@@ -70,6 +70,8 @@ type Processor interface {
 	AcceptToMtsListing(mb *message.Buffer) func(transactionId uuid.UUID, params AcceptToMtsListingParams) error
 	ReleaseFromMtsHoldingAndEmit(transactionId uuid.UUID, holdingId uuid.UUID) error
 	ReleaseFromMtsHolding(mb *message.Buffer) func(transactionId uuid.UUID, holdingId uuid.UUID) error
+	RestoreMtsHoldingAndEmit(transactionId uuid.UUID, holdingId uuid.UUID) error
+	RestoreMtsHolding(mb *message.Buffer) func(transactionId uuid.UUID, holdingId uuid.UUID) error
 	MoveListingToHoldingAndEmit(transactionId uuid.UUID, listingId uuid.UUID, buyerId uint32, worldId byte) error
 	MoveListingToHolding(mb *message.Buffer) func(transactionId uuid.UUID, listingId uuid.UUID, buyerId uint32, worldId byte) error
 }
@@ -111,6 +113,18 @@ func (p *ProcessorImpl) ReleaseFromMtsHoldingAndEmit(transactionId uuid.UUID, ho
 func (p *ProcessorImpl) ReleaseFromMtsHolding(mb *message.Buffer) func(transactionId uuid.UUID, holdingId uuid.UUID) error {
 	return func(transactionId uuid.UUID, holdingId uuid.UUID) error {
 		return mb.Put(mtsCustody.EnvCommandTopic, ReleaseFromMtsHoldingProvider(transactionId, holdingId))
+	}
+}
+
+func (p *ProcessorImpl) RestoreMtsHoldingAndEmit(transactionId uuid.UUID, holdingId uuid.UUID) error {
+	return message.Emit(p.p)(func(mb *message.Buffer) error {
+		return p.RestoreMtsHolding(mb)(transactionId, holdingId)
+	})
+}
+
+func (p *ProcessorImpl) RestoreMtsHolding(mb *message.Buffer) func(transactionId uuid.UUID, holdingId uuid.UUID) error {
+	return func(transactionId uuid.UUID, holdingId uuid.UUID) error {
+		return mb.Put(mtsCustody.EnvCommandTopic, RestoreMtsHoldingProvider(transactionId, holdingId))
 	}
 }
 

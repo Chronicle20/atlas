@@ -37,6 +37,7 @@ const (
 	CharacterRespawn     = sharedsaga.CharacterRespawn
 	GachaponTransaction  = sharedsaga.GachaponTransaction
 	PetEvolution         = sharedsaga.PetEvolution
+	MtsOperation         = sharedsaga.MtsOperation
 )
 
 // Status constants

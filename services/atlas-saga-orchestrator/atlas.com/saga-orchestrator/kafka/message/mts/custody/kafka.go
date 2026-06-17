@@ -19,6 +19,7 @@ const (
 	CommandAcceptToMtsListing      = "ACCEPT_TO_MTS_LISTING"
 	CommandReleaseFromMtsHolding   = "RELEASE_FROM_MTS_HOLDING"
 	CommandMtsMoveListingToHolding = "MTS_MOVE_LISTING_TO_HOLDING"
+	CommandRestoreMtsHolding       = "RESTORE_MTS_HOLDING"
 )
 
 // Command is the generic custody command envelope. TransactionId keys the saga
@@ -81,6 +82,12 @@ type ReleaseFromMtsHoldingCommandBody struct {
 	HoldingId uuid.UUID `json:"holdingId"`
 }
 
+// RestoreMtsHoldingCommandBody un-soft-deletes the holding row by id (the
+// compensating inverse of ReleaseFromMtsHolding).
+type RestoreMtsHoldingCommandBody struct {
+	HoldingId uuid.UUID `json:"holdingId"`
+}
+
 // MtsMoveListingToHoldingCommandBody carries the listing to settle plus the
 // buyer/world identity for the holding to create.
 type MtsMoveListingToHoldingCommandBody struct {
@@ -96,6 +103,7 @@ const (
 	StatusEventTypeAccepted = "ACCEPTED"
 	StatusEventTypeReleased = "RELEASED"
 	StatusEventTypeMoved    = "MOVED"
+	StatusEventTypeRestored = "RESTORED"
 	StatusEventTypeError    = "ERROR"
 )
 
@@ -114,6 +122,11 @@ type StatusEventAcceptedBody struct {
 
 // StatusEventReleasedBody acks a holding release, echoing the holding id.
 type StatusEventReleasedBody struct {
+	HoldingId uuid.UUID `json:"holdingId"`
+}
+
+// StatusEventRestoredBody acks a holding restore, echoing the holding id.
+type StatusEventRestoredBody struct {
 	HoldingId uuid.UUID `json:"holdingId"`
 }
 

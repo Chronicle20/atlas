@@ -1,12 +1,15 @@
 package saga
 
 import (
+	"atlas-saga-orchestrator/cashshop"
 	"atlas-saga-orchestrator/character"
 	"atlas-saga-orchestrator/compartment"
 	"atlas-saga-orchestrator/guild"
 	"atlas-saga-orchestrator/invite"
+	asset2 "atlas-saga-orchestrator/kafka/message/asset"
 	sagaMsg "atlas-saga-orchestrator/kafka/message/saga"
 	"atlas-saga-orchestrator/kafka/producer"
+	"atlas-saga-orchestrator/mts"
 	"atlas-saga-orchestrator/skill"
 	"atlas-saga-orchestrator/validation"
 	"context"
@@ -27,6 +30,8 @@ type Compensator interface {
 	WithValidationProcessor(validation.Processor) Compensator
 	WithGuildProcessor(guild.Processor) Compensator
 	WithInviteProcessor(invite.Processor) Compensator
+	WithCashshopProcessor(cashshop.Processor) Compensator
+	WithMtsProcessor(mts.Processor) Compensator
 
 	CompensateFailedStep(s Saga) error
 	compensateEquipAsset(s Saga, failedStep Step[any]) error
@@ -40,6 +45,16 @@ type Compensator interface {
 	compensateSelectGachaponReward(s Saga, failedStep Step[any]) error
 	compensateCharacterCreation(s Saga, failedStep Step[any]) error
 	compensatePetEvolution(s Saga, failedStep Step[any]) error
+	compensateMtsOperation(s Saga, failedStep Step[any]) error
+
+	// DispatchMtsOperationRollbacks reverse-walks the completed steps of an MTS
+	// saga (TransferToMts / WithdrawFromMts / MtsSettlePurchase) and dispatches the
+	// inverse for each: AwardCurrency → negated re-credit/debit, ReleaseFromCharacter
+	// → AcceptToCharacter (re-grant), ReleaseFromMtsHolding → RestoreMtsHolding,
+	// AcceptToMtsListing → DestroyItem-not-needed (handled by atomic tx; see code).
+	// No lifecycle transitions, no Failed emission, no cache eviction — callers
+	// handle those. This is the dupe-safety core (design §4.1).
+	DispatchMtsOperationRollbacks(s Saga)
 
 	// DispatchCharacterCreationRollbacks is the dispatch half of the reverse-walk
 	// compensator. It fires the inverse commands (DestroyItem / DeleteSkill /
@@ -57,113 +72,88 @@ type Compensator interface {
 }
 
 type CompensatorImpl struct {
-	l       logrus.FieldLogger
-	ctx     context.Context
-	t       tenant.Model
-	charP   character.Processor
-	compP   compartment.Processor
-	skillP  skill.Processor
-	validP  validation.Processor
-	guildP  guild.Processor
-	inviteP invite.Processor
+	l         logrus.FieldLogger
+	ctx       context.Context
+	t         tenant.Model
+	charP     character.Processor
+	compP     compartment.Processor
+	skillP    skill.Processor
+	validP    validation.Processor
+	guildP    guild.Processor
+	inviteP   invite.Processor
+	cashshopP cashshop.Processor
+	mtsP      mts.Processor
 }
 
 func NewCompensator(l logrus.FieldLogger, ctx context.Context) Compensator {
 	return &CompensatorImpl{
-		l:       l,
-		ctx:     ctx,
-		t:       tenant.MustFromContext(ctx),
-		charP:   character.NewProcessor(l, ctx),
-		compP:   compartment.NewProcessor(l, ctx),
-		skillP:  skill.NewProcessor(l, ctx),
-		validP:  validation.NewProcessor(l, ctx),
-		guildP:  guild.NewProcessor(l, ctx),
-		inviteP: invite.NewProcessor(l, ctx),
+		l:         l,
+		ctx:       ctx,
+		t:         tenant.MustFromContext(ctx),
+		charP:     character.NewProcessor(l, ctx),
+		compP:     compartment.NewProcessor(l, ctx),
+		skillP:    skill.NewProcessor(l, ctx),
+		validP:    validation.NewProcessor(l, ctx),
+		guildP:    guild.NewProcessor(l, ctx),
+		inviteP:   invite.NewProcessor(l, ctx),
+		cashshopP: cashshop.NewProcessor(l, ctx),
+		mtsP:      mts.NewProcessor(l, ctx),
 	}
+}
+
+// copy returns a shallow clone of the compensator so the With* setters can
+// override a single processor without re-listing every field at each call site.
+func (c *CompensatorImpl) copy() *CompensatorImpl {
+	cp := *c
+	return &cp
 }
 
 func (c *CompensatorImpl) WithCharacterProcessor(charP character.Processor) Compensator {
-	return &CompensatorImpl{
-		l:       c.l,
-		ctx:     c.ctx,
-		t:       c.t,
-		charP:   charP,
-		compP:   c.compP,
-		skillP:  c.skillP,
-		validP:  c.validP,
-		guildP:  c.guildP,
-		inviteP: c.inviteP,
-	}
+	n := c.copy()
+	n.charP = charP
+	return n
 }
 
 func (c *CompensatorImpl) WithCompartmentProcessor(compP compartment.Processor) Compensator {
-	return &CompensatorImpl{
-		l:       c.l,
-		ctx:     c.ctx,
-		t:       c.t,
-		charP:   c.charP,
-		compP:   compP,
-		skillP:  c.skillP,
-		validP:  c.validP,
-		guildP:  c.guildP,
-		inviteP: c.inviteP,
-	}
+	n := c.copy()
+	n.compP = compP
+	return n
 }
 
 func (c *CompensatorImpl) WithSkillProcessor(skillP skill.Processor) Compensator {
-	return &CompensatorImpl{
-		l:       c.l,
-		ctx:     c.ctx,
-		t:       c.t,
-		charP:   c.charP,
-		compP:   c.compP,
-		skillP:  skillP,
-		validP:  c.validP,
-		guildP:  c.guildP,
-		inviteP: c.inviteP,
-	}
+	n := c.copy()
+	n.skillP = skillP
+	return n
 }
 
 func (c *CompensatorImpl) WithValidationProcessor(validP validation.Processor) Compensator {
-	return &CompensatorImpl{
-		l:       c.l,
-		ctx:     c.ctx,
-		t:       c.t,
-		charP:   c.charP,
-		compP:   c.compP,
-		skillP:  c.skillP,
-		validP:  validP,
-		guildP:  c.guildP,
-		inviteP: c.inviteP,
-	}
+	n := c.copy()
+	n.validP = validP
+	return n
 }
 
 func (c *CompensatorImpl) WithGuildProcessor(guildP guild.Processor) Compensator {
-	return &CompensatorImpl{
-		l:       c.l,
-		ctx:     c.ctx,
-		t:       c.t,
-		charP:   c.charP,
-		compP:   c.compP,
-		skillP:  c.skillP,
-		validP:  c.validP,
-		guildP:  guildP,
-		inviteP: c.inviteP,
-	}
+	n := c.copy()
+	n.guildP = guildP
+	return n
 }
 
 func (c *CompensatorImpl) WithInviteProcessor(inviteP invite.Processor) Compensator {
-	return &CompensatorImpl{
-		l:       c.l,
-		ctx:     c.ctx,
-		t:       c.t,
-		charP:   c.charP,
-		compP:   c.compP,
-		skillP:  c.skillP,
-		validP:  c.validP,
-		guildP:  c.guildP,
-		inviteP: inviteP,
-	}
+	n := c.copy()
+	n.inviteP = inviteP
+	return n
+}
+
+func (c *CompensatorImpl) WithCashshopProcessor(cashshopP cashshop.Processor) Compensator {
+	n := c.copy()
+	n.cashshopP = cashshopP
+	return n
+}
+
+func (c *CompensatorImpl) WithMtsProcessor(mtsP mts.Processor) Compensator {
+	n := c.copy()
+	n.mtsP = mtsP
+	return n
 }
 
 // CompensateFailedStep handles compensation for failed steps
@@ -194,6 +184,15 @@ func (c *CompensatorImpl) CompensateFailedStep(s Saga) error {
 	// rather than only compensating the failed step.
 	if s.SagaType() == PetEvolution {
 		return c.compensatePetEvolution(s, failedStep)
+	}
+
+	// MTS reverse-walk (task-102 §4.1 — the dupe-safety core). A failed
+	// TransferToMts / WithdrawFromMts / MtsSettlePurchase must undo every
+	// already-completed step so exactly one custody copy of the item exists at
+	// every instant and currency nets to zero, rather than only compensating the
+	// failed step.
+	if s.SagaType() == MtsOperation {
+		return c.compensateMtsOperation(s, failedStep)
 	}
 
 	c.l.WithFields(logrus.Fields{
@@ -1136,6 +1135,175 @@ func (c *CompensatorImpl) DispatchPetEvolutionRollbacks(s Saga) {
 				}
 			}
 		}
+	}
+}
+
+// compensateMtsOperation is the MTS reverse-walk compensator (task-102 §4.1 —
+// the dupe-safety core). On a failed TransferToMts / WithdrawFromMts /
+// MtsSettlePurchase it walks the saga's completed steps in reverse, dispatches
+// the inverse for each, emits exactly one StatusEventTypeFailed, cancels the
+// Phase-4 timer, and evicts the saga.
+//
+// Double-emission is prevented by TryTransition(Compensating → Failed): if the
+// timer already emitted Failed, the transition is refused and this function
+// returns without re-emitting. Mirrors compensatePetEvolution.
+func (c *CompensatorImpl) compensateMtsOperation(s Saga, failedStep Step[any]) error {
+	c.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"failed_step":    failedStep.StepId(),
+		"failed_action":  failedStep.Action(),
+		"tenant_id":      c.t.Id().String(),
+	}).Info("MTS saga failing — dispatching reverse-walk compensation.")
+
+	c.DispatchMtsOperationRollbacks(s)
+
+	if !GetCache().TryTransition(c.ctx, s.TransactionId(), SagaLifecycleCompensating, SagaLifecycleFailed) {
+		c.l.WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId().String(),
+			"tenant_id":      c.t.Id().String(),
+		}).Info("saga already in terminal Failed state; reverse-walk emission skipped.")
+		SagaTimers().Cancel(s.TransactionId())
+		GetCache().Remove(c.ctx, s.TransactionId())
+		return nil
+	}
+
+	SagaTimers().Cancel(s.TransactionId())
+	GetCache().Remove(c.ctx, s.TransactionId())
+
+	reason := fmt.Sprintf("MTS operation failed at step [%s] action [%s]", failedStep.StepId(), failedStep.Action())
+	if err := EmitSagaFailed(c.l, c.ctx, s, sagaMsg.ErrorCodeUnknown, reason, failedStep.StepId()); err != nil {
+		c.l.WithError(err).WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId().String(),
+			"tenant_id":      c.t.Id().String(),
+		}).Error("Failed to emit saga failed event after MTS compensation.")
+		return err
+	}
+
+	c.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"tenant_id":      c.t.Id().String(),
+	}).Info("MTS reverse-walk compensation complete; saga terminated.")
+	return nil
+}
+
+// DispatchMtsOperationRollbacks reverse-walks the saga's completed steps and
+// dispatches the inverse compensation command for each. This is the pure
+// "dispatch" half — no lifecycle transitions, no event emission, no cache
+// eviction. Callers are responsible for those. An error dispatching one inverse
+// does not abort the chain.
+//
+// Inverses (design §4.1):
+//   - AwardCurrency (settlement debit/credit) → AwardCurrency with -Amount: the
+//     buyer debit (negative amount) re-credits, the seller credit (positive
+//     amount) debits. Net currency change is zero. REUSES the cash-shop wallet
+//     dispatch — no duplicate command.
+//   - ReleaseFromCharacter (TransferToMts: item left inventory) → re-grant the
+//     item to the character via RequestAcceptAsset, reconstructing the equip
+//     snapshot from the saga's AcceptToMtsListing step so stats survive.
+//   - ReleaseFromMtsHolding (WithdrawFromMts: holding soft-deleted) →
+//     RestoreMtsHolding (un-soft-delete the same holding row).
+//
+// Steps that committed no compensable mutation have no inverse:
+//   - AcceptToMtsListing failing leaves no listing row (its own atomic tx rolled
+//     back), so there is nothing to un-accept; the ReleaseFromCharacter inverse
+//     above re-grants the item.
+//   - MtsMoveListingToHolding failing leaves the listing `active` with no buyer
+//     holding (its own atomic tx rolled back), so there is nothing to un-move;
+//     only the two AwardCurrency steps need reversal. It is the LAST settlement
+//     step, so it is never a Completed-then-compensated step.
+func (c *CompensatorImpl) DispatchMtsOperationRollbacks(s Saga) {
+	// Locate the AcceptToMtsListing snapshot (if any) so a ReleaseFromCharacter
+	// inverse can re-grant with the original equip stats.
+	var listingSnapshot *AcceptToMtsListingPayload
+	for _, step := range s.Steps() {
+		if step.Action() != AcceptToMtsListing {
+			continue
+		}
+		if p, ok := step.Payload().(AcceptToMtsListingPayload); ok {
+			pc := p
+			listingSnapshot = &pc
+			break
+		}
+	}
+
+	steps := s.Steps()
+	for i := len(steps) - 1; i >= 0; i-- {
+		step := steps[i]
+		if step.Status() != Completed {
+			continue
+		}
+		switch step.Action() {
+		case AwardCurrency:
+			if payload, ok := step.Payload().(AwardCurrencyPayload); ok {
+				if err := c.cashshopP.AwardCurrencyAndEmit(s.TransactionId(), payload.AccountId, payload.CurrencyType, -payload.Amount); err != nil {
+					c.l.WithError(err).WithFields(logrus.Fields{
+						"transaction_id": s.TransactionId().String(),
+						"step_id":        step.StepId(),
+						"account_id":     payload.AccountId,
+						"amount":         payload.Amount,
+					}).Error("Reverse-walk: AwardCurrency reversal dispatch failed; continuing chain.")
+				}
+			}
+		case ReleaseFromCharacter:
+			if payload, ok := step.Payload().(ReleaseFromCharacterPayload); ok {
+				if listingSnapshot == nil {
+					c.l.WithFields(logrus.Fields{
+						"transaction_id": s.TransactionId().String(),
+						"step_id":        step.StepId(),
+						"character_id":   payload.CharacterId,
+					}).Error("Reverse-walk: ReleaseFromCharacter has no AcceptToMtsListing snapshot to re-grant; skipping.")
+					continue
+				}
+				assetData := assetDataFromMtsListingSnapshot(*listingSnapshot)
+				if err := c.compP.RequestAcceptAsset(s.TransactionId(), payload.CharacterId, payload.InventoryType, listingSnapshot.TemplateId, assetData); err != nil {
+					c.l.WithError(err).WithFields(logrus.Fields{
+						"transaction_id": s.TransactionId().String(),
+						"step_id":        step.StepId(),
+						"character_id":   payload.CharacterId,
+						"template_id":    listingSnapshot.TemplateId,
+					}).Error("Reverse-walk: ReleaseFromCharacter → AcceptToCharacter re-grant dispatch failed; continuing chain.")
+				}
+			}
+		case ReleaseFromMtsHolding:
+			if payload, ok := step.Payload().(ReleaseFromMtsHoldingPayload); ok {
+				if err := c.mtsP.RestoreMtsHoldingAndEmit(s.TransactionId(), payload.HoldingId); err != nil {
+					c.l.WithError(err).WithFields(logrus.Fields{
+						"transaction_id": s.TransactionId().String(),
+						"step_id":        step.StepId(),
+						"holding_id":     payload.HoldingId.String(),
+					}).Error("Reverse-walk: ReleaseFromMtsHolding → RestoreMtsHolding dispatch failed; continuing chain.")
+				}
+			}
+		}
+	}
+}
+
+// assetDataFromMtsListingSnapshot reconstructs an inventory AssetData from the
+// item snapshot carried on an AcceptToMtsListing step, so a TransferToMts
+// compensation re-grants the released item with its original equip stats intact.
+func assetDataFromMtsListingSnapshot(p AcceptToMtsListingPayload) asset2.AssetData {
+	return asset2.AssetData{
+		Quantity:      p.Quantity,
+		Strength:      p.Strength,
+		Dexterity:     p.Dexterity,
+		Intelligence:  p.Intelligence,
+		Luck:          p.Luck,
+		Hp:            p.HP,
+		Mp:            p.MP,
+		WeaponAttack:  p.WeaponAttack,
+		MagicAttack:   p.MagicAttack,
+		WeaponDefense: p.WeaponDefense,
+		MagicDefense:  p.MagicDefense,
+		Accuracy:      p.Accuracy,
+		Avoidability:  p.Avoidability,
+		Hands:         p.Hands,
+		Speed:         p.Speed,
+		Jump:          p.Jump,
+		Slots:         p.Slots,
+		LevelType:     p.ItemLevel,
+		Level:         p.Level,
+		Experience:    p.ItemExp,
+		Flag:          p.Flags,
 	}
 }
 

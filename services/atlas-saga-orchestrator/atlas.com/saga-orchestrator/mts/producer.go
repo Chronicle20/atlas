@@ -73,6 +73,21 @@ func ReleaseFromMtsHoldingProvider(transactionId uuid.UUID, holdingId uuid.UUID)
 	return producer.SingleMessageProvider(key, value)
 }
 
+// RestoreMtsHoldingProvider creates a RESTORE_MTS_HOLDING command (the
+// compensating inverse of RELEASE_FROM_MTS_HOLDING). Keyed by the holding id so
+// replays of the same restore are ordered.
+func RestoreMtsHoldingProvider(transactionId uuid.UUID, holdingId uuid.UUID) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(holdingId.ID()))
+	value := &mtsCustody.Command[mtsCustody.RestoreMtsHoldingCommandBody]{
+		TransactionId: transactionId,
+		Type:          mtsCustody.CommandRestoreMtsHolding,
+		Body: mtsCustody.RestoreMtsHoldingCommandBody{
+			HoldingId: holdingId,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 // MoveListingToHoldingProvider creates an MTS_MOVE_LISTING_TO_HOLDING command.
 // Keyed by the buyer id so the buyer's custody moves are ordered.
 func MoveListingToHoldingProvider(transactionId uuid.UUID, listingId uuid.UUID, buyerId uint32, worldId byte) model.Provider[[]kafka.Message] {

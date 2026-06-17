@@ -2,33 +2,78 @@ package holding
 
 import (
 	"context"
+	"fmt"
+	"time"
+
+	"atlas-mts/saga"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
-// Processor exposes the REST-facing operations over take-home holdings. Kafka
-// emission (the MethodAndEmit convention) lands in a later phase; for now these
-// are REST-only reads/writes.
+// SagaEmitter abstracts the saga-command emission so the take-home flow can be
+// exercised without a live Kafka broker. The production implementation is the
+// saga package's Processor; tests inject a capturing stub. Mirrors the listing
+// package's SagaEmitter (Task 4.1).
+type SagaEmitter interface {
+	Create(s saga.Saga) error
+}
+
+// takeHomeSagaBaseTimeout and takeHomeSagaPerStepTimeout define the
+// step-count-scaled timeout for the take-home (WithdrawFromMts) saga. The
+// orchestrator processes saga steps serially over Kafka, so the timeout budget
+// must grow with the number of effective steps; a flat timeout rolls back
+// legitimate multi-step sagas (see the preset-creation timeout bug,
+// bug_preset_creation_saga_flat_timeout).
+const (
+	takeHomeSagaBaseTimeout    = 10 * time.Second
+	takeHomeSagaPerStepTimeout = 1 * time.Second
+)
+
+// Processor exposes the REST-facing operations over take-home holdings plus the
+// take-home initiation flow (TakeHome).
 type Processor interface {
 	GetAll() model.Provider[[]Model]
 	GetById(id string) (Model, error)
 	Create(m Model) (Model, error)
 	GetByOwner(worldId world.Id, ownerId uint32) ([]Model, error)
 	GetByCharacter(ownerId uint32) ([]Model, error)
-	TakeHome(id string) (bool, error)
+	// TakeHome initiates the owner's withdrawal of a holding into inventory by
+	// emitting a WithdrawFromMts saga keyed by a fresh transaction id. It returns
+	// that transaction id. It does NOT soft-delete the holding row directly — the
+	// saga's ReleaseFromMtsHolding custody command soft-deletes it (idempotently on
+	// replay) and AcceptToCharacter grants the item to inventory.
+	TakeHome(holdingId string, characterId uint32, worldId world.Id, inventoryType byte, slot int16) (uuid.UUID, error)
 }
 
 type ProcessorImpl struct {
-	l   logrus.FieldLogger
-	ctx context.Context
-	db  *gorm.DB
+	l       logrus.FieldLogger
+	ctx     context.Context
+	db      *gorm.DB
+	emitter SagaEmitter
 }
 
-func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor {
-	return &ProcessorImpl{l: l, ctx: ctx, db: db}
+// Option mutates a ProcessorImpl during construction.
+type Option func(*ProcessorImpl)
+
+// WithSagaEmitter overrides the saga emitter (default: the real saga Processor).
+// Tests inject a capturing stub so the saga can be asserted without Kafka.
+func WithSagaEmitter(e SagaEmitter) Option {
+	return func(p *ProcessorImpl) {
+		p.emitter = e
+	}
+}
+
+func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB, opts ...Option) Processor {
+	p := &ProcessorImpl{l: l, ctx: ctx, db: db}
+	p.emitter = saga.NewProcessor(l, ctx)
+	for _, opt := range opts {
+		opt(p)
+	}
+	return p
 }
 
 func (p *ProcessorImpl) GetAll() model.Provider[[]Model] {
@@ -57,13 +102,54 @@ func (p *ProcessorImpl) GetByCharacter(ownerId uint32) ([]Model, error) {
 	return model.SliceMap(modelFromEntity)(getByCharacter(ownerId)(p.db.WithContext(p.ctx)))()()
 }
 
-// TakeHome soft-deletes the holding by id, returning true iff exactly one row
-// was soft-deleted. A repeated take-home is idempotent: the second call returns
-// false because the row is already gone from the default scope.
-func (p *ProcessorImpl) TakeHome(id string) (bool, error) {
-	affected, err := SoftDelete(p.db.WithContext(p.ctx), id)
+// TakeHome is the server-authoritative take-home initiation flow. It builds and
+// emits a WithdrawFromMts saga that the orchestrator expands into
+// release_from_mts_holding + accept_to_character: the holding row is soft-deleted
+// on release (idempotently — a replay finds it already released and re-acks
+// without re-granting) and the item is granted to the character's inventory;
+// compensation re-creates the holding if the accept fails.
+//
+// TakeHome does NOT soft-delete the holding row here — that side effect belongs
+// to the saga's ReleaseFromMtsHolding custody command, which is the idempotency
+// boundary on replay.
+//
+// slot is advisory: WithdrawFromMtsPayload carries no Slot field, so the
+// inventory grant (AcceptToCharacter) assigns a free slot during expansion. The
+// parameter is accepted for the REST contract but not propagated to the saga.
+func (p *ProcessorImpl) TakeHome(holdingId string, characterId uint32, worldId world.Id, inventoryType byte, slot int16) (uuid.UUID, error) {
+	hid, err := uuid.Parse(holdingId)
 	if err != nil {
-		return false, err
+		return uuid.Nil, fmt.Errorf("invalid holding id %q: %w", holdingId, err)
 	}
-	return affected == 1, nil
+
+	transactionId := uuid.New()
+
+	builder := saga.NewBuilder().
+		SetTransactionId(transactionId).
+		SetSagaType(saga.MtsOperation).
+		SetInitiatedBy(fmt.Sprintf("character_%d", characterId))
+
+	// WithdrawFromMts (composite): the orchestrator expands it into
+	// release_from_mts_holding + accept_to_character. release_from_mts_holding
+	// soft-deletes the holding by id (idempotent on replay); accept_to_character
+	// grants the item to the character's inventory.
+	builder.AddStep("withdraw_from_mts", saga.Pending, saga.WithdrawFromMts, saga.WithdrawFromMtsPayload{
+		TransactionId: transactionId,
+		CharacterId:   characterId,
+		WorldId:       worldId,
+		HoldingId:     hid,
+		InventoryType: inventoryType,
+	})
+
+	// Timeout MUST be set explicitly and scaled for the effective step count.
+	// N=2: the WithdrawFromMts composite expands to 2 steps
+	// (release_from_mts_holding + accept_to_character). A flat timeout rolls back a
+	// legitimate multi-step saga under a stressed broker.
+	const withdrawFromMtsExpandedSteps = 2 // release_from_mts_holding + accept_to_character
+	builder.SetTimeout(takeHomeSagaBaseTimeout + time.Duration(withdrawFromMtsExpandedSteps)*takeHomeSagaPerStepTimeout)
+
+	if err := p.emitter.Create(builder.Build()); err != nil {
+		return uuid.Nil, err
+	}
+	return transactionId, nil
 }

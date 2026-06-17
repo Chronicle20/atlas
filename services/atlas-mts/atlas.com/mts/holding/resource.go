@@ -2,6 +2,7 @@ package holding
 
 import (
 	"atlas-mts/rest"
+	"errors"
 	"net/http"
 	"strconv"
 
@@ -14,21 +15,81 @@ import (
 	"gorm.io/gorm"
 )
 
-// InitResource registers the read-only holding route:
-//   - GET /characters/{characterId}/mts/holding — a character's take-home holdings
+// InitResource registers the holding routes:
+//   - GET  /characters/{characterId}/mts/holding                          — a character's take-home holdings
+//   - POST /characters/{characterId}/mts/holding/{holdingId}/take-home    — initiate a take-home (WithdrawFromMts saga)
 //
-// An optional ?worldId= query param narrows the result to a single world; absent,
-// all of the character's holdings are returned. The take-home POST route is added
-// in Phase 4 (it initiates the WithdrawFromMts saga).
+// On GET, an optional ?worldId= query param narrows the result to a single world;
+// absent, all of the character's holdings are returned. The POST initiates the
+// WithdrawFromMts saga (release custody + grant to inventory); it does NOT
+// soft-delete the holding row directly — the saga's ReleaseFromMtsHolding custody
+// command does that (idempotently on replay).
 func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteInitializer {
 	return func(db *gorm.DB) server.RouteInitializer {
 		return func(router *mux.Router, l logrus.FieldLogger) {
 			registerGet := rest.RegisterHandler(l)(db)(si)
+			registerInput := rest.RegisterInputHandler[TakeHomeRestModel](l)(db)(si)
 
 			r := router.PathPrefix("/characters/{characterId}/mts/holding").Subrouter()
 			r.HandleFunc("", registerGet("get_character_holdings", handleGetCharacterHoldings)).Methods(http.MethodGet)
+			r.HandleFunc("/{holdingId}/take-home", registerInput("take_home_holding", handleTakeHome)).Methods(http.MethodPost)
 		}
 	}
+}
+
+// handleTakeHome initiates the owner's take-home of a holding into inventory by
+// emitting a WithdrawFromMts saga. The response is 202 Accepted carrying the
+// allocated transaction id — the holding is released and the item granted only
+// when the custody saga lands (ReleaseFromMtsHolding + AcceptToCharacter).
+//
+// Owner-only check (mirroring the listing seller-only check, Task 4.2): the
+// holding is loaded by id, and the take-home proceeds only when the requesting
+// characterId (path var) is the holding's owner; otherwise 403.
+func handleTakeHome(d *rest.HandlerDependency, c *rest.HandlerContext, rm TakeHomeRestModel) http.HandlerFunc {
+	return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
+		return rest.ParseHoldingId(d.Logger(), func(holdingId string) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				p := NewProcessor(d.Logger(), d.Context(), d.DB())
+
+				// Load the holding for the owner-only check.
+				m, err := p.GetById(holdingId)
+				if err != nil {
+					if errors.Is(err, gorm.ErrRecordNotFound) {
+						w.WriteHeader(http.StatusNotFound)
+						return
+					}
+					d.Logger().WithError(err).Errorf("Retrieving holding [%s] for take-home.", holdingId)
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+
+				// Owner-only: only the holding's owner may take it home.
+				if m.OwnerId() != characterId {
+					d.Logger().Errorf("Character [%d] attempted to take home holding [%s] owned by [%d]; forbidden.", characterId, holdingId, m.OwnerId())
+					w.WriteHeader(http.StatusForbidden)
+					return
+				}
+
+				txnId, err := p.TakeHome(holdingId, characterId, m.WorldId(), rm.InventoryType, rm.Slot)
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Initiating take-home of holding [%s] for character [%d].", holdingId, characterId)
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+
+				res := TakeHomeRestModel{
+					Id:            txnId.String(),
+					InventoryType: rm.InventoryType,
+					Slot:          rm.Slot,
+				}
+
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				w.WriteHeader(http.StatusAccepted)
+				server.MarshalResponse[TakeHomeRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+			}
+		})
+	})
 }
 
 func handleGetCharacterHoldings(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {

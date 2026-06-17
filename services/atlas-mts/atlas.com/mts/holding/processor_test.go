@@ -104,40 +104,8 @@ func TestProcessorGetByOwner(t *testing.T) {
 	}
 }
 
-// TestProcessorTakeHome asserts TakeHome is idempotent: the first call returns
-// true (1 row soft-deleted) and the row vanishes from GetByOwner; a second call
-// returns false.
-func TestProcessorTakeHome(t *testing.T) {
-	p, db, cleanup := test.CreateHoldingProcessor(t)
-	defer cleanup()
-	resetHoldings(t, db)
-
-	created, err := p.Create(buildProcessorHolding(t, 0, 100))
-	if err != nil {
-		t.Fatalf("Create: %v", err)
-	}
-
-	ok, err := p.TakeHome(created.Id().String())
-	if err != nil {
-		t.Fatalf("TakeHome first: %v", err)
-	}
-	if !ok {
-		t.Error("first TakeHome returned false, want true")
-	}
-
-	got, err := p.GetByOwner(0, 100)
-	if err != nil {
-		t.Fatalf("GetByOwner after take-home: %v", err)
-	}
-	if len(got) != 0 {
-		t.Errorf("GetByOwner after take-home returned %d rows, want 0", len(got))
-	}
-
-	ok, err = p.TakeHome(created.Id().String())
-	if err != nil {
-		t.Fatalf("TakeHome second: %v", err)
-	}
-	if ok {
-		t.Error("second TakeHome returned true, want false (idempotent)")
-	}
-}
+// TakeHome's saga-building behavior (it builds + emits a WithdrawFromMts saga and
+// does NOT directly soft-delete the holding) is asserted in take_home_flow_test.go
+// (TestTakeHomeBuildsWithdrawFromMtsSaga). The replay no-op (idempotency) is
+// enforced at the custody layer by the ReleaseFromMtsHolding handler — see
+// TestReleaseFromMtsHolding_SoftDeletesAndIsIdempotent in the custody consumer.

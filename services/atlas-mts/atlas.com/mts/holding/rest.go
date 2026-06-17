@@ -43,6 +43,30 @@ func (r RestModel) GetName() string {
 	return "holdings"
 }
 
+// TakeHomeRestModel is the JSON:API request/response for a take-home initiation.
+// inventoryType is the destination inventory type; slot is the advisory target
+// slot (the inventory grant auto-slots — WithdrawFromMtsPayload carries no slot,
+// so this is not propagated to the saga). The response carries the allocated
+// transaction id in Id.
+type TakeHomeRestModel struct {
+	Id            string `json:"-"`
+	InventoryType byte   `json:"inventoryType"`
+	Slot          int16  `json:"slot"`
+}
+
+func (r TakeHomeRestModel) GetName() string {
+	return "holdings"
+}
+
+func (r TakeHomeRestModel) GetID() string {
+	return r.Id
+}
+
+func (r *TakeHomeRestModel) SetID(idStr string) error {
+	r.Id = idStr
+	return nil
+}
+
 func (r RestModel) GetID() string {
 	return r.Id
 }

@@ -17,6 +17,9 @@ type (
 	// Payload types used by the list flow.
 	AwardMesosPayload    = sharedsaga.AwardMesosPayload
 	TransferToMtsPayload = sharedsaga.TransferToMtsPayload
+
+	// Payload type used by the take-home flow.
+	WithdrawFromMtsPayload = sharedsaga.WithdrawFromMtsPayload
 )
 
 const (
@@ -29,6 +32,7 @@ const (
 	Failed    = sharedsaga.Failed
 
 	// Action constants
-	AwardMesos    = sharedsaga.AwardMesos
-	TransferToMts = sharedsaga.TransferToMts
+	AwardMesos      = sharedsaga.AwardMesos
+	TransferToMts   = sharedsaga.TransferToMts
+	WithdrawFromMts = sharedsaga.WithdrawFromMts
 )

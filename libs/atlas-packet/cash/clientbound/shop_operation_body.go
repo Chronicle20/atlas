@@ -81,6 +81,20 @@ func CashShopCashGiftsBody() func(logrus.FieldLogger, context.Context) func(map[
 	return NewCashShopGifts(0x4D).Encode
 }
 
+// CashShopLoadInventoryFailureBody builds the LOAD_INVENTORY_FAILURE arm
+// (CCashShop::OnCashItemResLoadLockerFailed). It FIXES the LOAD_INVENTORY_FAILURE
+// operation key (the discrete struct never accepts a caller mode) and resolves the
+// reason byte from the writer's "errors" table.
+func CashShopLoadInventoryFailureBody(message string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		return func(options map[string]interface{}) []byte {
+			mode := atlas_packet.ResolveCode(l, options, "operations", CashShopOperationLoadInventoryFailure)
+			errorCode := atlas_packet.ResolveCode(l, options, "errors", message)
+			return NewLoadInventoryFailure(mode, errorCode).Encode(l, ctx)(options)
+		}
+	}
+}
+
 func CashShopInventoryCapacityIncreaseSuccessBody(inventoryType byte, capacity uint32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", CashShopOperationInventoryCapacityIncreaseSuccess, func(mode byte) packet.Encoder {
 		return NewInventoryCapacitySuccess(mode, inventoryType, uint16(capacity))

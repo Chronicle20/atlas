@@ -1,10 +1,10 @@
 {
-  "WriterName": "CashOperationError",
-  "IDAName": "CCashShop::OnCashItemResult#OperationError",
+  "WriterName": "CashLoadInventoryFailure",
+  "IDAName": "CCashShop::OnCashItemResult#LOAD_INVENTORY_FAILURE",
   "Address": "0x4969f0",
   "Variant": "GMS/v95",
   "BranchDepth": 0,
-  "AtlasFile": "../../libs/atlas-packet/cash/clientbound/shop_operation_result.go",
+  "AtlasFile": "libs/atlas-packet/cash/clientbound/shop_operation_result.go",
   "Rows": [
     {
       "Index": 0,

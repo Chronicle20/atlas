@@ -1,8 +1,8 @@
-packet: cash/clientbound/CashOperationError
+packet: cash/clientbound/CashLoadInventoryFailure
 direction: clientbound
 version: gms_v95
 category: TIER1-FIXTURE
 ida:
-    function: CCashShop::OnCashItemResult#OperationError
+    function: CCashShop::OnCashItemResult#LOAD_INVENTORY_FAILURE
     address: "0x4969f0"
     decompile_sha256: 70052beaa3e51acc4dd01cb8dd23facd69b1b68d70a4d7a198ed9ad5ca95bc98

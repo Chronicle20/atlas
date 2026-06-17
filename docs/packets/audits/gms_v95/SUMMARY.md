@@ -9,7 +9,7 @@
 | [CashCashShopPurchaseSuccess](CashCashShopPurchaseSuccess.md) | ✅ | `../../libs/atlas-packet/cash/clientbound/shop_inventory.go` |
 | [CashInventoryCapacityFailed](CashInventoryCapacityFailed.md) | ✅ | `../../libs/atlas-packet/cash/clientbound/shop_operation_result.go` |
 | [CashInventoryCapacitySuccess](CashInventoryCapacitySuccess.md) | ✅ | `../../libs/atlas-packet/cash/clientbound/shop_operation_result.go` |
-| [CashOperationError](CashOperationError.md) | ✅ | `../../libs/atlas-packet/cash/clientbound/shop_operation_result.go` |
+| [CashLoadInventoryFailure](CashLoadInventoryFailure.md) | ✅ | `../../libs/atlas-packet/cash/clientbound/shop_operation_result.go` |
 | [CashWishListLoad](CashWishListLoad.md) | ✅ | `../../libs/atlas-packet/cash/clientbound/shop_operation_result.go` |
 | [CashWishListUpdate](CashWishListUpdate.md) | ✅ | `../../libs/atlas-packet/cash/clientbound/shop_operation_result.go` |
 | [Ping](Ping.md) | ✅ | `../../libs/atlas-packet/socket/clientbound/ping.go` |

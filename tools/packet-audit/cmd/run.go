@@ -1700,8 +1700,11 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "InventoryCapacitySuccess", dir: csvpkg.DirClientbound, pkg: "cash"}}
 	case "CCashShop::OnCashItemResult#InventoryCapacityFailed":
 		return []candidate{{name: "InventoryCapacityFailed", dir: csvpkg.DirClientbound, pkg: "cash"}}
-	case "CCashShop::OnCashItemResult#OperationError":
-		return []candidate{{name: "OperationError", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	// LOAD_INVENTORY_FAILURE (OnCashItemResLoadLockerFailed): discrete per-mode struct
+	// (task-096). mode + reason byte (generic failure-family arm). FIXES the
+	// LOAD_INVENTORY_FAILURE operation key; replaces the old shape-name #OperationError.
+	case "CCashShop::OnCashItemResult#LOAD_INVENTORY_FAILURE":
+		return []candidate{{name: "LoadInventoryFailure", dir: csvpkg.DirClientbound, pkg: "cash"}}
 	case "CCashShop::OnCashItemResult#CashShopPurchaseSuccess":
 		return []candidate{{name: "CashShopPurchaseSuccess", dir: csvpkg.DirClientbound, pkg: "cash"}}
 	case "CCashShop::OnCashItemResult#CashItemMovedToCashInventory":

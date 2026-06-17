@@ -25,9 +25,11 @@ dispatchers:
   # not mode-byte-only), each with a packet-audit:verify byte-fixture + fresh
   # pinned evidence across gms_v83/v84/v87/v95/jms_v185. Supported arms (synthetic
   # #-suffix FNames in the per-version exports): CashShopInventory (LOAD_LOCKER),
-  # OperationError (LOAD_LOCKER_FAILED), WishListLoad (LOAD_WISH_DONE) +
-  # WishListUpdate (SET_WISH_DONE) — split into discrete per-mode structs
-  # (task-096 iteration 1: no struct serves >1 mode),
+  # LoadInventoryFailure (LOAD_INVENTORY_FAILURE / LOAD_LOCKER_FAILED),
+  # WishListLoad (LOAD_WISH_DONE) + WishListUpdate (SET_WISH_DONE) — split into
+  # discrete per-mode structs (task-096: no struct serves >1 mode; the failure
+  # arm fixes its own LOAD_INVENTORY_FAILURE key, replacing the old shape-name
+  # OperationError struct),
   # CashShopPurchaseSuccess (BUY_DONE), InventoryCapacitySuccess/Failed
   # (INC_SLOT_COUNT_DONE/FAILED), CashItemMovedToInventory (MOVE_L_TO_S_DONE),
   # CashItemMovedToCashInventory (MOVE_S_TO_L_DONE). Per-version arm bodies are

@@ -11,26 +11,29 @@ import (
 
 const CashShopOperationWriter = "CashShopOperation"
 
-// OperationError - mode + error code byte
-// packet-audit:fname CCashShop::OnCashItemResult#OperationError
-type OperationError struct {
+// LoadInventoryFailure - LOAD_INVENTORY_FAILURE arm (CCashShop::OnCashItemResLoadLockerFailed):
+// mode + errorCode (NoticeFailReason reason byte). Discrete per-mode struct: it fixes the
+// LOAD_INVENTORY_FAILURE operation key (the body func resolves it); never accepts the mode
+// from the caller. Wire shape is a generic failure-family arm (mode + reason byte).
+// packet-audit:fname CCashShop::OnCashItemResult#LOAD_INVENTORY_FAILURE
+type LoadInventoryFailure struct {
 	mode      byte
 	errorCode byte
 }
 
-func NewOperationError(mode byte, errorCode byte) OperationError {
-	return OperationError{mode: mode, errorCode: errorCode}
+func NewLoadInventoryFailure(mode byte, errorCode byte) LoadInventoryFailure {
+	return LoadInventoryFailure{mode: mode, errorCode: errorCode}
 }
 
-func (m OperationError) Mode() byte        { return m.mode }
-func (m OperationError) ErrorCode() byte   { return m.errorCode }
-func (m OperationError) Operation() string { return CashShopOperationWriter }
+func (m LoadInventoryFailure) Mode() byte        { return m.mode }
+func (m LoadInventoryFailure) ErrorCode() byte   { return m.errorCode }
+func (m LoadInventoryFailure) Operation() string { return CashShopOperationWriter }
 
-func (m OperationError) String() string {
+func (m LoadInventoryFailure) String() string {
 	return fmt.Sprintf("mode [%d] errorCode [%d]", m.mode, m.errorCode)
 }
 
-func (m OperationError) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+func (m LoadInventoryFailure) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
 		w.WriteByte(m.mode)
@@ -39,7 +42,7 @@ func (m OperationError) Encode(l logrus.FieldLogger, _ context.Context) func(opt
 	}
 }
 
-func (m *OperationError) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *LoadInventoryFailure) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.mode = r.ReadByte()
 		m.errorCode = r.ReadByte()

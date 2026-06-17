@@ -1,8 +1,8 @@
 {
-  "WriterName": "CashOperationError",
-  "IDAName": "CCashShop::OnCashItemResult#OperationError",
-  "Address": "0x47957c",
-  "Variant": "GMS/v83",
+  "WriterName": "CashLoadInventoryFailure",
+  "IDAName": "CCashShop::OnCashItemResult#LOAD_INVENTORY_FAILURE",
+  "Address": "0x47c71a",
+  "Variant": "GMS/v84",
   "BranchDepth": 0,
   "AtlasFile": "libs/atlas-packet/cash/clientbound/shop_operation_result.go",
   "Rows": [
@@ -11,7 +11,7 @@
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "mode (0x4c LOAD_LOCKER_FAILED; op-byte consumed by OnCashItemResult dispatcher before OnCashItemResLoadLockerFailed). Generic failure-family arm: NoticeFailReason(Decode1).",
+      "IDAComment": "mode (0x4f LOAD_LOCKER_FAILED; op-byte consumed by OnCashItemResult dispatcher before OnCashItemResLoadLockerFailed). Generic failure-family arm: NoticeFailReason(Decode1).",
       "Verdict": 0,
       "Note": ""
     },

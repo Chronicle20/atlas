@@ -1,8 +1,8 @@
-# CashOperationError (← `CCashShop::OnCashItemResult#OperationError`)
+# CashLoadInventoryFailure (← `CCashShop::OnCashItemResult#LOAD_INVENTORY_FAILURE`)
 
-- **IDA:** 0x48bda6
+- **IDA:** 0x47c71a
 - **Atlas file:** `libs/atlas-packet/cash/clientbound/shop_operation_result.go`
-- **Variant:** JMS/v185
+- **Variant:** GMS/v84
 - **Branch depth:** 0
 - **Verdict:** ✅
 

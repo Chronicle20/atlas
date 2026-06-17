@@ -365,7 +365,7 @@
         }
       ]
     },
-    "CCashShop::OnCashItemResult#OperationError": {
+    "CCashShop::OnCashItemResult#LOAD_INVENTORY_FAILURE": {
       "address": "0x484ca3",
       "direction": "clientbound",
       "calls": [

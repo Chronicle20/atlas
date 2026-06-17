@@ -1,4 +1,4 @@
-# CashOperationError (← `CCashShop::OnCashItemResult#OperationError`)
+# CashLoadInventoryFailure (← `CCashShop::OnCashItemResult#LOAD_INVENTORY_FAILURE`)
 
 - **IDA:** 0x47957c
 - **Atlas file:** `libs/atlas-packet/cash/clientbound/shop_operation_result.go`

@@ -89,14 +89,41 @@ except those baselined in `docs/packets/dispatcher-lint-baseline.yaml`:
 - **INV-1** no clientbound struct is mapped by >1 dispatcher `#`-entry.
 - **INV-2** no `mode:\s*0x` literal in a dispatcher struct constructor; no `func(_ byte)`
   in a body-function file (must be `func(mode byte)` passthrough).
-- **INV-3** no exported `*Body(` function takes an `op`/`code`/`mode`/`key` selector param.
+- **INV-3** no exported `*Body(` function lets the caller pick the operation.
+  Two complementary signals: (a) by-name — a param literally named
+  `op`/`code`/`mode`/`key`; (b) **semantic** — a param of ANY name (e.g.
+  `errorCode`, `reason`) that flows into the `WithResolvedCode("operations", …)`
+  key. A fixed const, a `string(Const)` cast, or a string literal is fine; a
+  *parameter* as the key is the AP-4 footgun. The semantic signal exists because
+  the by-name list let `BuddyErrorBody(errorCode string)` escape (task-101).
 - **INV-4** every `#`-entry candidate resolves to an existing `type <name> struct`; no
   committed audit report cites a deleted Atlas file.
 - **INV-5** every dispatcher clientbound struct is constructed by a body function.
 
-The **baseline** lists families not yet migrated (currently `party`, `guild`). The
-linter fails on any violation **outside** the baseline. Migrating a family = removing
-its baseline entry; the baseline only shrinks.
+The **baseline** lists families not yet migrated (currently `party`, `guild`,
+`buddy`). The linter fails on any violation **outside** the baseline. Migrating a
+family = removing its baseline entry; the baseline only shrinks.
+
+### Known limitations (the linter's blind spots)
+
+The linter only sees a family it is *enrolled* on — i.e. a base FName with **>1**
+`#`-suffixed clientbound entry in `candidatesFromFName`. Two consequences:
+
+- **A catch-all `#`-entry can hide AP-1 from INV-1.** INV-1 fires only when a
+  struct is mapped by >1 `#`-entry. A single catch-all arm (e.g.
+  `CWvsContext::OnPartyResult#Error` fronting ~15 error sub-ops through one
+  `Error` struct) maps the struct by ONE entry, so INV-1 stays silent. In
+  practice these catch-alls route through a string-keyed body func and INV-3
+  (semantic) catches them — but a catch-all constructed some other way would
+  slip through. When you see a `#`-entry comment admitting "sub-op enum deferred
+  to _pending.md", that arm is a catch-all: split it.
+- **A mode-dispatcher writer not enrolled as a family is invisible.** Example
+  (latent, task-101): `libs/atlas-packet/pet/clientbound/activated_body.go`
+  `PetDespawnBody(…, reason string)` passes `reason` as the operations key — the
+  same AP-4 footgun as the error bodies — but `pet` has no multi-arm `#`-entry
+  family in `run.go`, so the linter never scans it. Enrolling pet (split the
+  despawn modes into `#`-entries) would bring it under INV-3. Tracked as a
+  future "wire or migrate" item, not fixed here.
 
 ## "Family complete" checklist
 

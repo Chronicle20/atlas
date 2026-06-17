@@ -207,6 +207,80 @@ func TestSelectorParamRe(t *testing.T) {
 	}
 }
 
+// TestCheckBodyFunctionFilesSemanticSelector verifies INV-3 catches a
+// caller-specified operations key whose param name is NOT one of the
+// op/code/mode/key keywords (the buddy `errorCode` escapee), while leaving a
+// fixed-const key (and a `string(Const)` cast) clean.
+func TestCheckBodyFunctionFilesSemanticSelector(t *testing.T) {
+	root := t.TempDir()
+	packetLib := filepath.Join(root, "libs", "atlas-packet")
+
+	// buddy-style: selector named `errorCode` (escapes by-name matching) flows
+	// into the operations key -> must be caught semantically.
+	writeFile(t, filepath.Join(packetLib, "bud", "operation_body.go"), `package bud
+func BudErrorBody(errorCode string) E {
+	return WithResolvedCode("operations", errorCode, func(mode byte) packet.Encoder {
+		return NewBudError(mode)
+	})
+}
+func BudOkBody(slot byte) E {
+	return WithResolvedCode("operations", BudOpFixed, func(mode byte) packet.Encoder {
+		return NewBudOk(mode, slot)
+	})
+}
+func BudCastBody(name string) E {
+	return WithResolvedCode("operations", string(BudOpCast), func(mode byte) packet.Encoder {
+		return NewBudCast(mode, name)
+	})
+}
+`)
+
+	arms := []dispatcherArm{
+		{family: "CBud::On", mode: "Error", name: "Error", pkg: "bud"},
+		{family: "CBud::On", mode: "Ok", name: "Ok", pkg: "bud"},
+	}
+	cfg := dispatcherLintConfig{PacketLib: packetLib}
+	vs, err := checkBodyFunctionFiles(cfg, arms)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var inv3 []violation
+	for _, v := range vs {
+		if v.inv == "INV-3" {
+			inv3 = append(inv3, v)
+		}
+	}
+	if len(inv3) != 1 {
+		t.Fatalf("expected exactly 1 INV-3 (the errorCode selector), got %d: %+v", len(inv3), inv3)
+	}
+	if !strings.Contains(inv3[0].msg, "BudErrorBody") || !strings.Contains(inv3[0].msg, "errorCode") {
+		t.Errorf("INV-3 should name BudErrorBody/errorCode; got: %s", inv3[0].msg)
+	}
+}
+
+func TestParamNameSet(t *testing.T) {
+	cases := []struct {
+		params string
+		want   []string
+	}{
+		{"errorCode string", []string{"errorCode"}},
+		{"characterId uint32, slot int8, reason string", []string{"characterId", "slot", "reason"}},
+		{"", nil},
+		{"x byte", []string{"x"}},
+	}
+	for _, c := range cases {
+		got := paramNameSet(c.params)
+		for _, w := range c.want {
+			if !got[w] {
+				t.Errorf("paramNameSet(%q) missing %q; got %v", c.params, w, got)
+			}
+		}
+		if len(c.want) == 0 && len(got) != 0 {
+			t.Errorf("paramNameSet(%q) = %v, want empty", c.params, got)
+		}
+	}
+}
+
 // --- INV-4(a): dangling candidate -----------------------------------------
 
 func TestCheckINV4Candidates(t *testing.T) {

@@ -631,8 +631,58 @@ var bodyFuncRe = regexp.MustCompile(`(?m)^func\s+([A-Z]\w*Body\d*)\s*\(([^)]*)\)
 var discardedModeRe = regexp.MustCompile(`func\(\s*_\s+byte\s*\)\s*packet\.Encoder`)
 
 // selectorParamRe matches a parameter named op/code/mode/key of type string or
-// *Mode in a Body func's parameter list (AP-4).
+// *Mode in a Body func's parameter list (AP-4). This is the by-name heuristic;
+// it is intentionally backed up by the semantic check below (withResolvedKeyRe +
+// paramNameSet), because a selector under any other name (errorCode, reason, …)
+// reads as the same footgun and must not escape on naming alone.
 var selectorParamRe = regexp.MustCompile(`(?:^|,)\s*(op|code|mode|key)\s+(string|\*Mode)\b`)
+
+// withResolvedKeyRe captures the operations KEY argument of a
+// `WithResolvedCode("operations", <key>, …)` call when that key is a bare
+// identifier. A fixed key is a package const (`MtsOperationFoo`), a `string(Const)`
+// cast (the `(` after the cast keyword means no comma follows the bare word, so it
+// is not captured), or a string literal (`"RECEIVE"`, starts with a quote) — none
+// of which are function parameters. The footgun (AP-4) is when this identifier is
+// one of the enclosing Body func's own parameters: the caller, not the packet's
+// fixed operation, picks the mode. This catches the selector regardless of its name.
+var withResolvedKeyRe = regexp.MustCompile(`WithResolvedCode\(\s*"operations"\s*,\s*([A-Za-z_]\w*)\s*,`)
+
+// paramNameSet parses a Go parameter list (the text between the parens) into the
+// set of parameter NAMES. It handles both `name type` and grouped `a, b type`
+// forms by treating, in each comma-separated chunk, every leading identifier
+// before the type token as a name; a chunk that is a lone identifier (the `a` in
+// `a, b type`) is also a name. Good enough for the simple Body signatures here.
+func paramNameSet(params string) map[string]bool {
+	out := map[string]bool{}
+	for _, chunk := range strings.Split(params, ",") {
+		fields := strings.Fields(strings.TrimSpace(chunk))
+		if len(fields) == 0 {
+			continue
+		}
+		// `name type` → name is fields[0]; lone `name` (grouped) → fields[0].
+		name := fields[0]
+		if isIdent(name) {
+			out[name] = true
+		}
+	}
+	return out
+}
+
+func isIdent(s string) bool {
+	if s == "" {
+		return false
+	}
+	for i, r := range s {
+		if r == '_' || (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') {
+			continue
+		}
+		if i > 0 && r >= '0' && r <= '9' {
+			continue
+		}
+		return false
+	}
+	return true
+}
 
 func checkBodyFunctionFiles(cfg dispatcherLintConfig, arms []dispatcherArm) ([]violation, error) {
 	// Collect the body-function files for each dispatcher family's pkg:
@@ -676,18 +726,42 @@ func checkBodyFunctionFiles(cfg dispatcherLintConfig, arms []dispatcherArm) ([]v
 			})
 		}
 
-		// INV-3: exported *Body func with an op/code/mode/key selector param.
-		for _, m := range bodyFuncRe.FindAllStringSubmatchIndex(src, -1) {
+		// INV-3: exported *Body func with a caller-specified operation selector.
+		// Two complementary signals, deduped to one violation per func:
+		//   (a) by-name — a param literally named op/code/mode/key (selectorParamRe);
+		//   (b) semantic — a param flows into the `WithResolvedCode("operations", …)`
+		//       key, regardless of the param's name (errorCode, reason, …).
+		fnMatches := bodyFuncRe.FindAllStringSubmatchIndex(src, -1)
+		for i, m := range fnMatches {
 			fnName := src[m[2]:m[3]]
 			params := src[m[4]:m[5]]
-			if selectorParamRe.MatchString(params) {
+			// Function body text: from this match to the next top-level Body func
+			// (or EOF). Enough to see this func's WithResolvedCode call.
+			bodyEnd := len(src)
+			if i+1 < len(fnMatches) {
+				bodyEnd = fnMatches[i+1][0]
+			}
+			funcText := src[m[0]:bodyEnd]
+
+			var reason string
+			if sel := selectorParamRe.FindStringSubmatch(params); sel != nil {
+				reason = fmt.Sprintf("a caller-specified mode selector (%s %s)", sel[1], sel[2])
+			} else {
+				pnames := paramNameSet(params)
+				for _, km := range withResolvedKeyRe.FindAllStringSubmatch(funcText, -1) {
+					if pnames[km[1]] {
+						reason = fmt.Sprintf("its parameter %q as the resolved operations key", km[1])
+						break
+					}
+				}
+			}
+			if reason != "" {
 				ln := 1 + strings.Count(src[:m[0]], "\n")
-				sel := selectorParamRe.FindStringSubmatch(params)
 				out = append(out, violation{
 					file: filepath.ToSlash(f),
 					line: ln,
 					inv:  "INV-3",
-					msg:  fmt.Sprintf("body func %s takes a caller-specified mode selector (%s %s) — fix the operation key instead (AP-4) [family=%s]", fnName, sel[1], sel[2], fam),
+					msg:  fmt.Sprintf("body func %s takes %s — the packet maps to ONE operation, so fix the key instead (AP-4) [family=%s]", fnName, reason, fam),
 				})
 			}
 		}

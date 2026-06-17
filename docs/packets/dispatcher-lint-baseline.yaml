@@ -6,13 +6,26 @@
 # `CWvsContext::OnPartyResult`) appears below, and prints one note line per
 # exempt family instead.
 #
-# party + guild still carry the task-096 footguns — caller-specified mode
-# selectors (PartyErrorBody(code string) / GuildErrorBody(code string) /
-# GuildErrorBody2(code string, ...)) and the shared guild RequestAgreement
-# struct — pending a future discrete-per-mode migration task.
+# party + guild + buddy still carry the task-096 footguns — caller-specified
+# operation selectors (PartyErrorBody(code) / GuildErrorBody(code) /
+# GuildErrorBody2(code, …) / BuddyErrorBody(errorCode)) and the shared guild
+# RequestAgreement struct — pending a future discrete-per-mode migration task.
+# Each fronts a "deferred to _pending.md" Error catch-all (one struct + one
+# string-keyed body func for ~10–15 distinct error sub-ops) that the canonical
+# pattern requires splitting into discrete per-mode structs + fixed-key bodies.
 #
-# THE LIST ONLY SHRINKS. Migrating a family = deleting its entry here (after
-# the family is clean); never add a new family to dodge a fresh violation.
+# buddy (CWvsContext::OnFriendResult) was added when INV-3 was hardened from
+# by-name matching to semantic matching (task-101 follow-up): BuddyErrorBody's
+# selector is named `errorCode`, not `code`, so it escaped the original
+# name-based check. This is PRE-EXISTING debt surfaced by a stronger linter, not
+# a fresh violation introduced by new code — the only honest dispositions are
+# migrate or baseline, and migration is a separate cycle.
+#
+# THE LIST ONLY SHRINKS (the buddy addition above is the documented one-time
+# exception for the INV-3 hardening). Migrating a family = deleting its entry
+# here (after the family is clean); never add a new family to dodge a violation
+# from NEW work.
 exempt_families:
   - CWvsContext::OnPartyResult
   - CWvsContext::OnGuildResult
+  - CWvsContext::OnFriendResult

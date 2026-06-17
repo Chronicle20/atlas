@@ -20,6 +20,11 @@ type (
 
 	// Payload type used by the take-home flow.
 	WithdrawFromMtsPayload = sharedsaga.WithdrawFromMtsPayload
+
+	// Payload type used by the buy/buy-now settlement flow. The orchestrator
+	// expands MtsSettlePurchase into award_currency(buyer prepaid -markedUp) +
+	// award_currency(seller points +listValue) + mts_move_listing_to_holding.
+	MtsSettlePurchasePayload = sharedsaga.MtsSettlePurchasePayload
 )
 
 const (
@@ -32,7 +37,8 @@ const (
 	Failed    = sharedsaga.Failed
 
 	// Action constants
-	AwardMesos      = sharedsaga.AwardMesos
-	TransferToMts   = sharedsaga.TransferToMts
-	WithdrawFromMts = sharedsaga.WithdrawFromMts
+	AwardMesos        = sharedsaga.AwardMesos
+	TransferToMts     = sharedsaga.TransferToMts
+	WithdrawFromMts   = sharedsaga.WithdrawFromMts
+	MtsSettlePurchase = sharedsaga.MtsSettlePurchase
 )

@@ -10,6 +10,7 @@ import (
 	"atlas-mts/wish"
 	"context"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
@@ -32,18 +33,21 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 	}
 }
 
-// InitHandlers wires the locally-handled MTS command handlers (cancel, register
-// wish, remove wish) onto the command topic. The saga/ticker-driven command
-// types (create, buy, bid, take-home, expire) are intentionally NOT routed here
-// — they are dispatched in their own phases, like a not-yet-routed message type.
-// The producer.Provider is constructed per delivery from the message context so
-// emitted events carry the right tenant/span headers.
+// InitHandlers wires the locally-handled MTS command handlers (cancel, buy,
+// register wish, remove wish) onto the command topic. The remaining
+// saga/ticker-driven command types (create, bid, take-home, expire) are
+// intentionally NOT routed here — they are dispatched in their own phases, like a
+// not-yet-routed message type. The producer.Provider is constructed per delivery
+// from the message context so emitted events carry the right tenant/span headers.
 func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) error {
 	return func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) error {
 		return func(rf func(topic string, handler handler.Handler) (string, error)) error {
 			var t string
 			t, _ = topic.EnvProvider(l)(mts.EnvCommandTopic)()
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCancelListing(producer2.ProviderImpl(l))(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleBuy(db)))); err != nil {
 				return err
 			}
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleRegisterWish(producer2.ProviderImpl(l))(db)))); err != nil {
@@ -98,6 +102,34 @@ func handleCancelListing(pf providerFn) func(db *gorm.DB) message.Handler[mts.Co
 			_ = msg.Emit(p)(func(buf *msg.Buffer) error {
 				return buf.Put(mts.EnvStatusEventTopic, mtsproducer.ListingCancelledStatusEventProvider(c.TransactionId, b.WorldId, b.ListingId, res.HoldingId, res.SellerId, res.ItemId))
 			})
+		}
+	}
+}
+
+// handleBuy settles a buy / buy-now: it asks the listing processor to load the
+// (active) listing, compute the marked-up price from the listing's captured
+// listValue/commissionRate, pre-check the buyer's NX Prepaid balance, and — when
+// sufficient — emit a debit-first MtsSettlePurchase saga to COMMAND_TOPIC_SAGA.
+// It emits NO MTS status event itself: the listing-sold / item-moved-to-holding
+// outcome is driven by the saga's move step (a later phase wires that ack path).
+// An under-funded or non-active buy is logged and dropped (no saga, no effect).
+func handleBuy(db *gorm.DB) message.Handler[mts.Command[mts.BuyCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c mts.Command[mts.BuyCommandBody]) {
+		if c.Type != mts.CommandBuy {
+			return
+		}
+		b := c.Body
+
+		err := listing.NewProcessor(l, ctx, db).Buy(listing.BuyRequest{
+			WorldId:         world.Id(b.WorldId),
+			ListingId:       b.ListingId,
+			BuyerId:         b.BuyerId,
+			BuyerAccountId:  b.BuyerAccountId,
+			SellerAccountId: b.SellerAccountId,
+		})
+		if err != nil {
+			l.WithError(err).Errorf("Failed to settle buy for listing [%s], buyer [%d], transaction [%s].", b.ListingId.String(), b.BuyerId, c.TransactionId.String())
+			return
 		}
 	}
 }

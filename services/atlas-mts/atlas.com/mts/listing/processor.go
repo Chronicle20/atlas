@@ -3,11 +3,13 @@ package listing
 import (
 	"context"
 	"fmt"
+	"math"
 	"time"
 
 	"atlas-mts/configuration"
 	"atlas-mts/holding"
 	"atlas-mts/saga"
+	"atlas-mts/wallet"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
@@ -23,6 +25,15 @@ import (
 // saga package's Processor; tests inject a capturing stub.
 type SagaEmitter interface {
 	Create(s saga.Saga) error
+}
+
+// BalanceReader abstracts the buyer NX Prepaid balance read so the buy flow can
+// be exercised without a live cash-shop wallet. The production implementation is
+// the wallet package's Processor (a REST read of atlas-cashshop's wallet); tests
+// inject a stub. The read is a best-effort pre-check only — the saga's debit-first
+// AwardCurrency step is the authoritative insufficient-funds enforcement.
+type BalanceReader interface {
+	PrepaidBalance(accountId uint32) (uint32, error)
 }
 
 // ListRequest carries the seller-supplied parameters for a TransferToMts list
@@ -42,6 +53,22 @@ type ListRequest struct {
 	DurationHours       int // auction only; hours from now until the auction ends
 	Category            string
 	SubCategory         string
+}
+
+// BuyRequest carries the caller-supplied parameters for a buy / buy-now
+// settlement. The buyer's id+account come from the channel session; the seller's
+// account is caller-supplied too (the channel resolves it at buy time — atlas-mts
+// stores only the seller characterId on the listing, and there is no clean
+// characterId->accountId resolver outside a session, mirroring how the saga
+// AwardCurrencyPayload requires AccountId to be supplied rather than resolved).
+// The seller characterId, listValue, and commissionRate are read from the listing
+// row, not carried here.
+type BuyRequest struct {
+	WorldId         world.Id
+	ListingId       uuid.UUID
+	BuyerId         uint32
+	BuyerAccountId  uint32
+	SellerAccountId uint32
 }
 
 // listSagaBaseTimeout and listSagaPerStepTimeout define the step-count-scaled
@@ -82,6 +109,14 @@ type Processor interface {
 	// pre-allocated listing id. It does NOT create the listing row — the row is
 	// created only on the custody consumer's AcceptToMtsListing.
 	List(req ListRequest) (uuid.UUID, error)
+	// Buy settles a buy / buy-now against an active listing. It loads the listing
+	// (must be active), computes the marked-up price from the listing's captured
+	// listValue and commissionRate, pre-checks the buyer's NX Prepaid balance, and
+	// — when sufficient — emits a debit-first MtsSettlePurchase saga. It does NOT
+	// mutate the listing row or any holding directly: the listing flips to sold and
+	// the buyer holding is created only by the orchestrator-driven move step. The
+	// commission (markedUp - listValue) is the sink and is never credited.
+	Buy(req BuyRequest) error
 }
 
 type ProcessorImpl struct {
@@ -89,6 +124,7 @@ type ProcessorImpl struct {
 	ctx     context.Context
 	db      *gorm.DB
 	emitter SagaEmitter
+	balance BalanceReader
 }
 
 // Option mutates a ProcessorImpl during construction.
@@ -102,9 +138,20 @@ func WithSagaEmitter(e SagaEmitter) Option {
 	}
 }
 
+// WithBalanceReader overrides the buyer-prepaid balance reader (default: the real
+// wallet Processor, a REST read of atlas-cashshop's wallet). Tests inject a stub
+// so the insufficient/sufficient-funds pre-check can be asserted without Kafka or
+// a live cash-shop.
+func WithBalanceReader(b BalanceReader) Option {
+	return func(p *ProcessorImpl) {
+		p.balance = b
+	}
+}
+
 func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB, opts ...Option) Processor {
 	p := &ProcessorImpl{l: l, ctx: ctx, db: db}
 	p.emitter = saga.NewProcessor(l, ctx)
+	p.balance = wallet.NewProcessor(l, ctx)
 	for _, opt := range opts {
 		opt(p)
 	}
@@ -359,4 +406,96 @@ func (p *ProcessorImpl) List(req ListRequest) (uuid.UUID, error) {
 		return uuid.Nil, err
 	}
 	return listingId, nil
+}
+
+// buySagaBaseTimeout and buySagaPerStepTimeout mirror the list flow's
+// step-count-scaled timeout. The MtsSettlePurchase composite expands to N=3
+// effective steps in the orchestrator (award_currency buyer, award_currency
+// seller, mts_move_listing_to_holding), so the budget must grow with that count;
+// a flat timeout rolls back a legitimate multi-step saga under a stressed broker
+// (see bug_preset_creation_saga_flat_timeout).
+const (
+	buySagaBaseTimeout    = 10 * time.Second
+	buySagaPerStepTimeout = 1 * time.Second
+)
+
+// Buy settles a buy / buy-now against an active listing. The flow is:
+//
+//  1. Load the listing; it MUST be active (a sold/cancelled/expired listing is
+//     rejected — the buy cannot proceed). The seller characterId, listValue, and
+//     commissionRate are taken from the row (server-authoritative, captured at
+//     list time), never from the caller.
+//  2. Compute the marked-up price markedUp = ceil(listValue * (1 + commissionRate)).
+//     Rounding is round-UP (ceil): a fractional NX is rounded toward the sink, so
+//     the buyer always pays at least the exact commission and the marketplace
+//     never under-charges. NX is integer, so a documented, consistent rule is
+//     required; ceil favors the sink (the un-credited commission).
+//  3. Pre-check the buyer's NX Prepaid balance >= markedUp. This is a best-effort
+//     gate that fails fast on an obviously under-funded buy; the saga's
+//     debit-first AwardCurrency step is the AUTHORITATIVE enforcement (if the
+//     balance changed between the read and the debit, the first saga step fails,
+//     the saga aborts, and nothing is granted or moved).
+//  4. Emit a single MtsSettlePurchase composite. The orchestrator expands it
+//     debit-first: award_currency(buyer prepaid, -markedUp) FIRST so a mid-saga
+//     failure grants nothing, then award_currency(seller points, +listValue),
+//     then mts_move_listing_to_holding(buyer). The item lands in the buyer's
+//     mts holding (origin=purchased), NEVER inventory. Commission =
+//     markedUp - listValue is never credited to anyone — it is the sink.
+//
+// Buy does NOT mutate the listing row or create any holding directly; those
+// effects happen only via the orchestrator-driven move step (which marks the
+// listing sold and creates the buyer holding in one atlas-mts local tx).
+func (p *ProcessorImpl) Buy(req BuyRequest) error {
+	lm, err := GetById(req.ListingId.String())(p.db.WithContext(p.ctx))()
+	if err != nil {
+		return fmt.Errorf("load listing %s: %w", req.ListingId, err)
+	}
+	if lm.State() != StateActive {
+		return fmt.Errorf("listing %s is not active (state=%s); cannot buy", req.ListingId, lm.State())
+	}
+
+	listValue := lm.ListValue()
+	// markedUp = ceil(listValue * (1 + commissionRate)). Ceil rounds the fractional
+	// NX toward the sink (the un-credited commission), so the buyer never under-pays.
+	markedUp := uint32(math.Ceil(float64(listValue) * (1.0 + lm.CommissionRate())))
+
+	// Best-effort pre-check; the saga's first (debit) step is the authoritative gate.
+	prepaid, err := p.balance.PrepaidBalance(req.BuyerAccountId)
+	if err != nil {
+		return fmt.Errorf("read buyer %d prepaid balance: %w", req.BuyerAccountId, err)
+	}
+	if prepaid < markedUp {
+		return fmt.Errorf("buyer %d prepaid %d is below the marked-up price %d", req.BuyerAccountId, prepaid, markedUp)
+	}
+
+	transactionId := uuid.New()
+
+	builder := saga.NewBuilder().
+		SetTransactionId(transactionId).
+		SetSagaType(saga.MtsOperation).
+		SetInitiatedBy(fmt.Sprintf("character_%d", req.BuyerId))
+
+	// One composite step: MtsSettlePurchase. The orchestrator owns the debit-first
+	// ordering of the expansion (buyer prepaid -markedUp, seller points +listValue,
+	// move-to-holding). Commission (markedUp - listValue) is never credited: the
+	// payload only ever carries listValue as the seller credit, so the difference is
+	// the sink.
+	builder.AddStep("mts_settle_purchase", saga.Pending, saga.MtsSettlePurchase, saga.MtsSettlePurchasePayload{
+		TransactionId:   transactionId,
+		ListingId:       req.ListingId,
+		WorldId:         req.WorldId,
+		BuyerId:         req.BuyerId,
+		BuyerAccountId:  req.BuyerAccountId,
+		SellerId:        lm.SellerId(),
+		SellerAccountId: req.SellerAccountId,
+		MarkedUpPrice:   int32(markedUp),
+		ListValue:       int32(listValue),
+	})
+
+	// Timeout MUST be set explicitly and scaled for N=3: the MtsSettlePurchase
+	// composite expands to award_currency x2 + mts_move_listing_to_holding.
+	const settleExpandedSteps = 3 // award_currency(buyer) + award_currency(seller) + mts_move_listing_to_holding
+	builder.SetTimeout(buySagaBaseTimeout + time.Duration(settleExpandedSteps)*buySagaPerStepTimeout)
+
+	return p.emitter.Create(builder.Build())
 }

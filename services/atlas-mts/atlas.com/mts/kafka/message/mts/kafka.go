@@ -55,6 +55,21 @@ type CancelListingCommandBody struct {
 	WorldId   byte      `json:"worldId"`
 }
 
+// BuyCommandBody identifies the listing being bought and carries the buyer's
+// identity (id + account) plus the seller's account. The seller characterId,
+// listValue, and commissionRate are read from the listing row by atlas-mts; the
+// caller (channel) supplies the buyer id/account from the session and the seller
+// account it resolved at buy time (atlas-mts stores only the seller characterId,
+// and the AwardCurrency settlement requires the account, mirroring the saga
+// AwardCurrencyPayload which is caller-supplied rather than orchestrator-resolved).
+type BuyCommandBody struct {
+	ListingId       uuid.UUID `json:"listingId"`
+	WorldId         byte      `json:"worldId"`
+	BuyerId         uint32    `json:"buyerId"`
+	BuyerAccountId  uint32    `json:"buyerAccountId"`
+	SellerAccountId uint32    `json:"sellerAccountId"`
+}
+
 // RegisterWishCommandBody carries the wish-list entry to create.
 type RegisterWishCommandBody struct {
 	WishId      uuid.UUID `json:"wishId"`

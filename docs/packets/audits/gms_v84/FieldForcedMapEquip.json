@@ -1,0 +1,11 @@
+{
+  "WriterName": "FieldForcedMapEquip",
+  "IDAName": "CField::OnFieldSpecificData",
+  "Address": "0x53de01",
+  "Variant": "GMS/v84",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/field/clientbound/forced_map_equip.go",
+  "Rows": null,
+  "Verdict": 0,
+  "FlatInvalid": false
+}

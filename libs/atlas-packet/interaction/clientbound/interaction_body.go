@@ -15,14 +15,14 @@ type CharacterInteractionEnterErrorMode = string
 
 const (
 	// CharacterInteraction CMiniRoomBaseDlg::OnPacketBase
-	CharacterInteractionModeInvite          CharacterInteractionMode = "INVITE"           // 2
-	CharacterInteractionModeInviteResult    CharacterInteractionMode = "INVITE_RESULT"    // 3
-	CharacterInteractionModeEnter           CharacterInteractionMode = "ENTER"            // 4
-	CharacterInteractionModeEnterResult     CharacterInteractionMode = "ENTER_RESULT"     // 5
-	CharacterInteractionModeChat            CharacterInteractionMode = "CHAT"             // 6
-	CharacterInteractionModeChatThing       CharacterInteractionMode = "CHAT_THING"       // 8
-	CharacterInteractionModeLeave           CharacterInteractionMode = "LEAVE"            // 10
-	CharacterInteractionModeUpdateMerchant  CharacterInteractionMode = "UPDATE_MERCHANT"  // 25
+	CharacterInteractionModeInvite         CharacterInteractionMode = "INVITE"          // 2
+	CharacterInteractionModeInviteResult   CharacterInteractionMode = "INVITE_RESULT"   // 3
+	CharacterInteractionModeEnter          CharacterInteractionMode = "ENTER"           // 4
+	CharacterInteractionModeEnterResult    CharacterInteractionMode = "ENTER_RESULT"    // 5
+	CharacterInteractionModeChat           CharacterInteractionMode = "CHAT"            // 6
+	CharacterInteractionModeChatThing      CharacterInteractionMode = "CHAT_THING"      // 8
+	CharacterInteractionModeLeave          CharacterInteractionMode = "LEAVE"           // 10
+	CharacterInteractionModeUpdateMerchant CharacterInteractionMode = "UPDATE_MERCHANT" // 25
 
 	CharacterInteractionEnterErrorModeRoomClosed                CharacterInteractionEnterErrorMode = "ROOM_CLOSED"                   // 1
 	CharacterInteractionEnterErrorModeFull                      CharacterInteractionEnterErrorMode = "FULL"                          // 2
@@ -93,7 +93,9 @@ func CharacterInteractionEnterBody(visitor interaction.Visitor) func(logrus.Fiel
 }
 
 // CharacterInteractionLeaveBody notifies a client that a visitor has left the room.
-// TODO: verify status byte values with client testing.
+// CMiniRoomBaseDlg::OnLeaveBase (v95 0x637510) reads only Decode1(slot); the trailing
+// status byte is consumed by the subclass virtual OnLeave (e.g. CTradingRoomDlg::OnLeave),
+// so the full mode-10 wire shape is mode + slot + status.
 func CharacterInteractionLeaveBody(slot byte, status byte) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", CharacterInteractionModeLeave, func(mode byte) packet.Encoder {
 		return NewInteractionLeave(mode, slot, status)

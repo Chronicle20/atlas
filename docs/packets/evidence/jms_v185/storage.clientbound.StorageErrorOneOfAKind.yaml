@@ -1,0 +1,8 @@
+packet: storage/clientbound/StorageErrorOneOfAKind
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CTrunkDlg::OnPacket#ErrorOneOfAKind
+    address: "0x84e5a1"
+    decompile_sha256: b71a2c3021a6dbbedee402679b401b25515561cd41923942a4122660eda7aa9c

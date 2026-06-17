@@ -1,0 +1,8 @@
+packet: interaction/clientbound/InteractionInteractionEnter
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CMiniRoomBaseDlg::OnPacketBase#Enter
+    address: "0x6dace2"
+    decompile_sha256: d0f42aae352613536c1e1bfa131a219a7f1aadb73abb15e532313b5303bbf839

@@ -651,7 +651,7 @@ func produceWriters() []string {
 		charcb.CharacterAppearanceUpdateWriter,
 		charcb.CharacterDespawnWriter,
 		partycb.PartyOperationWriter,
-		chatCB.MultiChatWriter,
+		fieldcb.MultiChatWriter,
 		charcb.CharacterKeyMapWriter,
 		buddy2.BuddyOperationWriter,
 		charcb.CharacterExpressionWriter,
@@ -685,7 +685,7 @@ func produceWriters() []string {
 		monstercb.MonsterHealthWriter,
 		partycb.PartyMemberHPWriter,
 		charcb.ChalkboardUseWriter,
-		chatCB.WhisperWriter,
+		fieldcb.WhisperWriter,
 		messengercb.MessengerOperationWriter,
 		petcb.PetActivatedWriter,
 		petcb.PetMovementWriter,
@@ -706,6 +706,54 @@ func produceWriters() []string {
 		fieldcb.KiteErrorWriter,
 		fieldcb.KiteDestroyWriter,
 		fieldcb.ClockWriter,
+		fieldcb.StopClockWriter,
+		fieldcb.OxQuizWriter,
+		fieldcb.BlockedMapWriter,
+		fieldcb.SetObjectStateWriter,
+		fieldcb.FieldObstacleOnOffListWriter,
+		fieldcb.SpouseChatWriter,
+		fieldcb.SnowballTouchWriter,
+		fieldcb.StalkResultWriter,
+		fieldcb.AdminResultWriter,
+		fieldcb.TournamentWriter,
+		fieldcb.TournamentMatchTableWriter,
+		fieldcb.TournamentSetPrizeWriter,
+		fieldcb.TournamentUewWriter,
+		fieldcb.TournamentCharactersWriter,
+		fieldcb.ZakumShrineWriter,
+		fieldcb.HorntailCaveWriter,
+		fieldcb.AriantResultWriter,
+		fieldcb.MtsOperation2Writer,
+		fieldcb.MtsOperationWriter,
+		fieldcb.FootholdInfoWriter,
+		fieldcb.SnowballStateWriter,
+		fieldcb.SnowballHitWriter,
+		fieldcb.SnowballMessageWriter,
+		fieldcb.CoconutHitWriter,
+		fieldcb.CoconutScoreWriter,
+		fieldcb.GuildBossHealerMoveWriter,
+		fieldcb.GuildBossPulleyStateChangeWriter,
+		fieldcb.AriantArenaUserScoreWriter,
+		fieldcb.AriantArenaShowResultWriter,
+		fieldcb.SheepRanchInfoWriter,
+		fieldcb.SheepRanchClothesWriter,
+		fieldcb.ContiMoveWriter,
+		fieldcb.PyramidGaugeWriter,
+		fieldcb.PyramidScoreWriter,
+		fieldcb.BlockedServerWriter,
+		fieldcb.ForcedMapEquipWriter,
+		fieldcb.SummonItemUnavailableWriter,
+		fieldcb.FieldObstacleOnOffWriter,
+		fieldcb.FieldObstacleAllResetWriter,
+		fieldcb.SetQuestClearWriter,
+		fieldcb.SetQuestTimeWriter,
+		fieldcb.GmEventInstructionsWriter,
+		fieldcb.PlayJukeboxWriter,
+		fieldcb.WeddingProgressWriter,
+		fieldcb.WeddingCeremonyEndWriter,
+		fieldcb.WitchTowerScoreUpdateWriter,
+		fieldcb.AriantScoreWriter,
+		fieldcb.ViciousHammerWriter,
 		fieldcb.FieldTransportStateWriter,
 		storagecb.StorageOperationWriter,
 		charcb.CharacterHintWriter,
@@ -757,7 +805,21 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[monstersb.MobEscortStopEndRequestHandle] = handler.MobEscortStopEndRequestHandleFunc
 	handlerMap[carnivalsb.MonsterCarnivalHandle] = handler.MonsterCarnivalHandleFunc
 	handlerMap[charsb.MobBanishPlayerHandle] = handler.MobBanishPlayerHandleFunc
-	handlerMap[chatSB.CharacterChatGeneralHandle] = handler.CharacterChatGeneralHandleFunc
+	handlerMap[fieldsb.CharacterChatGeneralHandle] = handler.CharacterChatGeneralHandleFunc
+	handlerMap[fieldsb.SnowballHandle] = handler.SnowballHandleFunc
+	handlerMap[fieldsb.LeftKnockbackHandle] = handler.LeftKnockbackHandleFunc
+	handlerMap[fieldsb.CoconutHandle] = handler.CoconutHandleFunc
+	handlerMap[fieldsb.GuildBossHandle] = handler.GuildBossHandleFunc
+	handlerMap[fieldsb.UseDoorHandle] = handler.UseDoorHandleFunc
+	handlerMap[fieldsb.RequestFootholdInfoHandle] = handler.RequestFootholdInfoHandleFunc
+	handlerMap[fieldsb.WeddingActionHandle] = handler.WeddingActionHandleFunc
+	handlerMap[fieldsb.WeddingTalkHandle] = handler.WeddingTalkHandleFunc
+	handlerMap[fieldsb.AdminChatHandle] = handler.AdminChatHandleFunc
+	handlerMap[fieldsb.AdminCommandHandle] = handler.AdminCommandHandleFunc
+	handlerMap[fieldsb.AdminLogHandle] = handler.AdminLogHandleFunc
+	handlerMap[fieldsb.MatchTableHandle] = handler.MatchTableHandleFunc
+	handlerMap[fieldsb.SlideRequestHandle] = handler.SlideRequestHandleFunc
+	handlerMap[fieldsb.SueCharacterHandle] = handler.SueCharacterHandleFunc
 	handlerMap[charsb.CharacterInfoRequestHandle] = handler.CharacterInfoRequestHandleFunc
 	handlerMap[invsb.CharacterInventoryMoveHandle] = handler.CharacterInventoryMoveHandleFunc
 	handlerMap[partysb.PartyOperationHandle] = handler.PartyOperationHandleFunc
@@ -790,6 +852,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[cashsb.CharacterCashItemUseHandle] = handler.CharacterCashItemUseHandleFunc
 	handlerMap[charsb.ChalkboardCloseHandle] = handler.ChalkboardCloseHandleHandleFunc
 	handlerMap[chatSB.CharacterChatWhisperHandle] = handler.CharacterChatWhisperHandleFunc
+	handlerMap[fieldsb.CharacterSpouseChatHandle] = handler.CharacterSpouseChatHandleFunc
 	handlerMap[messengersb.MessengerOperationHandle] = handler.MessengerOperationHandleFunc
 	handlerMap[petsb.PetMovementHandle] = handler.PetMovementHandleFunc
 	handlerMap[petsb.PetSpawnHandle] = handler.PetSpawnHandleFunc

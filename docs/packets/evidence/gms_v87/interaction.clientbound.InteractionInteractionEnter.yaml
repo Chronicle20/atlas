@@ -1,0 +1,8 @@
+packet: interaction/clientbound/InteractionInteractionEnter
+direction: clientbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CMiniRoomBaseDlg::OnPacketBase#Enter
+    address: "0x699039"
+    decompile_sha256: 376d6cbca697d44453a4e12ce1d8c6498b5a26f818e146a773a10a98f6cffed1

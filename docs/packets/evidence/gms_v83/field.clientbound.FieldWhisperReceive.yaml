@@ -1,0 +1,8 @@
+packet: field/clientbound/FieldWhisperReceive
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnWhisper#Receive
+    address: "0x53228e"
+    decompile_sha256: 6ef26bd9a7cbafab7e313ac8dc718a05b65d8674511e2936e833ab768a316029

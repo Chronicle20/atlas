@@ -54,6 +54,21 @@ func WhisperChatCommandProvider(f field.Model, actorId uint32, message string, r
 	return producer.SingleMessageProvider(key, value)
 }
 
+func SpouseChatCommandProvider(f field.Model, actorId uint32, message string, spouseName string) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(actorId))
+	value := message2.Command[message2.SpouseChatBody]{
+		WorldId:   f.WorldId(),
+		ChannelId: f.ChannelId(),
+		MapId:     f.MapId(),
+		Instance:  f.Instance(),
+		ActorId:   actorId,
+		Message:   message,
+		Type:      message2.ChatTypeSpouse,
+		Body:      message2.SpouseChatBody{SpouseName: spouseName},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 func MessengerChatCommandProvider(f field.Model, actorId uint32, message string, recipients []uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(actorId))
 	value := message2.Command[message2.MessengerChatBody]{

@@ -1,0 +1,11 @@
+packet: field/serverbound/FieldRequestFootholdInfo
+direction: serverbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnRequestFootHoldInfo
+    address: "0x52ddd0"
+    decompile_sha256: 02e1148f9785e909f8241a195e396185f856b4fa67f9f71c968afc0b154cf903
+verifies:
+  - libs/atlas-packet/field/serverbound/request_foothold_info_test.go#TestRequestFootholdInfoGolden
+  - libs/atlas-packet/field/serverbound/request_foothold_info_test.go#TestRequestFootholdInfoRoundTrip

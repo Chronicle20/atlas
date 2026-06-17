@@ -11,6 +11,4 @@
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
 | 0 | byte | byte `mode (sub-op discriminator)` | ✅ |  |
-| 1 | byte | byte `hasMessage flag (case 0x11)` | ✅ |  |
-| 2 | string | string `error message (only when hasMessage set)` | ✅ |  |
-
+| 1 | byte | byte `hasMessage flag (case 0x11; 0 -> no message string)` | ✅ |  |

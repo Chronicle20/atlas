@@ -1,0 +1,8 @@
+packet: storage/clientbound/StorageStoreAssets
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CTrunkDlg::OnPacket#StoreAssets
+    address: "0x7c5dfd"
+    decompile_sha256: 86db46c92e12443c172460c103cebe48ae6487300e5da2c440cf47bf00f7380d

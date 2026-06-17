@@ -1,0 +1,48 @@
+package clientbound
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
+	"github.com/sirupsen/logrus"
+)
+
+const FieldObstacleOnOffWriter = "FieldObstacleOnOff"
+
+// FieldObstacleOnOff is the clientbound CField::OnFieldObstacleOnOff packet.
+// It toggles a single named field obstacle to the given state.
+// packet-audit:fname CField::OnFieldObstacleOnOff
+type FieldObstacleOnOff struct {
+	name  string
+	state uint32
+}
+
+func NewFieldObstacleOnOff(name string, state uint32) FieldObstacleOnOff {
+	return FieldObstacleOnOff{name: name, state: state}
+}
+
+func (m FieldObstacleOnOff) Name() string  { return m.name }
+func (m FieldObstacleOnOff) State() uint32 { return m.state }
+
+func (m FieldObstacleOnOff) Operation() string { return FieldObstacleOnOffWriter }
+func (m FieldObstacleOnOff) String() string {
+	return fmt.Sprintf("name [%s] state [%d]", m.name, m.state)
+}
+
+func (m FieldObstacleOnOff) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
+		w.WriteAsciiString(m.name)
+		w.WriteInt(m.state)
+		return w.Bytes()
+	}
+}
+
+func (m *FieldObstacleOnOff) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
+		m.name = r.ReadAsciiString()
+		m.state = r.ReadUint32()
+	}
+}

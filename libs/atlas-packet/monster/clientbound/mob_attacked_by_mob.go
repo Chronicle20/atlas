@@ -29,6 +29,8 @@ const MobAttackedByMobWriter = "MobAttackedByMob"
 // IDA basis: CMob::OnMobAttackedByMob — v83 @0x670f41, v84 @0x68749a,
 // v87 @0x6ac074, v95 @0x6436a0, jms @0x6ee151. Every version: Decode1 attackIndex,
 // Decode4 damage, then under `>-2`: Decode4 mobTemplateId, Decode1 left.
+//
+// packet-audit:fname CMob::OnMobAttackedByMob
 type MobAttackedByMob struct {
 	attackIndex   int8
 	damage        int32

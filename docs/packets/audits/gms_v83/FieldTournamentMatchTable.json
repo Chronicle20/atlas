@@ -1,0 +1,11 @@
+{
+  "WriterName": "FieldTournamentMatchTable",
+  "IDAName": "CField_Tournament::OnTournamentMatchTable",
+  "Address": "0x57b78a",
+  "Variant": "GMS/v83",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/field/clientbound/tournament_match_table.go",
+  "Rows": null,
+  "Verdict": 0,
+  "FlatInvalid": false
+}

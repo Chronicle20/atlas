@@ -11,6 +11,7 @@ import (
 
 const PetCommandResponseWriter = "PetCommandResponse"
 
+// packet-audit:fname CPet::OnActionCommand
 type CommandResponse struct {
 	ownerId   uint32
 	slot      int8

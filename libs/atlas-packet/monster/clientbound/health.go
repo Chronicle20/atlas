@@ -11,6 +11,7 @@ import (
 
 const MonsterHealthWriter = "MonsterHealth"
 
+// packet-audit:fname CMob::OnHPIndicator
 type Health struct {
 	uniqueId   uint32
 	hpPercent  byte

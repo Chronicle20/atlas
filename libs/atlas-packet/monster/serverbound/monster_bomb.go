@@ -27,6 +27,8 @@ const MonsterBombHandle = "MonsterBomb"
 //
 // In v84 the sender is unnamed in the IDB (no anchor symbol); the wire shape is
 // v83-identical, so v84 takes this same codec (route lands; evidence inherits v83).
+//
+// packet-audit:fname CMob::TryFirstSelfDestruction
 type MonsterBomb struct {
 	mobId uint32
 }

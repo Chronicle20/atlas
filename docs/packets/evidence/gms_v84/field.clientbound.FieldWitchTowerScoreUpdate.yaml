@@ -1,0 +1,8 @@
+packet: field/clientbound/FieldWitchTowerScoreUpdate
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CField_Witchtower::OnScoreUpdate
+    address: "0x594fe2"
+    decompile_sha256: 9e64704a52f14f1bb3eda53e529cb88ff06ca10724982c782c1e58f923aad4fc

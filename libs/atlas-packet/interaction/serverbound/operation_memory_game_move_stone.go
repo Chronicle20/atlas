@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// packet-audit:fname COmokDlg::PutStoneChecker
 type OperationMemoryGameMoveStone struct {
 	point int64
 	color byte

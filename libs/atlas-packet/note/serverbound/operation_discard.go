@@ -22,6 +22,7 @@ func (e DiscardEntry) Flag() byte {
 	return e.flag
 }
 
+// packet-audit:fname CMemoListDlg::SetRet
 type OperationDiscard struct {
 	count         byte
 	emptySlotCount byte

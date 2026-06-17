@@ -11,6 +11,7 @@ import (
 
 const MessengerOperationHandle = "MessengerOperationHandle"
 
+// packet-audit:fname CUIMessenger::OnDestroy
 type Operation struct {
 	mode byte
 }

@@ -1,0 +1,8 @@
+packet: field/serverbound/FieldGeneral
+direction: serverbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CField::SendChatMsg
+    address: "0x564a0a"
+    decompile_sha256: 89d8289f42f35894af7a3c49fe843a9223f1ca777300a469370a850d00a8cc77

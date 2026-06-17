@@ -17,6 +17,7 @@ const MobCrcKeyChangedReplyHandle = "MobCrcKeyChangedReply"
 // CMobPool::OnMobCrcKeyChanged (v83 @0x6797be, v87 @0x6b5399, v95 @0x657230) builds
 // the reply COutPacket (v83 opcode 0xA4, v87 0xAE, v95 0xBE) and immediately
 // SendPacket()s it with no Encode* calls — there are zero wire fields.
+// packet-audit:fname CMobPool::OnMobCrcKeyChanged
 type MobCrcKeyChangedReply struct {
 }
 

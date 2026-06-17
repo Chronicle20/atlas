@@ -11,6 +11,7 @@ import (
 
 const BuddyCapacityUpdateWriter = "BuddyCapacityUpdate"
 
+// packet-audit:fname CWvsContext::OnFriendResult#CapacityUpdate
 type CapacityUpdate struct {
 	mode     byte
 	capacity byte

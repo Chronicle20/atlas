@@ -11,6 +11,7 @@ import (
 
 const NoteOperationHandle = "NoteOperationHandle"
 
+// packet-audit:fname CWvsContext::OnMemoNotify_Receive
 type Operation struct {
 	op byte
 }

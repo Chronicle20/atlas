@@ -4,7 +4,7 @@
   "Address": "0x6eb7d0",
   "Variant": "GMS/v95",
   "BranchDepth": 1,
-  "AtlasFile": "../../libs/atlas-packet/npc/clientbound/shop_operation.go",
+  "AtlasFile": "libs/atlas-packet/npc/clientbound/shop_operation.go",
   "Rows": [
     {
       "Index": 0,
@@ -20,16 +20,7 @@
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "hasReason flag",
-      "Verdict": 0,
-      "Note": ""
-    },
-    {
-      "Index": 2,
-      "AtlasOp": 4,
-      "AtlasKind": 0,
-      "IDAOp": 4,
-      "IDAComment": "reason (only when hasReason != 0)",
+      "IDAComment": "hasReason flag (0 for plain GENERIC_ERROR; no reason string follows)",
       "Verdict": 0,
       "Note": ""
     }

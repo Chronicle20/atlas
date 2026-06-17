@@ -1,0 +1,8 @@
+packet: field/serverbound/FieldSlideRequest
+direction: serverbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CField::SendChatMsgSlash#SlideRequest
+    address: "0x5687f8"
+    decompile_sha256: 44082e483ab6c9efba3cae03dd468dd1a417d9079e409d8fd52e8b6a535d800a

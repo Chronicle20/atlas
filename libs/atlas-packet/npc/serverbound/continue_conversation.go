@@ -11,6 +11,7 @@ import (
 
 const NPCContinueConversationHandle = "NPCContinueConversationHandle"
 
+// packet-audit:fname CScriptMan::OnSay#Reply
 type ContinueConversation struct {
 	lastMessageType byte
 	action          byte

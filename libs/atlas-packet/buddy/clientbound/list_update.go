@@ -21,6 +21,7 @@ type BuddyEntry struct {
 	InShop      bool
 }
 
+// packet-audit:fname CWvsContext::OnFriendResult#ListUpdate
 type ListUpdate struct {
 	mode    byte
 	buddies []BuddyEntry

@@ -1,0 +1,37 @@
+# CharacterInteraction - CMiniRoomBaseDlg::OnPacketBase per-version mode table.
+#
+# SOURCE OF TRUTH for the CharacterInteraction writer (trade / personal shop /
+# hired merchant / mini-game invites + enter/leave). The base dispatcher
+# (Decode1 mode -> switch) handles invite/enter/leave directly; other modes are
+# virtual-dispatched into the concrete sub-dialog. Atlas emits exactly:
+# Invite/InviteResult/Enter/EnterResult/Leave (base) + UpdateMerchant (subclass).
+#
+# Base modes 2/3/4/5/10 are VERSION-STABLE: byte-identical in gms_v83 (0x65df4c),
+# gms_v95 (0x639e10), and jms_v185 (0x6da198) - IDA-verified; the mini-room
+# protocol predates v83. UPDATE_MERCHANT is subclass-routed (hired-merchant):
+# OnPacketBase default -> CPersonalShopDlg::OnPacket -> case N -> OnRefresh
+# (vtable[28], overridden by CEntrustedShopDlg::OnRefresh which prefixes Decode4
+# meso). The refresh sub-mode is 25 in gms_v83/v84/v87/v95 (IDA-verified: v83
+# 0x6fc42d, v95 0x69c820 both switch case 25 -> OnRefresh; v87 OnRefresh chain
+# 0x53b2fc->0x740179), but jms_v185 shifts the personal-shop sub-modes down by 3
+# (gms 24/25/26/27 = jms 21/22/23/24), so jms UPDATE_MERCHANT=22 (IDA-verified:
+# CPersonalShopDlg::OnPacket sub_761650 case 22 -> CEntrustedShopDlg::OnRefresh
+# sub_54adb9 -> CPersonalShopDlg::OnRefresh sub_761dba). gms_v84 = v83 (stable).
+#
+# The CharacterInteraction WRITER ENTRY was missing from the gms_87 + jms_185
+# templates, though PLAYER_INTERACTION clientbound IS in those registries (0x14B /
+# 0x153). `opcodes` below tells `operations` generate to ADD the writer entry
+# there (registry-confirmed opcode), wiring the feature.
+
+writer: CharacterInteraction
+fname: CMiniRoomBaseDlg::OnPacketBase
+op: PLAYER_INTERACTION
+direction: clientbound
+opcodes: { gms_v87: "0x14B", jms_v185: "0x153" }
+operations:
+  - { key: INVITE,          modes: { gms_v83: 2,  gms_v84: 2,  gms_v87: 2,  gms_v95: 2,  jms_v185: 2  } }
+  - { key: INVITE_RESULT,   modes: { gms_v83: 3,  gms_v84: 3,  gms_v87: 3,  gms_v95: 3,  jms_v185: 3  } }
+  - { key: ENTER,           modes: { gms_v83: 4,  gms_v84: 4,  gms_v87: 4,  gms_v95: 4,  jms_v185: 4  } }
+  - { key: ENTER_RESULT,    modes: { gms_v83: 5,  gms_v84: 5,  gms_v87: 5,  gms_v95: 5,  jms_v185: 5  } }
+  - { key: LEAVE,           modes: { gms_v83: 10, gms_v84: 10, gms_v87: 10, gms_v95: 10, jms_v185: 10 } }
+  - { key: UPDATE_MERCHANT, modes: { gms_v83: 25, gms_v84: 25, gms_v87: 25, gms_v95: 25, jms_v185: 22 } }

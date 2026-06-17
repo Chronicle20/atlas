@@ -1,0 +1,8 @@
+packet: field/clientbound/FieldAriantResult
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnWarnMessage
+    address: "0x5427c9"
+    decompile_sha256: 61e38ae63ec5d4a90a12c1a466ac32e615cddd7a221d9ba6b3002ea952c712cc

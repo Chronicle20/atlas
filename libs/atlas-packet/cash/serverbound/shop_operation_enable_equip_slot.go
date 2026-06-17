@@ -12,6 +12,7 @@ import (
 const CashShopOperationEnableEquipSlotHandle = "CashShopOperationEnableEquipSlotHandle"
 
 // ShopOperationEnableEquipSlot - CCashShop::SendEnableEquipSlotExt
+// packet-audit:fname CCashShop::OnEnableEquipSlotExt
 type ShopOperationEnableEquipSlot struct {
 	pointType    bool
 	serialNumber uint32

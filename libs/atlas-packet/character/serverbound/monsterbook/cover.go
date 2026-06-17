@@ -19,6 +19,7 @@ const MonsterBookCoverHandler = "MonsterBookCover"
 // cover setter; the send site itself is unnamed/inlined) — v83 @0x95fb3e,
 // v87 @0x9e2d06, v95 @0x908dd0, jms @0xa2c930. v84: the setter is unnamed in the
 // IDB so the op cannot be evidence-pinned there (documented blocker).
+// packet-audit:fname CUserLocal::SetMonsterBookCover
 type Cover struct {
 	cardId uint32
 }

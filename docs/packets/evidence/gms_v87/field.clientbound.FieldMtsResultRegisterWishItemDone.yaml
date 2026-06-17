@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldMtsResultRegisterWishItemDone
+direction: clientbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CITC::OnNormalItemResult#RegisterWishItemDone
+    address: "0x5d528e"
+    decompile_sha256: 49923851609785db2ab9e96f37583375ef5112e5c711c9f30eefeb7134223e9d
+verifies:
+  - libs/atlas-packet/field/clientbound/mts_result_empty_modes_test.go#TestMtsResultRegisterWishItemDone

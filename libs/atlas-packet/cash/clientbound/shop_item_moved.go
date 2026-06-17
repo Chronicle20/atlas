@@ -11,6 +11,7 @@ import (
 )
 
 // CashItemMovedToInventory - mode, slot, asset
+// packet-audit:fname CCashShop::OnCashItemResult#CashItemMovedToInventory
 type CashItemMovedToInventory struct {
 	mode  byte
 	slot  uint16
@@ -21,8 +22,8 @@ func NewCashItemMovedToInventory(mode byte, slot uint16, asset packetmodel.Asset
 	return CashItemMovedToInventory{mode: mode, slot: slot, asset: asset}
 }
 
-func (m CashItemMovedToInventory) Mode() byte              { return m.mode }
-func (m CashItemMovedToInventory) Slot() uint16            { return m.slot }
+func (m CashItemMovedToInventory) Mode() byte               { return m.mode }
+func (m CashItemMovedToInventory) Slot() uint16             { return m.slot }
 func (m CashItemMovedToInventory) Asset() packetmodel.Asset { return m.asset }
 func (m CashItemMovedToInventory) Operation() string        { return CashShopOperationWriter }
 
@@ -49,6 +50,7 @@ func (m *CashItemMovedToInventory) Decode(l logrus.FieldLogger, ctx context.Cont
 }
 
 // CashItemMovedToCashInventory - mode, item
+// packet-audit:fname CCashShop::OnCashItemResult#CashItemMovedToCashInventory
 type CashItemMovedToCashInventory struct {
 	mode byte
 	item CashInventoryItem

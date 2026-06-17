@@ -1,0 +1,46 @@
+# CashShopOperation — CCashShop::OnCashItemResult per-version mode table.
+#
+# SOURCE OF TRUTH for the tenant template `operations` map of the
+# CashShopOperation writer. `packet-audit operations` generates and validates
+# template_<ver>_1.json writer.options.operations against this file. Each mode
+# is the leading Decode1 switch case in that version's CCashShop::OnCashItemResult
+# (clientbound). Modes shift NON-uniformly per version (sub-ops inserted), so a
+# value is read from that version's IDB, not offset-derived.
+#
+# IDA-verified: gms_v83 (port 13342), gms_v87 (13341), gms_v95 (13340),
+# jms_v185 (13339). gms_v84: uniform +3 vs v83 (matches the seeded gms_84 table;
+# the v84 DEVM build leaves the result-dispatcher unnamed, so this column is
+# template-derived pending a named v84 reference).
+
+writer: CashShopOperation
+fname: CCashShop::OnCashItemResult
+op: CASHSHOP_OPERATION
+direction: clientbound
+operations:
+  - key: LOAD_INVENTORY_SUCCESS
+    handler: OnCashItemResLoadLockerDone
+    modes: { gms_v83: 75, gms_v84: 78, gms_v87: 80, gms_v95: 88, jms_v185: 78 }
+  - key: LOAD_INVENTORY_FAILURE
+    handler: OnCashItemResLoadLockerFailed
+    modes: { gms_v83: 76, gms_v84: 79, gms_v87: 81, gms_v95: 89, jms_v185: 79 }
+  - key: LOAD_WISHLIST
+    handler: OnCashItemResLoadWishDone
+    modes: { gms_v83: 79, gms_v84: 82, gms_v87: 84, gms_v95: 92, jms_v185: 82 }
+  - key: UPDATE_WISHLIST
+    handler: OnCashItemResSetWishDone
+    modes: { gms_v83: 85, gms_v84: 88, gms_v87: 90, gms_v95: 98, jms_v185: 86 }
+  - key: PURCHASE_SUCCESS
+    handler: OnCashItemResBuyDone
+    modes: { gms_v83: 87, gms_v84: 90, gms_v87: 92, gms_v95: 100, jms_v185: 88 }
+  - key: INVENTORY_CAPACITY_INCREASE_SUCCESS
+    handler: OnCashItemResIncSlotCountDone
+    modes: { gms_v83: 96, gms_v84: 99, gms_v87: 101, gms_v95: 109, jms_v185: 97 }
+  - key: INVENTORY_CAPACITY_INCREASE_FAILED
+    handler: OnCashItemResIncSlotCountFailed
+    modes: { gms_v83: 97, gms_v84: 100, gms_v87: 102, gms_v95: 110, jms_v185: 98 }
+  - key: CASH_ITEM_MOVED_TO_INVENTORY
+    handler: OnCashItemResMoveLtoSDone
+    modes: { gms_v83: 104, gms_v84: 107, gms_v87: 109, gms_v95: 119, jms_v185: 107 }
+  - key: CASH_ITEM_MOVED_TO_CASH_INVENTORY
+    handler: OnCashItemResMoveStoLDone
+    modes: { gms_v83: 106, gms_v84: 109, gms_v87: 111, gms_v95: 121, jms_v185: 109 }

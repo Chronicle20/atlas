@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// packet-audit:fname CShopDlg::SendRechargeRequest
 type ShopRecharge struct {
 	slot uint16
 }

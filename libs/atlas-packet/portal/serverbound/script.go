@@ -12,6 +12,7 @@ import (
 const PortalScriptHandle = "PortalScriptHandle"
 
 // Script - CField::SendPortalScript
+// packet-audit:fname CUserLocal::CheckPortal_Collision
 type Script struct {
 	fieldKey   byte
 	portalName string

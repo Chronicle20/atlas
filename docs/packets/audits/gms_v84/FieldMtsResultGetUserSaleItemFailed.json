@@ -1,0 +1,30 @@
+{
+  "WriterName": "FieldMtsResultGetUserSaleItemFailed",
+  "IDAName": "CITC::OnNormalItemResult#GetUserSaleItemFailed",
+  "Address": "0x5b51d7",
+  "Variant": "GMS/v84",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/field/clientbound/mts_result_reason_modes.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "MTS result mode byte (0x24 GetUserSaleItemFailed)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "Decode1 fail reason -\u003e NoticeFailReason",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

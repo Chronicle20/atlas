@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// packet-audit:fname CPersonalShopDlg::MoveItemToInventory
 type OperationPersonalStoreRemoveItem struct {
 	index uint16
 }

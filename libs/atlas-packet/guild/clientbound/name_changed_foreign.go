@@ -11,6 +11,7 @@ import (
 
 const GuildNameChangedWriter = "GuildNameChanged"
 
+// packet-audit:fname CUserRemote::OnGuildNameChanged
 type ForeignNameChanged struct {
 	characterId uint32
 	name        string

@@ -12,6 +12,7 @@ import (
 const CashShopOperationBuyNameChangeHandle = "CashShopOperationBuyNameChangeHandle"
 
 // ShopOperationBuyNameChange - CCashShop::SendBuyNameChange
+// packet-audit:fname CCashShop::SendBuyNameChangeItemPacket
 type ShopOperationBuyNameChange struct {
 	serialNumber uint32
 	oldName      string

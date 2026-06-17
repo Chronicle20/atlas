@@ -1,0 +1,21 @@
+{
+  "WriterName": "FieldGuildBossPulleyStateChange",
+  "IDAName": "CField_GuildBoss::OnPulleyStateChange",
+  "Address": "0x558c3b",
+  "Variant": "GMS/v83",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/field/clientbound/guild_boss_pulley_state_change.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

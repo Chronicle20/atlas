@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// packet-audit:fname CField::AddBlackList
 type OperationFieldAddToBlackList struct {
 	name string
 }

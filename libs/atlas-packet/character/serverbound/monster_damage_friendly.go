@@ -12,6 +12,7 @@ import (
 const MonsterDamageFriendlyHandle = "MonsterDamageFriendlyHandle"
 
 // MonsterDamageFriendly - CMob::Update
+// packet-audit:fname CMob::Update
 type MonsterDamageFriendly struct {
 	attackerId uint32
 	observerId uint32

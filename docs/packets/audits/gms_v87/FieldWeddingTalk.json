@@ -1,0 +1,11 @@
+{
+  "WriterName": "FieldWeddingTalk",
+  "IDAName": "CField_Wedding::OnWeddingProgress#Talk",
+  "Address": "0x5b012e",
+  "Variant": "GMS/v87",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/field/serverbound/wedding_talk.go",
+  "Rows": null,
+  "Verdict": 0,
+  "FlatInvalid": false
+}

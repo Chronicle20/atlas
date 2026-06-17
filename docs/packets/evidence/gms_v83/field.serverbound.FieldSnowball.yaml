@@ -1,0 +1,8 @@
+packet: field/serverbound/FieldSnowball
+direction: serverbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CField_SnowBall::BasicActionAttack#Snowball
+    address: "0x575387"
+    decompile_sha256: 72535759134da1ce8197d500fc4fdf57905750aa990bb15124df860538430d23

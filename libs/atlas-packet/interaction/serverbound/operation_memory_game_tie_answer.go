@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// packet-audit:fname CMemoryGameDlg::OnTieRequest
 type OperationMemoryGameTieAnswer struct {
 	response bool
 }

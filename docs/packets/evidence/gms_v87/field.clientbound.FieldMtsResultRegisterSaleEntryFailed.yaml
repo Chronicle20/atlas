@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldMtsResultRegisterSaleEntryFailed
+direction: clientbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CITC::OnNormalItemResult#RegisterSaleEntryFailed
+    address: "0x5d4640"
+    decompile_sha256: 29d827381de361b344463a69f79ff5bab85fc249370adc308506cecd28b651b7
+verifies:
+  - libs/atlas-packet/field/clientbound/mts_operation_body_test.go#TestMtsResultRegisterSaleEntryFailedGolden

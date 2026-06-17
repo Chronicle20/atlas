@@ -18,6 +18,7 @@ type Processor interface {
 	AllianceChat(f field.Model, actorId uint32, message string, recipients []uint32) error
 	MultiChat(f field.Model, actorId uint32, message string, chatType string, recipients []uint32) error
 	WhisperChat(f field.Model, actorId uint32, message string, recipientName string) error
+	SpouseChat(f field.Model, actorId uint32, message string, spouseName string) error
 	MessengerChat(f field.Model, actorId uint32, message string, recipients []uint32) error
 	PetChat(f field.Model, petId uint64, message string, ownerId uint32, petSlot int8, nType byte, nAction byte, balloon bool) error
 }
@@ -78,6 +79,10 @@ func (p *ProcessorImpl) MultiChat(f field.Model, actorId uint32, message string,
 
 func (p *ProcessorImpl) WhisperChat(f field.Model, actorId uint32, message string, recipientName string) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(message2.EnvCommandTopicChat)(WhisperChatCommandProvider(f, actorId, message, recipientName))
+}
+
+func (p *ProcessorImpl) SpouseChat(f field.Model, actorId uint32, message string, spouseName string) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(message2.EnvCommandTopicChat)(SpouseChatCommandProvider(f, actorId, message, spouseName))
 }
 
 func (p *ProcessorImpl) MessengerChat(f field.Model, actorId uint32, message string, recipients []uint32) error {

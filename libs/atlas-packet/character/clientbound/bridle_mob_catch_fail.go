@@ -26,6 +26,8 @@ const BridleMobCatchFailWriter = "BridleMobCatchFail"
 // Decode1(a1); v1 = Decode4(a1); Decode4(a1); GetBridleItem(v1)`), v84
 // @0xa522fc, v87 @0xa9d692, v95 @0x9d9a80, jms @0xaec5ed — every version reads
 // one Decode1 then two Decode4 (the second Decode4's value is never stored).
+//
+// packet-audit:fname CWvsContext::OnBridleMobCatchFail
 type BridleMobCatchFail struct {
 	reason byte
 	itemId int32

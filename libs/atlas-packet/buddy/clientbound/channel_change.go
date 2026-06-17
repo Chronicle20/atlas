@@ -11,6 +11,7 @@ import (
 
 const BuddyChannelChangeWriter = "BuddyChannelChange"
 
+// packet-audit:fname CWvsContext::OnFriendResult#ChannelChange
 type ChannelChange struct {
 	mode        byte
 	characterId uint32

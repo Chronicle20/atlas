@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// packet-audit:fname CTrunkDlg::SendGetMoneyRequest
 type OperationMeso struct {
 	amount int32
 }

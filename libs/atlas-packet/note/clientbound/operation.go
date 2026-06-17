@@ -12,6 +12,7 @@ import (
 const NoteOperationWriter = "NoteOperation"
 
 // SendSuccess - just mode byte
+// packet-audit:fname CWvsContext::OnMemoResult#SendSuccess
 type SendSuccess struct {
 	mode byte
 }
@@ -40,6 +41,7 @@ func (m *SendSuccess) Decode(_ logrus.FieldLogger, _ context.Context) func(r *re
 }
 
 // SendError - mode, errorCode
+// packet-audit:fname CWvsContext::OnMemoResult#SendError
 type SendError struct {
 	mode      byte
 	errorCode byte
@@ -74,6 +76,7 @@ func (m *SendError) Decode(_ logrus.FieldLogger, _ context.Context) func(r *requ
 }
 
 // Refresh - just mode byte
+// packet-audit:fname CWvsContext::OnMemoResult#Refresh
 type Refresh struct {
 	mode byte
 }

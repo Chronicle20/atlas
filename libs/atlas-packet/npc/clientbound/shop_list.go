@@ -27,6 +27,7 @@ type ShopCommodity struct {
 	SlotMax         uint16
 }
 
+// packet-audit:fname CShopDlg::SetShopDlg
 type ShopList struct {
 	templateId  uint32
 	commodities []ShopCommodity

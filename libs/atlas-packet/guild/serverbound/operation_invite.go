@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// packet-audit:fname CField::SendInviteGuildMsg
 type InviteRequest struct {
 	target string
 }

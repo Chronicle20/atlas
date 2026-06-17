@@ -1,0 +1,8 @@
+packet: field/clientbound/FieldTournament
+direction: clientbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CField_Tournament::OnTournament
+    address: "0x5a9d67"
+    decompile_sha256: e335d9f065d7538b194951facaa4020be0c2878e955df7b99498f2ef6edf723c

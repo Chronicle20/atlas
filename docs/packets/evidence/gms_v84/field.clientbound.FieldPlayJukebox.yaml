@@ -1,0 +1,8 @@
+packet: field/clientbound/FieldPlayJukebox
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnPlayJukeBox
+    address: "0x5414aa"
+    decompile_sha256: f51c660ae8ade50967ff07a34746445e0b7b9bca9898f7425644e7f898234726

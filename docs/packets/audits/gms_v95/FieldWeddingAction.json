@@ -1,0 +1,21 @@
+{
+  "WriterName": "FieldWeddingAction",
+  "IDAName": "CField_Wedding::OnWeddingProgress#Action",
+  "Address": "0x5640f0",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/field/serverbound/wedding_action.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

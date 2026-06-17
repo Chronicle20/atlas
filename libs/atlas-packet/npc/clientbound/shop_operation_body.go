@@ -24,25 +24,63 @@ const (
 	NPCShopOperationGenericErrorWithReason = "GENERIC_ERROR_WITH_REASON"
 )
 
-func NPCShopOperationBody(code string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
-	return func(l logrus.FieldLogger, ctx context.Context) func(map[string]interface{}) []byte {
-		if code == NPCShopOperationOverLevelRequirement {
-			l.Warnf("Should be using non generic function for this code.")
-			return NPCShopOperationOverLevelRequirementBody(200)(l, ctx)
-		} else if code == NPCShopOperationUnderLevelRequirement {
-			l.Warnf("Should be using non generic function for this code.")
-			return NPCShopOperationUnderLevelRequirementBody(0)(l, ctx)
-		} else if code == NPCShopOperationGenericError {
-			l.Warnf("Should be using non generic function for this code.")
-			return NPCShopOperationGenericErrorBody()(l, ctx)
-		} else if code == NPCShopOperationGenericErrorWithReason {
-			l.Warnf("Should be using non generic function for this code.")
-			return NPCShopOperationGenericErrorWithReasonBody("generic error")(l, ctx)
-		}
-		return atlas_packet.WithResolvedCode("operations", code, func(mode byte) packet.Encoder {
-			return NewShopOperationSimple(mode)
-		})(l, ctx)
-	}
+// Per-mode body funcs. Each FIXES its own operation key (a hard-coded const)
+// via WithResolvedCode and constructs that mode's DISCRETE struct. No body func
+// accepts a caller-supplied op/code/mode — the version-resolved mode byte comes
+// from the tenant template's "operations" table, keyed by the fixed const.
+
+func NPCShopOperationOkBody() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", NPCShopOperationOk, func(mode byte) packet.Encoder {
+		return NewShopOperationOk(mode)
+	})
+}
+
+func NPCShopOperationOutOfStockBody() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", NPCShopOperationOutOfStock, func(mode byte) packet.Encoder {
+		return NewShopOperationOutOfStock(mode)
+	})
+}
+
+func NPCShopOperationNotEnoughMoneyBody() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", NPCShopOperationNotEnoughMoney, func(mode byte) packet.Encoder {
+		return NewShopOperationNotEnoughMoney(mode)
+	})
+}
+
+func NPCShopOperationInventoryFullBody() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", NPCShopOperationInventoryFull, func(mode byte) packet.Encoder {
+		return NewShopOperationInventoryFull(mode)
+	})
+}
+
+func NPCShopOperationOutOfStock2Body() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", NPCShopOperationOutOfStock2, func(mode byte) packet.Encoder {
+		return NewShopOperationOutOfStock2(mode)
+	})
+}
+
+func NPCShopOperationOutOfStock3Body() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", NPCShopOperationOutOfStock3, func(mode byte) packet.Encoder {
+		return NewShopOperationOutOfStock3(mode)
+	})
+}
+
+func NPCShopOperationNotEnoughMoney2Body() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", NPCShopOperationNotEnoughMoney2, func(mode byte) packet.Encoder {
+		return NewShopOperationNotEnoughMoney2(mode)
+	})
+}
+
+func NPCShopOperationNeedMoreItemsBody() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", NPCShopOperationNeedMoreItems, func(mode byte) packet.Encoder {
+		return NewShopOperationNeedMoreItems(mode)
+	})
+}
+
+func NPCShopOperationTradeLimitBody() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", NPCShopOperationTradeLimit, func(mode byte) packet.Encoder {
+		return NewShopOperationTradeLimit(mode)
+	})
 }
 
 func NPCShopOperationGenericErrorBody() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
@@ -59,12 +97,12 @@ func NPCShopOperationGenericErrorWithReasonBody(reason string) func(logrus.Field
 
 func NPCShopOperationOverLevelRequirementBody(levelLimit uint32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", NPCShopOperationOverLevelRequirement, func(mode byte) packet.Encoder {
-		return NewShopOperationLevelRequirement(mode, levelLimit)
+		return NewShopOperationOverLevelRequirement(mode, levelLimit)
 	})
 }
 
 func NPCShopOperationUnderLevelRequirementBody(levelLimit uint32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", NPCShopOperationUnderLevelRequirement, func(mode byte) packet.Encoder {
-		return NewShopOperationLevelRequirement(mode, levelLimit)
+		return NewShopOperationUnderLevelRequirement(mode, levelLimit)
 	})
 }

@@ -12,6 +12,7 @@ import (
 const CashShopOperationIncreaseStorageHandle = "CashShopOperationIncreaseStorageHandle"
 
 // ShopOperationIncreaseStorage - CCashShop::SendIncTrunkCount
+// packet-audit:fname CCashShop::OnIncTrunkCount
 type ShopOperationIncreaseStorage struct {
 	isPoints     bool
 	currency     uint32

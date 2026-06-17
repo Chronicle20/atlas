@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// packet-audit:fname CPersonalShopDlg::PutItem
 type OperationPersonalStorePutItem struct {
 	inventoryType byte
 	slot          int16

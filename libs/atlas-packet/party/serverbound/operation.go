@@ -11,6 +11,7 @@ import (
 
 const PartyOperationHandle = "PartyOperationHandle"
 
+// packet-audit:fname CField::SendCreateNewPartyMsg
 type Operation struct {
 	op byte
 }

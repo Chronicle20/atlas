@@ -18,6 +18,7 @@ const CashShopOperationGiftHandle = "CashShopOperationGiftHandle"
 // appears from v87 onward (v87 SendGiftsPacket@0x47a168 still sends the leading
 // int, NOT the SPW string — only Encode1 oneADay before name). The leading int
 // is replaced by EncodeStr sSPW only at v95+.
+// packet-audit:fname CCashShop::SendGiftsPacket
 type ShopOperationGift struct {
 	birthday     uint32 // v83/v87 leading int (replaced by spw string in v95+)
 	spw          string // v95+ leading ask_SPW string

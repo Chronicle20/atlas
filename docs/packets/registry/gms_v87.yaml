@@ -833,11 +833,12 @@
   provenance: ida-discovered
   ida:
     address: 5637631
-- op: IDA_0X0AA
+- op: FOOTHOLD_INFO
   direction: clientbound
   opcode: 170
   fname: CField::OnFootHoldInfo
-  provenance: ida-discovered
+  provenance: manual
+  note: 'task-096: renamed from placeholder IDA_0X0AA. CField::OnFootHoldInfo @0x560fec is the clientbound FOOTHOLD_INFO handler (v87 single-entry form). Shared op label with v95/jms FOOTHOLD_INFO clientbound (different opcode per version).'
   ida:
     address: 5606216
 - op: SPAWN_PLAYER
@@ -1569,14 +1570,20 @@
   provenance: csv-import
 - op: HORNTAIL_CAVE
   direction: clientbound
-  opcode: 318
+  opcode: 319
   fname: CField::OnHontailTimer
-  provenance: csv-import
+  provenance: ida-discovered
+  ida:
+    address: 5614973
+  note: 'task-096: CSV-import swap corrected 318->319 (0x13F). IDA v87 CField::OnPacket (0x558b48) routes nType==0x13F -> CField::OnHontailTimer (0x55ad7d). The CSV GMS v87 column had HORNTAIL/WITCH transposed (inherited from the v83 transposition).'
 - op: WITCH_TOWER_SCORE_UPDATE
   direction: clientbound
-  opcode: 319
+  opcode: 318
   fname: CField_Witchtower::OnScoreUpdate
-  provenance: csv-import
+  provenance: ida-discovered
+  ida:
+    address: 5980397
+  note: 'task-096: CSV-import swap corrected 319->318 (0x13E). IDA v87 CField_Witchtower::OnPacket (0x5b40c9) if-dispatches a2==0x13E -> CField_Witchtower::OnScoreUpdate (0x5b40ed). The CSV GMS v87 column had HORNTAIL/WITCH transposed.'
 - op: ZAKUM_SHRINE
   direction: clientbound
   opcode: 320
@@ -1590,7 +1597,7 @@
 - op: OPEN_NPC_SHOP
   direction: clientbound
   opcode: 322
-  fname: CShopDlg::OnPacket
+  fname: CShopDlg::SetShopDlg
   provenance: csv-import
 - op: CONFIRM_SHOP_TRANSACTION
   direction: clientbound
@@ -2567,10 +2574,9 @@
 - op: WHISPER
   direction: serverbound
   opcode: 126
-  fname: CField::SendLocationWhisper
+  fname: CField::SendChatMsgWhisper
   fname_alts:
-    - CField::SendChatMsgWhisper
-    - CField::OnWhisper
+    - CField::SendLocationWhisper
   provenance: csv-import
 - op: SPOUSE_CHAT
   direction: serverbound
@@ -2804,12 +2810,19 @@
   direction: serverbound
   opcode: 147
   fname: CField_Wedding::OnWeddingProgress
-  provenance: csv-import
+  provenance: manual
+  note: 'IDA v87 CField_Wedding::OnWeddingProgress @0x5b012e emits COutPacket(147)
+    + Encode1(m_nCurrentStep). Body = { byte currentStep }. Distinct serverbound op
+    (NOT a mode of clientbound WEDDING_PROGRESS=337); shares the fname only because
+    OnWeddingProgress both reads the clientbound progress and emits this serverbound reply.'
 - op: WEDDING_TALK
   direction: serverbound
   opcode: 148
   fname: CField_Wedding::OnWeddingProgress
-  provenance: csv-import
+  provenance: manual
+  note: 'IDA v87 CField_Wedding::OnWeddingProgress @0x5b012e emits COutPacket(0x94=148)
+    with no body (header only). Sent on the bless YESNO confirm. Distinct serverbound op
+    emitted by OnWeddingProgress.'
 - op: BOOBY_TRAP_ALERT
   direction: serverbound
   opcode: 149
@@ -3286,11 +3299,9 @@
   opcode: 238
   fname: CStage::OnSetField
   provenance: csv-import
-- op: FOOTHOLD_INFO
-  direction: serverbound
-  opcode: 239
-  fname: CField::OnRequestFootHoldInfo
-  provenance: csv-import
+# task-096: FOOTHOLD_INFO serverbound (opcode 239) removed — CField::OnRequestFootHoldInfo
+# is IDA-confirmed ABSENT in GMS v87 (the reply-builder only appears in GMS v95 + jms).
+# VERSION-ABSENT (⬜).
 - op: UNNAMED_R377
   direction: serverbound
   opcode: 240

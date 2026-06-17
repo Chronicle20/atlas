@@ -1,8 +1,0 @@
-packet: npc/clientbound/NpcShopOperationLevelRequirement
-direction: clientbound
-version: gms_v87
-category: TIER1-FIXTURE
-ida:
-    function: CShopDlg::OnPacket#LevelRequirement
-    address: "0x7a290d"
-    decompile_sha256: 4fd2d1b14d7ebb89a55034c073973e24ec732c033e0e02aa3f41f9dd786b32fb

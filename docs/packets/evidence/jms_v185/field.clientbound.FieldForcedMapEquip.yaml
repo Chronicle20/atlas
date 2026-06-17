@@ -1,0 +1,8 @@
+packet: field/clientbound/FieldForcedMapEquip
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnFieldSpecificData
+    address: "0x56effa"
+    decompile_sha256: 3af64791753e1e4620c0c86dae21a3e771ed54066fb65d144cbe5d10228fc1a5

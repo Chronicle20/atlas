@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// packet-audit:fname CField::SendChangePartyBossMsg
 type OperationChangeLeader struct {
 	targetCharacterId uint32
 }

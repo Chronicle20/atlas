@@ -1,0 +1,39 @@
+{
+  "WriterName": "FieldMtsResultRegisterSaleEntryFailed",
+  "IDAName": "CITC::OnNormalItemResult#RegisterSaleEntryFailed",
+  "Address": "0x5a4581",
+  "Variant": "GMS/v83",
+  "BranchDepth": 1,
+  "AtlasFile": "libs/atlas-packet/field/clientbound/mts_operation_body.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "MTS result mode byte (0x1E RegisterSaleEntryFailed)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "fail reason byte -\u003e NoticeFailReason",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "sale-limit count (reason==0x48 branch only)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

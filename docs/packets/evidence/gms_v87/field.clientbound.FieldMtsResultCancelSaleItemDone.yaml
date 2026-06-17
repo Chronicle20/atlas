@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldMtsResultCancelSaleItemDone
+direction: clientbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CITC::OnNormalItemResult#CancelSaleItemDone
+    address: "0x5d4e04"
+    decompile_sha256: e4e8f6d1cb01a88bf3b1025999b84f83fc5f6ee76b29ed5e7b921d721b9eb3fd
+verifies:
+  - libs/atlas-packet/field/clientbound/mts_result_empty_modes_test.go#TestMtsResultCancelSaleItemDone

@@ -1,0 +1,8 @@
+packet: field/clientbound/FieldWhisperFindResultError
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnWhisper#FindResultError
+    address: "0x53e514"
+    decompile_sha256: 64f45c5344f64dba590f4829acd552d038d22b8e5c41c9b0b2d32f0ef04696d0

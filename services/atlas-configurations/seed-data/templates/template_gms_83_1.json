@@ -487,6 +487,16 @@
         "handler": "CharacterSkillMacroHandle"
       },
       {
+        "opCode": "0x72",
+        "validator": "LoggedInValidator",
+        "handler": "SueCharacter"
+      },
+      {
+        "opCode": "0x76",
+        "validator": "LoggedInValidator",
+        "handler": "AdminChat"
+      },
+      {
         "opCode": "0x77",
         "validator": "LoggedInValidator",
         "handler": "CharacterMultiChatHandle"
@@ -495,6 +505,11 @@
         "opCode": "0x78",
         "validator": "LoggedInValidator",
         "handler": "CharacterChatWhisperHandle"
+      },
+      {
+        "opCode": "0x79",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterSpouseChatHandle"
       },
       {
         "opCode": "0x7A",
@@ -610,6 +625,16 @@
         "handler": "GuildInviteRejectHandle"
       },
       {
+        "opCode": "0x80",
+        "validator": "LoggedInValidator",
+        "handler": "AdminCommand"
+      },
+      {
+        "opCode": "0x81",
+        "validator": "LoggedInValidator",
+        "handler": "AdminLog"
+      },
+      {
         "opCode": "0x82",
         "validator": "LoggedInValidator",
         "handler": "BuddyOperationHandle",
@@ -635,9 +660,24 @@
         }
       },
       {
+        "opCode": "0x85",
+        "validator": "LoggedInValidator",
+        "handler": "UseDoor"
+      },
+      {
         "opCode": "0x87",
         "validator": "LoggedInValidator",
         "handler": "CharacterKeyMapChangeHandle"
+      },
+      {
+        "opCode": "0x8B",
+        "validator": "LoggedInValidator",
+        "handler": "WeddingAction"
+      },
+      {
+        "opCode": "0x8C",
+        "validator": "LoggedInValidator",
+        "handler": "WeddingTalk"
       },
       {
         "opCode": "0x9B",
@@ -1038,6 +1078,31 @@
         "handler": "ReactorHitHandle"
       },
       {
+        "opCode": "0xD3",
+        "validator": "LoggedInValidator",
+        "handler": "Snowball"
+      },
+      {
+        "opCode": "0xD4",
+        "validator": "LoggedInValidator",
+        "handler": "LeftKnockback"
+      },
+      {
+        "opCode": "0xD5",
+        "validator": "LoggedInValidator",
+        "handler": "Coconut"
+      },
+      {
+        "opCode": "0xD6",
+        "validator": "LoggedInValidator",
+        "handler": "MatchTable"
+      },
+      {
+        "opCode": "0xD7",
+        "validator": "LoggedInValidator",
+        "handler": "GuildBoss"
+      },
+      {
         "opCode": "0xDA",
         "validator": "LoggedInValidator",
         "handler": "MonsterCarnival"
@@ -1378,20 +1443,21 @@
         "writer": "CharacterStatusMessage",
         "options": {
           "operations": {
-            "DROP_PICK_UP": "0x00",
-            "QUEST_RECORD": "0x01",
-            "CASH_ITEM_EXPIRE": "0x02",
-            "INCREASE_EXPERIENCE": "0x03",
-            "INCREASE_FAME": "0x04",
-            "INCREASE_MESO": "0x05",
-            "INCREASE_GUILD_POINT": "0x06",
-            "GIVE_BUFF": "0x07",
-            "GENERAL_ITEM_EXPIRE": "0x08",
-            "SYSTEM_MESSAGE": "0x09",
-            "QUEST_RECORD_EX": "0x0A",
-            "ITEM_PROTECT_EXPIRE": "0x0B",
-            "ITEM_EXPIRE_REPLACE": "0x0C",
-            "SKILL_EXPIRE": "0x0D"
+            "DROP_PICK_UP": 0,
+            "QUEST_RECORD": 1,
+            "CASH_ITEM_EXPIRE": 2,
+            "INCREASE_EXPERIENCE": 3,
+            "INCREASE_SKILL_POINT": 4,
+            "INCREASE_FAME": 5,
+            "INCREASE_MESO": 6,
+            "INCREASE_GUILD_POINT": 7,
+            "GIVE_BUFF": 8,
+            "GENERAL_ITEM_EXPIRE": 9,
+            "SYSTEM_MESSAGE": 10,
+            "QUEST_RECORD_EX": 11,
+            "ITEM_PROTECT_EXPIRE": 12,
+            "ITEM_EXPIRE_REPLACE": 13,
+            "SKILL_EXPIRE": 14
           }
         }
       },
@@ -1609,12 +1675,44 @@
         "writer": "CashShopOpen"
       },
       {
+        "opCode": "0x83",
+        "writer": "BlockedMap"
+      },
+      {
+        "opCode": "0x85",
+        "writer": "ForcedMapEquip"
+      },
+      {
+        "opCode": "0x84",
+        "writer": "BlockedServer"
+      },
+      {
         "opCode": "0x86",
         "writer": "CharacterMultiChat"
       },
       {
         "opCode": "0x87",
         "writer": "CharacterChatWhisper"
+      },
+      {
+        "opCode": "0x88",
+        "writer": "SpouseChat"
+      },
+      {
+        "opCode": "0x90",
+        "writer": "AdminResult"
+      },
+      {
+        "opCode": "0x9C",
+        "writer": "StalkResult"
+      },
+      {
+        "opCode": "0x11C",
+        "writer": "SnowballTouch"
+      },
+      {
+        "opCode": "0x89",
+        "writer": "SummonItemUnavailable"
       },
       {
         "opCode": "0x8A",
@@ -1633,8 +1731,32 @@
         }
       },
       {
+        "opCode": "0x8B",
+        "writer": "FieldObstacleOnOff"
+      },
+      {
+        "opCode": "0x8C",
+        "writer": "FieldObstacleOnOffList"
+      },
+      {
+        "opCode": "0x8D",
+        "writer": "FieldObstacleAllReset"
+      },
+      {
         "opCode": "0x8E",
         "writer": "FieldEffectWeather"
+      },
+      {
+        "opCode": "0x8F",
+        "writer": "PlayJukebox"
+      },
+      {
+        "opCode": "0x91",
+        "writer": "OxQuiz"
+      },
+      {
+        "opCode": "0x92",
+        "writer": "GmEventInstructions"
       },
       {
         "opCode": "0x93",
@@ -1643,6 +1765,26 @@
       {
         "opCode": "0x95",
         "writer": "FieldTransportState"
+      },
+      {
+        "opCode": "0x97",
+        "writer": "SetQuestTime"
+      },
+      {
+        "opCode": "0x96",
+        "writer": "SetQuestClear"
+      },
+      {
+        "opCode": "0x98",
+        "writer": "AriantResult"
+      },
+      {
+        "opCode": "0x99",
+        "writer": "SetObjectState"
+      },
+      {
+        "opCode": "0x9A",
+        "writer": "StopClock"
       },
       {
         "opCode": "0xA0",
@@ -2415,6 +2557,14 @@
         "writer": "MonsterCarnivalResult"
       },
       {
+        "opCode": "0x12E",
+        "writer": "HorntailCave"
+      },
+      {
+        "opCode": "0x12F",
+        "writer": "ZakumShrine"
+      },
+      {
         "opCode": "0x130",
         "writer": "NPCConversation",
         "options": {
@@ -2475,8 +2625,7 @@
             "UNKNOWN": 17,
             "UPDATE_MESO": 19,
             "SHOW": 22,
-            "UNKNOWN_2": 23,
-            "ERROR_MESSAGE": 24
+            "ERROR_MESSAGE": 23
           }
         }
       },
@@ -2505,8 +2654,6 @@
             "INVITE_RESULT": 3,
             "ENTER": 4,
             "ENTER_RESULT": 5,
-            "CHAT": 6,
-            "CHAT_THING": 8,
             "LEAVE": 10,
             "UPDATE_MERCHANT": 25
           },
@@ -2535,6 +2682,42 @@
             "ITEM_EXPIRED": 24
           }
         }
+      },
+      {
+        "opCode": "0x13B",
+        "writer": "Tournament"
+      },
+      {
+        "opCode": "0x13C",
+        "writer": "TournamentMatchTable"
+      },
+      {
+        "opCode": "0x13D",
+        "writer": "TournamentSetPrize"
+      },
+      {
+        "opCode": "0x13E",
+        "writer": "TournamentUew"
+      },
+      {
+        "opCode": "0x13F",
+        "writer": "TournamentCharacters"
+      },
+      {
+        "opCode": "0x140",
+        "writer": "WeddingProgress"
+      },
+      {
+        "opCode": "0x141",
+        "writer": "WeddingCeremonyEnd"
+      },
+      {
+        "opCode": "0x12D",
+        "writer": "WitchTowerScoreUpdate"
+      },
+      {
+        "opCode": "0x162",
+        "writer": "ViciousHammer"
       },
       {
         "opCode": "0x144",
@@ -2568,6 +2751,109 @@
       {
         "opCode": "0x151",
         "writer": "CharacterKeyMapAutoMp"
+      },
+      {
+        "opCode": "0x15B",
+        "writer": "MtsOperation2"
+      },
+      {
+        "opCode": "0x15C",
+        "writer": "MtsOperation",
+        "options": {
+          "operations": {
+            "GET_ITC_LIST_DONE": 21,
+            "GET_ITC_LIST_FAILED": 22,
+            "GET_SEARCH_ITC_LIST_DONE": 23,
+            "GET_SEARCH_ITC_LIST_FAILED": 24,
+            "REGISTER_SALE_ENTRY_DONE": 29,
+            "REGISTER_SALE_ENTRY_FAILED": 30,
+            "SALE_CURRENT_ITEM_TO_WISH_DONE": 31,
+            "SALE_CURRENT_ITEM_TO_WISH_FAILED": 32,
+            "GET_USER_PURCHASE_ITEM_DONE": 33,
+            "GET_USER_PURCHASE_ITEM_FAILED": 34,
+            "GET_USER_SALE_ITEM_DONE": 35,
+            "GET_USER_SALE_ITEM_FAILED": 36,
+            "CANCEL_SALE_ITEM_DONE": 37,
+            "CANCEL_SALE_ITEM_FAILED": 38,
+            "MOVE_ITC_PURCHASE_ITEM_LTOS_DONE": 39,
+            "MOVE_ITC_PURCHASE_ITEM_LTOS_FAILED": 40,
+            "SET_ZZIM_DONE": 41,
+            "SET_ZZIM_FAILED": 42,
+            "DELETE_ZZIM_DONE": 43,
+            "DELETE_ZZIM_FAILED": 44,
+            "LOAD_WISH_SALE_LIST_DONE": 45,
+            "LOAD_WISH_SALE_LIST_FAILED": 46,
+            "BUY_WISH_DONE": 47,
+            "BUY_WISH_FAILED": 48,
+            "CANCEL_WISH_DONE": 49,
+            "CANCEL_WISH_FAILED": 50,
+            "BUY_ITEM_DONE": 51,
+            "BUY_ITEM_FAILED": 52,
+            "BUY_ZZIM_ITEM_DONE": 53,
+            "BUY_ZZIM_ITEM_FAILED": 54,
+            "REGISTER_WISH_ITEM_DONE": 55,
+            "REGISTER_WISH_ITEM_FAILED": 56,
+            "BID_AUCTION_FAILED": 60,
+            "NOTIFY_CANCEL_WISH_RESULT": 61,
+            "SUCCESS_BID_INFO_RESULT": 62
+          }
+        }
+      },
+      {
+        "opCode": "0x94",
+        "writer": "ContiMove"
+      },
+      {
+        "opCode": "0x9B",
+        "writer": "AriantArenaShowResult"
+      },
+      {
+        "opCode": "0x9D",
+        "writer": "PyramidGauge"
+      },
+      {
+        "opCode": "0x9E",
+        "writer": "PyramidScore"
+      },
+      {
+        "opCode": "0x119",
+        "writer": "SnowballState"
+      },
+      {
+        "opCode": "0x11A",
+        "writer": "SnowballHit"
+      },
+      {
+        "opCode": "0x11B",
+        "writer": "SnowballMessage"
+      },
+      {
+        "opCode": "0x11D",
+        "writer": "CoconutHit"
+      },
+      {
+        "opCode": "0x11E",
+        "writer": "CoconutScore"
+      },
+      {
+        "opCode": "0x11F",
+        "writer": "GuildBossHealerMove"
+      },
+      {
+        "opCode": "0x120",
+        "writer": "GuildBossPulleyStateChange"
+      },
+      {
+        "opCode": "0x129",
+        "writer": "AriantArenaUserScore"
+      },
+      {
+        "opCode": "0x12B",
+        "writer": "SheepRanchInfo"
+      },
+      {
+        "opCode": "0x12C",
+        "writer": "SheepRanchClothes"
       }
     ]
   },

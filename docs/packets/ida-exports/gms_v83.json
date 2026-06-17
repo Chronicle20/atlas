@@ -242,6 +242,38 @@
         }
       ]
     },
+    "CCashShop::OnCashItemResult#CashItemMovedToCashInventory": {
+      "address": "0x47b2fd",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x6a MOVE_S_TO_L_DONE = item moved storage->locker=cash inventory; op-byte consumed by dispatcher before OnCashItemResMoveStoLDone)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "55 bytes GW_CashItemInfo (CashInventoryItem.EncodeBytes); DecodeBuffer(pItem, 0x37)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#CashItemMovedToInventory": {
+      "address": "0x47aee2",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x68 MOVE_L_TO_S_DONE = item moved locker->slot=player inventory; op-byte consumed by dispatcher before OnCashItemResMoveLtoSDone)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nPOS (inventory slot); Decode2"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "GW_ItemSlotBase::Decode(&pItem) = item slot payload (model.Asset)"
+        }
+      ]
+    },
     "CCashShop::OnCashItemResult#CashShopInventory": {
       "address": "0x4794f6",
       "direction": "clientbound",
@@ -265,6 +297,94 @@
         {
           "op": "Decode2",
           "comment": "m_nCharacterSlotCount (characterSlots; *(this+292))"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#CashShopPurchaseSuccess": {
+      "address": "0x4798c6",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x57 BUY_DONE; op-byte consumed by dispatcher before OnCashItemResBuyDone)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "55 bytes GW_CashItemInfo (CashInventoryItem.EncodeBytes); DecodeBuffer(pItem, 0x37)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#InventoryCapacityFailed": {
+      "address": "0x47aaee",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x61 INC_SLOT_COUNT_FAILED; op-byte consumed by dispatcher before OnCashItemResIncSlotCountFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode (NoticeFailReason reason byte)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#InventoryCapacitySuccess": {
+      "address": "0x47a9fa",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x60 INC_SLOT_COUNT_DONE; op-byte consumed by dispatcher before OnCashItemResIncSlotCountDone)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nTI (inventoryType); Decode1"
+        },
+        {
+          "op": "Decode2",
+          "comment": "newCount (capacity); Decode2"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#LOAD_INVENTORY_FAILURE": {
+      "address": "0x47957c",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x4c LOAD_LOCKER_FAILED; op-byte consumed by OnCashItemResult dispatcher before OnCashItemResLoadLockerFailed). Generic failure-family arm: NoticeFailReason(Decode1)."
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode (NoticeFailReason reason byte)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#LOAD_WISHLIST": {
+      "address": "0x4797e2",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x4f LOAD_WISH_DONE; op-byte consumed by dispatcher before OnCashItemResLoadWishDone)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "40 bytes = 10 x int32 wishlist SNs (DecodeBuffer(this+wishbuf, 40))"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#UPDATE_WISHLIST": {
+      "address": "0x479844",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x55 SET_WISH_DONE; op-byte consumed by dispatcher before OnCashItemResSetWishDone)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "40 bytes = 10 x int32 wishlist SNs (DecodeBuffer(this+wishbuf, 40))"
         }
       ]
     },
@@ -4707,7 +4827,7 @@
     "CShopDlg::OnPacket#GenericError": {
       "address": "0x756da7",
       "direction": "clientbound",
-      "notes": "Same v83 CShopDlg::OnPacket@0x756da7 (nType==0x132). Case 17 (0x756f1b): Decode1(hasReason); if non-zero, DecodeStr(reason) and show it as a Notice, else default Notice. Atlas ShopOperationGenericError writes Byte(mode)+Bool(hasReason)+optional AsciiString(reason). The mode byte is the switch discriminator.",
+      "notes": "Discrete per-mode arm split from the shared generic-error shape (task-096). Same v83 CShopDlg::OnPacket@0x756da7 (nType==0x132) case 17 (0x756f1b): Decode1(hasReason)==0 -> default Notice, no string. Atlas ShopOperationGenericError writes Byte(mode)+Bool(false). Mode 17 per npc_shop_operation.yaml.",
       "dispatch": [
         {
           "discriminator": "nType",
@@ -4721,33 +4841,102 @@
         },
         {
           "op": "Decode1",
-          "comment": "hasReason flag"
-        },
-        {
-          "op": "DecodeStr",
-          "comment": "reason (only when hasReason != 0)"
+          "comment": "hasReason flag (0 for plain GENERIC_ERROR; no reason string follows)"
         }
       ]
     },
-    "CShopDlg::OnPacket#LevelRequirement": {
+    "CShopDlg::OnPacket#Ok": {
       "address": "0x756da7",
       "direction": "clientbound",
-      "notes": "Same v83 CShopDlg::OnPacket@0x756da7 (nType==0x132). Cases 14 (0x756f81) and 15 (0x756ffd) read Decode4 (a level value formatted into an over/under level-requirement Notice). Atlas ShopOperationLevelRequirement writes Byte(mode)+Int(levelLimit). The mode byte is the switch discriminator.",
+      "notes": "CONFIRM_SHOP_TRANSACTION OK arm (mode 0). Discrete per-mode struct NpcShopOperationOk (mode-only StringPool-notice arm: Decode1 mode only). Split from the shared mode-byte family per task-096; mode byte from docs/packets/dispatchers/npc_shop_operation.yaml.",
       "calls": [
         {
           "op": "Decode1",
-          "comment": "mode (over/under level-requirement sub-op: v83 cases 14/15)"
-        },
-        {
-          "op": "Decode4",
-          "comment": "levelLimit"
+          "comment": "mode (sub-op discriminator; mode-only arm)"
         }
       ]
     },
-    "CShopDlg::OnPacket#Simple": {
+    "CShopDlg::OnPacket#OutOfStock": {
       "address": "0x756da7",
       "direction": "clientbound",
-      "notes": "CONFIRM_SHOP_TRANSACTION. v83 CShopDlg::OnPacket@0x756da7 (nType==0x132) switch(Decode1 mode). Mode-only arms (cases 0,1,2,3,4,5,8,9,10,16 and default) read no further packet fields — they show a StringPool Notice. Atlas ShopOperationSimple writes Byte(mode) only. v83 mode-enum values differ from v95 (level-req=14/15, generic-error=17 in v83) but the mode byte is the server-config discriminator, not encoded by atlas. OP-FAMILY deferred to _pending.md.",
+      "notes": "CONFIRM_SHOP_TRANSACTION OUT_OF_STOCK arm (mode 1). Discrete per-mode struct NpcShopOperationOutOfStock (mode-only StringPool-notice arm: Decode1 mode only). Split from the shared mode-byte family per task-096; mode byte from docs/packets/dispatchers/npc_shop_operation.yaml.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (sub-op discriminator; mode-only arm)"
+        }
+      ]
+    },
+    "CShopDlg::OnPacket#NotEnoughMoney": {
+      "address": "0x756da7",
+      "direction": "clientbound",
+      "notes": "CONFIRM_SHOP_TRANSACTION NOT_ENOUGH_MONEY arm (mode 2). Discrete per-mode struct NpcShopOperationNotEnoughMoney (mode-only StringPool-notice arm: Decode1 mode only). Split from the shared mode-byte family per task-096; mode byte from docs/packets/dispatchers/npc_shop_operation.yaml.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (sub-op discriminator; mode-only arm)"
+        }
+      ]
+    },
+    "CShopDlg::OnPacket#InventoryFull": {
+      "address": "0x756da7",
+      "direction": "clientbound",
+      "notes": "CONFIRM_SHOP_TRANSACTION INVENTORY_FULL arm (mode 3). Discrete per-mode struct NpcShopOperationInventoryFull (mode-only StringPool-notice arm: Decode1 mode only). Split from the shared mode-byte family per task-096; mode byte from docs/packets/dispatchers/npc_shop_operation.yaml.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (sub-op discriminator; mode-only arm)"
+        }
+      ]
+    },
+    "CShopDlg::OnPacket#OutOfStock2": {
+      "address": "0x756da7",
+      "direction": "clientbound",
+      "notes": "CONFIRM_SHOP_TRANSACTION OUT_OF_STOCK_2 arm (mode 5). Discrete per-mode struct NpcShopOperationOutOfStock2 (mode-only StringPool-notice arm: Decode1 mode only). Split from the shared mode-byte family per task-096; mode byte from docs/packets/dispatchers/npc_shop_operation.yaml.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (sub-op discriminator; mode-only arm)"
+        }
+      ]
+    },
+    "CShopDlg::OnPacket#OutOfStock3": {
+      "address": "0x756da7",
+      "direction": "clientbound",
+      "notes": "CONFIRM_SHOP_TRANSACTION OUT_OF_STOCK_3 arm (mode 9). Discrete per-mode struct NpcShopOperationOutOfStock3 (mode-only StringPool-notice arm: Decode1 mode only). Split from the shared mode-byte family per task-096; mode byte from docs/packets/dispatchers/npc_shop_operation.yaml.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (sub-op discriminator; mode-only arm)"
+        }
+      ]
+    },
+    "CShopDlg::OnPacket#NotEnoughMoney2": {
+      "address": "0x756da7",
+      "direction": "clientbound",
+      "notes": "CONFIRM_SHOP_TRANSACTION NOT_ENOUGH_MONEY_2 arm (mode 10). Discrete per-mode struct NpcShopOperationNotEnoughMoney2 (mode-only StringPool-notice arm: Decode1 mode only). Split from the shared mode-byte family per task-096; mode byte from docs/packets/dispatchers/npc_shop_operation.yaml.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (sub-op discriminator; mode-only arm)"
+        }
+      ]
+    },
+    "CShopDlg::OnPacket#NeedMoreItems": {
+      "address": "0x756da7",
+      "direction": "clientbound",
+      "notes": "CONFIRM_SHOP_TRANSACTION NEED_MORE_ITEMS arm (mode 13). Discrete per-mode struct NpcShopOperationNeedMoreItems (mode-only StringPool-notice arm: Decode1 mode only). Split from the shared mode-byte family per task-096; mode byte from docs/packets/dispatchers/npc_shop_operation.yaml.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (sub-op discriminator; mode-only arm)"
+        }
+      ]
+    },
+    "CShopDlg::OnPacket#TradeLimit": {
+      "address": "0x756da7",
+      "direction": "clientbound",
+      "notes": "CONFIRM_SHOP_TRANSACTION TRADE_LIMIT arm (mode 16). Discrete per-mode struct NpcShopOperationTradeLimit (mode-only StringPool-notice arm: Decode1 mode only). Split from the shared mode-byte family per task-096; mode byte from docs/packets/dispatchers/npc_shop_operation.yaml.",
       "calls": [
         {
           "op": "Decode1",
@@ -5347,13 +5536,13 @@
         }
       ]
     },
-    "CTrunkDlg::OnPacket#UpdateAssets": {
+    "CTrunkDlg::OnPacket#StoreAssets": {
       "address": "0x7c5dfd",
       "direction": "clientbound",
       "calls": [
         {
           "op": "Decode1",
-          "comment": "mode (9/13/15/19)"
+          "comment": "mode (STORE_ASSETS = 13; dispatcher case 0x0D -> SetGetItems)"
         },
         {
           "op": "Decode1",
@@ -5372,6 +5561,111 @@
           "op": "Decode1",
           "comment": "PER-TAB count byte; repeated per set tab bit (4/8/16/32/64), each followed by count*GW_ItemSlotBase::Decode",
           "guard": "loop perTab"
+        }
+      ]
+    },
+    "CTrunkDlg::OnPacket#RetrieveAssets": {
+      "address": "0x7c5dfd",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (RETRIEVE_ASSETS = 9; dispatcher case 0x09 -> SetGetItems)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "slotCount (m_nSlotCount)"
+        },
+        {
+          "op": "Decode8",
+          "comment": "tab-flag bitmask (8 bytes via DecodeBuffer; WriteLong-compatible width)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "meso (m_nMoney; ONLY if tab-flag bit 1 set — runtime callers never set it)",
+          "guard": "flag & 2"
+        },
+        {
+          "op": "Decode1",
+          "comment": "PER-TAB count byte; repeated per set tab bit (4/8/16/32/64), each followed by count*GW_ItemSlotBase::Decode",
+          "guard": "loop perTab"
+        }
+      ]
+    },
+    "CTrunkDlg::OnPacket#UpdateMeso": {
+      "address": "0x7c8a4c",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (19 = UPDATE_MESO; dispatcher case 0x13 -> SetGetItems)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "slotCount (m_nSlotCount)"
+        },
+        {
+          "op": "Decode8",
+          "comment": "tab-flag bitmask (atlas writes 2 = currency-only; 8 bytes)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "meso (m_nMoney; read because flag&2)"
+        }
+      ]
+    },
+    "CTrunkDlg::OnPacket#ErrorInventoryFull": {
+      "address": "0x7c8a4c",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (INVENTORY_FULL = 10; error code -> StringPool message, no further reads)"
+        }
+      ]
+    },
+    "CTrunkDlg::OnPacket#ErrorNotEnoughMesos": {
+      "address": "0x7c8a4c",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (NOT_ENOUGH_MESOS = 11; error code -> StringPool message, no further reads)"
+        }
+      ]
+    },
+    "CTrunkDlg::OnPacket#ErrorOneOfAKind": {
+      "address": "0x7c8a4c",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (ONE_OF_A_KIND = 12; error code -> StringPool message, no further reads)"
+        }
+      ]
+    },
+    "CTrunkDlg::OnPacket#ErrorMessage": {
+      "address": "0x7c8a4c",
+      "direction": "clientbound",
+      "dispatch": [
+        {
+          "discriminator": "v2",
+          "case": 23
+        }
+      ],
+      "notes": "inferred-high-confidence (1.00) @0x7c8a4c",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (23)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "enabled flag (if true -> read message)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "message"
         }
       ]
     },
@@ -8683,6 +8977,2261 @@
       "address": "0x424704",
       "direction": "",
       "calls": null
+    },
+    "CField::InputGuildName": {
+      "address": "0x5305ae",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "valid && v2"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "valid && v2"
+        }
+      ]
+    },
+    "CField::OnAdminResult": {
+      "address": "0x5352e9",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v3 > 0x13u && v38 && v39"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v3 > 0x13u && v38 && <default>"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v3 == 19"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v3 == 19 && CInPacket::Decode1(v2)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v3 == 19 && <default>"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v3 == 19"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 && v5 && v6 && v7 && v7 == 7"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 && v5 && v6"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 && v5 && v6 && sub_4CC68B(&a2, &WindowName)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 && v5 && v6 && sub_4CC68B(&a2, &WindowName)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 && v5 && <default>"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 && <default>"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "<default>"
+        }
+      ]
+    },
+    "CField::OnCharacterSale": {
+      "address": "0x537fa6",
+      "direction": "",
+      "calls": null
+    },
+    "CField::OnCoupleMessage": {
+      "address": "0x532087",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v3"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v3"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v3"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "<default>"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "<default> && CInPacket::Decode1(v2)"
+        }
+      ]
+    },
+    "CField::OnDesc": {
+      "address": "0x5360c0",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        }
+      ]
+    },
+    "CField::OnDestroyClock": {
+      "address": "0x53184a",
+      "direction": "",
+      "calls": null
+    },
+    "CField::OnFieldObstacleAllReset": {
+      "address": "0x5330b6",
+      "direction": "",
+      "calls": null
+    },
+    "CField::OnFieldObstacleOnOff": {
+      "address": "0x53300b",
+      "direction": "",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
+    "CField::OnFieldObstacleOnOffStatus": {
+      "address": "0x533057",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v3 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v3 > 0"
+        }
+      ]
+    },
+    "CField::OnFieldSpecificData": {
+      "address": "0x531b7b",
+      "direction": "",
+      "calls": null
+    },
+    "CField::OnGroupMessage": {
+      "address": "0x531e00",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        }
+      ]
+    },
+    "CField::OnHontailTimer": {
+      "address": "0x5335a3",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
+    "CField::OnItemUpgrade": {
+      "address": "0x537f8c",
+      "direction": "",
+      "calls": null
+    },
+    "CField::OnPlayJukeBox": {
+      "address": "0x535224",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "get_consume_cash_item_type(v3) == 20 && this->m_nJukeBoxItemID >= 0"
+        }
+      ]
+    },
+    "CField::OnQuiz": {
+      "address": "0x535a57",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        }
+      ]
+    },
+    "CField::OnSetObjectState": {
+      "address": "0x537a1e",
+      "direction": "",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
+    "CField::OnSetQuestClear": {
+      "address": "0x5378ba",
+      "direction": "",
+      "calls": null
+    },
+    "CField::OnSetQuestTime": {
+      "address": "0x5378cd",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v3"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "",
+          "guard": "v3"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "",
+          "guard": "v3"
+        }
+      ]
+    },
+    "CField::OnStalkResult": {
+      "address": "0x537a6a",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 0"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 0 && <default>"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 0 && <default>"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 0 && <default>"
+        }
+      ]
+    },
+    "CField::OnSummonItemInavailable": {
+      "address": "0x532fcf",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        }
+      ]
+    },
+    "CField::OnTransferChannelReqIgnored": {
+      "address": "0x531a08",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        }
+      ]
+    },
+    "CField::OnTransferFieldReqIgnored": {
+      "address": "0x53185c",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        }
+      ]
+    },
+    "CField::OnWarnMessage": {
+      "address": "0x5364c5",
+      "direction": "",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        }
+      ]
+    },
+    "CField::OnWhisper": {
+      "address": "0x53228e",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v120 == 0xA"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v120 == 0xA"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v120 == 0x12"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v120 == 0x12"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v120 == 0x12"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v120 == 0x12"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v120 != 0x22 && v120 != 0x48 && v120 != 138"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v120 != 0x22 && v120 != 0x48 && v120 != 138"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v120 != 0x22 && v120 != 0x48 && v120 != 138"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v120 != 0x22"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v120 != 0x22"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v120 != 0x22"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v120 != 0x22 && (v120 & 1) != 0 && v34 == 1"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v120 != 0x22 && (v120 & 1) != 0 && v34 == 1"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        }
+      ]
+    },
+    "CField::OnZakumTimer": {
+      "address": "0x53347c",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
+    "CField::SendChatMsgSlash": {
+      "address": "0x52c40c",
+      "direction": "",
+      "calls": null
+    },
+    "CField::TryEnterTownPortal": {
+      "address": "0x5375ed",
+      "direction": "",
+      "calls": null
+    },
+    "CField_AriantArena::OnShowResult": {
+      "address": "0x53ef95",
+      "direction": "",
+      "calls": null
+    },
+    "CField_AriantArena::OnUserScore": {
+      "address": "0x53e5e1",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v3"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v3"
+        }
+      ]
+    },
+    "CField_Battlefield::OnScoreUpdate": {
+      "address": "0x545c1e",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        }
+      ]
+    },
+    "CField_Battlefield::OnTeamChanged": {
+      "address": "0x545c52",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "User"
+        }
+      ]
+    },
+    "CField_Coconut::BasicActionAttack": {
+      "address": "0x549902",
+      "direction": "",
+      "calls": null
+    },
+    "CField_Coconut::OnCoconutHit": {
+      "address": "0x549834",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        }
+      ]
+    },
+    "CField_Coconut::OnCoconutScore": {
+      "address": "0x549802",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        }
+      ]
+    },
+    "CField_ContiMove::OnContiMove": {
+      "address": "0x54dca3",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        }
+      ]
+    },
+    "CField_GuildBoss::BasicActionAttack": {
+      "address": "0x558b45",
+      "direction": "",
+      "calls": null
+    },
+    "CField_GuildBoss::OnHealerMove": {
+      "address": "0x558c0c",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode2",
+          "comment": ""
+        }
+      ]
+    },
+    "CField_GuildBoss::OnPulleyStateChange": {
+      "address": "0x558c3b",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        }
+      ]
+    },
+    "CField_Massacre::OnMassacreIncGauge": {
+      "address": "0x560a81",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
+    "CField_MassacreResult::OnMassacreResult": {
+      "address": "0x5617c5",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
+    "CField_SnowBall::BasicActionAttack": {
+      "address": "0x575387",
+      "direction": "",
+      "calls": null
+    },
+    "CField_SnowBall::OnSnowBallHit": {
+      "address": "0x575191",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        }
+      ]
+    },
+    "CField_SnowBall::OnSnowBallMsg": {
+      "address": "0x5751cc",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        }
+      ]
+    },
+    "CField_SnowBall::OnSnowBallState": {
+      "address": "0x5750a3",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v8"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v8"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v8"
+        }
+      ]
+    },
+    "CField_SnowBall::OnSnowBallTouch": {
+      "address": "0x575372",
+      "direction": "",
+      "calls": null
+    },
+    "CField_SnowBall::Update": {
+      "address": "0x574df1",
+      "direction": "",
+      "calls": null
+    },
+    "CField_Tournament::OnPacket": {
+      "address": "0x57b5b4",
+      "direction": "",
+      "calls": null
+    },
+    "CField_Tournament::OnTournament": {
+      "address": "0x57b61a",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "CInPacket::Decode1(a2"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "<default>"
+        }
+      ]
+    },
+    "CField_Tournament::OnTournamentMatchTable": {
+      "address": "0x57b78a",
+      "direction": "",
+      "calls": null
+    },
+    "CField_Tournament::OnTournamentSetPrize": {
+      "address": "0x57b815",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "CInPacket::Decode1(v2)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "CInPacket::Decode1(v2)"
+        }
+      ]
+    },
+    "CField_Tournament::OnTournamentUEW": {
+      "address": "0x57ba16",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        }
+      ]
+    },
+    "CField_Wedding::OnWeddingCeremonyEnd": {
+      "address": "0x581b49",
+      "direction": "",
+      "calls": null
+    },
+    "CField_Wedding::OnWeddingProgress": {
+      "address": "0x58153d",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
+    "CField_Witchtower::OnPacket": {
+      "address": "0x585255",
+      "direction": "",
+      "calls": null
+    },
+    "CITC::OnNormalItemResult": {
+      "address": "0x5a4311",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "switch == 21",
+          "ref": "CITC::OnGetITCListDone"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "switch == 22",
+          "ref": "sub_5A4882"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "switch == 23",
+          "ref": "sub_5A4A02"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "switch == 24",
+          "ref": "sub_5A49E3"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "switch == 29",
+          "ref": "sub_5A4674"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "switch == 30",
+          "ref": "sub_5A4581"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "switch == 31",
+          "ref": "sub_5A46B2"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "switch == 32",
+          "ref": "sub_5A46F0"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "switch == 33",
+          "ref": "sub_5A4AF3"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "switch == 34",
+          "ref": "sub_5A4C2A"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "switch == 35",
+          "ref": "sub_5A4C57"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "switch == 36",
+          "ref": "sub_5A4CE7"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "switch == 37",
+          "ref": "sub_5A4D14"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "switch == 38",
+          "ref": "sub_5A4D49"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "switch == 39",
+          "ref": "CITC::OnMoveITCPurchaseItemLtoSDone"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "switch == 40",
+          "ref": "sub_5A4DCF"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "switch == 41",
+          "ref": "sub_5A4DFC"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "switch == 42",
+          "ref": "sub_5A4E31"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "switch == 43",
+          "ref": "sub_5A4E66"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "switch == 44",
+          "ref": "sub_5A4E91"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "switch == 45",
+          "ref": "sub_5A4EC6"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "switch == 46",
+          "ref": "sub_5A4FDC"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "switch == 47",
+          "ref": "sub_5A5011"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "switch == 48",
+          "ref": "sub_5A503C"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "switch == 49",
+          "ref": "sub_5A5071"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "switch == 50",
+          "ref": "sub_5A50DF"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "switch == 51",
+          "ref": "sub_5A5114"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "switch == 52",
+          "ref": "sub_5A513F"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "switch == 53",
+          "ref": "sub_5A5174"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "switch == 54",
+          "ref": "sub_5A519F"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "switch == 55",
+          "ref": "sub_5A51D4"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "switch == 56",
+          "ref": "sub_5A5209"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "switch == 60",
+          "ref": "sub_5A5444"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "switch == 61",
+          "ref": "sub_5A523E"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "switch == 62",
+          "ref": "sub_5A52DE"
+        }
+      ]
+    },
+    "CITC::OnQueryCashResult": {
+      "address": "0x5a428c",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
+    "CField_Witchtower::OnScoreUpdate": {
+      "address": "0x585279",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        }
+      ]
+    },
+    "CField::OnWhisper#Receive": {
+      "address": "0x53228e",
+      "direction": "clientbound",
+      "note": "mode=0x12 (RECEIVE). Wire version-invariant v83=v95.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "from"
+        },
+        {
+          "op": "Decode1",
+          "comment": "channel"
+        },
+        {
+          "op": "Decode1",
+          "comment": "gm"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "msg"
+        }
+      ]
+    },
+    "CField::OnWhisper#SendResult": {
+      "address": "0x53228e",
+      "direction": "clientbound",
+      "note": "mode=0x0A/0x8A (SEND_RESULT). Wire version-invariant v83=v95.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "target"
+        },
+        {
+          "op": "Decode1",
+          "comment": "result"
+        }
+      ]
+    },
+    "CField::OnWhisper#FindResultMap": {
+      "address": "0x53228e",
+      "direction": "clientbound",
+      "note": "mode=0x09/0x48 sub=1 (FIND on map). x/y are Decode4 (int32, IDA-confirmed v83 AND v95) when mode 0x09. Wire version-invariant.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "target"
+        },
+        {
+          "op": "Decode1",
+          "comment": "findMode (=1)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "mapId"
+        },
+        {
+          "op": "Decode4",
+          "comment": "x (mode 0x09 only)",
+          "guard": "mode == 0x09"
+        },
+        {
+          "op": "Decode4",
+          "comment": "y (mode 0x09 only)",
+          "guard": "mode == 0x09"
+        }
+      ]
+    },
+    "CField::OnWhisper#FindResultCashShop": {
+      "address": "0x53228e",
+      "direction": "clientbound",
+      "note": "mode=0x09/0x48 sub=2 (FIND in cash shop). Wire version-invariant.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "target"
+        },
+        {
+          "op": "Decode1",
+          "comment": "findMode (=2)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "-1"
+        }
+      ]
+    },
+    "CField::OnWhisper#FindResultChannel": {
+      "address": "0x53228e",
+      "direction": "clientbound",
+      "note": "mode=0x09/0x48 sub=3 (FIND on channel). Wire version-invariant.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "target"
+        },
+        {
+          "op": "Decode1",
+          "comment": "findMode (=3)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "channel"
+        }
+      ]
+    },
+    "CField::OnWhisper#FindResultError": {
+      "address": "0x53228e",
+      "direction": "clientbound",
+      "note": "mode=0x09/0x48 sub=0/else (FIND not found). Wire version-invariant.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "target"
+        },
+        {
+          "op": "Decode1",
+          "comment": "findMode (=0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "0"
+        }
+      ]
+    },
+    "CField::OnWhisper#Error": {
+      "address": "0x53228e",
+      "direction": "clientbound",
+      "note": "mode=0x22 (ERROR). Wire version-invariant.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "target"
+        },
+        {
+          "op": "Decode1",
+          "comment": "whispersEnabled"
+        }
+      ]
+    },
+    "CField::OnWhisper#Weather": {
+      "address": "0x53228e",
+      "direction": "clientbound",
+      "note": "mode=0x92 (WEATHER). Wire version-invariant.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "from"
+        },
+        {
+          "op": "Decode1",
+          "comment": "flag (always true)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "msg"
+        }
+      ]
+    },
+    "CField_SnowBall::BasicActionAttack#Snowball": {
+      "address": "0x575387",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": ""
+        },
+        {
+          "op": "Encode2",
+          "comment": ""
+        },
+        {
+          "op": "Encode2",
+          "comment": ""
+        }
+      ]
+    },
+    "CField_SnowBall::Update#LeftKnockback": {
+      "address": "0x574df1",
+      "direction": "serverbound",
+      "calls": []
+    },
+    "CField_Coconut::BasicActionAttack#Coconut": {
+      "address": "0x549902",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode2",
+          "comment": ""
+        },
+        {
+          "op": "Encode2",
+          "comment": ""
+        }
+      ]
+    },
+    "CField_GuildBoss::BasicActionAttack#GuildBoss": {
+      "address": "0x558b45",
+      "direction": "serverbound",
+      "calls": []
+    },
+    "CField::TryEnterTownPortal#UseDoor": {
+      "address": "0x5375ed",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": ""
+        },
+        {
+          "op": "Encode1",
+          "comment": ""
+        }
+      ]
+    },
+    "CField_Wedding::OnWeddingProgress#Action": {
+      "address": "0x58153d",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": ""
+        }
+      ]
+    },
+    "CField_Wedding::OnWeddingProgress#Talk": {
+      "address": "0x58153d",
+      "direction": "serverbound",
+      "calls": []
+    },
+    "CField::SendChatMsgSlash#AdminChat": {
+      "address": "0x52de5a",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": ""
+        },
+        {
+          "op": "Encode1",
+          "comment": ""
+        },
+        {
+          "op": "EncodeStr",
+          "comment": ""
+        }
+      ]
+    },
+    "CField::SendChatMsgSlash#AdminCommand": {
+      "address": "0x52c958",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": ""
+        }
+      ]
+    },
+    "CField::SendChatMsgSlash#AdminLog": {
+      "address": "0x52e297",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "EncodeStr",
+          "comment": ""
+        }
+      ]
+    },
+    "CField::SendChatMsgSlash#MatchTable": {
+      "address": "0x52ec6c",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": ""
+        }
+      ]
+    },
+    "CField::SendChatMsgSlash#SueCharacter": {
+      "address": "0x52cb7c",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": ""
+        },
+        {
+          "op": "Encode1",
+          "comment": ""
+        },
+        {
+          "op": "EncodeStr",
+          "comment": ""
+        }
+      ]
+    },
+    "CUIFadeYesNo::OnButtonClicked": {
+      "address": "0x0",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "op byte (sub-op dispatcher for GUILD_OPERATION serverbound)"
+        }
+      ]
+    },
+    "CITC::OnNormalItemResult#Mode": {
+      "address": "0x5a4311",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic OP-MODE-PREFIX entry (task-096): CITC::OnNormalItemResult reads Decode1(mode) then switch-dispatches to 35 cash-shop/MTS sub-handlers (0x15-0x3E). Only the leading mode byte is on the wire contract; per-mode tails are mode-opaque.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (switch discriminator)"
+        }
+      ]
+    },
+    "CITC::OnNormalItemResult#RegisterSaleEntryDone": {
+      "address": "0x5a4674",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x1D RegisterSaleEntryDone arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultRegisterSaleEntryDone.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x1D RegisterSaleEntryDone)"
+        }
+      ]
+    },
+    "CITC::OnNormalItemResult#SaleCurrentItemToWishDone": {
+      "address": "0x5a46b2",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x1F SaleCurrentItemToWishDone arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultSaleCurrentItemToWishDone.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x1F SaleCurrentItemToWishDone)"
+        }
+      ]
+    },
+    "CITC::OnNormalItemResult#CancelSaleItemDone": {
+      "address": "0x5a4d14",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x25 CancelSaleItemDone arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultCancelSaleItemDone.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x25 CancelSaleItemDone)"
+        }
+      ]
+    },
+    "CITC::OnNormalItemResult#SetZzimDone": {
+      "address": "0x5a4dfc",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x29 SetZzimDone arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultSetZzimDone.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x29 SetZzimDone)"
+        }
+      ]
+    },
+    "CITC::OnNormalItemResult#SetZzimFailed": {
+      "address": "0x5a4e31",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x2A SetZzimFailed arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultSetZzimFailed.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x2A SetZzimFailed)"
+        }
+      ]
+    },
+    "CITC::OnNormalItemResult#DeleteZzimDone": {
+      "address": "0x5a4e66",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x2B DeleteZzimDone arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultDeleteZzimDone.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x2B DeleteZzimDone)"
+        }
+      ]
+    },
+    "CITC::OnNormalItemResult#DeleteZzimFailed": {
+      "address": "0x5a4e91",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x2C DeleteZzimFailed arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultDeleteZzimFailed.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x2C DeleteZzimFailed)"
+        }
+      ]
+    },
+    "CITC::OnNormalItemResult#LoadWishSaleListFailed": {
+      "address": "0x5a4fdc",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x2E LoadWishSaleListFailed arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultLoadWishSaleListFailed.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x2E LoadWishSaleListFailed)"
+        }
+      ]
+    },
+    "CITC::OnNormalItemResult#BuyWishDone": {
+      "address": "0x5a5011",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x2F BuyWishDone arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultBuyWishDone.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x2F BuyWishDone)"
+        }
+      ]
+    },
+    "CITC::OnNormalItemResult#BuyWishFailed": {
+      "address": "0x5a503c",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x30 BuyWishFailed arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultBuyWishFailed.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x30 BuyWishFailed)"
+        }
+      ]
+    },
+    "CITC::OnNormalItemResult#CancelWishDone": {
+      "address": "0x5a5071",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x31 CancelWishDone arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultCancelWishDone.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x31 CancelWishDone)"
+        }
+      ]
+    },
+    "CITC::OnNormalItemResult#CancelWishFailed": {
+      "address": "0x5a50df",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x32 CancelWishFailed arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultCancelWishFailed.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x32 CancelWishFailed)"
+        }
+      ]
+    },
+    "CITC::OnNormalItemResult#BuyItemDone": {
+      "address": "0x5a5114",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x33 BuyItemDone arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultBuyItemDone.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x33 BuyItemDone)"
+        }
+      ]
+    },
+    "CITC::OnNormalItemResult#BuyItemFailed": {
+      "address": "0x5a513f",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x34 BuyItemFailed arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultBuyItemFailed.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x34 BuyItemFailed)"
+        }
+      ]
+    },
+    "CITC::OnNormalItemResult#BuyZzimItemDone": {
+      "address": "0x5a5174",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x35 BuyZzimItemDone arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultBuyZzimItemDone.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x35 BuyZzimItemDone)"
+        }
+      ]
+    },
+    "CITC::OnNormalItemResult#BuyZzimItemFailed": {
+      "address": "0x5a519f",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x36 BuyZzimItemFailed arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultBuyZzimItemFailed.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x36 BuyZzimItemFailed)"
+        }
+      ]
+    },
+    "CITC::OnNormalItemResult#RegisterWishItemDone": {
+      "address": "0x5a51d4",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x37 RegisterWishItemDone arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultRegisterWishItemDone.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x37 RegisterWishItemDone)"
+        }
+      ]
+    },
+    "CITC::OnNormalItemResult#RegisterWishItemFailed": {
+      "address": "0x5a5209",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x38 RegisterWishItemFailed arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultRegisterWishItemFailed.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x38 RegisterWishItemFailed)"
+        }
+      ]
+    },
+    "CITC::OnNormalItemResult#BidAuctionFailed": {
+      "address": "0x5a5444",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x3C BidAuctionFailed arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultBidAuctionFailed.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x3C BidAuctionFailed)"
+        }
+      ]
+    },
+    "CITC::OnNormalItemResult#GetItcListFailed": {
+      "address": "0x5a4882",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x16 GetItcListFailed arm of CITC::OnNormalItemResult. Reason-shape: the sub-handler reads Decode1(mode) then Decode1(reason) (the reason==73/65 transfer-field re-send branches read NO further bytes). Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultGetItcListFailed.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x16 GetItcListFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "Decode1 fail reason -> NoticeFailReason"
+        }
+      ]
+    },
+    "CITC::OnNormalItemResult#GetSearchItcListFailed": {
+      "address": "0x5a49e3",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x18 GetSearchItcListFailed arm of CITC::OnNormalItemResult. Reason-shape: the sub-handler reads Decode1(mode) then Decode1(reason) (the reason==73/65 transfer-field re-send branches read NO further bytes). Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultGetSearchItcListFailed.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x18 GetSearchItcListFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "Decode1 fail reason -> NoticeFailReason"
+        }
+      ]
+    },
+    "CITC::OnNormalItemResult#SaleCurrentItemToWishFailed": {
+      "address": "0x5a46f0",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x20 SaleCurrentItemToWishFailed arm of CITC::OnNormalItemResult. Reason-shape: the sub-handler reads Decode1(mode) then Decode1(reason) (the reason==73/65 transfer-field re-send branches read NO further bytes). Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultSaleCurrentItemToWishFailed.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x20 SaleCurrentItemToWishFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "Decode1 fail reason -> reason-keyed StringPool notice"
+        }
+      ]
+    },
+    "CITC::OnNormalItemResult#GetUserPurchaseItemFailed": {
+      "address": "0x5a4c2a",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x22 GetUserPurchaseItemFailed arm of CITC::OnNormalItemResult. Reason-shape: the sub-handler reads Decode1(mode) then Decode1(reason) (the reason==73/65 transfer-field re-send branches read NO further bytes). Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultGetUserPurchaseItemFailed.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x22 GetUserPurchaseItemFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "Decode1 fail reason -> NoticeFailReason"
+        }
+      ]
+    },
+    "CITC::OnNormalItemResult#GetUserSaleItemFailed": {
+      "address": "0x5a4ce7",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x24 GetUserSaleItemFailed arm of CITC::OnNormalItemResult. Reason-shape: the sub-handler reads Decode1(mode) then Decode1(reason) (the reason==73/65 transfer-field re-send branches read NO further bytes). Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultGetUserSaleItemFailed.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x24 GetUserSaleItemFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "Decode1 fail reason -> NoticeFailReason"
+        }
+      ]
+    },
+    "CITC::OnNormalItemResult#CancelSaleItemFailed": {
+      "address": "0x5a4d49",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x26 CancelSaleItemFailed arm of CITC::OnNormalItemResult. Reason-shape: the sub-handler reads Decode1(mode) then Decode1(reason) (the reason==73/65 transfer-field re-send branches read NO further bytes). Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultCancelSaleItemFailed.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x26 CancelSaleItemFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "Decode1 fail reason -> NoticeFailReason"
+        }
+      ]
+    },
+    "CITC::OnNormalItemResult#MoveItcPurchaseItemLtoSFailed": {
+      "address": "0x5a4dcf",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x28 MoveItcPurchaseItemLtoSFailed arm of CITC::OnNormalItemResult. Reason-shape: the sub-handler reads Decode1(mode) then Decode1(reason) (the reason==73/65 transfer-field re-send branches read NO further bytes). Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultMoveItcPurchaseItemLtoSFailed.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x28 MoveItcPurchaseItemLtoSFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "Decode1 fail reason -> NoticeFailReason"
+        }
+      ]
+    },
+    "CITC::OnNormalItemResult#MoveItcPurchaseItemLtoSDone": {
+      "address": "0x5a4d68",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x27 MoveItcPurchaseItemLtoSDone arm of CITC::OnNormalItemResult. TwoInts-shape: the sub-handler reads Decode1(mode) then Decode4 then Decode4. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultMoveItcPurchaseItemLtoSDone.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x27 MoveItcPurchaseItemLtoSDone)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "Decode4 tab (-> CCtrlTab::SetTab(tab-1))"
+        },
+        {
+          "op": "Decode4",
+          "comment": "Decode4 selectedNo"
+        }
+      ]
+    },
+    "CITC::OnNormalItemResult#NotifyCancelWishResult": {
+      "address": "0x5a523e",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x3D NotifyCancelWishResult arm of CITC::OnNormalItemResult. TwoInts-shape: the sub-handler reads Decode1(mode) then Decode4 then Decode4. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultNotifyCancelWishResult.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x3D NotifyCancelWishResult)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "Decode4 first notice count"
+        },
+        {
+          "op": "Decode4",
+          "comment": "Decode4 second notice count"
+        }
+      ]
+    },
+    "CITC::OnNormalItemResult#RegisterSaleEntryFailed": {
+      "address": "0x5a4581",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096 iter 5): 0x1E RegisterSaleEntryFailed arm of CITC::OnNormalItemResult. Reads Decode1(reason) -> NoticeFailReason; ONLY when reason==0x48 (sale-limit) it then reads a trailing Decode2 sale-limit short (Format StringPool 0x12BB). The trailing Decode2 is the maximal (reason==0x48) read shape the codec encodes; the cell is byte-fixture verified for both the plain and sale-limit reasons. Maps atlas field/clientbound MtsResultRegisterSaleEntryFailed.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x1E RegisterSaleEntryFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "fail reason byte -> NoticeFailReason"
+        },
+        {
+          "op": "Decode2",
+          "comment": "sale-limit count (reason==0x48 branch only)"
+        }
+      ]
+    },
+    "CITC::OnNormalItemResult#SuccessBidInfo": {
+      "address": "0x5a52de",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096 iter 5): 0x3E SuccessBidInfoResult arm of CITC::OnNormalItemResult. Reads Decode1(soldFlag) + Decode4(itemId); ONLY when itemId>0 it then reads Decode4(price) + DecodeBuffer(8) FILETIME contract date. The trailing Decode4+DecodeBuffer(8) is the maximal (itemId>0) read shape the codec encodes; the cell is byte-fixture verified for both the no-item and with-item paths. Maps atlas field/clientbound MtsResultSuccessBidInfo.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x3E SuccessBidInfoResult)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "sold(1)/bought flag -> StringPool 0x12AA/0x12AB"
+        },
+        {
+          "op": "Decode4",
+          "comment": "ITC item id; <=0 ends the body"
+        },
+        {
+          "op": "Decode4",
+          "comment": "meso price (itemId>0 branch only)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "8-byte FILETIME contract date (itemId>0 branch only)"
+        }
+      ]
+    },
+    "CField::SendLocationWhisper": {
+      "address": "0x52f9c6",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "!ZXString<char>::operator==(&v11, sWhisperTarget) && <default>"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!ZXString<char>::operator==(&v11, sWhisperTarget) && <default>"
+        }
+      ]
+    },
+    "CField::SendChatMsgWhisper": {
+      "address": "0x52f185",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v9 && ZXString<char>::operator==(v11, (dword_BED738 + 4 * i))"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v9 && ZXString<char>::operator==(v11, (dword_BED738 + 4 * i))"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v9 && ZXString<char>::operator==(v11, (dword_BED738 + 4 * i))"
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        }
+      ]
+    },
+    "CUIStatusBar::SendCoupleMessage": {
+      "address": "0x8defff",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        }
+      ]
+    },
+    "CMiniRoomBaseDlg::OnPacketBase#Invite": {
+      "address": "0x65e53b",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (2; dispatch byte)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "roomType (v2)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "name (sInviter)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "dwSN (v3)"
+        }
+      ]
+    },
+    "CMiniRoomBaseDlg::OnPacketBase#InviteResult": {
+      "address": "0x65e848",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (3; dispatch byte)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "result (v1)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "message (sTargetName; ONLY read for result 2/3/4, NOT result 1)"
+        }
+      ]
+    },
+    "CMiniRoomBaseDlg::OnPacketBase#Enter": {
+      "address": "0x65ed1c",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (4; dispatch byte)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "visitor (slot + DecodeAvatar + userID str + jobCode; interaction.Visitor substruct)"
+        }
+      ]
+    },
+    "CMiniRoomBaseDlg::OnPacketBase#EnterResultSuccess": {
+      "address": "0x65dff3",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (5; dispatch byte)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "room (roomType + maxUsers + myPosition + per-slot avatar loop; interaction.Room substruct)"
+        }
+      ]
+    },
+    "CMiniRoomBaseDlg::OnPacketBase#EnterResultError": {
+      "address": "0x65dff3",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (5; dispatch byte)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "discriminator (v1==0 -> error path)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode (switch value)"
+        }
+      ]
+    },
+    "CMiniRoomBaseDlg::OnPacketBase#Leave": {
+      "address": "0x65edb5",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (10; dispatch byte)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "slot (v4)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "status (read by subclass OnLeave; e.g. CTradingRoomDlg)"
+        }
+      ]
+    },
+    "CEntrustedShopDlg::OnRefresh#UpdateMerchant": {
+      "address": "0x518852",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (25; OnPacketBase dispatch byte)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "meso (m_nMoney; this[481]; CEntrustedShopDlg::OnRefresh @0x518852)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "count (this[100]; CPersonalShopDlg::OnRefresh @0x6fcc4e)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "items (count x: Decode2 perBundle, Decode2 quantity, Decode4 price, GW_ItemSlotBase::Decode asset)"
+        }
+      ]
+    },
+    "CITC::OnNormalItemResult#GetItcListDone": {
+      "address": "0x5a48af",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096 iter 6): 0x15 GetITCListDone list arm of CITC::OnNormalItemResult. Reads a count then count*ITCITEM::Decode (collapsed to one loop-guarded opaque representative, mirroring the atlas MtsItem recurse). The full per-field ITCITEM read order is byte-fixture verified (round-trip across all variants). Maps atlas field/clientbound.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x15 GET_ITC_LIST_DONE)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "categoryItemCnt"
+        },
+        {
+          "op": "Decode4",
+          "comment": "pageItemCnt (loop count)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "category"
+        },
+        {
+          "op": "Decode4",
+          "comment": "subCategory"
+        },
+        {
+          "op": "Decode4",
+          "comment": "page"
+        },
+        {
+          "op": "Decode1",
+          "comment": "sortType"
+        },
+        {
+          "op": "Decode1",
+          "comment": "sortColumn"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "ITCITEM::Decode entry (repeated per loop count): opaque GW_ItemSlotBase blob (Decode1 type + RawDecode; model.Asset recurse) then Decode4 nITCSN/nPrice/nContractFee, DecodeStr txid/rollback, DecodeBuffer(8) ftExpired, DecodeStr user/game/comment, Decode4 nBidCount/Range/Price/Min/Max/Unit, Decode2 nProcessStatus. Whole entry opaque to the flat differ (MtsItem recurse collapses) — byte-fixture verified.",
+          "guard": "loop items"
+        },
+        {
+          "op": "Decode1",
+          "comment": "requestSent flag"
+        }
+      ]
+    },
+    "CITC::OnNormalItemResult#GetSearchItcListDone": {
+      "address": "0x5a4a02",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096 iter 6): 0x17 GetSearchITCListDone list arm of CITC::OnNormalItemResult. Reads a count then count*ITCITEM::Decode (collapsed to one loop-guarded opaque representative, mirroring the atlas MtsItem recurse). The full per-field ITCITEM read order is byte-fixture verified (round-trip across all variants). Maps atlas field/clientbound.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x17 GET_SEARCH_ITC_LIST_DONE)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "categoryItemCnt"
+        },
+        {
+          "op": "Decode4",
+          "comment": "pageItemCnt (loop count)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "category"
+        },
+        {
+          "op": "Decode4",
+          "comment": "subCategory"
+        },
+        {
+          "op": "Decode4",
+          "comment": "page"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "ITCITEM::Decode entry (repeated per loop count): opaque GW_ItemSlotBase blob (Decode1 type + RawDecode; model.Asset recurse) then Decode4 nITCSN/nPrice/nContractFee, DecodeStr txid/rollback, DecodeBuffer(8) ftExpired, DecodeStr user/game/comment, Decode4 nBidCount/Range/Price/Min/Max/Unit, Decode2 nProcessStatus. Whole entry opaque to the flat differ (MtsItem recurse collapses) — byte-fixture verified.",
+          "guard": "loop items"
+        }
+      ]
+    },
+    "CITC::OnNormalItemResult#GetUserPurchaseItemDone": {
+      "address": "0x5a4af3",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096 iter 6): 0x21 GetUserPurchaseItemDone list arm of CITC::OnNormalItemResult. Reads a count then count*ITCITEM::Decode (collapsed to one loop-guarded opaque representative, mirroring the atlas MtsItem recurse). The full per-field ITCITEM read order is byte-fixture verified (round-trip across all variants). Maps atlas field/clientbound.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x21 GET_USER_PURCHASE_ITEM_DONE)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "totalCount (loop count)"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "ITCITEM::Decode entry (repeated per loop count): opaque GW_ItemSlotBase blob (Decode1 type + RawDecode; model.Asset recurse) then Decode4 nITCSN/nPrice/nContractFee, DecodeStr txid/rollback, DecodeBuffer(8) ftExpired, DecodeStr user/game/comment, Decode4 nBidCount/Range/Price/Min/Max/Unit, Decode2 nProcessStatus. Whole entry opaque to the flat differ (MtsItem recurse collapses) — byte-fixture verified.",
+          "guard": "loop items"
+        },
+        {
+          "op": "Decode4",
+          "comment": "limitedCount"
+        },
+        {
+          "op": "Decode1",
+          "comment": "requestSent flag"
+        }
+      ]
+    },
+    "CITC::OnNormalItemResult#GetUserSaleItemDone": {
+      "address": "0x5a4c57",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096 iter 6): 0x23 GetUserSaleItemDone list arm of CITC::OnNormalItemResult. Reads a count then count*ITCITEM::Decode (collapsed to one loop-guarded opaque representative, mirroring the atlas MtsItem recurse). The full per-field ITCITEM read order is byte-fixture verified (round-trip across all variants). Maps atlas field/clientbound.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x23 GET_USER_SALE_ITEM_DONE)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "totalCount (loop count)"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "ITCITEM::Decode entry (repeated per loop count): opaque GW_ItemSlotBase blob (Decode1 type + RawDecode; model.Asset recurse) then Decode4 nITCSN/nPrice/nContractFee, DecodeStr txid/rollback, DecodeBuffer(8) ftExpired, DecodeStr user/game/comment, Decode4 nBidCount/Range/Price/Min/Max/Unit, Decode2 nProcessStatus. Whole entry opaque to the flat differ (MtsItem recurse collapses) — byte-fixture verified.",
+          "guard": "loop items"
+        }
+      ]
+    },
+    "CITC::OnNormalItemResult#LoadWishSaleListDone": {
+      "address": "0x5a4ec6",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096 iter 6): 0x2D LoadWishSaleListDone list arm of CITC::OnNormalItemResult. Reads a count then count*ITCITEM::Decode (collapsed to one loop-guarded opaque representative, mirroring the atlas MtsItem recurse). The full per-field ITCITEM read order is byte-fixture verified (round-trip across all variants). Maps atlas field/clientbound.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x2D LOAD_WISH_SALE_LIST_DONE)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "totalCount (loop count)"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "ITCITEM::Decode entry (repeated per loop count): opaque GW_ItemSlotBase blob (Decode1 type + RawDecode; model.Asset recurse) then Decode4 nITCSN/nPrice/nContractFee, DecodeStr txid/rollback, DecodeBuffer(8) ftExpired, DecodeStr user/game/comment, Decode4 nBidCount/Range/Price/Min/Max/Unit, Decode2 nProcessStatus. Whole entry opaque to the flat differ (MtsItem recurse collapses) — byte-fixture verified.",
+          "guard": "loop items"
+        }
+      ]
+    },
+    "CShopDlg::OnPacket#OverLevelRequirement": {
+      "address": "0x756da7",
+      "direction": "clientbound",
+      "notes": "Discrete per-mode arm split from CShopDlg::OnPacket#LevelRequirement (task-096). Same v83 CShopDlg::OnPacket@0x756da7 (nType==0x132) case 14 (0x756f81): Decode1(mode)+Decode4(level) formatted into an over-level-requirement Notice. Atlas ShopOperationOverLevelRequirement writes Byte(mode)+Int(levelLimit). Mode 14 per npc_shop_operation.yaml.",
+      "dispatch": [
+        {
+          "discriminator": "nType",
+          "case": 306
+        }
+      ],
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (over level-requirement sub-op: v83 case 14)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "levelLimit (case 14 @0x756f81)"
+        }
+      ]
+    },
+    "CShopDlg::OnPacket#UnderLevelRequirement": {
+      "address": "0x756da7",
+      "direction": "clientbound",
+      "notes": "Discrete per-mode arm split from CShopDlg::OnPacket#LevelRequirement (task-096). Same v83 CShopDlg::OnPacket@0x756da7 (nType==0x132) case 15 (0x756ffd): Decode1(mode)+Decode4(level) formatted into an under-level-requirement Notice. Atlas ShopOperationUnderLevelRequirement writes Byte(mode)+Int(levelLimit). Mode 15 per npc_shop_operation.yaml.",
+      "dispatch": [
+        {
+          "discriminator": "nType",
+          "case": 306
+        }
+      ],
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (under level-requirement sub-op: v83 case 15)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "levelLimit (case 15 @0x756ffd)"
+        }
+      ]
+    },
+    "CShopDlg::OnPacket#GenericErrorWithReason": {
+      "address": "0x756da7",
+      "direction": "clientbound",
+      "notes": "Discrete per-mode arm split from the shared generic-error shape (task-096). Same v83 CShopDlg::OnPacket@0x756da7 (nType==0x132) case 17 (0x756f1b): Decode1(hasReason)!=0 -> DecodeStr(reason) shown as Notice. Atlas ShopOperationGenericErrorWithReason writes Byte(mode)+Bool(true)+AsciiString(reason). Mode 17 (gms) per npc_shop_operation.yaml.",
+      "dispatch": [
+        {
+          "discriminator": "nType",
+          "case": 306
+        }
+      ],
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (generic-error-with-reason sub-op: v83 case 17)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "hasReason flag (1 -> reason string follows)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "reason (DecodeStr; shown as the Notice text)"
+        }
+      ]
     }
   }
 }

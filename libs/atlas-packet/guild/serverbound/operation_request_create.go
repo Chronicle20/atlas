@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// packet-audit:fname CField::InputGuildName
 type RequestCreate struct {
 	name string
 }

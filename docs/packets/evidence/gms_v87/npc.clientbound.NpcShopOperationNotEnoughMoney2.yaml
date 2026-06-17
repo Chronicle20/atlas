@@ -1,0 +1,8 @@
+packet: npc/clientbound/NpcShopOperationNotEnoughMoney2
+direction: clientbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CShopDlg::OnPacket#NotEnoughMoney2
+    address: "0x7a290d"
+    decompile_sha256: c7200a1206a6c67d697fd18f3ad454f86da77e0414ca5eceed9c80ffed1985c8

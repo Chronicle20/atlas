@@ -33,6 +33,7 @@ const SummonDamageHandle = "SummonDamageHandle"
 // prior Cosmic-derived decoder; the ASM (v83 Encode1@0x7a62f4 / 0x7a62a8) proves
 // both exist on v83. The dir byte is consumed but not surfaced (the server does
 // not need it).
+// packet-audit:fname CSummonedPool::OnHit
 type Damage struct {
 	summonId      uint32
 	attackIdx     byte

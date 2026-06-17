@@ -1,0 +1,8 @@
+packet: field/clientbound/FieldTournamentCharacters
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CField_Tournament::OnPacket
+    address: "0x5cfd46"
+    decompile_sha256: 7f776d0e7c209eb3895f052058d190907fbc4ea7d3606d1e977ce9b05e33365b

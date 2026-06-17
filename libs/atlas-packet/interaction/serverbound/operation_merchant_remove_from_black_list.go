@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// packet-audit:fname CEntrustedShopDlg::DeleteBlackList
 type OperationMerchantRemoveFromBlackList struct {
 	name string
 }

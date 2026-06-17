@@ -12,6 +12,7 @@ import (
 const CashShopOperationSetWishlistHandle = "CashShopOperationSetWishlistHandle"
 
 // ShopOperationSetWishlist - CCashShop::SendSetWishList
+// packet-audit:fname CCashShop::OnSetWish
 type ShopOperationSetWishlist struct {
 	serialNumbers []uint32
 }

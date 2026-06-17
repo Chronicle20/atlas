@@ -1,0 +1,8 @@
+packet: interaction/clientbound/InteractionInteractionEnterResultError
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CMiniRoomBaseDlg::OnPacketBase#EnterResultError
+    address: "0x673e5c"
+    decompile_sha256: a51548003404958a7ae1761c3caa4f34a107c8296593bc035a6c0725c4899a99

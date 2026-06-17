@@ -1,0 +1,8 @@
+packet: field/clientbound/FieldSetQuestTime
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnSetQuestTime
+    address: "0x5378cd"
+    decompile_sha256: 2db6316412130cd32d81dca74df8d676e72de53a3cb9454b58c15d6c53e552fe

@@ -3,6 +3,6 @@ direction: clientbound
 version: gms_v95
 category: TIER1-FIXTURE
 ida:
-    function: CPersonalShopDlg::OnRefresh#UpdateMerchant
+    function: CEntrustedShopDlg::OnRefresh#UpdateMerchant
     address: "0x51cc30"
-    decompile_sha256: f52c5f15b152ba9841c52752efe99759a216ee37c23459dade08733f1f94da57
+    decompile_sha256: 3d9d80bd3530d9e214021be37d44e97baa6dd11d3ad33c444f20f81da4922017

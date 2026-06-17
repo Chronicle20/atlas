@@ -1,0 +1,14 @@
+# NoteOperation — CWvsContext::OnMemoResult per-version mode table.
+# Version-STABLE: switch cases {3,4,5,7} byte-identical in v83 (0xa2508b) and v95
+# (0x9f9da0), IDA-verified. All 4 keys match the seeded gms_83 table:
+# 3=CreateNewMemo (show), 4=Notice (send success), 5=Decode1+Notice (send error),
+# 7=OnMemoNotify (refresh/receive).
+writer: NoteOperation
+fname: CWvsContext::OnMemoResult
+op: NOTE
+direction: clientbound
+operations:
+  - { key: SHOW,         modes: { gms_v83: 3, gms_v84: 3, gms_v87: 3, gms_v95: 3, jms_v185: 3 } }
+  - { key: SEND_SUCCESS, modes: { gms_v83: 4, gms_v84: 4, gms_v87: 4, gms_v95: 4, jms_v185: 4 } }
+  - { key: SEND_ERROR,   modes: { gms_v83: 5, gms_v84: 5, gms_v87: 5, gms_v95: 5, jms_v185: 5 } }
+  - { key: REFRESH,      modes: { gms_v83: 7, gms_v84: 7, gms_v87: 7, gms_v95: 7, jms_v185: 7 } }

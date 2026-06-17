@@ -33,6 +33,8 @@ const MonsterSpecialEffectBySkillWriter = "MonsterSpecialEffectBySkill"
 //     v7 = Decode2; tDelay = v7` — three wire fields. The extra user-id + delay are
 //     a GMS-95 addition (jms v185, though numerically > 95, keeps the single-field
 //     shape), so the branch gates on GMS region AND major >= 95.
+//
+// packet-audit:fname CMob::OnSpecialEffectBySkill
 type MonsterSpecialEffectBySkill struct {
 	skillId     int32
 	characterId int32

@@ -1,0 +1,8 @@
+packet: field/clientbound/FieldFieldObstacleOnOff
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnFieldObstacleOnOff
+    address: "0x57026d"
+    decompile_sha256: 647ccfd0a20d51b4fc350265cafa77a6038f50f29165fa71a77cf4b0bc67ec82

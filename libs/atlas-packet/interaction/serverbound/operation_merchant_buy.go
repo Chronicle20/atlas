@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// packet-audit:fname CPersonalShopDlg::BuyItem#Merchant
 type OperationMerchantBuy struct {
 	index    byte
 	quantity uint16

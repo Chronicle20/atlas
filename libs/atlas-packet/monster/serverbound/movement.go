@@ -13,6 +13,7 @@ import (
 
 const MonsterMovementHandle = "MonsterMovementHandle"
 
+// packet-audit:fname CMob::GenerateMovePath
 type MovementRequest struct {
 	uniqueId              uint32
 	moveId                int16

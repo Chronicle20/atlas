@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldMtsResultLoadWishSaleListDone
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CITC::OnNormalItemResult#LoadWishSaleListDone
+    address: "0x5a4ec6"
+    decompile_sha256: e0977730965076c7ae86b8cf64a7f91873779145741c8eaa190aef29492f300c
+verifies:
+  - libs/atlas-packet/field/clientbound/mts_operation_list_test.go#TestMtsResultLoadWishSaleListDoneGolden

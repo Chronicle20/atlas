@@ -24,6 +24,7 @@ type GuildMemberInfo struct {
 	AllianceTitle byte
 }
 
+// packet-audit:fname CWvsContext::OnGuildResult#Info
 type Info struct {
 	inGuild             bool
 	guildId             uint32

@@ -21,6 +21,7 @@ const (
 	CakePieEventTimerClock ClockType = 0x64
 )
 
+// packet-audit:fname CField::OnClock
 type Clock struct {
 	clockType ClockType
 	seconds   uint32

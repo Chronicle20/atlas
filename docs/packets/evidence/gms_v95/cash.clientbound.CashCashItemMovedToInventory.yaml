@@ -1,0 +1,10 @@
+packet: cash/clientbound/CashCashItemMovedToInventory
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnCashItemResult#CashItemMovedToInventory
+    address: "0x495050"
+    decompile_sha256: 0eb0b6d965281058be7cba6355b4842705213bfd56d9a09d134df399e5b1ddf2
+verifies:
+    - libs/atlas-packet/cash/clientbound/shop_item_moved_test.go#TestCashItemMovedToInventoryBytePrefix

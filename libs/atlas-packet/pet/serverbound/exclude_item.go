@@ -12,6 +12,7 @@ import (
 
 const PetItemExcludeHandle = "PetItemExcludeHandle"
 
+// packet-audit:fname CPet::SendUpdateExceptionListRequest
 type ExcludeItem struct {
 	petId   uint64
 	itemIds []int32

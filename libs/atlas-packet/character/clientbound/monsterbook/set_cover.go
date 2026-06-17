@@ -11,6 +11,7 @@ import (
 const MonsterBookSetCoverWriter = "MonsterBookSetCover"
 
 // SetCover - body of monster book cover-changed packet (0x54).
+// packet-audit:fname CWvsContext::OnMonsterBookSetCover
 type SetCover struct {
 	CardId uint32
 }

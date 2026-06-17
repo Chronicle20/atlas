@@ -1,0 +1,21 @@
+{
+  "WriterName": "FieldSlideRequest",
+  "IDAName": "CField::SendChatMsgSlash#SlideRequest",
+  "Address": "0x542439",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/field/serverbound/slide_request.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

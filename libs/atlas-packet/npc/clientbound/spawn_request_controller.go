@@ -11,6 +11,7 @@ import (
 
 const NpcSpawnRequestControllerWriter = "SpawnNPCRequestController"
 
+// packet-audit:fname CNpcPool::OnNpcChangeController
 type SpawnRequestController struct {
 	id       uint32
 	template uint32

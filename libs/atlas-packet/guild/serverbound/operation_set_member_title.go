@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// packet-audit:fname CTabGuildAlliance::OnGradeChange
 type SetMemberTitle struct {
 	targetId uint32
 	newTitle byte

@@ -1,0 +1,53 @@
+# MtsOperation - CITC::OnNormalItemResult per-version mode table.
+#
+# SOURCE OF TRUTH for the MtsOperation writer (the MTS / item-trading-center
+# "normal item result" dispatcher). Unlike the cash-shop enum, the CITC result
+# mode enum is VERSION-STABLE: the switch (cases 0x15..0x3E) is byte-identical in
+# gms_v83 (0x5a4311), gms_v87 (0x5d43d0), gms_v95 (0x5771d0) - IDA-verified.
+# jms_v185 has no MTS_OPERATION op (registry-absent) - omitted.
+#
+# Atlas registers the MtsOperation writer but has no MTS feature emitting it yet;
+# the codec is stubbed config-driven (resolves the mode from this table via
+# WithResolvedCode), consistent with the other dispatcher families, so a future
+# MTS implementation sends the version-correct mode for the chosen result key.
+
+writer: MtsOperation
+fname: CITC::OnNormalItemResult
+op: MTS_OPERATION
+direction: clientbound
+operations:
+  - { key: GET_ITC_LIST_DONE,               modes: { gms_v83: 21, gms_v84: 21, gms_v87: 21, gms_v95: 21 } }
+  - { key: GET_ITC_LIST_FAILED,             modes: { gms_v83: 22, gms_v84: 22, gms_v87: 22, gms_v95: 22 } }
+  - { key: GET_SEARCH_ITC_LIST_DONE,        modes: { gms_v83: 23, gms_v84: 23, gms_v87: 23, gms_v95: 23 } }
+  - { key: GET_SEARCH_ITC_LIST_FAILED,      modes: { gms_v83: 24, gms_v84: 24, gms_v87: 24, gms_v95: 24 } }
+  - { key: REGISTER_SALE_ENTRY_DONE,        modes: { gms_v83: 29, gms_v84: 29, gms_v87: 29, gms_v95: 29 } }
+  - { key: REGISTER_SALE_ENTRY_FAILED,      modes: { gms_v83: 30, gms_v84: 30, gms_v87: 30, gms_v95: 30 } }
+  - { key: SALE_CURRENT_ITEM_TO_WISH_DONE,  modes: { gms_v83: 31, gms_v84: 31, gms_v87: 31, gms_v95: 31 } }
+  - { key: SALE_CURRENT_ITEM_TO_WISH_FAILED, modes: { gms_v83: 32, gms_v84: 32, gms_v87: 32, gms_v95: 32 } }
+  - { key: GET_USER_PURCHASE_ITEM_DONE,     modes: { gms_v83: 33, gms_v84: 33, gms_v87: 33, gms_v95: 33 } }
+  - { key: GET_USER_PURCHASE_ITEM_FAILED,   modes: { gms_v83: 34, gms_v84: 34, gms_v87: 34, gms_v95: 34 } }
+  - { key: GET_USER_SALE_ITEM_DONE,         modes: { gms_v83: 35, gms_v84: 35, gms_v87: 35, gms_v95: 35 } }
+  - { key: GET_USER_SALE_ITEM_FAILED,       modes: { gms_v83: 36, gms_v84: 36, gms_v87: 36, gms_v95: 36 } }
+  - { key: CANCEL_SALE_ITEM_DONE,           modes: { gms_v83: 37, gms_v84: 37, gms_v87: 37, gms_v95: 37 } }
+  - { key: CANCEL_SALE_ITEM_FAILED,         modes: { gms_v83: 38, gms_v84: 38, gms_v87: 38, gms_v95: 38 } }
+  - { key: MOVE_ITC_PURCHASE_ITEM_LTOS_DONE, modes: { gms_v83: 39, gms_v84: 39, gms_v87: 39, gms_v95: 39 } }
+  - { key: MOVE_ITC_PURCHASE_ITEM_LTOS_FAILED, modes: { gms_v83: 40, gms_v84: 40, gms_v87: 40, gms_v95: 40 } }
+  - { key: SET_ZZIM_DONE,                   modes: { gms_v83: 41, gms_v84: 41, gms_v87: 41, gms_v95: 41 } }
+  - { key: SET_ZZIM_FAILED,                 modes: { gms_v83: 42, gms_v84: 42, gms_v87: 42, gms_v95: 42 } }
+  - { key: DELETE_ZZIM_DONE,                modes: { gms_v83: 43, gms_v84: 43, gms_v87: 43, gms_v95: 43 } }
+  - { key: DELETE_ZZIM_FAILED,              modes: { gms_v83: 44, gms_v84: 44, gms_v87: 44, gms_v95: 44 } }
+  - { key: LOAD_WISH_SALE_LIST_DONE,        modes: { gms_v83: 45, gms_v84: 45, gms_v87: 45, gms_v95: 45 } }
+  - { key: LOAD_WISH_SALE_LIST_FAILED,      modes: { gms_v83: 46, gms_v84: 46, gms_v87: 46, gms_v95: 46 } }
+  - { key: BUY_WISH_DONE,                   modes: { gms_v83: 47, gms_v84: 47, gms_v87: 47, gms_v95: 47 } }
+  - { key: BUY_WISH_FAILED,                 modes: { gms_v83: 48, gms_v84: 48, gms_v87: 48, gms_v95: 48 } }
+  - { key: CANCEL_WISH_DONE,                modes: { gms_v83: 49, gms_v84: 49, gms_v87: 49, gms_v95: 49 } }
+  - { key: CANCEL_WISH_FAILED,              modes: { gms_v83: 50, gms_v84: 50, gms_v87: 50, gms_v95: 50 } }
+  - { key: BUY_ITEM_DONE,                   modes: { gms_v83: 51, gms_v84: 51, gms_v87: 51, gms_v95: 51 } }
+  - { key: BUY_ITEM_FAILED,                 modes: { gms_v83: 52, gms_v84: 52, gms_v87: 52, gms_v95: 52 } }
+  - { key: BUY_ZZIM_ITEM_DONE,              modes: { gms_v83: 53, gms_v84: 53, gms_v87: 53, gms_v95: 53 } }
+  - { key: BUY_ZZIM_ITEM_FAILED,            modes: { gms_v83: 54, gms_v84: 54, gms_v87: 54, gms_v95: 54 } }
+  - { key: REGISTER_WISH_ITEM_DONE,         modes: { gms_v83: 55, gms_v84: 55, gms_v87: 55, gms_v95: 55 } }
+  - { key: REGISTER_WISH_ITEM_FAILED,       modes: { gms_v83: 56, gms_v84: 56, gms_v87: 56, gms_v95: 56 } }
+  - { key: BID_AUCTION_FAILED,              modes: { gms_v83: 60, gms_v84: 60, gms_v87: 60, gms_v95: 60 } }
+  - { key: NOTIFY_CANCEL_WISH_RESULT,       modes: { gms_v83: 61, gms_v84: 61, gms_v87: 61, gms_v95: 61 } }
+  - { key: SUCCESS_BID_INFO_RESULT,         modes: { gms_v83: 62, gms_v84: 62, gms_v87: 62, gms_v95: 62 } }

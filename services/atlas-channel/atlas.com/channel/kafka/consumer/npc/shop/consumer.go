@@ -16,11 +16,11 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	npcpkt "github.com/Chronicle20/atlas/libs/atlas-packet/npc/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
-	npcpkt "github.com/Chronicle20/atlas/libs/atlas-packet/npc/clientbound"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -102,16 +102,36 @@ func handleErrorStatusEvent(sc server.Model, wp writer.Producer) message.Handler
 		}
 
 		var bp packet.Encode
-		if e.Body.Error == npcpkt.NPCShopOperationOverLevelRequirement {
+		switch e.Body.Error {
+		case npcpkt.NPCShopOperationOk:
+			bp = npcpkt.NPCShopOperationOkBody()
+		case npcpkt.NPCShopOperationOutOfStock:
+			bp = npcpkt.NPCShopOperationOutOfStockBody()
+		case npcpkt.NPCShopOperationNotEnoughMoney:
+			bp = npcpkt.NPCShopOperationNotEnoughMoneyBody()
+		case npcpkt.NPCShopOperationInventoryFull:
+			bp = npcpkt.NPCShopOperationInventoryFullBody()
+		case npcpkt.NPCShopOperationOutOfStock2:
+			bp = npcpkt.NPCShopOperationOutOfStock2Body()
+		case npcpkt.NPCShopOperationOutOfStock3:
+			bp = npcpkt.NPCShopOperationOutOfStock3Body()
+		case npcpkt.NPCShopOperationNotEnoughMoney2:
+			bp = npcpkt.NPCShopOperationNotEnoughMoney2Body()
+		case npcpkt.NPCShopOperationNeedMoreItems:
+			bp = npcpkt.NPCShopOperationNeedMoreItemsBody()
+		case npcpkt.NPCShopOperationTradeLimit:
+			bp = npcpkt.NPCShopOperationTradeLimitBody()
+		case npcpkt.NPCShopOperationOverLevelRequirement:
 			bp = npcpkt.NPCShopOperationOverLevelRequirementBody(e.Body.LevelLimit)
-		} else if e.Body.Error == npcpkt.NPCShopOperationUnderLevelRequirement {
+		case npcpkt.NPCShopOperationUnderLevelRequirement:
 			bp = npcpkt.NPCShopOperationUnderLevelRequirementBody(e.Body.LevelLimit)
-		} else if e.Body.Error == npcpkt.NPCShopOperationGenericError {
+		case npcpkt.NPCShopOperationGenericError:
 			bp = npcpkt.NPCShopOperationGenericErrorBody()
-		} else if e.Body.Error == npcpkt.NPCShopOperationGenericErrorWithReason {
+		case npcpkt.NPCShopOperationGenericErrorWithReason:
 			bp = npcpkt.NPCShopOperationGenericErrorWithReasonBody(e.Body.Reason)
-		} else {
-			bp = npcpkt.NPCShopOperationBody(e.Body.Error)
+		default:
+			l.Warnf("Unhandled NPC shop operation error code [%s].", e.Body.Error)
+			return
 		}
 		_ = session.Announce(l)(ctx)(wp)(npcpkt.NPCShopOperationWriter)(bp)(s)
 	}

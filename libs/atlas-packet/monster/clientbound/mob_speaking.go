@@ -21,6 +21,8 @@ const MobSpeakingWriter = "MobSpeaking"
 //
 // IDA basis: CMob::OnMobSpeaking — v83 @0x6711ea, v84 @0x687743, v87 @0x6ac31e,
 // v95 @0x650000, jms @0x6ee398 (`v3 = Decode4; v4 = Decode4; TrySpeaking(v3, v4)`).
+//
+// packet-audit:fname CMob::OnMobSpeaking
 type MobSpeaking struct {
 	speechType int32
 	action     int32

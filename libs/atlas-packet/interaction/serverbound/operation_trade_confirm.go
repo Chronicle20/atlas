@@ -17,6 +17,7 @@ type TradeConfirmEntry struct {
 func (e TradeConfirmEntry) Data() uint32 { return e.data }
 func (e TradeConfirmEntry) Crc() uint32  { return e.crc }
 
+// packet-audit:fname CTradingRoomDlg::Trade
 type OperationTradeConfirm struct {
 	entries []TradeConfirmEntry
 }

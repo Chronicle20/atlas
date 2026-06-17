@@ -36,6 +36,7 @@ const (
 )
 
 // AttackMeleeRequest is CLOSE_RANGE_ATTACK (CUserLocal::TryDoingMeleeAttack).
+// packet-audit:fname CUserLocal::TryDoingNormalAttack
 type AttackMeleeRequest struct {
 	attackInfo model.AttackInfo
 }
@@ -54,6 +55,7 @@ func (m *AttackMeleeRequest) Decode(l logrus.FieldLogger, ctx context.Context) f
 }
 
 // AttackRangedRequest is RANGED_ATTACK (CUserLocal::TryDoingShootAttack).
+// packet-audit:fname CUserLocal::TryDoingShootAttack
 type AttackRangedRequest struct {
 	attackInfo model.AttackInfo
 }
@@ -72,6 +74,7 @@ func (m *AttackRangedRequest) Decode(l logrus.FieldLogger, ctx context.Context) 
 }
 
 // AttackMagicRequest is MAGIC_ATTACK (CUserLocal::TryDoingMagicAttack).
+// packet-audit:fname CUserLocal::TryDoingMagicAttack
 type AttackMagicRequest struct {
 	attackInfo model.AttackInfo
 }
@@ -90,6 +93,7 @@ func (m *AttackMagicRequest) Decode(l logrus.FieldLogger, ctx context.Context) f
 }
 
 // AttackTouchRequest is TOUCH_MONSTER_ATTACK (CUserLocal::TryDoingBodyAttack).
+// packet-audit:fname CUserLocal::TryDoingBodyAttack
 type AttackTouchRequest struct {
 	attackInfo model.AttackInfo
 }

@@ -1,0 +1,8 @@
+packet: cash/clientbound/CashInventoryCapacitySuccess
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnCashItemResult#InventoryCapacitySuccess
+    address: "0x47db98"
+    decompile_sha256: a6d9f006824403a8bf47745ff8f73a96f06a98026781e2d1384e07e05e66845c

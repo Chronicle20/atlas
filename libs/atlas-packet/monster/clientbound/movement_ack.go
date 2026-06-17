@@ -11,6 +11,7 @@ import (
 
 const MonsterMovementAckWriter = "MoveMonsterAck"
 
+// packet-audit:fname CMob::OnCtrlAck
 type MovementAck struct {
 	uniqueId  uint32
 	moveId    int16

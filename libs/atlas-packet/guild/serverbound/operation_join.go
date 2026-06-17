@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// packet-audit:fname CWvsContext::SendGuildJoinMsg
 type Join struct {
 	guildId     uint32
 	characterId uint32

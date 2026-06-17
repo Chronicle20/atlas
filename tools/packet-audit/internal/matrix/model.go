@@ -37,8 +37,9 @@ func TemplatePath(versionKey string) string {
 
 // State is the graded cell state. The declared order is the design §5
 // precedence order (NA < Conflict < Verified < Partial < Incomplete) and is
-// part of the status.json contract — do NOT reorder it. For worst-of
-// comparisons use severity(), not the numeric value.
+// part of the status.json contract — do NOT reorder it; append new states at
+// the END so existing numeric values stay stable. For worst-of comparisons use
+// severity(), not the numeric value.
 type State int
 
 const (
@@ -47,17 +48,29 @@ const (
 	StateVerified
 	StatePartial
 	StateIncomplete
+	// StateFamily: the op is a mode-prefix DISPATCHER (one opcode, a leading
+	// mode/discriminator byte switching to many sub-handlers with distinct
+	// bodies). A byte-fixture proves only the leading byte + the one fixtured
+	// sub-handler — NOT the remaining mode arms — so such an op is capped here
+	// and can never reach ✅ on a single sub-handler. Appended last to preserve
+	// the status.json numeric contract.
+	StateFamily
 )
 
 // severity maps a State to its worst-of rank. Conflict is the most severe
-// (must win the worst-of comparison), then Incomplete, Partial, Verified, NA.
+// (must win the worst-of comparison), then Incomplete, Partial, Family,
+// Verified, NA. Family ranks above Verified so a dispatcher op never presents
+// as verified when any candidate is capped, but below Partial/Incomplete so a
+// genuine gap on the same op still surfaces.
 func severity(s State) int {
 	switch s {
 	case StateConflict:
-		return 4
+		return 5
 	case StateIncomplete:
-		return 3
+		return 4
 	case StatePartial:
+		return 3
+	case StateFamily:
 		return 2
 	case StateVerified:
 		return 1
@@ -76,6 +89,8 @@ func (s State) Symbol() string {
 		return "✅"
 	case StatePartial:
 		return "🟡"
+	case StateFamily:
+		return "🧩"
 	default:
 		return "❌"
 	}
@@ -91,6 +106,8 @@ func (s State) Name() string {
 		return "verified"
 	case StatePartial:
 		return "partial"
+	case StateFamily:
+		return "family"
 	default:
 		return "incomplete"
 	}
@@ -116,6 +133,8 @@ func (s *State) UnmarshalJSON(b []byte) error {
 		*s = StatePartial
 	case "incomplete":
 		*s = StateIncomplete
+	case "family":
+		*s = StateFamily
 	default:
 		return fmt.Errorf("unknown State %q", name)
 	}

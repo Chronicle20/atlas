@@ -12,6 +12,7 @@ import (
 const StorageOperationHandle = "StorageOperationHandle"
 
 // Operation - CStoreBankDlg
+// packet-audit:fname CTrunkDlg::OnPacket#Operation
 type Operation struct {
 	mode byte
 }

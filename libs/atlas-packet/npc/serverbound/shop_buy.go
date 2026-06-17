@@ -10,6 +10,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// packet-audit:fname CShopDlg::SendBuyRequest
 type ShopBuy struct {
 	slot          uint16
 	itemId        uint32

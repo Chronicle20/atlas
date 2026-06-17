@@ -194,3 +194,135 @@ The matrix mechanically enforces "all arms covered": `build.go:32-41` joins all 
 
 ## Bottom line
 All 6 families graduate HONESTLY. families.yaml is de-capped; the worst-of-arms aggregation means each ✅ requires every `#`-arm to carry marker+fresh-evidence; the 35 MTS modes are fully and exactly covered and IDA-confirmed live (dispatcher, an Empty arm, and the conditional SuccessBidInfo body). The single material weakness is CONFIRM_SHOP_TRANSACTION's symmetry-only fixtures — a verification-strength gap, NOT a false pass (the bodies are real). No mode-byte-only false pass found in any graded arm.
+
+---
+
+# Backend Guidelines Audit — discrete-per-mode dispatcher codecs (task-096 split)
+
+- **Scope:** ~93 discrete packet codec structs from splitting shared-by-shape codecs in `libs/atlas-packet/{field,npc,storage,cash}/clientbound/` + body-function layers (`{field,storage,cash}/operation_body.go`, `npc/clientbound/shop_operation_body.go`) + `tools/packet-audit/cmd/run.go` #-entries + the npc/storage channel consumers.
+- **Diff range:** BASE=52ec9f2fa HEAD=982085708
+- **Guidelines source:** backend-dev-guidelines skill. These are immutable packet codec structs (private fields + getters + Encode/Decode/Operation/String), NOT DDD domains — DOM-01..20 (builder/entity/JSON:API/processor) are N/A. Audit focused on: immutability, constructor+Encode+Decode+Operation()+String() consistency vs the reference `npc/clientbound/conversation.go`, DOM-21 (constant/model reuse), copy-paste DRIFT across near-identical structs, and no silent stubs.
+- **Build:** PASS (`go build ./...` clean in `libs/atlas-packet` and `services/atlas-channel/atlas.com/channel`)
+- **Vet:** PASS (`go vet ./...` clean in `libs/atlas-packet`)
+- **Tests:** PASS (`go test ./field/... ./npc/... ./storage/... ./cash/...` all `ok`)
+- **Overall:** PASS
+
+## Verification performed
+
+1. **Per-struct DRIFT sweep** (delegated, exhaustive read of all 7 new codec files, 50 structs): checked wrong mode byte (doc-comment hex vs struct literal vs Encode inline comment), copied-but-unedited doc/fname/String, Encode↔Decode field-order/width symmetry, wrong `Operation()` writer const, mutability leaks, stubs, and duplicate mode bytes within a family. **Zero drift found.**
+2. **Immutability:** all structs have private fields, value-receiver getters, no exported setters; only `Decode` (pointer receiver) mutates — matches the `NpcConversation` reference. PASS.
+3. **DOM-21 (shared-type reuse):** storage assets use `libs/atlas-packet/model.Asset`; storage consumer maps via `libs/atlas-constants/inventory.Type` (`inventory.TypeValueEquip/Use/Setup/ETC/Cash`) — no redeclared inventory enums. PASS.
+4. **No dead code after retirement:** retired shared structs (`MtsResultEmpty/Reason/TwoInts`, storage `ErrorSimple`/`UpdateAssets`, cash `WishList`/`CashShopWishListBody`) have zero remaining references in production code (only retirement-note comments). The unrelated `merchant` family still uses its own `ErrorSimple` — out of scope, untouched. PASS.
+5. **Callers rewired:** cash handlers (`cash_shop_entry.go:104`, `cash_shop_operation.go:70`) updated from `CashShopWishListBody(bool,…)` to discrete `CashShopWishListLoadBody`/`CashShopWishListUpdateBody`. npc + storage consumers map every error code through the discrete body funcs with a `default` warn arm (no silent drop). PASS.
+6. **Test coverage:** per-struct golden-byte + round-trip tests with `packet-audit:verify` IDA markers (19 empty-mode, 7 reason-mode, 2 two-ints, 5 storage, 5 cash, 13 npc). The deleted `mts_operation_body_test.go` (196 lines, tested retired shared structs) is replaced by the new per-struct files. PASS.
+7. **DOM-24 (Kafka producer stub):** N/A — the new/changed `*_test.go` are pure codec encode/decode tests; no `AndEmit`/`message.Emit`/`producer.Produce` and no consumer-handler invocation.
+
+## Findings
+
+### Critical
+None.
+
+### Important
+None.
+
+### Minor
+- **MINOR-1 — `String()` naming inconsistency in the cash family.** Every other family prefixes `String()` with an operation-identifying phrase (e.g. `storage error inventory full mode [%d]` in `storage/clientbound/error_modes.go:44`; `mts buy wish done mode [%d]` in `field/clientbound/mts_result_empty_modes.go:44`; `shop operation OK mode [%d]` in `npc/clientbound/shop_operation.go:32`). The cash structs omit any identifier: `cash/clientbound/shop_operation_result.go:33` (`LoadInventoryFailure.String()` → `"mode [%d] errorCode [%d]"`), `:70` (`InventoryCapacitySuccess`), `:107` (`InventoryCapacityFailed`), `:145` (`WishListLoad`), `:192` (`WishListUpdate`). Log lines from these encoders will be ambiguous (no way to tell which cash arm produced them). Non-blocking; cosmetic. Recommend prefixing each with the arm name to match siblings.
+
+## Notes (verified, not findings)
+- **Mode-byte sourcing differs by family — intentional, not drift.** The field/MTS structs hardcode their mode byte in the constructor (`{mode: 0x1D}` etc.) because the MTS case labels are IDA-verified version-stable across gms_v83/v84/v87/v95 (documented at `field/clientbound/mts_result_empty_modes.go:20-25`). The npc/storage/cash structs take the mode as a constructor arg resolved per-tenant via `WithResolvedCode` in their body funcs. Both patterns are internally consistent and each struct's golden test asserts the exact mode byte.
+- **Field MTS body funcs have no production caller yet** (`field/operation_body.go`). This is documented intentional pre-wiring (`operation_body.go:14-19`: "Atlas has no MTS feature emitting these yet; the body functions … are wired config-driven so a future MTS implementation sends the version-correct mode"). They are fully-implemented, tested, exported library API — not silent stubs. Acceptable for a shared packet-codec library that exposes codecs ahead of service use.
+
+---
+
+# Adversarial Re-Audit — dispatcher discrete-per-mode split (task-096 CField family)
+
+**Date:** 2026-06-17
+**Branch:** task-096-cfield-packet-family
+**HEAD:** 982085708  **BASE:** 52ec9f2fa (9 commits)
+**Auditor mindset:** FAIL until file:line / command evidence proves PASS.
+
+## Verdict per family
+
+| Family | Dispatcher | Verdict |
+|--------|-----------|---------|
+| MTS_OPERATION | CITC::OnNormalItemResult | **PASS** |
+| CONFIRM_SHOP_TRANSACTION | CShopDlg::OnPacket | **PASS** |
+| STORAGE | CTrunkDlg::OnPacket | **PASS** |
+| CASHSHOP_OPERATION | CCashShop::OnCashItemResult | **PASS** |
+
+All four families: the discrete-per-mode split is honest and wire-correct. One
+non-blocking stale-artifact finding (LATENT-1) and the pre-existing items the
+prior audit already logged.
+
+## Checklist results
+
+### 1. No struct serves >1 mode; old shared structs deleted — PASS
+- `grep "^type (MtsResultEmpty|MtsResultReason|MtsResultTwoInts|ShopOperationSimple|ShopOperationLevelRequirement|StorageErrorSimple|OperationError|CashWishList) "` over `libs/` → **NONE** (all deleted).
+- No non-test, non-comment Go reference to any deleted shared struct. Surviving mentions are doc comments in `tools/packet-audit/cmd/run.go` (lines 1691/1705/1901/1907/1972) and the unrelated `CharacterInfo.WishList()` getter (`character/clientbound/info.go:153`).
+- `storage/clientbound/update_assets.go` deleted; replaced by discrete `StoreAssets`/`RetrieveAssets` in `store_retrieve_assets.go`.
+- npc Over/Under level requirement = two discrete structs (`shop_operation.go:365`, `:397`).
+- cash WishList → `WishListLoad` (`shop_operation_result.go:131`) + `WishListUpdate` (`:178`).
+- cash OperationError → discrete `LoadInventoryFailure` (`:19`) (+ pre-existing `InventoryCapacityFailed`).
+
+### 2. No body func takes an op/code/mode/key parameter — PASS
+- `grep "func.*Body(" … | grep -iE "\b(op|code|mode|key)\b"` across all four body files → **no match**.
+- Every body func fixes its operation KEY via `WithResolvedCode("operations", <FIXED_CONST>, …)` (field/storage/npc) or `ResolveCode(…, "operations", <FIXED_CONST>)` (cash failure arms). The only string params present are `reason`/`message` routed to the `errors` table — not an operation key/mode.
+- MTS body funcs use `func(_ byte)` (discard the resolved byte; the struct fixes its own mode internally).
+
+### 3. Each Encode writes the real per-mode wire — PASS (spot-checked)
+- MTS Reason arm `MtsResultGetItcListFailed.Encode` (`mts_result_reason_modes.go:51`): mode 0x16 + reason byte. ✔
+- MTS TwoInts `MtsResultMoveItcPurchaseItemLtoSDone.Encode` (`mts_result_two_ints_modes.go:51`): mode 0x27 + Decode4 tab + Decode4 selectedNo. ✔
+- MTS conditional-tail `MtsResultRegisterSaleEntryFailed.Encode` (`mts_operation_body.go:78`): mode 0x1E + reason, +Decode2 short only when reason==0x48. ✔
+- MTS conditional-tail `MtsResultSuccessBidInfo.Encode` (`:137`): mode 0x3E + soldFlag + itemId, +price+8-byte FILETIME only when itemId>0. ✔
+- Storage `StoreAssets`/`RetrieveAssets.Encode` (`store_retrieve_assets.go:57`,`:110`): mode + slots + flags(8B) + count + asset blobs; distinct fixed mode keys (STORE_ASSETS=13, RETRIEVE_ASSETS=9). ✔
+- cash `WishListLoad`/`WishListUpdate.Encode` (`shop_operation_result.go:148`,`:195`): mode + 10×int32 SN buffer; wire-identical shape, distinct keys (LOAD_WISHLIST vs UPDATE_WISHLIST). ✔
+- All empty-shape arms write exactly the one mode byte (`mts_result_empty_modes.go`, `storage/clientbound/error_modes.go`).
+
+### 4. Coverage: every family op-row ✅ across applicable versions — PASS
+- STATUS.md: CONFIRM_SHOP_TRANSACTION, STORAGE, CASHSHOP_OPERATION dispatcher rows are ✅ for gms_v83/v84/v87/v95/jms_v185. MTS_OPERATION row (line 452) ✅ for gms_v83/v84/v87/v95, ⬜ jms (CITC registry-absent — correct).
+- Per-mode evidence completeness:
+  - MTS: 35 discrete MtsResult* modes; each has a `.md`+`.json` report (35/35 in gms_v83) and verify markers for **all 4** applicable versions (35×4=140 markers; jms correctly absent). The only Mts struct without a report is `MtsItem` (the embedded ITCITEM list element — not a dispatcher mode; correct).
+  - NPC: 13 discrete modes; each has a report; markers for 5 versions (GenericErrorWithReason has no jms marker — jms-absent, registered).
+  - STORAGE: StoreAssets/RetrieveAssets/ErrorInventoryFull/ErrorNotEnoughMesos/ErrorOneOfAKind each have report + 5-version markers.
+  - CASH: WishListLoad/WishListUpdate/LoadInventoryFailure (+ pre-existing mode structs) each have report + 5-version markers.
+- No export `.json` lacks a matching `.md` (only `_unimplemented.json` tooling sidecars, expected).
+
+### 5. Gates + builds — PASS (exit codes captured)
+- `go run ./tools/packet-audit matrix --check` → **exit 0**
+- `go run ./tools/packet-audit fname-doc --check` → **exit 0** ("212 structs without an audit report carry no fname")
+- `go run ./tools/packet-audit operations --check` → **exit 0** (2 pre-existing jms absent-writer notes: CharacterStatusMessage, NoteOperation — unrelated to the 4 families)
+- `cd libs/atlas-packet && go build ./...` → **exit 0**; `go vet ./...` → **exit 0**
+- `go test -race -count=1 ./field/clientbound ./cash/clientbound ./npc/clientbound ./storage/clientbound` → **all exit 0**
+- `cd services/atlas-channel/atlas.com/channel && go build ./...` → **exit 0**
+- Consumers updated to per-mode body funcs and build clean:
+  - npc shop consumer (`kafka/consumer/npc/shop/consumer.go:107-131`) → all 13 discrete body funcs incl. separate Over/Under.
+  - storage consumer (`kafka/consumer/storage/consumer.go:202-208`, `:255/:267` Store, `:310/:322` Retrieve) → discrete Store/Retrieve + 3 error bodies.
+  - cash handlers (`socket/handler/cash_shop_entry.go:104` Load, `cash_shop_operation.go:70` Update) → discrete WishListLoad / WishListUpdate.
+  - No reference anywhere to any old combined body func (grep for `UpdateAssetsBody|CashShopWishListBody|…LevelRequirementBody|MtsOperation(Empty|Reason|TwoInts)Body` → NONE).
+
+### 6. TODO/stub/faked-byte/orphaned-mode/leftover-shared-struct — 1 LATENT finding
+- No NEW TODO/stub/faked-byte lines added by this branch (diff scan of added `+` lines).
+- One pre-existing TODO unrelated to the split: `cash/clientbound/shop_operation_body.go:80` `// TODO map codes for JMS — currently hardcoded to 0x4D` in `CashShopCashGiftsBody` (introduced 2026-03-18, commit 6b6a74c9d, predates BASE; CashShopGifts is a separate op, not a shared-shape struct being split). Not a regression.
+
+## LATENT-1 — dangling `#Mode` candidate + stale report cite a DELETED struct/file (non-blocking)
+
+The `MtsOperation` mode-only struct was retired by this campaign, but two
+artifacts still point at it:
+
+1. `tools/packet-audit/cmd/run.go:1887-1888` — `case "CITC::OnNormalItemResult#Mode": return …{name: "MtsOperation", …}`. `locateAtlasFile` searches for `type MtsOperation struct`, which **no longer exists** (`grep "^type MtsOperation struct"` → none; file `field/clientbound/mts_operation.go` deleted — only `mts_operation2.go`/`_body.go`/`_list.go` remain).
+2. `docs/packets/audits/gms_v83/FieldMtsOperation.md:4` (and v84/v87/v95) — **Atlas file:** `libs/atlas-packet/field/clientbound/mts_operation.go` — a **deleted file**.
+
+Impact: NOT a wire-correctness bug and does NOT fail any gate. The `FieldMtsOperation`
+matrix cell stays ✅ via the byte-fixture markers in `mts_operation_test.go:22-25`,
+whose golden test now exercises a discrete arm (`NewMtsResultRegisterSaleEntryDone`,
+mode 0x1D) rather than the deleted struct. The danger is latent: on a future
+report-gen run, `locateAtlasFile("MtsOperation")` returns `found=false` →
+report-gen **silently `return`s** (`run.go:67-69`) and skips the cell, freezing the
+stale `mts_operation.go`-citing `FieldMtsOperation.md` in place. Recommend either
+repointing the `#Mode` candidate to the representative discrete struct
+(`MtsResultRegisterSaleEntryDone`) or regenerating `FieldMtsOperation.md` so its
+"Atlas file" cite is a file that exists.
+
+## Items I could NOT fully confirm
+- **jms version-absence of MTS and of npc GenericErrorWithReason** is taken from the in-repo comments/registry (CITC registry-absent in jms; GenericErrorWithReason has no jms marker) — `operations --check` and `matrix --check` accept these as registered absences (exit 0), but I did not independently decompile the jms_v185 IDB to prove no jms CITC dispatcher / no jms shop-reason arm exists. Treated as PASS on the strength of the green gates + registry notes, flagged here for transparency.
+- **Per-version IDA sub-handler addresses** cited in each struct's doc comment (e.g. v95 0x576270) were not re-derived against the IDBs in this audit; they were verified to be internally consistent and the byte-fixtures pin them, but address correctness is inherited from the implementers' decompile, not re-proven here.

@@ -30,7 +30,7 @@ func (m LoadInventoryFailure) ErrorCode() byte   { return m.errorCode }
 func (m LoadInventoryFailure) Operation() string { return CashShopOperationWriter }
 
 func (m LoadInventoryFailure) String() string {
-	return fmt.Sprintf("mode [%d] errorCode [%d]", m.mode, m.errorCode)
+	return fmt.Sprintf("cash load-inventory failure mode [%d] errorCode [%d]", m.mode, m.errorCode)
 }
 
 func (m LoadInventoryFailure) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
@@ -67,7 +67,7 @@ func (m InventoryCapacitySuccess) Capacity() uint16    { return m.capacity }
 func (m InventoryCapacitySuccess) Operation() string   { return CashShopOperationWriter }
 
 func (m InventoryCapacitySuccess) String() string {
-	return fmt.Sprintf("mode [%d] inventoryType [%d] capacity [%d]", m.mode, m.inventoryType, m.capacity)
+	return fmt.Sprintf("cash inventory-capacity success mode [%d] inventoryType [%d] capacity [%d]", m.mode, m.inventoryType, m.capacity)
 }
 
 func (m InventoryCapacitySuccess) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
@@ -104,7 +104,7 @@ func (m InventoryCapacityFailed) ErrorCode() byte   { return m.errorCode }
 func (m InventoryCapacityFailed) Operation() string { return CashShopOperationWriter }
 
 func (m InventoryCapacityFailed) String() string {
-	return fmt.Sprintf("mode [%d] errorCode [%d]", m.mode, m.errorCode)
+	return fmt.Sprintf("cash inventory-capacity failed mode [%d] errorCode [%d]", m.mode, m.errorCode)
 }
 
 func (m InventoryCapacityFailed) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
@@ -142,7 +142,7 @@ func (m WishListLoad) Items() []uint32   { return m.items }
 func (m WishListLoad) Operation() string { return CashShopOperationWriter }
 
 func (m WishListLoad) String() string {
-	return fmt.Sprintf("mode [%d] items [%v]", m.mode, m.items)
+	return fmt.Sprintf("cash wishlist-load mode [%d] items [%v]", m.mode, m.items)
 }
 
 func (m WishListLoad) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
@@ -189,7 +189,7 @@ func (m WishListUpdate) Items() []uint32   { return m.items }
 func (m WishListUpdate) Operation() string { return CashShopOperationWriter }
 
 func (m WishListUpdate) String() string {
-	return fmt.Sprintf("mode [%d] items [%v]", m.mode, m.items)
+	return fmt.Sprintf("cash wishlist-update mode [%d] items [%v]", m.mode, m.items)
 }
 
 func (m WishListUpdate) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {

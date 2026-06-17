@@ -6,9 +6,11 @@ import (
 	"time"
 
 	"atlas-mts/configuration"
+	"atlas-mts/holding"
 	"atlas-mts/saga"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
@@ -61,6 +63,15 @@ type Processor interface {
 	Browse(worldId world.Id, state State, f BrowseFilter) ([]Model, error)
 	TransitionState(id string, from State, to State) (bool, error)
 	UpdateAuction(id string, currentBid uint32, highBidderId uint32, endsAt *time.Time) error
+	// Cancel performs the seller's race-safe cancel in ONE local DB transaction:
+	// it conditionally transitions the listing active->cancelled and, only when
+	// that transition affected exactly one row, creates the seller's holding
+	// (origin=cancelled) copying the listing's item snapshot. The conditional
+	// transition is the cancel-vs-buy arbiter — a concurrent buy that already
+	// moved the row out of active makes this caller the loser (Won=false, no
+	// holding created). It is shared by the Kafka cancel handler and the REST
+	// DELETE so the tx logic exists once.
+	Cancel(id string) (CancelResult, error)
 	// List validates the request against the tenant config (price floor, active
 	// cap, auction duration) and, when valid, pre-allocates a listing id and
 	// emits a TransferToMts saga (fee debit + custody transfer). It returns the
@@ -132,6 +143,96 @@ func (p *ProcessorImpl) TransitionState(id string, from State, to State) (bool, 
 // the optional end time). Used by the bid path.
 func (p *ProcessorImpl) UpdateAuction(id string, currentBid uint32, highBidderId uint32, endsAt *time.Time) error {
 	return UpdateAuction(p.db.WithContext(p.ctx), id, currentBid, highBidderId, endsAt)
+}
+
+// CancelResult reports the outcome of a Cancel attempt. Won is true iff this
+// caller won the cancel-vs-buy race (the conditional transition affected exactly
+// one row); on a win the remaining fields describe the created seller holding and
+// the listing snapshot so the caller can emit a LISTING_CANCELLED event. On a
+// loss (Won=false) no holding was created and the other fields are zero values.
+type CancelResult struct {
+	Won       bool
+	HoldingId uuid.UUID
+	SellerId  uint32
+	ItemId    uint32
+}
+
+// Cancel runs the race-safe active->holding(seller) transition in one transaction.
+// See the interface doc for semantics. The conditional UpdateState is the race
+// arbiter; composing it with the holding insert in the same ExecuteTransaction
+// guarantees the cancel can never half-complete (a cancelled row without its
+// seller holding, or vice versa).
+func (p *ProcessorImpl) Cancel(id string) (CancelResult, error) {
+	t, err := tenant.FromContext(p.ctx)()
+	if err != nil {
+		return CancelResult{}, err
+	}
+
+	var res CancelResult
+	terr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		lm, gerr := GetById(id)(tx)()
+		if gerr != nil {
+			return gerr
+		}
+
+		// Conditional active->cancelled transition: the race arbiter. 0 rows means
+		// a concurrent buy already won — this caller is the loser.
+		affected, uerr := UpdateState(tx, id, StateActive, StateCancelled)
+		if uerr != nil {
+			return uerr
+		}
+		if affected != 1 {
+			// Cancel-vs-buy loser: create no holding, leave Won=false.
+			return nil
+		}
+
+		hm, berr := holding.NewBuilder(t.Id(), lm.WorldId(), lm.SellerId()).
+			SetOrigin(holding.OriginCancelled).
+			SetTemplateId(lm.TemplateId()).
+			SetQuantity(lm.Quantity()).
+			SetStrength(lm.Strength()).
+			SetDexterity(lm.Dexterity()).
+			SetIntelligence(lm.Intelligence()).
+			SetLuck(lm.Luck()).
+			SetHP(lm.HP()).
+			SetMP(lm.MP()).
+			SetWeaponAttack(lm.WeaponAttack()).
+			SetMagicAttack(lm.MagicAttack()).
+			SetWeaponDefense(lm.WeaponDefense()).
+			SetMagicDefense(lm.MagicDefense()).
+			SetAccuracy(lm.Accuracy()).
+			SetAvoidability(lm.Avoidability()).
+			SetHands(lm.Hands()).
+			SetSpeed(lm.Speed()).
+			SetJump(lm.Jump()).
+			SetSlots(lm.Slots()).
+			SetLevel(lm.Level()).
+			SetItemLevel(lm.ItemLevel()).
+			SetItemExp(lm.ItemExp()).
+			SetRingId(lm.RingId()).
+			SetViciousCount(lm.ViciousCount()).
+			SetFlags(lm.Flags()).
+			Build()
+		if berr != nil {
+			return berr
+		}
+		stored, cerr := holding.CreateHolding(tx, hm)
+		if cerr != nil {
+			return cerr
+		}
+
+		res = CancelResult{
+			Won:       true,
+			HoldingId: stored.Id(),
+			SellerId:  lm.SellerId(),
+			ItemId:    lm.TemplateId(),
+		}
+		return nil
+	})
+	if terr != nil {
+		return CancelResult{}, terr
+	}
+	return res, nil
 }
 
 // List is the server-authoritative list-initiation flow. It validates the

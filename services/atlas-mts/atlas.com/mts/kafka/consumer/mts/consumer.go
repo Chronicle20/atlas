@@ -1,7 +1,6 @@
 package mts
 
 import (
-	"atlas-mts/holding"
 	consumer2 "atlas-mts/kafka/consumer"
 	msg "atlas-mts/kafka/message"
 	"atlas-mts/kafka/message/mts"
@@ -11,7 +10,6 @@ import (
 	"atlas-mts/wish"
 	"context"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
@@ -20,7 +18,6 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -81,85 +78,25 @@ func handleCancelListing(pf providerFn) func(db *gorm.DB) message.Handler[mts.Co
 				return
 			}
 			b := c.Body
-			tdb := db.WithContext(ctx)
 
-			var won bool
-			var sellerId uint32
-			var itemId uint32
-			var holdingId uuid.UUID
-
-			err := database.ExecuteTransaction(tdb, func(tx *gorm.DB) error {
-				lm, gerr := listing.GetById(b.ListingId.String())(tx)()
-				if gerr != nil {
-					return gerr
-				}
-
-				// Conditional active->cancelled transition: the race arbiter. 0 rows
-				// means a concurrent buy already won — this handler is the loser.
-				affected, uerr := listing.UpdateState(tx, b.ListingId.String(), listing.StateActive, listing.StateCancelled)
-				if uerr != nil {
-					return uerr
-				}
-				if affected != 1 {
-					// Cancel-vs-buy loser: do not create a holding, emit nothing.
-					return nil
-				}
-				won = true
-				sellerId = lm.SellerId()
-				itemId = lm.TemplateId()
-
-				t := tenant.MustFromContext(ctx)
-				hm, berr := holding.NewBuilder(t.Id(), world.Id(b.WorldId), lm.SellerId()).
-					SetOrigin(holding.OriginCancelled).
-					SetTemplateId(lm.TemplateId()).
-					SetQuantity(lm.Quantity()).
-					SetStrength(lm.Strength()).
-					SetDexterity(lm.Dexterity()).
-					SetIntelligence(lm.Intelligence()).
-					SetLuck(lm.Luck()).
-					SetHP(lm.HP()).
-					SetMP(lm.MP()).
-					SetWeaponAttack(lm.WeaponAttack()).
-					SetMagicAttack(lm.MagicAttack()).
-					SetWeaponDefense(lm.WeaponDefense()).
-					SetMagicDefense(lm.MagicDefense()).
-					SetAccuracy(lm.Accuracy()).
-					SetAvoidability(lm.Avoidability()).
-					SetHands(lm.Hands()).
-					SetSpeed(lm.Speed()).
-					SetJump(lm.Jump()).
-					SetSlots(lm.Slots()).
-					SetLevel(lm.Level()).
-					SetItemLevel(lm.ItemLevel()).
-					SetItemExp(lm.ItemExp()).
-					SetRingId(lm.RingId()).
-					SetViciousCount(lm.ViciousCount()).
-					SetFlags(lm.Flags()).
-					Build()
-				if berr != nil {
-					return berr
-				}
-				stored, cerr := holding.CreateHolding(tx, hm)
-				if cerr != nil {
-					return cerr
-				}
-				holdingId = stored.Id()
-				return nil
-			})
+			// The race-safe active->holding(seller) transition lives in the listing
+			// processor so it is shared verbatim with the REST DELETE; this handler
+			// only adds the event emission on a win.
+			res, err := listing.NewProcessor(l, ctx, db).Cancel(b.ListingId.String())
 
 			p := pf(ctx)
 			if err != nil {
 				l.WithError(err).Errorf("Failed to cancel listing [%s] for transaction [%s].", b.ListingId.String(), c.TransactionId.String())
 				return
 			}
-			if !won {
+			if !res.Won {
 				// Cancel-vs-buy loser: the buy path owns the outcome; emit nothing.
 				l.Debugf("Cancel for listing [%s] lost the cancel-vs-buy race (already not active); no holding created.", b.ListingId.String())
 				return
 			}
 
 			_ = msg.Emit(p)(func(buf *msg.Buffer) error {
-				return buf.Put(mts.EnvStatusEventTopic, mtsproducer.ListingCancelledStatusEventProvider(c.TransactionId, b.WorldId, b.ListingId, holdingId, sellerId, itemId))
+				return buf.Put(mts.EnvStatusEventTopic, mtsproducer.ListingCancelledStatusEventProvider(c.TransactionId, b.WorldId, b.ListingId, res.HoldingId, res.SellerId, res.ItemId))
 			})
 		}
 	}

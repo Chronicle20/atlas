@@ -22,7 +22,7 @@ import (
 //
 // The POST initiates the custody/fee saga; it does NOT create the listing row
 // (that happens on the custody consumer's AcceptToMtsListing). The DELETE
-// (cancel) route is added in a later phase.
+// performs the seller's race-safe cancel (active->holding(seller)).
 func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteInitializer {
 	return func(db *gorm.DB) server.RouteInitializer {
 		return func(router *mux.Router, l logrus.FieldLogger) {
@@ -33,8 +33,81 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 			r.HandleFunc("", registerGet("browse_listings", handleBrowseListings)).Methods(http.MethodGet)
 			r.HandleFunc("", registerInput("create_listing", handleCreateListing)).Methods(http.MethodPost)
 			r.HandleFunc("/{listingId}", registerGet("get_listing", handleGetListing)).Methods(http.MethodGet)
+			r.HandleFunc("/{listingId}", registerGet("cancel_listing", handleCancelListing)).Methods(http.MethodDelete)
 		}
 	}
+}
+
+// handleCancelListing performs the seller's cancel of an active listing, moving
+// the item to the seller's holding (origin=cancelled) so it can be taken home.
+//
+// Seller-only owner check (prd §8.4): the requesting character id is read from
+// the ?characterId= query param (the atlas-portals ParseCharacterId precedent —
+// path var, else query param), the listing is loaded, and the cancel proceeds
+// only when the requester is the listing's seller; otherwise 403. The DELETE path
+// carries no characterId path var, so the query param is the caller's identity.
+//
+// The cancel itself runs through the shared, race-safe listing.Processor.Cancel:
+//   - 204 No Content on a win (row moved to cancelled, seller holding created);
+//   - 409 Conflict on a non-active listing (race loser / already settled) — a
+//     clean no-op, never a 500.
+//
+// Event emission stays in the Kafka command path (handleCancelListing in the mts
+// consumer emits LISTING_CANCELLED). This REST entry point is the direct (e.g.
+// channel-driven) cancel; it does not emit, keeping a single producer of the
+// status event per the command-path-owns-emission convention.
+func handleCancelListing(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return rest.ParseListingId(d.Logger(), func(listingId string) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			characterIdStr := r.URL.Query().Get("characterId")
+			if characterIdStr == "" {
+				d.Logger().Errorf("Cancel listing [%s] missing characterId query param for the seller-only check.", listingId)
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+			characterId64, err := strconv.ParseUint(characterIdStr, 10, 32)
+			if err != nil {
+				d.Logger().WithError(err).Errorf("Unable to parse characterId query for cancel of listing [%s].", listingId)
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+			characterId := uint32(characterId64)
+
+			p := NewProcessor(d.Logger(), d.Context(), d.DB())
+
+			// Load the listing for the seller-only owner check.
+			m, err := p.GetById(listingId)
+			if err != nil {
+				if errors.Is(err, gorm.ErrRecordNotFound) {
+					w.WriteHeader(http.StatusNotFound)
+					return
+				}
+				d.Logger().WithError(err).Errorf("Retrieving listing [%s] for cancel.", listingId)
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+
+			// Seller-only: only the listing's seller may cancel it (prd §8.4).
+			if m.SellerId() != characterId {
+				d.Logger().Errorf("Character [%d] attempted to cancel listing [%s] owned by seller [%d]; forbidden.", characterId, listingId, m.SellerId())
+				w.WriteHeader(http.StatusForbidden)
+				return
+			}
+
+			res, err := p.Cancel(listingId)
+			if err != nil {
+				d.Logger().WithError(err).Errorf("Cancelling listing [%s].", listingId)
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			if !res.Won {
+				// Race loser / already-not-active: a clean conflict, not a 500.
+				w.WriteHeader(http.StatusConflict)
+				return
+			}
+			w.WriteHeader(http.StatusNoContent)
+		}
+	})
 }
 
 // handleCreateListing initiates a list: it validates the request against the

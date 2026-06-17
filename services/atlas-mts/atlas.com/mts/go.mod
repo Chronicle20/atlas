@@ -3,11 +3,12 @@ module atlas-mts
 go 1.25.5
 
 require (
-	github.com/Chronicle20/atlas/libs/atlas-constants v0.0.0-00010101000000-000000000000
+	github.com/Chronicle20/atlas/libs/atlas-constants v0.0.0
 	github.com/Chronicle20/atlas/libs/atlas-database v0.0.0-00010101000000-000000000000
 	github.com/Chronicle20/atlas/libs/atlas-kafka v0.0.0-00010101000000-000000000000
 	github.com/Chronicle20/atlas/libs/atlas-model v0.0.0
 	github.com/Chronicle20/atlas/libs/atlas-rest v0.0.0-00010101000000-000000000000
+	github.com/Chronicle20/atlas/libs/atlas-saga v0.0.0-00010101000000-000000000000
 	github.com/Chronicle20/atlas/libs/atlas-service v0.0.0-00010101000000-000000000000
 	github.com/Chronicle20/atlas/libs/atlas-tenant v0.0.0
 	github.com/Chronicle20/atlas/libs/atlas-tracing v0.0.0-00010101000000-000000000000

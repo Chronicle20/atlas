@@ -68,6 +68,43 @@ func (r *RestModel) SetID(idStr string) error {
 	return nil
 }
 
+// CreateListingRestModel is the JSON:API request body for POST
+// /worlds/{worldId}/listings. It carries the seller's list parameters: the item
+// reference being listed (the inventory asset id + its inventory type), the sale
+// type and price, and (for auctions) the duration. The seller identity and the
+// item snapshot are NOT trusted from the body — sellerId/sellerName come from the
+// authenticated request and the snapshot is looked up during saga expansion.
+//
+// GetName returns "listings" so the envelope {data:{type:"listings",attributes:
+// {...}}} unmarshals; bare bodies 400.
+type CreateListingRestModel struct {
+	Id                  string  `json:"-"`
+	SellerId            uint32  `json:"sellerId"`
+	SellerName          string  `json:"sellerName"`
+	SaleType            string  `json:"saleType"`
+	SourceInventoryType byte    `json:"sourceInventoryType"`
+	AssetId             uint32  `json:"assetId"`
+	Quantity            uint32  `json:"quantity"`
+	ListValue           uint32  `json:"listValue"`
+	BuyNowPrice         *uint32 `json:"buyNowPrice,omitempty"`
+	DurationHours       int     `json:"durationHours,omitempty"`
+	Category            string  `json:"category"`
+	SubCategory         string  `json:"subCategory"`
+}
+
+func (r CreateListingRestModel) GetName() string {
+	return "listings"
+}
+
+func (r CreateListingRestModel) GetID() string {
+	return r.Id
+}
+
+func (r *CreateListingRestModel) SetID(idStr string) error {
+	r.Id = idStr
+	return nil
+}
+
 func Transform(m Model) (RestModel, error) {
 	return RestModel{
 		Id:             m.Id().String(),

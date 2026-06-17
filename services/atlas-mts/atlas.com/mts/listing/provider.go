@@ -88,6 +88,29 @@ func getBrowse(worldId world.Id, state State, f BrowseFilter) database.EntityPro
 	}
 }
 
+// getActiveCountBySeller returns the number of active listings owned by a seller.
+//
+// The WHERE clause uses an explicit name-keyed map rather than a struct
+// condition: GORM's struct-condition Where elides zero-valued fields, so a
+// struct condition would silently drop the seller_id filter for seller 0 and
+// over-count. state is constrained to active so cancelled/sold/expired rows do
+// not count against the per-character cap.
+func getActiveCountBySeller(sellerId uint32) func(db *gorm.DB) (int64, error) {
+	return func(db *gorm.DB) (int64, error) {
+		var count int64
+		err := db.Model(&entity{}).
+			Where(map[string]interface{}{
+				"seller_id": sellerId,
+				"state":     string(StateActive),
+			}).
+			Count(&count).Error
+		if err != nil {
+			return 0, err
+		}
+		return count, nil
+	}
+}
+
 func modelFromEntity(e entity) (Model, error) {
 	b := NewBuilder(e.TenantId, world.Id(e.WorldId), e.SellerId).
 		SetId(e.Id).

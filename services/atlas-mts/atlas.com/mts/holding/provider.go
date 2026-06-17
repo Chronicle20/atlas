@@ -40,6 +40,24 @@ func getByOwner(worldId world.Id, ownerId uint32) database.EntityProvider[[]enti
 	}
 }
 
+// getByCharacter returns all holdings for a character (owner) across worlds.
+//
+// The route is keyed on characterId alone, so this provider does not constrain
+// world_id. The owner_id filter uses an explicit name-keyed map (never a struct
+// condition) so owner 0 is not silently dropped.
+func getByCharacter(ownerId uint32) database.EntityProvider[[]entity] {
+	return func(db *gorm.DB) model.Provider[[]entity] {
+		var results []entity
+		err := db.Where(map[string]interface{}{
+			"owner_id": ownerId,
+		}).Find(&results).Error
+		if err != nil {
+			return model.ErrorProvider[[]entity](err)
+		}
+		return model.FixedProvider(results)
+	}
+}
+
 func modelFromEntity(e entity) (Model, error) {
 	b := NewBuilder(e.TenantId, world.Id(e.WorldId), e.OwnerId).
 		SetId(e.Id).

@@ -98,7 +98,7 @@ func TestProcessorBrowse(t *testing.T) {
 	}
 
 	// Browse world 0, active, equip => exactly 1 row.
-	got, err := p.Browse(0, listing.StateActive, "equip")
+	got, err := p.Browse(0, listing.StateActive, listing.BrowseFilter{Category: "equip"})
 	if err != nil {
 		t.Fatalf("Browse: %v", err)
 	}
@@ -111,7 +111,7 @@ func TestProcessorBrowse(t *testing.T) {
 	}
 
 	// Browse world 0, active, use => exactly 1 row.
-	gotUse, err := p.Browse(0, listing.StateActive, "use")
+	gotUse, err := p.Browse(0, listing.StateActive, listing.BrowseFilter{Category: "use"})
 	if err != nil {
 		t.Fatalf("Browse use: %v", err)
 	}
@@ -120,7 +120,7 @@ func TestProcessorBrowse(t *testing.T) {
 	}
 
 	// Browse world 0, cancelled, equip => 0 rows (none cancelled).
-	gotCancelled, err := p.Browse(0, listing.StateCancelled, "equip")
+	gotCancelled, err := p.Browse(0, listing.StateCancelled, listing.BrowseFilter{Category: "equip"})
 	if err != nil {
 		t.Fatalf("Browse cancelled: %v", err)
 	}

@@ -17,6 +17,7 @@ type Processor interface {
 	GetById(id string) (Model, error)
 	Create(m Model) (Model, error)
 	GetByOwner(worldId world.Id, ownerId uint32) ([]Model, error)
+	GetByCharacter(ownerId uint32) ([]Model, error)
 	TakeHome(id string) (bool, error)
 }
 
@@ -48,6 +49,12 @@ func (p *ProcessorImpl) Create(m Model) (Model, error) {
 // mirrors the getByOwner provider exactly.
 func (p *ProcessorImpl) GetByOwner(worldId world.Id, ownerId uint32) ([]Model, error) {
 	return model.SliceMap(modelFromEntity)(getByOwner(worldId, ownerId)(p.db.WithContext(p.ctx)))()()
+}
+
+// GetByCharacter returns all holdings for a character (owner) across worlds. The
+// signature mirrors the getByCharacter provider exactly.
+func (p *ProcessorImpl) GetByCharacter(ownerId uint32) ([]Model, error) {
+	return model.SliceMap(modelFromEntity)(getByCharacter(ownerId)(p.db.WithContext(p.ctx)))()()
 }
 
 // TakeHome soft-deletes the holding by id, returning true iff exactly one row

@@ -133,6 +133,15 @@ const (
 	AcceptToCashShop     = sharedsaga.AcceptToCashShop
 	ReleaseFromCashShop  = sharedsaga.ReleaseFromCashShop
 
+	// MTS actions
+	TransferToMts           = sharedsaga.TransferToMts
+	WithdrawFromMts         = sharedsaga.WithdrawFromMts
+	AcceptToMtsListing      = sharedsaga.AcceptToMtsListing
+	ReleaseFromMtsHolding   = sharedsaga.ReleaseFromMtsHolding
+	MtsSettlePurchase       = sharedsaga.MtsSettlePurchase
+	MtsMoveListingToHolding = sharedsaga.MtsMoveListingToHolding
+	MtsBidEscrow            = sharedsaga.MtsBidEscrow
+
 	// Guild actions
 	RequestGuildName             = sharedsaga.RequestGuildName
 	RequestGuildEmblem           = sharedsaga.RequestGuildEmblem
@@ -229,6 +238,13 @@ type (
 	WithdrawFromStoragePayload          = sharedsaga.WithdrawFromStoragePayload
 	TransferToCashShopPayload           = sharedsaga.TransferToCashShopPayload
 	WithdrawFromCashShopPayload         = sharedsaga.WithdrawFromCashShopPayload
+	TransferToMtsPayload                = sharedsaga.TransferToMtsPayload
+	WithdrawFromMtsPayload              = sharedsaga.WithdrawFromMtsPayload
+	AcceptToMtsListingPayload           = sharedsaga.AcceptToMtsListingPayload
+	ReleaseFromMtsHoldingPayload        = sharedsaga.ReleaseFromMtsHoldingPayload
+	MtsSettlePurchasePayload            = sharedsaga.MtsSettlePurchasePayload
+	MtsMoveListingToHoldingPayload      = sharedsaga.MtsMoveListingToHoldingPayload
+	MtsBidEscrowPayload                 = sharedsaga.MtsBidEscrowPayload
 	ReleaseFromCharacterPayload         = sharedsaga.ReleaseFromCharacterPayload
 	ReleaseFromStoragePayload           = sharedsaga.ReleaseFromStoragePayload
 	RequestGuildNamePayload             = sharedsaga.RequestGuildNamePayload
@@ -1246,6 +1262,48 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.payload = any(payload).(T)
 	case ReleaseFromCashShop:
 		var payload ReleaseFromCashShopPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case TransferToMts:
+		var payload TransferToMtsPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case WithdrawFromMts:
+		var payload WithdrawFromMtsPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case AcceptToMtsListing:
+		var payload AcceptToMtsListingPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case ReleaseFromMtsHolding:
+		var payload ReleaseFromMtsHoldingPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case MtsSettlePurchase:
+		var payload MtsSettlePurchasePayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case MtsMoveListingToHolding:
+		var payload MtsMoveListingToHoldingPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case MtsBidEscrow:
+		var payload MtsBidEscrowPayload
 		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}

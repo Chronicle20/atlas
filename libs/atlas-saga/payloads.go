@@ -658,6 +658,7 @@ type MtsMoveListingToHoldingPayload struct {
 type MtsSettlePurchasePayload struct {
 	TransactionId   uuid.UUID `json:"transactionId"`
 	ListingId       uuid.UUID `json:"listingId"`
+	WorldId         world.Id  `json:"worldId"` // World scoping for the buyer holding created on the final move step
 	BuyerId         uint32    `json:"buyerId"`
 	BuyerAccountId  uint32    `json:"buyerAccountId"`
 	SellerId        uint32    `json:"sellerId"`

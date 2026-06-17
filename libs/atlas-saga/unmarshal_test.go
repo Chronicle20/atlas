@@ -540,6 +540,7 @@ func TestUnmarshalMtsSettlePurchaseStep(t *testing.T) {
 		"payload": {
 			"transactionId": "11111111-1111-1111-1111-111111111111",
 			"listingId": "22222222-2222-2222-2222-222222222222",
+			"worldId": 0,
 			"buyerId": 100,
 			"buyerAccountId": 10,
 			"sellerId": 200,

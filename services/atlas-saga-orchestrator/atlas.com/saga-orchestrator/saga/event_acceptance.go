@@ -56,6 +56,12 @@ const (
 	EventKindCashShopCompartmentReleased EventKind = "cashshop.compartment_released"
 	EventKindCashShopCompartmentError    EventKind = "cashshop.compartment_error"
 
+	// MTS custody (atlas-mts custody acks on EVENT_TOPIC_MTS_CUSTODY_STATUS).
+	EventKindMtsCustodyAccepted EventKind = "mts.custody_accepted"
+	EventKindMtsCustodyReleased EventKind = "mts.custody_released"
+	EventKindMtsCustodyMoved    EventKind = "mts.custody_moved"
+	EventKindMtsCustodyError    EventKind = "mts.custody_error"
+
 	// Compartment (character inventory).
 	EventKindCompartmentCreated        EventKind = "compartment.created"
 	EventKindCompartmentCreationFailed EventKind = "compartment.creation_failed"
@@ -152,6 +158,15 @@ var acceptanceTable = map[sharedsaga.Action][]EventKind{
 	sharedsaga.WithdrawFromCashShop: {}, // composite
 	sharedsaga.AcceptToCashShop:     {EventKindCashShopCompartmentAccepted, EventKindCashShopCompartmentError},
 	sharedsaga.ReleaseFromCashShop:  {EventKindCashShopCompartmentReleased, EventKindCashShopCompartmentError},
+
+	// MTS.
+	sharedsaga.TransferToMts:           {}, // composite: expanded into release_from_character + accept_to_mts_listing
+	sharedsaga.WithdrawFromMts:         {}, // composite: expanded into release_from_mts_holding + accept_to_character
+	sharedsaga.MtsSettlePurchase:       {}, // composite: expanded into award_currency×2 + mts_move_listing_to_holding
+	sharedsaga.AcceptToMtsListing:      {EventKindMtsCustodyAccepted, EventKindMtsCustodyError},
+	sharedsaga.ReleaseFromMtsHolding:   {EventKindMtsCustodyReleased, EventKindMtsCustodyError},
+	sharedsaga.MtsMoveListingToHolding: {EventKindMtsCustodyMoved, EventKindMtsCustodyError},
+	sharedsaga.MtsBidEscrow:            {EventKindCashShopWalletUpdated}, // reuses the cash-shop wallet ack
 
 	// Guild.
 	sharedsaga.RequestGuildName:             {EventKindGuildRequestAgreement, EventKindGuildCreated},

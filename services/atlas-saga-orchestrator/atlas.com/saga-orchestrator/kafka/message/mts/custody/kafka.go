@@ -1,0 +1,130 @@
+package custody
+
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
+
+// This is the orchestrator's own copy of the atlas-mts custody wire contract.
+// The orchestrator cannot import the atlas-mts module, so these structs mirror
+// services/atlas-mts/atlas.com/mts/kafka/message/custody/kafka.go byte-for-byte
+// (identical JSON tags + Type discriminator strings). This follows the
+// cashshop/compartment precedent (the orchestrator keeps its own copy of the
+// cash-compartment command structs).
+const (
+	// EnvCommandTopic is the env var naming the MTS custody command topic.
+	EnvCommandTopic = "COMMAND_TOPIC_MTS_CUSTODY"
+
+	CommandAcceptToMtsListing      = "ACCEPT_TO_MTS_LISTING"
+	CommandReleaseFromMtsHolding   = "RELEASE_FROM_MTS_HOLDING"
+	CommandMtsMoveListingToHolding = "MTS_MOVE_LISTING_TO_HOLDING"
+)
+
+// Command is the generic custody command envelope. TransactionId keys the saga
+// step; Type discriminates which body is carried.
+type Command[E any] struct {
+	TransactionId uuid.UUID `json:"transactionId"`
+	Type          string    `json:"type"`
+	Body          E         `json:"body"`
+}
+
+// AcceptToMtsListingCommandBody carries every field needed to CREATE a listing
+// row in active state.
+type AcceptToMtsListingCommandBody struct {
+	ListingId  uuid.UUID `json:"listingId"`
+	WorldId    byte      `json:"worldId"`
+	SellerId   uint32    `json:"sellerId"`
+	SellerName string    `json:"sellerName"`
+	SaleType   string    `json:"saleType"`
+
+	// item snapshot
+	TemplateId uint32 `json:"templateId"`
+	Quantity   uint32 `json:"quantity"`
+
+	// equip stat block
+	Strength      uint16 `json:"strength"`
+	Dexterity     uint16 `json:"dexterity"`
+	Intelligence  uint16 `json:"intelligence"`
+	Luck          uint16 `json:"luck"`
+	HP            uint16 `json:"hp"`
+	MP            uint16 `json:"mp"`
+	WeaponAttack  uint16 `json:"weaponAttack"`
+	MagicAttack   uint16 `json:"magicAttack"`
+	WeaponDefense uint16 `json:"weaponDefense"`
+	MagicDefense  uint16 `json:"magicDefense"`
+	Accuracy      uint16 `json:"accuracy"`
+	Avoidability  uint16 `json:"avoidability"`
+	Hands         uint16 `json:"hands"`
+	Speed         uint16 `json:"speed"`
+	Jump          uint16 `json:"jump"`
+	Slots         uint16 `json:"slots"`
+	Level         byte   `json:"level"`
+	ItemLevel     byte   `json:"itemLevel"`
+	ItemExp       uint32 `json:"itemExp"`
+	RingId        uint32 `json:"ringId"`
+	ViciousCount  uint32 `json:"viciousCount"`
+	Flags         uint16 `json:"flags"`
+
+	// sale params
+	ListValue      uint32     `json:"listValue"`
+	BuyNowPrice    *uint32    `json:"buyNowPrice"`
+	CommissionRate float64    `json:"commissionRate"`
+	Category       string     `json:"category"`
+	SubCategory    string     `json:"subCategory"`
+	EndsAt         *time.Time `json:"endsAt"`
+	MinIncrement   uint32     `json:"minIncrement"`
+}
+
+// ReleaseFromMtsHoldingCommandBody soft-deletes the take-home holding row.
+type ReleaseFromMtsHoldingCommandBody struct {
+	HoldingId uuid.UUID `json:"holdingId"`
+}
+
+// MtsMoveListingToHoldingCommandBody carries the listing to settle plus the
+// buyer/world identity for the holding to create.
+type MtsMoveListingToHoldingCommandBody struct {
+	ListingId uuid.UUID `json:"listingId"`
+	BuyerId   uint32    `json:"buyerId"`
+	WorldId   byte      `json:"worldId"`
+}
+
+const (
+	// EnvStatusEventTopic names the custody status (ack) topic.
+	EnvStatusEventTopic = "EVENT_TOPIC_MTS_CUSTODY_STATUS"
+
+	StatusEventTypeAccepted = "ACCEPTED"
+	StatusEventTypeReleased = "RELEASED"
+	StatusEventTypeMoved    = "MOVED"
+	StatusEventTypeError    = "ERROR"
+)
+
+// StatusEvent is the generic custody ack envelope. TransactionId echoes the
+// command so the orchestrator can complete/fail the saga step.
+type StatusEvent[E any] struct {
+	TransactionId uuid.UUID `json:"transactionId"`
+	Type          string    `json:"type"`
+	Body          E         `json:"body"`
+}
+
+// StatusEventAcceptedBody acks listing creation, echoing the listing id.
+type StatusEventAcceptedBody struct {
+	ListingId uuid.UUID `json:"listingId"`
+}
+
+// StatusEventReleasedBody acks a holding release, echoing the holding id.
+type StatusEventReleasedBody struct {
+	HoldingId uuid.UUID `json:"holdingId"`
+}
+
+// StatusEventMovedBody acks a settlement move, echoing the listing id and the
+// created buyer holding id.
+type StatusEventMovedBody struct {
+	ListingId uuid.UUID `json:"listingId"`
+	HoldingId uuid.UUID `json:"holdingId"`
+}
+
+// StatusEventErrorBody reports a custody error.
+type StatusEventErrorBody struct {
+	Error string `json:"error"`
+}

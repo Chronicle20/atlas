@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestUnmarshalRebalanceAPStep(t *testing.T) {
@@ -291,7 +292,16 @@ func TestUnmarshalTransferToMtsStep(t *testing.T) {
 			"sourceInventoryType": 1,
 			"assetId": 555,
 			"quantity": 1,
-			"listingId": "22222222-2222-2222-2222-222222222222"
+			"listingId": "22222222-2222-2222-2222-222222222222",
+			"sellerName": "Seller",
+			"saleType": "buy_now",
+			"listValue": 1000,
+			"buyNowPrice": 1500,
+			"commissionRate": 0.1,
+			"category": "equip",
+			"subCategory": "onehanded",
+			"endsAt": "2026-06-20T00:00:00Z",
+			"minIncrement": 50
 		},
 		"createdAt": "2026-06-17T00:00:00Z",
 		"updatedAt": "2026-06-17T00:00:00Z"
@@ -313,6 +323,33 @@ func TestUnmarshalTransferToMtsStep(t *testing.T) {
 	}
 	if p.AssetId != 555 {
 		t.Errorf("assetId: expected 555, got %d", p.AssetId)
+	}
+	if p.SellerName != "Seller" {
+		t.Errorf("sellerName: expected Seller, got %q", p.SellerName)
+	}
+	if p.SaleType != "buy_now" {
+		t.Errorf("saleType: expected buy_now, got %q", p.SaleType)
+	}
+	if p.ListValue != 1000 {
+		t.Errorf("listValue: expected 1000, got %d", p.ListValue)
+	}
+	if p.BuyNowPrice == nil || *p.BuyNowPrice != 1500 {
+		t.Errorf("buyNowPrice: expected 1500, got %v", p.BuyNowPrice)
+	}
+	if p.CommissionRate != 0.1 {
+		t.Errorf("commissionRate: expected 0.1, got %v", p.CommissionRate)
+	}
+	if p.Category != "equip" {
+		t.Errorf("category: expected equip, got %q", p.Category)
+	}
+	if p.SubCategory != "onehanded" {
+		t.Errorf("subCategory: expected onehanded, got %q", p.SubCategory)
+	}
+	if p.EndsAt == nil || !p.EndsAt.Equal(time.Date(2026, 6, 20, 0, 0, 0, 0, time.UTC)) {
+		t.Errorf("endsAt: expected 2026-06-20T00:00:00Z, got %v", p.EndsAt)
+	}
+	if p.MinIncrement != 50 {
+		t.Errorf("minIncrement: expected 50, got %d", p.MinIncrement)
 	}
 }
 
@@ -358,7 +395,42 @@ func TestUnmarshalAcceptToMtsListingStep(t *testing.T) {
 		"action": "accept_to_mts_listing",
 		"payload": {
 			"transactionId": "11111111-1111-1111-1111-111111111111",
-			"listingId": "22222222-2222-2222-2222-222222222222"
+			"listingId": "22222222-2222-2222-2222-222222222222",
+			"worldId": 0,
+			"sellerId": 200,
+			"sellerName": "Seller",
+			"saleType": "buy_now",
+			"templateId": 1302000,
+			"quantity": 1,
+			"strength": 5,
+			"dexterity": 6,
+			"intelligence": 7,
+			"luck": 8,
+			"hp": 100,
+			"mp": 50,
+			"weaponAttack": 30,
+			"magicAttack": 20,
+			"weaponDefense": 10,
+			"magicDefense": 12,
+			"accuracy": 14,
+			"avoidability": 16,
+			"hands": 1,
+			"speed": 4,
+			"jump": 3,
+			"slots": 7,
+			"level": 2,
+			"itemLevel": 9,
+			"itemExp": 12345,
+			"ringId": 999,
+			"viciousCount": 2,
+			"flags": 64,
+			"listValue": 1000,
+			"buyNowPrice": 1500,
+			"commissionRate": 0.1,
+			"category": "equip",
+			"subCategory": "onehanded",
+			"endsAt": "2026-06-20T00:00:00Z",
+			"minIncrement": 50
 		},
 		"createdAt": "2026-06-17T00:00:00Z",
 		"updatedAt": "2026-06-17T00:00:00Z"
@@ -377,6 +449,57 @@ func TestUnmarshalAcceptToMtsListingStep(t *testing.T) {
 	}
 	if p.ListingId.String() != "22222222-2222-2222-2222-222222222222" {
 		t.Errorf("listingId mismatch, got %s", p.ListingId)
+	}
+	if p.SellerId != 200 {
+		t.Errorf("sellerId: expected 200, got %d", p.SellerId)
+	}
+	if p.SellerName != "Seller" {
+		t.Errorf("sellerName: expected Seller, got %q", p.SellerName)
+	}
+	if p.SaleType != "buy_now" {
+		t.Errorf("saleType: expected buy_now, got %q", p.SaleType)
+	}
+	if p.TemplateId != 1302000 {
+		t.Errorf("templateId: expected 1302000, got %d", p.TemplateId)
+	}
+	if p.Quantity != 1 {
+		t.Errorf("quantity: expected 1, got %d", p.Quantity)
+	}
+	if p.Strength != 5 || p.Dexterity != 6 || p.Intelligence != 7 || p.Luck != 8 {
+		t.Errorf("stat block STR/DEX/INT/LUK mismatch: %d/%d/%d/%d", p.Strength, p.Dexterity, p.Intelligence, p.Luck)
+	}
+	if p.HP != 100 || p.MP != 50 {
+		t.Errorf("HP/MP mismatch: %d/%d", p.HP, p.MP)
+	}
+	if p.WeaponAttack != 30 || p.MagicAttack != 20 || p.WeaponDefense != 10 || p.MagicDefense != 12 {
+		t.Errorf("atk/def block mismatch: %d/%d/%d/%d", p.WeaponAttack, p.MagicAttack, p.WeaponDefense, p.MagicDefense)
+	}
+	if p.Accuracy != 14 || p.Avoidability != 16 || p.Hands != 1 || p.Speed != 4 || p.Jump != 3 || p.Slots != 7 {
+		t.Errorf("acc/avoid/hands/speed/jump/slots mismatch: %d/%d/%d/%d/%d/%d", p.Accuracy, p.Avoidability, p.Hands, p.Speed, p.Jump, p.Slots)
+	}
+	if p.Level != 2 || p.ItemLevel != 9 {
+		t.Errorf("level/itemLevel mismatch: %d/%d", p.Level, p.ItemLevel)
+	}
+	if p.ItemExp != 12345 || p.RingId != 999 || p.ViciousCount != 2 || p.Flags != 64 {
+		t.Errorf("itemExp/ringId/viciousCount/flags mismatch: %d/%d/%d/%d", p.ItemExp, p.RingId, p.ViciousCount, p.Flags)
+	}
+	if p.ListValue != 1000 {
+		t.Errorf("listValue: expected 1000, got %d", p.ListValue)
+	}
+	if p.BuyNowPrice == nil || *p.BuyNowPrice != 1500 {
+		t.Errorf("buyNowPrice: expected 1500, got %v", p.BuyNowPrice)
+	}
+	if p.CommissionRate != 0.1 {
+		t.Errorf("commissionRate: expected 0.1, got %v", p.CommissionRate)
+	}
+	if p.Category != "equip" || p.SubCategory != "onehanded" {
+		t.Errorf("category/subCategory mismatch: %q/%q", p.Category, p.SubCategory)
+	}
+	if p.EndsAt == nil || !p.EndsAt.Equal(time.Date(2026, 6, 20, 0, 0, 0, 0, time.UTC)) {
+		t.Errorf("endsAt: expected 2026-06-20T00:00:00Z, got %v", p.EndsAt)
+	}
+	if p.MinIncrement != 50 {
+		t.Errorf("minIncrement: expected 50, got %d", p.MinIncrement)
 	}
 }
 
@@ -457,7 +580,9 @@ func TestUnmarshalMtsMoveListingToHoldingStep(t *testing.T) {
 		"action": "mts_move_listing_to_holding",
 		"payload": {
 			"transactionId": "11111111-1111-1111-1111-111111111111",
-			"listingId": "22222222-2222-2222-2222-222222222222"
+			"listingId": "22222222-2222-2222-2222-222222222222",
+			"buyerId": 100,
+			"worldId": 0
 		},
 		"createdAt": "2026-06-17T00:00:00Z",
 		"updatedAt": "2026-06-17T00:00:00Z"
@@ -476,6 +601,9 @@ func TestUnmarshalMtsMoveListingToHoldingStep(t *testing.T) {
 	}
 	if p.ListingId.String() != "22222222-2222-2222-2222-222222222222" {
 		t.Errorf("listingId mismatch, got %s", p.ListingId)
+	}
+	if p.BuyerId != 100 {
+		t.Errorf("buyerId: expected 100, got %d", p.BuyerId)
 	}
 }
 

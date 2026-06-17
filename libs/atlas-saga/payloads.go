@@ -563,6 +563,7 @@ type ReleaseFromStoragePayload struct {
 type TransferToMtsPayload struct {
 	TransactionId       uuid.UUID  `json:"transactionId"`
 	CharacterId         uint32     `json:"characterId"`
+	SellerAccountId     uint32     `json:"sellerAccountId"` // Seller's cash-shop account, captured onto the listing for the settle-at-expiry seller-points credit
 	WorldId             world.Id   `json:"worldId"`
 	SourceInventoryType byte       `json:"sourceInventoryType"`
 	AssetId             uint32     `json:"assetId"`
@@ -594,12 +595,13 @@ type WithdrawFromMtsPayload struct {
 // expansion), and the seller's sale parameters. Mirrors AcceptToCashShopPayload
 // carrying its item snapshot.
 type AcceptToMtsListingPayload struct {
-	TransactionId uuid.UUID `json:"transactionId"`
-	ListingId     uuid.UUID `json:"listingId"`
-	WorldId       world.Id  `json:"worldId"`
-	SellerId      uint32    `json:"sellerId"`
-	SellerName    string    `json:"sellerName"`
-	SaleType      string    `json:"saleType"`
+	TransactionId   uuid.UUID `json:"transactionId"`
+	ListingId       uuid.UUID `json:"listingId"`
+	WorldId         world.Id  `json:"worldId"`
+	SellerId        uint32    `json:"sellerId"`
+	SellerAccountId uint32    `json:"sellerAccountId"`
+	SellerName      string    `json:"sellerName"`
+	SaleType        string    `json:"saleType"`
 
 	// Item snapshot
 	TemplateId    uint32 `json:"templateId"`

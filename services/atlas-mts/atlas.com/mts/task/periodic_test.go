@@ -5,10 +5,14 @@ import (
 	"testing"
 	"time"
 
+	"atlas-mts/bid"
 	"atlas-mts/holding"
 	"atlas-mts/listing"
+	"atlas-mts/saga"
 	"atlas-mts/task"
 	"atlas-mts/test"
+
+	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/google/uuid"
@@ -160,6 +164,138 @@ func TestSweep_ExpiresOnlyExpiredActiveAuctions(t *testing.T) {
 	}
 	if got := len(holdingsForOwner(t, db, sellerFixed)); got != 0 {
 		t.Fatalf("fixed-price seller: expected no holding, got %d", got)
+	}
+}
+
+// captureEmitter records the sagas the sweep's settle path emits, so the
+// settle-at-expiry winner branch can be asserted without a live broker.
+type captureEmitter struct {
+	sagas []saga.Saga
+}
+
+func (e *captureEmitter) Create(s saga.Saga) error {
+	e.sagas = append(e.sagas, s)
+	return nil
+}
+
+// TestSweep_SettlesExpiredAuctionWithWinner asserts an expired auction WITH a high
+// bidder is settled to the winner: the winning held bid is marked won, and the
+// emitted saga credits the seller's points (+listValue) and moves custody to the
+// winner WITHOUT re-debiting the winner (no negative AwardCurrency / no
+// MtsBidEscrow / no MtsSettlePurchase). The seller account is read from the
+// listing row (captured at list time); the winner account from the held bid row.
+func TestSweep_SettlesExpiredAuctionWithWinner(t *testing.T) {
+	db := test.SetupTestDB(t, listing.Migration, holding.Migration, bid.Migration)
+	defer test.CleanupTestDB(t, db)
+	if err := db.Exec("DELETE FROM listings").Error; err != nil {
+		t.Fatalf("reset listings: %v", err)
+	}
+	if err := db.Exec("DELETE FROM bids").Error; err != nil {
+		t.Fatalf("reset bids: %v", err)
+	}
+
+	ctx := database.WithoutTenantFilter(context.Background())
+	tenantId := test.TestTenantId
+	listingId := uuid.New()
+	const (
+		seller        = uint32(8880001)
+		sellerAccount = uint32(88001)
+		winner        = uint32(8880002)
+		winnerAccount = uint32(88002)
+		listValue     = uint32(1000)
+	)
+	past := time.Now().Add(-time.Hour)
+
+	// Active auction past ends_at, with a high bidder + seller account captured.
+	m, err := listing.NewBuilder(tenantId, 0, seller).
+		SetId(listingId).
+		SetSellerAccountId(sellerAccount).
+		SetSellerName("Seller").
+		SetSaleType(listing.SaleTypeAuction).
+		SetState(listing.StateActive).
+		SetTemplateId(1302000).
+		SetQuantity(1).
+		SetListValue(listValue).
+		SetCommissionRate(0.10).
+		SetCurrentBid(1000).
+		SetHighBidderId(winner).
+		SetMinIncrement(100).
+		SetEndsAt(&past).
+		SetCategory("equip").
+		SetSubCategory("onehand").
+		Build()
+	if err != nil {
+		t.Fatalf("build listing: %v", err)
+	}
+	if _, err := listing.CreateListing(db.WithContext(ctx), m); err != nil {
+		t.Fatalf("seed listing: %v", err)
+	}
+
+	// The winner's held bid (carries the winner account for the move step).
+	bm, err := bid.NewBuilder(tenantId, listingId, winner).
+		SetId(uuid.New()).
+		SetBidderAccountId(winnerAccount).
+		SetAmount(1000).
+		SetEscrowTxnId(uuid.New()).
+		SetState(bid.StateHeld).
+		Build()
+	if err != nil {
+		t.Fatalf("build bid: %v", err)
+	}
+	if _, err := bid.CreateBid(db.WithContext(ctx), bm); err != nil {
+		t.Fatalf("seed bid: %v", err)
+	}
+
+	emitter := &captureEmitter{}
+	l := logrus.New()
+	swept, err := task.Sweep(l, context.Background(), db, listing.WithSagaEmitter(emitter))
+	if err != nil {
+		t.Fatalf("Sweep: %v", err)
+	}
+	if swept != 1 {
+		t.Fatalf("expected 1 settled, got %d", swept)
+	}
+
+	// Winning bid marked won.
+	allBids, err := bid.NewProcessor(l, ctx, db).GetByListingId(listingId)
+	if err != nil {
+		t.Fatalf("GetByListingId: %v", err)
+	}
+	if len(allBids) != 1 || allBids[0].State() != bid.StateWon {
+		t.Fatalf("expected the winning bid marked won, got %+v", allBids)
+	}
+
+	// One settle saga: seller-credit (+listValue points) + move-to-winner. No debit.
+	if len(emitter.sagas) != 1 {
+		t.Fatalf("expected 1 settle saga, got %d", len(emitter.sagas))
+	}
+	var sawSellerCredit, sawMove bool
+	for _, st := range emitter.sagas[0].Steps {
+		switch st.Action {
+		case sharedsaga.AwardCurrency:
+			ap := st.Payload.(sharedsaga.AwardCurrencyPayload)
+			if ap.Amount < 0 {
+				t.Errorf("settle has a NEGATIVE AwardCurrency (%+v) — winner double-debited", ap)
+			}
+			if ap.Amount == int32(listValue) && ap.AccountId == sellerAccount {
+				sawSellerCredit = true
+			}
+		case sharedsaga.MtsBidEscrow:
+			t.Errorf("settle has an MtsBidEscrow %+v — winner re-touched at settle", st.Payload)
+		case sharedsaga.MtsSettlePurchase:
+			t.Error("settle reused MtsSettlePurchase — that DEBITS the winner (double-debit)")
+		case sharedsaga.MtsMoveListingToHolding:
+			mp := st.Payload.(sharedsaga.MtsMoveListingToHoldingPayload)
+			if mp.BuyerId == winner && mp.ListingId == listingId {
+				sawMove = true
+			}
+		}
+	}
+	if !sawSellerCredit {
+		t.Errorf("expected a +%d points credit to the seller account %d", listValue, sellerAccount)
+	}
+	if !sawMove {
+		t.Error("expected a move-to-holding for the winner")
 	}
 }
 

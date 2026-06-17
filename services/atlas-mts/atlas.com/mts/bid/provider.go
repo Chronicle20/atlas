@@ -41,6 +41,7 @@ func getByListingId(listingId uuid.UUID) database.EntityProvider[[]entity] {
 func modelFromEntity(e entity) (Model, error) {
 	return NewBuilder(e.TenantId, e.ListingId, e.BidderId).
 		SetId(e.Id).
+		SetBidderAccountId(e.BidderAccountId).
 		SetAmount(e.Amount).
 		SetEscrowTxnId(e.EscrowTxnId).
 		SetState(State(e.State)).

@@ -43,11 +43,12 @@ type Command[E any] struct {
 // with the sale/auction params. ListingId is allocated up-front by the
 // initiator so creation is deterministic and idempotent on replay.
 type AcceptToMtsListingCommandBody struct {
-	ListingId  uuid.UUID `json:"listingId"`
-	WorldId    byte      `json:"worldId"`
-	SellerId   uint32    `json:"sellerId"`
-	SellerName string    `json:"sellerName"`
-	SaleType   string    `json:"saleType"`
+	ListingId       uuid.UUID `json:"listingId"`
+	WorldId         byte      `json:"worldId"`
+	SellerId        uint32    `json:"sellerId"`
+	SellerAccountId uint32    `json:"sellerAccountId"`
+	SellerName      string    `json:"sellerName"`
+	SaleType        string    `json:"saleType"`
 
 	// item snapshot
 	TemplateId uint32 `json:"templateId"`

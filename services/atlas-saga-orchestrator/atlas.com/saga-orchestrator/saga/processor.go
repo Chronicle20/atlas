@@ -1436,12 +1436,13 @@ func (p *ProcessorImpl) expandTransferToMts(st Step[any]) ([]Step[any], error) {
 			Pending,
 			AcceptToMtsListing,
 			AcceptToMtsListingPayload{
-				TransactionId: payload.TransactionId,
-				ListingId:     payload.ListingId,
-				WorldId:       payload.WorldId,
-				SellerId:      payload.CharacterId,
-				SellerName:    payload.SellerName,
-				SaleType:      payload.SaleType,
+				TransactionId:   payload.TransactionId,
+				ListingId:       payload.ListingId,
+				WorldId:         payload.WorldId,
+				SellerId:        payload.CharacterId,
+				SellerAccountId: payload.SellerAccountId,
+				SellerName:      payload.SellerName,
+				SaleType:        payload.SaleType,
 
 				// Item snapshot captured from inventory.
 				TemplateId:    foundAsset.TemplateId,

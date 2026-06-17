@@ -10,14 +10,15 @@ import (
 // Builder constructs an immutable bid Model. The id is assigned at create time
 // in the administrator, so it is not required here.
 type Builder struct {
-	id          uuid.UUID
-	tenantId    uuid.UUID
-	listingId   uuid.UUID
-	bidderId    uint32
-	amount      uint32
-	escrowTxnId uuid.UUID
-	state       State
-	createdAt   time.Time
+	id              uuid.UUID
+	tenantId        uuid.UUID
+	listingId       uuid.UUID
+	bidderId        uint32
+	bidderAccountId uint32
+	amount          uint32
+	escrowTxnId     uuid.UUID
+	state           State
+	createdAt       time.Time
 }
 
 func NewBuilder(tenantId uuid.UUID, listingId uuid.UUID, bidderId uint32) *Builder {
@@ -36,6 +37,11 @@ func (b *Builder) SetListingId(listingId uuid.UUID) *Builder {
 
 func (b *Builder) SetBidderId(bidderId uint32) *Builder {
 	b.bidderId = bidderId
+	return b
+}
+
+func (b *Builder) SetBidderAccountId(bidderAccountId uint32) *Builder {
+	b.bidderAccountId = bidderAccountId
 	return b
 }
 
@@ -64,13 +70,14 @@ func (b *Builder) Build() (Model, error) {
 		return Model{}, errors.New("tenantId cannot be nil")
 	}
 	return Model{
-		id:          b.id,
-		tenantId:    b.tenantId,
-		listingId:   b.listingId,
-		bidderId:    b.bidderId,
-		amount:      b.amount,
-		escrowTxnId: b.escrowTxnId,
-		state:       b.state,
-		createdAt:   b.createdAt,
+		id:              b.id,
+		tenantId:        b.tenantId,
+		listingId:       b.listingId,
+		bidderId:        b.bidderId,
+		bidderAccountId: b.bidderAccountId,
+		amount:          b.amount,
+		escrowTxnId:     b.escrowTxnId,
+		state:           b.state,
+		createdAt:       b.createdAt,
 	}, nil
 }

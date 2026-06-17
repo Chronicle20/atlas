@@ -99,6 +99,7 @@ func handleAcceptToMtsListing(pf providerFn) func(db *gorm.DB) message.Handler[c
 
 				m, berr := listing.NewBuilder(tid, world.Id(b.WorldId), b.SellerId).
 					SetId(b.ListingId).
+					SetSellerAccountId(b.SellerAccountId).
 					SetSellerName(b.SellerName).
 					SetSaleType(listing.SaleType(b.SaleType)).
 					SetState(listing.StateActive).

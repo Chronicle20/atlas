@@ -80,6 +80,7 @@ func (r *RestModel) SetID(idStr string) error {
 type CreateListingRestModel struct {
 	Id                  string  `json:"-"`
 	SellerId            uint32  `json:"sellerId"`
+	SellerAccountId     uint32  `json:"sellerAccountId"`
 	SellerName          string  `json:"sellerName"`
 	SaleType            string  `json:"saleType"`
 	SourceInventoryType byte    `json:"sourceInventoryType"`

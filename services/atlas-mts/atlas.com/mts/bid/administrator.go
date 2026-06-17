@@ -27,6 +27,16 @@ func GetById(id string) database.EntityProvider[Model] {
 	}
 }
 
+// GetByListingId is the exported provider wrapper: it resolves every bid placed on
+// an auction listing, mapping each entity to the immutable Model. The listing
+// processor uses it to find a bidder's held bid (for the outbid release and the
+// settle-at-expiry win mark) within the same DB handle/transaction.
+func GetByListingId(listingId uuid.UUID) database.EntityProvider[[]Model] {
+	return func(db *gorm.DB) model.Provider[[]Model] {
+		return model.SliceMap(modelFromEntity)(getByListingId(listingId)(db))()
+	}
+}
+
 // GetAll resolves every bid visible to the request's tenant.
 func GetAll() database.EntityProvider[[]Model] {
 	return func(db *gorm.DB) model.Provider[[]Model] {
@@ -47,14 +57,15 @@ func CreateBid(db *gorm.DB, m Model) (Model, error) {
 	}
 
 	e := entity{
-		Id:          id,
-		TenantId:    m.TenantId(),
-		ListingId:   m.ListingId(),
-		BidderId:    m.BidderId(),
-		Amount:      m.Amount(),
-		EscrowTxnId: m.EscrowTxnId(),
-		State:       string(m.State()),
-		CreatedAt:   createdAt,
+		Id:              id,
+		TenantId:        m.TenantId(),
+		ListingId:       m.ListingId(),
+		BidderId:        m.BidderId(),
+		BidderAccountId: m.BidderAccountId(),
+		Amount:          m.Amount(),
+		EscrowTxnId:     m.EscrowTxnId(),
+		State:           string(m.State()),
+		CreatedAt:       createdAt,
 	}
 	if err := db.Create(&e).Error; err != nil {
 		return Model{}, err

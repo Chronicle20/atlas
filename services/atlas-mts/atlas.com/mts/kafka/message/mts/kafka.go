@@ -29,8 +29,7 @@ const (
 	CommandCreateListing = "CREATE_LISTING"
 	// CommandBuy buys out a listing (saga-driven; routed in a later phase).
 	CommandBuy = "BUY"
-	// CommandPlaceBid places a bid on an auction listing (saga-driven; routed in a
-	// later phase).
+	// CommandPlaceBid places a bid on an auction listing (saga-driven; routed here).
 	CommandPlaceBid = "PLACE_BID"
 	// CommandTakeHome takes a holding home into inventory (saga-driven; routed in a
 	// later phase).
@@ -68,6 +67,20 @@ type BuyCommandBody struct {
 	BuyerId         uint32    `json:"buyerId"`
 	BuyerAccountId  uint32    `json:"buyerAccountId"`
 	SellerAccountId uint32    `json:"sellerAccountId"`
+}
+
+// PlaceBidCommandBody identifies the auction listing being bid on and carries the
+// bidder's identity (id + account) plus the bid amount. The listing's currentBid,
+// minIncrement, listValue, and commissionRate are read from the listing row by
+// atlas-mts; the caller (channel) supplies the bidder id/account from the session.
+// The escrow holds the MARKED-UP amount (bid * (1 + commissionRate)); the raw bid
+// amount is carried here.
+type PlaceBidCommandBody struct {
+	ListingId       uuid.UUID `json:"listingId"`
+	WorldId         byte      `json:"worldId"`
+	BidderId        uint32    `json:"bidderId"`
+	BidderAccountId uint32    `json:"bidderAccountId"`
+	Amount          uint32    `json:"amount"`
 }
 
 // RegisterWishCommandBody carries the wish-list entry to create.

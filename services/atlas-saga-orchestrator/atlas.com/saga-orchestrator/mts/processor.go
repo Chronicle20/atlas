@@ -19,11 +19,12 @@ import (
 // inventory). Grouped into a struct because the field count exceeds a readable
 // positional argument list.
 type AcceptToMtsListingParams struct {
-	ListingId  uuid.UUID
-	WorldId    byte
-	SellerId   uint32
-	SellerName string
-	SaleType   string
+	ListingId       uuid.UUID
+	WorldId         byte
+	SellerId        uint32
+	SellerAccountId uint32
+	SellerName      string
+	SaleType        string
 
 	TemplateId uint32
 	Quantity   uint32

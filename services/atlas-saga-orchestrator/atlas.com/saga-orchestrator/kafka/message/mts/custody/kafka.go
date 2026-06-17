@@ -33,11 +33,12 @@ type Command[E any] struct {
 // AcceptToMtsListingCommandBody carries every field needed to CREATE a listing
 // row in active state.
 type AcceptToMtsListingCommandBody struct {
-	ListingId  uuid.UUID `json:"listingId"`
-	WorldId    byte      `json:"worldId"`
-	SellerId   uint32    `json:"sellerId"`
-	SellerName string    `json:"sellerName"`
-	SaleType   string    `json:"saleType"`
+	ListingId       uuid.UUID `json:"listingId"`
+	WorldId         byte      `json:"worldId"`
+	SellerId        uint32    `json:"sellerId"`
+	SellerAccountId uint32    `json:"sellerAccountId"`
+	SellerName      string    `json:"sellerName"`
+	SaleType        string    `json:"saleType"`
 
 	// item snapshot
 	TemplateId uint32 `json:"templateId"`

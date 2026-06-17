@@ -17,13 +17,27 @@ import (
 // the list flow can be asserted without a live broker.
 type captureEmitter struct {
 	saga   saga.Saga
+	all    []saga.Saga
 	called bool
 }
 
 func (e *captureEmitter) Create(s saga.Saga) error {
 	e.saga = s
+	e.all = append(e.all, s)
 	e.called = true
 	return nil
+}
+
+// sagas returns every saga the emitter has captured (the bid path may emit a
+// hold and a release as two single-step sagas).
+func (e *captureEmitter) sagas() []saga.Saga { return e.all }
+
+// reset clears the capture state so a follow-up call's emission can be asserted
+// in isolation (used by the multi-step bid/settle flows).
+func (e *captureEmitter) reset() {
+	e.saga = saga.Saga{}
+	e.all = nil
+	e.called = false
 }
 
 // newListProcessor builds a listing processor wired to a capturing saga emitter.

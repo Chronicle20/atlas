@@ -24,13 +24,14 @@ func Migration(db *gorm.DB) error {
 // One composite index backs the design's hot query:
 //   - (tenant_id, listing_id, state) — the bids on an auction by escrow state
 type entity struct {
-	Id          uuid.UUID `gorm:"column:id;type:uuid;primaryKey;uniqueIndex:idx_bids_tenant_id,priority:2"`
-	TenantId    uuid.UUID `gorm:"column:tenant_id;type:uuid;not null;uniqueIndex:idx_bids_tenant_id,priority:1;index:idx_bids_listing_state,priority:1"`
-	ListingId   uuid.UUID `gorm:"column:listing_id;type:uuid;not null;index:idx_bids_listing_state,priority:2"`
-	BidderId    uint32    `gorm:"column:bidder_id;not null"`
-	Amount      uint32    `gorm:"column:amount;not null"`
-	EscrowTxnId uuid.UUID `gorm:"column:escrow_txn_id;type:uuid;not null"`
-	State       string    `gorm:"column:state;not null;index:idx_bids_listing_state,priority:3"`
+	Id              uuid.UUID `gorm:"column:id;type:uuid;primaryKey;uniqueIndex:idx_bids_tenant_id,priority:2"`
+	TenantId        uuid.UUID `gorm:"column:tenant_id;type:uuid;not null;uniqueIndex:idx_bids_tenant_id,priority:1;index:idx_bids_listing_state,priority:1"`
+	ListingId       uuid.UUID `gorm:"column:listing_id;type:uuid;not null;index:idx_bids_listing_state,priority:2"`
+	BidderId        uint32    `gorm:"column:bidder_id;not null"`
+	BidderAccountId uint32    `gorm:"column:bidder_account_id;not null"`
+	Amount          uint32    `gorm:"column:amount;not null"`
+	EscrowTxnId     uuid.UUID `gorm:"column:escrow_txn_id;type:uuid;not null"`
+	State           string    `gorm:"column:state;not null;index:idx_bids_listing_state,priority:3"`
 
 	CreatedAt time.Time `gorm:"column:created_at"`
 }

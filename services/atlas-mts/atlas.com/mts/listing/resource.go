@@ -120,6 +120,7 @@ func handleCreateListing(d *rest.HandlerDependency, c *rest.HandlerContext, rm C
 			req := ListRequest{
 				WorldId:             worldId,
 				SellerId:            rm.SellerId,
+				SellerAccountId:     rm.SellerAccountId,
 				SellerName:          rm.SellerName,
 				SaleType:            SaleType(rm.SaleType),
 				SourceInventoryType: rm.SourceInventoryType,

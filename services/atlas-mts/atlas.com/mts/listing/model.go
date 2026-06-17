@@ -29,11 +29,12 @@ const (
 // item snapshot (template id, quantity, and the full equip stat block) plus
 // sale/auction/state fields. Construct it via the Builder.
 type Model struct {
-	id         uuid.UUID
-	tenantId   uuid.UUID
-	worldId    world.Id
-	sellerId   uint32
-	sellerName string
+	id              uuid.UUID
+	tenantId        uuid.UUID
+	worldId         world.Id
+	sellerId        uint32
+	sellerAccountId uint32
+	sellerName      string
 
 	saleType SaleType
 	state    State
@@ -83,37 +84,38 @@ type Model struct {
 	updatedAt time.Time
 }
 
-func (m Model) Id() uuid.UUID         { return m.id }
-func (m Model) TenantId() uuid.UUID   { return m.tenantId }
-func (m Model) WorldId() world.Id     { return m.worldId }
-func (m Model) SellerId() uint32      { return m.sellerId }
-func (m Model) SellerName() string    { return m.sellerName }
-func (m Model) SaleType() SaleType    { return m.saleType }
-func (m Model) State() State          { return m.state }
-func (m Model) TemplateId() uint32    { return m.templateId }
-func (m Model) Quantity() uint32      { return m.quantity }
-func (m Model) Strength() uint16      { return m.strength }
-func (m Model) Dexterity() uint16     { return m.dexterity }
-func (m Model) Intelligence() uint16  { return m.intelligence }
-func (m Model) Luck() uint16          { return m.luck }
-func (m Model) HP() uint16            { return m.hp }
-func (m Model) MP() uint16            { return m.mp }
-func (m Model) WeaponAttack() uint16  { return m.weaponAttack }
-func (m Model) MagicAttack() uint16   { return m.magicAttack }
-func (m Model) WeaponDefense() uint16 { return m.weaponDefense }
-func (m Model) MagicDefense() uint16  { return m.magicDefense }
-func (m Model) Accuracy() uint16      { return m.accuracy }
-func (m Model) Avoidability() uint16  { return m.avoidability }
-func (m Model) Hands() uint16         { return m.hands }
-func (m Model) Speed() uint16         { return m.speed }
-func (m Model) Jump() uint16          { return m.jump }
-func (m Model) Slots() uint16         { return m.slots }
-func (m Model) Level() byte           { return m.level }
-func (m Model) ItemLevel() byte       { return m.itemLevel }
-func (m Model) ItemExp() uint32       { return m.itemExp }
-func (m Model) RingId() uint32        { return m.ringId }
-func (m Model) ViciousCount() uint32  { return m.viciousCount }
-func (m Model) Flags() uint16         { return m.flags }
+func (m Model) Id() uuid.UUID           { return m.id }
+func (m Model) TenantId() uuid.UUID     { return m.tenantId }
+func (m Model) WorldId() world.Id       { return m.worldId }
+func (m Model) SellerId() uint32        { return m.sellerId }
+func (m Model) SellerAccountId() uint32 { return m.sellerAccountId }
+func (m Model) SellerName() string      { return m.sellerName }
+func (m Model) SaleType() SaleType      { return m.saleType }
+func (m Model) State() State            { return m.state }
+func (m Model) TemplateId() uint32      { return m.templateId }
+func (m Model) Quantity() uint32        { return m.quantity }
+func (m Model) Strength() uint16        { return m.strength }
+func (m Model) Dexterity() uint16       { return m.dexterity }
+func (m Model) Intelligence() uint16    { return m.intelligence }
+func (m Model) Luck() uint16            { return m.luck }
+func (m Model) HP() uint16              { return m.hp }
+func (m Model) MP() uint16              { return m.mp }
+func (m Model) WeaponAttack() uint16    { return m.weaponAttack }
+func (m Model) MagicAttack() uint16     { return m.magicAttack }
+func (m Model) WeaponDefense() uint16   { return m.weaponDefense }
+func (m Model) MagicDefense() uint16    { return m.magicDefense }
+func (m Model) Accuracy() uint16        { return m.accuracy }
+func (m Model) Avoidability() uint16    { return m.avoidability }
+func (m Model) Hands() uint16           { return m.hands }
+func (m Model) Speed() uint16           { return m.speed }
+func (m Model) Jump() uint16            { return m.jump }
+func (m Model) Slots() uint16           { return m.slots }
+func (m Model) Level() byte             { return m.level }
+func (m Model) ItemLevel() byte         { return m.itemLevel }
+func (m Model) ItemExp() uint32         { return m.itemExp }
+func (m Model) RingId() uint32          { return m.ringId }
+func (m Model) ViciousCount() uint32    { return m.viciousCount }
+func (m Model) Flags() uint16           { return m.flags }
 
 func (m Model) ListValue() uint32       { return m.listValue }
 func (m Model) BuyNowPrice() *uint32    { return m.buyNowPrice }

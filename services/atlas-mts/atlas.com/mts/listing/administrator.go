@@ -65,48 +65,49 @@ func CreateListing(db *gorm.DB, m Model) (Model, error) {
 	}
 
 	e := entity{
-		Id:             id,
-		TenantId:       m.TenantId(),
-		WorldId:        byte(m.WorldId()),
-		SellerId:       m.SellerId(),
-		SellerName:     m.SellerName(),
-		SaleType:       string(m.SaleType()),
-		State:          string(m.State()),
-		TemplateId:     m.TemplateId(),
-		Quantity:       m.Quantity(),
-		Strength:       m.Strength(),
-		Dexterity:      m.Dexterity(),
-		Intelligence:   m.Intelligence(),
-		Luck:           m.Luck(),
-		HP:             m.HP(),
-		MP:             m.MP(),
-		WeaponAttack:   m.WeaponAttack(),
-		MagicAttack:    m.MagicAttack(),
-		WeaponDefense:  m.WeaponDefense(),
-		MagicDefense:   m.MagicDefense(),
-		Accuracy:       m.Accuracy(),
-		Avoidability:   m.Avoidability(),
-		Hands:          m.Hands(),
-		Speed:          m.Speed(),
-		Jump:           m.Jump(),
-		Slots:          m.Slots(),
-		Level:          m.Level(),
-		ItemLevel:      m.ItemLevel(),
-		ItemExp:        m.ItemExp(),
-		RingId:         m.RingId(),
-		ViciousCount:   m.ViciousCount(),
-		Flags:          m.Flags(),
-		ListValue:      m.ListValue(),
-		BuyNowPrice:    m.BuyNowPrice(),
-		CommissionRate: m.CommissionRate(),
-		Category:       m.Category(),
-		SubCategory:    m.SubCategory(),
-		EndsAt:         m.EndsAt(),
-		CurrentBid:     m.CurrentBid(),
-		HighBidderId:   m.HighBidderId(),
-		MinIncrement:   m.MinIncrement(),
-		CreatedAt:      createdAt,
-		UpdatedAt:      now,
+		Id:              id,
+		TenantId:        m.TenantId(),
+		WorldId:         byte(m.WorldId()),
+		SellerId:        m.SellerId(),
+		SellerAccountId: m.SellerAccountId(),
+		SellerName:      m.SellerName(),
+		SaleType:        string(m.SaleType()),
+		State:           string(m.State()),
+		TemplateId:      m.TemplateId(),
+		Quantity:        m.Quantity(),
+		Strength:        m.Strength(),
+		Dexterity:       m.Dexterity(),
+		Intelligence:    m.Intelligence(),
+		Luck:            m.Luck(),
+		HP:              m.HP(),
+		MP:              m.MP(),
+		WeaponAttack:    m.WeaponAttack(),
+		MagicAttack:     m.MagicAttack(),
+		WeaponDefense:   m.WeaponDefense(),
+		MagicDefense:    m.MagicDefense(),
+		Accuracy:        m.Accuracy(),
+		Avoidability:    m.Avoidability(),
+		Hands:           m.Hands(),
+		Speed:           m.Speed(),
+		Jump:            m.Jump(),
+		Slots:           m.Slots(),
+		Level:           m.Level(),
+		ItemLevel:       m.ItemLevel(),
+		ItemExp:         m.ItemExp(),
+		RingId:          m.RingId(),
+		ViciousCount:    m.ViciousCount(),
+		Flags:           m.Flags(),
+		ListValue:       m.ListValue(),
+		BuyNowPrice:     m.BuyNowPrice(),
+		CommissionRate:  m.CommissionRate(),
+		Category:        m.Category(),
+		SubCategory:     m.SubCategory(),
+		EndsAt:          m.EndsAt(),
+		CurrentBid:      m.CurrentBid(),
+		HighBidderId:    m.HighBidderId(),
+		MinIncrement:    m.MinIncrement(),
+		CreatedAt:       createdAt,
+		UpdatedAt:       now,
 	}
 	if err := db.Create(&e).Error; err != nil {
 		return Model{}, err
@@ -142,4 +143,30 @@ func UpdateAuction(db *gorm.DB, id string, currentBid uint32, highBidderId uint3
 				"updated_at":     time.Now(),
 			}).Error
 	})
+}
+
+// AdvanceAuctionBid is the race-safe compare-and-swap that advances an active
+// auction's high bid. It updates current_bid/high_bidder_id only when the row is
+// still active AND its current high bid matches the prior values the caller read
+// (the optimistic-concurrency arbiter): a concurrent bid that already advanced the
+// row makes this caller the loser (0 rows affected). It returns the number of rows
+// affected — 1 on a win, 0 on a lost race. endsAt is intentionally NOT touched
+// here (no anti-snipe extension in this task); the auction's ends_at stays fixed.
+//
+// The map-keyed WHERE forces every condition into the query (a struct condition
+// would elide a zero-valued prior bid/bidder, which is exactly the first-bid case).
+func AdvanceAuctionBid(db *gorm.DB, id string, priorBid uint32, priorBidder uint32, newBid uint32, newBidder uint32) (int64, error) {
+	result := db.Model(&entity{}).
+		Where(map[string]interface{}{
+			"id":             parseId(id),
+			"state":          string(StateActive),
+			"current_bid":    priorBid,
+			"high_bidder_id": priorBidder,
+		}).
+		Updates(map[string]interface{}{
+			"current_bid":    newBid,
+			"high_bidder_id": newBidder,
+			"updated_at":     time.Now(),
+		})
+	return result.RowsAffected, result.Error
 }

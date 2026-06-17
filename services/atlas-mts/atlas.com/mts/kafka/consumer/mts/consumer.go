@@ -50,6 +50,9 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleBuy(db)))); err != nil {
 				return err
 			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handlePlaceBid(db)))); err != nil {
+				return err
+			}
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleRegisterWish(producer2.ProviderImpl(l))(db)))); err != nil {
 				return err
 			}
@@ -129,6 +132,37 @@ func handleBuy(db *gorm.DB) message.Handler[mts.Command[mts.BuyCommandBody]] {
 		})
 		if err != nil {
 			l.WithError(err).Errorf("Failed to settle buy for listing [%s], buyer [%d], transaction [%s].", b.ListingId.String(), b.BuyerId, c.TransactionId.String())
+			return
+		}
+	}
+}
+
+// handlePlaceBid places a bid on an auction listing: it asks the listing processor
+// to validate the listing is an active auction and the bid clears the floor
+// (listValue for the first bid, else currentBid + minIncrement), then — under a
+// race-safe compare-and-swap on the listing row — record a held bid, advance the
+// listing's currentBid/highBidder, and emit an MtsBidEscrow{-markedUp} saga to hold
+// the bidder's prepaid (the MARKED-UP amount). On an outbid it releases the prior
+// bidder's escrow (MtsBidEscrow{+markedUpPrior}) and marks their bid released. It
+// emits NO MTS status event itself: the bid-placed / outbid notification is the
+// channel's concern (a later/Phase-0-gated path). A rejected or lost-race bid is
+// logged and dropped (no saga, no effect).
+func handlePlaceBid(db *gorm.DB) message.Handler[mts.Command[mts.PlaceBidCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c mts.Command[mts.PlaceBidCommandBody]) {
+		if c.Type != mts.CommandPlaceBid {
+			return
+		}
+		b := c.Body
+
+		err := listing.NewProcessor(l, ctx, db).PlaceBid(listing.BidRequest{
+			WorldId:         world.Id(b.WorldId),
+			ListingId:       b.ListingId,
+			BidderId:        b.BidderId,
+			BidderAccountId: b.BidderAccountId,
+			Amount:          b.Amount,
+		})
+		if err != nil {
+			l.WithError(err).Errorf("Failed to place bid for listing [%s], bidder [%d], transaction [%s].", b.ListingId.String(), b.BidderId, c.TransactionId.String())
 			return
 		}
 	}

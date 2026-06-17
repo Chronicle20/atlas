@@ -158,6 +158,7 @@ func countExpiredActive(now time.Time) func(db *gorm.DB) (int64, error) {
 func modelFromEntity(e entity) (Model, error) {
 	b := NewBuilder(e.TenantId, world.Id(e.WorldId), e.SellerId).
 		SetId(e.Id).
+		SetSellerAccountId(e.SellerAccountId).
 		SetSellerName(e.SellerName).
 		SetSaleType(SaleType(e.SaleType)).
 		SetState(State(e.State)).

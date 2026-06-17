@@ -6,6 +6,7 @@ import (
 	"math"
 	"time"
 
+	"atlas-mts/bid"
 	"atlas-mts/configuration"
 	"atlas-mts/holding"
 	"atlas-mts/saga"
@@ -43,6 +44,7 @@ type BalanceReader interface {
 type ListRequest struct {
 	WorldId             world.Id
 	SellerId            uint32
+	SellerAccountId     uint32
 	SellerName          string
 	SaleType            SaleType
 	SourceInventoryType byte
@@ -69,6 +71,41 @@ type BuyRequest struct {
 	BuyerId         uint32
 	BuyerAccountId  uint32
 	SellerAccountId uint32
+}
+
+// BidRequest carries the caller-supplied parameters for an auction bid. The
+// bidder's id+account come from the channel session; the listing's currentBid,
+// minIncrement, listValue, and commissionRate are read from the row, never carried
+// here. Amount is the raw bid in NX (the escrow holds the MARKED-UP amount).
+type BidRequest struct {
+	WorldId         world.Id
+	ListingId       uuid.UUID
+	BidderId        uint32
+	BidderAccountId uint32
+	Amount          uint32
+}
+
+// SettleRequest carries the caller-supplied parameters for the auction
+// settle-at-expiry decision. The ticker supplies the winner (the listing's current
+// high bidder) plus the account ids needed for the seller credit and the winner's
+// holding. When the listing has no high bidder the winner/account fields are zero
+// and SettleAuction takes the expire-to-seller path.
+type SettleRequest struct {
+	ListingId       uuid.UUID
+	WorldId         world.Id
+	WinnerId        uint32
+	WinnerAccountId uint32
+	SellerAccountId uint32
+}
+
+// SettleResult reports the outcome of a SettleAuction. HadWinner is true iff the
+// auction had a held high bid and was settled to the winner (seller credit + custody
+// move emitted). Expired is true iff the auction had no bids and was returned to the
+// seller's holding via the local Expire transition. Exactly one of the two is true
+// on success.
+type SettleResult struct {
+	HadWinner bool
+	Expired   bool
 }
 
 // listSagaBaseTimeout and listSagaPerStepTimeout define the step-count-scaled
@@ -117,6 +154,22 @@ type Processor interface {
 	// the buyer holding is created only by the orchestrator-driven move step. The
 	// commission (markedUp - listValue) is the sink and is never credited.
 	Buy(req BuyRequest) error
+	// PlaceBid places a bid on an active auction listing. It validates the listing
+	// is an active auction and the bid clears the floor (listValue for the first
+	// bid, else currentBid + minIncrement), then — under a race-safe compare-and-swap
+	// on the listing row — records a held Bid (with a fresh escrow txn id) and
+	// advances the listing's currentBid/highBidder. It escrows the MARKED-UP amount
+	// (bid * (1 + commissionRate)) by emitting an MtsBidEscrow{-markedUp} saga so the
+	// winner's settlement matches buy-now. On an outbid it RELEASES the prior high
+	// bidder's escrow (MtsBidEscrow{+markedUpPrior}) and marks their Bid released.
+	PlaceBid(req BidRequest) error
+	// SettleAuction settles an expired auction. With a high bidder it credits the
+	// seller's points (+listValue) and moves custody to the winner WITHOUT
+	// re-debiting the winner (the winner's prepaid was already escrowed at bid time;
+	// re-using MtsSettlePurchase would double-debit), and marks the winning bid won.
+	// With NO bids it returns the item to the seller's holding via the local Expire
+	// transition (origin=expired). The outcome is reported in SettleResult.
+	SettleAuction(req SettleRequest) (SettleResult, error)
 }
 
 type ProcessorImpl struct {
@@ -378,6 +431,7 @@ func (p *ProcessorImpl) List(req ListRequest) (uuid.UUID, error) {
 	builder.AddStep("transfer_to_mts", saga.Pending, saga.TransferToMts, saga.TransferToMtsPayload{
 		TransactionId:       transactionId,
 		CharacterId:         req.SellerId,
+		SellerAccountId:     req.SellerAccountId,
 		WorldId:             req.WorldId,
 		SourceInventoryType: req.SourceInventoryType,
 		AssetId:             req.AssetId,
@@ -498,4 +552,286 @@ func (p *ProcessorImpl) Buy(req BuyRequest) error {
 	builder.SetTimeout(buySagaBaseTimeout + time.Duration(settleExpandedSteps)*buySagaPerStepTimeout)
 
 	return p.emitter.Create(builder.Build())
+}
+
+// markedUp returns ceil(amount * (1 + commissionRate)). It mirrors Buy's rounding
+// rule: round UP so the fractional NX falls toward the sink (the un-credited
+// commission) and the bidder/buyer never under-pays. Used by both the bid escrow
+// (marked-up hold at bid time) and the outbid release (release the SAME marked-up
+// amount that was held), so a release exactly reverses its hold.
+func markedUp(amount uint32, commissionRate float64) uint32 {
+	return uint32(math.Ceil(float64(amount) * (1.0 + commissionRate)))
+}
+
+// bidEscrowTimeout scales the single-step escrow saga's timeout. MtsBidEscrow is a
+// single-step wallet adjust (N=1): the orchestrator routes it straight to the
+// cash-shop wallet without expansion. A flat timeout is still wrong under a stressed
+// broker, so it is scaled for N=1 (base + 1*perStep), mirroring the list/buy flows.
+func bidEscrowTimeout() time.Duration {
+	const escrowSteps = 1
+	return buySagaBaseTimeout + time.Duration(escrowSteps)*buySagaPerStepTimeout
+}
+
+// PlaceBid is the server-authoritative auction-bid flow. See the interface doc for
+// semantics. The flow is:
+//
+//  1. Load the listing; it MUST be an active auction (a fixed-price, sold,
+//     cancelled, or expired listing is rejected).
+//  2. Validate the floor: the FIRST bid (no high bidder) must clear listValue; a
+//     subsequent bid must clear currentBid + minIncrement. The thresholds are read
+//     from the row, never from the caller.
+//  3. In ONE local DB transaction: a race-safe compare-and-swap (AdvanceAuctionBid)
+//     advances the listing's currentBid/highBidder only if the row is still active
+//     with the prior bid the caller read — the optimistic-concurrency arbiter. On a
+//     lost race (0 rows) nothing is recorded and the caller is rejected (the
+//     concurrent bid won). On a win, a held Bid is recorded with a fresh escrow txn
+//     id, and — if there was a prior high bidder — that bidder's held Bid is marked
+//     released in the same tx.
+//  4. Emit MtsBidEscrow{-markedUp} to HOLD the new bidder's prepaid (the MARKED-UP
+//     amount, so the winner's settlement matches buy-now). On an outbid, emit a
+//     second MtsBidEscrow{+markedUpPrior} to RELEASE the prior bidder's escrow.
+//
+// PlaceBid escrows the marked-up amount but records the raw bid on the Bid row
+// (the row tracks the auction bid; the marked-up figure is the wallet hold). The
+// escrow keys off the Bid's escrowTxnId so a release reverses the exact hold.
+func (p *ProcessorImpl) PlaceBid(req BidRequest) error {
+	lm, err := GetById(req.ListingId.String())(p.db.WithContext(p.ctx))()
+	if err != nil {
+		return fmt.Errorf("load listing %s: %w", req.ListingId, err)
+	}
+	if lm.State() != StateActive {
+		return fmt.Errorf("listing %s is not active (state=%s); cannot bid", req.ListingId, lm.State())
+	}
+	if lm.SaleType() != SaleTypeAuction {
+		return fmt.Errorf("listing %s is not an auction (saleType=%s); cannot bid", req.ListingId, lm.SaleType())
+	}
+
+	priorBid := lm.CurrentBid()
+	priorBidder := lm.HighBidderId()
+	hasPrior := priorBidder != 0
+
+	// Floor: first bid clears listValue; subsequent clears currentBid + minIncrement.
+	var floor uint32
+	if hasPrior {
+		floor = priorBid + lm.MinIncrement()
+	} else {
+		floor = lm.ListValue()
+	}
+	if req.Amount < floor {
+		return fmt.Errorf("bid %d is below the floor %d for listing %s", req.Amount, floor, req.ListingId)
+	}
+
+	escrowTxnId := uuid.New()
+	t := tenant.MustFromContext(p.ctx)
+
+	// One local tx: the CAS advance (race arbiter) + record the held bid + mark the
+	// prior bid released. Composing them guarantees the bid can never half-commit
+	// (an advanced listing without its held bid, or an outbid without the prior
+	// release mark). priorAccount is the prior high bidder's account id, read from
+	// THEIR held Bid row so the outbid release credits the correct wallet (the
+	// channel does not carry the prior bidder's account on this request).
+	var won bool
+	var priorAccount uint32
+	terr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		affected, aerr := AdvanceAuctionBid(tx, req.ListingId.String(), priorBid, priorBidder, req.Amount, req.BidderId)
+		if aerr != nil {
+			return aerr
+		}
+		if affected != 1 {
+			// Lost the compare-and-swap: a concurrent bid already advanced the row.
+			return nil
+		}
+		won = true
+
+		bm, berr := bid.NewBuilder(t.Id(), req.ListingId, req.BidderId).
+			SetId(uuid.New()).
+			SetBidderAccountId(req.BidderAccountId).
+			SetAmount(req.Amount).
+			SetEscrowTxnId(escrowTxnId).
+			SetState(bid.StateHeld).
+			Build()
+		if berr != nil {
+			return berr
+		}
+		if _, cerr := bid.CreateBid(tx, bm); cerr != nil {
+			return cerr
+		}
+
+		// Outbid: mark the prior high bidder's held bid released (capturing their
+		// account id for the release credit) so the released-state escrow set stays
+		// consistent with the +amount release emitted below.
+		if hasPrior {
+			prevHeld, paccount, gerr := heldBidFor(tx, req.ListingId, priorBidder)
+			if gerr != nil {
+				return gerr
+			}
+			if prevHeld != uuid.Nil {
+				priorAccount = paccount
+				if _, uerr := bid.UpdateState(tx, prevHeld.String(), bid.StateHeld, bid.StateReleased); uerr != nil {
+					return uerr
+				}
+			}
+		}
+		return nil
+	})
+	if terr != nil {
+		return terr
+	}
+	if !won {
+		return fmt.Errorf("bid for listing %s lost the high-bid race (current bid advanced); rejected", req.ListingId)
+	}
+
+	// HOLD the new bidder's prepaid by the MARKED-UP amount (single-step saga, N=1).
+	holdTxnId := escrowTxnId
+	holdBuilder := saga.NewBuilder().
+		SetTransactionId(holdTxnId).
+		SetSagaType(saga.MtsOperation).
+		SetInitiatedBy(fmt.Sprintf("character_%d", req.BidderId))
+	holdBuilder.AddStep("mts_bid_escrow_hold", saga.Pending, saga.MtsBidEscrow, saga.MtsBidEscrowPayload{
+		TransactionId:   holdTxnId,
+		ListingId:       req.ListingId,
+		BidderId:        req.BidderId,
+		BidderAccountId: req.BidderAccountId,
+		Amount:          -int32(markedUp(req.Amount, lm.CommissionRate())),
+	})
+	holdBuilder.SetTimeout(bidEscrowTimeout())
+	if err := p.emitter.Create(holdBuilder.Build()); err != nil {
+		return err
+	}
+
+	// On an outbid, RELEASE the prior bidder's escrow by the SAME marked-up amount
+	// that was held for THEIR bid (priorBid * (1 + commissionRate)) — a separate
+	// single-step saga (N=1). The release exactly reverses the prior hold.
+	if hasPrior {
+		releaseTxnId := uuid.New()
+		releaseBuilder := saga.NewBuilder().
+			SetTransactionId(releaseTxnId).
+			SetSagaType(saga.MtsOperation).
+			SetInitiatedBy(fmt.Sprintf("character_%d", priorBidder))
+		releaseBuilder.AddStep("mts_bid_escrow_release", saga.Pending, saga.MtsBidEscrow, saga.MtsBidEscrowPayload{
+			TransactionId:   releaseTxnId,
+			ListingId:       req.ListingId,
+			BidderId:        priorBidder,
+			BidderAccountId: priorAccount,
+			Amount:          int32(markedUp(priorBid, lm.CommissionRate())),
+		})
+		releaseBuilder.SetTimeout(bidEscrowTimeout())
+		if err := p.emitter.Create(releaseBuilder.Build()); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// auctionSettleTimeout scales the auction-settle saga's timeout. The settle is a
+// TWO-step saga (N=2): award_currency(seller points +listValue) +
+// mts_move_listing_to_holding(winner). It is NOT MtsSettlePurchase — that debits
+// the buyer FIRST, which would DOUBLE-DEBIT the winner whose prepaid was already
+// escrowed at bid time. So the buyer-debit step is deliberately omitted here.
+func auctionSettleTimeout() time.Duration {
+	const settleSteps = 2 // award_currency(seller) + mts_move_listing_to_holding
+	return buySagaBaseTimeout + time.Duration(settleSteps)*buySagaPerStepTimeout
+}
+
+// SettleAuction settles an expired auction. See the interface doc for semantics.
+//
+// Currency correctness (the crux): the winner's prepaid was ALREADY debited at bid
+// time (the MtsBidEscrow{-markedUp} hold). At settle the seller must be credited
+// +listValue (points) and the item moved to the winner — the winner is NOT
+// re-debited. So the settle saga is exactly:
+//
+//  1. award_currency(seller account, currencyType=2 points, +listValue)
+//  2. mts_move_listing_to_holding(winner)  // marks listing sold + winner holding
+//
+// The commission (markedUp - listValue) stays as the sink: the winner's hold was
+// markedUp, only listValue flows to the seller, and the difference is never
+// credited to anyone. Reusing MtsSettlePurchase would inject a buyer-debit step
+// (prepaid -markedUp) and double-debit the winner — so it is deliberately NOT used.
+//
+// With NO high bidder the auction returns to the seller's holding via the local
+// Expire transition (origin=expired) and no money-mover is emitted.
+func (p *ProcessorImpl) SettleAuction(req SettleRequest) (SettleResult, error) {
+	lm, err := GetById(req.ListingId.String())(p.db.WithContext(p.ctx))()
+	if err != nil {
+		return SettleResult{}, fmt.Errorf("load listing %s: %w", req.ListingId, err)
+	}
+
+	// No bids: return the item to the seller via the existing expire transition.
+	if lm.HighBidderId() == 0 {
+		res, eerr := p.Expire(req.ListingId.String())
+		if eerr != nil {
+			return SettleResult{}, eerr
+		}
+		return SettleResult{Expired: res.Won}, nil
+	}
+
+	winner := lm.HighBidderId()
+	listValue := lm.ListValue()
+
+	// The seller-points credit is keyed by the seller's cash-shop account id. A
+	// zero account is the "not resolved" sentinel — crediting account 0 would be a
+	// silent wrong-wallet bug, so reject rather than emit a settle that mis-credits.
+	// The seller account is captured onto the listing at list time (SellerAccountId);
+	// the ticker reads it from the row.
+	if req.SellerAccountId == 0 {
+		return SettleResult{}, fmt.Errorf("auction %s has a winner but the seller account is unresolved; cannot credit", req.ListingId)
+	}
+
+	// Mark the winning held bid won (race-safe conditional). It is harmless if a
+	// concurrent path already moved it; the credit/move below are saga-driven and
+	// idempotent on the listing row's active->sold transition.
+	if heldId, _, gerr := heldBidFor(p.db.WithContext(p.ctx), req.ListingId, winner); gerr != nil {
+		return SettleResult{}, gerr
+	} else if heldId != uuid.Nil {
+		if _, uerr := bid.UpdateState(p.db.WithContext(p.ctx), heldId.String(), bid.StateHeld, bid.StateWon); uerr != nil {
+			return SettleResult{}, uerr
+		}
+	}
+
+	transactionId := uuid.New()
+	builder := saga.NewBuilder().
+		SetTransactionId(transactionId).
+		SetSagaType(saga.MtsOperation).
+		SetInitiatedBy(fmt.Sprintf("character_%d", winner))
+
+	// Step 1: credit the seller's points by listValue (NO buyer debit — the winner
+	// was already debited at bid time).
+	builder.AddStep("award_currency_seller", saga.Pending, saga.AwardCurrency, saga.AwardCurrencyPayload{
+		CharacterId:  lm.SellerId(),
+		AccountId:    req.SellerAccountId,
+		CurrencyType: saga.CurrencyTypePoints,
+		Amount:       int32(listValue),
+	})
+	// Step 2: move custody to the winner's holding (marks listing active->sold).
+	builder.AddStep("mts_move_listing_to_holding", saga.Pending, saga.MtsMoveListingToHolding, saga.MtsMoveListingToHoldingPayload{
+		TransactionId: transactionId,
+		ListingId:     req.ListingId,
+		BuyerId:       winner,
+		WorldId:       req.WorldId,
+	})
+	builder.SetTimeout(auctionSettleTimeout())
+
+	if err := p.emitter.Create(builder.Build()); err != nil {
+		return SettleResult{}, err
+	}
+	return SettleResult{HadWinner: true}, nil
+}
+
+// heldBidFor returns the surrogate id AND the stored account id of the single held
+// bid placed by bidderId on the listing, or (uuid.Nil, 0) if none. It scans the
+// listing's bids (the (tenant_id, listing_id, state) index backs this) and matches
+// the held bid for the bidder. The account id is needed so an outbid release credits
+// the prior bidder's correct wallet.
+func heldBidFor(db *gorm.DB, listingId uuid.UUID, bidderId uint32) (uuid.UUID, uint32, error) {
+	bids, err := bid.GetByListingId(listingId)(db)()
+	if err != nil {
+		return uuid.Nil, 0, err
+	}
+	for _, b := range bids {
+		if b.BidderId() == bidderId && b.State() == bid.StateHeld {
+			return b.Id(), b.BidderAccountId(), nil
+		}
+	}
+	return uuid.Nil, 0, nil
 }

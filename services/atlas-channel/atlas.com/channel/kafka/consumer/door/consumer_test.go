@@ -254,6 +254,52 @@ func TestHandleRemoved_AreaRemoveDoor_TownRemoveTownDoor(t *testing.T) {
 	}
 }
 
+// TestHandleRemoved_Recast_NoTownPortalClear asserts a RECAST removal does NOT
+// emit a TOWN_PORTAL clear. A recast is a remove+create on the SAME party slot;
+// the trailing CREATED re-sets it. Clearing here would make every in-party
+// client tear down then immediately rebuild that slot's town-door layer in one
+// frame (CField::OnTownPortalChanged), which crashes the v83 client. The
+// area/town RemoveDoor broadcasts still fire — only the party slot clear is
+// suppressed.
+func TestHandleRemoved_Recast_NoTownPortalClear(t *testing.T) {
+	tm := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tm)
+	sc := newTestServer(t, tm)
+
+	restore, calls := withRecordingBroadcaster(t)
+	defer restore()
+
+	h := handleRemoved(sc, nil)
+	h(logrus.New(), ctx, StatusEvent[RemovedBody]{
+		WorldId:          sc.WorldId(),
+		ChannelId:        sc.ChannelId(),
+		MapId:            areaMapId,
+		Instance:         uuid.Nil,
+		OwnerCharacterId: ownerId,
+		PartyId:          77,
+		Type:             EventDoorStatusRemoved,
+		Body: RemovedBody{
+			AreaDoorId: 10,
+			TownDoorId: 20,
+			TownMapId:  townMapId,
+			Reason:     RemoveReasonRecast,
+		},
+	})
+
+	// The field-level removes still happen (the door object is genuinely removed
+	// before the recast re-creates it).
+	if got := countWriter(calls.broadcasts, areaMapId, doorcb.RemoveDoorWriter); got != 1 {
+		t.Fatalf("recast area RemoveDoor: want 1, got %d", got)
+	}
+	if got := countWriter(calls.broadcasts, townMapId, doorcb.RemoveTownDoorWriter); got != 1 {
+		t.Fatalf("recast town RemoveTownDoor: want 1, got %d", got)
+	}
+	// The party town-portal slot clear MUST be suppressed on recast.
+	if len(calls.townPortals) != 0 {
+		t.Fatalf("recast must NOT emit a town-portal clear (crashes v83 client), got %+v", calls.townPortals)
+	}
+}
+
 // TestHandleSlotChanged_ReslotsTownPortal asserts a reslot re-places the
 // town-side portal: RemoveTownDoor then SpawnPortal at the new slot on the
 // town field only.

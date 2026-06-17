@@ -199,7 +199,15 @@ func handleRemoved(sc server.Model, wp writer.Producer) message.Handler[StatusEv
 
 		// PARTY town render path: clear this member's town-portal slot. See
 		// handleCreated; only on a real removal broadcast (not a leave delta).
-		if e.ForCharacterId == 0 {
+		//
+		// A RECAST is a remove+create on the SAME party slot: the CREATED that
+		// follows immediately re-sets this slot. Emitting a TOWN_PORTAL clear
+		// here would make every in-party client tear down then rebuild that
+		// slot's town-door layer in one frame (CField::OnTownPortalChanged),
+		// which crashes the v83 client. Skip the clear on recast — the trailing
+		// CREATED's set is an in-place update (CTownPortalPool::OnTownPortalCreated
+		// updates the existing owner entry rather than duplicating it).
+		if e.ForCharacterId == 0 && b.Reason != RemoveReasonRecast {
 			announceTownPortalToParty(l, ctx, wp, sc, e.PartyId, b.Slot, 0, 0, 0, 0, true)
 		}
 	}

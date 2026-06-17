@@ -248,6 +248,11 @@ func SpawnForSelf(l logrus.FieldLogger, ctx context.Context, wp writer.Producer)
 				l.WithError(err).Debugf("SpawnForSelf: unable to spawn doors for character [%d].", s.CharacterId())
 			}
 		}()
+		go func() {
+			// Town side: render the walkable town door to a player entering the
+			// return town (FR-3.2/FR-3.4) — the area-side spawn above misses it.
+			spawnTownDoorsForSession(l, ctx, wp, s)
+		}()
 
 		go func() {
 			if err := chalkboard.NewProcessor(l, ctx).ForEachInMap(f, spawnChalkboardsForSession(l)(ctx)(wp)(s)); err != nil {
@@ -579,10 +584,10 @@ var doorAnnounce = func(l logrus.FieldLogger, ctx context.Context, wp writer.Pro
 // door.Processor.ForEachInMap keyed on the area field), the wire packet is
 // SpawnDoor(ownerCharacterId, areaX, areaY, launched=true).
 //
-// Town-side late-join spawn (SpawnPortal for a session entering the town field)
-// is not implemented here: GetInField is keyed on the area field, so there is no
-// by-town REST route available. Town-side late-join visibility is provided by
-// the party minimap packet emitted in Task G6.
+// Town-side spawn (the walkable town door, clientbound spawnPortal, for a
+// session entering the return town) is handled separately by
+// spawnTownDoorsForSession — GetInField is keyed on the area field, so the
+// town side is resolved by owner instead.
 func spawnDoorsForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(s session.Model) model.Operator[door.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(s session.Model) model.Operator[door.Model] {
 		return func(wp writer.Producer) func(s session.Model) model.Operator[door.Model] {
@@ -599,6 +604,62 @@ func spawnDoorsForSession(l logrus.FieldLogger) func(ctx context.Context) func(w
 						writer.SpawnDoorBody(d.OwnerCharacterId(), d.AreaX(), d.AreaY(), true), s)
 				}
 			}
+		}
+	}
+}
+
+// townDoorsByOwnerFunc lists a character's live doors via the by-owner route.
+// Package var so tests can stub it.
+var townDoorsByOwnerFunc = func(l logrus.FieldLogger, ctx context.Context, ownerId uint32) ([]door.Model, error) {
+	return door.NewProcessor(l, ctx).GetByOwner(ownerId)
+}
+
+// townSpawnPartyMembers returns the session's character plus its same-party
+// member ids — the owners whose doors the session is eligible to see. Package
+// var so tests can stub party membership.
+var townSpawnPartyMembers = func(l logrus.FieldLogger, ctx context.Context, characterId uint32) []uint32 {
+	ids := []uint32{characterId}
+	pm, err := party.NewProcessor(l, ctx).GetByMemberId(characterId)
+	if err != nil {
+		return ids
+	}
+	for _, m := range pm.Members() {
+		if m.Id() != characterId {
+			ids = append(ids, m.Id())
+		}
+	}
+	return ids
+}
+
+// spawnTownDoorsForSession announces the TOWN-side door (clientbound spawnPortal)
+// to a session entering its field, for every door owned by the session's party
+// whose town side IS the entered map (FR-3.2 / FR-3.4). The area-side map-enter
+// spawn (spawnDoorsForSession) only covers doors whose AREA field is the entered
+// map; a player warping INTO the return town also needs the walkable town door
+// rendered. v83 draws the town door from spawnPortal positioned at the town door
+// portal (0x80+slot) resolved at cast. Resolved by owner (no by-town REST route),
+// de-duplicated across party members.
+func spawnTownDoorsForSession(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, s session.Model) {
+	f := s.Field()
+	seen := map[uint32]struct{}{}
+	for _, owner := range townSpawnPartyMembers(l, ctx, s.CharacterId()) {
+		doors, err := townDoorsByOwnerFunc(l, ctx, owner)
+		if err != nil {
+			continue
+		}
+		for _, d := range doors {
+			if d.TownMapId() != f.MapId() {
+				continue
+			}
+			if d.WorldId() != f.WorldId() || d.ChannelId() != f.ChannelId() {
+				continue
+			}
+			if _, dup := seen[d.AreaDoorId()]; dup {
+				continue
+			}
+			seen[d.AreaDoorId()] = struct{}{}
+			_ = doorAnnounce(l, ctx, wp, doorcb.SpawnPortalWriter,
+				writer.SpawnPortalBody(d.TownMapId(), d.MapId(), d.AreaX(), d.AreaY()), s)
 		}
 	}
 }

@@ -1,6 +1,7 @@
 package test
 
 import (
+	"atlas-mts/holding"
 	"atlas-mts/listing"
 	"testing"
 
@@ -22,3 +23,19 @@ func CreateListingProcessor(t *testing.T) (listing.Processor, *gorm.DB, func()) 
 
 	return processor, db, cleanup
 }
+
+// CreateHoldingProcessor creates a new holding processor for testing, backed by
+// an in-memory SQLite database migrated with the holding schema.
+func CreateHoldingProcessor(t *testing.T) (holding.Processor, *gorm.DB, func()) {
+	logger := logrus.New()
+	db := SetupTestDB(t, holding.Migration)
+	ctx := CreateTestContext()
+	processor := holding.NewProcessor(logger, ctx, db)
+
+	cleanup := func() {
+		CleanupTestDB(t, db)
+	}
+
+	return processor, db, cleanup
+}
+

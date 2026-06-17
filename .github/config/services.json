@@ -294,6 +294,14 @@
       "docker_context": "."
     },
     {
+      "name": "atlas-mts",
+      "type": "go-service",
+      "path": "services/atlas-mts",
+      "module_path": "services/atlas-mts/atlas.com/mts",
+      "docker_image": "ghcr.io/chronicle20/atlas-mts/atlas-mts",
+      "docker_context": "."
+    },
+    {
       "name": "atlas-notes",
       "type": "go-service",
       "path": "services/atlas-notes",

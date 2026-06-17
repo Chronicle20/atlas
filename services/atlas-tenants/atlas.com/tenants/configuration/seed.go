@@ -11,6 +11,7 @@ import (
 const defaultRoutesPath = "/configurations/routes"
 const defaultInstanceRoutesPath = "/configurations/instance-routes"
 const defaultVesselsPath = "/configurations/vessels"
+const defaultMtsConfigsPath = "/configurations/mts-configs"
 
 // SeedResult represents the result of a seed operation
 type SeedResult struct {
@@ -60,6 +61,20 @@ func getVesselsPath() string {
 // and parses them into map[string]interface{} structs.
 func LoadVesselFiles() ([]map[string]interface{}, []error) {
 	return loadSeedFiles(getVesselsPath())
+}
+
+// getMtsConfigsPath returns the path to the mts configs seed directory.
+func getMtsConfigsPath() string {
+	if path := os.Getenv("MTS_CONFIGS_SEED_PATH"); path != "" {
+		return path
+	}
+	return defaultMtsConfigsPath
+}
+
+// LoadMtsConfigFiles reads all JSON files from the mts configs seed directory
+// and parses them into map[string]interface{} structs.
+func LoadMtsConfigFiles() ([]map[string]interface{}, []error) {
+	return loadSeedFiles(getMtsConfigsPath())
 }
 
 // loadSeedFiles reads all JSON files from the given directory and parses them.

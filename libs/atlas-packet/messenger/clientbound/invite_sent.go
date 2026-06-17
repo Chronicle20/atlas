@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// packet-audit:fname CUIMessenger::OnPacket#InviteSent
 type InviteSent struct {
 	mode    byte
 	message string
@@ -20,8 +21,8 @@ func NewMessengerInviteSent(mode byte, message string, success bool) InviteSent 
 }
 
 func (m InviteSent) Mode() byte      { return m.mode }
-func (m InviteSent) Message() string  { return m.message }
-func (m InviteSent) Success() bool    { return m.success }
+func (m InviteSent) Message() string { return m.message }
+func (m InviteSent) Success() bool   { return m.success }
 
 func (m InviteSent) Operation() string { return MessengerOperationWriter }
 

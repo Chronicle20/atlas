@@ -1,0 +1,10 @@
+packet: field/serverbound/FieldCoupleMessage
+direction: serverbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CUIStatusBar::SendCoupleMessage
+    address: "0x8defff"
+    decompile_sha256: eea0ecce42b0327021dde0dcb6aade9c38b892a7d7e3dcadbeb55eec247c64ba
+verifies:
+    - libs/atlas-packet/field/serverbound/spouse_chat_test.go#TestCoupleMessageByteOutput

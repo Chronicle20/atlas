@@ -11,6 +11,7 @@ import (
 
 const FieldEffectWriter = "FieldEffect"
 
+// packet-audit:fname CField::OnFieldEffect#Summon
 type EffectSummon struct {
 	mode   byte
 	effect byte
@@ -47,6 +48,7 @@ func (m *EffectSummon) Decode(_ logrus.FieldLogger, _ context.Context) func(r *r
 	}
 }
 
+// packet-audit:fname CField::OnFieldEffect#Tremble
 type EffectTremble struct {
 	mode                  byte
 	bHeavyNShortTremble   bool
@@ -78,6 +80,7 @@ func (m *EffectTremble) Decode(_ logrus.FieldLogger, _ context.Context) func(r *
 	}
 }
 
+// packet-audit:fname CField::OnFieldEffect#String
 type EffectString struct {
 	mode byte
 	name string
@@ -118,6 +121,7 @@ func (m *EffectString) Decode(_ logrus.FieldLogger, _ context.Context) func(r *r
 	}
 }
 
+// packet-audit:fname CField::OnFieldEffect#BossHp
 type EffectBossHp struct {
 	mode               byte
 	monsterId          uint32
@@ -160,6 +164,7 @@ func (m *EffectBossHp) Decode(_ logrus.FieldLogger, _ context.Context) func(r *r
 	}
 }
 
+// packet-audit:fname CField::OnFieldEffect#RewardRullet
 type EffectRewardRullet struct {
 	mode            byte
 	nRewardJobIdx   uint32

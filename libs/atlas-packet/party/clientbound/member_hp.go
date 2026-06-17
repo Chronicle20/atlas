@@ -11,6 +11,7 @@ import (
 
 const PartyMemberHPWriter = "PartyMemberHP"
 
+// packet-audit:fname CUserRemote::OnReceiveHP
 type MemberHP struct {
 	characterId uint32
 	hp          uint16

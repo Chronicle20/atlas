@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// packet-audit:fname CPersonalShopDlg::OnClickBanButton
 type OperationPersonalStoreAddToBlackList struct {
 	slot byte
 	name string

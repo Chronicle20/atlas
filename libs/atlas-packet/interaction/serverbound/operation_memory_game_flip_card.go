@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// packet-audit:fname CMemoryGameDlg::SendTurnUpCard
 type OperationMemoryGameFlipCard struct {
 	first bool
 	index byte

@@ -12,6 +12,7 @@ import (
 
 const CashQueryResultWriter = "CashShopCashQueryResult"
 
+// packet-audit:fname CCashShop::OnQueryCashResult
 type QueryResult struct {
 	credit  uint32
 	points  uint32

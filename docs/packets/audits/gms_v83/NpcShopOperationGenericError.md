@@ -11,6 +11,4 @@
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
 | 0 | byte | byte `mode (generic-error sub-op: v83 case 17)` | ✅ |  |
-| 1 | byte | byte `hasReason flag` | ✅ |  |
-| 2 | string | string `reason (only when hasReason != 0)` | ✅ |  |
-
+| 1 | byte | byte `hasReason flag (0 for plain GENERIC_ERROR; no reason string follows)` | ✅ |  |

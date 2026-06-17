@@ -1,0 +1,11 @@
+{
+  "WriterName": "FieldStopClock",
+  "IDAName": "CField::OnDestroyClock",
+  "Address": "0x53184a",
+  "Variant": "GMS/v83",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/field/clientbound/stop_clock.go",
+  "Rows": null,
+  "Verdict": 0,
+  "FlatInvalid": false
+}

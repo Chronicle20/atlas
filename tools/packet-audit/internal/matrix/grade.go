@@ -42,9 +42,28 @@ type Inputs struct {
 	Reports       map[string]map[string]LoadedReport // version -> WriterName -> report
 	FNameToWriter map[string]map[string]string       // version -> FName -> WriterName (built from Reports)
 	Routed        map[string]map[RouteKey]bool       // version -> routed (opcode, dir)
+	// RoutedNames carries the writer/handler NAME a template routes each
+	// (opcode, dir) to. Used to make the cross-version routedElsewhere signal
+	// op-identity-aware: an opcode coincidentally occupied by a DIFFERENT op in
+	// another version must not count as routing this op (design §10.1: avoid
+	// raw-opcode-coincidence false conflicts). May be empty; when a key is
+	// absent the routedElsewhere check falls back to opcode-occupancy.
+	RoutedNames map[string]map[RouteKey]string
 	Evidence      map[EvKey]EvidenceStatus
 	Tier1         map[string]bool // packet id -> tier-1
 	Markers       map[EvKey]MarkerStatus
+	// Families is the set of base FNames that are mode-prefix DISPATCHERS
+	// (one opcode, a leading mode byte switching to many sub-handlers with
+	// distinct bodies). An op whose registry FName is in this set is capped at
+	// StateFamily and can never reach ✅ on a single sub-handler's fixture.
+	// Empty map = no family capping (every op grades normally).
+	//
+	// A dispatcher op stays capped at 🧩 until every mode arm Atlas supports has
+	// an IMPLEMENTED + byte-fixture-VERIFIED body. Enumerating the per-version
+	// mode BYTES alone does NOT lift the cap: a writer that emits only the leading
+	// discriminator byte is a false pass (it proves nothing about the per-mode
+	// bodies). The per-mode body-coverage model is the path back to ✅.
+	Families map[string]bool
 }
 
 // opEntryRef carries the union-row identity being graded for one version.
@@ -71,6 +90,7 @@ type gradeArgs struct {
 	opcode                        int
 	writerName                    string
 	reportFnameClaimedByPresentOp bool // true when a PRESENT op in the same version shares this report's base FName
+	family                        bool // true when the op's FName is a mode-prefix dispatcher (cap at StateFamily)
 }
 
 // gradeOpCell evaluates design §5 in precedence order for one op×version.
@@ -118,9 +138,15 @@ func gradeOpCell(in Inputs, ref opEntryRef, version string, routedElsewhere bool
 		opcode:                        ref.Opcode,
 		writerName:                    rep.WriterName,
 		reportFnameClaimedByPresentOp: reportFnameClaimedByPresentOp,
+		family:                        in.Families[baseFName(ref.FName)],
 	}
 	return gradeCore(args)
 }
+
+// familyNote explains why a dispatcher op is capped at StateFamily rather than
+// promoted to ✅: the fixture proves the leading mode byte and the one fixtured
+// sub-handler, but the remaining mode arms are neither implemented nor verified.
+const familyNote = "mode-prefix dispatcher: leading mode byte + the fixtured sub-handler verified, but the remaining mode arms are unverified (see docs/packets/families.yaml)"
 
 // gradeCore implements design §5 rules given fully-resolved gradeArgs.
 func gradeCore(a gradeArgs) Cell {
@@ -140,6 +166,13 @@ func gradeCore(a gradeArgs) Cell {
 	}
 
 	// Present from here on.
+
+	// NOTE: a mode-prefix dispatcher is NEVER lifted to ✅ by per-version mode-byte
+	// enumeration alone. Emitting only the leading discriminator byte verifies none
+	// of the per-mode bodies — that is the "passes because we only read 1 byte"
+	// false pass. A dispatcher stays capped at 🧩 (StateFamily) until every
+	// supported mode arm has an implemented, fixture-verified body.
+
 	if !a.hasReport {
 		return Cell{State: StateIncomplete, Note: "no audit report"}
 	}
@@ -164,6 +197,9 @@ func gradeCore(a gradeArgs) Cell {
 	if a.tier1 {
 		// Diff verdict is advisory; only a linked byte-fixture promotes.
 		if a.marker.Found && a.hasEvidence && a.evidence.Fresh {
+			if a.family {
+				return Cell{State: StateFamily, Note: familyNote}
+			}
 			return Cell{State: StateVerified}
 		}
 		if a.marker.Found {
@@ -177,6 +213,9 @@ func gradeCore(a gradeArgs) Cell {
 
 	// Tier 0.
 	if toolPass && a.marker.Found {
+		if a.family {
+			return Cell{State: StateFamily, Note: familyNote}
+		}
 		return Cell{State: StateVerified}
 	}
 	if toolPass {

@@ -1,0 +1,8 @@
+packet: field/clientbound/FieldWitchTowerScoreUpdate
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnChaosZakumTimer
+    address: "0x531020"
+    decompile_sha256: b3cbdba08272026b286feafec62adb22a8d9b4f6bb87fc4f379a110cb77bcea6

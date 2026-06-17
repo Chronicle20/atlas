@@ -1,0 +1,11 @@
+{
+  "WriterName": "FieldGuildBoss",
+  "IDAName": "CField_GuildBoss::BasicActionAttack#GuildBoss",
+  "Address": "0x558b45",
+  "Variant": "GMS/v83",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/field/serverbound/guild_boss.go",
+  "Rows": null,
+  "Verdict": 0,
+  "FlatInvalid": false
+}

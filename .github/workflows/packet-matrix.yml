@@ -27,6 +27,21 @@ jobs:
       - name: Packet-audit tests
         run: cd tools/packet-audit && go test ./...
 
+      - name: fname-doc check
+        # Every packet-definition struct that has an audit report must carry an
+        # accurate `// packet-audit:fname <IDAName>` comment. Fails on drift
+        # (comment != resolved fname) or a missing comment for a resolvable
+        # struct. Regenerate with `go run ./tools/packet-audit fname-doc`.
+        run: go run ./tools/packet-audit fname-doc --check
+
+      - name: operations table check
+        # Each dispatcher-family writer's per-tenant `operations` mode table must
+        # match the IDA-verified per-version enumeration in
+        # docs/packets/dispatchers/*.yaml. A drifted mode byte resolves to the
+        # wrong client switch arm (or 99 → crash). Regenerate with
+        # `go run ./tools/packet-audit operations`.
+        run: go run ./tools/packet-audit operations --check
+
       - name: Coverage matrix check
         # The conflict backlog was burned down to ZERO in task-085 (registry
         # re-derivation + template wiring across all five versions), so

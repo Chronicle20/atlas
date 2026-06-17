@@ -18,6 +18,7 @@ const (
 	KiteDestroyAnimationType2 KiteDestroyAnimationType = 1
 )
 
+// packet-audit:fname CMessageBoxPool::OnMessageBoxLeaveField
 type KiteDestroy struct {
 	animationType KiteDestroyAnimationType
 	id            uint32

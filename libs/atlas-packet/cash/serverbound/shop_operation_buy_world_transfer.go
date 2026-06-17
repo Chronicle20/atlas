@@ -12,6 +12,7 @@ import (
 const CashShopOperationBuyWorldTransferHandle = "CashShopOperationBuyWorldTransferHandle"
 
 // ShopOperationBuyWorldTransfer - CCashShop::SendBuyWorldTransfer
+// packet-audit:fname CCashShop::SendBuyTransferWorldItemPacket
 type ShopOperationBuyWorldTransfer struct {
 	serialNumber uint32
 	targetWorld  uint32

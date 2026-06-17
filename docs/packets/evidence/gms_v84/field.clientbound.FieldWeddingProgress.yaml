@@ -1,0 +1,8 @@
+packet: field/clientbound/FieldWeddingProgress
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CField_Wedding::OnWeddingProgress
+    address: "0x5911e6"
+    decompile_sha256: 7116ec8f326e0450af10f1b5df5a7ad9e8445246f8736875754371f0e3668c98

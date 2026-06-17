@@ -14,6 +14,7 @@ import (
 const MonsterStatSetWriter = "MonsterStatSet"
 const MonsterStatResetWriter = "MonsterStatReset"
 
+// packet-audit:fname CMob::OnStatSet
 type StatSet struct {
 	uniqueId uint32
 	stat     *model.MonsterTemporaryStat
@@ -59,6 +60,7 @@ func (m *StatSet) Decode(l logrus.FieldLogger, ctx context.Context) func(r *requ
 	}
 }
 
+// packet-audit:fname CMob::OnStatReset
 type StatReset struct {
 	uniqueId uint32
 	stat     *model.MonsterTemporaryStat

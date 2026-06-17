@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// packet-audit:fname CWvsContext::OnPartyResult#Disband
 type Disband struct {
 	mode     byte
 	partyId  uint32

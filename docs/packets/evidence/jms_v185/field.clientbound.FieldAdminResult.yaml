@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldAdminResult
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnAdminResult
+    address: "0x57255f"
+    decompile_sha256: 3c3e6c6b40402e826b5c8be7fbb609a2c1f83b033cefa054733def08aea527d8
+verifies:
+  - libs/atlas-packet/field/clientbound/admin_result_test.go#TestAdminResultRoundTrip

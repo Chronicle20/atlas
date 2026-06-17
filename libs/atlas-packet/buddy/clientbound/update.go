@@ -13,6 +13,7 @@ import (
 
 const BuddyUpdateWriter = "BuddyUpdate"
 
+// packet-audit:fname CWvsContext::OnFriendResult#Update
 type Update struct {
 	mode          byte
 	characterId   uint32

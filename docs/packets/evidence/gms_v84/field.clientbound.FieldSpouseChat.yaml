@@ -1,0 +1,8 @@
+packet: field/clientbound/FieldSpouseChat
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnCoupleMessage
+    address: "0x53e30d"
+    decompile_sha256: 597b9036332620afd3825f1fcddbecb89d44dc59b41358c256476c920dd5eebe

@@ -32,6 +32,8 @@ const MobDamageMobHandle = "MobDamageMob"
 //	COutPacket(op); Encode4(GetMobID(attacker)); Encode4(characterId);
 //	Encode4(GetMobID(this)); Encode1(nAttackIdx); Encode4(damage);
 //	Encode1(nDir<0); Encode2(xCenter); Encode2(yCenter); SendPacket
+//
+// packet-audit:fname CMob::SetDamagedByMob
 type MobDamageMob struct {
 	attackerMobId uint32
 	characterId   uint32

@@ -1,0 +1,8 @@
+packet: field/clientbound/FieldWhisperError
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnWhisper#Error
+    address: "0x53e514"
+    decompile_sha256: 7d19eb3535826cc8e58d558db3c2eb2b1fc00fa9ccc8e1abe9d67632f9753049

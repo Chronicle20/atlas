@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// packet-audit:fname CField::SendAcceptFriendMsg
 type OperationAccept struct {
 	fromCharacterId uint32
 }

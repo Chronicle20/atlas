@@ -186,6 +186,59 @@ func TestGradeTier1FixturePromotes(t *testing.T) {
 	}
 }
 
+func TestGradeFamilyCapsTier0VerifiedToFamily(t *testing.T) {
+	// A would-be tier-0 ✅ (tool match + marker) is capped at 🧩 family when the
+	// op's FName is a registered mode-prefix dispatcher.
+	in := presentWithReport(t, diff.VerdictMatch, false)
+	in.Markers[EvKey{"login/clientbound/AccountInfo", "gms_v83"}] = MarkerStatus{Found: true, Address: "0xa3f2e8"}
+	in.Families = map[string]bool{"CLogin::OnAccountInfoResult": true}
+	c := gradeOpCell(in, refACCOUNT(), "gms_v83", false, nil)
+	if c.State != StateFamily {
+		t.Errorf("dispatcher op must cap at family, not %v (%s)", c.State.Name(), c.Note)
+	}
+}
+
+func TestGradeFamilyModeEnumerationDoesNotLiftToVerified(t *testing.T) {
+	// Regression for the false-pass removal: a mode-prefix dispatcher with a
+	// single sub-handler fixture (marker + fresh evidence) must STAY 🧩 family.
+	// Per-version mode-byte enumeration no longer lifts a dispatcher to ✅ —
+	// only per-mode body coverage may (a future model), never enumeration alone.
+	in := presentWithReport(t, diff.VerdictMatch, false)
+	in.Families = map[string]bool{"CLogin::OnAccountInfoResult": true}
+	in.Markers[EvKey{"login/clientbound/AccountInfo", "gms_v83"}] = MarkerStatus{Found: true, Address: "0xa3f2e8"}
+	in.Evidence[EvKey{"login/clientbound/AccountInfo", "gms_v83"}] = EvidenceStatus{Exists: true, Fresh: true, Address: "0xa3f2e8"}
+	c := gradeOpCell(in, refACCOUNT(), "gms_v83", false, nil)
+	if c.State != StateFamily {
+		t.Errorf("dispatcher must stay 🧩 family (no enumeration lift), not %v (%s)", c.State.Name(), c.Note)
+	}
+}
+
+func TestGradeFamilyCapsTier1FixtureToFamily(t *testing.T) {
+	// A would-be tier-1 ✅ (marker + fresh evidence) is capped at 🧩 family for a
+	// dispatcher op — one sub-handler's fixture cannot verify the whole family.
+	in := presentWithReport(t, diff.VerdictDeferred, true)
+	in.Tier1["login/clientbound/AccountInfo"] = true
+	in.Markers[EvKey{"login/clientbound/AccountInfo", "gms_v83"}] = MarkerStatus{Found: true, Address: "0xa3f2e8"}
+	in.Evidence[EvKey{"login/clientbound/AccountInfo", "gms_v83"}] = EvidenceStatus{Exists: true, Fresh: true, Address: "0xa3f2e8"}
+	in.Families = map[string]bool{"CLogin::OnAccountInfoResult": true}
+	c := gradeOpCell(in, refACCOUNT(), "gms_v83", false, nil)
+	if c.State != StateFamily {
+		t.Errorf("dispatcher op must cap at family, not %v (%s)", c.State.Name(), c.Note)
+	}
+}
+
+func TestGradeNonFamilyStillVerifies(t *testing.T) {
+	// Control: with a Families set that does NOT contain this op's FName, the
+	// op promotes to ✅ exactly as before (no over-capping).
+	in := presentWithReport(t, diff.VerdictMatch, false)
+	in.Markers[EvKey{"login/clientbound/AccountInfo", "gms_v83"}] = MarkerStatus{Found: true, Address: "0xa3f2e8"}
+	in.Families = map[string]bool{"CSomethingElse::OnPacket": true}
+	c := gradeOpCell(in, refACCOUNT(), "gms_v83", false, nil)
+	if c.State != StateVerified {
+		t.Errorf("non-dispatcher op must verify, not %v (%s)", c.State.Name(), c.Note)
+	}
+}
+
 func TestGradeEvidencePinnedDeferralIsPartial(t *testing.T) {
 	in := presentWithReport(t, diff.VerdictDeferred, false)
 	in.Evidence[EvKey{"login/clientbound/AccountInfo", "gms_v83"}] = EvidenceStatus{Exists: true, Fresh: true}
@@ -409,6 +462,111 @@ func TestBuildPerPacketRoutingConflictAndFalsePositive(t *testing.T) {
 			}
 		}
 	}
+}
+
+// TestBuildRoutedNamesOpIdentityGuard exercises the op-identity guard added in
+// the task-096 matrix-grader fix (build.go RoutedNames branch). The guard makes
+// the cross-version routedElsewhere signal op-identity-aware: a version only
+// counts as routing an op if the template's routed NAME at that opcode matches
+// the op's own writer/handler (via fnameWriters). A raw-opcode coincidence —
+// the opcode is occupied by a DIFFERENT op's handler in that version — must NOT
+// fabricate a routedElsewhere → template-wiring Conflict for the sibling
+// versions.
+//
+// Scenario (mirrors the fix's commit message): a serverbound WEDDING_ACTION op
+// whose opcode (0x8B) in version A happens to equal A's CharacterKeyMapChange
+// handler slot. A routes 0x8B — but to the KeyMapChange handler, not to
+// WEDDING_ACTION. Version B has WEDDING_ACTION at a different opcode (0x90),
+// implements it (has a report), but does not route it.
+//
+//   - Negative (guard active): A's routed NAME at 0x8B != A's WEDDING_ACTION
+//     writer → A is NOT counted as routing WEDDING_ACTION → B is NOT
+//     routedElsewhere → B grades Incomplete, not a false Conflict.
+//   - Positive (name matches): A's routed NAME at 0x8B IS A's WEDDING_ACTION
+//     writer → A counts as routing the op → B is routedElsewhere → B (which has
+//     a report) grades Conflict (real template-wiring gap).
+func TestBuildRoutedNamesOpIdentityGuard(t *testing.T) {
+	const (
+		weddingFName       = "CWvsContext::OnWeddingAction"
+		weddingWriterA     = "WeddingActionA"
+		weddingWriterB     = "WeddingActionB"
+		keyMapChangeWriter = "CharacterKeyMapChange" // unrelated handler occupying 0x8B in A
+	)
+	// build constructs the two-version Inputs. routedNameAt8B is the writer/handler
+	// NAME that version A's template routes opcode 0x8B to.
+	build := func(routedNameAt8B string) Matrix {
+		in := baseInputs()
+		// Version A (gms_v83): WEDDING_ACTION serverbound at the colliding opcode 0x8B.
+		in.Registry.Versions["gms_v83"] = vfWith(t, opregistry.Entry{
+			Op: "WEDDING_ACTION", Direction: opregistry.DirServerbound, Opcode: 0x8B,
+			FName: weddingFName, Provenance: "csv-import"})
+		// Version B (gms_v87): WEDDING_ACTION serverbound at a DIFFERENT opcode 0x90.
+		in.Registry.Versions["gms_v87"] = vfWith(t, opregistry.Entry{
+			Op: "WEDDING_ACTION", Direction: opregistry.DirServerbound, Opcode: 0x90,
+			FName: weddingFName, Provenance: "csv-import"})
+		// A routes opcode 0x8B (occupancy true); the NAME it routes to varies per case.
+		in.Routed["gms_v83"] = map[RouteKey]bool{{0x8B, opregistry.DirServerbound}: true}
+		in.RoutedNames = map[string]map[RouteKey]string{
+			"gms_v83": {{0x8B, opregistry.DirServerbound}: routedNameAt8B},
+		}
+		// B does NOT route its opcode 0x90.
+		in.Routed["gms_v87"] = map[RouteKey]bool{}
+		// Both versions implement WEDDING_ACTION (have a local report) so the guard's
+		// "this version maps the op's FName to a writer" precondition holds for A and
+		// the coverage-gap conflict can fire for B.
+		in.Reports["gms_v83"] = map[string]LoadedReport{weddingWriterA: {
+			WriterName: weddingWriterA, IDAName: weddingFName,
+			AtlasFile: "libs/atlas-packet/wedding/serverbound/wedding_action.go", Verdict: diff.VerdictMatch,
+		}}
+		in.Reports["gms_v87"] = map[string]LoadedReport{weddingWriterB: {
+			WriterName: weddingWriterB, IDAName: weddingFName,
+			AtlasFile: "libs/atlas-packet/wedding/serverbound/wedding_action.go", Verdict: diff.VerdictMatch,
+		}}
+		in.FNameToWriter = map[string]map[string]string{
+			"gms_v83": {weddingFName: weddingWriterA},
+			"gms_v87": {weddingFName: weddingWriterB},
+		}
+		return Build(in, []string{"gms_v83", "gms_v87"})
+	}
+
+	cellsFor := func(m Matrix) (Cell, Cell) {
+		var cA, cB Cell
+		for _, r := range m.Rows {
+			if r.Op == "WEDDING_ACTION" {
+				cA = r.Cells["gms_v83"]
+				cB = r.Cells["gms_v87"]
+			}
+		}
+		return cA, cB
+	}
+
+	t.Run("coincidence-rejected", func(t *testing.T) {
+		// A routes 0x8B to an UNRELATED handler (KeyMapChange) — a raw-opcode
+		// coincidence. The guard must reject A as routing WEDDING_ACTION, so B is
+		// NOT routedElsewhere and must NOT be a false Conflict.
+		cA, cB := cellsFor(build(keyMapChangeWriter))
+		if cB.State == StateConflict {
+			t.Errorf("op-identity guard: B must NOT be a false routedElsewhere Conflict from a raw-opcode coincidence; got %v (%s)", cB.State.Name(), cB.Note)
+		}
+		if cB.State != StatePartial {
+			t.Errorf("B: present+routedElsewhere=false+toolPass report must be Partial; got %v (%s)", cB.State.Name(), cB.Note)
+		}
+		// A's own opcode is routed to a different op, so the guard also removes A
+		// from routedVersions → A is not routed for itself → Partial (has report).
+		if cA.State == StateConflict {
+			t.Errorf("A must not be a Conflict from its own coincidental routing; got %v (%s)", cA.State.Name(), cA.Note)
+		}
+	})
+
+	t.Run("matching-name-counts", func(t *testing.T) {
+		// A routes 0x8B to A's OWN WEDDING_ACTION writer — the op is genuinely
+		// routed in A. B (present, implemented, unrouted) is now routedElsewhere
+		// → real template-wiring gap → Conflict.
+		_, cB := cellsFor(build(weddingWriterA))
+		if cB.State != StateConflict {
+			t.Errorf("matching routed name: B must be a routedElsewhere template-wiring Conflict; got %v (%s)", cB.State.Name(), cB.Note)
+		}
+	})
 }
 
 // --- helpers ---

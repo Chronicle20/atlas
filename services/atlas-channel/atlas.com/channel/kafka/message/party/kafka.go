@@ -24,6 +24,9 @@ type CreateCommandBody struct {
 type LeaveCommandBody struct {
 	PartyId uint32 `json:"partyId"`
 	Force   bool   `json:"force"`
+	// CharacterId identifies the member to remove. For a normal leave it equals
+	// the actor; for a forced leave (expel) it is the target being expelled.
+	CharacterId uint32 `json:"characterId"`
 }
 
 type ChangeLeaderBody struct {

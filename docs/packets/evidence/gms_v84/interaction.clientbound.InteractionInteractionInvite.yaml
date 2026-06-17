@@ -1,0 +1,8 @@
+packet: interaction/clientbound/InteractionInteractionInvite
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CMiniRoomBaseDlg::OnPacketBase#Invite
+    address: "0x6743a4"
+    decompile_sha256: 7d50268f95f7e094e55255b44acd88495f921bbbc163a87c95eb20e434b47083

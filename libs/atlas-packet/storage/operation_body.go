@@ -39,25 +39,31 @@ const (
 
 func StorageOperationErrorInventoryFullBody() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", StorageOperationModeErrorInventoryFull, func(mode byte) packet.Encoder {
-		return clientbound.NewStorageErrorSimple(mode)
+		return clientbound.NewStorageErrorInventoryFull(mode)
 	})
 }
 
 func StorageOperationErrorNotEnoughMesoBody() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", StorageOperationModeErrorNotEnoughMesos, func(mode byte) packet.Encoder {
-		return clientbound.NewStorageErrorSimple(mode)
+		return clientbound.NewStorageErrorNotEnoughMesos(mode)
 	})
 }
 
 func StorageOperationErrorOneOfAKindBody() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", StorageOperationModeErrorOneOfAKind, func(mode byte) packet.Encoder {
-		return clientbound.NewStorageErrorSimple(mode)
+		return clientbound.NewStorageErrorOneOfAKind(mode)
 	})
 }
 
-func StorageOperationUpdateAssetsBody(op StorageOperationMode, slots byte, flags uint64, assets []model.Asset) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
-	return atlas_packet.WithResolvedCode("operations", op, func(mode byte) packet.Encoder {
-		return clientbound.NewStorageUpdateAssets(mode, slots, flags, assets)
+func StorageOperationStoreAssetsBody(slots byte, flags uint64, assets []model.Asset) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", StorageOperationModeStoreAssets, func(mode byte) packet.Encoder {
+		return clientbound.NewStorageStoreAssets(mode, slots, flags, assets)
+	})
+}
+
+func StorageOperationRetrieveAssetsBody(slots byte, flags uint64, assets []model.Asset) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", StorageOperationModeRetrieveAssets, func(mode byte) packet.Encoder {
+		return clientbound.NewStorageRetrieveAssets(mode, slots, flags, assets)
 	})
 }
 

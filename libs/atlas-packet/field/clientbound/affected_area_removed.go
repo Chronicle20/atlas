@@ -14,6 +14,7 @@ const AffectedAreaRemovedWriter = "AffectedAreaRemoved"
 // AffectedAreaRemoved is the v83 clientbound packet that despawns an
 // affected-area (mist) from the field. The wire body is just the uint32 mist
 // key derived from the UUID (see mistKey in affected_area_created.go).
+// packet-audit:fname CAffectedAreaPool::OnAffectedAreaRemoved
 type AffectedAreaRemoved struct {
 	mistId  uuid.UUID
 	ownerId uint32

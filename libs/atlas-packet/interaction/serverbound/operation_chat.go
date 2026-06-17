@@ -10,6 +10,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// packet-audit:fname CMiniRoomBaseDlg::CheckAndSendChat
 type OperationChat struct {
 	updateTime uint32
 	message    string

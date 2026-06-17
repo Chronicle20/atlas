@@ -1,0 +1,11 @@
+{
+  "WriterName": "FieldSnowballTouch",
+  "IDAName": "CField_SnowBall::OnSnowBallTouch",
+  "Address": "0x575372",
+  "Variant": "GMS/v83",
+  "BranchDepth": 0,
+  "AtlasFile": "../../libs/atlas-packet/field/clientbound/snowball_touch.go",
+  "Rows": null,
+  "Verdict": 0,
+  "FlatInvalid": false
+}

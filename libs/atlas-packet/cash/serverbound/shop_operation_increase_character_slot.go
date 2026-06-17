@@ -12,6 +12,7 @@ import (
 const CashShopOperationIncreaseCharacterSlotHandle = "CashShopOperationIncreaseCharacterSlotHandle"
 
 // ShopOperationIncreaseCharacterSlot - CCashShop::SendIncCharSlotCount
+// packet-audit:fname CCashShop::OnIncCharacterSlotCount
 type ShopOperationIncreaseCharacterSlot struct {
 	isPoints     bool
 	currency     uint32

@@ -30,6 +30,8 @@ const MobEscortStopSayWriter = "MobEscortStopSay"
 // IDA basis: CMob::OnEscortStopSay — v95 @0x64c500, jms @0x6f0090
 // (Decode4 duration, Decode4 chatBalloon, Decode1 weather, then under Decode1:
 // DecodeStr text, Decode4 action). v95/jms only — escort family absent in v83/v84/v87.
+//
+// packet-audit:fname CMob::OnEscortStopSay
 type MobEscortStopSay struct {
 	duration    int32
 	chatBalloon int32

@@ -11,6 +11,7 @@ import (
 )
 
 // ChangeBatch - multi-operation inventory change with structured entries.
+// packet-audit:fname CWvsContext::OnInventoryOperation#ChangeBatch
 type ChangeBatch struct {
 	silent  bool
 	entries []inventory.ChangeEntry

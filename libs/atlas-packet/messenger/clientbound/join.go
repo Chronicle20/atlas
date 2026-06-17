@@ -11,6 +11,7 @@ import (
 
 const MessengerOperationWriter = "MessengerOperation"
 
+// packet-audit:fname CUIMessenger::OnPacket#Join
 type Join struct {
 	mode     byte
 	position byte

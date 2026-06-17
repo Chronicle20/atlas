@@ -32,6 +32,8 @@ const CatchMonsterWriter = "CatchMonster"
 //   - v95 @0x63cd00: `v3 = Decode1; v4 = Decode1; ShowCatchEffect(this, v3,
 //     v4 != 0 ? 0x10E : 0)` — two wire bytes. The extra success byte is a GMS-95
 //     addition, so the branch gates on GMS region AND major >= 95.
+//
+// packet-audit:fname CMob::OnCatchEffect
 type CatchMonster struct {
 	result  byte
 	success byte

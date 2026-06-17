@@ -12,12 +12,10 @@ import (
 // TestTownPortalWire pins the PARTY_OPERATION town-portal body across versions.
 // Body = mode1+slot1+town4+target4+[skillId4 GMS v95+]+x2+y2: 14 bytes (v83/
 // v84/v87/jms), 18 bytes (GMS v95+). x/y are 2 bytes (Decode2), unlike the
-// 4-byte PARTYDATA aTownPortal coordinates. Round-trips per version.
-// packet-audit:verify packet=party/clientbound/PartyTownPortal version=gms_v83 ida=0xa3e31c
-// packet-audit:verify packet=party/clientbound/PartyTownPortal version=gms_v84 ida=0xa89cf3
-// packet-audit:verify packet=party/clientbound/PartyTownPortal version=gms_v87 ida=0xad697a
-// packet-audit:verify packet=party/clientbound/PartyTownPortal version=gms_v95 ida=0xa10ab0
-// packet-audit:verify packet=party/clientbound/PartyTownPortal version=jms_v185 ida=0xb297e7
+// 4-byte PARTYDATA aTownPortal coordinates. Round-trips per version. Per-version
+// IDA provenance (OnPartyResult cases) is recorded on the TownPortal type doc;
+// no packet-audit:verify marker is claimed until the evidence+report chain is
+// promoted (the byte test stands alone).
 func TestTownPortalWire(t *testing.T) {
 	want := map[string]int{
 		"GMS v28": 14, "GMS v83": 14, "GMS v84": 14, "GMS v86": 14,

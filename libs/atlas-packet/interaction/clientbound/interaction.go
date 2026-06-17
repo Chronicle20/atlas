@@ -13,6 +13,7 @@ import (
 const CharacterInteractionWriter = "CharacterInteraction"
 
 // InteractionInvite - invite to a mini room
+// packet-audit:fname CMiniRoomBaseDlg::OnPacketBase#Invite
 type InteractionInvite struct {
 	mode     byte
 	roomType byte
@@ -50,6 +51,7 @@ func (m *InteractionInvite) Decode(_ logrus.FieldLogger, _ context.Context) func
 }
 
 // InteractionInviteResult - invite result
+// packet-audit:fname CMiniRoomBaseDlg::OnPacketBase#InviteResult
 type InteractionInviteResult struct {
 	mode    byte
 	result  byte
@@ -84,6 +86,7 @@ func (m *InteractionInviteResult) Decode(_ logrus.FieldLogger, _ context.Context
 }
 
 // InteractionEnter - visitor entering a room
+// packet-audit:fname CMiniRoomBaseDlg::OnPacketBase#Enter
 type InteractionEnter struct {
 	mode    byte
 	visitor interaction.Visitor
@@ -93,8 +96,8 @@ func NewInteractionEnter(mode byte, visitor interaction.Visitor) InteractionEnte
 	return InteractionEnter{mode: mode, visitor: visitor}
 }
 
-func (m InteractionEnter) Operation() string { return CharacterInteractionWriter }
-func (m InteractionEnter) String() string    { return "enter" }
+func (m InteractionEnter) Operation() string            { return CharacterInteractionWriter }
+func (m InteractionEnter) String() string               { return "enter" }
 func (m InteractionEnter) Visitor() interaction.Visitor { return m.visitor }
 
 func (m InteractionEnter) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
@@ -114,6 +117,7 @@ func (m *InteractionEnter) Decode(l logrus.FieldLogger, ctx context.Context) fun
 }
 
 // InteractionEnterResultSuccess - successful room entry
+// packet-audit:fname CMiniRoomBaseDlg::OnPacketBase#EnterResultSuccess
 type InteractionEnterResultSuccess struct {
 	mode byte
 	room interaction.Room
@@ -123,8 +127,8 @@ func NewInteractionEnterResultSuccess(mode byte, room interaction.Room) Interact
 	return InteractionEnterResultSuccess{mode: mode, room: room}
 }
 
-func (m InteractionEnterResultSuccess) Operation() string { return CharacterInteractionWriter }
-func (m InteractionEnterResultSuccess) String() string    { return "enter result success" }
+func (m InteractionEnterResultSuccess) Operation() string      { return CharacterInteractionWriter }
+func (m InteractionEnterResultSuccess) String() string         { return "enter result success" }
 func (m InteractionEnterResultSuccess) Room() interaction.Room { return m.room }
 
 func (m InteractionEnterResultSuccess) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
@@ -144,6 +148,7 @@ func (m *InteractionEnterResultSuccess) Decode(l logrus.FieldLogger, ctx context
 }
 
 // InteractionChat - chat message in a mini room
+// packet-audit:fname CMiniRoomBaseDlg::OnPacketBase#Chat
 type InteractionChat struct {
 	mode     byte
 	chatType byte
@@ -181,6 +186,7 @@ func (m *InteractionChat) Decode(_ logrus.FieldLogger, _ context.Context) func(r
 }
 
 // InteractionEnterResultError - failed room entry
+// packet-audit:fname CMiniRoomBaseDlg::OnPacketBase#EnterResultError
 type InteractionEnterResultError struct {
 	mode      byte
 	errorCode byte
@@ -214,6 +220,7 @@ func (m *InteractionEnterResultError) Decode(_ logrus.FieldLogger, _ context.Con
 }
 
 // InteractionLeave - visitor leaving a room
+// packet-audit:fname CMiniRoomBaseDlg::OnPacketBase#Leave
 type InteractionLeave struct {
 	mode   byte
 	slot   byte
@@ -247,7 +254,12 @@ func (m *InteractionLeave) Decode(_ logrus.FieldLogger, _ context.Context) func(
 	}
 }
 
-// InteractionUpdateMerchant - refresh shop listings for viewers
+// InteractionUpdateMerchant - refresh shop listings for viewers (hired merchant).
+// Wire shape: mode(25) + Decode4 meso + Decode1 count + count x {short perBundle,
+// short quantity, int price, GW_ItemSlotBase asset}. The OnPacketBase default case
+// virtual-dispatches into CEntrustedShopDlg::OnRefresh (v95 0x51cc30), which reads
+// the meso (m_nMoney) then chains CPersonalShopDlg::OnRefresh for the item loop.
+// packet-audit:fname CEntrustedShopDlg::OnRefresh#UpdateMerchant
 type InteractionUpdateMerchant struct {
 	mode  byte
 	meso  uint32
@@ -276,5 +288,22 @@ func (m InteractionUpdateMerchant) Encode(l logrus.FieldLogger, ctx context.Cont
 			w.WriteByteArray(item.Asset.Encode(l, ctx)(options))
 		}
 		return w.Bytes()
+	}
+}
+
+func (m *InteractionUpdateMerchant) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
+		m.mode = r.ReadByte()
+		m.meso = r.ReadUint32()
+		count := int(r.ReadByte())
+		m.items = make([]interaction.RoomShopItem, 0, count)
+		for i := 0; i < count; i++ {
+			var item interaction.RoomShopItem
+			item.PerBundle = r.ReadUint16()
+			item.Quantity = r.ReadUint16()
+			item.Price = r.ReadUint32()
+			item.Asset.Decode(l, ctx)(r, options)
+			m.items = append(m.items, item)
+		}
 	}
 }

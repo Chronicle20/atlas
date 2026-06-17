@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// packet-audit:fname CField::SendWithdrawGuildMsg
 type Withdraw struct {
 	cid  uint32
 	name string

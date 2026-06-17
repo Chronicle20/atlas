@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// packet-audit:fname CTradingRoomDlg::PutMoney
 type OperationTradeAddMeso struct {
 	amount int32
 }

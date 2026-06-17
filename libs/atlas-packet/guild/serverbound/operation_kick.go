@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// packet-audit:fname CField::SendKickGuildMsg
 type Kick struct {
 	cid  uint32
 	name string

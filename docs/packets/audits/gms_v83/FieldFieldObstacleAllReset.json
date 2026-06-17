@@ -1,0 +1,11 @@
+{
+  "WriterName": "FieldFieldObstacleAllReset",
+  "IDAName": "CField::OnFieldObstacleAllReset",
+  "Address": "0x5330b6",
+  "Variant": "GMS/v83",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/field/clientbound/field_obstacle_all_reset.go",
+  "Rows": null,
+  "Verdict": 0,
+  "FlatInvalid": false
+}

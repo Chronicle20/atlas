@@ -1,0 +1,8 @@
+packet: field/serverbound/FieldSueCharacter
+direction: serverbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CField::SendChatMsgSlash#SueCharacter
+    address: "0x553526"
+    decompile_sha256: 3f1a4ce06f2dcc2a56e815fd7c8a342b9e070f9c1461d7ee5810d13a5e1b3593

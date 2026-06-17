@@ -11,6 +11,7 @@ import (
 )
 
 // Display - mode, notes
+// packet-audit:fname CWvsContext::OnMemoResult#Display
 type Display struct {
 	mode  byte
 	notes []note.NoteEntry

@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// packet-audit:fname CPersonalShopDlg::DeliverBlackList
 type OperationPersonalStoreSetBlackList struct {
 	entries []string
 }

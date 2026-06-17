@@ -11,6 +11,7 @@ import (
 
 const ReactorDestroyWriter = "ReactorDestroy"
 
+// packet-audit:fname CReactorPool::OnReactorLeaveField
 type Destroy struct {
 	id    uint32
 	state int8

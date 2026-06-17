@@ -34,6 +34,8 @@ const (
 // petPickupExtra for type 5 paths. For type 4 (explode), legacy callers
 // pass characterId=0 / petSlot=-1; the corrected wire emits int16(0) for
 // the explode delay.
+//
+// packet-audit:fname CDropPool::OnDropLeaveField
 type Destroy struct {
 	dropId           uint32
 	destroyType      DropDestroyType

@@ -12,6 +12,7 @@ import (
 const CashShopOperationBuyNormalHandle = "CashShopOperationBuyNormalHandle"
 
 // ShopOperationBuyNormal - CCashShop::SendBuyNormal
+// packet-audit:fname CCashShop::OnBuyNormal
 type ShopOperationBuyNormal struct {
 	serialNumber uint32
 }

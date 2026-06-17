@@ -27,6 +27,7 @@ const AffectedAreaCreatedWriter = "AffectedAreaCreated"
 // rcArea is an absolute LTRB rectangle: origin + offset for each corner. origin
 // and the lt/rb offsets are constructor inputs only — they are combined into the
 // 4×int32 absolute RECT on the wire and are NOT emitted independently.
+// packet-audit:fname CAffectedAreaPool::OnAffectedAreaCreated
 type AffectedAreaCreated struct {
 	mistId     uuid.UUID
 	ownerId    uint32

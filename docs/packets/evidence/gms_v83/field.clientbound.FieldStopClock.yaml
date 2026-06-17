@@ -1,0 +1,8 @@
+packet: field/clientbound/FieldStopClock
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnDestroyClock
+    address: "0x53184a"
+    decompile_sha256: 4b0c8876e5d67740fb5e9fb1d5caa757ece740f6e2bbde1d1a9eb579e8989c58

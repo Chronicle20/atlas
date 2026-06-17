@@ -1,0 +1,8 @@
+packet: storage/clientbound/StorageErrorNotEnoughMesos
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CTrunkDlg::OnPacket#ErrorNotEnoughMesos
+    address: "0x76a990"
+    decompile_sha256: 00b461ba93157041e7e0e2ee6afff31f8f203e2706244ecbbc1fc8819281c497

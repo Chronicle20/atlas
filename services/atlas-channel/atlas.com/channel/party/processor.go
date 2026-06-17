@@ -31,12 +31,12 @@ func (p *Processor) Create(characterId uint32) error {
 
 func (p *Processor) Leave(partyId uint32, characterId uint32) error {
 	p.l.Debugf("Character [%d] attempting to leave party [%d].", characterId, partyId)
-	return producer.ProviderImpl(p.l)(p.ctx)(party2.EnvCommandTopic)(LeaveCommandProvider(characterId, partyId, false))
+	return producer.ProviderImpl(p.l)(p.ctx)(party2.EnvCommandTopic)(LeaveCommandProvider(characterId, partyId, characterId, false))
 }
 
 func (p *Processor) Expel(partyId uint32, characterId uint32, targetCharacterId uint32) error {
 	p.l.Debugf("Character [%d] attempting to expel [%d] from party [%d].", characterId, targetCharacterId, partyId)
-	return producer.ProviderImpl(p.l)(p.ctx)(party2.EnvCommandTopic)(LeaveCommandProvider(characterId, partyId, true))
+	return producer.ProviderImpl(p.l)(p.ctx)(party2.EnvCommandTopic)(LeaveCommandProvider(characterId, partyId, targetCharacterId, true))
 }
 
 func (p *Processor) ChangeLeader(partyId uint32, characterId uint32, targetCharacterId uint32) error {

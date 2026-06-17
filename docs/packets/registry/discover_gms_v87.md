@@ -112,8 +112,8 @@ Registry entries whose opcode IDA did not discover. They are NOT auto-deleted.
 | `ARIANT_ARENA_USER_SCORE` | `0x13A` | `CField_AriantArena::OnUserScore` |
 | `SHEEP_RANCH_INFO` | `0x13C` | `CField_Battlefield::OnScoreUpdate` |
 | `SHEEP_RANCH_CLOTHES` | `0x13D` | `CField_Battlefield::OnTeamChanged` |
-| `HORNTAIL_CAVE` | `0x13E` | `CField::OnHontailTimer` |
-| `WITCH_TOWER_SCORE_UPDATE` | `0x13F` | `CField_Witchtower::OnScoreUpdate` |
+| `WITCH_TOWER_SCORE_UPDATE` | `0x13E` | `CField_Witchtower::OnScoreUpdate` |
+| `HORNTAIL_CAVE` | `0x13F` | `CField::OnHontailTimer` |
 | `NPC_TALK` | `0x141` | `CScriptMan::OnPacket` |
 | `OPEN_NPC_SHOP` | `0x142` | `CShopDlg::OnPacket` |
 | `CONFIRM_SHOP_TRANSACTION` | `0x143` | `CShopDlg::OnPacket` |

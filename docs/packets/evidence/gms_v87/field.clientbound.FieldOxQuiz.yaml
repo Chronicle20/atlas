@@ -1,0 +1,8 @@
+packet: field/clientbound/FieldOxQuiz
+direction: clientbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnQuiz
+    address: "0x55d2da"
+    decompile_sha256: 07b4075c1d94fd0d33bbd30f46526e10b2aeb3f837b10cc95996427a50267db3

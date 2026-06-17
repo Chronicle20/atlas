@@ -10,6 +10,7 @@ import (
 const CashShopCheckWalletHandle = "CashShopCheckWalletHandle"
 
 // CheckWallet - CCashShop::SendCheckWallet
+// packet-audit:fname CCashShop::TrySendQueryCashRequest
 type CheckWallet struct{}
 
 func (m CheckWallet) Operation() string {

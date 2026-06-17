@@ -11,6 +11,7 @@ import (
 
 const PetActivatedWriter = "PetActivated"
 
+// packet-audit:fname CUserRemote::OnPetActivated
 type Activated struct {
 	ownerId    uint32
 	slot       int8

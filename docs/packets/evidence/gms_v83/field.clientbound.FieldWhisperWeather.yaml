@@ -1,0 +1,8 @@
+packet: field/clientbound/FieldWhisperWeather
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnWhisper#Weather
+    address: "0x53228e"
+    decompile_sha256: a0487f6618e650faafd5f7af2fe0231fd3f7812c7a270611c2e43be5b18b871a

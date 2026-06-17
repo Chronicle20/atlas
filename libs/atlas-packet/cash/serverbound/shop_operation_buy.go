@@ -13,6 +13,7 @@ import (
 const CashShopOperationBuyHandle = "CashShopOperationBuyHandle"
 
 // ShopOperationBuy - CCashShop::OnBuy
+// packet-audit:fname CCashShop::OnBuy
 type ShopOperationBuy struct {
 	isPoints     bool
 	currency     uint32

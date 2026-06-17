@@ -1,0 +1,8 @@
+packet: field/clientbound/FieldSummonItemUnavailable
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnSummonItemInavailable
+    address: "0x532fcf"
+    decompile_sha256: 94613ef01436dd5b37787d86d7007e834be98a26a8fecbbe2178c265718b851e

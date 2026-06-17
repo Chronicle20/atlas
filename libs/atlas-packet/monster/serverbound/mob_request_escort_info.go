@@ -21,6 +21,8 @@ const MobRequestEscortInfoHandle = "MobRequestEscortInfo"
 // IDA basis: CMob::SendRequestEscortPath — v95 @0x6411f0 (opcode 237), jms
 // @0x6eff57 (opcode 0xCC/204): `if (IsActive) { ClearEscortInfo; COutPacket(op);
 // Encode4(SecureFuse(mobId)) }`. v95/jms only — escort family absent in v83/v84/v87.
+//
+// packet-audit:fname CMob::SendRequestEscortPath
 type MobRequestEscortInfo struct {
 	mobCrc uint32
 }

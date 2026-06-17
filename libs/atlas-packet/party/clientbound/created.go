@@ -12,6 +12,7 @@ import (
 
 const PartyOperationWriter = "PartyOperation"
 
+// packet-audit:fname CWvsContext::OnPartyResult#Created
 type Created struct {
 	mode            byte
 	partyId         uint32

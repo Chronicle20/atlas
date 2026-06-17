@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldMtsResultGetSearchItcListFailed
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CITC::OnNormalItemResult#GetSearchItcListFailed
+    address: "0x5b4ed3"
+    decompile_sha256: 32b186f1688ebad2dbbcb223f6e9fccbfafcc233bc388a17b3872802c59ca9e1
+verifies:
+  - libs/atlas-packet/field/clientbound/mts_result_reason_modes_test.go#TestMtsResultGetSearchItcListFailed

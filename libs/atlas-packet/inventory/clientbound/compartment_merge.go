@@ -11,6 +11,7 @@ import (
 
 const CompartmentMergeWriter = "CompartmentMerge"
 
+// packet-audit:fname CWvsContext::OnGatherItemResult
 type CompartmentMerge struct {
 	inventoryType byte
 }

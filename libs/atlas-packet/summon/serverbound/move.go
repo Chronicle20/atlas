@@ -38,6 +38,8 @@ const SummonMoveHandle = "SummonMoveHandle"
 //
 // Either way the decoded value is exposed via SummonId(); the channel handler
 // reconciles cid-vs-id against the sender's owned summons.
+//
+// packet-audit:fname CSummonedPool::OnMove
 type Move struct {
 	summonId    uint32
 	startX      int16

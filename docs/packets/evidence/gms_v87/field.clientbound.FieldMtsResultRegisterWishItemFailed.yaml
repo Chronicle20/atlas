@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldMtsResultRegisterWishItemFailed
+direction: clientbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CITC::OnNormalItemResult#RegisterWishItemFailed
+    address: "0x5d52c3"
+    decompile_sha256: 5f18c6b69c48a17b9e8f13b42e10d19f3c39fc0baa35ef29b4fa598aef4b6191
+verifies:
+  - libs/atlas-packet/field/clientbound/mts_result_empty_modes_test.go#TestMtsResultRegisterWishItemFailed

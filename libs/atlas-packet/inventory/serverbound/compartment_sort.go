@@ -12,6 +12,7 @@ import (
 const CompartmentSortRequestHandle = "CompartmentSortHandle"
 
 // CompartmentSortRequest - CField::SendCompartmentSortRequest
+// packet-audit:fname CWvsContext::SendSortItemRequest
 type CompartmentSortRequest struct {
 	updateTime      uint32
 	compartmentType byte

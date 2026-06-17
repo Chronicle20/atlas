@@ -1,0 +1,8 @@
+packet: field/serverbound/FieldAdminChat
+direction: serverbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CField::SendChatMsgSlash#AdminChat
+    address: "0x541d57"
+    decompile_sha256: 5cd0b8d4f02f5183de4c4bca2bd314ea0776c7ed595f7377748932de61389b03

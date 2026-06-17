@@ -11,6 +11,7 @@ import (
 
 const ReactorSpawnWriter = "ReactorSpawn"
 
+// packet-audit:fname CReactorPool::OnReactorEnterField
 type Spawn struct {
 	id             uint32
 	classification uint32

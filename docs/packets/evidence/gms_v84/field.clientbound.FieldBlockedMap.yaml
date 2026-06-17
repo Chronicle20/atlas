@@ -1,0 +1,8 @@
+packet: field/clientbound/FieldBlockedMap
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnTransferFieldReqIgnored
+    address: "0x53dae2"
+    decompile_sha256: d2a5ed77004ff28561291499b046d9c6f7ea5ed825a8134e7fb20f0db6fdbb16

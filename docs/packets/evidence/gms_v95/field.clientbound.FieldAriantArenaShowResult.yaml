@@ -1,0 +1,8 @@
+packet: field/clientbound/FieldAriantArenaShowResult
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CField_AriantArena::OnShowResult
+    address: "0x547630"
+    decompile_sha256: 7419451a1135ccc32dffb92cb3be016aaeda3e63c7364cc357fb3f96e76a58d2

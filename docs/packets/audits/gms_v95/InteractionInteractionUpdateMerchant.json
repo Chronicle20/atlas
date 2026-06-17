@@ -1,6 +1,6 @@
 {
   "WriterName": "InteractionInteractionUpdateMerchant",
-  "IDAName": "CPersonalShopDlg::OnRefresh#UpdateMerchant",
+  "IDAName": "CEntrustedShopDlg::OnRefresh#UpdateMerchant",
   "Address": "0x51cc30",
   "Variant": "GMS/v95",
   "BranchDepth": 0,
@@ -20,7 +20,7 @@
       "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
-      "IDAComment": "meso (m_nMoney; CEntrustedShopDlg::OnRefresh prefix)",
+      "IDAComment": "meso (this->m_nMoney; CEntrustedShopDlg::OnRefresh @0x51cc30)",
       "Verdict": 0,
       "Note": ""
     },
@@ -29,7 +29,7 @@
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "count (m_nItem)",
+      "IDAComment": "count (this[110]; CPersonalShopDlg::OnRefresh @0x698050)",
       "Verdict": 0,
       "Note": ""
     },
@@ -38,7 +38,7 @@
       "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 5,
-      "IDAComment": "items (count x: perBundle short, quantity short, price int, GW_ItemSlotBase substruct)",
+      "IDAComment": "items (count x: Decode2 perBundle, Decode2 quantity, Decode4 price, GW_ItemSlotBase::Decode asset)",
       "Verdict": 0,
       "Note": ""
     },

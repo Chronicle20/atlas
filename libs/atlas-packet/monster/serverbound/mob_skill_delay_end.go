@@ -34,6 +34,8 @@ const MobSkillDelayEndHandle = "MobSkillDelayEnd"
 // COutPacket at this opcode (the skill-delay-end feature post-dates v83, mirroring
 // its clientbound twin MOB_SKILL_DELAY which the v83 dispatcher also lacks — see
 // structures/applicability.md). v84/v87/v95/jms all carry the four-Encode4 send.
+//
+// packet-audit:fname CMob::Update
 type MobSkillDelayEnd struct {
 	mobCrc     uint32
 	skillId    uint32

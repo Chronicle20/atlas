@@ -1,8 +1,0 @@
-packet: chat/serverbound/ChatGeneral
-direction: serverbound
-version: gms_v84
-category: TIER1-FIXTURE
-ida:
-    function: CField::SendChatMsg
-    address: "0x5382d7"
-    decompile_sha256: 4f24ef8ccda0d1152fa0c2dafe0f99130b21240cf1ca7a71274b7cb01078abdf

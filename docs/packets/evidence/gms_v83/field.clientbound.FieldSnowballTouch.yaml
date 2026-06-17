@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldSnowballTouch
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CField_SnowBall::OnSnowBallTouch
+    address: "0x575372"
+    decompile_sha256: 91962fe82446c9d165cc7f3db0113729b624aea06b4d92068e6760a4efd623af
+verifies:
+  - libs/atlas-packet/field/clientbound/snowball_touch_test.go#TestSnowballTouchRoundTrip

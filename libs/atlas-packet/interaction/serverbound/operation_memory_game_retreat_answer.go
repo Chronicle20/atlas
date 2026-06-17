@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// packet-audit:fname COmokDlg::OnRetreatRequest
 type OperationMemoryGameRetreatAnswer struct {
 	response bool
 }

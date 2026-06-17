@@ -1,0 +1,8 @@
+packet: storage/clientbound/StorageShow
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CTrunkDlg::OnPacket#Show
+    address: "0x84e5a1"
+    decompile_sha256: bc3262ae2ad5e504eab4bf4495131d418619e74cffb260686de8f44620c626ec

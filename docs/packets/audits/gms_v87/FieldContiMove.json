@@ -1,0 +1,21 @@
+{
+  "WriterName": "FieldContiMove",
+  "IDAName": "CField_ContiMove::OnContiMove",
+  "Address": "0x577bbc",
+  "Variant": "GMS/v87",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/field/clientbound/conti_move.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

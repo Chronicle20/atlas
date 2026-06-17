@@ -1,0 +1,8 @@
+packet: field/clientbound/FieldSnowballMessage
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CField_SnowBall::OnSnowBallMsg
+    address: "0x5c96c6"
+    decompile_sha256: 5ca8d0a03d86e6c4f82b0ceba3df93db39a3065908b66826e1c40ac758aafba5

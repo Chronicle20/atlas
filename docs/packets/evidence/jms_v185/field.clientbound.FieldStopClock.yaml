@@ -1,0 +1,8 @@
+packet: field/clientbound/FieldStopClock
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnDestroyClock
+    address: "0x56ec69"
+    decompile_sha256: cf5ba46365e2a16f01daaf976d96498c7f17594eec3fd691d49f702b041c57bf

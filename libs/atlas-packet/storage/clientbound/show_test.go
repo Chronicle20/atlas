@@ -29,6 +29,8 @@ func etcAsset() model.Asset {
 // packet-audit:verify packet=storage/clientbound/StorageShow version=gms_v83 ida=0x7c5dae
 // packet-audit:verify packet=storage/clientbound/StorageShow version=gms_v95 ida=0x76a990
 // packet-audit:verify packet=storage/clientbound/StorageShow version=gms_v87 ida=0x819648
+// packet-audit:verify packet=storage/clientbound/StorageShow version=gms_v84 ida=0x7eec1a
+// packet-audit:verify packet=storage/clientbound/StorageShow version=jms_v185 ida=0x84e5a1
 func TestStorageShowSegmentation(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	for _, v := range pt.Variants {
@@ -128,16 +130,74 @@ func TestStorageShowEmptyRoundTrip(t *testing.T) {
 	}
 }
 
-func TestStorageUpdateAssetsRoundTrip(t *testing.T) {
+// storageAssetsMode returns the per-version SetGetItems mode byte for a STORAGE
+// data arm given its gms mode byte. jms_v185's CTrunkDlg dispatcher is shifted
+// -1 vs GMS (see docs/packets/dispatchers/storage_operation.yaml).
+func storageAssetsMode(v pt.TenantVariant, gmsMode byte) byte {
+	if v.Region == "JMS" {
+		return gmsMode - 1
+	}
+	return gmsMode
+}
+
+// TestStorageStoreAssetsRoundTrip exercises the STORE_ASSETS SetGetItems arm
+// (gms mode 13 / jms 12) the dispatcher routes to: Decode1 slotCount,
+// DecodeBuffer(8) tab-flag bitmask, Decode4 meso gated on flag&2, then the
+// per-tab count+items loop over bits 4/8/16/32/64. Read order IDA-confirmed
+// identical across versions: SetGetItems v83 0x7c5dfd (dispatcher 0x7c8a4c
+// case 13), v84 dispatcher 0x7eec1a case 13, v87 dispatcher 0x81c336 case 13,
+// v95 0x76a390 (dispatcher 0x76a990 case 13), jms dispatcher 0x84e5a1 case 12.
+// Mode bytes trace to storage_operation.yaml STORE_ASSETS row.
+// packet-audit:verify packet=storage/clientbound/StorageStoreAssets version=gms_v83 ida=0x7c5dfd
+// packet-audit:verify packet=storage/clientbound/StorageStoreAssets version=gms_v84 ida=0x7eec1a
+// packet-audit:verify packet=storage/clientbound/StorageStoreAssets version=gms_v87 ida=0x81c336
+// packet-audit:verify packet=storage/clientbound/StorageStoreAssets version=gms_v95 ida=0x76a990
+// packet-audit:verify packet=storage/clientbound/StorageStoreAssets version=jms_v185 ida=0x84e5a1
+func TestStorageStoreAssetsRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {
 			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			mode := storageAssetsMode(v, 13)
 			assets := []model.Asset{testAsset(), testAsset()}
-			input := NewStorageUpdateAssets(9, 16, 8, assets)
-			output := UpdateAssets{}
+			input := NewStorageStoreAssets(mode, 16, 8, assets)
+			output := StoreAssets{}
 			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
-			if output.Mode() != input.Mode() {
-				t.Errorf("mode: got %v, want %v", output.Mode(), input.Mode())
+			if output.Mode() != mode {
+				t.Errorf("mode: got %v, want %v", output.Mode(), mode)
+			}
+			if output.Slots() != input.Slots() {
+				t.Errorf("slots: got %v, want %v", output.Slots(), input.Slots())
+			}
+			if output.Flags() != input.Flags() {
+				t.Errorf("flags: got %v, want %v", output.Flags(), input.Flags())
+			}
+			if len(output.Assets()) != 2 {
+				t.Fatalf("assets: got %d, want 2", len(output.Assets()))
+			}
+		})
+	}
+}
+
+// TestStorageRetrieveAssetsRoundTrip exercises the RETRIEVE_ASSETS SetGetItems
+// arm (gms mode 9 / jms 8); same body shape as STORE_ASSETS, differing only by
+// the leading mode byte. Mode bytes trace to storage_operation.yaml
+// RETRIEVE_ASSETS row.
+// packet-audit:verify packet=storage/clientbound/StorageRetrieveAssets version=gms_v83 ida=0x7c5dfd
+// packet-audit:verify packet=storage/clientbound/StorageRetrieveAssets version=gms_v84 ida=0x7eec1a
+// packet-audit:verify packet=storage/clientbound/StorageRetrieveAssets version=gms_v87 ida=0x81c336
+// packet-audit:verify packet=storage/clientbound/StorageRetrieveAssets version=gms_v95 ida=0x76a990
+// packet-audit:verify packet=storage/clientbound/StorageRetrieveAssets version=jms_v185 ida=0x84e5a1
+func TestStorageRetrieveAssetsRoundTrip(t *testing.T) {
+	for _, v := range pt.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			mode := storageAssetsMode(v, 9)
+			assets := []model.Asset{testAsset(), testAsset()}
+			input := NewStorageRetrieveAssets(mode, 16, 8, assets)
+			output := RetrieveAssets{}
+			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
+			if output.Mode() != mode {
+				t.Errorf("mode: got %v, want %v", output.Mode(), mode)
 			}
 			if output.Slots() != input.Slots() {
 				t.Errorf("slots: got %v, want %v", output.Slots(), input.Slots())

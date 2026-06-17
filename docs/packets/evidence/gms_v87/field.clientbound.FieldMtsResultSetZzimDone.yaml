@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldMtsResultSetZzimDone
+direction: clientbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CITC::OnNormalItemResult#SetZzimDone
+    address: "0x5d4eef"
+    decompile_sha256: ba7f34ce758a9870bb1673b3f8b9050cea9c551855753b54f0281e3ec0b22c34
+verifies:
+  - libs/atlas-packet/field/clientbound/mts_result_empty_modes_test.go#TestMtsResultSetZzimDone

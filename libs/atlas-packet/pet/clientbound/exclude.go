@@ -11,6 +11,7 @@ import (
 
 const PetExcludeResponseWriter = "PetExcludeResponse"
 
+// packet-audit:fname CPet::OnLoadExceptionList
 type ExcludeResponse struct {
 	ownerId    uint32
 	slot       int8

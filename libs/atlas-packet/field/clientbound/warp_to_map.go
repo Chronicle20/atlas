@@ -25,6 +25,7 @@ const SetFieldWriter = "SetField"
 // portal-warp path, which a position warp deliberately does not use.)
 const chasePortalId byte = 0x80
 
+// packet-audit:fname CStage::OnSetField#WarpToMap
 type WarpToMap struct {
 	channelId channel.Id
 	mapId     _map.Id

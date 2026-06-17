@@ -1,0 +1,8 @@
+packet: npc/clientbound/NpcShopOperationGenericErrorWithReason
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CShopDlg::OnPacket#GenericErrorWithReason
+    address: "0x77905b"
+    decompile_sha256: 08975228d35930af0701d6afa0765763fa0c235671cbfa9765e53828374fdfff

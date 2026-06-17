@@ -25,6 +25,8 @@ const MobSkillDelayWriter = "MobSkillDelay"
 // v87 @0x6ad0e8, v95 @0x63d560, jms @0x6ef0d4 (4× Decode4). VERSION-ABSENT in v83:
 // the v83 dispatcher CMobPool::OnMobPacket @0x67936d ends at case 0xFF
 // (OnMobAttackedByMob) with no skill-delay case — this is a later-version feature.
+//
+// packet-audit:fname CMob::OnMobSkillDelay
 type MobSkillDelay struct {
 	delay      int32
 	skillId    int32

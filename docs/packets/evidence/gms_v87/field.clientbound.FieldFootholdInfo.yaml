@@ -1,0 +1,11 @@
+packet: field/clientbound/FieldFootholdInfo
+direction: clientbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnFootHoldInfo
+    address: "0x560fec"
+    decompile_sha256: 0e25541c75e5b2360669cb2e6ecb96d6c4be37e7f6f9a5b2df7c8b09edcfd113
+verifies:
+  - libs/atlas-packet/field/clientbound/foothold_info_test.go#TestFootholdInfoV87Golden
+  - libs/atlas-packet/field/clientbound/foothold_info_test.go#TestFootholdInfoRoundTrip

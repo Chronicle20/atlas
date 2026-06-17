@@ -11,6 +11,7 @@ import (
 
 const PartyInviteRejectHandle = "PartyInviteRejectHandle"
 
+// packet-audit:fname CWvsContext::OnPartyResult#InviteReject
 type InviteReject struct {
 	unk  byte
 	from string

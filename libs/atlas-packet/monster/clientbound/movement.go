@@ -13,6 +13,7 @@ import (
 
 const MonsterMovementWriter = "MoveMonster"
 
+// packet-audit:fname CMob::OnMove
 type Movement struct {
 	uniqueId                    uint32
 	bNotForceLandingWhenDiscard bool

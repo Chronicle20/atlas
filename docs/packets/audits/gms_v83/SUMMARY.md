@@ -56,7 +56,8 @@
 | [NpcShopOperationSimple](NpcShopOperationSimple.md) | ✅ | `libs/atlas-packet/npc/clientbound/shop_operation.go` |
 | [FieldWarpToMap](FieldWarpToMap.md) | 🔍 | `libs/atlas-packet/field/clientbound/warp_to_map.go` |
 | [StorageShow](StorageShow.md) | 🔍 | `libs/atlas-packet/storage/clientbound/show.go` |
-| [StorageUpdateAssets](StorageUpdateAssets.md) | 🔍 | `libs/atlas-packet/storage/clientbound/update_assets.go` |
+| [StorageStoreAssets](StorageStoreAssets.md) | 🔍 | `libs/atlas-packet/storage/clientbound/store_retrieve_assets.go` |
+| [StorageRetrieveAssets](StorageRetrieveAssets.md) | 🔍 | `libs/atlas-packet/storage/clientbound/store_retrieve_assets.go` |
 | [GuildBBSThread](GuildBBSThread.md) | ✅ | `libs/atlas-packet/guild/clientbound/bbs.go` |
 | [GuildBBSThreadList](GuildBBSThreadList.md) | 🔍 | `libs/atlas-packet/guild/clientbound/bbs.go` |
 | [MessengerAdd](MessengerAdd.md) | ✅ | `libs/atlas-packet/messenger/clientbound/add.go` |

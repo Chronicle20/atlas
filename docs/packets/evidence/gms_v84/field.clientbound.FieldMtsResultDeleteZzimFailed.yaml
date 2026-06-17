@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldMtsResultDeleteZzimFailed
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CITC::OnNormalItemResult#DeleteZzimFailed
+    address: "0x5b5381"
+    decompile_sha256: ffbdf23a4249e0d1c08a7cc5696a2f80fc3791553204f81dd41776b32569da39
+verifies:
+  - libs/atlas-packet/field/clientbound/mts_result_empty_modes_test.go#TestMtsResultDeleteZzimFailed

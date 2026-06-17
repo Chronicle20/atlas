@@ -22,6 +22,7 @@ import (
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 	chatpkt "github.com/Chronicle20/atlas/libs/atlas-packet/chat/clientbound"
+	fieldcb "github.com/Chronicle20/atlas/libs/atlas-packet/field/clientbound"
 	messengerpkt "github.com/Chronicle20/atlas/libs/atlas-packet/messenger"
 	messengercb "github.com/Chronicle20/atlas/libs/atlas-packet/messenger/clientbound"
 	petpkt "github.com/Chronicle20/atlas/libs/atlas-packet/pet/clientbound"
@@ -140,7 +141,7 @@ func sendMultiChat(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 	return func(ctx context.Context) func(wp writer.Producer) func(name string, message string, mode byte) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(name string, message string, mode byte) model.Operator[session.Model] {
 			return func(name string, message string, mode byte) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(chatpkt.MultiChatWriter)(chatpkt.NewMultiChat(mode, name, message).Encode)
+				return session.Announce(l)(ctx)(wp)(fieldcb.MultiChatWriter)(fieldcb.NewMultiChat(mode, name, message).Encode)
 			}
 		}
 	}
@@ -167,14 +168,14 @@ func handleWhisperChat(sc server.Model, wp writer.Producer) message.Handler[mess
 			return
 		}
 
-		bp := chatpkt.NewWhisperSendResult(0x0A, tc.Name(), true).Encode
-		err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.ActorId, session.Announce(l)(ctx)(wp)(chatpkt.WhisperWriter)(bp))
+		bp := fieldcb.NewWhisperSendResult(0x0A, tc.Name(), true).Encode
+		err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.ActorId, session.Announce(l)(ctx)(wp)(fieldcb.WhisperWriter)(bp))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to send whisper message from [%d] to [%d].", e.ActorId, e.Body.Recipient)
 		}
 
-		bp = chatpkt.NewWhisperReceive(0x12, c.Name(), byte(e.ChannelId), c.Gm(), e.Message).Encode
-		err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.Body.Recipient, session.Announce(l)(ctx)(wp)(chatpkt.WhisperWriter)(bp))
+		bp = fieldcb.NewWhisperReceive(0x12, c.Name(), byte(e.ChannelId), c.Gm(), e.Message).Encode
+		err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.Body.Recipient, session.Announce(l)(ctx)(wp)(fieldcb.WhisperWriter)(bp))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to send whisper message from [%d] to [%d].", e.ActorId, e.Body.Recipient)
 		}

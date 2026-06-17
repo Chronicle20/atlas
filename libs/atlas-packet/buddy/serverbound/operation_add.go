@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// packet-audit:fname CField::SendSetFriendMsg
 type OperationAdd struct {
 	name  string
 	group string

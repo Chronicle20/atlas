@@ -1153,27 +1153,57 @@ func candidatesFromFName(fname string) []candidate {
 	// Atlas MultiChat writes WriteByte(mode)+WriteAsciiString(from)+WriteAsciiString(message) — parameterised.
 	// Sub-op value space: ⚠️ deferred to _pending.md (single consolidated chat row).
 	case "CField::OnGroupMessage":
-		// CSV: MULTICHAT — atlas MultiChat (clientbound chat/multi.go).
-		return []candidate{{name: "MultiChat", pkg: "chat", dir: csvpkg.DirClientbound}}
+		// CSV: MULTICHAT — atlas MultiChat (relocated to field/clientbound/multi.go, task-096 R-MARK).
+		return []candidate{{name: "MultiChat", pkg: "field", dir: csvpkg.DirClientbound}}
 
-	// CSV: WHISPER (0x97 / 151) → CField::OnWhisper.
-	// Dispatches on a leading mode byte: 9/10=find, 18=receive-whisper, 34=blocked, 146=weather.
-	// All atlas clientbound whisper structs (WhisperSendResult, WhisperReceive, etc.) write mode as first byte — parameterised.
-	// Sub-op value space: ⚠️ deferred to _pending.md (single consolidated chat row).
-	case "CField::OnWhisper":
-		// Use WhisperReceive as the representative struct (mode=18 branch).
-		return []candidate{{name: "WhisperReceive", pkg: "chat", dir: csvpkg.DirClientbound}}
+	// CSV: WHISPER (clientbound) → CField::OnWhisper. A field-domain dispatcher
+	// (relocated chat→field, task-096 R-MARK) that branches on a leading mode
+	// byte to 8 sub-ops. Each atlas clientbound whisper struct is modelled via a
+	// #-suffixed synthetic IDA entry so the pipeline produces one report per
+	// struct (same pattern as messenger/buddy/note clientbound sub-ops). The op
+	// row grades worst-of across all 8 #-suffix writers.
+	case "CField::OnWhisper#Receive":
+		// mode=0x12 (RECEIVE): DecodeStr(from) + Decode1(channel) + Decode1(gm) + DecodeStr(msg).
+		// Atlas struct: field/clientbound/whisper.go WhisperReceive.
+		return []candidate{{name: "WhisperReceive", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField::OnWhisper#SendResult":
+		// mode=0x0A/0x8A (SEND_RESULT): DecodeStr(target) + Decode1(result).
+		// Atlas struct: field/clientbound/whisper.go WhisperSendResult.
+		return []candidate{{name: "WhisperSendResult", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField::OnWhisper#FindResultMap":
+		// mode=0x09/0x48 sub=1 (FIND on map): DecodeStr(target) + Decode1(=1) + Decode4(mapId) +
+		// [Decode4(x) + Decode4(y) when mode 0x09].
+		// Atlas struct: field/clientbound/whisper.go WhisperFindResultMap.
+		return []candidate{{name: "WhisperFindResultMap", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField::OnWhisper#FindResultCashShop":
+		// mode=0x09/0x48 sub=2 (FIND in cash shop): DecodeStr(target) + Decode1(=2) + Decode4(-1).
+		// Atlas struct: field/clientbound/whisper.go WhisperFindResultCashShop.
+		return []candidate{{name: "WhisperFindResultCashShop", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField::OnWhisper#FindResultChannel":
+		// mode=0x09/0x48 sub=3 (FIND on channel): DecodeStr(target) + Decode1(=3) + Decode4(channel).
+		// Atlas struct: field/clientbound/whisper.go WhisperFindResultChannel.
+		return []candidate{{name: "WhisperFindResultChannel", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField::OnWhisper#FindResultError":
+		// mode=0x09/0x48 sub=0/else (FIND not found): DecodeStr(target) + Decode1(=0) + Decode4(0).
+		// Atlas struct: field/clientbound/whisper.go WhisperFindResultError.
+		return []candidate{{name: "WhisperFindResultError", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField::OnWhisper#Error":
+		// mode=0x22 (ERROR): DecodeStr(target) + Decode1(whispersEnabled).
+		// Atlas struct: field/clientbound/whisper.go WhisperError.
+		return []candidate{{name: "WhisperError", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField::OnWhisper#Weather":
+		// mode=0x92 (WEATHER): DecodeStr(from) + Decode1 + DecodeStr(msg).
+		// Atlas struct: field/clientbound/whisper.go WhisperWeather.
+		return []candidate{{name: "WhisperWeather", pkg: "field", dir: csvpkg.DirClientbound}}
 
-	// CSV: SPOUSE_CHAT (0x98 / 152) → CField::OnCoupleMessage.
-	// Dispatches on a leading mode byte (Decode1 - 4): mode=4 (own message), mode=5 (partner message).
-	// Both sub-modes are parameterised; atlas world_message.go and whisper.go write mode as first byte.
-	// Sub-op value space: ⚠️ deferred to _pending.md (single consolidated chat row).
-	// Note: SPOUSE_CHAT is absent in v95 template (opcode 0 in serverbound SPOUSE_CHAT for GMS). No template
-	// opcode mapping; the clientbound opcode is 0x98. Atlas has no dedicated SPOUSE_CHAT writer yet; mapping
-	// via CField::OnCoupleMessage to WhisperWeather as a placeholder for pipeline coverage.
+	// CSV: SPOUSE_CHAT → CField::OnCoupleMessage (task-096 R-CB; field/clientbound/SpouseChat).
+	// Per-version clientbound opcodes: v83 0x88, v84 0x8B, v87 0x90, v95 0x98. jms VERSION-ABSENT.
+	// Dispatches on a leading mode byte (Decode1): mode=4 (own/sender message), mode=5 (partner
+	// message). The export's flat read is the maximal mode-4 branch:
+	//   Decode1(mode) + DecodeStr(sender) + Decode1(flag) + DecodeStr(chatText).
+	// Atlas SpouseChat writes that representative shape flat.
 	case "CField::OnCoupleMessage":
-		// Use WhisperWeather as a representative sub-op struct for pipeline coverage.
-		return []candidate{{name: "WhisperWeather", pkg: "chat", dir: csvpkg.DirClientbound}}
+		return []candidate{{name: "SpouseChat", pkg: "field", dir: csvpkg.DirClientbound}}
 
 	// CSV: SERVERMESSAGE (0x47 / 71) → CWvsContext::OnBroadcastMsg.
 	// Dispatches on a leading mode byte (Decode1): multiple sub-modes for notice/megaphone/ticker/etc.
@@ -1189,8 +1219,8 @@ func candidatesFromFName(fname string) []candidate {
 	// Atlas General writes: WriteInt(updateTime, GMS>83 gate) + WriteAsciiString(msg) + WriteBool(bOnlyBalloon).
 	// Gate fires for v95 → all 3 fields written → matches IDA wire exactly.
 	case "CField::SendChatMsg":
-		// CSV: GENERAL_CHAT — atlas General (serverbound chat/general.go).
-		return []candidate{{name: "General", pkg: "chat", dir: csvpkg.DirServerbound}}
+		// CSV: GENERAL_CHAT — atlas General (relocated to field/serverbound/general.go, task-096 R-MARK).
+		return []candidate{{name: "General", pkg: "field", dir: csvpkg.DirServerbound}}
 
 	// CSV: MULTI_CHAT (0xDD / 221) → CUIStatusBar::SendGroupMessage.
 	// Wire at LABEL_24: Encode4(updateTime) + Encode1(nChatTarget) + Encode1(nMemberCnt) +
@@ -1209,6 +1239,23 @@ func candidatesFromFName(fname string) []candidate {
 	case "CField::SendChatMsgWhisper":
 		// CSV: WHISPER — atlas Whisper (serverbound chat/whisper.go).
 		return []candidate{{name: "Whisper", pkg: "chat", dir: csvpkg.DirServerbound}}
+
+	// WHISPER (serverbound) primary registry fname is CField::SendLocationWhisper
+	// (the find-friend send-site); SendChatMsgWhisper is the chat-msg sibling. Both
+	// emit the same WHISPER opcode and the same atlas chat.Whisper codec decodes
+	// both. Per-version wire (IDA): mode byte + Encode4(get_update_time) [v87+/jms]
+	// + EncodeStr(target) + optional EncodeStr(msg for mode==Chat).
+	case "CField::SendLocationWhisper":
+		return []candidate{{name: "Whisper", pkg: "chat", dir: csvpkg.DirServerbound}}
+
+	// CSV: SPOUSE_CHAT (serverbound) → CUIStatusBar::SendCoupleMessage. The client
+	// reads the partner name from the local marriage record and sends two strings
+	// with NO leading mode byte / NO updateTime: EncodeStr(spouseName) +
+	// EncodeStr(message). Per-version opcodes: v84 0x7B, v87 0x7F, v95 0x8E; jms
+	// version-absent. Atlas struct field/serverbound/CoupleMessage (named to avoid
+	// the qualified writer-name collision with field/clientbound/SpouseChat).
+	case "CUIStatusBar::SendCoupleMessage":
+		return []candidate{{name: "CoupleMessage", pkg: "field", dir: csvpkg.DirServerbound}}
 
 	// --- Social: party (clientbound) ---
 	// CSV: PARTY_OPERATION (clientbound, opcode 0x3E/62 in GMS v95) → CWvsContext::OnPartyResult
@@ -1505,12 +1552,18 @@ func candidatesFromFName(fname string) []candidate {
 	// #-suffix FNames (one per atlas wire shape) to disambiguate.
 	case "CTrunkDlg::OnPacket#Show":
 		return []candidate{{name: "Show", dir: csvpkg.DirClientbound, pkg: "storage"}}
-	case "CTrunkDlg::OnPacket#UpdateAssets":
-		return []candidate{{name: "UpdateAssets", dir: csvpkg.DirClientbound, pkg: "storage"}}
+	case "CTrunkDlg::OnPacket#StoreAssets":
+		return []candidate{{name: "StoreAssets", dir: csvpkg.DirClientbound, pkg: "storage"}}
+	case "CTrunkDlg::OnPacket#RetrieveAssets":
+		return []candidate{{name: "RetrieveAssets", dir: csvpkg.DirClientbound, pkg: "storage"}}
 	case "CTrunkDlg::OnPacket#UpdateMeso":
 		return []candidate{{name: "UpdateMeso", dir: csvpkg.DirClientbound, pkg: "storage"}}
-	case "CTrunkDlg::OnPacket#ErrorSimple":
-		return []candidate{{name: "ErrorSimple", dir: csvpkg.DirClientbound, pkg: "storage"}}
+	case "CTrunkDlg::OnPacket#ErrorInventoryFull":
+		return []candidate{{name: "ErrorInventoryFull", dir: csvpkg.DirClientbound, pkg: "storage"}}
+	case "CTrunkDlg::OnPacket#ErrorNotEnoughMesos":
+		return []candidate{{name: "ErrorNotEnoughMesos", dir: csvpkg.DirClientbound, pkg: "storage"}}
+	case "CTrunkDlg::OnPacket#ErrorOneOfAKind":
+		return []candidate{{name: "ErrorOneOfAKind", dir: csvpkg.DirClientbound, pkg: "storage"}}
 	case "CTrunkDlg::OnPacket#ErrorMessage":
 		return []candidate{{name: "ErrorMessage", dir: csvpkg.DirClientbound, pkg: "storage"}}
 	// Serverbound CTrunkDlg senders.
@@ -1617,7 +1670,14 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "InteractionChat", dir: csvpkg.DirClientbound, pkg: "interaction"}}
 	case "CMiniRoomBaseDlg::OnPacketBase#Leave":
 		return []candidate{{name: "InteractionLeave", dir: csvpkg.DirClientbound, pkg: "interaction"}}
-	case "CPersonalShopDlg::OnRefresh#UpdateMerchant":
+	case "CEntrustedShopDlg::OnRefresh#UpdateMerchant":
+		// UPDATE_MERCHANT (mode 25) is the hired-merchant shop refresh. The
+		// dispatcher's default case virtual-dispatches into the concrete dialog;
+		// for the hired merchant that is CEntrustedShopDlg::OnRefresh, which reads
+		// Decode4(meso=m_nMoney) then chains into CPersonalShopDlg::OnRefresh
+		// (count byte + per-item perBundle/quantity/price/asset). v95 0x51cc30,
+		// v83 0x518852, v84 0x5218ca, v87 0x53b2fc — all IDA-verified to read the
+		// meso prefix before the personal-shop item loop.
 		return []candidate{{name: "InteractionUpdateMerchant", dir: csvpkg.DirClientbound, pkg: "interaction"}}
 	// --- cash sub-domain (task-067, Phase 1d) ---
 	// Clientbound: QueryResult routes through CCashShop::OnQueryCashResult (opcode 0x17F),
@@ -1628,18 +1688,31 @@ func candidatesFromFName(fname string) []candidate {
 	// synthetic #-suffix FNames map each CashShopOperation result struct to its OnCashItemRes* sub-handler.
 	case "CCashShop::OnCashItemResult#CashShopInventory":
 		return []candidate{{name: "CashShopInventory", dir: csvpkg.DirClientbound, pkg: "cash"}}
-	case "CCashShop::OnCashItemResult#WishList":
-		return []candidate{{name: "WishList", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	// WishList split into two discrete per-mode structs (task-096): LOAD_WISHLIST
+	// (OnCashItemResLoadWishDone) and UPDATE_WISHLIST (OnCashItemResSetWishDone).
+	// Both arms read DecodeBuffer(40) = 10 x int32 SNs after the dispatcher consumes
+	// the mode byte; the structs differ only in the fixed operation key + mode arm.
+	case "CCashShop::OnCashItemResult#LOAD_WISHLIST":
+		return []candidate{{name: "WishListLoad", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#UPDATE_WISHLIST":
+		return []candidate{{name: "WishListUpdate", dir: csvpkg.DirClientbound, pkg: "cash"}}
 	case "CCashShop::OnCashItemResult#InventoryCapacitySuccess":
 		return []candidate{{name: "InventoryCapacitySuccess", dir: csvpkg.DirClientbound, pkg: "cash"}}
 	case "CCashShop::OnCashItemResult#InventoryCapacityFailed":
 		return []candidate{{name: "InventoryCapacityFailed", dir: csvpkg.DirClientbound, pkg: "cash"}}
-	case "CCashShop::OnCashItemResult#OperationError":
-		return []candidate{{name: "OperationError", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	// LOAD_INVENTORY_FAILURE (OnCashItemResLoadLockerFailed): discrete per-mode struct
+	// (task-096). mode + reason byte (generic failure-family arm). FIXES the
+	// LOAD_INVENTORY_FAILURE operation key; replaces the old shape-name #OperationError.
+	case "CCashShop::OnCashItemResult#LOAD_INVENTORY_FAILURE":
+		return []candidate{{name: "LoadInventoryFailure", dir: csvpkg.DirClientbound, pkg: "cash"}}
 	case "CCashShop::OnCashItemResult#CashShopPurchaseSuccess":
 		return []candidate{{name: "CashShopPurchaseSuccess", dir: csvpkg.DirClientbound, pkg: "cash"}}
 	case "CCashShop::OnCashItemResult#CashItemMovedToCashInventory":
+		// case 0x79 MOVE_S_TO_L_DONE (OnCashItemResMoveStoLDone): mode + 55-byte GW_CashItemInfo.
 		return []candidate{{name: "CashItemMovedToCashInventory", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#CashItemMovedToInventory":
+		// case 0x77 MOVE_L_TO_S_DONE (OnCashItemResMoveLtoSDone): mode + Decode2(slot) + GW_ItemSlotBase (model.Asset).
+		return []candidate{{name: "CashItemMovedToInventory", dir: csvpkg.DirClientbound, pkg: "cash"}}
 	// Serverbound CCashShop senders (op-byte owned by the ShopOperation dispatcher; bodies below).
 	case "CCashShop::TrySendQueryCashRequest":
 		return []candidate{{name: "CheckWallet", dir: csvpkg.DirServerbound, pkg: "cash"}}
@@ -1777,6 +1850,362 @@ func candidatesFromFName(fname string) []candidate {
 	case "CField::OnClock":
 		return []candidate{{name: "Clock", pkg: "field", dir: csvpkg.DirClientbound}}
 
+	// CField clientbound proof batch (task-096, cluster 2). Version-invariant
+	// layouts derived from IDA (addresses pinned per version in the test markers).
+	case "CField::OnTransferFieldReqIgnored":
+		return []candidate{{name: "BlockedMap", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField::OnQuiz":
+		return []candidate{{name: "OxQuiz", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField::OnDestroyClock":
+		return []candidate{{name: "StopClock", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField::OnSetObjectState":
+		return []candidate{{name: "SetObjectState", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField::OnFieldObstacleOnOffStatus":
+		return []candidate{{name: "FieldObstacleOnOffList", pkg: "field", dir: csvpkg.DirClientbound}}
+
+	// CField clientbound cluster 3 proof batch (task-096, recipe R-CB).
+	// Version-invariant layouts derived from IDA (addresses pinned per version
+	// in the test markers). MtsOperation2's fname is CITC:: (not CField::).
+	case "CField::OnZakumTimer":
+		return []candidate{{name: "ZakumShrine", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField::OnHontailTimer":
+		return []candidate{{name: "HorntailCave", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField::OnWarnMessage":
+		return []candidate{{name: "AriantResult", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CITC::OnQueryCashResult":
+		return []candidate{{name: "MtsOperation2", pkg: "field", dir: csvpkg.DirClientbound}}
+
+	// MTS_OPERATION (task-096, recipe OP-MODE-PREFIX). CITC::OnNormalItemResult
+	// reads Decode1(mode) and switch-dispatches to one of 35 cash-shop/MTS
+	// sub-handlers (0x15..0x3E). Each sub-handler is a REAL discrete per-mode
+	// struct (MtsResult<Mode>) carrying its own #-suffixed synthetic FName below;
+	// baseFName strips the #suffix so all 35 reports collapse onto the registry op
+	// MTS_OPERATION (fname CITC::OnNormalItemResult), which the matrix grades
+	// worst-of across them (mirrors FIELD_EFFECT / CField::OnFieldEffect, whose
+	// op row is represented by its real discrete EffectBossHp et al). There is NO
+	// separate mode-byte-only #Mode representative — the retired phantom
+	// MtsOperation struct was a false-pass once the per-mode body codecs landed.
+	// jms VERSION-ABSENT (no CITC in jms).
+
+	// MTS_OPERATION per-mode body arms (task-096 graduation, FIELD_EFFECT model).
+	// Each #-suffixed synthetic FName maps a body-shape group of CITC sub-handlers
+	// to a per-mode body codec in field/clientbound/mts_operation_body.go. The
+	// codec writes the leading dispatcher mode byte THEN the full arm body (the
+	// read order the matching CITC sub-handler performs on CInPacket) — replacing
+	// the mode-byte-only MtsOperation false-pass for the covered arms.
+	//
+	//   Each notice-only ("Empty-shape") arm now has its OWN discrete per-mode
+	//   struct (MtsResult<Mode>) that fixes its own mode byte and writes exactly
+	//   that byte (the sub-handler reads NOTHING after the dispatcher Decode1(mode)
+	//   — StringPool notice only; the trailing m_bITCRequestSent=0 store is a member
+	//   write, not a wire read). The shared MtsResultEmpty struct was retired
+	//   (task-096 discrete-per-mode rule). All 19 Empty arms are decompile-confirmed
+	//   Empty-shape in v83/v84/v87/v95; jms VERSION-ABSENT (no CITC).
+	//   Each Reason-shape arm (sub-handler reads a single Decode1 fail-reason byte
+	//   after the dispatcher mode byte) now has its OWN discrete per-mode struct
+	//   (MtsResult<Mode>) that fixes its own mode byte and writes mode+reason. The
+	//   shared MtsResultReason struct was retired (task-096 discrete-per-mode rule).
+	//   Covers: 0x16 GetItcListFailed, 0x18 GetSearchItcListFailed,
+	//   0x20 SaleCurrentItemToWishFailed, 0x22 GetUserPurchaseItemFailed,
+	//   0x24 GetUserSaleItemFailed, 0x26 CancelSaleItemFailed,
+	//   0x28 MoveItcPurchaseItemLtoSFailed. All decompile-confirmed Reason-shape in
+	//   v83/v84/v87/v95; jms VERSION-ABSENT (no CITC).
+	//
+	// Body shapes are version-stable (gms_v83/v84/v87/v95 IDA-confirmed identical;
+	// jms VERSION-ABSENT — no CITC). The remaining arms (list/item-blob, two-int,
+	// search/purchase/sale) land in later task-096 iterations.
+	case "CITC::OnNormalItemResult#RegisterSaleEntryDone":
+		return []candidate{{name: "MtsResultRegisterSaleEntryDone", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CITC::OnNormalItemResult#SaleCurrentItemToWishDone":
+		return []candidate{{name: "MtsResultSaleCurrentItemToWishDone", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CITC::OnNormalItemResult#CancelSaleItemDone":
+		return []candidate{{name: "MtsResultCancelSaleItemDone", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CITC::OnNormalItemResult#SetZzimDone":
+		return []candidate{{name: "MtsResultSetZzimDone", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CITC::OnNormalItemResult#SetZzimFailed":
+		return []candidate{{name: "MtsResultSetZzimFailed", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CITC::OnNormalItemResult#DeleteZzimDone":
+		return []candidate{{name: "MtsResultDeleteZzimDone", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CITC::OnNormalItemResult#DeleteZzimFailed":
+		return []candidate{{name: "MtsResultDeleteZzimFailed", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CITC::OnNormalItemResult#LoadWishSaleListFailed":
+		return []candidate{{name: "MtsResultLoadWishSaleListFailed", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CITC::OnNormalItemResult#BuyWishDone":
+		return []candidate{{name: "MtsResultBuyWishDone", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CITC::OnNormalItemResult#BuyWishFailed":
+		return []candidate{{name: "MtsResultBuyWishFailed", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CITC::OnNormalItemResult#CancelWishDone":
+		return []candidate{{name: "MtsResultCancelWishDone", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CITC::OnNormalItemResult#CancelWishFailed":
+		return []candidate{{name: "MtsResultCancelWishFailed", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CITC::OnNormalItemResult#BuyItemDone":
+		return []candidate{{name: "MtsResultBuyItemDone", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CITC::OnNormalItemResult#BuyItemFailed":
+		return []candidate{{name: "MtsResultBuyItemFailed", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CITC::OnNormalItemResult#BuyZzimItemDone":
+		return []candidate{{name: "MtsResultBuyZzimItemDone", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CITC::OnNormalItemResult#BuyZzimItemFailed":
+		return []candidate{{name: "MtsResultBuyZzimItemFailed", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CITC::OnNormalItemResult#RegisterWishItemDone":
+		return []candidate{{name: "MtsResultRegisterWishItemDone", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CITC::OnNormalItemResult#RegisterWishItemFailed":
+		return []candidate{{name: "MtsResultRegisterWishItemFailed", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CITC::OnNormalItemResult#BidAuctionFailed":
+		return []candidate{{name: "MtsResultBidAuctionFailed", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CITC::OnNormalItemResult#GetItcListFailed":
+		return []candidate{{name: "MtsResultGetItcListFailed", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CITC::OnNormalItemResult#GetSearchItcListFailed":
+		return []candidate{{name: "MtsResultGetSearchItcListFailed", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CITC::OnNormalItemResult#SaleCurrentItemToWishFailed":
+		return []candidate{{name: "MtsResultSaleCurrentItemToWishFailed", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CITC::OnNormalItemResult#GetUserPurchaseItemFailed":
+		return []candidate{{name: "MtsResultGetUserPurchaseItemFailed", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CITC::OnNormalItemResult#GetUserSaleItemFailed":
+		return []candidate{{name: "MtsResultGetUserSaleItemFailed", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CITC::OnNormalItemResult#CancelSaleItemFailed":
+		return []candidate{{name: "MtsResultCancelSaleItemFailed", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CITC::OnNormalItemResult#MoveItcPurchaseItemLtoSFailed":
+		return []candidate{{name: "MtsResultMoveItcPurchaseItemLtoSFailed", pkg: "field", dir: csvpkg.DirClientbound}}
+
+	//   Each TwoInts-shape arm (sub-handler reads exactly Decode4 then Decode4
+	//   after the dispatcher mode byte) now has its OWN discrete per-mode struct
+	//   that fixes its own mode byte. The shared MtsResultTwoInts struct was retired
+	//   (task-096 discrete-per-mode rule). Covers: 0x27 MoveItcPurchaseItemLtoSDone
+	//   (tab+1, selectedNo), 0x3D NotifyCancelWishResult (count d, count x). The
+	//   downstream use differs but the wire read order is identical Decode4×2.
+	//   #RegisterSaleEntryFailed -> MtsResultRegisterSaleEntryFailed
+	//              (0x1E; Decode1(reason) then, ONLY when reason==0x48, a trailing
+	//              Decode2 short). The conditional tail makes it its own shape.
+	//   #SuccessBidInfo -> MtsResultSuccessBidInfo (0x3E; Decode1(soldFlag) +
+	//              Decode4(itemId) then, ONLY when itemId>0, Decode4(price) +
+	//              DecodeBuffer(8) FILETIME contract date).
+	//
+	// All decompile-confirmed version-stable in gms_v83/v84/v87/v95 (iteration 5).
+	case "CITC::OnNormalItemResult#MoveItcPurchaseItemLtoSDone":
+		return []candidate{{name: "MtsResultMoveItcPurchaseItemLtoSDone", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CITC::OnNormalItemResult#NotifyCancelWishResult":
+		return []candidate{{name: "MtsResultNotifyCancelWishResult", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CITC::OnNormalItemResult#RegisterSaleEntryFailed":
+		return []candidate{{name: "MtsResultRegisterSaleEntryFailed", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CITC::OnNormalItemResult#SuccessBidInfo":
+		return []candidate{{name: "MtsResultSuccessBidInfo", pkg: "field", dir: csvpkg.DirClientbound}}
+
+	// MTS_OPERATION list/item-blob arms (task-096 iteration 6, FINAL — completes
+	// the family). Each embeds one or more ITCITEM entries; an ITCITEM is a
+	// GW_ItemSlotBase blob (model.Asset codec) + an MTS trailer (meso/contract/
+	// bid metadata). Read order decompile-confirmed version-stable across
+	// gms_v83/v84/v87/v95 (the loop count, item-blob, and any leading/trailing
+	// scalars are identical; only the dispatcher mode bytes and sub-handler
+	// addresses shift). jms VERSION-ABSENT (no CITC). See
+	// field/clientbound/mts_operation_list.go.
+	//
+	//   #GetItcListDone            -> MtsResultGetItcListDone (0x15): Decode4
+	//              catItemCnt, Decode4 pageItemCnt (loop), Decode4 category,
+	//              Decode4 subCategory, Decode4 page, Decode1 sortType,
+	//              Decode1 sortColumn, pageItemCnt × ITCITEM, Decode1 requestSent.
+	//   #GetSearchItcListDone      -> MtsResultGetSearchItcListDone (0x17): same
+	//              leading 5×Decode4 (catItemCnt, pageItemCnt, category,
+	//              subCategory, page), pageItemCnt × ITCITEM; NO sort bytes, NO
+	//              trailing requestSent byte.
+	//   #GetUserPurchaseItemDone   -> MtsResultGetUserPurchaseItemDone (0x21):
+	//              Decode4 totalCount, totalCount × ITCITEM, Decode4 limitedCount,
+	//              Decode1 requestSent.
+	//   #GetUserSaleItemDone       -> MtsResultGetUserSaleItemDone (0x23): Decode4
+	//              totalCount, totalCount × ITCITEM. No trailing fields.
+	//   #LoadWishSaleListDone      -> MtsResultLoadWishSaleListDone (0x2D): Decode4
+	//              totalCount, totalCount × ITCITEM. No trailing fields.
+	case "CITC::OnNormalItemResult#GetItcListDone":
+		return []candidate{{name: "MtsResultGetItcListDone", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CITC::OnNormalItemResult#GetSearchItcListDone":
+		return []candidate{{name: "MtsResultGetSearchItcListDone", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CITC::OnNormalItemResult#GetUserPurchaseItemDone":
+		return []candidate{{name: "MtsResultGetUserPurchaseItemDone", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CITC::OnNormalItemResult#GetUserSaleItemDone":
+		return []candidate{{name: "MtsResultGetUserSaleItemDone", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CITC::OnNormalItemResult#LoadWishSaleListDone":
+		return []candidate{{name: "MtsResultLoadWishSaleListDone", pkg: "field", dir: csvpkg.DirClientbound}}
+
+	// FOOTHOLD_INFO clientbound (task-096, recipe R-CB). CField::OnFootHoldInfo
+	// is version-divergent: v87 reads a single entry (name, mode, [mode==2:
+	// 8×int32 + 2×byte]); v95/jms read Decode4(count) then per entry name, mode,
+	// idCount, idCount×int32, [mode==2: 7×int32 + 2×byte]. GMS<87 VERSION-ABSENT.
+	// The CMapLoadable::FootHoldStateChange/FootHoldMove delegates are map-apply
+	// application logic (no wire bytes), stripped from the exports per §10.
+	// field/clientbound/foothold_info.go FootholdInfo.
+	case "CField::OnFootHoldInfo":
+		return []candidate{{name: "FootholdInfo", pkg: "field", dir: csvpkg.DirClientbound}}
+
+	// FOOTHOLD_INFO serverbound (task-096, recipe R-SB). CField::OnRequestFootHoldInfo
+	// is the client's REPLY to the server foothold-info request: it builds
+	// COutPacket(270 v95 / 0xED jms) appending one entry per dynamic object with
+	// NO count prefix — Encode4(nCurState) + Encode4(nCurX)+Encode4(nCurY)+
+	// Encode1(revV)+Encode1(revH) (or 4 zeros). The server decodes the stream to
+	// exhaustion. Exists only in GMS v95 (@0x52ddd0) + jms (@0x576cd2);
+	// VERSION-ABSENT in GMS v83/v84/v87. field/serverbound/request_foothold_info.go.
+	case "CField::OnRequestFootHoldInfo":
+		return []candidate{{name: "RequestFootholdInfo", pkg: "field", dir: csvpkg.DirServerbound}}
+
+	// CField clientbound minigame family (task-096, recipe R-CB). Version-invariant
+	// wire layouts derived from IDA (addresses pinned per version in the test markers).
+	// CField_ContiMove::OnContiMove and CField_AriantArena::OnUserScore carry a
+	// post-read switch-dispatch / Delegate chain that is application logic, not a
+	// wire read; those delegate entries are stripped from the exports (and re-pinned)
+	// so Resolve yields only the wire fields.
+	case "CField_SnowBall::OnSnowBallState":
+		return []candidate{{name: "SnowballState", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField_SnowBall::OnSnowBallHit":
+		return []candidate{{name: "SnowballHit", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField_SnowBall::OnSnowBallMsg":
+		return []candidate{{name: "SnowballMessage", pkg: "field", dir: csvpkg.DirClientbound}}
+	// LEFT_KNOCK_BACK (task-096 R-CB). EMPTY body — the handler reads no bytes
+	// (SetImpact(0x12C,1) only). field/clientbound/snowball_touch.go SnowballTouch.
+	case "CField_SnowBall::OnSnowBallTouch":
+		return []candidate{{name: "SnowballTouch", pkg: "field", dir: csvpkg.DirClientbound}}
+	// IDA_0X09C / OnStalkResult (task-096 R-CB). Minimap stalkee-list update: a
+	// count-prefixed loop; the export flattens one insert iteration (count + charId
+	// + flag + name + x + y). The InsertStalkee/RemoveStalkee/_Release Delegates are
+	// UI logic. field/clientbound/stalk_result.go StalkResult. v84 VERSION-ABSENT.
+	case "CField::OnStalkResult":
+		return []candidate{{name: "StalkResult", pkg: "field", dir: csvpkg.DirClientbound}}
+	// ADMIN_RESULT (task-096 R-CB). Mode-demux flattened like SPOUSE_CHAT; the
+	// post-mode flat read order differs per version (the codec branches on tenant
+	// version). field/clientbound/admin_result.go AdminResult.
+	case "CField::OnAdminResult":
+		return []candidate{{name: "AdminResult", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField_Coconut::OnCoconutHit":
+		return []candidate{{name: "CoconutHit", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField_Coconut::OnCoconutScore":
+		return []candidate{{name: "CoconutScore", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField_GuildBoss::OnHealerMove":
+		return []candidate{{name: "GuildBossHealerMove", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField_GuildBoss::OnPulleyStateChange":
+		return []candidate{{name: "GuildBossPulleyStateChange", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField_AriantArena::OnUserScore":
+		return []candidate{{name: "AriantArenaUserScore", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField_AriantArena::OnShowResult":
+		return []candidate{{name: "AriantArenaShowResult", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField_Battlefield::OnScoreUpdate":
+		return []candidate{{name: "SheepRanchInfo", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField_Battlefield::OnTeamChanged":
+		return []candidate{{name: "SheepRanchClothes", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField_ContiMove::OnContiMove":
+		return []candidate{{name: "ContiMove", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField_Massacre::OnMassacreIncGauge":
+		return []candidate{{name: "PyramidGauge", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField_MassacreResult::OnMassacreResult":
+		return []candidate{{name: "PyramidScore", pkg: "field", dir: csvpkg.DirClientbound}}
+
+	// CField serverbound minigame/door send-sites (task-096, recipe R-SB). These
+	// are the client BasicActionAttack / Update / TryEnterTownPortal send-site
+	// FNames (#suffix tags appended in the export so each maps to a distinct op,
+	// since several share a base send-site). The codecs live under
+	// field/serverbound; addresses are pinned per version in the test markers.
+	case "CField_SnowBall::BasicActionAttack#Snowball":
+		return []candidate{{name: "Snowball", pkg: "field", dir: csvpkg.DirServerbound}}
+	case "CField_SnowBall::Update#LeftKnockback":
+		return []candidate{{name: "LeftKnockback", pkg: "field", dir: csvpkg.DirServerbound}}
+	case "CField_Coconut::BasicActionAttack#Coconut":
+		return []candidate{{name: "Coconut", pkg: "field", dir: csvpkg.DirServerbound}}
+	case "CField_GuildBoss::BasicActionAttack#GuildBoss":
+		return []candidate{{name: "GuildBoss", pkg: "field", dir: csvpkg.DirServerbound}}
+	case "CField::TryEnterTownPortal#UseDoor":
+		return []candidate{{name: "UseDoor", pkg: "field", dir: csvpkg.DirServerbound}}
+
+	// CField admin/slash serverbound family (task-096, recipe R-SB). The client
+	// /-command parser CField::SendChatMsgSlash builds several distinct COutPacket
+	// opcodes — one per command class — so each maps to a distinct op via a
+	// #suffix export entry (the base CField::SendChatMsgSlash entry is untouched).
+	// Layouts IDA-derived per version (v95 authoritative); addresses pinned per
+	// version in the test markers. SLIDE_REQUEST is v95+jms only; SUE_CHARACTER is
+	// jms-absent. SUE_CHARACTER version-branches its leading field (v83/v84/v87
+	// int32 char id, v95 sub-command string).
+	case "CField::SendChatMsgSlash#AdminChat":
+		return []candidate{{name: "AdminChat", pkg: "field", dir: csvpkg.DirServerbound}}
+	case "CField::SendChatMsgSlash#AdminCommand":
+		return []candidate{{name: "AdminCommand", pkg: "field", dir: csvpkg.DirServerbound}}
+	case "CField::SendChatMsgSlash#AdminLog":
+		return []candidate{{name: "AdminLog", pkg: "field", dir: csvpkg.DirServerbound}}
+	case "CField::SendChatMsgSlash#MatchTable":
+		return []candidate{{name: "MatchTable", pkg: "field", dir: csvpkg.DirServerbound}}
+	case "CField::SendChatMsgSlash#SlideRequest":
+		return []candidate{{name: "SlideRequest", pkg: "field", dir: csvpkg.DirServerbound}}
+	case "CField::SendChatMsgSlash#SueCharacter":
+		return []candidate{{name: "SueCharacter", pkg: "field", dir: csvpkg.DirServerbound}}
+
+	// CField_Tournament clientbound family (task-096, recipe R-CB). Version-invariant
+	// layouts derived from IDA (addresses pinned per version in the test markers).
+	// OnTournamentSetPrize carries a trailing post-read Delegate (sub_XXXXXX in the
+	// v83/v87/jms exports) that is application logic, not a wire read; those delegate
+	// entries are stripped from the exports (and re-pinned) so Resolve yields only the
+	// wire fields. OnTournamentMatchTable and OnPacket are empty-body no-op stubs.
+	case "CField_Tournament::OnTournament":
+		return []candidate{{name: "Tournament", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField_Tournament::OnTournamentMatchTable":
+		return []candidate{{name: "TournamentMatchTable", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField_Tournament::OnTournamentSetPrize":
+		return []candidate{{name: "TournamentSetPrize", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField_Tournament::OnTournamentUEW":
+		return []candidate{{name: "TournamentUew", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField_Tournament::OnPacket":
+		return []candidate{{name: "TournamentCharacters", pkg: "field", dir: csvpkg.DirClientbound}}
+
+	// CField_Wedding clientbound family (task-096, recipe R-CB). Version-invariant
+	// layouts derived from IDA (addresses pinned per version in the test markers),
+	// except WeddingProgress which is version-branched: jms drops the leading step
+	// byte (groomId + brideId only). The OnWeddingProgress fname is also used by
+	// serverbound WEDDING action/talk ops (different direction); only the clientbound
+	// candidate is declared here. OnWeddingCeremonyEnd is an empty-body no-op stub.
+	case "CField_Wedding::OnWeddingProgress":
+		return []candidate{{name: "WeddingProgress", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField_Wedding::OnWeddingCeremonyEnd":
+		return []candidate{{name: "WeddingCeremonyEnd", pkg: "field", dir: csvpkg.DirClientbound}}
+	// Serverbound wedding send-sites (task-096, recipe R-SB). OnWeddingProgress
+	// both reads the clientbound progress packet and emits these serverbound
+	// replies; the #Action / #Talk export suffixes disambiguate them from the
+	// base clientbound case above. jms-absent (no jms registry rows / markers).
+	case "CField_Wedding::OnWeddingProgress#Action":
+		return []candidate{{name: "WeddingAction", pkg: "field", dir: csvpkg.DirServerbound}}
+	case "CField_Wedding::OnWeddingProgress#Talk":
+		return []candidate{{name: "WeddingTalk", pkg: "field", dir: csvpkg.DirServerbound}}
+
+	// CField witch-tower / item-upgrade clientbound family (task-096). The
+	// OnScoreUpdate handler is shared by two ops that differ by version: it backs
+	// WITCH_TOWER_SCORE_UPDATE on v83/v84/v87/jms and ARIANT_SCORE on v95 (where
+	// v95 routes WITCH_TOWER_SCORE_UPDATE to OnChaosZakumTimer instead). Both
+	// clientbound candidates are returned; the matrix resolves them per op-identity
+	// via the registry op->fname mapping. OnItemUpgrade is an empty-body vtable
+	// forwarder backing VICIOUS_HAMMER (absent from the jms registry).
+	case "CField_Witchtower::OnScoreUpdate":
+		return []candidate{
+			{name: "WitchTowerScoreUpdate", pkg: "field", dir: csvpkg.DirClientbound},
+			{name: "AriantScore", pkg: "field", dir: csvpkg.DirClientbound},
+		}
+	case "CField::OnChaosZakumTimer":
+		return []candidate{{name: "WitchTowerScoreUpdate", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField::OnItemUpgrade":
+		return []candidate{{name: "ViciousHammer", pkg: "field", dir: csvpkg.DirClientbound}}
+
+	// CField clientbound cluster 2, remaining 9 ops (task-096). Version-invariant
+	// layouts derived from IDA (addresses pinned per version in the test markers).
+	case "CField::OnTransferChannelReqIgnored":
+		return []candidate{{name: "BlockedServer", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField::OnFieldSpecificData":
+		return []candidate{{name: "ForcedMapEquip", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField::OnSummonItemInavailable":
+		return []candidate{{name: "SummonItemUnavailable", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField::OnFieldObstacleOnOff":
+		return []candidate{{name: "FieldObstacleOnOff", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField::OnFieldObstacleAllReset":
+		return []candidate{{name: "FieldObstacleAllReset", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField::OnSetQuestClear":
+		return []candidate{{name: "SetQuestClear", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField::OnSetQuestTime":
+		return []candidate{{name: "SetQuestTime", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField::OnDesc":
+		return []candidate{{name: "GmEventInstructions", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField::OnPlayJukeBox":
+		return []candidate{{name: "PlayJukebox", pkg: "field", dir: csvpkg.DirClientbound}}
+
 	// --- World: npc (clientbound) ---
 	// Non-conversation NPC packets. FNames + addresses verified against the
 	// canonical CSV (docs/packets/MapleStory Ops - ClientBound.csv) and live
@@ -1810,22 +2239,57 @@ func candidatesFromFName(fname string) []candidate {
 		// Decode2 slotMax}. Atlas ShopList loop body matches per-item; analyzer flattens
 		// the loop → ⚠️ tool-limitation (manually verified — see NpcShopList ## Loop bounds).
 		return []candidate{{name: "ShopList", pkg: "npc", dir: csvpkg.DirClientbound}}
-	case "CShopDlg::OnPacket#Simple":
-		// CSV: CONFIRM_SHOP_TRANSACTION (GMS v95 opcode 0x12F? no — 0x130/304) →
-		// CShopDlg::OnPacket@0x6eb7d0 (nType==365) switch(Decode1 mode). Most modes
-		// (0,1,2,3,5,8,9,0xA,0xD,0x10,0x11,0x12) read no further fields (mode byte only,
-		// then a StringPool Notice). Atlas ShopOperationSimple writes Byte(mode). ✓
-		// ⚠️ OP-FAMILY-npc-shop-operation: full mode enum deferred to _pending.md.
-		return []candidate{{name: "ShopOperationSimple", pkg: "npc", dir: csvpkg.DirClientbound}}
-	case "CShopDlg::OnPacket#LevelRequirement":
-		// Same handler, cases 0xE/0xF (over/under level requirement): Decode4(level).
-		// Atlas ShopOperationLevelRequirement writes Byte(mode) + Int(levelLimit). ✓
-		return []candidate{{name: "ShopOperationLevelRequirement", pkg: "npc", dir: csvpkg.DirClientbound}}
+	// CONFIRM_SHOP_TRANSACTION (CShopDlg::OnPacket switch(Decode1 mode)) mode-only
+	// "notice" arms — each dispatcher mode maps to its OWN discrete struct (no
+	// shared shape). Each arm reads exactly one byte (the mode discriminator) then
+	// shows a StringPool Notice; the structs differ only by the fixed operation key
+	// their body func resolves. Mode bytes per docs/packets/dispatchers/
+	// npc_shop_operation.yaml (IDA-verified): OK=0, OUT_OF_STOCK=1,
+	// NOT_ENOUGH_MONEY=2, INVENTORY_FULL=3, OUT_OF_STOCK_2=5, OUT_OF_STOCK_3=9,
+	// NOT_ENOUGH_MONEY_2=10, NEED_MORE_ITEMS=13, TRADE_LIMIT=16 (version-stable).
+	case "CShopDlg::OnPacket#Ok":
+		return []candidate{{name: "ShopOperationOk", pkg: "npc", dir: csvpkg.DirClientbound}}
+	case "CShopDlg::OnPacket#OutOfStock":
+		return []candidate{{name: "ShopOperationOutOfStock", pkg: "npc", dir: csvpkg.DirClientbound}}
+	case "CShopDlg::OnPacket#NotEnoughMoney":
+		return []candidate{{name: "ShopOperationNotEnoughMoney", pkg: "npc", dir: csvpkg.DirClientbound}}
+	case "CShopDlg::OnPacket#InventoryFull":
+		return []candidate{{name: "ShopOperationInventoryFull", pkg: "npc", dir: csvpkg.DirClientbound}}
+	case "CShopDlg::OnPacket#OutOfStock2":
+		return []candidate{{name: "ShopOperationOutOfStock2", pkg: "npc", dir: csvpkg.DirClientbound}}
+	case "CShopDlg::OnPacket#OutOfStock3":
+		return []candidate{{name: "ShopOperationOutOfStock3", pkg: "npc", dir: csvpkg.DirClientbound}}
+	case "CShopDlg::OnPacket#NotEnoughMoney2":
+		return []candidate{{name: "ShopOperationNotEnoughMoney2", pkg: "npc", dir: csvpkg.DirClientbound}}
+	case "CShopDlg::OnPacket#NeedMoreItems":
+		return []candidate{{name: "ShopOperationNeedMoreItems", pkg: "npc", dir: csvpkg.DirClientbound}}
+	case "CShopDlg::OnPacket#TradeLimit":
+		return []candidate{{name: "ShopOperationTradeLimit", pkg: "npc", dir: csvpkg.DirClientbound}}
+	case "CShopDlg::OnPacket#OverLevelRequirement":
+		// Same handler, case 0xE (over level requirement): Decode1(mode) + Decode4(level).
+		// Discrete per-mode struct ShopOperationOverLevelRequirement writes
+		// Byte(mode) + Int(levelLimit). Split from the shared LevelRequirement
+		// shape per task-096; mode 14 per npc_shop_operation.yaml. ✓
+		return []candidate{{name: "ShopOperationOverLevelRequirement", pkg: "npc", dir: csvpkg.DirClientbound}}
+	case "CShopDlg::OnPacket#UnderLevelRequirement":
+		// Same handler, case 0xF (under level requirement): Decode1(mode) + Decode4(level).
+		// Discrete per-mode struct ShopOperationUnderLevelRequirement writes
+		// Byte(mode) + Int(levelLimit). Split from the shared LevelRequirement
+		// shape per task-096; mode 15 per npc_shop_operation.yaml. ✓
+		return []candidate{{name: "ShopOperationUnderLevelRequirement", pkg: "npc", dir: csvpkg.DirClientbound}}
 	case "CShopDlg::OnPacket#GenericError":
-		// Same handler, case 0x13: Decode1(hasReason) + (hasReason ? DecodeStr(reason)).
-		// Atlas ShopOperationGenericError writes Byte(mode) + Bool(hasReason) +
-		// optional AsciiString(reason). ✓
+		// Same handler, case 0x11 (mode 17): Decode1(mode) + Decode1(hasReason=0);
+		// no reason string. Discrete per-mode struct ShopOperationGenericError
+		// writes Byte(mode) + Bool(false). Split from the shared generic-error
+		// shape per task-096; mode 17 per npc_shop_operation.yaml. ✓
 		return []candidate{{name: "ShopOperationGenericError", pkg: "npc", dir: csvpkg.DirClientbound}}
+	case "CShopDlg::OnPacket#GenericErrorWithReason":
+		// Same handler, case 17 gms_v83/v84/v87, case 19 gms_v95: Decode1(mode) +
+		// Decode1(hasReason=1) + DecodeStr(reason). jms VERSION-ABSENT (no arm).
+		// Discrete per-mode struct ShopOperationGenericErrorWithReason writes
+		// Byte(mode) + Bool(true) + AsciiString(reason). Split from the shared
+		// generic-error shape per task-096; modes per npc_shop_operation.yaml. ✓
+		return []candidate{{name: "ShopOperationGenericErrorWithReason", pkg: "npc", dir: csvpkg.DirClientbound}}
 	// shop_operation_body.go has no exported struct (pure helper functions); no candidate entry.
 	case "CNpcPool::OnNpcEnterField":
 		// CSV: SPAWN_NPC (GMS v95 opcode 0x12F/303). OnNpcEnterField@0x679680 reads

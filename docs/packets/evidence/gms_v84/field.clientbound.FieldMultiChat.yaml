@@ -1,0 +1,8 @@
+packet: field/clientbound/FieldMultiChat
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnGroupMessage
+    address: "0x53e086"
+    decompile_sha256: ee826e1e4d008c68f2d40dd49ce729db41a0dcac5a1daf8be551897e8fce5124

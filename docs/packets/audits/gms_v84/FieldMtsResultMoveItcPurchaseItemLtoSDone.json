@@ -1,0 +1,39 @@
+{
+  "WriterName": "FieldMtsResultMoveItcPurchaseItemLtoSDone",
+  "IDAName": "CITC::OnNormalItemResult#MoveItcPurchaseItemLtoSDone",
+  "Address": "0x5b5258",
+  "Variant": "GMS/v84",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/field/clientbound/mts_result_two_ints_modes.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "MTS result mode byte (0x27 MoveItcPurchaseItemLtoSDone)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "Decode4 tab (-\u003e CCtrlTab::SetTab(tab-1))",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "Decode4 selectedNo",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

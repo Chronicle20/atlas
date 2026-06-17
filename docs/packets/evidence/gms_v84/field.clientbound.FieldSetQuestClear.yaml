@@ -1,0 +1,8 @@
+packet: field/clientbound/FieldSetQuestClear
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnSetQuestClear
+    address: "0x543bb8"
+    decompile_sha256: 368a90938420a64051b3d03e86da4f8fadfa83bf1b0b9c203790503234d676f1

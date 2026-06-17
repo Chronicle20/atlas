@@ -11,6 +11,7 @@ import (
 
 const PetItemUseHandle = "PetItemUseHandle"
 
+// packet-audit:fname CWvsContext::SendStatChangeItemUseRequestByPetQ
 type ItemUse struct {
 	petId      uint64
 	buffSkill  bool

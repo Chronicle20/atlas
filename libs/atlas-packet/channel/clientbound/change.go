@@ -13,6 +13,7 @@ import (
 
 const ChannelChangeWriter = "ChannelChange"
 
+// packet-audit:fname CClientSocket::OnMigrateCommand
 type ChannelChange struct {
 	ipAddr string
 	port   uint16

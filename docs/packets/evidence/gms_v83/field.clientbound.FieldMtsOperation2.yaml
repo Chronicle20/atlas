@@ -1,0 +1,8 @@
+packet: field/clientbound/FieldMtsOperation2
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CITC::OnQueryCashResult
+    address: "0x5a428c"
+    decompile_sha256: 8dfc565ba0fed69d7151fa72a13c313e510799f5a96812ef3be1513ad63b26a0

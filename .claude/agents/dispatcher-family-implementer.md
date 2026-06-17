@@ -78,6 +78,15 @@ Hard constraints, in priority order:
    (function + address) or export entry you cite. Resolve IDA by loaded IDB via
    list_instances/select_instance; if the right IDB isn't loaded and the export
    lacks the function, STOP and report blocked.
+   - **`run.go` `#`-entry comments can be STALE.** The `// Atlas X writes: … ❌`
+     narrative in `candidatesFromFName` is a point-in-time note, not live truth —
+     a struct may have been fixed (e.g. a version gate added, a `WriteInt`
+     narrowed to `WriteByte`) without its comment being updated. NEVER relay a
+     run.go comment's verdict (`❌`/"MISSING"/"wire bug") as a current finding.
+     Verify every wire claim against the struct's actual `Encode`/`Decode` AND the
+     committed per-version audit report (`docs/packets/audits/<ver>/<Name>.md`
+     Verdict) before reporting it. If the comment and the code disagree, the code
+     +report win — and freshening the stale comment is part of the work.
 2. The mode byte is per-tenant/version DATA. It is resolved from the `operations`
    table at emit time — never written as a literal in a struct or constructor.
    This is the bug that sank the MTS split; do not reintroduce it.

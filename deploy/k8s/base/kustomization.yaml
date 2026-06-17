@@ -40,6 +40,7 @@ resources:
   - atlas-monster-death.yaml
   - atlas-monsters.yaml
   - atlas-mounts.yaml
+  - atlas-mts.yaml
   - atlas-notes.yaml
   - atlas-npc-conversations.yaml
   - atlas-npc-shops.yaml

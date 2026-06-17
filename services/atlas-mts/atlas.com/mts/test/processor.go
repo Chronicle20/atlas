@@ -1,6 +1,7 @@
 package test
 
 import (
+	"atlas-mts/bid"
 	"atlas-mts/holding"
 	"atlas-mts/listing"
 	"testing"
@@ -39,3 +40,17 @@ func CreateHoldingProcessor(t *testing.T) (holding.Processor, *gorm.DB, func()) 
 	return processor, db, cleanup
 }
 
+// CreateBidProcessor creates a new bid processor for testing, backed by an
+// in-memory SQLite database migrated with the bid schema.
+func CreateBidProcessor(t *testing.T) (bid.Processor, *gorm.DB, func()) {
+	logger := logrus.New()
+	db := SetupTestDB(t, bid.Migration)
+	ctx := CreateTestContext()
+	processor := bid.NewProcessor(logger, ctx, db)
+
+	cleanup := func() {
+		CleanupTestDB(t, db)
+	}
+
+	return processor, db, cleanup
+}

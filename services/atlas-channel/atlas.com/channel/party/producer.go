@@ -18,14 +18,15 @@ func CreateCommandProvider(actorId uint32) model.Provider[[]kafka.Message] {
 	return producer.SingleMessageProvider(key, value)
 }
 
-func LeaveCommandProvider(actorId uint32, partyId uint32, force bool) model.Provider[[]kafka.Message] {
+func LeaveCommandProvider(actorId uint32, partyId uint32, targetId uint32, force bool) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(actorId))
 	value := &party2.Command[party2.LeaveCommandBody]{
 		ActorId: actorId,
 		Type:    party2.CommandPartyLeave,
 		Body: party2.LeaveCommandBody{
-			PartyId: partyId,
-			Force:   force,
+			PartyId:     partyId,
+			Force:       force,
+			CharacterId: targetId,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

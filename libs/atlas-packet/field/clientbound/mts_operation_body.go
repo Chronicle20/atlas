@@ -9,6 +9,13 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// MtsOperationWriter is the registry writer name (Operation()) shared by every
+// per-mode CITC::OnNormalItemResult (MTS_OPERATION) body codec below. The
+// mode-only MtsOperation struct that originally declared this const was retired
+// in task-096 once the per-mode body functions (field/operation_body.go) made it
+// dead; the const survives here because the codecs use it as their Operation().
+const MtsOperationWriter = "MtsOperation"
+
 // Per-mode body codecs for the CITC::OnNormalItemResult dispatcher
 // (MTS_OPERATION). The dispatcher reads Decode1(mode) and switch-dispatches to
 // one of 35 sub-handlers (0x15..0x3E). The mode bytes are version-stable across

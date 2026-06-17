@@ -607,3 +607,48 @@ func TestLeavePartyDoorRemovesFromPartyThenRekeysSolo(t *testing.T) {
 			got.PartyId(), got.Slot(), got.TownPortalId(), got.TownX(), got.TownY())
 	}
 }
+
+// TestJoinPartyDoorAdoptsSoloDoorIntoParty pins the rejoin fix: a member who
+// rejoins with a solo door (partyId 0, slot 0) has it adopted into the party at
+// their member slot and broadcast (CREATED, party-scoped) so the existing members
+// see it. Counterpart to LeavePartyDoor; without it the joiner's solo door is
+// skipped by ReslotParty/ShowPartyDoorsToCharacter and never re-enters the party.
+func TestJoinPartyDoorAdoptsSoloDoorIntoParty(t *testing.T) {
+	em := &fakeEmit{}
+	p, ten, ctx := newTestProcessor(t, fakeResolver{}, &counterAllocator{next: 1}, em)
+
+	f := field.NewBuilder(1, 2, 240011000).Build()
+	// Rejoining member's door is SOLO (partyId 0, slot 0) after a prior leave.
+	m := NewBuilder().
+		SetAreaDoorId(910_001).SetTownDoorId(910_002).
+		SetOwnerCharacterId(5).SetPartyId(0).SetField(f).
+		SetTownMapId(_map.Id(240000000)).SetSlot(0).SetTownPortalId(0x80).
+		SetTownX(10).SetTownY(20).Build()
+	if err := GetRegistry().Put(ctx, ten, m); err != nil {
+		t.Fatalf("Put: %v", err)
+	}
+
+	// Post-join ordering [leader=1, joiner=5] → joiner is slot 1; slot-1 portal at (-85,531).
+	portals := []TownPortal{{X: 10, Y: 20}, {X: -85, Y: 531}}
+	p.JoinPartyDoor(123, []character.Id{1, 5}, 5, func(_ _map.Id) []TownPortal { return portals })
+
+	if len(em.types) != 1 || em.types[0] != EventDoorStatusCreated {
+		t.Fatalf("expected [CREATED], got %v", em.types)
+	}
+	var env struct {
+		PartyId        uint32 `json:"partyId"`
+		ForCharacterId uint32 `json:"forCharacterId"`
+	}
+	_ = json.Unmarshal(em.values[0], &env)
+	if env.PartyId != 123 || env.ForCharacterId != 0 {
+		t.Fatalf("CREATED should be party-scoped broadcast: partyId=%d forCharacterId=%d", env.PartyId, env.ForCharacterId)
+	}
+	got, err := GetRegistry().Get(ctx, ten, 910_001)
+	if err != nil {
+		t.Fatalf("Get after join: %v", err)
+	}
+	if got.PartyId() != 123 || got.Slot() != 1 || got.TownPortalId() != 0x81 || got.TownX() != -85 || got.TownY() != 531 {
+		t.Fatalf("not adopted into party at slot 1: party=%d slot=%d portal=%d x=%d y=%d",
+			got.PartyId(), got.Slot(), got.TownPortalId(), got.TownX(), got.TownY())
+	}
+}

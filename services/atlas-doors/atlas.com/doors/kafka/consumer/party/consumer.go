@@ -99,6 +99,9 @@ func handleJoined(l logrus.FieldLogger) message.Handler[StatusEvent[JoinedEventB
 		reslotAfterMembership(l, ctx, e.PartyId, pm.Members(), nil)
 		// Make the party's existing doors visible to the member who just joined.
 		enginedoor.NewProcessor(l, ctx).ShowPartyDoorsToCharacter(e.PartyId, pm.Members(), e.ActorId)
+		// Adopt the joiner's own (solo) door into the party so the existing members
+		// see it and it reslots off solo slot 0 — counterpart to LeavePartyDoor.
+		enginedoor.NewProcessor(l, ctx).JoinPartyDoor(e.PartyId, pm.Members(), e.ActorId, townPortalsForMap(l, ctx))
 	}
 }
 

@@ -189,6 +189,41 @@ func (p *ProcessorImpl) RemoveByOwnerIfLeftField(ownerCharacterId character.Id, 
 	return nil
 }
 
+// JoinPartyDoor adopts a joining member's SOLO door into the party — the inverse
+// of LeavePartyDoor. A member who left then rejoined carries a solo door
+// (partyId 0, slot 0); on rejoin it must be re-keyed into the party at the
+// member's slot and broadcast so the EXISTING members see it added and the joiner
+// renders it at the correct slot. Without this the joiner's solo door is skipped
+// by ReslotParty and ShowPartyDoorsToCharacter (both filter d.PartyId()==partyId),
+// so it never reslots off slot 0 and is never shown to the rest of the party.
+//
+// members is the post-join ordered member list (used to compute the joiner's
+// slot). Only doors NOT already in this party are adopted.
+func (p *ProcessorImpl) JoinPartyDoor(partyId uint32, members []character.Id, joinerCharacterId character.Id, townPortalsByMap func(_map.Id) []TownPortal) {
+	slot := ComputeSlot(partyId, members, joinerCharacterId)
+	doors, err := GetRegistry().GetByOwner(p.ctx, p.t, joinerCharacterId)
+	if err != nil {
+		p.l.WithError(err).Warnf("JoinPartyDoor: unable to load doors for owner %d", joinerCharacterId)
+		return
+	}
+	for _, d := range doors {
+		if d.PartyId() == partyId {
+			continue // already a party door (e.g. duplicate event)
+		}
+		wireId, tx, ty, _ := ResolveTownPortal(townPortalsByMap(d.TownMapId()), slot, defaultTownX, defaultTownY)
+		n := Clone(d).SetPartyId(partyId).SetSlot(slot).SetTownPortalId(wireId).SetTownX(tx).SetTownY(ty).Build()
+		if err := GetRegistry().Put(p.ctx, p.t, n); err != nil {
+			p.l.WithError(err).Warnf("JoinPartyDoor: persist failed for door %d", d.AreaDoorId())
+			continue
+		}
+		// Broadcast CREATED for the now party-scoped door — reaches every member
+		// (existing + joiner) and sets the joiner's town-portal slot for them.
+		if err := p.emit(EnvEventTopicDoorStatus, createdEventProvider(n, 0)); err != nil {
+			p.l.WithError(err).Warnf("JoinPartyDoor: broadcast failed for door %d", d.AreaDoorId())
+		}
+	}
+}
+
 // ShowPartyDoorsToCharacter re-emits a CREATED status for every door owned by a
 // party member, targeted at `target` (a member who just joined). The channel
 // delivers the spawn only to that character, so a player who joins a party with

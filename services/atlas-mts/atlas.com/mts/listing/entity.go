@@ -26,7 +26,7 @@ func Migration(db *gorm.DB) error {
 //   - (tenant_id, seller_id, state)          — a seller's own listings
 //   - (tenant_id, world_id, ends_at)         — auction-expiry sweep
 type entity struct {
-	Id         uuid.UUID `gorm:"column:id;type:uuid;primaryKey"`
+	Id         uuid.UUID `gorm:"column:id;type:uuid;primaryKey;uniqueIndex:idx_listings_tenant_id,priority:2"`
 	TenantId   uuid.UUID `gorm:"column:tenant_id;type:uuid;not null;uniqueIndex:idx_listings_tenant_id,priority:1;index:idx_listings_world_state_category,priority:1;index:idx_listings_seller_state,priority:1;index:idx_listings_world_ends_at,priority:1"`
 	WorldId    byte      `gorm:"column:world_id;not null;index:idx_listings_world_state_category,priority:2;index:idx_listings_world_ends_at,priority:2"`
 	SellerId   uint32    `gorm:"column:seller_id;not null;index:idx_listings_seller_state,priority:2"`

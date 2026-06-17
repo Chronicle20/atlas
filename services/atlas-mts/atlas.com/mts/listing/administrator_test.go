@@ -187,6 +187,31 @@ func TestAdministratorUpdateStateConditional(t *testing.T) {
 	}
 }
 
+// TestAdministratorMultipleListingsPerTenant asserts a single tenant can hold
+// many active listings concurrently. Guards against a unique constraint on
+// tenant_id alone (which would cap a tenant at one listing and break the
+// maxActiveListings rule). The (tenant_id, id) unique index must permit this.
+func TestAdministratorMultipleListingsPerTenant(t *testing.T) {
+	tenantId := uuid.New()
+	ctx := tenantCtx(t, tenantId)
+	db := adminTestDB(t).WithContext(ctx)
+
+	for i := 0; i < 3; i++ {
+		m := buildActiveListing(t, tenantId, uint32(100+i))
+		if _, err := listing.CreateListing(db, m); err != nil {
+			t.Fatalf("CreateListing #%d for tenant: %v", i, err)
+		}
+	}
+
+	all, err := listing.GetAll()(db)()
+	if err != nil {
+		t.Fatalf("GetAll: %v", err)
+	}
+	if len(all) != 3 {
+		t.Errorf("tenant holds %d listings, want 3", len(all))
+	}
+}
+
 // TestAdministratorIndexesExist asserts the three design indexes are created by
 // the migration.
 func TestAdministratorIndexesExist(t *testing.T) {

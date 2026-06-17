@@ -20,13 +20,24 @@ func getById(id string) database.EntityProvider[entity] {
 }
 
 // getBrowse returns the listings for a world filtered by state and category.
+//
+// The filter is built as an explicit name-keyed map rather than a struct
+// condition: GORM's struct-condition Where elides zero-valued fields, so a
+// struct condition would silently drop the world_id filter for world 0 (a
+// valid world.Id, since world.Id is a byte) and return cross-world rows. The
+// map form forces every filter column into the WHERE clause.
 func getBrowse(worldId world.Id, state State, category string) database.EntityProvider[[]entity] {
 	return func(db *gorm.DB) model.Provider[[]entity] {
-		return database.SliceQuery[entity](db, &entity{
-			WorldId:  byte(worldId),
-			State:    string(state),
-			Category: category,
-		})
+		var results []entity
+		err := db.Where(map[string]interface{}{
+			"world_id": byte(worldId),
+			"state":    string(state),
+			"category": category,
+		}).Find(&results).Error
+		if err != nil {
+			return model.ErrorProvider[[]entity](err)
+		}
+		return model.FixedProvider(results)
 	}
 }
 

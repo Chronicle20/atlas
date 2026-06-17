@@ -1,7 +1,7 @@
 # FieldMtsResultGetUserPurchaseItemDone (← `CITC::OnNormalItemResult#GetUserPurchaseItemDone`)
 
 - **IDA:** 0x5d4be3
-- **Atlas file:** `libs/atlas-packet/field/clientbound/mts_operation_list.go`
+- **Atlas file:** `libs/atlas-packet/field/clientbound/mts_operation.go`
 - **Variant:** GMS/v87
 - **Branch depth:** 0
 - **Verdict:** ✅

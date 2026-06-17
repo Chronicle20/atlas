@@ -1,0 +1,18 @@
+# dispatcher-lint baseline — families NOT yet migrated to the canonical
+# discrete-per-mode pattern described in docs/packets/DISPATCHER_FAMILY.md.
+#
+# `packet-audit dispatcher-lint` SKIPS violations whose dispatcher family
+# (the base IDA FName of the `#`-suffixed candidatesFromFName entries, e.g.
+# `CWvsContext::OnPartyResult`) appears below, and prints one note line per
+# exempt family instead.
+#
+# party + guild still carry the task-096 footguns — caller-specified mode
+# selectors (PartyErrorBody(code string) / GuildErrorBody(code string) /
+# GuildErrorBody2(code string, ...)) and the shared guild RequestAgreement
+# struct — pending a future discrete-per-mode migration task.
+#
+# THE LIST ONLY SHRINKS. Migrating a family = deleting its entry here (after
+# the family is clean); never add a new family to dodge a fresh violation.
+exempt_families:
+  - CWvsContext::OnPartyResult
+  - CWvsContext::OnGuildResult

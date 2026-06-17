@@ -1,7 +1,7 @@
 # FieldMtsResultMoveItcPurchaseItemLtoSDone (← `CITC::OnNormalItemResult#MoveItcPurchaseItemLtoSDone`)
 
 - **IDA:** 0x5a4d68
-- **Atlas file:** `libs/atlas-packet/field/clientbound/mts_result_two_ints_modes.go`
+- **Atlas file:** `libs/atlas-packet/field/clientbound/mts_operation.go`
 - **Variant:** GMS/v83
 - **Branch depth:** 0
 - **Verdict:** ✅

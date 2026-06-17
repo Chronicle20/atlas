@@ -1,7 +1,7 @@
 # FieldMtsResultRegisterSaleEntryFailed (← `CITC::OnNormalItemResult#RegisterSaleEntryFailed`)
 
 - **IDA:** 0x5a4581
-- **Atlas file:** `libs/atlas-packet/field/clientbound/mts_operation_body.go`
+- **Atlas file:** `libs/atlas-packet/field/clientbound/mts_operation.go`
 - **Variant:** GMS/v83
 - **Branch depth:** 1
 - **Verdict:** ✅

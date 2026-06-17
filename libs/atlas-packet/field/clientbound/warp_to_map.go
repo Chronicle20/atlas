@@ -15,6 +15,16 @@ import (
 
 const SetFieldWriter = "SetField"
 
+// chasePortalId is the portal byte sent alongside a chase (exact-coordinate)
+// warp. In chase mode the v83 client places the avatar from the decoded (x, y)
+// rather than by portal index (CStage::OnSetField @0x776020), so this byte is a
+// fixed placeholder, NOT a per-destination identifier — the coordinates carry
+// the destination. 0x80 is the start of the dynamic-portal range and matches
+// Cosmic, whose Character.changeMap(Point) hardcodes spawnPoint 0x80 for every
+// coordinate warp. (The slot-specific 0x80+slot id only matters on the non-chase
+// portal-warp path, which a position warp deliberately does not use.)
+const chasePortalId byte = 0x80
+
 type WarpToMap struct {
 	channelId channel.Id
 	mapId     _map.Id
@@ -41,12 +51,13 @@ func NewWarpToMap(channelId channel.Id, mapId _map.Id, portalId byte, hp uint16)
 // flag after nHP (CStage::OnSetField @0x776020); when set it then reads
 // Decode4 x / Decode4 y and places the avatar there. This is the mechanism a
 // Mystic Door uses to land the user on the linked door's exact position
-// (Cosmic PacketCreator.getWarpToMap position overload, spawnPoint 0x80).
+// (Cosmic PacketCreator.getWarpToMap position overload). The portal byte is the
+// fixed chasePortalId placeholder — see its doc comment.
 func NewWarpToPosition(channelId channel.Id, mapId _map.Id, hp uint16, x int16, y int16) WarpToMap {
 	return WarpToMap{
 		channelId: channelId,
 		mapId:     mapId,
-		portalId:  0x80,
+		portalId:  chasePortalId,
 		hp:        hp,
 		chase:     true,
 		chaseX:    x,

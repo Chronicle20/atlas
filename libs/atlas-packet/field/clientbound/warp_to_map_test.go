@@ -71,8 +71,8 @@ func TestWarpToPositionWireShape(t *testing.T) {
 	if out.ChaseX() != 1234 || out.ChaseY() != -567 {
 		t.Fatalf("chase position: got (%d,%d), want (1234,-567)", out.ChaseX(), out.ChaseY())
 	}
-	if out.PortalId() != 0x80 {
-		t.Fatalf("position-warp portalId: got %d, want 0x80", out.PortalId())
+	if out.PortalId() != chasePortalId {
+		t.Fatalf("position-warp portalId: got %d, want %d (chasePortalId)", out.PortalId(), chasePortalId)
 	}
 }
 

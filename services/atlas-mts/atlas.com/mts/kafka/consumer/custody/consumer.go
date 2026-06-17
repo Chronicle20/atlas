@@ -254,9 +254,13 @@ func handleMtsMoveListingToHolding(pf providerFn) func(db *gorm.DB) message.Hand
 					return gerr
 				}
 
-				// Conditional active->sold transition. 0 rows on a replay (already
-				// sold) is success, not an error.
-				if _, uerr := listing.UpdateState(tx, b.ListingId.String(), listing.StateActive, listing.StateSold); uerr != nil {
+				// Conditional active->sold transition. The rows affected is the race
+				// arbiter: 1 means this call won the active->sold transition; 0 means
+				// the listing was already out of `active` (either this same move
+				// already settled it — a replay — or a concurrent cancel/expire won
+				// the race).
+				affected, uerr := listing.UpdateState(tx, b.ListingId.String(), listing.StateActive, listing.StateSold)
+				if uerr != nil {
 					return uerr
 				}
 
@@ -264,6 +268,17 @@ func handleMtsMoveListingToHolding(pf providerFn) func(db *gorm.DB) message.Hand
 				// (listing, buyer), the move has been applied — do not create a
 				// second copy.
 				if existing, herr := holding.GetById(hid.String())(tx)(); herr == nil && existing.Id() == hid {
+					return nil
+				}
+
+				// Single-custody guard: when this call did NOT win the active->sold
+				// transition (affected==0) and there is no prior buyer holding to
+				// idempotently re-ack, the listing was claimed by a concurrent cancel
+				// or expire. Creating a buyer holding here would DOUBLE the item (a
+				// seller cancel/expire holding plus this purchased holding), so settle
+				// must lose the race and create nothing.
+				if affected == 0 {
+					l.Warnf("MtsMoveListingToHolding lost the race for listing [%s] (no active->sold transition, no prior holding); creating no buyer holding for buyer [%d], transaction [%s].", b.ListingId.String(), b.BuyerId, c.TransactionId.String())
 					return nil
 				}
 

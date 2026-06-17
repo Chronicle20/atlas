@@ -1,0 +1,8 @@
+packet: storage/clientbound/StorageErrorOneOfAKind
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CTrunkDlg::OnPacket#ErrorOneOfAKind
+    address: "0x76a990"
+    decompile_sha256: 1460fe8b5beb45a2b0a2910bac92952eb997594d2e0e331d90303473d9c0b5c5

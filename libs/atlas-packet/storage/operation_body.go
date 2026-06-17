@@ -39,19 +39,19 @@ const (
 
 func StorageOperationErrorInventoryFullBody() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", StorageOperationModeErrorInventoryFull, func(mode byte) packet.Encoder {
-		return clientbound.NewStorageErrorSimple(mode)
+		return clientbound.NewStorageErrorInventoryFull(mode)
 	})
 }
 
 func StorageOperationErrorNotEnoughMesoBody() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", StorageOperationModeErrorNotEnoughMesos, func(mode byte) packet.Encoder {
-		return clientbound.NewStorageErrorSimple(mode)
+		return clientbound.NewStorageErrorNotEnoughMesos(mode)
 	})
 }
 
 func StorageOperationErrorOneOfAKindBody() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", StorageOperationModeErrorOneOfAKind, func(mode byte) packet.Encoder {
-		return clientbound.NewStorageErrorSimple(mode)
+		return clientbound.NewStorageErrorOneOfAKind(mode)
 	})
 }
 

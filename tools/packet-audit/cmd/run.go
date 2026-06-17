@@ -1556,8 +1556,12 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "UpdateAssets", dir: csvpkg.DirClientbound, pkg: "storage"}}
 	case "CTrunkDlg::OnPacket#UpdateMeso":
 		return []candidate{{name: "UpdateMeso", dir: csvpkg.DirClientbound, pkg: "storage"}}
-	case "CTrunkDlg::OnPacket#ErrorSimple":
-		return []candidate{{name: "ErrorSimple", dir: csvpkg.DirClientbound, pkg: "storage"}}
+	case "CTrunkDlg::OnPacket#ErrorInventoryFull":
+		return []candidate{{name: "ErrorInventoryFull", dir: csvpkg.DirClientbound, pkg: "storage"}}
+	case "CTrunkDlg::OnPacket#ErrorNotEnoughMesos":
+		return []candidate{{name: "ErrorNotEnoughMesos", dir: csvpkg.DirClientbound, pkg: "storage"}}
+	case "CTrunkDlg::OnPacket#ErrorOneOfAKind":
+		return []candidate{{name: "ErrorOneOfAKind", dir: csvpkg.DirClientbound, pkg: "storage"}}
 	case "CTrunkDlg::OnPacket#ErrorMessage":
 		return []candidate{{name: "ErrorMessage", dir: csvpkg.DirClientbound, pkg: "storage"}}
 	// Serverbound CTrunkDlg senders.

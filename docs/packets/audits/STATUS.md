@@ -5,11 +5,11 @@
 
 Tool: `39adafdfa0fcd6b55fc836bc9293f5862ff3b406`
 
-- export gms_v83: `d45082b41b6a686741cefebd981c1734598af0a46ced82610fffe503c3b272c8`
-- export gms_v84: `f51e7be45fbb9f17a56a35884e5c4cf6a3af42391cc359701b99adefbf6cf88f`
-- export gms_v87: `fab2283ef2207f3c6945ff168b34b1a972ff37340ab9ba1af01ad15f0cdd43d0`
-- export gms_v95: `863f9865467831ba6e3bd09728611aad5f7eef14f10942873de1d4a1774637e6`
-- export jms_v185: `ec3a77732e0599d491f29e206d2a5c1a11a0d8af6f97dabdb1a170f7963b76bb`
+- export gms_v83: `2b5abfbdfe0dceb88b4cb6a292b7b475b289f7202ecb3a79aa945653ceb1c74a`
+- export gms_v84: `428b89160f3462b70c7c52bcbafb4506632ccff435230ddf4214588376a2fb63`
+- export gms_v87: `1c3c7fcbf3067ca08470b7fc72d9a540a4120d7fa0b4bdb29da9997199ada155`
+- export gms_v95: `2d317c559e8a9dd8bd66b133b9e46a49a5f919932bcc9b58519a4d1d4575c594`
+- export jms_v185: `aaad0ff4c4d5808536297cef41e771f36956f372a89f75509a3180df7c6131ec`
 
 ## Clientbound
 
@@ -412,7 +412,7 @@ Tool: `39adafdfa0fcd6b55fc836bc9293f5862ff3b406`
 | MOB_ESCORT_RETURN_BEFORE | CMob::OnEscortReturnBefore | monster/clientbound/MonsterMobEscortReturnBefore (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x133 | ✅ | 0x113 | ✅ |
 | ADMIN_SHOP | CAdminShopDlg::OnPacket |  | 0x134 | ❌ | 0x13B | ❌ | 0x145 | ❌ | 0x16F | ❌ | 0x14D | ❌ |
 | MOB_NEXT_ATTACK | CMob::OnNextAttack | monster/clientbound/MonsterMobNextAttack (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x134 | ✅ |  | ⬜ |
-| STORAGE | CTrunkDlg::OnPacket | storage/clientbound/StorageErrorMessage (T1) | 0x135 | ✅ | 0x13C | ✅ | 0x146 | ✅ | 0x170 | ✅ | 0x14E | ✅ |
+| STORAGE | CTrunkDlg::OnPacket | storage/clientbound/StorageErrorInventoryFull (T1) | 0x135 | ✅ | 0x13C | ✅ | 0x146 | ✅ | 0x170 | ✅ | 0x14E | ✅ |
 | FREDRICK_MESSAGE | CStoreBankDlg::OnPacket |  | 0x136 | ❌ | 0x13D | ❌ | 0x147 | ❌ | 0x171 | ❌ | 0x14F | ❌ |
 | FREDRICK | CStoreBankDlg::OnPacket |  | 0x137 | ❌ | 0x13E | ❌ | 0x148 | ❌ | 0x172 | ❌ | 0x150 | ❌ |
 | RPS_GAME | CRPSGameDlg::OnPacket |  | 0x138 | ❌ | 0x13F | ❌ | 0x149 | ❌ | 0x173 | ❌ | 0x151 | ❌ |

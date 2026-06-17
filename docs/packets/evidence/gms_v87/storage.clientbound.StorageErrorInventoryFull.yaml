@@ -1,0 +1,8 @@
+packet: storage/clientbound/StorageErrorInventoryFull
+direction: clientbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CTrunkDlg::OnPacket#ErrorInventoryFull
+    address: "0x81c336"
+    decompile_sha256: f2de70147c32dfe95cd09699538d945aca0cf01710012d1bee63bfd884abe1b9

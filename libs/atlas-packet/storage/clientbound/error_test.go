@@ -7,27 +7,86 @@ import (
 	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
-// ErrorSimple covers the dispatcher notice arms (modes 10/11/12/16/17 + the
-// default fallthrough): the dispatcher consumes ONLY the mode byte then shows a
-// StringPool notice with NO further wire reads (decompile: each case just sets
-// the StringPool id and goes to the Notice call). Body = mode byte only. Mode
-// bytes are version-stable across the GMS dispatchers (v83 0x7c8a4c, v84
-// 0x7eec1a, v87 0x81c336, v95 0x76a990).
-// packet-audit:verify packet=storage/clientbound/StorageErrorSimple version=gms_v83 ida=0x7c8a4c
-// packet-audit:verify packet=storage/clientbound/StorageErrorSimple version=gms_v84 ida=0x7eec1a
-// packet-audit:verify packet=storage/clientbound/StorageErrorSimple version=gms_v87 ida=0x81c336
-// packet-audit:verify packet=storage/clientbound/StorageErrorSimple version=gms_v95 ida=0x76a990
-// packet-audit:verify packet=storage/clientbound/StorageErrorSimple version=jms_v185 ida=0x84e5a1
-func TestStorageErrorSimple(t *testing.T) {
+// storageNoticeMode returns the per-version mode byte for a STORAGE notice arm
+// given its gms mode byte. jms_v185's CTrunkDlg dispatcher is shifted -1 vs GMS
+// (see docs/packets/dispatchers/storage_operation.yaml).
+func storageNoticeMode(v test.TenantVariant, gmsMode byte) byte {
+	if v.Region == "JMS" {
+		return gmsMode - 1
+	}
+	return gmsMode
+}
+
+// StorageErrorInventoryFull is the INVENTORY_FULL notice arm: the CTrunkDlg
+// dispatcher consumes ONLY the mode byte (gms 10 / jms 9) then shows a fixed
+// StringPool notice with NO further wire reads. Body = mode byte only. Mode
+// bytes trace to storage_operation.yaml INVENTORY_FULL row (dispatcher
+// v83 0x7c8a4c, v84 0x7eec1a, v87 0x81c336, v95 0x76a990, jms 0x84e5a1).
+// packet-audit:verify packet=storage/clientbound/StorageErrorInventoryFull version=gms_v83 ida=0x7c8a4c
+// packet-audit:verify packet=storage/clientbound/StorageErrorInventoryFull version=gms_v84 ida=0x7eec1a
+// packet-audit:verify packet=storage/clientbound/StorageErrorInventoryFull version=gms_v87 ida=0x81c336
+// packet-audit:verify packet=storage/clientbound/StorageErrorInventoryFull version=gms_v95 ida=0x76a990
+// packet-audit:verify packet=storage/clientbound/StorageErrorInventoryFull version=jms_v185 ida=0x84e5a1
+func TestStorageErrorInventoryFull(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
-	input := NewStorageErrorSimple(10)
 	for _, v := range test.Variants {
 		t.Run(v.Name, func(t *testing.T) {
 			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
-			// Body is the mode byte only — no trailing fields.
+			mode := storageNoticeMode(v, 10)
+			input := NewStorageErrorInventoryFull(mode)
 			b := input.Encode(l, ctx)(nil)
-			if len(b) != 1 || b[0] != 10 {
-				t.Fatalf("ErrorSimple body: got %v, want [10]", b)
+			if len(b) != 1 || b[0] != mode {
+				t.Fatalf("InventoryFull body: got %v, want [%d]", b, mode)
+			}
+			test.RoundTrip(t, ctx, input.Encode, input.Decode, nil)
+		})
+	}
+}
+
+// StorageErrorNotEnoughMesos is the NOT_ENOUGH_MESOS notice arm: the dispatcher
+// consumes ONLY the mode byte (gms 11 / jms 10) then shows a fixed StringPool
+// notice with NO further wire reads. Body = mode byte only. Mode bytes trace to
+// storage_operation.yaml NOT_ENOUGH_MESOS row.
+// packet-audit:verify packet=storage/clientbound/StorageErrorNotEnoughMesos version=gms_v83 ida=0x7c8a4c
+// packet-audit:verify packet=storage/clientbound/StorageErrorNotEnoughMesos version=gms_v84 ida=0x7eec1a
+// packet-audit:verify packet=storage/clientbound/StorageErrorNotEnoughMesos version=gms_v87 ida=0x81c336
+// packet-audit:verify packet=storage/clientbound/StorageErrorNotEnoughMesos version=gms_v95 ida=0x76a990
+// packet-audit:verify packet=storage/clientbound/StorageErrorNotEnoughMesos version=jms_v185 ida=0x84e5a1
+func TestStorageErrorNotEnoughMesos(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	for _, v := range test.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			mode := storageNoticeMode(v, 11)
+			input := NewStorageErrorNotEnoughMesos(mode)
+			b := input.Encode(l, ctx)(nil)
+			if len(b) != 1 || b[0] != mode {
+				t.Fatalf("NotEnoughMesos body: got %v, want [%d]", b, mode)
+			}
+			test.RoundTrip(t, ctx, input.Encode, input.Decode, nil)
+		})
+	}
+}
+
+// StorageErrorOneOfAKind is the ONE_OF_A_KIND notice arm: the dispatcher
+// consumes ONLY the mode byte (gms 12 / jms 11) then shows a fixed StringPool
+// notice with NO further wire reads. Body = mode byte only. Mode bytes trace to
+// storage_operation.yaml ONE_OF_A_KIND row.
+// packet-audit:verify packet=storage/clientbound/StorageErrorOneOfAKind version=gms_v83 ida=0x7c8a4c
+// packet-audit:verify packet=storage/clientbound/StorageErrorOneOfAKind version=gms_v84 ida=0x7eec1a
+// packet-audit:verify packet=storage/clientbound/StorageErrorOneOfAKind version=gms_v87 ida=0x81c336
+// packet-audit:verify packet=storage/clientbound/StorageErrorOneOfAKind version=gms_v95 ida=0x76a990
+// packet-audit:verify packet=storage/clientbound/StorageErrorOneOfAKind version=jms_v185 ida=0x84e5a1
+func TestStorageErrorOneOfAKind(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	for _, v := range test.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			mode := storageNoticeMode(v, 12)
+			input := NewStorageErrorOneOfAKind(mode)
+			b := input.Encode(l, ctx)(nil)
+			if len(b) != 1 || b[0] != mode {
+				t.Fatalf("OneOfAKind body: got %v, want [%d]", b, mode)
 			}
 			test.RoundTrip(t, ctx, input.Encode, input.Decode, nil)
 		})

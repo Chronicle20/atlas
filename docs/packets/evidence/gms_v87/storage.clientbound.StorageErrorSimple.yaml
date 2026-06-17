@@ -1,8 +1,0 @@
-packet: storage/clientbound/StorageErrorSimple
-direction: clientbound
-version: gms_v87
-category: TIER1-FIXTURE
-ida:
-    function: CTrunkDlg::OnPacket#ErrorSimple
-    address: "0x81c336"
-    decompile_sha256: 8934f4f7ca5ffc9410b399514e1c0a13cffa954bf7fec0ff08038a88c6184291

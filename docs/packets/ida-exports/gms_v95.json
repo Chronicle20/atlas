@@ -911,13 +911,33 @@
         }
       ]
     },
-    "CTrunkDlg::OnPacket#ErrorSimple": {
+    "CTrunkDlg::OnPacket#ErrorInventoryFull": {
       "address": "0x76a990",
       "direction": "clientbound",
       "calls": [
         {
           "op": "Decode1",
-          "comment": "mode (error code; client maps to StringPool message)"
+          "comment": "mode (INVENTORY_FULL = 10; error code -> StringPool message, no further reads)"
+        }
+      ]
+    },
+    "CTrunkDlg::OnPacket#ErrorNotEnoughMesos": {
+      "address": "0x76a990",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (NOT_ENOUGH_MESOS = 11; error code -> StringPool message, no further reads)"
+        }
+      ]
+    },
+    "CTrunkDlg::OnPacket#ErrorOneOfAKind": {
+      "address": "0x76a990",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (ONE_OF_A_KIND = 12; error code -> StringPool message, no further reads)"
         }
       ]
     },

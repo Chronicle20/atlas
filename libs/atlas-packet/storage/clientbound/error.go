@@ -11,33 +11,6 @@ import (
 
 const StorageOperationWriter = "StorageOperation"
 
-// ErrorSimple - just mode (covers InventoryFull, NotEnoughMesos, OneOfAKind, etc.)
-// packet-audit:fname CTrunkDlg::OnPacket#ErrorSimple
-type ErrorSimple struct {
-	mode byte
-}
-
-func NewStorageErrorSimple(mode byte) ErrorSimple {
-	return ErrorSimple{mode: mode}
-}
-
-func (m ErrorSimple) Operation() string { return StorageOperationWriter }
-func (m ErrorSimple) String() string    { return fmt.Sprintf("storage error mode [%d]", m.mode) }
-
-func (m ErrorSimple) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
-	w := response.NewWriter(l)
-	return func(options map[string]interface{}) []byte {
-		w.WriteByte(m.mode)
-		return w.Bytes()
-	}
-}
-
-func (m *ErrorSimple) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
-	return func(r *request.Reader, options map[string]interface{}) {
-		m.mode = r.ReadByte()
-	}
-}
-
 // UpdateMeso - mode, slots, currency flag, meso
 // packet-audit:fname CTrunkDlg::OnPacket#UpdateMeso
 type UpdateMeso struct {

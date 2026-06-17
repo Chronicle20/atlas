@@ -16,12 +16,11 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	npcpkt "github.com/Chronicle20/atlas/libs/atlas-packet/npc"
-	npccb "github.com/Chronicle20/atlas/libs/atlas-packet/npc/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
+	npcpkt "github.com/Chronicle20/atlas/libs/atlas-packet/npc/clientbound"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -82,7 +81,7 @@ func handleEnteredStatusEvent(sc server.Model, wp writer.Producer) message.Handl
 			return
 		}
 		bp := writer.NPCShopBody(e.Body.NpcTemplateId, nsm.Commodities(), sms)
-		_ = session.Announce(l)(ctx)(wp)(npccb.NPCShopWriter)(bp)(s)
+		_ = session.Announce(l)(ctx)(wp)(npcpkt.NPCShopWriter)(bp)(s)
 	}
 }
 
@@ -114,6 +113,6 @@ func handleErrorStatusEvent(sc server.Model, wp writer.Producer) message.Handler
 		} else {
 			bp = npcpkt.NPCShopOperationBody(e.Body.Error)
 		}
-		_ = session.Announce(l)(ctx)(wp)(npccb.NPCShopOperationWriter)(bp)(s)
+		_ = session.Announce(l)(ctx)(wp)(npcpkt.NPCShopOperationWriter)(bp)(s)
 	}
 }

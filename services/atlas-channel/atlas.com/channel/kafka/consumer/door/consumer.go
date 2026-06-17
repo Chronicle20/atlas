@@ -93,6 +93,11 @@ var broadcastDoorToEligible = func(l logrus.FieldLogger, ctx context.Context, wp
 	if forCharacterId == 0 {
 		members = partyMemberSet(l, ctx, ownerCharacterId, partyId)
 	}
+	ll := l.WithFields(logrus.Fields{
+		"door_action": "broadcast", "writer": writerName, "map_id": uint32(f.MapId()),
+		"owner": ownerCharacterId, "party_id": partyId, "for_character_id": forCharacterId,
+	})
+	sent := make([]uint32, 0)
 	err := _map.NewProcessor(l, ctx).ForSessionsInMap(f, func(s session.Model) error {
 		if forCharacterId != 0 {
 			if s.CharacterId() != forCharacterId {
@@ -101,11 +106,14 @@ var broadcastDoorToEligible = func(l logrus.FieldLogger, ctx context.Context, wp
 		} else if _, ok := members[s.CharacterId()]; !ok {
 			return nil
 		}
+		sent = append(sent, s.CharacterId())
 		return session.Announce(l)(ctx)(wp)(writerName)(enc)(s)
 	})
 	if err != nil {
-		l.WithError(err).Errorf("Unable to broadcast door packet [%s] to field [%d].", writerName, f.MapId())
+		ll.WithError(err).Errorf("Unable to broadcast door packet [%s] to field [%d].", writerName, f.MapId())
+		return
 	}
+	ll.WithField("recipients", sent).Infof("Broadcast [%s] in map [%d] to [%d] session(s).", writerName, uint32(f.MapId()), len(sent))
 }
 
 // announceTownPortalToParty sends the per-slot PARTY_OPERATION town-portal
@@ -116,12 +124,25 @@ var broadcastDoorToEligible = func(l logrus.FieldLogger, ctx context.Context, wp
 // SPAWN_PORTAL emitted alongside remains the SOLO render path. Held as a
 // package var so tests can stub party/session resolution.
 var announceTownPortalToParty = func(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, sc server.Model, partyId uint32, slot byte, townMapId, targetMapId mapc.Id, x, y int16, clear bool) {
+	ll := l.WithFields(logrus.Fields{
+		"door_action": "town_portal_announce", "party_id": partyId, "slot": slot,
+		"town_map_id": uint32(townMapId), "target_map_id": uint32(targetMapId),
+		"x": x, "y": y, "clear": clear,
+	})
 	if partyId == 0 {
+		ll.Debugf("TownPortal: skipping announce, owner not in a party.")
+		return
+	}
+	// slot >= 6 makes the v83 client throw CDisconnectException in OnPartyResult
+	// case 0x25 (@0xa3e31c). Log loudly rather than crash the recipients; this
+	// should never happen for a 6-cap party and signals a slot-derivation bug.
+	if slot >= 6 {
+		ll.Errorf("TownPortal: REFUSING to send out-of-range slot [%d] (>=6 crashes the v83 client).", slot)
 		return
 	}
 	p, err := party.NewProcessor(l, ctx).GetById(partyId)
 	if err != nil {
-		l.WithError(err).Warnf("TownPortal: unable to resolve party [%d] for door owner.", partyId)
+		ll.WithError(err).Warnf("TownPortal: unable to resolve party [%d] for door owner.", partyId)
 		return
 	}
 	var body packet.Encode
@@ -131,11 +152,14 @@ var announceTownPortalToParty = func(l logrus.FieldLogger, ctx context.Context, 
 		body = partycb.PartyTownPortalBody(slot, townMapId, targetMapId, x, y)
 	}
 	sp := session.NewProcessor(l, ctx)
+	sent := make([]uint32, 0, len(p.Members()))
 	for _, m := range p.Members() {
 		_ = sp.IfPresentByCharacterId(sc.Channel())(m.Id(), func(s session.Model) error {
+			sent = append(sent, s.CharacterId())
 			return session.Announce(l)(ctx)(wp)(partycb.PartyOperationWriter)(body)(s)
 		})
 	}
+	ll.WithField("recipients", sent).Infof("TownPortal: announced slot [%d] (clear=%t) to [%d] party member session(s).", slot, clear, len(sent))
 }
 
 func handleCreated(sc server.Model, wp writer.Producer) message.Handler[StatusEvent[CreatedBody]] {
@@ -147,6 +171,12 @@ func handleCreated(sc server.Model, wp writer.Producer) message.Handler[StatusEv
 			return
 		}
 		b := e.Body
+		l.WithFields(logrus.Fields{
+			"door_action": "event_created", "owner": e.OwnerCharacterId, "party_id": e.PartyId,
+			"for_character_id": e.ForCharacterId, "slot": b.Slot, "area_map_id": uint32(e.MapId),
+			"town_map_id": uint32(b.TownMapId), "town_portal_id": b.TownPortalId,
+			"area_x": b.AreaX, "area_y": b.AreaY, "town_x": b.TownX, "town_y": b.TownY,
+		}).Infof("Door CREATED: owner [%d] party [%d] slot [%d] (forCharacter [%d]).", e.OwnerCharacterId, e.PartyId, b.Slot, e.ForCharacterId)
 		areaField := field.NewBuilder(e.WorldId, e.ChannelId, e.MapId).SetInstance(e.Instance).Build()
 		townField := field.NewBuilder(e.WorldId, e.ChannelId, b.TownMapId).SetInstance(e.Instance).Build()
 
@@ -184,6 +214,11 @@ func handleRemoved(sc server.Model, wp writer.Producer) message.Handler[StatusEv
 			return
 		}
 		b := e.Body
+		l.WithFields(logrus.Fields{
+			"door_action": "event_removed", "owner": e.OwnerCharacterId, "party_id": e.PartyId,
+			"for_character_id": e.ForCharacterId, "slot": b.Slot, "area_map_id": uint32(e.MapId),
+			"town_map_id": uint32(b.TownMapId), "reason": b.Reason,
+		}).Infof("Door REMOVED: owner [%d] party [%d] slot [%d] reason [%s] (forCharacter [%d]).", e.OwnerCharacterId, e.PartyId, b.Slot, b.Reason, e.ForCharacterId)
 		areaField := field.NewBuilder(e.WorldId, e.ChannelId, e.MapId).SetInstance(e.Instance).Build()
 		townField := field.NewBuilder(e.WorldId, e.ChannelId, b.TownMapId).SetInstance(e.Instance).Build()
 
@@ -222,6 +257,11 @@ func handleSlotChanged(sc server.Model, wp writer.Producer) message.Handler[Stat
 			return
 		}
 		b := e.Body
+		l.WithFields(logrus.Fields{
+			"door_action": "event_slot_changed", "owner": e.OwnerCharacterId, "party_id": e.PartyId,
+			"for_character_id": e.ForCharacterId, "old_slot": b.OldSlot, "new_slot": b.NewSlot,
+			"area_map_id": uint32(e.MapId), "town_map_id": uint32(b.TownMapId), "town_x": b.TownX, "town_y": b.TownY,
+		}).Infof("Door SLOT_CHANGED: owner [%d] party [%d] [%d]->[%d].", e.OwnerCharacterId, e.PartyId, b.OldSlot, b.NewSlot)
 		townField := field.NewBuilder(e.WorldId, e.ChannelId, b.TownMapId).SetInstance(e.Instance).Build()
 
 		// Reslot moves only the TOWN-side minimap portal indicator (Cosmic

@@ -138,6 +138,12 @@ func (p *ProcessorImpl) Spawn(f field.Model, ownerCharacterId character.Id, skil
 		p.alloc.Release(p.ctx, p.t, townId)
 		return Model{}, err
 	}
+	p.l.WithFields(logrus.Fields{
+		"door_action": "spawn", "owner": uint32(ownerCharacterId), "party_id": partyId,
+		"slot": plan.slot, "area_map_id": uint32(f.MapId()), "town_map_id": uint32(plan.townMapId),
+		"town_portal_id": plan.townPortalId, "area_x": int16(x), "area_y": int16(y),
+		"town_x": int16(plan.townX), "town_y": int16(plan.townY), "skill_id": uint32(skillId),
+	}).Infof("Spawn: owner [%d] party [%d] slot [%d] area_map [%d] town_map [%d].", uint32(ownerCharacterId), partyId, plan.slot, uint32(f.MapId()), uint32(plan.townMapId))
 	if err := p.emit(EnvEventTopicDoorStatus, createdEventProvider(m, 0)); err != nil {
 		p.l.WithError(err).Errorf("failed emitting CREATED for door %d", areaId)
 	}
@@ -156,6 +162,10 @@ func (p *ProcessorImpl) RemoveByOwner(ownerCharacterId character.Id, reason stri
 		}
 		p.alloc.Release(p.ctx, p.t, m.AreaDoorId())
 		p.alloc.Release(p.ctx, p.t, m.TownDoorId())
+		p.l.WithFields(logrus.Fields{
+			"door_action": "remove", "owner": uint32(ownerCharacterId), "party_id": m.PartyId(),
+			"slot": m.Slot(), "area_map_id": uint32(m.Field().MapId()), "town_map_id": uint32(m.TownMapId()), "reason": reason,
+		}).Infof("Remove: owner [%d] party [%d] slot [%d] reason [%s].", uint32(ownerCharacterId), m.PartyId(), m.Slot(), reason)
 		if err := p.emit(EnvEventTopicDoorStatus, removedEventProvider(m, reason, 0)); err != nil {
 			p.l.WithError(err).Errorf("failed emitting REMOVED for door %d", m.AreaDoorId())
 		}
@@ -201,6 +211,10 @@ func (p *ProcessorImpl) RemoveByOwnerIfLeftField(ownerCharacterId character.Id, 
 // slot). Only doors NOT already in this party are adopted.
 func (p *ProcessorImpl) JoinPartyDoor(partyId uint32, members []character.Id, joinerCharacterId character.Id, townPortalsByMap func(_map.Id) []TownPortal) {
 	slot := ComputeSlot(partyId, members, joinerCharacterId)
+	p.l.WithFields(logrus.Fields{
+		"door_action": "join_party", "party_id": partyId, "joiner": uint32(joinerCharacterId),
+		"computed_slot": slot, "member_count": len(members),
+	}).Infof("JoinPartyDoor: joiner [%d] computed slot [%d] in party [%d] (members %v).", uint32(joinerCharacterId), slot, partyId, members)
 	doors, err := GetRegistry().GetByOwner(p.ctx, p.t, joinerCharacterId)
 	if err != nil {
 		p.l.WithError(err).Warnf("JoinPartyDoor: unable to load doors for owner %d", joinerCharacterId)
@@ -208,6 +222,8 @@ func (p *ProcessorImpl) JoinPartyDoor(partyId uint32, members []character.Id, jo
 	}
 	for _, d := range doors {
 		if d.PartyId() == partyId {
+			p.l.WithFields(logrus.Fields{"door_action": "join_party", "party_id": partyId, "owner": uint32(joinerCharacterId), "area_door_id": d.AreaDoorId()}).
+				Infof("JoinPartyDoor: door [%d] already party-scoped, skipping.", d.AreaDoorId())
 			continue // already a party door (e.g. duplicate event)
 		}
 		wireId, tx, ty, _ := ResolveTownPortal(townPortalsByMap(d.TownMapId()), slot, defaultTownX, defaultTownY)
@@ -216,6 +232,11 @@ func (p *ProcessorImpl) JoinPartyDoor(partyId uint32, members []character.Id, jo
 			p.l.WithError(err).Warnf("JoinPartyDoor: persist failed for door %d", d.AreaDoorId())
 			continue
 		}
+		p.l.WithFields(logrus.Fields{
+			"door_action": "join_party_rekey", "party_id": partyId, "owner": uint32(joinerCharacterId),
+			"area_door_id": d.AreaDoorId(), "old_slot": d.Slot(), "new_slot": slot,
+			"town_portal_id": wireId, "town_x": int16(tx), "town_y": int16(ty),
+		}).Infof("JoinPartyDoor: re-keyed door [%d] solo->party slot [%d]->[%d].", d.AreaDoorId(), d.Slot(), slot)
 		// Broadcast CREATED for the now party-scoped door — reaches every member
 		// (existing + joiner) and sets the joiner's town-portal slot for them.
 		if err := p.emit(EnvEventTopicDoorStatus, createdEventProvider(n, 0)); err != nil {
@@ -293,6 +314,10 @@ func (p *ProcessorImpl) LeavePartyDoor(partyId uint32, ownerCharacterId characte
 		if d.PartyId() != partyId {
 			continue
 		}
+		p.l.WithFields(logrus.Fields{
+			"door_action": "leave_party", "party_id": partyId, "owner": uint32(ownerCharacterId),
+			"area_door_id": d.AreaDoorId(), "old_slot": d.Slot(), "town_map_id": uint32(d.TownMapId()),
+		}).Infof("LeavePartyDoor: door [%d] leaving party [%d] (slot [%d]) -> solo.", d.AreaDoorId(), partyId, d.Slot())
 		// 1. Remove the still-party-scoped door from the remaining members.
 		if err := p.emit(EnvEventTopicDoorStatus, removedEventProvider(d, RemoveReasonPartyLeft, 0)); err != nil {
 			p.l.WithError(err).Warnf("LeavePartyDoor: remove failed for door %d", d.AreaDoorId())
@@ -324,5 +349,10 @@ func (p *ProcessorImpl) Reslot(areaDoorId uint32, newSlot byte, townPortalId uin
 	if err := GetRegistry().Put(p.ctx, p.t, n); err != nil {
 		return err
 	}
+	p.l.WithFields(logrus.Fields{
+		"door_action": "reslot", "party_id": n.PartyId(), "owner": uint32(n.OwnerCharacterId()),
+		"area_door_id": areaDoorId, "old_slot": oldSlot, "new_slot": newSlot,
+		"town_portal_id": townPortalId, "town_x": int16(townX), "town_y": int16(townY),
+	}).Infof("Reslot: door [%d] party [%d] slot [%d]->[%d].", areaDoorId, n.PartyId(), oldSlot, newSlot)
 	return p.emit(EnvEventTopicDoorStatus, slotChangedEventProvider(n, oldSlot))
 }

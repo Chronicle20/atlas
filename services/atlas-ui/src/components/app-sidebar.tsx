@@ -63,6 +63,10 @@ const items = [
                 url: "/merchants"
             },
             {
+                title: "Marketplace",
+                url: "/marketplace"
+            },
+            {
                 title: "Maps",
                 url: "/maps"
             },

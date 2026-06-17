@@ -32,6 +32,7 @@ const MapsPage = lazy(() => import("@/pages/MapsPage").then(m => ({ default: m.M
 const MapDetailPage = lazy(() => import("@/pages/MapDetailPage").then(m => ({ default: m.MapDetailPage })));
 const PortalDetailPage = lazy(() => import("@/pages/PortalDetailPage").then(m => ({ default: m.PortalDetailPage })));
 const MerchantsPage = lazy(() => import("@/pages/MerchantsPage").then(m => ({ default: m.MerchantsPage })));
+const MarketplacePage = lazy(() => import("@/pages/MarketplacePage").then(m => ({ default: m.MarketplacePage })));
 const MerchantDetailPage = lazy(() => import("@/pages/MerchantDetailPage").then(m => ({ default: m.MerchantDetailPage })));
 const MonstersPage = lazy(() => import("@/pages/MonstersPage").then(m => ({ default: m.MonstersPage })));
 const MonsterDetailPage = lazy(() => import("@/pages/MonsterDetailPage").then(m => ({ default: m.MonsterDetailPage })));
@@ -94,6 +95,7 @@ export function App() {
                     <Route path="/maps/:id/portals/:portalId" element={<PortalDetailPage />} />
                     <Route path="/merchants" element={<MerchantsPage />} />
                     <Route path="/merchants/:id" element={<MerchantDetailPage />} />
+                    <Route path="/marketplace" element={<MarketplacePage />} />
                     <Route path="/monsters" element={<MonstersPage />} />
                     <Route path="/monsters/:id" element={<MonsterDetailPage />} />
                     <Route path="/npcs" element={<NpcsPage />} />

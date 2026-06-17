@@ -28,8 +28,9 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func toPartyMembers(p party.Model, forChannel channel.Id) []partypkt.PartyMember {
+func toPartyMembers(l logrus.FieldLogger, ctx context.Context, p party.Model, forChannel channel.Id) []partypkt.PartyMember {
 	members := make([]partypkt.PartyMember, 0, len(p.Members()))
+	dp := door.NewProcessor(l, ctx)
 	for _, m := range p.Members() {
 		chId := int32(m.ChannelId())
 		if !m.Online() {
@@ -39,16 +40,36 @@ func toPartyMembers(p party.Model, forChannel channel.Id) []partypkt.PartyMember
 		if forChannel == m.ChannelId() {
 			mapId = uint32(m.MapId())
 		}
-		members = append(members, partypkt.PartyMember{
+		pm := partypkt.PartyMember{
 			Id:        m.Id(),
 			Name:      m.Name(),
 			JobId:     uint16(m.JobId()),
 			Level:     uint16(m.Level()),
 			ChannelId: chId,
 			MapId:     mapId,
-		})
+		}
+		applyMemberDoor(&pm, dp, m.Id())
+		members = append(members, pm)
 	}
 	return members
+}
+
+// applyMemberDoor populates the member's aTownPortal entry from their live
+// Mystic Door (if any). The town-portal array is how the v83 client renders
+// party-member doors in town — a doorless member keeps the zero entry. The
+// portal carries the town (exit) map, the area (origin) map, and the AREA-side
+// door position (matching SPAWN_PORTAL / Cosmic partyPortal toPosition()).
+func applyMemberDoor(pm *partypkt.PartyMember, dp *door.Processor, memberId uint32) {
+	doors, err := dp.GetByOwner(memberId)
+	if err != nil || len(doors) == 0 {
+		return
+	}
+	d := doors[0]
+	pm.HasDoor = true
+	pm.DoorTownMapId = uint32(d.TownMapId())
+	pm.DoorFieldMapId = uint32(d.Field().MapId())
+	pm.DoorX = d.AreaX()
+	pm.DoorY = d.AreaY()
 }
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -206,7 +227,7 @@ func partyLeft(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Pr
 	return func(ctx context.Context) func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
 			return func(p party.Model, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(partycb.PartyOperationWriter)(partycb.PartyLeftBody(p.Id(), tc.Id(), tc.Name(), toPartyMembers(p, forChannel), p.LeaderId()))
+				return session.Announce(l)(ctx)(wp)(partycb.PartyOperationWriter)(partycb.PartyLeftBody(p.Id(), tc.Id(), tc.Name(), toPartyMembers(l, ctx, p, forChannel), p.LeaderId()))
 			}
 		}
 	}
@@ -257,7 +278,7 @@ func partyExpel(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.P
 	return func(ctx context.Context) func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
 			return func(p party.Model, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(partycb.PartyOperationWriter)(partycb.PartyExpelBody(p.Id(), tc.Id(), tc.Name(), toPartyMembers(p, forChannel), p.LeaderId()))
+				return session.Announce(l)(ctx)(wp)(partycb.PartyOperationWriter)(partycb.PartyExpelBody(p.Id(), tc.Id(), tc.Name(), toPartyMembers(l, ctx, p, forChannel), p.LeaderId()))
 			}
 		}
 	}
@@ -359,7 +380,7 @@ func partyJoined(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.
 	return func(ctx context.Context) func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
 			return func(p party.Model, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(partycb.PartyOperationWriter)(partycb.PartyJoinBody(p.Id(), tc.Name(), toPartyMembers(p, forChannel), p.LeaderId()))
+				return session.Announce(l)(ctx)(wp)(partycb.PartyOperationWriter)(partycb.PartyJoinBody(p.Id(), tc.Name(), toPartyMembers(l, ctx, p, forChannel), p.LeaderId()))
 			}
 		}
 	}

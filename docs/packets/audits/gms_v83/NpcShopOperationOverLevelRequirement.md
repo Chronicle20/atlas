@@ -1,4 +1,4 @@
-# NpcShopOperationLevelRequirement (← `CShopDlg::OnPacket#LevelRequirement`)
+# NpcShopOperationOverLevelRequirement (← `CShopDlg::OnPacket#OverLevelRequirement`)
 
 - **IDA:** 0x756da7
 - **Atlas file:** `libs/atlas-packet/npc/clientbound/shop_operation.go`
@@ -10,6 +10,5 @@
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | byte | byte `mode (over/under level-requirement sub-op: v83 cases 14/15)` | ✅ |  |
-| 1 | int32 | int32 `levelLimit` | ✅ |  |
-
+| 0 | byte | byte `mode (over level-requirement sub-op: v83 case 14)` | ✅ |  |
+| 1 | int32 | int32 `levelLimit (case 14 @0x756f81)` | ✅ |  |

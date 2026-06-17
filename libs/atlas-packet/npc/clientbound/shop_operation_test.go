@@ -8,16 +8,30 @@ import (
 	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
+// Per-mode discrete level-requirement + generic-error arms. OVER/UNDER level
+// requirement = dispatcher cases 14/15 (Decode1 mode + Decode4 level). GenericError
+// (no reason) + GenericErrorWithReason = case 17 (Decode1 mode + Decode1 hasReason
+// + optional DecodeStr reason); GenericErrorWithReason mode = 17 in gms_v83/v84/v87,
+// 19 in gms_v95, VERSION-ABSENT in jms_v185 (jms case 0x13 has no with-reason arm).
+// packet-audit:verify packet=npc/clientbound/NpcShopOperationOverLevelRequirement version=gms_v83 ida=0x756da7
+// packet-audit:verify packet=npc/clientbound/NpcShopOperationOverLevelRequirement version=gms_v84 ida=0x77905b
+// packet-audit:verify packet=npc/clientbound/NpcShopOperationOverLevelRequirement version=gms_v87 ida=0x7a290d
+// packet-audit:verify packet=npc/clientbound/NpcShopOperationOverLevelRequirement version=gms_v95 ida=0x6eb7d0
+// packet-audit:verify packet=npc/clientbound/NpcShopOperationOverLevelRequirement version=jms_v185 ida=0x7cb04e
+// packet-audit:verify packet=npc/clientbound/NpcShopOperationUnderLevelRequirement version=gms_v83 ida=0x756da7
+// packet-audit:verify packet=npc/clientbound/NpcShopOperationUnderLevelRequirement version=gms_v84 ida=0x77905b
+// packet-audit:verify packet=npc/clientbound/NpcShopOperationUnderLevelRequirement version=gms_v87 ida=0x7a290d
+// packet-audit:verify packet=npc/clientbound/NpcShopOperationUnderLevelRequirement version=gms_v95 ida=0x6eb7d0
+// packet-audit:verify packet=npc/clientbound/NpcShopOperationUnderLevelRequirement version=jms_v185 ida=0x7cb04e
 // packet-audit:verify packet=npc/clientbound/NpcShopOperationGenericError version=gms_v83 ida=0x756da7
+// packet-audit:verify packet=npc/clientbound/NpcShopOperationGenericError version=gms_v84 ida=0x77905b
 // packet-audit:verify packet=npc/clientbound/NpcShopOperationGenericError version=gms_v87 ida=0x7a290d
 // packet-audit:verify packet=npc/clientbound/NpcShopOperationGenericError version=gms_v95 ida=0x6eb7d0
-// packet-audit:verify packet=npc/clientbound/NpcShopOperationLevelRequirement version=gms_v83 ida=0x756da7
-// packet-audit:verify packet=npc/clientbound/NpcShopOperationLevelRequirement version=gms_v87 ida=0x7a290d
-// packet-audit:verify packet=npc/clientbound/NpcShopOperationLevelRequirement version=gms_v95 ida=0x6eb7d0
 // packet-audit:verify packet=npc/clientbound/NpcShopOperationGenericError version=jms_v185 ida=0x7cb04e
-// packet-audit:verify packet=npc/clientbound/NpcShopOperationLevelRequirement version=jms_v185 ida=0x7cb04e
-// packet-audit:verify packet=npc/clientbound/NpcShopOperationGenericError version=gms_v84 ida=0x77905b
-// packet-audit:verify packet=npc/clientbound/NpcShopOperationLevelRequirement version=gms_v84 ida=0x77905b
+// packet-audit:verify packet=npc/clientbound/NpcShopOperationGenericErrorWithReason version=gms_v83 ida=0x756da7
+// packet-audit:verify packet=npc/clientbound/NpcShopOperationGenericErrorWithReason version=gms_v84 ida=0x77905b
+// packet-audit:verify packet=npc/clientbound/NpcShopOperationGenericErrorWithReason version=gms_v87 ida=0x7a290d
+// packet-audit:verify packet=npc/clientbound/NpcShopOperationGenericErrorWithReason version=gms_v95 ida=0x6eb7d0
 //
 // Per-mode discrete notice arms (each a single mode byte). The mode byte is the
 // dispatcher discriminator from docs/packets/dispatchers/npc_shop_operation.yaml;
@@ -225,15 +239,52 @@ func TestShopOperationTradeLimit(t *testing.T) {
 	}
 }
 
-func TestShopOperationGenericError(t *testing.T) {
+func TestShopOperationOverLevelRequirement(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
-	input := NewShopOperationGenericError(11)
+	// OVER_LEVEL_REQUIREMENT arm = dispatcher mode 14 (yaml all versions).
+	input := NewShopOperationOverLevelRequirement(0x0E, 200)
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {
 			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
 			b := input.Encode(l, ctx)(nil)
-			// mode(0x0B) + hasReason bool(0x00); no reason string follows.
-			if want := []byte{0x0B, 0x00}; !bytes.Equal(b, want) {
+			// mode(0x0E) + Encode4(levelLimit=200) uint32 LE = C8 00 00 00.
+			if want := []byte{0x0E, 0xC8, 0x00, 0x00, 0x00}; !bytes.Equal(b, want) {
+				t.Fatalf("OverLevelRequirement body: got % x, want % x", b, want)
+			}
+			output := ShopOperationOverLevelRequirement{}
+			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
+		})
+	}
+}
+
+func TestShopOperationUnderLevelRequirement(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	// UNDER_LEVEL_REQUIREMENT arm = dispatcher mode 15 (yaml all versions).
+	input := NewShopOperationUnderLevelRequirement(0x0F, 200)
+	for _, v := range pt.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			b := input.Encode(l, ctx)(nil)
+			// mode(0x0F) + Encode4(levelLimit=200) uint32 LE = C8 00 00 00.
+			if want := []byte{0x0F, 0xC8, 0x00, 0x00, 0x00}; !bytes.Equal(b, want) {
+				t.Fatalf("UnderLevelRequirement body: got % x, want % x", b, want)
+			}
+			output := ShopOperationUnderLevelRequirement{}
+			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
+		})
+	}
+}
+
+func TestShopOperationGenericError(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	// GENERIC_ERROR arm = dispatcher mode 17 (yaml all versions); hasReason=false.
+	input := NewShopOperationGenericError(0x11)
+	for _, v := range pt.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			b := input.Encode(l, ctx)(nil)
+			// mode(0x11) + hasReason bool(0x00); no reason string follows.
+			if want := []byte{0x11, 0x00}; !bytes.Equal(b, want) {
 				t.Fatalf("GenericError(no reason) body: got % x, want % x", b, want)
 			}
 			output := ShopOperationGenericError{}
@@ -244,35 +295,20 @@ func TestShopOperationGenericError(t *testing.T) {
 
 func TestShopOperationGenericErrorWithReason(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
-	input := NewShopOperationGenericErrorWithReason(12, "test error")
+	// GENERIC_ERROR_WITH_REASON arm = dispatcher mode 17 (gms_v83/v84/v87), 19 (gms_v95).
+	// jms_v185 has no with-reason arm; the GMS wire shape is what is verified here.
+	input := NewShopOperationGenericErrorWithReason(0x11, "test error")
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {
 			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
 			b := input.Encode(l, ctx)(nil)
-			// mode(0x0C) + hasReason(0x01) + EncodeStr("test error"):
+			// mode(0x11) + hasReason(0x01) + EncodeStr("test error"):
 			// uint16 LE length 0x0A 0x00 then the 10 ASCII bytes.
-			want := []byte{0x0C, 0x01, 0x0A, 0x00, 't', 'e', 's', 't', ' ', 'e', 'r', 'r', 'o', 'r'}
+			want := []byte{0x11, 0x01, 0x0A, 0x00, 't', 'e', 's', 't', ' ', 'e', 'r', 'r', 'o', 'r'}
 			if !bytes.Equal(b, want) {
 				t.Fatalf("GenericError(with reason) body: got % x, want % x", b, want)
 			}
-			output := ShopOperationGenericError{}
-			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
-		})
-	}
-}
-
-func TestShopOperationLevelRequirement(t *testing.T) {
-	l, _ := testlog.NewNullLogger()
-	input := NewShopOperationLevelRequirement(9, 200)
-	for _, v := range pt.Variants {
-		t.Run(v.Name, func(t *testing.T) {
-			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
-			b := input.Encode(l, ctx)(nil)
-			// mode(0x09) + Encode4(levelLimit=200) uint32 LE = C8 00 00 00.
-			if want := []byte{0x09, 0xC8, 0x00, 0x00, 0x00}; !bytes.Equal(b, want) {
-				t.Fatalf("LevelRequirement body: got % x, want % x", b, want)
-			}
-			output := ShopOperationLevelRequirement{}
+			output := ShopOperationGenericErrorWithReason{}
 			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
 		})
 	}

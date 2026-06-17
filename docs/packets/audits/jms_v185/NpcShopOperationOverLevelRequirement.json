@@ -1,9 +1,9 @@
 {
-  "WriterName": "NpcShopOperationGenericError",
-  "IDAName": "CShopDlg::OnPacket#GenericError",
-  "Address": "0x6eb7d0",
-  "Variant": "GMS/v95",
-  "BranchDepth": 1,
+  "WriterName": "NpcShopOperationOverLevelRequirement",
+  "IDAName": "CShopDlg::OnPacket#OverLevelRequirement",
+  "Address": "0x7cb04e",
+  "Variant": "JMS/v185",
+  "BranchDepth": 0,
   "AtlasFile": "libs/atlas-packet/npc/clientbound/shop_operation.go",
   "Rows": [
     {
@@ -11,16 +11,16 @@
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "mode (generic-error sub-op)",
+      "IDAComment": "mode (0xE over level requirement)",
       "Verdict": 0,
       "Note": ""
     },
     {
       "Index": 1,
-      "AtlasOp": 0,
+      "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "hasReason flag (0 for plain GENERIC_ERROR; no reason string follows)",
+      "IDAOp": 2,
+      "IDAComment": "levelLimit / count (@0x7cb1c0 case 0xE)",
       "Verdict": 0,
       "Note": ""
     }

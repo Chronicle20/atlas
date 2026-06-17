@@ -1,6 +1,6 @@
 {
-  "WriterName": "NpcShopOperationGenericError",
-  "IDAName": "CShopDlg::OnPacket#GenericError",
+  "WriterName": "NpcShopOperationGenericErrorWithReason",
+  "IDAName": "CShopDlg::OnPacket#GenericErrorWithReason",
   "Address": "0x6eb7d0",
   "Variant": "GMS/v95",
   "BranchDepth": 1,
@@ -11,7 +11,7 @@
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "mode (generic-error sub-op)",
+      "IDAComment": "mode (generic-error-with-reason sub-op)",
       "Verdict": 0,
       "Note": ""
     },
@@ -20,7 +20,16 @@
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "hasReason flag (0 for plain GENERIC_ERROR; no reason string follows)",
+      "IDAComment": "hasReason flag (1 -> reason string follows)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "reason (DecodeStr; shown as the Notice text)",
       "Verdict": 0,
       "Note": ""
     }

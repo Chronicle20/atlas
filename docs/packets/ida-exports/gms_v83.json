@@ -4813,7 +4813,7 @@
     "CShopDlg::OnPacket#GenericError": {
       "address": "0x756da7",
       "direction": "clientbound",
-      "notes": "Same v83 CShopDlg::OnPacket@0x756da7 (nType==0x132). Case 17 (0x756f1b): Decode1(hasReason); if non-zero, DecodeStr(reason) and show it as a Notice, else default Notice. Atlas ShopOperationGenericError writes Byte(mode)+Bool(hasReason)+optional AsciiString(reason). The mode byte is the switch discriminator.",
+      "notes": "Discrete per-mode arm split from the shared generic-error shape (task-096). Same v83 CShopDlg::OnPacket@0x756da7 (nType==0x132) case 17 (0x756f1b): Decode1(hasReason)==0 -> default Notice, no string. Atlas ShopOperationGenericError writes Byte(mode)+Bool(false). Mode 17 per npc_shop_operation.yaml.",
       "dispatch": [
         {
           "discriminator": "nType",
@@ -4827,26 +4827,7 @@
         },
         {
           "op": "Decode1",
-          "comment": "hasReason flag"
-        },
-        {
-          "op": "DecodeStr",
-          "comment": "reason (only when hasReason != 0)"
-        }
-      ]
-    },
-    "CShopDlg::OnPacket#LevelRequirement": {
-      "address": "0x756da7",
-      "direction": "clientbound",
-      "notes": "Same v83 CShopDlg::OnPacket@0x756da7 (nType==0x132). Cases 14 (0x756f81) and 15 (0x756ffd) read Decode4 (a level value formatted into an over/under level-requirement Notice). Atlas ShopOperationLevelRequirement writes Byte(mode)+Int(levelLimit). The mode byte is the switch discriminator.",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (over/under level-requirement sub-op: v83 cases 14/15)"
-        },
-        {
-          "op": "Decode4",
-          "comment": "levelLimit"
+          "comment": "hasReason flag (0 for plain GENERIC_ERROR; no reason string follows)"
         }
       ]
     },
@@ -11120,6 +11101,73 @@
           "op": "DecodeBuf",
           "comment": "ITCITEM::Decode entry (repeated per loop count): opaque GW_ItemSlotBase blob (Decode1 type + RawDecode; model.Asset recurse) then Decode4 nITCSN/nPrice/nContractFee, DecodeStr txid/rollback, DecodeBuffer(8) ftExpired, DecodeStr user/game/comment, Decode4 nBidCount/Range/Price/Min/Max/Unit, Decode2 nProcessStatus. Whole entry opaque to the flat differ (MtsItem recurse collapses) — byte-fixture verified.",
           "guard": "loop items"
+        }
+      ]
+    },
+    "CShopDlg::OnPacket#OverLevelRequirement": {
+      "address": "0x756da7",
+      "direction": "clientbound",
+      "notes": "Discrete per-mode arm split from CShopDlg::OnPacket#LevelRequirement (task-096). Same v83 CShopDlg::OnPacket@0x756da7 (nType==0x132) case 14 (0x756f81): Decode1(mode)+Decode4(level) formatted into an over-level-requirement Notice. Atlas ShopOperationOverLevelRequirement writes Byte(mode)+Int(levelLimit). Mode 14 per npc_shop_operation.yaml.",
+      "dispatch": [
+        {
+          "discriminator": "nType",
+          "case": 306
+        }
+      ],
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (over level-requirement sub-op: v83 case 14)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "levelLimit (case 14 @0x756f81)"
+        }
+      ]
+    },
+    "CShopDlg::OnPacket#UnderLevelRequirement": {
+      "address": "0x756da7",
+      "direction": "clientbound",
+      "notes": "Discrete per-mode arm split from CShopDlg::OnPacket#LevelRequirement (task-096). Same v83 CShopDlg::OnPacket@0x756da7 (nType==0x132) case 15 (0x756ffd): Decode1(mode)+Decode4(level) formatted into an under-level-requirement Notice. Atlas ShopOperationUnderLevelRequirement writes Byte(mode)+Int(levelLimit). Mode 15 per npc_shop_operation.yaml.",
+      "dispatch": [
+        {
+          "discriminator": "nType",
+          "case": 306
+        }
+      ],
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (under level-requirement sub-op: v83 case 15)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "levelLimit (case 15 @0x756ffd)"
+        }
+      ]
+    },
+    "CShopDlg::OnPacket#GenericErrorWithReason": {
+      "address": "0x756da7",
+      "direction": "clientbound",
+      "notes": "Discrete per-mode arm split from the shared generic-error shape (task-096). Same v83 CShopDlg::OnPacket@0x756da7 (nType==0x132) case 17 (0x756f1b): Decode1(hasReason)!=0 -> DecodeStr(reason) shown as Notice. Atlas ShopOperationGenericErrorWithReason writes Byte(mode)+Bool(true)+AsciiString(reason). Mode 17 (gms) per npc_shop_operation.yaml.",
+      "dispatch": [
+        {
+          "discriminator": "nType",
+          "case": 306
+        }
+      ],
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (generic-error-with-reason sub-op: v83 case 17)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "hasReason flag (1 -> reason string follows)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "reason (DecodeStr; shown as the Notice text)"
         }
       ]
     }

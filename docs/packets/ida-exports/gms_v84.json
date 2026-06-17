@@ -4678,75 +4678,16 @@
     },
     "CShopDlg::OnPacket#GenericError": {
       "address": "0x77905b",
-      "direction": "",
-      "dispatch": [
-        {
-          "discriminator": "",
-          "case": 17
-        }
-      ],
+      "direction": "clientbound",
+      "notes": "Discrete per-mode arm split from the shared generic-error shape (task-096). v84 CShopDlg::OnPacket@0x77905b case 17 (shop shape == v83): Decode1(hasReason)==0 -> default Notice, no string. Atlas ShopOperationGenericError writes Byte(mode)+Bool(false). Mode 17 per npc_shop_operation.yaml.",
       "calls": [
         {
           "op": "Decode1",
-          "comment": "",
-          "guard": "pExceptionObject == 0x139 && v2"
-        },
-        {
-          "op": "Decode4",
-          "comment": "",
-          "guard": "pExceptionObject == 0x139 && v2 && switch == 14"
-        },
-        {
-          "op": "Decode4",
-          "comment": "",
-          "guard": "pExceptionObject == 0x139 && v2 && switch == 15"
+          "comment": "mode (generic-error sub-op: case 17)"
         },
         {
           "op": "Decode1",
-          "comment": "",
-          "guard": "pExceptionObject == 0x139 && v2 && switch == 17"
-        },
-        {
-          "op": "DecodeStr",
-          "comment": "",
-          "guard": "pExceptionObject == 0x139 && v2 && switch == 17"
-        }
-      ]
-    },
-    "CShopDlg::OnPacket#LevelRequirement": {
-      "address": "0x77905b",
-      "direction": "",
-      "dispatch": [
-        {
-          "discriminator": "",
-          "case": 15
-        }
-      ],
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "",
-          "guard": "pExceptionObject == 0x139 && v2"
-        },
-        {
-          "op": "Decode4",
-          "comment": "",
-          "guard": "pExceptionObject == 0x139 && v2 && switch == 14"
-        },
-        {
-          "op": "Decode4",
-          "comment": "",
-          "guard": "pExceptionObject == 0x139 && v2 && switch == 15"
-        },
-        {
-          "op": "Decode1",
-          "comment": "",
-          "guard": "pExceptionObject == 0x139 && v2 && switch == 17"
-        },
-        {
-          "op": "DecodeStr",
-          "comment": "",
-          "guard": "pExceptionObject == 0x139 && v2 && switch == 17"
+          "comment": "hasReason flag (0 for plain GENERIC_ERROR; no reason string follows)"
         }
       ]
     },
@@ -24397,6 +24338,55 @@
           "op": "DecodeBuf",
           "comment": "ITCITEM::Decode entry (repeated per loop count): opaque GW_ItemSlotBase blob (Decode1 type + RawDecode; model.Asset recurse) then Decode4 nITCSN/nPrice/nContractFee, DecodeStr txid/rollback, DecodeBuffer(8) ftExpired, DecodeStr user/game/comment, Decode4 nBidCount/Range/Price/Min/Max/Unit, Decode2 nProcessStatus. Whole entry opaque to the flat differ (MtsItem recurse collapses) — byte-fixture verified.",
           "guard": "loop items"
+        }
+      ]
+    },
+    "CShopDlg::OnPacket#OverLevelRequirement": {
+      "address": "0x77905b",
+      "direction": "clientbound",
+      "notes": "Discrete per-mode arm split from CShopDlg::OnPacket#LevelRequirement (task-096). v84 CShopDlg::OnPacket@0x77905b (shop shape == v83; v84 did not shift) case 14: Decode1(mode)+Decode4(level). Atlas ShopOperationOverLevelRequirement writes Byte(mode)+Int(levelLimit). Mode 14 per npc_shop_operation.yaml.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (over level-requirement sub-op: case 14)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "levelLimit (case 14)"
+        }
+      ]
+    },
+    "CShopDlg::OnPacket#UnderLevelRequirement": {
+      "address": "0x77905b",
+      "direction": "clientbound",
+      "notes": "Discrete per-mode arm split from CShopDlg::OnPacket#LevelRequirement (task-096). v84 CShopDlg::OnPacket@0x77905b (shop shape == v83; v84 did not shift) case 15: Decode1(mode)+Decode4(level). Atlas ShopOperationUnderLevelRequirement writes Byte(mode)+Int(levelLimit). Mode 15 per npc_shop_operation.yaml.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (under level-requirement sub-op: case 15)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "levelLimit (case 15)"
+        }
+      ]
+    },
+    "CShopDlg::OnPacket#GenericErrorWithReason": {
+      "address": "0x77905b",
+      "direction": "clientbound",
+      "notes": "Discrete per-mode arm split from the shared generic-error shape (task-096). v84 CShopDlg::OnPacket@0x77905b case 17 (shop shape == v83): Decode1(hasReason)!=0 -> DecodeStr(reason). Atlas ShopOperationGenericErrorWithReason writes Byte(mode)+Bool(true)+AsciiString(reason). Mode 17 (gms) per npc_shop_operation.yaml.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (generic-error-with-reason sub-op: case 17)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "hasReason flag (1 -> reason string follows)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "reason (DecodeStr; shown as the Notice text)"
         }
       ]
     }

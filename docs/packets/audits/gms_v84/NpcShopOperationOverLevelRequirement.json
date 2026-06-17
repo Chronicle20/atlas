@@ -1,8 +1,8 @@
 {
-  "WriterName": "NpcShopOperationLevelRequirement",
-  "IDAName": "CShopDlg::OnPacket#LevelRequirement",
-  "Address": "0x756da7",
-  "Variant": "GMS/v83",
+  "WriterName": "NpcShopOperationOverLevelRequirement",
+  "IDAName": "CShopDlg::OnPacket#OverLevelRequirement",
+  "Address": "0x77905b",
+  "Variant": "GMS/v84",
   "BranchDepth": 0,
   "AtlasFile": "libs/atlas-packet/npc/clientbound/shop_operation.go",
   "Rows": [
@@ -11,7 +11,7 @@
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "mode (over/under level-requirement sub-op: v83 cases 14/15)",
+      "IDAComment": "mode (over level-requirement sub-op: case 14)",
       "Verdict": 0,
       "Note": ""
     },
@@ -20,7 +20,7 @@
       "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
-      "IDAComment": "levelLimit",
+      "IDAComment": "levelLimit (case 14)",
       "Verdict": 0,
       "Note": ""
     }

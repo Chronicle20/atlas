@@ -4474,37 +4474,16 @@
         }
       ]
     },
-    "CShopDlg::OnPacket#LevelRequirement": {
-      "address": "0x7cb04e",
-      "direction": "clientbound",
-      "notes": "Same CShopDlg::OnPacket@0x7cb04e (nType==0x14B). Cases 0xE (@0x7cb1c0) and 0xF (@0x7cb23d) read Decode4 (level/count value formatted into an over/under level-requirement Notice). Atlas ShopOperationLevelRequirement writes Byte(mode) + Int(levelLimit). MATCH.",
-      "dispatch": [
-        {
-          "discriminator": "nType",
-          "case": 331
-        }
-      ],
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (0xE over / 0xF under level requirement)"
-        },
-        {
-          "op": "Decode4",
-          "comment": "levelLimit / count (@0x7cb1c0 case 0xE; @0x7cb23d case 0xF)"
-        }
-      ]
-    },
     "CShopDlg::OnPacket#GenericError": {
       "address": "0x7cb04e",
       "direction": "clientbound",
-      "notes": "Same CShopDlg::OnPacket@0x7cb04e (nType==0x14B). NOTE: JMS185 has NO reason-string mode. Case 0x13 (@0x7cb0e5 arm 'case 4u/8u/0x13u') simply RETURNS with no further reads -- there is no Decode1(hasReason)/DecodeStr(reason) like GMS v95. Atlas ShopOperationGenericError writes Byte(mode)+Bool(hasReason)+optional AsciiString(reason); the discriminator/opcode is config-driven and the GMS shape is correct. For JMS the reason path is a client no-op (feature absent) -- OUT OF SCOPE for an atlas wire fix (template/config concern; GMS shape unchanged).",
       "calls": [
         {
           "op": "Decode1",
           "comment": "mode (generic-error discriminator; JMS case 0x13 is a no-op return -- NO hasReason/reason bytes)"
         }
-      ]
+      ],
+      "notes": "Discrete per-mode arm split from the shared generic-error shape (task-096). JMS185 has NO reason-string mode: case 0x13 (@0x7cb0e5 'case 4u/8u/0x13u') RETURNS with no further reads. Atlas ShopOperationGenericError writes Byte(mode)+Bool(false); the trailing bool is a client no-op in JMS (feature absent). GMS shape unchanged; mode 17 per npc_shop_operation.yaml."
     },
     "CScriptMan::OnScriptMessage": {
       "address": "0x7b7160",
@@ -10127,6 +10106,48 @@
         {
           "op": "DecodeBuffer",
           "comment": "items (count x: Decode2 perBundle, Decode2 quantity, Decode4 price, GW_ItemSlotBase::Decode asset @0x50f611)"
+        }
+      ]
+    },
+    "CShopDlg::OnPacket#OverLevelRequirement": {
+      "address": "0x7cb04e",
+      "direction": "clientbound",
+      "notes": "Discrete per-mode arm split from CShopDlg::OnPacket#LevelRequirement (task-096). Same JMS CShopDlg::OnPacket@0x7cb04e (nType==0x14B) case 0xE (@0x7cb1c0): Decode1(mode)+Decode4(level/count) into an over-level-requirement Notice. Atlas ShopOperationOverLevelRequirement writes Byte(mode)+Int(levelLimit). Mode 14 per npc_shop_operation.yaml.",
+      "dispatch": [
+        {
+          "discriminator": "nType",
+          "case": 331
+        }
+      ],
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0xE over level requirement)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "levelLimit / count (@0x7cb1c0 case 0xE)"
+        }
+      ]
+    },
+    "CShopDlg::OnPacket#UnderLevelRequirement": {
+      "address": "0x7cb04e",
+      "direction": "clientbound",
+      "notes": "Discrete per-mode arm split from CShopDlg::OnPacket#LevelRequirement (task-096). Same JMS CShopDlg::OnPacket@0x7cb04e (nType==0x14B) case 0xF (@0x7cb23d): Decode1(mode)+Decode4(level/count) into an under-level-requirement Notice. Atlas ShopOperationUnderLevelRequirement writes Byte(mode)+Int(levelLimit). Mode 15 per npc_shop_operation.yaml.",
+      "dispatch": [
+        {
+          "discriminator": "nType",
+          "case": 331
+        }
+      ],
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0xF under level requirement)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "levelLimit / count (@0x7cb23d case 0xF)"
         }
       ]
     }

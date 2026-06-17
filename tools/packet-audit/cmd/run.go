@@ -2250,15 +2250,31 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "ShopOperationNeedMoreItems", pkg: "npc", dir: csvpkg.DirClientbound}}
 	case "CShopDlg::OnPacket#TradeLimit":
 		return []candidate{{name: "ShopOperationTradeLimit", pkg: "npc", dir: csvpkg.DirClientbound}}
-	case "CShopDlg::OnPacket#LevelRequirement":
-		// Same handler, cases 0xE/0xF (over/under level requirement): Decode4(level).
-		// Atlas ShopOperationLevelRequirement writes Byte(mode) + Int(levelLimit). ✓
-		return []candidate{{name: "ShopOperationLevelRequirement", pkg: "npc", dir: csvpkg.DirClientbound}}
+	case "CShopDlg::OnPacket#OverLevelRequirement":
+		// Same handler, case 0xE (over level requirement): Decode1(mode) + Decode4(level).
+		// Discrete per-mode struct ShopOperationOverLevelRequirement writes
+		// Byte(mode) + Int(levelLimit). Split from the shared LevelRequirement
+		// shape per task-096; mode 14 per npc_shop_operation.yaml. ✓
+		return []candidate{{name: "ShopOperationOverLevelRequirement", pkg: "npc", dir: csvpkg.DirClientbound}}
+	case "CShopDlg::OnPacket#UnderLevelRequirement":
+		// Same handler, case 0xF (under level requirement): Decode1(mode) + Decode4(level).
+		// Discrete per-mode struct ShopOperationUnderLevelRequirement writes
+		// Byte(mode) + Int(levelLimit). Split from the shared LevelRequirement
+		// shape per task-096; mode 15 per npc_shop_operation.yaml. ✓
+		return []candidate{{name: "ShopOperationUnderLevelRequirement", pkg: "npc", dir: csvpkg.DirClientbound}}
 	case "CShopDlg::OnPacket#GenericError":
-		// Same handler, case 0x13: Decode1(hasReason) + (hasReason ? DecodeStr(reason)).
-		// Atlas ShopOperationGenericError writes Byte(mode) + Bool(hasReason) +
-		// optional AsciiString(reason). ✓
+		// Same handler, case 0x11 (mode 17): Decode1(mode) + Decode1(hasReason=0);
+		// no reason string. Discrete per-mode struct ShopOperationGenericError
+		// writes Byte(mode) + Bool(false). Split from the shared generic-error
+		// shape per task-096; mode 17 per npc_shop_operation.yaml. ✓
 		return []candidate{{name: "ShopOperationGenericError", pkg: "npc", dir: csvpkg.DirClientbound}}
+	case "CShopDlg::OnPacket#GenericErrorWithReason":
+		// Same handler, case 17 gms_v83/v84/v87, case 19 gms_v95: Decode1(mode) +
+		// Decode1(hasReason=1) + DecodeStr(reason). jms VERSION-ABSENT (no arm).
+		// Discrete per-mode struct ShopOperationGenericErrorWithReason writes
+		// Byte(mode) + Bool(true) + AsciiString(reason). Split from the shared
+		// generic-error shape per task-096; modes per npc_shop_operation.yaml. ✓
+		return []candidate{{name: "ShopOperationGenericErrorWithReason", pkg: "npc", dir: csvpkg.DirClientbound}}
 	// shop_operation_body.go has no exported struct (pure helper functions); no candidate entry.
 	case "CNpcPool::OnNpcEnterField":
 		// CSV: SPAWN_NPC (GMS v95 opcode 0x12F/303). OnNpcEnterField@0x679680 reads

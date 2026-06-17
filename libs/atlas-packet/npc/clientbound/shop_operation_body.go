@@ -97,12 +97,12 @@ func NPCShopOperationGenericErrorWithReasonBody(reason string) func(logrus.Field
 
 func NPCShopOperationOverLevelRequirementBody(levelLimit uint32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", NPCShopOperationOverLevelRequirement, func(mode byte) packet.Encoder {
-		return NewShopOperationLevelRequirement(mode, levelLimit)
+		return NewShopOperationOverLevelRequirement(mode, levelLimit)
 	})
 }
 
 func NPCShopOperationUnderLevelRequirementBody(levelLimit uint32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", NPCShopOperationUnderLevelRequirement, func(mode byte) packet.Encoder {
-		return NewShopOperationLevelRequirement(mode, levelLimit)
+		return NewShopOperationUnderLevelRequirement(mode, levelLimit)
 	})
 }

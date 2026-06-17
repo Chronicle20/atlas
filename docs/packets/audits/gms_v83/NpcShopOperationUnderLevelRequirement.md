@@ -1,0 +1,14 @@
+# NpcShopOperationUnderLevelRequirement (← `CShopDlg::OnPacket#UnderLevelRequirement`)
+
+- **IDA:** 0x756da7
+- **Atlas file:** `libs/atlas-packet/npc/clientbound/shop_operation.go`
+- **Variant:** GMS/v83
+- **Branch depth:** 0
+- **Verdict:** ✅
+
+## Wire-level diff
+
+| # | Atlas writes | v? reads | Verdict | Note |
+|---|---|---|---|---|
+| 0 | byte | byte `mode (under level-requirement sub-op: v83 case 15)` | ✅ |  |
+| 1 | int32 | int32 `levelLimit (case 15 @0x756ffd)` | ✅ |  |

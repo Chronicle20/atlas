@@ -277,20 +277,24 @@ func (m *ShopOperationTradeLimit) Decode(_ logrus.FieldLogger, _ context.Context
 	}
 }
 
-// ShopOperationGenericError - mode, hasReason, reason
+// CONFIRM_SHOP_TRANSACTION generic-error arms. The dispatcher reads Decode1
+// mode + Decode1 hasReason, then conditionally DecodeStr reason. Atlas splits
+// this into two DISCRETE structs, one per operation key (no shared shape):
+//   - ShopOperationGenericError       — hasReason=false, no string (GENERIC_ERROR)
+//   - ShopOperationGenericErrorWithReason — hasReason=true + string (GENERIC_ERROR_WITH_REASON)
+// Mode bytes per docs/packets/dispatchers/npc_shop_operation.yaml (IDA-verified):
+// GENERIC_ERROR=17 (all versions); GENERIC_ERROR_WITH_REASON=17 in gms_v83/v84/
+// v87, 19 in gms_v95, and VERSION-ABSENT in jms_v185 (jms case 0x13 has no
+// Decode1+DecodeStr arm). Each struct's body func resolves its own fixed key.
+
+// ShopOperationGenericError - CONFIRM_SHOP_TRANSACTION GENERIC_ERROR arm (no reason).
 // packet-audit:fname CShopDlg::OnPacket#GenericError
 type ShopOperationGenericError struct {
-	mode      byte
-	hasReason bool
-	reason    string
+	mode byte
 }
 
 func NewShopOperationGenericError(mode byte) ShopOperationGenericError {
-	return ShopOperationGenericError{mode: mode, hasReason: false}
-}
-
-func NewShopOperationGenericErrorWithReason(mode byte, reason string) ShopOperationGenericError {
-	return ShopOperationGenericError{mode: mode, hasReason: true, reason: reason}
+	return ShopOperationGenericError{mode: mode}
 }
 
 func (m ShopOperationGenericError) Operation() string { return NPCShopOperationWriter }
@@ -302,10 +306,7 @@ func (m ShopOperationGenericError) Encode(l logrus.FieldLogger, _ context.Contex
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
 		w.WriteByte(m.mode)
-		w.WriteBool(m.hasReason)
-		if m.hasReason {
-			w.WriteAsciiString(m.reason)
-		}
+		w.WriteBool(false)
 		return w.Bytes()
 	}
 }
@@ -313,30 +314,69 @@ func (m ShopOperationGenericError) Encode(l logrus.FieldLogger, _ context.Contex
 func (m *ShopOperationGenericError) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.mode = r.ReadByte()
-		m.hasReason = r.ReadBool()
-		if m.hasReason {
-			m.reason = r.ReadAsciiString()
-		}
+		_ = r.ReadBool()
 	}
 }
 
-// ShopOperationLevelRequirement - mode, levelLimit
-// packet-audit:fname CShopDlg::OnPacket#LevelRequirement
-type ShopOperationLevelRequirement struct {
+// ShopOperationGenericErrorWithReason - CONFIRM_SHOP_TRANSACTION GENERIC_ERROR_WITH_REASON arm.
+// packet-audit:fname CShopDlg::OnPacket#GenericErrorWithReason
+type ShopOperationGenericErrorWithReason struct {
+	mode   byte
+	reason string
+}
+
+func NewShopOperationGenericErrorWithReason(mode byte, reason string) ShopOperationGenericErrorWithReason {
+	return ShopOperationGenericErrorWithReason{mode: mode, reason: reason}
+}
+
+func (m ShopOperationGenericErrorWithReason) Operation() string { return NPCShopOperationWriter }
+func (m ShopOperationGenericErrorWithReason) String() string {
+	return fmt.Sprintf("shop operation generic error with reason mode [%d]", m.mode)
+}
+
+func (m ShopOperationGenericErrorWithReason) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
+		w.WriteByte(m.mode)
+		w.WriteBool(true)
+		w.WriteAsciiString(m.reason)
+		return w.Bytes()
+	}
+}
+
+func (m *ShopOperationGenericErrorWithReason) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
+		m.mode = r.ReadByte()
+		_ = r.ReadBool()
+		m.reason = r.ReadAsciiString()
+	}
+}
+
+// CONFIRM_SHOP_TRANSACTION level-requirement arms. The dispatcher (CShopDlg::
+// OnPacket) handles cases 14 (over) and 15 (under) with the SAME wire shape —
+// Decode1 mode + Decode4 level. Each mode now gets its OWN discrete struct (no
+// shared shape): the structs differ only by the fixed operation key their body
+// func resolves. Mode bytes per docs/packets/dispatchers/npc_shop_operation.yaml
+// (IDA-verified): OVER_LEVEL_REQUIREMENT=14, UNDER_LEVEL_REQUIREMENT=15
+// (version-stable across gms_v83/v84/v87/v95/jms_v185).
+
+// ShopOperationOverLevelRequirement - CONFIRM_SHOP_TRANSACTION OVER_LEVEL_REQUIREMENT arm.
+// packet-audit:fname CShopDlg::OnPacket#OverLevelRequirement
+type ShopOperationOverLevelRequirement struct {
 	mode       byte
 	levelLimit uint32
 }
 
-func NewShopOperationLevelRequirement(mode byte, levelLimit uint32) ShopOperationLevelRequirement {
-	return ShopOperationLevelRequirement{mode: mode, levelLimit: levelLimit}
+func NewShopOperationOverLevelRequirement(mode byte, levelLimit uint32) ShopOperationOverLevelRequirement {
+	return ShopOperationOverLevelRequirement{mode: mode, levelLimit: levelLimit}
 }
 
-func (m ShopOperationLevelRequirement) Operation() string { return NPCShopOperationWriter }
-func (m ShopOperationLevelRequirement) String() string {
-	return fmt.Sprintf("shop operation level requirement [%d]", m.levelLimit)
+func (m ShopOperationOverLevelRequirement) Operation() string { return NPCShopOperationWriter }
+func (m ShopOperationOverLevelRequirement) String() string {
+	return fmt.Sprintf("shop operation over level requirement [%d]", m.levelLimit)
 }
 
-func (m ShopOperationLevelRequirement) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+func (m ShopOperationOverLevelRequirement) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
 		w.WriteByte(m.mode)
@@ -345,7 +385,39 @@ func (m ShopOperationLevelRequirement) Encode(l logrus.FieldLogger, _ context.Co
 	}
 }
 
-func (m *ShopOperationLevelRequirement) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *ShopOperationOverLevelRequirement) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
+		m.mode = r.ReadByte()
+		m.levelLimit = r.ReadUint32()
+	}
+}
+
+// ShopOperationUnderLevelRequirement - CONFIRM_SHOP_TRANSACTION UNDER_LEVEL_REQUIREMENT arm.
+// packet-audit:fname CShopDlg::OnPacket#UnderLevelRequirement
+type ShopOperationUnderLevelRequirement struct {
+	mode       byte
+	levelLimit uint32
+}
+
+func NewShopOperationUnderLevelRequirement(mode byte, levelLimit uint32) ShopOperationUnderLevelRequirement {
+	return ShopOperationUnderLevelRequirement{mode: mode, levelLimit: levelLimit}
+}
+
+func (m ShopOperationUnderLevelRequirement) Operation() string { return NPCShopOperationWriter }
+func (m ShopOperationUnderLevelRequirement) String() string {
+	return fmt.Sprintf("shop operation under level requirement [%d]", m.levelLimit)
+}
+
+func (m ShopOperationUnderLevelRequirement) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
+		w.WriteByte(m.mode)
+		w.WriteInt(m.levelLimit)
+		return w.Bytes()
+	}
+}
+
+func (m *ShopOperationUnderLevelRequirement) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.mode = r.ReadByte()
 		m.levelLimit = r.ReadUint32()

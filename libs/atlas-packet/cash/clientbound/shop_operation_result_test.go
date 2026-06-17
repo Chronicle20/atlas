@@ -1,6 +1,7 @@
 package clientbound
 
 import (
+	"fmt"
 	"testing"
 
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
@@ -21,11 +22,16 @@ import (
 // packet-audit:verify packet=cash/clientbound/CashInventoryCapacityFailed version=gms_v84 ida=0x47dc8c
 // packet-audit:verify packet=cash/clientbound/CashInventoryCapacityFailed version=gms_v87 ida=0x4862ae
 // packet-audit:verify packet=cash/clientbound/CashInventoryCapacityFailed version=jms_v185 ida=0x48d642
-// packet-audit:verify packet=cash/clientbound/CashWishList version=gms_v95 ida=0x494d60
-// packet-audit:verify packet=cash/clientbound/CashWishList version=gms_v83 ida=0x4797e2
-// packet-audit:verify packet=cash/clientbound/CashWishList version=gms_v84 ida=0x47c980
-// packet-audit:verify packet=cash/clientbound/CashWishList version=gms_v87 ida=0x484f09
-// packet-audit:verify packet=cash/clientbound/CashWishList version=jms_v185 ida=0x48c00c
+// packet-audit:verify packet=cash/clientbound/CashWishListLoad version=gms_v95 ida=0x494020
+// packet-audit:verify packet=cash/clientbound/CashWishListLoad version=gms_v83 ida=0x4797e2
+// packet-audit:verify packet=cash/clientbound/CashWishListLoad version=gms_v84 ida=0x47c980
+// packet-audit:verify packet=cash/clientbound/CashWishListLoad version=gms_v87 ida=0x484f09
+// packet-audit:verify packet=cash/clientbound/CashWishListLoad version=jms_v185 ida=0x48c00c
+// packet-audit:verify packet=cash/clientbound/CashWishListUpdate version=gms_v95 ida=0x494d60
+// packet-audit:verify packet=cash/clientbound/CashWishListUpdate version=gms_v83 ida=0x479844
+// packet-audit:verify packet=cash/clientbound/CashWishListUpdate version=gms_v84 ida=0x47c9e2
+// packet-audit:verify packet=cash/clientbound/CashWishListUpdate version=gms_v87 ida=0x484f6b
+// packet-audit:verify packet=cash/clientbound/CashWishListUpdate version=jms_v185 ida=0x48c06e
 func TestOperationErrorRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {
@@ -80,29 +86,93 @@ func TestInventoryCapacityFailedRoundTrip(t *testing.T) {
 	}
 }
 
-func TestWishListRoundTrip(t *testing.T) {
+// wishListBody computes the expected wire bytes for a wishlist arm: the leading
+// mode byte followed by 10 little-endian int32 SNs (the first len(sns) populated,
+// the rest zero-padded), matching CInPacket::DecodeBuffer(this+wishbuf, 40) in
+// CCashShop::OnCashItemResLoad/SetWishDone.
+func wishListBody(mode byte, sns []uint32) []byte {
+	out := []byte{mode}
+	for i := 0; i < 10; i++ {
+		var v uint32
+		if i < len(sns) {
+			v = sns[i]
+		}
+		out = append(out, byte(v), byte(v>>8), byte(v>>16), byte(v>>24))
+	}
+	return out
+}
+
+// wishLoadModes / wishUpdateModes are the per-version dispatcher mode bytes for
+// the LOAD_WISH_DONE / SET_WISH_DONE cases of CCashShop::OnCashItemResult, taken
+// from docs/packets/dispatchers/cash_shop_operation.yaml (IDA-verified).
+var wishLoadModes = map[string]byte{
+	"GMS/v83": 0x4F, "GMS/v84": 0x52, "GMS/v87": 0x54, "GMS/v95": 0x5C, "JMS/v185": 0x52,
+}
+var wishUpdateModes = map[string]byte{
+	"GMS/v83": 0x55, "GMS/v84": 0x58, "GMS/v87": 0x5A, "GMS/v95": 0x62, "JMS/v185": 0x56,
+}
+
+func variantKey(v pt.TenantVariant) string {
+	return fmt.Sprintf("%s/v%d", v.Region, v.MajorVersion)
+}
+
+func TestWishListLoadByteFixture(t *testing.T) {
+	sns := []uint32{101, 102, 103, 104, 105}
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {
+			mode, ok := wishLoadModes[variantKey(v)]
+			if !ok {
+				t.Skipf("no LOAD_WISH mode byte for %s", variantKey(v))
+			}
 			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
-			input := NewWishList(0x40, []uint32{101, 102, 103, 104, 105})
-			output := WishList{}
+			input := NewWishListLoad(mode, sns)
+			got := pt.Encode(t, ctx, input.Encode, nil)
+			want := wishListBody(mode, sns)
+			if !bytesEqual(got, want) {
+				t.Errorf("LOAD_WISHLIST bytes: got %v, want %v", got, want)
+			}
+			// round-trip the discrete struct
+			output := WishListLoad{}
 			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
-			if output.Mode() != input.Mode() {
-				t.Errorf("mode: got %v, want %v", output.Mode(), input.Mode())
-			}
-			if len(output.Items()) != 10 {
-				t.Fatalf("items length: got %v, want 10", len(output.Items()))
-			}
-			for i := 0; i < 5; i++ {
-				if output.Items()[i] != input.Items()[i] {
-					t.Errorf("items[%d]: got %v, want %v", i, output.Items()[i], input.Items()[i])
-				}
-			}
-			for i := 5; i < 10; i++ {
-				if output.Items()[i] != 0 {
-					t.Errorf("items[%d]: got %v, want 0 (padded)", i, output.Items()[i])
-				}
+			if output.Mode() != mode {
+				t.Errorf("mode: got %v, want %v", output.Mode(), mode)
 			}
 		})
 	}
+}
+
+func TestWishListUpdateByteFixture(t *testing.T) {
+	sns := []uint32{201, 202, 203}
+	for _, v := range pt.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			mode, ok := wishUpdateModes[variantKey(v)]
+			if !ok {
+				t.Skipf("no SET_WISH mode byte for %s", variantKey(v))
+			}
+			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			input := NewWishListUpdate(mode, sns)
+			got := pt.Encode(t, ctx, input.Encode, nil)
+			want := wishListBody(mode, sns)
+			if !bytesEqual(got, want) {
+				t.Errorf("UPDATE_WISHLIST bytes: got %v, want %v", got, want)
+			}
+			output := WishListUpdate{}
+			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
+			if output.Mode() != mode {
+				t.Errorf("mode: got %v, want %v", output.Mode(), mode)
+			}
+		})
+	}
+}
+
+func bytesEqual(a, b []byte) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
 }

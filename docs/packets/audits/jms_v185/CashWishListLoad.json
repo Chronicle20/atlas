@@ -1,6 +1,6 @@
 {
-  "WriterName": "CashWishList",
-  "IDAName": "CCashShop::OnCashItemResult#WishList",
+  "WriterName": "CashWishListLoad",
+  "IDAName": "CCashShop::OnCashItemResult#LOAD_WISHLIST",
   "Address": "0x48c00c",
   "Variant": "JMS/v185",
   "BranchDepth": 0,

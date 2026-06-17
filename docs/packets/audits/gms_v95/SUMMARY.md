@@ -10,7 +10,8 @@
 | [CashInventoryCapacityFailed](CashInventoryCapacityFailed.md) | ✅ | `../../libs/atlas-packet/cash/clientbound/shop_operation_result.go` |
 | [CashInventoryCapacitySuccess](CashInventoryCapacitySuccess.md) | ✅ | `../../libs/atlas-packet/cash/clientbound/shop_operation_result.go` |
 | [CashOperationError](CashOperationError.md) | ✅ | `../../libs/atlas-packet/cash/clientbound/shop_operation_result.go` |
-| [CashWishList](CashWishList.md) | ✅ | `../../libs/atlas-packet/cash/clientbound/shop_operation_result.go` |
+| [CashWishListLoad](CashWishListLoad.md) | ✅ | `../../libs/atlas-packet/cash/clientbound/shop_operation_result.go` |
+| [CashWishListUpdate](CashWishListUpdate.md) | ✅ | `../../libs/atlas-packet/cash/clientbound/shop_operation_result.go` |
 | [Ping](Ping.md) | ✅ | `../../libs/atlas-packet/socket/clientbound/ping.go` |
 | [Pong](Pong.md) | ✅ | `../../libs/atlas-packet/socket/serverbound/pong.go` |
 | [ChannelConnect](ChannelConnect.md) | ✅ | `../../libs/atlas-packet/socket/serverbound/channel_connect.go` |

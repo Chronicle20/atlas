@@ -1,8 +1,8 @@
-packet: cash/clientbound/CashWishList
+packet: cash/clientbound/CashWishListLoad
 direction: clientbound
 version: gms_v87
 category: TIER1-FIXTURE
 ida:
-    function: CCashShop::OnCashItemResult#WishList
+    function: CCashShop::OnCashItemResult#LOAD_WISHLIST
     address: "0x484f09"
     decompile_sha256: a694c9a5b1ebda4eb2cba87b5de6862fc68fe18f37233ccaee091feb62fbc649

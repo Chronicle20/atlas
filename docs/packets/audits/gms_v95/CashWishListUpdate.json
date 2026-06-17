@@ -1,17 +1,17 @@
 {
-  "WriterName": "CashWishList",
-  "IDAName": "CCashShop::OnCashItemResult#WishList",
+  "WriterName": "CashWishListUpdate",
+  "IDAName": "CCashShop::OnCashItemResult#UPDATE_WISHLIST",
   "Address": "0x494d60",
   "Variant": "GMS/v95",
   "BranchDepth": 0,
-  "AtlasFile": "../../libs/atlas-packet/cash/clientbound/shop_operation_result.go",
+  "AtlasFile": "libs/atlas-packet/cash/clientbound/shop_operation_result.go",
   "Rows": [
     {
       "Index": 0,
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "mode (0x62 SET_WISH_DONE; op-byte consumed by dispatcher)",
+      "IDAComment": "mode (0x62 SET_WISH_DONE; op-byte consumed by dispatcher before OnCashItemResSetWishDone)",
       "Verdict": 0,
       "Note": ""
     },
@@ -20,7 +20,7 @@
       "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 5,
-      "IDAComment": "40 bytes = 10 x int32 wishlist SNs",
+      "IDAComment": "40 bytes = 10 x int32 wishlist SNs (DecodeBuffer(this+wishbuf, 40))",
       "Verdict": 0,
       "Note": ""
     }

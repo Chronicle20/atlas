@@ -97,19 +97,20 @@ func CashShopInventoryCapacityIncreaseFailedBody(message string) func(logrus.Fie
 	}
 }
 
-func CashShopWishListBody(update bool, sns []uint32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
-	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		return func(options map[string]interface{}) []byte {
-			var key string
-			if update {
-				key = CashShopOperationUpdateWishlist
-			} else {
-				key = CashShopOperationLoadWishlist
-			}
-			mode := atlas_packet.ResolveCode(l, options, "operations", key)
-			return NewWishList(mode, sns).Encode(l, ctx)(options)
-		}
-	}
+// CashShopWishListLoadBody builds the LOAD_WISHLIST arm. It FIXES the
+// LOAD_WISHLIST operation key (the discrete struct never accepts a caller mode).
+func CashShopWishListLoadBody(sns []uint32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", CashShopOperationLoadWishlist, func(mode byte) packet.Encoder {
+		return NewWishListLoad(mode, sns)
+	})
+}
+
+// CashShopWishListUpdateBody builds the UPDATE_WISHLIST arm. It FIXES the
+// UPDATE_WISHLIST operation key (the discrete struct never accepts a caller mode).
+func CashShopWishListUpdateBody(sns []uint32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", CashShopOperationUpdateWishlist, func(mode byte) packet.Encoder {
+		return NewWishListUpdate(mode, sns)
+	})
 }
 
 func CashShopCashInventoryBody(items []CashInventoryItem, storageSlots uint16, characterSlots int16) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {

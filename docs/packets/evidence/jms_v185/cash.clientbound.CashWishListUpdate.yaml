@@ -1,0 +1,8 @@
+packet: cash/clientbound/CashWishListUpdate
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnCashItemResult#UPDATE_WISHLIST
+    address: "0x48c06e"
+    decompile_sha256: a2e14fee6add9e119fc0e56439d04e63c0dae5d4b8fc33093dd9090a006ddac1

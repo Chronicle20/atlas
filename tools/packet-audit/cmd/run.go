@@ -1688,8 +1688,14 @@ func candidatesFromFName(fname string) []candidate {
 	// synthetic #-suffix FNames map each CashShopOperation result struct to its OnCashItemRes* sub-handler.
 	case "CCashShop::OnCashItemResult#CashShopInventory":
 		return []candidate{{name: "CashShopInventory", dir: csvpkg.DirClientbound, pkg: "cash"}}
-	case "CCashShop::OnCashItemResult#WishList":
-		return []candidate{{name: "WishList", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	// WishList split into two discrete per-mode structs (task-096): LOAD_WISHLIST
+	// (OnCashItemResLoadWishDone) and UPDATE_WISHLIST (OnCashItemResSetWishDone).
+	// Both arms read DecodeBuffer(40) = 10 x int32 SNs after the dispatcher consumes
+	// the mode byte; the structs differ only in the fixed operation key + mode arm.
+	case "CCashShop::OnCashItemResult#LOAD_WISHLIST":
+		return []candidate{{name: "WishListLoad", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#UPDATE_WISHLIST":
+		return []candidate{{name: "WishListUpdate", dir: csvpkg.DirClientbound, pkg: "cash"}}
 	case "CCashShop::OnCashItemResult#InventoryCapacitySuccess":
 		return []candidate{{name: "InventoryCapacitySuccess", dir: csvpkg.DirClientbound, pkg: "cash"}}
 	case "CCashShop::OnCashItemResult#InventoryCapacityFailed":

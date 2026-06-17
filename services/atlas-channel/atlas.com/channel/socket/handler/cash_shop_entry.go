@@ -101,7 +101,7 @@ func CashShopEntryHandleFunc(l logrus.FieldLogger, ctx context.Context, wp write
 		for i, w := range wl {
 			sns[i] = w.SerialNumber()
 		}
-		err = session.Announce(l)(ctx)(wp)(cashcb.CashShopOperationWriter)(cashcb.CashShopWishListBody(false, sns))(s)
+		err = session.Announce(l)(ctx)(wp)(cashcb.CashShopOperationWriter)(cashcb.CashShopWishListLoadBody(sns))(s)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to update wish list for character [%d].", s.CharacterId())
 		}

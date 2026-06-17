@@ -120,26 +120,29 @@ func (m *InventoryCapacityFailed) Decode(_ logrus.FieldLogger, _ context.Context
 	}
 }
 
-// WishList - mode, items (padded to 10 uint32s)
-// packet-audit:fname CCashShop::OnCashItemResult#WishList
-type WishList struct {
+// WishListLoad - LOAD_WISHLIST arm: mode + 10 x int32 SNs (DecodeBuffer 40).
+// Discrete per-mode struct: fixes the LOAD_WISHLIST operation key; never accepts
+// the mode from the caller (the body func resolves it). Wire-identical in shape
+// to WishListUpdate but a distinct mode arm (CCashShop::OnCashItemResLoadWishDone).
+// packet-audit:fname CCashShop::OnCashItemResult#LOAD_WISHLIST
+type WishListLoad struct {
 	mode  byte
 	items []uint32
 }
 
-func NewWishList(mode byte, items []uint32) WishList {
-	return WishList{mode: mode, items: items}
+func NewWishListLoad(mode byte, items []uint32) WishListLoad {
+	return WishListLoad{mode: mode, items: items}
 }
 
-func (m WishList) Mode() byte        { return m.mode }
-func (m WishList) Items() []uint32   { return m.items }
-func (m WishList) Operation() string { return CashShopOperationWriter }
+func (m WishListLoad) Mode() byte        { return m.mode }
+func (m WishListLoad) Items() []uint32   { return m.items }
+func (m WishListLoad) Operation() string { return CashShopOperationWriter }
 
-func (m WishList) String() string {
+func (m WishListLoad) String() string {
 	return fmt.Sprintf("mode [%d] items [%v]", m.mode, m.items)
 }
 
-func (m WishList) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+func (m WishListLoad) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
 		w.WriteByte(m.mode)
@@ -154,7 +157,54 @@ func (m WishList) Encode(l logrus.FieldLogger, _ context.Context) func(options m
 	}
 }
 
-func (m *WishList) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *WishListLoad) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
+		m.mode = r.ReadByte()
+		m.items = make([]uint32, 10)
+		for i := 0; i < 10; i++ {
+			m.items[i] = r.ReadUint32()
+		}
+	}
+}
+
+// WishListUpdate - UPDATE_WISHLIST arm: mode + 10 x int32 SNs (DecodeBuffer 40).
+// Discrete per-mode struct: fixes the UPDATE_WISHLIST operation key; never accepts
+// the mode from the caller (the body func resolves it). Wire-identical in shape
+// to WishListLoad but a distinct mode arm (CCashShop::OnCashItemResSetWishDone).
+// packet-audit:fname CCashShop::OnCashItemResult#UPDATE_WISHLIST
+type WishListUpdate struct {
+	mode  byte
+	items []uint32
+}
+
+func NewWishListUpdate(mode byte, items []uint32) WishListUpdate {
+	return WishListUpdate{mode: mode, items: items}
+}
+
+func (m WishListUpdate) Mode() byte        { return m.mode }
+func (m WishListUpdate) Items() []uint32   { return m.items }
+func (m WishListUpdate) Operation() string { return CashShopOperationWriter }
+
+func (m WishListUpdate) String() string {
+	return fmt.Sprintf("mode [%d] items [%v]", m.mode, m.items)
+}
+
+func (m WishListUpdate) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
+		w.WriteByte(m.mode)
+		for i := 0; i < 10; i++ {
+			if i < len(m.items) {
+				w.WriteInt(m.items[i])
+			} else {
+				w.WriteInt(uint32(0))
+			}
+		}
+		return w.Bytes()
+	}
+}
+
+func (m *WishListUpdate) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.mode = r.ReadByte()
 		m.items = make([]uint32, 10)

@@ -1987,17 +1987,31 @@
         }
       ]
     },
-    "CCashShop::OnCashItemResult#WishList": {
+    "CCashShop::OnCashItemResult#LOAD_WISHLIST": {
+      "address": "0x494020",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x5c LOAD_WISH_DONE; op-byte consumed by dispatcher before OnCashItemResLoadWishDone)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "40 bytes = 10 x int32 wishlist SNs (DecodeBuffer(this+wishbuf, 40))"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#UPDATE_WISHLIST": {
       "address": "0x494d60",
       "direction": "clientbound",
       "calls": [
         {
           "op": "Decode1",
-          "comment": "mode (0x62 SET_WISH_DONE; op-byte consumed by dispatcher)"
+          "comment": "mode (0x62 SET_WISH_DONE; op-byte consumed by dispatcher before OnCashItemResSetWishDone)"
         },
         {
           "op": "DecodeBuffer",
-          "comment": "40 bytes = 10 x int32 wishlist SNs"
+          "comment": "40 bytes = 10 x int32 wishlist SNs (DecodeBuffer(this+wishbuf, 40))"
         }
       ]
     },

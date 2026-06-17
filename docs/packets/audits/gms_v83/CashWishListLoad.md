@@ -1,4 +1,4 @@
-# CashWishList (← `CCashShop::OnCashItemResult#WishList`)
+# CashWishListLoad (← `CCashShop::OnCashItemResult#LOAD_WISHLIST`)
 
 - **IDA:** 0x4797e2
 - **Atlas file:** `libs/atlas-packet/cash/clientbound/shop_operation_result.go`

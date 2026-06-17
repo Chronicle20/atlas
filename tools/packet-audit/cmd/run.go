@@ -1886,11 +1886,15 @@ func candidatesFromFName(fname string) []candidate {
 	//   write, not a wire read). The shared MtsResultEmpty struct was retired
 	//   (task-096 discrete-per-mode rule). All 19 Empty arms are decompile-confirmed
 	//   Empty-shape in v83/v84/v87/v95; jms VERSION-ABSENT (no CITC).
-	//   #Reason -> MtsResultReason (sub-handlers that read a single Decode1
-	//              fail-reason byte). Covers: 0x16 GetITCListFailed,
-	//              0x20 SaleCurrentItemToWishFailed; iteration 4
-	//              0x18 GetSearchITCListFailed, 0x22 GetUserPurchaseItemFailed,
-	//              0x24 GetUserSaleItemFailed.
+	//   Each Reason-shape arm (sub-handler reads a single Decode1 fail-reason byte
+	//   after the dispatcher mode byte) now has its OWN discrete per-mode struct
+	//   (MtsResult<Mode>) that fixes its own mode byte and writes mode+reason. The
+	//   shared MtsResultReason struct was retired (task-096 discrete-per-mode rule).
+	//   Covers: 0x16 GetItcListFailed, 0x18 GetSearchItcListFailed,
+	//   0x20 SaleCurrentItemToWishFailed, 0x22 GetUserPurchaseItemFailed,
+	//   0x24 GetUserSaleItemFailed, 0x26 CancelSaleItemFailed,
+	//   0x28 MoveItcPurchaseItemLtoSFailed. All decompile-confirmed Reason-shape in
+	//   v83/v84/v87/v95; jms VERSION-ABSENT (no CITC).
 	//
 	// Body shapes are version-stable (gms_v83/v84/v87/v95 IDA-confirmed identical;
 	// jms VERSION-ABSENT — no CITC). The remaining arms (list/item-blob, two-int,
@@ -1933,14 +1937,27 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "MtsResultRegisterWishItemFailed", pkg: "field", dir: csvpkg.DirClientbound}}
 	case "CITC::OnNormalItemResult#BidAuctionFailed":
 		return []candidate{{name: "MtsResultBidAuctionFailed", pkg: "field", dir: csvpkg.DirClientbound}}
-	case "CITC::OnNormalItemResult#Reason":
-		return []candidate{{name: "MtsResultReason", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CITC::OnNormalItemResult#GetItcListFailed":
+		return []candidate{{name: "MtsResultGetItcListFailed", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CITC::OnNormalItemResult#GetSearchItcListFailed":
+		return []candidate{{name: "MtsResultGetSearchItcListFailed", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CITC::OnNormalItemResult#SaleCurrentItemToWishFailed":
+		return []candidate{{name: "MtsResultSaleCurrentItemToWishFailed", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CITC::OnNormalItemResult#GetUserPurchaseItemFailed":
+		return []candidate{{name: "MtsResultGetUserPurchaseItemFailed", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CITC::OnNormalItemResult#GetUserSaleItemFailed":
+		return []candidate{{name: "MtsResultGetUserSaleItemFailed", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CITC::OnNormalItemResult#CancelSaleItemFailed":
+		return []candidate{{name: "MtsResultCancelSaleItemFailed", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CITC::OnNormalItemResult#MoveItcPurchaseItemLtoSFailed":
+		return []candidate{{name: "MtsResultMoveItcPurchaseItemLtoSFailed", pkg: "field", dir: csvpkg.DirClientbound}}
 
-	//   #TwoInts -> MtsResultTwoInts (sub-handlers that read exactly Decode4 then
-	//              Decode4 after the dispatcher mode byte). Covers, iteration 5:
-	//              0x27 MoveITCPurchaseItemLtoSDone (tab+1, selectedNo),
-	//              0x3D NotifyCancelWishResult (count d, count x). The downstream
-	//              use differs but the wire read order is identical Decode4×2.
+	//   Each TwoInts-shape arm (sub-handler reads exactly Decode4 then Decode4
+	//   after the dispatcher mode byte) now has its OWN discrete per-mode struct
+	//   that fixes its own mode byte. The shared MtsResultTwoInts struct was retired
+	//   (task-096 discrete-per-mode rule). Covers: 0x27 MoveItcPurchaseItemLtoSDone
+	//   (tab+1, selectedNo), 0x3D NotifyCancelWishResult (count d, count x). The
+	//   downstream use differs but the wire read order is identical Decode4×2.
 	//   #RegisterSaleEntryFailed -> MtsResultRegisterSaleEntryFailed
 	//              (0x1E; Decode1(reason) then, ONLY when reason==0x48, a trailing
 	//              Decode2 short). The conditional tail makes it its own shape.
@@ -1949,8 +1966,10 @@ func candidatesFromFName(fname string) []candidate {
 	//              DecodeBuffer(8) FILETIME contract date).
 	//
 	// All decompile-confirmed version-stable in gms_v83/v84/v87/v95 (iteration 5).
-	case "CITC::OnNormalItemResult#TwoInts":
-		return []candidate{{name: "MtsResultTwoInts", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CITC::OnNormalItemResult#MoveItcPurchaseItemLtoSDone":
+		return []candidate{{name: "MtsResultMoveItcPurchaseItemLtoSDone", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CITC::OnNormalItemResult#NotifyCancelWishResult":
+		return []candidate{{name: "MtsResultNotifyCancelWishResult", pkg: "field", dir: csvpkg.DirClientbound}}
 	case "CITC::OnNormalItemResult#RegisterSaleEntryFailed":
 		return []candidate{{name: "MtsResultRegisterSaleEntryFailed", pkg: "field", dir: csvpkg.DirClientbound}}
 	case "CITC::OnNormalItemResult#SuccessBidInfo":

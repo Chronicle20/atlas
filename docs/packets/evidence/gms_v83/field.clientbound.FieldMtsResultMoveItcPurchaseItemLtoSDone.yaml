@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldMtsResultMoveItcPurchaseItemLtoSDone
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CITC::OnNormalItemResult#MoveItcPurchaseItemLtoSDone
+    address: "0x5a4d68"
+    decompile_sha256: 085baa5bdf13fe55c8740b6947a4d8401c22940ba2f44e354299b4004c96b873
+verifies:
+  - libs/atlas-packet/field/clientbound/mts_result_two_ints_modes_test.go#TestMtsResultMoveItcPurchaseItemLtoSDone

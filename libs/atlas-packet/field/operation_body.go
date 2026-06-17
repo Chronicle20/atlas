@@ -180,72 +180,75 @@ func MtsOperationBidAuctionFailedBody() func(logrus.FieldLogger, context.Context
 
 // --- Reason-shape arms (Decode1 fail-reason byte after the mode byte) ----------
 //
-// All resolve to the verified clientbound.MtsResultReason codec.
-// reasonBody is the keyed helper; the per-key wrappers below give
-// every supported mode a discoverable typed entry point.
+// Each mode has its OWN discrete clientbound struct that FIXES its own mode byte
+// internally and writes the mode byte THEN the Decode1 fail-reason byte; the
+// body function FIXES the operation KEY via WithResolvedCode (the resolved
+// per-version mode is version-stable and matches the struct's fixed byte). No
+// caller-supplied op/mode (task-096: discrete-per-mode rule).
 
-// reasonBody resolves the mode for op (one of the Reason-shape result
-// keys) and writes the mode byte THEN the Decode1 fail-reason byte
-// (clientbound.MtsResultReason).
-func reasonBody(op string, reason byte) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
-	return atlas_packet.WithResolvedCode("operations", op, func(mode byte) packet.Encoder {
-		return clientbound.NewMtsResultReason(mode, reason)
+func MtsOperationGetItcListFailedBody(reason byte) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", MtsOperationGetItcListFailed, func(_ byte) packet.Encoder {
+		return clientbound.NewMtsResultGetItcListFailed(reason)
 	})
 }
 
-func MtsOperationGetItcListFailedBody(reason byte) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
-	return reasonBody(MtsOperationGetItcListFailed, reason)
-}
-
 func MtsOperationGetSearchItcListFailedBody(reason byte) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
-	return reasonBody(MtsOperationGetSearchItcListFailed, reason)
+	return atlas_packet.WithResolvedCode("operations", MtsOperationGetSearchItcListFailed, func(_ byte) packet.Encoder {
+		return clientbound.NewMtsResultGetSearchItcListFailed(reason)
+	})
 }
 
 func MtsOperationSaleCurrentItemToWishFailedBody(reason byte) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
-	return reasonBody(MtsOperationSaleCurrentItemToWishFail, reason)
+	return atlas_packet.WithResolvedCode("operations", MtsOperationSaleCurrentItemToWishFail, func(_ byte) packet.Encoder {
+		return clientbound.NewMtsResultSaleCurrentItemToWishFailed(reason)
+	})
 }
 
 func MtsOperationGetUserPurchaseItemFailedBody(reason byte) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
-	return reasonBody(MtsOperationGetUserPurchaseItemFailed, reason)
+	return atlas_packet.WithResolvedCode("operations", MtsOperationGetUserPurchaseItemFailed, func(_ byte) packet.Encoder {
+		return clientbound.NewMtsResultGetUserPurchaseItemFailed(reason)
+	})
 }
 
 func MtsOperationGetUserSaleItemFailedBody(reason byte) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
-	return reasonBody(MtsOperationGetUserSaleItemFailed, reason)
+	return atlas_packet.WithResolvedCode("operations", MtsOperationGetUserSaleItemFailed, func(_ byte) packet.Encoder {
+		return clientbound.NewMtsResultGetUserSaleItemFailed(reason)
+	})
 }
 
 func MtsOperationCancelSaleItemFailedBody(reason byte) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
-	return reasonBody(MtsOperationCancelSaleItemFailed, reason)
+	return atlas_packet.WithResolvedCode("operations", MtsOperationCancelSaleItemFailed, func(_ byte) packet.Encoder {
+		return clientbound.NewMtsResultCancelSaleItemFailed(reason)
+	})
 }
 
 func MtsOperationMoveItcPurchaseItemLtoSFailedBody(reason byte) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
-	return reasonBody(MtsOperationMoveItcPurchaseItemLtoSFl, reason)
+	return atlas_packet.WithResolvedCode("operations", MtsOperationMoveItcPurchaseItemLtoSFl, func(_ byte) packet.Encoder {
+		return clientbound.NewMtsResultMoveItcPurchaseItemLtoSFailed(reason)
+	})
 }
 
 // --- TwoInts-shape arms (Decode4 then Decode4 after the mode byte) -------------
 //
-// Both resolve to the verified clientbound.MtsResultTwoInts codec.
-// twoIntsBody is the keyed helper; the per-key wrappers below give
-// every supported mode a discoverable typed entry point with named params.
+// Each mode has its OWN discrete clientbound struct that FIXES its own mode byte
+// internally and writes the mode byte THEN two Decode4 ints; the body function
+// FIXES the operation KEY via WithResolvedCode. No caller-supplied op/mode
+// (task-096: discrete-per-mode rule).
 
-// twoIntsBody resolves the mode for op (one of the TwoInts-shape
-// result keys) and writes the mode byte THEN two Decode4 ints
-// (clientbound.MtsResultTwoInts).
-func twoIntsBody(op string, a uint32, b uint32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
-	return atlas_packet.WithResolvedCode("operations", op, func(mode byte) packet.Encoder {
-		return clientbound.NewMtsResultTwoInts(mode, a, b)
+// MtsOperationMoveItcPurchaseItemLtoSDoneBody — 0x27. tab (the sub-handler adds
+// 1 before CCtrlTab::SetTab) and selectedNo.
+func MtsOperationMoveItcPurchaseItemLtoSDoneBody(tab uint32, selectedNo uint32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", MtsOperationMoveItcPurchaseItemLtoSDn, func(_ byte) packet.Encoder {
+		return clientbound.NewMtsResultMoveItcPurchaseItemLtoSDone(tab, selectedNo)
 	})
 }
 
-// MtsOperationMoveItcPurchaseItemLtoSDoneBody — 0x27. a = tab (the sub-handler
-// adds 1 before CCtrlTab::SetTab), b = selectedNo.
-func MtsOperationMoveItcPurchaseItemLtoSDoneBody(tab uint32, selectedNo uint32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
-	return twoIntsBody(MtsOperationMoveItcPurchaseItemLtoSDn, tab, selectedNo)
-}
-
-// MtsOperationNotifyCancelWishResultBody — 0x3D. a/b are the two notice counts
-// (each >0 gates a StringPool notice in the sub-handler).
+// MtsOperationNotifyCancelWishResultBody — 0x3D. countA/countB are the two notice
+// counts (each >0 gates a StringPool notice in the sub-handler).
 func MtsOperationNotifyCancelWishResultBody(countA uint32, countB uint32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
-	return twoIntsBody(MtsOperationNotifyCancelWishResult, countA, countB)
+	return atlas_packet.WithResolvedCode("operations", MtsOperationNotifyCancelWishResult, func(_ byte) packet.Encoder {
+		return clientbound.NewMtsResultNotifyCancelWishResult(countA, countB)
+	})
 }
 
 // --- Conditional-tail scalar arms ---------------------------------------------

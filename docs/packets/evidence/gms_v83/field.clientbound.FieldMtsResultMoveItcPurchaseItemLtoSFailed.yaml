@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldMtsResultMoveItcPurchaseItemLtoSFailed
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CITC::OnNormalItemResult#MoveItcPurchaseItemLtoSFailed
+    address: "0x5a4dcf"
+    decompile_sha256: 2e6a14c45e86247e4237e31e4329cc1135499e2e08a94417d41ef974f1d0a91c
+verifies:
+  - libs/atlas-packet/field/clientbound/mts_result_reason_modes_test.go#TestMtsResultMoveItcPurchaseItemLtoSFailed

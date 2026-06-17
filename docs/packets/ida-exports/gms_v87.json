@@ -10607,39 +10607,155 @@
         }
       ]
     },
-    "CITC::OnNormalItemResult#Reason": {
+    "CITC::OnNormalItemResult#GetItcListFailed": {
       "address": "0x5d4972",
       "region": "GMS",
       "direction": "clientbound",
-      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096 iter 1+4): Reason-shape arms of CITC::OnNormalItemResult that read a single Decode1 fail-reason byte after the dispatcher mode byte. Covered modes: iter 1 0x16 GetITCListFailed / 0x20 SaleCurrentItemToWishFailed; iter 4 0x18 GetSearchITCListFailed / 0x22 GetUserPurchaseItemFailed / 0x24 GetUserSaleItemFailed. Address pins 0x16 (GetITCListFailed) as the per-version representative. Maps atlas field/clientbound MtsResultReason.",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x16 GetItcListFailed arm of CITC::OnNormalItemResult. Reason-shape: the sub-handler reads Decode1(mode) then Decode1(reason) (the reason==73/65 transfer-field re-send branches read NO further bytes). Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultGetItcListFailed.",
       "calls": [
         {
           "op": "Decode1",
-          "comment": "MTS result mode byte (switch discriminator; e.g. 0x16 GetITCListFailed)"
+          "comment": "MTS result mode byte (0x16 GetItcListFailed)"
         },
         {
           "op": "Decode1",
-          "comment": "fail reason byte -> NoticeFailReason / reason-keyed StringPool notice"
+          "comment": "Decode1 fail reason -> NoticeFailReason"
         }
       ]
     },
-    "CITC::OnNormalItemResult#TwoInts": {
-      "address": "0x5d4e58",
+    "CITC::OnNormalItemResult#GetSearchItcListFailed": {
+      "address": "0x5d4ad3",
       "region": "GMS",
       "direction": "clientbound",
-      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096 iter 5): TwoInts-shape arms of CITC::OnNormalItemResult that read exactly Decode4 then Decode4 after the dispatcher Decode1(mode). Covered modes: 0x27 MoveITCPurchaseItemLtoSDone (tab+1, selectedNo), 0x3D NotifyCancelWishResult (count d, count x). Address pins 0x27 (MoveITCPurchaseItemLtoSDone) as the per-version representative. Maps atlas field/clientbound MtsResultTwoInts.",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x18 GetSearchItcListFailed arm of CITC::OnNormalItemResult. Reason-shape: the sub-handler reads Decode1(mode) then Decode1(reason) (the reason==73/65 transfer-field re-send branches read NO further bytes). Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultGetSearchItcListFailed.",
       "calls": [
         {
           "op": "Decode1",
-          "comment": "MTS result mode byte (switch discriminator; e.g. 0x27 MoveITCPurchaseItemLtoSDone)"
+          "comment": "MTS result mode byte (0x18 GetSearchItcListFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "Decode1 fail reason -> NoticeFailReason"
+        }
+      ]
+    },
+    "CITC::OnNormalItemResult#SaleCurrentItemToWishFailed": {
+      "address": "0x5d47c4",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x20 SaleCurrentItemToWishFailed arm of CITC::OnNormalItemResult. Reason-shape: the sub-handler reads Decode1(mode) then Decode1(reason) (the reason==73/65 transfer-field re-send branches read NO further bytes). Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultSaleCurrentItemToWishFailed.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x20 SaleCurrentItemToWishFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "Decode1 fail reason -> reason-keyed StringPool notice"
+        }
+      ]
+    },
+    "CITC::OnNormalItemResult#GetUserPurchaseItemFailed": {
+      "address": "0x5d4d1a",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x22 GetUserPurchaseItemFailed arm of CITC::OnNormalItemResult. Reason-shape: the sub-handler reads Decode1(mode) then Decode1(reason) (the reason==73/65 transfer-field re-send branches read NO further bytes). Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultGetUserPurchaseItemFailed.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x22 GetUserPurchaseItemFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "Decode1 fail reason -> NoticeFailReason"
+        }
+      ]
+    },
+    "CITC::OnNormalItemResult#GetUserSaleItemFailed": {
+      "address": "0x5d4dd7",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x24 GetUserSaleItemFailed arm of CITC::OnNormalItemResult. Reason-shape: the sub-handler reads Decode1(mode) then Decode1(reason) (the reason==73/65 transfer-field re-send branches read NO further bytes). Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultGetUserSaleItemFailed.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x24 GetUserSaleItemFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "Decode1 fail reason -> NoticeFailReason"
+        }
+      ]
+    },
+    "CITC::OnNormalItemResult#CancelSaleItemFailed": {
+      "address": "0x5d4e39",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x26 CancelSaleItemFailed arm of CITC::OnNormalItemResult. Reason-shape: the sub-handler reads Decode1(mode) then Decode1(reason) (the reason==73/65 transfer-field re-send branches read NO further bytes). Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultCancelSaleItemFailed.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x26 CancelSaleItemFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "Decode1 fail reason -> NoticeFailReason"
+        }
+      ]
+    },
+    "CITC::OnNormalItemResult#MoveItcPurchaseItemLtoSFailed": {
+      "address": "0x5d4ec2",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x28 MoveItcPurchaseItemLtoSFailed arm of CITC::OnNormalItemResult. Reason-shape: the sub-handler reads Decode1(mode) then Decode1(reason) (the reason==73/65 transfer-field re-send branches read NO further bytes). Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultMoveItcPurchaseItemLtoSFailed.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x28 MoveItcPurchaseItemLtoSFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "Decode1 fail reason -> NoticeFailReason"
+        }
+      ]
+    },
+    "CITC::OnNormalItemResult#MoveItcPurchaseItemLtoSDone": {
+      "address": "0x5d4e58",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x27 MoveItcPurchaseItemLtoSDone arm of CITC::OnNormalItemResult. TwoInts-shape: the sub-handler reads Decode1(mode) then Decode4 then Decode4. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultMoveItcPurchaseItemLtoSDone.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x27 MoveItcPurchaseItemLtoSDone)"
         },
         {
           "op": "Decode4",
-          "comment": "first int (e.g. tab index +1 / cancel count d)"
+          "comment": "Decode4 tab (-> CCtrlTab::SetTab(tab-1))"
         },
         {
           "op": "Decode4",
-          "comment": "second int (e.g. selectedNo / cancel count x)"
+          "comment": "Decode4 selectedNo"
+        }
+      ]
+    },
+    "CITC::OnNormalItemResult#NotifyCancelWishResult": {
+      "address": "0x5d52f8",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x3D NotifyCancelWishResult arm of CITC::OnNormalItemResult. TwoInts-shape: the sub-handler reads Decode1(mode) then Decode4 then Decode4. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultNotifyCancelWishResult.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x3D NotifyCancelWishResult)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "Decode4 first notice count"
+        },
+        {
+          "op": "Decode4",
+          "comment": "Decode4 second notice count"
         }
       ]
     },

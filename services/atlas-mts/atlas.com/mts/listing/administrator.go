@@ -34,6 +34,23 @@ func GetAll() database.EntityProvider[[]Model] {
 	}
 }
 
+// GetExpiredActive resolves the active auction listings whose ends_at has passed
+// (not null, < now), capped at limit (0 = uncapped). Tenant scoping is the
+// caller's responsibility via the db context: the expiration sweep passes a
+// WithoutTenantFilter context to discover expired listings across every tenant.
+func GetExpiredActive(now time.Time, limit int) database.EntityProvider[[]Model] {
+	return func(db *gorm.DB) model.Provider[[]Model] {
+		return model.SliceMap(modelFromEntity)(getExpiredActive(now, limit)(db))()
+	}
+}
+
+// CountExpiredActive returns the total number of expired active auction listings
+// (ignoring any batch limit), so the sweep can log how many it deferred to the
+// next tick rather than silently truncating (NFR 8.3).
+func CountExpiredActive(now time.Time) func(db *gorm.DB) (int64, error) {
+	return countExpiredActive(now)
+}
+
 // CreateListing assigns a fresh surrogate id, persists an explicit-column row,
 // and returns the stored Model.
 func CreateListing(db *gorm.DB, m Model) (Model, error) {

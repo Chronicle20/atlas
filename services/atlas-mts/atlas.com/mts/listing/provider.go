@@ -1,6 +1,8 @@
 package listing
 
 import (
+	"time"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
@@ -103,6 +105,48 @@ func getActiveCountBySeller(sellerId uint32) func(db *gorm.DB) (int64, error) {
 				"seller_id": sellerId,
 				"state":     string(StateActive),
 			}).
+			Count(&count).Error
+		if err != nil {
+			return 0, err
+		}
+		return count, nil
+	}
+}
+
+// getExpiredActive returns the active listings whose auction window has closed
+// (ends_at IS NOT NULL AND ends_at < now). Fixed-price listings (ends_at NULL)
+// are excluded — only auctions expire. The caller controls tenant scoping via the
+// db's context: the periodic sweep passes a WithoutTenantFilter context plus an
+// explicit tenant_id so the discovery is cross-tenant, while a tenant-scoped
+// context narrows it to one tenant. An optional limit bounds the batch (0 = no
+// limit); the sweep logs anything left for the next tick rather than silently
+// truncating (NFR 8.3).
+func getExpiredActive(now time.Time, limit int) database.EntityProvider[[]entity] {
+	return func(db *gorm.DB) model.Provider[[]entity] {
+		var results []entity
+		q := db.Where("state = ?", string(StateActive)).
+			Where("ends_at IS NOT NULL").
+			Where("ends_at < ?", now)
+		if limit > 0 {
+			q = q.Limit(limit)
+		}
+		if err := q.Find(&results).Error; err != nil {
+			return model.ErrorProvider[[]entity](err)
+		}
+		return model.FixedProvider(results)
+	}
+}
+
+// countExpiredActive returns the total number of expired active auction listings
+// matching the same predicate as getExpiredActive, ignoring any batch limit. The
+// sweep compares this against the number it processed to log the deferred tail.
+func countExpiredActive(now time.Time) func(db *gorm.DB) (int64, error) {
+	return func(db *gorm.DB) (int64, error) {
+		var count int64
+		err := db.Model(&entity{}).
+			Where("state = ?", string(StateActive)).
+			Where("ends_at IS NOT NULL").
+			Where("ends_at < ?", now).
 			Count(&count).Error
 		if err != nil {
 			return 0, err

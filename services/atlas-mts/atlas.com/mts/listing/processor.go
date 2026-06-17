@@ -72,6 +72,10 @@ type Processor interface {
 	// holding created). It is shared by the Kafka cancel handler and the REST
 	// DELETE so the tx logic exists once.
 	Cancel(id string) (CancelResult, error)
+	// Expire runs the same active->holding(seller) transition as Cancel but with
+	// the listing moving to expired and the holding recorded with origin=expired.
+	// It is the per-listing transition applied by the DB-driven expiration ticker.
+	Expire(id string) (CancelResult, error)
 	// List validates the request against the tenant config (price floor, active
 	// cap, auction duration) and, when valid, pre-allocates a listing id and
 	// emits a TransferToMts saga (fee debit + custody transfer). It returns the
@@ -163,31 +167,54 @@ type CancelResult struct {
 // guarantees the cancel can never half-complete (a cancelled row without its
 // seller holding, or vice versa).
 func (p *ProcessorImpl) Cancel(id string) (CancelResult, error) {
-	t, err := tenant.FromContext(p.ctx)()
-	if err != nil {
-		return CancelResult{}, err
-	}
+	return p.transitionToSellerHolding(p.db.WithContext(p.ctx), id, StateCancelled, holding.OriginCancelled)
+}
 
+// Expire runs the SAME race-safe active->holding(seller) transition as Cancel but
+// records the holding with origin=expired and moves the listing to the expired
+// state. It is the local transition the DB-driven expiration ticker applies once
+// an auction's ends_at has passed. Sharing transitionToSellerHolding keeps the
+// atomic tx logic in one place — Cancel and Expire differ only in the terminal
+// listing state and the holding origin.
+func (p *ProcessorImpl) Expire(id string) (CancelResult, error) {
+	return p.transitionToSellerHolding(p.db.WithContext(p.ctx), id, StateExpired, holding.OriginExpired)
+}
+
+// transitionToSellerHolding is the shared, race-safe active->terminal transition
+// underpinning both Cancel (terminal=cancelled, origin=cancelled) and Expire
+// (terminal=expired, origin=expired). In one ExecuteTransaction it conditionally
+// moves the listing out of active and, only when that affected exactly one row,
+// creates the seller's holding copying the item snapshot. The conditional
+// UpdateState is the race arbiter (a concurrent buy that already moved the row
+// makes this caller the loser: Won=false, no holding).
+//
+// The holding's tenant_id is taken from the listing ROW (lm.TenantId()), not from
+// the request context, so the transition is tenant-self-describing: the
+// cross-tenant ticker can apply it without reconstructing a tenant model (which
+// would require region/version coordinates the listings table does not store).
+// The db handed in carries whatever scoping the caller wants — a tenant-scoped
+// context for Cancel, a tenant-id-scoped WithoutTenantFilter context for the sweep.
+func (p *ProcessorImpl) transitionToSellerHolding(db *gorm.DB, id string, terminal State, origin holding.Origin) (CancelResult, error) {
 	var res CancelResult
-	terr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+	terr := database.ExecuteTransaction(db, func(tx *gorm.DB) error {
 		lm, gerr := GetById(id)(tx)()
 		if gerr != nil {
 			return gerr
 		}
 
-		// Conditional active->cancelled transition: the race arbiter. 0 rows means
+		// Conditional active->terminal transition: the race arbiter. 0 rows means
 		// a concurrent buy already won — this caller is the loser.
-		affected, uerr := UpdateState(tx, id, StateActive, StateCancelled)
+		affected, uerr := UpdateState(tx, id, StateActive, terminal)
 		if uerr != nil {
 			return uerr
 		}
 		if affected != 1 {
-			// Cancel-vs-buy loser: create no holding, leave Won=false.
+			// Race loser: create no holding, leave Won=false.
 			return nil
 		}
 
-		hm, berr := holding.NewBuilder(t.Id(), lm.WorldId(), lm.SellerId()).
-			SetOrigin(holding.OriginCancelled).
+		hm, berr := holding.NewBuilder(lm.TenantId(), lm.WorldId(), lm.SellerId()).
+			SetOrigin(origin).
 			SetTemplateId(lm.TemplateId()).
 			SetQuantity(lm.Quantity()).
 			SetStrength(lm.Strength()).

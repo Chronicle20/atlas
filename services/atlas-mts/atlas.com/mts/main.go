@@ -7,8 +7,11 @@ import (
 	mtsConsumer "atlas-mts/kafka/consumer/mts"
 	"atlas-mts/listing"
 	"atlas-mts/logger"
+	"atlas-mts/task"
 	"atlas-mts/wish"
 	"os"
+	"strconv"
+	"time"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
@@ -73,6 +76,12 @@ func main() {
 
 	tdm.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 
+	// DB-driven auction-expiration sweep: each tick moves expired active auctions
+	// to their seller's holding (origin=expired) across every tenant.
+	expirationTask := task.NewPeriodicTask(l, tdm.Context(), db, getExpirationInterval())
+	expirationTask.Start()
+	tdm.TeardownFunc(expirationTask.Stop)
+
 	server.New(l).
 		WithContext(tdm.Context()).
 		WithWaitGroup(tdm.WaitGroup()).
@@ -88,4 +97,19 @@ func main() {
 
 	tdm.Wait()
 	l.Infoln("Service shutdown.")
+}
+
+// getExpirationInterval reads the sweep cadence from
+// EXPIRATION_CHECK_INTERVAL_SECONDS (mirrors the asset-expiration ticker's env
+// name), falling back to 60s when unset or invalid.
+func getExpirationInterval() time.Duration {
+	intervalStr := os.Getenv("EXPIRATION_CHECK_INTERVAL_SECONDS")
+	if intervalStr == "" {
+		return 60 * time.Second
+	}
+	seconds, err := strconv.Atoi(intervalStr)
+	if err != nil || seconds <= 0 {
+		return 60 * time.Second
+	}
+	return time.Duration(seconds) * time.Second
 }

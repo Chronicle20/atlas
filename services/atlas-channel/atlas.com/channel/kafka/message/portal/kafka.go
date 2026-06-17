@@ -43,4 +43,10 @@ type WarpBody struct {
 	// of a random spawn point (used to drop a Mystic Door user at the linked door's
 	// town portal rather than the town's default spawn).
 	TargetPortalId uint32 `json:"targetPortalId"`
+	// UseTargetPosition, when true, lands the character at the exact (TargetX,
+	// TargetY) coordinate instead of a portal — used by Mystic Door to place the
+	// user on the linked door's exact position.
+	UseTargetPosition bool  `json:"useTargetPosition"`
+	TargetX           int16 `json:"targetX"`
+	TargetY           int16 `json:"targetY"`
 }

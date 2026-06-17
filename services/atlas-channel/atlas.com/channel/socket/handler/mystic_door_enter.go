@@ -40,10 +40,13 @@ var partyMemberIdsFunc = func(l logrus.FieldLogger, ctx context.Context, charact
 	return ids
 }
 
-// warpFunc warps characterId on field f to targetMapId. Declared as a package
-// var so tests can capture the warp target without a live Kafka producer.
-var warpFunc = func(l logrus.FieldLogger, ctx context.Context, f field.Model, characterId uint32, targetMapId _map.Id, targetPortalId uint32) error {
-	return portal.NewProcessor(l, ctx).WarpToPortal(f, characterId, targetMapId, targetPortalId)
+// warpFunc warps characterId on field f to an exact (x, y) coordinate in
+// targetMapId. A Mystic Door always lands the user on the linked door's exact
+// position (the v83 SET_FIELD chase mechanism), matching Cosmic's
+// DoorObject.warp. Declared as a package var so tests can capture the warp
+// target without a live Kafka producer.
+var warpFunc = func(l logrus.FieldLogger, ctx context.Context, f field.Model, characterId uint32, targetMapId _map.Id, x int16, y int16) error {
+	return portal.NewProcessor(l, ctx).WarpToPosition(f, characterId, targetMapId, x, y)
 }
 
 // playPortalSoundForSession announces the existing portal-sound simple-effect
@@ -56,23 +59,24 @@ var playPortalSoundForSession = func(l logrus.FieldLogger, ctx context.Context, 
 	_ = session.Announce(l)(ctx)(wp)(charcb.CharacterEffectWriter)(charpkt.CharacterPlayPortalSoundEffectEffectBody())(s)
 }
 
-// linkedDestination resolves the map a requester standing on currentField warps
-// to when entering door d. A door spans an AREA field and a TOWN map:
-//   - on the AREA side -> warp to the TOWN map
-//   - on the TOWN side  -> warp to the AREA map
+// linkedDestination resolves the map + exact (x, y) a requester standing on
+// currentField warps to when entering door d. A door spans an AREA field and a
+// TOWN map, and the user always lands on the linked door's exact position
+// (Cosmic DoorObject.warp uses the linked-portal position):
+//   - on the AREA side -> warp to the TOWN map at the door's town (x, y)
+//   - on the TOWN side  -> warp to the AREA map at the door's area (x, y)
 //
 // The bool is false when currentField is neither side of the door.
-func linkedDestination(d door.Model, currentField field.Model) (_map.Id, uint32, bool) {
+func linkedDestination(d door.Model, currentField field.Model) (_map.Id, int16, int16, bool) {
 	switch currentField.MapId() {
 	case d.Field().MapId():
-		// AREA side: warp to the TOWN map at the door's town portal.
-		return d.TownMapId(), d.TownPortalId(), true
+		// AREA side: warp to the TOWN map at the door's town position.
+		return d.TownMapId(), d.TownX(), d.TownY(), true
 	case d.TownMapId():
-		// TOWN side: warp to the AREA map. The area door is a position, not a
-		// portal, so fall back to the default spawn (0).
-		return d.Field().MapId(), 0, true
+		// TOWN side: warp back to the AREA map at the door's area position.
+		return d.Field().MapId(), d.AreaX(), d.AreaY(), true
 	default:
-		return 0, 0, false
+		return 0, 0, 0, false
 	}
 }
 
@@ -146,12 +150,12 @@ func MysticDoorEnterHandleFunc(l logrus.FieldLogger, ctx context.Context, wp wri
 			return
 		}
 
-		targetMapId, targetPortalId, ok := linkedDestination(d, s.Field())
+		targetMapId, targetX, targetY, ok := linkedDestination(d, s.Field())
 		if !ok {
 			return
 		}
 
-		if err := warpFunc(l, ctx, s.Field(), s.CharacterId(), targetMapId, targetPortalId); err != nil {
+		if err := warpFunc(l, ctx, s.Field(), s.CharacterId(), targetMapId, targetX, targetY); err != nil {
 			l.WithError(err).Warnf("Mystic-door warp failed for character [%d].", s.CharacterId())
 			return
 		}

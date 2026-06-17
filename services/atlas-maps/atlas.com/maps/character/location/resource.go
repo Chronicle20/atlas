@@ -41,7 +41,7 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB, wp WarpProvide
 
 // WarpProcessor is the narrow slice of warp.Processor the helper needs.
 type WarpProcessor interface {
-	ChangeMap(transactionId uuid.UUID, characterId uint32, worldId world.Id, dest field.Model, portalId uint32) error
+	ChangeMap(transactionId uuid.UUID, characterId uint32, worldId world.Id, dest field.Model, portalId uint32, useTargetPosition bool, targetX int16, targetY int16) error
 }
 
 func handleChangeCharacterLocation(db *gorm.DB, wp WarpProvider) rest.InputHandler[RestModel] {
@@ -82,7 +82,7 @@ func changeCharacterLocation(l logrus.FieldLogger, lp Processor, ip info.Process
 	}
 
 	dest := field.NewBuilder(cur.WorldId(), cur.ChannelId(), targetMapId).SetInstance(uuid.Nil).Build()
-	if err := wp.ChangeMap(uuid.New(), characterId, cur.WorldId(), dest, 0); err != nil {
+	if err := wp.ChangeMap(uuid.New(), characterId, cur.WorldId(), dest, 0, false, 0, 0); err != nil {
 		l.WithError(err).Errorf("change_character_location: warp failed for character [%d].", characterId)
 		return http.StatusInternalServerError
 	}

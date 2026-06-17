@@ -42,6 +42,28 @@ func WarpCommandProvider(f field.Model, characterId uint32, targetMapId _map.Id)
 	return producer.SingleMessageProvider(key, value)
 }
 
+// WarpToPositionCommandProvider warps the character to an exact (x, y)
+// coordinate in the target map (rather than a portal or random spawn) — used to
+// land a Mystic Door user on the linked door's exact position.
+func WarpToPositionCommandProvider(f field.Model, characterId uint32, targetMapId _map.Id, x int16, y int16) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := portal2.WarpCommand{
+		WorldId:   f.WorldId(),
+		ChannelId: f.ChannelId(),
+		MapId:     f.MapId(),
+		Instance:  f.Instance(),
+		Type:      portal2.CommandTypeWarp,
+		Body: portal2.WarpBody{
+			CharacterId:       characterId,
+			TargetMapId:       targetMapId,
+			UseTargetPosition: true,
+			TargetX:           x,
+			TargetY:           y,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 // WarpToPortalCommandProvider warps the character to a SPECIFIC portal in the
 // target map (rather than a random spawn point) — used to land a Mystic Door
 // user at the linked door's town portal.

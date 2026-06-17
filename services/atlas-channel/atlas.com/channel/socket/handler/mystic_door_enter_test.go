@@ -43,7 +43,7 @@ func testDoor(owner uint32) door.Model {
 
 func TestLinkedDestinationAreaSideWarpsToTown(t *testing.T) {
 	d := testDoor(testOwnerId)
-	got, ok := linkedDestination(d, testField(testAreaMapId))
+	got, _, ok := linkedDestination(d, testField(testAreaMapId))
 	if !ok || got != testTownMapId {
 		t.Fatalf("area side: want (%d,true) got (%d,%v)", testTownMapId, got, ok)
 	}
@@ -51,7 +51,7 @@ func TestLinkedDestinationAreaSideWarpsToTown(t *testing.T) {
 
 func TestLinkedDestinationTownSideWarpsToArea(t *testing.T) {
 	d := testDoor(testOwnerId)
-	got, ok := linkedDestination(d, testField(testTownMapId))
+	got, _, ok := linkedDestination(d, testField(testTownMapId))
 	if !ok || got != testAreaMapId {
 		t.Fatalf("town side: want (%d,true) got (%d,%v)", testAreaMapId, got, ok)
 	}
@@ -59,7 +59,7 @@ func TestLinkedDestinationTownSideWarpsToArea(t *testing.T) {
 
 func TestLinkedDestinationUnrelatedFieldFails(t *testing.T) {
 	d := testDoor(testOwnerId)
-	if _, ok := linkedDestination(d, testField(_map.Id(200000000))); ok {
+	if _, _, ok := linkedDestination(d, testField(_map.Id(200000000))); ok {
 		t.Fatal("unrelated field must not resolve a destination")
 	}
 }
@@ -94,7 +94,7 @@ func TestFindDoorOnMapOwnerOnAreaSide(t *testing.T) {
 	if !ok {
 		t.Fatal("owner on area side: door must be found")
 	}
-	target, ok := linkedDestination(d, testField(testAreaMapId))
+	target, _, ok := linkedDestination(d, testField(testAreaMapId))
 	if !ok || target != testTownMapId {
 		t.Fatalf("owner on area side warps to town: got (%d,%v)", target, ok)
 	}
@@ -110,7 +110,7 @@ func TestFindDoorOnMapOwnerOnTownSide(t *testing.T) {
 	if !ok {
 		t.Fatal("owner on town side: door must be found")
 	}
-	target, ok := linkedDestination(d, testField(testTownMapId))
+	target, _, ok := linkedDestination(d, testField(testTownMapId))
 	if !ok || target != testAreaMapId {
 		t.Fatalf("owner on town side warps to area: got (%d,%v)", target, ok)
 	}

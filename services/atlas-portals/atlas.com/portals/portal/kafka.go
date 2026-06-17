@@ -35,8 +35,9 @@ type warpEvent struct {
 }
 
 type warpBody struct {
-	CharacterId uint32  `json:"characterId"`
-	TargetMapId _map.Id `json:"targetMapId"`
+	CharacterId    uint32  `json:"characterId"`
+	TargetMapId    _map.Id `json:"targetMapId"`
+	TargetPortalId uint32  `json:"targetPortalId"` // non-zero: land at this portal instead of a random spawn
 }
 
 type enterBody struct {

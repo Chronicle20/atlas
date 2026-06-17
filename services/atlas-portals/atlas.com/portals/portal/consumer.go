@@ -56,6 +56,11 @@ func handleWarpCommand(l logrus.FieldLogger, ctx context.Context, command warpEv
 		return
 	}
 	f := field.NewBuilder(command.WorldId, command.ChannelId, command.MapId).SetInstance(command.Instance).Build()
+	if command.Body.TargetPortalId != 0 {
+		l.Debugf("Received command for Character [%d] to warp to map [%d] portal [%d] from map [%d].", command.Body.CharacterId, command.Body.TargetMapId, command.Body.TargetPortalId, command.MapId)
+		WarpById(l)(ctx)(f, command.Body.CharacterId, command.Body.TargetMapId, command.Body.TargetPortalId)
+		return
+	}
 	l.Debugf("Received command for Character [%d] to warp to map [%d] from map [%d].", command.Body.CharacterId, command.Body.TargetMapId, command.MapId)
 	Warp(l)(ctx)(f, command.Body.CharacterId, command.Body.TargetMapId)
 }

@@ -42,8 +42,8 @@ var partyMemberIdsFunc = func(l logrus.FieldLogger, ctx context.Context, charact
 
 // warpFunc warps characterId on field f to targetMapId. Declared as a package
 // var so tests can capture the warp target without a live Kafka producer.
-var warpFunc = func(l logrus.FieldLogger, ctx context.Context, f field.Model, characterId uint32, targetMapId _map.Id) error {
-	return portal.NewProcessor(l, ctx).Warp(f, characterId, targetMapId)
+var warpFunc = func(l logrus.FieldLogger, ctx context.Context, f field.Model, characterId uint32, targetMapId _map.Id, targetPortalId uint32) error {
+	return portal.NewProcessor(l, ctx).WarpToPortal(f, characterId, targetMapId, targetPortalId)
 }
 
 // playPortalSoundForSession announces the existing portal-sound simple-effect
@@ -62,14 +62,17 @@ var playPortalSoundForSession = func(l logrus.FieldLogger, ctx context.Context, 
 //   - on the TOWN side  -> warp to the AREA map
 //
 // The bool is false when currentField is neither side of the door.
-func linkedDestination(d door.Model, currentField field.Model) (_map.Id, bool) {
+func linkedDestination(d door.Model, currentField field.Model) (_map.Id, uint32, bool) {
 	switch currentField.MapId() {
 	case d.Field().MapId():
-		return d.TownMapId(), true
+		// AREA side: warp to the TOWN map at the door's town portal.
+		return d.TownMapId(), d.TownPortalId(), true
 	case d.TownMapId():
-		return d.Field().MapId(), true
+		// TOWN side: warp to the AREA map. The area door is a position, not a
+		// portal, so fall back to the default spawn (0).
+		return d.Field().MapId(), 0, true
 	default:
-		return 0, false
+		return 0, 0, false
 	}
 }
 
@@ -143,12 +146,12 @@ func MysticDoorEnterHandleFunc(l logrus.FieldLogger, ctx context.Context, wp wri
 			return
 		}
 
-		targetMapId, ok := linkedDestination(d, s.Field())
+		targetMapId, targetPortalId, ok := linkedDestination(d, s.Field())
 		if !ok {
 			return
 		}
 
-		if err := warpFunc(l, ctx, s.Field(), s.CharacterId(), targetMapId); err != nil {
+		if err := warpFunc(l, ctx, s.Field(), s.CharacterId(), targetMapId, targetPortalId); err != nil {
 			l.WithError(err).Warnf("Mystic-door warp failed for character [%d].", s.CharacterId())
 			return
 		}

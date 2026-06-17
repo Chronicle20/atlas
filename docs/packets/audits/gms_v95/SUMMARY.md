@@ -78,7 +78,8 @@
 | [StorageErrorSimple](StorageErrorSimple.md) | ✅ | `../../libs/atlas-packet/storage/clientbound/error.go` |
 | [StorageOperation](StorageOperation.md) | ✅ | `../../libs/atlas-packet/storage/serverbound/operation.go` |
 | [StorageShow](StorageShow.md) | 🔍 | `../../libs/atlas-packet/storage/clientbound/show.go` |
-| [StorageUpdateAssets](StorageUpdateAssets.md) | 🔍 | `../../libs/atlas-packet/storage/clientbound/update_assets.go` |
+| [StorageStoreAssets](StorageStoreAssets.md) | 🔍 | `libs/atlas-packet/storage/clientbound/store_retrieve_assets.go` |
+| [StorageRetrieveAssets](StorageRetrieveAssets.md) | 🔍 | `libs/atlas-packet/storage/clientbound/store_retrieve_assets.go` |
 | [StorageUpdateMeso](StorageUpdateMeso.md) | ✅ | `../../libs/atlas-packet/storage/clientbound/error.go` |
 | [SummonSpawn](SummonSpawn.md) | ✅ | `../../libs/atlas-packet/summon/clientbound/spawn.go` |
 | [SummonRemove](SummonRemove.md) | ✅ | `../../libs/atlas-packet/summon/clientbound/remove.go` |

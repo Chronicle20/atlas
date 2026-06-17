@@ -1,8 +1,0 @@
-packet: storage/clientbound/StorageUpdateAssets
-direction: clientbound
-version: jms_v185
-category: TIER1-FIXTURE
-ida:
-    function: CTrunkDlg::OnPacket#UpdateAssets
-    address: "0x84e5a1"
-    decompile_sha256: aa2bc38532fcf92e39004554c7a9b141a2e9acc614d1279e95cc5fc7bb76c97d

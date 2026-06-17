@@ -1552,8 +1552,10 @@ func candidatesFromFName(fname string) []candidate {
 	// #-suffix FNames (one per atlas wire shape) to disambiguate.
 	case "CTrunkDlg::OnPacket#Show":
 		return []candidate{{name: "Show", dir: csvpkg.DirClientbound, pkg: "storage"}}
-	case "CTrunkDlg::OnPacket#UpdateAssets":
-		return []candidate{{name: "UpdateAssets", dir: csvpkg.DirClientbound, pkg: "storage"}}
+	case "CTrunkDlg::OnPacket#StoreAssets":
+		return []candidate{{name: "StoreAssets", dir: csvpkg.DirClientbound, pkg: "storage"}}
+	case "CTrunkDlg::OnPacket#RetrieveAssets":
+		return []candidate{{name: "RetrieveAssets", dir: csvpkg.DirClientbound, pkg: "storage"}}
 	case "CTrunkDlg::OnPacket#UpdateMeso":
 		return []candidate{{name: "UpdateMeso", dir: csvpkg.DirClientbound, pkg: "storage"}}
 	case "CTrunkDlg::OnPacket#ErrorInventoryFull":

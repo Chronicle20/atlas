@@ -1,0 +1,57 @@
+{
+  "WriterName": "StorageStoreAssets",
+  "IDAName": "CTrunkDlg::OnPacket#StoreAssets",
+  "Address": "0x7eec1a",
+  "Variant": "GMS/v84",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/storage/clientbound/store_retrieve_assets.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode (STORE_ASSETS = 13; dispatcher case -\u003e SetGetItems)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "slotCount (m_nSlotCount)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 3,
+      "AtlasKind": 0,
+      "IDAOp": 3,
+      "IDAComment": "tab-flag bitmask (8 bytes via DecodeBuffer; WriteLong-compatible width)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "meso (m_nMoney; ONLY if tab-flag bit 1 set — runtime callers never set it)",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 4,
+      "AtlasOp": 0,
+      "AtlasKind": 1,
+      "IDAOp": 0,
+      "IDAComment": "PER-TAB count byte; repeated per set tab bit (4/8/16/32/64), each followed by count*GW_ItemSlotBase::Decode",
+      "Verdict": 3,
+      "Note": "opaque type: model.Asset — register boundary (see opaque registry)"
+    }
+  ],
+  "Verdict": 3,
+  "FlatInvalid": true
+}

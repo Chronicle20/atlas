@@ -1,7 +1,7 @@
-# StorageUpdateAssets (← `CTrunkDlg::OnPacket#UpdateAssets`)
+# StorageStoreAssets (← `CTrunkDlg::OnPacket#StoreAssets`)
 
 - **IDA:** 0x84e5a1
-- **Atlas file:** `libs/atlas-packet/storage/clientbound/update_assets.go`
+- **Atlas file:** `libs/atlas-packet/storage/clientbound/store_retrieve_assets.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 0
 - **Verdict:** 🔍
@@ -11,7 +11,7 @@
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | byte | byte `mode (8/12/14 = RETRIEVE/STORE; jms shift -1)` | ✅ |  |
+| 0 | byte | byte `mode (STORE_ASSETS = 12; dispatcher case -> SetGetItems)` | ✅ |  |
 | 1 | byte | byte `slotCount (m_nSlotCount)` | ✅ |  |
 | 2 | int64 | int64 `tab-flag bitmask (8 bytes via DecodeBuffer; WriteLong-compatible width)` | ✅ |  |
 | 3 | byte | int32 `meso (m_nMoney; ONLY if tab-flag bit 1 set — runtime callers never set it)` | ❌ | width mismatch |

@@ -5522,13 +5522,41 @@
         }
       ]
     },
-    "CTrunkDlg::OnPacket#UpdateAssets": {
+    "CTrunkDlg::OnPacket#StoreAssets": {
       "address": "0x7c5dfd",
       "direction": "clientbound",
       "calls": [
         {
           "op": "Decode1",
-          "comment": "mode (9/13/15/19)"
+          "comment": "mode (STORE_ASSETS = 13; dispatcher case 0x0D -> SetGetItems)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "slotCount (m_nSlotCount)"
+        },
+        {
+          "op": "Decode8",
+          "comment": "tab-flag bitmask (8 bytes via DecodeBuffer; WriteLong-compatible width)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "meso (m_nMoney; ONLY if tab-flag bit 1 set — runtime callers never set it)",
+          "guard": "flag & 2"
+        },
+        {
+          "op": "Decode1",
+          "comment": "PER-TAB count byte; repeated per set tab bit (4/8/16/32/64), each followed by count*GW_ItemSlotBase::Decode",
+          "guard": "loop perTab"
+        }
+      ]
+    },
+    "CTrunkDlg::OnPacket#RetrieveAssets": {
+      "address": "0x7c5dfd",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (RETRIEVE_ASSETS = 9; dispatcher case 0x09 -> SetGetItems)"
         },
         {
           "op": "Decode1",

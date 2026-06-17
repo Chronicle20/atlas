@@ -1,17 +1,17 @@
 {
-  "WriterName": "StorageUpdateAssets",
-  "IDAName": "CTrunkDlg::OnPacket#UpdateAssets",
-  "Address": "0x7c5dfd",
-  "Variant": "GMS/v83",
+  "WriterName": "StorageRetrieveAssets",
+  "IDAName": "CTrunkDlg::OnPacket#RetrieveAssets",
+  "Address": "0x7eec1a",
+  "Variant": "GMS/v84",
   "BranchDepth": 0,
-  "AtlasFile": "libs/atlas-packet/storage/clientbound/update_assets.go",
+  "AtlasFile": "libs/atlas-packet/storage/clientbound/store_retrieve_assets.go",
   "Rows": [
     {
       "Index": 0,
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "mode (9/13/15/19)",
+      "IDAComment": "mode (RETRIEVE_ASSETS = 9; dispatcher case -\u003e SetGetItems)",
       "Verdict": 0,
       "Note": ""
     },

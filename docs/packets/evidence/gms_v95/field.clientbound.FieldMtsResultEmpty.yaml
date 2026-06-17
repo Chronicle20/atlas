@@ -1,8 +1,0 @@
-packet: field/clientbound/FieldMtsResultEmpty
-direction: clientbound
-version: gms_v95
-category: TIER1-FIXTURE
-ida:
-    function: CITC::OnNormalItemResult#Empty
-    address: "0x575cd0"
-    decompile_sha256: ffba15f1d02698f9096d547c06c231d6a6f753b0314de6db2fe81361c2601428

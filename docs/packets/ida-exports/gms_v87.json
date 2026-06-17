@@ -10379,15 +10379,231 @@
         }
       ]
     },
-    "CITC::OnNormalItemResult#Empty": {
+    "CITC::OnNormalItemResult#RegisterSaleEntryDone": {
       "address": "0x5d4748",
       "region": "GMS",
       "direction": "clientbound",
-      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096 iter 1+2+3+4): Empty-shape arms of CITC::OnNormalItemResult that read NOTHING after the dispatcher Decode1(mode) (StringPool notice only; the trailing m_bITCRequestSent=0 store on the *Failed/CancelSaleItemDone/RegisterWishItemDone arms is not a wire read). Covered modes: iter 1 0x1D RegisterSaleEntryDone / 0x1F SaleCurrentItemToWishDone / 0x29 SetZzimDone / 0x2A SetZzimFailed; iter 2 0x25 CancelSaleItemDone / 0x2B DeleteZzimDone / 0x2C DeleteZzimFailed / 0x2E LoadWishSaleListFailed / 0x2F BuyWishDone / 0x30 BuyWishFailed; iter 3 0x31 CancelWishDone / 0x32 CancelWishFailed / 0x34 BuyItemFailed / 0x36 BuyZzimItemFailed / 0x38 RegisterWishItemFailed / 0x3C BidAuctionFailed; iter 4 0x33 BuyItemDone / 0x35 BuyZzimItemDone / 0x37 RegisterWishItemDone. Address pins 0x1D (RegisterSaleEntryDone) as the per-version representative. Maps atlas field/clientbound MtsResultEmpty.",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x1D RegisterSaleEntryDone arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultRegisterSaleEntryDone.",
       "calls": [
         {
           "op": "Decode1",
-          "comment": "MTS result mode byte (switch discriminator; e.g. 0x1D RegisterSaleEntryDone)"
+          "comment": "MTS result mode byte (0x1D RegisterSaleEntryDone)"
+        }
+      ]
+    },
+    "CITC::OnNormalItemResult#SaleCurrentItemToWishDone": {
+      "address": "0x5d4786",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x1F SaleCurrentItemToWishDone arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultSaleCurrentItemToWishDone.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x1F SaleCurrentItemToWishDone)"
+        }
+      ]
+    },
+    "CITC::OnNormalItemResult#CancelSaleItemDone": {
+      "address": "0x5d4e04",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x25 CancelSaleItemDone arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultCancelSaleItemDone.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x25 CancelSaleItemDone)"
+        }
+      ]
+    },
+    "CITC::OnNormalItemResult#SetZzimDone": {
+      "address": "0x5d4eef",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x29 SetZzimDone arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultSetZzimDone.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x29 SetZzimDone)"
+        }
+      ]
+    },
+    "CITC::OnNormalItemResult#SetZzimFailed": {
+      "address": "0x5d4f24",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x2A SetZzimFailed arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultSetZzimFailed.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x2A SetZzimFailed)"
+        }
+      ]
+    },
+    "CITC::OnNormalItemResult#DeleteZzimDone": {
+      "address": "0x5d4f59",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x2B DeleteZzimDone arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultDeleteZzimDone.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x2B DeleteZzimDone)"
+        }
+      ]
+    },
+    "CITC::OnNormalItemResult#DeleteZzimFailed": {
+      "address": "0x5d4f84",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x2C DeleteZzimFailed arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultDeleteZzimFailed.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x2C DeleteZzimFailed)"
+        }
+      ]
+    },
+    "CITC::OnNormalItemResult#LoadWishSaleListFailed": {
+      "address": "0x5d50cf",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x2E LoadWishSaleListFailed arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultLoadWishSaleListFailed.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x2E LoadWishSaleListFailed)"
+        }
+      ]
+    },
+    "CITC::OnNormalItemResult#BuyWishDone": {
+      "address": "0x5d5104",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x2F BuyWishDone arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultBuyWishDone.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x2F BuyWishDone)"
+        }
+      ]
+    },
+    "CITC::OnNormalItemResult#BuyWishFailed": {
+      "address": "0x5d512f",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x30 BuyWishFailed arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultBuyWishFailed.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x30 BuyWishFailed)"
+        }
+      ]
+    },
+    "CITC::OnNormalItemResult#CancelWishDone": {
+      "address": "0x5d5164",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x31 CancelWishDone arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultCancelWishDone.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x31 CancelWishDone)"
+        }
+      ]
+    },
+    "CITC::OnNormalItemResult#CancelWishFailed": {
+      "address": "0x5d5199",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x32 CancelWishFailed arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultCancelWishFailed.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x32 CancelWishFailed)"
+        }
+      ]
+    },
+    "CITC::OnNormalItemResult#BuyItemDone": {
+      "address": "0x5d51ce",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x33 BuyItemDone arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultBuyItemDone.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x33 BuyItemDone)"
+        }
+      ]
+    },
+    "CITC::OnNormalItemResult#BuyItemFailed": {
+      "address": "0x5d51f9",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x34 BuyItemFailed arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultBuyItemFailed.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x34 BuyItemFailed)"
+        }
+      ]
+    },
+    "CITC::OnNormalItemResult#BuyZzimItemDone": {
+      "address": "0x5d522e",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x35 BuyZzimItemDone arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultBuyZzimItemDone.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x35 BuyZzimItemDone)"
+        }
+      ]
+    },
+    "CITC::OnNormalItemResult#BuyZzimItemFailed": {
+      "address": "0x5d5259",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x36 BuyZzimItemFailed arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultBuyZzimItemFailed.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x36 BuyZzimItemFailed)"
+        }
+      ]
+    },
+    "CITC::OnNormalItemResult#RegisterWishItemDone": {
+      "address": "0x5d528e",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x37 RegisterWishItemDone arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultRegisterWishItemDone.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x37 RegisterWishItemDone)"
+        }
+      ]
+    },
+    "CITC::OnNormalItemResult#RegisterWishItemFailed": {
+      "address": "0x5d52c3",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x38 RegisterWishItemFailed arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultRegisterWishItemFailed.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x38 RegisterWishItemFailed)"
+        }
+      ]
+    },
+    "CITC::OnNormalItemResult#BidAuctionFailed": {
+      "address": "0x5d54fe",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x3C BidAuctionFailed arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultBidAuctionFailed.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x3C BidAuctionFailed)"
         }
       ]
     },

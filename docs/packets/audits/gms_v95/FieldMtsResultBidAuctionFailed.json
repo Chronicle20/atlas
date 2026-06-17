@@ -1,0 +1,21 @@
+{
+  "WriterName": "FieldMtsResultBidAuctionFailed",
+  "IDAName": "CITC::OnNormalItemResult#BidAuctionFailed",
+  "Address": "0x5764c0",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/field/clientbound/mts_result_empty_modes.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "MTS result mode byte (0x3C BidAuctionFailed)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

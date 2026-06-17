@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldMtsResultCancelWishFailed
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CITC::OnNormalItemResult#CancelWishFailed
+    address: "0x5a50df"
+    decompile_sha256: fa40c19eb7dbd3253a903a225d63011235196c700b40ba32c8067ce86fcf11e2
+verifies:
+  - libs/atlas-packet/field/clientbound/mts_result_empty_modes_test.go#TestMtsResultCancelWishFailed

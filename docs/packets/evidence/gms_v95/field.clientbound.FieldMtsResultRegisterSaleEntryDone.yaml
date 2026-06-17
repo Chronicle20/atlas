@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldMtsResultRegisterSaleEntryDone
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CITC::OnNormalItemResult#RegisterSaleEntryDone
+    address: "0x575cd0"
+    decompile_sha256: cc20a5310e69c8aae741fe540b9eaccbc0ce2fe273129e7ff04a829527caa6a2
+verifies:
+  - libs/atlas-packet/field/clientbound/mts_result_empty_modes_test.go#TestMtsResultRegisterSaleEntryDone

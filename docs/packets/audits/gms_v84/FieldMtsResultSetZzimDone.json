@@ -1,0 +1,21 @@
+{
+  "WriterName": "FieldMtsResultSetZzimDone",
+  "IDAName": "CITC::OnNormalItemResult#SetZzimDone",
+  "Address": "0x5b52ec",
+  "Variant": "GMS/v84",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/field/clientbound/mts_result_empty_modes.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "MTS result mode byte (0x29 SetZzimDone)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

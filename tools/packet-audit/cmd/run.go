@@ -1879,18 +1879,13 @@ func candidatesFromFName(fname string) []candidate {
 	// read order the matching CITC sub-handler performs on CInPacket) — replacing
 	// the mode-byte-only MtsOperation false-pass for the covered arms.
 	//
-	//   #Empty  -> MtsResultEmpty  (sub-handlers that read NOTHING after the mode
-	//              byte; they just show a StringPool notice). Covers, iteration 1:
-	//              0x1D RegisterSaleEntryDone, 0x1F SaleCurrentItemToWishDone,
-	//              0x29 SetZzimDone, 0x2A SetZzimFailed; iteration 2:
-	//              0x25 CancelSaleItemDone, 0x2B DeleteZzimDone, 0x2C DeleteZzimFailed,
-	//              0x2E LoadWishSaleListFailed, 0x2F BuyWishDone, 0x30 BuyWishFailed;
-	//              iteration 3: 0x31 CancelWishDone, 0x32 CancelWishFailed,
-	//              0x34 BuyItemFailed, 0x36 BuyZzimItemFailed,
-	//              0x38 RegisterWishItemFailed, 0x3C BidAuctionFailed;
-	//              iteration 4: 0x33 BuyItemDone, 0x35 BuyZzimItemDone,
-	//              0x37 RegisterWishItemDone
-	//              (all decompile-confirmed Empty-shape in v83/v84/v87/v95).
+	//   Each notice-only ("Empty-shape") arm now has its OWN discrete per-mode
+	//   struct (MtsResult<Mode>) that fixes its own mode byte and writes exactly
+	//   that byte (the sub-handler reads NOTHING after the dispatcher Decode1(mode)
+	//   — StringPool notice only; the trailing m_bITCRequestSent=0 store is a member
+	//   write, not a wire read). The shared MtsResultEmpty struct was retired
+	//   (task-096 discrete-per-mode rule). All 19 Empty arms are decompile-confirmed
+	//   Empty-shape in v83/v84/v87/v95; jms VERSION-ABSENT (no CITC).
 	//   #Reason -> MtsResultReason (sub-handlers that read a single Decode1
 	//              fail-reason byte). Covers: 0x16 GetITCListFailed,
 	//              0x20 SaleCurrentItemToWishFailed; iteration 4
@@ -1900,8 +1895,44 @@ func candidatesFromFName(fname string) []candidate {
 	// Body shapes are version-stable (gms_v83/v84/v87/v95 IDA-confirmed identical;
 	// jms VERSION-ABSENT — no CITC). The remaining arms (list/item-blob, two-int,
 	// search/purchase/sale) land in later task-096 iterations.
-	case "CITC::OnNormalItemResult#Empty":
-		return []candidate{{name: "MtsResultEmpty", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CITC::OnNormalItemResult#RegisterSaleEntryDone":
+		return []candidate{{name: "MtsResultRegisterSaleEntryDone", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CITC::OnNormalItemResult#SaleCurrentItemToWishDone":
+		return []candidate{{name: "MtsResultSaleCurrentItemToWishDone", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CITC::OnNormalItemResult#CancelSaleItemDone":
+		return []candidate{{name: "MtsResultCancelSaleItemDone", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CITC::OnNormalItemResult#SetZzimDone":
+		return []candidate{{name: "MtsResultSetZzimDone", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CITC::OnNormalItemResult#SetZzimFailed":
+		return []candidate{{name: "MtsResultSetZzimFailed", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CITC::OnNormalItemResult#DeleteZzimDone":
+		return []candidate{{name: "MtsResultDeleteZzimDone", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CITC::OnNormalItemResult#DeleteZzimFailed":
+		return []candidate{{name: "MtsResultDeleteZzimFailed", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CITC::OnNormalItemResult#LoadWishSaleListFailed":
+		return []candidate{{name: "MtsResultLoadWishSaleListFailed", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CITC::OnNormalItemResult#BuyWishDone":
+		return []candidate{{name: "MtsResultBuyWishDone", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CITC::OnNormalItemResult#BuyWishFailed":
+		return []candidate{{name: "MtsResultBuyWishFailed", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CITC::OnNormalItemResult#CancelWishDone":
+		return []candidate{{name: "MtsResultCancelWishDone", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CITC::OnNormalItemResult#CancelWishFailed":
+		return []candidate{{name: "MtsResultCancelWishFailed", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CITC::OnNormalItemResult#BuyItemDone":
+		return []candidate{{name: "MtsResultBuyItemDone", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CITC::OnNormalItemResult#BuyItemFailed":
+		return []candidate{{name: "MtsResultBuyItemFailed", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CITC::OnNormalItemResult#BuyZzimItemDone":
+		return []candidate{{name: "MtsResultBuyZzimItemDone", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CITC::OnNormalItemResult#BuyZzimItemFailed":
+		return []candidate{{name: "MtsResultBuyZzimItemFailed", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CITC::OnNormalItemResult#RegisterWishItemDone":
+		return []candidate{{name: "MtsResultRegisterWishItemDone", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CITC::OnNormalItemResult#RegisterWishItemFailed":
+		return []candidate{{name: "MtsResultRegisterWishItemFailed", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CITC::OnNormalItemResult#BidAuctionFailed":
+		return []candidate{{name: "MtsResultBidAuctionFailed", pkg: "field", dir: csvpkg.DirClientbound}}
 	case "CITC::OnNormalItemResult#Reason":
 		return []candidate{{name: "MtsResultReason", pkg: "field", dir: csvpkg.DirClientbound}}
 

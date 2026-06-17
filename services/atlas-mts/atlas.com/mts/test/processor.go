@@ -4,6 +4,7 @@ import (
 	"atlas-mts/bid"
 	"atlas-mts/holding"
 	"atlas-mts/listing"
+	"atlas-mts/wish"
 	"testing"
 
 	"github.com/sirupsen/logrus"
@@ -47,6 +48,21 @@ func CreateBidProcessor(t *testing.T) (bid.Processor, *gorm.DB, func()) {
 	db := SetupTestDB(t, bid.Migration)
 	ctx := CreateTestContext()
 	processor := bid.NewProcessor(logger, ctx, db)
+
+	cleanup := func() {
+		CleanupTestDB(t, db)
+	}
+
+	return processor, db, cleanup
+}
+
+// CreateWishProcessor creates a new wish processor for testing, backed by an
+// in-memory SQLite database migrated with the wish schema.
+func CreateWishProcessor(t *testing.T) (wish.Processor, *gorm.DB, func()) {
+	logger := logrus.New()
+	db := SetupTestDB(t, wish.Migration)
+	ctx := CreateTestContext()
+	processor := wish.NewProcessor(logger, ctx, db)
 
 	cleanup := func() {
 		CleanupTestDB(t, db)

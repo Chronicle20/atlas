@@ -1877,15 +1877,15 @@ func candidatesFromFName(fname string) []candidate {
 
 	// MTS_OPERATION (task-096, recipe OP-MODE-PREFIX). CITC::OnNormalItemResult
 	// reads Decode1(mode) and switch-dispatches to one of 35 cash-shop/MTS
-	// sub-handlers (0x15..0x3E); only the leading mode byte is on the codec's
-	// wire contract. The full dispatcher entry CITC::OnNormalItemResult carries
-	// the 35 Delegate arms (left intact); a synthetic #Mode export entry whose
-	// calls = the single Decode1 is appended per version so report-gen audits
-	// only the mode byte. baseFName strips #Mode so the registry op
-	// MTS_OPERATION (fname CITC::OnNormalItemResult) links. jms VERSION-ABSENT
-	// (no CITC in jms). field/clientbound/mts_operation.go MtsOperation.
-	case "CITC::OnNormalItemResult#Mode":
-		return []candidate{{name: "MtsOperation", pkg: "field", dir: csvpkg.DirClientbound}}
+	// sub-handlers (0x15..0x3E). Each sub-handler is a REAL discrete per-mode
+	// struct (MtsResult<Mode>) carrying its own #-suffixed synthetic FName below;
+	// baseFName strips the #suffix so all 35 reports collapse onto the registry op
+	// MTS_OPERATION (fname CITC::OnNormalItemResult), which the matrix grades
+	// worst-of across them (mirrors FIELD_EFFECT / CField::OnFieldEffect, whose
+	// op row is represented by its real discrete EffectBossHp et al). There is NO
+	// separate mode-byte-only #Mode representative — the retired phantom
+	// MtsOperation struct was a false-pass once the per-mode body codecs landed.
+	// jms VERSION-ABSENT (no CITC in jms).
 
 	// MTS_OPERATION per-mode body arms (task-096 graduation, FIELD_EFFECT model).
 	// Each #-suffixed synthetic FName maps a body-shape group of CITC sub-handlers

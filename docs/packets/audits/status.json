@@ -1,5 +1,5 @@
 {
-  "toolSha": "503b7765f0048a6971b9bc759dd4f183675cc444",
+  "toolSha": "82a3cd3dc4dd4c64d97a088e49d2cd6686334596",
   "exportHashes": {
     "gms_v83": "6a32dfd1cfc4f04c29b4ca4d99fabbb9859bf9f4ca543e83a2fa3d35a3f3499d",
     "gms_v84": "b116aeaa5cdce5f1897eabbc47d0afcdb99b22853f4876c898b90d0960067b57",
@@ -25367,7 +25367,7 @@
     {
       "kind": "op",
       "op": "MTS_OPERATION",
-      "packet": "field/clientbound/FieldMtsOperation",
+      "packet": "field/clientbound/FieldMtsResultBidAuctionFailed",
       "direction": "clientbound",
       "tier1": true,
       "fnames": [

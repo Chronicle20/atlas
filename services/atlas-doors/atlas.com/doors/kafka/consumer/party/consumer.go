@@ -70,22 +70,8 @@ func townPortalsForMap(l logrus.FieldLogger, ctx context.Context) func(_map.Id) 
 	}
 }
 
-// reslotAfterMembership is the shared helper called by every membership-change
-// handler.  It fetches the current party (post-change member list), builds the
-// townPortalsByMap closure, and delegates to ReslotParty.
-//
-// newMembers: the post-change ordered member list (from atlas-parties).
-// formerMembers: character ids that just LEFT (may be empty, e.g. on join).
-func reslotAfterMembership(l logrus.FieldLogger, ctx context.Context, partyId uint32, newMembers []character.Id, formerMembers []character.Id) {
-	p := enginedoor.NewProcessor(l, ctx)
-	if err := enginedoor.ReslotParty(p, partyId, newMembers, formerMembers, townPortalsForMap(l, ctx)); err != nil {
-		l.WithError(err).Warnf("ReslotParty failed for party %d", partyId)
-	}
-}
-
 // handleJoined fires on JOINED events.  After a join the new member's slot is
-// already reflected in the party returned by atlas-parties, so formerMembers is
-// empty.
+// already reflected in the party returned by atlas-parties, so leavers is nil.
 func handleJoined(l logrus.FieldLogger) message.Handler[StatusEvent[JoinedEventBody]] {
 	return func(_ logrus.FieldLogger, ctx context.Context, e StatusEvent[JoinedEventBody]) {
 		if e.Type != EventPartyStatusTypeJoined {
@@ -96,37 +82,26 @@ func handleJoined(l logrus.FieldLogger) message.Handler[StatusEvent[JoinedEventB
 			l.WithError(err).Warnf("handleJoined: party %d not found", e.PartyId)
 			return
 		}
-		reslotAfterMembership(l, ctx, e.PartyId, pm.Members(), nil)
-		// Make the party's existing doors visible to the member who just joined.
-		enginedoor.NewProcessor(l, ctx).ShowPartyDoorsToCharacter(e.PartyId, pm.Members(), e.ActorId)
-		// Adopt the joiner's own (solo) door into the party so the existing members
-		// see it and it reslots off solo slot 0 — counterpart to LeavePartyDoor.
-		enginedoor.NewProcessor(l, ctx).JoinPartyDoor(e.PartyId, pm.Members(), e.ActorId, townPortalsForMap(l, ctx))
+		_ = enginedoor.ReconcileParty(enginedoor.NewProcessor(l, ctx), e.PartyId,
+			pm.Members(), []character.Id{character.Id(e.ActorId)}, nil, townPortalsForMap(l, ctx))
 	}
 }
 
 // handleLeft fires on LEFT events.  e.ActorId is the character who just left;
 // the party returned by atlas-parties already reflects the post-leave member list.
+// If the party is gone (solo leave that disbanded it), members is nil and the
+// leaver's door is still dropped to solo by ReconcileParty.
 func handleLeft(l logrus.FieldLogger) message.Handler[StatusEvent[LeftEventBody]] {
 	return func(_ logrus.FieldLogger, ctx context.Context, e StatusEvent[LeftEventBody]) {
 		if e.Type != EventPartyStatusTypeLeft {
 			return
 		}
-		pm, err := party.NewProcessor(l, ctx).GetById(e.PartyId)
-		if err != nil {
-			// Party may be disbanded already — still transition the leaver's door to solo.
-			enginedoor.NewProcessor(l, ctx).LeavePartyDoor(e.PartyId, e.ActorId, townPortalsForMap(l, ctx))
-			return
+		var members []character.Id
+		if pm, err := party.NewProcessor(l, ctx).GetById(e.PartyId); err == nil {
+			members = pm.Members()
 		}
-		// Reslot only the REMAINING members (their indices shift). The leaver's door
-		// is NOT reslotted within the party — that would broadcast its slot change
-		// back to the party it just left, dragging it onto the remaining members'
-		// slot 0. LeavePartyDoor instead removes it from them and re-keys it to solo.
-		reslotAfterMembership(l, ctx, e.PartyId, pm.Members(), nil)
-		// Hide the remaining party's doors from the member who just left.
-		enginedoor.NewProcessor(l, ctx).HidePartyDoorsFromCharacter(e.PartyId, pm.Members(), e.ActorId)
-		// Hide the leaver's own door from the remaining members + re-key it to solo.
-		enginedoor.NewProcessor(l, ctx).LeavePartyDoor(e.PartyId, e.ActorId, townPortalsForMap(l, ctx))
+		_ = enginedoor.ReconcileParty(enginedoor.NewProcessor(l, ctx), e.PartyId,
+			members, nil, []character.Id{character.Id(e.ActorId)}, townPortalsForMap(l, ctx))
 	}
 }
 
@@ -136,44 +111,32 @@ func handleExpel(l logrus.FieldLogger) message.Handler[StatusEvent[ExpelEventBod
 		if e.Type != EventPartyStatusTypeExpel {
 			return
 		}
-		pm, err := party.NewProcessor(l, ctx).GetById(e.PartyId)
-		if err != nil {
-			enginedoor.NewProcessor(l, ctx).LeavePartyDoor(e.PartyId, e.Body.CharacterId, townPortalsForMap(l, ctx))
-			return
+		var members []character.Id
+		if pm, err := party.NewProcessor(l, ctx).GetById(e.PartyId); err == nil {
+			members = pm.Members()
 		}
-		// Same handling as a voluntary leave (see handleLeft): reslot only the
-		// remaining members, hide the remaining party's doors from the expelled
-		// member, and transition the expelled member's door to solo so it is
-		// removed from the remaining members rather than reslotted in-party.
-		reslotAfterMembership(l, ctx, e.PartyId, pm.Members(), nil)
-		// Hide the remaining party's doors from the member who was expelled.
-		// Without this the expelled member keeps seeing every remaining member's
-		// door (the field door pool is not torn down by the party-leave event on
-		// the client; the server must send the removals). Mirrors handleLeft.
-		enginedoor.NewProcessor(l, ctx).HidePartyDoorsFromCharacter(e.PartyId, pm.Members(), e.Body.CharacterId)
-		enginedoor.NewProcessor(l, ctx).LeavePartyDoor(e.PartyId, e.Body.CharacterId, townPortalsForMap(l, ctx))
+		_ = enginedoor.ReconcileParty(enginedoor.NewProcessor(l, ctx), e.PartyId,
+			members, nil, []character.Id{character.Id(e.Body.CharacterId)}, townPortalsForMap(l, ctx))
 	}
 }
 
 // handleDisband fires on DISBAND events.  The party no longer exists in
-// atlas-parties; the event body carries the full former member list.  Every
-// member's door drops to solo scope (slot 0) AND must be removed from the other
-// former members — the field door pool is not torn down by the disband event on
-// the client, and with the party gone the channel cannot resolve its members to
-// broadcast a removal, so DisbandPartyDoors removes each door from the others by
-// targeting their character ids explicitly.
+// atlas-parties; the event body carries the full former member list (including
+// the departing leader, after the Task 1 fix).  Every member's door drops to
+// solo via ReconcileParty(members=nil, leavers=formerMembers).
 func handleDisband(l logrus.FieldLogger) message.Handler[StatusEvent[DisbandEventBody]] {
 	return func(_ logrus.FieldLogger, ctx context.Context, e StatusEvent[DisbandEventBody]) {
 		if e.Type != EventPartyStatusTypeDisband {
 			return
 		}
-		enginedoor.NewProcessor(l, ctx).DisbandPartyDoors(e.PartyId, e.Body.Members, townPortalsForMap(l, ctx))
+		_ = enginedoor.ReconcileParty(enginedoor.NewProcessor(l, ctx), e.PartyId,
+			nil, nil, e.Body.Members, townPortalsForMap(l, ctx))
 	}
 }
 
 // handleChangeLeader fires on CHANGE_LEADER events.  The leader slot (index 0)
 // is now a different character, so the ordering may have changed.  No one left
-// the party, so formerMembers is empty.
+// the party, so joiners and leavers are both nil.
 func handleChangeLeader(l logrus.FieldLogger) message.Handler[StatusEvent[ChangeLeaderEventBody]] {
 	return func(_ logrus.FieldLogger, ctx context.Context, e StatusEvent[ChangeLeaderEventBody]) {
 		if e.Type != EventPartyStatusTypeChangeLeader {
@@ -184,6 +147,7 @@ func handleChangeLeader(l logrus.FieldLogger) message.Handler[StatusEvent[Change
 			l.WithError(err).Warnf("handleChangeLeader: party %d not found", e.PartyId)
 			return
 		}
-		reslotAfterMembership(l, ctx, e.PartyId, pm.Members(), nil)
+		_ = enginedoor.ReconcileParty(enginedoor.NewProcessor(l, ctx), e.PartyId,
+			pm.Members(), nil, nil, townPortalsForMap(l, ctx))
 	}
 }

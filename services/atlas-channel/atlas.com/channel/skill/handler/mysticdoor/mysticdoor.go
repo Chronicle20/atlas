@@ -7,10 +7,12 @@ import (
 	"atlas-channel/character/buff"
 	datamap "atlas-channel/data/map"
 	"atlas-channel/data/skill/effect"
+	"atlas-channel/data/skill/effect/statup"
 	"atlas-channel/door"
 	"atlas-channel/socket/writer"
 	channelhandler "atlas-channel/skill/handler"
 
+	charconst "github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	skill2 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
@@ -48,16 +50,25 @@ var emitSpawn = func(l logrus.FieldLogger, ctx context.Context, f field.Model, c
 	return door.NewProcessor(l, ctx).Spawn(f, characterId, skillId, level, x, y)
 }
 
-// applyDoorBuff gives the caster the Mystic Door buff (the duration icon).
-// Mystic Door carries no statups, so the generic skill-use buff apply skips it
-// (it gates on len(StatUps) > 0); the door is still a buff with a duration, so
-// apply it here. The buff's duration mirrors the door's lifetime, so it expires
-// alongside the door. Stubbable for tests.
-var applyDoorBuff = func(l logrus.FieldLogger, ctx context.Context, f field.Model, characterId, skillId uint32, level byte, duration int32) {
+// applyDoorBuff gives the caster the Mystic Door buff so the client shows the
+// duration icon (and lets the player right-click it to cancel, which atlas turns
+// into an early door removal — see socket/handler/character_buff_cancel.go).
+//
+// Mystic Door's WZ effect carries no statups, so the generic skill-use buff apply
+// skips it (it gates on len(StatUps) > 0) and nothing would render. The v83 client
+// only draws a buff icon for a SET character-temporary-stat bit, and the cast
+// itself (CUserLocal::DoActiveSkill_OpenGate @0x969bf9) sets none — so a stat-less
+// buff is invisible. Following the v83 reference server, the door reuses the
+// SOUL_ARROW temporary stat (gameplay-harmless for a Priest, who carries no bow)
+// with the skill's X value: the buff bar then shows the Mystic Door icon (keyed by
+// sourceId 2311002) and is cancellable. The buff's duration mirrors the door's
+// lifetime, so it expires alongside the door. Stubbable for tests.
+var applyDoorBuff = func(l logrus.FieldLogger, ctx context.Context, f field.Model, characterId, skillId uint32, level byte, duration int32, amount int16) {
 	if duration <= 0 {
 		return
 	}
-	_ = buff.NewProcessor(l, ctx).Apply(f, characterId, int32(skillId), level, duration, nil)(characterId)
+	statups := []statup.Model{statup.NewModel(string(charconst.TemporaryStatTypeSoulArrow), int32(amount))}
+	_ = buff.NewProcessor(l, ctx).Apply(f, characterId, int32(skillId), level, duration, statups)(characterId)
 }
 
 // Apply is the Mystic Door handler installed in the per-skill registry.
@@ -110,8 +121,8 @@ func Apply(l logrus.FieldLogger) func(ctx context.Context) func(
 				return err
 			}
 
-			// Give the caster the Mystic Door buff (duration icon).
-			applyDoorBuff(l, ctx, f, characterId, uint32(info.SkillId()), info.SkillLevel(), e.Duration())
+			// Give the caster the Mystic Door buff (duration icon + right-click cancel).
+			applyDoorBuff(l, ctx, f, characterId, uint32(info.SkillId()), info.SkillLevel(), e.Duration(), e.X())
 			return nil
 		}
 	}

@@ -13,6 +13,7 @@ import (
 	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character"
 	charcb "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
 	doorsb "github.com/Chronicle20/atlas/libs/atlas-packet/door/serverbound"
+	fieldcb "github.com/Chronicle20/atlas/libs/atlas-packet/field/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
@@ -104,11 +105,15 @@ func authorizeDoorEntry(ownerId, requesterId uint32, requesterPartyMemberIds []u
 // or the town map (town side). A character has at most one live door (recast
 // replaces), but the route returns a slice, so 0/1/many are handled by picking
 // the first door that matches the current field's world/channel + side.
-func findDoorOnMap(l logrus.FieldLogger, ctx context.Context, currentField field.Model, ownerId, requesterId uint32) (door.Model, bool) {
+// Returns onSide (currentField is a side of this owner's door) and authorized
+// (requester is the owner or a current party member). The two bools let the
+// caller distinguish "no door here -> ignore silently" from "door here but
+// you're not in the party -> show the blocked message".
+func findDoorOnMap(l logrus.FieldLogger, ctx context.Context, currentField field.Model, ownerId, requesterId uint32) (_ door.Model, onSide bool, authorized bool) {
 	ms, err := doorsByOwnerFunc(l, ctx, ownerId)
 	if err != nil {
 		l.WithError(err).Warnf("Unable to retrieve doors for owner [%d] for mystic-door entry.", ownerId)
-		return door.Model{}, false
+		return door.Model{}, false, false
 	}
 
 	var found door.Model
@@ -128,13 +133,9 @@ func findDoorOnMap(l logrus.FieldLogger, ctx context.Context, currentField field
 		}
 	}
 	if !ok {
-		return door.Model{}, false
+		return door.Model{}, false, false
 	}
-
-	if !authorizeDoorEntry(ownerId, requesterId, partyMemberIdsFunc(l, ctx, requesterId)) {
-		return door.Model{}, false
-	}
-	return found, true
+	return found, true, authorizeDoorEntry(ownerId, requesterId, partyMemberIdsFunc(l, ctx, requesterId))
 }
 
 func MysticDoorEnterHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
@@ -143,10 +144,16 @@ func MysticDoorEnterHandleFunc(l logrus.FieldLogger, ctx context.Context, wp wri
 		p.Decode(l, ctx)(r, readerOptions)
 		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
 
-		d, ok := findDoorOnMap(l, ctx, s.Field(), p.OwnerId(), s.CharacterId())
-		if !ok {
-			// Ineligible / no door present: skip the warp silently. The client
-			// re-enables its own input after the request resolves with no warp.
+		d, onSide, authorized := findDoorOnMap(l, ctx, s.Field(), p.OwnerId(), s.CharacterId())
+		if !onSide {
+			// No door of this owner on the requester's map: ignore silently. The
+			// client re-enables its own input after the request resolves with no warp.
+			return
+		}
+		if !authorized {
+			// Door is present but the requester is not the owner or a party member:
+			// the door may only be entered by the owner's party (BLOCKED_MAP type 6).
+			_ = session.Announce(l)(ctx)(wp)(fieldcb.BlockedMapWriter)(writer.BlockedMapBody(6))(s)
 			return
 		}
 

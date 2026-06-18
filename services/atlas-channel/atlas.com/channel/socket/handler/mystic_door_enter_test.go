@@ -104,9 +104,9 @@ func TestFindDoorOnMapOwnerOnAreaSide(t *testing.T) {
 	restoreSeams := installLookupSeams(t, []door.Model{testDoor(testOwnerId)}, []uint32{testOwnerId})
 	defer restoreSeams()
 
-	d, ok := findDoorOnMap(logrus.New(), context.Background(), testField(testAreaMapId), testOwnerId, testOwnerId)
-	if !ok {
-		t.Fatal("owner on area side: door must be found")
+	d, onSide, authorized := findDoorOnMap(logrus.New(), context.Background(), testField(testAreaMapId), testOwnerId, testOwnerId)
+	if !onSide || !authorized {
+		t.Fatal("owner on area side: door must be found and authorized")
 	}
 	target, _, _, ok := linkedDestination(d, testField(testAreaMapId))
 	if !ok || target != testTownMapId {
@@ -120,9 +120,9 @@ func TestFindDoorOnMapOwnerOnTownSide(t *testing.T) {
 
 	// Requester standing on the TOWN map: the by-owner lookup resolves the door
 	// via its TownMapId() side, and linkedDestination warps back to the AREA map.
-	d, ok := findDoorOnMap(logrus.New(), context.Background(), testField(testTownMapId), testOwnerId, testOwnerId)
-	if !ok {
-		t.Fatal("owner on town side: door must be found")
+	d, onSide, authorized := findDoorOnMap(logrus.New(), context.Background(), testField(testTownMapId), testOwnerId, testOwnerId)
+	if !onSide || !authorized {
+		t.Fatal("owner on town side: door must be found and authorized")
 	}
 	target, _, _, ok := linkedDestination(d, testField(testTownMapId))
 	if !ok || target != testAreaMapId {
@@ -134,8 +134,8 @@ func TestFindDoorOnMapPartyMemberOnTownSide(t *testing.T) {
 	restoreSeams := installLookupSeams(t, []door.Model{testDoor(testOwnerId)}, []uint32{testOwnerId, testMemberId})
 	defer restoreSeams()
 
-	if _, ok := findDoorOnMap(logrus.New(), context.Background(), testField(testTownMapId), testOwnerId, testMemberId); !ok {
-		t.Fatal("party member on town side: door must be found")
+	if _, onSide, authorized := findDoorOnMap(logrus.New(), context.Background(), testField(testTownMapId), testOwnerId, testMemberId); !onSide || !authorized {
+		t.Fatal("party member on town side: door must be found and authorized")
 	}
 }
 
@@ -145,7 +145,7 @@ func TestFindDoorOnMapUnrelatedFieldFails(t *testing.T) {
 
 	// Owner has a door, but the requester is on a map that is neither the door's
 	// area nor town side -> no resolution.
-	if _, ok := findDoorOnMap(logrus.New(), context.Background(), testField(_map.Id(200000000)), testOwnerId, testOwnerId); ok {
+	if _, onSide, _ := findDoorOnMap(logrus.New(), context.Background(), testField(_map.Id(200000000)), testOwnerId, testOwnerId); onSide {
 		t.Fatal("door must not resolve when current field is neither side")
 	}
 }
@@ -154,8 +154,8 @@ func TestFindDoorOnMapPartyMemberOnAreaSide(t *testing.T) {
 	restoreSeams := installLookupSeams(t, []door.Model{testDoor(testOwnerId)}, []uint32{testOwnerId, testMemberId})
 	defer restoreSeams()
 
-	if _, ok := findDoorOnMap(logrus.New(), context.Background(), testField(testAreaMapId), testOwnerId, testMemberId); !ok {
-		t.Fatal("party member on area side: door must be found")
+	if _, onSide, authorized := findDoorOnMap(logrus.New(), context.Background(), testField(testAreaMapId), testOwnerId, testMemberId); !onSide || !authorized {
+		t.Fatal("party member on area side: door must be found and authorized")
 	}
 }
 
@@ -163,8 +163,9 @@ func TestFindDoorOnMapStrangerRejected(t *testing.T) {
 	restoreSeams := installLookupSeams(t, []door.Model{testDoor(testOwnerId)}, []uint32{testStranger})
 	defer restoreSeams()
 
-	if _, ok := findDoorOnMap(logrus.New(), context.Background(), testField(testAreaMapId), testOwnerId, testStranger); ok {
-		t.Fatal("stranger must not resolve a door")
+	// A stranger CAN see the door (it is on this map) but is NOT authorized to use it.
+	if _, onSide, authorized := findDoorOnMap(logrus.New(), context.Background(), testField(testAreaMapId), testOwnerId, testStranger); !onSide || authorized {
+		t.Fatal("stranger: door is on the map (onSide) but entry must not be authorized")
 	}
 }
 
@@ -172,7 +173,7 @@ func TestFindDoorOnMapNoDoorPresent(t *testing.T) {
 	restoreSeams := installLookupSeams(t, nil, []uint32{testOwnerId})
 	defer restoreSeams()
 
-	if _, ok := findDoorOnMap(logrus.New(), context.Background(), testField(testAreaMapId), testOwnerId, testOwnerId); ok {
+	if _, onSide, _ := findDoorOnMap(logrus.New(), context.Background(), testField(testAreaMapId), testOwnerId, testOwnerId); onSide {
 		t.Fatal("no door present must not resolve")
 	}
 }

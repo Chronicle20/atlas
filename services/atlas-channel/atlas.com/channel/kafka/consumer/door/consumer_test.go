@@ -254,15 +254,20 @@ func TestHandleRemoved_AreaRemoveDoor_TownRemoveTownDoor(t *testing.T) {
 	}
 }
 
-// TestHandleRemoved_Recast_NoRemovalPackets asserts a RECAST removal emits NO
-// removal packets at all — not the area RemoveDoor, not the town RemoveTownDoor,
-// not the party town-portal clear. A recast is a remove + immediate re-create of
-// the SAME owner; the v83 client keys its door pool by owner and updates in place
-// (CTownPortalPool::OnTownPortalCreated @0x7bd6c6), so the trailing CREATED fully
-// refreshes the door. Emitting RemoveDoor runs the despawn animation
-// (OnTownPortalRemoved @0x7be064) and the re-spawn lands on the same COM canvas
-// layers in one frame — which crashes the client. IDA-verified (v83).
-func TestHandleRemoved_Recast_NoRemovalPackets(t *testing.T) {
+// TestHandleRemoved_Recast_AreaRemoveOnly asserts a RECAST removal emits EXACTLY
+// the area RemoveDoor and nothing else — no town RemoveTownDoor, no party
+// town-portal clear, no buff cancel.
+//
+// The area RemoveDoor is REQUIRED: the v83 client keys CTownPortalPool by owner
+// and CTownPortalPool::OnTownPortalCreated (@0x7bd6c6) does NOT update an existing
+// entry in place — a repeat SpawnDoor for an open door TOGGLES it closed (CDOOR
+// sprite renders below the platform) and releases pLayerFrame, after which the
+// next removal crashes in OnTownPortalRemoved (@0x7be064) on the null pLayerFrame
+// (E_POINTER). Destroying the old entry here makes the trailing CREATED build a
+// FRESH entry. The town clear / buff cancel are skipped because the trailing
+// CREATED re-establishes the town portal and the caster re-applies the buff.
+// IDA-verified (v83).
+func TestHandleRemoved_Recast_AreaRemoveOnly(t *testing.T) {
 	tm := newTestTenant(t)
 	ctx := tenant.WithContext(context.Background(), tm)
 	sc := newTestServer(t, tm)
@@ -288,11 +293,19 @@ func TestHandleRemoved_Recast_NoRemovalPackets(t *testing.T) {
 		},
 	})
 
-	if len(calls.broadcasts) != 0 {
-		t.Fatalf("recast must NOT emit field removal packets (despawn-then-respawn crashes v83), got %+v", calls.broadcasts)
+	// Exactly one broadcast: the area RemoveDoor (destroys the stale client entry
+	// so the trailing CREATED does not toggle it).
+	if got := countWriter(calls.broadcasts, areaMapId, doorcb.RemoveDoorWriter); got != 1 {
+		t.Fatalf("recast must emit the area RemoveDoor (prevents the OnTownPortalCreated toggle), got %d", got)
+	}
+	if got := countWriter(calls.broadcasts, townMapId, doorcb.RemoveTownDoorWriter); got != 0 {
+		t.Fatalf("recast must NOT emit a town RemoveTownDoor (CREATED re-establishes it), got %d", got)
+	}
+	if len(calls.broadcasts) != 1 {
+		t.Fatalf("recast must emit ONLY the area RemoveDoor, got %+v", calls.broadcasts)
 	}
 	if len(calls.townPortals) != 0 {
-		t.Fatalf("recast must NOT emit a town-portal clear, got %+v", calls.townPortals)
+		t.Fatalf("recast must NOT emit a party town-portal clear, got %+v", calls.townPortals)
 	}
 }
 

@@ -201,31 +201,36 @@ func handleRemoved(sc server.Model, wp writer.Producer) message.Handler[StatusEv
 			"town_map_id": uint32(b.TownMapId), "reason": b.Reason,
 		}).Infof("Door REMOVED: owner [%d] party [%d] slot [%d] reason [%s] (forCharacter [%d]).", e.OwnerCharacterId, e.PartyId, b.Slot, b.Reason, e.ForCharacterId)
 
-		// A RECAST is a remove + immediate re-create of the SAME owner's door.
-		// The v83 client keys its field door pool by owner: re-sending SpawnDoor
-		// makes CTownPortalPool::OnTownPortalCreated (@0x7bd6c6) find the existing
-		// owner entry and UPDATE it in place, and SpawnPortal/TownPortal likewise
-		// refresh the town portal + party slot. So the CREATED that immediately
-		// follows fully refreshes the door with NO removal packet needed.
+		areaField := field.NewBuilder(e.WorldId, e.ChannelId, e.MapId).SetInstance(e.Instance).Build()
+
+		// AREA viewers (areaDoor.sendDestroyData, inTown=false): removeDoor(owner).
 		//
-		// Emitting the removal packets here is what crashes the v83 client: the
-		// area RemoveDoor runs CTownPortalPool::OnTownPortalRemoved (@0x7be064),
-		// which starts a despawn ANIMATION on the door's COM canvas layers, and
-		// the SpawnDoor that lands in the same frame re-creates that same owner —
-		// a despawn-then-respawn race on the same layers. (The TOWN_PORTAL clear
-		// has the analogous effect via CField::OnTownPortalChanged.) IDA-verified
-		// (v83, port 13342). So suppress ALL removal broadcasts on recast and let
-		// the trailing CREATED do the in-place update.
+		// This MUST run even on a RECAST. The v83 client keys CTownPortalPool by
+		// owner, and CTownPortalPool::OnTownPortalCreated (@0x7bd6c6) does NOT update
+		// an existing entry in place — a repeat SpawnDoor for an owner whose door is
+		// already open TOGGLES it: it loads the CDOOR "closing" sprite (which renders
+		// below the platform) and RELEASES pLayerFrame. The next removal then crashes
+		// in CTownPortalPool::OnTownPortalRemoved (@0x7be064), whose animate=0 path
+		// dereferences pLayerFrame (`if (!pLayerFrame) _com_issue_error(0x80004003)` —
+		// the E_POINTER seen live). So on a recast we destroy the old client entry
+		// HERE; the trailing CREATED then builds a FRESH entry at the new position
+		// (no existing entry -> no toggle). IDA-verified, v83 (port 13342).
+		//
+		// (The earlier "Remove+Spawn crashes" symptom was actually removing a door
+		// that the deleted ReconcileParty re-spawns had already toggled; with that
+		// gone, the recast remove+spawn is the correct, crash-free sequence.)
+		broadcastDoorToEligible(l, ctx, wp, areaField, e.OwnerCharacterId, e.PartyId, e.ForCharacterId,
+			doorcb.RemoveDoorWriter, writer.RemoveDoorBody(e.OwnerCharacterId))
+
+		// On a RECAST the trailing CREATED re-establishes the town portal AND the
+		// caster re-applies the Mystic Door buff, so STOP here: clearing the town
+		// portal or cancelling the buff would fight the immediately-following re-cast
+		// (a buff cancel landing after the re-apply would leave the door icon-less).
 		if b.Reason == RemoveReasonRecast {
 			return
 		}
 
-		areaField := field.NewBuilder(e.WorldId, e.ChannelId, e.MapId).SetInstance(e.Instance).Build()
 		townField := field.NewBuilder(e.WorldId, e.ChannelId, b.TownMapId).SetInstance(e.Instance).Build()
-
-		// AREA viewers (areaDoor.sendDestroyData, inTown=false): removeDoor(owner).
-		broadcastDoorToEligible(l, ctx, wp, areaField, e.OwnerCharacterId, e.PartyId, e.ForCharacterId,
-			doorcb.RemoveDoorWriter, writer.RemoveDoorBody(e.OwnerCharacterId))
 
 		// TOWN viewers (townDoor.sendDestroyData, inTown=true): removeDoor town=true
 		// -> 8-byte SPAWN_PORTAL clear (RemoveTownDoor), NOT SpawnPortal(...,0,0).

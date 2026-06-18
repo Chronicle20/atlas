@@ -17,6 +17,7 @@ const CharacterSkillCancelForeignWriter = "CharacterSkillCancelForeign"
 //
 // Full wire order: charId u32, skillId u32.
 // Field order and widths are identical across all five versions (v83/v84/v87/v95/jms185).
+// packet-audit:fname CUserRemote::OnSkillCancel
 type SkillCancelForeign struct {
 	characterId uint32
 	skillId     uint32

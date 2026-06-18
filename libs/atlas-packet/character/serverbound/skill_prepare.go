@@ -23,6 +23,7 @@ const SkillPrepareHandle = "SkillPrepare"
 // and delegates Encode/Decode; the analyzer recurses into SkillPrepareInfo for the
 // read order. The atlas-channel handler decodes the same model.SkillPrepareInfo
 // directly — the wire structure is identical, so the wrapper verifies the same bytes.
+// packet-audit:fname CUserLocal::DoActiveSkill_Prepare
 type SkillPrepare struct {
 	info model.SkillPrepareInfo
 }

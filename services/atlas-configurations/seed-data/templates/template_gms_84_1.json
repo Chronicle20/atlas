@@ -1160,6 +1160,11 @@
         "opCode": "0xB4",
         "validator": "LoggedInValidator",
         "handler": "SummonDamageHandle"
+      },
+      {
+        "opCode": "0xA0",
+        "validator": "LoggedInValidator",
+        "handler": "EnterMtsHandle"
       }
     ],
     "writers": [

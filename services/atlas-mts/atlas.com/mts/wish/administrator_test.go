@@ -132,6 +132,45 @@ func TestAdministratorDeleteWish(t *testing.T) {
 	}
 }
 
+// TestAdministratorDeleteWishMalformedIdIsScoped is the regression guard for the
+// GORM zero-value struct-condition elision bug: a malformed (non-UUID) id must
+// NOT delete the whole tenant's wishlist. Before the fix, parseId returned
+// uuid.Nil for a bad id, GORM elided the zero-valued Id struct condition, and the
+// Delete degraded to a tenant-wide wipe (the only surviving predicate being the
+// tenant callback's WHERE tenant_id = ?).
+func TestAdministratorDeleteWishMalformedIdIsScoped(t *testing.T) {
+	for _, badId := range []string{"not-a-uuid", ""} {
+		t.Run("id="+badId, func(t *testing.T) {
+			tenantId := uuid.New()
+			ctx := tenantCtx(t, tenantId)
+			db := adminTestDB(t).WithContext(ctx)
+
+			for i := 0; i < 3; i++ {
+				m := buildWish(t, tenantId, uint32(100+i), uint32(1302000+i))
+				if _, err := wish.CreateWish(db, m); err != nil {
+					t.Fatalf("CreateWish #%d: %v", i, err)
+				}
+			}
+
+			affected, err := wish.DeleteWish(db, badId)
+			if err == nil {
+				t.Errorf("DeleteWish(%q) returned nil error, want a malformed-id error", badId)
+			}
+			if affected != 0 {
+				t.Errorf("DeleteWish(%q) affected %d rows, want 0", badId, affected)
+			}
+
+			all, err := wish.GetAll()(db)()
+			if err != nil {
+				t.Fatalf("GetAll: %v", err)
+			}
+			if len(all) != 3 {
+				t.Errorf("after DeleteWish(%q) tenant holds %d wishes, want 3 (all survive)", badId, len(all))
+			}
+		})
+	}
+}
+
 // TestAdministratorMultipleWishesPerTenant asserts a single tenant can hold many
 // wish entries concurrently. Guards against a unique constraint on tenant_id
 // alone (which would cap a tenant at one wish). The (tenant_id, id) unique index

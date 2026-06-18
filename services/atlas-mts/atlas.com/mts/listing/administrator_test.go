@@ -187,6 +187,84 @@ func TestAdministratorUpdateStateConditional(t *testing.T) {
 	}
 }
 
+// TestAdministratorUpdateStateMalformedIdIsScoped is the regression guard for the
+// GORM zero-value struct-condition elision bug: a malformed (non-UUID) id must
+// NOT transition every active listing in the tenant.
+func TestAdministratorUpdateStateMalformedIdIsScoped(t *testing.T) {
+	for _, badId := range []string{"bad", ""} {
+		t.Run("id="+badId, func(t *testing.T) {
+			tenantId := uuid.New()
+			ctx := tenantCtx(t, tenantId)
+			db := adminTestDB(t).WithContext(ctx)
+
+			var ids []string
+			for i := 0; i < 3; i++ {
+				created, err := listing.CreateListing(db, buildActiveListing(t, tenantId, uint32(100+i)))
+				if err != nil {
+					t.Fatalf("CreateListing #%d: %v", i, err)
+				}
+				ids = append(ids, created.Id().String())
+			}
+
+			affected, err := listing.UpdateState(db, badId, listing.StateActive, listing.StateCancelled)
+			if err == nil {
+				t.Errorf("UpdateState(%q) returned nil error, want a malformed-id error", badId)
+			}
+			if affected != 0 {
+				t.Errorf("UpdateState(%q) affected %d rows, want 0", badId, affected)
+			}
+
+			for _, id := range ids {
+				got, err := listing.GetById(id)(db)()
+				if err != nil {
+					t.Fatalf("GetById %s: %v", id, err)
+				}
+				if got.State() != listing.StateActive {
+					t.Errorf("after UpdateState(%q) listing %s state = %q, want active (unchanged)", badId, id, got.State())
+				}
+			}
+		})
+	}
+}
+
+// TestAdministratorUpdateAuctionMalformedIdIsScoped is the regression guard for
+// the most dangerous variant: UpdateAuction has NO state predicate, so an elided
+// zero id would rewrite EVERY listing's auction fields. A malformed id must mutate
+// nothing.
+func TestAdministratorUpdateAuctionMalformedIdIsScoped(t *testing.T) {
+	for _, badId := range []string{"bad", ""} {
+		t.Run("id="+badId, func(t *testing.T) {
+			tenantId := uuid.New()
+			ctx := tenantCtx(t, tenantId)
+			db := adminTestDB(t).WithContext(ctx)
+
+			var ids []string
+			for i := 0; i < 2; i++ {
+				created, err := listing.CreateListing(db, buildActiveListing(t, tenantId, uint32(100+i)))
+				if err != nil {
+					t.Fatalf("CreateListing #%d: %v", i, err)
+				}
+				ids = append(ids, created.Id().String())
+			}
+
+			err := listing.UpdateAuction(db, badId, 99999, 777, nil)
+			if err == nil {
+				t.Errorf("UpdateAuction(%q) returned nil error, want a malformed-id error", badId)
+			}
+
+			for _, id := range ids {
+				got, err := listing.GetById(id)(db)()
+				if err != nil {
+					t.Fatalf("GetById %s: %v", id, err)
+				}
+				if got.CurrentBid() == 99999 || got.HighBidderId() == 777 {
+					t.Errorf("after UpdateAuction(%q) listing %s auction fields were mutated (currentBid=%d, highBidderId=%d)", badId, id, got.CurrentBid(), got.HighBidderId())
+				}
+			}
+		})
+	}
+}
+
 // TestAdministratorMultipleListingsPerTenant asserts a single tenant can hold
 // many active listings concurrently. Guards against a unique constraint on
 // tenant_id alone (which would cap a tenant at one listing and break the

@@ -149,3 +149,65 @@ func TestWishCRUD(t *testing.T) {
 		t.Errorf("wishlist after delete returned %d, want 0", len(listEnv2.Data))
 	}
 }
+
+// TestWishDeleteMalformedId is the resource-level regression guard for the GORM
+// zero-id elision bug: a DELETE with a non-UUID wishId must be rejected
+// (400/404), and must NOT wipe the character's wishlist.
+func TestWishDeleteMalformedId(t *testing.T) {
+	_, db, cleanup := test.CreateWishProcessor(t)
+	defer cleanup()
+	if err := db.Exec("DELETE FROM wish_entries").Error; err != nil {
+		t.Fatalf("reset: %v", err)
+	}
+
+	srv := newWishServer(t, db)
+	defer srv.Close()
+	client := &http.Client{}
+
+	// Seed 3 wishes via the API.
+	for i := 0; i < 3; i++ {
+		envelope := map[string]interface{}{
+			"data": map[string]interface{}{
+				"type": "wish-entries",
+				"attributes": map[string]interface{}{
+					"itemId": 1302000 + i,
+				},
+			},
+		}
+		body, _ := json.Marshal(envelope)
+		resp, err := client.Do(withTenant(t, http.MethodPost, fmt.Sprintf("%s/characters/100/mts/wishlist", srv.URL), body))
+		if err != nil {
+			t.Fatalf("create #%d: %v", i, err)
+		}
+		if resp.StatusCode != http.StatusCreated {
+			t.Fatalf("create #%d status = %d, want 201", i, resp.StatusCode)
+		}
+		resp.Body.Close()
+	}
+
+	// DELETE with a malformed wishId must be rejected, not a nil-delete.
+	respDel, err := client.Do(withTenant(t, http.MethodDelete, fmt.Sprintf("%s/characters/100/mts/wishlist/not-a-uuid", srv.URL), nil))
+	if err != nil {
+		t.Fatalf("delete malformed: %v", err)
+	}
+	if respDel.StatusCode != http.StatusBadRequest && respDel.StatusCode != http.StatusNotFound {
+		t.Errorf("delete malformed status = %d, want 400 or 404", respDel.StatusCode)
+	}
+	respDel.Body.Close()
+
+	// The wishlist must be intact.
+	respGet, err := client.Do(withTenant(t, http.MethodGet, fmt.Sprintf("%s/characters/100/mts/wishlist", srv.URL), nil))
+	if err != nil {
+		t.Fatalf("list after malformed delete: %v", err)
+	}
+	var listEnv struct {
+		Data []json.RawMessage `json:"data"`
+	}
+	if err := json.NewDecoder(respGet.Body).Decode(&listEnv); err != nil {
+		t.Fatalf("decode list: %v", err)
+	}
+	respGet.Body.Close()
+	if len(listEnv.Data) != 3 {
+		t.Errorf("wishlist after malformed delete returned %d, want 3 (all survive)", len(listEnv.Data))
+	}
+}

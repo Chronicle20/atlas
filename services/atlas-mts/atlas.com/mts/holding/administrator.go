@@ -1,6 +1,7 @@
 package holding
 
 import (
+	"fmt"
 	"time"
 
 	"atlas-mts/serial"
@@ -118,7 +119,13 @@ func CreateHolding(db *gorm.DB, m Model) (Model, error) {
 // default (non-deleted) scope. The tenant callback scopes the write to the
 // request's tenant.
 func SoftDelete(db *gorm.DB, id string) (int64, error) {
-	result := db.Where(&entity{Id: parseId(id)}).Delete(&entity{})
+	hid := parseId(id)
+	if hid == uuid.Nil {
+		// Guard against the GORM zero-value struct-condition elision: a uuid.Nil
+		// Id condition would vanish, degrading the delete to a tenant-wide wipe.
+		return 0, fmt.Errorf("invalid holding id %q", id)
+	}
+	result := db.Where(map[string]interface{}{"id": hid}).Delete(&entity{})
 	return result.RowsAffected, result.Error
 }
 
@@ -127,8 +134,14 @@ func SoftDelete(db *gorm.DB, id string) (int64, error) {
 // restoring an already-live row clears nothing (0 rows) and is still success.
 // Unscoped is required so the UPDATE can see the soft-deleted row.
 func Restore(db *gorm.DB, id string) (int64, error) {
+	hid := parseId(id)
+	if hid == uuid.Nil {
+		// Guard against the GORM zero-value struct-condition elision: a uuid.Nil
+		// Id condition would vanish, degrading the update to a tenant-wide restore.
+		return 0, fmt.Errorf("invalid holding id %q", id)
+	}
 	result := db.Unscoped().Model(&entity{}).
-		Where(&entity{Id: parseId(id)}).
+		Where(map[string]interface{}{"id": hid}).
 		Where("deleted_at IS NOT NULL").
 		Update("deleted_at", nil)
 	return result.RowsAffected, result.Error

@@ -1,6 +1,7 @@
 package listing
 
 import (
+	"fmt"
 	"time"
 
 	"atlas-mts/serial"
@@ -147,8 +148,17 @@ func CreateListing(db *gorm.DB, m Model) (Model, error) {
 // row out of `from` (the cancel-vs-buy race). The tenant callback scopes the
 // write to the request's tenant.
 func UpdateState(db *gorm.DB, id string, from State, to State) (int64, error) {
+	lid := parseId(id)
+	if lid == uuid.Nil {
+		// Guard against the GORM zero-value struct-condition elision: a uuid.Nil
+		// Id condition would vanish, degrading the update to a tenant-wide
+		// transition of every listing still in `from`.
+		return 0, fmt.Errorf("invalid listing id %q", id)
+	}
+	// The map-keyed WHERE forces the id into the query; the conditional
+	// state = from predicate is preserved for the race-safe transition.
 	result := db.Model(&entity{}).
-		Where(&entity{Id: parseId(id), State: string(from)}).
+		Where(map[string]interface{}{"id": lid, "state": string(from)}).
 		Updates(map[string]interface{}{
 			"state":      string(to),
 			"updated_at": time.Now(),
@@ -159,9 +169,16 @@ func UpdateState(db *gorm.DB, id string, from State, to State) (int64, error) {
 // UpdateAuction updates the live auction fields (current bid, high bidder, and
 // the optional end time) within a transaction. Used by the bid path.
 func UpdateAuction(db *gorm.DB, id string, currentBid uint32, highBidderId uint32, endsAt *time.Time) error {
+	lid := parseId(id)
+	if lid == uuid.Nil {
+		// Guard against the GORM zero-value struct-condition elision. This is the
+		// most dangerous write: UpdateAuction has NO state predicate, so an elided
+		// id would rewrite EVERY listing's auction fields tenant-wide.
+		return fmt.Errorf("invalid listing id %q", id)
+	}
 	return database.ExecuteTransaction(db, func(tx *gorm.DB) error {
 		return tx.Model(&entity{}).
-			Where(&entity{Id: parseId(id)}).
+			Where(map[string]interface{}{"id": lid}).
 			Updates(map[string]interface{}{
 				"current_bid":    currentBid,
 				"high_bidder_id": highBidderId,

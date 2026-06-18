@@ -237,6 +237,85 @@ func TestAdministratorMultipleHoldingsPerTenant(t *testing.T) {
 	}
 }
 
+// TestAdministratorSoftDeleteMalformedIdIsScoped is the regression guard for the
+// GORM zero-value struct-condition elision bug: a malformed (non-UUID) id must
+// NOT soft-delete every holding in the tenant.
+func TestAdministratorSoftDeleteMalformedIdIsScoped(t *testing.T) {
+	for _, badId := range []string{"bad", ""} {
+		t.Run("id="+badId, func(t *testing.T) {
+			tenantId := uuid.New()
+			ctx := tenantCtx(t, tenantId)
+			db := adminTestDB(t).WithContext(ctx)
+
+			for i := 0; i < 3; i++ {
+				if _, err := holding.CreateHolding(db, buildHolding(t, tenantId, uint32(100+i))); err != nil {
+					t.Fatalf("CreateHolding #%d: %v", i, err)
+				}
+			}
+
+			affected, err := holding.SoftDelete(db, badId)
+			if err == nil {
+				t.Errorf("SoftDelete(%q) returned nil error, want a malformed-id error", badId)
+			}
+			if affected != 0 {
+				t.Errorf("SoftDelete(%q) affected %d rows, want 0", badId, affected)
+			}
+
+			all, err := holding.GetAll()(db)()
+			if err != nil {
+				t.Fatalf("GetAll: %v", err)
+			}
+			if len(all) != 3 {
+				t.Errorf("after SoftDelete(%q) tenant holds %d holdings, want 3 (all survive)", badId, len(all))
+			}
+		})
+	}
+}
+
+// TestAdministratorRestoreMalformedIdIsScoped is the regression guard for the
+// GORM zero-value struct-condition elision bug on Restore: a malformed id must
+// NOT restore every soft-deleted holding in the tenant.
+func TestAdministratorRestoreMalformedIdIsScoped(t *testing.T) {
+	for _, badId := range []string{"bad", ""} {
+		t.Run("id="+badId, func(t *testing.T) {
+			tenantId := uuid.New()
+			ctx := tenantCtx(t, tenantId)
+			db := adminTestDB(t).WithContext(ctx)
+
+			// Seed 3 holdings and soft-delete them all.
+			var ids []string
+			for i := 0; i < 3; i++ {
+				created, err := holding.CreateHolding(db, buildHolding(t, tenantId, uint32(100+i)))
+				if err != nil {
+					t.Fatalf("CreateHolding #%d: %v", i, err)
+				}
+				ids = append(ids, created.Id().String())
+			}
+			for _, id := range ids {
+				if _, err := holding.SoftDelete(db, id); err != nil {
+					t.Fatalf("SoftDelete seed %s: %v", id, err)
+				}
+			}
+
+			affected, err := holding.Restore(db, badId)
+			if err == nil {
+				t.Errorf("Restore(%q) returned nil error, want a malformed-id error", badId)
+			}
+			if affected != 0 {
+				t.Errorf("Restore(%q) affected %d rows, want 0", badId, affected)
+			}
+
+			all, err := holding.GetAll()(db)()
+			if err != nil {
+				t.Fatalf("GetAll: %v", err)
+			}
+			if len(all) != 0 {
+				t.Errorf("after Restore(%q) tenant has %d live holdings, want 0 (none restored)", badId, len(all))
+			}
+		})
+	}
+}
+
 // TestAdministratorIndexExists asserts the design index is created by the
 // migration.
 func TestAdministratorIndexExists(t *testing.T) {

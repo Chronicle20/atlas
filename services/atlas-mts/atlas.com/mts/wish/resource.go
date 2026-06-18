@@ -7,6 +7,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
@@ -95,6 +96,13 @@ func handleDeleteWish(d *rest.HandlerDependency, c *rest.HandlerContext) http.Ha
 		wishId, ok := mux.Vars(r)["wishId"]
 		if !ok || wishId == "" {
 			d.Logger().Errorf("Unable to properly parse wishId from path.")
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		if _, err := uuid.Parse(wishId); err != nil {
+			// A malformed wishId must be rejected, never degraded to a nil-delete
+			// (which the tenant callback would scope into a tenant-wide wipe).
+			d.Logger().WithError(err).Errorf("Malformed wishId [%s] in delete path.", wishId)
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}

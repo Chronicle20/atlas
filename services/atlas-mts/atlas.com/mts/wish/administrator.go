@@ -1,6 +1,7 @@
 package wish
 
 import (
+	"fmt"
 	"time"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
@@ -64,6 +65,15 @@ func CreateWish(db *gorm.DB, m Model) (Model, error) {
 // custody, so a hard delete is appropriate here. The tenant callback scopes the
 // write to the request's tenant.
 func DeleteWish(db *gorm.DB, id string) (int64, error) {
-	result := db.Where(&entity{Id: parseId(id)}).Delete(&entity{})
+	wid := parseId(id)
+	if wid == uuid.Nil {
+		// Guard against the GORM zero-value struct-condition elision: a uuid.Nil
+		// Id condition would vanish from the WHERE, degrading the delete to a
+		// tenant-wide wipe. Reject the malformed id before touching the DB.
+		return 0, fmt.Errorf("invalid wish id %q", id)
+	}
+	// The map-keyed WHERE forces the id into the query: a struct condition would
+	// elide a zero-valued id (defense-in-depth alongside the guard above).
+	result := db.Where(map[string]interface{}{"id": wid}).Delete(&entity{})
 	return result.RowsAffected, result.Error
 }

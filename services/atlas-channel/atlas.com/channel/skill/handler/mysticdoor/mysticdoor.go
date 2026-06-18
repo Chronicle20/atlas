@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"atlas-channel/character"
+	"atlas-channel/character/buff"
 	datamap "atlas-channel/data/map"
 	"atlas-channel/data/skill/effect"
 	"atlas-channel/door"
@@ -45,6 +46,18 @@ var loadCaster = func(l logrus.FieldLogger, ctx context.Context, characterId uin
 // emitSpawn sends the SPAWN command to atlas-doors via the G1 door processor.
 var emitSpawn = func(l logrus.FieldLogger, ctx context.Context, f field.Model, characterId, skillId uint32, level byte, x, y int16) error {
 	return door.NewProcessor(l, ctx).Spawn(f, characterId, skillId, level, x, y)
+}
+
+// applyDoorBuff gives the caster the Mystic Door buff (the duration icon).
+// Mystic Door carries no statups, so the generic skill-use buff apply skips it
+// (it gates on len(StatUps) > 0); the door is still a buff with a duration, so
+// apply it here. The buff's duration mirrors the door's lifetime, so it expires
+// alongside the door. Stubbable for tests.
+var applyDoorBuff = func(l logrus.FieldLogger, ctx context.Context, f field.Model, characterId, skillId uint32, level byte, duration int32) {
+	if duration <= 0 {
+		return
+	}
+	_ = buff.NewProcessor(l, ctx).Apply(f, characterId, int32(skillId), level, duration, nil)(characterId)
 }
 
 // Apply is the Mystic Door handler installed in the per-skill registry.
@@ -93,7 +106,13 @@ func Apply(l logrus.FieldLogger) func(ctx context.Context) func(
 				return nil
 			}
 
-			return emitSpawn(l, ctx, f, characterId, uint32(info.SkillId()), info.SkillLevel(), x, y)
+			if err := emitSpawn(l, ctx, f, characterId, uint32(info.SkillId()), info.SkillLevel(), x, y); err != nil {
+				return err
+			}
+
+			// Give the caster the Mystic Door buff (duration icon).
+			applyDoorBuff(l, ctx, f, characterId, uint32(info.SkillId()), info.SkillLevel(), e.Duration())
+			return nil
 		}
 	}
 }

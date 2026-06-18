@@ -4,6 +4,7 @@ import (
 	"atlas-channel/guild/thread"
 	"context"
 
+	guildbody "github.com/Chronicle20/atlas/libs/atlas-packet/guild"
 	guildpkt "github.com/Chronicle20/atlas/libs/atlas-packet/guild/clientbound"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
@@ -15,7 +16,7 @@ func GuildBBSThreadsBody(ts []thread.Model, startIndex uint32) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 		return func(options map[string]interface{}) []byte {
 			if len(ts) == 0 {
-				return guildpkt.NewBBSThreadList(nil, nil, startIndex).Encode(l, ctx)(options)
+				return guildbody.GuildBBSThreadListBody(nil, nil, startIndex)(l, ctx)(options)
 			}
 
 			var notice *guildpkt.BBSThreadSummary
@@ -54,7 +55,7 @@ func GuildBBSThreadsBody(ts []thread.Model, startIndex uint32) packet.Encode {
 					})
 				}
 			}
-			return guildpkt.NewBBSThreadList(notice, threads, startIndex).Encode(l, ctx)(options)
+			return guildbody.GuildBBSThreadListBody(notice, threads, startIndex)(l, ctx)(options)
 		}
 	}
 }
@@ -71,7 +72,7 @@ func GuildBBSThreadBody(t thread.Model) packet.Encode {
 					Message:   r.Message(),
 				})
 			}
-			return guildpkt.NewBBSThread(t.Id(), t.PosterId(), packetmodel.MsTime(t.CreatedAt()), t.Title(), t.Message(), t.EmoticonId(), replies).Encode(l, ctx)(options)
+			return guildbody.GuildBBSThreadBody(t.Id(), t.PosterId(), packetmodel.MsTime(t.CreatedAt()), t.Title(), t.Message(), t.EmoticonId(), replies)(l, ctx)(options)
 		}
 	}
 }

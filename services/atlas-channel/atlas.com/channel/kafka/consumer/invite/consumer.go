@@ -178,7 +178,7 @@ func handleGuildRejectedStatusEvent(l logrus.FieldLogger) func(ctx context.Conte
 	return func(ctx context.Context) func(wp writer.Producer) func(targetName string) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(targetName string) model.Operator[session.Model] {
 			return func(targetName string) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(guildcb.GuildOperationWriter)(guildpkt.GuildErrorBody2(guildpkt.GuildOperationInviteDenied, targetName))
+				return session.Announce(l)(ctx)(wp)(guildcb.GuildOperationWriter)(guildpkt.GuildInviteDeniedBody(targetName))
 			}
 		}
 	}

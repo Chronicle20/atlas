@@ -136,11 +136,39 @@ func handleError(sc server.Model, wp writer.Producer) message.Handler[guild2.Sta
 	}
 }
 
+// guildErrorBodies maps a guild status-event error code to the discrete,
+// fixed-key per-mode body func for that mode-only error arm. Each entry resolves
+// exactly ONE operation key — the AP-4 "caller picks the mode" footgun
+// (GuildErrorBody(errCode)) is gone. A code with no entry is logged and dropped
+// (never sent as the wrong mode). The keys are the GuildOperation* error consts.
+var guildErrorBodies = map[string]func() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte{
+	guildpkt.GuildOperationRequestName:                   guildpkt.RequestGuildNameBody,
+	guildpkt.GuildOperationRequestEmblem:                 guildpkt.RequestGuildEmblemBody,
+	guildpkt.GuildOperationCreateErrorNameInUse:          guildpkt.GuildCreateErrorNameInUseBody,
+	guildpkt.GuildOperationCreateErrorDisagreed:          guildpkt.GuildCreateErrorDisagreedBody,
+	guildpkt.GuildOperationCreateError:                   guildpkt.GuildCreateErrorBody,
+	guildpkt.GuildOperationJoinErrorAlreadyJoined:        guildpkt.GuildJoinErrorAlreadyJoinedBody,
+	guildpkt.GuildOperationJoinErrorMaxMembers:           guildpkt.GuildJoinErrorMaxMembersBody,
+	guildpkt.GuildOperationJoinErrorNotInChannel:         guildpkt.GuildJoinErrorNotInChannelBody,
+	guildpkt.GuildOperationMemberQuitErrorNotInGuild:     guildpkt.GuildMemberQuitErrorNotInGuildBody,
+	guildpkt.GuildOperationMemberExpelledErrorNotInGuild: guildpkt.GuildMemberExpelledErrorNotInGuildBody,
+	guildpkt.GuildOperationDisbandError:                  guildpkt.GuildDisbandErrorBody,
+	guildpkt.GuildOperationCreateErrorCannotAsAdmin:      guildpkt.GuildCreateErrorCannotAsAdminBody,
+	guildpkt.GuildOperationIncreaseCapacityError:         guildpkt.GuildIncreaseCapacityErrorBody,
+	guildpkt.GuildOperationQuestErrorLessThanSixMembers:  guildpkt.GuildQuestErrorLessThanSixMembersBody,
+	guildpkt.GuildOperationQuestErrorDisconnected:        guildpkt.GuildQuestErrorDisconnectedBody,
+}
+
 func announceGuildError(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(errCode string) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(errCode string) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(errCode string) model.Operator[session.Model] {
 			return func(errCode string) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(guildcb.GuildOperationWriter)(guildpkt.GuildErrorBody(errCode))
+				bodyFn, ok := guildErrorBodies[errCode]
+				if !ok {
+					l.WithField("error_code", errCode).Warn("unmapped guild error code; dropping")
+					return func(_ session.Model) error { return nil }
+				}
+				return session.Announce(l)(ctx)(wp)(guildcb.GuildOperationWriter)(bodyFn())
 			}
 		}
 	}

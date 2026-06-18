@@ -700,6 +700,11 @@
         "handler": "EnterMtsHandle"
       },
       {
+        "opCode": "0xFB",
+        "validator": "NoOpValidator",
+        "handler": "ItcStatusChargeHandle"
+      },
+      {
         "opCode": "0xA4",
         "validator": "LoggedInValidator",
         "handler": "MobCrcKeyChangedReply"

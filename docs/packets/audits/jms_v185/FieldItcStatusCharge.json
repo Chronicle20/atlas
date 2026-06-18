@@ -1,0 +1,11 @@
+{
+  "WriterName": "FieldItcStatusCharge",
+  "IDAName": "CITC::OnStatusCharge",
+  "Address": "0x6040a9",
+  "Variant": "JMS/v185",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/field/serverbound/itc_status_charge.go",
+  "Rows": null,
+  "Verdict": 0,
+  "FlatInvalid": false
+}

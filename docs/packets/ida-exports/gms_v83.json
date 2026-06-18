@@ -9804,6 +9804,11 @@
       "direction": "",
       "calls": null
     },
+    "CITC::OnStatusCharge": {
+      "address": "0x59ebda",
+      "direction": "serverbound",
+      "calls": []
+    },
     "CITC::OnNormalItemResult": {
       "address": "0x5a4311",
       "direction": "",

@@ -22239,6 +22239,11 @@
         }
       ]
     },
+    "CITC::OnStatusCharge": {
+      "address": "0x5aef76",
+      "direction": "serverbound",
+      "calls": []
+    },
     "CITC::OnNormalItemResult": {
       "address": "0x5b47c8",
       "direction": "",

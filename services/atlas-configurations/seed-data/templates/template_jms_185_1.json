@@ -898,6 +898,11 @@
         "opCode": "0xA6",
         "validator": "LoggedInValidator",
         "handler": "EnterMtsHandle"
+      },
+      {
+        "opCode": "0x10A",
+        "validator": "NoOpValidator",
+        "handler": "ItcStatusChargeHandle"
       }
     ],
     "writers": [

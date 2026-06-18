@@ -5,6 +5,11 @@
   "region": "JMS",
   "notes": "JMS v185 shares C++ mangled symbol names with GMS v95 for all character-domain functions. The login domain differs significantly (separate opcode space, different OnCheckPasswordResult wire layout). Character domain functions are present under the same demangled names.",
   "functions": {
+    "CITC::OnStatusCharge": {
+      "address": "0x6040a9",
+      "direction": "serverbound",
+      "calls": []
+    },
     "CWvsContext::SendMigrateToITCRequest": {
       "address": "0xaf860d",
       "direction": "serverbound",

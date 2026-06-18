@@ -1782,6 +1782,17 @@ func candidatesFromFName(fname string) []candidate {
 	case "CWvsContext::SendMigrateToITCRequest":
 		return []candidate{{name: "EnterMts", pkg: "field", dir: csvpkg.DirServerbound}}
 
+	// ITC_STATUS_CHARGE. The client open-NX-recharge hook built by
+	// CITC::OnStatusCharge (gms_v83 @0x59ebda op 0xFB, gms_v84 @0x5aef76 op
+	// 0x102, gms_v87 @0x5ce90b op 0x109, gms_v95 @0x572a50 op 0x132, jms_v185
+	// @0x6040a9 op 0x10A). Uniform shape across all five builds: an
+	// m_bITCRequestSent latch guards a COutPacket(opcode) + immediate SendPacket
+	// with ZERO Encode calls in between — a bodiless (opcode-only) request.
+	// Matches atlas field/serverbound/itc_status_charge.go ItcStatusCharge.Encode
+	// (empty body).
+	case "CITC::OnStatusCharge":
+		return []candidate{{name: "ItcStatusCharge", pkg: "field", dir: csvpkg.DirServerbound}}
+
 	// --- World: field (clientbound) ---
 	// Affected-area (mist) + kite (the flying-kite field object, called
 	// "MessageBox" client-side). FNames + addresses verified against the

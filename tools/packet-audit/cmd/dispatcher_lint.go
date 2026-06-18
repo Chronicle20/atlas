@@ -850,6 +850,20 @@ func bodyFileCandidates(packetLib, pkg string) []string {
 var reportAtlasFileJSONRe = regexp.MustCompile(`"AtlasFile":\s*"([^"]+)"`)
 var reportAtlasFileMDRe = regexp.MustCompile("(?i)\\*\\*Atlas file:\\*\\*\\s*`([^`]+)`")
 
+// reportAtlasFileRepoRel normalizes an AtlasFile path from an audit report to a
+// repo-relative path: it strips any leading `../` segments (legacy reports carry
+// a `../../` prefix; newer ones are already repo-relative). Matches the matrix
+// loader's normalization intent (load.go) so the two agree on file existence.
+// (Distinct from run.go's repoRelAtlasFile, which normalizes ABSOLUTE
+// --atlas-packet inputs and deliberately leaves relative ../../ paths untouched.)
+func reportAtlasFileRepoRel(af string) string {
+	af = filepath.ToSlash(af)
+	for strings.HasPrefix(af, "../") {
+		af = af[len("../"):]
+	}
+	return af
+}
+
 func checkINV4Reports(cfg dispatcherLintConfig) ([]violation, error) {
 	var out []violation
 	err := filepath.WalkDir(cfg.AuditsDir, func(path string, d os.DirEntry, err error) error {
@@ -879,8 +893,13 @@ func checkINV4Reports(cfg dispatcherLintConfig) ([]violation, error) {
 			if af == "" {
 				continue
 			}
-			// AtlasFile is recorded repo-relative (libs/atlas-packet/...).
-			if _, statErr := os.Stat(af); os.IsNotExist(statErr) {
+			// AtlasFile is recorded either repo-relative (libs/atlas-packet/…,
+			// newer) or with a legacy ../../ prefix (older reports). Normalize to
+			// repo-relative before stat so the check is CWD-independent — statting
+			// the raw ../../ form only resolves by accident when CWD happens to be
+			// nested exactly that deep (e.g. a 2-level worktree), and fails in CI.
+			rel := reportAtlasFileRepoRel(af)
+			if _, statErr := os.Stat(rel); os.IsNotExist(statErr) {
 				ln := 1 + strings.Count(src[:m[0]], "\n")
 				out = append(out, violation{
 					file: filepath.ToSlash(path),

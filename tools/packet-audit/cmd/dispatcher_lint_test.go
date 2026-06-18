@@ -337,6 +337,53 @@ func TestCheckINV4Reports(t *testing.T) {
 	}
 }
 
+// TestCheckINV4ReportsLegacyPrefix locks the CWD-independence fix: a report's
+// AtlasFile with the legacy `../../` prefix must be normalized to repo-relative
+// before the existence check, so an EXISTING file is not falsely flagged. The
+// raw `../../` form only resolves by accident when CWD is nested exactly that
+// deep (a 2-level worktree masked this; CI at the repo root caught it). Chdir to
+// a temp root so the normalized `libs/...` path resolves there, not by accident.
+func TestCheckINV4ReportsLegacyPrefix(t *testing.T) {
+	root := t.TempDir()
+	t.Chdir(root)
+
+	// Existing target, repo-relative to the temp CWD.
+	writeFile(t, filepath.Join("libs", "atlas-packet", "foo", "clientbound", "add.go"),
+		"package clientbound\ntype Add struct{}\n")
+
+	audits := filepath.Join(root, "audits")
+	// Legacy ../../ prefix → existing file after normalization: must be CLEAN.
+	writeFile(t, filepath.Join(audits, "legacy_ok.json"),
+		`{"AtlasFile": "../../libs/atlas-packet/foo/clientbound/add.go"}`)
+	// Legacy ../../ prefix → missing file: must be a phantom.
+	writeFile(t, filepath.Join(audits, "legacy_gone.json"),
+		`{"AtlasFile": "../../libs/atlas-packet/foo/clientbound/gone.go"}`)
+
+	vs, err := checkINV4Reports(dispatcherLintConfig{AuditsDir: audits})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(vs) != 1 {
+		t.Fatalf("expected exactly 1 phantom (legacy_gone only), got %d: %+v", len(vs), vs)
+	}
+	if !strings.Contains(vs[0].msg, "gone.go") {
+		t.Errorf("the surviving violation should be gone.go; got: %s", vs[0].msg)
+	}
+}
+
+func TestReportAtlasFileRepoRel(t *testing.T) {
+	cases := map[string]string{
+		"../../libs/atlas-packet/foo.go": "libs/atlas-packet/foo.go",
+		"libs/atlas-packet/foo.go":       "libs/atlas-packet/foo.go",
+		"../libs/x.go":                   "libs/x.go",
+	}
+	for in, want := range cases {
+		if got := reportAtlasFileRepoRel(in); got != want {
+			t.Errorf("reportAtlasFileRepoRel(%q) = %q, want %q", in, got, want)
+		}
+	}
+}
+
 // --- INV-5: orphaned codec ------------------------------------------------
 
 func TestCheckINV5Orphans(t *testing.T) {

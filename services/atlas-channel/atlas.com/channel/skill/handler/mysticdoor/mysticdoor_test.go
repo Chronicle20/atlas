@@ -107,6 +107,51 @@ func TestMysticDoorEmitsSpawnWhenEligible(t *testing.T) {
 	}
 }
 
+// TestMysticDoorAppliesSoulArrowBuff verifies an eligible cast applies the door
+// buff with the skill's duration and X value. applyDoorBuff turns that X into the
+// SOUL_ARROW statup amount that makes the v83 buff icon render (and cancellable);
+// this pins that the X is threaded through rather than the old stat-less nil.
+func TestMysticDoorAppliesSoulArrowBuff(t *testing.T) {
+	origMap, origCaster, origSpawn, origBuff := loadMap, loadCaster, emitSpawn, applyDoorBuff
+	t.Cleanup(func() {
+		loadMap, loadCaster, emitSpawn, applyDoorBuff = origMap, origCaster, origSpawn, origBuff
+	})
+
+	loadMap = eligibleMapLoader
+	loadCaster = eligibleCasterLoader
+	emitSpawn = func(_ logrus.FieldLogger, _ context.Context, _ field.Model, _, _ uint32, _ byte, _, _ int16) error {
+		return nil
+	}
+
+	var gotDuration int32
+	var gotAmount int16
+	buffCalled := false
+	applyDoorBuff = func(_ logrus.FieldLogger, _ context.Context, _ field.Model, _, _ uint32, _ byte, duration int32, amount int16) {
+		buffCalled = true
+		gotDuration = duration
+		gotAmount = amount
+	}
+
+	e, err := effect.Extract(effect.RestModel{Duration: 5000, X: 50})
+	if err != nil {
+		t.Fatalf("effect.Extract: %v", err)
+	}
+
+	if err := Apply(testLogger())(context.Background())(nil, testField(), testCharId, testInfo(), e); err != nil {
+		t.Fatalf("Apply returned unexpected error: %v", err)
+	}
+
+	if !buffCalled {
+		t.Fatal("applyDoorBuff was not called for an eligible cast")
+	}
+	if gotDuration != 5000 {
+		t.Fatalf("applyDoorBuff duration = %d, want 5000 (effect duration)", gotDuration)
+	}
+	if gotAmount != 50 {
+		t.Fatalf("applyDoorBuff amount = %d, want 50 (effect X -> SOUL_ARROW statup value)", gotAmount)
+	}
+}
+
 // TestMysticDoorRejectsFieldLimit: fieldLimit&0x02 != 0 -> no spawn.
 func TestMysticDoorRejectsFieldLimit(t *testing.T) {
 	called := invokeApply(t,

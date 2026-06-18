@@ -35,8 +35,14 @@ type warpEvent struct {
 }
 
 type warpBody struct {
-	CharacterId uint32  `json:"characterId"`
-	TargetMapId _map.Id `json:"targetMapId"`
+	CharacterId    uint32  `json:"characterId"`
+	TargetMapId    _map.Id `json:"targetMapId"`
+	TargetPortalId uint32  `json:"targetPortalId"` // non-zero: land at this portal instead of a random spawn
+	// UseTargetPosition, when true, lands the character at the exact (TargetX,
+	// TargetY) coordinate instead of a portal — used by Mystic Door.
+	UseTargetPosition bool  `json:"useTargetPosition"`
+	TargetX           int16 `json:"targetX"`
+	TargetY           int16 `json:"targetY"`
 }
 
 type enterBody struct {

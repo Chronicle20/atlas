@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// packet-audit:fname CUIMessenger::SendInviteMsg
 type OperationInvite struct {
 	targetCharacter string
 }

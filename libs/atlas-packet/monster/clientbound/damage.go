@@ -19,6 +19,7 @@ const (
 	MonsterDamageTypeUnk3 MonsterDamageType = 2
 )
 
+// packet-audit:fname CMob::OnDamaged
 type Damage struct {
 	uniqueId   uint32
 	damageType MonsterDamageType

@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// packet-audit:fname CWvsContext::OnPartyResult#ChangeLeader
 type ChangeLeader struct {
 	mode              byte
 	targetCharacterId uint32

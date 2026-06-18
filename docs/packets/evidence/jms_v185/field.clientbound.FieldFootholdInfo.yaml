@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldFootholdInfo
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnFootHoldInfo
+    address: "0x576a89"
+    decompile_sha256: f6667456babc5a62d843a5cd323238dfbf592a9ffeb1fa42b2a1a6d5cbeadf83
+verifies:
+  - libs/atlas-packet/field/clientbound/foothold_info_test.go#TestFootholdInfoRoundTrip

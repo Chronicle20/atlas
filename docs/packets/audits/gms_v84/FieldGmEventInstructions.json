@@ -1,0 +1,21 @@
+{
+  "WriterName": "FieldGmEventInstructions",
+  "IDAName": "CField::OnDesc",
+  "Address": "0x5423c4",
+  "Variant": "GMS/v84",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/field/clientbound/gm_event_instructions.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

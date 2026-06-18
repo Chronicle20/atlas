@@ -59,6 +59,10 @@ func updateQuantity(db *gorm.DB, id uint32, quantity uint32) error {
 	return db.Model(&Entity{Id: id}).Select("Quantity").Updates(&Entity{Quantity: quantity}).Error
 }
 
+func updateTemplate(db *gorm.DB, id uint32, templateId uint32) error {
+	return db.Model(&Entity{Id: id}).Select("TemplateId").Updates(&Entity{TemplateId: templateId}).Error
+}
+
 func updateEquipmentStats(db *gorm.DB, id uint32, m Model) error {
 	return db.Model(&Entity{Id: id}).
 		Select("Strength", "Dexterity", "Intelligence", "Luck", "Hp", "Mp",

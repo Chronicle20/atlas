@@ -1,0 +1,8 @@
+packet: field/clientbound/FieldFieldObstacleOnOffList
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnFieldObstacleOnOffStatus
+    address: "0x535b00"
+    decompile_sha256: 90fb31e42a8f9b89012664022b4ff0eca52494a414ac0974e5babd868ee41f5d

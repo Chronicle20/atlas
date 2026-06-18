@@ -1,0 +1,8 @@
+packet: field/clientbound/FieldViciousHammer
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnItemUpgrade
+    address: "0x544395"
+    decompile_sha256: 66334a0666ff5c4c9d56800a88033b5756df7c5eccb785b2e92ef81a56c45089

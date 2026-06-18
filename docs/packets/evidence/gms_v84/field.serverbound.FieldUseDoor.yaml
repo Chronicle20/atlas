@@ -1,0 +1,8 @@
+packet: field/serverbound/FieldUseDoor
+direction: serverbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CField::TryEnterTownPortal#UseDoor
+    address: "0x5438eb"
+    decompile_sha256: e0e3b7957af9db25081f437c69a6df91f7c01c66f37ff8f138dcdf164285ab75

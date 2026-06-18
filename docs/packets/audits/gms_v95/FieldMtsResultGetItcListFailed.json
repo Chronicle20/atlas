@@ -1,0 +1,30 @@
+{
+  "WriterName": "FieldMtsResultGetItcListFailed",
+  "IDAName": "CITC::OnNormalItemResult#GetItcListFailed",
+  "Address": "0x575f70",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/field/clientbound/mts_operation.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "MTS result mode byte (0x16 GetItcListFailed)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "Decode1 fail reason -\u003e NoticeFailReason",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

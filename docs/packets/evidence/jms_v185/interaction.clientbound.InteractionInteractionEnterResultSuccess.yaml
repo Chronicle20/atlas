@@ -1,0 +1,8 @@
+packet: interaction/clientbound/InteractionInteractionEnterResultSuccess
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CMiniRoomBaseDlg::OnPacketBase#EnterResultSuccess
+    address: "0x6da234"
+    decompile_sha256: 6da83616e75ead777198d50e88233baa6def7ff03ba91e96492211ddc62cfd94

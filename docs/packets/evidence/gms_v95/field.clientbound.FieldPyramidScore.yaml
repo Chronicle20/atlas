@@ -1,0 +1,8 @@
+packet: field/clientbound/FieldPyramidScore
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CField_MassacreResult::OnMassacreResult
+    address: "0x5596c0"
+    decompile_sha256: 2c58edaed9c44156f59c5550aeb4d583e18878f41fb91b5cdb6cecbef297b0fe

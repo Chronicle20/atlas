@@ -20,16 +20,7 @@
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "hasMessage flag (case 0x11)",
-      "Verdict": 0,
-      "Note": ""
-    },
-    {
-      "Index": 2,
-      "AtlasOp": 4,
-      "AtlasKind": 0,
-      "IDAOp": 4,
-      "IDAComment": "error message (only when hasMessage set)",
+      "IDAComment": "hasMessage flag (case 0x11; 0 -> no message string)",
       "Verdict": 0,
       "Note": ""
     }

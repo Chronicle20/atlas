@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// packet-audit:fname CField::SendInviteTradingRoomMsg
 type OperationInvite struct {
 	targetCharacterId uint32
 }

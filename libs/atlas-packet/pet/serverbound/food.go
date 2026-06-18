@@ -11,6 +11,7 @@ import (
 
 const PetFoodHandle = "PetFoodHandle"
 
+// packet-audit:fname CWvsContext::SendPetFoodItemUseRequest
 type Food struct {
 	updateTime uint32
 	source     int16

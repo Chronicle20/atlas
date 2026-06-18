@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// packet-audit:fname CUIGuildBBS::OnCommentDelete
 type BBSDeleteReply struct {
 	threadId uint32
 	replyId  uint32

@@ -24,6 +24,8 @@ const MobBanishPlayerHandle = "MobBanishPlayer"
 // jms @0xa28621 (COutPacket(opcode); Encode4(dwMobTemplateID); SendPacket). (task-092
 // Stage 4 corrected the earlier "v83/v84 inlined" note — those were just unnamed
 // sub_XXXX functions, now named + pinned.) Wire shape is byte-identical, one codec.
+//
+// packet-audit:fname CUserLocal::SendBanMapByMobRequest
 type MobBanishPlayer struct {
 	mobTemplateId uint32
 }

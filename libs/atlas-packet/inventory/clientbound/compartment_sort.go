@@ -11,6 +11,7 @@ import (
 
 const CompartmentSortWriter = "CompartmentSort"
 
+// packet-audit:fname CWvsContext::OnSortItemResult
 type CompartmentSort struct {
 	inventoryType byte
 }

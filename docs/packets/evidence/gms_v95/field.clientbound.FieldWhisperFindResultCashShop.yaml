@@ -1,0 +1,8 @@
+packet: field/clientbound/FieldWhisperFindResultCashShop
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnWhisper#FindResultCashShop
+    address: "0x5448a0"
+    decompile_sha256: 1462ab244d1269e9f6804d1544b9012a332c6ffed647621bf7b0e02cac6fc9c5

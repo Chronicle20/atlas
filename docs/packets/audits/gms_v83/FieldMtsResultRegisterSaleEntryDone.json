@@ -1,0 +1,21 @@
+{
+  "WriterName": "FieldMtsResultRegisterSaleEntryDone",
+  "IDAName": "CITC::OnNormalItemResult#RegisterSaleEntryDone",
+  "Address": "0x5a4674",
+  "Variant": "GMS/v83",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/field/clientbound/mts_operation.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "MTS result mode byte (0x1D RegisterSaleEntryDone)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

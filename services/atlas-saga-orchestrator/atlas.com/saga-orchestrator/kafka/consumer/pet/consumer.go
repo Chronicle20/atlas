@@ -31,6 +31,9 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleClosenessChangedEvent))); err != nil {
 			return err
 		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleEvolvedEvent))); err != nil {
+			return err
+		}
 		return nil
 	}
 }
@@ -58,6 +61,33 @@ func handleClosenessChangedEvent(l logrus.FieldLogger, ctx context.Context, e pe
 		"new_closeness":  e.Body.Closeness,
 		"amount":         e.Body.Amount,
 	}).Debug("Pet closeness changed successfully, marking saga step as completed")
+
+	_ = p.StepCompleted(e.Body.TransactionId, true)
+}
+
+func handleEvolvedEvent(l logrus.FieldLogger, ctx context.Context, e pet2.StatusEvent[pet2.EvolvedStatusEventBody]) {
+	if e.Type != pet2.StatusEventTypeEvolved {
+		return
+	}
+
+	// Skip events without a transaction ID (non-saga evolutions, e.g. egg hatch).
+	if e.Body.TransactionId == uuid.Nil {
+		l.Debugf("Pet evolved event for pet [%d] has no transaction ID, skipping saga completion", e.PetId)
+		return
+	}
+
+	p := saga.NewProcessor(l, ctx)
+	if _, ok := p.AcceptEvent(e.Body.TransactionId, saga.EventKindPetEvolved); !ok {
+		return
+	}
+
+	l.WithFields(logrus.Fields{
+		"transaction_id":  e.Body.TransactionId.String(),
+		"pet_id":          e.PetId,
+		"owner_id":        e.OwnerId,
+		"old_template_id": e.Body.OldTemplateId,
+		"new_template_id": e.Body.NewTemplateId,
+	}).Debug("Pet evolved successfully, marking saga step as completed")
 
 	_ = p.StepCompleted(e.Body.TransactionId, true)
 }

@@ -1,0 +1,8 @@
+packet: field/clientbound/FieldWeddingCeremonyEnd
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CField_Wedding::OnWeddingCeremonyEnd
+    address: "0x5917f2"
+    decompile_sha256: 28187c18763776dc50c35b2846f20b197fffbadb70122824e2c77016505095e3

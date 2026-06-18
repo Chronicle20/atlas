@@ -134,6 +134,19 @@ func WarpById(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model
 	}
 }
 
+// WarpToPosition warps the character to an exact (x, y) coordinate in the
+// target map rather than a named portal — used by Mystic Door to land the user
+// on the linked door's position. The CHANGE_MAP command carries the position;
+// atlas-maps relays it on MAP_CHANGED and atlas-channel applies it via the
+// SET_FIELD chase mechanism.
+func WarpToPosition(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model, characterId uint32, targetMapId _map.Id, x int16, y int16) {
+	return func(ctx context.Context) func(f field.Model, characterId uint32, targetMapId _map.Id, x int16, y int16) {
+		return func(f field.Model, characterId uint32, targetMapId _map.Id, x int16, y int16) {
+			_ = producer.ProviderImpl(l)(ctx)(character.EnvCommandTopic)(character.ChangeToPositionProvider(f, characterId, targetMapId, x, y))
+		}
+	}
+}
+
 func WarpToPortal(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model, characterId uint32, targetMapId _map.Id, p model.Provider[uint32]) {
 	return func(ctx context.Context) func(f field.Model, characterId uint32, targetMapId _map.Id, p model.Provider[uint32]) {
 		return func(f field.Model, characterId uint32, targetMapId _map.Id, p model.Provider[uint32]) {

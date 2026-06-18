@@ -1,0 +1,8 @@
+packet: field/serverbound/FieldMatchTable
+direction: serverbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CField::SendChatMsgSlash#MatchTable
+    address: "0x56b971"
+    decompile_sha256: 57e9b2587e971f4b8669ee1bc30f313f629931f8ce6168c8b5dae6b00995e474

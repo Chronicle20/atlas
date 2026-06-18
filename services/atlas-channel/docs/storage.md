@@ -35,6 +35,7 @@ All persistent data is managed by external services accessed via REST APIs:
 - Map state: MAPS service
 - Monster state: MONSTERS service
 - Drop state: DROPS service
+- Door state: DOORS service
 - Reactor state: REACTORS service
 - Pet data: PETS service
 - Quest progress: QUESTS service

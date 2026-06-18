@@ -15,11 +15,25 @@ import (
 
 const SetFieldWriter = "SetField"
 
+// chasePortalId is the portal byte sent alongside a chase (exact-coordinate)
+// warp. In chase mode the v83 client places the avatar from the decoded (x, y)
+// rather than by portal index (CStage::OnSetField @0x776020), so this byte is a
+// fixed placeholder, NOT a per-destination identifier — the coordinates carry
+// the destination. 0x80 is the start of the dynamic-portal range and matches
+// Cosmic, whose Character.changeMap(Point) hardcodes spawnPoint 0x80 for every
+// coordinate warp. (The slot-specific 0x80+slot id only matters on the non-chase
+// portal-warp path, which a position warp deliberately does not use.)
+const chasePortalId byte = 0x80
+
+// packet-audit:fname CStage::OnSetField#WarpToMap
 type WarpToMap struct {
 	channelId channel.Id
 	mapId     _map.Id
 	portalId  byte
 	hp        uint16
+	chase     bool
+	chaseX    int16
+	chaseY    int16
 	timestamp int64
 }
 
@@ -33,10 +47,33 @@ func NewWarpToMap(channelId channel.Id, mapId _map.Id, portalId byte, hp uint16)
 	}
 }
 
+// NewWarpToPosition builds a SET_FIELD that drops the character at an exact
+// (x, y) coordinate rather than a named portal. The v83 client reads a "chase"
+// flag after nHP (CStage::OnSetField @0x776020); when set it then reads
+// Decode4 x / Decode4 y and places the avatar there. This is the mechanism a
+// Mystic Door uses to land the user on the linked door's exact position
+// (Cosmic PacketCreator.getWarpToMap position overload). The portal byte is the
+// fixed chasePortalId placeholder — see its doc comment.
+func NewWarpToPosition(channelId channel.Id, mapId _map.Id, hp uint16, x int16, y int16) WarpToMap {
+	return WarpToMap{
+		channelId: channelId,
+		mapId:     mapId,
+		portalId:  chasePortalId,
+		hp:        hp,
+		chase:     true,
+		chaseX:    x,
+		chaseY:    y,
+		timestamp: fieldMsTime(time.Now()),
+	}
+}
+
 func (m WarpToMap) ChannelId() channel.Id { return m.channelId }
 func (m WarpToMap) MapId() _map.Id        { return m.mapId }
 func (m WarpToMap) PortalId() byte        { return m.portalId }
 func (m WarpToMap) Hp() uint16            { return m.hp }
+func (m WarpToMap) Chase() bool           { return m.chase }
+func (m WarpToMap) ChaseX() int16         { return m.chaseX }
+func (m WarpToMap) ChaseY() int16         { return m.chaseY }
 func (m WarpToMap) Operation() string     { return SetFieldWriter }
 func (m WarpToMap) String() string {
 	return fmt.Sprintf("channelId [%d], mapId [%d], portalId [%d]", m.channelId, m.mapId, m.portalId)
@@ -84,7 +121,12 @@ func (m WarpToMap) Encode(l logrus.FieldLogger, ctx context.Context) func(option
 			w.WriteShort(m.hp)
 		}
 		if t.Region() == "GMS" && t.MajorVersion() > 28 {
-			w.WriteBool(false) // Chasing
+			w.WriteBool(m.chase) // Chasing
+			if m.chase {
+				// Decode4 x / Decode4 y when chasing (CStage::OnSetField @0x776020).
+				w.WriteInt(uint32(int32(m.chaseX)))
+				w.WriteInt(uint32(int32(m.chaseY)))
+			}
 		}
 		w.WriteInt64(m.timestamp)
 		return w.Bytes()
@@ -122,7 +164,11 @@ func (m *WarpToMap) Decode(l logrus.FieldLogger, ctx context.Context) func(r *re
 			m.hp = r.ReadUint16()
 		}
 		if t.Region() == "GMS" && t.MajorVersion() > 28 {
-			_ = r.ReadBool() // Chasing
+			m.chase = r.ReadBool() // Chasing
+			if m.chase {
+				m.chaseX = int16(int32(r.ReadUint32()))
+				m.chaseY = int16(int32(r.ReadUint32()))
+			}
 		}
 		m.timestamp = r.ReadInt64()
 	}

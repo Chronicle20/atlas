@@ -1,0 +1,21 @@
+{
+  "WriterName": "FieldAdminLog",
+  "IDAName": "CField::SendChatMsgSlash#AdminLog",
+  "Address": "0x56a838",
+  "Variant": "JMS/v185",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/field/serverbound/admin_log.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

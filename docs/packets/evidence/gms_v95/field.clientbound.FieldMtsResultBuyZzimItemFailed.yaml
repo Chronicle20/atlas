@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldMtsResultBuyZzimItemFailed
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CITC::OnNormalItemResult#BuyZzimItemFailed
+    address: "0x576400"
+    decompile_sha256: 736e9e07b8fe8ec87eddcf891e8a42edbfc44e16eee607e01d6bfad66ed28eeb
+verifies:
+  - libs/atlas-packet/field/clientbound/mts_result_empty_modes_test.go#TestMtsResultBuyZzimItemFailed

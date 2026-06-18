@@ -27,6 +27,33 @@ jobs:
       - name: Packet-audit tests
         run: cd tools/packet-audit && go test ./...
 
+      - name: fname-doc check
+        # Every packet-definition struct that has an audit report must carry an
+        # accurate `// packet-audit:fname <IDAName>` comment. Fails on drift
+        # (comment != resolved fname) or a missing comment for a resolvable
+        # struct. Regenerate with `go run ./tools/packet-audit fname-doc`.
+        run: go run ./tools/packet-audit fname-doc --check
+
+      - name: operations table check
+        # Each dispatcher-family writer's per-tenant `operations` mode table must
+        # match the IDA-verified per-version enumeration in
+        # docs/packets/dispatchers/*.yaml. A drifted mode byte resolves to the
+        # wrong client switch arm (or 99 → crash). Regenerate with
+        # `go run ./tools/packet-audit operations`.
+        run: go run ./tools/packet-audit operations --check
+
+      - name: dispatcher lint
+        # Enforces the mode-prefix dispatcher-family invariants INV-1..INV-5
+        # documented in docs/packets/DISPATCHER_FAMILY.md: discrete-per-mode
+        # structs (no shared-by-shape), config-driven mode resolution (no
+        # hard-coded mode bytes / discarded resolved code), footgun-free body
+        # functions (no caller-specified op/code/mode/key selector), no dangling
+        # #-candidate or phantom audit report, and no orphaned codec. Families
+        # not yet migrated are listed in docs/packets/dispatcher-lint-baseline.yaml
+        # and skipped (one note line each); THAT BASELINE ONLY SHRINKS — a fresh
+        # violation outside it fails CI. Read-only.
+        run: go run ./tools/packet-audit dispatcher-lint
+
       - name: Coverage matrix check
         # The conflict backlog was burned down to ZERO in task-085 (registry
         # re-derivation + template wiring across all five versions), so

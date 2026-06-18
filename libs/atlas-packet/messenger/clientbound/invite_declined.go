@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// packet-audit:fname CUIMessenger::OnPacket#InviteDeclined
 type InviteDeclined struct {
 	mode        byte
 	message     string
@@ -20,8 +21,8 @@ func NewMessengerInviteDeclined(mode byte, message string, declineMode byte) Inv
 }
 
 func (m InviteDeclined) Mode() byte        { return m.mode }
-func (m InviteDeclined) Message() string    { return m.message }
-func (m InviteDeclined) DeclineMode() byte  { return m.declineMode }
+func (m InviteDeclined) Message() string   { return m.message }
+func (m InviteDeclined) DeclineMode() byte { return m.declineMode }
 
 func (m InviteDeclined) Operation() string { return MessengerOperationWriter }
 

@@ -11,6 +11,7 @@ import (
 const MonsterBookSetCardWriter = "MonsterBookSetCard"
 
 // SetCard - body of monster book card-add packet (0x53).
+// packet-audit:fname CWvsContext::OnMonsterBookSetCard
 type SetCard struct {
 	CardId uint32
 	Level  uint8

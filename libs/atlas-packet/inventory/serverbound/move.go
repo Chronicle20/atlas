@@ -12,6 +12,7 @@ import (
 const CharacterInventoryMoveHandle = "CharacterInventoryMoveHandle"
 
 // Move - CWvsContext::SendGatherItemRequest / CWvsContext::SendSortItemRequest
+// packet-audit:fname CWvsContext::SendChangeSlotPositionRequest
 type Move struct {
 	updateTime    uint32
 	inventoryType byte

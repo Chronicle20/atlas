@@ -1,0 +1,16 @@
+# FieldEffect — CField::OnFieldEffect per-version mode table.
+# Version-STABLE: switch cases 0..7 byte-identical in v83 (0x5330f7) and v95
+# (0x53b790), IDA-verified. All 8 keys match the seeded gms_83 table.
+writer: FieldEffect
+fname: CField::OnFieldEffect
+op: FIELD_EFFECT
+direction: clientbound
+operations:
+  - { key: SUMMON,           modes: { gms_v83: 0, gms_v84: 0, gms_v87: 0, gms_v95: 0, jms_v185: 0 } }
+  - { key: TREMBLE,          modes: { gms_v83: 1, gms_v84: 1, gms_v87: 1, gms_v95: 1, jms_v185: 1 } }
+  - { key: OBJECT,           modes: { gms_v83: 2, gms_v84: 2, gms_v87: 2, gms_v95: 2, jms_v185: 2 } }
+  - { key: SCREEN,           modes: { gms_v83: 3, gms_v84: 3, gms_v87: 3, gms_v95: 3, jms_v185: 3 } }
+  - { key: SOUND,            modes: { gms_v83: 4, gms_v84: 4, gms_v87: 4, gms_v95: 4, jms_v185: 4 } }
+  - { key: BOSS_HP,          modes: { gms_v83: 5, gms_v84: 5, gms_v87: 5, gms_v95: 5, jms_v185: 5 } }
+  - { key: BACKGROUND_MUSIC, modes: { gms_v83: 6, gms_v84: 6, gms_v87: 6, gms_v95: 6, jms_v185: 6 } }
+  - { key: REWARD_RULLET,    modes: { gms_v83: 7, gms_v84: 7, gms_v87: 7, gms_v95: 7, jms_v185: 7 } }

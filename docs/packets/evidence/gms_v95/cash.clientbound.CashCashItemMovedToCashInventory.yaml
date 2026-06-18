@@ -4,5 +4,7 @@ version: gms_v95
 category: TIER1-FIXTURE
 ida:
     function: CCashShop::OnCashItemResult#CashItemMovedToCashInventory
-    address: "0x495050"
-    decompile_sha256: d385861ea2e537f121731c7331290dac771cbf3dbdabff224e40257a435b2b8e
+    address: "0x4948d0"
+    decompile_sha256: 23f18889182dfaebd438400553f363f4a37e96a72f95766f9030e51d682501e4
+verifies:
+    - libs/atlas-packet/cash/clientbound/shop_item_moved_test.go#TestCashItemMovedToCashInventoryRoundTrip

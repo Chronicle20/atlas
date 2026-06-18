@@ -1,0 +1,75 @@
+{
+  "WriterName": "InteractionInteractionUpdateMerchant",
+  "IDAName": "CEntrustedShopDlg::OnRefresh#UpdateMerchant",
+  "Address": "0x54adb9",
+  "Variant": "JMS/v185",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/interaction/clientbound/interaction.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode (22; OnPacketBase dispatch byte; jms personal-shop refresh = 22, gms = 25)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "meso (this[500]=m_nMoney; CEntrustedShopDlg::OnRefresh @0x54adb9)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "count (this[3].m_rcInvalidated.bottom; CPersonalShopDlg::OnRefresh sub_761DBA @0x761dba)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 5,
+      "IDAComment": "items (count x: Decode2 perBundle, Decode2 quantity, Decode4 price, GW_ItemSlotBase::Decode asset @0x50f611)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 4,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": "absorbed by trailing opaque buffer"
+    },
+    {
+      "Index": 5,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": "absorbed by trailing opaque buffer"
+    },
+    {
+      "Index": 6,
+      "AtlasOp": 0,
+      "AtlasKind": 1,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": "absorbed by trailing opaque buffer"
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

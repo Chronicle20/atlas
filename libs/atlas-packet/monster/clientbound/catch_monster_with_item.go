@@ -23,6 +23,8 @@ const CatchMonsterWithItemWriter = "CatchMonsterWithItem"
 // Decode1(a2); ShowEffectByItem(this, v3, v4)`), v84 @0x683c9f, v87 @0x6a886e,
 // v95 @0x63cd40, jms @0x6eb148 — every version reads exactly one Decode4 then
 // one Decode1.
+//
+// packet-audit:fname CMob::OnEffectByItem
 type CatchMonsterWithItem struct {
 	itemId int32
 	result byte

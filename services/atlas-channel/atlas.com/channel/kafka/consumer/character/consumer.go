@@ -33,6 +33,7 @@ import (
 	fieldcb "github.com/Chronicle20/atlas/libs/atlas-packet/field/clientbound"
 	partycb "github.com/Chronicle20/atlas/libs/atlas-packet/party/clientbound"
 	statpkt "github.com/Chronicle20/atlas/libs/atlas-packet/stat/clientbound"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -247,7 +248,13 @@ func warpCharacter(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 					targetField := field.NewBuilder(event.WorldId, event.Body.ChannelId, event.Body.TargetMapId).SetInstance(event.Body.TargetInstance).Build()
 					s = session.NewProcessor(l, ctx).SetField(s.SessionId(), targetField)
 
-					err = session.Announce(l)(ctx)(wp)(fieldcb.SetFieldWriter)(writer.WarpToMapBody(s.ChannelId(), event.Body.TargetMapId, event.Body.TargetPortalId, c.Hp()))(s)
+					var warpBody packet.Encode
+					if event.Body.UseTargetPosition {
+						warpBody = writer.WarpToPositionBody(s.ChannelId(), event.Body.TargetMapId, c.Hp(), event.Body.TargetX, event.Body.TargetY)
+					} else {
+						warpBody = writer.WarpToMapBody(s.ChannelId(), event.Body.TargetMapId, event.Body.TargetPortalId, c.Hp())
+					}
+					err = session.Announce(l)(ctx)(wp)(fieldcb.SetFieldWriter)(warpBody)(s)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to show set field response for character [%d]", c.Id())
 						return err

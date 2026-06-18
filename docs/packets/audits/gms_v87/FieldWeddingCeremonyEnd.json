@@ -1,0 +1,11 @@
+{
+  "WriterName": "FieldWeddingCeremonyEnd",
+  "IDAName": "CField_Wedding::OnWeddingCeremonyEnd",
+  "Address": "0x5b0756",
+  "Variant": "GMS/v87",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/field/clientbound/wedding_ceremony_end.go",
+  "Rows": null,
+  "Verdict": 0,
+  "FlatInvalid": false
+}

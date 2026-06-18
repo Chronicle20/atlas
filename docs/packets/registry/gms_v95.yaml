@@ -866,20 +866,19 @@
   opcode: 175
   fname: CQuickslotKeyMappedMan::OnInit
   provenance: csv-import
-- op: IDA_0X0B0
+- op: FOOTHOLD_INFO
   direction: clientbound
   opcode: 176
   fname: CField::OnFootHoldInfo
-  provenance: ida-discovered
+  provenance: manual
+  note: 'task-096: renamed from placeholder IDA_0X0B0. CField::OnFootHoldInfo @0x53a810 is the clientbound FOOTHOLD_INFO handler (v95 count-prefixed id-list form). Shared op label with v87/jms FOOTHOLD_INFO clientbound (different opcode per version).'
   ida:
     address: 5533008
-- op: IDA_0X0B1
-  direction: clientbound
-  opcode: 177
-  fname: CField::OnRequestFootHoldInfo
-  provenance: ida-discovered
-  ida:
-    address: 5533008
+# task-096: removed spurious clientbound IDA_0X0B1 (v95 opcode 177). Its fname
+# CField::OnRequestFootHoldInfo is the SERVERBOUND foothold-info reply builder
+# (COutPacket @0x52ddd0), not a clientbound packet — the discovery pass mislabeled
+# the opcode slot (it shared the OnFootHoldInfo discovery address). The serverbound
+# FOOTHOLD_INFO row (opcode 270) carries this function. VERSION-ABSENT (⬜) clientbound.
 - op: SPAWN_PLAYER
   direction: clientbound
   opcode: 179
@@ -1755,14 +1754,12 @@
     - CField_Witchtower::OnPacket
   provenance: manual
   note: IDA v95 CField_Witchtower::OnPacket (0x564BA0) if-dispatches nType==358 -> CField_Witchtower::OnScoreUpdate (0x564AD0). CSV dispatcher-level name kept as alt; op name ARIANT_SCORE is a CSV label, actual payload is the witch-tower score update.
-- op: HORNTAIL_CAVE
+- op: HONTALE_TIMER
   direction: clientbound
   opcode: 359
   fname: CField::OnHontaleTimer
-  fname_alts:
-    - CField::OnHontailTimer
   provenance: manual
-  note: 'IDA v95 CField::OnPacket (0x546D50) has a four-op boss timer family 359-362: OnHontaleTimer (0x5311D0), OnChaosZakumTimer (0x531020), OnHontailTimer (0x530E70), OnZakumTimer (0x530CC0). Case 359 -> OnHontaleTimer; CSV name (the 361 handler) kept as alt.'
+  note: 'IDA v95 CField::OnPacket (0x546D50) has a four-op boss timer family 359-362: OnHontaleTimer (0x5311D0), OnChaosZakumTimer (0x531020), OnHontailTimer (0x530E70), OnZakumTimer (0x530CC0). Case 359 -> OnHontaleTimer (the Hontale boss, distinct from Horntail at 361).'
 - op: WITCH_TOWER_SCORE_UPDATE
   direction: clientbound
   opcode: 360
@@ -1771,13 +1768,14 @@
     - CField_Witchtower::OnScoreUpdate
   provenance: manual
   note: IDA v95 CField::OnPacket (0x546D50) case 360 -> CField::OnChaosZakumTimer (0x531020). CSV fname (the real witch-tower handler, which lives at opcode 358 in v95) kept as alt; op name retained pending follow-up.
-- op: IDA_0X169
+- op: HORNTAIL_CAVE
   direction: clientbound
   opcode: 361
   fname: CField::OnHontailTimer
-  provenance: ida-discovered
+  provenance: manual
+  note: 'task-096 C3: v95 HORNTAIL_CAVE realigned 359->361. The canonical horntail timer (CField::OnHontailTimer, 0x530E70) is case 361 in the 359-362 boss-timer family; case 359 is OnHontaleTimer (Hontale, now op HONTALE_TIMER). +Routes 0x169.'
   ida:
-    address: 5533008
+    address: 5443184
 - op: ZAKUM_SHRINE
   direction: clientbound
   opcode: 362
@@ -1791,7 +1789,7 @@
 - op: OPEN_NPC_SHOP
   direction: clientbound
   opcode: 364
-  fname: CShopDlg::OnPacket
+  fname: CShopDlg::SetShopDlg
   provenance: csv-import
 - op: CONFIRM_SHOP_TRANSACTION
   direction: clientbound
@@ -2857,10 +2855,9 @@
 - op: WHISPER
   direction: serverbound
   opcode: 141
-  fname: CField::SendLocationWhisper
+  fname: CField::SendChatMsgWhisper
   fname_alts:
-    - CField::SendChatMsgWhisper
-    - CField::OnWhisper
+    - CField::SendLocationWhisper
   provenance: csv-import
 - op: SPOUSE_CHAT
   direction: serverbound
@@ -3099,12 +3096,19 @@
   direction: serverbound
   opcode: 163
   fname: CField_Wedding::OnWeddingProgress
-  provenance: csv-import
+  provenance: manual
+  note: 'IDA v95 CField_Wedding::OnWeddingProgress @0x5640f0 emits COutPacket(163)
+    + Encode1(m_nCurrentStep). Body = { byte currentStep }. Distinct serverbound op
+    (NOT a mode of clientbound WEDDING_PROGRESS=379); shares the fname only because
+    OnWeddingProgress both reads the clientbound progress and emits this serverbound reply.'
 - op: WEDDING_TALK
   direction: serverbound
   opcode: 164
   fname: CField_Wedding::OnWeddingProgress
-  provenance: csv-import
+  provenance: manual
+  note: 'IDA v95 CField_Wedding::OnWeddingProgress @0x5640f0 emits COutPacket(164)
+    with no body (header only). Sent on the bless YESNO confirm (field 680000210, step 2,
+    non-couple witness). Distinct serverbound op emitted by OnWeddingProgress.'
 - op: BOOBY_TRAP_ALERT
   direction: serverbound
   opcode: 165
@@ -3633,11 +3637,6 @@
   fname: ""
   provenance: csv-import
   note: 'CSV serverbound row 366: op name unknown — rename via discover-ops adjudication (provenance: manual)'
-- op: CONTI_MOVE
-  direction: serverbound
-  opcode: 264
-  fname: CField_ContiMove::Init
-  provenance: csv-import
 - op: UNNAMED_R369
   direction: serverbound
   opcode: 265

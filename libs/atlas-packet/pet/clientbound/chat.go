@@ -11,6 +11,7 @@ import (
 
 const PetChatWriter = "PetChat"
 
+// packet-audit:fname CPet::OnAction
 type Chat struct {
 	ownerId uint32
 	slot    int8

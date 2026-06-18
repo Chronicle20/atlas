@@ -12,6 +12,7 @@ import (
 
 const NpcActionWriter = "NPCAction"
 
+// packet-audit:fname CNpc::OnMove
 type Action struct {
 	objectId    uint32
 	unk         byte

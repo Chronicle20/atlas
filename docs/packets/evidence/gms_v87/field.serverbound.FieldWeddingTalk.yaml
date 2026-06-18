@@ -1,0 +1,8 @@
+packet: field/serverbound/FieldWeddingTalk
+direction: serverbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CField_Wedding::OnWeddingProgress#Talk
+    address: "0x5b012e"
+    decompile_sha256: 8efcc71e4ba5e742686b9dbf4ba0806dfe68779cad69a6cbde6cdde139e57433

@@ -1,0 +1,8 @@
+packet: cash/clientbound/CashLoadInventoryFailure
+direction: clientbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnCashItemResult#LOAD_INVENTORY_FAILURE
+    address: "0x484ca3"
+    decompile_sha256: f1e97af773d71a47f8dd989bcda1737fb275478c6f8d60892fb8f735097c4644

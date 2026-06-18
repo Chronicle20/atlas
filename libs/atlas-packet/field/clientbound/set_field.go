@@ -14,6 +14,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// packet-audit:fname CStage::OnSetField
 type SetField struct {
 	channelId     channel.Id
 	characterData charpkt.CharacterData

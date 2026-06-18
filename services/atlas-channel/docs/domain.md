@@ -283,6 +283,41 @@ Represents player parties for cooperative gameplay.
 
 ---
 
+## Door
+
+### Responsibility
+Represents a Mystic Door (Priest skill `PriestMysticDoorId`) as a read-only projection of an atlas-doors door. A door spans two sides: an AREA field (where it is cast) and a TOWN map (the door's return town). The channel service does not own door lifetime; it projects doors from atlas-doors REST/Kafka and renders them to sessions, gates door entry, and emits cast/cancel commands.
+
+### Core Models
+- `Model` - Contains id (string), areaDoorId (uint32), townDoorId (uint32), pairId (uint32), ownerCharacterId (uint32), partyId (uint32), field (field.Model), townMapId (_map.Id), slot (byte), townPortalId (uint32), areaX/areaY/townX/townY (int16), skillId (uint32), skillLevel (byte), expiresAt (time.Time). Delegates WorldId(), ChannelId(), MapId(), Instance() to the embedded area field.Model.
+
+### Invariants
+- A door is keyed by its owner character; a character has at most one live door (a recast replaces the previous door).
+- The area field map is `field.MapId()`; the town side map is `townMapId`. A field is a "side" of the door when its map equals the area map or the town map (with matching world/channel).
+- The wire object id ("oid") for the area door is the owner character id.
+- A party member's door occupies a town-portal `slot`; slot must be less than 6 (a slot of 6 or greater crashes the v83 client in the party town-portal path).
+
+### State Transitions
+A door is created, optionally re-slotted, and removed. Removal carries a reason: `EXPIRY`, `LOGOUT`, `CHANNEL_CHANGED`, `LEFT_FIELD`, `RECAST`, `PARTY_LEFT`, or `CANCELLED`. On a `RECAST` removal the area door is destroyed but the town portal and owner buff are left intact for the immediately-following re-cast; on any other removal the town portal is cleared and the owner's Mystic Door buff is cancelled.
+
+### Processors
+- `Processor` - GetInField/ForEachInMap (retrieves doors in a field, area-keyed, via DOORS service REST), GetByOwner (resolves the owner's live doors from either side), GetByOwnerOnMap (door owned by a character on a given field), Spawn(f, ownerCharacterId, skillId, level, x, y) emits a SPAWN command, Remove(f, ownerCharacterId, reason) emits a REMOVE command.
+
+### Mystic Door skill handler
+- `skill/handler/mysticdoor` registers an `Apply` handler for `PriestMysticDoorId`. By the time it runs, the generic skill-use path has already consumed MP and a Magic Rock. The handler performs channel-side eligibility checks — rejects when the cast map is a town, has no return map, or carries the `FieldLimitNoMysticDoor` field limit — and otherwise emits a SPAWN command with the caster's current position.
+- On a successful cast the handler also applies a Mystic Door buff to the caster so the client shows the duration icon and offers a right-click cancel. The buff carries a single `SoulArrow` temporary stat (Mystic Door's WZ effect has no statups of its own); its duration mirrors the door's lifetime.
+
+### Door entry
+- The Mystic Door enter handler (`socket/handler/mystic_door_enter.go`) resolves the owner's door from either side. It silently ignores the request when no door of that owner is on the requester's map. When a door is present but the requester is neither the owner nor a current party member of the owner, it announces a BLOCKED_MAP message (type 6). When authorized, it warps the requester to the linked door's exact position (area side → town map; town side → area map) and plays the portal sound.
+
+### Buff cancel
+- The character buff-cancel handler (`socket/handler/character_buff_cancel.go`) cancels the named buff; when the cancelled buff is `PriestMysticDoorId`, it additionally emits a door REMOVE command with reason `CANCELLED`, dismissing the door early.
+
+### Late-join rendering
+- On field entry, the map-status consumer renders existing doors to the arriving session: `spawnDoorsForSession` renders the AREA-side door for doors whose area field is the entered map, and `spawnTownDoorsForSession` renders the TOWN-side door (resolved by owner, de-duplicated across party members) for doors whose town side is the entered map.
+
+---
+
 ## Messenger
 
 ### Responsibility
@@ -611,7 +646,7 @@ Handles character death and respawn logic. Orchestrates experience loss calculat
 Handles portal entry and warp commands for map transitions.
 
 ### Processors
-- `Processor` (interface) - Enter(f, portalName, characterId) looks up portal by name in map data and emits ENTER command via Kafka. Warp(f, characterId, targetMapId) emits WARP command with target map ID.
+- `Processor` (interface) - Enter(f, portalName, characterId) looks up portal by name in map data and emits ENTER command via Kafka. Warp(f, characterId, targetMapId) emits WARP command with target map ID. WarpToPosition(f, characterId, targetMapId, x, y) emits a warp command to an exact coordinate (used by Mystic Door entry). WarpToPortal(f, characterId, targetMapId, targetPortalId) emits a warp command to a target portal.
 
 ---
 

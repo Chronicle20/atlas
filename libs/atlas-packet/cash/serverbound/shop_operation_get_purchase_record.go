@@ -12,6 +12,7 @@ import (
 const CashShopOperationGetPurchaseRecordHandle = "CashShopOperationGetPurchaseRecordHandle"
 
 // ShopOperationGetPurchaseRecord - CCashShop::SendGetPurchaseRecord
+// packet-audit:fname CCashShop::RequestCashPurchaseRecord
 type ShopOperationGetPurchaseRecord struct {
 	serialNumber uint32
 }

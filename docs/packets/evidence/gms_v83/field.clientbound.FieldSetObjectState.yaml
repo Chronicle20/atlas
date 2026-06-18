@@ -1,0 +1,8 @@
+packet: field/clientbound/FieldSetObjectState
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnSetObjectState
+    address: "0x537a1e"
+    decompile_sha256: ba9ae10e5861d03dc14d3fe06a81a6fae5b1613d2eb55e5392ca7f1f983e1f8a

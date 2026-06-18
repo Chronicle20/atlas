@@ -24,6 +24,8 @@ const MobEscortReturnBeforeWriter = "MobEscortReturnBefore"
 // m_pvcActive escort-return fields = index }`). v95/jms only — the escort family is
 // absent from v83/v84/v87 (their dispatchers have no escort cases and no Escort
 // symbols).
+//
+// packet-audit:fname CMob::OnEscortReturnBefore
 type MobEscortReturnBefore struct {
 	index int32
 }

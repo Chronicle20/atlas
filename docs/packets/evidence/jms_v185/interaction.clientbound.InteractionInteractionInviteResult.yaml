@@ -1,0 +1,8 @@
+packet: interaction/clientbound/InteractionInteractionInviteResult
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CMiniRoomBaseDlg::OnPacketBase#InviteResult
+    address: "0x6daa56"
+    decompile_sha256: 96f124fa1ee24a03f3dc94f26c8ce68e631b13dfe46df28e0ebe837729c7f9b3

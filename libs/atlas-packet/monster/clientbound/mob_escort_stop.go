@@ -24,6 +24,7 @@ const MobEscortStopWriter = "MobEscortStop"
 // CMobPool::OnMobPacket as a special-cased call before the read-side switch.
 // v95-only registry row; jms dispatches case 273 but carries no registry row
 // (reported gap). Absent in v83/v84/v87.
+// packet-audit:fname CMob::OnEscortStopEndPermmision
 type MobEscortStop struct {
 }
 

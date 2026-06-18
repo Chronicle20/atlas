@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// packet-audit:fname CUIGuildBBS::SendViewEntryRequest
 type BBSDisplayThread struct {
 	threadId uint32
 }

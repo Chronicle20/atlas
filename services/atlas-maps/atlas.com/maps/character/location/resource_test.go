@@ -21,7 +21,7 @@ type recordingWarp struct {
 	gotDest field.Model
 }
 
-func (r *recordingWarp) ChangeMap(_ uuid.UUID, _ uint32, _ world.Id, dest field.Model, _ uint32) error {
+func (r *recordingWarp) ChangeMap(_ uuid.UUID, _ uint32, _ world.Id, dest field.Model, _ uint32, _ bool, _ int16, _ int16) error {
 	r.calls++
 	r.gotDest = dest
 	return nil
@@ -30,7 +30,7 @@ func (r *recordingWarp) ChangeMap(_ uuid.UUID, _ uint32, _ world.Id, dest field.
 // erroringWarp always fails ChangeMap, exercising the warp-failure 500 path.
 type erroringWarp struct{}
 
-func (erroringWarp) ChangeMap(_ uuid.UUID, _ uint32, _ world.Id, _ field.Model, _ uint32) error {
+func (erroringWarp) ChangeMap(_ uuid.UUID, _ uint32, _ world.Id, _ field.Model, _ uint32, _ bool, _ int16, _ int16) error {
 	return errors.New("warp boom")
 }
 

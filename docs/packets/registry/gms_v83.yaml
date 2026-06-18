@@ -756,9 +756,10 @@
   direction: clientbound
   opcode: 156
   fname: CField::OnStalkResult
-  provenance: ida-discovered
+  provenance: manual
   ida:
-    address: 5444389
+    address: 5470826
+  note: 'IDA v83 CField::OnPacket (0x531325) case 0x9C -> CField::OnStalkResult (0x537a6a). Clientbound recv (reads CInPacket: Decode4 count, loop Decode4/Decode1[+DecodeStr+2x Decode4]). Address corrected from 0x531325 (the dispatcher) to 0x537a6a (the handler). task-096 0.3.'
 - op: PYRAMID_GAUGE
   direction: clientbound
   opcode: 157
@@ -1464,14 +1465,20 @@
   provenance: csv-import
 - op: HORNTAIL_CAVE
   direction: clientbound
-  opcode: 301
+  opcode: 302
   fname: CField::OnHontailTimer
-  provenance: csv-import
+  provenance: ida-discovered
+  ida:
+    address: 5453731
+  note: 'task-096: CSV-import swap corrected 301->302 (0x12E). IDA v83 CField::OnPacket (0x531325) routes nType==0x12E -> CField::OnHontailTimer (0x5335a3). The CSV GMS v83 column had HORNTAIL/WITCH transposed (HORNTAIL listed at 0x12D, the witch-tower opcode).'
 - op: WITCH_TOWER_SCORE_UPDATE
   direction: clientbound
-  opcode: 302
+  opcode: 301
   fname: CField_Witchtower::OnScoreUpdate
-  provenance: csv-import
+  provenance: ida-discovered
+  ida:
+    address: 5788281
+  note: 'task-096: CSV-import swap corrected 302->301 (0x12D). IDA v83 CField_Witchtower::OnPacket (0x585255) if-dispatches a2==0x12D -> CField_Witchtower::OnScoreUpdate (0x585279). The CSV GMS v83 column had HORNTAIL/WITCH transposed.'
 - op: ZAKUM_SHRINE
   direction: clientbound
   opcode: 303
@@ -1485,7 +1492,7 @@
 - op: OPEN_NPC_SHOP
   direction: clientbound
   opcode: 305
-  fname: CShopDlg::OnPacket
+  fname: CShopDlg::SetShopDlg
   provenance: csv-import
 - op: CONFIRM_SHOP_TRANSACTION
   direction: clientbound
@@ -2421,10 +2428,9 @@
 - op: WHISPER
   direction: serverbound
   opcode: 120
-  fname: CField::SendLocationWhisper
+  fname: CField::SendChatMsgWhisper
   fname_alts:
-    - CField::SendChatMsgWhisper
-    - CField::OnWhisper
+    - CField::SendLocationWhisper
   provenance: csv-import
 - op: SPOUSE_CHAT
   direction: serverbound
@@ -2541,7 +2547,8 @@
     - CField::SendSetGradeNameMsg
     - CField::SendSetGuildNoticeMsg
     - CWvsContext::OnGuildResult
-  provenance: csv-import
+  provenance: manual
+  note: 'IDA v83 CField::InputGuildName (0x5305ae, from CWvsContext::OnGuildResult) builds COutPacket(126) Encode1(2=name-input mode)+EncodeStr(name)+SendPacket. Direction confirmed serverbound; multi-mode op (leading mode byte). Served by guild/serverbound/GuildOperation (A-row). task-096 0.3.'
 - op: DENY_GUILD_REQUEST
   direction: serverbound
   opcode: 127
@@ -2591,7 +2598,8 @@
   fname: CField::TryEnterTownPortal
   fname_alts:
     - CTownPortalPool::TryEnterTownPortal
-  provenance: csv-import
+  provenance: manual
+  note: 'IDA v83 CField::TryEnterTownPortal (0x5375ed, from CUserLocal::HandleUpKeyDown) builds COutPacket(0x85=133) Encode4(townportal id)+Encode1(1)+SendPacket. Direction confirmed serverbound. task-096 0.3.'
 - op: OPEN_GATE
   direction: serverbound
   opcode: 134
@@ -2641,12 +2649,20 @@
   direction: serverbound
   opcode: 139
   fname: CField_Wedding::OnWeddingProgress
-  provenance: csv-import
+  provenance: manual
+  note: 'IDA v83 CField_Wedding::OnWeddingProgress @0x58153d emits COutPacket(139)
+    + Encode1(m_nCurrentStep). Body = { byte currentStep }. Distinct serverbound op
+    (NOT a mode of the clientbound WEDDING_PROGRESS=320); shares the fname only
+    because OnWeddingProgress both reads the clientbound progress packet and emits
+    this serverbound reply when the groom/bride confirms the cathedral step.'
 - op: WEDDING_TALK
   direction: serverbound
   opcode: 140
   fname: CField_Wedding::OnWeddingProgress
-  provenance: csv-import
+  provenance: manual
+  note: 'IDA v83 CField_Wedding::OnWeddingProgress @0x58153d emits COutPacket(0x8C=140)
+    with no body (header only). Sent on the bless YESNO confirm (field 680000210,
+    step 2, non-couple witness). Distinct serverbound op, emitted by OnWeddingProgress.'
 - op: BOOBY_TRAP_ALERT
   direction: serverbound
   opcode: 141
@@ -3021,17 +3037,20 @@
   direction: serverbound
   opcode: 211
   fname: CField_SnowBall::BasicActionAttack
-  provenance: csv-import
+  provenance: manual
+  note: 'IDA v83 CField_SnowBall::BasicActionAttack (0x575387) builds COutPacket(0xD3=211) Encode1(attack)+Encode2(damage)+Encode2(x)+SendPacket. Direction confirmed serverbound; fname is the send-site. task-096 0.3.'
 - op: LEFT_KNOCKBACK
   direction: serverbound
   opcode: 212
   fname: CField_SnowBall::Update
-  provenance: csv-import
+  provenance: manual
+  note: 'IDA v83 CField_SnowBall::Update (0x574df1) builds COutPacket(0xD4=212) (empty body) on crossing the knockback boundary + SendPacket. Direction confirmed serverbound; fname is the send-site. task-096 0.3.'
 - op: COCONUT
   direction: serverbound
   opcode: 213
   fname: CField_Coconut::BasicActionAttack
-  provenance: csv-import
+  provenance: manual
+  note: 'IDA v83 CField_Coconut::BasicActionAttack (0x549902) builds COutPacket(0xD5=213) Encode2(attack)+Encode2(x)+SendPacket. Direction confirmed serverbound; fname is the send-site. task-096 0.3.'
 - op: MATCH_TABLE
   direction: serverbound
   opcode: 214
@@ -3041,7 +3060,8 @@
   direction: serverbound
   opcode: 215
   fname: CField_GuildBoss::BasicActionAttack
-  provenance: csv-import
+  provenance: manual
+  note: 'IDA v83 CField_GuildBoss::BasicActionAttack (0x558b45) builds COutPacket(0xD7=215) (empty body) after CPulley::Hit + SendPacket. Direction confirmed serverbound; fname is the send-site. task-096 0.3.'
 - op: UNNAMED_R363
   direction: serverbound
   opcode: 216
@@ -3092,11 +3112,9 @@
   opcode: 225
   fname: CStage::OnSetField
   provenance: csv-import
-- op: FOOTHOLD_INFO
-  direction: serverbound
-  opcode: 226
-  fname: CField::OnRequestFootHoldInfo
-  provenance: csv-import
+# task-096: FOOTHOLD_INFO serverbound (opcode 226) removed — CField::OnRequestFootHoldInfo
+# is IDA-confirmed ABSENT in GMS v83 (the CSV allocated the opcode but no handler
+# function exists; the reply-builder only appears in GMS v95 + jms). VERSION-ABSENT (⬜).
 - op: UNNAMED_R377
   direction: serverbound
   opcode: 227

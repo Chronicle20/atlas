@@ -86,6 +86,7 @@ const SummonAttackHandle = "SummonAttackHandle"
 // Summon identity: v83/v87 carry the owner cid; v95 carries m_dwSummonedID. The
 // value is exposed via SummonId(); the channel handler reconciles cid-vs-id
 // against the sender's owned summons.
+// packet-audit:fname CSummonedPool::OnAttack
 type Attack struct {
 	summonId  uint32
 	direction byte

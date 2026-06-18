@@ -1,0 +1,8 @@
+packet: storage/clientbound/StorageRetrieveAssets
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CTrunkDlg::OnPacket#RetrieveAssets
+    address: "0x76a990"
+    decompile_sha256: d01bcd4a7fd9430b1d744df22a7cbe468f9e86cd3443d7f682927b011b9fb111

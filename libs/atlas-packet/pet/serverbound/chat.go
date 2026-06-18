@@ -12,6 +12,7 @@ import (
 
 const PetChatHandle = "PetChatHandle"
 
+// packet-audit:fname CPet::DoAction
 type ChatRequest struct {
 	petId      uint64
 	updateTime uint32

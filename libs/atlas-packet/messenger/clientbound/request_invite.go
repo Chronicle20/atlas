@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// packet-audit:fname CUIMessenger::OnPacket#RequestInvite
 type RequestInvite struct {
 	mode        byte
 	fromName    string
@@ -19,9 +20,9 @@ func NewMessengerRequestInvite(mode byte, fromName string, messengerId uint32) R
 	return RequestInvite{mode: mode, fromName: fromName, messengerId: messengerId}
 }
 
-func (m RequestInvite) Mode() byte           { return m.mode }
-func (m RequestInvite) FromName() string      { return m.fromName }
-func (m RequestInvite) MessengerId() uint32   { return m.messengerId }
+func (m RequestInvite) Mode() byte          { return m.mode }
+func (m RequestInvite) FromName() string    { return m.fromName }
+func (m RequestInvite) MessengerId() uint32 { return m.messengerId }
 
 func (m RequestInvite) Operation() string { return MessengerOperationWriter }
 

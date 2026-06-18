@@ -23,6 +23,7 @@ const (
 	TransportStateEnter3  TransportState = 6
 )
 
+// packet-audit:fname CField_ContiMove::OnContiState
 type Transport struct {
 	state          TransportState
 	overrideAppear bool

@@ -10,6 +10,7 @@ import (
 
 const SetTamingMobInfoWriter = "SetTamingMobInfo"
 
+// packet-audit:fname CWvsContext::OnSetTamingMobInfo
 type SetTamingMobInfo struct {
 	characterId uint32
 	level       uint32

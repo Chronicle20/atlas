@@ -16,6 +16,7 @@ const GuildOperationWriter = "GuildOperation"
 
 // RequestAgreement
 
+// packet-audit:fname CWvsContext::OnGuildResult#AgreementResponse
 type RequestAgreement struct {
 	mode       byte
 	partyId    uint32
@@ -54,6 +55,7 @@ func (m *RequestAgreement) Decode(_ logrus.FieldLogger, _ context.Context) func(
 
 // ErrorMessage
 
+// packet-audit:fname CWvsContext::OnGuildResult#ErrorMessage
 type ErrorMessage struct {
 	mode byte
 }
@@ -83,6 +85,7 @@ func (m *ErrorMessage) Decode(_ logrus.FieldLogger, _ context.Context) func(r *r
 
 // ErrorMessageWithTarget
 
+// packet-audit:fname CWvsContext::OnGuildResult#ErrorMessageWithTarget
 type ErrorMessageWithTarget struct {
 	mode   byte
 	target string
@@ -115,6 +118,7 @@ func (m *ErrorMessageWithTarget) Decode(_ logrus.FieldLogger, _ context.Context)
 
 // EmblemChange
 
+// packet-audit:fname CWvsContext::OnGuildResult#EmblemChange
 type EmblemChange struct {
 	mode                byte
 	guildId             uint32
@@ -159,6 +163,7 @@ func (m *EmblemChange) Decode(_ logrus.FieldLogger, _ context.Context) func(r *r
 
 // MemberStatusUpdate
 
+// packet-audit:fname CWvsContext::OnGuildResult#MemberStatusUpdate
 type MemberStatusUpdate struct {
 	mode        byte
 	guildId     uint32
@@ -197,6 +202,7 @@ func (m *MemberStatusUpdate) Decode(_ logrus.FieldLogger, _ context.Context) fun
 
 // MemberTitleUpdate
 
+// packet-audit:fname CWvsContext::OnGuildResult#MemberTitleUpdate
 type MemberTitleUpdate struct {
 	mode        byte
 	guildId     uint32
@@ -235,6 +241,7 @@ func (m *MemberTitleUpdate) Decode(_ logrus.FieldLogger, _ context.Context) func
 
 // NoticeChange
 
+// packet-audit:fname CWvsContext::OnGuildResult#NoticeChange
 type NoticeChange struct {
 	mode    byte
 	guildId uint32
@@ -270,6 +277,7 @@ func (m *NoticeChange) Decode(_ logrus.FieldLogger, _ context.Context) func(r *r
 
 // MemberLeft
 
+// packet-audit:fname CWvsContext::OnGuildResult#MemberLeft
 type MemberLeft struct {
 	mode        byte
 	guildId     uint32
@@ -308,6 +316,7 @@ func (m *MemberLeft) Decode(_ logrus.FieldLogger, _ context.Context) func(r *req
 
 // MemberExpel
 
+// packet-audit:fname CWvsContext::OnGuildResult#MemberExpel
 type MemberExpel struct {
 	mode        byte
 	guildId     uint32
@@ -346,6 +355,7 @@ func (m *MemberExpel) Decode(_ logrus.FieldLogger, _ context.Context) func(r *re
 
 // MemberJoined
 
+// packet-audit:fname CWvsContext::OnGuildResult#MemberJoined
 type MemberJoined struct {
 	mode          byte
 	guildId       uint32
@@ -405,6 +415,7 @@ func (m *MemberJoined) Decode(_ logrus.FieldLogger, _ context.Context) func(r *r
 
 // Invite
 
+// packet-audit:fname CWvsContext::OnGuildResult#Invite
 type Invite struct {
 	mode           byte
 	guildId        uint32
@@ -458,6 +469,7 @@ func (m *Invite) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *reque
 
 // TitleChange
 
+// packet-audit:fname CWvsContext::OnGuildResult#TitleChange
 type TitleChange struct {
 	mode    byte
 	guildId uint32
@@ -497,6 +509,7 @@ func (m *TitleChange) Decode(_ logrus.FieldLogger, _ context.Context) func(r *re
 
 // Disband
 
+// packet-audit:fname CWvsContext::OnGuildResult#Disband
 type Disband struct {
 	mode    byte
 	guildId uint32
@@ -529,6 +542,7 @@ func (m *Disband) Decode(_ logrus.FieldLogger, _ context.Context) func(r *reques
 
 // CapacityChange
 
+// packet-audit:fname CWvsContext::OnGuildResult#CapacityChange
 type CapacityChange struct {
 	mode     byte
 	guildId  uint32

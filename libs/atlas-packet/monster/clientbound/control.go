@@ -25,6 +25,7 @@ const (
 	ControlTypePassive1      ControlType = -3
 )
 
+// packet-audit:fname CMobPool::OnMobChangeController
 type Control struct {
 	controlType ControlType
 	uniqueId    uint32

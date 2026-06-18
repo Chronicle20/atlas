@@ -12,6 +12,7 @@ import (
 
 const PetMovementHandle = "PetMovementHandle"
 
+// packet-audit:fname CVecCtrlPet::EndUpdateActive
 type MovementRequest struct {
 	petId    uint64
 	movement model.Movement

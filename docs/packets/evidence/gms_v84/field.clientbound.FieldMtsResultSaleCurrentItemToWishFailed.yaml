@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldMtsResultSaleCurrentItemToWishFailed
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CITC::OnNormalItemResult#SaleCurrentItemToWishFailed
+    address: "0x5b4be0"
+    decompile_sha256: b5eb23dd9bce808837dd3e91fbdfb3eb6a8defe82cba1682a629438c3e2305c0
+verifies:
+  - libs/atlas-packet/field/clientbound/mts_result_reason_modes_test.go#TestMtsResultSaleCurrentItemToWishFailed

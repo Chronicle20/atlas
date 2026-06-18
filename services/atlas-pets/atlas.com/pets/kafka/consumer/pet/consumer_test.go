@@ -67,7 +67,7 @@ func TestInitHandlers(t *testing.T) {
 	}
 
 	consumer2.InitHandlers(l)(db)(rf)
-	if handlerCount != 8 {
-		t.Fatalf("Expected 8 handlers to be registered, got %d", handlerCount)
+	if handlerCount != 9 {
+		t.Fatalf("Expected 9 handlers to be registered, got %d", handlerCount)
 	}
 }

@@ -12,6 +12,7 @@ import (
 
 const PetMovementWriter = "PetMovement"
 
+// packet-audit:fname CPet::OnMove
 type Movement struct {
 	ownerId  uint32
 	slot     int8

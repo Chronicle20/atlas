@@ -13,5 +13,3 @@
 |---|---|---|---|---|
 | 0 | byte | byte `mode (generic-error discriminator; JMS case 0x13 is a no-op return -- NO hasReason/reason bytes)` | ✅ |  |
 | 1 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 2 | string | byte `` | ❌ | atlas: extra — client never reads this field |
-

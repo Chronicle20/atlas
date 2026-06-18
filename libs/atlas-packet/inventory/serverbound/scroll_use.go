@@ -12,6 +12,7 @@ import (
 const CharacterItemUseScrollHandle = "CharacterItemUseScrollHandle"
 
 // ScrollUse - CUser::SendScrollUseRequest
+// packet-audit:fname CWvsContext::SendUpgradeItemUseRequest
 type ScrollUse struct {
 	updateTime      uint32
 	scrollSlot      int16

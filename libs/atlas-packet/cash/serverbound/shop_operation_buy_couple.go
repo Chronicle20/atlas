@@ -15,6 +15,7 @@ const CashShopOperationBuyCoupleHandle = "CashShopOperationBuyCoupleHandle"
 // ShopOperationBuyCouple - CCashShop::OnBuyCouple. The leading field is the
 // secondary-password gate (ask_SPW): a 4-byte int in v83, a length-prefixed
 // string (EncodeStr) in v95.
+// packet-audit:fname CCashShop::OnBuyCouple
 type ShopOperationBuyCouple struct {
 	birthday     uint32 // v83 leading ask_SPW int
 	spw          string // v95 leading ask_SPW string

@@ -5,4 +5,4 @@ category: TIER1-FIXTURE
 ida:
     function: CShopDlg::OnPacket#GenericError
     address: "0x756da7"
-    decompile_sha256: 4c6dd99a97d6cdba16779a09c60bd8d68404f88c9c525d4d14124cd64c31ceeb
+    decompile_sha256: a16e6ceac72ae0452bed0a06c2a9f944d5734735a511ada18d93be7a0e8ff522

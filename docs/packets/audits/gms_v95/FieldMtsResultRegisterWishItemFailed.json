@@ -1,0 +1,21 @@
+{
+  "WriterName": "FieldMtsResultRegisterWishItemFailed",
+  "IDAName": "CITC::OnNormalItemResult#RegisterWishItemFailed",
+  "Address": "0x576480",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/field/clientbound/mts_operation.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "MTS result mode byte (0x38 RegisterWishItemFailed)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

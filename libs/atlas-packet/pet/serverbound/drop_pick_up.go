@@ -12,6 +12,7 @@ import (
 
 const PetDropPickUpHandle = "PetDropPickUpHandle"
 
+// packet-audit:fname CPet::SendDropPickUpRequest
 type DropPickUp struct {
 	petId          uint64
 	fieldKey       byte

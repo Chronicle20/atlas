@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// packet-audit:fname CUIMessenger::OnPacket#Remove
 type Remove struct {
 	mode     byte
 	position byte

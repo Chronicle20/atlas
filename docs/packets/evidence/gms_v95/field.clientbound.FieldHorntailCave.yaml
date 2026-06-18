@@ -1,0 +1,8 @@
+packet: field/clientbound/FieldHorntailCave
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnHontailTimer
+    address: "0x530e70"
+    decompile_sha256: 9bb300b3206243c209b9a27db8ff6924caf2bde3286b407de8d51fff7943ecc4

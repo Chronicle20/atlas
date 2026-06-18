@@ -9,8 +9,9 @@
 | [CashCashShopPurchaseSuccess](CashCashShopPurchaseSuccess.md) | ✅ | `../../libs/atlas-packet/cash/clientbound/shop_inventory.go` |
 | [CashInventoryCapacityFailed](CashInventoryCapacityFailed.md) | ✅ | `../../libs/atlas-packet/cash/clientbound/shop_operation_result.go` |
 | [CashInventoryCapacitySuccess](CashInventoryCapacitySuccess.md) | ✅ | `../../libs/atlas-packet/cash/clientbound/shop_operation_result.go` |
-| [CashOperationError](CashOperationError.md) | ✅ | `../../libs/atlas-packet/cash/clientbound/shop_operation_result.go` |
-| [CashWishList](CashWishList.md) | ✅ | `../../libs/atlas-packet/cash/clientbound/shop_operation_result.go` |
+| [CashLoadInventoryFailure](CashLoadInventoryFailure.md) | ✅ | `../../libs/atlas-packet/cash/clientbound/shop_operation_result.go` |
+| [CashWishListLoad](CashWishListLoad.md) | ✅ | `../../libs/atlas-packet/cash/clientbound/shop_operation_result.go` |
+| [CashWishListUpdate](CashWishListUpdate.md) | ✅ | `../../libs/atlas-packet/cash/clientbound/shop_operation_result.go` |
 | [Ping](Ping.md) | ✅ | `../../libs/atlas-packet/socket/clientbound/ping.go` |
 | [Pong](Pong.md) | ✅ | `../../libs/atlas-packet/socket/serverbound/pong.go` |
 | [ChannelConnect](ChannelConnect.md) | ✅ | `../../libs/atlas-packet/socket/serverbound/channel_connect.go` |
@@ -78,7 +79,8 @@
 | [StorageErrorSimple](StorageErrorSimple.md) | ✅ | `../../libs/atlas-packet/storage/clientbound/error.go` |
 | [StorageOperation](StorageOperation.md) | ✅ | `../../libs/atlas-packet/storage/serverbound/operation.go` |
 | [StorageShow](StorageShow.md) | 🔍 | `../../libs/atlas-packet/storage/clientbound/show.go` |
-| [StorageUpdateAssets](StorageUpdateAssets.md) | 🔍 | `../../libs/atlas-packet/storage/clientbound/update_assets.go` |
+| [StorageStoreAssets](StorageStoreAssets.md) | 🔍 | `libs/atlas-packet/storage/clientbound/store_retrieve_assets.go` |
+| [StorageRetrieveAssets](StorageRetrieveAssets.md) | 🔍 | `libs/atlas-packet/storage/clientbound/store_retrieve_assets.go` |
 | [StorageUpdateMeso](StorageUpdateMeso.md) | ✅ | `../../libs/atlas-packet/storage/clientbound/error.go` |
 | [SummonSpawn](SummonSpawn.md) | ✅ | `../../libs/atlas-packet/summon/clientbound/spawn.go` |
 | [SummonRemove](SummonRemove.md) | ✅ | `../../libs/atlas-packet/summon/clientbound/remove.go` |

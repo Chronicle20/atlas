@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldMtsResultBuyWishDone
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CITC::OnNormalItemResult#BuyWishDone
+    address: "0x5a5011"
+    decompile_sha256: 281aee6e09010f72e8554ad09f44c404f8457d241abc42888fa520fb5089f91f
+verifies:
+  - libs/atlas-packet/field/clientbound/mts_result_empty_modes_test.go#TestMtsResultBuyWishDone

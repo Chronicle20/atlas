@@ -1,0 +1,8 @@
+packet: cash/clientbound/CashWishListUpdate
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnCashItemResult#UPDATE_WISHLIST
+    address: "0x494d60"
+    decompile_sha256: dfdf345ba9093cd3e73d98143e50af30a7564f2b8b947c5b25932c0686b3fcad

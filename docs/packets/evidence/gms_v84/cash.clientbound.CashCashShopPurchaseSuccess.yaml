@@ -1,0 +1,8 @@
+packet: cash/clientbound/CashCashShopPurchaseSuccess
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnCashItemResult#CashShopPurchaseSuccess
+    address: "0x47ca64"
+    decompile_sha256: 36d995eb9be07a4cee935cc14891a268932767671cae78796878f4527217d5cf

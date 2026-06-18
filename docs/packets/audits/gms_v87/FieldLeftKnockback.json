@@ -1,0 +1,11 @@
+{
+  "WriterName": "FieldLeftKnockback",
+  "IDAName": "CField_SnowBall::Update#LeftKnockback",
+  "Address": "0x5a307b",
+  "Variant": "GMS/v87",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/field/serverbound/left_knockback.go",
+  "Rows": null,
+  "Verdict": 0,
+  "FlatInvalid": false
+}

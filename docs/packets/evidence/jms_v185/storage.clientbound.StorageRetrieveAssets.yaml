@@ -1,0 +1,8 @@
+packet: storage/clientbound/StorageRetrieveAssets
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CTrunkDlg::OnPacket#RetrieveAssets
+    address: "0x84e5a1"
+    decompile_sha256: 601d56919f664bca8fcc33d028288085f7fcc4dd8dafb893201d54b0bd34130c

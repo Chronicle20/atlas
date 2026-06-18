@@ -21,6 +21,8 @@ const MobCrcKeyChangedWriter = "MobCrcKeyChanged"
 // IDA basis: CMobPool::OnMobCrcKeyChanged — v83 @0x6797be, v87 @0x6b5399,
 // v95 @0x657230 (m_dwMobCrcKey = CInPacket::Decode4(iPacket)). The mob-list
 // re-checksum loop reads no further wire bytes; the only payload field is crcKey.
+//
+// packet-audit:fname CMobPool::OnMobCrcKeyChanged
 type MobCrcKeyChanged struct {
 	crcKey uint32
 }

@@ -1,0 +1,8 @@
+packet: field/clientbound/FieldWhisperError
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnWhisper#Error
+    address: "0x56f4df"
+    decompile_sha256: c3516a07a06c6beeab714b13efe3c90bb6b6fd62d3015dd8416ea12f3e661f44

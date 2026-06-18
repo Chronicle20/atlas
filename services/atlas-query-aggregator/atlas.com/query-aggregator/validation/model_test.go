@@ -2211,3 +2211,33 @@ func TestCondition_MonsterBookCount(t *testing.T) {
 		}
 	})
 }
+
+// TestEvaluate_PetTameness exercises the petTameness condition: a spawned pet
+// of one of the listed template ids must have closeness >= the configured
+// value. The condition reads spawned-pet detail from the ValidationContext.
+func TestEvaluate_PetTameness(t *testing.T) {
+	char := character.NewModelBuilder().SetId(123).Build()
+	ctx := NewValidationContextBuilder(char).
+		SetSpawnedPets([]SpawnedPet{{TemplateId: 5000029, Closeness: 1700}}).
+		Build()
+
+	pass := Condition{
+		conditionType: PetTamenessCondition,
+		operator:      GreaterEqual,
+		value:         1642,
+		values:        []int{5000029},
+	}
+	if !pass.EvaluateWithContext(ctx).Passed {
+		t.Fatal("expected petTameness >=1642 to pass for closeness 1700")
+	}
+
+	fail := Condition{
+		conditionType: PetTamenessCondition,
+		operator:      GreaterEqual,
+		value:         1642,
+		values:        []int{5000030},
+	}
+	if fail.EvaluateWithContext(ctx).Passed {
+		t.Fatal("expected petTameness to fail when no spawned pet matches the id set")
+	}
+}

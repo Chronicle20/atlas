@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// packet-audit:fname CFadeWnd::SendCloseMessage
 type OperationDeclineInvite struct {
 	fromName   string
 	myName     string

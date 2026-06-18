@@ -13,6 +13,7 @@ import (
 // Update - mode, position, avatar
 // IDA: CUIMessenger::OnPacket mode=7 → OnAvatar: Decode1(position) + AvatarLook::Decode only.
 // The client does not read name or channelId for avatar-update packets.
+// packet-audit:fname CUIMessenger::OnPacket#Update
 type Update struct {
 	mode     byte
 	position byte

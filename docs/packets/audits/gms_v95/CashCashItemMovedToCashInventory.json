@@ -1,17 +1,17 @@
 {
   "WriterName": "CashCashItemMovedToCashInventory",
   "IDAName": "CCashShop::OnCashItemResult#CashItemMovedToCashInventory",
-  "Address": "0x495050",
+  "Address": "0x4948d0",
   "Variant": "GMS/v95",
   "BranchDepth": 0,
-  "AtlasFile": "../../libs/atlas-packet/cash/clientbound/shop_item_moved.go",
+  "AtlasFile": "libs/atlas-packet/cash/clientbound/shop_item_moved.go",
   "Rows": [
     {
       "Index": 0,
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "mode (0x77 MOVE_L_TO_S_DONE; op-byte consumed by dispatcher)",
+      "IDAComment": "mode (0x79 MOVE_S_TO_L_DONE; op-byte consumed by OnCashItemResult dispatcher)",
       "Verdict": 0,
       "Note": ""
     },
@@ -20,7 +20,7 @@
       "AtlasOp": 5,
       "AtlasKind": 0,
       "IDAOp": 5,
-      "IDAComment": "55 bytes GW_CashItemInfo (CashInventoryItem.EncodeBytes)",
+      "IDAComment": "55 bytes GW_CashItemInfo (CashInventoryItem.EncodeBytes); CInPacket::DecodeBuffer(iPacket, v6, 0x37u)",
       "Verdict": 0,
       "Note": ""
     }

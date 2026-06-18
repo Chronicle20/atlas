@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// packet-audit:fname CWvsContext::OnPartyResult#Error
 type Error struct {
 	mode byte
 	name string

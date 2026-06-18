@@ -232,6 +232,48 @@ describe("ApplyPresetDialog", () => {
     });
   });
 
+  it("Apply button enables when the name check resolves AFTER the name is typed (async timing)", async () => {
+    // Mimic real usage: useNameValidity starts undefined (debounce + query
+    // in-flight) and only resolves to { valid: true } after the user has
+    // already filled the form. The synchronous-validity test above can't catch
+    // the regression because returning a value from the first render subscribes
+    // RHF's formState.isValid from mount. Here isValid is never read while
+    // validity is undefined, so without the unconditional read it stays a stale
+    // false and Apply stays disabled forever.
+    useNameValidityMock.mockReturnValue({ data: undefined, isLoading: false });
+
+    const { rerender } = render(<ApplyPresetDialog {...defaultProps()} />);
+
+    const warriorTile = screen
+      .getAllByRole("radio")
+      .find((el) => el.textContent?.includes("Warrior"))!;
+    await userEvent.click(warriorTile);
+
+    const nativeSelect = document.querySelector(
+      'select[aria-hidden="true"]',
+    ) as HTMLSelectElement | null;
+    if (nativeSelect) {
+      fireEvent.change(nativeSelect, { target: { value: "0" } });
+    }
+
+    const nameInput = screen.getByPlaceholderText("3-12 characters");
+    await userEvent.type(nameInput, "Foobar");
+
+    // Still in-flight: Apply is correctly disabled while validity is undefined.
+    expect(screen.getByRole("button", { name: /apply/i })).toBeDisabled();
+
+    // Name check resolves -> available. Re-render with the resolved value.
+    useNameValidityMock.mockReturnValue({
+      data: { valid: true },
+      isLoading: false,
+    });
+    rerender(<ApplyPresetDialog {...defaultProps()} />);
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /apply/i })).not.toBeDisabled();
+    });
+  });
+
   it("calls onOpenChange(false) when Cancel is clicked", () => {
     const onOpenChange = vi.fn();
     render(<ApplyPresetDialog {...defaultProps({ onOpenChange })} />);

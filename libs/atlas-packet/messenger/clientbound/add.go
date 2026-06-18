@@ -11,6 +11,7 @@ import (
 )
 
 // Add - mode, position, avatar, name, channelId
+// packet-audit:fname CUIMessenger::OnPacket#Add
 type Add struct {
 	mode      byte
 	position  byte
@@ -23,12 +24,12 @@ func NewMessengerAdd(mode byte, position byte, avatar model.Avatar, name string,
 	return Add{mode: mode, position: position, avatar: avatar, name: name, channelId: channelId}
 }
 
-func (m Add) Mode() byte         { return m.mode }
-func (m Add) Position() byte     { return m.position }
+func (m Add) Mode() byte           { return m.mode }
+func (m Add) Position() byte       { return m.position }
 func (m Add) Avatar() model.Avatar { return m.avatar }
-func (m Add) Name() string       { return m.name }
-func (m Add) ChannelId() byte    { return m.channelId }
-func (m Add) Operation() string  { return MessengerOperationWriter }
+func (m Add) Name() string         { return m.name }
+func (m Add) ChannelId() byte      { return m.channelId }
+func (m Add) Operation() string    { return MessengerOperationWriter }
 
 func (m Add) String() string {
 	return fmt.Sprintf("messenger add name [%s] position [%d]", m.name, m.position)

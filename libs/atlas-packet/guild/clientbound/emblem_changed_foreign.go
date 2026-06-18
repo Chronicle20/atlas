@@ -11,6 +11,7 @@ import (
 
 const GuildEmblemChangedWriter = "GuildEmblemChanged"
 
+// packet-audit:fname CUserRemote::OnGuildMarkChanged
 type ForeignEmblemChanged struct {
 	characterId         uint32
 	logo                uint16

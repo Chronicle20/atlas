@@ -11,7 +11,7 @@
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "",
+      "IDAComment": "mode (generic-error sub-op: case 17)",
       "Verdict": 0,
       "Note": ""
     },
@@ -19,39 +19,12 @@
       "Index": 1,
       "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 2,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "width mismatch"
-    },
-    {
-      "Index": 2,
-      "AtlasOp": 4,
-      "AtlasKind": 0,
-      "IDAOp": 2,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "width mismatch"
-    },
-    {
-      "Index": 3,
-      "AtlasOp": 0,
-      "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
-    },
-    {
-      "Index": 4,
-      "AtlasOp": 0,
-      "AtlasKind": 0,
-      "IDAOp": 4,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "IDAComment": "hasReason flag (0 for plain GENERIC_ERROR; no reason string follows)",
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 3,
-  "FlatInvalid": true
+  "Verdict": 0,
+  "FlatInvalid": false
 }

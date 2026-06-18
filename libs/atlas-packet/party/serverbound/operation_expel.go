@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// packet-audit:fname CField::SendKickPartyMsg
 type OperationExpel struct {
 	targetCharacterId uint32
 }

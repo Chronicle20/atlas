@@ -230,7 +230,13 @@ func announcePetStatUpdate(l logrus.FieldLogger) func(ctx context.Context) func(
 		cp := character.NewProcessor(l, ctx)
 		return func(wp writer.Producer) func(petId uint32, ownerId uint32) model.Operator[session.Model] {
 			return func(petId uint32, ownerId uint32) model.Operator[session.Model] {
-				c, err := cp.GetById(cp.InventoryDecorator)(ownerId)
+				// PetAssetEnrichmentDecorator is required: the cash pet asset is
+				// re-encoded into the inventory-change packet below, and without
+				// enrichment its name/level/closeness/fullness are all zero. Sending
+				// that on a closeness/fullness/level change wipes the client's pet
+				// stats (blank name, level 0) and zeroes fullness, triggering the
+				// hungry animation even though the real fullness is unchanged.
+				c, err := cp.GetById(cp.InventoryDecorator, cp.PetAssetEnrichmentDecorator)(ownerId)
 				if err != nil {
 					return func(s session.Model) error {
 						return err

@@ -1,0 +1,126 @@
+# Mode-prefix dispatcher membership (task-100 follow-up).
+#
+# Each entry is a base IDA function name whose client read-order is a
+# `switch(Decode<mode>)` DEMULTIPLEXER: a single opcode carries N logically
+# distinct sub-packets selected by a leading mode/discriminator byte, and each
+# arm reads a different body. A byte-fixture pointed at such a dispatcher proves
+# only the leading mode byte plus the one sub-handler it exercises — NOT the
+# remaining arms. The matrix therefore CAPS any op whose registry fname is one
+# of these at the 🧩 `family` state; it can never reach ✅ on one sub-handler.
+#
+# This is deliberately NARROW. It must list only true mode-byte demultiplexers,
+# confirmed by decompiling the function (v95 PDB) and seeing `switch(Decode1())`
+# dispatch to per-mode sub-handlers. It must NOT list:
+#   - opcode (nType) demuxers like CField::OnPacket / CSummonedPool::OnPacket /
+#     CField_Tournament::OnPacket — each leaf is its own registry op with its own
+#     opcode and body; those grade normally.
+#   - flat packets like CCashShop::OnQueryCashResult / CITC::OnQueryCashResult —
+#     no switch, fully fixturable, legitimately ✅.
+#
+# Adding/removing an entry is a reviewed edit. Verify the body first.
+dispatchers:
+  # CCashShop::OnCashItemResult — GRADUATED (task-096): all Atlas-supported mode
+  # arms of CASHSHOP_OPERATION have decompile-verified per-mode body codecs in
+  # cash/clientbound (each writes the leading mode byte THEN the full arm body,
+  # not mode-byte-only), each with a packet-audit:verify byte-fixture + fresh
+  # pinned evidence across gms_v83/v84/v87/v95/jms_v185. Supported arms (synthetic
+  # #-suffix FNames in the per-version exports): CashShopInventory (LOAD_LOCKER),
+  # LoadInventoryFailure (LOAD_INVENTORY_FAILURE / LOAD_LOCKER_FAILED),
+  # WishListLoad (LOAD_WISH_DONE) + WishListUpdate (SET_WISH_DONE) — split into
+  # discrete per-mode structs (task-096: no struct serves >1 mode; the failure
+  # arm fixes its own LOAD_INVENTORY_FAILURE key, replacing the old shape-name
+  # OperationError struct),
+  # CashShopPurchaseSuccess (BUY_DONE), InventoryCapacitySuccess/Failed
+  # (INC_SLOT_COUNT_DONE/FAILED), CashItemMovedToInventory (MOVE_L_TO_S_DONE),
+  # CashItemMovedToCashInventory (MOVE_S_TO_L_DONE). Per-version arm bodies are
+  # byte-identical in shape (version-shifted mode bytes + addresses only),
+  # decompile-confirmed this session: v83 0x4794f6.., v84 0x47c694.. (dispatcher
+  # CCashShop__OnCashItemResult_recv_0x14C@0x47c291), v87 0x4847f4 (dispatcher),
+  # jms 0x48bcff.., v95 0x499370 (dispatcher). The remaining cases (gift/coupon/
+  # gachapon/transfer-world/maple-point/destroy/expire) are not emitted by Atlas.
+  # CITC::OnNormalItemResult — GRADUATED (task-096): all 35 mode arms of
+  # MTS_OPERATION have decompile-verified per-mode body codecs in field/clientbound
+  # (mts_operation_body.go + mts_operation_list.go; each writes the leading mode
+  # byte THEN the full arm body, not mode-byte-only), each with a packet-audit:verify
+  # byte-fixture + fresh pinned evidence across gms_v83/v84/v87/v95. jms VERSION-ABSENT
+  # (no CITC op). Body-shape groups (synthetic #-suffix FNames in the per-version
+  # exports): Empty (notice-only arms, no wire body after the mode byte: 0x1D/0x1F/
+  # 0x25/0x29/0x2A/0x2B/0x2C/0x2E/0x2F/0x30/0x31/0x32/0x33/0x34/0x35/0x36/0x37/0x38/
+  # 0x3C), Reason (Decode1 fail-reason: 0x16/0x18/0x20/0x22/0x24/0x26/0x28), TwoInts
+  # (Decode4×2: 0x27/0x3D), RegisterSaleEntryFailed (0x1E; Decode1 reason + optional
+  # Decode2 sale-limit when reason==0x48), SuccessBidInfo (0x3E; Decode1 soldFlag +
+  # Decode4 itemId + optional Decode4 price + DecodeBuffer(8) date when itemId>0), and
+  # the list/item-blob arms GetItcListDone (0x15), GetSearchItcListDone (0x17),
+  # GetUserPurchaseItemDone (0x21), GetUserSaleItemDone (0x23), LoadWishSaleListDone
+  # (0x2D) — each reads a count then count*ITCITEM (GW_ItemSlotBase blob via model.Asset
+  # + meso/contract/bid trailer). Read order decompile-confirmed version-stable across
+  # all four GMS versions (only the dispatcher mode bytes + sub-handler addresses shift).
+  # CShopDlg::OnPacket — GRADUATED (task-096): all Atlas-supported mode arms of
+  # CONFIRM_SHOP_TRANSACTION have decompile-verified per-mode body codecs in
+  # npc/clientbound/shop_operation.go (each writes the leading mode byte THEN the
+  # full arm body, not mode-byte-only), each with a packet-audit:verify byte-fixture
+  # + fresh pinned evidence across gms_v83/v84/v87/v95/jms_v185. Supported arms
+  # Each mode now has its OWN DISCRETE struct (task-096 iteration 2 finished the
+  # split: no struct serves more than one mode). Discrete arms (synthetic #-suffix
+  # FNames in the per-version exports): the 9 Simple mode-only notice arms (Ok=0/
+  # OutOfStock=1/NotEnoughMoney=2/InventoryFull=3/OutOfStock2=5/OutOfStock3=9/
+  # NotEnoughMoney2=0xA/NeedMoreItems=0xD/TradeLimit=0x10 -> Decode1 mode only,
+  # StringPool Notice); OverLevelRequirement (case 0xE -> Decode1 mode + Decode4
+  # level) and UnderLevelRequirement (case 0xF -> Decode1 mode + Decode4 level),
+  # split from the former shared LevelRequirement shape; GenericError (mode 17 ->
+  # Decode1 mode + Decode1 hasReason=0, no string) and GenericErrorWithReason
+  # (Decode1 mode + Decode1 hasReason=1 + DecodeStr reason), split from the former
+  # shared generic-error shape. The mode bytes are the switch discriminator
+  # (server-config operations table), version-shifted but the body shapes are
+  # byte-identical. Decompile-confirmed: v83 dispatcher 0x756da7 (case 17 generic-
+  # error Decode1+DecodeStr @0x756f1b/0x756f23; cases 14/15 Decode4 @0x756f85/
+  # 0x757001), v95 dispatcher 0x6eb7d0 (case 0x13 generic-error Decode1+DecodeStr
+  # @0x6eb9a4/0x6eb9ad; cases 0xE/0xF Decode4 @0x6eba5a/0x6ebb09); v84 0x77905b,
+  # v87 0x7a290d, jms 0x7cb04e per export. GenericErrorWithReason is mode 17 in
+  # gms_v83/v84/v87, 19 in v95, and VERSION-ABSENT in jms (case 0x13 is a no-op
+  # return with no Decode1/DecodeStr arm), so jms gets only the plain GenericError
+  # discrete struct — and that arm's trailing bool is a jms client no-op, making its
+  # diff FlatInvalid (🔍-capped) promoted by byte-fixture + fresh evidence. The
+  # remaining shop modes (4/8 RETURN with no body, OnPacket nType==364 -> SetShopDlg
+  # is OPEN_NPC_SHOP, its own leaf op) are not CONFIRM_SHOP_TRANSACTION arms.
+  # CUIMessenger::OnPacket — GRADUATED (task-096): all 8 supported mode arms
+  # (Add/Join/Remove/RequestInvite/InviteSent/InviteDeclined/Chat/Update) have
+  # decompile-verified body codecs in messenger/clientbound (per-mode bodies, not
+  # mode-byte-only), each with a packet-audit:verify byte-fixture + fresh pinned
+  # evidence across gms_v83/v84/v87/v95/jms_v185. Mode 8 (OnMigrated) is not
+  # emitted by Atlas. v95 decompile cross-checked 2026-06: OnEnter 0x7f5d30,
+  # OnSelfEnterResult 0x7f5e00, OnLeave 0x7f5e20, OnInvite 0x7f2cb0,
+  # OnInviteResult 0x7f5030, OnBlocked 0x7f51a0, OnChat 0x7f52d0, OnAvatar 0x7f2ea0.
+  # CMiniRoomBaseDlg::OnPacketBase — GRADUATED (task-096): all 6 Atlas-supported
+  # mode arms of PLAYER_INTERACTION have decompile-verified per-mode body codecs in
+  # interaction/clientbound (each writes the leading mode byte THEN the full arm
+  # body, not mode-byte-only), each with a packet-audit:verify byte-fixture + fresh
+  # pinned evidence across gms_v83/v84/v87/v95/jms_v185. Supported arms (synthetic
+  # #-suffix FNames in the per-version exports): InteractionInvite (INVITE=2),
+  # InteractionInviteResult (INVITE_RESULT=3), InteractionEnter (ENTER=4),
+  # InteractionEnterResultSuccess/Error (ENTER_RESULT=5), InteractionLeave
+  # (LEAVE=10), InteractionUpdateMerchant (UPDATE_MERCHANT). Base modes 2/3/4/5/10
+  # are version-stable (dispatcher v83 0x65df4c, v95 0x639e10, jms 0x6da198).
+  # UPDATE_MERCHANT is subclass-routed (OnPacketBase default -> CPersonalShopDlg::
+  # OnPacket -> OnRefresh vtable[28], CEntrustedShopDlg::OnRefresh prefixes Decode4
+  # meso then chains the personal-shop count+item loop): mode 25 in gms (v83
+  # 0x6fc42d / v95 0x69c820 switch case 25; v95 leaf 0x51cc30; v87 chain
+  # 0x53b2fc->0x740179), but 22 in jms (sub_761650 case 22 -> sub_54adb9 ->
+  # sub_761dba) because jms shifts personal-shop sub-modes down by 3. Modes
+  # 6/8/9 (Chat/ChatThing/Avatar) are not emitted by Atlas as PLAYER_INTERACTION.
+  # CTrunkDlg::OnPacket — GRADUATED (task-096): all Atlas-supported mode arms of
+  # STORAGE have decompile-verified per-mode body codecs in storage/clientbound
+  # (each writes the leading mode byte THEN the full arm body, not mode-byte-only),
+  # each with a packet-audit:verify byte-fixture + fresh pinned evidence across
+  # gms_v83/v84/v87/v95/jms_v185. Supported arms (synthetic #-suffix FNames in the
+  # per-version exports): Show (SHOW=22, gms / 21 jms -> SetTrunkDlg: Decode4 npc +
+  # SetGetItems body), UpdateAssets (RETRIEVE/STORE = 9/13/15 gms, 8/12/14 jms ->
+  # SetGetItems: slotCount + 8-byte tab-flag + meso[flag&2] + per-tab item loop),
+  # UpdateMeso (UPDATE_MESO=19 gms / 18 jms -> SetGetItems currency-only),
+  # ErrorSimple (notice arms 10/11/12/16/17 + default -> mode byte only, no body),
+  # ErrorMessage (ERROR_MESSAGE=23 gms_v83/v84/v87, 24 gms_v95 -> Decode1 flag +
+  # DecodeStr message). Per-version arm bodies are byte-identical in shape
+  # (version-shifted mode bytes + addresses only), decompile-confirmed this session:
+  # dispatchers v83 0x7c8a4c, v84 0x7eec1a (CTrunkDlg__OnPacket_recv_0x13C), v87
+  # 0x81c336, v95 0x76a990, jms 0x84e5a1 (shift -1). ErrorMessage is version-absent
+  # in jms (its dispatcher has no Decode1+DecodeStr arm) so it is not an arm there.

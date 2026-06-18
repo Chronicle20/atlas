@@ -11,6 +11,7 @@ import (
 
 const NPCStartConversationHandle = "NPCStartConversationHandle"
 
+// packet-audit:fname CUserLocal::TalkToNpc
 type StartConversation struct {
 	oid uint32
 	x   int16

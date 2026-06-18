@@ -1,0 +1,39 @@
+{
+  "WriterName": "FieldMtsResultGetUserSaleItemDone",
+  "IDAName": "CITC::OnNormalItemResult#GetUserSaleItemDone",
+  "Address": "0x5b5147",
+  "Variant": "GMS/v84",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/field/clientbound/mts_operation.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "MTS result mode byte (0x23 GET_USER_SALE_ITEM_DONE)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "totalCount (loop count)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 5,
+      "AtlasKind": 0,
+      "IDAOp": 5,
+      "IDAComment": "ITCITEM::Decode entry (repeated per loop count): opaque GW_ItemSlotBase blob (Decode1 type + RawDecode; model.Asset recurse) then Decode4 nITCSN/nPrice/nContractFee, DecodeStr txid/rollback, DecodeBuffer(8) ftExpired, DecodeStr user/game/comment, Decode4 nBidCount/Range/Price/Min/Max/Unit, Decode2 nProcessStatus. Whole entry opaque to the flat differ (MtsItem recurse collapses) — byte-fixture verified.",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

@@ -4,6 +4,7 @@ import (
 	"atlas-pets/character"
 	data2 "atlas-pets/data/pet"
 	"atlas-pets/data/position"
+	inv "atlas-pets/inventory"
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"atlas-pets/kafka/message"
 	"atlas-pets/kafka/message/pet"
@@ -15,6 +16,7 @@ import (
 	"fmt"
 	"math/rand"
 	"sort"
+	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	skill2 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
@@ -67,6 +69,8 @@ type Processor interface {
 	AwardFullness(mb *message.Buffer) func(petId uint32) func(amount byte) error
 	AwardLevelAndEmit(petId uint32, amount byte) error
 	AwardLevel(mb *message.Buffer) func(petId uint32) func(amount byte) error
+	EvolveAndEmit(transactionId uuid.UUID, petId uint32) error
+	Evolve(mb *message.Buffer) func(transactionId uuid.UUID, petId uint32) error
 	SetExcludeAndEmit(petId uint32, items []uint32) error
 	SetExclude(mb *message.Buffer) func(petId uint32) func(items []uint32) error
 }
@@ -81,8 +85,12 @@ type ProcessorImpl struct {
 	pp        position.Processor
 	dp        data2.Processor
 	sp        skill.Processor
+	ip        inv.Processor
 	kp        producer.Provider
 	Despawner func(mb *message.Buffer) func(petId uint32) func(actorId uint32) func(reason string) error
+	// rollEvolution picks an index into the weighted candidate list. Injectable
+	// for deterministic tests; defaults to a weighted-random pick.
+	rollEvolution func(weights []uint32) int
 }
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) *ProcessorImpl {
@@ -96,10 +104,33 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) *Proce
 		pp:  position.NewProcessor(l, ctx),
 		dp:  data2.NewProcessor(l, ctx),
 		sp:  skill.NewProcessor(l, ctx),
+		ip:  inv.NewProcessor(l, ctx),
 		kp:  producer.ProviderImpl(l)(ctx),
 	}
 	p.Despawner = p.defaultDespawn
+	p.rollEvolution = weightedRoll
 	return p
+}
+
+// weightedRoll picks an index proportional to the given relative weights.
+// Weights are NOT assumed to sum to 100 (WZ uses arbitrary bases, e.g. 1000).
+func weightedRoll(weights []uint32) int {
+	var total uint32
+	for _, w := range weights {
+		total += w
+	}
+	if total == 0 {
+		return 0
+	}
+	r := uint32(rand.Intn(int(total)))
+	var acc uint32
+	for i, w := range weights {
+		acc += w
+		if r < acc {
+			return i
+		}
+	}
+	return len(weights) - 1
 }
 
 type ProcessorOption func(*ProcessorImpl)
@@ -131,6 +162,18 @@ func WithDataProcessor(dp data2.Processor) ProcessorOption {
 func WithSkillProcessor(sp skill.Processor) ProcessorOption {
 	return func(p *ProcessorImpl) {
 		p.sp = sp
+	}
+}
+
+func WithInventoryProcessor(ip inv.Processor) ProcessorOption {
+	return func(p *ProcessorImpl) {
+		p.ip = ip
+	}
+}
+
+func WithRollEvolution(f func(weights []uint32) int) ProcessorOption {
+	return func(p *ProcessorImpl) {
+		p.rollEvolution = f
 	}
 }
 
@@ -347,6 +390,47 @@ func (p *ProcessorImpl) Spawn(mb *message.Buffer) func(petId uint32) func(actorI
 					}
 					if pe.OwnerId() != actorId {
 						return errors.New("pet not owned by character")
+					}
+
+					// Egg hatch-on-summon: if the template is an egg, hatch into
+					// its single target in place instead of spawning. The egg is
+					// consumed and the player re-summons the resulting baby.
+					d, derr := p.dp.GetById(pe.TemplateId())
+					if derr == nil && d.IsEgg() {
+						baby := d.Evolutions()[0].TemplateId()
+
+						// Refuse if the character already owns the baby.
+						c, cerr := p.cp.GetById(p.cp.InventoryDecorator)(actorId)
+						if cerr != nil {
+							return cerr
+						}
+						if _, owned := c.Inventory().Cash().FindFirstByItemId(baby); owned {
+							p.l.Infof("Refusing to hatch egg [%d] for character [%d]: baby [%d] already owned.", petId, actorId, baby)
+							return nil // do not hatch, do not spawn
+						}
+
+						// Mutate the pet row in place: templateId egg->baby, reset
+						// stats to defaults (level 1, closeness 0, full), preserve
+						// egg expiration.
+						hatched, herr := Clone(pe).
+							SetTemplateId(baby).
+							SetLevel(1).
+							SetCloseness(0).
+							SetFullness(MaxFullness).
+							SetExpiration(pe.Expiration()).
+							Build()
+						if herr != nil {
+							return herr
+						}
+						if herr = updateOnEvolve(tx)(petId, baby, hatched.Expiration()); herr != nil {
+							return herr
+						}
+						// Cascade the in-place inventory asset swap.
+						if herr = p.ip.ChangeTemplate(mb)(uuid.Nil, actorId, petId, baby); herr != nil {
+							return herr
+						}
+						// Egg consumed; do NOT spawn. Player re-summons the baby.
+						return nil
 					}
 
 					p.l.Debugf("Attempting to spawn [%d] for character [%d].", petId, actorId)
@@ -716,6 +800,85 @@ func (p *ProcessorImpl) AwardClosenessWithTransaction(mb *message.Buffer) func(t
 			return txErr
 		}
 		p.l.Infof("Awarded [%d] closeness for pet [%d].", amount, petId)
+		return nil
+	}
+}
+
+func (p *ProcessorImpl) EvolveAndEmit(transactionId uuid.UUID, petId uint32) error {
+	return message.Emit(p.kp)(func(mb *message.Buffer) error {
+		return p.Evolve(mb)(transactionId, petId)
+	})
+}
+
+func (p *ProcessorImpl) Evolve(mb *message.Buffer) func(transactionId uuid.UUID, petId uint32) error {
+	return func(transactionId uuid.UUID, petId uint32) error {
+		p.l.Debugf("Evolving pet [%d].", petId)
+		var oldTemplateId uint32
+		var newTemplateId uint32
+		var ownerId uint32
+		var wasSummoned bool
+		var summonedSlot int8
+
+		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+			pe, err := p.With(WithTransaction(tx)).GetById(petId)
+			if err != nil {
+				return err
+			}
+			oldTemplateId = pe.TemplateId()
+			ownerId = pe.OwnerId()
+			wasSummoned = pe.Slot() >= 0
+			summonedSlot = pe.Slot()
+
+			d, err := p.dp.GetById(pe.TemplateId())
+			if err != nil {
+				return err
+			}
+			if !d.IsEvolvable() {
+				return fmt.Errorf("pet template [%d] is not evolvable", pe.TemplateId())
+			}
+			if uint32(pe.Level()) < d.ReqPetLevel() {
+				return fmt.Errorf("pet [%d] level [%d] below required [%d]", petId, pe.Level(), d.ReqPetLevel())
+			}
+
+			evos := d.Evolutions()
+			weights := make([]uint32, len(evos))
+			for i, e := range evos {
+				weights[i] = e.Probability()
+			}
+			idx := p.rollEvolution(weights)
+			newTemplateId = evos[idx].TemplateId()
+
+			updated, err := Clone(pe).
+				SetTemplateId(newTemplateId).
+				SetExpiration(time.Now().Add(2160 * time.Hour)).
+				Build()
+			if err != nil {
+				return err
+			}
+			if err = updateOnEvolve(tx)(petId, newTemplateId, updated.Expiration()); err != nil {
+				return err
+			}
+
+			// Cascade the in-place inventory asset swap (keyed by petId).
+			if err = p.ip.ChangeTemplate(mb)(transactionId, ownerId, petId, newTemplateId); err != nil {
+				return err
+			}
+			return mb.Put(pet.EnvStatusEventTopic, evolvedEventProvider(updated, oldTemplateId, transactionId))
+		})
+		if txErr != nil {
+			p.l.WithError(txErr).Errorf("Unable to evolve pet [%d].", petId)
+			return txErr
+		}
+
+		// Refresh appearance for a summoned pet via despawn+respawn.
+		if wasSummoned {
+			if err := p.Despawn(mb)(petId)(ownerId)(pet.DespawnReasonNormal); err != nil {
+				p.l.WithError(err).Warnf("Unable to despawn evolved pet [%d] for appearance refresh.", petId)
+			} else if err := p.Spawn(mb)(petId)(ownerId)(summonedSlot == 0); err != nil {
+				p.l.WithError(err).Warnf("Unable to respawn evolved pet [%d] for appearance refresh.", petId)
+			}
+		}
+		p.l.Infof("Evolved pet [%d]: [%d] -> [%d].", petId, oldTemplateId, newTemplateId)
 		return nil
 	}
 }

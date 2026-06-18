@@ -11,6 +11,7 @@ import (
 
 const ReactorHitWriter = "ReactorHit"
 
+// packet-audit:fname CReactorPool::OnReactorChangeState
 type Hit struct {
 	id        uint32
 	state     int8

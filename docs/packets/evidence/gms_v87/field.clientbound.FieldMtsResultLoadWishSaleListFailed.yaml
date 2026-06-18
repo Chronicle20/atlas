@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldMtsResultLoadWishSaleListFailed
+direction: clientbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CITC::OnNormalItemResult#LoadWishSaleListFailed
+    address: "0x5d50cf"
+    decompile_sha256: aefc3979e21cf55f591b3e5daf07e28f1f0a5a664197cd0502d7bf85da8c2752
+verifies:
+  - libs/atlas-packet/field/clientbound/mts_result_empty_modes_test.go#TestMtsResultLoadWishSaleListFailed

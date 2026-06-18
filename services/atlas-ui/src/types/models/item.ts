@@ -11,7 +11,10 @@ export function getItemType(itemId: string): ItemType {
     case 2: return "Consumable";
     case 3: return "Setup";
     case 4: return "Etc";
-    case 5: return "Cash";
+    // Prefix 5 splits between pets and cash. Pets are classification 500
+    // (floor(id / 10000) === 500, i.e. 5000000-5009999) and are served by a
+    // dedicated /api/data/pets endpoint; everything else (501+) is cash.
+    case 5: return Math.floor(id / 10000) === 500 ? "Pet" : "Cash";
     default: return "Unknown";
   }
 }
@@ -144,4 +147,23 @@ export interface CashItemData {
   attributes: CashItemAttributes;
 }
 
-export type ItemDetailData = EquipmentData | ConsumableData | SetupData | EtcData | CashItemData;
+// Pet detail attributes (served by /api/data/pets/{itemId})
+export interface PetAttributes {
+  name: string;
+  hungry: number;
+  cash: boolean;
+  life: number;
+}
+
+export interface PetData {
+  id: string;
+  attributes: PetAttributes;
+}
+
+export type ItemDetailData =
+  | EquipmentData
+  | ConsumableData
+  | SetupData
+  | EtcData
+  | CashItemData
+  | PetData;

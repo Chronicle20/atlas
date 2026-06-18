@@ -11,6 +11,7 @@ import (
 
 const GeneralChatWriter = "CharacterChatGeneral"
 
+// packet-audit:fname CUser::OnChat
 type GeneralChat struct {
 	characterId uint32
 	gm          bool

@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// packet-audit:fname CField::SendJoinPartyMsg#OperationJoin
 type OperationJoin struct {
 	partyId uint32
 }

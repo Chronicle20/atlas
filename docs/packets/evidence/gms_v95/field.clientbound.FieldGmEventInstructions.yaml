@@ -1,0 +1,8 @@
+packet: field/clientbound/FieldGmEventInstructions
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnDesc
+    address: "0x5313d0"
+    decompile_sha256: 6484d6ac8f67f196ff3c45e819aeff46267b098ad38de41096a575cf88790d7c

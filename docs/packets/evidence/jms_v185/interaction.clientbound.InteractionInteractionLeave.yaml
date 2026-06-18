@@ -1,0 +1,8 @@
+packet: interaction/clientbound/InteractionInteractionLeave
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CMiniRoomBaseDlg::OnPacketBase#Leave
+    address: "0x6dad8a"
+    decompile_sha256: 98e8b64bf5264e52d09c50361ef339d079de36fe73f3d8b2b8e56941ef1c6dfc

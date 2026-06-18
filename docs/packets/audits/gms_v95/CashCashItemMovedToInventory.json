@@ -1,0 +1,39 @@
+{
+  "WriterName": "CashCashItemMovedToInventory",
+  "IDAName": "CCashShop::OnCashItemResult#CashItemMovedToInventory",
+  "Address": "0x495050",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/cash/clientbound/shop_item_moved.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode (0x77 MOVE_L_TO_S_DONE; op-byte consumed by OnCashItemResult dispatcher)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "nPOS (inventory slot); nPOS = CInPacket::Decode2(iPacket)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 0,
+      "AtlasKind": 1,
+      "IDAOp": 5,
+      "IDAComment": "GW_ItemSlotBase::Decode(\u0026pItem, iPacket) = item slot payload (model.Asset)",
+      "Verdict": 3,
+      "Note": "opaque type: model.Asset — register boundary (see opaque registry)"
+    }
+  ],
+  "Verdict": 3,
+  "FlatInvalid": false
+}

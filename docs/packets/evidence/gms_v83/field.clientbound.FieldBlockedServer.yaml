@@ -1,0 +1,8 @@
+packet: field/clientbound/FieldBlockedServer
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnTransferChannelReqIgnored
+    address: "0x531a08"
+    decompile_sha256: 0d43f6baae454163751297b5b518350c78e1c2f4c2720e5e6929d86725e355ae

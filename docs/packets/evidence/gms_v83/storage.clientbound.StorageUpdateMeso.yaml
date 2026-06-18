@@ -1,0 +1,8 @@
+packet: storage/clientbound/StorageUpdateMeso
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CTrunkDlg::OnPacket#UpdateMeso
+    address: "0x7c8a4c"
+    decompile_sha256: 2e7dcd2257abf45600c40d9bd5fb21754d6b53fbddb7972e576470e6af659b28

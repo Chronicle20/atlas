@@ -1,0 +1,34 @@
+# CharacterStatusMessage — CWvsContext::OnMessage per-version mode table.
+#
+# SOURCE OF TRUTH for the CharacterStatusMessage writer. Version-STABLE: the
+# OnMessage switch (cases 0..14) is byte-identical in v83 and v95 (IDA-verified;
+# v95 PDB sub-handler names are authoritative). So one table serves all versions.
+#
+# CORRECTION (real bug): the seeded gms_83/gms_84 table was MISSING
+# INCREASE_SKILL_POINT and off-by-one too low from INCREASE_FAME onward. The v95
+# PDB names prove the dispatch: case 4=OnIncSPMessage, 5=OnIncPOPMessage (POP =
+# popularity = fame), 6=OnIncMoneyMessage (meso), 7=OnIncGPMessage (guild point),
+# 8=OnGiveBuffMessage, ... 14=OnSkillExpireMessage. So Atlas's INCREASE_FAME was
+# resolving to 4 (skill-point handler) and INCREASE_SKILL_POINT resolved to 99
+# (crash). Corrected below; applies to every version (stable).
+
+writer: CharacterStatusMessage
+fname: CWvsContext::OnMessage
+op: CHARACTER_STATUS_MESSAGE
+direction: clientbound
+operations:
+  - { key: DROP_PICK_UP,        modes: { gms_v83: 0,  gms_v84: 0,  gms_v87: 0,  gms_v95: 0,  jms_v185: 0 } }
+  - { key: QUEST_RECORD,        modes: { gms_v83: 1,  gms_v84: 1,  gms_v87: 1,  gms_v95: 1,  jms_v185: 1 } }
+  - { key: CASH_ITEM_EXPIRE,    modes: { gms_v83: 2,  gms_v84: 2,  gms_v87: 2,  gms_v95: 2,  jms_v185: 2 } }
+  - { key: INCREASE_EXPERIENCE, modes: { gms_v83: 3,  gms_v84: 3,  gms_v87: 3,  gms_v95: 3,  jms_v185: 3 } }
+  - { key: INCREASE_SKILL_POINT, modes: { gms_v83: 4, gms_v84: 4,  gms_v87: 4,  gms_v95: 4,  jms_v185: 4 } }
+  - { key: INCREASE_FAME,       modes: { gms_v83: 5,  gms_v84: 5,  gms_v87: 5,  gms_v95: 5,  jms_v185: 5 } }
+  - { key: INCREASE_MESO,       modes: { gms_v83: 6,  gms_v84: 6,  gms_v87: 6,  gms_v95: 6,  jms_v185: 6 } }
+  - { key: INCREASE_GUILD_POINT, modes: { gms_v83: 7, gms_v84: 7,  gms_v87: 7,  gms_v95: 7,  jms_v185: 7 } }
+  - { key: GIVE_BUFF,           modes: { gms_v83: 8,  gms_v84: 8,  gms_v87: 8,  gms_v95: 8,  jms_v185: 8 } }
+  - { key: GENERAL_ITEM_EXPIRE, modes: { gms_v83: 9,  gms_v84: 9,  gms_v87: 9,  gms_v95: 9,  jms_v185: 9 } }
+  - { key: SYSTEM_MESSAGE,      modes: { gms_v83: 10, gms_v84: 10, gms_v87: 10, gms_v95: 10, jms_v185: 10 } }
+  - { key: QUEST_RECORD_EX,     modes: { gms_v83: 11, gms_v84: 11, gms_v87: 11, gms_v95: 11, jms_v185: 11 } }
+  - { key: ITEM_PROTECT_EXPIRE, modes: { gms_v83: 12, gms_v84: 12, gms_v87: 12, gms_v95: 12, jms_v185: 12 } }
+  - { key: ITEM_EXPIRE_REPLACE, modes: { gms_v83: 13, gms_v84: 13, gms_v87: 13, gms_v95: 13, jms_v185: 13 } }
+  - { key: SKILL_EXPIRE,        modes: { gms_v83: 14, gms_v84: 14, gms_v87: 14, gms_v95: 14, jms_v185: 14 } }

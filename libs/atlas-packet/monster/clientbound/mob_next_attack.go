@@ -23,6 +23,8 @@ const MobNextAttackWriter = "MobNextAttack"
 // (IsActive && v3 > 0) { IsTargetInAttackRange(...); GenerateMovePath(...) }`).
 // v95-only: the v95 dispatcher CMobPool::OnMobPacket @0x6570b0 case 308 routes here;
 // no other in-scope version (v83/v84/v87/jms) has a NextAttack dispatcher case.
+//
+// packet-audit:fname CMob::OnNextAttack
 type MobNextAttack struct {
 	attackId int32
 }

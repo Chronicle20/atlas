@@ -1,0 +1,8 @@
+packet: cash/clientbound/CashCashItemMovedToCashInventory
+direction: clientbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnCashItemResult#CashItemMovedToCashInventory
+    address: "0x486ad3"
+    decompile_sha256: 8b7dd56af4a772b59ea0e0c630813aa35555e825a3ac6de9ce008808b8d2d9a1

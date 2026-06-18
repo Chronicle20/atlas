@@ -128,8 +128,8 @@ Registry entries whose opcode IDA did not discover. They are NOT auto-deleted.
 | `ARIANT_ARENA_USER_SCORE` | `0x129` | `CField_AriantArena::OnUserScore` |
 | `SHEEP_RANCH_INFO` | `0x12B` | `CField_Battlefield::OnScoreUpdate` |
 | `SHEEP_RANCH_CLOTHES` | `0x12C` | `CField_Battlefield::OnTeamChanged` |
-| `HORNTAIL_CAVE` | `0x12D` | `CField::OnHontailTimer` |
-| `WITCH_TOWER_SCORE_UPDATE` | `0x12E` | `CField_Witchtower::OnScoreUpdate` |
+| `WITCH_TOWER_SCORE_UPDATE` | `0x12D` | `CField_Witchtower::OnScoreUpdate` |
+| `HORNTAIL_CAVE` | `0x12E` | `CField::OnHontailTimer` |
 | `NPC_TALK` | `0x130` | `CScriptMan::OnPacket` |
 | `OPEN_NPC_SHOP` | `0x131` | `CShopDlg::OnPacket` |
 | `CONFIRM_SHOP_TRANSACTION` | `0x132` | `CShopDlg::OnPacket` |

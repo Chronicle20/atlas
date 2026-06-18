@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// packet-audit:fname CTrunkDlg::SendGetItemRequest
 type OperationRetrieveAsset struct {
 	inventoryType byte
 	slot          byte

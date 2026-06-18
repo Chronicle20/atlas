@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// packet-audit:fname CScriptMan::OnAskText#Reply
 type ContinueConversationText struct {
 	text string
 }

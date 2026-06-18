@@ -17,6 +17,7 @@ const CashShopOperationRebateLockerItemHandle = "CashShopOperationRebateLockerIt
 // length-prefixed string (EncodeStr) in v95/JMS. The trailing 8-byte locker
 // serial (EncodeBuffer 8) is identical across versions, modeled here as the
 // uint64 unk (WriteLong/ReadUint64 = 8 bytes little-endian).
+// packet-audit:fname CCashShop::OnRebateLockerItem
 type ShopOperationRebateLockerItem struct {
 	birthday uint32 // v83 leading ask_SPW int
 	spw      string // v95 leading ask_SPW string

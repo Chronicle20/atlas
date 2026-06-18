@@ -371,7 +371,7 @@ func handleRegisterWish(pf providerFn) func(db *gorm.DB) message.Handler[mts.Com
 			}
 
 			_ = msg.Emit(p)(func(buf *msg.Buffer) error {
-				return buf.Put(mts.EnvStatusEventTopic, mtsproducer.WishAddedStatusEventProvider(c.TransactionId, b.WorldId, b.WishId, b.CharacterId, b.ItemId))
+				return buf.Put(mts.EnvStatusEventTopic, mtsproducer.WishAddedStatusEventProvider(c.TransactionId, b.WorldId, b.WishId, b.CharacterId, b.ItemId, b.Origin))
 			})
 		}
 	}
@@ -409,7 +409,7 @@ func handleRemoveWish(pf providerFn) func(db *gorm.DB) message.Handler[mts.Comma
 			}
 
 			_ = msg.Emit(p)(func(buf *msg.Buffer) error {
-				return buf.Put(mts.EnvStatusEventTopic, mtsproducer.WishRemovedStatusEventProvider(c.TransactionId, b.WorldId, b.WishId, characterId))
+				return buf.Put(mts.EnvStatusEventTopic, mtsproducer.WishRemovedStatusEventProvider(c.TransactionId, b.WorldId, b.WishId, characterId, b.Origin))
 			})
 		}
 	}

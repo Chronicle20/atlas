@@ -135,8 +135,10 @@ func ItemTakenHomeStatusEventProvider(transactionId uuid.UUID, worldId byte, hol
 	return producer.SingleMessageProvider(keyFor(transactionId), value)
 }
 
-// WishAddedStatusEventProvider builds a WISH_ADDED event.
-func WishAddedStatusEventProvider(transactionId uuid.UUID, worldId byte, wishId uuid.UUID, characterId uint32, itemId uint32) model.Provider[[]kafka.Message] {
+// WishAddedStatusEventProvider builds a WISH_ADDED event. Origin echoes the
+// initiating command's WishOrigin so the channel picks the right clientbound
+// result.
+func WishAddedStatusEventProvider(transactionId uuid.UUID, worldId byte, wishId uuid.UUID, characterId uint32, itemId uint32, origin string) model.Provider[[]kafka.Message] {
 	value := &mts.StatusEvent[mts.StatusEventWishAddedBody]{
 		TransactionId: transactionId,
 		Type:          mts.StatusEventTypeWishAdded,
@@ -145,6 +147,7 @@ func WishAddedStatusEventProvider(transactionId uuid.UUID, worldId byte, wishId 
 			WishId:      wishId,
 			CharacterId: characterId,
 			ItemId:      itemId,
+			Origin:      origin,
 		},
 	}
 	return producer.SingleMessageProvider(keyFor(transactionId), value)
@@ -229,8 +232,10 @@ func BidFailedStatusEventProvider(transactionId uuid.UUID, worldId byte, serial 
 	return producer.SingleMessageProvider(keyFor(transactionId), value)
 }
 
-// WishRemovedStatusEventProvider builds a WISH_REMOVED event.
-func WishRemovedStatusEventProvider(transactionId uuid.UUID, worldId byte, wishId uuid.UUID, characterId uint32) model.Provider[[]kafka.Message] {
+// WishRemovedStatusEventProvider builds a WISH_REMOVED event. Origin echoes the
+// initiating command's WishOrigin so the channel picks the right clientbound
+// result.
+func WishRemovedStatusEventProvider(transactionId uuid.UUID, worldId byte, wishId uuid.UUID, characterId uint32, origin string) model.Provider[[]kafka.Message] {
 	value := &mts.StatusEvent[mts.StatusEventWishRemovedBody]{
 		TransactionId: transactionId,
 		Type:          mts.StatusEventTypeWishRemoved,
@@ -238,6 +243,7 @@ func WishRemovedStatusEventProvider(transactionId uuid.UUID, worldId byte, wishI
 			WorldId:     worldId,
 			WishId:      wishId,
 			CharacterId: characterId,
+			Origin:      origin,
 		},
 	}
 	return producer.SingleMessageProvider(keyFor(transactionId), value)

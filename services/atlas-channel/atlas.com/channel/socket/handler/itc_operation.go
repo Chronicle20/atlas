@@ -2,8 +2,10 @@ package handler
 
 import (
 	"atlas-channel/character"
+	mtsmsg "atlas-channel/kafka/message/mts"
 	mtsproc "atlas-channel/mts"
 	mtslisting "atlas-channel/mts/listing"
+	mtswish "atlas-channel/mts/wish"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
@@ -361,17 +363,71 @@ func ItcOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer
 			if err := mtsproc.NewProcessor(l, ctx).PlaceBid(uuid.New(), s.WorldId(), body.ItcSn(), s.CharacterId(), s.AccountId(), body.BidPrice()); err != nil {
 				l.WithError(err).Errorf("Unable to emit PLACE_BID for character [%d] serial [%d].", s.CharacterId(), body.ItcSn())
 			}
-		case ItcOperationRegisterWishEntry,
-			ItcOperationSetZzim,
-			ItcOperationDeleteZzim,
-			ItcOperationViewWish,
-			ItcOperationBuyWish,
-			ItcOperationCancelWish,
-			ItcOperationBuyZzim:
-			// Routed-but-unimplemented seam. Sibling arm tasks (wish/zzim) decode
-			// the matching fieldsb.ItcOperation* body and emit the corresponding
-			// COMMAND_TOPIC_MTS command + clientbound result.
-			l.Infof("Character [%d] sent routed-but-unimplemented ITC_OPERATION [%s] (mode [%d]).", s.CharacterId(), key, p.Mode())
+		case ItcOperationSetZzim:
+			body := &fieldsb.ItcOperationSetZzim{}
+			body.Decode(l, ctx)(r, readerOptions)
+			// SET_ZZIM favorites a listing: resolve the wire serial -> listing to read
+			// its templateId, then register a wish for that item. The SetZzimDone/Failed
+			// result is written by the status consumer from the WISH_ADDED event
+			// (Origin SET_ZZIM). A serial that does not resolve writes SetZzimFailed.
+			lm, err := mtslisting.NewProcessor(l, ctx).GetBySerial(s.WorldId(), body.ItcSn())
+			if err != nil {
+				l.WithError(err).Errorf("Unable to resolve serial [%d] for SET_ZZIM, character [%d].", body.ItcSn(), s.CharacterId())
+				writeWishFailure(l, ctx, wp, s, fieldpkt.MtsOperationSetZzimFailedBody())
+				return
+			}
+			if err := mtsproc.NewProcessor(l, ctx).RegisterWish(s.WorldId(), s.CharacterId(), lm.TemplateId(), mtsmsg.WishOriginSetZzim); err != nil {
+				l.WithError(err).Errorf("Unable to emit SET_ZZIM RegisterWish for character [%d] item [%d].", s.CharacterId(), lm.TemplateId())
+				writeWishFailure(l, ctx, wp, s, fieldpkt.MtsOperationSetZzimFailedBody())
+			}
+		case ItcOperationDeleteZzim:
+			body := &fieldsb.ItcOperationDeleteZzim{}
+			body.Decode(l, ctx)(r, readerOptions)
+			emitRemoveWishBySerial(l, ctx, wp, s, body.ItcSn(), mtsmsg.WishOriginDeleteZzim, fieldpkt.MtsOperationDeleteZzimFailedBody())
+		case ItcOperationCancelWish:
+			body := &fieldsb.ItcOperationCancelWish{}
+			body.Decode(l, ctx)(r, readerOptions)
+			emitRemoveWishBySerial(l, ctx, wp, s, body.ItcSn(), mtsmsg.WishOriginCancelWish, fieldpkt.MtsOperationCancelWishFailedBody())
+		case ItcOperationViewWish:
+			body := &fieldsb.ItcOperationViewWish{}
+			body.Decode(l, ctx)(r, readerOptions)
+			// VIEW_WISH is a synchronous read: query the character's wishlist over REST
+			// and write LoadWishSaleListDone inline (no status event).
+			writeWishList(l, ctx, wp, s)
+		case ItcOperationRegisterWishEntry:
+			body := &fieldsb.ItcOperationRegisterWishEntry{}
+			body.Decode(l, ctx)(r, readerOptions)
+			// REGISTER_WISH_ENTRY creates a wish request by criteria. The wish domain
+			// (task 1.6) models only (characterId, itemId), so the wire price/count/
+			// duration/feeOption/desc fields are intentionally NOT persisted — only the
+			// itemId is stored. The RegisterWishItemDone/Failed result is written by the
+			// status consumer from the WISH_ADDED event (Origin REGISTER_WISH).
+			if body.Price() != 0 || body.Count() != 0 || body.Duration() != 0 || body.FeeOption() != 0 || body.Description() != "" {
+				l.Debugf("REGISTER_WISH_ENTRY for character [%d] item [%d] dropped unmodeled fields (price [%d] count [%d] duration [%d] fee [%d] desc [%q]).", s.CharacterId(), body.ItemId(), body.Price(), body.Count(), body.Duration(), body.FeeOption(), body.Description())
+			}
+			if err := mtsproc.NewProcessor(l, ctx).RegisterWish(s.WorldId(), s.CharacterId(), body.ItemId(), mtsmsg.WishOriginRegisterWish); err != nil {
+				l.WithError(err).Errorf("Unable to emit REGISTER_WISH_ENTRY RegisterWish for character [%d] item [%d].", s.CharacterId(), body.ItemId())
+				writeWishFailure(l, ctx, wp, s, fieldpkt.MtsOperationRegisterWishItemFailedBody())
+			}
+		case ItcOperationBuyZzim:
+			body := &fieldsb.ItcOperationBuyZzim{}
+			body.Decode(l, ctx)(r, readerOptions)
+			// BUY_ZZIM buys a favorited listing (mode 0x11): same serial-only wire shape
+			// as BUY, routed into the Buy flow (BuyNow=false). atlas-mts resolves the
+			// serial -> listing and settles at listValue. The success/failure result is
+			// the shared LISTING_SOLD/BUY_FAILED status path (BuyItemDone/Failed).
+			if err := mtsproc.NewProcessor(l, ctx).Buy(uuid.New(), s.WorldId(), body.ItcSn(), s.CharacterId(), s.AccountId(), false); err != nil {
+				l.WithError(err).Errorf("Unable to emit BUY_ZZIM for character [%d] serial [%d].", s.CharacterId(), body.ItcSn())
+			}
+		case ItcOperationBuyWish:
+			body := &fieldsb.ItcOperationBuyWish{}
+			body.Decode(l, ctx)(r, readerOptions)
+			// BUY_WISH buys from the wish view (mode 0x0C): same serial-only wire shape
+			// as BUY, routed into the Buy flow (BuyNow=false). Success/failure flows the
+			// shared LISTING_SOLD/BUY_FAILED status path (BuyItemDone/Failed).
+			if err := mtsproc.NewProcessor(l, ctx).Buy(uuid.New(), s.WorldId(), body.ItcSn(), s.CharacterId(), s.AccountId(), false); err != nil {
+				l.WithError(err).Errorf("Unable to emit BUY_WISH for character [%d] serial [%d].", s.CharacterId(), body.ItcSn())
+			}
 		default:
 			l.Warnf("Character [%d] sent ITC_OPERATION with resolved-but-unrouted KEY [%s] (mode [%d]).", s.CharacterId(), key, p.Mode())
 		}
@@ -423,4 +479,100 @@ func writeBrowsePage(l logrus.FieldLogger, ctx context.Context, wp writer.Produc
 	if err := session.Announce(l)(ctx)(wp)(fieldcb.MtsOperationWriter)(body)(s); err != nil {
 		l.WithError(err).Errorf("Unable to announce MTS browse page to character [%d].", s.CharacterId())
 	}
+}
+
+// writeWishFailure announces a wish/zzim *Failed clientbound result inline. The
+// command-driven wish arms (SET_ZZIM / REGISTER_WISH_ENTRY) rely on the status
+// consumer for their success/fail result; this writes the failure synchronously
+// when the channel cannot even emit the command (serial unresolved / produce
+// error), so the client is not left waiting on a status event that will never come.
+func writeWishFailure(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, s session.Model, body func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte) {
+	if err := session.Announce(l)(ctx)(wp)(fieldcb.MtsOperationWriter)(body)(s); err != nil {
+		l.WithError(err).Errorf("Unable to announce MTS wish failure to character [%d].", s.CharacterId())
+	}
+}
+
+// emitRemoveWishBySerial resolves a wire listing serial to the wish entry the
+// character has for that listing's item, then emits a REMOVE_WISH command tagged
+// with the originating arm (DELETE_ZZIM or CANCEL_WISH) so the status consumer
+// writes the matching result. The wire carries only the serial, never the wish
+// UUID, so the channel resolves serial -> listing.templateId -> the character's
+// wish entry for that item. A resolution failure writes the supplied *Failed body.
+func emitRemoveWishBySerial(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, s session.Model, serial uint32, origin string, failBody func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte) {
+	lm, err := mtslisting.NewProcessor(l, ctx).GetBySerial(s.WorldId(), serial)
+	if err != nil {
+		l.WithError(err).Errorf("Unable to resolve serial [%d] for wish-remove (origin [%s]), character [%d].", serial, origin, s.CharacterId())
+		writeWishFailure(l, ctx, wp, s, failBody)
+		return
+	}
+
+	wm, err := mtswish.NewProcessor(l, ctx).GetByCharacterItem(s.CharacterId(), lm.TemplateId())
+	if err != nil {
+		l.WithError(err).Errorf("Character [%d] has no wish entry for item [%d] (serial [%d], origin [%s]).", s.CharacterId(), lm.TemplateId(), serial, origin)
+		writeWishFailure(l, ctx, wp, s, failBody)
+		return
+	}
+
+	wishId, err := uuid.Parse(wm.Id())
+	if err != nil {
+		l.WithError(err).Errorf("Wish entry id [%s] is not a valid uuid (character [%d], origin [%s]).", wm.Id(), s.CharacterId(), origin)
+		writeWishFailure(l, ctx, wp, s, failBody)
+		return
+	}
+
+	if err := mtsproc.NewProcessor(l, ctx).RemoveWish(s.WorldId(), wishId, s.CharacterId(), origin); err != nil {
+		l.WithError(err).Errorf("Unable to emit RemoveWish [%s] for character [%d] (origin [%s]).", wishId.String(), s.CharacterId(), origin)
+		writeWishFailure(l, ctx, wp, s, failBody)
+	}
+}
+
+// writeWishList queries the character's wishlist over REST and writes the
+// synchronous LoadWishSaleListDone result. Each wish entry renders as a minimal
+// ITCITEM carrying only the wished item template (the wish domain stores no price/
+// sale metadata). On a REST error an empty list is written so the client UI is not
+// left hanging.
+func writeWishList(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, s session.Model) {
+	ws, err := mtswish.NewProcessor(l, ctx).GetByCharacter(s.CharacterId())
+	if err != nil {
+		l.WithError(err).Errorf("Unable to load wishlist for character [%d]; writing empty list.", s.CharacterId())
+		ws = nil
+	}
+
+	items := make([]fieldcb.MtsItem, 0, len(ws))
+	for _, w := range ws {
+		items = append(items, mtsItemFromWish(w))
+	}
+
+	body := fieldpkt.MtsOperationLoadWishSaleListDoneBody(items)
+	if err := session.Announce(l)(ctx)(wp)(fieldcb.MtsOperationWriter)(body)(s); err != nil {
+		l.WithError(err).Errorf("Unable to announce MTS wish list to character [%d].", s.CharacterId())
+	}
+}
+
+// mtsItemFromWish maps one wish entry to a minimal clientbound MtsItem for the
+// LoadWishSaleListDone list. The wish domain carries only the item template, so
+// the item-slot blob carries the template id (quantity 1) and the MTS trailer is
+// zeroed (a wish has no serial/price/bid metadata).
+func mtsItemFromWish(w mtswish.Model) fieldcb.MtsItem {
+	item := packetmodel.NewAsset(false, 0, w.ItemId(), time.Time{}).SetStackableInfo(1, 0, 0)
+	var dateExpired [8]byte
+	return fieldpkt.MtsOperationNewItem(
+		item,        // GW_ItemSlotBase blob
+		0,           // nITCSN (a wish has no listing serial)
+		0,           // nPrice
+		0,           // nContractFee
+		"",          // sContractFeeTxId
+		"",          // sRollbackUsageID
+		dateExpired, // ftITCDateExpired
+		"",          // sUserID
+		"",          // sGameID
+		"",          // sComment
+		0,           // nBidCount
+		0,           // nBidRange
+		0,           // nBidPrice
+		0,           // nMinPrice
+		0,           // nMaxPrice
+		0,           // nUnitPrice
+		0,           // nProcessStatus
+	)
 }

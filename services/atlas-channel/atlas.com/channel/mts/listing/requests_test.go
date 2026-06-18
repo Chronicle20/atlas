@@ -31,6 +31,20 @@ func TestBrowseFilterQuery(t *testing.T) {
 	}
 }
 
+// TestBrowseFilterQuerySerial asserts the serial filter renders when set. The
+// zzim/wish remove arms resolve a listing by its ITC serial through this filter
+// (GetBySerial), so the param must reach atlas-mts.
+func TestBrowseFilterQuerySerial(t *testing.T) {
+	got := (BrowseFilter{Serial: 4242}).query()
+	if !strings.Contains(got, "serial=4242") {
+		t.Errorf("query %q missing serial=4242", got)
+	}
+	// Serial 0 means "unset" -> must be omitted.
+	if strings.Contains((BrowseFilter{}).query(), "serial=") {
+		t.Errorf("empty filter must not contain serial=")
+	}
+}
+
 // TestBrowseFilterQueryCategory asserts the category/subCategory/saleType filters
 // render when set (the browse arm passes them through to atlas-mts equality
 // filters).

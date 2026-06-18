@@ -129,6 +129,48 @@ func TestProcessorBrowse(t *testing.T) {
 	}
 }
 
+// TestProcessorBrowseBySerial asserts the Serial browse filter narrows the result
+// to the single listing carrying that ITC serial. This backs the channel-side
+// serial->listing resolution the zzim/wish ITC arms rely on (SET_ZZIM/DELETE_ZZIM/
+// CANCEL_WISH resolve nITCSN -> templateId via this filtered browse).
+func TestProcessorBrowseBySerial(t *testing.T) {
+	p, db, cleanup := test.CreateListingProcessor(t)
+	defer cleanup()
+	resetListings(t, db)
+
+	a, err := p.Create(buildProcessorListing(t, 0, 200, "equip"))
+	if err != nil {
+		t.Fatalf("Create A: %v", err)
+	}
+	if _, err := p.Create(buildProcessorListing(t, 0, 201, "use")); err != nil {
+		t.Fatalf("Create B: %v", err)
+	}
+
+	if a.Serial() == 0 {
+		t.Fatalf("expected a non-zero serial assigned on create")
+	}
+
+	got, err := p.Browse(0, listing.StateActive, listing.BrowseFilter{Serial: a.Serial()})
+	if err != nil {
+		t.Fatalf("Browse by serial: %v", err)
+	}
+	if len(got) != 1 {
+		t.Fatalf("Browse(serial=%d) returned %d rows, want 1", a.Serial(), len(got))
+	}
+	if got[0].Serial() != a.Serial() || got[0].SellerId() != 200 {
+		t.Errorf("Browse by serial returned wrong row: serial=%d seller=%d", got[0].Serial(), got[0].SellerId())
+	}
+
+	// A serial that matches no row yields an empty result.
+	none, err := p.Browse(0, listing.StateActive, listing.BrowseFilter{Serial: 99999999})
+	if err != nil {
+		t.Fatalf("Browse by missing serial: %v", err)
+	}
+	if len(none) != 0 {
+		t.Errorf("Browse(serial=99999999) returned %d rows, want 0", len(none))
+	}
+}
+
 // TestProcessorTransitionState asserts the conditional transition: the first
 // active->cancelled succeeds (true); a second returns false (the row is no
 // longer active).

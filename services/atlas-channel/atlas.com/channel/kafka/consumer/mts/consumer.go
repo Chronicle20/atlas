@@ -95,6 +95,12 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				if err := register(message.AdaptHandler(message.PersistentConfig(handleBidFailed(sc, wp)))); err != nil {
 					return nil, err
 				}
+				if err := register(message.AdaptHandler(message.PersistentConfig(handleWishAdded(sc, wp)))); err != nil {
+					return nil, err
+				}
+				if err := register(message.AdaptHandler(message.PersistentConfig(handleWishRemoved(sc, wp)))); err != nil {
+					return nil, err
+				}
 				return handles, nil
 			}
 		}
@@ -209,5 +215,57 @@ func handleBidFailed(sc server.Model, wp writer.Producer) message.Handler[mtsmsg
 		}
 		l.Debugf("MTS bid failed for bidder [%d] serial [%d] (reason [%d]).", e.Body.BidderId, e.Body.Serial, e.Body.Reason)
 		announceTo(l, ctx, sc, wp, e.Body.BidderId, fieldpkt.MtsOperationBidAuctionFailedBody())
+	}
+}
+
+// mtsNotifyCancelWishCount is the count passed to NotifyCancelWishResult on a
+// successful CANCEL_WISH. The clientbound codec gates a StringPool notice on each
+// count being >0; 1 cancelled / 0 other shows the single "wish cancelled" notice.
+const (
+	mtsNotifyCancelWishCountA uint32 = 1
+	mtsNotifyCancelWishCountB uint32 = 0
+)
+
+// handleWishAdded writes the wish-add result to the originating character. WISH_ADDED
+// is emitted by atlas-mts's handleRegisterWish; Origin discriminates which ITC arm
+// initiated the add so the channel writes the matching clientbound result
+// (SET_ZZIM -> SetZzimDone, REGISTER_WISH -> RegisterWishItemDone). An unknown Origin
+// is logged (no result written) rather than guessing a mode.
+func handleWishAdded(sc server.Model, wp writer.Producer) message.Handler[mtsmsg.StatusEvent[mtsmsg.StatusEventWishAddedBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e mtsmsg.StatusEvent[mtsmsg.StatusEventWishAddedBody]) {
+		if e.Type != mtsmsg.StatusEventTypeWishAdded {
+			return
+		}
+		l.Debugf("MTS wish added for character [%d] (item [%d], origin [%s]).", e.Body.CharacterId, e.Body.ItemId, e.Body.Origin)
+		switch e.Body.Origin {
+		case mtsmsg.WishOriginSetZzim:
+			announceTo(l, ctx, sc, wp, e.Body.CharacterId, fieldpkt.MtsOperationSetZzimDoneBody())
+		case mtsmsg.WishOriginRegisterWish:
+			announceTo(l, ctx, sc, wp, e.Body.CharacterId, fieldpkt.MtsOperationRegisterWishItemDoneBody())
+		default:
+			l.Warnf("MTS WISH_ADDED for character [%d] has unknown origin [%s]; no result written.", e.Body.CharacterId, e.Body.Origin)
+		}
+	}
+}
+
+// handleWishRemoved writes the wish-remove result to the originating character.
+// WISH_REMOVED is emitted by atlas-mts's handleRemoveWish; Origin discriminates which
+// ITC arm initiated the remove so the channel writes the matching clientbound result
+// (DELETE_ZZIM -> DeleteZzimDone, CANCEL_WISH -> NotifyCancelWishResult). An unknown
+// Origin is logged rather than guessing a mode.
+func handleWishRemoved(sc server.Model, wp writer.Producer) message.Handler[mtsmsg.StatusEvent[mtsmsg.StatusEventWishRemovedBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e mtsmsg.StatusEvent[mtsmsg.StatusEventWishRemovedBody]) {
+		if e.Type != mtsmsg.StatusEventTypeWishRemoved {
+			return
+		}
+		l.Debugf("MTS wish removed for character [%d] (origin [%s]).", e.Body.CharacterId, e.Body.Origin)
+		switch e.Body.Origin {
+		case mtsmsg.WishOriginDeleteZzim:
+			announceTo(l, ctx, sc, wp, e.Body.CharacterId, fieldpkt.MtsOperationDeleteZzimDoneBody())
+		case mtsmsg.WishOriginCancelWish:
+			announceTo(l, ctx, sc, wp, e.Body.CharacterId, fieldpkt.MtsOperationNotifyCancelWishResultBody(mtsNotifyCancelWishCountA, mtsNotifyCancelWishCountB))
+		default:
+			l.Warnf("MTS WISH_REMOVED for character [%d] has unknown origin [%s]; no result written.", e.Body.CharacterId, e.Body.Origin)
+		}
 	}
 }

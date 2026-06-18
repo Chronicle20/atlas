@@ -101,7 +101,7 @@ func TakeHomeCommandProvider(transactionId uuid.UUID, worldId world.Id, serial u
 	return producer.SingleMessageProvider(key, value)
 }
 
-func RegisterWishCommandProvider(worldId world.Id, characterId uint32, itemId uint32) model.Provider[[]kafka.Message] {
+func RegisterWishCommandProvider(worldId world.Id, characterId uint32, itemId uint32, origin string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &mtsmsg.Command[mtsmsg.RegisterWishCommandBody]{
 		Type: mtsmsg.CommandRegisterWish,
@@ -110,18 +110,20 @@ func RegisterWishCommandProvider(worldId world.Id, characterId uint32, itemId ui
 			WorldId:     byte(worldId),
 			CharacterId: characterId,
 			ItemId:      itemId,
+			Origin:      origin,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)
 }
 
-func RemoveWishCommandProvider(worldId world.Id, wishId uuid.UUID, characterId uint32) model.Provider[[]kafka.Message] {
+func RemoveWishCommandProvider(worldId world.Id, wishId uuid.UUID, characterId uint32, origin string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &mtsmsg.Command[mtsmsg.RemoveWishCommandBody]{
 		Type: mtsmsg.CommandRemoveWish,
 		Body: mtsmsg.RemoveWishCommandBody{
 			WishId:  wishId,
 			WorldId: byte(worldId),
+			Origin:  origin,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

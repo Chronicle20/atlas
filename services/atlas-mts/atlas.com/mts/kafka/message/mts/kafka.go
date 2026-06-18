@@ -88,19 +88,39 @@ type PlaceBidCommandBody struct {
 	Amount          uint32 `json:"amount"`
 }
 
-// RegisterWishCommandBody carries the wish-list entry to create.
+// RegisterWishCommandBody carries the wish-list entry to create. Origin records
+// which client ITC arm initiated the wish-add (SET_ZZIM vs REGISTER_WISH_ENTRY)
+// so atlas-mts can echo it back on the WISH_ADDED status event; the channel needs
+// it to pick the matching clientbound result (SetZzimDone vs RegisterWishItemDone)
+// since both arms create the same wish row. See WishOrigin* constants.
 type RegisterWishCommandBody struct {
 	WishId      uuid.UUID `json:"wishId"`
 	WorldId     byte      `json:"worldId"`
 	CharacterId uint32    `json:"characterId"`
 	ItemId      uint32    `json:"itemId"`
+	Origin      string    `json:"origin"`
 }
 
-// RemoveWishCommandBody identifies the wish-list entry to delete.
+// RemoveWishCommandBody identifies the wish-list entry to delete. Origin records
+// which client ITC arm initiated the wish-remove (DELETE_ZZIM vs CANCEL_WISH) so
+// atlas-mts can echo it back on the WISH_REMOVED status event; the channel needs
+// it to pick the matching clientbound result (DeleteZzimDone vs
+// NotifyCancelWishResult). See WishOrigin* constants.
 type RemoveWishCommandBody struct {
 	WishId  uuid.UUID `json:"wishId"`
 	WorldId byte      `json:"worldId"`
+	Origin  string    `json:"origin"`
 }
+
+// WishOrigin* discriminate which client ITC_OPERATION arm initiated a wish
+// add/remove. They round-trip command -> status event so the channel maps the
+// resulting WISH_ADDED/WISH_REMOVED to the correct clientbound result mode.
+const (
+	WishOriginSetZzim      = "SET_ZZIM"
+	WishOriginRegisterWish = "REGISTER_WISH"
+	WishOriginDeleteZzim   = "DELETE_ZZIM"
+	WishOriginCancelWish   = "CANCEL_WISH"
+)
 
 // CreateListingCommandBody initiates a listing (the channel ITC register-sale /
 // register-auction / sale-current-item arms emit this). atlas-mts maps it to a
@@ -267,19 +287,25 @@ type StatusEventItemTakenHomeBody struct {
 	ItemId      uint32    `json:"itemId"`
 }
 
-// StatusEventWishAddedBody reports an added wish-list entry.
+// StatusEventWishAddedBody reports an added wish-list entry. Origin echoes the
+// initiating command's WishOrigin so the channel writes the right clientbound
+// result (SetZzimDone vs RegisterWishItemDone).
 type StatusEventWishAddedBody struct {
 	WorldId     byte      `json:"worldId"`
 	WishId      uuid.UUID `json:"wishId"`
 	CharacterId uint32    `json:"characterId"`
 	ItemId      uint32    `json:"itemId"`
+	Origin      string    `json:"origin"`
 }
 
-// StatusEventWishRemovedBody reports a removed wish-list entry.
+// StatusEventWishRemovedBody reports a removed wish-list entry. Origin echoes the
+// initiating command's WishOrigin so the channel writes the right clientbound
+// result (DeleteZzimDone vs NotifyCancelWishResult).
 type StatusEventWishRemovedBody struct {
 	WorldId     byte      `json:"worldId"`
 	WishId      uuid.UUID `json:"wishId"`
 	CharacterId uint32    `json:"characterId"`
+	Origin      string    `json:"origin"`
 }
 
 // StatusEventListingCreateFailedBody reports a rejected listing creation. SellerId

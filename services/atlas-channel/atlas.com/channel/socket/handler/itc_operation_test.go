@@ -5,6 +5,7 @@ import (
 	"time"
 
 	mtslisting "atlas-channel/mts/listing"
+	mtswish "atlas-channel/mts/wish"
 
 	fieldsb "github.com/Chronicle20/atlas/libs/atlas-packet/field/serverbound"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
@@ -247,5 +248,25 @@ func TestMtsItemFromListing_CarriesSerialAsItcSn(t *testing.T) {
 	}
 	if it.Item().TemplateId() != 1302000 {
 		t.Errorf("item template: want 1302000, got %d", it.Item().TemplateId())
+	}
+}
+
+// TestMtsItemFromWish_CarriesTemplate asserts a wish entry renders as a minimal
+// ITCITEM for LoadWishSaleListDone: the wished item template, no serial/price (a
+// wish has no listing/sale metadata).
+func TestMtsItemFromWish_CarriesTemplate(t *testing.T) {
+	wm, err := mtswish.Extract(mtswish.RestModel{Id: "w1", CharacterId: 9001, ItemId: 1302000})
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	it := mtsItemFromWish(wm)
+	if it.Item().TemplateId() != 1302000 {
+		t.Errorf("item template: want 1302000, got %d", it.Item().TemplateId())
+	}
+	if it.ItcSn() != 0 {
+		t.Errorf("itcSn: want 0 (a wish has no listing serial), got %d", it.ItcSn())
+	}
+	if it.Price() != 0 {
+		t.Errorf("price: want 0 (a wish has no price), got %d", it.Price())
 	}
 }

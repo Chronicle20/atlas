@@ -75,19 +75,37 @@ type PlaceBidCommandBody struct {
 	Amount          uint32 `json:"amount"`
 }
 
-// RegisterWishCommandBody carries the wish-list entry to create.
+// RegisterWishCommandBody carries the wish-list entry to create. Origin records
+// which client ITC arm initiated the wish-add (SET_ZZIM vs REGISTER_WISH_ENTRY);
+// atlas-mts echoes it on the WISH_ADDED status event so the channel picks the
+// matching clientbound result. See WishOrigin* constants.
 type RegisterWishCommandBody struct {
 	WishId      uuid.UUID `json:"wishId"`
 	WorldId     byte      `json:"worldId"`
 	CharacterId uint32    `json:"characterId"`
 	ItemId      uint32    `json:"itemId"`
+	Origin      string    `json:"origin"`
 }
 
-// RemoveWishCommandBody identifies the wish-list entry to delete.
+// RemoveWishCommandBody identifies the wish-list entry to delete. Origin records
+// which client ITC arm initiated the wish-remove (DELETE_ZZIM vs CANCEL_WISH);
+// atlas-mts echoes it on the WISH_REMOVED status event. See WishOrigin* constants.
 type RemoveWishCommandBody struct {
 	WishId  uuid.UUID `json:"wishId"`
 	WorldId byte      `json:"worldId"`
+	Origin  string    `json:"origin"`
 }
+
+// WishOrigin* discriminate which client ITC_OPERATION arm initiated a wish
+// add/remove. They round-trip command -> status event so the channel maps the
+// resulting WISH_ADDED/WISH_REMOVED to the correct clientbound result mode. Must
+// match atlas-mts's WishOrigin* constants byte-for-byte.
+const (
+	WishOriginSetZzim      = "SET_ZZIM"
+	WishOriginRegisterWish = "REGISTER_WISH"
+	WishOriginDeleteZzim   = "DELETE_ZZIM"
+	WishOriginCancelWish   = "CANCEL_WISH"
+)
 
 // CreateListingCommandBody initiates a listing. The item snapshot and price terms
 // are resolved by atlas-mts from the seller's inventory transfer saga; the channel
@@ -142,6 +160,8 @@ const (
 	StatusEventTypeListingSold         = "LISTING_SOLD"
 	StatusEventTypeBuyFailed           = "BUY_FAILED"
 	StatusEventTypeBidFailed           = "BID_FAILED"
+	StatusEventTypeWishAdded           = "WISH_ADDED"
+	StatusEventTypeWishRemoved         = "WISH_REMOVED"
 )
 
 // StatusEvent is the generic high-level MTS status/event envelope.
@@ -235,4 +255,26 @@ type StatusEventBidFailedBody struct {
 	Serial   uint32 `json:"serial"`
 	BidderId uint32 `json:"bidderId"`
 	Reason   byte   `json:"reason"`
+}
+
+// StatusEventWishAddedBody reports an added wish-list entry. CharacterId is the
+// target character for the wish-add result; Origin discriminates which ITC arm
+// initiated the add (SET_ZZIM -> SetZzimDone, REGISTER_WISH -> RegisterWishItemDone).
+type StatusEventWishAddedBody struct {
+	WorldId     byte      `json:"worldId"`
+	WishId      uuid.UUID `json:"wishId"`
+	CharacterId uint32    `json:"characterId"`
+	ItemId      uint32    `json:"itemId"`
+	Origin      string    `json:"origin"`
+}
+
+// StatusEventWishRemovedBody reports a removed wish-list entry. CharacterId is the
+// target character for the wish-remove result; Origin discriminates which ITC arm
+// initiated the remove (DELETE_ZZIM -> DeleteZzimDone, CANCEL_WISH ->
+// NotifyCancelWishResult).
+type StatusEventWishRemovedBody struct {
+	WorldId     byte      `json:"worldId"`
+	WishId      uuid.UUID `json:"wishId"`
+	CharacterId uint32    `json:"characterId"`
+	Origin      string    `json:"origin"`
 }

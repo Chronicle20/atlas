@@ -49,6 +49,7 @@ type BrowseFilter struct {
 	SubCategory string
 	SaleType    SaleType
 	ItemId      uint32
+	Serial      uint32
 	SellerName  string
 	Page        int
 	PageSize    int
@@ -87,6 +88,9 @@ func getBrowse(worldId world.Id, state State, f BrowseFilter) database.EntityPro
 		}
 		if f.ItemId != 0 {
 			q = q.Where("template_id = ?", f.ItemId)
+		}
+		if f.Serial != 0 {
+			q = q.Where("serial = ?", f.Serial)
 		}
 		if f.SellerName != "" {
 			q = q.Where("seller_name = ?", f.SellerName)

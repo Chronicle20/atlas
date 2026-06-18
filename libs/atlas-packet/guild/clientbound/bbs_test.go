@@ -15,7 +15,7 @@ import (
 // packet-audit:verify packet=guild/clientbound/GuildBBSThread version=jms_v185 ida=ABSENT
 // packet-audit:verify packet=guild/clientbound/GuildBBSThreadList version=jms_v185 ida=ABSENT
 func TestBBSThreadListEmpty(t *testing.T) {
-	input := NewBBSThreadList(nil, nil, 0)
+	input := NewBBSThreadList(GuildBBSModeThreadList, nil, nil, 0)
 	for _, v := range test.Variants {
 		t.Run(v.Name, func(t *testing.T) {
 			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
@@ -29,7 +29,7 @@ func TestBBSThreadListWithThreads(t *testing.T) {
 		{Id: 1, PosterId: 100, Title: "Hello", CreatedAt: 116444736000000000, EmoticonId: 0, ReplyCount: 3},
 		{Id: 2, PosterId: 200, Title: "Test", CreatedAt: 116444736100000000, EmoticonId: 1, ReplyCount: 0},
 	}
-	input := NewBBSThreadList(nil, threads, 0)
+	input := NewBBSThreadList(GuildBBSModeThreadList, nil, threads, 0)
 	for _, v := range test.Variants {
 		t.Run(v.Name, func(t *testing.T) {
 			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
@@ -42,11 +42,22 @@ func TestBBSThread(t *testing.T) {
 	replies := []BBSReply{
 		{Id: 1, PosterId: 200, CreatedAt: 116444736000000000, Message: "Nice post!"},
 	}
-	input := NewBBSThread(1, 100, 116444736000000000, "Hello", "World", 0, replies)
+	input := NewBBSThread(GuildBBSModeThread, 1, 100, 116444736000000000, "Hello", "World", 0, replies)
 	for _, v := range test.Variants {
 		t.Run(v.Name, func(t *testing.T) {
 			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
 			test.RoundTrip(t, ctx, input.Encode, input.Decode, nil)
 		})
+	}
+}
+
+// packet-audit:verify packet=guild/clientbound/GuildBBSEntryNotFound version=gms_v83 ida=0x816c32
+// packet-audit:verify packet=guild/clientbound/GuildBBSEntryNotFound version=gms_v87 ida=0x87a5df
+// packet-audit:verify packet=guild/clientbound/GuildBBSEntryNotFound version=gms_v95 ida=0x7c8260
+func TestBBSEntryNotFound(t *testing.T) {
+	input := NewBBSEntryNotFound(GuildBBSModeEntryNotFound)
+	got := input.Encode(nil, nil)(nil)
+	if len(got) != 1 || got[0] != GuildBBSModeEntryNotFound {
+		t.Fatalf("got %v, want [%d]", got, GuildBBSModeEntryNotFound)
 	}
 }

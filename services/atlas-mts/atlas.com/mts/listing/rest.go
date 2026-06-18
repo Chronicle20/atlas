@@ -4,10 +4,14 @@ import "time"
 
 // RestModel is the JSON:API representation of a marketplace listing. It covers
 // both the browse (list) and detail (single) attribute surface: the full item
-// snapshot plus the sale/auction/state fields.
+// snapshot plus the sale/auction/state fields. ItcSn is the listing's persistent
+// per-(tenant, world) ITC serial (the client's nITCSN) — the channel emits it as
+// MtsItem.itcSn so the client can address this listing in subsequent
+// buy/cancel/bid ITC_OPERATION arms.
 type RestModel struct {
 	Id         string `json:"-"`
 	WorldId    byte   `json:"worldId"`
+	ItcSn      uint32 `json:"itcSn"`
 	SellerId   uint32 `json:"sellerId"`
 	SellerName string `json:"sellerName"`
 
@@ -110,6 +114,7 @@ func Transform(m Model) (RestModel, error) {
 	return RestModel{
 		Id:             m.Id().String(),
 		WorldId:        byte(m.WorldId()),
+		ItcSn:          m.Serial(),
 		SellerId:       m.SellerId(),
 		SellerName:     m.SellerName(),
 		SaleType:       string(m.SaleType()),

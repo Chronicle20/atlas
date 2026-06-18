@@ -3,10 +3,14 @@ package holding
 import "time"
 
 // RestModel is the JSON:API representation of a take-home holding: the item
-// snapshot plus the origin that placed it in the owner's holding bucket.
+// snapshot plus the origin that placed it in the owner's holding bucket. ItcSn is
+// the holding's persistent per-(tenant, world) ITC serial (the client's nITCSN) —
+// the channel emits it in the holding-list so the client can address this holding
+// in the take-home ITC_OPERATION arm.
 type RestModel struct {
 	Id      string `json:"-"`
 	WorldId byte   `json:"worldId"`
+	ItcSn   uint32 `json:"itcSn"`
 	OwnerId uint32 `json:"ownerId"`
 	Origin  string `json:"origin"`
 
@@ -80,6 +84,7 @@ func Transform(m Model) (RestModel, error) {
 	return RestModel{
 		Id:            m.Id().String(),
 		WorldId:       byte(m.WorldId()),
+		ItcSn:         m.Serial(),
 		OwnerId:       m.OwnerId(),
 		Origin:        string(m.Origin()),
 		TemplateId:    m.TemplateId(),

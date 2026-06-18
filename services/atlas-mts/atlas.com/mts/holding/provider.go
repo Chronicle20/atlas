@@ -19,6 +19,27 @@ func getById(id string) database.EntityProvider[entity] {
 	}
 }
 
+// getBySerial resolves a holding by its per-(tenant, world) ITC serial (the
+// client's nITCSN). The WHERE clause is an explicit name-keyed map rather than a
+// struct condition: GORM's struct-condition Where elides zero-valued fields, so a
+// struct condition would silently drop the world_id filter for world 0 (a valid
+// world.Id, since world.Id is a byte) and resolve the wrong row. tenant scoping is
+// applied by the tenant query callback from the db's context; the default (non
+// soft-deleted) scope applies, so a taken-home holding is not resolved.
+func getBySerial(worldId world.Id, sn uint32) database.EntityProvider[entity] {
+	return func(db *gorm.DB) model.Provider[entity] {
+		var result entity
+		err := db.Where(map[string]interface{}{
+			"world_id": byte(worldId),
+			"serial":   sn,
+		}).First(&result).Error
+		if err != nil {
+			return model.ErrorProvider[entity](err)
+		}
+		return model.FixedProvider(result)
+	}
+}
+
 // getByOwner returns the holdings for a character in a world.
 //
 // The filter is built as an explicit name-keyed map rather than a struct
@@ -61,6 +82,7 @@ func getByCharacter(ownerId uint32) database.EntityProvider[[]entity] {
 func modelFromEntity(e entity) (Model, error) {
 	b := NewBuilder(e.TenantId, world.Id(e.WorldId), e.OwnerId).
 		SetId(e.Id).
+		SetSerial(e.Serial).
 		SetOrigin(Origin(e.Origin)).
 		SetTemplateId(e.TemplateId).
 		SetQuantity(e.Quantity).

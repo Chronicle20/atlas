@@ -21,6 +21,26 @@ func getById(id string) database.EntityProvider[entity] {
 	}
 }
 
+// getBySerial resolves a listing by its per-(tenant, world) ITC serial (the
+// client's nITCSN). The WHERE clause is an explicit name-keyed map rather than a
+// struct condition: GORM's struct-condition Where elides zero-valued fields, so a
+// struct condition would silently drop the world_id filter for world 0 (a valid
+// world.Id, since world.Id is a byte) and resolve the wrong row. tenant scoping is
+// applied by the tenant query callback from the db's context.
+func getBySerial(worldId world.Id, sn uint32) database.EntityProvider[entity] {
+	return func(db *gorm.DB) model.Provider[entity] {
+		var result entity
+		err := db.Where(map[string]interface{}{
+			"world_id": byte(worldId),
+			"serial":   sn,
+		}).First(&result).Error
+		if err != nil {
+			return model.ErrorProvider[entity](err)
+		}
+		return model.FixedProvider(result)
+	}
+}
+
 // BrowseFilter carries the optional public-browse filters. The zero value of a
 // pointer/empty string means "do not constrain on this column"; world_id and
 // state are always applied (they are required positional args to getBrowse).
@@ -158,6 +178,7 @@ func countExpiredActive(now time.Time) func(db *gorm.DB) (int64, error) {
 func modelFromEntity(e entity) (Model, error) {
 	b := NewBuilder(e.TenantId, world.Id(e.WorldId), e.SellerId).
 		SetId(e.Id).
+		SetSerial(e.Serial).
 		SetSellerAccountId(e.SellerAccountId).
 		SetSellerName(e.SellerName).
 		SetSaleType(SaleType(e.SaleType)).

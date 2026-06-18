@@ -38,6 +38,10 @@ const (
 type Processor interface {
 	GetAll() model.Provider[[]Model]
 	GetById(id string) (Model, error)
+	// GetBySerial resolves a holding by its per-(tenant, world) ITC serial (the
+	// client's nITCSN). It is the resolver the channel take-home ITC_OPERATION arm
+	// uses to translate the wire's uint32 serial into the UUID-keyed holding.
+	GetBySerial(worldId world.Id, sn uint32) (Model, error)
 	Create(m Model) (Model, error)
 	GetByOwner(worldId world.Id, ownerId uint32) ([]Model, error)
 	GetByCharacter(ownerId uint32) ([]Model, error)
@@ -82,6 +86,11 @@ func (p *ProcessorImpl) GetAll() model.Provider[[]Model] {
 
 func (p *ProcessorImpl) GetById(id string) (Model, error) {
 	return GetById(id)(p.db.WithContext(p.ctx))()
+}
+
+// GetBySerial resolves a holding by its per-(tenant, world) ITC serial.
+func (p *ProcessorImpl) GetBySerial(worldId world.Id, sn uint32) (Model, error) {
+	return GetBySerial(worldId, sn)(p.db.WithContext(p.ctx))()
 }
 
 // Create persists a new holding and returns the stored Model (with its assigned

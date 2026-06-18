@@ -25,6 +25,7 @@ type Model struct {
 	id       uuid.UUID
 	tenantId uuid.UUID
 	worldId  world.Id
+	serial   uint32
 	ownerId  uint32
 
 	origin Origin
@@ -63,6 +64,7 @@ type Model struct {
 func (m Model) Id() uuid.UUID         { return m.id }
 func (m Model) TenantId() uuid.UUID   { return m.tenantId }
 func (m Model) WorldId() world.Id     { return m.worldId }
+func (m Model) Serial() uint32        { return m.serial }
 func (m Model) OwnerId() uint32       { return m.ownerId }
 func (m Model) Origin() Origin        { return m.origin }
 func (m Model) TemplateId() uint32    { return m.templateId }

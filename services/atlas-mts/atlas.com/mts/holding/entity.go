@@ -3,14 +3,22 @@ package holding
 import (
 	"time"
 
+	"atlas-mts/serial"
+
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
 // Migration creates the holdings table. It is a brand-new table (no legacy
 // primary-key rewrite), so AutoMigrate alone produces the correct surrogate-key
-// shape and the composite indexes declared on the entity tags.
+// shape and the composite indexes declared on the entity tags. It also migrates
+// the shared per-(tenant, world) ITC-serial counter table, since CreateHolding
+// draws a serial from it on every insert — co-migrating keeps the dependency
+// satisfied for every caller (prod boot and the per-package test harness alike).
 func Migration(db *gorm.DB) error {
+	if err := serial.Migration(db); err != nil {
+		return err
+	}
 	return db.AutoMigrate(&entity{})
 }
 
@@ -24,12 +32,17 @@ func Migration(db *gorm.DB) error {
 // DeletedAt is a GORM soft-delete column: take-home soft-deletes by id so a
 // repeated take-home is idempotent (the second delete affects zero rows).
 //
-// One composite index backs the design's hot query:
+// Composite indexes back the design's hot queries:
 //   - (tenant_id, world_id, owner_id) — list a character's holdings in a world
+//   - (tenant_id, world_id, serial) UNIQUE — serial->row resolution for the
+//     take-home ITC_OPERATION arm; the serial is the client's nITCSN, drawn from
+//     the SAME per-(tenant, world) counter as listings, so a serial maps to
+//     exactly one holding OR listing within a world.
 type entity struct {
 	Id       uuid.UUID `gorm:"column:id;type:uuid;primaryKey;uniqueIndex:idx_holdings_tenant_id,priority:2"`
-	TenantId uuid.UUID `gorm:"column:tenant_id;type:uuid;not null;uniqueIndex:idx_holdings_tenant_id,priority:1;index:idx_holdings_world_owner,priority:1"`
-	WorldId  byte      `gorm:"column:world_id;not null;index:idx_holdings_world_owner,priority:2"`
+	TenantId uuid.UUID `gorm:"column:tenant_id;type:uuid;not null;uniqueIndex:idx_holdings_tenant_id,priority:1;index:idx_holdings_world_owner,priority:1;uniqueIndex:idx_holdings_world_serial,priority:1"`
+	WorldId  byte      `gorm:"column:world_id;not null;index:idx_holdings_world_owner,priority:2;uniqueIndex:idx_holdings_world_serial,priority:2"`
+	Serial   uint32    `gorm:"column:serial;not null;uniqueIndex:idx_holdings_world_serial,priority:3"`
 	OwnerId  uint32    `gorm:"column:owner_id;not null;index:idx_holdings_world_owner,priority:3"`
 
 	Origin string `gorm:"column:origin;not null"`

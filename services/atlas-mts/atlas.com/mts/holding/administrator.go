@@ -3,6 +3,9 @@ package holding
 import (
 	"time"
 
+	"atlas-mts/serial"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
@@ -27,6 +30,15 @@ func GetById(id string) database.EntityProvider[Model] {
 	}
 }
 
+// GetBySerial is the exported provider wrapper: it resolves a holding by its
+// per-(tenant, world) ITC serial (the client's nITCSN), mapping the entity to the
+// immutable Model.
+func GetBySerial(worldId world.Id, sn uint32) database.EntityProvider[Model] {
+	return func(db *gorm.DB) model.Provider[Model] {
+		return model.Map(modelFromEntity)(getBySerial(worldId, sn)(db))
+	}
+}
+
 // GetAll resolves every holding visible to the request's tenant.
 func GetAll() database.EntityProvider[[]Model] {
 	return func(db *gorm.DB) model.Provider[[]Model] {
@@ -34,8 +46,18 @@ func GetAll() database.EntityProvider[[]Model] {
 	}
 }
 
-// CreateHolding assigns a fresh surrogate id, persists an explicit-column row,
-// and returns the stored Model.
+// CreateHolding assigns a fresh surrogate id, draws the next per-(tenant, world)
+// ITC serial (the client's nITCSN, shared with listings), persists an
+// explicit-column row, and returns the stored Model.
+//
+// The serial is drawn here — at the INSERT choke point — using the SAME db handle
+// the caller passes. Every production caller (the cancel/expire seller-holding
+// transition in the listing processor and the MtsMoveListingToHolding settle
+// handler) invokes CreateHolding only AFTER a guard inside an ExecuteTransaction
+// (a conditional active->terminal UpdateState that yields 0 rows on replay, or an
+// id-existence check), so a replayed move/cancel/expire short-circuits before
+// reaching here and never consumes a serial; the serial draw and the row insert
+// then commit or roll back together within that one transaction.
 func CreateHolding(db *gorm.DB, m Model) (Model, error) {
 	id := m.Id()
 	if id == uuid.Nil {
@@ -46,10 +68,16 @@ func CreateHolding(db *gorm.DB, m Model) (Model, error) {
 		createdAt = time.Now()
 	}
 
+	sn, err := serial.Next(db, m.TenantId(), m.WorldId())
+	if err != nil {
+		return Model{}, err
+	}
+
 	e := entity{
 		Id:            id,
 		TenantId:      m.TenantId(),
 		WorldId:       byte(m.WorldId()),
+		Serial:        sn,
 		OwnerId:       m.OwnerId(),
 		Origin:        string(m.Origin()),
 		TemplateId:    m.TemplateId(),

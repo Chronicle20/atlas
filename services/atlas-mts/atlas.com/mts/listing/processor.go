@@ -123,6 +123,11 @@ const (
 type Processor interface {
 	GetAll() model.Provider[[]Model]
 	GetById(id string) (Model, error)
+	// GetBySerial resolves a listing by its per-(tenant, world) ITC serial (the
+	// client's nITCSN). It is the resolver the channel ITC_OPERATION arms use to
+	// translate the wire's uint32 serial into the UUID-keyed listing for the
+	// cancel/buy/bid flows.
+	GetBySerial(worldId world.Id, sn uint32) (Model, error)
 	Create(m Model) (Model, error)
 	Browse(worldId world.Id, state State, f BrowseFilter) ([]Model, error)
 	TransitionState(id string, from State, to State) (bool, error)
@@ -217,6 +222,11 @@ func (p *ProcessorImpl) GetAll() model.Provider[[]Model] {
 
 func (p *ProcessorImpl) GetById(id string) (Model, error) {
 	return GetById(id)(p.db.WithContext(p.ctx))()
+}
+
+// GetBySerial resolves a listing by its per-(tenant, world) ITC serial.
+func (p *ProcessorImpl) GetBySerial(worldId world.Id, sn uint32) (Model, error) {
+	return GetBySerial(worldId, sn)(p.db.WithContext(p.ctx))()
 }
 
 // Create persists a new listing and returns the stored Model (with its assigned

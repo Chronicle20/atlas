@@ -23,6 +23,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
@@ -314,6 +316,74 @@ func TestDupeSafety_TakeHomeReplay(t *testing.T) {
 	handleReleaseFromMtsHolding(rp.provider())(db)(l, ctx, cmd)
 	if got := countHoldingsForOwner(t, db, ctx, ownerId); got != 0 {
 		t.Fatalf("expected 0 live holdings for owner after take-home + replay, got %d", got)
+	}
+}
+
+// TestDupeSafety_AcceptReplayDoesNotConsumeSerial asserts the replay-idempotency
+// invariant for the ITC serial (task-102 §3/§6): a redelivered AcceptToMtsListing
+// (same listing id) short-circuits on the id-existence check BEFORE CreateListing,
+// so it never draws a serial. Proof: the listing's serial is stable across the
+// replay AND a subsequent genuine create gets the very next serial — not one
+// skipped past a serial burned by the replay.
+func TestDupeSafety_AcceptReplayDoesNotConsumeSerial(t *testing.T) {
+	db := test.SetupTestDB(t, listing.Migration, holding.Migration)
+	l := logrus.New()
+	rp := &recordingProducer{}
+
+	// Use a FRESH tenant and a distinct world so the shared per-process in-memory DB
+	// (cache=shared) does not leak serial draws from sibling tests into the counter.
+	tenantId := uuid.New()
+	te, err := tenant.Create(tenantId, "GMS", 83, 1)
+	if err != nil {
+		t.Fatalf("create tenant: %v", err)
+	}
+	ctx := tenant.WithContext(context.Background(), te)
+	const wid = byte(7)
+
+	accept := func(listingId uuid.UUID) custody.Command[custody.AcceptToMtsListingCommandBody] {
+		c := newAcceptCommand(uuid.New(), listingId)
+		c.Body.WorldId = wid
+		return c
+	}
+
+	// First genuine create draws serial 1.
+	firstId := uuid.New()
+	handleAcceptToMtsListing(rp.provider())(db)(l, ctx, accept(firstId))
+	first, err := listing.GetById(firstId.String())(db.WithContext(ctx))()
+	if err != nil {
+		t.Fatalf("first listing lookup: %v", err)
+	}
+	if first.Serial() != 1 {
+		t.Fatalf("first listing serial = %d, want 1", first.Serial())
+	}
+
+	// Second genuine create draws serial 2; then REPLAY the same command — the
+	// existence check must short-circuit so no new serial is consumed.
+	secondId := uuid.New()
+	cmd := accept(secondId)
+	handleAcceptToMtsListing(rp.provider())(db)(l, ctx, cmd)
+	handleAcceptToMtsListing(rp.provider())(db)(l, ctx, cmd) // replay
+	second, err := listing.GetBySerial(world.Id(wid), 2)(db.WithContext(ctx))()
+	if err != nil {
+		t.Fatalf("second listing GetBySerial(2): %v", err)
+	}
+	if second.Id() != secondId {
+		t.Fatalf("serial 2 resolved id %s, want %s", second.Id(), secondId)
+	}
+	if got := countListingRows(t, db, ctx, secondId); got != 1 {
+		t.Fatalf("replay created %d rows for the second listing, want 1", got)
+	}
+
+	// A THIRD genuine create must draw serial 3 — NOT 4. If the replay had consumed
+	// a serial, the counter would be at 3 and this would be 4.
+	thirdId := uuid.New()
+	handleAcceptToMtsListing(rp.provider())(db)(l, ctx, accept(thirdId))
+	third, err := listing.GetById(thirdId.String())(db.WithContext(ctx))()
+	if err != nil {
+		t.Fatalf("third listing lookup: %v", err)
+	}
+	if third.Serial() != 3 {
+		t.Fatalf("third listing serial = %d, want 3 (a replay must NOT consume a serial)", third.Serial())
 	}
 }
 

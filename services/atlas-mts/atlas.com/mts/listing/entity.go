@@ -3,14 +3,22 @@ package listing
 import (
 	"time"
 
+	"atlas-mts/serial"
+
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
 // Migration creates the listings table. It is a brand-new table (no legacy
 // primary-key rewrite), so AutoMigrate alone produces the correct surrogate-key
-// shape and the composite indexes declared on the entity tags.
+// shape and the composite indexes declared on the entity tags. It also migrates
+// the shared per-(tenant, world) ITC-serial counter table, since CreateListing
+// draws a serial from it on every insert — co-migrating keeps the dependency
+// satisfied for every caller (prod boot and the per-package test harness alike).
 func Migration(db *gorm.DB) error {
+	if err := serial.Migration(db); err != nil {
+		return err
+	}
 	return db.AutoMigrate(&entity{})
 }
 
@@ -21,14 +29,20 @@ func Migration(db *gorm.DB) error {
 // snapshot is stored as explicit name-keyed columns — one column per stat, no
 // JSON blob — so a binary COPY/restore is column-order safe.
 //
-// Three composite indexes back the design's hot queries:
+// Composite indexes back the design's hot queries:
 //   - (tenant_id, world_id, state, category) — browse a world's active listings by category
 //   - (tenant_id, seller_id, state)          — a seller's own listings
 //   - (tenant_id, world_id, ends_at)         — auction-expiry sweep
+//   - (tenant_id, world_id, serial) UNIQUE   — serial->row resolution for the
+//     ITC_OPERATION arms; the serial is the client's nITCSN, assigned from the
+//     shared per-(tenant, world) counter at row creation. UNIQUE so a serial maps
+//     to exactly one row within a world (and never collides with a holding, since
+//     listings and holdings draw from the same counter).
 type entity struct {
 	Id              uuid.UUID `gorm:"column:id;type:uuid;primaryKey;uniqueIndex:idx_listings_tenant_id,priority:2"`
-	TenantId        uuid.UUID `gorm:"column:tenant_id;type:uuid;not null;uniqueIndex:idx_listings_tenant_id,priority:1;index:idx_listings_world_state_category,priority:1;index:idx_listings_seller_state,priority:1;index:idx_listings_world_ends_at,priority:1"`
-	WorldId         byte      `gorm:"column:world_id;not null;index:idx_listings_world_state_category,priority:2;index:idx_listings_world_ends_at,priority:2"`
+	TenantId        uuid.UUID `gorm:"column:tenant_id;type:uuid;not null;uniqueIndex:idx_listings_tenant_id,priority:1;index:idx_listings_world_state_category,priority:1;index:idx_listings_seller_state,priority:1;index:idx_listings_world_ends_at,priority:1;uniqueIndex:idx_listings_world_serial,priority:1"`
+	WorldId         byte      `gorm:"column:world_id;not null;index:idx_listings_world_state_category,priority:2;index:idx_listings_world_ends_at,priority:2;uniqueIndex:idx_listings_world_serial,priority:2"`
+	Serial          uint32    `gorm:"column:serial;not null;uniqueIndex:idx_listings_world_serial,priority:3"`
 	SellerId        uint32    `gorm:"column:seller_id;not null;index:idx_listings_seller_state,priority:2"`
 	SellerAccountId uint32    `gorm:"column:seller_account_id;not null"`
 	SellerName      string    `gorm:"column:seller_name;not null"`

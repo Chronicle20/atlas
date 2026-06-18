@@ -14,6 +14,7 @@ type Builder struct {
 	id              uuid.UUID
 	tenantId        uuid.UUID
 	worldId         world.Id
+	serial          uint32
 	sellerId        uint32
 	sellerAccountId uint32
 	sellerName      string
@@ -68,6 +69,11 @@ func NewBuilder(tenantId uuid.UUID, worldId world.Id, sellerId uint32) *Builder 
 
 func (b *Builder) SetId(id uuid.UUID) *Builder {
 	b.id = id
+	return b
+}
+
+func (b *Builder) SetSerial(serial uint32) *Builder {
+	b.serial = serial
 	return b
 }
 
@@ -279,6 +285,7 @@ func (b *Builder) Build() (Model, error) {
 		id:              b.id,
 		tenantId:        b.tenantId,
 		worldId:         b.worldId,
+		serial:          b.serial,
 		sellerId:        b.sellerId,
 		sellerAccountId: b.sellerAccountId,
 		sellerName:      b.sellerName,

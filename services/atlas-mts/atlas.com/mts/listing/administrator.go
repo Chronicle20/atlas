@@ -3,6 +3,9 @@ package listing
 import (
 	"time"
 
+	"atlas-mts/serial"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
@@ -24,6 +27,15 @@ func parseId(id string) uuid.UUID {
 func GetById(id string) database.EntityProvider[Model] {
 	return func(db *gorm.DB) model.Provider[Model] {
 		return model.Map(modelFromEntity)(getById(id)(db))
+	}
+}
+
+// GetBySerial is the exported provider wrapper: it resolves a listing by its
+// per-(tenant, world) ITC serial (the client's nITCSN), mapping the entity to the
+// immutable Model.
+func GetBySerial(worldId world.Id, sn uint32) database.EntityProvider[Model] {
+	return func(db *gorm.DB) model.Provider[Model] {
+		return model.Map(modelFromEntity)(getBySerial(worldId, sn)(db))
 	}
 }
 
@@ -51,8 +63,16 @@ func CountExpiredActive(now time.Time) func(db *gorm.DB) (int64, error) {
 	return countExpiredActive(now)
 }
 
-// CreateListing assigns a fresh surrogate id, persists an explicit-column row,
-// and returns the stored Model.
+// CreateListing assigns a fresh surrogate id, draws the next per-(tenant, world)
+// ITC serial (the client's nITCSN, shared with holdings), persists an
+// explicit-column row, and returns the stored Model.
+//
+// The serial is drawn here — at the INSERT choke point — using the SAME db handle
+// the caller passes. Every production caller (the AcceptToMtsListing custody
+// handler) invokes CreateListing only AFTER an id-existence check inside an
+// ExecuteTransaction, so a replayed create short-circuits before reaching here and
+// never consumes a serial; the serial draw and the row insert then commit or roll
+// back together within that one transaction.
 func CreateListing(db *gorm.DB, m Model) (Model, error) {
 	id := m.Id()
 	if id == uuid.Nil {
@@ -64,10 +84,16 @@ func CreateListing(db *gorm.DB, m Model) (Model, error) {
 		createdAt = now
 	}
 
+	sn, err := serial.Next(db, m.TenantId(), m.WorldId())
+	if err != nil {
+		return Model{}, err
+	}
+
 	e := entity{
 		Id:              id,
 		TenantId:        m.TenantId(),
 		WorldId:         byte(m.WorldId()),
+		Serial:          sn,
 		SellerId:        m.SellerId(),
 		SellerAccountId: m.SellerAccountId(),
 		SellerName:      m.SellerName(),

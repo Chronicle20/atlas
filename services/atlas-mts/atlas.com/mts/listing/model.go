@@ -32,6 +32,7 @@ type Model struct {
 	id              uuid.UUID
 	tenantId        uuid.UUID
 	worldId         world.Id
+	serial          uint32
 	sellerId        uint32
 	sellerAccountId uint32
 	sellerName      string
@@ -87,6 +88,7 @@ type Model struct {
 func (m Model) Id() uuid.UUID           { return m.id }
 func (m Model) TenantId() uuid.UUID     { return m.tenantId }
 func (m Model) WorldId() world.Id       { return m.worldId }
+func (m Model) Serial() uint32          { return m.serial }
 func (m Model) SellerId() uint32        { return m.sellerId }
 func (m Model) SellerAccountId() uint32 { return m.sellerAccountId }
 func (m Model) SellerName() string      { return m.sellerName }

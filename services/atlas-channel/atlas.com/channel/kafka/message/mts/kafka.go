@@ -41,10 +41,13 @@ type Command[E any] struct {
 	Body          E         `json:"body"`
 }
 
-// CancelListingCommandBody identifies the listing the seller is cancelling.
+// CancelListingCommandBody identifies the listing the seller is cancelling by its
+// per-(tenant, world) ITC serial (the client's nITCSN). atlas-mts resolves the
+// serial -> listing UUID and owner-checks SellerId.
 type CancelListingCommandBody struct {
-	ListingId uuid.UUID `json:"listingId"`
-	WorldId   byte      `json:"worldId"`
+	WorldId  byte   `json:"worldId"`
+	Serial   uint32 `json:"serial"`
+	SellerId uint32 `json:"sellerId"`
 }
 
 // BuyCommandBody identifies the listing being bought and carries the buyer's
@@ -81,26 +84,118 @@ type RemoveWishCommandBody struct {
 	WorldId byte      `json:"worldId"`
 }
 
-// CreateListingCommandBody initiates a listing. The item snapshot and price
-// terms are resolved by atlas-mts from the seller's holding/inventory transfer
-// saga; the channel supplies the seller identity, the item being listed, and the
-// price terms collected from the register-sale / register-auction packet.
+// CreateListingCommandBody initiates a listing. The item snapshot and price terms
+// are resolved by atlas-mts from the seller's inventory transfer saga; the channel
+// supplies the seller identity (from the session), the item being listed (AssetId =
+// the source inventory slot, SourceInventoryType), the sale terms and (for
+// auctions) the duration collected from the register-sale / register-auction
+// packet. No serial — the listing does not exist yet. Mirrors atlas-mts's
+// CreateListingCommandBody field-for-field.
 type CreateListingCommandBody struct {
-	WorldId         byte   `json:"worldId"`
-	SellerId        uint32 `json:"sellerId"`
-	SellerAccountId uint32 `json:"sellerAccountId"`
-	ItemId          uint32 `json:"itemId"`
-	Quantity        uint32 `json:"quantity"`
-	Price           uint32 `json:"price"`
-	IsAuction       bool   `json:"isAuction"`
-	BuyNowPrice     uint32 `json:"buyNowPrice"`
-	DurationHours   uint32 `json:"durationHours"`
+	WorldId             byte    `json:"worldId"`
+	SellerId            uint32  `json:"sellerId"`
+	SellerAccountId     uint32  `json:"sellerAccountId"`
+	SellerName          string  `json:"sellerName"`
+	SaleType            string  `json:"saleType"`
+	SourceInventoryType byte    `json:"sourceInventoryType"`
+	AssetId             uint32  `json:"assetId"`
+	Quantity            uint32  `json:"quantity"`
+	ListValue           uint32  `json:"listValue"`
+	BuyNowPrice         *uint32 `json:"buyNowPrice,omitempty"`
+	DurationHours       int     `json:"durationHours,omitempty"`
+	Category            string  `json:"category"`
+	SubCategory         string  `json:"subCategory"`
 }
 
 // TakeHomeCommandBody identifies the holding the character is taking home into
-// inventory.
+// inventory by its per-(tenant, world) ITC serial (the client's nITCSN). atlas-mts
+// resolves the serial -> holding UUID. Mirrors atlas-mts's TakeHomeCommandBody.
 type TakeHomeCommandBody struct {
-	HoldingId   uuid.UUID `json:"holdingId"`
+	WorldId       byte   `json:"worldId"`
+	Serial        uint32 `json:"serial"`
+	CharacterId   uint32 `json:"characterId"`
+	InventoryType byte   `json:"inventoryType"`
+	Slot          int16  `json:"slot"`
+}
+
+// --- EVENT_TOPIC_MTS_STATUS (status events the channel consumes) --------------
+//
+// These mirror atlas-mts's StatusEvent envelope + bodies (services/atlas-mts/
+// atlas.com/mts/kafka/message/mts/kafka.go). The channel consumes them to write
+// the matching clientbound MtsOperation* result to the originating character's
+// session. Only the event types the channel acts on are mirrored here.
+const (
+	// EnvStatusEventTopic names the high-level MTS status/event topic.
+	EnvStatusEventTopic = "EVENT_TOPIC_MTS_STATUS"
+
+	StatusEventTypeListingCreated      = "LISTING_CREATED"
+	StatusEventTypeListingCancelled    = "LISTING_CANCELLED"
+	StatusEventTypeItemTakenHome       = "ITEM_TAKEN_HOME"
+	StatusEventTypeListingCreateFailed = "LISTING_CREATE_FAILED"
+	StatusEventTypeListingCancelFailed = "LISTING_CANCEL_FAILED"
+	StatusEventTypeTakeHomeFailed      = "TAKE_HOME_FAILED"
+)
+
+// StatusEvent is the generic high-level MTS status/event envelope.
+type StatusEvent[E any] struct {
+	TransactionId uuid.UUID `json:"transactionId"`
+	Type          string    `json:"type"`
+	Body          E         `json:"body"`
+}
+
+// StatusEventListingCreatedBody reports a created listing. SellerId is the target
+// character for the RegisterSaleEntryDone result.
+type StatusEventListingCreatedBody struct {
+	WorldId   byte      `json:"worldId"`
+	ListingId uuid.UUID `json:"listingId"`
+	SellerId  uint32    `json:"sellerId"`
+	ItemId    uint32    `json:"itemId"`
+}
+
+// StatusEventListingCancelledBody reports a cancelled listing. SellerId is the
+// target character for the CancelSaleItemDone result.
+type StatusEventListingCancelledBody struct {
+	WorldId   byte      `json:"worldId"`
+	ListingId uuid.UUID `json:"listingId"`
+	HoldingId uuid.UUID `json:"holdingId"`
+	SellerId  uint32    `json:"sellerId"`
+	ItemId    uint32    `json:"itemId"`
+}
+
+// StatusEventItemTakenHomeBody reports a holding taken home. CharacterId is the
+// target character for the MoveItcPurchaseItemLtoSDone result.
+type StatusEventItemTakenHomeBody struct {
 	WorldId     byte      `json:"worldId"`
+	HoldingId   uuid.UUID `json:"holdingId"`
 	CharacterId uint32    `json:"characterId"`
+	ItemId      uint32    `json:"itemId"`
+}
+
+// StatusEventListingCreateFailedBody reports a rejected listing creation. SellerId
+// is the target character for the RegisterSaleEntryFailed result; Reason is the
+// clientbound NoticeFailReason byte.
+type StatusEventListingCreateFailedBody struct {
+	WorldId  byte   `json:"worldId"`
+	SellerId uint32 `json:"sellerId"`
+	Reason   byte   `json:"reason"`
+}
+
+// StatusEventListingCancelFailedBody reports a rejected cancel. SellerId is the
+// target character for the CancelSaleItemFailed result; Reason is the clientbound
+// NoticeFailReason byte.
+type StatusEventListingCancelFailedBody struct {
+	WorldId  byte   `json:"worldId"`
+	Serial   uint32 `json:"serial"`
+	SellerId uint32 `json:"sellerId"`
+	Reason   byte   `json:"reason"`
+}
+
+// StatusEventTakeHomeFailedBody reports a rejected take-home. CharacterId is the
+// target character for the MoveItcPurchaseItemLtoSFailed result; Reason is the
+// clientbound NoticeFailReason byte.
+type StatusEventTakeHomeFailedBody struct {
+	WorldId     byte   `json:"worldId"`
+	Serial      uint32 `json:"serial"`
+	CharacterId uint32 `json:"characterId"`
+	Reason      byte   `json:"reason"`
 }

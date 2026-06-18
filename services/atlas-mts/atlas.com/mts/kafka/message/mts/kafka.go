@@ -25,14 +25,13 @@ const (
 	// --- saga/ticker-driven command types (routed in Phases 4-6; declared here so
 	// the protocol vocabulary is complete, but intentionally NOT dispatched yet) ---
 
-	// CommandCreateListing creates a listing (saga-driven; routed in a later phase).
+	// CommandCreateListing creates a listing (saga-driven; routed task-102).
 	CommandCreateListing = "CREATE_LISTING"
 	// CommandBuy buys out a listing (saga-driven; routed in a later phase).
 	CommandBuy = "BUY"
 	// CommandPlaceBid places a bid on an auction listing (saga-driven; routed here).
 	CommandPlaceBid = "PLACE_BID"
-	// CommandTakeHome takes a holding home into inventory (saga-driven; routed in a
-	// later phase).
+	// CommandTakeHome takes a holding home into inventory (saga-driven; routed task-102).
 	CommandTakeHome = "TAKE_HOME"
 	// CommandExpireListing expires an auction/listing (ticker-driven; routed in a
 	// later phase).
@@ -47,11 +46,15 @@ type Command[E any] struct {
 	Body          E         `json:"body"`
 }
 
-// CancelListingCommandBody identifies the listing the seller is cancelling. The
-// seller identity and item snapshot are read from the listing row by atlas-mts.
+// CancelListingCommandBody identifies the listing the seller is cancelling by its
+// per-(tenant, world) ITC serial (the client's nITCSN). atlas-mts resolves the
+// serial -> listing UUID (listing.GetBySerial), owner-checks the SellerId against
+// the listing's seller, then runs the race-safe cancel. The item snapshot is read
+// from the listing row by atlas-mts.
 type CancelListingCommandBody struct {
-	ListingId uuid.UUID `json:"listingId"`
-	WorldId   byte      `json:"worldId"`
+	WorldId  byte   `json:"worldId"`
+	Serial   uint32 `json:"serial"`
+	SellerId uint32 `json:"sellerId"`
 }
 
 // BuyCommandBody identifies the listing being bought and carries the buyer's
@@ -97,6 +100,46 @@ type RemoveWishCommandBody struct {
 	WorldId byte      `json:"worldId"`
 }
 
+// CreateListingCommandBody initiates a listing (the channel ITC register-sale /
+// register-auction / sale-current-item arms emit this). atlas-mts maps it to a
+// listing.ListRequest and runs the server-authoritative List flow (price-floor,
+// active-cap, auction-duration validation + TransferToMts saga). No serial is
+// carried — the listing (and thus its serial) does not exist yet; it is assigned
+// when the custody saga's AcceptToMtsListing creates the row.
+//
+// The seller identity (SellerId/SellerAccountId/SellerName) and the item being
+// listed (AssetId = the source inventory slot, SourceInventoryType) come from the
+// channel session + the decoded register packet; the item snapshot itself is
+// resolved during saga expansion, never trusted from the wire.
+type CreateListingCommandBody struct {
+	WorldId             byte    `json:"worldId"`
+	SellerId            uint32  `json:"sellerId"`
+	SellerAccountId     uint32  `json:"sellerAccountId"`
+	SellerName          string  `json:"sellerName"`
+	SaleType            string  `json:"saleType"`
+	SourceInventoryType byte    `json:"sourceInventoryType"`
+	AssetId             uint32  `json:"assetId"`
+	Quantity            uint32  `json:"quantity"`
+	ListValue           uint32  `json:"listValue"`
+	BuyNowPrice         *uint32 `json:"buyNowPrice,omitempty"`
+	DurationHours       int     `json:"durationHours,omitempty"`
+	Category            string  `json:"category"`
+	SubCategory         string  `json:"subCategory"`
+}
+
+// TakeHomeCommandBody identifies the holding the character is taking home into
+// inventory by its per-(tenant, world) ITC serial (the client's nITCSN). atlas-mts
+// resolves the serial -> holding UUID (holding.GetBySerial), then runs the
+// WithdrawFromMts saga. InventoryType selects the destination tab; Slot is
+// advisory (the saga assigns a free slot on expansion).
+type TakeHomeCommandBody struct {
+	WorldId       byte   `json:"worldId"`
+	Serial        uint32 `json:"serial"`
+	CharacterId   uint32 `json:"characterId"`
+	InventoryType byte   `json:"inventoryType"`
+	Slot          int16  `json:"slot"`
+}
+
 const (
 	// EnvStatusEventTopic names the high-level MTS status/event topic. Every event
 	// body carries transactionId + worldId.
@@ -123,6 +166,21 @@ const (
 	StatusEventTypeWishAdded = "WISH_ADDED"
 	// StatusEventTypeWishRemoved reports a wish-list entry was removed.
 	StatusEventTypeWishRemoved = "WISH_REMOVED"
+
+	// StatusEventTypeListingCreateFailed reports a listing creation was rejected
+	// before any custody saga was emitted (price floor, active cap, auction
+	// duration, or emit error). The channel writes RegisterSaleEntryFailed to the
+	// originating seller.
+	StatusEventTypeListingCreateFailed = "LISTING_CREATE_FAILED"
+	// StatusEventTypeListingCancelFailed reports a seller's cancel was rejected
+	// (serial did not resolve, owner-check failed, or the listing was no longer
+	// active — the cancel-vs-buy loser). The channel writes CancelSaleItemFailed to
+	// the originating seller.
+	StatusEventTypeListingCancelFailed = "LISTING_CANCEL_FAILED"
+	// StatusEventTypeTakeHomeFailed reports a take-home was rejected (serial did not
+	// resolve, owner-check failed, or the withdraw saga could not be emitted). The
+	// channel writes MoveItcPurchaseItemLtoSFailed to the originating character.
+	StatusEventTypeTakeHomeFailed = "TAKE_HOME_FAILED"
 )
 
 // StatusEvent is the generic high-level MTS status/event envelope. TransactionId
@@ -209,4 +267,33 @@ type StatusEventWishRemovedBody struct {
 	WorldId     byte      `json:"worldId"`
 	WishId      uuid.UUID `json:"wishId"`
 	CharacterId uint32    `json:"characterId"`
+}
+
+// StatusEventListingCreateFailedBody reports a rejected listing creation. SellerId
+// is the originating character so the channel can target the seller's session with
+// a RegisterSaleEntryFailed; Reason is the clientbound NoticeFailReason byte.
+type StatusEventListingCreateFailedBody struct {
+	WorldId  byte   `json:"worldId"`
+	SellerId uint32 `json:"sellerId"`
+	Reason   byte   `json:"reason"`
+}
+
+// StatusEventListingCancelFailedBody reports a rejected cancel. SellerId is the
+// originating character so the channel can target the seller's session with a
+// CancelSaleItemFailed; Reason is the clientbound NoticeFailReason byte.
+type StatusEventListingCancelFailedBody struct {
+	WorldId  byte   `json:"worldId"`
+	Serial   uint32 `json:"serial"`
+	SellerId uint32 `json:"sellerId"`
+	Reason   byte   `json:"reason"`
+}
+
+// StatusEventTakeHomeFailedBody reports a rejected take-home. CharacterId is the
+// originating character so the channel can target their session with a
+// MoveItcPurchaseItemLtoSFailed; Reason is the clientbound NoticeFailReason byte.
+type StatusEventTakeHomeFailedBody struct {
+	WorldId     byte   `json:"worldId"`
+	Serial      uint32 `json:"serial"`
+	CharacterId uint32 `json:"characterId"`
+	Reason      byte   `json:"reason"`
 }

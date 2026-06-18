@@ -58,6 +58,9 @@ func (r *recordingProducer) provider() func(ctx context.Context) func(token stri
 
 // seedActiveListing persists an active listing row with a known snapshot so the
 // cancel handler has something to move to a seller holding.
+// seedActiveListing persists an active listing row with a known snapshot. The
+// per-(tenant, world) serial is assigned by CreateListing (serial.Next) and read
+// from the returned model, so callers address the row by its real nITCSN.
 func seedActiveListing(t *testing.T, db *gorm.DB, ctx context.Context, listingId uuid.UUID, sellerId uint32) listing.Model {
 	t.Helper()
 	m, err := listing.NewBuilder(test.TestTenantId, 0, sellerId).
@@ -103,13 +106,14 @@ func holdingsForOwner(t *testing.T, db *gorm.DB, ctx context.Context, ownerId ui
 	return out
 }
 
-func newCancelCommand(transactionId uuid.UUID, listingId uuid.UUID) mts.Command[mts.CancelListingCommandBody] {
+func newCancelCommand(transactionId uuid.UUID, serial uint32, sellerId uint32) mts.Command[mts.CancelListingCommandBody] {
 	return mts.Command[mts.CancelListingCommandBody]{
 		TransactionId: transactionId,
 		Type:          mts.CommandCancelListing,
 		Body: mts.CancelListingCommandBody{
-			ListingId: listingId,
-			WorldId:   0,
+			WorldId:  0,
+			Serial:   serial,
+			SellerId: sellerId,
 		},
 	}
 }
@@ -122,10 +126,10 @@ func TestCancelListing_MovesActiveToSellerHoldingAndAcks(t *testing.T) {
 	transactionId := uuid.New()
 	listingId := uuid.New()
 	const sellerId = uint32(8880001)
-	seedActiveListing(t, db, ctx, listingId, sellerId)
+	seeded := seedActiveListing(t, db, ctx, listingId, sellerId)
 
 	rp := &recordingProducer{}
-	handleCancelListing(rp.provider())(db)(l, ctx, newCancelCommand(transactionId, listingId))
+	handleCancelListing(rp.provider())(db)(l, ctx, newCancelCommand(transactionId, seeded.Serial(), sellerId))
 
 	// listing transitioned to cancelled
 	stored, err := listing.GetById(listingId.String())(db.WithContext(ctx))()
@@ -161,10 +165,11 @@ func TestCancelListing_MovesActiveToSellerHoldingAndAcks(t *testing.T) {
 	}
 }
 
-// TestCancelListing_RaceLoserCreatesNoHoldingAndEmitsNothing asserts the cancel
+// TestCancelListing_RaceLoserCreatesNoHoldingAndEmitsFailed asserts the cancel
 // handler that loses the cancel-vs-buy race (the listing is already not active)
-// neither creates a seller holding nor emits a LISTING_CANCELLED event.
-func TestCancelListing_RaceLoserCreatesNoHoldingAndEmitsNothing(t *testing.T) {
+// creates no seller holding and emits LISTING_CANCEL_FAILED (so the channel writes
+// CancelSaleItemFailed to the seller) rather than LISTING_CANCELLED.
+func TestCancelListing_RaceLoserCreatesNoHoldingAndEmitsFailed(t *testing.T) {
 	db := test.SetupTestDB(t, listing.Migration, holding.Migration, wish.Migration)
 	ctx := test.CreateTestContext()
 	l := logrus.New()
@@ -172,7 +177,7 @@ func TestCancelListing_RaceLoserCreatesNoHoldingAndEmitsNothing(t *testing.T) {
 	transactionId := uuid.New()
 	listingId := uuid.New()
 	const sellerId = uint32(8880002)
-	seedActiveListing(t, db, ctx, listingId, sellerId)
+	seeded := seedActiveListing(t, db, ctx, listingId, sellerId)
 
 	// Simulate a concurrent buy winning the race: the listing is already sold.
 	if _, err := listing.UpdateState(db.WithContext(ctx), listingId.String(), listing.StateActive, listing.StateSold); err != nil {
@@ -180,7 +185,7 @@ func TestCancelListing_RaceLoserCreatesNoHoldingAndEmitsNothing(t *testing.T) {
 	}
 
 	rp := &recordingProducer{}
-	handleCancelListing(rp.provider())(db)(l, ctx, newCancelCommand(transactionId, listingId))
+	handleCancelListing(rp.provider())(db)(l, ctx, newCancelCommand(transactionId, seeded.Serial(), sellerId))
 
 	// listing remains sold (cancel did not clobber it)
 	stored, err := listing.GetById(listingId.String())(db.WithContext(ctx))()
@@ -196,9 +201,125 @@ func TestCancelListing_RaceLoserCreatesNoHoldingAndEmitsNothing(t *testing.T) {
 		t.Fatalf("expected no holding for race-losing seller %d, got %d", sellerId, got)
 	}
 
-	// no LISTING_CANCELLED event emitted
-	if len(rp.events) != 0 {
-		t.Fatalf("expected no events for race loser, got %d (%v)", len(rp.events), rp.events)
+	// exactly one LISTING_CANCEL_FAILED event emitted
+	if len(rp.events) != 1 {
+		t.Fatalf("expected 1 event for race loser, got %d (%v)", len(rp.events), rp.events)
+	}
+	if rp.events[0].eventType != mts.StatusEventTypeListingCancelFailed {
+		t.Fatalf("expected LISTING_CANCEL_FAILED, got %s", rp.events[0].eventType)
+	}
+}
+
+// TestCancelListing_OwnerMismatch_EmitsFailed asserts a cancel whose SellerId does
+// not match the listing's seller is rejected with LISTING_CANCEL_FAILED and leaves
+// the listing active.
+func TestCancelListing_OwnerMismatch_EmitsFailed(t *testing.T) {
+	db := test.SetupTestDB(t, listing.Migration, holding.Migration, wish.Migration)
+	ctx := test.CreateTestContext()
+	l := logrus.New()
+
+	transactionId := uuid.New()
+	listingId := uuid.New()
+	const sellerId = uint32(8880003)
+	seeded := seedActiveListing(t, db, ctx, listingId, sellerId)
+
+	rp := &recordingProducer{}
+	// A different character (sellerId+999) attempts the cancel.
+	handleCancelListing(rp.provider())(db)(l, ctx, newCancelCommand(transactionId, seeded.Serial(), sellerId+999))
+
+	stored, err := listing.GetById(listingId.String())(db.WithContext(ctx))()
+	if err != nil {
+		t.Fatalf("listing lookup: %v", err)
+	}
+	if stored.State() != listing.StateActive {
+		t.Fatalf("expected listing to remain active after owner mismatch, got %s", stored.State())
+	}
+	if len(rp.events) != 1 || rp.events[0].eventType != mts.StatusEventTypeListingCancelFailed {
+		t.Fatalf("expected 1 LISTING_CANCEL_FAILED, got %v", rp.events)
+	}
+}
+
+// TestCancelListing_SerialUnresolved_EmitsFailed asserts a cancel whose serial does
+// not resolve to any listing is rejected with LISTING_CANCEL_FAILED.
+func TestCancelListing_SerialUnresolved_EmitsFailed(t *testing.T) {
+	db := test.SetupTestDB(t, listing.Migration, holding.Migration, wish.Migration)
+	ctx := test.CreateTestContext()
+	l := logrus.New()
+
+	rp := &recordingProducer{}
+	handleCancelListing(rp.provider())(db)(l, ctx, newCancelCommand(uuid.New(), 99999, 8880004))
+
+	if len(rp.events) != 1 || rp.events[0].eventType != mts.StatusEventTypeListingCancelFailed {
+		t.Fatalf("expected 1 LISTING_CANCEL_FAILED for unresolved serial, got %v", rp.events)
+	}
+}
+
+func newTakeHomeCommand(transactionId uuid.UUID, serial uint32, characterId uint32) mts.Command[mts.TakeHomeCommandBody] {
+	return mts.Command[mts.TakeHomeCommandBody]{
+		TransactionId: transactionId,
+		Type:          mts.CommandTakeHome,
+		Body: mts.TakeHomeCommandBody{
+			WorldId:       0,
+			Serial:        serial,
+			CharacterId:   characterId,
+			InventoryType: 1,
+			Slot:          0,
+		},
+	}
+}
+
+// seedHolding persists a holding row with a known owner. The per-(tenant, world)
+// serial is assigned by CreateHolding (serial.Next) and read from the returned
+// model, so callers address the row by its real nITCSN.
+func seedHolding(t *testing.T, db *gorm.DB, ctx context.Context, holdingId uuid.UUID, ownerId uint32) holding.Model {
+	t.Helper()
+	m, err := holding.NewBuilder(test.TestTenantId, 0, ownerId).
+		SetId(holdingId).
+		SetOrigin(holding.OriginPurchased).
+		SetTemplateId(1302000).
+		SetQuantity(1).
+		Build()
+	if err != nil {
+		t.Fatalf("build holding: %v", err)
+	}
+	stored, err := holding.CreateHolding(db.WithContext(ctx), m)
+	if err != nil {
+		t.Fatalf("seed holding: %v", err)
+	}
+	return stored
+}
+
+// TestTakeHome_SerialUnresolved_EmitsFailed asserts a take-home whose serial does
+// not resolve to any holding is rejected with TAKE_HOME_FAILED.
+func TestTakeHome_SerialUnresolved_EmitsFailed(t *testing.T) {
+	db := test.SetupTestDB(t, listing.Migration, holding.Migration, wish.Migration)
+	ctx := test.CreateTestContext()
+	l := logrus.New()
+
+	rp := &recordingProducer{}
+	handleTakeHome(rp.provider())(db)(l, ctx, newTakeHomeCommand(uuid.New(), 88888, 7770001))
+
+	if len(rp.events) != 1 || rp.events[0].eventType != mts.StatusEventTypeTakeHomeFailed {
+		t.Fatalf("expected 1 TAKE_HOME_FAILED for unresolved serial, got %v", rp.events)
+	}
+}
+
+// TestTakeHome_OwnerMismatch_EmitsFailed asserts a take-home whose CharacterId does
+// not match the holding's owner is rejected with TAKE_HOME_FAILED.
+func TestTakeHome_OwnerMismatch_EmitsFailed(t *testing.T) {
+	db := test.SetupTestDB(t, listing.Migration, holding.Migration, wish.Migration)
+	ctx := test.CreateTestContext()
+	l := logrus.New()
+
+	holdingId := uuid.New()
+	const ownerId = uint32(7770002)
+	seeded := seedHolding(t, db, ctx, holdingId, ownerId)
+
+	rp := &recordingProducer{}
+	handleTakeHome(rp.provider())(db)(l, ctx, newTakeHomeCommand(uuid.New(), seeded.Serial(), ownerId+999))
+
+	if len(rp.events) != 1 || rp.events[0].eventType != mts.StatusEventTypeTakeHomeFailed {
+		t.Fatalf("expected 1 TAKE_HOME_FAILED for owner mismatch, got %v", rp.events)
 	}
 }
 

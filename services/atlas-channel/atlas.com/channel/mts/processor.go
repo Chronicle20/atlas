@@ -16,11 +16,11 @@ import (
 // REST surface for writes — it commands via Kafka, mirroring the messenger and
 // cashshop command processors.
 type Processor interface {
-	CreateListing(transactionId uuid.UUID, worldId world.Id, sellerId uint32, sellerAccountId uint32, itemId uint32, quantity uint32, price uint32, isAuction bool, buyNowPrice uint32, durationHours uint32) error
+	CreateListing(transactionId uuid.UUID, worldId world.Id, sellerId uint32, sellerAccountId uint32, sellerName string, saleType string, sourceInventoryType byte, assetId uint32, quantity uint32, listValue uint32, buyNowPrice *uint32, durationHours int, category string, subCategory string) error
 	Buy(transactionId uuid.UUID, worldId world.Id, listingId uuid.UUID, buyerId uint32, buyerAccountId uint32, sellerAccountId uint32) error
 	PlaceBid(transactionId uuid.UUID, worldId world.Id, listingId uuid.UUID, bidderId uint32, bidderAccountId uint32, amount uint32) error
-	CancelListing(transactionId uuid.UUID, worldId world.Id, listingId uuid.UUID, sellerId uint32) error
-	TakeHome(transactionId uuid.UUID, worldId world.Id, holdingId uuid.UUID, characterId uint32) error
+	CancelListing(transactionId uuid.UUID, worldId world.Id, serial uint32, sellerId uint32) error
+	TakeHome(transactionId uuid.UUID, worldId world.Id, serial uint32, characterId uint32, inventoryType byte, slot int16) error
 	RegisterWish(worldId world.Id, characterId uint32, itemId uint32) error
 	RemoveWish(worldId world.Id, wishId uuid.UUID, characterId uint32) error
 }
@@ -34,9 +34,9 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	return &ProcessorImpl{l: l, ctx: ctx}
 }
 
-func (p *ProcessorImpl) CreateListing(transactionId uuid.UUID, worldId world.Id, sellerId uint32, sellerAccountId uint32, itemId uint32, quantity uint32, price uint32, isAuction bool, buyNowPrice uint32, durationHours uint32) error {
-	p.l.Debugf("Character [%d] creating MTS listing for item [%d] (auction [%t]).", sellerId, itemId, isAuction)
-	return producer.ProviderImpl(p.l)(p.ctx)(mtsmsg.EnvCommandTopic)(CreateListingCommandProvider(transactionId, worldId, sellerId, sellerAccountId, itemId, quantity, price, isAuction, buyNowPrice, durationHours))
+func (p *ProcessorImpl) CreateListing(transactionId uuid.UUID, worldId world.Id, sellerId uint32, sellerAccountId uint32, sellerName string, saleType string, sourceInventoryType byte, assetId uint32, quantity uint32, listValue uint32, buyNowPrice *uint32, durationHours int, category string, subCategory string) error {
+	p.l.Debugf("Character [%d] creating MTS listing (saleType [%s], asset [%d]).", sellerId, saleType, assetId)
+	return producer.ProviderImpl(p.l)(p.ctx)(mtsmsg.EnvCommandTopic)(CreateListingCommandProvider(transactionId, worldId, sellerId, sellerAccountId, sellerName, saleType, sourceInventoryType, assetId, quantity, listValue, buyNowPrice, durationHours, category, subCategory))
 }
 
 func (p *ProcessorImpl) Buy(transactionId uuid.UUID, worldId world.Id, listingId uuid.UUID, buyerId uint32, buyerAccountId uint32, sellerAccountId uint32) error {
@@ -49,14 +49,14 @@ func (p *ProcessorImpl) PlaceBid(transactionId uuid.UUID, worldId world.Id, list
 	return producer.ProviderImpl(p.l)(p.ctx)(mtsmsg.EnvCommandTopic)(PlaceBidCommandProvider(transactionId, worldId, listingId, bidderId, bidderAccountId, amount))
 }
 
-func (p *ProcessorImpl) CancelListing(transactionId uuid.UUID, worldId world.Id, listingId uuid.UUID, sellerId uint32) error {
-	p.l.Debugf("Character [%d] cancelling MTS listing [%s].", sellerId, listingId.String())
-	return producer.ProviderImpl(p.l)(p.ctx)(mtsmsg.EnvCommandTopic)(CancelListingCommandProvider(transactionId, worldId, listingId, sellerId))
+func (p *ProcessorImpl) CancelListing(transactionId uuid.UUID, worldId world.Id, serial uint32, sellerId uint32) error {
+	p.l.Debugf("Character [%d] cancelling MTS listing serial [%d].", sellerId, serial)
+	return producer.ProviderImpl(p.l)(p.ctx)(mtsmsg.EnvCommandTopic)(CancelListingCommandProvider(transactionId, worldId, serial, sellerId))
 }
 
-func (p *ProcessorImpl) TakeHome(transactionId uuid.UUID, worldId world.Id, holdingId uuid.UUID, characterId uint32) error {
-	p.l.Debugf("Character [%d] taking home MTS holding [%s].", characterId, holdingId.String())
-	return producer.ProviderImpl(p.l)(p.ctx)(mtsmsg.EnvCommandTopic)(TakeHomeCommandProvider(transactionId, worldId, holdingId, characterId))
+func (p *ProcessorImpl) TakeHome(transactionId uuid.UUID, worldId world.Id, serial uint32, characterId uint32, inventoryType byte, slot int16) error {
+	p.l.Debugf("Character [%d] taking home MTS holding serial [%d].", characterId, serial)
+	return producer.ProviderImpl(p.l)(p.ctx)(mtsmsg.EnvCommandTopic)(TakeHomeCommandProvider(transactionId, worldId, serial, characterId, inventoryType, slot))
 }
 
 func (p *ProcessorImpl) RegisterWish(worldId world.Id, characterId uint32, itemId uint32) error {

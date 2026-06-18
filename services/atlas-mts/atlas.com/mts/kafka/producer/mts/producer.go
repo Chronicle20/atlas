@@ -150,6 +150,53 @@ func WishAddedStatusEventProvider(transactionId uuid.UUID, worldId byte, wishId 
 	return producer.SingleMessageProvider(keyFor(transactionId), value)
 }
 
+// ListingCreateFailedStatusEventProvider builds a LISTING_CREATE_FAILED event for
+// a rejected listing creation, carrying the originating sellerId + a fail reason.
+func ListingCreateFailedStatusEventProvider(transactionId uuid.UUID, worldId byte, sellerId uint32, reason byte) model.Provider[[]kafka.Message] {
+	value := &mts.StatusEvent[mts.StatusEventListingCreateFailedBody]{
+		TransactionId: transactionId,
+		Type:          mts.StatusEventTypeListingCreateFailed,
+		Body: mts.StatusEventListingCreateFailedBody{
+			WorldId:  worldId,
+			SellerId: sellerId,
+			Reason:   reason,
+		},
+	}
+	return producer.SingleMessageProvider(keyFor(transactionId), value)
+}
+
+// ListingCancelFailedStatusEventProvider builds a LISTING_CANCEL_FAILED event for
+// a rejected cancel, carrying the originating sellerId + serial + a fail reason.
+func ListingCancelFailedStatusEventProvider(transactionId uuid.UUID, worldId byte, serial uint32, sellerId uint32, reason byte) model.Provider[[]kafka.Message] {
+	value := &mts.StatusEvent[mts.StatusEventListingCancelFailedBody]{
+		TransactionId: transactionId,
+		Type:          mts.StatusEventTypeListingCancelFailed,
+		Body: mts.StatusEventListingCancelFailedBody{
+			WorldId:  worldId,
+			Serial:   serial,
+			SellerId: sellerId,
+			Reason:   reason,
+		},
+	}
+	return producer.SingleMessageProvider(keyFor(transactionId), value)
+}
+
+// TakeHomeFailedStatusEventProvider builds a TAKE_HOME_FAILED event for a rejected
+// take-home, carrying the originating characterId + serial + a fail reason.
+func TakeHomeFailedStatusEventProvider(transactionId uuid.UUID, worldId byte, serial uint32, characterId uint32, reason byte) model.Provider[[]kafka.Message] {
+	value := &mts.StatusEvent[mts.StatusEventTakeHomeFailedBody]{
+		TransactionId: transactionId,
+		Type:          mts.StatusEventTypeTakeHomeFailed,
+		Body: mts.StatusEventTakeHomeFailedBody{
+			WorldId:     worldId,
+			Serial:      serial,
+			CharacterId: characterId,
+			Reason:      reason,
+		},
+	}
+	return producer.SingleMessageProvider(keyFor(transactionId), value)
+}
+
 // WishRemovedStatusEventProvider builds a WISH_REMOVED event.
 func WishRemovedStatusEventProvider(transactionId uuid.UUID, worldId byte, wishId uuid.UUID, characterId uint32) model.Provider[[]kafka.Message] {
 	value := &mts.StatusEvent[mts.StatusEventWishRemovedBody]{

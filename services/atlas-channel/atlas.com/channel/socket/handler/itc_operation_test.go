@@ -2,7 +2,12 @@ package handler
 
 import (
 	"testing"
+	"time"
 
+	mtslisting "atlas-channel/mts/listing"
+
+	fieldsb "github.com/Chronicle20/atlas/libs/atlas-packet/field/serverbound"
+	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/sirupsen/logrus"
 )
 
@@ -94,5 +99,153 @@ func TestResolveItcOperationKeyMissingTable(t *testing.T) {
 	resolve := resolveItcOperationKey(logrus.New())
 	if _, ok := resolve(map[string]interface{}{}, 2); ok {
 		t.Errorf("missing operations table: expected no resolution, got one")
+	}
+}
+
+// --- decode->command mapping (task-102) ---------------------------------------
+
+const (
+	testWorldId         = 1
+	testSellerId        = uint32(8001)
+	testSellerAccountId = uint32(7001)
+	testSellerName      = "Aria"
+)
+
+func TestBuildCreateListingFromRegisterSale(t *testing.T) {
+	// item at slot 5, template 1302000, qty 1; price 1000, itemType 1 (use tab)
+	item := packetmodel.NewAsset(false, 5, 1302000, time.Time{}).SetStackableInfo(1, 0, 0)
+	p := fieldsb.NewItcOperationRegisterSale(2, item, 1, 0, 1000, 1, 0)
+
+	args := buildCreateListingFromRegisterSale(p, testWorldId, testSellerId, testSellerAccountId, testSellerName)
+
+	if args.SaleType != itcSaleTypeFixed {
+		t.Errorf("saleType: want %s got %s", itcSaleTypeFixed, args.SaleType)
+	}
+	if args.AssetId != 5 {
+		t.Errorf("assetId (slot): want 5 got %d", args.AssetId)
+	}
+	if args.SourceInventoryType != 1 {
+		t.Errorf("sourceInventoryType: want 1 got %d", args.SourceInventoryType)
+	}
+	if args.Quantity != 1 {
+		t.Errorf("quantity: want 1 got %d", args.Quantity)
+	}
+	if args.ListValue != 1000 {
+		t.Errorf("listValue: want 1000 got %d", args.ListValue)
+	}
+	if args.BuyNowPrice != nil {
+		t.Errorf("buyNowPrice: want nil for fixed sale, got %v", *args.BuyNowPrice)
+	}
+	if args.DurationHours != 0 {
+		t.Errorf("durationHours: want 0 for fixed, got %d", args.DurationHours)
+	}
+	if args.SellerId != testSellerId || args.SellerAccountId != testSellerAccountId || args.SellerName != testSellerName {
+		t.Errorf("seller identity not carried: id=%d acct=%d name=%s", args.SellerId, args.SellerAccountId, args.SellerName)
+	}
+	if args.WorldId != testWorldId {
+		t.Errorf("worldId: want %d got %d", testWorldId, args.WorldId)
+	}
+}
+
+func TestBuildCreateListingFromRegisterAuction(t *testing.T) {
+	// auction: item at slot 9, qty 2, buyNow 5000, duration 48h
+	item := packetmodel.NewAsset(false, 9, 1302000, time.Time{}).SetStackableInfo(2, 0, 0)
+	p := fieldsb.NewItcOperationRegisterAuction(0x12, item, 2, 0, 1, 5000, 1, 0, 48)
+
+	args := buildCreateListingFromRegisterAuction(p, testWorldId, testSellerId, testSellerAccountId, testSellerName)
+
+	if args.SaleType != itcSaleTypeAuction {
+		t.Errorf("saleType: want %s got %s", itcSaleTypeAuction, args.SaleType)
+	}
+	if args.AssetId != 9 {
+		t.Errorf("assetId (slot): want 9 got %d", args.AssetId)
+	}
+	if args.Quantity != 2 {
+		t.Errorf("quantity: want 2 got %d", args.Quantity)
+	}
+	if args.BuyNowPrice == nil || *args.BuyNowPrice != 5000 {
+		t.Errorf("buyNowPrice: want 5000, got %v", args.BuyNowPrice)
+	}
+	// the auction carries no separate list price; buy-now doubles as the list value
+	if args.ListValue != 5000 {
+		t.Errorf("listValue: want 5000 (buy-now), got %d", args.ListValue)
+	}
+	if args.DurationHours != 48 {
+		t.Errorf("durationHours: want 48 got %d", args.DurationHours)
+	}
+}
+
+func TestBuildCreateListingFromSaleCurrentItem(t *testing.T) {
+	// sale-current: itemType 2, slotPos 7, item qty 3
+	item := packetmodel.NewAsset(false, 7, 2000000, time.Time{}).SetStackableInfo(3, 0, 0)
+	p := fieldsb.NewItcOperationSaleCurrentItem(3, 2, 7, item, 0)
+
+	args := buildCreateListingFromSaleCurrentItem(p, testWorldId, testSellerId, testSellerAccountId, testSellerName)
+
+	if args.SaleType != itcSaleTypeFixed {
+		t.Errorf("saleType: want %s got %s", itcSaleTypeFixed, args.SaleType)
+	}
+	if args.AssetId != 7 {
+		t.Errorf("assetId (slotPos): want 7 got %d", args.AssetId)
+	}
+	if args.SourceInventoryType != 2 {
+		t.Errorf("sourceInventoryType: want 2 got %d", args.SourceInventoryType)
+	}
+	if args.Quantity != 3 {
+		t.Errorf("quantity: want 3 got %d", args.Quantity)
+	}
+	// no price on the wire -> 0 (atlas-mts rejects against the price floor)
+	if args.ListValue != 0 {
+		t.Errorf("listValue: want 0 (no wire price), got %d", args.ListValue)
+	}
+}
+
+func TestBrowseFilterFromGetItcList(t *testing.T) {
+	// mode 5, category 3, sub 1, page 2, sortType 1, sortColumn 1, opt 1, ""
+	p := fieldsb.NewItcOperationChangedPage(5, 3, 1, 2, 1, 1, 1, "")
+	f := browseFilterFromGetItcList(p)
+	if f.Page != 2 {
+		t.Errorf("page: want 2 got %d", f.Page)
+	}
+	if f.SellerName != "" {
+		t.Errorf("sellerName: want empty for browse, got %s", f.SellerName)
+	}
+}
+
+func TestBrowseFilterFromSearchItcList(t *testing.T) {
+	// mode 6, category 2, sub 1, opt 0, searchName "Bob"
+	p := fieldsb.NewItcOperationTabSearch(6, 2, 1, 0, "Bob")
+	f := browseFilterFromSearchItcList(p)
+	if f.SellerName != "Bob" {
+		t.Errorf("sellerName: want Bob got %s", f.SellerName)
+	}
+}
+
+func TestMtsItemFromListing_CarriesSerialAsItcSn(t *testing.T) {
+	m := mtslisting.RestModel{
+		Id:           "abc",
+		WorldId:      1,
+		ItcSn:        4242,
+		SellerName:   "Aria",
+		TemplateId:   1302000,
+		Quantity:     1,
+		ListValue:    1000,
+		BuyNowPrice:  5000,
+		CurrentBid:   1200,
+		MinIncrement: 100,
+	}
+	model, err := mtslisting.Extract(m)
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	it := mtsItemFromListing(model)
+	if it.ItcSn() != 4242 {
+		t.Errorf("itcSn: want 4242 (the listing serial), got %d", it.ItcSn())
+	}
+	if it.Price() != 1000 {
+		t.Errorf("price: want 1000 (list value), got %d", it.Price())
+	}
+	if it.Item().TemplateId() != 1302000 {
+		t.Errorf("item template: want 1302000, got %d", it.Item().TemplateId())
 	}
 }

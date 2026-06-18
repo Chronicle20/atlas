@@ -15,21 +15,25 @@ import (
 // character so per-character ordering is preserved (the same keying the
 // messenger/cashshop command producers use).
 
-func CreateListingCommandProvider(transactionId uuid.UUID, worldId world.Id, sellerId uint32, sellerAccountId uint32, itemId uint32, quantity uint32, price uint32, isAuction bool, buyNowPrice uint32, durationHours uint32) model.Provider[[]kafka.Message] {
+func CreateListingCommandProvider(transactionId uuid.UUID, worldId world.Id, sellerId uint32, sellerAccountId uint32, sellerName string, saleType string, sourceInventoryType byte, assetId uint32, quantity uint32, listValue uint32, buyNowPrice *uint32, durationHours int, category string, subCategory string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(sellerId))
 	value := &mtsmsg.Command[mtsmsg.CreateListingCommandBody]{
 		TransactionId: transactionId,
 		Type:          mtsmsg.CommandCreateListing,
 		Body: mtsmsg.CreateListingCommandBody{
-			WorldId:         byte(worldId),
-			SellerId:        sellerId,
-			SellerAccountId: sellerAccountId,
-			ItemId:          itemId,
-			Quantity:        quantity,
-			Price:           price,
-			IsAuction:       isAuction,
-			BuyNowPrice:     buyNowPrice,
-			DurationHours:   durationHours,
+			WorldId:             byte(worldId),
+			SellerId:            sellerId,
+			SellerAccountId:     sellerAccountId,
+			SellerName:          sellerName,
+			SaleType:            saleType,
+			SourceInventoryType: sourceInventoryType,
+			AssetId:             assetId,
+			Quantity:            quantity,
+			ListValue:           listValue,
+			BuyNowPrice:         buyNowPrice,
+			DurationHours:       durationHours,
+			Category:            category,
+			SubCategory:         subCategory,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)
@@ -67,28 +71,31 @@ func PlaceBidCommandProvider(transactionId uuid.UUID, worldId world.Id, listingI
 	return producer.SingleMessageProvider(key, value)
 }
 
-func CancelListingCommandProvider(transactionId uuid.UUID, worldId world.Id, listingId uuid.UUID, sellerId uint32) model.Provider[[]kafka.Message] {
+func CancelListingCommandProvider(transactionId uuid.UUID, worldId world.Id, serial uint32, sellerId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(sellerId))
 	value := &mtsmsg.Command[mtsmsg.CancelListingCommandBody]{
 		TransactionId: transactionId,
 		Type:          mtsmsg.CommandCancelListing,
 		Body: mtsmsg.CancelListingCommandBody{
-			ListingId: listingId,
-			WorldId:   byte(worldId),
+			WorldId:  byte(worldId),
+			Serial:   serial,
+			SellerId: sellerId,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)
 }
 
-func TakeHomeCommandProvider(transactionId uuid.UUID, worldId world.Id, holdingId uuid.UUID, characterId uint32) model.Provider[[]kafka.Message] {
+func TakeHomeCommandProvider(transactionId uuid.UUID, worldId world.Id, serial uint32, characterId uint32, inventoryType byte, slot int16) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &mtsmsg.Command[mtsmsg.TakeHomeCommandBody]{
 		TransactionId: transactionId,
 		Type:          mtsmsg.CommandTakeHome,
 		Body: mtsmsg.TakeHomeCommandBody{
-			HoldingId:   holdingId,
-			WorldId:     byte(worldId),
-			CharacterId: characterId,
+			WorldId:       byte(worldId),
+			Serial:        serial,
+			CharacterId:   characterId,
+			InventoryType: inventoryType,
+			Slot:          slot,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

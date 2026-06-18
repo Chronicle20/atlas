@@ -6,6 +6,7 @@ import (
 	"atlas-mts/kafka/message/mts"
 	producer2 "atlas-mts/kafka/producer"
 	mtsproducer "atlas-mts/kafka/producer/mts"
+	"atlas-mts/holding"
 	"atlas-mts/listing"
 	"atlas-mts/wish"
 	"context"
@@ -33,18 +34,23 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 	}
 }
 
-// InitHandlers wires the locally-handled MTS command handlers (cancel, buy,
-// register wish, remove wish) onto the command topic. The remaining
-// saga/ticker-driven command types (create, bid, take-home, expire) are
-// intentionally NOT routed here — they are dispatched in their own phases, like a
-// not-yet-routed message type. The producer.Provider is constructed per delivery
-// from the message context so emitted events carry the right tenant/span headers.
+// InitHandlers wires the locally-handled MTS command handlers (create, cancel,
+// take-home, buy, bid, register wish, remove wish) onto the command topic. The
+// remaining ticker-driven command type (expire) is intentionally NOT routed here.
+// The producer.Provider is constructed per delivery from the message context so
+// emitted events carry the right tenant/span headers.
 func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) error {
 	return func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) error {
 		return func(rf func(topic string, handler handler.Handler) (string, error)) error {
 			var t string
 			t, _ = topic.EnvProvider(l)(mts.EnvCommandTopic)()
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCreateListing(producer2.ProviderImpl(l))(db)))); err != nil {
+				return err
+			}
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCancelListing(producer2.ProviderImpl(l))(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleTakeHome(producer2.ProviderImpl(l))(db)))); err != nil {
 				return err
 			}
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleBuy(db)))); err != nil {
@@ -68,16 +74,66 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 // producer2.ProviderImpl(l): func(ctx) func(token) MessageProducer.
 type providerFn = func(ctx context.Context) func(token string) kprod.MessageProducer
 
-// handleCancelListing performs the seller's race-safe cancel: in ONE local DB
-// transaction it (a) loads the listing snapshot, (b) conditionally transitions
-// the row active->cancelled, and (c) — only if the transition affected exactly
-// one row — creates the seller's holding (origin=cancelled) copying the listing's
-// item snapshot. The conditional transition is the race arbiter: if a concurrent
-// buy already moved the row out of active, the transition affects 0 rows, the
-// handler is the cancel-vs-buy LOSER, no holding is created, and NO event is
-// emitted (the buy path owns the outcome). Composing the transition AND the
-// holding-create in the same ExecuteTransaction guarantees the cancel can never
-// half-complete (a cancelled row without its seller holding, or vice versa).
+// mtsFailReasonGeneric is the generic clientbound NoticeFailReason byte used for
+// command-side failures (serial-not-resolved, owner-check, race-loser). The
+// MapleStory CITC NoticeFailReason table maps unknown reasons to a generic
+// "operation failed" notice; 0 is the safe generic value (the channel passes it
+// straight into the *Failed clientbound codec's Decode1 reason field).
+const mtsFailReasonGeneric byte = 0
+
+// handleCreateListing initiates a listing from the channel's register-sale /
+// register-auction / sale-current-item arm. It maps the command body to a
+// listing.ListRequest and runs the server-authoritative List flow (price-floor,
+// active-cap, auction-duration validation + TransferToMts saga). On a validation
+// or emit failure it emits LISTING_CREATE_FAILED so the channel writes
+// RegisterSaleEntryFailed to the seller. The LISTING_CREATED success event is
+// emitted by the custody consumer's AcceptToMtsListing (the listing row, and thus
+// its serial, only exists then) — not here.
+func handleCreateListing(pf providerFn) func(db *gorm.DB) message.Handler[mts.Command[mts.CreateListingCommandBody]] {
+	return func(db *gorm.DB) message.Handler[mts.Command[mts.CreateListingCommandBody]] {
+		return func(l logrus.FieldLogger, ctx context.Context, c mts.Command[mts.CreateListingCommandBody]) {
+			if c.Type != mts.CommandCreateListing {
+				return
+			}
+			b := c.Body
+
+			_, err := listing.NewProcessor(l, ctx, db).List(listing.ListRequest{
+				WorldId:             world.Id(b.WorldId),
+				SellerId:            b.SellerId,
+				SellerAccountId:     b.SellerAccountId,
+				SellerName:          b.SellerName,
+				SaleType:            listing.SaleType(b.SaleType),
+				SourceInventoryType: b.SourceInventoryType,
+				AssetId:             b.AssetId,
+				Quantity:            b.Quantity,
+				ListValue:           b.ListValue,
+				BuyNowPrice:         b.BuyNowPrice,
+				DurationHours:       b.DurationHours,
+				Category:            b.Category,
+				SubCategory:         b.SubCategory,
+			})
+			if err != nil {
+				l.WithError(err).Errorf("Failed to initiate listing for seller [%d], transaction [%s].", b.SellerId, c.TransactionId.String())
+				p := pf(ctx)
+				_ = msg.Emit(p)(func(buf *msg.Buffer) error {
+					return buf.Put(mts.EnvStatusEventTopic, mtsproducer.ListingCreateFailedStatusEventProvider(c.TransactionId, b.WorldId, b.SellerId, mtsFailReasonGeneric))
+				})
+				return
+			}
+		}
+	}
+}
+
+// handleCancelListing performs the seller's race-safe cancel. It resolves the
+// wire serial (nITCSN) to the listing UUID (listing.GetBySerial), owner-checks the
+// command's SellerId against the listing's seller, then — in ONE local DB
+// transaction — conditionally transitions the row active->cancelled and, only if
+// that affected exactly one row, creates the seller's holding (origin=cancelled)
+// copying the listing's item snapshot. The conditional transition is the race
+// arbiter: a concurrent buy that already moved the row out of active makes this
+// the cancel-vs-buy LOSER (no holding, LISTING_CANCEL_FAILED emitted). A serial
+// that does not resolve or an owner-check mismatch likewise emits
+// LISTING_CANCEL_FAILED so the channel writes CancelSaleItemFailed to the seller.
 func handleCancelListing(pf providerFn) func(db *gorm.DB) message.Handler[mts.Command[mts.CancelListingCommandBody]] {
 	return func(db *gorm.DB) message.Handler[mts.Command[mts.CancelListingCommandBody]] {
 		return func(l logrus.FieldLogger, ctx context.Context, c mts.Command[mts.CancelListingCommandBody]) {
@@ -85,26 +141,99 @@ func handleCancelListing(pf providerFn) func(db *gorm.DB) message.Handler[mts.Co
 				return
 			}
 			b := c.Body
+			p := pf(ctx)
+
+			emitFail := func() {
+				_ = msg.Emit(p)(func(buf *msg.Buffer) error {
+					return buf.Put(mts.EnvStatusEventTopic, mtsproducer.ListingCancelFailedStatusEventProvider(c.TransactionId, b.WorldId, b.Serial, b.SellerId, mtsFailReasonGeneric))
+				})
+			}
+
+			proc := listing.NewProcessor(l, ctx, db)
+
+			// Resolve the wire serial -> listing UUID.
+			lm, err := proc.GetBySerial(world.Id(b.WorldId), b.Serial)
+			if err != nil {
+				l.WithError(err).Errorf("Failed to resolve serial [%d] for cancel in world [%d], transaction [%s].", b.Serial, b.WorldId, c.TransactionId.String())
+				emitFail()
+				return
+			}
+
+			// Owner-check: only the listing's seller may cancel it.
+			if lm.SellerId() != b.SellerId {
+				l.Errorf("Character [%d] attempted to cancel listing [%s] (serial [%d]) owned by seller [%d]; forbidden.", b.SellerId, lm.Id().String(), b.Serial, lm.SellerId())
+				emitFail()
+				return
+			}
 
 			// The race-safe active->holding(seller) transition lives in the listing
 			// processor so it is shared verbatim with the REST DELETE; this handler
-			// only adds the event emission on a win.
-			res, err := listing.NewProcessor(l, ctx, db).Cancel(b.ListingId.String())
-
-			p := pf(ctx)
+			// adds the event emission.
+			res, err := proc.Cancel(lm.Id().String())
 			if err != nil {
-				l.WithError(err).Errorf("Failed to cancel listing [%s] for transaction [%s].", b.ListingId.String(), c.TransactionId.String())
+				l.WithError(err).Errorf("Failed to cancel listing [%s] for transaction [%s].", lm.Id().String(), c.TransactionId.String())
+				emitFail()
 				return
 			}
 			if !res.Won {
-				// Cancel-vs-buy loser: the buy path owns the outcome; emit nothing.
-				l.Debugf("Cancel for listing [%s] lost the cancel-vs-buy race (already not active); no holding created.", b.ListingId.String())
+				// Cancel-vs-buy loser: the buy path owns the holding outcome, but the
+				// seller still needs the cancel-failed notice.
+				l.Debugf("Cancel for listing [%s] lost the cancel-vs-buy race (already not active); no holding created.", lm.Id().String())
+				emitFail()
 				return
 			}
 
 			_ = msg.Emit(p)(func(buf *msg.Buffer) error {
-				return buf.Put(mts.EnvStatusEventTopic, mtsproducer.ListingCancelledStatusEventProvider(c.TransactionId, b.WorldId, b.ListingId, res.HoldingId, res.SellerId, res.ItemId))
+				return buf.Put(mts.EnvStatusEventTopic, mtsproducer.ListingCancelledStatusEventProvider(c.TransactionId, b.WorldId, lm.Id(), res.HoldingId, res.SellerId, res.ItemId))
 			})
+		}
+	}
+}
+
+// handleTakeHome withdraws a holding into the owner's inventory. It resolves the
+// wire serial (nITCSN) to the holding UUID (holding.GetBySerial), owner-checks the
+// command's CharacterId against the holding's owner, then runs the WithdrawFromMts
+// saga (release_from_mts_holding + accept_to_character). On a serial-not-resolved,
+// owner-check, or emit failure it emits TAKE_HOME_FAILED so the channel writes
+// MoveItcPurchaseItemLtoSFailed to the character. The ITEM_TAKEN_HOME success
+// event is emitted by the saga's accept step (a later phase), not here.
+func handleTakeHome(pf providerFn) func(db *gorm.DB) message.Handler[mts.Command[mts.TakeHomeCommandBody]] {
+	return func(db *gorm.DB) message.Handler[mts.Command[mts.TakeHomeCommandBody]] {
+		return func(l logrus.FieldLogger, ctx context.Context, c mts.Command[mts.TakeHomeCommandBody]) {
+			if c.Type != mts.CommandTakeHome {
+				return
+			}
+			b := c.Body
+			p := pf(ctx)
+
+			emitFail := func() {
+				_ = msg.Emit(p)(func(buf *msg.Buffer) error {
+					return buf.Put(mts.EnvStatusEventTopic, mtsproducer.TakeHomeFailedStatusEventProvider(c.TransactionId, b.WorldId, b.Serial, b.CharacterId, mtsFailReasonGeneric))
+				})
+			}
+
+			proc := holding.NewProcessor(l, ctx, db)
+
+			// Resolve the wire serial -> holding UUID.
+			hm, err := proc.GetBySerial(world.Id(b.WorldId), b.Serial)
+			if err != nil {
+				l.WithError(err).Errorf("Failed to resolve serial [%d] for take-home in world [%d], transaction [%s].", b.Serial, b.WorldId, c.TransactionId.String())
+				emitFail()
+				return
+			}
+
+			// Owner-check: only the holding's owner may take it home.
+			if hm.OwnerId() != b.CharacterId {
+				l.Errorf("Character [%d] attempted to take home holding [%s] (serial [%d]) owned by [%d]; forbidden.", b.CharacterId, hm.Id().String(), b.Serial, hm.OwnerId())
+				emitFail()
+				return
+			}
+
+			if _, err := proc.TakeHome(hm.Id().String(), b.CharacterId, world.Id(b.WorldId), b.InventoryType, b.Slot); err != nil {
+				l.WithError(err).Errorf("Failed to take home holding [%s] for transaction [%s].", hm.Id().String(), c.TransactionId.String())
+				emitFail()
+				return
+			}
 		}
 	}
 }

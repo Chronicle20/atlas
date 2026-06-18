@@ -60,6 +60,12 @@ type Processor interface {
 	// PrepaidBalance reads the account's NX Prepaid balance from the cash-shop
 	// wallet (the bucket the buy debit draws from, currencyType=3).
 	PrepaidBalance(accountId uint32) (uint32, error)
+	// Balance reads the account's two MTS wallet buckets — NX Prepaid (prepaid,
+	// currencyType=3) and Maple Points (points, currencyType=2) — in a single
+	// read. It backs the GET /accounts/{accountId}/mts/wallet read passthrough and
+	// the channel-side MTS_OPERATION2 (CITC::OnQueryCashResult) two-bucket wallet
+	// announce. Credit (currencyType=1) is not an MTS bucket and is not surfaced.
+	Balance(accountId uint32) (prepaid uint32, points uint32, err error)
 }
 
 type ProcessorImpl struct {
@@ -77,4 +83,12 @@ func (p *ProcessorImpl) PrepaidBalance(accountId uint32) (uint32, error) {
 		return 0, err
 	}
 	return rm.Prepaid, nil
+}
+
+func (p *ProcessorImpl) Balance(accountId uint32) (uint32, uint32, error) {
+	rm, err := requestByAccountId(accountId)(p.l, p.ctx)
+	if err != nil {
+		return 0, 0, err
+	}
+	return rm.Prepaid, rm.Points, nil
 }

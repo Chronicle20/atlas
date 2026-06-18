@@ -133,6 +133,25 @@ func ParseCharacterId(l logrus.FieldLogger, next func(characterId uint32) http.H
 	}
 }
 
+// ParseAccountId parses the {accountId} path var into a uint32.
+func ParseAccountId(l logrus.FieldLogger, next func(accountId uint32) http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		accountIdStr, ok := mux.Vars(r)["accountId"]
+		if !ok {
+			l.Errorf("Unable to properly parse accountId from path.")
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		accountId, err := strconv.ParseUint(accountIdStr, 10, 32)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to properly parse accountId from path.")
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		next(uint32(accountId))(w, r)
+	}
+}
+
 // ParseListingId parses the {listingId} path var (a UUID string).
 func ParseListingId(l logrus.FieldLogger, next func(listingId string) http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {

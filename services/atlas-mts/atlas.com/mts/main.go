@@ -8,6 +8,7 @@ import (
 	"atlas-mts/listing"
 	"atlas-mts/logger"
 	"atlas-mts/task"
+	"atlas-mts/wallet"
 	"atlas-mts/wish"
 	"os"
 	"strconv"
@@ -90,6 +91,7 @@ func main() {
 		AddRouteInitializer(listing.InitResource(GetServer())(db)).
 		AddRouteInitializer(holding.InitResource(GetServer())(db)).
 		AddRouteInitializer(wish.InitResource(GetServer())(db)).
+		AddRouteInitializer(wallet.InitResource(GetServer())(db)).
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
 		Run()
 

@@ -1,6 +1,7 @@
 package door
 
 import (
+	"atlas-channel/character/buff"
 	consumer2 "atlas-channel/kafka/consumer"
 	"atlas-channel/listener"
 	_map "atlas-channel/map"
@@ -12,6 +13,7 @@ import (
 	"sync"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	skillconst "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	mapc "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
@@ -235,6 +237,10 @@ func handleRemoved(sc server.Model, wp writer.Producer) message.Handler[StatusEv
 		// handleCreated; only on a real removal broadcast (not a leave delta).
 		if e.ForCharacterId == 0 {
 			announceTownPortalToParty(l, ctx, wp, sc, e.PartyId, b.Slot, 0, 0, 0, 0, true)
+			// Clear the owner's Mystic Door buff so the duration icon disappears
+			// when the door is gone (expiry / leave-field / cancel). RECAST already
+			// returned above, so a recast keeps the buff (the new cast refreshes it).
+			_ = buff.NewProcessor(l, ctx).Cancel(areaField, e.OwnerCharacterId, int32(skillconst.PriestMysticDoorId))
 		}
 	}
 }

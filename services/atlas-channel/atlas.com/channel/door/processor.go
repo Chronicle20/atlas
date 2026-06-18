@@ -64,3 +64,9 @@ func (p *Processor) GetByOwnerOnMap(f field.Model, ownerCharacterId uint32) (Mod
 func (p *Processor) Spawn(f field.Model, ownerCharacterId, skillId uint32, level byte, x, y int16) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(doormsg.EnvDoorCommandTopic)(SpawnCommandProvider(f, ownerCharacterId, skillId, level, x, y))
 }
+
+// Remove emits a REMOVE command to atlas-doors for the owner's door — used when
+// the caster cancels the Mystic Door buff (the door is dismissed early).
+func (p *Processor) Remove(f field.Model, ownerCharacterId uint32, reason string) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(doormsg.EnvDoorCommandTopic)(RemoveCommandProvider(f, ownerCharacterId, reason))
+}

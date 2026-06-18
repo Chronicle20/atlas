@@ -228,13 +228,6 @@ func TestSpawnDoorsForSession_EligibleOwner_SpawnDoor(t *testing.T) {
 	// session.Model{} has CharacterId()==0; door is also owned by 0.
 	d := buildTestDoor(f, 0, 0)
 
-	// Stub party-membership seam: owner 0 only.
-	origPMS := doorPartyMemberSet
-	defer func() { doorPartyMemberSet = origPMS }()
-	doorPartyMemberSet = func(_ logrus.FieldLogger, _ context.Context, owner, _ uint32) map[uint32]struct{} {
-		return map[uint32]struct{}{owner: {}}
-	}
-
 	// Stub announce seam; capture writer name.
 	var spawnDoorCalls int
 	origAnnounce := doorAnnounce
@@ -255,30 +248,26 @@ func TestSpawnDoorsForSession_EligibleOwner_SpawnDoor(t *testing.T) {
 	}
 }
 
-// TestSpawnDoorsForSession_IneligibleOwner_NoAnnounce asserts that when the
-// arriving session is NOT in the door's eligible member set, no announce is
-// emitted.
-func TestSpawnDoorsForSession_IneligibleOwner_NoAnnounce(t *testing.T) {
+// TestSpawnDoorsForSession_NonPartySession_StillSpawns asserts that a session
+// that is NOT in the door owner's party still receives the area door: the door
+// is a plain map object shown to everyone in the map (party only gates entry).
+func TestSpawnDoorsForSession_NonPartySession_StillSpawns(t *testing.T) {
 	l := logrus.New()
 	ctx := newTestCtx(t)
 	f := newTestField()
 
-	// Door is owned by character 999; session is zero-value (CharacterId()==0).
+	// Door is owned by character 999; session is zero-value (CharacterId()==0),
+	// not in the owner's party.
 	d := buildTestDoor(f, 999, 0)
 
-	// Stub party-membership seam: only 999 is eligible, not 0.
-	origPMS := doorPartyMemberSet
-	defer func() { doorPartyMemberSet = origPMS }()
-	doorPartyMemberSet = func(_ logrus.FieldLogger, _ context.Context, owner, _ uint32) map[uint32]struct{} {
-		return map[uint32]struct{}{owner: {}}
-	}
-
-	// Stub announce: count any calls.
-	var announceCalls int
+	// Stub announce; count SpawnDoor calls.
+	var spawnDoorCalls int
 	origAnnounce := doorAnnounce
 	defer func() { doorAnnounce = origAnnounce }()
-	doorAnnounce = func(_ logrus.FieldLogger, _ context.Context, _ writer.Producer, _ string, _ packet.Encode, _ session.Model) error {
-		announceCalls++
+	doorAnnounce = func(_ logrus.FieldLogger, _ context.Context, _ writer.Producer, writerName string, _ packet.Encode, _ session.Model) error {
+		if writerName == doorcb.SpawnDoorWriter {
+			spawnDoorCalls++
+		}
 		return nil
 	}
 
@@ -286,8 +275,8 @@ func TestSpawnDoorsForSession_IneligibleOwner_NoAnnounce(t *testing.T) {
 	if err := op(d); err != nil {
 		t.Fatalf("operator returned unexpected error: %v", err)
 	}
-	if announceCalls != 0 {
-		t.Errorf("announce calls = %d, want 0 for ineligible session", announceCalls)
+	if spawnDoorCalls != 1 {
+		t.Errorf("SpawnDoor calls = %d, want 1 (door is visible to everyone in the map)", spawnDoorCalls)
 	}
 }
 
@@ -301,13 +290,6 @@ func TestSpawnDoorsForSession_PartyMember_SpawnDoor(t *testing.T) {
 
 	// Door owned by 999; session (CharacterId==0) is a party member.
 	d := buildTestDoor(f, 999, 77)
-
-	// Stub party seam: both owner 999 and party member 0 are eligible.
-	origPMS := doorPartyMemberSet
-	defer func() { doorPartyMemberSet = origPMS }()
-	doorPartyMemberSet = func(_ logrus.FieldLogger, _ context.Context, owner, _ uint32) map[uint32]struct{} {
-		return map[uint32]struct{}{owner: {}, 0: {}}
-	}
 
 	var spawnDoorCalls int
 	origAnnounce := doorAnnounce

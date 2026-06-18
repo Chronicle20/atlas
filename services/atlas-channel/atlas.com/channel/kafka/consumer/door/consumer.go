@@ -61,49 +61,22 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 	}
 }
 
-// partyMemberSet resolves the set of character ids eligible to see a door: the
-// owner (always included) plus every same-channel party member of the owner.
-// Held as a package-level var so tests can stub party membership without a REST
-// mock. partyId == 0 (no party) yields just the owner.
-var partyMemberSet = func(l logrus.FieldLogger, ctx context.Context, ownerCharacterId, partyId uint32) map[uint32]struct{} {
-	members := map[uint32]struct{}{ownerCharacterId: {}}
-	if partyId == 0 {
-		return members
-	}
-	p, err := party.NewProcessor(l, ctx).GetById(partyId)
-	if err != nil {
-		l.WithError(err).Warnf("Unable to resolve party [%d] for door owner [%d]; restricting to owner only.", partyId, ownerCharacterId)
-		return members
-	}
-	for _, m := range p.Members() {
-		members[m.Id()] = struct{}{}
-	}
-	return members
-}
-
-// broadcastDoorToEligible announces `enc` (writer `writerName`) to the sessions
-// in field `f` whose character is the owner or a same-channel party member of
-// the owner (caster always included). Held as a package-level var so the test
-// can stub session enumeration + party membership.
+// broadcastDoorToMap announces `enc` (writer `writerName`) to sessions in field
+// `f`. The Mystic Door's area door (and its minimap portal) is a plain ranged
+// map object — visible to EVERYONE in the map, exactly like Cosmic
+// DoorObject.sendSpawnData (no party filter). Party membership only gates door
+// ENTRY and the partyPortal town-portal array (announceTownPortalToParty), not
+// area visibility. forCharacterId != 0 still targets a single character (kept
+// for any one-off targeted send); 0 broadcasts to every session in the map.
+// Held as a package-level var so the test can stub session enumeration.
 var broadcastDoorToEligible = func(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, f field.Model, ownerCharacterId, partyId, forCharacterId uint32, writerName string, enc packet.Encode) {
-	// forCharacterId != 0 targets a single character (a party joiner/leaver) and
-	// bypasses the eligibility filter — a leaver is no longer in the party set but
-	// still needs the removeDoor. 0 broadcasts to the door's eligible set.
-	var members map[uint32]struct{}
-	if forCharacterId == 0 {
-		members = partyMemberSet(l, ctx, ownerCharacterId, partyId)
-	}
 	ll := l.WithFields(logrus.Fields{
 		"door_action": "broadcast", "writer": writerName, "map_id": uint32(f.MapId()),
 		"owner": ownerCharacterId, "party_id": partyId, "for_character_id": forCharacterId,
 	})
 	sent := make([]uint32, 0)
 	err := _map.NewProcessor(l, ctx).ForSessionsInMap(f, func(s session.Model) error {
-		if forCharacterId != 0 {
-			if s.CharacterId() != forCharacterId {
-				return nil
-			}
-		} else if _, ok := members[s.CharacterId()]; !ok {
+		if forCharacterId != 0 && s.CharacterId() != forCharacterId {
 			return nil
 		}
 		sent = append(sent, s.CharacterId())

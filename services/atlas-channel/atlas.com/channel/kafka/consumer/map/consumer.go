@@ -547,27 +547,6 @@ func spawnReactorsForSession(l logrus.FieldLogger) func(ctx context.Context) fun
 	}
 }
 
-// doorPartyMemberSet resolves the set of character ids eligible to see a door:
-// the owner (always included) plus every same-channel party member of the owner.
-// Held as a package-level var so tests can stub party membership without a REST
-// mock. partyId == 0 (no party) yields just the owner. Mirrors the identical seam
-// in kafka/consumer/door.
-var doorPartyMemberSet = func(l logrus.FieldLogger, ctx context.Context, ownerCharacterId, partyId uint32) map[uint32]struct{} {
-	members := map[uint32]struct{}{ownerCharacterId: {}}
-	if partyId == 0 {
-		return members
-	}
-	p, err := party.NewProcessor(l, ctx).GetById(partyId)
-	if err != nil {
-		l.WithError(err).Warnf("SpawnForSelf: unable to resolve party [%d] for door owner [%d]; restricting to owner only.", partyId, ownerCharacterId)
-		return members
-	}
-	for _, m := range p.Members() {
-		members[m.Id()] = struct{}{}
-	}
-	return members
-}
-
 // doorAnnounce is the session.Announce seam for door packets, extracted as a
 // package-level var so tests can stub it without a real socket writer. The
 // writerName parameter identifies the writer (e.g. SpawnDoorWriter) for test
@@ -577,12 +556,15 @@ var doorAnnounce = func(l logrus.FieldLogger, ctx context.Context, wp writer.Pro
 	return session.Announce(l)(ctx)(wp)(writerName)(enc)(s)
 }
 
-// spawnDoorsForSession returns a door.Model operator that announces eligible
-// area-side doors to the arriving session (FR-3.4). A door is eligible if the
-// session's character is the owner or a same-channel party member of the owner
-// (per the G4 eligibility contract). For AREA-side doors (returned by
+// spawnDoorsForSession returns a door.Model operator that announces the
+// area-side door to the arriving session (FR-3.4). The area door is a plain
+// ranged map object — shown to EVERY session in the map, like a monster (no
+// party filter). Party membership only gates door ENTRY and the town-portal
+// array, not area visibility. For AREA-side doors (returned by
 // door.Processor.ForEachInMap keyed on the area field), the wire packet is
-// SpawnDoor(ownerCharacterId, areaX, areaY, launched=true).
+// SpawnDoor(ownerCharacterId, areaX, areaY, launched=true); launched=true marks
+// a late-join re-spawn vs. a first deploy. The wire "oid" is the owner character
+// id.
 //
 // Town-side spawn (the walkable town door, clientbound spawnPortal, for a
 // session entering the return town) is handled separately by
@@ -593,13 +575,6 @@ func spawnDoorsForSession(l logrus.FieldLogger) func(ctx context.Context) func(w
 		return func(wp writer.Producer) func(s session.Model) model.Operator[door.Model] {
 			return func(s session.Model) model.Operator[door.Model] {
 				return func(d door.Model) error {
-					members := doorPartyMemberSet(l, ctx, d.OwnerCharacterId(), d.PartyId())
-					if _, ok := members[s.CharacterId()]; !ok {
-						return nil
-					}
-					// AREA-side: announce SpawnDoor(ownerId, areaX, areaY, launched=true).
-					// launched=true marks a late-join re-spawn vs. a first deploy.
-					// The wire "oid" is the OWNER CHARACTER ID (Cosmic PacketCreator.java:1115).
 					return doorAnnounce(l, ctx, wp, doorcb.SpawnDoorWriter,
 						writer.SpawnDoorBody(d.OwnerCharacterId(), d.AreaX(), d.AreaY(), true), s)
 				}

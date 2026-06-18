@@ -146,11 +146,11 @@ func TestHandleCreated_AreaSpawnDoorPlusPortal_TownPortalOnly(t *testing.T) {
 	if got := countWriter(calls.broadcasts, townMapId, doorcb.SpawnDoorWriter); got != 0 {
 		t.Fatalf("town SpawnDoor: want 0 (Cosmic sends spawnDoor only when !inTown), got %d", got)
 	}
-	// Eligibility wiring: every broadcast carries the owner + party id so the
-	// seam can intersect with same-channel party membership.
+	// Every broadcast carries the owner + party id (for logging/targeting); the
+	// area door itself goes to every session in the map (no party filter).
 	for _, c := range calls.broadcasts {
 		if c.ownerCharacterId != ownerId || c.partyId != 77 {
-			t.Fatalf("broadcast lost eligibility args: %+v", c)
+			t.Fatalf("broadcast lost owner/party args: %+v", c)
 		}
 	}
 	// PARTY town render: a partied cast also sets the member's town-portal slot
@@ -391,44 +391,8 @@ func TestHandleSlotChanged_PartyTownPortalReconciled(t *testing.T) {
 	}
 }
 
-// TestPartyMemberSet_OwnerOnlyWhenNoParty asserts the eligibility seam returns
-// just the owner when there is no party (partyId == 0).
-func TestPartyMemberSet_OwnerOnlyWhenNoParty(t *testing.T) {
-	tm := newTestTenant(t)
-	ctx := tenant.WithContext(context.Background(), tm)
-
-	members := partyMemberSet(logrus.New(), ctx, ownerId, 0)
-	if len(members) != 1 {
-		t.Fatalf("no-party member set: want 1, got %d", len(members))
-	}
-	if _, ok := members[ownerId]; !ok {
-		t.Fatalf("no-party member set must include owner %d", ownerId)
-	}
-}
-
-// TestBroadcastDoorToEligible_FiltersToPartyMembers asserts the default
-// broadcaster only announces to sessions whose character is in the party
-// member set (owner + members), skipping outsiders. Session enumeration is
-// stubbed via the _map processor seam is not available here, so we exercise
-// the membership-intersection contract through partyMemberSet directly.
-func TestBroadcastDoorToEligible_FiltersToPartyMembers(t *testing.T) {
-	tm := newTestTenant(t)
-	ctx := tenant.WithContext(context.Background(), tm)
-
-	// Stub the party membership seam: owner 555 + members 600, 601.
-	origPM := partyMemberSet
-	defer func() { partyMemberSet = origPM }()
-	partyMemberSet = func(_ logrus.FieldLogger, _ context.Context, owner, _ uint32) map[uint32]struct{} {
-		return map[uint32]struct{}{owner: {}, 600: {}, 601: {}}
-	}
-
-	members := partyMemberSet(logrus.New(), ctx, ownerId, 77)
-	for _, want := range []uint32{ownerId, 600, 601} {
-		if _, ok := members[want]; !ok {
-			t.Fatalf("eligible set missing %d", want)
-		}
-	}
-	if _, ok := members[999]; ok {
-		t.Fatalf("outsider 999 must not be eligible")
-	}
-}
+// NOTE: the former TestPartyMemberSet_* / TestBroadcastDoorToEligible_FiltersToPartyMembers
+// tests were removed: the area door is no longer party-filtered. Per Cosmic
+// (DoorObject.sendSpawnData) it is a plain map object shown to EVERY session in
+// the map; party membership only gates entry and the partyPortal town-portal
+// array (announceTownPortalToParty, still covered above).

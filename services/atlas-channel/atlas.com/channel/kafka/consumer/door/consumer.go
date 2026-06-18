@@ -280,10 +280,19 @@ func handleSlotChanged(sc server.Model, wp writer.Producer) message.Handler[Stat
 		// Door.updateDoorPortal updates the areaDoor's linked town portal; the
 		// town portal indicator is re-placed at the new slot). Cosmic has no
 		// dedicated reslot packet, so emit remove(town) + spawnPortal at the new
-		// slot for the town field. The party-packet minimap update is Task G6.
+		// slot for the town field.
 		broadcastDoorToEligible(l, ctx, wp, townField, e.OwnerCharacterId, e.PartyId, e.ForCharacterId,
 			doorcb.RemoveTownDoorWriter, writer.RemoveTownDoorBody())
 		broadcastDoorToEligible(l, ctx, wp, townField, e.OwnerCharacterId, e.PartyId, e.ForCharacterId,
 			doorcb.SpawnPortalWriter, writer.SpawnPortalBody(b.TownMapId, e.MapId, b.TownX, b.TownY))
+
+		// PARTY town render path: reconcile the party town-portal array. Clear the
+		// old slot then set the new slot with the door's area position (AreaX/AreaY).
+		// A broadcast-scoped reslot (ForCharacterId == 0) is the only case that
+		// needs this; a per-character delta (join/leave) is handled by PARTYDATA refresh.
+		if e.ForCharacterId == 0 && e.PartyId != 0 {
+			announceTownPortalToParty(l, ctx, wp, sc, e.PartyId, b.OldSlot, 0, 0, 0, 0, true)
+			announceTownPortalToParty(l, ctx, wp, sc, e.PartyId, b.NewSlot, b.TownMapId, e.MapId, b.AreaX, b.AreaY, false)
+		}
 	}
 }

@@ -336,6 +336,60 @@ func TestHandleSlotChanged_ReslotsTownPortal(t *testing.T) {
 	}
 }
 
+// TestHandleSlotChanged_PartyTownPortalReconciled asserts that a reslot event
+// for a partied owner (PartyId != 0, ForCharacterId == 0) also reconciles the
+// party town-portal array: a CLEAR for OldSlot and a SET for NewSlot carrying
+// TownMapId, the area MapId, and the door's AreaX/AreaY position.
+func TestHandleSlotChanged_PartyTownPortalReconciled(t *testing.T) {
+	tm := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tm)
+	sc := newTestServer(t, tm)
+
+	restore, calls := withRecordingBroadcaster(t)
+	defer restore()
+
+	h := handleSlotChanged(sc, nil)
+	h(logrus.New(), ctx, StatusEvent[SlotChangedBody]{
+		WorldId:          sc.WorldId(),
+		ChannelId:        sc.ChannelId(),
+		MapId:            areaMapId,
+		Instance:         uuid.Nil,
+		OwnerCharacterId: ownerId,
+		PartyId:          77,
+		ForCharacterId:   0,
+		Type:             EventDoorStatusSlotChanged,
+		Body: SlotChangedBody{
+			TownMapId: townMapId,
+			OldSlot:   0,
+			NewSlot:   1,
+			TownX:     -150,
+			TownY:     -250,
+			AreaX:     300,
+			AreaY:     400,
+		},
+	})
+
+	// Expect exactly two party town-portal calls: clear old slot, set new slot.
+	if len(calls.townPortals) != 2 {
+		t.Fatalf("party town-portal reconcile: want 2 calls (clear+set), got %d: %+v", len(calls.townPortals), calls.townPortals)
+	}
+
+	// First call: CLEAR for OldSlot.
+	clearCall := calls.townPortals[0]
+	if !clearCall.clear || clearCall.partyId != 77 || clearCall.slot != 0 {
+		t.Fatalf("slot-changed party clear: want {partyId:77 slot:0 clear:true}, got %+v", clearCall)
+	}
+
+	// Second call: SET for NewSlot with town+area map ids and AreaX/AreaY.
+	setCall := calls.townPortals[1]
+	if setCall.clear || setCall.partyId != 77 || setCall.slot != 1 ||
+		setCall.townMapId != townMapId || setCall.targetMapId != areaMapId ||
+		setCall.x != 300 || setCall.y != 400 {
+		t.Fatalf("slot-changed party set: want {partyId:77 slot:1 town:%d target:%d x:300 y:400 clear:false}, got %+v",
+			townMapId, areaMapId, setCall)
+	}
+}
+
 // TestPartyMemberSet_OwnerOnlyWhenNoParty asserts the eligibility seam returns
 // just the owner when there is no party (partyId == 0).
 func TestPartyMemberSet_OwnerOnlyWhenNoParty(t *testing.T) {

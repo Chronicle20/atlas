@@ -78,4 +78,6 @@ type SlotChangedBody struct {
 	TownPortalId uint32  `json:"townPortalId"`
 	TownX        point.X `json:"townX"`
 	TownY        point.Y `json:"townY"`
+	AreaX        point.X `json:"areaX"`
+	AreaY        point.Y `json:"areaY"`
 }

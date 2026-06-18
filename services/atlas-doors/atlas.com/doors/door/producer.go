@@ -47,7 +47,8 @@ func slotChangedEventProvider(m Model, oldSlot byte) model.Provider[[]kafka.Mess
 		Type: EventDoorStatusSlotChanged,
 		Body: SlotChangedBody{AreaDoorId: m.AreaDoorId(), TownDoorId: m.TownDoorId(),
 			TownMapId: m.TownMapId(), OldSlot: oldSlot, NewSlot: m.Slot(),
-			TownPortalId: m.TownPortalId(), TownX: m.TownX(), TownY: m.TownY()},
+			TownPortalId: m.TownPortalId(), TownX: m.TownX(), TownY: m.TownY(),
+			AreaX: m.AreaX(), AreaY: m.AreaY()},
 	}
 	return producer.SingleMessageProvider(key, &value)
 }

@@ -11618,6 +11618,63 @@
           "comment": "error message (DecodeStr @0x7a2a91)"
         }
       ]
+    },
+    "CUserLocal::DoActiveSkill_Prepare": {
+      "address": "0x9ee1e6",
+      "direction": "serverbound",
+      "notes": "opcode COutPacket::COutPacket(...,0x60)=96. No swallow branch (skill 33101005 absent in v87).",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "nSkillID (skill to prepare)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "nSLV (skill level / action arg, Value)"
+        },
+        {
+          "op": "Encode2",
+          "comment": "action ((bMoveAction << 15) | (nOneTimeAction & 0x7FFF))"
+        },
+        {
+          "op": "Encode1",
+          "comment": "nActionSpeed (v46)"
+        }
+      ]
+    },
+    "CUserRemote::OnSkillCancel": {
+      "address": "0xa062b1",
+      "direction": "clientbound",
+      "notes": "nType 0xCC. Reads one Decode4 (nSkillID); remainder is local prepare-animation cleanup (a2 is reused as a scratch local for GetVecCtrl, not a further wire read).",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "nSkillID (skill to cancel)"
+        }
+      ]
+    },
+    "CUserRemote::OnSkillPrepare": {
+      "address": "0xa06135",
+      "direction": "clientbound",
+      "notes": "nType 0xCB.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "nSkillID"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nSLV (skill level)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "action (bit15 = move-action, low15 = one-time-action)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nActionSpeed"
+        }
+      ]
     }
   }
 }

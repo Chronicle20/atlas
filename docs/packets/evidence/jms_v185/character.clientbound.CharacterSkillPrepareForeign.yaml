@@ -1,0 +1,10 @@
+packet: character/clientbound/CharacterSkillPrepareForeign
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CUserRemote::OnSkillPrepare
+    address: "0xa53f49"
+    decompile_sha256: 8f8db72c7954a815b2c7094a1d3ebafbac4d4581030809dea411e492fb29ff97
+verifies:
+    - libs/atlas-packet/character/clientbound/skill_prepare_foreign_test.go#TestSkillPrepareForeignByteFixture

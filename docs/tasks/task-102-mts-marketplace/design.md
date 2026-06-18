@@ -533,3 +533,51 @@ risks the canonical grant-before-debit dupe vector.
 
 Each phase is independently buildable; custody/settlement (3–6) is the risk core
 and gets the heaviest test investment.
+
+---
+
+## Phase 0 decision note (resolved 2026-06-18)
+
+Resolved from task-096's **already-verified** clientbound `MTS_OPERATION`
+audits (`docs/packets/audits/gms_v95/FieldMtsResult*`), so no new IDA work was
+required for the design questions.
+
+### §9.1 — real-time bidding (server-push?): NO live-push → escrow-at-expiry
+
+The complete verified clientbound `MTS_OPERATION` mode set
+(`libs/atlas-packet/field/mts_operation_body.go`) contains **only request
+responses** (`*Done`/`*Failed`) plus the two auction modes:
+- `BidAuctionFailed` (0x3C/60) — a response to a *failed* bid request.
+- `SuccessBidInfoResult` (0x3E/62) — a settlement **outcome** notice
+  (sold/bought flag, ITC item id, meso price, 8-byte FILETIME contract date).
+
+There is **no** server-pushed "you've been outbid / current high bid updated"
+broadcast mode — nothing the server emits unsolicited to active observers
+during an auction. **Decision: escrowed highest-bid-wins-at-expiry with buy-now
+early-end** (the §9.1 fallback). This is exactly the baseline already built in
+Task 6.1 (bid escrows the marked-up amount; outbid releases the prior escrow;
+settle-at-expiry credits the seller + moves custody to the winner; no
+double-debit). **Phase 6.2 builds NO live-outbid-push path.** `SuccessBidInfoResult`
+may optionally be emitted to the winner/seller on the settle path as an outcome
+notice (not live bidding).
+
+### §9.4 — jms_v185 MTS surface
+
+Per `STATUS.md`, jms_v185 **has** the serverbound MTS opcodes
+(ENTER_MTS `0x0A6`, ITC_STATUS_CHARGE `0x10A`, ITC_QUERY_CASH_REQUEST `0x10B`,
+ITC_OPERATION `0x10C`), so the jms serverbound handlers + per-version
+`operations` mode table can be wired. Its clientbound `MTS_OPERATION` /
+`MTS_OPERATION2` cells are currently ⬜ (not covered by task-096) and are part of
+this campaign's verification scope; jms in-game flows are supported only where
+its clientbound result cells verify.
+
+### Per-version opcodes (from STATUS.md, incl. the v84/jms Phase-0 deliverables)
+
+| Op | v83 | v84 | v87 | v95 | jms |
+|----|-----|-----|-----|-----|-----|
+| ENTER_MTS | 0x09C | 0x0A0 | 0x0A4 | 0x0B4 | 0x0A6 |
+| ITC_STATUS_CHARGE | 0x0FB | 0x0FB | 0x109 | 0x132 | 0x10A |
+| ITC_QUERY_CASH_REQUEST | 0x0FC | 0x0FC | 0x10A | 0x133 | 0x10B |
+| ITC_OPERATION | 0x0FD | 0x0FD | 0x10B | 0x134 | 0x10C |
+| MTS_OPERATION2 (CB) | 0x15B | 0x15B | 0x170 | 0x19B | (⬜) |
+| MTS_OPERATION (CB) | 0x15C | 0x15C | 0x171 | 0x19C | (⬜) |

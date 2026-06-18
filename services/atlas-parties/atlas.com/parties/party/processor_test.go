@@ -5,6 +5,7 @@ import (
 	"atlas-parties/kafka/message"
 	"atlas-parties/kafka/producer"
 	"context"
+	"encoding/json"
 	"errors"
 	"testing"
 
@@ -322,6 +323,62 @@ func TestLeaveAndEmit_Integration(t *testing.T) {
 		character.GetRegistry().Delete(ctx, leaderId)
 		GetRegistry().Remove(ctx, party.Id()) // Cleanup the party if it still exists
 	})
+}
+
+// findDisbandMembers decodes all kafka messages on EnvEventStatusTopic from the
+// buffer and returns the Members slice from the first DISBAND event found.
+// Returns nil if no DISBAND event is found.
+func findDisbandMembers(t *testing.T, buffer *message.Buffer) []uint32 {
+	t.Helper()
+	msgs := buffer.GetAll()[EnvEventStatusTopic]
+	for _, msg := range msgs {
+		// Decode the top-level envelope to check the type field.
+		var env statusEvent[disbandEventBody]
+		if err := json.Unmarshal(msg.Value, &env); err != nil {
+			continue
+		}
+		if env.Type == EventPartyStatusTypeDisband {
+			return env.Body.Members
+		}
+	}
+	return nil
+}
+
+// TestLeaderLeaveDisbandEventIncludesLeader verifies that when the party
+// leader leaves and the party disbands, the DISBAND event body carries the
+// FULL former member list — including the departing leader.
+func TestLeaderLeaveDisbandEventIncludesLeader(t *testing.T) {
+	processor, ctx := setupTest(t)
+
+	leaderId := uint32(1)
+	memberId := uint32(5)
+
+	// Create a 2-member party: leader=1, member=5
+	party := GetRegistry().Create(ctx, leaderId)
+	GetRegistry().Update(ctx, party.Id(), func(m Model) Model {
+		return Model.AddMember(m, memberId)
+	})
+	createRealCharacter(ctx, leaderId, party.Id())
+	createRealCharacter(ctx, memberId, party.Id())
+
+	buffer := message.NewBuffer()
+
+	// Leader leaves → party disbands
+	_, err := processor.Leave(buffer)(party.Id(), leaderId)
+	assert.NoError(t, err)
+
+	// DISBAND event members must include BOTH the leader and the remaining member
+	members := findDisbandMembers(t, buffer)
+	if members == nil {
+		t.Fatal("no DISBAND event found in buffer")
+	}
+	assert.Contains(t, members, leaderId, "DISBAND members must include the departing leader")
+	assert.Contains(t, members, memberId, "DISBAND members must include the remaining member")
+	assert.Equal(t, 2, len(members), "DISBAND members must have exactly 2 entries")
+
+	// Cleanup
+	character.GetRegistry().Delete(ctx, leaderId)
+	character.GetRegistry().Delete(ctx, memberId)
 }
 
 // Test party state transitions more systematically

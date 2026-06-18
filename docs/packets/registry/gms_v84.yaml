@@ -325,9 +325,9 @@
 - op: GUILD_BBS_PACKET
   direction: clientbound
   opcode: 59
-  fname: CWvsContext::OnGuildBBSPacket
+  fname: CUIGuildBBS::OnGuildBBSPacket
   provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB. task-103: fname pointed at the real CUIGuildBBS::OnGuildBBSPacket handler (dispatch sub_841EC9) rather than the bare-delegating CWvsContext::OnGuildBBSPacket thunk, so the op row bridges to the per-arm reports and aggregates worst-of (same wiring as GUILD_OPERATION).'
 - op: CHAR_INFO
   direction: clientbound
   opcode: 61

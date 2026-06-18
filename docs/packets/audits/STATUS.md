@@ -6,10 +6,10 @@
 Tool: `1cf8cd5f16b7bf7c7623c82f32ee6fae39cd5396`
 
 - export gms_v83: `bb6c3851bea040fadaa5fa79e7b2c58d5c7e2253512b8523ca720ddcf75c9f7a`
-- export gms_v84: `2000ee694c0908fb4648e16798dc5fe7d186bab4e44f2cd8f006b0b2a30ccca2`
+- export gms_v84: `22686524ff4086e3887ca73b808679c733bd1ce7b31bc61d7aeaec04545c72fb`
 - export gms_v87: `4dea958ec2d5e21d59c13f37f8ecd99b484b4c56621fe9b6743f80056cd93e18`
 - export gms_v95: `d9d46ca359d4564935294035a6d5ff9088e39af5a722af2f9ed874ec4099dc8c`
-- export jms_v185: `72b0a66cae848169fe74b7703a0eb815f68bae0c24743e8fe4e549845d6c7e51`
+- export jms_v185: `62c33d20716c151cbd8de84fd7b8a11b2592e78a847e276e4c4ee0ecce832745`
 
 ## Clientbound
 
@@ -77,7 +77,7 @@ Tool: `1cf8cd5f16b7bf7c7623c82f32ee6fae39cd5396`
 | IDA_0X038 | CWvsContext::OnExpedtionResult |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x038 | ❌ |
 | TRADE_MONEY_LIMIT | CWvsContext::OnTradeMoneyLimit |  | 0x039 | ❌ | 0x039 | ❌ | 0x039 | ❌ | 0x039 | ❌ |  | ⬜ |
 | SET_GENDER | CWvsContext::OnSetGender |  | 0x03A | ❌ | 0x03A | ❌ | 0x03A | ❌ | 0x03A | ❌ |  | ⬜ |
-| GUILD_BBS_PACKET | CWvsContext::OnGuildBBSPacket |  | 0x03B | ❌ | 0x03B | ❌ | 0x03B | ❌ | 0x03B | ❌ |  | ⬜ |
+| GUILD_BBS_PACKET | CUIGuildBBS::OnGuildBBSPacket | guild/clientbound/GuildBBSEntryNotFound (T1) | 0x03B | ✅ | 0x03B | ✅ | 0x03B | ✅ | 0x03B | ✅ |  | ⬜ |
 | CHAR_INFO | CWvsContext::OnCharacterInfo | character/clientbound/CharacterInfo (T1) | 0x03D | ✅ | 0x03D | ✅ | 0x03D | ✅ | 0x03D | ✅ | 0x035 | ❌ |
 | PARTY_OPERATION | CWvsContext::OnPartyResult | party/clientbound/PartyChangeLeader (T1) | 0x03E | ✅ | 0x03E | ✅ | 0x03E | ✅ | 0x03E | ✅ | 0x036 | ✅ |
 | BUDDYLIST | CWvsContext::OnFriendResult | buddy/clientbound/BuddyCapacityUpdate (T1) | 0x03F | ✅ | 0x041 | ❌ | 0x041 | ✅ | 0x041 | ✅ | 0x039 | ✅ |
@@ -820,9 +820,6 @@ Tool: `1cf8cd5f16b7bf7c7623c82f32ee6fae39cd5396`
 | character/serverbound/KeyMapChange (T1) |  |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
 | character/serverbound/Move (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | field/serverbound/FieldChange (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
-| guild/clientbound/GuildBBSEntryNotFound (T1) |  |  | ✅ |  | 🟡 |  | ✅ |  | ✅ |  | ❌ |
-| guild/clientbound/GuildBBSThread (T1) |  |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
-| guild/clientbound/GuildBBSThreadList (T1) |  |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
 | guild/serverbound/GuildAgreementResponse (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | guild/serverbound/GuildBBSCreateOrEditThread (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | guild/serverbound/GuildBBSDeleteReply (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
@@ -906,11 +903,11 @@ Tool: `1cf8cd5f16b7bf7c7623c82f32ee6fae39cd5396`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v83 | 343 | 0 | 0 | 333 | 200 | 0 | 50.7% |
-| v84 | 306 | 0 | 1 | 348 | 221 | 0 | 46.7% |
-| v87 | 358 | 0 | 0 | 355 | 163 | 0 | 50.2% |
-| v95 | 391 | 0 | 1 | 405 | 79 | 0 | 49.1% |
-| JMS185 | 328 | 0 | 0 | 379 | 169 | 0 | 46.4% |
+| v83 | 341 | 0 | 0 | 332 | 200 | 0 | 50.7% |
+| v84 | 307 | 0 | 0 | 345 | 221 | 0 | 47.1% |
+| v87 | 356 | 0 | 0 | 354 | 163 | 0 | 50.1% |
+| v95 | 389 | 0 | 1 | 404 | 79 | 0 | 49.0% |
+| JMS185 | 326 | 0 | 0 | 378 | 169 | 0 | 46.3% |
 
 ## Conflicts
 

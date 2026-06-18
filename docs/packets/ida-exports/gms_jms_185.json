@@ -3904,6 +3904,12 @@
       "absent": true,
       "notes": "Absent in JMS v185 — BBS not implemented."
     },
+    "CUIGuildBBS::OnGuildBBSPacket#BBSEntryNotFound": {
+      "address": "ABSENT",
+      "region": "JMS",
+      "absent": true,
+      "notes": "Absent in JMS v185 — BBS not implemented (task-103: added so all three guild BBS clientbound arms grade consistently version-absent on jms; no CUIGuildBBS symbol exists in the jms SCY IDB, the jms registry has no GUILD_BBS_PACKET, and the jms template registers no GuildBBS writer)."
+    },
     "CUIGuildBBS::OnCommentDelete": {
       "address": "ABSENT",
       "region": "JMS",

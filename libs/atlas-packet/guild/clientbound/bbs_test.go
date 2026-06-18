@@ -12,6 +12,10 @@ import (
 // packet-audit:verify packet=guild/clientbound/GuildBBSThreadList version=gms_v87 ida=0x87a5df
 // packet-audit:verify packet=guild/clientbound/GuildBBSThread version=gms_v95 ida=0x7c6630
 // packet-audit:verify packet=guild/clientbound/GuildBBSThreadList version=gms_v95 ida=0x7c46c0
+// v84 BBS clientbound dispatch sub_841EC9 (Decode1-6): list sub_841F06 / view sub_84224E / notfound sub_842571.
+// Read orders byte-identical to v83 (no mode drift; verified live v84 IDB @port 13337). Bodies hand-computed below.
+// packet-audit:verify packet=guild/clientbound/GuildBBSThread version=gms_v84 ida=0x84224e
+// packet-audit:verify packet=guild/clientbound/GuildBBSThreadList version=gms_v84 ida=0x841f06
 // packet-audit:verify packet=guild/clientbound/GuildBBSThread version=jms_v185 ida=ABSENT
 // packet-audit:verify packet=guild/clientbound/GuildBBSThreadList version=jms_v185 ida=ABSENT
 func TestBBSThreadListEmpty(t *testing.T) {
@@ -54,6 +58,12 @@ func TestBBSThread(t *testing.T) {
 // packet-audit:verify packet=guild/clientbound/GuildBBSEntryNotFound version=gms_v83 ida=0x816c32
 // packet-audit:verify packet=guild/clientbound/GuildBBSEntryNotFound version=gms_v87 ida=0x87a5df
 // packet-audit:verify packet=guild/clientbound/GuildBBSEntryNotFound version=gms_v95 ida=0x7c8260
+// v84 notfound arm sub_842571 via dispatch sub_841EC9 ((Decode1-6)==2, mode 8); mode-only, byte-identical to v83.
+// packet-audit:verify packet=guild/clientbound/GuildBBSEntryNotFound version=gms_v84 ida=0x841ec9
+// jms BBS clientbound is VERSION-ABSENT (no CUIGuildBBS symbol in the jms SCY IDB;
+// no GUILD_BBS_PACKET in the jms registry; no GuildBBS writer in the jms template).
+// Marked ABSENT consistently with BBSThread/BBSThreadList (the codebase's verified-absent model).
+// packet-audit:verify packet=guild/clientbound/GuildBBSEntryNotFound version=jms_v185 ida=ABSENT
 func TestBBSEntryNotFound(t *testing.T) {
 	input := NewBBSEntryNotFound(GuildBBSModeEntryNotFound)
 	got := input.Encode(nil, nil)(nil)

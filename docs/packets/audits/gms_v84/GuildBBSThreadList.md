@@ -1,6 +1,6 @@
 # GuildBBSThreadList (← `CUIGuildBBS::OnGuildBBSPacket#BBSThreadList`)
 
-- **IDA:** 
+- **IDA:** 0x841f06
 - **Atlas file:** `libs/atlas-packet/guild/clientbound/bbs.go`
 - **Variant:** GMS/v84
 - **Branch depth:** 2
@@ -11,7 +11,7 @@
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | byte | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
+| 0 | byte | byte `mode (BBS load-list result, raw 6)` | ✅ |  |
 | 1 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
 | 2 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 3 | byte | byte `` | ❌ | atlas: extra — client never reads this field |

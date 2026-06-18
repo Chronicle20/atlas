@@ -1515,10 +1515,15 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "ForeignEmblemChanged", pkg: "guild", dir: csvpkg.DirClientbound}}
 
 	// --- Social: guild BBS (clientbound) ---
-	// CSV: GUILD_BBS_PACKET (clientbound, opcode 0x03B/59 in GMS v95) → CWvsContext::OnGuildBBSPacket →
-	// CUIGuildBBS::OnGuildBBSPacket dispatches on (Decode1 - 6): 0=list, 1=view, 2=not-found. Mode bytes
-	// 6/7/8 are version-stable (gms_v83/84/87/95; jms-absent) and NOT config-resolved (guild_bbs.yaml).
-	// No bare-root entry (matches the CITC/OnFieldEffect exemplars).
+	// CSV: GUILD_BBS_PACKET (clientbound, opcode 0x03B/59 in GMS v95). The bare
+	// CWvsContext::OnGuildBBSPacket thunk just delegates to the real handler
+	// CUIGuildBBS::OnGuildBBSPacket, which dispatches on (Decode1 - 6): 0=list,
+	// 1=view, 2=not-found. task-103 pointed the GUILD_BBS_PACKET registry fname at
+	// CUIGuildBBS::OnGuildBBSPacket (not the thunk) so the op row's worst-of
+	// aggregation bridges to the per-arm reports below — the same wiring as
+	// GUILD_OPERATION (CWvsContext::OnGuildResult#...). Mode bytes 6/7/8 are
+	// version-stable (gms_v83/84/87/95; jms-absent) and NOT config-resolved
+	// (guild_bbs.yaml). No bare-root entry (matches the CITC/OnFieldEffect exemplars).
 	case "CUIGuildBBS::OnGuildBBSPacket#BBSThreadList":
 		// (Decode1-6)=0 → OnLoadListResult mode 6: mode(1)+hasNotice(1)+[noticeFields if set]+totalCount(4)+pageCount(4)+entries.
 		// Atlas BBSThreadList.Encode: WriteByte(mode 6)+hasNotice+[noticeFields]+totalCount(4)+[page of entries]. ✓ on bytes.

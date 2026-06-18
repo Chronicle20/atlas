@@ -5550,13 +5550,13 @@
       "calls": null
     },
     "CUIGuildBBS::OnGuildBBSPacket#BBSThread": {
-      "address": "",
-      "direction": "",
-      "unresolved": true,
+      "address": "0x84224e",
+      "direction": "clientbound",
+      "note": "task-103 (Decode1-6)==1 OnViewEntryResult mode 7 (sub_84224E); v84 BBS view-entry read order byte-identical to v83 OnGuildBBSPacket@0x816c32 view arm (no mode drift; verified live v84 IDB). The fixture body bytes are hand-computed in bbs_test.go from the decompile.",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "mode (BBS view-entry result, raw 7)"
         }
       ]
     },
@@ -5572,13 +5572,13 @@
       ]
     },
     "CUIGuildBBS::OnGuildBBSPacket#BBSThreadList": {
-      "address": "",
-      "direction": "",
-      "unresolved": true,
+      "address": "0x841f06",
+      "direction": "clientbound",
+      "note": "task-103 (Decode1-6)==0 OnLoadListResult mode 6 (sub_841F06); v84 BBS load-list read order byte-identical to v83 OnGuildBBSPacket@0x816c32 list arm (Decode1 hasNotice; if set Decode4+Decode4+DecodeStr+DecodeBuffer(8)+Decode4+Decode4; Decode4 count; per-thread same shape). No mode drift; verified live v84 IDB. Fixture body bytes hand-computed in bbs_test.go.",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "mode (BBS load-list result, raw 6)"
         }
       ]
     },

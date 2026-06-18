@@ -2,10 +2,10 @@
   "toolSha": "1cf8cd5f16b7bf7c7623c82f32ee6fae39cd5396",
   "exportHashes": {
     "gms_v83": "bb6c3851bea040fadaa5fa79e7b2c58d5c7e2253512b8523ca720ddcf75c9f7a",
-    "gms_v84": "2000ee694c0908fb4648e16798dc5fe7d186bab4e44f2cd8f006b0b2a30ccca2",
+    "gms_v84": "22686524ff4086e3887ca73b808679c733bd1ce7b31bc61d7aeaec04545c72fb",
     "gms_v87": "4dea958ec2d5e21d59c13f37f8ecd99b484b4c56621fe9b6743f80056cd93e18",
     "gms_v95": "d9d46ca359d4564935294035a6d5ff9088e39af5a722af2f9ed874ec4099dc8c",
-    "jms_v185": "72b0a66cae848169fe74b7703a0eb815f68bae0c24743e8fe4e549845d6c7e51"
+    "jms_v185": "62c33d20716c151cbd8de84fd7b8a11b2592e78a847e276e4c4ee0ecce832745"
   },
   "rows": [
     {
@@ -4317,30 +4317,27 @@
     {
       "kind": "op",
       "op": "GUILD_BBS_PACKET",
+      "packet": "guild/clientbound/GuildBBSEntryNotFound",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
-        "CWvsContext::OnGuildBBSPacket"
+        "CUIGuildBBS::OnGuildBBSPacket"
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 59
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 59
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 59
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 59
         },
         "jms_v185": {
@@ -26686,91 +26683,6 @@
         },
         "gms_v84": {
           "state": "verified",
-          "opcode": -1
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "sub-struct",
-      "packet": "guild/clientbound/GuildBBSEntryNotFound",
-      "tier1": true,
-      "cells": {
-        "gms_v83": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v84": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
-          "opcode": -1
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "sub-struct",
-      "packet": "guild/clientbound/GuildBBSThread",
-      "tier1": true,
-      "cells": {
-        "gms_v83": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
-          "opcode": -1
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "sub-struct",
-      "packet": "guild/clientbound/GuildBBSThreadList",
-      "tier1": true,
-      "cells": {
-        "gms_v83": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
           "opcode": -1
         },
         "gms_v87": {

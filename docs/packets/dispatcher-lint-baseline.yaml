@@ -27,5 +27,4 @@
 # from NEW work.
 exempt_families:
   - CWvsContext::OnPartyResult
-  - CWvsContext::OnGuildResult
   - CWvsContext::OnFriendResult

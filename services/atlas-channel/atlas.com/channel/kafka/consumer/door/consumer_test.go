@@ -254,14 +254,15 @@ func TestHandleRemoved_AreaRemoveDoor_TownRemoveTownDoor(t *testing.T) {
 	}
 }
 
-// TestHandleRemoved_Recast_NoTownPortalClear asserts a RECAST removal does NOT
-// emit a TOWN_PORTAL clear. A recast is a remove+create on the SAME party slot;
-// the trailing CREATED re-sets it. Clearing here would make every in-party
-// client tear down then immediately rebuild that slot's town-door layer in one
-// frame (CField::OnTownPortalChanged), which crashes the v83 client. The
-// area/town RemoveDoor broadcasts still fire — only the party slot clear is
-// suppressed.
-func TestHandleRemoved_Recast_NoTownPortalClear(t *testing.T) {
+// TestHandleRemoved_Recast_NoRemovalPackets asserts a RECAST removal emits NO
+// removal packets at all — not the area RemoveDoor, not the town RemoveTownDoor,
+// not the party town-portal clear. A recast is a remove + immediate re-create of
+// the SAME owner; the v83 client keys its door pool by owner and updates in place
+// (CTownPortalPool::OnTownPortalCreated @0x7bd6c6), so the trailing CREATED fully
+// refreshes the door. Emitting RemoveDoor runs the despawn animation
+// (OnTownPortalRemoved @0x7be064) and the re-spawn lands on the same COM canvas
+// layers in one frame — which crashes the client. IDA-verified (v83).
+func TestHandleRemoved_Recast_NoRemovalPackets(t *testing.T) {
 	tm := newTestTenant(t)
 	ctx := tenant.WithContext(context.Background(), tm)
 	sc := newTestServer(t, tm)
@@ -282,21 +283,16 @@ func TestHandleRemoved_Recast_NoTownPortalClear(t *testing.T) {
 			AreaDoorId: 10,
 			TownDoorId: 20,
 			TownMapId:  townMapId,
+			Slot:       1,
 			Reason:     RemoveReasonRecast,
 		},
 	})
 
-	// The field-level removes still happen (the door object is genuinely removed
-	// before the recast re-creates it).
-	if got := countWriter(calls.broadcasts, areaMapId, doorcb.RemoveDoorWriter); got != 1 {
-		t.Fatalf("recast area RemoveDoor: want 1, got %d", got)
+	if len(calls.broadcasts) != 0 {
+		t.Fatalf("recast must NOT emit field removal packets (despawn-then-respawn crashes v83), got %+v", calls.broadcasts)
 	}
-	if got := countWriter(calls.broadcasts, townMapId, doorcb.RemoveTownDoorWriter); got != 1 {
-		t.Fatalf("recast town RemoveTownDoor: want 1, got %d", got)
-	}
-	// The party town-portal slot clear MUST be suppressed on recast.
 	if len(calls.townPortals) != 0 {
-		t.Fatalf("recast must NOT emit a town-portal clear (crashes v83 client), got %+v", calls.townPortals)
+		t.Fatalf("recast must NOT emit a town-portal clear, got %+v", calls.townPortals)
 	}
 }
 

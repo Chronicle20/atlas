@@ -219,6 +219,26 @@ func handleRemoved(sc server.Model, wp writer.Producer) message.Handler[StatusEv
 			"for_character_id": e.ForCharacterId, "slot": b.Slot, "area_map_id": uint32(e.MapId),
 			"town_map_id": uint32(b.TownMapId), "reason": b.Reason,
 		}).Infof("Door REMOVED: owner [%d] party [%d] slot [%d] reason [%s] (forCharacter [%d]).", e.OwnerCharacterId, e.PartyId, b.Slot, b.Reason, e.ForCharacterId)
+
+		// A RECAST is a remove + immediate re-create of the SAME owner's door.
+		// The v83 client keys its field door pool by owner: re-sending SpawnDoor
+		// makes CTownPortalPool::OnTownPortalCreated (@0x7bd6c6) find the existing
+		// owner entry and UPDATE it in place, and SpawnPortal/TownPortal likewise
+		// refresh the town portal + party slot. So the CREATED that immediately
+		// follows fully refreshes the door with NO removal packet needed.
+		//
+		// Emitting the removal packets here is what crashes the v83 client: the
+		// area RemoveDoor runs CTownPortalPool::OnTownPortalRemoved (@0x7be064),
+		// which starts a despawn ANIMATION on the door's COM canvas layers, and
+		// the SpawnDoor that lands in the same frame re-creates that same owner —
+		// a despawn-then-respawn race on the same layers. (The TOWN_PORTAL clear
+		// has the analogous effect via CField::OnTownPortalChanged.) IDA-verified
+		// (v83, port 13342). So suppress ALL removal broadcasts on recast and let
+		// the trailing CREATED do the in-place update.
+		if b.Reason == RemoveReasonRecast {
+			return
+		}
+
 		areaField := field.NewBuilder(e.WorldId, e.ChannelId, e.MapId).SetInstance(e.Instance).Build()
 		townField := field.NewBuilder(e.WorldId, e.ChannelId, b.TownMapId).SetInstance(e.Instance).Build()
 
@@ -234,15 +254,7 @@ func handleRemoved(sc server.Model, wp writer.Producer) message.Handler[StatusEv
 
 		// PARTY town render path: clear this member's town-portal slot. See
 		// handleCreated; only on a real removal broadcast (not a leave delta).
-		//
-		// A RECAST is a remove+create on the SAME party slot: the CREATED that
-		// follows immediately re-sets this slot. Emitting a TOWN_PORTAL clear
-		// here would make every in-party client tear down then rebuild that
-		// slot's town-door layer in one frame (CField::OnTownPortalChanged),
-		// which crashes the v83 client. Skip the clear on recast — the trailing
-		// CREATED's set is an in-place update (CTownPortalPool::OnTownPortalCreated
-		// updates the existing owner entry rather than duplicating it).
-		if e.ForCharacterId == 0 && b.Reason != RemoveReasonRecast {
+		if e.ForCharacterId == 0 {
 			announceTownPortalToParty(l, ctx, wp, sc, e.PartyId, b.Slot, 0, 0, 0, 0, true)
 		}
 	}

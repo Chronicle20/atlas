@@ -520,6 +520,20 @@
         "opCode": "0x133",
         "validator": "LoggedInValidator",
         "handler": "ItcQueryCashRequestHandle"
+      },
+      {
+        "opCode": "0x134",
+        "validator": "LoggedInValidator",
+        "handler": "ItcOperationHandle",
+        "options": {
+          "operations": {
+            "CANCEL_SALE": 7,
+            "TAKE_HOME": 8,
+            "BUY": 16,
+            "PLACE_BID": 19,
+            "BUY_AUCTION_IMM": 20
+          }
+        }
       }
     ],
     "writers": [

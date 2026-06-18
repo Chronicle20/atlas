@@ -138,6 +138,148 @@ func TestItcOperationSaleCurrentItemByteOutput(t *testing.T) {
 	}
 }
 
+// BUY / BUY-NOW / CANCEL / TAKE-HOME / PLACE-BID arms, gms_v95 opcode 0x134/308
+// (GMS_v95.0_U_DEVM.exe, IDA port 13340). v95's PDB symbols expose these as
+// named CITC::On* functions (inlined/unnamed on v83). Each arm references the
+// listing by its ITC serial (nITCSN); only place-bid carries extra scalars. The
+// item-slot blob is NOT present in these arms (unlike the register/sale arms).
+
+// packet-audit:verify packet=field/serverbound/FieldItcOperationBuy version=gms_v95 ida=0x573270
+//
+// ITC_OPERATION mode 0x10 buy-fixed-price. Derived from CITC::OnBuy @0x573270
+// (COutPacket(308) @0x5732a5). Encode order @0x5732b8..0x5732cc:
+//
+//	Encode1(0x10u)         @0x5732b8  mode byte
+//	Encode4(ii->p->nITCSN) @0x5732cc  itcSn
+func TestItcOperationBuyByteOutput_v95(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 95, 1)
+	input := NewItcOperationBuy(0x10, 123456)
+	got := pt.Encode(t, ctx, input.Encode, nil)
+
+	var want []byte
+	want = append(want, 0x10)            // Encode1(0x10u) mode byte @0x5732b8
+	want = append(want, le32(123456)...) // Encode4 nITCSN @0x5732cc
+	if !bytes.Equal(got, want) {
+		t.Fatalf("Buy (v95):\n got %v\nwant %v", got, want)
+	}
+}
+
+// packet-audit:verify packet=field/serverbound/FieldItcOperationBuyAuctionImm version=gms_v95 ida=0x573310
+//
+// ITC_OPERATION mode 0x14 buy-now-on-auction. Derived from
+// CITC::OnBuyAuctionImm @0x573310 (COutPacket(308) @0x573345). Encode order
+// @0x573358..0x57336c:
+//
+//	Encode1(0x14u)         @0x573358  mode byte
+//	Encode4(ii->p->nITCSN) @0x57336c  itcSn
+func TestItcOperationBuyAuctionImmByteOutput_v95(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 95, 1)
+	input := NewItcOperationBuyAuctionImm(0x14, 123456)
+	got := pt.Encode(t, ctx, input.Encode, nil)
+
+	var want []byte
+	want = append(want, 0x14)            // Encode1(0x14u) mode byte @0x573358
+	want = append(want, le32(123456)...) // Encode4 nITCSN @0x57336c
+	if !bytes.Equal(got, want) {
+		t.Fatalf("BuyAuctionImm (v95):\n got %v\nwant %v", got, want)
+	}
+}
+
+// packet-audit:verify packet=field/serverbound/FieldItcOperationCancelSale version=gms_v95 ida=0x5737a0
+//
+// ITC_OPERATION mode 0x07 cancel-sale. Derived from CITC::OnCancelSaleItem
+// @0x5737a0 (COutPacket(308) @0x57381a). Encode order @0x57382d..0x57383d:
+//
+//	Encode1(7u)            @0x57382d  mode byte
+//	Encode4(ii->p->nITCSN) @0x57383d  itcSn
+func TestItcOperationCancelSaleByteOutput_v95(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 95, 1)
+	input := NewItcOperationCancelSale(0x07, 123456)
+	got := pt.Encode(t, ctx, input.Encode, nil)
+
+	var want []byte
+	want = append(want, 0x07)            // Encode1(7u) mode byte @0x57382d
+	want = append(want, le32(123456)...) // Encode4 nITCSN @0x57383d
+	if !bytes.Equal(got, want) {
+		t.Fatalf("CancelSale (v95):\n got %v\nwant %v", got, want)
+	}
+}
+
+// packet-audit:verify packet=field/serverbound/FieldItcOperationMoveLtoS version=gms_v95 ida=0x573880
+//
+// ITC_OPERATION mode 0x08 take-home (move purchase locker->slot). Derived from
+// CITC::OnMoveITCPurchaseItemLtoS @0x573880 (COutPacket(308) @0x5738b5). The
+// nTI/nPos args are NOT written. Encode order @0x5738c8..0x5738dc:
+//
+//	Encode1(8u)            @0x5738c8  mode byte
+//	Encode4(ii->p->nITCSN) @0x5738dc  itcSn
+func TestItcOperationMoveLtoSByteOutput_v95(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 95, 1)
+	input := NewItcOperationMoveLtoS(0x08, 123456)
+	got := pt.Encode(t, ctx, input.Encode, nil)
+
+	var want []byte
+	want = append(want, 0x08)            // Encode1(8u) mode byte @0x5738c8
+	want = append(want, le32(123456)...) // Encode4 nITCSN @0x5738dc
+	if !bytes.Equal(got, want) {
+		t.Fatalf("MoveLtoS (v95):\n got %v\nwant %v", got, want)
+	}
+}
+
+// packet-audit:verify packet=field/serverbound/FieldItcOperationPlaceBid version=gms_v95 ida=0x58eb50
+//
+// ITC_OPERATION mode 0x13 place-bid. Send inlined into
+// CITCBidAuctionDlg::OnButtonClicked @0x58eb50 (nId==1 confirm-bid branch,
+// COutPacket(308) @0x58eda1). Encode order @0x58edb4..0x58ede7:
+//
+//	Encode1(0x13u)                @0x58edb4  mode byte
+//	Encode4(m_pITCItem.p->nITCSN) @0x58edc7  itcSn
+//	Encode4(m_nMyBidPrice)        @0x58edd7  bidPrice
+//	Encode4(m_nMyBidRange)        @0x58ede7  bidRange
+func TestItcOperationPlaceBidByteOutput_v95(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 95, 1)
+	input := NewItcOperationPlaceBid(0x13, 123456, 5000, 100)
+	got := pt.Encode(t, ctx, input.Encode, nil)
+
+	var want []byte
+	want = append(want, 0x13)            // Encode1(0x13u) mode byte @0x58edb4
+	want = append(want, le32(123456)...) // Encode4 nITCSN @0x58edc7
+	want = append(want, le32(5000)...)   // Encode4 m_nMyBidPrice @0x58edd7
+	want = append(want, le32(100)...)    // Encode4 m_nMyBidRange @0x58ede7
+	if !bytes.Equal(got, want) {
+		t.Fatalf("PlaceBid (v95):\n got %v\nwant %v", got, want)
+	}
+}
+
+func TestItcOperationV95ArmsRoundTrip(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 95, 1)
+	t.Run("Buy", func(t *testing.T) {
+		in := NewItcOperationBuy(0x10, 123456)
+		out := ItcOperationBuy{}
+		pt.RoundTrip(t, ctx, in.Encode, out.Decode, nil)
+	})
+	t.Run("BuyAuctionImm", func(t *testing.T) {
+		in := NewItcOperationBuyAuctionImm(0x14, 123456)
+		out := ItcOperationBuyAuctionImm{}
+		pt.RoundTrip(t, ctx, in.Encode, out.Decode, nil)
+	})
+	t.Run("CancelSale", func(t *testing.T) {
+		in := NewItcOperationCancelSale(0x07, 123456)
+		out := ItcOperationCancelSale{}
+		pt.RoundTrip(t, ctx, in.Encode, out.Decode, nil)
+	})
+	t.Run("MoveLtoS", func(t *testing.T) {
+		in := NewItcOperationMoveLtoS(0x08, 123456)
+		out := ItcOperationMoveLtoS{}
+		pt.RoundTrip(t, ctx, in.Encode, out.Decode, nil)
+	})
+	t.Run("PlaceBid", func(t *testing.T) {
+		in := NewItcOperationPlaceBid(0x13, 123456, 5000, 100)
+		out := ItcOperationPlaceBid{}
+		pt.RoundTrip(t, ctx, in.Encode, out.Decode, nil)
+	})
+}
+
 func TestItcOperationCoreTradeRoundTrip(t *testing.T) {
 	ctx := pt.CreateContext("GMS", 83, 1)
 	t.Run("RegisterSale", func(t *testing.T) {

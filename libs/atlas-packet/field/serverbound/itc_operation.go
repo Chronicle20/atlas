@@ -36,11 +36,30 @@ import (
 // virtual RawEncode — the GW_ItemSlotBase contract modeled by the shared
 // model.Asset codec (the same blob the clientbound MtsItem embeds).
 //
-// The buy / buy-now / place-bid / cancel-sale / take-home arms of this same
-// dispatcher are INLINED into UI dialog handlers in the v83 client (no
-// standalone CITC::OnBuy / OnCancelSaleItem / OnMoveITCPurchaseItemLtoS /
-// CITCBidAuctionDlg::OnButtonClicked function exists in the IDB or export);
-// they are NOT verified here.
+// BUY / BUY-NOW / CANCEL-SALE / TAKE-HOME / PLACE-BID arms verified here
+// (gms_v95, GMS_v95.0_U_DEVM.exe, IDA port 13340 — the symbol-rich PDB build
+// exposes these as named CITC::On* functions; the v83 client inlines them into
+// UI dialog handlers with no standalone fname, so they were BLOCKED on v83).
+// All five send the dispatcher opcode COutPacket(308/0x134) then a leading
+// Encode1(mode) byte, derived per-function below:
+//
+//	CITC::OnBuy @0x573270 — COutPacket(308) @0x5732a5, Encode1(0x10) @0x5732b8,
+//	    Encode4(nITCSN) @0x5732cc. Mode 0x10 (buy fixed-price).
+//	CITC::OnBuyAuctionImm @0x573310 — COutPacket(308) @0x573345,
+//	    Encode1(0x14) @0x573358, Encode4(nITCSN) @0x57336c. Mode 0x14 (buy-now).
+//	CITC::OnCancelSaleItem @0x5737a0 — COutPacket(308) @0x57381a,
+//	    Encode1(7) @0x57382d, Encode4(nITCSN) @0x57383d. Mode 0x07 (cancel sale).
+//	CITC::OnMoveITCPurchaseItemLtoS @0x573880 — COutPacket(308) @0x5738b5,
+//	    Encode1(8) @0x5738c8, Encode4(nITCSN) @0x5738dc. Mode 0x08 (take-home).
+//	    (The nTI/nPos args are NOT written to the wire — only nITCSN.)
+//	CITCBidAuctionDlg::OnButtonClicked @0x58eb50 — the nId==1 (confirm-bid)
+//	    branch inlines the send: COutPacket(308) @0x58eda1, Encode1(0x13)
+//	    @0x58edb4, Encode4(nITCSN) @0x58edc7, Encode4(m_nMyBidPrice) @0x58edd7,
+//	    Encode4(m_nMyBidRange) @0x58ede7. Mode 0x13 (place-bid).
+//
+// Each of these five carries the same body shape across all versions (per-
+// version opcode + mode bytes); v95 is the symbol-rich reference for
+// propagation to v83/v84/v87/jms by matching the inlined send sites by shape.
 
 const ItcOperationHandle = "ItcOperationHandle"
 
@@ -285,5 +304,231 @@ func (m *ItcOperationSaleCurrentItem) Decode(l logrus.FieldLogger, ctx context.C
 		m.slotPos = r.ReadUint32()
 		m.item.Decode(l, ctx)(r, options)
 		m.commodityId = r.ReadUint32()
+	}
+}
+
+// ItcOperationBuy — the buy-fixed-price arm (CITC::OnBuy @0x573270, gms_v95).
+// After the dispatcher opcode COutPacket(308) @0x5732a5 it encodes, in order:
+//
+//	Encode1(0x10u)            @0x5732b8  dispatcher mode byte (buy)
+//	Encode4(ii->p->nITCSN)   @0x5732cc  the ITC serial number of the listing
+//
+// No item-slot blob — a fixed-price purchase references the listing solely by
+// its serial. The m_bITCRequestSent latch (@0x573296) guards a double-send; it
+// is not written to the wire.
+//
+// packet-audit:fname CITC::OnBuy
+type ItcOperationBuy struct {
+	mode  byte
+	itcSn uint32 // Encode4 ii->p->nITCSN
+}
+
+func NewItcOperationBuy(mode byte, itcSn uint32) ItcOperationBuy {
+	return ItcOperationBuy{mode: mode, itcSn: itcSn}
+}
+
+func (m ItcOperationBuy) Mode() byte        { return m.mode }
+func (m ItcOperationBuy) ItcSn() uint32     { return m.itcSn }
+func (m ItcOperationBuy) Operation() string { return ItcOperationHandle }
+func (m ItcOperationBuy) String() string {
+	return fmt.Sprintf("itc buy mode [%d] itcSn [%d]", m.mode, m.itcSn)
+}
+
+func (m ItcOperationBuy) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
+		w.WriteByte(m.mode) // Encode1(0x10u) @0x5732b8 mode byte
+		w.WriteInt(m.itcSn) // Encode4 @0x5732cc nITCSN
+		return w.Bytes()
+	}
+}
+
+func (m *ItcOperationBuy) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
+		m.mode = r.ReadByte()
+		m.itcSn = r.ReadUint32()
+	}
+}
+
+// ItcOperationBuyAuctionImm — the buy-now-on-auction arm
+// (CITC::OnBuyAuctionImm @0x573310, gms_v95). After COutPacket(308) @0x573345
+// it encodes, in order:
+//
+//	Encode1(0x14u)            @0x573358  dispatcher mode byte (buy-now)
+//	Encode4(ii->p->nITCSN)   @0x57336c  the ITC serial number of the listing
+//
+// Identical body shape to OnBuy (serial-only); the mode byte distinguishes the
+// immediate-buy-out of an auction from a plain fixed-price buy.
+//
+// packet-audit:fname CITC::OnBuyAuctionImm
+type ItcOperationBuyAuctionImm struct {
+	mode  byte
+	itcSn uint32 // Encode4 ii->p->nITCSN
+}
+
+func NewItcOperationBuyAuctionImm(mode byte, itcSn uint32) ItcOperationBuyAuctionImm {
+	return ItcOperationBuyAuctionImm{mode: mode, itcSn: itcSn}
+}
+
+func (m ItcOperationBuyAuctionImm) Mode() byte        { return m.mode }
+func (m ItcOperationBuyAuctionImm) ItcSn() uint32     { return m.itcSn }
+func (m ItcOperationBuyAuctionImm) Operation() string { return ItcOperationHandle }
+func (m ItcOperationBuyAuctionImm) String() string {
+	return fmt.Sprintf("itc buy-now mode [%d] itcSn [%d]", m.mode, m.itcSn)
+}
+
+func (m ItcOperationBuyAuctionImm) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
+		w.WriteByte(m.mode) // Encode1(0x14u) @0x573358 mode byte
+		w.WriteInt(m.itcSn) // Encode4 @0x57336c nITCSN
+		return w.Bytes()
+	}
+}
+
+func (m *ItcOperationBuyAuctionImm) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
+		m.mode = r.ReadByte()
+		m.itcSn = r.ReadUint32()
+	}
+}
+
+// ItcOperationCancelSale — the cancel-sale arm (CITC::OnCancelSaleItem
+// @0x5737a0, gms_v95). A YesNo confirm dialog (StringPool 0x12BA, @0x57380f)
+// gates the send; the wire shape after COutPacket(308) @0x57381a is:
+//
+//	Encode1(7u)              @0x57382d  dispatcher mode byte (cancel sale)
+//	Encode4(ii->p->nITCSN)   @0x57383d  the ITC serial number of the listing
+//
+// The cancel is suppressed when the listing already has bids
+// (!ii->p->nBidCount guard @0x5737d8); that guard does not change the wire.
+//
+// packet-audit:fname CITC::OnCancelSaleItem
+type ItcOperationCancelSale struct {
+	mode  byte
+	itcSn uint32 // Encode4 ii->p->nITCSN
+}
+
+func NewItcOperationCancelSale(mode byte, itcSn uint32) ItcOperationCancelSale {
+	return ItcOperationCancelSale{mode: mode, itcSn: itcSn}
+}
+
+func (m ItcOperationCancelSale) Mode() byte        { return m.mode }
+func (m ItcOperationCancelSale) ItcSn() uint32     { return m.itcSn }
+func (m ItcOperationCancelSale) Operation() string { return ItcOperationHandle }
+func (m ItcOperationCancelSale) String() string {
+	return fmt.Sprintf("itc cancel sale mode [%d] itcSn [%d]", m.mode, m.itcSn)
+}
+
+func (m ItcOperationCancelSale) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
+		w.WriteByte(m.mode) // Encode1(7u) @0x57382d mode byte
+		w.WriteInt(m.itcSn) // Encode4 @0x57383d nITCSN
+		return w.Bytes()
+	}
+}
+
+func (m *ItcOperationCancelSale) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
+		m.mode = r.ReadByte()
+		m.itcSn = r.ReadUint32()
+	}
+}
+
+// ItcOperationMoveLtoS — the take-home (move purchased item locker->slot) arm
+// (CITC::OnMoveITCPurchaseItemLtoS @0x573880, gms_v95). After COutPacket(308)
+// @0x5738b5 it encodes, in order:
+//
+//	Encode1(8u)              @0x5738c8  dispatcher mode byte (take-home)
+//	Encode4(ii->p->nITCSN)   @0x5738dc  the ITC serial number of the listing
+//
+// The function takes nTI/nPos args but does NOT write them to the wire — only
+// nITCSN is sent; the server resolves the destination slot.
+//
+// packet-audit:fname CITC::OnMoveITCPurchaseItemLtoS
+type ItcOperationMoveLtoS struct {
+	mode  byte
+	itcSn uint32 // Encode4 ii->p->nITCSN
+}
+
+func NewItcOperationMoveLtoS(mode byte, itcSn uint32) ItcOperationMoveLtoS {
+	return ItcOperationMoveLtoS{mode: mode, itcSn: itcSn}
+}
+
+func (m ItcOperationMoveLtoS) Mode() byte        { return m.mode }
+func (m ItcOperationMoveLtoS) ItcSn() uint32     { return m.itcSn }
+func (m ItcOperationMoveLtoS) Operation() string { return ItcOperationHandle }
+func (m ItcOperationMoveLtoS) String() string {
+	return fmt.Sprintf("itc take-home mode [%d] itcSn [%d]", m.mode, m.itcSn)
+}
+
+func (m ItcOperationMoveLtoS) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
+		w.WriteByte(m.mode) // Encode1(8u) @0x5738c8 mode byte
+		w.WriteInt(m.itcSn) // Encode4 @0x5738dc nITCSN
+		return w.Bytes()
+	}
+}
+
+func (m *ItcOperationMoveLtoS) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
+		m.mode = r.ReadByte()
+		m.itcSn = r.ReadUint32()
+	}
+}
+
+// ItcOperationPlaceBid — the place-bid arm. The v95 send is INLINED into
+// CITCBidAuctionDlg::OnButtonClicked @0x58eb50 (the nId==1 confirm-bid branch);
+// there is no standalone CITC::OnBid function. After COutPacket(308) @0x58eda1
+// the branch encodes, in order:
+//
+//	Encode1(0x13u)               @0x58edb4  dispatcher mode byte (place bid)
+//	Encode4(m_pITCItem.p->nITCSN) @0x58edc7  the ITC serial number of the listing
+//	Encode4(m_nMyBidPrice)       @0x58edd7  the player's bid base price
+//	Encode4(m_nMyBidRange)       @0x58ede7  the player's bid increment/range
+//
+// A balance check (GetPriceWithCommision vs nexon cash, @0x58ec34) and a max-
+// price guard (@0x58ec8b) gate the send; neither changes the wire shape.
+//
+// packet-audit:fname CITCBidAuctionDlg::OnButtonClicked
+type ItcOperationPlaceBid struct {
+	mode     byte
+	itcSn    uint32 // Encode4 m_pITCItem.p->nITCSN
+	bidPrice uint32 // Encode4 m_nMyBidPrice
+	bidRange uint32 // Encode4 m_nMyBidRange
+}
+
+func NewItcOperationPlaceBid(mode byte, itcSn uint32, bidPrice uint32, bidRange uint32) ItcOperationPlaceBid {
+	return ItcOperationPlaceBid{mode: mode, itcSn: itcSn, bidPrice: bidPrice, bidRange: bidRange}
+}
+
+func (m ItcOperationPlaceBid) Mode() byte        { return m.mode }
+func (m ItcOperationPlaceBid) ItcSn() uint32     { return m.itcSn }
+func (m ItcOperationPlaceBid) BidPrice() uint32  { return m.bidPrice }
+func (m ItcOperationPlaceBid) BidRange() uint32  { return m.bidRange }
+func (m ItcOperationPlaceBid) Operation() string { return ItcOperationHandle }
+func (m ItcOperationPlaceBid) String() string {
+	return fmt.Sprintf("itc place bid mode [%d] itcSn [%d] price [%d] range [%d]", m.mode, m.itcSn, m.bidPrice, m.bidRange)
+}
+
+func (m ItcOperationPlaceBid) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
+		w.WriteByte(m.mode)    // Encode1(0x13u) @0x58edb4 mode byte
+		w.WriteInt(m.itcSn)    // Encode4 @0x58edc7 nITCSN
+		w.WriteInt(m.bidPrice) // Encode4 @0x58edd7 m_nMyBidPrice
+		w.WriteInt(m.bidRange) // Encode4 @0x58ede7 m_nMyBidRange
+		return w.Bytes()
+	}
+}
+
+func (m *ItcOperationPlaceBid) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
+		m.mode = r.ReadByte()
+		m.itcSn = r.ReadUint32()
+		m.bidPrice = r.ReadUint32()
+		m.bidRange = r.ReadUint32()
 	}
 }

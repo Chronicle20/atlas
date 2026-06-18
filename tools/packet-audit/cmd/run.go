@@ -1827,6 +1827,29 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "ItcOperationRegisterAuction", pkg: "field", dir: csvpkg.DirServerbound}}
 	case "CITC::OnSaleCurrentItem":
 		return []candidate{{name: "ItcOperationSaleCurrentItem", pkg: "field", dir: csvpkg.DirServerbound}}
+	// BUY / BUY-NOW / CANCEL-SALE / TAKE-HOME / PLACE-BID arms of the same
+	// ITC_OPERATION dispatcher, verified on gms_v95 (the symbol-rich PDB build,
+	// IDA port 13340) which exposes them as named CITC::On* functions; the v83
+	// client inlines them with no standalone fname. opcode 308/0x134.
+	//   CITC::OnBuy @0x573270 (COutPacket(308) @0x5732a5) mode 0x10.
+	//   CITC::OnBuyAuctionImm @0x573310 (COutPacket(308) @0x573345) mode 0x14.
+	//   CITC::OnCancelSaleItem @0x5737a0 (COutPacket(308) @0x57381a) mode 0x07.
+	//   CITC::OnMoveITCPurchaseItemLtoS @0x573880 (COutPacket(308) @0x5738b5) mode 0x08.
+	//   CITCBidAuctionDlg::OnButtonClicked @0x58eb50 (COutPacket(308) @0x58eda1,
+	//     nId==1 confirm-bid branch) mode 0x13 — the place-bid send is inlined
+	//     into the auction-bid dialog's button handler (no CITC::OnBid fname).
+	// Each body references the listing by its ITC serial (nITCSN); place-bid
+	// additionally carries m_nMyBidPrice + m_nMyBidRange. No item-slot blob.
+	case "CITC::OnBuy":
+		return []candidate{{name: "ItcOperationBuy", pkg: "field", dir: csvpkg.DirServerbound}}
+	case "CITC::OnBuyAuctionImm":
+		return []candidate{{name: "ItcOperationBuyAuctionImm", pkg: "field", dir: csvpkg.DirServerbound}}
+	case "CITC::OnCancelSaleItem":
+		return []candidate{{name: "ItcOperationCancelSale", pkg: "field", dir: csvpkg.DirServerbound}}
+	case "CITC::OnMoveITCPurchaseItemLtoS":
+		return []candidate{{name: "ItcOperationMoveLtoS", pkg: "field", dir: csvpkg.DirServerbound}}
+	case "CITCBidAuctionDlg::OnButtonClicked":
+		return []candidate{{name: "ItcOperationPlaceBid", pkg: "field", dir: csvpkg.DirServerbound}}
 
 	// --- World: field (clientbound) ---
 	// Affected-area (mist) + kite (the flying-kite field object, called

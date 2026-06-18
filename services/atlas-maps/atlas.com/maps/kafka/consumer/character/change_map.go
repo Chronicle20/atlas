@@ -15,7 +15,7 @@ import (
 func changeMapFromCommand(wp warp.Processor) func(c characterKafka.Command[characterKafka.ChangeMapBody]) error {
 	return func(c characterKafka.Command[characterKafka.ChangeMapBody]) error {
 		dest := field.NewBuilder(c.WorldId, c.Body.ChannelId, c.Body.MapId).SetInstance(c.Body.Instance).Build()
-		return wp.ChangeMap(c.TransactionId, c.CharacterId, c.WorldId, dest, c.Body.PortalId)
+		return wp.ChangeMap(c.TransactionId, c.CharacterId, c.WorldId, dest, c.Body.PortalId, c.Body.UseTargetPosition, c.Body.TargetX, c.Body.TargetY)
 	}
 }
 

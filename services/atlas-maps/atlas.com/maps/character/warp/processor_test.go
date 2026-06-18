@@ -92,7 +92,7 @@ func TestChangeMap_PersistsAndEmitsMapChanged(t *testing.T) {
 	p := newProcessorWithDeps(logrus.New(), ctx, lp, cp.Provider(), mt)
 
 	dest := field.NewBuilder(world0(), channel1(), _map.Id(104000000)).SetInstance(uuid.Nil).Build()
-	if err := p.ChangeMap(uuid.New(), 12345, world0(), dest, 0); err != nil {
+	if err := p.ChangeMap(uuid.New(), 12345, world0(), dest, 0, false, 0, 0); err != nil {
 		t.Fatalf("ChangeMap: %v", err)
 	}
 

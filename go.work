@@ -35,6 +35,7 @@ use (
 	./services/atlas-configurations/atlas.com/configurations
 	./services/atlas-consumables/atlas.com/consumables
 	./services/atlas-data/atlas.com/data
+	./services/atlas-doors/atlas.com/doors
 	./services/atlas-drop-information/atlas.com/dis
 	./services/atlas-drops/atlas.com/drops
 	./services/atlas-effective-stats/atlas.com/effective-stats

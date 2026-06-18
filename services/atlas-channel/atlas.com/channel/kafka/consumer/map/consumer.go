@@ -8,6 +8,7 @@ import (
 	cashData "atlas-channel/data/cash"
 	mapData "atlas-channel/data/map"
 	npc2 "atlas-channel/data/npc"
+	"atlas-channel/door"
 	"atlas-channel/drop"
 	"atlas-channel/guild"
 	consumer2 "atlas-channel/kafka/consumer"
@@ -16,6 +17,7 @@ import (
 	_map "atlas-channel/map"
 	"atlas-channel/merchant"
 	"atlas-channel/monster"
+	"atlas-channel/party"
 	"atlas-channel/party/hpsync"
 	"atlas-channel/party_quest"
 	"atlas-channel/reactor"
@@ -37,6 +39,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
+	doorcb "github.com/Chronicle20/atlas/libs/atlas-packet/door/clientbound"
 	droppkt "github.com/Chronicle20/atlas/libs/atlas-packet/drop/clientbound"
 	fieldpkt "github.com/Chronicle20/atlas/libs/atlas-packet/field"
 	fieldcb "github.com/Chronicle20/atlas/libs/atlas-packet/field/clientbound"
@@ -47,6 +50,7 @@ import (
 	reactorpkt "github.com/Chronicle20/atlas/libs/atlas-packet/reactor/clientbound"
 	summonpkt "github.com/Chronicle20/atlas/libs/atlas-packet/summon/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
@@ -237,6 +241,17 @@ func SpawnForSelf(l logrus.FieldLogger, ctx context.Context, wp writer.Producer)
 			if err := reactor.NewProcessor(l, ctx).ForEachInMap(f, spawnReactorsForSession(l)(ctx)(wp)(s)); err != nil {
 				l.WithError(err).Debugf("SpawnForSelf: unable to spawn reactors for character [%d].", s.CharacterId())
 			}
+		}()
+
+		go func() {
+			if err := door.NewProcessor(l, ctx).ForEachInMap(f, spawnDoorsForSession(l)(ctx)(wp)(s)); err != nil {
+				l.WithError(err).Debugf("SpawnForSelf: unable to spawn doors for character [%d].", s.CharacterId())
+			}
+		}()
+		go func() {
+			// Town side: render the walkable town door to a player entering the
+			// return town (FR-3.2/FR-3.4) — the area-side spawn above misses it.
+			spawnTownDoorsForSession(l, ctx, wp, s)
 		}()
 
 		go func() {
@@ -528,6 +543,98 @@ func spawnReactorsForSession(l logrus.FieldLogger) func(ctx context.Context) fun
 					return session.Announce(l)(ctx)(wp)(reactorpkt.ReactorSpawnWriter)(reactorpkt.NewReactorSpawn(r.Id(), r.Classification(), r.State(), r.X(), r.Y(), r.Direction(), r.Name()).Encode)(s)
 				}
 			}
+		}
+	}
+}
+
+// doorAnnounce is the session.Announce seam for door packets, extracted as a
+// package-level var so tests can stub it without a real socket writer. The
+// writerName parameter identifies the writer (e.g. SpawnDoorWriter) for test
+// assertions; the real implementation calls session.Announce with the given
+// writerName and body.
+var doorAnnounce = func(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, writerName string, enc packet.Encode, s session.Model) error {
+	return session.Announce(l)(ctx)(wp)(writerName)(enc)(s)
+}
+
+// spawnDoorsForSession returns a door.Model operator that announces the
+// area-side door to the arriving session (FR-3.4). The area door is a plain
+// ranged map object — shown to EVERY session in the map, like a monster (no
+// party filter). Party membership only gates door ENTRY and the town-portal
+// array, not area visibility. For AREA-side doors (returned by
+// door.Processor.ForEachInMap keyed on the area field), the wire packet is
+// SpawnDoor(ownerCharacterId, areaX, areaY, launched=true); launched=true marks
+// a late-join re-spawn vs. a first deploy. The wire "oid" is the owner character
+// id.
+//
+// Town-side spawn (the walkable town door, clientbound spawnPortal, for a
+// session entering the return town) is handled separately by
+// spawnTownDoorsForSession — GetInField is keyed on the area field, so the
+// town side is resolved by owner instead.
+func spawnDoorsForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(s session.Model) model.Operator[door.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(s session.Model) model.Operator[door.Model] {
+		return func(wp writer.Producer) func(s session.Model) model.Operator[door.Model] {
+			return func(s session.Model) model.Operator[door.Model] {
+				return func(d door.Model) error {
+					return doorAnnounce(l, ctx, wp, doorcb.SpawnDoorWriter,
+						writer.SpawnDoorBody(d.OwnerCharacterId(), d.AreaX(), d.AreaY(), true), s)
+				}
+			}
+		}
+	}
+}
+
+// townDoorsByOwnerFunc lists a character's live doors via the by-owner route.
+// Package var so tests can stub it.
+var townDoorsByOwnerFunc = func(l logrus.FieldLogger, ctx context.Context, ownerId uint32) ([]door.Model, error) {
+	return door.NewProcessor(l, ctx).GetByOwner(ownerId)
+}
+
+// townSpawnPartyMembers returns the session's character plus its same-party
+// member ids — the owners whose doors the session is eligible to see. Package
+// var so tests can stub party membership.
+var townSpawnPartyMembers = func(l logrus.FieldLogger, ctx context.Context, characterId uint32) []uint32 {
+	ids := []uint32{characterId}
+	pm, err := party.NewProcessor(l, ctx).GetByMemberId(characterId)
+	if err != nil {
+		return ids
+	}
+	for _, m := range pm.Members() {
+		if m.Id() != characterId {
+			ids = append(ids, m.Id())
+		}
+	}
+	return ids
+}
+
+// spawnTownDoorsForSession announces the TOWN-side door (clientbound spawnPortal)
+// to a session entering its field, for every door owned by the session's party
+// whose town side IS the entered map (FR-3.2 / FR-3.4). The area-side map-enter
+// spawn (spawnDoorsForSession) only covers doors whose AREA field is the entered
+// map; a player warping INTO the return town also needs the walkable town door
+// rendered. v83 draws the town door from spawnPortal positioned at the town door
+// portal (0x80+slot) resolved at cast. Resolved by owner (no by-town REST route),
+// de-duplicated across party members.
+func spawnTownDoorsForSession(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, s session.Model) {
+	f := s.Field()
+	seen := map[uint32]struct{}{}
+	for _, owner := range townSpawnPartyMembers(l, ctx, s.CharacterId()) {
+		doors, err := townDoorsByOwnerFunc(l, ctx, owner)
+		if err != nil {
+			continue
+		}
+		for _, d := range doors {
+			if d.TownMapId() != f.MapId() {
+				continue
+			}
+			if d.WorldId() != f.WorldId() || d.ChannelId() != f.ChannelId() {
+				continue
+			}
+			if _, dup := seen[d.AreaDoorId()]; dup {
+				continue
+			}
+			seen[d.AreaDoorId()] = struct{}{}
+			_ = doorAnnounce(l, ctx, wp, doorcb.SpawnPortalWriter,
+				writer.SpawnPortalBody(d.TownMapId(), d.MapId(), d.AreaX(), d.AreaY()), s)
 		}
 	}
 }

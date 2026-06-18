@@ -37,3 +37,24 @@ func ChangeMapProvider(f field.Model, characterId uint32, targetMapId _map.Id, p
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+// ChangeToPositionProvider issues a CHANGE_MAP command that lands the character
+// at an exact (x, y) coordinate in the target map rather than a named portal —
+// used by Mystic Door to place the user on the linked door's position.
+func ChangeToPositionProvider(f field.Model, characterId uint32, targetMapId _map.Id, x int16, y int16) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &commandEvent[changeMapBody]{
+		WorldId:     f.WorldId(),
+		CharacterId: characterId,
+		Type:        CommandCharacterChangeMap,
+		Body: changeMapBody{
+			ChannelId:         f.ChannelId(),
+			MapId:             targetMapId,
+			Instance:          f.Instance(),
+			UseTargetPosition: true,
+			TargetX:           x,
+			TargetY:           y,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

@@ -37,8 +37,11 @@ type commandEvent[E any] struct {
 }
 
 type changeMapBody struct {
-	ChannelId channel.Id `json:"channelId"`
-	MapId     _map.Id    `json:"mapId"`
-	Instance  uuid.UUID  `json:"instance"`
-	PortalId  uint32     `json:"portalId"`
+	ChannelId         channel.Id `json:"channelId"`
+	MapId             _map.Id    `json:"mapId"`
+	Instance          uuid.UUID  `json:"instance"`
+	PortalId          uint32     `json:"portalId"`
+	UseTargetPosition bool       `json:"useTargetPosition"`
+	TargetX           int16      `json:"targetX"`
+	TargetY           int16      `json:"targetY"`
 }

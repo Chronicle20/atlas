@@ -84,6 +84,16 @@
 - Error Type: PET_CANNOT_CONSUME
 - Purpose: Receives consumable item use events
 
+### EVENT_TOPIC_DOOR_STATUS
+- Direction: Event
+- Message Type: `StatusEvent[E]` with envelope fields worldId, channelId, mapId (area field), instance, pairId, ownerCharacterId, partyId, forCharacterId, type, body
+- Type Discriminators: `CREATED`, `REMOVED`, `SLOT_CHANGED`
+- Body Types: `CreatedBody` (areaDoorId, townDoorId, townMapId, slot, townPortalId, areaX, areaY, townX, townY, skillId, skillLevel, expiresAt), `RemovedBody` (areaDoorId, townDoorId, townMapId, slot, reason), `SlotChangedBody` (areaDoorId, townDoorId, townMapId, oldSlot, newSlot, townPortalId, townX, townY, areaX, areaY)
+- Remove Reasons (RemovedBody.reason): `EXPIRY`, `LOGOUT`, `CHANNEL_CHANGED`, `LEFT_FIELD`, `RECAST`, `PARTY_LEFT`, `CANCELLED`
+- Header Parsers: span, tenant
+- Start Offset: last
+- Purpose: Receives Mystic Door create/remove/slot-change events; channel renders the door to area and town sessions and updates the party town-portal array
+
 ### EVENT_TOPIC_DROP_STATUS
 - Direction: Event
 - Message Type: Drop status events
@@ -327,6 +337,13 @@
 - Message Type: `Command[RequestItemConsumeBody]`, `Command[RequestScrollBody]`
 - Purpose: Issues consumable item use commands. REQUEST_ITEM_CONSUME uses a consumable item (Source, ItemId, Quantity). REQUEST_SCROLL applies a scroll to equipment (ScrollSlot, EquipSlot, WhiteScroll, LegendarySpirit).
 
+### COMMAND_TOPIC_DOOR
+- Direction: Command
+- Message Type: `Command[E]` with envelope fields worldId, channelId, mapId, instance, ownerCharacterId, type, body
+- Type Discriminators: `SPAWN`, `REMOVE`
+- Body Types: `SpawnBody` (skillId, skillLevel, x, y), `RemoveBody` (reason)
+- Purpose: Issues Mystic Door spawn commands (on cast) and remove commands (on buff cancel) to atlas-doors
+
 ### COMMAND_TOPIC_DROP
 - Direction: Command
 - Message Type: `Command[RequestReservationBody]`
@@ -486,7 +503,7 @@ Quest-specific command envelope used for quest operations (start, complete, forf
 - Consumers start from `LastOffset` for real-time event processing
 - Tenant ID passed in Kafka headers for multi-tenant filtering
 - Span context passed in headers for distributed tracing
-- Messages keyed by character ID (or account ID for storage commands) for ordering guarantees
+- Messages keyed by character ID (or account ID for storage commands, or map ID for door commands) for ordering guarantees
 - Producer uses `producer.Provider` type = `func(token string) producer.MessageProducer`
 - All topics resolved via `topic.EnvProvider` from environment variables
 - Brokers configured via `BOOTSTRAP_SERVERS` environment variable

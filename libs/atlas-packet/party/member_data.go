@@ -17,6 +17,17 @@ type PartyMember struct {
 	Level     uint16
 	ChannelId int32 // -2 if offline
 	MapId     uint32
+	// Mystic Door town portal (aTownPortal slot for this member). When the
+	// member has an active door, these carry its town (exit) map, area (origin)
+	// map, and AREA-side door position. While a viewer is in a party the v83
+	// client renders town doors SOLELY from this array (CField::OnTownPortalChanged
+	// @0x5365c8 ignores the solo SPAWN_PORTAL when in a party), so leaving it
+	// zero — as the pre-fix code did — makes party doors invisible in town.
+	HasDoor        bool
+	DoorTownMapId  uint32 // town (exit) map id
+	DoorFieldMapId uint32 // area (origin) map id
+	DoorX          int16  // area-side door x
+	DoorY          int16  // area-side door y
 }
 
 // WritePartyData serialises PARTYDATA to the wire. The v83 PARTYDATA struct is
@@ -70,15 +81,28 @@ func WritePartyData(ctx context.Context, w *response.Writer, members []PartyMemb
 	// aTownPortal[6]: v83 = 4 ints (town+field+x+y); v95+ adds m_nSKillID (5th int).
 	// JMS v185 uses the small PARTYDATA (0x12A=298 bytes), same as GMS v83.
 	// IDA evidence: JMS OnPartyResult@0xb297e7 qmemcpy(v120,...,0x12Au=298).
+	// Entries are emitted in member order (matching the ids written above), then
+	// padded to 6. A member with an active Mystic Door carries its real portal;
+	// doorless members (and padding) stay EmptyMapId/0.
 	v95plus := t.Region() == "GMS" && t.MajorVersion() >= 95
-	for range 6 {
-		w.WriteInt(uint32(_map.EmptyMapId)) // m_dwTownID
-		w.WriteInt(uint32(_map.EmptyMapId)) // m_dwFieldID
+	writeTownPortal := func(townId, fieldId uint32, x, y int16) {
+		w.WriteInt(townId)  // m_dwTownID
+		w.WriteInt(fieldId) // m_dwFieldID
 		if v95plus {
 			w.WriteInt(0) // m_nSKillID (v95+)
 		}
-		w.WriteInt(0) // m_ptFieldPortal.x
-		w.WriteInt(0) // m_ptFieldPortal.y
+		w.WriteInt(uint32(int32(x))) // m_ptFieldPortal.x
+		w.WriteInt(uint32(int32(y))) // m_ptFieldPortal.y
+	}
+	for _, m := range members {
+		if m.HasDoor {
+			writeTownPortal(m.DoorTownMapId, m.DoorFieldMapId, m.DoorX, m.DoorY)
+		} else {
+			writeTownPortal(uint32(_map.EmptyMapId), uint32(_map.EmptyMapId), 0, 0)
+		}
+	}
+	for range 6 - len(members) {
+		writeTownPortal(uint32(_map.EmptyMapId), uint32(_map.EmptyMapId), 0, 0)
 	}
 	// aPQReward[6], aPQRewardType[6], dwPQRewardMobTemplateID, bPQReward (v95+).
 	// Absent in v83 (memset size 0x12A=298 vs v95 0x17A=378).
@@ -124,14 +148,18 @@ func ReadPartyData(ctx context.Context, r *request.Reader) ([]PartyMember, uint3
 	for i := range 6 {
 		maps[i] = r.ReadUint32()
 	}
-	for range 6 {
-		_ = r.ReadUint32() // m_dwTownID
-		_ = r.ReadUint32() // m_dwFieldID
+	townIds := make([]uint32, 6)
+	fieldIds := make([]uint32, 6)
+	portalX := make([]int16, 6)
+	portalY := make([]int16, 6)
+	for i := range 6 {
+		townIds[i] = r.ReadUint32()  // m_dwTownID
+		fieldIds[i] = r.ReadUint32() // m_dwFieldID
 		if v95plus {
 			_ = r.ReadUint32() // m_nSKillID (v95+)
 		}
-		_ = r.ReadUint32() // m_ptFieldPortal.x
-		_ = r.ReadUint32() // m_ptFieldPortal.y
+		portalX[i] = int16(int32(r.ReadUint32())) // m_ptFieldPortal.x
+		portalY[i] = int16(int32(r.ReadUint32())) // m_ptFieldPortal.y
 	}
 	if v95plus {
 		for range 6 {
@@ -146,14 +174,22 @@ func ReadPartyData(ctx context.Context, r *request.Reader) ([]PartyMember, uint3
 	var members []PartyMember
 	for i := range 6 {
 		if ids[i] != 0 {
-			members = append(members, PartyMember{
+			pm := PartyMember{
 				Id:        ids[i],
 				Name:      names[i],
 				JobId:     jobs[i],
 				Level:     levels[i],
 				ChannelId: channels[i],
 				MapId:     maps[i],
-			})
+			}
+			if townIds[i] != uint32(_map.EmptyMapId) {
+				pm.HasDoor = true
+				pm.DoorTownMapId = townIds[i]
+				pm.DoorFieldMapId = fieldIds[i]
+				pm.DoorX = portalX[i]
+				pm.DoorY = portalY[i]
+			}
+			members = append(members, pm)
 		}
 	}
 	return members, leaderId

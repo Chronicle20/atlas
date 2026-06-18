@@ -1,0 +1,8 @@
+packet: door/clientbound/SpawnPortal
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnTownPortal
+    address: "0xa226a6"
+    decompile_sha256: 9d67c9005562752cc978a7fbd512281db684f2001154f04e814a19ab55146461

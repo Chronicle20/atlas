@@ -2,6 +2,7 @@ package party
 
 import (
 	"atlas-channel/character"
+	"atlas-channel/door"
 	consumer2 "atlas-channel/kafka/consumer"
 	party2 "atlas-channel/kafka/message/party"
 	"atlas-channel/listener"
@@ -14,6 +15,7 @@ import (
 	"context"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
@@ -26,8 +28,9 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func toPartyMembers(p party.Model, forChannel channel.Id) []partypkt.PartyMember {
+func toPartyMembers(l logrus.FieldLogger, ctx context.Context, p party.Model, forChannel channel.Id) []partypkt.PartyMember {
 	members := make([]partypkt.PartyMember, 0, len(p.Members()))
+	dp := door.NewProcessor(l, ctx)
 	for _, m := range p.Members() {
 		chId := int32(m.ChannelId())
 		if !m.Online() {
@@ -37,16 +40,36 @@ func toPartyMembers(p party.Model, forChannel channel.Id) []partypkt.PartyMember
 		if forChannel == m.ChannelId() {
 			mapId = uint32(m.MapId())
 		}
-		members = append(members, partypkt.PartyMember{
+		pm := partypkt.PartyMember{
 			Id:        m.Id(),
 			Name:      m.Name(),
 			JobId:     uint16(m.JobId()),
 			Level:     uint16(m.Level()),
 			ChannelId: chId,
 			MapId:     mapId,
-		})
+		}
+		applyMemberDoor(&pm, dp, m.Id())
+		members = append(members, pm)
 	}
 	return members
+}
+
+// applyMemberDoor populates the member's aTownPortal entry from their live
+// Mystic Door (if any). The town-portal array is how the v83 client renders
+// party-member doors in town — a doorless member keeps the zero entry. The
+// portal carries the town (exit) map, the area (origin) map, and the AREA-side
+// door position (matching SPAWN_PORTAL / the v83 client partyPortal toPosition()).
+func applyMemberDoor(pm *partypkt.PartyMember, dp *door.Processor, memberId uint32) {
+	doors, err := dp.GetByOwner(memberId)
+	if err != nil || len(doors) == 0 {
+		return
+	}
+	d := doors[0]
+	pm.HasDoor = true
+	pm.DoorTownMapId = uint32(d.TownMapId())
+	pm.DoorFieldMapId = uint32(d.Field().MapId())
+	pm.DoorX = d.AreaX()
+	pm.DoorY = d.AreaY()
 }
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -121,18 +144,39 @@ func handleCreated(sc server.Model, wp writer.Producer) message.Handler[party2.S
 			return
 		}
 
-		err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(p.LeaderId(), partyCreated(l)(ctx)(wp)(e.PartyId))
+		// Resolve the party leader's active Mystic Door (if any) so that the
+		// party-created packet can populate the minimap door indicator (FR-3.3).
+		// the v83 client partyCreated convention: townMapId = door destination (town),
+		// targetMapId = door origin (area/dungeon), x/y = area-side door position.
+		townMapId := _map.EmptyMapId
+		targetMapId := _map.EmptyMapId
+		var doorX, doorY int16
+		doors, derr := door.NewProcessor(l, ctx).GetByOwner(p.LeaderId())
+		if derr != nil {
+			l.WithError(derr).Warnf("Unable to retrieve doors for party leader [%d]; sending empty sentinel.", p.LeaderId())
+		} else if len(doors) > 0 {
+			d := doors[0]
+			townMapId = d.TownMapId()
+			targetMapId = d.Field().MapId()
+			doorX = d.AreaX()
+			doorY = d.AreaY()
+		}
+
+		err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(p.LeaderId(), partyCreated(l)(ctx)(wp)(e.PartyId, townMapId, targetMapId, doorX, doorY))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to announce party [%d] created to character [%d].", e.PartyId, p.LeaderId())
 		}
 	}
 }
 
-func partyCreated(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(partyId uint32) model.Operator[session.Model] {
-	return func(ctx context.Context) func(wp writer.Producer) func(partyId uint32) model.Operator[session.Model] {
-		return func(wp writer.Producer) func(partyId uint32) model.Operator[session.Model] {
-			return func(partyId uint32) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(partycb.PartyOperationWriter)(partycb.PartyCreatedBody(partyId))
+func partyCreated(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(partyId uint32, townMapId _map.Id, targetMapId _map.Id, doorX int16, doorY int16) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(partyId uint32, townMapId _map.Id, targetMapId _map.Id, doorX int16, doorY int16) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(partyId uint32, townMapId _map.Id, targetMapId _map.Id, doorX int16, doorY int16) model.Operator[session.Model] {
+			return func(partyId uint32, townMapId _map.Id, targetMapId _map.Id, doorX int16, doorY int16) model.Operator[session.Model] {
+				if townMapId == _map.EmptyMapId {
+					return session.Announce(l)(ctx)(wp)(partycb.PartyOperationWriter)(partycb.PartyCreatedBody(partyId))
+				}
+				return session.Announce(l)(ctx)(wp)(partycb.PartyOperationWriter)(partycb.PartyCreatedBodyWithDoor(partyId, townMapId, targetMapId, doorX, doorY))
 			}
 		}
 	}
@@ -183,7 +227,7 @@ func partyLeft(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Pr
 	return func(ctx context.Context) func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
 			return func(p party.Model, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(partycb.PartyOperationWriter)(partycb.PartyLeftBody(p.Id(), tc.Id(), tc.Name(), toPartyMembers(p, forChannel), p.LeaderId()))
+				return session.Announce(l)(ctx)(wp)(partycb.PartyOperationWriter)(partycb.PartyLeftBody(p.Id(), tc.Id(), tc.Name(), toPartyMembers(l, ctx, p, forChannel), p.LeaderId()))
 			}
 		}
 	}
@@ -234,7 +278,7 @@ func partyExpel(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.P
 	return func(ctx context.Context) func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
 			return func(p party.Model, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(partycb.PartyOperationWriter)(partycb.PartyExpelBody(p.Id(), tc.Id(), tc.Name(), toPartyMembers(p, forChannel), p.LeaderId()))
+				return session.Announce(l)(ctx)(wp)(partycb.PartyOperationWriter)(partycb.PartyExpelBody(p.Id(), tc.Id(), tc.Name(), toPartyMembers(l, ctx, p, forChannel), p.LeaderId()))
 			}
 		}
 	}
@@ -307,29 +351,27 @@ func handleJoin(sc server.Model, wp writer.Producer) message.Handler[party2.Stat
 			return
 		}
 
-		// For remaining party members.
+		// Announce the join to every party member synchronously FIRST. The v83
+		// PARTYDATA carries no HP, so this join packet sets every party gauge to 0;
+		// the hpsync below must reach each session's writer AFTER it, or the join
+		// packet overwrites the synced gauges back to 0. The previous code raced
+		// these in separate goroutines, so the joiner's HP frequently stuck at 0.
 		for _, m := range p.Members() {
-			go func() {
-				err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(m.Id(), partyJoined(l)(ctx)(wp)(p, tc, sc.ChannelId()))
-				if err != nil {
-					l.WithError(err).Errorf("Unable to announce party [%d] joined party [%d].", e.PartyId, p.Id())
-				}
-			}()
+			if aErr := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(m.Id(), partyJoined(l)(ctx)(wp)(p, tc, sc.ChannelId())); aErr != nil {
+				l.WithError(aErr).Errorf("Unable to announce party [%d] joined party [%d].", e.PartyId, p.Id())
+			}
 		}
 
-		// v83 PARTYDATA carries no HP, so the join packet leaves every party
-		// gauge at 0. Sync the joining character's HP gauges in both directions
-		// with the in-map party members the same way map entry does — otherwise
-		// the gauges stay 0 until each member's next HP change. Done only on the
-		// actor's own channel server to avoid redundant cross-channel work.
+		// Sync the joining character's HP gauges in both directions with the in-map
+		// party members (PARTYDATA has no HP). Enqueued after the join announces
+		// above so it is not overwritten. Done only on the actor's own channel
+		// server to avoid redundant cross-channel work.
 		if f, ferr := location.GetField(l, ctx, e.ActorId); ferr != nil {
 			l.WithError(ferr).Debugf("Unable to resolve field for character [%d]; skipping party member HP sync on join.", e.ActorId)
 		} else if f.ChannelId() == sc.ChannelId() {
-			go func() {
-				if hpErr := hpsync.Sync(l, ctx, wp, f, e.ActorId); hpErr != nil {
-					l.WithError(hpErr).Debugf("Unable to sync party member HP for character [%d] on join.", e.ActorId)
-				}
-			}()
+			if hpErr := hpsync.Sync(l, ctx, wp, f, e.ActorId); hpErr != nil {
+				l.WithError(hpErr).Debugf("Unable to sync party member HP for character [%d] on join.", e.ActorId)
+			}
 		}
 	}
 }
@@ -338,7 +380,7 @@ func partyJoined(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.
 	return func(ctx context.Context) func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
 			return func(p party.Model, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(partycb.PartyOperationWriter)(partycb.PartyJoinBody(p.Id(), tc.Name(), toPartyMembers(p, forChannel), p.LeaderId()))
+				return session.Announce(l)(ctx)(wp)(partycb.PartyOperationWriter)(partycb.PartyJoinBody(p.Id(), tc.Name(), toPartyMembers(l, ctx, p, forChannel), p.LeaderId()))
 			}
 		}
 	}

@@ -532,3 +532,334 @@ func (m *ItcOperationPlaceBid) Decode(_ logrus.FieldLogger, _ context.Context) f
 		m.bidRange = r.ReadUint32()
 	}
 }
+
+// WISH-LIST / ZZIM (favorite) arms of the same ITC_OPERATION dispatcher,
+// verified on gms_v95 (GMS_v95.0_U_DEVM.exe, IDA port 13340 — the symbol-rich
+// PDB build exposes these as named CITC::On* functions). All but
+// OnRegisterWishEntry are serial-only (Encode4(nITCSN)) like the buy/cancel
+// arms; OnRegisterWishEntry carries a full wish-entry body. Each sends the
+// dispatcher opcode COutPacket(308/0x134) then a leading Encode1(mode) byte,
+// derived per-function below:
+//
+//	CITC::OnSetZzim @0x5733b0 — COutPacket(308) @0x5733e5, Encode1(9) @0x5733f8,
+//	    Encode4(ii->p->nITCSN) @0x57340c. Mode 0x09 (add to wishlist/favorite).
+//	CITC::OnBuyZzim @0x573450 — a YesNo confirm (StringPool 0x12D4) gates the
+//	    send; COutPacket(308) @0x5734b7, Encode1(0x11) @0x5734ca,
+//	    Encode4(ii->p->nITCSN) @0x5734de. Mode 0x11 (buy a favorited item).
+//	CITC::OnDeleteZzim @0x573520 — COutPacket(308) @0x573555, Encode1(0xA)
+//	    @0x573568, Encode4(ii->p->nITCSN) @0x57357c. Mode 0x0A (remove favorite).
+//	CITC::OnViewWish @0x5735c0 — COutPacket(308) @0x5735f5, Encode1(0xB)
+//	    @0x573608, Encode4(ii->p->nITCSN) @0x57361c. Mode 0x0B (view wish-list).
+//	CITC::OnBuyWish @0x573660 — COutPacket(308) @0x573695, Encode1(0xC)
+//	    @0x5736a8, Encode4(ii->p->nITCSN) @0x5736bc. Mode 0x0C (buy from wish).
+//	CITC::OnCancelWish @0x573700 — COutPacket(308) @0x573735, Encode1(0xD)
+//	    @0x573748, Encode4(ii->p->nITCSN) @0x57375c. Mode 0x0D (cancel a wish).
+//	CITC::OnRegisterWishEntry @0x573c10 — COutPacket(308) @0x573ca5,
+//	    Encode1(4) @0x573cb5, then the wish-entry body (see below). Mode 0x04.
+//
+// Each of these carries the same body shape across all versions (per-version
+// opcode + mode bytes); v95 is the symbol-rich reference for propagation.
+
+// ItcOperationSetZzim — the add-to-wishlist/favorite arm (CITC::OnSetZzim
+// @0x5733b0, gms_v95). After COutPacket(308) @0x5733e5 it encodes, in order:
+//
+//	Encode1(9u)            @0x5733f8  dispatcher mode byte (set zzim)
+//	Encode4(ii->p->nITCSN) @0x57340c  itcSn
+//
+// The m_bITCRequestSent latch (@0x5733d6) guards a double-send; not on the wire.
+//
+// packet-audit:fname CITC::OnSetZzim
+type ItcOperationSetZzim struct {
+	mode  byte
+	itcSn uint32 // Encode4 ii->p->nITCSN
+}
+
+func NewItcOperationSetZzim(mode byte, itcSn uint32) ItcOperationSetZzim {
+	return ItcOperationSetZzim{mode: mode, itcSn: itcSn}
+}
+
+func (m ItcOperationSetZzim) Mode() byte        { return m.mode }
+func (m ItcOperationSetZzim) ItcSn() uint32     { return m.itcSn }
+func (m ItcOperationSetZzim) Operation() string { return ItcOperationHandle }
+func (m ItcOperationSetZzim) String() string {
+	return fmt.Sprintf("itc set zzim mode [%d] itcSn [%d]", m.mode, m.itcSn)
+}
+
+func (m ItcOperationSetZzim) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
+		w.WriteByte(m.mode) // Encode1(9u) @0x5733f8 mode byte
+		w.WriteInt(m.itcSn) // Encode4 @0x57340c nITCSN
+		return w.Bytes()
+	}
+}
+
+func (m *ItcOperationSetZzim) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
+		m.mode = r.ReadByte()
+		m.itcSn = r.ReadUint32()
+	}
+}
+
+// ItcOperationBuyZzim — the buy-a-favorited-item arm (CITC::OnBuyZzim
+// @0x573450, gms_v95). A YesNo confirm (StringPool 0x12D4, @0x57349c) gates the
+// send; the wire shape after COutPacket(308) @0x5734b7 is:
+//
+//	Encode1(0x11u)         @0x5734ca  dispatcher mode byte (buy zzim)
+//	Encode4(ii->p->nITCSN) @0x5734de  itcSn
+//
+// packet-audit:fname CITC::OnBuyZzim
+type ItcOperationBuyZzim struct {
+	mode  byte
+	itcSn uint32 // Encode4 ii->p->nITCSN
+}
+
+func NewItcOperationBuyZzim(mode byte, itcSn uint32) ItcOperationBuyZzim {
+	return ItcOperationBuyZzim{mode: mode, itcSn: itcSn}
+}
+
+func (m ItcOperationBuyZzim) Mode() byte        { return m.mode }
+func (m ItcOperationBuyZzim) ItcSn() uint32     { return m.itcSn }
+func (m ItcOperationBuyZzim) Operation() string { return ItcOperationHandle }
+func (m ItcOperationBuyZzim) String() string {
+	return fmt.Sprintf("itc buy zzim mode [%d] itcSn [%d]", m.mode, m.itcSn)
+}
+
+func (m ItcOperationBuyZzim) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
+		w.WriteByte(m.mode) // Encode1(0x11u) @0x5734ca mode byte
+		w.WriteInt(m.itcSn) // Encode4 @0x5734de nITCSN
+		return w.Bytes()
+	}
+}
+
+func (m *ItcOperationBuyZzim) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
+		m.mode = r.ReadByte()
+		m.itcSn = r.ReadUint32()
+	}
+}
+
+// ItcOperationDeleteZzim — the remove-favorite arm (CITC::OnDeleteZzim
+// @0x573520, gms_v95). After COutPacket(308) @0x573555 it encodes, in order:
+//
+//	Encode1(0xAu)          @0x573568  dispatcher mode byte (delete zzim)
+//	Encode4(ii->p->nITCSN) @0x57357c  itcSn
+//
+// packet-audit:fname CITC::OnDeleteZzim
+type ItcOperationDeleteZzim struct {
+	mode  byte
+	itcSn uint32 // Encode4 ii->p->nITCSN
+}
+
+func NewItcOperationDeleteZzim(mode byte, itcSn uint32) ItcOperationDeleteZzim {
+	return ItcOperationDeleteZzim{mode: mode, itcSn: itcSn}
+}
+
+func (m ItcOperationDeleteZzim) Mode() byte        { return m.mode }
+func (m ItcOperationDeleteZzim) ItcSn() uint32     { return m.itcSn }
+func (m ItcOperationDeleteZzim) Operation() string { return ItcOperationHandle }
+func (m ItcOperationDeleteZzim) String() string {
+	return fmt.Sprintf("itc delete zzim mode [%d] itcSn [%d]", m.mode, m.itcSn)
+}
+
+func (m ItcOperationDeleteZzim) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
+		w.WriteByte(m.mode) // Encode1(0xAu) @0x573568 mode byte
+		w.WriteInt(m.itcSn) // Encode4 @0x57357c nITCSN
+		return w.Bytes()
+	}
+}
+
+func (m *ItcOperationDeleteZzim) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
+		m.mode = r.ReadByte()
+		m.itcSn = r.ReadUint32()
+	}
+}
+
+// ItcOperationViewWish — the view-wish-list arm (CITC::OnViewWish @0x5735c0,
+// gms_v95). After COutPacket(308) @0x5735f5 it encodes, in order:
+//
+//	Encode1(0xBu)          @0x573608  dispatcher mode byte (view wish)
+//	Encode4(ii->p->nITCSN) @0x57361c  itcSn
+//
+// packet-audit:fname CITC::OnViewWish
+type ItcOperationViewWish struct {
+	mode  byte
+	itcSn uint32 // Encode4 ii->p->nITCSN
+}
+
+func NewItcOperationViewWish(mode byte, itcSn uint32) ItcOperationViewWish {
+	return ItcOperationViewWish{mode: mode, itcSn: itcSn}
+}
+
+func (m ItcOperationViewWish) Mode() byte        { return m.mode }
+func (m ItcOperationViewWish) ItcSn() uint32     { return m.itcSn }
+func (m ItcOperationViewWish) Operation() string { return ItcOperationHandle }
+func (m ItcOperationViewWish) String() string {
+	return fmt.Sprintf("itc view wish mode [%d] itcSn [%d]", m.mode, m.itcSn)
+}
+
+func (m ItcOperationViewWish) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
+		w.WriteByte(m.mode) // Encode1(0xBu) @0x573608 mode byte
+		w.WriteInt(m.itcSn) // Encode4 @0x57361c nITCSN
+		return w.Bytes()
+	}
+}
+
+func (m *ItcOperationViewWish) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
+		m.mode = r.ReadByte()
+		m.itcSn = r.ReadUint32()
+	}
+}
+
+// ItcOperationBuyWish — the buy-from-wish arm (CITC::OnBuyWish @0x573660,
+// gms_v95). After COutPacket(308) @0x573695 it encodes, in order:
+//
+//	Encode1(0xCu)          @0x5736a8  dispatcher mode byte (buy wish)
+//	Encode4(ii->p->nITCSN) @0x5736bc  itcSn
+//
+// packet-audit:fname CITC::OnBuyWish
+type ItcOperationBuyWish struct {
+	mode  byte
+	itcSn uint32 // Encode4 ii->p->nITCSN
+}
+
+func NewItcOperationBuyWish(mode byte, itcSn uint32) ItcOperationBuyWish {
+	return ItcOperationBuyWish{mode: mode, itcSn: itcSn}
+}
+
+func (m ItcOperationBuyWish) Mode() byte        { return m.mode }
+func (m ItcOperationBuyWish) ItcSn() uint32     { return m.itcSn }
+func (m ItcOperationBuyWish) Operation() string { return ItcOperationHandle }
+func (m ItcOperationBuyWish) String() string {
+	return fmt.Sprintf("itc buy wish mode [%d] itcSn [%d]", m.mode, m.itcSn)
+}
+
+func (m ItcOperationBuyWish) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
+		w.WriteByte(m.mode) // Encode1(0xCu) @0x5736a8 mode byte
+		w.WriteInt(m.itcSn) // Encode4 @0x5736bc nITCSN
+		return w.Bytes()
+	}
+}
+
+func (m *ItcOperationBuyWish) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
+		m.mode = r.ReadByte()
+		m.itcSn = r.ReadUint32()
+	}
+}
+
+// ItcOperationCancelWish — the cancel-a-wish arm (CITC::OnCancelWish
+// @0x573700, gms_v95). After COutPacket(308) @0x573735 it encodes, in order:
+//
+//	Encode1(0xDu)          @0x573748  dispatcher mode byte (cancel wish)
+//	Encode4(ii->p->nITCSN) @0x57375c  itcSn
+//
+// packet-audit:fname CITC::OnCancelWish
+type ItcOperationCancelWish struct {
+	mode  byte
+	itcSn uint32 // Encode4 ii->p->nITCSN
+}
+
+func NewItcOperationCancelWish(mode byte, itcSn uint32) ItcOperationCancelWish {
+	return ItcOperationCancelWish{mode: mode, itcSn: itcSn}
+}
+
+func (m ItcOperationCancelWish) Mode() byte        { return m.mode }
+func (m ItcOperationCancelWish) ItcSn() uint32     { return m.itcSn }
+func (m ItcOperationCancelWish) Operation() string { return ItcOperationHandle }
+func (m ItcOperationCancelWish) String() string {
+	return fmt.Sprintf("itc cancel wish mode [%d] itcSn [%d]", m.mode, m.itcSn)
+}
+
+func (m ItcOperationCancelWish) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
+		w.WriteByte(m.mode) // Encode1(0xDu) @0x573748 mode byte
+		w.WriteInt(m.itcSn) // Encode4 @0x57375c nITCSN
+		return w.Bytes()
+	}
+}
+
+func (m *ItcOperationCancelWish) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
+		m.mode = r.ReadByte()
+		m.itcSn = r.ReadUint32()
+	}
+}
+
+// ItcOperationRegisterWishEntry — the register-a-wish-entry arm
+// (CITC::OnRegisterWishEntry @0x573c10, gms_v95). Unlike the other wish/zzim
+// arms this carries a full body. A 110-NX floor guard (nWishPrice-110, @0x573c56)
+// gates a StringPool notice; it does not change the wire shape. After
+// COutPacket(308) @0x573ca5 it encodes, in order:
+//
+//	Encode1(4u)                          @0x573cb5  dispatcher mode byte (register wish)
+//	Encode4(m_nWishItemID)               @0x573cc5  wish item id
+//	Encode4(m_nWishPrice)                @0x573cd5  wish price
+//	Encode4(m_nWishCount)                @0x573ce5  wish count
+//	Encode1(m_bWishDuration)             @0x573cf6  wish duration
+//	Encode1(m_bWishRegistrationFeeOption)@0x573d07  registration-fee option
+//	EncodeStr(m_sWishDesc)               @0x573d23  wish description (len-prefixed)
+//
+// packet-audit:fname CITC::OnRegisterWishEntry
+type ItcOperationRegisterWishEntry struct {
+	mode        byte
+	itemId      uint32 // Encode4 m_nWishItemID
+	price       uint32 // Encode4 m_nWishPrice
+	count       uint32 // Encode4 m_nWishCount
+	duration    byte   // Encode1 m_bWishDuration
+	feeOption   byte   // Encode1 m_bWishRegistrationFeeOption
+	description string // EncodeStr m_sWishDesc
+}
+
+func NewItcOperationRegisterWishEntry(mode byte, itemId uint32, price uint32, count uint32, duration byte, feeOption byte, description string) ItcOperationRegisterWishEntry {
+	return ItcOperationRegisterWishEntry{mode: mode, itemId: itemId, price: price, count: count, duration: duration, feeOption: feeOption, description: description}
+}
+
+func (m ItcOperationRegisterWishEntry) Mode() byte          { return m.mode }
+func (m ItcOperationRegisterWishEntry) ItemId() uint32      { return m.itemId }
+func (m ItcOperationRegisterWishEntry) Price() uint32       { return m.price }
+func (m ItcOperationRegisterWishEntry) Count() uint32       { return m.count }
+func (m ItcOperationRegisterWishEntry) Duration() byte      { return m.duration }
+func (m ItcOperationRegisterWishEntry) FeeOption() byte     { return m.feeOption }
+func (m ItcOperationRegisterWishEntry) Description() string { return m.description }
+func (m ItcOperationRegisterWishEntry) Operation() string   { return ItcOperationHandle }
+func (m ItcOperationRegisterWishEntry) String() string {
+	return fmt.Sprintf("itc register wish entry mode [%d] item [%d] price [%d] count [%d] duration [%d] fee [%d]", m.mode, m.itemId, m.price, m.count, m.duration, m.feeOption)
+}
+
+func (m ItcOperationRegisterWishEntry) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
+		w.WriteByte(m.mode)               // Encode1(4u) @0x573cb5 mode byte
+		w.WriteInt(m.itemId)              // Encode4 @0x573cc5 wish item id
+		w.WriteInt(m.price)               // Encode4 @0x573cd5 wish price
+		w.WriteInt(m.count)               // Encode4 @0x573ce5 wish count
+		w.WriteByte(m.duration)           // Encode1 @0x573cf6 wish duration
+		w.WriteByte(m.feeOption)          // Encode1 @0x573d07 registration-fee option
+		w.WriteAsciiString(m.description) // EncodeStr @0x573d23 wish description
+		return w.Bytes()
+	}
+}
+
+func (m *ItcOperationRegisterWishEntry) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
+		m.mode = r.ReadByte()
+		m.itemId = r.ReadUint32()
+		m.price = r.ReadUint32()
+		m.count = r.ReadUint32()
+		m.duration = r.ReadByte()
+		m.feeOption = r.ReadByte()
+		m.description = r.ReadAsciiString()
+	}
+}

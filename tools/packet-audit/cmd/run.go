@@ -1850,6 +1850,33 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "ItcOperationMoveLtoS", pkg: "field", dir: csvpkg.DirServerbound}}
 	case "CITCBidAuctionDlg::OnButtonClicked":
 		return []candidate{{name: "ItcOperationPlaceBid", pkg: "field", dir: csvpkg.DirServerbound}}
+	// WISH-LIST / ZZIM (favorite) arms of the same ITC_OPERATION dispatcher,
+	// verified on gms_v95 (the symbol-rich PDB build, IDA port 13340) which
+	// exposes them as named CITC::On* functions. opcode 308/0x134. Six are
+	// serial-only (mode + Encode4(nITCSN)); OnRegisterWishEntry carries a full
+	// wish-entry body.
+	//   CITC::OnSetZzim @0x5733b0 (COutPacket(308) @0x5733e5) mode 0x09.
+	//   CITC::OnBuyZzim @0x573450 (COutPacket(308) @0x5734b7) mode 0x11.
+	//   CITC::OnDeleteZzim @0x573520 (COutPacket(308) @0x573555) mode 0x0A.
+	//   CITC::OnViewWish @0x5735c0 (COutPacket(308) @0x5735f5) mode 0x0B.
+	//   CITC::OnBuyWish @0x573660 (COutPacket(308) @0x573695) mode 0x0C.
+	//   CITC::OnCancelWish @0x573700 (COutPacket(308) @0x573735) mode 0x0D.
+	//   CITC::OnRegisterWishEntry @0x573c10 (COutPacket(308) @0x573ca5) mode 0x04;
+	//     body: Encode4 itemId/price/count, Encode1 duration/feeOption, EncodeStr desc.
+	case "CITC::OnSetZzim":
+		return []candidate{{name: "ItcOperationSetZzim", pkg: "field", dir: csvpkg.DirServerbound}}
+	case "CITC::OnBuyZzim":
+		return []candidate{{name: "ItcOperationBuyZzim", pkg: "field", dir: csvpkg.DirServerbound}}
+	case "CITC::OnDeleteZzim":
+		return []candidate{{name: "ItcOperationDeleteZzim", pkg: "field", dir: csvpkg.DirServerbound}}
+	case "CITC::OnViewWish":
+		return []candidate{{name: "ItcOperationViewWish", pkg: "field", dir: csvpkg.DirServerbound}}
+	case "CITC::OnBuyWish":
+		return []candidate{{name: "ItcOperationBuyWish", pkg: "field", dir: csvpkg.DirServerbound}}
+	case "CITC::OnCancelWish":
+		return []candidate{{name: "ItcOperationCancelWish", pkg: "field", dir: csvpkg.DirServerbound}}
+	case "CITC::OnRegisterWishEntry":
+		return []candidate{{name: "ItcOperationRegisterWishEntry", pkg: "field", dir: csvpkg.DirServerbound}}
 
 	// --- World: field (clientbound) ---
 	// Affected-area (mist) + kite (the flying-kite field object, called

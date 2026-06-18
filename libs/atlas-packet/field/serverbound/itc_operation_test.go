@@ -251,6 +251,167 @@ func TestItcOperationPlaceBidByteOutput_v95(t *testing.T) {
 	}
 }
 
+// WISH-LIST / ZZIM (favorite) arms, gms_v95 opcode 0x134/308
+// (GMS_v95.0_U_DEVM.exe, IDA port 13340). v95's PDB symbols expose these as
+// named CITC::On* functions. Six are serial-only (mode + Encode4(nITCSN)) like
+// the buy/cancel arms; OnRegisterWishEntry carries a full wish-entry body.
+
+// packet-audit:verify packet=field/serverbound/FieldItcOperationSetZzim version=gms_v95 ida=0x5733b0
+//
+// ITC_OPERATION mode 0x09 set-zzim (add to wishlist/favorite). Derived from
+// CITC::OnSetZzim @0x5733b0 (COutPacket(308) @0x5733e5). Encode order
+// @0x5733f8..0x57340c:
+//
+//	Encode1(9u)            @0x5733f8  mode byte
+//	Encode4(ii->p->nITCSN) @0x57340c  itcSn
+func TestItcOperationSetZzimByteOutput_v95(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 95, 1)
+	input := NewItcOperationSetZzim(0x09, 123456)
+	got := pt.Encode(t, ctx, input.Encode, nil)
+
+	var want []byte
+	want = append(want, 0x09)            // Encode1(9u) mode byte @0x5733f8
+	want = append(want, le32(123456)...) // Encode4 nITCSN @0x57340c
+	if !bytes.Equal(got, want) {
+		t.Fatalf("SetZzim (v95):\n got %v\nwant %v", got, want)
+	}
+}
+
+// packet-audit:verify packet=field/serverbound/FieldItcOperationBuyZzim version=gms_v95 ida=0x573450
+//
+// ITC_OPERATION mode 0x11 buy-zzim (buy a favorited item). Derived from
+// CITC::OnBuyZzim @0x573450 (COutPacket(308) @0x5734b7). A YesNo confirm
+// gates the send; it does not change the wire. Encode order @0x5734ca..0x5734de:
+//
+//	Encode1(0x11u)         @0x5734ca  mode byte
+//	Encode4(ii->p->nITCSN) @0x5734de  itcSn
+func TestItcOperationBuyZzimByteOutput_v95(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 95, 1)
+	input := NewItcOperationBuyZzim(0x11, 123456)
+	got := pt.Encode(t, ctx, input.Encode, nil)
+
+	var want []byte
+	want = append(want, 0x11)            // Encode1(0x11u) mode byte @0x5734ca
+	want = append(want, le32(123456)...) // Encode4 nITCSN @0x5734de
+	if !bytes.Equal(got, want) {
+		t.Fatalf("BuyZzim (v95):\n got %v\nwant %v", got, want)
+	}
+}
+
+// packet-audit:verify packet=field/serverbound/FieldItcOperationDeleteZzim version=gms_v95 ida=0x573520
+//
+// ITC_OPERATION mode 0x0A delete-zzim (remove favorite). Derived from
+// CITC::OnDeleteZzim @0x573520 (COutPacket(308) @0x573555). Encode order
+// @0x573568..0x57357c:
+//
+//	Encode1(0xAu)          @0x573568  mode byte
+//	Encode4(ii->p->nITCSN) @0x57357c  itcSn
+func TestItcOperationDeleteZzimByteOutput_v95(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 95, 1)
+	input := NewItcOperationDeleteZzim(0x0A, 123456)
+	got := pt.Encode(t, ctx, input.Encode, nil)
+
+	var want []byte
+	want = append(want, 0x0A)            // Encode1(0xAu) mode byte @0x573568
+	want = append(want, le32(123456)...) // Encode4 nITCSN @0x57357c
+	if !bytes.Equal(got, want) {
+		t.Fatalf("DeleteZzim (v95):\n got %v\nwant %v", got, want)
+	}
+}
+
+// packet-audit:verify packet=field/serverbound/FieldItcOperationViewWish version=gms_v95 ida=0x5735c0
+//
+// ITC_OPERATION mode 0x0B view-wish. Derived from CITC::OnViewWish @0x5735c0
+// (COutPacket(308) @0x5735f5). Encode order @0x573608..0x57361c:
+//
+//	Encode1(0xBu)          @0x573608  mode byte
+//	Encode4(ii->p->nITCSN) @0x57361c  itcSn
+func TestItcOperationViewWishByteOutput_v95(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 95, 1)
+	input := NewItcOperationViewWish(0x0B, 123456)
+	got := pt.Encode(t, ctx, input.Encode, nil)
+
+	var want []byte
+	want = append(want, 0x0B)            // Encode1(0xBu) mode byte @0x573608
+	want = append(want, le32(123456)...) // Encode4 nITCSN @0x57361c
+	if !bytes.Equal(got, want) {
+		t.Fatalf("ViewWish (v95):\n got %v\nwant %v", got, want)
+	}
+}
+
+// packet-audit:verify packet=field/serverbound/FieldItcOperationBuyWish version=gms_v95 ida=0x573660
+//
+// ITC_OPERATION mode 0x0C buy-wish. Derived from CITC::OnBuyWish @0x573660
+// (COutPacket(308) @0x573695). Encode order @0x5736a8..0x5736bc:
+//
+//	Encode1(0xCu)          @0x5736a8  mode byte
+//	Encode4(ii->p->nITCSN) @0x5736bc  itcSn
+func TestItcOperationBuyWishByteOutput_v95(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 95, 1)
+	input := NewItcOperationBuyWish(0x0C, 123456)
+	got := pt.Encode(t, ctx, input.Encode, nil)
+
+	var want []byte
+	want = append(want, 0x0C)            // Encode1(0xCu) mode byte @0x5736a8
+	want = append(want, le32(123456)...) // Encode4 nITCSN @0x5736bc
+	if !bytes.Equal(got, want) {
+		t.Fatalf("BuyWish (v95):\n got %v\nwant %v", got, want)
+	}
+}
+
+// packet-audit:verify packet=field/serverbound/FieldItcOperationCancelWish version=gms_v95 ida=0x573700
+//
+// ITC_OPERATION mode 0x0D cancel-wish. Derived from CITC::OnCancelWish
+// @0x573700 (COutPacket(308) @0x573735). Encode order @0x573748..0x57375c:
+//
+//	Encode1(0xDu)          @0x573748  mode byte
+//	Encode4(ii->p->nITCSN) @0x57375c  itcSn
+func TestItcOperationCancelWishByteOutput_v95(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 95, 1)
+	input := NewItcOperationCancelWish(0x0D, 123456)
+	got := pt.Encode(t, ctx, input.Encode, nil)
+
+	var want []byte
+	want = append(want, 0x0D)            // Encode1(0xDu) mode byte @0x573748
+	want = append(want, le32(123456)...) // Encode4 nITCSN @0x57375c
+	if !bytes.Equal(got, want) {
+		t.Fatalf("CancelWish (v95):\n got %v\nwant %v", got, want)
+	}
+}
+
+// packet-audit:verify packet=field/serverbound/FieldItcOperationRegisterWishEntry version=gms_v95 ida=0x573c10
+//
+// ITC_OPERATION mode 0x04 register-wish-entry. Derived from
+// CITC::OnRegisterWishEntry @0x573c10 (COutPacket(308) @0x573ca5). A 110-NX
+// floor guard gates a notice; it does not change the wire. Encode order
+// @0x573cb5..0x573d23:
+//
+//	Encode1(4u)                           @0x573cb5  mode byte
+//	Encode4(m_nWishItemID)                @0x573cc5  itemId
+//	Encode4(m_nWishPrice)                 @0x573cd5  price
+//	Encode4(m_nWishCount)                 @0x573ce5  count
+//	Encode1(m_bWishDuration)              @0x573cf6  duration
+//	Encode1(m_bWishRegistrationFeeOption) @0x573d07  feeOption
+//	EncodeStr(m_sWishDesc)                @0x573d23  description (uint16 len + bytes)
+func TestItcOperationRegisterWishEntryByteOutput_v95(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 95, 1)
+	input := NewItcOperationRegisterWishEntry(0x04, 2000000, 1000, 5, 0x07, 0x01, "wish")
+	got := pt.Encode(t, ctx, input.Encode, nil)
+
+	var want []byte
+	want = append(want, 0x04)             // Encode1(4u) mode byte @0x573cb5
+	want = append(want, le32(2000000)...) // Encode4 itemId @0x573cc5
+	want = append(want, le32(1000)...)    // Encode4 price @0x573cd5
+	want = append(want, le32(5)...)       // Encode4 count @0x573ce5
+	want = append(want, 0x07)             // Encode1 duration @0x573cf6
+	want = append(want, 0x01)             // Encode1 feeOption @0x573d07
+	want = append(want, 0x04, 0x00)       // EncodeStr len prefix (uint16 LE = 4) @0x573d23
+	want = append(want, []byte("wish")...) // EncodeStr bytes @0x573d23
+	if !bytes.Equal(got, want) {
+		t.Fatalf("RegisterWishEntry (v95):\n got %v\nwant %v", got, want)
+	}
+}
+
 func TestItcOperationV95ArmsRoundTrip(t *testing.T) {
 	ctx := pt.CreateContext("GMS", 95, 1)
 	t.Run("Buy", func(t *testing.T) {
@@ -276,6 +437,41 @@ func TestItcOperationV95ArmsRoundTrip(t *testing.T) {
 	t.Run("PlaceBid", func(t *testing.T) {
 		in := NewItcOperationPlaceBid(0x13, 123456, 5000, 100)
 		out := ItcOperationPlaceBid{}
+		pt.RoundTrip(t, ctx, in.Encode, out.Decode, nil)
+	})
+	t.Run("SetZzim", func(t *testing.T) {
+		in := NewItcOperationSetZzim(0x09, 123456)
+		out := ItcOperationSetZzim{}
+		pt.RoundTrip(t, ctx, in.Encode, out.Decode, nil)
+	})
+	t.Run("BuyZzim", func(t *testing.T) {
+		in := NewItcOperationBuyZzim(0x11, 123456)
+		out := ItcOperationBuyZzim{}
+		pt.RoundTrip(t, ctx, in.Encode, out.Decode, nil)
+	})
+	t.Run("DeleteZzim", func(t *testing.T) {
+		in := NewItcOperationDeleteZzim(0x0A, 123456)
+		out := ItcOperationDeleteZzim{}
+		pt.RoundTrip(t, ctx, in.Encode, out.Decode, nil)
+	})
+	t.Run("ViewWish", func(t *testing.T) {
+		in := NewItcOperationViewWish(0x0B, 123456)
+		out := ItcOperationViewWish{}
+		pt.RoundTrip(t, ctx, in.Encode, out.Decode, nil)
+	})
+	t.Run("BuyWish", func(t *testing.T) {
+		in := NewItcOperationBuyWish(0x0C, 123456)
+		out := ItcOperationBuyWish{}
+		pt.RoundTrip(t, ctx, in.Encode, out.Decode, nil)
+	})
+	t.Run("CancelWish", func(t *testing.T) {
+		in := NewItcOperationCancelWish(0x0D, 123456)
+		out := ItcOperationCancelWish{}
+		pt.RoundTrip(t, ctx, in.Encode, out.Decode, nil)
+	})
+	t.Run("RegisterWishEntry", func(t *testing.T) {
+		in := NewItcOperationRegisterWishEntry(0x04, 2000000, 1000, 5, 0x07, 0x01, "wish")
+		out := ItcOperationRegisterWishEntry{}
 		pt.RoundTrip(t, ctx, in.Encode, out.Decode, nil)
 	})
 }

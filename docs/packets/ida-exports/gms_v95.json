@@ -12344,6 +12344,138 @@
           "comment": "m_nMyBidRange @0x58ede7"
         }
       ]
+    },
+    "CITC::OnSetZzim": {
+      "address": "0x5733b0",
+      "direction": "serverbound",
+      "region": "GMS",
+      "notes": "ITC_OPERATION mode 0x09 set-zzim/add-to-wishlist (CITC::OnSetZzim @0x5733b0, COutPacket(308/0x134) @0x5733e5). Encode1(9) mode, Encode4 nITCSN. Maps atlas field/serverbound ItcOperationSetZzim. Byte-fixture verified (gms_v95, IDA port 13340).",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (9) @0x5733f8"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nITCSN @0x57340c"
+        }
+      ]
+    },
+    "CITC::OnBuyZzim": {
+      "address": "0x573450",
+      "direction": "serverbound",
+      "region": "GMS",
+      "notes": "ITC_OPERATION mode 0x11 buy-zzim/buy-favorited-item (CITC::OnBuyZzim @0x573450, COutPacket(308) @0x5734b7; YesNo confirm StringPool 0x12D4 @0x57349c). Encode1(0x11) mode, Encode4 nITCSN. Maps atlas field/serverbound ItcOperationBuyZzim. Byte-fixture verified (gms_v95).",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (0x11) @0x5734ca"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nITCSN @0x5734de"
+        }
+      ]
+    },
+    "CITC::OnDeleteZzim": {
+      "address": "0x573520",
+      "direction": "serverbound",
+      "region": "GMS",
+      "notes": "ITC_OPERATION mode 0x0A delete-zzim/remove-favorite (CITC::OnDeleteZzim @0x573520, COutPacket(308) @0x573555). Encode1(0xA) mode, Encode4 nITCSN. Maps atlas field/serverbound ItcOperationDeleteZzim. Byte-fixture verified (gms_v95).",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (0xA) @0x573568"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nITCSN @0x57357c"
+        }
+      ]
+    },
+    "CITC::OnViewWish": {
+      "address": "0x5735c0",
+      "direction": "serverbound",
+      "region": "GMS",
+      "notes": "ITC_OPERATION mode 0x0B view-wish (CITC::OnViewWish @0x5735c0, COutPacket(308) @0x5735f5). Encode1(0xB) mode, Encode4 nITCSN. Maps atlas field/serverbound ItcOperationViewWish. Byte-fixture verified (gms_v95).",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (0xB) @0x573608"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nITCSN @0x57361c"
+        }
+      ]
+    },
+    "CITC::OnBuyWish": {
+      "address": "0x573660",
+      "direction": "serverbound",
+      "region": "GMS",
+      "notes": "ITC_OPERATION mode 0x0C buy-wish (CITC::OnBuyWish @0x573660, COutPacket(308) @0x573695). Encode1(0xC) mode, Encode4 nITCSN. Maps atlas field/serverbound ItcOperationBuyWish. Byte-fixture verified (gms_v95).",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (0xC) @0x5736a8"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nITCSN @0x5736bc"
+        }
+      ]
+    },
+    "CITC::OnCancelWish": {
+      "address": "0x573700",
+      "direction": "serverbound",
+      "region": "GMS",
+      "notes": "ITC_OPERATION mode 0x0D cancel-wish (CITC::OnCancelWish @0x573700, COutPacket(308) @0x573735). Encode1(0xD) mode, Encode4 nITCSN. Maps atlas field/serverbound ItcOperationCancelWish. Byte-fixture verified (gms_v95).",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (0xD) @0x573748"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nITCSN @0x57375c"
+        }
+      ]
+    },
+    "CITC::OnRegisterWishEntry": {
+      "address": "0x573c10",
+      "direction": "serverbound",
+      "region": "GMS",
+      "notes": "ITC_OPERATION mode 0x04 register-wish-entry (CITC::OnRegisterWishEntry @0x573c10, COutPacket(308) @0x573ca5; 110-NX floor guard @0x573c56). Encode1(4) mode, Encode4 m_nWishItemID/m_nWishPrice/m_nWishCount, Encode1 m_bWishDuration/m_bWishRegistrationFeeOption, EncodeStr m_sWishDesc. Maps atlas field/serverbound ItcOperationRegisterWishEntry. Byte-fixture verified (gms_v95).",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (4) @0x573cb5"
+        },
+        {
+          "op": "Encode4",
+          "comment": "m_nWishItemID @0x573cc5"
+        },
+        {
+          "op": "Encode4",
+          "comment": "m_nWishPrice @0x573cd5"
+        },
+        {
+          "op": "Encode4",
+          "comment": "m_nWishCount @0x573ce5"
+        },
+        {
+          "op": "Encode1",
+          "comment": "m_bWishDuration @0x573cf6"
+        },
+        {
+          "op": "Encode1",
+          "comment": "m_bWishRegistrationFeeOption @0x573d07"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "m_sWishDesc @0x573d23"
+        }
+      ]
     }
   }
 }

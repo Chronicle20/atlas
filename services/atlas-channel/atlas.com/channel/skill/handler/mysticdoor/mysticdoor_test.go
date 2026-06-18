@@ -51,22 +51,15 @@ func invokeApply(
 	origMap := loadMap
 	origCaster := loadCaster
 	origSpawn := emitSpawn
-	origSnap := snapToGround
 	t.Cleanup(func() {
 		loadMap = origMap
 		loadCaster = origCaster
 		emitSpawn = origSpawn
-		snapToGround = origSnap
 	})
 
 	spawnCalled := false
 	loadMap = mapLoader
 	loadCaster = casterLoader
-	// Default: identity snap (no foothold service in unit tests). Tests that
-	// exercise the snap override snapToGround directly after invokeApply wiring.
-	snapToGround = func(_ logrus.FieldLogger, _ context.Context, _ _map.Id, x, y int16) (int16, int16) {
-		return x, y
-	}
 	emitSpawn = func(l logrus.FieldLogger, ctx context.Context, f field.Model, characterId, skillId uint32, level byte, x, y int16) error {
 		spawnCalled = true
 		return spawnCb(l, ctx, f, characterId, skillId, level, x, y)
@@ -159,38 +152,6 @@ func TestMysticDoorRejectsNoReturn(t *testing.T) {
 	)
 	if called {
 		t.Fatal("emitSpawn was called despite no valid return map")
-	}
-}
-
-// TestMysticDoorSnapsDoorToGround: the door is emitted at the snapped (ground)
-// position, not the raw caster position (Cosmic getGroundBelow parity).
-func TestMysticDoorSnapsDoorToGround(t *testing.T) {
-	origMap, origCaster, origSpawn, origSnap := loadMap, loadCaster, emitSpawn, snapToGround
-	t.Cleanup(func() {
-		loadMap, loadCaster, emitSpawn, snapToGround = origMap, origCaster, origSpawn, origSnap
-	})
-
-	loadMap = eligibleMapLoader
-	loadCaster = eligibleCasterLoader // raw caster (testX, testY)
-	const snappedX, snappedY = int16(100), int16(199)
-	snapToGround = func(_ logrus.FieldLogger, _ context.Context, _ _map.Id, _, _ int16) (int16, int16) {
-		return snappedX, snappedY
-	}
-	var gotX, gotY int16
-	called := false
-	emitSpawn = func(_ logrus.FieldLogger, _ context.Context, _ field.Model, _, _ uint32, _ byte, x, y int16) error {
-		called, gotX, gotY = true, x, y
-		return nil
-	}
-
-	if err := Apply(testLogger())(context.Background())(nil, testField(), testCharId, testInfo(), effect.Model{}); err != nil {
-		t.Fatalf("Apply error: %v", err)
-	}
-	if !called {
-		t.Fatal("emitSpawn was not called")
-	}
-	if gotX != snappedX || gotY != snappedY {
-		t.Fatalf("emitSpawn got (%d,%d), want snapped (%d,%d)", gotX, gotY, snappedX, snappedY)
 	}
 }
 

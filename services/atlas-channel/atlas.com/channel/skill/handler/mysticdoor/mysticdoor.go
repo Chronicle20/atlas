@@ -47,21 +47,6 @@ var emitSpawn = func(l logrus.FieldLogger, ctx context.Context, f field.Model, c
 	return door.NewProcessor(l, ctx).Spawn(f, characterId, skillId, level, x, y)
 }
 
-// snapToGround anchors the door to the foothold below the caster (Cosmic
-// getGroundBelow / SnapMobPosition parity — 1px above the surface) so the v83
-// client does not render it embedded-in-terrain a platform below. On any lookup
-// failure it returns the raw (x, y) so a cast is never blocked by a snap miss.
-var snapToGround = func(l logrus.FieldLogger, ctx context.Context, mapId _map.Id, x, y int16) (int16, int16) {
-	m, err := datamap.NewProcessor(l, ctx).GetById(mapId)
-	if err != nil {
-		return x, y
-	}
-	if sx, sy, ok := m.GroundBelow(x, y); ok {
-		return sx, sy
-	}
-	return x, y
-}
-
 // Apply is the Mystic Door handler installed in the per-skill registry.
 //
 // By the time this handler runs, UseSkill has already consumed MP + Magic Rock
@@ -107,11 +92,6 @@ func Apply(l logrus.FieldLogger) func(ctx context.Context) func(
 				l.WithError(err).Errorf("Mystic Door: failed to load caster [%d].", characterId)
 				return nil
 			}
-
-			// Snap the door to the foothold below the caster (Cosmic parity); a
-			// raw caster Y sits exactly on the surface and the v83 client renders
-			// the door embedded / a platform below.
-			x, y = snapToGround(l, ctx, f.MapId(), x, y)
 
 			return emitSpawn(l, ctx, f, characterId, uint32(info.SkillId()), info.SkillLevel(), x, y)
 		}

@@ -880,6 +880,11 @@
         }
       },
       {
+        "opCode": "0x088",
+        "validator": "LoggedInValidator",
+        "handler": "EnterDoorHandle"
+      },
+      {
         "opCode": "0xB2",
         "validator": "LoggedInValidator",
         "handler": "SummonMoveHandle"
@@ -1099,7 +1104,12 @@
       },
       {
         "opCode": "0x36",
-        "writer": "PartyOperation"
+        "writer": "PartyOperation",
+        "options": {
+          "operations": {
+            "TOWN_PORTAL": "0x28"
+          }
+        }
       },
       {
         "opCode": "0x39",
@@ -2037,6 +2047,22 @@
       {
         "opCode": "0x172",
         "writer": "CharacterKeyMapAutoMp"
+      },
+      {
+        "opCode": "0x128",
+        "writer": "SpawnDoor"
+      },
+      {
+        "opCode": "0x129",
+        "writer": "RemoveDoor"
+      },
+      {
+        "opCode": "0x03D",
+        "writer": "SpawnPortal"
+      },
+      {
+        "opCode": "0x03D",
+        "writer": "RemoveTownDoor"
       },
       {
         "opCode": "0x91",

@@ -1,0 +1,172 @@
+package handler
+
+import (
+	"atlas-channel/door"
+	"atlas-channel/party"
+	"atlas-channel/portal"
+	"atlas-channel/session"
+	"atlas-channel/socket/writer"
+	"context"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character"
+	charcb "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
+	doorsb "github.com/Chronicle20/atlas/libs/atlas-packet/door/serverbound"
+	fieldcb "github.com/Chronicle20/atlas/libs/atlas-packet/field/clientbound"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
+	"github.com/sirupsen/logrus"
+)
+
+// doorsByOwnerFunc lists the owner's live door(s) via the atlas-doors by-owner
+// REST route. Because a door is keyed on its owner (not a single field), this
+// resolves from EITHER side — the requester can be standing on the door's AREA
+// field or its TOWN map. Declared as a package var so tests can inject a fake.
+var doorsByOwnerFunc = func(l logrus.FieldLogger, ctx context.Context, ownerId uint32) ([]door.Model, error) {
+	return door.NewProcessor(l, ctx).GetByOwner(ownerId)
+}
+
+// partyMemberIdsFunc returns the character ids of the party that the given
+// character belongs to (empty slice when not in a party / lookup fails).
+// Declared as a package var so tests can inject a fake.
+var partyMemberIdsFunc = func(l logrus.FieldLogger, ctx context.Context, characterId uint32) []uint32 {
+	pm, err := party.NewProcessor(l, ctx).GetByMemberId(characterId)
+	if err != nil {
+		return nil
+	}
+	ids := make([]uint32, 0, len(pm.Members()))
+	for _, m := range pm.Members() {
+		ids = append(ids, m.Id())
+	}
+	return ids
+}
+
+// warpFunc warps characterId on field f to an exact (x, y) coordinate in
+// targetMapId. A Mystic Door always lands the user on the linked door's exact
+// position (the v83 SET_FIELD chase mechanism), matching the reference client's
+// the door-warp rule. Declared as a package var so tests can capture the warp
+// target without a live Kafka producer.
+var warpFunc = func(l logrus.FieldLogger, ctx context.Context, f field.Model, characterId uint32, targetMapId _map.Id, x int16, y int16) error {
+	return portal.NewProcessor(l, ctx).WarpToPosition(f, characterId, targetMapId, x, y)
+}
+
+// playPortalSoundForSession announces the existing portal-sound simple-effect
+// to the session. It reuses the same writer + body the system_message consumer
+// uses for CommandPlayPortalSound — no new packet is introduced.
+var playPortalSoundForSession = func(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, s session.Model) {
+	if wp == nil {
+		return
+	}
+	_ = session.Announce(l)(ctx)(wp)(charcb.CharacterEffectWriter)(charpkt.CharacterPlayPortalSoundEffectEffectBody())(s)
+}
+
+// linkedDestination resolves the map + exact (x, y) a requester standing on
+// currentField warps to when entering door d. A door spans an AREA field and a
+// TOWN map, and the user always lands on the linked door's exact position
+// (the door-warp rule uses the linked-portal position):
+// - on the AREA side -> warp to the TOWN map at the door's town (x, y)
+// - on the TOWN side -> warp to the AREA map at the door's area (x, y)
+//
+// The bool is false when currentField is neither side of the door.
+func linkedDestination(d door.Model, currentField field.Model) (_map.Id, int16, int16, bool) {
+	switch currentField.MapId() {
+	case d.Field().MapId():
+		// AREA side: warp to the TOWN map at the door's town position.
+		return d.TownMapId(), d.TownX(), d.TownY(), true
+	case d.TownMapId():
+		// TOWN side: warp back to the AREA map at the door's area position.
+		return d.Field().MapId(), d.AreaX(), d.AreaY(), true
+	default:
+		return 0, 0, 0, false
+	}
+}
+
+// authorizeDoorEntry reports whether requesterId may use a door owned by
+// ownerId: they are the owner, or a current party member of the owner.
+func authorizeDoorEntry(ownerId, requesterId uint32, requesterPartyMemberIds []uint32) bool {
+	if requesterId == ownerId {
+		return true
+	}
+	for _, id := range requesterPartyMemberIds {
+		if id == ownerId {
+			return true
+		}
+	}
+	return false
+}
+
+// findDoorOnMap locates the door owned by ownerId that the requester (standing
+// on currentField) is authorized to use, and of which currentField is a side.
+//
+// It fetches the owner's live door(s) by owner (not by field), so it resolves
+// BIDIRECTIONALLY: the requester may be on the door's AREA field (warp to town)
+// OR on its TOWN map (warp to area). A door's world/channel must match
+// currentField, and currentField's map must be either the area map (area side)
+// or the town map (town side). A character has at most one live door (recast
+// replaces), but the route returns a slice, so 0/1/many are handled by picking
+// the first door that matches the current field's world/channel + side.
+// Returns onSide (currentField is a side of this owner's door) and authorized
+// (requester is the owner or a current party member). The two bools let the
+// caller distinguish "no door here -> ignore silently" from "door here but
+// you're not in the party -> show the blocked message".
+func findDoorOnMap(l logrus.FieldLogger, ctx context.Context, currentField field.Model, ownerId, requesterId uint32) (_ door.Model, onSide bool, authorized bool) {
+	ms, err := doorsByOwnerFunc(l, ctx, ownerId)
+	if err != nil {
+		l.WithError(err).Warnf("Unable to retrieve doors for owner [%d] for mystic-door entry.", ownerId)
+		return door.Model{}, false, false
+	}
+
+	var found door.Model
+	ok := false
+	for _, m := range ms {
+		af := m.Field()
+		// World/channel of the door's area field must match the requester.
+		if af.WorldId() != currentField.WorldId() || af.ChannelId() != currentField.ChannelId() {
+			continue
+		}
+		// currentField's map must be a side of this door: the area map (requester
+		// on the AREA side) or the town map (requester on the TOWN side).
+		if af.MapId() == currentField.MapId() || m.TownMapId() == currentField.MapId() {
+			found = m
+			ok = true
+			break
+		}
+	}
+	if !ok {
+		return door.Model{}, false, false
+	}
+	return found, true, authorizeDoorEntry(ownerId, requesterId, partyMemberIdsFunc(l, ctx, requesterId))
+}
+
+func MysticDoorEnterHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
+	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
+		p := doorsb.Enter{}
+		p.Decode(l, ctx)(r, readerOptions)
+		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
+
+		d, onSide, authorized := findDoorOnMap(l, ctx, s.Field(), p.OwnerId(), s.CharacterId())
+		if !onSide {
+			// No door of this owner on the requester's map: ignore silently. The
+			// client re-enables its own input after the request resolves with no warp.
+			return
+		}
+		if !authorized {
+			// Door is present but the requester is not the owner or a party member:
+			// the door may only be entered by the owner's party (BLOCKED_MAP type 6).
+			_ = session.Announce(l)(ctx)(wp)(fieldcb.BlockedMapWriter)(writer.BlockedMapBody(6))(s)
+			return
+		}
+
+		targetMapId, targetX, targetY, ok := linkedDestination(d, s.Field())
+		if !ok {
+			return
+		}
+
+		if err := warpFunc(l, ctx, s.Field(), s.CharacterId(), targetMapId, targetX, targetY); err != nil {
+			l.WithError(err).Warnf("Mystic-door warp failed for character [%d].", s.CharacterId())
+			return
+		}
+
+		playPortalSoundForSession(l, ctx, wp, s)
+	}
+}

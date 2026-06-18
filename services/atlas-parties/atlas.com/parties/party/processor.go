@@ -426,6 +426,11 @@ func (p *ProcessorImpl) Leave(mb *message.Buffer) func(partyId uint32, character
 
 		var disbandParty = party.LeaderId() == characterId
 
+		// Capture the full member list BEFORE removing the leaver so the DISBAND
+		// event can include the departing leader (or any member being expelled).
+		formerMembers := make([]uint32, len(party.Members()))
+		copy(formerMembers, party.Members())
+
 		party, err = GetRegistry().Update(p.ctx, partyId, func(m Model) Model { return Model.RemoveMember(m, characterId) })
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to leave party [%d].", partyId)
@@ -459,7 +464,7 @@ func (p *ProcessorImpl) Leave(mb *message.Buffer) func(partyId uint32, character
 
 			GetRegistry().Remove(p.ctx, partyId)
 			p.l.Debugf("Party [%d] has been disbanded.", partyId)
-			err = mb.Put(EnvEventStatusTopic, disbandEventProvider(characterId, partyId, c.WorldId(), party.Members()))
+			err = mb.Put(EnvEventStatusTopic, disbandEventProvider(characterId, partyId, c.WorldId(), formerMembers))
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to announce the party [%d] was disbanded.", partyId)
 				err = mb.Put(EnvEventStatusTopic, errorEventProvider(characterId, partyId, c.WorldId(), EventPartyStatusErrorUnexpected, ""))

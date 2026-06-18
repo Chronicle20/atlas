@@ -34,7 +34,11 @@ type Processor interface {
 	// defaults to dest (parity with the pre-task-087 consumer). Returns an error
 	// only when the durable Set fails; emit/transition failures are logged and
 	// the call still succeeds (parity with the consumer).
-	ChangeMap(transactionId uuid.UUID, characterId uint32, worldId world.Id, dest field.Model, portalId uint32) error
+	//
+	// When useTargetPosition is true the emitted MAP_CHANGED carries an exact
+	// (targetX, targetY) landing instead of a named portal — atlas-channel then
+	// uses the SET_FIELD chase mechanism to place the avatar there (Mystic Door).
+	ChangeMap(transactionId uuid.UUID, characterId uint32, worldId world.Id, dest field.Model, portalId uint32, useTargetPosition bool, targetX int16, targetY int16) error
 }
 
 type ProcessorImpl struct {
@@ -62,7 +66,7 @@ func newProcessorWithDeps(l logrus.FieldLogger, ctx context.Context, lp location
 	return &ProcessorImpl{l: l, ctx: ctx, lp: lp, pp: pp, mp: mp}
 }
 
-func (p *ProcessorImpl) ChangeMap(transactionId uuid.UUID, characterId uint32, worldId world.Id, dest field.Model, portalId uint32) error {
+func (p *ProcessorImpl) ChangeMap(transactionId uuid.UUID, characterId uint32, worldId world.Id, dest field.Model, portalId uint32, useTargetPosition bool, targetX int16, targetY int16) error {
 	oldField := dest
 	if old, err := p.lp.GetById(characterId); err == nil {
 		oldField = old.Field()
@@ -74,7 +78,7 @@ func (p *ProcessorImpl) ChangeMap(transactionId uuid.UUID, characterId uint32, w
 
 	if err := message.Emit(p.pp)(func(buf *message.Buffer) error {
 		return buf.Put(characterKafka.EnvEventTopicCharacterStatus,
-			producer.MapChangedStatusProvider(transactionId, characterId, worldId, oldField, dest, portalId))
+			producer.MapChangedStatusProvider(transactionId, characterId, worldId, oldField, dest, portalId, useTargetPosition, targetX, targetY))
 	}); err != nil {
 		p.l.WithError(err).Errorf("ChangeMap: failed to emit MAP_CHANGED status for character [%d].", characterId)
 	}

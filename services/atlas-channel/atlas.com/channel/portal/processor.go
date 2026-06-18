@@ -43,3 +43,19 @@ func (p *ProcessorImpl) Enter(f field.Model, portalName string, characterId uint
 func (p *ProcessorImpl) Warp(f field.Model, characterId uint32, targetMapId _map.Id) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(portal.EnvPortalCommandTopic)(WarpCommandProvider(f, characterId, targetMapId))
 }
+
+// WarpToPosition warps the character to an exact (x, y) coordinate in the
+// target map — used by Mystic Door to land the user on the linked door's
+// position rather than a named portal.
+func (p *ProcessorImpl) WarpToPosition(f field.Model, characterId uint32, targetMapId _map.Id, x int16, y int16) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(portal.EnvPortalCommandTopic)(WarpToPositionCommandProvider(f, characterId, targetMapId, x, y))
+}
+
+// WarpToPortal warps the character to a specific portal in the target map. A
+// targetPortalId of 0 falls back to the random-spawn Warp.
+func (p *ProcessorImpl) WarpToPortal(f field.Model, characterId uint32, targetMapId _map.Id, targetPortalId uint32) error {
+	if targetPortalId == 0 {
+		return p.Warp(f, characterId, targetMapId)
+	}
+	return producer.ProviderImpl(p.l)(p.ctx)(portal.EnvPortalCommandTopic)(WarpToPortalCommandProvider(f, characterId, targetMapId, targetPortalId))
+}

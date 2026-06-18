@@ -23,6 +23,7 @@ The channel service acts as the primary interface between game clients and the b
   - CHARACTERS - Character data
   - CONFIGURATIONS - Service and tenant configuration
   - DATA - Static game data (maps, NPCs, skills, portals, quests, cash items)
+  - DOORS - Mystic Door state
   - DROPS - Drop state
   - GUILDS - Guild data
   - GUILD_THREADS - Guild BBS

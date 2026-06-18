@@ -240,6 +240,30 @@ Base URL: `BASE_SERVICE_URL` + DATA root
 
 ---
 
+### DOORS
+Base URL: `BASE_SERVICE_URL` + DOORS root
+Resource Type: `doors`
+
+#### GET /doors/{id}
+- Parameters: id (string)
+- Request Model: None
+- Response Model: `RestModel` - Door details (areaDoorId, townDoorId, pairId, ownerCharacterId, partyId, worldId, channelId, mapId, instance, townMapId, slot, townPortalId, areaX, areaY, townX, townY, skillId, skillLevel, expiresAt)
+- Error Conditions: 404 if not found
+
+#### GET /worlds/{worldId}/channels/{channelId}/maps/{mapId}/instances/{instanceId}/doors
+- Parameters: worldId, channelId, mapId, instanceId (uuid)
+- Request Model: None
+- Response Model: `[]RestModel` - Doors in the area field instance
+- Error Conditions: None
+
+#### GET /characters/{characterId}/doors
+- Parameters: characterId (uint32) — door owner
+- Request Model: None
+- Response Model: `[]RestModel` - The owner's live door(s), resolvable from either side (area or town)
+- Error Conditions: None
+
+---
+
 ### DROPS
 Base URL: `BASE_SERVICE_URL` + DROPS root
 

@@ -1,0 +1,8 @@
+packet: door/clientbound/RemoveDoor
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CTownPortalPool::OnTownPortalRemoved
+    address: "0x7be064"
+    decompile_sha256: e89e9693dc9208b97b8b5fcc4e657f977d062e3865fdd9e4e2d1d061d8483d3a

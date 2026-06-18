@@ -1,0 +1,8 @@
+packet: door/clientbound/SpawnDoor
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CTownPortalPool::OnTownPortalCreated
+    address: "0x7bd6c6"
+    decompile_sha256: a6dca6f0a4773148f5376019d1713ea755d793f1ee5fee868bbb000b11ed1730

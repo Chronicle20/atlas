@@ -336,6 +336,61 @@ func (p *ProcessorImpl) LeavePartyDoor(partyId uint32, ownerCharacterId characte
 	}
 }
 
+// DisbandPartyDoors transitions every member's door to solo when the party is
+// disbanded. Unlike a single LEAVE/EXPEL, the party no longer exists, so the
+// channel cannot resolve its members to broadcast removals — each door must be
+// removed from the OTHER former members explicitly (targeted by character id).
+//
+// For each member's door (still scoped to the disbanded party) it:
+//  1. emits a targeted REMOVED to every OTHER former member, so they stop
+//     seeing it (the field door pool is not torn down by the party-disband
+//     event on the client; the server must send the removals);
+//  2. re-keys the door to solo (party 0, slot 0, slot-0 town portal);
+//  3. emits a CREATED for the now-solo door (party 0 -> reaches only the owner),
+//     refreshing the owner's own town-portal render off the dead party array.
+//
+// Without this, handleDisband only reslotted within the dead party scope, so
+// every former member kept seeing every other member's door (and the doors
+// lingered tagged with the disbanded party id).
+func (p *ProcessorImpl) DisbandPartyDoors(partyId uint32, members []character.Id, townPortalsByMap func(_map.Id) []TownPortal) {
+	for _, owner := range members {
+		doors, err := GetRegistry().GetByOwner(p.ctx, p.t, owner)
+		if err != nil {
+			p.l.WithError(err).Warnf("DisbandPartyDoor: unable to load doors for owner %d", owner)
+			continue
+		}
+		for _, d := range doors {
+			if d.PartyId() != partyId {
+				continue
+			}
+			p.l.WithFields(logrus.Fields{
+				"door_action": "disband_party", "party_id": partyId, "owner": uint32(owner),
+				"area_door_id": d.AreaDoorId(), "old_slot": d.Slot(), "member_count": len(members),
+			}).Infof("DisbandPartyDoor: door [%d] party [%d] -> solo; removing from %d other member(s).", d.AreaDoorId(), partyId, len(members)-1)
+			// 1. Remove this owner's door from every OTHER former member.
+			for _, other := range members {
+				if other == owner {
+					continue
+				}
+				if err := p.emit(EnvEventTopicDoorStatus, removedEventProvider(d, RemoveReasonPartyLeft, uint32(other))); err != nil {
+					p.l.WithError(err).Warnf("DisbandPartyDoor: remove failed for door %d -> char %d", d.AreaDoorId(), uint32(other))
+				}
+			}
+			// 2. Re-key to solo: party 0, slot 0, slot-0 town portal.
+			wireId, tx, ty, _ := ResolveTownPortal(townPortalsByMap(d.TownMapId()), 0, defaultTownX, defaultTownY)
+			n := Clone(d).SetPartyId(0).SetSlot(0).SetTownPortalId(wireId).SetTownX(tx).SetTownY(ty).Build()
+			if err := GetRegistry().Put(p.ctx, p.t, n); err != nil {
+				p.l.WithError(err).Warnf("DisbandPartyDoor: persist failed for door %d", d.AreaDoorId())
+				continue
+			}
+			// 3. Re-create as a solo door — party 0 resolves to only the owner.
+			if err := p.emit(EnvEventTopicDoorStatus, createdEventProvider(n, 0)); err != nil {
+				p.l.WithError(err).Warnf("DisbandPartyDoor: re-create failed for door %d", d.AreaDoorId())
+			}
+		}
+	}
+}
+
 func (p *ProcessorImpl) Reslot(areaDoorId uint32, newSlot byte, townPortalId uint32, townX point.X, townY point.Y) error {
 	m, err := GetRegistry().Get(p.ctx, p.t, areaDoorId)
 	if err != nil {

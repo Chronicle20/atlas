@@ -652,3 +652,74 @@ func TestJoinPartyDoorAdoptsSoloDoorIntoParty(t *testing.T) {
 			got.PartyId(), got.Slot(), got.TownPortalId(), got.TownX(), got.TownY())
 	}
 }
+
+// TestDisbandPartyDoorsRemovesFromOthersThenRekeysSolo pins the disband fix: when
+// a party disbands, each member's door is REMOVED from every OTHER former member
+// (targeted by character id, because the party no longer exists for the channel
+// to resolve) and then re-keyed to a solo door (party 0, slot 0). Without this,
+// handleDisband only reslotted within the dead party scope, so every former
+// member kept seeing every other member's door.
+func TestDisbandPartyDoorsRemovesFromOthersThenRekeysSolo(t *testing.T) {
+	em := &fakeEmit{}
+	p, ten, ctx := newTestProcessor(t, fakeResolver{}, &counterAllocator{next: 1}, em)
+
+	f := field.NewBuilder(1, 2, 240011000).Build()
+	// Two party members, each with a party-scoped door (party 123).
+	leader := NewBuilder().
+		SetAreaDoorId(920_001).SetTownDoorId(920_002).
+		SetOwnerCharacterId(1).SetPartyId(123).SetField(f).
+		SetTownMapId(_map.Id(240000000)).SetSlot(0).SetTownPortalId(0x80).
+		SetTownX(10).SetTownY(20).Build()
+	member := NewBuilder().
+		SetAreaDoorId(920_003).SetTownDoorId(920_004).
+		SetOwnerCharacterId(5).SetPartyId(123).SetField(f).
+		SetTownMapId(_map.Id(240000000)).SetSlot(1).SetTownPortalId(0x81).
+		SetTownX(-85).SetTownY(531).Build()
+	for _, m := range []Model{leader, member} {
+		if err := GetRegistry().Put(ctx, ten, m); err != nil {
+			t.Fatalf("Put: %v", err)
+		}
+	}
+
+	portals := []TownPortal{{X: 10, Y: 20}, {X: -85, Y: 531}}
+	p.DisbandPartyDoors(123, []character.Id{1, 5}, func(_ _map.Id) []TownPortal { return portals })
+
+	// Each of the 2 doors -> 1 targeted REMOVED (to the other member) + 1 solo CREATED.
+	if len(em.types) != 4 {
+		t.Fatalf("expected 4 events ([REMOVED,CREATED] per door), got %v", em.types)
+	}
+	decode := func(b []byte) (owner, partyId, forCh uint32) {
+		var env struct {
+			OwnerCharacterId uint32 `json:"ownerCharacterId"`
+			PartyId          uint32 `json:"partyId"`
+			ForCharacterId   uint32 `json:"forCharacterId"`
+		}
+		_ = json.Unmarshal(b, &env)
+		return env.OwnerCharacterId, env.PartyId, env.ForCharacterId
+	}
+	// Leader's door (owner 1): REMOVED targeted at the OTHER member (5), then solo CREATED.
+	if o, pid, fc := decode(em.values[0]); em.types[0] != EventDoorStatusRemoved || o != 1 || pid != 123 || fc != 5 {
+		t.Fatalf("door 1 REMOVED should target other member 5: type=%s owner=%d party=%d for=%d", em.types[0], o, pid, fc)
+	}
+	if o, pid, fc := decode(em.values[1]); em.types[1] != EventDoorStatusCreated || o != 1 || pid != 0 || fc != 0 {
+		t.Fatalf("door 1 CREATED should be solo: type=%s owner=%d party=%d for=%d", em.types[1], o, pid, fc)
+	}
+	// Member's door (owner 5): REMOVED targeted at the OTHER member (1), then solo CREATED.
+	if o, pid, fc := decode(em.values[2]); em.types[2] != EventDoorStatusRemoved || o != 5 || pid != 123 || fc != 1 {
+		t.Fatalf("door 5 REMOVED should target other member 1: type=%s owner=%d party=%d for=%d", em.types[2], o, pid, fc)
+	}
+	if o, pid, fc := decode(em.values[3]); em.types[3] != EventDoorStatusCreated || o != 5 || pid != 0 || fc != 0 {
+		t.Fatalf("door 5 CREATED should be solo: type=%s owner=%d party=%d for=%d", em.types[3], o, pid, fc)
+	}
+	// Both doors are now solo at slot 0 with the slot-0 town portal.
+	for _, id := range []uint32{920_001, 920_003} {
+		got, err := GetRegistry().Get(ctx, ten, id)
+		if err != nil {
+			t.Fatalf("Get after disband: %v", err)
+		}
+		if got.PartyId() != 0 || got.Slot() != 0 || got.TownPortalId() != 0x80 || got.TownX() != 10 || got.TownY() != 20 {
+			t.Fatalf("door %d not re-keyed to solo: party=%d slot=%d portal=%d x=%d y=%d",
+				id, got.PartyId(), got.Slot(), got.TownPortalId(), got.TownX(), got.TownY())
+		}
+	}
+}

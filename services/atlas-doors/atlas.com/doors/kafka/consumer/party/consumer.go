@@ -142,23 +142,32 @@ func handleExpel(l logrus.FieldLogger) message.Handler[StatusEvent[ExpelEventBod
 			return
 		}
 		// Same handling as a voluntary leave (see handleLeft): reslot only the
-		// remaining members, and transition the expelled member's door to solo so
-		// it is removed from the remaining members rather than reslotted in-party.
+		// remaining members, hide the remaining party's doors from the expelled
+		// member, and transition the expelled member's door to solo so it is
+		// removed from the remaining members rather than reslotted in-party.
 		reslotAfterMembership(l, ctx, e.PartyId, pm.Members(), nil)
+		// Hide the remaining party's doors from the member who was expelled.
+		// Without this the expelled member keeps seeing every remaining member's
+		// door (the field door pool is not torn down by the party-leave event on
+		// the client; the server must send the removals). Mirrors handleLeft.
+		enginedoor.NewProcessor(l, ctx).HidePartyDoorsFromCharacter(e.PartyId, pm.Members(), e.Body.CharacterId)
 		enginedoor.NewProcessor(l, ctx).LeavePartyDoor(e.PartyId, e.Body.CharacterId, townPortalsForMap(l, ctx))
 	}
 }
 
 // handleDisband fires on DISBAND events.  The party no longer exists in
 // atlas-parties; the event body carries the full former member list.  Every
-// member's door drops to solo scope (slot 0).
+// member's door drops to solo scope (slot 0) AND must be removed from the other
+// former members — the field door pool is not torn down by the disband event on
+// the client, and with the party gone the channel cannot resolve its members to
+// broadcast a removal, so DisbandPartyDoors removes each door from the others by
+// targeting their character ids explicitly.
 func handleDisband(l logrus.FieldLogger) message.Handler[StatusEvent[DisbandEventBody]] {
 	return func(_ logrus.FieldLogger, ctx context.Context, e StatusEvent[DisbandEventBody]) {
 		if e.Type != EventPartyStatusTypeDisband {
 			return
 		}
-		// All members become former members — no remaining party members.
-		reslotAfterMembership(l, ctx, e.PartyId, nil, e.Body.Members)
+		enginedoor.NewProcessor(l, ctx).DisbandPartyDoors(e.PartyId, e.Body.Members, townPortalsForMap(l, ctx))
 	}
 }
 

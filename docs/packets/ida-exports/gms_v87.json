@@ -11633,6 +11633,486 @@
           "comment": "error message (DecodeStr @0x7a2a91)"
         }
       ]
+    },
+    "CITC::OnRegisterSaleEntry": {
+      "address": "0x5ce967",
+      "direction": "serverbound",
+      "region": "GMS",
+      "notes": "Serverbound ITC_OPERATION register-sale dispatcher (gms_v87 opcode 0x10B/267 @0x5cea27). Maps atlas field/serverbound ItcOperationRegisterSale codec (mode 2 register-fixed-price, arg0==0 branch @0x5ceb55). The register-auction arm (mode 0x12, arg0==1 @0x5cea89) is carried by the synthetic #RegisterAuction entry. Encode order (fixed-price): Encode1(2) mode, item-slot blob sub_502670 (GW_ItemSlotBase, model.Asset recurse, opaque), Encode4 quantity/commodityId/price, Encode1 type/flag. Body shape identical to gms_v83/v95 (only opcode differs). Byte-fixture verified (IDA port 13341).",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (2 register-fixed-price) @0x5ceb55"
+        },
+        {
+          "op": "EncodeBuf",
+          "comment": "item-slot blob sub_502670 @0x5ceb60 (model.Asset recurse, opaque)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "quantity @0x5ceb6b"
+        },
+        {
+          "op": "Encode4",
+          "comment": "commodityId @0x5ceb76"
+        },
+        {
+          "op": "Encode4",
+          "comment": "price @0x5ceb81"
+        },
+        {
+          "op": "Encode1",
+          "comment": "type @0x5ceb8c"
+        },
+        {
+          "op": "Encode1",
+          "comment": "flag @0x5ceb97"
+        }
+      ]
+    },
+    "CITC::OnRegisterSaleEntry#RegisterAuction": {
+      "address": "0x5cea89",
+      "direction": "serverbound",
+      "region": "GMS",
+      "notes": "synthetic ITC_OPERATION per-mode body entry: mode 0x12 register-auction arm of CITC::OnRegisterSaleEntry (arg0==1 branch @0x5cea89, gms_v87). Encode1(0x12) mode, item-slot blob sub_502670 (GW_ItemSlotBase), Encode4 quantity/commodityId/selector/buyNowPrice, Encode1 type/flag, Encode4 durationHrs. Maps atlas field/serverbound ItcOperationRegisterAuction. Body shape identical to gms_v83/v95. Byte-fixture verified.",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (0x12 register-auction) @0x5cea89"
+        },
+        {
+          "op": "EncodeBuf",
+          "comment": "item-slot blob sub_502670 @0x5cea94 (model.Asset recurse)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "quantity @0x5cea9f"
+        },
+        {
+          "op": "Encode4",
+          "comment": "commodityId @0x5ceaaa"
+        },
+        {
+          "op": "Encode4",
+          "comment": "selector (==1) @0x5ceab5"
+        },
+        {
+          "op": "Encode4",
+          "comment": "buyNowPrice @0x5ceac0"
+        },
+        {
+          "op": "Encode1",
+          "comment": "type @0x5ceacb"
+        },
+        {
+          "op": "Encode1",
+          "comment": "flag @0x5cead6"
+        },
+        {
+          "op": "Encode4",
+          "comment": "durationHrs @0x5ceae1"
+        }
+      ]
+    },
+    "CITC::OnSaleCurrentItem": {
+      "address": "0x5cec03",
+      "direction": "serverbound",
+      "region": "GMS",
+      "notes": "ITC_OPERATION mode 3 sell-currently-selected-item (CITC::OnSaleCurrentItem @0x5cec03, COutPacket(0x10B/267) @0x5cec21, gms_v87). Encode1(3) mode, Encode1 type, Encode4 slotPos, item-slot blob sub_502670 (GW_ItemSlotBase), Encode4 commodityId. Maps atlas field/serverbound ItcOperationSaleCurrentItem. Body shape identical to gms_v83/v95. Byte-fixture verified.",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (3) @0x5cec2f"
+        },
+        {
+          "op": "Encode1",
+          "comment": "type @0x5cec3a"
+        },
+        {
+          "op": "Encode4",
+          "comment": "slotPos @0x5cec45"
+        },
+        {
+          "op": "EncodeBuf",
+          "comment": "item-slot blob sub_502670 @0x5cec51 (model.Asset recurse)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "commodityId @0x5cec5c"
+        }
+      ]
+    },
+    "CITC::OnBuy": {
+      "address": "0x5cf3fa",
+      "direction": "serverbound",
+      "region": "GMS",
+      "notes": "ITC_OPERATION mode 0x10 buy-fixed-price (CITC::OnBuy @0x5cf3fa, COutPacket(0x10B/267) @0x5cf418, gms_v87). Encode1(0x10) mode, Encode4 nITCSN. Maps atlas field/serverbound ItcOperationBuy. Byte-fixture verified (IDA port 13341).",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (0x10) @0x5cf426"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nITCSN @0x5cf437"
+        }
+      ]
+    },
+    "CITC::OnBuyAuctionImm": {
+      "address": "0x5cf46d",
+      "direction": "serverbound",
+      "region": "GMS",
+      "notes": "ITC_OPERATION mode 0x14 buy-now-on-auction (CITC::OnBuyAuctionImm @0x5cf46d, COutPacket(0x10B/267) @0x5cf48b, gms_v87). Encode1(0x14) mode, Encode4 nITCSN. Maps atlas field/serverbound ItcOperationBuyAuctionImm. Byte-fixture verified (IDA port 13341).",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (0x14) @0x5cf499"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nITCSN @0x5cf4aa"
+        }
+      ]
+    },
+    "CITC::OnCancelSaleItem": {
+      "address": "0x5cf8dd",
+      "direction": "serverbound",
+      "region": "GMS",
+      "notes": "ITC_OPERATION mode 0x07 cancel-sale (YesNo gate; suppressed if listing has bids) (CITC::OnCancelSaleItem @0x5cf8dd, COutPacket(0x10B/267) @0x5cf933, gms_v87). Encode1(0x07) mode, Encode4 nITCSN. Maps atlas field/serverbound ItcOperationCancelSale. Byte-fixture verified (IDA port 13341).",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (0x07) @0x5cf940"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nITCSN @0x5cf94e"
+        }
+      ]
+    },
+    "CITC::OnMoveITCPurchaseItemLtoS": {
+      "address": "0x5cf986",
+      "direction": "serverbound",
+      "region": "GMS",
+      "notes": "ITC_OPERATION mode 0x08 take-home (move purchase locker->slot; nTI/nPos not written) (CITC::OnMoveITCPurchaseItemLtoS @0x5cf986, COutPacket(0x10B/267) @0x5cf9a4, gms_v87). Encode1(0x08) mode, Encode4 nITCSN. Maps atlas field/serverbound ItcOperationMoveLtoS. Byte-fixture verified (IDA port 13341).",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (0x08) @0x5cf9b2"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nITCSN @0x5cf9c3"
+        }
+      ]
+    },
+    "CITC::OnSetZzim": {
+      "address": "0x5cf600",
+      "direction": "serverbound",
+      "region": "GMS",
+      "notes": "ITC_OPERATION mode 0x09 set-zzim (add to wishlist/favorite) (CITC::OnSetZzim @0x5cf600, COutPacket(0x10B/267) @0x5cf61e, gms_v87). Encode1(0x09) mode, Encode4 nITCSN. Maps atlas field/serverbound ItcOperationSetZzim. Byte-fixture verified (IDA port 13341).",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (0x09) @0x5cf62c"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nITCSN @0x5cf63d"
+        }
+      ]
+    },
+    "CITC::OnBuyZzim": {
+      "address": "0x5cf673",
+      "direction": "serverbound",
+      "region": "GMS",
+      "notes": "ITC_OPERATION mode 0x11 buy-zzim (buy a favorited item; YesNo gate) (CITC::OnBuyZzim @0x5cf673, COutPacket(0x10B/267) @0x5cf6bc, gms_v87). Encode1(0x11) mode, Encode4 nITCSN. Maps atlas field/serverbound ItcOperationBuyZzim. Byte-fixture verified (IDA port 13341).",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (0x11) @0x5cf6c9"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nITCSN @0x5cf6da"
+        }
+      ]
+    },
+    "CITC::OnDeleteZzim": {
+      "address": "0x5cf711",
+      "direction": "serverbound",
+      "region": "GMS",
+      "notes": "ITC_OPERATION mode 0x0A delete-zzim (remove favorite) (CITC::OnDeleteZzim @0x5cf711, COutPacket(0x10B/267) @0x5cf72f, gms_v87). Encode1(0x0A) mode, Encode4 nITCSN. Maps atlas field/serverbound ItcOperationDeleteZzim. Byte-fixture verified (IDA port 13341).",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (0x0A) @0x5cf73d"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nITCSN @0x5cf74e"
+        }
+      ]
+    },
+    "CITC::OnViewWish": {
+      "address": "0x5cf784",
+      "direction": "serverbound",
+      "region": "GMS",
+      "notes": "ITC_OPERATION mode 0x0B view-wish (CITC::OnViewWish @0x5cf784, COutPacket(0x10B/267) @0x5cf7a2, gms_v87). Encode1(0x0B) mode, Encode4 nITCSN. Maps atlas field/serverbound ItcOperationViewWish. Byte-fixture verified (IDA port 13341).",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (0x0B) @0x5cf7b0"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nITCSN @0x5cf7c1"
+        }
+      ]
+    },
+    "CITC::OnBuyWish": {
+      "address": "0x5cf7f7",
+      "direction": "serverbound",
+      "region": "GMS",
+      "notes": "ITC_OPERATION mode 0x0C buy-wish (CITC::OnBuyWish @0x5cf7f7, COutPacket(0x10B/267) @0x5cf815, gms_v87). Encode1(0x0C) mode, Encode4 nITCSN. Maps atlas field/serverbound ItcOperationBuyWish. Byte-fixture verified (IDA port 13341).",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (0x0C) @0x5cf823"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nITCSN @0x5cf834"
+        }
+      ]
+    },
+    "CITC::OnCancelWish": {
+      "address": "0x5cf86a",
+      "direction": "serverbound",
+      "region": "GMS",
+      "notes": "ITC_OPERATION mode 0x0D cancel-wish (CITC::OnCancelWish @0x5cf86a, COutPacket(0x10B/267) @0x5cf888, gms_v87). Encode1(0x0D) mode, Encode4 nITCSN. Maps atlas field/serverbound ItcOperationCancelWish. Byte-fixture verified (IDA port 13341).",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (0x0D) @0x5cf896"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nITCSN @0x5cf8a7"
+        }
+      ]
+    },
+    "CITC::OnRegisterWishEntry": {
+      "address": "0x5cf2a5",
+      "direction": "serverbound",
+      "region": "GMS",
+      "notes": "ITC_OPERATION mode 4 register-wish-entry (CITC::OnRegisterWishEntry @0x5cf2a5, COutPacket(0x10B/267) @0x5cf31f, gms_v87). A 110-NX floor guard gates a notice; not on the wire. Encode1(4) mode, Encode4 itemId, Encode4 price, Encode4 count, Encode1 duration, Encode1 feeOption, EncodeStr description. Maps atlas field/serverbound ItcOperationRegisterWishEntry. Body shape identical to gms_v95. Byte-fixture verified.",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (4) @0x5cf32f"
+        },
+        {
+          "op": "Encode4",
+          "comment": "itemId @0x5cf33d"
+        },
+        {
+          "op": "Encode4",
+          "comment": "price @0x5cf34b"
+        },
+        {
+          "op": "Encode4",
+          "comment": "count @0x5cf359"
+        },
+        {
+          "op": "Encode1",
+          "comment": "duration @0x5cf36a"
+        },
+        {
+          "op": "Encode1",
+          "comment": "feeOption @0x5cf37b"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "description @0x5cf392"
+        }
+      ]
+    },
+    "CITC::OnChangedCategory": {
+      "address": "0x5ceffa",
+      "direction": "serverbound",
+      "region": "GMS",
+      "notes": "ITC_OPERATION mode 5 change-browse-category (CITC::OnChangedCategory @0x5ceffa, COutPacket(0x10B/267) @0x5cf042, gms_v87). Only nCategory is variable; sub/page/sort/option/cond are constants. Encode1(5) mode, Encode4 category, Encode4 0 categorySub, Encode4 0 page, Encode1 1 sortType, Encode1 1 sortColumn, Encode4 1 searchOption, EncodeStr empty searchCondition. Maps atlas field/serverbound ItcOperationChangedCategory. Body shape identical to gms_v95. Byte-fixture verified.",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (5) @0x5cf04f"
+        },
+        {
+          "op": "Encode4",
+          "comment": "category @0x5cf05a"
+        },
+        {
+          "op": "Encode4",
+          "comment": "categorySub (const 0) @0x5cf063"
+        },
+        {
+          "op": "Encode4",
+          "comment": "page (const 0) @0x5cf06c"
+        },
+        {
+          "op": "Encode1",
+          "comment": "sortType (const 1) @0x5cf078"
+        },
+        {
+          "op": "Encode1",
+          "comment": "sortColumn (const 1) @0x5cf081"
+        },
+        {
+          "op": "Encode4",
+          "comment": "searchOption (const 1) @0x5cf08a"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "searchCondition (const empty) @0x5cf0a2"
+        }
+      ]
+    },
+    "CITC::OnChangedCategorySub": {
+      "address": "0x5cf0d9",
+      "direction": "serverbound",
+      "region": "GMS",
+      "notes": "ITC_OPERATION mode 5 change-sub-category (CITC::OnChangedCategorySub @0x5cf0d9, COutPacket(0x10B/267) @0x5cf0fe, gms_v87). page=0 const; cat/sub/sort/option/cond from state/args. Encode1(5) mode, Encode4 category, Encode4 categorySub, Encode4 0 page, Encode1 sortType, Encode1 sortColumn, Encode4 searchOption, EncodeStr searchCondition. Maps atlas field/serverbound ItcOperationChangedCategorySub. Body shape identical to gms_v95. Byte-fixture verified.",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (5) @0x5cf10b"
+        },
+        {
+          "op": "Encode4",
+          "comment": "category @0x5cf116"
+        },
+        {
+          "op": "Encode4",
+          "comment": "categorySub @0x5cf122"
+        },
+        {
+          "op": "Encode4",
+          "comment": "page (const 0) @0x5cf12b"
+        },
+        {
+          "op": "Encode1",
+          "comment": "sortType @0x5cf136"
+        },
+        {
+          "op": "Encode1",
+          "comment": "sortColumn @0x5cf141"
+        },
+        {
+          "op": "Encode4",
+          "comment": "searchOption @0x5cf174/@0x5cf150"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "searchCondition @0x5cf190"
+        }
+      ]
+    },
+    "CITC::OnChangedPage": {
+      "address": "0x5cf1c8",
+      "direction": "serverbound",
+      "region": "GMS",
+      "notes": "ITC_OPERATION mode 5 change-browse-page (CITC::OnChangedPage @0x5cf1c8, COutPacket(0x10B/267) @0x5cf1ea, gms_v87). All 8 fields from CITC state. Encode1(5) mode, Encode4 category, Encode4 categorySub, Encode4 page, Encode1 sortType, Encode1 sortColumn, Encode4 searchOption, EncodeStr searchCondition. Maps atlas field/serverbound ItcOperationChangedPage. Body shape identical to gms_v95. Byte-fixture verified.",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (5) @0x5cf1f8"
+        },
+        {
+          "op": "Encode4",
+          "comment": "category @0x5cf203"
+        },
+        {
+          "op": "Encode4",
+          "comment": "categorySub @0x5cf20e"
+        },
+        {
+          "op": "Encode4",
+          "comment": "page @0x5cf219"
+        },
+        {
+          "op": "Encode1",
+          "comment": "sortType @0x5cf227"
+        },
+        {
+          "op": "Encode1",
+          "comment": "sortColumn @0x5cf235"
+        },
+        {
+          "op": "Encode4",
+          "comment": "searchOption @0x5cf243"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "searchCondition @0x5cf260"
+        }
+      ]
+    },
+    "CITCBidAuctionDlg::OnButtonClicked": {
+      "address": "0x5f45b1",
+      "direction": "serverbound",
+      "region": "GMS",
+      "notes": "ITC_OPERATION mode 0x13 place-bid, send inlined into CITCBidAuctionDlg::OnButtonClicked @0x5f45b1 (a2==1 confirm-bid branch, COutPacket(0x10B/267) @0x5f4752, gms_v87). Encode1(0x13) mode, Encode4 nITCSN, Encode4 bidPrice, Encode4 bidRange. Maps atlas field/serverbound ItcOperationPlaceBid. Body shape identical to gms_v95. Byte-fixture verified.",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (0x13) @0x5f475f"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nITCSN @0x5f4770"
+        },
+        {
+          "op": "Encode4",
+          "comment": "bidPrice (this[44]) @0x5f477e"
+        },
+        {
+          "op": "Encode4",
+          "comment": "bidRange (this[43]) @0x5f478c"
+        }
+      ]
+    },
+    "CITCWnd_Tab::OnButtonClicked": {
+      "address": "0x5e7a64",
+      "direction": "serverbound",
+      "region": "GMS",
+      "notes": "ITC_OPERATION mode 6 tab/search-by-name, send inlined into CITCWnd_Tab::OnButtonClicked @0x5e7a64 (a2==1004 search button, COutPacket(0x10B/267) @0x5e7b03/@0x5e7bcc, gms_v87). 6-field body, NO sort bytes (distinct from mode 5). Both inner branches (character-name @0x5e7b11, advanced-search @0x5e7bda) send identical wire shape. Encode1(6) mode, Encode4 category (m_nSelect+1), Encode4 categorySub, Encode4 0 page, Encode4 searchOption, EncodeStr searchName. Maps atlas field/serverbound ItcOperationTabSearch. Body shape identical to gms_v95. Byte-fixture verified.",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (6) @0x5e7bda/@0x5e7b11"
+        },
+        {
+          "op": "Encode4",
+          "comment": "category (m_nSelect+1) @0x5e7be3/@0x5e7b1a"
+        },
+        {
+          "op": "Encode4",
+          "comment": "categorySub @0x5e7bee/@0x5e7b25"
+        },
+        {
+          "op": "Encode4",
+          "comment": "page (const 0) @0x5e7bf7/@0x5e7b2e"
+        },
+        {
+          "op": "Encode4",
+          "comment": "searchOption @0x5e7c02/@0x5e7b37"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "searchName @0x5e7c1b/@0x5e7b50"
+        }
+      ]
     }
   }
 }

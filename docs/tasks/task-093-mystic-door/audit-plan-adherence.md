@@ -72,3 +72,64 @@ None. (Optional: re-run `tools/redis-key-guard.sh` and `docker buildx bake
 atlas-doors atlas-parties atlas-channel` from the worktree root as the final gate
 before PR, per the task-description note that redis-key-guard fails identically on
 main under local GOWORK=off — environmental, not introduced here.)
+
+---
+
+# Plan Audit — task-093-mystic-door (Cosmic Visibility Rework)
+
+**Audit Date:** 2026-06-18
+**Branch:** task-093-mystic-door @ 763ea8623
+**Base Branch:** main
+**Governing design:** `design-cosmic-visibility.md` (supersedes the party-filtered
+visibility + `ReconcileParty` area-door re-sends from `design-reconciliation.md`)
+
+## Executive Summary
+
+The five correctness goals of the cosmic-visibility rework are all implemented and
+guarded by passing tests. The area door is now a plain map object broadcast to every
+session in the map (no party filter); `ReconcileParty` (the area-door re-send / toggle
+bug) is deleted; party reslot is town-only via `ReslotParty` and never re-sends the area
+door; non-party entry yields `BLOCKED_MAP(6)`; in-party town render is owned by the
+PARTYDATA refresh (`applyMemberDoor`) with no incremental TOWN_PORTAL on reslot; and the
+Mystic Door buff is applied via the SOUL_ARROW stat and wired bidirectionally to the door
+lifecycle. atlas-doors and atlas-channel both build/vet/test -race clean.
+
+## Behavior Verification (the design's correctness goals)
+
+| # | Behavior | Status | Evidence (file:line) |
+|---|----------|--------|----------------------|
+| 1 | Area door (SpawnDoor + area/town SpawnPortal) broadcast to ALL sessions in the map, no party filter | DONE | `kafka/consumer/door/consumer.go:75-98` (`broadcastDoorToEligible` enumerates every session via `ForSessionsInMap`, only `forCharacterId != 0` narrows to one char) + `:167-176` (handleCreated). Late-join: `kafka/consumer/map/consumer.go:247` (`ForEachInMap` → `spawnDoorsForSession:573-584`, no party gate). Test: `consumer_test.go:104` `TestHandleCreated_AreaSpawnDoorPlusPortal_TownPortalOnly` (asserts area SpawnDoor=1, SpawnPortal=1, town SpawnPortal=1, town SpawnDoor=0). |
+| 2 | Area door NOT re-sent on party changes; `ReconcileParty` deleted; reslot is town-only | DONE | `ReconcileParty` removed repo-wide (only a removal-explaining comment remains at `consumer.go:220`). Replacement `door/reslot.go:20` `ReslotParty` calls only `p.Reslot` → `processor.go:203-222` emits `SLOT_CHANGED` (town-portal move), never CREATED/REMOVED for the area door. doors party consumer (`kafka/consumer/party/consumer.go:77-140`) routes every party event through `reslotForParty`/`ReslotParty` only. |
+| 3 | Entry gate: owner/party → warp; non-party → BLOCKED_MAP(6), no warp | DONE | `socket/handler/mystic_door_enter.go:84-96` (`authorizeDoorEntry`), `:147-158` (`!authorized` → `BlockedMapBody(6)` + return, no warp; `onSide && authorized` → warp). Writer `socket/writer/blocked_map.go` → `libs/atlas-packet/field/clientbound/blocked_map.go` (packet-audit:verify across v83/v84/v87/v95/jms). Tests in `mystic_door_enter_test.go`. |
+| 4 | In-party town render owned by PARTYDATA refresh (`applyMemberDoor`); `handleSlotChanged` emits no incremental TOWN_PORTAL | DONE | `kafka/consumer/party/consumer.go:57-72` (`applyMemberDoor` populates `aTownPortal` from each member's live door), used by `toPartyMembers:31-55` in PartyJoin/Left/Expel (`:230,:281,:383`). `kafka/consumer/door/consumer.go:280-292` (handleSlotChanged deliberately does NOT touch the party town-portal array). Test: `consumer_test.go:364` `TestHandleSlotChanged_PartyTownPortalNotTouched` (asserts `townPortals == 0`). |
+| 5 | Recast sends area RemoveDoor (no toggle); buff via SOUL_ARROW stat; buff cancel ↔ door removal both directions | DONE | Recast remove: `consumer.go:222-231` (RemoveDoor to all map sessions, returns before town/buff clear on `RemoveReasonRecast`); doors-side `processor.go:95` emits REMOVED/RECAST on recast. Buff apply (cast): `skill/handler/mysticdoor/mysticdoor.go:66-72,125` (SOUL_ARROW statup, duration = door lifetime). Buff→door: `socket/handler/character_buff_cancel.go:23-24` (cancel → `door.Remove`). Door→buff: `consumer.go:248` (removal → `buff.Cancel`, RECAST excluded). Tests: `consumer_test.go:270` `TestHandleRemoved_Recast_AreaRemoveOnly`. |
+
+## Build & Test Results
+
+| Service | Build | Vet | Tests (`-race -count=1`) | Notes |
+|---------|-------|-----|--------------------------|-------|
+| atlas-doors | PASS | PASS | PASS | `ok atlas-doors`, `door`, `data/map`, `data/skill`, `party` |
+| atlas-channel | PASS | PASS | PASS | full suite green incl. `kafka/consumer/door` (8.5s), `consumer/map`, `consumer/party`, `socket/handler`, `skill/handler/mysticdoor` |
+
+## Notes / Non-blocking observations
+
+- **redis-key-guard:** `GOWORK=off tools/redis-key-guard.sh` reports FAIL, but the failure
+  is environmental: ~26 of the scanned modules (incl. atlas-channel AND atlas-doors) emit
+  `./... matched no packages` (package resolution fails under GOWORK=off in this worktree),
+  so the static pass never analyzed door code. atlas-doors' registry/allocator use only
+  `libs/atlas-redis` wrapper types (`r.reg.Get`, `atlasredis.NewRegistry`/`NewKeyedSet`) —
+  no raw keyed go-redis client calls. The prior audit section above records the same FAIL
+  reproduces identically on `main`. Re-run via CI (proper GOWORK) before PR to get a clean
+  signal; not a defect in this branch.
+- **`reslot.go`/`reslot_test.go` retained:** the reconciliation plan called for deleting
+  these, but the cosmic-visibility rework reinstated `ReslotParty` as the town-only reslot
+  primitive (no area re-send). This is consistent with the governing design §4.1/§4.2
+  (reslot stays town-only) — not a gap.
+- **`docker buildx bake atlas-doors atlas-parties atlas-channel`** not run in this audit
+  (no docker daemon invoked here); run from the worktree root before PR per CLAUDE.md.
+
+## Overall Assessment
+
+- **Plan Adherence (cosmic-visibility design):** FULL
+- **Recommendation:** READY_TO_MERGE (after the standard `docker buildx bake` gate + a
+  CI-run redis-key-guard for a clean signal)

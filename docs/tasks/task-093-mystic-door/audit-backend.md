@@ -84,3 +84,106 @@ Not auth/authz/token service — **N/A**. No secrets, JWT, or redirect handling 
 **Overall: PASS** — build/tests clean, refactor removed dead code without dangling
 references, strong atlas-constants type reuse, correct context-based multi-tenancy,
 and new tests stub the producer correctly.
+
+---
+
+## Session fixes (reslot / recast / buff icon) — 2026-06-18
+
+Scope: `git diff 2f41bbd4f..HEAD` — three production commits:
+`540f06757` (reslot), `b229c582c` (buff icon via SOUL_ARROW), `763ea8623` (recast door destroy).
+Files: `kafka/consumer/door/consumer.go` (+`_test.go`),
+`skill/handler/mysticdoor/mysticdoor.go`.
+
+### Objective gate
+- `go build ./...` — PASS (exit 0).
+- `go vet ./kafka/consumer/door/ ./skill/handler/mysticdoor/` — PASS (exit 0).
+- `go test -race ./kafka/consumer/door/ ./skill/handler/mysticdoor/` — PASS:
+  - `atlas-channel/kafka/consumer/door` ok 17.551s
+  - `atlas-channel/skill/handler/mysticdoor` ok 1.023s
+  - The 17.5s for the door package is the DOM-24 smell below, not a flake.
+
+### Per-area verdict
+
+| Area | Verdict | Evidence |
+|------|---------|----------|
+| Reslot — drop incremental TOWN_PORTAL clear/set | PASS | `consumer.go:280-291` removes the `announceTownPortalToParty` clear/set; solo `RemoveTownDoor`+`SpawnPortal` retained `consumer.go:275-278`. Test `consumer_test.go:364` asserts zero `townPortals` for a partied reslot while the solo path still fires. Reasoning (OldSlot clear wiped a non-reslotted member; cross-topic race) is sound. |
+| Recast — always destroy area door | PASS | `consumer.go:222-223` emits `RemoveDoorWriter` unconditionally, then the `RemoveReasonRecast` early-return `consumer.go:229-231` suppresses town clear + buff cancel. Test `consumer_test.go:270` asserts exactly one area `RemoveDoor` and nothing else on recast. |
+| Buff icon — SOUL_ARROW statup | PASS (logic) / see DOM-24 + coverage gap | `mysticdoor.go:70-71` builds `statup.NewModel(string(charconst.TemporaryStatTypeSoulArrow), int32(amount))`. `amount int16` (`mysticdoor.go:66`) matches `e.X() int16` (`data/skill/effect/model.go:144`) — no truncation. Threaded at call site `mysticdoor.go:125`. |
+
+### Checklist items examined
+
+- **DOM-21 (shared-constant reuse)** — PASS. `TemporaryStatTypeSoulArrow` is the
+  shared lib constant `libs/atlas-constants/character/temporary_stat.go:22`, not a
+  service redeclaration. `statup.NewModel` is the existing channel helper
+  (`data/skill/effect/statup/model.go:20`). `skillconst.PriestMysticDoorId`
+  (`consumer.go:248`) and `RemoveReasonRecast` are reused, not re-minted. No new
+  type/const/numeric-literal introduced by the diff.
+
+- **Concurrency around `ForSessionsInMap`** — PASS. The recast `RemoveDoor` and the
+  reslot broadcasts route through `broadcastDoorToEligible`
+  (`consumer.go:75-98`), which guards the recipient-slice append with
+  `sync.Mutex` (`consumer.go:82,88-90`) because `ForSessionsInMap` runs the
+  callback concurrently. `-race` is clean. No new shared mutable state added by
+  the diff.
+
+- **Error handling** — PASS-with-note. The new `RemoveDoor` broadcast on recast
+  (`consumer.go:222`) returns nothing (consistent with the pre-existing
+  fire-and-forget broadcast seam, which logs its own errors at `consumer.go:93-94`).
+  The pre-existing `buff.Cancel` swallows its error with `_ =`
+  (`consumer.go:248`) — unchanged by this session, acceptable for a best-effort
+  icon clear.
+
+- **SOUL_ARROW gameplay side-effect for non-bowmen** — NO unintended channel-side
+  effect found. The channel only emits the statup mask to atlas-buffs via
+  `buff.Apply` → `producer.ProviderImpl` (`character/buff/processor.go:48`); no
+  channel writer keys behavior off `SOUL_ARROW` (grep of `socket/writer/`,
+  `character/buff/` returns nothing). The "harmless for a Priest (no bow)" claim
+  is correct *channel-side*. NOT independently verified here: that atlas-buffs
+  does not apply a real no-miss/avoid effect from a `SOUL_ARROW` statup for a
+  non-bowman caster — that lives in another service and is out of this diff's
+  scope. Flagged as Important to confirm before shipping (the comment asserts it
+  but cites only the v83 reference server, not atlas-buffs source).
+
+### DOM-24 (Kafka producer stubbed in emitting tests) — FAIL (pre-existing, in-scope test path)
+
+- `consumer_test.go:217` `TestHandleRemoved_AreaRemoveDoor_TownRemoveTownDoor`
+  drives the non-recast removal path with `PartyId 77` / `ForCharacterId 0`,
+  reaching the REAL `buff.NewProcessor(l, ctx).Cancel(...)` at `consumer.go:248`.
+  That `Cancel` emits through `producer.ProviderImpl` (`character/buff/processor.go:54`)
+  with no broker, burning the full retry budget — 10 retries, 100ms→10s backoff
+  (`libs/atlas-kafka/producer/producer.go:59`). This is the 17.5s package time.
+- The door test stubs `broadcastDoorToEligible` and `announceTownPortalToParty`
+  (`consumer_test.go:57,67`) but NOT the `buff.Cancel` emit, and the package has no
+  `TestMain` calling `producertest.InstallNoop()` (only `consumer.go`,
+  `consumer_test.go`, `kafka.go` in the dir).
+- The `buff.Cancel` line pre-dates this session (present at base `2f41bbd4f`
+  `consumer.go:243`), so the slow path is NOT introduced by these three commits —
+  but it is squarely the DOM-24 hazard and is exercised by an in-scope test.
+  Fix: add a package `TestMain` calling
+  `producer/producertest.InstallNoop()` (no per-test `t.Cleanup(ResetInstance)`).
+
+### Coverage gap — `applyDoorBuff` emit path is untested (Important)
+
+- `TestMysticDoorEmitsSpawnWhenEligible` (`mysticdoor_test.go:91`) runs the
+  eligible path with `e := effect.Model{}` (`mysticdoor_test.go:72`), so
+  `e.Duration()` is 0 and `applyDoorBuff`'s `if duration <= 0 { return }` guard
+  (`mysticdoor.go:67-68`) short-circuits BEFORE the real `buff.Apply` emit. That
+  is the only reason the mysticdoor package stays at 1.0s.
+- Consequence: the session's actual change — the SOUL_ARROW statup + `amount`
+  threading — has ZERO test coverage. No test stubs `applyDoorBuff` to assert it
+  receives `e.X()`, and no test reaches it with a positive duration. A regression
+  in the statup mask or the X→amount wiring would not be caught.
+- Recommend: stub `applyDoorBuff` as a package var (mirroring `emitSpawn`) and
+  assert it is called with the skill's X value on the eligible+duration>0 path;
+  this also keeps the emit stubbed (DOM-24).
+
+### Verdict for this session's changes
+
+**NEEDS-WORK** — build/vet/`-race` tests all pass and the three fixes are
+logically correct with sound IDA-cited reasoning and clean DOM-21 reuse, but:
+- DOM-24 FAIL: the in-scope door removal test hits an unstubbed `buff.Cancel`
+  emit (17.5s); add `producertest.InstallNoop()` via `TestMain`.
+- Important: the new SOUL_ARROW/`amount` buff-apply path is untested (zero-duration
+  effect masks it); add coverage that stubs `applyDoorBuff` and asserts `e.X()`.
+- Important (cross-service, unverified here): confirm atlas-buffs applies no real
+  gameplay effect from a `SOUL_ARROW` statup on a non-bowman caster before ship.

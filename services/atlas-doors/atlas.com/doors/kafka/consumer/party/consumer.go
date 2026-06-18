@@ -1,9 +1,14 @@
 package party
 
 import (
+	mapdata "atlas-doors/data/map"
+	enginedoor "atlas-doors/door"
 	consumer2 "atlas-doors/kafka/consumer"
+	"atlas-doors/party"
 	"context"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
@@ -12,20 +17,13 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// The door service no longer derives door visibility from party membership.
-//
-// The Mystic Door's area door is a plain ranged map object — shown to every
-// session in the map, like a monster. Party membership only gates door ENTRY
-// and the town-portal array. That town-portal/party rendering is owned entirely
-// by the channel's party-status consumer, which rebuilds the PARTYDATA
-// town-portal array on every membership change.
-//
-// Re-deriving door scope here (the former ReconcileParty) re-broadcast the area
-// door on every party change; the v83 client treats a repeat area-door spawn as
-// an open/close toggle, which corrupted the render (door drawn below the
-// platform) and cleared the door's frame layer — the source of the door-removal
-// (expiry) crash. So these handlers are intentionally no-ops; the consumer stays
-// registered only to drain the topic.
+// On a party membership change the door service reslots each affected member's
+// door TOWN-portal position to the member's current party slot. This is the
+// town side only — it never re-sends the area door, so it cannot toggle the
+// client render (the source of the earlier below-platform / expiry-crash bugs).
+// The reslot keeps the door's stored town position correct, which is both the
+// in-town render position and the warp destination when the door is entered.
+// (Two members' doors must warp to portal index 0 and 1, not both to 0.)
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -54,26 +52,91 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 	}
 }
 
-// The handlers below are intentionally no-ops (see the package note). They exist
-// only so the consumer drains the party-status topic; door rendering no longer
-// reacts to party membership.
-
-func handleJoined(_ logrus.FieldLogger) message.Handler[StatusEvent[JoinedEventBody]] {
-	return func(_ logrus.FieldLogger, _ context.Context, _ StatusEvent[JoinedEventBody]) {}
+// townPortalsForMap returns a closure that fetches door-type (Type==6) portals
+// for a town map from atlas-data, used to resolve a slot's town-portal position.
+func townPortalsForMap(l logrus.FieldLogger, ctx context.Context) func(_map.Id) []enginedoor.TownPortal {
+	mp := mapdata.NewProcessor(l, ctx)
+	return func(townMapId _map.Id) []enginedoor.TownPortal {
+		const doorPortalType uint8 = 6
+		m, err := mp.GetById(townMapId)
+		if err != nil {
+			return nil
+		}
+		portals := make([]enginedoor.TownPortal, 0)
+		for _, p := range m.Portals() {
+			if p.Type() == doorPortalType {
+				portals = append(portals, enginedoor.TownPortal{X: p.X(), Y: p.Y()})
+			}
+		}
+		return portals
+	}
 }
 
-func handleLeft(_ logrus.FieldLogger) message.Handler[StatusEvent[LeftEventBody]] {
-	return func(_ logrus.FieldLogger, _ context.Context, _ StatusEvent[LeftEventBody]) {}
+// reslotForParty resolves the party's current ordered membership and reslots the
+// members' (and leavers') doors. members is nil on disband (party gone).
+func reslotForParty(l logrus.FieldLogger, ctx context.Context, partyId uint32, members []character.Id, leavers []character.Id) {
+	_ = enginedoor.ReslotParty(enginedoor.NewProcessor(l, ctx), partyId, members, leavers, townPortalsForMap(l, ctx))
 }
 
-func handleExpel(_ logrus.FieldLogger) message.Handler[StatusEvent[ExpelEventBody]] {
-	return func(_ logrus.FieldLogger, _ context.Context, _ StatusEvent[ExpelEventBody]) {}
+func handleJoined(l logrus.FieldLogger) message.Handler[StatusEvent[JoinedEventBody]] {
+	return func(_ logrus.FieldLogger, ctx context.Context, e StatusEvent[JoinedEventBody]) {
+		if e.Type != EventPartyStatusTypeJoined {
+			return
+		}
+		pm, err := party.NewProcessor(l, ctx).GetById(e.PartyId)
+		if err != nil {
+			l.WithError(err).Warnf("handleJoined: party %d not found", e.PartyId)
+			return
+		}
+		reslotForParty(l, ctx, e.PartyId, pm.Members(), nil)
+	}
 }
 
-func handleDisband(_ logrus.FieldLogger) message.Handler[StatusEvent[DisbandEventBody]] {
-	return func(_ logrus.FieldLogger, _ context.Context, _ StatusEvent[DisbandEventBody]) {}
+func handleLeft(l logrus.FieldLogger) message.Handler[StatusEvent[LeftEventBody]] {
+	return func(_ logrus.FieldLogger, ctx context.Context, e StatusEvent[LeftEventBody]) {
+		if e.Type != EventPartyStatusTypeLeft {
+			return
+		}
+		var members []character.Id
+		if pm, err := party.NewProcessor(l, ctx).GetById(e.PartyId); err == nil {
+			members = pm.Members()
+		}
+		reslotForParty(l, ctx, e.PartyId, members, []character.Id{e.ActorId})
+	}
 }
 
-func handleChangeLeader(_ logrus.FieldLogger) message.Handler[StatusEvent[ChangeLeaderEventBody]] {
-	return func(_ logrus.FieldLogger, _ context.Context, _ StatusEvent[ChangeLeaderEventBody]) {}
+func handleExpel(l logrus.FieldLogger) message.Handler[StatusEvent[ExpelEventBody]] {
+	return func(_ logrus.FieldLogger, ctx context.Context, e StatusEvent[ExpelEventBody]) {
+		if e.Type != EventPartyStatusTypeExpel {
+			return
+		}
+		var members []character.Id
+		if pm, err := party.NewProcessor(l, ctx).GetById(e.PartyId); err == nil {
+			members = pm.Members()
+		}
+		reslotForParty(l, ctx, e.PartyId, members, []character.Id{e.Body.CharacterId})
+	}
+}
+
+func handleDisband(l logrus.FieldLogger) message.Handler[StatusEvent[DisbandEventBody]] {
+	return func(_ logrus.FieldLogger, ctx context.Context, e StatusEvent[DisbandEventBody]) {
+		if e.Type != EventPartyStatusTypeDisband {
+			return
+		}
+		reslotForParty(l, ctx, e.PartyId, nil, e.Body.Members)
+	}
+}
+
+func handleChangeLeader(l logrus.FieldLogger) message.Handler[StatusEvent[ChangeLeaderEventBody]] {
+	return func(_ logrus.FieldLogger, ctx context.Context, e StatusEvent[ChangeLeaderEventBody]) {
+		if e.Type != EventPartyStatusTypeChangeLeader {
+			return
+		}
+		pm, err := party.NewProcessor(l, ctx).GetById(e.PartyId)
+		if err != nil {
+			l.WithError(err).Warnf("handleChangeLeader: party %d not found", e.PartyId)
+			return
+		}
+		reslotForParty(l, ctx, e.PartyId, pm.Members(), nil)
+	}
 }

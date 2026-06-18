@@ -261,23 +261,28 @@ func handleSlotChanged(sc server.Model, wp writer.Producer) message.Handler[Stat
 		}).Infof("Door SLOT_CHANGED: owner [%d] party [%d] [%d]->[%d].", e.OwnerCharacterId, e.PartyId, b.OldSlot, b.NewSlot)
 		townField := field.NewBuilder(e.WorldId, e.ChannelId, b.TownMapId).SetInstance(e.Instance).Build()
 
-		// Reslot moves only the TOWN-side minimap portal indicator (the v83 client
-		// the door portal update updates the areaDoor's linked town portal; the
-		// town portal indicator is re-placed at the new slot). the v83 client has no
-		// dedicated reslot packet, so emit remove(town) + spawnPortal at the new
-		// slot for the town field.
+		// SOLO town render path: reslot moves the town-side minimap portal indicator
+		// for a viewer NOT in a party (e.g. a member who just left and reslotted back
+		// to solo slot 0). the v83 client has no dedicated reslot packet, so emit
+		// remove(town) + spawnPortal at the new slot for the town field. Party members
+		// ignore this (CField::OnTownPortalChanged @0x5365c8 takes the party branch and
+		// renders from the PARTYDATA aTownPortal array instead).
 		broadcastDoorToEligible(l, ctx, wp, townField, e.OwnerCharacterId, e.PartyId, e.ForCharacterId,
 			doorcb.RemoveTownDoorWriter, writer.RemoveTownDoorBody())
 		broadcastDoorToEligible(l, ctx, wp, townField, e.OwnerCharacterId, e.PartyId, e.ForCharacterId,
 			doorcb.SpawnPortalWriter, writer.SpawnPortalBody(b.TownMapId, e.MapId, b.TownX, b.TownY))
 
-		// PARTY town render path: reconcile the party town-portal array. Clear the
-		// old slot then set the new slot with the door's area position (AreaX/AreaY).
-		// A broadcast-scoped reslot (ForCharacterId == 0) is the only case that
-		// needs this; a per-character delta (join/leave) is handled by PARTYDATA refresh.
-		if e.ForCharacterId == 0 {
-			announceTownPortalToParty(l, ctx, wp, sc, e.PartyId, b.OldSlot, 0, 0, 0, 0, true)
-			announceTownPortalToParty(l, ctx, wp, sc, e.PartyId, b.NewSlot, b.TownMapId, e.MapId, b.AreaX, b.AreaY, false)
-		}
+		// PARTY town render path: a reslot is ALWAYS driven by a party membership
+		// change (join/left/expel — see atlas-doors handleJoined/Left/Expel), and the
+		// channel party-status consumer already re-sends the full PARTYDATA (with every
+		// member's door resolved via applyMemberDoor) on each of those events. That
+		// full refresh re-renders the town-portal array self-consistently — every
+		// member's door at their own party index. Emitting an incremental per-slot
+		// TOWN_PORTAL(0x25) clear/set here is both redundant with that refresh AND
+		// actively harmful: the OldSlot clear wipes whichever OTHER member now occupies
+		// that array index (e.g. a member who stayed at slot 0 while this door moved
+		// 0->1 emits no SLOT_CHANGED of its own, so is never restored), and the two
+		// updates race across the door_status vs party_status topics. So do NOT touch
+		// the party town-portal array on reslot — the PARTYDATA refresh owns it.
 	}
 }

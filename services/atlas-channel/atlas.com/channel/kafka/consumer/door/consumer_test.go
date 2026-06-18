@@ -337,11 +337,18 @@ func TestHandleSlotChanged_ReslotsTownPortal(t *testing.T) {
 	}
 }
 
-// TestHandleSlotChanged_PartyTownPortalReconciled asserts that a reslot event
-// for a partied owner (PartyId != 0, ForCharacterId == 0) also reconciles the
-// party town-portal array: a CLEAR for OldSlot and a SET for NewSlot carrying
-// TownMapId, the area MapId, and the door's AreaX/AreaY position.
-func TestHandleSlotChanged_PartyTownPortalReconciled(t *testing.T) {
+// TestHandleSlotChanged_PartyTownPortalNotTouched asserts that a reslot event for
+// a partied owner (PartyId != 0, ForCharacterId == 0) does NOT emit any incremental
+// party town-portal (TOWN_PORTAL/0x25) calls. A reslot is always driven by a party
+// membership change (join/left/expel), and the channel party-status consumer already
+// re-sends the full PARTYDATA — with every member's door resolved via applyMemberDoor —
+// on each of those events, re-rendering the town-portal array self-consistently.
+// Emitting a per-slot clear/set here was both redundant and harmful: the OldSlot clear
+// wiped whichever OTHER member occupies that array index (a member who stayed at its
+// slot emits no SLOT_CHANGED of its own, so was never restored), and the two updates
+// raced across the door_status vs party_status topics. The solo town SpawnPortal is
+// still emitted (a leaver reslotting back to solo slot 0 renders via the solo branch).
+func TestHandleSlotChanged_PartyTownPortalNotTouched(t *testing.T) {
 	tm := newTestTenant(t)
 	ctx := tenant.WithContext(context.Background(), tm)
 	sc := newTestServer(t, tm)
@@ -370,24 +377,20 @@ func TestHandleSlotChanged_PartyTownPortalReconciled(t *testing.T) {
 		},
 	})
 
-	// Expect exactly two party town-portal calls: clear old slot, set new slot.
-	if len(calls.townPortals) != 2 {
-		t.Fatalf("party town-portal reconcile: want 2 calls (clear+set), got %d: %+v", len(calls.townPortals), calls.townPortals)
+	// No incremental party town-portal (0x25) calls: the PARTYDATA refresh owns the
+	// in-party town render.
+	if len(calls.townPortals) != 0 {
+		t.Fatalf("reslot must NOT emit incremental party town-portal calls (PARTYDATA refresh owns it), got %d: %+v",
+			len(calls.townPortals), calls.townPortals)
 	}
 
-	// First call: CLEAR for OldSlot.
-	clearCall := calls.townPortals[0]
-	if !clearCall.clear || clearCall.partyId != 77 || clearCall.slot != 0 {
-		t.Fatalf("slot-changed party clear: want {partyId:77 slot:0 clear:true}, got %+v", clearCall)
+	// The solo town render path is still emitted (RemoveTownDoor + SpawnPortal on the
+	// town field) — party members ignore it; a leaver who reslotted to solo renders from it.
+	if got := countWriter(calls.broadcasts, townMapId, doorcb.RemoveTownDoorWriter); got != 1 {
+		t.Fatalf("reslot town RemoveTownDoor: want 1, got %d", got)
 	}
-
-	// Second call: SET for NewSlot with town+area map ids and AreaX/AreaY.
-	setCall := calls.townPortals[1]
-	if setCall.clear || setCall.partyId != 77 || setCall.slot != 1 ||
-		setCall.townMapId != townMapId || setCall.targetMapId != areaMapId ||
-		setCall.x != 300 || setCall.y != 400 {
-		t.Fatalf("slot-changed party set: want {partyId:77 slot:1 town:%d target:%d x:300 y:400 clear:false}, got %+v",
-			townMapId, areaMapId, setCall)
+	if got := countWriter(calls.broadcasts, townMapId, doorcb.SpawnPortalWriter); got != 1 {
+		t.Fatalf("reslot town SpawnPortal: want 1, got %d", got)
 	}
 }
 

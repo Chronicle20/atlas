@@ -9809,6 +9809,11 @@
       "direction": "serverbound",
       "calls": []
     },
+    "CITC::TrySendQueryCashRequest": {
+      "address": "0x59eece",
+      "direction": "serverbound",
+      "calls": []
+    },
     "CITC::OnNormalItemResult": {
       "address": "0x5a4311",
       "direction": "",

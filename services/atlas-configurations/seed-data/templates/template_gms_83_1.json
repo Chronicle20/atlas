@@ -705,6 +705,11 @@
         "handler": "ItcStatusChargeHandle"
       },
       {
+        "opCode": "0xFC",
+        "validator": "LoggedInValidator",
+        "handler": "ItcQueryCashRequestHandle"
+      },
+      {
         "opCode": "0xA4",
         "validator": "LoggedInValidator",
         "handler": "MobCrcKeyChangedReply"

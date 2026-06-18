@@ -903,6 +903,11 @@
         "opCode": "0x10A",
         "validator": "NoOpValidator",
         "handler": "ItcStatusChargeHandle"
+      },
+      {
+        "opCode": "0x10B",
+        "validator": "LoggedInValidator",
+        "handler": "ItcQueryCashRequestHandle"
       }
     ],
     "writers": [

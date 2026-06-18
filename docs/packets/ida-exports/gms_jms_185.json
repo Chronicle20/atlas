@@ -10,6 +10,11 @@
       "direction": "serverbound",
       "calls": []
     },
+    "CITC::TrySendQueryCashRequest": {
+      "address": "0x6043bf",
+      "direction": "serverbound",
+      "calls": []
+    },
     "CWvsContext::SendMigrateToITCRequest": {
       "address": "0xaf860d",
       "direction": "serverbound",

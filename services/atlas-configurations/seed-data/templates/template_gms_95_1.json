@@ -515,6 +515,11 @@
         "opCode": "0x132",
         "validator": "NoOpValidator",
         "handler": "ItcStatusChargeHandle"
+      },
+      {
+        "opCode": "0x133",
+        "validator": "LoggedInValidator",
+        "handler": "ItcQueryCashRequestHandle"
       }
     ],
     "writers": [

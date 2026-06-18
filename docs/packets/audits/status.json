@@ -1,11 +1,11 @@
 {
-  "toolSha": "cc6741e98f8330420707db82fbc7fbcee3788482",
+  "toolSha": "29c4c8599a231e25ea35400e209516bdb2b2e5e4",
   "exportHashes": {
-    "gms_v83": "a2264591bc2673af2d1696e6481e0c1fac710f16ef0e1f154696b351651fcc84",
-    "gms_v84": "768b9d062a4cc6caa95616c47f30c7915272322b8e08badc1e12faed10426ada",
-    "gms_v87": "0fd9b5ea5c1e2273f3c9714ff12775880a6a4117cf6149f93273b2eeb6baeba2",
-    "gms_v95": "75466b5209c2e0b7b40f1d8af684c50fe27755b23fb41b3fedb8032d1930aacb",
-    "jms_v185": "75ac63126e4f70048cfeb87e95cadafda916f06180998c20fadd70163969b3ed"
+    "gms_v83": "26c87751b3d8b8eedaaab309666c4c615ba8fc8e9e29eae5da2cd22984b8b07c",
+    "gms_v84": "6f5c4e6a053aa82eacd8e94739218b422a66e44c983250ec012704eb6df0673e",
+    "gms_v87": "04f96265a67ecf5fa46fda867a7cf61f62fee860c6f98f257b255ca5a46c170b",
+    "gms_v95": "1756965485b1433484325fbb5584e99160e1bee9aaec4e6274e9692d82477452",
+    "jms_v185": "fa89b9a31f1fd407ba86e98af693fe7949d84b9b7497f31d662151f8038597b4"
   },
   "rows": [
     {
@@ -21013,35 +21013,31 @@
     {
       "kind": "op",
       "op": "ITC_QUERY_CASH_REQUEST",
+      "packet": "field/serverbound/FieldItcQueryCashRequest",
       "direction": "serverbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CITC::TrySendQueryCashRequest"
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 252
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 252
+          "state": "verified",
+          "opcode": 259
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 266
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 307
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 267
         }
       }

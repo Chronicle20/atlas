@@ -9922,6 +9922,11 @@
       "direction": "serverbound",
       "calls": []
     },
+    "CITC::TrySendQueryCashRequest": {
+      "address": "0x5cec92",
+      "direction": "serverbound",
+      "calls": []
+    },
     "CITC::OnNormalItemResult": {
       "address": "0x5d43d0",
       "direction": "",

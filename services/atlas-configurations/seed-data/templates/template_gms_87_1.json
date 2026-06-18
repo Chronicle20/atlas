@@ -836,6 +836,11 @@
         "opCode": "0x109",
         "validator": "NoOpValidator",
         "handler": "ItcStatusChargeHandle"
+      },
+      {
+        "opCode": "0x10A",
+        "validator": "LoggedInValidator",
+        "handler": "ItcQueryCashRequestHandle"
       }
     ],
     "writers": [

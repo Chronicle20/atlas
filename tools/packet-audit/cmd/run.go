@@ -1793,6 +1793,18 @@ func candidatesFromFName(fname string) []candidate {
 	case "CITC::OnStatusCharge":
 		return []candidate{{name: "ItcStatusCharge", pkg: "field", dir: csvpkg.DirServerbound}}
 
+	// ITC_QUERY_CASH_REQUEST. The wallet-balance query built by
+	// CITC::TrySendQueryCashRequest (gms_v83 @0x59eece op 0xFC, gms_v84
+	// @0x5af26a op 0x103, gms_v87 @0x5cec92 op 0x10A, gms_v95 @0x572ad0 op
+	// 0x133, jms_v185 @0x6043bf op 0x10B). Uniform shape across all five builds:
+	// an m_bITCRequestSent latch guards a COutPacket(opcode) + immediate
+	// SendPacket with ZERO Encode calls in between — a bodiless (opcode-only)
+	// request that elicits the clientbound MTS_OPERATION2 wallet reply. Matches
+	// atlas field/serverbound/itc_query_cash_request.go ItcQueryCashRequest.Encode
+	// (empty body).
+	case "CITC::TrySendQueryCashRequest":
+		return []candidate{{name: "ItcQueryCashRequest", pkg: "field", dir: csvpkg.DirServerbound}}
+
 	// --- World: field (clientbound) ---
 	// Affected-area (mist) + kite (the flying-kite field object, called
 	// "MessageBox" client-side). FNames + addresses verified against the

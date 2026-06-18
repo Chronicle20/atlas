@@ -10560,6 +10560,11 @@
       "direction": "serverbound",
       "calls": []
     },
+    "CITC::TrySendQueryCashRequest": {
+      "address": "0x572ad0",
+      "direction": "serverbound",
+      "calls": []
+    },
     "CITC::OnNormalItemResult": {
       "address": "0x5771d0",
       "direction": "",

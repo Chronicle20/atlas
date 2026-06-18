@@ -1877,6 +1877,25 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "ItcOperationCancelWish", pkg: "field", dir: csvpkg.DirServerbound}}
 	case "CITC::OnRegisterWishEntry":
 		return []candidate{{name: "ItcOperationRegisterWishEntry", pkg: "field", dir: csvpkg.DirServerbound}}
+	// BROWSE-NAVIGATION arms of the same ITC_OPERATION dispatcher, verified on
+	// gms_v95 (the symbol-rich PDB build, IDA port 13340). opcode 308/0x134. The
+	// three CITC::OnChanged* senders all emit mode 0x05 (the GetItcList browse
+	// request, 8-field shape) but with different per-fname constant fills; the tab
+	// search button emits the distinct mode 0x06 (6-field shape, no sort bytes).
+	// Each is modeled by its own discrete struct + fixture.
+	//   CITC::OnChangedCategory @0x5744a0 (COutPacket(308) @0x57451a) mode 0x05.
+	//   CITC::OnChangedCategorySub @0x5739a0 (COutPacket(308) @0x5739da) mode 0x05.
+	//   CITC::OnChangedPage @0x573af0 (COutPacket(308) @0x573b29) mode 0x05.
+	//   CITCWnd_Tab::OnButtonClicked @0x584b10 (COutPacket(308) @0x584bc7/@0x584cc9)
+	//     mode 0x06 (search-by-name; send inlined in the nId==1004 button branch).
+	case "CITC::OnChangedCategory":
+		return []candidate{{name: "ItcOperationChangedCategory", pkg: "field", dir: csvpkg.DirServerbound}}
+	case "CITC::OnChangedCategorySub":
+		return []candidate{{name: "ItcOperationChangedCategorySub", pkg: "field", dir: csvpkg.DirServerbound}}
+	case "CITC::OnChangedPage":
+		return []candidate{{name: "ItcOperationChangedPage", pkg: "field", dir: csvpkg.DirServerbound}}
+	case "CITCWnd_Tab::OnButtonClicked":
+		return []candidate{{name: "ItcOperationTabSearch", pkg: "field", dir: csvpkg.DirServerbound}}
 
 	// --- World: field (clientbound) ---
 	// Affected-area (mist) + kite (the flying-kite field object, called

@@ -863,3 +863,289 @@ func (m *ItcOperationRegisterWishEntry) Decode(_ logrus.FieldLogger, _ context.C
 		m.description = r.ReadAsciiString()
 	}
 }
+
+// BROWSE-NAVIGATION arms of the ITC_OPERATION dispatcher, verified on gms_v95
+// (GMS_v95.0_U_DEVM.exe, IDA port 13340). Three sender functions
+// (CITC::OnChangedCategory / OnChangedCategorySub / OnChangedPage) all emit the
+// SAME mode byte 0x05 (the GetItcList browse request) with the same 8-field
+// wire shape; they differ only in which fields they fill from args vs CITC
+// state. A fourth (CITCWnd_Tab::OnButtonClicked, the tab/search-by-name button)
+// emits a DIFFERENT mode byte 0x06 with a 6-field shape (no sort bytes). Per the
+// dispatcher-family rule each sender is modeled by its own discrete struct that
+// fixes the constant fills its decompile shows:
+//
+//	CITC::OnChangedCategory @0x5744a0 — COutPacket(308) @0x57451a, Encode1(5)
+//	    @0x57452d. Sends nCategory then constant sub=0/page=0/sort=1/1/opt=1/"".
+//	CITC::OnChangedCategorySub @0x5739a0 — COutPacket(308) @0x5739da, Encode1(5)
+//	    @0x5739ed. cat=m_nCurCategory, sub=nCategorySub, page=0(const), the two
+//	    sort bytes + searchOption + searchCondition from state/args.
+//	CITC::OnChangedPage @0x573af0 — COutPacket(308) @0x573b29, Encode1(5)
+//	    @0x573b3c. All 8 fields from CITC state (page=nPage).
+//	CITCWnd_Tab::OnButtonClicked @0x584b10 — COutPacket(308) @0x584bc7/@0x584cc9,
+//	    Encode1(6) @0x584bd7/@0x584cd9. cat=m_nSelect+1, sub=m_nSelect, page=0
+//	    (const), searchOption, searchName. No sortType/sortColumn bytes.
+
+// ItcOperationChangedCategory — the change-browse-category arm
+// (CITC::OnChangedCategory @0x5744a0, gms_v95). After COutPacket(308) @0x57451a
+// it encodes, in order (cited to the decompile):
+//
+//	Encode1(5u)             @0x57452d  dispatcher mode byte (GetItcList browse)
+//	Encode4(nCategory)      @0x57453b  category (the only variable field)
+//	Encode4(0)              @0x574546  categorySub (const 0)
+//	Encode4(0)              @0x574551  page (const 0)
+//	Encode1(1u)             @0x57455c  sortType (const 1)
+//	Encode1(1u)             @0x574567  sortColumn (const 1)
+//	Encode4(1u)             @0x574572  searchOption (const 1)
+//	EncodeStr("")           @0x5745ac  searchCondition (const empty)
+//
+// SetSearchCondition(0,0,0,0,"") @0x57450c resets browse state before the send;
+// it does not change the wire. The m_bITCRequestSent latch (@0x5744c7) guards a
+// double-send; not on the wire.
+//
+// packet-audit:fname CITC::OnChangedCategory
+type ItcOperationChangedCategory struct {
+	mode     byte
+	category uint32 // Encode4 nCategory
+}
+
+func NewItcOperationChangedCategory(mode byte, category uint32) ItcOperationChangedCategory {
+	return ItcOperationChangedCategory{mode: mode, category: category}
+}
+
+func (m ItcOperationChangedCategory) Mode() byte        { return m.mode }
+func (m ItcOperationChangedCategory) Category() uint32  { return m.category }
+func (m ItcOperationChangedCategory) Operation() string { return ItcOperationHandle }
+func (m ItcOperationChangedCategory) String() string {
+	return fmt.Sprintf("itc changed category mode [%d] category [%d]", m.mode, m.category)
+}
+
+func (m ItcOperationChangedCategory) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
+		w.WriteByte(m.mode)    // Encode1(5u) @0x57452d mode byte
+		w.WriteInt(m.category) // Encode4 @0x57453b category
+		w.WriteInt(0)          // Encode4(0) @0x574546 categorySub
+		w.WriteInt(0)          // Encode4(0) @0x574551 page
+		w.WriteByte(0x01)      // Encode1(1u) @0x57455c sortType
+		w.WriteByte(0x01)      // Encode1(1u) @0x574567 sortColumn
+		w.WriteInt(1)          // Encode4(1u) @0x574572 searchOption
+		w.WriteAsciiString("") // EncodeStr("") @0x5745ac searchCondition
+		return w.Bytes()
+	}
+}
+
+func (m *ItcOperationChangedCategory) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
+		m.mode = r.ReadByte()
+		m.category = r.ReadUint32()
+		_ = r.ReadUint32() // categorySub (const 0)
+		_ = r.ReadUint32() // page (const 0)
+		_ = r.ReadByte()   // sortType (const 1)
+		_ = r.ReadByte()   // sortColumn (const 1)
+		_ = r.ReadUint32() // searchOption (const 1)
+		_ = r.ReadAsciiString()
+	}
+}
+
+// ItcOperationChangedCategorySub — the change-sub-category arm
+// (CITC::OnChangedCategorySub @0x5739a0, gms_v95). Mode 0x05, full 8-field
+// browse-request body. After COutPacket(308) @0x5739da it encodes, in order:
+//
+//	Encode1(5u)                  @0x5739ed  dispatcher mode byte
+//	Encode4(this->m_nCurCategory)@0x5739fa  category
+//	Encode4(nCategorySub)        @0x573a08  categorySub
+//	Encode4(0)                   @0x573a13  page (const 0)
+//	Encode1(nSortType)           @0x573a21  sortType
+//	Encode1(nSortColumn)         @0x573a2f  sortColumn
+//	Encode4(searchOption)        @0x573a3f/0x573a7e  searchOption (1 or m_nSearchOption)
+//	EncodeStr(searchCondition)   @0x573aa0  searchCondition
+//
+// The searchOption/condition branch (m_nCurCategorySub==nCategorySub) selects
+// state vs the (1, "") reset; both branches keep the same wire shape.
+//
+// packet-audit:fname CITC::OnChangedCategorySub
+type ItcOperationChangedCategorySub struct {
+	mode            byte
+	category        uint32 // Encode4 m_nCurCategory
+	categorySub     uint32 // Encode4 nCategorySub
+	sortType        byte   // Encode1 nSortType
+	sortColumn      byte   // Encode1 nSortColumn
+	searchOption    uint32 // Encode4 searchOption
+	searchCondition string // EncodeStr searchCondition
+}
+
+func NewItcOperationChangedCategorySub(mode byte, category uint32, categorySub uint32, sortType byte, sortColumn byte, searchOption uint32, searchCondition string) ItcOperationChangedCategorySub {
+	return ItcOperationChangedCategorySub{mode: mode, category: category, categorySub: categorySub, sortType: sortType, sortColumn: sortColumn, searchOption: searchOption, searchCondition: searchCondition}
+}
+
+func (m ItcOperationChangedCategorySub) Mode() byte              { return m.mode }
+func (m ItcOperationChangedCategorySub) Category() uint32        { return m.category }
+func (m ItcOperationChangedCategorySub) CategorySub() uint32     { return m.categorySub }
+func (m ItcOperationChangedCategorySub) SortType() byte          { return m.sortType }
+func (m ItcOperationChangedCategorySub) SortColumn() byte        { return m.sortColumn }
+func (m ItcOperationChangedCategorySub) SearchOption() uint32    { return m.searchOption }
+func (m ItcOperationChangedCategorySub) SearchCondition() string { return m.searchCondition }
+func (m ItcOperationChangedCategorySub) Operation() string       { return ItcOperationHandle }
+func (m ItcOperationChangedCategorySub) String() string {
+	return fmt.Sprintf("itc changed category-sub mode [%d] category [%d] sub [%d] sort [%d/%d] option [%d]", m.mode, m.category, m.categorySub, m.sortType, m.sortColumn, m.searchOption)
+}
+
+func (m ItcOperationChangedCategorySub) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
+		w.WriteByte(m.mode)                   // Encode1(5u) @0x5739ed mode byte
+		w.WriteInt(m.category)                // Encode4 @0x5739fa category
+		w.WriteInt(m.categorySub)             // Encode4 @0x573a08 categorySub
+		w.WriteInt(0)                         // Encode4(0) @0x573a13 page
+		w.WriteByte(m.sortType)               // Encode1 @0x573a21 sortType
+		w.WriteByte(m.sortColumn)             // Encode1 @0x573a2f sortColumn
+		w.WriteInt(m.searchOption)            // Encode4 @0x573a3f/0x573a7e searchOption
+		w.WriteAsciiString(m.searchCondition) // EncodeStr @0x573aa0 searchCondition
+		return w.Bytes()
+	}
+}
+
+func (m *ItcOperationChangedCategorySub) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
+		m.mode = r.ReadByte()
+		m.category = r.ReadUint32()
+		m.categorySub = r.ReadUint32()
+		_ = r.ReadUint32() // page (const 0)
+		m.sortType = r.ReadByte()
+		m.sortColumn = r.ReadByte()
+		m.searchOption = r.ReadUint32()
+		m.searchCondition = r.ReadAsciiString()
+	}
+}
+
+// ItcOperationChangedPage — the change-browse-page arm (CITC::OnChangedPage
+// @0x573af0, gms_v95). Mode 0x05, full 8-field browse-request body, every field
+// from CITC state. After COutPacket(308) @0x573b29 it encodes, in order:
+//
+//	Encode1(5u)                     @0x573b3c  dispatcher mode byte
+//	Encode4(this->m_nCurCategory)   @0x573b49  category
+//	Encode4(this->m_nCurCategorySub)@0x573b56  categorySub
+//	Encode4(nPage)                  @0x573b64  page
+//	Encode1(this->m_nSortType)      @0x573b72  sortType
+//	Encode1(this->m_nSortColumn)    @0x573b80  sortColumn
+//	Encode4(this->m_nSearchOption)  @0x573b90  searchOption
+//	EncodeStr(this->m_sSearchCondition) @0x573bb2  searchCondition
+//
+// packet-audit:fname CITC::OnChangedPage
+type ItcOperationChangedPage struct {
+	mode            byte
+	category        uint32 // Encode4 m_nCurCategory
+	categorySub     uint32 // Encode4 m_nCurCategorySub
+	page            uint32 // Encode4 nPage
+	sortType        byte   // Encode1 m_nSortType
+	sortColumn      byte   // Encode1 m_nSortColumn
+	searchOption    uint32 // Encode4 m_nSearchOption
+	searchCondition string // EncodeStr m_sSearchCondition
+}
+
+func NewItcOperationChangedPage(mode byte, category uint32, categorySub uint32, page uint32, sortType byte, sortColumn byte, searchOption uint32, searchCondition string) ItcOperationChangedPage {
+	return ItcOperationChangedPage{mode: mode, category: category, categorySub: categorySub, page: page, sortType: sortType, sortColumn: sortColumn, searchOption: searchOption, searchCondition: searchCondition}
+}
+
+func (m ItcOperationChangedPage) Mode() byte              { return m.mode }
+func (m ItcOperationChangedPage) Category() uint32        { return m.category }
+func (m ItcOperationChangedPage) CategorySub() uint32     { return m.categorySub }
+func (m ItcOperationChangedPage) Page() uint32            { return m.page }
+func (m ItcOperationChangedPage) SortType() byte          { return m.sortType }
+func (m ItcOperationChangedPage) SortColumn() byte        { return m.sortColumn }
+func (m ItcOperationChangedPage) SearchOption() uint32    { return m.searchOption }
+func (m ItcOperationChangedPage) SearchCondition() string { return m.searchCondition }
+func (m ItcOperationChangedPage) Operation() string       { return ItcOperationHandle }
+func (m ItcOperationChangedPage) String() string {
+	return fmt.Sprintf("itc changed page mode [%d] category [%d] sub [%d] page [%d]", m.mode, m.category, m.categorySub, m.page)
+}
+
+func (m ItcOperationChangedPage) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
+		w.WriteByte(m.mode)                   // Encode1(5u) @0x573b3c mode byte
+		w.WriteInt(m.category)                // Encode4 @0x573b49 category
+		w.WriteInt(m.categorySub)             // Encode4 @0x573b56 categorySub
+		w.WriteInt(m.page)                    // Encode4 @0x573b64 page
+		w.WriteByte(m.sortType)               // Encode1 @0x573b72 sortType
+		w.WriteByte(m.sortColumn)             // Encode1 @0x573b80 sortColumn
+		w.WriteInt(m.searchOption)            // Encode4 @0x573b90 searchOption
+		w.WriteAsciiString(m.searchCondition) // EncodeStr @0x573bb2 searchCondition
+		return w.Bytes()
+	}
+}
+
+func (m *ItcOperationChangedPage) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
+		m.mode = r.ReadByte()
+		m.category = r.ReadUint32()
+		m.categorySub = r.ReadUint32()
+		m.page = r.ReadUint32()
+		m.sortType = r.ReadByte()
+		m.sortColumn = r.ReadByte()
+		m.searchOption = r.ReadUint32()
+		m.searchCondition = r.ReadAsciiString()
+	}
+}
+
+// ItcOperationTabSearch — the tab/search-by-name browse request inlined into
+// CITCWnd_Tab::OnButtonClicked @0x584b10 (gms_v95, the nId==1004 search-button
+// branch; there is no standalone CITC::On* sender). It emits the DISTINCT mode
+// byte 0x06 with a 6-field body (NO sortType/sortColumn bytes, unlike mode
+// 0x05). Both inner branches (character-name search @0x584bd7, advanced-search
+// @0x584cd9) send the identical wire shape. After COutPacket(308)
+// @0x584bc7/@0x584cc9 it encodes, in order:
+//
+//	Encode1(6u)              @0x584bd7/@0x584cd9  dispatcher mode byte (search)
+//	Encode4(m_nSelect+1)     @0x584be1/@0x584ce3  category (main-category select +1)
+//	Encode4(m_nSelect)       @0x584beb/@0x584ced  categorySub (sub-category select)
+//	Encode4(0)               @0x584bf5/@0x584cf8  page (const 0)
+//	Encode4(searchOption)    @0x584bff/@0x584d02  searchOption (0 for name search, else m_nSelect)
+//	EncodeStr(searchName)    @0x584c1b/@0x584d22  searchCondition (the edit-box text)
+//
+// packet-audit:fname CITCWnd_Tab::OnButtonClicked
+type ItcOperationTabSearch struct {
+	mode         byte
+	category     uint32 // Encode4 m_nSelect+1
+	categorySub  uint32 // Encode4 m_nSelect
+	searchOption uint32 // Encode4 searchOption
+	searchName   string // EncodeStr searchCondition
+}
+
+func NewItcOperationTabSearch(mode byte, category uint32, categorySub uint32, searchOption uint32, searchName string) ItcOperationTabSearch {
+	return ItcOperationTabSearch{mode: mode, category: category, categorySub: categorySub, searchOption: searchOption, searchName: searchName}
+}
+
+func (m ItcOperationTabSearch) Mode() byte           { return m.mode }
+func (m ItcOperationTabSearch) Category() uint32     { return m.category }
+func (m ItcOperationTabSearch) CategorySub() uint32  { return m.categorySub }
+func (m ItcOperationTabSearch) SearchOption() uint32 { return m.searchOption }
+func (m ItcOperationTabSearch) SearchName() string   { return m.searchName }
+func (m ItcOperationTabSearch) Operation() string    { return ItcOperationHandle }
+func (m ItcOperationTabSearch) String() string {
+	return fmt.Sprintf("itc tab search mode [%d] category [%d] sub [%d] option [%d] name [%s]", m.mode, m.category, m.categorySub, m.searchOption, m.searchName)
+}
+
+func (m ItcOperationTabSearch) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
+		w.WriteByte(m.mode)              // Encode1(6u) @0x584bd7/@0x584cd9 mode byte
+		w.WriteInt(m.category)           // Encode4 @0x584be1/@0x584ce3 category
+		w.WriteInt(m.categorySub)        // Encode4 @0x584beb/@0x584ced categorySub
+		w.WriteInt(0)                    // Encode4(0) @0x584bf5/@0x584cf8 page
+		w.WriteInt(m.searchOption)       // Encode4 @0x584bff/@0x584d02 searchOption
+		w.WriteAsciiString(m.searchName) // EncodeStr @0x584c1b/@0x584d22 searchCondition
+		return w.Bytes()
+	}
+}
+
+func (m *ItcOperationTabSearch) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
+		m.mode = r.ReadByte()
+		m.category = r.ReadUint32()
+		m.categorySub = r.ReadUint32()
+		_ = r.ReadUint32() // page (const 0)
+		m.searchOption = r.ReadUint32()
+		m.searchName = r.ReadAsciiString()
+	}
+}

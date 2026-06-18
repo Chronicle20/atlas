@@ -153,6 +153,33 @@ func TestBrowseEnvelopeAndFilter(t *testing.T) {
 	if env2.Data[0].Attributes.Category != "equip" {
 		t.Errorf("filtered category = %q, want equip", env2.Data[0].Attributes.Category)
 	}
+
+	// Browse world 0 with sellerId=100 => exactly 1 listing (seller 100's own).
+	// This backs the channel ENTER_MTS "my sales" announce (GET_USER_SALE_ITEM_DONE).
+	resp3, err := client.Do(withTenant(t, http.MethodGet, fmt.Sprintf("%s/worlds/0/listings?sellerId=100", srv.URL)))
+	if err != nil {
+		t.Fatalf("browse sellerId: %v", err)
+	}
+	if resp3.StatusCode != http.StatusOK {
+		t.Fatalf("browse sellerId status = %d, want 200", resp3.StatusCode)
+	}
+	var env3 struct {
+		Data []struct {
+			Attributes struct {
+				SellerId uint32 `json:"sellerId"`
+			} `json:"attributes"`
+		} `json:"data"`
+	}
+	if err := json.NewDecoder(resp3.Body).Decode(&env3); err != nil {
+		t.Fatalf("decode sellerId: %v", err)
+	}
+	resp3.Body.Close()
+	if len(env3.Data) != 1 {
+		t.Fatalf("browse(w0, sellerId=100) returned %d, want 1", len(env3.Data))
+	}
+	if env3.Data[0].Attributes.SellerId != 100 {
+		t.Errorf("filtered sellerId = %d, want 100", env3.Data[0].Attributes.SellerId)
+	}
 }
 
 // TestListingDetail asserts the detail endpoint returns a single "listings"

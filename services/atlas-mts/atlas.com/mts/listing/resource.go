@@ -184,6 +184,11 @@ func handleBrowseListings(d *rest.HandlerDependency, c *rest.HandlerContext) htt
 					f.Serial = uint32(serial)
 				}
 			}
+			if v := query.Get("sellerId"); v != "" {
+				if sellerId, err := strconv.ParseUint(v, 10, 32); err == nil {
+					f.SellerId = uint32(sellerId)
+				}
+			}
 			if v := query.Get("page"); v != "" {
 				if page, err := strconv.Atoi(v); err == nil {
 					f.Page = page

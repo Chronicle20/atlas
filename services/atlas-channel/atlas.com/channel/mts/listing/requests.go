@@ -23,6 +23,7 @@ type BrowseFilter struct {
 	SaleType    string
 	ItemId      uint32
 	Serial      uint32
+	SellerId    uint32
 	SellerName  string
 	Page        int
 	PageSize    int
@@ -49,6 +50,9 @@ func (f BrowseFilter) query() string {
 	}
 	if f.Serial != 0 {
 		q.Set("serial", strconv.FormatUint(uint64(f.Serial), 10))
+	}
+	if f.SellerId != 0 {
+		q.Set("sellerId", strconv.FormatUint(uint64(f.SellerId), 10))
 	}
 	if f.SellerName != "" {
 		q.Set("sellerName", f.SellerName)

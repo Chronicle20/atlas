@@ -45,6 +45,20 @@ func TestBrowseFilterQuerySerial(t *testing.T) {
 	}
 }
 
+// TestBrowseFilterQuerySellerId asserts the sellerId filter renders when set. The
+// ENTER_MTS "my sales" announce browses with this filter so only the entering
+// character's own active listings are returned (GET_USER_SALE_ITEM_DONE).
+func TestBrowseFilterQuerySellerId(t *testing.T) {
+	got := (BrowseFilter{SellerId: 100100}).query()
+	if !strings.Contains(got, "sellerId=100100") {
+		t.Errorf("query %q missing sellerId=100100", got)
+	}
+	// SellerId 0 means "unset" -> must be omitted.
+	if strings.Contains((BrowseFilter{}).query(), "sellerId=") {
+		t.Errorf("empty filter must not contain sellerId=")
+	}
+}
+
 // TestBrowseFilterQueryCategory asserts the category/subCategory/saleType filters
 // render when set (the browse arm passes them through to atlas-mts equality
 // filters).

@@ -1,11 +1,11 @@
 {
   "toolSha": "6913e7a3ea74b715887fa34e22bc251e662c06ba",
   "exportHashes": {
-    "gms_v83": "9a6fabba184211d4d00ef8f82aa72562a1cf11303b63c1c56a1bb6fb4c65c041",
-    "gms_v84": "fbbb8402b364d65e949763f73821340faabcc46d146027aba6c1f50dc47aa72c",
-    "gms_v87": "1ea92550295baa1c6de29adc5e891af9181c05517b97a260acde2e021e34b5a8",
-    "gms_v95": "d9d46ca359d4564935294035a6d5ff9088e39af5a722af2f9ed874ec4099dc8c",
-    "jms_v185": "62c33d20716c151cbd8de84fd7b8a11b2592e78a847e276e4c4ee0ecce832745"
+    "gms_v83": "264cae29289113a6520215bfb495ae4874a835426461da98d195ff6878ab0ef5",
+    "gms_v84": "99179f347b2c24e3fd5f0df2838714a4362d8c55462d344c775d1a4fc0bb38ea",
+    "gms_v87": "e7a82f25191b2fcb253b2aa7dff96e17a2e15bd37861c7ac07a7479e2ff52a63",
+    "gms_v95": "7958c6a541bc84d5ce38a6a8d05bbc5e01eb4aadf8a247373dd08857820c19f1",
+    "jms_v185": "6070dbcd2f970651ee1028e782138af90ee65db1fc9d30b1bcdfb4e913a73930"
   },
   "rows": [
     {
@@ -10013,7 +10013,7 @@
     {
       "kind": "op",
       "op": "GUILD_OPERATION",
-      "packet": "guild/serverbound/GuildOperation",
+      "packet": "guild/serverbound/GuildJoin",
       "direction": "serverbound",
       "tier1": true,
       "fnames": [
@@ -11773,7 +11773,7 @@
     {
       "kind": "op",
       "op": "ALLIANCE_REQUEST",
-      "packet": "guild/serverbound/GuildOperation",
+      "packet": "guild/serverbound/GuildJoin",
       "direction": "serverbound",
       "tier1": true,
       "fnames": [
@@ -12993,7 +12993,7 @@
     {
       "kind": "op",
       "op": "NEW_YEAR_CARD_REQUEST",
-      "packet": "guild/serverbound/GuildOperation",
+      "packet": "guild/serverbound/GuildJoin",
       "direction": "serverbound",
       "tier1": true,
       "fnames": [
@@ -26857,33 +26857,6 @@
     {
       "kind": "sub-struct",
       "packet": "guild/serverbound/GuildInviteRequest",
-      "tier1": true,
-      "cells": {
-        "gms_v83": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "sub-struct",
-      "packet": "guild/serverbound/GuildJoin",
       "tier1": true,
       "cells": {
         "gms_v83": {

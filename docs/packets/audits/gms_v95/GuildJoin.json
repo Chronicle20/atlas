@@ -1,7 +1,7 @@
 {
   "WriterName": "GuildJoin",
-  "IDAName": "CWvsContext::SendGuildJoinMsg",
-  "Address": "0x0",
+  "IDAName": "CUIFadeYesNo::OnButtonClicked#Join",
+  "Address": "0x529c60",
   "Variant": "GMS/v95",
   "BranchDepth": 0,
   "AtlasFile": "libs/atlas-packet/guild/serverbound/operation_join.go",

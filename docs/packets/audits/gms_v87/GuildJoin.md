@@ -1,6 +1,6 @@
-# GuildJoin (← `CWvsContext::SendGuildJoinMsg`)
+# GuildJoin (← `CUIFadeYesNo::OnButtonClicked#Join`)
 
-- **IDA:** 0x0
+- **IDA:** 0x548098
 - **Atlas file:** `libs/atlas-packet/guild/serverbound/operation_join.go`
 - **Variant:** GMS/v87
 - **Branch depth:** 0

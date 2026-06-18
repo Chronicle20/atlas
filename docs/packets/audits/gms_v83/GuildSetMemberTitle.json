@@ -1,7 +1,7 @@
 {
   "WriterName": "GuildSetMemberTitle",
-  "IDAName": "CTabGuildAlliance::OnGradeChange",
-  "Address": "0x0",
+  "IDAName": "CField::SendSetMemberGradeMsg",
+  "Address": "0x530dba",
   "Variant": "GMS/v83",
   "BranchDepth": 0,
   "AtlasFile": "libs/atlas-packet/guild/serverbound/operation_set_member_title.go",

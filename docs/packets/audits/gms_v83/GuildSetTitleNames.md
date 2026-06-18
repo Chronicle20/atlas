@@ -1,6 +1,6 @@
-# GuildSetTitleNames (← `CWvsContext::SendSetGuildTitleNames`)
+# GuildSetTitleNames (← `CField::SendSetGradeNameMsg`)
 
-- **IDA:** 0x0
+- **IDA:** 0x530e1e
 - **Atlas file:** `libs/atlas-packet/guild/serverbound/operation_set_title_names.go`
 - **Variant:** GMS/v83
 - **Branch depth:** 0

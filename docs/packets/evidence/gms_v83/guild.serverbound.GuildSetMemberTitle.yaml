@@ -3,6 +3,6 @@ direction: serverbound
 version: gms_v83
 category: TIER1-FIXTURE
 ida:
-    function: CTabGuildAlliance::OnGradeChange
-    address: "0x0"
-    decompile_sha256: bc77f1f0cf2d6372a8f71a0ee1e36f369887e55869af0619a767a004a05846de
+    function: CField::SendSetMemberGradeMsg
+    address: "0x530dba"
+    decompile_sha256: f2630aff16c029a22a7966a69480a8ad4cbeebb3ceb6a5e7ba051222a17ba817

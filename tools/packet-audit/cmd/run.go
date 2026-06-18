@@ -1568,19 +1568,21 @@ func candidatesFromFName(fname string) []candidate {
 	case "CField::SendSetGuildNoticeMsg":
 		// Sub-op: SetNotice — Encode1(op) + EncodeStr(notice). Atlas SetNotice writes: WriteAsciiString(notice). ✓
 		return []candidate{{name: "SetNotice", pkg: "guild", dir: csvpkg.DirServerbound, prefixName: "Operation", prefixPkg: "guild"}}
-	case "CTabGuildAlliance::OnGradeChange":
-		// Sub-op: SetMemberTitle — Encode1(op) + Encode4(targetId) + Encode1(newTitle). Atlas SetMemberTitle writes: WriteInt(targetId)+WriteByte(newTitle). ✓
+	case "CField::SendSetMemberGradeMsg":
+		// Sub-op: SetMemberTitle — Encode1(0xE) + Encode4(targetId) + Encode1(newTitle). Atlas SetMemberTitle writes: WriteInt(targetId)+WriteByte(newTitle). ✓
+		// task-103 re-pin: was CTabGuildAlliance::OnGradeChange, which actually emits ALLIANCE_OPERATION sub-op 9 (a different packet). Correct GUILD_OPERATION SET_MEMBER_TITLE emit site is CField::SendSetMemberGradeMsg (IDA-verified v83@0x530dba, v84@0x53d030, v87@0x5585d1, v95@0x52d820, jms@0x56e1aa).
 		return []candidate{{name: "SetMemberTitle", pkg: "guild", dir: csvpkg.DirServerbound, prefixName: "Operation", prefixPkg: "guild"}}
-	case "CWvsContext::SendSetGuildTitleNames":
-		// Sub-op: SetTitleNames — Encode1(op) + 5×EncodeStr(title). Atlas SetTitleNames writes: 5×WriteAsciiString. ✓
+	case "CField::SendSetGradeNameMsg":
+		// Sub-op: SetTitleNames — Encode1(0xD) + 5×EncodeStr(title). Atlas SetTitleNames writes: 5×WriteAsciiString. ✓
+		// task-103 re-pin: was CWvsContext::SendSetGuildTitleNames (no such symbol). Correct GUILD_OPERATION SET_TITLE_NAMES emit site is CField::SendSetGradeNameMsg (IDA-verified v83@0x530e1e, v84@0x53d097, v87@0x558638, v95@0x534fe0).
 		return []candidate{{name: "SetTitleNames", pkg: "guild", dir: csvpkg.DirServerbound, prefixName: "Operation", prefixPkg: "guild"}}
 	// (Removed the CWvsContext::OnGuildResult#AgreementResponse clientbound alias:
 	// it mapped RequestAgreement a SECOND time (INV-1 shared-by-shape). F5: there is
 	// exactly ONE clientbound mode here — REQUEST_AGREEMENT (case 3) → #RequestAgreement.
 	// The serverbound member reply is the separate CField::SendCreateGuildAgreeMsg below.)
-	case "CWvsContext::SendGuildJoinMsg":
-		// Synthetic entry for Join serverbound (guild join after invitation accepted).
-		// Atlas Join writes: WriteInt(guildId)+WriteInt(characterId). ✓
+	case "CUIFadeYesNo::OnButtonClicked#Join":
+		// Sub-op: Join — Encode1(0x6) + Encode4(guildId) + Encode4(characterId). Atlas Join writes: WriteInt(guildId)+WriteInt(characterId). ✓
+		// task-103 re-pin: was CWvsContext::SendGuildJoinMsg (no such symbol). Correct GUILD_OPERATION JOIN emit site is CUIFadeYesNo::OnButtonClicked case 8 (guild-invite YES), IDA-verified v83@0x522585, v84@0x52dc20, v87@0x548098, v95@0x529c60. baseFName strips #Join → shares the GUILD_OPERATION dispatcher demux with the Operation root.
 		return []candidate{{name: "Join", pkg: "guild", dir: csvpkg.DirServerbound, prefixName: "Operation", prefixPkg: "guild"}}
 
 	// CSV: DENY_GUILD_REQUEST (serverbound, opcode 0x07F/127 in GMS v95).

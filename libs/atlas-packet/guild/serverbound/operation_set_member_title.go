@@ -9,7 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// packet-audit:fname CTabGuildAlliance::OnGradeChange
+// packet-audit:fname CField::SendSetMemberGradeMsg
 type SetMemberTitle struct {
 	targetId uint32
 	newTitle byte

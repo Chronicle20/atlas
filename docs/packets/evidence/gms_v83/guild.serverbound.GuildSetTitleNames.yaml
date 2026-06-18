@@ -3,6 +3,6 @@ direction: serverbound
 version: gms_v83
 category: TIER1-FIXTURE
 ida:
-    function: CWvsContext::SendSetGuildTitleNames
-    address: "0x0"
-    decompile_sha256: 972acfa27d57212ca58695cefd090d8142d79fa6a129ec0314a529eb86885711
+    function: CField::SendSetGradeNameMsg
+    address: "0x530e1e"
+    decompile_sha256: ae35bbcd90679bee0a73a848a8173388dc757d6238c487b4a6f39abaa7f6e27e

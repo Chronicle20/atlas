@@ -1,7 +1,7 @@
 {
   "WriterName": "GuildSetTitleNames",
-  "IDAName": "CWvsContext::SendSetGuildTitleNames",
-  "Address": "0x0",
+  "IDAName": "CField::SendSetGradeNameMsg",
+  "Address": "0x530e1e",
   "Variant": "GMS/v83",
   "BranchDepth": 0,
   "AtlasFile": "libs/atlas-packet/guild/serverbound/operation_set_title_names.go",

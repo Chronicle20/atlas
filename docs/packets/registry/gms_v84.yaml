@@ -4032,7 +4032,7 @@
   note: 'task-102: v84 opcode corrected 252->259 (0x103). CITC::TrySendQueryCashRequest @0x5af26a (GMS_v84.1_U_DEVM.exe, IDA port 13337) builds COutPacket(0x103) — push 103h @0x5af284, structurally identical to the v83 twin @0x59eece which pushes 0FCh and sitting at the same intra-class offset from CITC::OnStatusCharge (0x2F4). The stale csv value 252 (0xFC) was the v83 opcode carried over unshifted (same class as the sibling ITC_STATUS_CHARGE 251->258 and CATCH_MONSTER_WITH_ITEM 251->257 corrections). Serverbound 259 has no other claimant.'
 - op: ITC_OPERATION
   direction: serverbound
-  opcode: 253
+  opcode: 260
   fname: CITC::OnRegisterSaleEntry
   fname_alts:
   - CITC::OnSaleCurrentItem
@@ -4052,8 +4052,10 @@
   - CITC::OnChangedCategory
   - CITCWnd_Tab::OnButtonClicked
   - CITCBidAuctionDlg::OnButtonClicked
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 5959634
+  note: 'task-102: v84 opcode corrected 253->260 (0xFD->0x104). CITC::OnRegisterSaleEntry @0x5aefd2 (GMS_v84.1_U_DEVM.exe, IDA port 13337) builds COutPacket(0x104) — push 104h @0x5aefff; all 16 sibling CITC senders (OnSaleCurrentItem @0x5af1db, OnBuy @0x5af9fa, OnBuyAuctionImm @0x5afa6d, OnSetZzim @0x5afc00, OnBuyZzim @0x5afc73, OnDeleteZzim @0x5afd11, OnViewWish @0x5afd84, OnBuyWish @0x5afdf7, OnCancelWish @0x5afe6a, OnCancelSaleItem @0x5afedd, OnMoveITCPurchaseItemLtoS @0x5aff86, OnChangedCategory @0x5af5fa, OnChangedCategorySub @0x5af6d9, OnChangedPage @0x5af7c8, OnRegisterWishEntry @0x5af8a5) plus the two inlined dialog handlers (CITCWnd_Tab::OnButtonClicked @0x5c77ca, CITCBidAuctionDlg::OnButtonClicked @0x5d3ec7) all build COutPacket(260). The stale csv value 253 (0xFD) was the v83 opcode carried over unshifted — same +7 region shift as the sibling ITC_STATUS_CHARGE 251->258 and ITC_QUERY_CASH_REQUEST 252->259 corrections (CATCH_MONSTER_WITH_ITEM 251->257 class). Serverbound 260 has no other claimant.'
 - op: ITEM_UPGRADE_UPDATE
   direction: serverbound
   opcode: 260

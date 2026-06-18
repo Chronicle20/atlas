@@ -10,11 +10,11 @@ import (
 
 // TestSpawnDoor pins the full wire body of spawnDoor (SPAWN_DOOR clientbound).
 //
-// Cosmic PacketCreator.java spawnDoor (line 1112):
+// the spawnDoor:
 //
-//	p.writeBool(launched)       — 1 byte
-//	p.writeInt(ownerid)         — 4 bytes LE uint32
-//	p.writePos(pos)             — writeShort(x), writeShort(y) — 4 bytes
+//	p.writeBool(launched) — 1 byte
+//	p.writeInt(ownerid) — 4 bytes LE uint32
+//	p.writePos(pos) — writeShort(x), writeShort(y) — 4 bytes
 //
 // Total: 9 bytes. Unbranched across all versions (no structural delta known).
 //
@@ -30,15 +30,15 @@ func TestSpawnDoor(t *testing.T) {
 	m := NewSpawnDoor(1000, 100, 200, true)
 
 	// Golden wire layout (little-endian):
-	//   writeBool(true)    → 0x01
-	//   writeInt(1000)     → 0xE8 0x03 0x00 0x00
-	//   writeShort(100)    → 0x64 0x00
-	//   writeShort(200)    → 0xC8 0x00
+	// writeBool(true) → 0x01
+	// writeInt(1000) → 0xE8 0x03 0x00 0x00
+	// writeShort(100) → 0x64 0x00
+	// writeShort(200) → 0xC8 0x00
 	want := []byte{
 		0x01,                   // launched = true
 		0xE8, 0x03, 0x00, 0x00, // ownerid = 1000 LE
-		0x64, 0x00,             // x = 100 LE short
-		0xC8, 0x00,             // y = 200 LE short
+		0x64, 0x00, // x = 100 LE short
+		0xC8, 0x00, // y = 200 LE short
 	}
 
 	// v83 golden bytes
@@ -49,7 +49,7 @@ func TestSpawnDoor(t *testing.T) {
 	}
 
 	// Cross-version equality: all known versions must produce identical bytes
-	// (no structural branch implemented — single Cosmic layout applies to all).
+	// (no structural branch implemented — single the v83 client layout applies to all).
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {
 			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)

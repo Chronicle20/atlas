@@ -22,7 +22,7 @@ type TownPortal struct {
 	Y point.Y
 }
 
-// ComputeSlot returns the caster's 0-based party door slot (Cosmic Party.getPartyDoor).
+// ComputeSlot returns the caster's 0-based party door slot (the party door-slot mapping).
 // Solo (partyId==0) or non-member → slot 0.
 func ComputeSlot(partyId uint32, members []character.Id, ownerCharacterId character.Id) byte {
 	if partyId == 0 {

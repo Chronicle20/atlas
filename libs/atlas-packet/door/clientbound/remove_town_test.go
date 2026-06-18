@@ -11,11 +11,11 @@ import (
 // TestRemoveTownDoor pins the full wire body of the town-side door removal packet
 // (SPAWN_PORTAL opcode, writer name RemoveTownDoor).
 //
-// Cosmic PacketCreator.java removeDoor (line 1127), town=true branch:
+// the removeDoor, town=true branch:
 //
 //	p = OutPacket.create(SendOpcode.SPAWN_PORTAL)
-//	p.writeInt(MapId.NONE)   — 4 bytes LE uint32, MapId.NONE = 999999999
-//	p.writeInt(MapId.NONE)   — 4 bytes LE uint32
+//	p.writeInt(MapId.NONE) — 4 bytes LE uint32, MapId.NONE = 999999999
+//	p.writeInt(MapId.NONE) — 4 bytes LE uint32
 //
 // Critically, NO writePos call follows — total body is exactly 8 bytes.
 // SpawnPortal ALWAYS writes writePos (x,y) for 12 bytes total; using it for
@@ -34,8 +34,8 @@ func TestRemoveTownDoor(t *testing.T) {
 	m := NewRemoveTownDoor()
 
 	// Golden wire layout (little-endian):
-	//   writeInt(999999999)  → 0xFF 0xC9 0x9A 0x3B  (_map.EmptyMapId, MapId.NONE)
-	//   writeInt(999999999)  → 0xFF 0xC9 0x9A 0x3B
+	// writeInt(999999999) → 0xFF 0xC9 0x9A 0x3B (_map.EmptyMapId, MapId.NONE)
+	// writeInt(999999999) → 0xFF 0xC9 0x9A 0x3B
 	// Total: 8 bytes. NO position bytes follow.
 	want := []byte{
 		0xFF, 0xC9, 0x9A, 0x3B, // EmptyMapId = 999999999 LE (first int)
@@ -56,7 +56,7 @@ func TestRemoveTownDoor(t *testing.T) {
 	}
 
 	// Cross-version equality: all known versions must produce identical bytes
-	// (no structural branch implemented — single Cosmic layout applies to all).
+	// (no structural branch implemented — single the v83 client layout applies to all).
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {
 			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)

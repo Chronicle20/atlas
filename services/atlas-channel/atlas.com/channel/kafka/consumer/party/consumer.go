@@ -58,7 +58,7 @@ func toPartyMembers(l logrus.FieldLogger, ctx context.Context, p party.Model, fo
 // Mystic Door (if any). The town-portal array is how the v83 client renders
 // party-member doors in town — a doorless member keeps the zero entry. The
 // portal carries the town (exit) map, the area (origin) map, and the AREA-side
-// door position (matching SPAWN_PORTAL / Cosmic partyPortal toPosition()).
+// door position (matching SPAWN_PORTAL / the v83 client partyPortal toPosition()).
 func applyMemberDoor(pm *partypkt.PartyMember, dp *door.Processor, memberId uint32) {
 	doors, err := dp.GetByOwner(memberId)
 	if err != nil || len(doors) == 0 {
@@ -146,7 +146,7 @@ func handleCreated(sc server.Model, wp writer.Producer) message.Handler[party2.S
 
 		// Resolve the party leader's active Mystic Door (if any) so that the
 		// party-created packet can populate the minimap door indicator (FR-3.3).
-		// Cosmic partyCreated convention: townMapId = door destination (town),
+		// the v83 client partyCreated convention: townMapId = door destination (town),
 		// targetMapId = door origin (area/dungeon), x/y = area-side door position.
 		townMapId := _map.EmptyMapId
 		targetMapId := _map.EmptyMapId

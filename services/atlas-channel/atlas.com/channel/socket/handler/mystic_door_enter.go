@@ -42,8 +42,8 @@ var partyMemberIdsFunc = func(l logrus.FieldLogger, ctx context.Context, charact
 
 // warpFunc warps characterId on field f to an exact (x, y) coordinate in
 // targetMapId. A Mystic Door always lands the user on the linked door's exact
-// position (the v83 SET_FIELD chase mechanism), matching Cosmic's
-// DoorObject.warp. Declared as a package var so tests can capture the warp
+// position (the v83 SET_FIELD chase mechanism), matching the reference client's
+// the door-warp rule. Declared as a package var so tests can capture the warp
 // target without a live Kafka producer.
 var warpFunc = func(l logrus.FieldLogger, ctx context.Context, f field.Model, characterId uint32, targetMapId _map.Id, x int16, y int16) error {
 	return portal.NewProcessor(l, ctx).WarpToPosition(f, characterId, targetMapId, x, y)
@@ -62,9 +62,9 @@ var playPortalSoundForSession = func(l logrus.FieldLogger, ctx context.Context, 
 // linkedDestination resolves the map + exact (x, y) a requester standing on
 // currentField warps to when entering door d. A door spans an AREA field and a
 // TOWN map, and the user always lands on the linked door's exact position
-// (Cosmic DoorObject.warp uses the linked-portal position):
-//   - on the AREA side -> warp to the TOWN map at the door's town (x, y)
-//   - on the TOWN side  -> warp to the AREA map at the door's area (x, y)
+// (the door-warp rule uses the linked-portal position):
+// - on the AREA side -> warp to the TOWN map at the door's town (x, y)
+// - on the TOWN side -> warp to the AREA map at the door's area (x, y)
 //
 // The bool is false when currentField is neither side of the door.
 func linkedDestination(d door.Model, currentField field.Model) (_map.Id, int16, int16, bool) {

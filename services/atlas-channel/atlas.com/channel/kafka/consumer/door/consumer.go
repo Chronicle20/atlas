@@ -63,8 +63,8 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 
 // broadcastDoorToMap announces `enc` (writer `writerName`) to sessions in field
 // `f`. The Mystic Door's area door (and its minimap portal) is a plain ranged
-// map object — visible to EVERYONE in the map, exactly like Cosmic
-// DoorObject.sendSpawnData (no party filter). Party membership only gates door
+// map object — visible to EVERYONE in the map, exactly like the v83 client
+// the door spawn sequence (no party filter). Party membership only gates door
 // ENTRY and the partyPortal town-portal array (announceTownPortalToParty), not
 // area visibility. forCharacterId != 0 still targets a single character (kept
 // for any one-off targeted send); 0 broadcasts to every session in the map.
@@ -153,7 +153,7 @@ func handleCreated(sc server.Model, wp writer.Producer) message.Handler[StatusEv
 		areaField := field.NewBuilder(e.WorldId, e.ChannelId, e.MapId).SetInstance(e.Instance).Build()
 		townField := field.NewBuilder(e.WorldId, e.ChannelId, b.TownMapId).SetInstance(e.Instance).Build()
 
-		// AREA field viewers (Cosmic DoorObject.sendSpawnData, areaDoor: from=area,
+		// AREA field viewers (the door spawn sequence, areaDoor: from=area,
 		// inTown=false): spawnPortal(area, town, townPortalPos) then
 		// spawnDoor(owner, areaPos, launched=false-for-first-deploy).
 		broadcastDoorToEligible(l, ctx, wp, areaField, e.OwnerCharacterId, e.PartyId, e.ForCharacterId,
@@ -161,7 +161,7 @@ func handleCreated(sc server.Model, wp writer.Producer) message.Handler[StatusEv
 		broadcastDoorToEligible(l, ctx, wp, areaField, e.OwnerCharacterId, e.PartyId, e.ForCharacterId,
 			doorcb.SpawnDoorWriter, writer.SpawnDoorBody(e.OwnerCharacterId, b.AreaX, b.AreaY, false))
 
-		// TOWN field viewers (Cosmic townDoor: from=town, inTown=true): ONLY
+		// TOWN field viewers (townDoor: from=town, inTown=true): ONLY
 		// spawnPortal(town, area, areaPos) — NO spawnDoor (line 120 guards
 		// spawnDoor behind !inTown()). SPAWN_PORTAL is the SOLO town render path.
 		broadcastDoorToEligible(l, ctx, wp, townField, e.OwnerCharacterId, e.PartyId, e.ForCharacterId,
@@ -249,9 +249,9 @@ func handleSlotChanged(sc server.Model, wp writer.Producer) message.Handler[Stat
 		}).Infof("Door SLOT_CHANGED: owner [%d] party [%d] [%d]->[%d].", e.OwnerCharacterId, e.PartyId, b.OldSlot, b.NewSlot)
 		townField := field.NewBuilder(e.WorldId, e.ChannelId, b.TownMapId).SetInstance(e.Instance).Build()
 
-		// Reslot moves only the TOWN-side minimap portal indicator (Cosmic
-		// Door.updateDoorPortal updates the areaDoor's linked town portal; the
-		// town portal indicator is re-placed at the new slot). Cosmic has no
+		// Reslot moves only the TOWN-side minimap portal indicator (the v83 client
+		// the door portal update updates the areaDoor's linked town portal; the
+		// town portal indicator is re-placed at the new slot). the v83 client has no
 		// dedicated reslot packet, so emit remove(town) + spawnPortal at the new
 		// slot for the town field.
 		broadcastDoorToEligible(l, ctx, wp, townField, e.OwnerCharacterId, e.PartyId, e.ForCharacterId,

@@ -14,13 +14,13 @@ const SpawnPortalWriter = "SpawnPortal"
 // SpawnPortal is the clientbound packet that places the minimap door indicator
 // (SPAWN_PORTAL) showing the town↔target portal link to the caster.
 //
-// Cosmic PacketCreator.java spawnPortal (line 1096):
+// the spawnPortal:
 //
-//	p.writeInt(townId)      — LE uint32 town map id
-//	p.writeInt(targetId)    — LE uint32 field (area) map id
-//	p.writePos(pos)         — writeShort(x), writeShort(y)  [ByteBufOutPacket line 85-87]
+//	p.writeInt(townId) — LE uint32 town map id
+//	p.writeInt(targetId) — LE uint32 field (area) map id
+//	p.writePos(pos) — writeShort(x), writeShort(y) [ByteBufOutPacket line 85-87]
 //
-// For town-side door REMOVAL, use RemoveTownDoor (remove_town.go) — Cosmic's
+// For town-side door REMOVAL, use RemoveTownDoor (remove_town.go) — the reference client's
 // removeDoor(town=true) emits SPAWN_PORTAL with writeInt(MapId.NONE) ×2 and
 // NO writePos (8-byte body). SpawnPortal always writes position (12 bytes) and
 // must NOT be used for removal: passing MapNone/MapNone/0/0 here would emit

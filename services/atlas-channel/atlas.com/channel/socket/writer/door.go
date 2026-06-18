@@ -7,7 +7,7 @@ import (
 )
 
 // SpawnDoorBody builds the SpawnDoor (SPAWN_DOOR) encode body. ownerId is the
-// door owner character id (Cosmic spawnDoor(ownerid)). x/y is the door position
+// door owner character id (spawnDoor(ownerid)). x/y is the door position
 // on the field it is announced to (area position for the area field). launched
 // marks a late-join re-spawn (true) vs a first deploy (false).
 func SpawnDoorBody(ownerId uint32, x, y int16, launched bool) packet.Encode {
@@ -21,7 +21,7 @@ func RemoveDoorBody(ownerId uint32) packet.Encode {
 }
 
 // SpawnPortalBody builds the SpawnPortal (SPAWN_PORTAL) encode body — the
-// minimap door indicator. fromMapId/toMapId follow Cosmic's spawnPortal(townId,
+// minimap door indicator. fromMapId/toMapId follow the reference client's spawnPortal(townId,
 // targetId) wire order (the announcing side's from-map then to-map). x/y is the
 // indicator position on the announcing field.
 func SpawnPortalBody(fromMapId, toMapId _map.Id, x, y int16) packet.Encode {

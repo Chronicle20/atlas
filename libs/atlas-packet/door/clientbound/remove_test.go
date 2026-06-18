@@ -11,14 +11,14 @@ import (
 // TestRemoveDoor pins the full wire body of removeDoor's non-town path
 // (REMOVE_DOOR clientbound, opcode chosen by config at runtime).
 //
-// Cosmic PacketCreator.java removeDoor (line 1127), town=false branch:
+// the removeDoor, town=false branch:
 //
-//	p.writeByte(0)          — 1 constant byte
-//	p.writeInt(ownerId)     — 4 bytes LE uint32
+//	p.writeByte(0) — 1 constant byte
+//	p.writeInt(ownerId) — 4 bytes LE uint32
 //
 // Total: 5 bytes. Unbranched across all versions (no structural delta known).
 //
-// The town=true path in Cosmic emits SPAWN_PORTAL with two NONE map-ids and
+// The town=true path in the v83 client emits SPAWN_PORTAL with two NONE map-ids and
 // NO position (8-byte body); that is modelled by RemoveTownDoor (remove_town.go),
 // NOT SpawnPortal — see remove_town_test.go for the 8-byte invariant test.
 //
@@ -33,8 +33,8 @@ func TestRemoveDoor(t *testing.T) {
 	m := NewRemoveDoor(2500)
 
 	// Golden wire layout (little-endian):
-	//   writeByte(0)       → 0x00
-	//   writeInt(2500)     → 0xC4 0x09 0x00 0x00
+	// writeByte(0) → 0x00
+	// writeInt(2500) → 0xC4 0x09 0x00 0x00
 	want := []byte{
 		0x00,                   // constant zero byte
 		0xC4, 0x09, 0x00, 0x00, // ownerId = 2500 LE
@@ -48,7 +48,7 @@ func TestRemoveDoor(t *testing.T) {
 	}
 
 	// Cross-version equality: all known versions must produce identical bytes
-	// (no structural branch implemented — single Cosmic layout applies to all).
+	// (no structural branch implemented — single the v83 client layout applies to all).
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {
 			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)

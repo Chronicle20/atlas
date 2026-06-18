@@ -13,11 +13,11 @@ const RemoveTownDoorWriter = "RemoveTownDoor"
 // RemoveTownDoor is the clientbound packet that clears the minimap door indicator
 // on the town side when a Mystic Door is removed.
 //
-// Cosmic PacketCreator.java removeDoor (line 1127), town=true branch:
+// the removeDoor, town=true branch:
 //
 //	p = OutPacket.create(SendOpcode.SPAWN_PORTAL)
-//	p.writeInt(MapId.NONE)   — LE uint32, 999999999 = _map.EmptyMapId
-//	p.writeInt(MapId.NONE)   — LE uint32, 999999999 = _map.EmptyMapId
+//	p.writeInt(MapId.NONE) — LE uint32, 999999999 = _map.EmptyMapId
+//	p.writeInt(MapId.NONE) — LE uint32, 999999999 = _map.EmptyMapId
 //
 // Unlike SpawnPortal (which places a real minimap portal and always writes a
 // position), this removal packet writes EXACTLY two ints — NO position field.
@@ -31,12 +31,12 @@ const RemoveTownDoorWriter = "RemoveTownDoor"
 // 8 bytes. Using SpawnPortal for removal emits 4 spurious trailing bytes and
 // corrupts the client read cursor.
 //
-// Layout is version-unbranched (single Cosmic layout applies to all tenants;
+// Layout is version-unbranched (single the v83 client layout applies to all tenants;
 // branching is deferred to Part H if a structural delta is found).
 type RemoveTownDoor struct{}
 
 // NewRemoveTownDoor constructs a RemoveTownDoor packet. No arguments are
-// needed — Cosmic always sends _map.EmptyMapId (999999999) for both map ids
+// needed — the v83 client always sends _map.EmptyMapId (999999999) for both map ids
 // on the town-side removal path.
 func NewRemoveTownDoor() RemoveTownDoor {
 	return RemoveTownDoor{}

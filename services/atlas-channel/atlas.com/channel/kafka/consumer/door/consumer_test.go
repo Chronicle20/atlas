@@ -97,9 +97,9 @@ func countWriter(calls []broadcastCall, mapId _map.Id, writerName string) int {
 	return n
 }
 
-// TestHandleCreated_AreaSpawnDoorPlusPortal_TownPortalOnly asserts the Cosmic
-// DoorObject per-side sequence: the AREA field gets SpawnPortal + SpawnDoor;
-// the TOWN field gets ONLY SpawnPortal (no SpawnDoor — DoorObject line 120
+// TestHandleCreated_AreaSpawnDoorPlusPortal_TownPortalOnly asserts the v83 client
+// door object per-side sequence: the AREA field gets SpawnPortal + SpawnDoor;
+// the TOWN field gets ONLY SpawnPortal (no SpawnDoor — door object line 120
 // guards spawnDoor behind !inTown()).
 func TestHandleCreated_AreaSpawnDoorPlusPortal_TownPortalOnly(t *testing.T) {
 	tm := newTestTenant(t)
@@ -144,7 +144,7 @@ func TestHandleCreated_AreaSpawnDoorPlusPortal_TownPortalOnly(t *testing.T) {
 		t.Fatalf("town SpawnPortal: want 1, got %d", got)
 	}
 	if got := countWriter(calls.broadcasts, townMapId, doorcb.SpawnDoorWriter); got != 0 {
-		t.Fatalf("town SpawnDoor: want 0 (Cosmic sends spawnDoor only when !inTown), got %d", got)
+		t.Fatalf("town SpawnDoor: want 0 (sends spawnDoor only when !inTown), got %d", got)
 	}
 	// Every broadcast carries the owner + party id (for logging/targeting); the
 	// area door itself goes to every session in the map (no party filter).
@@ -392,7 +392,7 @@ func TestHandleSlotChanged_PartyTownPortalReconciled(t *testing.T) {
 }
 
 // NOTE: the former TestPartyMemberSet_* / TestBroadcastDoorToEligible_FiltersToPartyMembers
-// tests were removed: the area door is no longer party-filtered. Per Cosmic
-// (DoorObject.sendSpawnData) it is a plain map object shown to EVERY session in
+// tests were removed: the area door is no longer party-filtered. Per the v83 client
+// (the door spawn sequence) it is a plain map object shown to EVERY session in
 // the map; party membership only gates entry and the partyPortal town-portal
 // array (announceTownPortalToParty, still covered above).

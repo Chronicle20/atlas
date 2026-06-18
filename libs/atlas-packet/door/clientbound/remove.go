@@ -13,12 +13,12 @@ const RemoveDoorWriter = "RemoveDoor"
 // RemoveDoor is the clientbound packet that despawns a Mystic Door from the
 // field (the non-town/area-door path).
 //
-// Cosmic PacketCreator.java removeDoor (line 1127), town=false branch:
+// the removeDoor, town=false branch:
 //
-//	p.writeByte(0)          — constant zero byte (client expects this discriminant)
-//	p.writeInt(ownerId)     — LE uint32 door owner character id
+//	p.writeByte(0) — constant zero byte (client expects this discriminant)
+//	p.writeInt(ownerId) — LE uint32 door owner character id
 //
-// The town=true branch in Cosmic emits SPAWN_PORTAL with two NONE map-ids
+// The town=true branch in the v83 client emits SPAWN_PORTAL with two NONE map-ids
 // (999999999); that is a distinct packet modelled by SpawnPortal with
 // _map.Id(999999999) arguments — it uses a different config writer name and
 // opcode, so it is NOT represented here.

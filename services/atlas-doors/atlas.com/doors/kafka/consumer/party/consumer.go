@@ -83,7 +83,7 @@ func handleJoined(l logrus.FieldLogger) message.Handler[StatusEvent[JoinedEventB
 			return
 		}
 		_ = enginedoor.ReconcileParty(enginedoor.NewProcessor(l, ctx), e.PartyId,
-			pm.Members(), []character.Id{character.Id(e.ActorId)}, nil, townPortalsForMap(l, ctx))
+			pm.Members(), []character.Id{e.ActorId}, nil, townPortalsForMap(l, ctx))
 	}
 }
 
@@ -99,9 +99,11 @@ func handleLeft(l logrus.FieldLogger) message.Handler[StatusEvent[LeftEventBody]
 		var members []character.Id
 		if pm, err := party.NewProcessor(l, ctx).GetById(e.PartyId); err == nil {
 			members = pm.Members()
+		} else {
+			l.WithError(err).Debugf("handleLeft: party %d already gone; reconciling leaver %d to solo.", e.PartyId, e.ActorId)
 		}
 		_ = enginedoor.ReconcileParty(enginedoor.NewProcessor(l, ctx), e.PartyId,
-			members, nil, []character.Id{character.Id(e.ActorId)}, townPortalsForMap(l, ctx))
+			members, nil, []character.Id{e.ActorId}, townPortalsForMap(l, ctx))
 	}
 }
 
@@ -114,9 +116,11 @@ func handleExpel(l logrus.FieldLogger) message.Handler[StatusEvent[ExpelEventBod
 		var members []character.Id
 		if pm, err := party.NewProcessor(l, ctx).GetById(e.PartyId); err == nil {
 			members = pm.Members()
+		} else {
+			l.WithError(err).Debugf("handleExpel: party %d already gone; reconciling expelled %d to solo.", e.PartyId, e.Body.CharacterId)
 		}
 		_ = enginedoor.ReconcileParty(enginedoor.NewProcessor(l, ctx), e.PartyId,
-			members, nil, []character.Id{character.Id(e.Body.CharacterId)}, townPortalsForMap(l, ctx))
+			members, nil, []character.Id{e.Body.CharacterId}, townPortalsForMap(l, ctx))
 	}
 }
 

@@ -12,16 +12,14 @@ import (
 const GuildBBSWriter = "GuildBBS"
 
 // Guild-BBS dispatcher mode bytes. CUIGuildBBS::OnGuildBBSPacket dispatches on
-// (Decode1 - 6), so the raw leading mode bytes are 6/7/8. These are VERSION-
-// STABLE across gms_v83/v84/v87/v95 (IDA-verified — guild_bbs.yaml) and are NOT
-// resolved from the tenant operations table (no seed template registers a
-// GuildBBS operations map). They are package consts (not config data and not
-// struct-literal AP-2 footguns) passed through the body functions in bbs_body.go.
-const (
-	GuildBBSModeThreadList    byte = 6 // OnLoadListResult
-	GuildBBSModeThread        byte = 7 // OnViewEntryResult
-	GuildBBSModeEntryNotFound byte = 8 // OnEntryNotFound
-)
+// (Decode1 - 6), so the raw leading mode bytes are 6/7/8 (OnLoadListResult /
+// OnViewEntryResult / OnEntryNotFound). The 6/7/8 bytes are version-stable across
+// gms_v83/v84/v87/v95 (IDA-verified — guild_bbs.yaml; jms-absent), but at emit
+// time each arm's mode is resolved from the tenant "operations" table via the
+// body functions in guild/bbs_body.go (config-driven for pattern uniformity with
+// the other dispatcher families). Each struct takes the RESOLVED mode byte first
+// (discrete-per-mode contract); none writes a struct-literal mode (no AP-2
+// footgun).
 
 type BBSThreadSummary struct {
 	Id         uint32
@@ -43,10 +41,10 @@ type BBSReply struct {
 //
 // CUIGuildBBS::OnGuildBBSPacket dispatches on (Decode1 - 6); this arm is mode 6
 // (OnLoadListResult). The mode byte is version-stable (6 across gms_v83/84/87/95;
-// jms-absent) and is NOT config-resolved — guild_bbs.yaml records that no seed
-// template registers a GuildBBS operations table. It is therefore passed in via
-// the constructor as a fixed package const (GuildBBSModeThreadList) rather than
-// hard-coded as a struct-literal field, so no AP-2 mode:0x literal exists.
+// jms-absent) but is config-resolved at emit time via GuildBBSThreadListBody in
+// guild/bbs_body.go (operations key BBS_THREAD_LIST), mirroring GuildOperation.
+// It is passed in via the constructor as the RESOLVED mode rather than a struct
+// literal, so no AP-2 mode:0x literal exists.
 // packet-audit:fname CUIGuildBBS::OnGuildBBSPacket#BBSThreadList
 type BBSThreadList struct {
 	mode       byte
@@ -162,8 +160,9 @@ func (m *BBSThreadList) Decode(_ logrus.FieldLogger, _ context.Context) func(r *
 
 // BBSThread - single thread detail
 //
-// Mode 7 (OnViewEntryResult), version-stable, NOT config-resolved (see
-// BBSThreadList doc). Mode injected via constructor (GuildBBSModeThread const).
+// Mode 7 (OnViewEntryResult), version-stable but config-resolved via
+// GuildBBSThreadBody (operations key BBS_THREAD); see BBSThreadList doc. Mode
+// injected via constructor as the RESOLVED mode.
 // packet-audit:fname CUIGuildBBS::OnGuildBBSPacket#BBSThread
 type BBSThread struct {
 	mode       byte
@@ -231,7 +230,8 @@ func (m *BBSThread) Decode(_ logrus.FieldLogger, _ context.Context) func(r *requ
 // BBSEntryNotFound - the (Decode1 - 6)==2 arm (OnEntryNotFound, mode 8).
 // Mode-only: the sub-handler shows a "thread not found" notice with no further
 // wire reads. Discrete struct per the discrete-per-mode rule. Mode injected via
-// constructor (GuildBBSModeEntryNotFound); version-stable, not config-resolved.
+// constructor as the RESOLVED mode (version-stable but config-resolved via
+// GuildBBSEntryNotFoundBody, operations key BBS_ENTRY_NOT_FOUND).
 // packet-audit:fname CUIGuildBBS::OnGuildBBSPacket#BBSEntryNotFound
 type BBSEntryNotFound struct {
 	mode byte

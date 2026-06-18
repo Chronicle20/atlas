@@ -1511,7 +1511,14 @@
       },
       {
         "opCode": "0x3B",
-        "writer": "GuildBBS"
+        "writer": "GuildBBS",
+        "options": {
+          "operations": {
+            "BBS_THREAD_LIST": 6,
+            "BBS_THREAD": 7,
+            "BBS_ENTRY_NOT_FOUND": 8
+          }
+        }
       },
       {
         "opCode": "0x3D",

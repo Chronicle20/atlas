@@ -2136,6 +2136,17 @@
             "UPDATE_MERCHANT": 25
           }
         }
+      },
+      {
+        "opCode": "0x3B",
+        "writer": "GuildBBS",
+        "options": {
+          "operations": {
+            "BBS_THREAD_LIST": 6,
+            "BBS_THREAD": 7,
+            "BBS_ENTRY_NOT_FOUND": 8
+          }
+        }
       }
     ]
   },

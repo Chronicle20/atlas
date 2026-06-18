@@ -19,7 +19,9 @@ import (
 // packet-audit:verify packet=guild/clientbound/GuildBBSThread version=jms_v185 ida=ABSENT
 // packet-audit:verify packet=guild/clientbound/GuildBBSThreadList version=jms_v185 ida=ABSENT
 func TestBBSThreadListEmpty(t *testing.T) {
-	input := NewBBSThreadList(GuildBBSModeThreadList, nil, nil, 0)
+	// mode byte 6 (OnLoadListResult) — version-stable across gms_v83/84/87/95;
+	// the body func config-resolves it, the codec fixture pins the wire byte.
+	input := NewBBSThreadList(6, nil, nil, 0)
 	for _, v := range test.Variants {
 		t.Run(v.Name, func(t *testing.T) {
 			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
@@ -33,7 +35,7 @@ func TestBBSThreadListWithThreads(t *testing.T) {
 		{Id: 1, PosterId: 100, Title: "Hello", CreatedAt: 116444736000000000, EmoticonId: 0, ReplyCount: 3},
 		{Id: 2, PosterId: 200, Title: "Test", CreatedAt: 116444736100000000, EmoticonId: 1, ReplyCount: 0},
 	}
-	input := NewBBSThreadList(GuildBBSModeThreadList, nil, threads, 0)
+	input := NewBBSThreadList(6, nil, threads, 0)
 	for _, v := range test.Variants {
 		t.Run(v.Name, func(t *testing.T) {
 			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
@@ -46,7 +48,8 @@ func TestBBSThread(t *testing.T) {
 	replies := []BBSReply{
 		{Id: 1, PosterId: 200, CreatedAt: 116444736000000000, Message: "Nice post!"},
 	}
-	input := NewBBSThread(GuildBBSModeThread, 1, 100, 116444736000000000, "Hello", "World", 0, replies)
+	// mode byte 7 (OnViewEntryResult) — version-stable; config-resolved by the body func.
+	input := NewBBSThread(7, 1, 100, 116444736000000000, "Hello", "World", 0, replies)
 	for _, v := range test.Variants {
 		t.Run(v.Name, func(t *testing.T) {
 			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
@@ -65,9 +68,10 @@ func TestBBSThread(t *testing.T) {
 // Marked ABSENT consistently with BBSThread/BBSThreadList (the codebase's verified-absent model).
 // packet-audit:verify packet=guild/clientbound/GuildBBSEntryNotFound version=jms_v185 ida=ABSENT
 func TestBBSEntryNotFound(t *testing.T) {
-	input := NewBBSEntryNotFound(GuildBBSModeEntryNotFound)
+	// mode byte 8 (OnEntryNotFound) — version-stable; config-resolved by the body func.
+	input := NewBBSEntryNotFound(8)
 	got := input.Encode(nil, nil)(nil)
-	if len(got) != 1 || got[0] != GuildBBSModeEntryNotFound {
-		t.Fatalf("got %v, want [%d]", got, GuildBBSModeEntryNotFound)
+	if len(got) != 1 || got[0] != 8 {
+		t.Fatalf("got %v, want [8]", got)
 	}
 }

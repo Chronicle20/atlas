@@ -11247,6 +11247,114 @@
           "comment": "reason (DecodeStr; shown as the Notice text)"
         }
       ]
+    },
+    "CITC::OnRegisterSaleEntry": {
+      "address": "0x59ec36",
+      "direction": "serverbound",
+      "region": "GMS",
+      "notes": "Serverbound ITC_OPERATION register-sale dispatcher (gms_v83 opcode 0xFD/253 @0x59ec63). Maps the atlas field/serverbound ItcOperationRegisterSale codec (mode 2 register-fixed-price, arg0==0 branch @0x59ed92). The register-auction arm (mode 0x12, arg0==1 @0x59ecc8) of this same function is carried by the synthetic #RegisterAuction entry. Encode order (fixed-price arm): Encode1(2) mode, sub_4E33D8 item-slot blob (GW_ItemSlotBase Encode1 type + RawEncode; model.Asset recurse, opaque to the flat differ), Encode4 quantity/commodityId/price, Encode1 type/flag. Byte-fixture verified.",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (2 register-fixed-price) @0x59ed92"
+        },
+        {
+          "op": "EncodeBuf",
+          "comment": "item-slot blob sub_4E33D8 @0x59ed9e (GW_ItemSlotBase Encode1 type + RawEncode; model.Asset recurse)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "quantity @0x59eda9"
+        },
+        {
+          "op": "Encode4",
+          "comment": "commodityId @0x59edb4"
+        },
+        {
+          "op": "Encode4",
+          "comment": "price @0x59edbf"
+        },
+        {
+          "op": "Encode1",
+          "comment": "type @0x59edca"
+        },
+        {
+          "op": "Encode1",
+          "comment": "flag @0x59edd5"
+        }
+      ]
+    },
+    "CITC::OnRegisterSaleEntry#RegisterAuction": {
+      "address": "0x59ecc8",
+      "direction": "serverbound",
+      "region": "GMS",
+      "notes": "synthetic ITC_OPERATION per-mode body entry: mode 0x12 register-auction arm of CITC::OnRegisterSaleEntry (arg0==1 branch @0x59ecc8). Encode1(0x12) mode, sub_4E33D8 item-slot blob, Encode4 quantity/commodityId/arg0(==1)/buyNowPrice, Encode1 type/flag, Encode4 durationHrs. Maps atlas field/serverbound ItcOperationRegisterAuction. Byte-fixture verified.",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (0x12 register-auction) @0x59ecc8"
+        },
+        {
+          "op": "EncodeBuf",
+          "comment": "item-slot blob sub_4E33D8 @0x59ecd4 (GW_ItemSlotBase Encode1 type + RawEncode; model.Asset recurse)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "quantity @0x59ecdf"
+        },
+        {
+          "op": "Encode4",
+          "comment": "commodityId @0x59ecea"
+        },
+        {
+          "op": "Encode4",
+          "comment": "arg0 selector (==1) @0x59ecf5"
+        },
+        {
+          "op": "Encode4",
+          "comment": "buyNowPrice @0x59ed00"
+        },
+        {
+          "op": "Encode1",
+          "comment": "type @0x59ed0b"
+        },
+        {
+          "op": "Encode1",
+          "comment": "flag @0x59ed16"
+        },
+        {
+          "op": "Encode4",
+          "comment": "durationHrs @0x59ed21"
+        }
+      ]
+    },
+    "CITC::OnSaleCurrentItem": {
+      "address": "0x59ee3f",
+      "direction": "serverbound",
+      "region": "GMS",
+      "notes": "ITC_OPERATION mode 3 sell-currently-selected-item (CITC::OnSaleCurrentItem @0x59ee3f, COutPacket(253) @0x59ee5d). Encode1(3) mode, Encode1 type, Encode4 slotPos, sub_4E33D8 item-slot blob, Encode4 commodityId. Maps atlas field/serverbound ItcOperationSaleCurrentItem. Byte-fixture verified.",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (3) @0x59ee6b"
+        },
+        {
+          "op": "Encode1",
+          "comment": "type @0x59ee76"
+        },
+        {
+          "op": "Encode4",
+          "comment": "slotPos @0x59ee81"
+        },
+        {
+          "op": "EncodeBuf",
+          "comment": "item-slot blob sub_4E33D8 @0x59ee8d (GW_ItemSlotBase Encode1 type + RawEncode; model.Asset recurse)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "commodityId @0x59ee98"
+        }
+      ]
     }
   }
 }

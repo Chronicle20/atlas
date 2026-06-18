@@ -1805,6 +1805,29 @@ func candidatesFromFName(fname string) []candidate {
 	case "CITC::TrySendQueryCashRequest":
 		return []candidate{{name: "ItcQueryCashRequest", pkg: "field", dir: csvpkg.DirServerbound}}
 
+	// ITC_OPERATION (serverbound mode-dispatcher, gms_v83 opcode 0xFD/253). One
+	// opcode + a leading Encode1(mode) byte selecting the marketplace operation,
+	// then that op's body. CORE-TRADE arms verified (gms_v83, IDA port 13342):
+	//
+	//   CITC::OnRegisterSaleEntry @0x59ec36 (COutPacket(0xFD) @0x59ec63) handles
+	//   BOTH register-fixed-price (mode 2, arg0==0 @0x59ed92) and register-auction
+	//   (mode 0x12, arg0==1 @0x59ecc8) by its arg0 selector — two arms, two
+	//   discrete body codecs. The bare primary fname maps the fixed-price arm
+	//   (ItcOperationRegisterSale); the "#RegisterAuction" synthetic export entry
+	//   maps the auction arm (ItcOperationRegisterAuction).
+	//   CITC::OnSaleCurrentItem @0x59ee3f (COutPacket(253) @0x59ee5d) is mode 3.
+	//
+	// The item-slot blob is sub_4E33D8 @0x4e33d8 (GW_ItemSlotBase: Encode1 type +
+	// virtual RawEncode), modeled by the shared model.Asset codec. The leading
+	// ItcOperation dispatcher struct is a production handler helper and carries no
+	// fname marker. Matches atlas field/serverbound/itc_operation.go.
+	case "CITC::OnRegisterSaleEntry":
+		return []candidate{{name: "ItcOperationRegisterSale", pkg: "field", dir: csvpkg.DirServerbound}}
+	case "CITC::OnRegisterSaleEntry#RegisterAuction":
+		return []candidate{{name: "ItcOperationRegisterAuction", pkg: "field", dir: csvpkg.DirServerbound}}
+	case "CITC::OnSaleCurrentItem":
+		return []candidate{{name: "ItcOperationSaleCurrentItem", pkg: "field", dir: csvpkg.DirServerbound}}
+
 	// --- World: field (clientbound) ---
 	// Affected-area (mist) + kite (the flying-kite field object, called
 	// "MessageBox" client-side). FNames + addresses verified against the

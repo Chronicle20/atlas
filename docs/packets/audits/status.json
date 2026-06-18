@@ -1,7 +1,7 @@
 {
-  "toolSha": "29c4c8599a231e25ea35400e209516bdb2b2e5e4",
+  "toolSha": "477af11af5ec6531b2abfe26f7800e996ebde10b",
   "exportHashes": {
-    "gms_v83": "26c87751b3d8b8eedaaab309666c4c615ba8fc8e9e29eae5da2cd22984b8b07c",
+    "gms_v83": "748fdc6a64646150c6c78f76b008af8655d0bd8f9c1d978a0c17a80ec1fd5e21",
     "gms_v84": "6f5c4e6a053aa82eacd8e94739218b422a66e44c983250ec012704eb6df0673e",
     "gms_v87": "04f96265a67ecf5fa46fda867a7cf61f62fee860c6f98f257b255ca5a46c170b",
     "gms_v95": "1756965485b1433484325fbb5584e99160e1bee9aaec4e6274e9692d82477452",
@@ -21045,8 +21045,9 @@
     {
       "kind": "op",
       "op": "ITC_OPERATION",
+      "packet": "field/serverbound/FieldItcOperationRegisterAuction",
       "direction": "serverbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CITC::OnBuy",
         "CITC::OnBuyAuctionImm",
@@ -21069,8 +21070,7 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 253
         },
         "gms_v84": {
@@ -26688,6 +26688,37 @@
         },
         "jms_v185": {
           "state": "verified",
+          "opcode": -1
+        }
+      }
+    },
+    {
+      "kind": "sub-struct",
+      "packet": "field/serverbound/FieldItcOperationSaleCurrentItem",
+      "tier1": true,
+      "cells": {
+        "gms_v83": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "gms_v84": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "gms_v87": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "gms_v95": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "jms_v185": {
+          "state": "incomplete",
+          "note": "no audit report",
           "opcode": -1
         }
       }

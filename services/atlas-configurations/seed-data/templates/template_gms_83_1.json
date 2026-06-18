@@ -710,6 +710,18 @@
         "handler": "ItcQueryCashRequestHandle"
       },
       {
+        "opCode": "0xFD",
+        "validator": "LoggedInValidator",
+        "handler": "ItcOperationHandle",
+        "options": {
+          "operations": {
+            "REGISTER_SALE": 2,
+            "SALE_CURRENT_ITEM": 3,
+            "REGISTER_AUCTION": 18
+          }
+        }
+      },
+      {
         "opCode": "0xA4",
         "validator": "LoggedInValidator",
         "handler": "MobCrcKeyChangedReply"

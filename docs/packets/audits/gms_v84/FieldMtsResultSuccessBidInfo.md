@@ -1,7 +1,7 @@
 # FieldMtsResultSuccessBidInfo (← `CITC::OnNormalItemResult#SuccessBidInfo`)
 
 - **IDA:** 0x5b5795
-- **Atlas file:** `libs/atlas-packet/field/clientbound/mts_operation_body.go`
+- **Atlas file:** `libs/atlas-packet/field/clientbound/mts_operation.go`
 - **Variant:** GMS/v84
 - **Branch depth:** 1
 - **Verdict:** ✅

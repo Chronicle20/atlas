@@ -1,7 +1,7 @@
 # FieldMtsResultSetZzimFailed (← `CITC::OnNormalItemResult#SetZzimFailed`)
 
 - **IDA:** 0x576180
-- **Atlas file:** `libs/atlas-packet/field/clientbound/mts_result_empty_modes.go`
+- **Atlas file:** `libs/atlas-packet/field/clientbound/mts_operation.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ✅

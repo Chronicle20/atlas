@@ -4,7 +4,7 @@
   "Address": "0x577000",
   "Variant": "GMS/v95",
   "BranchDepth": 1,
-  "AtlasFile": "libs/atlas-packet/field/clientbound/mts_operation_body.go",
+  "AtlasFile": "libs/atlas-packet/field/clientbound/mts_operation.go",
   "Rows": [
     {
       "Index": 0,

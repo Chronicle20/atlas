@@ -1,7 +1,7 @@
 # FieldMtsResultMoveItcPurchaseItemLtoSFailed (← `CITC::OnNormalItemResult#MoveItcPurchaseItemLtoSFailed`)
 
 - **IDA:** 0x576110
-- **Atlas file:** `libs/atlas-packet/field/clientbound/mts_result_reason_modes.go`
+- **Atlas file:** `libs/atlas-packet/field/clientbound/mts_operation.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ✅

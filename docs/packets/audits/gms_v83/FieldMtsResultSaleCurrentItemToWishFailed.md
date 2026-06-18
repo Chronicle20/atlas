@@ -1,7 +1,7 @@
 # FieldMtsResultSaleCurrentItemToWishFailed (← `CITC::OnNormalItemResult#SaleCurrentItemToWishFailed`)
 
 - **IDA:** 0x5a46f0
-- **Atlas file:** `libs/atlas-packet/field/clientbound/mts_result_reason_modes.go`
+- **Atlas file:** `libs/atlas-packet/field/clientbound/mts_operation.go`
 - **Variant:** GMS/v83
 - **Branch depth:** 0
 - **Verdict:** ✅

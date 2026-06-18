@@ -1,7 +1,7 @@
 # FieldMtsResultGetSearchItcListDone (← `CITC::OnNormalItemResult#GetSearchItcListDone`)
 
 - **IDA:** 0x5a4a02
-- **Atlas file:** `libs/atlas-packet/field/clientbound/mts_operation_list.go`
+- **Atlas file:** `libs/atlas-packet/field/clientbound/mts_operation.go`
 - **Variant:** GMS/v83
 - **Branch depth:** 0
 - **Verdict:** ✅

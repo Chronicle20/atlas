@@ -1,7 +1,7 @@
 # FieldMtsResultGetUserSaleItemFailed (← `CITC::OnNormalItemResult#GetUserSaleItemFailed`)
 
 - **IDA:** 0x5b51d7
-- **Atlas file:** `libs/atlas-packet/field/clientbound/mts_result_reason_modes.go`
+- **Atlas file:** `libs/atlas-packet/field/clientbound/mts_operation.go`
 - **Variant:** GMS/v84
 - **Branch depth:** 0
 - **Verdict:** ✅

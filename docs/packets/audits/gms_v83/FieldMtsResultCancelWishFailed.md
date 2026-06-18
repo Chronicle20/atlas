@@ -1,7 +1,7 @@
 # FieldMtsResultCancelWishFailed (← `CITC::OnNormalItemResult#CancelWishFailed`)
 
 - **IDA:** 0x5a50df
-- **Atlas file:** `libs/atlas-packet/field/clientbound/mts_result_empty_modes.go`
+- **Atlas file:** `libs/atlas-packet/field/clientbound/mts_operation.go`
 - **Variant:** GMS/v83
 - **Branch depth:** 0
 - **Verdict:** ✅

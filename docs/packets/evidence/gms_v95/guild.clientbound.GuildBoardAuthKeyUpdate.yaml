@@ -1,0 +1,8 @@
+packet: guild/clientbound/GuildBoardAuthKeyUpdate
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnGuildResult#BoardAuthKeyUpdate
+    address: "0xa0d3b0"
+    decompile_sha256: 6b5a7f64d1290168ec223d8ed08f477287d70ee6d90aa3bf8b3a211ae17eaca3

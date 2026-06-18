@@ -1,11 +1,11 @@
 {
-  "toolSha": "22326230292d0fe6feb8819dbd6ba4e565f759e8",
+  "toolSha": "1cf8cd5f16b7bf7c7623c82f32ee6fae39cd5396",
   "exportHashes": {
-    "gms_v83": "6a32dfd1cfc4f04c29b4ca4d99fabbb9859bf9f4ca543e83a2fa3d35a3f3499d",
-    "gms_v84": "b116aeaa5cdce5f1897eabbc47d0afcdb99b22853f4876c898b90d0960067b57",
-    "gms_v87": "0d9fea678e5566431214761144c431eb334105cb58ddcb77763f5e3c1e594c49",
-    "gms_v95": "bd400f5eb43214485a388f1d91697456988d42d4efeeef94a1d2fb211079d759",
-    "jms_v185": "fa7818857af11225d8dc05993571ec68bae53e80494cbb7fb30b7febeae411a3"
+    "gms_v83": "b53ecbb0023ec11788870fa7fd032bf97cd160fffe9122eaa13c442a49a1d162",
+    "gms_v84": "7891e815e6032dd9517ad59699f6d482e8f3a96ff658398256b187bf1403d0e6",
+    "gms_v87": "3ecebf4d25ee54d6e55425df7c6d33b167e225f3d5980fd86b0bc32babd67bab",
+    "gms_v95": "d9d46ca359d4564935294035a6d5ff9088e39af5a722af2f9ed874ec4099dc8c",
+    "jms_v185": "72b0a66cae848169fe74b7703a0eb815f68bae0c24743e8fe4e549845d6c7e51"
   },
   "rows": [
     {
@@ -4759,7 +4759,7 @@
     {
       "kind": "op",
       "op": "GUILD_OPERATION",
-      "packet": "guild/clientbound/GuildCapacityChange",
+      "packet": "guild/clientbound/GuildBoardAuthKeyUpdate",
       "direction": "clientbound",
       "tier1": true,
       "fnames": [
@@ -26706,6 +26706,35 @@
     },
     {
       "kind": "sub-struct",
+      "packet": "guild/clientbound/GuildBBSEntryNotFound",
+      "tier1": true,
+      "cells": {
+        "gms_v83": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "gms_v84": {
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
+          "opcode": -1
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "jms_v185": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        }
+      }
+    },
+    {
+      "kind": "sub-struct",
       "packet": "guild/clientbound/GuildBBSThread",
       "tier1": true,
       "cells": {
@@ -27024,18 +27053,18 @@
       "tier1": true,
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": -1
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": -1
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": -1
         },
         "gms_v95": {

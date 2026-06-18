@@ -1,0 +1,21 @@
+{
+  "WriterName": "GuildIncreaseCapacityError",
+  "IDAName": "CWvsContext::OnGuildResult#IncreaseCapacityError",
+  "Address": "0xa82e2b",
+  "Variant": "GMS/v84",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/guild/clientbound/operation.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode (INCREASE error)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

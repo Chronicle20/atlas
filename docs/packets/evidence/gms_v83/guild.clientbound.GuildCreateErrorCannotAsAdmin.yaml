@@ -1,0 +1,8 @@
+packet: guild/clientbound/GuildCreateErrorCannotAsAdmin
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnGuildResult#CreateErrorCannotAsAdmin
+    address: "0xa37490"
+    decompile_sha256: 59c9dcd4db3a818f6317783ee9304e42440207da1cd07f6e316069d7c857c270

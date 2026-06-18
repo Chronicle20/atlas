@@ -1,0 +1,8 @@
+packet: guild/clientbound/GuildShowTitles
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnGuildResult#ShowTitles
+    address: "0xb22518"
+    decompile_sha256: 76a26f665c18dfbfaefc7d63ed6a1e74aee7be9db9904effcc5715f6c0d646ce

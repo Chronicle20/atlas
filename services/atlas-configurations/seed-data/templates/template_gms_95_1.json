@@ -300,10 +300,12 @@
       },
       {
         "opCode": "0x95",
+        "validator": "LoggedInValidator",
         "handler": "GuildOperationHandle"
       },
       {
         "opCode": "0x96",
+        "validator": "LoggedInValidator",
         "handler": "GuildInviteRejectHandle"
       },
       {
@@ -356,6 +358,7 @@
       },
       {
         "opCode": "0xB3",
+        "validator": "LoggedInValidator",
         "handler": "GuildBBSHandle"
       },
       {
@@ -782,7 +785,46 @@
       },
       {
         "opCode": "0x43",
-        "writer": "GuildOperation"
+        "writer": "GuildOperation",
+        "options": {
+          "operations": {
+            "REQUEST_NAME": 1,
+            "REQUEST_AGREEMENT": 3,
+            "INVITE": 5,
+            "REQUEST_EMBLEM": 17,
+            "THE_NAME_IS_ALREADY_IN_USE_PLEASE_TRY_OTHER_ONES": 30,
+            "SOMEBODY_HAS_DISAGREED_TO_FORM_A_GUILD": 38,
+            "THE_PROBLEM_HAS_HAPPENED_DURING_THE_PROCESS_OF_FORMING_THE_GUILD_PLEASE_TRY_AGAIN": 40,
+            "JOIN_SUCCESS": 41,
+            "ALREADY_JOINED_THE_GUILD": 42,
+            "THE_GUILD_YOU_ARE_TRYING_TO_JOIN_HAS_ALREADY_REACHED_THE_MAX_NUMBER_OF_USERS": 43,
+            "THE_CHARACTER_CANNOT_BE_FOUND_IN_THE_CURRENT_CHANNEL": 44,
+            "MEMBER_QUIT_SUCCESS": 46,
+            "MEMBER_QUIT_ERROR_NOT_IN_GUILD": 47,
+            "MEMBER_EXPELLED_SUCCESS": 49,
+            "MEMBER_EXPELLED_ERROR_NOT_IN_GUILD": 50,
+            "DISBAND_SUCCESS": 52,
+            "THE_PROBLEM_HAS_HAPPENED_DURING_THE_PROCESS_OF_DISBANDING_THE_GUILD_PLEASE_TRY_AGAIN": 54,
+            "IS_CURRENTLY_NOT_ACCEPTING_GUILD_INVITE_MESSAGE": 55,
+            "IS_TAKING_CARE_OF_ANOTHER_INVITATION": 56,
+            "HAS_DENIED_YOUR_GUILD_INVITATION": 57,
+            "ADMIN_CANNOT_MAKE_A_GUILD": 58,
+            "CONGRATULATION_THE_NUMBER_OF_GUILD_MEMBERS_HAS_NOW_INCREASED_TO": 60,
+            "THE_PROBLEM_HAS_HAPPENED_DURING_THE_PROCESS_OF_INCREASING_THE_GUILD_PLEASE_TRY_AGAIN": 61,
+            "MEMBER_UPDATE": 62,
+            "MEMBER_ONLINE": 63,
+            "TITLE_UPDATE": 64,
+            "MEMBER_TITLE_CHANGE": 66,
+            "EMBLEM_CHANGE": 69,
+            "NOTICE_CHANGE": 71,
+            "SHOW_TITLES": 76,
+            "THERE_ARE_LESS_THAN_6_MEMBERS_REMAINING_SO_THE_QUEST_CANNOT_CONTINUE_YOUR_GUILD": 77,
+            "THE_USER_THAT_REGISTERED_HAS_DISCONNECTED_SO_THE_QUEST_CANNOT_CONTINUE_YOUR_GUILD": 78,
+            "QUEST_WAITING_NOTICE": 79,
+            "BOARD_AUTH_KEY_UPDATE": 80,
+            "SET_SKILL_RESPONSE": 81
+          }
+        }
       },
       {
         "opCode": "0x4F",

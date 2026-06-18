@@ -5746,6 +5746,17 @@
         }
       ]
     },
+    "CUIGuildBBS::OnGuildBBSPacket#BBSEntryNotFound": {
+      "address": "0x816c32",
+      "direction": "clientbound",
+      "note": "task-103 (Decode1-6)==2 OnEntryNotFound mode 8; mode-only.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (BBS entry not found, raw 8)"
+        }
+      ]
+    },
     "CUIGuildBBS::OnGuildBBSPacket#BBSThreadList": {
       "address": "0xa1233f",
       "direction": "clientbound",

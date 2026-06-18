@@ -1,6 +1,6 @@
 {
   "WriterName": "GuildRequestAgreement",
-  "IDAName": "CWvsContext::OnGuildResult#AgreementResponse",
+  "IDAName": "CWvsContext::OnGuildResult#RequestAgreement",
   "Address": "0xa82e2b",
   "Variant": "GMS/v84",
   "BranchDepth": 0,

@@ -49,6 +49,7 @@ import (
 // packet-audit:verify packet=guild/clientbound/GuildMemberTitleUpdate version=gms_v83 ida=0xa37490
 // packet-audit:verify packet=guild/clientbound/GuildNoticeChange version=gms_v83 ida=0xa37490
 // packet-audit:verify packet=guild/clientbound/GuildRequestAgreement version=gms_v83 ida=0xa37490
+// packet-audit:verify packet=guild/clientbound/GuildRequestAgreement version=gms_v95 ida=0xa0d3b0
 // packet-audit:verify packet=guild/clientbound/GuildTitleChange version=gms_v83 ida=0xa37490
 // packet-audit:verify packet=guild/clientbound/GuildCapacityChange version=gms_v95 ida=0xa0dfe2
 // packet-audit:verify packet=guild/clientbound/GuildDisband version=gms_v95 ida=0xa0dfcb
@@ -262,11 +263,6 @@ func modeOnlyFixture(t *testing.T, mode byte, enc func(byte) []byte) {
 	}
 }
 
-// packet-audit:verify packet=guild/clientbound/RequestName version=gms_v83 ida=0xa37490
-// packet-audit:verify packet=guild/clientbound/RequestName version=gms_v84 ida=0xa82e2b
-// packet-audit:verify packet=guild/clientbound/RequestName version=gms_v87 ida=0xacf7d3
-// packet-audit:verify packet=guild/clientbound/RequestName version=gms_v95 ida=0xa0d3b0
-// packet-audit:verify packet=guild/clientbound/RequestName version=jms_v185 ida=0xb22518
 func TestGuildRequestName(t *testing.T) {
 	// gms_v83/84/87/jms mode 0x01; v95 mode 0x01 (no shift at <=0x11).
 	for _, mode := range []byte{0x01} {
@@ -275,11 +271,6 @@ func TestGuildRequestName(t *testing.T) {
 	}
 }
 
-// packet-audit:verify packet=guild/clientbound/RequestEmblem version=gms_v83 ida=0xa37490
-// packet-audit:verify packet=guild/clientbound/RequestEmblem version=gms_v84 ida=0xa82e2b
-// packet-audit:verify packet=guild/clientbound/RequestEmblem version=gms_v87 ida=0xacf7d3
-// packet-audit:verify packet=guild/clientbound/RequestEmblem version=gms_v95 ida=0xa0d3b0
-// packet-audit:verify packet=guild/clientbound/RequestEmblem version=jms_v185 ida=0xb22518
 func TestGuildRequestEmblem(t *testing.T) {
 	for _, mode := range []byte{0x11} {
 		m := NewRequestEmblem(mode)
@@ -293,35 +284,6 @@ type modeOnlyArmCase struct {
 	encode   func(byte) []byte
 }
 
-// packet-audit:verify packet=guild/clientbound/CreateErrorNameInUse version=gms_v83 ida=0xa37490
-// packet-audit:verify packet=guild/clientbound/CreateErrorNameInUse version=gms_v84 ida=0xa82e2b
-// packet-audit:verify packet=guild/clientbound/CreateErrorNameInUse version=gms_v87 ida=0xacf7d3
-// packet-audit:verify packet=guild/clientbound/CreateErrorNameInUse version=gms_v95 ida=0xa0d3b0
-// packet-audit:verify packet=guild/clientbound/CreateErrorNameInUse version=jms_v185 ida=0xb22518
-// packet-audit:verify packet=guild/clientbound/CreateErrorDisagreed version=gms_v83 ida=0xa37490
-// packet-audit:verify packet=guild/clientbound/CreateErrorDisagreed version=gms_v95 ida=0xa0d3b0
-// packet-audit:verify packet=guild/clientbound/CreateError version=gms_v83 ida=0xa37490
-// packet-audit:verify packet=guild/clientbound/CreateError version=gms_v95 ida=0xa0d3b0
-// packet-audit:verify packet=guild/clientbound/JoinErrorAlreadyJoined version=gms_v83 ida=0xa37490
-// packet-audit:verify packet=guild/clientbound/JoinErrorAlreadyJoined version=gms_v95 ida=0xa0d3b0
-// packet-audit:verify packet=guild/clientbound/JoinErrorMaxMembers version=gms_v83 ida=0xa37490
-// packet-audit:verify packet=guild/clientbound/JoinErrorMaxMembers version=gms_v95 ida=0xa0d3b0
-// packet-audit:verify packet=guild/clientbound/JoinErrorNotInChannel version=gms_v83 ida=0xa37490
-// packet-audit:verify packet=guild/clientbound/JoinErrorNotInChannel version=gms_v95 ida=0xa0d3b0
-// packet-audit:verify packet=guild/clientbound/MemberQuitErrorNotInGuild version=gms_v83 ida=0xa37490
-// packet-audit:verify packet=guild/clientbound/MemberQuitErrorNotInGuild version=gms_v95 ida=0xa0d3b0
-// packet-audit:verify packet=guild/clientbound/MemberExpelledErrorNotInGuild version=gms_v83 ida=0xa37490
-// packet-audit:verify packet=guild/clientbound/MemberExpelledErrorNotInGuild version=gms_v95 ida=0xa0d3b0
-// packet-audit:verify packet=guild/clientbound/DisbandError version=gms_v83 ida=0xa37490
-// packet-audit:verify packet=guild/clientbound/DisbandError version=gms_v95 ida=0xa0d3b0
-// packet-audit:verify packet=guild/clientbound/CreateErrorCannotAsAdmin version=gms_v83 ida=0xa37490
-// packet-audit:verify packet=guild/clientbound/CreateErrorCannotAsAdmin version=gms_v95 ida=0xa0d3b0
-// packet-audit:verify packet=guild/clientbound/IncreaseCapacityError version=gms_v83 ida=0xa37490
-// packet-audit:verify packet=guild/clientbound/IncreaseCapacityError version=gms_v95 ida=0xa0d3b0
-// packet-audit:verify packet=guild/clientbound/QuestErrorLessThanSixMembers version=gms_v83 ida=0xa37490
-// packet-audit:verify packet=guild/clientbound/QuestErrorLessThanSixMembers version=gms_v95 ida=0xa0d3b0
-// packet-audit:verify packet=guild/clientbound/QuestErrorDisconnected version=gms_v83 ida=0xa37490
-// packet-audit:verify packet=guild/clientbound/QuestErrorDisconnected version=gms_v95 ida=0xa0d3b0
 func TestModeOnlyErrorArms(t *testing.T) {
 	cases := map[string]modeOnlyArmCase{
 		"CreateErrorNameInUse":          {0x1C, 0x1E, func(b byte) []byte { m := NewCreateErrorNameInUse(b); return m.Encode(nil, nil)(nil) }},
@@ -346,12 +308,6 @@ func TestModeOnlyErrorArms(t *testing.T) {
 
 // --- Target-bearing invite-error arm fixtures ({mode,target}) -----------------
 
-// packet-audit:verify packet=guild/clientbound/InviteErrorNotAcceptingInvites version=gms_v83 ida=0xa37490
-// packet-audit:verify packet=guild/clientbound/InviteErrorNotAcceptingInvites version=gms_v95 ida=0xa0d3b0
-// packet-audit:verify packet=guild/clientbound/InviteErrorAnotherInvite version=gms_v83 ida=0xa37490
-// packet-audit:verify packet=guild/clientbound/InviteErrorAnotherInvite version=gms_v95 ida=0xa0d3b0
-// packet-audit:verify packet=guild/clientbound/InviteDenied version=gms_v83 ida=0xa37490
-// packet-audit:verify packet=guild/clientbound/InviteDenied version=gms_v95 ida=0xa0d3b0
 func TestTargetBearingInviteErrors(t *testing.T) {
 	// mode byte + 2-byte ascii length prefix + "Bob" (3 bytes) = 6 bytes total.
 	want := func(mode byte) []byte { return []byte{mode, 0x03, 0x00, 'B', 'o', 'b'} }
@@ -389,8 +345,6 @@ func TestTargetBearingInviteErrors(t *testing.T) {
 
 // --- Structured arms previously without a discrete struct ----------------------
 
-// packet-audit:verify packet=guild/clientbound/MemberUpdate version=gms_v83 ida=0xa37490
-// packet-audit:verify packet=guild/clientbound/MemberUpdate version=gms_v95 ida=0xa0d3b0
 func TestGuildMemberUpdateRoundTrip(t *testing.T) {
 	input := NewMemberUpdate(0x3C, 500, 1001, 50, 100)
 	for _, v := range pt.Variants {
@@ -402,8 +356,6 @@ func TestGuildMemberUpdateRoundTrip(t *testing.T) {
 	}
 }
 
-// packet-audit:verify packet=guild/clientbound/ShowTitles version=gms_v83 ida=0xa37490
-// packet-audit:verify packet=guild/clientbound/ShowTitles version=gms_v95 ida=0xa0d3b0
 func TestGuildShowTitlesRoundTrip(t *testing.T) {
 	entries := []GuildTitleEntry{
 		{Name: "Alice", Values: [5]uint32{1, 2, 3, 4, 5}},
@@ -419,8 +371,6 @@ func TestGuildShowTitlesRoundTrip(t *testing.T) {
 	}
 }
 
-// packet-audit:verify packet=guild/clientbound/QuestWaitingNotice version=gms_v83 ida=0xa37490
-// packet-audit:verify packet=guild/clientbound/QuestWaitingNotice version=gms_v95 ida=0xa0d3b0
 func TestGuildQuestWaitingNoticeRoundTrip(t *testing.T) {
 	input := NewQuestWaitingNotice(0x4C, 3, 1)
 	for _, v := range pt.Variants {
@@ -432,8 +382,6 @@ func TestGuildQuestWaitingNoticeRoundTrip(t *testing.T) {
 	}
 }
 
-// packet-audit:verify packet=guild/clientbound/BoardAuthKeyUpdate version=gms_v83 ida=0xa37490
-// packet-audit:verify packet=guild/clientbound/BoardAuthKeyUpdate version=gms_v95 ida=0xa0d3b0
 func TestGuildBoardAuthKeyUpdateRoundTrip(t *testing.T) {
 	input := NewBoardAuthKeyUpdate(0x4D, "auth-key-123")
 	for _, v := range pt.Variants {
@@ -445,8 +393,6 @@ func TestGuildBoardAuthKeyUpdateRoundTrip(t *testing.T) {
 	}
 }
 
-// packet-audit:verify packet=guild/clientbound/SetSkillResponse version=gms_v83 ida=0xa37490
-// packet-audit:verify packet=guild/clientbound/SetSkillResponse version=gms_v95 ida=0xa0d3b0
 func TestGuildSetSkillResponseRoundTrip(t *testing.T) {
 	for _, success := range []bool{true, false} {
 		input := NewSetSkillResponse(0x4E, success, "ok")
@@ -459,3 +405,121 @@ func TestGuildSetSkillResponseRoundTrip(t *testing.T) {
 		}
 	}
 }
+
+// --- Consolidated per-version verify markers for the discrete OnGuildResult arms.
+// Address is the per-version OnGuildResult dispatcher root (guild.yaml); matches the
+// synthetic export entry + evidence record for each arm. SetSkillResponse is jms-absent.
+// packet-audit:verify packet=guild/clientbound/GuildRequestName version=gms_v83 ida=0xa37490
+// packet-audit:verify packet=guild/clientbound/GuildRequestName version=gms_v84 ida=0xa82e2b
+// packet-audit:verify packet=guild/clientbound/GuildRequestName version=gms_v87 ida=0xacf7d3
+// packet-audit:verify packet=guild/clientbound/GuildRequestName version=gms_v95 ida=0xa0d3b0
+// packet-audit:verify packet=guild/clientbound/GuildRequestName version=jms_v185 ida=0xb22518
+// packet-audit:verify packet=guild/clientbound/GuildRequestEmblem version=gms_v83 ida=0xa37490
+// packet-audit:verify packet=guild/clientbound/GuildRequestEmblem version=gms_v84 ida=0xa82e2b
+// packet-audit:verify packet=guild/clientbound/GuildRequestEmblem version=gms_v87 ida=0xacf7d3
+// packet-audit:verify packet=guild/clientbound/GuildRequestEmblem version=gms_v95 ida=0xa0d3b0
+// packet-audit:verify packet=guild/clientbound/GuildRequestEmblem version=jms_v185 ida=0xb22518
+// packet-audit:verify packet=guild/clientbound/GuildCreateErrorNameInUse version=gms_v83 ida=0xa37490
+// packet-audit:verify packet=guild/clientbound/GuildCreateErrorNameInUse version=gms_v84 ida=0xa82e2b
+// packet-audit:verify packet=guild/clientbound/GuildCreateErrorNameInUse version=gms_v87 ida=0xacf7d3
+// packet-audit:verify packet=guild/clientbound/GuildCreateErrorNameInUse version=gms_v95 ida=0xa0d3b0
+// packet-audit:verify packet=guild/clientbound/GuildCreateErrorNameInUse version=jms_v185 ida=0xb22518
+// packet-audit:verify packet=guild/clientbound/GuildCreateErrorDisagreed version=gms_v83 ida=0xa37490
+// packet-audit:verify packet=guild/clientbound/GuildCreateErrorDisagreed version=gms_v84 ida=0xa82e2b
+// packet-audit:verify packet=guild/clientbound/GuildCreateErrorDisagreed version=gms_v87 ida=0xacf7d3
+// packet-audit:verify packet=guild/clientbound/GuildCreateErrorDisagreed version=gms_v95 ida=0xa0d3b0
+// packet-audit:verify packet=guild/clientbound/GuildCreateErrorDisagreed version=jms_v185 ida=0xb22518
+// packet-audit:verify packet=guild/clientbound/GuildCreateError version=gms_v83 ida=0xa37490
+// packet-audit:verify packet=guild/clientbound/GuildCreateError version=gms_v84 ida=0xa82e2b
+// packet-audit:verify packet=guild/clientbound/GuildCreateError version=gms_v87 ida=0xacf7d3
+// packet-audit:verify packet=guild/clientbound/GuildCreateError version=gms_v95 ida=0xa0d3b0
+// packet-audit:verify packet=guild/clientbound/GuildCreateError version=jms_v185 ida=0xb22518
+// packet-audit:verify packet=guild/clientbound/GuildJoinErrorAlreadyJoined version=gms_v83 ida=0xa37490
+// packet-audit:verify packet=guild/clientbound/GuildJoinErrorAlreadyJoined version=gms_v84 ida=0xa82e2b
+// packet-audit:verify packet=guild/clientbound/GuildJoinErrorAlreadyJoined version=gms_v87 ida=0xacf7d3
+// packet-audit:verify packet=guild/clientbound/GuildJoinErrorAlreadyJoined version=gms_v95 ida=0xa0d3b0
+// packet-audit:verify packet=guild/clientbound/GuildJoinErrorAlreadyJoined version=jms_v185 ida=0xb22518
+// packet-audit:verify packet=guild/clientbound/GuildJoinErrorMaxMembers version=gms_v83 ida=0xa37490
+// packet-audit:verify packet=guild/clientbound/GuildJoinErrorMaxMembers version=gms_v84 ida=0xa82e2b
+// packet-audit:verify packet=guild/clientbound/GuildJoinErrorMaxMembers version=gms_v87 ida=0xacf7d3
+// packet-audit:verify packet=guild/clientbound/GuildJoinErrorMaxMembers version=gms_v95 ida=0xa0d3b0
+// packet-audit:verify packet=guild/clientbound/GuildJoinErrorMaxMembers version=jms_v185 ida=0xb22518
+// packet-audit:verify packet=guild/clientbound/GuildJoinErrorNotInChannel version=gms_v83 ida=0xa37490
+// packet-audit:verify packet=guild/clientbound/GuildJoinErrorNotInChannel version=gms_v84 ida=0xa82e2b
+// packet-audit:verify packet=guild/clientbound/GuildJoinErrorNotInChannel version=gms_v87 ida=0xacf7d3
+// packet-audit:verify packet=guild/clientbound/GuildJoinErrorNotInChannel version=gms_v95 ida=0xa0d3b0
+// packet-audit:verify packet=guild/clientbound/GuildJoinErrorNotInChannel version=jms_v185 ida=0xb22518
+// packet-audit:verify packet=guild/clientbound/GuildMemberQuitErrorNotInGuild version=gms_v83 ida=0xa37490
+// packet-audit:verify packet=guild/clientbound/GuildMemberQuitErrorNotInGuild version=gms_v84 ida=0xa82e2b
+// packet-audit:verify packet=guild/clientbound/GuildMemberQuitErrorNotInGuild version=gms_v87 ida=0xacf7d3
+// packet-audit:verify packet=guild/clientbound/GuildMemberQuitErrorNotInGuild version=gms_v95 ida=0xa0d3b0
+// packet-audit:verify packet=guild/clientbound/GuildMemberQuitErrorNotInGuild version=jms_v185 ida=0xb22518
+// packet-audit:verify packet=guild/clientbound/GuildMemberExpelledErrorNotInGuild version=gms_v83 ida=0xa37490
+// packet-audit:verify packet=guild/clientbound/GuildMemberExpelledErrorNotInGuild version=gms_v84 ida=0xa82e2b
+// packet-audit:verify packet=guild/clientbound/GuildMemberExpelledErrorNotInGuild version=gms_v87 ida=0xacf7d3
+// packet-audit:verify packet=guild/clientbound/GuildMemberExpelledErrorNotInGuild version=gms_v95 ida=0xa0d3b0
+// packet-audit:verify packet=guild/clientbound/GuildMemberExpelledErrorNotInGuild version=jms_v185 ida=0xb22518
+// packet-audit:verify packet=guild/clientbound/GuildDisbandError version=gms_v83 ida=0xa37490
+// packet-audit:verify packet=guild/clientbound/GuildDisbandError version=gms_v84 ida=0xa82e2b
+// packet-audit:verify packet=guild/clientbound/GuildDisbandError version=gms_v87 ida=0xacf7d3
+// packet-audit:verify packet=guild/clientbound/GuildDisbandError version=gms_v95 ida=0xa0d3b0
+// packet-audit:verify packet=guild/clientbound/GuildDisbandError version=jms_v185 ida=0xb22518
+// packet-audit:verify packet=guild/clientbound/GuildCreateErrorCannotAsAdmin version=gms_v83 ida=0xa37490
+// packet-audit:verify packet=guild/clientbound/GuildCreateErrorCannotAsAdmin version=gms_v84 ida=0xa82e2b
+// packet-audit:verify packet=guild/clientbound/GuildCreateErrorCannotAsAdmin version=gms_v87 ida=0xacf7d3
+// packet-audit:verify packet=guild/clientbound/GuildCreateErrorCannotAsAdmin version=gms_v95 ida=0xa0d3b0
+// packet-audit:verify packet=guild/clientbound/GuildCreateErrorCannotAsAdmin version=jms_v185 ida=0xb22518
+// packet-audit:verify packet=guild/clientbound/GuildIncreaseCapacityError version=gms_v83 ida=0xa37490
+// packet-audit:verify packet=guild/clientbound/GuildIncreaseCapacityError version=gms_v84 ida=0xa82e2b
+// packet-audit:verify packet=guild/clientbound/GuildIncreaseCapacityError version=gms_v87 ida=0xacf7d3
+// packet-audit:verify packet=guild/clientbound/GuildIncreaseCapacityError version=gms_v95 ida=0xa0d3b0
+// packet-audit:verify packet=guild/clientbound/GuildIncreaseCapacityError version=jms_v185 ida=0xb22518
+// packet-audit:verify packet=guild/clientbound/GuildQuestErrorLessThanSixMembers version=gms_v83 ida=0xa37490
+// packet-audit:verify packet=guild/clientbound/GuildQuestErrorLessThanSixMembers version=gms_v84 ida=0xa82e2b
+// packet-audit:verify packet=guild/clientbound/GuildQuestErrorLessThanSixMembers version=gms_v87 ida=0xacf7d3
+// packet-audit:verify packet=guild/clientbound/GuildQuestErrorLessThanSixMembers version=gms_v95 ida=0xa0d3b0
+// packet-audit:verify packet=guild/clientbound/GuildQuestErrorLessThanSixMembers version=jms_v185 ida=0xb22518
+// packet-audit:verify packet=guild/clientbound/GuildQuestErrorDisconnected version=gms_v83 ida=0xa37490
+// packet-audit:verify packet=guild/clientbound/GuildQuestErrorDisconnected version=gms_v84 ida=0xa82e2b
+// packet-audit:verify packet=guild/clientbound/GuildQuestErrorDisconnected version=gms_v87 ida=0xacf7d3
+// packet-audit:verify packet=guild/clientbound/GuildQuestErrorDisconnected version=gms_v95 ida=0xa0d3b0
+// packet-audit:verify packet=guild/clientbound/GuildQuestErrorDisconnected version=jms_v185 ida=0xb22518
+// packet-audit:verify packet=guild/clientbound/GuildInviteErrorNotAcceptingInvites version=gms_v83 ida=0xa37490
+// packet-audit:verify packet=guild/clientbound/GuildInviteErrorNotAcceptingInvites version=gms_v84 ida=0xa82e2b
+// packet-audit:verify packet=guild/clientbound/GuildInviteErrorNotAcceptingInvites version=gms_v87 ida=0xacf7d3
+// packet-audit:verify packet=guild/clientbound/GuildInviteErrorNotAcceptingInvites version=gms_v95 ida=0xa0d3b0
+// packet-audit:verify packet=guild/clientbound/GuildInviteErrorNotAcceptingInvites version=jms_v185 ida=0xb22518
+// packet-audit:verify packet=guild/clientbound/GuildInviteErrorAnotherInvite version=gms_v83 ida=0xa37490
+// packet-audit:verify packet=guild/clientbound/GuildInviteErrorAnotherInvite version=gms_v84 ida=0xa82e2b
+// packet-audit:verify packet=guild/clientbound/GuildInviteErrorAnotherInvite version=gms_v87 ida=0xacf7d3
+// packet-audit:verify packet=guild/clientbound/GuildInviteErrorAnotherInvite version=gms_v95 ida=0xa0d3b0
+// packet-audit:verify packet=guild/clientbound/GuildInviteErrorAnotherInvite version=jms_v185 ida=0xb22518
+// packet-audit:verify packet=guild/clientbound/GuildInviteDenied version=gms_v83 ida=0xa37490
+// packet-audit:verify packet=guild/clientbound/GuildInviteDenied version=gms_v84 ida=0xa82e2b
+// packet-audit:verify packet=guild/clientbound/GuildInviteDenied version=gms_v87 ida=0xacf7d3
+// packet-audit:verify packet=guild/clientbound/GuildInviteDenied version=gms_v95 ida=0xa0d3b0
+// packet-audit:verify packet=guild/clientbound/GuildInviteDenied version=jms_v185 ida=0xb22518
+// packet-audit:verify packet=guild/clientbound/GuildMemberUpdate version=gms_v83 ida=0xa37490
+// packet-audit:verify packet=guild/clientbound/GuildMemberUpdate version=gms_v84 ida=0xa82e2b
+// packet-audit:verify packet=guild/clientbound/GuildMemberUpdate version=gms_v87 ida=0xacf7d3
+// packet-audit:verify packet=guild/clientbound/GuildMemberUpdate version=gms_v95 ida=0xa0d3b0
+// packet-audit:verify packet=guild/clientbound/GuildMemberUpdate version=jms_v185 ida=0xb22518
+// packet-audit:verify packet=guild/clientbound/GuildShowTitles version=gms_v83 ida=0xa37490
+// packet-audit:verify packet=guild/clientbound/GuildShowTitles version=gms_v84 ida=0xa82e2b
+// packet-audit:verify packet=guild/clientbound/GuildShowTitles version=gms_v87 ida=0xacf7d3
+// packet-audit:verify packet=guild/clientbound/GuildShowTitles version=gms_v95 ida=0xa0d3b0
+// packet-audit:verify packet=guild/clientbound/GuildShowTitles version=jms_v185 ida=0xb22518
+// packet-audit:verify packet=guild/clientbound/GuildQuestWaitingNotice version=gms_v83 ida=0xa37490
+// packet-audit:verify packet=guild/clientbound/GuildQuestWaitingNotice version=gms_v84 ida=0xa82e2b
+// packet-audit:verify packet=guild/clientbound/GuildQuestWaitingNotice version=gms_v87 ida=0xacf7d3
+// packet-audit:verify packet=guild/clientbound/GuildQuestWaitingNotice version=gms_v95 ida=0xa0d3b0
+// packet-audit:verify packet=guild/clientbound/GuildQuestWaitingNotice version=jms_v185 ida=0xb22518
+// packet-audit:verify packet=guild/clientbound/GuildBoardAuthKeyUpdate version=gms_v83 ida=0xa37490
+// packet-audit:verify packet=guild/clientbound/GuildBoardAuthKeyUpdate version=gms_v84 ida=0xa82e2b
+// packet-audit:verify packet=guild/clientbound/GuildBoardAuthKeyUpdate version=gms_v87 ida=0xacf7d3
+// packet-audit:verify packet=guild/clientbound/GuildBoardAuthKeyUpdate version=gms_v95 ida=0xa0d3b0
+// packet-audit:verify packet=guild/clientbound/GuildBoardAuthKeyUpdate version=jms_v185 ida=0xb22518
+// packet-audit:verify packet=guild/clientbound/GuildSetSkillResponse version=gms_v83 ida=0xa37490
+// packet-audit:verify packet=guild/clientbound/GuildSetSkillResponse version=gms_v84 ida=0xa82e2b
+// packet-audit:verify packet=guild/clientbound/GuildSetSkillResponse version=gms_v87 ida=0xacf7d3
+// packet-audit:verify packet=guild/clientbound/GuildSetSkillResponse version=gms_v95 ida=0xa0d3b0

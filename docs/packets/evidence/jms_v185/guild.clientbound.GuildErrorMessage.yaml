@@ -1,8 +1,0 @@
-packet: guild/clientbound/GuildErrorMessage
-direction: clientbound
-version: jms_v185
-category: TIER1-FIXTURE
-ida:
-    function: CWvsContext::OnGuildResult#ErrorMessage
-    address: "0xb22518"
-    decompile_sha256: bffce0984385d11f146ea579101e1ea587fd585aa5f665e7d5f6aa77bf6b6e0d

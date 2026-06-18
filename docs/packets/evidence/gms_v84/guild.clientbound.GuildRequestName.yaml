@@ -1,0 +1,8 @@
+packet: guild/clientbound/GuildRequestName
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnGuildResult#RequestName
+    address: "0xa82e2b"
+    decompile_sha256: 2b87bbc9b7fbbc6d5c38a75a57286e62c101c3091ac8010cd44e291270c403d4

@@ -14,9 +14,10 @@ import (
 
 const GuildOperationWriter = "GuildOperation"
 
-// RequestAgreement
-
-// packet-audit:fname CWvsContext::OnGuildResult#AgreementResponse
+// RequestAgreement — REQUEST_AGREEMENT (case 3): the create-guild-agree dialog
+// REQUEST broadcast to party members. The single clientbound mode here (F5); the
+// serverbound member reply is the separate guild/serverbound AgreementResponse.
+// packet-audit:fname CWvsContext::OnGuildResult#RequestAgreement
 type RequestAgreement struct {
 	mode       byte
 	partyId    uint32
@@ -73,267 +74,267 @@ func (m *RequestAgreement) Decode(_ logrus.FieldLogger, _ context.Context) func(
 // fixed operation key and a single dispatcher #-entry; the field shape is
 // identical (one mode byte) but the types are distinct on purpose.
 
-// GuildRequestName — REQUEST_NAME (case 0x01). Prompts the create-guild name
+// RequestName — REQUEST_NAME (case 0x01). Prompts the create-guild name
 // dialog; the sub-handler reads no body. v83 OnGuildResult@0xa37490 if-chain
 // (v4==1 → CField::InputGuildName, no Decode*).
-// packet-audit:fname CWvsContext::OnGuildResult#GuildRequestName
-type GuildRequestName struct{ mode byte }
+// packet-audit:fname CWvsContext::OnGuildResult#RequestName
+type RequestName struct{ mode byte }
 
-func NewGuildRequestName(mode byte) GuildRequestName { return GuildRequestName{mode: mode} }
-func (m GuildRequestName) Operation() string         { return GuildOperationWriter }
-func (m GuildRequestName) String() string            { return fmt.Sprintf("mode [%d]", m.mode) }
-func (m GuildRequestName) Encode(l logrus.FieldLogger, _ context.Context) func(map[string]interface{}) []byte {
+func NewRequestName(mode byte) RequestName { return RequestName{mode: mode} }
+func (m RequestName) Operation() string    { return GuildOperationWriter }
+func (m RequestName) String() string       { return fmt.Sprintf("mode [%d]", m.mode) }
+func (m RequestName) Encode(l logrus.FieldLogger, _ context.Context) func(map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(map[string]interface{}) []byte { w.WriteByte(m.mode); return w.Bytes() }
 }
-func (m *GuildRequestName) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
+func (m *RequestName) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
 	return func(r *request.Reader, _ map[string]interface{}) { m.mode = r.ReadByte() }
 }
 
-// GuildRequestEmblem — REQUEST_EMBLEM (case 0x11). Prompts the set-emblem
+// RequestEmblem — REQUEST_EMBLEM (case 0x11). Prompts the set-emblem
 // dialog; no body. v83 OnGuildResult@0xa37490 (v4==0x11 → CSetGuildMarkDlg, no
 // Decode*).
-// packet-audit:fname CWvsContext::OnGuildResult#GuildRequestEmblem
-type GuildRequestEmblem struct{ mode byte }
+// packet-audit:fname CWvsContext::OnGuildResult#RequestEmblem
+type RequestEmblem struct{ mode byte }
 
-func NewGuildRequestEmblem(mode byte) GuildRequestEmblem { return GuildRequestEmblem{mode: mode} }
-func (m GuildRequestEmblem) Operation() string           { return GuildOperationWriter }
-func (m GuildRequestEmblem) String() string              { return fmt.Sprintf("mode [%d]", m.mode) }
-func (m GuildRequestEmblem) Encode(l logrus.FieldLogger, _ context.Context) func(map[string]interface{}) []byte {
+func NewRequestEmblem(mode byte) RequestEmblem { return RequestEmblem{mode: mode} }
+func (m RequestEmblem) Operation() string      { return GuildOperationWriter }
+func (m RequestEmblem) String() string         { return fmt.Sprintf("mode [%d]", m.mode) }
+func (m RequestEmblem) Encode(l logrus.FieldLogger, _ context.Context) func(map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(map[string]interface{}) []byte { w.WriteByte(m.mode); return w.Bytes() }
 }
-func (m *GuildRequestEmblem) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
+func (m *RequestEmblem) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
 	return func(r *request.Reader, _ map[string]interface{}) { m.mode = r.ReadByte() }
 }
 
-// GuildCreateErrorNameInUse — THE_NAME_IS_ALREADY_IN_USE (case 0x1C). Mode-only
+// CreateErrorNameInUse — THE_NAME_IS_ALREADY_IN_USE (case 0x1C). Mode-only
 // (v83 OnGuildResult@0xa37490, v4==0x1C → StringPool notice, no Decode*).
-// packet-audit:fname CWvsContext::OnGuildResult#GuildCreateErrorNameInUse
-type GuildCreateErrorNameInUse struct{ mode byte }
+// packet-audit:fname CWvsContext::OnGuildResult#CreateErrorNameInUse
+type CreateErrorNameInUse struct{ mode byte }
 
-func NewGuildCreateErrorNameInUse(mode byte) GuildCreateErrorNameInUse {
-	return GuildCreateErrorNameInUse{mode: mode}
+func NewCreateErrorNameInUse(mode byte) CreateErrorNameInUse {
+	return CreateErrorNameInUse{mode: mode}
 }
-func (m GuildCreateErrorNameInUse) Operation() string { return GuildOperationWriter }
-func (m GuildCreateErrorNameInUse) String() string    { return fmt.Sprintf("mode [%d]", m.mode) }
-func (m GuildCreateErrorNameInUse) Encode(l logrus.FieldLogger, _ context.Context) func(map[string]interface{}) []byte {
+func (m CreateErrorNameInUse) Operation() string { return GuildOperationWriter }
+func (m CreateErrorNameInUse) String() string    { return fmt.Sprintf("mode [%d]", m.mode) }
+func (m CreateErrorNameInUse) Encode(l logrus.FieldLogger, _ context.Context) func(map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(map[string]interface{}) []byte { w.WriteByte(m.mode); return w.Bytes() }
 }
-func (m *GuildCreateErrorNameInUse) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
+func (m *CreateErrorNameInUse) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
 	return func(r *request.Reader, _ map[string]interface{}) { m.mode = r.ReadByte() }
 }
 
-// GuildCreateErrorDisagreed — SOMEBODY_HAS_DISAGREED (case 0x24). Mode-only
+// CreateErrorDisagreed — SOMEBODY_HAS_DISAGREED (case 0x24). Mode-only
 // (v83 OnGuildResult@0xa37490, case 0x24 → notice, no Decode*).
-// packet-audit:fname CWvsContext::OnGuildResult#GuildCreateErrorDisagreed
-type GuildCreateErrorDisagreed struct{ mode byte }
+// packet-audit:fname CWvsContext::OnGuildResult#CreateErrorDisagreed
+type CreateErrorDisagreed struct{ mode byte }
 
-func NewGuildCreateErrorDisagreed(mode byte) GuildCreateErrorDisagreed {
-	return GuildCreateErrorDisagreed{mode: mode}
+func NewCreateErrorDisagreed(mode byte) CreateErrorDisagreed {
+	return CreateErrorDisagreed{mode: mode}
 }
-func (m GuildCreateErrorDisagreed) Operation() string { return GuildOperationWriter }
-func (m GuildCreateErrorDisagreed) String() string    { return fmt.Sprintf("mode [%d]", m.mode) }
-func (m GuildCreateErrorDisagreed) Encode(l logrus.FieldLogger, _ context.Context) func(map[string]interface{}) []byte {
+func (m CreateErrorDisagreed) Operation() string { return GuildOperationWriter }
+func (m CreateErrorDisagreed) String() string    { return fmt.Sprintf("mode [%d]", m.mode) }
+func (m CreateErrorDisagreed) Encode(l logrus.FieldLogger, _ context.Context) func(map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(map[string]interface{}) []byte { w.WriteByte(m.mode); return w.Bytes() }
 }
-func (m *GuildCreateErrorDisagreed) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
+func (m *CreateErrorDisagreed) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
 	return func(r *request.Reader, _ map[string]interface{}) { m.mode = r.ReadByte() }
 }
 
-// GuildCreateError — THE_PROBLEM…FORMING_THE_GUILD (case 0x26). Mode-only
+// CreateError — THE_PROBLEM…FORMING_THE_GUILD (case 0x26). Mode-only
 // (v83 OnGuildResult@0xa37490, case 0x26 → notice, no Decode*).
-// packet-audit:fname CWvsContext::OnGuildResult#GuildCreateError
-type GuildCreateError struct{ mode byte }
+// packet-audit:fname CWvsContext::OnGuildResult#CreateError
+type CreateError struct{ mode byte }
 
-func NewGuildCreateError(mode byte) GuildCreateError { return GuildCreateError{mode: mode} }
-func (m GuildCreateError) Operation() string         { return GuildOperationWriter }
-func (m GuildCreateError) String() string            { return fmt.Sprintf("mode [%d]", m.mode) }
-func (m GuildCreateError) Encode(l logrus.FieldLogger, _ context.Context) func(map[string]interface{}) []byte {
+func NewCreateError(mode byte) CreateError { return CreateError{mode: mode} }
+func (m CreateError) Operation() string    { return GuildOperationWriter }
+func (m CreateError) String() string       { return fmt.Sprintf("mode [%d]", m.mode) }
+func (m CreateError) Encode(l logrus.FieldLogger, _ context.Context) func(map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(map[string]interface{}) []byte { w.WriteByte(m.mode); return w.Bytes() }
 }
-func (m *GuildCreateError) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
+func (m *CreateError) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
 	return func(r *request.Reader, _ map[string]interface{}) { m.mode = r.ReadByte() }
 }
 
-// GuildJoinErrorAlreadyJoined — ALREADY_JOINED_THE_GUILD (case 0x28). Mode-only
+// JoinErrorAlreadyJoined — ALREADY_JOINED_THE_GUILD (case 0x28). Mode-only
 // (v83 OnGuildResult@0xa37490, case 0x28 → notice, no Decode*).
-// packet-audit:fname CWvsContext::OnGuildResult#GuildJoinErrorAlreadyJoined
-type GuildJoinErrorAlreadyJoined struct{ mode byte }
+// packet-audit:fname CWvsContext::OnGuildResult#JoinErrorAlreadyJoined
+type JoinErrorAlreadyJoined struct{ mode byte }
 
-func NewGuildJoinErrorAlreadyJoined(mode byte) GuildJoinErrorAlreadyJoined {
-	return GuildJoinErrorAlreadyJoined{mode: mode}
+func NewJoinErrorAlreadyJoined(mode byte) JoinErrorAlreadyJoined {
+	return JoinErrorAlreadyJoined{mode: mode}
 }
-func (m GuildJoinErrorAlreadyJoined) Operation() string { return GuildOperationWriter }
-func (m GuildJoinErrorAlreadyJoined) String() string    { return fmt.Sprintf("mode [%d]", m.mode) }
-func (m GuildJoinErrorAlreadyJoined) Encode(l logrus.FieldLogger, _ context.Context) func(map[string]interface{}) []byte {
+func (m JoinErrorAlreadyJoined) Operation() string { return GuildOperationWriter }
+func (m JoinErrorAlreadyJoined) String() string    { return fmt.Sprintf("mode [%d]", m.mode) }
+func (m JoinErrorAlreadyJoined) Encode(l logrus.FieldLogger, _ context.Context) func(map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(map[string]interface{}) []byte { w.WriteByte(m.mode); return w.Bytes() }
 }
-func (m *GuildJoinErrorAlreadyJoined) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
+func (m *JoinErrorAlreadyJoined) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
 	return func(r *request.Reader, _ map[string]interface{}) { m.mode = r.ReadByte() }
 }
 
-// GuildJoinErrorMaxMembers — MAX_NUMBER_OF_USERS (case 0x29). Mode-only
+// JoinErrorMaxMembers — MAX_NUMBER_OF_USERS (case 0x29). Mode-only
 // (v83 OnGuildResult@0xa37490, case 0x29 → notice, no Decode*).
-// packet-audit:fname CWvsContext::OnGuildResult#GuildJoinErrorMaxMembers
-type GuildJoinErrorMaxMembers struct{ mode byte }
+// packet-audit:fname CWvsContext::OnGuildResult#JoinErrorMaxMembers
+type JoinErrorMaxMembers struct{ mode byte }
 
-func NewGuildJoinErrorMaxMembers(mode byte) GuildJoinErrorMaxMembers {
-	return GuildJoinErrorMaxMembers{mode: mode}
+func NewJoinErrorMaxMembers(mode byte) JoinErrorMaxMembers {
+	return JoinErrorMaxMembers{mode: mode}
 }
-func (m GuildJoinErrorMaxMembers) Operation() string { return GuildOperationWriter }
-func (m GuildJoinErrorMaxMembers) String() string    { return fmt.Sprintf("mode [%d]", m.mode) }
-func (m GuildJoinErrorMaxMembers) Encode(l logrus.FieldLogger, _ context.Context) func(map[string]interface{}) []byte {
+func (m JoinErrorMaxMembers) Operation() string { return GuildOperationWriter }
+func (m JoinErrorMaxMembers) String() string    { return fmt.Sprintf("mode [%d]", m.mode) }
+func (m JoinErrorMaxMembers) Encode(l logrus.FieldLogger, _ context.Context) func(map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(map[string]interface{}) []byte { w.WriteByte(m.mode); return w.Bytes() }
 }
-func (m *GuildJoinErrorMaxMembers) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
+func (m *JoinErrorMaxMembers) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
 	return func(r *request.Reader, _ map[string]interface{}) { m.mode = r.ReadByte() }
 }
 
-// GuildJoinErrorNotInChannel — CHARACTER_CANNOT_BE_FOUND_IN_THE_CURRENT_CHANNEL
+// JoinErrorNotInChannel — CHARACTER_CANNOT_BE_FOUND_IN_THE_CURRENT_CHANNEL
 // (case 0x2A). Mode-only (v83 OnGuildResult@0xa37490, case 0x2A → notice, no Decode*).
-// packet-audit:fname CWvsContext::OnGuildResult#GuildJoinErrorNotInChannel
-type GuildJoinErrorNotInChannel struct{ mode byte }
+// packet-audit:fname CWvsContext::OnGuildResult#JoinErrorNotInChannel
+type JoinErrorNotInChannel struct{ mode byte }
 
-func NewGuildJoinErrorNotInChannel(mode byte) GuildJoinErrorNotInChannel {
-	return GuildJoinErrorNotInChannel{mode: mode}
+func NewJoinErrorNotInChannel(mode byte) JoinErrorNotInChannel {
+	return JoinErrorNotInChannel{mode: mode}
 }
-func (m GuildJoinErrorNotInChannel) Operation() string { return GuildOperationWriter }
-func (m GuildJoinErrorNotInChannel) String() string    { return fmt.Sprintf("mode [%d]", m.mode) }
-func (m GuildJoinErrorNotInChannel) Encode(l logrus.FieldLogger, _ context.Context) func(map[string]interface{}) []byte {
+func (m JoinErrorNotInChannel) Operation() string { return GuildOperationWriter }
+func (m JoinErrorNotInChannel) String() string    { return fmt.Sprintf("mode [%d]", m.mode) }
+func (m JoinErrorNotInChannel) Encode(l logrus.FieldLogger, _ context.Context) func(map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(map[string]interface{}) []byte { w.WriteByte(m.mode); return w.Bytes() }
 }
-func (m *GuildJoinErrorNotInChannel) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
+func (m *JoinErrorNotInChannel) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
 	return func(r *request.Reader, _ map[string]interface{}) { m.mode = r.ReadByte() }
 }
 
-// GuildMemberQuitErrorNotInGuild — MEMBER_QUIT_ERROR_NOT_IN_GUILD (case 0x2D).
+// MemberQuitErrorNotInGuild — MEMBER_QUIT_ERROR_NOT_IN_GUILD (case 0x2D).
 // Mode-only (v83 OnGuildResult@0xa37490, case 0x2D → notice, no Decode*).
-// packet-audit:fname CWvsContext::OnGuildResult#GuildMemberQuitErrorNotInGuild
-type GuildMemberQuitErrorNotInGuild struct{ mode byte }
+// packet-audit:fname CWvsContext::OnGuildResult#MemberQuitErrorNotInGuild
+type MemberQuitErrorNotInGuild struct{ mode byte }
 
-func NewGuildMemberQuitErrorNotInGuild(mode byte) GuildMemberQuitErrorNotInGuild {
-	return GuildMemberQuitErrorNotInGuild{mode: mode}
+func NewMemberQuitErrorNotInGuild(mode byte) MemberQuitErrorNotInGuild {
+	return MemberQuitErrorNotInGuild{mode: mode}
 }
-func (m GuildMemberQuitErrorNotInGuild) Operation() string { return GuildOperationWriter }
-func (m GuildMemberQuitErrorNotInGuild) String() string    { return fmt.Sprintf("mode [%d]", m.mode) }
-func (m GuildMemberQuitErrorNotInGuild) Encode(l logrus.FieldLogger, _ context.Context) func(map[string]interface{}) []byte {
+func (m MemberQuitErrorNotInGuild) Operation() string { return GuildOperationWriter }
+func (m MemberQuitErrorNotInGuild) String() string    { return fmt.Sprintf("mode [%d]", m.mode) }
+func (m MemberQuitErrorNotInGuild) Encode(l logrus.FieldLogger, _ context.Context) func(map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(map[string]interface{}) []byte { w.WriteByte(m.mode); return w.Bytes() }
 }
-func (m *GuildMemberQuitErrorNotInGuild) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
+func (m *MemberQuitErrorNotInGuild) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
 	return func(r *request.Reader, _ map[string]interface{}) { m.mode = r.ReadByte() }
 }
 
-// GuildMemberExpelledErrorNotInGuild — MEMBER_EXPELLED_ERROR_NOT_IN_GUILD
+// MemberExpelledErrorNotInGuild — MEMBER_EXPELLED_ERROR_NOT_IN_GUILD
 // (case 0x30). Mode-only (v83 OnGuildResult@0xa37490, case 0x30 → notice, no Decode*).
-// packet-audit:fname CWvsContext::OnGuildResult#GuildMemberExpelledErrorNotInGuild
-type GuildMemberExpelledErrorNotInGuild struct{ mode byte }
+// packet-audit:fname CWvsContext::OnGuildResult#MemberExpelledErrorNotInGuild
+type MemberExpelledErrorNotInGuild struct{ mode byte }
 
-func NewGuildMemberExpelledErrorNotInGuild(mode byte) GuildMemberExpelledErrorNotInGuild {
-	return GuildMemberExpelledErrorNotInGuild{mode: mode}
+func NewMemberExpelledErrorNotInGuild(mode byte) MemberExpelledErrorNotInGuild {
+	return MemberExpelledErrorNotInGuild{mode: mode}
 }
-func (m GuildMemberExpelledErrorNotInGuild) Operation() string { return GuildOperationWriter }
-func (m GuildMemberExpelledErrorNotInGuild) String() string    { return fmt.Sprintf("mode [%d]", m.mode) }
-func (m GuildMemberExpelledErrorNotInGuild) Encode(l logrus.FieldLogger, _ context.Context) func(map[string]interface{}) []byte {
+func (m MemberExpelledErrorNotInGuild) Operation() string { return GuildOperationWriter }
+func (m MemberExpelledErrorNotInGuild) String() string    { return fmt.Sprintf("mode [%d]", m.mode) }
+func (m MemberExpelledErrorNotInGuild) Encode(l logrus.FieldLogger, _ context.Context) func(map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(map[string]interface{}) []byte { w.WriteByte(m.mode); return w.Bytes() }
 }
-func (m *GuildMemberExpelledErrorNotInGuild) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
+func (m *MemberExpelledErrorNotInGuild) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
 	return func(r *request.Reader, _ map[string]interface{}) { m.mode = r.ReadByte() }
 }
 
-// GuildDisbandError — THE_PROBLEM…DISBANDING_THE_GUILD (case 0x34). Mode-only
+// DisbandError — THE_PROBLEM…DISBANDING_THE_GUILD (case 0x34). Mode-only
 // (v83 OnGuildResult@0xa37490, case 0x34 → GuildNPCSay, no Decode*).
-// packet-audit:fname CWvsContext::OnGuildResult#GuildDisbandError
-type GuildDisbandError struct{ mode byte }
+// packet-audit:fname CWvsContext::OnGuildResult#DisbandError
+type DisbandError struct{ mode byte }
 
-func NewGuildDisbandError(mode byte) GuildDisbandError { return GuildDisbandError{mode: mode} }
-func (m GuildDisbandError) Operation() string          { return GuildOperationWriter }
-func (m GuildDisbandError) String() string             { return fmt.Sprintf("mode [%d]", m.mode) }
-func (m GuildDisbandError) Encode(l logrus.FieldLogger, _ context.Context) func(map[string]interface{}) []byte {
+func NewDisbandError(mode byte) DisbandError { return DisbandError{mode: mode} }
+func (m DisbandError) Operation() string     { return GuildOperationWriter }
+func (m DisbandError) String() string        { return fmt.Sprintf("mode [%d]", m.mode) }
+func (m DisbandError) Encode(l logrus.FieldLogger, _ context.Context) func(map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(map[string]interface{}) []byte { w.WriteByte(m.mode); return w.Bytes() }
 }
-func (m *GuildDisbandError) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
+func (m *DisbandError) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
 	return func(r *request.Reader, _ map[string]interface{}) { m.mode = r.ReadByte() }
 }
 
-// GuildCreateErrorCannotAsAdmin — ADMIN_CANNOT_MAKE_A_GUILD (case 0x38).
+// CreateErrorCannotAsAdmin — ADMIN_CANNOT_MAKE_A_GUILD (case 0x38).
 // Mode-only (v83 OnGuildResult@0xa37490, case 0x38 → CHATLOG, no Decode*).
-// packet-audit:fname CWvsContext::OnGuildResult#GuildCreateErrorCannotAsAdmin
-type GuildCreateErrorCannotAsAdmin struct{ mode byte }
+// packet-audit:fname CWvsContext::OnGuildResult#CreateErrorCannotAsAdmin
+type CreateErrorCannotAsAdmin struct{ mode byte }
 
-func NewGuildCreateErrorCannotAsAdmin(mode byte) GuildCreateErrorCannotAsAdmin {
-	return GuildCreateErrorCannotAsAdmin{mode: mode}
+func NewCreateErrorCannotAsAdmin(mode byte) CreateErrorCannotAsAdmin {
+	return CreateErrorCannotAsAdmin{mode: mode}
 }
-func (m GuildCreateErrorCannotAsAdmin) Operation() string { return GuildOperationWriter }
-func (m GuildCreateErrorCannotAsAdmin) String() string    { return fmt.Sprintf("mode [%d]", m.mode) }
-func (m GuildCreateErrorCannotAsAdmin) Encode(l logrus.FieldLogger, _ context.Context) func(map[string]interface{}) []byte {
+func (m CreateErrorCannotAsAdmin) Operation() string { return GuildOperationWriter }
+func (m CreateErrorCannotAsAdmin) String() string    { return fmt.Sprintf("mode [%d]", m.mode) }
+func (m CreateErrorCannotAsAdmin) Encode(l logrus.FieldLogger, _ context.Context) func(map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(map[string]interface{}) []byte { w.WriteByte(m.mode); return w.Bytes() }
 }
-func (m *GuildCreateErrorCannotAsAdmin) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
+func (m *CreateErrorCannotAsAdmin) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
 	return func(r *request.Reader, _ map[string]interface{}) { m.mode = r.ReadByte() }
 }
 
-// GuildIncreaseCapacityError — THE_PROBLEM…INCREASING_THE_GUILD (case 0x3B).
+// IncreaseCapacityError — THE_PROBLEM…INCREASING_THE_GUILD (case 0x3B).
 // Mode-only (v83 OnGuildResult@0xa37490, case 0x3B → notice, no Decode*).
-// packet-audit:fname CWvsContext::OnGuildResult#GuildIncreaseCapacityError
-type GuildIncreaseCapacityError struct{ mode byte }
+// packet-audit:fname CWvsContext::OnGuildResult#IncreaseCapacityError
+type IncreaseCapacityError struct{ mode byte }
 
-func NewGuildIncreaseCapacityError(mode byte) GuildIncreaseCapacityError {
-	return GuildIncreaseCapacityError{mode: mode}
+func NewIncreaseCapacityError(mode byte) IncreaseCapacityError {
+	return IncreaseCapacityError{mode: mode}
 }
-func (m GuildIncreaseCapacityError) Operation() string { return GuildOperationWriter }
-func (m GuildIncreaseCapacityError) String() string    { return fmt.Sprintf("mode [%d]", m.mode) }
-func (m GuildIncreaseCapacityError) Encode(l logrus.FieldLogger, _ context.Context) func(map[string]interface{}) []byte {
+func (m IncreaseCapacityError) Operation() string { return GuildOperationWriter }
+func (m IncreaseCapacityError) String() string    { return fmt.Sprintf("mode [%d]", m.mode) }
+func (m IncreaseCapacityError) Encode(l logrus.FieldLogger, _ context.Context) func(map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(map[string]interface{}) []byte { w.WriteByte(m.mode); return w.Bytes() }
 }
-func (m *GuildIncreaseCapacityError) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
+func (m *IncreaseCapacityError) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
 	return func(r *request.Reader, _ map[string]interface{}) { m.mode = r.ReadByte() }
 }
 
-// GuildQuestErrorLessThanSixMembers — THERE_ARE_LESS_THAN_6_MEMBERS (case 0x4A).
+// QuestErrorLessThanSixMembers — THERE_ARE_LESS_THAN_6_MEMBERS (case 0x4A).
 // Mode-only (v83 OnGuildResult@0xa37490, case 0x4A → notice, no Decode*).
-// packet-audit:fname CWvsContext::OnGuildResult#GuildQuestErrorLessThanSixMembers
-type GuildQuestErrorLessThanSixMembers struct{ mode byte }
+// packet-audit:fname CWvsContext::OnGuildResult#QuestErrorLessThanSixMembers
+type QuestErrorLessThanSixMembers struct{ mode byte }
 
-func NewGuildQuestErrorLessThanSixMembers(mode byte) GuildQuestErrorLessThanSixMembers {
-	return GuildQuestErrorLessThanSixMembers{mode: mode}
+func NewQuestErrorLessThanSixMembers(mode byte) QuestErrorLessThanSixMembers {
+	return QuestErrorLessThanSixMembers{mode: mode}
 }
-func (m GuildQuestErrorLessThanSixMembers) Operation() string { return GuildOperationWriter }
-func (m GuildQuestErrorLessThanSixMembers) String() string    { return fmt.Sprintf("mode [%d]", m.mode) }
-func (m GuildQuestErrorLessThanSixMembers) Encode(l logrus.FieldLogger, _ context.Context) func(map[string]interface{}) []byte {
+func (m QuestErrorLessThanSixMembers) Operation() string { return GuildOperationWriter }
+func (m QuestErrorLessThanSixMembers) String() string    { return fmt.Sprintf("mode [%d]", m.mode) }
+func (m QuestErrorLessThanSixMembers) Encode(l logrus.FieldLogger, _ context.Context) func(map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(map[string]interface{}) []byte { w.WriteByte(m.mode); return w.Bytes() }
 }
-func (m *GuildQuestErrorLessThanSixMembers) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
+func (m *QuestErrorLessThanSixMembers) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
 	return func(r *request.Reader, _ map[string]interface{}) { m.mode = r.ReadByte() }
 }
 
-// GuildQuestErrorDisconnected — THE_USER_THAT_REGISTERED_HAS_DISCONNECTED
+// QuestErrorDisconnected — THE_USER_THAT_REGISTERED_HAS_DISCONNECTED
 // (case 0x4B). Mode-only (v83 OnGuildResult@0xa37490, case 0x4B → notice, no Decode*).
-// packet-audit:fname CWvsContext::OnGuildResult#GuildQuestErrorDisconnected
-type GuildQuestErrorDisconnected struct{ mode byte }
+// packet-audit:fname CWvsContext::OnGuildResult#QuestErrorDisconnected
+type QuestErrorDisconnected struct{ mode byte }
 
-func NewGuildQuestErrorDisconnected(mode byte) GuildQuestErrorDisconnected {
-	return GuildQuestErrorDisconnected{mode: mode}
+func NewQuestErrorDisconnected(mode byte) QuestErrorDisconnected {
+	return QuestErrorDisconnected{mode: mode}
 }
-func (m GuildQuestErrorDisconnected) Operation() string { return GuildOperationWriter }
-func (m GuildQuestErrorDisconnected) String() string    { return fmt.Sprintf("mode [%d]", m.mode) }
-func (m GuildQuestErrorDisconnected) Encode(l logrus.FieldLogger, _ context.Context) func(map[string]interface{}) []byte {
+func (m QuestErrorDisconnected) Operation() string { return GuildOperationWriter }
+func (m QuestErrorDisconnected) String() string    { return fmt.Sprintf("mode [%d]", m.mode) }
+func (m QuestErrorDisconnected) Encode(l logrus.FieldLogger, _ context.Context) func(map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(map[string]interface{}) []byte { w.WriteByte(m.mode); return w.Bytes() }
 }
-func (m *GuildQuestErrorDisconnected) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
+func (m *QuestErrorDisconnected) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
 	return func(r *request.Reader, _ map[string]interface{}) { m.mode = r.ReadByte() }
 }
 
@@ -347,52 +348,52 @@ func (m *GuildQuestErrorDisconnected) Decode(_ logrus.FieldLogger, _ context.Con
 // remain {mode,target} (the retired ErrorMessageWithTarget split into 3 discrete
 // structs). v83/v84/v87/jms byte-identical shape; v95 mode bytes shifted (yaml).
 
-// GuildInviteErrorNotAcceptingInvites — IS_CURRENTLY_NOT_ACCEPTING (case 0x35).
+// InviteErrorNotAcceptingInvites — IS_CURRENTLY_NOT_ACCEPTING (case 0x35).
 // Decode1(mode) + DecodeStr(target). v83 OnGuildResult@0xa37490 case 0x35 L273.
-// packet-audit:fname CWvsContext::OnGuildResult#GuildInviteErrorNotAcceptingInvites
-type GuildInviteErrorNotAcceptingInvites struct {
+// packet-audit:fname CWvsContext::OnGuildResult#InviteErrorNotAcceptingInvites
+type InviteErrorNotAcceptingInvites struct {
 	mode   byte
 	target string
 }
 
-func NewGuildInviteErrorNotAcceptingInvites(mode byte, target string) GuildInviteErrorNotAcceptingInvites {
-	return GuildInviteErrorNotAcceptingInvites{mode: mode, target: target}
+func NewInviteErrorNotAcceptingInvites(mode byte, target string) InviteErrorNotAcceptingInvites {
+	return InviteErrorNotAcceptingInvites{mode: mode, target: target}
 }
-func (m GuildInviteErrorNotAcceptingInvites) Operation() string { return GuildOperationWriter }
-func (m GuildInviteErrorNotAcceptingInvites) String() string {
+func (m InviteErrorNotAcceptingInvites) Operation() string { return GuildOperationWriter }
+func (m InviteErrorNotAcceptingInvites) String() string {
 	return fmt.Sprintf("mode [%d], target [%s]", m.mode, m.target)
 }
-func (m GuildInviteErrorNotAcceptingInvites) Encode(l logrus.FieldLogger, _ context.Context) func(map[string]interface{}) []byte {
+func (m InviteErrorNotAcceptingInvites) Encode(l logrus.FieldLogger, _ context.Context) func(map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(map[string]interface{}) []byte {
-		w.WriteByte(m.mode)            // dispatcher mode byte
-		w.WriteAsciiString(m.target)   // DecodeStr target name (case 0x35 L273)
+		w.WriteByte(m.mode)          // dispatcher mode byte
+		w.WriteAsciiString(m.target) // DecodeStr target name (case 0x35 L273)
 		return w.Bytes()
 	}
 }
-func (m *GuildInviteErrorNotAcceptingInvites) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
+func (m *InviteErrorNotAcceptingInvites) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
 	return func(r *request.Reader, _ map[string]interface{}) {
 		m.mode = r.ReadByte()
 		m.target = r.ReadAsciiString()
 	}
 }
 
-// GuildInviteErrorAnotherInvite — IS_TAKING_CARE_OF_ANOTHER_INVITATION
+// InviteErrorAnotherInvite — IS_TAKING_CARE_OF_ANOTHER_INVITATION
 // (case 0x36). Decode1(mode) + DecodeStr(target). v83 case 0x36 L289.
-// packet-audit:fname CWvsContext::OnGuildResult#GuildInviteErrorAnotherInvite
-type GuildInviteErrorAnotherInvite struct {
+// packet-audit:fname CWvsContext::OnGuildResult#InviteErrorAnotherInvite
+type InviteErrorAnotherInvite struct {
 	mode   byte
 	target string
 }
 
-func NewGuildInviteErrorAnotherInvite(mode byte, target string) GuildInviteErrorAnotherInvite {
-	return GuildInviteErrorAnotherInvite{mode: mode, target: target}
+func NewInviteErrorAnotherInvite(mode byte, target string) InviteErrorAnotherInvite {
+	return InviteErrorAnotherInvite{mode: mode, target: target}
 }
-func (m GuildInviteErrorAnotherInvite) Operation() string { return GuildOperationWriter }
-func (m GuildInviteErrorAnotherInvite) String() string {
+func (m InviteErrorAnotherInvite) Operation() string { return GuildOperationWriter }
+func (m InviteErrorAnotherInvite) String() string {
 	return fmt.Sprintf("mode [%d], target [%s]", m.mode, m.target)
 }
-func (m GuildInviteErrorAnotherInvite) Encode(l logrus.FieldLogger, _ context.Context) func(map[string]interface{}) []byte {
+func (m InviteErrorAnotherInvite) Encode(l logrus.FieldLogger, _ context.Context) func(map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(map[string]interface{}) []byte {
 		w.WriteByte(m.mode)
@@ -400,29 +401,29 @@ func (m GuildInviteErrorAnotherInvite) Encode(l logrus.FieldLogger, _ context.Co
 		return w.Bytes()
 	}
 }
-func (m *GuildInviteErrorAnotherInvite) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
+func (m *InviteErrorAnotherInvite) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
 	return func(r *request.Reader, _ map[string]interface{}) {
 		m.mode = r.ReadByte()
 		m.target = r.ReadAsciiString()
 	}
 }
 
-// GuildInviteDenied — HAS_DENIED_YOUR_GUILD_INVITATION (case 0x37).
+// InviteDenied — HAS_DENIED_YOUR_GUILD_INVITATION (case 0x37).
 // Decode1(mode) + DecodeStr(target). v83 case 0x37 L305.
-// packet-audit:fname CWvsContext::OnGuildResult#GuildInviteDenied
-type GuildInviteDenied struct {
+// packet-audit:fname CWvsContext::OnGuildResult#InviteDenied
+type InviteDenied struct {
 	mode   byte
 	target string
 }
 
-func NewGuildInviteDenied(mode byte, target string) GuildInviteDenied {
-	return GuildInviteDenied{mode: mode, target: target}
+func NewInviteDenied(mode byte, target string) InviteDenied {
+	return InviteDenied{mode: mode, target: target}
 }
-func (m GuildInviteDenied) Operation() string { return GuildOperationWriter }
-func (m GuildInviteDenied) String() string {
+func (m InviteDenied) Operation() string { return GuildOperationWriter }
+func (m InviteDenied) String() string {
 	return fmt.Sprintf("mode [%d], target [%s]", m.mode, m.target)
 }
-func (m GuildInviteDenied) Encode(l logrus.FieldLogger, _ context.Context) func(map[string]interface{}) []byte {
+func (m InviteDenied) Encode(l logrus.FieldLogger, _ context.Context) func(map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(map[string]interface{}) []byte {
 		w.WriteByte(m.mode)
@@ -430,7 +431,7 @@ func (m GuildInviteDenied) Encode(l logrus.FieldLogger, _ context.Context) func(
 		return w.Bytes()
 	}
 }
-func (m *GuildInviteDenied) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
+func (m *InviteDenied) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
 	return func(r *request.Reader, _ map[string]interface{}) {
 		m.mode = r.ReadByte()
 		m.target = r.ReadAsciiString()
@@ -909,11 +910,11 @@ func (m *CapacityChange) Decode(_ logrus.FieldLogger, _ context.Context) func(r 
 // SET_SKILL_RESPONSE — read orders verified case-by-case in v83 OnGuildResult
 // (sub @0xa37490). v83/v84/v87/jms byte-identical; v95 mode bytes shifted (yaml).
 
-// GuildMemberUpdate — MEMBER_UPDATE (case 0x3C). After the guildId match check,
+// MemberUpdate — MEMBER_UPDATE (case 0x3C). After the guildId match check,
 // reads Decode4(charId) + Decode4(level) + Decode4(job). v83 OnGuildResult@0xa37490
 // case 0x3C (L379 guildId-check, L381 charId, L382 level, L383 job).
-// packet-audit:fname CWvsContext::OnGuildResult#GuildMemberUpdate
-type GuildMemberUpdate struct {
+// packet-audit:fname CWvsContext::OnGuildResult#MemberUpdate
+type MemberUpdate struct {
 	mode        byte
 	guildId     uint32
 	characterId uint32
@@ -921,14 +922,14 @@ type GuildMemberUpdate struct {
 	job         uint32
 }
 
-func NewGuildMemberUpdate(mode byte, guildId uint32, characterId uint32, level uint32, job uint32) GuildMemberUpdate {
-	return GuildMemberUpdate{mode: mode, guildId: guildId, characterId: characterId, level: level, job: job}
+func NewMemberUpdate(mode byte, guildId uint32, characterId uint32, level uint32, job uint32) MemberUpdate {
+	return MemberUpdate{mode: mode, guildId: guildId, characterId: characterId, level: level, job: job}
 }
-func (m GuildMemberUpdate) Operation() string { return GuildOperationWriter }
-func (m GuildMemberUpdate) String() string {
+func (m MemberUpdate) Operation() string { return GuildOperationWriter }
+func (m MemberUpdate) String() string {
 	return fmt.Sprintf("mode [%d], guildId [%d], characterId [%d], level [%d], job [%d]", m.mode, m.guildId, m.characterId, m.level, m.job)
 }
-func (m GuildMemberUpdate) Encode(l logrus.FieldLogger, _ context.Context) func(map[string]interface{}) []byte {
+func (m MemberUpdate) Encode(l logrus.FieldLogger, _ context.Context) func(map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(map[string]interface{}) []byte {
 		w.WriteByte(m.mode)
@@ -939,7 +940,7 @@ func (m GuildMemberUpdate) Encode(l logrus.FieldLogger, _ context.Context) func(
 		return w.Bytes()
 	}
 }
-func (m *GuildMemberUpdate) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
+func (m *MemberUpdate) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
 	return func(r *request.Reader, _ map[string]interface{}) {
 		m.mode = r.ReadByte()
 		m.guildId = r.ReadUint32()
@@ -955,29 +956,29 @@ type GuildTitleEntry struct {
 	Values [5]uint32
 }
 
-// GuildShowTitles — SHOW_TITLES (case 0x49). Reads Decode4(guildId) [discarded] +
+// ShowTitles — SHOW_TITLES (case 0x49). Reads Decode4(guildId) [discarded] +
 // Decode4(count) + count×[DecodeStr(name) + 5×Decode4]. v83 OnGuildResult@0xa37490
 // case 0x49 (L645 guildId, L646 count, loop L656 name + L662-666 5 ints).
-// packet-audit:fname CWvsContext::OnGuildResult#GuildShowTitles
-type GuildShowTitles struct {
+// packet-audit:fname CWvsContext::OnGuildResult#ShowTitles
+type ShowTitles struct {
 	mode    byte
 	guildId uint32
 	entries []GuildTitleEntry
 }
 
-func NewGuildShowTitles(mode byte, guildId uint32, entries []GuildTitleEntry) GuildShowTitles {
-	return GuildShowTitles{mode: mode, guildId: guildId, entries: entries}
+func NewShowTitles(mode byte, guildId uint32, entries []GuildTitleEntry) ShowTitles {
+	return ShowTitles{mode: mode, guildId: guildId, entries: entries}
 }
-func (m GuildShowTitles) Operation() string { return GuildOperationWriter }
-func (m GuildShowTitles) String() string {
+func (m ShowTitles) Operation() string { return GuildOperationWriter }
+func (m ShowTitles) String() string {
 	return fmt.Sprintf("mode [%d], guildId [%d], entries [%d]", m.mode, m.guildId, len(m.entries))
 }
-func (m GuildShowTitles) Encode(l logrus.FieldLogger, _ context.Context) func(map[string]interface{}) []byte {
+func (m ShowTitles) Encode(l logrus.FieldLogger, _ context.Context) func(map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(map[string]interface{}) []byte {
 		w.WriteByte(m.mode)
-		w.WriteInt(m.guildId)                // Decode4 guildId (discarded by client)
-		w.WriteInt(uint32(len(m.entries)))   // Decode4 count (loop bound)
+		w.WriteInt(m.guildId)              // Decode4 guildId (discarded by client)
+		w.WriteInt(uint32(len(m.entries))) // Decode4 count (loop bound)
 		for _, e := range m.entries {
 			w.WriteAsciiString(e.Name) // DecodeStr name
 			for _, v := range e.Values {
@@ -987,7 +988,7 @@ func (m GuildShowTitles) Encode(l logrus.FieldLogger, _ context.Context) func(ma
 		return w.Bytes()
 	}
 }
-func (m *GuildShowTitles) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
+func (m *ShowTitles) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
 	return func(r *request.Reader, _ map[string]interface{}) {
 		m.mode = r.ReadByte()
 		m.guildId = r.ReadUint32()
@@ -1004,23 +1005,23 @@ func (m *GuildShowTitles) Decode(_ logrus.FieldLogger, _ context.Context) func(*
 	}
 }
 
-// GuildQuestWaitingNotice — QUEST_WAITING_NOTICE (case 0x4C). Reads Decode1(channel)
+// QuestWaitingNotice — QUEST_WAITING_NOTICE (case 0x4C). Reads Decode1(channel)
 // + Decode4(state). v83 OnGuildResult@0xa37490 case 0x4C (L713 channel, L714 state).
-// packet-audit:fname CWvsContext::OnGuildResult#GuildQuestWaitingNotice
-type GuildQuestWaitingNotice struct {
+// packet-audit:fname CWvsContext::OnGuildResult#QuestWaitingNotice
+type QuestWaitingNotice struct {
 	mode    byte
 	channel byte
 	state   uint32
 }
 
-func NewGuildQuestWaitingNotice(mode byte, channel byte, state uint32) GuildQuestWaitingNotice {
-	return GuildQuestWaitingNotice{mode: mode, channel: channel, state: state}
+func NewQuestWaitingNotice(mode byte, channel byte, state uint32) QuestWaitingNotice {
+	return QuestWaitingNotice{mode: mode, channel: channel, state: state}
 }
-func (m GuildQuestWaitingNotice) Operation() string { return GuildOperationWriter }
-func (m GuildQuestWaitingNotice) String() string {
+func (m QuestWaitingNotice) Operation() string { return GuildOperationWriter }
+func (m QuestWaitingNotice) String() string {
 	return fmt.Sprintf("mode [%d], channel [%d], state [%d]", m.mode, m.channel, m.state)
 }
-func (m GuildQuestWaitingNotice) Encode(l logrus.FieldLogger, _ context.Context) func(map[string]interface{}) []byte {
+func (m QuestWaitingNotice) Encode(l logrus.FieldLogger, _ context.Context) func(map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(map[string]interface{}) []byte {
 		w.WriteByte(m.mode)
@@ -1029,7 +1030,7 @@ func (m GuildQuestWaitingNotice) Encode(l logrus.FieldLogger, _ context.Context)
 		return w.Bytes()
 	}
 }
-func (m *GuildQuestWaitingNotice) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
+func (m *QuestWaitingNotice) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
 	return func(r *request.Reader, _ map[string]interface{}) {
 		m.mode = r.ReadByte()
 		m.channel = r.ReadByte()
@@ -1037,22 +1038,22 @@ func (m *GuildQuestWaitingNotice) Decode(_ logrus.FieldLogger, _ context.Context
 	}
 }
 
-// GuildBoardAuthKeyUpdate — BOARD_AUTH_KEY_UPDATE (case 0x4D). Reads
+// BoardAuthKeyUpdate — BOARD_AUTH_KEY_UPDATE (case 0x4D). Reads
 // DecodeStr(authKey). v83 OnGuildResult@0xa37490 case 0x4D (L791).
-// packet-audit:fname CWvsContext::OnGuildResult#GuildBoardAuthKeyUpdate
-type GuildBoardAuthKeyUpdate struct {
+// packet-audit:fname CWvsContext::OnGuildResult#BoardAuthKeyUpdate
+type BoardAuthKeyUpdate struct {
 	mode    byte
 	authKey string
 }
 
-func NewGuildBoardAuthKeyUpdate(mode byte, authKey string) GuildBoardAuthKeyUpdate {
-	return GuildBoardAuthKeyUpdate{mode: mode, authKey: authKey}
+func NewBoardAuthKeyUpdate(mode byte, authKey string) BoardAuthKeyUpdate {
+	return BoardAuthKeyUpdate{mode: mode, authKey: authKey}
 }
-func (m GuildBoardAuthKeyUpdate) Operation() string { return GuildOperationWriter }
-func (m GuildBoardAuthKeyUpdate) String() string {
+func (m BoardAuthKeyUpdate) Operation() string { return GuildOperationWriter }
+func (m BoardAuthKeyUpdate) String() string {
 	return fmt.Sprintf("mode [%d], authKey [%s]", m.mode, m.authKey)
 }
-func (m GuildBoardAuthKeyUpdate) Encode(l logrus.FieldLogger, _ context.Context) func(map[string]interface{}) []byte {
+func (m BoardAuthKeyUpdate) Encode(l logrus.FieldLogger, _ context.Context) func(map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(map[string]interface{}) []byte {
 		w.WriteByte(m.mode)
@@ -1060,31 +1061,31 @@ func (m GuildBoardAuthKeyUpdate) Encode(l logrus.FieldLogger, _ context.Context)
 		return w.Bytes()
 	}
 }
-func (m *GuildBoardAuthKeyUpdate) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
+func (m *BoardAuthKeyUpdate) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
 	return func(r *request.Reader, _ map[string]interface{}) {
 		m.mode = r.ReadByte()
 		m.authKey = r.ReadAsciiString()
 	}
 }
 
-// GuildSetSkillResponse — SET_SKILL_RESPONSE (case 0x4E; GMS only, jms-absent).
+// SetSkillResponse — SET_SKILL_RESPONSE (case 0x4E; GMS only, jms-absent).
 // Reads Decode1(success); when success!=0 then DecodeStr(message). v83
 // OnGuildResult@0xa37490 case 0x4E (L802 success, L804 message in the truthy branch).
-// packet-audit:fname CWvsContext::OnGuildResult#GuildSetSkillResponse
-type GuildSetSkillResponse struct {
+// packet-audit:fname CWvsContext::OnGuildResult#SetSkillResponse
+type SetSkillResponse struct {
 	mode    byte
 	success bool
 	message string
 }
 
-func NewGuildSetSkillResponse(mode byte, success bool, message string) GuildSetSkillResponse {
-	return GuildSetSkillResponse{mode: mode, success: success, message: message}
+func NewSetSkillResponse(mode byte, success bool, message string) SetSkillResponse {
+	return SetSkillResponse{mode: mode, success: success, message: message}
 }
-func (m GuildSetSkillResponse) Operation() string { return GuildOperationWriter }
-func (m GuildSetSkillResponse) String() string {
+func (m SetSkillResponse) Operation() string { return GuildOperationWriter }
+func (m SetSkillResponse) String() string {
 	return fmt.Sprintf("mode [%d], success [%t], message [%s]", m.mode, m.success, m.message)
 }
-func (m GuildSetSkillResponse) Encode(l logrus.FieldLogger, _ context.Context) func(map[string]interface{}) []byte {
+func (m SetSkillResponse) Encode(l logrus.FieldLogger, _ context.Context) func(map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(map[string]interface{}) []byte {
 		w.WriteByte(m.mode)
@@ -1095,7 +1096,7 @@ func (m GuildSetSkillResponse) Encode(l logrus.FieldLogger, _ context.Context) f
 		return w.Bytes()
 	}
 }
-func (m *GuildSetSkillResponse) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
+func (m *SetSkillResponse) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
 	return func(r *request.Reader, _ map[string]interface{}) {
 		m.mode = r.ReadByte()
 		m.success = r.ReadBool()

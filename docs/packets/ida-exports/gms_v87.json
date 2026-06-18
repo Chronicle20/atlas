@@ -4448,6 +4448,339 @@
         }
       ]
     },
+    "CWvsContext::OnGuildResult#RequestName": {
+      "address": "0xacf7d3",
+      "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xacf7d3.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (REQUEST_NAME)"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#RequestEmblem": {
+      "address": "0xacf7d3",
+      "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xacf7d3.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (REQUEST_EMBLEM)"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#CreateErrorNameInUse": {
+      "address": "0xacf7d3",
+      "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xacf7d3.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (THE_NAME_IS_ALREADY_IN_USE)"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#CreateErrorDisagreed": {
+      "address": "0xacf7d3",
+      "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xacf7d3.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (SOMEBODY_HAS_DISAGREED)"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#CreateError": {
+      "address": "0xacf7d3",
+      "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xacf7d3.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (CREATE error)"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#JoinErrorAlreadyJoined": {
+      "address": "0xacf7d3",
+      "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xacf7d3.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (ALREADY_JOINED)"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#JoinErrorMaxMembers": {
+      "address": "0xacf7d3",
+      "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xacf7d3.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (MAX_NUMBER_OF_USERS)"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#JoinErrorNotInChannel": {
+      "address": "0xacf7d3",
+      "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xacf7d3.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (CHARACTER_CANNOT_BE_FOUND)"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#MemberQuitErrorNotInGuild": {
+      "address": "0xacf7d3",
+      "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xacf7d3.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (MEMBER_QUIT_ERROR_NOT_IN_GUILD)"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#MemberExpelledErrorNotInGuild": {
+      "address": "0xacf7d3",
+      "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xacf7d3.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (MEMBER_EXPELLED_ERROR_NOT_IN_GUILD)"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#DisbandError": {
+      "address": "0xacf7d3",
+      "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xacf7d3.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (DISBAND error)"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#CreateErrorCannotAsAdmin": {
+      "address": "0xacf7d3",
+      "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xacf7d3.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (ADMIN_CANNOT_MAKE_A_GUILD)"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#IncreaseCapacityError": {
+      "address": "0xacf7d3",
+      "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xacf7d3.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (INCREASE error)"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#QuestErrorLessThanSixMembers": {
+      "address": "0xacf7d3",
+      "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xacf7d3.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (LESS_THAN_6_MEMBERS)"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#QuestErrorDisconnected": {
+      "address": "0xacf7d3",
+      "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xacf7d3.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (USER_DISCONNECTED)"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#InviteErrorNotAcceptingInvites": {
+      "address": "0xacf7d3",
+      "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xacf7d3.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (IS_CURRENTLY_NOT_ACCEPTING)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "targetName"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#InviteErrorAnotherInvite": {
+      "address": "0xacf7d3",
+      "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xacf7d3.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (IS_TAKING_CARE_OF_ANOTHER_INVITATION)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "targetName"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#InviteDenied": {
+      "address": "0xacf7d3",
+      "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xacf7d3.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (HAS_DENIED_YOUR_GUILD_INVITATION)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "targetName"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#MemberUpdate": {
+      "address": "0xacf7d3",
+      "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xacf7d3.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (MEMBER_UPDATE)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "guildId (match check)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "characterId"
+        },
+        {
+          "op": "Decode4",
+          "comment": "level"
+        },
+        {
+          "op": "Decode4",
+          "comment": "job"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#ShowTitles": {
+      "address": "0xacf7d3",
+      "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xacf7d3.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (SHOW_TITLES)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "guildId (discarded)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "count (loop bound)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "entry name (per count)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "value0 (per count)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "value1 (per count)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "value2 (per count)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "value3 (per count)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "value4 (per count)"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#QuestWaitingNotice": {
+      "address": "0xacf7d3",
+      "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xacf7d3.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (QUEST_WAITING_NOTICE)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "channel"
+        },
+        {
+          "op": "Decode4",
+          "comment": "state"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#BoardAuthKeyUpdate": {
+      "address": "0xacf7d3",
+      "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xacf7d3.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (BOARD_AUTH_KEY_UPDATE)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "authKey"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#SetSkillResponse": {
+      "address": "0xacf7d3",
+      "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xacf7d3.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (SET_SKILL_RESPONSE)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "success flag"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "message (success branch only)"
+        }
+      ]
+    },
     "CWvsContext::OnGuildResult#MemberJoined": {
       "address": "0xacf7d3",
       "direction": "clientbound",
@@ -4710,67 +5043,6 @@
         {
           "op": "DecodeStr",
           "comment": "character name 2"
-        }
-      ]
-    },
-    "CWvsContext::OnGuildResult#AgreementResponse": {
-      "address": "0xacf7d3",
-      "direction": "clientbound",
-      "note": "mode=37 (AGREEMENT). Reads guildId+characterId+bool+name. Wire identical to v83/v95.",
-      "dispatch": [
-        {
-          "case": 0,
-          "guard": "!v6"
-        }
-      ],
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode byte (3 = guild-creation agreement request)"
-        },
-        {
-          "op": "Decode4",
-          "comment": "partyId"
-        },
-        {
-          "op": "DecodeStr",
-          "comment": "leaderName"
-        },
-        {
-          "op": "DecodeStr",
-          "comment": "guildName"
-        }
-      ]
-    },
-    "CWvsContext::OnGuildResult#ErrorMessage": {
-      "address": "0xacf7d3",
-      "direction": "clientbound",
-      "note": "Various error modes. No further reads (or reads error code only). Wire identical to v83/v95.",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode byte (error mode)"
-        }
-      ]
-    },
-    "CWvsContext::OnGuildResult#ErrorMessageWithTarget": {
-      "address": "0xacf7d3",
-      "direction": "clientbound",
-      "note": "Error mode with target name. Reads DecodeStr(characterName). Wire identical to v83/v95.",
-      "dispatch": [
-        {
-          "case": 0,
-          "guard": "CInPacket::Decode4(v2) == *(this + 12160"
-        }
-      ],
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode byte (error+target mode)"
-        },
-        {
-          "op": "DecodeStr",
-          "comment": "characterName"
         }
       ]
     },

@@ -1364,31 +1364,89 @@ func candidatesFromFName(fname string) []candidate {
 
 	// --- Social: guild (clientbound) ---
 	// CSV: GUILD_OPERATION (clientbound, opcode 0x041/65 in GMS v95) → CWvsContext::OnGuildResult
-	// dispatches on a leading mode byte (Decode1) to 20+ sub-handlers. Each atlas struct is modelled
-	// via a #-suffixed synthetic IDA entry. Both mode byte and sub-op enum drift deferred to _pending.md.
-	case "CWvsContext::OnGuildResult":
-		// Top-level dispatcher — reads mode byte only; sub-ops audited individually.
-		// ⚠️ OP-FAMILY-guild-clientbound: op-byte family deferred to _pending.md.
-		return []candidate{{name: "RequestAgreement", pkg: "guild", dir: csvpkg.DirClientbound}}
+	// dispatches on a leading mode byte (Decode1) to ~35 sub-handlers. task-103 migrated this to the
+	// discrete-per-mode pattern: one #-suffixed arm per supported mode → its own discrete clientbound
+	// struct. There is NO bare-root entry (matches the CITC/OnFieldEffect exemplars). Per-version mode
+	// bytes live in docs/packets/dispatchers/guild.yaml; v83/v84/v87/jms byte-identical, v95 shifted.
 	case "CWvsContext::OnGuildResult#RequestAgreement":
 		// case 3: Decode1(mode) + Decode4(partyId) + DecodeStr(leaderName) + DecodeStr(guildName).
 		// Atlas RequestAgreement writes: mode(1) + partyId(4) + leaderName(str) + guildName(str). ✓
 		return []candidate{{name: "RequestAgreement", pkg: "guild", dir: csvpkg.DirClientbound}}
 	case "CWvsContext::OnGuildResult#Invite":
-		// case 5: Decode1(mode) + Decode4(guildId) + DecodeStr(inviterName) [+ v87: Decode4(unknown) + Decode4(nSkillID)].
-		// Atlas Invite writes: mode(1) + guildId(4) + originatorName(str) + (v87+: unknown(4) + skillId(4)). ✓
-		// Per-version gated in the struct: v83 = guildId+name only (IDA v83 @0xa3b57a); v87+ adds 2 int32
-		// (IDA v87 @0xacf7d3/@0xacf9c7); v84..86 == v83. Verified: gms_v87 GuildInvite ✅; gms_v83 🔍
-		// (flat-diff-invalid modeling cap, NOT a wire bug). [Prior ❌ "MISSING 2 trailing" comment was stale.]
+		// case 5: Decode1(mode) + Decode4(guildId) + DecodeStr(inviterName) [+ >=84/JMS: Decode4(unknown) + Decode4(nSkillID)].
+		// Atlas Invite writes: mode(1) + guildId(4) + originatorName(str) + (>=84/JMS: unknown(4) + skillId(4)). ✓
+		// F3: v83 = guildId+name only (IDA v83 OnGuildResult@0xa37490 L1319-1320); v84+ adds 2 int32
+		// (IDA v84@0xa82e2b L1212-1216) — gate boundary is 84, NOT 87 (the opposite of the usual off-by-one).
 		return []candidate{{name: "Invite", pkg: "guild", dir: csvpkg.DirClientbound}}
-	case "CWvsContext::OnGuildResult#ErrorMessage":
-		// cases 30,33,35,37,38,40,42,43,44,47,50,54,58,61: mode byte only, no further reads.
-		// Atlas ErrorMessage writes: mode(1). ✓ (mode-only arms)
-		return []candidate{{name: "ErrorMessage", pkg: "guild", dir: csvpkg.DirClientbound}}
-	case "CWvsContext::OnGuildResult#ErrorMessageWithTarget":
-		// cases 55,56,57: Decode1(mode) + DecodeStr(targetName).
-		// Atlas ErrorMessageWithTarget writes: mode(1) + target(str). ✓
-		return []candidate{{name: "ErrorMessageWithTarget", pkg: "guild", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnGuildResult#RequestName":
+		// case 0x01: Decode1(mode) only (prompt create-guild-name dialog). Atlas RequestName writes mode(1). ✓
+		return []candidate{{name: "RequestName", pkg: "guild", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnGuildResult#RequestEmblem":
+		// case 0x11: Decode1(mode) only (prompt set-emblem dialog). Atlas RequestEmblem writes mode(1). ✓
+		return []candidate{{name: "RequestEmblem", pkg: "guild", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnGuildResult#CreateErrorNameInUse":
+		// case 0x1C: mode-only notice. Atlas CreateErrorNameInUse writes mode(1). ✓
+		return []candidate{{name: "CreateErrorNameInUse", pkg: "guild", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnGuildResult#CreateErrorDisagreed":
+		// case 0x24: mode-only notice. Atlas CreateErrorDisagreed writes mode(1). ✓
+		return []candidate{{name: "CreateErrorDisagreed", pkg: "guild", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnGuildResult#CreateError":
+		// case 0x26: mode-only notice. Atlas CreateError writes mode(1). ✓
+		return []candidate{{name: "CreateError", pkg: "guild", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnGuildResult#JoinErrorAlreadyJoined":
+		// case 0x28: mode-only notice. Atlas JoinErrorAlreadyJoined writes mode(1). ✓
+		return []candidate{{name: "JoinErrorAlreadyJoined", pkg: "guild", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnGuildResult#JoinErrorMaxMembers":
+		// case 0x29: mode-only notice. Atlas JoinErrorMaxMembers writes mode(1). ✓
+		return []candidate{{name: "JoinErrorMaxMembers", pkg: "guild", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnGuildResult#JoinErrorNotInChannel":
+		// case 0x2A: mode-only notice. Atlas JoinErrorNotInChannel writes mode(1). ✓
+		return []candidate{{name: "JoinErrorNotInChannel", pkg: "guild", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnGuildResult#MemberQuitErrorNotInGuild":
+		// case 0x2D: mode-only notice. Atlas MemberQuitErrorNotInGuild writes mode(1). ✓
+		return []candidate{{name: "MemberQuitErrorNotInGuild", pkg: "guild", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnGuildResult#MemberExpelledErrorNotInGuild":
+		// case 0x30: mode-only notice. Atlas MemberExpelledErrorNotInGuild writes mode(1). ✓
+		return []candidate{{name: "MemberExpelledErrorNotInGuild", pkg: "guild", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnGuildResult#DisbandError":
+		// case 0x34: mode-only GuildNPCSay. Atlas DisbandError writes mode(1). ✓
+		return []candidate{{name: "DisbandError", pkg: "guild", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnGuildResult#InviteErrorNotAcceptingInvites":
+		// case 0x35: Decode1(mode) + DecodeStr(targetName). Atlas InviteErrorNotAcceptingInvites writes mode(1)+target(str). ✓
+		return []candidate{{name: "InviteErrorNotAcceptingInvites", pkg: "guild", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnGuildResult#InviteErrorAnotherInvite":
+		// case 0x36: Decode1(mode) + DecodeStr(targetName). Atlas InviteErrorAnotherInvite writes mode(1)+target(str). ✓
+		return []candidate{{name: "InviteErrorAnotherInvite", pkg: "guild", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnGuildResult#InviteDenied":
+		// case 0x37: Decode1(mode) + DecodeStr(targetName). Atlas InviteDenied writes mode(1)+target(str). ✓
+		return []candidate{{name: "InviteDenied", pkg: "guild", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnGuildResult#CreateErrorCannotAsAdmin":
+		// case 0x38: mode-only CHATLOG. Atlas CreateErrorCannotAsAdmin writes mode(1). ✓
+		return []candidate{{name: "CreateErrorCannotAsAdmin", pkg: "guild", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnGuildResult#IncreaseCapacityError":
+		// case 0x3B: mode-only notice. Atlas IncreaseCapacityError writes mode(1). ✓
+		return []candidate{{name: "IncreaseCapacityError", pkg: "guild", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnGuildResult#MemberUpdate":
+		// case 0x3C: Decode4(guildId)+Decode4(charId)+Decode4(level)+Decode4(job). Atlas MemberUpdate writes mode(1)+guildId(4)+charId(4)+level(4)+job(4). ✓
+		return []candidate{{name: "MemberUpdate", pkg: "guild", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnGuildResult#ShowTitles":
+		// case 0x49: Decode4(guildId)+Decode4(count)+count×[DecodeStr(name)+5×Decode4]. Atlas ShowTitles writes mode(1)+guildId(4)+count(4)+entries. ✓
+		return []candidate{{name: "ShowTitles", pkg: "guild", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnGuildResult#QuestErrorLessThanSixMembers":
+		// case 0x4A: mode-only notice. Atlas QuestErrorLessThanSixMembers writes mode(1). ✓
+		return []candidate{{name: "QuestErrorLessThanSixMembers", pkg: "guild", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnGuildResult#QuestErrorDisconnected":
+		// case 0x4B: mode-only notice. Atlas QuestErrorDisconnected writes mode(1). ✓
+		return []candidate{{name: "QuestErrorDisconnected", pkg: "guild", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnGuildResult#QuestWaitingNotice":
+		// case 0x4C: Decode1(channel)+Decode4(state). Atlas QuestWaitingNotice writes mode(1)+channel(1)+state(4). ✓
+		return []candidate{{name: "QuestWaitingNotice", pkg: "guild", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnGuildResult#BoardAuthKeyUpdate":
+		// case 0x4D: DecodeStr(authKey). Atlas BoardAuthKeyUpdate writes mode(1)+authKey(str). ✓
+		return []candidate{{name: "BoardAuthKeyUpdate", pkg: "guild", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnGuildResult#SetSkillResponse":
+		// case 0x4E (GMS only; jms-absent): Decode1(success)+[success: DecodeStr(message)]. Atlas SetSkillResponse writes mode(1)+success(1)+[message(str)]. ✓
+		return []candidate{{name: "SetSkillResponse", pkg: "guild", dir: csvpkg.DirClientbound}}
 	case "CWvsContext::OnGuildResult#EmblemChange":
 		// case 69: Decode1(mode) + Decode4(guildId) + Decode2(nMarkBg) + Decode1(nMarkBgColor) + Decode2(nMark) + Decode1(nMarkColor).
 		// Atlas EmblemChange writes: mode(1) + guildId(4) + logoBackground(2) + logoBackgroundColor(1) + logo(2) + logoColor(1). ✓
@@ -1458,34 +1516,37 @@ func candidatesFromFName(fname string) []candidate {
 
 	// --- Social: guild BBS (clientbound) ---
 	// CSV: GUILD_BBS_PACKET (clientbound, opcode 0x03B/59 in GMS v95) → CWvsContext::OnGuildBBSPacket →
-	// CUIGuildBBS::OnGuildBBSPacket dispatches on (Decode1 - 6): 0=list, 1=view, 2=not-found.
-	case "CWvsContext::OnGuildBBSPacket":
-		// Top-level dispatcher — op-byte only (delegates to CUIGuildBBS::OnGuildBBSPacket).
-		// ⚠️ OP-FAMILY-guild-bbs-clientbound: deferred to _pending.md.
-		return []candidate{{name: "BBSThreadList", pkg: "guild", dir: csvpkg.DirClientbound}}
+	// CUIGuildBBS::OnGuildBBSPacket dispatches on (Decode1 - 6): 0=list, 1=view, 2=not-found. Mode bytes
+	// 6/7/8 are version-stable (gms_v83/84/87/95; jms-absent) and NOT config-resolved (guild_bbs.yaml).
+	// No bare-root entry (matches the CITC/OnFieldEffect exemplars).
 	case "CUIGuildBBS::OnGuildBBSPacket#BBSThreadList":
-		// (Decode1-6)=0 → OnLoadListResult: mode(1)+hasNotice(1)+[noticeFields if set]+totalCount(4)+pageCount(4)+entries.
-		// Atlas BBSThreadList.Encode: WriteByte(0x06)+hasNotice+[noticeFields]+totalCount(4)+[page of entries].
-		// ⚠️ Tool-limitation: conditional notice block + loop body → flat analyzer FP. Wire ✓ on bytes.
+		// (Decode1-6)=0 → OnLoadListResult mode 6: mode(1)+hasNotice(1)+[noticeFields if set]+totalCount(4)+pageCount(4)+entries.
+		// Atlas BBSThreadList.Encode: WriteByte(mode 6)+hasNotice+[noticeFields]+totalCount(4)+[page of entries]. ✓ on bytes.
 		return []candidate{{name: "BBSThreadList", pkg: "guild", dir: csvpkg.DirClientbound}}
 	case "CUIGuildBBS::OnGuildBBSPacket#BBSThread":
-		// (Decode1-6)=1 → OnViewEntryResult: mode(1)+id(4)+charId(4)+date(8buf)+title(str)+text(str)+emoticon(4)+replyCount(4)+replies.
-		// Atlas BBSThread.Encode: WriteByte(0x07)+id(4)+charId(4)+int64(date)+title+text+emoticon(4)+replyCount(4)+replies. ✓
-		// ⚠️ Tool-limitation: DecodeBuf(8) date vs WriteInt64 — same 8 bytes but different op classification.
+		// (Decode1-6)=1 → OnViewEntryResult mode 7: mode(1)+id(4)+charId(4)+date(8buf)+title(str)+text(str)+emoticon(4)+replyCount(4)+replies.
+		// Atlas BBSThread.Encode: WriteByte(mode 7)+id(4)+charId(4)+int64(date)+title+text+emoticon(4)+replyCount(4)+replies. ✓
 		return []candidate{{name: "BBSThread", pkg: "guild", dir: csvpkg.DirClientbound}}
+	case "CUIGuildBBS::OnGuildBBSPacket#BBSEntryNotFound":
+		// (Decode1-6)=2 → OnEntryNotFound mode 8: mode-only notice. Atlas BBSEntryNotFound writes mode(1). ✓
+		return []candidate{{name: "BBSEntryNotFound", pkg: "guild", dir: csvpkg.DirClientbound}}
 
 	// --- Social: guild (serverbound) ---
 	// CSV: GUILD_OPERATION (serverbound, opcode 0x07E/126 in GMS v95) → dispatcher reads op byte.
 	// Multiple CField functions share this opcode.
 	case "CUIFadeYesNo::OnButtonClicked":
-		// Op-byte dispatcher for GUILD_OPERATION serverbound.
-		// ⚠️ OP-FAMILY-guild-serverbound: op-byte family deferred to _pending.md.
+		// GUILD_OPERATION serverbound op-byte prefix struct (guild/serverbound Operation),
+		// the same kept-root pattern as party's serverbound Operation. The per-sub-op
+		// serverbound arms below carry prefixName/prefixPkg "Operation"/"guild".
 		return []candidate{{name: "Operation", pkg: "guild", dir: csvpkg.DirServerbound}}
 	case "CField::InputGuildName":
 		// Sub-op: RequestCreate — Encode1(op) + EncodeStr(name). Atlas RequestCreate writes: WriteAsciiString(name). ✓ (op consumed by dispatcher)
 		return []candidate{{name: "RequestCreate", pkg: "guild", dir: csvpkg.DirServerbound, prefixName: "Operation", prefixPkg: "guild"}}
 	case "CField::SendCreateGuildAgreeMsg":
-		// Sub-op: AgreementResponse — Encode1(op) + Encode1(agreed). Atlas AgreementResponse writes: WriteInt(unk)+WriteBool(agreed). ❌ wire mismatch — extra Encode4 unk.
+		// Sub-op: AgreementResponse — Encode1(op) + Encode4(unk) + Encode1(agreed).
+		// Atlas AgreementResponse writes: WriteInt(unk)+WriteBool(agreed) (op stripped by dispatcher). ✓
+		// IDA-verified byte-correct: v83@0x530666, v87@0x557e6e, v95@0x52d780, jms@0x56da47 all write
+		// Encode4(party/guild id)+Encode1(agreed). [Prior "❌ extra Encode4 unk" verdict was STALE — unk is real.]
 		return []candidate{{name: "AgreementResponse", pkg: "guild", dir: csvpkg.DirServerbound, prefixName: "Operation", prefixPkg: "guild"}}
 	case "CField::SendSetGuildMarkMsg":
 		// Sub-op: SetEmblem — Encode1(op) + Encode2(logoBg) + Encode1(logoBgColor) + Encode2(logo) + Encode1(logoColor). Atlas SetEmblem writes same fields. ✓
@@ -1508,14 +1569,10 @@ func candidatesFromFName(fname string) []candidate {
 	case "CWvsContext::SendSetGuildTitleNames":
 		// Sub-op: SetTitleNames — Encode1(op) + 5×EncodeStr(title). Atlas SetTitleNames writes: 5×WriteAsciiString. ✓
 		return []candidate{{name: "SetTitleNames", pkg: "guild", dir: csvpkg.DirServerbound, prefixName: "Operation", prefixPkg: "guild"}}
-	case "CWvsContext::OnGuildResult#AgreementResponse":
-		// CLIENTBOUND guild-creation agreement broadcast to party members:
-		// [mode, partyId, leaderName, guildName]. This is the REQUEST shown in the
-		// agree dialog, NOT the serverbound member reply (CField::SendCreateGuildAgreeMsg
-		// → the separate serverbound AgreementResponse). Atlas's clientbound
-		// RequestAgreement writes exactly [mode, partyId, leaderName, guildName], and
-		// the mode byte is the struct's own first field (no Operation wrapper).
-		return []candidate{{name: "RequestAgreement", pkg: "guild", dir: csvpkg.DirClientbound}}
+	// (Removed the CWvsContext::OnGuildResult#AgreementResponse clientbound alias:
+	// it mapped RequestAgreement a SECOND time (INV-1 shared-by-shape). F5: there is
+	// exactly ONE clientbound mode here — REQUEST_AGREEMENT (case 3) → #RequestAgreement.
+	// The serverbound member reply is the separate CField::SendCreateGuildAgreeMsg below.)
 	case "CWvsContext::SendGuildJoinMsg":
 		// Synthetic entry for Join serverbound (guild join after invitation accepted).
 		// Atlas Join writes: WriteInt(guildId)+WriteInt(characterId). ✓

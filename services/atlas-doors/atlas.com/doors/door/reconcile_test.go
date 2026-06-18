@@ -198,6 +198,50 @@ func TestReconcileHealsOrphanTaggedToDeadParty(t *testing.T) {
 	}
 }
 
+// TestReconcileAdoptDoesNotClearAnotherMembersSlot asserts that the adopt path
+// never emits a SLOT_CHANGED whose OldSlot differs from NewSlot.  In the
+// reinvite scenario below, Chronicle is leader at slot 0; Bishop is solo (also
+// at slot 0 while solo) and gets adopted at slot 1.  The pre-fix code passed
+// oldSlot=0 (Bishop's solo slot) to slotChangedEventProvider, which would emit
+// OldSlot=0, NewSlot=1 — telling the channel to clear slot 0 (the leader's
+// slot) before setting slot 1.  After the fix, OldSlot must equal NewSlot so
+// only Bishop's own slot is touched.
+func TestReconcileAdoptDoesNotClearAnotherMembersSlot(t *testing.T) {
+	em := &fakeEmit{}
+	p, ten, ctx := newTestProcessor(t, fakeResolver{}, &counterAllocator{next: 1}, em)
+	f := field.NewBuilder(1, 2, 240011000).Build()
+
+	// Chronicle (owner=1) in party at slot 0; Bishop (owner=5) currently solo (slot 0).
+	chron := NewBuilder().SetAreaDoorId(1).SetTownDoorId(2).SetOwnerCharacterId(1).
+		SetPartyId(1000000008).SetField(f).SetTownMapId(_map.Id(240000000)).SetSlot(0).Build()
+	bishopSolo := NewBuilder().SetAreaDoorId(3).SetTownDoorId(4).SetOwnerCharacterId(5).
+		SetPartyId(0).SetField(f).SetTownMapId(_map.Id(240000000)).SetSlot(0).Build()
+	for _, m := range []Model{chron, bishopSolo} {
+		_ = GetRegistry().Put(ctx, ten, m)
+	}
+
+	// Bishop rejoins: members=[1,5], joiners=[5].
+	_ = ReconcileParty(p, 1000000008, []character.Id{1, 5}, []character.Id{5}, nil,
+		func(_ _map.Id) []TownPortal { return twoPartyPortals() })
+
+	// Any emitted SLOT_CHANGED must have OldSlot == NewSlot (no foreign-slot clear).
+	for i, ty := range em.types {
+		if ty != EventDoorStatusSlotChanged {
+			continue
+		}
+		var env struct {
+			Body struct {
+				OldSlot byte `json:"oldSlot"`
+				NewSlot byte `json:"newSlot"`
+			} `json:"body"`
+		}
+		_ = json.Unmarshal(em.values[i], &env)
+		if env.Body.OldSlot != env.Body.NewSlot {
+			t.Fatalf("adopt emitted a foreign-slot clear: OldSlot=%d NewSlot=%d (would wipe another member's slot)", env.Body.OldSlot, env.Body.NewSlot)
+		}
+	}
+}
+
 func TestReconcileNeverEmitsSlotAbove5(t *testing.T) {
 	em := &fakeEmit{}
 	p, ten, ctx := newTestProcessor(t, fakeResolver{}, &counterAllocator{next: 1}, em)

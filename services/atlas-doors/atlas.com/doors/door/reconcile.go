@@ -103,8 +103,11 @@ func (p *ProcessorImpl) reconcileMemberDoor(partyId uint32, members []character.
 		}
 		_ = p.emit(EnvEventTopicDoorStatus, createdEventProvider(n, uint32(m)))
 	}
-	// Owner: town/array-only transition (clears old slot, sets new array slot).
-	_ = p.emit(EnvEventTopicDoorStatus, slotChangedEventProvider(n, oldSlot))
+	// Adopt has no prior party-array slot to vacate. Emit OldSlot == NewSlot so the
+	// channel's town-portal-array update is a self-clear+set of THIS door's own slot
+	// and never clears another member's slot (e.g. the leader's slot 0). A foreign
+	// OldSlot clear here would wipe another member's town portal from the party array.
+	_ = p.emit(EnvEventTopicDoorStatus, slotChangedEventProvider(n, n.Slot()))
 	p.l.WithFields(logrus.Fields{
 		"door_action": "reconcile_adopt", "party_id": partyId, "owner": uint32(owner),
 		"area_door_id": d.AreaDoorId(), "old_slot": oldSlot, "new_slot": desiredSlot,

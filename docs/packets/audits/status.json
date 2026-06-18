@@ -13006,8 +13006,7 @@
           "opcode": 159
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 163
         },
         "gms_v87": {

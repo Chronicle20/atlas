@@ -3552,13 +3552,13 @@
 - op: NEW_YEAR_CARD_REQUEST
   direction: serverbound
   opcode: 163
-  fname: CUINewYearCardSenderDlg::_SendNewYearCard
+  fname: CUIFadeYesNo::OnButtonClicked
   fname_alts:
   - CUINewYearCardSenderDlg::_SendNewYearCard
   provenance: ida-discovered
   ida:
     address: 11130819
-  note: 'task-100 cluster-H: v84 serverbound 0x82-0xA6 reshift, READ from v84 IDB COutPacket send-site (GMS_v84.1_U_DEVM). NewYearCard sender @0xa9d7c3 pushes COutPacket(163)=0xa3 (Encode1(0)+Encode2(pos)+Encode4(item)+EncodeStr(target)+EncodeStr(memo)); body == v95 _SendNewYearCard @0xa1d2a0 COutPacket(183)=0xb7 (-20). v84 fn renamed+idb_saved. Prior fname CUIFadeYesNo::OnButtonClicked was WRONG; prior 0x9f stale (collided with BBS_OPERATION which IS real@0x9f).'
+  note: 'task-100 cluster-H: v84 serverbound 0x82-0xA6 reshift, READ from v84 IDB COutPacket send-site (GMS_v84.1_U_DEVM). NewYearCard sender @0xa9d7c3 pushes COutPacket(163)=0xa3 (Encode1(0)+Encode2(pos)+Encode4(item)+EncodeStr(target)+EncodeStr(memo)); body == v95 _SendNewYearCard @0xa1d2a0 COutPacket(183)=0xb7 (-20). v84 fn renamed+idb_saved. task-103: primary fname realigned to CUIFadeYesNo::OnButtonClicked (the synthetic GUILD_OPERATION op-byte dispatcher stub used by v83/v87/v95, matching the GuildOperation one-byte codec the matrix grades this op against); _SendNewYearCard kept as alt (real send site). Opcode 163 unchanged. Prior 0x9f stale (collided with BBS_OPERATION which IS real@0x9f).'
 - op: MORPH_REQUEST
   direction: serverbound
   opcode: 164

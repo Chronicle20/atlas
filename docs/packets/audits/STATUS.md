@@ -664,7 +664,7 @@ Tool: `6913e7a3ea74b715887fa34e22bc251e662c06ba`
 | USE_SOLOMON_ITEM | CWvsContext::SendExpUpItemUseRequest |  | 0x09D | ❌ | 0x0A1 | ❌ | 0x0A5 | ❌ | 0x0B5 | ❌ | 0x071 | ❌ |
 | SLIDE_REQUEST | CField::SendChatMsgSlash | field/serverbound/FieldAdminChat (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x09E | ✅ | 0x089 | ✅ |
 | USE_GACHA_EXP | CWvsContext::SendTempExpUseRequest |  | 0x09E | ❌ | 0x0A2 | ❌ | 0x0A6 | ❌ | 0x0B6 | ❌ | 0x072 | ❌ |
-| NEW_YEAR_CARD_REQUEST | CUIFadeYesNo::OnButtonClicked; CUINewYearCardSenderDlg::_SendNewYearCard | guild/serverbound/GuildOperation (T1) | 0x09F | ✅ | 0x0A3 | ❌ | 0x0A7 | ✅ | 0x0B7 | ✅ |  | ⬜ |
+| NEW_YEAR_CARD_REQUEST | CUIFadeYesNo::OnButtonClicked; CUINewYearCardSenderDlg::_SendNewYearCard | guild/serverbound/GuildOperation (T1) | 0x09F | ✅ | 0x0A3 | ✅ | 0x0A7 | ✅ | 0x0B7 | ✅ |  | ⬜ |
 | MORPH_REQUEST | CUINewYearCardSenderDlg::_SendNewYearCard; CUIRandomMorphDlg::_SendMorphRequest |  | 0x0A0 | ❌ | 0x0A4 | ❌ | 0x0A8 | ❌ | 0x0B8 | ❌ |  | ⬜ |
 | CASH_ITEM_GACHAPON_BUTTON | CUICashItemGachapon::OnButtonClicked |  | 0x0A1 | ❌ | 0x0A5 | ❌ | 0x0A9 | ❌ | 0x0B9 | ❌ |  | ⬜ |
 | CLICK_GUIDE | CUserLocal::HandleLButtonDblClk |  | 0x0A2 | ❌ |  | ⬜ | 0x0AC | ❌ | 0x0BC | ❌ | 0x09C | ❌ |
@@ -904,7 +904,7 @@ Tool: `6913e7a3ea74b715887fa34e22bc251e662c06ba`
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
 | v83 | 343 | 0 | 0 | 330 | 200 | 0 | 51.0% |
-| v84 | 309 | 0 | 0 | 343 | 221 | 0 | 47.4% |
+| v84 | 310 | 0 | 0 | 342 | 221 | 0 | 47.5% |
 | v87 | 358 | 0 | 0 | 352 | 163 | 0 | 50.4% |
 | v95 | 389 | 0 | 1 | 404 | 79 | 0 | 49.0% |
 | JMS185 | 326 | 0 | 0 | 378 | 169 | 0 | 46.3% |

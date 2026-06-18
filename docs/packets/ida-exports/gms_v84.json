@@ -3,6 +3,153 @@
   "md5": "",
   "generated_at": "2026-06-13T12:51:12Z",
   "functions": {
+    "CField::SendInviteGuildMsg": {
+      "address": "0x0",
+      "direction": "serverbound",
+      "note": "task-103 serverbound campaign: gms_v84 GUILD_OPERATION sub-op 5 (0x5), COutPacket(0x82)+Encode1(0x5)+body. Body verified at 0x53c93f. op+subtype consumed by Atlas guild Operation wrapper; calls list the wire body only (mirrors gms_v95 curated stub).",
+      "calls": [
+        {
+          "op": "EncodeStr",
+          "comment": "target character name"
+        }
+      ]
+    },
+    "CWvsContext::SendGuildJoinMsg": {
+      "address": "0x0",
+      "direction": "serverbound",
+      "note": "task-103 serverbound campaign: gms_v84 GUILD_OPERATION sub-op 6 (0x6), COutPacket(0x82)+Encode1(0x6)+body. Body verified at 0x52ddcf (CUIFadeYesNo::OnButtonClicked case 8). op+subtype consumed by Atlas guild Operation wrapper; calls list the wire body only (mirrors gms_v95 curated stub).",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "guildId"
+        },
+        {
+          "op": "Encode4",
+          "comment": "characterId"
+        }
+      ]
+    },
+    "CField::SendKickGuildMsg": {
+      "address": "0x0",
+      "direction": "serverbound",
+      "note": "task-103 serverbound campaign: gms_v84 GUILD_OPERATION sub-op 8 (0x8), COutPacket(0x82)+Encode1(0x8)+body. Body verified at 0x53cc7d. op+subtype consumed by Atlas guild Operation wrapper; calls list the wire body only (mirrors gms_v95 curated stub).",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "characterId"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "character name"
+        }
+      ]
+    },
+    "CField::SendWithdrawGuildMsg": {
+      "address": "0x0",
+      "direction": "serverbound",
+      "note": "task-103 serverbound campaign: gms_v84 GUILD_OPERATION sub-op 7 (0x7), COutPacket(0x82)+Encode1(0x7)+body. Body verified at 0x53cb4d. op+subtype consumed by Atlas guild Operation wrapper; calls list the wire body only (mirrors gms_v95 curated stub).",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "characterId"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "character name"
+        }
+      ]
+    },
+    "CTabGuildAlliance::OnGradeChange": {
+      "address": "0x0",
+      "direction": "serverbound",
+      "note": "task-103 serverbound campaign: gms_v84 GUILD_OPERATION sub-op 14 (0xE), COutPacket(0x82)+Encode1(0xE)+body. Body verified at 0x53d030 (CField::SendSetMemberGradeMsg). op+subtype consumed by Atlas guild Operation wrapper; calls list the wire body only (mirrors gms_v95 curated stub).",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "targetId"
+        },
+        {
+          "op": "Encode1",
+          "comment": "newTitle byte"
+        }
+      ]
+    },
+    "CField::SendSetGuildNoticeMsg": {
+      "address": "0x0",
+      "direction": "serverbound",
+      "note": "task-103 serverbound campaign: gms_v84 GUILD_OPERATION sub-op 16 (0x10), COutPacket(0x82)+Encode1(0x10)+body. Body verified at 0x53d228. op+subtype consumed by Atlas guild Operation wrapper; calls list the wire body only (mirrors gms_v95 curated stub).",
+      "calls": [
+        {
+          "op": "EncodeStr",
+          "comment": "notice text"
+        }
+      ]
+    },
+    "CWvsContext::SendSetGuildTitleNames": {
+      "address": "0x0",
+      "direction": "serverbound",
+      "note": "task-103 serverbound campaign: gms_v84 GUILD_OPERATION sub-op 13 (0xD), COutPacket(0x82)+Encode1(0xD)+body. Body verified at 0x53d097 (CField::SendSetGradeNameMsg). op+subtype consumed by Atlas guild Operation wrapper; calls list the wire body only (mirrors gms_v95 curated stub).",
+      "calls": [
+        {
+          "op": "EncodeStr",
+          "comment": "title[0]"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "title[1]"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "title[2]"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "title[3]"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "title[4]"
+        }
+      ]
+    },
+    "CField::SendSetGuildMarkMsg": {
+      "address": "0x0",
+      "direction": "serverbound",
+      "note": "task-103 serverbound campaign: gms_v84 GUILD_OPERATION sub-op 15 (0xF), COutPacket(0x82)+Encode1(0xF)+body. Body verified at 0x53d1ab. op+subtype consumed by Atlas guild Operation wrapper; calls list the wire body only (mirrors gms_v95 curated stub).",
+      "calls": [
+        {
+          "op": "Encode2",
+          "comment": "logoBackground"
+        },
+        {
+          "op": "Encode1",
+          "comment": "logoBackgroundColor"
+        },
+        {
+          "op": "Encode2",
+          "comment": "logo"
+        },
+        {
+          "op": "Encode1",
+          "comment": "logoColor"
+        }
+      ]
+    },
+    "CField::SendCreateGuildAgreeMsg": {
+      "address": "0x0",
+      "direction": "serverbound",
+      "note": "task-103 serverbound campaign: gms_v84 GUILD_OPERATION sub-op 30 (0x1E), COutPacket(0x82)+Encode1(0x1E)+body. Body verified at 0x53c8cd. op+subtype consumed by Atlas guild Operation wrapper; calls list the wire body only (mirrors gms_v95 curated stub).",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "guildId (party/guild id from CWvsContext)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "bAgree bool (0=no,1=yes)"
+        }
+      ]
+    },
     "AvatarLook::Decode": {
       "address": "",
       "direction": "",
@@ -5345,35 +5492,55 @@
       ]
     },
     "CUIGuildBBS::OnComment": {
-      "address": "",
+      "address": "0x841c2b",
       "direction": "serverbound",
-      "unresolved": true,
+      "note": "task-103: v84 BBS_OPERATION reply. COutPacket(159)+Encode1(4)+Encode4(threadId)+EncodeStr(message). IDA-verified @0x841c2b.",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Encode1",
+          "comment": "op byte (reply sub-op)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "threadId"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "message"
         }
       ]
     },
     "CUIGuildBBS::OnCommentDelete": {
-      "address": "",
+      "address": "0x841d3f",
       "direction": "serverbound",
-      "unresolved": true,
+      "note": "task-103: v84 BBS_OPERATION delete-reply. COutPacket(159)+Encode1(5)+Encode4(threadId)+Encode4(replyId). IDA-verified @0x841d3f.",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Encode1",
+          "comment": "op byte (delete-reply sub-op)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "threadId"
+        },
+        {
+          "op": "Encode4",
+          "comment": "replyId"
         }
       ]
     },
     "CUIGuildBBS::OnDelete": {
-      "address": "",
+      "address": "0x841b72",
       "direction": "serverbound",
-      "unresolved": true,
+      "note": "task-103: v84 BBS_OPERATION delete-thread. COutPacket(159)+Encode1(1)+Encode4(threadId). IDA-verified @0x841b72.",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Encode1",
+          "comment": "op byte (delete-thread sub-op)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "threadId"
         }
       ]
     },
@@ -5416,35 +5583,67 @@
       ]
     },
     "CUIGuildBBS::OnRegister": {
-      "address": "",
+      "address": "0x84198d",
       "direction": "serverbound",
-      "unresolved": true,
+      "note": "task-103: v84 BBS_OPERATION create/edit. COutPacket(159)+Encode1(0)+Encode1(modify)+[if modify:Encode4(threadId)]+Encode1(notice)+EncodeStr(title)+EncodeStr(message)+Encode4(emoticon). IDA-verified @0x84198d.",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Encode1",
+          "comment": "op byte (create/edit sub-op)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "modify bool"
+        },
+        {
+          "op": "Encode4",
+          "comment": "threadId (if modify)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "notice bool"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "title"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "message"
+        },
+        {
+          "op": "Encode4",
+          "comment": "emoticonId"
         }
       ]
     },
     "CUIGuildBBS::SendLoadListRequest": {
-      "address": "",
+      "address": "0x841e00",
       "direction": "serverbound",
-      "unresolved": true,
+      "note": "task-103: v84 BBS_OPERATION (opcode 0x9F) load-list. COutPacket(159)+Encode1(2)+Encode4(startIndex). IDA-verified @0x841e00.",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Encode1",
+          "comment": "op byte (list sub-op)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "startIndex"
         }
       ]
     },
     "CUIGuildBBS::SendViewEntryRequest": {
-      "address": "",
+      "address": "0x841e61",
       "direction": "serverbound",
-      "unresolved": true,
+      "note": "task-103: v84 BBS_OPERATION view-entry. COutPacket(159)+Encode1(3)+Encode4(threadId). IDA-verified @0x841e61.",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Encode1",
+          "comment": "op byte (view sub-op)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "threadId (entryID)"
         }
       ]
     },

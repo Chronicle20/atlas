@@ -684,7 +684,7 @@
         "handler": "WeddingTalk"
       },
       {
-        "opCode": "0x9B",
+        "opCode": "0x9F",
         "validator": "LoggedInValidator",
         "handler": "GuildBBSHandle",
         "options": {

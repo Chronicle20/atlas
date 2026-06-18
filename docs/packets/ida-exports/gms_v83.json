@@ -3,6 +3,115 @@
   "md5": "80ff438ced539b831f0d2ed95099275d",
   "generated_at": "2026-05-14T00:00:00Z",
   "functions": {
+    "CField::SendInviteGuildMsg": {
+      "address": "0x0",
+      "direction": "serverbound",
+      "note": "task-103 serverbound campaign: gms_v83 GUILD_OPERATION sub-op 5 (0x5), COutPacket(0x7E)+Encode1(0x5)+body. Body verified at 0x5306d5. op+subtype consumed by Atlas guild Operation wrapper; calls list the wire body only (mirrors gms_v95 curated stub).",
+      "calls": [
+        {
+          "op": "EncodeStr",
+          "comment": "target character name"
+        }
+      ]
+    },
+    "CWvsContext::SendGuildJoinMsg": {
+      "address": "0x0",
+      "direction": "serverbound",
+      "note": "task-103 serverbound campaign: gms_v83 GUILD_OPERATION sub-op 6 (0x6), COutPacket(0x7E)+Encode1(0x6)+body. Body verified at 0x5226d0 (CUIFadeYesNo::OnButtonClicked case 8). op+subtype consumed by Atlas guild Operation wrapper; calls list the wire body only (mirrors gms_v95 curated stub).",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "guildId"
+        },
+        {
+          "op": "Encode4",
+          "comment": "characterId"
+        }
+      ]
+    },
+    "CField::SendKickGuildMsg": {
+      "address": "0x0",
+      "direction": "serverbound",
+      "note": "task-103 serverbound campaign: gms_v83 GUILD_OPERATION sub-op 8 (0x8), COutPacket(0x7E)+Encode1(0x8)+body. Body verified at 0x530a0d. op+subtype consumed by Atlas guild Operation wrapper; calls list the wire body only (mirrors gms_v95 curated stub).",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "characterId"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "character name"
+        }
+      ]
+    },
+    "CField::SendWithdrawGuildMsg": {
+      "address": "0x0",
+      "direction": "serverbound",
+      "note": "task-103 serverbound campaign: gms_v83 GUILD_OPERATION sub-op 7 (0x7), COutPacket(0x7E)+Encode1(0x7)+body. Body verified at 0x5308e0. op+subtype consumed by Atlas guild Operation wrapper; calls list the wire body only (mirrors gms_v95 curated stub).",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "characterId"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "character name"
+        }
+      ]
+    },
+    "CTabGuildAlliance::OnGradeChange": {
+      "address": "0x0",
+      "direction": "serverbound",
+      "note": "task-103 serverbound campaign: gms_v83 GUILD_OPERATION sub-op 14 (0xE), COutPacket(0x7E)+Encode1(0xE)+body. Body verified at 0x530dba (CField::SendSetMemberGradeMsg). op+subtype consumed by Atlas guild Operation wrapper; calls list the wire body only (mirrors gms_v95 curated stub).",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "targetId"
+        },
+        {
+          "op": "Encode1",
+          "comment": "newTitle byte"
+        }
+      ]
+    },
+    "CField::SendSetGuildNoticeMsg": {
+      "address": "0x0",
+      "direction": "serverbound",
+      "note": "task-103 serverbound campaign: gms_v83 GUILD_OPERATION sub-op 16 (0x10), COutPacket(0x7E)+Encode1(0x10)+body. Body verified at 0x530fa9. op+subtype consumed by Atlas guild Operation wrapper; calls list the wire body only (mirrors gms_v95 curated stub).",
+      "calls": [
+        {
+          "op": "EncodeStr",
+          "comment": "notice text"
+        }
+      ]
+    },
+    "CWvsContext::SendSetGuildTitleNames": {
+      "address": "0x0",
+      "direction": "serverbound",
+      "note": "task-103 serverbound campaign: gms_v83 GUILD_OPERATION sub-op 13 (0xD), COutPacket(0x7E)+Encode1(0xD)+body. Body verified at 0x530e1e (CField::SendSetGradeNameMsg). op+subtype consumed by Atlas guild Operation wrapper; calls list the wire body only (mirrors gms_v95 curated stub).",
+      "calls": [
+        {
+          "op": "EncodeStr",
+          "comment": "title[0]"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "title[1]"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "title[2]"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "title[3]"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "title[4]"
+        }
+      ]
+    },
     "CAffectedAreaPool::OnAffectedAreaCreated": {
       "address": "0x431a63",
       "direction": "clientbound",

@@ -1,0 +1,8 @@
+packet: guild/serverbound/GuildJoin
+direction: serverbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::SendGuildJoinMsg
+    address: "0x0"
+    decompile_sha256: a03a21c4ac0d015cf92d2eaaac42fcfff2297803d2824fffdaf5d15f1ab13ae8

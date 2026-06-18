@@ -1,0 +1,8 @@
+packet: guild/serverbound/GuildBBSDeleteReply
+direction: serverbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CUIGuildBBS::OnCommentDelete
+    address: "0x841d3f"
+    decompile_sha256: d51c840c5fce620715916b0c7c68f08dd1c263fdf90106c0428a34bd3ad449ec

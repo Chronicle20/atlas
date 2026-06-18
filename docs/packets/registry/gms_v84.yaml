@@ -3265,7 +3265,7 @@
 - op: GUILD_OPERATION
   direction: serverbound
   opcode: 130
-  fname: CField::SendSetGuildMarkMsg
+  fname: CUIFadeYesNo::OnButtonClicked
   fname_alts:
   - CField::SendCreateGuildAgreeMsg
   - CField::SendSetMemberGradeMsg
@@ -3280,7 +3280,7 @@
   provenance: ida-discovered
   ida:
     address: 5493163
-  note: 'task-100 cluster-H: v84 serverbound 0x82-0xA6 reshift, READ from v84 IDB COutPacket send-site (GMS_v84.1_U_DEVM). GUILD family @0x53d1ab pushes COutPacket(130)=0x82 (Encode1(0xF)+Encode2+Encode1+Encode2+Encode1); v95 SendSetGuildMarkMsg @0x52d8c0 = COutPacket(149)=0x95. Whole guild family (InputGuildName/SendInvite/SendKick) sends 0x82. Prior 0x7e was stale v83 (collided with PARTY_OPERATION which IS real@0x7e).'
+  note: 'task-100 cluster-H: v84 serverbound 0x82-0xA6 reshift, READ from v84 IDB COutPacket send-site (GMS_v84.1_U_DEVM). GUILD family @0x53d1ab pushes COutPacket(130)=0x82 (Encode1(0xF)+Encode2+Encode1+Encode2+Encode1); v95 SendSetGuildMarkMsg @0x52d8c0 = COutPacket(149)=0x95. Whole guild family (InputGuildName/SendInvite/SendKick) sends 0x82. Prior 0x7e was stale v83 (collided with PARTY_OPERATION which IS real@0x7e). task-103: primary fname set to CUIFadeYesNo::OnButtonClicked (the GUILD_OPERATION dispatcher kept-root, mirroring v83/v87/v95); the per-arm CField::Send* senders remain fname_alts. This stops the op row from consuming the SetEmblem sub-struct report (same wiring as v83), so GuildSetEmblem v84 grades as its own sub-struct cell.'
 - op: DENY_GUILD_REQUEST
   direction: serverbound
   opcode: 131

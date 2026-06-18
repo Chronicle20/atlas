@@ -3,6 +3,104 @@
   "md5": "2e692f3ab5078e04138d264f8ea1e668",
   "generated_at": "2026-05-14T00:00:00Z",
   "functions": {
+    "CField::SendInviteGuildMsg": {
+      "address": "0x0",
+      "direction": "serverbound",
+      "note": "task-103 serverbound campaign: gms_v87 GUILD_OPERATION sub-op 5 (0x5), COutPacket(0x86)+Encode1(0x5)+body. Body verified at 0x557ee0. op+subtype consumed by Atlas guild Operation wrapper; calls list the wire body only (mirrors gms_v95 curated stub).",
+      "calls": [
+        {
+          "op": "EncodeStr",
+          "comment": "target character name"
+        }
+      ]
+    },
+    "CWvsContext::SendGuildJoinMsg": {
+      "address": "0x0",
+      "direction": "serverbound",
+      "note": "task-103 serverbound campaign: gms_v87 GUILD_OPERATION sub-op 6 (0x6), COutPacket(0x86)+Encode1(0x6)+body. Body verified at 0x548098 (CUIFadeYesNo::OnButtonClicked case 8). op+subtype consumed by Atlas guild Operation wrapper; calls list the wire body only (mirrors gms_v95 curated stub).",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "guildId"
+        },
+        {
+          "op": "Encode4",
+          "comment": "characterId"
+        }
+      ]
+    },
+    "CField::SendKickGuildMsg": {
+      "address": "0x0",
+      "direction": "serverbound",
+      "note": "task-103 serverbound campaign: gms_v87 GUILD_OPERATION sub-op 8 (0x8), COutPacket(0x86)+Encode1(0x8)+body. Body verified at 0x55821e. op+subtype consumed by Atlas guild Operation wrapper; calls list the wire body only (mirrors gms_v95 curated stub).",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "characterId"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "character name"
+        }
+      ]
+    },
+    "CField::SendWithdrawGuildMsg": {
+      "address": "0x0",
+      "direction": "serverbound",
+      "note": "task-103 serverbound campaign: gms_v87 GUILD_OPERATION sub-op 7 (0x7), COutPacket(0x86)+Encode1(0x7)+body. Body verified at 0x5580ee. op+subtype consumed by Atlas guild Operation wrapper; calls list the wire body only (mirrors gms_v95 curated stub).",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "characterId"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "character name"
+        }
+      ]
+    },
+    "CTabGuildAlliance::OnGradeChange": {
+      "address": "0x0",
+      "direction": "serverbound",
+      "note": "task-103 serverbound campaign: gms_v87 GUILD_OPERATION sub-op 14 (0xE), COutPacket(0x86)+Encode1(0xE)+body. Body verified at 0x5585d1 (CField::SendSetMemberGradeMsg). op+subtype consumed by Atlas guild Operation wrapper; calls list the wire body only (mirrors gms_v95 curated stub).",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "targetId"
+        },
+        {
+          "op": "Encode1",
+          "comment": "newTitle byte"
+        }
+      ]
+    },
+    "CWvsContext::SendSetGuildTitleNames": {
+      "address": "0x0",
+      "direction": "serverbound",
+      "note": "task-103 serverbound campaign: gms_v87 GUILD_OPERATION sub-op 13 (0xD), COutPacket(0x86)+Encode1(0xD)+body. Body verified at 0x558638 (CField::SendSetGradeNameMsg). op+subtype consumed by Atlas guild Operation wrapper; calls list the wire body only (mirrors gms_v95 curated stub).",
+      "calls": [
+        {
+          "op": "EncodeStr",
+          "comment": "title[0]"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "title[1]"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "title[2]"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "title[3]"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "title[4]"
+        }
+      ]
+    },
     "CField::SendChatMsgWhisper": {
       "address": "0x556385",
       "direction": "serverbound",

@@ -1,30 +1,39 @@
 {
   "WriterName": "GuildBBSReplyThread",
   "IDAName": "CUIGuildBBS::OnComment",
-  "Address": "",
+  "Address": "0x841c2b",
   "Variant": "GMS/v84",
   "BranchDepth": 0,
   "AtlasFile": "libs/atlas-packet/guild/serverbound/bbs_reply_thread.go",
   "Rows": [
     {
       "Index": 0,
-      "AtlasOp": 2,
+      "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 4,
-      "Note": "IDA read-order unresolved: function not found in IDB"
+      "IDAOp": 0,
+      "IDAComment": "op byte (reply sub-op)",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "threadId",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
       "AtlasOp": 4,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "IDAOp": 4,
+      "IDAComment": "message",
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 2,
+  "Verdict": 0,
   "FlatInvalid": false
 }

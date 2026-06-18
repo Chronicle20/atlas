@@ -1,0 +1,8 @@
+packet: guild/serverbound/GuildSetMemberTitle
+direction: serverbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CTabGuildAlliance::OnGradeChange
+    address: "0x0"
+    decompile_sha256: ca704f6d35950fd98372ea8e8afa0c431e6f9b933c59d3518879759ff2c27939

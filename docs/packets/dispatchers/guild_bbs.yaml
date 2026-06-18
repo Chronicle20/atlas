@@ -1,0 +1,50 @@
+# GuildBBS — CUIGuildBBS::OnGuildBBSPacket per-version mode table.
+#
+# IDA-ENUMERATED arm table for the guild-BBS clientbound dispatcher. The
+# GUILD_BBS_PACKET opcode is delegated CWvsContext::OnGuildBBSPacket ->
+# CUIGuildBBS::OnGuildBBSPacket, which dispatches on (CInPacket::Decode1 - 6):
+#   (Decode1 - 6) == 0  -> OnLoadListResult   (raw mode byte 6)  -> BBSThreadList
+#   (Decode1 - 6) == 1  -> OnViewEntryResult  (raw mode byte 7)  -> BBSThread
+#   (Decode1 - 6) == 2  -> OnEntryNotFound    (raw mode byte 8)  -> (mode-only)
+#
+# Per-version CUIGuildBBS::OnGuildBBSPacket addresses (IDA-verified — task-103):
+#   gms_v83  0x816c32  (MapleStory_dump.exe,     port 13342) — named
+#   gms_v84  0x841ec9  (GMS_v84.1_U_DEVM.exe,    port 13337) — UNNAMED sub_841EC9,
+#            reached via CWvsContext::OnGuildBBSPacket thunk @0xa5c77c; dispatch
+#            (Decode1-6) -> sub_841F06 / sub_84224E / sub_842571 (list/view/notfound)
+#   gms_v87  0x87a5df  (GMSv87_4GB.exe,          port 13341) — named
+#   gms_v95  0x7c8260  (GMS_v95.0_U_DEVM.exe,    port 13340) — named
+#   jms_v185 — VERSION-ABSENT in the SCY build: no OnGuildBBSPacket / CUIGuildBBS
+#            symbol of any kind in the jms IDB, and the jms seed template does NOT
+#            register a GuildBBS writer. Per the grounding contract no jms address
+#            is fabricated; jms is omitted.
+#
+# MODE-BYTE DRIFT: NONE. The (Decode1 - 6) dispatch and the 6/7/8 mode bytes are
+# BYTE-IDENTICAL across gms_v83 / gms_v84 / gms_v87 / gms_v95 (IDA-verified).
+#
+# IMPORTANT — this is NOT an `operations`-table dispatcher:
+#   The GuildBBS clientbound structs (libs/atlas-packet/guild/clientbound/bbs.go)
+#   write the mode byte as a STRUCT LITERAL (WriteByte(0x06) / WriteByte(0x07)),
+#   NOT via WithResolvedCode("operations", ...). The gms_83 / gms_84 templates
+#   register the GuildBBS writer with NO `options.operations` map at all, and
+#   gms_87 / gms_95 / jms do not register it. Because the mode bytes are
+#   version-stable AND not config-resolved, GuildBBS does NOT belong in the
+#   tenant `operations` table.
+#
+#   Therefore this file intentionally OMITS the active `writer:` key so the
+#   packet-audit `operations` tool SKIPS it (loadDispatcherDocs ignores docs with
+#   an empty writer). Wiring `writer: GuildBBS` here would make `operations`
+#   try to populate a table the writer never reads — a false config dependency.
+#   This file is the grounded enumeration record; the later discrete-per-mode
+#   migration keeps the 6/7/8 bytes literal (version-stable) rather than
+#   config-resolving them.
+#
+# Enumeration (documentation only; tool-ignored):
+#   writer:    GuildBBS
+#   fname:     CUIGuildBBS::OnGuildBBSPacket
+#   op:        GUILD_BBS_PACKET
+#   direction: clientbound
+#   arms:
+#     - { handler: OnLoadListResult,  struct: BBSThreadList, raw_mode: 6, dispatch_index: 0, modes: { gms_v83: 6, gms_v84: 6, gms_v87: 6, gms_v95: 6 } }
+#     - { handler: OnViewEntryResult, struct: BBSThread,     raw_mode: 7, dispatch_index: 1, modes: { gms_v83: 7, gms_v84: 7, gms_v87: 7, gms_v95: 7 } }
+#     - { handler: OnEntryNotFound,   struct: (none — mode-only), raw_mode: 8, dispatch_index: 2, modes: { gms_v83: 8, gms_v84: 8, gms_v87: 8, gms_v95: 8 } }

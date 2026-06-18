@@ -189,3 +189,126 @@ new discrete struct needs its own marker lines per supported version.
 - `services/atlas-guilds` — only if a producer must emit a newly-split packet.
 - `docs/packets/...`, seed templates, live-config runbook — non-go.
 Touching a service `go.mod` ⇒ that service needs a `docker buildx bake`.
+
+## 10. Enumerated arm table (Task 1 — IDA-grounded)
+
+All values below are read directly from each version's decompiled switch (no
+MapleStory-knowledge / inference). OnGuildResult addresses: gms_v83 `0xa37490`,
+gms_v84 `0xa82e2b`, gms_v87 `0xacf7d3`, gms_v95 `0xa0d3b0`, jms_v185 `0xb22518`.
+Mode bytes shown in hex. `shape`: mode-only = ErrorMessage `{mode}`; target =
+ErrorMessageWithTarget `{mode,target}` (NOTE: none of the GuildOperation error
+arms actually read a trailing string in any version — they are ALL mode-only on
+the wire; the client substitutes the StringPool message locally, so
+ErrorMessageWithTarget is NOT used by any OnGuildResult arm — see flag F4);
+structured = arm with its own body struct.
+
+### GuildOperation (CWvsContext::OnGuildResult)
+
+| key | struct | shape | v83 | v84 | v87 | v95 | jms | present |
+|---|---|---|---|---|---|---|---|---|
+| REQUEST_NAME | (RequestGuildNameBody→ErrorMessage) | mode-only | 0x01 | 0x01 | 0x01 | 0x01 | 0x01 | all |
+| REQUEST_AGREEMENT | RequestAgreement | structured (partyId+leader+guild) | 0x03 | 0x03 | 0x03 | 0x03 | 0x03 | all |
+| INVITE | Invite | structured (guildId+name[+v87+:unk+skill]) | 0x05 | 0x05 | 0x05 | 0x05 | 0x05 | all |
+| REQUEST_EMBLEM | (RequestGuildEmblemBody→ErrorMessage) | mode-only | 0x11 | 0x11 | 0x11 | 0x11 | 0x11 | all |
+| THE_NAME_IS_ALREADY_IN_USE_PLEASE_TRY_OTHER_ONES | ErrorMessage | mode-only | 0x1C | 0x1C | 0x1C | 0x1E | 0x1C | all |
+| SOMEBODY_HAS_DISAGREED_TO_FORM_A_GUILD | ErrorMessage | mode-only | 0x24 | 0x24 | 0x24 | 0x26 | 0x24 | all |
+| THE_PROBLEM…FORMING_THE_GUILD…TRY_AGAIN | ErrorMessage | mode-only | 0x26 | 0x26 | 0x26 | 0x28 | 0x26 | all |
+| JOIN_SUCCESS | MemberJoined | structured (guildId+charId+GUILDMEMBER 37B) | 0x27 | 0x27 | 0x27 | 0x29 | 0x27 | all |
+| ALREADY_JOINED_THE_GUILD | ErrorMessage | mode-only | 0x28 | 0x28 | 0x28 | 0x2A | 0x28 | all |
+| THE_GUILD…MAX_NUMBER_OF_USERS | ErrorMessage | mode-only | 0x29 | 0x29 | 0x29 | 0x2B | 0x29 | all |
+| THE_CHARACTER_CANNOT_BE_FOUND_IN_THE_CURRENT_CHANNEL | ErrorMessage | mode-only | 0x2A | 0x2A | 0x2A | 0x2C | 0x2A | all |
+| MEMBER_QUIT_SUCCESS | MemberLeft | structured (guildId+charId+name) | 0x2C | 0x2C | 0x2C | 0x2E | 0x2C | all |
+| MEMBER_QUIT_ERROR_NOT_IN_GUILD | ErrorMessage | mode-only | 0x2D | 0x2D | 0x2D | 0x2F | 0x2D | all |
+| MEMBER_EXPELLED_SUCCESS | MemberExpel | structured (guildId+charId+name) | 0x2F | 0x2F | 0x2F | 0x31 | 0x2F | all |
+| MEMBER_EXPELLED_ERROR_NOT_IN_GUILD | ErrorMessage | mode-only | 0x30 | 0x30 | 0x30 | 0x32 | 0x30 | all |
+| DISBAND_SUCCESS | Disband | structured (guildId) | 0x32 | 0x32 | 0x32 | 0x34 | 0x32 | all |
+| THE_PROBLEM…DISBANDING…TRY_AGAIN | ErrorMessage | mode-only | 0x34 | 0x34 | 0x34 | 0x36 | 0x34 | all |
+| IS_CURRENTLY_NOT_ACCEPTING_GUILD_INVITE_MESSAGE | ErrorMessage | mode-only | 0x35 | 0x35 | 0x35 | 0x37 | 0x35 | all |
+| IS_TAKING_CARE_OF_ANOTHER_INVITATION | ErrorMessage | mode-only | 0x36 | 0x36 | 0x36 | 0x38 | 0x36 | all |
+| HAS_DENIED_YOUR_GUILD_INVITATION | ErrorMessage | mode-only | 0x37 | 0x37 | 0x37 | 0x39 | 0x37 | all |
+| ADMIN_CANNOT_MAKE_A_GUILD | ErrorMessage | mode-only | 0x38 | 0x38 | 0x38 | 0x3A | 0x38 | all |
+| CONGRATULATION…INCREASED_TO (CapacityChange) | CapacityChange | structured (guildId+capacity byte) | 0x3A | 0x3A | 0x3A | 0x3C | 0x3A | all |
+| THE_PROBLEM…INCREASING…TRY_AGAIN | ErrorMessage | mode-only | 0x3B | 0x3B | 0x3B | 0x3D | 0x3B | all |
+| MEMBER_UPDATE | (no body func yet) | structured (guildId+charId+level+job) | 0x3C | 0x3C | 0x3C | 0x3E | 0x3C | all |
+| MEMBER_ONLINE | MemberStatusUpdate | structured (guildId+charId+online byte) | 0x3D | 0x3D | 0x3D | 0x3F | 0x3D | all |
+| TITLE_UPDATE | TitleChange | structured (guildId+5×str) | 0x3E | 0x3E | 0x3E | 0x40 | 0x3E | all |
+| MEMBER_TITLE_CHANGE | MemberTitleUpdate | structured (guildId+charId+title byte) | 0x40 | 0x40 | 0x40 | 0x42 | 0x40 | all |
+| EMBLEM_CHANGE | EmblemChange | structured (guildId+markBg+bgColor+mark+color) | 0x42 | 0x42 | 0x42 | 0x45 | 0x42 | all |
+| NOTICE_CHANGE | NoticeChange | structured (guildId+notice str) | 0x44 | 0x44 | 0x44 | 0x47 | 0x44 | all |
+| SHOW_TITLES | (no body func yet) | structured (guildId+count+name+5×int) | 0x49 | 0x49 | 0x49 | 0x4C | 0x49 | all |
+| THERE_ARE_LESS_THAN_6_MEMBERS… | ErrorMessage | mode-only | 0x4A | 0x4A | 0x4A | 0x4D | 0x4A | all |
+| THE_USER_THAT_REGISTERED_HAS_DISCONNECTED… | ErrorMessage | mode-only | 0x4B | 0x4B | 0x4B | 0x4E | 0x4B | all |
+| QUEST_WAITING_NOTICE | (no body func yet) | structured (Decode1+Decode4) | 0x4C | 0x4C | 0x4C | 0x4F | 0x4C | all |
+| BOARD_AUTH_KEY_UPDATE | (no body func yet) | structured (DecodeStr) | 0x4D | 0x4D | 0x4D | 0x50 | 0x4D | all |
+| SET_SKILL_RESPONSE | (no body func yet) | structured (guildId+skillId+SKILLENTRY) | 0x4E | 0x4E | 0x4E | 0x51 | ⬜ | gms only |
+
+### GuildBBS (CUIGuildBBS::OnGuildBBSPacket — dispatch on `Decode1 - 6`)
+
+Addresses: gms_v83 `0x816c32`, gms_v84 `0x841ec9` (UNNAMED sub_841EC9 via thunk
+`0xa5c77c`), gms_v87 `0x87a5df`, gms_v95 `0x7c8260`, jms_v185 = absent. Mode
+bytes are STRUCT LITERALS (bbs.go `WriteByte(0x06)`/`(0x07)`), NOT config-resolved.
+
+| arm (handler) | struct | shape | mode | v83 | v84 | v87 | v95 | jms |
+|---|---|---|---|---|---|---|---|---|
+| OnLoadListResult | BBSThreadList | structured (notice + thread page) | 6 | 0x06 | 0x06 | 0x06 | 0x06 | ⬜ |
+| OnViewEntryResult | BBSThread | structured (thread + replies) | 7 | 0x07 | 0x07 | 0x07 | 0x07 | ⬜ |
+| OnEntryNotFound | (none — mode-only) | mode-only | 8 | 0x08 | 0x08 | 0x08 | 0x08 | ⬜ |
+
+### Flags / findings (real input for later tasks)
+
+- **F1 — v95 mode-byte SHIFT (non-uniform):** v95 GuildOperation modes are shifted
+  vs v83/v84/v87/jms by 0 (≤0x11), +2 (0x1C..0x44 range), +3 (EMBLEM/NOTICE and the
+  0x49+ quest/skill range). Mapped per arm by client read-order AND by decrypting
+  the StringPool message each arm shows (ms_aKey @0xb98830, rotl(seed)^cipher;
+  decryptor reproduced in-process). This is the SAME family as the opcode-table
+  drift bug — v95 modes are NOT a copy of v83.
+- **F2 — v83/v84/v87/jms modes are BYTE-IDENTICAL.** v84 confirmed from the LIVE
+  v84 IDB (port 13337), not folded from v83. The two-switch (`v4 > 0x32`) +
+  low-value if-chain shape and every case value match v83.
+- **F3 — Invite body shape, NOT a mode-byte issue:** the INVITE mode byte is 0x05
+  in every version, but the BODY differs. v83 reads only `guildId + name`;
+  **v84, v87, v95, jms ALL read `guildId + name + unk(4) + skillId(4)`** (the 2
+  trailing ints). The existing `Invite` struct gates the trailing ints on
+  `(GMS && MajorAtLeast(87)) || JMS`, i.e. it treats v84 like v83 — **this is WRONG
+  per the live v84 IDB** (v84 case 5 @0xa82e2b L1212-1216 reads the 2 ints). Later
+  task must widen the gate to include v84 (or `>=84`). Records contradict the
+  struct comment "v84..86 == v83".
+- **F4 — No OnGuildResult arm uses ErrorMessageWithTarget.** Every error arm in
+  every version is mode-only on the wire (client looks up the StringPool message;
+  the IS_CURRENTLY_NOT_ACCEPTING / ANOTHER_INVITATION / DENIED messages embed the
+  name via local `%s` formatting of a value the client already has, NOT a wire
+  string). `ErrorMessageWithTarget`/`GuildErrorBody2` is therefore an orphan codec
+  with no matching OnGuildResult arm — flag for the migration (it currently maps
+  to no enumerated arm).
+- **F5 — RequestAgreement vs AgreementResponse (the run.go question):** there is
+  exactly ONE clientbound mode here — **REQUEST_AGREEMENT = 0x03** (case 3 in every
+  version: `Decode4(partyId) + DecodeStr(leaderName) + DecodeStr(guildName)`, the
+  create-guild-agree-dialog request). run.go has BOTH
+  `#RequestAgreement` (L1373) and `#AgreementResponse` (L1495→L1511) pointing at the
+  SAME clientbound `RequestAgreement` struct. The serverbound `AgreementResponse`
+  (CField::SendCreateGuildAgreeMsg, L1487) is a DIFFERENT, serverbound packet (the
+  member's yes/no reply). So: clientbound side = ONE struct (RequestAgreement,
+  mode 0x03); the two clientbound run.go `#`-entries are aliases of one mode, NOT
+  two distinct clientbound modes. No second clientbound struct is needed.
+- **F6 — keys absent from the IDA switch:** none. Every GuildOperation key in
+  operation_body.go and the gms_83/gms_84 templates resolves to a real switch case
+  in v83/v84/v87 (and to its shifted case in v95). No invented structs.
+- **F7 — switch cases with NO existing key (NOT named — flagged, not invented):**
+  v83 has NPCsay/CHATLOG-only arms with no Atlas key (e.g. 0x1A guild-info-set /
+  GUILDDATA::Decode→0x1C in v95; v83 0x1F/0x20/0x21/0x23 minlevel/already-joined
+  NPCsay; v83 0x35 first-switch is the WAIT_AND_SEE NPCSay). v95 ADDS NEW upper
+  arms with no v83 analog and no Atlas key: **0x4B** (guildId+nPoint+nLevel guild
+  points/level update) and **0x52** ("guild request not accepted, unknown reason"
+  default path). These are NOT in the Atlas key set; per the stop-and-ask rule they
+  are NOT named/added here — surfaced for a design decision in a later task.
+- **F8 — `operations --check` RECORDED result (Step 7):** exit 1, **0 drift, 0
+  extra, 104 missing.** All 104 MISSING are the gms_87 / gms_95 / jms GuildOperation
+  keys whose seed templates have an EMPTY operations map (ops_count=0 —
+  bug_operations_mode_tables_missing_v87_v95_jms). gms_83/gms_84 = 0 drift/extra
+  (their templates already match these IDA values exactly). Not papered over: a
+  later task runs `packet-audit operations` (generate) to populate v87/v95/jms from
+  guild.yaml. GuildBBS produced 0 entries (correctly tool-ignored — no `writer:`).
+- **F9 — stale run.go comments to freshen later:** the `#`-entry narrative for
+  guild arms is point-in-time. The Invite comment claims v84..86==v83 (disproven by
+  F3). CapacityChange/Invite "[Prior ❌ … stale]" notes are accurate that the structs
+  are fixed, but the v84 Invite gate itself is wrong (F3).

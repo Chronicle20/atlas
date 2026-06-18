@@ -298,7 +298,8 @@ func TestHandleRemoved_Recast_NoRemovalPackets(t *testing.T) {
 
 // TestHandleSlotChanged_ReslotsTownPortal asserts a reslot re-places the
 // town-side portal: RemoveTownDoor then SpawnPortal at the new slot on the
-// town field only.
+// town field only. PartyId is 0 so this is a pure solo-path test (the party
+// block early-returns in announceTownPortalToParty when partyId == 0).
 func TestHandleSlotChanged_ReslotsTownPortal(t *testing.T) {
 	tm := newTestTenant(t)
 	ctx := tenant.WithContext(context.Background(), tm)
@@ -314,7 +315,7 @@ func TestHandleSlotChanged_ReslotsTownPortal(t *testing.T) {
 		MapId:            areaMapId,
 		Instance:         uuid.Nil,
 		OwnerCharacterId: ownerId,
-		PartyId:          77,
+		PartyId:          0,
 		Type:             EventDoorStatusSlotChanged,
 		Body: SlotChangedBody{
 			TownMapId: townMapId,

@@ -1,7 +1,7 @@
 # FieldMtsResultNotifyCancelWishResult (← `CITC::OnNormalItemResult#NotifyCancelWishResult`)
 
 - **IDA:** 0x5a523e
-- **Atlas file:** `libs/atlas-packet/field/clientbound/mts_result_two_ints_modes.go`
+- **Atlas file:** `libs/atlas-packet/field/clientbound/mts_operation.go`
 - **Variant:** GMS/v83
 - **Branch depth:** 0
 - **Verdict:** ✅

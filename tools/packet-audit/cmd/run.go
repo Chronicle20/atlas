@@ -1375,10 +1375,11 @@ func candidatesFromFName(fname string) []candidate {
 		// Atlas RequestAgreement writes: mode(1) + partyId(4) + leaderName(str) + guildName(str). ✓
 		return []candidate{{name: "RequestAgreement", pkg: "guild", dir: csvpkg.DirClientbound}}
 	case "CWvsContext::OnGuildResult#Invite":
-		// case 5: Decode1(mode) + Decode4(guildId) + DecodeStr(inviterName) + Decode4(v21) + Decode4(nSkillID).
-		// Atlas Invite writes: mode(1) + guildId(4) + originatorName(str) — MISSING 2 trailing Decode4 fields.
-		// ❌ Real wire bug: client reads 2 extra int32 fields that atlas does not send.
-		// IDA address 0xa0d664 (case 5 body).
+		// case 5: Decode1(mode) + Decode4(guildId) + DecodeStr(inviterName) [+ v87: Decode4(unknown) + Decode4(nSkillID)].
+		// Atlas Invite writes: mode(1) + guildId(4) + originatorName(str) + (v87+: unknown(4) + skillId(4)). ✓
+		// Per-version gated in the struct: v83 = guildId+name only (IDA v83 @0xa3b57a); v87+ adds 2 int32
+		// (IDA v87 @0xacf7d3/@0xacf9c7); v84..86 == v83. Verified: gms_v87 GuildInvite ✅; gms_v83 🔍
+		// (flat-diff-invalid modeling cap, NOT a wire bug). [Prior ❌ "MISSING 2 trailing" comment was stale.]
 		return []candidate{{name: "Invite", pkg: "guild", dir: csvpkg.DirClientbound}}
 	case "CWvsContext::OnGuildResult#ErrorMessage":
 		// cases 30,33,35,37,38,40,42,43,44,47,50,54,58,61: mode byte only, no further reads.
@@ -1428,8 +1429,9 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "Disband", pkg: "guild", dir: csvpkg.DirClientbound}}
 	case "CWvsContext::OnGuildResult#CapacityChange":
 		// case 60: Decode1(mode) + Decode4(guildId) + Decode1(nMaxMemberNum).
-		// Atlas CapacityChange writes: mode(1) + guildId(4) + WriteInt(capacity)(4).
-		// ❌ Real wire bug: IDA reads Decode1 (1 byte) but atlas emits WriteInt (4 bytes).
+		// Atlas CapacityChange writes: mode(1) + guildId(4) + capacity(1, WriteByte). ✓
+		// Verified: gms_v83 GuildCapacityChange ✅ (capacity row = Decode1/byte).
+		// [Prior ❌ "WriteInt (4 bytes)" comment was stale — the struct already emits WriteByte.]
 		return []candidate{{name: "CapacityChange", pkg: "guild", dir: csvpkg.DirClientbound}}
 	case "CWvsContext::OnGuildResult#Info":
 		// Info packet (sub-op 0x1A=26 in GUILD_OPERATION).

@@ -4,7 +4,7 @@
   "Address": "0x5a4e91",
   "Variant": "GMS/v83",
   "BranchDepth": 0,
-  "AtlasFile": "libs/atlas-packet/field/clientbound/mts_result_empty_modes.go",
+  "AtlasFile": "libs/atlas-packet/field/clientbound/mts_operation.go",
   "Rows": [
     {
       "Index": 0,

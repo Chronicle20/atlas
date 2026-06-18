@@ -1772,6 +1772,16 @@ func candidatesFromFName(fname string) []candidate {
 	case "CField::SendTransferFieldRequest":
 		return []candidate{{name: "Change", pkg: "field", dir: csvpkg.DirServerbound}}
 
+	// ENTER_MTS (CSV opcode 0x9C/156 in GMS v83). The client migrate-to-MTS/ITC
+	// request built by CWvsContext::SendMigrateToITCRequest@0xa12522. Per IDA the
+	// send site at 0xa1263b constructs COutPacket(opcode 0x9C) and immediately
+	// SendPacket()s it with ZERO Encode calls in between — a bodiless (opcode-only)
+	// request. All preceding code (guest-ID guard, lie-detector guard, map-flag
+	// guard) emits local chat/dialog and returns early; none writes to the packet.
+	// Matches atlas field/serverbound/enter_mts.go EnterMts.Encode (empty body).
+	case "CWvsContext::SendMigrateToITCRequest":
+		return []candidate{{name: "EnterMts", pkg: "field", dir: csvpkg.DirServerbound}}
+
 	// --- World: field (clientbound) ---
 	// Affected-area (mist) + kite (the flying-kite field object, called
 	// "MessageBox" client-side). FNames + addresses verified against the

@@ -8801,6 +8801,11 @@
         }
       ]
     },
+    "CWvsContext::SendMigrateToITCRequest": {
+      "address": "0xa12522",
+      "direction": "serverbound",
+      "calls": []
+    },
     "CWvsContext::SendPetFoodItemUseRequest": {
       "address": "0xa09905",
       "direction": "serverbound",

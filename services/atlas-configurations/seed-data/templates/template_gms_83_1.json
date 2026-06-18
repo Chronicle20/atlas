@@ -695,6 +695,11 @@
         }
       },
       {
+        "opCode": "0x9C",
+        "validator": "LoggedInValidator",
+        "handler": "EnterMtsHandle"
+      },
+      {
         "opCode": "0xA4",
         "validator": "LoggedInValidator",
         "handler": "MobCrcKeyChangedReply"

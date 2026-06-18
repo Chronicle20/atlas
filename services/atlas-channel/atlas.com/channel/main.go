@@ -854,6 +854,10 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[chatSB.CharacterChatWhisperHandle] = handler.CharacterChatWhisperHandleFunc
 	handlerMap[fieldsb.CharacterSpouseChatHandle] = handler.CharacterSpouseChatHandleFunc
 	handlerMap[messengersb.MessengerOperationHandle] = handler.MessengerOperationHandleFunc
+	handlerMap[fieldsb.EnterMtsHandle] = handler.EnterMtsHandleFunc
+	handlerMap[fieldsb.ItcStatusChargeHandle] = handler.ItcStatusChargeHandleFunc
+	handlerMap[fieldsb.ItcQueryCashRequestHandle] = handler.ItcQueryCashRequestHandleFunc
+	handlerMap[fieldsb.ItcOperationHandle] = handler.ItcOperationHandleFunc
 	handlerMap[petsb.PetMovementHandle] = handler.PetMovementHandleFunc
 	handlerMap[petsb.PetSpawnHandle] = handler.PetSpawnHandleFunc
 	handlerMap[petsb.PetCommandHandle] = handler.PetCommandHandleFunc

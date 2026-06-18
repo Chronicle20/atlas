@@ -9,6 +9,7 @@ import (
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
+	"sync"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	mapc "github.com/Chronicle20/atlas/libs/atlas-constants/map"
@@ -74,12 +75,17 @@ var broadcastDoorToEligible = func(l logrus.FieldLogger, ctx context.Context, wp
 		"door_action": "broadcast", "writer": writerName, "map_id": uint32(f.MapId()),
 		"owner": ownerCharacterId, "party_id": partyId, "for_character_id": forCharacterId,
 	})
+	// ForSessionsInMap runs the callback concurrently, so the recipient-list
+	// append must be synchronized.
+	var mu sync.Mutex
 	sent := make([]uint32, 0)
 	err := _map.NewProcessor(l, ctx).ForSessionsInMap(f, func(s session.Model) error {
 		if forCharacterId != 0 && s.CharacterId() != forCharacterId {
 			return nil
 		}
+		mu.Lock()
 		sent = append(sent, s.CharacterId())
+		mu.Unlock()
 		return session.Announce(l)(ctx)(wp)(writerName)(enc)(s)
 	})
 	if err != nil {

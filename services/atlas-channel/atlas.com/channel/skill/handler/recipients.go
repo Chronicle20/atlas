@@ -7,6 +7,7 @@ import (
 	"atlas-channel/party"
 	"atlas-channel/session"
 	"context"
+	"sync"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/sirupsen/logrus"
@@ -55,8 +56,14 @@ var loadCasterPartyFunc = func(l logrus.FieldLogger, ctx context.Context, caster
 // but not actually present on this channel.
 var inMapCharacterIdsFunc = func(l logrus.FieldLogger, ctx context.Context, f field.Model) map[uint32]struct{} {
 	inMap := map[uint32]struct{}{}
+	// ForSessionsInMap runs the callback concurrently across sessions, so the
+	// map write must be synchronized (a plain map write here fatals the process
+	// with "concurrent map writes" once two sessions are present).
+	var mu sync.Mutex
 	_ = _map.NewProcessor(l, ctx).ForSessionsInMap(f, func(s session.Model) error {
+		mu.Lock()
 		inMap[s.CharacterId()] = struct{}{}
+		mu.Unlock()
 		return nil
 	})
 	return inMap

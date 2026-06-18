@@ -5,7 +5,7 @@
 
 Tool: `cc28b93192a20c05b52129b5cb9c13a6226f26bd`
 
-- export gms_v83: `748fdc6a64646150c6c78f76b008af8655d0bd8f9c1d978a0c17a80ec1fd5e21`
+- export gms_v83: `d1ddad97ce348e9000c2fc5033a1e6bcca0f09cdc320e0db3a6f03fe4c8234b7`
 - export gms_v84: `cf44f8e03a7551db0623f3a371b834139299087ddcb3faf9e5ab13e6365aa1a4`
 - export gms_v87: `2be675d91d68cd9fc7d5a5da0e5f89366b19f7d404db19ed5efbd38d648ef536`
 - export gms_v95: `2a020c2e8c835c44dcf64f38cd51092f191536e06a4a6bbdf7d2873707b665db`
@@ -820,23 +820,23 @@ Tool: `cc28b93192a20c05b52129b5cb9c13a6226f26bd`
 | character/serverbound/KeyMapChange (T1) |  |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
 | character/serverbound/Move (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | field/serverbound/FieldChange (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
-| field/serverbound/FieldItcOperationBuy (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |
-| field/serverbound/FieldItcOperationBuyAuctionImm (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |
-| field/serverbound/FieldItcOperationBuyWish (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |
-| field/serverbound/FieldItcOperationBuyZzim (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |
-| field/serverbound/FieldItcOperationCancelSale (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |
-| field/serverbound/FieldItcOperationCancelWish (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |
-| field/serverbound/FieldItcOperationChangedCategory (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |
-| field/serverbound/FieldItcOperationChangedCategorySub (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |
-| field/serverbound/FieldItcOperationChangedPage (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |
-| field/serverbound/FieldItcOperationDeleteZzim (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |
-| field/serverbound/FieldItcOperationMoveLtoS (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |
-| field/serverbound/FieldItcOperationPlaceBid (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |
-| field/serverbound/FieldItcOperationRegisterWishEntry (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |
+| field/serverbound/FieldItcOperationBuy (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |
+| field/serverbound/FieldItcOperationBuyAuctionImm (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |
+| field/serverbound/FieldItcOperationBuyWish (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |
+| field/serverbound/FieldItcOperationBuyZzim (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |
+| field/serverbound/FieldItcOperationCancelSale (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |
+| field/serverbound/FieldItcOperationCancelWish (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |
+| field/serverbound/FieldItcOperationChangedCategory (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |
+| field/serverbound/FieldItcOperationChangedCategorySub (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |
+| field/serverbound/FieldItcOperationChangedPage (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |
+| field/serverbound/FieldItcOperationDeleteZzim (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |
+| field/serverbound/FieldItcOperationMoveLtoS (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |
+| field/serverbound/FieldItcOperationPlaceBid (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |
+| field/serverbound/FieldItcOperationRegisterWishEntry (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |
 | field/serverbound/FieldItcOperationSaleCurrentItem (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |
-| field/serverbound/FieldItcOperationSetZzim (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |
-| field/serverbound/FieldItcOperationTabSearch (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |
-| field/serverbound/FieldItcOperationViewWish (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |
+| field/serverbound/FieldItcOperationSetZzim (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |
+| field/serverbound/FieldItcOperationTabSearch (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |
+| field/serverbound/FieldItcOperationViewWish (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |
 | guild/clientbound/GuildBBSThread (T1) |  |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
 | guild/clientbound/GuildBBSThreadList (T1) |  |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
 | guild/serverbound/GuildAgreementResponse (T1) |  |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
@@ -922,7 +922,7 @@ Tool: `cc28b93192a20c05b52129b5cb9c13a6226f26bd`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v83 | 339 | 0 | 0 | 353 | 200 | 0 | 49.0% |
+| v83 | 355 | 0 | 0 | 337 | 200 | 0 | 51.3% |
 | v84 | 310 | 0 | 0 | 361 | 221 | 0 | 46.2% |
 | v87 | 371 | 0 | 0 | 358 | 163 | 0 | 50.9% |
 | v95 | 411 | 0 | 1 | 401 | 79 | 0 | 50.6% |

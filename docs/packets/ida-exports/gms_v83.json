@@ -11355,6 +11355,378 @@
           "comment": "commodityId @0x59ee98"
         }
       ]
+    },
+    "CITC::OnBuy": {
+      "address": "0x59f697",
+      "direction": "serverbound",
+      "region": "GMS",
+      "notes": "ITC_OPERATION mode 0x10 buy-fixed-price (CITC::OnBuy @0x59f697 [inlined sender renamed from sub_59F697], COutPacket(253) @0x59f6b5, gms_v83 MapleStory_dump.exe IDA port 13342). Encode1(0x10) mode, Encode4 nITCSN (*(*(a2+4)+32)). Serial-only (no item-slot blob). this[6] double-send latch not on wire. Maps atlas field/serverbound ItcOperationBuy. Body shape identical to gms_v84/v87/v95. Byte-fixture verified.",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (0x10) @0x59f6c3"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nITCSN @0x59f6d4"
+        }
+      ]
+    },
+    "CITC::OnBuyAuctionImm": {
+      "address": "0x59f70a",
+      "direction": "serverbound",
+      "region": "GMS",
+      "notes": "ITC_OPERATION mode 0x14 buy-now-on-auction (CITC::OnBuyAuctionImm @0x59f70a [inlined sender renamed from sub_59F70A], COutPacket(253) @0x59f728, gms_v83). Encode1(0x14) mode, Encode4 nITCSN. Serial-only. Maps atlas field/serverbound ItcOperationBuyAuctionImm. Body shape identical to gms_v84/v87/v95. Byte-fixture verified.",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (0x14) @0x59f736"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nITCSN @0x59f747"
+        }
+      ]
+    },
+    "CITC::OnCancelSaleItem": {
+      "address": "0x59fb7a",
+      "direction": "serverbound",
+      "region": "GMS",
+      "notes": "ITC_OPERATION mode 0x07 cancel-sale (CITC::OnCancelSaleItem @0x59fb7a [inlined sender renamed from sub_59FB7A], gms_v83). YesNo confirm (SP_4777 CANCEL_THE_SALE) gate @0x59fbc6; suppressed when listing has bids (!*(*(a2+4)+12) = !nBidCount) @0x59fb99 - neither on wire. COutPacket(253) @0x59fbd0. Encode1(7) mode, Encode4 nITCSN. Maps atlas field/serverbound ItcOperationCancelSale. Body shape identical to gms_v84/v87/v95. Byte-fixture verified.",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (7) @0x59fbdd"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nITCSN @0x59fbeb"
+        }
+      ]
+    },
+    "CITC::OnMoveITCPurchaseItemLtoS": {
+      "address": "0x59fc23",
+      "direction": "serverbound",
+      "region": "GMS",
+      "notes": "ITC_OPERATION mode 0x08 take-home (CITC::OnMoveITCPurchaseItemLtoS @0x59fc23 [inlined sender renamed from sub_59FC23], COutPacket(253) @0x59fc41, gms_v83). nTI/nPos args (a3/a4) NOT written. Encode1(8) mode, Encode4 nITCSN. Maps atlas field/serverbound ItcOperationMoveLtoS. Body shape identical to gms_v84/v87/v95. Byte-fixture verified.",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (8) @0x59fc4f"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nITCSN @0x59fc60"
+        }
+      ]
+    },
+    "CITC::OnSetZzim": {
+      "address": "0x59f89d",
+      "direction": "serverbound",
+      "region": "GMS",
+      "notes": "ITC_OPERATION mode 0x09 set-zzim (CITC::OnSetZzim @0x59f89d [inlined sender renamed from sub_59F89D], COutPacket(253) @0x59f8bb, gms_v83). this[6] double-send latch not on wire. Encode1(9) mode, Encode4 nITCSN. Maps atlas field/serverbound ItcOperationSetZzim. Body shape identical to gms_v84/v87/v95. Byte-fixture verified.",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (9) @0x59f8c9"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nITCSN @0x59f8da"
+        }
+      ]
+    },
+    "CITC::OnBuyZzim": {
+      "address": "0x59f910",
+      "direction": "serverbound",
+      "region": "GMS",
+      "notes": "ITC_OPERATION mode 0x11 buy-zzim (CITC::OnBuyZzim @0x59f910 [inlined sender renamed from sub_59F910], gms_v83). YesNo confirm (SP_4803 ARE_YOU_SURE_YOU_WANT_TO_BUY_THIS) gate @0x59f94f; not on wire. COutPacket(253) @0x59f959. Encode1(0x11) mode, Encode4 nITCSN. Maps atlas field/serverbound ItcOperationBuyZzim. Body shape identical to gms_v84/v87/v95. Byte-fixture verified.",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (0x11) @0x59f966"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nITCSN @0x59f977"
+        }
+      ]
+    },
+    "CITC::OnDeleteZzim": {
+      "address": "0x59f9ae",
+      "direction": "serverbound",
+      "region": "GMS",
+      "notes": "ITC_OPERATION mode 0x0A delete-zzim (CITC::OnDeleteZzim @0x59f9ae [inlined sender renamed from sub_59F9AE], COutPacket(253) @0x59f9cc, gms_v83). Encode1(0xA) mode, Encode4 nITCSN. Maps atlas field/serverbound ItcOperationDeleteZzim. Body shape identical to gms_v84/v87/v95. Byte-fixture verified.",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (0xA) @0x59f9da"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nITCSN @0x59f9eb"
+        }
+      ]
+    },
+    "CITC::OnViewWish": {
+      "address": "0x59fa21",
+      "direction": "serverbound",
+      "region": "GMS",
+      "notes": "ITC_OPERATION mode 0x0B view-wish (CITC::OnViewWish @0x59fa21 [inlined sender renamed from sub_59FA21], COutPacket(253) @0x59fa3f, gms_v83). Encode1(0xB) mode, Encode4 nITCSN. Maps atlas field/serverbound ItcOperationViewWish. Body shape identical to gms_v84/v87/v95. Byte-fixture verified.",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (0xB) @0x59fa4d"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nITCSN @0x59fa5e"
+        }
+      ]
+    },
+    "CITC::OnBuyWish": {
+      "address": "0x59fa94",
+      "direction": "serverbound",
+      "region": "GMS",
+      "notes": "ITC_OPERATION mode 0x0C buy-wish (CITC::OnBuyWish @0x59fa94 [inlined sender renamed from sub_59FA94], COutPacket(253) @0x59fab2, gms_v83). Encode1(0xC) mode, Encode4 nITCSN. Maps atlas field/serverbound ItcOperationBuyWish. Body shape identical to gms_v84/v87/v95. Byte-fixture verified.",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (0xC) @0x59fac0"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nITCSN @0x59fad1"
+        }
+      ]
+    },
+    "CITC::OnCancelWish": {
+      "address": "0x59fb07",
+      "direction": "serverbound",
+      "region": "GMS",
+      "notes": "ITC_OPERATION mode 0x0D cancel-wish (CITC::OnCancelWish @0x59fb07 [inlined sender renamed from sub_59FB07], COutPacket(253) @0x59fb25, gms_v83). Encode1(0xD) mode, Encode4 nITCSN. Maps atlas field/serverbound ItcOperationCancelWish. Body shape identical to gms_v84/v87/v95. Byte-fixture verified.",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (0xD) @0x59fb33"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nITCSN @0x59fb44"
+        }
+      ]
+    },
+    "CITCBidAuctionDlg::OnButtonClicked": {
+      "address": "0x5c373e",
+      "direction": "serverbound",
+      "region": "GMS",
+      "notes": "ITC_OPERATION mode 0x13 place-bid, send inlined into CITCBidAuctionDlg::OnButtonClicked @0x5c373e [renamed from sub_5C373E] (a2==1 confirm-bid branch; COutPacket(253) @0x5c38df, gms_v83). Balance check (SP_535 YOU_DONT_HAVE_ENOUGH_CASH) and bid<buyNow guard gate the send; not on wire. Encode1(0x13) mode, Encode4 nITCSN (*(this[47]+32)), Encode4 bidPrice (this[40]), Encode4 bidRange (this[39]). Maps atlas field/serverbound ItcOperationPlaceBid. Body shape identical to gms_v84/v87/v95. Byte-fixture verified.",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (0x13) @0x5c38ec"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nITCSN @0x5c38fd"
+        },
+        {
+          "op": "Encode4",
+          "comment": "bidPrice @0x5c390b"
+        },
+        {
+          "op": "Encode4",
+          "comment": "bidRange @0x5c3919"
+        }
+      ]
+    },
+    "CITC::OnRegisterWishEntry": {
+      "address": "0x59f542",
+      "direction": "serverbound",
+      "region": "GMS",
+      "notes": "ITC_OPERATION mode 0x04 register-wish-entry (CITC::OnRegisterWishEntry @0x59f542 [inlined sender renamed from sub_59F542], gms_v83). 110-NX floor + 9999999 ceiling guard (a3>9999999||a3<=109) @0x59f573 (not on wire). COutPacket(253) @0x59f5bc. Encode1(4) mode, Encode4 itemId (this+7768), Encode4 price (this+7772), Encode4 count (this+7776), Encode1 duration (this+7781), Encode1 feeOption (this+7780), EncodeStr description (this+7784). Maps atlas field/serverbound ItcOperationRegisterWishEntry. Body shape identical to gms_v84/v87/v95. Byte-fixture verified.",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (4) @0x59f5cc"
+        },
+        {
+          "op": "Encode4",
+          "comment": "itemId @0x59f5da"
+        },
+        {
+          "op": "Encode4",
+          "comment": "price @0x59f5e8"
+        },
+        {
+          "op": "Encode4",
+          "comment": "count @0x59f5f6"
+        },
+        {
+          "op": "Encode1",
+          "comment": "duration @0x59f607"
+        },
+        {
+          "op": "Encode1",
+          "comment": "feeOption @0x59f618"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "description @0x59f62f"
+        }
+      ]
+    },
+    "CITC::OnChangedCategory": {
+      "address": "0x59f297",
+      "direction": "serverbound",
+      "region": "GMS",
+      "notes": "ITC_OPERATION mode 0x05 change-browse-category (CITC::OnChangedCategory @0x59f297 [inlined sender renamed from sub_59F297], COutPacket(253) @0x59f2df, gms_v83). Only nCategory (a2) variable; rest const. Encode1(5) mode, Encode4 category, Encode4 0 categorySub, Encode4 0 page, Encode1 1 sortType, Encode1 1 sortColumn, Encode4 1 searchOption, EncodeStr empty searchCondition. Maps atlas field/serverbound ItcOperationChangedCategory. Body shape identical to gms_v84/v87/v95. Byte-fixture verified.",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (5) @0x59f2ec"
+        },
+        {
+          "op": "Encode4",
+          "comment": "category @0x59f2f7"
+        },
+        {
+          "op": "Encode4",
+          "comment": "categorySub (const 0) @0x59f300"
+        },
+        {
+          "op": "Encode4",
+          "comment": "page (const 0) @0x59f309"
+        },
+        {
+          "op": "Encode1",
+          "comment": "sortType (const 1) @0x59f315"
+        },
+        {
+          "op": "Encode1",
+          "comment": "sortColumn (const 1) @0x59f31e"
+        },
+        {
+          "op": "Encode4",
+          "comment": "searchOption (const 1) @0x59f327"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "searchCondition (const empty) @0x59f33f"
+        }
+      ]
+    },
+    "CITC::OnChangedCategorySub": {
+      "address": "0x59f376",
+      "direction": "serverbound",
+      "region": "GMS",
+      "notes": "ITC_OPERATION mode 0x05 change-sub-category (CITC::OnChangedCategorySub @0x59f376 [inlined sender renamed from sub_59F376], COutPacket(253) @0x59f39b, gms_v83). page=0 const. Encode1(5) mode, Encode4 category (*(this+104)), Encode4 categorySub (arg0), Encode4 0 page, Encode1 sortType (a2), Encode1 sortColumn (a4), Encode4 searchOption (state/else-const-1), EncodeStr searchCondition. Both branches keep same wire shape. Maps atlas field/serverbound ItcOperationChangedCategorySub. Body shape identical to gms_v84/v87/v95. Byte-fixture verified.",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (5) @0x59f3a8"
+        },
+        {
+          "op": "Encode4",
+          "comment": "category @0x59f3b3"
+        },
+        {
+          "op": "Encode4",
+          "comment": "categorySub @0x59f3bf"
+        },
+        {
+          "op": "Encode4",
+          "comment": "page (const 0) @0x59f3c8"
+        },
+        {
+          "op": "Encode1",
+          "comment": "sortType @0x59f3d3"
+        },
+        {
+          "op": "Encode1",
+          "comment": "sortColumn @0x59f3de"
+        },
+        {
+          "op": "Encode4",
+          "comment": "searchOption @0x59f3ed/@0x59f411"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "searchCondition @0x59f42d"
+        }
+      ]
+    },
+    "CITC::OnChangedPage": {
+      "address": "0x59f465",
+      "direction": "serverbound",
+      "region": "GMS",
+      "notes": "ITC_OPERATION mode 0x05 change-browse-page (CITC::OnChangedPage @0x59f465 [inlined sender renamed from sub_59F465], COutPacket(253) @0x59f487, gms_v83). All 8 fields from CITC state. Encode1(5) mode, Encode4 category (*(this+104)), Encode4 categorySub (*(this+108)), Encode4 page (a2), Encode1 sortType (*(this+96)), Encode1 sortColumn (*(this+100)), Encode4 searchOption (*(this+7820)), EncodeStr searchCondition (this+7824). Maps atlas field/serverbound ItcOperationChangedPage. Body shape identical to gms_v84/v87/v95. Byte-fixture verified.",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (5) @0x59f495"
+        },
+        {
+          "op": "Encode4",
+          "comment": "category @0x59f4a0"
+        },
+        {
+          "op": "Encode4",
+          "comment": "categorySub @0x59f4ab"
+        },
+        {
+          "op": "Encode4",
+          "comment": "page @0x59f4b6"
+        },
+        {
+          "op": "Encode1",
+          "comment": "sortType @0x59f4c4"
+        },
+        {
+          "op": "Encode1",
+          "comment": "sortColumn @0x59f4d2"
+        },
+        {
+          "op": "Encode4",
+          "comment": "searchOption @0x59f4e0"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "searchCondition @0x59f4fd"
+        }
+      ]
+    },
+    "CITCWnd_Tab::OnButtonClicked": {
+      "address": "0x5b7106",
+      "direction": "serverbound",
+      "region": "GMS",
+      "notes": "ITC_OPERATION mode 0x06 tab/search-by-name, send inlined into CITCWnd_Tab::OnButtonClicked @0x5b7106 [renamed from sub_5B7106] (arg0==1004 search button; COutPacket(253) @0x5b71a5 char-name branch / @0x5b726e advanced-search branch, gms_v83). 6-field body, NO sort bytes (distinct from mode 5). Both inner branches send identical wire shape. Encode1(6) mode, Encode4 category (m_nSelect+1), Encode4 categorySub, Encode4 0 page, Encode4 searchOption (0 char-name / state advanced), EncodeStr searchName. Maps atlas field/serverbound ItcOperationTabSearch. Body shape identical to gms_v84/v87/v95. Byte-fixture verified.",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (6) @0x5b71b3"
+        },
+        {
+          "op": "Encode4",
+          "comment": "category (m_nSelect+1) @0x5b71bc"
+        },
+        {
+          "op": "Encode4",
+          "comment": "categorySub @0x5b71c7"
+        },
+        {
+          "op": "Encode4",
+          "comment": "page (const 0) @0x5b71d0"
+        },
+        {
+          "op": "Encode4",
+          "comment": "searchOption @0x5b71d9"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "searchName @0x5b71f2"
+        }
+      ]
     }
   }
 }

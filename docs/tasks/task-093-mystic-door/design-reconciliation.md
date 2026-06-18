@@ -105,7 +105,7 @@ The function is **idempotent** (a second call emits nothing) and **convergent** 
 - **atlas-doors `door` package:** add `ReconcileParty` (+ a small `desiredDoorState` / diff helper). Remove `JoinPartyDoor`, `LeavePartyDoor`, `DisbandPartyDoors`, `ShowPartyDoorsToCharacter`, `HidePartyDoorsFromCharacter`, `ReslotParty`. Keep `Spawn`, `RemoveByOwner`, `RemoveByOwnerIfLeftField`, `Reslot` (the area-door lifecycle + the low-level reslot primitive the reconciler calls).
 - **atlas-doors `kafka/consumer/party`:** the five handlers (`handleJoined/Left/Expel/Disband/ChangeLeader`) collapse to: resolve authoritative `members` → call `ReconcileParty`. Disband passes the event body's (now-complete) member list.
 - **atlas-parties `party/processor.go`:** capture the full member list **before** `RemoveMember` (`:429`) and emit it in the DISBAND body (`:462`). This is the one cross-service change.
-- **atlas-channel:** unchanged. The status-event handlers (`CREATED` / `REMOVED` / `SLOT_CHANGED` with `forCharacterId`) and `PartyOperationWriter` already express every delta the reconciler needs, and the slot-≥6 guard at `kafka/consumer/door/consumer.go:139` stays as defence-in-depth.
+- **atlas-channel:** one bounded addition. The status-event handlers (`CREATED` / `REMOVED` / `SLOT_CHANGED` with `forCharacterId`) and `PartyOperationWriter` already express every delta, and the slot-≥6 guard at `kafka/consumer/door/consumer.go:139` stays as defence-in-depth. **However** `handleSlotChanged` currently updates only the *solo* town portal, not the authoritative party array — so it must additionally clear the old slot and set the new slot in the party town-portal array on a reslot (and `SlotChangedBody` gains additive `AreaX`/`AreaY` to carry the array position). Without this, an in-party reslot/adopt would not re-render in party mode. No other channel change; the event schema additions are backward-compatible.
 
 ### 3.5 Sourcing the leaver(s)
 
@@ -128,7 +128,7 @@ No new Redis index is required — candidates are reached via `GetByOwner` over 
 ## 5. Out of scope
 
 - Area-door spawn / recast / expiry / leave-field logic (unchanged).
-- Kafka event schema and atlas-channel handlers (unchanged).
+- atlas-channel beyond the one bounded `handleSlotChanged` party-array update (§3.4); the Kafka event schema changes are limited to additive `SlotChangedBody.AreaX/AreaY`.
 - Redis registry schema; no "doors by partyId" index (candidates reached via member+leaver `GetByOwner`).
 - Migrating the party packet **dispatcher family** to discrete-per-mode (`docs/packets/DISPATCHER_FAMILY.md`). We rely on the existing `PartyOperationWriter` for the version-resolved town-portal op code; the family migration is a separate task.
 

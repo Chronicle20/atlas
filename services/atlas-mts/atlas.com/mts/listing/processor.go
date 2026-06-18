@@ -71,6 +71,12 @@ type BuyRequest struct {
 	BuyerId         uint32
 	BuyerAccountId  uint32
 	SellerAccountId uint32
+	// BuyNow distinguishes an immediate-buyout of an auction (BUY_AUCTION_IMM,
+	// mode 0x14) from a plain fixed-price buy (BUY, mode 0x10). When true the buy
+	// settles at the listing's buyNowPrice (the immediate-buyout price), not its
+	// listValue; the listing MUST be an auction carrying a buy-now price. When
+	// false the buy settles at listValue (the fixed-price path).
+	BuyNow bool
 }
 
 // BidRequest carries the caller-supplied parameters for an auction bid. The
@@ -518,10 +524,22 @@ func (p *ProcessorImpl) Buy(req BuyRequest) error {
 		return fmt.Errorf("listing %s is not active (state=%s); cannot buy", req.ListingId, lm.State())
 	}
 
-	listValue := lm.ListValue()
-	// markedUp = ceil(listValue * (1 + commissionRate)). Ceil rounds the fractional
+	// Price basis: a plain buy settles at the listing's listValue (the fixed-price
+	// value). A buy-now (BUY_AUCTION_IMM) settles at the listing's buyNowPrice — the
+	// immediate-buyout price — which is only meaningful on an auction that carries
+	// one. The basis becomes the seller credit (ListValue in the settle payload) and
+	// the marked-up figure the buyer pays; the commission stays the sink.
+	priceBasis := lm.ListValue()
+	if req.BuyNow {
+		if lm.SaleType() != SaleTypeAuction || lm.BuyNowPrice() == nil {
+			return fmt.Errorf("listing %s is not a buy-now auction (saleType=%s, buyNow=%v); cannot buy-now", req.ListingId, lm.SaleType(), lm.BuyNowPrice())
+		}
+		priceBasis = *lm.BuyNowPrice()
+	}
+	listValue := priceBasis
+	// markedUp = ceil(priceBasis * (1 + commissionRate)). Ceil rounds the fractional
 	// NX toward the sink (the un-credited commission), so the buyer never under-pays.
-	markedUp := uint32(math.Ceil(float64(listValue) * (1.0 + lm.CommissionRate())))
+	markedUp := uint32(math.Ceil(float64(priceBasis) * (1.0 + lm.CommissionRate())))
 
 	// Best-effort pre-check; the saga's first (debit) step is the authoritative gate.
 	prepaid, err := p.balance.PrepaidBalance(req.BuyerAccountId)

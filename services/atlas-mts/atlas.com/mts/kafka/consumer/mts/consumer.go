@@ -53,10 +53,10 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleTakeHome(producer2.ProviderImpl(l))(db)))); err != nil {
 				return err
 			}
-			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleBuy(db)))); err != nil {
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleBuy(producer2.ProviderImpl(l))(db)))); err != nil {
 				return err
 			}
-			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handlePlaceBid(db)))); err != nil {
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handlePlaceBid(producer2.ProviderImpl(l))(db)))); err != nil {
 				return err
 			}
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleRegisterWish(producer2.ProviderImpl(l))(db)))); err != nil {
@@ -238,61 +238,104 @@ func handleTakeHome(pf providerFn) func(db *gorm.DB) message.Handler[mts.Command
 	}
 }
 
-// handleBuy settles a buy / buy-now: it asks the listing processor to load the
-// (active) listing, compute the marked-up price from the listing's captured
-// listValue/commissionRate, pre-check the buyer's NX Prepaid balance, and — when
-// sufficient — emit a debit-first MtsSettlePurchase saga to COMMAND_TOPIC_SAGA.
-// It emits NO MTS status event itself: the listing-sold / item-moved-to-holding
-// outcome is driven by the saga's move step (a later phase wires that ack path).
-// An under-funded or non-active buy is logged and dropped (no saga, no effect).
-func handleBuy(db *gorm.DB) message.Handler[mts.Command[mts.BuyCommandBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, c mts.Command[mts.BuyCommandBody]) {
-		if c.Type != mts.CommandBuy {
-			return
-		}
-		b := c.Body
+// handleBuy settles a buy / buy-now. It resolves the wire serial (nITCSN) to the
+// listing UUID (listing.GetBySerial), reads the seller account from the resolved
+// listing row, then asks the listing processor to load the (active) listing,
+// compute the marked-up price (from listValue for a plain buy, or buyNowPrice for a
+// buy-now), pre-check the buyer's NX Prepaid balance, and — when sufficient — emit a
+// debit-first MtsSettlePurchase saga. On a serial-not-resolved, non-active, or
+// insufficient-funds rejection it emits BUY_FAILED so the channel writes
+// BuyItemFailed to the buyer. The BUY success notice (BuyItemDone) is driven by the
+// LISTING_SOLD event the saga's move step emits — not here.
+func handleBuy(pf providerFn) func(db *gorm.DB) message.Handler[mts.Command[mts.BuyCommandBody]] {
+	return func(db *gorm.DB) message.Handler[mts.Command[mts.BuyCommandBody]] {
+		return func(l logrus.FieldLogger, ctx context.Context, c mts.Command[mts.BuyCommandBody]) {
+			if c.Type != mts.CommandBuy {
+				return
+			}
+			b := c.Body
+			p := pf(ctx)
 
-		err := listing.NewProcessor(l, ctx, db).Buy(listing.BuyRequest{
-			WorldId:         world.Id(b.WorldId),
-			ListingId:       b.ListingId,
-			BuyerId:         b.BuyerId,
-			BuyerAccountId:  b.BuyerAccountId,
-			SellerAccountId: b.SellerAccountId,
-		})
-		if err != nil {
-			l.WithError(err).Errorf("Failed to settle buy for listing [%s], buyer [%d], transaction [%s].", b.ListingId.String(), b.BuyerId, c.TransactionId.String())
-			return
+			emitFail := func() {
+				_ = msg.Emit(p)(func(buf *msg.Buffer) error {
+					return buf.Put(mts.EnvStatusEventTopic, mtsproducer.BuyFailedStatusEventProvider(c.TransactionId, b.WorldId, b.Serial, b.BuyerId, mtsFailReasonGeneric))
+				})
+			}
+
+			proc := listing.NewProcessor(l, ctx, db)
+
+			// Resolve the wire serial -> listing UUID; the seller account is read from
+			// the resolved row (captured at list time), never carried on the wire.
+			lm, err := proc.GetBySerial(world.Id(b.WorldId), b.Serial)
+			if err != nil {
+				l.WithError(err).Errorf("Failed to resolve serial [%d] for buy in world [%d], transaction [%s].", b.Serial, b.WorldId, c.TransactionId.String())
+				emitFail()
+				return
+			}
+
+			if err := proc.Buy(listing.BuyRequest{
+				WorldId:         world.Id(b.WorldId),
+				ListingId:       lm.Id(),
+				BuyerId:         b.BuyerId,
+				BuyerAccountId:  b.BuyerAccountId,
+				SellerAccountId: lm.SellerAccountId(),
+				BuyNow:          b.BuyNow,
+			}); err != nil {
+				l.WithError(err).Errorf("Failed to settle buy for listing [%s] (serial [%d]), buyer [%d], transaction [%s].", lm.Id().String(), b.Serial, b.BuyerId, c.TransactionId.String())
+				emitFail()
+				return
+			}
 		}
 	}
 }
 
-// handlePlaceBid places a bid on an auction listing: it asks the listing processor
-// to validate the listing is an active auction and the bid clears the floor
-// (listValue for the first bid, else currentBid + minIncrement), then — under a
+// handlePlaceBid places a bid on an auction listing. It resolves the wire serial
+// (nITCSN) to the listing UUID (listing.GetBySerial), then asks the listing
+// processor to validate the listing is an active auction and the bid clears the
+// floor (listValue for the first bid, else currentBid + minIncrement), and — under a
 // race-safe compare-and-swap on the listing row — record a held bid, advance the
 // listing's currentBid/highBidder, and emit an MtsBidEscrow{-markedUp} saga to hold
 // the bidder's prepaid (the MARKED-UP amount). On an outbid it releases the prior
-// bidder's escrow (MtsBidEscrow{+markedUpPrior}) and marks their bid released. It
-// emits NO MTS status event itself: the bid-placed / outbid notification is the
-// channel's concern (a later/Phase-0-gated path). A rejected or lost-race bid is
-// logged and dropped (no saga, no effect).
-func handlePlaceBid(db *gorm.DB) message.Handler[mts.Command[mts.PlaceBidCommandBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, c mts.Command[mts.PlaceBidCommandBody]) {
-		if c.Type != mts.CommandPlaceBid {
-			return
-		}
-		b := c.Body
+// bidder's escrow. On a serial-not-resolved, non-auction, below-floor, or lost-race
+// rejection it emits BID_FAILED so the channel writes BidAuctionFailed to the
+// bidder. The success/settle notice (SuccessBidInfoResult) is emitted at auction
+// settle (the ticker), not here.
+func handlePlaceBid(pf providerFn) func(db *gorm.DB) message.Handler[mts.Command[mts.PlaceBidCommandBody]] {
+	return func(db *gorm.DB) message.Handler[mts.Command[mts.PlaceBidCommandBody]] {
+		return func(l logrus.FieldLogger, ctx context.Context, c mts.Command[mts.PlaceBidCommandBody]) {
+			if c.Type != mts.CommandPlaceBid {
+				return
+			}
+			b := c.Body
+			p := pf(ctx)
 
-		err := listing.NewProcessor(l, ctx, db).PlaceBid(listing.BidRequest{
-			WorldId:         world.Id(b.WorldId),
-			ListingId:       b.ListingId,
-			BidderId:        b.BidderId,
-			BidderAccountId: b.BidderAccountId,
-			Amount:          b.Amount,
-		})
-		if err != nil {
-			l.WithError(err).Errorf("Failed to place bid for listing [%s], bidder [%d], transaction [%s].", b.ListingId.String(), b.BidderId, c.TransactionId.String())
-			return
+			emitFail := func() {
+				_ = msg.Emit(p)(func(buf *msg.Buffer) error {
+					return buf.Put(mts.EnvStatusEventTopic, mtsproducer.BidFailedStatusEventProvider(c.TransactionId, b.WorldId, b.Serial, b.BidderId, mtsFailReasonGeneric))
+				})
+			}
+
+			proc := listing.NewProcessor(l, ctx, db)
+
+			// Resolve the wire serial -> listing UUID.
+			lm, err := proc.GetBySerial(world.Id(b.WorldId), b.Serial)
+			if err != nil {
+				l.WithError(err).Errorf("Failed to resolve serial [%d] for bid in world [%d], transaction [%s].", b.Serial, b.WorldId, c.TransactionId.String())
+				emitFail()
+				return
+			}
+
+			if err := proc.PlaceBid(listing.BidRequest{
+				WorldId:         world.Id(b.WorldId),
+				ListingId:       lm.Id(),
+				BidderId:        b.BidderId,
+				BidderAccountId: b.BidderAccountId,
+				Amount:          b.Amount,
+			}); err != nil {
+				l.WithError(err).Errorf("Failed to place bid for listing [%s] (serial [%d]), bidder [%d], transaction [%s].", lm.Id().String(), b.Serial, b.BidderId, c.TransactionId.String())
+				emitFail()
+				return
+			}
 		}
 	}
 }

@@ -57,33 +57,35 @@ type CancelListingCommandBody struct {
 	SellerId uint32 `json:"sellerId"`
 }
 
-// BuyCommandBody identifies the listing being bought and carries the buyer's
-// identity (id + account) plus the seller's account. The seller characterId,
-// listValue, and commissionRate are read from the listing row by atlas-mts; the
-// caller (channel) supplies the buyer id/account from the session and the seller
-// account it resolved at buy time (atlas-mts stores only the seller characterId,
-// and the AwardCurrency settlement requires the account, mirroring the saga
-// AwardCurrencyPayload which is caller-supplied rather than orchestrator-resolved).
+// BuyCommandBody identifies the listing being bought by its per-(tenant, world)
+// ITC serial (the client's nITCSN — the channel never has the listing UUID, only
+// the wire serial) and carries the buyer's identity (id + account) from the
+// session. atlas-mts resolves the serial -> listing UUID (listing.GetBySerial) and
+// reads the seller characterId + account, listValue/buyNowPrice, and commissionRate
+// from the listing row (the seller account is captured at list time, so it need not
+// be carried). BuyNow distinguishes an immediate-buyout of an auction
+// (BUY_AUCTION_IMM, mode 0x14) from a plain fixed-price buy (BUY, mode 0x10).
 type BuyCommandBody struct {
-	ListingId       uuid.UUID `json:"listingId"`
-	WorldId         byte      `json:"worldId"`
-	BuyerId         uint32    `json:"buyerId"`
-	BuyerAccountId  uint32    `json:"buyerAccountId"`
-	SellerAccountId uint32    `json:"sellerAccountId"`
+	WorldId        byte   `json:"worldId"`
+	Serial         uint32 `json:"serial"`
+	BuyerId        uint32 `json:"buyerId"`
+	BuyerAccountId uint32 `json:"buyerAccountId"`
+	BuyNow         bool   `json:"buyNow"`
 }
 
-// PlaceBidCommandBody identifies the auction listing being bid on and carries the
-// bidder's identity (id + account) plus the bid amount. The listing's currentBid,
-// minIncrement, listValue, and commissionRate are read from the listing row by
-// atlas-mts; the caller (channel) supplies the bidder id/account from the session.
+// PlaceBidCommandBody identifies the auction listing being bid on by its
+// per-(tenant, world) ITC serial (the client's nITCSN) and carries the bidder's
+// identity (id + account) from the session plus the raw bid amount. atlas-mts
+// resolves the serial -> listing UUID (listing.GetBySerial) and reads the
+// currentBid, minIncrement, listValue, and commissionRate from the listing row.
 // The escrow holds the MARKED-UP amount (bid * (1 + commissionRate)); the raw bid
 // amount is carried here.
 type PlaceBidCommandBody struct {
-	ListingId       uuid.UUID `json:"listingId"`
-	WorldId         byte      `json:"worldId"`
-	BidderId        uint32    `json:"bidderId"`
-	BidderAccountId uint32    `json:"bidderAccountId"`
-	Amount          uint32    `json:"amount"`
+	WorldId         byte   `json:"worldId"`
+	Serial          uint32 `json:"serial"`
+	BidderId        uint32 `json:"bidderId"`
+	BidderAccountId uint32 `json:"bidderAccountId"`
+	Amount          uint32 `json:"amount"`
 }
 
 // RegisterWishCommandBody carries the wish-list entry to create.
@@ -177,6 +179,17 @@ const (
 	// active — the cancel-vs-buy loser). The channel writes CancelSaleItemFailed to
 	// the originating seller.
 	StatusEventTypeListingCancelFailed = "LISTING_CANCEL_FAILED"
+	// StatusEventTypeBuyFailed reports a buy / buy-now was rejected (serial did not
+	// resolve, the listing was not active, or the buyer's prepaid was insufficient).
+	// BuyerId is the originating character so the channel can target their session
+	// with a BuyItemFailed; Reason is the clientbound NoticeFailReason byte.
+	StatusEventTypeBuyFailed = "BUY_FAILED"
+	// StatusEventTypeBidFailed reports a place-bid was rejected (serial did not
+	// resolve, the listing was not an active auction, the bid was below the floor,
+	// or the bid lost the high-bid race). BidderId is the originating character so
+	// the channel can target their session with a BidAuctionFailed; Reason is the
+	// clientbound NoticeFailReason byte.
+	StatusEventTypeBidFailed = "BID_FAILED"
 	// StatusEventTypeTakeHomeFailed reports a take-home was rejected (serial did not
 	// resolve, owner-check failed, or the withdraw saga could not be emitted). The
 	// channel writes MoveItcPurchaseItemLtoSFailed to the originating character.
@@ -285,6 +298,26 @@ type StatusEventListingCancelFailedBody struct {
 	WorldId  byte   `json:"worldId"`
 	Serial   uint32 `json:"serial"`
 	SellerId uint32 `json:"sellerId"`
+	Reason   byte   `json:"reason"`
+}
+
+// StatusEventBuyFailedBody reports a rejected buy / buy-now. BuyerId is the
+// originating character so the channel can target their session with a
+// BuyItemFailed; Reason is the clientbound NoticeFailReason byte.
+type StatusEventBuyFailedBody struct {
+	WorldId byte   `json:"worldId"`
+	Serial  uint32 `json:"serial"`
+	BuyerId uint32 `json:"buyerId"`
+	Reason  byte   `json:"reason"`
+}
+
+// StatusEventBidFailedBody reports a rejected place-bid. BidderId is the
+// originating character so the channel can target their session with a
+// BidAuctionFailed; Reason is the clientbound NoticeFailReason byte.
+type StatusEventBidFailedBody struct {
+	WorldId  byte   `json:"worldId"`
+	Serial   uint32 `json:"serial"`
+	BidderId uint32 `json:"bidderId"`
 	Reason   byte   `json:"reason"`
 }
 

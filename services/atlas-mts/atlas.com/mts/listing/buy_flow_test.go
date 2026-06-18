@@ -194,6 +194,92 @@ func TestBuyEmitsSettlePurchase(t *testing.T) {
 	}
 }
 
+// seedActiveAuctionForBuyNow persists an active AUCTION listing with listValue
+// 1000, a buyNowPrice of 5000, and commissionRate 0.10 and returns its id. It is
+// the fixture for the buy-now (BUY_AUCTION_IMM) path: the immediate-buyout price
+// is the buy-now price, not the auction's starting/list value.
+func seedActiveAuctionForBuyNow(t *testing.T, db *gorm.DB) uuid.UUID {
+	t.Helper()
+	id := uuid.New()
+	buyNow := uint32(5000)
+	m, err := listing.NewBuilder(test.TestTenantId, 0, sellerForBuy).
+		SetId(id).
+		SetSellerName("Seller").
+		SetSaleType(listing.SaleTypeAuction).
+		SetState(listing.StateActive).
+		SetTemplateId(1302000).
+		SetQuantity(1).
+		SetListValue(1000).
+		SetBuyNowPrice(&buyNow).
+		SetCommissionRate(0.10).
+		SetCategory("equip").
+		SetSubCategory("one-handed-sword").
+		Build()
+	if err != nil {
+		t.Fatalf("build seed auction: %v", err)
+	}
+	if _, err := listing.CreateListing(db, m); err != nil {
+		t.Fatalf("create seed auction: %v", err)
+	}
+	return id
+}
+
+// TestBuyNowChargesBuyNowPrice asserts a buy-now (BuyNow=true) against an active
+// auction charges the buy-now price (5000) marked up (5000 * 1.10 = 5500) and
+// credits the seller the buy-now price, NOT the auction's listValue (1000).
+func TestBuyNowChargesBuyNowPrice(t *testing.T) {
+	br := &stubBalanceReader{prepaid: 5500} // exactly the marked-up buy-now price
+	logger := logrus.New()
+	db := test.SetupTestDB(t, listing.Migration)
+	ctx := test.CreateTestContext()
+	emitter := &captureEmitter{}
+	p := listing.NewProcessor(logger, ctx, db,
+		listing.WithSagaEmitter(emitter),
+		listing.WithBalanceReader(br),
+	)
+	if err := db.Exec("DELETE FROM listings").Error; err != nil {
+		t.Fatalf("reset listings: %v", err)
+	}
+	defer test.CleanupTestDB(t, db)
+	listingId := seedActiveAuctionForBuyNow(t, db)
+
+	req := buyRequest(listingId)
+	req.BuyNow = true
+	if err := p.Buy(req); err != nil {
+		t.Fatalf("BuyNow: %v", err)
+	}
+	if !emitter.called {
+		t.Fatal("expected a saga to be emitted for a funded buy-now")
+	}
+	sp, ok := emitter.saga.Steps[0].Payload.(sharedsaga.MtsSettlePurchasePayload)
+	if !ok {
+		t.Fatalf("step[0] payload type = %T, want MtsSettlePurchasePayload", emitter.saga.Steps[0].Payload)
+	}
+	if sp.MarkedUpPrice != 5500 {
+		t.Errorf("buy-now markedUpPrice = %d, want 5500 (buyNow 5000 * 1.10)", sp.MarkedUpPrice)
+	}
+	if sp.ListValue != 5000 {
+		t.Errorf("buy-now seller credit = %d, want 5000 (the buy-now price)", sp.ListValue)
+	}
+}
+
+// TestBuyNowRejectsNonAuction asserts BuyNow against a fixed-price listing (no
+// buy-now price) is rejected with no saga emission.
+func TestBuyNowRejectsNonAuction(t *testing.T) {
+	br := &stubBalanceReader{prepaid: 1_000_000}
+	p, emitter, _, listingId, cleanup := newBuyProcessor(t, br)
+	defer cleanup()
+
+	req := buyRequest(listingId) // a fixed-price listing with no buy-now price
+	req.BuyNow = true
+	if err := p.Buy(req); err == nil {
+		t.Fatal("expected buy-now against a non-buy-now listing to be rejected")
+	}
+	if emitter.called {
+		t.Error("saga emitted for an invalid buy-now; expected no emission")
+	}
+}
+
 // TestBuyRejectsNonActiveListing asserts a buy against a listing that is not
 // active (already sold/cancelled) is rejected with no saga emission.
 func TestBuyRejectsNonActiveListing(t *testing.T) {

@@ -39,30 +39,30 @@ func CreateListingCommandProvider(transactionId uuid.UUID, worldId world.Id, sel
 	return producer.SingleMessageProvider(key, value)
 }
 
-func BuyCommandProvider(transactionId uuid.UUID, worldId world.Id, listingId uuid.UUID, buyerId uint32, buyerAccountId uint32, sellerAccountId uint32) model.Provider[[]kafka.Message] {
+func BuyCommandProvider(transactionId uuid.UUID, worldId world.Id, serial uint32, buyerId uint32, buyerAccountId uint32, buyNow bool) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(buyerId))
 	value := &mtsmsg.Command[mtsmsg.BuyCommandBody]{
 		TransactionId: transactionId,
 		Type:          mtsmsg.CommandBuy,
 		Body: mtsmsg.BuyCommandBody{
-			ListingId:       listingId,
-			WorldId:         byte(worldId),
-			BuyerId:         buyerId,
-			BuyerAccountId:  buyerAccountId,
-			SellerAccountId: sellerAccountId,
+			WorldId:        byte(worldId),
+			Serial:         serial,
+			BuyerId:        buyerId,
+			BuyerAccountId: buyerAccountId,
+			BuyNow:         buyNow,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)
 }
 
-func PlaceBidCommandProvider(transactionId uuid.UUID, worldId world.Id, listingId uuid.UUID, bidderId uint32, bidderAccountId uint32, amount uint32) model.Provider[[]kafka.Message] {
+func PlaceBidCommandProvider(transactionId uuid.UUID, worldId world.Id, serial uint32, bidderId uint32, bidderAccountId uint32, amount uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(bidderId))
 	value := &mtsmsg.Command[mtsmsg.PlaceBidCommandBody]{
 		TransactionId: transactionId,
 		Type:          mtsmsg.CommandPlaceBid,
 		Body: mtsmsg.PlaceBidCommandBody{
-			ListingId:       listingId,
 			WorldId:         byte(worldId),
+			Serial:          serial,
 			BidderId:        bidderId,
 			BidderAccountId: bidderAccountId,
 			Amount:          amount,

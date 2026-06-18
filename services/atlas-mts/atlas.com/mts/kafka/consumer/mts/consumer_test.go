@@ -323,6 +323,109 @@ func TestTakeHome_OwnerMismatch_EmitsFailed(t *testing.T) {
 	}
 }
 
+func newBuyCommand(transactionId uuid.UUID, serial uint32, buyerId uint32, buyNow bool) mts.Command[mts.BuyCommandBody] {
+	return mts.Command[mts.BuyCommandBody]{
+		TransactionId: transactionId,
+		Type:          mts.CommandBuy,
+		Body: mts.BuyCommandBody{
+			WorldId:        0,
+			Serial:         serial,
+			BuyerId:        buyerId,
+			BuyerAccountId: buyerId + 1000,
+			BuyNow:         buyNow,
+		},
+	}
+}
+
+// TestBuy_SerialUnresolved_EmitsFailed asserts a buy whose serial does not resolve
+// to any listing is rejected with BUY_FAILED (so the channel writes BuyItemFailed).
+func TestBuy_SerialUnresolved_EmitsFailed(t *testing.T) {
+	db := test.SetupTestDB(t, listing.Migration, holding.Migration, wish.Migration)
+	ctx := test.CreateTestContext()
+	l := logrus.New()
+
+	rp := &recordingProducer{}
+	handleBuy(rp.provider())(db)(l, ctx, newBuyCommand(uuid.New(), 77777, 6660001, false))
+
+	if len(rp.events) != 1 || rp.events[0].eventType != mts.StatusEventTypeBuyFailed {
+		t.Fatalf("expected 1 BUY_FAILED for unresolved serial, got %v", rp.events)
+	}
+}
+
+// TestBuy_NonActiveListing_EmitsFailed asserts a buy against a non-active listing
+// (already sold) is rejected with BUY_FAILED. The serial resolves but the Buy
+// processor rejects the non-active state before any balance read.
+func TestBuy_NonActiveListing_EmitsFailed(t *testing.T) {
+	db := test.SetupTestDB(t, listing.Migration, holding.Migration, wish.Migration)
+	ctx := test.CreateTestContext()
+	l := logrus.New()
+
+	listingId := uuid.New()
+	const sellerId = uint32(6660002)
+	seeded := seedActiveListing(t, db, ctx, listingId, sellerId)
+	if _, err := listing.UpdateState(db.WithContext(ctx), listingId.String(), listing.StateActive, listing.StateSold); err != nil {
+		t.Fatalf("simulate already-sold: %v", err)
+	}
+
+	rp := &recordingProducer{}
+	handleBuy(rp.provider())(db)(l, ctx, newBuyCommand(uuid.New(), seeded.Serial(), 6660003, false))
+
+	if len(rp.events) != 1 || rp.events[0].eventType != mts.StatusEventTypeBuyFailed {
+		t.Fatalf("expected 1 BUY_FAILED for non-active listing, got %v", rp.events)
+	}
+}
+
+func newBidCommand(transactionId uuid.UUID, serial uint32, bidderId uint32, amount uint32) mts.Command[mts.PlaceBidCommandBody] {
+	return mts.Command[mts.PlaceBidCommandBody]{
+		TransactionId: transactionId,
+		Type:          mts.CommandPlaceBid,
+		Body: mts.PlaceBidCommandBody{
+			WorldId:         0,
+			Serial:          serial,
+			BidderId:        bidderId,
+			BidderAccountId: bidderId + 1000,
+			Amount:          amount,
+		},
+	}
+}
+
+// TestPlaceBid_SerialUnresolved_EmitsFailed asserts a bid whose serial does not
+// resolve to any listing is rejected with BID_FAILED (so the channel writes
+// BidAuctionFailed).
+func TestPlaceBid_SerialUnresolved_EmitsFailed(t *testing.T) {
+	db := test.SetupTestDB(t, listing.Migration, holding.Migration, wish.Migration)
+	ctx := test.CreateTestContext()
+	l := logrus.New()
+
+	rp := &recordingProducer{}
+	handlePlaceBid(rp.provider())(db)(l, ctx, newBidCommand(uuid.New(), 66666, 5550001, 2000))
+
+	if len(rp.events) != 1 || rp.events[0].eventType != mts.StatusEventTypeBidFailed {
+		t.Fatalf("expected 1 BID_FAILED for unresolved serial, got %v", rp.events)
+	}
+}
+
+// TestPlaceBid_NonAuctionListing_EmitsFailed asserts a bid against a fixed-price
+// (non-auction) listing is rejected with BID_FAILED. The serial resolves but the
+// PlaceBid processor rejects the non-auction sale type.
+func TestPlaceBid_NonAuctionListing_EmitsFailed(t *testing.T) {
+	db := test.SetupTestDB(t, listing.Migration, holding.Migration, wish.Migration)
+	ctx := test.CreateTestContext()
+	l := logrus.New()
+
+	listingId := uuid.New()
+	const sellerId = uint32(5550002)
+	// seedActiveListing seeds a FIXED-price listing; bidding on it must fail.
+	seeded := seedActiveListing(t, db, ctx, listingId, sellerId)
+
+	rp := &recordingProducer{}
+	handlePlaceBid(rp.provider())(db)(l, ctx, newBidCommand(uuid.New(), seeded.Serial(), 5550003, 2000))
+
+	if len(rp.events) != 1 || rp.events[0].eventType != mts.StatusEventTypeBidFailed {
+		t.Fatalf("expected 1 BID_FAILED for non-auction listing, got %v", rp.events)
+	}
+}
+
 func TestRegisterWish_CreatesEntryAndAcks(t *testing.T) {
 	db := test.SetupTestDB(t, listing.Migration, holding.Migration, wish.Migration)
 	ctx := test.CreateTestContext()

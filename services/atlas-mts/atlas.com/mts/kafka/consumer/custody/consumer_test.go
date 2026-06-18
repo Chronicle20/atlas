@@ -3,6 +3,7 @@ package custody
 import (
 	"atlas-mts/holding"
 	"atlas-mts/kafka/message/custody"
+	mtsmsg "atlas-mts/kafka/message/mts"
 	"atlas-mts/listing"
 	"atlas-mts/test"
 	"context"
@@ -56,6 +57,19 @@ func (r *recordingProducer) provider() func(ctx context.Context) func(token stri
 			}
 		}
 	}
+}
+
+// eventsOfType filters recorded events by their event-type string so assertions
+// can isolate one event family (e.g. MOVED acks vs LISTING_SOLD notices) when a
+// success path emits more than one.
+func eventsOfType(events []recordedEvent, eventType string) []recordedEvent {
+	var out []recordedEvent
+	for _, e := range events {
+		if e.eventType == eventType {
+			out = append(out, e)
+		}
+	}
+	return out
 }
 
 func newAcceptCommand(transactionId uuid.UUID, listingId uuid.UUID) custody.Command[custody.AcceptToMtsListingCommandBody] {
@@ -264,15 +278,21 @@ func TestMtsMoveListingToHolding_MarksSoldCreatesHoldingAndAcks(t *testing.T) {
 		t.Fatalf("holding snapshot not copied: tmpl=%d qty=%d watk=%d slots=%d", h.TemplateId(), h.Quantity(), h.WeaponAttack(), h.Slots())
 	}
 
-	// exactly one MOVED ack carrying the transactionId
-	if len(rp.events) != 1 {
-		t.Fatalf("expected 1 ack, got %d", len(rp.events))
+	// exactly one MOVED ack (drives the saga) + one LISTING_SOLD (drives the
+	// channel's BuyItemDone), both carrying the transactionId.
+	moved := eventsOfType(rp.events, custody.StatusEventTypeMoved)
+	if len(moved) != 1 {
+		t.Fatalf("expected 1 MOVED ack, got %d (all: %v)", len(moved), rp.events)
 	}
-	if rp.events[0].eventType != custody.StatusEventTypeMoved {
-		t.Fatalf("expected MOVED ack, got %s", rp.events[0].eventType)
+	if moved[0].transactionId != transactionId {
+		t.Fatalf("ack transactionId mismatch: want %s got %s", transactionId, moved[0].transactionId)
 	}
-	if rp.events[0].transactionId != transactionId {
-		t.Fatalf("ack transactionId mismatch: want %s got %s", transactionId, rp.events[0].transactionId)
+	sold := eventsOfType(rp.events, mtsmsg.StatusEventTypeListingSold)
+	if len(sold) != 1 {
+		t.Fatalf("expected 1 LISTING_SOLD event, got %d (all: %v)", len(sold), rp.events)
+	}
+	if sold[0].transactionId != transactionId {
+		t.Fatalf("LISTING_SOLD transactionId mismatch: want %s got %s", transactionId, sold[0].transactionId)
 	}
 }
 
@@ -310,17 +330,19 @@ func TestMtsMoveListingToHolding_ReplayCreatesNoSecondHoldingAndReacks(t *testin
 		t.Fatalf("expected listing state sold, got %s", stored.State())
 	}
 
-	// both deliveries re-acked MOVED with the same transactionId
-	if len(rp.events) != 2 {
-		t.Fatalf("expected 2 MOVED acks (original + replay), got %d", len(rp.events))
+	// both deliveries re-acked MOVED (and re-emitted LISTING_SOLD) with the same
+	// transactionId. A replayed LISTING_SOLD is a harmless idempotent buyer notice.
+	moved := eventsOfType(rp.events, custody.StatusEventTypeMoved)
+	if len(moved) != 2 {
+		t.Fatalf("expected 2 MOVED acks (original + replay), got %d (all: %v)", len(moved), rp.events)
 	}
-	for i, ev := range rp.events {
-		if ev.eventType != custody.StatusEventTypeMoved {
-			t.Fatalf("ack %d not MOVED: %s", i, ev.eventType)
-		}
+	for i, ev := range moved {
 		if ev.transactionId != transactionId {
 			t.Fatalf("ack %d transactionId mismatch: %s", i, ev.transactionId)
 		}
+	}
+	if got := len(eventsOfType(rp.events, mtsmsg.StatusEventTypeListingSold)); got != 2 {
+		t.Fatalf("expected 2 LISTING_SOLD events (original + replay), got %d (all: %v)", got, rp.events)
 	}
 }
 

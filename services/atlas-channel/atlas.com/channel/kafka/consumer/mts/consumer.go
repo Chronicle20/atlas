@@ -86,6 +86,15 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				if err := register(message.AdaptHandler(message.PersistentConfig(handleTakeHomeFailed(sc, wp)))); err != nil {
 					return nil, err
 				}
+				if err := register(message.AdaptHandler(message.PersistentConfig(handleListingSold(sc, wp)))); err != nil {
+					return nil, err
+				}
+				if err := register(message.AdaptHandler(message.PersistentConfig(handleBuyFailed(sc, wp)))); err != nil {
+					return nil, err
+				}
+				if err := register(message.AdaptHandler(message.PersistentConfig(handleBidFailed(sc, wp)))); err != nil {
+					return nil, err
+				}
 				return handles, nil
 			}
 		}
@@ -162,5 +171,43 @@ func handleTakeHomeFailed(sc server.Model, wp writer.Producer) message.Handler[m
 		}
 		l.Debugf("MTS take-home failed for character [%d] serial [%d] (reason [%d]).", e.Body.CharacterId, e.Body.Serial, e.Body.Reason)
 		announceTo(l, ctx, sc, wp, e.Body.CharacterId, fieldpkt.MtsOperationMoveItcPurchaseItemLtoSFailedBody(e.Body.Reason))
+	}
+}
+
+// handleListingSold writes the BuyItemDone result to the buyer when a listing
+// settles to a purchase (the buy / buy-now success notice). LISTING_SOLD is emitted
+// by atlas-mts's settle path (the saga move step / auction settle), carrying the
+// buyer (or auction winner) as BuyerId.
+func handleListingSold(sc server.Model, wp writer.Producer) message.Handler[mtsmsg.StatusEvent[mtsmsg.StatusEventListingSoldBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e mtsmsg.StatusEvent[mtsmsg.StatusEventListingSoldBody]) {
+		if e.Type != mtsmsg.StatusEventTypeListingSold {
+			return
+		}
+		l.Debugf("MTS listing sold to buyer [%d] (item [%d]).", e.Body.BuyerId, e.Body.ItemId)
+		announceTo(l, ctx, sc, wp, e.Body.BuyerId, fieldpkt.MtsOperationBuyItemDoneBody())
+	}
+}
+
+// handleBuyFailed writes the BuyItemFailed result to the buyer when a buy / buy-now
+// is rejected (serial unresolved, listing not active, or insufficient prepaid).
+func handleBuyFailed(sc server.Model, wp writer.Producer) message.Handler[mtsmsg.StatusEvent[mtsmsg.StatusEventBuyFailedBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e mtsmsg.StatusEvent[mtsmsg.StatusEventBuyFailedBody]) {
+		if e.Type != mtsmsg.StatusEventTypeBuyFailed {
+			return
+		}
+		l.Debugf("MTS buy failed for buyer [%d] serial [%d] (reason [%d]).", e.Body.BuyerId, e.Body.Serial, e.Body.Reason)
+		announceTo(l, ctx, sc, wp, e.Body.BuyerId, fieldpkt.MtsOperationBuyItemFailedBody())
+	}
+}
+
+// handleBidFailed writes the BidAuctionFailed result to the bidder when a place-bid
+// is rejected (serial unresolved, not an active auction, below floor, or lost race).
+func handleBidFailed(sc server.Model, wp writer.Producer) message.Handler[mtsmsg.StatusEvent[mtsmsg.StatusEventBidFailedBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e mtsmsg.StatusEvent[mtsmsg.StatusEventBidFailedBody]) {
+		if e.Type != mtsmsg.StatusEventTypeBidFailed {
+			return
+		}
+		l.Debugf("MTS bid failed for bidder [%d] serial [%d] (reason [%d]).", e.Body.BidderId, e.Body.Serial, e.Body.Reason)
+		announceTo(l, ctx, sc, wp, e.Body.BidderId, fieldpkt.MtsOperationBidAuctionFailedBody())
 	}
 }

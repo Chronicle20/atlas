@@ -50,24 +50,29 @@ type CancelListingCommandBody struct {
 	SellerId uint32 `json:"sellerId"`
 }
 
-// BuyCommandBody identifies the listing being bought and carries the buyer's
-// identity (id + account) plus the seller's account.
+// BuyCommandBody identifies the listing being bought by its per-(tenant, world)
+// ITC serial (the client's nITCSN — the only addressing the channel has from the
+// wire) and carries the buyer's identity (id + account) from the session. atlas-mts
+// resolves the serial -> listing UUID and reads the seller account + price terms
+// from the listing row. BuyNow distinguishes an immediate-buyout of an auction
+// (BUY_AUCTION_IMM, mode 0x14) from a plain fixed-price buy (BUY, mode 0x10).
 type BuyCommandBody struct {
-	ListingId       uuid.UUID `json:"listingId"`
-	WorldId         byte      `json:"worldId"`
-	BuyerId         uint32    `json:"buyerId"`
-	BuyerAccountId  uint32    `json:"buyerAccountId"`
-	SellerAccountId uint32    `json:"sellerAccountId"`
+	WorldId        byte   `json:"worldId"`
+	Serial         uint32 `json:"serial"`
+	BuyerId        uint32 `json:"buyerId"`
+	BuyerAccountId uint32 `json:"buyerAccountId"`
+	BuyNow         bool   `json:"buyNow"`
 }
 
-// PlaceBidCommandBody identifies the auction listing being bid on and carries the
-// bidder's identity (id + account) plus the raw bid amount.
+// PlaceBidCommandBody identifies the auction listing being bid on by its
+// per-(tenant, world) ITC serial (the client's nITCSN) and carries the bidder's
+// identity (id + account) from the session plus the raw bid amount.
 type PlaceBidCommandBody struct {
-	ListingId       uuid.UUID `json:"listingId"`
-	WorldId         byte      `json:"worldId"`
-	BidderId        uint32    `json:"bidderId"`
-	BidderAccountId uint32    `json:"bidderAccountId"`
-	Amount          uint32    `json:"amount"`
+	WorldId         byte   `json:"worldId"`
+	Serial          uint32 `json:"serial"`
+	BidderId        uint32 `json:"bidderId"`
+	BidderAccountId uint32 `json:"bidderAccountId"`
+	Amount          uint32 `json:"amount"`
 }
 
 // RegisterWishCommandBody carries the wish-list entry to create.
@@ -134,6 +139,9 @@ const (
 	StatusEventTypeListingCreateFailed = "LISTING_CREATE_FAILED"
 	StatusEventTypeListingCancelFailed = "LISTING_CANCEL_FAILED"
 	StatusEventTypeTakeHomeFailed      = "TAKE_HOME_FAILED"
+	StatusEventTypeListingSold         = "LISTING_SOLD"
+	StatusEventTypeBuyFailed           = "BUY_FAILED"
+	StatusEventTypeBidFailed           = "BID_FAILED"
 )
 
 // StatusEvent is the generic high-level MTS status/event envelope.
@@ -198,4 +206,33 @@ type StatusEventTakeHomeFailedBody struct {
 	Serial      uint32 `json:"serial"`
 	CharacterId uint32 `json:"characterId"`
 	Reason      byte   `json:"reason"`
+}
+
+// StatusEventListingSoldBody reports a sold listing. BuyerId is the target
+// character for the BuyItemDone result.
+type StatusEventListingSoldBody struct {
+	WorldId   byte      `json:"worldId"`
+	ListingId uuid.UUID `json:"listingId"`
+	BuyerId   uint32    `json:"buyerId"`
+	ItemId    uint32    `json:"itemId"`
+}
+
+// StatusEventBuyFailedBody reports a rejected buy / buy-now. BuyerId is the target
+// character for the BuyItemFailed result; Reason is the clientbound NoticeFailReason
+// byte.
+type StatusEventBuyFailedBody struct {
+	WorldId byte   `json:"worldId"`
+	Serial  uint32 `json:"serial"`
+	BuyerId uint32 `json:"buyerId"`
+	Reason  byte   `json:"reason"`
+}
+
+// StatusEventBidFailedBody reports a rejected place-bid. BidderId is the target
+// character for the BidAuctionFailed result; Reason is the clientbound
+// NoticeFailReason byte.
+type StatusEventBidFailedBody struct {
+	WorldId  byte   `json:"worldId"`
+	Serial   uint32 `json:"serial"`
+	BidderId uint32 `json:"bidderId"`
+	Reason   byte   `json:"reason"`
 }

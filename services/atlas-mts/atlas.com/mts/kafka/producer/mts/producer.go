@@ -197,6 +197,38 @@ func TakeHomeFailedStatusEventProvider(transactionId uuid.UUID, worldId byte, se
 	return producer.SingleMessageProvider(keyFor(transactionId), value)
 }
 
+// BuyFailedStatusEventProvider builds a BUY_FAILED event for a rejected buy /
+// buy-now, carrying the originating buyerId + serial + a fail reason.
+func BuyFailedStatusEventProvider(transactionId uuid.UUID, worldId byte, serial uint32, buyerId uint32, reason byte) model.Provider[[]kafka.Message] {
+	value := &mts.StatusEvent[mts.StatusEventBuyFailedBody]{
+		TransactionId: transactionId,
+		Type:          mts.StatusEventTypeBuyFailed,
+		Body: mts.StatusEventBuyFailedBody{
+			WorldId: worldId,
+			Serial:  serial,
+			BuyerId: buyerId,
+			Reason:  reason,
+		},
+	}
+	return producer.SingleMessageProvider(keyFor(transactionId), value)
+}
+
+// BidFailedStatusEventProvider builds a BID_FAILED event for a rejected place-bid,
+// carrying the originating bidderId + serial + a fail reason.
+func BidFailedStatusEventProvider(transactionId uuid.UUID, worldId byte, serial uint32, bidderId uint32, reason byte) model.Provider[[]kafka.Message] {
+	value := &mts.StatusEvent[mts.StatusEventBidFailedBody]{
+		TransactionId: transactionId,
+		Type:          mts.StatusEventTypeBidFailed,
+		Body: mts.StatusEventBidFailedBody{
+			WorldId:  worldId,
+			Serial:   serial,
+			BidderId: bidderId,
+			Reason:   reason,
+		},
+	}
+	return producer.SingleMessageProvider(keyFor(transactionId), value)
+}
+
 // WishRemovedStatusEventProvider builds a WISH_REMOVED event.
 func WishRemovedStatusEventProvider(transactionId uuid.UUID, worldId byte, wishId uuid.UUID, characterId uint32) model.Provider[[]kafka.Message] {
 	value := &mts.StatusEvent[mts.StatusEventWishRemovedBody]{

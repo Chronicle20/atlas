@@ -7,6 +7,8 @@ import (
 	"atlas-mts/kafka/message/custody"
 	producer2 "atlas-mts/kafka/producer"
 	custodyproducer "atlas-mts/kafka/producer/custody"
+	mtsmsg "atlas-mts/kafka/message/mts"
+	mtsproducer "atlas-mts/kafka/producer/mts"
 	"atlas-mts/listing"
 	"context"
 	"encoding/binary"
@@ -257,11 +259,16 @@ func handleMtsMoveListingToHolding(pf providerFn) func(db *gorm.DB) message.Hand
 			tdb := db.WithContext(ctx)
 			hid := moveHoldingId(b.ListingId, b.BuyerId)
 
+			// itemId is captured from the listing row inside the tx so the
+			// LISTING_SOLD notice emitted on success can carry the sold item id.
+			var itemId uint32
+
 			err := database.ExecuteTransaction(tdb, func(tx *gorm.DB) error {
 				lm, gerr := listing.GetById(b.ListingId.String())(tx)()
 				if gerr != nil {
 					return gerr
 				}
+				itemId = lm.TemplateId()
 
 				// Conditional active->sold transition. The rows affected is the race
 				// arbiter: 1 means this call won the active->sold transition; 0 means
@@ -343,8 +350,14 @@ func handleMtsMoveListingToHolding(pf providerFn) func(db *gorm.DB) message.Hand
 				return
 			}
 
+			// On success emit BOTH the custody MOVED ack (drives the saga forward) AND
+			// the high-level LISTING_SOLD MTS status event so the channel writes
+			// BuyItemDone to the buyer. The buyer (or auction winner) is b.BuyerId.
 			_ = msg.Emit(p)(func(buf *msg.Buffer) error {
-				return buf.Put(custody.EnvStatusEventTopic, custodyproducer.MovedStatusEventProvider(c.TransactionId, b.ListingId, hid))
+				if perr := buf.Put(custody.EnvStatusEventTopic, custodyproducer.MovedStatusEventProvider(c.TransactionId, b.ListingId, hid)); perr != nil {
+					return perr
+				}
+				return buf.Put(mtsmsg.EnvStatusEventTopic, mtsproducer.ListingSoldStatusEventProvider(c.TransactionId, b.WorldId, b.ListingId, b.BuyerId, itemId))
 			})
 		}
 	}

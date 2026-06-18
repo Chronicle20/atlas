@@ -333,17 +333,42 @@ func ItcOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer
 			body.Decode(l, ctx)(r, readerOptions)
 			// SEARCH surfaces hits in the same GetItcListDone result view.
 			writeBrowsePage(l, ctx, wp, s, body.Category(), body.CategorySub(), 0, 0, 0, browseFilterFromSearchItcList(*body))
+		case ItcOperationBuy:
+			body := &fieldsb.ItcOperationBuy{}
+			body.Decode(l, ctx)(r, readerOptions)
+			// Plain fixed-price buy (mode 0x10): BuyNow=false. atlas-mts resolves the
+			// serial->listing and settles at the listing's listValue.
+			if err := mtsproc.NewProcessor(l, ctx).Buy(uuid.New(), s.WorldId(), body.ItcSn(), s.CharacterId(), s.AccountId(), false); err != nil {
+				l.WithError(err).Errorf("Unable to emit BUY for character [%d] serial [%d].", s.CharacterId(), body.ItcSn())
+			}
+		case ItcOperationBuyAuctionImm:
+			body := &fieldsb.ItcOperationBuyAuctionImm{}
+			body.Decode(l, ctx)(r, readerOptions)
+			// Buy-now / immediate-buyout of an auction (mode 0x14): identical wire
+			// shape to BUY (serial only), distinguished by BuyNow=true so atlas-mts
+			// settles at the listing's buyNowPrice (not its auction list/starting
+			// value) — grounded in listing.Processor.Buy's BuyNow price-basis branch.
+			if err := mtsproc.NewProcessor(l, ctx).Buy(uuid.New(), s.WorldId(), body.ItcSn(), s.CharacterId(), s.AccountId(), true); err != nil {
+				l.WithError(err).Errorf("Unable to emit BUY_AUCTION_IMM for character [%d] serial [%d].", s.CharacterId(), body.ItcSn())
+			}
+		case ItcOperationPlaceBid:
+			body := &fieldsb.ItcOperationPlaceBid{}
+			body.Decode(l, ctx)(r, readerOptions)
+			// PLACE_BID (mode 0x13): the wire carries itcSn + bidPrice + bidRange. The
+			// bid amount is bidPrice (the player's base bid); bidRange is the client's
+			// increment hint and is not part of the server-authoritative floor (atlas-mts
+			// validates against currentBid + the listing's configured minIncrement).
+			if err := mtsproc.NewProcessor(l, ctx).PlaceBid(uuid.New(), s.WorldId(), body.ItcSn(), s.CharacterId(), s.AccountId(), body.BidPrice()); err != nil {
+				l.WithError(err).Errorf("Unable to emit PLACE_BID for character [%d] serial [%d].", s.CharacterId(), body.ItcSn())
+			}
 		case ItcOperationRegisterWishEntry,
 			ItcOperationSetZzim,
 			ItcOperationDeleteZzim,
 			ItcOperationViewWish,
 			ItcOperationBuyWish,
 			ItcOperationCancelWish,
-			ItcOperationBuy,
-			ItcOperationBuyZzim,
-			ItcOperationPlaceBid,
-			ItcOperationBuyAuctionImm:
-			// Routed-but-unimplemented seam. Sibling arm tasks (buy/bid/wish) decode
+			ItcOperationBuyZzim:
+			// Routed-but-unimplemented seam. Sibling arm tasks (wish/zzim) decode
 			// the matching fieldsb.ItcOperation* body and emit the corresponding
 			// COMMAND_TOPIC_MTS command + clientbound result.
 			l.Infof("Character [%d] sent routed-but-unimplemented ITC_OPERATION [%s] (mode [%d]).", s.CharacterId(), key, p.Mode())

@@ -1260,3 +1260,483 @@ func TestItcOperationTabSearchByteOutput_v87(t *testing.T) {
 		t.Fatalf("TabSearch (v87):\n got %v\nwant %v", got, want)
 	}
 }
+
+// =============================================================================
+// gms_v84 — all 18 ITC_OPERATION serverbound arms, dispatcher opcode 0x104/260
+// (GMS_v84.1_U_DEVM.exe, IDA port 13337). v84 is a DEVM build, but the CITC
+// sender methods were NOT symbol-named (unlike v87/v95); they decompile as a
+// dense sub_5AEF* cluster right after the named CITC::OnStatusCharge @0x5aef76
+// and TrySendQueryCashRequest @0x5af26a siblings, and were named in the IDB by
+// reading their COutPacket opcode + Encode order (PlaceBid/TabSearch inline into
+// the bid-dialog/tab-button handlers, same as v83/v87/v95). The dispatcher
+// opcode COutPacket(260) is confirmed at CITC::OnRegisterSaleEntry @0x5aefff —
+// a +7 shift from the registry's stale v83-carryover 253 (corrected to 260 in
+// the preceding fix commit). EVERY arm's mode byte is BYTE-IDENTICAL to gms_v95
+// and gms_v87 — no divergence. The item-slot blob is written by sub_4EA6F8
+// (v84's GW_ItemSlotBase writer; v83 sub_4E33D8, v87 sub_502670, v95
+// GW_ItemSlotBase::Encode) — same model.Asset contract. Per the dispatcher-
+// family rule each arm gets its OWN byte fixture.
+// =============================================================================
+
+// packet-audit:verify packet=field/serverbound/FieldItcOperationRegisterSale version=gms_v84 ida=0x5aefd2
+//
+// ITC_OPERATION mode 2 register-fixed-price. Derived from
+// CITC::OnRegisterSaleEntry @0x5aefd2 (COutPacket(260) @0x5aefff), arg0==0
+// branch. Encode order @0x5af12e..0x5af171:
+//
+//	Encode1(2u)          @0x5af12e  mode byte
+//	sub_4EA6F8(&pkt)     @0x5af13a  item-slot blob (model.Asset)
+//	Encode4(a4)          @0x5af145  quantity
+//	Encode4(v20)         @0x5af150  commodityId
+//	Encode4(a3)          @0x5af15b  price
+//	Encode1(v21)         @0x5af166  type
+//	Encode1(v19)         @0x5af171  flag
+func TestItcOperationRegisterSaleByteOutput_v84(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 84, 1)
+	asset := itcTestAsset()
+	assetBytes := pt.Encode(t, ctx, asset.Encode, nil)
+
+	input := NewItcOperationRegisterSale(0x02, asset, 5, 2000000, 1000, 0x01, 0x00)
+	got := pt.Encode(t, ctx, input.Encode, nil)
+
+	var want []byte
+	want = append(want, 0x02)             // Encode1(2u) mode byte @0x5af12e
+	want = append(want, assetBytes...)    // sub_4EA6F8 item-slot blob @0x5af13a
+	want = append(want, le32(5)...)       // Encode4 quantity @0x5af145
+	want = append(want, le32(2000000)...) // Encode4 commodityId @0x5af150
+	want = append(want, le32(1000)...)    // Encode4 price @0x5af15b
+	want = append(want, 0x01)             // Encode1 type @0x5af166
+	want = append(want, 0x00)             // Encode1 flag @0x5af171
+	if !bytes.Equal(got, want) {
+		t.Fatalf("RegisterSale (v84):\n got %v\nwant %v", got, want)
+	}
+}
+
+// packet-audit:verify packet=field/serverbound/FieldItcOperationRegisterAuction version=gms_v84 ida=0x5af045
+//
+// ITC_OPERATION mode 0x12 register-auction. Derived from
+// CITC::OnRegisterSaleEntry @0x5aefd2 (COutPacket(260) @0x5aefff), arg0==1
+// branch. Encode order @0x5af064..0x5af0bd:
+//
+//	Encode1(0x12u)       @0x5af064  mode byte
+//	sub_4EA6F8(&pkt)     @0x5af070  item-slot blob (model.Asset)
+//	Encode4(a4)          @0x5af07b  quantity
+//	Encode4(v20)         @0x5af086  commodityId
+//	Encode4(a2)          @0x5af091  selector (==1)
+//	Encode4(v18)         @0x5af09c  buyNowPrice
+//	Encode1(v21)         @0x5af0a7  type
+//	Encode1(v19)         @0x5af0b2  flag
+//	Encode4(v17)         @0x5af0bd  durationHrs
+func TestItcOperationRegisterAuctionByteOutput_v84(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 84, 1)
+	asset := itcTestAsset()
+	assetBytes := pt.Encode(t, ctx, asset.Encode, nil)
+
+	input := NewItcOperationRegisterAuction(0x12, asset, 5, 2000000, 1, 5000, 0x01, 0x00, 24)
+	got := pt.Encode(t, ctx, input.Encode, nil)
+
+	var want []byte
+	want = append(want, 0x12)             // Encode1(0x12u) mode byte @0x5af064
+	want = append(want, assetBytes...)    // sub_4EA6F8 item-slot blob @0x5af070
+	want = append(want, le32(5)...)       // Encode4 quantity @0x5af07b
+	want = append(want, le32(2000000)...) // Encode4 commodityId @0x5af086
+	want = append(want, le32(1)...)       // Encode4 selector @0x5af091
+	want = append(want, le32(5000)...)    // Encode4 buyNowPrice @0x5af09c
+	want = append(want, 0x01)             // Encode1 type @0x5af0a7
+	want = append(want, 0x00)             // Encode1 flag @0x5af0b2
+	want = append(want, le32(24)...)      // Encode4 durationHrs @0x5af0bd
+	if !bytes.Equal(got, want) {
+		t.Fatalf("RegisterAuction (v84):\n got %v\nwant %v", got, want)
+	}
+}
+
+// packet-audit:verify packet=field/serverbound/FieldItcOperationSaleCurrentItem version=gms_v84 ida=0x5af1db
+//
+// ITC_OPERATION mode 3 sell-currently-selected-item. Derived from
+// CITC::OnSaleCurrentItem @0x5af1db (COutPacket(260) @0x5af1f9). Encode order
+// @0x5af207..0x5af234:
+//
+//	Encode1(3u)          @0x5af207  mode byte
+//	Encode1(a2)          @0x5af212  type
+//	Encode4(a3)          @0x5af21d  slotPos
+//	sub_4EA6F8(&pkt)     @0x5af229  item-slot blob (model.Asset)
+//	Encode4(a5)          @0x5af234  commodityId
+func TestItcOperationSaleCurrentItemByteOutput_v84(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 84, 1)
+	asset := itcTestAsset()
+	assetBytes := pt.Encode(t, ctx, asset.Encode, nil)
+
+	input := NewItcOperationSaleCurrentItem(0x03, 0x01, 7, asset, 2000000)
+	got := pt.Encode(t, ctx, input.Encode, nil)
+
+	var want []byte
+	want = append(want, 0x03)             // Encode1(3u) mode byte @0x5af207
+	want = append(want, 0x01)             // Encode1 type @0x5af212
+	want = append(want, le32(7)...)       // Encode4 slotPos @0x5af21d
+	want = append(want, assetBytes...)    // sub_4EA6F8 item-slot blob @0x5af229
+	want = append(want, le32(2000000)...) // Encode4 commodityId @0x5af234
+	if !bytes.Equal(got, want) {
+		t.Fatalf("SaleCurrentItem (v84):\n got %v\nwant %v", got, want)
+	}
+}
+
+// packet-audit:verify packet=field/serverbound/FieldItcOperationBuy version=gms_v84 ida=0x5af9fa
+//
+// ITC_OPERATION mode 0x10 buy-fixed-price. CITC::OnBuy @0x5af9fa
+// (COutPacket(260) @0x5afa18). Encode1(0x10) @0x5afa26, Encode4 nITCSN @0x5afa37.
+func TestItcOperationBuyByteOutput_v84(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 84, 1)
+	input := NewItcOperationBuy(0x10, 123456)
+	got := pt.Encode(t, ctx, input.Encode, nil)
+
+	var want []byte
+	want = append(want, 0x10)            // Encode1(0x10u) mode byte @0x5afa26
+	want = append(want, le32(123456)...) // Encode4 nITCSN @0x5afa37
+	if !bytes.Equal(got, want) {
+		t.Fatalf("Buy (v84):\n got %v\nwant %v", got, want)
+	}
+}
+
+// packet-audit:verify packet=field/serverbound/FieldItcOperationBuyAuctionImm version=gms_v84 ida=0x5afa6d
+//
+// ITC_OPERATION mode 0x14 buy-now-on-auction. CITC::OnBuyAuctionImm @0x5afa6d
+// (COutPacket(260) @0x5afa8b). Encode1(0x14) @0x5afa99, Encode4 nITCSN @0x5afaaa.
+func TestItcOperationBuyAuctionImmByteOutput_v84(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 84, 1)
+	input := NewItcOperationBuyAuctionImm(0x14, 123456)
+	got := pt.Encode(t, ctx, input.Encode, nil)
+
+	var want []byte
+	want = append(want, 0x14)            // Encode1(0x14u) mode byte @0x5afa99
+	want = append(want, le32(123456)...) // Encode4 nITCSN @0x5afaaa
+	if !bytes.Equal(got, want) {
+		t.Fatalf("BuyAuctionImm (v84):\n got %v\nwant %v", got, want)
+	}
+}
+
+// packet-audit:verify packet=field/serverbound/FieldItcOperationCancelSale version=gms_v84 ida=0x5afedd
+//
+// ITC_OPERATION mode 0x07 cancel-sale. CITC::OnCancelSaleItem @0x5afedd
+// (YesNo gate sub_9D3ABC==6; COutPacket(260) @0x5aff33). Encode1(7) @0x5aff40,
+// Encode4 nITCSN @0x5aff4e.
+func TestItcOperationCancelSaleByteOutput_v84(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 84, 1)
+	input := NewItcOperationCancelSale(0x07, 123456)
+	got := pt.Encode(t, ctx, input.Encode, nil)
+
+	var want []byte
+	want = append(want, 0x07)            // Encode1(7u) mode byte @0x5aff40
+	want = append(want, le32(123456)...) // Encode4 nITCSN @0x5aff4e
+	if !bytes.Equal(got, want) {
+		t.Fatalf("CancelSale (v84):\n got %v\nwant %v", got, want)
+	}
+}
+
+// packet-audit:verify packet=field/serverbound/FieldItcOperationMoveLtoS version=gms_v84 ida=0x5aff86
+//
+// ITC_OPERATION mode 0x08 take-home. CITC::OnMoveITCPurchaseItemLtoS @0x5aff86
+// (COutPacket(260) @0x5affa4). nTI/nPos args NOT written. Encode1(8) @0x5affb2,
+// Encode4 nITCSN @0x5affc3.
+func TestItcOperationMoveLtoSByteOutput_v84(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 84, 1)
+	input := NewItcOperationMoveLtoS(0x08, 123456)
+	got := pt.Encode(t, ctx, input.Encode, nil)
+
+	var want []byte
+	want = append(want, 0x08)            // Encode1(8u) mode byte @0x5affb2
+	want = append(want, le32(123456)...) // Encode4 nITCSN @0x5affc3
+	if !bytes.Equal(got, want) {
+		t.Fatalf("MoveLtoS (v84):\n got %v\nwant %v", got, want)
+	}
+}
+
+// packet-audit:verify packet=field/serverbound/FieldItcOperationPlaceBid version=gms_v84 ida=0x5d3ec7
+//
+// ITC_OPERATION mode 0x13 place-bid. Send inlined into
+// CITCBidAuctionDlg::OnButtonClicked @0x5d3ec7 (a2==1 confirm-bid branch,
+// COutPacket(260) @0x5d4068). Encode order @0x5d4075..0x5d40a2:
+//
+//	Encode1(0x13u)            @0x5d4075  mode byte
+//	Encode4(*(this[47]+32))   @0x5d4086  nITCSN
+//	Encode4(this[40])         @0x5d4094  bidPrice
+//	Encode4(this[39])         @0x5d40a2  bidRange
+func TestItcOperationPlaceBidByteOutput_v84(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 84, 1)
+	input := NewItcOperationPlaceBid(0x13, 123456, 5000, 100)
+	got := pt.Encode(t, ctx, input.Encode, nil)
+
+	var want []byte
+	want = append(want, 0x13)            // Encode1(0x13u) mode byte @0x5d4075
+	want = append(want, le32(123456)...) // Encode4 nITCSN @0x5d4086
+	want = append(want, le32(5000)...)   // Encode4 bidPrice @0x5d4094
+	want = append(want, le32(100)...)    // Encode4 bidRange @0x5d40a2
+	if !bytes.Equal(got, want) {
+		t.Fatalf("PlaceBid (v84):\n got %v\nwant %v", got, want)
+	}
+}
+
+// packet-audit:verify packet=field/serverbound/FieldItcOperationSetZzim version=gms_v84 ida=0x5afc00
+//
+// ITC_OPERATION mode 0x09 set-zzim. CITC::OnSetZzim @0x5afc00
+// (COutPacket(260) @0x5afc1e). Encode1(9) @0x5afc2c, Encode4 nITCSN @0x5afc3d.
+func TestItcOperationSetZzimByteOutput_v84(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 84, 1)
+	input := NewItcOperationSetZzim(0x09, 123456)
+	got := pt.Encode(t, ctx, input.Encode, nil)
+
+	var want []byte
+	want = append(want, 0x09)            // Encode1(9u) mode byte @0x5afc2c
+	want = append(want, le32(123456)...) // Encode4 nITCSN @0x5afc3d
+	if !bytes.Equal(got, want) {
+		t.Fatalf("SetZzim (v84):\n got %v\nwant %v", got, want)
+	}
+}
+
+// packet-audit:verify packet=field/serverbound/FieldItcOperationBuyZzim version=gms_v84 ida=0x5afc73
+//
+// ITC_OPERATION mode 0x11 buy-zzim. CITC::OnBuyZzim @0x5afc73 (YesNo gate
+// sub_9D3ABC==6; COutPacket(260) @0x5afcbc). Encode1(0x11) @0x5afcc9,
+// Encode4 nITCSN @0x5afcda.
+func TestItcOperationBuyZzimByteOutput_v84(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 84, 1)
+	input := NewItcOperationBuyZzim(0x11, 123456)
+	got := pt.Encode(t, ctx, input.Encode, nil)
+
+	var want []byte
+	want = append(want, 0x11)            // Encode1(0x11u) mode byte @0x5afcc9
+	want = append(want, le32(123456)...) // Encode4 nITCSN @0x5afcda
+	if !bytes.Equal(got, want) {
+		t.Fatalf("BuyZzim (v84):\n got %v\nwant %v", got, want)
+	}
+}
+
+// packet-audit:verify packet=field/serverbound/FieldItcOperationDeleteZzim version=gms_v84 ida=0x5afd11
+//
+// ITC_OPERATION mode 0x0A delete-zzim. CITC::OnDeleteZzim @0x5afd11
+// (COutPacket(260) @0x5afd2f). Encode1(0xA) @0x5afd3d, Encode4 nITCSN @0x5afd4e.
+func TestItcOperationDeleteZzimByteOutput_v84(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 84, 1)
+	input := NewItcOperationDeleteZzim(0x0A, 123456)
+	got := pt.Encode(t, ctx, input.Encode, nil)
+
+	var want []byte
+	want = append(want, 0x0A)            // Encode1(0xAu) mode byte @0x5afd3d
+	want = append(want, le32(123456)...) // Encode4 nITCSN @0x5afd4e
+	if !bytes.Equal(got, want) {
+		t.Fatalf("DeleteZzim (v84):\n got %v\nwant %v", got, want)
+	}
+}
+
+// packet-audit:verify packet=field/serverbound/FieldItcOperationViewWish version=gms_v84 ida=0x5afd84
+//
+// ITC_OPERATION mode 0x0B view-wish. CITC::OnViewWish @0x5afd84
+// (COutPacket(260) @0x5afda2). Encode1(0xB) @0x5afdb0, Encode4 nITCSN @0x5afdc1.
+func TestItcOperationViewWishByteOutput_v84(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 84, 1)
+	input := NewItcOperationViewWish(0x0B, 123456)
+	got := pt.Encode(t, ctx, input.Encode, nil)
+
+	var want []byte
+	want = append(want, 0x0B)            // Encode1(0xBu) mode byte @0x5afdb0
+	want = append(want, le32(123456)...) // Encode4 nITCSN @0x5afdc1
+	if !bytes.Equal(got, want) {
+		t.Fatalf("ViewWish (v84):\n got %v\nwant %v", got, want)
+	}
+}
+
+// packet-audit:verify packet=field/serverbound/FieldItcOperationBuyWish version=gms_v84 ida=0x5afdf7
+//
+// ITC_OPERATION mode 0x0C buy-wish. CITC::OnBuyWish @0x5afdf7
+// (COutPacket(260) @0x5afe15). Encode1(0xC) @0x5afe23, Encode4 nITCSN @0x5afe34.
+func TestItcOperationBuyWishByteOutput_v84(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 84, 1)
+	input := NewItcOperationBuyWish(0x0C, 123456)
+	got := pt.Encode(t, ctx, input.Encode, nil)
+
+	var want []byte
+	want = append(want, 0x0C)            // Encode1(0xCu) mode byte @0x5afe23
+	want = append(want, le32(123456)...) // Encode4 nITCSN @0x5afe34
+	if !bytes.Equal(got, want) {
+		t.Fatalf("BuyWish (v84):\n got %v\nwant %v", got, want)
+	}
+}
+
+// packet-audit:verify packet=field/serverbound/FieldItcOperationCancelWish version=gms_v84 ida=0x5afe6a
+//
+// ITC_OPERATION mode 0x0D cancel-wish. CITC::OnCancelWish @0x5afe6a
+// (COutPacket(260) @0x5afe88). Encode1(0xD) @0x5afe96, Encode4 nITCSN @0x5afea7.
+func TestItcOperationCancelWishByteOutput_v84(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 84, 1)
+	input := NewItcOperationCancelWish(0x0D, 123456)
+	got := pt.Encode(t, ctx, input.Encode, nil)
+
+	var want []byte
+	want = append(want, 0x0D)            // Encode1(0xDu) mode byte @0x5afe96
+	want = append(want, le32(123456)...) // Encode4 nITCSN @0x5afea7
+	if !bytes.Equal(got, want) {
+		t.Fatalf("CancelWish (v84):\n got %v\nwant %v", got, want)
+	}
+}
+
+// packet-audit:verify packet=field/serverbound/FieldItcOperationRegisterWishEntry version=gms_v84 ida=0x5af8a5
+//
+// ITC_OPERATION mode 0x04 register-wish-entry. CITC::OnRegisterWishEntry
+// @0x5af8a5 (110-NX floor guard a3<=109 @0x5af8d6, not on wire; COutPacket(260)
+// @0x5af91f). Encode order @0x5af92f..0x5af992:
+//
+//	Encode1(4u)                      @0x5af92f  mode byte
+//	Encode4(*(this+7864))            @0x5af93d  itemId
+//	Encode4(*(this+7868))            @0x5af94b  price
+//	Encode4(*(this+7872))            @0x5af959  count
+//	Encode1(*(this+7877))            @0x5af96a  duration
+//	Encode1(*(this+7876))            @0x5af97b  feeOption
+//	EncodeStr(this+7880)             @0x5af992  description (uint16 len + bytes)
+func TestItcOperationRegisterWishEntryByteOutput_v84(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 84, 1)
+	input := NewItcOperationRegisterWishEntry(0x04, 2000000, 1000, 5, 0x07, 0x01, "wish")
+	got := pt.Encode(t, ctx, input.Encode, nil)
+
+	var want []byte
+	want = append(want, 0x04)              // Encode1(4u) mode byte @0x5af92f
+	want = append(want, le32(2000000)...)  // Encode4 itemId @0x5af93d
+	want = append(want, le32(1000)...)     // Encode4 price @0x5af94b
+	want = append(want, le32(5)...)        // Encode4 count @0x5af959
+	want = append(want, 0x07)              // Encode1 duration @0x5af96a
+	want = append(want, 0x01)              // Encode1 feeOption @0x5af97b
+	want = append(want, 0x04, 0x00)        // EncodeStr len prefix (uint16 LE = 4) @0x5af992
+	want = append(want, []byte("wish")...) // EncodeStr bytes @0x5af992
+	if !bytes.Equal(got, want) {
+		t.Fatalf("RegisterWishEntry (v84):\n got %v\nwant %v", got, want)
+	}
+}
+
+// packet-audit:verify packet=field/serverbound/FieldItcOperationChangedCategory version=gms_v84 ida=0x5af5fa
+//
+// ITC_OPERATION mode 0x05 change-browse-category. CITC::OnChangedCategory
+// @0x5af5fa (COutPacket(260) @0x5af642). Only nCategory variable; rest const.
+// Encode order @0x5af64f..0x5af6a2:
+//
+//	Encode1(5u)        @0x5af64f  mode byte
+//	Encode4(a2)        @0x5af65a  category
+//	Encode4(0)         @0x5af663  categorySub (const 0)
+//	Encode4(0)         @0x5af66c  page (const 0)
+//	Encode1(1u)        @0x5af678  sortType (const 1)
+//	Encode1(1u)        @0x5af681  sortColumn (const 1)
+//	Encode4(1u)        @0x5af68a  searchOption (const 1)
+//	EncodeStr("")      @0x5af6a2  searchCondition (const empty)
+func TestItcOperationChangedCategoryByteOutput_v84(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 84, 1)
+	input := NewItcOperationChangedCategory(0x05, 3)
+	got := pt.Encode(t, ctx, input.Encode, nil)
+
+	var want []byte
+	want = append(want, 0x05)       // Encode1(5u) mode byte @0x5af64f
+	want = append(want, le32(3)...) // Encode4 category @0x5af65a
+	want = append(want, le32(0)...) // Encode4 categorySub @0x5af663
+	want = append(want, le32(0)...) // Encode4 page @0x5af66c
+	want = append(want, 0x01)       // Encode1 sortType @0x5af678
+	want = append(want, 0x01)       // Encode1 sortColumn @0x5af681
+	want = append(want, le32(1)...) // Encode4 searchOption @0x5af68a
+	want = append(want, 0x00, 0x00) // EncodeStr("") uint16 len 0 @0x5af6a2
+	if !bytes.Equal(got, want) {
+		t.Fatalf("ChangedCategory (v84):\n got %v\nwant %v", got, want)
+	}
+}
+
+// packet-audit:verify packet=field/serverbound/FieldItcOperationChangedCategorySub version=gms_v84 ida=0x5af6d9
+//
+// ITC_OPERATION mode 0x05 change-sub-category. CITC::OnChangedCategorySub
+// @0x5af6d9 (COutPacket(260) @0x5af6fe). page=0 const. Encode order
+// @0x5af70b..0x5af790:
+//
+//	Encode1(5u)            @0x5af70b  mode byte
+//	Encode4(*(this+104))   @0x5af716  category
+//	Encode4(a2)            @0x5af722  categorySub
+//	Encode4(0)             @0x5af72b  page (const 0)
+//	Encode1(a3)            @0x5af736  sortType
+//	Encode1(a4)            @0x5af741  sortColumn
+//	Encode4(searchOption)  @0x5af750  searchOption (else-branch const 1)
+//	EncodeStr(cond)        @0x5af790  searchCondition
+func TestItcOperationChangedCategorySubByteOutput_v84(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 84, 1)
+	input := NewItcOperationChangedCategorySub(0x05, 3, 2, 0x01, 0x01, 1, "")
+	got := pt.Encode(t, ctx, input.Encode, nil)
+
+	var want []byte
+	want = append(want, 0x05)       // Encode1(5u) mode byte @0x5af70b
+	want = append(want, le32(3)...) // Encode4 category @0x5af716
+	want = append(want, le32(2)...) // Encode4 categorySub @0x5af722
+	want = append(want, le32(0)...) // Encode4 page @0x5af72b
+	want = append(want, 0x01)       // Encode1 sortType @0x5af736
+	want = append(want, 0x01)       // Encode1 sortColumn @0x5af741
+	want = append(want, le32(1)...) // Encode4 searchOption @0x5af750
+	want = append(want, 0x00, 0x00) // EncodeStr("") uint16 len 0 @0x5af790
+	if !bytes.Equal(got, want) {
+		t.Fatalf("ChangedCategorySub (v84):\n got %v\nwant %v", got, want)
+	}
+}
+
+// packet-audit:verify packet=field/serverbound/FieldItcOperationChangedPage version=gms_v84 ida=0x5af7c8
+//
+// ITC_OPERATION mode 0x05 change-browse-page. CITC::OnChangedPage @0x5af7c8
+// (COutPacket(260) @0x5af7ea). All 8 fields from CITC state. Encode order
+// @0x5af7f8..0x5af860:
+//
+//	Encode1(5u)            @0x5af7f8  mode byte
+//	Encode4(*(this+104))   @0x5af803  category
+//	Encode4(*(this+108))   @0x5af80e  categorySub
+//	Encode4(a2)            @0x5af819  page
+//	Encode1(*(this+96))    @0x5af827  sortType
+//	Encode1(*(this+100))   @0x5af835  sortColumn
+//	Encode4(*(this+7916))  @0x5af843  searchOption
+//	EncodeStr(this+7920)   @0x5af860  searchCondition
+func TestItcOperationChangedPageByteOutput_v84(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 84, 1)
+	input := NewItcOperationChangedPage(0x05, 3, 2, 4, 0x01, 0x01, 1, "abc")
+	got := pt.Encode(t, ctx, input.Encode, nil)
+
+	var want []byte
+	want = append(want, 0x05)             // Encode1(5u) mode byte @0x5af7f8
+	want = append(want, le32(3)...)       // Encode4 category @0x5af803
+	want = append(want, le32(2)...)       // Encode4 categorySub @0x5af80e
+	want = append(want, le32(4)...)       // Encode4 page @0x5af819
+	want = append(want, 0x01)             // Encode1 sortType @0x5af827
+	want = append(want, 0x01)             // Encode1 sortColumn @0x5af835
+	want = append(want, le32(1)...)       // Encode4 searchOption @0x5af843
+	want = append(want, 0x03, 0x00)       // EncodeStr len prefix (uint16 LE = 3) @0x5af860
+	want = append(want, []byte("abc")...) // EncodeStr bytes @0x5af860
+	if !bytes.Equal(got, want) {
+		t.Fatalf("ChangedPage (v84):\n got %v\nwant %v", got, want)
+	}
+}
+
+// packet-audit:verify packet=field/serverbound/FieldItcOperationTabSearch version=gms_v84 ida=0x5c77ca
+//
+// ITC_OPERATION mode 0x06 tab/search-by-name. Send inlined into
+// CITCWnd_Tab::OnButtonClicked @0x5c77ca (a2==1004 search button, COutPacket(260)
+// @0x5c7869/@0x5c7932). 6-field body, NO sort bytes. Encode order
+// (advanced-search branch @0x5c7940; character-name branch @0x5c7877 is identical):
+//
+//	Encode1(6u)            @0x5c7940  mode byte
+//	Encode4(v3=m_nSelect+1)@0x5c7949  category
+//	Encode4(v17)           @0x5c7954  categorySub
+//	Encode4(0)             @0x5c795d  page (const 0)
+//	Encode4(v16)           @0x5c7968  searchOption
+//	EncodeStr(name)        @0x5c7981  searchCondition
+func TestItcOperationTabSearchByteOutput_v84(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 84, 1)
+	input := NewItcOperationTabSearch(0x06, 3, 2, 0, "hero")
+	got := pt.Encode(t, ctx, input.Encode, nil)
+
+	var want []byte
+	want = append(want, 0x06)              // Encode1(6u) mode byte @0x5c7940
+	want = append(want, le32(3)...)        // Encode4 category @0x5c7949
+	want = append(want, le32(2)...)        // Encode4 categorySub @0x5c7954
+	want = append(want, le32(0)...)        // Encode4 page @0x5c795d
+	want = append(want, le32(0)...)        // Encode4 searchOption @0x5c7968
+	want = append(want, 0x04, 0x00)        // EncodeStr len prefix (uint16 LE = 4) @0x5c7981
+	want = append(want, []byte("hero")...) // EncodeStr bytes @0x5c7981
+	if !bytes.Equal(got, want) {
+		t.Fatalf("TabSearch (v84):\n got %v\nwant %v", got, want)
+	}
+}

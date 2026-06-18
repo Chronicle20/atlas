@@ -1170,6 +1170,11 @@
         "opCode": "0x102",
         "validator": "NoOpValidator",
         "handler": "ItcStatusChargeHandle"
+      },
+      {
+        "opCode": "0x103",
+        "validator": "LoggedInValidator",
+        "handler": "ItcQueryCashRequestHandle"
       }
     ],
     "writers": [

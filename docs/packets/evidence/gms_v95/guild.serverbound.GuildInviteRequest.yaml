@@ -4,5 +4,5 @@ version: gms_v95
 category: TIER1-FIXTURE
 ida:
     function: CField::SendInviteGuildMsg
-    address: "0x0"
+    address: "0x5348e0"
     decompile_sha256: ba4e93935e86b153054619d141bbefddbd15a1948dac8642bf7ba252dff90dd9

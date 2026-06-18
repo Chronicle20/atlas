@@ -4,5 +4,5 @@ version: gms_v95
 category: TIER1-FIXTURE
 ida:
     function: CField::SendWithdrawGuildMsg
-    address: "0x0"
+    address: "0x534ad0"
     decompile_sha256: 930fd7899fdd82c1f5d5aadcf5e0c584974d3863e698f4f2f2a0692bd86fc659

@@ -5819,22 +5819,45 @@
    ]
   },
   "CUIGuildBBS::OnComment": {
-   "address": "0x0",
+   "address": "0x816994",
    "direction": "serverbound",
-   "note": "ABSENT in v83 as a standalone named function. Cannot audit.",
-   "calls": []
+   "note": "task-103: v83 BBS_OPERATION (155/0x9B) sub-op 4 (reply to thread), sub_816994 @0x816994. IDA-verified. [Prior \"ABSENT\" note incorrect.] op+subtype consumed by Atlas wrapper; calls list the wire body only.",
+   "calls": [
+    {
+     "op": "Encode4",
+     "comment": "threadId"
+    },
+    {
+     "op": "EncodeStr",
+     "comment": "message"
+    }
+   ]
   },
   "CUIGuildBBS::OnCommentDelete": {
-   "address": "0x0",
+   "address": "0x816aa8",
    "direction": "serverbound",
-   "note": "ABSENT in v83 as a standalone named function. Cannot audit.",
-   "calls": []
+   "note": "task-103: v83 BBS_OPERATION (155/0x9B) sub-op 5 (delete reply), sub_816AA8 @0x816aa8. IDA-verified. [Prior \"ABSENT\" note incorrect.] op+subtype consumed by Atlas wrapper; calls list the wire body only.",
+   "calls": [
+    {
+     "op": "Encode4",
+     "comment": "threadId"
+    },
+    {
+     "op": "Encode4",
+     "comment": "replyId"
+    }
+   ]
   },
   "CUIGuildBBS::OnDelete": {
-   "address": "0x0",
+   "address": "0x8168db",
    "direction": "serverbound",
-   "note": "ABSENT in v83 as a standalone named function. Cannot audit.",
-   "calls": []
+   "note": "task-103: v83 BBS_OPERATION (155/0x9B) sub-op 1 (delete thread), sub_8168DB @0x8168db. IDA-verified. [Prior \"ABSENT\" note incorrect.] op+subtype consumed by Atlas wrapper; calls list the wire body only.",
+   "calls": [
+    {
+     "op": "Encode4",
+     "comment": "threadId"
+    }
+   ]
   },
   "CUIGuildBBS::OnGuildBBSPacket#BBSThread": {
    "address": "0xa1233f",
@@ -5913,22 +5936,57 @@
    "calls": []
   },
   "CUIGuildBBS::OnRegister": {
-   "address": "0x0",
+   "address": "0x8166f6",
    "direction": "serverbound",
-   "note": "ABSENT in v83 as a standalone named function. Cannot audit.",
-   "calls": []
+   "note": "task-103: v83 BBS_OPERATION (COutPacket 155/0x9B) sub-op 0 (create/edit thread), sub_8166F6 @0x8166f6 (CUIGuildBBS member). IDA-verified. [Prior \"ABSENT/inlined\" note was incorrect - the v83 send sites exist as unnamed sub_816xxx in the CUIGuildBBS UI cluster.] op+subtype consumed by Atlas guild BBS wrapper; calls list the wire body only.",
+   "calls": [
+    {
+     "op": "Encode1",
+     "comment": "modify flag"
+    },
+    {
+     "op": "Encode4",
+     "comment": "threadId (only when modify != 0)"
+    },
+    {
+     "op": "Encode1",
+     "comment": "notice flag"
+    },
+    {
+     "op": "EncodeStr",
+     "comment": "title"
+    },
+    {
+     "op": "EncodeStr",
+     "comment": "message"
+    },
+    {
+     "op": "Encode4",
+     "comment": "emoticon"
+    }
+   ]
   },
   "CUIGuildBBS::SendLoadListRequest": {
-   "address": "0x0",
+   "address": "0x816b69",
    "direction": "serverbound",
-   "note": "ABSENT in v83 as a standalone named function — not found in binary. Likely inlined or handled differently in v83. Cannot audit.",
-   "calls": []
+   "note": "task-103: v83 BBS_OPERATION (155/0x9B) sub-op 2 (load thread list), sub_816B69 @0x816b69. IDA-verified. [Prior \"ABSENT/inlined\" note incorrect.] op+subtype consumed by Atlas wrapper; calls list the wire body only.",
+   "calls": [
+    {
+     "op": "Encode4",
+     "comment": "startIndex"
+    }
+   ]
   },
   "CUIGuildBBS::SendViewEntryRequest": {
-   "address": "0x0",
+   "address": "0x816bca",
    "direction": "serverbound",
-   "note": "ABSENT in v83 as a standalone named function. Cannot audit.",
-   "calls": []
+   "note": "task-103: v83 BBS_OPERATION (155/0x9B) sub-op 3 (view thread), sub_816BCA @0x816bca. IDA-verified. [Prior \"ABSENT\" note incorrect.] op+subtype consumed by Atlas wrapper; calls list the wire body only.",
+   "calls": [
+    {
+     "op": "Encode4",
+     "comment": "threadId"
+    }
+   ]
   },
   "CUIMessenger::OnCreate": {
    "address": "0x8511fc",

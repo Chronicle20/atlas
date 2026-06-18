@@ -9,10 +9,10 @@ import (
 // CField::SendKickGuildMsg: COutPacket(GUILD_OPERATION)+Encode1(8=KICK)+Encode4(cid)+EncodeStr(name).
 // Body = Encode4(cid)+EncodeStr(name). IDA-verified: v83@0x530a0d, v84@0x53cc7d, v87@0x55821e.
 // packet-audit:verify packet=guild/serverbound/GuildKick version=jms_v185 ida=0x56ddf7
-// packet-audit:verify packet=guild/serverbound/GuildKick version=gms_v95 ida=0x0
-// packet-audit:verify packet=guild/serverbound/GuildKick version=gms_v83 ida=0x0
-// packet-audit:verify packet=guild/serverbound/GuildKick version=gms_v84 ida=0x0
-// packet-audit:verify packet=guild/serverbound/GuildKick version=gms_v87 ida=0x0
+// packet-audit:verify packet=guild/serverbound/GuildKick version=gms_v95 ida=0x534cb0
+// packet-audit:verify packet=guild/serverbound/GuildKick version=gms_v83 ida=0x530a0d
+// packet-audit:verify packet=guild/serverbound/GuildKick version=gms_v84 ida=0x53cc7d
+// packet-audit:verify packet=guild/serverbound/GuildKick version=gms_v87 ida=0x55821e
 func TestKickRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

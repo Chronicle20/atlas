@@ -20,10 +20,10 @@ import (
 // All four read orders are byte-identical: characterId(4) + name(2+len).
 // name="NewGuildName" -> 2+12=14 bytes; total 4+14 = 18 bytes.
 //
-// packet-audit:verify packet=guild/clientbound/GuildForeignNameChanged version=gms_v83 ida=0x0
-// packet-audit:verify packet=guild/clientbound/GuildForeignNameChanged version=gms_v84 ida=0x0
-// packet-audit:verify packet=guild/clientbound/GuildForeignNameChanged version=gms_v87 ida=0x0
-// packet-audit:verify packet=guild/clientbound/GuildForeignNameChanged version=gms_v95 ida=0x0
+// packet-audit:verify packet=guild/clientbound/GuildForeignNameChanged version=gms_v83 ida=0x983a6a
+// packet-audit:verify packet=guild/clientbound/GuildForeignNameChanged version=gms_v84 ida=0x9c3e08
+// packet-audit:verify packet=guild/clientbound/GuildForeignNameChanged version=gms_v87 ida=0xa094f4
+// packet-audit:verify packet=guild/clientbound/GuildForeignNameChanged version=gms_v95 ida=0x9550b0
 // packet-audit:verify packet=guild/clientbound/GuildForeignNameChanged version=jms_v185 ida=0xa5763e
 func TestForeignNameChangedByteOutput(t *testing.T) {
 	const name = "NewGuildName"

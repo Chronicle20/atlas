@@ -9,10 +9,10 @@ import (
 // CField::SendInviteGuildMsg: COutPacket(GUILD_OPERATION)+Encode1(5=INVITE)+EncodeStr(target).
 // Body after op+subtype = EncodeStr(target). IDA-verified: v83@0x5306d5, v84@0x53c93f, v87@0x557ee0.
 // packet-audit:verify packet=guild/serverbound/GuildInviteRequest version=jms_v185 ida=0x56dab9
-// packet-audit:verify packet=guild/serverbound/GuildInviteRequest version=gms_v95 ida=0x0
-// packet-audit:verify packet=guild/serverbound/GuildInviteRequest version=gms_v83 ida=0x0
-// packet-audit:verify packet=guild/serverbound/GuildInviteRequest version=gms_v84 ida=0x0
-// packet-audit:verify packet=guild/serverbound/GuildInviteRequest version=gms_v87 ida=0x0
+// packet-audit:verify packet=guild/serverbound/GuildInviteRequest version=gms_v95 ida=0x5348e0
+// packet-audit:verify packet=guild/serverbound/GuildInviteRequest version=gms_v83 ida=0x5306d5
+// packet-audit:verify packet=guild/serverbound/GuildInviteRequest version=gms_v84 ida=0x53c93f
+// packet-audit:verify packet=guild/serverbound/GuildInviteRequest version=gms_v87 ida=0x557ee0
 func TestInviteRequestRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

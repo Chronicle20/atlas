@@ -21,10 +21,10 @@ import (
 // All four read orders are byte-identical:
 //   characterId(4) + logoBackground(2) + logoBackgroundColor(1) + logo(2) + logoColor(1) = 10 bytes.
 //
-// packet-audit:verify packet=guild/clientbound/GuildForeignEmblemChanged version=gms_v83 ida=0x0
-// packet-audit:verify packet=guild/clientbound/GuildForeignEmblemChanged version=gms_v84 ida=0x0
-// packet-audit:verify packet=guild/clientbound/GuildForeignEmblemChanged version=gms_v87 ida=0x0
-// packet-audit:verify packet=guild/clientbound/GuildForeignEmblemChanged version=gms_v95 ida=0x0
+// packet-audit:verify packet=guild/clientbound/GuildForeignEmblemChanged version=gms_v83 ida=0x983ab5
+// packet-audit:verify packet=guild/clientbound/GuildForeignEmblemChanged version=gms_v84 ida=0x9c3e53
+// packet-audit:verify packet=guild/clientbound/GuildForeignEmblemChanged version=gms_v87 ida=0xa0953f
+// packet-audit:verify packet=guild/clientbound/GuildForeignEmblemChanged version=gms_v95 ida=0x953fe0
 // packet-audit:verify packet=guild/clientbound/GuildForeignEmblemChanged version=jms_v185 ida=0xa57689
 func TestForeignEmblemChangedByteOutput(t *testing.T) {
 	// logo=3, logoColor=2, logoBackground=5, logoBackgroundColor=4

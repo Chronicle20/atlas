@@ -210,7 +210,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-data/atlas-data
     newTag: main-c3044ab
   - name: ghcr.io/chronicle20/atlas-doors/atlas-doors
-    newTag: main-c3044ab
+    newTag: main-1faf270
   - name: ghcr.io/chronicle20/atlas-drop-information/atlas-drop-information
     newTag: main-c3044ab
   - name: ghcr.io/chronicle20/atlas-drops/atlas-drops

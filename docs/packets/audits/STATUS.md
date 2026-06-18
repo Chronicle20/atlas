@@ -5,9 +5,9 @@
 
 Tool: `6913e7a3ea74b715887fa34e22bc251e662c06ba`
 
-- export gms_v83: `bb6c3851bea040fadaa5fa79e7b2c58d5c7e2253512b8523ca720ddcf75c9f7a`
-- export gms_v84: `22686524ff4086e3887ca73b808679c733bd1ce7b31bc61d7aeaec04545c72fb`
-- export gms_v87: `4dea958ec2d5e21d59c13f37f8ecd99b484b4c56621fe9b6743f80056cd93e18`
+- export gms_v83: `9a6fabba184211d4d00ef8f82aa72562a1cf11303b63c1c56a1bb6fb4c65c041`
+- export gms_v84: `fbbb8402b364d65e949763f73821340faabcc46d146027aba6c1f50dc47aa72c`
+- export gms_v87: `1ea92550295baa1c6de29adc5e891af9181c05517b97a260acde2e021e34b5a8`
 - export gms_v95: `d9d46ca359d4564935294035a6d5ff9088e39af5a722af2f9ed874ec4099dc8c`
 - export jms_v185: `62c33d20716c151cbd8de84fd7b8a11b2592e78a847e276e4c4ee0ecce832745`
 
@@ -266,8 +266,8 @@ Tool: `6913e7a3ea74b715887fa34e22bc251e662c06ba`
 | GIVE_FOREIGN_BUFF | CUserRemote::OnSetTemporaryStat | character/clientbound/BuffGiveForeign (T1) | 0x0C7 | ✅ | 0x0CB | ✅ | 0x0D4 | ✅ | 0x0E1 | ✅ | 0x0CD | ❌ |
 | CANCEL_FOREIGN_BUFF | CUserRemote::OnResetTemporaryStat | character/clientbound/BuffCancelForeign (T1) | 0x0C8 | ✅ | 0x0CC | ✅ | 0x0D5 | ✅ | 0x0E2 | ✅ | 0x0CE | ✅ |
 | UPDATE_PARTYMEMBER_HP | CUserRemote::OnReceiveHP | party/clientbound/PartyMemberHP (T1) | 0x0C9 | ✅ | 0x0CD | ✅ | 0x0D6 | ✅ | 0x0E3 | ✅ | 0x0CF | ✅ |
-| GUILD_NAME_CHANGED | CUserRemote::OnGuildNameChanged | guild/clientbound/GuildForeignNameChanged (T1) | 0x0CA | ❌ | 0x0CE | ❌ | 0x0D7 | ❌ | 0x0E4 | ✅ | 0x0D0 | ✅ |
-| GUILD_MARK_CHANGED | CUserRemote::OnGuildMarkChanged | guild/clientbound/GuildForeignEmblemChanged (T1) | 0x0CB | ❌ | 0x0CF | ❌ | 0x0D8 | ❌ | 0x0E5 | ✅ | 0x0D1 | ✅ |
+| GUILD_NAME_CHANGED | CUserRemote::OnGuildNameChanged | guild/clientbound/GuildForeignNameChanged (T1) | 0x0CA | ✅ | 0x0CE | ✅ | 0x0D7 | ✅ | 0x0E4 | ✅ | 0x0D0 | ✅ |
+| GUILD_MARK_CHANGED | CUserRemote::OnGuildMarkChanged | guild/clientbound/GuildForeignEmblemChanged (T1) | 0x0CB | ✅ | 0x0CF | ✅ | 0x0D8 | ✅ | 0x0E5 | ✅ | 0x0D1 | ✅ |
 | THROW_GRENADE | CUserRemote::OnThrowGrenade |  | 0x0CC | ❌ | 0x0D0 | ❌ | 0x0D9 | ❌ | 0x0E6 | ❌ | 0x0D2 | ❌ |
 | CANCEL_CHAIR | CUserLocal::OnSitResult | character/clientbound/CharacterSitResult (T1) | 0x0CD | ✅ | 0x0D1 | ✅ | 0x0DA | ✅ | 0x0E7 | ✅ | 0x0D3 | ✅ |
 | SHOW_ITEM_GAIN_INCHAT | CUser::OnEffect | character/clientbound/EffectQuest (T1) | 0x0CE | ❌ | 0x0D2 | ❌ | 0x0DB | ❌ | 0x0E9 | ❌ | 0x0D5 | ❌ |
@@ -903,9 +903,9 @@ Tool: `6913e7a3ea74b715887fa34e22bc251e662c06ba`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v83 | 341 | 0 | 0 | 332 | 200 | 0 | 50.7% |
-| v84 | 307 | 0 | 0 | 345 | 221 | 0 | 47.1% |
-| v87 | 356 | 0 | 0 | 354 | 163 | 0 | 50.1% |
+| v83 | 343 | 0 | 0 | 330 | 200 | 0 | 51.0% |
+| v84 | 309 | 0 | 0 | 343 | 221 | 0 | 47.4% |
+| v87 | 358 | 0 | 0 | 352 | 163 | 0 | 50.4% |
 | v95 | 389 | 0 | 1 | 404 | 79 | 0 | 49.0% |
 | JMS185 | 326 | 0 | 0 | 378 | 169 | 0 | 46.3% |
 

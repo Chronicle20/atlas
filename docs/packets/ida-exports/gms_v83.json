@@ -3,6 +3,46 @@
   "md5": "80ff438ced539b831f0d2ed95099275d",
   "generated_at": "2026-05-14T00:00:00Z",
   "functions": {
+    "CUserRemote::OnGuildNameChanged": {
+      "address": "0x0",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "characterId (dispatcher-prefix pattern — consumed by CUserPool::OnUserRemotePacket Decode4 before OnGuildNameChanged)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "newGuildName"
+        }
+      ]
+    },
+    "CUserRemote::OnGuildMarkChanged": {
+      "address": "0x0",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "characterId (dispatcher-prefix pattern — consumed by CUserPool::OnUserRemotePacket Decode4 before OnGuildMarkChanged)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nMarkBg (logoBackground)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nMarkBgColor (logoBackgroundColor)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nMark (logo)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nMarkColor (logoColor)"
+        }
+      ]
+    },
     "CField::SendInviteGuildMsg": {
       "address": "0x0",
       "direction": "serverbound",

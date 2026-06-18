@@ -5,6 +5,467 @@
   "region": "JMS",
   "notes": "JMS v185 shares C++ mangled symbol names with GMS v95 for all character-domain functions. The login domain differs significantly (separate opcode space, different OnCheckPasswordResult wire layout). Character domain functions are present under the same demangled names.",
   "functions": {
+    "CITC::OnRegisterSaleEntry": {
+      "address": "0x604105",
+      "direction": "serverbound",
+      "notes": "Serverbound ITC_OPERATION register-sale dispatcher (jms_v185 opcode 0x10C/268 @0x604158). Maps the atlas field/serverbound ItcOperationRegisterSale codec (mode 2 register-fixed-price, nRegType==0 branch @0x604281). The register-auction arm (mode 0x12, nRegType==1 @0x6041b9) of this same function is carried by the synthetic #RegisterAuction entry. Encode order (fixed-price arm): Encode1(2) mode, GW_ItemSlotBase::Encode item-slot blob (model.Asset recurse), Encode4 quantity/commodityId/price, Encode1 type/flag. 110-NX floor + ceiling guard (nTI>0x98967F||nTI<=109) @0x60427a not on wire. jms mode bytes IDENTICAL to gms_v83/v84/v87/v95 (no region divergence). Byte-fixture verified.",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (2 register-fixed-price) @0x604281"
+        },
+        {
+          "op": "EncodeBuf",
+          "comment": "item-slot blob GW_ItemSlotBase::Encode @0x60428c (Encode1 type + RawEncode; model.Asset recurse)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "quantity (nSlotNo) @0x604297"
+        },
+        {
+          "op": "Encode4",
+          "comment": "commodityId (v24) @0x6042a2"
+        },
+        {
+          "op": "Encode4",
+          "comment": "price (nTI) @0x6042ad"
+        },
+        {
+          "op": "Encode1",
+          "comment": "type (pItem) @0x6042b8"
+        },
+        {
+          "op": "Encode1",
+          "comment": "flag (n[0]) @0x6042c3"
+        }
+      ]
+    },
+    "CITC::OnRegisterSaleEntry#RegisterAuction": {
+      "address": "0x6041b9",
+      "direction": "serverbound",
+      "notes": "synthetic ITC_OPERATION per-mode body entry: mode 0x12 register-auction arm of CITC::OnRegisterSaleEntry (nRegType==1 branch @0x6041b9, jms_v185). Encode1(0x12) mode, GW_ItemSlotBase::Encode item-slot blob, Encode4 quantity/commodityId/selector(nRegType==1)/buyNowPrice, Encode1 type/flag, Encode4 durationHrs. Maps atlas field/serverbound ItcOperationRegisterAuction. jms mode byte IDENTICAL to gms. Byte-fixture verified.",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (0x12 register-auction) @0x6041b9"
+        },
+        {
+          "op": "EncodeBuf",
+          "comment": "item-slot blob GW_ItemSlotBase::Encode @0x6041c4 (Encode1 type + RawEncode; model.Asset recurse)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "quantity (nSlotNo) @0x6041cf"
+        },
+        {
+          "op": "Encode4",
+          "comment": "commodityId (v24) @0x6041da"
+        },
+        {
+          "op": "Encode4",
+          "comment": "selector (nRegType==1) @0x6041e5"
+        },
+        {
+          "op": "Encode4",
+          "comment": "buyNowPrice (v22) @0x6041f0"
+        },
+        {
+          "op": "Encode1",
+          "comment": "type (pItem) @0x6041fb"
+        },
+        {
+          "op": "Encode1",
+          "comment": "flag (n[0]) @0x604206"
+        },
+        {
+          "op": "Encode4",
+          "comment": "durationHrs (v21) @0x604211"
+        }
+      ]
+    },
+    "CITC::OnSaleCurrentItem": {
+      "address": "0x604330",
+      "direction": "serverbound",
+      "notes": "ITC_OPERATION mode 3 sell-currently-selected-item (CITC::OnSaleCurrentItem @0x604330, COutPacket(0x10C) @0x60434e, jms_v185). Encode1(3) mode, Encode1 type (nItemTI), Encode4 slotPos (nSlotPosition), GW_ItemSlotBase::Encode item-slot blob, Encode4 commodityId (nITCSN). Maps atlas field/serverbound ItcOperationSaleCurrentItem. jms mode byte IDENTICAL to gms. Byte-fixture verified.",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (3) @0x60435c"
+        },
+        {
+          "op": "Encode1",
+          "comment": "type @0x604367"
+        },
+        {
+          "op": "Encode4",
+          "comment": "slotPos @0x604372"
+        },
+        {
+          "op": "EncodeBuf",
+          "comment": "item-slot blob GW_ItemSlotBase::Encode @0x60437e (Encode1 type + RawEncode; model.Asset recurse)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "commodityId @0x604389"
+        }
+      ]
+    },
+    "CITC::OnBuy": {
+      "address": "0x604bbe",
+      "direction": "serverbound",
+      "notes": "ITC_OPERATION mode 0x10 buy-fixed-price (CITC::OnBuy @0x604bbe, COutPacket(0x10C) jms_v185). Encode1(0x10) mode, Encode4 nITCSN (*(*(a2+4)+32)). Serial-only (no item-slot blob). this double-send latch not on wire. Maps atlas field/serverbound. jms mode byte IDENTICAL to gms. Byte-fixture verified.",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (0x10) @0x604bea"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nITCSN @0x604bfb"
+        }
+      ]
+    },
+    "CITC::OnBuyAuctionImm": {
+      "address": "0x604c31",
+      "direction": "serverbound",
+      "notes": "ITC_OPERATION mode 0x14 buy-now-on-auction (CITC::OnBuyAuctionImm @0x604c31, COutPacket(0x10C) jms_v185). Encode1(0x14) mode, Encode4 nITCSN (*(*(a2+4)+32)). Serial-only (no item-slot blob). this double-send latch not on wire. Maps atlas field/serverbound. jms mode byte IDENTICAL to gms. Byte-fixture verified.",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (0x14) @0x604c5d"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nITCSN @0x604c6e"
+        }
+      ]
+    },
+    "CITC::OnSetZzim": {
+      "address": "0x604dc4",
+      "direction": "serverbound",
+      "notes": "ITC_OPERATION mode 9 set-zzim (add to wishlist/favorite) (CITC::OnSetZzim @0x604dc4, COutPacket(0x10C) jms_v185). Encode1(9) mode, Encode4 nITCSN (*(*(a2+4)+32)). Serial-only (no item-slot blob). this double-send latch not on wire. Maps atlas field/serverbound. jms mode byte IDENTICAL to gms. Byte-fixture verified.",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (9) @0x604df0"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nITCSN @0x604e01"
+        }
+      ]
+    },
+    "CITC::OnBuyZzim": {
+      "address": "0x604e37",
+      "direction": "serverbound",
+      "notes": "ITC_OPERATION mode 0x11 buy-zzim; YesNo confirm (SP 0x14B7) @0x604e76 gates send, not on wire (CITC::OnBuyZzim @0x604e37, COutPacket(0x10C) jms_v185). Encode1(0x11) mode, Encode4 nITCSN (*(*(a2+4)+32)). Serial-only (no item-slot blob). this double-send latch not on wire. Maps atlas field/serverbound. jms mode byte IDENTICAL to gms. Byte-fixture verified.",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (0x11) @0x604e8d"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nITCSN @0x604e9e"
+        }
+      ]
+    },
+    "CITC::OnDeleteZzim": {
+      "address": "0x604ed5",
+      "direction": "serverbound",
+      "notes": "ITC_OPERATION mode 0xA delete-zzim (remove favorite) (CITC::OnDeleteZzim @0x604ed5, COutPacket(0x10C) jms_v185). Encode1(0xA) mode, Encode4 nITCSN (*(*(a2+4)+32)). Serial-only (no item-slot blob). this double-send latch not on wire. Maps atlas field/serverbound. jms mode byte IDENTICAL to gms. Byte-fixture verified.",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (0xA) @0x604f01"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nITCSN @0x604f12"
+        }
+      ]
+    },
+    "CITC::OnViewWish": {
+      "address": "0x604f48",
+      "direction": "serverbound",
+      "notes": "ITC_OPERATION mode 0xB view-wish (CITC::OnViewWish @0x604f48, COutPacket(0x10C) jms_v185). Encode1(0xB) mode, Encode4 nITCSN (*(*(a2+4)+32)). Serial-only (no item-slot blob). this double-send latch not on wire. Maps atlas field/serverbound. jms mode byte IDENTICAL to gms. Byte-fixture verified.",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (0xB) @0x604f74"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nITCSN @0x604f85"
+        }
+      ]
+    },
+    "CITC::OnBuyWish": {
+      "address": "0x604fbb",
+      "direction": "serverbound",
+      "notes": "ITC_OPERATION mode 0xC buy-wish; YesNo confirm (SP 0x14B7) @0x604ffa gates send, not on wire (CITC::OnBuyWish @0x604fbb, COutPacket(0x10C) jms_v185). Encode1(0xC) mode, Encode4 nITCSN (*(*(a2+4)+32)). Serial-only (no item-slot blob). this double-send latch not on wire. Maps atlas field/serverbound. jms mode byte IDENTICAL to gms. Byte-fixture verified.",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (0xC) @0x605011"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nITCSN @0x605022"
+        }
+      ]
+    },
+    "CITC::OnCancelWish": {
+      "address": "0x605059",
+      "direction": "serverbound",
+      "notes": "ITC_OPERATION mode 0xD cancel-wish (CITC::OnCancelWish @0x605059, COutPacket(0x10C) jms_v185). Encode1(0xD) mode, Encode4 nITCSN (*(*(a2+4)+32)). Serial-only (no item-slot blob). this double-send latch not on wire. Maps atlas field/serverbound. jms mode byte IDENTICAL to gms. Byte-fixture verified.",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (0xD) @0x605085"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nITCSN @0x605096"
+        }
+      ]
+    },
+    "CITC::OnCancelSaleItem": {
+      "address": "0x6050cc",
+      "direction": "serverbound",
+      "notes": "ITC_OPERATION mode 7 cancel-sale; YesNo confirm (SP 0x149C) @0x605118 + no-bids guard (!*(*(a2+4)+12)) @0x6050eb gate send, not on wire (CITC::OnCancelSaleItem @0x6050cc, COutPacket(0x10C) jms_v185). Encode1(7) mode, Encode4 nITCSN (*(*(a2+4)+32)). Serial-only (no item-slot blob). this double-send latch not on wire. Maps atlas field/serverbound. jms mode byte IDENTICAL to gms. Byte-fixture verified.",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (7) @0x60512f"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nITCSN @0x60513d"
+        }
+      ]
+    },
+    "CITC::OnMoveITCPurchaseItemLtoS": {
+      "address": "0x605175",
+      "direction": "serverbound",
+      "notes": "ITC_OPERATION mode 8 take-home (move purchase locker->slot); nTI/nPos args (a3/a4) NOT written (CITC::OnMoveITCPurchaseItemLtoS @0x605175, COutPacket(0x10C) jms_v185). Encode1(8) mode, Encode4 nITCSN (*(*(a2+4)+32)). Serial-only (no item-slot blob). this double-send latch not on wire. Maps atlas field/serverbound. jms mode byte IDENTICAL to gms. Byte-fixture verified.",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (8) @0x6051a1"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nITCSN @0x6051b2"
+        }
+      ]
+    },
+    "CITC::OnRegisterWishEntry": {
+      "address": "0x604a69",
+      "direction": "serverbound",
+      "notes": "ITC_OPERATION mode 0x04 register-wish-entry (CITC::OnRegisterWishEntry @0x604a69, COutPacket(0x10C) @0x604ae3, jms_v185). 110-NX floor + 9999999 ceiling guard (a3>9999999||a3<=109) @0x604a9a not on wire. Encode1(4) mode, Encode4 itemId (this+11628), Encode4 price (this+11632), Encode4 count (this+11636), Encode1 duration (this+11641), Encode1 feeOption (this+11640), EncodeStr description (this+11644). Maps atlas field/serverbound ItcOperationRegisterWishEntry. jms mode byte IDENTICAL to gms. Byte-fixture verified.",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (4) @0x604af3"
+        },
+        {
+          "op": "Encode4",
+          "comment": "itemId @0x604b01"
+        },
+        {
+          "op": "Encode4",
+          "comment": "price @0x604b0f"
+        },
+        {
+          "op": "Encode4",
+          "comment": "count @0x604b1d"
+        },
+        {
+          "op": "Encode1",
+          "comment": "duration @0x604b2e"
+        },
+        {
+          "op": "Encode1",
+          "comment": "feeOption @0x604b3f"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "description @0x604b56"
+        }
+      ]
+    },
+    "CITC::OnChangedCategory": {
+      "address": "0x6047bf",
+      "direction": "serverbound",
+      "notes": "ITC_OPERATION mode 0x05 change-browse-category (CITC::OnChangedCategory @0x6047bf, COutPacket(0x10C) @0x604809, jms_v185). Only nCategory variable; rest const. Encode1(5) mode, Encode4 category, Encode4 0 categorySub, Encode4 0 page, Encode1 1 sortType, Encode1 1 sortColumn, Encode4 1 searchOption, EncodeStr empty searchCondition. Maps atlas field/serverbound ItcOperationChangedCategory. jms mode byte IDENTICAL to gms. Byte-fixture verified.",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (5) @0x604816"
+        },
+        {
+          "op": "Encode4",
+          "comment": "category @0x604821"
+        },
+        {
+          "op": "Encode4",
+          "comment": "categorySub (const 0) @0x60482a"
+        },
+        {
+          "op": "Encode4",
+          "comment": "page (const 0) @0x604833"
+        },
+        {
+          "op": "Encode1",
+          "comment": "sortType (const 1) @0x60483c"
+        },
+        {
+          "op": "Encode1",
+          "comment": "sortColumn (const 1) @0x604845"
+        },
+        {
+          "op": "Encode4",
+          "comment": "searchOption (const 1) @0x60484e"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "searchCondition (const empty) @0x604866"
+        }
+      ]
+    },
+    "CITC::OnChangedCategorySub": {
+      "address": "0x60489d",
+      "direction": "serverbound",
+      "notes": "ITC_OPERATION mode 0x05 change-sub-category (CITC::OnChangedCategorySub @0x60489d, COutPacket(0x10C) @0x6048c2, jms_v185). Encode1(5) mode, Encode4 category (this+26), Encode4 categorySub, Encode4 0 page (const), Encode1 sortType, Encode1 sortColumn, Encode4 searchOption (else-branch const 1 @0x604914), EncodeStr searchCondition. Maps atlas field/serverbound ItcOperationChangedCategorySub. jms mode byte IDENTICAL to gms. Byte-fixture verified.",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (5) @0x6048cf"
+        },
+        {
+          "op": "Encode4",
+          "comment": "category (this+26) @0x6048da"
+        },
+        {
+          "op": "Encode4",
+          "comment": "categorySub @0x6048e6"
+        },
+        {
+          "op": "Encode4",
+          "comment": "page (const 0) @0x6048ef"
+        },
+        {
+          "op": "Encode1",
+          "comment": "sortType @0x6048fa"
+        },
+        {
+          "op": "Encode1",
+          "comment": "sortColumn @0x604905"
+        },
+        {
+          "op": "Encode4",
+          "comment": "searchOption (else-branch const 1) @0x604914"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "searchCondition @0x604954"
+        }
+      ]
+    },
+    "CITC::OnChangedPage": {
+      "address": "0x60498c",
+      "direction": "serverbound",
+      "notes": "ITC_OPERATION mode 0x05 change-browse-page (CITC::OnChangedPage @0x60498c, COutPacket(0x10C) @0x6049ae, jms_v185). All 8 fields from CITC state. Encode1(5) mode, Encode4 category (this+26), Encode4 categorySub (this+27), Encode4 page (nPage), Encode1 sortType (this+96), Encode1 sortColumn (this+100), Encode4 searchOption (this+2920), EncodeStr searchCondition (this+2921). Maps atlas field/serverbound ItcOperationChangedPage. jms mode byte IDENTICAL to gms. Byte-fixture verified.",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (5) @0x6049bc"
+        },
+        {
+          "op": "Encode4",
+          "comment": "category (this+26) @0x6049c7"
+        },
+        {
+          "op": "Encode4",
+          "comment": "categorySub (this+27) @0x6049d2"
+        },
+        {
+          "op": "Encode4",
+          "comment": "page (nPage) @0x6049dd"
+        },
+        {
+          "op": "Encode1",
+          "comment": "sortType (this+96) @0x6049eb"
+        },
+        {
+          "op": "Encode1",
+          "comment": "sortColumn (this+100) @0x6049f9"
+        },
+        {
+          "op": "Encode4",
+          "comment": "searchOption (this+2920) @0x604a07"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "searchCondition (this+2921) @0x604a24"
+        }
+      ]
+    },
+    "CITCWnd_Tab::OnButtonClicked": {
+      "address": "0x61e3cf",
+      "direction": "serverbound",
+      "notes": "ITC_OPERATION mode 0x06 tab/search-by-name (CITCWnd_Tab::OnButtonClicked @0x61e3cf, result==1004 search button; COutPacket(0x10C) @0x61e46e char-name branch / @0x61e537 advanced branch, jms_v185). 6-field body, NO sort bytes (distinct from mode 5). Both inner branches send identical wire shape; char-name branch (searchOption=0) is the primary site. Encode1(6) mode, Encode4 category (m_nSelect+1=v4), Encode4 categorySub (n), Encode4 0 page, Encode4 searchOption (0 char-name / v21 advanced), EncodeStr searchName. Maps atlas field/serverbound ItcOperationTabSearch. jms mode byte IDENTICAL to gms. Byte-fixture verified.",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (6) @0x61e47c"
+        },
+        {
+          "op": "Encode4",
+          "comment": "category (m_nSelect+1) @0x61e485"
+        },
+        {
+          "op": "Encode4",
+          "comment": "categorySub @0x61e490"
+        },
+        {
+          "op": "Encode4",
+          "comment": "page (const 0) @0x61e499"
+        },
+        {
+          "op": "Encode4",
+          "comment": "searchOption @0x61e4a2"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "searchName @0x61e4bb"
+        }
+      ]
+    },
+    "CITCBidAuctionDlg::OnButtonClicked": {
+      "address": "0x62b063",
+      "direction": "serverbound",
+      "notes": "ITC_OPERATION mode 0x13 place-bid, send inlined into CITCBidAuctionDlg::OnButtonClicked @0x62b063 (a2==1 confirm-bid branch; COutPacket(0x10C) @0x62b204, jms_v185). Balance check (sub_4176C2 vs sub_62B26C) + bid<buyNow guard gate the send; not on wire. Encode1(0x13) mode, Encode4 nITCSN, Encode4 bidPrice, Encode4 bidRange. Maps atlas field/serverbound ItcOperationPlaceBid. jms mode byte IDENTICAL to gms. Byte-fixture verified.",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (0x13) @0x62b211"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nITCSN @0x62b222"
+        },
+        {
+          "op": "Encode4",
+          "comment": "bidPrice @0x62b230"
+        },
+        {
+          "op": "Encode4",
+          "comment": "bidRange @0x62b23e"
+        }
+      ]
+    },
     "CITC::OnStatusCharge": {
       "address": "0x6040a9",
       "direction": "serverbound",

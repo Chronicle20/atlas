@@ -908,6 +908,32 @@
         "opCode": "0x10B",
         "validator": "LoggedInValidator",
         "handler": "ItcQueryCashRequestHandle"
+      },
+      {
+        "opCode": "0x10C",
+        "validator": "LoggedInValidator",
+        "handler": "ItcOperationHandle",
+        "options": {
+          "operations": {
+            "REGISTER_SALE": 2,
+            "SALE_CURRENT_ITEM": 3,
+            "REGISTER_WISH_ENTRY": 4,
+            "GET_ITC_LIST": 5,
+            "SEARCH_ITC_LIST": 6,
+            "CANCEL_SALE": 7,
+            "TAKE_HOME": 8,
+            "SET_ZZIM": 9,
+            "DELETE_ZZIM": 10,
+            "VIEW_WISH": 11,
+            "BUY_WISH": 12,
+            "CANCEL_WISH": 13,
+            "BUY": 16,
+            "BUY_ZZIM": 17,
+            "REGISTER_AUCTION": 18,
+            "PLACE_BID": 19,
+            "BUY_AUCTION_IMM": 20
+          }
+        }
       }
     ],
     "writers": [

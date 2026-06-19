@@ -5,11 +5,11 @@
 
 Tool: `9be72b165aa2b8814b9e91c4c8d5a87338d8eed5`
 
-- export gms_v83: `739bc6f3684306434152cdf95ba51147d9214ced0b232a86f469190dd849a516`
-- export gms_v84: `99179f347b2c24e3fd5f0df2838714a4362d8c55462d344c775d1a4fc0bb38ea`
-- export gms_v87: `e7a82f25191b2fcb253b2aa7dff96e17a2e15bd37861c7ac07a7479e2ff52a63`
-- export gms_v95: `7958c6a541bc84d5ce38a6a8d05bbc5e01eb4aadf8a247373dd08857820c19f1`
-- export jms_v185: `6070dbcd2f970651ee1028e782138af90ee65db1fc9d30b1bcdfb4e913a73930`
+- export gms_v83: `97f1cd755f3ed82d9b1470fc4b28eda99b2acff46e947a5cd9d2774648a32347`
+- export gms_v84: `749355a9f4514a8eba59e849b0ded26ce97613c0efb98d595b5c657419bfb31b`
+- export gms_v87: `dc1e75331052dc7665ad6b529ed2778175145effa3f30977f82f785fce384bab`
+- export gms_v95: `2abb82301b7ece7492038d0d2da8ba3e8314f4350b85e5e378883b86ce8dd3c0`
+- export jms_v185: `9dcefe84301bb7922a23296827219422de57bf2f99be71d7ae3f19e97793876f`
 
 ## Clientbound
 
@@ -248,8 +248,8 @@ Tool: `9be72b165aa2b8814b9e91c4c8d5a87338d8eed5`
 | ENERGY_ATTACK | CUserRemote::OnAttack | character/clientbound/Attack (T1) | 0x0BD | ✅ | 0x0C1 | ✅ | 0x0CA | ✅ | 0x0D6 | ✅ | 0x0C3 | ✅ |
 | SHOW_ITEM_RELEASE_EFFECT | CUser::ShowItemReleaseEffect |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x0BD | ❌ |  | ⬜ |
 | SHOW_ITEM_UNRELEASE_EFFECT | CUser::ShowItemUnreleaseEffect |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x0BE | ❌ |  | ⬜ |
-| SKILL_EFFECT | CUserRemote::OnSkillPrepare |  | 0x0BE | ❌ | 0x0C2 | ❌ | 0x0CB | ❌ | 0x0D7 | ❌ | 0x0C4 | ❌ |
-| CANCEL_SKILL_EFFECT | CUserRemote::OnSkillCancel; sub_980BF5 |  | 0x0BF | ❌ | 0x0C3 | ❌ | 0x0CC | ❌ | 0x0D9 | ❌ | 0x0C5 | ❌ |
+| SKILL_EFFECT | CUserRemote::OnSkillPrepare | character/clientbound/CharacterSkillPrepareForeign (T1) | 0x0BE | ✅ | 0x0C2 | ✅ | 0x0CB | ✅ | 0x0D7 | ✅ | 0x0C4 | ✅ |
+| CANCEL_SKILL_EFFECT | CUserRemote::OnSkillCancel; sub_980BF5 | character/clientbound/CharacterSkillCancelForeign (T1) | 0x0BF | ✅ | 0x0C3 | ✅ | 0x0CC | ✅ | 0x0D9 | ✅ | 0x0C5 | ✅ |
 | HIT_BY_USER | CUser::OnHitByUser |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x0BF | ❌ |  | ⬜ |
 | DAMAGE_PLAYER | CUserRemote::OnHit | character/clientbound/CharacterDamage (T1) | 0x0C0 | ✅ | 0x0C4 | ✅ | 0x0CD | ✅ | 0x0DA | ✅ | 0x0C6 | ✅ |
 | TESLA_TRIANGLE | CUser::OnTeslaTriangle |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x0C0 | ❌ |  | ⬜ |
@@ -579,7 +579,7 @@ Tool: `9be72b165aa2b8814b9e91c4c8d5a87338d8eed5`
 | USE_SHOP_SCANNER_ITEM | CWvsContext::SendShopScannerItemUseRequest |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x05A | ❌ |  | ⬜ |
 | SPECIAL_MOVE | CGrenade::SendTimeBombInfo; CUserLocal::DoActiveSkill_DamageMeter; CUserLocal::DoActiveSkill_Flying; CUserLocal::DoActiveSkill_Heal; CUserLocal::DoActiveSkill_MobCapture; CUserLocal::DoActiveSkill_OpenGate; CUserLocal::DoActiveSkill_RecoveryAura; CUserLocal::DoActiveSkill_SmokeShell; CUserLocal::DoActiveSkill_StatChangeAdmin; CUserLocal::DoActiveSkill_Summon; CUserLocal::DoActiveSkill_SummonMonster; CUserLocal::DoActiveSkill_TownPortal; CUserLocal::SendSkillUseRequest; CUserLocal::TryDoingMonsterMagnet; CUserLocal::TryDoingSwallowAbsorb |  | 0x05B | ❌ | 0x05B | ❌ | 0x05E | ❌ | 0x067 | ❌ | 0x056 | ❌ |
 | CANCEL_BUFF | CUserLocal::SendSkillCancelRequest | character/serverbound/BuffCancelRequest (T1) | 0x05C | ✅ | 0x05C | ✅ | 0x05F | ✅ | 0x068 | ✅ | 0x057 | ✅ |
-| SKILL_EFFECT | CUserLocal::DoActiveSkill_Prepare |  | 0x05D | ❌ | 0x05D | ❌ | 0x060 | ❌ | 0x069 | ❌ | 0x058 | ❌ |
+| SKILL_EFFECT | CUserLocal::DoActiveSkill_Prepare | character/serverbound/CharacterSkillPrepare (T1) | 0x05D | ✅ | 0x05D | ✅ | 0x060 | ✅ | 0x069 | ✅ | 0x058 | ✅ |
 | HYPER_UPGRADE_ITEM_USE | CWvsContext::SendHyperUpgradeItemUseRequest |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x05E | ❌ | 0x04F | ❌ |
 | MESO_DROP | CWvsContext::SendDropMoneyRequest | character/serverbound/DropMeso (T1) | 0x05E | ✅ | 0x05E | ✅ | 0x061 | ✅ | 0x06A | ✅ | 0x059 | ✅ |
 | GIVE_FAME | CWvsContext::SendGivePopularityRequest | fame/serverbound/Change | 0x05F | ✅ | 0x05F | ✅ | 0x062 | ✅ | 0x06B | ✅ | 0x05A | ✅ |
@@ -902,11 +902,11 @@ Tool: `9be72b165aa2b8814b9e91c4c8d5a87338d8eed5`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v83 | 345 | 0 | 0 | 327 | 200 | 0 | 51.3% |
-| v84 | 309 | 0 | 0 | 342 | 221 | 0 | 47.5% |
-| v87 | 357 | 0 | 0 | 352 | 163 | 0 | 50.4% |
-| v95 | 388 | 0 | 1 | 404 | 79 | 0 | 48.9% |
-| JMS185 | 325 | 0 | 0 | 378 | 169 | 0 | 46.2% |
+| v83 | 348 | 0 | 0 | 324 | 200 | 0 | 51.8% |
+| v84 | 312 | 0 | 0 | 339 | 221 | 0 | 47.9% |
+| v87 | 360 | 0 | 0 | 349 | 163 | 0 | 50.8% |
+| v95 | 391 | 0 | 1 | 401 | 79 | 0 | 49.3% |
+| JMS185 | 328 | 0 | 0 | 375 | 169 | 0 | 46.7% |
 
 ## Conflicts
 

@@ -1,11 +1,11 @@
 {
   "toolSha": "9be72b165aa2b8814b9e91c4c8d5a87338d8eed5",
   "exportHashes": {
-    "gms_v83": "739bc6f3684306434152cdf95ba51147d9214ced0b232a86f469190dd849a516",
-    "gms_v84": "99179f347b2c24e3fd5f0df2838714a4362d8c55462d344c775d1a4fc0bb38ea",
-    "gms_v87": "e7a82f25191b2fcb253b2aa7dff96e17a2e15bd37861c7ac07a7479e2ff52a63",
-    "gms_v95": "7958c6a541bc84d5ce38a6a8d05bbc5e01eb4aadf8a247373dd08857820c19f1",
-    "jms_v185": "6070dbcd2f970651ee1028e782138af90ee65db1fc9d30b1bcdfb4e913a73930"
+    "gms_v83": "97f1cd755f3ed82d9b1470fc4b28eda99b2acff46e947a5cd9d2774648a32347",
+    "gms_v84": "749355a9f4514a8eba59e849b0ded26ce97613c0efb98d595b5c657419bfb31b",
+    "gms_v87": "dc1e75331052dc7665ad6b529ed2778175145effa3f30977f82f785fce384bab",
+    "gms_v95": "2abb82301b7ece7492038d0d2da8ba3e8314f4350b85e5e378883b86ce8dd3c0",
+    "jms_v185": "9dcefe84301bb7922a23296827219422de57bf2f99be71d7ae3f19e97793876f"
   },
   "rows": [
     {
@@ -7213,35 +7213,31 @@
     {
       "kind": "op",
       "op": "SKILL_EFFECT",
+      "packet": "character/serverbound/CharacterSkillPrepare",
       "direction": "serverbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CUserLocal::DoActiveSkill_Prepare"
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 93
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 93
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 96
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 105
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 88
         }
       }
@@ -15521,35 +15517,31 @@
     {
       "kind": "op",
       "op": "SKILL_EFFECT",
+      "packet": "character/clientbound/CharacterSkillPrepareForeign",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CUserRemote::OnSkillPrepare"
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 190
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 194
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 203
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 215
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 196
         }
       }
@@ -15557,36 +15549,32 @@
     {
       "kind": "op",
       "op": "CANCEL_SKILL_EFFECT",
+      "packet": "character/clientbound/CharacterSkillCancelForeign",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CUserRemote::OnSkillCancel",
         "sub_980BF5"
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 191
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 195
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 204
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 217
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 197
         }
       }

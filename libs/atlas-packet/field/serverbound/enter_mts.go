@@ -18,6 +18,7 @@ const EnterMtsHandle = "EnterMtsHandle"
 // calls in between. All preceding code in the sender (guest-ID guard,
 // lie-detector guard, map-flag guard) emits local chat/dialog and returns
 // early; none writes to the packet. The request therefore carries no payload.
+// packet-audit:fname CWvsContext::SendMigrateToITCRequest
 type EnterMts struct{}
 
 func (m EnterMts) Operation() string {

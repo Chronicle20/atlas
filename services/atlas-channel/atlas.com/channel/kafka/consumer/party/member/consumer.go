@@ -2,6 +2,7 @@ package member
 
 import (
 	"atlas-channel/character"
+	"atlas-channel/door"
 	consumer2 "atlas-channel/kafka/consumer"
 	member2 "atlas-channel/kafka/message/party/member"
 	"atlas-channel/listener"
@@ -24,8 +25,9 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func toPartyMembers(p party.Model, forChannel channel.Id) []partypkt.PartyMember {
+func toPartyMembers(l logrus.FieldLogger, ctx context.Context, p party.Model, forChannel channel.Id) []partypkt.PartyMember {
 	members := make([]partypkt.PartyMember, 0, len(p.Members()))
+	dp := door.NewProcessor(l, ctx)
 	for _, m := range p.Members() {
 		chId := int32(m.ChannelId())
 		if !m.Online() {
@@ -35,16 +37,35 @@ func toPartyMembers(p party.Model, forChannel channel.Id) []partypkt.PartyMember
 		if forChannel == m.ChannelId() {
 			mapId = uint32(m.MapId())
 		}
-		members = append(members, partypkt.PartyMember{
+		pm := partypkt.PartyMember{
 			Id:        m.Id(),
 			Name:      m.Name(),
 			JobId:     uint16(m.JobId()),
 			Level:     uint16(m.Level()),
 			ChannelId: chId,
 			MapId:     mapId,
-		})
+		}
+		applyMemberDoor(&pm, dp, m.Id())
+		members = append(members, pm)
 	}
 	return members
+}
+
+// applyMemberDoor populates the member's aTownPortal entry from their live
+// Mystic Door (if any) — see the identical helper in the party-status consumer.
+// Without it the v83 client cannot render party-member doors in town (it reads
+// town doors solely from this array while in a party).
+func applyMemberDoor(pm *partypkt.PartyMember, dp *door.Processor, memberId uint32) {
+	doors, err := dp.GetByOwner(memberId)
+	if err != nil || len(doors) == 0 {
+		return
+	}
+	d := doors[0]
+	pm.HasDoor = true
+	pm.DoorTownMapId = uint32(d.TownMapId())
+	pm.DoorFieldMapId = uint32(d.Field().MapId())
+	pm.DoorX = d.AreaX()
+	pm.DoorY = d.AreaY()
 }
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -148,7 +169,7 @@ func partyUpdate(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.
 	return func(ctx context.Context) func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
 			return func(p party.Model, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(partycb.PartyOperationWriter)(partycb.PartyUpdateBody(p.Id(), toPartyMembers(p, forChannel), p.LeaderId()))
+				return session.Announce(l)(ctx)(wp)(partycb.PartyOperationWriter)(partycb.PartyUpdateBody(p.Id(), toPartyMembers(l, ctx, p, forChannel), p.LeaderId()))
 			}
 		}
 	}

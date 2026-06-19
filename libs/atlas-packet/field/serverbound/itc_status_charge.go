@@ -27,6 +27,7 @@ const ItcStatusChargeHandle = "ItcStatusChargeHandle"
 // There are ZERO Encode calls between the COutPacket constructor and
 // SendPacket — the request carries no payload (the open-NX-recharge hook). The
 // latch guards against a double-send; it does not write to the wire.
+// packet-audit:fname CITC::OnStatusCharge
 type ItcStatusCharge struct{}
 
 func (m ItcStatusCharge) Operation() string {

@@ -1,0 +1,31 @@
+# dispatcher-lint baseline — families NOT yet migrated to the canonical
+# discrete-per-mode pattern described in docs/packets/DISPATCHER_FAMILY.md.
+#
+# `packet-audit dispatcher-lint` SKIPS violations whose dispatcher family
+# (the base IDA FName of the `#`-suffixed candidatesFromFName entries, e.g.
+# `CWvsContext::OnPartyResult`) appears below, and prints one note line per
+# exempt family instead.
+#
+# party + guild + buddy still carry the task-096 footguns — caller-specified
+# operation selectors (PartyErrorBody(code) / GuildErrorBody(code) /
+# GuildErrorBody2(code, …) / BuddyErrorBody(errorCode)) and the shared guild
+# RequestAgreement struct — pending a future discrete-per-mode migration task.
+# Each fronts a "deferred to _pending.md" Error catch-all (one struct + one
+# string-keyed body func for ~10–15 distinct error sub-ops) that the canonical
+# pattern requires splitting into discrete per-mode structs + fixed-key bodies.
+#
+# buddy (CWvsContext::OnFriendResult) was added when INV-3 was hardened from
+# by-name matching to semantic matching (task-101 follow-up): BuddyErrorBody's
+# selector is named `errorCode`, not `code`, so it escaped the original
+# name-based check. This is PRE-EXISTING debt surfaced by a stronger linter, not
+# a fresh violation introduced by new code — the only honest dispositions are
+# migrate or baseline, and migration is a separate cycle.
+#
+# THE LIST ONLY SHRINKS (the buddy addition above is the documented one-time
+# exception for the INV-3 hardening). Migrating a family = deleting its entry
+# here (after the family is clean); never add a new family to dodge a violation
+# from NEW work.
+exempt_families:
+  - CWvsContext::OnPartyResult
+  - CWvsContext::OnGuildResult
+  - CWvsContext::OnFriendResult

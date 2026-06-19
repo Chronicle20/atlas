@@ -48,12 +48,15 @@ type StatusEventLogoutBody struct {
 }
 
 type StatusEventMapChangedBody struct {
-	ChannelId      channel.Id `json:"channelId"`
-	OldMapId       _map.Id    `json:"oldMapId"`
-	OldInstance    uuid.UUID  `json:"oldInstance"`
-	TargetMapId    _map.Id    `json:"targetMapId"`
-	TargetInstance uuid.UUID  `json:"targetInstance"`
-	TargetPortalId uint32     `json:"targetPortalId"`
+	ChannelId         channel.Id `json:"channelId"`
+	OldMapId          _map.Id    `json:"oldMapId"`
+	OldInstance       uuid.UUID  `json:"oldInstance"`
+	TargetMapId       _map.Id    `json:"targetMapId"`
+	TargetInstance    uuid.UUID  `json:"targetInstance"`
+	TargetPortalId    uint32     `json:"targetPortalId"`
+	UseTargetPosition bool       `json:"useTargetPosition"`
+	TargetX           int16      `json:"targetX"`
+	TargetY           int16      `json:"targetY"`
 }
 
 type ChangeChannelEventLoginBody struct {
@@ -79,8 +82,11 @@ type Command[E any] struct {
 }
 
 type ChangeMapBody struct {
-	ChannelId channel.Id `json:"channelId"`
-	MapId     _map.Id    `json:"mapId"`
-	Instance  uuid.UUID  `json:"instance"`
-	PortalId  uint32     `json:"portalId"`
+	ChannelId         channel.Id `json:"channelId"`
+	MapId             _map.Id    `json:"mapId"`
+	Instance          uuid.UUID  `json:"instance"`
+	PortalId          uint32     `json:"portalId"`
+	UseTargetPosition bool       `json:"useTargetPosition"`
+	TargetX           int16      `json:"targetX"`
+	TargetY           int16      `json:"targetY"`
 }

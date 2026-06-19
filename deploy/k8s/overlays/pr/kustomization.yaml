@@ -302,6 +302,8 @@ images:
     newTag: latest
   - name: ghcr.io/chronicle20/atlas-data/atlas-data
     newTag: latest
+  - name: ghcr.io/chronicle20/atlas-doors/atlas-doors
+    newTag: latest
   - name: ghcr.io/chronicle20/atlas-drop-information/atlas-drop-information
     newTag: latest
   - name: ghcr.io/chronicle20/atlas-drops/atlas-drops

@@ -17,6 +17,7 @@ resources:
   - atlas-consumables.yaml
   - atlas-data.yaml
   - atlas-data-ingest-job-template.yaml
+  - atlas-doors.yaml
   - atlas-drop-information.yaml
   - atlas-drops.yaml
   - atlas-effective-stats.yaml

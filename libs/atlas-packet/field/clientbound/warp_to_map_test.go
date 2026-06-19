@@ -49,6 +49,33 @@ func TestWarpToMapWireLength(t *testing.T) {
 	}
 }
 
+// TestWarpToPositionWireShape pins the chase position-warp: on GMS (chase
+// branch gated >28) NewWarpToPosition writes chase=true followed by Decode4 x /
+// Decode4 y, i.e. 8 bytes more than the chase=false envelope, and round-trips
+// the coordinates. This is the SET_FIELD mechanism Mystic Door uses to land the
+// user on the linked door (v83 CStage::OnSetField @0x776020).
+func TestWarpToPositionWireShape(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 83, 1)
+	// chase=false baseline for GMS v83 is 25 bytes (see TestWarpToMapWireLength).
+	pos := NewWarpToPosition(1, 100000000, 500, 1234, -567)
+	b := pos.Encode(logrus.New(), ctx)(nil)
+	if len(b) != 33 {
+		t.Fatalf("position-warp length: got %d, want 33 (v83 25 + chase x/y 8)", len(b))
+	}
+
+	out := WarpToMap{}
+	pt.RoundTrip(t, ctx, pos.Encode, out.Decode, nil)
+	if !out.Chase() {
+		t.Fatal("chase flag not round-tripped")
+	}
+	if out.ChaseX() != 1234 || out.ChaseY() != -567 {
+		t.Fatalf("chase position: got (%d,%d), want (1234,-567)", out.ChaseX(), out.ChaseY())
+	}
+	if out.PortalId() != chasePortalId {
+		t.Fatalf("position-warp portalId: got %d, want %d (chasePortalId)", out.PortalId(), chasePortalId)
+	}
+}
+
 func TestWarpToMapRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

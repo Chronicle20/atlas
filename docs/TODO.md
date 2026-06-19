@@ -143,7 +143,8 @@ Location: `socket/handler/character_damage.go:24-33`
 - [ ] Handle GMS-JMS ring encoding differences (`socket/writer/character_spawn.go:101`)
 - [ ] Fix crash issues in character effects (`socket/writer/character_effect.go:265,276`)
 - [ ] Quest complete communication (`socket/writer/character_effect.go:119`)
-- [ ] Write doors for party (`socket/writer/party_operation.go:32,191`)
+- [x] Write doors for party — implemented in task-093: `libs/atlas-packet/party/clientbound/created.go` (WithDoor/PartyCreatedBodyWithDoor) + `services/atlas-channel/atlas.com/channel/kafka/consumer/party/consumer.go` (handleCreated fetches leader door via GetByOwner, wires town/target/x/y into party-created packet, FR-3.3)
+- [ ] **gms_v92 Mystic Door opcodes PARKED** — no v92 IDB available to IDA-verify SpawnDoor/RemoveDoor/SpawnPortal/RemoveTownDoor/EnterDoorHandle opcodes; `services/atlas-configurations/seed-data/templates/template_gms_92_1.json` intentionally left without door rows (task-093). Unblocks when a v92 IDB exists (same situation as v92 MountFoodHandle, task-086).
 - [ ] Party operation auto-reject flag (`socket/writer/party_operation.go:131`)
 - [ ] Test party operations with JMS (`socket/writer/party_operation.go:200`)
 - [ ] JMS map codes for cash shop (`socket/writer/cash_shop_operation.go:128`)

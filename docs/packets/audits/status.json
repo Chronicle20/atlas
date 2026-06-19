@@ -1,11 +1,11 @@
 {
   "toolSha": "cc28b93192a20c05b52129b5cb9c13a6226f26bd",
   "exportHashes": {
-    "gms_v83": "d1ddad97ce348e9000c2fc5033a1e6bcca0f09cdc320e0db3a6f03fe4c8234b7",
-    "gms_v84": "cf44f8e03a7551db0623f3a371b834139299087ddcb3faf9e5ab13e6365aa1a4",
-    "gms_v87": "2be675d91d68cd9fc7d5a5da0e5f89366b19f7d404db19ed5efbd38d648ef536",
-    "gms_v95": "2a020c2e8c835c44dcf64f38cd51092f191536e06a4a6bbdf7d2873707b665db",
-    "jms_v185": "14142a22f9781a4c1b22771dbc3427dca9d3071daaa8b34dd1715e593746c1ac"
+    "gms_v83": "acd63a15ad5929501795d1b23ca21ceef17f3cdf138aff00b5ce5f0f3158d1e8",
+    "gms_v84": "60ff78c678166b01803cca9fbaec9e40f5794f287b4a0b3990fb4e87ed018a4d",
+    "gms_v87": "898d87e0030f43ca8c84004d75004af7166eccea1f6ebf865d09d54382a83396",
+    "gms_v95": "6235b3428f0487c92ea599b4235ec4030410d0168647a93653b6d504ef814178",
+    "jms_v185": "e768e157f435f378da6d585f6274b660bd8d6049c4b8b1d42ec1a26d53417128"
   },
   "rows": [
     {
@@ -4899,15 +4899,15 @@
     {
       "kind": "op",
       "op": "SPAWN_PORTAL",
+      "packet": "door/clientbound/RemoveTownDoor",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CWvsContext::OnTownPortal"
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 67
         },
         "gms_v84": {
@@ -7216,35 +7216,31 @@
     {
       "kind": "op",
       "op": "SKILL_EFFECT",
+      "packet": "character/serverbound/CharacterSkillPrepare",
       "direction": "serverbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CUserLocal::DoActiveSkill_Prepare"
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 93
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 93
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 96
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 105
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 88
         }
       }
@@ -15523,35 +15519,31 @@
     {
       "kind": "op",
       "op": "SKILL_EFFECT",
+      "packet": "character/clientbound/CharacterSkillPrepareForeign",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CUserRemote::OnSkillPrepare"
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 190
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 194
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 203
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 215
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 196
         }
       }
@@ -15559,36 +15551,32 @@
     {
       "kind": "op",
       "op": "CANCEL_SKILL_EFFECT",
+      "packet": "character/clientbound/CharacterSkillCancelForeign",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CUserRemote::OnSkillCancel",
         "sub_980BF5"
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 191
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 195
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 204
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 217
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 197
         }
       }
@@ -22377,6 +22365,7 @@
     {
       "kind": "op",
       "op": "SPAWN_DOOR",
+      "packet": "door/clientbound/SpawnDoor",
       "direction": "clientbound",
       "tier1": false,
       "fnames": [
@@ -22384,8 +22373,7 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 275
         },
         "gms_v84": {
@@ -22479,6 +22467,7 @@
     {
       "kind": "op",
       "op": "REMOVE_DOOR",
+      "packet": "door/clientbound/RemoveDoor",
       "direction": "clientbound",
       "tier1": false,
       "fnames": [
@@ -22486,8 +22475,7 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 276
         },
         "gms_v84": {

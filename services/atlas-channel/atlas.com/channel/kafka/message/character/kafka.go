@@ -118,6 +118,12 @@ type StatusEventMapChangedBody struct {
 	TargetMapId    _map.Id    `json:"targetMapId"`
 	TargetInstance uuid.UUID  `json:"targetInstance"`
 	TargetPortalId uint32     `json:"targetPortalId"`
+	// UseTargetPosition, when true, lands the character at the exact (TargetX,
+	// TargetY) coordinate via the SET_FIELD chase mechanism instead of a named
+	// portal — used by Mystic Door to place the user on the linked door.
+	UseTargetPosition bool  `json:"useTargetPosition"`
+	TargetX           int16 `json:"targetX"`
+	TargetY           int16 `json:"targetY"`
 }
 
 type ExperienceChangedStatusEventBody struct {

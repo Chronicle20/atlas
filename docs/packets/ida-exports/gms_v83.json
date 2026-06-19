@@ -11727,6 +11727,175 @@
           "comment": "searchName @0x5b71f2"
         }
       ]
+    },
+    "CShopDlg::OnPacket#LevelRequirement": {
+      "address": "0x756da7",
+      "direction": "clientbound",
+      "notes": "Same v83 CShopDlg::OnPacket@0x756da7 (nType==0x132). Cases 14 (0x756f81) and 15 (0x756ffd) read Decode4 (a level value formatted into an over/under level-requirement Notice). Atlas ShopOperationLevelRequirement writes Byte(mode)+Int(levelLimit). The mode byte is the switch discriminator.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (over/under level-requirement sub-op: v83 cases 14/15)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "levelLimit"
+        }
+      ]
+    },
+    "CShopDlg::OnPacket#Simple": {
+      "address": "0x756da7",
+      "direction": "clientbound",
+      "notes": "CONFIRM_SHOP_TRANSACTION. v83 CShopDlg::OnPacket@0x756da7 (nType==0x132) switch(Decode1 mode). Mode-only arms (cases 0,1,2,3,4,5,8,9,10,16 and default) read no further packet fields — they show a StringPool Notice. Atlas ShopOperationSimple writes Byte(mode) only. v83 mode-enum values differ from v95 (level-req=14/15, generic-error=17 in v83) but the mode byte is the server-config discriminator, not encoded by atlas. OP-FAMILY deferred to _pending.md.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (sub-op discriminator; mode-only arm)"
+        }
+      ]
+    },
+    "CTownPortalPool::OnTownPortalCreated": {
+      "address": "0x7bd6c6",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "launched flag (writeBool launched)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "ownerId (door owner character id)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "x (door position, writeShort)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "y (door position, writeShort)"
+        }
+      ]
+    },
+    "CTownPortalPool::OnTownPortalRemoved": {
+      "address": "0x7be064",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "animate flag (Cosmic writes constant 0; gates removal animation)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "ownerId (door owner character id; registry lookup key)"
+        }
+      ]
+    },
+    "CTrunkDlg::OnPacket#UpdateAssets": {
+      "address": "0x7c5dfd",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (9/13/15/19)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "slotCount (m_nSlotCount)"
+        },
+        {
+          "op": "Decode8",
+          "comment": "tab-flag bitmask (8 bytes via DecodeBuffer; WriteLong-compatible width)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "meso (m_nMoney; ONLY if tab-flag bit 1 set — runtime callers never set it)",
+          "guard": "flag & 2"
+        },
+        {
+          "op": "Decode1",
+          "comment": "PER-TAB count byte; repeated per set tab bit (4/8/16/32/64), each followed by count*GW_ItemSlotBase::Decode",
+          "guard": "loop perTab"
+        }
+      ]
+    },
+    "CUserLocal::DoActiveSkill_Prepare": {
+      "address": "0x96a86e",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "nSkillID (skill to prepare)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "nSLV (skill level / action arg, a2)"
+        },
+        {
+          "op": "Encode2",
+          "comment": "action ((bMoveAction << 15) | (nOneTimeAction & 0x7FFF))"
+        },
+        {
+          "op": "Encode1",
+          "comment": "nActionSpeed (v49)"
+        }
+      ]
+    },
+    "CUserRemote::OnSkillCancel": {
+      "address": "0x980bf5",
+      "direction": "clientbound",
+      "notes": "v83 handler left unnamed in IDB (sub_980BF5); resolved via OnUserRemotePacket@0x9724F9 case 0xBF. Reads one Decode4 (nSkillID); remainder is local prepare-animation cleanup, no further wire reads.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "nSkillID (skill to cancel)"
+        }
+      ]
+    },
+    "CUserRemote::OnSkillPrepare": {
+      "address": "0x980a81",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "nSkillID"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nSLV (skill level)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "action (bit15 = move-action, low15 = one-time-action)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nActionSpeed"
+        }
+      ]
+    },
+    "CWvsContext::OnTownPortal": {
+      "address": "0xa226a6",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "townId (SpawnPortal); MapId.NONE (999999999) for RemoveTownDoor"
+        },
+        {
+          "op": "Decode4",
+          "comment": "targetId; MapId.NONE (999999999) for RemoveTownDoor"
+        },
+        {
+          "op": "Decode2",
+          "comment": "x (door position)",
+          "guard": "townId != 999999999 && targetId != 999999999"
+        },
+        {
+          "op": "Decode2",
+          "comment": "y (door position)",
+          "guard": "townId != 999999999 && targetId != 999999999"
+        }
+      ]
     }
   }
 }

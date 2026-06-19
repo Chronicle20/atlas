@@ -117,7 +117,7 @@ func (m *ItcOperation) Decode(_ logrus.FieldLogger, _ context.Context) func(r *r
 // The 110-NX floor guard (a3 > 109) gates a StringPool notice before this; it
 // does not change the wire shape.
 //
-// packet-audit:fname CITC::OnRegisterSaleEntry#RegisterSale
+// packet-audit:fname CITC::OnRegisterSaleEntry
 type ItcOperationRegisterSale struct {
 	mode        byte
 	item        model.Asset // sub_4E33D8 GW_ItemSlotBase blob

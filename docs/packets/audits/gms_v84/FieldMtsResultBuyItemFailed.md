@@ -1,7 +1,7 @@
 # FieldMtsResultBuyItemFailed (← `CITC::OnNormalItemResult#BuyItemFailed`)
 
 - **IDA:** 0x5b55f6
-- **Atlas file:** `libs/atlas-packet/field/clientbound/mts_result_empty_modes.go`
+- **Atlas file:** `libs/atlas-packet/field/clientbound/mts_operation.go`
 - **Variant:** GMS/v84
 - **Branch depth:** 0
 - **Verdict:** ✅

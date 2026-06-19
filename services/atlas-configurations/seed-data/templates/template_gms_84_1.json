@@ -456,6 +456,11 @@
         "handler": "CharacterBuffCancel"
       },
       {
+        "opCode": "0x5D",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterSkillPrepareHandle"
+      },
+      {
         "opCode": "0x5E",
         "validator": "LoggedInValidator",
         "handler": "CharacterDropMesoHandle"
@@ -1147,6 +1152,11 @@
         }
       },
       {
+        "opCode": "0x085",
+        "validator": "LoggedInValidator",
+        "handler": "EnterDoorHandle"
+      },
+      {
         "opCode": "0xB2",
         "validator": "LoggedInValidator",
         "handler": "SummonMoveHandle"
@@ -1606,7 +1616,8 @@
             "UNABLE_TO_HAND_OVER_THE_LEADERSHIP_POST_NO_PARTY_MEMBER_IS_CURRENTLY_WITHIN_THE": "0x1D",
             "YOU_MAY_ONLY_CHANGE_WITH_THE_PARTY_MEMBER_THATS_ON_THE_SAME_CHANNEL": "0x1E",
             "AS_A_GM_YOURE_FORBIDDEN_FROM_CREATING_A_PARTY": "0x20",
-            "UNABLE_TO_FIND_THE_CHARACTER": "0x21"
+            "UNABLE_TO_FIND_THE_CHARACTER": "0x21",
+            "TOWN_PORTAL": "0x28"
           }
         }
       },
@@ -2112,6 +2123,14 @@
       {
         "opCode": "0xC1",
         "writer": "CharacterAttackEnergy"
+      },
+      {
+        "opCode": "0xC2",
+        "writer": "CharacterSkillPrepareForeign"
+      },
+      {
+        "opCode": "0xC3",
+        "writer": "CharacterSkillCancelForeign"
       },
       {
         "opCode": "0xC4",
@@ -2805,6 +2824,22 @@
       {
         "opCode": "0x15A",
         "writer": "CharacterKeyMapAutoMp"
+      },
+      {
+        "opCode": "0x11A",
+        "writer": "SpawnDoor"
+      },
+      {
+        "opCode": "0x11B",
+        "writer": "RemoveDoor"
+      },
+      {
+        "opCode": "0x45",
+        "writer": "SpawnPortal"
+      },
+      {
+        "opCode": "0x45",
+        "writer": "RemoveTownDoor"
       },
       {
         "opCode": "0x15B",

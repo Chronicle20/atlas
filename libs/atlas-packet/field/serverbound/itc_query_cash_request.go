@@ -29,6 +29,7 @@ const ItcQueryCashRequestHandle = "ItcQueryCashRequestHandle"
 // SendPacket — the request carries no payload. It is the wallet-balance query
 // that elicits the clientbound MTS_OPERATION2 (CITC::OnQueryCashResult). The
 // latch guards against a double-send; it does not write to the wire.
+// packet-audit:fname CITC::TrySendQueryCashRequest
 type ItcQueryCashRequest struct{}
 
 func (m ItcQueryCashRequest) Operation() string {

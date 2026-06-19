@@ -347,6 +347,11 @@
         "handler": "CharacterBuffCancel"
       },
       {
+        "opCode": "0x58",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterSkillPrepareHandle"
+      },
+      {
         "opCode": "0x59",
         "validator": "LoggedInValidator",
         "handler": "CharacterDropMesoHandle"
@@ -880,6 +885,11 @@
         }
       },
       {
+        "opCode": "0x088",
+        "validator": "LoggedInValidator",
+        "handler": "EnterDoorHandle"
+      },
+      {
         "opCode": "0xB2",
         "validator": "LoggedInValidator",
         "handler": "SummonMoveHandle"
@@ -1140,7 +1150,12 @@
       },
       {
         "opCode": "0x36",
-        "writer": "PartyOperation"
+        "writer": "PartyOperation",
+        "options": {
+          "operations": {
+            "TOWN_PORTAL": "0x28"
+          }
+        }
       },
       {
         "opCode": "0x39",
@@ -1481,6 +1496,14 @@
       {
         "opCode": "0xC3",
         "writer": "CharacterAttackEnergy"
+      },
+      {
+        "opCode": "0xC4",
+        "writer": "CharacterSkillPrepareForeign"
+      },
+      {
+        "opCode": "0xC5",
+        "writer": "CharacterSkillCancelForeign"
       },
       {
         "opCode": "0xC6",
@@ -2078,6 +2101,22 @@
       {
         "opCode": "0x172",
         "writer": "CharacterKeyMapAutoMp"
+      },
+      {
+        "opCode": "0x128",
+        "writer": "SpawnDoor"
+      },
+      {
+        "opCode": "0x129",
+        "writer": "RemoveDoor"
+      },
+      {
+        "opCode": "0x03D",
+        "writer": "SpawnPortal"
+      },
+      {
+        "opCode": "0x03D",
+        "writer": "RemoveTownDoor"
       },
       {
         "opCode": "0x91",

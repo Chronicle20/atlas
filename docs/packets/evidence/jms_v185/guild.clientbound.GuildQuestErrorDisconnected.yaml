@@ -1,0 +1,8 @@
+packet: guild/clientbound/GuildQuestErrorDisconnected
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnGuildResult#QuestErrorDisconnected
+    address: "0xb22518"
+    decompile_sha256: 60043bb2bf83ab3a545a69fc077b37546c558070cdd41cc1478fdd548ea9e4cd

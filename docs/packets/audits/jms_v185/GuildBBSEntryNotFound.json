@@ -1,0 +1,21 @@
+{
+  "WriterName": "GuildBBSEntryNotFound",
+  "IDAName": "CUIGuildBBS::OnGuildBBSPacket#BBSEntryNotFound",
+  "Address": "ABSENT",
+  "Variant": "JMS/v185",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/guild/clientbound/bbs.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 1,
+      "Note": "atlas: trailing padding byte — client stops reading (harmless over-write)"
+    }
+  ],
+  "Verdict": 1,
+  "FlatInvalid": false
+}

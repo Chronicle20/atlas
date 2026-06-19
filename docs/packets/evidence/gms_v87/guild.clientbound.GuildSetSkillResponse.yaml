@@ -1,0 +1,8 @@
+packet: guild/clientbound/GuildSetSkillResponse
+direction: clientbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnGuildResult#SetSkillResponse
+    address: "0xacf7d3"
+    decompile_sha256: d0cf1300b2229f0d7780671ffea7aa8d5a5d6c6f8b9f5a3e2e7c8b6e50723fd8

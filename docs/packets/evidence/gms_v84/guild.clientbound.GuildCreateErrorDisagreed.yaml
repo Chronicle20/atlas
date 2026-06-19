@@ -1,0 +1,8 @@
+packet: guild/clientbound/GuildCreateErrorDisagreed
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnGuildResult#CreateErrorDisagreed
+    address: "0xa82e2b"
+    decompile_sha256: 3eb17a5174b61ddc61920f9f32dc0e952f1851f8bf735767f21f748058a628fb

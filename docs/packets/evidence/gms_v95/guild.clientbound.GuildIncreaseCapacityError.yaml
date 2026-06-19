@@ -1,0 +1,8 @@
+packet: guild/clientbound/GuildIncreaseCapacityError
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnGuildResult#IncreaseCapacityError
+    address: "0xa0d3b0"
+    decompile_sha256: 594391f8115046c201467726645a782412b15557d8b23c8bbe06c3e0bb6e9dee

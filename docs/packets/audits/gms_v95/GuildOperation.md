@@ -1,7 +1,7 @@
 # GuildOperation (← `CUIFadeYesNo::OnButtonClicked`)
 
 - **IDA:** 0x0
-- **Atlas file:** `../../libs/atlas-packet/guild/serverbound/operation.go`
+- **Atlas file:** `libs/atlas-packet/guild/serverbound/operation.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ✅

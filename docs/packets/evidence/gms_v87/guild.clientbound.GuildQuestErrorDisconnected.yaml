@@ -1,0 +1,8 @@
+packet: guild/clientbound/GuildQuestErrorDisconnected
+direction: clientbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnGuildResult#QuestErrorDisconnected
+    address: "0xacf7d3"
+    decompile_sha256: fa3513db3fd53e7570a4bf8d3e9905327319abfcaf795e47cbad3c31e8536b81

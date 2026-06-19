@@ -1,0 +1,8 @@
+packet: guild/clientbound/GuildMemberUpdate
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnGuildResult#MemberUpdate
+    address: "0xa0d3b0"
+    decompile_sha256: f6c4871a4c30bf296e675a672040368bee781c02b94f4aebd2ba4faf6f0adfeb

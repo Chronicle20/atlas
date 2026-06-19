@@ -1,8 +1,0 @@
-packet: guild/clientbound/GuildErrorMessage
-direction: clientbound
-version: gms_v83
-category: TIER1-FIXTURE
-ida:
-    function: CWvsContext::OnGuildResult#ErrorMessage
-    address: "0xa37490"
-    decompile_sha256: 37049bc7ec44268f29097ea9e38f171256bd11b075b417d2fc111b6b39d4acb3

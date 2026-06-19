@@ -1,11 +1,11 @@
 {
-  "toolSha": "6dffba7390223f2e1aa0da5e60c0b8d36991389c",
+  "toolSha": "c63442bc2d1a127f5be4c35743c1f466c1112aed",
   "exportHashes": {
-    "gms_v83": "852f581aa10842da8d3e830c0fb1b4a8755bfc4e6365a5fc1da1644ff8f83798",
-    "gms_v84": "e4e9d8ff37851a7d4b882751473b9f57948cf1a9b3b9ecda4d83d8eacca2ccb0",
-    "gms_v87": "88e35d99c48fd12dfe9e8e1e5d38a1e699c4e3f108b4a6ced9cf196c8c7e1b4a",
-    "gms_v95": "6853254648f094820d7b3de1c925b2e6753180279985c2b916eed892d36c8fd0",
-    "jms_v185": "93229560e1436b9f7e5f62a4af2ba351edc55bb7f20eb8feab6c3144397af25d"
+    "gms_v83": "97f1cd755f3ed82d9b1470fc4b28eda99b2acff46e947a5cd9d2774648a32347",
+    "gms_v84": "749355a9f4514a8eba59e849b0ded26ce97613c0efb98d595b5c657419bfb31b",
+    "gms_v87": "dc1e75331052dc7665ad6b529ed2778175145effa3f30977f82f785fce384bab",
+    "gms_v95": "2abb82301b7ece7492038d0d2da8ba3e8314f4350b85e5e378883b86ce8dd3c0",
+    "jms_v185": "9dcefe84301bb7922a23296827219422de57bf2f99be71d7ae3f19e97793876f"
   },
   "rows": [
     {
@@ -4317,30 +4317,27 @@
     {
       "kind": "op",
       "op": "GUILD_BBS_PACKET",
+      "packet": "guild/clientbound/GuildBBSEntryNotFound",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
-        "CWvsContext::OnGuildBBSPacket"
+        "CUIGuildBBS::OnGuildBBSPacket"
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 59
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 59
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 59
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 59
         },
         "jms_v185": {
@@ -4759,7 +4756,7 @@
     {
       "kind": "op",
       "op": "GUILD_OPERATION",
-      "packet": "guild/clientbound/GuildCapacityChange",
+      "packet": "guild/clientbound/GuildBoardAuthKeyUpdate",
       "direction": "clientbound",
       "tier1": true,
       "fnames": [
@@ -10012,7 +10009,7 @@
     {
       "kind": "op",
       "op": "GUILD_OPERATION",
-      "packet": "guild/serverbound/GuildOperation",
+      "packet": "guild/serverbound/GuildJoin",
       "direction": "serverbound",
       "tier1": true,
       "fnames": [
@@ -10034,8 +10031,7 @@
           "opcode": 126
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 130
         },
         "gms_v87": {
@@ -11773,7 +11769,7 @@
     {
       "kind": "op",
       "op": "ALLIANCE_REQUEST",
-      "packet": "guild/serverbound/GuildOperation",
+      "packet": "guild/serverbound/GuildJoin",
       "direction": "serverbound",
       "tier1": true,
       "fnames": [
@@ -12737,8 +12733,7 @@
           "opcode": 155
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🚫",
+          "state": "verified",
           "opcode": 159
         },
         "gms_v87": {
@@ -12994,7 +12989,7 @@
     {
       "kind": "op",
       "op": "NEW_YEAR_CARD_REQUEST",
-      "packet": "guild/serverbound/GuildOperation",
+      "packet": "guild/serverbound/GuildJoin",
       "direction": "serverbound",
       "tier1": true,
       "fnames": [
@@ -13007,8 +13002,7 @@
           "opcode": 159
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 163
         },
         "gms_v87": {
@@ -16590,18 +16584,15 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 202
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 206
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 215
         },
         "gms_v95": {
@@ -16657,18 +16648,15 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 203
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 207
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 216
         },
         "gms_v95": {
@@ -26694,62 +26682,6 @@
     },
     {
       "kind": "sub-struct",
-      "packet": "guild/clientbound/GuildBBSThread",
-      "tier1": true,
-      "cells": {
-        "gms_v83": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
-          "opcode": -1
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "sub-struct",
-      "packet": "guild/clientbound/GuildBBSThreadList",
-      "tier1": true,
-      "cells": {
-        "gms_v83": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
-          "opcode": -1
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "sub-struct",
       "packet": "guild/serverbound/GuildAgreementResponse",
       "tier1": true,
       "cells": {
@@ -26758,8 +26690,7 @@
           "opcode": -1
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v87": {
@@ -26786,8 +26717,7 @@
           "opcode": -1
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v87": {
@@ -26814,8 +26744,7 @@
           "opcode": -1
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v87": {
@@ -26842,8 +26771,7 @@
           "opcode": -1
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🚫",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v87": {
@@ -26870,8 +26798,7 @@
           "opcode": -1
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🚫",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v87": {
@@ -26898,8 +26825,7 @@
           "opcode": -1
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v87": {
@@ -26922,48 +26848,15 @@
       "tier1": true,
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v95": {
           "state": "verified",
           "opcode": -1
         },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "sub-struct",
-      "packet": "guild/serverbound/GuildJoin",
-      "tier1": true,
-      "cells": {
-        "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v95": {
@@ -26982,18 +26875,15 @@
       "tier1": true,
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v95": {
@@ -27012,18 +26902,15 @@
       "tier1": true,
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v95": {
@@ -27046,8 +26933,7 @@
           "opcode": -1
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v87": {
@@ -27070,18 +26956,15 @@
       "tier1": true,
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v95": {
@@ -27100,13 +26983,11 @@
       "tier1": true,
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v87": {
@@ -27129,18 +27010,15 @@
       "tier1": true,
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v95": {
@@ -27159,18 +27037,15 @@
       "tier1": true,
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v95": {

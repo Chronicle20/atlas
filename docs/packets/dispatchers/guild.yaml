@@ -1,0 +1,79 @@
+# GuildOperation — CWvsContext::OnGuildResult per-version mode table.
+#
+# SOURCE OF TRUTH for the GuildOperation writer's `operations` sub-op MODE byte.
+# The writer's opcode is GUILD_OPERATION; the leading byte (CInPacket::Decode1)
+# selects one of ~35 sub-handler arms. Each arm's MODE byte is per-version DATA
+# resolved at emit time from the tenant `operations` table — never a struct literal.
+#
+# Per-version OnGuildResult function addresses (IDA-verified — Task 1, task-103):
+#   gms_v83  0xa37490  (MapleStory_dump.exe,      port 13342)
+#   gms_v84  0xa82e2b  (GMS_v84.1_U_DEVM.exe,     port 13337)
+#   gms_v87  0xacf7d3  (GMSv87_4GB.exe,           port 13341)
+#   gms_v95  0xa0d3b0  (GMS_v95.0_U_DEVM.exe,     port 13340)
+#   jms_v185 0xb22518  (MapleStory_dump_SCY.exe,  port 13339)
+#
+# MODE-BYTE VERSION DRIFT (IDA-enumerated, NOT inferred):
+#   - gms_v83 == gms_v84 == gms_v87 == jms_v185: the switch is BYTE-IDENTICAL.
+#     v83/v84/v87/jms share the (v4 > 0x32) two-switch + low-value if-chain shape;
+#     every case value matches v83. v84 cases confirmed from the live v84 IDB
+#     (case '4'=0x34 … case '\''=0x27 … '<'=0x3C), NOT folded from v83.
+#   - gms_v95: SHIFTED. v95 uses a single flat switch(mode) with NON-UNIFORM
+#     drift vs v83 (0 for cases <=0x11, +2 for the mid range, +3 for EMBLEM/NOTICE
+#     and the 0x49+ quest/skill range). Mapped per arm by client read-order AND by
+#     decrypting the StringPool message each arm shows (ms_aKey @0xb98830 rotl(seed)
+#     ^ cipher). This is the SAME non-uniform shift family as the opcode table bug.
+#
+# jms_v185: SET_SKILL_RESPONSE arm is VERSION-ABSENT (no case 0x4E in the jms
+#   switch; all other arms present at v83 byte values). Its jms mode is omitted.
+#
+# NOTE (template state, recorded for later tasks — do NOT paper over):
+#   The gms_87 / gms_95 / jms_185 seed templates currently have an EMPTY
+#   GuildOperation `operations` map (ops_count=0) — the documented
+#   bug_operations_mode_tables_missing_v87_v95_jms. `operations --check` will
+#   therefore report MISSING for every v87/v95/jms key below until a later task
+#   runs `packet-audit operations` (generate) to populate those tables from THIS
+#   file. The v83/v84 templates already match these values exactly.
+#
+# Mode bytes below are DECIMAL (the tool reads ints); the per-version hex appears
+# in context.md §10. Each value is read from THAT version's decompiled switch.
+
+writer: GuildOperation
+fname: CWvsContext::OnGuildResult
+op: GUILD_OPERATION
+direction: clientbound
+operations:
+  - { key: REQUEST_NAME,                                                                       modes: { gms_v83: 1,  gms_v84: 1,  gms_v87: 1,  gms_v95: 1,  jms_v185: 1 } }
+  - { key: REQUEST_AGREEMENT,                                                                  modes: { gms_v83: 3,  gms_v84: 3,  gms_v87: 3,  gms_v95: 3,  jms_v185: 3 } }
+  - { key: INVITE,                                                                             modes: { gms_v83: 5,  gms_v84: 5,  gms_v87: 5,  gms_v95: 5,  jms_v185: 5 } }
+  - { key: REQUEST_EMBLEM,                                                                     modes: { gms_v83: 17, gms_v84: 17, gms_v87: 17, gms_v95: 17, jms_v185: 17 } }
+  - { key: THE_NAME_IS_ALREADY_IN_USE_PLEASE_TRY_OTHER_ONES,                                   modes: { gms_v83: 28, gms_v84: 28, gms_v87: 28, gms_v95: 30, jms_v185: 28 } }
+  - { key: SOMEBODY_HAS_DISAGREED_TO_FORM_A_GUILD,                                             modes: { gms_v83: 36, gms_v84: 36, gms_v87: 36, gms_v95: 38, jms_v185: 36 } }
+  - { key: THE_PROBLEM_HAS_HAPPENED_DURING_THE_PROCESS_OF_FORMING_THE_GUILD_PLEASE_TRY_AGAIN,  modes: { gms_v83: 38, gms_v84: 38, gms_v87: 38, gms_v95: 40, jms_v185: 38 } }
+  - { key: JOIN_SUCCESS,                                                                       modes: { gms_v83: 39, gms_v84: 39, gms_v87: 39, gms_v95: 41, jms_v185: 39 } }
+  - { key: ALREADY_JOINED_THE_GUILD,                                                           modes: { gms_v83: 40, gms_v84: 40, gms_v87: 40, gms_v95: 42, jms_v185: 40 } }
+  - { key: THE_GUILD_YOU_ARE_TRYING_TO_JOIN_HAS_ALREADY_REACHED_THE_MAX_NUMBER_OF_USERS,       modes: { gms_v83: 41, gms_v84: 41, gms_v87: 41, gms_v95: 43, jms_v185: 41 } }
+  - { key: THE_CHARACTER_CANNOT_BE_FOUND_IN_THE_CURRENT_CHANNEL,                               modes: { gms_v83: 42, gms_v84: 42, gms_v87: 42, gms_v95: 44, jms_v185: 42 } }
+  - { key: MEMBER_QUIT_SUCCESS,                                                                modes: { gms_v83: 44, gms_v84: 44, gms_v87: 44, gms_v95: 46, jms_v185: 44 } }
+  - { key: MEMBER_QUIT_ERROR_NOT_IN_GUILD,                                                     modes: { gms_v83: 45, gms_v84: 45, gms_v87: 45, gms_v95: 47, jms_v185: 45 } }
+  - { key: MEMBER_EXPELLED_SUCCESS,                                                            modes: { gms_v83: 47, gms_v84: 47, gms_v87: 47, gms_v95: 49, jms_v185: 47 } }
+  - { key: MEMBER_EXPELLED_ERROR_NOT_IN_GUILD,                                                 modes: { gms_v83: 48, gms_v84: 48, gms_v87: 48, gms_v95: 50, jms_v185: 48 } }
+  - { key: DISBAND_SUCCESS,                                                                    modes: { gms_v83: 50, gms_v84: 50, gms_v87: 50, gms_v95: 52, jms_v185: 50 } }
+  - { key: THE_PROBLEM_HAS_HAPPENED_DURING_THE_PROCESS_OF_DISBANDING_THE_GUILD_PLEASE_TRY_AGAIN, modes: { gms_v83: 52, gms_v84: 52, gms_v87: 52, gms_v95: 54, jms_v185: 52 } }
+  - { key: IS_CURRENTLY_NOT_ACCEPTING_GUILD_INVITE_MESSAGE,                                    modes: { gms_v83: 53, gms_v84: 53, gms_v87: 53, gms_v95: 55, jms_v185: 53 } }
+  - { key: IS_TAKING_CARE_OF_ANOTHER_INVITATION,                                               modes: { gms_v83: 54, gms_v84: 54, gms_v87: 54, gms_v95: 56, jms_v185: 54 } }
+  - { key: HAS_DENIED_YOUR_GUILD_INVITATION,                                                   modes: { gms_v83: 55, gms_v84: 55, gms_v87: 55, gms_v95: 57, jms_v185: 55 } }
+  - { key: ADMIN_CANNOT_MAKE_A_GUILD,                                                          modes: { gms_v83: 56, gms_v84: 56, gms_v87: 56, gms_v95: 58, jms_v185: 56 } }
+  - { key: CONGRATULATION_THE_NUMBER_OF_GUILD_MEMBERS_HAS_NOW_INCREASED_TO,                    modes: { gms_v83: 58, gms_v84: 58, gms_v87: 58, gms_v95: 60, jms_v185: 58 } }
+  - { key: THE_PROBLEM_HAS_HAPPENED_DURING_THE_PROCESS_OF_INCREASING_THE_GUILD_PLEASE_TRY_AGAIN, modes: { gms_v83: 59, gms_v84: 59, gms_v87: 59, gms_v95: 61, jms_v185: 59 } }
+  - { key: MEMBER_UPDATE,                                                                      modes: { gms_v83: 60, gms_v84: 60, gms_v87: 60, gms_v95: 62, jms_v185: 60 } }
+  - { key: MEMBER_ONLINE,                                                                      modes: { gms_v83: 61, gms_v84: 61, gms_v87: 61, gms_v95: 63, jms_v185: 61 } }
+  - { key: TITLE_UPDATE,                                                                       modes: { gms_v83: 62, gms_v84: 62, gms_v87: 62, gms_v95: 64, jms_v185: 62 } }
+  - { key: MEMBER_TITLE_CHANGE,                                                                modes: { gms_v83: 64, gms_v84: 64, gms_v87: 64, gms_v95: 66, jms_v185: 64 } }
+  - { key: EMBLEM_CHANGE,                                                                      modes: { gms_v83: 66, gms_v84: 66, gms_v87: 66, gms_v95: 69, jms_v185: 66 } }
+  - { key: NOTICE_CHANGE,                                                                      modes: { gms_v83: 68, gms_v84: 68, gms_v87: 68, gms_v95: 71, jms_v185: 68 } }
+  - { key: SHOW_TITLES,                                                                        modes: { gms_v83: 73, gms_v84: 73, gms_v87: 73, gms_v95: 76, jms_v185: 73 } }
+  - { key: THERE_ARE_LESS_THAN_6_MEMBERS_REMAINING_SO_THE_QUEST_CANNOT_CONTINUE_YOUR_GUILD,    modes: { gms_v83: 74, gms_v84: 74, gms_v87: 74, gms_v95: 77, jms_v185: 74 } }
+  - { key: THE_USER_THAT_REGISTERED_HAS_DISCONNECTED_SO_THE_QUEST_CANNOT_CONTINUE_YOUR_GUILD,  modes: { gms_v83: 75, gms_v84: 75, gms_v87: 75, gms_v95: 78, jms_v185: 75 } }
+  - { key: QUEST_WAITING_NOTICE,                                                               modes: { gms_v83: 76, gms_v84: 76, gms_v87: 76, gms_v95: 79, jms_v185: 76 } }
+  - { key: BOARD_AUTH_KEY_UPDATE,                                                              modes: { gms_v83: 77, gms_v84: 77, gms_v87: 77, gms_v95: 80, jms_v185: 77 } }
+  - { key: SET_SKILL_RESPONSE,                                                                 modes: { gms_v83: 78, gms_v84: 78, gms_v87: 78, gms_v95: 81 } }

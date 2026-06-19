@@ -1,0 +1,59 @@
+{
+  "service": "task-103-guild-dispatcher-family",
+  "path": "libs/atlas-packet/guild + services/atlas-channel/atlas.com/channel",
+  "scope": "commit range 72cb42c6c..HEAD",
+  "date": "2026-06-18",
+  "build": "pass",
+  "vet": "pass",
+  "testsPassed": "all (guild clientbound+serverbound race-clean; channel writer)",
+  "testsFailed": 0,
+  "overallStatus": "pass",
+  "applicabilityNote": "Packet-library + channel-consumer change, not a CRUD domain service. DOM-01..05, DOM-08..19, DOM-22..24, SUB-*, SEC-* are N/A by structure. Applicable checks evaluated against dispatcher-family focus areas.",
+  "domains": [
+    {
+      "name": "libs/atlas-packet/guild/clientbound",
+      "type": "packet-library",
+      "checks": [
+        {"id": "DOM-06", "name": "Encode/Decode accept logrus.FieldLogger", "status": "pass", "evidence": "operation.go:37,86,462; bbs.go:71,188,243"},
+        {"id": "DOM-21", "name": "No reinvented atlas-constants types", "status": "pass", "evidence": "only wire-shape structs + guild-protocol op-key consts (operation_body.go:18-54)"},
+        {"id": "IMMUT", "name": "Discrete structs immutable (private fields + ctor)", "status": "pass", "evidence": "operation.go:21-30,81-83,1075-1083; bbs.go:51-64,168-181,236-240"},
+        {"id": "MODE-CONFIG", "name": "Mode byte config-resolved, never literal", "status": "pass", "evidence": "operation_body.go:58-276 WithResolvedCode('operations',KEY,fn(mode))"},
+        {"id": "BBS-EXCEPTION", "name": "BBS fixed-const mode is documented justified exception", "status": "pass", "evidence": "bbs_body.go:10-21; bbs.go:14-24 (modes 6/7/8, version-stable, no operations table)"},
+        {"id": "ENC-DEC-SYM", "name": "Encode/Decode symmetry / round-trip", "status": "pass", "evidence": "operation.go:462-484,758-796,976-1006,1088-1107; roundtrip asserts 0 unconsumed bytes"}
+      ]
+    },
+    {
+      "name": "services/atlas-channel .../kafka/consumer/guild",
+      "type": "kafka-consumer",
+      "checks": [
+        {"id": "ERR-DROP", "name": "Unmapped error codes logged + dropped, never wrong mode", "status": "pass", "evidence": "consumer.go:144-160 guildErrorBodies map; :166-170 Warn+no-op on miss"},
+        {"id": "FOOTGUN-REMOVED", "name": "GuildErrorBody/GuildErrorBody2 dynamic-mode footgun removed", "status": "pass", "evidence": "grep for key-taking body func returns empty; consumer.go uses fixed-key bodyFn()"},
+        {"id": "FUNCTIONAL", "name": "Curried Operator/Announce composition preserved", "status": "pass", "evidence": "consumer.go:194-202,348-356"},
+        {"id": "DOM-07", "name": "Logger threaded, no StandardLogger", "status": "pass", "evidence": "handlers take logrus.FieldLogger (consumer.go:123,178); no StandardLogger"}
+      ]
+    },
+    {
+      "name": "services/atlas-channel call-site migrations",
+      "type": "call-site",
+      "checks": [
+        {"id": "MIGRATE-INVITE", "name": "invite consumer migrated to fixed-key body", "status": "pass", "evidence": "invite/consumer.go:181 GuildInviteDeniedBody(targetName)"},
+        {"id": "MIGRATE-BBS", "name": "guild_bbs writer migrated to body funcs", "status": "pass", "evidence": "socket/writer/guild_bbs.go:19,58,75 guildbody.GuildBBS*Body(...)"}
+      ]
+    },
+    {
+      "name": "tests",
+      "type": "test",
+      "checks": [
+        {"id": "TEST-GOLDEN", "name": "Real byte fixtures (not mocks)", "status": "pass", "evidence": "operation_test.go:257-264,313,333-342; no mock usages; no *_testhelpers.go"},
+        {"id": "TEST-TABLE", "name": "Table-driven with t.Run, per-version", "status": "pass", "evidence": "operation_test.go:287-307,311-344; pt.Variants loops"},
+        {"id": "TEST-CTOR", "name": "Uses ctors not test-only constructors", "status": "pass", "evidence": "New* ctors in all fixtures"}
+      ]
+    }
+  ],
+  "blocking": [],
+  "nonBlocking": [],
+  "clearedNonIssues": [
+    "info.go:70 WriteByte(0x1A) literal — file unchanged in range; separate GUILDDATA path documented out-of-scope (operation_body.go:278-285)",
+    "invite/consumer.go:154 // TODO — pre-existing (commit 2c43c0e9e), outside this range, not in task-103 diff"
+  ]
+}

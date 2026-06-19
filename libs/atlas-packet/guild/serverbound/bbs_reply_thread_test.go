@@ -8,7 +8,9 @@ import (
 
 // packet-audit:verify packet=guild/serverbound/GuildBBSReplyThread version=gms_v87 ida=0x87a5df
 // packet-audit:verify packet=guild/serverbound/GuildBBSReplyThread version=gms_v95 ida=0x7c4530
-// packet-audit:verify packet=guild/serverbound/GuildBBSReplyThread version=gms_v83 ida=0x0
+// packet-audit:verify packet=guild/serverbound/GuildBBSReplyThread version=gms_v83 ida=0x816994
+// v84 OnComment COutPacket(0x9F)+Encode1(4)+Encode4(threadId)+EncodeStr(message), IDA-verified.
+// packet-audit:verify packet=guild/serverbound/GuildBBSReplyThread version=gms_v84 ida=0x841c2b
 // packet-audit:verify packet=guild/serverbound/GuildBBSReplyThread version=jms_v185 ida=ABSENT
 func TestBBSReplyThreadRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {

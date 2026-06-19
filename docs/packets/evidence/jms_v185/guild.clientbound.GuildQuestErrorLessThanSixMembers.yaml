@@ -1,0 +1,8 @@
+packet: guild/clientbound/GuildQuestErrorLessThanSixMembers
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnGuildResult#QuestErrorLessThanSixMembers
+    address: "0xb22518"
+    decompile_sha256: f0dec5d3252c56c81e6f2d8fa1899bb219675ae88054d94df28e25794b3dbd6a

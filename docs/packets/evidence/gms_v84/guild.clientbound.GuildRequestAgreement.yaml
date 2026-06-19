@@ -3,6 +3,6 @@ direction: clientbound
 version: gms_v84
 category: TIER1-FIXTURE
 ida:
-    function: CWvsContext::OnGuildResult#AgreementResponse
+    function: CWvsContext::OnGuildResult#RequestAgreement
     address: "0xa82e2b"
     decompile_sha256: a4da42eb63271c61fc3a023584832ab8167f2bee471bb81493b3b0a0cd77e008

@@ -12241,6 +12241,68 @@
           "comment": "reason (DecodeStr; shown as the Notice text)"
         }
       ]
+    },
+    "CUserLocal::DoActiveSkill_Prepare": {
+      "address": "0x941710",
+      "direction": "serverbound",
+      "notes": "opcode COutPacket::COutPacket(...,105)=0x69. Trailing Encode4(m_dwSwallowMobID) is gated on skillId==33101005 (Dragon Knight swallow).",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "nSkillID (skill to prepare)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "nSLV (skill level, nSLV)"
+        },
+        {
+          "op": "Encode2",
+          "comment": "action ((m_nMoveAction << 15) | (m_nOneTimeAction & 0x7FFF))"
+        },
+        {
+          "op": "Encode1",
+          "comment": "nActionSpeed (attack_speed_degree)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "dwSwallowMobID (only when nSkillID == 33101005)",
+          "guard": "v5 == 33101005"
+        }
+      ]
+    },
+    "CUserRemote::OnSkillCancel": {
+      "address": "0x954600",
+      "direction": "clientbound",
+      "notes": "nType 0xD9. Reads one Decode4 (nSkillID); remainder is local cleanup (iPacket reused as scratch for GetVecCtrl, not a further wire read).",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "nSkillID (skill to cancel)"
+        }
+      ]
+    },
+    "CUserRemote::OnSkillPrepare": {
+      "address": "0x953a30",
+      "direction": "clientbound",
+      "notes": "nType 0xD7.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "nSkillID"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nSLV (skill level)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "action (bit15 = move-action, low15 = one-time-action)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nActionSpeed"
+        }
+      ]
     }
   }
 }

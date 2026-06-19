@@ -218,7 +218,7 @@ v95=13340 `GMS_v95.0_U_DEVM.exe`, jms=13339 `MapleStory_dump_SCY.exe` (JMS v185)
 | gms_v84 | `0xA6BDD9` | 0–0xE | 15 | present (`sub_A6CEFA`, verified = SP) |
 | gms_v87 | `0xAB8076` | 0–0xE | 15 | present (`OnIncSPMessage`) |
 | gms_v95 | `0xA06C90` | 0–0xE | 15 | present (`OnIncSPMessage`, PDB-named, authoritative) |
-| jms_v185 | `0xB078F3` | 0–0xF | **16** | present (`OnIncSPMessage`); **case 0xF = `sub_B0931C` (no Atlas arm — ESCALATED)** |
+| jms_v185 | `0xB078F3` | 0–0xF | **16** | present (`OnIncSPMessage`); **case 0xF = `sub_B0931C` (jms-only `StatusMessageJMSCounterNotice` / `JMS_COUNTER_NOTICE` — RESOLVED)** |
 
 All switches read the outer mode via `CInPacket::Decode1` and `return` on `default`
 (no out-of-range handler). This confirms the corrected mode table in this doc: v83 fame=4/meso=5/
@@ -247,7 +247,7 @@ Outer mode = the switch case. v83 has no SP row (mode 4 is fame). Names are the 
 | ITEM_PROTECT_EXPIRE `OnItemProtectExpireMessage` | `0xA2187E` | `0xA6CCB3` | `0xAB8F10` | `0x9F82E0` | `0xB08763` |
 | ITEM_EXPIRE_REPLACE `OnItemExpireReplaceMessage` | `0xA2195A` | `0xA6CD8F` | `0xAB8FEC` | `0x9FE7A0` | `0xB08840` |
 | SKILL_EXPIRE `OnSkillExpireMessage` | `0xA219BE` | `0xA6CDF3` | `0xAB9050` | `0x9F8440` | `0xB088A4` |
-| *(jms-only mode 0xF)* `sub_B0931C` | — | — | — | — | `0xB0931C` **ESCALATED** |
+| *(jms-only mode 0xF)* `sub_B0931C` | — | — | — | — | `0xB0931C` **RESOLVED: implemented as `StatusMessageJMSCounterNotice` / key `JMS_COUNTER_NOTICE` / jms mode 15 / delegate `0xB0931C` / wire `[mode][int32]` / semantics: single int → localized StringPool 5603, chat-type-6. message text runtime-encrypted, name is structural.** |
 
 The 24 Atlas arms collapse onto the 15 operations keys above: DROP_PICK_UP fans out to 8 structs
 (inner int8), QUEST_RECORD fans out to 3 (inner byte), the other 13 keys are singletons. The
@@ -328,7 +328,8 @@ their own outer modes (2/5/6/7/8) in the jms switch. Mode 0xF is a **new outer m
 in no GMS version** (v83=0–0xD, v84/87/95=0–0xE) and has **no Atlas `StatusMessage*` struct and
 no operations key** (the 24 Atlas arms span exactly modes 0–0xE; see status_message_body.go).
 
-**Disposition: jms-only arm with no Atlas equivalent → ESCALATED for human decision.** Per the
-plan it is NOT to be invented (no fabricated struct, fname, or operations entry). It will be
-tracked ⬜/escalated. The 15 shared arms (modes 0–0xE) are fully grounded above and jms ✅ for
-those does not depend on resolving 0xF.
+**Disposition: RESOLVED.** Human decision: implement as a new jms-only arm `StatusMessageJMSCounterNotice`
+/ operations key `JMS_COUNTER_NOTICE` / jms mode 15 (0xF) / delegate `0xB0931C` / wire `[mode byte][int32 amount]` /
+semantics: single int formatted into localized StringPool 5603, displayed as chat-type-6 line.
+Message text is runtime-encrypted and intentionally not asserted in the name. The 15 shared arms
+(modes 0–0xE) are fully grounded above; jms ✅ for those does not depend on this arm.

@@ -939,3 +939,36 @@ func (m *StatusMessageSkillExpire) Decode(_ logrus.FieldLogger, _ context.Contex
 		}
 	}
 }
+
+// StatusMessageJMSCounterNotice - jms-only OnMessage arm (outer mode 0xF / 15).
+// CWvsContext::sub_B0931C (jms_v185 @0xB0931C): Decode4 single int formatted into
+// localized StringPool 5603, displayed as a chat-type-6 line. jms-only; absent in all GMS.
+type StatusMessageJMSCounterNotice struct {
+	mode   byte
+	amount int32
+}
+
+func NewStatusMessageJMSCounterNotice(mode byte, amount int32) StatusMessageJMSCounterNotice {
+	return StatusMessageJMSCounterNotice{mode: mode, amount: amount}
+}
+
+func (m StatusMessageJMSCounterNotice) Operation() string { return CharacterStatusMessageWriter }
+func (m StatusMessageJMSCounterNotice) String() string {
+	return fmt.Sprintf("jms counter notice [%d]", m.amount)
+}
+
+func (m StatusMessageJMSCounterNotice) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
+		w.WriteByte(m.mode)
+		w.WriteInt32(m.amount)
+		return w.Bytes()
+	}
+}
+
+func (m *StatusMessageJMSCounterNotice) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
+		m.mode = r.ReadByte()
+		m.amount = r.ReadInt32()
+	}
+}

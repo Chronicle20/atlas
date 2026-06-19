@@ -1,0 +1,10 @@
+packet: character/clientbound/StatusMessageSystemMessage
+direction: clientbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnMessage#SystemMessage
+    address: "0xab910a"
+    decompile_sha256: 607063962c7e857f8d7ee7b11c72a070ff283da33c2188911ff1e5ea71e3d5d5
+verifies:
+  - libs/atlas-packet/character/clientbound/status_message_test.go#TestStatusMessageSystemMessage

@@ -1,10 +1,10 @@
 packet: character/clientbound/StatusMessageDropPickUpInventoryFull
 direction: clientbound
-version: gms_v84
+version: jms_v185
 category: TIER1-FIXTURE
 ida:
     function: CWvsContext::OnMessage#DropPickUpInventoryFull
-    address: "0xa6beef"
-    decompile_sha256: 5431e8795ffb2e2c54a945e51b97a20d4f6829811e45c0b6736995892903f750
+    address: "0xb07a01"
+    decompile_sha256: 6eeb1cad575ff3e7aea8ca3ea5f4ffbdec011db9a09489bd62e9b15c59e5cc01
 verifies:
   - libs/atlas-packet/character/clientbound/status_message_test.go#TestStatusMessageDropPickUpInventoryFull

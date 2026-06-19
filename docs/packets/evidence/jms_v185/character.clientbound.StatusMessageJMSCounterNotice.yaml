@@ -1,0 +1,10 @@
+packet: character/clientbound/StatusMessageJMSCounterNotice
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnMessage#JMSCounterNotice
+    address: "0xb0931c"
+    decompile_sha256: c0c095c3a63a31481c57cc18acb4926dc98a00fd536051fdf4bc0b9bcfba4803
+verifies:
+  - libs/atlas-packet/character/clientbound/status_message_test.go#TestStatusMessageJMSCounterNotice

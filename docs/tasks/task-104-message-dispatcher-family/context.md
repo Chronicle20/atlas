@@ -202,3 +202,133 @@ From the worktree root:
 No business-logic change to consumers (call-site verify only). No new arms (jms 0xF escalated, not
 invented). No DB/REST change. No new tenant version / LB ports. Migrating party/buddy/guild fully
 off the baseline is a separate cycle.
+
+## Enumeration results
+
+Grounded from live IDA decompiles this session (Task 1). Every address below was read directly
+from the named IDB; ports/binaries confirmed against `list_instances` before reading:
+v83=13342 `MapleStory_dump.exe`, v84=13337 `GMS_v84.1_U_DEVM.exe`, v87=13341 `GMSv87_4GB.exe`,
+v95=13340 `GMS_v95.0_U_DEVM.exe`, jms=13339 `MapleStory_dump_SCY.exe` (JMS v185).
+
+### 1. Per-version `CWvsContext::OnMessage` switch confirmation
+
+| version | switch addr | case range | case count | SP arm (case 4)? |
+|---|---|---|---|---|
+| gms_v83 | `0xA209D4` | 0–0xD | 14 | **absent** — case 4 is `OnIncPOPMessage` (fame) |
+| gms_v84 | `0xA6BDD9` | 0–0xE | 15 | present (`sub_A6CEFA`, verified = SP) |
+| gms_v87 | `0xAB8076` | 0–0xE | 15 | present (`OnIncSPMessage`) |
+| gms_v95 | `0xA06C90` | 0–0xE | 15 | present (`OnIncSPMessage`, PDB-named, authoritative) |
+| jms_v185 | `0xB078F3` | 0–0xF | **16** | present (`OnIncSPMessage`); **case 0xF = `sub_B0931C` (no Atlas arm — ESCALATED)** |
+
+All switches read the outer mode via `CInPacket::Decode1` and `return` on `default`
+(no out-of-range handler). This confirms the corrected mode table in this doc: v83 fame=4/meso=5/
+GP=6/buff=7/...; v84+ insert SP at 4 shifting fame=5/meso=6/GP=7/buff=8/... No decompiled value
+differs from the expected table.
+
+### 2. Per-version, per-arm delegate addresses (canonical source for Tasks 4/5/8)
+
+Outer mode = the switch case. v83 has no SP row (mode 4 is fame). Names are the IDB's own
+(v84 are `sub_*` — semantically verified per-arm in §4).
+
+| arm (operations key) | gms_v83 | gms_v84 | gms_v87 | gms_v95 | jms_v185 |
+|---|---|---|---|---|---|
+| DROP_PICK_UP (mode 0) `OnDropPickUpMessage` | `0xA20AD9` | `0xA6BEEF` | `0xAB818C` | `0x9FE190` | `0xB07A01` |
+| QUEST_RECORD (mode 1) `OnQuestRecordMessage` | `0xA20F4C` | `0xA6C362` | `0xAB85D2` | `0xA03920` | `0xB07E49` |
+| CASH_ITEM_EXPIRE `OnCashItemExpireMessage` | `0xA216FC` | `0xA6CB31` | `0xAB8D8E` | `0x9F8060` | `0xB085DF` |
+| INCREASE_EXPERIENCE `OnIncEXPMessage` | `0xA21AC5` | `0xA6CFD7` | `0xAB9234` | `0x9F86C0` | `0xB08A97` |
+| INCREASE_SKILL_POINT `OnIncSPMessage` | *(absent)* | `0xA6CEFA` | `0xAB9157` | `0x9F8570` | `0xB089AB` |
+| INCREASE_FAME `OnIncPOPMessage` | `0xA2212D` | `0xA6D63F` | `0xAB9975` | `0x9F90A0` | `0xB09180` |
+| INCREASE_MESO `OnIncMoneyMessage` | `0xA221F3` | `0xA6D705` | `0xAB9A3B` | `0x9FE910` | `0xB09246` |
+| INCREASE_GUILD_POINT `OnIncGPMessage` | `0xA222C9` | `0xA6D7DB` | `0xAB9B11` | `0x9F91E0` | `0xB09397` |
+| GIVE_BUFF `OnGiveBuffMessage` | `0xA2238F` | `0xA6D8A1` | `0xAB9BD7` | `0x9F2DF0` | `0xB0945D` |
+| GENERAL_ITEM_EXPIRE `OnGeneralItemExpireMessage` | `0xA217A2` | `0xA6CBD7` | `0xAB8E34` | `0x9F8180` | `0xB08686` |
+| SYSTEM_MESSAGE `OnSystemMessage` | `0xA21A78` | `0xA6CEAD` | `0xAB910A` | `0x9FE860` | `0xB0895E` |
+| QUEST_RECORD_EX `OnQuestRecordExMessage` | `0xA2160B` | `0xA6CA40` | `0xAB8C9D` | `0x9FE6A0` | `0xB084EE` |
+| ITEM_PROTECT_EXPIRE `OnItemProtectExpireMessage` | `0xA2187E` | `0xA6CCB3` | `0xAB8F10` | `0x9F82E0` | `0xB08763` |
+| ITEM_EXPIRE_REPLACE `OnItemExpireReplaceMessage` | `0xA2195A` | `0xA6CD8F` | `0xAB8FEC` | `0x9FE7A0` | `0xB08840` |
+| SKILL_EXPIRE `OnSkillExpireMessage` | `0xA219BE` | `0xA6CDF3` | `0xAB9050` | `0x9F8440` | `0xB088A4` |
+| *(jms-only mode 0xF)* `sub_B0931C` | — | — | — | — | `0xB0931C` **ESCALATED** |
+
+The 24 Atlas arms collapse onto the 15 operations keys above: DROP_PICK_UP fans out to 8 structs
+(inner int8), QUEST_RECORD fans out to 3 (inner byte), the other 13 keys are singletons. The
+delegate address is per *key/mode*; per-arm verification of the two fan-out families uses the
+mode-0 and mode-1 delegate plus the inner discriminator in §3.
+
+### 3. Inner fan-out discriminators (decompile-confirmed, stable across all 5 versions)
+
+**OnDropPickUpMessage** (mode 0): reads `Decode1` → inner int8 `v3`, then:
+
+| inner disc | branch in decompile | Atlas arm |
+|---|---|---|
+| `1` | `if (v3 == 1)` → `Decode1` partial, `Decode4` amount, `Decode2` bonus | DropPickUpMeso |
+| `0` | `if (v3)` else / `case 0` → `Decode4` itemId, `Decode4` qty | DropPickUpStackableItem / DropLossStackableItem (neg qty) |
+| `2` | `case 2` → `Decode4` itemId | DropPickUpUnStackableItem / DropLossUnStackableItem |
+| `-2` | `case -2` → string-pool unavailable | DropPickUpItemUnavailable |
+| `-3` | `case -3` → string-pool game-file-damaged | DropPickUpGameFileDamaged |
+| `-1` (`default`) | `default` → string-pool inventory-full | DropPickUpInventoryFull |
+
+Matches the structs' baked inner bytes (`-2/-1/-3/0/1/2`). No drift across versions.
+
+**OnQuestRecordMessage** (mode 1): reads `Decode2` (questId) → `Decode1` (inner byte), then:
+
+| inner disc | branch in decompile | Atlas arm |
+|---|---|---|
+| `0` | `if (!v#)` → RemoveQuest path, no extra read | ForfeitQuestRecord |
+| `1` | `==1` → `DecodeStr` (info) → SetQuest | UpdateQuestRecord |
+| `2` | `==2` → `DecodeBuffer(...,8)` (FILETIME completedAt) | CompleteQuestRecord |
+
+Matches the quest family inner bytes (`0/1/2`). No drift across versions.
+
+Inner-handler delegate addresses (same as the mode-0/mode-1 rows in §2): OnDropPickUpMessage
+v83 `0xA20AD9` / v84 `0xA6BEEF` / v87 `0xAB818C` / v95 `0x9FE190` / jms `0xB07A01`;
+OnQuestRecordMessage v83 `0xA20F4C` / v84 `0xA6C362` / v87 `0xAB85D2` / v95 `0xA03920` /
+jms `0xB07E49`.
+
+### 4. v84 per-arm semantic confirmation (Step 4 — NOT folded from v83/v95)
+
+Each v84 `sub_` was decompiled and its read order matched the v95-named arm at the **same case
+index**. The key check — case 4 SP — confirmed:
+
+- case 4 `sub_A6CEFA` = SP: reads `Decode2` (short jobId, with the `v1/100==22 || v1==2001`
+  job-id check) then `Decode1` (byte amount) → exactly v95 `OnIncSPMessage` (`short jobId + byte
+  amount`). This proves v84 SP-at-4 directly.
+- case 3 `sub_A6CFD7` = EXP (`Decode1` flag + multi-`Decode4` exp breakdown) = v95 `OnIncEXPMessage`.
+- case 5 `sub_A6D63F` = fame (`Decode4`, `>=0` gained/lost) = v95 `OnIncPOPMessage`.
+- case 6 `sub_A6D705` = meso (`Decode4`, `<=0`, calls CheckQuestCompleteByMeso) = v95 `OnIncMoneyMessage`.
+- case 7 `sub_A6D7DB` = GP (`Decode4`, `<=0`) = v95 `OnIncGPMessage`.
+- case 8 `sub_A6D8A1` = buff (`Decode4` itemId) = v95 `OnGiveBuffMessage`.
+- case 2 `sub_A6CB31` = cash-item-expire (`Decode4` itemId) = v95 `OnCashItemExpireMessage`.
+- case 9 `sub_A6CBD7` = general-item-expire (`Decode1` count loop, `Decode4` itemId) = v95.
+- case 0xA `sub_A6CEAD` = system-message (`DecodeStr`) = v95 `OnSystemMessage`.
+- case 0xB `sub_A6CA40` = quest-record-ex (`Decode2` questId, `DecodeStr` info) = v95.
+- case 0xC `sub_A6CCB3` = item-protect-expire (`Decode1` count loop, `Decode4` itemId) = v95.
+- case 0xD `sub_A6CD8F` = item-expire-replace (`Decode1` count loop, `DecodeStr`) = v95.
+- case 0xE `sub_A6CDF3` = skill-expire (`Decode1` count loop, `Decode4` skillId) = v95.
+- cases 0/1 (fan-out) `sub_A6BEEF` / `sub_A6C362` confirmed identical inner discriminators (§3).
+
+Conclusion: v84 mode table = v83 with SP inserted at 4, every arm from fame up shifted +1.
+Verified per-arm, not assumed.
+
+### 5. jms `sub_B0931C` (outer mode 0xF) — ESCALATED (Step 5 STOP-AND-ASK GATE)
+
+Decompiled at `0xB0931C` (jms_v185, port 13339). Full read order:
+
+```
+v3 = CInPacket::Decode4(iPacket)            // a single 4-byte int
+StringPool::GetString(..., 0x15E3)          // string-pool id 5603
+ZXString::Format(&s, <fmt>, v3)             // format that one int into the message
+sub_4A586D(&s, 6u)                          // screen/chat message add, font arg = 6
+```
+
+So mode 0xF reads exactly **one `Decode4` int** and displays a single formatted string-pool
+message (id 0x15E3). It does NOT match any DROP_PICK_UP / QUEST_RECORD inner arm (those are
+mode 0/1), and although the *read shape* (one Decode4) coincides with several singleton arms
+(CashItemExpire/IncreaseFame/IncreaseMeso/IncreaseGuildPoint/GiveBuff), those already occupy
+their own outer modes (2/5/6/7/8) in the jms switch. Mode 0xF is a **new outer mode that exists
+in no GMS version** (v83=0–0xD, v84/87/95=0–0xE) and has **no Atlas `StatusMessage*` struct and
+no operations key** (the 24 Atlas arms span exactly modes 0–0xE; see status_message_body.go).
+
+**Disposition: jms-only arm with no Atlas equivalent → ESCALATED for human decision.** Per the
+plan it is NOT to be invented (no fabricated struct, fname, or operations entry). It will be
+tracked ⬜/escalated. The 15 shared arms (modes 0–0xE) are fully grounded above and jms ✅ for
+those does not depend on resolving 0xF.

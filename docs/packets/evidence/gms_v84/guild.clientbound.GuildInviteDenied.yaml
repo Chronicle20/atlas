@@ -1,0 +1,8 @@
+packet: guild/clientbound/GuildInviteDenied
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnGuildResult#InviteDenied
+    address: "0xa82e2b"
+    decompile_sha256: adaed8037794eebda6d9c0ab245a0f0a0b9a4e33fb9b3b8ba8e949de120c78ff

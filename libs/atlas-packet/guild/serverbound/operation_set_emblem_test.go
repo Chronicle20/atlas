@@ -10,6 +10,8 @@ import (
 // packet-audit:verify packet=guild/serverbound/GuildSetEmblem version=jms_v185 ida=0x56e325
 // packet-audit:verify packet=guild/serverbound/GuildSetEmblem version=gms_v87 ida=0x55874c
 // packet-audit:verify packet=guild/serverbound/GuildSetEmblem version=gms_v83 ida=0x530f2f
+// v84 SendSetGuildMarkMsg @0x53d1ab: COutPacket(0x82)+Encode1(0xF)+Encode2+Encode1+Encode2+Encode1 (IDA-verified).
+// packet-audit:verify packet=guild/serverbound/GuildSetEmblem version=gms_v84 ida=0x53d1ab
 func TestSetEmblemRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

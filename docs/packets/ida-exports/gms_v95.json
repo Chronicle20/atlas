@@ -12798,6 +12798,407 @@
           "comment": "nActionSpeed"
         }
       ]
+    },
+    "CWvsContext::OnGuildResult#RequestName": {
+      "address": "0xa0d3b0",
+      "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xa0d3b0.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (REQUEST_NAME)"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#QuestErrorDisconnected": {
+      "address": "0xa0d3b0",
+      "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xa0d3b0.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (USER_DISCONNECTED)"
+        }
+      ]
+    },
+    "CField::SendSetGradeNameMsg": {
+      "address": "0x534fe0",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "EncodeStr",
+          "comment": "title[0]"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "title[1]"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "title[2]"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "title[3]"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "title[4]"
+        }
+      ],
+      "note": "task-103 re-pin: gms_v95 GUILD_OPERATION sub-op 13 (0xD), CField::SendSetGradeNameMsg @0x534fe0 = COutPacket(GUILD_OPERATION)+Encode1(0xD)+5xEncodeStr(title). [Prior key CWvsContext::SendSetGuildTitleNames did not exist as a real symbol; correct emit site is CField::SendSetGradeNameMsg. IDA-verified.] op+subtype consumed by Atlas guild Operation wrapper; calls list the wire body only."
+    },
+    "CWvsContext::OnGuildResult#CreateError": {
+      "address": "0xa0d3b0",
+      "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xa0d3b0.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (CREATE error)"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#InviteDenied": {
+      "address": "0xa0d3b0",
+      "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xa0d3b0.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (HAS_DENIED_YOUR_GUILD_INVITATION)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "targetName"
+        }
+      ]
+    },
+    "CUIFadeYesNo::OnButtonClicked#Join": {
+      "address": "0x529c60",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "guildId"
+        },
+        {
+          "op": "Encode4",
+          "comment": "characterId"
+        }
+      ],
+      "note": "task-103 re-pin: gms_v95 GUILD_OPERATION sub-op 6 (0x6 JOIN), CUIFadeYesNo::OnButtonClicked case 8 (fn entry @0x529c60) = COutPacket(GUILD_OPERATION)+Encode1(0x6)+Encode4(guildId)+Encode4(characterId). [Prior key CWvsContext::SendGuildJoinMsg did not exist as a real symbol; correct emit site is OnButtonClicked case 8 (guild-invite YES). IDA-verified.] op+subtype consumed by Atlas guild Operation wrapper; calls list the wire body only."
+    },
+    "CWvsContext::OnGuildResult#InviteErrorNotAcceptingInvites": {
+      "address": "0xa0d3b0",
+      "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xa0d3b0.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (IS_CURRENTLY_NOT_ACCEPTING)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "targetName"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#BoardAuthKeyUpdate": {
+      "address": "0xa0d3b0",
+      "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xa0d3b0.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (BOARD_AUTH_KEY_UPDATE)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "authKey"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#DisbandError": {
+      "address": "0xa0d3b0",
+      "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xa0d3b0.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (DISBAND error)"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#QuestWaitingNotice": {
+      "address": "0xa0d3b0",
+      "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xa0d3b0.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (QUEST_WAITING_NOTICE)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "channel"
+        },
+        {
+          "op": "Decode4",
+          "comment": "state"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#MemberExpelledErrorNotInGuild": {
+      "address": "0xa0d3b0",
+      "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xa0d3b0.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (MEMBER_EXPELLED_ERROR_NOT_IN_GUILD)"
+        }
+      ]
+    },
+    "CField::SendSetMemberGradeMsg": {
+      "address": "0x52d820",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "targetId"
+        },
+        {
+          "op": "Encode1",
+          "comment": "newTitle byte"
+        }
+      ],
+      "note": "task-103 re-pin: gms_v95 GUILD_OPERATION sub-op 14 (0xE), CField::SendSetMemberGradeMsg @0x52d820 = COutPacket(GUILD_OPERATION)+Encode1(0xE)+Encode4(targetId)+Encode1(newTitle). [Prior key CTabGuildAlliance::OnGradeChange was WRONG - that fn emits ALLIANCE_OPERATION sub-op 9. IDA-verified.] op+subtype consumed by Atlas guild Operation wrapper; calls list the wire body only."
+    },
+    "CWvsContext::OnGuildResult#CreateErrorNameInUse": {
+      "address": "0xa0d3b0",
+      "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xa0d3b0.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (THE_NAME_IS_ALREADY_IN_USE)"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#RequestEmblem": {
+      "address": "0xa0d3b0",
+      "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xa0d3b0.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (REQUEST_EMBLEM)"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#MemberQuitErrorNotInGuild": {
+      "address": "0xa0d3b0",
+      "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xa0d3b0.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (MEMBER_QUIT_ERROR_NOT_IN_GUILD)"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#QuestErrorLessThanSixMembers": {
+      "address": "0xa0d3b0",
+      "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xa0d3b0.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (LESS_THAN_6_MEMBERS)"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#InviteErrorAnotherInvite": {
+      "address": "0xa0d3b0",
+      "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xa0d3b0.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (IS_TAKING_CARE_OF_ANOTHER_INVITATION)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "targetName"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#ShowTitles": {
+      "address": "0xa0d3b0",
+      "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xa0d3b0.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (SHOW_TITLES)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "guildId (discarded)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "count (loop bound)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "entry name (per count)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "value0 (per count)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "value1 (per count)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "value2 (per count)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "value3 (per count)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "value4 (per count)"
+        }
+      ]
+    },
+    "CUIGuildBBS::OnGuildBBSPacket#BBSEntryNotFound": {
+      "address": "0x7c8260",
+      "direction": "clientbound",
+      "note": "task-103 (Decode1-6)==2 OnEntryNotFound mode 8; mode-only.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (BBS entry not found, raw 8)"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#JoinErrorMaxMembers": {
+      "address": "0xa0d3b0",
+      "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xa0d3b0.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (MAX_NUMBER_OF_USERS)"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#JoinErrorAlreadyJoined": {
+      "address": "0xa0d3b0",
+      "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xa0d3b0.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (ALREADY_JOINED)"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#IncreaseCapacityError": {
+      "address": "0xa0d3b0",
+      "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xa0d3b0.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (INCREASE error)"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#MemberUpdate": {
+      "address": "0xa0d3b0",
+      "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xa0d3b0.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (MEMBER_UPDATE)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "guildId (match check)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "characterId"
+        },
+        {
+          "op": "Decode4",
+          "comment": "level"
+        },
+        {
+          "op": "Decode4",
+          "comment": "job"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#SetSkillResponse": {
+      "address": "0xa0d3b0",
+      "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xa0d3b0.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (SET_SKILL_RESPONSE)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "success flag"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "message (success branch only)"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#CreateErrorDisagreed": {
+      "address": "0xa0d3b0",
+      "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xa0d3b0.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (SOMEBODY_HAS_DISAGREED)"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#JoinErrorNotInChannel": {
+      "address": "0xa0d3b0",
+      "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xa0d3b0.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (CHARACTER_CANNOT_BE_FOUND)"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#CreateErrorCannotAsAdmin": {
+      "address": "0xa0d3b0",
+      "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xa0d3b0.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (ADMIN_CANNOT_MAKE_A_GUILD)"
+        }
+      ]
     }
   }
 }

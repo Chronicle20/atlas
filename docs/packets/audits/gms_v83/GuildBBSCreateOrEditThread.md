@@ -1,6 +1,6 @@
 # GuildBBSCreateOrEditThread (← `CUIGuildBBS::OnRegister`)
 
-- **IDA:** 0x0
+- **IDA:** 0x8166f6
 - **Atlas file:** `libs/atlas-packet/guild/serverbound/bbs_create_or_edit_thread.go`
 - **Variant:** GMS/v83
 - **Branch depth:** 1
@@ -11,10 +11,11 @@
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 1 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 2 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 3 | string | byte `` | ❌ | atlas: extra — client never reads this field |
-| 4 | string | byte `` | ❌ | atlas: extra — client never reads this field |
-| 5 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 0 | byte | byte `modify flag` | ✅ |  |
+| 1 | byte | int32 `threadId (only when modify != 0)` | ❌ | width mismatch |
+| 2 | int32 | byte `notice flag` | ❌ | width mismatch |
+| 3 | byte | string `title` | ❌ | width mismatch |
+| 4 | string | string `message` | ✅ |  |
+| 5 | string | int32 `emoticon` | ❌ | width mismatch |
+| 6 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 

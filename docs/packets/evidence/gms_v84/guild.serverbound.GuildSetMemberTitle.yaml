@@ -1,0 +1,8 @@
+packet: guild/serverbound/GuildSetMemberTitle
+direction: serverbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CField::SendSetMemberGradeMsg
+    address: "0x53d030"
+    decompile_sha256: 3cd169fe3e35b86110785f1f0cf548c39701eb12d9ebdd671253e5ac209ab028

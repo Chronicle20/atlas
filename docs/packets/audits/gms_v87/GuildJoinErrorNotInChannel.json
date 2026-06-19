@@ -1,0 +1,21 @@
+{
+  "WriterName": "GuildJoinErrorNotInChannel",
+  "IDAName": "CWvsContext::OnGuildResult#JoinErrorNotInChannel",
+  "Address": "0xacf7d3",
+  "Variant": "GMS/v87",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/guild/clientbound/operation.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode (CHARACTER_CANNOT_BE_FOUND)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

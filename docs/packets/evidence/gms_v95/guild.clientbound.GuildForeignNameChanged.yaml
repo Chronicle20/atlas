@@ -4,5 +4,5 @@ version: gms_v95
 category: TIER1-FIXTURE
 ida:
     function: CUserRemote::OnGuildNameChanged
-    address: "0x0"
+    address: "0x9550b0"
     decompile_sha256: 6ee6d3e973f674724b7e4cdcf82edd25456606c0b83a6cd2492344c993c24be1

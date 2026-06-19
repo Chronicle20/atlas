@@ -1,0 +1,10 @@
+packet: guild/clientbound/GuildForeignEmblemChanged
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CUserRemote::OnGuildMarkChanged
+    address: "0x983ab5"
+    decompile_sha256: 9147422c3dd0cad90565937b36cd2e378e69258218db3a13f700c1b6f408916c
+verifies:
+  - libs/atlas-packet/guild/clientbound/emblem_changed_foreign_test.go#TestForeignEmblemChangedByteOutput

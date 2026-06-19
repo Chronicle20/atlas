@@ -1,6 +1,6 @@
 {
   "WriterName": "GuildRequestAgreement",
-  "IDAName": "CWvsContext::OnGuildResult#AgreementResponse",
+  "IDAName": "CWvsContext::OnGuildResult#RequestAgreement",
   "Address": "0xb22518",
   "Variant": "JMS/v185",
   "BranchDepth": 0,
@@ -11,7 +11,7 @@
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "mode (AgreementResponse/RequestAgreement)",
+      "IDAComment": "mode = 3 (RequestAgreement)",
       "Verdict": 0,
       "Note": ""
     },
@@ -20,7 +20,7 @@
       "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
-      "IDAComment": "partyId/guildId",
+      "IDAComment": "partyId",
       "Verdict": 0,
       "Note": ""
     },

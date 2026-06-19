@@ -9,7 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// packet-audit:fname CWvsContext::SendSetGuildTitleNames
+// packet-audit:fname CField::SendSetGradeNameMsg
 type SetTitleNames struct {
 	titles []string
 }

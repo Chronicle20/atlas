@@ -1,21 +1,30 @@
 {
   "WriterName": "GuildBBSDisplayThread",
   "IDAName": "CUIGuildBBS::SendViewEntryRequest",
-  "Address": "",
+  "Address": "0x841e61",
   "Variant": "GMS/v84",
   "BranchDepth": 0,
   "AtlasFile": "libs/atlas-packet/guild/serverbound/bbs_display_thread.go",
   "Rows": [
     {
       "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "op byte (view sub-op)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 4,
-      "Note": "IDA read-order unresolved: function not found in IDB"
+      "IDAOp": 2,
+      "IDAComment": "threadId (entryID)",
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 4,
+  "Verdict": 0,
   "FlatInvalid": false
 }

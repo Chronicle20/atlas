@@ -278,8 +278,9 @@
 - op: GUILD_BBS_PACKET
   direction: clientbound
   opcode: 59
-  fname: CWvsContext::OnGuildBBSPacket
+  fname: CUIGuildBBS::OnGuildBBSPacket
   provenance: csv-import
+  note: 'task-103: fname pointed at the real CUIGuildBBS::OnGuildBBSPacket handler (the per-arm dispatcher) rather than the bare-delegating CWvsContext::OnGuildBBSPacket thunk, so the op row bridges to the per-arm reports (CUIGuildBBS::OnGuildBBSPacket#{BBSThreadList,BBSThread,BBSEntryNotFound}) and aggregates worst-of — the same wiring as GUILD_OPERATION (CWvsContext::OnGuildResult#...).'
 - op: CHAR_INFO
   direction: clientbound
   opcode: 61

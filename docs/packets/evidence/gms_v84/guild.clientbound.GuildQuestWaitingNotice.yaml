@@ -1,0 +1,8 @@
+packet: guild/clientbound/GuildQuestWaitingNotice
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnGuildResult#QuestWaitingNotice
+    address: "0xa82e2b"
+    decompile_sha256: 969e9471a68af39ef6c9364c6c0d05477a6fedea9b193a78da5b49704e72855b

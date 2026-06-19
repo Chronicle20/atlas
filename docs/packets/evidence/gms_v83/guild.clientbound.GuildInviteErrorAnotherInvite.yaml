@@ -1,0 +1,8 @@
+packet: guild/clientbound/GuildInviteErrorAnotherInvite
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnGuildResult#InviteErrorAnotherInvite
+    address: "0xa37490"
+    decompile_sha256: ffdad9755fbae424c8258859d442d1cedfb4b52c216ff2b558e3608e90f31b69

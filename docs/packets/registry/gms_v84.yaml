@@ -325,9 +325,9 @@
 - op: GUILD_BBS_PACKET
   direction: clientbound
   opcode: 59
-  fname: CWvsContext::OnGuildBBSPacket
+  fname: CUIGuildBBS::OnGuildBBSPacket
   provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB. task-103: fname pointed at the real CUIGuildBBS::OnGuildBBSPacket handler (dispatch sub_841EC9) rather than the bare-delegating CWvsContext::OnGuildBBSPacket thunk, so the op row bridges to the per-arm reports and aggregates worst-of (same wiring as GUILD_OPERATION).'
 - op: CHAR_INFO
   direction: clientbound
   opcode: 61
@@ -3265,7 +3265,7 @@
 - op: GUILD_OPERATION
   direction: serverbound
   opcode: 130
-  fname: CField::SendSetGuildMarkMsg
+  fname: CUIFadeYesNo::OnButtonClicked
   fname_alts:
   - CField::SendCreateGuildAgreeMsg
   - CField::SendSetMemberGradeMsg
@@ -3280,7 +3280,7 @@
   provenance: ida-discovered
   ida:
     address: 5493163
-  note: 'task-100 cluster-H: v84 serverbound 0x82-0xA6 reshift, READ from v84 IDB COutPacket send-site (GMS_v84.1_U_DEVM). GUILD family @0x53d1ab pushes COutPacket(130)=0x82 (Encode1(0xF)+Encode2+Encode1+Encode2+Encode1); v95 SendSetGuildMarkMsg @0x52d8c0 = COutPacket(149)=0x95. Whole guild family (InputGuildName/SendInvite/SendKick) sends 0x82. Prior 0x7e was stale v83 (collided with PARTY_OPERATION which IS real@0x7e).'
+  note: 'task-100 cluster-H: v84 serverbound 0x82-0xA6 reshift, READ from v84 IDB COutPacket send-site (GMS_v84.1_U_DEVM). GUILD family @0x53d1ab pushes COutPacket(130)=0x82 (Encode1(0xF)+Encode2+Encode1+Encode2+Encode1); v95 SendSetGuildMarkMsg @0x52d8c0 = COutPacket(149)=0x95. Whole guild family (InputGuildName/SendInvite/SendKick) sends 0x82. Prior 0x7e was stale v83 (collided with PARTY_OPERATION which IS real@0x7e). task-103: primary fname set to CUIFadeYesNo::OnButtonClicked (the GUILD_OPERATION dispatcher kept-root, mirroring v83/v87/v95); the per-arm CField::Send* senders remain fname_alts. This stops the op row from consuming the SetEmblem sub-struct report (same wiring as v83), so GuildSetEmblem v84 grades as its own sub-struct cell.'
 - op: DENY_GUILD_REQUEST
   direction: serverbound
   opcode: 131
@@ -3552,13 +3552,13 @@
 - op: NEW_YEAR_CARD_REQUEST
   direction: serverbound
   opcode: 163
-  fname: CUINewYearCardSenderDlg::_SendNewYearCard
+  fname: CUIFadeYesNo::OnButtonClicked
   fname_alts:
   - CUINewYearCardSenderDlg::_SendNewYearCard
   provenance: ida-discovered
   ida:
     address: 11130819
-  note: 'task-100 cluster-H: v84 serverbound 0x82-0xA6 reshift, READ from v84 IDB COutPacket send-site (GMS_v84.1_U_DEVM). NewYearCard sender @0xa9d7c3 pushes COutPacket(163)=0xa3 (Encode1(0)+Encode2(pos)+Encode4(item)+EncodeStr(target)+EncodeStr(memo)); body == v95 _SendNewYearCard @0xa1d2a0 COutPacket(183)=0xb7 (-20). v84 fn renamed+idb_saved. Prior fname CUIFadeYesNo::OnButtonClicked was WRONG; prior 0x9f stale (collided with BBS_OPERATION which IS real@0x9f).'
+  note: 'task-100 cluster-H: v84 serverbound 0x82-0xA6 reshift, READ from v84 IDB COutPacket send-site (GMS_v84.1_U_DEVM). NewYearCard sender @0xa9d7c3 pushes COutPacket(163)=0xa3 (Encode1(0)+Encode2(pos)+Encode4(item)+EncodeStr(target)+EncodeStr(memo)); body == v95 _SendNewYearCard @0xa1d2a0 COutPacket(183)=0xb7 (-20). v84 fn renamed+idb_saved. task-103: primary fname realigned to CUIFadeYesNo::OnButtonClicked (the synthetic GUILD_OPERATION op-byte dispatcher stub used by v83/v87/v95, matching the GuildOperation one-byte codec the matrix grades this op against); _SendNewYearCard kept as alt (real send site). Opcode 163 unchanged. Prior 0x9f stale (collided with BBS_OPERATION which IS real@0x9f).'
 - op: MORPH_REQUEST
   direction: serverbound
   opcode: 164

@@ -1,0 +1,8 @@
+packet: guild/clientbound/GuildBBSEntryNotFound
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CUIGuildBBS::OnGuildBBSPacket#BBSEntryNotFound
+    address: "0x816c32"
+    decompile_sha256: 5e55c2050a7611dcdd71d2883d39786e349a8e8356c25c59a7bc2e8bc76a0d99

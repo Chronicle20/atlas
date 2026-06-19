@@ -1,6 +1,6 @@
-# GuildSetMemberTitle (← `CTabGuildAlliance::OnGradeChange`)
+# GuildSetMemberTitle (← `CField::SendSetMemberGradeMsg`)
 
-- **IDA:** 0x9ce1c7
+- **IDA:** 0x56e1aa
 - **Atlas file:** `libs/atlas-packet/guild/serverbound/operation_set_member_title.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 0

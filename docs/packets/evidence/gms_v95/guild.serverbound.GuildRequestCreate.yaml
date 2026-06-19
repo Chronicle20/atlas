@@ -4,5 +4,5 @@ version: gms_v95
 category: TIER1-FIXTURE
 ida:
     function: CField::InputGuildName
-    address: "0x0"
+    address: "0x5347d0"
     decompile_sha256: 4b5709d4d59bf5c3df43b4045ca9ae0437f2e2a03485afe14276a8ff91e181dd

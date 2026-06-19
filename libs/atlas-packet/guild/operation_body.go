@@ -9,6 +9,12 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// GuildOperation result-mode keys (CWvsContext::OnGuildResult). Each resolves to
+// the per-version sub-op MODE byte via the tenant "operations" table
+// (docs/packets/dispatchers/guild.yaml). The mode byte is per-tenant/version
+// DATA — never a struct literal. Body functions fix the key; the constructor
+// receives the RESOLVED mode (config-driven contract, like the other dispatcher
+// families). v83/v84/v87/jms are byte-identical; v95 mode bytes are shifted.
 const (
 	GuildOperationRequestName                    = "REQUEST_NAME"
 	GuildOperationRequestAgreement               = "REQUEST_AGREEMENT"
@@ -47,29 +53,25 @@ const (
 	GuildOperationSetSkillResponse               = "SET_SKILL_RESPONSE"
 )
 
+// --- Request-prompt arms (mode-only) -----------------------------------------
+
 func RequestGuildNameBody() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
-	return GuildErrorBody(GuildOperationRequestName)
+	return atlas_packet.WithResolvedCode("operations", GuildOperationRequestName, func(mode byte) packet.Encoder {
+		return clientbound.NewRequestName(mode)
+	})
 }
 
 func RequestGuildEmblemBody() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
-	return GuildErrorBody(GuildOperationRequestEmblem)
+	return atlas_packet.WithResolvedCode("operations", GuildOperationRequestEmblem, func(mode byte) packet.Encoder {
+		return clientbound.NewRequestEmblem(mode)
+	})
 }
+
+// --- Structured arms ---------------------------------------------------------
 
 func GuildRequestAgreementBody(partyId uint32, leaderName string, guildName string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", GuildOperationRequestAgreement, func(mode byte) packet.Encoder {
 		return clientbound.NewRequestAgreement(mode, partyId, leaderName, guildName)
-	})
-}
-
-func GuildErrorBody(code string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
-	return atlas_packet.WithResolvedCode("operations", code, func(mode byte) packet.Encoder {
-		return clientbound.NewErrorMessage(mode)
-	})
-}
-
-func GuildErrorBody2(code string, target string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
-	return atlas_packet.WithResolvedCode("operations", code, func(mode byte) packet.Encoder {
-		return clientbound.NewErrorMessageWithTarget(mode, target)
 	})
 }
 
@@ -143,6 +145,141 @@ func GuildCapacityChangedBody(guildId uint32, capacity byte) func(logrus.FieldLo
 	})
 }
 
+func GuildMemberUpdateBody(guildId uint32, characterId uint32, level uint32, job uint32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", GuildOperationMemberUpdate, func(mode byte) packet.Encoder {
+		return clientbound.NewMemberUpdate(mode, guildId, characterId, level, job)
+	})
+}
+
+func GuildShowTitlesBody(guildId uint32, entries []clientbound.GuildTitleEntry) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", GuildOperationShowTitles, func(mode byte) packet.Encoder {
+		return clientbound.NewShowTitles(mode, guildId, entries)
+	})
+}
+
+func GuildQuestWaitingNoticeBody(channel byte, state uint32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", GuildOperationQuestWaitingNotice, func(mode byte) packet.Encoder {
+		return clientbound.NewQuestWaitingNotice(mode, channel, state)
+	})
+}
+
+func GuildBoardAuthKeyUpdateBody(authKey string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", GuildOperationBoardAuthKeyUpdate, func(mode byte) packet.Encoder {
+		return clientbound.NewBoardAuthKeyUpdate(mode, authKey)
+	})
+}
+
+func GuildSetSkillResponseBody(success bool, message string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", GuildOperationSetSkillResponse, func(mode byte) packet.Encoder {
+		return clientbound.NewSetSkillResponse(mode, success, message)
+	})
+}
+
+// --- Target-bearing invite-error arms ({mode,target}) -------------------------
+
+func GuildInviteErrorNotAcceptingInvitesBody(target string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", GuildOperationInviteErrorNotAcceptingInvites, func(mode byte) packet.Encoder {
+		return clientbound.NewInviteErrorNotAcceptingInvites(mode, target)
+	})
+}
+
+func GuildInviteErrorAnotherInviteBody(target string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", GuildOperationInviteErrorAnotherInvite, func(mode byte) packet.Encoder {
+		return clientbound.NewInviteErrorAnotherInvite(mode, target)
+	})
+}
+
+func GuildInviteDeniedBody(target string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", GuildOperationInviteDenied, func(mode byte) packet.Encoder {
+		return clientbound.NewInviteDenied(mode, target)
+	})
+}
+
+// --- Mode-only error/notice arms ---------------------------------------------
+
+func GuildCreateErrorNameInUseBody() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", GuildOperationCreateErrorNameInUse, func(mode byte) packet.Encoder {
+		return clientbound.NewCreateErrorNameInUse(mode)
+	})
+}
+
+func GuildCreateErrorDisagreedBody() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", GuildOperationCreateErrorDisagreed, func(mode byte) packet.Encoder {
+		return clientbound.NewCreateErrorDisagreed(mode)
+	})
+}
+
+func GuildCreateErrorBody() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", GuildOperationCreateError, func(mode byte) packet.Encoder {
+		return clientbound.NewCreateError(mode)
+	})
+}
+
+func GuildJoinErrorAlreadyJoinedBody() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", GuildOperationJoinErrorAlreadyJoined, func(mode byte) packet.Encoder {
+		return clientbound.NewJoinErrorAlreadyJoined(mode)
+	})
+}
+
+func GuildJoinErrorMaxMembersBody() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", GuildOperationJoinErrorMaxMembers, func(mode byte) packet.Encoder {
+		return clientbound.NewJoinErrorMaxMembers(mode)
+	})
+}
+
+func GuildJoinErrorNotInChannelBody() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", GuildOperationJoinErrorNotInChannel, func(mode byte) packet.Encoder {
+		return clientbound.NewJoinErrorNotInChannel(mode)
+	})
+}
+
+func GuildMemberQuitErrorNotInGuildBody() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", GuildOperationMemberQuitErrorNotInGuild, func(mode byte) packet.Encoder {
+		return clientbound.NewMemberQuitErrorNotInGuild(mode)
+	})
+}
+
+func GuildMemberExpelledErrorNotInGuildBody() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", GuildOperationMemberExpelledErrorNotInGuild, func(mode byte) packet.Encoder {
+		return clientbound.NewMemberExpelledErrorNotInGuild(mode)
+	})
+}
+
+func GuildDisbandErrorBody() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", GuildOperationDisbandError, func(mode byte) packet.Encoder {
+		return clientbound.NewDisbandError(mode)
+	})
+}
+
+func GuildCreateErrorCannotAsAdminBody() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", GuildOperationCreateErrorCannotAsAdmin, func(mode byte) packet.Encoder {
+		return clientbound.NewCreateErrorCannotAsAdmin(mode)
+	})
+}
+
+func GuildIncreaseCapacityErrorBody() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", GuildOperationIncreaseCapacityError, func(mode byte) packet.Encoder {
+		return clientbound.NewIncreaseCapacityError(mode)
+	})
+}
+
+func GuildQuestErrorLessThanSixMembersBody() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", GuildOperationQuestErrorLessThanSixMembers, func(mode byte) packet.Encoder {
+		return clientbound.NewQuestErrorLessThanSixMembers(mode)
+	})
+}
+
+func GuildQuestErrorDisconnectedBody() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", GuildOperationQuestErrorDisconnected, func(mode byte) packet.Encoder {
+		return clientbound.NewQuestErrorDisconnected(mode)
+	})
+}
+
+// GuildInfoBody emits the GUILDDATA info packet (GUILD_OPERATION sub-op 0x1A).
+// Info is NOT one of the OnGuildResult dispatcher arms (it has no operations
+// key in guild.yaml — it is the separate GUILDDATA::Decode path); its 0x1A mode
+// is written directly by clientbound.Info.Encode. Left as-is by task-103 (out of
+// the 35-key OnGuildResult dispatcher scope).
 func GuildInfoBody(inGuild bool, guildId uint32, name string, titles [5]string, members []clientbound.GuildMemberInfo, capacity uint32, logoBackground uint16, logoBackgroundColor byte, logo uint16, logoColor byte, notice string, points uint32, allianceId uint32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return clientbound.NewInfo(inGuild, guildId, name, titles, members, capacity, logoBackground, logoBackgroundColor, logo, logoColor, notice, points, allianceId).Encode
 }

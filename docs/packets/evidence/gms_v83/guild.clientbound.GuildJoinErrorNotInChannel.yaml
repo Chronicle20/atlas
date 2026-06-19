@@ -1,0 +1,8 @@
+packet: guild/clientbound/GuildJoinErrorNotInChannel
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnGuildResult#JoinErrorNotInChannel
+    address: "0xa37490"
+    decompile_sha256: e85896eb3fce69bfb8b529b19f1026c66fe7e8bc2ba309228eca6a3207af54bb

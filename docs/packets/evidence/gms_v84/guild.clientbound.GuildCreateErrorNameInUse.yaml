@@ -1,0 +1,8 @@
+packet: guild/clientbound/GuildCreateErrorNameInUse
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnGuildResult#CreateErrorNameInUse
+    address: "0xa82e2b"
+    decompile_sha256: 49349053563c018d40d20f0473b6c2ff616cf3000aa47ee04c9c365e693507ee

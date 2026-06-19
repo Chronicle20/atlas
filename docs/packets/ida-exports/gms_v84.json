@@ -5350,35 +5350,55 @@
       ]
     },
     "CUIGuildBBS::OnComment": {
-      "address": "",
+      "address": "0x841c2b",
       "direction": "serverbound",
-      "unresolved": true,
+      "note": "task-103: v84 BBS_OPERATION reply. COutPacket(159)+Encode1(4)+Encode4(threadId)+EncodeStr(message). IDA-verified @0x841c2b.",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Encode1",
+          "comment": "op byte (reply sub-op)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "threadId"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "message"
         }
       ]
     },
     "CUIGuildBBS::OnCommentDelete": {
-      "address": "",
+      "address": "0x841d3f",
       "direction": "serverbound",
-      "unresolved": true,
+      "note": "task-103: v84 BBS_OPERATION delete-reply. COutPacket(159)+Encode1(5)+Encode4(threadId)+Encode4(replyId). IDA-verified @0x841d3f.",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Encode1",
+          "comment": "op byte (delete-reply sub-op)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "threadId"
+        },
+        {
+          "op": "Encode4",
+          "comment": "replyId"
         }
       ]
     },
     "CUIGuildBBS::OnDelete": {
-      "address": "",
+      "address": "0x841b72",
       "direction": "serverbound",
-      "unresolved": true,
+      "note": "task-103: v84 BBS_OPERATION delete-thread. COutPacket(159)+Encode1(1)+Encode4(threadId). IDA-verified @0x841b72.",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Encode1",
+          "comment": "op byte (delete-thread sub-op)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "threadId"
         }
       ]
     },
@@ -5388,57 +5408,89 @@
       "calls": null
     },
     "CUIGuildBBS::OnGuildBBSPacket#BBSThread": {
-      "address": "",
-      "direction": "",
-      "unresolved": true,
+      "address": "0x84224e",
+      "direction": "clientbound",
+      "note": "task-103 (Decode1-6)==1 OnViewEntryResult mode 7 (sub_84224E); v84 BBS view-entry read order byte-identical to v83 OnGuildBBSPacket@0x816c32 view arm (no mode drift; verified live v84 IDB). The fixture body bytes are hand-computed in bbs_test.go from the decompile.",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "mode (BBS view-entry result, raw 7)"
         }
       ]
     },
     "CUIGuildBBS::OnGuildBBSPacket#BBSThreadList": {
-      "address": "",
-      "direction": "",
-      "unresolved": true,
+      "address": "0x841f06",
+      "direction": "clientbound",
+      "note": "task-103 (Decode1-6)==0 OnLoadListResult mode 6 (sub_841F06); v84 BBS load-list read order byte-identical to v83 OnGuildBBSPacket@0x816c32 list arm (Decode1 hasNotice; if set Decode4+Decode4+DecodeStr+DecodeBuffer(8)+Decode4+Decode4; Decode4 count; per-thread same shape). No mode drift; verified live v84 IDB. Fixture body bytes hand-computed in bbs_test.go.",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "mode (BBS load-list result, raw 6)"
         }
       ]
     },
     "CUIGuildBBS::OnRegister": {
-      "address": "",
+      "address": "0x84198d",
       "direction": "serverbound",
-      "unresolved": true,
+      "note": "task-103: v84 BBS_OPERATION create/edit. COutPacket(159)+Encode1(0)+Encode1(modify)+[if modify:Encode4(threadId)]+Encode1(notice)+EncodeStr(title)+EncodeStr(message)+Encode4(emoticon). IDA-verified @0x84198d.",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Encode1",
+          "comment": "op byte (create/edit sub-op)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "modify bool"
+        },
+        {
+          "op": "Encode4",
+          "comment": "threadId (if modify)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "notice bool"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "title"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "message"
+        },
+        {
+          "op": "Encode4",
+          "comment": "emoticonId"
         }
       ]
     },
     "CUIGuildBBS::SendLoadListRequest": {
-      "address": "",
+      "address": "0x841e00",
       "direction": "serverbound",
-      "unresolved": true,
+      "note": "task-103: v84 BBS_OPERATION (opcode 0x9F) load-list. COutPacket(159)+Encode1(2)+Encode4(startIndex). IDA-verified @0x841e00.",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Encode1",
+          "comment": "op byte (list sub-op)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "startIndex"
         }
       ]
     },
     "CUIGuildBBS::SendViewEntryRequest": {
-      "address": "",
+      "address": "0x841e61",
       "direction": "serverbound",
-      "unresolved": true,
+      "note": "task-103: v84 BBS_OPERATION view-entry. COutPacket(159)+Encode1(3)+Encode4(threadId). IDA-verified @0x841e61.",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Encode1",
+          "comment": "op byte (view sub-op)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "threadId (entryID)"
         }
       ]
     },
@@ -25001,6 +25053,537 @@
         {
           "op": "Encode4",
           "comment": "bidRange @0x5d40a2"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#QuestErrorDisconnected": {
+      "address": "0xa82e2b",
+      "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xa82e2b.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (USER_DISCONNECTED)"
+        }
+      ]
+    },
+    "CField::SendSetGradeNameMsg": {
+      "address": "0x53d097",
+      "direction": "serverbound",
+      "note": "task-103 re-pin: gms_v84 GUILD_OPERATION sub-op 13 (0xD), CField::SendSetGradeNameMsg @0x53d097 = COutPacket(GUILD_OPERATION)+Encode1(0xD)+5xEncodeStr(title). [Prior key CWvsContext::SendSetGuildTitleNames did not exist as a real symbol; correct emit site is CField::SendSetGradeNameMsg. IDA-verified.] op+subtype consumed by Atlas guild Operation wrapper; calls list the wire body only.",
+      "calls": [
+        {
+          "op": "EncodeStr",
+          "comment": "title[0]"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "title[1]"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "title[2]"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "title[3]"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "title[4]"
+        }
+      ]
+    },
+    "CField::SendCreateGuildAgreeMsg": {
+      "address": "0x0",
+      "direction": "serverbound",
+      "note": "task-103 serverbound campaign: gms_v84 GUILD_OPERATION sub-op 30 (0x1E), COutPacket(0x82)+Encode1(0x1E)+body. Body verified at 0x53c8cd. op+subtype consumed by Atlas guild Operation wrapper; calls list the wire body only (mirrors gms_v95 curated stub).",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "guildId (party/guild id from CWvsContext)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "bAgree bool (0=no,1=yes)"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#InviteErrorNotAcceptingInvites": {
+      "address": "0xa82e2b",
+      "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xa82e2b.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (IS_CURRENTLY_NOT_ACCEPTING)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "targetName"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#DisbandError": {
+      "address": "0xa82e2b",
+      "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xa82e2b.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (DISBAND error)"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#QuestWaitingNotice": {
+      "address": "0xa82e2b",
+      "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xa82e2b.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (QUEST_WAITING_NOTICE)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "channel"
+        },
+        {
+          "op": "Decode4",
+          "comment": "state"
+        }
+      ]
+    },
+    "CField::SendSetMemberGradeMsg": {
+      "address": "0x53d030",
+      "direction": "serverbound",
+      "note": "task-103 re-pin: gms_v84 GUILD_OPERATION sub-op 14 (0xE), CField::SendSetMemberGradeMsg @0x53d030 = COutPacket(GUILD_OPERATION)+Encode1(0xE)+Encode4(targetId)+Encode1(newTitle). [Prior key CTabGuildAlliance::OnGradeChange was WRONG - that fn emits ALLIANCE_OPERATION sub-op 9. IDA-verified.] op+subtype consumed by Atlas guild Operation wrapper; calls list the wire body only.",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "targetId"
+        },
+        {
+          "op": "Encode1",
+          "comment": "newTitle byte"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#CreateErrorNameInUse": {
+      "address": "0xa82e2b",
+      "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xa82e2b.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (THE_NAME_IS_ALREADY_IN_USE)"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#RequestEmblem": {
+      "address": "0xa82e2b",
+      "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xa82e2b.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (REQUEST_EMBLEM)"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#MemberQuitErrorNotInGuild": {
+      "address": "0xa82e2b",
+      "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xa82e2b.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (MEMBER_QUIT_ERROR_NOT_IN_GUILD)"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#ShowTitles": {
+      "address": "0xa82e2b",
+      "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xa82e2b.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (SHOW_TITLES)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "guildId (discarded)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "count (loop bound)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "entry name (per count)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "value0 (per count)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "value1 (per count)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "value2 (per count)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "value3 (per count)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "value4 (per count)"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#JoinErrorMaxMembers": {
+      "address": "0xa82e2b",
+      "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xa82e2b.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (MAX_NUMBER_OF_USERS)"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#JoinErrorAlreadyJoined": {
+      "address": "0xa82e2b",
+      "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xa82e2b.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (ALREADY_JOINED)"
+        }
+      ]
+    },
+    "CField::SendKickGuildMsg": {
+      "address": "0x0",
+      "direction": "serverbound",
+      "note": "task-103 serverbound campaign: gms_v84 GUILD_OPERATION sub-op 8 (0x8), COutPacket(0x82)+Encode1(0x8)+body. Body verified at 0x53cc7d. op+subtype consumed by Atlas guild Operation wrapper; calls list the wire body only (mirrors gms_v95 curated stub).",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "characterId"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "character name"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#MemberUpdate": {
+      "address": "0xa82e2b",
+      "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xa82e2b.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (MEMBER_UPDATE)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "guildId (match check)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "characterId"
+        },
+        {
+          "op": "Decode4",
+          "comment": "level"
+        },
+        {
+          "op": "Decode4",
+          "comment": "job"
+        }
+      ]
+    },
+    "CField::SendSetGuildNoticeMsg": {
+      "address": "0x0",
+      "direction": "serverbound",
+      "note": "task-103 serverbound campaign: gms_v84 GUILD_OPERATION sub-op 16 (0x10), COutPacket(0x82)+Encode1(0x10)+body. Body verified at 0x53d228. op+subtype consumed by Atlas guild Operation wrapper; calls list the wire body only (mirrors gms_v95 curated stub).",
+      "calls": [
+        {
+          "op": "EncodeStr",
+          "comment": "notice text"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#SetSkillResponse": {
+      "address": "0xa82e2b",
+      "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xa82e2b.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (SET_SKILL_RESPONSE)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "success flag"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "message (success branch only)"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#JoinErrorNotInChannel": {
+      "address": "0xa82e2b",
+      "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xa82e2b.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (CHARACTER_CANNOT_BE_FOUND)"
+        }
+      ]
+    },
+    "CField::SendWithdrawGuildMsg": {
+      "address": "0x0",
+      "direction": "serverbound",
+      "note": "task-103 serverbound campaign: gms_v84 GUILD_OPERATION sub-op 7 (0x7), COutPacket(0x82)+Encode1(0x7)+body. Body verified at 0x53cb4d. op+subtype consumed by Atlas guild Operation wrapper; calls list the wire body only (mirrors gms_v95 curated stub).",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "characterId"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "character name"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#CreateErrorCannotAsAdmin": {
+      "address": "0xa82e2b",
+      "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xa82e2b.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (ADMIN_CANNOT_MAKE_A_GUILD)"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#RequestName": {
+      "address": "0xa82e2b",
+      "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xa82e2b.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (REQUEST_NAME)"
+        }
+      ]
+    },
+    "CUserRemote::OnGuildMarkChanged": {
+      "address": "0x0",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "characterId (dispatcher-prefix pattern — consumed by CUserPool::OnUserRemotePacket Decode4 before OnGuildMarkChanged)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nMarkBg (logoBackground)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nMarkBgColor (logoBackgroundColor)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nMark (logo)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nMarkColor (logoColor)"
+        }
+      ]
+    },
+    "CField::SendSetGuildMarkMsg": {
+      "address": "0x0",
+      "direction": "serverbound",
+      "note": "task-103 serverbound campaign: gms_v84 GUILD_OPERATION sub-op 15 (0xF), COutPacket(0x82)+Encode1(0xF)+body. Body verified at 0x53d1ab. op+subtype consumed by Atlas guild Operation wrapper; calls list the wire body only (mirrors gms_v95 curated stub).",
+      "calls": [
+        {
+          "op": "Encode2",
+          "comment": "logoBackground"
+        },
+        {
+          "op": "Encode1",
+          "comment": "logoBackgroundColor"
+        },
+        {
+          "op": "Encode2",
+          "comment": "logo"
+        },
+        {
+          "op": "Encode1",
+          "comment": "logoColor"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#CreateError": {
+      "address": "0xa82e2b",
+      "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xa82e2b.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (CREATE error)"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#InviteDenied": {
+      "address": "0xa82e2b",
+      "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xa82e2b.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (HAS_DENIED_YOUR_GUILD_INVITATION)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "targetName"
+        }
+      ]
+    },
+    "CUIFadeYesNo::OnButtonClicked#Join": {
+      "address": "0x52dc20",
+      "direction": "serverbound",
+      "note": "task-103 re-pin: gms_v84 GUILD_OPERATION sub-op 6 (0x6 JOIN), CUIFadeYesNo::OnButtonClicked case 8 (fn entry @0x52dc20) = COutPacket(GUILD_OPERATION)+Encode1(0x6)+Encode4(guildId)+Encode4(characterId). [Prior key CWvsContext::SendGuildJoinMsg did not exist as a real symbol; correct emit site is OnButtonClicked case 8 (guild-invite YES). IDA-verified.] op+subtype consumed by Atlas guild Operation wrapper; calls list the wire body only.",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "guildId"
+        },
+        {
+          "op": "Encode4",
+          "comment": "characterId"
+        }
+      ]
+    },
+    "CField::SendInviteGuildMsg": {
+      "address": "0x0",
+      "direction": "serverbound",
+      "note": "task-103 serverbound campaign: gms_v84 GUILD_OPERATION sub-op 5 (0x5), COutPacket(0x82)+Encode1(0x5)+body. Body verified at 0x53c93f. op+subtype consumed by Atlas guild Operation wrapper; calls list the wire body only (mirrors gms_v95 curated stub).",
+      "calls": [
+        {
+          "op": "EncodeStr",
+          "comment": "target character name"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#BoardAuthKeyUpdate": {
+      "address": "0xa82e2b",
+      "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xa82e2b.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (BOARD_AUTH_KEY_UPDATE)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "authKey"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#MemberExpelledErrorNotInGuild": {
+      "address": "0xa82e2b",
+      "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xa82e2b.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (MEMBER_EXPELLED_ERROR_NOT_IN_GUILD)"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#QuestErrorLessThanSixMembers": {
+      "address": "0xa82e2b",
+      "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xa82e2b.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (LESS_THAN_6_MEMBERS)"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#InviteErrorAnotherInvite": {
+      "address": "0xa82e2b",
+      "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xa82e2b.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (IS_TAKING_CARE_OF_ANOTHER_INVITATION)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "targetName"
+        }
+      ]
+    },
+    "CUIGuildBBS::OnGuildBBSPacket#BBSEntryNotFound": {
+      "address": "0x841ec9",
+      "direction": "clientbound",
+      "note": "task-103 (Decode1-6)==2 OnEntryNotFound mode 8; mode-only.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (BBS entry not found, raw 8)"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#IncreaseCapacityError": {
+      "address": "0xa82e2b",
+      "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xa82e2b.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (INCREASE error)"
+        }
+      ]
+    },
+    "CUserRemote::OnGuildNameChanged": {
+      "address": "0x0",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "characterId (dispatcher-prefix pattern — consumed by CUserPool::OnUserRemotePacket Decode4 before OnGuildNameChanged)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "newGuildName"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#CreateErrorDisagreed": {
+      "address": "0xa82e2b",
+      "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xa82e2b.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (SOMEBODY_HAS_DISAGREED)"
         }
       ]
     }

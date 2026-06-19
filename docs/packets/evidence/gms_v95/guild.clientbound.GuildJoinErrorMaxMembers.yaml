@@ -1,0 +1,8 @@
+packet: guild/clientbound/GuildJoinErrorMaxMembers
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnGuildResult#JoinErrorMaxMembers
+    address: "0xa0d3b0"
+    decompile_sha256: 46336aa7a3e5f203d63a86cb8a7aac3ba3750a569dc7e34e4cb4b0d2c9f22aa0

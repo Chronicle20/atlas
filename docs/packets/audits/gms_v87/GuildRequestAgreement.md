@@ -1,4 +1,4 @@
-# GuildRequestAgreement (← `CWvsContext::OnGuildResult#AgreementResponse`)
+# GuildRequestAgreement (← `CWvsContext::OnGuildResult#RequestAgreement`)
 
 - **IDA:** 0xacf7d3
 - **Atlas file:** `libs/atlas-packet/guild/clientbound/operation.go`
@@ -10,8 +10,8 @@
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | byte | byte `mode byte (3 = guild-creation agreement request)` | ✅ |  |
-| 1 | int32 | int32 `partyId` | ✅ |  |
-| 2 | string | string `leaderName` | ✅ |  |
-| 3 | string | string `guildName` | ✅ |  |
+| 0 | byte | byte `mode byte (3)` | ✅ |  |
+| 1 | int32 | int32 `guildId (check vs self)` | ✅ |  |
+| 2 | string | string `character name 1` | ✅ |  |
+| 3 | string | string `character name 2` | ✅ |  |
 

@@ -8,7 +8,9 @@ import (
 
 // packet-audit:verify packet=guild/serverbound/GuildBBSDeleteThread version=gms_v87 ida=0x87a5df
 // packet-audit:verify packet=guild/serverbound/GuildBBSDeleteThread version=gms_v95 ida=0x7c6520
-// packet-audit:verify packet=guild/serverbound/GuildBBSDeleteThread version=gms_v83 ida=0x0
+// packet-audit:verify packet=guild/serverbound/GuildBBSDeleteThread version=gms_v83 ida=0x8168db
+// v84 OnDelete COutPacket(0x9F)+Encode1(1)+Encode4(threadId), IDA-verified.
+// packet-audit:verify packet=guild/serverbound/GuildBBSDeleteThread version=gms_v84 ida=0x841b72
 // packet-audit:verify packet=guild/serverbound/GuildBBSDeleteThread version=jms_v185 ida=ABSENT
 func TestBBSDeleteThreadRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {

@@ -1,7 +1,7 @@
 {
   "WriterName": "GuildBBSThreadList",
   "IDAName": "CUIGuildBBS::OnGuildBBSPacket#BBSThreadList",
-  "Address": "",
+  "Address": "0x841f06",
   "Variant": "GMS/v84",
   "BranchDepth": 2,
   "AtlasFile": "libs/atlas-packet/guild/clientbound/bbs.go",
@@ -10,10 +10,10 @@
       "Index": 0,
       "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 4,
-      "Note": "IDA read-order unresolved: function not found in IDB"
+      "IDAOp": 0,
+      "IDAComment": "mode (BBS load-list result, raw 6)",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 1,

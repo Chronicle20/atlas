@@ -3,6 +3,6 @@ direction: serverbound
 version: gms_v95
 category: TIER1-FIXTURE
 ida:
-    function: CWvsContext::SendGuildJoinMsg
-    address: "0x0"
-    decompile_sha256: d55ffc2d5167561b4d5d16b5e773363e9978574ed6a65f43e3596e63905b3090
+    function: CUIFadeYesNo::OnButtonClicked#Join
+    address: "0x529c60"
+    decompile_sha256: c86fc14f0e62023667aa74f08a258233bbc8b139f9a15b90c66b910e23aa71ef

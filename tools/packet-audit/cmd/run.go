@@ -405,13 +405,89 @@ func candidatesFromFName(fname string) []candidate {
 		// CLogin::OnDeleteCharacterResult (case 0x0F in login socket) reads
 		// Decode4 (characterId) + Decode1 (result code).
 		return []candidate{{name: "DeleteCharacterResponse", dir: csvpkg.DirClientbound}}
-	case "CWvsContext::OnMessage":
-		// Struct family is StatusMessage*; writer = "CharacterStatusMessage".
-		// CWvsContext::OnPacket case 38 (0x26) delegates here; dispatches on
-		// a leading mode byte (0-14) to 15 sub-handlers.  The pipeline can only
-		// model the outermost Decode1 (mode byte); sub-op enum drift is deferred
-		// to _pending.md "## Sub-op enum drift — character domain".
+	// --- Character: CWvsContext::OnMessage (CHARACTER_STATUS_MESSAGE / SHOW_STATUS_INFO) ---
+	// Mode-prefix dispatcher: Decode1(outer mode) → per-mode sub-handler. modes 0 (DropPickUp)
+	// and 1 (QuestRecord) fan out on an inner discriminator (structural constant, not config-
+	// resolved — task-104 D1). Outer mode is config-resolved from the CharacterStatusMessage
+	// operations table (docs/packets/dispatchers/character_status_message.yaml). v83 has 14 arms
+	// (no SP); v84+ has 15; jms has 16 (case 0xF = JMSCounterNotice, jms-only — task-104). No
+	// bare-root representative (FIELD_EFFECT/MTS model). Per-version verdicts via the test markers.
+	case "CWvsContext::OnMessage#DropPickUpItemUnavailable":
+		// mode 0, inner -2 (OnDropPickUpMessage "item unavailable", StringPool 2983).
+		return []candidate{{name: "StatusMessageDropPickUpItemUnavailable", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnMessage#DropPickUpInventoryFull":
+		// mode 0, inner -1 (default branch → "cannot pick up any more", StringPool 295).
 		return []candidate{{name: "StatusMessageDropPickUpInventoryFull", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnMessage#DropPickUpGameFileDamaged":
+		// mode 0, inner -3 (StringPool 5317 + chat 5311).
+		return []candidate{{name: "StatusMessageDropPickUpGameFileDamaged", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnMessage#DropPickUpStackableItem":
+		// mode 0, inner 0: Decode1(mode)+Decode1(0)+Decode4(itemId)+Decode4(amount).
+		return []candidate{{name: "StatusMessageDropPickUpStackableItem", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnMessage#DropPickUpUnStackableItem":
+		// mode 0, inner 2: Decode1(mode)+Decode1(2)+Decode4(itemId).
+		return []candidate{{name: "StatusMessageDropPickUpUnStackableItem", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnMessage#DropLossStackableItem":
+		// mode 0, inner 0, negative qty: Decode1(mode)+Decode1(0)+Decode4(itemId)+Decode4(-amount).
+		return []candidate{{name: "StatusMessageDropLossStackableItem", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnMessage#DropLossUnStackableItem":
+		// mode 0, inner 2: Decode1(mode)+Decode1(2)+Decode4(itemId).
+		return []candidate{{name: "StatusMessageDropLossUnStackableItem", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnMessage#DropPickUpMeso":
+		// mode 0, inner 1: Decode1(mode)+Decode1(1)+Decode1(partial)+Decode4(amount)+Decode2(bonus).
+		return []candidate{{name: "StatusMessageDropPickUpMeso", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnMessage#ForfeitQuestRecord":
+		// mode 1, inner 0: Decode1(mode)+Decode2(questId)+Decode1(0).
+		return []candidate{{name: "StatusMessageForfeitQuestRecord", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnMessage#UpdateQuestRecord":
+		// mode 1, inner 1: Decode1(mode)+Decode2(questId)+Decode1(1)+DecodeStr(info).
+		return []candidate{{name: "StatusMessageUpdateQuestRecord", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnMessage#CompleteQuestRecord":
+		// mode 1, inner 2: Decode1(mode)+Decode2(questId)+Decode1(2)+Decode8(FILETIME).
+		return []candidate{{name: "StatusMessageCompleteQuestRecord", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnMessage#CashItemExpire":
+		// mode 2: Decode1(mode)+Decode4(itemId).
+		return []candidate{{name: "StatusMessageCashItemExpire", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnMessage#IncreaseExperience":
+		// mode 3: OnIncEXPMessage. GMS>=95 trailing partyEXPRingEXP+cakePieEventBonus (gated in struct).
+		return []candidate{{name: "StatusMessageIncreaseExperience", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnMessage#IncreaseSkillPoint":
+		// mode 4 (v84+ ONLY; v83 absent → ⬜). Decode1(mode)+Decode2(jobId)+Decode1(amount).
+		return []candidate{{name: "StatusMessageIncreaseSkillPoint", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnMessage#IncreaseFame":
+		// OnIncPOPMessage. mode 4 (v83) / 5 (v84+): Decode1(mode)+Decode4(amount).
+		return []candidate{{name: "StatusMessageIncreaseFame", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnMessage#IncreaseMeso":
+		// OnIncMoneyMessage. mode 5 (v83) / 6 (v84+): Decode1(mode)+Decode4(amount).
+		return []candidate{{name: "StatusMessageIncreaseMeso", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnMessage#IncreaseGuildPoint":
+		// OnIncGPMessage. mode 6 (v83) / 7 (v84+): Decode1(mode)+Decode4(amount).
+		return []candidate{{name: "StatusMessageIncreaseGuildPoint", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnMessage#GiveBuff":
+		// OnGiveBuffMessage. mode 7 (v83) / 8 (v84+): Decode1(mode)+Decode4(itemId).
+		return []candidate{{name: "StatusMessageGiveBuff", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnMessage#GeneralItemExpire":
+		// mode 8 (v83) / 9 (v84+): Decode1(mode)+Decode1(count)+count*Decode4(itemId).
+		return []candidate{{name: "StatusMessageGeneralItemExpire", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnMessage#SystemMessage":
+		// mode 9 (v83) / 10 (v84+): Decode1(mode)+DecodeStr(message).
+		return []candidate{{name: "StatusMessageSystemMessage", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnMessage#QuestRecordEx":
+		// mode 10 (v83) / 11 (v84+): Decode1(mode)+Decode2(questId)+DecodeStr(info).
+		return []candidate{{name: "StatusMessageQuestRecordEx", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnMessage#ItemProtectExpire":
+		// mode 11 (v83) / 12 (v84+): Decode1(mode)+Decode1(count)+count*Decode4(itemId).
+		return []candidate{{name: "StatusMessageItemProtectExpire", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnMessage#ItemExpireReplace":
+		// mode 12 (v83) / 13 (v84+): Decode1(mode)+Decode1(count)+count*DecodeStr(message).
+		return []candidate{{name: "StatusMessageItemExpireReplace", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnMessage#SkillExpire":
+		// mode 13 (v83) / 14 (v84+): Decode1(mode)+Decode1(count)+count*Decode4(skillId).
+		return []candidate{{name: "StatusMessageSkillExpire", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnMessage#JMSCounterNotice":
+		// mode 15 (0xF) — jms_v185 ONLY (sub_B0931C @0xB0931C). Decode1(mode)+Decode4(amount):
+		// single int formatted into localized StringPool 5603, displayed as a chat-type-6 notice.
+		return []candidate{{name: "StatusMessageJMSCounterNotice", dir: csvpkg.DirClientbound}}
 	case "CUser::ShowItemUpgradeEffect":
 		// Struct is ItemUpgrade; writer = "CharacterItemUpgrade".
 		// CUserPool::OnUserCommonPacket case 186 (0xBA) reads Decode4 (characterId)

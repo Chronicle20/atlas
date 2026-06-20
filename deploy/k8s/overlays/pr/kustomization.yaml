@@ -348,6 +348,8 @@ images:
     newTag: latest
   - name: ghcr.io/chronicle20/atlas-mounts/atlas-mounts
     newTag: latest
+  - name: ghcr.io/chronicle20/atlas-mts/atlas-mts
+    newTag: latest
   - name: ghcr.io/chronicle20/atlas-notes/atlas-notes
     newTag: latest
   - name: ghcr.io/chronicle20/atlas-npc-conversations/atlas-npc-conversations

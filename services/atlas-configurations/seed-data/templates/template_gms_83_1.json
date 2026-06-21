@@ -1730,6 +1730,10 @@
         "writer": "SetField"
       },
       {
+        "opCode": "0x7E",
+        "writer": "SetItc"
+      },
+      {
         "opCode": "0x7F",
         "writer": "CashShopOpen"
       },

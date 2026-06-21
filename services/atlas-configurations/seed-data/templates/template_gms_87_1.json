@@ -1229,6 +1229,10 @@
         "writer": "SetField"
       },
       {
+        "opCode": "0x86",
+        "writer": "SetItc"
+      },
+      {
         "opCode": "0x87",
         "writer": "CashShopOpen"
       },

@@ -908,6 +908,10 @@
         "writer": "SetField"
       },
       {
+        "opCode": "0x8E",
+        "writer": "SetItc"
+      },
+      {
         "opCode": "0x93",
         "writer": "BlockedMap"
       },

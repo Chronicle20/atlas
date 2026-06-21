@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.24
+# syntax=docker/dockerfile:1.25
 #
 # Shared Atlas Dockerfile. One file builds every Go service in
 # .github/config/services.json (.services[] | select(.type=="go-service")).

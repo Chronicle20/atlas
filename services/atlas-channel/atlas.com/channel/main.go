@@ -737,6 +737,7 @@ func produceWriters() []string {
 		fieldcb.ZakumShrineWriter,
 		fieldcb.HorntailCaveWriter,
 		fieldcb.AriantResultWriter,
+		fieldcb.SetItcWriter,
 		fieldcb.MtsOperation2Writer,
 		fieldcb.MtsOperationWriter,
 		fieldcb.FootholdInfoWriter,

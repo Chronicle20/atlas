@@ -1,6 +1,9 @@
 package handler
 
 import (
+	"atlas-channel/account"
+	"atlas-channel/buddylist"
+	"atlas-channel/cashshop"
 	"atlas-channel/cashshop/wallet"
 	"atlas-channel/character"
 	mtsholding "atlas-channel/mts/holding"
@@ -46,8 +49,11 @@ func EnterMtsHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Pro
 		p.Decode(l, ctx)(r, readerOptions)
 		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
 
+		// Load the character with the same decorators CashShopEntryHandleFunc uses
+		// so the SET_ITC CharacterData migrate-in block is complete (inventory,
+		// pets, skills, quests).
 		cp := character.NewProcessor(l, ctx)
-		c, err := cp.GetById()(s.CharacterId())
+		c, err := cp.GetById(cp.InventoryDecorator, cp.PetAssetEnrichmentDecorator, cp.SkillModelDecorator, cp.QuestModelDecorator)(s.CharacterId())
 		if err != nil {
 			l.WithError(err).Errorf("Unable to locate character [%d] attempting to enter MTS.", s.CharacterId())
 			return
@@ -59,6 +65,40 @@ func EnterMtsHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Pro
 		if c.Level() < mtsMinLevel {
 			l.Debugf("Character [%d] level [%d] below MTS minimum [%d]; entry denied.", s.CharacterId(), c.Level(), mtsMinLevel)
 			return
+		}
+
+		// SET_ITC scene transition (CStage::OnSetITC) FIRST — this pushes the
+		// client's CITC stage so the in-game MTS view opens. It mirrors
+		// CashShopEntryHandleFunc's CashShopOpen send: the same CharacterData
+		// migrate-in block (built from account + decorated character + buddylist)
+		// plus the account name and the ITC config (Cosmic-faithful defaults
+		// 5000/7/500/24/168; replaced by per-tenant MTS config when reachable
+		// channel-side). Without this the client never enters the ITC scene, so
+		// the wallet/browse/listing announces below have no scene to render in.
+		a, err := account.NewProcessor(l, ctx).GetById(s.AccountId())
+		if err != nil {
+			l.WithError(err).Errorf("Unable to locate account [%d] attempting to enter MTS.", s.AccountId())
+			return
+		}
+		bl, err := buddylist.NewProcessor(l, ctx).GetById(s.CharacterId())
+		if err != nil {
+			l.WithError(err).Errorf("Unable to locate buddylist [%d] attempting to enter MTS.", s.CharacterId())
+			return
+		}
+		err = session.Announce(l)(ctx)(wp)(fieldcb.SetItcWriter)(writer.SetItcBody(a, c, bl))(s)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to announce SET_ITC scene transition to character [%d] on MTS entry.", s.CharacterId())
+			return
+		}
+
+		// Leave-field / mark-entered migration. The ITC is rendered inside the
+		// cash-shop stage family (SET_ITC pushes the same CStage the cash shop
+		// uses), so the migration is identical to CashShopEntryHandleFunc's
+		// cashshop.Enter: emit the CharacterEnter status event so the player
+		// leaves the field and is marked as in the cash-shop/ITC stage.
+		err = cashshop.NewProcessor(l, ctx).Enter(s.CharacterId(), s.Field())
+		if err != nil {
+			l.WithError(err).Errorf("Unable to announce [%d] has entered the MTS (cash-shop stage).", s.CharacterId())
 		}
 
 		// Initial state: wallet (reachable now). prepaid -> cash bucket, points ->

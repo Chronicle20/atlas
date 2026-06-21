@@ -1,0 +1,8 @@
+packet: guild/clientbound/GuildDisbandError
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnGuildResult#DisbandError
+    address: "0xa0d3b0"
+    decompile_sha256: ba245dff1131f695fbf20693e15f4d633846e80e2c9e15e94b2e7f98adb8908f

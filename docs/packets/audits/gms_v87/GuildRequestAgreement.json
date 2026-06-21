@@ -1,6 +1,6 @@
 {
   "WriterName": "GuildRequestAgreement",
-  "IDAName": "CWvsContext::OnGuildResult#AgreementResponse",
+  "IDAName": "CWvsContext::OnGuildResult#RequestAgreement",
   "Address": "0xacf7d3",
   "Variant": "GMS/v87",
   "BranchDepth": 0,
@@ -11,7 +11,7 @@
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "mode byte (3 = guild-creation agreement request)",
+      "IDAComment": "mode byte (3)",
       "Verdict": 0,
       "Note": ""
     },
@@ -20,7 +20,7 @@
       "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
-      "IDAComment": "partyId",
+      "IDAComment": "guildId (check vs self)",
       "Verdict": 0,
       "Note": ""
     },
@@ -29,7 +29,7 @@
       "AtlasOp": 4,
       "AtlasKind": 0,
       "IDAOp": 4,
-      "IDAComment": "leaderName",
+      "IDAComment": "character name 1",
       "Verdict": 0,
       "Note": ""
     },
@@ -38,7 +38,7 @@
       "AtlasOp": 4,
       "AtlasKind": 0,
       "IDAOp": 4,
-      "IDAComment": "guildName",
+      "IDAComment": "character name 2",
       "Verdict": 0,
       "Note": ""
     }

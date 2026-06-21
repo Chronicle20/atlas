@@ -4,5 +4,5 @@ version: gms_v83
 category: TIER1-FIXTURE
 ida:
     function: CUIGuildBBS::SendViewEntryRequest
-    address: "0x0"
-    decompile_sha256: 1c55a466480c2f710ac3bec30715b10669c0ac9041a084ab5b95a8eef89dca4b
+    address: "0x816bca"
+    decompile_sha256: 42666b70ad8dadee750f5c935e47287456f8837f58441fb309a3f990e0718411

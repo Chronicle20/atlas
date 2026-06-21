@@ -1,0 +1,8 @@
+packet: guild/clientbound/GuildRequestEmblem
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnGuildResult#RequestEmblem
+    address: "0xa0d3b0"
+    decompile_sha256: c0edab60e1c3d6b0f6f0f3359fcc2ac44faa63217787a7ed6104b6b66c415c71

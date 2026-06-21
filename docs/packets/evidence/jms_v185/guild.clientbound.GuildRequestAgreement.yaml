@@ -3,6 +3,6 @@ direction: clientbound
 version: jms_v185
 category: TIER1-FIXTURE
 ida:
-    function: CWvsContext::OnGuildResult#AgreementResponse
+    function: CWvsContext::OnGuildResult#RequestAgreement
     address: "0xb22518"
-    decompile_sha256: 7eea7aff820b54a2e4d05177f1c190a155090f415dad174d3999f3b49cf6b257
+    decompile_sha256: 228977319960a0c8252a76505965dcff2fb3a15461e57b55d54a6216423f0c2b

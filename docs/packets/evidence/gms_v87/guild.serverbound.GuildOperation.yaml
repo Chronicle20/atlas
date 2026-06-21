@@ -4,7 +4,7 @@ version: gms_v87
 category: TIER1-FIXTURE
 ida:
     function: CUIFadeYesNo::OnButtonClicked
-    address: "0x0"
+    address: "0x548098"
     decompile_sha256: 879639ce8ecdb3268c415bbccd940679df8d543b5cf4a1f89632d99eb24ebbf7
 verifies:
   - libs/atlas-packet/guild/serverbound/operation_test.go#TestOperationRoundTrip

@@ -4,5 +4,5 @@ version: gms_v83
 category: TIER1-FIXTURE
 ida:
     function: CUIGuildBBS::OnRegister
-    address: "0x0"
-    decompile_sha256: 1c55a466480c2f710ac3bec30715b10669c0ac9041a084ab5b95a8eef89dca4b
+    address: "0x8166f6"
+    decompile_sha256: 86aedab12d92ebe33f012baade8f09297e20c0b194970668d59b79ef3266bcab

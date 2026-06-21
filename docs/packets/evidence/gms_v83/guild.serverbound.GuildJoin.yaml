@@ -1,0 +1,8 @@
+packet: guild/serverbound/GuildJoin
+direction: serverbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CUIFadeYesNo::OnButtonClicked#Join
+    address: "0x522585"
+    decompile_sha256: 4852244c2db026f86512343d8e184b621db9514edbc698a4a6fcb6fccb5c7016

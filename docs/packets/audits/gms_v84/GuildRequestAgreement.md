@@ -1,4 +1,4 @@
-# GuildRequestAgreement (← `CWvsContext::OnGuildResult#AgreementResponse`)
+# GuildRequestAgreement (← `CWvsContext::OnGuildResult#RequestAgreement`)
 
 - **IDA:** 0xa82e2b
 - **Atlas file:** `libs/atlas-packet/guild/clientbound/operation.go`

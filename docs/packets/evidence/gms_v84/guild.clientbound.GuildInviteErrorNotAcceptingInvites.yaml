@@ -1,0 +1,8 @@
+packet: guild/clientbound/GuildInviteErrorNotAcceptingInvites
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnGuildResult#InviteErrorNotAcceptingInvites
+    address: "0xa82e2b"
+    decompile_sha256: f18a63b744828b07fb3676abf051f4914f86f8bc743bf83cb2fb179745bb395e

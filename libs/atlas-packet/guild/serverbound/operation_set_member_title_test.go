@@ -6,8 +6,13 @@ import (
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
-// packet-audit:verify packet=guild/serverbound/GuildSetMemberTitle version=jms_v185 ida=0x9ce1c7
-// packet-audit:verify packet=guild/serverbound/GuildSetMemberTitle version=gms_v95 ida=0x0
+// CField::SendSetMemberGradeMsg: COutPacket(GUILD_OPERATION)+Encode1(0xE=SET_MEMBER_TITLE)+Encode4(targetId)+Encode1(newTitle).
+// Body = Encode4(targetId)+Encode1(newTitle). IDA-verified: v83@0x530dba, v84@0x53d030, v87@0x5585d1, v95@0x52d820, jms@0x56e1aa.
+// packet-audit:verify packet=guild/serverbound/GuildSetMemberTitle version=jms_v185 ida=0x56e1aa
+// packet-audit:verify packet=guild/serverbound/GuildSetMemberTitle version=gms_v95 ida=0x52d820
+// packet-audit:verify packet=guild/serverbound/GuildSetMemberTitle version=gms_v83 ida=0x530dba
+// packet-audit:verify packet=guild/serverbound/GuildSetMemberTitle version=gms_v84 ida=0x53d030
+// packet-audit:verify packet=guild/serverbound/GuildSetMemberTitle version=gms_v87 ida=0x5585d1
 func TestSetMemberTitleRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

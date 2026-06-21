@@ -1,0 +1,8 @@
+packet: guild/serverbound/GuildRequestCreate
+direction: serverbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CField::InputGuildName
+    address: "0x5305ae"
+    decompile_sha256: 359ca23f334b6168044e810c964e01d629476a381f401c11c7598895f3959d24

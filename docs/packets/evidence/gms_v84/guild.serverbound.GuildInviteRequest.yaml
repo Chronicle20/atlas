@@ -1,0 +1,8 @@
+packet: guild/serverbound/GuildInviteRequest
+direction: serverbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CField::SendInviteGuildMsg
+    address: "0x53c93f"
+    decompile_sha256: 784425b3a21bd8383a8ddaaf298bfec9d1aa96ba152b20cb354340843f358010

@@ -1,0 +1,8 @@
+packet: guild/clientbound/GuildJoinErrorAlreadyJoined
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnGuildResult#JoinErrorAlreadyJoined
+    address: "0xa37490"
+    decompile_sha256: 93ddf3b2527c8a05d2b0646cc1ac33cc1a41bbd26b1e06add28b2f0e381e487f

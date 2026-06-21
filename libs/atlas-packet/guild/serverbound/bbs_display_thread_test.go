@@ -8,7 +8,9 @@ import (
 
 // packet-audit:verify packet=guild/serverbound/GuildBBSDisplayThread version=gms_v87 ida=0x87a5df
 // packet-audit:verify packet=guild/serverbound/GuildBBSDisplayThread version=gms_v95 ida=0x7c3710
-// packet-audit:verify packet=guild/serverbound/GuildBBSDisplayThread version=gms_v83 ida=0x0
+// packet-audit:verify packet=guild/serverbound/GuildBBSDisplayThread version=gms_v83 ida=0x816bca
+// v84 SendViewEntryRequest COutPacket(0x9F)+Encode1(3)+Encode4(threadId), IDA-verified.
+// packet-audit:verify packet=guild/serverbound/GuildBBSDisplayThread version=gms_v84 ida=0x841e61
 // packet-audit:verify packet=guild/serverbound/GuildBBSDisplayThread version=jms_v185 ida=ABSENT
 func TestBBSDisplayThreadRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {

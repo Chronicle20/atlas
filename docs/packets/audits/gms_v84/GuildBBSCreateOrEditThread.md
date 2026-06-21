@@ -1,20 +1,20 @@
 # GuildBBSCreateOrEditThread (← `CUIGuildBBS::OnRegister`)
 
-- **IDA:** 
+- **IDA:** 0x84198d
 - **Atlas file:** `libs/atlas-packet/guild/serverbound/bbs_create_or_edit_thread.go`
 - **Variant:** GMS/v84
 - **Branch depth:** 1
-- **Verdict:** 🔍
-- **Flat-diff-invalid:** the wire shape depends on a runtime discriminator a flat positional diff cannot model — the Atlas writer branches on a non-version condition (a data-dependent field or an untraced version-derived local), and/or the client reads fields conditionally (e.g. `mode <= 1`). The verdict is capped to 🔍; the row-level mismatches below are a modeling limitation, not a verified wire bug — confirm per-branch via byte-level tests.
+- **Verdict:** ✅
 
 ## Wire-level diff
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | byte | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
-| 1 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 2 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 3 | string | byte `` | ❌ | atlas: extra — client never reads this field |
-| 4 | string | byte `` | ❌ | atlas: extra — client never reads this field |
-| 5 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 0 | byte | byte `op byte (create/edit sub-op)` | ✅ |  |
+| 1 | byte | byte `modify bool` | ✅ |  |
+| 2 | int32 | int32 `threadId (if modify)` | ✅ |  |
+| 3 | byte | byte `notice bool` | ✅ |  |
+| 4 | string | string `title` | ✅ |  |
+| 5 | string | string `message` | ✅ |  |
+| 6 | int32 | int32 `emoticonId` | ✅ |  |
 

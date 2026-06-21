@@ -1,0 +1,8 @@
+packet: guild/clientbound/GuildMemberQuitErrorNotInGuild
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnGuildResult#MemberQuitErrorNotInGuild
+    address: "0xb22518"
+    decompile_sha256: d95a78aae1649adc94fd26ca39bcd15ce12a5e181de564bd35731abf66d70b7d

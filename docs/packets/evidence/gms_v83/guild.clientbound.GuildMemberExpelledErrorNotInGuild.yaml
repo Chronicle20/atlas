@@ -1,0 +1,8 @@
+packet: guild/clientbound/GuildMemberExpelledErrorNotInGuild
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnGuildResult#MemberExpelledErrorNotInGuild
+    address: "0xa37490"
+    decompile_sha256: 30061601e3b3e2ae00483879e7b30bb913dc124c84cf9e98a26a08121baddcb0

@@ -329,12 +329,20 @@ func ItcOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer
 		case ItcOperationGetItcList:
 			body := &fieldsb.ItcOperationChangedPage{}
 			body.Decode(l, ctx)(r, readerOptions)
-			writeBrowsePage(l, ctx, wp, s, body.Category(), body.CategorySub(), body.Page(), body.SortType(), body.SortColumn(), 0, browseFilterFromGetItcList(*body))
+			// requestSent=1: this GetItcListDone answers a latching client request
+			// (CITC::OnChangedCategory/Sub/Page set m_bITCRequestSent=this[6]=1 before
+			// SendPacket and refuse any further ITC request until it clears).
+			// CITC::OnGetITCListDone (v83 0x5a48af) clears the latch ONLY when its
+			// trailing Decode1 byte is nonzero (`result=Decode1; if(result) this[6]=0`).
+			// Sending 0 left the latch set, freezing the next tab — the reported bug.
+			writeBrowsePage(l, ctx, wp, s, body.Category(), body.CategorySub(), body.Page(), body.SortType(), body.SortColumn(), 1, browseFilterFromGetItcList(*body))
 		case ItcOperationSearchItcList:
 			body := &fieldsb.ItcOperationTabSearch{}
 			body.Decode(l, ctx)(r, readerOptions)
-			// SEARCH surfaces hits in the same GetItcListDone result view.
-			writeBrowsePage(l, ctx, wp, s, body.Category(), body.CategorySub(), 0, 0, 0, 0, browseFilterFromSearchItcList(*body))
+			// SEARCH surfaces hits in the same GetItcListDone result view. Same latch
+			// contract as GET_ITC_LIST: send requestSent=1 so OnGetITCListDone clears
+			// m_bITCRequestSent and the next tab/search is not blocked.
+			writeBrowsePage(l, ctx, wp, s, body.Category(), body.CategorySub(), 0, 0, 0, 1, browseFilterFromSearchItcList(*body))
 		case ItcOperationBuy:
 			body := &fieldsb.ItcOperationBuy{}
 			body.Decode(l, ctx)(r, readerOptions)
@@ -464,11 +472,15 @@ func emitCreateListing(l logrus.FieldLogger, ctx context.Context, s session.Mode
 // is the listing's serial (from the REST itcSn). On a REST error an empty page is
 // written so the client UI is not left hanging.
 //
-// requestSent is the trailing Decode1 byte (CITC::OnGetITCListDone, v83 0x5a49c5):
-// when nonzero the client clears m_bITCRequestSent (this[6]=0), re-arming the ITC
-// view for the next request. The client-driven browse/search arms pass 0 (they are
-// the client's own paged request and leave the flag as-is); the entry path passes
-// 1 (Cosmic-faithful) so the freshly-opened ITC view is re-armed.
+// requestSent is the trailing Decode1 byte read by CITC::OnGetITCListDone
+// (v83 0x5a48af: `result = Decode1(a2); if (result) this[6] = 0`). The client
+// LATCHES m_bITCRequestSent (this[6]=1) the moment it sends a GET_ITC_LIST /
+// SEARCH request (CITC::OnChangedCategory/Sub/Page, v83 0x59f297/0x59f376/
+// 0x59f465) and refuses to send any further ITC request until that latch clears.
+// The ONLY thing that clears it for this response is a nonzero trailing byte, so
+// EVERY GetItcListDone that answers a latching client request MUST pass 1 — a 0
+// leaves the latch set and freezes the next tab. The entry path also passes 1
+// (cosmetic there, since entry is server-initiated and never sets the latch).
 func writeBrowsePage(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, s session.Model, category uint32, subCategory uint32, page uint32, sortType byte, sortColumn byte, requestSent byte, f mtslisting.BrowseFilter) {
 	ms, err := mtslisting.NewProcessor(l, ctx).Browse(s.WorldId(), f)
 	if err != nil {

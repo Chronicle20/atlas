@@ -300,6 +300,6 @@ images:
   - name: ghcr.io/chronicle20/atlas-world/atlas-world
     newTag: main-bf8badc
   - name: ghcr.io/chronicle20/atlas-ui/atlas-ui
-    newTag: main-bf8badc
+    newTag: main-157e5fc
 commonLabels:
   atlas.env: main

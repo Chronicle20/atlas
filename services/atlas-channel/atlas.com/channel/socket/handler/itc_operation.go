@@ -329,12 +329,12 @@ func ItcOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer
 		case ItcOperationGetItcList:
 			body := &fieldsb.ItcOperationChangedPage{}
 			body.Decode(l, ctx)(r, readerOptions)
-			writeBrowsePage(l, ctx, wp, s, body.Category(), body.CategorySub(), body.Page(), body.SortType(), body.SortColumn(), browseFilterFromGetItcList(*body))
+			writeBrowsePage(l, ctx, wp, s, body.Category(), body.CategorySub(), body.Page(), body.SortType(), body.SortColumn(), 0, browseFilterFromGetItcList(*body))
 		case ItcOperationSearchItcList:
 			body := &fieldsb.ItcOperationTabSearch{}
 			body.Decode(l, ctx)(r, readerOptions)
 			// SEARCH surfaces hits in the same GetItcListDone result view.
-			writeBrowsePage(l, ctx, wp, s, body.Category(), body.CategorySub(), 0, 0, 0, browseFilterFromSearchItcList(*body))
+			writeBrowsePage(l, ctx, wp, s, body.Category(), body.CategorySub(), 0, 0, 0, 0, browseFilterFromSearchItcList(*body))
 		case ItcOperationBuy:
 			body := &fieldsb.ItcOperationBuy{}
 			body.Decode(l, ctx)(r, readerOptions)
@@ -463,7 +463,13 @@ func emitCreateListing(l logrus.FieldLogger, ctx context.Context, s session.Mode
 // synchronous GetItcListDone result to the requesting session. Each MtsItem.itcSn
 // is the listing's serial (from the REST itcSn). On a REST error an empty page is
 // written so the client UI is not left hanging.
-func writeBrowsePage(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, s session.Model, category uint32, subCategory uint32, page uint32, sortType byte, sortColumn byte, f mtslisting.BrowseFilter) {
+//
+// requestSent is the trailing Decode1 byte (CITC::OnGetITCListDone, v83 0x5a49c5):
+// when nonzero the client clears m_bITCRequestSent (this[6]=0), re-arming the ITC
+// view for the next request. The client-driven browse/search arms pass 0 (they are
+// the client's own paged request and leave the flag as-is); the entry path passes
+// 1 (Cosmic-faithful) so the freshly-opened ITC view is re-armed.
+func writeBrowsePage(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, s session.Model, category uint32, subCategory uint32, page uint32, sortType byte, sortColumn byte, requestSent byte, f mtslisting.BrowseFilter) {
 	ms, err := mtslisting.NewProcessor(l, ctx).Browse(s.WorldId(), f)
 	if err != nil {
 		l.WithError(err).Errorf("Unable to browse MTS listings for character [%d]; writing empty page.", s.CharacterId())
@@ -475,7 +481,7 @@ func writeBrowsePage(l logrus.FieldLogger, ctx context.Context, wp writer.Produc
 		items = append(items, mtsItemFromListing(m))
 	}
 
-	body := fieldpkt.MtsOperationGetItcListDoneBody(uint32(len(items)), category, subCategory, page, sortType, sortColumn, items, 0)
+	body := fieldpkt.MtsOperationGetItcListDoneBody(uint32(len(items)), category, subCategory, page, sortType, sortColumn, items, requestSent)
 	if err := session.Announce(l)(ctx)(wp)(fieldcb.MtsOperationWriter)(body)(s); err != nil {
 		l.WithError(err).Errorf("Unable to announce MTS browse page to character [%d].", s.CharacterId())
 	}

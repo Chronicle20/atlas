@@ -32,15 +32,17 @@ const mtsMinLevel = byte(10)
 // (CWvsContext::SendMigrateToITCRequest) — the MTS entry/migration request. It
 // mirrors CashShopEntryHandleFunc: load the account + character, gate on the
 // configurable min level, then announce the initial MTS state. On entry the
-// channel announces, in order:
+// channel announces, in order (mirroring Cosmic's EnterMTSHandler entry sequence):
+//   - the wanted-listing-over summary (MTS_OPERATION mode 0x3D, (0,0));
 //   - the wallet (MTS_OPERATION2, prepaid + points; CITC::OnQueryCashResult);
-//   - the initial browse page (MTS_OPERATION GET_ITC_LIST_DONE), page 0 of the
-//     character's world;
+//   - the initial browse page (MTS_OPERATION GET_ITC_LIST_DONE) on tab/category 1
+//     (MTS tabs are 1-indexed; category 0 is an invalid tab that crashes the
+//     canvas render), with sortType=1, sortColumn=1, trailing requestSent=1;
+//   - the character's take-home holdings (GET_USER_PURCHASE_ITEM_DONE); and
 //   - the character's own active listings (GET_USER_SALE_ITEM_DONE), filtered by
-//     sellerId; and
-//   - the character's take-home holdings (GET_USER_PURCHASE_ITEM_DONE).
+//     sellerId. (Cosmic sends purchase before sale.)
 //
-// All four are produced from atlas-mts REST via the channel-side listing/holding
+// The lists are produced from atlas-mts REST via the channel-side listing/holding
 // read clients; the clientbound MtsResult* codecs live in
 // libs/atlas-packet/field/clientbound/mts_operation*.go.
 func EnterMtsHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
@@ -101,6 +103,20 @@ func EnterMtsHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Pro
 			l.WithError(err).Errorf("Unable to announce [%d] has entered the MTS (cash-shop stage).", s.CharacterId())
 		}
 
+		// MTSWantedListingOver (CITC::OnNormalItemResult case 61 / mode 0x3D,
+		// v83 sub_5A523E): the "expired wanted listings" summary. The sub-handler
+		// reads two int32s (expired NX, expired item count) and shows a StringPool
+		// notice ONLY when both are > 0; with (0,0) it reads both ints cleanly and
+		// shows nothing. Cosmic's EnterMTSHandler sends this before the wallet on
+		// entry. Atlas's MtsOperationNotifyCancelWishResultBody is exactly this
+		// 2-int body resolved at mode 0x3D, so it is reused here (no new writer).
+		// IDA-verified (v83 0x5a523e): Decode4(nx), Decode4(items), gate nx>=0 && items>0.
+		err = session.Announce(l)(ctx)(wp)(fieldcb.MtsOperationWriter)(fieldpkt.MtsOperationNotifyCancelWishResultBody(0, 0))(s)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to announce MTS wanted-listing-over summary to character [%d] on entry.", s.CharacterId())
+			return
+		}
+
 		// Initial state: wallet (reachable now). prepaid -> cash bucket, points ->
 		// MaplePoints bucket (CITC::OnQueryCashResult two-bucket shape).
 		w, err := wallet.NewProcessor(l, ctx).GetByAccountId(s.AccountId())
@@ -114,18 +130,25 @@ func EnterMtsHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Pro
 			return
 		}
 
-		// Initial browse page (GET_ITC_LIST_DONE), page 0 of the character's world.
-		// Reuses the synchronous browse arm's page writer (the same one the
-		// GET_ITC_LIST request uses); an empty/failed page degrades to an empty list
-		// inside writeBrowsePage rather than blocking entry.
-		writeBrowsePage(l, ctx, wp, s, 0, 0, 0, 0, 0, mtslisting.BrowseFilter{})
+		// Initial browse page (GET_ITC_LIST_DONE). The ENTRY default selects the
+		// first tab — category=1 (MTS tabs are 1-indexed; category 0 is not a valid
+		// tab and leaves CITCWnd_List selecting a non-existent category, which
+		// crashes on the next canvas render). sortType=1, sortColumn=1, and the
+		// trailing requestSent=1 mirror Cosmic's sendMTS(items, tab=1, type=0,
+		// page=0, ...) entry packet (which writes sortType/sortColumn bytes 1,1 and
+		// the trailing 1). Reuses the synchronous browse-page writer; an empty/failed
+		// page degrades to an empty list rather than blocking entry. IDA-verified
+		// read order: CITC::OnGetITCListDone (v83 0x5a48af).
+		writeBrowsePage(l, ctx, wp, s, 1, 0, 0, 1, 1, 1, mtslisting.BrowseFilter{})
+
+		// The character's take-home holdings (GET_USER_PURCHASE_ITEM_DONE). Cosmic's
+		// EnterMTSHandler sends transferInventory (purchase) BEFORE notYetSoldInv
+		// (sale), so the purchase list is announced first.
+		announceUserPurchaseItems(l, ctx, wp, s)
 
 		// The character's own active listings (GET_USER_SALE_ITEM_DONE), filtered by
 		// sellerId so only this character's active sales are returned.
 		announceUserSaleItems(l, ctx, wp, s)
-
-		// The character's take-home holdings (GET_USER_PURCHASE_ITEM_DONE).
-		announceUserPurchaseItems(l, ctx, wp, s)
 	}
 }
 

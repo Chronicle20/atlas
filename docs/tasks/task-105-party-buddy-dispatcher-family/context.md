@@ -303,7 +303,7 @@ Port 13342 does not exist. guild.yaml's header ports are stale and were NOT copi
 | UNABLE_TO_HAND_OVER_THE_LEADERSHIP.. | new | mode-only | 29 | 29 | **33** | **33** | **33** | ✅ |
 | YOU_MAY_ONLY_CHANGE..SAME_CHANNEL | new | mode-only | 30 | 30 | **34** | **34** | **34** | ✅ |
 | AS_A_GM_YOURE_FORBIDDEN..PARTY | new | mode-only | 32 | 32 | **36** | **36** | **36** | ✅ |
-| UNABLE_TO_FIND_THE_CHARACTER | new | mode-only | 33 | 33 | **37** | ⬜ absent | ⬜ absent | resolved (v87 only) |
+| UNABLE_TO_FIND_THE_CHARACTER | new | mode-only | 33 | 33 | **37** | **37** | ⬜ absent | resolved (jms absent) |
 | TOWN_PORTAL | TownPortal (exists) | slot+maps(+skillId v95)+xy | 37 | 40 | 41 | 46 | 40 | ✅ |
 
 NON-error / non-key arms seen in the IDA switch but with NO Atlas operation-key
@@ -359,7 +359,7 @@ All read from each version's OnPartyResult switch; case = the mode byte.
 | UNABLE_TO_HAND_OVER | 33→4058→"Unable to hand over the leadership post; No party member is currently within the vicinity…" | 33→0xFFB→same | 33→0xFF9→"グループ長と同じマップにグループ員がいないため譲れません。" |
 | YOU_MAY_ONLY_CHANGE | 34→4057→"You may only change with the party member that's on the same channel." | 34→0xFFA→same | 34→0xFF8→"チャンネルにいるグループ員にのみ譲渡可能です…" |
 | AS_A_GM | 36→336→"As a GM, you're forbidden from creating a party." | 36→0x153→same | 36→0x151→"運用者キャラクターはグループを作れません。" |
-| UNABLE_TO_FIND_THE_CHARACTER | 37→376→"Unable to find the character." | ABSENT (no case decrypts to it; enumerated @0xa10ab0) | ABSENT (enumerated @0xb297e7) |
+| UNABLE_TO_FIND_THE_CHARACTER | 37→376→"Unable to find the character." | 37→0x17B→"Unable to find the character." | ABSENT (no case 37; enumerated @0xb297e7) |
 | ALREADY_HAVE_JOINED_A_PARTY_2 | 17→329→"Already have joined a party." | 17→0x14C→same | 17→0x142→"既に参加しているグループがあります。" |
 | THE_PARTY..FULL_CAPACITY | 18→332→"The party you're trying to join is already in full capacity." | 18→0x14F→same | 18→0x147→"加入しようとしたグループはいっぱいです。" |
 
@@ -372,8 +372,8 @@ precedent — proven, not assumed):
     decrypts to the text. Absent in v87/v95/jms.
   - IS_CURRENTLY_BLOCKING (SP_308), IS_TAKING_CARE (SP_2723), HAVE_DENIED (SP_309):
     no v87/v95/jms case reads the corresponding name-bearing notice. Absent.
-  - UNABLE_TO_FIND_THE_CHARACTER (SP_366): present v87 case 37 (id 376); ABSENT in
-    v95 (enumerated @0xa10ab0) and jms (enumerated @0xb297e7).
+  - UNABLE_TO_FIND_THE_CHARACTER (SP_366): present v87 case 37 (id 376) AND v95
+    case 37 (id 0x17B); ABSENT in jms only (no case 37; enumerated @0xb297e7).
 
 #### 10.3e CORRECTION to the "byte-identical LOW arms" assumption
 The prior table claimed cases ≤17 are byte-identical v83..jms. IDA text DISPROVES

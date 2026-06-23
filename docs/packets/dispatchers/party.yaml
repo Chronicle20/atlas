@@ -23,8 +23,10 @@
 # clientbound/town_portal.go's IDA-verified per-version table and the v83 seed.
 #
 # MODE-BYTE VERSION DRIFT (IDA-enumerated, NOT inferred):
-#   - LOW arms (INVITE..FULL_CAPACITY, cases 0x04..0x11) are BYTE-IDENTICAL
-#     across v83/v84/v87/v95/jms: the leading sub-op bytes match v83.
+#   - LOW arms (INVITE..JOIN, cases 0x04..0x0F) are BYTE-IDENTICAL across
+#     v83/v84/v87/v95/jms: the leading sub-op bytes match v83.
+#     ALREADY_HAVE_JOINED_A_PARTY_2 (0x10) and FULL_CAPACITY (0x11) SHIFT +1 in
+#     v87/v95/jms (→ 0x11/0x12) — see the body rows + context.md §10.3e.
 #   - UPPER arms SHIFT non-uniformly per version. Confirmed anchor (town_portal.go,
 #     IDA-verified): TOWN_PORTAL = v83 0x25 / v84 0x28 / v87 0x29 / v95 0x2E /
 #     jms 0x28. CHANGE_LEADER = v83 0x1B / v95 0x1F (v95 clean switch case 31).
@@ -72,7 +74,7 @@
 #   v87/v95/jms — their case 19/0x13 is an empty `return`); IS_CURRENTLY_BLOCKING,
 #   IS_TAKING_CARE, HAVE_DENIED (the three name-bearing invite-target notices —
 #   no v87/v95/jms case reads them); UNABLE_TO_FIND_THE_CHARACTER (present in v87
-#   case 37 but ABSENT in v95/jms). These ⬜ are legitimate (guild jms
+#   AND v95 at case 37; ABSENT in jms only). These ⬜ are legitimate (guild jms
 #   SET_SKILL_RESPONSE precedent), proven by enumerating every case @ the switch
 #   address, not assumed. v83/v84 (seed-grounded, IDA v83-confirmed) always present.
 #
@@ -133,9 +135,10 @@ operations:
   # AS_A_GM: v83/v84 case32 (SP_326); v87 case36 (id336), v95 case36 (id0x153),
   #   jms case36 (id0x151) — "...forbidden from creating a party".
   - { key: AS_A_GM_YOURE_FORBIDDEN_FROM_CREATING_A_PARTY,          modes: { gms_v83: 32, gms_v84: 32, gms_v87: 36, gms_v95: 36, jms_v185: 36 } }
-  # UNABLE_TO_FIND_THE_CHARACTER: v83/v84 case33 (SP_366); v87 case37 (id376,
-  #   "Unable to find the character."). VERSION-ABSENT in v95/jms (no case decrypts
-  #   to it — enumerated @0xa10ab0/@0xb297e7).
-  - { key: UNABLE_TO_FIND_THE_CHARACTER,                           modes: { gms_v83: 33, gms_v84: 33, gms_v87: 37 } }  # version-absent gms_v95/jms_v185: enumerated all cases @0xa10ab0/@0xb297e7, none decrypt to 'Unable to find the character.'
+  # UNABLE_TO_FIND_THE_CHARACTER: v83/v84 case33 (SP_366); v87 case37 (id376) and
+  #   v95 case37 (id0x17B) BOTH decrypt to "Unable to find the character.".
+  #   VERSION-ABSENT in jms only (jms upper arms run 34/36/38/39/40/41 — no case 37;
+  #   enumerated @0xb297e7).
+  - { key: UNABLE_TO_FIND_THE_CHARACTER,                           modes: { gms_v83: 33, gms_v84: 33, gms_v87: 37, gms_v95: 37 } }  # version-absent jms_v185 only: no jms case 37; v95 case37 = id0x17B "Unable to find the character." (independent IDA re-verify, task-105 Task 1b)
   # --- TOWN_PORTAL: IDA-anchored across all 5 (town_portal.go) ---
   - { key: TOWN_PORTAL,                                            modes: { gms_v83: 37, gms_v84: 40, gms_v87: 41, gms_v95: 46, jms_v185: 40 } }

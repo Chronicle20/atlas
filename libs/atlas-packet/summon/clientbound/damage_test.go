@@ -147,3 +147,34 @@ func TestSummonDamageBytesV95(t *testing.T) {
 		t.Fatalf("v95 bytes = % X, want % X (identical to v83)", got, summonDamageV83Body)
 	}
 }
+
+// TestSummonDamageBytesJMS185 pins that jms185 is byte-identical to v83 (cid + oid +
+// body, no trailing dir byte). Confirmed live (IDA, MapleStory_dump_SCY.exe @port
+// 13338):
+//   - CUserPool::OnUserCommonPacket reads cid, op 0xB9 (185) routes to
+//     CSummonedPool::OnPacket@0x9f7f6e, which reads oid (Decode4@0x9f7fad), looks up
+//     the summon, then case 0xB9 calls the damage leaf
+//     CSummonedPool::OnHit@0x828d16.
+//   - The damage body lives at 0x828d16 (exported FName CSummonedPool::OnHit; the
+//     mangled symbol there is OnSkill — the known naming swap, the body is truth).
+//     It reads:
+//       Decode1@0x828d47 → attackIdx (v4=v32; atlas writes 12)
+//       Decode4@0x828d5c → damage (v36)
+//       if (v5 > -2):   // 12 > -2, branch fires
+//         Decode4@0x828d6e → monsterIdFrom (v37 → GetMobTemplate)
+//         Decode1@0x828d7c → bLeft (v33; atlas writes 0)
+//     and nothing after from the packet — no trailing dir byte (the dir<0 byte
+//     belongs to the SERVERBOUND SetDamaged send). Damage has no version gate, so
+//     the jms185 path is byte-identical to v83.
+// Wire: int cid (upstream) + int oid + byte attackIdx(12) + int damage +
+//       int monsterIdFrom + byte bLeft(0).
+// packet-audit:verify packet=summon/clientbound/SummonDamage version=jms_v185 ida=0x828d16
+func TestSummonDamageBytesJMS185(t *testing.T) {
+	in := NewSummonDamage(42, 1000001, 1234, 9300018)
+	ctx := test.CreateContext("JMS", 185, 1)
+	got := test.Encode(t, ctx, in.Encode, nil)
+
+	if !bytes.Equal(got, summonDamageV83Body) {
+		t.Fatalf("JMS185 bytes = % X, want % X (identical to v83)", got, summonDamageV83Body)
+	}
+}

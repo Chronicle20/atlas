@@ -1,7 +1,7 @@
 {
   "WriterName": "StatusMessageDropPickUpInventoryFull",
-  "IDAName": "CWvsContext::OnMessage",
-  "Address": "0xa6bdd9",
+  "IDAName": "CWvsContext::OnMessage#DropPickUpInventoryFull",
+  "Address": "0xa6beef",
   "Variant": "GMS/v84",
   "BranchDepth": 0,
   "AtlasFile": "libs/atlas-packet/character/clientbound/status_message.go",
@@ -11,7 +11,7 @@
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "",
+      "IDAComment": "outer mode (0 = drop pick-up)",
       "Verdict": 0,
       "Note": ""
     },
@@ -20,11 +20,11 @@
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 1,
-      "Note": "atlas: trailing padding byte — client stops reading (harmless over-write)"
+      "IDAComment": "inner disc int8 = -1 (default → 'cannot pick up any more', StringPool 295)",
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 1,
+  "Verdict": 0,
   "FlatInvalid": false
 }

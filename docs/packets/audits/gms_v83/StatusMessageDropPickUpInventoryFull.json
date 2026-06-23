@@ -1,7 +1,7 @@
 {
   "WriterName": "StatusMessageDropPickUpInventoryFull",
-  "IDAName": "CWvsContext::OnMessage",
-  "Address": "0xa209d4",
+  "IDAName": "CWvsContext::OnMessage#DropPickUpInventoryFull",
+  "Address": "0xa20ad9",
   "Variant": "GMS/v83",
   "BranchDepth": 0,
   "AtlasFile": "libs/atlas-packet/character/clientbound/status_message.go",
@@ -11,7 +11,7 @@
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "mode/sub-op byte (0=drop pick-up, 1=quest record, 2=cash item expire, 3=inc EXP, 4=inc SP/POP, 5=inc meso, 6=inc GP, 7=give buff, 8=general item expire, 9=system message, 0xA=quest record ex, 0xB=item protect expire, 0xC=item expire replace, 0xD=skill expire; v83 has 14 modes, v95 added mode 14=skill expire as 0xE)",
+      "IDAComment": "outer mode (0 = drop pick-up)",
       "Verdict": 0,
       "Note": ""
     },
@@ -20,11 +20,11 @@
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 1,
-      "Note": "atlas: trailing padding byte — client stops reading (harmless over-write)"
+      "IDAComment": "inner disc int8 = -1 (default → 'cannot pick up any more', StringPool 295)",
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 1,
+  "Verdict": 0,
   "FlatInvalid": false
 }

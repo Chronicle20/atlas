@@ -1,0 +1,10 @@
+packet: character/clientbound/StatusMessageDropPickUpGameFileDamaged
+direction: clientbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnMessage#DropPickUpGameFileDamaged
+    address: "0xab818c"
+    decompile_sha256: 2342c12ea678fb9bac8552f2c9a2c3aa6038386c5f0a3247beb0dfc194a6c920
+verifies:
+  - libs/atlas-packet/character/clientbound/status_message_test.go#TestStatusMessageDropPickUpGameFileDamaged

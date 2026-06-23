@@ -1,0 +1,10 @@
+packet: character/clientbound/StatusMessageForfeitQuestRecord
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnMessage#ForfeitQuestRecord
+    address: "0xa20f4c"
+    decompile_sha256: 5ec26947bb3fe1a1655510aa7da2e3a35d6236ff20b4e0b8b74c6158565e4a26
+verifies:
+  - libs/atlas-packet/character/clientbound/status_message_test.go#TestStatusMessageForfeitQuestRecord

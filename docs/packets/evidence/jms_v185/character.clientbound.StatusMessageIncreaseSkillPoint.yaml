@@ -1,0 +1,10 @@
+packet: character/clientbound/StatusMessageIncreaseSkillPoint
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnMessage#IncreaseSkillPoint
+    address: "0xb089ab"
+    decompile_sha256: 374c422aa3b48724629403687100b1acb9b9586f85ffc0e76082f5891d03b5cc
+verifies:
+  - libs/atlas-packet/character/clientbound/status_message_test.go#TestStatusMessageIncreaseSkillPoint

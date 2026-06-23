@@ -3,6 +3,8 @@ direction: clientbound
 version: gms_v95
 category: TIER1-FIXTURE
 ida:
-    function: CWvsContext::OnMessage
-    address: "0xa06c90"
-    decompile_sha256: b0117d4eafd5493fc16e65a7753ce8d5d1809c6f1163a80b11aaa787ab336e7e
+    function: CWvsContext::OnMessage#DropPickUpInventoryFull
+    address: "0x9fe190"
+    decompile_sha256: 275f4c61e7dfe30a34d2a1e29adb38f30f34bb7811a8313f4ffe799a47ec01a2
+verifies:
+  - libs/atlas-packet/character/clientbound/status_message_test.go#TestStatusMessageDropPickUpInventoryFull

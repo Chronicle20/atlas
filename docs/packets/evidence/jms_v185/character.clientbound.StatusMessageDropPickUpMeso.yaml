@@ -1,0 +1,10 @@
+packet: character/clientbound/StatusMessageDropPickUpMeso
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnMessage#DropPickUpMeso
+    address: "0xb07a01"
+    decompile_sha256: 1c2b4365007bbffb135442e686d088f8093c5cbccf256a8c2cf77db0269aad42
+verifies:
+  - libs/atlas-packet/character/clientbound/status_message_test.go#TestStatusMessageDropPickUpMeso

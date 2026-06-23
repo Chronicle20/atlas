@@ -1,0 +1,10 @@
+packet: character/clientbound/StatusMessageIncreaseGuildPoint
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnMessage#IncreaseGuildPoint
+    address: "0x9f91e0"
+    decompile_sha256: a426b4d7b34abc44ec4369302338652d4912c33bbd36068705ae58280c04f154
+verifies:
+  - libs/atlas-packet/character/clientbound/status_message_test.go#TestStatusMessageIncreaseGuildPoint

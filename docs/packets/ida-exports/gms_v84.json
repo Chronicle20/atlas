@@ -21349,16 +21349,6 @@
         }
       ]
     },
-    "CWvsContext::OnMessage": {
-      "address": "0xa6bdd9",
-      "direction": "clientbound",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": ""
-        }
-      ]
-    },
     "CField::OnDesc": {
       "address": "0x5423c4",
       "direction": "",
@@ -24042,6 +24032,646 @@
         {
           "op": "Decode4",
           "comment": ""
+        }
+      ]
+    },
+    "CWvsContext::OnMessage#DropPickUpItemUnavailable": {
+      "address": "0xa6beef",
+      "direction": "clientbound",
+      "dispatch": [
+        {
+          "discriminator": "switch",
+          "case": 0
+        }
+      ],
+      "notes": "OnDropPickUpMessage inner -2; bodyless string-pool arm.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "outer mode (0 = drop pick-up)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "inner disc int8 = -2 (item unavailable \u2192 StringPool 2983); no follow-up bytes"
+        }
+      ]
+    },
+    "CWvsContext::OnMessage#DropPickUpInventoryFull": {
+      "address": "0xa6beef",
+      "direction": "clientbound",
+      "dispatch": [
+        {
+          "discriminator": "switch",
+          "case": 0
+        }
+      ],
+      "notes": "OnDropPickUpMessage default branch; bodyless string-pool arm.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "outer mode (0 = drop pick-up)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "inner disc int8 = -1 (default \u2192 'cannot pick up any more', StringPool 295)"
+        }
+      ]
+    },
+    "CWvsContext::OnMessage#DropPickUpGameFileDamaged": {
+      "address": "0xa6beef",
+      "direction": "clientbound",
+      "dispatch": [
+        {
+          "discriminator": "switch",
+          "case": 0
+        }
+      ],
+      "notes": "OnDropPickUpMessage inner -3; bodyless string-pool arm.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "outer mode (0 = drop pick-up)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "inner disc int8 = -3 (game file damaged \u2192 StringPool 5317 + chat 5311)"
+        }
+      ]
+    },
+    "CWvsContext::OnMessage#DropPickUpStackableItem": {
+      "address": "0xa6beef",
+      "direction": "clientbound",
+      "dispatch": [
+        {
+          "discriminator": "switch",
+          "case": 0
+        }
+      ],
+      "notes": "OnDropPickUpMessage inner 0.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "outer mode (0 = drop pick-up)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "inner disc int8 = 0 (stackable item)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "itemId"
+        },
+        {
+          "op": "Decode4",
+          "comment": "amount"
+        }
+      ]
+    },
+    "CWvsContext::OnMessage#DropPickUpUnStackableItem": {
+      "address": "0xa6beef",
+      "direction": "clientbound",
+      "dispatch": [
+        {
+          "discriminator": "switch",
+          "case": 0
+        }
+      ],
+      "notes": "OnDropPickUpMessage inner 2.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "outer mode (0 = drop pick-up)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "inner disc int8 = 2 (unstackable / equip item)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "itemId"
+        }
+      ]
+    },
+    "CWvsContext::OnMessage#DropLossStackableItem": {
+      "address": "0xa6beef",
+      "direction": "clientbound",
+      "dispatch": [
+        {
+          "discriminator": "switch",
+          "case": 0
+        }
+      ],
+      "notes": "OnDropPickUpMessage inner 0 with negative quantity (loss).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "outer mode (0 = drop pick-up)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "inner disc int8 = 0 (stackable item)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "itemId"
+        },
+        {
+          "op": "Decode4",
+          "comment": "negative amount (loss rendered as -qty)"
+        }
+      ]
+    },
+    "CWvsContext::OnMessage#DropLossUnStackableItem": {
+      "address": "0xa6beef",
+      "direction": "clientbound",
+      "dispatch": [
+        {
+          "discriminator": "switch",
+          "case": 0
+        }
+      ],
+      "notes": "OnDropPickUpMessage inner 2 (loss of equip).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "outer mode (0 = drop pick-up)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "inner disc int8 = 2 (unstackable / equip item)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "itemId"
+        }
+      ]
+    },
+    "CWvsContext::OnMessage#DropPickUpMeso": {
+      "address": "0xa6beef",
+      "direction": "clientbound",
+      "dispatch": [
+        {
+          "discriminator": "switch",
+          "case": 0
+        }
+      ],
+      "notes": "OnDropPickUpMessage inner 1 (meso).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "outer mode (0 = drop pick-up)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "inner disc int8 = 1 (meso)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "partial bool"
+        },
+        {
+          "op": "Decode4",
+          "comment": "amount"
+        },
+        {
+          "op": "Decode2",
+          "comment": "internet-cafe bonus"
+        }
+      ]
+    },
+    "CWvsContext::OnMessage#ForfeitQuestRecord": {
+      "address": "0xa6c362",
+      "direction": "clientbound",
+      "dispatch": [
+        {
+          "discriminator": "switch",
+          "case": 1
+        }
+      ],
+      "notes": "OnQuestRecordMessage inner 0 (forfeit).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "outer mode (1 = quest record)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "questId"
+        },
+        {
+          "op": "Decode1",
+          "comment": "inner disc byte = 0 (forfeit / remove quest); no follow-up bytes"
+        }
+      ]
+    },
+    "CWvsContext::OnMessage#UpdateQuestRecord": {
+      "address": "0xa6c362",
+      "direction": "clientbound",
+      "dispatch": [
+        {
+          "discriminator": "switch",
+          "case": 1
+        }
+      ],
+      "notes": "OnQuestRecordMessage inner 1 (update).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "outer mode (1 = quest record)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "questId"
+        },
+        {
+          "op": "Decode1",
+          "comment": "inner disc byte = 1 (update)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "quest info string"
+        }
+      ]
+    },
+    "CWvsContext::OnMessage#CompleteQuestRecord": {
+      "address": "0xa6c362",
+      "direction": "clientbound",
+      "dispatch": [
+        {
+          "discriminator": "switch",
+          "case": 1
+        }
+      ],
+      "notes": "OnQuestRecordMessage inner 2 (complete).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "outer mode (1 = quest record)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "questId"
+        },
+        {
+          "op": "Decode1",
+          "comment": "inner disc byte = 2 (complete)"
+        },
+        {
+          "op": "Decode8",
+          "comment": "completedAt FILETIME (8-byte int64)"
+        }
+      ]
+    },
+    "CWvsContext::OnMessage#CashItemExpire": {
+      "address": "0xa6cb31",
+      "direction": "clientbound",
+      "dispatch": [
+        {
+          "discriminator": "switch",
+          "case": 2
+        }
+      ],
+      "notes": "OnCashItemExpireMessage singleton.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "outer mode (CASH_ITEM_EXPIRE)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "itemId"
+        }
+      ]
+    },
+    "CWvsContext::OnMessage#IncreaseExperience": {
+      "address": "0xa6cfd7",
+      "direction": "clientbound",
+      "dispatch": [
+        {
+          "discriminator": "switch",
+          "case": 3
+        }
+      ],
+      "notes": "OnIncEXPMessage. Conditional fields gated in struct (mobEvent/inChat). The 2 trailing party-EXP-ring / cake-pie ints are GMS>=95-only (gms_v95 only).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "outer mode (INCREASE_EXPERIENCE)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "white bool"
+        },
+        {
+          "op": "Decode4",
+          "comment": "amount"
+        },
+        {
+          "op": "Decode1",
+          "comment": "inChat bool"
+        },
+        {
+          "op": "Decode4",
+          "comment": "monsterBookBonus"
+        },
+        {
+          "op": "Decode1",
+          "comment": "mobEventBonusPercentage"
+        },
+        {
+          "op": "Decode1",
+          "comment": "partyBonusPercentage"
+        },
+        {
+          "op": "Decode4",
+          "comment": "weddingBonusEXP"
+        },
+        {
+          "op": "Decode1",
+          "comment": "playTimeHour (only if mobEventBonusPercentage>0)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "questBonusRate (only if inChat)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "questBonusRemainCount (only if inChat && questBonusRate>0)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "partyBonusEventRate"
+        },
+        {
+          "op": "Decode4",
+          "comment": "partyBonusExp"
+        },
+        {
+          "op": "Decode4",
+          "comment": "itemBonusEXP"
+        },
+        {
+          "op": "Decode4",
+          "comment": "premiumIPExp"
+        },
+        {
+          "op": "Decode4",
+          "comment": "rainbowWeekEventEXP"
+        }
+      ]
+    },
+    "CWvsContext::OnMessage#IncreaseSkillPoint": {
+      "address": "0xa6cefa",
+      "direction": "clientbound",
+      "dispatch": [
+        {
+          "discriminator": "switch",
+          "case": 4
+        }
+      ],
+      "notes": "OnIncSPMessage. v84+ only; no gms_v83 case.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "outer mode (INCREASE_SKILL_POINT; v84+ only, v83 absent)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "jobId"
+        },
+        {
+          "op": "Decode1",
+          "comment": "amount"
+        }
+      ]
+    },
+    "CWvsContext::OnMessage#IncreaseFame": {
+      "address": "0xa6d63f",
+      "direction": "clientbound",
+      "dispatch": [
+        {
+          "discriminator": "switch",
+          "case": 5
+        }
+      ],
+      "notes": "OnIncPOPMessage singleton.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "outer mode (INCREASE_FAME)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "amount (signed)"
+        }
+      ]
+    },
+    "CWvsContext::OnMessage#IncreaseMeso": {
+      "address": "0xa6d705",
+      "direction": "clientbound",
+      "dispatch": [
+        {
+          "discriminator": "switch",
+          "case": 6
+        }
+      ],
+      "notes": "OnIncMoneyMessage singleton.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "outer mode (INCREASE_MESO)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "amount (signed)"
+        }
+      ]
+    },
+    "CWvsContext::OnMessage#IncreaseGuildPoint": {
+      "address": "0xa6d7db",
+      "direction": "clientbound",
+      "dispatch": [
+        {
+          "discriminator": "switch",
+          "case": 7
+        }
+      ],
+      "notes": "OnIncGPMessage singleton.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "outer mode (INCREASE_GUILD_POINT)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "amount (signed)"
+        }
+      ]
+    },
+    "CWvsContext::OnMessage#GiveBuff": {
+      "address": "0xa6d8a1",
+      "direction": "clientbound",
+      "dispatch": [
+        {
+          "discriminator": "switch",
+          "case": 8
+        }
+      ],
+      "notes": "OnGiveBuffMessage singleton.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "outer mode (GIVE_BUFF)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "itemId"
+        }
+      ]
+    },
+    "CWvsContext::OnMessage#GeneralItemExpire": {
+      "address": "0xa6cbd7",
+      "direction": "clientbound",
+      "dispatch": [
+        {
+          "discriminator": "switch",
+          "case": 9
+        }
+      ],
+      "notes": "OnGeneralItemExpireMessage; count-prefixed itemId loop.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "outer mode (GENERAL_ITEM_EXPIRE)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "count"
+        },
+        {
+          "op": "Decode4",
+          "comment": "itemId (repeated count times)"
+        }
+      ]
+    },
+    "CWvsContext::OnMessage#SystemMessage": {
+      "address": "0xa6cead",
+      "direction": "clientbound",
+      "dispatch": [
+        {
+          "discriminator": "switch",
+          "case": 10
+        }
+      ],
+      "notes": "OnSystemMessage singleton.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "outer mode (SYSTEM_MESSAGE)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "message"
+        }
+      ]
+    },
+    "CWvsContext::OnMessage#QuestRecordEx": {
+      "address": "0xa6ca40",
+      "direction": "clientbound",
+      "dispatch": [
+        {
+          "discriminator": "switch",
+          "case": 11
+        }
+      ],
+      "notes": "OnQuestRecordExMessage singleton.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "outer mode (QUEST_RECORD_EX)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "questId"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "info string"
+        }
+      ]
+    },
+    "CWvsContext::OnMessage#ItemProtectExpire": {
+      "address": "0xa6ccb3",
+      "direction": "clientbound",
+      "dispatch": [
+        {
+          "discriminator": "switch",
+          "case": 12
+        }
+      ],
+      "notes": "OnItemProtectExpireMessage; count-prefixed itemId loop.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "outer mode (ITEM_PROTECT_EXPIRE)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "count"
+        },
+        {
+          "op": "Decode4",
+          "comment": "itemId (repeated count times)"
+        }
+      ]
+    },
+    "CWvsContext::OnMessage#ItemExpireReplace": {
+      "address": "0xa6cd8f",
+      "direction": "clientbound",
+      "dispatch": [
+        {
+          "discriminator": "switch",
+          "case": 13
+        }
+      ],
+      "notes": "OnItemExpireReplaceMessage; count-prefixed string loop.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "outer mode (ITEM_EXPIRE_REPLACE)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "count"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "message (repeated count times)"
+        }
+      ]
+    },
+    "CWvsContext::OnMessage#SkillExpire": {
+      "address": "0xa6cdf3",
+      "direction": "clientbound",
+      "dispatch": [
+        {
+          "discriminator": "switch",
+          "case": 14
+        }
+      ],
+      "notes": "OnSkillExpireMessage; count-prefixed skillId loop.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "outer mode (SKILL_EXPIRE)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "count"
+        },
+        {
+          "op": "Decode4",
+          "comment": "skillId (repeated count times)"
         }
       ]
     }

@@ -1,0 +1,30 @@
+{
+  "WriterName": "StatusMessageDropPickUpItemUnavailable",
+  "IDAName": "CWvsContext::OnMessage#DropPickUpItemUnavailable",
+  "Address": "0xab818c",
+  "Variant": "GMS/v87",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/character/clientbound/status_message.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "outer mode (0 = drop pick-up)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "inner disc int8 = -2 (item unavailable → StringPool 2983); no follow-up bytes",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

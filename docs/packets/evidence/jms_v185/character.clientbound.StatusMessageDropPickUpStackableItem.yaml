@@ -1,0 +1,10 @@
+packet: character/clientbound/StatusMessageDropPickUpStackableItem
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnMessage#DropPickUpStackableItem
+    address: "0xb07a01"
+    decompile_sha256: c5ed674d9e41fd4582697a19718efccdf8bd38eca1acb9abf5a746a1de7e48ee
+verifies:
+  - libs/atlas-packet/character/clientbound/status_message_test.go#TestStatusMessageDropPickUpStackableItem

@@ -1,0 +1,10 @@
+packet: character/clientbound/StatusMessageIncreaseFame
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnMessage#IncreaseFame
+    address: "0xa6d63f"
+    decompile_sha256: b033ae191c7e2d63b9415cfd87006e66d63cc8d1c872847a4f0254d5bce92389
+verifies:
+  - libs/atlas-packet/character/clientbound/status_message_test.go#TestStatusMessageIncreaseFame

@@ -1,0 +1,10 @@
+packet: character/clientbound/StatusMessageIncreaseMeso
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnMessage#IncreaseMeso
+    address: "0x9fe910"
+    decompile_sha256: 710323730c498adf48bc45e3fe14a4bde1622f7f74a5f93acc95391f362fc8ed
+verifies:
+  - libs/atlas-packet/character/clientbound/status_message_test.go#TestStatusMessageIncreaseMeso

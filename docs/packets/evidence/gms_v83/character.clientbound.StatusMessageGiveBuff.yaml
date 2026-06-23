@@ -1,0 +1,10 @@
+packet: character/clientbound/StatusMessageGiveBuff
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnMessage#GiveBuff
+    address: "0xa2238f"
+    decompile_sha256: 1d0901e7af946a92caeefba1409a306e5480e142c301d7e1082b1d4cd8d7f5dc
+verifies:
+  - libs/atlas-packet/character/clientbound/status_message_test.go#TestStatusMessageGiveBuff

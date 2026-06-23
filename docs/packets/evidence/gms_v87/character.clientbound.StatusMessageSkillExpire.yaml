@@ -1,0 +1,10 @@
+packet: character/clientbound/StatusMessageSkillExpire
+direction: clientbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnMessage#SkillExpire
+    address: "0xab9050"
+    decompile_sha256: dddc87e487249532614ef79bcb167f8b817a87f5008f0ca7c6987850eb0df07b
+verifies:
+  - libs/atlas-packet/character/clientbound/status_message_test.go#TestStatusMessageSkillExpire

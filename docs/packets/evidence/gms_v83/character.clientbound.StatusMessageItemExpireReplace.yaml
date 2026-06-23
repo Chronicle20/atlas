@@ -1,0 +1,10 @@
+packet: character/clientbound/StatusMessageItemExpireReplace
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnMessage#ItemExpireReplace
+    address: "0xa2195a"
+    decompile_sha256: 66a30fc6d56ecf52cdefd7a286c331815059a43fa6e3c69cfd24c3b19e28c291
+verifies:
+  - libs/atlas-packet/character/clientbound/status_message_test.go#TestStatusMessageItemExpireReplace

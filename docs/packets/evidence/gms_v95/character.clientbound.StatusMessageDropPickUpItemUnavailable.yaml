@@ -1,0 +1,10 @@
+packet: character/clientbound/StatusMessageDropPickUpItemUnavailable
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnMessage#DropPickUpItemUnavailable
+    address: "0x9fe190"
+    decompile_sha256: e9819038ee00f69f1de001cc9783df6cdb643be86d7028be52fff1bbd566f5db
+verifies:
+  - libs/atlas-packet/character/clientbound/status_message_test.go#TestStatusMessageDropPickUpItemUnavailable

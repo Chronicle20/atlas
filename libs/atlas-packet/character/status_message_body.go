@@ -168,3 +168,9 @@ func CharacterStatusMessageOperationSkillExpireBody(skillIds []uint32) func(logr
 		return clientbound.NewStatusMessageSkillExpire(mode, skillIds)
 	})
 }
+
+func CharacterStatusMessageOperationJMSCounterNoticeBody(amount int32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", "JMS_COUNTER_NOTICE", func(mode byte) packet.Encoder {
+		return clientbound.NewStatusMessageJMSCounterNotice(mode, amount)
+	})
+}

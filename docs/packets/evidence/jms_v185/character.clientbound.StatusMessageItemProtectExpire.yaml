@@ -1,0 +1,10 @@
+packet: character/clientbound/StatusMessageItemProtectExpire
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnMessage#ItemProtectExpire
+    address: "0xb08763"
+    decompile_sha256: 469d7ff7df4a103a6038a90dcc148ad4e98434876fd90e85078bd88f6b2861e8
+verifies:
+  - libs/atlas-packet/character/clientbound/status_message_test.go#TestStatusMessageItemProtectExpire

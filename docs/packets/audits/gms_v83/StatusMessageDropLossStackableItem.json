@@ -1,0 +1,48 @@
+{
+  "WriterName": "StatusMessageDropLossStackableItem",
+  "IDAName": "CWvsContext::OnMessage#DropLossStackableItem",
+  "Address": "0xa20ad9",
+  "Variant": "GMS/v83",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/character/clientbound/status_message.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "outer mode (0 = drop pick-up)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "inner disc int8 = 0 (stackable item)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "itemId",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "negative amount (loss rendered as -qty)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

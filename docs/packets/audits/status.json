@@ -1,11 +1,11 @@
 {
-  "toolSha": "c63442bc2d1a127f5be4c35743c1f466c1112aed",
+  "toolSha": "b5bbc49ef36175ed0055f1d7253676e27767f465",
   "exportHashes": {
-    "gms_v83": "97f1cd755f3ed82d9b1470fc4b28eda99b2acff46e947a5cd9d2774648a32347",
-    "gms_v84": "749355a9f4514a8eba59e849b0ded26ce97613c0efb98d595b5c657419bfb31b",
-    "gms_v87": "dc1e75331052dc7665ad6b529ed2778175145effa3f30977f82f785fce384bab",
-    "gms_v95": "2abb82301b7ece7492038d0d2da8ba3e8314f4350b85e5e378883b86ce8dd3c0",
-    "jms_v185": "9dcefe84301bb7922a23296827219422de57bf2f99be71d7ae3f19e97793876f"
+    "gms_v83": "fcfabe617a859aadf6000e0f3046b33f8928a302daf9a6d20ee7eaf6450c9fc1",
+    "gms_v84": "bb655a785f6e5a214ef19115ffc231d8484af40865547f30b6f89e6c32bc59a6",
+    "gms_v87": "11299fd5a471713829fa92edfd5158dfd7a34d788dfffb16e12f2146e31d523b",
+    "gms_v95": "53a1e91d8e8052f8bb016679735906f739457f74a472c13c9c6bc3a4c088fd81",
+    "jms_v185": "a9104fa94154e06cd507a4dc48299561512cf917f56ab664cb36a6ea8dc03fdf"
   },
   "rows": [
     {
@@ -2896,7 +2896,7 @@
     {
       "kind": "op",
       "op": "SHOW_STATUS_INFO",
-      "packet": "character/clientbound/StatusMessageDropPickUpInventoryFull",
+      "packet": "character/clientbound/StatusMessageCashItemExpire",
       "direction": "clientbound",
       "tier1": true,
       "fnames": [
@@ -2920,8 +2920,7 @@
           "opcode": 38
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 37
         }
       }

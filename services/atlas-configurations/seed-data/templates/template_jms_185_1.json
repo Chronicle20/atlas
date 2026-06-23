@@ -2225,6 +2225,30 @@
             "SHOW": 21
           }
         }
+      },
+      {
+        "opCode": "0x25",
+        "writer": "CharacterStatusMessage",
+        "options": {
+          "operations": {
+            "DROP_PICK_UP": 0,
+            "QUEST_RECORD": 1,
+            "CASH_ITEM_EXPIRE": 2,
+            "INCREASE_EXPERIENCE": 3,
+            "INCREASE_SKILL_POINT": 4,
+            "INCREASE_FAME": 5,
+            "INCREASE_MESO": 6,
+            "INCREASE_GUILD_POINT": 7,
+            "GIVE_BUFF": 8,
+            "GENERAL_ITEM_EXPIRE": 9,
+            "SYSTEM_MESSAGE": 10,
+            "QUEST_RECORD_EX": 11,
+            "ITEM_PROTECT_EXPIRE": 12,
+            "ITEM_EXPIRE_REPLACE": 13,
+            "SKILL_EXPIRE": 14,
+            "JMS_COUNTER_NOTICE": 15
+          }
+        }
       }
     ]
   },

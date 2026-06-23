@@ -1,0 +1,10 @@
+packet: character/clientbound/StatusMessageDropLossStackableItem
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnMessage#DropLossStackableItem
+    address: "0xa6beef"
+    decompile_sha256: fe194b47a5043f82da2ff4b0fb5e64c41303ef9c6d9b2fced69d5f21bfe43c98
+verifies:
+  - libs/atlas-packet/character/clientbound/status_message_test.go#TestStatusMessageDropLossStackableItem

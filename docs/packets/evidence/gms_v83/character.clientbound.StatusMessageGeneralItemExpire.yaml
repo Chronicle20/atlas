@@ -1,0 +1,10 @@
+packet: character/clientbound/StatusMessageGeneralItemExpire
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnMessage#GeneralItemExpire
+    address: "0xa217a2"
+    decompile_sha256: f7af0620fe6c3406a6ada16761e0d6e0da075c550d1d963239cc3fc4e71a135c
+verifies:
+  - libs/atlas-packet/character/clientbound/status_message_test.go#TestStatusMessageGeneralItemExpire

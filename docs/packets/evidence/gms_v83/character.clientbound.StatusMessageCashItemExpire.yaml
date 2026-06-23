@@ -1,0 +1,10 @@
+packet: character/clientbound/StatusMessageCashItemExpire
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnMessage#CashItemExpire
+    address: "0xa216fc"
+    decompile_sha256: 88bb93fa403ef8c47c716a37cc665a809720b5e0aa2c5a00312ea105cbdade78
+verifies:
+  - libs/atlas-packet/character/clientbound/status_message_test.go#TestStatusMessageCashItemExpire

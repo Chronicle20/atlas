@@ -1,0 +1,16 @@
+# StatusMessageForfeitQuestRecord (← `CWvsContext::OnMessage#ForfeitQuestRecord`)
+
+- **IDA:** 0xa6c362
+- **Atlas file:** `libs/atlas-packet/character/clientbound/status_message.go`
+- **Variant:** GMS/v84
+- **Branch depth:** 0
+- **Verdict:** ✅
+
+## Wire-level diff
+
+| # | Atlas writes | v? reads | Verdict | Note |
+|---|---|---|---|---|
+| 0 | byte | byte `outer mode (1 = quest record)` | ✅ |  |
+| 1 | int16 | int16 `questId` | ✅ |  |
+| 2 | byte | byte `inner disc byte = 0 (forfeit / remove quest); no follow-up bytes` | ✅ |  |
+

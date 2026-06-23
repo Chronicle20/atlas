@@ -1,0 +1,10 @@
+packet: character/clientbound/StatusMessageIncreaseExperience
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnMessage#IncreaseExperience
+    address: "0xa6cfd7"
+    decompile_sha256: 2db3bdd4bd9374272dabdb58af21f61bb24b48f7757aaafd098d69a105c2c91d
+verifies:
+  - libs/atlas-packet/character/clientbound/status_message_test.go#TestStatusMessageIncreaseExperience

@@ -2,6 +2,7 @@ package handler
 
 import (
 	"atlas-channel/character"
+	"atlas-channel/compartment"
 	mtsmsg "atlas-channel/kafka/message/mts"
 	mtsproc "atlas-channel/mts"
 	mtslisting "atlas-channel/mts/listing"
@@ -11,6 +12,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	fieldpkt "github.com/Chronicle20/atlas/libs/atlas-packet/field"
 	fieldcb "github.com/Chronicle20/atlas/libs/atlas-packet/field/clientbound"
@@ -119,11 +122,19 @@ func resolveItcOperationKey(l logrus.FieldLogger) func(options map[string]interf
 // identity. Extracting the mapping into a pure function keeps the decode->command
 // translation unit-testable without a session/Kafka.
 type CreateListingArgs struct {
-	WorldId             world.Id
-	SellerId            uint32
-	SellerAccountId     uint32
-	SellerName          string
-	SaleType            string
+	WorldId         world.Id
+	SellerId        uint32
+	SellerAccountId uint32
+	SellerName      string
+	SaleType        string
+	// TemplateId/CashId identify the item the seller is listing. The register
+	// packet's GW_ItemSlotBase blob carries the templateId (and, for cash items,
+	// the cashId) but NOT the inventory slot/asset id — GW_ItemSlotBase has no
+	// position field on the wire (see model.Asset.Decode). emitCreateListing
+	// resolves these into SourceInventoryType + AssetId from the seller's live
+	// inventory, so those two fields are populated downstream, not here.
+	TemplateId          uint32
+	CashId              int64
 	SourceInventoryType byte
 	AssetId             uint32
 	Quantity            uint32
@@ -135,24 +146,27 @@ type CreateListingArgs struct {
 }
 
 // buildCreateListingFromRegisterSale maps the verified ItcOperationRegisterSale
-// (mode 2, fixed-price) onto CreateListingArgs. AssetId is the item-slot blob's
-// slot (the inventory slot atlas-mts removes); SourceInventoryType is the packet's
-// itemType byte. Category/SubCategory are left empty — the register packet carries
-// no category, and atlas-mts categorizes server-side from the item; the browse
-// filter treats empty as unfiltered. Price is the packet's price (NX list value).
+// (mode 2, fixed-price) onto CreateListingArgs. The item is identified by the
+// blob's templateId (and cashId, for cash items); the inventory type and real
+// asset id are resolved from the seller's live inventory in emitCreateListing —
+// the packet's itemType byte is the MTS category, not an inventory type, and the
+// blob carries no slot. Category/SubCategory are left empty — the register packet
+// carries no category, and atlas-mts categorizes server-side from the item; the
+// browse filter treats empty as unfiltered. Price is the packet's price (NX list
+// value).
 func buildCreateListingFromRegisterSale(p fieldsb.ItcOperationRegisterSale, worldId world.Id, sellerId uint32, sellerAccountId uint32, sellerName string) CreateListingArgs {
 	return CreateListingArgs{
-		WorldId:             worldId,
-		SellerId:            sellerId,
-		SellerAccountId:     sellerAccountId,
-		SellerName:          sellerName,
-		SaleType:            itcSaleTypeFixed,
-		SourceInventoryType: p.ItemType(),
-		AssetId:             uint32(p.Item().Slot()),
-		Quantity:            p.Quantity(),
-		ListValue:           p.Price(),
-		BuyNowPrice:         nil,
-		DurationHours:       0,
+		WorldId:         worldId,
+		SellerId:        sellerId,
+		SellerAccountId: sellerAccountId,
+		SellerName:      sellerName,
+		SaleType:        itcSaleTypeFixed,
+		TemplateId:      p.Item().TemplateId(),
+		CashId:          p.Item().CashId(),
+		Quantity:        p.Quantity(),
+		ListValue:       p.Price(),
+		BuyNowPrice:     nil,
+		DurationHours:   0,
 	}
 }
 
@@ -167,40 +181,42 @@ func buildCreateListingFromRegisterSale(p fieldsb.ItcOperationRegisterSale, worl
 func buildCreateListingFromRegisterAuction(p fieldsb.ItcOperationRegisterAuction, worldId world.Id, sellerId uint32, sellerAccountId uint32, sellerName string) CreateListingArgs {
 	buyNow := p.BuyNowPrice()
 	return CreateListingArgs{
-		WorldId:             worldId,
-		SellerId:            sellerId,
-		SellerAccountId:     sellerAccountId,
-		SellerName:          sellerName,
-		SaleType:            itcSaleTypeAuction,
-		SourceInventoryType: p.ItemType(),
-		AssetId:             uint32(p.Item().Slot()),
-		Quantity:            p.Quantity(),
-		ListValue:           buyNow,
-		BuyNowPrice:         &buyNow,
-		DurationHours:       int(p.DurationHrs()),
+		WorldId:         worldId,
+		SellerId:        sellerId,
+		SellerAccountId: sellerAccountId,
+		SellerName:      sellerName,
+		SaleType:        itcSaleTypeAuction,
+		TemplateId:      p.Item().TemplateId(),
+		CashId:          p.Item().CashId(),
+		Quantity:        p.Quantity(),
+		ListValue:       buyNow,
+		BuyNowPrice:     &buyNow,
+		DurationHours:   int(p.DurationHrs()),
 	}
 }
 
 // buildCreateListingFromSaleCurrentItem maps the verified
 // ItcOperationSaleCurrentItem (mode 3, sell currently-selected item) onto
-// CreateListingArgs. It is a fixed-price sale of the item at slotPos. The packet
-// carries no price field — SaleCurrentItem is the "list at the previously-entered
-// price" follow-up; with no price on the wire the channel sends ListValue 0 and
+// CreateListingArgs. The item is identified by the blob's templateId/cashId and
+// resolved against the seller's live inventory in emitCreateListing (the wire's
+// slotPos/itemType are not an asset id / inventory type). The packet carries no
+// price field — SaleCurrentItem is the "list at the previously-entered price"
+// follow-up; with no price on the wire the channel sends ListValue 0 and
 // atlas-mts rejects it against the price floor (a clean RegisterSaleEntryFailed)
 // rather than guessing a price.
 func buildCreateListingFromSaleCurrentItem(p fieldsb.ItcOperationSaleCurrentItem, worldId world.Id, sellerId uint32, sellerAccountId uint32, sellerName string) CreateListingArgs {
 	return CreateListingArgs{
-		WorldId:             worldId,
-		SellerId:            sellerId,
-		SellerAccountId:     sellerAccountId,
-		SellerName:          sellerName,
-		SaleType:            itcSaleTypeFixed,
-		SourceInventoryType: p.ItemType(),
-		AssetId:             p.SlotPos(),
-		Quantity:            p.Item().Quantity(),
-		ListValue:           0,
-		BuyNowPrice:         nil,
-		DurationHours:       0,
+		WorldId:         worldId,
+		SellerId:        sellerId,
+		SellerAccountId: sellerAccountId,
+		SellerName:      sellerName,
+		SaleType:        itcSaleTypeFixed,
+		TemplateId:      p.Item().TemplateId(),
+		CashId:          p.Item().CashId(),
+		Quantity:        p.Item().Quantity(),
+		ListValue:       0,
+		BuyNowPrice:     nil,
+		DurationHours:   0,
 	}
 }
 
@@ -460,6 +476,25 @@ func ItcOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer
 // RegisterSaleEntryFailed via the status consumer only when it actually processes
 // and rejects the command).
 func emitCreateListing(l logrus.FieldLogger, ctx context.Context, s session.Model, args CreateListingArgs) {
+	// Resolve the item to a concrete inventory type + asset id from the seller's
+	// live inventory. The register packet conveys only the item's templateId
+	// (and cashId for cash items) — never the inventory slot or the inventory
+	// type — so the channel must look the item up to give atlas-mts/the saga a
+	// real asset to release. Without this the saga's transfer_to_mts step fails
+	// to find the asset (id 0 / category byte as type) and the listing is lost.
+	invType, ok := inventory.TypeFromItemId(item.Id(args.TemplateId))
+	if !ok {
+		l.Errorf("Unable to derive inventory type for MTS listing template [%d] for character [%d]; aborting list.", args.TemplateId, s.CharacterId())
+		return
+	}
+	assetId, found := resolveSellerAssetId(l, ctx, s.CharacterId(), invType, args.TemplateId, args.CashId)
+	if !found {
+		l.Errorf("Character [%d] tried to list template [%d] (cashId [%d]) not present in inventory type [%d]; aborting list.", s.CharacterId(), args.TemplateId, args.CashId, invType)
+		return
+	}
+	args.SourceInventoryType = byte(invType)
+	args.AssetId = assetId
+
 	if err := mtsproc.NewProcessor(l, ctx).CreateListing(
 		uuid.New(),
 		args.WorldId,
@@ -478,6 +513,25 @@ func emitCreateListing(l logrus.FieldLogger, ctx context.Context, s session.Mode
 	); err != nil {
 		l.WithError(err).Errorf("Unable to emit CREATE_LISTING for character [%d].", s.CharacterId())
 	}
+}
+
+// resolveSellerAssetId looks up the seller's inventory compartment of the given
+// type and returns the real asset id (the DB asset id atlas-mts releases) of the
+// item the seller is listing. The item is matched by templateId; for cash items
+// (cashId != 0) the cashId disambiguates a specific cash asset. Returns (0, false)
+// if the compartment lookup fails or no matching asset is present.
+func resolveSellerAssetId(l logrus.FieldLogger, ctx context.Context, characterId uint32, invType inventory.Type, templateId uint32, cashId int64) (uint32, bool) {
+	comp, err := compartment.NewProcessor(l, ctx).GetByType(characterId, invType)
+	if err != nil {
+		l.WithError(err).Errorf("Unable to load inventory type [%d] for character [%d] while resolving MTS listing asset.", invType, characterId)
+		return 0, false
+	}
+	for _, a := range comp.Assets() {
+		if a.TemplateId() == templateId && (cashId == 0 || a.CashId() == cashId) {
+			return a.Id(), true
+		}
+	}
+	return 0, false
 }
 
 // writeBrowsePage queries atlas-mts REST for the listing page and writes the

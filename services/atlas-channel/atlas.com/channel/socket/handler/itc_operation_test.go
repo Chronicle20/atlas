@@ -122,11 +122,14 @@ func TestBuildCreateListingFromRegisterSale(t *testing.T) {
 	if args.SaleType != itcSaleTypeFixed {
 		t.Errorf("saleType: want %s got %s", itcSaleTypeFixed, args.SaleType)
 	}
-	if args.AssetId != 5 {
-		t.Errorf("assetId (slot): want 5 got %d", args.AssetId)
+	// SourceInventoryType + AssetId are resolved from the seller's live inventory
+	// in emitCreateListing (the blob has no slot); the build function carries the
+	// item identity (templateId/cashId) instead.
+	if args.TemplateId != 1302000 {
+		t.Errorf("templateId: want 1302000 got %d", args.TemplateId)
 	}
-	if args.SourceInventoryType != 1 {
-		t.Errorf("sourceInventoryType: want 1 got %d", args.SourceInventoryType)
+	if args.CashId != 0 {
+		t.Errorf("cashId: want 0 got %d", args.CashId)
 	}
 	if args.Quantity != 1 {
 		t.Errorf("quantity: want 1 got %d", args.Quantity)
@@ -158,8 +161,8 @@ func TestBuildCreateListingFromRegisterAuction(t *testing.T) {
 	if args.SaleType != itcSaleTypeAuction {
 		t.Errorf("saleType: want %s got %s", itcSaleTypeAuction, args.SaleType)
 	}
-	if args.AssetId != 9 {
-		t.Errorf("assetId (slot): want 9 got %d", args.AssetId)
+	if args.TemplateId != 1302000 {
+		t.Errorf("templateId: want 1302000 got %d", args.TemplateId)
 	}
 	if args.Quantity != 2 {
 		t.Errorf("quantity: want 2 got %d", args.Quantity)
@@ -186,11 +189,11 @@ func TestBuildCreateListingFromSaleCurrentItem(t *testing.T) {
 	if args.SaleType != itcSaleTypeFixed {
 		t.Errorf("saleType: want %s got %s", itcSaleTypeFixed, args.SaleType)
 	}
-	if args.AssetId != 7 {
-		t.Errorf("assetId (slotPos): want 7 got %d", args.AssetId)
+	if args.TemplateId != 2000000 {
+		t.Errorf("templateId: want 2000000 got %d", args.TemplateId)
 	}
-	if args.SourceInventoryType != 2 {
-		t.Errorf("sourceInventoryType: want 2 got %d", args.SourceInventoryType)
+	if args.CashId != 0 {
+		t.Errorf("cashId: want 0 got %d", args.CashId)
 	}
 	if args.Quantity != 3 {
 		t.Errorf("quantity: want 3 got %d", args.Quantity)

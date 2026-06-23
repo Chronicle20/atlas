@@ -1,0 +1,10 @@
+packet: party/clientbound/PartyBlockingInvitations
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnPartyResult#BlockingInvitations
+    address: "0xa3e31c"
+    decompile_sha256: 36c1dc3cfc7756e8cdc59e62962e03de5c93cea857b937aa7e0f544dec805ea6
+verifies:
+  - libs/atlas-packet/party/clientbound/error_test.go#TestInviteTargetPartyArms

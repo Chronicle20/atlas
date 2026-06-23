@@ -1,0 +1,10 @@
+packet: party/clientbound/PartyUnableToFindInChannel
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnPartyResult#UnableToFindInChannel
+    address: "0xa89cf3"
+    decompile_sha256: 91d35fe18adef12bf05dbfdcab5940faa3e6e2180843568049f73f090057070a
+verifies:
+  - libs/atlas-packet/party/clientbound/error_test.go#TestModeOnlyPartyErrorArms

@@ -1,9 +1,0 @@
-packet: buddy/clientbound/BuddyError
-direction: clientbound
-version: gms_v87
-category: OP-MODE-PREFIX
-ida:
-    function: CWvsContext::OnFriendResult#Error
-    address: "0xad7ae5"
-    decompile_sha256: 0bdc8da48b1e4ea6643a01304f6b2dc5719fae99036cc19a82c511258b5e4ac8
-notes: "Migrated from docs/packets/ida-exports/_pending.md S5 (buddy clientbound row): OnFriendResult mode-byte prefix; error arms read mode only (StringPool notice, no wire string - B3.6); hasExtra 0x10 trailing 0x00 ignored by the client."

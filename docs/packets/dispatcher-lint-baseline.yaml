@@ -6,25 +6,15 @@
 # `CWvsContext::OnPartyResult`) appears below, and prints one note line per
 # exempt family instead.
 #
-# party + guild + buddy still carry the task-096 footguns — caller-specified
-# operation selectors (PartyErrorBody(code) / GuildErrorBody(code) /
-# GuildErrorBody2(code, …) / BuddyErrorBody(errorCode)) and the shared guild
-# RequestAgreement struct — pending a future discrete-per-mode migration task.
-# Each fronts a "deferred to _pending.md" Error catch-all (one struct + one
-# string-keyed body func for ~10–15 distinct error sub-ops) that the canonical
-# pattern requires splitting into discrete per-mode structs + fixed-key bodies.
+# CAMPAIGN COMPLETE (task-105): the list is now EMPTY. Every mode-prefix
+# dispatcher family — guild (task-103), message (task-104), and finally party
+# (CWvsContext::OnPartyResult) + buddy (CWvsContext::OnFriendResult) (task-105)
+# — has been migrated to the canonical discrete-per-mode pattern: one struct per
+# enumerated mode, fixed-key per-mode body funcs, config-resolved mode bytes,
+# per-mode byte fixtures + pinned evidence. No caller-specified operation
+# selectors remain (PartyErrorBody / BuddyErrorBody / GuildErrorBody all gone).
 #
-# buddy (CWvsContext::OnFriendResult) was added when INV-3 was hardened from
-# by-name matching to semantic matching (task-101 follow-up): BuddyErrorBody's
-# selector is named `errorCode`, not `code`, so it escaped the original
-# name-based check. This is PRE-EXISTING debt surfaced by a stronger linter, not
-# a fresh violation introduced by new code — the only honest dispositions are
-# migrate or baseline, and migration is a separate cycle.
-#
-# THE LIST ONLY SHRINKS (the buddy addition above is the documented one-time
-# exception for the INV-3 hardening). Migrating a family = deleting its entry
-# here (after the family is clean); never add a new family to dodge a violation
-# from NEW work.
-exempt_families:
-  - CWvsContext::OnPartyResult
-  - CWvsContext::OnFriendResult
+# THE LIST ONLY SHRINKS. It has reached empty — there is nothing left to migrate.
+# Never add a new family to dodge a violation from NEW work: new dispatcher
+# families must be authored discrete-per-mode from the start (DISPATCHER_FAMILY.md).
+exempt_families: []

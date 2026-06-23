@@ -1,8 +1,0 @@
-packet: party/clientbound/PartyError
-direction: clientbound
-version: gms_v83
-category: TIER1-FIXTURE
-ida:
-    function: CWvsContext::OnPartyResult#Error
-    address: "0xa3e31c"
-    decompile_sha256: 82caedee18914be27c3063281afbc2463c1f9b3401f0c3360f9b965554f50994

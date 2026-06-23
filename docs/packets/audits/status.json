@@ -1,11 +1,11 @@
 {
-  "toolSha": "d5640883529dd4e84c4dd80151db5a30a4725337",
+  "toolSha": "0d2a71691fac50edb0fa35903ca63f9f6fb3010d",
   "exportHashes": {
-    "gms_v83": "4e30dc7bd2f7484b508347f673ed207c317a8a459c0eddf9b31081d3bb0e9eea",
-    "gms_v84": "1fab7d0b7f5e296d59be01089c57f390deab6871c56c7413b4c493863ea2367e",
-    "gms_v87": "a57a58d3c1b7326d6e559747d4b07e6b6445ebd28c9141c7a7b1a68b05818475",
-    "gms_v95": "e8f9791d2914788c19facadcb8719707c77538b0190013f62213be547ff6dd74",
-    "jms_v185": "04cb8008af400e1a0b2fc61b7fdc285a724036049efaedd58c334cfe94cb6670"
+    "gms_v83": "e4f329dac5e737dbafb8cb6c91af30e36da0054699a2d5b1206d59fc284b672d",
+    "gms_v84": "06a208ed592803a88b13f97a0682a1c067ac27f0a41df79074d2f5df515b7363",
+    "gms_v87": "60a4c60e1eabea5d81ebacfea8a8ce1637a06679d9bdc97fe49eb45d052ed4a2",
+    "gms_v95": "cf7682a52552f94e68453f8ed3a9f74098b50a4fdf14a19968227a2f3816d37d",
+    "jms_v185": "7e7115c6f86a1bee097df0d178fd2ea60981010836500eebdb46c733bb9ddd4d"
   },
   "rows": [
     {
@@ -4501,7 +4501,7 @@
     {
       "kind": "op",
       "op": "PARTY_OPERATION",
-      "packet": "party/clientbound/PartyChangeLeader",
+      "packet": "party/clientbound/PartyAlreadyJoined1",
       "direction": "clientbound",
       "tier1": true,
       "fnames": [
@@ -4574,7 +4574,7 @@
     {
       "kind": "op",
       "op": "BUDDYLIST",
-      "packet": "buddy/clientbound/BuddyCapacityUpdate",
+      "packet": "buddy/clientbound/BuddyAlreadyBuddy",
       "direction": "clientbound",
       "tier1": true,
       "fnames": [
@@ -4586,8 +4586,7 @@
           "opcode": 63
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ⚠️",
+          "state": "verified",
           "opcode": 65
         },
         "gms_v87": {
@@ -12752,31 +12751,35 @@
     {
       "kind": "op",
       "op": "ENTER_MTS",
-      "packet": "field/serverbound/FieldEnterMts",
       "direction": "serverbound",
-      "tier1": true,
+      "tier1": false,
       "fnames": [
         "CWvsContext::SendMigrateToITCRequest"
       ],
       "cells": {
         "gms_v83": {
-          "state": "verified",
+          "state": "incomplete",
+          "note": "no audit report",
           "opcode": 156
         },
         "gms_v84": {
-          "state": "verified",
+          "state": "incomplete",
+          "note": "no audit report",
           "opcode": 160
         },
         "gms_v87": {
-          "state": "verified",
+          "state": "incomplete",
+          "note": "no audit report",
           "opcode": 164
         },
         "gms_v95": {
-          "state": "verified",
+          "state": "incomplete",
+          "note": "no audit report",
           "opcode": 180
         },
         "jms_v185": {
-          "state": "verified",
+          "state": "incomplete",
+          "note": "no audit report",
           "opcode": 166
         }
       }
@@ -20924,31 +20927,35 @@
     {
       "kind": "op",
       "op": "ITC_STATUS_CHARGE",
-      "packet": "field/serverbound/FieldItcStatusCharge",
       "direction": "serverbound",
-      "tier1": true,
+      "tier1": false,
       "fnames": [
         "CITC::OnStatusCharge"
       ],
       "cells": {
         "gms_v83": {
-          "state": "verified",
+          "state": "incomplete",
+          "note": "no audit report",
           "opcode": 251
         },
         "gms_v84": {
-          "state": "verified",
-          "opcode": 258
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 251
         },
         "gms_v87": {
-          "state": "verified",
+          "state": "incomplete",
+          "note": "no audit report",
           "opcode": 265
         },
         "gms_v95": {
-          "state": "verified",
+          "state": "incomplete",
+          "note": "no audit report",
           "opcode": 306
         },
         "jms_v185": {
-          "state": "verified",
+          "state": "incomplete",
+          "note": "no audit report",
           "opcode": 266
         }
       }
@@ -20988,31 +20995,35 @@
     {
       "kind": "op",
       "op": "ITC_QUERY_CASH_REQUEST",
-      "packet": "field/serverbound/FieldItcQueryCashRequest",
       "direction": "serverbound",
-      "tier1": true,
+      "tier1": false,
       "fnames": [
         "CITC::TrySendQueryCashRequest"
       ],
       "cells": {
         "gms_v83": {
-          "state": "verified",
+          "state": "incomplete",
+          "note": "no audit report",
           "opcode": 252
         },
         "gms_v84": {
-          "state": "verified",
-          "opcode": 259
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 252
         },
         "gms_v87": {
-          "state": "verified",
+          "state": "incomplete",
+          "note": "no audit report",
           "opcode": 266
         },
         "gms_v95": {
-          "state": "verified",
+          "state": "incomplete",
+          "note": "no audit report",
           "opcode": 307
         },
         "jms_v185": {
-          "state": "verified",
+          "state": "incomplete",
+          "note": "no audit report",
           "opcode": 267
         }
       }
@@ -21020,9 +21031,8 @@
     {
       "kind": "op",
       "op": "ITC_OPERATION",
-      "packet": "field/serverbound/FieldItcOperationRegisterAuction",
       "direction": "serverbound",
-      "tier1": true,
+      "tier1": false,
       "fnames": [
         "CITC::OnBuy",
         "CITC::OnBuyAuctionImm",
@@ -21045,23 +21055,28 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "verified",
+          "state": "incomplete",
+          "note": "no audit report",
           "opcode": 253
         },
         "gms_v84": {
-          "state": "verified",
-          "opcode": 260
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 253
         },
         "gms_v87": {
-          "state": "verified",
+          "state": "incomplete",
+          "note": "no audit report",
           "opcode": 267
         },
         "gms_v95": {
-          "state": "verified",
+          "state": "incomplete",
+          "note": "no audit report",
           "opcode": 308
         },
         "jms_v185": {
-          "state": "verified",
+          "state": "incomplete",
+          "note": "no audit report",
           "opcode": 268
         }
       }
@@ -26639,465 +26654,6 @@
     {
       "kind": "sub-struct",
       "packet": "field/serverbound/FieldChange",
-      "tier1": true,
-      "cells": {
-        "gms_v83": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "sub-struct",
-      "packet": "field/serverbound/FieldItcOperationBuy",
-      "tier1": true,
-      "cells": {
-        "gms_v83": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "sub-struct",
-      "packet": "field/serverbound/FieldItcOperationBuyAuctionImm",
-      "tier1": true,
-      "cells": {
-        "gms_v83": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "sub-struct",
-      "packet": "field/serverbound/FieldItcOperationBuyWish",
-      "tier1": true,
-      "cells": {
-        "gms_v83": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "sub-struct",
-      "packet": "field/serverbound/FieldItcOperationBuyZzim",
-      "tier1": true,
-      "cells": {
-        "gms_v83": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "sub-struct",
-      "packet": "field/serverbound/FieldItcOperationCancelSale",
-      "tier1": true,
-      "cells": {
-        "gms_v83": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "sub-struct",
-      "packet": "field/serverbound/FieldItcOperationCancelWish",
-      "tier1": true,
-      "cells": {
-        "gms_v83": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "sub-struct",
-      "packet": "field/serverbound/FieldItcOperationChangedCategory",
-      "tier1": true,
-      "cells": {
-        "gms_v83": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "sub-struct",
-      "packet": "field/serverbound/FieldItcOperationChangedCategorySub",
-      "tier1": true,
-      "cells": {
-        "gms_v83": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "sub-struct",
-      "packet": "field/serverbound/FieldItcOperationChangedPage",
-      "tier1": true,
-      "cells": {
-        "gms_v83": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "sub-struct",
-      "packet": "field/serverbound/FieldItcOperationDeleteZzim",
-      "tier1": true,
-      "cells": {
-        "gms_v83": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "sub-struct",
-      "packet": "field/serverbound/FieldItcOperationMoveLtoS",
-      "tier1": true,
-      "cells": {
-        "gms_v83": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "sub-struct",
-      "packet": "field/serverbound/FieldItcOperationPlaceBid",
-      "tier1": true,
-      "cells": {
-        "gms_v83": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "sub-struct",
-      "packet": "field/serverbound/FieldItcOperationRegisterWishEntry",
-      "tier1": true,
-      "cells": {
-        "gms_v83": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "sub-struct",
-      "packet": "field/serverbound/FieldItcOperationSaleCurrentItem",
-      "tier1": true,
-      "cells": {
-        "gms_v83": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "sub-struct",
-      "packet": "field/serverbound/FieldItcOperationSetZzim",
-      "tier1": true,
-      "cells": {
-        "gms_v83": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "sub-struct",
-      "packet": "field/serverbound/FieldItcOperationTabSearch",
-      "tier1": true,
-      "cells": {
-        "gms_v83": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "sub-struct",
-      "packet": "field/serverbound/FieldItcOperationViewWish",
       "tier1": true,
       "cells": {
         "gms_v83": {

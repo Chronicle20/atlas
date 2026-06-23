@@ -1127,11 +1127,37 @@ func candidatesFromFName(fname string) []candidate {
 		// mode=0x14 (20, CHANNEL_CHANGE): Decode4(charId) + Decode1(inShop) + Decode4(channelId).
 		// Atlas struct: buddy/clientbound/channel_change.go ChannelChange.
 		return []candidate{{name: "ChannelChange", pkg: "buddy", dir: csvpkg.DirClientbound}}
-	case "CWvsContext::OnFriendResult#Error":
-		// mode=0x0B–0x17 (error sub-ops): mode byte only; no further packet reads on success
-		// path (error cases show StringPool notice dialogs). Sub-op enum deferred to _pending.md.
-		// Atlas struct: buddy/clientbound/error.go Error.
-		return []candidate{{name: "Error", pkg: "buddy", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnFriendResult#ListFull":
+		// case 11 (0x0B): mode-only notice. Atlas ListFull writes mode(1). ✓ v83..jms.
+		return []candidate{{name: "ListFull", pkg: "buddy", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnFriendResult#OtherListFull":
+		// case 12 (0x0C): mode-only notice. Atlas OtherListFull writes mode(1). ✓ v83..jms.
+		return []candidate{{name: "OtherListFull", pkg: "buddy", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnFriendResult#AlreadyBuddy":
+		// case 13 (0x0D): mode-only notice. Atlas AlreadyBuddy writes mode(1). ✓ v83..jms.
+		return []candidate{{name: "AlreadyBuddy", pkg: "buddy", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnFriendResult#CannotBuddyGm":
+		// case 14 (0x0E): mode-only notice. Atlas CannotBuddyGm writes mode(1). ✓ v83..jms.
+		return []candidate{{name: "CannotBuddyGm", pkg: "buddy", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnFriendResult#CharacterNotFound":
+		// case 15 (0x0F): mode-only notice. Atlas CharacterNotFound writes mode(1). ✓ v83..jms.
+		return []candidate{{name: "CharacterNotFound", pkg: "buddy", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnFriendResult#UnknownError":
+		// case 16 (0x10): GMS reads Decode1(extra byte), jms mode-only.
+		// Atlas UnknownError writes mode(1)+0x00(1) on GMS, mode(1) on jms. ✓
+		return []candidate{{name: "UnknownError", pkg: "buddy", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnFriendResult#UnknownError2":
+		// case 17 (0x11): GMS reads Decode1(extra byte), jms mode-only.
+		// Atlas UnknownError2 writes mode(1)+0x00(1) on GMS, mode(1) on jms. ✓
+		return []candidate{{name: "UnknownError2", pkg: "buddy", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnFriendResult#UnknownError3":
+		// case 19 (0x13): GMS reads Decode1(extra byte), jms mode-only.
+		// Atlas UnknownError3 writes mode(1)+0x00(1) on GMS, mode(1) on jms. ✓
+		return []candidate{{name: "UnknownError3", pkg: "buddy", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnFriendResult#UnknownError4":
+		// case 22 (0x16): GMS reads Decode1(extra byte), jms mode-only.
+		// Atlas UnknownError4 writes mode(1)+0x00(1) on GMS, mode(1) on jms. ✓
+		return []candidate{{name: "UnknownError4", pkg: "buddy", dir: csvpkg.DirClientbound}}
 	case "CWvsContext::OnFriendResult#Invite":
 		// mode=0x09 (INVITE): Decode4(origId) + DecodeStr(origName) + Decode4 + Decode4 +
 		// GW_Friend::Insert(39 bytes) + Decode1(inShop).
@@ -1370,11 +1396,63 @@ func candidatesFromFName(fname string) []candidate {
 		// optional(Decode1+DecodeStr+PARTYDATA). The no-member path (isForced=0, different charId)
 		// writes zero-fills party, consistent with Disband. Tool-limitation: branch-flattening.
 		return []candidate{{name: "Disband", pkg: "party", dir: csvpkg.DirClientbound}}
-	case "CWvsContext::OnPartyResult#Error":
-		// mode=9,10,13,17,18,22,29,32–34,36 (error string pool nodes; no Decode calls beyond mode byte).
-		// Atlas Error writes: mode(1) + name(str). ⚠️ Many error modes read no additional data from
-		// packet; the name field is resolved server-side. Sub-op enum deferred to _pending.md.
-		return []candidate{{name: "Error", pkg: "party", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnPartyResult#AlreadyJoined1":
+		// case 9 (0x09): mode-only notice. Atlas AlreadyJoined1 writes mode(1). ✓ v83..jms.
+		return []candidate{{name: "AlreadyJoined1", pkg: "party", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnPartyResult#BeginnerCannotCreate":
+		// case 10 (0x0A): mode-only notice. Atlas BeginnerCannotCreate writes mode(1). ✓ v83..jms.
+		return []candidate{{name: "BeginnerCannotCreate", pkg: "party", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnPartyResult#NotInParty":
+		// case 13 (0x0D): mode-only notice. Atlas NotInParty writes mode(1). ✓ v83..jms.
+		return []candidate{{name: "NotInParty", pkg: "party", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnPartyResult#AlreadyJoined2":
+		// v83/84 case 16 (0x10), v87/95/jms case 17 (0x11, +1 shift): mode-only notice.
+		// Atlas AlreadyJoined2 writes mode(1). ✓
+		return []candidate{{name: "AlreadyJoined2", pkg: "party", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnPartyResult#PartyFull":
+		// v83/84 case 17 (0x11), v87/95/jms case 18 (0x12, +1 shift): mode-only notice.
+		// Atlas PartyFull writes mode(1). ✓
+		return []candidate{{name: "PartyFull", pkg: "party", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnPartyResult#UnableToFindInChannel":
+		// case 19 (0x13): mode-only notice. v83/84 only (version-absent v87/95/jms).
+		// Atlas UnableToFindInChannel writes mode(1). ✓
+		return []candidate{{name: "UnableToFindInChannel", pkg: "party", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnPartyResult#BlockingInvitations":
+		// case 21 (0x15): Decode1(mode)+DecodeStr(name). v83/84 only.
+		// Atlas BlockingInvitations writes mode(1)+name(str). ✓
+		return []candidate{{name: "BlockingInvitations", pkg: "party", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnPartyResult#TakingCareOfInvitation":
+		// case 22 (0x16): Decode1(mode)+DecodeStr(name). v83/84 only.
+		// Atlas TakingCareOfInvitation writes mode(1)+name(str). ✓
+		return []candidate{{name: "TakingCareOfInvitation", pkg: "party", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnPartyResult#RequestDenied":
+		// case 23 (0x17): Decode1(mode)+DecodeStr(name). v83/84 only.
+		// Atlas RequestDenied writes mode(1)+name(str). ✓
+		return []candidate{{name: "RequestDenied", pkg: "party", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnPartyResult#CannotKick":
+		// v83/84 case 25 (0x19), v87/95/jms case 29 (0x1D): mode-only notice.
+		// Atlas CannotKick writes mode(1). ✓
+		return []candidate{{name: "CannotKick", pkg: "party", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnPartyResult#OnlyWithinVicinity":
+		// v83/84 case 28 (0x1C), v87/95/jms case 32 (0x20): mode-only notice.
+		// Atlas OnlyWithinVicinity writes mode(1). ✓
+		return []candidate{{name: "OnlyWithinVicinity", pkg: "party", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnPartyResult#UnableToHandOver":
+		// v83/84 case 29 (0x1D), v87/95/jms case 33 (0x21): mode-only notice.
+		// Atlas UnableToHandOver writes mode(1). ✓
+		return []candidate{{name: "UnableToHandOver", pkg: "party", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnPartyResult#OnlySameChannel":
+		// v83/84 case 30 (0x1E), v87/95/jms case 34 (0x22): mode-only notice.
+		// Atlas OnlySameChannel writes mode(1). ✓
+		return []candidate{{name: "OnlySameChannel", pkg: "party", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnPartyResult#GmCannotCreate":
+		// v83/84 case 32 (0x20), v87/95/jms case 36 (0x24): mode-only notice.
+		// Atlas GmCannotCreate writes mode(1). ✓
+		return []candidate{{name: "GmCannotCreate", pkg: "party", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnPartyResult#UnableToFindCharacter":
+		// v83/84 case 33 (0x21), v87/95 case 37 (0x25), jms version-absent: mode-only notice.
+		// Atlas UnableToFindCharacter writes mode(1). ✓
+		return []candidate{{name: "UnableToFindCharacter", pkg: "party", dir: csvpkg.DirClientbound}}
 	case "CWvsContext::OnPartyResult#ChangeLeader":
 		// mode=31: Decode4(newLeaderId) + Decode1(disconnected).
 		// Atlas ChangeLeader writes: mode(1) + targetCharacterId(4) + disconnected(1). ✓

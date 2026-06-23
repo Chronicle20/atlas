@@ -1,0 +1,30 @@
+{
+  "WriterName": "BuddyUnknownError",
+  "IDAName": "CWvsContext::OnFriendResult#UnknownError",
+  "Address": "0xa8ada2",
+  "Variant": "GMS/v84",
+  "BranchDepth": 1,
+  "AtlasFile": "libs/atlas-packet/buddy/clientbound/error.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode byte (16)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "trailing extra byte (CInPacket::Decode1)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

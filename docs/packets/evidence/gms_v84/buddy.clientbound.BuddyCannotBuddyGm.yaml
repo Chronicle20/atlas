@@ -1,0 +1,10 @@
+packet: buddy/clientbound/BuddyCannotBuddyGm
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnFriendResult#CannotBuddyGm
+    address: "0xa8ada2"
+    decompile_sha256: 12920bda4e16dba733c14261ce8c4f1c32d4d4478a0b3f86d8d03b22658229ff
+verifies:
+  - libs/atlas-packet/buddy/clientbound/error_test.go#TestModeOnlyBuddyErrorArms

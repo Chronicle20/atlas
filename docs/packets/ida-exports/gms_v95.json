@@ -13847,6 +13847,242 @@
           "comment": "skillId (repeated count times)"
         }
       ]
+    },
+    "CWvsContext::OnPartyResult#AlreadyJoined1": {
+      "address": "0xa10ab0",
+      "direction": "clientbound",
+      "note": "mode=9. Error/notice arm: mode-only (no body).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (9)"
+        }
+      ]
+    },
+    "CWvsContext::OnPartyResult#BeginnerCannotCreate": {
+      "address": "0xa10ab0",
+      "direction": "clientbound",
+      "note": "mode=10. Error/notice arm: mode-only (no body).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (10)"
+        }
+      ]
+    },
+    "CWvsContext::OnPartyResult#NotInParty": {
+      "address": "0xa10ab0",
+      "direction": "clientbound",
+      "note": "mode=13. Error/notice arm: mode-only (no body).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (13)"
+        }
+      ]
+    },
+    "CWvsContext::OnPartyResult#AlreadyJoined2": {
+      "address": "0xa10ab0",
+      "direction": "clientbound",
+      "note": "mode=17. Error/notice arm: mode-only (no body).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (17)"
+        }
+      ]
+    },
+    "CWvsContext::OnPartyResult#PartyFull": {
+      "address": "0xa10ab0",
+      "direction": "clientbound",
+      "note": "mode=18. Error/notice arm: mode-only (no body).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (18)"
+        }
+      ]
+    },
+    "CWvsContext::OnPartyResult#CannotKick": {
+      "address": "0xa10ab0",
+      "direction": "clientbound",
+      "note": "mode=29. Error/notice arm: mode-only (no body).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (29)"
+        }
+      ]
+    },
+    "CWvsContext::OnPartyResult#OnlyWithinVicinity": {
+      "address": "0xa10ab0",
+      "direction": "clientbound",
+      "note": "mode=32. Error/notice arm: mode-only (no body).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (32)"
+        }
+      ]
+    },
+    "CWvsContext::OnPartyResult#UnableToHandOver": {
+      "address": "0xa10ab0",
+      "direction": "clientbound",
+      "note": "mode=33. Error/notice arm: mode-only (no body).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (33)"
+        }
+      ]
+    },
+    "CWvsContext::OnPartyResult#OnlySameChannel": {
+      "address": "0xa10ab0",
+      "direction": "clientbound",
+      "note": "mode=34. Error/notice arm: mode-only (no body).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (34)"
+        }
+      ]
+    },
+    "CWvsContext::OnPartyResult#GmCannotCreate": {
+      "address": "0xa10ab0",
+      "direction": "clientbound",
+      "note": "mode=36. Error/notice arm: mode-only (no body).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (36)"
+        }
+      ]
+    },
+    "CWvsContext::OnPartyResult#UnableToFindCharacter": {
+      "address": "0xa10ab0",
+      "direction": "clientbound",
+      "note": "mode=37. Error/notice arm: mode-only (no body).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (37)"
+        }
+      ]
+    },
+    "CWvsContext::OnFriendResult#ListFull": {
+      "address": "0xa12630",
+      "direction": "clientbound",
+      "note": "mode=11. Error/notice arm: mode-only (no body).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (11)"
+        }
+      ]
+    },
+    "CWvsContext::OnFriendResult#OtherListFull": {
+      "address": "0xa12630",
+      "direction": "clientbound",
+      "note": "mode=12. Error/notice arm: mode-only (no body).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (12)"
+        }
+      ]
+    },
+    "CWvsContext::OnFriendResult#AlreadyBuddy": {
+      "address": "0xa12630",
+      "direction": "clientbound",
+      "note": "mode=13. Error/notice arm: mode-only (no body).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (13)"
+        }
+      ]
+    },
+    "CWvsContext::OnFriendResult#CannotBuddyGm": {
+      "address": "0xa12630",
+      "direction": "clientbound",
+      "note": "mode=14. Error/notice arm: mode-only (no body).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (14)"
+        }
+      ]
+    },
+    "CWvsContext::OnFriendResult#CharacterNotFound": {
+      "address": "0xa12630",
+      "direction": "clientbound",
+      "note": "mode=15. Error/notice arm: mode-only (no body).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (15)"
+        }
+      ]
+    },
+    "CWvsContext::OnFriendResult#UnknownError": {
+      "address": "0xa12630",
+      "direction": "clientbound",
+      "note": "mode=16. GMS reads a trailing CInPacket::Decode1 (extra byte).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (16)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "trailing extra byte (CInPacket::Decode1)"
+        }
+      ]
+    },
+    "CWvsContext::OnFriendResult#UnknownError2": {
+      "address": "0xa12630",
+      "direction": "clientbound",
+      "note": "mode=17. GMS reads a trailing CInPacket::Decode1 (extra byte).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (17)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "trailing extra byte (CInPacket::Decode1)"
+        }
+      ]
+    },
+    "CWvsContext::OnFriendResult#UnknownError3": {
+      "address": "0xa12630",
+      "direction": "clientbound",
+      "note": "mode=19. GMS reads a trailing CInPacket::Decode1 (extra byte).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (19)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "trailing extra byte (CInPacket::Decode1)"
+        }
+      ]
+    },
+    "CWvsContext::OnFriendResult#UnknownError4": {
+      "address": "0xa12630",
+      "direction": "clientbound",
+      "note": "mode=22. GMS reads a trailing CInPacket::Decode1 (extra byte).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (22)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "trailing extra byte (CInPacket::Decode1)"
+        }
+      ]
     }
   }
 }

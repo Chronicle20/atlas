@@ -1,0 +1,10 @@
+packet: buddy/clientbound/BuddyAlreadyBuddy
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnFriendResult#AlreadyBuddy
+    address: "0xa8ada2"
+    decompile_sha256: f4299ff8e04562597a52c7c6a8f045f54455a5f44896f5c415be6987d14c57f1
+verifies:
+  - libs/atlas-packet/buddy/clientbound/error_test.go#TestModeOnlyBuddyErrorArms

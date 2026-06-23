@@ -1,0 +1,10 @@
+packet: party/clientbound/PartyUnableToHandOver
+direction: clientbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnPartyResult#UnableToHandOver
+    address: "0xad697a"
+    decompile_sha256: 55d58809d4990b0cbd58079106bc15c969b18caa77b0233858ee25cea9bb2f54
+verifies:
+  - libs/atlas-packet/party/clientbound/error_test.go#TestModeOnlyPartyErrorArms

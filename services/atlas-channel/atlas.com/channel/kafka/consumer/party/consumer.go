@@ -445,11 +445,60 @@ func handleError(sc server.Model, wp writer.Producer) message.Handler[party2.Sta
 	}
 }
 
+// partyErrorBody maps a party status-event error type to the discrete,
+// fixed-key per-mode body func for that arm. Most arms are mode-only and ignore
+// the target name; the three invite-target arms (Blocking/TakingCare/RequestDenied)
+// carry the name. The two D8 arms (UnableToFindCharacter/UnableToFindInChannel)
+// are mode-only and intentionally drop the name. ERROR_UNEXPECTED has no
+// operations key and falls through to the unmapped default (logged + dropped) —
+// no mode is invented for it. Keys are the partycb.PartyOperation* error consts.
+func partyErrorBody(errorType string, name string) (func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte, bool) {
+	switch errorType {
+	case partycb.PartyOperationAlreadyJoined1:
+		return partycb.PartyAlreadyJoined1Body(), true
+	case partycb.PartyOperationBeginnerCannotCreate:
+		return partycb.PartyBeginnerCannotCreateBody(), true
+	case partycb.PartyOperationNotInParty:
+		return partycb.PartyNotInPartyBody(), true
+	case partycb.PartyOperationAlreadyJoined2:
+		return partycb.PartyAlreadyJoined2Body(), true
+	case partycb.PartyOperationPartyFull:
+		return partycb.PartyFullBody(), true
+	case partycb.PartyOperationUnableToFindInChannel:
+		return partycb.PartyUnableToFindInChannelBody(), true
+	case partycb.PartyOperationBlockingInvitations:
+		return partycb.PartyBlockingInvitationsBody(name), true
+	case partycb.PartyOperationTakingCareOfInvitation:
+		return partycb.PartyTakingCareOfInvitationBody(name), true
+	case partycb.PartyOperationRequestDenied:
+		return partycb.PartyRequestDeniedBody(name), true
+	case partycb.PartyOperationCannotKick:
+		return partycb.PartyCannotKickBody(), true
+	case partycb.PartyOperationOnlyWithinVicinity:
+		return partycb.PartyOnlyWithinVicinityBody(), true
+	case partycb.PartyOperationUnableToHandOver:
+		return partycb.PartyUnableToHandOverBody(), true
+	case partycb.PartyOperationOnlySameChannel:
+		return partycb.PartyOnlySameChannelBody(), true
+	case partycb.PartyOperationGmCannotCreate:
+		return partycb.PartyGmCannotCreateBody(), true
+	case partycb.PartyOperationUnableToFindCharacter:
+		return partycb.PartyUnableToFindCharacterBody(), true
+	default:
+		return nil, false
+	}
+}
+
 func partyError(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(errorType string, name string) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(errorType string, name string) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(errorType string, name string) model.Operator[session.Model] {
 			return func(errorType string, name string) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(partycb.PartyOperationWriter)(partycb.PartyErrorBody(errorType, name))
+				body, ok := partyErrorBody(errorType, name)
+				if !ok {
+					l.WithField("error_type", errorType).Warn("unmapped party error type; dropping")
+					return func(_ session.Model) error { return nil }
+				}
+				return session.Announce(l)(ctx)(wp)(partycb.PartyOperationWriter)(body)
 			}
 		}
 	}

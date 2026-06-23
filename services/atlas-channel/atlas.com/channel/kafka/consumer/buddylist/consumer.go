@@ -231,11 +231,30 @@ func handleStatusEventBuddyError(sc server.Model, wp writer.Producer) message.Ha
 	}
 }
 
+// buddyErrorBodies maps a buddy-list status-event error code to the discrete,
+// fixed-key per-mode body func for that mode-only error arm. A code with no entry
+// is logged and dropped (never sent as the wrong mode). The future-feature
+// UnknownError2/3/4 arms have no runtime caller and are intentionally absent.
+// Keys are the channel-side StatusEventError* consts.
+var buddyErrorBodies = map[string]func() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte{
+	buddylist2.StatusEventErrorListFull:          buddypkt.BuddyListFullBody,
+	buddylist2.StatusEventErrorOtherListFull:     buddypkt.BuddyOtherListFullBody,
+	buddylist2.StatusEventErrorAlreadyBuddy:      buddypkt.BuddyAlreadyBuddyBody,
+	buddylist2.StatusEventErrorCannotBuddyGm:     buddypkt.BuddyCannotBuddyGmBody,
+	buddylist2.StatusEventErrorCharacterNotFound: buddypkt.BuddyCharacterNotFoundBody,
+	buddylist2.StatusEventErrorUnknownError:      buddypkt.BuddyUnknownErrorBody,
+}
+
 func buddyError(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(errorCode string) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(errorCode string) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(errorCode string) model.Operator[session.Model] {
 			return func(errorCode string) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(buddypkt.BuddyOperationWriter)(buddypkt.BuddyErrorBody(errorCode))
+				bodyFn, ok := buddyErrorBodies[errorCode]
+				if !ok {
+					l.WithField("error_code", errorCode).Warn("unmapped buddy error code; dropping")
+					return func(_ session.Model) error { return nil }
+				}
+				return session.Announce(l)(ctx)(wp)(buddypkt.BuddyOperationWriter)(bodyFn())
 			}
 		}
 	}

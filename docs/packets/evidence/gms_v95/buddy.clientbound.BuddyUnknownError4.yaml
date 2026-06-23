@@ -1,0 +1,10 @@
+packet: buddy/clientbound/BuddyUnknownError4
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnFriendResult#UnknownError4
+    address: "0xa12630"
+    decompile_sha256: 2d0faa4b5de348c88cd5dc0d7bfc98fae5bdf465b5fd398f584c5e5dc2432843
+verifies:
+  - libs/atlas-packet/buddy/clientbound/error_test.go#TestExtraByteBuddyErrorArms

@@ -1,0 +1,10 @@
+packet: party/clientbound/PartyOnlyWithinVicinity
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnPartyResult#OnlyWithinVicinity
+    address: "0xa3e31c"
+    decompile_sha256: c308de109207ea4187c7d2caf6dc2538bafaa784897d62135141a7ef6ffcee76
+verifies:
+  - libs/atlas-packet/party/clientbound/error_test.go#TestModeOnlyPartyErrorArms

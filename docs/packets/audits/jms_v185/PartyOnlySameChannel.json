@@ -1,0 +1,21 @@
+{
+  "WriterName": "PartyOnlySameChannel",
+  "IDAName": "CWvsContext::OnPartyResult#OnlySameChannel",
+  "Address": "0xb297e7",
+  "Variant": "JMS/v185",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/party/clientbound/error.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode byte (34)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

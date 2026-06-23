@@ -47,13 +47,6 @@ func BuddyUpdateBody(characterId uint32, group string, characterName string, cha
 	})
 }
 
-func BuddyErrorBody(errorCode string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
-	hasExtra := errorCode == BuddyOperationErrorUnknownError
-	return atlas_packet.WithResolvedCode("operations", errorCode, func(mode byte) packet.Encoder {
-		return clientbound.NewBuddyError(mode, hasExtra)
-	})
-}
-
 func BuddyChannelChangeBody(characterId uint32, channelId int8) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", BuddyOperationBuddyChannelChange, func(mode byte) packet.Encoder {
 		return clientbound.NewBuddyChannelChange(mode, characterId, channelId)
@@ -63,5 +56,59 @@ func BuddyChannelChangeBody(characterId uint32, channelId int8) func(logrus.Fiel
 func BuddyCapacityUpdateBody(capacity byte) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", BuddyOperationCapacityUpdate, func(mode byte) packet.Encoder {
 		return clientbound.NewBuddyCapacityUpdate(mode, capacity)
+	})
+}
+
+func BuddyListFullBody() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", BuddyOperationErrorListFull, func(mode byte) packet.Encoder {
+		return clientbound.NewListFull(mode)
+	})
+}
+
+func BuddyOtherListFullBody() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", BuddyOperationErrorOtherListFull, func(mode byte) packet.Encoder {
+		return clientbound.NewOtherListFull(mode)
+	})
+}
+
+func BuddyAlreadyBuddyBody() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", BuddyOperationErrorAlreadyBuddy, func(mode byte) packet.Encoder {
+		return clientbound.NewAlreadyBuddy(mode)
+	})
+}
+
+func BuddyCannotBuddyGmBody() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", BuddyOperationErrorCannotBuddyGm, func(mode byte) packet.Encoder {
+		return clientbound.NewCannotBuddyGm(mode)
+	})
+}
+
+func BuddyCharacterNotFoundBody() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", BuddyOperationErrorCharacterNotFound, func(mode byte) packet.Encoder {
+		return clientbound.NewCharacterNotFound(mode)
+	})
+}
+
+func BuddyUnknownErrorBody() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", BuddyOperationErrorUnknownError, func(mode byte) packet.Encoder {
+		return clientbound.NewUnknownError(mode)
+	})
+}
+
+func BuddyUnknownError2Body() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", BuddyOperationErrorUnknownError2, func(mode byte) packet.Encoder {
+		return clientbound.NewUnknownError2(mode)
+	})
+}
+
+func BuddyUnknownError3Body() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", BuddyOperationErrorUnknownError3, func(mode byte) packet.Encoder {
+		return clientbound.NewUnknownError3(mode)
+	})
+}
+
+func BuddyUnknownError4Body() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", BuddyOperationErrorUnknownError4, func(mode byte) packet.Encoder {
+		return clientbound.NewUnknownError4(mode)
 	})
 }

@@ -233,7 +233,7 @@ Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 | SPAWN_SPECIAL_MAPOBJECT | CSummonedPool::OnCreated; CSummonedPool::OnPacket | summon/clientbound/SummonSpawn (T1) | 0x0AF | ✅ | 0x0B3 | ✅ | 0x0BC | ✅ | 0x116 | ✅ | 0x0B5 | ❌ |
 | REMOVE_SPECIAL_MAPOBJECT | CSummonedPool::OnPacket; CSummonedPool::OnRemoved | summon/clientbound/SummonRemove (T1) | 0x0B0 | ✅ | 0x0B4 | ✅ | 0x0BD | ✅ | 0x117 | ✅ | 0x0B6 | ❌ |
 | MOVE_SUMMON | CSummonedPool::OnMove | summon/clientbound/SummonMove (T1) | 0x0B1 | ✅ | 0x0B5 | ✅ | 0x0BE | ✅ | 0x118 | ✅ | 0x0B7 | ❌ |
-| SUMMON_ATTACK | CSummonedPool::OnAttack | summon/clientbound/SummonAttack (T1) | 0x0B2 | ✅ | 0x0B6 | ✅ | 0x0BF | ❌ | 0x119 | ✅ | 0x0B8 | ❌ |
+| SUMMON_ATTACK | CSummonedPool::OnAttack | summon/clientbound/SummonAttack (T1) | 0x0B2 | ✅ | 0x0B6 | ✅ | 0x0BF | ✅ | 0x119 | ✅ | 0x0B8 | ❌ |
 | DAMAGE_SUMMON | CSummonedPool::OnHit | summon/clientbound/SummonDamage (T1) | 0x0B3 | ✅ | 0x0B8 | ✅ | 0x0C0 | ❌ | 0x11B | ✅ | 0x0B9 | ❌ |
 | SHOW_ITEM_HYPER_UPGRADE_EFFECT | CUser::OnHitByUser; CUser::ShowItemHyperUpgradeEffect |  |  | ⬜ |  | ⬜ | 0x0B3 | ❌ | 0x0BB | ❌ |  | ⬜ |
 | SUMMON_SKILL | CSummonedPool::OnSkill | summon/clientbound/SummonSkill (T1) | 0x0B4 | ✅ | 0x0B7 | ✅ | 0x0C1 | ❌ | 0x11A | ✅ | 0x0BA | ❌ |
@@ -904,7 +904,7 @@ Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 |---------|----|----|----|----|----|----|-----------|
 | v83 | 354 | 0 | 0 | 318 | 200 | 0 | 52.7% |
 | v84 | 319 | 0 | 0 | 332 | 221 | 0 | 49.0% |
-| v87 | 363 | 0 | 0 | 346 | 163 | 0 | 51.2% |
+| v87 | 364 | 0 | 0 | 345 | 163 | 0 | 51.3% |
 | v95 | 392 | 0 | 0 | 401 | 79 | 0 | 49.4% |
 | JMS185 | 329 | 0 | 0 | 374 | 169 | 0 | 46.8% |
 

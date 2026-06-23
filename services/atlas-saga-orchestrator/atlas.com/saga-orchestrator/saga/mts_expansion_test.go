@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
@@ -167,7 +169,10 @@ func TestExpandWithdrawFromMts(t *testing.T) {
 		CharacterId:   1001,
 		WorldId:       0,
 		HoldingId:     holdingId,
-		InventoryType: 1,
+		// The channel passes 0 (advisory placeholder); 0 matches no compartment, so
+		// the expansion MUST derive the real type from the holding's template (a
+		// weapon, 1402001 -> equip type 1), NOT pass this 0 through.
+		InventoryType: 0,
 	}
 	st := NewStep[any]("withdraw_from_mts-1", Pending, WithdrawFromMts, payload)
 
@@ -188,6 +193,12 @@ func TestExpandWithdrawFromMts(t *testing.T) {
 	require.True(t, ok)
 	require.Equal(t, uint32(1001), acc.CharacterId)
 	require.Equal(t, templateId, acc.TemplateId)
+	// The accept step's inventory type is derived from the template, not the
+	// passed-through advisory 0. 1402001 is a one-handed sword -> equip (type 1).
+	expectedType, ok := inventory.TypeFromItemId(item.Id(templateId))
+	require.True(t, ok)
+	require.Equal(t, byte(expectedType), acc.InventoryType)
+	require.NotZero(t, acc.InventoryType, "inventory type must be the template-derived non-zero type, not the advisory 0")
 	require.Equal(t, uint16(9), acc.AssetData.Strength)
 	require.Equal(t, uint16(11), acc.AssetData.WeaponAttack)
 	require.Equal(t, uint16(7), acc.AssetData.Slots)

@@ -19,6 +19,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
@@ -1532,6 +1534,17 @@ func (p *ProcessorImpl) expandWithdrawFromMts(st Step[any]) ([]Step[any], error)
 
 	p.l.Debugf("Found MTS holding template [%d] quantity [%d] for take-home", found.TemplateId, found.Quantity)
 
+	// Derive the destination inventory type from the holding's item template. The
+	// channel passes InventoryType=0 as an advisory placeholder (the wire carries
+	// only nITCSN), and 0 matches no compartment (valid types are 1-5), so the
+	// accept_to_character step would error and roll the saga back, stranding the
+	// item in holding. Derive it here from the template the same way every other
+	// grant path does (cash-shop withdraw, RequestCreateItem, the asset consumer).
+	inventoryType, ok := inventory.TypeFromItemId(item.Id(found.TemplateId))
+	if !ok {
+		return nil, fmt.Errorf("unable to derive inventory type for holding template [%d] (character [%d])", found.TemplateId, payload.CharacterId)
+	}
+
 	assetData := asset2.AssetData{
 		Quantity:      found.Quantity,
 		Flag:          found.Flags,
@@ -1572,7 +1585,7 @@ func (p *ProcessorImpl) expandWithdrawFromMts(st Step[any]) ([]Step[any], error)
 			AcceptToCharacterPayload{
 				TransactionId: payload.TransactionId,
 				CharacterId:   payload.CharacterId,
-				InventoryType: payload.InventoryType,
+				InventoryType: byte(inventoryType),
 				TemplateId:    found.TemplateId,
 				AssetData:     assetData,
 			},

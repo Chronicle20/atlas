@@ -14639,8 +14639,7 @@
           "opcode": 177
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 181
         },
         "gms_v87": {

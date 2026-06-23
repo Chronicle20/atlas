@@ -29,7 +29,7 @@ const BuddyOperationWriter = "BuddyOperation"
 // The OnFriendResult switch is BYTE-IDENTICAL across ALL FIVE versions for every
 // arm below (unlike OnGuildResult/OnPartyResult, the buddy mode table is NOT
 // shifted in v95). v83==v84==v87==v95==jms. Per-version OnFriendResult addrs
-// (IDA-verified, task-105 Task 1): gms_v83 0xa8ada2, gms_v84 0xa8ada2,
+// (IDA-verified, task-105 Task 1): gms_v83 0xa3f2e8, gms_v84 0xa8ada2,
 // gms_v87 0xad7ae5, gms_v95 0xa12630, jms_v185 0xb2a873. See
 // docs/packets/dispatchers/buddy.yaml.
 //

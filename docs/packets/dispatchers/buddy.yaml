@@ -9,7 +9,7 @@
 # Per-version OnFriendResult function addresses (IDA-verified — task-105 Task 1).
 # NOTE: these are the CORRECTED ports the instances are actually running on
 # (the plan/context/guild.yaml documented ports are STALE — see context.md §10):
-#   gms_v83  0xa8ada2  (MapleStory_dump.exe,      port 13341, path v83_Me)
+#   gms_v83  0xa3f2e8  (MapleStory_dump.exe,      port 13341, path v83_Me)
 #   gms_v84  0xa8ada2  (GMS_v84.1_U_DEVM.exe,     port 13337)
 #   gms_v87  0xad7ae5  (GMSv87_4GB.exe,           port 13340)
 #   gms_v95  0xa12630  (GMS_v95.0_U_DEVM.exe,     port 13339)

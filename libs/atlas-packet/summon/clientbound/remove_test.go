@@ -39,6 +39,33 @@ func TestSummonRemoveBytes(t *testing.T) {
 	}
 }
 
+// TestSummonRemoveBytesV83 pins the v83 wire byte-for-byte against the live
+// decompile. Dispatch chain (IDA, MapleStory_dump.exe @port 13341):
+//   - CUserPool::OnUserCommonPacket@0x972401 reads cid (Decode4@0x97240c), then
+//     routes op 0xB0 to CSummonedPool::OnPacket(v6,a2)@0x972490.
+//   - CSummonedPool::OnPacket@0x938dd7 reads oid (Decode4@0x938e16), looks up the
+//     summon, then for op 0xB0 calls sub_7A64EB(v9,v5)@0x938e43 (the OnRemoved leaf).
+//   - sub_7A64EB@0x7a64eb reads ONE byte: Decode1@0x7a6500 (leave/animated flag,
+//     branched 0/2/3/4) and nothing else from the packet.
+// So the wire is: int ownerId(=cid, consumed upstream) + int oid + byte flag.
+// Atlas writes flag = 4 when animated, else 1 (matches the branch).
+// packet-audit:verify packet=summon/clientbound/SummonRemove version=gms_v83 ida=0x7a64eb
+func TestSummonRemoveBytesV83(t *testing.T) {
+	in := NewSummonRemove(42, 1000001, true)
+	ctx := test.CreateContext("GMS", 83, 1)
+	got := test.Encode(t, ctx, in.Encode, nil)
+
+	// ownerId=42, oid=1000001=0x000F4241, animated => byte 4 (Decode1@0x7a6500)
+	want := []byte{
+		0x2A, 0x00, 0x00, 0x00, // ownerId (cid, consumed by dispatcher)
+		0x41, 0x42, 0x0F, 0x00, // oid (Decode4@0x938e16 in OnPacket)
+		0x04, // animated ? 4 : 1 (Decode1@0x7a6500)
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatalf("v83 bytes = % X, want % X", got, want)
+	}
+}
+
 // TestSummonRemoveBytesV95 pins the v95+ DELTA: the oid int after ownerId.
 // packet-audit:verify packet=summon/clientbound/SummonRemove version=gms_v95 ida=0x75a470
 func TestSummonRemoveBytesV95(t *testing.T) {

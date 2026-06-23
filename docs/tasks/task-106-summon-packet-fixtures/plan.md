@@ -1,6 +1,6 @@
 # Summon Clientbound Packet-Fixture Verification Campaign — Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Drive every `incomplete`/`partial` cell in the `summon` clientbound family of the coverage matrix (`docs/packets/audits/STATUS.md`) to `verified` (✅) across v83/v84/v87/v95/jms by adding a `packet-audit:verify` byte-fixture per cell — and, for the 24 tier-1 cells, a fresh pinned evidence record — each derived field-by-field from the live client read order.
 
@@ -176,11 +176,11 @@ The export is non-idempotent — never re-run a full `export`. To re-point ONE f
 
 **Parameters:** version `gms_v95`, port 13339, FName `CSummonedPool::OnMove`, report addr `0x759830` (`docs/packets/audits/gms_v95/SummonMove.json`), test `TestSummonMoveBytesV95` (already exists), region/major/minor = `GMS,95,1`.
 
-- [ ] **Step 1: Pre-flight.** Confirm cwd is the worktree; `go run ./tools/packet-audit matrix --check` exits 0; STATUS.md shows `MOVE_SUMMON … summon/clientbound/SummonMove … 0x118 🟡` for v95.
-- [ ] **Step 2: Apply Recipe R-T0** with the parameters above. The SummonMove wire is `int cid, int oid, raw CMovePath blob` (the blob already begins with start x,y — confirm via `CMovePath::Decode` reached from `CSummonedPool::OnMove`; the start position must NOT be written separately — see `move.go` comment).
-- [ ] **Step 3: Confirm promotion.** STATUS.md v95 SummonMove cell now ✅; `matrix --check` exit 0; `go test ./libs/atlas-packet/summon/clientbound/ -run TestSummonMoveBytesV95 -v` PASS.
-- [ ] **Step 4: Verify NO evidence file was created** for v95 SummonMove (`ls docs/packets/evidence/gms_v95/ | grep -i summon.clientbound.SummonMove` → no output; tier-0 carries none).
-- [ ] **Step 5: Commit.**
+- [x] **Step 1: Pre-flight.** Confirm cwd is the worktree; `go run ./tools/packet-audit matrix --check` exits 0; STATUS.md shows `MOVE_SUMMON … summon/clientbound/SummonMove … 0x118 🟡` for v95.
+- [x] **Step 2: Apply Recipe R-T0** with the parameters above. The SummonMove wire is `int cid, int oid, raw CMovePath blob` (the blob already begins with start x,y — confirm via `CMovePath::Decode` reached from `CSummonedPool::OnMove`; the start position must NOT be written separately — see `move.go` comment).
+- [x] **Step 3: Confirm promotion.** STATUS.md v95 SummonMove cell now ✅; `matrix --check` exit 0; `go test ./libs/atlas-packet/summon/clientbound/ -run TestSummonMoveBytesV95 -v` PASS.
+- [x] **Step 4: Verify NO evidence file was created** for v95 SummonMove (`ls docs/packets/evidence/gms_v95/ | grep -i summon.clientbound.SummonMove` → no output; tier-0 carries none).
+- [x] **Step 5: Commit.**
   ```bash
   git add libs/atlas-packet/summon/clientbound/move_test.go docs/packets/audits/STATUS.md docs/packets/audits/status.json
   git commit -m "task-106: verify summon/clientbound/SummonMove gms_v95 (tier-0 marker; clears lone 🟡)"
@@ -211,15 +211,15 @@ The export is non-idempotent — never re-run a full `export`. To re-point ONE f
 
 > The existing `*_test.go` already carry unmarked v83 byte bodies. Treat them as a hypothesis to **confirm against the live decompile**, then add a **new** marked `…BytesV83` test (or add the marker above the existing one only after live confirmation). Do NOT delete/rename the existing funcs.
 
-- [ ] **Step 1: Select the v83 IDB.** `mcp__ida-pro__list_instances`; `select_instance(13341)` (confirm name).
-- [ ] **Step 2: Resolve the dispatch chain once.** Decompile `CUserPool::OnUserCommonPacket` (cid pre-read) and `CSummonedPool::OnPacket @0x938dd7` (oid pre-read + the per-opcode vtable dispatch for 0xAF..0xB4). Record which leaf each opcode routes to and the active address of each. **Resolve the `SummonSpawn` active-vs-inactive question here** (`0x938f61` vs `0x95ADEC`).
-- [ ] **Step 3: SummonSpawn** — apply Recipe R-T1. If the dispatcher routes 0xAF to an `OnCreated` whose address ≠ `0x938f61`, apply §R5 re-point (splice the active `OnCreated` into `gms_v83.json`, regen `gms_v83/SummonSpawn.json`) so report+marker+evidence = active addr. Confirm the spawn Init tail (charLevel, foothold) and the `spawnHasAvatarLook` gate (v83 = no avatar byte). Commit per step k.
-- [ ] **Step 4: SummonRemove** — apply Recipe R-T1. Wire = `ownerId, oid, animated byte (4|1)`. Commit.
-- [ ] **Step 5: SummonMove** — apply Recipe R-T1. Wire = `cid, oid, raw CMovePath blob` (no separate start pos). Commit.
-- [ ] **Step 6: SummonAttack** — apply Recipe R-T1. Wire = `cid, oid, byte charLevel(0), byte direction, byte count, per target{int monsterOid, byte 6, int damage}`; confirm v83 has **no** trailing flag byte (the trailing byte is the v95-only delta). Commit.
-- [ ] **Step 7: SummonDamage** — apply Recipe R-T1. Wire = `cid, oid, byte attackIdx(12), int damage, int monsterIdFrom, byte bLeft(0)`; confirm v83 stops at bLeft (no trailing dir byte). Commit.
-- [ ] **Step 8: SummonSkill** — apply Recipe R-T1. Wire = `cid, oid, byte (stance&0x7F)`; confirm there is **no** summonSkillId int. Commit.
-- [ ] **Step 9: Full-family check for v83.** `go run ./tools/packet-audit matrix && go run ./tools/packet-audit matrix --check` → exit 0; STATUS.md shows all six v83 summon clientbound cells ✅. `go test ./libs/atlas-packet/summon/clientbound/ -v` all PASS.
+- [x] **Step 1: Select the v83 IDB.** `mcp__ida-pro__list_instances`; `select_instance(13341)` (confirm name).
+- [x] **Step 2: Resolve the dispatch chain once.** Decompile `CUserPool::OnUserCommonPacket` (cid pre-read) and `CSummonedPool::OnPacket @0x938dd7` (oid pre-read + the per-opcode vtable dispatch for 0xAF..0xB4). Record which leaf each opcode routes to and the active address of each. **Resolve the `SummonSpawn` active-vs-inactive question here** (`0x938f61` vs `0x95ADEC`).
+- [x] **Step 3: SummonSpawn** — apply Recipe R-T1. If the dispatcher routes 0xAF to an `OnCreated` whose address ≠ `0x938f61`, apply §R5 re-point (splice the active `OnCreated` into `gms_v83.json`, regen `gms_v83/SummonSpawn.json`) so report+marker+evidence = active addr. Confirm the spawn Init tail (charLevel, foothold) and the `spawnHasAvatarLook` gate (v83 = no avatar byte). Commit per step k.
+- [x] **Step 4: SummonRemove** — apply Recipe R-T1. Wire = `ownerId, oid, animated byte (4|1)`. Commit.
+- [x] **Step 5: SummonMove** — apply Recipe R-T1. Wire = `cid, oid, raw CMovePath blob` (no separate start pos). Commit.
+- [x] **Step 6: SummonAttack** — apply Recipe R-T1. Wire = `cid, oid, byte charLevel(0), byte direction, byte count, per target{int monsterOid, byte 6, int damage}`; confirm v83 has **no** trailing flag byte (the trailing byte is the v95-only delta). Commit.
+- [x] **Step 7: SummonDamage** — apply Recipe R-T1. Wire = `cid, oid, byte attackIdx(12), int damage, int monsterIdFrom, byte bLeft(0)`; confirm v83 stops at bLeft (no trailing dir byte). Commit.
+- [x] **Step 8: SummonSkill** — apply Recipe R-T1. Wire = `cid, oid, byte (stance&0x7F)`; confirm there is **no** summonSkillId int. Commit.
+- [x] **Step 9: Full-family check for v83.** `go run ./tools/packet-audit matrix && go run ./tools/packet-audit matrix --check` → exit 0; STATUS.md shows all six v83 summon clientbound cells ✅. `go test ./libs/atlas-packet/summon/clientbound/ -v` all PASS.
 
 ---
 
@@ -244,10 +244,10 @@ The export is non-idempotent — never re-run a full `export`. To re-point ONE f
 | SummonDamage | `CSummonedPool::OnHit` | `0x7cc984` | confirm live |
 | SummonSkill | `CSummonedPool::OnSkill` | `0x7cc920` | confirm live |
 
-- [ ] **Step 1: Select the v84 IDB.** `select_instance(13337)`; confirm name `GMS_v84.1_U_DEVM`.
-- [ ] **Step 2: Resolve the v84 dispatch chain** (`CSummonedPool::OnPacket` + cid/oid pre-reads); record active leaf addresses; resolve any spawn active-vs-inactive twin.
-- [ ] **Step 3–8: Apply Recipe R-T1** to Spawn, Remove, Move, Attack, Damage, Skill (one commit per cell). For each, confirm the clientbound layout is byte-identical to the v83 active layout AND that every codec gate resolves to the v83 path under `GMS,84,1` (off-by-one guard). `…BytesV84` may assert equality to the shared body var (e.g. `summonSpawnV83Body`, `summonAttackV83Body`) **after** live confirmation, mirroring `TestSummonDamageBytesV87`'s pattern.
-- [ ] **Step 9: Full-family check for v84.** matrix + `matrix --check` exit 0; six v84 cells ✅; `go test` PASS.
+- [x] **Step 1: Select the v84 IDB.** `select_instance(13337)`; confirm name `GMS_v84.1_U_DEVM`.
+- [x] **Step 2: Resolve the v84 dispatch chain** (`CSummonedPool::OnPacket` + cid/oid pre-reads); record active leaf addresses; resolve any spawn active-vs-inactive twin.
+- [x] **Step 3–8: Apply Recipe R-T1** to Spawn, Remove, Move, Attack, Damage, Skill (one commit per cell). For each, confirm the clientbound layout is byte-identical to the v83 active layout AND that every codec gate resolves to the v83 path under `GMS,84,1` (off-by-one guard). `…BytesV84` may assert equality to the shared body var (e.g. `summonSpawnV83Body`, `summonAttackV83Body`) **after** live confirmation, mirroring `TestSummonDamageBytesV87`'s pattern.
+- [x] **Step 9: Full-family check for v84.** matrix + `matrix --check` exit 0; six v84 cells ✅; `go test` PASS.
 
 ---
 
@@ -270,10 +270,10 @@ The export is non-idempotent — never re-run a full `export`. To re-point ONE f
 | SummonDamage | `CSummonedPool::OnHit` | `0x7f969f` | confirm live (existing `TestSummonDamageBytesV87` asserts v87 ≡ v83) |
 | SummonSkill | `CSummonedPool::OnSkill` | `0x7f963b` | confirm live |
 
-- [ ] **Step 1: Select the v87 IDB.** `select_instance(13340)`; confirm name.
-- [ ] **Step 2: Resolve the v87 dispatch chain**; record active leaf addresses; resolve any spawn twin.
-- [ ] **Step 3–8: Apply Recipe R-T1** to all six (one commit per cell). For SummonDamage, confirm the existing `TestSummonDamageBytesV87` body against the live decompile, then add its marker + pin evidence (do not duplicate the func). Confirm v87 SummonAttack has no trailing flag byte.
-- [ ] **Step 9: Full-family check for v87.** matrix + `matrix --check` exit 0; six v87 cells ✅; `go test` PASS.
+- [x] **Step 1: Select the v87 IDB.** `select_instance(13340)`; confirm name.
+- [x] **Step 2: Resolve the v87 dispatch chain**; record active leaf addresses; resolve any spawn twin.
+- [x] **Step 3–8: Apply Recipe R-T1** to all six (one commit per cell). For SummonDamage, confirm the existing `TestSummonDamageBytesV87` body against the live decompile, then add its marker + pin evidence (do not duplicate the func). Confirm v87 SummonAttack has no trailing flag byte.
+- [x] **Step 9: Full-family check for v87.** matrix + `matrix --check` exit 0; six v87 cells ✅; `go test` PASS.
 
 ---
 
@@ -298,10 +298,10 @@ The export is non-idempotent — never re-run a full `export`. To re-point ONE f
 | SummonDamage | `CSummonedPool::OnHit` | `0x828d16` | confirm live |
 | SummonSkill | `CSummonedPool::OnSkill` | `0x828cb2` | confirm live |
 
-- [ ] **Step 1: Select the jms IDB.** `select_instance(13338)`; confirm name is the JMS v185 binary.
-- [ ] **Step 2: Resolve the jms dispatch chain** (`CSummonedPool::OnPacket @0x9F7F6E` + cid/oid pre-reads); record active leaf addresses. If a read function is SMC/undecompilable, escalate (§7).
-- [ ] **Step 3–8: Apply Recipe R-T1** to all six (one commit per cell). For SummonSpawn, confirm the existing `TestSummonSpawnBytesJMS185` body (avatar-look tail = +1 byte over the shared body) against the live decompile, then add its marker + pin evidence.
-- [ ] **Step 9: Full-family check for jms.** matrix + `matrix --check` exit 0; six jms cells ✅; `go test` PASS.
+- [x] **Step 1: Select the jms IDB.** `select_instance(13338)`; confirm name is the JMS v185 binary.
+- [x] **Step 2: Resolve the jms dispatch chain** (`CSummonedPool::OnPacket @0x9F7F6E` + cid/oid pre-reads); record active leaf addresses. If a read function is SMC/undecompilable, escalate (§7).
+- [x] **Step 3–8: Apply Recipe R-T1** to all six (one commit per cell). For SummonSpawn, confirm the existing `TestSummonSpawnBytesJMS185` body (avatar-look tail = +1 byte over the shared body) against the live decompile, then add its marker + pin evidence.
+- [x] **Step 9: Full-family check for jms.** matrix + `matrix --check` exit 0; six jms cells ✅; `go test` PASS.
 
 ---
 
@@ -309,24 +309,24 @@ The export is non-idempotent — never re-run a full `export`. To re-point ONE f
 
 **Files:** none new — verification only.
 
-- [ ] **Step 1: Whole-family matrix check.** `go run ./tools/packet-audit matrix && go run ./tools/packet-audit matrix --check` → exit 0. In STATUS.md, all six summon clientbound rows show ✅ for v83/v84/v87/v95/jms; **no 🟡 anywhere in the summon family**.
+- [x] **Step 1: Whole-family matrix check.** `go run ./tools/packet-audit matrix && go run ./tools/packet-audit matrix --check` → exit 0. In STATUS.md, all six summon clientbound rows show ✅ for v83/v84/v87/v95/jms; **no 🟡 anywhere in the summon family**.
   ```bash
   grep -iE "SummonSpawn|SummonRemove|SummonMove|SummonAttack|SummonDamage|SummonSkill|SPAWN_SPECIAL|REMOVE_SPECIAL|MOVE_SUMMON|SUMMON_ATTACK|DAMAGE_SUMMON|SUMMON_SKILL" docs/packets/audits/STATUS.md
   ```
   Confirm zero `🟡` and zero `❌` on the six clientbound summon rows.
-- [ ] **Step 2: Marker/evidence parity.** Confirm 25 markers exist (24 tier-1 + 1 tier-0) and 24 evidence files exist (no v95-SummonMove evidence):
+- [x] **Step 2: Marker/evidence parity.** Confirm 25 markers exist (24 tier-1 + 1 tier-0) and 24 evidence files exist (no v95-SummonMove evidence):
   ```bash
   grep -rn "packet-audit:verify packet=summon/clientbound" libs/atlas-packet/summon/clientbound/ | wc -l   # expect 25
   find docs/packets/evidence -name 'summon.clientbound.Summon*.yaml' | wc -l                                # expect 24
   ```
-- [ ] **Step 3: Go module gates (CLAUDE.md §Build & Verification).** In `libs/atlas-packet`:
+- [x] **Step 3: Go module gates (CLAUDE.md §Build & Verification).** In `libs/atlas-packet`:
   ```bash
   go test -race ./... && go vet ./... && go build ./...
   ```
   all clean. If §R3 forced a codec fix consumed by `services/atlas-channel`, additionally run the same three in `services/atlas-channel` **and** `docker buildx bake atlas-channel` from the worktree root.
-- [ ] **Step 4: Redis key guard.** From the repo root: `GOWORK=off tools/redis-key-guard.sh` → clean (no summon changes touch redis, but the gate is mandatory).
-- [ ] **Step 5: No stray artifacts.** `git status` shows only intended changes (fixtures, evidence YAMLs, optional re-pointed export/report, STATUS.md, status.json, plan/context docs). No `// TODO`, no stubbed tests.
-- [ ] **Step 6: Acceptance criteria sign-off.** Re-read `design.md` §9 and confirm each box is satisfied with evidence (matrix output, test output). Then proceed to code review (`superpowers:requesting-code-review`) before opening a PR, per CLAUDE.md.
+- [x] **Step 4: Redis key guard.** From the repo root: `GOWORK=off tools/redis-key-guard.sh` → clean (no summon changes touch redis, but the gate is mandatory).
+- [x] **Step 5: No stray artifacts.** `git status` shows only intended changes (fixtures, evidence YAMLs, optional re-pointed export/report, STATUS.md, status.json, plan/context docs). No `// TODO`, no stubbed tests.
+- [x] **Step 6: Acceptance criteria sign-off.** Re-read `design.md` §9 and confirm each box is satisfied with evidence (matrix output, test output). Then proceed to code review (`superpowers:requesting-code-review`) before opening a PR, per CLAUDE.md.
 
 ---
 

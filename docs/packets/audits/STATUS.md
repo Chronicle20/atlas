@@ -6,7 +6,7 @@
 Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 
 - export gms_v83: `e4f329dac5e737dbafb8cb6c91af30e36da0054699a2d5b1206d59fc284b672d`
-- export gms_v84: `06a208ed592803a88b13f97a0682a1c067ac27f0a41df79074d2f5df515b7363`
+- export gms_v84: `6a21ecf6c36f3b7be5d70b1f1f89627ff353db6b0e103830721e8f0ad482cdbb`
 - export gms_v87: `60a4c60e1eabea5d81ebacfea8a8ce1637a06679d9bdc97fe49eb45d052ed4a2`
 - export gms_v95: `cf7682a52552f94e68453f8ed3a9f74098b50a4fdf14a19968227a2f3816d37d`
 - export jms_v185: `7e7115c6f86a1bee097df0d178fd2ea60981010836500eebdb46c733bb9ddd4d`
@@ -368,7 +368,7 @@ Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 | IDA_0X112 | CUserLocal::OnQuestGuideResult |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x112 | ❌ |  | ⬜ |
 | REMOVE_MIST | CAffectedAreaPool::OnAffectedAreaRemoved | field/clientbound/FieldAffectedAreaRemoved (T1) | 0x112 | ✅ | 0x119 | ✅ | 0x123 | ✅ | 0x149 | ✅ | 0x127 | ✅ |
 | IDA_0X113 | CUserLocal::OnDeliveryQuest |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x113 | ❌ |  | ⬜ |
-| SPAWN_DOOR | CTownPortalPool::OnTownPortalCreated | door/clientbound/SpawnDoor | 0x113 | ✅ | 0x11A | ❌ | 0x124 | ❌ | 0x14A | ❌ | 0x128 | ❌ |
+| SPAWN_DOOR | CTownPortalPool::OnTownPortalCreated | door/clientbound/SpawnDoor | 0x113 | ✅ | 0x11A | ✅ | 0x124 | ❌ | 0x14A | ❌ | 0x128 | ❌ |
 | IDA_0X114 | CMob::OnMobAttackedByMob | monster/clientbound/MonsterMobAttackedByMob (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x114 | ✅ |
 | REMOVE_DOOR | CTownPortalPool::OnTownPortalRemoved | door/clientbound/RemoveDoor | 0x114 | ✅ | 0x11B | ❌ | 0x125 | ❌ | 0x14B | ❌ | 0x129 | ❌ |
 | REACTOR_HIT | CReactorPool::OnReactorChangeState | reactor/clientbound/ReactorHit | 0x115 | ✅ | 0x11C | ✅ | 0x126 | ✅ | 0x14E | ✅ | 0x12D | ✅ |
@@ -903,7 +903,7 @@ Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
 | v83 | 348 | 0 | 0 | 324 | 200 | 0 | 51.8% |
-| v84 | 313 | 0 | 0 | 338 | 221 | 0 | 48.1% |
+| v84 | 314 | 0 | 0 | 337 | 221 | 0 | 48.2% |
 | v87 | 360 | 0 | 0 | 349 | 163 | 0 | 50.8% |
 | v95 | 391 | 0 | 1 | 401 | 79 | 0 | 49.3% |
 | JMS185 | 329 | 0 | 0 | 374 | 169 | 0 | 46.8% |

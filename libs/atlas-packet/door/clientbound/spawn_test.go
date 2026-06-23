@@ -23,6 +23,7 @@ import (
 // → Decode2(x) → Decode2(y) — byte-for-byte the layout pinned below.
 //
 // packet-audit:verify packet=door/clientbound/SpawnDoor version=gms_v83 ida=0x7bd6c6
+// packet-audit:verify packet=door/clientbound/SpawnDoor version=gms_v84 ida=0x7e3740
 func TestSpawnDoor(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 

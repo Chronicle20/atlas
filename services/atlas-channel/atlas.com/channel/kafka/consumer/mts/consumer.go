@@ -4,11 +4,13 @@ import (
 	consumer2 "atlas-channel/kafka/consumer"
 	mtsmsg "atlas-channel/kafka/message/mts"
 	"atlas-channel/listener"
+	mtslisting "atlas-channel/mts/listing"
 	"atlas-channel/server"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
@@ -120,6 +122,25 @@ func announceTo(l logrus.FieldLogger, ctx context.Context, sc server.Model, wp w
 	})
 }
 
+// announceUserSaleList re-pushes the seller's "Not Yet Sold" panel
+// (GetUserSaleItemDone) by re-querying their active listings. The v83 client
+// only loads this list once at MTS entry and never re-requests it after a
+// registration/cancellation (RegisterSaleEntryDone just shows a notice and
+// re-selects a tab — it does not re-query), so the server must push the fresh
+// list for the panel to reflect a just-created or just-cancelled listing.
+func announceUserSaleList(l logrus.FieldLogger, ctx context.Context, sc server.Model, wp writer.Producer, worldId byte, sellerId uint32) {
+	ms, err := mtslisting.NewProcessor(l, ctx).Browse(world.Id(worldId), mtslisting.BrowseFilter{SellerId: sellerId})
+	if err != nil {
+		l.WithError(err).Errorf("Unable to refresh MTS sale list for seller [%d]; leaving the Not-Yet-Sold panel stale.", sellerId)
+		return
+	}
+	items := make([]fieldcb.MtsItem, 0, len(ms))
+	for _, m := range ms {
+		items = append(items, mtslisting.ToMtsItem(m))
+	}
+	announceTo(l, ctx, sc, wp, sellerId, fieldpkt.MtsOperationGetUserSaleItemDoneBody(items))
+}
+
 func handleListingCreated(sc server.Model, wp writer.Producer) message.Handler[mtsmsg.StatusEvent[mtsmsg.StatusEventListingCreatedBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, e mtsmsg.StatusEvent[mtsmsg.StatusEventListingCreatedBody]) {
 		if e.Type != mtsmsg.StatusEventTypeListingCreated {
@@ -127,6 +148,9 @@ func handleListingCreated(sc server.Model, wp writer.Producer) message.Handler[m
 		}
 		l.Debugf("MTS listing created for seller [%d] (item [%d]).", e.Body.SellerId, e.Body.ItemId)
 		announceTo(l, ctx, sc, wp, e.Body.SellerId, fieldpkt.MtsOperationRegisterSaleEntryDoneBody())
+		// Refresh the seller's "Not Yet Sold" panel so the new listing appears
+		// without re-entering MTS (the client does not re-query it itself).
+		announceUserSaleList(l, ctx, sc, wp, e.Body.WorldId, e.Body.SellerId)
 	}
 }
 
@@ -147,6 +171,9 @@ func handleListingCancelled(sc server.Model, wp writer.Producer) message.Handler
 		}
 		l.Debugf("MTS listing cancelled for seller [%d] (item [%d] -> holding [%s]).", e.Body.SellerId, e.Body.ItemId, e.Body.HoldingId.String())
 		announceTo(l, ctx, sc, wp, e.Body.SellerId, fieldpkt.MtsOperationCancelSaleItemDoneBody())
+		// Refresh the seller's "Not Yet Sold" panel so the cancelled listing drops
+		// off without re-entering MTS.
+		announceUserSaleList(l, ctx, sc, wp, e.Body.WorldId, e.Body.SellerId)
 	}
 }
 

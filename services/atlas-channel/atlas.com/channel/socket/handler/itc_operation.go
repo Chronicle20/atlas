@@ -252,32 +252,10 @@ func browseFilterFromSearchItcList(p fieldsb.ItcOperationTabSearch) mtslisting.B
 // strings are empty (the channel surfaces no such state) and the date-expired
 // FILETIME is zero.
 func mtsItemFromListing(m mtslisting.Model) fieldcb.MtsItem {
-	// zeroPosition=true: the ITCITEM's GW_ItemSlotBase blob is bare (the v83
-	// client's GW_ItemSlotBase::Decode reads the item type byte first, with NO
-	// leading inventory-slot byte). Passing false prepends a slot byte that the
-	// client misreads as the item type, mis-decodes the rest of the item, and
-	// overruns a later DecodeStr -> client crash on browse.
-	item := packetmodel.NewAsset(true, 0, m.TemplateId(), time.Time{}).SetStackableInfo(m.Quantity(), 0, 0)
-	var dateExpired [8]byte
-	return fieldpkt.MtsOperationNewItem(
-		item,            // GW_ItemSlotBase blob
-		m.ItcSn(),       // nITCSN = the listing serial (addresses buy/cancel/bid)
-		m.ListValue(),   // nPrice
-		0,               // nContractFee
-		"",              // sContractFeeTxId
-		"",              // sRollbackUsageID
-		dateExpired,     // ftITCDateExpired
-		"",              // sUserID
-		m.SellerName(),  // sGameID (seller display name)
-		"",              // sComment
-		0,               // nBidCount
-		m.MinIncrement(), // nBidRange
-		m.CurrentBid(),  // nBidPrice
-		m.ListValue(),   // nMinPrice
-		m.BuyNowPrice(), // nMaxPrice
-		m.ListValue(),   // nUnitPrice
-		0,               // nProcessStatus
-	)
+	// Delegates to the shared mtslisting.ToMtsItem so the browse arm and the
+	// consumer's post-event "Not Yet Sold" re-push produce identical wire bytes
+	// (including the zeroPosition=true bare item blob — see ToMtsItem).
+	return mtslisting.ToMtsItem(m)
 }
 
 // sellerName resolves the requesting character's display name for the listing

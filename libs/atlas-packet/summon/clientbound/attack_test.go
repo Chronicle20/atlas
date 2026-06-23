@@ -100,6 +100,36 @@ func TestSummonAttackBytes(t *testing.T) {
 	}
 }
 
+// TestSummonAttackBytesV83 pins the v83 wire byte-for-byte against the live
+// decompile. Dispatch chain (IDA, MapleStory_dump.exe @port 13341):
+//   - CUserPool::OnUserCommonPacket@0x972401 reads cid (Decode4@0x97240c), routes
+//     op 0xB2 to CSummonedPool::OnPacket@0x972490.
+//   - CSummonedPool::OnPacket@0x938dd7 reads oid (Decode4@0x938e16), looks up the
+//     summon, then case 0xB2 calls CSummonedPool::OnAttack(v9,v5,..)@0x938e9c.
+//   - CSummonedPool::OnAttack@0x7a6882 reads, after the GetSkill guard:
+//       Decode1@0x7a6908 → charLevel (stored *(this+184))
+//       Decode1@0x7a6916 → action byte (v71=(b>>7)&1 left flag, v67=b&0x7F)
+//       Decode1@0x7a6937 → count (loop guard `if (v9 > 0)`)
+//       per target: Decode4@0x7a6966 monsterOid; if(oid){ Decode1@0x7a6974 byte(6);
+//         Decode4@0x7a6987 damage }
+//     and NOTHING after the loop — there is NO trailing byte on v83 (the trailing
+//     flag is a v95-only addition, gated >=95 in the codec).
+// Wire: int cid (upstream) + int oid + byte charLevel + byte direction + byte count
+//       + per target {int monsterOid, byte 6, int damage}.
+// packet-audit:verify packet=summon/clientbound/SummonAttack version=gms_v83 ida=0x7a6882
+func TestSummonAttackBytesV83(t *testing.T) {
+	targets := []SummonAttackTarget{
+		NewSummonAttackTarget(1000001, 1234),
+		NewSummonAttackTarget(1000002, 5678),
+	}
+	in := NewSummonAttack(42, 2000001, 3, targets)
+	ctx := test.CreateContext("GMS", 83, 1)
+	got := test.Encode(t, ctx, in.Encode, nil)
+	if !bytes.Equal(got, summonAttackV83Body) {
+		t.Fatalf("v83 bytes = % X, want % X", got, summonAttackV83Body)
+	}
+}
+
 // TestSummonAttackBytesV95 pins the v95 DELTA over the shared body: a single
 // trailing flag byte = 0 after the target loop (v95 client reader
 // CSummoned::OnAttack@0x753340's Decode1@0x7534e1). The oid is now part of the

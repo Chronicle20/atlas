@@ -75,12 +75,6 @@ func PartyChangeLeaderBody(targetCharacterId uint32, disconnected bool) func(log
 	})
 }
 
-func PartyErrorBody(code string, name string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
-	return atlas_packet.WithResolvedCode("operations", code, func(mode byte) packet.Encoder {
-		return NewError(mode, name)
-	})
-}
-
 func PartyInviteBody(partyId uint32, originatorName string, originatorJobId uint32, originatorLevel uint32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", PartyOperationInvite, func(mode byte) packet.Encoder {
 		return NewInvite(mode, partyId, originatorName, originatorJobId, originatorLevel)

@@ -243,3 +243,26 @@ func TestExpandMtsSettlePurchase(t *testing.T) {
 	require.Equal(t, listingId, move.ListingId)
 	require.Equal(t, uint32(100), move.BuyerId)
 }
+
+// TestIsExpandableActionCoversExpansionSwitch pins the composite-expansion GATE
+// (isExpandableAction, used by Step()) to the set of actions that
+// expandAndProcessStep actually expands. The MTS list/settle flow regressed
+// because the expansion function + switch case existed but this gate didn't
+// list the MTS composites, so a transfer_to_mts step fell through to GetHandler
+// and failed at runtime with "unknown action type" — while the expansion unit
+// tests (which call expand* directly) stayed green. This guards that gap.
+func TestIsExpandableActionCoversExpansionSwitch(t *testing.T) {
+	composites := []Action{
+		TransferToStorage, WithdrawFromStorage,
+		TransferToCashShop, WithdrawFromCashShop,
+		TransferToMts, WithdrawFromMts, MtsSettlePurchase,
+	}
+	for _, a := range composites {
+		require.Truef(t, isExpandableAction(a), "composite action %q must be routed to expansion by the Step() gate", a)
+	}
+	// Atomic actions (dispatched via GetHandler, not expanded) must NOT be gated
+	// into expansion — e.g. the MTS custody steps the composites expand into.
+	for _, a := range []Action{AcceptToMtsListing, ReleaseFromMtsHolding, MtsMoveListingToHolding} {
+		require.Falsef(t, isExpandableAction(a), "atomic action %q must not be routed to expansion", a)
+	}
+}

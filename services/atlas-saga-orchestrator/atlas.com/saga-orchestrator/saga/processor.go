@@ -917,8 +917,7 @@ func (p *ProcessorImpl) Step(transactionId uuid.UUID) error {
 	}).Debugf("Progressing saga step [%s].", st.StepId())
 
 	// Check if this is a high-level action that needs expansion
-	if st.Action() == TransferToStorage || st.Action() == WithdrawFromStorage ||
-		st.Action() == TransferToCashShop || st.Action() == WithdrawFromCashShop {
+	if isExpandableAction(st.Action()) {
 		p.l.Debugf("Expanding high-level action [%s] into concrete steps", st.Action())
 		err := p.expandAndProcessStep(s, st)
 		if err != nil {
@@ -1003,6 +1002,25 @@ func (p *ProcessorImpl) emitFailedFromStepSyncError(s Saga, st Step[any], cause 
 			"step_id":        st.StepId(),
 			"tenant_id":      p.t.Id().String(),
 		}).Error("Failed to emit saga failed event on step sync-error.")
+	}
+}
+
+// isExpandableAction reports whether an action is a high-level composite that
+// must be routed to expandAndProcessStep rather than handled atomically via
+// GetHandler. This MUST stay in sync with the switch in expandAndProcessStep:
+// any action with an expand* case there must be listed here, or the step falls
+// through to GetHandler and fails with "unknown action type" at runtime (the
+// MTS composites hit exactly that gap — the expansion existed but this gate
+// didn't list them, and unit tests that called expand* directly never exercised
+// the gate). TestIsExpandableActionCoversExpansionSwitch pins the two in sync.
+func isExpandableAction(a Action) bool {
+	switch a {
+	case TransferToStorage, WithdrawFromStorage,
+		TransferToCashShop, WithdrawFromCashShop,
+		TransferToMts, WithdrawFromMts, MtsSettlePurchase:
+		return true
+	default:
+		return false
 	}
 }
 

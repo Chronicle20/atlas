@@ -125,6 +125,40 @@ func TestSummonSpawnBytesV84(t *testing.T) {
 	}
 }
 
+// TestSummonSpawnBytesV87 pins that v87 is byte-identical to v83 (cid, oid, skillId,
+// charLevel, SLV, Init blob; NO trailing avatar byte). Verified live (IDA,
+// GMSv87_4GB.exe @port 13340). Dispatch chain:
+//   - CUserPool::OnUserCommonPacket@0x9f7387 reads cid (Decode4@0x9f7392), routes
+//     ops 188-193 (0xBC-0xC1) to CSummonedPool::OnPacket@0x9b35bf. For op 0xBC the
+//     0xBC arm vtable-calls (*(*this+48)) = the spawn leaf sub_9B3749 (the ACTIVE
+//     vtable+0x30 target — confirmed: 0x9b3749 sits at offset +0x30 in all 3 CUser
+//     vtables that carry it: 0xb96060/0xbe4e14/0xbe5840).
+//   - sub_9B3749@0x9b3749 reads (cid already consumed upstream):
+//       Decode4@0x9b376b → oid (arg1 to the CSummoned ctor sub_7F489E, stored at
+//         obj+172 — the object id; IDB-confirmed the same +172 oid slot as the v83
+//         ctor sub_7A30A9, so the first leaf Decode4 IS the oid, not the skillId)
+//       Decode4@0x9b3775 → skillId (arg2, stored obj+180)
+//       Decode1@0x9b377f → charLevel (arg3)
+//       Decode1@0x9b378e → SLV (arg4)
+//     then sub_7F504A@0x7f504a reads the Init blob:
+//       Decode2@0x7f5061 → nX, Decode2@0x7f506e → nY, Decode1@0x7f507b → stance,
+//       Decode2@0x7f507e → foothold, Decode1@0x7f5092 → movementType,
+//       Decode1@0x7f50a9 → !puppet, then (if GetSkill(skillId)!=0)
+//       Decode1@0x7f50d0 → !animated, and returns (CSummoned::Init takes the
+//       AvatarLook ptr from the CALLER, not the packet).
+//     NO avatar-look byte on v87 — the active path reads nothing after !animated.
+//     spawnHasAvatarLook(GMS,87) = (GMS && 87>=95) = false → v83 path; off-by-one
+//     confirmed clear.
+// packet-audit:verify packet=summon/clientbound/SummonSpawn version=gms_v87 ida=0x9b3749
+func TestSummonSpawnBytesV87(t *testing.T) {
+	in := NewSummonSpawn(42, 1000001, 3111002, 20, 100, -50, 0, 0, true, false)
+	ctx := test.CreateContext("GMS", 87, 1)
+	got := test.Encode(t, ctx, in.Encode, nil)
+	if !bytes.Equal(got, summonSpawnV83Body) {
+		t.Fatalf("v87 bytes = % X, want % X (identical to v83)", got, summonSpawnV83Body)
+	}
+}
+
 // TestSummonSpawnBytesV95 pins the v95 DELTA over the shared body: just a trailing
 // bAvatarLook-present byte = 0 (the oid is now part of the shared body on all
 // versions). For our 21-summon v83 roster no avatar look is carried and Tesla Coil

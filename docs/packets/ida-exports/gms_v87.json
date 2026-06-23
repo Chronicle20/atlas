@@ -11308,15 +11308,19 @@
     "CSummonedPool::OnCreated": {
       "address": "0x9b3749",
       "direction": "clientbound",
-      "note": "SPAWN_SPECIAL_MAPOBJECT (op 188/0xBC). CSummonedPool::OnPacket@0x9b35bf dispatches op 0xBC -> the vtable+0x30 target (*(*this+48)) = sub_9B3749 (= CSummonedPool::OnCreated equivalent). sub_9B3749 reads Decode4(cid)@0x9b376b then Decode4(skillId)@0x9b3775 + Decode1(charLevel)@0x9b377f + Decode1(SLV)@0x9b378e (passed to the CSummoned ctor sub_7F489E; skillId stored at [obj+0B4h]), then the Init blob via sub_7F504A@0x9b3818. There is NO oid on v87 — only ONE int (skillId) sits between cid and the two bytes; v95 OnCreated inserts oid(i4) right after cid. The skillId is consumed by GetSkill@CSkillInfo in sub_7F504A@0x7f50b7 (this[45] = [obj+0xB4]). Init blob (sub_7F504A): Decode2(x)@0x7f5061, Decode2(y)@0x7f506e, Decode1(moveAction)@0x7f507b, Decode2(foothold)@0x7f507e, Decode1(moveAbility)@0x7f5092, Decode1(assistType)@0x7f50a9, then [if GetSkill!=0: Decode1(enterType)@0x7f50d0]. NO avatar-look byte (v95+ only). Atlas SummonSpawn (gated oid >=95, avatarLook >=95) writes cid+skillId+0x0A(charLevel)+level(SLV)+x+y+stance+foothold(0)+movementType+!puppet+!animated for v87. v87 reference (IDB asm-confirmed, summon-wire-truth.md).",
+      "note": "SPAWN_SPECIAL_MAPOBJECT (op 188/0xBC). The ACTIVE field-path target is the vtable+0x30 spawn handler CSummonedPool::OnCreated@0x9B3749 (task-106 live-confirmed: it IS the vtable[12] target in all 3 CUser vtables that carry it — 0xb96060/0xbe4e14/0xbe5840 all hold 0x9b3749 at offset +0x30). CUserPool::OnUserCommonPacket@0x9f7387 reads cid (Decode4@0x9f7392) and routes ops 188-193 to CSummonedPool::OnPacket@0x9b35bf, whose 0xBC arm vtable-calls (*(*this+48)) = sub_9B3749. OnCreated@0x9B3749 then reads (cid already consumed upstream): Decode4(oid)@0x9b376b [arg1 to the CSummoned ctor sub_7F489E, stored at obj+172 as the object id — IDB-confirmed the same +172 oid slot as the v83 ctor sub_7A30A9], Decode4(skillId)@0x9b3775 [arg2, stored obj+180], Decode1(charLevel)@0x9b377f, Decode1(SLV)@0x9b378e, then the Init blob via sub_7F504A. NO avatar-look byte on v87 (v95+/JMS185 only). Init blob (sub_7F504A): Decode2(x)@0x7f5061, Decode2(y)@0x7f506e, Decode1(moveAction/stance)@0x7f507b, Decode2(foothold)@0x7f507e, Decode1(moveAbility/movementType)@0x7f5092, Decode1(assistType=!puppet)@0x7f50a9, then [if GetSkill(skillId)!=0: Decode1(enterType=!animated)@0x7f50d0]. Atlas SummonSpawn writes cid+oid+skillId+0x0A(charLevel)+level(SLV)+x+y+stance+foothold(0)+movementType+!puppet+!animated for v87 — byte-faithful. v87 reference (IDB asm-confirmed; summon-wire-truth.md spawn row, calls corrected to reflect the oid under task-106).",
       "calls": [
         {
           "op": "Decode4",
-          "comment": "cid — read by sub_9B3749@0x9b376b (the vtable+0x30 spawn target; pool is cid-keyed)"
+          "comment": "cid (character id) — read upstream by CUserPool::OnUserCommonPacket@0x9f7392 (consumed by the dispatch; pool is cid-keyed). Atlas writes it as ownerId."
         },
         {
           "op": "Decode4",
-          "comment": "skillId (nSkillID) — sub_9B3749@0x9b3775; consumed by GetSkill@CSkillInfo in sub_7F504A@0x7f50b7 (this[45]=[obj+0xB4]). (NO oid on v87 — the int after cid is the skillId)"
+          "comment": "oid (summon object id) — OnCreated@0x9B3749 Decode4@0x9b376b; passed to the CSummoned ctor sub_7F489E as arg1 (stored at obj+172, the object id). (The active path's first Decode4 after the upstream cid IS the oid.)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "skillId (nSkillID) — OnCreated@0x9B3749 Decode4@0x9b3775; passed to the CSummoned ctor as arg2 (stored obj+180); consumed by GetSkill@CSkillInfo in sub_7F504A@0x7f50b7."
         },
         {
           "op": "Decode1",

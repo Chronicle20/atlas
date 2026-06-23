@@ -78,9 +78,25 @@ func TestSummonDamageBytesV83(t *testing.T) {
 }
 
 // TestSummonDamageBytesV87 pins that v87 is byte-identical to v83 (cid + oid +
-// body, no trailing dir byte). NOTE: v87 inherits the oid correction by the same
-// dispatcher logic; this cell needs re-verification against the cid-pre-reading
-// dispatcher.
+// body, no trailing dir byte). Confirmed live (IDA, GMSv87_4GB.exe @port 13340):
+//   - CUserPool::OnUserCommonPacket@0x9f7387 reads cid (Decode4@0x9f7392), routes
+//     ops 188-193 to CSummonedPool::OnPacket@0x9b35bf.
+//   - CSummonedPool::OnPacket@0x9b35bf reads oid (Decode4@0x9b35fe), looks up the
+//     summon, then case 0xC0 calls the damage leaf @0x7f969f.
+//   - The damage body lives at 0x7f969f (exported FName CSummonedPool::OnHit; the
+//     mangled symbol there is OnSkill — the known naming swap, the body is truth).
+//     It reads:
+//       Decode1@0x7f96d0 → attackIdx (v4=v5; atlas writes 12)
+//       Decode4@0x7f96e5 → damage (v37)
+//       if (v5 > -2):   // 12 > -2, branch fires
+//         Decode4@0x7f96f7 → monsterIdFrom (v38 → GetMobTemplate)
+//         Decode1@0x7f9705 → bLeft (v34; atlas writes 0)
+//     and nothing after from the packet — no trailing dir byte (the dir<0 byte
+//     belongs to the SERVERBOUND SetDamaged send). Damage has no version gate, so
+//     the v87 path is byte-identical to v83 (off-by-one confirmed clear).
+// Wire: int cid (upstream) + int oid + byte attackIdx(12) + int damage +
+//       int monsterIdFrom + byte bLeft(0).
+// packet-audit:verify packet=summon/clientbound/SummonDamage version=gms_v87 ida=0x7f969f
 func TestSummonDamageBytesV87(t *testing.T) {
 	in := NewSummonDamage(42, 1000001, 1234, 9300018)
 	ctx := test.CreateContext("GMS", 87, 1)

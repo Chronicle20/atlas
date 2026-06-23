@@ -47,19 +47,34 @@
 #   MODE-ONLY in v83 IDA (case 19) — the current code writes a name the client
 #   never reads. Per-arm shape table in context.md §10.
 #
-# VERSION-ABSENT / RESHIFTED UPPER ERROR ARMS (recorded, some NEEDS_CONTEXT):
-#   The v83 name-bearing/notice error arms above CHANGE_LEADER
-#   (IS_CURRENTLY_BLOCKING 0x15, IS_TAKING_CARE 0x16, HAVE_DENIED 0x17,
-#   CANNOT_KICK 0x19, THIS_CAN_ONLY_BE_GIVEN 0x1C, UNABLE_TO_HAND_OVER 0x1D,
-#   YOU_MAY_ONLY_CHANGE 0x1E, AS_A_GM 0x20, UNABLE_TO_FIND_THE_CHARACTER 0x21)
-#   reorganize heavily in v95/jms (the v95 switch reassigns the upper range to
-#   PQReward/expedition arms; several v83 error cases have no positional twin).
-#   Mapping each to its v87/v95/jms mode requires decrypting that version's
-#   StringPool message per arm (numeric IDs, not symbols, in v87/jms) — which is
-#   a stop-and-ask under the grounding contract, NOT a guess. Those versions'
-#   modes are OMITTED below (⬜) with a NEEDS_CONTEXT marker rather than invented.
-#   v83/v84 (seed-grounded) are always present. See context.md §10 for the full
-#   per-arm evidence + the escalation list.
+# UPPER ERROR ARMS — RESOLVED via StringPool decrypt (task-105 Task 1b):
+#   Every v87/v95/jms upper-arm mode below was resolved by reproducing each
+#   version's StringPool stream cipher in-process and matching the decrypted
+#   message text to the v83 named-symbol arm (the same method task-103 used for
+#   guild v95). Decryptor: ms_aKey = d6de75864664a371e8e67bd33330e72e (the SAME
+#   16-byte key in gms_v87 @0xBA43CC, gms_v95 @0xb98830, jms @0xBEC954; the
+#   static IDB mislabels the v87/jms key pointer but the bytes are inline);
+#   per-entry seed = first BYTE of the ms_aString blob, cipher = blob[1:],
+#   key left-rotated by seed (byte-rot (seed>>3)%16, then bit-rot seed&7),
+#   plaintext[i] = cipher[i] ^ rotkey[i%16] with the NUL guard. v83 (clean named
+#   SP_* switch) and v95 (clean switch) gave first-principles text; v87/jms are
+#   if-chains with numeric IDs, decrypted identically. Full decrypted-text
+#   evidence per arm per version is in context.md §10.3.
+#
+#   RESHIFTED (resolved, present): CANNOT_KICK, CHANGE_LEADER, THIS_CAN_ONLY_BE_GIVEN,
+#   UNABLE_TO_HAND_OVER, YOU_MAY_ONLY_CHANGE, AS_A_GM collapse to v87/v95/jms
+#   cases 29/31/32/33/34/36 respectively (the v83 0x19..0x20 spread is reassigned;
+#   v95/jms slot PQReward/expedition into the freed v83 upper cases). All three
+#   GMS/JMS versions agree on 29/31/32/33/34/36 for these six.
+#
+#   VERSION-ABSENT (proven by full case enumeration — no case decrypts to the
+#   arm's text): UNABLE_TO_FIND_THE_REQUESTED_CHARACTER_IN_THIS_CHANNEL (gone in
+#   v87/v95/jms — their case 19/0x13 is an empty `return`); IS_CURRENTLY_BLOCKING,
+#   IS_TAKING_CARE, HAVE_DENIED (the three name-bearing invite-target notices —
+#   no v87/v95/jms case reads them); UNABLE_TO_FIND_THE_CHARACTER (present in v87
+#   case 37 but ABSENT in v95/jms). These ⬜ are legitimate (guild jms
+#   SET_SKILL_RESPONSE precedent), proven by enumerating every case @ the switch
+#   address, not assumed. v83/v84 (seed-grounded, IDA v83-confirmed) always present.
 #
 # Mode bytes below are DECIMAL (the tool reads ints); per-version hex is in
 # context.md §10. member_hp (CUserRemote::OnReceiveHP) is NOT an OnPartyResult
@@ -70,7 +85,7 @@ fname: CWvsContext::OnPartyResult
 op: PARTY_OPERATION
 direction: clientbound
 operations:
-  # --- LOW arms: byte-identical v83..jms (read from each version's switch) ---
+  # --- LOW arms: byte-identical v83..jms for cases <= 15 (read from each switch) ---
   - { key: INVITE,                                                  modes: { gms_v83: 4,  gms_v84: 4,  gms_v87: 4,  gms_v95: 4,  jms_v185: 4 } }
   - { key: UPDATE,                                                  modes: { gms_v83: 7,  gms_v84: 7,  gms_v87: 7,  gms_v95: 7,  jms_v185: 7 } }
   - { key: CREATED,                                                 modes: { gms_v83: 8,  gms_v84: 8,  gms_v87: 8,  gms_v95: 8,  jms_v185: 8 } }
@@ -81,23 +96,46 @@ operations:
   - { key: EXPEL,                                                   modes: { gms_v83: 12, gms_v84: 12, gms_v87: 12, gms_v95: 12, jms_v185: 12 } }
   - { key: YOU_HAVE_YET_TO_JOIN_A_PARTY,                            modes: { gms_v83: 13, gms_v84: 13, gms_v87: 13, gms_v95: 13, jms_v185: 13 } }
   - { key: JOIN,                                                    modes: { gms_v83: 15, gms_v84: 15, gms_v87: 15, gms_v95: 15, jms_v185: 15 } }
-  - { key: ALREADY_HAVE_JOINED_A_PARTY_2,                           modes: { gms_v83: 16, gms_v84: 16, gms_v87: 16, gms_v95: 16, jms_v185: 16 } }
-  - { key: THE_PARTY_YOURE_TRYING_TO_JOIN_IS_ALREADY_IN_FULL_CAPACITY, modes: { gms_v83: 17, gms_v84: 17, gms_v87: 17, gms_v95: 17, jms_v185: 17 } }
-  # UNABLE_TO_FIND_THE_REQUESTED_CHARACTER_IN_THIS_CHANNEL: v83 IDA case 19 = 0x13
-  #   MODE-ONLY (client reads no name, current Go writes one — IDA wins). v95 case
-  #   18 = 0x12 mode-only (the v95 switch slots it one earlier). v87/jms unresolved.
-  - { key: UNABLE_TO_FIND_THE_REQUESTED_CHARACTER_IN_THIS_CHANNEL,  modes: { gms_v83: 19, gms_v84: 19, gms_v95: 18 } }  # NEEDS_CONTEXT: gms_v87, jms_v185 (StringPool decrypt)
-  # --- name-bearing invite-target notices (v83 cases 21/22/23 = 0x15/0x16/0x17) ---
-  - { key: IS_CURRENTLY_BLOCKING_ANY_PARTY_INVITATIONS,             modes: { gms_v83: 21, gms_v84: 21 } }  # NEEDS_CONTEXT: gms_v87/v95/jms (reshifted upper range)
-  - { key: IS_TAKING_CARE_OF_ANOTHER_INVITATION,                   modes: { gms_v83: 22, gms_v84: 22 } }  # NEEDS_CONTEXT: gms_v87/v95/jms
-  - { key: HAVE_DENIED_REQUEST_TO_THE_PARTY,                       modes: { gms_v83: 23, gms_v84: 23 } }  # NEEDS_CONTEXT: gms_v87/v95/jms
-  - { key: CANNOT_KICK_ANOTHER_USER_IN_THIS_MAP,                   modes: { gms_v83: 25, gms_v84: 25 } }  # NEEDS_CONTEXT: gms_v87/v95/jms
-  # --- CHANGE_LEADER: v83 0x1B (case 27), v95 0x1F (case 31). ---
-  - { key: CHANGE_LEADER,                                          modes: { gms_v83: 27, gms_v84: 27, gms_v95: 31 } }  # NEEDS_CONTEXT: gms_v87, jms_v185
-  - { key: THIS_CAN_ONLY_BE_GIVEN_TO_A_PARTY_MEMBER_WITHIN_THE_VICINITY, modes: { gms_v83: 28, gms_v84: 28 } }  # NEEDS_CONTEXT: gms_v87/v95/jms
-  - { key: UNABLE_TO_HAND_OVER_THE_LEADERSHIP_POST_NO_PARTY_MEMBER_IS_CURRENTLY_WITHIN_THE, modes: { gms_v83: 29, gms_v84: 29 } }  # NEEDS_CONTEXT: gms_v87/v95/jms
-  - { key: YOU_MAY_ONLY_CHANGE_WITH_THE_PARTY_MEMBER_THATS_ON_THE_SAME_CHANNEL, modes: { gms_v83: 30, gms_v84: 30 } }  # NEEDS_CONTEXT: gms_v87/v95/jms
-  - { key: AS_A_GM_YOURE_FORBIDDEN_FROM_CREATING_A_PARTY,          modes: { gms_v83: 32, gms_v84: 32 } }  # NEEDS_CONTEXT: gms_v87/v95/jms
-  - { key: UNABLE_TO_FIND_THE_CHARACTER,                           modes: { gms_v83: 33, gms_v84: 33 } }  # NEEDS_CONTEXT: gms_v87/v95/jms
+  # ALREADY_HAVE_JOINED_A_PARTY_2 / FULL_CAPACITY: v87/v95/jms SHIFT +1 vs v83/v84.
+  #   StringPool-decrypt verified (task-105 Task 1b): "Already have joined a party."
+  #   = v83/v84 case16 / v87 case17 (id329) / v95 case17 (id0x14C) / jms case17
+  #   (id0x142). "...already in full capacity." = v83/v84 case17 / v87 case18
+  #   (id332) / v95 case18 (id0x14F) / jms case18 (id0x147). The prior "all=16/17"
+  #   was the byte-identical assumption; IDA text contradicts it for v87/v95/jms.
+  - { key: ALREADY_HAVE_JOINED_A_PARTY_2,                           modes: { gms_v83: 16, gms_v84: 16, gms_v87: 17, gms_v95: 17, jms_v185: 17 } }
+  - { key: THE_PARTY_YOURE_TRYING_TO_JOIN_IS_ALREADY_IN_FULL_CAPACITY, modes: { gms_v83: 17, gms_v84: 17, gms_v87: 18, gms_v95: 18, jms_v185: 18 } }
+  # UNABLE_TO_FIND_THE_REQUESTED_CHARACTER_IN_THIS_CHANNEL: v83/v84 IDA case 19 =
+  #   0x13 MODE-ONLY (client reads no name; current Go writes one — IDA wins).
+  #   VERSION-ABSENT in v87/v95/jms: case 19/0x13 is an empty `return` and no other
+  #   case decrypts to "Unable to find the requested character in this channel"
+  #   (full enumeration: v87 @0xad697a, v95 @0xa10ab0, jms @0xb297e7).
+  - { key: UNABLE_TO_FIND_THE_REQUESTED_CHARACTER_IN_THIS_CHANNEL,  modes: { gms_v83: 19, gms_v84: 19 } }  # version-absent: enumerated all cases @0xad697a/@0xa10ab0/@0xb297e7, none decrypt to 'Unable to find the requested character in this channel'
+  # --- name-bearing invite-target notices (v83 cases 21/22/23 = 0x15/0x16/0x17,
+  #     each reads a trailing CInPacket::DecodeStr name; VERSION-ABSENT in v87/v95/jms) ---
+  - { key: IS_CURRENTLY_BLOCKING_ANY_PARTY_INVITATIONS,             modes: { gms_v83: 21, gms_v84: 21 } }  # version-absent: enumerated all cases @0xad697a/@0xa10ab0/@0xb297e7, none decrypt to "'%s' is currently blocking any party invitations."
+  - { key: IS_TAKING_CARE_OF_ANOTHER_INVITATION,                   modes: { gms_v83: 22, gms_v84: 22 } }  # version-absent: enumerated all cases @0xad697a/@0xa10ab0/@0xb297e7, none decrypt to "'%s' is taking care of another invitation."
+  - { key: HAVE_DENIED_REQUEST_TO_THE_PARTY,                       modes: { gms_v83: 23, gms_v84: 23 } }  # version-absent: enumerated all cases @0xad697a/@0xa10ab0/@0xb297e7, none decrypt to "'%s' have denied request to the party."
+  # CANNOT_KICK: v83/v84 case25 (SP_5059); v87 case29 (id5070), v95 case29 (id0x13D5),
+  #   jms case29 (id0x12CB) — all decrypt to "Cannot kick another user in this map".
+  - { key: CANNOT_KICK_ANOTHER_USER_IN_THIS_MAP,                   modes: { gms_v83: 25, gms_v84: 25, gms_v87: 29, gms_v95: 29, jms_v185: 29 } }
+  # CHANGE_LEADER: v83/v84 case27 (SP_4046/4047); v87 case31 (id4054/4055),
+  #   v95 case31 (id0xFF7/0xFF8), jms case31 (id0xFF5/0xFF6) — leader-change.
+  - { key: CHANGE_LEADER,                                          modes: { gms_v83: 27, gms_v84: 27, gms_v87: 31, gms_v95: 31, jms_v185: 31 } }
+  # THIS_CAN_ONLY_BE_GIVEN: v83/v84 case28 (SP_4048); v87 case32 (id4056),
+  #   v95 case32 (id0xFF9), jms case32 (id0xFF7) — "...within the vicinity".
+  - { key: THIS_CAN_ONLY_BE_GIVEN_TO_A_PARTY_MEMBER_WITHIN_THE_VICINITY, modes: { gms_v83: 28, gms_v84: 28, gms_v87: 32, gms_v95: 32, jms_v185: 32 } }
+  # UNABLE_TO_HAND_OVER: v83/v84 case29 (SP_4050); v87 case33 (id4058),
+  #   v95 case33 (id0xFFB), jms case33 (id0xFF9).
+  - { key: UNABLE_TO_HAND_OVER_THE_LEADERSHIP_POST_NO_PARTY_MEMBER_IS_CURRENTLY_WITHIN_THE, modes: { gms_v83: 29, gms_v84: 29, gms_v87: 33, gms_v95: 33, jms_v185: 33 } }
+  # YOU_MAY_ONLY_CHANGE: v83/v84 case30 (SP_4049); v87 case34 (id4057),
+  #   v95 case34 (id0xFFA), jms case34 (id0xFF8) — "...on the same channel".
+  - { key: YOU_MAY_ONLY_CHANGE_WITH_THE_PARTY_MEMBER_THATS_ON_THE_SAME_CHANNEL, modes: { gms_v83: 30, gms_v84: 30, gms_v87: 34, gms_v95: 34, jms_v185: 34 } }
+  # AS_A_GM: v83/v84 case32 (SP_326); v87 case36 (id336), v95 case36 (id0x153),
+  #   jms case36 (id0x151) — "...forbidden from creating a party".
+  - { key: AS_A_GM_YOURE_FORBIDDEN_FROM_CREATING_A_PARTY,          modes: { gms_v83: 32, gms_v84: 32, gms_v87: 36, gms_v95: 36, jms_v185: 36 } }
+  # UNABLE_TO_FIND_THE_CHARACTER: v83/v84 case33 (SP_366); v87 case37 (id376,
+  #   "Unable to find the character."). VERSION-ABSENT in v95/jms (no case decrypts
+  #   to it — enumerated @0xa10ab0/@0xb297e7).
+  - { key: UNABLE_TO_FIND_THE_CHARACTER,                           modes: { gms_v83: 33, gms_v84: 33, gms_v87: 37 } }  # version-absent gms_v95/jms_v185: enumerated all cases @0xa10ab0/@0xb297e7, none decrypt to 'Unable to find the character.'
   # --- TOWN_PORTAL: IDA-anchored across all 5 (town_portal.go) ---
   - { key: TOWN_PORTAL,                                            modes: { gms_v83: 37, gms_v84: 40, gms_v87: 41, gms_v95: 46, jms_v185: 40 } }

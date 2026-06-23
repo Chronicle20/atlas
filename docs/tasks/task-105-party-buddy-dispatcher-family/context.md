@@ -291,19 +291,19 @@ Port 13342 does not exist. guild.yaml's header ports are stale and were NOT copi
 | LEAVE / DISBAND / EXPEL | Left/Disband (exist) | members | 12 | 12 | 12 | 12 | 12 | ✅ |
 | YOU_HAVE_YET_TO_JOIN_A_PARTY | new | mode-only | 13 | 13 | 13 | 13 | 13 | ✅ |
 | JOIN | Join (exists) | name+members | 15 | 15 | 15 | 15 | 15 | ✅ |
-| ALREADY_HAVE_JOINED_A_PARTY_2 | new | mode-only | 16 | 16 | 16 | 16 | 16 | ✅ |
-| THE_PARTY..FULL_CAPACITY | new | mode-only | 17 | 17 | 17 | 17 | 17 | ✅ |
-| UNABLE_TO_FIND_THE_REQUESTED_CHARACTER_IN_THIS_CHANNEL | new | **mode-only** (v83 case19; current Go writes a name the client does NOT read — IDA wins) | 19 | 19 | ⬜? | 18 | ⬜? | partial |
-| IS_CURRENTLY_BLOCKING_ANY_PARTY_INVITATIONS | new | **name** (v83 case21 DecodeStr) | 21 | 21 | ⬜? | ⬜? | ⬜? | partial |
-| IS_TAKING_CARE_OF_ANOTHER_INVITATION | new | **name** (v83 case22 DecodeStr) | 22 | 22 | ⬜? | ⬜? | ⬜? | partial |
-| HAVE_DENIED_REQUEST_TO_THE_PARTY | new | **name** (v83 case23 DecodeStr) | 23 | 23 | ⬜? | ⬜? | ⬜? | partial |
-| CANNOT_KICK_ANOTHER_USER_IN_THIS_MAP | new | mode-only | 25 | 25 | ⬜? | ⬜? | ⬜? | partial |
-| CHANGE_LEADER | ChangeLeader (exists) | targetId+disc | 27 | 27 | **31**? | 31 | ⬜? | partial |
-| THIS_CAN_ONLY_BE_GIVEN..VICINITY | new | mode-only | 28 | 28 | ⬜? | ⬜? | ⬜? | partial |
-| UNABLE_TO_HAND_OVER_THE_LEADERSHIP.. | new | mode-only | 29 | 29 | ⬜? | ⬜? | ⬜? | partial |
-| YOU_MAY_ONLY_CHANGE..SAME_CHANNEL | new | mode-only | 30 | 30 | ⬜? | ⬜? | ⬜? | partial |
-| AS_A_GM_YOURE_FORBIDDEN..PARTY | new | mode-only | 32 | 32 | ⬜? | ⬜? | ⬜? | partial |
-| UNABLE_TO_FIND_THE_CHARACTER | new | mode-only | 33 | 33 | ⬜? | ⬜? | ⬜? | partial |
+| ALREADY_HAVE_JOINED_A_PARTY_2 | new | mode-only | 16 | 16 | **17** | **17** | **17** | ✅ (v87/v95/jms +1, see 10.3a) |
+| THE_PARTY..FULL_CAPACITY | new | mode-only | 17 | 17 | **18** | **18** | **18** | ✅ (v87/v95/jms +1, see 10.3a) |
+| UNABLE_TO_FIND_THE_REQUESTED_CHARACTER_IN_THIS_CHANNEL | new | **mode-only** (v83 case19; current Go writes a name the client does NOT read — IDA wins) | 19 | 19 | ⬜ absent | ⬜ absent | ⬜ absent | resolved (absent v87/v95/jms) |
+| IS_CURRENTLY_BLOCKING_ANY_PARTY_INVITATIONS | new | **name** (v83 case21 DecodeStr) | 21 | 21 | ⬜ absent | ⬜ absent | ⬜ absent | resolved (absent) |
+| IS_TAKING_CARE_OF_ANOTHER_INVITATION | new | **name** (v83 case22 DecodeStr) | 22 | 22 | ⬜ absent | ⬜ absent | ⬜ absent | resolved (absent) |
+| HAVE_DENIED_REQUEST_TO_THE_PARTY | new | **name** (v83 case23 DecodeStr) | 23 | 23 | ⬜ absent | ⬜ absent | ⬜ absent | resolved (absent) |
+| CANNOT_KICK_ANOTHER_USER_IN_THIS_MAP | new | mode-only | 25 | 25 | **29** | **29** | **29** | ✅ |
+| CHANGE_LEADER | ChangeLeader (exists) | targetId+disc | 27 | 27 | **31** | 31 | **31** | ✅ |
+| THIS_CAN_ONLY_BE_GIVEN..VICINITY | new | mode-only | 28 | 28 | **32** | **32** | **32** | ✅ |
+| UNABLE_TO_HAND_OVER_THE_LEADERSHIP.. | new | mode-only | 29 | 29 | **33** | **33** | **33** | ✅ |
+| YOU_MAY_ONLY_CHANGE..SAME_CHANNEL | new | mode-only | 30 | 30 | **34** | **34** | **34** | ✅ |
+| AS_A_GM_YOURE_FORBIDDEN..PARTY | new | mode-only | 32 | 32 | **36** | **36** | **36** | ✅ |
+| UNABLE_TO_FIND_THE_CHARACTER | new | mode-only | 33 | 33 | **37** | ⬜ absent | ⬜ absent | resolved (v87 only) |
 | TOWN_PORTAL | TownPortal (exists) | slot+maps(+skillId v95)+xy | 37 | 40 | 41 | 46 | 40 | ✅ |
 
 NON-error / non-key arms seen in the IDA switch but with NO Atlas operation-key
@@ -313,22 +313,73 @@ notice, name-or-mode), case 0x45 (expedition invite, sends 0x4D). v95 adds
 PQReward arms (cases 40-43), expedition (case 78), case 22 (name notice), case 29.
 These are gameplay arms outside the party error/notice key set — out of scope.
 
-#### ESCALATION (NEEDS_CONTEXT) — party upper error arms, v87/v95/jms
-The v83 (0xa3e31c) and v95 (0xa10ab0) switches are clean; the v83 upper error
-arms (0x15..0x21) map unambiguously by named StringPool symbol. BUT v87
-(0xad697a) and jms (0xb297e7) decompile as if-chains using NUMERIC StringPool
-IDs, and the upper range REORGANIZES per version (v95 reassigns 0x1F+ to
-PQReward/expedition, leaving several v83 error cases without a positional twin).
-Mapping these nine arms (IS_CURRENTLY_BLOCKING, IS_TAKING_CARE, HAVE_DENIED,
-CANNOT_KICK, THIS_CAN_ONLY_BE_GIVEN, UNABLE_TO_HAND_OVER, YOU_MAY_ONLY_CHANGE,
-AS_A_GM, UNABLE_TO_FIND_THE_CHARACTER) — plus UNABLE_..IN_THIS_CHANNEL on v87/jms
-and CHANGE_LEADER on v87/jms — to their v87/v95/jms mode bytes requires
-decrypting each version's StringPool message per arm to confirm the key. Per the
-grounding contract that is a stop-and-ask, NOT a guess. party.yaml omits those
-version cells (⬜) with a `# NEEDS_CONTEXT` marker; v83/v84 (seed-grounded, IDA
-v83-confirmed) and TOWN_PORTAL (town_portal.go IDA-verified 5-version anchor) are
-always present. A follow-up Task 1b should resolve them via StringPool decrypt
-(ms_aKey-style) the same way task-103 resolved the v95 guild arms.
+#### 10.3a Name-bearing wire-shape verdict (3 invite-target arms)
+RE-VERIFIED from the v83 clean switch (0xa3e31c): cases 21/22/23 each begin with
+`CInPacket::DecodeStr(v4, &v152)` and then `ZXString<char>::Format(&arg0, m_pStr,
+v152)` — the `%s` is filled from the WIRE-decoded string `v152`, not a client-
+local. So all three ARE mode+name on the wire (contra guild's mode-only arms).
+Decompile citations (v83 0xa3e31c):
+  - IS_CURRENTLY_BLOCKING (case 21): `CInPacket::DecodeStr(v4, &v152); ... v21 =
+    StringPool::GetString(..., SP_308_...); ZXString<char>::Format(&arg0,
+    v21->_m_pStr, v152);`
+  - IS_TAKING_CARE (case 22): `CInPacket::DecodeStr(v4, &v152); ... GetString(...,
+    SP_2723_...); Format(&arg0, v23->_m_pStr, v152);`
+  - HAVE_DENIED (case 23): `CInPacket::DecodeStr(v4, &v152); ... GetString(...,
+    SP_309_...); Format(&arg0, v25->_m_pStr, v152);`
+Downstream (Task 2): these three need `struct{mode, name}`. All other party
+error/notice arms below are mode-only. NOTE: these three are VERSION-ABSENT in
+v87/v95/jms, so the mode+name struct only emits for v83/v84.
+
+#### 10.3b StringPool decryptor (reproduced in-process; how the modes were resolved)
+Method mirrors task-103 guild v95. The StringPool stream cipher is identical
+across versions; the 16-byte `ms_aKey` is the SAME constant in every binary:
+`d6de75864664a371e8e67bd33330e72e`.
+  - Key location: gms_v87 inline @0xBA43CC (len @0xBA43DC=0x10; the decompiler
+    mislabels it as a pointer `dword_BA43CC`=garbage, but the bytes ARE the key);
+    gms_v95 `ms_aKey` @0xb98830; jms inline @0xBEC954 (len @0xBEC964=0x10).
+  - Per-string blob = `ms_aString[id]`. Seed = first BYTE of the blob (v87/v95/jms
+    1-byte-seed layout: `Assign(entry+1, -1)` / `nKeySeed = *ms_aString[id]`);
+    cipher = blob[1:] up to the first NUL. (v83's table layout reads a 4-byte seed
+    + cipher@+4, but v83 has named SP_* symbols so no decrypt was needed.)
+  - Rotate key LEFT by seed: byte-rotate `(seed>>3)%16`, then bit-rotate left
+    `seed&7` (rotatel<unsigned char> @v95 0x746270). plaintext[i] = cipher[i] ^
+    rotkey[i%16], with the NUL guard (if rotkey[i]==cipher[i], keep rotkey[i]).
+  - Validation: decrypts gms_v95 0x143 → "You have created a new party.";
+    gms_v87 320 → same; jms decrypts to correct Shift-JIS (e.g. 0x137 → "新しい
+    グループを作りました。"). Sanity-checked English/JP before trusting each.
+
+#### 10.3c Resolved upper-arm evidence (decrypted text per arm per version)
+All read from each version's OnPartyResult switch; case = the mode byte.
+
+| arm | v87 case→id→text | v95 case→id→text | jms case→id→text |
+|---|---|---|---|
+| CANNOT_KICK | 29→5070→"Cannot kick another user in this map" | 29→0x13D5→"Cannot kick another user in this map" | 29→0x12CB→"追放機能が制限されたマップです。" |
+| CHANGE_LEADER | 31→4054/4055→"%s has become the leader…"/"Due to the party leader disconnecting…" | 31→0xFF7/0xFF8→same | 31→0xFF5/0xFF6→"%s様がグループ長になりました。"/disconnect |
+| THIS_CAN_ONLY_BE_GIVEN | 32→4056→"This can only be given to a party member within the vicinity." | 32→0xFF9→same | 32→0xFF7→"同じマップにいるグループ長にのみ譲れます。" |
+| UNABLE_TO_HAND_OVER | 33→4058→"Unable to hand over the leadership post; No party member is currently within the vicinity…" | 33→0xFFB→same | 33→0xFF9→"グループ長と同じマップにグループ員がいないため譲れません。" |
+| YOU_MAY_ONLY_CHANGE | 34→4057→"You may only change with the party member that's on the same channel." | 34→0xFFA→same | 34→0xFF8→"チャンネルにいるグループ員にのみ譲渡可能です…" |
+| AS_A_GM | 36→336→"As a GM, you're forbidden from creating a party." | 36→0x153→same | 36→0x151→"運用者キャラクターはグループを作れません。" |
+| UNABLE_TO_FIND_THE_CHARACTER | 37→376→"Unable to find the character." | ABSENT (no case decrypts to it; enumerated @0xa10ab0) | ABSENT (enumerated @0xb297e7) |
+| ALREADY_HAVE_JOINED_A_PARTY_2 | 17→329→"Already have joined a party." | 17→0x14C→same | 17→0x142→"既に参加しているグループがあります。" |
+| THE_PARTY..FULL_CAPACITY | 18→332→"The party you're trying to join is already in full capacity." | 18→0x14F→same | 18→0x147→"加入しようとしたグループはいっぱいです。" |
+
+#### 10.3d VERSION-ABSENT arms (proven by full case enumeration)
+For each, every case of the version's switch was enumerated and decrypted; NONE
+yields the arm's v83 text (legitimate per the guild jms SET_SKILL_RESPONSE
+precedent — proven, not assumed):
+  - UNABLE_TO_FIND_THE_REQUESTED_CHARACTER_IN_THIS_CHANNEL (v83 SP_330): v87 case
+    19 / v95 case 19 / jms case 0x13 are all an empty `return`; no other case
+    decrypts to the text. Absent in v87/v95/jms.
+  - IS_CURRENTLY_BLOCKING (SP_308), IS_TAKING_CARE (SP_2723), HAVE_DENIED (SP_309):
+    no v87/v95/jms case reads the corresponding name-bearing notice. Absent.
+  - UNABLE_TO_FIND_THE_CHARACTER (SP_366): present v87 case 37 (id 376); ABSENT in
+    v95 (enumerated @0xa10ab0) and jms (enumerated @0xb297e7).
+
+#### 10.3e CORRECTION to the "byte-identical LOW arms" assumption
+The prior table claimed cases ≤17 are byte-identical v83..jms. IDA text DISPROVES
+this for two arms: ALREADY_HAVE_JOINED_A_PARTY_2 and FULL_CAPACITY shift +1 in
+v87/v95/jms (v83/v84 case 16/17 → v87/v95/jms case 17/18). All arms at cases ≤15
+remain identical. party.yaml rows corrected accordingly.
 
 ### 10.4 Buddy `BuddyOperation` — key | struct-name | shape | per-version mode (dec) | present
 OnFriendResult is BYTE-IDENTICAL across all 5 versions (v95 NOT shifted; it only

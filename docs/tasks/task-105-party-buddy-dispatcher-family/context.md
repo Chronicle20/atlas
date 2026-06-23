@@ -239,3 +239,140 @@ already-discrete non-error arms beyond the operations-key reconciliation; normal
 party-vs-buddy package-layout asymmetry; **live-tenant config patching** (operational — record in a
 runbook only, unlike guild task-103 which executed it; PRD §6 records live v87/v95/jms tenants need
 the patch + channel restart but this task does not execute it).
+
+## 10. Enumerated arm tables (IDA) — task-105 Task 1
+
+All values below are read from each version's decompiled `CWvsContext::OnPartyResult`
+/ `OnFriendResult` switch. Mode bytes are shown in DECIMAL (= the wire byte = the
+`case` value); v83 decimal matches the gms_83 seed hex (e.g. 0x25 = 37).
+
+### 10.0 CORRECTED IDA port table (the documented ports are STALE)
+`list_instances` (verified by binary name, task-105 Task 1) — the running set:
+
+| version | port (ACTUAL) | port (docs, WRONG) | binary |
+|---|---|---|---|
+| gms_v83  | 13341 | 13342 | MapleStory_dump.exe (path v83_Me) |
+| gms_v84  | 13337 | 13337 | GMS_v84.1_U_DEVM.exe |
+| gms_v87  | 13340 | 13341 | GMSv87_4GB.exe |
+| gms_v95  | 13339 | 13340 | GMS_v95.0_U_DEVM.exe |
+| jms_v185 | 13338 | 13339 | MapleStory_dump_SCY.exe |
+
+Port 13342 does not exist. guild.yaml's header ports are stale and were NOT copied.
+
+### 10.1 OnPartyResult function addresses
+| version | addr | note |
+|---|---|---|
+| gms_v83  | **0xa3e31c** | TRUE v83: clean switch, named SP_* symbols, TOWN_PORTAL case 0x25. **NOTE: the v83 IDB ALSO has a duplicate `OnPartyResult` at 0xa89cf3 (v84-layout, TOWN_PORTAL 0x28) that func_query returns FIRST — do NOT read it for v83.** |
+| gms_v84  | 0xa89cf3 | if-chain; TOWN_PORTAL case 0x28 (town_portal.go-confirmed) |
+| gms_v87  | 0xad697a | if-chain w/ CHATLOG_ADD; CHANGE_LEADER 0x1F, TOWN_PORTAL 0x29 |
+| gms_v95  | 0xa10ab0 | clean switch; CHANGE_LEADER 0x1F (case31), TOWN_PORTAL 0x2E (case46) |
+| jms_v185 | 0xb297e7 | if-chain; TOWN_PORTAL case 0x28 |
+
+### 10.2 OnFriendResult function addresses
+| version | addr |
+|---|---|
+| gms_v83  | 0xa8ada2 |
+| gms_v84  | 0xa8ada2 |
+| gms_v87  | 0xad7ae5 |
+| gms_v95  | 0xa12630 |
+| jms_v185 | 0xb2a873 |
+
+### 10.3 Party `PartyOperation` — key | struct-name | shape | per-version mode (dec) | present
+"shape" is the CLIENT read order at that arm (IDA wins over the current Go Error).
+`name` = trailing DecodeStr; `mode-only` = no body after the mode byte.
+
+| key | struct-name | shape (IDA) | v83 | v84 | v87 | v95 | jms | present |
+|---|---|---|---|---|---|---|---|---|
+| INVITE | Invite (exists) | id+name+job+lvl | 4 | 4 | 4 | 4 | 4 | ✅ |
+| UPDATE | Update (exists) | PARTYDATA | 7 | 7 | 7 | 7 | 7 | ✅ |
+| CREATED | Created (exists) | partyId(+door) | 8 | 8 | 8 | 8 | 8 | ✅ |
+| ALREADY_HAVE_JOINED_A_PARTY_1 | new | mode-only | 9 | 9 | 9 | 9 | 9 | ✅ |
+| A_BEGINNER_CANT_CREATE_A_PARTY | new | mode-only | 10 | 10 | 10 | 10 | 10 | ✅ |
+| LEAVE / DISBAND / EXPEL | Left/Disband (exist) | members | 12 | 12 | 12 | 12 | 12 | ✅ |
+| YOU_HAVE_YET_TO_JOIN_A_PARTY | new | mode-only | 13 | 13 | 13 | 13 | 13 | ✅ |
+| JOIN | Join (exists) | name+members | 15 | 15 | 15 | 15 | 15 | ✅ |
+| ALREADY_HAVE_JOINED_A_PARTY_2 | new | mode-only | 16 | 16 | 16 | 16 | 16 | ✅ |
+| THE_PARTY..FULL_CAPACITY | new | mode-only | 17 | 17 | 17 | 17 | 17 | ✅ |
+| UNABLE_TO_FIND_THE_REQUESTED_CHARACTER_IN_THIS_CHANNEL | new | **mode-only** (v83 case19; current Go writes a name the client does NOT read — IDA wins) | 19 | 19 | ⬜? | 18 | ⬜? | partial |
+| IS_CURRENTLY_BLOCKING_ANY_PARTY_INVITATIONS | new | **name** (v83 case21 DecodeStr) | 21 | 21 | ⬜? | ⬜? | ⬜? | partial |
+| IS_TAKING_CARE_OF_ANOTHER_INVITATION | new | **name** (v83 case22 DecodeStr) | 22 | 22 | ⬜? | ⬜? | ⬜? | partial |
+| HAVE_DENIED_REQUEST_TO_THE_PARTY | new | **name** (v83 case23 DecodeStr) | 23 | 23 | ⬜? | ⬜? | ⬜? | partial |
+| CANNOT_KICK_ANOTHER_USER_IN_THIS_MAP | new | mode-only | 25 | 25 | ⬜? | ⬜? | ⬜? | partial |
+| CHANGE_LEADER | ChangeLeader (exists) | targetId+disc | 27 | 27 | **31**? | 31 | ⬜? | partial |
+| THIS_CAN_ONLY_BE_GIVEN..VICINITY | new | mode-only | 28 | 28 | ⬜? | ⬜? | ⬜? | partial |
+| UNABLE_TO_HAND_OVER_THE_LEADERSHIP.. | new | mode-only | 29 | 29 | ⬜? | ⬜? | ⬜? | partial |
+| YOU_MAY_ONLY_CHANGE..SAME_CHANNEL | new | mode-only | 30 | 30 | ⬜? | ⬜? | ⬜? | partial |
+| AS_A_GM_YOURE_FORBIDDEN..PARTY | new | mode-only | 32 | 32 | ⬜? | ⬜? | ⬜? | partial |
+| UNABLE_TO_FIND_THE_CHARACTER | new | mode-only | 33 | 33 | ⬜? | ⬜? | ⬜? | partial |
+| TOWN_PORTAL | TownPortal (exists) | slot+maps(+skillId v95)+xy | 37 | 40 | 41 | 46 | 40 | ✅ |
+
+NON-error / non-key arms seen in the IDA switch but with NO Atlas operation-key
+(do NOT invent — recorded for completeness): v83 case 0x12 (no-op), case 0x13
+(level/job member-update; v95 case 39, jms 0x1F-region), case 0x24 (member-leave
+notice, name-or-mode), case 0x45 (expedition invite, sends 0x4D). v95 adds
+PQReward arms (cases 40-43), expedition (case 78), case 22 (name notice), case 29.
+These are gameplay arms outside the party error/notice key set — out of scope.
+
+#### ESCALATION (NEEDS_CONTEXT) — party upper error arms, v87/v95/jms
+The v83 (0xa3e31c) and v95 (0xa10ab0) switches are clean; the v83 upper error
+arms (0x15..0x21) map unambiguously by named StringPool symbol. BUT v87
+(0xad697a) and jms (0xb297e7) decompile as if-chains using NUMERIC StringPool
+IDs, and the upper range REORGANIZES per version (v95 reassigns 0x1F+ to
+PQReward/expedition, leaving several v83 error cases without a positional twin).
+Mapping these nine arms (IS_CURRENTLY_BLOCKING, IS_TAKING_CARE, HAVE_DENIED,
+CANNOT_KICK, THIS_CAN_ONLY_BE_GIVEN, UNABLE_TO_HAND_OVER, YOU_MAY_ONLY_CHANGE,
+AS_A_GM, UNABLE_TO_FIND_THE_CHARACTER) — plus UNABLE_..IN_THIS_CHANNEL on v87/jms
+and CHANGE_LEADER on v87/jms — to their v87/v95/jms mode bytes requires
+decrypting each version's StringPool message per arm to confirm the key. Per the
+grounding contract that is a stop-and-ask, NOT a guess. party.yaml omits those
+version cells (⬜) with a `# NEEDS_CONTEXT` marker; v83/v84 (seed-grounded, IDA
+v83-confirmed) and TOWN_PORTAL (town_portal.go IDA-verified 5-version anchor) are
+always present. A follow-up Task 1b should resolve them via StringPool decrypt
+(ms_aKey-style) the same way task-103 resolved the v95 guild arms.
+
+### 10.4 Buddy `BuddyOperation` — key | struct-name | shape | per-version mode (dec) | present
+OnFriendResult is BYTE-IDENTICAL across all 5 versions (v95 NOT shifted; it only
+ADDS a keyless case 0x17). Every key fully grounded.
+
+| key | struct-name | shape (IDA) | v83 | v84 | v87 | v95 | jms | present |
+|---|---|---|---|---|---|---|---|---|
+| UPDATE | ListUpdate (exists) | list | 7 | 7 | 7 | 7 | 7 | ✅ |
+| BUDDY_UPDATE | Update (exists) | one buddy | 8 | 8 | 8 | 8 | 8 | ✅ |
+| INVITE | Invite (exists) | id+name+job+lvl | 9 | 9 | 9 | 9 | 9 | ✅ |
+| UNKNOWN_1 | (list-reset, not error) | list (shares case 7/0xA/0x12) | 10 | 10 | 10 | 10 | 10 | ✅ |
+| BUDDY_LIST_FULL | new | mode-only (StringPool) | 11 | 11 | 11 | 11 | 11 | ✅ |
+| OTHER_BUDDY_LIST_FULL | new | mode-only | 12 | 12 | 12 | 12 | 12 | ✅ |
+| ALREADY_BUDDY | new | mode-only | 13 | 13 | 13 | 13 | 13 | ✅ |
+| CANNOT_BUDDY_GM | new | mode-only | 14 | 14 | 14 | 14 | 14 | ✅ |
+| CHARACTER_NOT_FOUND | new | mode-only | 15 | 15 | 15 | 15 | 15 | ✅ |
+| UNKNOWN_ERROR | new | **extra-byte** in GMS (Decode1); **mode-only** in jms | 16 | 16 | 16 | 16 | 16 | ✅ |
+| UNKNOWN_ERROR_2 | new | **extra-byte** in GMS (case 0x11); mode-only jms | 17 | 17 | 17 | 17 | 17 | ✅ |
+| UNKNOWN_2 | (list-reset, not error) | list (shares case 7/0xA/0x12) | 18 | 18 | 18 | 18 | 18 | ✅ |
+| UNKNOWN_ERROR_3 | new | **extra-byte** in GMS (case 0x13); mode-only jms | 19 | 19 | 19 | 19 | 19 | ✅ |
+| BUDDY_CHANNEL_CHANGE | ChannelChange (exists) | id+channel | 20 | 20 | 20 | 20 | 20 | ✅ |
+| CAPACITY_CHANGE | CapacityUpdate (exists) | capacity | 21 | 21 | 21 | 21 | 21 | ✅ |
+| UNKNOWN_ERROR_4 | new | **extra-byte** in GMS (case 0x16); mode-only jms | 22 | 22 | 22 | 22 | 22 | ✅ |
+
+KEY FINDINGS (buddy):
+1. The extra trailing byte (`if (CInPacket::Decode1())`) is read by FOUR cases —
+   0x10 UNKNOWN_ERROR, 0x11 UNKNOWN_ERROR_2, 0x13 UNKNOWN_ERROR_3, 0x16
+   UNKNOWN_ERROR_4 — in gms_v83/v84/v87/v95. The current Go `hasExtra :=
+   errorCode == "UNKNOWN_ERROR"` gate (operation_body.go:51) covers only 0x10 and
+   is WRONG for the other three. Each gets its own extra-byte struct (design D1).
+2. In **jms_v185** those same four cases are MODE-ONLY (no Decode1; straight to
+   StringPool 765 + Notice). The extra-byte structs must gate the trailing byte
+   GMS-only.
+3. UNKNOWN_1 (0x0A) and UNKNOWN_2 (0x12) are NOT errors — they share the case
+   7/0xA/0x12 list-reset handler (CFriend::Reset). §4's "tbd extra byte" for them
+   resolves to: list-reset shape, no trailing byte.
+4. gms_v95 adds a keyless `case 0x17` (StringPool 384, mode-only) — no Atlas key,
+   NEEDS_CONTEXT, not invented.
+
+### 10.5 operations --check result (task-105 Task 1)
+`go run ./tools/packet-audit operations --check` →
+`0 drift, 86 missing, 0 extra` (exit 1). The 86 "missing" are the new v87/v95/jms
+party/buddy keys this yaml declares but whose seed tables are still empty — the
+EXPECTED `bug_operations_mode_tables_missing_v87_v95_jms` gap, fixed by a later
+`packet-audit operations` (generate) task, NOT here. **0 drift / 0 extra** = none
+of the authored values CONFLICT with the existing v83/v84 seed entries (no
+contradiction). Seed templates were NOT edited in this task.

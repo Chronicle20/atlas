@@ -1,0 +1,103 @@
+# PartyOperation — CWvsContext::OnPartyResult per-version mode table.
+#
+# SOURCE OF TRUTH for the PartyOperation writer's `operations` sub-op MODE byte.
+# The writer's opcode is PARTY_OPERATION; the leading byte (CInPacket::Decode1)
+# selects one of ~25 sub-handler arms. Each arm's MODE byte is per-version DATA
+# resolved at emit time from the tenant `operations` table — never a struct
+# literal.
+#
+# Per-version OnPartyResult function addresses (IDA-verified — task-105 Task 1).
+# NOTE: these are the CORRECTED ports the instances are actually running on
+# (the plan/context/guild.yaml documented ports are STALE — see context.md §10):
+#   gms_v83  0xa3e31c  (MapleStory_dump.exe,      port 13341, path v83_Me)
+#   gms_v84  0xa89cf3  (GMS_v84.1_U_DEVM.exe,     port 13337)
+#   gms_v87  0xad697a  (GMSv87_4GB.exe,           port 13340)
+#   gms_v95  0xa10ab0  (GMS_v95.0_U_DEVM.exe,     port 13339)
+#   jms_v185 0xb297e7  (MapleStory_dump_SCY.exe,  port 13338)
+#
+# CAUTION — DUPLICATE SYMBOL in the v83 IDB: the port-13341 (gms_v83) binary has
+# TWO functions named CWvsContext::OnPartyResult. func_query returns 0xa89cf3
+# FIRST, but THAT is the v84-LAYOUT function (TOWN_PORTAL at case 0x28). The TRUE
+# v83 OnPartyResult is 0xa3e31c (clean switch, named StringPool symbols,
+# TOWN_PORTAL at case 0x25). Confirmed against libs/atlas-packet/party/
+# clientbound/town_portal.go's IDA-verified per-version table and the v83 seed.
+#
+# MODE-BYTE VERSION DRIFT (IDA-enumerated, NOT inferred):
+#   - LOW arms (INVITE..FULL_CAPACITY, cases 0x04..0x11) are BYTE-IDENTICAL
+#     across v83/v84/v87/v95/jms: the leading sub-op bytes match v83.
+#   - UPPER arms SHIFT non-uniformly per version. Confirmed anchor (town_portal.go,
+#     IDA-verified): TOWN_PORTAL = v83 0x25 / v84 0x28 / v87 0x29 / v95 0x2E /
+#     jms 0x28. CHANGE_LEADER = v83 0x1B / v95 0x1F (v95 clean switch case 31).
+#     The v95 switch (0xa10ab0) and v83 switch (0xa3e31c) are CLEAN switches with
+#     named/positional StringPool arms; v84/v87/jms are decompiled as nested
+#     if-chains. Each mode below is read from THAT version's switch.
+#
+# v83/v84 values match the existing seed tables exactly
+# (template_gms_83_1.json:1540, template_gms_84_1.json:1562). v83 IDA confirms
+# the seed arm-for-arm. v84 seed = v83 seed EXCEPT TOWN_PORTAL=0x28 (the only
+# v84 mode-table delta task-085 recorded; town_portal.go IDA-confirms 0x28).
+#
+# WIRE-SHAPE divergence vs the current Go shared Error (IDA wins — context.md §10):
+#   The current party `Error{mode,name}` always writes mode + AsciiString name.
+#   The v83 switch (0xa3e31c) shows MOST notices are MODE-ONLY; only four arms
+#   read a trailing DecodeStr name: IS_CURRENTLY_BLOCKING (0x15),
+#   IS_TAKING_CARE_OF_ANOTHER_INVITATION (0x16), HAVE_DENIED_REQUEST (0x17), and
+#   the keyless member-leave notice (0x24, if/Decode1 name-or-mode). In
+#   particular UNABLE_TO_FIND_THE_REQUESTED_CHARACTER_IN_THIS_CHANNEL (0x13) is
+#   MODE-ONLY in v83 IDA (case 19) — the current code writes a name the client
+#   never reads. Per-arm shape table in context.md §10.
+#
+# VERSION-ABSENT / RESHIFTED UPPER ERROR ARMS (recorded, some NEEDS_CONTEXT):
+#   The v83 name-bearing/notice error arms above CHANGE_LEADER
+#   (IS_CURRENTLY_BLOCKING 0x15, IS_TAKING_CARE 0x16, HAVE_DENIED 0x17,
+#   CANNOT_KICK 0x19, THIS_CAN_ONLY_BE_GIVEN 0x1C, UNABLE_TO_HAND_OVER 0x1D,
+#   YOU_MAY_ONLY_CHANGE 0x1E, AS_A_GM 0x20, UNABLE_TO_FIND_THE_CHARACTER 0x21)
+#   reorganize heavily in v95/jms (the v95 switch reassigns the upper range to
+#   PQReward/expedition arms; several v83 error cases have no positional twin).
+#   Mapping each to its v87/v95/jms mode requires decrypting that version's
+#   StringPool message per arm (numeric IDs, not symbols, in v87/jms) — which is
+#   a stop-and-ask under the grounding contract, NOT a guess. Those versions'
+#   modes are OMITTED below (⬜) with a NEEDS_CONTEXT marker rather than invented.
+#   v83/v84 (seed-grounded) are always present. See context.md §10 for the full
+#   per-arm evidence + the escalation list.
+#
+# Mode bytes below are DECIMAL (the tool reads ints); per-version hex is in
+# context.md §10. member_hp (CUserRemote::OnReceiveHP) is NOT an OnPartyResult
+# arm and is intentionally absent.
+
+writer: PartyOperation
+fname: CWvsContext::OnPartyResult
+op: PARTY_OPERATION
+direction: clientbound
+operations:
+  # --- LOW arms: byte-identical v83..jms (read from each version's switch) ---
+  - { key: INVITE,                                                  modes: { gms_v83: 4,  gms_v84: 4,  gms_v87: 4,  gms_v95: 4,  jms_v185: 4 } }
+  - { key: UPDATE,                                                  modes: { gms_v83: 7,  gms_v84: 7,  gms_v87: 7,  gms_v95: 7,  jms_v185: 7 } }
+  - { key: CREATED,                                                 modes: { gms_v83: 8,  gms_v84: 8,  gms_v87: 8,  gms_v95: 8,  jms_v185: 8 } }
+  - { key: ALREADY_HAVE_JOINED_A_PARTY_1,                           modes: { gms_v83: 9,  gms_v84: 9,  gms_v87: 9,  gms_v95: 9,  jms_v185: 9 } }
+  - { key: A_BEGINNER_CANT_CREATE_A_PARTY,                          modes: { gms_v83: 10, gms_v84: 10, gms_v87: 10, gms_v95: 10, jms_v185: 10 } }
+  - { key: LEAVE,                                                   modes: { gms_v83: 12, gms_v84: 12, gms_v87: 12, gms_v95: 12, jms_v185: 12 } }
+  - { key: DISBAND,                                                 modes: { gms_v83: 12, gms_v84: 12, gms_v87: 12, gms_v95: 12, jms_v185: 12 } }
+  - { key: EXPEL,                                                   modes: { gms_v83: 12, gms_v84: 12, gms_v87: 12, gms_v95: 12, jms_v185: 12 } }
+  - { key: YOU_HAVE_YET_TO_JOIN_A_PARTY,                            modes: { gms_v83: 13, gms_v84: 13, gms_v87: 13, gms_v95: 13, jms_v185: 13 } }
+  - { key: JOIN,                                                    modes: { gms_v83: 15, gms_v84: 15, gms_v87: 15, gms_v95: 15, jms_v185: 15 } }
+  - { key: ALREADY_HAVE_JOINED_A_PARTY_2,                           modes: { gms_v83: 16, gms_v84: 16, gms_v87: 16, gms_v95: 16, jms_v185: 16 } }
+  - { key: THE_PARTY_YOURE_TRYING_TO_JOIN_IS_ALREADY_IN_FULL_CAPACITY, modes: { gms_v83: 17, gms_v84: 17, gms_v87: 17, gms_v95: 17, jms_v185: 17 } }
+  # UNABLE_TO_FIND_THE_REQUESTED_CHARACTER_IN_THIS_CHANNEL: v83 IDA case 19 = 0x13
+  #   MODE-ONLY (client reads no name, current Go writes one — IDA wins). v95 case
+  #   18 = 0x12 mode-only (the v95 switch slots it one earlier). v87/jms unresolved.
+  - { key: UNABLE_TO_FIND_THE_REQUESTED_CHARACTER_IN_THIS_CHANNEL,  modes: { gms_v83: 19, gms_v84: 19, gms_v95: 18 } }  # NEEDS_CONTEXT: gms_v87, jms_v185 (StringPool decrypt)
+  # --- name-bearing invite-target notices (v83 cases 21/22/23 = 0x15/0x16/0x17) ---
+  - { key: IS_CURRENTLY_BLOCKING_ANY_PARTY_INVITATIONS,             modes: { gms_v83: 21, gms_v84: 21 } }  # NEEDS_CONTEXT: gms_v87/v95/jms (reshifted upper range)
+  - { key: IS_TAKING_CARE_OF_ANOTHER_INVITATION,                   modes: { gms_v83: 22, gms_v84: 22 } }  # NEEDS_CONTEXT: gms_v87/v95/jms
+  - { key: HAVE_DENIED_REQUEST_TO_THE_PARTY,                       modes: { gms_v83: 23, gms_v84: 23 } }  # NEEDS_CONTEXT: gms_v87/v95/jms
+  - { key: CANNOT_KICK_ANOTHER_USER_IN_THIS_MAP,                   modes: { gms_v83: 25, gms_v84: 25 } }  # NEEDS_CONTEXT: gms_v87/v95/jms
+  # --- CHANGE_LEADER: v83 0x1B (case 27), v95 0x1F (case 31). ---
+  - { key: CHANGE_LEADER,                                          modes: { gms_v83: 27, gms_v84: 27, gms_v95: 31 } }  # NEEDS_CONTEXT: gms_v87, jms_v185
+  - { key: THIS_CAN_ONLY_BE_GIVEN_TO_A_PARTY_MEMBER_WITHIN_THE_VICINITY, modes: { gms_v83: 28, gms_v84: 28 } }  # NEEDS_CONTEXT: gms_v87/v95/jms
+  - { key: UNABLE_TO_HAND_OVER_THE_LEADERSHIP_POST_NO_PARTY_MEMBER_IS_CURRENTLY_WITHIN_THE, modes: { gms_v83: 29, gms_v84: 29 } }  # NEEDS_CONTEXT: gms_v87/v95/jms
+  - { key: YOU_MAY_ONLY_CHANGE_WITH_THE_PARTY_MEMBER_THATS_ON_THE_SAME_CHANNEL, modes: { gms_v83: 30, gms_v84: 30 } }  # NEEDS_CONTEXT: gms_v87/v95/jms
+  - { key: AS_A_GM_YOURE_FORBIDDEN_FROM_CREATING_A_PARTY,          modes: { gms_v83: 32, gms_v84: 32 } }  # NEEDS_CONTEXT: gms_v87/v95/jms
+  - { key: UNABLE_TO_FIND_THE_CHARACTER,                           modes: { gms_v83: 33, gms_v84: 33 } }  # NEEDS_CONTEXT: gms_v87/v95/jms
+  # --- TOWN_PORTAL: IDA-anchored across all 5 (town_portal.go) ---
+  - { key: TOWN_PORTAL,                                            modes: { gms_v83: 37, gms_v84: 40, gms_v87: 41, gms_v95: 46, jms_v185: 40 } }

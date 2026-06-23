@@ -1,0 +1,33 @@
+{
+  "service": "task-105-party-buddy-dispatcher-family",
+  "path": "libs/atlas-packet/{party,buddy}/clientbound + services/atlas-channel/atlas.com/channel",
+  "date": "2026-06-23",
+  "build": "pass",
+  "vet": "pass",
+  "testsPassed": -1,
+  "testsFailed": 0,
+  "overallStatus": "pass",
+  "scopeNote": "Packet-codec lib + atlas-channel call-site migration. No new domain package (model.go), REST resource, GORM administrator/provider, or Kafka emit in changed code; most DOM-* checks are N/A.",
+  "checks": [
+    {"id": "PHASE1-BUILD", "name": "go build ./... both modules", "status": "pass", "evidence": "clean"},
+    {"id": "PHASE1-VET", "name": "go vet touched packages", "status": "pass", "evidence": "clean"},
+    {"id": "PHASE1-TEST", "name": "go test party/buddy + socket/handler", "status": "pass", "evidence": "libs/atlas-packet/{party,buddy}/... ok; atlas-channel/socket/handler ok"},
+    {"id": "DOM-21", "name": "Reuse existing consts/types", "status": "pass", "evidence": "party operation_body.go:27-41 PartyOperation*; buddy map keys on pre-existing buddylist2.StatusEventError* (kafka/message/buddylist/kafka.go:39)"},
+    {"id": "DOM-24", "name": "Kafka producer stubbed in emitting tests", "status": "na", "evidence": "lib tests are pure encoders; no emit call sites"},
+    {"id": "BOUNDARY", "name": "No atlas-channel->atlas-parties internal import", "status": "pass", "evidence": "consumer/party/consumer.go:455-490 switch keys on partycb.PartyOperation* consts"},
+    {"id": "MODEBYTE", "name": "Mode bytes config-resolved, not hard-coded", "status": "pass", "evidence": "all body funcs use atlas_packet.WithResolvedCode(\"operations\", ...); WriteByte(0) is no-name payload not mode"},
+    {"id": "SYMMETRY", "name": "Encode/Decode symmetry", "status": "pass", "evidence": "error_test.go:152 TestBuddyErrorRoundTrip asserts clean per-region round trip"},
+    {"id": "VERSIONGATE", "name": "IsRegion(GMS) idiom correct & consistent", "status": "pass", "evidence": "buddy error.go:138-139; matches buddy/clientbound/invite.go:44; plain IsRegion correct since only JMS diverges"},
+    {"id": "IMMUTABLE", "name": "Immutable private-field structs via New* ctors", "status": "pass", "evidence": "all 24 error structs"},
+    {"id": "FIXTURES", "name": "Tests assert real bytes", "status": "pass", "evidence": "party error_test.go:150 length-prefixed AsciiString; buddy error_test.go:137 GMS [mode,0] vs JMS [mode]"},
+    {"id": "TESTHELPERS", "name": "No *_testhelpers.go; Builder/ctor pattern", "status": "pass", "evidence": "none added; table-driven t.Run"},
+    {"id": "NOSTUB", "name": "No new TODO/stub/501 landed", "status": "pass", "evidence": "only TODO invite/consumer.go:154 pre-existing (commit 2c43c0e9e)"},
+    {"id": "CATCHALL", "name": "Legacy PartyErrorBody/Error catch-all removed", "status": "pass", "evidence": "grep NONE across libs + atlas-channel"},
+    {"id": "TEMPLATEKEYS", "name": "Operation keys resolve in seed templates", "status": "pass", "evidence": "v83/jms templates contain all spot-checked party+buddy keys"}
+  ],
+  "blocking": [],
+  "nonBlocking": [
+    "party_operation.go:97-101: missing return after PartyUnableToFindCharacterBody announce (pre-existing control-flow defect; branch only swapped the body-func call)",
+    "invite/consumer.go:154: pre-existing // TODO send rejection to requesting character (commit 2c43c0e9e, not in this diff)"
+  ]
+}

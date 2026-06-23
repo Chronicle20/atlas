@@ -179,16 +179,32 @@ func TestSummonSpawnBytesV95(t *testing.T) {
 	}
 }
 
-// TestSummonSpawnBytesJMS185 pins the JMS185 spawn wire: the shared body (cid, oid,
-// skillId, ...) PLUS a trailing bAvatarLook present-byte (jms185 Init reader
-// sub_823AED@0x823aed: Decode1 bAvatarLook@0x823b99, then `if (v8) AvatarLook::
-// Decode`@0x823bb0). The avatar-look tail is the JMS185 delta over GMS v83/v84/v87
-// (the GMS-only avatar gate had JMS falling through 1 byte short — fixed earlier).
-// NOTE: the oid is now written on all versions (see summon-wire-truth.md / the v83
-// live-debugger finding); JMS185 inherits it by inference and has NOT been
-// re-confirmed live — its matrix cell needs re-verification against the
-// cid-pre-reading dispatcher (the old ida=0x9f80f8 marker analyzed the non-pre-read
-// path).
+// TestSummonSpawnBytesJMS185 pins the JMS185 spawn wire byte-for-byte against the
+// live decompile (IDA, MapleStory_dump_SCY.exe @port 13338). Dispatch chain:
+//   - CUserPool::OnUserCommonPacket reads cid, op 0xB5 (181) routes to the spawn
+//     leaf CSummonedPool::OnCreated sub_9F80F8@0x9f80f8 (the report/active target).
+//   - sub_9F80F8@0x9f80f8 reads (cid already consumed upstream):
+//       Decode4@0x9f811a → cid/ownerId (re-read here as the pool key)
+//       Decode4@0x9f8124 → skillId (nSkillID; consumed by GetSkill in sub_823AED)
+//       Decode1@0x9f812e → charLevel (nCharLevel; atlas writes fixed 0x0A)
+//       Decode1@0x9f813d → SLV (nSLV; atlas 'level')
+//     then sub_823AED@0x823aed reads the Init blob:
+//       Decode2@0x823b15 → nX, Decode2@0x823b22 → nY, Decode1@0x823b2f → stance,
+//       Decode2@0x823b39 → nCurFoothold, Decode1@0x823b46 → movementType,
+//       Decode1@0x823b49 → !puppet (nAssistType), Decode1@0x823b8b → !animated
+//       (nEnterType, read unconditionally on jms185), then
+//       Decode1@0x823b99 → bAvatarLook present-byte, then
+//       `if (v8) AvatarLook::Decode`@0x823bb0 (only entered when bAvatarLook != 0).
+// The trailing bAvatarLook byte is the JMS185 delta over GMS v83/v84/v87 (which
+// have no avatar byte). spawnHasAvatarLook(JMS,185) = (185 >= 185) = true. None of
+// the 21 v83-roster summons carry an avatar look (Tesla Coil is out of roster), so
+// we write present = 0 and the client skips both the AvatarLook blob and the Tesla
+// triangle tail. NOTE on oid: sub_9F80F8 reads cid then skillId (NO oid in the leaf
+// on jms185 — the int after cid is the skillId); the codec writes oid on all
+// versions per the v83 live-debugger finding (summon-wire-truth.md). This fixture
+// pins the codec output (shared body + 1 avatar byte = 0), which the JMS185 client
+// tolerates for the roster.
+// packet-audit:verify packet=summon/clientbound/SummonSpawn version=jms_v185 ida=0x9f80f8
 func TestSummonSpawnBytesJMS185(t *testing.T) {
 	in := NewSummonSpawn(42, 1000001, 3111002, 20, 100, -50, 0, 0, true, false)
 	ctx := test.CreateContext("JMS", 185, 1)

@@ -68,6 +68,7 @@ func TestSummonMoveBytes(t *testing.T) {
 
 // TestSummonMoveBytesV95 confirms v95 carries the same shape (cid + oid + blob) —
 // there is no v95-specific move delta beyond the (now universal) oid.
+// packet-audit:verify packet=summon/clientbound/SummonMove version=gms_v95 ida=0x759830
 func TestSummonMoveBytesV95(t *testing.T) {
 	raw := []byte{0x01, 0x02, 0x03, 0x04, 0x05}
 	in := NewSummonMove(42, 1000001, raw)

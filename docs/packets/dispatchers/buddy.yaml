@@ -1,0 +1,74 @@
+# BuddyOperation — CWvsContext::OnFriendResult per-version mode table.
+#
+# SOURCE OF TRUTH for the BuddyOperation writer's `operations` sub-op MODE byte.
+# The writer's opcode is BUDDYLIST; the leading byte (CInPacket::Decode1)
+# selects one of ~12 sub-handler arms. Each arm's MODE byte is per-version DATA
+# resolved at emit time from the tenant `operations` table — never a struct
+# literal.
+#
+# Per-version OnFriendResult function addresses (IDA-verified — task-105 Task 1).
+# NOTE: these are the CORRECTED ports the instances are actually running on
+# (the plan/context/guild.yaml documented ports are STALE — see context.md §10):
+#   gms_v83  0xa3f2e8  (MapleStory_dump.exe,      port 13341, path v83_Me)
+#   gms_v84  0xa8ada2  (GMS_v84.1_U_DEVM.exe,     port 13337)
+#   gms_v87  0xad7ae5  (GMSv87_4GB.exe,           port 13340)
+#   gms_v95  0xa12630  (GMS_v95.0_U_DEVM.exe,     port 13339)
+#   jms_v185 0xb2a873  (MapleStory_dump_SCY.exe,  port 13338)
+#
+# MODE-BYTE VERSION DRIFT (IDA-enumerated, NOT inferred):
+#   The OnFriendResult switch is BYTE-IDENTICAL across ALL FIVE versions for
+#   every key below. Unlike OnGuildResult/OnPartyResult, the buddy mode table is
+#   NOT shifted in v95 — case values 0x07..0x16 match v83 exactly in the v95
+#   switch (0xa12630). v83==v84==v87==v95==jms for every key.
+#
+# EXTRA-BYTE ARMS (the UNKNOWN_ERROR family 0x10/0x11/0x13/0x16):
+#   In gms_v83/v84/v87/v95 the four cases 0x10, 0x11, 0x13, 0x16 share one arm
+#   that FIRST reads `if (CInPacket::Decode1())` — a trailing extra byte — then
+#   shows either a DecodeStr'd name (extra-byte != 0) or a fixed StringPool
+#   notice (extra-byte == 0). So ALL FOUR of UNKNOWN_ERROR, UNKNOWN_ERROR_2,
+#   UNKNOWN_ERROR_3, UNKNOWN_ERROR_4 read the extra byte — NOT only UNKNOWN_ERROR
+#   (0x10) as the current Go `hasExtra` gate assumes. Model each as its own
+#   discrete struct whose Encode writes the extra byte (design D1).
+#   IN JMS (0xb2a873) the same four cases are MODE-ONLY: the jms arm goes
+#   straight to StringPool 765 + Notice with NO leading Decode1. So on jms the
+#   UNKNOWN_ERROR family writes mode only (no extra byte). Recorded per context.md
+#   §10; the extra-byte structs must gate the trailing byte off (GMS) vs jms.
+#
+# UNKNOWN_1 (0x0A) and UNKNOWN_2 (0x12): NOT error arms. In every version both
+#   share the case 7/0xA/0x12 list-reset handler (CFriend::Reset) — same shape as
+#   UPDATE (0x07): they read a full buddy list, no trailing byte, no StringPool
+#   notice. Their keys exist in the seed for completeness; their structs (if ever
+#   built) mirror the list-update shape, not the error shape.
+#
+# VERSION-ADDITIVE ARM (NEEDS_CONTEXT, recorded — NOT wired here):
+#   gms_v95 OnFriendResult (0xa12630) has an EXTRA `case 0x17` (StringPool 384,
+#   mode-only) absent from v83/v84/v87/jms. It has NO existing Atlas
+#   operation-key. Per the grounding contract a switch case with no key is a
+#   stop-and-ask; it is NOT invented here. No key/line is emitted for it.
+#
+# Mode bytes below are DECIMAL (the tool reads ints); per-version hex is in
+# context.md §10. Each value is read from THAT version's decompiled switch and
+# matches the v83/v84 seed tables (template_gms_83_1.json:1572,
+# template_gms_84_1.json:1593).
+
+writer: BuddyOperation
+fname: CWvsContext::OnFriendResult
+op: BUDDYLIST
+direction: clientbound
+operations:
+  - { key: UPDATE,                modes: { gms_v83: 7,  gms_v84: 7,  gms_v87: 7,  gms_v95: 7,  jms_v185: 7 } }
+  - { key: BUDDY_UPDATE,          modes: { gms_v83: 8,  gms_v84: 8,  gms_v87: 8,  gms_v95: 8,  jms_v185: 8 } }
+  - { key: INVITE,                modes: { gms_v83: 9,  gms_v84: 9,  gms_v87: 9,  gms_v95: 9,  jms_v185: 9 } }
+  - { key: UNKNOWN_1,             modes: { gms_v83: 10, gms_v84: 10, gms_v87: 10, gms_v95: 10, jms_v185: 10 } }   # list-reset arm (shares case 7/0xA/0x12), not an error
+  - { key: BUDDY_LIST_FULL,       modes: { gms_v83: 11, gms_v84: 11, gms_v87: 11, gms_v95: 11, jms_v185: 11 } }
+  - { key: OTHER_BUDDY_LIST_FULL, modes: { gms_v83: 12, gms_v84: 12, gms_v87: 12, gms_v95: 12, jms_v185: 12 } }
+  - { key: ALREADY_BUDDY,         modes: { gms_v83: 13, gms_v84: 13, gms_v87: 13, gms_v95: 13, jms_v185: 13 } }
+  - { key: CANNOT_BUDDY_GM,       modes: { gms_v83: 14, gms_v84: 14, gms_v87: 14, gms_v95: 14, jms_v185: 14 } }
+  - { key: CHARACTER_NOT_FOUND,   modes: { gms_v83: 15, gms_v84: 15, gms_v87: 15, gms_v95: 15, jms_v185: 15 } }
+  - { key: UNKNOWN_ERROR,         modes: { gms_v83: 16, gms_v84: 16, gms_v87: 16, gms_v95: 16, jms_v185: 16 } }   # EXTRA-BYTE arm (GMS 0x10/0x11/0x13/0x16 read Decode1; jms mode-only)
+  - { key: UNKNOWN_ERROR_2,       modes: { gms_v83: 17, gms_v84: 17, gms_v87: 17, gms_v95: 17, jms_v185: 17 } }   # EXTRA-BYTE arm in GMS (case 0x11)
+  - { key: UNKNOWN_2,             modes: { gms_v83: 18, gms_v84: 18, gms_v87: 18, gms_v95: 18, jms_v185: 18 } }   # list-reset arm (shares case 7/0xA/0x12), not an error
+  - { key: UNKNOWN_ERROR_3,       modes: { gms_v83: 19, gms_v84: 19, gms_v87: 19, gms_v95: 19, jms_v185: 19 } }   # EXTRA-BYTE arm in GMS (case 0x13)
+  - { key: BUDDY_CHANNEL_CHANGE,  modes: { gms_v83: 20, gms_v84: 20, gms_v87: 20, gms_v95: 20, jms_v185: 20 } }
+  - { key: CAPACITY_CHANGE,       modes: { gms_v83: 21, gms_v84: 21, gms_v87: 21, gms_v95: 21, jms_v185: 21 } }
+  - { key: UNKNOWN_ERROR_4,       modes: { gms_v83: 22, gms_v84: 22, gms_v87: 22, gms_v95: 22, jms_v185: 22 } }   # EXTRA-BYTE arm in GMS (case 0x16)

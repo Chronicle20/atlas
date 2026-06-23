@@ -1,0 +1,10 @@
+packet: party/clientbound/PartyUnableToFindCharacter
+direction: clientbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnPartyResult#UnableToFindCharacter
+    address: "0xad697a"
+    decompile_sha256: bbce0cf85f398947d530e2541f4fb0ec29b8c1710bbef5edf68fac82ae61f91c
+verifies:
+  - libs/atlas-packet/party/clientbound/error_test.go#TestModeOnlyPartyErrorArms

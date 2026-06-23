@@ -1112,13 +1112,51 @@
         "writer": "PartyOperation",
         "options": {
           "operations": {
-            "TOWN_PORTAL": "0x28"
+            "INVITE": 4,
+            "UPDATE": 7,
+            "CREATED": 8,
+            "ALREADY_HAVE_JOINED_A_PARTY_1": 9,
+            "A_BEGINNER_CANT_CREATE_A_PARTY": 10,
+            "LEAVE": 12,
+            "DISBAND": 12,
+            "EXPEL": 12,
+            "YOU_HAVE_YET_TO_JOIN_A_PARTY": 13,
+            "JOIN": 15,
+            "ALREADY_HAVE_JOINED_A_PARTY_2": 17,
+            "THE_PARTY_YOURE_TRYING_TO_JOIN_IS_ALREADY_IN_FULL_CAPACITY": 18,
+            "CANNOT_KICK_ANOTHER_USER_IN_THIS_MAP": 29,
+            "CHANGE_LEADER": 31,
+            "THIS_CAN_ONLY_BE_GIVEN_TO_A_PARTY_MEMBER_WITHIN_THE_VICINITY": 32,
+            "UNABLE_TO_HAND_OVER_THE_LEADERSHIP_POST_NO_PARTY_MEMBER_IS_CURRENTLY_WITHIN_THE": 33,
+            "YOU_MAY_ONLY_CHANGE_WITH_THE_PARTY_MEMBER_THATS_ON_THE_SAME_CHANNEL": 34,
+            "AS_A_GM_YOURE_FORBIDDEN_FROM_CREATING_A_PARTY": 36,
+            "TOWN_PORTAL": 40
           }
         }
       },
       {
         "opCode": "0x39",
-        "writer": "BuddyOperation"
+        "writer": "BuddyOperation",
+        "options": {
+          "operations": {
+            "UPDATE": 7,
+            "BUDDY_UPDATE": 8,
+            "INVITE": 9,
+            "UNKNOWN_1": 10,
+            "BUDDY_LIST_FULL": 11,
+            "OTHER_BUDDY_LIST_FULL": 12,
+            "ALREADY_BUDDY": 13,
+            "CANNOT_BUDDY_GM": 14,
+            "CHARACTER_NOT_FOUND": 15,
+            "UNKNOWN_ERROR": 16,
+            "UNKNOWN_ERROR_2": 17,
+            "UNKNOWN_2": 18,
+            "UNKNOWN_ERROR_3": 19,
+            "BUDDY_CHANNEL_CHANGE": 20,
+            "CAPACITY_CHANGE": 21,
+            "UNKNOWN_ERROR_4": 22
+          }
+        }
       },
       {
         "opCode": "0x3B",

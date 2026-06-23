@@ -1,0 +1,10 @@
+packet: party/clientbound/PartyBeginnerCannotCreate
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnPartyResult#BeginnerCannotCreate
+    address: "0xb297e7"
+    decompile_sha256: 88fbebe74b8840f7b39c379260b41bdf345bdb412754296c07bbd658a4212126
+verifies:
+  - libs/atlas-packet/party/clientbound/error_test.go#TestModeOnlyPartyErrorArms

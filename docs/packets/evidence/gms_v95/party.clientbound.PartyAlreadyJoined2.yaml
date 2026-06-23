@@ -1,0 +1,10 @@
+packet: party/clientbound/PartyAlreadyJoined2
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnPartyResult#AlreadyJoined2
+    address: "0xa10ab0"
+    decompile_sha256: f20e0d6d7639f64e154e38db589c87ff940dd44828e3bed536e9f495128dd840
+verifies:
+  - libs/atlas-packet/party/clientbound/error_test.go#TestModeOnlyPartyErrorArms

@@ -1,0 +1,10 @@
+packet: party/clientbound/PartyPartyFull
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnPartyResult#PartyFull
+    address: "0xa89cf3"
+    decompile_sha256: 54ce00feaeb774bf931896b467b1b2304b6efcb58877e51f894c4d96485c5534
+verifies:
+  - libs/atlas-packet/party/clientbound/error_test.go#TestModeOnlyPartyErrorArms

@@ -1,0 +1,10 @@
+packet: party/clientbound/PartyNotInParty
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnPartyResult#NotInParty
+    address: "0xb297e7"
+    decompile_sha256: 49b3209e323d0e51f8275b02f774fd72f65b7a906cfdd5eb13f70f5f7248efc8
+verifies:
+  - libs/atlas-packet/party/clientbound/error_test.go#TestModeOnlyPartyErrorArms

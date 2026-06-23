@@ -343,6 +343,85 @@ func TestSettleAuctionAtExpiryCreditsSellerNoDoubleDebit(t *testing.T) {
 	}
 }
 
+// TestSettleAuctionTwiceCreditsSellerOnce is the regression guard for the
+// double-credit money bug: the DB-driven expiration sweep discovers expired
+// auctions by (state='active' AND ends_at<now). SettleAuction emits the
+// seller-credit + move saga, but the listing only flips out of `active` later, in
+// the async MtsMoveListingToHolding custody step. If a SECOND sweep tick fires
+// before that async move completes, the listing is STILL active+expired and gets
+// re-discovered — a naive settle would emit a SECOND seller credit, double-paying
+// the seller. The fix transitions the listing active->settling SYNCHRONOUSLY under
+// a CAS when the first settle emits, so the second settle's CAS loses and emits
+// nothing. This test settles the SAME auction twice (move step deliberately not
+// run between) and asserts exactly ONE seller credit was emitted.
+func TestSettleAuctionTwiceCreditsSellerOnce(t *testing.T) {
+	p, emitter, db, listingId, cleanup := newBidProcessor(t)
+	defer cleanup()
+
+	if err := p.PlaceBid(bidRequest(listingId, bidderForBid, bidderAcctForBid, 1000)); err != nil {
+		t.Fatalf("bid: %v", err)
+	}
+	emitter.reset()
+
+	settleReq := listing.SettleRequest{
+		ListingId:       listingId,
+		WorldId:         0,
+		WinnerId:        bidderForBid,
+		WinnerAccountId: bidderAcctForBid,
+		SellerAccountId: sellerAcctForBid,
+	}
+
+	// First sweep tick: settle. Emits the seller-credit + move saga and flips the
+	// listing out of the discovery set (active->settling).
+	res1, err := p.SettleAuction(settleReq)
+	if err != nil {
+		t.Fatalf("first SettleAuction: %v", err)
+	}
+	if !res1.HadWinner {
+		t.Fatal("expected the first settle to report a winner")
+	}
+
+	// The listing MUST no longer be discoverable as an expired active auction: the
+	// settle synchronously moved it out of `active` so the next sweep tick cannot
+	// re-discover it before the async move step runs.
+	expired, err := listing.GetExpiredActive(time.Now().Add(2*time.Hour), 0)(db.WithContext(test.CreateTestContext()))()
+	if err != nil {
+		t.Fatalf("GetExpiredActive: %v", err)
+	}
+	for _, lm := range expired {
+		if lm.Id() == listingId {
+			t.Fatalf("listing %s still discoverable as expired-active after settle — a second sweep would re-settle it", listingId)
+		}
+	}
+
+	// Second sweep tick BEFORE the async move step completes: settle the same row
+	// again. The CAS must lose and emit nothing — no second seller credit.
+	res2, err := p.SettleAuction(settleReq)
+	if err != nil {
+		t.Fatalf("second SettleAuction: %v", err)
+	}
+	if res2.HadWinner {
+		t.Error("the second settle reported a winner — it should have lost the settle CAS and done nothing")
+	}
+
+	// Across BOTH settle calls, exactly ONE seller-points credit must have been
+	// emitted. Two would double-pay the seller (the money bug).
+	sellerCredits := 0
+	for _, sg := range emitter.sagas() {
+		for _, st := range sg.Steps {
+			if st.Action == sharedsaga.AwardCurrency {
+				ap := st.Payload.(sharedsaga.AwardCurrencyPayload)
+				if ap.AccountId == sellerAcctForBid && ap.Amount == 1000 {
+					sellerCredits++
+				}
+			}
+		}
+	}
+	if sellerCredits != 1 {
+		t.Errorf("seller credited %d times across two settle ticks, want exactly 1 (double-credit money bug)", sellerCredits)
+	}
+}
+
 // TestSettleAuctionNoBidsReturnsToSeller asserts an auction that expires with NO
 // bids returns the item to the SELLER holding (origin=expired) and emits no settle
 // money-mover — i.e. it takes the existing Expire path, reported by HadWinner=false.

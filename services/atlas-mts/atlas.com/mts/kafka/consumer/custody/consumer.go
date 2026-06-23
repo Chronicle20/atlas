@@ -280,14 +280,29 @@ func handleMtsMoveListingToHolding(pf providerFn) func(db *gorm.DB) message.Hand
 				}
 				itemId = lm.TemplateId()
 
-				// Conditional active->sold transition. The rows affected is the race
-				// arbiter: 1 means this call won the active->sold transition; 0 means
-				// the listing was already out of `active` (either this same move
-				// already settled it — a replay — or a concurrent cancel/expire won
-				// the race).
+				// Conditional ->sold transition. The rows affected is the race
+				// arbiter: 1 means this call won the transition; 0 means the listing
+				// was already out of its pre-sold state (either this same move already
+				// settled it — a replay — or a concurrent cancel/expire won the race).
+				//
+				// Two valid pre-sold source states feed this step:
+				//   - a fixed-price/buy-now Buy settles the listing straight from
+				//     `active` (MtsSettlePurchase never pre-transitions the row), so the
+				//     buy path is active->sold;
+				//   - an auction settle (SettleAuction) pre-transitions the listing
+				//     active->settling SYNCHRONOUSLY (the sweep re-discovery guard), so
+				//     the auction path is settling->sold.
+				// Try active->sold first (the buy path); if 0 rows, try settling->sold
+				// (the auction-settle path). Whichever affects 1 row is the winner.
 				affected, uerr := listing.UpdateState(tx, b.ListingId.String(), listing.StateActive, listing.StateSold)
 				if uerr != nil {
 					return uerr
+				}
+				if affected == 0 {
+					affected, uerr = listing.UpdateState(tx, b.ListingId.String(), listing.StateSettling, listing.StateSold)
+					if uerr != nil {
+						return uerr
+					}
 				}
 
 				// Idempotency: if the buyer holding already exists for this

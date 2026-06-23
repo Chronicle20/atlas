@@ -806,15 +806,50 @@ func (p *ProcessorImpl) SettleAuction(req SettleRequest) (SettleResult, error) {
 		return SettleResult{}, fmt.Errorf("auction %s has a winner but the seller account is unresolved; cannot credit", req.ListingId)
 	}
 
-	// Mark the winning held bid won (race-safe conditional). It is harmless if a
-	// concurrent path already moved it; the credit/move below are saga-driven and
-	// idempotent on the listing row's active->sold transition.
-	if heldId, _, gerr := heldBidFor(p.db.WithContext(p.ctx), req.ListingId, winner); gerr != nil {
-		return SettleResult{}, gerr
-	} else if heldId != uuid.Nil {
-		if _, uerr := bid.UpdateState(p.db.WithContext(p.ctx), heldId.String(), bid.StateHeld, bid.StateWon); uerr != nil {
-			return SettleResult{}, uerr
+	// Re-discovery guard (the double-credit money bug): the DB-driven sweep
+	// discovers expired auctions by (state='active' AND ends_at<now). The listing
+	// only flips out of `active` LATER, in the async MtsMoveListingToHolding step,
+	// so a second sweep tick firing before that completes would re-discover this row
+	// and emit a SECOND seller credit. To make the row non-discoverable the instant
+	// the settle is decided, transition it active->settling under a race-safe CAS in
+	// the SAME tx that marks the winning bid won. If the CAS affects 0 rows, another
+	// settle (a prior tick or a concurrent one) already claimed this auction — this
+	// caller emits nothing (HadWinner=false). settling is excluded from the sweep's
+	// discovery set, and MtsMoveListingToHolding transitions settling->sold.
+	var claimed bool
+	terr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		affected, uerr := UpdateState(tx, req.ListingId.String(), StateActive, StateSettling)
+		if uerr != nil {
+			return uerr
 		}
+		if affected != 1 {
+			// Lost the settle CAS: a prior/concurrent settle already claimed this
+			// auction. Do not mark the bid won or emit — that settle owns the credit.
+			return nil
+		}
+		claimed = true
+
+		// Mark the winning held bid won (race-safe conditional). It is harmless if a
+		// concurrent path already moved it; the credit/move below are saga-driven and
+		// idempotent on the listing row's settling->sold transition.
+		heldId, _, gerr := heldBidFor(tx, req.ListingId, winner)
+		if gerr != nil {
+			return gerr
+		}
+		if heldId != uuid.Nil {
+			if _, berr := bid.UpdateState(tx, heldId.String(), bid.StateHeld, bid.StateWon); berr != nil {
+				return berr
+			}
+		}
+		return nil
+	})
+	if terr != nil {
+		return SettleResult{}, terr
+	}
+	if !claimed {
+		// Another settle won the CAS; this caller settles nothing and re-credits no
+		// one. The sweep treats this as a no-op (HadWinner=false, Expired=false).
+		return SettleResult{}, nil
 	}
 
 	transactionId := uuid.New()
@@ -841,6 +876,14 @@ func (p *ProcessorImpl) SettleAuction(req SettleRequest) (SettleResult, error) {
 	builder.SetTimeout(auctionSettleTimeout())
 
 	if err := p.emitter.Create(builder.Build()); err != nil {
+		// The settle saga never emitted, so the row would be stranded in `settling`
+		// (out of the sweep's discovery set) and never retried. Revert it
+		// settling->active under a CAS so the NEXT sweep tick re-discovers and
+		// re-settles it. The winning bid's won mark is left as-is (the re-settle's
+		// idempotent heldBidFor/UpdateState handles an already-won bid harmlessly).
+		if _, rerr := UpdateState(p.db.WithContext(p.ctx), req.ListingId.String(), StateSettling, StateActive); rerr != nil {
+			p.l.WithError(rerr).Errorf("failed to revert listing %s settling->active after a settle-emit failure; it may be stranded out of the sweep", req.ListingId)
+		}
 		return SettleResult{}, err
 	}
 	return SettleResult{HadWinner: true}, nil

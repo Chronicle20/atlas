@@ -19,7 +19,16 @@ const (
 type State string
 
 const (
-	StateActive    State = "active"
+	StateActive State = "active"
+	// StateSettling is the transient state an auction listing enters SYNCHRONOUSLY
+	// the moment its settle-to-winner saga is emitted (active->settling), before the
+	// async MtsMoveListingToHolding custody step flips it settling->sold. It exists
+	// solely to take a settling auction OUT of the expiration sweep's discovery set
+	// (state='active' AND ends_at<now) so a second sweep tick cannot re-discover the
+	// row and emit a SECOND seller-credit saga (the double-credit money bug). The
+	// active->settling transition is a race-safe CAS, so two concurrent ticks cannot
+	// both emit. On a settle-emit failure the row is reverted settling->active.
+	StateSettling  State = "settling"
 	StateSold      State = "sold"
 	StateCancelled State = "cancelled"
 	StateExpired   State = "expired"

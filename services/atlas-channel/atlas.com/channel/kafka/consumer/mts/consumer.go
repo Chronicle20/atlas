@@ -4,6 +4,7 @@ import (
 	consumer2 "atlas-channel/kafka/consumer"
 	mtsmsg "atlas-channel/kafka/message/mts"
 	"atlas-channel/listener"
+	mtsholding "atlas-channel/mts/holding"
 	mtslisting "atlas-channel/mts/listing"
 	"atlas-channel/server"
 	"atlas-channel/session"
@@ -141,6 +142,24 @@ func announceUserSaleList(l logrus.FieldLogger, ctx context.Context, sc server.M
 	announceTo(l, ctx, sc, wp, sellerId, fieldpkt.MtsOperationGetUserSaleItemDoneBody(items))
 }
 
+// announceUserPurchaseList re-pushes the character's "Transfer Inventory" panel
+// (GetUserPurchaseItemDone) by re-querying their take-home holdings. Like the sale
+// list, the v83 client loads this once at MTS entry and never re-requests it after
+// a take-home, so a just-retrieved item lingers in the panel until the player
+// re-enters MTS unless the server pushes the fresh list.
+func announceUserPurchaseList(l logrus.FieldLogger, ctx context.Context, sc server.Model, wp writer.Producer, characterId uint32) {
+	hs, err := mtsholding.NewProcessor(l, ctx).GetByCharacter(characterId)
+	if err != nil {
+		l.WithError(err).Errorf("Unable to refresh MTS purchase list for character [%d]; leaving the Transfer-Inventory panel stale.", characterId)
+		return
+	}
+	items := make([]fieldcb.MtsItem, 0, len(hs))
+	for _, h := range hs {
+		items = append(items, mtsholding.ToMtsItem(h))
+	}
+	announceTo(l, ctx, sc, wp, characterId, fieldpkt.MtsOperationGetUserPurchaseItemDoneBody(items, 0, 0))
+}
+
 func handleListingCreated(sc server.Model, wp writer.Producer) message.Handler[mtsmsg.StatusEvent[mtsmsg.StatusEventListingCreatedBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, e mtsmsg.StatusEvent[mtsmsg.StatusEventListingCreatedBody]) {
 		if e.Type != mtsmsg.StatusEventTypeListingCreated {
@@ -194,6 +213,9 @@ func handleItemTakenHome(sc server.Model, wp writer.Producer) message.Handler[mt
 		}
 		l.Debugf("MTS item taken home for character [%d] (item [%d]).", e.Body.CharacterId, e.Body.ItemId)
 		announceTo(l, ctx, sc, wp, e.Body.CharacterId, fieldpkt.MtsOperationMoveItcPurchaseItemLtoSDoneBody(mtsTakeHomePurchaseTab, mtsTakeHomeSelectedNo))
+		// Refresh the "Transfer Inventory" panel so the retrieved item drops off
+		// without re-entering MTS (the client does not re-query it itself).
+		announceUserPurchaseList(l, ctx, sc, wp, e.Body.CharacterId)
 	}
 }
 

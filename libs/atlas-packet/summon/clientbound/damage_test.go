@@ -91,6 +91,33 @@ func TestSummonDamageBytesV87(t *testing.T) {
 	}
 }
 
+// TestSummonDamageBytesV84 pins that v84 is byte-identical to v83 (cid + oid + body,
+// no trailing dir byte). Verified live (IDA, GMS_v84.1_U_DEVM.exe @port 13337):
+//   - CUserPool::OnUserCommonPacket@0x9b23a1 reads cid (Decode4@0x9b23ac), routes
+//     op 0xB8 (184) to the summon dispatcher sub_970201@0x970201.
+//   - sub_970201@0x970201 reads oid (Decode4@0x970240), looks up the summon, then
+//     case 184 calls the damage leaf sub_7CC984@0x7cc984 (exported FName
+//     CSummonedPool::OnHit — the body that reads attackIdx/damage is what matters).
+//   - sub_7CC984@0x7cc984 reads:
+//       Decode1@0x7cc9b5 → attackIdx (v34=v5; atlas writes 12)
+//       Decode4@0x7cc9ca → damage (v38)
+//       if (v5 > -2):   // 12 > -2, branch fires
+//         Decode4@0x7cc9dc → monsterIdFrom (v39 → sub_6938FA/GetMobTemplate)
+//         Decode1@0x7cc9ea → bLeft (v35; atlas writes 0)
+//     and nothing after from the packet — no trailing dir byte (the dir<0 byte
+//     belongs to the SERVERBOUND SetDamaged send). Damage has no version gate, so
+//     the v84 path is byte-identical to v83 (off-by-one confirmed clear).
+// packet-audit:verify packet=summon/clientbound/SummonDamage version=gms_v84 ida=0x7cc984
+func TestSummonDamageBytesV84(t *testing.T) {
+	in := NewSummonDamage(42, 1000001, 1234, 9300018)
+	ctx := test.CreateContext("GMS", 84, 1)
+	got := test.Encode(t, ctx, in.Encode, nil)
+
+	if !bytes.Equal(got, summonDamageV83Body) {
+		t.Fatalf("v84 bytes = % X, want % X (identical to v83)", got, summonDamageV83Body)
+	}
+}
+
 // TestSummonDamageBytesV95 pins that v95 is byte-identical to v83 for damage: the
 // oid is now in the shared body and there is no v95-specific delta (v95 OnHit@
 // 0x74bc80 stops at bLeft — the dir byte is serverbound only).

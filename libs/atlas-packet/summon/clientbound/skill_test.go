@@ -170,3 +170,33 @@ func TestSummonSkillBytesV95(t *testing.T) {
 		t.Fatalf("v95 bytes = % X, want % X", got, want)
 	}
 }
+
+// TestSummonSkillBytesJMS185 pins the JMS185 wire byte-for-byte against the live
+// decompile (IDA, MapleStory_dump_SCY.exe @port 13338). jms185 is v83-shaped —
+// same dispatch + leaf, no version delta. Dispatch chain:
+//   - CUserPool::OnUserCommonPacket reads cid, op 0xBA (186) routes to
+//     CSummonedPool::OnPacket@0x9f7f6e, which reads oid (Decode4@0x9f7fad), looks up
+//     the summon, then case 0xBA calls the skill leaf CSummonedPool::OnSkill@0x828cb2.
+//   - The skill body lives at 0x828cb2 (exported FName CSummonedPool::OnSkill; the
+//     mangled symbol there is OnHit — the known naming swap; the body is truth).
+//     It reads exactly ONE byte: Decode1@0x828d01 → CSummoned::SetAttackAction(this,
+//     v4 & 0x7F) — a single stance byte masked 0x7F, and nothing else. There is NO
+//     summonSkillId int on the wire in any version.
+// Wire: int cid (upstream) + int oid + byte stance. Skill has no version gate, so the
+// jms185 path is byte-identical to v83.
+// packet-audit:verify packet=summon/clientbound/SummonSkill version=jms_v185 ida=0x828cb2
+func TestSummonSkillBytesJMS185(t *testing.T) {
+	in := NewSummonSkill(42, 1000001, 6)
+	ctx := test.CreateContext("JMS", 185, 1)
+	got := test.Encode(t, ctx, in.Encode, nil)
+
+	// cid=42, oid=1000001=0x000F4241, newStance=6 (single byte, masked 0x7F client-side)
+	want := []byte{
+		0x2A, 0x00, 0x00, 0x00, // cid (consumed by dispatcher)
+		0x41, 0x42, 0x0F, 0x00, // oid (Decode4@0x9f7fad in OnPacket)
+		0x06, // newStance (Decode1@0x828d01)
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatalf("JMS185 bytes = % X, want % X", got, want)
+	}
+}

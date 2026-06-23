@@ -62,6 +62,35 @@ func TestSummonSkillBytes(t *testing.T) {
 	}
 }
 
+// TestSummonSkillBytesV83 pins the v83 wire byte-for-byte against the live
+// decompile. Dispatch chain (IDA, MapleStory_dump.exe @port 13341):
+//   - CUserPool::OnUserCommonPacket@0x972401 reads cid (Decode4@0x97240c), routes
+//     op 0xB4 to CSummonedPool::OnPacket@0x972490.
+//   - CSummonedPool::OnPacket@0x938dd7 reads oid (Decode4@0x938e16), looks up the
+//     summon, then case 0xB4 calls the skill leaf @0x938e86.
+//   - The skill body lives at 0x7a6e5a (exported FName CSummonedPool::OnSkill; the
+//     mangled symbol there is OnHit — the known naming swap; the body is what
+//     matters). It reads exactly ONE byte: Decode1@0x7a6ea9 → sub_7A601D(this,
+//     b & 0x7F) — a single stance byte masked 0x7F, and nothing else. There is NO
+//     summonSkillId int on the wire in any version.
+// Wire: int cid (upstream) + int oid + byte stance.
+// packet-audit:verify packet=summon/clientbound/SummonSkill version=gms_v83 ida=0x7a6e5a
+func TestSummonSkillBytesV83(t *testing.T) {
+	in := NewSummonSkill(42, 1000001, 6)
+	ctx := test.CreateContext("GMS", 83, 1)
+	got := test.Encode(t, ctx, in.Encode, nil)
+
+	// cid=42, oid=1000001=0x000F4241, newStance=6 (single byte, masked 0x7F client-side)
+	want := []byte{
+		0x2A, 0x00, 0x00, 0x00, // cid (consumed by dispatcher)
+		0x41, 0x42, 0x0F, 0x00, // oid (Decode4@0x938e16 in OnPacket)
+		0x06, // newStance (Decode1@0x7a6ea9)
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatalf("v83 bytes = % X, want % X", got, want)
+	}
+}
+
 // TestSummonSkillBytesV95 pins the v95+ DELTA: the oid int between cid and the
 // stance byte. Still no summonSkillId int (v95 OnSkill also reads a single byte).
 // packet-audit:verify packet=summon/clientbound/SummonSkill version=gms_v95 ida=0x759890

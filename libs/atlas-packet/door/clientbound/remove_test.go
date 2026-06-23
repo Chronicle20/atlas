@@ -28,6 +28,7 @@ import (
 //
 // packet-audit:verify packet=door/clientbound/RemoveDoor version=gms_v83 ida=0x7be064
 // packet-audit:verify packet=door/clientbound/RemoveDoor version=gms_v84 ida=0x7e40de
+// packet-audit:verify packet=door/clientbound/RemoveDoor version=gms_v87 ida=0x811487
 func TestRemoveDoor(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 

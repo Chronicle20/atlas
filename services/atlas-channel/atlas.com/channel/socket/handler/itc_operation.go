@@ -248,7 +248,12 @@ func browseFilterFromSearchItcList(p fieldsb.ItcOperationTabSearch) mtslisting.B
 // strings are empty (the channel surfaces no such state) and the date-expired
 // FILETIME is zero.
 func mtsItemFromListing(m mtslisting.Model) fieldcb.MtsItem {
-	item := packetmodel.NewAsset(false, 0, m.TemplateId(), time.Time{}).SetStackableInfo(m.Quantity(), 0, 0)
+	// zeroPosition=true: the ITCITEM's GW_ItemSlotBase blob is bare (the v83
+	// client's GW_ItemSlotBase::Decode reads the item type byte first, with NO
+	// leading inventory-slot byte). Passing false prepends a slot byte that the
+	// client misreads as the item type, mis-decodes the rest of the item, and
+	// overruns a later DecodeStr -> client crash on browse.
+	item := packetmodel.NewAsset(true, 0, m.TemplateId(), time.Time{}).SetStackableInfo(m.Quantity(), 0, 0)
 	var dateExpired [8]byte
 	return fieldpkt.MtsOperationNewItem(
 		item,            // GW_ItemSlotBase blob
@@ -675,7 +680,9 @@ func writeWishList(l logrus.FieldLogger, ctx context.Context, wp writer.Producer
 // resolve the cancel back to this wish entry. Writing 0 (the old behavior) meant
 // the client always sent 0 and the cancel never resolved.
 func mtsItemFromWish(w mtswish.Model) fieldcb.MtsItem {
-	item := packetmodel.NewAsset(false, 0, w.ItemId(), time.Time{}).SetStackableInfo(1, 0, 0)
+	// zeroPosition=true: bare GW_ItemSlotBase blob, no leading slot byte (see
+	// mtsItemFromListing — the v83 client crashes on a slot-prefixed ITCITEM).
+	item := packetmodel.NewAsset(true, 0, w.ItemId(), time.Time{}).SetStackableInfo(1, 0, 0)
 	var dateExpired [8]byte
 	return fieldpkt.MtsOperationNewItem(
 		item,        // GW_ItemSlotBase blob

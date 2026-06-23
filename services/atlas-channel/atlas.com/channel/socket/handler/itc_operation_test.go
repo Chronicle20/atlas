@@ -113,9 +113,9 @@ const (
 )
 
 func TestBuildCreateListingFromRegisterSale(t *testing.T) {
-	// item at slot 5, template 1302000, qty 1; price 1000, itemType 1 (use tab)
-	item := packetmodel.NewAsset(false, 5, 1302000, time.Time{}).SetStackableInfo(1, 0, 0)
-	p := fieldsb.NewItcOperationRegisterSale(2, item, 1, 0, 1000, 1, 0)
+	// register-sale wire: slotPos 5 (a4), quantity 7 (v22), price 1000 (a3)
+	item := packetmodel.NewAsset(false, 5, 1302000, time.Time{}).SetStackableInfo(7, 0, 0)
+	p := fieldsb.NewItcOperationRegisterSale(2, item, 5, 7, 1000, 1, 0)
 
 	args := buildCreateListingFromRegisterSale(p, testWorldId, testSellerId, testSellerAccountId, testSellerName)
 
@@ -131,8 +131,11 @@ func TestBuildCreateListingFromRegisterSale(t *testing.T) {
 	if args.CashId != 0 {
 		t.Errorf("cashId: want 0 got %d", args.CashId)
 	}
-	if args.Quantity != 1 {
-		t.Errorf("quantity: want 1 got %d", args.Quantity)
+	if args.SlotPos != 5 {
+		t.Errorf("slotPos: want 5 (a4) got %d", args.SlotPos)
+	}
+	if args.Quantity != 7 {
+		t.Errorf("quantity: want 7 (v22, not slotPos) got %d", args.Quantity)
 	}
 	if args.ListValue != 1000 {
 		t.Errorf("listValue: want 1000 got %d", args.ListValue)
@@ -152,9 +155,9 @@ func TestBuildCreateListingFromRegisterSale(t *testing.T) {
 }
 
 func TestBuildCreateListingFromRegisterAuction(t *testing.T) {
-	// auction: item at slot 9, qty 2, buyNow 5000, duration 48h
+	// auction wire: slotPos 9 (a4), quantity 2 (v22), buyNow 5000, duration 48h
 	item := packetmodel.NewAsset(false, 9, 1302000, time.Time{}).SetStackableInfo(2, 0, 0)
-	p := fieldsb.NewItcOperationRegisterAuction(0x12, item, 2, 0, 1, 5000, 1, 0, 48)
+	p := fieldsb.NewItcOperationRegisterAuction(0x12, item, 9, 2, 1, 5000, 1, 0, 48)
 
 	args := buildCreateListingFromRegisterAuction(p, testWorldId, testSellerId, testSellerAccountId, testSellerName)
 
@@ -164,8 +167,11 @@ func TestBuildCreateListingFromRegisterAuction(t *testing.T) {
 	if args.TemplateId != 1302000 {
 		t.Errorf("templateId: want 1302000 got %d", args.TemplateId)
 	}
+	if args.SlotPos != 9 {
+		t.Errorf("slotPos: want 9 (a4) got %d", args.SlotPos)
+	}
 	if args.Quantity != 2 {
-		t.Errorf("quantity: want 2 got %d", args.Quantity)
+		t.Errorf("quantity: want 2 (v22) got %d", args.Quantity)
 	}
 	if args.BuyNowPrice == nil || *args.BuyNowPrice != 5000 {
 		t.Errorf("buyNowPrice: want 5000, got %v", args.BuyNowPrice)

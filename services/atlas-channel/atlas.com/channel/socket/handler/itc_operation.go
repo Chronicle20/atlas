@@ -135,6 +135,7 @@ type CreateListingArgs struct {
 	// inventory, so those two fields are populated downstream, not here.
 	TemplateId          uint32
 	CashId              int64
+	SlotPos             uint32 // inventory slot of the listed item (from the register packet) — used to resolve the exact asset
 	SourceInventoryType byte
 	AssetId             uint32
 	Quantity            uint32
@@ -163,6 +164,7 @@ func buildCreateListingFromRegisterSale(p fieldsb.ItcOperationRegisterSale, worl
 		SaleType:        itcSaleTypeFixed,
 		TemplateId:      p.Item().TemplateId(),
 		CashId:          p.Item().CashId(),
+		SlotPos:         p.SlotPos(),
 		Quantity:        p.Quantity(),
 		ListValue:       p.Price(),
 		BuyNowPrice:     nil,
@@ -188,6 +190,7 @@ func buildCreateListingFromRegisterAuction(p fieldsb.ItcOperationRegisterAuction
 		SaleType:        itcSaleTypeAuction,
 		TemplateId:      p.Item().TemplateId(),
 		CashId:          p.Item().CashId(),
+		SlotPos:         p.SlotPos(),
 		Quantity:        p.Quantity(),
 		ListValue:       buyNow,
 		BuyNowPrice:     &buyNow,
@@ -213,6 +216,7 @@ func buildCreateListingFromSaleCurrentItem(p fieldsb.ItcOperationSaleCurrentItem
 		SaleType:        itcSaleTypeFixed,
 		TemplateId:      p.Item().TemplateId(),
 		CashId:          p.Item().CashId(),
+		SlotPos:         p.SlotPos(),
 		Quantity:        p.Item().Quantity(),
 		ListValue:       0,
 		BuyNowPrice:     nil,
@@ -350,6 +354,11 @@ func ItcOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer
 		case ItcOperationGetItcList:
 			body := &fieldsb.ItcOperationChangedPage{}
 			body.Decode(l, ctx)(r, readerOptions)
+			// TEMP (task-102 filtering bring-up): the client encodes the top-tab/view
+			// in category and the inventory sub-tab in categorySub (CITC this[26]/[27],
+			// consumed by the per-item action dispatch sub_5BC1D5). Log them so the
+			// view->number mapping can be pinned before filtering is wired.
+			l.Infof("[MTS browse] character [%d] GET_ITC_LIST category [%d] categorySub [%d] page [%d] searchOption [%d] searchCondition [%q].", s.CharacterId(), body.Category(), body.CategorySub(), body.Page(), body.SearchOption(), body.SearchCondition())
 			// requestSent=1: this GetItcListDone answers a latching client request
 			// (CITC::OnChangedCategory/Sub/Page set m_bITCRequestSent=this[6]=1 before
 			// SendPacket and refuse any further ITC request until it clears).
@@ -492,9 +501,9 @@ func emitCreateListing(l logrus.FieldLogger, ctx context.Context, s session.Mode
 		l.Errorf("Unable to derive inventory type for MTS listing template [%d] for character [%d]; aborting list.", args.TemplateId, s.CharacterId())
 		return
 	}
-	assetId, found := resolveSellerAssetId(l, ctx, s.CharacterId(), invType, args.TemplateId, args.CashId)
+	assetId, found := resolveSellerAssetId(l, ctx, s.CharacterId(), invType, args.SlotPos, args.TemplateId, args.CashId)
 	if !found {
-		l.Errorf("Character [%d] tried to list template [%d] (cashId [%d]) not present in inventory type [%d]; aborting list.", s.CharacterId(), args.TemplateId, args.CashId, invType)
+		l.Errorf("Character [%d] tried to list template [%d] (cashId [%d]) at slot [%d] not present in inventory type [%d]; aborting list.", s.CharacterId(), args.TemplateId, args.CashId, args.SlotPos, invType)
 		return
 	}
 	args.SourceInventoryType = byte(invType)
@@ -522,15 +531,25 @@ func emitCreateListing(l logrus.FieldLogger, ctx context.Context, s session.Mode
 
 // resolveSellerAssetId looks up the seller's inventory compartment of the given
 // type and returns the real asset id (the DB asset id atlas-mts releases) of the
-// item the seller is listing. The item is matched by templateId; for cash items
-// (cashId != 0) the cashId disambiguates a specific cash asset. Returns (0, false)
-// if the compartment lookup fails or no matching asset is present.
-func resolveSellerAssetId(l logrus.FieldLogger, ctx context.Context, characterId uint32, invType inventory.Type, templateId uint32, cashId int64) (uint32, bool) {
+// item the seller is listing. The register packet carries the item's inventory
+// SLOT (slotPos), which uniquely identifies the selected stack — so the primary
+// match is by slot, with templateId (and cashId for cash items) as a consistency
+// guard against a stale/mismatched slot. If the slot does not resolve, fall back
+// to the first asset matching templateId (+cashId). Returns (0, false) if the
+// compartment lookup fails or nothing matches.
+func resolveSellerAssetId(l logrus.FieldLogger, ctx context.Context, characterId uint32, invType inventory.Type, slotPos uint32, templateId uint32, cashId int64) (uint32, bool) {
 	comp, err := compartment.NewProcessor(l, ctx).GetByType(characterId, invType)
 	if err != nil {
 		l.WithError(err).Errorf("Unable to load inventory type [%d] for character [%d] while resolving MTS listing asset.", invType, characterId)
 		return 0, false
 	}
+	for _, a := range comp.Assets() {
+		if uint32(a.Slot()) == slotPos && a.TemplateId() == templateId && (cashId == 0 || a.CashId() == cashId) {
+			return a.Id(), true
+		}
+	}
+	// Slot did not resolve (e.g. moved between selection and send) — fall back to
+	// the first stack matching the item identity.
 	for _, a := range comp.Assets() {
 		if a.TemplateId() == templateId && (cashId == 0 || a.CashId() == cashId) {
 			return a.Id(), true

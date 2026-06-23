@@ -108,40 +108,45 @@ func (m *ItcOperation) Decode(_ logrus.FieldLogger, _ context.Context) func(r *r
 //
 //	Encode1(2u)               @0x59ed92  dispatcher mode byte (fixed-price)
 //	sub_4E33D8(a5, &pkt)      @0x59ed9e  item-slot blob (Encode1 type + RawEncode)
-//	Encode4(a4)               @0x59eda9  quantity
-//	Encode4(v22)              @0x59edb4  commodityId
-//	Encode4(a3)               @0x59edbf  price
+//	Encode4(a4)               @0x59eda9  slotPos   (CharacterData::GetItem nPos)
+//	Encode4(v22)              @0x59edb4  quantity  (register-dialog count edit box)
+//	Encode4(a3)               @0x59edbf  price     (register-dialog price edit box)
 //	Encode1(a2[0])            @0x59edca  type
 //	Encode1(v21[0])           @0x59edd5  flag
 //
-// The 110-NX floor guard (a3 > 109) gates a StringPool notice before this; it
-// does not change the wire shape.
+// Field semantics traced through the caller (CITCWnd_Inventory::OnButtonClicked
+// @0x5b3361 -> OnRegisterSaleEntry(.., nType=*(this+1440), nPos=*(this+1444),
+// item)) and the dialog (sub_5A9480 @0x5a9480, two CCtrlEdit::GetText/atoi
+// boxes): a4 is the item's INVENTORY SLOT (GetItem position), NOT a quantity;
+// v22 is the seller-entered quantity; a3 is the price (110-NX floor guard,
+// a3 > 109, gates a StringPool notice before the send). An earlier audit
+// mislabeled a4 as quantity / v22 as commodityId — corrected here.
 //
 // packet-audit:fname CITC::OnRegisterSaleEntry
 type ItcOperationRegisterSale struct {
-	mode        byte
-	item        model.Asset // sub_4E33D8 GW_ItemSlotBase blob
-	quantity    uint32      // Encode4 a4
-	commodityId uint32      // Encode4 v22
-	price       uint32      // Encode4 a3
-	itemType    byte        // Encode1 a2[0]
-	flag        byte        // Encode1 v21[0]
+	mode     byte
+	item     model.Asset // sub_4E33D8 GW_ItemSlotBase blob
+	slotPos  uint32      // Encode4 a4  (inventory slot of the listed item)
+	quantity uint32      // Encode4 v22 (seller-entered quantity to list)
+	price    uint32      // Encode4 a3  (NX price, floor 110)
+	itemType byte        // Encode1 a2[0]
+	flag     byte        // Encode1 v21[0]
 }
 
-func NewItcOperationRegisterSale(mode byte, item model.Asset, quantity uint32, commodityId uint32, price uint32, itemType byte, flag byte) ItcOperationRegisterSale {
-	return ItcOperationRegisterSale{mode: mode, item: item, quantity: quantity, commodityId: commodityId, price: price, itemType: itemType, flag: flag}
+func NewItcOperationRegisterSale(mode byte, item model.Asset, slotPos uint32, quantity uint32, price uint32, itemType byte, flag byte) ItcOperationRegisterSale {
+	return ItcOperationRegisterSale{mode: mode, item: item, slotPos: slotPos, quantity: quantity, price: price, itemType: itemType, flag: flag}
 }
 
-func (m ItcOperationRegisterSale) Mode() byte          { return m.mode }
-func (m ItcOperationRegisterSale) Item() model.Asset   { return m.item }
-func (m ItcOperationRegisterSale) Quantity() uint32    { return m.quantity }
-func (m ItcOperationRegisterSale) CommodityId() uint32 { return m.commodityId }
-func (m ItcOperationRegisterSale) Price() uint32       { return m.price }
-func (m ItcOperationRegisterSale) ItemType() byte      { return m.itemType }
-func (m ItcOperationRegisterSale) Flag() byte          { return m.flag }
-func (m ItcOperationRegisterSale) Operation() string   { return ItcOperationHandle }
+func (m ItcOperationRegisterSale) Mode() byte        { return m.mode }
+func (m ItcOperationRegisterSale) Item() model.Asset { return m.item }
+func (m ItcOperationRegisterSale) SlotPos() uint32   { return m.slotPos }
+func (m ItcOperationRegisterSale) Quantity() uint32  { return m.quantity }
+func (m ItcOperationRegisterSale) Price() uint32     { return m.price }
+func (m ItcOperationRegisterSale) ItemType() byte    { return m.itemType }
+func (m ItcOperationRegisterSale) Flag() byte        { return m.flag }
+func (m ItcOperationRegisterSale) Operation() string { return ItcOperationHandle }
 func (m ItcOperationRegisterSale) String() string {
-	return fmt.Sprintf("itc register sale mode [%d] qty [%d] commodity [%d] price [%d] type [%d] flag [%d]", m.mode, m.quantity, m.commodityId, m.price, m.itemType, m.flag)
+	return fmt.Sprintf("itc register sale mode [%d] slot [%d] qty [%d] price [%d] type [%d] flag [%d]", m.mode, m.slotPos, m.quantity, m.price, m.itemType, m.flag)
 }
 
 func (m ItcOperationRegisterSale) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
@@ -150,8 +155,8 @@ func (m ItcOperationRegisterSale) Encode(l logrus.FieldLogger, ctx context.Conte
 		itemCopy := m.item
 		w.WriteByte(m.mode)                                // Encode1(2u) @0x59ed92 mode byte
 		w.WriteByteArray(itemCopy.Encode(l, ctx)(options)) // sub_4E33D8 item-slot blob @0x59ed9e
-		w.WriteInt(m.quantity)                             // Encode4 @0x59eda9 quantity
-		w.WriteInt(m.commodityId)                          // Encode4 @0x59edb4 commodityId
+		w.WriteInt(m.slotPos)                              // Encode4 @0x59eda9 slotPos
+		w.WriteInt(m.quantity)                             // Encode4 @0x59edb4 quantity
 		w.WriteInt(m.price)                                // Encode4 @0x59edbf price
 		w.WriteByte(m.itemType)                            // Encode1 @0x59edca type
 		w.WriteByte(m.flag)                                // Encode1 @0x59edd5 flag
@@ -163,8 +168,8 @@ func (m *ItcOperationRegisterSale) Decode(l logrus.FieldLogger, ctx context.Cont
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.mode = r.ReadByte()
 		m.item.Decode(l, ctx)(r, options)
+		m.slotPos = r.ReadUint32()
 		m.quantity = r.ReadUint32()
-		m.commodityId = r.ReadUint32()
 		m.price = r.ReadUint32()
 		m.itemType = r.ReadByte()
 		m.flag = r.ReadByte()
@@ -178,23 +183,25 @@ func (m *ItcOperationRegisterSale) Decode(l logrus.FieldLogger, ctx context.Cont
 //
 //	Encode1(0x12u)            @0x59ecc8  dispatcher mode byte (auction)
 //	sub_4E33D8(a5, &pkt)      @0x59ecd4  item-slot blob (Encode1 type + RawEncode)
-//	Encode4(a4)               @0x59ecdf  quantity
-//	Encode4(v22)              @0x59ecea  commodityId
+//	Encode4(a4)               @0x59ecdf  slotPos   (CharacterData::GetItem nPos)
+//	Encode4(v22)              @0x59ecea  quantity  (register-dialog count edit box)
 //	Encode4(arg0)             @0x59ecf5  arg0 (==1 here; the auction selector echo)
 //	Encode4(v20)              @0x59ed00  buyNowPrice
 //	Encode1(a2[0])            @0x59ed0b  type
 //	Encode1(v21[0])           @0x59ed16  flag
 //	Encode4(v19)              @0x59ed21  durationHrs
 //
-// The 24..168-hr duration guard gates a StringPool notice before this; it does
-// not change the wire shape.
+// Same field-semantics correction as ItcOperationRegisterSale: a4 is the item's
+// inventory slot (OnRegisterSaleEntry nPos arg), v22 the seller-entered quantity
+// (sub_5AD76B dialog) — NOT quantity/commodityId. The 24..168-hr duration guard
+// gates a StringPool notice before this; it does not change the wire shape.
 //
 // packet-audit:fname CITC::OnRegisterSaleEntry#RegisterAuction
 type ItcOperationRegisterAuction struct {
 	mode        byte
 	item        model.Asset // sub_4E33D8 GW_ItemSlotBase blob
-	quantity    uint32      // Encode4 a4
-	commodityId uint32      // Encode4 v22
+	slotPos     uint32      // Encode4 a4  (inventory slot of the listed item)
+	quantity    uint32      // Encode4 v22 (seller-entered quantity to list)
 	selector    uint32      // Encode4 arg0 (==1)
 	buyNowPrice uint32      // Encode4 v20
 	itemType    byte        // Encode1 a2[0]
@@ -202,14 +209,14 @@ type ItcOperationRegisterAuction struct {
 	durationHrs uint32      // Encode4 v19
 }
 
-func NewItcOperationRegisterAuction(mode byte, item model.Asset, quantity uint32, commodityId uint32, selector uint32, buyNowPrice uint32, itemType byte, flag byte, durationHrs uint32) ItcOperationRegisterAuction {
-	return ItcOperationRegisterAuction{mode: mode, item: item, quantity: quantity, commodityId: commodityId, selector: selector, buyNowPrice: buyNowPrice, itemType: itemType, flag: flag, durationHrs: durationHrs}
+func NewItcOperationRegisterAuction(mode byte, item model.Asset, slotPos uint32, quantity uint32, selector uint32, buyNowPrice uint32, itemType byte, flag byte, durationHrs uint32) ItcOperationRegisterAuction {
+	return ItcOperationRegisterAuction{mode: mode, item: item, slotPos: slotPos, quantity: quantity, selector: selector, buyNowPrice: buyNowPrice, itemType: itemType, flag: flag, durationHrs: durationHrs}
 }
 
 func (m ItcOperationRegisterAuction) Mode() byte          { return m.mode }
 func (m ItcOperationRegisterAuction) Item() model.Asset   { return m.item }
+func (m ItcOperationRegisterAuction) SlotPos() uint32     { return m.slotPos }
 func (m ItcOperationRegisterAuction) Quantity() uint32    { return m.quantity }
-func (m ItcOperationRegisterAuction) CommodityId() uint32 { return m.commodityId }
 func (m ItcOperationRegisterAuction) Selector() uint32    { return m.selector }
 func (m ItcOperationRegisterAuction) BuyNowPrice() uint32 { return m.buyNowPrice }
 func (m ItcOperationRegisterAuction) ItemType() byte      { return m.itemType }
@@ -217,7 +224,7 @@ func (m ItcOperationRegisterAuction) Flag() byte          { return m.flag }
 func (m ItcOperationRegisterAuction) DurationHrs() uint32 { return m.durationHrs }
 func (m ItcOperationRegisterAuction) Operation() string   { return ItcOperationHandle }
 func (m ItcOperationRegisterAuction) String() string {
-	return fmt.Sprintf("itc register auction mode [%d] qty [%d] commodity [%d] buyNow [%d] duration [%d]", m.mode, m.quantity, m.commodityId, m.buyNowPrice, m.durationHrs)
+	return fmt.Sprintf("itc register auction mode [%d] slot [%d] qty [%d] buyNow [%d] duration [%d]", m.mode, m.slotPos, m.quantity, m.buyNowPrice, m.durationHrs)
 }
 
 func (m ItcOperationRegisterAuction) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
@@ -226,8 +233,8 @@ func (m ItcOperationRegisterAuction) Encode(l logrus.FieldLogger, ctx context.Co
 		itemCopy := m.item
 		w.WriteByte(m.mode)                                // Encode1(0x12u) @0x59ecc8 mode byte
 		w.WriteByteArray(itemCopy.Encode(l, ctx)(options)) // sub_4E33D8 item-slot blob @0x59ecd4
-		w.WriteInt(m.quantity)                             // Encode4 @0x59ecdf quantity
-		w.WriteInt(m.commodityId)                          // Encode4 @0x59ecea commodityId
+		w.WriteInt(m.slotPos)                              // Encode4 @0x59ecdf slotPos
+		w.WriteInt(m.quantity)                             // Encode4 @0x59ecea quantity
 		w.WriteInt(m.selector)                             // Encode4 @0x59ecf5 arg0 (==1)
 		w.WriteInt(m.buyNowPrice)                          // Encode4 @0x59ed00 buyNowPrice
 		w.WriteByte(m.itemType)                            // Encode1 @0x59ed0b type
@@ -241,8 +248,8 @@ func (m *ItcOperationRegisterAuction) Decode(l logrus.FieldLogger, ctx context.C
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.mode = r.ReadByte()
 		m.item.Decode(l, ctx)(r, options)
+		m.slotPos = r.ReadUint32()
 		m.quantity = r.ReadUint32()
-		m.commodityId = r.ReadUint32()
 		m.selector = r.ReadUint32()
 		m.buyNowPrice = r.ReadUint32()
 		m.itemType = r.ReadByte()

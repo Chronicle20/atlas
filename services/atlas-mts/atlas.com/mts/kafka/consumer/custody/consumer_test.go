@@ -122,7 +122,10 @@ func TestAcceptToMtsListing_CreatesListingAndAcks(t *testing.T) {
 	if stored.TemplateId() != 1302000 || stored.Quantity() != 1 || stored.WeaponAttack() != 17 {
 		t.Fatalf("snapshot not persisted: tmpl=%d qty=%d watk=%d", stored.TemplateId(), stored.Quantity(), stored.WeaponAttack())
 	}
-	if stored.ListValue() != 1000 || stored.CommissionRate() != 0.10 || stored.Category() != "equip" {
+	// Category is derived server-side from the templateId's inventory type
+	// (1302000 -> equip -> "1"), overriding the payload's "equip" string so the
+	// GET_ITC_LIST sub-tab filter (categorySub -> inventory type) matches.
+	if stored.ListValue() != 1000 || stored.CommissionRate() != 0.10 || stored.Category() != "1" {
 		t.Fatalf("sale params not persisted: lv=%d rate=%v cat=%s", stored.ListValue(), stored.CommissionRate(), stored.Category())
 	}
 

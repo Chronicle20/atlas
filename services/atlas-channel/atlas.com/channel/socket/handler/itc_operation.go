@@ -10,6 +10,7 @@ import (
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
+	"strconv"
 	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
@@ -224,25 +225,51 @@ func buildCreateListingFromSaleCurrentItem(p fieldsb.ItcOperationSaleCurrentItem
 	}
 }
 
-// browseFilterFromGetItcList maps the verified ItcOperationChangedPage (mode 5,
-// the full 8-field GET_ITC_LIST browse request) onto the channel REST BrowseFilter.
-// Only the page is carried into the filter; the wire category/subCategory are
-// numeric indices with no verified string mapping, so they are not used as
-// equality filters (an unmatched numeric->string filter would return an empty page
-// rather than the catalog). They are still echoed back into the result page.
-func browseFilterFromGetItcList(p fieldsb.ItcOperationChangedPage) mtslisting.BrowseFilter {
-	return mtslisting.BrowseFilter{
-		Page: int(p.Page()),
+// ITC browse view (category) values. The GET_ITC_LIST `category` field is the
+// top-tab/view selector (CITC this[26], consumed by the per-item action dispatch
+// sub_5BC1D5): view 1 = For Sale (fixed-price, the MTS-entry default), view 3 =
+// Auction. Views 2/4/5 (my-page/wanted/etc.) are not yet given a saleType filter
+// and fall through to an unfiltered active browse.
+const (
+	itcViewForSale uint32 = 1
+	itcViewAuction uint32 = 3
+)
+
+// applyItcViewFilters maps the client's GET_ITC_LIST/SEARCH view (category) and
+// item sub-tab (categorySub) onto the REST browse filter. categorySub is the
+// item-category sub-tab (0=all, 1=equip, 2=use, 3=setup, 4=etc) and maps directly
+// to the listing's stored inventory-type category, so a USE item only surfaces in
+// the "use" and "all" sub-tabs. category selects the saleType for the views whose
+// sale kind is known (For Sale -> fixed, Auction -> auction).
+func applyItcViewFilters(f *mtslisting.BrowseFilter, category uint32, categorySub uint32) {
+	switch category {
+	case itcViewForSale:
+		f.SaleType = itcSaleTypeFixed
+	case itcViewAuction:
+		f.SaleType = itcSaleTypeAuction
 	}
+	if categorySub != 0 {
+		f.Category = strconv.FormatUint(uint64(categorySub), 10)
+	}
+}
+
+// browseFilterFromGetItcList maps the verified ItcOperationChangedPage (mode 5,
+// the full 8-field GET_ITC_LIST browse request) onto the channel REST BrowseFilter:
+// the page plus the view (category -> saleType) and item sub-tab (categorySub ->
+// inventory-type category) filters.
+func browseFilterFromGetItcList(p fieldsb.ItcOperationChangedPage) mtslisting.BrowseFilter {
+	f := mtslisting.BrowseFilter{Page: int(p.Page())}
+	applyItcViewFilters(&f, p.Category(), p.CategorySub())
+	return f
 }
 
 // browseFilterFromSearchItcList maps the verified ItcOperationTabSearch (mode 6,
 // the SEARCH_ITC_LIST request) onto the REST BrowseFilter. The search name is the
-// seller-name search term.
+// seller-name search term, scoped to the same view + sub-tab filters as the browse.
 func browseFilterFromSearchItcList(p fieldsb.ItcOperationTabSearch) mtslisting.BrowseFilter {
-	return mtslisting.BrowseFilter{
-		SellerName: p.SearchName(),
-	}
+	f := mtslisting.BrowseFilter{SellerName: p.SearchName()}
+	applyItcViewFilters(&f, p.Category(), p.CategorySub())
+	return f
 }
 
 // mtsItemFromListing maps one channel-side listing.Model to a clientbound MtsItem

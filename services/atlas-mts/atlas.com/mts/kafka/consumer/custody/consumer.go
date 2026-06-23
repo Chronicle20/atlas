@@ -13,7 +13,10 @@ import (
 	"context"
 	"encoding/binary"
 	"errors"
+	"strconv"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
@@ -99,6 +102,16 @@ func handleAcceptToMtsListing(pf providerFn) func(db *gorm.DB) message.Handler[c
 				t := tenant.MustFromContext(ctx)
 				tid := t.Id()
 
+				// Derive the listing's item-category from the templateId server-side
+				// (the inventory type: 1=equip 2=use 3=setup 4=etc 5=cash). The client's
+				// browse sub-tabs (categorySub) map to these, so storing the type here
+				// lets the GET_ITC_LIST sub-tab filter (category=?) match. Falls back to
+				// the payload category if the templateId has no resolvable type.
+				category := b.Category
+				if it, ok := inventory.TypeFromItemId(item.Id(b.TemplateId)); ok {
+					category = strconv.Itoa(int(it))
+				}
+
 				m, berr := listing.NewBuilder(tid, world.Id(b.WorldId), b.SellerId).
 					SetId(b.ListingId).
 					SetSellerAccountId(b.SellerAccountId).
@@ -132,7 +145,7 @@ func handleAcceptToMtsListing(pf providerFn) func(db *gorm.DB) message.Handler[c
 					SetListValue(b.ListValue).
 					SetBuyNowPrice(b.BuyNowPrice).
 					SetCommissionRate(b.CommissionRate).
-					SetCategory(b.Category).
+					SetCategory(category).
 					SetSubCategory(b.SubCategory).
 					SetEndsAt(b.EndsAt).
 					SetMinIncrement(b.MinIncrement).

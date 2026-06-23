@@ -282,3 +282,35 @@ func TestMtsItemFromWish_CarriesSerial(t *testing.T) {
 		t.Errorf("price: want 0 (a wish has no price), got %d", it.Price())
 	}
 }
+
+// TestApplyItcViewFilters locks the GET_ITC_LIST view->filter mapping: the
+// top-tab view selects the saleType (For Sale=1 -> fixed, Auction=3 -> auction;
+// other views unfiltered) and the item sub-tab (categorySub, 1-4 = inventory
+// type; 0 = all) selects the listing's stored category.
+func TestApplyItcViewFilters(t *testing.T) {
+	cases := []struct {
+		name         string
+		category     uint32
+		categorySub  uint32
+		wantSaleType string
+		wantCategory string
+	}{
+		{"for-sale all", 1, 0, "fixed", ""},
+		{"for-sale use sub-tab", 1, 2, "fixed", "2"},
+		{"auction all", 3, 0, "auction", ""},
+		{"auction equip sub-tab", 3, 1, "auction", "1"},
+		{"unknown view, etc sub-tab", 5, 4, "", "4"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			var f mtslisting.BrowseFilter
+			applyItcViewFilters(&f, c.category, c.categorySub)
+			if f.SaleType != c.wantSaleType {
+				t.Errorf("saleType: want %q got %q", c.wantSaleType, f.SaleType)
+			}
+			if f.Category != c.wantCategory {
+				t.Errorf("category: want %q got %q", c.wantCategory, f.Category)
+			}
+		})
+	}
+}

@@ -66,6 +66,35 @@ func TestSummonRemoveBytesV83(t *testing.T) {
 	}
 }
 
+// TestSummonRemoveBytesV84 pins the v84 wire byte-for-byte against the live
+// decompile (IDA, GMS_v84.1_U_DEVM.exe @port 13337). v84 is v83-shaped — same
+// dispatch + leaf, no version delta. Dispatch chain:
+//   - CUserPool::OnUserCommonPacket@0x9b23a1 reads cid (Decode4@0x9b23ac), then
+//     routes op 0xB4 (180) to the summon dispatcher sub_970201@0x970201.
+//   - sub_970201@0x970201 (else branch) reads oid (Decode4@0x970240), looks up the
+//     summon via sub_97B9D1, then for op 180 calls the OnRemoved leaf sub_7CBFA1@0x7cbfa1.
+//   - sub_7CBFA1@0x7cbfa1 reads ONE byte: Decode1@0x7cbfb6 (leave/animated flag,
+//     branched 0/2/3/4) and nothing else from the packet.
+// Wire = int ownerId(=cid, consumed upstream) + int oid + byte flag. Atlas writes
+// flag = 4 when animated, else 1 (matches the branch). No off-by-one: Remove has no
+// version gate, so the v84 path is byte-identical to v83.
+// packet-audit:verify packet=summon/clientbound/SummonRemove version=gms_v84 ida=0x7cbfa1
+func TestSummonRemoveBytesV84(t *testing.T) {
+	in := NewSummonRemove(42, 1000001, true)
+	ctx := test.CreateContext("GMS", 84, 1)
+	got := test.Encode(t, ctx, in.Encode, nil)
+
+	// ownerId=42, oid=1000001=0x000F4241, animated => byte 4 (Decode1@0x7cbfb6)
+	want := []byte{
+		0x2A, 0x00, 0x00, 0x00, // ownerId (cid, consumed by dispatcher)
+		0x41, 0x42, 0x0F, 0x00, // oid (Decode4@0x970240 in sub_970201)
+		0x04, // animated ? 4 : 1 (Decode1@0x7cbfb6)
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatalf("v84 bytes = % X, want % X", got, want)
+	}
+}
+
 // TestSummonRemoveBytesV95 pins the v95+ DELTA: the oid int after ownerId.
 // packet-audit:verify packet=summon/clientbound/SummonRemove version=gms_v95 ida=0x75a470
 func TestSummonRemoveBytesV95(t *testing.T) {

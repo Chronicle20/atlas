@@ -5,7 +5,7 @@
 
 Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 
-- export gms_v83: `e4f329dac5e737dbafb8cb6c91af30e36da0054699a2d5b1206d59fc284b672d`
+- export gms_v83: `655eec77f536a52e5780f01b23cf9234d06ef3a891e8d12b9d9b280b54bee69d`
 - export gms_v84: `06a208ed592803a88b13f97a0682a1c067ac27f0a41df79074d2f5df515b7363`
 - export gms_v87: `60a4c60e1eabea5d81ebacfea8a8ce1637a06679d9bdc97fe49eb45d052ed4a2`
 - export gms_v95: `cf7682a52552f94e68453f8ed3a9f74098b50a4fdf14a19968227a2f3816d37d`
@@ -230,7 +230,7 @@ Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 | PET_NAMECHANGE | CPet::OnNameChanged; CPet__OnNameChanged_recv_0xB0 |  | 0x0AC | ❌ | 0x0B0 | ❌ | 0x0B9 | ❌ | 0x0CB | ❌ | 0x0B2 | ❌ |
 | PET_EXCEPTION_LIST | CPet::OnLoadExceptionList | pet/clientbound/PetExcludeResponse (T1) | 0x0AD | ✅ | 0x0B1 | ✅ | 0x0BA | ✅ | 0x0CC | ✅ | 0x0B3 | ✅ |
 | PET_COMMAND | CPet::OnActionCommand | pet/clientbound/PetCommandResponse (T1) | 0x0AE | ✅ | 0x0B2 | ✅ | 0x0BB | ✅ | 0x0CD | ✅ | 0x0B4 | ✅ |
-| SPAWN_SPECIAL_MAPOBJECT | CSummonedPool::OnCreated; CSummonedPool::OnPacket | summon/clientbound/SummonSpawn (T1) | 0x0AF | ❌ | 0x0B3 | ❌ | 0x0BC | ❌ | 0x116 | ✅ | 0x0B5 | ❌ |
+| SPAWN_SPECIAL_MAPOBJECT | CSummonedPool::OnCreated; CSummonedPool::OnPacket | summon/clientbound/SummonSpawn (T1) | 0x0AF | ✅ | 0x0B3 | ❌ | 0x0BC | ❌ | 0x116 | ✅ | 0x0B5 | ❌ |
 | REMOVE_SPECIAL_MAPOBJECT | CSummonedPool::OnPacket; CSummonedPool::OnRemoved | summon/clientbound/SummonRemove (T1) | 0x0B0 | ✅ | 0x0B4 | ❌ | 0x0BD | ❌ | 0x117 | ✅ | 0x0B6 | ❌ |
 | MOVE_SUMMON | CSummonedPool::OnMove | summon/clientbound/SummonMove (T1) | 0x0B1 | ✅ | 0x0B5 | ❌ | 0x0BE | ❌ | 0x118 | ✅ | 0x0B7 | ❌ |
 | SUMMON_ATTACK | CSummonedPool::OnAttack | summon/clientbound/SummonAttack (T1) | 0x0B2 | ✅ | 0x0B6 | ❌ | 0x0BF | ❌ | 0x119 | ✅ | 0x0B8 | ❌ |
@@ -902,7 +902,7 @@ Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v83 | 353 | 0 | 0 | 319 | 200 | 0 | 52.5% |
+| v83 | 354 | 0 | 0 | 318 | 200 | 0 | 52.7% |
 | v84 | 313 | 0 | 0 | 338 | 221 | 0 | 48.1% |
 | v87 | 360 | 0 | 0 | 349 | 163 | 0 | 50.8% |
 | v95 | 392 | 0 | 0 | 401 | 79 | 0 | 49.4% |

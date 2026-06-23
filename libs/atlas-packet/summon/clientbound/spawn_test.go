@@ -75,6 +75,18 @@ var summonSpawnV83Body = []byte{
 // (spawnSummon always writes ownerId, objectId, skillId), but have NOT been
 // re-confirmed live — their coverage-matrix cells need re-verification against the
 // cid-pre-reading dispatcher (the old ida= markers below point at the wrong path).
+//
+// Re-pointed to the ACTIVE field-path target under task-106. Dispatch (IDA,
+// MapleStory_dump.exe @port 13341): CUserPool::OnUserCommonPacket@0x972401 reads
+// cid (Decode4@0x97240c) → op 0xAF vtable-calls CSummonedPool::OnCreated@0x95ADEC,
+// which reads (cid already consumed upstream): Decode4(oid)@0x95ae0e,
+// Decode4(skillId)@0x95ae17, Decode1(charLevel)@0x95ae21, Decode1(SLV)@0x95ae30,
+// then CSummoned::Init@0x7a379b reads Decode2(x)@0x7a37b2, Decode2(y)@0x7a37bf,
+// Decode1(stance)@0x7a37cc, Decode2(foothold)@0x7a37cf, Decode1(movementType)@0x7a37e3,
+// Decode1(!puppet)@0x7a37fa, Decode1(!animated)@0x7a3821. NO avatar-look byte on
+// v83 (the active path reads nothing after !animated). The inactive twin sub_938F61
+// reads the SAME field order but is the wrong instance (task-088 live x32dbg).
+// packet-audit:verify packet=summon/clientbound/SummonSpawn version=gms_v83 ida=0x95adec
 func TestSummonSpawnBytesV83(t *testing.T) {
 	in := NewSummonSpawn(42, 1000001, 3111002, 20, 100, -50, 0, 0, true, false)
 	ctx := test.CreateContext("GMS", 83, 1)

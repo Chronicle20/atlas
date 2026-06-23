@@ -8,7 +8,7 @@ Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 - export gms_v83: `e4f329dac5e737dbafb8cb6c91af30e36da0054699a2d5b1206d59fc284b672d`
 - export gms_v84: `8b3e1d7833c210a2c3c87a80849764f3348a8141977550e412669deb9ef4abf0`
 - export gms_v87: `c1e17657bcba88a3091b6fe1c8fedf76f79df92795dd6e3d7cd6f47b749760b2`
-- export gms_v95: `9e296db8f3b021b42c263d5dc53e2cffe78e694694087b7d2de8ab9554d6c763`
+- export gms_v95: `d630364f4d84b433c62329d3756f4f97efdb9ce8056c62b60842bc9b91b24b97`
 - export jms_v185: `7e7115c6f86a1bee097df0d178fd2ea60981010836500eebdb46c733bb9ddd4d`
 
 ## Clientbound
@@ -84,7 +84,7 @@ Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 | EXPEDITION_RESULT | CWvsContext::OnExpedtionResult |  |  | ⬜ |  | ⬜ | 0x040 | ❌ | 0x040 | ❌ |  | ⬜ |
 | GUILD_OPERATION | CWvsContext::OnGuildResult | guild/clientbound/GuildBoardAuthKeyUpdate (T1) | 0x041 | ✅ | 0x043 | ✅ | 0x043 | ✅ | 0x043 | ✅ | 0x03B | ✅ |
 | ALLIANCE_OPERATION | CWvsContext::OnAllianceResult |  | 0x042 | ❌ | 0x042 | ❌ | 0x044 | ❌ | 0x044 | ❌ | 0x03C | ❌ |
-| SPAWN_PORTAL | CWvsContext::OnTownPortal | door/clientbound/RemoveTownDoor (T1) | 0x043 | ✅ | 0x045 | ✅ | 0x045 | ✅ | 0x045 | ❌ | 0x03D | ❌ |
+| SPAWN_PORTAL | CWvsContext::OnTownPortal | door/clientbound/RemoveTownDoor (T1) | 0x043 | ✅ | 0x045 | ✅ | 0x045 | ✅ | 0x045 | ✅ | 0x03D | ❌ |
 | SERVERMESSAGE | CWvsContext::OnBroadcastMsg |  | 0x044 | ❌ | 0x044 | ❌ | 0x046 | ❌ | 0x047 | ❌ | 0x03E | ❌ |
 | INCUBATOR_RESULT | CWvsContext::OnIncubatorResult |  | 0x045 | ❌ | 0x047 | ❌ | 0x047 | ❌ | 0x048 | ❌ | 0x03F | ❌ |
 | OPEN_GATE | CWvsContext::OnOpenGate |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x046 | ❌ |  | ⬜ |
@@ -905,7 +905,7 @@ Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 | v83 | 348 | 0 | 0 | 324 | 200 | 0 | 51.8% |
 | v84 | 316 | 0 | 0 | 335 | 221 | 0 | 48.5% |
 | v87 | 363 | 0 | 0 | 346 | 163 | 0 | 51.2% |
-| v95 | 393 | 0 | 1 | 399 | 79 | 0 | 49.6% |
+| v95 | 394 | 0 | 1 | 398 | 79 | 0 | 49.7% |
 | JMS185 | 329 | 0 | 0 | 374 | 169 | 0 | 46.8% |
 
 ## Conflicts

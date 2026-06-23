@@ -195,6 +195,30 @@
       "direction": "",
       "calls": null
     },
+    "CWvsContext::OnTownPortal": {
+      "address": "0x9f1330",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "townId (SpawnPortal); MapId.NONE (999999999) for RemoveTownDoor"
+        },
+        {
+          "op": "Decode4",
+          "comment": "targetId; MapId.NONE (999999999) for RemoveTownDoor"
+        },
+        {
+          "op": "Decode2",
+          "comment": "x (door position)",
+          "guard": "townId != 999999999 && targetId != 999999999"
+        },
+        {
+          "op": "Decode2",
+          "comment": "y (door position)",
+          "guard": "townId != 999999999 && targetId != 999999999"
+        }
+      ]
+    },
     "CWvsContext::SendSkillUpRequest": {
       "address": "0x9f2e90",
       "direction": "serverbound",

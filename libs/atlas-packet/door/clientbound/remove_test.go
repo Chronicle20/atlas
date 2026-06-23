@@ -27,6 +27,7 @@ import (
 // Decode4(ownerId) and reads nothing further — the 5-byte layout pinned below.
 //
 // packet-audit:verify packet=door/clientbound/RemoveDoor version=gms_v83 ida=0x7be064
+// packet-audit:verify packet=door/clientbound/RemoveDoor version=gms_v84 ida=0x7e40de
 func TestRemoveDoor(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 

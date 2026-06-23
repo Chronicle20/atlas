@@ -24770,6 +24770,20 @@
           "comment": "y (door position, writeShort)"
         }
       ]
+    },
+    "CTownPortalPool::OnTownPortalRemoved": {
+      "address": "0x7e40de",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "animate flag (Cosmic writes constant 0; gates removal animation)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "ownerId (door owner character id; registry lookup key)"
+        }
+      ]
     }
   }
 }

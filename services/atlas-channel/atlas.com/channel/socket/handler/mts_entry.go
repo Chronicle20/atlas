@@ -203,7 +203,13 @@ func announceUserPurchaseItems(l logrus.FieldLogger, ctx context.Context, wp wri
 // serial, which addresses the take-home arm). A holding has no price/bid metadata,
 // so the remaining trailer fields are zeroed.
 func mtsItemFromHolding(m mtsholding.Model) fieldcb.MtsItem {
-	item := packetmodel.NewAsset(false, 0, m.TemplateId(), time.Time{}).SetStackableInfo(m.Quantity(), 0, 0)
+	// zeroPosition=true: bare GW_ItemSlotBase blob, no leading inventory-slot byte.
+	// GET_USER_PURCHASE_ITEM_DONE (mode 33, CITC sub_5A4AF3) decodes each ITCITEM
+	// via the shared GW_ItemSlotBase::Decode (type byte first, no slot) — the same
+	// decoder as the browse/sale lists. A slot-prefixed blob is misread as the item
+	// type and overruns a later DecodeStr -> client crash on MTS entry once any
+	// holding (e.g. a cancelled listing) exists.
+	item := packetmodel.NewAsset(true, 0, m.TemplateId(), time.Time{}).SetStackableInfo(m.Quantity(), 0, 0)
 	var dateExpired [8]byte
 	return fieldpkt.MtsOperationNewItem(
 		item,        // GW_ItemSlotBase blob

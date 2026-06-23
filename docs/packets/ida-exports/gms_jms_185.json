@@ -3,6 +3,30 @@
   "md5": "af6652ff9b7c549341f35e3569d7564a",
   "generated_at": "2026-05-14T00:00:00Z",
   "functions": {
+    "CWvsContext::OnTownPortal": {
+      "address": "0xb0977c",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "townId (SpawnPortal); MapId.NONE (999999999) for RemoveTownDoor"
+        },
+        {
+          "op": "Decode4",
+          "comment": "targetId; MapId.NONE (999999999) for RemoveTownDoor"
+        },
+        {
+          "op": "Decode2",
+          "comment": "x (door position)",
+          "guard": "townId != 999999999 && targetId != 999999999"
+        },
+        {
+          "op": "Decode2",
+          "comment": "y (door position)",
+          "guard": "townId != 999999999 && targetId != 999999999"
+        }
+      ]
+    },
     "CWvsContext::OnGuildResult#RequestName": {
       "address": "0xb22518",
       "direction": "clientbound",

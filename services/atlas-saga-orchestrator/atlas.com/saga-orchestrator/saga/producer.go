@@ -26,6 +26,16 @@ func CompletedStatusEventProvider(s Saga) model.Provider[[]kafka.Message] {
 		body.Results = extractCharacterCreationResults(s)
 	}
 
+	// For a completed take-home (WithdrawFromMts) saga, include the take-home
+	// marker + characterId + templateId so the channel's saga-status COMPLETED
+	// handler can write MoveItcPurchaseItemLtoSDone to the originating session.
+	// This is the ONLY place that fires after the full saga (release + grant)
+	// completes; emitting earlier (e.g. from the release custody handler) would
+	// signal success before the item is granted and wrongly on a compensated saga.
+	if r := extractMtsTakeHomeResults(s); r != nil {
+		body.Results = r
+	}
+
 	value := &saga.StatusEvent[saga.StatusEventCompletedBody]{
 		TransactionId: s.TransactionId(),
 		Type:          saga.StatusEventTypeCompleted,
@@ -49,6 +59,50 @@ func extractCharacterCreationResults(s Saga) map[string]any {
 			}
 			break
 		}
+	}
+	return results
+}
+
+// MtsTakeHomeResultKind is the Results["kind"] marker the channel matches to
+// recognize a completed WithdrawFromMts (take-home) saga and write
+// MoveItcPurchaseItemLtoSDone. It distinguishes take-home from the other
+// MtsOperation sagas (list / buy / settle) that share the same saga type but do
+// NOT grant a holding back to a character's inventory.
+const MtsTakeHomeResultKind = "mts_take_home"
+
+// extractMtsTakeHomeResults returns the COMPLETED Results map for a take-home
+// (WithdrawFromMts) saga, or nil if this is not one. WithdrawFromMts expands to
+// release_from_mts_holding (ReleaseFromMtsHolding) + accept_to_character
+// (AcceptToCharacter); the ReleaseFromMtsHolding action is unique to take-home
+// among MtsOperation sagas, so its presence is the discriminator. The channel's
+// saga-status COMPLETED handler reads characterId off the result to target the
+// originating session. This fires from the single guarded terminal-completion
+// emit, so the notice is sent only after the item was actually granted.
+func extractMtsTakeHomeResults(s Saga) map[string]any {
+	if s.SagaType() != MtsOperation {
+		return nil
+	}
+	isTakeHome := false
+	for _, step := range s.Steps() {
+		if step.Action() == ReleaseFromMtsHolding {
+			isTakeHome = true
+			break
+		}
+	}
+	if !isTakeHome {
+		return nil
+	}
+
+	results := map[string]any{"kind": MtsTakeHomeResultKind}
+	for _, step := range s.Steps() {
+		if step.Action() != AcceptToCharacter {
+			continue
+		}
+		if p, ok := step.Payload().(AcceptToCharacterPayload); ok {
+			results["characterId"] = p.CharacterId
+			results["templateId"] = p.TemplateId
+		}
+		break
 	}
 	return results
 }

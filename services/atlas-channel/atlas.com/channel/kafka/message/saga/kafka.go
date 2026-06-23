@@ -21,7 +21,14 @@ const (
 // Saga type constants
 const (
 	SagaTypeStorageOperation = "storage_operation"
+	SagaTypeMtsOperation     = "mts_operation"
 )
+
+// MtsTakeHomeResultKind is the Results["kind"] marker the orchestrator sets on a
+// completed WithdrawFromMts (take-home) saga so this service can recognize it and
+// write MoveItcPurchaseItemLtoSDone. Mirrors saga.MtsTakeHomeResultKind in
+// atlas-saga-orchestrator.
+const MtsTakeHomeResultKind = "mts_take_home"
 
 type StatusEvent[T any] struct {
 	TransactionId uuid.UUID `json:"transactionId"`
@@ -30,6 +37,8 @@ type StatusEvent[T any] struct {
 }
 
 type StatusEventCompletedBody struct {
+	SagaType string         `json:"sagaType,omitempty"`
+	Results  map[string]any `json:"results,omitempty"`
 }
 
 type StatusEventFailedBody struct {

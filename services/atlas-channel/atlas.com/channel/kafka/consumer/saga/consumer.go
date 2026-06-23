@@ -14,6 +14,8 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	fieldpkt "github.com/Chronicle20/atlas/libs/atlas-packet/field"
+	fieldcb "github.com/Chronicle20/atlas/libs/atlas-packet/field/clientbound"
 	storagepkt "github.com/Chronicle20/atlas/libs/atlas-packet/storage"
 	storagecb "github.com/Chronicle20/atlas/libs/atlas-packet/storage/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
@@ -39,7 +41,7 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				var t string
 				var handles []listener.HandlerHandle
 				t, _ = topic.EnvProvider(l)(saga.EnvStatusEventTopic)()
-				id, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCompletedEvent(sc))))
+				id, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCompletedEvent(sc, wp))))
 				if err != nil {
 					return nil, err
 				}
@@ -55,8 +57,17 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 	}
 }
 
+// mtsTakeHomePurchaseTab / mtsTakeHomeSelectedNo mirror the values the MTS
+// status consumer's handleItemTakenHome passes to MoveItcPurchaseItemLtoSDone:
+// the purchase ("taken home") items live in the first MTS tab (tab=1 -> index 0
+// via SetTab(tab-1)); selectedNo 0 leaves the selection at the top of the list.
+const (
+	mtsTakeHomePurchaseTab uint32 = 1
+	mtsTakeHomeSelectedNo  uint32 = 0
+)
+
 // handleCompletedEvent handles saga completion events
-func handleCompletedEvent(sc server.Model) message.Handler[saga.StatusEvent[saga.StatusEventCompletedBody]] {
+func handleCompletedEvent(sc server.Model, wp writer.Producer) message.Handler[saga.StatusEvent[saga.StatusEventCompletedBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, e saga.StatusEvent[saga.StatusEventCompletedBody]) {
 		if e.Type != saga.StatusEventTypeCompleted {
 			return
@@ -67,10 +78,72 @@ func handleCompletedEvent(sc server.Model) message.Handler[saga.StatusEvent[saga
 			return
 		}
 
-		l.Debugf("Saga transaction [%s] completed successfully.", e.TransactionId.String())
-		// Storage mesos update is handled by storage consumer
-		// Character sees the result through character meso changed event
-		// No additional action needed here
+		l.Debugf("Saga transaction [%s] completed successfully (type [%s]).", e.TransactionId.String(), e.Body.SagaType)
+
+		// Take-home (WithdrawFromMts) completion: the item has actually been granted
+		// to the character's inventory (this fires from the orchestrator's single
+		// guarded terminal-completion emit, AFTER both release + accept_to_character
+		// succeeded). Write MoveItcPurchaseItemLtoSDone to the originating session so
+		// the seller/buyer's take-home UI unhangs. A failed/compensated saga never
+		// reaches COMPLETED, so this is only ever sent on real success.
+		if e.Body.SagaType == saga.SagaTypeMtsOperation && resultKind(e.Body.Results) == saga.MtsTakeHomeResultKind {
+			characterId := resultUint32(e.Body.Results, "characterId")
+			if characterId == 0 {
+				l.WithField("transaction_id", e.TransactionId.String()).Warn("MTS take-home completion missing characterId; cannot notify session.")
+				return
+			}
+			announceMtsTakeHomeDone(l, ctx, sc, wp, characterId)
+			return
+		}
+
+		// Storage mesos update is handled by storage consumer; the character sees
+		// other results through their respective domain events.
+	}
+}
+
+// announceMtsTakeHomeDone resolves the character's session on this channel and
+// writes the MtsOperation MoveItcPurchaseItemLtoSDone result. A missing session
+// (character not on this channel) is a graceful no-op.
+func announceMtsTakeHomeDone(l logrus.FieldLogger, ctx context.Context, sc server.Model, wp writer.Producer, characterId uint32) {
+	s, err := session.NewProcessor(l, ctx).GetByCharacterId(sc.Channel())(characterId)
+	if err != nil {
+		l.WithField("character_id", characterId).Debug("Character not connected, skipping MTS take-home notification.")
+		return
+	}
+	if s.ChannelId() != sc.ChannelId() {
+		return
+	}
+	if err := session.Announce(l)(ctx)(wp)(fieldcb.MtsOperationWriter)(fieldpkt.MtsOperationMoveItcPurchaseItemLtoSDoneBody(mtsTakeHomePurchaseTab, mtsTakeHomeSelectedNo))(s); err != nil {
+		l.WithError(err).WithField("character_id", characterId).Error("Failed to send MTS take-home done packet to client.")
+	}
+}
+
+// resultKind reads the "kind" marker off a saga COMPLETED Results map.
+func resultKind(results map[string]any) string {
+	if results == nil {
+		return ""
+	}
+	if v, ok := results["kind"].(string); ok {
+		return v
+	}
+	return ""
+}
+
+// resultUint32 reads a uint32 off a saga COMPLETED Results map, tolerating the
+// float64 the value becomes after a JSON round-trip.
+func resultUint32(results map[string]any, key string) uint32 {
+	if results == nil {
+		return 0
+	}
+	switch v := results[key].(type) {
+	case float64:
+		return uint32(v)
+	case uint32:
+		return v
+	case int:
+		return uint32(v)
+	default:
+		return 0
 	}
 }
 

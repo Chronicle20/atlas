@@ -94,10 +94,10 @@ func PartyOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writ
 			cs, err := character.NewProcessor(l, ctx).GetByName(sp.Name())
 			if err != nil {
 				l.WithError(err).Errorf("Unable to locate character by name [%s] to invite to party.", sp.Name())
-				err := session.Announce(l)(ctx)(wp)(partycb.PartyOperationWriter)(partycb.PartyUnableToFindCharacterBody())(s)
-				if err != nil {
-					return
+				if err := session.Announce(l)(ctx)(wp)(partycb.PartyOperationWriter)(partycb.PartyUnableToFindCharacterBody())(s); err != nil {
+					l.WithError(err).Errorf("Unable to announce party invite error to character [%d].", s.CharacterId())
 				}
+				return
 			}
 
 			os, err := session.NewProcessor(l, ctx).GetByCharacterId(s.Field().Channel())(cs.Id())

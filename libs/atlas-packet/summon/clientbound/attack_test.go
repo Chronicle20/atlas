@@ -130,6 +130,35 @@ func TestSummonAttackBytesV83(t *testing.T) {
 	}
 }
 
+// TestSummonAttackBytesV84 pins that v84 is byte-identical to v83 (cid + oid + body,
+// NO trailing flag byte). Verified live (IDA, GMS_v84.1_U_DEVM.exe @port 13337):
+//   - CUserPool::OnUserCommonPacket@0x9b23a1 reads cid (Decode4@0x9b23ac), routes
+//     op 0xB6 (182) to the summon dispatcher sub_970201@0x970201.
+//   - sub_970201@0x970201 reads oid (Decode4@0x970240), looks up the summon, then
+//     case 182 calls the OnAttack leaf sub_7CC338@0x7cc338.
+//   - sub_7CC338@0x7cc338 reads, after the GetSkill guard (sub_77EAC3):
+//       Decode1@0x7cc3be → charLevel (stored *(a1+184))
+//       Decode1@0x7cc3cc → action byte (v75=(b>>7)&1 left flag, v74=b&0x7F direction)
+//       Decode1@0x7cc3ed → count (loop guard `if (v9 > 0)`)
+//       per target: Decode4@0x7cc41c monsterOid; if(oid){ Decode1@0x7cc42a byte(6);
+//         Decode4@0x7cc43d damage }
+//     and NOTHING after the loop — NO trailing byte on v84. The trailing flag is a
+//     v95-only addition (gated GMS && >=95 in the codec → false at v84, so this is
+//     the v83 path; off-by-one confirmed clear).
+// packet-audit:verify packet=summon/clientbound/SummonAttack version=gms_v84 ida=0x7cc338
+func TestSummonAttackBytesV84(t *testing.T) {
+	targets := []SummonAttackTarget{
+		NewSummonAttackTarget(1000001, 1234),
+		NewSummonAttackTarget(1000002, 5678),
+	}
+	in := NewSummonAttack(42, 2000001, 3, targets)
+	ctx := test.CreateContext("GMS", 84, 1)
+	got := test.Encode(t, ctx, in.Encode, nil)
+	if !bytes.Equal(got, summonAttackV83Body) {
+		t.Fatalf("v84 bytes = % X, want % X (identical to v83)", got, summonAttackV83Body)
+	}
+}
+
 // TestSummonAttackBytesV95 pins the v95 DELTA over the shared body: a single
 // trailing flag byte = 0 after the target loop (v95 client reader
 // CSummoned::OnAttack@0x753340's Decode1@0x7534e1). The oid is now part of the

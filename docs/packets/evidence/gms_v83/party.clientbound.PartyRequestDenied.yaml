@@ -1,0 +1,10 @@
+packet: party/clientbound/PartyRequestDenied
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnPartyResult#RequestDenied
+    address: "0xa3e31c"
+    decompile_sha256: d34930dc0cc5db0da122380fb81810699f0fabafad640f100fa83c880b900ca8
+verifies:
+  - libs/atlas-packet/party/clientbound/error_test.go#TestInviteTargetPartyArms

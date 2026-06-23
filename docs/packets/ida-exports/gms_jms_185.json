@@ -17,7 +17,7 @@
     "CWvsContext::OnEntrustedShopCheckResult#FreeFormNotice": {
       "address": "0xb0ee59",
       "direction": "clientbound",
-      "note": "Mode 0x12 (FreeFormNotice) is ABSENT from JMS v185 switch \u2014 falls to default/return. JMS does not implement this mode. Atlas FreeFormNotice encoder writes mode 0x12 which JMS client ignores.",
+      "note": "Mode 0x12 (FreeFormNotice) is ABSENT from JMS v185 switch — falls to default/return. JMS does not implement this mode. Atlas FreeFormNotice encoder writes mode 0x12 which JMS client ignores.",
       "calls": []
     },
     "CUserLocal::OnBalloonMsg": {
@@ -159,7 +159,7 @@
       "address": "0x436eda",
       "region": "JMS",
       "direction": "clientbound",
-      "notes": "REMOVE_MIST (JMS v185). JMS CAffectedAreaPool::OnAffectedAreaRemoved@0x436eda reads a single Decode4(v40 @line54) \u2014 the affected-area id. Matches atlas affected_area_removed.go (single WriteInt mistKey).",
+      "notes": "REMOVE_MIST (JMS v185). JMS CAffectedAreaPool::OnAffectedAreaRemoved@0x436eda reads a single Decode4(v40 @line54) — the affected-area id. Matches atlas affected_area_removed.go (single WriteInt mistKey).",
       "calls": [
         {
           "op": "Decode4",
@@ -214,7 +214,7 @@
         },
         {
           "op": "Decode2",
-          "comment": "m_nBuyCharacterCount (*(this+290)). JMS PRESENT \u2014 atlas else-branch (2 shorts) is WRONG; JMS reads 4 shorts like GMS v95"
+          "comment": "m_nBuyCharacterCount (*(this+290)). JMS PRESENT — atlas else-branch (2 shorts) is WRONG; JMS reads 4 shorts like GMS v95"
         },
         {
           "op": "Decode2",
@@ -282,7 +282,7 @@
         },
         {
           "op": "Encode4",
-          "comment": "update_time (get_update_time). JMS v185 PRESENT \u2014 same as GMS v95; atlas else-branch (no updateTime) is WRONG for JMS"
+          "comment": "update_time (get_update_time). JMS v185 PRESENT — same as GMS v95; atlas else-branch (no updateTime) is WRONG for JMS"
         },
         {
           "op": "EncodeStr",
@@ -300,7 +300,7 @@
         },
         {
           "op": "Decode4",
-          "comment": "nMaplePoint (points). JMS reads only 2 ints \u2014 atlas else-branch (no prepaid) matches"
+          "comment": "nMaplePoint (points). JMS reads only 2 ints — atlas else-branch (no prepaid) matches"
         }
       ]
     },
@@ -308,7 +308,7 @@
       "address": "ABSENT",
       "region": "JMS",
       "absent": true,
-      "notes": "Absent in JMS v185 \u2014 BBS not implemented. See CWvsContext::OnGuildBBSPacket note."
+      "notes": "Absent in JMS v185 — BBS not implemented. See CWvsContext::OnGuildBBSPacket note."
     },
     "CScriptMan::OnAskSlideMenu#AskSlideMenu": {
       "address": "0x7b8513",
@@ -337,7 +337,7 @@
       "calls": [
         {
           "op": "Decode4",
-          "comment": "characterId \u2014 consumed by dispatcher"
+          "comment": "characterId — consumed by dispatcher"
         },
         {
           "op": "Decode2",
@@ -361,11 +361,11 @@
       "address": "0x7eea69",
       "region": "JMS",
       "direction": "clientbound",
-      "notes": "SET_FIELD (JMS v185 opcode 0x087/135). JMS CStage::OnSetField@0x7eea69, bCharacterData=1 branch. ENVELOPE-ONLY: CharacterData::Decode (line 165) is a single DecodeBuf boundary (character domain). JMS wire order: DecodeOpt(2 @line119 CClientOptMan::DecodeOpt) + channelId(4 @line121) + JMS-only byte(1 @line122, szCookie[76]) + JMS-only int(4 @line123, szReserved[1976]) + sNotifierMessage(1 @line126) + bCharacterData(1 @line127) + nNotifierCheck/notifierCount(2 @line128) + [if count: DecodeStr loop] + 3x damage seed(4 @lines159-161) + CharacterData + OnSetLogoutGiftConfig@0xae81c0 (Decode4 m_bPredictQuit + 3x Decode4 logoutGiftSN = 4 ints) + timestamp DecodeBuffer(p,8 @line209). Matches atlas set_field.go JMS branch field-for-field \u2014 JMS byte+int block, 4-byte nHP path N/A here (CharacterData path), 4 logout gift ints all confirmed.",
+      "notes": "SET_FIELD (JMS v185 opcode 0x087/135). JMS CStage::OnSetField@0x7eea69, bCharacterData=1 branch. ENVELOPE-ONLY: CharacterData::Decode (line 165) is a single DecodeBuf boundary (character domain). JMS wire order: DecodeOpt(2 @line119 CClientOptMan::DecodeOpt) + channelId(4 @line121) + JMS-only byte(1 @line122, szCookie[76]) + JMS-only int(4 @line123, szReserved[1976]) + sNotifierMessage(1 @line126) + bCharacterData(1 @line127) + nNotifierCheck/notifierCount(2 @line128) + [if count: DecodeStr loop] + 3x damage seed(4 @lines159-161) + CharacterData + OnSetLogoutGiftConfig@0xae81c0 (Decode4 m_bPredictQuit + 3x Decode4 logoutGiftSN = 4 ints) + timestamp DecodeBuffer(p,8 @line209). Matches atlas set_field.go JMS branch field-for-field — JMS byte+int block, 4-byte nHP path N/A here (CharacterData path), 4 logout gift ints all confirmed.",
       "calls": [
         {
           "op": "Decode2",
-          "comment": "DecodeOpt (CClientOptMan::DecodeOpt @line119) \u2014 atlas WriteShort(0) gated (GMS>83 || JMS)"
+          "comment": "DecodeOpt (CClientOptMan::DecodeOpt @line119) — atlas WriteShort(0) gated (GMS>83 || JMS)"
         },
         {
           "op": "Decode4",
@@ -373,11 +373,11 @@
         },
         {
           "op": "Decode1",
-          "comment": "JMS-only byte (@line122 \u2192 szCookie[76]) \u2014 atlas WriteByte(0) gated JMS"
+          "comment": "JMS-only byte (@line122 → szCookie[76]) — atlas WriteByte(0) gated JMS"
         },
         {
           "op": "Decode4",
-          "comment": "JMS-only int (@line123 \u2192 szReserved[1976]) \u2014 atlas WriteInt(0) gated JMS"
+          "comment": "JMS-only int (@line123 → szReserved[1976]) — atlas WriteInt(0) gated JMS"
         },
         {
           "op": "Decode1",
@@ -405,11 +405,11 @@
         },
         {
           "op": "DecodeBuf",
-          "comment": "CharacterData::Decode (@line165) \u2014 ENVELOPE BOUNDARY; inner shape under character domain"
+          "comment": "CharacterData::Decode (@line165) — ENVELOPE BOUNDARY; inner shape under character domain"
         },
         {
           "op": "Decode4",
-          "comment": "m_bPredictQuit (OnSetLogoutGiftConfig@0xae81c0) \u2014 logout gift int #1, gated (GMS>83 || JMS)"
+          "comment": "m_bPredictQuit (OnSetLogoutGiftConfig@0xae81c0) — logout gift int #1, gated (GMS>83 || JMS)"
         },
         {
           "op": "Decode4",
@@ -425,7 +425,7 @@
         },
         {
           "op": "Decode8",
-          "comment": "timestamp DecodeBuffer(p,8 @line209; FILETIME) \u2014 atlas WriteInt64"
+          "comment": "timestamp DecodeBuffer(p,8 @line209; FILETIME) — atlas WriteInt64"
         }
       ]
     },
@@ -446,7 +446,7 @@
         },
         {
           "op": "DecodeSub",
-          "comment": "character entry loop (18 \u00d7 GW_CharacterStat::Decode + AvatarLook::Decode + onFamily + rank)",
+          "comment": "character entry loop (18 × GW_CharacterStat::Decode + AvatarLook::Decode + onFamily + rank)",
           "guard": "loop 18"
         },
         {
@@ -804,7 +804,7 @@
           "guard": "v3 > 0 && sub_577C42(&iPacket, v29)"
         }
       ],
-      "notes": "task-096: stripped FootHoldStateChange/FootHoldMove map-apply Delegate(s) (application logic, no wire bytes) per VERIFYING_A_PACKET.md \u00a710."
+      "notes": "task-096: stripped FootHoldStateChange/FootHoldMove map-apply Delegate(s) (application logic, no wire bytes) per VERIFYING_A_PACKET.md §10."
     },
     "CLogin::OnCreateNewCharacterResult": {
       "address": "0x66ffa8",
@@ -1003,7 +1003,7 @@
     "CUserLocal::OnSetDirectionMode": {
       "address": "0xa2cd83",
       "direction": "clientbound",
-      "note": "JMS v185 uses sub_A2CD83 at case 0xE7 of CUserLocal::OnPacket instead of a named OnSetDirectionMode. Reads ONLY Decode1(bSet) \u2014 no tAfterLeaveDirectionMode int32 field. Same wire shape as GMS v83; gate GMS && MajorVersion>=90 is CORRECT for JMS.",
+      "note": "JMS v185 uses sub_A2CD83 at case 0xE7 of CUserLocal::OnPacket instead of a named OnSetDirectionMode. Reads ONLY Decode1(bSet) — no tAfterLeaveDirectionMode int32 field. Same wire shape as GMS v83; gate GMS && MajorVersion>=90 is CORRECT for JMS.",
       "calls": [
         {
           "op": "Decode1",
@@ -1029,7 +1029,7 @@
         },
         {
           "op": "Decode4",
-          "comment": "meso (m_nMoney; ONLY if tab-flag bit 1 set \u2014 runtime callers never set it)",
+          "comment": "meso (m_nMoney; ONLY if tab-flag bit 1 set — runtime callers never set it)",
           "guard": "flag & 2"
         },
         {
@@ -1048,7 +1048,7 @@
       "address": "ABSENT",
       "region": "JMS",
       "absent": true,
-      "notes": "CWvsContext::OnGuildBBSPacket and all CUIGuildBBS::* functions are absent from JMS v185. BBS (Bulletin Board System) feature was not implemented in JMS v185. This is a JMS-specific omission \u2014 out of scope for atlas wire fix (no JMS client to decode BBS packets). Affected: guild/clientbound/bbs_thread_list.go, guild/clientbound/bbs_thread.go, guild/serverbound/bbs_*.go."
+      "notes": "CWvsContext::OnGuildBBSPacket and all CUIGuildBBS::* functions are absent from JMS v185. BBS (Bulletin Board System) feature was not implemented in JMS v185. This is a JMS-specific omission — out of scope for atlas wire fix (no JMS client to decode BBS packets). Affected: guild/clientbound/bbs_thread_list.go, guild/clientbound/bbs_thread.go, guild/serverbound/bbs_*.go."
     },
     "CWvsContext::OnGuildResult#MemberStatusUpdate": {
       "address": "0xb22518",
@@ -1097,11 +1097,11 @@
       "calls": [
         {
           "op": "Decode4",
-          "comment": "characterId \u2014 read by dispatcher"
+          "comment": "characterId — read by dispatcher"
         },
         {
           "op": "Decode1",
-          "comment": "slot \u2014 read by dispatcher"
+          "comment": "slot — read by dispatcher"
         },
         {
           "op": "Decode1",
@@ -1109,12 +1109,12 @@
         },
         {
           "op": "Decode1",
-          "comment": "reaction index \u2014 gated mode <= 1",
+          "comment": "reaction index — gated mode <= 1",
           "guard": "mode <= 1"
         },
         {
           "op": "Decode1",
-          "comment": "success flag \u2014 gated mode <= 1",
+          "comment": "success flag — gated mode <= 1",
           "guard": "mode <= 1"
         }
       ]
@@ -1201,7 +1201,7 @@
         },
         {
           "op": "Decode4",
-          "comment": "dwSwallowCharacterID \u2014 only destroyType == 4",
+          "comment": "dwSwallowCharacterID — only destroyType == 4",
           "guard": "destroyType == 4"
         }
       ]
@@ -1210,7 +1210,7 @@
       "address": "ABSENT",
       "region": "JMS",
       "absent": true,
-      "notes": "Absent in JMS v185 \u2014 BBS not implemented. See CWvsContext::OnGuildBBSPacket note."
+      "notes": "Absent in JMS v185 — BBS not implemented. See CWvsContext::OnGuildBBSPacket note."
     },
     "CUserLocal::SendBanMapByMobRequest": {
       "address": "0xa28621",
@@ -1242,7 +1242,7 @@
       "address": "0x8e46f2",
       "region": "JMS",
       "direction": "clientbound",
-      "notes": "JMS mode 3 \u2192 OnInvite (static handler, no instance guard). Wire: DecodeStr(fromName)+Decode1(pad)+Decode4(messengerId)+Decode1(pad). Identical to GMS v95.",
+      "notes": "JMS mode 3 → OnInvite (static handler, no instance guard). Wire: DecodeStr(fromName)+Decode1(pad)+Decode4(messengerId)+Decode1(pad). Identical to GMS v95.",
       "calls": [
         {
           "op": "Decode1",
@@ -1295,7 +1295,7 @@
       "address": "ABSENT",
       "region": "JMS",
       "absent": true,
-      "notes": "Absent in JMS v185 \u2014 BBS not implemented."
+      "notes": "Absent in JMS v185 — BBS not implemented."
     },
     "CCashShop::RequestCashPurchaseRecord": {
       "address": "0x47bf86",
@@ -1422,7 +1422,7 @@
       "calls": [
         {
           "op": "Decode1",
-          "comment": "mode byte (subtracted by 3 in decompile: 0\u21923=Display, 1\u21924=SendSuccess, 2\u21925=SendError, 5\u21928=Refresh/notify)"
+          "comment": "mode byte (subtracted by 3 in decompile: 0→3=Display, 1→4=SendSuccess, 2→5=SendError, 5→8=Refresh/notify)"
         },
         {
           "op": "Decode1",
@@ -1554,11 +1554,11 @@
       "address": "0x9f1a92",
       "region": "JMS",
       "direction": "clientbound",
-      "notes": "JMS v185 reads Decode1\u00d75: bSuccess+bCursed+bEnchantSkill+v5+v6. NO Decode4(nEnchantCategory). enchantResultFlag (v6) IS present in JMS \u2014 same as GMS v95 position. Only enchantCategory (Decode4, GMS>87 only) is absent from JMS. The || JMS clause on the enchantCategory gate was incorrect; the || JMS clause on enchantResultFlag gate is correct.",
+      "notes": "JMS v185 reads Decode1×5: bSuccess+bCursed+bEnchantSkill+v5+v6. NO Decode4(nEnchantCategory). enchantResultFlag (v6) IS present in JMS — same as GMS v95 position. Only enchantCategory (Decode4, GMS>87 only) is absent from JMS. The || JMS clause on the enchantCategory gate was incorrect; the || JMS clause on enchantResultFlag gate is correct.",
       "calls": [
         {
           "op": "Decode4",
-          "comment": "characterId \u2014 consumed by CUserPool::OnUserCommonPacket dispatcher before calling this function"
+          "comment": "characterId — consumed by CUserPool::OnUserCommonPacket dispatcher before calling this function"
         },
         {
           "op": "Decode1",
@@ -1578,7 +1578,7 @@
         },
         {
           "op": "Decode1",
-          "comment": "v6 / enchantResultFlag (display flag \u2014 present in JMS v185 even though not passed to CUIEnchantDlg)"
+          "comment": "v6 / enchantResultFlag (display flag — present in JMS v185 even though not passed to CUIEnchantDlg)"
         }
       ]
     },
@@ -1586,7 +1586,7 @@
       "address": "0x6d5978",
       "region": "JMS",
       "direction": "clientbound",
-      "notes": "KITE_SPAWN / message-box enter field (JMS v185). JMS CMessageBoxPool::OnMessageBoxEnterField@0x6d5978 reads: Decode4(id @line67, v58) + Decode4(itemId @line78, +56) + DecodeStr(@line79, +8) + DecodeStr(@line85, +12) + Decode2(x @line92, +28) + Decode2(y @line94, +32). Field order: int id, int itemId, str, str, short, short \u2014 matches atlas kite_spawn.go (id,templateId,message,name,x,kiteType). String-pair semantic order (message vs name) does not affect wire shape.",
+      "notes": "KITE_SPAWN / message-box enter field (JMS v185). JMS CMessageBoxPool::OnMessageBoxEnterField@0x6d5978 reads: Decode4(id @line67, v58) + Decode4(itemId @line78, +56) + DecodeStr(@line79, +8) + DecodeStr(@line85, +12) + Decode2(x @line92, +28) + Decode2(y @line94, +32). Field order: int id, int itemId, str, str, short, short — matches atlas kite_spawn.go (id,templateId,message,name,x,kiteType). String-pair semantic order (message vs name) does not affect wire shape.",
       "calls": [
         {
           "op": "Decode4",
@@ -1623,7 +1623,7 @@
       "address": "0x8e4851",
       "region": "JMS",
       "direction": "clientbound",
-      "notes": "JMS mode 6 \u2192 OnChat. Wire: DecodeStr(chatLine). Identical to GMS v95.",
+      "notes": "JMS mode 6 → OnChat. Wire: DecodeStr(chatLine). Identical to GMS v95.",
       "calls": [
         {
           "op": "Decode1",
@@ -1650,7 +1650,7 @@
         },
         {
           "op": "DecodeBuffer",
-          "comment": "CNpc::Init(iPacket) \u2014 opaque npc position/appearance block"
+          "comment": "CNpc::Init(iPacket) — opaque npc position/appearance block"
         }
       ]
     },
@@ -2000,19 +2000,19 @@
       "address": "0x5723E6",
       "region": "JMS",
       "direction": "clientbound",
-      "notes": "BLOW_WEATHER (JMS v185 opcode 0x08B/139). JMS dispatch CField::OnPacket case 0x8B -> sub_5723E6@0x5723E6 (inlined, no OnBlowWeather symbol). JMS reads: Decode4(itemId v2 @line17) + [if get_consume_cash_item_type(itemId)==51: Decode4(v3 @line22)] + [if itemId!=0: DecodeStr(message @line27)]. NO leading blow-type byte (GMS OnBlowWeather reads Decode1 m_nBlowType FIRST). atlas effect_weather.go writes WriteBool(!active)+WriteInt(itemId)+[string if active] \u2014 leading byte is a JMS over-write AND atlas lacks the JMS cash-type-51 conditional int. STRUCTURAL per-version divergence on a BAD-FORM struct (no region branch) \u2014 DEFERRED to _pending.md WEATHER-jms-shape, not a blind fix.",
+      "notes": "BLOW_WEATHER (JMS v185 opcode 0x08B/139). JMS dispatch CField::OnPacket case 0x8B -> sub_5723E6@0x5723E6 (inlined, no OnBlowWeather symbol). JMS reads: Decode4(itemId v2 @line17) + [if get_consume_cash_item_type(itemId)==51: Decode4(v3 @line22)] + [if itemId!=0: DecodeStr(message @line27)]. NO leading blow-type byte (GMS OnBlowWeather reads Decode1 m_nBlowType FIRST). atlas effect_weather.go writes WriteBool(!active)+WriteInt(itemId)+[string if active] — leading byte is a JMS over-write AND atlas lacks the JMS cash-type-51 conditional int. STRUCTURAL per-version divergence on a BAD-FORM struct (no region branch) — DEFERRED to _pending.md WEATHER-jms-shape, not a blind fix.",
       "calls": [
         {
           "op": "Decode4",
-          "comment": "itemId (v2 @line17) \u2014 JMS reads itemId FIRST; NO leading blow-type byte"
+          "comment": "itemId (v2 @line17) — JMS reads itemId FIRST; NO leading blow-type byte"
         },
         {
           "op": "Decode4",
-          "comment": "extra int \u2014 ONLY if get_consume_cash_item_type(itemId)==51 (@line22; cash-weather variant); no atlas field"
+          "comment": "extra int — ONLY if get_consume_cash_item_type(itemId)==51 (@line22; cash-weather variant); no atlas field"
         },
         {
           "op": "DecodeStr",
-          "comment": "message \u2014 only if itemId!=0 (@line27)"
+          "comment": "message — only if itemId!=0 (@line27)"
         }
       ]
     },
@@ -2084,7 +2084,7 @@
         },
         {
           "op": "Encode4",
-          "comment": "commSN (serialNumber). op-byte 0x2E (NOT GMS 0x04). JMS gift = serialNumber ONLY \u2014 no SPW/birthday, no recipient name, no message, no oneADay. NX-system divergence"
+          "comment": "commSN (serialNumber). op-byte 0x2E (NOT GMS 0x04). JMS gift = serialNumber ONLY — no SPW/birthday, no recipient name, no message, no oneADay. NX-system divergence"
         }
       ]
     },
@@ -2125,7 +2125,7 @@
         },
         {
           "op": "EncodeStr",
-          "comment": "per-entry name loop (string[]). JMS string[] \u2014 atlas unconditional []string fix is correct"
+          "comment": "per-entry name loop (string[]). JMS string[] — atlas unconditional []string fix is correct"
         }
       ]
     },
@@ -2349,7 +2349,7 @@
       "address": "0x8e4bab",
       "region": "JMS",
       "direction": "clientbound",
-      "notes": "JMS mode 7 \u2192 OnAvatar. Wire: Decode1(position)+AvatarLook::Decode. No name/channelId/pad. Atlas Update wrongly writes name+channelId+pad \u2014 confirmed as wire bug in GMS v95 audit (GMS OnAvatar does NOT read those). JMS confirms same shape.",
+      "notes": "JMS mode 7 → OnAvatar. Wire: Decode1(position)+AvatarLook::Decode. No name/channelId/pad. Atlas Update wrongly writes name+channelId+pad — confirmed as wire bug in GMS v95 audit (GMS OnAvatar does NOT read those). JMS confirms same shape.",
       "calls": [
         {
           "op": "Decode1",
@@ -2372,7 +2372,7 @@
       "calls": [
         {
           "op": "Decode4",
-          "comment": "dwMobId \u2014 read by dispatcher"
+          "comment": "dwMobId — read by dispatcher"
         },
         {
           "op": "Decode2",
@@ -2432,7 +2432,7 @@
         },
         {
           "op": "Encode4",
-          "comment": "ItemCRC (CItemInfo::GetItemCRC). PRESENT in JMS \u2014 atlas unconditional itemCRC fix is correct"
+          "comment": "ItemCRC (CItemInfo::GetItemCRC). PRESENT in JMS — atlas unconditional itemCRC fix is correct"
         }
       ]
     },
@@ -2572,7 +2572,7 @@
         },
         {
           "op": "Encode2",
-          "comment": "gm/dummy1 uint16 (CConfig::dummy1) \u2014 JMS sends 2 bytes; GMS sends 1 byte"
+          "comment": "gm/dummy1 uint16 (CConfig::dummy1) — JMS sends 2 bytes; GMS sends 1 byte"
         },
         {
           "op": "Encode1",
@@ -2606,11 +2606,11 @@
       "calls": [
         {
           "op": "Decode4",
-          "comment": "cid \u2014 read by CSummonedPool::OnPacket@0x9f7fad before dispatch (pool is cid-keyed; NO oid on jms185)"
+          "comment": "cid — read by CSummonedPool::OnPacket@0x9f7fad before dispatch (pool is cid-keyed; NO oid on jms185)"
         },
         {
           "op": "Decode1",
-          "comment": "leave-type/animated flag (0/2/3/4) \u2014 consumed in the remove path sub_828502@0x828517; atlas writes 4 or 1"
+          "comment": "leave-type/animated flag (0/2/3/4) — consumed in the remove path sub_828502@0x828517; atlas writes 4 or 1"
         }
       ]
     },
@@ -2628,7 +2628,7 @@
       "address": "0x5599d6",
       "region": "JMS",
       "absent": true,
-      "notes": "CWvsContext::SendGuildJoinMsg absent from JMS v185. JMS uses an inline or inlined join path. Out of scope \u2014 atlas does not send guild join packets to JMS clients in the current implementation.",
+      "notes": "CWvsContext::SendGuildJoinMsg absent from JMS v185. JMS uses an inline or inlined join path. Out of scope — atlas does not send guild join packets to JMS clients in the current implementation.",
       "note": "task-103 re-pin: jms_v185 GUILD_OPERATION sub-op 6 (0x6 JOIN), CUIFadeYesNo::OnButtonClicked case 8 (fn entry @0x5599d6) = COutPacket(GUILD_OPERATION=129/0x81)+Encode1(0x6)+Encode4(guildId)+Encode4(characterId). [Prior key CWvsContext::SendGuildJoinMsg did not exist as a real symbol; correct emit site is OnButtonClicked case 8. IDA-verified in jms SCY IDB; jms DOES implement guild-join (prior ABSENT marking was incorrect).] op+subtype consumed by Atlas guild Operation wrapper; calls list the wire body only."
     },
     "CField::SendInviteGuildMsg": {
@@ -2854,7 +2854,7 @@
       "address": "0x570359",
       "region": "JMS",
       "direction": "clientbound",
-      "notes": "FIELD_EFFECT cases 2 (SetObjectState), 3 (ShowScreenEffect), 4 (play_field_sound), 6 (PlayBGM) \u2014 JMS v185 CField::OnFieldEffect@0x570359. Each: Decode1(mode) + DecodeStr(name/path). Maps atlas EffectString.",
+      "notes": "FIELD_EFFECT cases 2 (SetObjectState), 3 (ShowScreenEffect), 4 (play_field_sound), 6 (PlayBGM) — JMS v185 CField::OnFieldEffect@0x570359. Each: Decode1(mode) + DecodeStr(name/path). Maps atlas EffectString.",
       "calls": [
         {
           "op": "Decode1",
@@ -2917,7 +2917,7 @@
       "address": "0x8e4601",
       "region": "JMS",
       "direction": "clientbound",
-      "notes": "JMS mode 5 \u2192 OnBlocked. Wire: DecodeStr(blockedUser)+Decode1(declineMode). Identical to GMS v95.",
+      "notes": "JMS mode 5 → OnBlocked. Wire: DecodeStr(blockedUser)+Decode1(declineMode). Identical to GMS v95.",
       "calls": [
         {
           "op": "Decode1",
@@ -2940,7 +2940,7 @@
       "calls": [
         {
           "op": "Decode4",
-          "comment": "dwMobId \u2014 read by dispatcher"
+          "comment": "dwMobId — read by dispatcher"
         },
         {
           "op": "Decode1",
@@ -3103,7 +3103,7 @@
       "address": "0x8e4515",
       "region": "JMS",
       "direction": "clientbound",
-      "notes": "JMS mode 4 \u2192 OnInviteResult. Wire: DecodeStr(msg)+Decode1(success). Identical to GMS v95.",
+      "notes": "JMS mode 4 → OnInviteResult. Wire: DecodeStr(msg)+Decode1(success). Identical to GMS v95.",
       "calls": [
         {
           "op": "Decode1",
@@ -3194,7 +3194,7 @@
         },
         {
           "op": "Decode4",
-          "comment": "jobId (present in JMS v185 \u2014 v84plus gate correct)"
+          "comment": "jobId (present in JMS v185 — v84plus gate correct)"
         },
         {
           "op": "Decode4",
@@ -3293,7 +3293,7 @@
       "address": "ABSENT",
       "region": "JMS",
       "absent": true,
-      "notes": "Absent in JMS v185 \u2014 BBS not implemented."
+      "notes": "Absent in JMS v185 — BBS not implemented."
     },
     "CScriptMan::OnAskYesNo#AskYesNo": {
       "address": "0x7b765d",
@@ -3432,12 +3432,12 @@
         },
         {
           "op": "Decode4",
-          "comment": "pickupCharId \u2014 gated destroyType in {2,3,5}",
+          "comment": "pickupCharId — gated destroyType in {2,3,5}",
           "guard": "destroyType in (2,3,5)"
         },
         {
           "op": "Decode2",
-          "comment": "tLeaveDelay \u2014 gated destroyType == 4",
+          "comment": "tLeaveDelay — gated destroyType == 4",
           "guard": "destroyType == 4"
         }
       ]
@@ -3494,7 +3494,7 @@
       "address": "ABSENT",
       "region": "JMS",
       "absent": true,
-      "notes": "Absent in JMS v185 \u2014 BBS not implemented."
+      "notes": "Absent in JMS v185 — BBS not implemented."
     },
     "CUserRemote::OnPetActivated": {
       "address": "0xa576d3",
@@ -3503,7 +3503,7 @@
       "calls": [
         {
           "op": "Decode4",
-          "comment": "characterId \u2014 read by CUserPool::OnUserRemotePacket before dispatch"
+          "comment": "characterId — read by CUserPool::OnUserRemotePacket before dispatch"
         },
         {
           "op": "Decode1",
@@ -3515,17 +3515,17 @@
         },
         {
           "op": "Decode1",
-          "comment": "show \u2014 gated active != 0",
+          "comment": "show — gated active != 0",
           "guard": "active != 0"
         },
         {
           "op": "DecodeBuf",
-          "comment": "CPet::Init body \u2014 gated active != 0",
+          "comment": "CPet::Init body — gated active != 0",
           "guard": "active != 0"
         },
         {
           "op": "Decode1",
-          "comment": "despawnMode \u2014 gated active == 0",
+          "comment": "despawnMode — gated active == 0",
           "guard": "active == 0"
         }
       ]
@@ -3548,7 +3548,7 @@
         },
         {
           "op": "Decode4",
-          "comment": "meso (m_nMoney; ONLY if tab-flag bit 1 set \u2014 runtime callers never set it)",
+          "comment": "meso (m_nMoney; ONLY if tab-flag bit 1 set — runtime callers never set it)",
           "guard": "flag & 2"
         },
         {
@@ -3816,7 +3816,7 @@
       "address": "0x8e447e",
       "region": "JMS",
       "direction": "clientbound",
-      "notes": "JMS mode 1 \u2192 OnSelfEnterResult. Wire: Decode1(position). Identical to GMS v95.",
+      "notes": "JMS mode 1 → OnSelfEnterResult. Wire: Decode1(position). Identical to GMS v95.",
       "calls": [
         {
           "op": "Decode1",
@@ -3865,15 +3865,15 @@
     "CSummonedPool::OnSkill": {
       "address": "0x828cb2",
       "direction": "clientbound",
-      "note": "SUMMON_SKILL (op 186/0xBA). The SKILL behavior lives at the IDB function NAMED OnHit (sub @0x828cb2) \u2014 the client OnHit/OnSkill names are swapped relative to behavior (summon-wire-truth.md), so this export key (CSummonedPool::OnSkill, which candidatesFromFName maps to the Atlas SummonSkill writer) points at the skill-reader ADDRESS 0x828cb2. CSummonedPool::OnPacket@0x9f7f6e reads Decode4(cid)@0x9f7fad, op 0xBA (registry SUMMON_SKILL) dispatches to OnSkill@0x828d16 by NAME but the SKILL wire is read here at 0x828cb2: a single Decode1@0x828d01, masked &0x7F @0x828d0c, passed to CSummoned::SetAttackAction@0x82800f to replay the summon's skill animation. Just ONE byte: NO summonSkillId int, NO oid. Atlas SummonSkill (writer 'SummonSkill', gated oid >=95 GMS-only -> JMS no oid) writes cid + byte(newStance) for jms185. jms185 reference (IDB asm-confirmed). NOTE: opcode-driven swap \u2014 same as v83/v87/v95 where the OnSkill export key carries the skill-reader address.",
+      "note": "SUMMON_SKILL (op 186/0xBA). The SKILL behavior lives at the IDB function NAMED OnHit (sub @0x828cb2) — the client OnHit/OnSkill names are swapped relative to behavior (summon-wire-truth.md), so this export key (CSummonedPool::OnSkill, which candidatesFromFName maps to the Atlas SummonSkill writer) points at the skill-reader ADDRESS 0x828cb2. CSummonedPool::OnPacket@0x9f7f6e reads Decode4(cid)@0x9f7fad, op 0xBA (registry SUMMON_SKILL) dispatches to OnSkill@0x828d16 by NAME but the SKILL wire is read here at 0x828cb2: a single Decode1@0x828d01, masked &0x7F @0x828d0c, passed to CSummoned::SetAttackAction@0x82800f to replay the summon's skill animation. Just ONE byte: NO summonSkillId int, NO oid. Atlas SummonSkill (writer 'SummonSkill', gated oid >=95 GMS-only -> JMS no oid) writes cid + byte(newStance) for jms185. jms185 reference (IDB asm-confirmed). NOTE: opcode-driven swap — same as v83/v87/v95 where the OnSkill export key carries the skill-reader address.",
       "calls": [
         {
           "op": "Decode4",
-          "comment": "cid \u2014 read by CSummonedPool::OnPacket@0x9f7fad before dispatch (pool is cid-keyed; NO oid on jms185)"
+          "comment": "cid — read by CSummonedPool::OnPacket@0x9f7fad before dispatch (pool is cid-keyed; NO oid on jms185)"
         },
         {
           "op": "Decode1",
-          "comment": "action/newStance (v & 0x7F -> SetAttackAction@0x82800f) \u2014 skill reader @0x828d01 (SKILL behavior). NO summonSkillId int on the wire."
+          "comment": "action/newStance (v & 0x7F -> SetAttackAction@0x82800f) — skill reader @0x828d01 (SKILL behavior). NO summonSkillId int on the wire."
         }
       ]
     },
@@ -3913,7 +3913,7 @@
       "address": "0x8e447e",
       "region": "JMS",
       "direction": "clientbound",
-      "notes": "JMS CUIMessenger::OnPacket@0x8e447e dispatches mode 0 \u2192 OnEnter. Wire: Decode1(position)+AvatarLook::Decode+DecodeStr(name)+Decode1(channelId)+Decode1(pad). Identical to GMS v95.",
+      "notes": "JMS CUIMessenger::OnPacket@0x8e447e dispatches mode 0 → OnEnter. Wire: Decode1(position)+AvatarLook::Decode+DecodeStr(name)+Decode1(channelId)+Decode1(pad). Identical to GMS v95.",
       "calls": [
         {
           "op": "Decode1",
@@ -3969,7 +3969,7 @@
       "address": "ABSENT",
       "region": "JMS",
       "absent": true,
-      "notes": "Absent in JMS v185 \u2014 BBS not implemented."
+      "notes": "Absent in JMS v185 — BBS not implemented."
     },
     "CField_SnowBall::Update#LeftKnockback": {
       "address": "0x5c92fb",
@@ -4071,7 +4071,7 @@
       "address": "0x9f636b",
       "region": "JMS",
       "direction": "clientbound",
-      "notes": "JMS v185 CUser::OnEmotion@0x9f636b reads Decode4(nEmotion)+Decode4(tDuration) only \u2014 no bByItemOption. JMS v185 is older code than GMS v95; the || JMS clause on the byItemOption gate was incorrect.",
+      "notes": "JMS v185 CUser::OnEmotion@0x9f636b reads Decode4(nEmotion)+Decode4(tDuration) only — no bByItemOption. JMS v185 is older code than GMS v95; the || JMS clause on the byItemOption gate was incorrect.",
       "calls": [
         {
           "op": "Decode4",
@@ -4083,7 +4083,7 @@
         },
         {
           "op": "Decode4",
-          "comment": "tDuration (display duration in ms \u2014 JMS has duration but NOT byItemOption)"
+          "comment": "tDuration (display duration in ms — JMS has duration but NOT byItemOption)"
         }
       ]
     },
@@ -4179,7 +4179,7 @@
         },
         {
           "op": "EncodeBuf",
-          "comment": "CMovePath::Flush \u2014 movement data (only if detectFlag)",
+          "comment": "CMovePath::Flush — movement data (only if detectFlag)",
           "guard": "detectFlag"
         }
       ]
@@ -4258,7 +4258,7 @@
         },
         {
           "op": "Decode2",
-          "comment": "nHP (JMS v185 int16 \u2014 NOT widened to int32 unlike GMS v95)",
+          "comment": "nHP (JMS v185 int16 — NOT widened to int32 unlike GMS v95)",
           "guard": "mask 0x400"
         },
         {
@@ -4349,7 +4349,7 @@
         },
         {
           "op": "DecodeBuffer",
-          "comment": "PARTYDATA::Decode \u2014 fixed opaque block (read as one buffer)"
+          "comment": "PARTYDATA::Decode — fixed opaque block (read as one buffer)"
         }
       ]
     },
@@ -4524,7 +4524,7 @@
       "calls": [
         {
           "op": "Decode1",
-          "comment": "mode byte = 0x14 (20 \u2014 ChannelChange)"
+          "comment": "mode byte = 0x14 (20 — ChannelChange)"
         },
         {
           "op": "Decode4",
@@ -4578,7 +4578,7 @@
         },
         {
           "op": "DecodeBuffer",
-          "comment": "PARTYDATA::Decode \u2014 fixed opaque block (read as one buffer)"
+          "comment": "PARTYDATA::Decode — fixed opaque block (read as one buffer)"
         }
       ]
     },
@@ -4793,7 +4793,7 @@
         },
         {
           "op": "Encode2",
-          "comment": "pet pos.x \u2014 gated dwID % 13 == 0",
+          "comment": "pet pos.x — gated dwID % 13 == 0",
           "guard": "dwID % 13 == 0"
         },
         {
@@ -4906,7 +4906,7 @@
         },
         {
           "op": "Decode4",
-          "comment": "v32 (medal-related int32 \u2014 JMS reads Decode4 not Decode1)"
+          "comment": "v32 (medal-related int32 — JMS reads Decode4 not Decode1)"
         },
         {
           "op": "Decode4",
@@ -4954,7 +4954,7 @@
         },
         {
           "op": "DecodeSub",
-          "comment": "monster book block (SomethingMonsterBook \u2014 present in JMS v185)"
+          "comment": "monster book block (SomethingMonsterBook — present in JMS v185)"
         },
         {
           "op": "DecodeSub",
@@ -5072,11 +5072,11 @@
       "calls": [
         {
           "op": "Decode4",
-          "comment": "characterId \u2014 read by dispatcher"
+          "comment": "characterId — read by dispatcher"
         },
         {
           "op": "Decode1",
-          "comment": "slot \u2014 read by dispatcher"
+          "comment": "slot — read by dispatcher"
         },
         {
           "op": "DecodeBuf",
@@ -5099,7 +5099,7 @@
       "calls": [
         {
           "op": "Decode1",
-          "comment": "mode (cases 9/10/11/15 \u2014 string pool notice, no further reads; JMS adds case 0xB/0xF vs GMS 9/10/15)"
+          "comment": "mode (cases 9/10/11/15 — string pool notice, no further reads; JMS adds case 0xB/0xF vs GMS 9/10/15)"
         }
       ]
     },
@@ -5128,7 +5128,7 @@
         },
         {
           "op": "Decode4",
-          "comment": "nPOP (new total fame \u2014 CUIUserInfo::NotifyGivePopResult uses Decode4)"
+          "comment": "nPOP (new total fame — CUIUserInfo::NotifyGivePopResult uses Decode4)"
         }
       ]
     },
@@ -5164,7 +5164,7 @@
         },
         {
           "op": "Decode1",
-          "comment": "nCalcDamageIndex (controlled \u2014 atlas writes for JMS too)"
+          "comment": "nCalcDamageIndex (controlled — atlas writes for JMS too)"
         },
         {
           "op": "Decode4",
@@ -5190,127 +5190,127 @@
     "CSummoned::TryDoingAttackManual": {
       "address": "0x824a81",
       "direction": "serverbound",
-      "note": "SUMMON_ATTACK send (CMSG 179/0xB3). On jms185 TryDoingAttackManual is inlined into CSummoned::Update@0x824381 via sub_824A81@0x824a81 (the manual-attack target builder; called from Update case 1 @0x8245d1 and the rune-attack branch @0x82463c). It builds the per-target damage array, then calls DR_check@0x826202 to compute the _DR_INFO[4] anti-hack block (staged at var_20@0x8261fd) and jumps into the jms185 anti-tamper VM (jmp loc_DE90B8@0x82620f -> loc_D21897) where the COutPacket(0xB3) emit lives. The emit is NOT statically recoverable (virtualized), but the DR_check call PROVES the drInfo/dwKey/crc32 anti-hack envelope is present (the same envelope GMS gained at v84). JMS v185 corresponds structurally to the GMS v87 era (envelope + crc, NO repeatSkillPoint), NOT v95 \u2014 the JMS/GMS code lines diverged and raw version numbers don't map (v185 \u2248 v87 here). An earlier pass wrongly inferred the v95-only repeatSkillPoint from version-number lineage (v185 >> v95); that has been removed. The field ORDER below mirrors the v95 PDB-clean send (CSummoned::TryDoingAttackManual@0x751240) MINUS repeatSkillPoint; the envelope's PRESENCE (proven by DR_check) is jms185-derived. The per-target block + skillCRC trailer are byte-identical across all versions. jms185 identity = owner cid. Atlas serverbound Attack (hasAntiHackEnvelope -> JMS true via DR_check; hasRepeatSkillPoint -> JMS false, matching v87) decodes summonId + envelope + action + count + positions + per-target loop + skillCRC. jms185 reference (IDB asm-confirmed envelope; VM-obfuscated emit, field order mirrored from v87).",
+      "note": "SUMMON_ATTACK send (CMSG 179/0xB3). On jms185 TryDoingAttackManual is inlined into CSummoned::Update@0x824381 via sub_824A81@0x824a81 (the manual-attack target builder; called from Update case 1 @0x8245d1 and the rune-attack branch @0x82463c). It builds the per-target damage array, then calls DR_check@0x826202 to compute the _DR_INFO[4] anti-hack block (staged at var_20@0x8261fd) and jumps into the jms185 anti-tamper VM (jmp loc_DE90B8@0x82620f -> loc_D21897) where the COutPacket(0xB3) emit lives. The emit is NOT statically recoverable (virtualized), but the DR_check call PROVES the drInfo/dwKey/crc32 anti-hack envelope is present (the same envelope GMS gained at v84). JMS v185 corresponds structurally to the GMS v87 era (envelope + crc, NO repeatSkillPoint), NOT v95 — the JMS/GMS code lines diverged and raw version numbers don't map (v185 ≈ v87 here). An earlier pass wrongly inferred the v95-only repeatSkillPoint from version-number lineage (v185 >> v95); that has been removed. The field ORDER below mirrors the v95 PDB-clean send (CSummoned::TryDoingAttackManual@0x751240) MINUS repeatSkillPoint; the envelope's PRESENCE (proven by DR_check) is jms185-derived. The per-target block + skillCRC trailer are byte-identical across all versions. jms185 identity = owner cid. Atlas serverbound Attack (hasAntiHackEnvelope -> JMS true via DR_check; hasRepeatSkillPoint -> JMS false, matching v87) decodes summonId + envelope + action + count + positions + per-target loop + skillCRC. jms185 reference (IDB asm-confirmed envelope; VM-obfuscated emit, field order mirrored from v87).",
       "calls": [
         {
           "op": "Encode4",
-          "comment": "summonId (owner cid on jms185) \u2014 emit virtualized; mirrors v95 TryDoingAttackManual@0x752287"
+          "comment": "summonId (owner cid on jms185) — emit virtualized; mirrors v95 TryDoingAttackManual@0x752287"
         },
         {
           "op": "Encode4",
-          "comment": "~drInfo[0] (anti-hack; from DR_check@0x826202) \u2014 emit virtualized; mirrors v95@0x75229b"
+          "comment": "~drInfo[0] (anti-hack; from DR_check@0x826202) — emit virtualized; mirrors v95@0x75229b"
         },
         {
           "op": "Encode4",
-          "comment": "~drInfo[1] (anti-hack; from DR_check@0x826202) \u2014 emit virtualized; mirrors v95@0x7522af"
+          "comment": "~drInfo[1] (anti-hack; from DR_check@0x826202) — emit virtualized; mirrors v95@0x7522af"
         },
         {
           "op": "Encode4",
-          "comment": "updateTime \u2014 emit virtualized; mirrors v95@0x7522c0"
+          "comment": "updateTime — emit virtualized; mirrors v95@0x7522c0"
         },
         {
           "op": "Encode4",
-          "comment": "~drInfo[2] (anti-hack; from DR_check@0x826202) \u2014 emit virtualized; mirrors v95@0x7522d4"
+          "comment": "~drInfo[2] (anti-hack; from DR_check@0x826202) — emit virtualized; mirrors v95@0x7522d4"
         },
         {
           "op": "Encode4",
-          "comment": "~drInfo[3] (anti-hack; from DR_check@0x826202) \u2014 emit virtualized; mirrors v95@0x7522e8"
+          "comment": "~drInfo[3] (anti-hack; from DR_check@0x826202) — emit virtualized; mirrors v95@0x7522e8"
         },
         {
           "op": "Encode1",
-          "comment": "action byte (action&0x7F | bLeft<<7) \u2014 emit virtualized; mirrors v95@0x752302"
+          "comment": "action byte (action&0x7F | bLeft<<7) — emit virtualized; mirrors v95@0x752302"
         },
         {
           "op": "Encode4",
-          "comment": "dwKey (crc rand key) \u2014 emit virtualized; mirrors v95@0x752325"
+          "comment": "dwKey (crc rand key) — emit virtualized; mirrors v95@0x752325"
         },
         {
           "op": "Encode4",
-          "comment": "crc32 \u2014 emit virtualized; mirrors v95@0x75234c"
+          "comment": "crc32 — emit virtualized; mirrors v95@0x75234c"
         },
         {
           "op": "Encode1",
-          "comment": "nMobCount \u2014 emit virtualized; mirrors v95@0x75235c"
+          "comment": "nMobCount — emit virtualized; mirrors v95@0x75235c"
         },
         {
           "op": "Encode2",
-          "comment": "userX \u2014 emit virtualized; mirrors v95@0x7523a5"
+          "comment": "userX — emit virtualized; mirrors v95@0x7523a5"
         },
         {
           "op": "Encode2",
-          "comment": "userY \u2014 emit virtualized; mirrors v95@0x7523dd"
+          "comment": "userY — emit virtualized; mirrors v95@0x7523dd"
         },
         {
           "op": "Encode2",
-          "comment": "summonX \u2014 emit virtualized; mirrors v95@0x75240a"
+          "comment": "summonX — emit virtualized; mirrors v95@0x75240a"
         },
         {
           "op": "Encode2",
-          "comment": "summonY \u2014 emit virtualized; mirrors v87@send-block (NO repeatSkillPoint; jms185 \u2248 GMS v87, not v95)"
+          "comment": "summonY — emit virtualized; mirrors v87@send-block (NO repeatSkillPoint; jms185 ≈ GMS v87, not v95)"
         },
         {
           "op": "Encode4",
-          "comment": "mob[i].mobId \u2014 emit virtualized; mirrors v87 per-target loop, loop nMobCount times",
+          "comment": "mob[i].mobId — emit virtualized; mirrors v87 per-target loop, loop nMobCount times",
           "guard": "loop mobs"
         },
         {
           "op": "Encode4",
-          "comment": "mob[i].templateId \u2014 mirrors v95@0x7524cc",
-          "guard": "loop mobs"
-        },
-        {
-          "op": "Encode1",
-          "comment": "mob[i].hitAction \u2014 mirrors v95@0x7524e2",
+          "comment": "mob[i].templateId — mirrors v95@0x7524cc",
           "guard": "loop mobs"
         },
         {
           "op": "Encode1",
-          "comment": "mob[i].foreAction|isLeft<<7 \u2014 mirrors v95@0x75250c",
+          "comment": "mob[i].hitAction — mirrors v95@0x7524e2",
           "guard": "loop mobs"
         },
         {
           "op": "Encode1",
-          "comment": "mob[i].frameIdx \u2014 mirrors v95@0x752522",
+          "comment": "mob[i].foreAction|isLeft<<7 — mirrors v95@0x75250c",
           "guard": "loop mobs"
         },
         {
           "op": "Encode1",
-          "comment": "mob[i].calcDamageStatIdx \u2014 mirrors v95@0x75253b",
+          "comment": "mob[i].frameIdx — mirrors v95@0x752522",
+          "guard": "loop mobs"
+        },
+        {
+          "op": "Encode1",
+          "comment": "mob[i].calcDamageStatIdx — mirrors v95@0x75253b",
           "guard": "loop mobs"
         },
         {
           "op": "Encode2",
-          "comment": "mob[i].curX \u2014 mirrors v95@0x75256c",
+          "comment": "mob[i].curX — mirrors v95@0x75256c",
           "guard": "loop mobs"
         },
         {
           "op": "Encode2",
-          "comment": "mob[i].curY \u2014 mirrors v95@0x7525a0",
+          "comment": "mob[i].curY — mirrors v95@0x7525a0",
           "guard": "loop mobs"
         },
         {
           "op": "Encode2",
-          "comment": "mob[i].hitX \u2014 mirrors v95@0x7525d3",
+          "comment": "mob[i].hitX — mirrors v95@0x7525d3",
           "guard": "loop mobs"
         },
         {
           "op": "Encode2",
-          "comment": "mob[i].hitY \u2014 mirrors v95@0x752607",
+          "comment": "mob[i].hitY — mirrors v95@0x752607",
           "guard": "loop mobs"
         },
         {
           "op": "Encode2",
-          "comment": "mob[i].tDelay \u2014 mirrors v95@0x75261d",
+          "comment": "mob[i].tDelay — mirrors v95@0x75261d",
           "guard": "loop mobs"
         },
         {
           "op": "Encode4",
-          "comment": "mob[i].damage \u2014 mirrors v95@0x752632",
+          "comment": "mob[i].damage — mirrors v95@0x752632",
           "guard": "loop mobs"
         },
         {
           "op": "Encode4",
-          "comment": "skillCRC \u2014 emit virtualized; mirrors v95@0x75266f"
+          "comment": "skillCRC — emit virtualized; mirrors v95@0x75266f"
         }
       ]
     },
@@ -5463,7 +5463,7 @@
       "calls": [
         {
           "op": "Encode4",
-          "comment": "characterId (local user's charId from CUserLocal \u2014 NOT emotionId)"
+          "comment": "characterId (local user's charId from CUserLocal — NOT emotionId)"
         }
       ]
     },
@@ -5541,7 +5541,7 @@
       "address": "0xb297e7",
       "region": "JMS",
       "direction": "clientbound",
-      "notes": "JMS Disband mode (mode=12, isForced=0). Same as GMS v95@0xa11085: Decode4(partyId)+Decode4(targetId)+Decode1(isForced). Atlas Disband writes mode+partyId+targetId+0x00+partyId \u2014 the trailing repeated partyId is atlas-only; pre-existing \u274c in GMS v83/v95 audits too.",
+      "notes": "JMS Disband mode (mode=12, isForced=0). Same as GMS v95@0xa11085: Decode4(partyId)+Decode4(targetId)+Decode1(isForced). Atlas Disband writes mode+partyId+targetId+0x00+partyId — the trailing repeated partyId is atlas-only; pre-existing ❌ in GMS v83/v95 audits too.",
       "calls": [
         {
           "op": "Decode1",
@@ -5597,33 +5597,33 @@
       "calls": [
         {
           "op": "Decode4",
-          "comment": "cid \u2014 read by CSummonedPool::OnPacket@0x9f7fad before dispatch (pool is cid-keyed; NO oid on jms185)"
+          "comment": "cid — read by CSummonedPool::OnPacket@0x9f7fad before dispatch (pool is cid-keyed; NO oid on jms185)"
         },
         {
           "op": "Decode1",
-          "comment": "charLevel (-> [this+188]) \u2014 CSummonedPool::OnAttack@0x82878d; atlas writes fixed 0"
+          "comment": "charLevel (-> [this+188]) — CSummonedPool::OnAttack@0x82878d; atlas writes fixed 0"
         },
         {
           "op": "Decode1",
-          "comment": "action byte (low7=action @0x8287ab, bit7=bLeft @0x8287a7) \u2014 OnAttack@0x82879b; atlas 'direction'"
+          "comment": "action byte (low7=action @0x8287ab, bit7=bLeft @0x8287a7) — OnAttack@0x82879b; atlas 'direction'"
         },
         {
           "op": "Decode1",
-          "comment": "count (mob count) \u2014 OnAttack@0x8287db"
+          "comment": "count (mob count) — OnAttack@0x8287db"
         },
         {
           "op": "Decode4",
-          "comment": "target[i].monsterOid \u2014 OnAttack@0x82880c, loop count times",
+          "comment": "target[i].monsterOid — OnAttack@0x82880c, loop count times",
           "guard": "loop targets"
         },
         {
           "op": "Decode1",
-          "comment": "target[i].byte (only when monsterOid!=0) \u2014 OnAttack@0x82881a; atlas writes fixed 6",
+          "comment": "target[i].byte (only when monsterOid!=0) — OnAttack@0x82881a; atlas writes fixed 6",
           "guard": "loop targets (only when monsterOid!=0)"
         },
         {
           "op": "Decode4",
-          "comment": "target[i].damage (only when monsterOid!=0) \u2014 OnAttack@0x82882d",
+          "comment": "target[i].damage (only when monsterOid!=0) — OnAttack@0x82882d",
           "guard": "loop targets (only when monsterOid!=0)"
         }
       ]
@@ -5674,7 +5674,7 @@
       "calls": [
         {
           "op": "Decode4",
-          "comment": "characterId \u2014 consumed by CUserPool dispatcher before OnChat"
+          "comment": "characterId — consumed by CUserPool dispatcher before OnChat"
         },
         {
           "op": "Decode1",
@@ -5721,7 +5721,7 @@
       "address": "0x66e79f",
       "region": "JMS",
       "direction": "clientbound",
-      "notes": "JMS success path (resultCode==0 or 12) differs from GMS v95. Reads: Decode4(accountId)+Decode1(nGender)+Decode1(nGradeCode)+Decode1(combined)+2\u00d7DecodeStr(nexon club IDs)+5\u00d7Decode1(flags)+DecodeBuffer(8,chatUnblockDate)+DecodeStr(extra). Fundamentally different wire layout from GMS v95. Atlas login domain tracks this separately (task-027).",
+      "notes": "JMS success path (resultCode==0 or 12) differs from GMS v95. Reads: Decode4(accountId)+Decode1(nGender)+Decode1(nGradeCode)+Decode1(combined)+2×DecodeStr(nexon club IDs)+5×Decode1(flags)+DecodeBuffer(8,chatUnblockDate)+DecodeStr(extra). Fundamentally different wire layout from GMS v95. Atlas login domain tracks this separately (task-027).",
       "calls": [
         {
           "op": "Decode1",
@@ -5845,11 +5845,11 @@
       "calls": [
         {
           "op": "Encode4",
-          "comment": "summonId (this[190] = owner cid on jms185) \u2014 CVecCtrlSummoned::EndUpdateActive@0xaa601e"
+          "comment": "summonId (this[190] = owner cid on jms185) — CVecCtrlSummoned::EndUpdateActive@0xaa601e"
         },
         {
           "op": "EncodeBuf",
-          "comment": "movement blob \u2014 CMovePath::Flush@0xaa602b (opaque; head is Encode2 startX, Encode2 startY, Encode1 count, count moves, keypad run, bounding box). Atlas rebroadcasts the whole post-identity remainder byte-faithfully and extracts startX/startY from the first 4 bytes for position seeding."
+          "comment": "movement blob — CMovePath::Flush@0xaa602b (opaque; head is Encode2 startX, Encode2 startY, Encode1 count, count moves, keypad run, bounding box). Atlas rebroadcasts the whole post-identity remainder byte-faithfully and extracts startX/startY from the first 4 bytes for position seeding."
         }
       ]
     },
@@ -5880,7 +5880,7 @@
       "address": "0x6f8b84",
       "region": "JMS",
       "direction": "clientbound",
-      "notes": "JMS v185 production shape (function size 0x47 \u2014 same as v83, no dev seed block). Matches atlas's encoder.",
+      "notes": "JMS v185 production shape (function size 0x47 — same as v83, no dev seed block). Matches atlas's encoder.",
       "calls": [
         {
           "op": "Decode1",
@@ -5892,12 +5892,12 @@
         },
         {
           "op": "Decode1",
-          "comment": "aggro byte \u2014 atlas hardcodes 5",
+          "comment": "aggro byte — atlas hardcodes 5",
           "guard": "controlMode != 0"
         },
         {
           "op": "Decode4",
-          "comment": "dwTemplateID via sub_6F75D6 \u2014 atlas monsterId",
+          "comment": "dwTemplateID via sub_6F75D6 — atlas monsterId",
           "guard": "controlMode != 0"
         },
         {
@@ -5913,7 +5913,7 @@
       "calls": [
         {
           "op": "Decode1",
-          "comment": "mode (cases 1-4 = error codes \u2014 no additional fields)"
+          "comment": "mode (cases 1-4 = error codes — no additional fields)"
         }
       ]
     },
@@ -6010,7 +6010,7 @@
       "address": "0x76abe0",
       "region": "JMS",
       "direction": "serverbound",
-      "notes": "COutPacket(0xAC)+EncodeBuffer(petLockerSN,8)+Encode1(commandWithName)+Encode1(command) (verified live jms185 @0x76abe0). Corrected: the prior baseline traced a phantom 4th Encode1 'success flag' that the client never sends \u2014 the real send is exactly 3 fields, matching Atlas command.go [WriteLong, WriteBool, WriteByte].",
+      "notes": "COutPacket(0xAC)+EncodeBuffer(petLockerSN,8)+Encode1(commandWithName)+Encode1(command) (verified live jms185 @0x76abe0). Corrected: the prior baseline traced a phantom 4th Encode1 'success flag' that the client never sends — the real send is exactly 3 fields, matching Atlas command.go [WriteLong, WriteBool, WriteByte].",
       "calls": [
         {
           "op": "EncodeBuf",
@@ -6142,7 +6142,7 @@
       "address": "0x56e849",
       "region": "JMS",
       "direction": "clientbound",
-      "notes": "CLOCK (JMS v185 opcode 0x090/144). JMS dispatch CField::OnPacket case 0x90 -> virtual call [vtable+0x2C] (CField::OnClock, inlined/unnamed in JMS185 IDB \u2014 no standalone symbol; OnDestroyClock@0x56ec69 confirms the clock family lives on CField). Clock is a BAD-FORM mode-switch struct (clockType byte + per-mode payload); same analyzer flattening limitation as GMS v95 (verdict carried forward as tool-limitation, not a wire bug). JMS clockType-discriminated shape matches the standard MapleStory clock layout; full per-mode decode not resolvable without the vtable target. \u26a0\ufe0f manual-verify carried forward.",
+      "notes": "CLOCK (JMS v185 opcode 0x090/144). JMS dispatch CField::OnPacket case 0x90 -> virtual call [vtable+0x2C] (CField::OnClock, inlined/unnamed in JMS185 IDB — no standalone symbol; OnDestroyClock@0x56ec69 confirms the clock family lives on CField). Clock is a BAD-FORM mode-switch struct (clockType byte + per-mode payload); same analyzer flattening limitation as GMS v95 (verdict carried forward as tool-limitation, not a wire bug). JMS clockType-discriminated shape matches the standard MapleStory clock layout; full per-mode decode not resolvable without the vtable target. ⚠️ manual-verify carried forward.",
       "calls": [
         {
           "op": "Decode1",
@@ -6428,7 +6428,7 @@
       "address": "ABSENT",
       "region": "JMS",
       "absent": true,
-      "notes": "CWvsContext::SendSetGuildTitleNames absent from JMS v185. JMS uses a different title-names update mechanism. The serverbound title change uses CField::SendSetGuildMarkMsg-family rather than a dedicated WvsContext function. Out of scope \u2014 no wire bug since atlas does not send this packet to JMS clients."
+      "notes": "CWvsContext::SendSetGuildTitleNames absent from JMS v185. JMS uses a different title-names update mechanism. The serverbound title change uses CField::SendSetGuildMarkMsg-family rather than a dedicated WvsContext function. Out of scope — no wire bug since atlas does not send this packet to JMS clients."
     },
     "CUserLocal::OnSetStandAloneMode": {
       "address": "0xa2cdcb",
@@ -6466,7 +6466,7 @@
       "address": "0xb22518",
       "region": "JMS",
       "direction": "clientbound",
-      "notes": "JMS mode 5 (Invite): Decode4(guildId)+DecodeStr(inviterName)+Decode4(unknown)+Decode4(skillId). v84plus gate (GMS > 83 || JMS) is correct for JMS \u2014 JMS reads the full invite fields.",
+      "notes": "JMS mode 5 (Invite): Decode4(guildId)+DecodeStr(inviterName)+Decode4(unknown)+Decode4(skillId). v84plus gate (GMS > 83 || JMS) is correct for JMS — JMS reads the full invite fields.",
       "calls": [
         {
           "op": "Decode1",
@@ -6511,19 +6511,19 @@
       "calls": [
         {
           "op": "Decode4",
-          "comment": "cid \u2014 read by CSummonedPool::OnPacket@0x9f7fad before dispatch (pool is cid-keyed; NO oid on jms185)"
+          "comment": "cid — read by CSummonedPool::OnPacket@0x9f7fad before dispatch (pool is cid-keyed; NO oid on jms185)"
         },
         {
           "op": "Decode2",
-          "comment": "startX \u2014 CMovePath::OnMovePacket movement-blob head (CSummonedPool::OnMove@0x8286e4 -> CMovePath::OnMovePacket@0x70c5dc)"
+          "comment": "startX — CMovePath::OnMovePacket movement-blob head (CSummonedPool::OnMove@0x8286e4 -> CMovePath::OnMovePacket@0x70c5dc)"
         },
         {
           "op": "Decode2",
-          "comment": "startY \u2014 CMovePath::OnMovePacket movement-blob head"
+          "comment": "startY — CMovePath::OnMovePacket movement-blob head"
         },
         {
           "op": "DecodeBuf",
-          "comment": "rawMovement blob \u2014 CMovePath::OnMovePacket@0x70c5dc (variable-length movement path)"
+          "comment": "rawMovement blob — CMovePath::OnMovePacket@0x70c5dc (variable-length movement path)"
         }
       ]
     },
@@ -6531,7 +6531,7 @@
       "address": "ABSENT",
       "region": "JMS",
       "absent": true,
-      "notes": "Absent in JMS v185 \u2014 BBS not implemented."
+      "notes": "Absent in JMS v185 — BBS not implemented."
     },
     "CField_MonsterCarnival::OnShowMemberOutMsg": {
       "address": "0x5b070f",
@@ -6832,11 +6832,11 @@
         },
         {
           "op": "DecodeBuffer",
-          "comment": "GW_Friend \u00d7count"
+          "comment": "GW_Friend ×count"
         },
         {
           "op": "DecodeBuffer",
-          "comment": "inShop flags \u00d7count"
+          "comment": "inShop flags ×count"
         }
       ]
     },
@@ -6916,11 +6916,11 @@
       "calls": [
         {
           "op": "Decode4",
-          "comment": "characterId \u2014 read by dispatcher"
+          "comment": "characterId — read by dispatcher"
         },
         {
           "op": "Decode1",
-          "comment": "slot \u2014 read by dispatcher"
+          "comment": "slot — read by dispatcher"
         },
         {
           "op": "Decode1",
@@ -7041,7 +7041,7 @@
       "calls": [
         {
           "op": "Decode1",
-          "comment": "mode (case 7 = OPEN_SHOP; calls SendOpenShopRequest \u2014 no further reads)"
+          "comment": "mode (case 7 = OPEN_SHOP; calls SendOpenShopRequest — no further reads)"
         }
       ]
     },
@@ -7187,7 +7187,7 @@
       "calls": [
         {
           "op": "Decode4",
-          "comment": "dwMobId \u2014 read by dispatcher"
+          "comment": "dwMobId — read by dispatcher"
         },
         {
           "op": "Decode1",
@@ -7199,12 +7199,12 @@
         },
         {
           "op": "Decode4",
-          "comment": "hp current \u2014 gated mob.bDamagedByMob",
+          "comment": "hp current — gated mob.bDamagedByMob",
           "guard": "mob.bDamagedByMob"
         },
         {
           "op": "Decode4",
-          "comment": "hp max \u2014 gated mob.bDamagedByMob",
+          "comment": "hp max — gated mob.bDamagedByMob",
           "guard": "mob.bDamagedByMob"
         }
       ]
@@ -7213,7 +7213,7 @@
       "address": "0x436572",
       "region": "JMS",
       "direction": "clientbound",
-      "notes": "SPAWN_MIST (JMS v185). JMS CAffectedAreaPool::OnAffectedAreaCreated@0x436572 reads: Decode4(dwId @line103) + Decode4(nType @line104) + Decode4(dwOwnerId @line105) + Decode4(nSkillID @line106) + Decode1(nSLV @line107) + Decode2(phase @line108) + DecodeBuffer(16 rcArea RECT @line109) + Decode4(tEnd @line110). 8 fields \u2014 SAME as GMS v83 (no leading tStart). JMS does NOT have the v95-only tStart int. atlas affected_area_created.go (10-field v83-ish origin/lt/rb shape) matches NEITHER \u2014 STRUCTURAL DEFERRAL carried forward (see _pending.md AFFECTEDAREA-create-shape).",
+      "notes": "SPAWN_MIST (JMS v185). JMS CAffectedAreaPool::OnAffectedAreaCreated@0x436572 reads: Decode4(dwId @line103) + Decode4(nType @line104) + Decode4(dwOwnerId @line105) + Decode4(nSkillID @line106) + Decode1(nSLV @line107) + Decode2(phase @line108) + DecodeBuffer(16 rcArea RECT @line109) + Decode4(tEnd @line110). 8 fields — SAME as GMS v83 (no leading tStart). JMS does NOT have the v95-only tStart int. atlas affected_area_created.go (10-field v83-ish origin/lt/rb shape) matches NEITHER — STRUCTURAL DEFERRAL carried forward (see _pending.md AFFECTEDAREA-create-shape).",
       "calls": [
         {
           "op": "Decode4",
@@ -7245,7 +7245,7 @@
         },
         {
           "op": "Decode4",
-          "comment": "tEnd (end time @line110) \u2014 NO leading tStart (v95-only; absent in JMS like v83)"
+          "comment": "tEnd (end time @line110) — NO leading tStart (v95-only; absent in JMS like v83)"
         }
       ]
     },
@@ -7290,7 +7290,7 @@
       "address": "ABSENT",
       "region": "JMS",
       "absent": true,
-      "notes": "Absent in JMS v185 \u2014 BBS not implemented."
+      "notes": "Absent in JMS v185 — BBS not implemented."
     },
     "CCashTradingRoomDlg::Trade": {
       "address": "0x499b67",
@@ -7515,7 +7515,7 @@
       "calls": [
         {
           "op": "Decode4",
-          "comment": "dwMobId \u2014 read by dispatcher"
+          "comment": "dwMobId — read by dispatcher"
         },
         {
           "op": "Decode1",
@@ -7570,7 +7570,7 @@
       "address": "0x56d75a",
       "region": "JMS",
       "direction": "serverbound",
-      "notes": "FIELD_CHANGE / transfer-field request (JMS v185). JMS CField::SendTransferFieldRequest@0x56d75a: COutPacket(0x1D) then Encode1(fieldKey @line33, get_field()+328) + Encode4(dwTargetField @line34) + EncodeStr(sPortal @line40) + [if sPortal!=NULL: Encode2(x @line44)+Encode2(y @line46)] + Encode1(0 @line48, unused) + Encode1(bPremium @line49). NO chase byte, NO targetX/targetY int pair (GMS v95 has neither either \u2014 those are atlas's m.chase-gated tail). atlas change.go JMS path: chase gated GMS>=83 (skipped for JMS), targetX/Y only if m.chase (false) \u2192 JMS emits fieldKey+targetId+portal+[x,y if portal]+unused+premium. MATCHES.",
+      "notes": "FIELD_CHANGE / transfer-field request (JMS v185). JMS CField::SendTransferFieldRequest@0x56d75a: COutPacket(0x1D) then Encode1(fieldKey @line33, get_field()+328) + Encode4(dwTargetField @line34) + EncodeStr(sPortal @line40) + [if sPortal!=NULL: Encode2(x @line44)+Encode2(y @line46)] + Encode1(0 @line48, unused) + Encode1(bPremium @line49). NO chase byte, NO targetX/targetY int pair (GMS v95 has neither either — those are atlas's m.chase-gated tail). atlas change.go JMS path: chase gated GMS>=83 (skipped for JMS), targetX/Y only if m.chase (false) → JMS emits fieldKey+targetId+portal+[x,y if portal]+unused+premium. MATCHES.",
       "calls": [
         {
           "op": "Decode1",
@@ -7586,11 +7586,11 @@
         },
         {
           "op": "Decode2",
-          "comment": "x \u2014 only when sPortal!=NULL (@line44)"
+          "comment": "x — only when sPortal!=NULL (@line44)"
         },
         {
           "op": "Decode2",
-          "comment": "y \u2014 only when sPortal!=NULL (@line46)"
+          "comment": "y — only when sPortal!=NULL (@line46)"
         },
         {
           "op": "Decode1",
@@ -7711,7 +7711,7 @@
       "address": "0x6e8892",
       "region": "JMS",
       "direction": "serverbound",
-      "notes": "MOB_MOVE (opcode 0xC2). Atlas MovementRequest decoder mirrors this byte-for-byte. The four `>v83 || JMS`-gated blocks in atlas (multiTargetForBall + randTimeForAreaAttack, hackedCodeCRC, bChasing/hasTarget/bChasing2/bChasingHack/tChaseDuration) all fire for JMS \u2014 verified against this decompile.",
+      "notes": "MOB_MOVE (opcode 0xC2). Atlas MovementRequest decoder mirrors this byte-for-byte. The four `>v83 || JMS`-gated blocks in atlas (multiTargetForBall + randTimeForAreaAttack, hackedCodeCRC, bChasing/hasTarget/bChasing2/bChasingHack/tChaseDuration) all fire for JMS — verified against this decompile.",
       "calls": [
         {
           "op": "Encode4",
@@ -7723,7 +7723,7 @@
         },
         {
           "op": "Encode1",
-          "comment": "flags byte: nMoveEndingX | (v109 << 1) | (bRiseByToss << 2) | (nMoveTypeb << 3) \u2014 atlas dwFlag"
+          "comment": "flags byte: nMoveEndingX | (v109 << 1) | (bRiseByToss << 2) | (nMoveTypeb << 3) — atlas dwFlag"
         },
         {
           "op": "Encode1",
@@ -7731,7 +7731,7 @@
         },
         {
           "op": "Encode4",
-          "comment": "ti (TARGETINFO \u2014 atlas skillData; LOBYTE=skillId, BYTE1=skillLevel)"
+          "comment": "ti (TARGETINFO — atlas skillData; LOBYTE=skillId, BYTE1=skillLevel)"
         },
         {
           "op": "Encode4",
@@ -7739,12 +7739,12 @@
         },
         {
           "op": "Encode4",
-          "comment": "multiTargetForBall[i].x \u2014 loop",
+          "comment": "multiTargetForBall[i].x — loop",
           "guard": "loop multiTargetForBall"
         },
         {
           "op": "Encode4",
-          "comment": "multiTargetForBall[i].y \u2014 loop",
+          "comment": "multiTargetForBall[i].y — loop",
           "guard": "loop multiTargetForBall"
         },
         {
@@ -7753,28 +7753,28 @@
         },
         {
           "op": "Encode4",
-          "comment": "randTimeForAreaAttack[i] \u2014 loop",
+          "comment": "randTimeForAreaAttack[i] — loop",
           "guard": "loop randTimeForAreaAttack"
         },
         {
           "op": "Encode1",
-          "comment": "state byte: (nTyped == 0) | (16 * (v76 != 0)) \u2014 atlas moveFlags"
+          "comment": "state byte: (nTyped == 0) | (16 * (v76 != 0)) — atlas moveFlags"
         },
         {
           "op": "Encode4",
-          "comment": "TSecType<long>.GetData(sub_6E9537) \u2014 atlas hackedCode"
+          "comment": "TSecType<long>.GetData(sub_6E9537) — atlas hackedCode"
         },
         {
           "op": "Encode4",
-          "comment": "v107 ? TSecType<long>.GetData(v14[2]...+12) : 16768460 \u2014 atlas flyCtxTargetX"
+          "comment": "v107 ? TSecType<long>.GetData(v14[2]...+12) : 16768460 — atlas flyCtxTargetX"
         },
         {
           "op": "Encode4",
-          "comment": "v107 ? TSecType<long>.GetData(v14[2]...) : 16768460 \u2014 atlas flyCtxTargetY"
+          "comment": "v107 ? TSecType<long>.GetData(v14[2]...) : 16768460 — atlas flyCtxTargetY"
         },
         {
           "op": "Encode4",
-          "comment": "sub_515C39(v14[2].m_pfhFallStart) \u2014 atlas hackedCodeCRC"
+          "comment": "sub_515C39(v14[2].m_pfhFallStart) — atlas hackedCodeCRC"
         },
         {
           "op": "EncodeBuf",
@@ -7860,7 +7860,7 @@
         },
         {
           "op": "DecodeBuffer",
-          "comment": "PARTYDATA::Decode \u2014 fixed opaque block (read as one buffer)"
+          "comment": "PARTYDATA::Decode — fixed opaque block (read as one buffer)"
         }
       ]
     },
@@ -7928,17 +7928,17 @@
       "address": "ABSENT",
       "region": "JMS",
       "absent": true,
-      "notes": "Absent in JMS v185 \u2014 BBS not implemented (task-103: added so all three guild BBS clientbound arms grade consistently version-absent on jms; no CUIGuildBBS symbol exists in the jms SCY IDB, the jms registry has no GUILD_BBS_PACKET, and the jms template registers no GuildBBS writer)."
+      "notes": "Absent in JMS v185 — BBS not implemented (task-103: added so all three guild BBS clientbound arms grade consistently version-absent on jms; no CUIGuildBBS symbol exists in the jms SCY IDB, the jms registry has no GUILD_BBS_PACKET, and the jms template registers no GuildBBS writer)."
     },
     "CStage::OnSetField#WarpToMap": {
       "address": "0x7eea69",
       "region": "JMS",
       "direction": "clientbound",
-      "notes": "SET_FIELD warp path (JMS v185 opcode 0x087/135). Same JMS CStage::OnSetField@0x7eea69, bCharacterData=0 (else branch @lines168-190). JMS wire order: DecodeOpt(2) + channelId(4) + JMS byte(1) + JMS int(4) + sNotifierMessage(1) + bCharacterData(1=0) + nNotifierCheck(2) + revive(1 Decode1 @line170) + mapId(4 Decode4 @line181 / disasm @0x7eec6b) + portalId(1 Decode1 @line184 / @0x7eec87) + nHP(2 Decode2 @line187 / @0x7eec9d \u2014 2 BYTES, NOT widened to Decode4 like GMS v95) + timestamp(8). NOTE: NO m_dwOldDriverID (GMS-only), NO chase byte (GMS-only). nHP is Decode2 \u2014 atlas FIXED to gate the 4-byte width on GMS>=95 only, JMS now writes 2 bytes (warp_to_map.go).",
+      "notes": "SET_FIELD warp path (JMS v185 opcode 0x087/135). Same JMS CStage::OnSetField@0x7eea69, bCharacterData=0 (else branch @lines168-190). JMS wire order: DecodeOpt(2) + channelId(4) + JMS byte(1) + JMS int(4) + sNotifierMessage(1) + bCharacterData(1=0) + nNotifierCheck(2) + revive(1 Decode1 @line170) + mapId(4 Decode4 @line181 / disasm @0x7eec6b) + portalId(1 Decode1 @line184 / @0x7eec87) + nHP(2 Decode2 @line187 / @0x7eec9d — 2 BYTES, NOT widened to Decode4 like GMS v95) + timestamp(8). NOTE: NO m_dwOldDriverID (GMS-only), NO chase byte (GMS-only). nHP is Decode2 — atlas FIXED to gate the 4-byte width on GMS>=95 only, JMS now writes 2 bytes (warp_to_map.go).",
       "calls": [
         {
           "op": "Decode2",
-          "comment": "DecodeOpt \u2014 atlas WriteShort(0) gated (GMS>83 || JMS)"
+          "comment": "DecodeOpt — atlas WriteShort(0) gated (GMS>83 || JMS)"
         },
         {
           "op": "Decode4",
@@ -7946,11 +7946,11 @@
         },
         {
           "op": "Decode1",
-          "comment": "JMS-only byte \u2014 atlas WriteByte(0) gated JMS"
+          "comment": "JMS-only byte — atlas WriteByte(0) gated JMS"
         },
         {
           "op": "Decode4",
-          "comment": "JMS-only int \u2014 atlas WriteInt(0) gated JMS"
+          "comment": "JMS-only int — atlas WriteInt(0) gated JMS"
         },
         {
           "op": "Decode1",
@@ -7958,7 +7958,7 @@
         },
         {
           "op": "Decode1",
-          "comment": "bCharacterData flag (atlas writes 0 \u2014 warp path)"
+          "comment": "bCharacterData flag (atlas writes 0 — warp path)"
         },
         {
           "op": "Decode2",
@@ -7966,7 +7966,7 @@
         },
         {
           "op": "Decode1",
-          "comment": "revive flag (@line170; else branch) \u2014 atlas WriteByte(0) gated (GMS>28 || JMS)"
+          "comment": "revive flag (@line170; else branch) — atlas WriteByte(0) gated (GMS>28 || JMS)"
         },
         {
           "op": "Decode4",
@@ -7978,11 +7978,11 @@
         },
         {
           "op": "Decode2",
-          "comment": "nHP (@0x7eec9d Decode2 \u2014 2 bytes; JMS did NOT widen with GMS v95) \u2014 atlas WriteShort gated (else branch)"
+          "comment": "nHP (@0x7eec9d Decode2 — 2 bytes; JMS did NOT widen with GMS v95) — atlas WriteShort gated (else branch)"
         },
         {
           "op": "Decode8",
-          "comment": "timestamp (DecodeBuffer p,8; FILETIME) \u2014 atlas WriteInt64"
+          "comment": "timestamp (DecodeBuffer p,8; FILETIME) — atlas WriteInt64"
         }
       ]
     },
@@ -8092,7 +8092,7 @@
       "address": "0x8e447e",
       "region": "JMS",
       "direction": "clientbound",
-      "notes": "JMS mode 2 \u2192 OnLeave. Wire: Decode1(position). Identical to GMS v95.",
+      "notes": "JMS mode 2 → OnLeave. Wire: Decode1(position). Identical to GMS v95.",
       "calls": [
         {
           "op": "Decode1",
@@ -8142,7 +8142,7 @@
       "calls": [
         {
           "op": "Decode1",
-          "comment": "success flag (if 0 \u2192 CDisconnectException thrown)"
+          "comment": "success flag (if 0 → CDisconnectException thrown)"
         },
         {
           "op": "Decode4",
@@ -8158,7 +8158,7 @@
       "address": "0x6d594d",
       "region": "JMS",
       "direction": "clientbound",
-      "notes": "KITE_ERROR / message-box create-failed (JMS v185). JMS CMessageBoxPool::OnCreateFailed@0x6d594d reads NO packet bytes \u2014 just shows a StringPool notice (string id 0x200). Matches atlas kite_error.go (empty body).",
+      "notes": "KITE_ERROR / message-box create-failed (JMS v185). JMS CMessageBoxPool::OnCreateFailed@0x6d594d reads NO packet bytes — just shows a StringPool notice (string id 0x200). Matches atlas kite_error.go (empty body).",
       "calls": []
     },
     "CReactorPool::FindHitReactor": {
@@ -8356,22 +8356,6 @@
         }
       ]
     },
-    "CWvsContext::OnPartyResult#Error": {
-      "address": "0xb297e7",
-      "region": "JMS",
-      "direction": "clientbound",
-      "notes": "JMS Error modes (mode=9/10/13/16/17/19/21/22/23/25/28/29/30/32/33/35/36). No further reads \u2014 error code only. Atlas Error writes mode+string(name), which is atlas-only extra field. Pre-existing \u274c in GMS v83/v95 audits too.",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (error code)"
-        },
-        {
-          "op": "DecodeStr",
-          "comment": "name"
-        }
-      ]
-    },
     "CScriptMan::OnSayImage#SayImage": {
       "address": "0x7b7496",
       "direction": "clientbound",
@@ -8547,7 +8531,7 @@
       "address": "0xb22518",
       "region": "JMS",
       "direction": "clientbound",
-      "notes": "JMS MemberExpel ('/') \u2014 same wire as MemberLeft but with expulsion flag. Identical to GMS v95.",
+      "notes": "JMS MemberExpel ('/') — same wire as MemberLeft but with expulsion flag. Identical to GMS v95.",
       "calls": [
         {
           "op": "Decode1",
@@ -8707,7 +8691,7 @@
       "calls": [
         {
           "op": "Decode4",
-          "comment": "characterId \u2014 consumed by CUserPool dispatcher before OnGuildNameChanged"
+          "comment": "characterId — consumed by CUserPool dispatcher before OnGuildNameChanged"
         },
         {
           "op": "DecodeStr",
@@ -8722,24 +8706,24 @@
       "calls": [
         {
           "op": "Encode4",
-          "comment": "summonId ([this+44] = owner cid on jms185) \u2014 SetDamaged@0x828293"
+          "comment": "summonId ([this+44] = owner cid on jms185) — SetDamaged@0x828293"
         },
         {
           "op": "Encode1",
-          "comment": "attackIdx (mob-present path; 0xFE sentinel on the no-mob path @0x8282a4) \u2014 SetDamaged@0x8282ba; atlas skip1"
+          "comment": "attackIdx (mob-present path; 0xFE sentinel on the no-mob path @0x8282a4) — SetDamaged@0x8282ba; atlas skip1"
         },
         {
           "op": "Encode4",
-          "comment": "damage (nDamage) \u2014 SetDamaged@0x8282c3 (mob path) / @0x8282ad (no-mob path)"
+          "comment": "damage (nDamage) — SetDamaged@0x8282c3 (mob path) / @0x8282ad (no-mob path)"
         },
         {
           "op": "Encode4",
-          "comment": "mobTemplateId (monsterIdFrom; mob-present path only) \u2014 SetDamaged@0x8282e0",
+          "comment": "mobTemplateId (monsterIdFrom; mob-present path only) — SetDamaged@0x8282e0",
           "guard": "mob present (attackIdx != 0xFE)"
         },
         {
           "op": "Encode1",
-          "comment": "dir<0 flag (mob-present path only) \u2014 SetDamaged@0x8282f0; atlas skip1. PRESENT on jms185.",
+          "comment": "dir<0 flag (mob-present path only) — SetDamaged@0x8282f0; atlas skip1. PRESENT on jms185.",
           "guard": "mob present (attackIdx != 0xFE)"
         }
       ]
@@ -8802,7 +8786,7 @@
         },
         {
           "op": "Encode4",
-          "comment": "nCommSN (serialNumber). JMS NX-system: NO dwOption/currency int, NO trailing zero/oneADay/eventSN \u2014 diverges from all atlas branches"
+          "comment": "nCommSN (serialNumber). JMS NX-system: NO dwOption/currency int, NO trailing zero/oneADay/eventSN — diverges from all atlas branches"
         }
       ]
     },
@@ -8852,7 +8836,7 @@
         },
         {
           "op": "Decode1",
-          "comment": "petSlotIndex \u2014 only result == 0",
+          "comment": "petSlotIndex — only result == 0",
           "guard": "result == 0"
         }
       ]
@@ -8861,7 +8845,7 @@
       "address": "0xb22518",
       "region": "JMS",
       "direction": "clientbound",
-      "notes": "JMS TitleChange: Decode4(guildId)+5\u00d7DecodeStr(titles). Identical to GMS v95.",
+      "notes": "JMS TitleChange: Decode4(guildId)+5×DecodeStr(titles). Identical to GMS v95.",
       "calls": [
         {
           "op": "Decode1",
@@ -9348,7 +9332,7 @@
       "calls": [
         {
           "op": "Decode4",
-          "comment": "dwMobId \u2014 read by dispatcher"
+          "comment": "dwMobId — read by dispatcher"
         },
         {
           "op": "DecodeBuf",
@@ -9374,11 +9358,11 @@
       "address": "0xb22518",
       "region": "JMS",
       "direction": "clientbound",
-      "notes": "JMS CWvsContext::OnGuildResult@0xb22518. Full guild result dispatcher. Mode 5 (Invite) reads: Decode4(guildId)+DecodeStr(inviterName)+Decode4(unknown)+Decode4(skillId) \u2014 same as GMS v87/v95. The v84plus gate (GMS > 83 || JMS) in atlas operation.go is correct. Mode values and wire layouts match GMS v95 for all audited cases. BBS-related modes (above 50) absent (CUIGuildBBS not present in JMS v185).",
+      "notes": "JMS CWvsContext::OnGuildResult@0xb22518. Full guild result dispatcher. Mode 5 (Invite) reads: Decode4(guildId)+DecodeStr(inviterName)+Decode4(unknown)+Decode4(skillId) — same as GMS v87/v95. The v84plus gate (GMS > 83 || JMS) in atlas operation.go is correct. Mode values and wire layouts match GMS v95 for all audited cases. BBS-related modes (above 50) absent (CUIGuildBBS not present in JMS v185).",
       "calls": [
         {
           "op": "Decode1",
-          "comment": "mode byte \u2014 dispatches to guild sub-handler"
+          "comment": "mode byte — dispatches to guild sub-handler"
         }
       ]
     },
@@ -9416,7 +9400,7 @@
       "calls": [
         {
           "op": "Decode4",
-          "comment": "dwMobId \u2014 read by dispatcher"
+          "comment": "dwMobId — read by dispatcher"
         },
         {
           "op": "DecodeBuf",
@@ -9474,28 +9458,28 @@
     "CSummonedPool::OnHit": {
       "address": "0x828d16",
       "direction": "clientbound",
-      "note": "DAMAGE_SUMMON (op 185/0xB9). The DAMAGE behavior lives at the IDB function NAMED OnSkill (sub @0x828d16) \u2014 the client OnHit/OnSkill names are swapped relative to behavior (summon-wire-truth.md), so this export key (CSummonedPool::OnHit, which candidatesFromFName maps to the Atlas SummonDamage writer) points at the damage-reader ADDRESS 0x828d16. CSummonedPool::OnPacket@0x9f7f6e reads Decode4(cid)@0x9f7fad, op 0xB9 (registry DAMAGE_SUMMON) dispatches to OnHit@0x828cb2 by NAME but the DAMAGE wire is read here at 0x828d16: Decode1(attackIdx, signed)@0x828d47 + Decode4(damage)@0x828d5c + if attackIdx>-2 (v5>-2 @0x828d5f): Decode4(mobTemplateId)@0x828d6e (-> GetMobTemplate@0x828d7f) + Decode1(bLeft)@0x828d7c. Stops after bLeft \u2014 NO trailing dir byte, NO oid. Atlas SummonDamage (writer 'SummonDamage', gated oid >=95 GMS-only -> JMS no oid) writes cid+12(attackIdx)+damage+monsterIdFrom(templateId)+0(bLeft) for jms185. jms185 reference (IDB asm-confirmed). NOTE: opcode-driven swap \u2014 same as v83/v87/v95 where the OnHit export key carries the damage-reader address.",
+      "note": "DAMAGE_SUMMON (op 185/0xB9). The DAMAGE behavior lives at the IDB function NAMED OnSkill (sub @0x828d16) — the client OnHit/OnSkill names are swapped relative to behavior (summon-wire-truth.md), so this export key (CSummonedPool::OnHit, which candidatesFromFName maps to the Atlas SummonDamage writer) points at the damage-reader ADDRESS 0x828d16. CSummonedPool::OnPacket@0x9f7f6e reads Decode4(cid)@0x9f7fad, op 0xB9 (registry DAMAGE_SUMMON) dispatches to OnHit@0x828cb2 by NAME but the DAMAGE wire is read here at 0x828d16: Decode1(attackIdx, signed)@0x828d47 + Decode4(damage)@0x828d5c + if attackIdx>-2 (v5>-2 @0x828d5f): Decode4(mobTemplateId)@0x828d6e (-> GetMobTemplate@0x828d7f) + Decode1(bLeft)@0x828d7c. Stops after bLeft — NO trailing dir byte, NO oid. Atlas SummonDamage (writer 'SummonDamage', gated oid >=95 GMS-only -> JMS no oid) writes cid+12(attackIdx)+damage+monsterIdFrom(templateId)+0(bLeft) for jms185. jms185 reference (IDB asm-confirmed). NOTE: opcode-driven swap — same as v83/v87/v95 where the OnHit export key carries the damage-reader address.",
       "calls": [
         {
           "op": "Decode4",
-          "comment": "cid \u2014 read by CSummonedPool::OnPacket@0x9f7fad before dispatch (pool is cid-keyed; NO oid on jms185)"
+          "comment": "cid — read by CSummonedPool::OnPacket@0x9f7fad before dispatch (pool is cid-keyed; NO oid on jms185)"
         },
         {
           "op": "Decode1",
-          "comment": "attackIdx (signed) \u2014 damage reader @0x828d47; atlas writes fixed 12"
+          "comment": "attackIdx (signed) — damage reader @0x828d47; atlas writes fixed 12"
         },
         {
           "op": "Decode4",
-          "comment": "damage (nDamage) \u2014 @0x828d5c"
+          "comment": "damage (nDamage) — @0x828d5c"
         },
         {
           "op": "Decode4",
-          "comment": "mobTemplateId (monsterIdFrom; only when attackIdx>-2) \u2014 @0x828d6e (-> GetMobTemplate@0x828d7f)",
+          "comment": "mobTemplateId (monsterIdFrom; only when attackIdx>-2) — @0x828d6e (-> GetMobTemplate@0x828d7f)",
           "guard": "attackIdx > -2"
         },
         {
           "op": "Decode1",
-          "comment": "bLeft (only when attackIdx>-2) \u2014 @0x828d7c; atlas writes fixed 0. NO trailing dir byte after bLeft on jms185 (the dir byte is serverbound-only).",
+          "comment": "bLeft (only when attackIdx>-2) — @0x828d7c; atlas writes fixed 0. NO trailing dir byte after bLeft on jms185 (the dir byte is serverbound-only).",
           "guard": "attackIdx > -2"
         }
       ]
@@ -9567,59 +9551,59 @@
     "CSummonedPool::OnCreated": {
       "address": "0x9f80f8",
       "direction": "clientbound",
-      "note": "SPAWN_SPECIAL_MAPOBJECT (op 181/0xB5). CSummonedPool::OnPacket@0x9f7f6e dispatches op 0xB5 -> spawn (vtable+48 target sub_9F80F8). sub_9F80F8 reads Decode4(cid)@0x9f811a then Decode4(skillId)@0x9f8124 + Decode1(charLevel)@0x9f812e + Decode1(SLV)@0x9f813d (passed to CSummoned ctor sub_8231AA@0x9f81ad), then the Init blob via sub_823AED@0x9f81c7. There is NO oid on jms185 \u2014 only ONE int (skillId) sits between cid and the two bytes (matches v83; the v95 GMS path inserts oid right after cid, but jms185 keeps the pool cid-keyed via the dispatcher Decode4 cid@0x9f7fad). Init blob (sub_823AED@0x823aed): Decode2(x)@0x823b15, Decode2(y)@0x823b22, Decode1(moveAction)@0x823b2f, Decode2(foothold)@0x823b39, Decode1(moveAbility)@0x823b46, Decode1(assistType)@0x823b49, Decode1(enterType)@0x823b8b, then Decode1(bAvatarLook)@0x823b99 and, iff bAvatarLook!=0, AvatarLook::Decode@0x823bb0. The trailing bAvatarLook byte IS present on jms185 (the avatar-look field GMS gained at v95) \u2014 atlas writes present=0 for the v83 roster (no AvatarLook blob, no Tesla tail). Atlas SummonSpawn (gated oid >=95 GMS-only -> JMS no oid; spawnHasAvatarLook -> JMS185 writes the byte) writes cid+skillId+0x0A(charLevel)+level(SLV)+x+y+stance+foothold(0)+movementType+!puppet+!animated+0(bAvatarLook) for jms185. jms185 reference (IDB asm-confirmed).",
+      "note": "SPAWN_SPECIAL_MAPOBJECT (op 181/0xB5). CSummonedPool::OnPacket@0x9f7f6e dispatches op 0xB5 -> spawn (vtable+48 target sub_9F80F8). sub_9F80F8 reads Decode4(cid)@0x9f811a then Decode4(skillId)@0x9f8124 + Decode1(charLevel)@0x9f812e + Decode1(SLV)@0x9f813d (passed to CSummoned ctor sub_8231AA@0x9f81ad), then the Init blob via sub_823AED@0x9f81c7. There is NO oid on jms185 — only ONE int (skillId) sits between cid and the two bytes (matches v83; the v95 GMS path inserts oid right after cid, but jms185 keeps the pool cid-keyed via the dispatcher Decode4 cid@0x9f7fad). Init blob (sub_823AED@0x823aed): Decode2(x)@0x823b15, Decode2(y)@0x823b22, Decode1(moveAction)@0x823b2f, Decode2(foothold)@0x823b39, Decode1(moveAbility)@0x823b46, Decode1(assistType)@0x823b49, Decode1(enterType)@0x823b8b, then Decode1(bAvatarLook)@0x823b99 and, iff bAvatarLook!=0, AvatarLook::Decode@0x823bb0. The trailing bAvatarLook byte IS present on jms185 (the avatar-look field GMS gained at v95) — atlas writes present=0 for the v83 roster (no AvatarLook blob, no Tesla tail). Atlas SummonSpawn (gated oid >=95 GMS-only -> JMS no oid; spawnHasAvatarLook -> JMS185 writes the byte) writes cid+skillId+0x0A(charLevel)+level(SLV)+x+y+stance+foothold(0)+movementType+!puppet+!animated+0(bAvatarLook) for jms185. jms185 reference (IDB asm-confirmed).",
       "calls": [
         {
           "op": "Decode4",
-          "comment": "cid \u2014 read by sub_9F80F8@0x9f811a (also consumed by CSummonedPool::OnPacket dispatch; pool is cid-keyed)"
+          "comment": "cid — read by sub_9F80F8@0x9f811a (also consumed by CSummonedPool::OnPacket dispatch; pool is cid-keyed)"
         },
         {
           "op": "Decode4",
-          "comment": "skillId (nSkillID) \u2014 sub_9F80F8@0x9f8124; consumed by GetSkill@CSkillInfo in sub_823AED@0x823b6b. (NO oid on jms185 \u2014 the int after cid is the skillId)"
+          "comment": "skillId (nSkillID) — sub_9F80F8@0x9f8124; consumed by GetSkill@CSkillInfo in sub_823AED@0x823b6b. (NO oid on jms185 — the int after cid is the skillId)"
         },
         {
           "op": "Decode1",
-          "comment": "charLevel (nCharLevel) \u2014 sub_9F80F8@0x9f812e; atlas writes fixed 0x0A (visual-only)"
+          "comment": "charLevel (nCharLevel) — sub_9F80F8@0x9f812e; atlas writes fixed 0x0A (visual-only)"
         },
         {
           "op": "Decode1",
-          "comment": "SLV skill level (nSLV) \u2014 sub_9F80F8@0x9f813d; atlas 'level'"
+          "comment": "SLV skill level (nSLV) — sub_9F80F8@0x9f813d; atlas 'level'"
         },
         {
           "op": "Decode2",
-          "comment": "nX \u2014 CSummoned Init blob sub_823AED@0x823b15"
+          "comment": "nX — CSummoned Init blob sub_823AED@0x823b15"
         },
         {
           "op": "Decode2",
-          "comment": "nY \u2014 sub_823AED@0x823b22"
+          "comment": "nY — sub_823AED@0x823b22"
         },
         {
           "op": "Decode1",
-          "comment": "nMoveAction (stance) \u2014 sub_823AED@0x823b2f"
+          "comment": "nMoveAction (stance) — sub_823AED@0x823b2f"
         },
         {
           "op": "Decode2",
-          "comment": "nCurFoothold \u2014 sub_823AED@0x823b39; atlas writes fixed 0 (visual-only)"
+          "comment": "nCurFoothold — sub_823AED@0x823b39; atlas writes fixed 0 (visual-only)"
         },
         {
           "op": "Decode1",
-          "comment": "nMoveAbility (movementType) \u2014 sub_823AED@0x823b46"
+          "comment": "nMoveAbility (movementType) — sub_823AED@0x823b46"
         },
         {
           "op": "Decode1",
-          "comment": "nAssistType (!puppet attack flag) \u2014 sub_823AED@0x823b49"
+          "comment": "nAssistType (!puppet attack flag) — sub_823AED@0x823b49"
         },
         {
           "op": "Decode1",
-          "comment": "nEnterType (!animated flag) \u2014 sub_823AED@0x823b8b (read unconditionally on jms185)"
+          "comment": "nEnterType (!animated flag) — sub_823AED@0x823b8b (read unconditionally on jms185)"
         },
         {
           "op": "Decode1",
-          "comment": "bAvatarLook present byte \u2014 sub_823AED@0x823b99; atlas writes fixed 0 (no AvatarLook blob / Tesla tail for the v83 roster). PRESENT on jms185 (avatar-look field GMS gained at v95); ABSENT on GMS v83/v84/v87."
+          "comment": "bAvatarLook present byte — sub_823AED@0x823b99; atlas writes fixed 0 (no AvatarLook blob / Tesla tail for the v83 roster). PRESENT on jms185 (avatar-look field GMS gained at v95); ABSENT on GMS v83/v84/v87."
         },
         {
           "op": "DecodeBuf",
-          "comment": "AvatarLook blob \u2014 sub_823AED@0x823bb0, read ONLY when bAvatarLook!=0 (AvatarLook::Decode). Absent for the v83 roster (present byte = 0).",
+          "comment": "AvatarLook blob — sub_823AED@0x823bb0, read ONLY when bAvatarLook!=0 (AvatarLook::Decode). Absent for the v83 roster (present byte = 0).",
           "guard": "bAvatarLook != 0"
         }
       ]
@@ -9813,11 +9797,11 @@
       "calls": [
         {
           "op": "Decode4",
-          "comment": "characterId \u2014 read by dispatcher"
+          "comment": "characterId — read by dispatcher"
         },
         {
           "op": "Decode1",
-          "comment": "slot \u2014 read by dispatcher"
+          "comment": "slot — read by dispatcher"
         },
         {
           "op": "DecodeBuf",
@@ -9985,22 +9969,22 @@
         },
         {
           "op": "Decode2",
-          "comment": "sourceX \u2014 gated nEnterType != 2",
+          "comment": "sourceX — gated nEnterType != 2",
           "guard": "nEnterType != 2"
         },
         {
           "op": "Decode2",
-          "comment": "sourceY \u2014 gated nEnterType != 2",
+          "comment": "sourceY — gated nEnterType != 2",
           "guard": "nEnterType != 2"
         },
         {
           "op": "Decode2",
-          "comment": "tDelay \u2014 gated nEnterType != 2",
+          "comment": "tDelay — gated nEnterType != 2",
           "guard": "nEnterType != 2"
         },
         {
           "op": "DecodeBuf",
-          "comment": "cashItemSN (8 bytes) \u2014 gated !isMoney",
+          "comment": "cashItemSN (8 bytes) — gated !isMoney",
           "guard": "isMoney == 0"
         },
         {
@@ -10228,18 +10212,6 @@
         }
       ]
     },
-    "CWvsContext::OnFriendResult#Error": {
-      "address": "0xb2a873",
-      "region": "JMS",
-      "direction": "clientbound",
-      "notes": "synthetic sub-mode entry: error cases (11\u201315, 16, 17, 19, 22) in JMS OnFriendResult show string notices. Identical error sub-ops to GMS v95.",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode byte = 11\u201322 range (error codes)"
-        }
-      ]
-    },
     "CWvsContext::SendActivatePetRequest": {
       "address": "0xb0b40b",
       "region": "JMS",
@@ -10317,7 +10289,7 @@
       "address": "0xb297e7",
       "region": "JMS",
       "direction": "clientbound",
-      "notes": "JMS CWvsContext::OnPartyResult@0xb297e7 mode=1 (self-created). Wire: Decode1(mode)+Decode4(partyId)+Decode4(memberId)+Decode4(mapId)+Decode2(jobId)+Decode2(level). Same layout as GMS v83 OnPartyResult#Created@0xa3e31c. PARTYDATA (0x12A=298 bytes small) key finding: qmemcpy(v120, &this[1].m_Cookie.szReserved[584], 0x12Au). The v95plus gate in atlas member_data.go incorrectly included JMS \u2014 bug fixed in task-066 Task 10.",
+      "notes": "JMS CWvsContext::OnPartyResult@0xb297e7 mode=1 (self-created). Wire: Decode1(mode)+Decode4(partyId)+Decode4(memberId)+Decode4(mapId)+Decode2(jobId)+Decode2(level). Same layout as GMS v83 OnPartyResult#Created@0xa3e31c. PARTYDATA (0x12A=298 bytes small) key finding: qmemcpy(v120, &this[1].m_Cookie.szReserved[584], 0x12Au). The v95plus gate in atlas member_data.go incorrectly included JMS — bug fixed in task-066 Task 10.",
       "dispatch": [
         {
           "discriminator": "v5",
@@ -10454,7 +10426,7 @@
         },
         {
           "op": "Decode1",
-          "comment": "inner disc int8 = -2 (item unavailable \u2192 StringPool 2983); no follow-up bytes"
+          "comment": "inner disc int8 = -2 (item unavailable → StringPool 2983); no follow-up bytes"
         }
       ]
     },
@@ -10475,7 +10447,7 @@
         },
         {
           "op": "Decode1",
-          "comment": "inner disc int8 = -1 (default \u2192 'cannot pick up any more', StringPool 295)"
+          "comment": "inner disc int8 = -1 (default → 'cannot pick up any more', StringPool 295)"
         }
       ]
     },
@@ -10496,7 +10468,7 @@
         },
         {
           "op": "Decode1",
-          "comment": "inner disc int8 = -3 (game file damaged \u2192 StringPool 5317 + chat 5311)"
+          "comment": "inner disc int8 = -3 (game file damaged → StringPool 5317 + chat 5311)"
         }
       ]
     },
@@ -11094,7 +11066,216 @@
         },
         {
           "op": "Decode4",
-          "comment": "amount (single int \u2192 StringPool 5603 chat-type-6 notice)"
+          "comment": "amount (single int → StringPool 5603 chat-type-6 notice)"
+        }
+      ]
+    },
+    "CWvsContext::OnPartyResult#AlreadyJoined1": {
+      "address": "0xb297e7",
+      "direction": "clientbound",
+      "note": "mode=9. Error/notice arm: mode-only (no body).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (9)"
+        }
+      ]
+    },
+    "CWvsContext::OnPartyResult#BeginnerCannotCreate": {
+      "address": "0xb297e7",
+      "direction": "clientbound",
+      "note": "mode=10. Error/notice arm: mode-only (no body).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (10)"
+        }
+      ]
+    },
+    "CWvsContext::OnPartyResult#NotInParty": {
+      "address": "0xb297e7",
+      "direction": "clientbound",
+      "note": "mode=13. Error/notice arm: mode-only (no body).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (13)"
+        }
+      ]
+    },
+    "CWvsContext::OnPartyResult#AlreadyJoined2": {
+      "address": "0xb297e7",
+      "direction": "clientbound",
+      "note": "mode=17. Error/notice arm: mode-only (no body).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (17)"
+        }
+      ]
+    },
+    "CWvsContext::OnPartyResult#PartyFull": {
+      "address": "0xb297e7",
+      "direction": "clientbound",
+      "note": "mode=18. Error/notice arm: mode-only (no body).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (18)"
+        }
+      ]
+    },
+    "CWvsContext::OnPartyResult#CannotKick": {
+      "address": "0xb297e7",
+      "direction": "clientbound",
+      "note": "mode=29. Error/notice arm: mode-only (no body).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (29)"
+        }
+      ]
+    },
+    "CWvsContext::OnPartyResult#OnlyWithinVicinity": {
+      "address": "0xb297e7",
+      "direction": "clientbound",
+      "note": "mode=32. Error/notice arm: mode-only (no body).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (32)"
+        }
+      ]
+    },
+    "CWvsContext::OnPartyResult#UnableToHandOver": {
+      "address": "0xb297e7",
+      "direction": "clientbound",
+      "note": "mode=33. Error/notice arm: mode-only (no body).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (33)"
+        }
+      ]
+    },
+    "CWvsContext::OnPartyResult#OnlySameChannel": {
+      "address": "0xb297e7",
+      "direction": "clientbound",
+      "note": "mode=34. Error/notice arm: mode-only (no body).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (34)"
+        }
+      ]
+    },
+    "CWvsContext::OnPartyResult#GmCannotCreate": {
+      "address": "0xb297e7",
+      "direction": "clientbound",
+      "note": "mode=36. Error/notice arm: mode-only (no body).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (36)"
+        }
+      ]
+    },
+    "CWvsContext::OnFriendResult#ListFull": {
+      "address": "0xb2a873",
+      "direction": "clientbound",
+      "note": "mode=11. Error/notice arm: mode-only (no body).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (11)"
+        }
+      ]
+    },
+    "CWvsContext::OnFriendResult#OtherListFull": {
+      "address": "0xb2a873",
+      "direction": "clientbound",
+      "note": "mode=12. Error/notice arm: mode-only (no body).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (12)"
+        }
+      ]
+    },
+    "CWvsContext::OnFriendResult#AlreadyBuddy": {
+      "address": "0xb2a873",
+      "direction": "clientbound",
+      "note": "mode=13. Error/notice arm: mode-only (no body).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (13)"
+        }
+      ]
+    },
+    "CWvsContext::OnFriendResult#CannotBuddyGm": {
+      "address": "0xb2a873",
+      "direction": "clientbound",
+      "note": "mode=14. Error/notice arm: mode-only (no body).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (14)"
+        }
+      ]
+    },
+    "CWvsContext::OnFriendResult#CharacterNotFound": {
+      "address": "0xb2a873",
+      "direction": "clientbound",
+      "note": "mode=15. Error/notice arm: mode-only (no body).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (15)"
+        }
+      ]
+    },
+    "CWvsContext::OnFriendResult#UnknownError": {
+      "address": "0xb2a873",
+      "direction": "clientbound",
+      "note": "mode=16. jms arm is mode-only (no trailing byte).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (16)"
+        }
+      ]
+    },
+    "CWvsContext::OnFriendResult#UnknownError2": {
+      "address": "0xb2a873",
+      "direction": "clientbound",
+      "note": "mode=17. jms arm is mode-only (no trailing byte).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (17)"
+        }
+      ]
+    },
+    "CWvsContext::OnFriendResult#UnknownError3": {
+      "address": "0xb2a873",
+      "direction": "clientbound",
+      "note": "mode=19. jms arm is mode-only (no trailing byte).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (19)"
+        }
+      ]
+    },
+    "CWvsContext::OnFriendResult#UnknownError4": {
+      "address": "0xb2a873",
+      "direction": "clientbound",
+      "note": "mode=22. jms arm is mode-only (no trailing byte).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (22)"
         }
       ]
     }

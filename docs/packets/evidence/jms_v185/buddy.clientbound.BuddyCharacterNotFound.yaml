@@ -1,0 +1,10 @@
+packet: buddy/clientbound/BuddyCharacterNotFound
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnFriendResult#CharacterNotFound
+    address: "0xb2a873"
+    decompile_sha256: b2a62c1825f0776cddd863281be6957ec664f88817be18cf7d0f6b9f2dc145ba
+verifies:
+  - libs/atlas-packet/buddy/clientbound/error_test.go#TestModeOnlyBuddyErrorArms

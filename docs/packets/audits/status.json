@@ -1,11 +1,11 @@
 {
-  "toolSha": "b5bbc49ef36175ed0055f1d7253676e27767f465",
+  "toolSha": "0d2a71691fac50edb0fa35903ca63f9f6fb3010d",
   "exportHashes": {
-    "gms_v83": "fcfabe617a859aadf6000e0f3046b33f8928a302daf9a6d20ee7eaf6450c9fc1",
-    "gms_v84": "bb655a785f6e5a214ef19115ffc231d8484af40865547f30b6f89e6c32bc59a6",
-    "gms_v87": "11299fd5a471713829fa92edfd5158dfd7a34d788dfffb16e12f2146e31d523b",
-    "gms_v95": "53a1e91d8e8052f8bb016679735906f739457f74a472c13c9c6bc3a4c088fd81",
-    "jms_v185": "a9104fa94154e06cd507a4dc48299561512cf917f56ab664cb36a6ea8dc03fdf"
+    "gms_v83": "e4f329dac5e737dbafb8cb6c91af30e36da0054699a2d5b1206d59fc284b672d",
+    "gms_v84": "06a208ed592803a88b13f97a0682a1c067ac27f0a41df79074d2f5df515b7363",
+    "gms_v87": "60a4c60e1eabea5d81ebacfea8a8ce1637a06679d9bdc97fe49eb45d052ed4a2",
+    "gms_v95": "cf7682a52552f94e68453f8ed3a9f74098b50a4fdf14a19968227a2f3816d37d",
+    "jms_v185": "7e7115c6f86a1bee097df0d178fd2ea60981010836500eebdb46c733bb9ddd4d"
   },
   "rows": [
     {
@@ -4501,7 +4501,7 @@
     {
       "kind": "op",
       "op": "PARTY_OPERATION",
-      "packet": "party/clientbound/PartyChangeLeader",
+      "packet": "party/clientbound/PartyAlreadyJoined1",
       "direction": "clientbound",
       "tier1": true,
       "fnames": [
@@ -4574,7 +4574,7 @@
     {
       "kind": "op",
       "op": "BUDDYLIST",
-      "packet": "buddy/clientbound/BuddyCapacityUpdate",
+      "packet": "buddy/clientbound/BuddyAlreadyBuddy",
       "direction": "clientbound",
       "tier1": true,
       "fnames": [
@@ -4586,8 +4586,7 @@
           "opcode": 63
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ⚠️",
+          "state": "verified",
           "opcode": 65
         },
         "gms_v87": {

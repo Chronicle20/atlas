@@ -1,0 +1,10 @@
+packet: party/clientbound/PartyOnlySameChannel
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnPartyResult#OnlySameChannel
+    address: "0xa89cf3"
+    decompile_sha256: 46cb4f953873a97ce16e5bfcb07cf9ca2850ad7bf69aa550d8831cccd319c06a
+verifies:
+  - libs/atlas-packet/party/clientbound/error_test.go#TestModeOnlyPartyErrorArms

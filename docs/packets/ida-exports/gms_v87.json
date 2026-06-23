@@ -35,7 +35,7 @@
         },
         {
           "op": "DecodeStr",
-          "comment": "sMsg \u2014 message string (only read when flag != 0)"
+          "comment": "sMsg — message string (only read when flag != 0)"
         }
       ]
     },
@@ -72,7 +72,7 @@
     "CScriptMan::OnAskMenu#Selection": {
       "address": "0x7921a8",
       "direction": "serverbound",
-      "notes": "NPC_CONTINUE_CONVERSATION AskMenu reply trailing field, built inside v87 CScriptMan::OnAskMenu@0x7921a8 after DoModal: COutPacket(0x3F)+Encode1(5 msgType @0x792295)+Encode1(action @0x7922ab/0x7922b7); when selected appends Encode4(selection @0x7922c2). The msgType+action bytes belong to atlas ContinueConversation; ContinueConversationSelection writes ONLY the trailing selection. Atlas Decode picks width at runtime (Available()>=4 -> Int32 wide else Byte). AskAvatar/AskMembershopAvatar (msgType 8/9) instead append Encode1 (1-byte response), so both client widths exist; modeled as the wide (Encode4) path. Analyzer flattens the branch \u2014 tool limitation. Match \u2014 identical to v83/v95.",
+      "notes": "NPC_CONTINUE_CONVERSATION AskMenu reply trailing field, built inside v87 CScriptMan::OnAskMenu@0x7921a8 after DoModal: COutPacket(0x3F)+Encode1(5 msgType @0x792295)+Encode1(action @0x7922ab/0x7922b7); when selected appends Encode4(selection @0x7922c2). The msgType+action bytes belong to atlas ContinueConversation; ContinueConversationSelection writes ONLY the trailing selection. Atlas Decode picks width at runtime (Available()>=4 -> Int32 wide else Byte). AskAvatar/AskMembershopAvatar (msgType 8/9) instead append Encode1 (1-byte response), so both client widths exist; modeled as the wide (Encode4) path. Analyzer flattens the branch — tool limitation. Match — identical to v83/v95.",
       "calls": [
         {
           "op": "Encode4",
@@ -96,7 +96,7 @@
         },
         {
           "op": "DecodeBuf",
-          "comment": "ITCITEM::Decode entry (repeated per loop count): opaque GW_ItemSlotBase blob (Decode1 type + RawDecode; model.Asset recurse) then Decode4 nITCSN/nPrice/nContractFee, DecodeStr txid/rollback, DecodeBuffer(8) ftExpired, DecodeStr user/game/comment, Decode4 nBidCount/Range/Price/Min/Max/Unit, Decode2 nProcessStatus. Whole entry opaque to the flat differ (MtsItem recurse collapses) \u2014 byte-fixture verified.",
+          "comment": "ITCITEM::Decode entry (repeated per loop count): opaque GW_ItemSlotBase blob (Decode1 type + RawDecode; model.Asset recurse) then Decode4 nITCSN/nPrice/nContractFee, DecodeStr txid/rollback, DecodeBuffer(8) ftExpired, DecodeStr user/game/comment, Decode4 nBidCount/Range/Price/Min/Max/Unit, Decode2 nProcessStatus. Whole entry opaque to the flat differ (MtsItem recurse collapses) — byte-fixture verified.",
           "guard": "loop items"
         }
       ]
@@ -231,7 +231,7 @@
         },
         {
           "op": "Decode2",
-          "comment": "m_nCharacterSlotCount (characterSlots; *(this+1172)). v87 reads ONLY these 2 trailing shorts \u2014 m_nBuyCharacterCount + m_nCharacterCount are v95-only; >=95 gate CORRECT."
+          "comment": "m_nCharacterSlotCount (characterSlots; *(this+1172)). v87 reads ONLY these 2 trailing shorts — m_nBuyCharacterCount + m_nCharacterCount are v95-only; >=95 gate CORRECT."
         }
       ]
     },
@@ -266,7 +266,7 @@
         },
         {
           "op": "Decode1",
-          "comment": "channelId (v14 \u2014 0xFE/0xFD/0xFF = error; otherwise shows YesNo warp dialog)"
+          "comment": "channelId (v14 — 0xFE/0xFD/0xFF = error; otherwise shows YesNo warp dialog)"
         }
       ]
     },
@@ -390,7 +390,7 @@
     "CWvsContext::SendSitOnPortableChairRequest": {
       "address": "0xa9ef5b",
       "direction": "serverbound",
-      "_note": "Address approximate \u2014 same shape as v95.",
+      "_note": "Address approximate — same shape as v95.",
       "calls": [
         {
           "op": "Encode4",
@@ -408,7 +408,7 @@
         },
         {
           "op": "Encode4",
-          "comment": "update_time (get_update_time). PRESENT at v87 (line 16) \u2014 same as v95. NOT a v95-only field; gate tightened to GMS>=87."
+          "comment": "update_time (get_update_time). PRESENT at v87 (line 16) — same as v95. NOT a v95-only field; gate tightened to GMS>=87."
         },
         {
           "op": "EncodeStr",
@@ -452,7 +452,7 @@
     "CScriptMan::OnAskSlideMenu#AskSlideMenu": {
       "address": "0x792bb4",
       "direction": "clientbound",
-      "notes": "Dialog type 0xF (AskSlideMenu). v87 CScriptMan::OnAskSlideMenu@0x792bb4 forwards to CSlideMenuDlgEX ctor@0x7b90f3 -> SetSlideMenuDlg@0x7b92d1: Decode4(slideDlgType @0x7b92ee)+Decode4(menuType @0x7b92fc)+DecodeStr(button info @0x7b9303). Atlas AskSlideMenuConversationDetail: Int(Unknown)+Int(menuType)+AsciiString. Match \u2014 identical to v83/v95.",
+      "notes": "Dialog type 0xF (AskSlideMenu). v87 CScriptMan::OnAskSlideMenu@0x792bb4 forwards to CSlideMenuDlgEX ctor@0x7b90f3 -> SetSlideMenuDlg@0x7b92d1: Decode4(slideDlgType @0x7b92ee)+Decode4(menuType @0x7b92fc)+DecodeStr(button info @0x7b9303). Atlas AskSlideMenuConversationDetail: Int(Unknown)+Int(menuType)+AsciiString. Match — identical to v83/v95.",
       "calls": [
         {
           "op": "Decode4",
@@ -474,7 +474,7 @@
       "calls": [
         {
           "op": "Decode4",
-          "comment": "characterId (dispatcher-prefix pattern \u2014 consumed by CUserPool::OnUserRemotePacket Decode4 before OnGuildMarkChanged)"
+          "comment": "characterId (dispatcher-prefix pattern — consumed by CUserPool::OnUserRemotePacket Decode4 before OnGuildMarkChanged)"
         },
         {
           "op": "Decode2",
@@ -497,11 +497,11 @@
     "CStage::OnSetField": {
       "address": "0x7c429c",
       "direction": "clientbound",
-      "notes": "SET_FIELD (clientbound, GMS v87). ENVELOPE-ONLY audit: the CharacterData blob (CharacterData::Decode @0x7c440a) is audited under the character domain (task-028) and is represented here by a single DecodeBuf boundary marker. v87 wire order (bCharacterData=1 branch): DecodeOpt(2, CClientOptMan::DecodeOpt @0x7c42c5) + channelId(4, Decode4 @0x7c42db) + sNotifierMessage(1) + bCharacterData(1) + nNotifierCheck(2) + [notifier string loop if !=0] + 3x seed(4) + CharacterData + OnSetLogoutGiftConfig(4x int32) + timestamp(8, DecodeBuffer p,8u). CROSS-VERSION (task-068 Phase 3 v87): v87 reads NO m_dwOldDriverID after channelId \u2014 sNotifierMessage (Decode1 @0x7c42fa) is read immediately after channelId(@0x7c42db), matching v83 @0x776020 and unlike v95 @0x71a0a0 which inserts an unconditional Decode4 there. Field introduced between v87 and v95. Atlas gate GMS>=95 CONFIRMED correct.",
+      "notes": "SET_FIELD (clientbound, GMS v87). ENVELOPE-ONLY audit: the CharacterData blob (CharacterData::Decode @0x7c440a) is audited under the character domain (task-028) and is represented here by a single DecodeBuf boundary marker. v87 wire order (bCharacterData=1 branch): DecodeOpt(2, CClientOptMan::DecodeOpt @0x7c42c5) + channelId(4, Decode4 @0x7c42db) + sNotifierMessage(1) + bCharacterData(1) + nNotifierCheck(2) + [notifier string loop if !=0] + 3x seed(4) + CharacterData + OnSetLogoutGiftConfig(4x int32) + timestamp(8, DecodeBuffer p,8u). CROSS-VERSION (task-068 Phase 3 v87): v87 reads NO m_dwOldDriverID after channelId — sNotifierMessage (Decode1 @0x7c42fa) is read immediately after channelId(@0x7c42db), matching v83 @0x776020 and unlike v95 @0x71a0a0 which inserts an unconditional Decode4 there. Field introduced between v87 and v95. Atlas gate GMS>=95 CONFIRMED correct.",
       "calls": [
         {
           "op": "Decode2",
-          "comment": "DecodeOpt (CClientOptMan::DecodeOpt @0x7c42c5) \u2014 atlas WriteShort(0) gated (GMS>83 || JMS); present v87"
+          "comment": "DecodeOpt (CClientOptMan::DecodeOpt @0x7c42c5) — atlas WriteShort(0) gated (GMS>83 || JMS); present v87"
         },
         {
           "op": "Decode4",
@@ -509,7 +509,7 @@
         },
         {
           "op": "Decode1",
-          "comment": "sNotifierMessage flag (HIBYTE, @0x7c42fa) \u2014 read immediately after channelId; v87 has NO m_dwOldDriverID Decode4 between (unlike v95)"
+          "comment": "sNotifierMessage flag (HIBYTE, @0x7c42fa) — read immediately after channelId; v87 has NO m_dwOldDriverID Decode4 between (unlike v95)"
         },
         {
           "op": "Decode1",
@@ -517,7 +517,7 @@
         },
         {
           "op": "Decode2",
-          "comment": "nNotifierCheck (@0x7c431e; atlas writes 0 \u2014 no notifier title/content loop)"
+          "comment": "nNotifierCheck (@0x7c431e; atlas writes 0 — no notifier title/content loop)"
         },
         {
           "op": "Decode4",
@@ -533,11 +533,11 @@
         },
         {
           "op": "DecodeBuf",
-          "comment": "CharacterData::Decode (@0x7c440a) \u2014 ENVELOPE BOUNDARY; inner shape audited under character domain (task-028)"
+          "comment": "CharacterData::Decode (@0x7c440a) — ENVELOPE BOUNDARY; inner shape audited under character domain (task-028)"
         },
         {
           "op": "Decode4",
-          "comment": "m_bPredictQuit (OnSetLogoutGiftConfig @0x7c4412) \u2014 atlas logout-gift int #1, gated (GMS>83 || JMS)"
+          "comment": "m_bPredictQuit (OnSetLogoutGiftConfig @0x7c4412) — atlas logout-gift int #1, gated (GMS>83 || JMS)"
         },
         {
           "op": "Decode4",
@@ -553,7 +553,7 @@
         },
         {
           "op": "Decode8",
-          "comment": "timestamp (DecodeBuffer p,8u @0x7c4558 \u2014 FILETIME); atlas WriteInt64"
+          "comment": "timestamp (DecodeBuffer p,8u @0x7c4558 — FILETIME); atlas WriteInt64"
         }
       ]
     },
@@ -634,7 +634,7 @@
         },
         {
           "op": "Decode8",
-          "comment": "GW_CharacterStat::petLockerSN (DecodeBuffer 24 bytes = 3 \u00d7 int64)",
+          "comment": "GW_CharacterStat::petLockerSN (DecodeBuffer 24 bytes = 3 × int64)",
           "guard": "loop nCount"
         },
         {
@@ -843,7 +843,7 @@
         },
         {
           "op": "Decode4",
-          "comment": "m_nSlotCount \u2014 final field; NO m_nBuyCharCount in v87 (added >v87, gate MajorVersion()>87 in atlas already correct)"
+          "comment": "m_nSlotCount — final field; NO m_nBuyCharCount in v87 (added >v87, gate MajorVersion()>87 in atlas already correct)"
         }
       ]
     },
@@ -926,7 +926,7 @@
     "CShopDlg::SendBuyRequest": {
       "address": "0x7a1d49",
       "direction": "serverbound",
-      "notes": "NPC_SHOP (Buy body). v87 CShopDlg::SendBuyRequest@0x7a1d49 final send (0x7a249e..): after the leading Encode1(0) action byte (modeled separately as NpcShop/ShopDispatch), the body is Encode2(slot @0x7a24cb)+Encode4(itemId @0x7a24db)+Encode2(quantity @0x7a24e6)+Encode4(discountPrice/unitPrice @0x7a2503). Atlas NpcShopBuy writes Int16(slot)+Int(itemId)+Int16(quantity)+Int(discountPrice) \u2014 the action byte is NOT part of ShopBuy. Match \u2014 identical to v83/v95.",
+      "notes": "NPC_SHOP (Buy body). v87 CShopDlg::SendBuyRequest@0x7a1d49 final send (0x7a249e..): after the leading Encode1(0) action byte (modeled separately as NpcShop/ShopDispatch), the body is Encode2(slot @0x7a24cb)+Encode4(itemId @0x7a24db)+Encode2(quantity @0x7a24e6)+Encode4(discountPrice/unitPrice @0x7a2503). Atlas NpcShopBuy writes Int16(slot)+Int(itemId)+Int16(quantity)+Int(discountPrice) — the action byte is NOT part of ShopBuy. Match — identical to v83/v95.",
       "calls": [
         {
           "op": "Encode1",
@@ -953,7 +953,7 @@
     "CScriptMan::OnSay#Reply": {
       "address": "0x791828",
       "direction": "serverbound",
-      "notes": "NPC_CONTINUE_CONVERSATION (Say reply). Built inside v87 CScriptMan::OnSay@0x791828 after DoModal: COutPacket(0x3F)+Encode1(0 msgType @0x791938)+Encode1(action @0x79195a; -1/0/1 from prev/end/next). The msgType+action bytes belong to atlas ContinueConversation; the Say reply carries NO trailing field. Match \u2014 identical to v83/v95.",
+      "notes": "NPC_CONTINUE_CONVERSATION (Say reply). Built inside v87 CScriptMan::OnSay@0x791828 after DoModal: COutPacket(0x3F)+Encode1(0 msgType @0x791938)+Encode1(action @0x79195a; -1/0/1 from prev/end/next). The msgType+action bytes belong to atlas ContinueConversation; the Say reply carries NO trailing field. Match — identical to v83/v95.",
       "dispatch": [
         {
           "case": 0,
@@ -1188,7 +1188,7 @@
           "guard": "v4 == 2"
         }
       ],
-      "notes": "task-096: stripped FootHoldStateChange/FootHoldMove map-apply Delegate(s) (application logic, no wire bytes) per VERIFYING_A_PACKET.md \u00a710."
+      "notes": "task-096: stripped FootHoldStateChange/FootHoldMove map-apply Delegate(s) (application logic, no wire bytes) per VERIFYING_A_PACKET.md §10."
     },
     "CLogin::OnCreateNewCharacterResult": {
       "address": "0x631b13",
@@ -1408,7 +1408,7 @@
     "CScriptMan::OnScriptMessage": {
       "address": "0x791666",
       "direction": "clientbound",
-      "notes": "SCRIPT_MESSAGE / NPC_TALK. v87 CScriptMan::OnScriptMessage@0x791666 reads the common header Decode1(speakerType)+Decode4(npcTemplate)+Decode1(msgType)+Decode1(bParam), then switch(msgType) to per-type handlers. NOTE: UNLIKE v83 (which had NO SayImage case), v87's switch HAS a SayImage case (case 1 -> OnSayImage), matching v95 \u2014 the dialog-type enum is the v95-style ordering: 0=Say,1=SayImage,2=AskYesNo,3=AskText,4=AskNumber,5=AskMenu,6=AskQuiz,7=AskSpeedQuiz,8=AskAvatar,9=AskMembershopAvatar,0xA=AskPet,0xB=AskPetAll,0xD=AskYesNoQuest,0xE=AskBoxText,0xF=AskSlideMenu. Atlas NpcConversation.Encode writes byte(speakerTypeId)+int(speakerTemplateId)+byte(msgType)+byte(param)+(param&4?int(secondaryNpcTemplateId))+WriteByteArray(detail); the msgType byte is resolved from tenant config (ResolveCode 'messageType'), so the per-version enum is handled at the template/config layer, NOT in the encoder. The param&4 secondary read and detail body are consumed inside each per-type handler (OnSay reads secondary first). Per-dialog-type bodies audited individually.",
+      "notes": "SCRIPT_MESSAGE / NPC_TALK. v87 CScriptMan::OnScriptMessage@0x791666 reads the common header Decode1(speakerType)+Decode4(npcTemplate)+Decode1(msgType)+Decode1(bParam), then switch(msgType) to per-type handlers. NOTE: UNLIKE v83 (which had NO SayImage case), v87's switch HAS a SayImage case (case 1 -> OnSayImage), matching v95 — the dialog-type enum is the v95-style ordering: 0=Say,1=SayImage,2=AskYesNo,3=AskText,4=AskNumber,5=AskMenu,6=AskQuiz,7=AskSpeedQuiz,8=AskAvatar,9=AskMembershopAvatar,0xA=AskPet,0xB=AskPetAll,0xD=AskYesNoQuest,0xE=AskBoxText,0xF=AskSlideMenu. Atlas NpcConversation.Encode writes byte(speakerTypeId)+int(speakerTemplateId)+byte(msgType)+byte(param)+(param&4?int(secondaryNpcTemplateId))+WriteByteArray(detail); the msgType byte is resolved from tenant config (ResolveCode 'messageType'), so the per-version enum is handled at the template/config layer, NOT in the encoder. The param&4 secondary read and detail body are consumed inside each per-type handler (OnSay reads secondary first). Per-dialog-type bodies audited individually.",
       "calls": [
         {
           "op": "Decode1",
@@ -1537,7 +1537,7 @@
     "CUIMessenger::OnDestroy": {
       "address": "0x8b978f",
       "direction": "clientbound",
-      "note": "Messenger destroy \u2014 no dedicated function; messenger close handled by the mode=2 (Leave) path.",
+      "note": "Messenger destroy — no dedicated function; messenger close handled by the mode=2 (Leave) path.",
       "absent": true
     },
     "CField::SendSetGuildMarkMsg": {
@@ -1623,7 +1623,7 @@
       "calls": [
         {
           "op": "Decode1",
-          "comment": "bSet (direction/lock mode flag) \u2014 v87 reads ONLY 1 byte; tAfterLeaveDirectionMode int32 absent (gate >=90)"
+          "comment": "bSet (direction/lock mode flag) — v87 reads ONLY 1 byte; tAfterLeaveDirectionMode int32 absent (gate >=90)"
         }
       ]
     },
@@ -1645,7 +1645,7 @@
         },
         {
           "op": "Decode4",
-          "comment": "meso (m_nMoney; ONLY if tab-flag bit 1 set \u2014 runtime callers never set it)",
+          "comment": "meso (m_nMoney; ONLY if tab-flag bit 1 set — runtime callers never set it)",
           "guard": "flag & 2"
         },
         {
@@ -1663,7 +1663,7 @@
     "CWvsContext::OnGuildBBSPacket": {
       "address": "0xaa7d66",
       "direction": "clientbound",
-      "note": "Stub dispatcher \u2014 size 0x16 (22 bytes). Just dispatches to CUIGuildBBS::OnGuildBBSPacket. Wire identical to v83/v95.",
+      "note": "Stub dispatcher — size 0x16 (22 bytes). Just dispatches to CUIGuildBBS::OnGuildBBSPacket. Wire identical to v83/v95.",
       "calls": [
         {
           "op": "Decode1",
@@ -1715,11 +1715,11 @@
       "calls": [
         {
           "op": "Decode4",
-          "comment": "characterId \u2014 read by CUserPool::OnUserRemotePacket before dispatch"
+          "comment": "characterId — read by CUserPool::OnUserRemotePacket before dispatch"
         },
         {
           "op": "Decode1",
-          "comment": "slot \u2014 read by CUser::OnPetPacket before dispatch"
+          "comment": "slot — read by CUser::OnPetPacket before dispatch"
         },
         {
           "op": "Decode1",
@@ -1727,12 +1727,12 @@
         },
         {
           "op": "Decode1",
-          "comment": "reaction index \u2014 gated mode <= 1",
+          "comment": "reaction index — gated mode <= 1",
           "guard": "mode <= 1"
         },
         {
           "op": "Decode1",
-          "comment": "success flag \u2014 gated mode <= 1",
+          "comment": "success flag — gated mode <= 1",
           "guard": "mode <= 1"
         }
       ]
@@ -1867,7 +1867,7 @@
         },
         {
           "op": "Decode4",
-          "comment": "dwSwallowCharacterID \u2014 only if destroyType == 4",
+          "comment": "dwSwallowCharacterID — only if destroyType == 4",
           "guard": "destroyType == 4"
         }
       ]
@@ -2066,7 +2066,7 @@
     "CScriptMan::OnAskMembershopAvatar#AskMemberShopAvatar": {
       "address": "0x7924cc",
       "direction": "clientbound",
-      "notes": "Dialog type 9 (AskMemberShopAvatar). v87 CScriptMan::OnAskMembershopAvatar@0x7924cc: DecodeStr(message @0x7924ed)+Decode1(count @0x792501)+loop count x Decode4(avatar look @0x79251d). Atlas AskMemberShopAvatarConversationDetail: AsciiString(Message)+Byte(len)+loop Int. Count is a single byte (Decode1) NOT int \u2014 Phase-2 unconditional byte-count fix VERIFIED correct for v87. Match \u2014 identical to v83/v95. Analyzer flattens the loop.",
+      "notes": "Dialog type 9 (AskMemberShopAvatar). v87 CScriptMan::OnAskMembershopAvatar@0x7924cc: DecodeStr(message @0x7924ed)+Decode1(count @0x792501)+loop count x Decode4(avatar look @0x79251d). Atlas AskMemberShopAvatarConversationDetail: AsciiString(Message)+Byte(len)+loop Int. Count is a single byte (Decode1) NOT int — Phase-2 unconditional byte-count fix VERIFIED correct for v87. Match — identical to v83/v95. Analyzer flattens the loop.",
       "dispatch": [
         {
           "case": 0,
@@ -2198,7 +2198,7 @@
         },
         {
           "op": "Decode8",
-          "comment": "GW_CharacterStat::petLockerSN (DecodeBuffer 24 bytes = 3 \u00d7 int64)",
+          "comment": "GW_CharacterStat::petLockerSN (DecodeBuffer 24 bytes = 3 × int64)",
           "guard": "loop nCount"
         },
         {
@@ -2378,7 +2378,7 @@
         },
         {
           "op": "DecodeBuf",
-          "comment": "rank buffer 16 bytes: worldRank + worldRankGap + jobRank + jobRankGap \u2014 final per-entry field; NO m_bLoginOpt at end of case 0 in v87 (added >v87 in v95; gate MajorVersion()>87 in atlas)",
+          "comment": "rank buffer 16 bytes: worldRank + worldRankGap + jobRank + jobRankGap — final per-entry field; NO m_bLoginOpt at end of case 0 in v87 (added >v87 in v95; gate MajorVersion()>87 in atlas)",
           "guard": "loop nCount && rankEnabled"
         }
       ]
@@ -2389,7 +2389,7 @@
       "calls": [
         {
           "op": "Decode1",
-          "comment": "nWorldID terminator (0xFF dispatch \u2014 end of world list)"
+          "comment": "nWorldID terminator (0xFF dispatch — end of world list)"
         }
       ]
     },
@@ -2407,7 +2407,7 @@
         },
         {
           "op": "Encode2",
-          "comment": "m_nCurSelectedSubJob (sub-job; literal 0 in v87 \u2014 present but zero-forced)"
+          "comment": "m_nCurSelectedSubJob (sub-job; literal 0 in v87 — present but zero-forced)"
         },
         {
           "op": "Encode4",
@@ -2455,7 +2455,7 @@
     "CWvsContext::OnMemoResult": {
       "address": "0xabccc2",
       "direction": "clientbound",
-      "note": "Dispatcher \u2014 Decode1(mode)-3 dispatch: mode=3\u2192Display (reads list of GW_Memo), mode=4\u2192SendSuccess, mode=5\u2192SendError variants, mode=7\u2192Refresh. Wire shape identical to v83/v95.",
+      "note": "Dispatcher — Decode1(mode)-3 dispatch: mode=3→Display (reads list of GW_Memo), mode=4→SendSuccess, mode=5→SendError variants, mode=7→Refresh. Wire shape identical to v83/v95.",
       "calls": [
         {
           "op": "Decode1",
@@ -2503,7 +2503,7 @@
         },
         {
           "op": "DecodeBuf",
-          "comment": "ITCITEM::Decode entry (repeated per loop count): opaque GW_ItemSlotBase blob (Decode1 type + RawDecode; model.Asset recurse) then Decode4 nITCSN/nPrice/nContractFee, DecodeStr txid/rollback, DecodeBuffer(8) ftExpired, DecodeStr user/game/comment, Decode4 nBidCount/Range/Price/Min/Max/Unit, Decode2 nProcessStatus. Whole entry opaque to the flat differ (MtsItem recurse collapses) \u2014 byte-fixture verified.",
+          "comment": "ITCITEM::Decode entry (repeated per loop count): opaque GW_ItemSlotBase blob (Decode1 type + RawDecode; model.Asset recurse) then Decode4 nITCSN/nPrice/nContractFee, DecodeStr txid/rollback, DecodeBuffer(8) ftExpired, DecodeStr user/game/comment, Decode4 nBidCount/Range/Price/Min/Max/Unit, Decode2 nProcessStatus. Whole entry opaque to the flat differ (MtsItem recurse collapses) — byte-fixture verified.",
           "guard": "loop items"
         },
         {
@@ -2608,7 +2608,7 @@
         },
         {
           "op": "DecodeBuf",
-          "comment": "ITCITEM::Decode entry (repeated per loop count): opaque GW_ItemSlotBase blob (Decode1 type + RawDecode; model.Asset recurse) then Decode4 nITCSN/nPrice/nContractFee, DecodeStr txid/rollback, DecodeBuffer(8) ftExpired, DecodeStr user/game/comment, Decode4 nBidCount/Range/Price/Min/Max/Unit, Decode2 nProcessStatus. Whole entry opaque to the flat differ (MtsItem recurse collapses) \u2014 byte-fixture verified.",
+          "comment": "ITCITEM::Decode entry (repeated per loop count): opaque GW_ItemSlotBase blob (Decode1 type + RawDecode; model.Asset recurse) then Decode4 nITCSN/nPrice/nContractFee, DecodeStr txid/rollback, DecodeBuffer(8) ftExpired, DecodeStr user/game/comment, Decode4 nBidCount/Range/Price/Min/Max/Unit, Decode2 nProcessStatus. Whole entry opaque to the flat differ (MtsItem recurse collapses) — byte-fixture verified.",
           "guard": "loop items"
         }
       ]
@@ -2637,7 +2637,7 @@
       "calls": [
         {
           "op": "Decode4",
-          "comment": "characterId \u2014 read by CUserPool::OnUserCommonPacket (case 0xBA)"
+          "comment": "characterId — read by CUserPool::OnUserCommonPacket (case 0xBA)"
         },
         {
           "op": "Decode1",
@@ -2653,7 +2653,7 @@
         },
         {
           "op": "Decode1",
-          "comment": "pExceptionObject / result byte \u2014 4th Decode1; NO Decode4(enchantCategory) and NO 2nd result byte. v87 = same 4\u00d7Decode1 as v83. enchantCategory+enchantResultFlag are v95+ only."
+          "comment": "pExceptionObject / result byte — 4th Decode1; NO Decode4(enchantCategory) and NO 2nd result byte. v87 = same 4×Decode1 as v83. enchantCategory+enchantResultFlag are v95+ only."
         }
       ]
     },
@@ -2711,7 +2711,7 @@
     "CNpcPool::OnNpcEnterField": {
       "address": "0x716fd5",
       "direction": "clientbound",
-      "notes": "SPAWN_NPC. v87 CNpcPool::OnNpcEnterField@0x716fd5 reads Decode4(npcId) then (new-entry path) Decode4(templateId), then CNpc::Init@0x70db47 reads Decode2(x@0x70db7b)+Decode2(cy@0x70db89)+Decode1(moveAction@0x70dbb1)+Decode2(fh@0x70dbc1 via GetFoothold)+Decode2(rx0@0x70dbe1)+Decode2(rx1@0x70dbef)+Decode1(enabled@0x70dc84). Atlas Spawn writes Int(id)+Int(template)+Int16(x)+Int16(cy)+Byte(f)+Short(fh)+Int16(rx0)+Int16(rx1)+Byte(1). Field-for-field match \u2014 identical to v83/v95.",
+      "notes": "SPAWN_NPC. v87 CNpcPool::OnNpcEnterField@0x716fd5 reads Decode4(npcId) then (new-entry path) Decode4(templateId), then CNpc::Init@0x70db47 reads Decode2(x@0x70db7b)+Decode2(cy@0x70db89)+Decode1(moveAction@0x70dbb1)+Decode2(fh@0x70dbc1 via GetFoothold)+Decode2(rx0@0x70dbe1)+Decode2(rx1@0x70dbef)+Decode1(enabled@0x70dc84). Atlas Spawn writes Int(id)+Int(template)+Int16(x)+Int16(cy)+Byte(f)+Short(fh)+Int16(rx0)+Int16(rx1)+Byte(1). Field-for-field match — identical to v83/v95.",
       "calls": [
         {
           "op": "Decode4",
@@ -3076,19 +3076,19 @@
         },
         {
           "op": "EncodeStr",
-          "comment": "nexonPassport \u2014 only when gameStartMode==1"
+          "comment": "nexonPassport — only when gameStartMode==1"
         },
         {
           "op": "EncodeBuf",
-          "comment": "machineId (16 bytes) \u2014 only when gameStartMode==1"
+          "comment": "machineId (16 bytes) — only when gameStartMode==1"
         },
         {
           "op": "Encode4",
-          "comment": "gameRoomClient \u2014 only when gameStartMode==1"
+          "comment": "gameRoomClient — only when gameStartMode==1"
         },
         {
           "op": "Encode1",
-          "comment": "gameStartMode (echoed) \u2014 only when gameStartMode==1"
+          "comment": "gameStartMode (echoed) — only when gameStartMode==1"
         }
       ]
     },
@@ -3218,7 +3218,7 @@
         },
         {
           "op": "Encode1",
-          "comment": "m_bRequestBuyOneADay byte (*(this+9928)). PRESENT at v87 (line 149) before name \u2014 NOT v95-only. oneADay gate tightened to GMS>=87 (split from the v95-only SPW gate)."
+          "comment": "m_bRequestBuyOneADay byte (*(this+9928)). PRESENT at v87 (line 149) before name — NOT v95-only. oneADay gate tightened to GMS>=87 (split from the v95-only SPW gate)."
         },
         {
           "op": "EncodeStr",
@@ -3293,7 +3293,7 @@
         },
         {
           "op": "EncodeStr",
-          "comment": "per-entry character name; repeated count times (string[], NOT byte[]) \u2014 same as v83/v95. Unconditional fix holds."
+          "comment": "per-entry character name; repeated count times (string[], NOT byte[]) — same as v83/v95. Unconditional fix holds."
         }
       ]
     },
@@ -3344,7 +3344,7 @@
     "CScriptMan::OnAskText#Reply": {
       "address": "0x791cd0",
       "direction": "serverbound",
-      "notes": "NPC_CONTINUE_CONVERSATION AskText reply, built inside v87 CScriptMan::OnAskText@0x791cd0 after DoModal: COutPacket(0x3F)+Encode1(3 msgType @0x791de7)+Encode1(accepted @0x791df5/0x791e1e); when accepted appends EncodeStr(text @0x791e13). The msgType+accepted bytes belong to atlas ContinueConversation; ContinueConversationText writes ONLY the trailing string. Match \u2014 identical to v83/v95. (AskNumber/AskBoxText follow the same accepted+payload shape with Encode4 / EncodeStr respectively.)",
+      "notes": "NPC_CONTINUE_CONVERSATION AskText reply, built inside v87 CScriptMan::OnAskText@0x791cd0 after DoModal: COutPacket(0x3F)+Encode1(3 msgType @0x791de7)+Encode1(accepted @0x791df5/0x791e1e); when accepted appends EncodeStr(text @0x791e13). The msgType+accepted bytes belong to atlas ContinueConversation; ContinueConversationText writes ONLY the trailing string. Match — identical to v83/v95. (AskNumber/AskBoxText follow the same accepted+payload shape with Encode4 / EncodeStr respectively.)",
       "calls": [
         {
           "op": "EncodeStr",
@@ -3366,7 +3366,7 @@
     "CScriptMan::OnSay#Say": {
       "address": "0x791828",
       "direction": "clientbound",
-      "notes": "Dialog type 0 (Say). v87 CScriptMan::OnSay@0x791828 body (after the param&4 secondary Decode4 at 0x79184a which the wrapper covers): DecodeStr(message @0x791853)+Decode1(bPrev @0x791869)+Decode1(bNext @0x79187b). Atlas SayConversationDetail: AsciiString(Message)+Bool(Previous)+Bool(Next). Match \u2014 identical to v83/v95.",
+      "notes": "Dialog type 0 (Say). v87 CScriptMan::OnSay@0x791828 body (after the param&4 secondary Decode4 at 0x79184a which the wrapper covers): DecodeStr(message @0x791853)+Decode1(bPrev @0x791869)+Decode1(bNext @0x79187b). Atlas SayConversationDetail: AsciiString(Message)+Bool(Previous)+Bool(Next). Match — identical to v83/v95.",
       "calls": [
         {
           "op": "DecodeStr",
@@ -3392,7 +3392,7 @@
         },
         {
           "op": "Decode1",
-          "comment": "FUNCKEY_MAPPED::nType (key type byte; loop 89 entries \u2014 v87=89, same as v83; v95=90)",
+          "comment": "FUNCKEY_MAPPED::nType (key type byte; loop 89 entries — v87=89, same as v83; v95=90)",
           "guard": "loop 89, if resetToDefault==0"
         },
         {
@@ -3408,7 +3408,7 @@
       "calls": [
         {
           "op": "Decode1",
-          "comment": "resultCode (== 27 \u2014 prompts YesNo then throws TerminateException)"
+          "comment": "resultCode (== 27 — prompts YesNo then throws TerminateException)"
         },
         {
           "op": "Decode1",
@@ -3527,7 +3527,7 @@
       "calls": [
         {
           "op": "Decode4",
-          "comment": "dwMobId \u2014 read by CMobPool::OnMobPacket before dispatch"
+          "comment": "dwMobId — read by CMobPool::OnMobPacket before dispatch"
         },
         {
           "op": "Decode2",
@@ -3580,7 +3580,7 @@
         },
         {
           "op": "Encode4",
-          "comment": "itemCRC (CItemInfo::GetItemCRC) \u2014 PRESENT in v83 AND v87 AND v95. Unconditional fix holds."
+          "comment": "itemCRC (CItemInfo::GetItemCRC) — PRESENT in v83 AND v87 AND v95. Unconditional fix holds."
         }
       ]
     },
@@ -3799,11 +3799,11 @@
       "calls": [
         {
           "op": "Decode4",
-          "comment": "cid \u2014 read by CSummonedPool::OnPacket@0x9b35f5 before dispatch (pool is cid-keyed; NO oid on v87)"
+          "comment": "cid — read by CSummonedPool::OnPacket@0x9b35f5 before dispatch (pool is cid-keyed; NO oid on v87)"
         },
         {
           "op": "Decode1",
-          "comment": "animated flag (4=animated leave, 1=immediate; 0/3/2 also handled) \u2014 remove path sub_7F8CB0@0x7f8cc5; atlas writes 4 or 1"
+          "comment": "animated flag (4=animated leave, 1=immediate; 0/3/2 also handled) — remove path sub_7F8CB0@0x7f8cc5; atlas writes 4 or 1"
         }
       ]
     },
@@ -3813,7 +3813,7 @@
       "calls": [
         {
           "op": "Decode4",
-          "comment": "characterId \u2014 read by CUserPool::OnUserRemotePacket"
+          "comment": "characterId — read by CUserPool::OnUserRemotePacket"
         },
         {
           "op": "DecodeBuf",
@@ -3948,7 +3948,7 @@
     "CUserLocal::OnTutorMsg#Message": {
       "address": "0x9e36c9",
       "direction": "clientbound",
-      "notes": "TALK_GUIDE. v87 CUserLocal::OnTutorMsg@0x9e36c9 has the SAME message/hint split as v83/v95: Decode1(bByMessage @0x9e36e6); the FALSE (==0) arm at 0x9e3714 calls DecodeStr(message)+Decode4(width)+Decode4(duration) -> CTutor::OnMessage(ZXString,int,int). Atlas GuideTalkMessage writes the leading bool as false. Phase-2 unconditional fix VERIFIED correct for v87 \u2014 no version gate needed (v83==v87==v95).",
+      "notes": "TALK_GUIDE. v87 CUserLocal::OnTutorMsg@0x9e36c9 has the SAME message/hint split as v83/v95: Decode1(bByMessage @0x9e36e6); the FALSE (==0) arm at 0x9e3714 calls DecodeStr(message)+Decode4(width)+Decode4(duration) -> CTutor::OnMessage(ZXString,int,int). Atlas GuideTalkMessage writes the leading bool as false. Phase-2 unconditional fix VERIFIED correct for v87 — no version gate needed (v83==v87==v95).",
       "dispatch": [
         {
           "case": 0,
@@ -4135,7 +4135,7 @@
     "CNpcPool::OnNpcChangeController": {
       "address": "0x7170c8",
       "direction": "clientbound",
-      "notes": "SPAWN_NPC_REQUEST_CONTROLLER. v87 CNpcPool::OnNpcChangeController@0x7170c8 reads Decode1(bLocal @0x7170da)+Decode4(npcId @0x7170dd); local (bLocal!=0) -> SetLocalNpc@0x716b88 which on the new-controller path Decode4(templateId @0x716be2) then CNpc::Init@0x70db47 reads the full spawn body Decode2(x)+Decode2(cy)+Decode1(moveAction)+Decode2(fh via GetFoothold)+Decode2(rx0)+Decode2(rx1)+Decode1(enabled). Atlas SpawnRequestController writes Byte(localFlag)+Int(npcId)+Int(templateId)+Int16(x)+Int16(cy)+Byte(f)+Short(fh)+Int16(rx0)+Int16(rx1)+Byte(enabled). Field-for-field match \u2014 identical to v95 (the remote arm SetRemoteNpc reads no spawn body; analyzer follows the local arm).",
+      "notes": "SPAWN_NPC_REQUEST_CONTROLLER. v87 CNpcPool::OnNpcChangeController@0x7170c8 reads Decode1(bLocal @0x7170da)+Decode4(npcId @0x7170dd); local (bLocal!=0) -> SetLocalNpc@0x716b88 which on the new-controller path Decode4(templateId @0x716be2) then CNpc::Init@0x70db47 reads the full spawn body Decode2(x)+Decode2(cy)+Decode1(moveAction)+Decode2(fh via GetFoothold)+Decode2(rx0)+Decode2(rx1)+Decode1(enabled). Atlas SpawnRequestController writes Byte(localFlag)+Int(npcId)+Int(templateId)+Int16(x)+Int16(cy)+Byte(f)+Short(fh)+Int16(rx0)+Int16(rx1)+Byte(enabled). Field-for-field match — identical to v95 (the remote arm SetRemoteNpc reads no spawn body; analyzer follows the local arm).",
       "calls": [
         {
           "op": "Decode1",
@@ -4204,7 +4204,7 @@
       "calls": [
         {
           "op": "Decode4",
-          "comment": "dwMobId \u2014 read by CMobPool::OnMobPacket before dispatch"
+          "comment": "dwMobId — read by CMobPool::OnMobPacket before dispatch"
         },
         {
           "op": "Decode1",
@@ -4425,11 +4425,11 @@
         },
         {
           "op": "Decode4",
-          "comment": "originatorJobId \u2014 present in v87"
+          "comment": "originatorJobId — present in v87"
         },
         {
           "op": "Decode4",
-          "comment": "originatorLevel \u2014 present in v87"
+          "comment": "originatorLevel — present in v87"
         },
         {
           "op": "Decode1",
@@ -4564,7 +4564,7 @@
     "CScriptMan::OnAskYesNo#AskYesNo": {
       "address": "0x791b70",
       "direction": "clientbound",
-      "notes": "Dialog type 2 (AskYesNo; case 0xD AskYesNoQuest shares the same handler with a7=1). v87 CScriptMan::OnAskYesNo@0x791b70: DecodeStr(message @0x791b89) only. Atlas AskYesNoConversationDetail: AsciiString(Message). Match \u2014 identical to v83/v95.",
+      "notes": "Dialog type 2 (AskYesNo; case 0xD AskYesNoQuest shares the same handler with a7=1). v87 CScriptMan::OnAskYesNo@0x791b70: DecodeStr(message @0x791b89) only. Atlas AskYesNoConversationDetail: AsciiString(Message). Match — identical to v83/v95.",
       "calls": [
         {
           "op": "DecodeStr",
@@ -4796,12 +4796,12 @@
         },
         {
           "op": "Decode4",
-          "comment": "pickupCharId \u2014 gated destroyType in {2,3,5}",
+          "comment": "pickupCharId — gated destroyType in {2,3,5}",
           "guard": "destroyType in (2,3,5)"
         },
         {
           "op": "Decode2",
-          "comment": "tLeaveDelay \u2014 gated destroyType == 4",
+          "comment": "tLeaveDelay — gated destroyType == 4",
           "guard": "destroyType == 4"
         }
       ]
@@ -4935,7 +4935,7 @@
         },
         {
           "op": "DecodeBuf",
-          "comment": "ITCITEM::Decode entry (repeated per loop count): opaque GW_ItemSlotBase blob (Decode1 type + RawDecode; model.Asset recurse) then Decode4 nITCSN/nPrice/nContractFee, DecodeStr txid/rollback, DecodeBuffer(8) ftExpired, DecodeStr user/game/comment, Decode4 nBidCount/Range/Price/Min/Max/Unit, Decode2 nProcessStatus. Whole entry opaque to the flat differ (MtsItem recurse collapses) \u2014 byte-fixture verified.",
+          "comment": "ITCITEM::Decode entry (repeated per loop count): opaque GW_ItemSlotBase blob (Decode1 type + RawDecode; model.Asset recurse) then Decode4 nITCSN/nPrice/nContractFee, DecodeStr txid/rollback, DecodeBuffer(8) ftExpired, DecodeStr user/game/comment, Decode4 nBidCount/Range/Price/Min/Max/Unit, Decode2 nProcessStatus. Whole entry opaque to the flat differ (MtsItem recurse collapses) — byte-fixture verified.",
           "guard": "loop items"
         }
       ]
@@ -4958,7 +4958,7 @@
         },
         {
           "op": "Decode4",
-          "comment": "meso (m_nMoney; ONLY if tab-flag bit 1 set \u2014 runtime callers never set it)",
+          "comment": "meso (m_nMoney; ONLY if tab-flag bit 1 set — runtime callers never set it)",
           "guard": "flag & 2"
         },
         {
@@ -4987,7 +4987,7 @@
     "CUserLocal::HandleLButtonClk": {
       "address": "0x9c9270",
       "direction": "serverbound",
-      "_note": "Address approximate \u2014 empty payload, same as v95.",
+      "_note": "Address approximate — empty payload, same as v95.",
       "calls": []
     },
     "CField::OnWhisper#FindResultMap": {
@@ -5026,7 +5026,7 @@
     "CScriptMan::OnAskAvatar#AskAvatar": {
       "address": "0x792330",
       "direction": "clientbound",
-      "notes": "Dialog type 8 (AskAvatar). v87 CScriptMan::OnAskAvatar@0x792330: DecodeStr(message @0x792351)+Decode1(count @0x792365)+loop count x Decode4(avatar look @0x792381). Atlas AskAvatarConversationDetail: AsciiString(Message)+Byte(len)+loop Int. Count is a single byte (Decode1). Match \u2014 identical to v83/v95. Analyzer flattens the loop.",
+      "notes": "Dialog type 8 (AskAvatar). v87 CScriptMan::OnAskAvatar@0x792330: DecodeStr(message @0x792351)+Decode1(count @0x792365)+loop count x Decode4(avatar look @0x792381). Atlas AskAvatarConversationDetail: AsciiString(Message)+Byte(len)+loop Int. Count is a single byte (Decode1). Match — identical to v83/v95. Analyzer flattens the loop.",
       "dispatch": [
         {
           "case": 0,
@@ -5104,7 +5104,7 @@
     "CScriptMan::OnAskPetAll#AskPetAll": {
       "address": "0x7928f1",
       "direction": "clientbound",
-      "notes": "Dialog type 0xB (AskPetAll). v87 CScriptMan::OnAskPetAll@0x7928f1: DecodeStr(message @0x79290b)+Decode1(pet count @0x792922)+Decode1(bExceptionExist @0x792931)+loop count x (DecodeBuffer(8) cashItemSN @0x792978 + Decode1 @0x792980). Atlas AskPetAllConversationDetail: AsciiString(Message)+Byte(len)+Byte(exception)+loop (Long(SN)+Byte). Match \u2014 identical to v83/v95. Analyzer flattens the loop.",
+      "notes": "Dialog type 0xB (AskPetAll). v87 CScriptMan::OnAskPetAll@0x7928f1: DecodeStr(message @0x79290b)+Decode1(pet count @0x792922)+Decode1(bExceptionExist @0x792931)+loop count x (DecodeBuffer(8) cashItemSN @0x792978 + Decode1 @0x792980). Atlas AskPetAllConversationDetail: AsciiString(Message)+Byte(len)+Byte(exception)+loop (Long(SN)+Byte). Match — identical to v83/v95. Analyzer flattens the loop.",
       "dispatch": [
         {
           "case": 0,
@@ -5284,22 +5284,22 @@
     "CSummonedPool::OnSkill": {
       "address": "0x7f963b",
       "direction": "clientbound",
-      "note": "SUMMON_SKILL (op 193/0xC1). CSummonedPool::OnPacket@0x9b35bf reads Decode4(cid)@0x9b35f5, op 0xC1 -> OnHit@0x7f963b (IDA's labeling; BEHAVIOR is summon-skill) which reads a single Decode1@0x7f968a, masks &0x7F @0x7f9691, and passes it to SetAttackAction@0x7f9695 to replay the summon's skill animation. Just ONE byte: NO summonSkillId int, NO oid. Behavior matches v83 (the SKILL behavior lives at the lower-opcode handler; OnHit/OnSkill names are swapped relative to behavior \u2014 summon-wire-truth.md). Atlas SummonSkill (writer 'SummonSkill', gated oid >=95) writes cid + byte(newStance) for v87. v87 reference (IDB asm-confirmed). NOTE: candidatesFromFName maps CSummonedPool::OnSkill -> SummonSkill writer; the SKILL behavior lives at the OnHit address (0x7f963b) on v87 (opcode-driven, not name-driven).",
+      "note": "SUMMON_SKILL (op 193/0xC1). CSummonedPool::OnPacket@0x9b35bf reads Decode4(cid)@0x9b35f5, op 0xC1 -> OnHit@0x7f963b (IDA's labeling; BEHAVIOR is summon-skill) which reads a single Decode1@0x7f968a, masks &0x7F @0x7f9691, and passes it to SetAttackAction@0x7f9695 to replay the summon's skill animation. Just ONE byte: NO summonSkillId int, NO oid. Behavior matches v83 (the SKILL behavior lives at the lower-opcode handler; OnHit/OnSkill names are swapped relative to behavior — summon-wire-truth.md). Atlas SummonSkill (writer 'SummonSkill', gated oid >=95) writes cid + byte(newStance) for v87. v87 reference (IDB asm-confirmed). NOTE: candidatesFromFName maps CSummonedPool::OnSkill -> SummonSkill writer; the SKILL behavior lives at the OnHit address (0x7f963b) on v87 (opcode-driven, not name-driven).",
       "calls": [
         {
           "op": "Decode4",
-          "comment": "cid \u2014 read by CSummonedPool::OnPacket@0x9b35f5 before dispatch (pool is cid-keyed; NO oid on v87)"
+          "comment": "cid — read by CSummonedPool::OnPacket@0x9b35f5 before dispatch (pool is cid-keyed; NO oid on v87)"
         },
         {
           "op": "Decode1",
-          "comment": "action/newStance (v & 0x7F -> SetAttackAction@0x7f9695) \u2014 OnHit@0x7f968a (SKILL behavior). NO summonSkillId int on the wire."
+          "comment": "action/newStance (v & 0x7F -> SetAttackAction@0x7f9695) — OnHit@0x7f968a (SKILL behavior). NO summonSkillId int on the wire."
         }
       ]
     },
     "CWvsContext::OnFriendResult": {
       "address": "0xad7ae5",
       "direction": "clientbound",
-      "note": "Dispatcher \u2014 reads Decode1(mode) then switches. Wire shape identical to v83/v95 for all sub-modes."
+      "note": "Dispatcher — reads Decode1(mode) then switches. Wire shape identical to v83/v95 for all sub-modes."
     },
     "CField::OnSummonItemInavailable": {
       "address": "0x55a7e8",
@@ -5532,11 +5532,11 @@
       "calls": [
         {
           "op": "Decode4",
-          "comment": "characterId \u2014 read by CUserPool::OnUserRemotePacket dispatcher"
+          "comment": "characterId — read by CUserPool::OnUserRemotePacket dispatcher"
         },
         {
           "op": "Decode4",
-          "comment": "nEmotion (expression/emote ID) \u2014 only field; no duration, no byItemOption in v87"
+          "comment": "nEmotion (expression/emote ID) — only field; no duration, no byItemOption in v87"
         }
       ]
     },
@@ -5590,15 +5590,15 @@
         },
         {
           "op": "DecodeStr",
-          "comment": "minorVersion string (len-prefixed; atoi\u2192namelen)"
+          "comment": "minorVersion string (len-prefixed; atoi→namelen)"
         },
         {
           "op": "Decode4",
-          "comment": "recvIv (\u2192 client m_uSeqSnd) 4 bytes"
+          "comment": "recvIv (→ client m_uSeqSnd) 4 bytes"
         },
         {
           "op": "Decode4",
-          "comment": "sendIv (\u2192 client m_uSeqRcv) 4 bytes"
+          "comment": "sendIv (→ client m_uSeqRcv) 4 bytes"
         },
         {
           "op": "Decode1",
@@ -5612,7 +5612,7 @@
       "calls": [
         {
           "op": "Encode4",
-          "comment": "dr0 (~drInfo[0]) \u2014 present in v87, same as v95",
+          "comment": "dr0 (~drInfo[0]) — present in v87, same as v95",
           "guard": "GMS>83||JMS"
         },
         {
@@ -5636,7 +5636,7 @@
         },
         {
           "op": "Encode4",
-          "comment": "crc (field CRC \u2014 get_field()+2084)"
+          "comment": "crc (field CRC — get_field()+2084)"
         },
         {
           "op": "Encode4",
@@ -5650,7 +5650,7 @@
         },
         {
           "op": "EncodeBuf",
-          "comment": "movement: CMovePath::Flush \u2014 tool cannot linearize loop"
+          "comment": "movement: CMovePath::Flush — tool cannot linearize loop"
         }
       ]
     },
@@ -5778,7 +5778,7 @@
         },
         {
           "op": "Decode1",
-          "comment": "bSecondaryStatChangedPoint flag (@0xab6f0b; mask 0x180008; ONE trailing byte only \u2014 v87 has no battle-recovery-info second byte)"
+          "comment": "bSecondaryStatChangedPoint flag (@0xab6f0b; mask 0x180008; ONE trailing byte only — v87 has no battle-recovery-info second byte)"
         }
       ]
     },
@@ -5836,7 +5836,7 @@
         },
         {
           "op": "DecodeBuf",
-          "comment": "PARTYDATA (298 bytes in v87 \u2014 same as v83; v95+ is 378)"
+          "comment": "PARTYDATA (298 bytes in v87 — same as v83; v95+ is 378)"
         }
       ]
     },
@@ -5998,7 +5998,7 @@
     "CWvsContext::OnPartyResult#Left": {
       "address": "0xad697a",
       "direction": "clientbound",
-      "note": "mode=12 (LEFT \u2014 v=12-4=8 path). Reads leaderId+PARTYDATA+discharge flag. PARTYDATA=298 bytes.",
+      "note": "mode=12 (LEFT — v=12-4=8 path). Reads leaderId+PARTYDATA+discharge flag. PARTYDATA=298 bytes.",
       "calls": [
         {
           "op": "Decode1",
@@ -6051,7 +6051,7 @@
     "CScriptMan::OnAskMenu#AskMenu": {
       "address": "0x7921a8",
       "direction": "clientbound",
-      "notes": "Dialog type 5 (AskMenu). v87 CScriptMan::OnAskMenu@0x7921a8: DecodeStr(message @0x7921c1) only (the menu options are embedded in the message string). Atlas AskMenuConversationDetail: AsciiString(Message). Match \u2014 identical to v83/v95.",
+      "notes": "Dialog type 5 (AskMenu). v87 CScriptMan::OnAskMenu@0x7921a8: DecodeStr(message @0x7921c1) only (the menu options are embedded in the message string). Atlas AskMenuConversationDetail: AsciiString(Message). Match — identical to v83/v95.",
       "calls": [
         {
           "op": "DecodeStr",
@@ -6065,7 +6065,7 @@
       "calls": [
         {
           "op": "Decode4",
-          "comment": "dwCharacterID \u2014 user leaving the field"
+          "comment": "dwCharacterID — user leaving the field"
         }
       ]
     },
@@ -6237,7 +6237,7 @@
         },
         {
           "op": "Encode2",
-          "comment": "pet pos.x \u2014 gated dwID % 13 == 0",
+          "comment": "pet pos.x — gated dwID % 13 == 0",
           "guard": "dwID % 13 == 0"
         },
         {
@@ -6282,7 +6282,7 @@
         },
         {
           "op": "DecodeBuf",
-          "comment": "ipv4 (4 octets \u2014 stored as Decode4 in client; same wire bytes)"
+          "comment": "ipv4 (4 octets — stored as Decode4 in client; same wire bytes)"
         },
         {
           "op": "Decode2",
@@ -6298,7 +6298,7 @@
         },
         {
           "op": "Decode4",
-          "comment": "ulPremiumArgument \u2014 present in v87 at LABEL_48 (same as v95)"
+          "comment": "ulPremiumArgument — present in v87 at LABEL_48 (same as v95)"
         }
       ]
     },
@@ -6362,7 +6362,7 @@
         },
         {
           "op": "Decode4",
-          "comment": "monster book: CMonsterBook data 1 (via sub_6C10A8) \u2014 present in v87; absent in v95 (GMS>=87 guard)"
+          "comment": "monster book: CMonsterBook data 1 (via sub_6C10A8) — present in v87; absent in v95 (GMS>=87 guard)"
         },
         {
           "op": "Decode4",
@@ -6413,7 +6413,7 @@
         },
         {
           "op": "Encode4",
-          "comment": "itemCRC (CItemInfo::GetItemCRC) \u2014 PRESENT in v83 AND v87 AND v95"
+          "comment": "itemCRC (CItemInfo::GetItemCRC) — PRESENT in v83 AND v87 AND v95"
         }
       ]
     },
@@ -6487,7 +6487,7 @@
         },
         {
           "op": "DecodeBuffer",
-          "comment": "CMovePath::OnMovePacket \u2014 opaque movement path block"
+          "comment": "CMovePath::OnMovePacket — opaque movement path block"
         }
       ]
     },
@@ -6502,11 +6502,11 @@
       "calls": [
         {
           "op": "Decode4",
-          "comment": "characterId \u2014 read by CUserPool::OnUserRemotePacket before dispatch"
+          "comment": "characterId — read by CUserPool::OnUserRemotePacket before dispatch"
         },
         {
           "op": "Decode1",
-          "comment": "slot \u2014 read by CUser::OnPetPacket before dispatch"
+          "comment": "slot — read by CUser::OnPetPacket before dispatch"
         },
         {
           "op": "DecodeBuf",
@@ -6529,7 +6529,7 @@
       "calls": [
         {
           "op": "Decode1",
-          "comment": "mode (cases 9/10/11/15 \u2014 client shows fixed string-pool notice, no further reads)"
+          "comment": "mode (cases 9/10/11/15 — client shows fixed string-pool notice, no further reads)"
         }
       ]
     },
@@ -6636,138 +6636,138 @@
       "calls": [
         {
           "op": "Encode4",
-          "comment": "summonId (v86[43] = owner cid on v87) \u2014 TryDoingAttackManual@0x7f7c7f"
+          "comment": "summonId (v86[43] = owner cid on v87) — TryDoingAttackManual@0x7f7c7f"
         },
         {
           "op": "Encode4",
-          "comment": "~drInfo[0] (anti-hack obfuscated) \u2014 @0x7f7c93"
+          "comment": "~drInfo[0] (anti-hack obfuscated) — @0x7f7c93"
         },
         {
           "op": "Encode4",
-          "comment": "~drInfo[1] (anti-hack obfuscated) \u2014 @0x7f7ca7"
+          "comment": "~drInfo[1] (anti-hack obfuscated) — @0x7f7ca7"
         },
         {
           "op": "Encode4",
-          "comment": "updateTime \u2014 @0x7f7cb8"
+          "comment": "updateTime — @0x7f7cb8"
         },
         {
           "op": "Encode4",
-          "comment": "~drInfo[2] (anti-hack obfuscated) \u2014 @0x7f7ccc"
+          "comment": "~drInfo[2] (anti-hack obfuscated) — @0x7f7ccc"
         },
         {
           "op": "Encode4",
-          "comment": "~drInfo[3] (anti-hack obfuscated) \u2014 @0x7f7ce0"
+          "comment": "~drInfo[3] (anti-hack obfuscated) — @0x7f7ce0"
         },
         {
           "op": "Encode1",
-          "comment": "action byte (action&0x7F | bLeft<<7) \u2014 @0x7f7d00"
+          "comment": "action byte (action&0x7F | bLeft<<7) — @0x7f7d00"
         },
         {
           "op": "Encode4",
-          "comment": "dwKey (crc rand key) \u2014 @0x7f7d5c"
+          "comment": "dwKey (crc rand key) — @0x7f7d5c"
         },
         {
           "op": "Encode4",
-          "comment": "crc32 \u2014 @0x7f7d83"
+          "comment": "crc32 — @0x7f7d83"
         },
         {
           "op": "Encode1",
-          "comment": "nMobCount \u2014 @0x7f7d94"
+          "comment": "nMobCount — @0x7f7d94"
         },
         {
           "op": "Encode2",
-          "comment": "userX \u2014 @0x7f7ddb"
+          "comment": "userX — @0x7f7ddb"
         },
         {
           "op": "Encode2",
-          "comment": "userY \u2014 @0x7f7e11"
+          "comment": "userY — @0x7f7e11"
         },
         {
           "op": "Encode2",
-          "comment": "summonX \u2014 @0x7f7e3c"
+          "comment": "summonX — @0x7f7e3c"
         },
         {
           "op": "Encode2",
-          "comment": "summonY \u2014 @0x7f7e68 (NO repeatSkillPoint follows on v87 \u2014 v95-only)"
+          "comment": "summonY — @0x7f7e68 (NO repeatSkillPoint follows on v87 — v95-only)"
         },
         {
           "op": "Encode4",
-          "comment": "mob[i].mobId \u2014 @0x7f7eed, loop nMobCount times",
+          "comment": "mob[i].mobId — @0x7f7eed, loop nMobCount times",
           "guard": "loop mobs"
         },
         {
           "op": "Encode4",
-          "comment": "mob[i].templateId \u2014 @0x7f7f70",
-          "guard": "loop mobs"
-        },
-        {
-          "op": "Encode1",
-          "comment": "mob[i].hitAction \u2014 @0x7f7f87",
+          "comment": "mob[i].templateId — @0x7f7f70",
           "guard": "loop mobs"
         },
         {
           "op": "Encode1",
-          "comment": "mob[i].foreAction|isLeft<<7 \u2014 @0x7f7fb1",
+          "comment": "mob[i].hitAction — @0x7f7f87",
           "guard": "loop mobs"
         },
         {
           "op": "Encode1",
-          "comment": "mob[i].frameIdx \u2014 @0x7f7fc8",
+          "comment": "mob[i].foreAction|isLeft<<7 — @0x7f7fb1",
           "guard": "loop mobs"
         },
         {
           "op": "Encode1",
-          "comment": "mob[i].calcDamageStatIdx \u2014 @0x7f7fed",
+          "comment": "mob[i].frameIdx — @0x7f7fc8",
+          "guard": "loop mobs"
+        },
+        {
+          "op": "Encode1",
+          "comment": "mob[i].calcDamageStatIdx — @0x7f7fed",
           "guard": "loop mobs"
         },
         {
           "op": "Encode2",
-          "comment": "mob[i].curX \u2014 @0x7f801c",
+          "comment": "mob[i].curX — @0x7f801c",
           "guard": "loop mobs"
         },
         {
           "op": "Encode2",
-          "comment": "mob[i].curY \u2014 @0x7f804c",
+          "comment": "mob[i].curY — @0x7f804c",
           "guard": "loop mobs"
         },
         {
           "op": "Encode2",
-          "comment": "mob[i].hitX \u2014 @0x7f807b",
+          "comment": "mob[i].hitX — @0x7f807b",
           "guard": "loop mobs"
         },
         {
           "op": "Encode2",
-          "comment": "mob[i].hitY \u2014 @0x7f80ab",
+          "comment": "mob[i].hitY — @0x7f80ab",
           "guard": "loop mobs"
         },
         {
           "op": "Encode2",
-          "comment": "mob[i].tDelay \u2014 @0x7f80c3",
+          "comment": "mob[i].tDelay — @0x7f80c3",
           "guard": "loop mobs"
         },
         {
           "op": "Encode4",
-          "comment": "mob[i].damage \u2014 @0x7f80d7",
+          "comment": "mob[i].damage — @0x7f80d7",
           "guard": "loop mobs"
         },
         {
           "op": "Encode4",
-          "comment": "skillCRC \u2014 @0x7f811c"
+          "comment": "skillCRC — @0x7f811c"
         }
       ]
     },
     "CUIMessenger::OnCreate": {
       "address": "0x8b62ed",
       "direction": "serverbound",
-      "note": "client accepts a messenger invite; COutPacket(0x80)+Encode1(0,ENTER)+Encode4(messengerId) (verified live v87 @0x8b62ed). Corrected: the prior baseline mislabeled this SERVERBOUND send as clientbound with a single Decode4 \u2014 it is the ENTER send, and the leading op byte is Atlas's messenger Operation wrapper (composed on the Atlas side by the audit).",
+      "note": "client accepts a messenger invite; COutPacket(0x80)+Encode1(0,ENTER)+Encode4(messengerId) (verified live v87 @0x8b62ed). Corrected: the prior baseline mislabeled this SERVERBOUND send as clientbound with a single Decode4 — it is the ENTER send, and the leading op byte is Atlas's messenger Operation wrapper (composed on the Atlas side by the audit).",
       "calls": [
         {
           "op": "Encode1",
-          "comment": "sub-op = 0 (ENTER) \u2014 messenger Operation mode byte"
+          "comment": "sub-op = 0 (ENTER) — messenger Operation mode byte"
         },
         {
           "op": "Encode4",
-          "comment": "messengerId \u2014 room id"
+          "comment": "messengerId — room id"
         }
       ]
     },
@@ -6953,7 +6953,7 @@
       "calls": [
         {
           "op": "Encode4",
-          "comment": "nEmotion (emotion/expression ID; validated <= 0x16 in v87) \u2014 only field. duration and byItemOption absent in v87; added in v95. Gate GMS>83||JMS is wrong for v87."
+          "comment": "nEmotion (emotion/expression ID; validated <= 0x16 in v87) — only field. duration and byItemOption absent in v87; added in v95. Gate GMS>83||JMS is wrong for v87."
         }
       ]
     },
@@ -6980,7 +6980,7 @@
     "CWvsContext::OnPartyResult#Disband": {
       "address": "0xad697a",
       "direction": "clientbound",
-      "note": "mode=14 (DISBAND \u2014 v=14-4=10 path). Reads leaderId+PARTYDATA. PARTYDATA=298 bytes.",
+      "note": "mode=14 (DISBAND — v=14-4=10 path). Reads leaderId+PARTYDATA. PARTYDATA=298 bytes.",
       "calls": [
         {
           "op": "Decode1",
@@ -7029,33 +7029,33 @@
       "calls": [
         {
           "op": "Decode4",
-          "comment": "cid \u2014 read by CSummonedPool::OnPacket@0x9b35f5 before dispatch (pool is cid-keyed; NO oid on v87)"
+          "comment": "cid — read by CSummonedPool::OnPacket@0x9b35f5 before dispatch (pool is cid-keyed; NO oid on v87)"
         },
         {
           "op": "Decode1",
-          "comment": "charLevel (m_nCharLevel -> [edi+0B8h]) \u2014 CSummonedPool::OnAttack@0x7f90d2; atlas writes fixed 0"
+          "comment": "charLevel (m_nCharLevel -> [edi+0B8h]) — CSummonedPool::OnAttack@0x7f90d2; atlas writes fixed 0"
         },
         {
           "op": "Decode1",
-          "comment": "action byte (low7=action @0x7f90f6, bit7=bLeft @0x7f90ea) \u2014 OnAttack@0x7f90e0; atlas 'direction'"
+          "comment": "action byte (low7=action @0x7f90f6, bit7=bLeft @0x7f90ea) — OnAttack@0x7f90e0; atlas 'direction'"
         },
         {
           "op": "Decode1",
-          "comment": "count (mob count) \u2014 OnAttack@0x7f90fc"
+          "comment": "count (mob count) — OnAttack@0x7f90fc"
         },
         {
           "op": "Decode4",
-          "comment": "target[i].monsterOid \u2014 OnAttack@0x7f9130, loop count times",
+          "comment": "target[i].monsterOid — OnAttack@0x7f9130, loop count times",
           "guard": "loop targets"
         },
         {
           "op": "Decode1",
-          "comment": "target[i].byte (only when monsterOid!=0) \u2014 OnAttack@0x7f913e; atlas writes fixed 6",
+          "comment": "target[i].byte (only when monsterOid!=0) — OnAttack@0x7f913e; atlas writes fixed 6",
           "guard": "loop targets (only when monsterOid!=0)"
         },
         {
           "op": "Decode4",
-          "comment": "target[i].damage (only when monsterOid!=0) \u2014 OnAttack@0x7f914c",
+          "comment": "target[i].damage (only when monsterOid!=0) — OnAttack@0x7f914c",
           "guard": "loop targets (only when monsterOid!=0)"
         }
       ]
@@ -7173,7 +7173,7 @@
         },
         {
           "op": "Decode1",
-          "comment": "admin byte (v87 still 2\u00d7Decode1; v95 widened to Decode2)"
+          "comment": "admin byte (v87 still 2×Decode1; v95 widened to Decode2)"
         },
         {
           "op": "Decode1",
@@ -7213,7 +7213,7 @@
         },
         {
           "op": "Decode8",
-          "comment": "clientKey (DecodeBuffer 8 bytes \u2014 identical to v83/v95)"
+          "comment": "clientKey (DecodeBuffer 8 bytes — identical to v83/v95)"
         }
       ]
     },
@@ -7296,11 +7296,11 @@
       "calls": [
         {
           "op": "Encode4",
-          "comment": "summonId (this[188] = owner cid on v87) \u2014 CVecCtrlSummoned::EndUpdateActive@0xa5922e"
+          "comment": "summonId (this[188] = owner cid on v87) — CVecCtrlSummoned::EndUpdateActive@0xa5922e"
         },
         {
           "op": "EncodeBuf",
-          "comment": "movement blob \u2014 CMovePath::Flush@0x6c74a1 (opaque; head is Encode2 startX, Encode2 startY, Encode1 count, count moves, keypad run, bounding box). Atlas rebroadcasts the whole post-identity remainder byte-faithfully and extracts startX/startY from the first 4 bytes for position seeding."
+          "comment": "movement blob — CMovePath::Flush@0x6c74a1 (opaque; head is Encode2 startX, Encode2 startY, Encode1 count, count moves, keypad run, bounding box). Atlas rebroadcasts the whole post-identity remainder byte-faithfully and extracts startX/startY from the first 4 bytes for position seeding."
         }
       ]
     },
@@ -7358,7 +7358,7 @@
     "CMobPool::OnMobChangeController": {
       "address": "0x6b52c3",
       "direction": "clientbound",
-      "notes": "v87 production shape \u2014 dev seed block excluded (same as v95). Matches atlas's encoder.",
+      "notes": "v87 production shape — dev seed block excluded (same as v95). Matches atlas's encoder.",
       "calls": [
         {
           "op": "Decode1",
@@ -7370,12 +7370,12 @@
         },
         {
           "op": "Decode1",
-          "comment": "aggro byte \u2014 atlas hardcodes 5",
+          "comment": "aggro byte — atlas hardcodes 5",
           "guard": "controlMode != 0"
         },
         {
           "op": "Decode4",
-          "comment": "dwTemplateID via SetLocalMob \u2014 atlas monsterId",
+          "comment": "dwTemplateID via SetLocalMob — atlas monsterId",
           "guard": "controlMode != 0"
         },
         {
@@ -7391,7 +7391,7 @@
       "calls": [
         {
           "op": "Decode1",
-          "comment": "mode (switch dispatch; cases 1-4 = error codes \u2014 no additional fields)"
+          "comment": "mode (switch dispatch; cases 1-4 = error codes — no additional fields)"
         }
       ]
     },
@@ -7468,7 +7468,7 @@
     "CUserLocal::TalkToNpc": {
       "address": "0x9e3066",
       "direction": "serverbound",
-      "notes": "NPC_START_CONVERSATION. v87 CUserLocal::TalkToNpc@0x9e3066 (non-quest path): COutPacket(0x3D)+Encode4(npcObjectId @0x9e30bc)+Encode2(x @0x9e30d7)+Encode2(y @0x9e30ef). Atlas StartConversation writes Int(oId)+Int16(x)+Int16(y). Match \u2014 identical to v83/v95. (Quest path branches to CNpc::ShowQuestList, no packet.)",
+      "notes": "NPC_START_CONVERSATION. v87 CUserLocal::TalkToNpc@0x9e3066 (non-quest path): COutPacket(0x3D)+Encode4(npcObjectId @0x9e30bc)+Encode2(x @0x9e30d7)+Encode2(y @0x9e30ef). Atlas StartConversation writes Int(oId)+Int16(x)+Int16(y). Match — identical to v83/v95. (Quest path branches to CNpc::ShowQuestList, no packet.)",
       "calls": [
         {
           "op": "Encode4",
@@ -7500,7 +7500,7 @@
         },
         {
           "op": "DecodeBuf",
-          "comment": "ITCITEM::Decode entry (repeated per loop count): opaque GW_ItemSlotBase blob (Decode1 type + RawDecode; model.Asset recurse) then Decode4 nITCSN/nPrice/nContractFee, DecodeStr txid/rollback, DecodeBuffer(8) ftExpired, DecodeStr user/game/comment, Decode4 nBidCount/Range/Price/Min/Max/Unit, Decode2 nProcessStatus. Whole entry opaque to the flat differ (MtsItem recurse collapses) \u2014 byte-fixture verified.",
+          "comment": "ITCITEM::Decode entry (repeated per loop count): opaque GW_ItemSlotBase blob (Decode1 type + RawDecode; model.Asset recurse) then Decode4 nITCSN/nPrice/nContractFee, DecodeStr txid/rollback, DecodeBuffer(8) ftExpired, DecodeStr user/game/comment, Decode4 nBidCount/Range/Price/Min/Max/Unit, Decode2 nProcessStatus. Whole entry opaque to the flat differ (MtsItem recurse collapses) — byte-fixture verified.",
           "guard": "loop items"
         },
         {
@@ -7528,7 +7528,7 @@
     "CPet::ParseCommand": {
       "address": "0x748a35",
       "direction": "serverbound",
-      "notes": "COutPacket(0xB5)+EncodeBuffer(petLockerSN,8)+Encode1(commandWithName)+Encode1(command) (verified live v87 @0x748a35). Corrected: the prior baseline traced a phantom 4th Encode1 'success flag' that the client never sends \u2014 the real send is exactly 3 fields, matching Atlas command.go [WriteLong, WriteBool, WriteByte].",
+      "notes": "COutPacket(0xB5)+EncodeBuffer(petLockerSN,8)+Encode1(commandWithName)+Encode1(command) (verified live v87 @0x748a35). Corrected: the prior baseline traced a phantom 4th Encode1 'success flag' that the client never sends — the real send is exactly 3 fields, matching Atlas command.go [WriteLong, WriteBool, WriteByte].",
       "calls": [
         {
           "op": "EncodeBuf",
@@ -7575,7 +7575,7 @@
     "CNpc::OnMove": {
       "address": "0x7101b0",
       "direction": "clientbound",
-      "notes": "NPC_ACTION. v87 dispatched via CNpcPool::OnNpcPacket@0x716f20 which Decode4(npcId) BEFORE calling CNpc::OnMove@0x7101b0 (case 0x115; opcode shifted from v83 0x104 / handled at CSV/template layer). OnMove reads Decode1(action @0x7101c5)+Decode1(chatIdx @0x7101d3), then (template bMove gated) a CMovePath::OnMovePacket movement body. Movement presence is server-controlled in atlas (hasMovement) \u2014 conditional movement is a tool limitation. Export models the dispatcher-prefix int + the two action bytes. Matches v83/v95.",
+      "notes": "NPC_ACTION. v87 dispatched via CNpcPool::OnNpcPacket@0x716f20 which Decode4(npcId) BEFORE calling CNpc::OnMove@0x7101b0 (case 0x115; opcode shifted from v83 0x104 / handled at CSV/template layer). OnMove reads Decode1(action @0x7101c5)+Decode1(chatIdx @0x7101d3), then (template bMove gated) a CMovePath::OnMovePacket movement body. Movement presence is server-controlled in atlas (hasMovement) — conditional movement is a tool limitation. Export models the dispatcher-prefix int + the two action bytes. Matches v83/v95.",
       "calls": [
         {
           "op": "Decode4",
@@ -7601,7 +7601,7 @@
         },
         {
           "op": "DecodeBuffer",
-          "comment": "SecondaryStat::DecodeForRemote \u2014 opaque remote stat block"
+          "comment": "SecondaryStat::DecodeForRemote — opaque remote stat block"
         },
         {
           "op": "Decode2",
@@ -7676,7 +7676,7 @@
     "CField::OnClock": {
       "address": "0x55DA5F",
       "direction": "clientbound",
-      "notes": "CLOCK (GMS v87). v87 has NO standalone CField::OnClock symbol \u2014 the clock-set handler is inlined as sub_55DA5F@0x55DA5F (3x CClock::SetTimer callers). Dispatches on a leading clockType byte (Decode1 v4 @0x55da76) to 5 arms: case 0 EventClock (Decode4 seconds @0x55dd6d), case 1 TownClock (3x Decode1 hour/min/sec @0x55dd40-4d), case 2 TimerClock (Decode4 seconds @0x55dd0f), case 3 EventTimerClock (Decode1 enable @0x55dac2 + Decode4 seconds @0x55dae6), case 0x64 CakePieEventTimerClock (Decode1 enable + Decode1 flag2 v9 @0x55dadd + Decode4 seconds @0x55dae6). Atlas Clock (BAD-FORM single struct) Encode switches on the same clockType. v87 ALL 5 ARMS byte-identical to v95 (CField::OnClock@0x531510). The flat analyzer cannot model the mutually-exclusive arms; export lists the EventTimerClock(case 3) shape as a representative \u2014 verdict is a TOOL LIMITATION (all 5 modes manually verified). See FieldClock.md.",
+      "notes": "CLOCK (GMS v87). v87 has NO standalone CField::OnClock symbol — the clock-set handler is inlined as sub_55DA5F@0x55DA5F (3x CClock::SetTimer callers). Dispatches on a leading clockType byte (Decode1 v4 @0x55da76) to 5 arms: case 0 EventClock (Decode4 seconds @0x55dd6d), case 1 TownClock (3x Decode1 hour/min/sec @0x55dd40-4d), case 2 TimerClock (Decode4 seconds @0x55dd0f), case 3 EventTimerClock (Decode1 enable @0x55dac2 + Decode4 seconds @0x55dae6), case 0x64 CakePieEventTimerClock (Decode1 enable + Decode1 flag2 v9 @0x55dadd + Decode4 seconds @0x55dae6). Atlas Clock (BAD-FORM single struct) Encode switches on the same clockType. v87 ALL 5 ARMS byte-identical to v95 (CField::OnClock@0x531510). The flat analyzer cannot model the mutually-exclusive arms; export lists the EventTimerClock(case 3) shape as a representative — verdict is a TOOL LIMITATION (all 5 modes manually verified). See FieldClock.md.",
       "calls": [
         {
           "op": "Decode1",
@@ -7722,11 +7722,11 @@
         },
         {
           "op": "Encode1",
-          "comment": "unknown2 (literal 0) \u2014 present in v87; gate MajorVersion()>=95 in atlas is wrong for v87"
+          "comment": "unknown2 (literal 0) — present in v87; gate MajorVersion()>=95 in atlas is wrong for v87"
         },
         {
           "op": "Encode4",
-          "comment": "PartnerCode (GetPartnerCode()) \u2014 v87-only extra int32 after the three Encode1s; absent in v83 and v95"
+          "comment": "PartnerCode (GetPartnerCode()) — v87-only extra int32 after the three Encode1s; absent in v83 and v95"
         }
       ]
     },
@@ -7747,7 +7747,7 @@
       "calls": [
         {
           "op": "Decode4",
-          "comment": "characterId \u2014 read by CUserPool::OnUserRemotePacket"
+          "comment": "characterId — read by CUserPool::OnUserRemotePacket"
         },
         {
           "op": "Decode1",
@@ -8048,11 +8048,11 @@
         },
         {
           "op": "Decode4",
-          "comment": "unknown (v200) \u2014 present in v87 (NOT v83)"
+          "comment": "unknown (v200) — present in v87 (NOT v83)"
         },
         {
           "op": "Decode4",
-          "comment": "skillId (v201) \u2014 present in v87 (NOT v83)"
+          "comment": "skillId (v201) — present in v87 (NOT v83)"
         }
       ]
     },
@@ -8077,19 +8077,19 @@
       "calls": [
         {
           "op": "Decode4",
-          "comment": "cid \u2014 read by CSummonedPool::OnPacket@0x9b35f5 before dispatch (pool is cid-keyed; NO oid on v87)"
+          "comment": "cid — read by CSummonedPool::OnPacket@0x9b35f5 before dispatch (pool is cid-keyed; NO oid on v87)"
         },
         {
           "op": "Decode2",
-          "comment": "startX \u2014 CMovePath::OnMovePacket movement-blob head (CSummonedPool::OnMove@0x7f9044)"
+          "comment": "startX — CMovePath::OnMovePacket movement-blob head (CSummonedPool::OnMove@0x7f9044)"
         },
         {
           "op": "Decode2",
-          "comment": "startY \u2014 CMovePath::OnMovePacket movement-blob head"
+          "comment": "startY — CMovePath::OnMovePacket movement-blob head"
         },
         {
           "op": "DecodeBuf",
-          "comment": "rawMovement blob \u2014 CMovePath::OnMovePacket@0x6c802d (variable-length movement path)"
+          "comment": "rawMovement blob — CMovePath::OnMovePacket@0x6c802d (variable-length movement path)"
         }
       ]
     },
@@ -8254,7 +8254,7 @@
     "CShopDlg::OnPacket#ShopDispatch": {
       "address": "0x7a249e",
       "direction": "serverbound",
-      "notes": "NPC_SHOP dispatch wrapper (atlas NpcShop / NPCShopHandle). The leading shop-request discriminator byte written at the head of opcode 0x40 by v87 CShopDlg::SendBuyRequest/SendSellRequest/SendRechargeRequest (Encode1 0/1/2 @0x7a24ab/0x7a2728/0x7a28b7). Atlas Shop.Encode (shop.go) writes a single Byte(op); the per-action bodies (ShopBuy/ShopSell/ShopRecharge) carry ONLY the trailing fields. Op values (0=BUY,1=SELL,2=RECHARGE) are runtime-config discriminators. Match \u2014 identical role to v83/v95.",
+      "notes": "NPC_SHOP dispatch wrapper (atlas NpcShop / NPCShopHandle). The leading shop-request discriminator byte written at the head of opcode 0x40 by v87 CShopDlg::SendBuyRequest/SendSellRequest/SendRechargeRequest (Encode1 0/1/2 @0x7a24ab/0x7a2728/0x7a28b7). Atlas Shop.Encode (shop.go) writes a single Byte(op); the per-action bodies (ShopBuy/ShopSell/ShopRecharge) carry ONLY the trailing fields. Op values (0=BUY,1=SELL,2=RECHARGE) are runtime-config discriminators. Match — identical role to v83/v95.",
       "calls": [
         {
           "op": "Encode1",
@@ -8424,7 +8424,7 @@
     "CWvsContext::OnFriendResult#ListUpdate": {
       "address": "0xad7ae5",
       "direction": "clientbound",
-      "note": "mode=7/10/18 (LOADED/LIST_UPDATE/RESET). Calls CFriend::Reset(v2) \u2014 reads the full friend-list wire from the packet. Wire identical to v83.",
+      "note": "mode=7/10/18 (LOADED/LIST_UPDATE/RESET). Calls CFriend::Reset(v2) — reads the full friend-list wire from the packet. Wire identical to v83.",
       "dispatch": [
         {
           "discriminator": "switch",
@@ -8442,11 +8442,11 @@
         },
         {
           "op": "DecodeBuffer",
-          "comment": "GW_Friend \u00d7count"
+          "comment": "GW_Friend ×count"
         },
         {
           "op": "DecodeBuffer",
-          "comment": "inShop flags \u00d7count"
+          "comment": "inShop flags ×count"
         }
       ]
     },
@@ -8493,11 +8493,11 @@
       "calls": [
         {
           "op": "Decode4",
-          "comment": "characterId \u2014 read by CUserPool::OnUserRemotePacket before dispatch"
+          "comment": "characterId — read by CUserPool::OnUserRemotePacket before dispatch"
         },
         {
           "op": "Decode1",
-          "comment": "slot \u2014 read by CUser::OnPetPacket before dispatch"
+          "comment": "slot — read by CUser::OnPetPacket before dispatch"
         },
         {
           "op": "Decode1",
@@ -8527,7 +8527,7 @@
         },
         {
           "op": "Decode4",
-          "comment": "npcTemplateId (dispatcher; not in SetGetItems@0x819648 body \u2014 tool-limitation residual same as v83/v95)"
+          "comment": "npcTemplateId (dispatcher; not in SetGetItems@0x819648 body — tool-limitation residual same as v83/v95)"
         },
         {
           "op": "Decode1",
@@ -8543,7 +8543,7 @@
         },
         {
           "op": "Decode1",
-          "comment": "PER-TAB count byte; repeated once per set tab bit (4/8/16/32/64 = i=1..5, lines 46-152), each followed by count*GW_ItemSlotBase::Decode. Per-tab segmentation identical to v83/v95 \u2014 unconditional Show fix holds."
+          "comment": "PER-TAB count byte; repeated once per set tab bit (4/8/16/32/64 = i=1..5, lines 46-152), each followed by count*GW_ItemSlotBase::Decode. Per-tab segmentation identical to v83/v95 — unconditional Show fix holds."
         }
       ]
     },
@@ -8574,14 +8574,14 @@
       "calls": [
         {
           "op": "Decode1",
-          "comment": "mode (case 7 = OPEN_SHOP; client calls SendOpenShopRequest \u2014 no further reads)"
+          "comment": "mode (case 7 = OPEN_SHOP; client calls SendOpenShopRequest — no further reads)"
         }
       ]
     },
     "CUserLocal::OnTutorMsg#Idx": {
       "address": "0x9e36c9",
       "direction": "clientbound",
-      "notes": "TALK_GUIDE. Same v87 CUserLocal::OnTutorMsg@0x9e36c9 handler; the TRUE (!=0) arm at 0x9e36f8 calls Decode4(hintId)+Decode4(duration) -> CTutor::OnMessage(int,int), NO string. Same polarity as v83/v95. Atlas GuideTalkIdx writes the leading bool as true. Phase-2 unconditional fix VERIFIED correct for v87 \u2014 no version gate needed.",
+      "notes": "TALK_GUIDE. Same v87 CUserLocal::OnTutorMsg@0x9e36c9 handler; the TRUE (!=0) arm at 0x9e36f8 calls Decode4(hintId)+Decode4(duration) -> CTutor::OnMessage(int,int), NO string. Same polarity as v83/v95. Atlas GuideTalkIdx writes the leading bool as true. Phase-2 unconditional fix VERIFIED correct for v87 — no version gate needed.",
       "calls": [
         {
           "op": "Decode1",
@@ -8628,7 +8628,7 @@
       "calls": [
         {
           "op": "Decode4",
-          "comment": "characterId \u2014 read before dispatching to OnAttack/OnHit/OnMove/etc."
+          "comment": "characterId — read before dispatching to OnAttack/OnHit/OnMove/etc."
         }
       ]
     },
@@ -8652,7 +8652,7 @@
       "calls": [
         {
           "op": "Decode4",
-          "comment": "dwMobId \u2014 read by CMobPool::OnMobPacket before dispatch"
+          "comment": "dwMobId — read by CMobPool::OnMobPacket before dispatch"
         },
         {
           "op": "Decode1",
@@ -8664,12 +8664,12 @@
         },
         {
           "op": "Decode4",
-          "comment": "hp current \u2014 gated mob.bDamagedByMob",
+          "comment": "hp current — gated mob.bDamagedByMob",
           "guard": "mob.bDamagedByMob"
         },
         {
           "op": "Decode4",
-          "comment": "hp max \u2014 gated mob.bDamagedByMob",
+          "comment": "hp max — gated mob.bDamagedByMob",
           "guard": "mob.bDamagedByMob"
         }
       ]
@@ -8677,7 +8677,7 @@
     "CAffectedAreaPool::OnAffectedAreaCreated": {
       "address": "0x432f3f",
       "direction": "clientbound",
-      "notes": "SPAWN_MIST (clientbound, GMS v87). v87 layout (8 fields): Decode4(dwId v89 @0x432f6e) + Decode4(nType v91[0] @0x432f78) + Decode4(dwOwnerId v4 @0x432f82) + Decode4(nSkillID a2 @0x432f8b) + Decode1(nSLV Value @0x432f98) + Decode2(phase/delay v87 @0x432fa3) + DecodeBuffer(16, rcArea RECT @0x432fae) + Decode4(tEnd/phase Skill @0x432fba). CROSS-VERSION (task-068 Phase 3 v87): v87 reads ONLY ONE trailing Decode4 after the 16-byte RECT (no tStart), MATCHING v83 @0x431a63; v95 @0x437ec0 adds a leading tStart int32 (2 trailing Decode4s). Atlas matches NEITHER version (atlas writes v83-era origin int16s). STRUCTURAL DEFERRAL \u2014 see _pending.md AFFECTEDAREA-create-shape; NOT rewritten in this pass.",
+      "notes": "SPAWN_MIST (clientbound, GMS v87). v87 layout (8 fields): Decode4(dwId v89 @0x432f6e) + Decode4(nType v91[0] @0x432f78) + Decode4(dwOwnerId v4 @0x432f82) + Decode4(nSkillID a2 @0x432f8b) + Decode1(nSLV Value @0x432f98) + Decode2(phase/delay v87 @0x432fa3) + DecodeBuffer(16, rcArea RECT @0x432fae) + Decode4(tEnd/phase Skill @0x432fba). CROSS-VERSION (task-068 Phase 3 v87): v87 reads ONLY ONE trailing Decode4 after the 16-byte RECT (no tStart), MATCHING v83 @0x431a63; v95 @0x437ec0 adds a leading tStart int32 (2 trailing Decode4s). Atlas matches NEITHER version (atlas writes v83-era origin int16s). STRUCTURAL DEFERRAL — see _pending.md AFFECTEDAREA-create-shape; NOT rewritten in this pass.",
       "calls": [
         {
           "op": "Decode4",
@@ -8709,7 +8709,7 @@
         },
         {
           "op": "Decode4",
-          "comment": "tEnd/nPhase (end time, Skill @0x432fba) \u2014 v87 has NO leading tStart (matches v83; v95 adds tStart)"
+          "comment": "tEnd/nPhase (end time, Skill @0x432fba) — v87 has NO leading tStart (matches v83; v95 adds tStart)"
         }
       ]
     },
@@ -8811,14 +8811,14 @@
       "calls": [
         {
           "op": "Decode2",
-          "comment": "world status (2 bytes \u2014 same as v95)"
+          "comment": "world status (2 bytes — same as v95)"
         }
       ]
     },
     "CWvsContext::OnPartyResult#OperationBody": {
       "address": "0xad697a",
       "direction": "clientbound",
-      "note": "Dispatcher \u2014 reads Decode1(mode) then dispatches. PARTYDATA size in v87: qmemcpy/memset with 0x12A (298 bytes), same as v83 (NOT v95's 0x17A=378). Gate v95plus (>=95) correctly excludes v87.",
+      "note": "Dispatcher — reads Decode1(mode) then dispatches. PARTYDATA size in v87: qmemcpy/memset with 0x12A (298 bytes), same as v83 (NOT v95's 0x17A=378). Gate v95plus (>=95) correctly excludes v87.",
       "calls": [
         {
           "op": "Decode1",
@@ -9006,14 +9006,14 @@
         },
         {
           "op": "Decode8",
-          "comment": "liCashItemSN \u2014 8-byte serial number (DecodeBuffer 8, stored as _LARGE_INTEGER)"
+          "comment": "liCashItemSN — 8-byte serial number (DecodeBuffer 8, stored as _LARGE_INTEGER)"
         }
       ]
     },
     "CUIMessenger::ProcessChat": {
       "address": "0x8b978f",
       "direction": "serverbound",
-      "note": "Outbound chat in messenger \u2014 sends mode+message. Wire identical to v83/v95.",
+      "note": "Outbound chat in messenger — sends mode+message. Wire identical to v83/v95.",
       "calls": [
         {
           "op": "Encode1",
@@ -9031,7 +9031,7 @@
       "calls": [
         {
           "op": "Decode4",
-          "comment": "dwMobId \u2014 read by CMobPool::OnMobPacket before dispatch"
+          "comment": "dwMobId — read by CMobPool::OnMobPacket before dispatch"
         },
         {
           "op": "Decode1",
@@ -9039,7 +9039,7 @@
         },
         {
           "op": "Decode1",
-          "comment": "bNotChangeAction (v87: present \u2014 gated GMS>83)"
+          "comment": "bNotChangeAction (v87: present — gated GMS>83)"
         },
         {
           "op": "Decode1",
@@ -9059,12 +9059,12 @@
         },
         {
           "op": "Decode4",
-          "comment": "multiTargetForBall[i].x \u2014 loop",
+          "comment": "multiTargetForBall[i].x — loop",
           "guard": "loop multiTargetForBall"
         },
         {
           "op": "Decode4",
-          "comment": "multiTargetForBall[i].y \u2014 loop",
+          "comment": "multiTargetForBall[i].y — loop",
           "guard": "loop multiTargetForBall"
         },
         {
@@ -9073,7 +9073,7 @@
         },
         {
           "op": "Decode4",
-          "comment": "randTimeForAreaAttack[i] \u2014 loop",
+          "comment": "randTimeForAreaAttack[i] — loop",
           "guard": "loop randTimeForAreaAttack"
         },
         {
@@ -9305,7 +9305,7 @@
     "CMob::GenerateMovePath": {
       "address": "0x6a6381",
       "direction": "serverbound",
-      "notes": "Opcode 0xC8. v87 wire shape matches v95 / JMS-v185 \u2014 the `(GMS && >83) || JMS` gates open the multiTargetForBall and randTimeForAreaAttack count+loop blocks, the hackedCodeCRC field between flyCtxTargetY and the Flush body, and the post-Flush bChasing/hasTarget/bChasing2/bChasingHack/tChaseDuration tail. Decompile cross-check at GMSv87_4GB.exe:0x6a6381 confirms COutPacket(0xC8) \u2192 Encode4 mobId \u2192 Encode2 ctrlSN+1 \u2192 Encode1 packed flags \u2192 Encode1 actionType \u2192 Encode4 skill m_Data \u2192 Encode4 multiTargetForBall count + 2\u00d7Encode4 per entry \u2192 Encode4 randTimeForAreaAttack count + 1\u00d7Encode4 per entry \u2192 Encode1 state \u2192 Encode4 hackedCode \u2192 Encode4 flyCtxTargetX \u2192 Encode4 flyCtxTargetY \u2192 Encode4 hackedCodeCRC \u2192 CMovePath::Flush \u2192 Encode1 bChasing \u2192 Encode1 hasTarget \u2192 Encode1 bChasing2 \u2192 Encode1 bChasingHack \u2192 Encode4 tChaseDuration.",
+      "notes": "Opcode 0xC8. v87 wire shape matches v95 / JMS-v185 — the `(GMS && >83) || JMS` gates open the multiTargetForBall and randTimeForAreaAttack count+loop blocks, the hackedCodeCRC field between flyCtxTargetY and the Flush body, and the post-Flush bChasing/hasTarget/bChasing2/bChasingHack/tChaseDuration tail. Decompile cross-check at GMSv87_4GB.exe:0x6a6381 confirms COutPacket(0xC8) → Encode4 mobId → Encode2 ctrlSN+1 → Encode1 packed flags → Encode1 actionType → Encode4 skill m_Data → Encode4 multiTargetForBall count + 2×Encode4 per entry → Encode4 randTimeForAreaAttack count + 1×Encode4 per entry → Encode1 state → Encode4 hackedCode → Encode4 flyCtxTargetX → Encode4 flyCtxTargetY → Encode4 hackedCodeCRC → CMovePath::Flush → Encode1 bChasing → Encode1 hasTarget → Encode1 bChasing2 → Encode1 bChasingHack → Encode4 tChaseDuration.",
       "calls": [
         {
           "op": "Encode4",
@@ -9317,7 +9317,7 @@
         },
         {
           "op": "Encode1",
-          "comment": "flags byte (atlas dwFlag \u2014 multiBitFlag with nMoveType / bRiseByToss / etc.)"
+          "comment": "flags byte (atlas dwFlag — multiBitFlag with nMoveType / bRiseByToss / etc.)"
         },
         {
           "op": "Encode1",
@@ -9325,7 +9325,7 @@
         },
         {
           "op": "Encode4",
-          "comment": "ti (TARGETINFO \u2014 atlas skillData packed)"
+          "comment": "ti (TARGETINFO — atlas skillData packed)"
         },
         {
           "op": "Encode4",
@@ -9333,12 +9333,12 @@
         },
         {
           "op": "Encode4",
-          "comment": "multiTargetForBall[i].x \u2014 loop",
+          "comment": "multiTargetForBall[i].x — loop",
           "guard": "loop multiTargetForBall"
         },
         {
           "op": "Encode4",
-          "comment": "multiTargetForBall[i].y \u2014 loop",
+          "comment": "multiTargetForBall[i].y — loop",
           "guard": "loop multiTargetForBall"
         },
         {
@@ -9347,7 +9347,7 @@
         },
         {
           "op": "Encode4",
-          "comment": "randTimeForAreaAttack[i] \u2014 loop",
+          "comment": "randTimeForAreaAttack[i] — loop",
           "guard": "loop randTimeForAreaAttack"
         },
         {
@@ -9418,7 +9418,7 @@
     "CScriptMan::OnAskNumber#AskNumber": {
       "address": "0x792020",
       "direction": "clientbound",
-      "notes": "Dialog type 4 (AskNumber). v87 CScriptMan::OnAskNumber@0x792020: DecodeStr(message @0x79203b)+Decode4(default @0x79204e)+Decode4(min @0x792058)+Decode4(max @0x79206a). Atlas AskNumberConversationDetail: AsciiString(Message)+Int(Default)+Int(Min)+Int(Max). Match \u2014 identical to v83/v95.",
+      "notes": "Dialog type 4 (AskNumber). v87 CScriptMan::OnAskNumber@0x792020: DecodeStr(message @0x79203b)+Decode4(default @0x79204e)+Decode4(min @0x792058)+Decode4(max @0x79206a). Atlas AskNumberConversationDetail: AsciiString(Message)+Int(Default)+Int(Min)+Int(Max). Match — identical to v83/v95.",
       "calls": [
         {
           "op": "DecodeStr",
@@ -9441,7 +9441,7 @@
     "CWvsContext::OnPartyResult#Update": {
       "address": "0xad697a",
       "direction": "clientbound",
-      "note": "mode=5 (UPDATE \u2014 v=5-4=1 path). Reads leaderId+PARTYDATA. PARTYDATA=298 bytes.",
+      "note": "mode=5 (UPDATE — v=5-4=1 path). Reads leaderId+PARTYDATA. PARTYDATA=298 bytes.",
       "calls": [
         {
           "op": "Decode1",
@@ -9543,11 +9543,11 @@
     "CStage::OnSetField#WarpToMap": {
       "address": "0x7c429c",
       "direction": "clientbound",
-      "notes": "SET_FIELD warp path (clientbound, GMS v87). Same CStage::OnSetField handler @0x7c429c with bCharacterData=0 \u2014 the else branch (no CharacterData blob, @0x7c4423). v87 wire order: DecodeOpt(2) + channelId(4) + sNotifierMessage(1) + bCharacterData(1) + nNotifierCheck(2) + reviveFlag(1, @0x7c4423) + dwPosMap/mapId(4, @0x7c447b) + nPortal(1, @0x7c449d) + nHP(2, Decode2 @0x7c44a8) + bChaseEnable(1, @0x7c44c2) + [if chase: targetX(4)+targetY(4)] + timestamp(8). CROSS-VERSION (task-068 Phase 3 v87): (1) NO m_dwOldDriverID after channelId \u2014 matches v83, unlike v95. (2) nHP is Decode2 (2 bytes, @0x7c44a8 LOWORD), matching v83 @0x776020 and unlike v95 @0x71a0a0 which reads Decode4. nHP width widened between v87 and v95. Atlas nHP gate GMS>=95 (4 bytes) CONFIRMED correct.",
+      "notes": "SET_FIELD warp path (clientbound, GMS v87). Same CStage::OnSetField handler @0x7c429c with bCharacterData=0 — the else branch (no CharacterData blob, @0x7c4423). v87 wire order: DecodeOpt(2) + channelId(4) + sNotifierMessage(1) + bCharacterData(1) + nNotifierCheck(2) + reviveFlag(1, @0x7c4423) + dwPosMap/mapId(4, @0x7c447b) + nPortal(1, @0x7c449d) + nHP(2, Decode2 @0x7c44a8) + bChaseEnable(1, @0x7c44c2) + [if chase: targetX(4)+targetY(4)] + timestamp(8). CROSS-VERSION (task-068 Phase 3 v87): (1) NO m_dwOldDriverID after channelId — matches v83, unlike v95. (2) nHP is Decode2 (2 bytes, @0x7c44a8 LOWORD), matching v83 @0x776020 and unlike v95 @0x71a0a0 which reads Decode4. nHP width widened between v87 and v95. Atlas nHP gate GMS>=95 (4 bytes) CONFIRMED correct.",
       "calls": [
         {
           "op": "Decode2",
-          "comment": "DecodeOpt \u2014 atlas WriteShort(0) gated (GMS>83 || JMS); present v87"
+          "comment": "DecodeOpt — atlas WriteShort(0) gated (GMS>83 || JMS); present v87"
         },
         {
           "op": "Decode4",
@@ -9555,11 +9555,11 @@
         },
         {
           "op": "Decode1",
-          "comment": "sNotifierMessage flag (@0x7c42fa; atlas writes 0) \u2014 no m_dwOldDriverID before it in v87"
+          "comment": "sNotifierMessage flag (@0x7c42fa; atlas writes 0) — no m_dwOldDriverID before it in v87"
         },
         {
           "op": "Decode1",
-          "comment": "bCharacterData flag (@0x7c4307; atlas writes 0 \u2014 warp path)"
+          "comment": "bCharacterData flag (@0x7c4307; atlas writes 0 — warp path)"
         },
         {
           "op": "Decode2",
@@ -9567,7 +9567,7 @@
         },
         {
           "op": "Decode1",
-          "comment": "revive flag (else branch @0x7c4423) \u2014 atlas WriteByte(0) gated (GMS>28 || JMS)"
+          "comment": "revive flag (else branch @0x7c4423) — atlas WriteByte(0) gated (GMS>28 || JMS)"
         },
         {
           "op": "Decode4",
@@ -9579,11 +9579,11 @@
         },
         {
           "op": "Decode2",
-          "comment": "nHP \u2014 v87 Decode2 (2 bytes, LOWORD @0x7c44a8), matches v83; v95 reads Decode4. atlas WriteShort(2) for GMS<95"
+          "comment": "nHP — v87 Decode2 (2 bytes, LOWORD @0x7c44a8), matches v83; v95 reads Decode4. atlas WriteShort(2) for GMS<95"
         },
         {
           "op": "Decode1",
-          "comment": "m_bChaseEnable (@0x7c44c2) \u2014 atlas WriteBool(false) gated (GMS>28)"
+          "comment": "m_bChaseEnable (@0x7c44c2) — atlas WriteBool(false) gated (GMS>28)"
         },
         {
           "op": "Decode8",
@@ -9611,7 +9611,7 @@
     "CScriptMan::OnAskQuiz#AskQuiz": {
       "address": "0x792b90",
       "direction": "clientbound",
-      "notes": "Dialog type 6 (AskQuiz). v87 CScriptMan::OnAskQuiz@0x792b90 forwards to CWvsContext::OnInitialQuiz@0xabe75d: Decode1(flag @0xabe774); when flag==0 (show): DecodeStr(title @0xabe7bb)+DecodeStr(problem @0xabe7c9)+DecodeStr(hint @0xabe7d8)+Decode4(min @0xabe7ea)+Decode4(max @0xabe7f4)+Decode4(remainSec @0xabe808). Atlas AskQuizConversationDetail mirrors this guarded body. Match \u2014 identical to v83/v95. Guard on flag==0 is analyzer-flattened (tool limitation).",
+      "notes": "Dialog type 6 (AskQuiz). v87 CScriptMan::OnAskQuiz@0x792b90 forwards to CWvsContext::OnInitialQuiz@0xabe75d: Decode1(flag @0xabe774); when flag==0 (show): DecodeStr(title @0xabe7bb)+DecodeStr(problem @0xabe7c9)+DecodeStr(hint @0xabe7d8)+Decode4(min @0xabe7ea)+Decode4(max @0xabe7f4)+Decode4(remainSec @0xabe808). Atlas AskQuizConversationDetail mirrors this guarded body. Match — identical to v83/v95. Guard on flag==0 is analyzer-flattened (tool limitation).",
       "calls": [
         {
           "op": "Decode1",
@@ -9793,11 +9793,11 @@
       "calls": [
         {
           "op": "Decode1",
-          "comment": "success flag (if 0 \u2192 client disconnects)"
+          "comment": "success flag (if 0 → client disconnects)"
         },
         {
           "op": "Decode4",
-          "comment": "IP address as raw uint32 (stored directly into sin_addr.s_addr \u2014 network byte order preserved)"
+          "comment": "IP address as raw uint32 (stored directly into sin_addr.s_addr — network byte order preserved)"
         },
         {
           "op": "Decode2",
@@ -9813,7 +9813,7 @@
     "CMessageBoxPool::OnCreateFailed": {
       "address": "0x694e1d",
       "direction": "clientbound",
-      "notes": "CANNOT_SPAWN_KITE (clientbound, GMS v87). Empty body \u2014 client reads nothing and shows a StringPool notice (485 @0x694e38). v87 byte-identical to v95 (@0x636760, empty body).",
+      "notes": "CANNOT_SPAWN_KITE (clientbound, GMS v87). Empty body — client reads nothing and shows a StringPool notice (485 @0x694e38). v87 byte-identical to v95 (@0x636760, empty body).",
       "calls": []
     },
     "CReactorPool::FindHitReactor": {
@@ -9962,7 +9962,7 @@
     "CShopDlg::SendRechargeRequest": {
       "address": "0x7a278f",
       "direction": "serverbound",
-      "notes": "NPC_SHOP (Recharge body). v87 CShopDlg::SendRechargeRequest@0x7a278f final send (0x7a28a9..): after the leading Encode1(2) action byte (modeled separately as NpcShop/ShopDispatch), the body is Encode2(inventory pos @0x7a28c0). Atlas NpcShopRecharge writes Int16(slot) \u2014 the action byte is NOT part of ShopRecharge. Match \u2014 identical to v83/v95.",
+      "notes": "NPC_SHOP (Recharge body). v87 CShopDlg::SendRechargeRequest@0x7a278f final send (0x7a28a9..): after the leading Encode1(2) action byte (modeled separately as NpcShop/ShopDispatch), the body is Encode2(inventory pos @0x7a28c0). Atlas NpcShopRecharge writes Int16(slot) — the action byte is NOT part of ShopRecharge. Match — identical to v83/v95.",
       "calls": [
         {
           "op": "Encode1",
@@ -10002,31 +10002,10 @@
         }
       ]
     },
-    "CWvsContext::OnPartyResult#Error": {
-      "address": "0xad697a",
-      "direction": "clientbound",
-      "note": "Various error modes (13, 16, 17, 18, 19). No further reads beyond mode byte.",
-      "dispatch": [
-        {
-          "case": 0,
-          "guard": "CInPacket::Decode1(v4"
-        }
-      ],
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (error code)"
-        },
-        {
-          "op": "DecodeStr",
-          "comment": "name"
-        }
-      ]
-    },
     "CScriptMan::OnSayImage#SayImage": {
       "address": "0x7919a9",
       "direction": "clientbound",
-      "notes": "Dialog type 1 (SayImage). v87 CScriptMan::OnSayImage@0x7919a9: Decode1(count @0x791a37)+loop count x DecodeStr(image @0x791a4d). Atlas SayImageConversationDetail (post-fix): Byte(len)+loop AsciiString. Count is a single byte (Decode1) NOT int \u2014 Phase-2 unconditional WriteByte fix VERIFIED correct for v87. NOTE: unlike v83 (no SayImage case in the OnScriptMessage switch), v87 IS reachable via the standard msgType dispatch (case 1), same as v95. Analyzer flattens the loop.",
+      "notes": "Dialog type 1 (SayImage). v87 CScriptMan::OnSayImage@0x7919a9: Decode1(count @0x791a37)+loop count x DecodeStr(image @0x791a4d). Atlas SayImageConversationDetail (post-fix): Byte(len)+loop AsciiString. Count is a single byte (Decode1) NOT int — Phase-2 unconditional WriteByte fix VERIFIED correct for v87. NOTE: unlike v83 (no SayImage case in the OnScriptMessage switch), v87 IS reachable via the standard msgType dispatch (case 1), same as v95. Analyzer flattens the loop.",
       "dispatch": [
         {
           "case": 0,
@@ -10159,7 +10138,7 @@
     "CScriptMan::OnAskText#AskText": {
       "address": "0x791cd0",
       "direction": "clientbound",
-      "notes": "Dialog type 3 (AskText). v87 CScriptMan::OnAskText@0x791cd0: DecodeStr(message @0x791ceb)+DecodeStr(default @0x791cfb)+Decode2(minLen @0x791d10)+Decode2(maxLen @0x791d22). Atlas AskTextConversationDetail: AsciiString(Message)+AsciiString(Default)+Int16(MinLength)+Int16(MaxLength). Match \u2014 identical to v83/v95.",
+      "notes": "Dialog type 3 (AskText). v87 CScriptMan::OnAskText@0x791cd0: DecodeStr(message @0x791ceb)+DecodeStr(default @0x791cfb)+Decode2(minLen @0x791d10)+Decode2(maxLen @0x791d22). Atlas AskTextConversationDetail: AsciiString(Message)+AsciiString(Default)+Int16(MinLength)+Int16(MaxLength). Match — identical to v83/v95.",
       "calls": [
         {
           "op": "DecodeStr",
@@ -10182,7 +10161,7 @@
     "CUIMessenger::OnPacket": {
       "address": "0x8b978f",
       "direction": "clientbound",
-      "note": "Dispatcher \u2014 Decode1(mode) then switches. Sub-modes: 0=OnEnter, 1=OnSelfEnterResult, 2=OnLeave, 3=OnInvite, 4=OnInviteResult, 5=OnBlocked, 6=OnChat, 7=OnAvatar, 8=OnMigrated. Wire shape identical to v83/v95.",
+      "note": "Dispatcher — Decode1(mode) then switches. Sub-modes: 0=OnEnter, 1=OnSelfEnterResult, 2=OnLeave, 3=OnInvite, 4=OnInviteResult, 5=OnBlocked, 6=OnChat, 7=OnAvatar, 8=OnMigrated. Wire shape identical to v83/v95.",
       "calls": [
         {
           "op": "Decode1",
@@ -10306,7 +10285,7 @@
     "CWvsContext::OnFriendResult#Update": {
       "address": "0xad7ae5",
       "direction": "clientbound",
-      "note": "mode=8. Calls sub_AD8963 \u2014 wire identical to v83.",
+      "note": "mode=8. Calls sub_AD8963 — wire identical to v83.",
       "calls": [
         {
           "op": "Decode1",
@@ -10332,7 +10311,7 @@
       "calls": [
         {
           "op": "Decode4",
-          "comment": "characterId (dispatcher-prefix pattern \u2014 consumed by CUserPool::OnUserRemotePacket Decode4 before OnGuildNameChanged)"
+          "comment": "characterId (dispatcher-prefix pattern — consumed by CUserPool::OnUserRemotePacket Decode4 before OnGuildNameChanged)"
         },
         {
           "op": "DecodeStr",
@@ -10347,24 +10326,24 @@
       "calls": [
         {
           "op": "Encode4",
-          "comment": "summonId (this[43] = owner cid on v87) \u2014 SetDamaged@0x7f8a5c"
+          "comment": "summonId (this[43] = owner cid on v87) — SetDamaged@0x7f8a5c"
         },
         {
           "op": "Encode1",
-          "comment": "attackIdx (mob-present path; 0xFE sentinel on the no-mob path @0x7f8a6d) \u2014 SetDamaged@0x7f8a83; atlas skip1"
+          "comment": "attackIdx (mob-present path; 0xFE sentinel on the no-mob path @0x7f8a6d) — SetDamaged@0x7f8a83; atlas skip1"
         },
         {
           "op": "Encode4",
-          "comment": "damage (nDamage) \u2014 SetDamaged@0x7f8a8c (mob path) / @0x7f8a76 (no-mob path)"
+          "comment": "damage (nDamage) — SetDamaged@0x7f8a8c (mob path) / @0x7f8a76 (no-mob path)"
         },
         {
           "op": "Encode4",
-          "comment": "mobTemplateId (monsterIdFrom; mob-present path only) \u2014 SetDamaged@0x7f8aa9",
+          "comment": "mobTemplateId (monsterIdFrom; mob-present path only) — SetDamaged@0x7f8aa9",
           "guard": "mob present (attackIdx != 0xFE)"
         },
         {
           "op": "Encode1",
-          "comment": "dir<0 flag (mob-present path only) \u2014 SetDamaged@0x7f8ab9; atlas skip1. PRESENT on v87 (not v95-only).",
+          "comment": "dir<0 flag (mob-present path only) — SetDamaged@0x7f8ab9; atlas skip1. PRESENT on v87 (not v95-only).",
           "guard": "mob present (attackIdx != 0xFE)"
         }
       ]
@@ -10435,11 +10414,11 @@
         },
         {
           "op": "Encode1",
-          "comment": "m_bRequestBuyOneADay byte (*(this+9928)). PRESENT at v87 (line 443) \u2014 NOT v95-only. Gate tightened to GMS>=87."
+          "comment": "m_bRequestBuyOneADay byte (*(this+9928)). PRESENT at v87 (line 443) — NOT v95-only. Gate tightened to GMS>=87."
         },
         {
           "op": "Encode4",
-          "comment": "nEventSN int (v44). PRESENT at v87 (line 444) \u2014 NOT v95-only. Gate tightened to GMS>=87."
+          "comment": "nEventSN int (v44). PRESENT at v87 (line 444) — NOT v95-only. Gate tightened to GMS>=87."
         }
       ]
     },
@@ -10481,7 +10460,7 @@
         },
         {
           "op": "Decode1",
-          "comment": "petSlotIndex \u2014 only on result == 0",
+          "comment": "petSlotIndex — only on result == 0",
           "guard": "result == 0"
         }
       ]
@@ -10538,7 +10517,7 @@
     "CShopDlg::SetShopDlg": {
       "address": "0x79e4d0",
       "direction": "clientbound",
-      "notes": "OPEN_NPC_SHOP (NpcShopList). v87 CShopDlg::OnPacket@0x7a290d (nType==0x142) -> CShopDlg::SetShopDlg@0x79e4d0. Decode4(npcTemplateId @0x79e4f4)+Decode2(count @0x79e4fa)+per-commodity loop (while idx<count, no cap). Per item, the EXACT v87 decode sequence is (0x79e527..0x79e5b1): Decode4 itemId + Decode4 mesoPrice + Decode1 discountRate + Decode4 (token field; IDA names it nTokenItemID) + Decode4 period + Decode4 levelLimit + (itemId/10000 in {207,233} ? DecodeBuffer(8) unitPrice double : Decode2 quantity) + Decode2 slotMax. KEY CROSS-VERSION FINDING: v87 carries discountRate(byte)+ONE token int (3 ints total after meso: token/period/levelLimit). v83 had NEITHER discountRate NOR any token int (2 ints after meso). v95 has discountRate + TWO token ints (tokenItemId + tokenPrice = 4 ints after meso). Atlas ShopList.Encode gates WriteByte(DiscountRate) on GMS>=87 and WriteInt(TokenTemplateId) on GMS>=95, then unconditionally writes TokenPrice/Period/LevelLimit. For v87 atlas emits: meso + discountRate(byte) + [no TokenTemplateId, <95] + TokenPrice(int) + Period(int) + LevelLimit(int) = byte + 3 ints \u2014 wire layout MATCHES the v87 client byte+3-int read exactly (the single v87 token int is filled by atlas TokenPrice). VERIFIED correct for v87, no atlas change. Analyzer flattens the loop (TOOL LIMITATION, manually verified). Export models templateId+count+one representative non-ammo item.",
+      "notes": "OPEN_NPC_SHOP (NpcShopList). v87 CShopDlg::OnPacket@0x7a290d (nType==0x142) -> CShopDlg::SetShopDlg@0x79e4d0. Decode4(npcTemplateId @0x79e4f4)+Decode2(count @0x79e4fa)+per-commodity loop (while idx<count, no cap). Per item, the EXACT v87 decode sequence is (0x79e527..0x79e5b1): Decode4 itemId + Decode4 mesoPrice + Decode1 discountRate + Decode4 (token field; IDA names it nTokenItemID) + Decode4 period + Decode4 levelLimit + (itemId/10000 in {207,233} ? DecodeBuffer(8) unitPrice double : Decode2 quantity) + Decode2 slotMax. KEY CROSS-VERSION FINDING: v87 carries discountRate(byte)+ONE token int (3 ints total after meso: token/period/levelLimit). v83 had NEITHER discountRate NOR any token int (2 ints after meso). v95 has discountRate + TWO token ints (tokenItemId + tokenPrice = 4 ints after meso). Atlas ShopList.Encode gates WriteByte(DiscountRate) on GMS>=87 and WriteInt(TokenTemplateId) on GMS>=95, then unconditionally writes TokenPrice/Period/LevelLimit. For v87 atlas emits: meso + discountRate(byte) + [no TokenTemplateId, <95] + TokenPrice(int) + Period(int) + LevelLimit(int) = byte + 3 ints — wire layout MATCHES the v87 client byte+3-int read exactly (the single v87 token int is filled by atlas TokenPrice). VERIFIED correct for v87, no atlas change. Analyzer flattens the loop (TOOL LIMITATION, manually verified). Export models templateId+count+one representative non-ammo item.",
       "calls": [
         {
           "op": "Decode4",
@@ -10562,7 +10541,7 @@
         },
         {
           "op": "Decode4",
-          "comment": "[item] token field (single int @0x79e558; IDA labels nTokenItemID; atlas TokenPrice fills this slot for v87 \u2014 v95 splits into tokenItemId+tokenPrice, v83 has none)"
+          "comment": "[item] token field (single int @0x79e558; IDA labels nTokenItemID; atlas TokenPrice fills this slot for v87 — v95 splits into tokenItemId+tokenPrice, v83 has none)"
         },
         {
           "op": "Decode4",
@@ -10602,11 +10581,11 @@
       "calls": [
         {
           "op": "Decode4",
-          "comment": "characterId \u2014 read by CUserPool::OnUserRemotePacket before dispatch (foreign path); absent on self-effect opcode"
+          "comment": "characterId — read by CUserPool::OnUserRemotePacket before dispatch (foreign path); absent on self-effect opcode"
         },
         {
           "op": "Decode1",
-          "comment": "nMode \u2014 switch discriminator dispatching to 27 effect branches (case 0..26)",
+          "comment": "nMode — switch discriminator dispatching to 27 effect branches (case 0..26)",
           "guard": "switch nMode"
         }
       ]
@@ -10842,7 +10821,7 @@
       "calls": [
         {
           "op": "Decode4",
-          "comment": "dwMobId \u2014 read by CMobPool::OnMobPacket before dispatch"
+          "comment": "dwMobId — read by CMobPool::OnMobPacket before dispatch"
         },
         {
           "op": "DecodeBuf",
@@ -10867,7 +10846,7 @@
     "CWvsContext::OnGuildResult": {
       "address": "0xacf7d3",
       "direction": "clientbound",
-      "note": "Dispatcher \u2014 reads Decode1(mode) then dispatches. Wire shapes below reflect v87 IDA at 0xacf7d3."
+      "note": "Dispatcher — reads Decode1(mode) then dispatches. Wire shapes below reflect v87 IDA at 0xacf7d3."
     },
     "CITC::OnNormalItemResult#BuyWishDone": {
       "address": "0x5d5104",
@@ -11159,7 +11138,7 @@
       "calls": [
         {
           "op": "Decode4",
-          "comment": "dwMobId \u2014 read by CMobPool::OnMobPacket before dispatch"
+          "comment": "dwMobId — read by CMobPool::OnMobPacket before dispatch"
         },
         {
           "op": "DecodeBuf",
@@ -11243,28 +11222,28 @@
     "CSummonedPool::OnHit": {
       "address": "0x7f969f",
       "direction": "clientbound",
-      "note": "DAMAGE_SUMMON (op 192/0xC0). CSummonedPool::OnPacket@0x9b35bf reads Decode4(cid)@0x9b35f5, op 0xC0 -> OnSkill@0x7f969f (IDA's labeling; BEHAVIOR is summon-damage) which reads Decode1(attackIdx, signed)@0x7f96d0 + Decode4(damage)@0x7f96dd + if attackIdx>-2 (cmp 0xFFFFFFFE; jle @0x7f96e8): Decode4(mobTemplateId)@0x7f96f0 (-> GetMobTemplate) + Decode1(bLeft)@0x7f96fa. STOPS at bLeft \u2014 NO dir byte (the dir<0 byte is serverbound-only; IDB-confirmed). NO oid (dispatcher consumes only cid). Behavior matches v83 (the DAMAGE behavior lives at the higher-opcode handler; the OnHit/OnSkill names are swapped relative to behavior \u2014 summon-wire-truth.md). Atlas SummonDamage (writer 'SummonDamage', gated oid >=95) writes cid+12(attackIdx)+damage+monsterIdFrom(templateId)+0(bLeft) for v87. v87 reference (IDB asm-confirmed). NOTE: candidatesFromFName maps CSummonedPool::OnHit -> SummonDamage writer; the DAMAGE behavior lives at the OnSkill address (0x7f969f) on v87 (opcode-driven, not name-driven).",
+      "note": "DAMAGE_SUMMON (op 192/0xC0). CSummonedPool::OnPacket@0x9b35bf reads Decode4(cid)@0x9b35f5, op 0xC0 -> OnSkill@0x7f969f (IDA's labeling; BEHAVIOR is summon-damage) which reads Decode1(attackIdx, signed)@0x7f96d0 + Decode4(damage)@0x7f96dd + if attackIdx>-2 (cmp 0xFFFFFFFE; jle @0x7f96e8): Decode4(mobTemplateId)@0x7f96f0 (-> GetMobTemplate) + Decode1(bLeft)@0x7f96fa. STOPS at bLeft — NO dir byte (the dir<0 byte is serverbound-only; IDB-confirmed). NO oid (dispatcher consumes only cid). Behavior matches v83 (the DAMAGE behavior lives at the higher-opcode handler; the OnHit/OnSkill names are swapped relative to behavior — summon-wire-truth.md). Atlas SummonDamage (writer 'SummonDamage', gated oid >=95) writes cid+12(attackIdx)+damage+monsterIdFrom(templateId)+0(bLeft) for v87. v87 reference (IDB asm-confirmed). NOTE: candidatesFromFName maps CSummonedPool::OnHit -> SummonDamage writer; the DAMAGE behavior lives at the OnSkill address (0x7f969f) on v87 (opcode-driven, not name-driven).",
       "calls": [
         {
           "op": "Decode4",
-          "comment": "cid \u2014 read by CSummonedPool::OnPacket@0x9b35f5 before dispatch (pool is cid-keyed; NO oid on v87)"
+          "comment": "cid — read by CSummonedPool::OnPacket@0x9b35f5 before dispatch (pool is cid-keyed; NO oid on v87)"
         },
         {
           "op": "Decode1",
-          "comment": "attackIdx (signed) \u2014 OnSkill@0x7f96d0; atlas writes fixed 12"
+          "comment": "attackIdx (signed) — OnSkill@0x7f96d0; atlas writes fixed 12"
         },
         {
           "op": "Decode4",
-          "comment": "damage (nDamage) \u2014 OnSkill@0x7f96dd"
+          "comment": "damage (nDamage) — OnSkill@0x7f96dd"
         },
         {
           "op": "Decode4",
-          "comment": "mobTemplateId (monsterIdFrom; only when attackIdx>-2) \u2014 OnSkill@0x7f96f0 (-> GetMobTemplate)",
+          "comment": "mobTemplateId (monsterIdFrom; only when attackIdx>-2) — OnSkill@0x7f96f0 (-> GetMobTemplate)",
           "guard": "attackIdx > -2"
         },
         {
           "op": "Decode1",
-          "comment": "bLeft (only when attackIdx>-2) \u2014 OnSkill@0x7f96fa; atlas writes fixed 0. STOPS here \u2014 no dir byte on the clientbound wire.",
+          "comment": "bLeft (only when attackIdx>-2) — OnSkill@0x7f96fa; atlas writes fixed 0. STOPS here — no dir byte on the clientbound wire.",
           "guard": "attackIdx > -2"
         }
       ]
@@ -11329,51 +11308,51 @@
     "CSummonedPool::OnCreated": {
       "address": "0x9b3749",
       "direction": "clientbound",
-      "note": "SPAWN_SPECIAL_MAPOBJECT (op 188/0xBC). CSummonedPool::OnPacket@0x9b35bf dispatches op 0xBC -> the vtable+0x30 target (*(*this+48)) = sub_9B3749 (= CSummonedPool::OnCreated equivalent). sub_9B3749 reads Decode4(cid)@0x9b376b then Decode4(skillId)@0x9b3775 + Decode1(charLevel)@0x9b377f + Decode1(SLV)@0x9b378e (passed to the CSummoned ctor sub_7F489E; skillId stored at [obj+0B4h]), then the Init blob via sub_7F504A@0x9b3818. There is NO oid on v87 \u2014 only ONE int (skillId) sits between cid and the two bytes; v95 OnCreated inserts oid(i4) right after cid. The skillId is consumed by GetSkill@CSkillInfo in sub_7F504A@0x7f50b7 (this[45] = [obj+0xB4]). Init blob (sub_7F504A): Decode2(x)@0x7f5061, Decode2(y)@0x7f506e, Decode1(moveAction)@0x7f507b, Decode2(foothold)@0x7f507e, Decode1(moveAbility)@0x7f5092, Decode1(assistType)@0x7f50a9, then [if GetSkill!=0: Decode1(enterType)@0x7f50d0]. NO avatar-look byte (v95+ only). Atlas SummonSpawn (gated oid >=95, avatarLook >=95) writes cid+skillId+0x0A(charLevel)+level(SLV)+x+y+stance+foothold(0)+movementType+!puppet+!animated for v87. v87 reference (IDB asm-confirmed, summon-wire-truth.md).",
+      "note": "SPAWN_SPECIAL_MAPOBJECT (op 188/0xBC). CSummonedPool::OnPacket@0x9b35bf dispatches op 0xBC -> the vtable+0x30 target (*(*this+48)) = sub_9B3749 (= CSummonedPool::OnCreated equivalent). sub_9B3749 reads Decode4(cid)@0x9b376b then Decode4(skillId)@0x9b3775 + Decode1(charLevel)@0x9b377f + Decode1(SLV)@0x9b378e (passed to the CSummoned ctor sub_7F489E; skillId stored at [obj+0B4h]), then the Init blob via sub_7F504A@0x9b3818. There is NO oid on v87 — only ONE int (skillId) sits between cid and the two bytes; v95 OnCreated inserts oid(i4) right after cid. The skillId is consumed by GetSkill@CSkillInfo in sub_7F504A@0x7f50b7 (this[45] = [obj+0xB4]). Init blob (sub_7F504A): Decode2(x)@0x7f5061, Decode2(y)@0x7f506e, Decode1(moveAction)@0x7f507b, Decode2(foothold)@0x7f507e, Decode1(moveAbility)@0x7f5092, Decode1(assistType)@0x7f50a9, then [if GetSkill!=0: Decode1(enterType)@0x7f50d0]. NO avatar-look byte (v95+ only). Atlas SummonSpawn (gated oid >=95, avatarLook >=95) writes cid+skillId+0x0A(charLevel)+level(SLV)+x+y+stance+foothold(0)+movementType+!puppet+!animated for v87. v87 reference (IDB asm-confirmed, summon-wire-truth.md).",
       "calls": [
         {
           "op": "Decode4",
-          "comment": "cid \u2014 read by sub_9B3749@0x9b376b (the vtable+0x30 spawn target; pool is cid-keyed)"
+          "comment": "cid — read by sub_9B3749@0x9b376b (the vtable+0x30 spawn target; pool is cid-keyed)"
         },
         {
           "op": "Decode4",
-          "comment": "skillId (nSkillID) \u2014 sub_9B3749@0x9b3775; consumed by GetSkill@CSkillInfo in sub_7F504A@0x7f50b7 (this[45]=[obj+0xB4]). (NO oid on v87 \u2014 the int after cid is the skillId)"
+          "comment": "skillId (nSkillID) — sub_9B3749@0x9b3775; consumed by GetSkill@CSkillInfo in sub_7F504A@0x7f50b7 (this[45]=[obj+0xB4]). (NO oid on v87 — the int after cid is the skillId)"
         },
         {
           "op": "Decode1",
-          "comment": "charLevel (nCharLevel) \u2014 sub_9B3749@0x9b377f; atlas writes fixed 0x0A (visual-only)"
+          "comment": "charLevel (nCharLevel) — sub_9B3749@0x9b377f; atlas writes fixed 0x0A (visual-only)"
         },
         {
           "op": "Decode1",
-          "comment": "SLV skill level (nSLV) \u2014 sub_9B3749@0x9b378e; atlas 'level'"
+          "comment": "SLV skill level (nSLV) — sub_9B3749@0x9b378e; atlas 'level'"
         },
         {
           "op": "Decode2",
-          "comment": "nX \u2014 CSummoned Init blob sub_7F504A@0x7f5061"
+          "comment": "nX — CSummoned Init blob sub_7F504A@0x7f5061"
         },
         {
           "op": "Decode2",
-          "comment": "nY \u2014 sub_7F504A@0x7f506e"
+          "comment": "nY — sub_7F504A@0x7f506e"
         },
         {
           "op": "Decode1",
-          "comment": "nMoveAction (stance) \u2014 sub_7F504A@0x7f507b"
+          "comment": "nMoveAction (stance) — sub_7F504A@0x7f507b"
         },
         {
           "op": "Decode2",
-          "comment": "nCurFoothold \u2014 sub_7F504A@0x7f507e; atlas writes fixed 0 (visual-only)"
+          "comment": "nCurFoothold — sub_7F504A@0x7f507e; atlas writes fixed 0 (visual-only)"
         },
         {
           "op": "Decode1",
-          "comment": "nMoveAbility (movementType) \u2014 sub_7F504A@0x7f5092"
+          "comment": "nMoveAbility (movementType) — sub_7F504A@0x7f5092"
         },
         {
           "op": "Decode1",
-          "comment": "nAssistType (!puppet attack flag) \u2014 sub_7F504A@0x7f50a9"
+          "comment": "nAssistType (!puppet attack flag) — sub_7F504A@0x7f50a9"
         },
         {
           "op": "Decode1",
-          "comment": "nEnterType (!animated flag; read only if GetSkill(skillId)!=0) \u2014 sub_7F504A@0x7f50d0",
+          "comment": "nEnterType (!animated flag; read only if GetSkill(skillId)!=0) — sub_7F504A@0x7f50d0",
           "guard": "GetSkill(skillId) != 0"
         }
       ]
@@ -11400,11 +11379,11 @@
       "calls": [
         {
           "op": "Decode4",
-          "comment": "characterId \u2014 read by CUserPool::OnUserRemotePacket before dispatch"
+          "comment": "characterId — read by CUserPool::OnUserRemotePacket before dispatch"
         },
         {
           "op": "Decode1",
-          "comment": "slot \u2014 read by CUser::OnPetPacket before dispatch"
+          "comment": "slot — read by CUser::OnPetPacket before dispatch"
         },
         {
           "op": "DecodeBuf",
@@ -11550,22 +11529,22 @@
         },
         {
           "op": "Decode2",
-          "comment": "sourceX \u2014 gated nEnterType != 2",
+          "comment": "sourceX — gated nEnterType != 2",
           "guard": "nEnterType != 2"
         },
         {
           "op": "Decode2",
-          "comment": "sourceY \u2014 gated nEnterType != 2",
+          "comment": "sourceY — gated nEnterType != 2",
           "guard": "nEnterType != 2"
         },
         {
           "op": "Decode2",
-          "comment": "tDelay \u2014 gated nEnterType != 2",
+          "comment": "tDelay — gated nEnterType != 2",
           "guard": "nEnterType != 2"
         },
         {
           "op": "DecodeBuf",
-          "comment": "cashItemSN (8 bytes) \u2014 gated !isMoney",
+          "comment": "cashItemSN (8 bytes) — gated !isMoney",
           "guard": "isMoney == 0"
         },
         {
@@ -11593,7 +11572,7 @@
     "CScriptMan::OnAskBoxText#AskBoxText": {
       "address": "0x791e79",
       "direction": "clientbound",
-      "notes": "Dialog type 0xE (AskBoxText). v87 CScriptMan::OnAskBoxText@0x791e79: DecodeStr(message @0x791e94)+DecodeStr(default @0x791ea4)+Decode2(col @0x791eb9)+Decode2(line @0x791ecb). Atlas AskBoxTextConversationDetail: AsciiString(Message)+AsciiString(Default)+Int16(Column)+Int16(Line). Match \u2014 identical to v83/v95.",
+      "notes": "Dialog type 0xE (AskBoxText). v87 CScriptMan::OnAskBoxText@0x791e79: DecodeStr(message @0x791e94)+DecodeStr(default @0x791ea4)+Decode2(col @0x791eb9)+Decode2(line @0x791ecb). Atlas AskBoxTextConversationDetail: AsciiString(Message)+AsciiString(Default)+Int16(Column)+Int16(Line). Match — identical to v83/v95.",
       "calls": [
         {
           "op": "DecodeStr",
@@ -11730,7 +11709,7 @@
     "CShopDlg::SendSellRequest": {
       "address": "0x7a256b",
       "direction": "serverbound",
-      "notes": "NPC_SHOP (Sell body). v87 CShopDlg::SendSellRequest@0x7a256b final send (0x7a2718..): after the leading Encode1(1) action byte (modeled separately as NpcShop/ShopDispatch), the body is Encode2(inventory pos @0x7a2733)+Encode4(itemId @0x7a273e)+Encode2(quantity @0x7a2749). Atlas NpcShopSell writes Int16(slot)+Int(itemId)+Int16(quantity) \u2014 the action byte is NOT part of ShopSell. Match \u2014 identical to v83/v95.",
+      "notes": "NPC_SHOP (Sell body). v87 CShopDlg::SendSellRequest@0x7a256b final send (0x7a2718..): after the leading Encode1(1) action byte (modeled separately as NpcShop/ShopDispatch), the body is Encode2(inventory pos @0x7a2733)+Encode4(itemId @0x7a273e)+Encode2(quantity @0x7a2749). Atlas NpcShopSell writes Int16(slot)+Int(itemId)+Int16(quantity) — the action byte is NOT part of ShopSell. Match — identical to v83/v95.",
       "calls": [
         {
           "op": "Encode1",
@@ -11753,7 +11732,7 @@
     "CScriptMan::OnAskPet#AskPet": {
       "address": "0x792663",
       "direction": "clientbound",
-      "notes": "Dialog type 0xA (AskPet). v87 CScriptMan::OnAskPet@0x792663: DecodeStr(message @0x79267f)+Decode1(pet count @0x792699)+loop count x (DecodeBuffer(8) cashItemSN @0x7926e7 + Decode1 @0x7926ef). The client DecodeBuffer(8) corresponds to atlas WriteLong(cashItemSN) (8-byte serial). Atlas AskPetConversationDetail: AsciiString(Message)+Byte(len)+loop (Long(SN)+Byte). Match \u2014 identical to v83/v95. Analyzer flattens the loop (one iteration modeled; tool limitation).",
+      "notes": "Dialog type 0xA (AskPet). v87 CScriptMan::OnAskPet@0x792663: DecodeStr(message @0x79267f)+Decode1(pet count @0x792699)+loop count x (DecodeBuffer(8) cashItemSN @0x7926e7 + Decode1 @0x7926ef). The client DecodeBuffer(8) corresponds to atlas WriteLong(cashItemSN) (8-byte serial). Atlas AskPetConversationDetail: AsciiString(Message)+Byte(len)+loop (Long(SN)+Byte). Match — identical to v83/v95. Analyzer flattens the loop (one iteration modeled; tool limitation).",
       "dispatch": [
         {
           "case": 0,
@@ -11815,7 +11794,7 @@
       "calls": [
         {
           "op": "Encode4",
-          "comment": "leading ask_SPW int \u2014 INFERRED from gift-family parity (OnBuyCouple/OnBuyFriendship/SendGiftsPacket all use a leading Encode4 int at v87, NOT EncodeStr). No discrete v87 rebate sender symbol recovered (OnRebateLockerItem not present in v87 export; built inline in a locker UI path). LOW CONFIDENCE: address unknown. SPW gate >=95 retained (consistent with the 3 confirmed family members)."
+          "comment": "leading ask_SPW int — INFERRED from gift-family parity (OnBuyCouple/OnBuyFriendship/SendGiftsPacket all use a leading Encode4 int at v87, NOT EncodeStr). No discrete v87 rebate sender symbol recovered (OnRebateLockerItem not present in v87 export; built inline in a locker UI path). LOW CONFIDENCE: address unknown. SPW gate >=95 retained (consistent with the 3 confirmed family members)."
         },
         {
           "op": "EncodeBuffer",
@@ -11832,31 +11811,6 @@
         {
           "op": "Decode1",
           "comment": "MTS result mode byte (0x31 CancelWishDone)"
-        }
-      ]
-    },
-    "CWvsContext::OnFriendResult#Error": {
-      "address": "0xad7ae5",
-      "direction": "clientbound",
-      "note": "mode=0x10/0x11/0x13/0x16. Conditionally reads Decode1(hasMsg)+DecodeStr(msg). Wire identical to v83/v95.",
-      "dispatch": [
-        {
-          "discriminator": "switch",
-          "case": 22
-        }
-      ],
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode byte"
-        },
-        {
-          "op": "Decode1",
-          "comment": "hasMsg flag"
-        },
-        {
-          "op": "DecodeStr",
-          "comment": "error message string (only if hasMsg != 0)"
         }
       ]
     },
@@ -11881,7 +11835,7 @@
     "CScriptMan::OnAskSpeedQuiz#AskSpeedQuiz": {
       "address": "0x792ba2",
       "direction": "clientbound",
-      "notes": "Dialog type 7 (AskSpeedQuiz). v87 CScriptMan::OnAskSpeedQuiz@0x792ba2 forwards to CWvsContext::OnInitialSpeedQuiz@0xabe8ba: Decode1(flag @0xabe8c9); when flag==0 (show): Decode4(type @0xabe916)+Decode4(answer @0xabe91f)+Decode4(correct @0xabe929)+Decode4(remain @0xabe933)+Decode4(remainSec @0xabe941). Atlas AskSpeedQuizConversationDetail mirrors this guarded body. Match \u2014 identical to v83/v95. Guard on flag==0 is analyzer-flattened (tool limitation).",
+      "notes": "Dialog type 7 (AskSpeedQuiz). v87 CScriptMan::OnAskSpeedQuiz@0x792ba2 forwards to CWvsContext::OnInitialSpeedQuiz@0xabe8ba: Decode1(flag @0xabe8c9); when flag==0 (show): Decode4(type @0xabe916)+Decode4(answer @0xabe91f)+Decode4(correct @0xabe929)+Decode4(remain @0xabe933)+Decode4(remainSec @0xabe941). Atlas AskSpeedQuizConversationDetail mirrors this guarded body. Match — identical to v83/v95. Guard on flag==0 is analyzer-flattened (tool limitation).",
       "calls": [
         {
           "op": "Decode1",
@@ -11939,7 +11893,7 @@
     "CWvsContext::OnPartyResult#Created": {
       "address": "0xad697a",
       "direction": "clientbound",
-      "note": "mode=4 (CREATE). v87 reads: partyId+name+jobId+level+autoJoin \u2014 IDA confirmed at 0xad6ed6-0xad6f06. Gate widened from v95plus to v84plus.",
+      "note": "mode=4 (CREATE). v87 reads: partyId+name+jobId+level+autoJoin — IDA confirmed at 0xad6ed6-0xad6f06. Gate widened from v95plus to v84plus.",
       "calls": [
         {
           "op": "Decode1",
@@ -11987,7 +11941,7 @@
       "calls": [
         {
           "op": "DecodeBuffer",
-          "comment": "SecondaryStat::DecodeForLocal \u2014 mask-driven opaque stat block (per-stat values+delays)"
+          "comment": "SecondaryStat::DecodeForLocal — mask-driven opaque stat block (per-stat values+delays)"
         },
         {
           "op": "Decode2",
@@ -11995,7 +11949,7 @@
         },
         {
           "op": "Decode1",
-          "comment": "MovementAffectingStat \u2014 conditional: only if SecondaryStat::IsMovementAffectingStat",
+          "comment": "MovementAffectingStat — conditional: only if SecondaryStat::IsMovementAffectingStat",
           "guard": "cond IsMovementAffectingStat"
         }
       ]
@@ -12104,7 +12058,7 @@
         },
         {
           "op": "Decode1",
-          "comment": "inner disc int8 = -2 (item unavailable \u2192 StringPool 2983); no follow-up bytes"
+          "comment": "inner disc int8 = -2 (item unavailable → StringPool 2983); no follow-up bytes"
         }
       ]
     },
@@ -12125,7 +12079,7 @@
         },
         {
           "op": "Decode1",
-          "comment": "inner disc int8 = -1 (default \u2192 'cannot pick up any more', StringPool 295)"
+          "comment": "inner disc int8 = -1 (default → 'cannot pick up any more', StringPool 295)"
         }
       ]
     },
@@ -12146,7 +12100,7 @@
         },
         {
           "op": "Decode1",
-          "comment": "inner disc int8 = -3 (game file damaged \u2192 StringPool 5317 + chat 5311)"
+          "comment": "inner disc int8 = -3 (game file damaged → StringPool 5317 + chat 5311)"
         }
       ]
     },
@@ -12724,6 +12678,242 @@
         {
           "op": "Decode4",
           "comment": "skillId (repeated count times)"
+        }
+      ]
+    },
+    "CWvsContext::OnPartyResult#AlreadyJoined1": {
+      "address": "0xad697a",
+      "direction": "clientbound",
+      "note": "mode=9. Error/notice arm: mode-only (no body).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (9)"
+        }
+      ]
+    },
+    "CWvsContext::OnPartyResult#BeginnerCannotCreate": {
+      "address": "0xad697a",
+      "direction": "clientbound",
+      "note": "mode=10. Error/notice arm: mode-only (no body).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (10)"
+        }
+      ]
+    },
+    "CWvsContext::OnPartyResult#NotInParty": {
+      "address": "0xad697a",
+      "direction": "clientbound",
+      "note": "mode=13. Error/notice arm: mode-only (no body).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (13)"
+        }
+      ]
+    },
+    "CWvsContext::OnPartyResult#AlreadyJoined2": {
+      "address": "0xad697a",
+      "direction": "clientbound",
+      "note": "mode=17. Error/notice arm: mode-only (no body).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (17)"
+        }
+      ]
+    },
+    "CWvsContext::OnPartyResult#PartyFull": {
+      "address": "0xad697a",
+      "direction": "clientbound",
+      "note": "mode=18. Error/notice arm: mode-only (no body).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (18)"
+        }
+      ]
+    },
+    "CWvsContext::OnPartyResult#CannotKick": {
+      "address": "0xad697a",
+      "direction": "clientbound",
+      "note": "mode=29. Error/notice arm: mode-only (no body).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (29)"
+        }
+      ]
+    },
+    "CWvsContext::OnPartyResult#OnlyWithinVicinity": {
+      "address": "0xad697a",
+      "direction": "clientbound",
+      "note": "mode=32. Error/notice arm: mode-only (no body).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (32)"
+        }
+      ]
+    },
+    "CWvsContext::OnPartyResult#UnableToHandOver": {
+      "address": "0xad697a",
+      "direction": "clientbound",
+      "note": "mode=33. Error/notice arm: mode-only (no body).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (33)"
+        }
+      ]
+    },
+    "CWvsContext::OnPartyResult#OnlySameChannel": {
+      "address": "0xad697a",
+      "direction": "clientbound",
+      "note": "mode=34. Error/notice arm: mode-only (no body).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (34)"
+        }
+      ]
+    },
+    "CWvsContext::OnPartyResult#GmCannotCreate": {
+      "address": "0xad697a",
+      "direction": "clientbound",
+      "note": "mode=36. Error/notice arm: mode-only (no body).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (36)"
+        }
+      ]
+    },
+    "CWvsContext::OnPartyResult#UnableToFindCharacter": {
+      "address": "0xad697a",
+      "direction": "clientbound",
+      "note": "mode=37. Error/notice arm: mode-only (no body).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (37)"
+        }
+      ]
+    },
+    "CWvsContext::OnFriendResult#ListFull": {
+      "address": "0xad7ae5",
+      "direction": "clientbound",
+      "note": "mode=11. Error/notice arm: mode-only (no body).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (11)"
+        }
+      ]
+    },
+    "CWvsContext::OnFriendResult#OtherListFull": {
+      "address": "0xad7ae5",
+      "direction": "clientbound",
+      "note": "mode=12. Error/notice arm: mode-only (no body).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (12)"
+        }
+      ]
+    },
+    "CWvsContext::OnFriendResult#AlreadyBuddy": {
+      "address": "0xad7ae5",
+      "direction": "clientbound",
+      "note": "mode=13. Error/notice arm: mode-only (no body).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (13)"
+        }
+      ]
+    },
+    "CWvsContext::OnFriendResult#CannotBuddyGm": {
+      "address": "0xad7ae5",
+      "direction": "clientbound",
+      "note": "mode=14. Error/notice arm: mode-only (no body).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (14)"
+        }
+      ]
+    },
+    "CWvsContext::OnFriendResult#CharacterNotFound": {
+      "address": "0xad7ae5",
+      "direction": "clientbound",
+      "note": "mode=15. Error/notice arm: mode-only (no body).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (15)"
+        }
+      ]
+    },
+    "CWvsContext::OnFriendResult#UnknownError": {
+      "address": "0xad7ae5",
+      "direction": "clientbound",
+      "note": "mode=16. GMS reads a trailing CInPacket::Decode1 (extra byte).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (16)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "trailing extra byte (CInPacket::Decode1)"
+        }
+      ]
+    },
+    "CWvsContext::OnFriendResult#UnknownError2": {
+      "address": "0xad7ae5",
+      "direction": "clientbound",
+      "note": "mode=17. GMS reads a trailing CInPacket::Decode1 (extra byte).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (17)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "trailing extra byte (CInPacket::Decode1)"
+        }
+      ]
+    },
+    "CWvsContext::OnFriendResult#UnknownError3": {
+      "address": "0xad7ae5",
+      "direction": "clientbound",
+      "note": "mode=19. GMS reads a trailing CInPacket::Decode1 (extra byte).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (19)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "trailing extra byte (CInPacket::Decode1)"
+        }
+      ]
+    },
+    "CWvsContext::OnFriendResult#UnknownError4": {
+      "address": "0xad7ae5",
+      "direction": "clientbound",
+      "note": "mode=22. GMS reads a trailing CInPacket::Decode1 (extra byte).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (22)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "trailing extra byte (CInPacket::Decode1)"
         }
       ]
     }

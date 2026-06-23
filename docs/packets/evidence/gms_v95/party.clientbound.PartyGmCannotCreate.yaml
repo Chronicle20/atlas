@@ -1,0 +1,10 @@
+packet: party/clientbound/PartyGmCannotCreate
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnPartyResult#GmCannotCreate
+    address: "0xa10ab0"
+    decompile_sha256: c5a8f30a2e8d2daa717b8bf108c67238dcaaf706d42ddc9176be8667446f97fc
+verifies:
+  - libs/atlas-packet/party/clientbound/error_test.go#TestModeOnlyPartyErrorArms

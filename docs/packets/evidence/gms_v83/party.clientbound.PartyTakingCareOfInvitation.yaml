@@ -1,0 +1,10 @@
+packet: party/clientbound/PartyTakingCareOfInvitation
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnPartyResult#TakingCareOfInvitation
+    address: "0xa3e31c"
+    decompile_sha256: fd664819e8bfe22db78b6a2a27ab46b3a1f282bfeb487c1643cb60ca926e9383
+verifies:
+  - libs/atlas-packet/party/clientbound/error_test.go#TestInviteTargetPartyArms

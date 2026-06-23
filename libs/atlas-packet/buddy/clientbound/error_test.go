@@ -26,31 +26,31 @@ import (
 // TestModeOnlyBuddyErrorArms covers the 5 mode-only OnFriendResult error arms.
 // Each encodes to exactly its mode byte for every version.
 //
-// packet-audit:verify packet=buddy/clientbound/ListFull version=gms_v83 ida=CWvsContext::OnFriendResult@0xa3f2e8
-// packet-audit:verify packet=buddy/clientbound/ListFull version=gms_v84 ida=CWvsContext::OnFriendResult@0xa8ada2
-// packet-audit:verify packet=buddy/clientbound/ListFull version=gms_v87 ida=CWvsContext::OnFriendResult@0xad7ae5
-// packet-audit:verify packet=buddy/clientbound/ListFull version=gms_v95 ida=CWvsContext::OnFriendResult@0xa12630
-// packet-audit:verify packet=buddy/clientbound/ListFull version=jms_v185 ida=CWvsContext::OnFriendResult@0xb2a873
-// packet-audit:verify packet=buddy/clientbound/OtherListFull version=gms_v83 ida=CWvsContext::OnFriendResult@0xa3f2e8
-// packet-audit:verify packet=buddy/clientbound/OtherListFull version=gms_v84 ida=CWvsContext::OnFriendResult@0xa8ada2
-// packet-audit:verify packet=buddy/clientbound/OtherListFull version=gms_v87 ida=CWvsContext::OnFriendResult@0xad7ae5
-// packet-audit:verify packet=buddy/clientbound/OtherListFull version=gms_v95 ida=CWvsContext::OnFriendResult@0xa12630
-// packet-audit:verify packet=buddy/clientbound/OtherListFull version=jms_v185 ida=CWvsContext::OnFriendResult@0xb2a873
-// packet-audit:verify packet=buddy/clientbound/AlreadyBuddy version=gms_v83 ida=CWvsContext::OnFriendResult@0xa3f2e8
-// packet-audit:verify packet=buddy/clientbound/AlreadyBuddy version=gms_v84 ida=CWvsContext::OnFriendResult@0xa8ada2
-// packet-audit:verify packet=buddy/clientbound/AlreadyBuddy version=gms_v87 ida=CWvsContext::OnFriendResult@0xad7ae5
-// packet-audit:verify packet=buddy/clientbound/AlreadyBuddy version=gms_v95 ida=CWvsContext::OnFriendResult@0xa12630
-// packet-audit:verify packet=buddy/clientbound/AlreadyBuddy version=jms_v185 ida=CWvsContext::OnFriendResult@0xb2a873
-// packet-audit:verify packet=buddy/clientbound/CannotBuddyGm version=gms_v83 ida=CWvsContext::OnFriendResult@0xa3f2e8
-// packet-audit:verify packet=buddy/clientbound/CannotBuddyGm version=gms_v84 ida=CWvsContext::OnFriendResult@0xa8ada2
-// packet-audit:verify packet=buddy/clientbound/CannotBuddyGm version=gms_v87 ida=CWvsContext::OnFriendResult@0xad7ae5
-// packet-audit:verify packet=buddy/clientbound/CannotBuddyGm version=gms_v95 ida=CWvsContext::OnFriendResult@0xa12630
-// packet-audit:verify packet=buddy/clientbound/CannotBuddyGm version=jms_v185 ida=CWvsContext::OnFriendResult@0xb2a873
-// packet-audit:verify packet=buddy/clientbound/CharacterNotFound version=gms_v83 ida=CWvsContext::OnFriendResult@0xa3f2e8
-// packet-audit:verify packet=buddy/clientbound/CharacterNotFound version=gms_v84 ida=CWvsContext::OnFriendResult@0xa8ada2
-// packet-audit:verify packet=buddy/clientbound/CharacterNotFound version=gms_v87 ida=CWvsContext::OnFriendResult@0xad7ae5
-// packet-audit:verify packet=buddy/clientbound/CharacterNotFound version=gms_v95 ida=CWvsContext::OnFriendResult@0xa12630
-// packet-audit:verify packet=buddy/clientbound/CharacterNotFound version=jms_v185 ida=CWvsContext::OnFriendResult@0xb2a873
+// packet-audit:verify packet=buddy/clientbound/BuddyListFull version=gms_v83 ida=0xa3f2e8
+// packet-audit:verify packet=buddy/clientbound/BuddyListFull version=gms_v84 ida=0xa8ada2
+// packet-audit:verify packet=buddy/clientbound/BuddyListFull version=gms_v87 ida=0xad7ae5
+// packet-audit:verify packet=buddy/clientbound/BuddyListFull version=gms_v95 ida=0xa12630
+// packet-audit:verify packet=buddy/clientbound/BuddyListFull version=jms_v185 ida=0xb2a873
+// packet-audit:verify packet=buddy/clientbound/BuddyOtherListFull version=gms_v83 ida=0xa3f2e8
+// packet-audit:verify packet=buddy/clientbound/BuddyOtherListFull version=gms_v84 ida=0xa8ada2
+// packet-audit:verify packet=buddy/clientbound/BuddyOtherListFull version=gms_v87 ida=0xad7ae5
+// packet-audit:verify packet=buddy/clientbound/BuddyOtherListFull version=gms_v95 ida=0xa12630
+// packet-audit:verify packet=buddy/clientbound/BuddyOtherListFull version=jms_v185 ida=0xb2a873
+// packet-audit:verify packet=buddy/clientbound/BuddyAlreadyBuddy version=gms_v83 ida=0xa3f2e8
+// packet-audit:verify packet=buddy/clientbound/BuddyAlreadyBuddy version=gms_v84 ida=0xa8ada2
+// packet-audit:verify packet=buddy/clientbound/BuddyAlreadyBuddy version=gms_v87 ida=0xad7ae5
+// packet-audit:verify packet=buddy/clientbound/BuddyAlreadyBuddy version=gms_v95 ida=0xa12630
+// packet-audit:verify packet=buddy/clientbound/BuddyAlreadyBuddy version=jms_v185 ida=0xb2a873
+// packet-audit:verify packet=buddy/clientbound/BuddyCannotBuddyGm version=gms_v83 ida=0xa3f2e8
+// packet-audit:verify packet=buddy/clientbound/BuddyCannotBuddyGm version=gms_v84 ida=0xa8ada2
+// packet-audit:verify packet=buddy/clientbound/BuddyCannotBuddyGm version=gms_v87 ida=0xad7ae5
+// packet-audit:verify packet=buddy/clientbound/BuddyCannotBuddyGm version=gms_v95 ida=0xa12630
+// packet-audit:verify packet=buddy/clientbound/BuddyCannotBuddyGm version=jms_v185 ida=0xb2a873
+// packet-audit:verify packet=buddy/clientbound/BuddyCharacterNotFound version=gms_v83 ida=0xa3f2e8
+// packet-audit:verify packet=buddy/clientbound/BuddyCharacterNotFound version=gms_v84 ida=0xa8ada2
+// packet-audit:verify packet=buddy/clientbound/BuddyCharacterNotFound version=gms_v87 ida=0xad7ae5
+// packet-audit:verify packet=buddy/clientbound/BuddyCharacterNotFound version=gms_v95 ida=0xa12630
+// packet-audit:verify packet=buddy/clientbound/BuddyCharacterNotFound version=jms_v185 ida=0xb2a873
 func TestModeOnlyBuddyErrorArms(t *testing.T) {
 	cases := map[string]struct {
 		mode   byte
@@ -83,26 +83,26 @@ func TestModeOnlyBuddyErrorArms(t *testing.T) {
 // arm reads a trailing CInPacket::Decode1, so the encoder writes [mode, 0x00];
 // in JMS the arm is mode-only, so the encoder writes [mode].
 //
-// packet-audit:verify packet=buddy/clientbound/UnknownError version=gms_v83 ida=CWvsContext::OnFriendResult@0xa3f2e8
-// packet-audit:verify packet=buddy/clientbound/UnknownError version=gms_v84 ida=CWvsContext::OnFriendResult@0xa8ada2
-// packet-audit:verify packet=buddy/clientbound/UnknownError version=gms_v87 ida=CWvsContext::OnFriendResult@0xad7ae5
-// packet-audit:verify packet=buddy/clientbound/UnknownError version=gms_v95 ida=CWvsContext::OnFriendResult@0xa12630
-// packet-audit:verify packet=buddy/clientbound/UnknownError version=jms_v185 ida=CWvsContext::OnFriendResult@0xb2a873
-// packet-audit:verify packet=buddy/clientbound/UnknownError2 version=gms_v83 ida=CWvsContext::OnFriendResult@0xa3f2e8
-// packet-audit:verify packet=buddy/clientbound/UnknownError2 version=gms_v84 ida=CWvsContext::OnFriendResult@0xa8ada2
-// packet-audit:verify packet=buddy/clientbound/UnknownError2 version=gms_v87 ida=CWvsContext::OnFriendResult@0xad7ae5
-// packet-audit:verify packet=buddy/clientbound/UnknownError2 version=gms_v95 ida=CWvsContext::OnFriendResult@0xa12630
-// packet-audit:verify packet=buddy/clientbound/UnknownError2 version=jms_v185 ida=CWvsContext::OnFriendResult@0xb2a873
-// packet-audit:verify packet=buddy/clientbound/UnknownError3 version=gms_v83 ida=CWvsContext::OnFriendResult@0xa3f2e8
-// packet-audit:verify packet=buddy/clientbound/UnknownError3 version=gms_v84 ida=CWvsContext::OnFriendResult@0xa8ada2
-// packet-audit:verify packet=buddy/clientbound/UnknownError3 version=gms_v87 ida=CWvsContext::OnFriendResult@0xad7ae5
-// packet-audit:verify packet=buddy/clientbound/UnknownError3 version=gms_v95 ida=CWvsContext::OnFriendResult@0xa12630
-// packet-audit:verify packet=buddy/clientbound/UnknownError3 version=jms_v185 ida=CWvsContext::OnFriendResult@0xb2a873
-// packet-audit:verify packet=buddy/clientbound/UnknownError4 version=gms_v83 ida=CWvsContext::OnFriendResult@0xa3f2e8
-// packet-audit:verify packet=buddy/clientbound/UnknownError4 version=gms_v84 ida=CWvsContext::OnFriendResult@0xa8ada2
-// packet-audit:verify packet=buddy/clientbound/UnknownError4 version=gms_v87 ida=CWvsContext::OnFriendResult@0xad7ae5
-// packet-audit:verify packet=buddy/clientbound/UnknownError4 version=gms_v95 ida=CWvsContext::OnFriendResult@0xa12630
-// packet-audit:verify packet=buddy/clientbound/UnknownError4 version=jms_v185 ida=CWvsContext::OnFriendResult@0xb2a873
+// packet-audit:verify packet=buddy/clientbound/BuddyUnknownError version=gms_v83 ida=0xa3f2e8
+// packet-audit:verify packet=buddy/clientbound/BuddyUnknownError version=gms_v84 ida=0xa8ada2
+// packet-audit:verify packet=buddy/clientbound/BuddyUnknownError version=gms_v87 ida=0xad7ae5
+// packet-audit:verify packet=buddy/clientbound/BuddyUnknownError version=gms_v95 ida=0xa12630
+// packet-audit:verify packet=buddy/clientbound/BuddyUnknownError version=jms_v185 ida=0xb2a873
+// packet-audit:verify packet=buddy/clientbound/BuddyUnknownError2 version=gms_v83 ida=0xa3f2e8
+// packet-audit:verify packet=buddy/clientbound/BuddyUnknownError2 version=gms_v84 ida=0xa8ada2
+// packet-audit:verify packet=buddy/clientbound/BuddyUnknownError2 version=gms_v87 ida=0xad7ae5
+// packet-audit:verify packet=buddy/clientbound/BuddyUnknownError2 version=gms_v95 ida=0xa12630
+// packet-audit:verify packet=buddy/clientbound/BuddyUnknownError2 version=jms_v185 ida=0xb2a873
+// packet-audit:verify packet=buddy/clientbound/BuddyUnknownError3 version=gms_v83 ida=0xa3f2e8
+// packet-audit:verify packet=buddy/clientbound/BuddyUnknownError3 version=gms_v84 ida=0xa8ada2
+// packet-audit:verify packet=buddy/clientbound/BuddyUnknownError3 version=gms_v87 ida=0xad7ae5
+// packet-audit:verify packet=buddy/clientbound/BuddyUnknownError3 version=gms_v95 ida=0xa12630
+// packet-audit:verify packet=buddy/clientbound/BuddyUnknownError3 version=jms_v185 ida=0xb2a873
+// packet-audit:verify packet=buddy/clientbound/BuddyUnknownError4 version=gms_v83 ida=0xa3f2e8
+// packet-audit:verify packet=buddy/clientbound/BuddyUnknownError4 version=gms_v84 ida=0xa8ada2
+// packet-audit:verify packet=buddy/clientbound/BuddyUnknownError4 version=gms_v87 ida=0xad7ae5
+// packet-audit:verify packet=buddy/clientbound/BuddyUnknownError4 version=gms_v95 ida=0xa12630
+// packet-audit:verify packet=buddy/clientbound/BuddyUnknownError4 version=jms_v185 ida=0xb2a873
 func TestExtraByteBuddyErrorArms(t *testing.T) {
 	cases := []struct {
 		name   string

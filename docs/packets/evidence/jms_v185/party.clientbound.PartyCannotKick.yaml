@@ -1,0 +1,10 @@
+packet: party/clientbound/PartyCannotKick
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnPartyResult#CannotKick
+    address: "0xb297e7"
+    decompile_sha256: 3682059101cb14f7babcd08b530c9eadb2d6a731c0b7af143e226c81db73869c
+verifies:
+  - libs/atlas-packet/party/clientbound/error_test.go#TestModeOnlyPartyErrorArms

@@ -57,62 +57,62 @@ func runModeOnly(t *testing.T, name string, c modeOnlyArmCase) {
 // arm's encoder writes exactly one mode byte; the per-version mode bytes are
 // asserted from party.yaml.
 //
-// packet-audit:verify packet=party/clientbound/AlreadyJoined1 version=gms_v83 ida=CWvsContext::OnPartyResult@0xa3e31c
-// packet-audit:verify packet=party/clientbound/AlreadyJoined1 version=gms_v84 ida=CWvsContext::OnPartyResult@0xa89cf3
-// packet-audit:verify packet=party/clientbound/AlreadyJoined1 version=gms_v87 ida=CWvsContext::OnPartyResult@0xad697a
-// packet-audit:verify packet=party/clientbound/AlreadyJoined1 version=gms_v95 ida=CWvsContext::OnPartyResult@0xa10ab0
-// packet-audit:verify packet=party/clientbound/AlreadyJoined1 version=jms_v185 ida=CWvsContext::OnPartyResult@0xb297e7
-// packet-audit:verify packet=party/clientbound/BeginnerCannotCreate version=gms_v83 ida=CWvsContext::OnPartyResult@0xa3e31c
-// packet-audit:verify packet=party/clientbound/BeginnerCannotCreate version=gms_v84 ida=CWvsContext::OnPartyResult@0xa89cf3
-// packet-audit:verify packet=party/clientbound/BeginnerCannotCreate version=gms_v87 ida=CWvsContext::OnPartyResult@0xad697a
-// packet-audit:verify packet=party/clientbound/BeginnerCannotCreate version=gms_v95 ida=CWvsContext::OnPartyResult@0xa10ab0
-// packet-audit:verify packet=party/clientbound/BeginnerCannotCreate version=jms_v185 ida=CWvsContext::OnPartyResult@0xb297e7
-// packet-audit:verify packet=party/clientbound/NotInParty version=gms_v83 ida=CWvsContext::OnPartyResult@0xa3e31c
-// packet-audit:verify packet=party/clientbound/NotInParty version=gms_v84 ida=CWvsContext::OnPartyResult@0xa89cf3
-// packet-audit:verify packet=party/clientbound/NotInParty version=gms_v87 ida=CWvsContext::OnPartyResult@0xad697a
-// packet-audit:verify packet=party/clientbound/NotInParty version=gms_v95 ida=CWvsContext::OnPartyResult@0xa10ab0
-// packet-audit:verify packet=party/clientbound/NotInParty version=jms_v185 ida=CWvsContext::OnPartyResult@0xb297e7
-// packet-audit:verify packet=party/clientbound/AlreadyJoined2 version=gms_v83 ida=CWvsContext::OnPartyResult@0xa3e31c
-// packet-audit:verify packet=party/clientbound/AlreadyJoined2 version=gms_v84 ida=CWvsContext::OnPartyResult@0xa89cf3
-// packet-audit:verify packet=party/clientbound/AlreadyJoined2 version=gms_v87 ida=CWvsContext::OnPartyResult@0xad697a
-// packet-audit:verify packet=party/clientbound/AlreadyJoined2 version=gms_v95 ida=CWvsContext::OnPartyResult@0xa10ab0
-// packet-audit:verify packet=party/clientbound/AlreadyJoined2 version=jms_v185 ida=CWvsContext::OnPartyResult@0xb297e7
-// packet-audit:verify packet=party/clientbound/PartyFull version=gms_v83 ida=CWvsContext::OnPartyResult@0xa3e31c
-// packet-audit:verify packet=party/clientbound/PartyFull version=gms_v84 ida=CWvsContext::OnPartyResult@0xa89cf3
-// packet-audit:verify packet=party/clientbound/PartyFull version=gms_v87 ida=CWvsContext::OnPartyResult@0xad697a
-// packet-audit:verify packet=party/clientbound/PartyFull version=gms_v95 ida=CWvsContext::OnPartyResult@0xa10ab0
-// packet-audit:verify packet=party/clientbound/PartyFull version=jms_v185 ida=CWvsContext::OnPartyResult@0xb297e7
-// packet-audit:verify packet=party/clientbound/UnableToFindInChannel version=gms_v83 ida=CWvsContext::OnPartyResult@0xa3e31c
-// packet-audit:verify packet=party/clientbound/UnableToFindInChannel version=gms_v84 ida=CWvsContext::OnPartyResult@0xa89cf3
-// packet-audit:verify packet=party/clientbound/CannotKick version=gms_v83 ida=CWvsContext::OnPartyResult@0xa3e31c
-// packet-audit:verify packet=party/clientbound/CannotKick version=gms_v84 ida=CWvsContext::OnPartyResult@0xa89cf3
-// packet-audit:verify packet=party/clientbound/CannotKick version=gms_v87 ida=CWvsContext::OnPartyResult@0xad697a
-// packet-audit:verify packet=party/clientbound/CannotKick version=gms_v95 ida=CWvsContext::OnPartyResult@0xa10ab0
-// packet-audit:verify packet=party/clientbound/CannotKick version=jms_v185 ida=CWvsContext::OnPartyResult@0xb297e7
-// packet-audit:verify packet=party/clientbound/OnlyWithinVicinity version=gms_v83 ida=CWvsContext::OnPartyResult@0xa3e31c
-// packet-audit:verify packet=party/clientbound/OnlyWithinVicinity version=gms_v84 ida=CWvsContext::OnPartyResult@0xa89cf3
-// packet-audit:verify packet=party/clientbound/OnlyWithinVicinity version=gms_v87 ida=CWvsContext::OnPartyResult@0xad697a
-// packet-audit:verify packet=party/clientbound/OnlyWithinVicinity version=gms_v95 ida=CWvsContext::OnPartyResult@0xa10ab0
-// packet-audit:verify packet=party/clientbound/OnlyWithinVicinity version=jms_v185 ida=CWvsContext::OnPartyResult@0xb297e7
-// packet-audit:verify packet=party/clientbound/UnableToHandOver version=gms_v83 ida=CWvsContext::OnPartyResult@0xa3e31c
-// packet-audit:verify packet=party/clientbound/UnableToHandOver version=gms_v84 ida=CWvsContext::OnPartyResult@0xa89cf3
-// packet-audit:verify packet=party/clientbound/UnableToHandOver version=gms_v87 ida=CWvsContext::OnPartyResult@0xad697a
-// packet-audit:verify packet=party/clientbound/UnableToHandOver version=gms_v95 ida=CWvsContext::OnPartyResult@0xa10ab0
-// packet-audit:verify packet=party/clientbound/UnableToHandOver version=jms_v185 ida=CWvsContext::OnPartyResult@0xb297e7
-// packet-audit:verify packet=party/clientbound/OnlySameChannel version=gms_v83 ida=CWvsContext::OnPartyResult@0xa3e31c
-// packet-audit:verify packet=party/clientbound/OnlySameChannel version=gms_v84 ida=CWvsContext::OnPartyResult@0xa89cf3
-// packet-audit:verify packet=party/clientbound/OnlySameChannel version=gms_v87 ida=CWvsContext::OnPartyResult@0xad697a
-// packet-audit:verify packet=party/clientbound/OnlySameChannel version=gms_v95 ida=CWvsContext::OnPartyResult@0xa10ab0
-// packet-audit:verify packet=party/clientbound/OnlySameChannel version=jms_v185 ida=CWvsContext::OnPartyResult@0xb297e7
-// packet-audit:verify packet=party/clientbound/GmCannotCreate version=gms_v83 ida=CWvsContext::OnPartyResult@0xa3e31c
-// packet-audit:verify packet=party/clientbound/GmCannotCreate version=gms_v84 ida=CWvsContext::OnPartyResult@0xa89cf3
-// packet-audit:verify packet=party/clientbound/GmCannotCreate version=gms_v87 ida=CWvsContext::OnPartyResult@0xad697a
-// packet-audit:verify packet=party/clientbound/GmCannotCreate version=gms_v95 ida=CWvsContext::OnPartyResult@0xa10ab0
-// packet-audit:verify packet=party/clientbound/GmCannotCreate version=jms_v185 ida=CWvsContext::OnPartyResult@0xb297e7
-// packet-audit:verify packet=party/clientbound/UnableToFindCharacter version=gms_v83 ida=CWvsContext::OnPartyResult@0xa3e31c
-// packet-audit:verify packet=party/clientbound/UnableToFindCharacter version=gms_v84 ida=CWvsContext::OnPartyResult@0xa89cf3
-// packet-audit:verify packet=party/clientbound/UnableToFindCharacter version=gms_v87 ida=CWvsContext::OnPartyResult@0xad697a
-// packet-audit:verify packet=party/clientbound/UnableToFindCharacter version=gms_v95 ida=CWvsContext::OnPartyResult@0xa10ab0
+// packet-audit:verify packet=party/clientbound/PartyAlreadyJoined1 version=gms_v83 ida=0xa3e31c
+// packet-audit:verify packet=party/clientbound/PartyAlreadyJoined1 version=gms_v84 ida=0xa89cf3
+// packet-audit:verify packet=party/clientbound/PartyAlreadyJoined1 version=gms_v87 ida=0xad697a
+// packet-audit:verify packet=party/clientbound/PartyAlreadyJoined1 version=gms_v95 ida=0xa10ab0
+// packet-audit:verify packet=party/clientbound/PartyAlreadyJoined1 version=jms_v185 ida=0xb297e7
+// packet-audit:verify packet=party/clientbound/PartyBeginnerCannotCreate version=gms_v83 ida=0xa3e31c
+// packet-audit:verify packet=party/clientbound/PartyBeginnerCannotCreate version=gms_v84 ida=0xa89cf3
+// packet-audit:verify packet=party/clientbound/PartyBeginnerCannotCreate version=gms_v87 ida=0xad697a
+// packet-audit:verify packet=party/clientbound/PartyBeginnerCannotCreate version=gms_v95 ida=0xa10ab0
+// packet-audit:verify packet=party/clientbound/PartyBeginnerCannotCreate version=jms_v185 ida=0xb297e7
+// packet-audit:verify packet=party/clientbound/PartyNotInParty version=gms_v83 ida=0xa3e31c
+// packet-audit:verify packet=party/clientbound/PartyNotInParty version=gms_v84 ida=0xa89cf3
+// packet-audit:verify packet=party/clientbound/PartyNotInParty version=gms_v87 ida=0xad697a
+// packet-audit:verify packet=party/clientbound/PartyNotInParty version=gms_v95 ida=0xa10ab0
+// packet-audit:verify packet=party/clientbound/PartyNotInParty version=jms_v185 ida=0xb297e7
+// packet-audit:verify packet=party/clientbound/PartyAlreadyJoined2 version=gms_v83 ida=0xa3e31c
+// packet-audit:verify packet=party/clientbound/PartyAlreadyJoined2 version=gms_v84 ida=0xa89cf3
+// packet-audit:verify packet=party/clientbound/PartyAlreadyJoined2 version=gms_v87 ida=0xad697a
+// packet-audit:verify packet=party/clientbound/PartyAlreadyJoined2 version=gms_v95 ida=0xa10ab0
+// packet-audit:verify packet=party/clientbound/PartyAlreadyJoined2 version=jms_v185 ida=0xb297e7
+// packet-audit:verify packet=party/clientbound/PartyPartyFull version=gms_v83 ida=0xa3e31c
+// packet-audit:verify packet=party/clientbound/PartyPartyFull version=gms_v84 ida=0xa89cf3
+// packet-audit:verify packet=party/clientbound/PartyPartyFull version=gms_v87 ida=0xad697a
+// packet-audit:verify packet=party/clientbound/PartyPartyFull version=gms_v95 ida=0xa10ab0
+// packet-audit:verify packet=party/clientbound/PartyPartyFull version=jms_v185 ida=0xb297e7
+// packet-audit:verify packet=party/clientbound/PartyUnableToFindInChannel version=gms_v83 ida=0xa3e31c
+// packet-audit:verify packet=party/clientbound/PartyUnableToFindInChannel version=gms_v84 ida=0xa89cf3
+// packet-audit:verify packet=party/clientbound/PartyCannotKick version=gms_v83 ida=0xa3e31c
+// packet-audit:verify packet=party/clientbound/PartyCannotKick version=gms_v84 ida=0xa89cf3
+// packet-audit:verify packet=party/clientbound/PartyCannotKick version=gms_v87 ida=0xad697a
+// packet-audit:verify packet=party/clientbound/PartyCannotKick version=gms_v95 ida=0xa10ab0
+// packet-audit:verify packet=party/clientbound/PartyCannotKick version=jms_v185 ida=0xb297e7
+// packet-audit:verify packet=party/clientbound/PartyOnlyWithinVicinity version=gms_v83 ida=0xa3e31c
+// packet-audit:verify packet=party/clientbound/PartyOnlyWithinVicinity version=gms_v84 ida=0xa89cf3
+// packet-audit:verify packet=party/clientbound/PartyOnlyWithinVicinity version=gms_v87 ida=0xad697a
+// packet-audit:verify packet=party/clientbound/PartyOnlyWithinVicinity version=gms_v95 ida=0xa10ab0
+// packet-audit:verify packet=party/clientbound/PartyOnlyWithinVicinity version=jms_v185 ida=0xb297e7
+// packet-audit:verify packet=party/clientbound/PartyUnableToHandOver version=gms_v83 ida=0xa3e31c
+// packet-audit:verify packet=party/clientbound/PartyUnableToHandOver version=gms_v84 ida=0xa89cf3
+// packet-audit:verify packet=party/clientbound/PartyUnableToHandOver version=gms_v87 ida=0xad697a
+// packet-audit:verify packet=party/clientbound/PartyUnableToHandOver version=gms_v95 ida=0xa10ab0
+// packet-audit:verify packet=party/clientbound/PartyUnableToHandOver version=jms_v185 ida=0xb297e7
+// packet-audit:verify packet=party/clientbound/PartyOnlySameChannel version=gms_v83 ida=0xa3e31c
+// packet-audit:verify packet=party/clientbound/PartyOnlySameChannel version=gms_v84 ida=0xa89cf3
+// packet-audit:verify packet=party/clientbound/PartyOnlySameChannel version=gms_v87 ida=0xad697a
+// packet-audit:verify packet=party/clientbound/PartyOnlySameChannel version=gms_v95 ida=0xa10ab0
+// packet-audit:verify packet=party/clientbound/PartyOnlySameChannel version=jms_v185 ida=0xb297e7
+// packet-audit:verify packet=party/clientbound/PartyGmCannotCreate version=gms_v83 ida=0xa3e31c
+// packet-audit:verify packet=party/clientbound/PartyGmCannotCreate version=gms_v84 ida=0xa89cf3
+// packet-audit:verify packet=party/clientbound/PartyGmCannotCreate version=gms_v87 ida=0xad697a
+// packet-audit:verify packet=party/clientbound/PartyGmCannotCreate version=gms_v95 ida=0xa10ab0
+// packet-audit:verify packet=party/clientbound/PartyGmCannotCreate version=jms_v185 ida=0xb297e7
+// packet-audit:verify packet=party/clientbound/PartyUnableToFindCharacter version=gms_v83 ida=0xa3e31c
+// packet-audit:verify packet=party/clientbound/PartyUnableToFindCharacter version=gms_v84 ida=0xa89cf3
+// packet-audit:verify packet=party/clientbound/PartyUnableToFindCharacter version=gms_v87 ida=0xad697a
+// packet-audit:verify packet=party/clientbound/PartyUnableToFindCharacter version=gms_v95 ida=0xa10ab0
 func TestModeOnlyPartyErrorArms(t *testing.T) {
 	cases := map[string]modeOnlyArmCase{
 		"AlreadyJoined1":        {9, 9, 9, 9, 9, func(b byte) []byte { m := NewAlreadyJoined1(b); return m.Encode(nil, nil)(nil) }},
@@ -139,12 +139,12 @@ func TestModeOnlyPartyErrorArms(t *testing.T) {
 // writes mode + WriteAsciiString(name): a 2-byte little-endian length prefix
 // followed by the ShiftJIS-encoded ascii bytes. "Bob" → [0x03, 0x00, 'B','o','b'].
 //
-// packet-audit:verify packet=party/clientbound/BlockingInvitations version=gms_v83 ida=CWvsContext::OnPartyResult@0xa3e31c
-// packet-audit:verify packet=party/clientbound/BlockingInvitations version=gms_v84 ida=CWvsContext::OnPartyResult@0xa89cf3
-// packet-audit:verify packet=party/clientbound/TakingCareOfInvitation version=gms_v83 ida=CWvsContext::OnPartyResult@0xa3e31c
-// packet-audit:verify packet=party/clientbound/TakingCareOfInvitation version=gms_v84 ida=CWvsContext::OnPartyResult@0xa89cf3
-// packet-audit:verify packet=party/clientbound/RequestDenied version=gms_v83 ida=CWvsContext::OnPartyResult@0xa3e31c
-// packet-audit:verify packet=party/clientbound/RequestDenied version=gms_v84 ida=CWvsContext::OnPartyResult@0xa89cf3
+// packet-audit:verify packet=party/clientbound/PartyBlockingInvitations version=gms_v83 ida=0xa3e31c
+// packet-audit:verify packet=party/clientbound/PartyBlockingInvitations version=gms_v84 ida=0xa89cf3
+// packet-audit:verify packet=party/clientbound/PartyTakingCareOfInvitation version=gms_v83 ida=0xa3e31c
+// packet-audit:verify packet=party/clientbound/PartyTakingCareOfInvitation version=gms_v84 ida=0xa89cf3
+// packet-audit:verify packet=party/clientbound/PartyRequestDenied version=gms_v83 ida=0xa3e31c
+// packet-audit:verify packet=party/clientbound/PartyRequestDenied version=gms_v84 ida=0xa89cf3
 func TestInviteTargetPartyArms(t *testing.T) {
 	// mode byte + 2-byte ascii length prefix + "Bob" (3 bytes) = 6 bytes total.
 	want := func(mode byte) []byte { return []byte{mode, 0x03, 0x00, 'B', 'o', 'b'} }

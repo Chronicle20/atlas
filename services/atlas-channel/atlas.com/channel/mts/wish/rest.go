@@ -9,6 +9,8 @@ import "time"
 // libs/atlas-rest/CLAUDE.md).
 type RestModel struct {
 	Id          string    `json:"-"`
+	WorldId     byte      `json:"worldId"`
+	Serial      uint32    `json:"serial"`
 	CharacterId uint32    `json:"characterId"`
 	ItemId      uint32    `json:"itemId"`
 	CreatedAt   time.Time `json:"createdAt"`
@@ -30,6 +32,8 @@ func (r *RestModel) SetToManyReferenceIDs(_ string, _ []string) error { return n
 func Extract(r RestModel) (Model, error) {
 	return Model{
 		id:          r.Id,
+		worldId:     r.WorldId,
+		serial:      r.Serial,
 		characterId: r.CharacterId,
 		itemId:      r.ItemId,
 	}, nil

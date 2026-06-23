@@ -356,6 +356,7 @@ func handleRegisterWish(pf providerFn) func(db *gorm.DB) message.Handler[mts.Com
 				t := tenant.MustFromContext(ctx)
 				wm, berr := wish.NewBuilder(t.Id(), b.CharacterId, b.ItemId).
 					SetId(b.WishId).
+					SetWorldId(world.Id(b.WorldId)).
 					Build()
 				if berr != nil {
 					return berr

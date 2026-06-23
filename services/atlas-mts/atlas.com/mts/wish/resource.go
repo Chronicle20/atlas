@@ -4,6 +4,7 @@ import (
 	"atlas-mts/rest"
 	"net/http"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
@@ -62,7 +63,9 @@ func handleCreateWish(d *rest.HandlerDependency, c *rest.HandlerContext, rm Rest
 	return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			t := tenant.MustFromContext(d.Context())
-			m, err := NewBuilder(t.Id(), characterId, rm.ItemId).Build()
+			m, err := NewBuilder(t.Id(), characterId, rm.ItemId).
+				SetWorldId(world.Id(rm.WorldId)).
+				Build()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Building wish model.")
 				w.WriteHeader(http.StatusBadRequest)

@@ -395,7 +395,13 @@ func ItcOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer
 		case ItcOperationCancelWish:
 			body := &fieldsb.ItcOperationCancelWish{}
 			body.Decode(l, ctx)(r, readerOptions)
-			emitRemoveWishBySerial(l, ctx, wp, s, body.ItcSn(), mtsmsg.WishOriginCancelWish, fieldpkt.MtsOperationCancelWishFailedBody())
+			// CANCEL_WISH is sent from the WISH sub-tab (IDA: sub_5BC1D5 case 4,
+			// v4[27]!=0 -> CITC::OnCancelWish, which Encode4s the wish ITCITEM's
+			// nITCSN). VIEW_WISH renders each wish entry's own per-(tenant, world)
+			// serial into that nITCSN, so the wire serial resolves DIRECTLY to a wish
+			// entry (NOT a listing) — unlike DELETE_ZZIM, whose favorites tab shows
+			// real listings. emitRemoveWishByWishSerial does that wish-identity resolve.
+			emitRemoveWishByWishSerial(l, ctx, wp, s, body.ItcSn(), mtsmsg.WishOriginCancelWish, fieldpkt.MtsOperationCancelWishFailedBody())
 		case ItcOperationViewWish:
 			body := &fieldsb.ItcOperationViewWish{}
 			body.Decode(l, ctx)(r, readerOptions)
@@ -430,9 +436,16 @@ func ItcOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer
 		case ItcOperationBuyWish:
 			body := &fieldsb.ItcOperationBuyWish{}
 			body.Decode(l, ctx)(r, readerOptions)
-			// BUY_WISH buys from the wish view (mode 0x0C): same serial-only wire shape
-			// as BUY, routed into the Buy flow (BuyNow=false). Success/failure flows the
-			// shared LISTING_SOLD/BUY_FAILED status path (BuyItemDone/Failed).
+			// BUY_WISH (mode 0x0C) is sent from the wish-list modal (IDA: sub_5AB5DE
+			// -> CITC::OnBuyWish, v83 0x59fa94, Encode4 of the wish ITCITEM's nITCSN).
+			// That modal renders the character's OWN wish entries — items they WANT,
+			// with no listing behind them — so the echoed nITCSN is now a WISH serial,
+			// not a listing serial. There is therefore no buyable listing to settle
+			// against from the wish tab; routing the wish serial through the Buy flow
+			// makes listing.GetBySerial miss and emit a clean BuyFailed (the correct
+			// outcome: a wished item is not a listing you can buy from the wish view).
+			// Buying an actual listing of a wished item happens from the browse/favorites
+			// tabs (BUY / BUY_ZZIM), which carry real listing serials.
 			if err := mtsproc.NewProcessor(l, ctx).Buy(uuid.New(), s.WorldId(), body.ItcSn(), s.CharacterId(), s.AccountId(), false); err != nil {
 				l.WithError(err).Errorf("Unable to emit BUY_WISH for character [%d] serial [%d].", s.CharacterId(), body.ItcSn())
 			}
@@ -544,6 +557,35 @@ func emitRemoveWishBySerial(l logrus.FieldLogger, ctx context.Context, wp writer
 	}
 }
 
+// emitRemoveWishByWishSerial resolves a WISH serial (the nITCSN the client echoed
+// from the wish-tab ITCITEM that VIEW_WISH populated with the wish entry's own
+// serial) directly to the wish entry, then emits REMOVE_WISH tagged with the
+// origin (CANCEL_WISH). Unlike emitRemoveWishBySerial (DELETE_ZZIM), the wire
+// serial here is a wish serial, NOT a listing serial — a wish has no listing — so
+// it resolves via the wishlist (GetByCharacterSerial) with no listing lookup. A
+// resolution failure (no wish for that serial, or the stale itcSn=0) writes the
+// supplied *Failed body.
+func emitRemoveWishByWishSerial(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, s session.Model, serial uint32, origin string, failBody func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte) {
+	wm, err := mtswish.NewProcessor(l, ctx).GetByCharacterSerial(s.CharacterId(), serial)
+	if err != nil {
+		l.WithError(err).Errorf("Unable to resolve wish serial [%d] for CANCEL_WISH (origin [%s]), character [%d].", serial, origin, s.CharacterId())
+		writeWishFailure(l, ctx, wp, s, failBody)
+		return
+	}
+
+	wishId, err := uuid.Parse(wm.Id())
+	if err != nil {
+		l.WithError(err).Errorf("Wish entry id [%s] is not a valid uuid (character [%d], origin [%s]).", wm.Id(), s.CharacterId(), origin)
+		writeWishFailure(l, ctx, wp, s, failBody)
+		return
+	}
+
+	if err := mtsproc.NewProcessor(l, ctx).RemoveWish(s.WorldId(), wishId, s.CharacterId(), origin); err != nil {
+		l.WithError(err).Errorf("Unable to emit RemoveWish [%s] for character [%d] (origin [%s]).", wishId.String(), s.CharacterId(), origin)
+		writeWishFailure(l, ctx, wp, s, failBody)
+	}
+}
+
 // writeWishList queries the character's wishlist over REST and writes the
 // synchronous LoadWishSaleListDone result. Each wish entry renders as a minimal
 // ITCITEM carrying only the wished item template (the wish domain stores no price/
@@ -568,15 +610,22 @@ func writeWishList(l logrus.FieldLogger, ctx context.Context, wp writer.Producer
 }
 
 // mtsItemFromWish maps one wish entry to a minimal clientbound MtsItem for the
-// LoadWishSaleListDone list. The wish domain carries only the item template, so
-// the item-slot blob carries the template id (quantity 1) and the MTS trailer is
-// zeroed (a wish has no serial/price/bid metadata).
+// LoadWishSaleListDone list. The wish domain carries the item template plus its
+// own per-(tenant, world) ITC serial: the item-slot blob carries the template id
+// (quantity 1), the MTS trailer carries the wish serial as nITCSN (the rest is
+// zeroed — a wish has no price/bid metadata).
+//
+// Writing the wish serial as nITCSN is the H5 fix: the client echoes nITCSN back
+// verbatim on CANCEL_WISH (IDA: CITC::OnCancelWish, v83 0x59fb07, Encode4 of the
+// item's offset-0x20 nITCSN field), so a nonzero wish serial lets the channel
+// resolve the cancel back to this wish entry. Writing 0 (the old behavior) meant
+// the client always sent 0 and the cancel never resolved.
 func mtsItemFromWish(w mtswish.Model) fieldcb.MtsItem {
 	item := packetmodel.NewAsset(false, 0, w.ItemId(), time.Time{}).SetStackableInfo(1, 0, 0)
 	var dateExpired [8]byte
 	return fieldpkt.MtsOperationNewItem(
 		item,        // GW_ItemSlotBase blob
-		0,           // nITCSN (a wish has no listing serial)
+		w.Serial(),  // nITCSN (the wish entry's per-(tenant, world) ITC serial)
 		0,           // nPrice
 		0,           // nContractFee
 		"",          // sContractFeeTxId

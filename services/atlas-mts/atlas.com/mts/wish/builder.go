@@ -4,14 +4,17 @@ import (
 	"errors"
 	"time"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/google/uuid"
 )
 
-// Builder constructs an immutable wish Model. The id is assigned at create time
-// in the administrator, so it is not required here.
+// Builder constructs an immutable wish Model. The id and serial are assigned at
+// create time in the administrator, so they are not required here.
 type Builder struct {
 	id          uuid.UUID
 	tenantId    uuid.UUID
+	worldId     world.Id
+	serial      uint32
 	characterId uint32
 	itemId      uint32
 	createdAt   time.Time
@@ -23,6 +26,16 @@ func NewBuilder(tenantId uuid.UUID, characterId uint32, itemId uint32) *Builder 
 
 func (b *Builder) SetId(id uuid.UUID) *Builder {
 	b.id = id
+	return b
+}
+
+func (b *Builder) SetWorldId(worldId world.Id) *Builder {
+	b.worldId = worldId
+	return b
+}
+
+func (b *Builder) SetSerial(serial uint32) *Builder {
+	b.serial = serial
 	return b
 }
 
@@ -48,6 +61,8 @@ func (b *Builder) Build() (Model, error) {
 	return Model{
 		id:          b.id,
 		tenantId:    b.tenantId,
+		worldId:     b.worldId,
+		serial:      b.serial,
 		characterId: b.characterId,
 		itemId:      b.itemId,
 		createdAt:   b.createdAt,

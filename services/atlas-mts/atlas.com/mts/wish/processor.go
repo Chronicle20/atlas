@@ -3,6 +3,7 @@ package wish
 import (
 	"context"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
@@ -14,6 +15,7 @@ import (
 type Processor interface {
 	GetAll() model.Provider[[]Model]
 	GetById(id string) (Model, error)
+	GetBySerial(worldId world.Id, sn uint32) (Model, error)
 	Create(m Model) (Model, error)
 	GetByCharacter(characterId uint32) ([]Model, error)
 	Delete(id string) (bool, error)
@@ -35,6 +37,11 @@ func (p *ProcessorImpl) GetAll() model.Provider[[]Model] {
 
 func (p *ProcessorImpl) GetById(id string) (Model, error) {
 	return GetById(id)(p.db.WithContext(p.ctx))()
+}
+
+// GetBySerial resolves a wish entry by its per-(tenant, world) ITC serial.
+func (p *ProcessorImpl) GetBySerial(worldId world.Id, sn uint32) (Model, error) {
+	return GetBySerial(worldId, sn)(p.db.WithContext(p.ctx))()
 }
 
 // Create persists a new wish entry and returns the stored Model (with its

@@ -251,11 +251,14 @@ func TestMtsItemFromListing_CarriesSerialAsItcSn(t *testing.T) {
 	}
 }
 
-// TestMtsItemFromWish_CarriesTemplate asserts a wish entry renders as a minimal
-// ITCITEM for LoadWishSaleListDone: the wished item template, no serial/price (a
-// wish has no listing/sale metadata).
-func TestMtsItemFromWish_CarriesTemplate(t *testing.T) {
-	wm, err := mtswish.Extract(mtswish.RestModel{Id: "w1", CharacterId: 9001, ItemId: 1302000})
+// TestMtsItemFromWish_CarriesSerial is the H5 round-trip guard: a wish entry
+// renders as an ITCITEM whose nITCSN is the wish entry's OWN per-(tenant, world)
+// serial (not 0). The client echoes that nITCSN back verbatim on CANCEL_WISH
+// (IDA: CITC::OnCancelWish, v83 0x59fb07, Encode4 of the item's nITCSN), so the
+// channel can resolve the cancel to the wish. The old behavior wrote 0 here,
+// which meant the client always sent 0 and the cancel never resolved.
+func TestMtsItemFromWish_CarriesSerial(t *testing.T) {
+	wm, err := mtswish.Extract(mtswish.RestModel{Id: "w1", WorldId: 0, Serial: 7777, CharacterId: 9001, ItemId: 1302000})
 	if err != nil {
 		t.Fatalf("extract: %v", err)
 	}
@@ -263,8 +266,8 @@ func TestMtsItemFromWish_CarriesTemplate(t *testing.T) {
 	if it.Item().TemplateId() != 1302000 {
 		t.Errorf("item template: want 1302000, got %d", it.Item().TemplateId())
 	}
-	if it.ItcSn() != 0 {
-		t.Errorf("itcSn: want 0 (a wish has no listing serial), got %d", it.ItcSn())
+	if it.ItcSn() != 7777 {
+		t.Errorf("itcSn: want 7777 (the wish entry's serial), got %d", it.ItcSn())
 	}
 	if it.Price() != 0 {
 		t.Errorf("price: want 0 (a wish has no price), got %d", it.Price())

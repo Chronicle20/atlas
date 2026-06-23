@@ -6,6 +6,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -210,3 +211,113 @@ func TestAdministratorIndexExists(t *testing.T) {
 type wishIndexProbe struct{}
 
 func (wishIndexProbe) TableName() string { return "wish_entries" }
+
+// buildWorldWish builds a world-scoped wish entry (the gameplay create path
+// carries a worldId; the serial counter is per-(tenant, world)).
+func buildWorldWish(t *testing.T, tenantId uuid.UUID, worldId byte, characterId uint32, itemId uint32) wish.Model {
+	t.Helper()
+	m, err := wish.NewBuilder(tenantId, characterId, itemId).
+		SetWorldId(world.Id(worldId)).
+		Build()
+	if err != nil {
+		t.Fatalf("Failed to build wish: %v", err)
+	}
+	return m
+}
+
+// TestAdministratorCreateAssignsSerialAndRoundTrips is the core CANCEL_WISH-fix
+// guard: CreateWish must draw a nonzero per-(tenant, world) serial, and that
+// serial must resolve straight back to the wish entry via GetBySerial — the
+// exact round-trip the channel performs when the client echoes the wish
+// ITCITEM's nITCSN back on CANCEL_WISH (IDA: CITC::OnCancelWish, v83 0x59fb07,
+// Encode4 of the item's offset-0x20 nITCSN field). Before the fix the wish item
+// carried itcSn=0, so the client always sent 0 and nothing resolved.
+func TestAdministratorCreateAssignsSerialAndRoundTrips(t *testing.T) {
+	tenantId := uuid.New()
+	ctx := tenantCtx(t, tenantId)
+	db := adminTestDB(t).WithContext(ctx)
+
+	created, err := wish.CreateWish(db, buildWorldWish(t, tenantId, 0, 100, 1302000))
+	if err != nil {
+		t.Fatalf("CreateWish: %v", err)
+	}
+	if created.Serial() == 0 {
+		t.Fatal("CreateWish did not assign a nonzero serial")
+	}
+
+	got, err := wish.GetBySerial(world.Id(0), created.Serial())(db)()
+	if err != nil {
+		t.Fatalf("GetBySerial(%d): %v", created.Serial(), err)
+	}
+	if got.Id() != created.Id() {
+		t.Errorf("GetBySerial resolved id %s, want %s", got.Id(), created.Id())
+	}
+	if got.ItemId() != 1302000 {
+		t.Errorf("GetBySerial resolved itemId %d, want 1302000", got.ItemId())
+	}
+	if got.CharacterId() != 100 {
+		t.Errorf("GetBySerial resolved characterId %d, want 100", got.CharacterId())
+	}
+}
+
+// TestAdministratorSerialIsWorldScoped asserts a serial resolves only within the
+// world it was drawn in — the same serial number in a different world must not
+// resolve (serials are per-(tenant, world), shared with listings/holdings).
+func TestAdministratorSerialIsWorldScoped(t *testing.T) {
+	tenantId := uuid.New()
+	ctx := tenantCtx(t, tenantId)
+	db := adminTestDB(t).WithContext(ctx)
+
+	created, err := wish.CreateWish(db, buildWorldWish(t, tenantId, 0, 100, 1302000))
+	if err != nil {
+		t.Fatalf("CreateWish: %v", err)
+	}
+
+	if _, err := wish.GetBySerial(world.Id(1), created.Serial())(db)(); err == nil {
+		t.Errorf("GetBySerial in world 1 resolved a world-0 serial [%d]", created.Serial())
+	}
+}
+
+// TestAdministratorCreateIsIdempotent asserts the "one wish per (tenant, world,
+// character, item)" invariant: a duplicate CreateWish for the same key returns
+// the EXISTING entry (same id, same serial) and consumes NO new serial. This is
+// what makes the serial-based CANCEL_WISH resolution unambiguous.
+func TestAdministratorCreateIsIdempotent(t *testing.T) {
+	tenantId := uuid.New()
+	ctx := tenantCtx(t, tenantId)
+	db := adminTestDB(t).WithContext(ctx)
+
+	first, err := wish.CreateWish(db, buildWorldWish(t, tenantId, 0, 100, 1302000))
+	if err != nil {
+		t.Fatalf("CreateWish first: %v", err)
+	}
+
+	second, err := wish.CreateWish(db, buildWorldWish(t, tenantId, 0, 100, 1302000))
+	if err != nil {
+		t.Fatalf("CreateWish duplicate: %v", err)
+	}
+
+	if second.Id() != first.Id() {
+		t.Errorf("duplicate create returned id %s, want existing %s", second.Id(), first.Id())
+	}
+	if second.Serial() != first.Serial() {
+		t.Errorf("duplicate create returned serial %d, want existing %d (no new serial consumed)", second.Serial(), first.Serial())
+	}
+
+	all, err := wish.GetAll()(db)()
+	if err != nil {
+		t.Fatalf("GetAll: %v", err)
+	}
+	if len(all) != 1 {
+		t.Errorf("after duplicate create, tenant holds %d wishes, want 1", len(all))
+	}
+
+	// A different item in the same world is a distinct wish with its own serial.
+	other, err := wish.CreateWish(db, buildWorldWish(t, tenantId, 0, 100, 1302001))
+	if err != nil {
+		t.Fatalf("CreateWish other item: %v", err)
+	}
+	if other.Serial() == first.Serial() {
+		t.Errorf("distinct wish got the same serial %d as the first", other.Serial())
+	}
+}

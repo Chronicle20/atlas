@@ -6,16 +6,23 @@ import (
 	"testing"
 )
 
-// TestExtract asserts the JSON:API RestModel maps onto the channel-side Model
-// (id/characterId/itemId are the only fields the zzim/wish arms consume).
+// TestExtract asserts the JSON:API RestModel maps onto the channel-side Model,
+// including the worldId/serial fields the CANCEL_WISH resolution relies on (the
+// serial is what VIEW_WISH renders as nITCSN and the client echoes back).
 func TestExtract(t *testing.T) {
-	rm := RestModel{Id: "abc-123", CharacterId: 9001, ItemId: 1302000}
+	rm := RestModel{Id: "abc-123", WorldId: 2, Serial: 4242, CharacterId: 9001, ItemId: 1302000}
 	m, err := Extract(rm)
 	if err != nil {
 		t.Fatalf("Extract: %v", err)
 	}
 	if m.Id() != "abc-123" || m.CharacterId() != 9001 || m.ItemId() != 1302000 {
 		t.Errorf("Extract mismatch: id=%q char=%d item=%d", m.Id(), m.CharacterId(), m.ItemId())
+	}
+	if m.WorldId() != 2 {
+		t.Errorf("Extract worldId = %d, want 2", m.WorldId())
+	}
+	if m.Serial() != 4242 {
+		t.Errorf("Extract serial = %d, want 4242", m.Serial())
 	}
 }
 
@@ -43,6 +50,40 @@ func TestFindByItem(t *testing.T) {
 
 	if _, ok := findByItem(nil, 1302000); ok {
 		t.Errorf("findByItem(nil): expected no match")
+	}
+}
+
+// TestFindBySerial asserts the CANCEL_WISH resolution: given the character's
+// wishlist and the serial the client echoed back (the nITCSN VIEW_WISH wrote),
+// find the wish entry whose Serial matches — that entry's Id is the wish UUID the
+// REMOVE_WISH command needs. This is the round-trip the H5 fix establishes.
+func TestFindBySerial(t *testing.T) {
+	ms := []Model{
+		{id: "w1", worldId: 0, serial: 11, characterId: 9001, itemId: 1302000},
+		{id: "w2", worldId: 0, serial: 22, characterId: 9001, itemId: 2000000},
+	}
+
+	got, ok := findBySerial(ms, 22)
+	if !ok {
+		t.Fatalf("findBySerial(22): expected a match")
+	}
+	if got.Id() != "w2" {
+		t.Errorf("findBySerial(22): want w2, got %q", got.Id())
+	}
+
+	if _, ok := findBySerial(ms, 99); ok {
+		t.Errorf("findBySerial(99): expected no match for an unknown serial")
+	}
+
+	// Serial 0 is the stale/pre-fix sentinel and must never resolve to a wish,
+	// even if (defensively) a row carried serial 0.
+	zero := []Model{{id: "z", serial: 0, characterId: 9001, itemId: 1}}
+	if _, ok := findBySerial(zero, 0); ok {
+		t.Errorf("findBySerial(0): expected no match (0 is the no-serial sentinel)")
+	}
+
+	if _, ok := findBySerial(nil, 11); ok {
+		t.Errorf("findBySerial(nil): expected no match")
 	}
 }
 

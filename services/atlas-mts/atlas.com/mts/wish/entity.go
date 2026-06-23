@@ -3,14 +3,20 @@ package wish
 import (
 	"time"
 
+	"atlas-mts/serial"
+
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
-// Migration creates the wish_entries table. It is a brand-new table (no legacy
-// primary-key rewrite), so AutoMigrate alone produces the correct surrogate-key
-// shape and the composite index declared on the entity tags.
+// Migration creates the wish_entries table (and the shared mts_serials counter
+// it draws from). It is a brand-new table (no legacy primary-key rewrite), so
+// AutoMigrate alone produces the correct surrogate-key shape and the composite
+// indexes declared on the entity tags.
 func Migration(db *gorm.DB) error {
+	if err := serial.Migration(db); err != nil {
+		return err
+	}
 	return db.AutoMigrate(&entity{})
 }
 
@@ -20,13 +26,25 @@ func Migration(db *gorm.DB) error {
 // and a (tenant_id, id) unique index keeps the row tenant-scoped — never a
 // unique index on tenant_id alone, which would cap a tenant at one wish entry.
 //
-// One composite index backs the design's hot query:
-//   - (tenant_id, character_id) — a character's wish list
+// Serial is the per-(tenant, world) ITC serial (the client's nITCSN) drawn from
+// the shared `serial` counter at create time; a (tenant_id, world_id, serial)
+// unique index lets GetBySerial resolve a CANCEL_WISH serial back to the wish
+// entry. tenant_id is part of the unique key because the serial counter is
+// per-(tenant, world): serial 1 recurs across tenants and across worlds.
+//
+// Composite indexes:
+//   - (tenant_id, character_id)                       — a character's wish list
+//   - (tenant_id, world_id, serial) UNIQUE            — serial -> wish entry
+//   - (tenant_id, world_id, character_id, item_id) UQ — one wish per (char, item)
+//     per world, enforcing the design's "one wish per (character, item)" invariant
+//     and making the idempotent create well-defined.
 type entity struct {
 	Id          uuid.UUID `gorm:"column:id;type:uuid;primaryKey;uniqueIndex:idx_wish_entries_tenant_id,priority:2"`
-	TenantId    uuid.UUID `gorm:"column:tenant_id;type:uuid;not null;uniqueIndex:idx_wish_entries_tenant_id,priority:1;index:idx_wish_entries_character,priority:1"`
-	CharacterId uint32    `gorm:"column:character_id;not null;index:idx_wish_entries_character,priority:2"`
-	ItemId      uint32    `gorm:"column:item_id;not null"`
+	TenantId    uuid.UUID `gorm:"column:tenant_id;type:uuid;not null;uniqueIndex:idx_wish_entries_tenant_id,priority:1;index:idx_wish_entries_character,priority:1;uniqueIndex:idx_wish_entries_world_serial,priority:1;uniqueIndex:idx_wish_entries_char_item,priority:1"`
+	WorldId     byte      `gorm:"column:world_id;not null;uniqueIndex:idx_wish_entries_world_serial,priority:2;uniqueIndex:idx_wish_entries_char_item,priority:2"`
+	Serial      uint32    `gorm:"column:serial;not null;uniqueIndex:idx_wish_entries_world_serial,priority:3"`
+	CharacterId uint32    `gorm:"column:character_id;not null;index:idx_wish_entries_character,priority:2;uniqueIndex:idx_wish_entries_char_item,priority:3"`
+	ItemId      uint32    `gorm:"column:item_id;not null;uniqueIndex:idx_wish_entries_char_item,priority:4"`
 
 	CreatedAt time.Time `gorm:"column:created_at"`
 }

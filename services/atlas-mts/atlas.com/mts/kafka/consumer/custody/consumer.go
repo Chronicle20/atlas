@@ -153,8 +153,18 @@ func handleAcceptToMtsListing(pf providerFn) func(db *gorm.DB) message.Handler[c
 				return
 			}
 
+			// On success emit BOTH the custody ACCEPTED ack (drives the saga forward —
+			// the orchestrator needs it to advance the listing-create saga) AND the
+			// high-level LISTING_CREATED MTS status event so the channel writes
+			// RegisterSaleEntryDone to the seller. This mirrors the MOVED+LISTING_SOLD
+			// dual-emit in handleMtsMoveListingToHolding: the custody ack is the saga
+			// machinery, the MTS status event is the player-facing notice. Without the
+			// LISTING_CREATED emit the seller's client hangs (no RegisterSaleEntryDone).
 			_ = msg.Emit(p)(func(buf *msg.Buffer) error {
-				return buf.Put(custody.EnvStatusEventTopic, custodyproducer.AcceptedStatusEventProvider(c.TransactionId, b.ListingId))
+				if perr := buf.Put(custody.EnvStatusEventTopic, custodyproducer.AcceptedStatusEventProvider(c.TransactionId, b.ListingId)); perr != nil {
+					return perr
+				}
+				return buf.Put(mtsmsg.EnvStatusEventTopic, mtsproducer.ListingCreatedStatusEventProvider(c.TransactionId, b.WorldId, b.ListingId, b.SellerId, b.TemplateId))
 			})
 		}
 	}

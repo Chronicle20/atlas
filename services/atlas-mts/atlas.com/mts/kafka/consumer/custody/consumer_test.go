@@ -126,15 +126,21 @@ func TestAcceptToMtsListing_CreatesListingAndAcks(t *testing.T) {
 		t.Fatalf("sale params not persisted: lv=%d rate=%v cat=%s", stored.ListValue(), stored.CommissionRate(), stored.Category())
 	}
 
-	// exactly one ACCEPTED ack carrying the same transactionId
-	if len(rp.events) != 1 {
-		t.Fatalf("expected 1 ack, got %d", len(rp.events))
+	// exactly one ACCEPTED ack (drives the saga) + one LISTING_CREATED (drives the
+	// channel's RegisterSaleEntryDone), both carrying the same transactionId.
+	accepted := eventsOfType(rp.events, custody.StatusEventTypeAccepted)
+	if len(accepted) != 1 {
+		t.Fatalf("expected 1 ACCEPTED ack, got %d (all: %v)", len(accepted), rp.events)
 	}
-	if rp.events[0].eventType != custody.StatusEventTypeAccepted {
-		t.Fatalf("expected ACCEPTED ack, got %s", rp.events[0].eventType)
+	if accepted[0].transactionId != transactionId {
+		t.Fatalf("ACCEPTED ack transactionId mismatch: want %s got %s", transactionId, accepted[0].transactionId)
 	}
-	if rp.events[0].transactionId != transactionId {
-		t.Fatalf("ack transactionId mismatch: want %s got %s", transactionId, rp.events[0].transactionId)
+	created := eventsOfType(rp.events, mtsmsg.StatusEventTypeListingCreated)
+	if len(created) != 1 {
+		t.Fatalf("expected 1 LISTING_CREATED event, got %d (all: %v)", len(created), rp.events)
+	}
+	if created[0].transactionId != transactionId {
+		t.Fatalf("LISTING_CREATED transactionId mismatch: want %s got %s", transactionId, created[0].transactionId)
 	}
 }
 
@@ -168,16 +174,20 @@ func TestAcceptToMtsListing_ReplayIsNoOpAndReacks(t *testing.T) {
 		t.Fatalf("expected exactly 1 listing row for id %s after replay, got %d (total rows=%d)", listingId, count, len(all))
 	}
 
-	// both deliveries re-acked with ACCEPTED + same transactionId
-	if len(rp.events) != 2 {
-		t.Fatalf("expected 2 acks (original + replay), got %d", len(rp.events))
+	// both deliveries re-emitted the ACCEPTED ack + the LISTING_CREATED notice with
+	// the same transactionId (a replayed LISTING_CREATED is a harmless idempotent
+	// seller notice, mirroring the replayed LISTING_SOLD on the move handler).
+	accepted := eventsOfType(rp.events, custody.StatusEventTypeAccepted)
+	if len(accepted) != 2 {
+		t.Fatalf("expected 2 ACCEPTED acks (original + replay), got %d (all: %v)", len(accepted), rp.events)
 	}
-	for i, ev := range rp.events {
-		if ev.eventType != custody.StatusEventTypeAccepted {
-			t.Fatalf("ack %d not ACCEPTED: %s", i, ev.eventType)
-		}
+	created := eventsOfType(rp.events, mtsmsg.StatusEventTypeListingCreated)
+	if len(created) != 2 {
+		t.Fatalf("expected 2 LISTING_CREATED events (original + replay), got %d (all: %v)", len(created), rp.events)
+	}
+	for _, ev := range append(accepted, created...) {
 		if ev.transactionId != transactionId {
-			t.Fatalf("ack %d transactionId mismatch: %s", i, ev.transactionId)
+			t.Fatalf("event transactionId mismatch: want %s got %s", transactionId, ev.transactionId)
 		}
 	}
 }

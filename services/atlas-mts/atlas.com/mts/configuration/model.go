@@ -4,7 +4,8 @@ package configuration
 // knobs that govern listing fees, commissions, auction durations, and paging.
 // Fields are private with getters; construct via the builder or DefaultConfig.
 type Model struct {
-	listingFee        uint32  // flat meso fee charged to create a listing
+	listingFee        uint32  // flat NX base fee charged to create a listing (client m_nCommissionBase)
+	listingFeeRate    float64 // NX fee rate applied to the list price (client m_nCommissionRate%, e.g. 0.07 = 7%)
 	commissionRate    float64 // buyer-markup applied on top of the sale price
 	maxActiveListings int     // per-character cap on concurrently active listings
 	minLevel          int     // minimum character level required to use the MTS
@@ -17,6 +18,10 @@ type Model struct {
 
 func (m Model) ListingFee() uint32 {
 	return m.listingFee
+}
+
+func (m Model) ListingFeeRate() float64 {
+	return m.listingFeeRate
 }
 
 func (m Model) CommissionRate() float64 {
@@ -58,6 +63,7 @@ func (m Model) MinBidIncrement() uint32 {
 type RestModel struct {
 	Id                string  `json:"-"`
 	ListingFee        uint32  `json:"listingFee"`
+	ListingFeeRate    float64 `json:"listingFeeRate"`
 	CommissionRate    float64 `json:"commissionRate"`
 	MaxActiveListings int     `json:"maxActiveListings"`
 	MinLevel          int     `json:"minLevel"`
@@ -87,6 +93,7 @@ func Extract(r RestModel) Model {
 	d := DefaultConfig()
 	m := Model{
 		listingFee:        r.ListingFee,
+		listingFeeRate:    r.ListingFeeRate,
 		commissionRate:    r.CommissionRate,
 		maxActiveListings: r.MaxActiveListings,
 		minLevel:          r.MinLevel,
@@ -98,6 +105,9 @@ func Extract(r RestModel) Model {
 	}
 	if m.listingFee == 0 {
 		m.listingFee = d.listingFee
+	}
+	if m.listingFeeRate == 0 {
+		m.listingFeeRate = d.listingFeeRate
 	}
 	if m.commissionRate == 0 {
 		m.commissionRate = d.commissionRate
@@ -132,7 +142,8 @@ func Extract(r RestModel) Model {
 // configuration resource.
 func DefaultConfig() Model {
 	return Model{
-		listingFee:        5000,  // meso
+		listingFee:        500,   // NX base (client m_nCommissionBase, IDA-verified)
+		listingFeeRate:    0.07,  // 7% of list price (client m_nCommissionRate, IDA-verified)
 		commissionRate:    0.10,  // buyer-markup
 		maxActiveListings: 10,    //
 		minLevel:          10,    //

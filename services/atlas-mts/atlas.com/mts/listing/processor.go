@@ -124,6 +124,11 @@ const (
 	listSagaPerStepTimeout = 1 * time.Second
 )
 
+// currencyTypePrepaid is the NX-prepaid wallet bucket (cash-shop AdjustCurrency
+// currencyType 3 — "nexon cash"). The registration fee and buyer debit both come
+// from prepaid; mirrors the orchestrator's settle expansion.
+const currencyTypePrepaid = uint32(3)
+
 // Processor exposes the REST-facing CRUD and state-transition operations over
 // marketplace listings plus the list-initiation flow (List).
 type Processor interface {
@@ -382,7 +387,7 @@ func (p *ProcessorImpl) transitionToSellerHolding(db *gorm.DB, id string, termin
 // request against the tenant's MTS configuration and, on success, pre-allocates
 // the listing id and emits a TransferToMts saga.
 //
-// The saga is [AwardMesos(-listingFee), TransferToMts{...}]: the fee debit runs
+// The saga is [AwardCurrency(-listingFee NX), TransferToMts{...}]: the fee debit runs
 // first, then the custody transfer (which the orchestrator expands into
 // release_from_character + accept_to_mts_listing). The listing row is created in
 // `active` only by the custody consumer's AcceptToMtsListing — never here, since
@@ -431,14 +436,18 @@ func (p *ProcessorImpl) List(req ListRequest) (uuid.UUID, error) {
 		SetSagaType(saga.MtsOperation).
 		SetInitiatedBy(fmt.Sprintf("character_%d", req.SellerId))
 
-	// Step 1: debit the listing fee (AwardMesos with a negative amount).
-	builder.AddStep("award_mesos", saga.Pending, saga.AwardMesos, saga.AwardMesosPayload{
-		CharacterId: req.SellerId,
-		WorldId:     req.WorldId,
-		ActorId:     req.SellerId,
-		ActorType:   "SYSTEM",
-		Amount:      -int32(cfg.ListingFee()),
-		ShowEffect:  false,
+	// Step 1: debit the registration fee in NX. The client previews (and the
+	// in-game guide states) a fee of flat base + rate% of the list price — the
+	// client constants m_nCommissionBase (500 NX) + m_nCommissionRate (7%) drive
+	// the buyout/listing fee math (CITC sub_5BC1D5 / OnSetITC). So the server MUST
+	// charge listingFee + ceil(listingFeeRate * listValue) from the seller's NX
+	// prepaid (currencyType 3) to match what the player is told.
+	listingFee := cfg.ListingFee() + uint32(math.Ceil(cfg.ListingFeeRate()*float64(req.ListValue)))
+	builder.AddStep("award_currency", saga.Pending, saga.AwardCurrency, saga.AwardCurrencyPayload{
+		CharacterId:  req.SellerId,
+		AccountId:    req.SellerAccountId,
+		CurrencyType: currencyTypePrepaid,
+		Amount:       -int32(listingFee),
 	})
 
 	// Step 2: transfer the item into MTS custody. The orchestrator expands this

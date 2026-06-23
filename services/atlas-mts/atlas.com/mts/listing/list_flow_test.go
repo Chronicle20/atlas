@@ -165,8 +165,8 @@ func TestListRejectsAuctionDurationOutOfRange(t *testing.T) {
 }
 
 // TestValidFixedListBuildsSaga asserts a valid fixed list pre-allocates a listing
-// id, charges the listing fee via AwardMesos(-fee), then transfers to MTS, and
-// sets a step-count-scaled timeout (N=2 for the TransferToMts composite).
+// id, charges the NX registration fee via AwardCurrency(-fee), then transfers to
+// MTS, and sets a step-count-scaled timeout (N=2 for the TransferToMts composite).
 func TestValidFixedListBuildsSaga(t *testing.T) {
 	p, emitter, _, cleanup := newListProcessor(t)
 	defer cleanup()
@@ -189,22 +189,29 @@ func TestValidFixedListBuildsSaga(t *testing.T) {
 		t.Errorf("saga type = %q, want %q", sg.SagaType, saga.MtsOperation)
 	}
 	if len(sg.Steps) != 2 {
-		t.Fatalf("expected 2 steps (AwardMesos + TransferToMts), got %d", len(sg.Steps))
+		t.Fatalf("expected 2 steps (AwardCurrency + TransferToMts), got %d", len(sg.Steps))
 	}
 
-	// Step 1: AwardMesos with a negative amount (the listing fee debit).
-	if sg.Steps[0].Action != saga.AwardMesos {
-		t.Errorf("step[0] action = %q, want %q", sg.Steps[0].Action, saga.AwardMesos)
+	// Step 1: AwardCurrency NX debit (the registration fee: 500 base + 7% of the
+	// list price = 500 + ceil(0.07 * 1000) = 570), from the seller's prepaid wallet.
+	if sg.Steps[0].Action != saga.AwardCurrency {
+		t.Errorf("step[0] action = %q, want %q", sg.Steps[0].Action, saga.AwardCurrency)
 	}
-	mp, ok := sg.Steps[0].Payload.(sharedsaga.AwardMesosPayload)
+	cp, ok := sg.Steps[0].Payload.(sharedsaga.AwardCurrencyPayload)
 	if !ok {
-		t.Fatalf("step[0] payload type = %T, want AwardMesosPayload", sg.Steps[0].Payload)
+		t.Fatalf("step[0] payload type = %T, want AwardCurrencyPayload", sg.Steps[0].Payload)
 	}
-	if mp.Amount != -5000 { // default listingFee = 5000
-		t.Errorf("AwardMesos amount = %d, want -5000 (the listing fee debit)", mp.Amount)
+	if cp.Amount != -570 { // 500 + ceil(0.07 * 1000)
+		t.Errorf("AwardCurrency amount = %d, want -570 (500 NX base + 7%% of 1000)", cp.Amount)
 	}
-	if mp.CharacterId != req.SellerId {
-		t.Errorf("AwardMesos characterId = %d, want %d", mp.CharacterId, req.SellerId)
+	if cp.CurrencyType != 3 {
+		t.Errorf("AwardCurrency currencyType = %d, want 3 (prepaid NX)", cp.CurrencyType)
+	}
+	if cp.CharacterId != req.SellerId {
+		t.Errorf("AwardCurrency characterId = %d, want %d", cp.CharacterId, req.SellerId)
+	}
+	if cp.AccountId != req.SellerAccountId {
+		t.Errorf("AwardCurrency accountId = %d, want %d", cp.AccountId, req.SellerAccountId)
 	}
 
 	// Step 2: TransferToMts carrying the pre-allocated listing id + sale params.

@@ -11302,6 +11302,22 @@
           "comment": "y (door position, writeShort)"
         }
       ]
+    },
+    "CTownPortalPool::OnTownPortalRemoved": {
+      "address": "0x84195b",
+      "region": "JMS",
+      "direction": "clientbound",
+      "notes": "Wire layout identical to GMS v83/v84: Decode1(animate flag) + Decode4(ownerId). The flag is read unconditionally before the flag-gated (if !flag) IWzGr2DLayer teardown; ownerId is the registry lookup key via sub_842027. Receiver CTownPortalPool::OnTownPortalRemoved@0x84195b (JMS v185 MapleStory_dump_SCY.exe). Canonical wire order is 2 reads / 5 bytes.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "animate flag (Cosmic writes constant 0; gates removal animation)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "ownerId (door owner character id; registry lookup key)"
+        }
+      ]
     }
   }
 }

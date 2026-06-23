@@ -1,0 +1,30 @@
+{
+  "WriterName": "RemoveDoor",
+  "IDAName": "CTownPortalPool::OnTownPortalRemoved",
+  "Address": "0x84195b",
+  "Variant": "JMS/v185",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/door/clientbound/remove.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "animate flag (Cosmic writes constant 0; gates removal animation)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "ownerId (door owner character id; registry lookup key)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

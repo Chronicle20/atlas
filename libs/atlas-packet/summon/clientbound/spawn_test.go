@@ -96,6 +96,35 @@ func TestSummonSpawnBytesV83(t *testing.T) {
 	}
 }
 
+// TestSummonSpawnBytesV84 pins that v84 is byte-identical to v83 (no trailing avatar
+// byte). Verified live (IDA, GMS_v84.1_U_DEVM.exe @port 13337). Dispatch chain:
+//   - CUserPool::OnUserCommonPacket@0x9b23a1 reads cid (Decode4@0x9b23ac), routes
+//     op 0xB3 (179) to the summon dispatcher sub_970201@0x970201, which for op 179
+//     vtable-calls the spawn leaf sub_97038B@0x97038b (the ACTIVE leaf — v84 has no
+//     inactive twin like v83's; the committed report already points here).
+//   - sub_97038B@0x97038b reads (cid already consumed upstream):
+//       Decode4@0x9703ad → oid (pool key for sub_97B9D1 lookup)
+//       Decode4@0x9703b7 → skillId (v13)
+//       Decode1@0x9703c1 → charLevel (v14)
+//       Decode1@0x9703d0 → SLV (v15)
+//     then sub_7C83D7@0x7c83d7 reads the Init blob:
+//       Decode2@0x7c83ee → nX, Decode2@0x7c83fb → nY, Decode1@0x7c8408 → stance,
+//       Decode2@0x7c8412 → foothold, Decode1@0x7c841f → movementType,
+//       Decode1@0x7c8436 → !puppet, then (after the GetSkill guard sub_77EAC3)
+//       Decode1@0x7c845d → !animated.
+//     NO avatar-look byte on v84 — the active path reads nothing after !animated.
+//     spawnHasAvatarLook(GMS,84) = (GMS && 84>=95) = false → v83 path; off-by-one
+//     confirmed clear.
+// packet-audit:verify packet=summon/clientbound/SummonSpawn version=gms_v84 ida=0x97038b
+func TestSummonSpawnBytesV84(t *testing.T) {
+	in := NewSummonSpawn(42, 1000001, 3111002, 20, 100, -50, 0, 0, true, false)
+	ctx := test.CreateContext("GMS", 84, 1)
+	got := test.Encode(t, ctx, in.Encode, nil)
+	if !bytes.Equal(got, summonSpawnV83Body) {
+		t.Fatalf("v84 bytes = % X, want % X (identical to v83)", got, summonSpawnV83Body)
+	}
+}
+
 // TestSummonSpawnBytesV95 pins the v95 DELTA over the shared body: just a trailing
 // bAvatarLook-present byte = 0 (the oid is now part of the shared body on all
 // versions). For our 21-summon v83 roster no avatar look is carried and Tesla Coil

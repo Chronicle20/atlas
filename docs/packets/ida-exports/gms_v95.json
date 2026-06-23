@@ -13447,6 +13447,28 @@
           "comment": "trailing extra byte (CInPacket::Decode1)"
         }
       ]
+    },
+    "CTownPortalPool::OnTownPortalCreated": {
+      "address": "0x762c00",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "launched flag (writeBool launched)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "ownerId (door owner character id)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "x (door position, writeShort)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "y (door position, writeShort)"
+        }
+      ]
     }
   }
 }

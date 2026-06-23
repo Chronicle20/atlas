@@ -49,6 +49,34 @@ func TestSummonDamageBytes(t *testing.T) {
 	}
 }
 
+// TestSummonDamageBytesV83 pins the v83 wire byte-for-byte against the live
+// decompile. Dispatch chain (IDA, MapleStory_dump.exe @port 13341):
+//   - CUserPool::OnUserCommonPacket@0x972401 reads cid (Decode4@0x97240c), routes
+//     op 0xB3 to CSummonedPool::OnPacket@0x972490.
+//   - CSummonedPool::OnPacket@0x938dd7 reads oid (Decode4@0x938e16), looks up the
+//     summon, then case 0xB3 calls the damage leaf @0x938e91.
+//   - The damage body lives at 0x7a6ebe (exported FName CSummonedPool::OnHit; the
+//     mangled symbol there is OnSkill — a known naming swap, the body is what
+//     matters). It reads:
+//       Decode1@0x7a6eef → attackIdx (v34=v6=b; atlas writes 12)
+//       Decode4@0x7a6f04 → damage (v38)
+//       if (attackIdx > -2):   // 12 > -2, branch fires
+//         Decode4@0x7a6f16 → monsterIdFrom (v39 → GetMobTemplate)
+//         Decode1@0x7a6f24 → bLeft (v35; atlas writes 0)
+//     and nothing after — no trailing dir byte on any version (the dir<0 byte
+//     belongs to the SERVERBOUND SetDamaged send).
+// Wire: int cid (upstream) + int oid + byte attackIdx(12) + int damage +
+//       int monsterIdFrom + byte bLeft(0).
+// packet-audit:verify packet=summon/clientbound/SummonDamage version=gms_v83 ida=0x7a6ebe
+func TestSummonDamageBytesV83(t *testing.T) {
+	in := NewSummonDamage(42, 1000001, 1234, 9300018)
+	ctx := test.CreateContext("GMS", 83, 1)
+	got := test.Encode(t, ctx, in.Encode, nil)
+	if !bytes.Equal(got, summonDamageV83Body) {
+		t.Fatalf("v83 bytes = % X, want % X", got, summonDamageV83Body)
+	}
+}
+
 // TestSummonDamageBytesV87 pins that v87 is byte-identical to v83 (cid + oid +
 // body, no trailing dir byte). NOTE: v87 inherits the oid correction by the same
 // dispatcher logic; this cell needs re-verification against the cid-pre-reading

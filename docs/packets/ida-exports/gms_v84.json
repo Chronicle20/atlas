@@ -6214,13 +6214,17 @@
       ]
     },
     "CWvsContext::SendAbilityUpRequest#DistributeAp": {
-      "address": "",
-      "direction": "",
-      "unresolved": true,
+      "address": "0xa6f054",
+      "direction": "serverbound",
+      "_note": "v84 DISTRIBUTE_AP (op 0x57) sender CWvsContext::SendAbilityUpRequest(DWORD)@0xa6f054 (was sub_A6F054, named this campaign): COutPacket(0x57)@0xa6f174 + Encode4(updateTime via sub_9C7771)@0xa6f186 + Encode4(dwFlag = the single DWORD param)@0xa6f191. Matches the Atlas DistributeAp codec (updateTime + dwFlag). The prior Unresolved was an unnamed-sub export gap (registry fname didn't resolve), not a wire delta. Same 2-field shape as the verified v87/v95 #DistributeAp.",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Encode4",
+          "comment": "update_time (get_update_time())"
+        },
+        {
+          "op": "Encode4",
+          "comment": "dwFlag (stat flag to increment)"
         }
       ]
     },
@@ -7358,13 +7362,27 @@
       ]
     },
     "CWvsContext::SendAbilityUpRequest#AutoDistributeAp": {
-      "address": "",
-      "direction": "",
-      "unresolved": true,
+      "address": "0xa6f1da",
+      "direction": "serverbound",
+      "_note": "v84 AUTO_DISTRIBUTE_AP (op 0x58) sender CWvsContext::SendAbilityUpRequest(ZArray<StatPair>*)@0xa6f1da (named this campaign): COutPacket(0x58)@0xa6f2fa + Encode4(updateTime)@0xa6f30c + Encode4(count = array length)@0xa6f31e + loop[Encode4(flag)@0xa6f336, Encode4(value)@0xa6f344]. Matches the Atlas AutoDistributeAp codec (updateTime + nValue + loop[Flag,Value]). The prior Unresolved was an unnamed-sub export gap, not a wire delta. Same 4-call shape as the verified v87/v95 #AutoDistributeAp.",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Encode4",
+          "comment": "update_time (get_update_time())"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nValue (count of stat pairs)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "dwStatFlag (stat flag for each pair)",
+          "guard": "loop nValue"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nValue (amount for each stat pair)",
+          "guard": "loop nValue"
         }
       ]
     },

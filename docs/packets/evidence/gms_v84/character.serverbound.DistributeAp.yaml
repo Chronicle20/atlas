@@ -1,0 +1,11 @@
+packet: character/serverbound/DistributeAp
+direction: serverbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::SendAbilityUpRequest#DistributeAp
+    address: "0xa6f054"
+    decompile_sha256: 772bc43a6efad95332a270081cd23ad6eca85fdfe0556bd6857e182951833704
+notes: "v84 DISTRIBUTE_AP (op 0x57) sender CWvsContext::SendAbilityUpRequest(DWORD)@0xa6f054 (was sub_A6F054, named this campaign): COutPacket(0x57)@0xa6f174 + Encode4(updateTime)@0xa6f186 + Encode4(dwFlag)@0xa6f191. Matches the Atlas DistributeAp codec (updateTime + dwFlag). The prior ❌ was an Unresolved unnamed-sub export gap (the registry fname did not resolve in the v84 IDB), not a wire delta. Routed via CharacterDistributeApHandle (op 0x57) in template_gms_84_1.json. Report verdicts [0,0]."
+verifies:
+    - libs/atlas-packet/character/serverbound/distribute_ap_test.go#TestDistributeApRoundTrip

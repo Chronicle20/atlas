@@ -6,7 +6,7 @@
 Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 
 - export gms_v83: `14cc76b9bee6633c1aca5113691714d1f0fd3ddca81d6fc6ab6bca79a3cda12d`
-- export gms_v84: `c941cf1f29af8a17d9e64aec84192c70d141bfb73eaaf7b8e6abd9803c1f737d`
+- export gms_v84: `2c0197b645c84dfc9ff2edbc06cd1649e396a0dabf7549fbcc7699b753b8c3a2`
 - export gms_v87: `60a4c60e1eabea5d81ebacfea8a8ce1637a06679d9bdc97fe49eb45d052ed4a2`
 - export gms_v95: `cf7682a52552f94e68453f8ed3a9f74098b50a4fdf14a19968227a2f3816d37d`
 - export jms_v185: `7e7115c6f86a1bee097df0d178fd2ea60981010836500eebdb46c733bb9ddd4d`
@@ -572,8 +572,8 @@ Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 | USE_TELEPORT_ROCK | CWvsContext::SendMapTransferItemUseRequest |  | 0x054 | ❌ | 0x054 | ❌ | 0x057 | ❌ | 0x05B | ❌ | 0x04C | ❌ |
 | USE_RETURN_SCROLL | CWvsContext::SendPortalScrollUseRequest |  | 0x055 | ❌ | 0x055 | ❌ | 0x058 | ❌ | 0x05C | ❌ | 0x04D | ❌ |
 | USE_UPGRADE_SCROLL | CWvsContext::SendUpgradeItemUseRequest | inventory/serverbound/InventoryScrollUse (T1) | 0x056 | ✅ | 0x056 | ✅ | 0x059 | ✅ | 0x05D | ✅ | 0x04E | ✅ |
-| DISTRIBUTE_AP | CWvsContext::SendAbilityUpRequest | character/serverbound/AutoDistributeAp (T1) | 0x057 | ✅ | 0x057 | ❌ | 0x05B | ✅ | 0x062 | ✅ | 0x052 | ✅ |
-| AUTO_DISTRIBUTE_AP | CWvsContext::SendAbilityUpRequest | character/serverbound/AutoDistributeAp (T1) | 0x058 | ✅ | 0x058 | ❌ | 0x05B | ✅ | 0x062 | ✅ | 0x052 | ✅ |
+| DISTRIBUTE_AP | CWvsContext::SendAbilityUpRequest | character/serverbound/AutoDistributeAp (T1) | 0x057 | ✅ | 0x057 | ✅ | 0x05B | ✅ | 0x062 | ✅ | 0x052 | ✅ |
+| AUTO_DISTRIBUTE_AP | CWvsContext::SendAbilityUpRequest | character/serverbound/AutoDistributeAp (T1) | 0x058 | ✅ | 0x058 | ✅ | 0x05B | ✅ | 0x062 | ✅ | 0x052 | ✅ |
 | HEAL_OVER_TIME | CWvsContext::SendStatChangeRequest | character/serverbound/HealOverTime (T1) | 0x059 | ✅ | 0x059 | ✅ | 0x05C | ✅ | 0x064 | ✅ | 0x054 | ❌ |
 | DISTRIBUTE_SP | CWvsContext::SendSkillUpRequest | character/serverbound/DistributeSp (T1) | 0x05A | ✅ | 0x05A | ✅ | 0x05D | ✅ | 0x066 | ✅ | 0x055 | ✅ |
 | USE_SHOP_SCANNER_ITEM | CWvsContext::SendShopScannerItemUseRequest |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x05A | ❌ |  | ⬜ |
@@ -902,7 +902,7 @@ Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
 | v83 | 355 | 0 | 0 | 316 | 200 | 0 | 52.9% |
-| v84 | 322 | 0 | 0 | 328 | 221 | 0 | 49.5% |
+| v84 | 324 | 0 | 0 | 326 | 221 | 0 | 49.8% |
 | v87 | 360 | 0 | 0 | 348 | 163 | 0 | 50.8% |
 | v95 | 391 | 0 | 1 | 400 | 79 | 0 | 49.4% |
 | JMS185 | 329 | 0 | 0 | 373 | 169 | 0 | 46.9% |

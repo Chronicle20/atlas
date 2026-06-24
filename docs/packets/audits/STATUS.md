@@ -15,7 +15,7 @@ Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 
 | Op | FName | Packet | v83 # | v83 | v84 # | v84 | v87 # | v87 | v95 # | v95 | JMS185 # | JMS185 |
 |----|-------|--------|-------|-----|-------|-----|-------|-----|-------|-----|-------|-----|
-| LOGIN_STATUS | CLogin::OnCheckPasswordResult | login/clientbound/AuthLoginFailed | 0x000 | ❌ | 0x000 | ❌ | 0x000 | ✅ | 0x000 | ✅ | 0x000 | ✅ |
+| LOGIN_STATUS | CLogin::OnCheckPasswordResult | login/clientbound/AuthLoginFailed | 0x000 | ✅ | 0x000 | ❌ | 0x000 | ✅ | 0x000 | ✅ | 0x000 | ✅ |
 | GUEST_ID_LOGIN | CLogin::OnGuestIDLoginResult |  | 0x001 | ❌ | 0x001 | ❌ | 0x001 | ❌ | 0x001 | ❌ | 0x001 | ❌ |
 | ACCOUNT_INFO | CLogin::OnAccountInfoResult |  | 0x002 | ❌ | 0x002 | ❌ | 0x002 | ❌ | 0x002 | ❌ |  | ⬜ |
 | SERVERSTATUS | CLogin::OnCheckUserLimitResult | login/clientbound/ServerStatus | 0x003 | ✅ | 0x003 | ❌ | 0x003 | ✅ | 0x003 | ✅ |  | ⬜ |
@@ -902,7 +902,7 @@ Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v83 | 348 | 0 | 0 | 324 | 200 | 0 | 51.8% |
+| v83 | 349 | 0 | 0 | 323 | 200 | 0 | 51.9% |
 | v84 | 313 | 0 | 0 | 338 | 221 | 0 | 48.1% |
 | v87 | 360 | 0 | 0 | 349 | 163 | 0 | 50.8% |
 | v95 | 391 | 0 | 1 | 401 | 79 | 0 | 49.3% |

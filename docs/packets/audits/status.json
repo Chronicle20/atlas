@@ -16110,8 +16110,7 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 196
         },
         "gms_v84": {

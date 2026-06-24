@@ -1,0 +1,11 @@
+packet: character/clientbound/CharacterChairShow
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CUserRemote::OnSetActivePortableChair
+    address: "0x9724f9"
+    decompile_sha256: df17ddf1e48f105f5d3bd994b3a7f5231229e1a7f975fd6d28908c72eb0d3980
+notes: "v83 SHOW_CHAIR read inline in CUserPool::OnUserRemotePacket case 0xC4 (@0x9724f9): characterId via dispatcher Decode4, then RemoteUser[3567] = CInPacket::Decode4(a3) reads chairId. Same wire shape as v87 case 0xD1 / v95. Matches the Atlas codec (characterId + chairId)."
+verifies:
+    - libs/atlas-packet/character/clientbound/chair_show_test.go#TestCharacterChairShow

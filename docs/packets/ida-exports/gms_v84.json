@@ -20728,12 +20728,8 @@
       "direction": "clientbound",
       "calls": [
         {
-          "op": "Decode1",
-          "comment": ""
-        },
-        {
-          "op": "Decode1",
-          "comment": ""
+          "op": "Decode2",
+          "comment": "world status (2 bytes; v84 reads as 2 × Decode1, atlas writes WriteShort — wire-equivalent; IDA-verified 0x60e275)"
         }
       ]
     },

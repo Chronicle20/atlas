@@ -90,14 +90,27 @@ verification, so this does not weaken any cell. Foundation commit `f12ba3a94`.
 - v95 EffectQuest discriminator shifted case 3→5 (runtime operations-table resolved) — codec mode-agnostic.
 - jms GW_CharacterStat keeps int16 HP/MP + a jms-extra tail — already in codec JMS branch.
 
+### Effect operations tables — FIXED (commit 2e7f7299e)
+The v87/v95/jms seed templates were missing the `CUser::OnEffect` operations table on
+both the `CharacterEffect` (local) and `CharacterEffectForeign` writers, so
+`ResolveCode("operations", <mode>)` returned the sentinel 99 → wrong mode byte → client
+crash on any character effect. Added version-correct tables (26 modes), with mode bytes
+read live from each version's OnEffect switch (NOT copied — the bytes shift per version):
+- **v87** `@0x9b1ef0`: identical to v83 (QUEST=3, SOUL_STONE=26).
+- **v95** `@0x8f9a70`: two ShowSkillAffected variants inserted at cases 3/4 → +2 shift
+  (QUEST=5, SOUL_STONE=28). Matches the campaign's earlier EffectQuest v95 finding.
+- **jms** `@0x9f6395`: +1 shift after case 6 (new message mode at case 7) plus a tail
+  permutation (UPGRADE_TOMB=20, BATTLEFIELD=21, CONSUME=22, SHOW_INFO=24, SOUL_STONE=27).
+  Controller-verified case-by-case against the live switch bodies.
+`BUFF` (mode 19, "not in v83") omitted in all three — no body exists for it. Other
+dispatcher families' missing operations tables (messenger/cashshop/storage/…) remain a
+separate follow-up; only the effect table was in scope here.
+
 ### Out-of-scope observations flagged (NOT fixed — separate concerns)
-- **v95 seed template lacks the effect `operations` table** (LEVEL_UP/SKILL_USE/QUEST
-  keys) — same family as the known `operations-mode-tables-missing-v87/v95/jms` bug.
-  Byte-fixtures pass mode literally so are unaffected; runtime EffectQuest/EffectSimple
-  mode resolution on v95 would fall back to default. Belongs to the template-wiring
-  follow-up, not this verification campaign.
 - The new jms heal route is a seed-template change; existing live jms tenants won't
   receive it without a config patch + channel restart (`bug_new_opcodes_not_in_live_tenant_config`).
+  Same applies to the effect operations tables above — they take effect for newly-created
+  tenants; existing v87/v95/jms tenants need a config refresh.
 
 ### jms IDB caveat
 The plan §B names a `*_U_DEVM` jms build; the only reachable jms instance is

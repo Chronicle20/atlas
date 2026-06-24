@@ -1,0 +1,10 @@
+packet: summon/clientbound/SummonMove
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CSummonedPool::OnMove
+    address: "0x7cc317"
+    decompile_sha256: 70f34e1e96aa09afac0295b8b471f3a4a6e27e7dbcb641eb2fbbda0646957ebc
+verifies:
+    - libs/atlas-packet/summon/clientbound/move_test.go#TestSummonMoveBytesV84

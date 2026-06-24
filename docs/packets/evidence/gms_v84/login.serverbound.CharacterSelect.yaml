@@ -1,0 +1,10 @@
+packet: login/serverbound/CharacterSelect
+direction: serverbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CLogin::SendSelectCharPacket
+    address: "0x60c1e3"
+    decompile_sha256: 818e6fffd61eef8b6633456530d957760bef4ceb01ec9b98dc683c956831eca4
+verifies:
+    - libs/atlas-packet/login/serverbound/character_select_byte_test.go#TestCharacterSelectByteOutput

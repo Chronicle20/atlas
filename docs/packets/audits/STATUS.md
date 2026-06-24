@@ -5,20 +5,20 @@
 
 Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 
-- export gms_v83: `da0b2bc53c8fe790d5e1654e580191a9399c5cc4506d8c7617d13225edb46e57`
-- export gms_v84: `4bc93e6a8e1381dd6831a09a9a6bfcea782ab861794b7d7d87916dcb11b7044a`
-- export gms_v87: `2e7679cbe87dc69ffbb5b59281177d9b1d2cfb9e1afc31f28e3c75eee828e513`
-- export gms_v95: `cf7682a52552f94e68453f8ed3a9f74098b50a4fdf14a19968227a2f3816d37d`
-- export jms_v185: `4b080fb8d6c1f55c27a7c5684e5c38d182d05cec7d1cbc848cbe781f5e599381`
+- export gms_v83: `ed8270aee32909e07c16c291578c8e64ae8fb3e9b7511e87251c2f2f0fe4d743`
+- export gms_v84: `38eb0b469dbd4bf70f2ccf8a95a9ac7aca0aa741bb52e92e8fe9377f29ee4c16`
+- export gms_v87: `714817d376bb93732ef6b6fbe6b59f8c24515ff901801d213d676b501eae7f94`
+- export gms_v95: `d630364f4d84b433c62329d3756f4f97efdb9ce8056c62b60842bc9b91b24b97`
+- export jms_v185: `56d20afaed17dfaced48b1a91cdc77e78fd8fa29c6040d0c390dfc0fc14f0822`
 
 ## Clientbound
 
 | Op | FName | Packet | v83 # | v83 | v84 # | v84 | v87 # | v87 | v95 # | v95 | JMS185 # | JMS185 |
 |----|-------|--------|-------|-----|-------|-----|-------|-----|-------|-----|-------|-----|
-| LOGIN_STATUS | CLogin::OnCheckPasswordResult | login/clientbound/AuthLoginFailed | 0x000 | ❌ | 0x000 | ❌ | 0x000 | ✅ | 0x000 | ✅ | 0x000 | ✅ |
+| LOGIN_STATUS | CLogin::OnCheckPasswordResult | login/clientbound/AuthLoginFailed | 0x000 | ✅ | 0x000 | ✅ | 0x000 | ✅ | 0x000 | ✅ | 0x000 | ✅ |
 | GUEST_ID_LOGIN | CLogin::OnGuestIDLoginResult |  | 0x001 | ❌ | 0x001 | ❌ | 0x001 | ❌ | 0x001 | ❌ | 0x001 | ❌ |
 | ACCOUNT_INFO | CLogin::OnAccountInfoResult |  | 0x002 | ❌ | 0x002 | ❌ | 0x002 | ❌ | 0x002 | ❌ |  | ⬜ |
-| SERVERSTATUS | CLogin::OnCheckUserLimitResult | login/clientbound/ServerStatus | 0x003 | ✅ | 0x003 | ❌ | 0x003 | ✅ | 0x003 | ✅ |  | ⬜ |
+| SERVERSTATUS | CLogin::OnCheckUserLimitResult | login/clientbound/ServerStatus | 0x003 | ✅ | 0x003 | ✅ | 0x003 | ✅ | 0x003 | ✅ |  | ⬜ |
 | GENDER_DONE | CLogin::OnSetAccountResult | login/serverbound/AfterLogin | 0x004 | ✅ | 0x004 | ✅ | 0x004 | ✅ | 0x004 | ✅ |  | ⬜ |
 | CONFIRM_EULA_RESULT | CLogin::OnConfirmEULAResult |  | 0x005 | ❌ | 0x005 | ❌ | 0x005 | ❌ | 0x005 | ❌ |  | ⬜ |
 | CHECK_PINCODE | CLogin::OnCheckPinCodeResult | login/clientbound/PinOperation | 0x006 | ✅ | 0x006 | ✅ | 0x006 | ✅ | 0x006 | ✅ |  | ⬜ |
@@ -26,7 +26,7 @@ Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 | VIEW_ALL_CHAR | CLogin::OnViewAllCharResult | character/clientbound/CharacterViewAllCharacters (T1) | 0x008 | ✅ | 0x008 | ❌ | 0x008 | ✅ | 0x008 | ✅ | 0x014 | ❌ |
 | SELECT_CHARACTER_BY_VAC | CLogin::OnSelectCharacterByVACResult |  | 0x009 | ❌ | 0x009 | ❌ | 0x009 | ❌ | 0x009 | ❌ |  | ⬜ |
 | IDA_0X00A | CClientSocket::OnAuthenCodeChanged |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x00A | ❌ |
-| WORLD_INFORMATION | CLogin::OnWorldInformation | login/clientbound/ServerListEnd | 0x00A | ✅ | 0x00A | ✅ | 0x00A | ✅ | 0x00A | ✅ | 0x002 | ❌ |
+| WORLD_INFORMATION | CLogin::OnWorldInformation | login/clientbound/ServerListEnd | 0x00A | ✅ | 0x00A | ✅ | 0x00A | ✅ | 0x00A | ✅ | 0x002 | ✅ |
 | CHARLIST | CLogin::OnSelectWorldResult | character/clientbound/CharacterList (T1) | 0x00B | ❌ | 0x00B | ❌ | 0x00B | ❌ | 0x00B | ❌ | 0x003 | ❌ |
 | IDA_0X00B | CClientSocket::OnAuthenMessage |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x00B | ❌ |
 | SERVER_IP | CLogin::OnSelectCharacterResult | login/clientbound/ServerIP | 0x00C | ✅ | 0x00C | ✅ | 0x00C | ✅ | 0x00C | ✅ | 0x004 | ✅ |
@@ -84,7 +84,7 @@ Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 | EXPEDITION_RESULT | CWvsContext::OnExpedtionResult |  |  | ⬜ |  | ⬜ | 0x040 | ❌ | 0x040 | ❌ |  | ⬜ |
 | GUILD_OPERATION | CWvsContext::OnGuildResult | guild/clientbound/GuildBoardAuthKeyUpdate (T1) | 0x041 | ✅ | 0x043 | ✅ | 0x043 | ✅ | 0x043 | ✅ | 0x03B | ✅ |
 | ALLIANCE_OPERATION | CWvsContext::OnAllianceResult |  | 0x042 | ❌ | 0x042 | ❌ | 0x044 | ❌ | 0x044 | ❌ | 0x03C | ❌ |
-| SPAWN_PORTAL | CWvsContext::OnTownPortal | door/clientbound/RemoveTownDoor (T1) | 0x043 | ✅ | 0x045 | ❌ | 0x045 | ❌ | 0x045 | ❌ | 0x03D | ❌ |
+| SPAWN_PORTAL | CWvsContext::OnTownPortal | door/clientbound/RemoveTownDoor (T1) | 0x043 | ✅ | 0x045 | ✅ | 0x045 | ✅ | 0x045 | ✅ | 0x03D | ✅ |
 | SERVERMESSAGE | CWvsContext::OnBroadcastMsg |  | 0x044 | ❌ | 0x044 | ❌ | 0x046 | ❌ | 0x047 | ❌ | 0x03E | ❌ |
 | INCUBATOR_RESULT | CWvsContext::OnIncubatorResult |  | 0x045 | ❌ | 0x047 | ❌ | 0x047 | ❌ | 0x048 | ❌ | 0x03F | ❌ |
 | OPEN_GATE | CWvsContext::OnOpenGate |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x046 | ❌ |  | ⬜ |
@@ -230,13 +230,13 @@ Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 | PET_NAMECHANGE | CPet::OnNameChanged; CPet__OnNameChanged_recv_0xB0 |  | 0x0AC | ❌ | 0x0B0 | ❌ | 0x0B9 | ❌ | 0x0CB | ❌ | 0x0B2 | ❌ |
 | PET_EXCEPTION_LIST | CPet::OnLoadExceptionList | pet/clientbound/PetExcludeResponse (T1) | 0x0AD | ✅ | 0x0B1 | ✅ | 0x0BA | ✅ | 0x0CC | ✅ | 0x0B3 | ✅ |
 | PET_COMMAND | CPet::OnActionCommand | pet/clientbound/PetCommandResponse (T1) | 0x0AE | ✅ | 0x0B2 | ✅ | 0x0BB | ✅ | 0x0CD | ✅ | 0x0B4 | ✅ |
-| SPAWN_SPECIAL_MAPOBJECT | CSummonedPool::OnCreated; CSummonedPool::OnPacket | summon/clientbound/SummonSpawn (T1) | 0x0AF | ❌ | 0x0B3 | ❌ | 0x0BC | ❌ | 0x116 | ✅ | 0x0B5 | ❌ |
-| REMOVE_SPECIAL_MAPOBJECT | CSummonedPool::OnPacket; CSummonedPool::OnRemoved | summon/clientbound/SummonRemove (T1) | 0x0B0 | ❌ | 0x0B4 | ❌ | 0x0BD | ❌ | 0x117 | ✅ | 0x0B6 | ❌ |
-| MOVE_SUMMON | CSummonedPool::OnMove | summon/clientbound/SummonMove (T1) | 0x0B1 | ❌ | 0x0B5 | ❌ | 0x0BE | ❌ | 0x118 | 🟡 | 0x0B7 | ❌ |
-| SUMMON_ATTACK | CSummonedPool::OnAttack | summon/clientbound/SummonAttack (T1) | 0x0B2 | ❌ | 0x0B6 | ❌ | 0x0BF | ❌ | 0x119 | ✅ | 0x0B8 | ❌ |
-| DAMAGE_SUMMON | CSummonedPool::OnHit | summon/clientbound/SummonDamage (T1) | 0x0B3 | ❌ | 0x0B8 | ❌ | 0x0C0 | ❌ | 0x11B | ✅ | 0x0B9 | ❌ |
+| SPAWN_SPECIAL_MAPOBJECT | CSummonedPool::OnCreated; CSummonedPool::OnPacket | summon/clientbound/SummonSpawn (T1) | 0x0AF | ✅ | 0x0B3 | ✅ | 0x0BC | ✅ | 0x116 | ✅ | 0x0B5 | ✅ |
+| REMOVE_SPECIAL_MAPOBJECT | CSummonedPool::OnPacket; CSummonedPool::OnRemoved | summon/clientbound/SummonRemove (T1) | 0x0B0 | ✅ | 0x0B4 | ✅ | 0x0BD | ✅ | 0x117 | ✅ | 0x0B6 | ✅ |
+| MOVE_SUMMON | CSummonedPool::OnMove | summon/clientbound/SummonMove (T1) | 0x0B1 | ✅ | 0x0B5 | ✅ | 0x0BE | ✅ | 0x118 | ✅ | 0x0B7 | ✅ |
+| SUMMON_ATTACK | CSummonedPool::OnAttack | summon/clientbound/SummonAttack (T1) | 0x0B2 | ✅ | 0x0B6 | ✅ | 0x0BF | ✅ | 0x119 | ✅ | 0x0B8 | ✅ |
+| DAMAGE_SUMMON | CSummonedPool::OnHit | summon/clientbound/SummonDamage (T1) | 0x0B3 | ✅ | 0x0B8 | ✅ | 0x0C0 | ✅ | 0x11B | ✅ | 0x0B9 | ✅ |
 | SHOW_ITEM_HYPER_UPGRADE_EFFECT | CUser::OnHitByUser; CUser::ShowItemHyperUpgradeEffect |  |  | ⬜ |  | ⬜ | 0x0B3 | ❌ | 0x0BB | ❌ |  | ⬜ |
-| SUMMON_SKILL | CSummonedPool::OnSkill | summon/clientbound/SummonSkill (T1) | 0x0B4 | ❌ | 0x0B7 | ❌ | 0x0C1 | ❌ | 0x11A | ✅ | 0x0BA | ❌ |
+| SUMMON_SKILL | CSummonedPool::OnSkill | summon/clientbound/SummonSkill (T1) | 0x0B4 | ✅ | 0x0B7 | ✅ | 0x0C1 | ✅ | 0x11A | ✅ | 0x0BA | ✅ |
 | SPAWN_DRAGON | CDragon::OnCreated |  | 0x0B5 | ❌ | 0x0B9 | ❌ | 0x0C2 | ❌ | 0x0CE | ❌ | 0x0BB | ❌ |
 | MOVE_DRAGON | CDragon::OnMove |  | 0x0B6 | ❌ | 0x0BA | ❌ | 0x0C3 | ❌ | 0x0CF | ❌ | 0x0BC | ❌ |
 | REMOVE_DRAGON | CUser::OnDragonPacket |  | 0x0B7 | ❌ | 0x0BB | ❌ | 0x0C4 | ❌ | 0x0D0 | ❌ | 0x0BD | ❌ |
@@ -368,9 +368,9 @@ Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 | IDA_0X112 | CUserLocal::OnQuestGuideResult |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x112 | ❌ |  | ⬜ |
 | REMOVE_MIST | CAffectedAreaPool::OnAffectedAreaRemoved | field/clientbound/FieldAffectedAreaRemoved (T1) | 0x112 | ✅ | 0x119 | ✅ | 0x123 | ✅ | 0x149 | ✅ | 0x127 | ✅ |
 | IDA_0X113 | CUserLocal::OnDeliveryQuest |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x113 | ❌ |  | ⬜ |
-| SPAWN_DOOR | CTownPortalPool::OnTownPortalCreated | door/clientbound/SpawnDoor | 0x113 | ✅ | 0x11A | ❌ | 0x124 | ❌ | 0x14A | ❌ | 0x128 | ❌ |
+| SPAWN_DOOR | CTownPortalPool::OnTownPortalCreated | door/clientbound/SpawnDoor | 0x113 | ✅ | 0x11A | ✅ | 0x124 | ✅ | 0x14A | ✅ | 0x128 | ✅ |
 | IDA_0X114 | CMob::OnMobAttackedByMob | monster/clientbound/MonsterMobAttackedByMob (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x114 | ✅ |
-| REMOVE_DOOR | CTownPortalPool::OnTownPortalRemoved | door/clientbound/RemoveDoor | 0x114 | ✅ | 0x11B | ❌ | 0x125 | ❌ | 0x14B | ❌ | 0x129 | ❌ |
+| REMOVE_DOOR | CTownPortalPool::OnTownPortalRemoved | door/clientbound/RemoveDoor | 0x114 | ✅ | 0x11B | ✅ | 0x125 | ✅ | 0x14B | ✅ | 0x129 | ✅ |
 | REACTOR_HIT | CReactorPool::OnReactorChangeState | reactor/clientbound/ReactorHit | 0x115 | ✅ | 0x11C | ✅ | 0x126 | ✅ | 0x14E | ✅ | 0x12D | ✅ |
 | REACTOR_MOVE | CReactorPool::OnReactorMove |  | 0x116 | ❌ | 0x116 | ❌ | 0x127 | ❌ | 0x14F | ❌ | 0x12E | ❌ |
 | REACTOR_SPAWN | CReactorPool::OnReactorEnterField | reactor/clientbound/ReactorSpawn | 0x117 | ✅ | 0x11E | ✅ | 0x128 | ✅ | 0x150 | ✅ | 0x12F | ✅ |
@@ -482,20 +482,20 @@ Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 | ACCOUNT_INFO_REQUEST |  |  | 0x003 | ❌ | 0x003 | ❌ | 0x003 | ❌ | 0x003 | ❌ |  | ⬜ |
 | SERVERLIST_REREQUEST | CLogin::ChangeStepImmediate; CLogin::Init |  | 0x004 | ❌ | 0x004 | ❌ | 0x004 | ❌ | 0x004 | ❌ | 0x003 | ❌ |
 | CHARLIST_REQUEST | CLogin::SendLoginPacket | login/serverbound/WorldCharacterListRequest | 0x005 | ✅ | 0x005 | ✅ | 0x005 | ✅ | 0x005 | ✅ | 0x004 | ✅ |
-| SERVERSTATUS_REQUEST | CLogin::SendCheckUserLimitPacket | login/serverbound/ServerStatusRequest | 0x006 | ✅ | 0x006 | ✅ | 0x006 | ✅ | 0x006 | ✅ | 0x005 | ❌ |
+| SERVERSTATUS_REQUEST | CLogin::SendCheckUserLimitPacket | login/serverbound/ServerStatusRequest | 0x006 | ✅ | 0x006 | ✅ | 0x006 | ✅ | 0x006 | ✅ |  | ⬜ |
 | ACCEPT_TOS | CLogin::OnAcceptLicense; CLogin::OnDenyLicense | account/serverbound/AcceptTos | 0x007 | ❌ | 0x007 | ❌ | 0x007 | ✅ | 0x007 | ✅ |  | ⬜ |
 | SET_GENDER | CLogin::SendCancelGenderPacket; CLogin::SendSetGenderPacket | account/serverbound/SetGender | 0x008 | ❌ | 0x008 | ❌ | 0x008 | ✅ | 0x008 | ✅ |  | ⬜ |
 | AFTER_LOGIN | CLogin::OnCheckPasswordResult; CLogin::OnCheckPinCodeResult; CLogin::OnSelectWorldResult; CLogin::OnSetAccountResult | login/serverbound/AfterLogin | 0x009 | ✅ | 0x009 | ✅ | 0x009 | ✅ | 0x009 | ✅ |  | ⬜ |
 | REGISTER_PIN | CLogin::OnCheckPinCodeResult | login/clientbound/PinOperation | 0x00A | ✅ | 0x00A | ✅ | 0x00A | ✅ | 0x00A | ✅ |  | ⬜ |
 | SERVERLIST_REQUEST | CLicenseDlg::OnButtonClicked; CLogin::OnCheckPasswordResult; CLogin::OnCheckPinCodeResult | login/clientbound/PinOperation | 0x00B | ✅ | 0x00B | ✅ | 0x00B | ✅ | 0x00B | ✅ |  | ⬜ |
 | PLAYER_DC | CLogin::GotoWorldSelect; CLogin::SendViewAllCharPacket |  | 0x00C | ❌ | 0x00C | ❌ | 0x00C | ❌ | 0x00C | ❌ |  | ⬜ |
-| VIEW_ALL_CHAR | CLogin::SendViewAllCharPacket | login/serverbound/AllCharacterListRequest (T1) | 0x00D | ❌ | 0x00D | ✅ | 0x00D | ✅ | 0x00D | ✅ | 0x00A | ✅ |
-| PICK_ALL_CHAR | CLogin::SendSelectCharPacketByVAC | login/serverbound/AllCharacterListSelect | 0x00E | ✅ | 0x00E | ❌ | 0x00E | ❌ | 0x00E | ✅ |  | ⬜ |
+| VIEW_ALL_CHAR | CLogin::SendViewAllCharPacket | login/serverbound/AllCharacterListRequest (T1) | 0x00D | ✅ | 0x00D | ✅ | 0x00D | ✅ | 0x00D | ✅ | 0x00A | ✅ |
+| PICK_ALL_CHAR | CLogin::SendSelectCharPacketByVAC | login/serverbound/AllCharacterListSelect | 0x00E | ✅ | 0x00E | ✅ | 0x00E | ✅ | 0x00E | ✅ |  | ⬜ |
 | VAC | CLogin::MakeVACDlg; CLogin::ResetVAC | login/serverbound/AllCharacterListPong | 0x00F | ✅ | 0x00F | ✅ | 0x00F | ✅ | 0x00F | ✅ |  | ⬜ |
 | NAME_TRANSFER | CCashShop::SendCheckNameChangePossiblePacket |  | 0x010 | ❌ | 0x010 | ❌ | 0x010 | ❌ | 0x010 | ❌ | 0x009 | ❌ |
 | UNNAMED_R18 |  |  | 0x011 | ❌ | 0x011 | ❌ | 0x011 | ❌ | 0x011 | ❌ |  | ⬜ |
 | WORLD_TRANSFER | CCashShop::SendCheckTransferWorldPossiblePacket |  | 0x012 | ❌ | 0x012 | ❌ | 0x012 | ❌ | 0x012 | ❌ |  | ⬜ |
-| CHAR_SELECT | CLogin::SendSelectCharPacket | login/serverbound/CharacterSelect | 0x013 | ✅ | 0x013 | ❌ | 0x013 | ✅ | 0x013 | ✅ | 0x006 | ❌ |
+| CHAR_SELECT | CLogin::SendSelectCharPacket | login/serverbound/CharacterSelect | 0x013 | ✅ | 0x013 | ✅ | 0x013 | ✅ | 0x013 | ✅ | 0x006 | ✅ |
 | PLAYER_LOGGEDIN | CClientSocket::OnConnect | socket/serverbound/ChannelConnect | 0x014 | ✅ | 0x014 | ❌ | 0x014 | ✅ | 0x014 | ✅ | 0x007 | ✅ |
 | CHECK_CHAR_NAME | CCashShop::SendCheckDuplicateIDPacket; CLogin::SendCheckDuplicateIDPacket | character/serverbound/CheckName (T1) | 0x015 | ❌ | 0x015 | ❌ | 0x015 | ✅ | 0x015 | ✅ | 0x008 | ❌ |
 | CREATE_CHAR | CLogin::SendNewCharPacket | character/serverbound/CreateCharacter (T1) | 0x016 | ✅ | 0x016 | ✅ | 0x016 | ✅ | 0x016 | ✅ | 0x00B | ❌ |
@@ -508,10 +508,10 @@ Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 | JMS_CLOGIN_CLOGIN |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x01A | ❌ |
 | STRANGE_DATA |  |  | 0x01B | ❌ | 0x01B | ❌ | 0x01B | ❌ |  | ⬜ |  | ⬜ |
 | RELOG |  |  | 0x01C | ❌ | 0x01C | ❌ | 0x01C | ❌ |  | ⬜ |  | ⬜ |
-| REGISTER_PIC | CLogin::SendSelectCharPacket | login/serverbound/CharacterSelect | 0x01D | ✅ | 0x01D | ❌ | 0x01D | ✅ | 0x01C | ✅ | 0x013 | ❌ |
-| CHAR_SELECT_WITH_PIC | CLogin::SendSelectCharPacket | login/serverbound/CharacterSelect | 0x01E | ✅ | 0x01E | ❌ | 0x01E | ✅ | 0x01D | ✅ | 0x014 | ❌ |
-| VIEW_ALL_PIC_REGISTER | CLogin::SendSelectCharPacketByVAC | login/serverbound/AllCharacterListSelect | 0x01F | ✅ | 0x01F | ❌ | 0x01F | ❌ | 0x01E | ✅ |  | ⬜ |
-| VIEW_ALL_WITH_PIC | CLogin::SendSelectCharPacketByVAC | login/serverbound/AllCharacterListSelect | 0x020 | ✅ | 0x020 | ❌ | 0x020 | ❌ | 0x01F | ✅ |  | ⬜ |
+| REGISTER_PIC | CLogin::SendSelectCharPacket | login/serverbound/CharacterSelect | 0x01D | ✅ | 0x01D | ✅ | 0x01D | ✅ | 0x01C | ✅ | 0x013 | ✅ |
+| CHAR_SELECT_WITH_PIC | CLogin::SendSelectCharPacket | login/serverbound/CharacterSelect | 0x01E | ✅ | 0x01E | ✅ | 0x01E | ✅ | 0x01D | ✅ | 0x014 | ✅ |
+| VIEW_ALL_PIC_REGISTER | CLogin::SendSelectCharPacketByVAC | login/serverbound/AllCharacterListSelect | 0x01F | ✅ | 0x01F | ✅ | 0x01F | ✅ | 0x01E | ✅ |  | ⬜ |
+| VIEW_ALL_WITH_PIC | CLogin::SendSelectCharPacketByVAC | login/serverbound/AllCharacterListSelect | 0x020 | ✅ | 0x020 | ✅ | 0x020 | ✅ | 0x01F | ✅ |  | ⬜ |
 | UNNAMED_R38 |  |  | 0x021 | ❌ | 0x021 | ❌ | 0x021 | ❌ | 0x020 | ❌ | 0x016 | ❌ |
 | UNNAMED_R39 |  |  | 0x022 | ❌ | 0x022 | ❌ | 0x022 | ❌ | 0x021 | ❌ | 0x017 | ❌ |
 | CLIENT_START | CLogin::Init |  | 0x023 | ❌ | 0x023 | ❌ | 0x023 | ❌ | 0x022 | ❌ | 0x018 | ❌ |
@@ -857,7 +857,7 @@ Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 | interaction/serverbound/InteractionOperationTradeConfirm (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | interaction/serverbound/InteractionOperationTradePutItem (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | interaction/serverbound/InteractionOperationTransaction (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
-| login/serverbound/ServerListRequest |  |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
+| login/serverbound/ServerListRequest |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | messenger/serverbound/MessengerOperation (T1) |  |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
 | messenger/serverbound/MessengerOperationAnswerInvite (T1) |  |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
 | messenger/serverbound/MessengerOperationChat (T1) |  |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
@@ -902,11 +902,11 @@ Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v83 | 351 | 0 | 0 | 321 | 200 | 0 | 52.2% |
-| v84 | 316 | 0 | 0 | 335 | 221 | 0 | 48.5% |
-| v87 | 363 | 0 | 0 | 346 | 163 | 0 | 51.2% |
-| v95 | 391 | 0 | 1 | 401 | 79 | 0 | 49.3% |
-| JMS185 | 332 | 0 | 0 | 371 | 169 | 0 | 47.2% |
+| v83 | 360 | 0 | 0 | 312 | 200 | 0 | 53.6% |
+| v84 | 334 | 0 | 0 | 317 | 221 | 0 | 51.3% |
+| v87 | 375 | 0 | 0 | 334 | 163 | 0 | 52.9% |
+| v95 | 395 | 0 | 0 | 398 | 79 | 0 | 49.8% |
+| JMS185 | 345 | 0 | 0 | 357 | 170 | 0 | 49.1% |
 
 ## Conflicts
 

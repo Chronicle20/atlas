@@ -955,8 +955,7 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "byte-test marker present but no fresh evidence record",
+          "state": "verified",
           "opcode": 13
         },
         "gms_v84": {

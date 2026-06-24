@@ -31,6 +31,7 @@ import (
 // packet-audit:verify packet=character/clientbound/EffectQuest version=gms_v83 ida=0x9377d9
 // packet-audit:verify packet=character/clientbound/EffectQuest version=gms_v84 ida=0x96ea92
 // packet-audit:verify packet=character/clientbound/EffectQuest version=gms_v87 ida=0x9b1ef0
+// packet-audit:verify packet=character/clientbound/EffectQuest version=gms_v95 ida=0x8f9a70
 func TestEffectQuestByteOutput(t *testing.T) {
 	v83 := pt.Variants[1] // GMS v83
 	ctx := pt.CreateContext(v83.Region, v83.MajorVersion, v83.MinorVersion)
@@ -245,6 +246,91 @@ func TestEffectQuestByteOutputV87(t *testing.T) {
 		}
 		if !bytes.Equal(got, want) {
 			t.Errorf("foreign/no-rewards v87 bytes:\n got %x\nwant %x", got, want)
+		}
+	})
+}
+
+// EffectQuest / EffectQuestForeign v95 byte-fixture.
+//
+// Client read order — CUser::OnEffect (v95 @0x8f9a70). The SHOW_FOREIGN_EFFECT /
+// SHOW_ITEM_GAIN_INCHAT opcodes both dispatch to this single function whose first
+// decoded byte is the outer effect-mode discriminator (switch on Decode1 @0x8f9ab4).
+//
+// VERSION DELTA: the quest / item-gain effect is case **5** in v95 (@0x8faa01),
+// NOT case 3 as in v83/v84/v87. The v95 OnEffect switch arms shifted — case 3 is
+// now a ShowSkillAffected variant (Decode4/Decode4/Decode1), and the count+reward/
+// message+nEffect body moved to case 5. The mode byte is config-resolved from the
+// tenant template's effect operations table (effect_body.go ResolveCode "QUEST"),
+// so the codec is mode-agnostic; this fixture passes the v95-correct discriminator
+// (5) and asserts the case-5 body. The body wire format itself is byte-identical
+// to v83/v84/v87:
+//
+//	mode   = Decode1            // outer switch discriminator (== 5 here) /*0x8f9ab4*/
+//	count  = Decode1 (v66)      // number of item rewards                  /*0x8faa01*/
+//	if count == 0:              // !v66 path
+//	    message = DecodeStr     // ZXString length-prefixed                /*0x8faaf1*/
+//	    nEffect = Decode4       // quest-effect id -> Effect_Quest         /*0x8fab9d*/
+//	else:                       // loop @0x8faa1a, count times
+//	    itemId = Decode4 (v67)  //                                        /*0x8faa1a*/
+//	    amount = Decode4 (v68)  // signed: >1 gained, ==1, ==-1, < -1     /*0x8faa30*/
+//
+// The foreign (SHOW_FOREIGN_EFFECT) opcode carries a leading characterId int that
+// CUserPool::OnUserRemotePacket consumes before dispatch into OnEffect;
+// EffectQuestForeign prepends it. The remaining body is identical to the self form.
+func TestEffectQuestByteOutputV95(t *testing.T) {
+	v95 := pt.Variants[3] // GMS v95
+	ctx := pt.CreateContext(v95.Region, v95.MajorVersion, v95.MinorVersion)
+
+	t.Run("self/no-rewards/"+v95.Name, func(t *testing.T) {
+		// mode=5 (v95 quest case), count=0, message="Hello", nEffect=0x10
+		input := NewEffectQuest(5, "Hello", 0x10, nil)
+		got := input.Encode(nil, ctx)(nil)
+		want := []byte{
+			0x05,                         // mode (Decode1, switch discriminator) /*0x8f9ab4*/
+			0x00,                         // count (Decode1 v66)                  /*0x8faa01*/
+			0x05, 0x00,                   // message len = 5 (DecodeStr short)    /*0x8faaf1*/
+			0x48, 0x65, 0x6c, 0x6c, 0x6f, // "Hello"                              /*0x8faaf1*/
+			0x10, 0x00, 0x00, 0x00,       // nEffect = 0x10 (Decode4)             /*0x8fab9d*/
+		}
+		if !bytes.Equal(got, want) {
+			t.Errorf("self/no-rewards v95 bytes:\n got %x\nwant %x", got, want)
+		}
+	})
+
+	t.Run("self/rewards/"+v95.Name, func(t *testing.T) {
+		// mode=5, two rewards: gain 5 of item 0x010203, lose 1 of item 0x0A
+		input := NewEffectQuest(5, "", 0, []QuestReward{
+			{ItemId: 0x010203, Amount: 5},
+			{ItemId: 0x00000A, Amount: -1},
+		})
+		got := input.Encode(nil, ctx)(nil)
+		want := []byte{
+			0x05,                   // mode                                /*0x8f9ab4*/
+			0x02,                   // count = 2 (Decode1 v66)             /*0x8faa01*/
+			0x03, 0x02, 0x01, 0x00, // reward0 itemId = 0x010203 (Decode4) /*0x8faa1a*/
+			0x05, 0x00, 0x00, 0x00, // reward0 amount = 5 (Decode4 v68)    /*0x8faa30*/
+			0x0a, 0x00, 0x00, 0x00, // reward1 itemId = 0x0A (Decode4)     /*0x8faa1a*/
+			0xff, 0xff, 0xff, 0xff, // reward1 amount = -1 (Decode4 v68)   /*0x8faa30*/
+		}
+		if !bytes.Equal(got, want) {
+			t.Errorf("self/rewards v95 bytes:\n got %x\nwant %x", got, want)
+		}
+	})
+
+	t.Run("foreign/no-rewards/"+v95.Name, func(t *testing.T) {
+		// characterId=0x12345678, mode=5, count=0, message="Hi", nEffect=7
+		input := NewEffectQuestForeign(0x12345678, 5, "Hi", 7, nil)
+		got := input.Encode(nil, ctx)(nil)
+		want := []byte{
+			0x78, 0x56, 0x34, 0x12, // characterId (foreign-path prefix)    /*OnUserRemotePacket*/
+			0x05,                   // mode                                /*0x8f9ab4*/
+			0x00,                   // count = 0                           /*0x8faa01*/
+			0x02, 0x00,             // message len = 2                     /*0x8faaf1*/
+			0x48, 0x69,             // "Hi"                                /*0x8faaf1*/
+			0x07, 0x00, 0x00, 0x00, // nEffect = 7 (Decode4)               /*0x8fab9d*/
+		}
+		if !bytes.Equal(got, want) {
+			t.Errorf("foreign/no-rewards v95 bytes:\n got %x\nwant %x", got, want)
 		}
 	})
 }

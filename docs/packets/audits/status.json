@@ -764,8 +764,7 @@
           "opcode": 11
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
+          "state": "verified",
           "opcode": 11
         },
         "jms_v185": {
@@ -16241,8 +16240,7 @@
           "opcode": 210
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 223
         },
         "jms_v185": {
@@ -16311,8 +16309,7 @@
           "opcode": 211
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 224
         },
         "jms_v185": {
@@ -16832,8 +16829,7 @@
           "opcode": 219
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 233
         },
         "jms_v185": {

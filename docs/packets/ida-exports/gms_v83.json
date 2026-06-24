@@ -2040,55 +2040,8 @@
       "direction": "serverbound",
       "calls": [
         {
-          "op": "Decode1",
-          "comment": "",
-          "guard": "a2"
-        },
-        {
-          "op": "Decode1",
-          "comment": "",
-          "guard": "a2"
-        },
-        {
-          "op": "Decode1",
-          "comment": "",
-          "guard": "a2"
-        },
-        {
           "op": "Decode4",
-          "comment": "",
-          "guard": "a2"
-        },
-        {
-          "op": "Decode1",
-          "comment": "",
-          "guard": "<default>"
-        },
-        {
-          "op": "Decode1",
-          "comment": "",
-          "guard": "<default>"
-        },
-        {
-          "op": "Decode1",
-          "comment": "",
-          "guard": "<default>"
-        },
-        {
-          "op": "Delegate",
-          "comment": "",
-          "guard": "<default>",
-          "ref": "COutPacket::Init"
-        },
-        {
-          "op": "Decode1",
-          "comment": "",
-          "guard": "<default>"
-        },
-        {
-          "op": "Decode4",
-          "comment": "",
-          "guard": "<default>"
+          "comment": "targetCharacterId (m_dwCharacterId)"
         }
       ]
     },

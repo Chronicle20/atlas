@@ -2883,35 +2883,8 @@
       "direction": "serverbound",
       "calls": [
         {
-          "op": "Decode1",
-          "comment": "",
-          "guard": "<default> && <default> && RemoteUserByName"
-        },
-        {
-          "op": "Decode1",
-          "comment": "",
-          "guard": "<default> && <default> && RemoteUserByName"
-        },
-        {
-          "op": "Decode1",
-          "comment": "",
-          "guard": "<default> && <default> && RemoteUserByName"
-        },
-        {
-          "op": "Delegate",
-          "comment": "",
-          "guard": "<default> && <default> && RemoteUserByName",
-          "ref": "COutPacket::Init"
-        },
-        {
-          "op": "Decode1",
-          "comment": "",
-          "guard": "<default> && <default> && RemoteUserByName"
-        },
-        {
           "op": "Decode4",
-          "comment": "",
-          "guard": "<default> && <default> && RemoteUserByName"
+          "comment": "targetCharacterId (m_dwCharacterId)"
         }
       ]
     },

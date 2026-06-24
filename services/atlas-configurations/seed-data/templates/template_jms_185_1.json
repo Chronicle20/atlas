@@ -337,6 +337,11 @@
         "handler": "CharacterDistributeApHandle"
       },
       {
+        "opCode": "0x54",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterHealOverTimeHandle"
+      },
+      {
         "opCode": "0x55",
         "validator": "LoggedInValidator",
         "handler": "CharacterDistributeSpHandle"

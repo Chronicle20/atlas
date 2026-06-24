@@ -12020,6 +12020,37 @@
           "comment": "m_nPortableChairID (chairId)"
         }
       ]
+    },
+    "CWvsContext::SendStatChangeRequest": {
+      "address": "0xb054d6",
+      "direction": "serverbound",
+      "_note": "jms HEAL_OVER_TIME (opcode 0x54) sender. The jms function is named SendStatChangeRequestByItemOption@0xb054d6 but ground truth is COutPacket::COutPacket(_, 0x54) — it is the HEAL_OVER_TIME sender (called from CWvsContext::TryRecovery@0xae6f5a auto-recovery; the only 0x54 packet sender). Wire = updateTime+val+hp+mp+option+extra. jms appends a trailing client validation dword (dword_CDA4F8) the GMS v83/v87/v95 SendStatChangeRequest do NOT.",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "update_time (get_update_time())"
+        },
+        {
+          "op": "Encode4",
+          "comment": "val (constant 0x1400 = 5120 in the sitdown-heal path)"
+        },
+        {
+          "op": "Encode2",
+          "comment": "nHP (uint16 HP recovery amount)"
+        },
+        {
+          "op": "Encode2",
+          "comment": "nMP (uint16 MP recovery amount)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "nOption (0=normal, 2=sitting)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "jms-only trailing validation dword (dword_CDA4F8)"
+        }
+      ]
     }
   }
 }

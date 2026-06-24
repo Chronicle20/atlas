@@ -1,6 +1,8 @@
 package clientbound
 
 import (
+	"bytes"
+	"encoding/hex"
 	"testing"
 
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
@@ -11,6 +13,7 @@ import (
 // packet-audit:verify packet=character/clientbound/CharacterInfo version=gms_v87 ida=0xabb181
 // packet-audit:verify packet=character/clientbound/CharacterInfo version=gms_v95 ida=0xa05750
 // packet-audit:verify packet=character/clientbound/CharacterInfo version=gms_v84 ida=0xa6eda8
+// packet-audit:verify packet=character/clientbound/CharacterInfo version=jms_v185 ida=0xb0aa6e
 
 // TestCharacterInfo_MountRoundTrip locks the tamed-mob block: when a mount is
 // active the writer emits flag=1 + level/exp/tiredness (3×int32), and the decoder
@@ -119,6 +122,33 @@ func TestCharacterInfo_CoverCarriesArbitraryValue(t *testing.T) {
 	pt.RoundTrip(t, ctx, in.Encode, out.Decode, nil)
 	if out.MonsterBookCover() != 100100 {
 		t.Errorf("cover = %d, want 100100", out.MonsterBookCover())
+	}
+}
+
+// TestCharacterInfoJMSGolden pins the full jms_v185 wire for a CharacterInfo with
+// a pet, an active mount, a wishlist, and a monster-book block. jms read order is
+// CWvsContext::OnCharacterInfo @0xb0aa6e:
+//   Decode4(charId), Decode1(level), Decode2(job), Decode2(fame), Decode1(married),
+//   DecodeStr(guild), DecodeStr(alliance), Decode4(v32)+Decode4(p) consumed by
+//   SetUserInfo, Decode1(medalInfo byte), Decode1(pet flag)→SetMultiPetInfo (per-pet
+//   Decode4/Str/1/2/1/2/4, bool-terminated @0x9bb959), Decode1(mount flag)+3×Decode4,
+//   Decode1(wish count)+count×int, SomethingMonsterBook @0x70522a (5×Decode4),
+//   MedalAchievementInfo::Decode @0x9bcacf (Decode4 medalId + Decode2 quest count),
+//   then a trailing Decode4 count (jms-only; codec emits 0). The trailing int is the
+//   4-byte jms delta over v83 (99 vs 95 bytes).
+func TestCharacterInfoJMSGolden(t *testing.T) {
+	v := pt.Variants[4] // JMS v185
+	ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+	pets := []InfoPet{{Slot: 0, TemplateId: 5000000, Name: "Kitty", Level: 15, Closeness: 200, Fullness: 80}}
+	mb := MonsterBookInfo{Level: 5, NormalCards: 10, SpecialCards: 3, TotalCards: 13, Cover: 2380001}
+	mount := MountInfo{Active: true, Level: 7, Exp: 1234, Tiredness: 42}
+	in := NewCharacterInfo(12345, 50, 100, 10, "TestGuild", pets, []uint32{1002000, 1002001}, 1142007, mb, mount)
+
+	got := in.Encode(nil, ctx)(nil)
+	want, _ := hex.DecodeString(
+		"393000003264000a00000900546573744775696c6400000001404b4c0005004b697474790fc80050000000000000000107000000d20400002a00000002104a0f00114a0f00050000000a000000030000000d000000e1502400f76c1100000000000000")
+	if !bytes.Equal(got, want) {
+		t.Errorf("jms CharacterInfo wire (len got=%d want=%d):\n got %x\nwant %x", len(got), len(want), got, want)
 	}
 }
 

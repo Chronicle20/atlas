@@ -27,6 +27,7 @@ func TestOperationMerchantRemoveItemRoundTrip(t *testing.T) {
 // remove-item arm: a single uint16 index (LE). The #Merchant arm shares the base
 // CPersonalShopDlg::MoveItemToInventory (entrusted sub-op 0x26 vs personal-shop 0x1B)
 // and carries the same body across versions; no MajorVersion() gate.
+// packet-audit:verify packet=interaction/serverbound/InteractionOperationMerchantRemoveItem version=gms_v83 ida=0x6fdcdf
 func TestOperationMerchantRemoveItemBytes(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	ctx := pt.CreateContext("GMS", 83, 1)

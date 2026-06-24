@@ -40,6 +40,7 @@ func TestOperationMerchantPutItemRoundTrip(t *testing.T) {
 // uint16 set (LE), uint32 price (LE). The #Merchant arm shares the base
 // CPersonalShopDlg::PutItem (entrusted sub-op 0x21 vs personal-shop 0x16) and carries
 // the same body across versions; the codec has no MajorVersion() gate.
+// packet-audit:verify packet=interaction/serverbound/InteractionOperationMerchantPutItem version=gms_v83 ida=0x6fd96c
 func TestOperationMerchantPutItemBytes(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	ctx := pt.CreateContext("GMS", 83, 1)

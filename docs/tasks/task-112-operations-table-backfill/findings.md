@@ -47,7 +47,25 @@ some versions — harmless: `socket.writers` and `socket.handlers` are separate 
 - **MtsOperation (jms)** — SKIPPED per scope: the MTS feature is blocked/planned
   (`project_mts_feature_planned`), so the jms writer is correctly absent. v87/v95 already had it.
 
+## Tooling reconciliation (source-of-truth `docs/packets/dispatchers/*.yaml`)
+The five Class-A/B families with NO dispatcher yaml (FameResponse, HiredMerchantOperation,
+UiOpen, WorldMessage, PetActivated) are hand-managed in the templates — consistent with how
+gms_83/gms_84 carry them (no yaml exists for them). The two yaml-managed families were
+reconciled against their source of truth:
+- **NoteOperation** — `note_operation.yaml` already carried the jms modes {3,4,5,7} (matching
+  the hand-added jms entry exactly) but had no `opcodes:` block, which is why the tool could
+  never auto-add the jms writer. Added the `opcodes:` block (jms_v185 `0x26` + the GMS opcodes)
+  so the writer is now tool-reproducible.
+- **GuildBBS** — `guild_bbs.yaml` independently documents (task-103) that jms is VERSION-ABSENT
+  ("no OnGuildBBSPacket/CUIGuildBBS symbol… jms seed template does NOT register a GuildBBS
+  writer"), corroborating the BLOCKED decision above from the established source of truth.
+
+**Validation:** after the yaml change, `go run ./tools/packet-audit operations` (generate)
+writes **0 templates** — i.e. every hand-populated table is byte-for-byte identical to what the
+canonical tool produces from the yamls — and `operations --check` is clean (0 absent-writer notes).
+
 ## Verification
+- `packet-audit operations --check` clean; `packet-audit operations` (generate) writes 0 templates.
 - All 3 templates valid JSON; `atlas-configurations` and `atlas-channel` build green.
 - No Go/TS changed — seed-template data only. No automated byte-fixture exists for these
   writers, so correctness rests on IDA citation + the controller spot-checks above.

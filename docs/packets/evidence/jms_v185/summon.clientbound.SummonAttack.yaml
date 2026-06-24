@@ -1,0 +1,10 @@
+packet: summon/clientbound/SummonAttack
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CSummonedPool::OnAttack
+    address: "0x828707"
+    decompile_sha256: a20c0ed1dea18045217db5546d4e9aadf14fd3ac4e724f6e59ab59c04cee58d3
+verifies:
+    - libs/atlas-packet/summon/clientbound/attack_test.go#TestSummonAttackBytesJMS185

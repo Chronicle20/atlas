@@ -7568,54 +7568,57 @@
       ]
     },
     "CSummonedPool::OnCreated": {
-      "address": "0x938f61",
+      "address": "0x95adec",
       "direction": "clientbound",
-      "note": "SPAWN_SPECIAL_MAPOBJECT (op 175/0xAF). CSummonedPool::OnPacket@0x938dd7 dispatches op 0xAF -> spawn (vtable+0x2C target sub_938F61). sub_938F61 reads Decode4(cid)@0x938f7c then Decode4(skillId)@0x938f86 + Decode1(charLevel)@0x938f90 + Decode1(SLV)@0x938f9a (passed to CSummoned ctor sub_7A30A9), then the Init blob via sub_7A379B@0x939030. There is NO oid on v83 — only ONE int (skillId) sits between cid and the two bytes; v95 OnCreated inserts oid(i4) right after cid. The int after cid is the skillId, consumed by GetSkill@CSkillInfo in sub_7A379B@0x7a37fd. Init blob (sub_7A379B): Decode2(x)@0x7a37ab, Decode2(y)@0x7a37b5, Decode1(moveAction)@0x7a37c2, Decode2(foothold)@0x7a37cf, Decode1(moveAbility)@0x7a37d9, Decode1(assistType)@0x7a37e6, then [if GetFoothold(foothold)!=0: Decode1(enterType)@0x7a3821]. NO avatar-look byte (v95+ only). Atlas SummonSpawn (gated oid >=95, avatarLook >=95) writes cid+skillId+0x0A(charLevel)+level(SLV)+x+y+stance+foothold(0)+movementType+!puppet+!animated for v83. v83 reference (IDB asm-confirmed, summon-wire-truth.md).",
+      "note": "SPAWN_SPECIAL_MAPOBJECT (op 175/0xAF). The ACTIVE field-path target is the vtable+0x2C spawn handler CSummonedPool::OnCreated@0x95ADEC (task-088 live x32dbg-confirmed; the inactive twin sub_938F61 reads the SAME field order but is the wrong instance). CUserPool::OnUserCommonPacket@0x972401 reads cid (Decode4@0x97240c) and routes op 0xAF to CSummonedPool::OnPacket@0x972490, whose 0xAF arm vtable-calls OnCreated. OnCreated@0x95ADEC then reads (cid already consumed upstream): Decode4(oid)@0x95ae0e [v5 -> CSummoned ctor object id], Decode4(skillId)@0x95ae17 [nSkillID], Decode1(charLevel)@0x95ae21, Decode1(SLV)@0x95ae30, then the Init blob via CSummoned::Init@0x7a379b. Init reads Decode2(x)@0x7a37b2, Decode2(y)@0x7a37bf, Decode1(stance/moveAction)@0x7a37cc, Decode2(foothold)@0x7a37cf, Decode1(movementType/moveAbility)@0x7a37e3, Decode1(assistType=!puppet attack flag)@0x7a37fa, then [if Skill: Decode1(enterType=!animated)@0x7a3821]. NO avatar-look byte on v83 (v95+/JMS185 only). Atlas SummonSpawn writes cid+oid+skillId+0x0A(charLevel)+level(SLV)+x+y+stance+foothold(0)+movementType+!puppet+!animated for v83 — byte-faithful. v83 reference (IDB asm-confirmed; summon-wire-truth.md spawn row, re-pointed to the active 0x95ADEC under task-106).",
       "calls": [
         {
           "op": "Decode4",
-          "comment": "cid — read by sub_938F61@0x938f7c (consumed by CSummonedPool::OnPacket dispatch; pool is cid-keyed)"
+          "comment": "cid (character id) — read upstream by CUserPool::OnUserCommonPacket@0x97240c (consumed by the dispatch; pool is cid-keyed). Atlas writes it as ownerId."
         },
         {
           "op": "Decode4",
-          "comment": "skillId (nSkillID) — sub_938F61@0x938f86; consumed by GetSkill@CSkillInfo in sub_7A379B@0x7a37fd. (NO oid on v83 — the int after cid is the skillId)"
+          "comment": "oid (summon object id) — OnCreated@0x95ADEC Decode4@0x95ae0e; passed to the CSummoned ctor (sub_7A30A9) as the object id. (The active path's first Decode4 after the upstream cid IS the oid.)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "skillId (nSkillID) — OnCreated@0x95ADEC Decode4@0x95ae17; consumed by GetSkill@CSkillInfo."
         },
         {
           "op": "Decode1",
-          "comment": "charLevel (nCharLevel) — sub_938F61@0x938f90; atlas writes fixed 0x0A (visual-only)"
+          "comment": "charLevel (nCharLevel) — OnCreated@0x95ADEC Decode1@0x95ae21; atlas writes fixed 0x0A (visual-only)."
         },
         {
           "op": "Decode1",
-          "comment": "SLV skill level (nSLV) — sub_938F61@0x938f9a; atlas 'level'"
+          "comment": "SLV skill level (nSLV) — OnCreated@0x95ADEC Decode1@0x95ae30; atlas 'level'."
         },
         {
           "op": "Decode2",
-          "comment": "nX — CSummoned Init blob sub_7A379B@0x7a37ab"
+          "comment": "nX — CSummoned::Init blob @0x7a379b Decode2@0x7a37b2."
         },
         {
           "op": "Decode2",
-          "comment": "nY — sub_7A379B@0x7a37b5"
+          "comment": "nY — CSummoned::Init @0x7a379b Decode2@0x7a37bf."
         },
         {
           "op": "Decode1",
-          "comment": "nMoveAction (stance) — sub_7A379B@0x7a37c2"
+          "comment": "nMoveAction (stance) — CSummoned::Init @0x7a379b Decode1@0x7a37cc."
         },
         {
           "op": "Decode2",
-          "comment": "nCurFoothold — sub_7A379B@0x7a37cf; atlas writes fixed 0 (visual-only)"
+          "comment": "nCurFoothold — CSummoned::Init @0x7a379b Decode2@0x7a37cf; atlas writes fixed 0 (visual-only)."
         },
         {
           "op": "Decode1",
-          "comment": "nMoveAbility (movementType) — sub_7A379B@0x7a37d9"
+          "comment": "nMoveAbility (movementType) — CSummoned::Init @0x7a379b Decode1@0x7a37e3."
         },
         {
           "op": "Decode1",
-          "comment": "nAssistType (!puppet attack flag) — sub_7A379B@0x7a37e6"
+          "comment": "nAssistType (!puppet attack flag) — CSummoned::Init @0x7a379b Decode1@0x7a37fa."
         },
         {
           "op": "Decode1",
-          "comment": "nEnterType (!animated flag; read only if GetFoothold(foothold)!=0) — sub_7A379B@0x7a3821",
-          "guard": "GetFoothold(foothold) != 0"
+          "comment": "nEnterType (!animated flag; read after the Skill guard) — CSummoned::Init @0x7a379b Decode1@0x7a3821."
         }
       ]
     },

@@ -6461,7 +6461,17 @@
     "CUserRemote::OnMove": {
       "address": "0x9b26cd",
       "direction": "clientbound",
-      "calls": null
+      "_note": "v84 CUserRemote::OnMove@0x9b26cd delegates to CMovePath::OnMovePacket@0x6a203f (opaque movement-path block), same as v83/v87/v95. characterId is read by CUserPool::OnUserRemotePacket@0x9b2518 before dispatch. v84 == v83 (no wire delta; the prior null-calls entry was an exporter descent gap, not a structural difference). Hand-curated to mirror the verified v83 2-call entry.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "characterId (read by CUserPool::OnUserRemotePacket before dispatch)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "CMovePath::OnMovePacket — opaque movement path block"
+        }
+      ]
     },
     "CWvsContext::OnGivePopularityResult#GiveResponse": {
       "address": "0xa6d8ee",

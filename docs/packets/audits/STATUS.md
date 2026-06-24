@@ -6,7 +6,7 @@
 Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 
 - export gms_v83: `14cc76b9bee6633c1aca5113691714d1f0fd3ddca81d6fc6ab6bca79a3cda12d`
-- export gms_v84: `963a28c703d00609beed1a6998ced636792246836bcaf287f732de2b5d13ba99`
+- export gms_v84: `c941cf1f29af8a17d9e64aec84192c70d141bfb73eaaf7b8e6abd9803c1f737d`
 - export gms_v87: `60a4c60e1eabea5d81ebacfea8a8ce1637a06679d9bdc97fe49eb45d052ed4a2`
 - export gms_v95: `cf7682a52552f94e68453f8ed3a9f74098b50a4fdf14a19968227a2f3816d37d`
 - export jms_v185: `7e7115c6f86a1bee097df0d178fd2ea60981010836500eebdb46c733bb9ddd4d`
@@ -240,7 +240,7 @@ Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 | SPAWN_DRAGON | CDragon::OnCreated |  | 0x0B5 | ❌ | 0x0B9 | ❌ | 0x0C2 | ❌ | 0x0CE | ❌ | 0x0BB | ❌ |
 | MOVE_DRAGON | CDragon::OnMove |  | 0x0B6 | ❌ | 0x0BA | ❌ | 0x0C3 | ❌ | 0x0CF | ❌ | 0x0BC | ❌ |
 | REMOVE_DRAGON | CUser::OnDragonPacket |  | 0x0B7 | ❌ | 0x0BB | ❌ | 0x0C4 | ❌ | 0x0D0 | ❌ | 0x0BD | ❌ |
-| MOVE_PLAYER | CUserRemote::OnMove | character/clientbound/CharacterMovement (T1) | 0x0B9 | ✅ | 0x0BD | ❌ | 0x0C6 | ✅ | 0x0D2 | ✅ | 0x0BF | ❌ |
+| MOVE_PLAYER | CUserRemote::OnMove | character/clientbound/CharacterMovement (T1) | 0x0B9 | ✅ | 0x0BD | ✅ | 0x0C6 | ✅ | 0x0D2 | ✅ | 0x0BF | ❌ |
 | CLOSE_RANGE_ATTACK | CUserRemote::OnAttack | character/clientbound/Attack (T1) | 0x0BA | ✅ | 0x0BE | ✅ | 0x0C7 | ✅ | 0x0D3 | ✅ | 0x0C0 | ✅ |
 | RANGED_ATTACK | CUserRemote::OnAttack | character/clientbound/Attack (T1) | 0x0BB | ✅ | 0x0BF | ✅ | 0x0C8 | ✅ | 0x0D4 | ✅ | 0x0C1 | ✅ |
 | MAGIC_ATTACK | CUserRemote::OnAttack | character/clientbound/Attack (T1) | 0x0BC | ✅ | 0x0C0 | ✅ | 0x0C9 | ✅ | 0x0D5 | ✅ | 0x0C2 | ✅ |
@@ -902,7 +902,7 @@ Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
 | v83 | 355 | 0 | 0 | 316 | 200 | 0 | 52.9% |
-| v84 | 321 | 0 | 0 | 329 | 221 | 0 | 49.4% |
+| v84 | 322 | 0 | 0 | 328 | 221 | 0 | 49.5% |
 | v87 | 360 | 0 | 0 | 348 | 163 | 0 | 50.8% |
 | v95 | 391 | 0 | 1 | 400 | 79 | 0 | 49.4% |
 | JMS185 | 329 | 0 | 0 | 373 | 169 | 0 | 46.9% |

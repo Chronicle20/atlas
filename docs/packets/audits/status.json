@@ -1359,8 +1359,7 @@
           "opcode": 19
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 19
         },
         "gms_v87": {
@@ -2193,8 +2192,7 @@
           "opcode": 29
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 29
         },
         "gms_v87": {
@@ -2227,8 +2225,7 @@
           "opcode": 30
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 30
         },
         "gms_v87": {

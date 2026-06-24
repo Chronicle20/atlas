@@ -495,7 +495,7 @@ Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 | NAME_TRANSFER | CCashShop::SendCheckNameChangePossiblePacket |  | 0x010 | ❌ | 0x010 | ❌ | 0x010 | ❌ | 0x010 | ❌ | 0x009 | ❌ |
 | UNNAMED_R18 |  |  | 0x011 | ❌ | 0x011 | ❌ | 0x011 | ❌ | 0x011 | ❌ |  | ⬜ |
 | WORLD_TRANSFER | CCashShop::SendCheckTransferWorldPossiblePacket |  | 0x012 | ❌ | 0x012 | ❌ | 0x012 | ❌ | 0x012 | ❌ |  | ⬜ |
-| CHAR_SELECT | CLogin::SendSelectCharPacket | login/serverbound/CharacterSelect | 0x013 | ✅ | 0x013 | ❌ | 0x013 | ✅ | 0x013 | ✅ | 0x006 | ❌ |
+| CHAR_SELECT | CLogin::SendSelectCharPacket | login/serverbound/CharacterSelect | 0x013 | ✅ | 0x013 | ✅ | 0x013 | ✅ | 0x013 | ✅ | 0x006 | ❌ |
 | PLAYER_LOGGEDIN | CClientSocket::OnConnect | socket/serverbound/ChannelConnect | 0x014 | ✅ | 0x014 | ❌ | 0x014 | ✅ | 0x014 | ✅ | 0x007 | ✅ |
 | CHECK_CHAR_NAME | CCashShop::SendCheckDuplicateIDPacket; CLogin::SendCheckDuplicateIDPacket | character/serverbound/CheckName (T1) | 0x015 | ❌ | 0x015 | ❌ | 0x015 | ✅ | 0x015 | ✅ | 0x008 | ❌ |
 | CREATE_CHAR | CLogin::SendNewCharPacket | character/serverbound/CreateCharacter (T1) | 0x016 | ✅ | 0x016 | ✅ | 0x016 | ✅ | 0x016 | ✅ | 0x00B | ❌ |
@@ -508,8 +508,8 @@ Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 | JMS_CLOGIN_CLOGIN |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x01A | ❌ |
 | STRANGE_DATA |  |  | 0x01B | ❌ | 0x01B | ❌ | 0x01B | ❌ |  | ⬜ |  | ⬜ |
 | RELOG |  |  | 0x01C | ❌ | 0x01C | ❌ | 0x01C | ❌ |  | ⬜ |  | ⬜ |
-| REGISTER_PIC | CLogin::SendSelectCharPacket | login/serverbound/CharacterSelect | 0x01D | ✅ | 0x01D | ❌ | 0x01D | ✅ | 0x01C | ✅ | 0x013 | ❌ |
-| CHAR_SELECT_WITH_PIC | CLogin::SendSelectCharPacket | login/serverbound/CharacterSelect | 0x01E | ✅ | 0x01E | ❌ | 0x01E | ✅ | 0x01D | ✅ | 0x014 | ❌ |
+| REGISTER_PIC | CLogin::SendSelectCharPacket | login/serverbound/CharacterSelect | 0x01D | ✅ | 0x01D | ✅ | 0x01D | ✅ | 0x01C | ✅ | 0x013 | ❌ |
+| CHAR_SELECT_WITH_PIC | CLogin::SendSelectCharPacket | login/serverbound/CharacterSelect | 0x01E | ✅ | 0x01E | ✅ | 0x01E | ✅ | 0x01D | ✅ | 0x014 | ❌ |
 | VIEW_ALL_PIC_REGISTER | CLogin::SendSelectCharPacketByVAC | login/serverbound/AllCharacterListSelect | 0x01F | ✅ | 0x01F | ❌ | 0x01F | ❌ | 0x01E | ✅ |  | ⬜ |
 | VIEW_ALL_WITH_PIC | CLogin::SendSelectCharPacketByVAC | login/serverbound/AllCharacterListSelect | 0x020 | ✅ | 0x020 | ❌ | 0x020 | ❌ | 0x01F | ✅ |  | ⬜ |
 | UNNAMED_R38 |  |  | 0x021 | ❌ | 0x021 | ❌ | 0x021 | ❌ | 0x020 | ❌ | 0x016 | ❌ |
@@ -903,7 +903,7 @@ Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
 | v83 | 349 | 0 | 0 | 323 | 200 | 0 | 51.9% |
-| v84 | 313 | 0 | 0 | 338 | 221 | 0 | 48.1% |
+| v84 | 316 | 0 | 0 | 335 | 221 | 0 | 48.5% |
 | v87 | 360 | 0 | 0 | 349 | 163 | 0 | 50.8% |
 | v95 | 391 | 0 | 1 | 401 | 79 | 0 | 49.3% |
 | JMS185 | 329 | 0 | 0 | 374 | 169 | 0 | 46.8% |

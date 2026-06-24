@@ -47,6 +47,7 @@ func le4(v uint32) []byte {
 //	    EncodeStr GetLocalMacAddressWithHDDSerialNo=hwid [0x5da753].
 //
 // packet-audit:verify packet=login/serverbound/CharacterSelect version=gms_v83 ida=0x5f726d
+// packet-audit:verify packet=login/serverbound/CharacterSelect version=gms_v84 ida=0x60c1e3
 // packet-audit:verify packet=login/serverbound/CharacterSelect version=gms_v87 ida=0x62e9f6
 // packet-audit:verify packet=login/serverbound/CharacterSelect version=gms_v95 ida=0x5da2a0
 func TestCharacterSelectByteOutput(t *testing.T) {
@@ -61,6 +62,7 @@ func TestCharacterSelectByteOutput(t *testing.T) {
 		Major, Minor uint16
 	}{
 		{"GMS v83", "GMS", 83, 1},
+		{"GMS v84", "GMS", 84, 1},
 		{"GMS v87", "GMS", 87, 1},
 		{"GMS v95", "GMS", 95, 1},
 	} {

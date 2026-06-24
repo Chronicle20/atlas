@@ -31,7 +31,7 @@ Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 | IDA_0X00B | CClientSocket::OnAuthenMessage |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x00B | ❌ |
 | SERVER_IP | CLogin::OnSelectCharacterResult | login/clientbound/ServerIP | 0x00C | ✅ | 0x00C | ✅ | 0x00C | ✅ | 0x00C | ✅ | 0x004 | ✅ |
 | CHAR_NAME_RESPONSE | CLogin::OnCheckDuplicatedIDResult | character/clientbound/CharacterNameResponse (T1) | 0x00D | ✅ | 0x00D | ✅ | 0x00D | ✅ | 0x00D | ✅ | 0x005 | ✅ |
-| ADD_NEW_CHAR_ENTRY | CLogin::OnCreateNewCharacterResult | character/clientbound/AddCharacterEntry (T1) | 0x00E | ✅ | 0x00E | ✅ | 0x00E | ✅ | 0x00E | ✅ | 0x006 | ❌ |
+| ADD_NEW_CHAR_ENTRY | CLogin::OnCreateNewCharacterResult | character/clientbound/AddCharacterEntry (T1) | 0x00E | ✅ | 0x00E | ✅ | 0x00E | ✅ | 0x00E | ✅ | 0x006 | ✅ |
 | DELETE_CHAR_RESPONSE | CLogin::OnDeleteCharacterResult | character/clientbound/DeleteCharacterResponse (T1) | 0x00F | ✅ | 0x00F | ✅ | 0x00F | ✅ | 0x00F | ✅ | 0x007 | ✅ |
 | CHANGE_CHANNEL | CClientSocket::OnMigrateCommand | channel/clientbound/ChannelChannelChange | 0x010 | ✅ | 0x010 | ✅ | 0x010 | ✅ | 0x010 | ✅ | 0x008 | ✅ |
 | PING | CClientSocket::OnAliveReq | socket/clientbound/Ping | 0x011 | ✅ | 0x011 | ❌ | 0x011 | ✅ | 0x011 | ✅ | 0x009 | ✅ |
@@ -905,7 +905,7 @@ Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 | v84 | 324 | 0 | 0 | 326 | 221 | 0 | 49.8% |
 | v87 | 364 | 0 | 0 | 344 | 163 | 0 | 51.4% |
 | v95 | 395 | 0 | 1 | 396 | 79 | 0 | 49.9% |
-| JMS185 | 338 | 0 | 0 | 364 | 169 | 0 | 48.1% |
+| JMS185 | 339 | 0 | 0 | 363 | 169 | 0 | 48.3% |
 
 ## Conflicts
 

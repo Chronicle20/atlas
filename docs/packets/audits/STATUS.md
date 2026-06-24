@@ -6,7 +6,7 @@
 Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 
 - export gms_v83: `d472c1e21f447c0d0a82fdac07219ec9b6d8c55088db00b7d12a5fa500e416b4`
-- export gms_v84: `06a208ed592803a88b13f97a0682a1c067ac27f0a41df79074d2f5df515b7363`
+- export gms_v84: `0c03bb8bdfb9d0cded1c9a193d4570c6ed0dc3bcca54a4397c4adc4be371f291`
 - export gms_v87: `e2f3921d15c619508b4d7fee89f4fbb75d6bea42c66206b7f66f21ecff6e6c94`
 - export gms_v95: `cf7682a52552f94e68453f8ed3a9f74098b50a4fdf14a19968227a2f3816d37d`
 - export jms_v185: `6608f6cb212fa9c7e8632f30aa67436f3de4fe1c4f48222da8093e55eea605e9`
@@ -842,7 +842,7 @@ Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 | interaction/serverbound/InteractionOperationMemoryGameFlipCard (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | interaction/serverbound/InteractionOperationMemoryGameMoveStone (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | interaction/serverbound/InteractionOperationMemoryGameRetreatAnswer (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
-| interaction/serverbound/InteractionOperationMemoryGameTieAnswer (T1) |  |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
+| interaction/serverbound/InteractionOperationMemoryGameTieAnswer (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | interaction/serverbound/InteractionOperationMerchantAddToBlackList (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | interaction/serverbound/InteractionOperationMerchantBuy (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | interaction/serverbound/InteractionOperationMerchantPutItem (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |
@@ -903,7 +903,7 @@ Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
 | v83 | 349 | 0 | 0 | 323 | 200 | 0 | 51.9% |
-| v84 | 313 | 0 | 0 | 338 | 221 | 0 | 48.1% |
+| v84 | 314 | 0 | 0 | 337 | 221 | 0 | 48.2% |
 | v87 | 361 | 0 | 0 | 348 | 163 | 0 | 50.9% |
 | v95 | 391 | 0 | 1 | 401 | 79 | 0 | 49.3% |
 | JMS185 | 330 | 0 | 0 | 373 | 169 | 0 | 46.9% |

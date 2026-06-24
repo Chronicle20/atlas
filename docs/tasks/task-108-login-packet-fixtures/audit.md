@@ -53,7 +53,25 @@ op-rows. Verified against `tools/packet-audit/internal/matrix/{build,grade}.go`:
   the base `CLogin::OnCheckPasswordResult` key (mirrors the existing gms_v84
   AuthSuccess record). Committed `925554c`.
 
+## Export / fname deviations (grounded, documented)
+
+- **v83 `ServerListRequest` — `CLogin::ChangeStepImmediate` does not exist as a
+  discrete symbol in the v83 IDB** (unlike v87/v95/jms). The immediate
+  server-list-request send is **inlined into `CLogin::ChangeStep` @0x5f53c0**
+  (`m_nBaseStep==1` block: `COutPacket(opcode 4)+SendPacket`, no Encode calls →
+  bodyless). The export key was spliced under the canonical matrix logical name
+  `CLogin::ChangeStepImmediate` (the `candidatesFromFName` mapping at run.go:546)
+  with the **real** inline address and a `note` documenting the inline.
+  Independently re-decompiled and confirmed (controller). This is a grounded
+  unblock per "No Deferring Producible Work" — the fname was *found and verified*
+  inlined, not fabricated — NOT a faked-hash escalation case.
+
 ## Wire deltas found
 
-(none yet — updated as the campaign proceeds; jms `ServerListEnd` is the prime
-real-delta suspect per plan §7)
+- **none through v83.** v83 `AllCharacterListRequest` (`SendViewAllCharPacket`
+  @0x5fac34) sends opcodes 0xC/0xD with zero Encode calls → bodyless on v83; the
+  atlas decoder gates all 5 field reads behind `MajorAtLeast(87)` → reads nothing
+  on v83. The report's 5 "atlas: extra" verdict-2 rows are a flat-diff modeling
+  artifact (analyzer models the v87 fields statically), confirmed by decompile —
+  NOT a real over-read. Tier-1 advisory → promoted via marker + fresh evidence.
+- jms `ServerListEnd` remains the prime real-delta suspect (Task 8).

@@ -37,6 +37,7 @@ import (
 //
 // packet-audit:verify packet=character/clientbound/CharacterList version=gms_v83 ida=0x5f9891
 // packet-audit:verify packet=character/clientbound/CharacterList version=gms_v84 ida=0x60e8c6
+// packet-audit:verify packet=character/clientbound/CharacterList version=gms_v87 ida=0x63115a
 func TestCharacterListByteOutput(t *testing.T) {
 	v83 := pt.Variants[1] // GMS v83
 	ctx := pt.CreateContext(v83.Region, v83.MajorVersion, v83.MinorVersion)
@@ -252,6 +253,132 @@ func TestCharacterListByteOutputV84(t *testing.T) {
 	}
 	if !bytes.Equal(got, want) {
 		t.Errorf("character-list v84 bytes:\n got %x\nwant %x", got, want)
+	}
+}
+
+// CharacterList v87 byte-fixture.
+//
+// Client read order — CLogin::OnSelectWorldResult (v87 @0x63115a), the
+// world-select-success path (LABEL_33, !v4 / v4==12 / v4==23 @0x6312eb):
+//
+//	status = Decode1                       // result/status byte (earlier path) /*0x6311b2*/
+//	count  = Decode1 (v10)                 // number of avatar entries           /*0x63132a*/
+//	for each of count entries:             // loop @0x6313ec, 15 slots, count decoded
+//	    GW_CharacterStat::Decode           // statistics block (@0x501d0e)       /*0x631359*/
+//	    AvatarLook::Decode                 // avatar/look block (@0x508277)      /*0x631367*/
+//	    family = Decode1 (*v12)            // viewAll/family flag byte            /*0x631386*/
+//	    rankEnabled = Decode1              // 0 => zeros; else DecodeBuffer(16)   /*0x631388*/
+//	        if rankEnabled: rank/rankMove/jobRank/jobRankMove (4x Decode4)        /*0x6313a3*/
+//	hasPic = Decode1 (m_bLoginOpt)         //                                    /*0x6313fd*/
+//	slots  = Decode4 (m_nSlotCount)        //                                    /*0x631403*/
+//	// GMS major>87 reads an extra nBuyCharCount int; v87 (==87) does NOT.
+//
+// GW_CharacterStat::Decode (v87 @0x501d0e, list path bBackwardUpdate=0):
+// id=Decode4, name=DecodeBuffer(13), gender=Decode1, skin=Decode1, face=Decode4,
+// hair=Decode4, petLockerSN=DecodeBuffer(24), level=Decode1, 10x Decode2
+// (job,str,dex,int,luk,hp,maxHp,mp,maxMp,ap), sp=Decode2 (non-22xx job path),
+// exp=Decode4, fame=Decode2, gachaExp=Decode4, mapId=Decode4, spawnPoint=Decode1,
+// trailing Decode4 (this+227 @0x501f74), then trailing Decode2 (this+231 @0x501f80).
+//
+// The trailing Decode2 (nSubJob) is the ONLY structural delta vs v83/v84: v87
+// reads an extra short after the trailing int. The Atlas codec writes it at
+// MajorVersion()>=87 (character_statistics.go WriteShort(0) // nSubJob), so the
+// v87 wire carries two extra 0x00 bytes in the GW_CharacterStat block.
+//
+// AvatarLook::Decode (v87 @0x508277): gender,skin,face,!mega,hair, equip loop
+// (0xFF term), masked loop (0xFF term), cashWeapon=Decode4, pets=DecodeBuffer(12).
+func TestCharacterListByteOutputV87(t *testing.T) {
+	v87 := pt.Variants[2] // GMS v87
+	ctx := pt.CreateContext(v87.Region, v87.MajorVersion, v87.MinorVersion)
+
+	stats := model.NewCharacterStatistics(
+		0x01020304,         // id
+		"Hero",             // name (padded to 13)
+		0,                  // gender
+		0,                  // skinColor
+		0x4D2,              // face
+		0x7B,               // hair
+		[3]uint64{0, 0, 0}, // petIds
+		0x0A,               // level
+		0x64,               // jobId
+		4, 5, 6, 7,         // str, dex, int, luck
+		0x64, 0x64, 0x32, 0x32, // hp, maxHp, mp, maxMp
+		3,      // ap
+		false,  // hasSPTable (write sp short)
+		2,      // sp
+		0,      // experience
+		8,      // fame
+		0,      // gachaponExperience
+		0x0BB8, // mapId
+		0,      // spawnPoint
+	)
+	avatar := model.NewAvatar(0, 0, 0x4D2, false, 0x7B, nil, nil, nil)
+	entry := model.NewCharacterListEntry(stats, avatar, false /*viewAll*/, false /*gm*/, 1, 2, 3, 4)
+
+	input := NewCharacterList(0 /*status*/, []model.CharacterListEntry{entry}, false /*hasPic*/, 8 /*slots*/)
+	got := input.Encode(nil, ctx)(nil)
+
+	want := []byte{
+		0x00, // status (Decode1)                                  /*0x6311b2*/
+		0x01, // count = 1 (Decode1)                               /*0x63132a*/
+
+		// --- GW_CharacterStat block (entry 0) --- @0x501d0e
+		0x04, 0x03, 0x02, 0x01, // id = 0x01020304 (Decode4)       /*0x501d31*/
+		0x48, 0x65, 0x72, 0x6f, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // "Hero"+pad to 13 /*0x501d42*/
+		0x00,                   // gender (Decode1)                /*0x501d59*/
+		0x00,                   // skin (Decode1)                  /*0x501d6e*/
+		0xd2, 0x04, 0x00, 0x00, // face (Decode4)                  /*0x501d83*/
+		0x7b, 0x00, 0x00, 0x00, // hair (Decode4)                  /*0x501d98*/
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // pet long 0 (DecodeBuffer 24) /*0x501da3*/
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // pet long 1
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // pet long 2
+		0x0a,       // level (Decode1)                 /*0x501db2*/
+		0x64, 0x00, // jobId (Decode2)                 /*0x501dbe*/
+		0x04, 0x00, // str (Decode2)                   /*0x501dd4*/
+		0x05, 0x00, // dex                             /*0x501de8*/
+		0x06, 0x00, // int                             /*0x501dfc*/
+		0x07, 0x00, // luck                            /*0x501e10*/
+		0x64, 0x00, // hp                              /*0x501e24*/
+		0x64, 0x00, // maxHp                           /*0x501e38*/
+		0x32, 0x00, // mp                              /*0x501e4c*/
+		0x32, 0x00, // maxMp                           /*0x501e60*/
+		0x03, 0x00, // ap (Decode2)                    /*0x501e74*/
+		0x02, 0x00, // sp (Decode2, non-22xx job path) /*0x501ed3*/
+		0x00, 0x00, 0x00, 0x00, // experience (Decode4)            /*0x501ef8*/
+		0x08, 0x00,             // fame (Decode2)                  /*0x501f12*/
+		0x00, 0x00, 0x00, 0x00, // gachaExp (Decode4)              /*0x501f2c*/
+		0xb8, 0x0b, 0x00, 0x00, // mapId (Decode4)                 /*0x501f46*/
+		0x00,                   // spawnPoint (Decode1)            /*0x501f67*/
+		0x00, 0x00, 0x00, 0x00, // trailing int (Decode4)          /*0x501f74*/
+		0x00, 0x00,             // nSubJob (Decode2, GMS>=87)       /*0x501f80*/
+
+		// --- AvatarLook block (entry 0) --- @0x508277
+		0x00,                   // gender                          /*0x50828a*/
+		0x00,                   // skin                            /*0x508297*/
+		0xd2, 0x04, 0x00, 0x00, // face                            /*0x5082ab*/
+		0x01,                   // !mega -> WriteBool(true)        /*0x5082c7*/
+		0x7b, 0x00, 0x00, 0x00, // hair                            /*0x5082d3*/
+		0xff,                   // equip terminator                /*0x5082dc*/
+		0xff,                   // masked terminator               /*0x508313*/
+		0x00, 0x00, 0x00, 0x00, // cash weapon                     /*0x50834f*/
+		0x00, 0x00, 0x00, 0x00, // pet 0 (DecodeBuffer 12)         /*0x50835d*/
+		0x00, 0x00, 0x00, 0x00, // pet 1
+		0x00, 0x00, 0x00, 0x00, // pet 2
+
+		// --- entry trailer ---
+		0x00,                   // family/viewAll flag (Decode1)   /*0x631386*/
+		0x01,                   // rankEnabled = !gm (Decode1)     /*0x631388*/
+		0x01, 0x00, 0x00, 0x00, // rank (Decode4)                  /*0x6313a3 DecodeBuffer 16*/
+		0x02, 0x00, 0x00, 0x00, // rankMove
+		0x03, 0x00, 0x00, 0x00, // jobRank
+		0x04, 0x00, 0x00, 0x00, // jobRankMove
+
+		// --- list trailer ---
+		0x00,                   // hasPic (Decode1)                /*0x6313fd*/
+		0x08, 0x00, 0x00, 0x00, // slots (Decode4)                 /*0x631403*/
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("character-list v87 bytes:\n got %x\nwant %x", got, want)
 	}
 }
 

@@ -124,10 +124,6 @@ const (
 	listSagaPerStepTimeout = 1 * time.Second
 )
 
-// currencyTypePrepaid is the NX-prepaid wallet bucket (cash-shop AdjustCurrency
-// currencyType 3 — "nexon cash"). The registration fee and buyer debit both come
-// from prepaid; mirrors the orchestrator's settle expansion.
-const currencyTypePrepaid = uint32(3)
 
 // Processor exposes the REST-facing CRUD and state-transition operations over
 // marketplace listings plus the list-initiation flow (List).
@@ -387,7 +383,7 @@ func (p *ProcessorImpl) transitionToSellerHolding(db *gorm.DB, id string, termin
 // request against the tenant's MTS configuration and, on success, pre-allocates
 // the listing id and emits a TransferToMts saga.
 //
-// The saga is [AwardCurrency(-listingFee NX), TransferToMts{...}]: the fee debit runs
+// The saga is [AwardMesos(-listingFee), TransferToMts{...}]: the fee debit runs
 // first, then the custody transfer (which the orchestrator expands into
 // release_from_character + accept_to_mts_listing). The listing row is created in
 // `active` only by the custody consumer's AcceptToMtsListing — never here, since
@@ -437,17 +433,16 @@ func (p *ProcessorImpl) List(req ListRequest) (uuid.UUID, error) {
 		SetInitiatedBy(fmt.Sprintf("character_%d", req.SellerId))
 
 	// Step 1: debit the registration fee in NX. The client previews (and the
-	// in-game guide states) a fee of flat base + rate% of the list price — the
-	// client constants m_nCommissionBase (500 NX) + m_nCommissionRate (7%) drive
-	// the buyout/listing fee math (CITC sub_5BC1D5 / OnSetITC). So the server MUST
-	// charge listingFee + ceil(listingFeeRate * listValue) from the seller's NX
-	// prepaid (currencyType 3) to match what the player is told.
-	listingFee := cfg.ListingFee() + uint32(math.Ceil(cfg.ListingFeeRate()*float64(req.ListValue)))
-	builder.AddStep("award_currency", saga.Pending, saga.AwardCurrency, saga.AwardCurrencyPayload{
-		CharacterId:  req.SellerId,
-		AccountId:    req.SellerAccountId,
-		CurrencyType: currencyTypePrepaid,
-		Amount:       -int32(listingFee),
+	// flat meso fee charged to the seller to create a listing. (The 500 NX + 7%
+	// the in-game guide describes is the BUYER's commission at purchase, not this
+	// seller listing fee — see Buy's markedUp.)
+	builder.AddStep("award_mesos", saga.Pending, saga.AwardMesos, saga.AwardMesosPayload{
+		CharacterId: req.SellerId,
+		WorldId:     req.WorldId,
+		ActorId:     req.SellerId,
+		ActorType:   "SYSTEM",
+		Amount:      -int32(cfg.ListingFee()),
+		ShowEffect:  false,
 	})
 
 	// Step 2: transfer the item into MTS custody. The orchestrator expands this
@@ -546,9 +541,17 @@ func (p *ProcessorImpl) Buy(req BuyRequest) error {
 		priceBasis = *lm.BuyNowPrice()
 	}
 	listValue := priceBasis
-	// markedUp = ceil(priceBasis * (1 + commissionRate)). Ceil rounds the fractional
-	// NX toward the sink (the un-credited commission), so the buyer never under-pays.
-	markedUp := uint32(math.Ceil(float64(priceBasis) * (1.0 + lm.CommissionRate())))
+	// The buyer pays a marked-up price = ceil(priceBasis * (1 + commissionRate)) +
+	// commissionBase — i.e. the list price + 7% + a flat 500 NX (the in-game guide's
+	// "500 NX + 7% of list price"; client m_nCommissionBase/m_nCommissionRate). The
+	// seller still receives only listValue; the markup (base + rate%) is the sink.
+	// Ceil rounds the fractional NX toward the sink so the buyer never under-pays.
+	t, terr := tenant.FromContext(p.ctx)()
+	if terr != nil {
+		return terr
+	}
+	cfg := configuration.GetRegistry().GetTenantConfig(p.l, p.ctx, t.Id())
+	markedUp := uint32(math.Ceil(float64(priceBasis)*(1.0+lm.CommissionRate()))) + cfg.CommissionBase()
 
 	// Best-effort pre-check; the saga's first (debit) step is the authoritative gate.
 	prepaid, err := p.balance.PrepaidBalance(req.BuyerAccountId)
@@ -591,13 +594,15 @@ func (p *ProcessorImpl) Buy(req BuyRequest) error {
 	return p.emitter.Create(builder.Build())
 }
 
-// markedUp returns ceil(amount * (1 + commissionRate)). It mirrors Buy's rounding
-// rule: round UP so the fractional NX falls toward the sink (the un-credited
-// commission) and the bidder/buyer never under-pays. Used by both the bid escrow
-// (marked-up hold at bid time) and the outbid release (release the SAME marked-up
-// amount that was held), so a release exactly reverses its hold.
-func markedUp(amount uint32, commissionRate float64) uint32 {
-	return uint32(math.Ceil(float64(amount) * (1.0 + commissionRate)))
+// markedUp returns ceil(amount * (1 + commissionRate)) + commissionBase — the
+// price the buyer/bidder pays: the amount plus the rate% plus the flat NX base
+// (the in-game "500 NX + 7%"). It mirrors Buy's rounding rule: round UP so the
+// fractional NX falls toward the sink and the bidder/buyer never under-pays. Used
+// by both the bid escrow (marked-up hold at bid time) and the outbid release
+// (release the SAME marked-up amount that was held), so a release exactly
+// reverses its hold.
+func markedUp(amount uint32, commissionRate float64, commissionBase uint32) uint32 {
+	return uint32(math.Ceil(float64(amount)*(1.0+commissionRate))) + commissionBase
 }
 
 // bidEscrowTimeout scales the single-step escrow saga's timeout. MtsBidEscrow is a
@@ -660,6 +665,8 @@ func (p *ProcessorImpl) PlaceBid(req BidRequest) error {
 
 	escrowTxnId := uuid.New()
 	t := tenant.MustFromContext(p.ctx)
+	// commissionBase (flat NX added to the marked-up hold/release) from config.
+	commissionBase := configuration.GetRegistry().GetTenantConfig(p.l, p.ctx, t.Id()).CommissionBase()
 
 	// One local tx: the CAS advance (race arbiter) + record the held bid + mark the
 	// prior bid released. Composing them guarantees the bid can never half-commit
@@ -729,7 +736,7 @@ func (p *ProcessorImpl) PlaceBid(req BidRequest) error {
 		ListingId:       req.ListingId,
 		BidderId:        req.BidderId,
 		BidderAccountId: req.BidderAccountId,
-		Amount:          -int32(markedUp(req.Amount, lm.CommissionRate())),
+		Amount:          -int32(markedUp(req.Amount, lm.CommissionRate(), commissionBase)),
 	})
 	holdBuilder.SetTimeout(bidEscrowTimeout())
 	if err := p.emitter.Create(holdBuilder.Build()); err != nil {
@@ -750,7 +757,7 @@ func (p *ProcessorImpl) PlaceBid(req BidRequest) error {
 			ListingId:       req.ListingId,
 			BidderId:        priorBidder,
 			BidderAccountId: priorAccount,
-			Amount:          int32(markedUp(priorBid, lm.CommissionRate())),
+			Amount:          int32(markedUp(priorBid, lm.CommissionRate(), commissionBase)),
 		})
 		releaseBuilder.SetTimeout(bidEscrowTimeout())
 		if err := p.emitter.Create(releaseBuilder.Build()); err != nil {

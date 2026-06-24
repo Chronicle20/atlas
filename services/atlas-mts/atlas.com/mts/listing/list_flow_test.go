@@ -165,8 +165,8 @@ func TestListRejectsAuctionDurationOutOfRange(t *testing.T) {
 }
 
 // TestValidFixedListBuildsSaga asserts a valid fixed list pre-allocates a listing
-// id, charges the NX registration fee via AwardCurrency(-fee), then transfers to
-// MTS, and sets a step-count-scaled timeout (N=2 for the TransferToMts composite).
+// id, charges the registration fee via AwardMesos(-fee), then transfers to MTS,
+// and sets a step-count-scaled timeout (N=2 for the TransferToMts composite).
 func TestValidFixedListBuildsSaga(t *testing.T) {
 	p, emitter, _, cleanup := newListProcessor(t)
 	defer cleanup()
@@ -189,29 +189,22 @@ func TestValidFixedListBuildsSaga(t *testing.T) {
 		t.Errorf("saga type = %q, want %q", sg.SagaType, saga.MtsOperation)
 	}
 	if len(sg.Steps) != 2 {
-		t.Fatalf("expected 2 steps (AwardCurrency + TransferToMts), got %d", len(sg.Steps))
+		t.Fatalf("expected 2 steps (AwardMesos + TransferToMts), got %d", len(sg.Steps))
 	}
 
-	// Step 1: AwardCurrency NX debit (the registration fee: 500 base + 7% of the
-	// list price = 500 + ceil(0.07 * 1000) = 570), from the seller's prepaid wallet.
-	if sg.Steps[0].Action != saga.AwardCurrency {
-		t.Errorf("step[0] action = %q, want %q", sg.Steps[0].Action, saga.AwardCurrency)
+	// Step 1: AwardMesos debit — the flat meso listing fee (default 5000).
+	if sg.Steps[0].Action != saga.AwardMesos {
+		t.Errorf("step[0] action = %q, want %q", sg.Steps[0].Action, saga.AwardMesos)
 	}
-	cp, ok := sg.Steps[0].Payload.(sharedsaga.AwardCurrencyPayload)
+	mp, ok := sg.Steps[0].Payload.(sharedsaga.AwardMesosPayload)
 	if !ok {
-		t.Fatalf("step[0] payload type = %T, want AwardCurrencyPayload", sg.Steps[0].Payload)
+		t.Fatalf("step[0] payload type = %T, want AwardMesosPayload", sg.Steps[0].Payload)
 	}
-	if cp.Amount != -570 { // 500 + ceil(0.07 * 1000)
-		t.Errorf("AwardCurrency amount = %d, want -570 (500 NX base + 7%% of 1000)", cp.Amount)
+	if mp.Amount != -5000 { // default flat listing fee
+		t.Errorf("AwardMesos amount = %d, want -5000 (the flat listing fee)", mp.Amount)
 	}
-	if cp.CurrencyType != 3 {
-		t.Errorf("AwardCurrency currencyType = %d, want 3 (prepaid NX)", cp.CurrencyType)
-	}
-	if cp.CharacterId != req.SellerId {
-		t.Errorf("AwardCurrency characterId = %d, want %d", cp.CharacterId, req.SellerId)
-	}
-	if cp.AccountId != req.SellerAccountId {
-		t.Errorf("AwardCurrency accountId = %d, want %d", cp.AccountId, req.SellerAccountId)
+	if mp.CharacterId != req.SellerId {
+		t.Errorf("AwardMesos characterId = %d, want %d", mp.CharacterId, req.SellerId)
 	}
 
 	// Step 2: TransferToMts carrying the pre-allocated listing id + sale params.
@@ -237,8 +230,8 @@ func TestValidFixedListBuildsSaga(t *testing.T) {
 	if tp.SaleType != string(req.SaleType) {
 		t.Errorf("TransferToMts saleType = %q, want %q", tp.SaleType, req.SaleType)
 	}
-	if tp.CommissionRate != 0.10 { // default commissionRate
-		t.Errorf("TransferToMts commissionRate = %v, want 0.10", tp.CommissionRate)
+	if tp.CommissionRate != 0.07 { // default commissionRate (client m_nCommissionRate = 7%)
+		t.Errorf("TransferToMts commissionRate = %v, want 0.07", tp.CommissionRate)
 	}
 
 	// Timeout must be set (never default) and scaled for N=2 expansion: the fee

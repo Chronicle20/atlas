@@ -4,9 +4,9 @@ package configuration
 // knobs that govern listing fees, commissions, auction durations, and paging.
 // Fields are private with getters; construct via the builder or DefaultConfig.
 type Model struct {
-	listingFee        uint32  // flat NX base fee charged to create a listing (client m_nCommissionBase)
-	listingFeeRate    float64 // NX fee rate applied to the list price (client m_nCommissionRate%, e.g. 0.07 = 7%)
-	commissionRate    float64 // buyer-markup applied on top of the sale price
+	listingFee        uint32  // flat meso fee charged to the seller to create a listing
+	commissionRate    float64 // buyer-markup rate on the sale price (client m_nCommissionRate%, e.g. 0.07 = 7%)
+	commissionBase    uint32  // flat NX added to the buyer's payment (client m_nCommissionBase, e.g. 500)
 	maxActiveListings int     // per-character cap on concurrently active listings
 	minLevel          int     // minimum character level required to use the MTS
 	auctionMinHours   int     // minimum auction duration in hours
@@ -20,12 +20,12 @@ func (m Model) ListingFee() uint32 {
 	return m.listingFee
 }
 
-func (m Model) ListingFeeRate() float64 {
-	return m.listingFeeRate
-}
-
 func (m Model) CommissionRate() float64 {
 	return m.commissionRate
+}
+
+func (m Model) CommissionBase() uint32 {
+	return m.commissionBase
 }
 
 func (m Model) MaxActiveListings() int {
@@ -63,8 +63,8 @@ func (m Model) MinBidIncrement() uint32 {
 type RestModel struct {
 	Id                string  `json:"-"`
 	ListingFee        uint32  `json:"listingFee"`
-	ListingFeeRate    float64 `json:"listingFeeRate"`
 	CommissionRate    float64 `json:"commissionRate"`
+	CommissionBase    uint32  `json:"commissionBase"`
 	MaxActiveListings int     `json:"maxActiveListings"`
 	MinLevel          int     `json:"minLevel"`
 	AuctionMinHours   int     `json:"auctionMinHours"`
@@ -93,8 +93,8 @@ func Extract(r RestModel) Model {
 	d := DefaultConfig()
 	m := Model{
 		listingFee:        r.ListingFee,
-		listingFeeRate:    r.ListingFeeRate,
 		commissionRate:    r.CommissionRate,
+		commissionBase:    r.CommissionBase,
 		maxActiveListings: r.MaxActiveListings,
 		minLevel:          r.MinLevel,
 		auctionMinHours:   r.AuctionMinHours,
@@ -106,11 +106,11 @@ func Extract(r RestModel) Model {
 	if m.listingFee == 0 {
 		m.listingFee = d.listingFee
 	}
-	if m.listingFeeRate == 0 {
-		m.listingFeeRate = d.listingFeeRate
-	}
 	if m.commissionRate == 0 {
 		m.commissionRate = d.commissionRate
+	}
+	if m.commissionBase == 0 {
+		m.commissionBase = d.commissionBase
 	}
 	if m.maxActiveListings == 0 {
 		m.maxActiveListings = d.maxActiveListings
@@ -142,9 +142,9 @@ func Extract(r RestModel) Model {
 // configuration resource.
 func DefaultConfig() Model {
 	return Model{
-		listingFee:        500,   // NX base (client m_nCommissionBase, IDA-verified)
-		listingFeeRate:    0.07,  // 7% of list price (client m_nCommissionRate, IDA-verified)
-		commissionRate:    0.10,  // buyer-markup
+		listingFee:        5000,  // flat meso seller fee to list
+		commissionRate:    0.07,  // buyer-markup rate (client m_nCommissionRate, IDA-verified)
+		commissionBase:    500,   // flat NX added to buyer payment (client m_nCommissionBase, IDA-verified)
 		maxActiveListings: 10,    //
 		minLevel:          10,    //
 		auctionMinHours:   24,    // hours

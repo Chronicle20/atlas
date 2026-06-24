@@ -117,11 +117,12 @@ func TestBuyRejectsInsufficientPrepaid(t *testing.T) {
 
 // TestBuyEmitsSettlePurchase asserts a sufficiently-funded buy emits a single
 // MtsSettlePurchase step whose payload carries the debit-first money-mover fields:
-// buyer prepaid debited by markedUpPrice (1100), seller points credited by
-// listValue (1000), commission (100) never credited, and the item routed to the
-// buyer's holding (never inventory) via the move-to-holding the expansion performs.
+// buyer prepaid debited by markedUpPrice (1600 = ceil(1000*1.10)+500 base), seller
+// points credited by listValue (1000), commission (600) never credited, and the
+// item routed to the buyer's holding (never inventory) via the move-to-holding the
+// expansion performs.
 func TestBuyEmitsSettlePurchase(t *testing.T) {
-	br := &stubBalanceReader{prepaid: 1100} // exactly the marked-up price
+	br := &stubBalanceReader{prepaid: 1600} // exactly the marked-up price
 	p, emitter, _, listingId, cleanup := newBuyProcessor(t, br)
 	defer cleanup()
 
@@ -169,14 +170,14 @@ func TestBuyEmitsSettlePurchase(t *testing.T) {
 	if sp.ListValue != 1000 {
 		t.Errorf("settle listValue = %d, want 1000 (the seller credit)", sp.ListValue)
 	}
-	if sp.MarkedUpPrice != 1100 {
-		t.Errorf("settle markedUpPrice = %d, want 1100 (listValue * (1 + 0.10))", sp.MarkedUpPrice)
+	if sp.MarkedUpPrice != 1600 {
+		t.Errorf("settle markedUpPrice = %d, want 1600 (ceil(listValue*1.10)+500 base)", sp.MarkedUpPrice)
 	}
 	// Commission is the sink: it is markedUp - listValue and is never credited to
 	// anyone. The payload only ever carries listValue as the seller credit; assert
 	// the commission is exactly the un-credited difference.
-	if commission := sp.MarkedUpPrice - sp.ListValue; commission != 100 {
-		t.Errorf("commission (markedUp - listValue) = %d, want 100 (never credited)", commission)
+	if commission := sp.MarkedUpPrice - sp.ListValue; commission != 600 {
+		t.Errorf("commission (markedUp - listValue) = %d, want 600 (never credited)", commission)
 	}
 	if sp.WorldId != 0 {
 		t.Errorf("settle worldId = %d, want 0", sp.WorldId)
@@ -225,10 +226,10 @@ func seedActiveAuctionForBuyNow(t *testing.T, db *gorm.DB) uuid.UUID {
 }
 
 // TestBuyNowChargesBuyNowPrice asserts a buy-now (BuyNow=true) against an active
-// auction charges the buy-now price (5000) marked up (5000 * 1.10 = 5500) and
-// credits the seller the buy-now price, NOT the auction's listValue (1000).
+// auction charges the buy-now price (5000) marked up (ceil(5000*1.10)+500 = 6000)
+// and credits the seller the buy-now price, NOT the auction's listValue (1000).
 func TestBuyNowChargesBuyNowPrice(t *testing.T) {
-	br := &stubBalanceReader{prepaid: 5500} // exactly the marked-up buy-now price
+	br := &stubBalanceReader{prepaid: 6000} // exactly the marked-up buy-now price
 	logger := logrus.New()
 	db := test.SetupTestDB(t, listing.Migration)
 	ctx := test.CreateTestContext()
@@ -255,8 +256,8 @@ func TestBuyNowChargesBuyNowPrice(t *testing.T) {
 	if !ok {
 		t.Fatalf("step[0] payload type = %T, want MtsSettlePurchasePayload", emitter.saga.Steps[0].Payload)
 	}
-	if sp.MarkedUpPrice != 5500 {
-		t.Errorf("buy-now markedUpPrice = %d, want 5500 (buyNow 5000 * 1.10)", sp.MarkedUpPrice)
+	if sp.MarkedUpPrice != 6000 {
+		t.Errorf("buy-now markedUpPrice = %d, want 6000 (ceil(buyNow 5000 * 1.10)+500 base)", sp.MarkedUpPrice)
 	}
 	if sp.ListValue != 5000 {
 		t.Errorf("buy-now seller credit = %d, want 5000 (the buy-now price)", sp.ListValue)

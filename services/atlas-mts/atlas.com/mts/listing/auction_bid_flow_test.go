@@ -197,8 +197,8 @@ func TestPlaceBidEscrowsMarkedUp(t *testing.T) {
 	if !ok {
 		t.Fatalf("payload type = %T, want MtsBidEscrowPayload", sg.Steps[0].Payload)
 	}
-	if ep.Amount != -1100 {
-		t.Errorf("escrow amount = %d, want -1100 (marked-up hold)", ep.Amount)
+	if ep.Amount != -1600 {
+		t.Errorf("escrow amount = %d, want -1600 (marked-up hold: ceil(1000*1.10)+500 base)", ep.Amount)
 	}
 	if ep.BidderId != bidderForBid || ep.BidderAccountId != bidderAcctForBid {
 		t.Errorf("escrow bidder = (%d,%d), want (%d,%d)", ep.BidderId, ep.BidderAccountId, bidderForBid, bidderAcctForBid)
@@ -218,13 +218,13 @@ func TestPlaceBidOutbidReleasesPrior(t *testing.T) {
 	p, emitter, db, listingId, cleanup := newBidProcessor(t)
 	defer cleanup()
 
-	// Prior high bid at 1000 (markedUp 1100).
+	// Prior high bid at 1000 (markedUp = ceil(1000*1.10)+500 = 1600).
 	if err := p.PlaceBid(bidRequest(listingId, priorBidder, priorBidderAcct, 1000)); err != nil {
 		t.Fatalf("prior bid: %v", err)
 	}
 	emitter.called = false
 
-	// Outbid at 1200 (>= 1000 + 100). markedUp 1320.
+	// Outbid at 1200 (>= 1000 + 100). markedUp = ceil(1200*1.10)+500 = 1820.
 	if err := p.PlaceBid(bidRequest(listingId, bidderForBid, bidderAcctForBid, 1200)); err != nil {
 		t.Fatalf("outbid: %v", err)
 	}
@@ -239,8 +239,8 @@ func TestPlaceBidOutbidReleasesPrior(t *testing.T) {
 		t.Errorf("held bids = %+v, want exactly the new bidder's", held)
 	}
 
-	// The emitted saga(s) must include: a hold for the new bidder (-1320) AND a
-	// release for the prior bidder (+1100). The release marks the prior escrow freed.
+	// The emitted saga(s) must include: a hold for the new bidder (-1820) AND a
+	// release for the prior bidder (+1600). The release marks the prior escrow freed.
 	if !emitter.called {
 		t.Fatal("expected an escrow saga on outbid")
 	}
@@ -252,18 +252,18 @@ func TestPlaceBidOutbidReleasesPrior(t *testing.T) {
 			}
 			ep := st.Payload.(sharedsaga.MtsBidEscrowPayload)
 			switch {
-			case ep.Amount == -1320 && ep.BidderId == bidderForBid:
+			case ep.Amount == -1820 && ep.BidderId == bidderForBid:
 				sawHold = true
-			case ep.Amount == 1100 && ep.BidderId == priorBidder:
+			case ep.Amount == 1600 && ep.BidderId == priorBidder:
 				sawRelease = true
 			}
 		}
 	}
 	if !sawHold {
-		t.Error("expected a -1320 hold for the new bidder")
+		t.Error("expected a -1820 hold for the new bidder")
 	}
 	if !sawRelease {
-		t.Error("expected a +1100 release for the prior bidder")
+		t.Error("expected a +1600 release for the prior bidder")
 	}
 
 	// Listing high bid advanced.

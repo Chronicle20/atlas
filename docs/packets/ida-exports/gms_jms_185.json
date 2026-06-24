@@ -1658,7 +1658,7 @@
       "address": "0x66f107",
       "region": "JMS",
       "direction": "clientbound",
-      "notes": "Wire layout identical to GMS v95: Decode1(nWorldID)+DecodeStr(name)+Decode1(state)+DecodeStr(eventDesc)+Decode2+Decode2+Decode1(blockCharCreation)+Decode1(nChannelCount)+loop channels+Decode2(nBalloonCount)+loop balloons.",
+      "notes": "jms @0x66f107: Decode1(nWorldID)+DecodeStr(name)+Decode1(state)+DecodeStr(eventDesc)+Decode2(expWSE)+Decode2(dropWSE)+Decode1(nChannelCount)+loop channels{name,Decode4 userNo,Decode1 worldID,Decode1 channelID,Decode1 adult}+Decode2(nBalloonCount)+loop balloons{Decode2 x,Decode2 y,DecodeStr msg}. NO nBlockCharCreation byte (differs from GMS v95).",
       "calls": [
         {
           "op": "Decode1",
@@ -1683,10 +1683,6 @@
         {
           "op": "Decode2",
           "comment": "nWorldEventDrop_WSE"
-        },
-        {
-          "op": "Decode1",
-          "comment": "nBlockCharCreation"
         },
         {
           "op": "Decode1",
@@ -11276,6 +11272,65 @@
         {
           "op": "Decode1",
           "comment": "mode byte (22)"
+        }
+      ]
+    },
+    "CLogin::OnWorldInformation#ServerListEnd": {
+      "address": "0x66f107",
+      "region": "JMS",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "0xFF end-of-list sentinel (OnWorldInformation nWorldID<0 branch); atlas writes WriteByte(0xFF)"
+        }
+      ]
+    },
+    "CLogin::SendSelectCharPacket#CharacterSelectWithPic": {
+      "address": "0x66ddac",
+      "region": "JMS",
+      "direction": "serverbound",
+      "dispatch": [
+        {
+          "discriminator": "m_bLoginOpt",
+          "case": 1
+        }
+      ],
+      "notes": "jms COutPacket(0x14): EncodeStr(pic)+Encode4(charId) — NO mac/hwid (differs from GMS)",
+      "calls": [
+        {
+          "op": "EncodeStr",
+          "comment": "sSPW (PIC, m_bLoginOpt == 1 branch)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "dwCharacterID"
+        }
+      ]
+    },
+    "CLogin::SendSelectCharPacket#CharacterSelectRegisterPic": {
+      "address": "0x66ddac",
+      "region": "JMS",
+      "direction": "serverbound",
+      "dispatch": [
+        {
+          "case": 0,
+          "default": true
+        }
+      ],
+      "notes": "jms COutPacket(0x13): Encode1(flag)+Encode4(charId)+if(flag) EncodeStr(pic) — NO mac/hwid (differs from GMS)",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode (m_bLoginOpt == 0 branch; v10 flag)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "dwCharacterID"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "sSPW (PIC); written when flag != 0"
         }
       ]
     }

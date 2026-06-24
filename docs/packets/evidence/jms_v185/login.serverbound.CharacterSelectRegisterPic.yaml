@@ -1,0 +1,10 @@
+packet: login/serverbound/CharacterSelectRegisterPic
+direction: serverbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CLogin::SendSelectCharPacket#CharacterSelectRegisterPic
+    address: "0x66ddac"
+    decompile_sha256: e3f98893ffd593419b864a660d5fc90d327e3f53fcf1df0dec3852185fad7769
+verifies:
+    - libs/atlas-packet/login/serverbound/character_select_byte_test.go#TestRegisterPicByteOutput

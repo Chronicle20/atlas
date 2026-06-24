@@ -50,6 +50,11 @@ func le4(v uint32) []byte {
 // packet-audit:verify packet=login/serverbound/CharacterSelect version=gms_v84 ida=0x60c1e3
 // packet-audit:verify packet=login/serverbound/CharacterSelect version=gms_v87 ida=0x62e9f6
 // packet-audit:verify packet=login/serverbound/CharacterSelect version=gms_v95 ida=0x5da2a0
+// packet-audit:verify packet=login/serverbound/CharacterSelect version=jms_v185 ida=0x66ddac
+//
+// jms CLogin::SendSelectCharPacket @0x66ddac, m_bLoginOpt<=3 arm:
+//
+//	COutPacket(6) + Encode4(charId) — NO mac/hwid (differs from GMS).
 func TestCharacterSelectByteOutput(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	in := CharacterSelect{characterId: 0x01020304, mac: "MAC", hwid: "HW"}
@@ -71,6 +76,13 @@ func TestCharacterSelectByteOutput(t *testing.T) {
 			require.Equal(t, want, got, "%s CHAR_SELECT body", v.Name)
 		})
 	}
+
+	// jms: charId(4) ONLY (no mac/hwid).
+	t.Run("JMS v185", func(t *testing.T) {
+		wantJMS := le4(0x01020304)
+		got := in.Encode(l, pt.CreateContext("JMS", 185, 1))(nil)
+		require.Equal(t, wantJMS, got, "JMS v185 CHAR_SELECT body")
+	})
 }
 
 // TestCharacterSelectWithPicByteOutput pins CHAR_SELECT_WITH_PIC (0x1E/29) body:
@@ -107,6 +119,14 @@ func TestCharacterSelectWithPicByteOutput(t *testing.T) {
 			require.Equal(t, want, got, "%s CHAR_SELECT_WITH_PIC body", v.Name)
 		})
 	}
+
+	// jms case m_bLoginOpt==1 @0x66ddac: COutPacket(0x14) + EncodeStr(pic) +
+	// Encode4(charId) — NO mac/hwid (differs from GMS).
+	t.Run("JMS v185", func(t *testing.T) {
+		wantJMS := append(lp("PIC"), le4(0x01020304)...)
+		got := in.Encode(l, pt.CreateContext("JMS", 185, 1))(nil)
+		require.Equal(t, wantJMS, got, "JMS v185 CHAR_SELECT_WITH_PIC body")
+	})
 }
 
 // TestRegisterPicByteOutput pins REGISTER_PIC (0x1D/28) body:
@@ -143,4 +163,16 @@ func TestRegisterPicByteOutput(t *testing.T) {
 			require.Equal(t, want, got, "%s REGISTER_PIC body", v.Name)
 		})
 	}
+
+	// jms case m_bLoginOpt==0 (else) @0x66ddac: COutPacket(0x13) + Encode1(flag) +
+	// Encode4(charId) + if(flag) EncodeStr(pic) — NO mac/hwid (differs from GMS).
+	// mode is non-zero so the client's if(flag) EncodeStr path matches atlas's
+	// unconditional pic write.
+	t.Run("JMS v185", func(t *testing.T) {
+		wantJMS := []byte{0x01}
+		wantJMS = append(wantJMS, le4(0x01020304)...)
+		wantJMS = append(wantJMS, lp("PIC")...)
+		got := in.Encode(l, pt.CreateContext("JMS", 185, 1))(nil)
+		require.Equal(t, wantJMS, got, "JMS v185 REGISTER_PIC body")
+	})
 }

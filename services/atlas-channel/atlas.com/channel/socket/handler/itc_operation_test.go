@@ -283,33 +283,34 @@ func TestMtsItemFromWish_CarriesSerial(t *testing.T) {
 	}
 }
 
-// TestApplyItcViewFilters locks the GET_ITC_LIST view->filter mapping: the
-// top-tab view selects the saleType (For Sale=1 -> fixed, Auction=3 -> auction;
-// other views unfiltered) and the item sub-tab (categorySub, 1-4 = inventory
-// type; 0 = all) selects the listing's stored category.
+// TestApplyItcViewFilters locks the GET_ITC_LIST browse->filter mapping: the
+// category (marketplace section / top tab) maps to the listing `category` filter
+// and the item sub-tab (categorySub, 1-4 = inventory type; 0 = all = unfiltered)
+// to the `subCategory` filter — a straight equality filter, no per-view casing.
 func TestApplyItcViewFilters(t *testing.T) {
 	cases := []struct {
-		name         string
-		category     uint32
-		categorySub  uint32
-		wantSaleType string
-		wantCategory string
+		name            string
+		category        uint32
+		categorySub     uint32
+		wantCategory    string
+		wantSubCategory string
 	}{
-		{"for-sale all", 1, 0, "fixed", ""},
-		{"for-sale use sub-tab", 1, 2, "fixed", "2"},
-		{"auction all", 3, 0, "auction", ""},
-		{"auction equip sub-tab", 3, 1, "auction", "1"},
-		{"unknown view, etc sub-tab", 5, 4, "", "4"},
+		{"for-sale all", 1, 0, "1", ""},
+		{"for-sale use sub-tab", 1, 2, "1", "2"},
+		{"auction all", 3, 0, "3", ""},
+		{"auction equip sub-tab", 3, 1, "3", "1"},
+		{"wanted section", 2, 0, "2", ""},
+		{"my-page etc sub-tab", 4, 4, "4", "4"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			var f mtslisting.BrowseFilter
 			applyItcViewFilters(&f, c.category, c.categorySub)
-			if f.SaleType != c.wantSaleType {
-				t.Errorf("saleType: want %q got %q", c.wantSaleType, f.SaleType)
-			}
 			if f.Category != c.wantCategory {
 				t.Errorf("category: want %q got %q", c.wantCategory, f.Category)
+			}
+			if f.SubCategory != c.wantSubCategory {
+				t.Errorf("subCategory: want %q got %q", c.wantSubCategory, f.SubCategory)
 			}
 		})
 	}

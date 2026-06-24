@@ -102,14 +102,21 @@ func handleAcceptToMtsListing(pf providerFn) func(db *gorm.DB) message.Handler[c
 				t := tenant.MustFromContext(ctx)
 				tid := t.Id()
 
-				// Derive the listing's item-category from the templateId server-side
-				// (the inventory type: 1=equip 2=use 3=setup 4=etc 5=cash). The client's
-				// browse sub-tabs (categorySub) map to these, so storing the type here
-				// lets the GET_ITC_LIST sub-tab filter (category=?) match. Falls back to
-				// the payload category if the templateId has no resolvable type.
-				category := b.Category
+				// The GET_ITC_LIST browse filters listings by (category, subCategory),
+				// which mirror the client's browse "tab" and "type":
+				//   category    = the marketplace SECTION / top tab: "1" For Sale
+				//                 (fixed-price), "3" Auction. (Sections 2/4/5 — wanted,
+				//                 my-page/cart — hold no sale listings.)
+				//   subCategory = the item's inventory category (1=equip 2=use 3=setup
+				//                 4=etc 5=cash), derived from the templateId.
+				// So a fixed USE listing surfaces only under For Sale -> Use.
+				category := "1"
+				if b.SaleType == string(listing.SaleTypeAuction) {
+					category = "3"
+				}
+				subCategory := b.SubCategory
 				if it, ok := inventory.TypeFromItemId(item.Id(b.TemplateId)); ok {
-					category = strconv.Itoa(int(it))
+					subCategory = strconv.Itoa(int(it))
 				}
 
 				m, berr := listing.NewBuilder(tid, world.Id(b.WorldId), b.SellerId).
@@ -146,7 +153,7 @@ func handleAcceptToMtsListing(pf providerFn) func(db *gorm.DB) message.Handler[c
 					SetBuyNowPrice(b.BuyNowPrice).
 					SetCommissionRate(b.CommissionRate).
 					SetCategory(category).
-					SetSubCategory(b.SubCategory).
+					SetSubCategory(subCategory).
 					SetEndsAt(b.EndsAt).
 					SetMinIncrement(b.MinIncrement).
 					Build()

@@ -225,43 +225,23 @@ func buildCreateListingFromSaleCurrentItem(p fieldsb.ItcOperationSaleCurrentItem
 	}
 }
 
-// ITC browse view (category) values. The GET_ITC_LIST `category` field is the
-// top-tab/view selector (CITC this[26], consumed by the per-item action dispatch
-// sub_5BC1D5). All five top tabs fill the one shared browse list window via
-// GET_ITC_LIST with a distinct category, so the server returns the matching data
-// set per view:
+// applyItcViewFilters maps the client's GET_ITC_LIST/SEARCH browse selectors onto
+// the REST listing filter. The wire carries two values that mirror the marketplace
+// data model (listings are stored with the same two fields at AcceptToMtsListing):
 //
-//	1 For Sale  -> public fixed-price listings (the MTS-entry default; case 1 = buy)
-//	2 My Page   -> the requesting seller's OWN listings (case 2 = manage modal)
-//	3 Auction   -> public auction listings (case 3 = bid/buyout)
-//	4 Wanted    -> the requesting character's wish entries (case 4 = wish)
-//	5 (other)   -> no public-listing browse (empty)
+//	category    -> the marketplace SECTION / top tab: 1=For Sale (fixed), 3=Auction.
+//	               Listings store this in `category`, so section 1 shows fixed sales,
+//	               section 3 auctions, and sections 2/4/5 (wanted/my-page/cart) hold
+//	               no sale listings -> empty.
+//	categorySub -> the item sub-tab: 0=all, 1=equip, 2=use, 3=setup, 4=etc. Listings
+//	               store the item's inventory category in `subCategory`, so a USE item
+//	               only surfaces under For Sale -> Use (and All).
 //
-// Views 1/3/4 are IDA-grounded (entry default + sub_5BC1D5 cases). Views 2 and 5
-// are inferred from the user's tab names + the per-view sub-tab counts; if a tab
-// shows the wrong data set, only this mapping needs adjusting.
-const (
-	itcViewForSale uint32 = 1
-	itcViewMyPage  uint32 = 2
-	itcViewAuction uint32 = 3
-	itcViewWanted  uint32 = 4
-)
-
-// applyItcViewFilters maps the client's GET_ITC_LIST/SEARCH view (category) and
-// item sub-tab (categorySub) onto the REST browse filter. categorySub is the
-// item-category sub-tab (0=all, 1=equip, 2=use, 3=setup, 4=etc) and maps directly
-// to the listing's stored inventory-type category, so a USE item only surfaces in
-// the "use" and "all" sub-tabs. category selects the saleType for the views whose
-// sale kind is known (For Sale -> fixed, Auction -> auction).
+// A straight (category, subCategory) equality filter — no per-view special-casing.
 func applyItcViewFilters(f *mtslisting.BrowseFilter, category uint32, categorySub uint32) {
-	switch category {
-	case itcViewForSale:
-		f.SaleType = itcSaleTypeFixed
-	case itcViewAuction:
-		f.SaleType = itcSaleTypeAuction
-	}
+	f.Category = strconv.FormatUint(uint64(category), 10)
 	if categorySub != 0 {
-		f.Category = strconv.FormatUint(uint64(categorySub), 10)
+		f.SubCategory = strconv.FormatUint(uint64(categorySub), 10)
 	}
 }
 
@@ -590,44 +570,31 @@ func resolveSellerAssetId(l logrus.FieldLogger, ctx context.Context, characterId
 // leaves the latch set and freezes the next tab. The entry path also passes 1
 // (cosmetic there, since entry is server-initiated and never sets the latch).
 func writeBrowsePage(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, s session.Model, category uint32, subCategory uint32, page uint32, sortType byte, sortColumn byte, requestSent byte, f mtslisting.BrowseFilter) {
-	var items []fieldcb.MtsItem
-	switch category {
-	case itcViewWanted:
-		// Wanted: the character's own wish entries, not public listings.
-		ws, werr := mtswish.NewProcessor(l, ctx).GetByCharacter(s.CharacterId())
-		if werr != nil {
-			l.WithError(werr).Errorf("Unable to load wishes for character [%d]; writing empty Wanted page.", s.CharacterId())
-			ws = nil
-		}
-		items = make([]fieldcb.MtsItem, 0, len(ws))
-		for _, w := range ws {
-			items = append(items, mtsItemFromWish(w))
-		}
-	case itcViewForSale, itcViewMyPage, itcViewAuction:
-		// Listing-backed views. f already carries the saleType (For Sale=fixed,
-		// Auction=auction) and item sub-tab filters; My Page additionally scopes to
-		// the requesting seller's own listings.
-		if category == itcViewMyPage {
-			f.SellerId = s.CharacterId()
-		}
-		ms, err := mtslisting.NewProcessor(l, ctx).Browse(s.WorldId(), f)
-		if err != nil {
-			l.WithError(err).Errorf("Unable to browse MTS listings for character [%d]; writing empty page.", s.CharacterId())
-			ms = nil
-		}
-		items = make([]fieldcb.MtsItem, 0, len(ms))
-		for _, m := range ms {
-			items = append(items, mtsItemFromListing(m))
-		}
-	default:
-		// Unmapped view (e.g. category 5): no public-listing browse.
-		items = nil
+	// Public marketplace browse: listings filtered by (section=category,
+	// item-type=subCategory). Sections that hold no sale listings (wanted/my-page)
+	// simply return an empty page.
+	ms, err := mtslisting.NewProcessor(l, ctx).Browse(s.WorldId(), f)
+	if err != nil {
+		l.WithError(err).Errorf("Unable to browse MTS listings for character [%d]; writing empty page.", s.CharacterId())
+		ms = nil
+	}
+	items := make([]fieldcb.MtsItem, 0, len(ms))
+	for _, m := range ms {
+		items = append(items, mtsItemFromListing(m))
 	}
 
 	body := fieldpkt.MtsOperationGetItcListDoneBody(uint32(len(items)), category, subCategory, page, sortType, sortColumn, items, requestSent)
 	if err := session.Announce(l)(ctx)(wp)(fieldcb.MtsOperationWriter)(body)(s); err != nil {
 		l.WithError(err).Errorf("Unable to announce MTS browse page to character [%d].", s.CharacterId())
 	}
+
+	// Every browse also re-pushes the seller's own panels — "Not Yet Sold" (active
+	// listings) and "Transfer Inventory" (take-home holdings) — so they stay current
+	// after any operation. The v83 client does not re-request these itself; this
+	// mirrors the reference handler, which re-sends both on every interaction and is
+	// the real fix for the panels lagging after a cancel/take-home.
+	announceUserSaleItems(l, ctx, wp, s)
+	announceUserPurchaseItems(l, ctx, wp, s)
 }
 
 // writeWishFailure announces a wish/zzim *Failed clientbound result inline. The

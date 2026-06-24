@@ -1,0 +1,11 @@
+packet: character/clientbound/CharacterViewAllSearchFailed
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CLogin::OnViewAllCharResult#CharacterViewAllSearchFailed
+    address: "0x60ffe8"
+    decompile_sha256: 50bab5c7e89f5594065d15c826cea793ff6a72e4df594431206a2ed9f6ef6ca8
+notes: "v84 VIEW_ALL_CHAR error case (modes 2/3/6/7) in CLogin::OnViewAllCharResult@0x60ffe8: code byte only (same as v83). Re-spliced to correct the prior Unresolved exporter artifact; report verdicts all 0."
+verifies:
+    - libs/atlas-packet/character/clientbound/view_all_test.go#TestCharacterViewAllSearchFailedRoundTrip

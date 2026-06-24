@@ -5,4 +5,7 @@ category: TIER1-FIXTURE
 ida:
     function: CLogin::OnViewAllCharResult#CharacterViewAllCount
     address: "0x60ffe8"
-    decompile_sha256: 11ba41132cc67857ab18517d433aa46209944f46d1518d5f8b416092ad55c6db
+    decompile_sha256: b7518d6608a8a1db47693edaf8c78f5ba96dc2b12756ab425bc888c3c473fc24
+notes: "v84 VIEW_ALL_CHAR CHARACTER_COUNT case (mode 1) in CLogin::OnViewAllCharResult@0x60ffe8: code byte then Decode4(worldCount)+Decode4(totalCharCount). Matches the Atlas codec (code+worldCount+unk). Re-spliced to correct the prior corrupt exporter entry; report verdicts all 0."
+verifies:
+    - libs/atlas-packet/character/clientbound/view_all_test.go#TestCharacterViewAllCountRoundTrip

@@ -1779,58 +1779,234 @@
     },
     "CLogin::OnViewAllCharResult#CharacterViewAllCharacters": {
       "address": "0x60ffe8",
-      "direction": "",
-      "dispatch": [
-        {
-          "discriminator": "",
-          "case": 0
-        }
-      ],
+      "direction": "clientbound",
+      "_note": "v84 VIEW_ALL_CHAR result NORMAL case (mode 0) in CLogin::OnViewAllCharResult@0x60ffe8: code + nWorldID + nCount, then loop nCount of GW_CharacterStat::Decode@0x4e9da4 + AvatarLook::Decode@0x4ef958 + Decode1(flag) + optional DecodeBuffer(16) rank block, then trailing PIC byte. The two nested readers were decompiled and confirmed byte-for-byte identical to v83 (v84 == v83 below ~0x3D). Corrects the prior corrupt exporter branch-descent (9 identical calls) for this v84 #suffix.",
       "calls": [
         {
           "op": "Decode1",
-          "comment": "",
-          "guard": "this[76]"
+          "comment": "code byte (case 0 = NORMAL)"
         },
         {
           "op": "Decode1",
-          "comment": "",
-          "guard": "this[76] && switch == 0"
+          "comment": "nWorldID (world for this batch)"
         },
         {
           "op": "Decode1",
-          "comment": "",
-          "guard": "this[76] && switch == 0"
+          "comment": "nCount (character entries in this world)"
         },
         {
-          "op": "Decode1",
-          "comment": "",
-          "guard": "this[76] && switch == 0 && v13 > 0"
+          "op": "Decode4",
+          "comment": "GW_CharacterStat::dwCharacterID",
+          "guard": "loop nCount"
         },
         {
           "op": "DecodeBuf",
-          "comment": "",
-          "guard": "this[76] && switch == 0 && v13 > 0"
-        },
-        {
-          "op": "Decode4",
-          "comment": "",
-          "guard": "this[76] && switch == 1"
-        },
-        {
-          "op": "Decode4",
-          "comment": "",
-          "guard": "this[76] && switch == 1"
+          "comment": "GW_CharacterStat::sCharacterName (padded 13 bytes)",
+          "guard": "loop nCount"
         },
         {
           "op": "Decode1",
-          "comment": "",
-          "guard": "this[76] && switch == 7"
+          "comment": "GW_CharacterStat::nGender",
+          "guard": "loop nCount"
         },
         {
-          "op": "DecodeStr",
-          "comment": "",
-          "guard": "this[76] && switch == 7 && CInPacket::Decode1(v4)"
+          "op": "Decode1",
+          "comment": "GW_CharacterStat::nSkin",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode4",
+          "comment": "GW_CharacterStat::nFace",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode4",
+          "comment": "GW_CharacterStat::nHair",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode8",
+          "comment": "GW_CharacterStat::petLockerSN (DecodeBuffer 24; atlas for-loop body collapses to 1 static entry)",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode1",
+          "comment": "GW_CharacterStat::nLevel",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode2",
+          "comment": "GW_CharacterStat::nJob",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode2",
+          "comment": "GW_CharacterStat::nSTR",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode2",
+          "comment": "GW_CharacterStat::nDEX",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode2",
+          "comment": "GW_CharacterStat::nINT",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode2",
+          "comment": "GW_CharacterStat::nLUK",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode2",
+          "comment": "GW_CharacterStat::nHP (v83 int16)",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode2",
+          "comment": "GW_CharacterStat::nMHP (v83 int16)",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode2",
+          "comment": "GW_CharacterStat::nMP (v83 int16)",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode2",
+          "comment": "GW_CharacterStat::nMMP (v83 int16)",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode2",
+          "comment": "GW_CharacterStat::nAP",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode2",
+          "comment": "GW_CharacterStat::nSP (common-job branch)",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode4",
+          "comment": "GW_CharacterStat::nEXP",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode2",
+          "comment": "GW_CharacterStat::nPOP (fame)",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode4",
+          "comment": "GW_CharacterStat::nTempEXP (gachaponExperience)",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode4",
+          "comment": "GW_CharacterStat::dwPosMap (mapId)",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode1",
+          "comment": "GW_CharacterStat::nPortal (spawnPoint)",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode4",
+          "comment": "GW_CharacterStat::nPlaytime",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode1",
+          "comment": "AvatarLook::nGender (duplicate)",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode1",
+          "comment": "AvatarLook::nSkin (duplicate)",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode4",
+          "comment": "AvatarLook::nFace (duplicate)",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode1",
+          "comment": "AvatarLook::hairBase/mega flag",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode4",
+          "comment": "AvatarLook::anHairEquip[0] (hair)",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode1",
+          "comment": "AvatarLook::equipment slot (WriteKeyValue byte)",
+          "guard": "loop nCount, loop equip"
+        },
+        {
+          "op": "Decode4",
+          "comment": "AvatarLook::equipment itemId (WriteKeyValue int32)",
+          "guard": "loop nCount, loop equip"
+        },
+        {
+          "op": "Decode1",
+          "comment": "AvatarLook::equipment-loop terminator (0xFF)",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode1",
+          "comment": "AvatarLook::masked-equip slot",
+          "guard": "loop nCount, loop maskedEquip"
+        },
+        {
+          "op": "Decode4",
+          "comment": "AvatarLook::masked-equip itemId",
+          "guard": "loop nCount, loop maskedEquip"
+        },
+        {
+          "op": "Decode1",
+          "comment": "AvatarLook::masked-equipment-loop terminator (0xFF)",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode4",
+          "comment": "AvatarLook::nWeaponStickerID",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode4",
+          "comment": "AvatarLook::anPetID[0]",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode4",
+          "comment": "AvatarLook::anPetID[1]",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode4",
+          "comment": "AvatarLook::anPetID[2]",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode1",
+          "comment": "rankEnabled / hasRank byte",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "rank buffer 16 bytes: worldRank + worldRankGap + jobRank + jobRankGap",
+          "guard": "loop nCount && rankEnabled"
+        },
+        {
+          "op": "Decode1",
+          "comment": "m_bLoginOpt (PIC handling — v83 included)"
         }
       ]
     },
@@ -7381,13 +7557,13 @@
       ]
     },
     "CLogin::OnViewAllCharResult#CharacterViewAllSearchFailed": {
-      "address": "",
-      "direction": "",
-      "unresolved": true,
+      "address": "0x60ffe8",
+      "direction": "clientbound",
+      "_note": "v84 VIEW_ALL_CHAR result error case (modes 2/3/6/7) in CLogin::OnViewAllCharResult@0x60ffe8: code byte only, no further reads (same as v83). Corrects the prior 'Unresolved' exporter artifact for this v84 #suffix.",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "code byte (case 2/3/6/7 = error — no further reads in v83)"
         }
       ]
     },
@@ -13053,58 +13229,20 @@
     },
     "CLogin::OnViewAllCharResult#CharacterViewAllCount": {
       "address": "0x60ffe8",
-      "direction": "",
-      "dispatch": [
-        {
-          "discriminator": "",
-          "case": 1
-        }
-      ],
+      "direction": "clientbound",
+      "_note": "v84 VIEW_ALL_CHAR result CHARACTER_COUNT case (mode 1) in CLogin::OnViewAllCharResult@0x60ffe8: code byte (Decode1 switch) then Decode4(worldCount)+Decode4(totalCharCount). Wire shape byte-identical to v83 (v84 nested readers GW_CharacterStat::Decode@0x4e9da4 + AvatarLook::Decode@0x4ef958 confirmed field-for-field == v83). Corrects the prior corrupt exporter branch-descent (9 identical Decode1/Buf calls) for this v84 #suffix.",
       "calls": [
         {
           "op": "Decode1",
-          "comment": "",
-          "guard": "this[76]"
-        },
-        {
-          "op": "Decode1",
-          "comment": "",
-          "guard": "this[76] && switch == 0"
-        },
-        {
-          "op": "Decode1",
-          "comment": "",
-          "guard": "this[76] && switch == 0"
-        },
-        {
-          "op": "Decode1",
-          "comment": "",
-          "guard": "this[76] && switch == 0 && v13 > 0"
-        },
-        {
-          "op": "DecodeBuf",
-          "comment": "",
-          "guard": "this[76] && switch == 0 && v13 > 0"
+          "comment": "code byte (case 1 = CHARACTER_COUNT)"
         },
         {
           "op": "Decode4",
-          "comment": "",
-          "guard": "this[76] && switch == 1"
+          "comment": "m_nCountRelatedSvrs (server/world count)"
         },
         {
           "op": "Decode4",
-          "comment": "",
-          "guard": "this[76] && switch == 1"
-        },
-        {
-          "op": "Decode1",
-          "comment": "",
-          "guard": "this[76] && switch == 7"
-        },
-        {
-          "op": "DecodeStr",
-          "comment": "",
-          "guard": "this[76] && switch == 7 && CInPacket::Decode1(v4)"
+          "comment": "m_nCountCharacters (total character count)"
         }
       ]
     },

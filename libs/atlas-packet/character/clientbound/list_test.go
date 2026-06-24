@@ -513,6 +513,158 @@ func TestCharacterListByteOutputV95(t *testing.T) {
 	}
 }
 
+// CharacterList jms byte-fixture.
+//
+// Client read order — CLogin::OnSelectWorldResult (jms v185 @0x66f3d8,
+// MapleStory_dump_SCY.exe), the world-select-success path (v34==0 || v34==12):
+//
+//	status = Decode1                       // result/status byte              /*0x66f411*/
+//	_      = DecodeStr                      // JMS leading ASCII string (empty)/*0x66f72e*/
+//	count  = Decode1 (v29)                 // number of avatar entries        /*0x66f73d*/
+//	for each of count entries:             // loop, 18 slots, count decoded
+//	    GW_CharacterStat::Decode(_,_,0)    // statistics block (@0x50ec17)    /*0x66f76c*/
+//	    AvatarLook::Decode                 // avatar/look block (@0x51517e)   /*0x66f77a*/
+//	    family = Decode1 (*v21)            // viewAll/family flag byte         /*0x66f78e*/
+//	    rankEnabled = Decode1              // 0 => zeros; else DecodeBuffer(16)/*0x66f79b*/
+//	        if rankEnabled: rank/rankMove/jobRank/jobRankMove (DecodeBuffer 16)/*0x66f7b6*/
+//	hasPic = Decode1 (m_bLoginOpt)         //                                 /*0x66f815*/
+//	_      = Decode1 (m_bQuerySSN...)      // JMS extra byte                  /*0x66f822*/
+//	slots  = Decode4 (m_nSlotCount)        //                                 /*0x66f832*/
+//	nBuyCharCount = Decode4 (m_nBuyChar..) // read unconditionally in jms     /*0x66f83f*/
+//
+// JMS structural deltas vs GMS (all IDA-confirmed against the Atlas codec
+// list.go JMS branch and character_statistics.go JMS branch):
+//   (1) A leading empty ASCII string is read after the status byte (DecodeStr
+//       @0x66f72e). list.go writes WriteAsciiString("") for JMS.
+//   (2) An extra byte (m_bQuerySSNOnCreateNewCharacter) sits between hasPic and
+//       slots (Decode1 @0x66f822). list.go writes WriteByte(0) for JMS.
+//   (3) nBuyCharCount is read unconditionally (Decode4 @0x66f83f). list.go writes
+//       WriteInt(0) for JMS.
+//
+// GW_CharacterStat::Decode (jms @0x50ec17, list path bBackwardUpdate=0):
+// id=Decode4 /*0x50ec35*/, name=DecodeBuffer(13) /*0x50ec4b*/, gender=Decode1
+// /*0x50ec5d*/, skin=Decode1 /*0x50ec72*/, face=Decode4 /*0x50ec87*/, hair=Decode4
+// /*0x50ec9c*/, petLockerSN=DecodeBuffer(24) /*0x50ecac*/, level=Decode1 /*0x50ecb3*/,
+// 5x Decode2 job/str/dex/int/luk /*0x50ecc7..0x50ed19*/, HP/MaxHP/MP/MaxMP = 4x
+// Decode2 (int16, NOT v95-widened — jms reads shorts) /*0x50ed2d/41/55/69*/, ap=Decode2
+// /*0x50ed7d*/, sp=Decode2 (non-extendSP job path) /*0x50edd2*/, exp=Decode4 /*0x50edf7*/,
+// fame=Decode2 /*0x50ee11*/, gachaExp=Decode4 /*0x50ee2b*/, mapId=Decode4 /*0x50ee45*/,
+// spawnPoint=Decode1 /*0x50ee58*/, then the jms-extra tail: Decode2 /*0x50ee65*/ +
+// DecodeBuffer(8) /*0x50ee7c*/ + nPlaytime Decode4 /*0x50ee83*/ + Decode4 /*0x50ee90*/
+// + Decode4 /*0x50ee9d*/. character_statistics.go JMS branch writes
+// WriteShort(0)+WriteLong(0)+3xWriteInt(0) — byte-exact match (2+8+4+4+4).
+//
+// AvatarLook::Decode (jms @0x51517e): gender=Decode1 /*0x51518a*/, skin=Decode1
+// /*0x515194*/, face=Decode4 /*0x5151a1*/, !mega=Decode1 /*0x5151ce*/, hair=Decode4
+// /*0x5151d5*/, equip loop (key Decode1 0xFF term /*0x5151de*/; value Decode4
+// /*0x5151ec*/), masked loop (key Decode1 0xFF term /*0x515215*/; value Decode4
+// /*0x515223*/), cashWeapon=Decode4 /*0x515251*/, pets=DecodeBuffer(12) /*0x515264*/.
+//
+// The jms wire matches the Atlas codec exactly — no per-version codec delta. HP/MP
+// stay int16 (jms is NOT the v95-widened path) and the jms tail is fully consumed.
+//
+// packet-audit:verify packet=character/clientbound/CharacterList version=jms_v185 ida=0x66f3d8
+func TestCharacterListByteOutputJMS(t *testing.T) {
+	jms := pt.Variants[4] // JMS v185
+	ctx := pt.CreateContext(jms.Region, jms.MajorVersion, jms.MinorVersion)
+
+	stats := model.NewCharacterStatistics(
+		0x01020304,         // id
+		"Hero",             // name (padded to 13)
+		0,                  // gender
+		0,                  // skinColor
+		0x4D2,              // face
+		0x7B,               // hair
+		[3]uint64{0, 0, 0}, // petIds
+		0x0A,               // level
+		0x64,               // jobId
+		4, 5, 6, 7,         // str, dex, int, luck
+		0x64, 0x64, 0x32, 0x32, // hp, maxHp, mp, maxMp
+		3,      // ap
+		false,  // hasSPTable (write sp short)
+		2,      // sp
+		0,      // experience
+		8,      // fame
+		0,      // gachaponExperience
+		0x0BB8, // mapId
+		0,      // spawnPoint
+	)
+	avatar := model.NewAvatar(0, 0, 0x4D2, false, 0x7B, nil, nil, nil)
+	entry := model.NewCharacterListEntry(stats, avatar, false /*viewAll*/, false /*gm*/, 1, 2, 3, 4)
+
+	input := NewCharacterList(0 /*status*/, []model.CharacterListEntry{entry}, false /*hasPic*/, 8 /*slots*/)
+	got := input.Encode(nil, ctx)(nil)
+
+	want := []byte{
+		0x00,       // status (Decode1)                                  /*0x66f411*/
+		0x00, 0x00, // JMS leading ASCII string len = 0 (DecodeStr)      /*0x66f72e*/
+		0x01,       // count = 1 (Decode1)                               /*0x66f73d*/
+
+		// --- GW_CharacterStat block (entry 0) --- @0x50ec17
+		0x04, 0x03, 0x02, 0x01, // id = 0x01020304 (Decode4)       /*0x50ec35*/
+		0x48, 0x65, 0x72, 0x6f, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // "Hero"+pad to 13 /*0x50ec4b*/
+		0x00,                   // gender (Decode1)                /*0x50ec5d*/
+		0x00,                   // skin (Decode1)                  /*0x50ec72*/
+		0xd2, 0x04, 0x00, 0x00, // face (Decode4)                  /*0x50ec87*/
+		0x7b, 0x00, 0x00, 0x00, // hair (Decode4)                  /*0x50ec9c*/
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // pet long 0 (DecodeBuffer 24) /*0x50ecac*/
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // pet long 1
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // pet long 2
+		0x0a,       // level (Decode1)                 /*0x50ecb3*/
+		0x64, 0x00, // jobId (Decode2)                 /*0x50ecc7*/
+		0x04, 0x00, // str (Decode2)                   /*0x50ecdd*/
+		0x05, 0x00, // dex                             /*0x50ecf1*/
+		0x06, 0x00, // int                             /*0x50ed05*/
+		0x07, 0x00, // luck                            /*0x50ed19*/
+		0x64, 0x00, // hp (Decode2, int16 — jms)       /*0x50ed2d*/
+		0x64, 0x00, // maxHp (Decode2)                 /*0x50ed41*/
+		0x32, 0x00, // mp (Decode2)                    /*0x50ed55*/
+		0x32, 0x00, // maxMp (Decode2)                 /*0x50ed69*/
+		0x03, 0x00, // ap (Decode2)                    /*0x50ed7d*/
+		0x02, 0x00, // sp (Decode2, non-extendSP job)  /*0x50edd2*/
+		0x00, 0x00, 0x00, 0x00, // experience (Decode4)            /*0x50edf7*/
+		0x08, 0x00,             // fame (Decode2)                  /*0x50ee11*/
+		0x00, 0x00, 0x00, 0x00, // gachaExp (Decode4)              /*0x50ee2b*/
+		0xb8, 0x0b, 0x00, 0x00, // mapId (Decode4)                 /*0x50ee45*/
+		0x00,                   // spawnPoint (Decode1)            /*0x50ee58*/
+		0x00, 0x00,             // jms tail short (Decode2)        /*0x50ee65*/
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // jms tail buf8 (DecodeBuffer 8) /*0x50ee7c*/
+		0x00, 0x00, 0x00, 0x00, // jms nPlaytime (Decode4)         /*0x50ee83*/
+		0x00, 0x00, 0x00, 0x00, // jms extra int (Decode4)         /*0x50ee90*/
+		0x00, 0x00, 0x00, 0x00, // jms extra int (Decode4)         /*0x50ee9d*/
+
+		// --- AvatarLook block (entry 0) --- @0x51517e
+		0x00,                   // gender                          /*0x51518a*/
+		0x00,                   // skin                            /*0x515194*/
+		0xd2, 0x04, 0x00, 0x00, // face                            /*0x5151a1*/
+		0x01,                   // !mega -> WriteBool(true)        /*0x5151ce*/
+		0x7b, 0x00, 0x00, 0x00, // hair                            /*0x5151d5*/
+		0xff,                   // equip terminator                /*0x5151de*/
+		0xff,                   // masked terminator               /*0x515215*/
+		0x00, 0x00, 0x00, 0x00, // cash weapon                     /*0x515251*/
+		0x00, 0x00, 0x00, 0x00, // pet 0 (DecodeBuffer 12)         /*0x515264*/
+		0x00, 0x00, 0x00, 0x00, // pet 1
+		0x00, 0x00, 0x00, 0x00, // pet 2
+
+		// --- entry trailer ---
+		0x00,                   // family/viewAll flag (Decode1)   /*0x66f78e*/
+		0x01,                   // rankEnabled = !gm (Decode1)     /*0x66f79b*/
+		0x01, 0x00, 0x00, 0x00, // rank (Decode4)                  /*0x66f7b6 DecodeBuffer 16*/
+		0x02, 0x00, 0x00, 0x00, // rankMove
+		0x03, 0x00, 0x00, 0x00, // jobRank
+		0x04, 0x00, 0x00, 0x00, // jobRankMove
+
+		// --- list trailer ---
+		0x00,                   // hasPic (Decode1)                /*0x66f815*/
+		0x00,                   // m_bQuerySSN... (Decode1, jms)   /*0x66f822*/
+		0x08, 0x00, 0x00, 0x00, // slots (Decode4)                 /*0x66f832*/
+		0x00, 0x00, 0x00, 0x00, // nBuyCharCount (Decode4, jms)    /*0x66f83f*/
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("character-list jms bytes:\n got %x\nwant %x", got, want)
+	}
+}
+
 func TestCharacterListRoundTrip(t *testing.T) {
 	v83 := pt.Variants[1]
 	ctx := pt.CreateContext(v83.Region, v83.MajorVersion, v83.MinorVersion)

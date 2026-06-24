@@ -5163,7 +5163,17 @@
     "CUserRemote::OnMove": {
       "address": "0xa443ee",
       "direction": "clientbound",
-      "calls": null
+      "_note": "jms CUserRemote::OnMove@0xa443ee is a thunk to CMovePath::OnMovePacket@0x70c5dc, which calls CMovePath::Decode@0x70b3ce (the opaque movement-path block) — same structure as v83/v87/v95 (no wire delta; the prior null-calls entry was an exporter descent gap). characterId is read by CUserPool::OnUserRemotePacket before dispatch. Hand-curated to mirror the verified v83/v84 2-call entry.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "characterId (read by CUserPool::OnUserRemotePacket before dispatch)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "CMovePath::OnMovePacket — opaque movement path block"
+        }
+      ]
     },
     "CField_SnowBall::OnSnowBallTouch": {
       "address": "0x5c986c",

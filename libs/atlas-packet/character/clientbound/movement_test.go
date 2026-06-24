@@ -42,6 +42,12 @@ func normalTypesOptions() map[string]interface{} {
 // packet-audit:verify packet=character/clientbound/CharacterMovement version=gms_v84 ida=0x9b26cd
 // packet-audit:verify packet=character/clientbound/CharacterMovement version=gms_v87 ida=0x9f7647
 // packet-audit:verify packet=character/clientbound/CharacterMovement version=gms_v95 ida=0x948a80
+// packet-audit:verify packet=character/clientbound/CharacterMovement version=jms_v185 ida=0xa443ee
+//
+// jms CUserRemote::OnMove@0xa443ee is a thunk to CMovePath::OnMovePacket@0x70c5dc,
+// which calls CMovePath::Decode@0x70b3ce (the opaque move-path block) — byte-identical
+// structure to v83/v87/v95: characterId(4 LE) prefix (read by the pool dispatcher) +
+// the shared model.Movement blob. No wire delta on jms; the codec is version-agnostic.
 func TestCharacterMovementByteOutput(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	for _, v := range []struct {
@@ -53,6 +59,7 @@ func TestCharacterMovementByteOutput(t *testing.T) {
 		{"GMS v84", "GMS", 84, 1},
 		{"GMS v87", "GMS", 87, 1},
 		{"GMS v95", "GMS", 95, 1},
+		{"JMS v185", "JMS", 185, 1},
 	} {
 		t.Run(v.Name, func(t *testing.T) {
 			ctx := pt.CreateContext(v.Region, v.Major, v.Minor)

@@ -1,0 +1,11 @@
+packet: character/clientbound/CharacterChairShow
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CUserRemote::OnSetActivePortableChair
+    address: "0x9b2518"
+    decompile_sha256: eea99d29353f6fb7ad3ed60030052e25b8363ef4febdca80258e7dc23902b586
+notes: "v84 SHOW_CHAIR (opcode 0xC8) read inline in CUserPool::OnUserRemotePacket@0x9b2518 case 200: characterId via dispatcher Decode4 @0x9b2522, then RemoteUser m_nPortableChairID = Decode4(chairId) @0x9b25fe. No separate OnSetActivePortableChair receive function (same inline shape as v83 case 0xC4 / v87 case 0xD1). v84 opcode 0xC8 confirmed against template_gms_84_1.json CharacterShowChair writer. Matches the Atlas codec (characterId + chairId). Report verdicts [0,0]."
+verifies:
+    - libs/atlas-packet/character/clientbound/chair_show_test.go#TestCharacterChairShow

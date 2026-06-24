@@ -259,7 +259,7 @@ Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 | SHOW_PQ_REWARD | CUser::OnShowPQReward |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x0C2 | ❌ |  | ⬜ |
 | SET_PHASE | CUser::OnSetPhase |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x0C3 | ❌ |  | ⬜ |
 | SHOW_UPGRADE_TOMB_EFFECT | CUserRemote::OnShowUpgradeTombEffect |  | 0x0C3 | ❌ | 0x0C7 | ❌ | 0x0D0 | ❌ | 0x0DD | ❌ | 0x0C9 | ❌ |
-| SHOW_CHAIR | CUserRemote::OnSetActivePortableChair | character/clientbound/CharacterChairShow (T1) | 0x0C4 | ✅ | 0x0C8 | 🟡 | 0x0D1 | ✅ | 0x0DE | ✅ | 0x0CA | ❌ |
+| SHOW_CHAIR | CUserRemote::OnSetActivePortableChair | character/clientbound/CharacterChairShow (T1) | 0x0C4 | ✅ | 0x0C8 | ✅ | 0x0D1 | ✅ | 0x0DE | ✅ | 0x0CA | ❌ |
 | SHOW_RECOVERY_UPGRADE_COUNT_EFFECT | CUser::ShowRecoverUpgradeCountEffect |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x0C5 | ❌ |  | ⬜ |
 | UPDATE_CHAR_LOOK | CUserRemote::OnAvatarModified | character/clientbound/CharacterAppearanceUpdate (T1) | 0x0C5 | ✅ | 0x0C9 | ✅ | 0x0D2 | ❌ | 0x0DF | ❌ | 0x0CB | ❌ |
 | SHOW_FOREIGN_EFFECT | CUser::OnEffect | character/clientbound/EffectQuest (T1) | 0x0C6 | ✅ | 0x0CA | ✅ | 0x0D3 | ❌ | 0x0E0 | ❌ | 0x0CC | ❌ |
@@ -902,7 +902,7 @@ Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
 | v83 | 355 | 0 | 0 | 316 | 200 | 0 | 52.9% |
-| v84 | 318 | 0 | 2 | 330 | 221 | 0 | 48.9% |
+| v84 | 319 | 0 | 1 | 330 | 221 | 0 | 49.1% |
 | v87 | 360 | 0 | 0 | 348 | 163 | 0 | 50.8% |
 | v95 | 391 | 0 | 1 | 400 | 79 | 0 | 49.4% |
 | JMS185 | 329 | 0 | 0 | 373 | 169 | 0 | 46.9% |

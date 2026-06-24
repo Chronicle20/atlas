@@ -18,6 +18,7 @@ import (
 // own v83 marker+fixture+evidence to let the demux promote.
 //
 // packet-audit:verify packet=character/clientbound/EffectSimple version=gms_v83 ida=0x9377d9
+// packet-audit:verify packet=character/clientbound/EffectSimple version=gms_v84 ida=0x96ea92
 // packet-audit:verify packet=character/clientbound/EffectSimple version=jms_v185 ida=0x9f6395
 func TestEffectSimpleByteOutput(t *testing.T) {
 	v83 := pt.Variants[1] // GMS v83
@@ -33,6 +34,32 @@ func TestEffectSimpleByteOutput(t *testing.T) {
 	gotForeign := NewEffectSimpleForeign(0x12345678, 8).Encode(nil, ctx)(nil)
 	if wantForeign := []byte{0x78, 0x56, 0x34, 0x12, 0x08}; !bytes.Equal(gotForeign, wantForeign) {
 		t.Errorf("foreign bytes: got %x want %x", gotForeign, wantForeign)
+	}
+}
+
+// TestEffectSimpleByteOutputV84 is the v84 golden-byte fixture for the mode-only
+// OnEffect arms. The read order is byte-identical to v83 (v84 body ≡ v83 below
+// ~0x3D, IDA-confirmed): CUser::OnEffect (v84 @0x96ea92) case 0 (@0x96eac9) reads
+// ONLY the leading Decode1 effect-mode byte (@0x96eaa5) and plays a client-side
+// animation — no further wire fields. EffectSimple.Encode writes exactly that byte.
+//
+// EffectSimple shares the CUser::OnEffect demux with EffectQuest/EffectSkillUse;
+// the EffectQuest op-cell grades worst-of all three, so this sibling carries its
+// own v84 marker+fixture+evidence to let the demux promote.
+func TestEffectSimpleByteOutputV84(t *testing.T) {
+	v84 := pt.Variants[5] // GMS v84
+	ctx := pt.CreateContext(v84.Region, v84.MajorVersion, v84.MinorVersion)
+
+	// self: mode 0 (LevelUp) -> single mode byte (Decode1) /*0x96eaa5*/
+	gotSelf := NewEffectSimple(0).Encode(nil, ctx)(nil)
+	if wantSelf := []byte{0x00}; !bytes.Equal(gotSelf, wantSelf) {
+		t.Errorf("self v84 bytes: got %x want %x", gotSelf, wantSelf)
+	}
+
+	// foreign: characterId prefix (read by CUserPool::OnUserRemotePacket) + mode byte
+	gotForeign := NewEffectSimpleForeign(0x12345678, 8).Encode(nil, ctx)(nil)
+	if wantForeign := []byte{0x78, 0x56, 0x34, 0x12, 0x08}; !bytes.Equal(gotForeign, wantForeign) {
+		t.Errorf("foreign v84 bytes: got %x want %x", gotForeign, wantForeign)
 	}
 }
 

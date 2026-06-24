@@ -26,6 +26,7 @@ import (
 // packet-audit:verify packet=character/clientbound/EffectSkillUse version=gms_v84 ida=0x96ea92
 // packet-audit:verify packet=character/clientbound/EffectSkillUse version=gms_v87 ida=0x9b1ef0
 // packet-audit:verify packet=character/clientbound/EffectSkillUse version=gms_v95 ida=0x8f9a70
+// packet-audit:verify packet=character/clientbound/EffectSkillUse version=jms_v185 ida=0x9f6395
 func TestEffectSkillUseByteOutput(t *testing.T) {
 	v83 := pt.Variants[1] // GMS v83
 	ctx := pt.CreateContext(v83.Region, v83.MajorVersion, v83.MinorVersion)
@@ -280,6 +281,77 @@ func TestEffectSkillUseByteOutputV95(t *testing.T) {
 		}
 		if !bytes.Equal(got, want) {
 			t.Errorf("foreign v95 bytes:\n got %x\nwant %x", got, want)
+		}
+	})
+}
+
+// EffectSkillUse jms byte-fixture — CUser::OnEffect (jms v185 @0x9f6395,
+// MapleStory_dump_SCY.exe) case 1 (skill-use, block head @0x9f6487). The skill-use
+// arm is case 1 in jms (unchanged from GMS; only the v95 quest arm shifted 3->5).
+// The read order is byte-identical to v83/v84/v87:
+//
+//	mode    = Decode1            // outer switch discriminator (== 1)   /*0x9f63c0*/
+//	skillId = Decode4 (a2)       //                                     /*0x9f6480*/
+//	charLvl = Decode1 (v9)       // SLV cap byte stored on self          /*0x9f648a*/
+//	skillLvl= Decode1 (Value)    //                                     /*0x9f64a7*/
+//	// then, conditional on skillId, a trailing flag byte:
+//	//   monster-magnet (1320006)                      -> Decode1        /*0x9f661d*/
+//	//   dragon-fury (22160000)                        -> Decode1        /*0x9f6793*/
+//	//   berserk (1121001/1221001/1321001 / job/1e7==9)-> Decode1        /*0x9f68b6*/
+//
+// jms uses the same literal-skillId berserk arms (a2==1121001||1221001||1321001||
+// a2/10000000==9 -> Decode1 -> ShowSkillEffect) as v83/v87; the wire byte is
+// identical. EffectSkillUse shares the CUser::OnEffect demux with EffectSimple/
+// EffectQuest; the EffectQuest op-cell grades worst-of all three, so this sibling
+// carries its own jms marker+fixture+evidence to let the demux promote.
+func TestEffectSkillUseByteOutputJMS(t *testing.T) {
+	jms := pt.Variants[4] // JMS v185
+	ctx := pt.CreateContext(jms.Region, jms.MajorVersion, jms.MinorVersion)
+
+	t.Run("plain/"+jms.Name, func(t *testing.T) {
+		// mode=1, skillId=0x010203, characterLevel=0x1E, skillLevel=0x0A, no trailing flags
+		input := NewEffectSkillUse(1, 0x010203, 0x1E, 0x0A, false, false, false, false, false, false)
+		got := input.Encode(nil, ctx)(nil)
+		want := []byte{
+			0x01,                   // mode (Decode1)                /*0x9f63c0*/
+			0x03, 0x02, 0x01, 0x00, // skillId = 0x010203 (Decode4)  /*0x9f6480*/
+			0x1e,                   // characterLevel (Decode1 v9)   /*0x9f648a*/
+			0x0a,                   // skillLevel (Decode1 Value)    /*0x9f64a7*/
+		}
+		if !bytes.Equal(got, want) {
+			t.Errorf("plain jms bytes:\n got %x\nwant %x", got, want)
+		}
+	})
+
+	t.Run("berserk/"+jms.Name, func(t *testing.T) {
+		// berserk skill 1121001 -> trailing darkForce flag byte
+		input := NewEffectSkillUse(1, 1121001, 0x1E, 0x0A, true, true, false, false, false, false)
+		got := input.Encode(nil, ctx)(nil)
+		want := []byte{
+			0x01,                   // mode                          /*0x9f63c0*/
+			0xe9, 0x1a, 0x11, 0x00, // skillId = 1121001 = 0x111AE9 (Decode4) /*0x9f6480*/
+			0x1e,                   // characterLevel                /*0x9f648a*/
+			0x0a,                   // skillLevel                    /*0x9f64a7*/
+			0x01,                   // berserk darkForce (Decode1)   /*0x9f68b6*/
+		}
+		if !bytes.Equal(got, want) {
+			t.Errorf("berserk jms bytes:\n got %x\nwant %x", got, want)
+		}
+	})
+
+	t.Run("foreign/"+jms.Name, func(t *testing.T) {
+		// characterId prefix (read by CUserPool::OnUserRemotePacket) + skill-use body
+		input := NewEffectSkillUseForeign(0x12345678, 1, 0x010203, 0x1E, 0x0A, false, false, false, false, false, false)
+		got := input.Encode(nil, ctx)(nil)
+		want := []byte{
+			0x78, 0x56, 0x34, 0x12, // characterId (foreign prefix)
+			0x01,                   // mode
+			0x03, 0x02, 0x01, 0x00, // skillId
+			0x1e,                   // characterLevel
+			0x0a,                   // skillLevel
+		}
+		if !bytes.Equal(got, want) {
+			t.Errorf("foreign jms bytes:\n got %x\nwant %x", got, want)
 		}
 	})
 }

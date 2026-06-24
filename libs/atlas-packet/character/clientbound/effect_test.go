@@ -119,6 +119,33 @@ func TestEffectSimpleByteOutputV95(t *testing.T) {
 	}
 }
 
+// TestEffectSimpleByteOutputJMS is the jms golden-byte fixture for the mode-only
+// OnEffect arms. CUser::OnEffect (jms v185 @0x9f6395, MapleStory_dump_SCY.exe)
+// case 0 (LevelUp) reads ONLY the leading Decode1 effect-mode byte (switch
+// @0x9f63c0) and plays a client-side animation — no further wire fields.
+// EffectSimple.Encode writes exactly that byte. Case 0 is unchanged at jms (the
+// v95 demux arm shift, 3->5, did not occur in jms — its quest arm is still case 3).
+//
+// EffectSimple shares the CUser::OnEffect demux with EffectQuest/EffectSkillUse;
+// the EffectQuest op-cell grades worst-of all three, so this sibling carries its
+// own jms marker+fixture+evidence to let the demux promote.
+func TestEffectSimpleByteOutputJMS(t *testing.T) {
+	jms := pt.Variants[4] // JMS v185
+	ctx := pt.CreateContext(jms.Region, jms.MajorVersion, jms.MinorVersion)
+
+	// self: mode 0 (LevelUp) -> single mode byte (Decode1) /*0x9f63c0*/
+	gotSelf := NewEffectSimple(0).Encode(nil, ctx)(nil)
+	if wantSelf := []byte{0x00}; !bytes.Equal(gotSelf, wantSelf) {
+		t.Errorf("self jms bytes: got %x want %x", gotSelf, wantSelf)
+	}
+
+	// foreign: characterId prefix (read by CUserPool::OnUserRemotePacket) + mode byte
+	gotForeign := NewEffectSimpleForeign(0x12345678, 8).Encode(nil, ctx)(nil)
+	if wantForeign := []byte{0x78, 0x56, 0x34, 0x12, 0x08}; !bytes.Equal(gotForeign, wantForeign) {
+		t.Errorf("foreign jms bytes: got %x want %x", gotForeign, wantForeign)
+	}
+}
+
 func TestEffectSimpleRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

@@ -1,8 +1,8 @@
 {
   "WriterName": "AllCharacterListSelect",
   "IDAName": "CLogin::SendSelectCharPacketByVAC#AllCharacterListSelect",
-  "Address": "0x60c624",
-  "Variant": "GMS/v84",
+  "Address": "0x62ee37",
+  "Variant": "GMS/v87",
   "BranchDepth": 0,
   "AtlasFile": "libs/atlas-packet/login/serverbound/all_character_list_select.go",
   "Rows": [

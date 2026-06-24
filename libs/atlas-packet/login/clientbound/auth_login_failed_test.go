@@ -7,6 +7,7 @@ import (
 )
 
 // packet-audit:verify packet=login/clientbound/AuthLoginFailed version=gms_v83 ida=0x5f83ee
+// packet-audit:verify packet=login/clientbound/AuthLoginFailed version=gms_v84 ida=0x60d368
 // packet-audit:verify packet=login/clientbound/AuthLoginFailed version=gms_v87 ida=0x62fb84
 // packet-audit:verify packet=login/clientbound/AuthLoginFailed version=gms_v95 ida=0x5dc600
 func TestAuthLoginFailedRoundTrip(t *testing.T) {

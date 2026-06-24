@@ -8416,13 +8416,32 @@
       ]
     },
     "CLogin::SendSelectCharPacketByVAC#AllCharacterListSelectWithPicRegister": {
-      "address": "",
-      "direction": "",
-      "unresolved": true,
+      "address": "0x60c624",
+      "direction": "serverbound",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Encode1",
+          "comment": "opt (literal 1u, m_bLoginOpt == 0 branch, opcode 0x1E)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "dwCharacterID"
+        },
+        {
+          "op": "Encode4",
+          "comment": "m_anWorldID (int32)"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "sMacAddress"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "sMacAddressWithHDDSerial"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "sSPW (PIC)"
         }
       ]
     },
@@ -9313,13 +9332,20 @@
       ]
     },
     "CLogin::OnCheckPasswordResult#AuthLoginFailed": {
-      "address": "",
-      "direction": "",
-      "unresolved": true,
+      "address": "0x60d368",
+      "direction": "clientbound",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "resultCode (failure code)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "post-auth flag"
+        },
+        {
+          "op": "Decode4",
+          "comment": "reserved (always decoded before branch)"
         }
       ]
     },
@@ -18548,13 +18574,31 @@
       ]
     },
     "CLogin::SendSelectCharPacketByVAC#AllCharacterListSelect": {
-      "address": "",
-      "direction": "",
-      "unresolved": true,
+      "address": "0x60c624",
+      "direction": "serverbound",
+      "dispatch": [
+        {
+          "discriminator": "switch",
+          "case": 3
+        }
+      ],
+      "notes": "inferred-high-confidence (1.00) @0x60c624",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Encode4",
+          "comment": "dwCharacterID (m_bLoginOpt == 2/3 branch, opcode 0x0E)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "m_anWorldID (int32)"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "sMacAddress"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "sMacAddressWithHDDSerial"
         }
       ]
     },
@@ -20708,12 +20752,8 @@
       "direction": "clientbound",
       "calls": [
         {
-          "op": "Decode1",
-          "comment": ""
-        },
-        {
-          "op": "Decode1",
-          "comment": ""
+          "op": "Decode2",
+          "comment": "world status (2 bytes; v84 reads as 2 × Decode1, atlas writes WriteShort — wire-equivalent; IDA-verified 0x60e275)"
         }
       ]
     },
@@ -22893,13 +22933,35 @@
       ]
     },
     "CLogin::SendSelectCharPacketByVAC#AllCharacterListSelectWithPic": {
-      "address": "",
-      "direction": "",
-      "unresolved": true,
+      "address": "0x60c624",
+      "direction": "serverbound",
+      "dispatch": [
+        {
+          "discriminator": "switch",
+          "case": 1
+        }
+      ],
+      "notes": "inferred-high-confidence (1.00) @0x60c624",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "EncodeStr",
+          "comment": "sSPW (PIC, m_bLoginOpt == 1 branch, opcode 0x1F)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "dwCharacterID"
+        },
+        {
+          "op": "Encode4",
+          "comment": "m_anWorldID (int32)"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "sMacAddress"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "sMacAddressWithHDDSerial"
         }
       ]
     },
@@ -24772,6 +24834,12 @@
           "comment": "trailing extra byte (CInPacket::Decode1)"
         }
       ]
+    },
+    "CLogin::ChangeStepImmediate": {
+      "address": "0x609165",
+      "direction": "serverbound",
+      "note": "v84 inlines the immediate server-list-request send into the CLogin step-machine function @0x609165 (no separate ChangeStepImmediate symbol exists in this build, same as v83; the function is the demangled v83 CLogin::ChangeStep analog, base-step==1 branch). The send is COutPacket(opcode 4)+SendPacket @0x6098d0 with no Encode calls between construct and send — bodyless wire shape, matching the bodyless atlas ServerListRequest decoder. IDA-verified gms_v84.",
+      "calls": []
     },
     "CTownPortalPool::OnTownPortalCreated": {
       "address": "0x7e3740",

@@ -1,8 +1,8 @@
 # AllCharacterListSelectWithPicRegister (← `CLogin::SendSelectCharPacketByVAC#AllCharacterListSelectWithPicRegister`)
 
-- **IDA:** 0x60c624
+- **IDA:** 0x62ee37
 - **Atlas file:** `libs/atlas-packet/login/serverbound/all_character_list_select_with_pic_register.go`
-- **Variant:** GMS/v84
+- **Variant:** GMS/v87
 - **Branch depth:** 0
 - **Verdict:** ✅
 

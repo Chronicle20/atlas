@@ -4,6 +4,7 @@ import (
 	consumer2 "atlas-channel/kafka/consumer"
 	mtsmsg "atlas-channel/kafka/message/mts"
 	"atlas-channel/listener"
+	"atlas-channel/cashshop/wallet"
 	mtsholding "atlas-channel/mts/holding"
 	mtslisting "atlas-channel/mts/listing"
 	"atlas-channel/server"
@@ -160,6 +161,26 @@ func announceUserPurchaseList(l logrus.FieldLogger, ctx context.Context, sc serv
 	announceTo(l, ctx, sc, wp, characterId, fieldpkt.MtsOperationGetUserPurchaseItemDoneBody(items, 0, 0))
 }
 
+// announceWalletRefresh re-pushes the MTS wallet display (MTS_OPERATION2: prepaid
+// NX + maple points) to the character so the on-screen NX/points counter updates
+// after a money-moving operation (a buy debit / sale credit). The v83 client only
+// reads the wallet at entry, so without this the counter stays stale until
+// re-entry. Resolves the character's session for its accountId (the wallet key).
+func announceWalletRefresh(l logrus.FieldLogger, ctx context.Context, sc server.Model, wp writer.Producer, characterId uint32) {
+	t := tenant.MustFromContext(ctx)
+	if !t.Is(sc.Tenant()) {
+		return
+	}
+	_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(characterId, func(s session.Model) error {
+		w, err := wallet.NewProcessor(l, ctx).GetByAccountId(s.AccountId())
+		if err != nil {
+			l.WithError(err).Errorf("Unable to refresh MTS wallet for character [%d]; leaving the NX counter stale.", characterId)
+			return nil
+		}
+		return session.Announce(l)(ctx)(wp)(fieldcb.MtsOperation2Writer)(fieldcb.NewMtsOperation2(w.Prepaid(), w.Points()).Encode)(s)
+	})
+}
+
 func handleListingCreated(sc server.Model, wp writer.Producer) message.Handler[mtsmsg.StatusEvent[mtsmsg.StatusEventListingCreatedBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, e mtsmsg.StatusEvent[mtsmsg.StatusEventListingCreatedBody]) {
 		if e.Type != mtsmsg.StatusEventTypeListingCreated {
@@ -240,6 +261,19 @@ func handleListingSold(sc server.Model, wp writer.Producer) message.Handler[mtsm
 		}
 		l.Debugf("MTS listing sold to buyer [%d] (item [%d]).", e.Body.BuyerId, e.Body.ItemId)
 		announceTo(l, ctx, sc, wp, e.Body.BuyerId, fieldpkt.MtsOperationBuyItemDoneBody())
+		// Refresh the buyer's view of the purchase: the NX/points counter (debited)
+		// and the Transfer Inventory (the bought item now sits in their holdings,
+		// ready to take home). Without these the client shows the buy succeeded but
+		// the counter and panel stay stale until re-entry.
+		announceWalletRefresh(l, ctx, sc, wp, e.Body.BuyerId)
+		announceUserPurchaseList(l, ctx, sc, wp, e.Body.BuyerId)
+		// Refresh the seller's view: the sold item leaves "Not Yet Sold" and their
+		// wallet gains the sale credit (points). If the seller is offline/elsewhere
+		// these no-op; their panels also re-push on their next browse.
+		if e.Body.SellerId != 0 {
+			announceUserSaleList(l, ctx, sc, wp, e.Body.WorldId, e.Body.SellerId)
+			announceWalletRefresh(l, ctx, sc, wp, e.Body.SellerId)
+		}
 	}
 }
 

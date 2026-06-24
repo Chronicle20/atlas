@@ -423,7 +423,12 @@ func ItcOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer
 		case ItcOperationDeleteZzim:
 			body := &fieldsb.ItcOperationDeleteZzim{}
 			body.Decode(l, ctx)(r, readerOptions)
-			emitRemoveWishBySerial(l, ctx, wp, s, body.ItcSn(), mtsmsg.WishOriginDeleteZzim, fieldpkt.MtsOperationDeleteZzimFailedBody())
+			// Remove-from-cart: the Cart is rendered from wish entries (itcSn = the
+			// wish's own serial via mtsItemFromWish), so the wire serial is a WISH
+			// serial, not a listing serial — resolve it by wish identity (as
+			// CANCEL_WISH does). Resolving it as a listing serial is why "failed to
+			// remove item from cart" was raised.
+			emitRemoveWishByWishSerial(l, ctx, wp, s, body.ItcSn(), mtsmsg.WishOriginDeleteZzim, fieldpkt.MtsOperationDeleteZzimFailedBody())
 		case ItcOperationCancelWish:
 			body := &fieldsb.ItcOperationCancelWish{}
 			body.Decode(l, ctx)(r, readerOptions)
@@ -591,8 +596,11 @@ func writeBrowsePage(l logrus.FieldLogger, ctx context.Context, wp writer.Produc
 		}
 	} else {
 		// Public marketplace browse: listings filtered by (section=category,
-		// item-type=subCategory). Sections that hold no sale listings (wanted/my-page)
-		// simply return an empty page.
+		// item-type=subCategory), excluding the requesting character's OWN listings
+		// (For Sale / Auction show others' items; your own appear under My Page /
+		// Not Yet Sold). Sections that hold no sale listings (wanted/my-page) return
+		// an empty page.
+		f.ExcludeSellerId = s.CharacterId()
 		ms, err := mtslisting.NewProcessor(l, ctx).Browse(s.WorldId(), f)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to browse MTS listings for character [%d]; writing empty page.", s.CharacterId())

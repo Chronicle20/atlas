@@ -233,6 +233,7 @@ type StatusEventTakeHomeFailedBody struct {
 type StatusEventListingSoldBody struct {
 	WorldId   byte      `json:"worldId"`
 	ListingId uuid.UUID `json:"listingId"`
+	SellerId  uint32    `json:"sellerId"`
 	BuyerId   uint32    `json:"buyerId"`
 	ItemId    uint32    `json:"itemId"`
 }

@@ -289,9 +289,11 @@ func handleMtsMoveListingToHolding(pf providerFn) func(db *gorm.DB) message.Hand
 			tdb := db.WithContext(ctx)
 			hid := moveHoldingId(b.ListingId, b.BuyerId)
 
-			// itemId is captured from the listing row inside the tx so the
-			// LISTING_SOLD notice emitted on success can carry the sold item id.
+			// itemId + sellerId are captured from the listing row inside the tx so the
+			// LISTING_SOLD notice emitted on success can carry the sold item id and
+			// the seller (so the channel can refresh the seller's panels/wallet).
 			var itemId uint32
+			var sellerId uint32
 
 			err := database.ExecuteTransaction(tdb, func(tx *gorm.DB) error {
 				lm, gerr := listing.GetById(b.ListingId.String())(tx)()
@@ -299,6 +301,7 @@ func handleMtsMoveListingToHolding(pf providerFn) func(db *gorm.DB) message.Hand
 					return gerr
 				}
 				itemId = lm.TemplateId()
+				sellerId = lm.SellerId()
 
 				// Conditional ->sold transition. The rows affected is the race
 				// arbiter: 1 means this call won the transition; 0 means the listing
@@ -402,7 +405,7 @@ func handleMtsMoveListingToHolding(pf providerFn) func(db *gorm.DB) message.Hand
 				if perr := buf.Put(custody.EnvStatusEventTopic, custodyproducer.MovedStatusEventProvider(c.TransactionId, b.ListingId, hid)); perr != nil {
 					return perr
 				}
-				return buf.Put(mtsmsg.EnvStatusEventTopic, mtsproducer.ListingSoldStatusEventProvider(c.TransactionId, b.WorldId, b.ListingId, b.BuyerId, itemId))
+				return buf.Put(mtsmsg.EnvStatusEventTopic, mtsproducer.ListingSoldStatusEventProvider(c.TransactionId, b.WorldId, b.ListingId, sellerId, b.BuyerId, itemId))
 			})
 		}
 	}

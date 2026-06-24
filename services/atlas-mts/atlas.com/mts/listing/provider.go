@@ -45,15 +45,16 @@ func getBySerial(worldId world.Id, sn uint32) database.EntityProvider[entity] {
 // pointer/empty string means "do not constrain on this column"; world_id and
 // state are always applied (they are required positional args to getBrowse).
 type BrowseFilter struct {
-	Category    string
-	SubCategory string
-	SaleType    SaleType
-	ItemId      uint32
-	Serial      uint32
-	SellerId    uint32
-	SellerName  string
-	Page        int
-	PageSize    int
+	Category        string
+	SubCategory     string
+	SaleType        SaleType
+	ItemId          uint32
+	Serial          uint32
+	SellerId        uint32
+	ExcludeSellerId uint32
+	SellerName      string
+	Page            int
+	PageSize        int
 }
 
 // DefaultPageSize is the browse page size when the caller does not specify one.
@@ -95,6 +96,9 @@ func getBrowse(worldId world.Id, state State, f BrowseFilter) database.EntityPro
 		}
 		if f.SellerId != 0 {
 			q = q.Where("seller_id = ?", f.SellerId)
+		}
+		if f.ExcludeSellerId != 0 {
+			q = q.Where("seller_id <> ?", f.ExcludeSellerId)
 		}
 		if f.SellerName != "" {
 			q = q.Where("seller_name = ?", f.SellerName)

@@ -18,15 +18,16 @@ const Resource = "worlds/%d/listings"
 // the GET_ITC_LIST / SEARCH_ITC_LIST ITC_OPERATION arms. Empty/zero fields are
 // omitted from the query string (atlas-mts treats absent params as unfiltered).
 type BrowseFilter struct {
-	Category    string
-	SubCategory string
-	SaleType    string
-	ItemId      uint32
-	Serial      uint32
-	SellerId    uint32
-	SellerName  string
-	Page        int
-	PageSize    int
+	Category        string
+	SubCategory     string
+	SaleType        string
+	ItemId          uint32
+	Serial          uint32
+	SellerId        uint32
+	ExcludeSellerId uint32 // public-browse filter: omit this seller's own listings
+	SellerName      string
+	Page            int
+	PageSize        int
 }
 
 func getBaseRequest() string {
@@ -53,6 +54,9 @@ func (f BrowseFilter) query() string {
 	}
 	if f.SellerId != 0 {
 		q.Set("sellerId", strconv.FormatUint(uint64(f.SellerId), 10))
+	}
+	if f.ExcludeSellerId != 0 {
+		q.Set("excludeSellerId", strconv.FormatUint(uint64(f.ExcludeSellerId), 10))
 	}
 	if f.SellerName != "" {
 		q.Set("sellerName", f.SellerName)

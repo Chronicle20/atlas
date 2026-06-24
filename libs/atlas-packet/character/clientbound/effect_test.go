@@ -1,12 +1,41 @@
 package clientbound
 
 import (
+	"bytes"
 	"testing"
 
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// TestEffectSimpleByteOutput is the v83 golden-byte fixture for the mode-only
+// OnEffect arms (LevelUp/JobChanged/QuestClear/MonsterBookCardGet/...). These
+// cases (CUser::OnEffect v83 @0x9377d9 cases 0/8/9/13/...) read ONLY the leading
+// Decode1 effect-mode byte and play a client-side animation — no further wire
+// fields. EffectSimple.Encode writes exactly that one byte.
+//
+// EffectSimple shares the CUser::OnEffect demux with EffectQuest/EffectSkillUse;
+// the EffectQuest op-cell grades worst-of all three, so this sibling carries its
+// own v83 marker+fixture+evidence to let the demux promote.
+//
+// packet-audit:verify packet=character/clientbound/EffectSimple version=gms_v83 ida=0x9377d9
 // packet-audit:verify packet=character/clientbound/EffectSimple version=jms_v185 ida=0x9f6395
+func TestEffectSimpleByteOutput(t *testing.T) {
+	v83 := pt.Variants[1] // GMS v83
+	ctx := pt.CreateContext(v83.Region, v83.MajorVersion, v83.MinorVersion)
+
+	// self: mode 0 (LevelUp) -> single mode byte (Decode1) /*0x9377ec*/
+	gotSelf := NewEffectSimple(0).Encode(nil, ctx)(nil)
+	if wantSelf := []byte{0x00}; !bytes.Equal(gotSelf, wantSelf) {
+		t.Errorf("self bytes: got %x want %x", gotSelf, wantSelf)
+	}
+
+	// foreign: characterId prefix (read by CUserPool::OnUserRemotePacket) + mode byte
+	gotForeign := NewEffectSimpleForeign(0x12345678, 8).Encode(nil, ctx)(nil)
+	if wantForeign := []byte{0x78, 0x56, 0x34, 0x12, 0x08}; !bytes.Equal(gotForeign, wantForeign) {
+		t.Errorf("foreign bytes: got %x want %x", gotForeign, wantForeign)
+	}
+}
+
 func TestEffectSimpleRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

@@ -482,7 +482,7 @@ Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 | ACCOUNT_INFO_REQUEST |  |  | 0x003 | ❌ | 0x003 | ❌ | 0x003 | ❌ | 0x003 | ❌ |  | ⬜ |
 | SERVERLIST_REREQUEST | CLogin::ChangeStepImmediate; CLogin::Init |  | 0x004 | ❌ | 0x004 | ❌ | 0x004 | ❌ | 0x004 | ❌ | 0x003 | ❌ |
 | CHARLIST_REQUEST | CLogin::SendLoginPacket | login/serverbound/WorldCharacterListRequest | 0x005 | ✅ | 0x005 | ✅ | 0x005 | ✅ | 0x005 | ✅ | 0x004 | ✅ |
-| SERVERSTATUS_REQUEST | CLogin::SendCheckUserLimitPacket | login/serverbound/ServerStatusRequest | 0x006 | ✅ | 0x006 | ✅ | 0x006 | ✅ | 0x006 | ✅ | 0x005 | ❌ |
+| SERVERSTATUS_REQUEST | CLogin::SendCheckUserLimitPacket | login/serverbound/ServerStatusRequest | 0x006 | ✅ | 0x006 | ✅ | 0x006 | ✅ | 0x006 | ✅ |  | ⬜ |
 | ACCEPT_TOS | CLogin::OnAcceptLicense; CLogin::OnDenyLicense | account/serverbound/AcceptTos | 0x007 | ❌ | 0x007 | ❌ | 0x007 | ✅ | 0x007 | ✅ |  | ⬜ |
 | SET_GENDER | CLogin::SendCancelGenderPacket; CLogin::SendSetGenderPacket | account/serverbound/SetGender | 0x008 | ❌ | 0x008 | ❌ | 0x008 | ✅ | 0x008 | ✅ |  | ⬜ |
 | AFTER_LOGIN | CLogin::OnCheckPasswordResult; CLogin::OnCheckPinCodeResult; CLogin::OnSelectWorldResult; CLogin::OnSetAccountResult | login/serverbound/AfterLogin | 0x009 | ✅ | 0x009 | ✅ | 0x009 | ✅ | 0x009 | ✅ |  | ⬜ |
@@ -906,7 +906,7 @@ Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 | v84 | 322 | 0 | 0 | 329 | 221 | 0 | 49.5% |
 | v87 | 363 | 0 | 0 | 346 | 163 | 0 | 51.2% |
 | v95 | 391 | 0 | 1 | 401 | 79 | 0 | 49.3% |
-| JMS185 | 333 | 0 | 0 | 370 | 169 | 0 | 47.4% |
+| JMS185 | 333 | 0 | 0 | 369 | 170 | 0 | 47.4% |
 
 ## Conflicts
 

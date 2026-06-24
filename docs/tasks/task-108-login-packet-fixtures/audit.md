@@ -86,3 +86,32 @@ op-rows. Verified against `tools/packet-audit/internal/matrix/{build,grade}.go`:
   artifact (analyzer models the v87 fields statically), confirmed by decompile —
   NOT a real over-read. Tier-1 advisory → promoted via marker + fresh evidence.
 - jms `ServerListEnd` remains the prime real-delta suspect (Task 8).
+
+## jms ServerListEnd / OnWorldInformation — resolved (not a wire delta)
+
+The `WORLD_INFORMATION` op grades worst-of-writers under base FName
+`CLogin::OnWorldInformation` (ServerListEnd + ServerListEntry). The blocker was
+NOT the `#ServerListEnd` sentinel (that matched immediately — single 0xFF) but a
+**mismodeled base export entry**: it had been authored "Wire layout identical to
+GMS v95" and carried a spurious `Decode1(nBlockCharCreation)` between the two
+`Decode2`s and `nChannelCount`. The jms decompile @0x66f107 reads, after the two
+`Decode2`s, `v8 = Decode1` **directly as nChannelCount** — there is NO
+blockCharCreation byte in jms. The atlas `server_list_entry.go` JMS encode
+already omits blockCharCreation, so the atlas writer was correct; the export was
+wrong. Removed the spurious Decode1 and corrected the notes → ServerListEntry
+flips ❌→✅, ServerListEnd already ✅, op verified.
+
+## jms ServerStatusRequest n-a (IDB-confirmed no SendCheckUserLimitPacket)
+
+`func_query name_regex "SendCheckUserLimit|CheckUserLimit"` on the jms IDB
+(MapleStory_dump_SCY.exe, port 13338) returns **zero matches** — there is no
+`CLogin::SendCheckUserLimitPacket` send function, and `OnCheckUserLimitResult`
+is absent too (`UserLimit|UserNumber|WorldStatus|ServerStatus` regex also
+returns zero). The whole user-limit / world-population request-response flow is
+absent in jms. The clientbound sibling `login/clientbound/ServerStatus`
+(`CLogin::OnCheckUserLimitResult`) is already `n-a` for jms. The serverbound
+`SERVERSTATUS_REQUEST` op was `Present` in the registry ONLY via a spurious
+`provenance: csv-import` entry (opcode 5, fname `CLogin::SendCheckUserLimitPacket`).
+Removed that entry from `docs/packets/registry/jms_v185.yaml` so the op is
+`Absent` → `n-a` (opcode -1), mirroring the ServerStatus/VAC n-a siblings.
+`matrix --check` stays exit 0 (no new dangling-opcode/conflict line).

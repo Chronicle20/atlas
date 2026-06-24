@@ -1944,11 +1944,6 @@
   opcode: 4
   fname: CLogin::SendLoginPacket
   provenance: csv-import
-- op: SERVERSTATUS_REQUEST
-  direction: serverbound
-  opcode: 5
-  fname: CLogin::SendCheckUserLimitPacket
-  provenance: csv-import
 - op: CHAR_SELECT
   direction: serverbound
   opcode: 6

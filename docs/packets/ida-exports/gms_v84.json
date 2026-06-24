@@ -24748,6 +24748,16 @@
           "comment": "trailing extra byte (CInPacket::Decode1)"
         }
       ]
+    },
+    "CMemoryGameDlg::OnTieRequest": {
+      "address": "0x664034",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "response (CUtilDlg::YesNo == 6)"
+        }
+      ]
     }
   }
 }

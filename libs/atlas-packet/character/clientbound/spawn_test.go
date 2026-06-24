@@ -1,6 +1,8 @@
 package clientbound
 
 import (
+	"bytes"
+	"encoding/hex"
 	"testing"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
@@ -13,6 +15,7 @@ import (
 // packet-audit:verify packet=character/clientbound/CharacterSpawn version=gms_v87 ida=0x9f7084
 // packet-audit:verify packet=character/clientbound/CharacterSpawn version=gms_v95 ida=0x94db40
 // packet-audit:verify packet=character/clientbound/CharacterSpawn version=gms_v84 ida=0x9b20a0
+// packet-audit:verify packet=character/clientbound/CharacterSpawn version=jms_v185 ida=0xa43ddd
 func TestCharacterSpawnEncode(t *testing.T) {
 	avatar := model.Avatar{}
 	cts := model.NewCharacterTemporaryStat()
@@ -27,6 +30,52 @@ func TestCharacterSpawnEncode(t *testing.T) {
 				t.Error("expected non-empty encoded bytes")
 			}
 		})
+	}
+}
+
+// TestCharacterSpawnJMSGolden pins the jms_v185 wire for CharacterSpawn against
+// CUserPool::OnUserEnterField @0xa43ddd → CUserRemote::Init @0xa52876. The jms
+// read order (IDA-verified, jms export CUserRemote::Init calls):
+//   level, name, guildName, guild logo (2/1/2/1), SecondaryStat::DecodeForRemote,
+//   jobId, AvatarLook::Decode, driver(int)+passenger(int) [jms], choco(int),
+//   itemEffect(int), chair(int), x, y, stance, foothold(short) → pet while-loop
+//   (NO bShowAdminEffect byte), mount(3 ints), miniRoom/adBoard/couple/friend/
+//   marriage flags, dragon-effect flag (call 46), final-effect flag (call 47).
+// The jms client has NO admin byte after the foothold and NO trailing team byte —
+// both are GMS-only. Those two bytes were the jms wire delta fixed in this commit's
+// codec change; here the body is 238 bytes (was 240 with the spurious bytes).
+//
+// The cts base-stat blocks carry a tLastUpdated time interval, so the middle of the
+// body is time-dependent; this golden pins the fully-deterministic header (through
+// the SecondaryStat flag word) and the entire tail (avatar end through the corrected
+// final-effect byte), which is where the wire delta lives.
+func TestCharacterSpawnJMSGolden(t *testing.T) {
+	v := pt.Variants[4] // JMS v185
+	ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+	guild := GuildEmblem{Name: "TestGuild", LogoBackground: 1, LogoBackgroundColor: 2, Logo: 3, LogoColor: 4}
+	in := NewCharacterSpawn(12345, 50, "TestChar", guild, model.NewCharacterTemporaryStat(), 100, model.Avatar{}, nil, false, 100, 200, 3)
+
+	got := in.Encode(nil, ctx)(nil)
+
+	if len(got) != 238 {
+		t.Fatalf("jms CharacterSpawn length: got %d want 238 (admin+team bytes must be absent)", len(got))
+	}
+	// Header through the 16-byte SecondaryStat flag word: charId, level,
+	// name("TestChar"), guildName("TestGuild"), logo (2/1/2/1), empty-cts mask
+	// (bits 110-116 = 0x001FC000 in the jms two-state group).
+	wantPrefix, _ := hex.DecodeString(
+		"3930000032080054657374436861720900546573744775696c6401000203000400c01f00000000000000000000000000")
+	if !bytes.Equal(got[:48], wantPrefix) {
+		t.Errorf("jms CharacterSpawn header+mask: got %x want %x", got[:48], wantPrefix)
+	}
+	// Tail from the avatar-end marker (ffff) through the corrected final-effect byte:
+	// driver(0)+passenger(0)+choco(0)+itemEffect(0)+chair(0)+x(100)+y(200)+stance(3)+
+	// foothold(0)+pets-terminator(0)+mount(1,0,0)+5 ring flags+newyear(jms skips)+
+	// berserk/dragon(0)+jms final-effect(0). NO admin byte, NO team byte.
+	wantTail, _ := hex.DecodeString(
+		"0000000100000000ffff0000000000000000000000000000000000000000000000000000000000000000000000006400c8000300000001000000000000000000000000000000000000")
+	if !bytes.Equal(got[165:], wantTail) {
+		t.Errorf("jms CharacterSpawn tail:\n got %x\nwant %x", got[165:], wantTail)
 	}
 }
 

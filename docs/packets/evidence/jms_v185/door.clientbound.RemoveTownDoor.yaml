@@ -1,0 +1,10 @@
+packet: door/clientbound/RemoveTownDoor
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnTownPortal
+    address: "0xb0977c"
+    decompile_sha256: af2e1b34ab0d5755ba54d8aa18a0f7f2f171c30786557caea5ed2f9747bf2789
+verifies:
+    - libs/atlas-packet/door/clientbound/remove_town_test.go#TestRemoveTownDoor

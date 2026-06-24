@@ -11968,6 +11968,70 @@
           "comment": "mode byte (22)"
         }
       ]
+    },
+    "CWvsContext::OnTownPortal": {
+      "address": "0xb0977c",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "townId (SpawnPortal); MapId.NONE (999999999) for RemoveTownDoor"
+        },
+        {
+          "op": "Decode4",
+          "comment": "targetId; MapId.NONE (999999999) for RemoveTownDoor"
+        },
+        {
+          "op": "Decode2",
+          "comment": "x (door position)",
+          "guard": "townId != 999999999 && targetId != 999999999"
+        },
+        {
+          "op": "Decode2",
+          "comment": "y (door position)",
+          "guard": "townId != 999999999 && targetId != 999999999"
+        }
+      ]
+    },
+    "CTownPortalPool::OnTownPortalCreated": {
+      "address": "0x840fc6",
+      "region": "JMS",
+      "direction": "clientbound",
+      "notes": "Wire layout identical to GMS v83/v84: Decode1(launched flag) + Decode4(ownerId) + Decode2(x) + Decode2(y). Receiver CTownPortalPool::OnTownPortalCreated@0x840fc6 (JMS v185 MapleStory_dump_SCY.exe). The Decode2 x/y pair is read once per existing/new branch (sub_842027 portal lookup); both arms read the identical 2-short tail, so the canonical wire order is 4 reads / 9 bytes.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "launched flag (writeBool launched)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "ownerId (door owner character id)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "x (door position, writeShort)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "y (door position, writeShort)"
+        }
+      ]
+    },
+    "CTownPortalPool::OnTownPortalRemoved": {
+      "address": "0x84195b",
+      "region": "JMS",
+      "direction": "clientbound",
+      "notes": "Wire layout identical to GMS v83/v84: Decode1(animate flag) + Decode4(ownerId). The flag is read unconditionally before the flag-gated (if !flag) IWzGr2DLayer teardown; ownerId is the registry lookup key via sub_842027. Receiver CTownPortalPool::OnTownPortalRemoved@0x84195b (JMS v185 MapleStory_dump_SCY.exe). Canonical wire order is 2 reads / 5 bytes.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "animate flag (Cosmic writes constant 0; gates removal animation)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "ownerId (door owner character id; registry lookup key)"
+        }
+      ]
     }
   }
 }

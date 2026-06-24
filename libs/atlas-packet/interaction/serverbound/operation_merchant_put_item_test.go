@@ -42,6 +42,7 @@ func TestOperationMerchantPutItemRoundTrip(t *testing.T) {
 // the same body across versions; the codec has no MajorVersion() gate.
 // packet-audit:verify packet=interaction/serverbound/InteractionOperationMerchantPutItem version=gms_v83 ida=0x6fd96c
 // packet-audit:verify packet=interaction/serverbound/InteractionOperationMerchantPutItem version=gms_v87 ida=0x740ee6
+// packet-audit:verify packet=interaction/serverbound/InteractionOperationMerchantPutItem version=jms_v185 ida=0x762a9e
 func TestOperationMerchantPutItemBytes(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	ctx := pt.CreateContext("GMS", 83, 1)

@@ -3,6 +3,30 @@
   "md5": "2e692f3ab5078e04138d264f8ea1e668",
   "generated_at": "2026-05-14T00:00:00Z",
   "functions": {
+    "CWvsContext::OnTownPortal": {
+      "address": "0xab9ef6",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "townId (SpawnPortal); MapId.NONE (999999999) for RemoveTownDoor"
+        },
+        {
+          "op": "Decode4",
+          "comment": "targetId; MapId.NONE (999999999) for RemoveTownDoor"
+        },
+        {
+          "op": "Decode2",
+          "comment": "x (door position)",
+          "guard": "townId != 999999999 && targetId != 999999999"
+        },
+        {
+          "op": "Decode2",
+          "comment": "y (door position)",
+          "guard": "townId != 999999999 && targetId != 999999999"
+        }
+      ]
+    },
     "CWvsContext::OnGuildResult#RequestName": {
       "address": "0xacf7d3",
       "direction": "clientbound",
@@ -12918,6 +12942,42 @@
         {
           "op": "Decode1",
           "comment": "trailing extra byte (CInPacket::Decode1)"
+        }
+      ]
+    },
+    "CTownPortalPool::OnTownPortalCreated": {
+      "address": "0x810af2",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "launched flag (writeBool launched)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "ownerId (door owner character id)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "x (door position, writeShort)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "y (door position, writeShort)"
+        }
+      ]
+    },
+    "CTownPortalPool::OnTownPortalRemoved": {
+      "address": "0x811487",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "animate flag (Cosmic writes constant 0; gates removal animation)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "ownerId (door owner character id; registry lookup key)"
         }
       ]
     }

@@ -24810,6 +24810,12 @@
           "comment": "trailing extra byte (CInPacket::Decode1)"
         }
       ]
+    },
+    "CLogin::ChangeStepImmediate": {
+      "address": "0x609165",
+      "direction": "serverbound",
+      "note": "v84 inlines the immediate server-list-request send into the CLogin step-machine function @0x609165 (no separate ChangeStepImmediate symbol exists in this build, same as v83; the function is the demangled v83 CLogin::ChangeStep analog, base-step==1 branch). The send is COutPacket(opcode 4)+SendPacket @0x6098d0 with no Encode calls between construct and send — bodyless wire shape, matching the bodyless atlas ServerListRequest decoder. IDA-verified gms_v84.",
+      "calls": []
     }
   }
 }

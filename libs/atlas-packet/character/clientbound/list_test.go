@@ -38,6 +38,7 @@ import (
 // packet-audit:verify packet=character/clientbound/CharacterList version=gms_v83 ida=0x5f9891
 // packet-audit:verify packet=character/clientbound/CharacterList version=gms_v84 ida=0x60e8c6
 // packet-audit:verify packet=character/clientbound/CharacterList version=gms_v87 ida=0x63115a
+// packet-audit:verify packet=character/clientbound/CharacterList version=gms_v95 ida=0x5dda00
 func TestCharacterListByteOutput(t *testing.T) {
 	v83 := pt.Variants[1] // GMS v83
 	ctx := pt.CreateContext(v83.Region, v83.MajorVersion, v83.MinorVersion)
@@ -379,6 +380,136 @@ func TestCharacterListByteOutputV87(t *testing.T) {
 	}
 	if !bytes.Equal(got, want) {
 		t.Errorf("character-list v87 bytes:\n got %x\nwant %x", got, want)
+	}
+}
+
+// CharacterList v95 byte-fixture.
+//
+// Client read order — CLogin::OnSelectWorldResult (v95 @0x5dda00), the
+// world-select-success path (v4==0 / v4==12 / v4==23 fallthrough @0x5ddd10):
+//
+//	status = Decode1                       // result/status byte (earlier path) /*0x5dda5f*/
+//	count  = Decode1 (nCount)              // number of avatar entries           /*0x5ddd4b*/
+//	for each of count entries:             // loop @0x5ddd66, 15 slots, count decoded
+//	    GW_CharacterStat::Decode           // statistics block (@0x4f9d40)       /*0x5ddd7d*/
+//	    AvatarLook::Decode                 // avatar/look block (@0x4f2c00)      /*0x5ddd8d*/
+//	    family = Decode1 (*v28)            // viewAll/family flag byte            /*0x5ddda5*/
+//	    rankEnabled = Decode1              // 0 => zeros; else DecodeBuffer(16)   /*0x5dddb5*/
+//	        if rankEnabled: rank/rankMove/jobRank/jobRankMove (DecodeBuffer 16)   /*0x5dddd0*/
+//	hasPic = Decode1 (m_bLoginOpt)         //                                    /*0x5dde34*/
+//	slots  = Decode4 (m_nSlotCount)        //                                    /*0x5dde41*/
+//	nBuyCharCount = Decode4 (m_nBuyCharCount) // read UNCONDITIONALLY in v95     /*0x5dde4c*/
+//
+// Two structural deltas vs v87:
+//   (1) GW_CharacterStat reads HP/MaxHP/MP/MaxMP as Decode4 (int), not Decode2
+//       (short) — IDA @0x4f9e56/0x4f9e6a/0x4f9e7e/0x4f9e95. The codec widens
+//       these at MajorVersion()>=95 (character_statistics.go), adding 8 bytes.
+//   (2) OnSelectWorldResult reads the trailing nBuyCharCount int unconditionally
+//       (@0x5dde4c). The codec emits it at MajorVersion()>87 (list.go), adding 4
+//       bytes. The nSubJob short (Decode2 @0x4f9fe2, GMS>=87) is also present.
+//
+// GW_CharacterStat::Decode (v95 @0x4f9d40, list path bBackwardUpdate=0):
+// id=Decode4, name=DecodeBuffer(13), gender=Decode1, skin=Decode1, face=Decode4,
+// hair=Decode4, petLockerSN=DecodeBuffer(24), level=Decode1, job/str/dex/int/luk
+// (5x Decode2), hp/maxHp/mp/maxMp (4x Decode4), ap=Decode2, sp=Decode2 (non-3xxx/
+// 22xx/2001 job path), exp=Decode4, fame=Decode2, gachaExp=Decode4, mapId=Decode4,
+// spawnPoint=Decode1, nPlaytime=Decode4, nSubJob=Decode2.
+//
+// AvatarLook::Decode (v95 @0x4f2c00): gender,skin,face,!mega,hair, equip loop
+// (0xFF term), masked loop (0xFF term), cashWeapon=Decode4, pets=DecodeBuffer(12).
+func TestCharacterListByteOutputV95(t *testing.T) {
+	v95 := pt.Variants[3] // GMS v95
+	ctx := pt.CreateContext(v95.Region, v95.MajorVersion, v95.MinorVersion)
+
+	stats := model.NewCharacterStatistics(
+		0x01020304,         // id
+		"Hero",             // name (padded to 13)
+		0,                  // gender
+		0,                  // skinColor
+		0x4D2,              // face
+		0x7B,               // hair
+		[3]uint64{0, 0, 0}, // petIds
+		0x0A,               // level
+		0x64,               // jobId
+		4, 5, 6, 7,         // str, dex, int, luck
+		0x64, 0x64, 0x32, 0x32, // hp, maxHp, mp, maxMp
+		3,      // ap
+		false,  // hasSPTable (write sp short)
+		2,      // sp
+		0,      // experience
+		8,      // fame
+		0,      // gachaponExperience
+		0x0BB8, // mapId
+		0,      // spawnPoint
+	)
+	avatar := model.NewAvatar(0, 0, 0x4D2, false, 0x7B, nil, nil, nil)
+	entry := model.NewCharacterListEntry(stats, avatar, false /*viewAll*/, false /*gm*/, 1, 2, 3, 4)
+
+	input := NewCharacterList(0 /*status*/, []model.CharacterListEntry{entry}, false /*hasPic*/, 8 /*slots*/)
+	got := input.Encode(nil, ctx)(nil)
+
+	want := []byte{
+		0x00, // status (Decode1)                                  /*0x5dda5f*/
+		0x01, // count = 1 (Decode1)                               /*0x5ddd4b*/
+
+		// --- GW_CharacterStat block (entry 0) --- @0x4f9d40
+		0x04, 0x03, 0x02, 0x01, // id = 0x01020304 (Decode4)       /*0x4f9d71*/
+		0x48, 0x65, 0x72, 0x6f, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // "Hero"+pad to 13 /*0x4f9d7b*/
+		0x00,                   // gender (Decode1)                /*0x4f9da9*/
+		0x00,                   // skin (Decode1)                  /*0x4f9db3*/
+		0xd2, 0x04, 0x00, 0x00, // face (Decode4)                  /*0x4f9dbd*/
+		0x7b, 0x00, 0x00, 0x00, // hair (Decode4)                  /*0x4f9dc5*/
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // pet long 0 (DecodeBuffer 24) /*0x4f9dd0*/
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // pet long 1
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // pet long 2
+		0x0a,                   // level (Decode1)                 /*0x4f9dd7*/
+		0x64, 0x00,             // jobId (Decode2)                 /*0x4f9deb*/
+		0x04, 0x00,             // str (Decode2)                   /*0x4f9e02*/
+		0x05, 0x00,             // dex                             /*0x4f9e17*/
+		0x06, 0x00,             // int                             /*0x4f9e2c*/
+		0x07, 0x00,             // luck                            /*0x4f9e41*/
+		0x64, 0x00, 0x00, 0x00, // hp (Decode4, v95-widened)       /*0x4f9e56*/
+		0x64, 0x00, 0x00, 0x00, // maxHp (Decode4)                 /*0x4f9e6a*/
+		0x32, 0x00, 0x00, 0x00, // mp (Decode4)                    /*0x4f9e7e*/
+		0x32, 0x00, 0x00, 0x00, // maxMp (Decode4)                 /*0x4f9e95*/
+		0x03, 0x00,             // ap (Decode2)                    /*0x4f9eaf*/
+		0x02, 0x00,             // sp (Decode2, non-3xxx/22xx job) /*0x4f9f2f*/
+		0x00, 0x00, 0x00, 0x00, // experience (Decode4)            /*0x4f9f55*/
+		0x08, 0x00,             // fame (Decode2)                  /*0x4f9f6f*/
+		0x00, 0x00, 0x00, 0x00, // gachaExp (Decode4)              /*0x4f9f8a*/
+		0xb8, 0x0b, 0x00, 0x00, // mapId (Decode4)                 /*0x4f9fa4*/
+		0x00,                   // spawnPoint (Decode1)            /*0x4f9fc5*/
+		0x00, 0x00, 0x00, 0x00, // nPlaytime trailing int (Decode4)/*0x4f9fd2*/
+		0x00, 0x00,             // nSubJob (Decode2, GMS>=87)      /*0x4f9fe2*/
+
+		// --- AvatarLook block (entry 0) --- @0x4f2c00
+		0x00,                   // gender                          /*0x4f2c13*/
+		0x00,                   // skin                            /*0x4f2c20*/
+		0xd2, 0x04, 0x00, 0x00, // face                            /*0x4f2c33*/
+		0x01,                   // !mega -> WriteBool(true)        /*0x4f2c53*/
+		0x7b, 0x00, 0x00, 0x00, // hair                            /*0x4f2c61*/
+		0xff,                   // equip terminator                /*0x4f2c6d*/
+		0xff,                   // masked terminator               /*0x4f2cb3*/
+		0x00, 0x00, 0x00, 0x00, // cash weapon                     /*0x4f2cf6*/
+		0x00, 0x00, 0x00, 0x00, // pet 0 (DecodeBuffer 12)         /*0x4f2d04*/
+		0x00, 0x00, 0x00, 0x00, // pet 1
+		0x00, 0x00, 0x00, 0x00, // pet 2
+
+		// --- entry trailer ---
+		0x00,                   // family/viewAll flag (Decode1)   /*0x5ddda5*/
+		0x01,                   // rankEnabled = !gm (Decode1)     /*0x5dddb5*/
+		0x01, 0x00, 0x00, 0x00, // rank (Decode4)                  /*0x5dddd0 DecodeBuffer 16*/
+		0x02, 0x00, 0x00, 0x00, // rankMove
+		0x03, 0x00, 0x00, 0x00, // jobRank
+		0x04, 0x00, 0x00, 0x00, // jobRankMove
+
+		// --- list trailer ---
+		0x00,                   // hasPic (Decode1)                /*0x5dde34*/
+		0x08, 0x00, 0x00, 0x00, // slots (Decode4)                 /*0x5dde41*/
+		0x00, 0x00, 0x00, 0x00, // nBuyCharCount (Decode4, GMS>87) /*0x5dde4c*/
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("character-list v95 bytes:\n got %x\nwant %x", got, want)
 	}
 }
 

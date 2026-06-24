@@ -12051,6 +12051,270 @@
           "comment": "jms-only trailing validation dword (dword_CDA4F8)"
         }
       ]
+    },
+    "CLogin::OnViewAllCharResult#CharacterViewAllCharacters": {
+      "address": "0x6709e4",
+      "direction": "clientbound",
+      "_note": "jms VIEW_ALL_CHAR result NORMAL case (mode 0) in CLogin::OnViewAllCharResult@0x6709e4: Decode1(code)+Decode1(nWorldID)+Decode1(nCount), then loop nCount of GW_CharacterStat::Decode@0x50ec17 + AvatarLook::Decode@0x51517e + Decode1(hasRank) + optional DecodeBuffer(16) rank block. No trailing PIC byte (jms). Flattened from the live jms nested-decode read order — jms GW_CharacterStat differs from v83/v84 (nAP widened to int32, jms-specific extendSP/posMap tail), so the static row-diff still surfaces advisory verdict-2 rows over the loop-expanded block; the real verification is the byte-level round-trip exercising the verified CharacterListEntry jms branch (see view_all_test.go).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "code byte (case 0 = NORMAL)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nWorldID (world for this batch)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nCount (character entries in this world)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "GW_CharacterStat::dwCharacterID",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "GW_CharacterStat::sCharacterName (13 bytes)",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode1",
+          "comment": "GW_CharacterStat::nGender",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode1",
+          "comment": "GW_CharacterStat::nSkin",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode4",
+          "comment": "GW_CharacterStat::nFace",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode4",
+          "comment": "GW_CharacterStat::nHair",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "GW_CharacterStat::aliPetLockerSN (24 bytes)",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode1",
+          "comment": "GW_CharacterStat::nLevel",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode2",
+          "comment": "GW_CharacterStat::nJob",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode2",
+          "comment": "GW_CharacterStat::nSTR",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode2",
+          "comment": "GW_CharacterStat::nDEX",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode2",
+          "comment": "GW_CharacterStat::nINT",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode2",
+          "comment": "GW_CharacterStat::nLUK",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode2",
+          "comment": "GW_CharacterStat::nHP (int16)",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode2",
+          "comment": "GW_CharacterStat::nMHP (int16)",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode2",
+          "comment": "GW_CharacterStat::nMP (int16)",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode2",
+          "comment": "GW_CharacterStat::nMMP (int16)",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode2",
+          "comment": "GW_CharacterStat::extra MMP/SP-CS (common-job else-branch)",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode4",
+          "comment": "GW_CharacterStat::nAP (jms widened to int32)",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode2",
+          "comment": "GW_CharacterStat::nSP",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode4",
+          "comment": "GW_CharacterStat::nEXP",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode4",
+          "comment": "GW_CharacterStat::extendSP/nPOP block (int32)",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode1",
+          "comment": "GW_CharacterStat::extendSP tail byte",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode2",
+          "comment": "GW_CharacterStat::posMap HIWORD",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "GW_CharacterStat::nPortal block (8 bytes)",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode4",
+          "comment": "GW_CharacterStat::nPlaytime",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode4",
+          "comment": "GW_CharacterStat::subAvatar/dwCharacterID[1]",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode4",
+          "comment": "GW_CharacterStat::dwPosMap[1]",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode1",
+          "comment": "AvatarLook::nGender",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode1",
+          "comment": "AvatarLook::nSkin",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode4",
+          "comment": "AvatarLook::nFace",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode1",
+          "comment": "AvatarLook::hair flag byte",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode4",
+          "comment": "AvatarLook::anHairEquip[0] (hair)",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode1",
+          "comment": "AvatarLook::equipment slot (WriteKeyValue byte)",
+          "guard": "loop nCount, loop equip"
+        },
+        {
+          "op": "Decode4",
+          "comment": "AvatarLook::equipment itemId (WriteKeyValue int32)",
+          "guard": "loop nCount, loop equip"
+        },
+        {
+          "op": "Decode1",
+          "comment": "AvatarLook::equipment-loop terminator (0xFF)",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode1",
+          "comment": "AvatarLook::masked-equip slot",
+          "guard": "loop nCount, loop maskedEquip"
+        },
+        {
+          "op": "Decode4",
+          "comment": "AvatarLook::masked-equip itemId",
+          "guard": "loop nCount, loop maskedEquip"
+        },
+        {
+          "op": "Decode1",
+          "comment": "AvatarLook::masked-equipment-loop terminator (0xFF)",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode4",
+          "comment": "AvatarLook::nWeaponStickerID",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "AvatarLook::anPetID (12 bytes)",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode1",
+          "comment": "rankEnabled / hasRank byte",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "rank buffer 16 bytes (worldRank+gap+jobRank+gap)",
+          "guard": "loop nCount && rankEnabled"
+        }
+      ]
+    },
+    "CLogin::OnViewAllCharResult#CharacterViewAllCount": {
+      "address": "0x6709e4",
+      "direction": "clientbound",
+      "_note": "jms VIEW_ALL_CHAR result CHARACTER_COUNT case (mode 1) in CLogin::OnViewAllCharResult@0x6709e4: Decode1(code) then Decode4(m_nCountRelatedSvrs)+Decode4(m_nCountCharacters). Byte-identical to v83/v84. Hand-curated to mirror the verified v84 entry.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "code byte (case 1 = CHARACTER_COUNT)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "m_nCountRelatedSvrs (server/world count)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "m_nCountCharacters (total character count)"
+        }
+      ]
+    },
+    "CLogin::OnViewAllCharResult#CharacterViewAllSearchFailed": {
+      "address": "0x6709e4",
+      "direction": "clientbound",
+      "_note": "jms VIEW_ALL_CHAR result error case (modes 2/3/4/5) in CLogin::OnViewAllCharResult@0x6709e4: code byte only, no further wire reads (RemoveNoticeConnecting/ResetVAC/Notice UI logic). Same as v83/v84. Hand-curated to mirror the verified v84 entry.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "code byte (case 2/3/6/7 = error — no further reads in v83)"
+        }
+      ]
     }
   }
 }

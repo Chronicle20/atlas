@@ -28,6 +28,18 @@ import (
 // packet-audit:verify packet=character/clientbound/CharacterViewAllCharacters version=gms_v84 ida=0x60ffe8
 // packet-audit:verify packet=character/clientbound/CharacterViewAllSearchFailed version=gms_v84 ida=0x60ffe8
 // packet-audit:verify packet=character/clientbound/CharacterViewAllError version=gms_v84 ida=0x60ffe8
+// jms VIEW_ALL_CHAR result is dispatched by CLogin::OnViewAllCharResult@0x6709e4 on a
+// leading Decode1(mode): mode 0 = NORMAL (nWorldID + nCount, then per-char
+// GW_CharacterStat::Decode@0x50ec17 + AvatarLook::Decode@0x51517e + rank block); mode 1 =
+// CHARACTER_COUNT (Decode4 svrCount + Decode4 charCount); modes 2/3/4/5 = error (code byte
+// only). The jms GW_CharacterStat block differs from v83/v84 (nAP widened to int32, jms tail);
+// the Atlas CharacterListEntry jms branch (verified by the 8c CharacterList byte-fixture) emits
+// it exactly. The base + #suffix export keys were spliced from the live jms decompile (the 3
+// #suffix entries were ABSENT on jms). No codec delta — verification-only.
+// packet-audit:verify packet=character/clientbound/CharacterViewAllCount version=jms_v185 ida=0x6709e4
+// packet-audit:verify packet=character/clientbound/CharacterViewAllCharacters version=jms_v185 ida=0x6709e4
+// packet-audit:verify packet=character/clientbound/CharacterViewAllSearchFailed version=jms_v185 ida=0x6709e4
+// packet-audit:verify packet=character/clientbound/CharacterViewAllError version=jms_v185 ida=0x6709e4
 func TestCharacterViewAllCountRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

@@ -1,0 +1,480 @@
+{
+  "WriterName": "CharacterViewAllCharacters",
+  "IDAName": "CLogin::OnViewAllCharResult#CharacterViewAllCharacters",
+  "Address": "0x6709e4",
+  "Variant": "JMS/v185",
+  "BranchDepth": 2,
+  "AtlasFile": "libs/atlas-packet/character/clientbound/view_all.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "code byte (case 0 = NORMAL)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "nWorldID (world for this batch)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "nCount (character entries in this world)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "GW_CharacterStat::dwCharacterID",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 4,
+      "AtlasOp": 5,
+      "AtlasKind": 0,
+      "IDAOp": 5,
+      "IDAComment": "GW_CharacterStat::sCharacterName (13 bytes)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 5,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "GW_CharacterStat::nGender",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 6,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "GW_CharacterStat::nSkin",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 7,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "GW_CharacterStat::nFace",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 8,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "GW_CharacterStat::nHair",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 9,
+      "AtlasOp": 3,
+      "AtlasKind": 0,
+      "IDAOp": 5,
+      "IDAComment": "GW_CharacterStat::aliPetLockerSN (24 bytes)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 10,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "GW_CharacterStat::nLevel",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 11,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "GW_CharacterStat::nJob",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 12,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "GW_CharacterStat::nSTR",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 13,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "GW_CharacterStat::nDEX",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 14,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "GW_CharacterStat::nINT",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 15,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "GW_CharacterStat::nLUK",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 16,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "GW_CharacterStat::nHP (int16)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 17,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "GW_CharacterStat::nMHP (int16)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 18,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "GW_CharacterStat::nMP (int16)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 19,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "GW_CharacterStat::nMMP (int16)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 20,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "GW_CharacterStat::extra MMP/SP-CS (common-job else-branch)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 21,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "GW_CharacterStat::nAP (jms widened to int32)",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 22,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "GW_CharacterStat::nSP",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 23,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "GW_CharacterStat::nEXP",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 24,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "GW_CharacterStat::extendSP/nPOP block (int32)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 25,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "GW_CharacterStat::extendSP tail byte",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 26,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "GW_CharacterStat::posMap HIWORD",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 27,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 5,
+      "IDAComment": "GW_CharacterStat::nPortal block (8 bytes)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 28,
+      "AtlasOp": 3,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "GW_CharacterStat::nPlaytime",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 29,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "GW_CharacterStat::subAvatar/dwCharacterID[1]",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 30,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "GW_CharacterStat::dwPosMap[1]",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 31,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "AvatarLook::nGender",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 32,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "AvatarLook::nSkin",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 33,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "AvatarLook::nFace",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 34,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "AvatarLook::hair flag byte",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 35,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "AvatarLook::anHairEquip[0] (hair)",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 36,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "AvatarLook::equipment slot (WriteKeyValue byte)",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 37,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "AvatarLook::equipment itemId (WriteKeyValue int32)",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 38,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "AvatarLook::equipment-loop terminator (0xFF)",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 39,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "AvatarLook::masked-equip slot",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 40,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "AvatarLook::masked-equip itemId",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 41,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "AvatarLook::masked-equipment-loop terminator (0xFF)",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 42,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "AvatarLook::nWeaponStickerID",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 43,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 5,
+      "IDAComment": "AvatarLook::anPetID (12 bytes)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 44,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "rankEnabled / hasRank byte",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 45,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 5,
+      "IDAComment": "rank buffer 16 bytes (worldRank+gap+jobRank+gap)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 46,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": "absorbed by trailing opaque buffer"
+    },
+    {
+      "Index": 47,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": "absorbed by trailing opaque buffer"
+    },
+    {
+      "Index": 48,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": "absorbed by trailing opaque buffer"
+    },
+    {
+      "Index": 49,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": "absorbed by trailing opaque buffer"
+    },
+    {
+      "Index": 50,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": "absorbed by trailing opaque buffer"
+    },
+    {
+      "Index": 51,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": "absorbed by trailing opaque buffer"
+    }
+  ],
+  "Verdict": 2,
+  "FlatInvalid": false
+}

@@ -1,0 +1,11 @@
+packet: character/clientbound/CharacterViewAllSearchFailed
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CLogin::OnViewAllCharResult#CharacterViewAllSearchFailed
+    address: "0x6709e4"
+    decompile_sha256: 129693a2802890abbe327e7bd38abdc3e130bfe86bbea3b460863146f53bb659
+notes: "jms VIEW_ALL_CHAR error arm (modes 2/3/4/5) of CLogin::OnViewAllCharResult@0x6709e4: code byte only, no further wire reads (RemoveNoticeConnecting/ResetVAC/Notice UI). #suffix key spliced from the live jms decompile. Report verdict [0]."
+verifies:
+    - libs/atlas-packet/character/clientbound/view_all_test.go#TestCharacterViewAllSearchFailedRoundTrip

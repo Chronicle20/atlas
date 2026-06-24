@@ -1,0 +1,11 @@
+packet: character/serverbound/CheckName
+direction: serverbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CLogin::SendCheckDuplicateIDPacket
+    address: "0x60cf5d"
+    decompile_sha256: 51f0e0bd4a624192b24b9e5d5e709afa7faaca85d4db55e6ca989ec3c97c5688
+notes: "v84 CHECK_CHAR_NAME sender CLogin::SendCheckDuplicateIDPacket@0x60cf5d (was sub_60CF5D, named this campaign). Validates the name (sub_7C4771) then COutPacket(0x15)@0x60cfa6 + EncodeStr(sCharName)@0x60cfc3 and sends. Op 0x15 = CHECK_CHAR_NAME, ground-truth from the COutPacket ctor immediate (playbook §10), matches template_gms_84_1.json CharacterCheckNameHandle. Keyed under the registry/CSV primary fname CLogin::SendCheckDuplicateIDPacket. Matches the Atlas codec (single name string). Routed via CharacterCheckNameHandle. Report verdict [0]."
+verifies:
+    - libs/atlas-packet/character/serverbound/check_name_test.go#TestCheckNameRoundTrip

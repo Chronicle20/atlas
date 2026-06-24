@@ -497,7 +497,7 @@ Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 | WORLD_TRANSFER | CCashShop::SendCheckTransferWorldPossiblePacket |  | 0x012 | ❌ | 0x012 | ❌ | 0x012 | ❌ | 0x012 | ❌ |  | ⬜ |
 | CHAR_SELECT | CLogin::SendSelectCharPacket | login/serverbound/CharacterSelect | 0x013 | ✅ | 0x013 | ❌ | 0x013 | ✅ | 0x013 | ✅ | 0x006 | ❌ |
 | PLAYER_LOGGEDIN | CClientSocket::OnConnect | socket/serverbound/ChannelConnect | 0x014 | ✅ | 0x014 | ❌ | 0x014 | ✅ | 0x014 | ✅ | 0x007 | ✅ |
-| CHECK_CHAR_NAME | CCashShop::SendCheckDuplicateIDPacket; CLogin::SendCheckDuplicateIDPacket | character/serverbound/CheckName (T1) | 0x015 | ✅ | 0x015 | 🟡 | 0x015 | ✅ | 0x015 | ✅ | 0x008 | ❌ |
+| CHECK_CHAR_NAME | CCashShop::SendCheckDuplicateIDPacket; CLogin::SendCheckDuplicateIDPacket | character/serverbound/CheckName (T1) | 0x015 | ✅ | 0x015 | ✅ | 0x015 | ✅ | 0x015 | ✅ | 0x008 | ❌ |
 | CREATE_CHAR | CLogin::SendNewCharPacket | character/serverbound/CreateCharacter (T1) | 0x016 | ✅ | 0x016 | ✅ | 0x016 | ✅ | 0x016 | ✅ | 0x00B | ❌ |
 | CREATE_CHAR_IN_CS | CLogin::SendNewCharPacket | character/serverbound/CreateCharacter (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x017 | ✅ |  | ⬜ |
 | DELETE_CHAR | CLogin::SendDeleteCharPacket | character/serverbound/DeleteCharacter (T1) | 0x017 | ✅ | 0x017 | ✅ | 0x017 | ✅ | 0x018 | ✅ | 0x00D | ❌ |
@@ -902,7 +902,7 @@ Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
 | v83 | 355 | 0 | 0 | 316 | 200 | 0 | 52.9% |
-| v84 | 319 | 0 | 1 | 330 | 221 | 0 | 49.1% |
+| v84 | 320 | 0 | 0 | 330 | 221 | 0 | 49.2% |
 | v87 | 360 | 0 | 0 | 348 | 163 | 0 | 50.8% |
 | v95 | 391 | 0 | 1 | 400 | 79 | 0 | 49.4% |
 | JMS185 | 329 | 0 | 0 | 373 | 169 | 0 | 46.9% |

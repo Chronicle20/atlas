@@ -1496,8 +1496,7 @@
           "opcode": 21
         },
         "gms_v84": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": 21
         },
         "gms_v87": {

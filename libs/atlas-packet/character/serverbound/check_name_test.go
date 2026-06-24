@@ -7,6 +7,7 @@ import (
 )
 
 // packet-audit:verify packet=character/serverbound/CheckName version=gms_v83 ida=0x7d75ab
+// packet-audit:verify packet=character/serverbound/CheckName version=gms_v84 ida=0x60cf5d
 // packet-audit:verify packet=character/serverbound/CheckName version=gms_v87 ida=0x62f779
 // packet-audit:verify packet=character/serverbound/CheckName version=gms_v95 ida=0x5d5690
 func TestCheckNameRoundTrip(t *testing.T) {

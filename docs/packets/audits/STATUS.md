@@ -5,9 +5,9 @@
 
 Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 
-- export gms_v83: `e4f329dac5e737dbafb8cb6c91af30e36da0054699a2d5b1206d59fc284b672d`
+- export gms_v83: `655eec77f536a52e5780f01b23cf9234d06ef3a891e8d12b9d9b280b54bee69d`
 - export gms_v84: `8b3e1d7833c210a2c3c87a80849764f3348a8141977550e412669deb9ef4abf0`
-- export gms_v87: `c1e17657bcba88a3091b6fe1c8fedf76f79df92795dd6e3d7cd6f47b749760b2`
+- export gms_v87: `7bb7bdd62b53a137a932173aebdf128b26bccb9e4070120ac4e04f70b1d21db3`
 - export gms_v95: `d630364f4d84b433c62329d3756f4f97efdb9ce8056c62b60842bc9b91b24b97`
 - export jms_v185: `cdddad7295ae01a293ddc0934545ec7cfa11805ac0d626e160664484b72acc82`
 
@@ -230,13 +230,13 @@ Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 | PET_NAMECHANGE | CPet::OnNameChanged; CPet__OnNameChanged_recv_0xB0 |  | 0x0AC | ❌ | 0x0B0 | ❌ | 0x0B9 | ❌ | 0x0CB | ❌ | 0x0B2 | ❌ |
 | PET_EXCEPTION_LIST | CPet::OnLoadExceptionList | pet/clientbound/PetExcludeResponse (T1) | 0x0AD | ✅ | 0x0B1 | ✅ | 0x0BA | ✅ | 0x0CC | ✅ | 0x0B3 | ✅ |
 | PET_COMMAND | CPet::OnActionCommand | pet/clientbound/PetCommandResponse (T1) | 0x0AE | ✅ | 0x0B2 | ✅ | 0x0BB | ✅ | 0x0CD | ✅ | 0x0B4 | ✅ |
-| SPAWN_SPECIAL_MAPOBJECT | CSummonedPool::OnCreated; CSummonedPool::OnPacket | summon/clientbound/SummonSpawn (T1) | 0x0AF | ❌ | 0x0B3 | ❌ | 0x0BC | ❌ | 0x116 | ✅ | 0x0B5 | ❌ |
-| REMOVE_SPECIAL_MAPOBJECT | CSummonedPool::OnPacket; CSummonedPool::OnRemoved | summon/clientbound/SummonRemove (T1) | 0x0B0 | ❌ | 0x0B4 | ❌ | 0x0BD | ❌ | 0x117 | ✅ | 0x0B6 | ❌ |
-| MOVE_SUMMON | CSummonedPool::OnMove | summon/clientbound/SummonMove (T1) | 0x0B1 | ❌ | 0x0B5 | ❌ | 0x0BE | ❌ | 0x118 | 🟡 | 0x0B7 | ❌ |
-| SUMMON_ATTACK | CSummonedPool::OnAttack | summon/clientbound/SummonAttack (T1) | 0x0B2 | ❌ | 0x0B6 | ❌ | 0x0BF | ❌ | 0x119 | ✅ | 0x0B8 | ❌ |
-| DAMAGE_SUMMON | CSummonedPool::OnHit | summon/clientbound/SummonDamage (T1) | 0x0B3 | ❌ | 0x0B8 | ❌ | 0x0C0 | ❌ | 0x11B | ✅ | 0x0B9 | ❌ |
+| SPAWN_SPECIAL_MAPOBJECT | CSummonedPool::OnCreated; CSummonedPool::OnPacket | summon/clientbound/SummonSpawn (T1) | 0x0AF | ✅ | 0x0B3 | ✅ | 0x0BC | ✅ | 0x116 | ✅ | 0x0B5 | ✅ |
+| REMOVE_SPECIAL_MAPOBJECT | CSummonedPool::OnPacket; CSummonedPool::OnRemoved | summon/clientbound/SummonRemove (T1) | 0x0B0 | ✅ | 0x0B4 | ✅ | 0x0BD | ✅ | 0x117 | ✅ | 0x0B6 | ✅ |
+| MOVE_SUMMON | CSummonedPool::OnMove | summon/clientbound/SummonMove (T1) | 0x0B1 | ✅ | 0x0B5 | ✅ | 0x0BE | ✅ | 0x118 | ✅ | 0x0B7 | ✅ |
+| SUMMON_ATTACK | CSummonedPool::OnAttack | summon/clientbound/SummonAttack (T1) | 0x0B2 | ✅ | 0x0B6 | ✅ | 0x0BF | ✅ | 0x119 | ✅ | 0x0B8 | ✅ |
+| DAMAGE_SUMMON | CSummonedPool::OnHit | summon/clientbound/SummonDamage (T1) | 0x0B3 | ✅ | 0x0B8 | ✅ | 0x0C0 | ✅ | 0x11B | ✅ | 0x0B9 | ✅ |
 | SHOW_ITEM_HYPER_UPGRADE_EFFECT | CUser::OnHitByUser; CUser::ShowItemHyperUpgradeEffect |  |  | ⬜ |  | ⬜ | 0x0B3 | ❌ | 0x0BB | ❌ |  | ⬜ |
-| SUMMON_SKILL | CSummonedPool::OnSkill | summon/clientbound/SummonSkill (T1) | 0x0B4 | ❌ | 0x0B7 | ❌ | 0x0C1 | ❌ | 0x11A | ✅ | 0x0BA | ❌ |
+| SUMMON_SKILL | CSummonedPool::OnSkill | summon/clientbound/SummonSkill (T1) | 0x0B4 | ✅ | 0x0B7 | ✅ | 0x0C1 | ✅ | 0x11A | ✅ | 0x0BA | ✅ |
 | SPAWN_DRAGON | CDragon::OnCreated |  | 0x0B5 | ❌ | 0x0B9 | ❌ | 0x0C2 | ❌ | 0x0CE | ❌ | 0x0BB | ❌ |
 | MOVE_DRAGON | CDragon::OnMove |  | 0x0B6 | ❌ | 0x0BA | ❌ | 0x0C3 | ❌ | 0x0CF | ❌ | 0x0BC | ❌ |
 | REMOVE_DRAGON | CUser::OnDragonPacket |  | 0x0B7 | ❌ | 0x0BB | ❌ | 0x0C4 | ❌ | 0x0D0 | ❌ | 0x0BD | ❌ |
@@ -902,11 +902,11 @@ Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v83 | 348 | 0 | 0 | 324 | 200 | 0 | 51.8% |
-| v84 | 316 | 0 | 0 | 335 | 221 | 0 | 48.5% |
-| v87 | 363 | 0 | 0 | 346 | 163 | 0 | 51.2% |
-| v95 | 394 | 0 | 1 | 398 | 79 | 0 | 49.7% |
-| JMS185 | 332 | 0 | 0 | 371 | 169 | 0 | 47.2% |
+| v83 | 354 | 0 | 0 | 318 | 200 | 0 | 52.7% |
+| v84 | 322 | 0 | 0 | 329 | 221 | 0 | 49.5% |
+| v87 | 369 | 0 | 0 | 340 | 163 | 0 | 52.0% |
+| v95 | 395 | 0 | 0 | 398 | 79 | 0 | 49.8% |
+| JMS185 | 338 | 0 | 0 | 365 | 169 | 0 | 48.1% |
 
 ## Conflicts
 

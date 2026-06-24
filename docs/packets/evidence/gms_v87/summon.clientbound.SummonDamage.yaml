@@ -1,0 +1,10 @@
+packet: summon/clientbound/SummonDamage
+direction: clientbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CSummonedPool::OnHit
+    address: "0x7f969f"
+    decompile_sha256: 5b6378069dab5d59f245ac3adfbd7a261f850b4e39fb90a19ec1debf0159e4ba
+verifies:
+    - libs/atlas-packet/summon/clientbound/damage_test.go#TestSummonDamageBytesV87

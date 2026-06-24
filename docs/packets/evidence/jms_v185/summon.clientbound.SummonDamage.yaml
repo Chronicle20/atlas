@@ -1,0 +1,10 @@
+packet: summon/clientbound/SummonDamage
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CSummonedPool::OnHit
+    address: "0x828d16"
+    decompile_sha256: de031dec33a4c7ff434bfb2d6d11fa55f67305471ad3ea56b862e0474b389cd4
+verifies:
+    - libs/atlas-packet/summon/clientbound/damage_test.go#TestSummonDamageBytesJMS185

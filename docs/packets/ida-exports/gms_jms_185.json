@@ -12005,6 +12005,21 @@
       "direction": "serverbound",
       "notes": "jms CLogin::SendRequest @0x66da4a. Thin send wrapper (CClientSocket::SendPacket + sets m_bRequestSent). Encodes no wire bytes itself; the packet body is encoded by the caller before this delegate.",
       "calls": []
+    },
+    "CUserRemote::OnSetActivePortableChair": {
+      "address": "0xa44324",
+      "direction": "clientbound",
+      "_note": "jms SHOW_CHAIR (opcode 0xCA) handled inline in CUserPool::OnUserRemotePacket case 0xCA (@0xa44324): *(RemoteUser+16516) = CInPacket::Decode4(iPacket) reads chairId directly into the remote-user struct. No separate OnSetActivePortableChair receive function — same inline shape as v83 case 0xC4 / v87 case 0xD1. The local send/display side is CUser::SetActivePortableChair@0x9fc0f0. characterId is read by the dispatcher's leading Decode4(iPacket)@0xa44250 before the case.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "characterId (consumed by CUserPool::OnUserRemotePacket)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "m_nPortableChairID (chairId)"
+        }
+      ]
     }
   }
 }

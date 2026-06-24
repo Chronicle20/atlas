@@ -19,6 +19,7 @@ import (
 //
 // packet-audit:verify packet=character/clientbound/EffectSimple version=gms_v83 ida=0x9377d9
 // packet-audit:verify packet=character/clientbound/EffectSimple version=gms_v84 ida=0x96ea92
+// packet-audit:verify packet=character/clientbound/EffectSimple version=gms_v87 ida=0x9b1ef0
 // packet-audit:verify packet=character/clientbound/EffectSimple version=jms_v185 ida=0x9f6395
 func TestEffectSimpleByteOutput(t *testing.T) {
 	v83 := pt.Variants[1] // GMS v83
@@ -60,6 +61,33 @@ func TestEffectSimpleByteOutputV84(t *testing.T) {
 	gotForeign := NewEffectSimpleForeign(0x12345678, 8).Encode(nil, ctx)(nil)
 	if wantForeign := []byte{0x78, 0x56, 0x34, 0x12, 0x08}; !bytes.Equal(gotForeign, wantForeign) {
 		t.Errorf("foreign v84 bytes: got %x want %x", gotForeign, wantForeign)
+	}
+}
+
+// TestEffectSimpleByteOutputV87 is the v87 golden-byte fixture for the mode-only
+// OnEffect arms. The read order is byte-identical to v83 (the demux is structurally
+// unchanged at v87): CUser::OnEffect (v87 @0x9b1ef0) case 0 (@0x9b1f27, LevelUp)
+// reads ONLY the leading Decode1 effect-mode byte (switch @0x9b1f03) and plays a
+// client-side animation — no further wire fields. EffectSimple.Encode writes exactly
+// that byte.
+//
+// EffectSimple shares the CUser::OnEffect demux with EffectQuest/EffectSkillUse;
+// the EffectQuest op-cell grades worst-of all three, so this sibling carries its
+// own v87 marker+fixture+evidence to let the demux promote.
+func TestEffectSimpleByteOutputV87(t *testing.T) {
+	v87 := pt.Variants[2] // GMS v87
+	ctx := pt.CreateContext(v87.Region, v87.MajorVersion, v87.MinorVersion)
+
+	// self: mode 0 (LevelUp) -> single mode byte (Decode1) /*0x9b1f03*/
+	gotSelf := NewEffectSimple(0).Encode(nil, ctx)(nil)
+	if wantSelf := []byte{0x00}; !bytes.Equal(gotSelf, wantSelf) {
+		t.Errorf("self v87 bytes: got %x want %x", gotSelf, wantSelf)
+	}
+
+	// foreign: characterId prefix (read by CUserPool::OnUserRemotePacket) + mode byte
+	gotForeign := NewEffectSimpleForeign(0x12345678, 8).Encode(nil, ctx)(nil)
+	if wantForeign := []byte{0x78, 0x56, 0x34, 0x12, 0x08}; !bytes.Equal(gotForeign, wantForeign) {
+		t.Errorf("foreign v87 bytes: got %x want %x", gotForeign, wantForeign)
 	}
 }
 

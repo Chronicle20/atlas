@@ -27,7 +27,7 @@ Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 | SELECT_CHARACTER_BY_VAC | CLogin::OnSelectCharacterByVACResult |  | 0x009 | ❌ | 0x009 | ❌ | 0x009 | ❌ | 0x009 | ❌ |  | ⬜ |
 | IDA_0X00A | CClientSocket::OnAuthenCodeChanged |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x00A | ❌ |
 | WORLD_INFORMATION | CLogin::OnWorldInformation | login/clientbound/ServerListEnd | 0x00A | ✅ | 0x00A | ✅ | 0x00A | ✅ | 0x00A | ✅ | 0x002 | ❌ |
-| CHARLIST | CLogin::OnSelectWorldResult | character/clientbound/CharacterList (T1) | 0x00B | ❌ | 0x00B | ❌ | 0x00B | ❌ | 0x00B | ❌ | 0x003 | ❌ |
+| CHARLIST | CLogin::OnSelectWorldResult | character/clientbound/CharacterList (T1) | 0x00B | ✅ | 0x00B | ❌ | 0x00B | ❌ | 0x00B | ❌ | 0x003 | ❌ |
 | IDA_0X00B | CClientSocket::OnAuthenMessage |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x00B | ❌ |
 | SERVER_IP | CLogin::OnSelectCharacterResult | login/clientbound/ServerIP | 0x00C | ✅ | 0x00C | ✅ | 0x00C | ✅ | 0x00C | ✅ | 0x004 | ✅ |
 | CHAR_NAME_RESPONSE | CLogin::OnCheckDuplicatedIDResult | character/clientbound/CharacterNameResponse (T1) | 0x00D | ✅ | 0x00D | ✅ | 0x00D | ✅ | 0x00D | ✅ | 0x005 | ✅ |
@@ -902,7 +902,7 @@ Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v83 | 351 | 0 | 0 | 321 | 200 | 0 | 52.2% |
+| v83 | 352 | 0 | 0 | 320 | 200 | 0 | 52.4% |
 | v84 | 313 | 0 | 0 | 338 | 221 | 0 | 48.1% |
 | v87 | 360 | 0 | 0 | 349 | 163 | 0 | 50.8% |
 | v95 | 391 | 0 | 1 | 401 | 79 | 0 | 49.3% |

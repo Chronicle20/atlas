@@ -54,4 +54,52 @@ export splices** harvested from this IDB. No human escalation; this is exactly t
 6. **Task 9 — final gate.**
 
 ## Cell dispositions / wire deltas
-(appended as cells land)
+
+**Outcome: all 47 in-scope character cells `verified` (0 incomplete). 13 pre-existing
+`n-a` cells unchanged (no campaign regression — confirmed against baseline).**
+
+### Two REAL production wire deltas found + fixed-first (jms), see `audit.md`:
+1. **`spawn.go` (CharacterSpawn jms)** — codec emitted two GMS-only bytes the jms
+   client never reads (`bShowAdminEffect` + trailing `team`); gated both off for
+   `Region()=="JMS"` (symmetric Encode/Decode). GMS v83/v87/v95 output unchanged.
+   Commit `e4803b0fd`.
+2. **`heal_over_time.go` (HealOverTime jms)** — jms appends a trailing validation dword
+   (`dword_CDA4F8`) and includes the option byte the codec had gated GMS-only; added
+   `extra uint32` + `Extra()`, gated option for `(GMS<=95)||JMS`, dword for `JMS`.
+   Also wired the jms route `0x54 → CharacterHealOverTimeHandle` (with
+   `LoggedInValidator`) into `template_jms_185_1.json`. Commit `29f1af951`.
+
+### KeyMapChange consolidation (Task K)
+Resolved the op-row vs None-sub-struct-row attribution by making `SaveFuncKeyMap`
+the uniform registry primary in all 5 versions → the op row consumes the report and
+the orphan `None` rows disappear (tooling-native; not n-a). All 5 KMC cells verified.
+TRUNCATION exception confirmed per version via SaveFuncKeyMap decompile (9 bytes/entry).
+
+### jms export-quality foundation (Task 8a)
+The committed jms export was hand-stubbed (`DecodeSub` placeholders + unspliced shared
+helpers), blocking report-gen for ~10 character functions. Spliced 6 shared helpers
+(`GW_CharacterStat::Decode`, `AvatarLook::Decode`, `CUserRemote::Init`,
+`SecondaryStat::DecodeForLocal/ForRemote`, `CLogin::SendRequest`) + expanded 3
+character `DecodeSub` stubs, all harvested from the jms SCY IDB. Large mask-gated
+sub-bodies honestly left `Unresolved` (valid wildcard) — byte-fixtures are the real
+verification, so this does not weaken any cell. Foundation commit `f12ba3a94`.
+
+### Notable codec-correct findings (no fix needed)
+- v87 CharacterList reads a trailing `nSubJob` short (>=87) — already in codec.
+- v95 widens HP/MP to `Decode4` (>=95) + reads `nBuyCharCount` unconditionally — already in codec.
+- v95 EffectQuest discriminator shifted case 3→5 (runtime operations-table resolved) — codec mode-agnostic.
+- jms GW_CharacterStat keeps int16 HP/MP + a jms-extra tail — already in codec JMS branch.
+
+### Out-of-scope observations flagged (NOT fixed — separate concerns)
+- **v95 seed template lacks the effect `operations` table** (LEVEL_UP/SKILL_USE/QUEST
+  keys) — same family as the known `operations-mode-tables-missing-v87/v95/jms` bug.
+  Byte-fixtures pass mode literally so are unaffected; runtime EffectQuest/EffectSimple
+  mode resolution on v95 would fall back to default. Belongs to the template-wiring
+  follow-up, not this verification campaign.
+- The new jms heal route is a seed-template change; existing live jms tenants won't
+  receive it without a config patch + channel restart (`bug_new_opcodes_not_in_live_tenant_config`).
+
+### jms IDB caveat
+The plan §B names a `*_U_DEVM` jms build; the only reachable jms instance is
+`MapleStory_dump_SCY.exe` (port 13338). It decompiles cleanly (not SMC-obfuscated in
+the character regions), so all jms confirmations hold.

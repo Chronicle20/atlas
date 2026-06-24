@@ -55,6 +55,17 @@ op-rows. Verified against `tools/packet-audit/internal/matrix/{build,grade}.go`:
 
 ## Export / fname deviations (grounded, documented)
 
+- **v84 `ServerStatus` annotation fix (controller-verified, not a wire delta).**
+  `CLogin::OnCheckUserLimitResult` reads 2×`Decode1` on BOTH v83 (@0x5f92ae) and
+  v84 (@0x60e275); atlas writes one `WriteShort` = 2 bytes → wire-equivalent. The
+  v84 export entry listed two literal `Decode1` ops (→ "width mismatch"); the
+  verified v83 entry collapses them to one `Decode2` with a wire-equivalence
+  comment. Fixed the v84 entry to mirror v83. Grounded by decompiling both.
+- **v84 `ServerListRequest` — same inline as v83.** No discrete `ChangeStep`/
+  `ChangeStepImmediate` symbol in v84; the bodyless `COutPacket(4)+SendPacket`
+  lives in `sub_609165` (the v84 step-machine analog), in the `*(CWvsContext+8228)
+  ==1` block. Spliced under the canonical name with the real v84 address + note;
+  controller re-decompiled and confirmed bodyless opcode-4.
 - **v83 `ServerListRequest` — `CLogin::ChangeStepImmediate` does not exist as a
   discrete symbol in the v83 IDB** (unlike v87/v95/jms). The immediate
   server-list-request send is **inlined into `CLogin::ChangeStep` @0x5f53c0**

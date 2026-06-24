@@ -635,7 +635,7 @@ Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 | USE_DOOR | CField::TryEnterTownPortal; CTownPortalPool::TryEnterTownPortal | field/serverbound/FieldUseDoor (T1) | 0x085 | ✅ | 0x089 | ✅ | 0x08D | ✅ | 0x09C | ✅ | 0x088 | ✅ |
 | FOLLOW_CHARACTER_REQUEST | CWvsContext::SendFollowCharacterRequest |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x086 | ❌ | 0x074 | ❌ |
 | OPEN_GATE | COpenGatePool::TryEnterOpenGate |  | 0x086 | ❌ |  | ⬜ | 0x08E | ❌ | 0x09D | ❌ | 0x0A2 | ❌ |
-| CHANGE_KEYMAP | CFuncKeyMappedMan::ChangePetConsumeItemID; CFuncKeyMappedMan::ChangePetConsumeMPItemID; CFuncKeyMappedMan::SaveFuncKeyMap | character/serverbound/KeyMapChange (T1) | 0x087 | ❌ | 0x08B | ✅ | 0x08F | ❌ | 0x09F | ❌ | 0x08A | ❌ |
+| CHANGE_KEYMAP | CFuncKeyMappedMan::ChangePetConsumeItemID; CFuncKeyMappedMan::ChangePetConsumeMPItemID; CFuncKeyMappedMan::SaveFuncKeyMap | character/serverbound/KeyMapChange (T1) | 0x087 | ✅ | 0x08B | ✅ | 0x08F | ❌ | 0x09F | ❌ | 0x08A | ❌ |
 | UNNAMED_R190 |  |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x087 | ❌ |  | ⬜ |
 | PQ_SELECT_REWARD | CUIPQReward::SelectReward |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x088 | ❌ |  | ⬜ |
 | RPS_ACTION | CRPSGameDlg::OnBtContinue; CRPSGameDlg::OnBtExit; CRPSGameDlg::OnBtRetry; CRPSGameDlg::OnBtStart; CRPSGameDlg::SendSelection; CRPSGameDlg::Update |  | 0x088 | ❌ | 0x08C | ❌ | 0x090 | ❌ | 0x0A0 | ❌ | 0x08B | ❌ |
@@ -817,7 +817,7 @@ Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 | cash/serverbound/CashShopOperationRebateLockerItem (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | cash/serverbound/CashShopOperationSetWishlist (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | character/serverbound/ExpressionRequest (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
-| character/serverbound/KeyMapChange (T1) |  |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
+| character/serverbound/KeyMapChange (T1) |  |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
 | character/serverbound/Move (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | field/serverbound/FieldChange (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | guild/serverbound/GuildAgreementResponse (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |

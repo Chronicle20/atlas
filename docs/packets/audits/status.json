@@ -11005,8 +11005,7 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 135
         },
         "gms_v84": {
@@ -26598,7 +26597,8 @@
       "tier1": true,
       "cells": {
         "gms_v83": {
-          "state": "verified",
+          "state": "incomplete",
+          "note": "no audit report",
           "opcode": -1
         },
         "gms_v84": {

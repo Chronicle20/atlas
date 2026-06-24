@@ -96,10 +96,35 @@ None.
 
 ## 10. Acceptance Criteria
 
-- [ ] All four listed interaction serverbound packets show `verified` (✅) for v83, v84,
-      v87, v95, jms (or `n-a` where genuinely version-absent).
-- [ ] Every promoted cell has a `packet-audit:verify` byte-fixture and a fresh pinned
-      evidence record + REPORT committed together.
-- [ ] `packet-audit matrix --check` (and fname-doc/operations `--check`) exit 0.
-- [ ] Affected Go module(s): `go test -race ./...`, `go vet ./...`, `go build ./...`
-      clean; `docker buildx bake` for any service whose `go.mod` was touched.
+- [x] All four listed interaction serverbound packets show `verified` (✅) for v83, v84,
+      v87, v95, jms (or `n-a` where genuinely version-absent). — all 12 cells `verified`;
+      0 incomplete interaction cells remain in `status.json`.
+- [x] Every promoted cell has a `packet-audit:verify` byte-fixture and a fresh pinned
+      evidence record + REPORT committed together. — markers on the RoundTrip/Bytes tests,
+      `docs/packets/evidence/<v>/…` records (with `verifies:`), and audit reports (Verdict 0).
+- [x] `packet-audit matrix --check` (and fname-doc/operations `--check`) exit 0. — matrix
+      clean; fname-doc OK; operations OK (1 pre-existing non-interaction jms `NoteOperation`
+      note); 0 interaction lines in any check.
+- [x] Affected Go module(s): `go test -race ./...`, `go vet ./...`, `go build ./...`
+      clean; `docker buildx bake` for any service whose `go.mod` was touched. — `libs/atlas-packet`
+      clean on all three; no `go.mod` touched → no bake required.
+
+### Resolution of §9 open questions (IDA-confirmed)
+
+- **MerchantPutItem / MerchantRemoveItem** — the other versions **share the v95 body**.
+  The entrusted-merchant arm of `CPersonalShopDlg::PutItem` writes
+  `inventoryType·slot·quantity·set·price` and `::MoveItemToInventory` writes `index` on
+  every version; only the dispatcher **sub-op byte** differs (GMS `0x21`/`0x26`, jms
+  `0x1E`/`0x23`), which is resolved by the PLAYER_INTERACTION dispatcher and is not part
+  of the codec body. No per-version slot-encoding shift.
+- **Invite v83/v87/jms** — same single `targetCharacterId` body as v84/v95.
+  `CField::SendInviteTradingRoomMsg` sends a room-create packet then the invite
+  (`Encode1(mode 2)` + `Encode4(targetCharacterId)`); the raw harvest had captured the
+  whole two-arm function, curated to the single `Decode4` body.
+- **No template-wiring conflicts** — no `routedElsewhere && !routed` lines; matrix
+  `--check` stays clean for every interaction cell.
+
+> Note: the repo-wide `tools/redis-key-guard.sh` reports a FAIL in
+> `services/atlas-party-quests` ("matched no packages"); this failure is **pre-existing
+> on `main`** and unrelated to task-110, which touched only `libs/atlas-packet` test
+> files and `docs/packets/` (zero redis surface).

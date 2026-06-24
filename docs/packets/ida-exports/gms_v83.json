@@ -12727,6 +12727,42 @@
           "comment": "trailing extra byte (CInPacket::Decode1)"
         }
       ]
+    },
+    "CPersonalShopDlg::PutItem#Merchant": {
+      "address": "0x6fd96c",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "inventoryType (nTI; op 0x21 entrusted)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "slot (nPos)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "quantity"
+        },
+        {
+          "op": "Decode2",
+          "comment": "set"
+        },
+        {
+          "op": "Decode4",
+          "comment": "price"
+        }
+      ]
+    },
+    "CPersonalShopDlg::MoveItemToInventory#Merchant": {
+      "address": "0x6fdcdf",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode2",
+          "comment": "index (nIdx; op 0x26 entrusted)"
+        }
+      ]
     }
   }
 }

@@ -227,12 +227,24 @@ func buildCreateListingFromSaleCurrentItem(p fieldsb.ItcOperationSaleCurrentItem
 
 // ITC browse view (category) values. The GET_ITC_LIST `category` field is the
 // top-tab/view selector (CITC this[26], consumed by the per-item action dispatch
-// sub_5BC1D5): view 1 = For Sale (fixed-price, the MTS-entry default), view 3 =
-// Auction. Views 2/4/5 (my-page/wanted/etc.) are not yet given a saleType filter
-// and fall through to an unfiltered active browse.
+// sub_5BC1D5). All five top tabs fill the one shared browse list window via
+// GET_ITC_LIST with a distinct category, so the server returns the matching data
+// set per view:
+//
+//	1 For Sale  -> public fixed-price listings (the MTS-entry default; case 1 = buy)
+//	2 My Page   -> the requesting seller's OWN listings (case 2 = manage modal)
+//	3 Auction   -> public auction listings (case 3 = bid/buyout)
+//	4 Wanted    -> the requesting character's wish entries (case 4 = wish)
+//	5 (other)   -> no public-listing browse (empty)
+//
+// Views 1/3/4 are IDA-grounded (entry default + sub_5BC1D5 cases). Views 2 and 5
+// are inferred from the user's tab names + the per-view sub-tab counts; if a tab
+// shows the wrong data set, only this mapping needs adjusting.
 const (
 	itcViewForSale uint32 = 1
+	itcViewMyPage  uint32 = 2
 	itcViewAuction uint32 = 3
+	itcViewWanted  uint32 = 4
 )
 
 // applyItcViewFilters maps the client's GET_ITC_LIST/SEARCH view (category) and
@@ -578,15 +590,38 @@ func resolveSellerAssetId(l logrus.FieldLogger, ctx context.Context, characterId
 // leaves the latch set and freezes the next tab. The entry path also passes 1
 // (cosmetic there, since entry is server-initiated and never sets the latch).
 func writeBrowsePage(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, s session.Model, category uint32, subCategory uint32, page uint32, sortType byte, sortColumn byte, requestSent byte, f mtslisting.BrowseFilter) {
-	ms, err := mtslisting.NewProcessor(l, ctx).Browse(s.WorldId(), f)
-	if err != nil {
-		l.WithError(err).Errorf("Unable to browse MTS listings for character [%d]; writing empty page.", s.CharacterId())
-		ms = nil
-	}
-
-	items := make([]fieldcb.MtsItem, 0, len(ms))
-	for _, m := range ms {
-		items = append(items, mtsItemFromListing(m))
+	var items []fieldcb.MtsItem
+	switch category {
+	case itcViewWanted:
+		// Wanted: the character's own wish entries, not public listings.
+		ws, werr := mtswish.NewProcessor(l, ctx).GetByCharacter(s.CharacterId())
+		if werr != nil {
+			l.WithError(werr).Errorf("Unable to load wishes for character [%d]; writing empty Wanted page.", s.CharacterId())
+			ws = nil
+		}
+		items = make([]fieldcb.MtsItem, 0, len(ws))
+		for _, w := range ws {
+			items = append(items, mtsItemFromWish(w))
+		}
+	case itcViewForSale, itcViewMyPage, itcViewAuction:
+		// Listing-backed views. f already carries the saleType (For Sale=fixed,
+		// Auction=auction) and item sub-tab filters; My Page additionally scopes to
+		// the requesting seller's own listings.
+		if category == itcViewMyPage {
+			f.SellerId = s.CharacterId()
+		}
+		ms, err := mtslisting.NewProcessor(l, ctx).Browse(s.WorldId(), f)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to browse MTS listings for character [%d]; writing empty page.", s.CharacterId())
+			ms = nil
+		}
+		items = make([]fieldcb.MtsItem, 0, len(ms))
+		for _, m := range ms {
+			items = append(items, mtsItemFromListing(m))
+		}
+	default:
+		// Unmapped view (e.g. category 5): no public-listing browse.
+		items = nil
 	}
 
 	body := fieldpkt.MtsOperationGetItcListDoneBody(uint32(len(items)), category, subCategory, page, sortType, sortColumn, items, requestSent)

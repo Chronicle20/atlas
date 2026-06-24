@@ -268,6 +268,75 @@ func TestCharacterAppearanceUpdateByteOutputV95(t *testing.T) {
 	}
 }
 
+// CharacterAppearanceUpdate jms byte-fixture.
+//
+// Client read order — CUserRemote::OnAvatarModified (jms v185 @0xa57221,
+// MapleStory_dump_SCY.exe):
+//
+//	flags = Decode1                  // bitfield: &1 look, &2 speed, &4 carry  /*0xa57230*/
+//	if flags & 1:  AvatarLook::Decode  // full avatar/look block (@0x51517e)   /*0xa57246*/
+//	if flags & 2:  Decode1            // riding/vehicle speed (not set here)     /*0xa57295*/
+//	if flags & 4:  Decode1            // carry-item effect (not set here)        /*0xa572b7*/
+//	crushMarker    = Decode1         // 0 => no buffer; else Decode4 count loop  /*0xa572ca*/
+//	friendMarker   = Decode1         // 0 => no buffer; else Decode4 count loop  /*0xa5733b*/
+//	marriageMarker = Decode1         // != 0 => 3x Decode4; else zeros           /*0xa573af*/
+//
+// As in v83/v84, the marriage if/else has NO trailing unconditional Decode4 in jms
+// (the else branch @0xa573e1 zeroes the slots and reads nothing). Atlas always writes
+// flags=1 (look-only) and the three ring markers as 0, so the trailing WriteInt(0)
+// "completed set item id" is benign trailing slack (unread when marriage==0). The
+// jms wire matches the GMS-shaped codec — no per-version delta.
+//
+// AvatarLook::Decode (jms @0x51517e):
+//	gender=Decode1 /*0x51518a*/, skin=Decode1 /*0x515194*/, face=Decode4 /*0x5151a1*/,
+//	!mega=Decode1 /*0x5151ce*/, hair=Decode4 /*0x5151d5*/, equip loop (key Decode1
+//	0xFF term; value Decode4), masked loop (same), cashWeapon=Decode4 /*0x515251*/,
+//	pets=DecodeBuffer(12) /*0x515264*/.
+//
+// packet-audit:verify packet=character/clientbound/CharacterAppearanceUpdate version=jms_v185 ida=0xa57221
+func TestCharacterAppearanceUpdateByteOutputJMS(t *testing.T) {
+	jms := pt.Variants[4] // JMS v185
+	ctx := pt.CreateContext(jms.Region, jms.MajorVersion, jms.MinorVersion)
+
+	avatar := model.NewAvatar(
+		1,     // gender
+		2,     // skinColor
+		0x14,  // face
+		false, // mega -> WriteBool(!mega)=WriteBool(true)=0x01
+		0x1E,  // hair
+		nil,   // equipment (-> just 0xFF terminator)
+		nil,   // maskedEquipment (-> just 0xFF terminator)
+		nil,   // pets (-> 3x WriteInt(0))
+	)
+	input := NewCharacterAppearanceUpdate(0x12345678, avatar)
+	got := input.Encode(nil, ctx)(nil)
+
+	want := []byte{
+		0x78, 0x56, 0x34, 0x12, // characterId (WriteInt)                 /*0xa57221 dispatch*/
+		0x01,                   // flags = 1 (look-only)                  /*0xa57230*/
+		// --- AvatarLook block (flags & 1) ---                            /*0xa57246*/
+		0x01,                   // gender (Decode1)                       /*0x51518a*/
+		0x02,                   // skinColor (Decode1)                    /*0x515194*/
+		0x14, 0x00, 0x00, 0x00, // face (Decode4)                         /*0x5151a1*/
+		0x01,                   // !mega -> WriteBool(true) (Decode1)     /*0x5151ce*/
+		0x1e, 0x00, 0x00, 0x00, // hair (Decode4)                         /*0x5151d5*/
+		0xff,                   // equipment terminator                   /*0x5151de*/
+		0xff,                   // masked-equipment terminator            /*0x515215*/
+		0x00, 0x00, 0x00, 0x00, // cash weapon (Decode4)                  /*0x515251*/
+		0x00, 0x00, 0x00, 0x00, // pet 0 (DecodeBuffer 12 = 3x Decode4)   /*0x515264*/
+		0x00, 0x00, 0x00, 0x00, // pet 1
+		0x00, 0x00, 0x00, 0x00, // pet 2
+		// --- ring markers ---
+		0x00,                   // crush ring marker (Decode1)            /*0xa572ca*/
+		0x00,                   // friendship ring marker (Decode1)       /*0xa5733b*/
+		0x00,                   // marriage ring marker (Decode1)         /*0xa573af*/
+		0x00, 0x00, 0x00, 0x00, // completed set item id (trailing slack; unread when marriage==0)
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("appearance-update jms bytes:\n got %x\nwant %x", got, want)
+	}
+}
+
 func TestCharacterAppearanceUpdateRoundTrip(t *testing.T) {
 	v83 := pt.Variants[1]
 	ctx := pt.CreateContext(v83.Region, v83.MajorVersion, v83.MinorVersion)

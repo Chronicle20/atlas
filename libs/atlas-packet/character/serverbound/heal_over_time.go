@@ -67,7 +67,7 @@ func (m HealOverTime) Operation() string {
 }
 
 func (m HealOverTime) String() string {
-	return fmt.Sprintf("updateTime [%d], val [%d], hp [%d], mp [%d], unknown [%d]", m.updateTime, m.val, m.hp, m.mp, m.unknown)
+	return fmt.Sprintf("updateTime [%d], val [%d], hp [%d], mp [%d], unknown [%d], extra [%d]", m.updateTime, m.val, m.hp, m.mp, m.unknown, m.extra)
 }
 
 func (m HealOverTime) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {

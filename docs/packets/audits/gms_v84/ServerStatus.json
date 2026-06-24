@@ -10,21 +10,12 @@
       "Index": 0,
       "AtlasOp": 1,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "width mismatch"
-    },
-    {
-      "Index": 1,
-      "AtlasOp": 0,
-      "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "IDAOp": 1,
+      "IDAComment": "world status (2 bytes; v84 reads as 2 × Decode1, atlas writes WriteShort — wire-equivalent; IDA-verified 0x60e275)",
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 2,
+  "Verdict": 0,
   "FlatInvalid": false
 }

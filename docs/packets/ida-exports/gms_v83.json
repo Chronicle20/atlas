@@ -13347,6 +13347,12 @@
           "comment": "trailing extra byte (CInPacket::Decode1)"
         }
       ]
+    },
+    "CLogin::ChangeStepImmediate": {
+      "address": "0x5f53c0",
+      "direction": "serverbound",
+      "note": "v83 inlines the immediate server-list-request send into CLogin::ChangeStep @0x5f53c0 (no separate ChangeStepImmediate symbol exists in this build, unlike v87/v95/jms). The send is COutPacket(opcode 4)+SendPacket in the m_nBaseStep==1 block with no Encode calls — bodyless wire shape, matching the bodyless atlas ServerListRequest decoder. IDA-verified gms_v83.",
+      "calls": []
     }
   }
 }

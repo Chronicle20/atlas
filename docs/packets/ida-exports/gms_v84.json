@@ -3,6 +3,30 @@
   "md5": "",
   "generated_at": "2026-06-13T12:51:12Z",
   "functions": {
+    "CWvsContext::OnTownPortal": {
+      "address": "0xa6dbb8",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "townId (SpawnPortal); MapId.NONE (999999999) for RemoveTownDoor"
+        },
+        {
+          "op": "Decode4",
+          "comment": "targetId; MapId.NONE (999999999) for RemoveTownDoor"
+        },
+        {
+          "op": "Decode2",
+          "comment": "x (door position)",
+          "guard": "townId != 999999999 && targetId != 999999999"
+        },
+        {
+          "op": "Decode2",
+          "comment": "y (door position)",
+          "guard": "townId != 999999999 && targetId != 999999999"
+        }
+      ]
+    },
     "COutPacket::Encode1": {
       "address": "",
       "direction": "",
@@ -24816,6 +24840,42 @@
       "direction": "serverbound",
       "note": "v84 inlines the immediate server-list-request send into the CLogin step-machine function @0x609165 (no separate ChangeStepImmediate symbol exists in this build, same as v83; the function is the demangled v83 CLogin::ChangeStep analog, base-step==1 branch). The send is COutPacket(opcode 4)+SendPacket @0x6098d0 with no Encode calls between construct and send — bodyless wire shape, matching the bodyless atlas ServerListRequest decoder. IDA-verified gms_v84.",
       "calls": []
+    },
+    "CTownPortalPool::OnTownPortalCreated": {
+      "address": "0x7e3740",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "launched flag (writeBool launched)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "ownerId (door owner character id)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "x (door position, writeShort)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "y (door position, writeShort)"
+        }
+      ]
+    },
+    "CTownPortalPool::OnTownPortalRemoved": {
+      "address": "0x7e40de",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "animate flag (Cosmic writes constant 0; gates removal animation)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "ownerId (door owner character id; registry lookup key)"
+        }
+      ]
     }
   }
 }

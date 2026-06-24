@@ -57,4 +57,15 @@ packet_prefixes:
   - character/      # CharacterStatistics + Pet + Avatar consumers
   - field/          # SET_FIELD encodes charpkt.CharacterData → CharacterStatistics/Asset/Pet
 
-packets: []
+# Explicit tier-1 packets (reviewed per-packet additions).
+packets:
+  # SummonSpawn branches on spawnHasAvatarLook (a version-gated trailing avatar
+  # byte: present GMS>=95 / JMS>=185, absent on GMS v83/v84/v87), so the flat
+  # diff is advisory and only a linked byte-fixture promotes. Once its IDA leaf
+  # export was re-pointed to the ACTIVE OnCreated (which reads the oid in-leaf,
+  # task-106), the body matches and the report no longer auto-flags FlatInvalid
+  # the way the other summon leaves do (their leaf exports omit the upstream oid).
+  # Pinned here so every version reaches `verified` only via a fixture+evidence,
+  # never via the advisory diff. v83 + v95 carry fixtures+evidence; v84/v87/jms
+  # remain fixture-pending (unchanged from before).
+  - summon/clientbound/SummonSpawn

@@ -5,11 +5,11 @@
 
 Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 
-- export gms_v83: `8a64a5904b4643db7db933bfb4facdc7b8aa8a1edfadb0c2aeed5ec5299fbcec`
-- export gms_v84: `e87c1619adef220502b82b76cf421c3b8add1e765a18285ccca1a00e5eff9657`
-- export gms_v87: `09a5092344ac82e0f39d4f0b407bdca18e2c24974ae1d7641415d3e3291c16cc`
-- export gms_v95: `cf7682a52552f94e68453f8ed3a9f74098b50a4fdf14a19968227a2f3816d37d`
-- export jms_v185: `440fbdd1f1b89c73702b589b98231a5fed29f8136d7c8e8a9a9d3cd6e959f298`
+- export gms_v83: `e9f3c17a0e394085e7ec12efe6ae33f13ab06bba93b80b44c9180f7d0387052a`
+- export gms_v84: `1b22d1ada960ab9a9302c07507cc7908c67d4ca1a17d5fea6ec4c4f741515e43`
+- export gms_v87: `57ee76777f519399e5d36c1069f84a903b6515046f26c0f827d049589bd6ec1c`
+- export gms_v95: `d630364f4d84b433c62329d3756f4f97efdb9ce8056c62b60842bc9b91b24b97`
+- export jms_v185: `7abb5f57f19a1b4acee93a6c48e30d509964fa1ab82fd681b07d3d3828758cc2`
 
 ## Clientbound
 
@@ -84,7 +84,7 @@ Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 | EXPEDITION_RESULT | CWvsContext::OnExpedtionResult |  |  | ⬜ |  | ⬜ | 0x040 | ❌ | 0x040 | ❌ |  | ⬜ |
 | GUILD_OPERATION | CWvsContext::OnGuildResult | guild/clientbound/GuildBoardAuthKeyUpdate (T1) | 0x041 | ✅ | 0x043 | ✅ | 0x043 | ✅ | 0x043 | ✅ | 0x03B | ✅ |
 | ALLIANCE_OPERATION | CWvsContext::OnAllianceResult |  | 0x042 | ❌ | 0x042 | ❌ | 0x044 | ❌ | 0x044 | ❌ | 0x03C | ❌ |
-| SPAWN_PORTAL | CWvsContext::OnTownPortal | door/clientbound/RemoveTownDoor (T1) | 0x043 | ✅ | 0x045 | ❌ | 0x045 | ❌ | 0x045 | ❌ | 0x03D | ❌ |
+| SPAWN_PORTAL | CWvsContext::OnTownPortal | door/clientbound/RemoveTownDoor (T1) | 0x043 | ✅ | 0x045 | ✅ | 0x045 | ✅ | 0x045 | ✅ | 0x03D | ✅ |
 | SERVERMESSAGE | CWvsContext::OnBroadcastMsg |  | 0x044 | ❌ | 0x044 | ❌ | 0x046 | ❌ | 0x047 | ❌ | 0x03E | ❌ |
 | INCUBATOR_RESULT | CWvsContext::OnIncubatorResult |  | 0x045 | ❌ | 0x047 | ❌ | 0x047 | ❌ | 0x048 | ❌ | 0x03F | ❌ |
 | OPEN_GATE | CWvsContext::OnOpenGate |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x046 | ❌ |  | ⬜ |
@@ -230,13 +230,13 @@ Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 | PET_NAMECHANGE | CPet::OnNameChanged; CPet__OnNameChanged_recv_0xB0 |  | 0x0AC | ❌ | 0x0B0 | ❌ | 0x0B9 | ❌ | 0x0CB | ❌ | 0x0B2 | ❌ |
 | PET_EXCEPTION_LIST | CPet::OnLoadExceptionList | pet/clientbound/PetExcludeResponse (T1) | 0x0AD | ✅ | 0x0B1 | ✅ | 0x0BA | ✅ | 0x0CC | ✅ | 0x0B3 | ✅ |
 | PET_COMMAND | CPet::OnActionCommand | pet/clientbound/PetCommandResponse (T1) | 0x0AE | ✅ | 0x0B2 | ✅ | 0x0BB | ✅ | 0x0CD | ✅ | 0x0B4 | ✅ |
-| SPAWN_SPECIAL_MAPOBJECT | CSummonedPool::OnCreated; CSummonedPool::OnPacket | summon/clientbound/SummonSpawn (T1) | 0x0AF | ❌ | 0x0B3 | ❌ | 0x0BC | ❌ | 0x116 | ✅ | 0x0B5 | ❌ |
-| REMOVE_SPECIAL_MAPOBJECT | CSummonedPool::OnPacket; CSummonedPool::OnRemoved | summon/clientbound/SummonRemove (T1) | 0x0B0 | ❌ | 0x0B4 | ❌ | 0x0BD | ❌ | 0x117 | ✅ | 0x0B6 | ❌ |
-| MOVE_SUMMON | CSummonedPool::OnMove | summon/clientbound/SummonMove (T1) | 0x0B1 | ❌ | 0x0B5 | ❌ | 0x0BE | ❌ | 0x118 | 🟡 | 0x0B7 | ❌ |
-| SUMMON_ATTACK | CSummonedPool::OnAttack | summon/clientbound/SummonAttack (T1) | 0x0B2 | ❌ | 0x0B6 | ❌ | 0x0BF | ❌ | 0x119 | ✅ | 0x0B8 | ❌ |
-| DAMAGE_SUMMON | CSummonedPool::OnHit | summon/clientbound/SummonDamage (T1) | 0x0B3 | ❌ | 0x0B8 | ❌ | 0x0C0 | ❌ | 0x11B | ✅ | 0x0B9 | ❌ |
+| SPAWN_SPECIAL_MAPOBJECT | CSummonedPool::OnCreated; CSummonedPool::OnPacket | summon/clientbound/SummonSpawn (T1) | 0x0AF | ✅ | 0x0B3 | ✅ | 0x0BC | ✅ | 0x116 | ✅ | 0x0B5 | ✅ |
+| REMOVE_SPECIAL_MAPOBJECT | CSummonedPool::OnPacket; CSummonedPool::OnRemoved | summon/clientbound/SummonRemove (T1) | 0x0B0 | ✅ | 0x0B4 | ✅ | 0x0BD | ✅ | 0x117 | ✅ | 0x0B6 | ✅ |
+| MOVE_SUMMON | CSummonedPool::OnMove | summon/clientbound/SummonMove (T1) | 0x0B1 | ✅ | 0x0B5 | ✅ | 0x0BE | ✅ | 0x118 | ✅ | 0x0B7 | ✅ |
+| SUMMON_ATTACK | CSummonedPool::OnAttack | summon/clientbound/SummonAttack (T1) | 0x0B2 | ✅ | 0x0B6 | ✅ | 0x0BF | ✅ | 0x119 | ✅ | 0x0B8 | ✅ |
+| DAMAGE_SUMMON | CSummonedPool::OnHit | summon/clientbound/SummonDamage (T1) | 0x0B3 | ✅ | 0x0B8 | ✅ | 0x0C0 | ✅ | 0x11B | ✅ | 0x0B9 | ✅ |
 | SHOW_ITEM_HYPER_UPGRADE_EFFECT | CUser::OnHitByUser; CUser::ShowItemHyperUpgradeEffect |  |  | ⬜ |  | ⬜ | 0x0B3 | ❌ | 0x0BB | ❌ |  | ⬜ |
-| SUMMON_SKILL | CSummonedPool::OnSkill | summon/clientbound/SummonSkill (T1) | 0x0B4 | ❌ | 0x0B7 | ❌ | 0x0C1 | ❌ | 0x11A | ✅ | 0x0BA | ❌ |
+| SUMMON_SKILL | CSummonedPool::OnSkill | summon/clientbound/SummonSkill (T1) | 0x0B4 | ✅ | 0x0B7 | ✅ | 0x0C1 | ✅ | 0x11A | ✅ | 0x0BA | ✅ |
 | SPAWN_DRAGON | CDragon::OnCreated |  | 0x0B5 | ❌ | 0x0B9 | ❌ | 0x0C2 | ❌ | 0x0CE | ❌ | 0x0BB | ❌ |
 | MOVE_DRAGON | CDragon::OnMove |  | 0x0B6 | ❌ | 0x0BA | ❌ | 0x0C3 | ❌ | 0x0CF | ❌ | 0x0BC | ❌ |
 | REMOVE_DRAGON | CUser::OnDragonPacket |  | 0x0B7 | ❌ | 0x0BB | ❌ | 0x0C4 | ❌ | 0x0D0 | ❌ | 0x0BD | ❌ |
@@ -368,9 +368,9 @@ Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 | IDA_0X112 | CUserLocal::OnQuestGuideResult |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x112 | ❌ |  | ⬜ |
 | REMOVE_MIST | CAffectedAreaPool::OnAffectedAreaRemoved | field/clientbound/FieldAffectedAreaRemoved (T1) | 0x112 | ✅ | 0x119 | ✅ | 0x123 | ✅ | 0x149 | ✅ | 0x127 | ✅ |
 | IDA_0X113 | CUserLocal::OnDeliveryQuest |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x113 | ❌ |  | ⬜ |
-| SPAWN_DOOR | CTownPortalPool::OnTownPortalCreated | door/clientbound/SpawnDoor | 0x113 | ✅ | 0x11A | ❌ | 0x124 | ❌ | 0x14A | ❌ | 0x128 | ❌ |
+| SPAWN_DOOR | CTownPortalPool::OnTownPortalCreated | door/clientbound/SpawnDoor | 0x113 | ✅ | 0x11A | ✅ | 0x124 | ✅ | 0x14A | ✅ | 0x128 | ✅ |
 | IDA_0X114 | CMob::OnMobAttackedByMob | monster/clientbound/MonsterMobAttackedByMob (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x114 | ✅ |
-| REMOVE_DOOR | CTownPortalPool::OnTownPortalRemoved | door/clientbound/RemoveDoor | 0x114 | ✅ | 0x11B | ❌ | 0x125 | ❌ | 0x14B | ❌ | 0x129 | ❌ |
+| REMOVE_DOOR | CTownPortalPool::OnTownPortalRemoved | door/clientbound/RemoveDoor | 0x114 | ✅ | 0x11B | ✅ | 0x125 | ✅ | 0x14B | ✅ | 0x129 | ✅ |
 | REACTOR_HIT | CReactorPool::OnReactorChangeState | reactor/clientbound/ReactorHit | 0x115 | ✅ | 0x11C | ✅ | 0x126 | ✅ | 0x14E | ✅ | 0x12D | ✅ |
 | REACTOR_MOVE | CReactorPool::OnReactorMove |  | 0x116 | ❌ | 0x116 | ❌ | 0x127 | ❌ | 0x14F | ❌ | 0x12E | ❌ |
 | REACTOR_SPAWN | CReactorPool::OnReactorEnterField | reactor/clientbound/ReactorSpawn | 0x117 | ✅ | 0x11E | ✅ | 0x128 | ✅ | 0x150 | ✅ | 0x12F | ✅ |
@@ -902,11 +902,11 @@ Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v83 | 351 | 0 | 0 | 321 | 200 | 0 | 52.2% |
-| v84 | 322 | 0 | 0 | 329 | 221 | 0 | 49.5% |
-| v87 | 363 | 0 | 0 | 346 | 163 | 0 | 51.2% |
-| v95 | 391 | 0 | 1 | 401 | 79 | 0 | 49.3% |
-| JMS185 | 333 | 0 | 0 | 369 | 170 | 0 | 47.4% |
+| v83 | 357 | 0 | 0 | 315 | 200 | 0 | 53.1% |
+| v84 | 331 | 0 | 0 | 320 | 221 | 0 | 50.8% |
+| v87 | 372 | 0 | 0 | 337 | 163 | 0 | 52.5% |
+| v95 | 395 | 0 | 0 | 398 | 79 | 0 | 49.8% |
+| JMS185 | 342 | 0 | 0 | 360 | 170 | 0 | 48.7% |
 
 ## Conflicts
 

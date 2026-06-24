@@ -18,6 +18,7 @@ type Processor interface {
 	GetBySerial(worldId world.Id, sn uint32) (Model, error)
 	Create(m Model) (Model, error)
 	GetByCharacter(characterId uint32) ([]Model, error)
+	GetByCharacterAndType(characterId uint32, wishType string) ([]Model, error)
 	Delete(id string) (bool, error)
 }
 
@@ -54,6 +55,12 @@ func (p *ProcessorImpl) Create(m Model) (Model, error) {
 // the getByCharacter provider exactly.
 func (p *ProcessorImpl) GetByCharacter(characterId uint32) ([]Model, error) {
 	return model.SliceMap(modelFromEntity)(getByCharacter(characterId)(p.db.WithContext(p.ctx)))()()
+}
+
+// GetByCharacterAndType returns a character's wishes of one kind (cart/wanted),
+// so the Cart and Wanted views stay disjoint.
+func (p *ProcessorImpl) GetByCharacterAndType(characterId uint32, wishType string) ([]Model, error) {
+	return model.SliceMap(modelFromEntity)(getByCharacterAndType(characterId, wishType)(p.db.WithContext(p.ctx)))()()
 }
 
 // Delete hard-deletes the wish entry by id, returning true iff exactly one row

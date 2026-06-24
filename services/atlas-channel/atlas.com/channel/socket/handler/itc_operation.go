@@ -225,10 +225,13 @@ func buildCreateListingFromSaleCurrentItem(p fieldsb.ItcOperationSaleCurrentItem
 	}
 }
 
-// itcSectionCart is the marketplace section (client browse "tab") for the My Page
-// Cart view; with sub-tab 0 the client expects the character's cart contents
-// (CITC change-page `tab==4 && type==0` -> cart) rather than a listing page.
-const itcSectionCart uint32 = 4
+// Marketplace sections (client browse "tab"). Section 2 (Wanted) and the section
+// 4 / sub 0 Cart view are wish-backed (the character's own wanted/cart entries),
+// not public listings; the rest are listing browses.
+const (
+	itcSectionWanted uint32 = 2
+	itcSectionCart   uint32 = 4
+)
 
 // applyItcViewFilters maps the client's GET_ITC_LIST/SEARCH browse selectors onto
 // the REST listing filter. The wire carries two values that mirror the marketplace
@@ -416,6 +419,13 @@ func ItcOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer
 				writeWishFailure(l, ctx, wp, s, fieldpkt.MtsOperationSetZzimFailedBody())
 				return
 			}
+			// You cannot cart your own listing — the cart is items you intend to buy
+			// from others (mirrors the reference handler's seller<>self guard).
+			if lm.SellerId() == s.CharacterId() {
+				l.Debugf("Character [%d] tried to cart their own listing (serial [%d]); rejecting.", s.CharacterId(), body.ItcSn())
+				writeWishFailure(l, ctx, wp, s, fieldpkt.MtsOperationSetZzimFailedBody())
+				return
+			}
 			if err := mtsproc.NewProcessor(l, ctx).RegisterWish(s.WorldId(), s.CharacterId(), lm.TemplateId(), mtsmsg.WishOriginSetZzim); err != nil {
 				l.WithError(err).Errorf("Unable to emit SET_ZZIM RegisterWish for character [%d] item [%d].", s.CharacterId(), lm.TemplateId())
 				writeWishFailure(l, ctx, wp, s, fieldpkt.MtsOperationSetZzimFailedBody())
@@ -581,20 +591,17 @@ func resolveSellerAssetId(l logrus.FieldLogger, ctx context.Context, characterId
 // (cosmetic there, since entry is server-initiated and never sets the latch).
 func writeBrowsePage(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, s session.Model, category uint32, subCategory uint32, page uint32, sortType byte, sortColumn byte, requestSent byte, f mtslisting.BrowseFilter) {
 	var items []fieldcb.MtsItem
-	if category == itcSectionCart && subCategory == 0 {
+	switch {
+	case category == itcSectionCart && subCategory == 0:
 		// Cart (My Page -> Cart, section 4 / sub 0): the character's added-to-cart
-		// items. The client's "add to cart" is SET_ZZIM, which the channel persists
-		// as a wish entry, so the cart is the requesting character's wishes.
-		ws, werr := mtswish.NewProcessor(l, ctx).GetByCharacter(s.CharacterId())
-		if werr != nil {
-			l.WithError(werr).Errorf("Unable to load cart (wishes) for character [%d]; writing empty cart.", s.CharacterId())
-			ws = nil
-		}
-		items = make([]fieldcb.MtsItem, 0, len(ws))
-		for _, w := range ws {
-			items = append(items, mtsItemFromWish(w))
-		}
-	} else {
+		// entries (SET_ZZIM -> wish type=cart), kept disjoint from their wanted ads.
+		items = wishItems(l, ctx, s.CharacterId(), mtswish.TypeCart, 0)
+	case category == itcSectionWanted:
+		// Wanted (section 2): the character's own want-ads (REGISTER_WISH_ENTRY ->
+		// wish type=wanted), filtered by the item sub-tab (categorySub -> inventory
+		// type; 0 = all).
+		items = wishItems(l, ctx, s.CharacterId(), mtswish.TypeWanted, subCategory)
+	default:
 		// Public marketplace browse: listings filtered by (section=category,
 		// item-type=subCategory), excluding the requesting character's OWN listings
 		// (For Sale / Auction show others' items; your own appear under My Page /
@@ -624,6 +631,28 @@ func writeBrowsePage(l logrus.FieldLogger, ctx context.Context, wp writer.Produc
 	// the real fix for the panels lagging after a cancel/take-home.
 	announceUserSaleItems(l, ctx, wp, s)
 	announceUserPurchaseItems(l, ctx, wp, s)
+}
+
+// wishItems loads a character's wish entries of one kind (cart/wanted) and maps
+// them to ITCITEMs for the Cart / Wanted views. When categorySub is non-zero the
+// list is narrowed to that inventory category (derived from each wish's itemId),
+// so the Wanted sub-tabs (equip/use/...) filter like the public browse does.
+func wishItems(l logrus.FieldLogger, ctx context.Context, characterId uint32, wishType string, categorySub uint32) []fieldcb.MtsItem {
+	ws, err := mtswish.NewProcessor(l, ctx).GetByCharacterAndType(characterId, wishType)
+	if err != nil {
+		l.WithError(err).Errorf("Unable to load %s wishes for character [%d]; writing empty page.", wishType, characterId)
+		ws = nil
+	}
+	items := make([]fieldcb.MtsItem, 0, len(ws))
+	for _, w := range ws {
+		if categorySub != 0 {
+			if it, ok := inventory.TypeFromItemId(item.Id(w.ItemId())); !ok || uint32(it) != categorySub {
+				continue
+			}
+		}
+		items = append(items, mtsItemFromWish(w))
+	}
+	return items
 }
 
 // writeWishFailure announces a wish/zzim *Failed clientbound result inline. The

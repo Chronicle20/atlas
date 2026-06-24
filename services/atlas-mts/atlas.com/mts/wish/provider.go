@@ -42,13 +42,14 @@ func getBySerial(worldId world.Id, sn uint32) database.EntityProvider[entity] {
 // — the uniqueness key the idempotent create enforces. It backs the create-time
 // existence check. A missing row yields gorm.ErrRecordNotFound (via First), which
 // CreateWish treats as "no existing wish" rather than an error.
-func getByCharacterItem(worldId world.Id, characterId uint32, itemId uint32) database.EntityProvider[Model] {
+func getByCharacterItem(worldId world.Id, characterId uint32, itemId uint32, wishType string) database.EntityProvider[Model] {
 	return func(db *gorm.DB) model.Provider[Model] {
 		var result entity
 		err := db.Where(map[string]interface{}{
 			"world_id":     byte(worldId),
 			"character_id": characterId,
 			"item_id":      itemId,
+			"type":         wishType,
 		}).First(&result).Error
 		if err != nil {
 			return model.ErrorProvider[Model](err)
@@ -76,11 +77,28 @@ func getByCharacter(characterId uint32) database.EntityProvider[[]entity] {
 	}
 }
 
+// getByCharacterAndType returns a character's wish entries of a single type
+// (cart or wanted), so the Cart and Wanted views stay disjoint.
+func getByCharacterAndType(characterId uint32, wishType string) database.EntityProvider[[]entity] {
+	return func(db *gorm.DB) model.Provider[[]entity] {
+		var results []entity
+		err := db.Where(map[string]interface{}{
+			"character_id": characterId,
+			"type":         wishType,
+		}).Find(&results).Error
+		if err != nil {
+			return model.ErrorProvider[[]entity](err)
+		}
+		return model.FixedProvider(results)
+	}
+}
+
 func modelFromEntity(e entity) (Model, error) {
 	return NewBuilder(e.TenantId, e.CharacterId, e.ItemId).
 		SetId(e.Id).
 		SetWorldId(world.Id(e.WorldId)).
 		SetSerial(e.Serial).
+		SetType(e.Type).
 		SetCreatedAt(e.CreatedAt).
 		Build()
 }

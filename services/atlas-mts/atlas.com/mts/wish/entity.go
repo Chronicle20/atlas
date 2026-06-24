@@ -17,6 +17,14 @@ func Migration(db *gorm.DB) error {
 	if err := serial.Migration(db); err != nil {
 		return err
 	}
+	// The (tenant, world, character, item) unique index was widened to include
+	// `type` (cart vs wanted) so a character can hold the same item as both a cart
+	// entry and a wanted entry. AutoMigrate will not alter an existing index in
+	// place, so drop the old one first and let AutoMigrate recreate it with the new
+	// column set.
+	if db.Migrator().HasIndex(&entity{}, "idx_wish_entries_char_item") {
+		_ = db.Migrator().DropIndex(&entity{}, "idx_wish_entries_char_item")
+	}
 	return db.AutoMigrate(&entity{})
 }
 
@@ -45,6 +53,10 @@ type entity struct {
 	Serial      uint32    `gorm:"column:serial;not null;uniqueIndex:idx_wish_entries_world_serial,priority:3"`
 	CharacterId uint32    `gorm:"column:character_id;not null;index:idx_wish_entries_character,priority:2;uniqueIndex:idx_wish_entries_char_item,priority:3"`
 	ItemId      uint32    `gorm:"column:item_id;not null;uniqueIndex:idx_wish_entries_char_item,priority:4"`
+	// Type distinguishes a "cart" entry (added-to-cart, SET_ZZIM) from a "wanted"
+	// entry (a want-ad, REGISTER_WISH_ENTRY); part of the char_item unique index so
+	// the same item can be in both the cart and the wanted list.
+	Type string `gorm:"column:type;not null;default:cart;uniqueIndex:idx_wish_entries_char_item,priority:5"`
 
 	CreatedAt time.Time `gorm:"column:created_at"`
 }

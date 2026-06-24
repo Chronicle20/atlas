@@ -13,6 +13,7 @@ type RestModel struct {
 	Serial      uint32    `json:"serial"`
 	CharacterId uint32    `json:"characterId"`
 	ItemId      uint32    `json:"itemId"`
+	Type        string    `json:"type"`
 	CreatedAt   time.Time `json:"createdAt"`
 }
 
@@ -36,6 +37,7 @@ func Transform(m Model) (RestModel, error) {
 		Serial:      m.Serial(),
 		CharacterId: m.CharacterId(),
 		ItemId:      m.ItemId(),
+		Type:        m.Type(),
 		CreatedAt:   m.CreatedAt(),
 	}, nil
 }

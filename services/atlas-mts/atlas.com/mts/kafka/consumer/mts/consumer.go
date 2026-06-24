@@ -354,9 +354,17 @@ func handleRegisterWish(pf providerFn) func(db *gorm.DB) message.Handler[mts.Com
 
 			err := database.ExecuteTransaction(tdb, func(tx *gorm.DB) error {
 				t := tenant.MustFromContext(ctx)
+				// Origin determines the wish kind: REGISTER_WISH_ENTRY posts a "wanted"
+				// item; SET_ZZIM (and the rest) are "cart" additions. Cart and wanted are
+				// disjoint stores so the Cart and Wanted views never bleed together.
+				wishType := wish.TypeCart
+				if b.Origin == mts.WishOriginRegisterWish {
+					wishType = wish.TypeWanted
+				}
 				wm, berr := wish.NewBuilder(t.Id(), b.CharacterId, b.ItemId).
 					SetId(b.WishId).
 					SetWorldId(world.Id(b.WorldId)).
+					SetType(wishType).
 					Build()
 				if berr != nil {
 					return berr

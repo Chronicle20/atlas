@@ -18,6 +18,9 @@ import (
 type Processor interface {
 	GetByCharacterProvider(characterId uint32) model.Provider[[]Model]
 	GetByCharacter(characterId uint32) ([]Model, error)
+	// GetByCharacterAndType returns the character's wishes of one kind (cart or
+	// wanted), so the Cart and Wanted MTS views fetch disjoint sets.
+	GetByCharacterAndType(characterId uint32, wishType string) ([]Model, error)
 	// GetByCharacterItem returns the character's wish entry for the given item
 	// template. atlas-mts allows at most one wish per (character, item); an empty
 	// result is reported as an error so the caller writes the matching *Failed.
@@ -43,6 +46,10 @@ func (p *ProcessorImpl) GetByCharacterProvider(characterId uint32) model.Provide
 
 func (p *ProcessorImpl) GetByCharacter(characterId uint32) ([]Model, error) {
 	return p.GetByCharacterProvider(characterId)()
+}
+
+func (p *ProcessorImpl) GetByCharacterAndType(characterId uint32, wishType string) ([]Model, error) {
+	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByCharacterAndType(characterId, wishType), Extract, model.Filters[Model]())()
 }
 
 func (p *ProcessorImpl) GetByCharacterItem(characterId uint32, itemId uint32) (Model, error) {

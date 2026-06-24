@@ -18,6 +18,14 @@ import (
 // each entry's Serial into the ITCITEM's itcSn field; the client echoes it back
 // verbatim on CANCEL_WISH (IDA: CITC::OnCancelWish Encode4 of the item's nITCSN),
 // so the channel resolves a CANCEL_WISH serial straight back to the wish entry.
+// Wish entry types: a Cart entry (added-to-cart, SET_ZZIM) vs a Wanted entry
+// (a want-ad, REGISTER_WISH_ENTRY). Stored in the `type` column and part of the
+// char_item unique index, so the same item can be both carted and wanted.
+const (
+	TypeCart   = "cart"
+	TypeWanted = "wanted"
+)
+
 type Model struct {
 	id          uuid.UUID
 	tenantId    uuid.UUID
@@ -25,6 +33,7 @@ type Model struct {
 	serial      uint32
 	characterId uint32
 	itemId      uint32
+	wishType    string
 	createdAt   time.Time
 }
 
@@ -34,4 +43,5 @@ func (m Model) WorldId() world.Id    { return m.worldId }
 func (m Model) Serial() uint32       { return m.serial }
 func (m Model) CharacterId() uint32  { return m.characterId }
 func (m Model) ItemId() uint32       { return m.itemId }
+func (m Model) Type() string         { return m.wishType }
 func (m Model) CreatedAt() time.Time { return m.createdAt }

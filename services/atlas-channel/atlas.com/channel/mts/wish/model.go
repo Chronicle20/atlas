@@ -11,6 +11,14 @@ package wish
 // its Id, the wish UUID, for the REMOVE_WISH command). DELETE_ZZIM operates on
 // the favorites tab, which shows real LISTINGS (listing serials), so it keeps
 // the listing-serial resolution path and does not use this model.
+// Wish entry kinds (mirror atlas-mts wish.Type*): a Cart entry (added-to-cart,
+// SET_ZZIM) vs a Wanted entry (a want-ad, REGISTER_WISH_ENTRY). Used to scope the
+// Cart and Wanted MTS views to disjoint sets.
+const (
+	TypeCart   = "cart"
+	TypeWanted = "wanted"
+)
+
 type Model struct {
 	id          string
 	worldId     byte

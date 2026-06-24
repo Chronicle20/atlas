@@ -64,7 +64,7 @@ func CreateWish(db *gorm.DB, m Model) (Model, error) {
 	// Idempotency: a wish already held for (tenant, world, character, item)
 	// returns unchanged. The unique index backs this at the DB level; the
 	// explicit pre-check keeps the serial draw out of the duplicate path.
-	if existing, err := getByCharacterItem(m.WorldId(), m.CharacterId(), m.ItemId())(db)(); err == nil {
+	if existing, err := getByCharacterItem(m.WorldId(), m.CharacterId(), m.ItemId(), m.Type())(db)(); err == nil {
 		return existing, nil
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 		return Model{}, err
@@ -91,6 +91,7 @@ func CreateWish(db *gorm.DB, m Model) (Model, error) {
 		Serial:      sn,
 		CharacterId: m.CharacterId(),
 		ItemId:      m.ItemId(),
+		Type:        m.Type(),
 		CreatedAt:   createdAt,
 	}
 	if err := db.Create(&e).Error; err != nil {

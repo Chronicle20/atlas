@@ -17,11 +17,12 @@ type Builder struct {
 	serial      uint32
 	characterId uint32
 	itemId      uint32
+	wishType    string
 	createdAt   time.Time
 }
 
 func NewBuilder(tenantId uuid.UUID, characterId uint32, itemId uint32) *Builder {
-	return &Builder{tenantId: tenantId, characterId: characterId, itemId: itemId}
+	return &Builder{tenantId: tenantId, characterId: characterId, itemId: itemId, wishType: TypeCart}
 }
 
 func (b *Builder) SetId(id uuid.UUID) *Builder {
@@ -49,6 +50,13 @@ func (b *Builder) SetItemId(itemId uint32) *Builder {
 	return b
 }
 
+func (b *Builder) SetType(t string) *Builder {
+	if t != "" {
+		b.wishType = t
+	}
+	return b
+}
+
 func (b *Builder) SetCreatedAt(v time.Time) *Builder {
 	b.createdAt = v
 	return b
@@ -65,6 +73,7 @@ func (b *Builder) Build() (Model, error) {
 		serial:      b.serial,
 		characterId: b.characterId,
 		itemId:      b.itemId,
+		wishType:    b.wishType,
 		createdAt:   b.createdAt,
 	}, nil
 }

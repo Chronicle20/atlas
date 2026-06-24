@@ -38,7 +38,16 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 func handleGetCharacterWishlist(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			ms, err := NewProcessor(d.Logger(), d.Context(), d.DB()).GetByCharacter(characterId)
+			p := NewProcessor(d.Logger(), d.Context(), d.DB())
+			// Optional `type` filter (cart/wanted) so the Cart and Wanted views fetch
+			// only their own entries; absent, return the full wishlist.
+			var ms []Model
+			var err error
+			if wishType := r.URL.Query().Get("type"); wishType != "" {
+				ms, err = p.GetByCharacterAndType(characterId, wishType)
+			} else {
+				ms, err = p.GetByCharacter(characterId)
+			}
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Retrieving wishlist for character [%d].", characterId)
 				w.WriteHeader(http.StatusInternalServerError)

@@ -7,6 +7,7 @@ import (
 )
 
 // packet-audit:verify packet=character/clientbound/CharacterExpression version=gms_v83 ida=0x9724f9
+// packet-audit:verify packet=character/clientbound/CharacterExpression version=gms_v84 ida=0x9b2518
 // packet-audit:verify packet=character/clientbound/CharacterExpression version=jms_v185 ida=0x9f636b
 // packet-audit:verify packet=character/clientbound/CharacterExpression version=gms_v87 ida=0x9f7492
 // packet-audit:verify packet=character/clientbound/CharacterExpression version=gms_v95 ida=0x8e0150

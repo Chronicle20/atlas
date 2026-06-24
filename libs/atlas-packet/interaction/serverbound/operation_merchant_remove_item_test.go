@@ -28,6 +28,7 @@ func TestOperationMerchantRemoveItemRoundTrip(t *testing.T) {
 // CPersonalShopDlg::MoveItemToInventory (entrusted sub-op 0x26 vs personal-shop 0x1B)
 // and carries the same body across versions; no MajorVersion() gate.
 // packet-audit:verify packet=interaction/serverbound/InteractionOperationMerchantRemoveItem version=gms_v83 ida=0x6fdcdf
+// packet-audit:verify packet=interaction/serverbound/InteractionOperationMerchantRemoveItem version=gms_v87 ida=0x741271
 func TestOperationMerchantRemoveItemBytes(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	ctx := pt.CreateContext("GMS", 83, 1)

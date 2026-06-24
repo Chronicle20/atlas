@@ -7,7 +7,7 @@ Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 
 - export gms_v83: `da0b2bc53c8fe790d5e1654e580191a9399c5cc4506d8c7617d13225edb46e57`
 - export gms_v84: `0c03bb8bdfb9d0cded1c9a193d4570c6ed0dc3bcca54a4397c4adc4be371f291`
-- export gms_v87: `e2f3921d15c619508b4d7fee89f4fbb75d6bea42c66206b7f66f21ecff6e6c94`
+- export gms_v87: `2e7679cbe87dc69ffbb5b59281177d9b1d2cfb9e1afc31f28e3c75eee828e513`
 - export gms_v95: `cf7682a52552f94e68453f8ed3a9f74098b50a4fdf14a19968227a2f3816d37d`
 - export jms_v185: `6608f6cb212fa9c7e8632f30aa67436f3de4fe1c4f48222da8093e55eea605e9`
 
@@ -845,9 +845,9 @@ Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 | interaction/serverbound/InteractionOperationMemoryGameTieAnswer (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | interaction/serverbound/InteractionOperationMerchantAddToBlackList (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | interaction/serverbound/InteractionOperationMerchantBuy (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
-| interaction/serverbound/InteractionOperationMerchantPutItem (T1) |  |  | ✅ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |
+| interaction/serverbound/InteractionOperationMerchantPutItem (T1) |  |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ❌ |
 | interaction/serverbound/InteractionOperationMerchantRemoveFromBlackList (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
-| interaction/serverbound/InteractionOperationMerchantRemoveItem (T1) |  |  | ✅ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |
+| interaction/serverbound/InteractionOperationMerchantRemoveItem (T1) |  |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ❌ |
 | interaction/serverbound/InteractionOperationPersonalStoreAddToBlackList (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | interaction/serverbound/InteractionOperationPersonalStoreBuy (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | interaction/serverbound/InteractionOperationPersonalStorePutItem (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
@@ -904,7 +904,7 @@ Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 |---------|----|----|----|----|----|----|-----------|
 | v83 | 351 | 0 | 0 | 321 | 200 | 0 | 52.2% |
 | v84 | 314 | 0 | 0 | 337 | 221 | 0 | 48.2% |
-| v87 | 361 | 0 | 0 | 348 | 163 | 0 | 50.9% |
+| v87 | 363 | 0 | 0 | 346 | 163 | 0 | 51.2% |
 | v95 | 391 | 0 | 1 | 401 | 79 | 0 | 49.3% |
 | JMS185 | 330 | 0 | 0 | 373 | 169 | 0 | 46.9% |
 

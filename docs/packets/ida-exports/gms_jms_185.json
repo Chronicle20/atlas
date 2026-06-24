@@ -11215,6 +11215,42 @@
           "comment": "mode byte (22)"
         }
       ]
+    },
+    "CPersonalShopDlg::PutItem#Merchant": {
+      "address": "0x762a9e",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "inventoryType (nTI; op 0x1E entrusted)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "slot (nPos)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "quantity"
+        },
+        {
+          "op": "Decode2",
+          "comment": "set"
+        },
+        {
+          "op": "Decode4",
+          "comment": "price"
+        }
+      ]
+    },
+    "CPersonalShopDlg::MoveItemToInventory#Merchant": {
+      "address": "0x762e26",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode2",
+          "comment": "index (nIdx; op 0x23 entrusted)"
+        }
+      ]
     }
   }
 }

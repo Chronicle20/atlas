@@ -7,6 +7,15 @@ writer: NoteOperation
 fname: CWvsContext::OnMemoResult
 op: NOTE
 direction: clientbound
+# Per-version writer opCode (registry NOTE/MEMO_RESULT → template hex) so
+# `packet-audit operations` (generate) can ADD the NoteOperation writer to a
+# template that lacks it. jms_v185 (0x26) was previously absent — task-112.
+opcodes:
+  gms_v83: "0x29"
+  gms_v84: "0x29"
+  gms_v87: "0x29"
+  gms_v95: "0x28"
+  jms_v185: "0x26"
 operations:
   - { key: SHOW,         modes: { gms_v83: 3, gms_v84: 3, gms_v87: 3, gms_v95: 3, jms_v185: 3 } }
   - { key: SEND_SUCCESS, modes: { gms_v83: 4, gms_v84: 4, gms_v87: 4, gms_v95: 4, jms_v185: 4 } }

@@ -6,6 +6,7 @@ import (
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=character/serverbound/AutoDistributeAp version=gms_v84 ida=0xa6f1da
 // packet-audit:verify packet=character/serverbound/AutoDistributeAp version=gms_v87 ida=0xabb60b
 // packet-audit:verify packet=character/serverbound/AutoDistributeAp version=gms_v95 ida=0x9f63b0
 // packet-audit:verify packet=character/serverbound/AutoDistributeAp version=gms_v83 ida=0xa23b3d

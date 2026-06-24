@@ -269,3 +269,280 @@ All 4 cells `verified`; `matrix --check` EXIT 0, 0 conflicts, no character probl
 `fname-doc --check` OK; `operations --check` OK (the pre-existing `NoteOperation` writer-absent
 note is unrelated). `git diff` of `gms_jms_185.json` shows only the intended keys (OnMove
 modified; chair / heal sender / 3 ViewAll suffixes added).
+
+---
+
+## Backend-Guidelines Review (DOM-*/SUB-*/SEC-* adversarial audit)
+
+- **Reviewer:** backend-guidelines-reviewer (adversarial; default FAIL until file:line proves PASS)
+- **Date:** 2026-06-24
+- **Scope:** the two IDA-justified production Go changes of the campaign —
+  `libs/atlas-packet/character/clientbound/spawn.go` (commit `e4803b0fd`) and
+  `libs/atlas-packet/character/serverbound/heal_over_time.go` (commit `29f1af951`),
+  plus the jms route in `template_jms_185_1.json` (commit `8b7d37de0`) and the
+  touched byte-fixture tests.
+- **Note on checklist applicability:** the DOM-* checklist targets a *service* domain
+  package (`model.go` + `builder.go` + `processor.go` + `resource.go` + administrator
+  + JSON:API REST models). These changes are **wire codecs in a shared library**
+  (`libs/atlas-packet`), not a service domain package. DOM-01..20, DOM-22..24, SUB-*,
+  EXT-*, SCAFFOLD-* therefore do not apply (no model/builder/processor/REST/Dockerfile/
+  Kafka surface is touched). The relevant bar is the package's own established codec
+  idiom (immutable struct + private fields + getters + region/version-gated
+  Encode/Decode symmetry) plus DOM-21 (no atlas-constants duplication) and SEC-*.
+
+### Objective gate — Build & Test
+
+- `go vet ./...` in `libs/atlas-packet`: **EXIT 0** (clean).
+- `go test -race -count=1 ./character/...`: **PASS** (all 5 packages green; verified
+  uncached for `TestCharacterSpawn*` and `TestHealOverTime*`).
+- GMS byte-length regression check (instrumented run): GMS v83=233, v87=237, v95=196,
+  v28=218, v84=233, v86=233 — **exactly the pre-change values** the commit claims
+  (233/237/196); JMS=238 (was 240). The GMS wire is provably unchanged.
+
+### Findings
+
+#### spawn.go (`CharacterSpawn`, commit e4803b0fd) — verdict: PASS
+
+- **Encode/Decode symmetry — PASS.** Both GMS-only bytes are gated with the identical
+  predicate on each side: `bShowAdminEffect` Encode `spawn.go:106` / Decode
+  `spawn.go:210` (`if t.Region() != "JMS"`); trailing `team` byte Encode `spawn.go:154`
+  / Decode `spawn.go:250` (`if t.Region() != "JMS"`). The pre-existing jms final-effect
+  byte stays symmetric (Encode `spawn.go:149-151`, Decode `spawn.go:247-249`). The
+  round-trip test (`spawn_test.go:89-153`) exercises all 7 variants and passes, which
+  only holds if Encode and Decode consume the same byte count per region.
+- **No GMS regression — PASS.** The change converts two previously-unconditional
+  `w.WriteByte(0)` calls into `if t.Region() != "JMS"` guards. For any GMS tenant the
+  guard is true, so both bytes are still written; measured GMS lengths are identical to
+  HEAD~1 (233/237/196). The mutation is strictly additive on the JMS arm.
+- **Region idiom — PASS.** `t.Region() != "JMS"` / `== "JMS"` is the established gating
+  idiom in this exact package — see `character/data.go:131,143,190,202,296,372`,
+  `character/clientbound/list.go:47,66,81,101`, `clientbound/item_upgrade.go:98,119`.
+  `IsRegion`/`MajorAtLeast` and raw `Region()==` coexist throughout; the chosen form
+  is consistent with the surrounding file (the file already uses `t.Region() == "JMS"`
+  at `spawn.go:79,149`).
+- **Comments cite IDA evidence — PASS.** `spawn.go:102-105` and `spawn.go:152-153` name
+  `CUserRemote::Init @0xa52876` and the specific call indices (foothold call 18 → pet
+  call 19; final-effect call 47). No magic numbers without explanation.
+- **Golden fixture is real (not length-only) — PASS.** `TestCharacterSpawnJMSGolden`
+  (`spawn_test.go:52-80`) asserts the exact header+mask bytes (`got[:48]`) and the
+  exact tail bytes (`got[165:]`) against hand-derived hex, plus the 238-byte length.
+  The deterministic-prefix/deterministic-tail split is justified in the doc comment
+  (`spawn_test.go:47-51`: the cts base-stat block carries a time interval). The wire
+  delta lives entirely in the asserted tail, so this is not a false pass.
+
+#### heal_over_time.go (`HealOverTime`, commit 29f1af951) — verdict: PASS
+
+- **Immutable-struct idiom — PASS.** The new field is private (`extra uint32`,
+  `heal_over_time.go:37`) with a getter `Extra() uint32` (`heal_over_time.go:61-63`),
+  matching the existing `unknown`/`Unknown()` pattern (`heal_over_time.go:36,56-58`).
+  No Builder is expected here: no packet codec in `serverbound/` or `clientbound/` uses
+  a Builder — construction is via `New*()` + `Decode` populating private fields
+  (e.g. `serverbound/attack_request.go:44`, `serverbound/skill_prepare.go:31`). The
+  field is wired through Decode (`heal_over_time.go:101-103`) and Encode
+  (`heal_over_time.go:84-86`) consistently.
+- **Encode/Decode symmetry — PASS.** Option byte gated identically on both sides:
+  Encode `heal_over_time.go:81` / Decode `heal_over_time.go:98`
+  (`(t.Region() == "GMS" && t.MajorVersion() <= 95) || t.Region() == "JMS"`). Trailing
+  dword gated identically: Encode `heal_over_time.go:84` / Decode `heal_over_time.go:101`
+  (`t.Region() == "JMS"`). The round-trip test asserts the dword is preserved on JMS and
+  is zero on GMS (`heal_over_time_test.go:38-44`) — a real differential assertion, not a
+  bare round-trip.
+- **No GMS regression — PASS.** Before this change the option byte was gated
+  `t.Region() == "GMS" && t.MajorVersion() <= 95`; the new predicate only *adds* the
+  `|| t.Region() == "JMS"` arm, leaving the GMS sub-expression byte-identical. The
+  trailing dword is `JMS`-only, so it can never appear on a GMS wire. GMS v83/v87/v95
+  round-trips still pass.
+- **Comments cite IDA evidence — PASS.** `heal_over_time.go:15-30` documents the per-
+  version wire body with concrete addresses (`@0xa1e997/.../0x9f2a00`, jms `@0xb054d6`),
+  flags the misleading `SendStatChangeRequestByItemOption` symbol, and names the
+  validation dword `dword_CDA4F8`. The 0x54 opcode is the stated ground truth.
+
+#### template_jms_185_1.json route (commit 8b7d37de0) — verdict: PASS
+
+- **Correct & non-colliding — PASS.** `0x54 → CharacterHealOverTimeHandle` with
+  `LoggedInValidator`; `0x54` appears exactly once in the template (slotted between
+  `0x52` DistributeAp and `0x55` DistributeSp). Handler constant is the one the codec
+  exports (`heal_over_time.go:13`) and is registered in
+  `services/atlas-channel/.../main.go:861` with a concrete handler func
+  (`socket/handler/character_heal_over_time.go:14`). `LoggedInValidator` is registered
+  (`main.go:907`) — so the handler will not be silently dropped (per the known
+  missing-validator bug pattern).
+
+### DOM-21 (no atlas-constants duplication) — PASS
+
+No new domain type, alias, or numeric constant is introduced. `extra uint32` is a raw
+wire field, not a reclassification of item/inventory/world/job ids; nothing in
+`libs/atlas-constants/` is shadowed.
+
+### SEC-* — N/A / PASS
+
+No auth, token, redirect, secret, or `os.Getenv` surface is touched. The codecs read/
+write fixed-width integers and pre-existing string fields; no untrusted-length
+allocation or unbounded loop is added (the pet loop is pre-existing and bool-terminated).
+No finding.
+
+### Verdict on the two codec changes
+
+**Both PASS — APPROVE.** `spawn.go` and `heal_over_time.go` are idiomatically consistent
+with the package, Encode/Decode are symmetric on every gated field, the GMS wire is
+provably unchanged (byte-length-verified against HEAD~1), the new `extra` field follows
+the immutable private-field + getter convention, comments cite IDA addresses for every
+gated byte, the golden/round-trip tests make real differential assertions (not length-
+or round-trip-only false passes), `go vet` and `go test -race` are green, and the jms
+route is correctly wired to a registered handler+validator with no opcode collision.
+
+**No blocking findings. No non-blocking findings.**
+
+#### Minor (optional, non-blocking)
+
+- `HealOverTime.String()` (`heal_over_time.go:69-71`) was not updated to include the new
+  `extra` field — its format string still ends at `unknown`. Cosmetic only (debug
+  logging); does not affect wire output or correctness. Same pre-existing omission
+  applies to `unknown`'s sibling fields, so this is consistent with the existing
+  `String()` scope. Not required by any guideline.
+
+---
+
+## Plan-Adherence Review
+
+**Reviewer:** plan-adherence audit (independent re-verification, read-only)
+**Date:** 2026-06-24
+**Branch:** `task-109-character-packet-fixtures` @ `631d53747`
+**Base:** `5d9c42ff3` (main overlay baseline)
+
+### Verdict: PLAN FAITHFULLY IMPLEMENTED — READY TO MERGE
+
+All 47 in-scope `character/*` cells are genuinely `verified` with real artifacts;
+acceptance gates are green; the two production codec changes are IDA-justified and
+GMS-safe; export edits are surgical; no silent skips, stubs, or regressions found.
+The plan's literal Stage-1/Stage-2 split dissolved per its own §C escalation rule
+(execution-log.md), but the GOAL — every cell promoted via coupled, machine-checked
+artifacts — is met. Two Minor documentation-vs-tooling mismatches (below) are
+cosmetic, not coverage gaps.
+
+### 1. All 47 cells verified — reconciled against baseline
+
+`status.json` incomplete `character/*` cells = **0** (337 verified, 13 pre-existing
+`n-a`, all 13 `n-a` unchanged from baseline). Baseline `5d9c42ff3` had **exactly 47**
+incomplete character cells; **46 promoted directly** to verified, and the **5
+KeyMapChange cells** (4 `CHANGE_KEYMAP` op rows v83/v87/v95/jms = plan #9/#10/#11/#47,
+plus the v84 `op=None` sub-struct = plan #12) resolved via the documented Task-K
+consolidation (commit `0486fe57f`): promoting `SaveFuncKeyMap` to the uniform registry
+primary in v87/v95/jms makes the `CHANGE_KEYMAP` op row consume the single
+`KeyMapChange` report in every version, and the orphan `op=None` sub-struct rows
+**vanish** (consumed, not downgraded). Net: 5 KMC op cells verified, 5 None rows
+removed. The diff's apparent "downgrades" (None v83/v87/v95/jms verified→gone, None
+v84 incomplete→gone) are all this single tooling-native consolidation — **no genuine
+coverage lost; no previously-verified character cell regressed to incomplete.**
+
+Verified set == plan's 47 (cross-checked the promotion list against §C #1–#47): jms
+Class-A (#1–8), GMS+jms KeyMapChange (#9–12,#47), Phase-A CharacterList/Appearance/
+EffectQuest×2 across 5 versions (#13–32), Class-E Expression/Chair/CheckName (#33–39),
+ViewAll/Movement/AutoDistributeAp/HealOverTime (#40–46). No out-of-scope packet
+touched; `new keys in current = []`.
+
+### 2. Promotion mechanism is real, not a false pass
+
+- **Phase-A full-body golden bytes confirmed.** `list_test.go`,
+  `appearance_update_test.go`, `effect_quest_test.go` assert **real per-field bytes**
+  (`bytes.Equal(got, want)`) across all 5 versions, exercising the nested
+  GW_CharacterStat + AvatarLook blocks (CharacterList) / effect mode body (EffectQuest,
+  both op variants self/foreign × rewards/no-rewards). Each field carries a decompile
+  line-address citation. Per-version structural deltas are explicitly encoded and
+  asserted: v87 trailing `nSubJob` short, v95 widened Decode4 HP/MP + unconditional
+  `nBuyCharCount`, jms int16 HP/MP + jms tail + leading empty string + querySSN byte.
+  This is exactly plan §D.7; **not** a length-only/mode-only/round-trip-only assertion.
+- **jms Class-A golden assertions present** (audit.md 8c): all 8
+  (`TestCheckNameJMSGolden`, `TestCharacterSpawnJMSGolden`, `TestBuffGiveJMSMask`, etc.)
+  exist in the test tree.
+- **Grader enforces the promotion.** `grade.go:117` sets `tier1 = Tier1[pkt] ||
+  rep.FlatInvalid`; `:197–203` makes the diff verdict **advisory** for tier-1 and
+  promotes only on `marker.Found && hasEvidence && evidence.Fresh`. A fresh
+  `matrix` regen produced **zero** diff to the committed `status.json`/`STATUS.md` —
+  i.e. re-running the grader against the committed exports/markers/evidence reproduces
+  all 47 as verified, proving each promoted cell has an on-disk fresh-hash evidence
+  record + marker (spot-checked: `jms_v185/character.clientbound.CharacterList.yaml`
+  carries `decompile_sha256` + `verifies: …#TestCharacterListByteOutputJMS`). 443
+  `packet-audit:verify` character markers; 88–89 character evidence records per version.
+
+### 3. The two production codec changes are IDA-justified and GMS-safe
+
+- **`spawn.go` (`e4803b0fd`)** — gates `bShowAdminEffect` + trailing `team` bytes off
+  for `Region()=="JMS"` only, **symmetric Encode/Decode**, citing
+  `CUserRemote::Init @0xa52876`. GMS branches unchanged (the `!="JMS"` guard preserves
+  prior unconditional behavior for GMS). jms body 240→238 bytes; GMS output unchanged.
+- **`heal_over_time.go` (`29f1af951`)** — adds `extra uint32` + `Extra()`; the GMS
+  guard `Region()=="GMS" && MajorVersion()<=95` is **unchanged in effect for GMS** (the
+  added `|| Region()=="JMS"` only widens to jms), and the trailing dword is JMS-only.
+  Cites `CWvsContext::SendStatChangeRequestByItemOption @0xb054d6` (opcode 0x54 ground
+  truth). The new jms route `0x54 → CharacterHealOverTimeHandle` in
+  `template_jms_185_1.json:340–342` carries **`"validator": "LoggedInValidator"`** —
+  not validator-less (avoids the silently-dropped-handler bug).
+- Both deltas are documented in audit.md (8c/8d) and execution-log.md with decompile
+  evidence and the live-tenant config-patch caveat.
+
+### 4. Acceptance gates pass
+
+`(cd libs/atlas-packet && go test -race ./... && go vet ./... && go build ./...)` →
+all **EXIT 0** (character pkgs: clientbound/serverbound/monsterbook all ok).
+`go run ./tools/packet-audit matrix --check` → **EXIT 0, 0 conflicts, 0 character
+lines** (matches baseline; NB: this gate must run in the workspace — `GOWORK=off`
+breaks the tool's module resolution and yields a spurious EXIT 1).
+`fname-doc --check` → EXIT 0 OK. `operations --check` → EXIT 0 OK (the 1
+`NoteOperation` writer-absent note is pre-existing/unrelated). `tools/redis-key-guard.sh`
+→ EXIT 0. Consumers build clean: `services/atlas-channel/atlas.com/channel` EXIT 0,
+`services/atlas-login/atlas.com/login` EXIT 0. No `go.mod` touched → `docker buildx
+bake` correctly not required.
+
+### 5. Export hygiene — surgical, no drift
+
+Function-key diff `5d9c42ff3..HEAD` (parsed JSON, not line-grep):
+- `gms_v83.json`: +3 (`CUser::OnEmotion`, `CUserRemote::OnSetActivePortableChair`,
+  `CLogin::SendCheckDuplicateIDPacket`), 0 changed, 0 removed — exactly the Class-E v83
+  cluster (#33/#35/#38).
+- `gms_v84.json`: +3 (same Class-E fns #34/#36/#39), 6 changed (ViewAll ×3 suffix #41,
+  `OnMove` #42, `SendAbilityUpRequest#{DistributeAp,AutoDistributeAp}` #44/#45).
+- `gms_jms_185.json`: +11 (6 shared-helper foundation splices + chair + ViewAll ×3 +
+  HealOverTime sender), 4 changed (foundation DecodeSub-stub expansion of
+  OnCreateNewCharacterResult/OnSelectWorldResult/OnMove/OnCharacterInfo).
+All intended; **no ~150-key drift**.
+
+### 6. No silent skips / stubs / deferrals
+
+No `// TODO`, stub, or 501 introduced. The `TODO`s in `character/effect_body.go` and
+`serverbound/create.go` are **pre-existing** (those files have zero commits in
+`5d9c42ff3..HEAD`). No cell marked verified without marker+fresh-evidence (grader
+enforces; idempotent regen confirms). The two out-of-scope observations in
+execution-log.md (v95 seed missing the effect `operations` table; jms live-tenant
+config patch for the new heal route) are legitimately deferred — both are
+config/template-wiring follow-ups outside a byte-fixture verification campaign, and
+neither weakens any promoted cell (byte-fixtures pass mode literally).
+
+### Issues
+
+**Critical:** none.
+**Important:** none.
+**Minor (cosmetic, documentation-vs-tooling):**
+1. Plan §C/§D called for "its own evidence record per version (op-keyed)" for the two
+   `EffectQuest` ops (SHOW_FOREIGN_EFFECT / SHOW_ITEM_GAIN_INCHAT). Execution used **one**
+   shared `EffectQuest` report + evidence + fixture covering both op variants. This is
+   correct, not a gap: both CSV ops share fname `CUser::OnEffect` → one `EffectQuest`
+   packet id, and the grader keys evidence/markers by `(packet-id, version)` not by op
+   (`grade.go:115–116`); the single fixture asserts both op bodies. The plan's "op-keyed"
+   wording was over-prescriptive for a shared-fname packet. (By contrast AutoDistributeAp's
+   two ops *do* have distinct evidence — `#DistributeAp` / `#AutoDistributeAp` — because
+   they resolve to distinct `#suffix` fnames; that op-keying is correct.)
+2. Plan §C "Verdict-clean rule" stated ✅ requires `FlatInvalid:false` AND all verdicts 0,
+   with KeyMapChange TRUNCATION as the *one* exception. In practice several Phase-A/jms
+   reports are `FlatInvalid:true` with advisory verdict-2 rows (loop-vs-flattened
+   static-diff artifacts), promoted on the byte-fixture. This is tooling-native
+   (`grade.go:117/197` make the verdict advisory whenever `FlatInvalid`), and audit.md
+   documents it per-cell, but it is a broader application of the "advisory verdict"
+   path than the plan's prose anticipated. No false pass results — every such cell is
+   backed by a real full-body golden fixture (verified in §2 above).
+
+### Action items
+None blocking. Optionally, for documentation accuracy, note in the PR description that
+the EffectQuest two ops share one fixture/evidence record (tooling keys by packet id),
+and that FlatInvalid-advisory tier-1 promotion (byte-fixture is the verifier) was the
+operative mechanism for the Phase-A packets — broader than plan §C's verdict-clean prose.

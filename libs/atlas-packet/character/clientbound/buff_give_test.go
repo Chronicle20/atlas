@@ -19,6 +19,8 @@ import (
 // packet-audit:verify packet=character/clientbound/BuffGiveForeign version=gms_v95 ida=0xb13200
 // packet-audit:verify packet=character/clientbound/BuffGive version=gms_v84 ida=0xa6b6c3
 // packet-audit:verify packet=character/clientbound/BuffGiveForeign version=gms_v84 ida=0x9c3bfb
+// packet-audit:verify packet=character/clientbound/BuffGive version=jms_v185 ida=0xb0701f
+// packet-audit:verify packet=character/clientbound/BuffGiveForeign version=jms_v185 ida=0xa57431
 func TestBuffGiveEmptyRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {
@@ -86,5 +88,64 @@ func TestBuffGiveForeignEmptyRoundTrip(t *testing.T) {
 				t.Errorf("characterId: got %v, want %v", output.CharacterId(), 12345)
 			}
 		})
+	}
+}
+
+// jmsEmptyMask is the jms_v185 SecondaryStat flag word that BuffGive /
+// BuffGiveForeign emit with no active per-stat buffs. The TwoState/base group
+// (EnergyCharge..Undead) occupies jms shifts 110-116, so bits 110-116 are set
+// unconditionally. The mask is written H>>32, H&L, L>>32, L&L (4 ints LE).
+// Bits 110-116 fall in H bits 46-52 → first int = 1<<14..1<<20 = 0x001FC000.
+// jms client read: SecondaryStat::DecodeForLocal @0x7fcc73 / DecodeForRemote —
+// 4× CInPacket::Decode4 for the UINT128 flag word, then per-set-bit blocks.
+// This word is jms-distinct from v83 (0x0000FC01 in the L words) and is the
+// load-bearing version delta these packets carry.
+var jmsEmptyMask = []byte{
+	0x00, 0xc0, 0x1f, 0x00, // int0 = 0x001FC000 (bits 110-116)
+	0x00, 0x00, 0x00, 0x00, // int1
+	0x00, 0x00, 0x00, 0x00, // int2
+	0x00, 0x00, 0x00, 0x00, // int3
+}
+
+// TestBuffGiveJMSMask pins the jms_v185 empty-CTS SecondaryStat flag word and
+// the giveBuff trailer for the local (own-player) BuffGive. The first 16 bytes
+// of the body are the flag word read by SecondaryStat::DecodeForLocal; the
+// trailing 3 bytes are the buff trailer (Short(0)+Byte(0)).
+func TestBuffGiveJMSMask(t *testing.T) {
+	v := pt.Variants[4] // JMS v185
+	ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+	got := NewBuffGive(*model.NewCharacterTemporaryStat()).Encode(nil, ctx)(nil)
+	if !bytes.Equal(got[:16], jmsEmptyMask) {
+		t.Errorf("jms BuffGive flag word: got %x want %x", got[:16], jmsEmptyMask)
+	}
+	// Empty CTS → no per-stat value blocks → mask immediately followed by
+	// nDefenseAtt/nDefenseState (00 00) before the base-stat blocks.
+	if got[16] != 0x00 || got[17] != 0x00 {
+		t.Errorf("jms BuffGive defense bytes: got %x want 0000", got[16:18])
+	}
+	// giveBuff trailer: Short(0) + Byte(0).
+	wantTail := []byte{0x00, 0x00, 0x00}
+	if !bytes.Equal(got[len(got)-3:], wantTail) {
+		t.Errorf("jms BuffGive trailer: got %x want %x", got[len(got)-3:], wantTail)
+	}
+}
+
+// TestBuffGiveForeignJMSMask pins the jms_v185 wire for the remote BuffGiveForeign:
+// Int(characterId) prefix, then the SecondaryStat flag word (DecodeForRemote),
+// then the Short(0)+Byte(0) trailer.
+func TestBuffGiveForeignJMSMask(t *testing.T) {
+	v := pt.Variants[4] // JMS v185
+	ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+	got := NewBuffGiveForeign(12345, *model.NewCharacterTemporaryStat()).Encode(nil, ctx)(nil)
+	wantPrefix := []byte{0x39, 0x30, 0x00, 0x00} // Int(12345) LE
+	if !bytes.Equal(got[:4], wantPrefix) {
+		t.Errorf("jms BuffGiveForeign characterId: got %x want %x", got[:4], wantPrefix)
+	}
+	if !bytes.Equal(got[4:20], jmsEmptyMask) {
+		t.Errorf("jms BuffGiveForeign flag word: got %x want %x", got[4:20], jmsEmptyMask)
+	}
+	wantTail := []byte{0x00, 0x00, 0x00}
+	if !bytes.Equal(got[len(got)-3:], wantTail) {
+		t.Errorf("jms BuffGiveForeign trailer: got %x want %x", got[len(got)-3:], wantTail)
 	}
 }

@@ -1,0 +1,11 @@
+packet: character/clientbound/BuffGive
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnTemporaryStatSet
+    address: "0xb0701f"
+    decompile_sha256: 8308376873d8411dccddff16e61836879af27bc6d286aa34e9150a7770c37f4d
+verifies:
+    - libs/atlas-packet/character/clientbound/buff_give_test.go#TestBuffGiveJMSMask
+    - libs/atlas-packet/character/clientbound/buff_give_test.go#TestBuffGiveEmptyRoundTrip

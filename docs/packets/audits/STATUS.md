@@ -51,7 +51,7 @@ Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 | INVENTORY_OPERATION | CWvsContext::OnInventoryOperation | inventory/clientbound/InventoryAdd (T1) | 0x01D | ✅ | 0x01D | ❌ | 0x01D | ❌ | 0x01C | ✅ | 0x01B | ❌ |
 | INVENTORY_GROW | CWvsContext::OnInventoryGrow |  | 0x01E | ❌ | 0x01E | ❌ | 0x01E | ❌ | 0x01D | ❌ | 0x01C | ❌ |
 | STAT_CHANGED | CWvsContext::OnStatChanged | stat/clientbound/Changed (T1) | 0x01F | ✅ | 0x01F | ✅ | 0x01F | ✅ | 0x01E | ✅ | 0x01D | ✅ |
-| GIVE_BUFF | CWvsContext::OnTemporaryStatSet | character/clientbound/BuffGive (T1) | 0x020 | ✅ | 0x020 | ✅ | 0x020 | ✅ | 0x01F | ✅ | 0x01E | ❌ |
+| GIVE_BUFF | CWvsContext::OnTemporaryStatSet | character/clientbound/BuffGive (T1) | 0x020 | ✅ | 0x020 | ✅ | 0x020 | ✅ | 0x01F | ✅ | 0x01E | ✅ |
 | CANCEL_BUFF | CWvsContext::OnTemporaryStatReset | character/clientbound/BuffCancel (T1) | 0x021 | ✅ | 0x021 | ✅ | 0x021 | ✅ | 0x020 | ✅ | 0x01F | ✅ |
 | FORCED_STAT_SET | CWvsContext::OnForcedStatSet |  | 0x022 | ❌ | 0x022 | ❌ | 0x022 | ❌ | 0x021 | ❌ | 0x020 | ❌ |
 | FORCED_STAT_RESET | CWvsContext::OnForcedStatReset |  | 0x023 | ❌ | 0x023 | ❌ | 0x023 | ❌ | 0x022 | ❌ | 0x021 | ❌ |
@@ -263,7 +263,7 @@ Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 | SHOW_RECOVERY_UPGRADE_COUNT_EFFECT | CUser::ShowRecoverUpgradeCountEffect |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x0C5 | ❌ |  | ⬜ |
 | UPDATE_CHAR_LOOK | CUserRemote::OnAvatarModified | character/clientbound/CharacterAppearanceUpdate (T1) | 0x0C5 | ✅ | 0x0C9 | ✅ | 0x0D2 | ✅ | 0x0DF | ✅ | 0x0CB | ✅ |
 | SHOW_FOREIGN_EFFECT | CUser::OnEffect | character/clientbound/EffectQuest (T1) | 0x0C6 | ✅ | 0x0CA | ✅ | 0x0D3 | ✅ | 0x0E0 | ✅ | 0x0CC | ✅ |
-| GIVE_FOREIGN_BUFF | CUserRemote::OnSetTemporaryStat | character/clientbound/BuffGiveForeign (T1) | 0x0C7 | ✅ | 0x0CB | ✅ | 0x0D4 | ✅ | 0x0E1 | ✅ | 0x0CD | ❌ |
+| GIVE_FOREIGN_BUFF | CUserRemote::OnSetTemporaryStat | character/clientbound/BuffGiveForeign (T1) | 0x0C7 | ✅ | 0x0CB | ✅ | 0x0D4 | ✅ | 0x0E1 | ✅ | 0x0CD | ✅ |
 | CANCEL_FOREIGN_BUFF | CUserRemote::OnResetTemporaryStat | character/clientbound/BuffCancelForeign (T1) | 0x0C8 | ✅ | 0x0CC | ✅ | 0x0D5 | ✅ | 0x0E2 | ✅ | 0x0CE | ✅ |
 | UPDATE_PARTYMEMBER_HP | CUserRemote::OnReceiveHP | party/clientbound/PartyMemberHP (T1) | 0x0C9 | ✅ | 0x0CD | ✅ | 0x0D6 | ✅ | 0x0E3 | ✅ | 0x0CF | ✅ |
 | GUILD_NAME_CHANGED | CUserRemote::OnGuildNameChanged | guild/clientbound/GuildForeignNameChanged (T1) | 0x0CA | ✅ | 0x0CE | ✅ | 0x0D7 | ✅ | 0x0E4 | ✅ | 0x0D0 | ✅ |
@@ -905,7 +905,7 @@ Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 | v84 | 324 | 0 | 0 | 326 | 221 | 0 | 49.8% |
 | v87 | 364 | 0 | 0 | 344 | 163 | 0 | 51.4% |
 | v95 | 395 | 0 | 1 | 396 | 79 | 0 | 49.9% |
-| JMS185 | 336 | 0 | 0 | 366 | 169 | 0 | 47.9% |
+| JMS185 | 338 | 0 | 0 | 364 | 169 | 0 | 48.1% |
 
 ## Conflicts
 

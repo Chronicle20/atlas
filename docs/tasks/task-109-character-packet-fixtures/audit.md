@@ -153,3 +153,67 @@ the real verification and pass against the codec.
 All four cells `verified` in status.json. `matrix --check` EXIT 0, 0 conflicts, no
 character problem lines. `fname-doc --check` OK; `operations --check` OK (1
 pre-existing unrelated jms NoteOperation note). `go test -race`/`vet`/`build` green.
+
+---
+
+## Task 8c — jms Class-A character cells (clientbound AddCharacterEntry, BuffGive,
+## BuffGiveForeign, CharacterInfo, CharacterSpawn; serverbound CheckName,
+## CreateCharacter, DeleteCharacter)
+
+IDB: jms `MapleStory_dump_SCY.exe` @ port 13338 (only jms instance available;
+the committed `gms_jms_185.json` export was harvested from it).
+
+### REAL WIRE DELTA FOUND — CharacterSpawn jms (fixed-first)
+
+`libs/atlas-packet/character/clientbound/spawn.go` emitted **two bytes the jms
+client never reads**, proven against `CUserRemote::Init @0xa52876` (called by
+`CUserPool::OnUserEnterField @0xa43ddd`) and the 8a-harvested jms export
+`CUserRemote::Init` call list:
+
+1. **`bShowAdminEffect` byte** — the codec wrote a byte after the foothold short
+   and before the pet loop. The jms client reads `Decode2` foothold (call 18) then
+   goes straight into the pet while-loop `while(Decode1())` (call 19) with **no
+   admin byte**. (GMS `CUserRemote::Init` is not in any committed GMS export, so
+   the GMS admin byte stays as-is and unverified-from-IDA; the codec keeps it for
+   GMS, gated `Region()!="JMS"`.)
+2. **trailing `team` byte** — the codec wrote berserk + a jms byte + team. The jms
+   client's last two packet reads are call 46 (dragon/effect-1320006 flag) and call
+   47 (final-effect flag) — only **two** trailing bytes. The codec's `team` byte is
+   GMS-only (gated `Region()!="JMS"`).
+
+Fix: gate both bytes off for jms in `CharacterSpawn.Encode` **and** `.Decode`
+(kept symmetric so the round-trip test still holds). jms body 240→238 bytes; GMS
+v83/v87/v95 byte output unchanged (233/237/196). Landed as its own commit
+`fix(character): spawn.go jms wire — drop GMS-only bShowAdminEffect + team bytes`
+before the CharacterSpawn verification commit. `go test -race ./...` green.
+
+### No-delta cells (codec already jms-correct)
+
+- **CheckName** — `CLogin::SendCheckDuplicateIDPacket @0x66e467`: COutPacket(8) +
+  EncodeStr(name). Single ASCII string. Matches; report FlatInvalid false.
+- **DeleteCharacter** — `CLogin::SendDeleteCharPacket @0x66e0f9`: COutPacket(0xD) +
+  Encode4(selected char id). No PIC/DOB for jms. Matches; report FlatInvalid false.
+- **CreateCharacter** — `CLogin::SendNewCharPacket @0x66e2ab` (non-charSale, op 0xB):
+  EncodeStr(name)+Encode4(race/job)+Encode2(subJob)+6×Encode4(avatar templates).
+  jms skips hairColor/skinColor/gender. Matches.
+- **AddCharacterEntry** — `CLogin::OnCreateNewCharacterResult @0x66ffa8`: Decode1(code)
+  + GW_CharacterStat::Decode @0x50ec17 + AvatarLook::Decode @0x51517e, then the
+  list-entry rank trailer. jms GW_CharacterStat is 18 bytes wider than v83. Matches.
+- **BuffGive / BuffGiveForeign** — `SecondaryStat::DecodeForLocal @0x7fcc73` /
+  `DecodeForRemote @0x804dbf`: 16-byte UINT128 flag word (4×Decode4) then per-set-bit
+  blocks + trailer. jms TwoState/base group occupies shifts 110-116 → first int
+  0x001FC000 (jms-distinct from v83 0x0000FC01). EncodeMask emits the jms word. Matches.
+- **CharacterInfo** — `CWvsContext::OnCharacterInfo @0xb0aa6e`: header + SetMultiPetInfo
+  @0x9bb959 (bool-terminated pets) + mount + wishlist + SomethingMonsterBook @0x70522a
+  (5 ints, jms-gated) + MedalAchievementInfo::Decode @0x9bcacf (medalId + short count)
+  + trailing Decode4 count (jms-only, codec emits 0). Matches; trailing int is the jms
+  4-byte delta over v83 (99 vs 95).
+
+### Golden coverage added
+Each cell got a jms golden-byte assertion (not a bare round-trip): TestCheckNameJMSGolden,
+TestDeleteCharacterJMSGolden, TestCreateCharacterJMSGolden, TestAddCharacterEntryJMSGolden,
+TestBuffGiveJMSMask, TestBuffGiveForeignJMSMask, TestCharacterInfoJMSGolden,
+TestCharacterSpawnJMSGolden. Serverbound (CheckName/CreateCharacter/DeleteCharacter)
+already routed in template_jms_185_1.json (CharacterCheckNameHandle / CreateCharacterHandle
+/ DeleteCharacterHandle). All 8 cells `verified`; `matrix --check` EXIT 0, no character
+problem lines.

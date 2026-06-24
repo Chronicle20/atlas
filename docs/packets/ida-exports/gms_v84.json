@@ -9308,13 +9308,20 @@
       ]
     },
     "CLogin::OnCheckPasswordResult#AuthLoginFailed": {
-      "address": "",
-      "direction": "",
-      "unresolved": true,
+      "address": "0x60d368",
+      "direction": "clientbound",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "resultCode (failure code)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "post-auth flag"
+        },
+        {
+          "op": "Decode4",
+          "comment": "reserved (always decoded before branch)"
         }
       ]
     },

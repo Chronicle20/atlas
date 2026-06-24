@@ -217,3 +217,55 @@ TestCharacterSpawnJMSGolden. Serverbound (CheckName/CreateCharacter/DeleteCharac
 already routed in template_jms_185_1.json (CharacterCheckNameHandle / CreateCharacterHandle
 / DeleteCharacterHandle). All 8 cells `verified`; `matrix --check` EXIT 0, no character
 problem lines.
+
+## Task 8d — final 4 jms character cells (Movement, Chair, HealOverTime, ViewAll)
+
+IDB: `MapleStory_dump_SCY.exe` (port 13338), confirmed by name.
+
+### REAL WIRE DELTA — HealOverTime jms (fix-first, commit 29f1af951)
+
+`HealOverTime` (HEAL_OVER_TIME, opcode 0x54) is sent by
+`CWvsContext::SendStatChangeRequestByItemOption @0xb054d6` on jms (the symbol name is
+misleading; ground truth is `COutPacket::COutPacket(_, 0x54)`, and it is the only 0x54
+sender — called from `CWvsContext::TryRecovery @0xae6f5a` auto-recovery). Its wire body is:
+
+    Encode4(updateTime) + Encode4(val=0x1400) + Encode2(hp) + Encode2(mp)
+    + Encode1(option) + Encode4(extra = dword_CDA4F8)   ← 17 bytes
+
+The GMS v83/v87/v95 senders (`CWvsContext::SendStatChangeRequest`) stop after the option
+byte (12 bytes). The Atlas codec previously gated the option byte to `GMS && <=95` only,
+so for jms it neither read the option byte NOR the trailing validation dword — leaving 5
+unconsumed bytes on decode (the live `CharacterHealOverTimeHandleFunc` decodes this packet).
+**Fix:** added an `extra uint32` field + `Extra()` getter; encode/decode the option byte for
+`(GMS<=95) || JMS` and the trailing dword for `JMS` only. Round-trip asserts the dword is
+present on jms and absent on GMS. Also wired opcode `0x54 → CharacterHealOverTimeHandle` into
+`template_jms_185_1.json` (the jms template had a gap at 0x54 between DistributeAp 0x52 and
+DistributeSp 0x55), so the live jms channel routes the heal packet. Report verdicts
+[0,0,0,0,0,0].
+
+### No-delta cells (codec already jms-correct, verification-only)
+
+- **CharacterMovement** — `CUserRemote::OnMove @0xa443ee` is a thunk to
+  `CMovePath::OnMovePacket @0x70c5dc` → `CMovePath::Decode @0x70b3ce` (opaque move-path
+  block); characterId read by the pool dispatcher prefix. Byte-identical structure to
+  v83/v87/v95 — the ❌ was a `calls:null` exporter descent gap (same as the v84 case).
+  Re-spliced the 2-call entry; verdicts [0,0]. Codec unchanged.
+- **CharacterChairShow** — jms SHOW_CHAIR (opcode 0xCA) is read INLINE in
+  `CUserPool::OnUserRemotePacket` case 0xCA @0xa44324: `*(RemoteUser+16516) = Decode4(chairId)`,
+  characterId from the leading `Decode4 @0xa44250`. Same inline shape as v83 (case 0xC4) /
+  v87 (case 0xD1). No separate `OnSetActivePortableChair` receive fn — spliced a synthetic
+  export entry mirroring the verified twins. Verdicts [0,0]. Codec unchanged.
+- **CharacterViewAllCharacters** — the 3 `CLogin::OnViewAllCharResult#CharacterViewAll{Characters,
+  Count,SearchFailed}` `#suffix` keys were ABSENT on jms (only the base resolved). Decompiled
+  `CLogin::OnViewAllCharResult @0x6709e4` (mode 0 NORMAL / mode 1 COUNT / modes 2-5 error) and
+  spliced the 3 suffixes from the live read order. The jms `GW_CharacterStat::Decode @0x50ec17`
+  genuinely differs from v83/v84 (nAP widened to int32, jms extendSP/posMap tail) — but the
+  Atlas `CharacterListEntry` jms branch (byte-verified by the 8c CharacterList fixture) already
+  emits it exactly; **no codec delta**. Reports FlatInvalid:false (Count/SearchFailed/Error
+  all-zero; Characters carries the advisory static-diff-over-loop-expansion verdict-2 rows, same
+  family as the verified jms CharacterList — the byte-level round-trip is the real verification).
+
+All 4 cells `verified`; `matrix --check` EXIT 0, 0 conflicts, no character problem lines;
+`fname-doc --check` OK; `operations --check` OK (the pre-existing `NoteOperation` writer-absent
+note is unrelated). `git diff` of `gms_jms_185.json` shows only the intended keys (OnMove
+modified; chair / heal sender / 3 ViewAll suffixes added).

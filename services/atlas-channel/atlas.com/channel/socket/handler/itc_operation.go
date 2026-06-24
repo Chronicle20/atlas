@@ -225,6 +225,11 @@ func buildCreateListingFromSaleCurrentItem(p fieldsb.ItcOperationSaleCurrentItem
 	}
 }
 
+// itcSectionCart is the marketplace section (client browse "tab") for the My Page
+// Cart view; with sub-tab 0 the client expects the character's cart contents
+// (CITC change-page `tab==4 && type==0` -> cart) rather than a listing page.
+const itcSectionCart uint32 = 4
+
 // applyItcViewFilters maps the client's GET_ITC_LIST/SEARCH browse selectors onto
 // the REST listing filter. The wire carries two values that mirror the marketplace
 // data model (listings are stored with the same two fields at AcceptToMtsListing):
@@ -570,17 +575,33 @@ func resolveSellerAssetId(l logrus.FieldLogger, ctx context.Context, characterId
 // leaves the latch set and freezes the next tab. The entry path also passes 1
 // (cosmetic there, since entry is server-initiated and never sets the latch).
 func writeBrowsePage(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, s session.Model, category uint32, subCategory uint32, page uint32, sortType byte, sortColumn byte, requestSent byte, f mtslisting.BrowseFilter) {
-	// Public marketplace browse: listings filtered by (section=category,
-	// item-type=subCategory). Sections that hold no sale listings (wanted/my-page)
-	// simply return an empty page.
-	ms, err := mtslisting.NewProcessor(l, ctx).Browse(s.WorldId(), f)
-	if err != nil {
-		l.WithError(err).Errorf("Unable to browse MTS listings for character [%d]; writing empty page.", s.CharacterId())
-		ms = nil
-	}
-	items := make([]fieldcb.MtsItem, 0, len(ms))
-	for _, m := range ms {
-		items = append(items, mtsItemFromListing(m))
+	var items []fieldcb.MtsItem
+	if category == itcSectionCart && subCategory == 0 {
+		// Cart (My Page -> Cart, section 4 / sub 0): the character's added-to-cart
+		// items. The client's "add to cart" is SET_ZZIM, which the channel persists
+		// as a wish entry, so the cart is the requesting character's wishes.
+		ws, werr := mtswish.NewProcessor(l, ctx).GetByCharacter(s.CharacterId())
+		if werr != nil {
+			l.WithError(werr).Errorf("Unable to load cart (wishes) for character [%d]; writing empty cart.", s.CharacterId())
+			ws = nil
+		}
+		items = make([]fieldcb.MtsItem, 0, len(ws))
+		for _, w := range ws {
+			items = append(items, mtsItemFromWish(w))
+		}
+	} else {
+		// Public marketplace browse: listings filtered by (section=category,
+		// item-type=subCategory). Sections that hold no sale listings (wanted/my-page)
+		// simply return an empty page.
+		ms, err := mtslisting.NewProcessor(l, ctx).Browse(s.WorldId(), f)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to browse MTS listings for character [%d]; writing empty page.", s.CharacterId())
+			ms = nil
+		}
+		items = make([]fieldcb.MtsItem, 0, len(ms))
+		for _, m := range ms {
+			items = append(items, mtsItemFromListing(m))
+		}
 	}
 
 	body := fieldpkt.MtsOperationGetItcListDoneBody(uint32(len(items)), category, subCategory, page, sortType, sortColumn, items, requestSent)

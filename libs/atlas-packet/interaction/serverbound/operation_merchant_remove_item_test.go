@@ -30,6 +30,7 @@ func TestOperationMerchantRemoveItemRoundTrip(t *testing.T) {
 // packet-audit:verify packet=interaction/serverbound/InteractionOperationMerchantRemoveItem version=gms_v83 ida=0x6fdcdf
 // packet-audit:verify packet=interaction/serverbound/InteractionOperationMerchantRemoveItem version=gms_v87 ida=0x741271
 // packet-audit:verify packet=interaction/serverbound/InteractionOperationMerchantRemoveItem version=jms_v185 ida=0x762e26
+// packet-audit:verify packet=interaction/serverbound/InteractionOperationMerchantRemoveItem version=gms_v84 ida=0x719ffd
 func TestOperationMerchantRemoveItemBytes(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	ctx := pt.CreateContext("GMS", 83, 1)

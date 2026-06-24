@@ -43,6 +43,7 @@ func TestOperationMerchantPutItemRoundTrip(t *testing.T) {
 // packet-audit:verify packet=interaction/serverbound/InteractionOperationMerchantPutItem version=gms_v83 ida=0x6fd96c
 // packet-audit:verify packet=interaction/serverbound/InteractionOperationMerchantPutItem version=gms_v87 ida=0x740ee6
 // packet-audit:verify packet=interaction/serverbound/InteractionOperationMerchantPutItem version=jms_v185 ida=0x762a9e
+// packet-audit:verify packet=interaction/serverbound/InteractionOperationMerchantPutItem version=gms_v84 ida=0x719c8a
 func TestOperationMerchantPutItemBytes(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	ctx := pt.CreateContext("GMS", 83, 1)

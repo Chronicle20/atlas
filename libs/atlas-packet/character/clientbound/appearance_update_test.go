@@ -32,6 +32,7 @@ import (
 // packet-audit:verify packet=character/clientbound/CharacterAppearanceUpdate version=gms_v83 ida=0x98367e
 // packet-audit:verify packet=character/clientbound/CharacterAppearanceUpdate version=gms_v84 ida=0x9c3a1c
 // packet-audit:verify packet=character/clientbound/CharacterAppearanceUpdate version=gms_v87 ida=0xa090f4
+// packet-audit:verify packet=character/clientbound/CharacterAppearanceUpdate version=gms_v95 ida=0x954110
 func TestCharacterAppearanceUpdateByteOutput(t *testing.T) {
 	v83 := pt.Variants[1] // GMS v83
 	ctx := pt.CreateContext(v83.Region, v83.MajorVersion, v83.MinorVersion)
@@ -199,6 +200,71 @@ func TestCharacterAppearanceUpdateByteOutputV87(t *testing.T) {
 	}
 	if !bytes.Equal(got, want) {
 		t.Errorf("appearance-update v87 bytes:\n got %x\nwant %x", got, want)
+	}
+}
+
+// CharacterAppearanceUpdate v95 byte-fixture.
+//
+// Client read order — CUserRemote::OnAvatarModified (v95 @0x954110):
+//
+//	flags = Decode1                  // bitfield: &1 look, &2 speed, &4 carry  /*0x954122*/
+//	if flags & 1:  AvatarLook::Decode  // full avatar/look block (@0x4f2c00)   /*0x954131*/
+//	if flags & 2:  Decode1            // riding/vehicle speed (not set here)     /*0x954185*/
+//	if flags & 4:  Decode1            // carry-item effect (not set here)        /*0x9541a5*/
+//	crushMarker    = Decode1         // 0 => no buffer; else 2xDecodeBuffer(8)+Decode4 /*0x9541b7*/
+//	friendMarker   = Decode1         // 0 => no buffer; else 2xDecodeBuffer(8)+Decode4 /*0x954202*/
+//	marriageMarker = Decode1         // != 0 => 3x Decode4; else zeros          /*0x954251*/
+//	completedSet   = Decode4         // read UNCONDITIONALLY in v95 (m_nCompletedSetItemID) /*0x9542ec*/
+//
+// The read order is byte-identical to v83/v84/v87: flags, AvatarLook, three ring
+// markers, then the trailing completed-set int (consumed unconditionally at v95 as
+// at v87, @0x9542ec). Atlas writes flags=1 (look-only) and the three ring markers
+// as 0, so the wire bytes are unchanged from the v87 fixture.
+//
+// AvatarLook::Decode (v95 @0x4f2c00):
+//	gender=Decode1, skin=Decode1, face=Decode4, !mega=Decode1, hair=Decode4,
+//	equip loop (key Decode1; 0xFF terminates; else value Decode4),
+//	masked loop (same), cashWeapon=Decode4, pets=DecodeBuffer(12)=3xDecode4.
+func TestCharacterAppearanceUpdateByteOutputV95(t *testing.T) {
+	v95 := pt.Variants[3] // GMS v95
+	ctx := pt.CreateContext(v95.Region, v95.MajorVersion, v95.MinorVersion)
+
+	avatar := model.NewAvatar(
+		1,     // gender
+		2,     // skinColor
+		0x14,  // face
+		false, // mega -> WriteBool(!mega)=WriteBool(true)=0x01
+		0x1E,  // hair
+		nil,   // equipment (-> just 0xFF terminator)
+		nil,   // maskedEquipment (-> just 0xFF terminator)
+		nil,   // pets (-> 3x WriteInt(0))
+	)
+	input := NewCharacterAppearanceUpdate(0x12345678, avatar)
+	got := input.Encode(nil, ctx)(nil)
+
+	want := []byte{
+		0x78, 0x56, 0x34, 0x12, // characterId (WriteInt)                 /*0x954110 dispatch*/
+		0x01,                   // flags = 1 (look-only)                  /*0x954122*/
+		// --- AvatarLook block (flags & 1) ---                            /*0x954131*/
+		0x01,                   // gender (Decode1)                       /*0x4f2c13*/
+		0x02,                   // skinColor (Decode1)                    /*0x4f2c20*/
+		0x14, 0x00, 0x00, 0x00, // face (Decode4)                         /*0x4f2c33*/
+		0x01,                   // !mega -> WriteBool(true) (Decode1)     /*0x4f2c53*/
+		0x1e, 0x00, 0x00, 0x00, // hair (Decode4)                         /*0x4f2c61*/
+		0xff,                   // equipment terminator                   /*0x4f2c6d*/
+		0xff,                   // masked-equipment terminator            /*0x4f2cb3*/
+		0x00, 0x00, 0x00, 0x00, // cash weapon (Decode4)                  /*0x4f2cf6*/
+		0x00, 0x00, 0x00, 0x00, // pet 0 (DecodeBuffer 12 = 3x Decode4)   /*0x4f2d04*/
+		0x00, 0x00, 0x00, 0x00, // pet 1
+		0x00, 0x00, 0x00, 0x00, // pet 2
+		// --- ring markers ---
+		0x00,                   // crush ring marker (Decode1)            /*0x9541b7*/
+		0x00,                   // friendship ring marker (Decode1)       /*0x954202*/
+		0x00,                   // marriage ring marker (Decode1)         /*0x954251*/
+		0x00, 0x00, 0x00, 0x00, // completed set item id (Decode4, read unconditionally) /*0x9542ec*/
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("appearance-update v95 bytes:\n got %x\nwant %x", got, want)
 	}
 }
 

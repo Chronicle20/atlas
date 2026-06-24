@@ -7,7 +7,7 @@ Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 
 - export gms_v83: `8a64a5904b4643db7db933bfb4facdc7b8aa8a1edfadb0c2aeed5ec5299fbcec`
 - export gms_v84: `e87c1619adef220502b82b76cf421c3b8add1e765a18285ccca1a00e5eff9657`
-- export gms_v87: `60a4c60e1eabea5d81ebacfea8a8ce1637a06679d9bdc97fe49eb45d052ed4a2`
+- export gms_v87: `09a5092344ac82e0f39d4f0b407bdca18e2c24974ae1d7641415d3e3291c16cc`
 - export gms_v95: `cf7682a52552f94e68453f8ed3a9f74098b50a4fdf14a19968227a2f3816d37d`
 - export jms_v185: `7e7115c6f86a1bee097df0d178fd2ea60981010836500eebdb46c733bb9ddd4d`
 
@@ -490,7 +490,7 @@ Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 | SERVERLIST_REQUEST | CLicenseDlg::OnButtonClicked; CLogin::OnCheckPasswordResult; CLogin::OnCheckPinCodeResult | login/clientbound/PinOperation | 0x00B | ✅ | 0x00B | ✅ | 0x00B | ✅ | 0x00B | ✅ |  | ⬜ |
 | PLAYER_DC | CLogin::GotoWorldSelect; CLogin::SendViewAllCharPacket |  | 0x00C | ❌ | 0x00C | ❌ | 0x00C | ❌ | 0x00C | ❌ |  | ⬜ |
 | VIEW_ALL_CHAR | CLogin::SendViewAllCharPacket | login/serverbound/AllCharacterListRequest (T1) | 0x00D | ✅ | 0x00D | ✅ | 0x00D | ✅ | 0x00D | ✅ | 0x00A | ✅ |
-| PICK_ALL_CHAR | CLogin::SendSelectCharPacketByVAC | login/serverbound/AllCharacterListSelect | 0x00E | ✅ | 0x00E | ✅ | 0x00E | ❌ | 0x00E | ✅ |  | ⬜ |
+| PICK_ALL_CHAR | CLogin::SendSelectCharPacketByVAC | login/serverbound/AllCharacterListSelect | 0x00E | ✅ | 0x00E | ✅ | 0x00E | ✅ | 0x00E | ✅ |  | ⬜ |
 | VAC | CLogin::MakeVACDlg; CLogin::ResetVAC | login/serverbound/AllCharacterListPong | 0x00F | ✅ | 0x00F | ✅ | 0x00F | ✅ | 0x00F | ✅ |  | ⬜ |
 | NAME_TRANSFER | CCashShop::SendCheckNameChangePossiblePacket |  | 0x010 | ❌ | 0x010 | ❌ | 0x010 | ❌ | 0x010 | ❌ | 0x009 | ❌ |
 | UNNAMED_R18 |  |  | 0x011 | ❌ | 0x011 | ❌ | 0x011 | ❌ | 0x011 | ❌ |  | ⬜ |
@@ -510,8 +510,8 @@ Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 | RELOG |  |  | 0x01C | ❌ | 0x01C | ❌ | 0x01C | ❌ |  | ⬜ |  | ⬜ |
 | REGISTER_PIC | CLogin::SendSelectCharPacket | login/serverbound/CharacterSelect | 0x01D | ✅ | 0x01D | ✅ | 0x01D | ✅ | 0x01C | ✅ | 0x013 | ❌ |
 | CHAR_SELECT_WITH_PIC | CLogin::SendSelectCharPacket | login/serverbound/CharacterSelect | 0x01E | ✅ | 0x01E | ✅ | 0x01E | ✅ | 0x01D | ✅ | 0x014 | ❌ |
-| VIEW_ALL_PIC_REGISTER | CLogin::SendSelectCharPacketByVAC | login/serverbound/AllCharacterListSelect | 0x01F | ✅ | 0x01F | ✅ | 0x01F | ❌ | 0x01E | ✅ |  | ⬜ |
-| VIEW_ALL_WITH_PIC | CLogin::SendSelectCharPacketByVAC | login/serverbound/AllCharacterListSelect | 0x020 | ✅ | 0x020 | ✅ | 0x020 | ❌ | 0x01F | ✅ |  | ⬜ |
+| VIEW_ALL_PIC_REGISTER | CLogin::SendSelectCharPacketByVAC | login/serverbound/AllCharacterListSelect | 0x01F | ✅ | 0x01F | ✅ | 0x01F | ✅ | 0x01E | ✅ |  | ⬜ |
+| VIEW_ALL_WITH_PIC | CLogin::SendSelectCharPacketByVAC | login/serverbound/AllCharacterListSelect | 0x020 | ✅ | 0x020 | ✅ | 0x020 | ✅ | 0x01F | ✅ |  | ⬜ |
 | UNNAMED_R38 |  |  | 0x021 | ❌ | 0x021 | ❌ | 0x021 | ❌ | 0x020 | ❌ | 0x016 | ❌ |
 | UNNAMED_R39 |  |  | 0x022 | ❌ | 0x022 | ❌ | 0x022 | ❌ | 0x021 | ❌ | 0x017 | ❌ |
 | CLIENT_START | CLogin::Init |  | 0x023 | ❌ | 0x023 | ❌ | 0x023 | ❌ | 0x022 | ❌ | 0x018 | ❌ |
@@ -904,7 +904,7 @@ Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 |---------|----|----|----|----|----|----|-----------|
 | v83 | 351 | 0 | 0 | 321 | 200 | 0 | 52.2% |
 | v84 | 322 | 0 | 0 | 329 | 221 | 0 | 49.5% |
-| v87 | 360 | 0 | 0 | 349 | 163 | 0 | 50.8% |
+| v87 | 363 | 0 | 0 | 346 | 163 | 0 | 51.2% |
 | v95 | 391 | 0 | 1 | 401 | 79 | 0 | 49.3% |
 | JMS185 | 329 | 0 | 0 | 374 | 169 | 0 | 46.8% |
 

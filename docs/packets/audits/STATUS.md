@@ -497,10 +497,10 @@ Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 | WORLD_TRANSFER | CCashShop::SendCheckTransferWorldPossiblePacket |  | 0x012 | ❌ | 0x012 | ❌ | 0x012 | ❌ | 0x012 | ❌ |  | ⬜ |
 | CHAR_SELECT | CLogin::SendSelectCharPacket | login/serverbound/CharacterSelect | 0x013 | ✅ | 0x013 | ❌ | 0x013 | ✅ | 0x013 | ✅ | 0x006 | ❌ |
 | PLAYER_LOGGEDIN | CClientSocket::OnConnect | socket/serverbound/ChannelConnect | 0x014 | ✅ | 0x014 | ❌ | 0x014 | ✅ | 0x014 | ✅ | 0x007 | ✅ |
-| CHECK_CHAR_NAME | CCashShop::SendCheckDuplicateIDPacket; CLogin::SendCheckDuplicateIDPacket | character/serverbound/CheckName (T1) | 0x015 | ✅ | 0x015 | ✅ | 0x015 | ✅ | 0x015 | ✅ | 0x008 | ❌ |
-| CREATE_CHAR | CLogin::SendNewCharPacket | character/serverbound/CreateCharacter (T1) | 0x016 | ✅ | 0x016 | ✅ | 0x016 | ✅ | 0x016 | ✅ | 0x00B | ❌ |
+| CHECK_CHAR_NAME | CCashShop::SendCheckDuplicateIDPacket; CLogin::SendCheckDuplicateIDPacket | character/serverbound/CheckName (T1) | 0x015 | ✅ | 0x015 | ✅ | 0x015 | ✅ | 0x015 | ✅ | 0x008 | ✅ |
+| CREATE_CHAR | CLogin::SendNewCharPacket | character/serverbound/CreateCharacter (T1) | 0x016 | ✅ | 0x016 | ✅ | 0x016 | ✅ | 0x016 | ✅ | 0x00B | ✅ |
 | CREATE_CHAR_IN_CS | CLogin::SendNewCharPacket | character/serverbound/CreateCharacter (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x017 | ✅ |  | ⬜ |
-| DELETE_CHAR | CLogin::SendDeleteCharPacket | character/serverbound/DeleteCharacter (T1) | 0x017 | ✅ | 0x017 | ✅ | 0x017 | ✅ | 0x018 | ✅ | 0x00D | ❌ |
+| DELETE_CHAR | CLogin::SendDeleteCharPacket | character/serverbound/DeleteCharacter (T1) | 0x017 | ✅ | 0x017 | ✅ | 0x017 | ✅ | 0x018 | ✅ | 0x00D | ✅ |
 | PONG | CClientSocket::OnAliveReq | socket/clientbound/Ping | 0x018 | ✅ | 0x018 | ❌ | 0x018 | ✅ | 0x019 | ✅ | 0x00E | ✅ |
 | CLIENT_START_ERROR | CClientSocket::OnConnect | socket/serverbound/ChannelConnect | 0x019 | ✅ | 0x019 | ❌ | 0x019 | ✅ | 0x01A | ✅ | 0x00F | ✅ |
 | SECURE_PASSWORD |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x019 | ❌ |
@@ -905,7 +905,7 @@ Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 | v84 | 324 | 0 | 0 | 326 | 221 | 0 | 49.8% |
 | v87 | 364 | 0 | 0 | 344 | 163 | 0 | 51.4% |
 | v95 | 395 | 0 | 1 | 396 | 79 | 0 | 49.9% |
-| JMS185 | 333 | 0 | 0 | 369 | 169 | 0 | 47.4% |
+| JMS185 | 336 | 0 | 0 | 366 | 169 | 0 | 47.9% |
 
 ## Conflicts
 

@@ -1504,8 +1504,7 @@
           "opcode": 21
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 8
         }
       }
@@ -1572,8 +1571,7 @@
           "opcode": 22
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 11
         }
       }
@@ -1673,8 +1671,7 @@
           "opcode": 24
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 13
         }
       }

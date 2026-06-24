@@ -1,0 +1,11 @@
+packet: character/serverbound/DeleteCharacter
+direction: serverbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CLogin::SendDeleteCharPacket
+    address: "0x66e0f9"
+    decompile_sha256: 787c27ecba146602da917a91c75318f4523933b525fd02c520efa0c68aaef4eb
+verifies:
+    - libs/atlas-packet/character/serverbound/delete_test.go#TestDeleteCharacterJMSGolden
+    - libs/atlas-packet/character/serverbound/delete_test.go#TestDeleteCharacterRoundTrip

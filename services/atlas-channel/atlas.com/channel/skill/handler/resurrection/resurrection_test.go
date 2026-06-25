@@ -31,11 +31,13 @@ func bishopInfo() packetmodel.SkillUsageInfo {
 
 // installHandlerSeams swaps every Apply seam with deterministic stubs and
 // returns a pointer to the recorded event log and whether broadcastEffects fired.
+// Pass nil for setHPErr or warpErr to have those stubs always succeed.
 func installHandlerSeams(
 	t *testing.T,
 	recipients []channelhandler.PartyRecipient,
 	casterErr error,
 	setHPErr map[uint32]error,
+	warpErr map[uint32]error,
 ) (*[]string, *bool) {
 	t.Helper()
 	prevCaster, prevParty, prevMap := loadCaster, selectDeadParty, selectDeadMap
@@ -62,6 +64,9 @@ func installHandlerSeams(
 	}
 	warpToPosition = func(_ logrus.FieldLogger, _ context.Context, _ field.Model, id uint32, x, y int16) error {
 		events = append(events, fmt.Sprintf("warp:%d:%d:%d", id, x, y))
+		if warpErr != nil {
+			return warpErr[id]
+		}
 		return nil
 	}
 	broadcastEffects = func(_ logrus.FieldLogger, _ context.Context, _ writer.Producer, _ field.Model, _ uint32, _ byte, _ uint32, _ byte) {
@@ -91,7 +96,7 @@ func TestResurrection_RegistersAllThreeIds(t *testing.T) {
 func TestResurrection_SetHPBeforeWarpPerRecipient(t *testing.T) {
 	events, broadcast := installHandlerSeams(t,
 		[]channelhandler.PartyRecipient{mkRecipient(42, 100, 50), mkRecipient(43, -10, 20)},
-		nil, nil)
+		nil, nil, nil)
 
 	err := Apply(testLogger())(context.Background())(nil, testField(), testCasterId, bishopInfo(), effect.Model{})
 	if err != nil {
@@ -107,7 +112,7 @@ func TestResurrection_SetHPBeforeWarpPerRecipient(t *testing.T) {
 }
 
 func TestResurrection_EmptyRecipientsBroadcastsNoSetHP(t *testing.T) {
-	events, broadcast := installHandlerSeams(t, nil, nil, nil)
+	events, broadcast := installHandlerSeams(t, nil, nil, nil, nil)
 	err := Apply(testLogger())(context.Background())(nil, testField(), testCasterId, bishopInfo(), effect.Model{})
 	if err != nil {
 		t.Fatalf("Apply err: %v", err)
@@ -121,22 +126,26 @@ func TestResurrection_EmptyRecipientsBroadcastsNoSetHP(t *testing.T) {
 }
 
 func TestResurrection_PerRecipientFailureIsolation(t *testing.T) {
-	events, _ := installHandlerSeams(t,
+	events, broadcast := installHandlerSeams(t,
 		[]channelhandler.PartyRecipient{mkRecipient(42, 0, 0), mkRecipient(43, 0, 0)},
 		nil,
-		map[uint32]error{42: errors.New("setHP boom")})
+		map[uint32]error{42: errors.New("setHP boom")},
+		nil)
 
 	_ = Apply(testLogger())(context.Background())(nil, testField(), testCasterId, bishopInfo(), effect.Model{})
 	want := []string{"setHP:42:65535", "setHP:43:65535", "warp:43:0:0"}
 	if fmt.Sprint(*events) != fmt.Sprint(want) {
 		t.Fatalf("events = %v, want %v", *events, want)
 	}
+	if !*broadcast {
+		t.Fatal("broadcastEffects must fire even when some recipients fail SetHP")
+	}
 }
 
 func TestResurrection_CasterLoadErrorNoOp(t *testing.T) {
 	events, broadcast := installHandlerSeams(t,
 		[]channelhandler.PartyRecipient{mkRecipient(42, 0, 0)},
-		errors.New("caster load failed"), nil)
+		errors.New("caster load failed"), nil, nil)
 
 	err := Apply(testLogger())(context.Background())(nil, testField(), testCasterId, bishopInfo(), effect.Model{})
 	if err != nil {
@@ -147,5 +156,31 @@ func TestResurrection_CasterLoadErrorNoOp(t *testing.T) {
 	}
 	if *broadcast {
 		t.Fatal("broadcastEffects must not fire on caster load failure")
+	}
+}
+
+// TestResurrection_WarpFailureIsolation verifies that a warpToPosition error for
+// one recipient does not abort processing of subsequent recipients, and that
+// broadcastEffects still fires. The warp stub records the attempt before
+// returning the error, so the event log includes the failed warp call.
+func TestResurrection_WarpFailureIsolation(t *testing.T) {
+	events, broadcast := installHandlerSeams(t,
+		[]channelhandler.PartyRecipient{mkRecipient(42, 10, 20), mkRecipient(43, 30, 40)},
+		nil,
+		nil,
+		map[uint32]error{42: errors.New("warp boom")})
+
+	err := Apply(testLogger())(context.Background())(nil, testField(), testCasterId, bishopInfo(), effect.Model{})
+	if err != nil {
+		t.Fatalf("Apply err: %v", err)
+	}
+	// Both setHP calls and both warp calls are attempted; 42's warp returns an
+	// error and is skipped, but 43 proceeds to completion.
+	want := []string{"setHP:42:65535", "warp:42:10:20", "setHP:43:65535", "warp:43:30:40"}
+	if fmt.Sprint(*events) != fmt.Sprint(want) {
+		t.Fatalf("events = %v, want %v", *events, want)
+	}
+	if !*broadcast {
+		t.Fatal("broadcastEffects must fire even when some recipients fail warp")
 	}
 }

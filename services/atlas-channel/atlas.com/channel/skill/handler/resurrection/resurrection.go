@@ -25,7 +25,8 @@ func init() {
 	channelhandler.Register(skill2.SuperGmResurrectionId, Apply)
 }
 
-// loadCaster returns the caster's position and level. Seam for tests.
+// loadCaster fetches the caster's position (range-check origin for selectByVariant) and level
+// (needed for the effect broadcast) in a single call. Seam for tests.
 var loadCaster = func(l logrus.FieldLogger, ctx context.Context, characterId uint32) (int16, int16, byte, error) {
 	c, err := character.NewProcessor(l, ctx).GetById()(characterId)
 	if err != nil {
@@ -40,8 +41,11 @@ var setHP = func(l logrus.FieldLogger, ctx context.Context, f field.Model, chara
 	return character.NewProcessor(l, ctx).SetHP(f, characterId, amount)
 }
 
-// warpToPosition warps a character to (x,y) on the current map via the
-// WarpToPosition primitive, which fires the client's OnRevive for a dead target.
+// warpToPosition warps a character to (x,y) on the current map via the task-093
+// chase-warp primitive (a WarpToPosition command to atlas-portals). Per the
+// task-111 design, an in-map warp to a dead character's own death coordinates is
+// expected to make the v83 client play its revive animation; this is the OQ-1
+// live-verification gate, not a property verified in this service.
 var warpToPosition = func(l logrus.FieldLogger, ctx context.Context, f field.Model, characterId uint32, x, y int16) error {
 	return portal.NewProcessor(l, ctx).WarpToPosition(f, characterId, f.MapId(), x, y)
 }
@@ -61,10 +65,10 @@ var broadcastEffects = func(l logrus.FieldLogger, ctx context.Context, wp writer
 
 // Apply is the Resurrection handler installed in the per-skill registry for the
 // Bishop and GM/SuperGM skill IDs. For each dead recipient it restores full HP
-// then warps the recipient to its own death coordinates (the chase-warp fires
-// the client's OnRevive). Per-recipient failures are logged and skipped;
-// caster-load failure is a clean no-op. An empty recipient set still broadcasts
-// the effect.
+// then warps the recipient to its own death coordinates (expected, per
+// design/OQ-1, to trigger the client revive). Per-recipient failures are logged
+// and skipped; caster-load failure is a clean no-op. An empty recipient set
+// still broadcasts the effect.
 func Apply(l logrus.FieldLogger) func(ctx context.Context) func(
 	wp writer.Producer, f field.Model, characterId uint32,
 	info packetmodel.SkillUsageInfo, e effect.Model,

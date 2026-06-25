@@ -57,6 +57,12 @@ type entity struct {
 	// entry (a want-ad, REGISTER_WISH_ENTRY); part of the char_item unique index so
 	// the same item can be in both the cart and the wanted list.
 	Type string `gorm:"column:type;not null;default:cart;uniqueIndex:idx_wish_entries_char_item,priority:5"`
+	// Price is the wish entry's price: for a "wanted" entry it is the want-ad price
+	// the registrant offered (REGISTER_WISH_ENTRY); for a "cart" entry it is the
+	// favorited listing's list value at the time it was carted (SET_ZZIM). It backs
+	// the price the Cart / Wanted views render. A plain new defaulted column —
+	// AutoMigrate adds it with no index/key changes.
+	Price uint32 `gorm:"column:price;not null;default:0"`
 
 	CreatedAt time.Time `gorm:"column:created_at"`
 }

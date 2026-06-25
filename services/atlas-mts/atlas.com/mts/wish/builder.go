@@ -18,6 +18,7 @@ type Builder struct {
 	characterId uint32
 	itemId      uint32
 	wishType    string
+	price       uint32
 	createdAt   time.Time
 }
 
@@ -57,6 +58,11 @@ func (b *Builder) SetType(t string) *Builder {
 	return b
 }
 
+func (b *Builder) SetPrice(v uint32) *Builder {
+	b.price = v
+	return b
+}
+
 func (b *Builder) SetCreatedAt(v time.Time) *Builder {
 	b.createdAt = v
 	return b
@@ -74,6 +80,7 @@ func (b *Builder) Build() (Model, error) {
 		characterId: b.characterId,
 		itemId:      b.itemId,
 		wishType:    b.wishType,
+		price:       b.price,
 		createdAt:   b.createdAt,
 	}, nil
 }

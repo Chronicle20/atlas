@@ -99,6 +99,7 @@ func modelFromEntity(e entity) (Model, error) {
 		SetWorldId(world.Id(e.WorldId)).
 		SetSerial(e.Serial).
 		SetType(e.Type).
+		SetPrice(e.Price).
 		SetCreatedAt(e.CreatedAt).
 		Build()
 }

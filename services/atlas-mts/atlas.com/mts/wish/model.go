@@ -34,6 +34,7 @@ type Model struct {
 	characterId uint32
 	itemId      uint32
 	wishType    string
+	price       uint32
 	createdAt   time.Time
 }
 
@@ -44,4 +45,5 @@ func (m Model) Serial() uint32       { return m.serial }
 func (m Model) CharacterId() uint32  { return m.characterId }
 func (m Model) ItemId() uint32       { return m.itemId }
 func (m Model) Type() string         { return m.wishType }
+func (m Model) Price() uint32        { return m.price }
 func (m Model) CreatedAt() time.Time { return m.createdAt }

@@ -14,6 +14,7 @@ type RestModel struct {
 	CharacterId uint32    `json:"characterId"`
 	ItemId      uint32    `json:"itemId"`
 	Type        string    `json:"type"`
+	Price       uint32    `json:"price"`
 	CreatedAt   time.Time `json:"createdAt"`
 }
 
@@ -38,6 +39,7 @@ func Transform(m Model) (RestModel, error) {
 		CharacterId: m.CharacterId(),
 		ItemId:      m.ItemId(),
 		Type:        m.Type(),
+		Price:       m.Price(),
 		CreatedAt:   m.CreatedAt(),
 	}, nil
 }

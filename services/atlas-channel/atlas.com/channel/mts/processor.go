@@ -21,7 +21,7 @@ type Processor interface {
 	PlaceBid(transactionId uuid.UUID, worldId world.Id, serial uint32, bidderId uint32, bidderAccountId uint32, amount uint32) error
 	CancelListing(transactionId uuid.UUID, worldId world.Id, serial uint32, sellerId uint32) error
 	TakeHome(transactionId uuid.UUID, worldId world.Id, serial uint32, characterId uint32, inventoryType byte, slot int16) error
-	RegisterWish(worldId world.Id, characterId uint32, itemId uint32, origin string) error
+	RegisterWish(worldId world.Id, characterId uint32, itemId uint32, price uint32, origin string) error
 	RemoveWish(worldId world.Id, wishId uuid.UUID, characterId uint32, origin string) error
 }
 
@@ -59,9 +59,9 @@ func (p *ProcessorImpl) TakeHome(transactionId uuid.UUID, worldId world.Id, seri
 	return producer.ProviderImpl(p.l)(p.ctx)(mtsmsg.EnvCommandTopic)(TakeHomeCommandProvider(transactionId, worldId, serial, characterId, inventoryType, slot))
 }
 
-func (p *ProcessorImpl) RegisterWish(worldId world.Id, characterId uint32, itemId uint32, origin string) error {
-	p.l.Debugf("Character [%d] registering MTS wish for item [%d] (origin [%s]).", characterId, itemId, origin)
-	return producer.ProviderImpl(p.l)(p.ctx)(mtsmsg.EnvCommandTopic)(RegisterWishCommandProvider(worldId, characterId, itemId, origin))
+func (p *ProcessorImpl) RegisterWish(worldId world.Id, characterId uint32, itemId uint32, price uint32, origin string) error {
+	p.l.Debugf("Character [%d] registering MTS wish for item [%d] (price [%d], origin [%s]).", characterId, itemId, price, origin)
+	return producer.ProviderImpl(p.l)(p.ctx)(mtsmsg.EnvCommandTopic)(RegisterWishCommandProvider(worldId, characterId, itemId, price, origin))
 }
 
 func (p *ProcessorImpl) RemoveWish(worldId world.Id, wishId uuid.UUID, characterId uint32, origin string) error {

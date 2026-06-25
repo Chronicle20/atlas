@@ -13,6 +13,7 @@ type RestModel struct {
 	Serial      uint32    `json:"serial"`
 	CharacterId uint32    `json:"characterId"`
 	ItemId      uint32    `json:"itemId"`
+	Price       uint32    `json:"price"`
 	CreatedAt   time.Time `json:"createdAt"`
 }
 
@@ -36,5 +37,6 @@ func Extract(r RestModel) (Model, error) {
 		serial:      r.Serial,
 		characterId: r.CharacterId,
 		itemId:      r.ItemId,
+		price:       r.Price,
 	}, nil
 }

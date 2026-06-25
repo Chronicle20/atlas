@@ -92,6 +92,7 @@ func CreateWish(db *gorm.DB, m Model) (Model, error) {
 		CharacterId: m.CharacterId(),
 		ItemId:      m.ItemId(),
 		Type:        m.Type(),
+		Price:       m.Price(),
 		CreatedAt:   createdAt,
 	}
 	if err := db.Create(&e).Error; err != nil {

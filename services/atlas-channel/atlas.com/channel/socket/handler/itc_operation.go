@@ -173,12 +173,12 @@ func buildCreateListingFromRegisterSale(p fieldsb.ItcOperationRegisterSale, worl
 
 // buildCreateListingFromRegisterAuction maps the verified
 // ItcOperationRegisterAuction (mode 0x12) onto CreateListingArgs. The auction
-// packet carries a buy-now price and a duration (hours) but NO separate
-// starting/list price field (verified read order: quantity, commodityId, selector,
-// buyNowPrice, itemType, flag, durationHrs). The buy-now price doubles as the
-// list/reserve value (atlas-mts uses ListValue as the auction's starting floor and
-// the seller credit on settle). atlas-mts validates the duration against its
-// [min,max] range.
+// packet carries TWO prices (a starting bid and a buy-now price) plus a duration
+// (hours); the read order is quantity, startingBid (the "selector" int), buyNow,
+// itemType, flag, durationHrs. The lower price becomes the auction's ListValue
+// (first-bid floor / seller credit on settle) and the higher its buy-now ceiling
+// — see the body for why. atlas-mts validates the duration against its [min,max]
+// range.
 func buildCreateListingFromRegisterAuction(p fieldsb.ItcOperationRegisterAuction, worldId world.Id, sellerId uint32, sellerAccountId uint32, sellerName string) CreateListingArgs {
 	// The auction register dialog (CITC::OnRegisterSaleEntry -> sub_5AD76B,
 	// v83 0x59ec36 / 0x5ad76b) collects TWO prices — a starting bid and a buy-now
@@ -443,7 +443,7 @@ func ItcOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer
 				writeWishFailure(l, ctx, wp, s, fieldpkt.MtsOperationSetZzimFailedBody())
 				return
 			}
-			if err := mtsproc.NewProcessor(l, ctx).RegisterWish(s.WorldId(), s.CharacterId(), lm.TemplateId(), mtsmsg.WishOriginSetZzim); err != nil {
+			if err := mtsproc.NewProcessor(l, ctx).RegisterWish(s.WorldId(), s.CharacterId(), lm.TemplateId(), lm.ListValue(), mtsmsg.WishOriginSetZzim); err != nil {
 				l.WithError(err).Errorf("Unable to emit SET_ZZIM RegisterWish for character [%d] item [%d].", s.CharacterId(), lm.TemplateId())
 				writeWishFailure(l, ctx, wp, s, fieldpkt.MtsOperationSetZzimFailedBody())
 			}
@@ -476,14 +476,15 @@ func ItcOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer
 			body := &fieldsb.ItcOperationRegisterWishEntry{}
 			body.Decode(l, ctx)(r, readerOptions)
 			// REGISTER_WISH_ENTRY creates a wish request by criteria. The wish domain
-			// (task 1.6) models only (characterId, itemId), so the wire price/count/
-			// duration/feeOption/desc fields are intentionally NOT persisted — only the
-			// itemId is stored. The RegisterWishItemDone/Failed result is written by the
-			// status consumer from the WISH_ADDED event (Origin REGISTER_WISH).
-			if body.Price() != 0 || body.Count() != 0 || body.Duration() != 0 || body.FeeOption() != 0 || body.Description() != "" {
-				l.Debugf("REGISTER_WISH_ENTRY for character [%d] item [%d] dropped unmodeled fields (price [%d] count [%d] duration [%d] fee [%d] desc [%q]).", s.CharacterId(), body.ItemId(), body.Price(), body.Count(), body.Duration(), body.FeeOption(), body.Description())
+			// models (characterId, itemId, price); the wire price is persisted so the
+			// want-ad view shows the real price. The remaining count/duration/feeOption/
+			// desc fields are still unmodeled and intentionally NOT persisted. The
+			// RegisterWishItemDone/Failed result is written by the status consumer from
+			// the WISH_ADDED event (Origin REGISTER_WISH).
+			if body.Count() != 0 || body.Duration() != 0 || body.FeeOption() != 0 || body.Description() != "" {
+				l.Debugf("REGISTER_WISH_ENTRY for character [%d] item [%d] dropped unmodeled fields (count [%d] duration [%d] fee [%d] desc [%q]).", s.CharacterId(), body.ItemId(), body.Count(), body.Duration(), body.FeeOption(), body.Description())
 			}
-			if err := mtsproc.NewProcessor(l, ctx).RegisterWish(s.WorldId(), s.CharacterId(), body.ItemId(), mtsmsg.WishOriginRegisterWish); err != nil {
+			if err := mtsproc.NewProcessor(l, ctx).RegisterWish(s.WorldId(), s.CharacterId(), body.ItemId(), body.Price(), mtsmsg.WishOriginRegisterWish); err != nil {
 				l.WithError(err).Errorf("Unable to emit REGISTER_WISH_ENTRY RegisterWish for character [%d] item [%d].", s.CharacterId(), body.ItemId())
 				writeWishFailure(l, ctx, wp, s, fieldpkt.MtsOperationRegisterWishItemFailedBody())
 			}
@@ -748,9 +749,8 @@ func emitRemoveWishByWishSerial(l logrus.FieldLogger, ctx context.Context, wp wr
 
 // writeWishList queries the character's wishlist over REST and writes the
 // synchronous LoadWishSaleListDone result. Each wish entry renders as a minimal
-// ITCITEM carrying only the wished item template (the wish domain stores no price/
-// sale metadata). On a REST error an empty list is written so the client UI is not
-// left hanging.
+// ITCITEM carrying the wished item template plus its price. On a REST error an
+// empty list is written so the client UI is not left hanging.
 func writeWishList(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, s session.Model) {
 	ws, err := mtswish.NewProcessor(l, ctx).GetByCharacter(s.CharacterId())
 	if err != nil {

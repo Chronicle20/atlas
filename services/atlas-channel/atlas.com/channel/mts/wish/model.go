@@ -25,6 +25,7 @@ type Model struct {
 	serial      uint32
 	characterId uint32
 	itemId      uint32
+	price       uint32
 }
 
 func (m Model) Id() string          { return m.id }
@@ -32,3 +33,4 @@ func (m Model) WorldId() byte        { return m.worldId }
 func (m Model) Serial() uint32       { return m.serial }
 func (m Model) CharacterId() uint32  { return m.characterId }
 func (m Model) ItemId() uint32       { return m.itemId }
+func (m Model) Price() uint32        { return m.price }

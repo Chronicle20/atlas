@@ -101,7 +101,7 @@ func TakeHomeCommandProvider(transactionId uuid.UUID, worldId world.Id, serial u
 	return producer.SingleMessageProvider(key, value)
 }
 
-func RegisterWishCommandProvider(worldId world.Id, characterId uint32, itemId uint32, origin string) model.Provider[[]kafka.Message] {
+func RegisterWishCommandProvider(worldId world.Id, characterId uint32, itemId uint32, price uint32, origin string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &mtsmsg.Command[mtsmsg.RegisterWishCommandBody]{
 		Type: mtsmsg.CommandRegisterWish,
@@ -110,6 +110,7 @@ func RegisterWishCommandProvider(worldId world.Id, characterId uint32, itemId ui
 			WorldId:     byte(worldId),
 			CharacterId: characterId,
 			ItemId:      itemId,
+			Price:       price,
 			Origin:      origin,
 		},
 	}

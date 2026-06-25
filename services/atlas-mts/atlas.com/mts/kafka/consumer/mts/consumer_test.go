@@ -435,6 +435,7 @@ func TestRegisterWish_CreatesEntryAndAcks(t *testing.T) {
 	wishId := uuid.New()
 	const characterId = uint32(9990001)
 	const itemId = uint32(1302000)
+	const price = uint32(12345)
 
 	rp := &recordingProducer{}
 	cmd := mts.Command[mts.RegisterWishCommandBody]{
@@ -445,6 +446,7 @@ func TestRegisterWish_CreatesEntryAndAcks(t *testing.T) {
 			WorldId:     0,
 			CharacterId: characterId,
 			ItemId:      itemId,
+			Price:       price,
 		},
 	}
 	handleRegisterWish(rp.provider())(db)(l, ctx, cmd)
@@ -456,6 +458,9 @@ func TestRegisterWish_CreatesEntryAndAcks(t *testing.T) {
 	}
 	if stored.CharacterId() != characterId || stored.ItemId() != itemId {
 		t.Fatalf("wish not persisted: char=%d item=%d", stored.CharacterId(), stored.ItemId())
+	}
+	if stored.Price() != price {
+		t.Fatalf("wish price not persisted: want %d got %d", price, stored.Price())
 	}
 
 	if len(rp.events) != 1 {

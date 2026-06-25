@@ -98,6 +98,7 @@ type RegisterWishCommandBody struct {
 	WorldId     byte      `json:"worldId"`
 	CharacterId uint32    `json:"characterId"`
 	ItemId      uint32    `json:"itemId"`
+	Price       uint32    `json:"price"`
 	Origin      string    `json:"origin"`
 }
 

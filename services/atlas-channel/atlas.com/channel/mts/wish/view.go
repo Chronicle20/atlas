@@ -18,8 +18,10 @@ var mtsWishExpiry = time.Date(2079, 1, 1, 0, 0, 0, 0, time.UTC)
 // post-mutation GetItcListDone re-push). The item-slot blob carries the wish's
 // item template (quantity 1); the MTS trailer carries the wish's per-(tenant,
 // world) ITC serial as nITCSN so the client can echo it back on CANCEL_WISH
-// (CITC::OnCancelWish, v83 0x59fb07). A wish has no price/bid metadata, so the
-// remaining trailer fields are zeroed.
+// (CITC::OnCancelWish, v83 0x59fb07). The wish's price is rendered into the
+// nPrice/nMinPrice/nUnitPrice trailer fields so the Cart / Wanted views show the
+// real price; the bid fields and nMaxPrice are zeroed (a wish carries no bid /
+// price-range metadata).
 //
 // zeroPosition=true: the ITCITEM's GW_ItemSlotBase blob is bare (the v83 client's
 // GW_ItemSlotBase::Decode reads the item type byte first, with NO leading
@@ -34,7 +36,7 @@ func ToMtsItem(m Model) fieldcb.MtsItem {
 	return fieldpkt.MtsOperationNewItem(
 		item,        // GW_ItemSlotBase blob
 		m.Serial(),  // nITCSN = the wish entry's per-(tenant, world) ITC serial
-		0,           // nPrice
+		m.Price(),   // nPrice
 		0,           // nContractFee
 		"",          // sContractFeeTxId
 		"",          // sRollbackUsageID
@@ -45,9 +47,9 @@ func ToMtsItem(m Model) fieldcb.MtsItem {
 		0,           // nBidCount
 		0,           // nBidRange
 		0,           // nBidPrice
-		0,           // nMinPrice
+		m.Price(),   // nMinPrice
 		0,           // nMaxPrice
-		0,           // nUnitPrice
+		m.Price(),   // nUnitPrice
 		0,           // nProcessStatus
 	)
 }

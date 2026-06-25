@@ -365,6 +365,7 @@ func handleRegisterWish(pf providerFn) func(db *gorm.DB) message.Handler[mts.Com
 					SetId(b.WishId).
 					SetWorldId(world.Id(b.WorldId)).
 					SetType(wishType).
+					SetPrice(b.Price).
 					Build()
 				if berr != nil {
 					return berr

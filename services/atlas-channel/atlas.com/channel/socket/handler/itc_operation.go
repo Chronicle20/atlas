@@ -7,6 +7,7 @@ import (
 	mtsmsg "atlas-channel/kafka/message/mts"
 	mtsproc "atlas-channel/mts"
 	mtslisting "atlas-channel/mts/listing"
+	mtstransaction "atlas-channel/mts/transaction"
 	mtswish "atlas-channel/mts/wish"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
@@ -655,10 +656,18 @@ func writeBrowsePage(l logrus.FieldLogger, ctx context.Context, wp writer.Produc
 		// (REGISTER_WISH_ENTRY -> wish type=wanted).
 		items = wishItems(l, ctx, s.CharacterId(), mtswish.TypeWanted, 0)
 	case category == itcSectionCart && subCategory == 2:
-		// My Page -> History (section 4 / sub 2): the viewer's transaction log.
-		// Stage B: transaction history domain not yet built — return an empty page
-		// rather than faking data.
-		items = make([]fieldcb.MtsItem, 0)
+		// My Page -> History (section 4 / sub 2): the viewer's settled
+		// purchase/sale log, read from atlas-mts. On a REST error write an empty
+		// page rather than blocking the client UI.
+		ts, err := mtstransaction.NewProcessor(l, ctx).GetByCharacter(s.CharacterId())
+		if err != nil {
+			l.WithError(err).Errorf("Unable to retrieve MTS transaction history for character [%d]; writing empty page.", s.CharacterId())
+			ts = nil
+		}
+		items = make([]fieldcb.MtsItem, 0, len(ts))
+		for _, m := range ts {
+			items = append(items, mtstransaction.ToMtsItem(m))
+		}
 	case category == itcSectionCart && subCategory == 3:
 		// My Page -> Auction (section 4 / sub 3): the viewer's OWN auction listings.
 		items = ownAuctionItems(l, ctx, s)

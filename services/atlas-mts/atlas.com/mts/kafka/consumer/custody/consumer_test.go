@@ -6,6 +6,7 @@ import (
 	mtsmsg "atlas-mts/kafka/message/mts"
 	"atlas-mts/listing"
 	"atlas-mts/test"
+	"atlas-mts/transaction"
 	"context"
 	"encoding/json"
 	"sync"
@@ -255,7 +256,7 @@ func newMoveCommand(transactionId uuid.UUID, listingId uuid.UUID, buyerId uint32
 }
 
 func TestMtsMoveListingToHolding_MarksSoldCreatesHoldingAndAcks(t *testing.T) {
-	db := test.SetupTestDB(t, listing.Migration, holding.Migration)
+	db := test.SetupTestDB(t, listing.Migration, holding.Migration, transaction.Migration)
 	ctx := test.CreateTestContext()
 	l := logrus.New()
 
@@ -264,7 +265,8 @@ func TestMtsMoveListingToHolding_MarksSoldCreatesHoldingAndAcks(t *testing.T) {
 	// The package uses a cache=shared in-memory DB, so rows leak across tests;
 	// scope holding assertions to this test's unique buyer id.
 	const buyerId = uint32(7770001)
-	seedActiveListing(t, db, ctx, listingId)
+	seeded := seedActiveListing(t, db, ctx, listingId)
+	sellerId := seeded.SellerId()
 
 	rp := &recordingProducer{}
 	handleMtsMoveListingToHolding(rp.provider())(db)(l, ctx, newMoveCommand(transactionId, listingId, buyerId))
@@ -306,6 +308,46 @@ func TestMtsMoveListingToHolding_MarksSoldCreatesHoldingAndAcks(t *testing.T) {
 	}
 	if sold[0].transactionId != transactionId {
 		t.Fatalf("LISTING_SOLD transactionId mismatch: want %s got %s", transactionId, sold[0].transactionId)
+	}
+
+	// Settle records TWO transaction-history rows: the buyer's purchase row and
+	// the seller's sale row, each owned by its own character with the other as
+	// counterparty, both carrying the item + sale price snapshot.
+	tp := transaction.NewProcessor(l, ctx, db)
+	buyerTxns, err := tp.GetByCharacter(buyerId)
+	if err != nil {
+		t.Fatalf("transaction GetByCharacter(buyer): %v", err)
+	}
+	if len(buyerTxns) != 1 {
+		t.Fatalf("expected 1 purchase row for buyer %d, got %d", buyerId, len(buyerTxns))
+	}
+	bt := buyerTxns[0]
+	if bt.Kind() != transaction.KindPurchase {
+		t.Errorf("buyer row kind = %q, want purchase", bt.Kind())
+	}
+	if bt.CounterpartyId() != sellerId {
+		t.Errorf("buyer row counterparty = %d, want seller %d", bt.CounterpartyId(), sellerId)
+	}
+	if bt.ItemId() != 1302000 || bt.Quantity() != 1 || bt.TotalPrice() != 1000 {
+		t.Errorf("buyer row snapshot mismatch: item=%d qty=%d price=%d", bt.ItemId(), bt.Quantity(), bt.TotalPrice())
+	}
+
+	sellerTxns, err := tp.GetByCharacter(sellerId)
+	if err != nil {
+		t.Fatalf("transaction GetByCharacter(seller): %v", err)
+	}
+	if len(sellerTxns) != 1 {
+		t.Fatalf("expected 1 sale row for seller %d, got %d", sellerId, len(sellerTxns))
+	}
+	st := sellerTxns[0]
+	if st.Kind() != transaction.KindSale {
+		t.Errorf("seller row kind = %q, want sale", st.Kind())
+	}
+	if st.CounterpartyId() != buyerId {
+		t.Errorf("seller row counterparty = %d, want buyer %d", st.CounterpartyId(), buyerId)
+	}
+	if st.ItemId() != 1302000 || st.Quantity() != 1 || st.TotalPrice() != 1000 {
+		t.Errorf("seller row snapshot mismatch: item=%d qty=%d price=%d", st.ItemId(), st.Quantity(), st.TotalPrice())
 	}
 }
 

@@ -5,11 +5,12 @@ import (
 	consumer2 "atlas-mts/kafka/consumer"
 	msg "atlas-mts/kafka/message"
 	"atlas-mts/kafka/message/custody"
+	mtsmsg "atlas-mts/kafka/message/mts"
 	producer2 "atlas-mts/kafka/producer"
 	custodyproducer "atlas-mts/kafka/producer/custody"
-	mtsmsg "atlas-mts/kafka/message/mts"
 	mtsproducer "atlas-mts/kafka/producer/mts"
 	"atlas-mts/listing"
+	"atlas-mts/transaction"
 	"context"
 	"encoding/binary"
 	"errors"
@@ -406,8 +407,50 @@ func handleMtsMoveListingToHolding(pf providerFn) func(db *gorm.DB) message.Hand
 				if berr != nil {
 					return berr
 				}
-				_, cerr := holding.CreateHolding(tx, hm)
-				return cerr
+				if _, cerr := holding.CreateHolding(tx, hm); cerr != nil {
+					return cerr
+				}
+
+				// Record the settle for BOTH parties' My Page -> History. This point
+				// is reached only on the winning first settle (the holding-exists
+				// guard above returns early on replay), so the two rows are written
+				// exactly once. salePrice is the listing value for a fixed/buy-now
+				// sale, or the winning bid for an auction.
+				salePrice := lm.ListValue()
+				if lm.SaleType() == listing.SaleTypeAuction {
+					salePrice = lm.CurrentBid()
+				}
+
+				buyerTxn, berr := transaction.NewBuilder(t.Id(), world.Id(b.WorldId), b.BuyerId).
+					SetId(uuid.New()).
+					SetCounterpartyId(sellerId).
+					SetItemId(lm.TemplateId()).
+					SetQuantity(lm.Quantity()).
+					SetTotalPrice(salePrice).
+					SetKind(transaction.KindPurchase).
+					Build()
+				if berr != nil {
+					return berr
+				}
+				if _, terr := transaction.CreateTransaction(tx, buyerTxn); terr != nil {
+					return terr
+				}
+
+				sellerTxn, berr := transaction.NewBuilder(t.Id(), world.Id(b.WorldId), sellerId).
+					SetId(uuid.New()).
+					SetCounterpartyId(b.BuyerId).
+					SetItemId(lm.TemplateId()).
+					SetQuantity(lm.Quantity()).
+					SetTotalPrice(salePrice).
+					SetKind(transaction.KindSale).
+					Build()
+				if berr != nil {
+					return berr
+				}
+				if _, terr := transaction.CreateTransaction(tx, sellerTxn); terr != nil {
+					return terr
+				}
+				return nil
 			})
 
 			p := pf(ctx)

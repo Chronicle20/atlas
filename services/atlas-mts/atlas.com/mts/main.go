@@ -8,6 +8,7 @@ import (
 	"atlas-mts/listing"
 	"atlas-mts/logger"
 	"atlas-mts/task"
+	"atlas-mts/transaction"
 	"atlas-mts/wallet"
 	"atlas-mts/wish"
 	"os"
@@ -63,6 +64,7 @@ func main() {
 		holding.Migration,
 		bid.Migration,
 		wish.Migration,
+		transaction.Migration,
 	))
 
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
@@ -91,6 +93,7 @@ func main() {
 		AddRouteInitializer(listing.InitResource(GetServer())(db)).
 		AddRouteInitializer(holding.InitResource(GetServer())(db)).
 		AddRouteInitializer(wish.InitResource(GetServer())(db)).
+		AddRouteInitializer(transaction.InitResource(GetServer())(db)).
 		AddRouteInitializer(wallet.InitResource(GetServer())(db)).
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
 		Run()

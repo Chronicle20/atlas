@@ -1,0 +1,11 @@
+packet: character/clientbound/CharacterSpawn
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CUserPool::OnUserEnterField
+    address: "0xa43ddd"
+    decompile_sha256: 0b3e4fa456d9e9cbdfa2b36440dd43365821f2cdc2ea681d653153c043d8c858
+verifies:
+    - libs/atlas-packet/character/clientbound/spawn_test.go#TestCharacterSpawnJMSGolden
+    - libs/atlas-packet/character/clientbound/spawn_test.go#TestCharacterSpawnRoundTrip

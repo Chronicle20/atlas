@@ -1,0 +1,10 @@
+packet: character/clientbound/CharacterAppearanceUpdate
+direction: clientbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CUserRemote::OnAvatarModified
+    address: "0xa090f4"
+    decompile_sha256: 75b711fefdf60df323001b6963bffdf1a45f4d8c7806adcb4c19233cf737be57
+verifies:
+    - libs/atlas-packet/character/clientbound/appearance_update_test.go#TestCharacterAppearanceUpdateByteOutputV87

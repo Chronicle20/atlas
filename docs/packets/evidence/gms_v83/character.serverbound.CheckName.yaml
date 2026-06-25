@@ -1,0 +1,11 @@
+packet: character/serverbound/CheckName
+direction: serverbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CLogin::SendCheckDuplicateIDPacket
+    address: "0x7d75ab"
+    decompile_sha256: fd5ec2e5fcf40a140b3673d87a4c5961987550605737e9bbc575eeaa0504f24d
+notes: "v83 CHECK_CHAR_NAME sender is CUICharacterSaleDlg::SendCheckDuplicateIDPacket@0x7d75ab (v83 routes name checks through the character-sale dialog): COutPacket(0x100) + EncodeStr(sCharName) — a single ASCII string. Keyed under the registry primary fname CLogin::SendCheckDuplicateIDPacket (same convention as v87/v95). Matches the Atlas codec (WriteAsciiString(name)). Routed in template_gms_83_1.json via CharacterCheckNameHandle."
+verifies:
+    - libs/atlas-packet/character/serverbound/check_name_test.go#TestCheckNameRoundTrip

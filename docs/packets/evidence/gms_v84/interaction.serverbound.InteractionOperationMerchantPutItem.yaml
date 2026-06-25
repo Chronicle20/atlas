@@ -1,0 +1,10 @@
+packet: interaction/serverbound/InteractionOperationMerchantPutItem
+direction: serverbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CPersonalShopDlg::PutItem#Merchant
+    address: "0x719c8a"
+    decompile_sha256: 75b81c7939088a4e9ae0a71c6cf774622f110c7e7ccb3744a1bd46f028bb841a
+verifies:
+    - libs/atlas-packet/interaction/serverbound/operation_merchant_put_item_test.go#TestOperationMerchantPutItemBytes

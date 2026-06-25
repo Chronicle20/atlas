@@ -949,9 +949,46 @@
           "comment": "resultCode"
         },
         {
-          "op": "DecodeSub",
-          "comment": "character entry loop (18 × GW_CharacterStat::Decode + AvatarLook::Decode + onFamily + rank)",
+          "op": "Delegate",
+          "ref": "GW_CharacterStat::Decode",
+          "comment": "GW_CharacterStat::Decode (per-entry)",
           "guard": "loop 18"
+        },
+        {
+          "op": "Delegate",
+          "ref": "AvatarLook::Decode",
+          "comment": "AvatarLook::Decode (per-entry)",
+          "guard": "loop 18"
+        },
+        {
+          "op": "Decode1",
+          "comment": "onFamily byte (per-entry)",
+          "guard": "loop 18"
+        },
+        {
+          "op": "Decode1",
+          "comment": "rankEnabled / hasRank byte (per-entry)",
+          "guard": "loop 18"
+        },
+        {
+          "op": "Decode4",
+          "comment": "worldRank (per-entry)",
+          "guard": "loop 18 && hasRank"
+        },
+        {
+          "op": "Decode4",
+          "comment": "worldRankMove (per-entry)",
+          "guard": "loop 18 && hasRank"
+        },
+        {
+          "op": "Decode4",
+          "comment": "jobRank (per-entry)",
+          "guard": "loop 18 && hasRank"
+        },
+        {
+          "op": "Decode4",
+          "comment": "jobRankMove (per-entry)",
+          "guard": "loop 18 && hasRank"
         },
         {
           "op": "Decode1",
@@ -1130,8 +1167,15 @@
           "comment": "v3/v5 result code: 0=success, 10=limit, -24=JMS notice, 30=cannotUse"
         },
         {
-          "op": "DecodeSub",
-          "comment": "GW_CharacterStat::Decode + AvatarLook::Decode (success path)",
+          "op": "Delegate",
+          "ref": "GW_CharacterStat::Decode",
+          "comment": "GW_CharacterStat::Decode (success path)",
+          "guard": "code == 0"
+        },
+        {
+          "op": "Delegate",
+          "ref": "AvatarLook::Decode",
+          "comment": "AvatarLook::Decode (success path)",
           "guard": "code == 0"
         }
       ]
@@ -1278,8 +1322,44 @@
           "comment": "v7 (pet count for SetMultiPetInfo loop)"
         },
         {
-          "op": "DecodeSub",
-          "comment": "SetMultiPetInfo bool-terminated loop (v7 iterations)"
+          "op": "Decode4",
+          "comment": "pet SN/id (SetMultiPetInfo per-pet)",
+          "guard": "petCount > 0"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "pet name (SetMultiPetInfo per-pet)",
+          "guard": "petCount > 0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "pet nLevel",
+          "guard": "petCount > 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "pet nTameness",
+          "guard": "petCount > 0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "pet nRepleteness",
+          "guard": "petCount > 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "pet nPetSkill",
+          "guard": "petCount > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "pet item/expire int32",
+          "guard": "petCount > 0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "pet-loop terminator (next-pet bool)",
+          "guard": "petCount > 0"
         },
         {
           "op": "Decode1",
@@ -1310,12 +1390,37 @@
           "guard": "wishCount > 0"
         },
         {
-          "op": "DecodeSub",
-          "comment": "monster book block (SomethingMonsterBook — present in JMS v185)"
+          "op": "Decode4",
+          "comment": "monster book field 1 (SomethingMonsterBook)"
         },
         {
-          "op": "DecodeSub",
-          "comment": "MedalAchievementInfo::Decode"
+          "op": "Decode4",
+          "comment": "monster book field 2"
+        },
+        {
+          "op": "Decode4",
+          "comment": "monster book field 3"
+        },
+        {
+          "op": "Decode4",
+          "comment": "monster book field 4"
+        },
+        {
+          "op": "Decode4",
+          "comment": "monster book cover (mob id)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "current medal id (MedalAchievementInfo::Decode)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "medal/quest count"
+        },
+        {
+          "op": "Decode2",
+          "comment": "medal/quest id (per entry)",
+          "guard": "medalCount > 0"
         },
         {
           "op": "Decode4",
@@ -6396,71 +6501,8 @@
       "direction": "serverbound",
       "calls": [
         {
-          "op": "Decode1",
-          "comment": "",
-          "guard": "a2"
-        },
-        {
-          "op": "Decode1",
-          "comment": "",
-          "guard": "a2"
-        },
-        {
           "op": "Decode4",
-          "comment": "",
-          "guard": "a2"
-        },
-        {
-          "op": "Decode4",
-          "comment": "",
-          "guard": "a2"
-        },
-        {
-          "op": "Delegate",
-          "comment": "",
-          "guard": "a2",
-          "ref": "COutPacket::Init"
-        },
-        {
-          "op": "Decode1",
-          "comment": "",
-          "guard": "a2"
-        },
-        {
-          "op": "Decode4",
-          "comment": "",
-          "guard": "a2"
-        },
-        {
-          "op": "Decode1",
-          "comment": "",
-          "guard": "<default>"
-        },
-        {
-          "op": "Decode1",
-          "comment": "",
-          "guard": "<default>"
-        },
-        {
-          "op": "Decode1",
-          "comment": "",
-          "guard": "<default>"
-        },
-        {
-          "op": "Delegate",
-          "comment": "",
-          "guard": "<default>",
-          "ref": "COutPacket::Init"
-        },
-        {
-          "op": "Decode1",
-          "comment": "",
-          "guard": "<default>"
-        },
-        {
-          "op": "Decode4",
-          "comment": "",
-          "guard": "<default>"
+          "comment": "targetCharacterId (m_dwCharacterId)"
         }
       ]
     },
@@ -7710,7 +7752,17 @@
     "CUserRemote::OnMove": {
       "address": "0xa443ee",
       "direction": "clientbound",
-      "calls": null
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "characterId (read by CUserPool::OnUserRemotePacket before dispatch)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "CMovePath::OnMovePacket — opaque movement path block"
+        }
+      ],
+      "_note": "jms CUserRemote::OnMove@0xa443ee is a thunk to CMovePath::OnMovePacket@0x70c5dc, which calls CMovePath::Decode@0x70b3ce (the opaque movement-path block) — same structure as v83/v87/v95 (no wire delta; the prior null-calls entry was an exporter descent gap). characterId is read by CUserPool::OnUserRemotePacket before dispatch. Hand-curated to mirror the verified v83/v84 2-call entry."
     },
     "CUserRemote::OnReceiveHP": {
       "address": "0xa575be",
@@ -12085,6 +12137,964 @@
         {
           "op": "EncodeStr",
           "comment": "sSPW (PIC); written when flag != 0"
+        }
+      ]
+    },
+    "CPersonalShopDlg::PutItem#Merchant": {
+      "address": "0x762a9e",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "inventoryType (nTI; op 0x1E entrusted)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "slot (nPos)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "quantity"
+        },
+        {
+          "op": "Decode2",
+          "comment": "set"
+        },
+        {
+          "op": "Decode4",
+          "comment": "price"
+        }
+      ]
+    },
+    "CPersonalShopDlg::MoveItemToInventory#Merchant": {
+      "address": "0x762e26",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode2",
+          "comment": "index (nIdx; op 0x23 entrusted)"
+        }
+      ]
+    },
+    "CLogin::SendRequest": {
+      "address": "0x66da4a",
+      "region": "JMS",
+      "direction": "serverbound",
+      "notes": "jms CLogin::SendRequest @0x66da4a. Thin send wrapper (CClientSocket::SendPacket + sets m_bRequestSent). Encodes no wire bytes itself; the packet body is encoded by the caller before this delegate.",
+      "calls": []
+    },
+    "CLogin::OnViewAllCharResult#CharacterViewAllCount": {
+      "address": "0x6709e4",
+      "direction": "clientbound",
+      "_note": "jms VIEW_ALL_CHAR result CHARACTER_COUNT case (mode 1) in CLogin::OnViewAllCharResult@0x6709e4: Decode1(code) then Decode4(m_nCountRelatedSvrs)+Decode4(m_nCountCharacters). Byte-identical to v83/v84. Hand-curated to mirror the verified v84 entry.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "code byte (case 1 = CHARACTER_COUNT)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "m_nCountRelatedSvrs (server/world count)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "m_nCountCharacters (total character count)"
+        }
+      ]
+    },
+    "CWvsContext::SendStatChangeRequest": {
+      "address": "0xb054d6",
+      "direction": "serverbound",
+      "_note": "jms HEAL_OVER_TIME (opcode 0x54) sender. The jms function is named SendStatChangeRequestByItemOption@0xb054d6 but ground truth is COutPacket::COutPacket(_, 0x54) — it is the HEAL_OVER_TIME sender (called from CWvsContext::TryRecovery@0xae6f5a auto-recovery; the only 0x54 packet sender). Wire = updateTime+val+hp+mp+option+extra. jms appends a trailing client validation dword (dword_CDA4F8) the GMS v83/v87/v95 SendStatChangeRequest do NOT.",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "update_time (get_update_time())"
+        },
+        {
+          "op": "Encode4",
+          "comment": "val (constant 0x1400 = 5120 in the sitdown-heal path)"
+        },
+        {
+          "op": "Encode2",
+          "comment": "nHP (uint16 HP recovery amount)"
+        },
+        {
+          "op": "Encode2",
+          "comment": "nMP (uint16 MP recovery amount)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "nOption (0=normal, 2=sitting)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "jms-only trailing validation dword (dword_CDA4F8)"
+        }
+      ]
+    },
+    "CUserRemote::Init": {
+      "address": "0xa52876",
+      "region": "JMS",
+      "direction": "clientbound",
+      "notes": "jms CUserRemote::Init @0xa52876 (remote-user enter-field body; dwCharacterID is read by the CUserPool::OnUserEnterField dispatcher, not here). Delegates to SecondaryStat::DecodeForRemote then AvatarLook::Decode. Pet loop + several bool-gated optional blocks (mini-shop/ad-board/couple ring/friendship ring/marriage/effect) follow; per-pet body and deep optional blocks are Unresolved.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "this[12276] (level/portal byte)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "remote user name"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "second string (guild/community)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "this[5004]"
+        },
+        {
+          "op": "Decode1",
+          "comment": "this[5006]"
+        },
+        {
+          "op": "Decode2",
+          "comment": "this[5008]"
+        },
+        {
+          "op": "Decode1",
+          "comment": "this[5010]"
+        },
+        {
+          "op": "Delegate",
+          "ref": "SecondaryStat::DecodeForRemote",
+          "comment": "SecondaryStat::DecodeForRemote"
+        },
+        {
+          "op": "Decode2",
+          "comment": "this[16560]"
+        },
+        {
+          "op": "Delegate",
+          "ref": "AvatarLook::Decode",
+          "comment": "AvatarLook::Decode"
+        },
+        {
+          "op": "Decode4",
+          "comment": "this[9400]"
+        },
+        {
+          "op": "Decode4",
+          "comment": "this[9404]"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nChocoCount (carry item effect)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nActiveEffectItemID"
+        },
+        {
+          "op": "Decode4",
+          "comment": "this[16516] (active portable chair)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "x (position)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "y (position)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "this[1112] (move action/stance)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "foothold (GetFoothold)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "pet-loop terminator (while Decode1: per-pet CPet::Init body, Unresolved)"
+        },
+        {
+          "op": "Unresolved",
+          "comment": "per-pet CPet::Init body (variable; hand-trace)",
+          "guard": "petActive"
+        },
+        {
+          "op": "Decode4",
+          "comment": "this[12144]"
+        },
+        {
+          "op": "Decode4",
+          "comment": "this[12148]"
+        },
+        {
+          "op": "Decode4",
+          "comment": "this[12152]"
+        },
+        {
+          "op": "Decode1",
+          "comment": "mini-room/shop active flag (this[9252])"
+        },
+        {
+          "op": "Decode4",
+          "comment": "mini-room sn (this[9256])",
+          "guard": "miniRoom"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "mini-room title (this[9260])",
+          "guard": "miniRoom"
+        },
+        {
+          "op": "Decode1",
+          "comment": "this[9264]",
+          "guard": "miniRoom"
+        },
+        {
+          "op": "Decode1",
+          "comment": "this[9268]",
+          "guard": "miniRoom"
+        },
+        {
+          "op": "Decode1",
+          "comment": "this[9276]",
+          "guard": "miniRoom"
+        },
+        {
+          "op": "Decode1",
+          "comment": "this[9272]",
+          "guard": "miniRoom"
+        },
+        {
+          "op": "Decode1",
+          "comment": "this[9280]",
+          "guard": "miniRoom"
+        },
+        {
+          "op": "Decode1",
+          "comment": "AD board active flag (this[16552])"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "AD board text",
+          "guard": "adBoard"
+        },
+        {
+          "op": "Decode1",
+          "comment": "couple-ring active flag"
+        },
+        {
+          "op": "Decode4",
+          "comment": "couple-ring count",
+          "guard": "coupleRing"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "couple-ring item (16 bytes per entry)",
+          "guard": "coupleRing && count > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "couple-ring itemId (per entry)",
+          "guard": "coupleRing && count > 0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "friendship-ring active flag"
+        },
+        {
+          "op": "Decode4",
+          "comment": "friendship-ring count",
+          "guard": "friendRing"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "friendship-ring item (16 bytes per entry)",
+          "guard": "friendRing && count > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "friendship-ring itemId (per entry)",
+          "guard": "friendRing && count > 0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "marriage-record active flag"
+        },
+        {
+          "op": "Decode4",
+          "comment": "this[9416] (marriage)",
+          "guard": "marriage"
+        },
+        {
+          "op": "Decode4",
+          "comment": "this[9420] (marriage)",
+          "guard": "marriage"
+        },
+        {
+          "op": "Decode4",
+          "comment": "this[9424] (marriage)",
+          "guard": "marriage"
+        },
+        {
+          "op": "Decode1",
+          "comment": "dragon/effect (1320006) active flag"
+        },
+        {
+          "op": "Decode1",
+          "comment": "final effect active flag (this[16564])"
+        }
+      ]
+    },
+    "AvatarLook::Decode": {
+      "address": "0x51517e",
+      "region": "JMS",
+      "direction": "clientbound",
+      "notes": "jms AvatarLook::Decode @0x51517e. Two equipment loops terminated by 0xFF; anPetID is DecodeBuffer 12 = 3 x int32.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "nGender"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nSkin"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nFace"
+        },
+        {
+          "op": "Decode1",
+          "comment": "hairBase/mega flag"
+        },
+        {
+          "op": "Decode4",
+          "comment": "anHairEquip[0] (hair)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "equipment slot (loop entry; 0xFF terminates)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "equipment itemId",
+          "guard": "slot != 0xFF"
+        },
+        {
+          "op": "Decode1",
+          "comment": "equipment-loop terminator (0xFF)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "masked-equip slot (loop entry; 0xFF terminates)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "masked-equip itemId",
+          "guard": "slot != 0xFF"
+        },
+        {
+          "op": "Decode1",
+          "comment": "masked-equipment-loop terminator (0xFF)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nWeaponStickerID"
+        },
+        {
+          "op": "Decode4",
+          "comment": "anPetID[0] (DecodeBuffer 12 = 3 x int32)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "anPetID[1]"
+        },
+        {
+          "op": "Decode4",
+          "comment": "anPetID[2]"
+        }
+      ]
+    },
+    "GW_CharacterStat::Decode": {
+      "address": "0x50ec17",
+      "region": "JMS",
+      "direction": "clientbound",
+      "notes": "jms GW_CharacterStat::Decode @0x50ec17. HP/MHP/MP/MMP are int16 (Decode2, like v83, not v95-widened). SP read is job-conditional (common-job: one Decode2; extended-SP job: variable array via sub_50E8B0 - represented Unresolved). Tail diverges from GMS (extra buf8 + 2 Decode4).",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "dwCharacterID"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "sCharacterName (DecodeBuffer 13 bytes)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nGender"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nSkin"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nFace"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nHair"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "aliPetLockerSN (DecodeBuffer 24 bytes = 3 x int64)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nLevel"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nJob"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nSTR"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nDEX"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nINT"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nLUK"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nHP (int16)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nMHP (int16)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nMP (int16)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nMMP (int16)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nAP"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nSP (common-job branch; extended-SP jobs read a variable array instead)",
+          "guard": "commonJob"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nEXP"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nPOP (fame)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nTempEXP (gachaponExperience)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "dwPosMap (mapId)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nPortal (spawnPoint)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nSubJob"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "jms extra 8-byte field (DecodeBuffer 8)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nPlaytime"
+        },
+        {
+          "op": "Decode4",
+          "comment": "jms extra int32"
+        },
+        {
+          "op": "Decode4",
+          "comment": "jms extra int32"
+        }
+      ]
+    },
+    "CUserRemote::OnSetActivePortableChair": {
+      "address": "0xa44324",
+      "direction": "clientbound",
+      "_note": "jms SHOW_CHAIR (opcode 0xCA) handled inline in CUserPool::OnUserRemotePacket case 0xCA (@0xa44324): *(RemoteUser+16516) = CInPacket::Decode4(iPacket) reads chairId directly into the remote-user struct. No separate OnSetActivePortableChair receive function — same inline shape as v83 case 0xC4 / v87 case 0xD1. The local send/display side is CUser::SetActivePortableChair@0x9fc0f0. characterId is read by the dispatcher's leading Decode4(iPacket)@0xa44250 before the case.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "characterId (consumed by CUserPool::OnUserRemotePacket)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "m_nPortableChairID (chairId)"
+        }
+      ]
+    },
+    "SecondaryStat::DecodeForLocal": {
+      "address": "0x7fcc73",
+      "region": "JMS",
+      "direction": "clientbound",
+      "notes": "jms SecondaryStat::DecodeForLocal @0x7fcc73. Mask-driven (DecodeBuffer 16 stat mask) then per-bit nValue+rExpireTime reads in mask order. Body is very large; the mask-gated bulk is represented Unresolved; the leading guarded pair is shown.",
+      "calls": [
+        {
+          "op": "DecodeBuf",
+          "comment": "stat mask (DecodeBuffer 16 = UINT128)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "first stat nValue (mask bit)",
+          "guard": "mask"
+        },
+        {
+          "op": "Decode4",
+          "comment": "first stat rExpireTime (mask bit)",
+          "guard": "mask"
+        },
+        {
+          "op": "Unresolved",
+          "comment": "remaining mask-gated nValue/rExpireTime stat reads (hand-trace)"
+        }
+      ]
+    },
+    "SecondaryStat::DecodeForRemote": {
+      "address": "0x804dbf",
+      "region": "JMS",
+      "direction": "clientbound",
+      "notes": "jms SecondaryStat::DecodeForRemote @0x804dbf. Mask-driven: DecodeBuffer 16 stat mask then per-bit conditional reads in mask order. Two trailing unconditional Decode1; final 7x vtable-dispatched per-stat-set decode (Unresolved).",
+      "calls": [
+        {
+          "op": "DecodeBuf",
+          "comment": "stat mask (DecodeBuffer 16 = UINT128)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "stat (mask bit)",
+          "guard": "mask"
+        },
+        {
+          "op": "Decode1",
+          "comment": "stat (mask bit)",
+          "guard": "mask"
+        },
+        {
+          "op": "Decode4",
+          "comment": "stat (mask bit)",
+          "guard": "mask"
+        },
+        {
+          "op": "Decode4",
+          "comment": "stat (mask bit)",
+          "guard": "mask"
+        },
+        {
+          "op": "Decode4",
+          "comment": "stat (mask bit)",
+          "guard": "mask"
+        },
+        {
+          "op": "Decode4",
+          "comment": "stat (mask bit)",
+          "guard": "mask"
+        },
+        {
+          "op": "Decode4",
+          "comment": "stat (mask bit)",
+          "guard": "mask"
+        },
+        {
+          "op": "Decode4",
+          "comment": "stat (mask bit)",
+          "guard": "mask"
+        },
+        {
+          "op": "Decode2",
+          "comment": "stat (mask bit)",
+          "guard": "mask"
+        },
+        {
+          "op": "Decode4",
+          "comment": "stat (mask bit)",
+          "guard": "mask"
+        },
+        {
+          "op": "Decode2",
+          "comment": "stat (mask bit)",
+          "guard": "mask"
+        },
+        {
+          "op": "Decode2",
+          "comment": "stat (mask bit)",
+          "guard": "mask"
+        },
+        {
+          "op": "Decode4",
+          "comment": "stat (mask bit)",
+          "guard": "mask"
+        },
+        {
+          "op": "Decode4",
+          "comment": "stat (mask bit)",
+          "guard": "mask"
+        },
+        {
+          "op": "Decode4",
+          "comment": "stat (mask bit)",
+          "guard": "mask"
+        },
+        {
+          "op": "Decode4",
+          "comment": "stat (mask bit)",
+          "guard": "mask"
+        },
+        {
+          "op": "Decode4",
+          "comment": "stat (mask bit)",
+          "guard": "mask"
+        },
+        {
+          "op": "Decode4",
+          "comment": "stat (mask bit)",
+          "guard": "mask"
+        },
+        {
+          "op": "Decode4",
+          "comment": "stat (mask bit)",
+          "guard": "mask"
+        },
+        {
+          "op": "Decode4",
+          "comment": "stat (mask bit)",
+          "guard": "mask"
+        },
+        {
+          "op": "Decode4",
+          "comment": "stat (mask bit)",
+          "guard": "mask"
+        },
+        {
+          "op": "Decode4",
+          "comment": "stat (mask bit)",
+          "guard": "mask"
+        },
+        {
+          "op": "Decode4",
+          "comment": "stat (mask bit)",
+          "guard": "mask"
+        },
+        {
+          "op": "Decode4",
+          "comment": "stat (mask bit)",
+          "guard": "mask"
+        },
+        {
+          "op": "Decode4",
+          "comment": "stat (mask bit)",
+          "guard": "mask"
+        },
+        {
+          "op": "Decode4",
+          "comment": "stat (mask bit)",
+          "guard": "mask"
+        },
+        {
+          "op": "Decode4",
+          "comment": "stat (mask bit)",
+          "guard": "mask"
+        },
+        {
+          "op": "Decode4",
+          "comment": "stat (mask bit)",
+          "guard": "mask"
+        },
+        {
+          "op": "Decode1",
+          "comment": "trailing nDefenseAtt (unconditional)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "trailing nDefenseState (unconditional)"
+        },
+        {
+          "op": "Unresolved",
+          "comment": "7x vtable-dispatched per-stat-set conditional decode (hand-trace)"
+        }
+      ]
+    },
+    "CLogin::OnViewAllCharResult#CharacterViewAllCharacters": {
+      "address": "0x6709e4",
+      "direction": "clientbound",
+      "_note": "jms VIEW_ALL_CHAR result NORMAL case (mode 0) in CLogin::OnViewAllCharResult@0x6709e4: Decode1(code)+Decode1(nWorldID)+Decode1(nCount), then loop nCount of GW_CharacterStat::Decode@0x50ec17 + AvatarLook::Decode@0x51517e + Decode1(hasRank) + optional DecodeBuffer(16) rank block. No trailing PIC byte (jms). Flattened from the live jms nested-decode read order — jms GW_CharacterStat differs from v83/v84 (nAP widened to int32, jms-specific extendSP/posMap tail), so the static row-diff still surfaces advisory verdict-2 rows over the loop-expanded block; the real verification is the byte-level round-trip exercising the verified CharacterListEntry jms branch (see view_all_test.go).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "code byte (case 0 = NORMAL)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nWorldID (world for this batch)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nCount (character entries in this world)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "GW_CharacterStat::dwCharacterID",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "GW_CharacterStat::sCharacterName (13 bytes)",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode1",
+          "comment": "GW_CharacterStat::nGender",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode1",
+          "comment": "GW_CharacterStat::nSkin",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode4",
+          "comment": "GW_CharacterStat::nFace",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode4",
+          "comment": "GW_CharacterStat::nHair",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "GW_CharacterStat::aliPetLockerSN (24 bytes)",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode1",
+          "comment": "GW_CharacterStat::nLevel",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode2",
+          "comment": "GW_CharacterStat::nJob",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode2",
+          "comment": "GW_CharacterStat::nSTR",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode2",
+          "comment": "GW_CharacterStat::nDEX",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode2",
+          "comment": "GW_CharacterStat::nINT",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode2",
+          "comment": "GW_CharacterStat::nLUK",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode2",
+          "comment": "GW_CharacterStat::nHP (int16)",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode2",
+          "comment": "GW_CharacterStat::nMHP (int16)",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode2",
+          "comment": "GW_CharacterStat::nMP (int16)",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode2",
+          "comment": "GW_CharacterStat::nMMP (int16)",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode2",
+          "comment": "GW_CharacterStat::extra MMP/SP-CS (common-job else-branch)",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode4",
+          "comment": "GW_CharacterStat::nAP (jms widened to int32)",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode2",
+          "comment": "GW_CharacterStat::nSP",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode4",
+          "comment": "GW_CharacterStat::nEXP",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode4",
+          "comment": "GW_CharacterStat::extendSP/nPOP block (int32)",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode1",
+          "comment": "GW_CharacterStat::extendSP tail byte",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode2",
+          "comment": "GW_CharacterStat::posMap HIWORD",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "GW_CharacterStat::nPortal block (8 bytes)",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode4",
+          "comment": "GW_CharacterStat::nPlaytime",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode4",
+          "comment": "GW_CharacterStat::subAvatar/dwCharacterID[1]",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode4",
+          "comment": "GW_CharacterStat::dwPosMap[1]",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode1",
+          "comment": "AvatarLook::nGender",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode1",
+          "comment": "AvatarLook::nSkin",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode4",
+          "comment": "AvatarLook::nFace",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode1",
+          "comment": "AvatarLook::hair flag byte",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode4",
+          "comment": "AvatarLook::anHairEquip[0] (hair)",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode1",
+          "comment": "AvatarLook::equipment slot (WriteKeyValue byte)",
+          "guard": "loop nCount, loop equip"
+        },
+        {
+          "op": "Decode4",
+          "comment": "AvatarLook::equipment itemId (WriteKeyValue int32)",
+          "guard": "loop nCount, loop equip"
+        },
+        {
+          "op": "Decode1",
+          "comment": "AvatarLook::equipment-loop terminator (0xFF)",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode1",
+          "comment": "AvatarLook::masked-equip slot",
+          "guard": "loop nCount, loop maskedEquip"
+        },
+        {
+          "op": "Decode4",
+          "comment": "AvatarLook::masked-equip itemId",
+          "guard": "loop nCount, loop maskedEquip"
+        },
+        {
+          "op": "Decode1",
+          "comment": "AvatarLook::masked-equipment-loop terminator (0xFF)",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode4",
+          "comment": "AvatarLook::nWeaponStickerID",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "AvatarLook::anPetID (12 bytes)",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode1",
+          "comment": "rankEnabled / hasRank byte",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "rank buffer 16 bytes (worldRank+gap+jobRank+gap)",
+          "guard": "loop nCount && rankEnabled"
+        }
+      ]
+    },
+    "CLogin::OnViewAllCharResult#CharacterViewAllSearchFailed": {
+      "address": "0x6709e4",
+      "direction": "clientbound",
+      "_note": "jms VIEW_ALL_CHAR result error case (modes 2/3/4/5) in CLogin::OnViewAllCharResult@0x6709e4: code byte only, no further wire reads (RemoveNoticeConnecting/ResetVAC/Notice UI logic). Same as v83/v84. Hand-curated to mirror the verified v84 entry.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "code byte (case 2/3/6/7 = error — no further reads in v83)"
         }
       ]
     }

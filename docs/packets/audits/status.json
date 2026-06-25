@@ -1,11 +1,11 @@
 {
   "toolSha": "01dcce58d91f84e473750b7164cc711a27d8c8dc",
   "exportHashes": {
-    "gms_v83": "e598b8fb984c8a9981804fcdd4c31c8393b9aa9ce77b070b95db379cfe971539",
-    "gms_v84": "5e48f10860c989d6040d36f22871e40b659916953da632ffde815934d08ef9ef",
-    "gms_v87": "acef4ca6ed2a415cde352b0cdf88f6ad834c875c8003844833aba58a701d2ff2",
+    "gms_v83": "2673f938325d2791a0951411aa615dee08eee2b0c3ec945ece9b09c83e41cd42",
+    "gms_v84": "a13bdc029c469c8d8faf59b63f16d5bd040e96910d57ab03ceb5aaced8bd83fc",
+    "gms_v87": "5df0f1af483b4012687c556ed5d5521c05d6e1d59895b137516b9826411ca7d3",
     "gms_v95": "18d6bc3a43c9750a86e2195117db0d0c0551143e0d3032046309ec67a62836ad",
-    "jms_v185": "a7f6c7a32d205e8487ea0f85f8e34a3f8b6d4d2ba8b088bc18476328fd3387e0"
+    "jms_v185": "8460cd0b9d48a4d9223d7a0a086496a393d2c6fb0c46fa376bb77b3fde1fede0"
   },
   "rows": [
     {
@@ -553,7 +553,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🚫",
+          "note": "evidence stale (decompile hash drift)",
           "opcode": 8
         },
         "gms_v87": {
@@ -565,8 +565,7 @@
           "opcode": 8
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 20
         }
       }
@@ -748,28 +747,23 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
+          "state": "verified",
           "opcode": 11
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 11
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
+          "state": "verified",
           "opcode": 11
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
+          "state": "verified",
           "opcode": 11
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 3
         }
       }
@@ -999,8 +993,7 @@
           "opcode": 14
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 6
         }
       }
@@ -1484,13 +1477,11 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 21
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 21
         },
         "gms_v87": {
@@ -1502,8 +1493,7 @@
           "opcode": 21
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 8
         }
       }
@@ -1570,8 +1560,7 @@
           "opcode": 22
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 11
         }
       }
@@ -1671,8 +1660,7 @@
           "opcode": 24
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 13
         }
       }
@@ -2360,8 +2348,7 @@
           "opcode": 31
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 30
         }
       }
@@ -4435,8 +4422,7 @@
           "opcode": 61
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 53
         }
       }
@@ -6677,7 +6663,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
+          "note": "evidence stale (decompile hash drift)",
           "opcode": 87
         },
         "gms_v87": {
@@ -6710,7 +6696,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
+          "note": "evidence stale (decompile hash drift)",
           "opcode": 88
         },
         "gms_v87": {
@@ -6790,8 +6776,7 @@
           "opcode": 100
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 84
         }
       }
@@ -10984,8 +10969,7 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 135
         },
         "gms_v84": {
@@ -10993,18 +10977,15 @@
           "opcode": 139
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 143
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 159
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 138
         }
       }
@@ -13090,8 +13071,7 @@
           "opcode": 179
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 158
         }
       }
@@ -15118,8 +15098,7 @@
           "opcode": 185
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
+          "state": "verified",
           "opcode": 189
         },
         "gms_v87": {
@@ -15131,8 +15110,7 @@
           "opcode": 210
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
+          "state": "verified",
           "opcode": 191
         }
       }
@@ -15731,13 +15709,11 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 193
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 197
         },
         "gms_v87": {
@@ -16062,13 +16038,11 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 196
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 200
         },
         "gms_v87": {
@@ -16080,8 +16054,7 @@
           "opcode": 222
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 202
         }
       }
@@ -16195,28 +16168,23 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 197
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 201
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 210
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 223
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 203
         }
       }
@@ -16268,28 +16236,23 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 198
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 202
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 211
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 224
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 204
         }
       }
@@ -16321,8 +16284,7 @@
           "opcode": 225
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 205
         }
       }
@@ -16792,28 +16754,23 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 206
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 210
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 219
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 233
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 213
         }
       }
@@ -26527,34 +26484,6 @@
     },
     {
       "kind": "sub-struct",
-      "packet": "character/serverbound/KeyMapChange",
-      "tier1": true,
-      "cells": {
-        "gms_v83": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "sub-struct",
       "packet": "character/serverbound/Move",
       "tier1": true,
       "cells": {
@@ -27558,8 +27487,7 @@
       "tier1": true,
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v84": {
@@ -27567,8 +27495,7 @@
           "opcode": -1
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v95": {
@@ -27576,8 +27503,7 @@
           "opcode": -1
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": -1
         }
       }
@@ -27673,8 +27599,7 @@
           "opcode": -1
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v87": {
@@ -27751,18 +27676,15 @@
       "tier1": true,
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v95": {
@@ -27770,8 +27692,7 @@
           "opcode": -1
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": -1
         }
       }
@@ -27809,18 +27730,15 @@
       "tier1": true,
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v95": {
@@ -27828,8 +27746,7 @@
           "opcode": -1
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": -1
         }
       }

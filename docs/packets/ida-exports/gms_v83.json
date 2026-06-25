@@ -1243,55 +1243,8 @@
       "direction": "serverbound",
       "calls": [
         {
-          "op": "Decode1",
-          "comment": "",
-          "guard": "a2"
-        },
-        {
-          "op": "Decode1",
-          "comment": "",
-          "guard": "a2"
-        },
-        {
-          "op": "Decode1",
-          "comment": "",
-          "guard": "a2"
-        },
-        {
           "op": "Decode4",
-          "comment": "",
-          "guard": "a2"
-        },
-        {
-          "op": "Decode1",
-          "comment": "",
-          "guard": "<default>"
-        },
-        {
-          "op": "Decode1",
-          "comment": "",
-          "guard": "<default>"
-        },
-        {
-          "op": "Decode1",
-          "comment": "",
-          "guard": "<default>"
-        },
-        {
-          "op": "Delegate",
-          "comment": "",
-          "guard": "<default>",
-          "ref": "COutPacket::Init"
-        },
-        {
-          "op": "Decode1",
-          "comment": "",
-          "guard": "<default>"
-        },
-        {
-          "op": "Decode4",
-          "comment": "",
-          "guard": "<default>"
+          "comment": "targetCharacterId (m_dwCharacterId)"
         }
       ]
     },
@@ -13353,6 +13306,83 @@
       "direction": "serverbound",
       "note": "v83 inlines the immediate server-list-request send into CLogin::ChangeStep @0x5f53c0 (no separate ChangeStepImmediate symbol exists in this build, unlike v87/v95/jms). The send is COutPacket(opcode 4)+SendPacket in the m_nBaseStep==1 block with no Encode calls — bodyless wire shape, matching the bodyless atlas ServerListRequest decoder. IDA-verified gms_v83.",
       "calls": []
+    },
+    "CPersonalShopDlg::PutItem#Merchant": {
+      "address": "0x6fd96c",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "inventoryType (nTI; op 0x21 entrusted)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "slot (nPos)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "quantity"
+        },
+        {
+          "op": "Decode2",
+          "comment": "set"
+        },
+        {
+          "op": "Decode4",
+          "comment": "price"
+        }
+      ]
+    },
+    "CPersonalShopDlg::MoveItemToInventory#Merchant": {
+      "address": "0x6fdcdf",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode2",
+          "comment": "index (nIdx; op 0x26 entrusted)"
+        }
+      ]
+    },
+    "CUserRemote::OnSetActivePortableChair": {
+      "address": "0x9724f9",
+      "direction": "clientbound",
+      "_note": "In v83 handled inline in CUserPool::OnUserRemotePacket case 0xC4 (@0x9724f9): RemoteUser[3567] = CInPacket::Decode4(a3) reads chairId directly. No separate OnSetActivePortableChair receive function (same inline shape as v87 case 0xD1). The CUser send side is CUser::SetActivePortableChair@0x93c7c3.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "characterId (consumed by CUserPool::OnUserRemotePacket)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "m_nPortableChairID (chairId)"
+        }
+      ]
+    },
+    "CLogin::SendCheckDuplicateIDPacket": {
+      "address": "0x7d75ab",
+      "direction": "serverbound",
+      "_note": "v83 character-name duplicate check. The actual sender is CUICharacterSaleDlg::SendCheckDuplicateIDPacket@0x7d75ab (v83 routes name checks through the character-sale dialog): COutPacket(0x100) + EncodeStr(sCharName). Keyed under the registry/CSV primary fname CLogin::SendCheckDuplicateIDPacket (same convention as v87/v95).",
+      "calls": [
+        {
+          "op": "EncodeStr",
+          "comment": "sCharName (character name to check)"
+        }
+      ]
+    },
+    "CUser::OnEmotion": {
+      "address": "0x9724f9",
+      "direction": "clientbound",
+      "_note": "In v83 handled inline in CUserPool::OnUserRemotePacket case 0xC1 (@0x9724f9): reads Decode4(expressionId) only and calls CAvatar::SetEmotion(avatar, expr, -1). No separate OnEmotion function (same as v87). duration and byItemOption are v95+ only; JMS v185 has its own OnEmotion with duration but no byItemOption.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "characterId — read by CUserPool::OnUserRemotePacket dispatcher"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nEmotion (expression/emote ID) — only field; no duration, no byItemOption in v83"
+        }
+      ]
     }
   }
 }

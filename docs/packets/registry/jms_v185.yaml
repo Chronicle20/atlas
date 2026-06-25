@@ -2797,11 +2797,14 @@
 - op: CHANGE_KEYMAP
   direction: serverbound
   opcode: 138
-  fname: CFuncKeyMappedMan::ChangePetConsumeItemID
+  fname: CFuncKeyMappedMan::SaveFuncKeyMap
   fname_alts:
+    - CFuncKeyMappedMan::ChangePetConsumeItemID
     - CFuncKeyMappedMan::ChangePetConsumeMPItemID
-    - CFuncKeyMappedMan::SaveFuncKeyMap
-  provenance: csv-import
+  provenance: ida-discovered
+  ida:
+    address: 6191432
+  note: 'task-109: promote SaveFuncKeyMap to primary fname (uniform with v83/v84/v87/v95) so the CHANGE_KEYMAP op row joins the KeyMapChange audit report and the orphan sub-struct (op=None) row is consumed. jms SaveFuncKeyMap @0x5e7b48 pushes COutPacket(0x8A=138)+Encode4(mode=0)+Encode4(count)+per-entry[Encode4(keyIdx)+FUNCKEY_MAPPED::Encode=EncodeBuffer(5 bytes: nType[1]+nID[4]) @0x510939]. Wire byte-identical to the Atlas codec (mode4+count4+entry9); the report verdict-2 rows are the documented TRUNCATION loop-vs-flattened static-diff artifact (jms internal scan loop <94, not the wire count), not a wire delta (IDA-confirmed task-109, SCY dump SaveFuncKeyMap decompile). ChangePetConsumeItemID/ChangePetConsumeMPItemID are alt sub-handlers of the same dispatcher.'
 - op: RPS_ACTION
   direction: serverbound
   opcode: 139

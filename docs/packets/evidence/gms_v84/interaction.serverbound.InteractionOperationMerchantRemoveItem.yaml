@@ -1,0 +1,10 @@
+packet: interaction/serverbound/InteractionOperationMerchantRemoveItem
+direction: serverbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CPersonalShopDlg::MoveItemToInventory#Merchant
+    address: "0x719ffd"
+    decompile_sha256: d059f187bca7cf7334759362076a93fb20526c158314453da0d2f690f510b3cd
+verifies:
+    - libs/atlas-packet/interaction/serverbound/operation_merchant_remove_item_test.go#TestOperationMerchantRemoveItemBytes

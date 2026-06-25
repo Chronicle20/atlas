@@ -1,0 +1,11 @@
+packet: character/clientbound/CharacterInfo
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnCharacterInfo
+    address: "0xb0aa6e"
+    decompile_sha256: 297d2e007691e788458a3288b70f895f3217d37021b76e5cc83588bcced0a6be
+verifies:
+    - libs/atlas-packet/character/clientbound/info_test.go#TestCharacterInfoJMSGolden
+    - libs/atlas-packet/character/clientbound/info_test.go#TestCharacterInfoRoundTrip

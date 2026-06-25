@@ -1,0 +1,11 @@
+packet: character/serverbound/CheckName
+direction: serverbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CLogin::SendCheckDuplicateIDPacket
+    address: "0x66e467"
+    decompile_sha256: a45081f2730b947113ba29facb6d3e96d7f85338508b3e017f1b2e1b3771926c
+verifies:
+    - libs/atlas-packet/character/serverbound/check_name_test.go#TestCheckNameJMSGolden
+    - libs/atlas-packet/character/serverbound/check_name_test.go#TestCheckNameRoundTrip

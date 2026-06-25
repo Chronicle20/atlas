@@ -99,7 +99,13 @@ func (m CharacterSpawn) Encode(l logrus.FieldLogger, ctx context.Context) func(o
 		}
 
 		w.WriteShort(0) // fh
-		w.WriteByte(0)  // bShowAdminEffect
+		// bShowAdminEffect: GMS CUserRemote::Init reads a byte here before the pet
+		// loop; the jms_v185 client (CUserRemote::Init @0xa52876) goes straight from
+		// the foothold short into the pet while-loop with NO admin byte. IDA-verified
+		// (jms export CUserRemote::Init call 18 foothold → call 19 pet terminator).
+		if t.Region() != "JMS" {
+			w.WriteByte(0) // bShowAdminEffect
+		}
 
 		// Pets: iterate 3 slots
 		for slot := int8(0); slot < 3; slot++ {
@@ -141,9 +147,13 @@ func (m CharacterSpawn) Encode(l logrus.FieldLogger, ctx context.Context) func(o
 				w.WriteInt(0)  // nPhase
 			}
 		} else if t.Region() == "JMS" {
-			w.WriteByte(0)
+			w.WriteByte(0) // final-effect flag (jms CUserRemote::Init call 47, last read)
 		}
-		w.WriteByte(0) // team
+		// team (carnival) byte: GMS reads a trailing team byte; the jms_v185 client's
+		// last packet read is the final-effect flag above (call 47) — no team byte.
+		if t.Region() != "JMS" {
+			w.WriteByte(0) // team
+		}
 		return w.Bytes()
 	}
 }
@@ -197,7 +207,9 @@ func (m *CharacterSpawn) Decode(l logrus.FieldLogger, ctx context.Context) func(
 		m.stance = r.ReadByte()
 
 		_ = r.ReadUint16() // fh
-		_ = r.ReadByte()   // bShowAdminEffect
+		if t.Region() != "JMS" {
+			_ = r.ReadByte() // bShowAdminEffect (GMS-only; jms has no admin byte)
+		}
 
 		// Pets: bool-terminated loop (true+data for each present pet, then false terminator)
 		m.pets = nil
@@ -233,8 +245,10 @@ func (m *CharacterSpawn) Decode(l logrus.FieldLogger, ctx context.Context) func(
 				_ = r.ReadUint32() // nPhase
 			}
 		} else if t.Region() == "JMS" {
-			_ = r.ReadByte()
+			_ = r.ReadByte() // final-effect flag (jms last read)
 		}
-		_ = r.ReadByte() // team
+		if t.Region() != "JMS" {
+			_ = r.ReadByte() // team (GMS-only)
+		}
 	}
 }

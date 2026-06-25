@@ -2609,11 +2609,14 @@
 - op: CHANGE_KEYMAP
   direction: serverbound
   opcode: 135
-  fname: CFuncKeyMappedMan::ChangePetConsumeItemID
+  fname: CFuncKeyMappedMan::SaveFuncKeyMap
   fname_alts:
+    - CFuncKeyMappedMan::ChangePetConsumeItemID
     - CFuncKeyMappedMan::ChangePetConsumeMPItemID
-    - CFuncKeyMappedMan::SaveFuncKeyMap
-  provenance: csv-import
+  provenance: ida-discovered
+  ida:
+    address: 5824303
+  note: 'task-109: promote SaveFuncKeyMap to primary fname (mirrors verified v84 sibling) so the CHANGE_KEYMAP op row joins the KeyMapChange audit report. v83 SaveFuncKeyMap @0x58df2f pushes COutPacket(0x87)=Encode4(mode=0)+Encode4(count)+per-entry[Encode4(keyIdx)+EncodeBuffer(5 bytes: nType[1]+nID[4]) via sub_4E43FA]. Wire is byte-identical to the Atlas codec (mode4+count4+entry9); the report verdict-2 rows are the TRUNCATION loop-vs-flattened static-diff artifact, not a wire delta. ChangePetConsumeItemID/ChangePetConsumeMPItemID are alt sub-handlers of the same 0x87 dispatcher.'
 - op: RPS_ACTION
   direction: serverbound
   opcode: 136

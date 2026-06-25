@@ -1,0 +1,11 @@
+packet: character/clientbound/CharacterExpression
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CUser::OnEmotion
+    address: "0x9b2518"
+    decompile_sha256: 7b3a22e19f46ef006231f87343e8fd6645c4b7d8d71ec253d1e0bbd67104c421
+notes: "v84 EMOTION read inline in CUserPool::OnUserRemotePacket@0x9b2518 case 197 (0xC5): characterId via dispatcher Decode4 @0x9b2522, then Decode4(expressionId) @0x9b2598 and CAvatar::SetEmotion(avatar, expr, -1) via sub_4537A9. No duration, no byItemOption (those are GMS v95+; JMS v185 adds duration only). v84 opcode 0xC5 = v83 0xC1 + 4 (v84 remote-op table shifted vs v83). Matches the Atlas codec v84 path (characterId + expression only). Report verdicts [0,0]."
+verifies:
+    - libs/atlas-packet/character/clientbound/expression_test.go#TestCharacterExpressionRoundTrip

@@ -1,0 +1,11 @@
+packet: character/serverbound/AutoDistributeAp
+direction: serverbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::SendAbilityUpRequest#AutoDistributeAp
+    address: "0xa6f1da"
+    decompile_sha256: 0febc9e1c4de85916ad8c52dd790bf7248d2919725e43238d507fceab53ef1c7
+notes: "v84 AUTO_DISTRIBUTE_AP (op 0x58) sender CWvsContext::SendAbilityUpRequest(ZArray<StatPair>*)@0xa6f1da (named this campaign): COutPacket(0x58)@0xa6f2fa + Encode4(updateTime)@0xa6f30c + Encode4(count)@0xa6f31e + loop[Encode4(flag)@0xa6f336, Encode4(value)@0xa6f344]. Matches the Atlas AutoDistributeAp codec (updateTime + nValue + loop[Flag,Value]). The prior ❌ was an Unresolved unnamed-sub export gap, not a wire delta. Routed via CharacterAutoDistributeApHandle (op 0x58) in template_gms_84_1.json. Report verdicts [0,0,0,0]."
+verifies:
+    - libs/atlas-packet/character/serverbound/auto_distribute_ap_test.go#TestAutoDistributeApRoundTrip

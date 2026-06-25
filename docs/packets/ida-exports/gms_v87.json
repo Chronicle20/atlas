@@ -7547,35 +7547,8 @@
       "direction": "serverbound",
       "calls": [
         {
-          "op": "Decode1",
-          "comment": "",
-          "guard": "<default> && <default> && RemoteUserByName"
-        },
-        {
-          "op": "Decode1",
-          "comment": "",
-          "guard": "<default> && <default> && RemoteUserByName"
-        },
-        {
-          "op": "Decode1",
-          "comment": "",
-          "guard": "<default> && <default> && RemoteUserByName"
-        },
-        {
-          "op": "Delegate",
-          "comment": "",
-          "guard": "<default> && <default> && RemoteUserByName",
-          "ref": "COutPacket::Init"
-        },
-        {
-          "op": "Decode1",
-          "comment": "",
-          "guard": "<default> && <default> && RemoteUserByName"
-        },
-        {
           "op": "Decode4",
-          "comment": "",
-          "guard": "<default> && <default> && RemoteUserByName"
+          "comment": "targetCharacterId (m_dwCharacterId)"
         }
       ]
     },
@@ -13682,6 +13655,42 @@
         {
           "op": "EncodeStr",
           "comment": "sSPW (PIC)"
+        }
+      ]
+    },
+    "CPersonalShopDlg::PutItem#Merchant": {
+      "address": "0x740ee6",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "inventoryType (nTI; op 0x21 entrusted)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "slot (nPos)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "quantity"
+        },
+        {
+          "op": "Decode2",
+          "comment": "set"
+        },
+        {
+          "op": "Decode4",
+          "comment": "price"
+        }
+      ]
+    },
+    "CPersonalShopDlg::MoveItemToInventory#Merchant": {
+      "address": "0x741271",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode2",
+          "comment": "index (nIdx; op 0x26 entrusted)"
         }
       ]
     }

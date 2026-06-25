@@ -1,6 +1,6 @@
 {
   "WriterName": "EffectSimple",
-  "IDAName": "CUser::OnEffect#EffectSimple",
+  "IDAName": "CUser::OnEffect",
   "Address": "0x9b1ef0",
   "Variant": "GMS/v87",
   "BranchDepth": 0,
@@ -11,7 +11,7 @@
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 2,
-      "IDAComment": "characterId \u2014 read by CUserPool::OnUserRemotePacket before dispatch (foreign path); absent on self-effect opcode",
+      "IDAComment": "characterId — read by CUserPool::OnUserRemotePacket before dispatch (foreign path); absent on self-effect opcode",
       "Verdict": 2,
       "Note": "width mismatch"
     },
@@ -20,9 +20,9 @@
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "nMode \u2014 switch discriminator dispatching to 27 effect branches (case 0..26)",
+      "IDAComment": "nMode — switch discriminator dispatching to 27 effect branches (case 0..26)",
       "Verdict": 2,
-      "Note": "atlas: short \u2014 missing trailing field"
+      "Note": "atlas: short — missing trailing field"
     }
   ],
   "Verdict": 3,

@@ -1,0 +1,11 @@
+packet: character/clientbound/CharacterMovement
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CUserRemote::OnMove
+    address: "0x9b26cd"
+    decompile_sha256: c641ea47f31e1dcc6bf98543fbe91eb47af4571b29f4f87f1d567010f50a02ca
+notes: "v84 CharacterMovement: CUserRemote::OnMove@0x9b26cd delegates to CMovePath::OnMovePacket@0x6a203f (opaque movement-path block), characterId read by CUserPool::OnUserRemotePacket@0x9b2518 before dispatch. Same shape as v83/v87/v95 (v84 == v83, no wire delta). The prior ❌ was a null-calls exporter descent gap on OnMove; re-spliced to mirror the verified v83 2-call entry (Decode4 characterId + DecodeBuffer opaque). Codec unchanged; report verdicts [0,0]."
+verifies:
+    - libs/atlas-packet/character/clientbound/movement_test.go#TestCharacterMovementByteOutput

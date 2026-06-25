@@ -5,4 +5,7 @@ category: TIER1-FIXTURE
 ida:
     function: CLogin::OnViewAllCharResult#CharacterViewAllCharacters
     address: "0x60ffe8"
-    decompile_sha256: 9b346906a1b303353c332bba1fe4833607ff5a67709d3b66d4e504e69d7b81c3
+    decompile_sha256: 9c421267bbbf81608ea4def7710e8d60237a6ebb2788db233caa8d594cdd619e
+notes: "v84 VIEW_ALL_CHAR NORMAL case (mode 0) in CLogin::OnViewAllCharResult@0x60ffe8: code+nWorldID+nCount, then loop nCount of GW_CharacterStat::Decode@0x4e9da4 + AvatarLook::Decode@0x4ef958 + flag + optional rank buffer, trailing PIC byte. Both nested readers decompiled and confirmed byte-for-byte identical to v83 (v84 == v83). Codec unchanged. Re-spliced the v84 #suffix to correct a prior corrupt exporter branch-descent; report now FlatInvalid:false (trailing rank/PIC rows tolerated, same pattern as the verified v83/v87/v95 siblings)."
+verifies:
+    - libs/atlas-packet/character/clientbound/view_all_test.go#TestCharacterViewAllCharactersRoundTrip

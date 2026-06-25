@@ -1,0 +1,11 @@
+packet: character/clientbound/CharacterViewAllCount
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CLogin::OnViewAllCharResult#CharacterViewAllCount
+    address: "0x6709e4"
+    decompile_sha256: a5b457747bd9a605eab6db0effb510841d408a1b358b5e8b67309d0da066fd17
+notes: "jms VIEW_ALL_CHAR CHARACTER_COUNT arm (mode 1) of CLogin::OnViewAllCharResult@0x6709e4: Decode4(m_nCountRelatedSvrs) + Decode4(m_nCountCharacters). #suffix key spliced from the live jms decompile. Report verdicts [0,0,0]."
+verifies:
+    - libs/atlas-packet/character/clientbound/view_all_test.go#TestCharacterViewAllCountRoundTrip

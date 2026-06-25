@@ -1,0 +1,11 @@
+packet: character/clientbound/AddCharacterEntry
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CLogin::OnCreateNewCharacterResult
+    address: "0x66ffa8"
+    decompile_sha256: 2a3f8ee8f8676472cf808ae1a360982beb4a907cb68e6161a9cbbbe421d95ef4
+verifies:
+    - libs/atlas-packet/character/clientbound/add_entry_test.go#TestAddCharacterEntryJMSGolden
+    - libs/atlas-packet/character/clientbound/add_entry_test.go#TestAddCharacterEntryRoundTrip

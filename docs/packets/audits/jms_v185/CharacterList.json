@@ -1,0 +1,507 @@
+{
+  "WriterName": "CharacterList",
+  "IDAName": "CLogin::OnSelectWorldResult",
+  "Address": "0x66f3d8",
+  "Variant": "JMS/v185",
+  "BranchDepth": 2,
+  "AtlasFile": "libs/atlas-packet/character/clientbound/list.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "resultCode",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "dwCharacterID",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 5,
+      "IDAComment": "sCharacterName (DecodeBuffer 13 bytes)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "nGender",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 4,
+      "AtlasOp": 5,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "nSkin",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 5,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "nFace",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 6,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "nHair",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 7,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 5,
+      "IDAComment": "aliPetLockerSN (DecodeBuffer 24 bytes = 3 x int64)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 8,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "nLevel",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 9,
+      "AtlasOp": 3,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "nJob",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 10,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "nSTR",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 11,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "nDEX",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 12,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "nINT",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 13,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "nLUK",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 14,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "nHP (int16)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 15,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "nMHP (int16)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 16,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "nMP (int16)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 17,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "nMMP (int16)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 18,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "nAP",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 19,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "nSP (common-job branch; extended-SP jobs read a variable array instead)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 20,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "nEXP",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 21,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "nPOP (fame)",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 22,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "nTempEXP (gachaponExperience)",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 23,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "dwPosMap (mapId)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 24,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "nPortal (spawnPoint)",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 25,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "nSubJob",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 26,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 5,
+      "IDAComment": "jms extra 8-byte field (DecodeBuffer 8)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 27,
+      "AtlasOp": 3,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "nPlaytime",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 28,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "jms extra int32",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 29,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "jms extra int32",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 30,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "nGender",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 31,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "nSkin",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 32,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "nFace",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 33,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "hairBase/mega flag",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 34,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "anHairEquip[0] (hair)",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 35,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "equipment slot (loop entry; 0xFF terminates)",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 36,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "equipment itemId",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 37,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "equipment-loop terminator (0xFF)",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 38,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "masked-equip slot (loop entry; 0xFF terminates)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 39,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "masked-equip itemId",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 40,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "masked-equipment-loop terminator (0xFF)",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 41,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "nWeaponStickerID",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 42,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "anPetID[0] (DecodeBuffer 12 = 3 x int32)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 43,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "anPetID[1]",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 44,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "anPetID[2]",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 45,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "onFamily byte (per-entry)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 46,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "rankEnabled / hasRank byte (per-entry)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 47,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "worldRank (per-entry)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 48,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "worldRankMove (per-entry)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 49,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "jobRank (per-entry)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 50,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "jobRankMove (per-entry)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 51,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "m_bLoginOpt",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 52,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "m_bQuerySSNOnCreateNewCharacter (JMS extra field)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 53,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "m_nSlotCount",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 54,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "m_nBuyCharCount",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 3,
+  "FlatInvalid": true
+}

@@ -1091,7 +1091,18 @@
       },
       {
         "opCode": "0x26",
-        "writer": "FameResponse"
+        "writer": "FameResponse",
+        "options": {
+          "operations": {
+            "GIVE": "0x00",
+            "INVALID_NAME": "0x01",
+            "NOT_MINIMUM_LEVEL": "0x02",
+            "NOT_TODAY": "0x03",
+            "NOT_THIS_MONTH": "0x04",
+            "RECEIVE": "0x05",
+            "UNEXPECTED": "0x06"
+          }
+        }
       },
       {
         "opCode": "0x27",
@@ -1134,7 +1145,22 @@
       },
       {
         "opCode": "0x32",
-        "writer": "HiredMerchantOperation"
+        "writer": "HiredMerchantOperation",
+        "options": {
+          "operations": {
+            "OPEN_SHOP": 7,
+            "ERROR_UNKNOWN": 8,
+            "ERROR_RETRIEVE_FROM_FREDRICK": 9,
+            "ERROR_ANOTHER_CHARACTER_IS_USING_THE_ITEM": 10,
+            "ERROR_UNABLE_TO_OPEN_THE_STORE": 11,
+            "SHOP_SEARCH": 13,
+            "SHOP_RENAME": 14,
+            "ERROR_RETRIEVE_FROM_FREDRICK_2": 15,
+            "REMOTE_SHOP_WARP": 16,
+            "CONFIRM_MANAGE": 17,
+            "FREE_FORM_NOTICE": 18
+          }
+        }
       },
       {
         "opCode": "0x34",
@@ -1240,6 +1266,33 @@
             "QUEST_WAITING_NOTICE": 76,
             "BOARD_AUTH_KEY_UPDATE": 77,
             "SET_SKILL_RESPONSE": 78
+          }
+        }
+      },
+      {
+        "opCode": "0x46",
+        "writer": "WorldMessage",
+        "options": {
+          "operations": {
+            "NOTICE": 0,
+            "POP_UP": 1,
+            "MEGAPHONE": 2,
+            "SUPER_MEGAPHONE": 3,
+            "TOP_SCROLL": 4,
+            "PINK_TEXT": 5,
+            "BLUE_TEXT": 6,
+            "NPC": 7,
+            "ITEM_MEGAPHONE": 8,
+            "YELLOW_MEGAPHONE": 9,
+            "MULTI_MEGAPHONE": 10,
+            "WEATHER": 11,
+            "GACHAPON": 12,
+            "UNKNOWN_3": 13,
+            "UNKNOWN_4": 14,
+            "CLIPBOARD_NOTICE_1": 15,
+            "CLIPBOARD_NOTICE_2": 16,
+            "UNKNOWN_7": 17,
+            "UNKNOWN_8": 18
           }
         }
       },
@@ -1412,6 +1465,19 @@
         "writer": "CharacterItemUpgrade"
       },
       {
+        "opCode": "0xB4",
+        "writer": "PetActivated",
+        "options": {
+          "operations": {
+            "NORMAL": 0,
+            "HUNGER": 1,
+            "EXPIRED": 2,
+            "UNKNOWN_1": 3,
+            "UNKNOWN_2": 4
+          }
+        }
+      },
+      {
         "opCode": "0xB7",
         "writer": "PetMovement"
       },
@@ -1577,7 +1643,37 @@
       },
       {
         "opCode": "0xD3",
-        "writer": "CharacterEffectForeign"
+        "writer": "CharacterEffectForeign",
+        "options": {
+          "operations": {
+            "LEVEL_UP": 0,
+            "SKILL_USE": 1,
+            "SKILL_AFFECTED": 2,
+            "QUEST": 3,
+            "PET": 4,
+            "SKILL_SPECIAL": 5,
+            "PROTECT_ON_DIE_ITEM_USE": 6,
+            "PLAY_PORTAL_SOUND_EFFECT": 7,
+            "JOB_CHANGED": 8,
+            "QUEST_COMPLETE": 9,
+            "INC_DEC_HP_EFFECT": 10,
+            "BUFF_ITEM_EFFECT": 11,
+            "SHOW_INTRO": 12,
+            "MONSTER_BOOK_CARD_GET": 13,
+            "LOTTERY_USE": 14,
+            "ITEM_LEVEL_UP": 15,
+            "ITEM_MAKER": 16,
+            "ITEM_EXPERIENCE_CONSUMED": 17,
+            "RESERVED_EFFECT": 18,
+            "CONSUME_EFFECT": 20,
+            "UPGRADE_TOMB_ITEM_USE": 21,
+            "BATTLEFIELD_ITEM_USE": 22,
+            "SHOW_INFO": 23,
+            "INCUBATOR_USE": 24,
+            "PLAY_SOUND_WITH_MUTE_BACKGROUND_MUSIC": 25,
+            "SOUL_STONE_USE": 26
+          }
+        }
       },
       {
         "opCode": "0xD4",
@@ -1597,7 +1693,37 @@
       },
       {
         "opCode": "0xDB",
-        "writer": "CharacterEffect"
+        "writer": "CharacterEffect",
+        "options": {
+          "operations": {
+            "LEVEL_UP": 0,
+            "SKILL_USE": 1,
+            "SKILL_AFFECTED": 2,
+            "QUEST": 3,
+            "PET": 4,
+            "SKILL_SPECIAL": 5,
+            "PROTECT_ON_DIE_ITEM_USE": 6,
+            "PLAY_PORTAL_SOUND_EFFECT": 7,
+            "JOB_CHANGED": 8,
+            "QUEST_COMPLETE": 9,
+            "INC_DEC_HP_EFFECT": 10,
+            "BUFF_ITEM_EFFECT": 11,
+            "SHOW_INTRO": 12,
+            "MONSTER_BOOK_CARD_GET": 13,
+            "LOTTERY_USE": 14,
+            "ITEM_LEVEL_UP": 15,
+            "ITEM_MAKER": 16,
+            "ITEM_EXPERIENCE_CONSUMED": 17,
+            "RESERVED_EFFECT": 18,
+            "CONSUME_EFFECT": 20,
+            "UPGRADE_TOMB_ITEM_USE": 21,
+            "BATTLEFIELD_ITEM_USE": 22,
+            "SHOW_INFO": 23,
+            "INCUBATOR_USE": 24,
+            "PLAY_SOUND_WITH_MUTE_BACKGROUND_MUSIC": 25,
+            "SOUL_STONE_USE": 26
+          }
+        }
       },
       {
         "opCode": "0xE3",
@@ -1605,7 +1731,32 @@
       },
       {
         "opCode": "0xE9",
-        "writer": "UiOpen"
+        "writer": "UiOpen",
+        "options": {
+          "operations": {
+            "ITEM": 0,
+            "EQUIPMENT": 1,
+            "STATISTICS": 2,
+            "SKILLS": 3,
+            "KEYBOARD": 5,
+            "QUEST": 6,
+            "MONSTER_BOOK": 9,
+            "CHARACTER_INFORMATION": 10,
+            "GUILD_BBS": 34,
+            "MONSTER_CARNIVAL": 17,
+            "ENERGY_BAR": 19,
+            "PARTY_SEARCH": 21,
+            "ITEM_MAKER": 22,
+            "RANKING": 25,
+            "FAMILY": 26,
+            "FAMILY_PEDIGREE": 27,
+            "OPERATOR_BOARD": 28,
+            "OPERATOR_BOARD_STATE": 29,
+            "MEDAL_MEDAL_QUEST": 30,
+            "WEB_EVENT": 31,
+            "SKILLS_EX": 32
+          }
+        }
       },
       {
         "opCode": "0xEC",

@@ -1,14 +1,14 @@
 # CharacterViewAllError (← `CLogin::OnViewAllCharResult#CharacterViewAllSearchFailed`)
 
-- **IDA:** 
+- **IDA:** 0x60ffe8
 - **Atlas file:** `libs/atlas-packet/character/clientbound/view_all.go`
 - **Variant:** GMS/v84
 - **Branch depth:** 0
-- **Verdict:** 🚫
+- **Verdict:** ✅
 
 ## Wire-level diff
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | byte | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
+| 0 | byte | byte `code byte (case 2/3/6/7 = error — no further reads in v83)` | ✅ |  |
 

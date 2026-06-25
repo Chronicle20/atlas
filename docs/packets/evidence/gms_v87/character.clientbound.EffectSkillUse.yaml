@@ -1,0 +1,10 @@
+packet: character/clientbound/EffectSkillUse
+direction: clientbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CUser::OnEffect
+    address: "0x9b1ef0"
+    decompile_sha256: 6840c286baafa434b344ced1e3cd7f159f06a63458cd96009e8518ec9473a446
+verifies:
+    - libs/atlas-packet/character/clientbound/effect_skill_use_test.go#TestEffectSkillUseByteOutputV87

@@ -1,0 +1,21 @@
+{
+  "WriterName": "DeleteCharacter",
+  "IDAName": "CLogin::SendDeleteCharPacket",
+  "Address": "0x66e0f9",
+  "Variant": "JMS/v185",
+  "BranchDepth": 3,
+  "AtlasFile": "libs/atlas-packet/character/serverbound/delete.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

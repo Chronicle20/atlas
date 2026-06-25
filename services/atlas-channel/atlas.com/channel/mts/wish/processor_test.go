@@ -95,3 +95,59 @@ func TestResourcePath(t *testing.T) {
 		t.Errorf("resource path %q missing characters/9001/mts/wishlist", got)
 	}
 }
+
+// TestWorldResourcePath asserts the cross-character want-ad resource template
+// formats to the atlas-mts per-world wishlist path.
+func TestWorldResourcePath(t *testing.T) {
+	got := fmt.Sprintf(WorldResource, byte(2))
+	if !strings.Contains(got, "worlds/2/mts/wishlist") {
+		t.Errorf("world resource path %q missing worlds/2/mts/wishlist", got)
+	}
+}
+
+// TestToMtsItemWithSeller asserts the cross-character Wanted-tab variant carries
+// the want-ad's serial as nITCSN, the wish price, and the owner name in the
+// seller (sGameID) column — while ToMtsItem (the viewer's own entries) leaves the
+// seller column empty.
+func TestToMtsItemWithSeller(t *testing.T) {
+	wm, err := Extract(RestModel{Id: "w1", WorldId: 0, Serial: 7777, CharacterId: 9001, ItemId: 1302000, Price: 1500})
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+
+	withSeller := ToMtsItemWithSeller(wm, "Aria")
+	if withSeller.GameId() != "Aria" {
+		t.Errorf("seller column (sGameID): want Aria, got %q", withSeller.GameId())
+	}
+	if withSeller.ItcSn() != 7777 {
+		t.Errorf("itcSn: want 7777 (the wish serial), got %d", withSeller.ItcSn())
+	}
+	if withSeller.Price() != 1500 {
+		t.Errorf("price: want 1500 (the wish price), got %d", withSeller.Price())
+	}
+	if withSeller.Item().TemplateId() != 1302000 {
+		t.Errorf("item template: want 1302000, got %d", withSeller.Item().TemplateId())
+	}
+
+	// The viewer's own entries (ToMtsItem) leave the seller column empty.
+	if own := ToMtsItem(wm); own.GameId() != "" {
+		t.Errorf("ToMtsItem seller column: want empty, got %q", own.GameId())
+	}
+}
+
+// TestToMtsItemWithSellerEmptyName asserts a blank owner name still produces a
+// valid item (a name-lookup failure must blank the seller column, not drop the
+// want-ad).
+func TestToMtsItemWithSellerEmptyName(t *testing.T) {
+	wm, err := Extract(RestModel{Id: "w1", WorldId: 0, Serial: 7777, CharacterId: 9001, ItemId: 1302000})
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	it := ToMtsItemWithSeller(wm, "")
+	if it.GameId() != "" {
+		t.Errorf("seller column: want empty, got %q", it.GameId())
+	}
+	if it.ItcSn() != 7777 {
+		t.Errorf("itcSn: want 7777, got %d", it.ItcSn())
+	}
+}

@@ -19,6 +19,9 @@ type Processor interface {
 	Create(m Model) (Model, error)
 	GetByCharacter(characterId uint32) ([]Model, error)
 	GetByCharacterAndType(characterId uint32, wishType string) ([]Model, error)
+	// GetWantedByWorld returns every want-ad in a world, across all characters —
+	// the cross-character Wanted tab.
+	GetWantedByWorld(worldId world.Id) ([]Model, error)
 	Delete(id string) (bool, error)
 }
 
@@ -61,6 +64,12 @@ func (p *ProcessorImpl) GetByCharacter(characterId uint32) ([]Model, error) {
 // so the Cart and Wanted views stay disjoint.
 func (p *ProcessorImpl) GetByCharacterAndType(characterId uint32, wishType string) ([]Model, error) {
 	return model.SliceMap(modelFromEntity)(getByCharacterAndType(characterId, wishType)(p.db.WithContext(p.ctx)))()()
+}
+
+// GetWantedByWorld returns every want-ad in a world, across all characters. The
+// signature mirrors the getWantedByWorld provider exactly.
+func (p *ProcessorImpl) GetWantedByWorld(worldId world.Id) ([]Model, error) {
+	return model.SliceMap(modelFromEntity)(getWantedByWorld(worldId)(p.db.WithContext(p.ctx)))()()
 }
 
 // Delete hard-deletes the wish entry by id, returning true iff exactly one row

@@ -5,6 +5,7 @@ import (
 	"atlas-mts/wish"
 	"testing"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"gorm.io/gorm"
 )
 
@@ -87,6 +88,65 @@ func TestProcessorGetByCharacter(t *testing.T) {
 	for _, w := range got {
 		if w.CharacterId() != 100 {
 			t.Errorf("GetByCharacter returned wrong row: character=%d", w.CharacterId())
+		}
+	}
+}
+
+// buildWantedWish builds a world-scoped want-ad (type=wanted) for the test
+// tenant. GetWantedByWorld filters on (world_id, type=wanted), so the test seeds
+// must carry both a world and the wanted type.
+func buildWantedWish(t *testing.T, worldId byte, characterId uint32, itemId uint32) wish.Model {
+	t.Helper()
+	m, err := wish.NewBuilder(test.TestTenantId, characterId, itemId).
+		SetWorldId(world.Id(worldId)).
+		SetType(wish.TypeWanted).
+		Build()
+	if err != nil {
+		t.Fatalf("Failed to build wanted wish: %v", err)
+	}
+	return m
+}
+
+// TestProcessorGetWantedByWorld asserts GetWantedByWorld returns every want-ad in
+// a world across ALL characters, and excludes both cart entries and other worlds'
+// want-ads.
+func TestProcessorGetWantedByWorld(t *testing.T) {
+	p, db, cleanup := test.CreateWishProcessor(t)
+	defer cleanup()
+	resetWishes(t, db)
+
+	// Two characters' want-ads in world 0.
+	if _, err := p.Create(buildWantedWish(t, 0, 100, 1302000)); err != nil {
+		t.Fatalf("Create wanted c100: %v", err)
+	}
+	if _, err := p.Create(buildWantedWish(t, 0, 101, 1302001)); err != nil {
+		t.Fatalf("Create wanted c101: %v", err)
+	}
+	// A cart entry in world 0 (type=cart, default builder) must NOT surface.
+	if _, err := p.Create(buildProcessorWish(t, 102, 1302002)); err != nil {
+		t.Fatalf("Create cart c102: %v", err)
+	}
+	// A want-ad in world 1 must NOT surface for a world-0 query.
+	if _, err := p.Create(buildWantedWish(t, 1, 103, 1302003)); err != nil {
+		t.Fatalf("Create wanted world1 c103: %v", err)
+	}
+
+	got, err := p.GetWantedByWorld(world.Id(0))
+	if err != nil {
+		t.Fatalf("GetWantedByWorld: %v", err)
+	}
+	if len(got) != 2 {
+		t.Fatalf("GetWantedByWorld(0) returned %d rows, want 2 (cross-character want-ads only)", len(got))
+	}
+	for _, w := range got {
+		if w.Type() != wish.TypeWanted {
+			t.Errorf("GetWantedByWorld returned a non-wanted row (type=%s)", w.Type())
+		}
+		if w.WorldId() != world.Id(0) {
+			t.Errorf("GetWantedByWorld returned a row from world %d, want 0", byte(w.WorldId()))
+		}
+		if w.CharacterId() != 100 && w.CharacterId() != 101 {
+			t.Errorf("GetWantedByWorld returned unexpected character %d", w.CharacterId())
 		}
 	}
 }

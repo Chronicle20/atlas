@@ -29,6 +29,10 @@ type Processor interface {
 	// (nITCSN) matches the value the client echoed on CANCEL_WISH. An unmatched
 	// serial is reported as an error so the caller writes CancelWishFailed.
 	GetByCharacterSerial(characterId uint32, serial uint32) (Model, error)
+	// GetWantedByWorld returns every want-ad in a world, across all characters —
+	// the cross-character Wanted browse tab. Each entry carries its owner's
+	// CharacterId so the browse can render the owner name in the seller column.
+	GetWantedByWorld(worldId byte) ([]Model, error)
 }
 
 type ProcessorImpl struct {
@@ -50,6 +54,10 @@ func (p *ProcessorImpl) GetByCharacter(characterId uint32) ([]Model, error) {
 
 func (p *ProcessorImpl) GetByCharacterAndType(characterId uint32, wishType string) ([]Model, error) {
 	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByCharacterAndType(characterId, wishType), Extract, model.Filters[Model]())()
+}
+
+func (p *ProcessorImpl) GetWantedByWorld(worldId byte) ([]Model, error) {
+	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestWantedByWorld(worldId), Extract, model.Filters[Model]())()
 }
 
 func (p *ProcessorImpl) GetByCharacterItem(characterId uint32, itemId uint32) (Model, error) {

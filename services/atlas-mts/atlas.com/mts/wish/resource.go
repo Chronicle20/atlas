@@ -19,8 +19,10 @@ import (
 //   - GET    /characters/{characterId}/mts/wishlist          — list a character's wishes
 //   - POST   /characters/{characterId}/mts/wishlist          — add a wish (JSON:API envelope)
 //   - DELETE /characters/{characterId}/mts/wishlist/{wishId} — remove a wish
+//   - GET    /worlds/{worldId}/mts/wishlist                  — every want-ad in a world (cross-character)
 //
-// Wish CRUD touches no custody, so it has no saga and is safe to land here.
+// Wish CRUD touches no custody, so it has no saga and is safe to land here. The
+// world-scoped GET backs the channel's cross-character Wanted browse tab.
 func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteInitializer {
 	return func(db *gorm.DB) server.RouteInitializer {
 		return func(router *mux.Router, l logrus.FieldLogger) {
@@ -31,6 +33,9 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 			r.HandleFunc("", registerGet("get_character_wishlist", handleGetCharacterWishlist)).Methods(http.MethodGet)
 			r.HandleFunc("", registerInput("create_wish", handleCreateWish)).Methods(http.MethodPost)
 			r.HandleFunc("/{wishId}", registerGet("delete_wish", handleDeleteWish)).Methods(http.MethodDelete)
+
+			wr := router.PathPrefix("/worlds/{worldId}/mts/wishlist").Subrouter()
+			wr.HandleFunc("", registerGet("get_world_wishlist", handleGetWorldWishlist)).Methods(http.MethodGet)
 		}
 	}
 }
@@ -50,6 +55,33 @@ func handleGetCharacterWishlist(d *rest.HandlerDependency, c *rest.HandlerContex
 			}
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Retrieving wishlist for character [%d].", characterId)
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+
+			res, err := model.SliceMap(Transform)(model.FixedProvider(ms))(model.ParallelMap())()
+			if err != nil {
+				d.Logger().WithError(err).Errorf("Creating REST model.")
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+
+			query := r.URL.Query()
+			queryParams := jsonapi.ParseQueryFields(&query)
+			server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+		}
+	})
+}
+
+// handleGetWorldWishlist returns every want-ad (type=wanted) in a world, across
+// all characters — the channel's cross-character Wanted browse tab. The seller
+// column is rendered channel-side from each entry's CharacterId.
+func handleGetWorldWishlist(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return rest.ParseWorldId(d.Logger(), func(worldId world.Id) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			ms, err := NewProcessor(d.Logger(), d.Context(), d.DB()).GetWantedByWorld(worldId)
+			if err != nil {
+				d.Logger().WithError(err).Errorf("Retrieving world wishlist for world [%d].", byte(worldId))
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}

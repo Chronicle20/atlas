@@ -647,14 +647,26 @@ func writeBrowsePage(l logrus.FieldLogger, ctx context.Context, wp writer.Produc
 	var items []fieldcb.MtsItem
 	switch {
 	case category == itcSectionCart && subCategory == 0:
-		// Cart (My Page -> Cart, section 4 / sub 0): the character's added-to-cart
-		// entries (SET_ZZIM -> wish type=cart), kept disjoint from their wanted ads.
+		// My Page -> Cart (section 4 / sub 0): the viewer's added-to-cart entries
+		// (SET_ZZIM -> wish type=cart), kept disjoint from their wanted ads.
 		items = wishItems(l, ctx, s.CharacterId(), mtswish.TypeCart, 0)
+	case category == itcSectionCart && subCategory == 1:
+		// My Page -> Offers (section 4 / sub 1): the viewer's OWN want-ads
+		// (REGISTER_WISH_ENTRY -> wish type=wanted).
+		items = wishItems(l, ctx, s.CharacterId(), mtswish.TypeWanted, 0)
+	case category == itcSectionCart && subCategory == 2:
+		// My Page -> History (section 4 / sub 2): the viewer's transaction log.
+		// Stage B: transaction history domain not yet built — return an empty page
+		// rather than faking data.
+		items = make([]fieldcb.MtsItem, 0)
+	case category == itcSectionCart && subCategory == 3:
+		// My Page -> Auction (section 4 / sub 3): the viewer's OWN auction listings.
+		items = ownAuctionItems(l, ctx, s)
 	case category == itcSectionWanted:
-		// Wanted (section 2): the character's own want-ads (REGISTER_WISH_ENTRY ->
-		// wish type=wanted), filtered by the item sub-tab (categorySub -> inventory
-		// type; 0 = all).
-		items = wishItems(l, ctx, s.CharacterId(), mtswish.TypeWanted, subCategory)
+		// Wanted (section 2): ALL want-ads in the world, across every character
+		// (NOT just the viewer's own). Each MtsItem carries the wish serial as
+		// nITCSN, the wish price, and the owner's character name as the seller column.
+		items = wantedWorldItems(l, ctx, s)
 	default:
 		// Public marketplace browse: listings filtered by (section=category,
 		// item-type=subCategory), excluding the requesting character's OWN listings
@@ -724,6 +736,61 @@ func wishItems(l logrus.FieldLogger, ctx context.Context, characterId uint32, wi
 		items = append(items, mtsItemFromWish(w))
 	}
 	return items
+}
+
+// ownAuctionItems loads the viewer's OWN active auction listings (My Page ->
+// Auction, section 4 / sub 3) and maps each to an ITCITEM. Unlike the public
+// Auction tab (section 3, which excludes the viewer's own listings), this view is
+// scoped to the viewer as the seller, so it browses with SellerId set and no
+// ExcludeSellerId. A REST error yields an empty list rather than blocking the page.
+func ownAuctionItems(l logrus.FieldLogger, ctx context.Context, s session.Model) []fieldcb.MtsItem {
+	ms, err := mtslisting.NewProcessor(l, ctx).Browse(s.WorldId(), mtslisting.BrowseFilter{
+		SellerId: s.CharacterId(),
+		SaleType: itcSaleTypeAuction,
+	})
+	if err != nil {
+		l.WithError(err).Errorf("Unable to browse own MTS auctions for character [%d]; writing empty page.", s.CharacterId())
+		ms = nil
+	}
+	items := make([]fieldcb.MtsItem, 0, len(ms))
+	for _, m := range ms {
+		items = append(items, mtsItemFromListing(m))
+	}
+	return items
+}
+
+// wantedWorldItems loads ALL want-ads in the viewer's world, across every
+// character (the cross-character Wanted tab, section 2), and maps each to an
+// ITCITEM that carries the wish serial as nITCSN, the wish price, and the want-ad
+// owner's character name as the seller column. A REST error yields an empty list
+// rather than blocking the page.
+func wantedWorldItems(l logrus.FieldLogger, ctx context.Context, s session.Model) []fieldcb.MtsItem {
+	ws, err := mtswish.NewProcessor(l, ctx).GetWantedByWorld(byte(s.WorldId()))
+	if err != nil {
+		l.WithError(err).Errorf("Unable to load world want-ads for world [%d]; writing empty page.", byte(s.WorldId()))
+		ws = nil
+	}
+	items := make([]fieldcb.MtsItem, 0, len(ws))
+	for _, w := range ws {
+		items = append(items, mtsWantedItem(l, ctx, w))
+	}
+	return items
+}
+
+// mtsWantedItem maps one cross-character want-ad to an ITCITEM, resolving the
+// owner's display name into the seller (sGameID) column. The name lookup is
+// best-effort: a failure yields "" (a blank seller column) and the item is STILL
+// included — a want-ad must never be dropped because its owner's name could not
+// be resolved. Mirrors the sellerName helper's error tolerance.
+func mtsWantedItem(l logrus.FieldLogger, ctx context.Context, w mtswish.Model) fieldcb.MtsItem {
+	ownerName := ""
+	c, err := character.NewProcessor(l, ctx).GetById()(w.CharacterId())
+	if err != nil {
+		l.WithError(err).Warnf("Unable to resolve owner name for want-ad character [%d]; rendering with empty seller column.", w.CharacterId())
+	} else {
+		ownerName = c.Name()
+	}
+	return mtswish.ToMtsItemWithSeller(w, ownerName)
 }
 
 // writeWishFailure announces a wish/zzim *Failed clientbound result inline. The

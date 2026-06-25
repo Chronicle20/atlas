@@ -31,6 +31,23 @@ var mtsWishExpiry = time.Date(2079, 1, 1, 0, 0, 0, 0, time.UTC)
 // Shared by the synchronous VIEW_WISH arm (socket/handler) and the post-mutation
 // Cart/Wanted re-push (kafka/consumer/mts) so both produce identical wire bytes.
 func ToMtsItem(m Model) fieldcb.MtsItem {
+	return toMtsItem(m, "")
+}
+
+// ToMtsItemWithSeller is the cross-character Wanted-tab variant of ToMtsItem: it
+// renders the want-ad owner's display name into the sGameID field (the browse's
+// seller column) while keeping every other wire field identical to ToMtsItem. A
+// want-ad has an owner other than the viewer, so the Wanted browse shows who is
+// looking for the item; the Cart / VIEW_WISH views (the viewer's own entries)
+// leave sGameID empty via ToMtsItem.
+func ToMtsItemWithSeller(m Model, sellerName string) fieldcb.MtsItem {
+	return toMtsItem(m, sellerName)
+}
+
+// toMtsItem is the shared body: it builds the wish ITCITEM with the given
+// sGameID (seller name). All callers keep the same zeroPosition/dateExpired and
+// nPrice/nMinPrice/nUnitPrice = the wish price layout; only sGameID varies.
+func toMtsItem(m Model, sellerName string) fieldcb.MtsItem {
 	item := packetmodel.NewAsset(true, 0, m.ItemId(), time.Time{}).SetStackableInfo(1, 0, 0)
 	dateExpired := packetmodel.MsTimeBytes(mtsWishExpiry)
 	return fieldpkt.MtsOperationNewItem(
@@ -42,7 +59,7 @@ func ToMtsItem(m Model) fieldcb.MtsItem {
 		"",          // sRollbackUsageID
 		dateExpired, // ftITCDateExpired
 		"",          // sUserID
-		"",          // sGameID
+		sellerName,  // sGameID = the want-ad owner's name (empty for the viewer's own entries)
 		"",          // sComment
 		0,           // nBidCount
 		0,           // nBidRange

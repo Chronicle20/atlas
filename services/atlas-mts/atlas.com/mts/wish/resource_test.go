@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
@@ -147,6 +148,75 @@ func TestWishCRUD(t *testing.T) {
 	respGet2.Body.Close()
 	if len(listEnv2.Data) != 0 {
 		t.Errorf("wishlist after delete returned %d, want 0", len(listEnv2.Data))
+	}
+}
+
+// TestWorldWishlistCrossCharacter asserts GET /worlds/{worldId}/mts/wishlist
+// returns every want-ad in the world across all characters (excluding cart
+// entries and other worlds' want-ads). Want-ads are seeded through the processor
+// because the POST create path always defaults type=cart.
+func TestWorldWishlistCrossCharacter(t *testing.T) {
+	p, db, cleanup := test.CreateWishProcessor(t)
+	defer cleanup()
+	if err := db.Exec("DELETE FROM wish_entries").Error; err != nil {
+		t.Fatalf("reset: %v", err)
+	}
+
+	seed := func(worldId byte, characterId uint32, itemId uint32, wishType string) {
+		m, err := wish.NewBuilder(test.TestTenantId, characterId, itemId).
+			SetWorldId(world.Id(worldId)).
+			SetType(wishType).
+			Build()
+		if err != nil {
+			t.Fatalf("build seed: %v", err)
+		}
+		if _, err := p.Create(m); err != nil {
+			t.Fatalf("seed create: %v", err)
+		}
+	}
+	seed(0, 100, 1302000, wish.TypeWanted)
+	seed(0, 101, 1302001, wish.TypeWanted)
+	seed(0, 102, 1302002, wish.TypeCart)   // cart entry: must not surface
+	seed(1, 103, 1302003, wish.TypeWanted) // other world: must not surface
+
+	srv := newWishServer(t, db)
+	defer srv.Close()
+	client := &http.Client{}
+
+	resp, err := client.Do(withTenant(t, http.MethodGet, fmt.Sprintf("%s/worlds/0/mts/wishlist", srv.URL), nil))
+	if err != nil {
+		t.Fatalf("get world wishlist: %v", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("world wishlist status = %d, want 200", resp.StatusCode)
+	}
+	var env struct {
+		Data []struct {
+			Attributes struct {
+				CharacterId uint32 `json:"characterId"`
+				ItemId      uint32 `json:"itemId"`
+				Type        string `json:"type"`
+				WorldId     byte   `json:"worldId"`
+			} `json:"attributes"`
+		} `json:"data"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&env); err != nil {
+		t.Fatalf("decode world wishlist: %v", err)
+	}
+	resp.Body.Close()
+	if len(env.Data) != 2 {
+		t.Fatalf("world wishlist returned %d, want 2 (cross-character want-ads only)", len(env.Data))
+	}
+	for _, d := range env.Data {
+		if d.Attributes.Type != wish.TypeWanted {
+			t.Errorf("world wishlist returned a non-wanted entry (type=%s)", d.Attributes.Type)
+		}
+		if d.Attributes.WorldId != 0 {
+			t.Errorf("world wishlist returned a world-%d entry, want 0", d.Attributes.WorldId)
+		}
+		if d.Attributes.CharacterId != 100 && d.Attributes.CharacterId != 101 {
+			t.Errorf("world wishlist returned unexpected character %d", d.Attributes.CharacterId)
+		}
 	}
 }
 

@@ -77,6 +77,26 @@ func getByCharacter(characterId uint32) database.EntityProvider[[]entity] {
 	}
 }
 
+// getWantedByWorld returns ALL want-ad entries in a world, across every
+// character — the cross-character Wanted tab (ITC_OPERATION section 2). The WHERE
+// is an explicit name-keyed map rather than a struct condition: GORM elides
+// zero-valued struct fields, which would silently drop the world_id filter for
+// world 0 (a valid world.Id, since world.Id is a byte). tenant scoping is applied
+// by the tenant query callback from the db's context.
+func getWantedByWorld(worldId world.Id) database.EntityProvider[[]entity] {
+	return func(db *gorm.DB) model.Provider[[]entity] {
+		var results []entity
+		err := db.Where(map[string]interface{}{
+			"world_id": byte(worldId),
+			"type":     TypeWanted,
+		}).Find(&results).Error
+		if err != nil {
+			return model.ErrorProvider[[]entity](err)
+		}
+		return model.FixedProvider(results)
+	}
+}
+
 // getByCharacterAndType returns a character's wish entries of a single type
 // (cart or wanted), so the Cart and Wanted views stay disjoint.
 func getByCharacterAndType(characterId uint32, wishType string) database.EntityProvider[[]entity] {

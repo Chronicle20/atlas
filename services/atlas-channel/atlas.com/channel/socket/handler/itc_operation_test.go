@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -243,12 +244,41 @@ func TestBrowseFilterFromGetItcList(t *testing.T) {
 	}
 }
 
-func TestBrowseFilterFromSearchItcList(t *testing.T) {
-	// mode 6, category 2, sub 1, opt 0, searchName "Bob"
-	p := fieldsb.NewItcOperationTabSearch(6, 2, 1, 0, "Bob")
-	f := browseFilterFromSearchItcList(p)
-	if f.SellerName != "Bob" {
-		t.Errorf("sellerName: want Bob got %s", f.SellerName)
+// TestBrowseFilterFromSearchItcList_EmptyName asserts that an empty search term
+// browses the view unfiltered (hasResults=true, no TemplateIds, no SellerName) and
+// applies the view (category/sub) filters. The empty-name path does not hit
+// atlas-data, so this is deterministic without a server.
+func TestBrowseFilterFromSearchItcList_EmptyName(t *testing.T) {
+	// mode 6, category 3, sub 2, opt 0, searchName ""
+	p := fieldsb.NewItcOperationTabSearch(6, 3, 2, 0, "")
+	f, hasResults := browseFilterFromSearchItcList(logrus.New(), context.Background(), p)
+	if !hasResults {
+		t.Errorf("empty search name should browse the view (hasResults=true), got false")
+	}
+	if f.SellerName != "" {
+		t.Errorf("sellerName: must be unused for item-name search, got %q", f.SellerName)
+	}
+	if len(f.TemplateIds) != 0 {
+		t.Errorf("templateIds: want none for empty search, got %v", f.TemplateIds)
+	}
+	if f.Category != "3" {
+		t.Errorf("category: want 3, got %q", f.Category)
+	}
+	if f.SubCategory != "2" {
+		t.Errorf("subCategory: want 2, got %q", f.SubCategory)
+	}
+}
+
+// TestBrowseFilterFromSearchItcList_ResolveErrorShowsNoResults asserts that when
+// the search term cannot be resolved (here, atlas-data is unreachable because no
+// DATA_SERVICE_URL is configured in the test env), the helper reports hasResults
+// =false so the caller writes an empty page rather than leaking the whole
+// marketplace via an empty filter.
+func TestBrowseFilterFromSearchItcList_ResolveErrorShowsNoResults(t *testing.T) {
+	p := fieldsb.NewItcOperationTabSearch(6, 1, 0, 0, "Sword")
+	_, hasResults := browseFilterFromSearchItcList(logrus.New(), context.Background(), p)
+	if hasResults {
+		t.Errorf("a failed/empty resolve must report hasResults=false (no results), got true")
 	}
 }
 

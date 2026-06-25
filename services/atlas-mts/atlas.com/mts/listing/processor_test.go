@@ -45,6 +45,82 @@ func buildProcessorListing(t *testing.T, worldId world.Id, sellerId uint32, cate
 	return m
 }
 
+// buildProcessorListingTemplate is buildProcessorListing with a caller-chosen
+// template id, for the ItemIds IN-filter test (which needs listings with distinct
+// template ids to assert the set membership).
+func buildProcessorListingTemplate(t *testing.T, worldId world.Id, sellerId uint32, category string, templateId uint32) listing.Model {
+	t.Helper()
+	buyNow := uint32(5000)
+	m, err := listing.NewBuilder(test.TestTenantId, worldId, sellerId).
+		SetSellerName("Seller").
+		SetSaleType(listing.SaleTypeFixed).
+		SetState(listing.StateActive).
+		SetTemplateId(templateId).
+		SetQuantity(1).
+		SetListValue(1000).
+		SetBuyNowPrice(&buyNow).
+		SetCommissionRate(0.05).
+		SetCategory(category).
+		SetSubCategory("one-handed-sword").
+		Build()
+	if err != nil {
+		t.Fatalf("Failed to build listing: %v", err)
+	}
+	return m
+}
+
+// TestProcessorBrowseByItemIds asserts the ItemIds browse filter narrows the
+// result to listings whose template_id is in the provided set (template_id IN (?)).
+// This backs the marketplace name search: a search term resolves to matching item
+// template ids and the browse is filtered on them.
+func TestProcessorBrowseByItemIds(t *testing.T) {
+	p, db, cleanup := test.CreateListingProcessor(t)
+	defer cleanup()
+	resetListings(t, db)
+
+	if _, err := p.Create(buildProcessorListingTemplate(t, 0, 300, "equip", 1302000)); err != nil {
+		t.Fatalf("Create 1302000: %v", err)
+	}
+	if _, err := p.Create(buildProcessorListingTemplate(t, 0, 301, "equip", 1302001)); err != nil {
+		t.Fatalf("Create 1302001: %v", err)
+	}
+	if _, err := p.Create(buildProcessorListingTemplate(t, 0, 302, "equip", 1402000)); err != nil {
+		t.Fatalf("Create 1402000: %v", err)
+	}
+
+	// Filter to the two-id set {1302000, 1402000} => exactly those two rows.
+	got, err := p.Browse(0, listing.StateActive, listing.BrowseFilter{ItemIds: []uint32{1302000, 1402000}})
+	if err != nil {
+		t.Fatalf("Browse by itemIds: %v", err)
+	}
+	if len(got) != 2 {
+		t.Fatalf("Browse(itemIds={1302000,1402000}) returned %d rows, want 2", len(got))
+	}
+	for _, m := range got {
+		if m.TemplateId() != 1302000 && m.TemplateId() != 1402000 {
+			t.Errorf("Browse returned unexpected template id %d", m.TemplateId())
+		}
+	}
+
+	// A single-id set narrows to one row.
+	one, err := p.Browse(0, listing.StateActive, listing.BrowseFilter{ItemIds: []uint32{1302001}})
+	if err != nil {
+		t.Fatalf("Browse by single itemId: %v", err)
+	}
+	if len(one) != 1 || one[0].TemplateId() != 1302001 {
+		t.Fatalf("Browse(itemIds={1302001}) returned %d rows, want 1 with template 1302001", len(one))
+	}
+
+	// An id set matching nothing yields an empty result.
+	none, err := p.Browse(0, listing.StateActive, listing.BrowseFilter{ItemIds: []uint32{9999999}})
+	if err != nil {
+		t.Fatalf("Browse by missing itemId: %v", err)
+	}
+	if len(none) != 0 {
+		t.Errorf("Browse(itemIds={9999999}) returned %d rows, want 0", len(none))
+	}
+}
+
 // TestProcessorCreateGetById asserts a created listing round-trips through the
 // processor's GetById.
 func TestProcessorCreateGetById(t *testing.T) {

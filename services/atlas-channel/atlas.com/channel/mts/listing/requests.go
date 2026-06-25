@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/url"
 	"strconv"
+	"strings"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
@@ -22,6 +23,12 @@ type BrowseFilter struct {
 	SubCategory     string
 	SaleType        string
 	ItemId          uint32
+	// TemplateIds restricts the browse to this set of item template ids (the
+	// resolved hits of a SEARCH_ITC_LIST name search). When non-empty it renders
+	// the comma-joined `itemIds` param, which atlas-mts maps to `template_id IN (?)`.
+	// An empty (but non-nil) slice means "name search matched nothing" — the search
+	// arm short-circuits before browsing in that case, so it is never rendered here.
+	TemplateIds     []uint32
 	Serial          uint32
 	SellerId        uint32
 	ExcludeSellerId uint32 // public-browse filter: omit this seller's own listings
@@ -48,6 +55,13 @@ func (f BrowseFilter) query() string {
 	}
 	if f.ItemId != 0 {
 		q.Set("itemId", strconv.FormatUint(uint64(f.ItemId), 10))
+	}
+	if len(f.TemplateIds) > 0 {
+		parts := make([]string, 0, len(f.TemplateIds))
+		for _, id := range f.TemplateIds {
+			parts = append(parts, strconv.FormatUint(uint64(id), 10))
+		}
+		q.Set("itemIds", strings.Join(parts, ","))
 	}
 	if f.Serial != 0 {
 		q.Set("serial", strconv.FormatUint(uint64(f.Serial), 10))

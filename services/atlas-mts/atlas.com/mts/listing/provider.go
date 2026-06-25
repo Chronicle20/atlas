@@ -49,6 +49,10 @@ type BrowseFilter struct {
 	SubCategory     string
 	SaleType        SaleType
 	ItemId          uint32
+	// ItemIds restricts the browse to this set of template ids (template_id IN (?)).
+	// Used by the marketplace name search, which resolves a search term to its
+	// matching item template ids and filters the listings on them.
+	ItemIds         []uint32
 	Serial          uint32
 	SellerId        uint32
 	ExcludeSellerId uint32
@@ -90,6 +94,9 @@ func getBrowse(worldId world.Id, state State, f BrowseFilter) database.EntityPro
 		}
 		if f.ItemId != 0 {
 			q = q.Where("template_id = ?", f.ItemId)
+		}
+		if len(f.ItemIds) > 0 {
+			q = q.Where("template_id IN ?", f.ItemIds)
 		}
 		if f.Serial != 0 {
 			q = q.Where("serial = ?", f.Serial)

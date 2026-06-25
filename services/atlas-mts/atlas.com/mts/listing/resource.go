@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
@@ -177,6 +178,20 @@ func handleBrowseListings(d *rest.HandlerDependency, c *rest.HandlerContext) htt
 			if v := query.Get("itemId"); v != "" {
 				if itemId, err := strconv.ParseUint(v, 10, 32); err == nil {
 					f.ItemId = uint32(itemId)
+				}
+			}
+			if v := query.Get("itemIds"); v != "" {
+				// Comma-separated decimal template ids (the marketplace name-search
+				// result set). Skip empties / unparseable tokens gracefully so a
+				// malformed entry narrows the search rather than failing the request.
+				for _, tok := range strings.Split(v, ",") {
+					tok = strings.TrimSpace(tok)
+					if tok == "" {
+						continue
+					}
+					if id, err := strconv.ParseUint(tok, 10, 32); err == nil {
+						f.ItemIds = append(f.ItemIds, uint32(id))
+					}
 				}
 			}
 			if v := query.Get("serial"); v != "" {

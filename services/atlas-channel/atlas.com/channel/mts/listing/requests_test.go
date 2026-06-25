@@ -71,3 +71,20 @@ func TestBrowseFilterQueryCategory(t *testing.T) {
 		}
 	}
 }
+
+// TestBrowseFilterQueryTemplateIds asserts the TemplateIds filter renders as a
+// comma-joined `itemIds` param (the marketplace name-search result set). An empty
+// slice must omit the param so atlas-mts treats it as unfiltered.
+func TestBrowseFilterQueryTemplateIds(t *testing.T) {
+	got := (BrowseFilter{TemplateIds: []uint32{1302000, 1302001, 1402000}}).query()
+	// url.Values.Encode escapes the comma to %2C; assert on the encoded form.
+	if !strings.Contains(got, "itemIds=1302000%2C1302001%2C1402000") {
+		t.Errorf("query %q missing comma-joined itemIds", got)
+	}
+	if strings.Contains((BrowseFilter{}).query(), "itemIds=") {
+		t.Errorf("empty filter must not contain itemIds=")
+	}
+	if strings.Contains((BrowseFilter{TemplateIds: []uint32{}}).query(), "itemIds=") {
+		t.Errorf("empty TemplateIds slice must not contain itemIds=")
+	}
+}

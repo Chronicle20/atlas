@@ -3,6 +3,7 @@ package handler
 import (
 	"atlas-channel/character"
 	"atlas-channel/compartment"
+	dataitem "atlas-channel/data/item"
 	mtsmsg "atlas-channel/kafka/message/mts"
 	mtsproc "atlas-channel/mts"
 	mtslisting "atlas-channel/mts/listing"
@@ -277,20 +278,45 @@ func browseFilterFromGetItcList(p fieldsb.ItcOperationChangedPage) mtslisting.Br
 }
 
 // browseFilterFromSearchItcList maps the verified ItcOperationTabSearch (mode 6,
-// the SEARCH_ITC_LIST request) onto the REST BrowseFilter. The search name is the
-// seller-name search term, scoped to the same view + sub-tab filters as the browse.
-func browseFilterFromSearchItcList(p fieldsb.ItcOperationTabSearch) mtslisting.BrowseFilter {
-	f := mtslisting.BrowseFilter{SellerName: p.SearchName()}
+// the SEARCH_ITC_LIST request) onto the REST BrowseFilter. The search term is an
+// ITEM NAME: it is resolved to the matching item template ids via atlas-data's
+// item-string search index, and the browse is filtered on those ids (scoped to the
+// same view + sub-tab filters as a normal browse).
+//
+// The bool result is hasResults: false means the search term was non-empty but
+// matched no items, so the caller MUST short-circuit to an empty page rather than
+// running the (unfiltered) browse — an empty TemplateIds slice would otherwise
+// return all listings. true means either the search resolved to one or more ids
+// (TemplateIds populated) or the term was empty (an unfiltered browse of the view).
+// A resolve error is treated as zero matches (false) so a transient atlas-data
+// failure shows no results instead of leaking the whole marketplace.
+func browseFilterFromSearchItcList(l logrus.FieldLogger, ctx context.Context, p fieldsb.ItcOperationTabSearch) (mtslisting.BrowseFilter, bool) {
+	f := mtslisting.BrowseFilter{}
 	applyItcViewFilters(&f, p.Category(), p.CategorySub())
-	return f
+
+	name := p.SearchName()
+	if name == "" {
+		// No search term: browse the view unfiltered.
+		return f, true
+	}
+
+	ids, err := dataitem.NewProcessor(l, ctx).GetIdsByName(name)
+	if err != nil {
+		l.WithError(err).Errorf("Unable to resolve MTS search term [%q] to item ids; showing no results.", name)
+		return f, false
+	}
+	if len(ids) == 0 {
+		return f, false
+	}
+	f.TemplateIds = ids
+	return f, true
 }
 
 // mtsItemFromListing maps one channel-side listing.Model to a clientbound MtsItem
 // (ITCITEM) for the GetItcListDone page. The item-slot blob carries the template
 // id, quantity, and slot; the MTS trailer carries itcSn (= the listing's serial),
-// price, and the auction bid metadata. The contract-fee / rollback / user-id
-// strings are empty (the channel surfaces no such state) and the date-expired
-// FILETIME is zero.
+// price, the auction bid metadata, and the "Sold Until" date (auction end or a
+// far-future sentinel for fixed listings — see mtslisting.ToMtsItem).
 func mtsItemFromListing(m mtslisting.Model) fieldcb.MtsItem {
 	// Delegates to the shared mtslisting.ToMtsItem so the browse arm and the
 	// consumer's post-event "Not Yet Sold" re-push produce identical wire bytes
@@ -387,10 +413,20 @@ func ItcOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer
 		case ItcOperationSearchItcList:
 			body := &fieldsb.ItcOperationTabSearch{}
 			body.Decode(l, ctx)(r, readerOptions)
-			// SEARCH surfaces hits in the same GetItcListDone result view. Same latch
-			// contract as GET_ITC_LIST: send requestSent=1 so OnGetITCListDone clears
+			// SEARCH is an ITEM-NAME search: the term is resolved to matching item
+			// template ids via atlas-data and the browse is filtered on them. Hits
+			// surface in the same GetItcListDone result view. Same latch contract as
+			// GET_ITC_LIST: send requestSent=1 so OnGetITCListDone clears
 			// m_bITCRequestSent and the next tab/search is not blocked.
-			writeBrowsePage(l, ctx, wp, s, body.Category(), body.CategorySub(), 0, 0, 0, 1, browseFilterFromSearchItcList(*body))
+			f, hasResults := browseFilterFromSearchItcList(l, ctx, *body)
+			if !hasResults {
+				// The term matched no items (or atlas-data failed). An empty
+				// TemplateIds would browse UNFILTERED (all listings), so write an
+				// empty page directly instead of running the browse.
+				writeEmptyBrowsePage(l, ctx, wp, s, body.Category(), body.CategorySub(), 0, 0, 0, 1)
+				return
+			}
+			writeBrowsePage(l, ctx, wp, s, body.Category(), body.CategorySub(), 0, 0, 0, 1, f)
 		case ItcOperationBuy:
 			body := &fieldsb.ItcOperationBuy{}
 			body.Decode(l, ctx)(r, readerOptions)
@@ -647,6 +683,23 @@ func writeBrowsePage(l logrus.FieldLogger, ctx context.Context, wp writer.Produc
 	// after any operation. The v83 client does not re-request these itself; this
 	// mirrors the reference handler, which re-sends both on every interaction and is
 	// the real fix for the panels lagging after a cancel/take-home.
+	announceUserSaleItems(l, ctx, wp, s)
+	announceUserPurchaseItems(l, ctx, wp, s)
+}
+
+// writeEmptyBrowsePage writes a GetItcListDone result with zero items for the
+// given view, then re-pushes the seller's own panels (as writeBrowsePage does). It
+// is used by SEARCH_ITC_LIST when the search term matches no items: an empty
+// TemplateIds filter would browse unfiltered (all listings), so the empty result
+// must be written directly rather than via the browse path. The latch contract is
+// identical to writeBrowsePage — requestSent MUST be 1 so OnGetITCListDone clears
+// m_bITCRequestSent and the next request is not frozen.
+func writeEmptyBrowsePage(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, s session.Model, category uint32, subCategory uint32, page uint32, sortType byte, sortColumn byte, requestSent byte) {
+	items := make([]fieldcb.MtsItem, 0)
+	body := fieldpkt.MtsOperationGetItcListDoneBody(uint32(len(items)), category, subCategory, page, sortType, sortColumn, items, requestSent)
+	if err := session.Announce(l)(ctx)(wp)(fieldcb.MtsOperationWriter)(body)(s); err != nil {
+		l.WithError(err).Errorf("Unable to announce empty MTS search page to character [%d].", s.CharacterId())
+	}
 	announceUserSaleItems(l, ctx, wp, s)
 	announceUserPurchaseItems(l, ctx, wp, s)
 }

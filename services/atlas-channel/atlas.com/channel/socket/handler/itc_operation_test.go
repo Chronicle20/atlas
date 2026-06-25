@@ -208,11 +208,13 @@ func TestBuildCreateListingFromRegisterAuctionPriceOrderIndependent(t *testing.T
 }
 
 func TestBuildCreateListingFromSaleCurrentItem(t *testing.T) {
-	// sale-current: itemType 2, slotPos 7, item qty 3
+	// want-ad offer: itemType 2, slotPos 7, item qty 3, target want-ad serial 4244.
+	// The listValue arg is the resolved want-ad asking price (3500) — the offered
+	// item is listed as a fixed sale at that price.
 	item := packetmodel.NewAsset(false, 7, 2000000, time.Time{}).SetStackableInfo(3, 0, 0)
-	p := fieldsb.NewItcOperationSaleCurrentItem(3, 2, 7, item, 0)
+	p := fieldsb.NewItcOperationSaleCurrentItem(3, 2, 7, item, 4244)
 
-	args := buildCreateListingFromSaleCurrentItem(p, testWorldId, testSellerId, testSellerAccountId, testSellerName)
+	args := buildCreateListingFromSaleCurrentItem(p, testWorldId, testSellerId, testSellerAccountId, testSellerName, 3500)
 
 	if args.SaleType != itcSaleTypeFixed {
 		t.Errorf("saleType: want %s got %s", itcSaleTypeFixed, args.SaleType)
@@ -226,9 +228,9 @@ func TestBuildCreateListingFromSaleCurrentItem(t *testing.T) {
 	if args.Quantity != 3 {
 		t.Errorf("quantity: want 3 got %d", args.Quantity)
 	}
-	// no price on the wire -> 0 (atlas-mts rejects against the price floor)
-	if args.ListValue != 0 {
-		t.Errorf("listValue: want 0 (no wire price), got %d", args.ListValue)
+	// listValue is the resolved want-ad asking price the offer fulfills
+	if args.ListValue != 3500 {
+		t.Errorf("listValue: want 3500 (want-ad price), got %d", args.ListValue)
 	}
 }
 

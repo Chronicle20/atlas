@@ -258,37 +258,43 @@ func (m *ItcOperationRegisterAuction) Decode(l logrus.FieldLogger, ctx context.C
 	}
 }
 
-// ItcOperationSaleCurrentItem — the mode 3 sell-currently-selected-item arm
-// (CITC::OnSaleCurrentItem @0x59ee3f). After the dispatcher opcode
+// ItcOperationSaleCurrentItem — the mode 3 arm. Despite the "sale current item"
+// name this is exclusively the WANT-AD OFFER: CITC::OnSaleCurrentItem (@0x59ee3f)
+// is called ONLY from CITCWndItemDlg::OnMouseButton (@0x5c1ffa), the inventory
+// picker opened by the Wanted tab's "SEND ME AN OFFER" action (sub_59F811). The
+// player double-clicks one of their own items (the SP_4780 "are you sure you want
+// to sell this item" confirm) to fulfill a want-ad. After the dispatcher opcode
 // COutPacket(253) @0x59ee5d, it encodes, in order (cited to the decompile):
 //
 //	Encode1(3u)               @0x59ee6b  dispatcher mode byte
-//	Encode1(a2)               @0x59ee76  type
-//	Encode4(a3)               @0x59ee81  slotPos
+//	Encode1(a2)               @0x59ee76  inventory type of the offered item
+//	Encode4(a3)               @0x59ee81  slotPos of the offered item
 //	sub_4E33D8(a4, &pkt)      @0x59ee8d  item-slot blob (Encode1 type + RawEncode)
-//	Encode4(a5)               @0x59ee98  commodityId
+//	Encode4(a5)               @0x59ee98  the want-ad's nITCSN (the offer target) —
+//	                                     a5 = *(*(this+1472)+32), the wished
+//	                                     ITCITEM's serial (OnMouseButton @0x5c216e)
 //
 // packet-audit:fname CITC::OnSaleCurrentItem
 type ItcOperationSaleCurrentItem struct {
-	mode        byte
-	itemType    byte        // Encode1 a2
-	slotPos     uint32      // Encode4 a3
-	item        model.Asset // sub_4E33D8 GW_ItemSlotBase blob
-	commodityId uint32      // Encode4 a5
+	mode       byte
+	itemType   byte        // Encode1 a2 (inventory type of the offered item)
+	slotPos    uint32      // Encode4 a3 (slot of the offered item)
+	item       model.Asset // sub_4E33D8 GW_ItemSlotBase blob (the offered item)
+	wishSerial uint32      // Encode4 a5 (the want-ad nITCSN being fulfilled)
 }
 
-func NewItcOperationSaleCurrentItem(mode byte, itemType byte, slotPos uint32, item model.Asset, commodityId uint32) ItcOperationSaleCurrentItem {
-	return ItcOperationSaleCurrentItem{mode: mode, itemType: itemType, slotPos: slotPos, item: item, commodityId: commodityId}
+func NewItcOperationSaleCurrentItem(mode byte, itemType byte, slotPos uint32, item model.Asset, wishSerial uint32) ItcOperationSaleCurrentItem {
+	return ItcOperationSaleCurrentItem{mode: mode, itemType: itemType, slotPos: slotPos, item: item, wishSerial: wishSerial}
 }
 
-func (m ItcOperationSaleCurrentItem) Mode() byte          { return m.mode }
-func (m ItcOperationSaleCurrentItem) ItemType() byte      { return m.itemType }
-func (m ItcOperationSaleCurrentItem) SlotPos() uint32     { return m.slotPos }
-func (m ItcOperationSaleCurrentItem) Item() model.Asset   { return m.item }
-func (m ItcOperationSaleCurrentItem) CommodityId() uint32 { return m.commodityId }
-func (m ItcOperationSaleCurrentItem) Operation() string   { return ItcOperationHandle }
+func (m ItcOperationSaleCurrentItem) Mode() byte         { return m.mode }
+func (m ItcOperationSaleCurrentItem) ItemType() byte     { return m.itemType }
+func (m ItcOperationSaleCurrentItem) SlotPos() uint32    { return m.slotPos }
+func (m ItcOperationSaleCurrentItem) Item() model.Asset  { return m.item }
+func (m ItcOperationSaleCurrentItem) WishSerial() uint32 { return m.wishSerial }
+func (m ItcOperationSaleCurrentItem) Operation() string  { return ItcOperationHandle }
 func (m ItcOperationSaleCurrentItem) String() string {
-	return fmt.Sprintf("itc sale current item mode [%d] type [%d] slot [%d] commodity [%d]", m.mode, m.itemType, m.slotPos, m.commodityId)
+	return fmt.Sprintf("itc want-ad offer mode [%d] type [%d] slot [%d] wishSerial [%d]", m.mode, m.itemType, m.slotPos, m.wishSerial)
 }
 
 func (m ItcOperationSaleCurrentItem) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
@@ -299,7 +305,7 @@ func (m ItcOperationSaleCurrentItem) Encode(l logrus.FieldLogger, ctx context.Co
 		w.WriteByte(m.itemType)                            // Encode1 @0x59ee76 type
 		w.WriteInt(m.slotPos)                              // Encode4 @0x59ee81 slotPos
 		w.WriteByteArray(itemCopy.Encode(l, ctx)(options)) // sub_4E33D8 item-slot blob @0x59ee8d
-		w.WriteInt(m.commodityId)                          // Encode4 @0x59ee98 commodityId
+		w.WriteInt(m.wishSerial)                           // Encode4 @0x59ee98 want-ad nITCSN
 		return w.Bytes()
 	}
 }
@@ -310,7 +316,7 @@ func (m *ItcOperationSaleCurrentItem) Decode(l logrus.FieldLogger, ctx context.C
 		m.itemType = r.ReadByte()
 		m.slotPos = r.ReadUint32()
 		m.item.Decode(l, ctx)(r, options)
-		m.commodityId = r.ReadUint32()
+		m.wishSerial = r.ReadUint32()
 	}
 }
 

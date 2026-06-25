@@ -118,7 +118,7 @@ func TestItcOperationRegisterAuctionByteOutput(t *testing.T) {
 //	Encode1(a2)          @0x59ee76  type
 //	Encode4(a3)          @0x59ee81  slotPos
 //	sub_4E33D8(a4,&pkt)  @0x59ee8d  item-slot blob (model.Asset)
-//	Encode4(a5)          @0x59ee98  commodityId
+//	Encode4(a5)          @0x59ee98  want-ad nITCSN (offer target)
 func TestItcOperationSaleCurrentItemByteOutput(t *testing.T) {
 	ctx := pt.CreateContext("GMS", 83, 1)
 	asset := itcTestAsset()
@@ -132,7 +132,7 @@ func TestItcOperationSaleCurrentItemByteOutput(t *testing.T) {
 	want = append(want, 0x01)             // Encode1 type @0x59ee76
 	want = append(want, le32(7)...)       // Encode4 slotPos @0x59ee81
 	want = append(want, assetBytes...)    // sub_4E33D8 item-slot blob @0x59ee8d
-	want = append(want, le32(2000000)...) // Encode4 commodityId @0x59ee98
+	want = append(want, le32(2000000)...) // Encode4 want-ad nITCSN @0x59ee98
 	if !bytes.Equal(got, want) {
 		t.Fatalf("SaleCurrentItem (v83):\n got %v\nwant %v", got, want)
 	}

@@ -215,15 +215,14 @@ func buildCreateListingFromRegisterAuction(p fieldsb.ItcOperationRegisterAuction
 }
 
 // buildCreateListingFromSaleCurrentItem maps the verified
-// ItcOperationSaleCurrentItem (mode 3, sell currently-selected item) onto
-// CreateListingArgs. The item is identified by the blob's templateId/cashId and
-// resolved against the seller's live inventory in emitCreateListing (the wire's
-// slotPos/itemType are not an asset id / inventory type). The packet carries no
-// price field — SaleCurrentItem is the "list at the previously-entered price"
-// follow-up; with no price on the wire the channel sends ListValue 0 and
-// atlas-mts rejects it against the price floor (a clean RegisterSaleEntryFailed)
-// rather than guessing a price.
-func buildCreateListingFromSaleCurrentItem(p fieldsb.ItcOperationSaleCurrentItem, worldId world.Id, sellerId uint32, sellerAccountId uint32, sellerName string) CreateListingArgs {
+// ItcOperationSaleCurrentItem (mode 3, the want-ad OFFER) onto CreateListingArgs.
+// The item is identified by the blob's templateId/cashId and resolved against the
+// seller's live inventory in emitCreateListing (the wire's slotPos/itemType are
+// not an asset id / inventory type). listValue is the want-ad's asking price
+// (resolved from the offer's target wishSerial), so the offered item is listed as
+// a fixed sale at the price the want-ad poster offered to pay; the poster then
+// buys it through the normal browse/buy path.
+func buildCreateListingFromSaleCurrentItem(p fieldsb.ItcOperationSaleCurrentItem, worldId world.Id, sellerId uint32, sellerAccountId uint32, sellerName string, listValue uint32) CreateListingArgs {
 	return CreateListingArgs{
 		WorldId:         worldId,
 		SellerId:        sellerId,
@@ -234,10 +233,29 @@ func buildCreateListingFromSaleCurrentItem(p fieldsb.ItcOperationSaleCurrentItem
 		CashId:          p.Item().CashId(),
 		SlotPos:         p.SlotPos(),
 		Quantity:        p.Item().Quantity(),
-		ListValue:       0,
+		ListValue:       listValue,
 		BuyNowPrice:     nil,
 		DurationHours:   0,
 	}
+}
+
+// resolveWantedPrice looks up the asking price of a want-ad by its per-(tenant,
+// world) ITC serial (the wishSerial a SALE_CURRENT_ITEM offer targets). It scans
+// the world's want-ads for the matching serial. Returns (0, false) when the serial
+// does not resolve (a stale/invalid offer target) so the caller skips the listing
+// rather than creating a free (price 0) sale.
+func resolveWantedPrice(l logrus.FieldLogger, ctx context.Context, worldId world.Id, wishSerial uint32) (uint32, bool) {
+	ws, err := mtswish.NewProcessor(l, ctx).GetWantedByWorld(byte(worldId))
+	if err != nil {
+		l.WithError(err).Errorf("Unable to load world want-ads to resolve offer target serial [%d].", wishSerial)
+		return 0, false
+	}
+	for _, w := range ws {
+		if w.Serial() == wishSerial {
+			return w.Price(), true
+		}
+	}
+	return 0, false
 }
 
 // Marketplace sections (client browse "tab"). Section 2 (Wanted) and the section
@@ -380,7 +398,17 @@ func ItcOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer
 		case ItcOperationSaleCurrentItem:
 			body := &fieldsb.ItcOperationSaleCurrentItem{}
 			body.Decode(l, ctx)(r, readerOptions)
-			emitCreateListing(l, ctx, s, buildCreateListingFromSaleCurrentItem(*body, s.WorldId(), s.CharacterId(), s.AccountId(), sellerName(l, ctx, s)))
+			// SALE_CURRENT_ITEM (mode 3) is the want-ad OFFER (CITC picker "SEND ME
+			// AN OFFER"): the player offers one of their items to fulfill want-ad
+			// #WishSerial. Resolve the want-ad's asking price and list the offered
+			// item at that price as a fixed sale the poster can buy. A want-ad serial
+			// that does not resolve is logged and ignored (no free listing).
+			price, ok := resolveWantedPrice(l, ctx, s.WorldId(), body.WishSerial())
+			if !ok {
+				l.Errorf("Character [%d] sent a want-ad offer (SALE_CURRENT_ITEM) for unresolved want-ad serial [%d]; ignoring.", s.CharacterId(), body.WishSerial())
+				return
+			}
+			emitCreateListing(l, ctx, s, buildCreateListingFromSaleCurrentItem(*body, s.WorldId(), s.CharacterId(), s.AccountId(), sellerName(l, ctx, s), price))
 		case ItcOperationCancelSale:
 			body := &fieldsb.ItcOperationCancelSale{}
 			body.Decode(l, ctx)(r, readerOptions)

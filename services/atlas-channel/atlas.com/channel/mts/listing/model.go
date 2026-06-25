@@ -1,6 +1,10 @@
 package listing
 
-import "github.com/Chronicle20/atlas/libs/atlas-constants/world"
+import (
+	"time"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+)
 
 // Model is the channel-side view of an atlas-mts marketplace listing, read over
 // REST for the browse (GET_ITC_LIST / SEARCH_ITC_LIST) arms. ItcSn is the
@@ -46,6 +50,7 @@ type Model struct {
 	minIncrement  uint32
 	category      string
 	subCategory   string
+	endsAt        *time.Time
 }
 
 func (m Model) Id() string            { return m.id }
@@ -86,3 +91,4 @@ func (m Model) HighBidderId() uint32  { return m.highBidderId }
 func (m Model) MinIncrement() uint32  { return m.minIncrement }
 func (m Model) Category() string      { return m.category }
 func (m Model) SubCategory() string   { return m.subCategory }
+func (m Model) EndsAt() *time.Time    { return m.endsAt }

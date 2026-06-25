@@ -155,9 +155,12 @@ func TestBuildCreateListingFromRegisterSale(t *testing.T) {
 }
 
 func TestBuildCreateListingFromRegisterAuction(t *testing.T) {
-	// auction wire: slotPos 9 (a4), quantity 2 (v22), buyNow 5000, duration 48h
+	// auction wire: slotPos 9 (a4), quantity 2 (v22), startingBid 1000 (selector),
+	// buyNow 5000, duration 48h. The two prices are the starting bid and the buy-now
+	// price (sub_5AD76B); the lower becomes the listValue / first-bid floor, the
+	// higher the buy-now ceiling.
 	item := packetmodel.NewAsset(false, 9, 1302000, time.Time{}).SetStackableInfo(2, 0, 0)
-	p := fieldsb.NewItcOperationRegisterAuction(0x12, item, 9, 2, 1, 5000, 1, 0, 48)
+	p := fieldsb.NewItcOperationRegisterAuction(0x12, item, 9, 2, 1000, 5000, 1, 0, 48)
 
 	args := buildCreateListingFromRegisterAuction(p, testWorldId, testSellerId, testSellerAccountId, testSellerName)
 
@@ -174,14 +177,32 @@ func TestBuildCreateListingFromRegisterAuction(t *testing.T) {
 		t.Errorf("quantity: want 2 (v22) got %d", args.Quantity)
 	}
 	if args.BuyNowPrice == nil || *args.BuyNowPrice != 5000 {
-		t.Errorf("buyNowPrice: want 5000, got %v", args.BuyNowPrice)
+		t.Errorf("buyNowPrice: want 5000 (higher price), got %v", args.BuyNowPrice)
 	}
-	// the auction carries no separate list price; buy-now doubles as the list value
-	if args.ListValue != 5000 {
-		t.Errorf("listValue: want 5000 (buy-now), got %d", args.ListValue)
+	// the lower of the two wire prices is the starting bid / list value (first-bid floor)
+	if args.ListValue != 1000 {
+		t.Errorf("listValue: want 1000 (starting bid), got %d", args.ListValue)
 	}
 	if args.DurationHours != 48 {
 		t.Errorf("durationHours: want 48 got %d", args.DurationHours)
+	}
+}
+
+func TestBuildCreateListingFromRegisterAuctionPriceOrderIndependent(t *testing.T) {
+	// The wire field order (selector then buyNowPrice) does not constrain which
+	// price is the starting bid: the client guarantees buyNow > startingBid, so
+	// min/max recovers (startingBid, buyNow) regardless of which slot holds which.
+	item := packetmodel.NewAsset(false, 9, 1302000, time.Time{}).SetStackableInfo(2, 0, 0)
+	// selector (5000) > buyNowPrice (1000): still listValue=1000, buyNow=5000.
+	p := fieldsb.NewItcOperationRegisterAuction(0x12, item, 9, 2, 5000, 1000, 1, 0, 48)
+
+	args := buildCreateListingFromRegisterAuction(p, testWorldId, testSellerId, testSellerAccountId, testSellerName)
+
+	if args.ListValue != 1000 {
+		t.Errorf("listValue: want 1000 (min), got %d", args.ListValue)
+	}
+	if args.BuyNowPrice == nil || *args.BuyNowPrice != 5000 {
+		t.Errorf("buyNowPrice: want 5000 (max), got %v", args.BuyNowPrice)
 	}
 }
 

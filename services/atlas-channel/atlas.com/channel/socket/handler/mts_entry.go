@@ -137,7 +137,12 @@ func EnterMtsHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Pro
 		// the trailing 1). Reuses the synchronous browse-page writer; an empty/failed
 		// page degrades to an empty list rather than blocking entry. IDA-verified
 		// read order: CITC::OnGetITCListDone (v83 0x5a48af).
-		writeBrowsePage(l, ctx, wp, s, 1, 0, 0, 1, 1, 1, mtslisting.BrowseFilter{})
+		//
+		// Category "1" scopes the entry page to the For Sale section so auctions
+		// (category "3") do not bleed into the first tab on initial load; without
+		// it the empty filter returns every listing and auctions render under For
+		// Sale until the user switches sub-tab (which re-queries with the filter).
+		writeBrowsePage(l, ctx, wp, s, 1, 0, 0, 1, 1, 1, mtslisting.BrowseFilter{Category: "1"})
 
 		// The character's take-home holdings (GET_USER_PURCHASE_ITEM_DONE). Cosmic's
 		// EnterMTSHandler sends transferInventory (purchase) BEFORE notYetSoldInv

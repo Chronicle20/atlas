@@ -21,9 +21,14 @@ import (
 //
 // Shared by the entry push (socket/handler) and the post-take-home re-push
 // (kafka/consumer/mts) so both produce identical wire bytes.
+// mtsHoldingExpiry is the "Sold Until" FILETIME the client displays for a
+// taken-home holding (which never expires). A zero FILETIME renders as
+// "1-1-01"; this far-future date renders as an effectively-permanent entry.
+var mtsHoldingExpiry = time.Date(2079, 1, 1, 0, 0, 0, 0, time.UTC)
+
 func ToMtsItem(m Model) fieldcb.MtsItem {
 	item := packetmodel.NewAsset(true, 0, m.TemplateId(), time.Time{}).SetStackableInfo(m.Quantity(), 0, 0)
-	var dateExpired [8]byte
+	dateExpired := packetmodel.MsTimeBytes(mtsHoldingExpiry)
 	return fieldpkt.MtsOperationNewItem(
 		item,        // GW_ItemSlotBase blob
 		m.ItcSn(),   // nITCSN = the holding serial (addresses take-home)

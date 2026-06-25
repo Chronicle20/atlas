@@ -182,7 +182,22 @@ func buildCreateListingFromRegisterSale(p fieldsb.ItcOperationRegisterSale, worl
 // the seller credit on settle). atlas-mts validates the duration against its
 // [min,max] range.
 func buildCreateListingFromRegisterAuction(p fieldsb.ItcOperationRegisterAuction, worldId world.Id, sellerId uint32, sellerAccountId uint32, sellerName string) CreateListingArgs {
-	buyNow := p.BuyNowPrice()
+	// The auction register dialog (CITC::OnRegisterSaleEntry -> sub_5AD76B,
+	// v83 0x59ec36 / 0x5ad76b) collects TWO prices — a starting bid and a buy-now
+	// price — and the client guarantees buyNow > startingBid (the SP_4765 "buy now
+	// price is lower than the starting bid" validation). Both arrive on the wire:
+	// the "selector" int (formerly assumed a constant ==1, but sub_5AD76B overwrites
+	// it with a dialog price) and the buyNowPrice int are those two prices. The
+	// lower is the starting bid — the auction's listValue / first-bid floor — and
+	// the higher is the buy-now ceiling. Sending the buyNowPrice as the listValue
+	// made the first-bid floor equal the buyout, so atlas-mts rejected every bid
+	// below the buyout and the client showed SP_4760 "you cannot make a consecutive
+	// bid" (the fixed BidAuctionFailed message). min/max is order-independent and
+	// respects the client's buyNow>startingBid invariant.
+	startingBid, buyNow := p.Selector(), p.BuyNowPrice()
+	if startingBid > buyNow {
+		startingBid, buyNow = buyNow, startingBid
+	}
 	return CreateListingArgs{
 		WorldId:         worldId,
 		SellerId:        sellerId,
@@ -193,7 +208,7 @@ func buildCreateListingFromRegisterAuction(p fieldsb.ItcOperationRegisterAuction
 		CashId:          p.Item().CashId(),
 		SlotPos:         p.SlotPos(),
 		Quantity:        p.Quantity(),
-		ListValue:       buyNow,
+		ListValue:       startingBid,
 		BuyNowPrice:     &buyNow,
 		DurationHours:   int(p.DurationHrs()),
 	}
@@ -400,10 +415,14 @@ func ItcOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer
 			body := &fieldsb.ItcOperationPlaceBid{}
 			body.Decode(l, ctx)(r, readerOptions)
 			// PLACE_BID (mode 0x13): the wire carries itcSn + bidPrice + bidRange. The
-			// bid amount is bidPrice (the player's base bid); bidRange is the client's
-			// increment hint and is not part of the server-authoritative floor (atlas-mts
-			// validates against currentBid + the listing's configured minIncrement).
-			if err := mtsproc.NewProcessor(l, ctx).PlaceBid(uuid.New(), s.WorldId(), body.ItcSn(), s.CharacterId(), s.AccountId(), body.BidPrice()); err != nil {
+			// player's intended bid is bidPrice + bidRange: CITCBidAuctionDlg keeps the
+			// current base in this[40] (bidPrice) and the dialed-up increment in this[39]
+			// (bidRange), and only sends a bid when this[40]+this[39] < buyNow
+			// (OnButtonClicked, v83 0x5c373e). Sending bidPrice alone under-records the
+			// bid and — for any re-bid where bidPrice == the prior bid — falls below the
+			// currentBid + minIncrement floor, so atlas-mts rejects it as
+			// BidAuctionFailed (client SP_4760 "you cannot make a consecutive bid").
+			if err := mtsproc.NewProcessor(l, ctx).PlaceBid(uuid.New(), s.WorldId(), body.ItcSn(), s.CharacterId(), s.AccountId(), body.BidPrice()+body.BidRange()); err != nil {
 				l.WithError(err).Errorf("Unable to emit PLACE_BID for character [%d] serial [%d].", s.CharacterId(), body.ItcSn())
 			}
 		case ItcOperationSetZzim:
@@ -767,7 +786,9 @@ func mtsItemFromWish(w mtswish.Model) fieldcb.MtsItem {
 	// zeroPosition=true: bare GW_ItemSlotBase blob, no leading slot byte (see
 	// mtsItemFromListing — the v83 client crashes on a slot-prefixed ITCITEM).
 	item := packetmodel.NewAsset(true, 0, w.ItemId(), time.Time{}).SetStackableInfo(1, 0, 0)
-	var dateExpired [8]byte
+	// A wanted/cart wish never expires; a zero FILETIME renders as "1-1-01", so
+	// send a far-future "Sold Until" date instead.
+	dateExpired := packetmodel.MsTimeBytes(time.Date(2079, 1, 1, 0, 0, 0, 0, time.UTC))
 	return fieldpkt.MtsOperationNewItem(
 		item,        // GW_ItemSlotBase blob
 		w.Serial(),  // nITCSN (the wish entry's per-(tenant, world) ITC serial)

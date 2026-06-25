@@ -1,6 +1,10 @@
 package listing
 
-import "github.com/Chronicle20/atlas/libs/atlas-constants/world"
+import (
+	"time"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+)
 
 // RestModel mirrors atlas-mts's listing.RestModel (the JSON:API "listings"
 // resource). It carries the full item snapshot plus the sale/auction/state fields
@@ -51,6 +55,8 @@ type RestModel struct {
 	CurrentBid   uint32 `json:"currentBid"`
 	HighBidderId uint32 `json:"highBidderId"`
 	MinIncrement uint32 `json:"minIncrement"`
+
+	EndsAt *time.Time `json:"endsAt,omitempty"`
 }
 
 func (r RestModel) GetName() string { return "listings" }
@@ -106,5 +112,6 @@ func Extract(r RestModel) (Model, error) {
 		minIncrement:  r.MinIncrement,
 		category:      r.Category,
 		subCategory:   r.SubCategory,
+		endsAt:        r.EndsAt,
 	}, nil
 }

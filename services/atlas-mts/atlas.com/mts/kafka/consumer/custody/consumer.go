@@ -201,7 +201,18 @@ func handleReleaseFromMtsHolding(pf providerFn) func(db *gorm.DB) message.Handle
 			}
 			tdb := db.WithContext(ctx)
 
+			// Capture the holding's owner/world/item BEFORE the soft-delete so the
+			// take-home ITEM_TAKEN_HOME event can address the owner's Transfer
+			// Inventory re-push. A miss means the row is already soft-deleted (a
+			// replay), so the event was emitted on the first delivery — skip the
+			// re-emit to keep release idempotent.
+			var taken holding.Model
+			var emitTakenHome bool
 			err := database.ExecuteTransaction(tdb, func(tx *gorm.DB) error {
+				if hm, gerr := holding.GetById(c.Body.HoldingId.String())(tx)(); gerr == nil {
+					taken = hm
+					emitTakenHome = true
+				}
 				// SoftDelete is idempotent: 0 rows affected on a replay (already
 				// released) is success, not an error.
 				_, derr := holding.SoftDelete(tx, c.Body.HoldingId.String())
@@ -218,7 +229,17 @@ func handleReleaseFromMtsHolding(pf providerFn) func(db *gorm.DB) message.Handle
 			}
 
 			_ = msg.Emit(p)(func(buf *msg.Buffer) error {
-				return buf.Put(custody.EnvStatusEventTopic, custodyproducer.ReleasedStatusEventProvider(c.TransactionId, c.Body.HoldingId))
+				if perr := buf.Put(custody.EnvStatusEventTopic, custodyproducer.ReleasedStatusEventProvider(c.TransactionId, c.Body.HoldingId)); perr != nil {
+					return perr
+				}
+				// ITEM_TAKEN_HOME drives the channel's re-push of the owner's
+				// "Transfer Inventory" panel so the just-withdrawn holding disappears
+				// without re-entering the MTS. Release is the take-home soft-delete
+				// boundary (WithdrawFromMts), so this is the natural emission point.
+				if emitTakenHome {
+					return buf.Put(mtsmsg.EnvStatusEventTopic, mtsproducer.ItemTakenHomeStatusEventProvider(c.TransactionId, byte(taken.WorldId()), taken.Id(), taken.OwnerId(), taken.TemplateId()))
+				}
+				return nil
 			})
 		}
 	}

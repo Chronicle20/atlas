@@ -396,16 +396,26 @@ func TestReleaseFromMtsHolding_SoftDeletesAndIsIdempotent(t *testing.T) {
 	// replayed delivery: already released, re-acks without error
 	handleReleaseFromMtsHolding(rp.provider())(db)(l, ctx, cmd)
 
-	if len(rp.events) != 2 {
-		t.Fatalf("expected 2 RELEASED acks (original + replay), got %d", len(rp.events))
+	// Both deliveries ack RELEASED (original + replay).
+	released := eventsOfType(rp.events, custody.StatusEventTypeReleased)
+	if len(released) != 2 {
+		t.Fatalf("expected 2 RELEASED acks (original + replay), got %d", len(released))
 	}
-	for i, ev := range rp.events {
-		if ev.eventType != custody.StatusEventTypeReleased {
-			t.Fatalf("ack %d not RELEASED: %s", i, ev.eventType)
-		}
+	for i, ev := range released {
 		if ev.transactionId != transactionId {
-			t.Fatalf("ack %d transactionId mismatch: %s", i, ev.transactionId)
+			t.Fatalf("RELEASED ack %d transactionId mismatch: %s", i, ev.transactionId)
 		}
+	}
+
+	// Only the first delivery emits ITEM_TAKEN_HOME (which drives the channel's
+	// Transfer Inventory re-push); the replay finds the row already soft-deleted
+	// and skips the re-emit, keeping release idempotent.
+	takenHome := eventsOfType(rp.events, mtsmsg.StatusEventTypeItemTakenHome)
+	if len(takenHome) != 1 {
+		t.Fatalf("expected exactly 1 ITEM_TAKEN_HOME event, got %d", len(takenHome))
+	}
+	if takenHome[0].transactionId != transactionId {
+		t.Fatalf("ITEM_TAKEN_HOME transactionId mismatch: %s", takenHome[0].transactionId)
 	}
 }
 

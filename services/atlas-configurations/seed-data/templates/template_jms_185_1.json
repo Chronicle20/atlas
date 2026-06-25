@@ -1090,7 +1090,35 @@
       },
       {
         "opCode": "0x24",
-        "writer": "FameResponse"
+        "writer": "FameResponse",
+        "options": {
+          "operations": {
+            "GIVE": "0x00",
+            "INVALID_NAME": "0x01",
+            "NOT_MINIMUM_LEVEL": "0x02",
+            "NOT_TODAY": "0x03",
+            "NOT_THIS_MONTH": "0x04",
+            "RECEIVE": "0x05",
+            "UNEXPECTED": "0x06"
+          }
+        }
+      },
+      {
+        "opCode": "0x26",
+        "writer": "NoteOperation",
+        "options": {
+          "operations": {
+            "SHOW": 3,
+            "SEND_SUCCESS": 4,
+            "SEND_ERROR": 5,
+            "REFRESH": 7
+          },
+          "errors": {
+            "RECEIVER_ONLINE": 0,
+            "RECEIVER_UNKNOWN": 1,
+            "RECEIVER_INBOX_FULL": 2
+          }
+        }
       },
       {
         "opCode": "0x2D",
@@ -1098,7 +1126,22 @@
       },
       {
         "opCode": "0x2F",
-        "writer": "HiredMerchantOperation"
+        "writer": "HiredMerchantOperation",
+        "options": {
+          "operations": {
+            "OPEN_SHOP": 7,
+            "ERROR_UNKNOWN": 8,
+            "ERROR_RETRIEVE_FROM_FREDRICK": 9,
+            "ERROR_ANOTHER_CHARACTER_IS_USING_THE_ITEM": 10,
+            "ERROR_UNABLE_TO_OPEN_THE_STORE": 11,
+            "SHOP_SEARCH": 13,
+            "SHOP_RENAME": 14,
+            "ERROR_RETRIEVE_FROM_FREDRICK_2": 15,
+            "REMOTE_SHOP_WARP": 16,
+            "CONFIRM_MANAGE": 17,
+            "FREE_FORM_NOTICE": 18
+          }
+        }
       },
       {
         "opCode": "0x31",
@@ -1202,6 +1245,33 @@
             "THE_USER_THAT_REGISTERED_HAS_DISCONNECTED_SO_THE_QUEST_CANNOT_CONTINUE_YOUR_GUILD": 75,
             "QUEST_WAITING_NOTICE": 76,
             "BOARD_AUTH_KEY_UPDATE": 77
+          }
+        }
+      },
+      {
+        "opCode": "0x3E",
+        "writer": "WorldMessage",
+        "options": {
+          "operations": {
+            "NOTICE": 0,
+            "POP_UP": 1,
+            "MEGAPHONE": 2,
+            "SUPER_MEGAPHONE": 3,
+            "TOP_SCROLL": 4,
+            "PINK_TEXT": 5,
+            "BLUE_TEXT": 6,
+            "NPC": 7,
+            "ITEM_MEGAPHONE": 8,
+            "YELLOW_MEGAPHONE": 9,
+            "MULTI_MEGAPHONE": 10,
+            "WEATHER": 11,
+            "GACHAPON": 12,
+            "UNKNOWN_3": 13,
+            "UNKNOWN_4": 14,
+            "CLIPBOARD_NOTICE_1": 15,
+            "CLIPBOARD_NOTICE_2": 16,
+            "UNKNOWN_7": 17,
+            "UNKNOWN_8": 18
           }
         }
       },
@@ -1364,6 +1434,19 @@
       {
         "opCode": "0xA5",
         "writer": "CharacterItemUpgrade"
+      },
+      {
+        "opCode": "0xAD",
+        "writer": "PetActivated",
+        "options": {
+          "operations": {
+            "NORMAL": 0,
+            "HUNGER": 1,
+            "EXPIRED": 2,
+            "UNKNOWN_1": 3,
+            "UNKNOWN_2": 4
+          }
+        }
       },
       {
         "opCode": "0xB0",
@@ -1655,7 +1738,32 @@
       },
       {
         "opCode": "0xE5",
-        "writer": "UiOpen"
+        "writer": "UiOpen",
+        "options": {
+          "operations": {
+            "ITEM": 0,
+            "EQUIPMENT": 1,
+            "STATISTICS": 2,
+            "SKILLS": 3,
+            "KEYBOARD": 5,
+            "QUEST": 6,
+            "MONSTER_BOOK": 9,
+            "CHARACTER_INFORMATION": 10,
+            "GUILD_BBS": 34,
+            "MONSTER_CARNIVAL": 17,
+            "ENERGY_BAR": 19,
+            "PARTY_SEARCH": 21,
+            "ITEM_MAKER": 22,
+            "RANKING": 25,
+            "FAMILY": 26,
+            "FAMILY_PEDIGREE": 27,
+            "OPERATOR_BOARD": 28,
+            "OPERATOR_BOARD_STATE": 29,
+            "MEDAL_MEDAL_QUEST": 30,
+            "WEB_EVENT": 31,
+            "SKILLS_EX": 32
+          }
+        }
       },
       {
         "opCode": "0xE8",

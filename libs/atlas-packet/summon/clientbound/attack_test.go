@@ -100,6 +100,94 @@ func TestSummonAttackBytes(t *testing.T) {
 	}
 }
 
+// TestSummonAttackBytesV83 pins the v83 wire byte-for-byte against the live
+// decompile. Dispatch chain (IDA, MapleStory_dump.exe @port 13341):
+//   - CUserPool::OnUserCommonPacket@0x972401 reads cid (Decode4@0x97240c), routes
+//     op 0xB2 to CSummonedPool::OnPacket@0x972490.
+//   - CSummonedPool::OnPacket@0x938dd7 reads oid (Decode4@0x938e16), looks up the
+//     summon, then case 0xB2 calls CSummonedPool::OnAttack(v9,v5,..)@0x938e9c.
+//   - CSummonedPool::OnAttack@0x7a6882 reads, after the GetSkill guard:
+//       Decode1@0x7a6908 → charLevel (stored *(this+184))
+//       Decode1@0x7a6916 → action byte (v71=(b>>7)&1 left flag, v67=b&0x7F)
+//       Decode1@0x7a6937 → count (loop guard `if (v9 > 0)`)
+//       per target: Decode4@0x7a6966 monsterOid; if(oid){ Decode1@0x7a6974 byte(6);
+//         Decode4@0x7a6987 damage }
+//     and NOTHING after the loop — there is NO trailing byte on v83 (the trailing
+//     flag is a v95-only addition, gated >=95 in the codec).
+// Wire: int cid (upstream) + int oid + byte charLevel + byte direction + byte count
+//       + per target {int monsterOid, byte 6, int damage}.
+// packet-audit:verify packet=summon/clientbound/SummonAttack version=gms_v83 ida=0x7a6882
+func TestSummonAttackBytesV83(t *testing.T) {
+	targets := []SummonAttackTarget{
+		NewSummonAttackTarget(1000001, 1234),
+		NewSummonAttackTarget(1000002, 5678),
+	}
+	in := NewSummonAttack(42, 2000001, 3, targets)
+	ctx := test.CreateContext("GMS", 83, 1)
+	got := test.Encode(t, ctx, in.Encode, nil)
+	if !bytes.Equal(got, summonAttackV83Body) {
+		t.Fatalf("v83 bytes = % X, want % X", got, summonAttackV83Body)
+	}
+}
+
+// TestSummonAttackBytesV84 pins that v84 is byte-identical to v83 (cid + oid + body,
+// NO trailing flag byte). Verified live (IDA, GMS_v84.1_U_DEVM.exe @port 13337):
+//   - CUserPool::OnUserCommonPacket@0x9b23a1 reads cid (Decode4@0x9b23ac), routes
+//     op 0xB6 (182) to the summon dispatcher sub_970201@0x970201.
+//   - sub_970201@0x970201 reads oid (Decode4@0x970240), looks up the summon, then
+//     case 182 calls the OnAttack leaf sub_7CC338@0x7cc338.
+//   - sub_7CC338@0x7cc338 reads, after the GetSkill guard (sub_77EAC3):
+//       Decode1@0x7cc3be → charLevel (stored *(a1+184))
+//       Decode1@0x7cc3cc → action byte (v75=(b>>7)&1 left flag, v74=b&0x7F direction)
+//       Decode1@0x7cc3ed → count (loop guard `if (v9 > 0)`)
+//       per target: Decode4@0x7cc41c monsterOid; if(oid){ Decode1@0x7cc42a byte(6);
+//         Decode4@0x7cc43d damage }
+//     and NOTHING after the loop — NO trailing byte on v84. The trailing flag is a
+//     v95-only addition (gated GMS && >=95 in the codec → false at v84, so this is
+//     the v83 path; off-by-one confirmed clear).
+// packet-audit:verify packet=summon/clientbound/SummonAttack version=gms_v84 ida=0x7cc338
+func TestSummonAttackBytesV84(t *testing.T) {
+	targets := []SummonAttackTarget{
+		NewSummonAttackTarget(1000001, 1234),
+		NewSummonAttackTarget(1000002, 5678),
+	}
+	in := NewSummonAttack(42, 2000001, 3, targets)
+	ctx := test.CreateContext("GMS", 84, 1)
+	got := test.Encode(t, ctx, in.Encode, nil)
+	if !bytes.Equal(got, summonAttackV83Body) {
+		t.Fatalf("v84 bytes = % X, want % X (identical to v83)", got, summonAttackV83Body)
+	}
+}
+
+// TestSummonAttackBytesV87 pins that v87 is byte-identical to v83 (cid + oid + body,
+// NO trailing flag byte). Verified live (IDA, GMSv87_4GB.exe @port 13340):
+//   - CUserPool::OnUserCommonPacket@0x9f7387 reads cid (Decode4@0x9f7392), routes
+//     ops 188-193 to CSummonedPool::OnPacket@0x9b35bf.
+//   - CSummonedPool::OnPacket@0x9b35bf reads oid (Decode4@0x9b35fe), looks up the
+//     summon, then case 0xBF calls the OnAttack leaf CSummonedPool::OnAttack@0x7f904c.
+//   - CSummonedPool::OnAttack@0x7f904c reads, after the GetSkill guard:
+//       Decode1@0x7f90d2 → charLevel (stored *(this+184))
+//       Decode1@0x7f90e0 → action byte (v73=(b>>7)&1 left flag, v71=b&0x7F direction)
+//       Decode1@0x7f9101 → count (loop guard `if (v8 > 0)`)
+//       per target: Decode4@0x7f9130 monsterOid; if(oid){ Decode1@0x7f913e byte(6);
+//         Decode4@0x7f9151 damage }
+//     and NOTHING after the loop — NO trailing byte on v87. The trailing flag is a
+//     v95-only addition (gated GMS && >=95 in the codec → false at v87, so this is
+//     the v83 path; off-by-one confirmed clear).
+// packet-audit:verify packet=summon/clientbound/SummonAttack version=gms_v87 ida=0x7f904c
+func TestSummonAttackBytesV87(t *testing.T) {
+	targets := []SummonAttackTarget{
+		NewSummonAttackTarget(1000001, 1234),
+		NewSummonAttackTarget(1000002, 5678),
+	}
+	in := NewSummonAttack(42, 2000001, 3, targets)
+	ctx := test.CreateContext("GMS", 87, 1)
+	got := test.Encode(t, ctx, in.Encode, nil)
+	if !bytes.Equal(got, summonAttackV83Body) {
+		t.Fatalf("v87 bytes = % X, want % X (identical to v83)", got, summonAttackV83Body)
+	}
+}
+
 // TestSummonAttackBytesV95 pins the v95 DELTA over the shared body: a single
 // trailing flag byte = 0 after the target loop (v95 client reader
 // CSummoned::OnAttack@0x753340's Decode1@0x7534e1). The oid is now part of the
@@ -118,5 +206,36 @@ func TestSummonAttackBytesV95(t *testing.T) {
 	want := append(append([]byte{}, summonAttackV83Body...), 0x00)
 	if !bytes.Equal(got, want) {
 		t.Fatalf("v95 bytes = % X, want % X", got, want)
+	}
+}
+
+// TestSummonAttackBytesJMS185 pins that jms185 is byte-identical to v83 (cid + oid +
+// body, NO trailing flag byte). Verified live (IDA, MapleStory_dump_SCY.exe @port
+// 13338):
+//   - CUserPool::OnUserCommonPacket reads cid, op 0xB8 (184) routes to
+//     CSummonedPool::OnPacket@0x9f7f6e, which reads oid (Decode4@0x9f7fad), looks up
+//     the summon, then case 0xB8 calls the OnAttack leaf
+//     CSummonedPool::OnAttack@0x828707.
+//   - CSummonedPool::OnAttack@0x828707 reads, after the GetSkill guard:
+//       Decode1@0x82878d → charLevel/first byte (v6, stored *(this+188))
+//       Decode1@0x82879b → action byte (v9=b>>7 bLeft, v10=b&0x7F direction)
+//       Decode1@0x8287db → count (v11; loop guard `if (v11 > 0)`)
+//       per target: Decode4@0x82880c monsterOid; if(oid){ Decode1@0x82881a byte(6);
+//         Decode4@0x82882d damage }
+//     and NOTHING after the loop — NO trailing byte on jms185. The trailing flag is
+//     a GMS>=95-only addition (codec gate `IsRegion("GMS") && MajorAtLeast(95)` →
+//     false for JMS, so jms gets no trailing byte). The jms185 path is byte-identical
+//     to v83.
+// packet-audit:verify packet=summon/clientbound/SummonAttack version=jms_v185 ida=0x828707
+func TestSummonAttackBytesJMS185(t *testing.T) {
+	targets := []SummonAttackTarget{
+		NewSummonAttackTarget(1000001, 1234),
+		NewSummonAttackTarget(1000002, 5678),
+	}
+	in := NewSummonAttack(42, 2000001, 3, targets)
+	ctx := test.CreateContext("JMS", 185, 1)
+	got := test.Encode(t, ctx, in.Encode, nil)
+	if !bytes.Equal(got, summonAttackV83Body) {
+		t.Fatalf("JMS185 bytes = % X, want % X (identical to v83, no trailing byte)", got, summonAttackV83Body)
 	}
 }

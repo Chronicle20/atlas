@@ -3,6 +3,30 @@
   "md5": "",
   "generated_at": "2026-06-13T12:51:12Z",
   "functions": {
+    "CWvsContext::OnTownPortal": {
+      "address": "0xa6dbb8",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "townId (SpawnPortal); MapId.NONE (999999999) for RemoveTownDoor"
+        },
+        {
+          "op": "Decode4",
+          "comment": "targetId; MapId.NONE (999999999) for RemoveTownDoor"
+        },
+        {
+          "op": "Decode2",
+          "comment": "x (door position)",
+          "guard": "townId != 999999999 && targetId != 999999999"
+        },
+        {
+          "op": "Decode2",
+          "comment": "y (door position)",
+          "guard": "townId != 999999999 && targetId != 999999999"
+        }
+      ]
+    },
     "COutPacket::Encode1": {
       "address": "",
       "direction": "",
@@ -8596,13 +8620,32 @@
       ]
     },
     "CLogin::SendSelectCharPacketByVAC#AllCharacterListSelectWithPicRegister": {
-      "address": "",
-      "direction": "",
-      "unresolved": true,
+      "address": "0x60c624",
+      "direction": "serverbound",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Encode1",
+          "comment": "opt (literal 1u, m_bLoginOpt == 0 branch, opcode 0x1E)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "dwCharacterID"
+        },
+        {
+          "op": "Encode4",
+          "comment": "m_anWorldID (int32)"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "sMacAddress"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "sMacAddressWithHDDSerial"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "sSPW (PIC)"
         }
       ]
     },
@@ -9493,13 +9536,20 @@
       ]
     },
     "CLogin::OnCheckPasswordResult#AuthLoginFailed": {
-      "address": "",
-      "direction": "",
-      "unresolved": true,
+      "address": "0x60d368",
+      "direction": "clientbound",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "resultCode (failure code)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "post-auth flag"
+        },
+        {
+          "op": "Decode4",
+          "comment": "reserved (always decoded before branch)"
         }
       ]
     },
@@ -18690,13 +18740,31 @@
       ]
     },
     "CLogin::SendSelectCharPacketByVAC#AllCharacterListSelect": {
-      "address": "",
-      "direction": "",
-      "unresolved": true,
+      "address": "0x60c624",
+      "direction": "serverbound",
+      "dispatch": [
+        {
+          "discriminator": "switch",
+          "case": 3
+        }
+      ],
+      "notes": "inferred-high-confidence (1.00) @0x60c624",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Encode4",
+          "comment": "dwCharacterID (m_bLoginOpt == 2/3 branch, opcode 0x0E)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "m_anWorldID (int32)"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "sMacAddress"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "sMacAddressWithHDDSerial"
         }
       ]
     },
@@ -20850,12 +20918,8 @@
       "direction": "clientbound",
       "calls": [
         {
-          "op": "Decode1",
-          "comment": ""
-        },
-        {
-          "op": "Decode1",
-          "comment": ""
+          "op": "Decode2",
+          "comment": "world status (2 bytes; v84 reads as 2 × Decode1, atlas writes WriteShort — wire-equivalent; IDA-verified 0x60e275)"
         }
       ]
     },
@@ -23035,13 +23099,35 @@
       ]
     },
     "CLogin::SendSelectCharPacketByVAC#AllCharacterListSelectWithPic": {
-      "address": "",
-      "direction": "",
-      "unresolved": true,
+      "address": "0x60c624",
+      "direction": "serverbound",
+      "dispatch": [
+        {
+          "discriminator": "switch",
+          "case": 1
+        }
+      ],
+      "notes": "inferred-high-confidence (1.00) @0x60c624",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "EncodeStr",
+          "comment": "sSPW (PIC, m_bLoginOpt == 1 branch, opcode 0x1F)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "dwCharacterID"
+        },
+        {
+          "op": "Encode4",
+          "comment": "m_anWorldID (int32)"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "sMacAddress"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "sMacAddressWithHDDSerial"
         }
       ]
     },
@@ -24915,6 +25001,94 @@
         }
       ]
     },
+    "CLogin::ChangeStepImmediate": {
+      "address": "0x609165",
+      "direction": "serverbound",
+      "note": "v84 inlines the immediate server-list-request send into the CLogin step-machine function @0x609165 (no separate ChangeStepImmediate symbol exists in this build, same as v83; the function is the demangled v83 CLogin::ChangeStep analog, base-step==1 branch). The send is COutPacket(opcode 4)+SendPacket @0x6098d0 with no Encode calls between construct and send — bodyless wire shape, matching the bodyless atlas ServerListRequest decoder. IDA-verified gms_v84.",
+      "calls": []
+    },
+    "CTownPortalPool::OnTownPortalCreated": {
+      "address": "0x7e3740",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "launched flag (writeBool launched)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "ownerId (door owner character id)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "x (door position, writeShort)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "y (door position, writeShort)"
+        }
+      ]
+    },
+    "CTownPortalPool::OnTownPortalRemoved": {
+      "address": "0x7e40de",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "animate flag (Cosmic writes constant 0; gates removal animation)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "ownerId (door owner character id; registry lookup key)"
+        }
+      ]
+    },
+    "CMemoryGameDlg::OnTieRequest": {
+      "address": "0x664034",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "response (CUtilDlg::YesNo == 6)"
+        }
+      ]
+    },
+    "CPersonalShopDlg::PutItem#Merchant": {
+      "address": "0x719c8a",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "inventoryType (nTI; op 0x21 entrusted)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "slot (nPos)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "quantity"
+        },
+        {
+          "op": "Decode2",
+          "comment": "set"
+        },
+        {
+          "op": "Decode4",
+          "comment": "price"
+        }
+      ]
+    },
+    "CPersonalShopDlg::MoveItemToInventory#Merchant": {
+      "address": "0x719ffd",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode2",
+          "comment": "index (nIdx; op 0x26 entrusted)"
+        }
+      ]
+    },
     "CUser::OnEmotion": {
       "address": "0x9b2518",
       "direction": "clientbound",
@@ -24930,6 +25104,17 @@
         }
       ]
     },
+    "CLogin::SendCheckDuplicateIDPacket": {
+      "address": "0x60cf5d",
+      "direction": "serverbound",
+      "_note": "v84 character-name duplicate check. Sender CLogin::SendCheckDuplicateIDPacket@0x60cf5d (was sub_60CF5D, named this campaign): validates the name then COutPacket(0x15)@0x60cfa6 + EncodeStr(sCharName)@0x60cfc3. Op 0x15 = CHECK_CHAR_NAME (matches template_gms_84_1.json CharacterCheckNameHandle). Keyed under the registry/CSV primary fname CLogin::SendCheckDuplicateIDPacket (same convention as v83/v87/v95).",
+      "calls": [
+        {
+          "op": "EncodeStr",
+          "comment": "sCharName (character name to check) @0x60cfc3"
+        }
+      ]
+    },
     "CUserRemote::OnSetActivePortableChair": {
       "address": "0x9b2518",
       "direction": "clientbound",
@@ -24942,17 +25127,6 @@
         {
           "op": "Decode4",
           "comment": "m_nPortableChairID (chairId) @0x9b25fe"
-        }
-      ]
-    },
-    "CLogin::SendCheckDuplicateIDPacket": {
-      "address": "0x60cf5d",
-      "direction": "serverbound",
-      "_note": "v84 character-name duplicate check. Sender CLogin::SendCheckDuplicateIDPacket@0x60cf5d (was sub_60CF5D, named this campaign): validates the name then COutPacket(0x15)@0x60cfa6 + EncodeStr(sCharName)@0x60cfc3. Op 0x15 = CHECK_CHAR_NAME (matches template_gms_84_1.json CharacterCheckNameHandle). Keyed under the registry/CSV primary fname CLogin::SendCheckDuplicateIDPacket (same convention as v83/v87/v95).",
-      "calls": [
-        {
-          "op": "EncodeStr",
-          "comment": "sCharName (character name to check) @0x60cfc3"
         }
       ]
     }

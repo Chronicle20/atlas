@@ -1,9 +1,9 @@
 {
   "WriterName": "SummonSpawn",
   "IDAName": "CSummonedPool::OnCreated",
-  "Address": "0x938f61",
+  "Address": "0x95adec",
   "Variant": "GMS/v83",
-  "BranchDepth": 2,
+  "BranchDepth": 1,
   "AtlasFile": "libs/atlas-packet/summon/clientbound/spawn.go",
   "Rows": [
     {
@@ -11,7 +11,7 @@
       "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
-      "IDAComment": "cid — read by sub_938F61@0x938f7c (consumed by CSummonedPool::OnPacket dispatch; pool is cid-keyed)",
+      "IDAComment": "cid (character id) — read upstream by CUserPool::OnUserCommonPacket@0x97240c (consumed by the dispatch; pool is cid-keyed). Atlas writes it as ownerId.",
       "Verdict": 0,
       "Note": ""
     },
@@ -20,7 +20,7 @@
       "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
-      "IDAComment": "skillId (nSkillID) — sub_938F61@0x938f86; consumed by GetSkill@CSkillInfo in sub_7A379B@0x7a37fd. (NO oid on v83 — the int after cid is the skillId)",
+      "IDAComment": "oid (summon object id) — OnCreated@0x95ADEC Decode4@0x95ae0e; passed to the CSummoned ctor (sub_7A30A9) as the object id. (The active path's first Decode4 after the upstream cid IS the oid.)",
       "Verdict": 0,
       "Note": ""
     },
@@ -28,17 +28,17 @@
       "Index": 2,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "charLevel (nCharLevel) — sub_938F61@0x938f90; atlas writes fixed 0x0A (visual-only)",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "IDAOp": 2,
+      "IDAComment": "skillId (nSkillID) — OnCreated@0x95ADEC Decode4@0x95ae17; consumed by GetSkill@CSkillInfo.",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 3,
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "SLV skill level (nSLV) — sub_938F61@0x938f9a; atlas 'level'",
+      "IDAComment": "charLevel (nCharLevel) — OnCreated@0x95ADEC Decode1@0x95ae21; atlas writes fixed 0x0A (visual-only).",
       "Verdict": 0,
       "Note": ""
     },
@@ -46,17 +46,17 @@
       "Index": 4,
       "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 1,
-      "IDAComment": "nX — CSummoned Init blob sub_7A379B@0x7a37ab",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "IDAOp": 0,
+      "IDAComment": "SLV skill level (nSLV) — OnCreated@0x95ADEC Decode1@0x95ae30; atlas 'level'.",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 5,
       "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 1,
-      "IDAComment": "nY — sub_7A379B@0x7a37b5",
+      "IDAComment": "nX — CSummoned::Init blob @0x7a379b Decode2@0x7a37b2.",
       "Verdict": 0,
       "Note": ""
     },
@@ -64,35 +64,35 @@
       "Index": 6,
       "AtlasOp": 1,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "nMoveAction (stance) — sub_7A379B@0x7a37c2",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "IDAOp": 1,
+      "IDAComment": "nY — CSummoned::Init @0x7a379b Decode2@0x7a37bf.",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 7,
       "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 1,
-      "IDAComment": "nCurFoothold — sub_7A379B@0x7a37cf; atlas writes fixed 0 (visual-only)",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "IDAOp": 0,
+      "IDAComment": "nMoveAction (stance) — CSummoned::Init @0x7a379b Decode1@0x7a37cc.",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 8,
       "AtlasOp": 1,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "nMoveAbility (movementType) — sub_7A379B@0x7a37d9",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "IDAOp": 1,
+      "IDAComment": "nCurFoothold — CSummoned::Init @0x7a379b Decode2@0x7a37cf; atlas writes fixed 0 (visual-only).",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 9,
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "nAssistType (!puppet attack flag) — sub_7A379B@0x7a37e6",
+      "IDAComment": "nMoveAbility (movementType) — CSummoned::Init @0x7a379b Decode1@0x7a37e3.",
       "Verdict": 0,
       "Note": ""
     },
@@ -101,7 +101,7 @@
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "nEnterType (!animated flag; read only if GetFoothold(foothold)!=0) — sub_7A379B@0x7a3821",
+      "IDAComment": "nAssistType (!puppet attack flag) — CSummoned::Init @0x7a379b Decode1@0x7a37fa.",
       "Verdict": 0,
       "Note": ""
     },
@@ -110,9 +110,9 @@
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "IDAComment": "nEnterType (!animated flag; read after the Skill guard) — CSummoned::Init @0x7a379b Decode1@0x7a3821.",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 12,
@@ -120,10 +120,10 @@
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Verdict": 1,
+      "Note": "atlas: trailing padding byte — client stops reading (harmless over-write)"
     }
   ],
-  "Verdict": 3,
-  "FlatInvalid": true
+  "Verdict": 1,
+  "FlatInvalid": false
 }

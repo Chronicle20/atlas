@@ -1,0 +1,10 @@
+packet: summon/clientbound/SummonSpawn
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CSummonedPool::OnCreated
+    address: "0x95adec"
+    decompile_sha256: af32e8bfd86a312e1c74886e7ddd65ff7ee6ba6382ef1356b20556bd123a2bd0
+verifies:
+    - libs/atlas-packet/summon/clientbound/spawn_test.go#TestSummonSpawnBytesV83

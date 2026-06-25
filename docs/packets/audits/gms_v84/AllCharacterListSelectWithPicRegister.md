@@ -1,19 +1,19 @@
 # AllCharacterListSelectWithPicRegister (← `CLogin::SendSelectCharPacketByVAC#AllCharacterListSelectWithPicRegister`)
 
-- **IDA:** 
+- **IDA:** 0x60c624
 - **Atlas file:** `libs/atlas-packet/login/serverbound/all_character_list_select_with_pic_register.go`
 - **Variant:** GMS/v84
 - **Branch depth:** 0
-- **Verdict:** ❌
+- **Verdict:** ✅
 
 ## Wire-level diff
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | byte | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
-| 1 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 2 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 3 | string | byte `` | ❌ | atlas: extra — client never reads this field |
-| 4 | string | byte `` | ❌ | atlas: extra — client never reads this field |
-| 5 | string | byte `` | ❌ | atlas: extra — client never reads this field |
+| 0 | byte | byte `opt (literal 1u, m_bLoginOpt == 0 branch, opcode 0x1E)` | ✅ |  |
+| 1 | int32 | int32 `dwCharacterID` | ✅ |  |
+| 2 | int32 | int32 `m_anWorldID (int32)` | ✅ |  |
+| 3 | string | string `sMacAddress` | ✅ |  |
+| 4 | string | string `sMacAddressWithHDDSerial` | ✅ |  |
+| 5 | string | string `sSPW (PIC)` | ✅ |  |
 

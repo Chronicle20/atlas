@@ -1,0 +1,10 @@
+packet: summon/clientbound/SummonRemove
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CSummonedPool::OnRemoved
+    address: "0x7a64eb"
+    decompile_sha256: a63c6aafa66a31f35556e0068f381c98174b6b30ac00533421811263697bf97f
+verifies:
+    - libs/atlas-packet/summon/clientbound/remove_test.go#TestSummonRemoveBytesV83

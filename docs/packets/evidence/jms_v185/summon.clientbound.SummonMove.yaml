@@ -1,0 +1,10 @@
+packet: summon/clientbound/SummonMove
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CSummonedPool::OnMove
+    address: "0x8286e4"
+    decompile_sha256: 2391b1df9b89aa84a4e16c1ec502b1e5fd0e6f527eabc59ab99de4c2e5da6fe9
+verifies:
+    - libs/atlas-packet/summon/clientbound/move_test.go#TestSummonMoveBytesJMS185

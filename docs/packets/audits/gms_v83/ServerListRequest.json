@@ -1,0 +1,11 @@
+{
+  "WriterName": "ServerListRequest",
+  "IDAName": "CLogin::ChangeStepImmediate",
+  "Address": "0x5f53c0",
+  "Variant": "GMS/v83",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/login/serverbound/server_list_request.go",
+  "Rows": null,
+  "Verdict": 0,
+  "FlatInvalid": false
+}

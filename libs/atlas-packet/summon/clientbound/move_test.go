@@ -66,8 +66,100 @@ func TestSummonMoveBytes(t *testing.T) {
 	}
 }
 
+// TestSummonMoveBytesV83 pins the v83 wire byte-for-byte against the live
+// decompile. Dispatch chain (IDA, MapleStory_dump.exe @port 13341):
+//   - CUserPool::OnUserCommonPacket@0x972401 reads cid (Decode4@0x97240c), routes
+//     op 0xB1 to CSummonedPool::OnPacket@0x972490.
+//   - CSummonedPool::OnPacket@0x938dd7 reads oid (Decode4@0x938e16), looks up the
+//     summon, then case 0xB1 calls CSummonedPool::OnMove(v9,v5)@0x938ea7.
+//   - CSummonedPool::OnMove@0x7a6861 forwards the CInPacket to
+//     CMovePath::OnMovePacket@0x68b371, which decodes the raw movement blob (the
+//     blob itself begins with start x,y per CMovePath::Encode).
+// So the wire is: int cid (consumed upstream) + int oid + raw CMovePath blob, with
+// NO separately-written start position (writing one mis-aligns the observer decode).
+// packet-audit:verify packet=summon/clientbound/SummonMove version=gms_v83 ida=0x7a6861
+func TestSummonMoveBytesV83(t *testing.T) {
+	raw := []byte{0x01, 0x02, 0x03, 0x04, 0x05}
+	in := NewSummonMove(42, 1000001, raw)
+	ctx := test.CreateContext("GMS", 83, 1)
+	got := test.Encode(t, ctx, in.Encode, nil)
+
+	// cid=42, oid=1000001=0x000F4241, then the raw movement blob (no separate pos)
+	want := []byte{
+		0x2A, 0x00, 0x00, 0x00, // cid (consumed by dispatcher)
+		0x41, 0x42, 0x0F, 0x00, // oid (Decode4@0x938e16 in OnPacket)
+		0x01, 0x02, 0x03, 0x04, 0x05, // rawMovement (CMovePath blob → OnMovePacket@0x68b371)
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatalf("v83 bytes = % X, want % X", got, want)
+	}
+}
+
+// TestSummonMoveBytesV84 pins the v84 wire byte-for-byte against the live
+// decompile (IDA, GMS_v84.1_U_DEVM.exe @port 13337). v84 is v83-shaped — same
+// dispatch + leaf, no version delta. Dispatch chain:
+//   - CUserPool::OnUserCommonPacket@0x9b23a1 reads cid (Decode4@0x9b23ac), routes
+//     op 0xB5 (181) to the summon dispatcher sub_970201@0x970201.
+//   - sub_970201@0x970201 reads oid (Decode4@0x970240), looks up the summon, then
+//     case 181 calls the OnMove leaf sub_7CC317@0x7cc317.
+//   - sub_7CC317@0x7cc317 forwards the CInPacket to CMovePath__OnMovePacket
+//     (@0x6a203f), which decodes the raw movement blob (the blob itself begins with
+//     start x,y per CMovePath::Encode).
+// Wire = int cid (consumed upstream) + int oid + raw CMovePath blob, with NO
+// separately-written start position. No off-by-one: Move has no version gate, so the
+// v84 path is byte-identical to v83.
+// packet-audit:verify packet=summon/clientbound/SummonMove version=gms_v84 ida=0x7cc317
+func TestSummonMoveBytesV84(t *testing.T) {
+	raw := []byte{0x01, 0x02, 0x03, 0x04, 0x05}
+	in := NewSummonMove(42, 1000001, raw)
+	ctx := test.CreateContext("GMS", 84, 1)
+	got := test.Encode(t, ctx, in.Encode, nil)
+
+	// cid=42, oid=1000001=0x000F4241, then the raw movement blob (no separate pos)
+	want := []byte{
+		0x2A, 0x00, 0x00, 0x00, // cid (consumed by dispatcher)
+		0x41, 0x42, 0x0F, 0x00, // oid (Decode4@0x970240 in sub_970201)
+		0x01, 0x02, 0x03, 0x04, 0x05, // rawMovement (CMovePath blob → CMovePath__OnMovePacket@0x6a203f)
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatalf("v84 bytes = % X, want % X", got, want)
+	}
+}
+
+// TestSummonMoveBytesV87 pins the v87 wire byte-for-byte against the live
+// decompile (IDA, GMSv87_4GB.exe @port 13340). v87 is v83-shaped — same dispatch
+// + leaf, no version delta. Dispatch chain:
+//   - CUserPool::OnUserCommonPacket@0x9f7387 reads cid (Decode4@0x9f7392), routes
+//     ops 188-193 to CSummonedPool::OnPacket@0x9b35bf.
+//   - CSummonedPool::OnPacket@0x9b35bf reads oid (Decode4@0x9b35fe), looks up the
+//     summon via sub_9BEC8B, then case 0xBE calls CSummonedPool::OnMove@0x7f902b.
+//   - CSummonedPool::OnMove@0x7f902b forwards the CInPacket to
+//     CMovePath::OnMovePacket@0x6c802d, which decodes the raw movement blob (the
+//     blob itself begins with start x,y per CMovePath::Encode).
+// Wire = int cid (consumed upstream) + int oid + raw CMovePath blob, with NO
+// separately-written start position. No off-by-one: Move has no version gate, so the
+// v87 path is byte-identical to v83.
+// packet-audit:verify packet=summon/clientbound/SummonMove version=gms_v87 ida=0x7f902b
+func TestSummonMoveBytesV87(t *testing.T) {
+	raw := []byte{0x01, 0x02, 0x03, 0x04, 0x05}
+	in := NewSummonMove(42, 1000001, raw)
+	ctx := test.CreateContext("GMS", 87, 1)
+	got := test.Encode(t, ctx, in.Encode, nil)
+
+	// cid=42, oid=1000001=0x000F4241, then the raw movement blob (no separate pos)
+	want := []byte{
+		0x2A, 0x00, 0x00, 0x00, // cid (consumed by dispatcher)
+		0x41, 0x42, 0x0F, 0x00, // oid (Decode4@0x9b35fe in OnPacket)
+		0x01, 0x02, 0x03, 0x04, 0x05, // rawMovement (CMovePath blob → OnMovePacket@0x6c802d)
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatalf("v87 bytes = % X, want % X", got, want)
+	}
+}
+
 // TestSummonMoveBytesV95 confirms v95 carries the same shape (cid + oid + blob) —
 // there is no v95-specific move delta beyond the (now universal) oid.
+// packet-audit:verify packet=summon/clientbound/SummonMove version=gms_v95 ida=0x759830
 func TestSummonMoveBytesV95(t *testing.T) {
 	raw := []byte{0x01, 0x02, 0x03, 0x04, 0x05}
 	in := NewSummonMove(42, 1000001, raw)
@@ -81,5 +173,35 @@ func TestSummonMoveBytesV95(t *testing.T) {
 	}
 	if !bytes.Equal(got, want) {
 		t.Fatalf("v95 bytes = % X, want % X", got, want)
+	}
+}
+
+// TestSummonMoveBytesJMS185 pins the JMS185 wire byte-for-byte against the live
+// decompile (IDA, MapleStory_dump_SCY.exe @port 13338). jms185 is v83-shaped —
+// same dispatch + leaf, no version delta. Dispatch chain:
+//   - CUserPool::OnUserCommonPacket reads cid, op 0xB7 (183) routes to
+//     CSummonedPool::OnPacket@0x9f7f6e, which reads oid (Decode4@0x9f7fad), looks up
+//     the summon, then case 0xB7 calls CSummonedPool::OnMove@0x8286e4.
+//   - CSummonedPool::OnMove@0x8286e4 forwards the CInPacket to
+//     CMovePath::OnMovePacket@0x70c5dc, which decodes the raw movement blob (the
+//     blob itself begins with start x,y per CMovePath::Encode).
+// Wire = int cid (consumed upstream) + int oid + raw CMovePath blob, with NO
+// separately-written start position (writing one mis-aligns the observer decode).
+// Move has no version gate, so the jms185 path is byte-identical to v83.
+// packet-audit:verify packet=summon/clientbound/SummonMove version=jms_v185 ida=0x8286e4
+func TestSummonMoveBytesJMS185(t *testing.T) {
+	raw := []byte{0x01, 0x02, 0x03, 0x04, 0x05}
+	in := NewSummonMove(42, 1000001, raw)
+	ctx := test.CreateContext("JMS", 185, 1)
+	got := test.Encode(t, ctx, in.Encode, nil)
+
+	// cid=42, oid=1000001=0x000F4241, then the raw movement blob (no separate pos)
+	want := []byte{
+		0x2A, 0x00, 0x00, 0x00, // cid (consumed by dispatcher)
+		0x41, 0x42, 0x0F, 0x00, // oid (Decode4@0x9f7fad in OnPacket)
+		0x01, 0x02, 0x03, 0x04, 0x05, // rawMovement (CMovePath blob → OnMovePacket@0x70c5dc)
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatalf("JMS185 bytes = % X, want % X", got, want)
 	}
 }

@@ -1,0 +1,21 @@
+{
+  "WriterName": "InteractionOperationInvite",
+  "IDAName": "CField::SendInviteTradingRoomMsg",
+  "Address": "0x52fad4",
+  "Variant": "GMS/v83",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/interaction/serverbound/operation_invite.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "targetCharacterId (m_dwCharacterId)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

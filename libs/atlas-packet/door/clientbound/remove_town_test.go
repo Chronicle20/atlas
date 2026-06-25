@@ -28,6 +28,10 @@ import (
 // Decode2(x)/Decode2(y) entirely — confirming the 8-byte removal body below.
 //
 // packet-audit:verify packet=door/clientbound/RemoveTownDoor version=gms_v83 ida=0xa226a6
+// packet-audit:verify packet=door/clientbound/RemoveTownDoor version=gms_v84 ida=0xa6dbb8
+// packet-audit:verify packet=door/clientbound/RemoveTownDoor version=gms_v87 ida=0xab9ef6
+// packet-audit:verify packet=door/clientbound/RemoveTownDoor version=gms_v95 ida=0x9f1330
+// packet-audit:verify packet=door/clientbound/RemoveTownDoor version=jms_v185 ida=0xb0977c
 func TestRemoveTownDoor(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 

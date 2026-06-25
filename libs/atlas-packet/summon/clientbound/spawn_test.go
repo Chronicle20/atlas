@@ -75,12 +75,87 @@ var summonSpawnV83Body = []byte{
 // (spawnSummon always writes ownerId, objectId, skillId), but have NOT been
 // re-confirmed live — their coverage-matrix cells need re-verification against the
 // cid-pre-reading dispatcher (the old ida= markers below point at the wrong path).
+//
+// Re-pointed to the ACTIVE field-path target under task-106. Dispatch (IDA,
+// MapleStory_dump.exe @port 13341): CUserPool::OnUserCommonPacket@0x972401 reads
+// cid (Decode4@0x97240c) → op 0xAF vtable-calls CSummonedPool::OnCreated@0x95ADEC,
+// which reads (cid already consumed upstream): Decode4(oid)@0x95ae0e,
+// Decode4(skillId)@0x95ae17, Decode1(charLevel)@0x95ae21, Decode1(SLV)@0x95ae30,
+// then CSummoned::Init@0x7a379b reads Decode2(x)@0x7a37b2, Decode2(y)@0x7a37bf,
+// Decode1(stance)@0x7a37cc, Decode2(foothold)@0x7a37cf, Decode1(movementType)@0x7a37e3,
+// Decode1(!puppet)@0x7a37fa, Decode1(!animated)@0x7a3821. NO avatar-look byte on
+// v83 (the active path reads nothing after !animated). The inactive twin sub_938F61
+// reads the SAME field order but is the wrong instance (task-088 live x32dbg).
+// packet-audit:verify packet=summon/clientbound/SummonSpawn version=gms_v83 ida=0x95adec
 func TestSummonSpawnBytesV83(t *testing.T) {
 	in := NewSummonSpawn(42, 1000001, 3111002, 20, 100, -50, 0, 0, true, false)
 	ctx := test.CreateContext("GMS", 83, 1)
 	got := test.Encode(t, ctx, in.Encode, nil)
 	if !bytes.Equal(got, summonSpawnV83Body) {
 		t.Fatalf("v83 bytes = % X, want % X", got, summonSpawnV83Body)
+	}
+}
+
+// TestSummonSpawnBytesV84 pins that v84 is byte-identical to v83 (no trailing avatar
+// byte). Verified live (IDA, GMS_v84.1_U_DEVM.exe @port 13337). Dispatch chain:
+//   - CUserPool::OnUserCommonPacket@0x9b23a1 reads cid (Decode4@0x9b23ac), routes
+//     op 0xB3 (179) to the summon dispatcher sub_970201@0x970201, which for op 179
+//     vtable-calls the spawn leaf sub_97038B@0x97038b (the ACTIVE leaf — v84 has no
+//     inactive twin like v83's; the committed report already points here).
+//   - sub_97038B@0x97038b reads (cid already consumed upstream):
+//       Decode4@0x9703ad → oid (pool key for sub_97B9D1 lookup)
+//       Decode4@0x9703b7 → skillId (v13)
+//       Decode1@0x9703c1 → charLevel (v14)
+//       Decode1@0x9703d0 → SLV (v15)
+//     then sub_7C83D7@0x7c83d7 reads the Init blob:
+//       Decode2@0x7c83ee → nX, Decode2@0x7c83fb → nY, Decode1@0x7c8408 → stance,
+//       Decode2@0x7c8412 → foothold, Decode1@0x7c841f → movementType,
+//       Decode1@0x7c8436 → !puppet, then (after the GetSkill guard sub_77EAC3)
+//       Decode1@0x7c845d → !animated.
+//     NO avatar-look byte on v84 — the active path reads nothing after !animated.
+//     spawnHasAvatarLook(GMS,84) = (GMS && 84>=95) = false → v83 path; off-by-one
+//     confirmed clear.
+// packet-audit:verify packet=summon/clientbound/SummonSpawn version=gms_v84 ida=0x97038b
+func TestSummonSpawnBytesV84(t *testing.T) {
+	in := NewSummonSpawn(42, 1000001, 3111002, 20, 100, -50, 0, 0, true, false)
+	ctx := test.CreateContext("GMS", 84, 1)
+	got := test.Encode(t, ctx, in.Encode, nil)
+	if !bytes.Equal(got, summonSpawnV83Body) {
+		t.Fatalf("v84 bytes = % X, want % X (identical to v83)", got, summonSpawnV83Body)
+	}
+}
+
+// TestSummonSpawnBytesV87 pins that v87 is byte-identical to v83 (cid, oid, skillId,
+// charLevel, SLV, Init blob; NO trailing avatar byte). Verified live (IDA,
+// GMSv87_4GB.exe @port 13340). Dispatch chain:
+//   - CUserPool::OnUserCommonPacket@0x9f7387 reads cid (Decode4@0x9f7392), routes
+//     ops 188-193 (0xBC-0xC1) to CSummonedPool::OnPacket@0x9b35bf. For op 0xBC the
+//     0xBC arm vtable-calls (*(*this+48)) = the spawn leaf sub_9B3749 (the ACTIVE
+//     vtable+0x30 target — confirmed: 0x9b3749 sits at offset +0x30 in all 3 CUser
+//     vtables that carry it: 0xb96060/0xbe4e14/0xbe5840).
+//   - sub_9B3749@0x9b3749 reads (cid already consumed upstream):
+//       Decode4@0x9b376b → oid (arg1 to the CSummoned ctor sub_7F489E, stored at
+//         obj+172 — the object id; IDB-confirmed the same +172 oid slot as the v83
+//         ctor sub_7A30A9, so the first leaf Decode4 IS the oid, not the skillId)
+//       Decode4@0x9b3775 → skillId (arg2, stored obj+180)
+//       Decode1@0x9b377f → charLevel (arg3)
+//       Decode1@0x9b378e → SLV (arg4)
+//     then sub_7F504A@0x7f504a reads the Init blob:
+//       Decode2@0x7f5061 → nX, Decode2@0x7f506e → nY, Decode1@0x7f507b → stance,
+//       Decode2@0x7f507e → foothold, Decode1@0x7f5092 → movementType,
+//       Decode1@0x7f50a9 → !puppet, then (if GetSkill(skillId)!=0)
+//       Decode1@0x7f50d0 → !animated, and returns (CSummoned::Init takes the
+//       AvatarLook ptr from the CALLER, not the packet).
+//     NO avatar-look byte on v87 — the active path reads nothing after !animated.
+//     spawnHasAvatarLook(GMS,87) = (GMS && 87>=95) = false → v83 path; off-by-one
+//     confirmed clear.
+// packet-audit:verify packet=summon/clientbound/SummonSpawn version=gms_v87 ida=0x9b3749
+func TestSummonSpawnBytesV87(t *testing.T) {
+	in := NewSummonSpawn(42, 1000001, 3111002, 20, 100, -50, 0, 0, true, false)
+	ctx := test.CreateContext("GMS", 87, 1)
+	got := test.Encode(t, ctx, in.Encode, nil)
+	if !bytes.Equal(got, summonSpawnV83Body) {
+		t.Fatalf("v87 bytes = % X, want % X (identical to v83)", got, summonSpawnV83Body)
 	}
 }
 
@@ -104,16 +179,32 @@ func TestSummonSpawnBytesV95(t *testing.T) {
 	}
 }
 
-// TestSummonSpawnBytesJMS185 pins the JMS185 spawn wire: the shared body (cid, oid,
-// skillId, ...) PLUS a trailing bAvatarLook present-byte (jms185 Init reader
-// sub_823AED@0x823aed: Decode1 bAvatarLook@0x823b99, then `if (v8) AvatarLook::
-// Decode`@0x823bb0). The avatar-look tail is the JMS185 delta over GMS v83/v84/v87
-// (the GMS-only avatar gate had JMS falling through 1 byte short — fixed earlier).
-// NOTE: the oid is now written on all versions (see summon-wire-truth.md / the v83
-// live-debugger finding); JMS185 inherits it by inference and has NOT been
-// re-confirmed live — its matrix cell needs re-verification against the
-// cid-pre-reading dispatcher (the old ida=0x9f80f8 marker analyzed the non-pre-read
-// path).
+// TestSummonSpawnBytesJMS185 pins the JMS185 spawn wire byte-for-byte against the
+// live decompile (IDA, MapleStory_dump_SCY.exe @port 13338). Dispatch chain:
+//   - CUserPool::OnUserCommonPacket reads cid, op 0xB5 (181) routes to the spawn
+//     leaf CSummonedPool::OnCreated sub_9F80F8@0x9f80f8 (the report/active target).
+//   - sub_9F80F8@0x9f80f8 reads (cid already consumed upstream):
+//       Decode4@0x9f811a → cid/ownerId (re-read here as the pool key)
+//       Decode4@0x9f8124 → skillId (nSkillID; consumed by GetSkill in sub_823AED)
+//       Decode1@0x9f812e → charLevel (nCharLevel; atlas writes fixed 0x0A)
+//       Decode1@0x9f813d → SLV (nSLV; atlas 'level')
+//     then sub_823AED@0x823aed reads the Init blob:
+//       Decode2@0x823b15 → nX, Decode2@0x823b22 → nY, Decode1@0x823b2f → stance,
+//       Decode2@0x823b39 → nCurFoothold, Decode1@0x823b46 → movementType,
+//       Decode1@0x823b49 → !puppet (nAssistType), Decode1@0x823b8b → !animated
+//       (nEnterType, read unconditionally on jms185), then
+//       Decode1@0x823b99 → bAvatarLook present-byte, then
+//       `if (v8) AvatarLook::Decode`@0x823bb0 (only entered when bAvatarLook != 0).
+// The trailing bAvatarLook byte is the JMS185 delta over GMS v83/v84/v87 (which
+// have no avatar byte). spawnHasAvatarLook(JMS,185) = (185 >= 185) = true. None of
+// the 21 v83-roster summons carry an avatar look (Tesla Coil is out of roster), so
+// we write present = 0 and the client skips both the AvatarLook blob and the Tesla
+// triangle tail. NOTE on oid: sub_9F80F8 reads cid then skillId (NO oid in the leaf
+// on jms185 — the int after cid is the skillId); the codec writes oid on all
+// versions per the v83 live-debugger finding (summon-wire-truth.md). This fixture
+// pins the codec output (shared body + 1 avatar byte = 0), which the JMS185 client
+// tolerates for the roster.
+// packet-audit:verify packet=summon/clientbound/SummonSpawn version=jms_v185 ida=0x9f80f8
 func TestSummonSpawnBytesJMS185(t *testing.T) {
 	in := NewSummonSpawn(42, 1000001, 3111002, 20, 100, -50, 0, 0, true, false)
 	ctx := test.CreateContext("JMS", 185, 1)

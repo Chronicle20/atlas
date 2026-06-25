@@ -24876,6 +24876,52 @@
           "comment": "ownerId (door owner character id; registry lookup key)"
         }
       ]
+    },
+    "CMemoryGameDlg::OnTieRequest": {
+      "address": "0x664034",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "response (CUtilDlg::YesNo == 6)"
+        }
+      ]
+    },
+    "CPersonalShopDlg::PutItem#Merchant": {
+      "address": "0x719c8a",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "inventoryType (nTI; op 0x21 entrusted)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "slot (nPos)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "quantity"
+        },
+        {
+          "op": "Decode2",
+          "comment": "set"
+        },
+        {
+          "op": "Decode4",
+          "comment": "price"
+        }
+      ]
+    },
+    "CPersonalShopDlg::MoveItemToInventory#Merchant": {
+      "address": "0x719ffd",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode2",
+          "comment": "index (nIdx; op 0x26 entrusted)"
+        }
+      ]
     }
   }
 }

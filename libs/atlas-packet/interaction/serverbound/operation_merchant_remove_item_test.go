@@ -1,9 +1,11 @@
 package serverbound
 
 import (
+	"encoding/hex"
 	"testing"
 
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
+	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
 // packet-audit:verify packet=interaction/serverbound/InteractionOperationMerchantRemoveItem version=gms_v95 ida=0x6987a0
@@ -18,5 +20,25 @@ func TestOperationMerchantRemoveItemRoundTrip(t *testing.T) {
 				t.Errorf("index: got %v, want %v", output.Index(), input.Index())
 			}
 		})
+	}
+}
+
+// TestOperationMerchantRemoveItemBytes pins the wire bytes for the entrusted-merchant
+// remove-item arm: a single uint16 index (LE). The #Merchant arm shares the base
+// CPersonalShopDlg::MoveItemToInventory (entrusted sub-op 0x26 vs personal-shop 0x1B)
+// and carries the same body across versions; no MajorVersion() gate.
+// packet-audit:verify packet=interaction/serverbound/InteractionOperationMerchantRemoveItem version=gms_v83 ida=0x6fdcdf
+// packet-audit:verify packet=interaction/serverbound/InteractionOperationMerchantRemoveItem version=gms_v87 ida=0x741271
+// packet-audit:verify packet=interaction/serverbound/InteractionOperationMerchantRemoveItem version=jms_v185 ida=0x762e26
+// packet-audit:verify packet=interaction/serverbound/InteractionOperationMerchantRemoveItem version=gms_v84 ida=0x719ffd
+func TestOperationMerchantRemoveItemBytes(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	ctx := pt.CreateContext("GMS", 83, 1)
+	input := OperationMerchantRemoveItem{index: 42}
+	got := hex.EncodeToString(input.Encode(l, ctx)(nil))
+	// 2a00
+	want := "2a00"
+	if got != want {
+		t.Errorf("bytes: got %s, want %s", got, want)
 	}
 }

@@ -2040,55 +2040,8 @@
       "direction": "serverbound",
       "calls": [
         {
-          "op": "Decode1",
-          "comment": "",
-          "guard": "a2"
-        },
-        {
-          "op": "Decode1",
-          "comment": "",
-          "guard": "a2"
-        },
-        {
-          "op": "Decode1",
-          "comment": "",
-          "guard": "a2"
-        },
-        {
           "op": "Decode4",
-          "comment": "",
-          "guard": "a2"
-        },
-        {
-          "op": "Decode1",
-          "comment": "",
-          "guard": "<default>"
-        },
-        {
-          "op": "Decode1",
-          "comment": "",
-          "guard": "<default>"
-        },
-        {
-          "op": "Decode1",
-          "comment": "",
-          "guard": "<default>"
-        },
-        {
-          "op": "Delegate",
-          "comment": "",
-          "guard": "<default>",
-          "ref": "COutPacket::Init"
-        },
-        {
-          "op": "Decode1",
-          "comment": "",
-          "guard": "<default>"
-        },
-        {
-          "op": "Decode4",
-          "comment": "",
-          "guard": "<default>"
+          "comment": "targetCharacterId (m_dwCharacterId)"
         }
       ]
     },
@@ -12781,6 +12734,42 @@
         {
           "op": "Decode1",
           "comment": "trailing extra byte (CInPacket::Decode1)"
+        }
+      ]
+    },
+    "CPersonalShopDlg::PutItem#Merchant": {
+      "address": "0x6fd96c",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "inventoryType (nTI; op 0x21 entrusted)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "slot (nPos)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "quantity"
+        },
+        {
+          "op": "Decode2",
+          "comment": "set"
+        },
+        {
+          "op": "Decode4",
+          "comment": "price"
+        }
+      ]
+    },
+    "CPersonalShopDlg::MoveItemToInventory#Merchant": {
+      "address": "0x6fdcdf",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode2",
+          "comment": "index (nIdx; op 0x26 entrusted)"
         }
       ]
     }

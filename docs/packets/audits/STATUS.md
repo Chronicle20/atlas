@@ -5,11 +5,11 @@
 
 Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 
-- export gms_v83: `e9f3c17a0e394085e7ec12efe6ae33f13ab06bba93b80b44c9180f7d0387052a`
-- export gms_v84: `1b22d1ada960ab9a9302c07507cc7908c67d4ca1a17d5fea6ec4c4f741515e43`
-- export gms_v87: `57ee76777f519399e5d36c1069f84a903b6515046f26c0f827d049589bd6ec1c`
+- export gms_v83: `ed8270aee32909e07c16c291578c8e64ae8fb3e9b7511e87251c2f2f0fe4d743`
+- export gms_v84: `38eb0b469dbd4bf70f2ccf8a95a9ac7aca0aa741bb52e92e8fe9377f29ee4c16`
+- export gms_v87: `714817d376bb93732ef6b6fbe6b59f8c24515ff901801d213d676b501eae7f94`
 - export gms_v95: `d630364f4d84b433c62329d3756f4f97efdb9ce8056c62b60842bc9b91b24b97`
-- export jms_v185: `7abb5f57f19a1b4acee93a6c48e30d509964fa1ab82fd681b07d3d3828758cc2`
+- export jms_v185: `56d20afaed17dfaced48b1a91cdc77e78fd8fa29c6040d0c390dfc0fc14f0822`
 
 ## Clientbound
 
@@ -838,16 +838,16 @@ Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 | interaction/serverbound/InteractionOperationChat (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | interaction/serverbound/InteractionOperationFieldAddToBlackList (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | interaction/serverbound/InteractionOperationFieldRemoveFromBlackList (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
-| interaction/serverbound/InteractionOperationInvite (T1) |  |  | ❌ |  | ✅ |  | ❌ |  | ✅ |  | ❌ |
+| interaction/serverbound/InteractionOperationInvite (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | interaction/serverbound/InteractionOperationMemoryGameFlipCard (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | interaction/serverbound/InteractionOperationMemoryGameMoveStone (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | interaction/serverbound/InteractionOperationMemoryGameRetreatAnswer (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
-| interaction/serverbound/InteractionOperationMemoryGameTieAnswer (T1) |  |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
+| interaction/serverbound/InteractionOperationMemoryGameTieAnswer (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | interaction/serverbound/InteractionOperationMerchantAddToBlackList (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | interaction/serverbound/InteractionOperationMerchantBuy (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
-| interaction/serverbound/InteractionOperationMerchantPutItem (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |
+| interaction/serverbound/InteractionOperationMerchantPutItem (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | interaction/serverbound/InteractionOperationMerchantRemoveFromBlackList (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
-| interaction/serverbound/InteractionOperationMerchantRemoveItem (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |
+| interaction/serverbound/InteractionOperationMerchantRemoveItem (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | interaction/serverbound/InteractionOperationPersonalStoreAddToBlackList (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | interaction/serverbound/InteractionOperationPersonalStoreBuy (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | interaction/serverbound/InteractionOperationPersonalStorePutItem (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
@@ -902,11 +902,11 @@ Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v83 | 357 | 0 | 0 | 315 | 200 | 0 | 53.1% |
-| v84 | 331 | 0 | 0 | 320 | 221 | 0 | 50.8% |
-| v87 | 372 | 0 | 0 | 337 | 163 | 0 | 52.5% |
+| v83 | 360 | 0 | 0 | 312 | 200 | 0 | 53.6% |
+| v84 | 334 | 0 | 0 | 317 | 221 | 0 | 51.3% |
+| v87 | 375 | 0 | 0 | 334 | 163 | 0 | 52.9% |
 | v95 | 395 | 0 | 0 | 398 | 79 | 0 | 49.8% |
-| JMS185 | 342 | 0 | 0 | 360 | 170 | 0 | 48.7% |
+| JMS185 | 345 | 0 | 0 | 357 | 170 | 0 | 49.1% |
 
 ## Conflicts
 

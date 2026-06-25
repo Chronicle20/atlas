@@ -2,10 +2,10 @@
   "toolSha": "01dcce58d91f84e473750b7164cc711a27d8c8dc",
   "exportHashes": {
     "gms_v83": "2673f938325d2791a0951411aa615dee08eee2b0c3ec945ece9b09c83e41cd42",
-    "gms_v84": "a13bdc029c469c8d8faf59b63f16d5bd040e96910d57ab03ceb5aaced8bd83fc",
+    "gms_v84": "f1cdd0165bc5d754a01a371c7ae26cdaa85e536dbebea9560d99c3b2bd09ebe8",
     "gms_v87": "5df0f1af483b4012687c556ed5d5521c05d6e1d59895b137516b9826411ca7d3",
     "gms_v95": "18d6bc3a43c9750a86e2195117db0d0c0551143e0d3032046309ec67a62836ad",
-    "jms_v185": "8460cd0b9d48a4d9223d7a0a086496a393d2c6fb0c46fa376bb77b3fde1fede0"
+    "jms_v185": "9b4c657920b770d75542de9fd918171712c2671a8fb9061e31c23bd13f9db893"
   },
   "rows": [
     {
@@ -552,8 +552,7 @@
           "opcode": 8
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "evidence stale (decompile hash drift)",
+          "state": "verified",
           "opcode": 8
         },
         "gms_v87": {
@@ -6662,8 +6661,7 @@
           "opcode": 87
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "evidence stale (decompile hash drift)",
+          "state": "verified",
           "opcode": 87
         },
         "gms_v87": {
@@ -6695,8 +6693,7 @@
           "opcode": 88
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "evidence stale (decompile hash drift)",
+          "state": "verified",
           "opcode": 88
         },
         "gms_v87": {

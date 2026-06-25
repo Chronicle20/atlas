@@ -6,10 +6,10 @@
 Tool: `01dcce58d91f84e473750b7164cc711a27d8c8dc`
 
 - export gms_v83: `2673f938325d2791a0951411aa615dee08eee2b0c3ec945ece9b09c83e41cd42`
-- export gms_v84: `a13bdc029c469c8d8faf59b63f16d5bd040e96910d57ab03ceb5aaced8bd83fc`
+- export gms_v84: `f1cdd0165bc5d754a01a371c7ae26cdaa85e536dbebea9560d99c3b2bd09ebe8`
 - export gms_v87: `5df0f1af483b4012687c556ed5d5521c05d6e1d59895b137516b9826411ca7d3`
 - export gms_v95: `18d6bc3a43c9750a86e2195117db0d0c0551143e0d3032046309ec67a62836ad`
-- export jms_v185: `8460cd0b9d48a4d9223d7a0a086496a393d2c6fb0c46fa376bb77b3fde1fede0`
+- export jms_v185: `9b4c657920b770d75542de9fd918171712c2671a8fb9061e31c23bd13f9db893`
 
 ## Clientbound
 
@@ -23,7 +23,7 @@ Tool: `01dcce58d91f84e473750b7164cc711a27d8c8dc`
 | CONFIRM_EULA_RESULT | CLogin::OnConfirmEULAResult |  | 0x005 | ❌ | 0x005 | ❌ | 0x005 | ❌ | 0x005 | ❌ |  | ⬜ |
 | CHECK_PINCODE | CLogin::OnCheckPinCodeResult | login/clientbound/PinOperation | 0x006 | ✅ | 0x006 | ✅ | 0x006 | ✅ | 0x006 | ✅ |  | ⬜ |
 | UPDATE_PINCODE | CLogin::OnUpdatePinCodeResult | login/clientbound/PinUpdate | 0x007 | ✅ | 0x007 | ✅ | 0x007 | ✅ | 0x007 | ✅ |  | ⬜ |
-| VIEW_ALL_CHAR | CLogin::OnViewAllCharResult | character/clientbound/CharacterViewAllCharacters (T1) | 0x008 | ✅ | 0x008 | ❌ | 0x008 | ✅ | 0x008 | ✅ | 0x014 | ✅ |
+| VIEW_ALL_CHAR | CLogin::OnViewAllCharResult | character/clientbound/CharacterViewAllCharacters (T1) | 0x008 | ✅ | 0x008 | ✅ | 0x008 | ✅ | 0x008 | ✅ | 0x014 | ✅ |
 | SELECT_CHARACTER_BY_VAC | CLogin::OnSelectCharacterByVACResult |  | 0x009 | ❌ | 0x009 | ❌ | 0x009 | ❌ | 0x009 | ❌ |  | ⬜ |
 | IDA_0X00A | CClientSocket::OnAuthenCodeChanged |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x00A | ❌ |
 | WORLD_INFORMATION | CLogin::OnWorldInformation | login/clientbound/ServerListEnd | 0x00A | ✅ | 0x00A | ✅ | 0x00A | ✅ | 0x00A | ✅ | 0x002 | ✅ |
@@ -572,8 +572,8 @@ Tool: `01dcce58d91f84e473750b7164cc711a27d8c8dc`
 | USE_TELEPORT_ROCK | CWvsContext::SendMapTransferItemUseRequest |  | 0x054 | ❌ | 0x054 | ❌ | 0x057 | ❌ | 0x05B | ❌ | 0x04C | ❌ |
 | USE_RETURN_SCROLL | CWvsContext::SendPortalScrollUseRequest |  | 0x055 | ❌ | 0x055 | ❌ | 0x058 | ❌ | 0x05C | ❌ | 0x04D | ❌ |
 | USE_UPGRADE_SCROLL | CWvsContext::SendUpgradeItemUseRequest | inventory/serverbound/InventoryScrollUse (T1) | 0x056 | ✅ | 0x056 | ✅ | 0x059 | ✅ | 0x05D | ✅ | 0x04E | ✅ |
-| DISTRIBUTE_AP | CWvsContext::SendAbilityUpRequest | character/serverbound/AutoDistributeAp (T1) | 0x057 | ✅ | 0x057 | ❌ | 0x05B | ✅ | 0x062 | ✅ | 0x052 | ✅ |
-| AUTO_DISTRIBUTE_AP | CWvsContext::SendAbilityUpRequest | character/serverbound/AutoDistributeAp (T1) | 0x058 | ✅ | 0x058 | ❌ | 0x05B | ✅ | 0x062 | ✅ | 0x052 | ✅ |
+| DISTRIBUTE_AP | CWvsContext::SendAbilityUpRequest | character/serverbound/AutoDistributeAp (T1) | 0x057 | ✅ | 0x057 | ✅ | 0x05B | ✅ | 0x062 | ✅ | 0x052 | ✅ |
+| AUTO_DISTRIBUTE_AP | CWvsContext::SendAbilityUpRequest | character/serverbound/AutoDistributeAp (T1) | 0x058 | ✅ | 0x058 | ✅ | 0x05B | ✅ | 0x062 | ✅ | 0x052 | ✅ |
 | HEAL_OVER_TIME | CWvsContext::SendStatChangeRequest | character/serverbound/HealOverTime (T1) | 0x059 | ✅ | 0x059 | ✅ | 0x05C | ✅ | 0x064 | ✅ | 0x054 | ✅ |
 | DISTRIBUTE_SP | CWvsContext::SendSkillUpRequest | character/serverbound/DistributeSp (T1) | 0x05A | ✅ | 0x05A | ✅ | 0x05D | ✅ | 0x066 | ✅ | 0x055 | ✅ |
 | USE_SHOP_SCANNER_ITEM | CWvsContext::SendShopScannerItemUseRequest |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x05A | ❌ |  | ⬜ |
@@ -919,7 +919,7 @@ Tool: `01dcce58d91f84e473750b7164cc711a27d8c8dc`
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
 | v83 | 388 | 0 | 0 | 300 | 200 | 0 | 56.4% |
-| v84 | 363 | 0 | 0 | 304 | 221 | 0 | 54.4% |
+| v84 | 366 | 0 | 0 | 301 | 221 | 0 | 54.9% |
 | v87 | 400 | 0 | 0 | 325 | 163 | 0 | 55.2% |
 | v95 | 420 | 0 | 0 | 389 | 79 | 0 | 51.9% |
 | JMS185 | 382 | 0 | 0 | 336 | 170 | 0 | 53.2% |

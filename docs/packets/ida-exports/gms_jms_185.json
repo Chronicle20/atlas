@@ -2,8 +2,6 @@
   "binary": "MapleStory_dump_SCY.exe (JMS v185.1)",
   "md5": "af6652ff9b7c549341f35e3569d7564a",
   "generated_at": "2026-05-14T00:00:00Z",
-  "region": "JMS",
-  "notes": "JMS v185 shares C++ mangled symbol names with GMS v95 for all character-domain functions. The login domain differs significantly (separate opcode space, different OnCheckPasswordResult wire layout). Character domain functions are present under the same demangled names.",
   "functions": {
     "CITC::OnRegisterSaleEntry": {
       "address": "0x604105",
@@ -7752,6 +7750,7 @@
     "CUserRemote::OnMove": {
       "address": "0xa443ee",
       "direction": "clientbound",
+      "_note": "jms CUserRemote::OnMove@0xa443ee is a thunk to CMovePath::OnMovePacket@0x70c5dc, which calls CMovePath::Decode@0x70b3ce (the opaque movement-path block) — same structure as v83/v87/v95 (no wire delta; the prior null-calls entry was an exporter descent gap). characterId is read by CUserPool::OnUserRemotePacket before dispatch. Hand-curated to mirror the verified v83/v84 2-call entry.",
       "calls": [
         {
           "op": "Decode4",
@@ -7761,8 +7760,7 @@
           "op": "DecodeBuffer",
           "comment": "CMovePath::OnMovePacket — opaque movement path block"
         }
-      ],
-      "_note": "jms CUserRemote::OnMove@0xa443ee is a thunk to CMovePath::OnMovePacket@0x70c5dc, which calls CMovePath::Decode@0x70b3ce (the opaque movement-path block) — same structure as v83/v87/v95 (no wire delta; the prior null-calls entry was an exporter descent gap). characterId is read by CUserPool::OnUserRemotePacket before dispatch. Hand-curated to mirror the verified v83/v84 2-call entry."
+      ]
     },
     "CUserRemote::OnReceiveHP": {
       "address": "0xa575be",

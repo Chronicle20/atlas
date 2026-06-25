@@ -1666,7 +1666,6 @@
     "CLogin::OnCheckPasswordResult#AuthLoginFailed": {
       "address": "0x60d368",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
           "op": "Decode1",
@@ -2253,12 +2252,7 @@
     "CLogin::OnViewAllCharResult#CharacterViewAllCharacters": {
       "address": "0x60ffe8",
       "direction": "clientbound",
-      "dispatch": [
-        {
-          "discriminator": "",
-          "case": 0
-        }
-      ],
+      "_note": "v84 VIEW_ALL_CHAR result NORMAL case (mode 0) in CLogin::OnViewAllCharResult@0x60ffe8: code + nWorldID + nCount, then loop nCount of GW_CharacterStat::Decode@0x4e9da4 + AvatarLook::Decode@0x4ef958 + Decode1(flag) + optional DecodeBuffer(16) rank block, then trailing PIC byte. The two nested readers were decompiled and confirmed byte-for-byte identical to v83 (v84 == v83 below ~0x3D). Corrects the prior corrupt exporter branch-descent (9 identical calls) for this v84 #suffix.",
       "calls": [
         {
           "op": "Decode1",
@@ -2486,18 +2480,12 @@
           "op": "Decode1",
           "comment": "m_bLoginOpt (PIC handling — v83 included)"
         }
-      ],
-      "_note": "v84 VIEW_ALL_CHAR result NORMAL case (mode 0) in CLogin::OnViewAllCharResult@0x60ffe8: code + nWorldID + nCount, then loop nCount of GW_CharacterStat::Decode@0x4e9da4 + AvatarLook::Decode@0x4ef958 + Decode1(flag) + optional DecodeBuffer(16) rank block, then trailing PIC byte. The two nested readers were decompiled and confirmed byte-for-byte identical to v83 (v84 == v83 below ~0x3D). Corrects the prior corrupt exporter branch-descent (9 identical calls) for this v84 #suffix."
+      ]
     },
     "CLogin::OnViewAllCharResult#CharacterViewAllCount": {
       "address": "0x60ffe8",
       "direction": "clientbound",
-      "dispatch": [
-        {
-          "discriminator": "",
-          "case": 1
-        }
-      ],
+      "_note": "v84 VIEW_ALL_CHAR result CHARACTER_COUNT case (mode 1) in CLogin::OnViewAllCharResult@0x60ffe8: code byte (Decode1 switch) then Decode4(worldCount)+Decode4(totalCharCount). Wire shape byte-identical to v83 (v84 nested readers GW_CharacterStat::Decode@0x4e9da4 + AvatarLook::Decode@0x4ef958 confirmed field-for-field == v83). Corrects the prior corrupt exporter branch-descent (9 identical Decode1/Buf calls) for this v84 #suffix.",
       "calls": [
         {
           "op": "Decode1",
@@ -2511,20 +2499,18 @@
           "op": "Decode4",
           "comment": "m_nCountCharacters (total character count)"
         }
-      ],
-      "_note": "v84 VIEW_ALL_CHAR result CHARACTER_COUNT case (mode 1) in CLogin::OnViewAllCharResult@0x60ffe8: code byte (Decode1 switch) then Decode4(worldCount)+Decode4(totalCharCount). Wire shape byte-identical to v83 (v84 nested readers GW_CharacterStat::Decode@0x4e9da4 + AvatarLook::Decode@0x4ef958 confirmed field-for-field == v83). Corrects the prior corrupt exporter branch-descent (9 identical Decode1/Buf calls) for this v84 #suffix."
+      ]
     },
     "CLogin::OnViewAllCharResult#CharacterViewAllSearchFailed": {
       "address": "0x60ffe8",
       "direction": "clientbound",
-      "unresolved": true,
+      "_note": "v84 VIEW_ALL_CHAR result error case (modes 2/3/6/7) in CLogin::OnViewAllCharResult@0x60ffe8: code byte only, no further reads (same as v83). Corrects the prior 'Unresolved' exporter artifact for this v84 #suffix.",
       "calls": [
         {
           "op": "Decode1",
           "comment": "code byte (case 2/3/6/7 = error — no further reads in v83)"
         }
-      ],
-      "_note": "v84 VIEW_ALL_CHAR result error case (modes 2/3/6/7) in CLogin::OnViewAllCharResult@0x60ffe8: code byte only, no further reads (same as v83). Corrects the prior 'Unresolved' exporter artifact for this v84 #suffix."
+      ]
     },
     "CLogin::OnWorldInformation": {
       "address": "0x60e5b3",
@@ -3074,7 +3060,13 @@
     "CLogin::SendSelectCharPacketByVAC#AllCharacterListSelect": {
       "address": "0x60c624",
       "direction": "serverbound",
-      "unresolved": true,
+      "dispatch": [
+        {
+          "discriminator": "switch",
+          "case": 3
+        }
+      ],
+      "notes": "inferred-high-confidence (1.00) @0x60c624",
       "calls": [
         {
           "op": "Encode4",
@@ -3092,19 +3084,18 @@
           "op": "EncodeStr",
           "comment": "sMacAddressWithHDDSerial"
         }
-      ],
-      "dispatch": [
-        {
-          "discriminator": "switch",
-          "case": 3
-        }
-      ],
-      "notes": "inferred-high-confidence (1.00) @0x60c624"
+      ]
     },
     "CLogin::SendSelectCharPacketByVAC#AllCharacterListSelectWithPic": {
       "address": "0x60c624",
       "direction": "serverbound",
-      "unresolved": true,
+      "dispatch": [
+        {
+          "discriminator": "switch",
+          "case": 1
+        }
+      ],
+      "notes": "inferred-high-confidence (1.00) @0x60c624",
       "calls": [
         {
           "op": "EncodeStr",
@@ -3126,19 +3117,11 @@
           "op": "EncodeStr",
           "comment": "sMacAddressWithHDDSerial"
         }
-      ],
-      "dispatch": [
-        {
-          "discriminator": "switch",
-          "case": 1
-        }
-      ],
-      "notes": "inferred-high-confidence (1.00) @0x60c624"
+      ]
     },
     "CLogin::SendSelectCharPacketByVAC#AllCharacterListSelectWithPicRegister": {
       "address": "0x60c624",
       "direction": "serverbound",
-      "unresolved": true,
       "calls": [
         {
           "op": "Encode1",
@@ -7405,6 +7388,7 @@
     "CUserRemote::OnMove": {
       "address": "0x9b26cd",
       "direction": "clientbound",
+      "_note": "v84 CUserRemote::OnMove@0x9b26cd delegates to CMovePath::OnMovePacket@0x6a203f (opaque movement-path block), same as v83/v87/v95. characterId is read by CUserPool::OnUserRemotePacket@0x9b2518 before dispatch. v84 == v83 (no wire delta; the prior null-calls entry was an exporter descent gap, not a structural difference). Hand-curated to mirror the verified v83 2-call entry.",
       "calls": [
         {
           "op": "Decode4",
@@ -7414,8 +7398,7 @@
           "op": "DecodeBuffer",
           "comment": "CMovePath::OnMovePacket — opaque movement path block"
         }
-      ],
-      "_note": "v84 CUserRemote::OnMove@0x9b26cd delegates to CMovePath::OnMovePacket@0x6a203f (opaque movement-path block), same as v83/v87/v95. characterId is read by CUserPool::OnUserRemotePacket@0x9b2518 before dispatch. v84 == v83 (no wire delta; the prior null-calls entry was an exporter descent gap, not a structural difference). Hand-curated to mirror the verified v83 2-call entry."
+      ]
     },
     "CUserRemote::OnPetActivated": {
       "address": "0x9c3e9d",
@@ -17666,7 +17649,7 @@
     "CWvsContext::SendAbilityUpRequest#AutoDistributeAp": {
       "address": "0xa6f1da",
       "direction": "serverbound",
-      "unresolved": true,
+      "_note": "v84 AUTO_DISTRIBUTE_AP (op 0x58) sender CWvsContext::SendAbilityUpRequest(ZArray<StatPair>*)@0xa6f1da (named this campaign): COutPacket(0x58)@0xa6f2fa + Encode4(updateTime)@0xa6f30c + Encode4(count = array length)@0xa6f31e + loop[Encode4(flag)@0xa6f336, Encode4(value)@0xa6f344]. Matches the Atlas AutoDistributeAp codec (updateTime + nValue + loop[Flag,Value]). The prior Unresolved was an unnamed-sub export gap, not a wire delta. Same 4-call shape as the verified v87/v95 #AutoDistributeAp.",
       "calls": [
         {
           "op": "Encode4",
@@ -17686,13 +17669,12 @@
           "comment": "nValue (amount for each stat pair)",
           "guard": "loop nValue"
         }
-      ],
-      "_note": "v84 AUTO_DISTRIBUTE_AP (op 0x58) sender CWvsContext::SendAbilityUpRequest(ZArray<StatPair>*)@0xa6f1da (named this campaign): COutPacket(0x58)@0xa6f2fa + Encode4(updateTime)@0xa6f30c + Encode4(count = array length)@0xa6f31e + loop[Encode4(flag)@0xa6f336, Encode4(value)@0xa6f344]. Matches the Atlas AutoDistributeAp codec (updateTime + nValue + loop[Flag,Value]). The prior Unresolved was an unnamed-sub export gap, not a wire delta. Same 4-call shape as the verified v87/v95 #AutoDistributeAp."
+      ]
     },
     "CWvsContext::SendAbilityUpRequest#DistributeAp": {
       "address": "0xa6f054",
       "direction": "serverbound",
-      "unresolved": true,
+      "_note": "v84 DISTRIBUTE_AP (op 0x57) sender CWvsContext::SendAbilityUpRequest(DWORD)@0xa6f054 (was sub_A6F054, named this campaign): COutPacket(0x57)@0xa6f174 + Encode4(updateTime via sub_9C7771)@0xa6f186 + Encode4(dwFlag = the single DWORD param)@0xa6f191. Matches the Atlas DistributeAp codec (updateTime + dwFlag). The prior Unresolved was an unnamed-sub export gap (registry fname didn't resolve), not a wire delta. Same 2-field shape as the verified v87/v95 #DistributeAp.",
       "calls": [
         {
           "op": "Encode4",
@@ -17702,8 +17684,7 @@
           "op": "Encode4",
           "comment": "dwFlag (stat flag to increment)"
         }
-      ],
-      "_note": "v84 DISTRIBUTE_AP (op 0x57) sender CWvsContext::SendAbilityUpRequest(DWORD)@0xa6f054 (was sub_A6F054, named this campaign): COutPacket(0x57)@0xa6f174 + Encode4(updateTime via sub_9C7771)@0xa6f186 + Encode4(dwFlag = the single DWORD param)@0xa6f191. Matches the Atlas DistributeAp codec (updateTime + dwFlag). The prior Unresolved was an unnamed-sub export gap (registry fname didn't resolve), not a wire delta. Same 2-field shape as the verified v87/v95 #DistributeAp."
+      ]
     },
     "CWvsContext::SendCharacterInfoRequest": {
       "address": "0xa6f657",

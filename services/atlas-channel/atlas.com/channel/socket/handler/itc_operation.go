@@ -11,7 +11,6 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 	"strconv"
-	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
@@ -19,7 +18,6 @@ import (
 	fieldpkt "github.com/Chronicle20/atlas/libs/atlas-packet/field"
 	fieldcb "github.com/Chronicle20/atlas/libs/atlas-packet/field/clientbound"
 	fieldsb "github.com/Chronicle20/atlas/libs/atlas-packet/field/serverbound"
-	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -783,29 +781,7 @@ func writeWishList(l logrus.FieldLogger, ctx context.Context, wp writer.Producer
 // resolve the cancel back to this wish entry. Writing 0 (the old behavior) meant
 // the client always sent 0 and the cancel never resolved.
 func mtsItemFromWish(w mtswish.Model) fieldcb.MtsItem {
-	// zeroPosition=true: bare GW_ItemSlotBase blob, no leading slot byte (see
-	// mtsItemFromListing — the v83 client crashes on a slot-prefixed ITCITEM).
-	item := packetmodel.NewAsset(true, 0, w.ItemId(), time.Time{}).SetStackableInfo(1, 0, 0)
-	// A wanted/cart wish never expires; a zero FILETIME renders as "1-1-01", so
-	// send a far-future "Sold Until" date instead.
-	dateExpired := packetmodel.MsTimeBytes(time.Date(2079, 1, 1, 0, 0, 0, 0, time.UTC))
-	return fieldpkt.MtsOperationNewItem(
-		item,        // GW_ItemSlotBase blob
-		w.Serial(),  // nITCSN (the wish entry's per-(tenant, world) ITC serial)
-		0,           // nPrice
-		0,           // nContractFee
-		"",          // sContractFeeTxId
-		"",          // sRollbackUsageID
-		dateExpired, // ftITCDateExpired
-		"",          // sUserID
-		"",          // sGameID
-		"",          // sComment
-		0,           // nBidCount
-		0,           // nBidRange
-		0,           // nBidPrice
-		0,           // nMinPrice
-		0,           // nMaxPrice
-		0,           // nUnitPrice
-		0,           // nProcessStatus
-	)
+	// Delegates to the shared mtswish.ToMtsItem so the VIEW_WISH arm and the
+	// consumer's post-mutation Cart/Wanted re-push produce identical wire bytes.
+	return mtswish.ToMtsItem(w)
 }

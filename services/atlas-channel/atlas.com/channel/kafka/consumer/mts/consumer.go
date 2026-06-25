@@ -7,6 +7,7 @@ import (
 	"atlas-channel/cashshop/wallet"
 	mtsholding "atlas-channel/mts/holding"
 	mtslisting "atlas-channel/mts/listing"
+	mtswish "atlas-channel/mts/wish"
 	"atlas-channel/server"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
@@ -181,6 +182,54 @@ func announceWalletRefresh(l logrus.FieldLogger, ctx context.Context, sc server.
 	})
 }
 
+// MTS browse sections (CITC category tab), mirrored from the socket handler's
+// itcSection* constants. The Cart view (section 4 / sub 0) renders type=cart
+// wishes; the Wanted view (section 2) renders type=wanted wishes.
+const (
+	mtsSectionWanted uint32 = 2
+	mtsSectionCart   uint32 = 4
+)
+
+// announceWishList re-pushes the character's Cart or Wanted view as a
+// GetItcListDone so the list reflects a just-added/removed wish AND the trailing
+// requestSent=1 clears the client's m_bITCRequestSent latch. The latch matters
+// because DeleteZzimDone (cart remove) shows its success notice but — unlike
+// SetZzimDone — never clears the latch itself (CITC sub_5A4E66 vs sub_5A4DFC), so
+// without this re-push the client freezes after a successful cart removal (IDA:
+// CITC::OnGetITCListDone v83 0x5a48af clears this[6] only when requestSent != 0).
+// The v83 client also never re-requests the wish list after a mutation, so the
+// re-push is the only way the Cart/Wanted view updates without re-entering MTS.
+func announceWishList(l logrus.FieldLogger, ctx context.Context, sc server.Model, wp writer.Producer, characterId uint32, section uint32, wishType string) {
+	ws, err := mtswish.NewProcessor(l, ctx).GetByCharacterAndType(characterId, wishType)
+	if err != nil {
+		l.WithError(err).Errorf("Unable to refresh MTS %s list for character [%d]; leaving the view stale.", wishType, characterId)
+		return
+	}
+	items := make([]fieldcb.MtsItem, 0, len(ws))
+	for _, w := range ws {
+		items = append(items, mtswish.ToMtsItem(w))
+	}
+	// section as the browse category, sub 0 (all), page 0, sortType/sortColumn 1,
+	// requestSent 1 (mirrors the entry browse — and clears the latch, see above).
+	body := fieldpkt.MtsOperationGetItcListDoneBody(uint32(len(items)), section, 0, 0, 1, 1, items, 1)
+	announceTo(l, ctx, sc, wp, characterId, body)
+}
+
+// wishSectionForOrigin maps a wish-mutation origin to the MTS section + wish type
+// whose view should be re-pushed: SET_ZZIM/DELETE_ZZIM act on the Cart, while
+// REGISTER_WISH/CANCEL_WISH act on the Wanted ads. An unknown origin returns
+// ok=false so the caller skips the re-push rather than guessing a section.
+func wishSectionForOrigin(origin string) (section uint32, wishType string, ok bool) {
+	switch origin {
+	case mtsmsg.WishOriginSetZzim, mtsmsg.WishOriginDeleteZzim:
+		return mtsSectionCart, mtswish.TypeCart, true
+	case mtsmsg.WishOriginRegisterWish, mtsmsg.WishOriginCancelWish:
+		return mtsSectionWanted, mtswish.TypeWanted, true
+	default:
+		return 0, "", false
+	}
+}
+
 func handleListingCreated(sc server.Model, wp writer.Producer) message.Handler[mtsmsg.StatusEvent[mtsmsg.StatusEventListingCreatedBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, e mtsmsg.StatusEvent[mtsmsg.StatusEventListingCreatedBody]) {
 		if e.Type != mtsmsg.StatusEventTypeListingCreated {
@@ -328,6 +377,12 @@ func handleWishAdded(sc server.Model, wp writer.Producer) message.Handler[mtsmsg
 		default:
 			l.Warnf("MTS WISH_ADDED for character [%d] has unknown origin [%s]; no result written.", e.Body.CharacterId, e.Body.Origin)
 		}
+		// Re-push the Cart/Wanted view so the just-added wish appears without the
+		// player re-entering MTS (the v83 client never re-requests the list after a
+		// SetZzimDone/RegisterWishItemDone notice).
+		if section, wishType, ok := wishSectionForOrigin(e.Body.Origin); ok {
+			announceWishList(l, ctx, sc, wp, e.Body.CharacterId, section, wishType)
+		}
 	}
 }
 
@@ -349,6 +404,13 @@ func handleWishRemoved(sc server.Model, wp writer.Producer) message.Handler[mtsm
 			announceTo(l, ctx, sc, wp, e.Body.CharacterId, fieldpkt.MtsOperationNotifyCancelWishResultBody(mtsNotifyCancelWishCountA, mtsNotifyCancelWishCountB))
 		default:
 			l.Warnf("MTS WISH_REMOVED for character [%d] has unknown origin [%s]; no result written.", e.Body.CharacterId, e.Body.Origin)
+		}
+		// Re-push the Cart/Wanted view so the removed wish disappears and — critically
+		// for DELETE_ZZIM — the trailing requestSent=1 clears the client's request
+		// latch (DeleteZzimDone never clears it itself), which otherwise freezes the
+		// client after a successful cart removal.
+		if section, wishType, ok := wishSectionForOrigin(e.Body.Origin); ok {
+			announceWishList(l, ctx, sc, wp, e.Body.CharacterId, section, wishType)
 		}
 	}
 }

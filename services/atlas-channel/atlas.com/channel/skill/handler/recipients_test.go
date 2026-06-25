@@ -322,6 +322,15 @@ func TestSelectDeadInRangePartyMembers_MissingRectangleReturnsNil(t *testing.T) 
 	}
 }
 
+// TestSelectDeadInRangeMapPlayers_MissingRectangleReturnsNil verifies that a
+// zero-valued effect (no LT/RB rectangle) returns nil — no one to revive.
+func TestSelectDeadInRangeMapPlayers_MissingRectangleReturnsNil(t *testing.T) {
+	got := SelectDeadInRangeMapPlayers(testLogger(), context.Background(), mkField(), testCasterId, 0, 0, effect.Model{})
+	if got != nil {
+		t.Fatalf("got %v, want nil for missing rectangle", got)
+	}
+}
+
 // TestSelectDeadInRangeMapPlayers_AllDeadRegardlessOfParty verifies the GM
 // resurrection selector: dead players in range are included regardless of party,
 // alive players and the caster are excluded, and out-of-range dead players are excluded.

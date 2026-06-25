@@ -1,0 +1,11 @@
+packet: character/clientbound/CharacterViewAllError
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CLogin::OnViewAllCharResult#CharacterViewAllSearchFailed
+    address: "0x60ffe8"
+    decompile_sha256: 50bab5c7e89f5594065d15c826cea793ff6a72e4df594431206a2ed9f6ef6ca8
+notes: "v84 CharacterViewAllError is the error/notice arm of the same CLogin::OnViewAllCharResult@0x60ffe8 dispatcher; the decompose emits no distinct #CharacterViewAllError slice, so evidence is pinned against the same-function #CharacterViewAllSearchFailed slice (identical address/hash) — same convention as the verified v83/v87/v95 siblings. Report verdicts all 0."
+verifies:
+    - libs/atlas-packet/character/clientbound/view_all_test.go#TestCharacterViewAllErrorRoundTrip

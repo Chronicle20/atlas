@@ -1,0 +1,11 @@
+packet: character/clientbound/CharacterViewAllCharacters
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CLogin::OnViewAllCharResult#CharacterViewAllCharacters
+    address: "0x6709e4"
+    decompile_sha256: edf50456dabcfe78a8f5872be368c93d201daf74b1b02ee8d55abdbf56937e29
+notes: "jms VIEW_ALL_CHAR NORMAL arm (mode 0) of CLogin::OnViewAllCharResult@0x6709e4: nWorldID+nCount then per-char GW_CharacterStat::Decode@0x50ec17 + AvatarLook::Decode@0x51517e + rank block. The 3 #suffix export keys were ABSENT on jms and spliced from the live jms decompile (base + nested helpers already present from the 8a foundation). The jms GW_CharacterStat block differs from v83/v84 (nAP int32, jms tail); the Atlas CharacterListEntry jms branch (byte-verified by the 8c CharacterList fixture) emits it exactly. Report FlatInvalid:false; the residual verdict-2 rows are the advisory static-diff-over-loop-expansion artifact (same family as the verified jms CharacterList), the byte-level round-trip is the real verification. No codec delta."
+verifies:
+    - libs/atlas-packet/character/clientbound/view_all_test.go#TestCharacterViewAllCharactersRoundTrip

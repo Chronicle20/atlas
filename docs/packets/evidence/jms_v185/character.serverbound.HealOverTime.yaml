@@ -1,0 +1,11 @@
+packet: character/serverbound/HealOverTime
+direction: serverbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::SendStatChangeRequest
+    address: "0xb054d6"
+    decompile_sha256: bd150e6f9c4ee1a3cd8418772314244b5e71fe0fc14d328b37a1d58ef89c9854
+notes: "jms HEAL_OVER_TIME (opcode 0x54). The jms sender is named SendStatChangeRequestByItemOption@0xb054d6 but ground truth is COutPacket(_, 0x54) — it is the HEAL_OVER_TIME sender (only 0x54 packet sender; called from CWvsContext::TryRecovery@0xae6f5a auto-recovery). Wire = updateTime(4)+val(4)+hp(2)+mp(2)+option(1)+extra(4). jms appends a trailing client validation dword (dword_CDA4F8) that GMS v83/v87/v95 (CWvsContext::SendStatChangeRequest) do NOT. REAL WIRE DELTA: fixed heal_over_time.go to read/write the option byte for (GMS<=95)||JMS and the trailing dword for JMS only (own commit). Report verdicts [0,0,0,0,0,0]."
+verifies:
+    - libs/atlas-packet/character/serverbound/heal_over_time_test.go#TestHealOverTimeRoundTrip

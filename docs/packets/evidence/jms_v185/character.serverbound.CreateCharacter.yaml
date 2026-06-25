@@ -1,0 +1,11 @@
+packet: character/serverbound/CreateCharacter
+direction: serverbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CLogin::SendNewCharPacket
+    address: "0x66e2ab"
+    decompile_sha256: 237cbffac8ab1807829643374586aad2f458f47261cc3c225cc12f35e2fea47f
+verifies:
+    - libs/atlas-packet/character/serverbound/create_test.go#TestCreateCharacterJMSGolden
+    - libs/atlas-packet/character/serverbound/create_test.go#TestCreateCharacterRoundTrip

@@ -1173,7 +1173,37 @@
       },
       {
         "opCode": "0xE0",
-        "writer": "CharacterEffect"
+        "writer": "CharacterEffect",
+        "options": {
+          "operations": {
+            "LEVEL_UP": 0,
+            "SKILL_USE": 1,
+            "SKILL_AFFECTED": 2,
+            "QUEST": 5,
+            "PET": 6,
+            "SKILL_SPECIAL": 7,
+            "PROTECT_ON_DIE_ITEM_USE": 8,
+            "PLAY_PORTAL_SOUND_EFFECT": 9,
+            "JOB_CHANGED": 10,
+            "QUEST_COMPLETE": 11,
+            "INC_DEC_HP_EFFECT": 12,
+            "BUFF_ITEM_EFFECT": 13,
+            "SHOW_INTRO": 14,
+            "MONSTER_BOOK_CARD_GET": 15,
+            "LOTTERY_USE": 16,
+            "ITEM_LEVEL_UP": 17,
+            "ITEM_MAKER": 18,
+            "ITEM_EXPERIENCE_CONSUMED": 19,
+            "RESERVED_EFFECT": 20,
+            "CONSUME_EFFECT": 22,
+            "UPGRADE_TOMB_ITEM_USE": 23,
+            "BATTLEFIELD_ITEM_USE": 24,
+            "SHOW_INFO": 25,
+            "INCUBATOR_USE": 26,
+            "PLAY_SOUND_WITH_MUTE_BACKGROUND_MUSIC": 27,
+            "SOUL_STONE_USE": 28
+          }
+        }
       },
       {
         "opCode": "0xE1",
@@ -1201,7 +1231,37 @@
       },
       {
         "opCode": "0xE9",
-        "writer": "CharacterEffect"
+        "writer": "CharacterEffect",
+        "options": {
+          "operations": {
+            "LEVEL_UP": 0,
+            "SKILL_USE": 1,
+            "SKILL_AFFECTED": 2,
+            "QUEST": 5,
+            "PET": 6,
+            "SKILL_SPECIAL": 7,
+            "PROTECT_ON_DIE_ITEM_USE": 8,
+            "PLAY_PORTAL_SOUND_EFFECT": 9,
+            "JOB_CHANGED": 10,
+            "QUEST_COMPLETE": 11,
+            "INC_DEC_HP_EFFECT": 12,
+            "BUFF_ITEM_EFFECT": 13,
+            "SHOW_INTRO": 14,
+            "MONSTER_BOOK_CARD_GET": 15,
+            "LOTTERY_USE": 16,
+            "ITEM_LEVEL_UP": 17,
+            "ITEM_MAKER": 18,
+            "ITEM_EXPERIENCE_CONSUMED": 19,
+            "RESERVED_EFFECT": 20,
+            "CONSUME_EFFECT": 22,
+            "UPGRADE_TOMB_ITEM_USE": 23,
+            "BATTLEFIELD_ITEM_USE": 24,
+            "SHOW_INFO": 25,
+            "INCUBATOR_USE": 26,
+            "PLAY_SOUND_WITH_MUTE_BACKGROUND_MUSIC": 27,
+            "SOUL_STONE_USE": 28
+          }
+        }
       },
       {
         "opCode": "0xF5",

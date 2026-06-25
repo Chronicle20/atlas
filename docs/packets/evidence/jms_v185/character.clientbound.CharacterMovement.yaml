@@ -1,0 +1,11 @@
+packet: character/clientbound/CharacterMovement
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CUserRemote::OnMove
+    address: "0xa443ee"
+    decompile_sha256: 09379d70fd7edacfab0b067c2472dca5042eb8b410cf960be6990da38aa1a10b
+notes: "jms CharacterMovement: CUserRemote::OnMove@0xa443ee is a thunk to CMovePath::OnMovePacket@0x70c5dc, which calls CMovePath::Decode@0x70b3ce (the opaque movement-path block). Same structure as v83/v87/v95 — characterId read by CUserPool::OnUserRemotePacket before dispatch + the shared model.Movement blob. No wire delta on jms; the codec is version-agnostic. The prior ❌ was a null-calls exporter descent gap on OnMove; re-spliced to mirror the verified v83/v84 2-call entry (Decode4 characterId + DecodeBuffer opaque). Codec unchanged; report verdicts [0,0]."
+verifies:
+    - libs/atlas-packet/character/clientbound/movement_test.go#TestCharacterMovementByteOutput

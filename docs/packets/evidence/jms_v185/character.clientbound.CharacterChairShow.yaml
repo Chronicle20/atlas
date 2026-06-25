@@ -1,0 +1,11 @@
+packet: character/clientbound/CharacterChairShow
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CUserRemote::OnSetActivePortableChair
+    address: "0xa44324"
+    decompile_sha256: 85e11223ea40322cd5782db33aff72eb512e397c18b97cb156d5e50f5b123d51
+notes: "jms CharacterChairShow: SHOW_CHAIR (opcode 0xCA) is read inline in CUserPool::OnUserRemotePacket case 0xCA@0xa44324 — *(RemoteUser+16516) = Decode4(chairId), with characterId read by the dispatcher's leading Decode4@0xa44250 before the case. No separate OnSetActivePortableChair receive function (same inline shape as v83 case 0xC4 / v87 case 0xD1 / v95). Synthetic CUserRemote::OnSetActivePortableChair export entry spliced to mirror the verified v83/v87/v95 2-call shape (Decode4 characterId + Decode4 chairId). Codec unchanged; report verdicts [0,0]. The local send/display side is CUser::SetActivePortableChair@0x9fc0f0."
+verifies:
+    - libs/atlas-packet/character/clientbound/chair_show_test.go#TestCharacterChairShow

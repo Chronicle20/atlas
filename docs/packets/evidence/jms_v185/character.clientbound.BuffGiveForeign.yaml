@@ -1,0 +1,11 @@
+packet: character/clientbound/BuffGiveForeign
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CUserRemote::OnSetTemporaryStat
+    address: "0xa57431"
+    decompile_sha256: 33a428c41e5e6695b74003c7004fd5b8f954323de0397d89a2dbc6e066b083bc
+verifies:
+    - libs/atlas-packet/character/clientbound/buff_give_test.go#TestBuffGiveForeignJMSMask
+    - libs/atlas-packet/character/clientbound/buff_give_test.go#TestBuffGiveForeignEmptyRoundTrip

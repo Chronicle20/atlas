@@ -1,12 +1,151 @@
 package clientbound
 
 import (
+	"bytes"
 	"testing"
 
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// TestEffectSimpleByteOutput is the v83 golden-byte fixture for the mode-only
+// OnEffect arms (LevelUp/JobChanged/QuestClear/MonsterBookCardGet/...). These
+// cases (CUser::OnEffect v83 @0x9377d9 cases 0/8/9/13/...) read ONLY the leading
+// Decode1 effect-mode byte and play a client-side animation — no further wire
+// fields. EffectSimple.Encode writes exactly that one byte.
+//
+// EffectSimple shares the CUser::OnEffect demux with EffectQuest/EffectSkillUse;
+// the EffectQuest op-cell grades worst-of all three, so this sibling carries its
+// own v83 marker+fixture+evidence to let the demux promote.
+//
+// packet-audit:verify packet=character/clientbound/EffectSimple version=gms_v83 ida=0x9377d9
+// packet-audit:verify packet=character/clientbound/EffectSimple version=gms_v84 ida=0x96ea92
+// packet-audit:verify packet=character/clientbound/EffectSimple version=gms_v87 ida=0x9b1ef0
+// packet-audit:verify packet=character/clientbound/EffectSimple version=gms_v95 ida=0x8f9a70
 // packet-audit:verify packet=character/clientbound/EffectSimple version=jms_v185 ida=0x9f6395
+func TestEffectSimpleByteOutput(t *testing.T) {
+	v83 := pt.Variants[1] // GMS v83
+	ctx := pt.CreateContext(v83.Region, v83.MajorVersion, v83.MinorVersion)
+
+	// self: mode 0 (LevelUp) -> single mode byte (Decode1) /*0x9377ec*/
+	gotSelf := NewEffectSimple(0).Encode(nil, ctx)(nil)
+	if wantSelf := []byte{0x00}; !bytes.Equal(gotSelf, wantSelf) {
+		t.Errorf("self bytes: got %x want %x", gotSelf, wantSelf)
+	}
+
+	// foreign: characterId prefix (read by CUserPool::OnUserRemotePacket) + mode byte
+	gotForeign := NewEffectSimpleForeign(0x12345678, 8).Encode(nil, ctx)(nil)
+	if wantForeign := []byte{0x78, 0x56, 0x34, 0x12, 0x08}; !bytes.Equal(gotForeign, wantForeign) {
+		t.Errorf("foreign bytes: got %x want %x", gotForeign, wantForeign)
+	}
+}
+
+// TestEffectSimpleByteOutputV84 is the v84 golden-byte fixture for the mode-only
+// OnEffect arms. The read order is byte-identical to v83 (v84 body ≡ v83 below
+// ~0x3D, IDA-confirmed): CUser::OnEffect (v84 @0x96ea92) case 0 (@0x96eac9) reads
+// ONLY the leading Decode1 effect-mode byte (@0x96eaa5) and plays a client-side
+// animation — no further wire fields. EffectSimple.Encode writes exactly that byte.
+//
+// EffectSimple shares the CUser::OnEffect demux with EffectQuest/EffectSkillUse;
+// the EffectQuest op-cell grades worst-of all three, so this sibling carries its
+// own v84 marker+fixture+evidence to let the demux promote.
+func TestEffectSimpleByteOutputV84(t *testing.T) {
+	v84 := pt.Variants[5] // GMS v84
+	ctx := pt.CreateContext(v84.Region, v84.MajorVersion, v84.MinorVersion)
+
+	// self: mode 0 (LevelUp) -> single mode byte (Decode1) /*0x96eaa5*/
+	gotSelf := NewEffectSimple(0).Encode(nil, ctx)(nil)
+	if wantSelf := []byte{0x00}; !bytes.Equal(gotSelf, wantSelf) {
+		t.Errorf("self v84 bytes: got %x want %x", gotSelf, wantSelf)
+	}
+
+	// foreign: characterId prefix (read by CUserPool::OnUserRemotePacket) + mode byte
+	gotForeign := NewEffectSimpleForeign(0x12345678, 8).Encode(nil, ctx)(nil)
+	if wantForeign := []byte{0x78, 0x56, 0x34, 0x12, 0x08}; !bytes.Equal(gotForeign, wantForeign) {
+		t.Errorf("foreign v84 bytes: got %x want %x", gotForeign, wantForeign)
+	}
+}
+
+// TestEffectSimpleByteOutputV87 is the v87 golden-byte fixture for the mode-only
+// OnEffect arms. The read order is byte-identical to v83 (the demux is structurally
+// unchanged at v87): CUser::OnEffect (v87 @0x9b1ef0) case 0 (@0x9b1f27, LevelUp)
+// reads ONLY the leading Decode1 effect-mode byte (switch @0x9b1f03) and plays a
+// client-side animation — no further wire fields. EffectSimple.Encode writes exactly
+// that byte.
+//
+// EffectSimple shares the CUser::OnEffect demux with EffectQuest/EffectSkillUse;
+// the EffectQuest op-cell grades worst-of all three, so this sibling carries its
+// own v87 marker+fixture+evidence to let the demux promote.
+func TestEffectSimpleByteOutputV87(t *testing.T) {
+	v87 := pt.Variants[2] // GMS v87
+	ctx := pt.CreateContext(v87.Region, v87.MajorVersion, v87.MinorVersion)
+
+	// self: mode 0 (LevelUp) -> single mode byte (Decode1) /*0x9b1f03*/
+	gotSelf := NewEffectSimple(0).Encode(nil, ctx)(nil)
+	if wantSelf := []byte{0x00}; !bytes.Equal(gotSelf, wantSelf) {
+		t.Errorf("self v87 bytes: got %x want %x", gotSelf, wantSelf)
+	}
+
+	// foreign: characterId prefix (read by CUserPool::OnUserRemotePacket) + mode byte
+	gotForeign := NewEffectSimpleForeign(0x12345678, 8).Encode(nil, ctx)(nil)
+	if wantForeign := []byte{0x78, 0x56, 0x34, 0x12, 0x08}; !bytes.Equal(gotForeign, wantForeign) {
+		t.Errorf("foreign v87 bytes: got %x want %x", gotForeign, wantForeign)
+	}
+}
+
+// TestEffectSimpleByteOutputV95 is the v95 golden-byte fixture for the mode-only
+// OnEffect arms. CUser::OnEffect (v95 @0x8f9a70) case 0 (LevelUp) reads ONLY the
+// leading Decode1 effect-mode byte (switch @0x8f9ab4) and plays a client-side
+// animation — no further wire fields. EffectSimple.Encode writes exactly that byte.
+// Case 0 is unchanged at v95 (the demux arm shift affected the quest case, 3->5,
+// not the mode-only LevelUp arm).
+//
+// EffectSimple shares the CUser::OnEffect demux with EffectQuest/EffectSkillUse;
+// the EffectQuest op-cell grades worst-of all three, so this sibling carries its
+// own v95 marker+fixture+evidence to let the demux promote.
+func TestEffectSimpleByteOutputV95(t *testing.T) {
+	v95 := pt.Variants[3] // GMS v95
+	ctx := pt.CreateContext(v95.Region, v95.MajorVersion, v95.MinorVersion)
+
+	// self: mode 0 (LevelUp) -> single mode byte (Decode1) /*0x8f9ab4*/
+	gotSelf := NewEffectSimple(0).Encode(nil, ctx)(nil)
+	if wantSelf := []byte{0x00}; !bytes.Equal(gotSelf, wantSelf) {
+		t.Errorf("self v95 bytes: got %x want %x", gotSelf, wantSelf)
+	}
+
+	// foreign: characterId prefix (read by CUserPool::OnUserRemotePacket) + mode byte
+	gotForeign := NewEffectSimpleForeign(0x12345678, 8).Encode(nil, ctx)(nil)
+	if wantForeign := []byte{0x78, 0x56, 0x34, 0x12, 0x08}; !bytes.Equal(gotForeign, wantForeign) {
+		t.Errorf("foreign v95 bytes: got %x want %x", gotForeign, wantForeign)
+	}
+}
+
+// TestEffectSimpleByteOutputJMS is the jms golden-byte fixture for the mode-only
+// OnEffect arms. CUser::OnEffect (jms v185 @0x9f6395, MapleStory_dump_SCY.exe)
+// case 0 (LevelUp) reads ONLY the leading Decode1 effect-mode byte (switch
+// @0x9f63c0) and plays a client-side animation — no further wire fields.
+// EffectSimple.Encode writes exactly that byte. Case 0 is unchanged at jms (the
+// v95 demux arm shift, 3->5, did not occur in jms — its quest arm is still case 3).
+//
+// EffectSimple shares the CUser::OnEffect demux with EffectQuest/EffectSkillUse;
+// the EffectQuest op-cell grades worst-of all three, so this sibling carries its
+// own jms marker+fixture+evidence to let the demux promote.
+func TestEffectSimpleByteOutputJMS(t *testing.T) {
+	jms := pt.Variants[4] // JMS v185
+	ctx := pt.CreateContext(jms.Region, jms.MajorVersion, jms.MinorVersion)
+
+	// self: mode 0 (LevelUp) -> single mode byte (Decode1) /*0x9f63c0*/
+	gotSelf := NewEffectSimple(0).Encode(nil, ctx)(nil)
+	if wantSelf := []byte{0x00}; !bytes.Equal(gotSelf, wantSelf) {
+		t.Errorf("self jms bytes: got %x want %x", gotSelf, wantSelf)
+	}
+
+	// foreign: characterId prefix (read by CUserPool::OnUserRemotePacket) + mode byte
+	gotForeign := NewEffectSimpleForeign(0x12345678, 8).Encode(nil, ctx)(nil)
+	if wantForeign := []byte{0x78, 0x56, 0x34, 0x12, 0x08}; !bytes.Equal(gotForeign, wantForeign) {
+		t.Errorf("foreign jms bytes: got %x want %x", gotForeign, wantForeign)
+	}
+}
+
 func TestEffectSimpleRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

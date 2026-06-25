@@ -1,0 +1,10 @@
+packet: character/clientbound/CharacterList
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CLogin::OnSelectWorldResult
+    address: "0x66f3d8"
+    decompile_sha256: 81a6e54fece55374f8b1e68bc69f6276454c97f647b3854f67fb663609a67deb
+verifies:
+    - libs/atlas-packet/character/clientbound/list_test.go#TestCharacterListByteOutputJMS

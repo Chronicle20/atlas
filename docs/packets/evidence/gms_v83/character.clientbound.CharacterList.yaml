@@ -1,0 +1,10 @@
+packet: character/clientbound/CharacterList
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CLogin::OnSelectWorldResult
+    address: "0x5f9891"
+    decompile_sha256: 51dbd58d12299fad4bf362bf9032148df3410821fcaa9eaf8db98fc71de805d6
+verifies:
+    - libs/atlas-packet/character/clientbound/list_test.go#TestCharacterListByteOutput

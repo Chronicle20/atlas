@@ -425,6 +425,251 @@
         "opCode": "0x62",
         "validator": "LoggedInValidator",
         "handler": "PortalScriptHandle"
+      },
+      {
+        "opCode": "0x2E",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterDamageHandle"
+      },
+      {
+        "opCode": "0x30",
+        "validator": "LoggedInValidator",
+        "handler": "ChalkboardCloseHandle"
+      },
+      {
+        "opCode": "0x37",
+        "validator": "LoggedInValidator",
+        "handler": "MonsterBookCover"
+      },
+      {
+        "opCode": "0x3A",
+        "validator": "LoggedInValidator",
+        "handler": "NPCContinueConversationHandle"
+      },
+      {
+        "opCode": "0x3B",
+        "validator": "LoggedInValidator",
+        "handler": "NPCShopHandle"
+      },
+      {
+        "opCode": "0x3C",
+        "validator": "LoggedInValidator",
+        "handler": "StorageOperationHandle"
+      },
+      {
+        "opCode": "0x3D",
+        "validator": "LoggedInValidator",
+        "handler": "HiredMerchantOperationHandle"
+      },
+      {
+        "opCode": "0x43",
+        "validator": "LoggedInValidator",
+        "handler": "CompartmentMergeHandle"
+      },
+      {
+        "opCode": "0x44",
+        "validator": "LoggedInValidator",
+        "handler": "CompartmentSortHandle"
+      },
+      {
+        "opCode": "0x47",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterItemCancelHandle"
+      },
+      {
+        "opCode": "0x49",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterItemUseSummonBagHandle"
+      },
+      {
+        "opCode": "0x4B",
+        "validator": "LoggedInValidator",
+        "handler": "MountFoodHandle"
+      },
+      {
+        "opCode": "0x4D",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterCashItemUseHandle"
+      },
+      {
+        "opCode": "0x54",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterItemUseScrollHandle"
+      },
+      {
+        "opCode": "0x55",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterDistributeApHandle"
+      },
+      {
+        "opCode": "0x56",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterAutoDistributeApHandle"
+      },
+      {
+        "opCode": "0x58",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterDistributeSpHandle"
+      },
+      {
+        "opCode": "0x59",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterUseSkillHandle"
+      },
+      {
+        "opCode": "0x5B",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterSkillPrepareHandle"
+      },
+      {
+        "opCode": "0x5C",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterDropMesoHandle"
+      },
+      {
+        "opCode": "0x5D",
+        "validator": "LoggedInValidator",
+        "handler": "FameChangeHandle"
+      },
+      {
+        "opCode": "0x5F",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterInfoRequestHandle"
+      },
+      {
+        "opCode": "0x60",
+        "validator": "LoggedInValidator",
+        "handler": "PetSpawnHandle"
+      },
+      {
+        "opCode": "0x6C",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterSkillMacroHandle"
+      },
+      {
+        "opCode": "0x70",
+        "validator": "LoggedInValidator",
+        "handler": "SueCharacter"
+      },
+      {
+        "opCode": "0x73",
+        "validator": "LoggedInValidator",
+        "handler": "AdminChat"
+      },
+      {
+        "opCode": "0x78",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterInteractionHandle"
+      },
+      {
+        "opCode": "0x7D",
+        "validator": "LoggedInValidator",
+        "handler": "AdminCommand"
+      },
+      {
+        "opCode": "0x7E",
+        "validator": "LoggedInValidator",
+        "handler": "AdminLog"
+      },
+      {
+        "opCode": "0x80",
+        "validator": "LoggedInValidator",
+        "handler": "NoteOperationHandle"
+      },
+      {
+        "opCode": "0xA3",
+        "validator": "LoggedInValidator",
+        "handler": "PetMovementHandle"
+      },
+      {
+        "opCode": "0xA5",
+        "validator": "LoggedInValidator",
+        "handler": "PetCommandHandle"
+      },
+      {
+        "opCode": "0xA6",
+        "validator": "LoggedInValidator",
+        "handler": "PetDropPickUpHandle"
+      },
+      {
+        "opCode": "0xA8",
+        "validator": "LoggedInValidator",
+        "handler": "PetItemExcludeHandle"
+      },
+      {
+        "opCode": "0xAB",
+        "validator": "LoggedInValidator",
+        "handler": "SummonMoveHandle"
+      },
+      {
+        "opCode": "0xAC",
+        "validator": "LoggedInValidator",
+        "handler": "SummonAttackHandle"
+      },
+      {
+        "opCode": "0xAD",
+        "validator": "LoggedInValidator",
+        "handler": "SummonDamageHandle"
+      },
+      {
+        "opCode": "0xB4",
+        "validator": "LoggedInValidator",
+        "handler": "MonsterMovementHandle"
+      },
+      {
+        "opCode": "0xB6",
+        "validator": "LoggedInValidator",
+        "handler": "MobDropPickupRequest"
+      },
+      {
+        "opCode": "0xB7",
+        "validator": "LoggedInValidator",
+        "handler": "FieldDamageMob"
+      },
+      {
+        "opCode": "0xB8",
+        "validator": "LoggedInValidator",
+        "handler": "MonsterDamageFriendlyHandle"
+      },
+      {
+        "opCode": "0xB9",
+        "validator": "LoggedInValidator",
+        "handler": "MonsterBomb"
+      },
+      {
+        "opCode": "0xBA",
+        "validator": "LoggedInValidator",
+        "handler": "MobDamageMob"
+      },
+      {
+        "opCode": "0xCB",
+        "validator": "LoggedInValidator",
+        "handler": "Snowball"
+      },
+      {
+        "opCode": "0xCC",
+        "validator": "LoggedInValidator",
+        "handler": "LeftKnockback"
+      },
+      {
+        "opCode": "0xCD",
+        "validator": "LoggedInValidator",
+        "handler": "Coconut"
+      },
+      {
+        "opCode": "0xCE",
+        "validator": "LoggedInValidator",
+        "handler": "MatchTable"
+      },
+      {
+        "opCode": "0xCF",
+        "validator": "LoggedInValidator",
+        "handler": "GuildBoss"
+      },
+      {
+        "opCode": "0xDC",
+        "validator": "LoggedInValidator",
+        "handler": "CashShopCheckWalletHandle"
       }
     ],
     "writers": [

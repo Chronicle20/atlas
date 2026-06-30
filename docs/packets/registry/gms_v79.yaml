@@ -2428,3 +2428,395 @@
   ida:
     address: 9070994
   note: 'COutPacket(98)+Enc1(fieldKey)+EncStr(portalName)+Enc2(x)+Enc2(y) scripted portal (types 7/8/11); v83 CHANGE_MAP_SPECIAL=0x64=100 (d-2).'
+- op: TAKE_DAMAGE
+  direction: serverbound
+  opcode: 46
+  fname: CUserLocal::Update
+  provenance: ida-discovered
+  ida:
+    address: 9055807
+  note: 'v79 CUserLocal::Update COutPacket(46); push 2Eh;a2 @0x8a3e82 (inlined CUserLocal::SetDamaged take-damage send). v83 TAKE_DAMAGE=0x30=48 (d-2). delta doc serverbound (ida-read).'
+- op: CLOSE_CHALKBOARD
+  direction: serverbound
+  opcode: 48
+  fname: sub_8A80A3
+  provenance: ida-discovered
+  ida:
+    address: 9076899
+  note: 'v79 sub_8A80A3 COutPacket(48); push 30h;a2 @0x8a80d6. v83 CLOSE_CHALKBOARD=0x32=50 (d-2). delta doc serverbound (ida-read).'
+- op: MONSTER_BOOK_COVER
+  direction: serverbound
+  opcode: 55
+  fname: sub_7D1772
+  provenance: ida-discovered
+  ida:
+    address: 8198002
+  note: 'v79 sub_7D1772 COutPacket(55); push 37h;a2 @0x7d17ab (monster-book UI; SetMonsterBookCover @0x8b7ab0 only sets char-data+ZRef release, no COutPacket). v83 MONSTER_BOOK_COVER=0x39=57 (d-2). delta doc serverbound (ida-read).'
+- op: NPC_TALK_MORE
+  direction: serverbound
+  opcode: 58
+  fname: CScriptMan::OnAskMenu
+  provenance: ida-discovered
+  ida:
+    address: 7112803
+  note: 'v79 CScriptMan::OnAskMenu COutPacket(58); push 3Ah;a2 @0x6c89a1 (one of many CScriptMan::OnSay/OnAsk* response sends, all COutPacket(58)). v83 NPC_TALK_MORE=0x3c=60 (d-2). delta doc serverbound (ida-read).'
+- op: NPC_SHOP
+  direction: serverbound
+  opcode: 59
+  fname: sub_6D68A3
+  provenance: ida-discovered
+  ida:
+    address: 7170211
+  note: 'v79 sub_6D68A3 COutPacket(59); push 3Bh;a2 @0x6d6a42 (CShopDlg buy/sell send). v83 NPC_SHOP=0x3d=61 (d-2). delta doc serverbound (ida-read).'
+- op: STORAGE
+  direction: serverbound
+  opcode: 60
+  fname: sub_73B5B6
+  provenance: ida-discovered
+  ida:
+    address: 7583158
+  note: 'v79 sub_73B5B6 COutPacket(60); push 3Ch;a2 @0x73b6f9 (CTrunkDlg op send). v83 STORAGE=0x3e=62 (d-2). delta doc serverbound (ida-read).'
+- op: HIRED_MERCHANT_REQUEST
+  direction: serverbound
+  opcode: 61
+  fname: sub_971BE0
+  provenance: ida-discovered
+  ida:
+    address: 9903072
+  note: 'v79 sub_971BE0 COutPacket(61); push 3Dh;a2 @0x971d7a. v83 HIRED_MERCHANT_REQUEST=0x3f=63 (d-2). delta doc serverbound (ida-read).'
+- op: ITEM_SORT
+  direction: serverbound
+  opcode: 67
+  fname: sub_954C6B
+  provenance: ida-discovered
+  ida:
+    address: 9784427
+  note: 'v79 sub_954C6B COutPacket(67); push 43h;a2 @0x954c97 (gather/merge). v83 ITEM_SORT=0x45=69 (d-2). delta doc serverbound (ida-read).'
+- op: ITEM_SORT2
+  direction: serverbound
+  opcode: 68
+  fname: sub_954CFD
+  provenance: ida-discovered
+  ida:
+    address: 9784573
+  note: 'v79 sub_954CFD COutPacket(68); push 44h;a2 @0x954d29 (sort). v83 ITEM_SORT2=0x46=70 (d-2). delta doc serverbound (ida-read).'
+- op: CANCEL_ITEM_EFFECT
+  direction: serverbound
+  opcode: 71
+  fname: sub_9553CD
+  provenance: ida-discovered
+  ida:
+    address: 9786317
+  note: 'v79 sub_9553CD COutPacket(71); push 47h;a2 @0x955454. v83 CANCEL_ITEM_EFFECT=0x49=73 (d-2). delta doc serverbound (ida-read).'
+- op: USE_SUMMON_BAG
+  direction: serverbound
+  opcode: 73
+  fname: sub_955499
+  provenance: ida-discovered
+  ida:
+    address: 9786521
+  note: 'v79 sub_955499 COutPacket(73); push 49h;a2 @0x9555b0 (IDB mislabels fn as SendEngagementRequest; opcode read from body per unreliable-name caveat). v83 USE_SUMMON_BAG=0x4b=75 (d-2). delta doc serverbound (ida-read).'
+- op: USE_MOUNT_FOOD
+  direction: serverbound
+  opcode: 75
+  fname: sub_955781
+  provenance: ida-discovered
+  ida:
+    address: 9787265
+  note: 'v79 sub_955781 COutPacket(75); push 4Bh;a2 @0x9557cf (taming-mob food). v83 USE_MOUNT_FOOD=0x4d=77 (d-2). delta doc serverbound (ida-read).'
+- op: USE_CASH_ITEM
+  direction: serverbound
+  opcode: 77
+  fname: CWvsContext::SendConsumeCashItemUseRequest
+  provenance: ida-discovered
+  ida:
+    address: 9790282
+  note: 'v79 CWvsContext::SendConsumeCashItemUseRequest COutPacket(77); push 4Dh;a2 @0x9563b3. v83 USE_CASH_ITEM=0x4f=79 (d-2). delta doc serverbound (ida-read).'
+- op: USE_UPGRADE_SCROLL
+  direction: serverbound
+  opcode: 84
+  fname: sub_954F9B
+  provenance: ida-discovered
+  ida:
+    address: 9785243
+  note: 'v79 sub_954F9B COutPacket(84); push 54h;a2 @0x954fbf. v83 USE_UPGRADE_SCROLL=0x56=86 (d-2). delta doc serverbound (ida-read).'
+- op: DISTRIBUTE_AP
+  direction: serverbound
+  opcode: 85
+  fname: sub_96DB81
+  provenance: ida-discovered
+  ida:
+    address: 9886593
+  note: 'v79 sub_96DB81 COutPacket(85); push 55h;a2 @0x96dc9c. v83 DISTRIBUTE_AP=0x57=87 (d-2). delta doc serverbound (ida-read).'
+- op: AUTO_DISTRIBUTE_AP
+  direction: serverbound
+  opcode: 86
+  fname: sub_96DD07
+  provenance: ida-discovered
+  ida:
+    address: 9886983
+  note: 'v79 sub_96DD07 COutPacket(86); push 56h;a2 @0x96de22. v83 AUTO_DISTRIBUTE_AP=0x58=88 (d-2). delta doc serverbound (ida-read).'
+- op: DISTRIBUTE_SP
+  direction: serverbound
+  opcode: 88
+  fname: sub_96DEBD
+  provenance: ida-discovered
+  ida:
+    address: 9887421
+  note: 'v79 sub_96DEBD COutPacket(88); push 58h;a2 @0x96dedd. v83 DISTRIBUTE_SP=0x5a=90 (d-2). delta doc serverbound (ida-read).'
+- op: SPECIAL_MOVE
+  direction: serverbound
+  opcode: 89
+  fname: sub_8C0CBE
+  provenance: ida-discovered
+  ida:
+    address: 9178302
+  note: 'v79 sub_8C0CBE COutPacket(89); push 59h;a2 (7 skill-cast sites in CUserLocal 0x8C0CBE..0x8C4007 all COutPacket(89)). v83 SPECIAL_MOVE=0x5b=91 (d-2). delta doc serverbound (ida-read).'
+- op: SKILL_EFFECT
+  direction: serverbound
+  opcode: 91
+  fname: sub_8C17F2
+  provenance: ida-discovered
+  ida:
+    address: 9181170
+  note: 'v79 sub_8C17F2 COutPacket(91); push 5Bh;a2 @0x8c1fc0 (skill prepare/keydown). v83 SKILL_EFFECT=0x5d=93 (d-2). delta doc serverbound (ida-read).'
+- op: MESO_DROP
+  direction: serverbound
+  opcode: 92
+  fname: sub_96DFAF
+  provenance: ida-discovered
+  ida:
+    address: 9887663
+  note: 'v79 sub_96DFAF COutPacket(92); push 5Ch;a2 @0x96e01d. v83 MESO_DROP=0x5e=94 (d-2). delta doc serverbound (ida-read).'
+- op: GIVE_FAME
+  direction: serverbound
+  opcode: 93
+  fname: sub_96E07F
+  provenance: ida-discovered
+  ida:
+    address: 9887871
+  note: 'v79 sub_96E07F COutPacket(93); push 5Dh;a2 @0x96e128. v83 GIVE_FAME=0x5f=95 (d-2). delta doc serverbound (ida-read).'
+- op: CHAR_INFO_REQUEST
+  direction: serverbound
+  opcode: 95
+  fname: sub_96E184
+  provenance: ida-discovered
+  ida:
+    address: 9888132
+  note: 'v79 sub_96E184 COutPacket(95); push 5Fh;a2 @0x96e1e1. v83 CHAR_INFO_REQUEST=0x61=97 (d-2). delta doc serverbound (ida-read).'
+- op: SPAWN_PET
+  direction: serverbound
+  opcode: 96
+  fname: sub_96E251
+  provenance: ida-discovered
+  ida:
+    address: 9888337
+  note: 'v79 sub_96E251 COutPacket(96); push 60h;a2 @0x96e550. v83 SPAWN_PET=0x62=98 (d-2). delta doc serverbound (ida-read).'
+- op: SKILL_MACRO
+  direction: serverbound
+  opcode: 108
+  fname: sub_6022DB
+  provenance: ida-discovered
+  ida:
+    address: 6300379
+  note: 'v79 sub_6022DB COutPacket(108); COutPacket(108)+encode(macros via sub_4DB93F)+Send (CMacroSysMan::FlushToSvr). v83 SKILL_MACRO=0x6e=110 (d-2). delta doc serverbound (ida-read).'
+- op: SUE_CHARACTER
+  direction: serverbound
+  opcode: 112
+  fname: CField::SendChatMsgSlash
+  provenance: ida-discovered
+  ida:
+    address: 5339897
+  note: 'v79 CField::SendChatMsgSlash COutPacket(112); push 70h;a2 @0x51825e (slash dispatcher; note non-uniform: SUE d-2 vs admin-chat d-3). v83 SUE_CHARACTER=0x72=114 (d-2). delta doc serverbound (ida-read).'
+- op: ADMIN_CHAT
+  direction: serverbound
+  opcode: 115
+  fname: CField::SendChatMsgSlash
+  provenance: ida-discovered
+  ida:
+    address: 5339897
+  note: 'v79 CField::SendChatMsgSlash COutPacket(115); push 73h;a2 @0x5194ac (slash dispatcher). v83 ADMIN_CHAT=0x76=118 (d-3). delta doc serverbound (ida-read).'
+- op: PLAYER_INTERACTION
+  direction: serverbound
+  opcode: 120
+  fname: sub_62298D
+  provenance: ida-discovered
+  ida:
+    address: 6433165
+  note: 'v79 sub_62298D COutPacket(120); push 78h;a2 (many CMiniRoomBaseDlg trade/minigame sends, all COutPacket(120)). v83 PLAYER_INTERACTION=0x7b=123 (d-3). delta doc serverbound (ida-read).'
+- op: ADMIN_COMMAND
+  direction: serverbound
+  opcode: 125
+  fname: CField::SendChatMsgSlash
+  provenance: ida-discovered
+  ida:
+    address: 5339897
+  note: 'v79 CField::SendChatMsgSlash COutPacket(125); push 7Dh;a2 @0x51803a (slash dispatcher). v83 ADMIN_COMMAND=0x80=128 (d-3). delta doc serverbound (ida-read).'
+- op: ADMIN_LOG
+  direction: serverbound
+  opcode: 126
+  fname: CField::SendChatMsgSlash
+  provenance: ida-discovered
+  ida:
+    address: 5339897
+  note: 'v79 CField::SendChatMsgSlash COutPacket(126); push 7Eh;a2 @0x5198e6 (slash dispatcher). v83 ADMIN_LOG=0x81=129 (d-3). delta doc serverbound (ida-read).'
+- op: NOTE_ACTION
+  direction: serverbound
+  opcode: 128
+  fname: CMemoListDlg::SetRet
+  provenance: ida-discovered
+  ida:
+    address: 6397746
+  note: 'v79 CMemoListDlg::SetRet COutPacket(128); push 80h;a2 @0x619fa6. v83 NOTE_ACTION=0x83=131 (d-3). delta doc serverbound (ida-read).'
+- op: MOVE_PET
+  direction: serverbound
+  opcode: 163
+  fname: sub_9150A1
+  provenance: ida-discovered
+  ida:
+    address: 9523361
+  note: 'v79 sub_9150A1 COutPacket(163); push 0A3h;a2 @0x9150c5 (CVecCtrlPet move flush). v83 MOVE_PET=0xa7=167 (d-4). delta doc serverbound (ida-read).'
+- op: PET_COMMAND
+  direction: serverbound
+  opcode: 165
+  fname: sub_6914DB
+  provenance: ida-discovered
+  ida:
+    address: 6886619
+  note: 'v79 sub_6914DB COutPacket(165); push 0A5h;a2 @0x691714. v83 PET_COMMAND=0xa9=169 (d-4). delta doc serverbound (ida-read).'
+- op: PET_LOOT
+  direction: serverbound
+  opcode: 166
+  fname: sub_6923AF
+  provenance: ida-discovered
+  ida:
+    address: 6890415
+  note: 'v79 sub_6923AF COutPacket(166); push 0A6h;a2 @0x6923e2. v83 PET_LOOT=0xaa=170 (d-4). delta doc serverbound (ida-read).'
+- op: PET_EXCLUDE_ITEMS
+  direction: serverbound
+  opcode: 168
+  fname: sub_692ABB
+  provenance: ida-discovered
+  ida:
+    address: 6892219
+  note: 'v79 sub_692ABB COutPacket(168); push 0A8h;a2 @0x692acc. v83 PET_EXCLUDE_ITEMS=0xac=172 (d-4). delta doc serverbound (ida-read).'
+- op: MOVE_SUMMON
+  direction: serverbound
+  opcode: 171
+  fname: sub_9184E5
+  provenance: ida-discovered
+  ida:
+    address: 9536741
+  note: 'v79 sub_9184E5 COutPacket(171); push 0ABh;a2 @0x91851f (CVecCtrlSummoned move flush). v83 MOVE_SUMMON=0xaf=175 (d-4). delta doc serverbound (ida-read).'
+- op: SUMMON_ATTACK
+  direction: serverbound
+  opcode: 172
+  fname: sub_71B522
+  provenance: ida-discovered
+  ida:
+    address: 7451938
+  note: 'v79 sub_71B522 COutPacket(172); push 0ACh;a2 @0x71bfd9. v83 SUMMON_ATTACK=0xb0=176 (d-4). delta doc serverbound (ida-read).'
+- op: DAMAGE_SUMMON
+  direction: serverbound
+  opcode: 173
+  fname: sub_71C7A7
+  provenance: ida-discovered
+  ida:
+    address: 7456679
+  note: 'v79 sub_71C7A7 COutPacket(173); push 0ADh;a2 @0x71c9e1. v83 DAMAGE_SUMMON=0xb1=177 (d-4). delta doc serverbound (ida-read).'
+- op: MOVE_LIFE
+  direction: serverbound
+  opcode: 180
+  fname: sub_63A226
+  provenance: ida-discovered
+  ida:
+    address: 6529574
+  note: 'v79 sub_63A226 COutPacket(180); push 0B4h;a2 @0x63a791 (CMob move flush). v83 MOVE_LIFE=0xbc=188 (d-8). delta doc serverbound (ida-read).'
+- op: MOB_DROP_PICKUP_REQUEST
+  direction: serverbound
+  opcode: 182
+  fname: sub_63D8BF
+  provenance: ida-discovered
+  ida:
+    address: 6543551
+  note: 'v79 sub_63D8BF COutPacket(182); push 0B6h;a2 @0x63d931. v83 MOB_DROP_PICKUP_REQUEST=0xbe=190 (d-8). delta doc serverbound (ida-read).'
+- op: FIELD_DAMAGE_MOB
+  direction: serverbound
+  opcode: 183
+  fname: sub_6361DF
+  provenance: ida-discovered
+  ida:
+    address: 6513119
+  note: 'v79 sub_6361DF COutPacket(183); push 0B7h;a2 @0x636970. v83 FIELD_DAMAGE_MOB=0xbf=191 (d-8). delta doc serverbound (ida-read).'
+- op: MOB_DAMAGE_MOB_FRIENDLY
+  direction: serverbound
+  opcode: 184
+  fname: sub_6361DF
+  provenance: ida-discovered
+  ida:
+    address: 6513119
+  note: 'v79 sub_6361DF COutPacket(184); push 0B8h;a2 @0x636b87 (same CMob fn as FIELD_DAMAGE_MOB). v83 MOB_DAMAGE_MOB_FRIENDLY=0xc0=192 (d-8). delta doc serverbound (ida-read).'
+- op: MONSTER_BOMB
+  direction: serverbound
+  opcode: 185
+  fname: sub_63D5D6
+  provenance: ida-discovered
+  ida:
+    address: 6542806
+  note: 'v79 sub_63D5D6 COutPacket(185); push 0B9h;a2 @0x63d6f7. v83 MONSTER_BOMB=0xc1=193 (d-8). delta doc serverbound (ida-read).'
+- op: MOB_DAMAGE_MOB
+  direction: serverbound
+  opcode: 186
+  fname: sub_63FBE8
+  provenance: ida-discovered
+  ida:
+    address: 6552552
+  note: 'v79 sub_63FBE8 COutPacket(186); push 0BAh;a2 @0x63fdff. v83 MOB_DAMAGE_MOB=0xc2=194 (d-8). delta doc serverbound (ida-read).'
+- op: SNOWBALL
+  direction: serverbound
+  opcode: 203
+  fname: CField_SnowBall::BasicActionAttack
+  provenance: ida-discovered
+  ida:
+    address: 5580963
+  note: 'v79 CField_SnowBall::BasicActionAttack COutPacket(203); COutPacket(203)+Enc1+Enc2+Enc2; push 0CBh;a2 @0x552980. v83 SNOWBALL=0xd3=211 (d-8). delta doc serverbound (ida-read).'
+- op: LEFT_KNOCKBACK
+  direction: serverbound
+  opcode: 204
+  fname: CField_SnowBall::Update
+  provenance: ida-discovered
+  ida:
+    address: 5579533
+  note: 'v79 CField_SnowBall::Update COutPacket(204); COutPacket(204) in body. v83 LEFT_KNOCKBACK=0xd4=212 (d-8). delta doc serverbound (ida-read).'
+- op: COCONUT
+  direction: serverbound
+  opcode: 205
+  fname: sub_5333C8
+  provenance: ida-discovered
+  ida:
+    address: 5452744
+  note: 'v79 sub_5333C8 COutPacket(205); push 0CDh;a2 @0x53347b (coconut field-event send; no named CField_Coconut in IDB). v83 COCONUT=0xd5=213 (d-8). delta doc serverbound (ida-read).'
+- op: MATCH_TABLE
+  direction: serverbound
+  opcode: 206
+  fname: CField::SendChatMsgSlash
+  provenance: ida-discovered
+  ida:
+    address: 5339897
+  note: 'v79 CField::SendChatMsgSlash COutPacket(206); push 0CEh;a2 @0x51a2b8 (slash dispatcher). v83 MATCH_TABLE=0xd6=214 (d-8). delta doc serverbound (ida-read).'
+- op: GUILD_BOSS
+  direction: serverbound
+  opcode: 207
+  fname: CField_GuildBoss::BasicActionAttack
+  provenance: ida-discovered
+  ida:
+    address: 5511317
+  note: 'v79 CField_GuildBoss::BasicActionAttack COutPacket(207); COutPacket(207); push 0CFh;a2 @0x541914. v83 GUILD_BOSS=0xd7=215 (d-8). delta doc serverbound (ida-read).'
+- op: CHECK_CASH
+  direction: serverbound
+  opcode: 220
+  fname: sub_46C34C
+  provenance: ida-discovered
+  ida:
+    address: 4637516
+  note: 'v79 sub_46C34C COutPacket(220); push 0DCh;a2 @0x46c366. v83 CHECK_CASH=0xe4=228 (d-8). delta doc serverbound (ida-read).'

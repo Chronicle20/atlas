@@ -9,3 +9,11 @@ func TestEveryVersionKeyHasShortLabel(t *testing.T) {
 		}
 	}
 }
+
+func TestEveryVersionKeyHasTemplateFile(t *testing.T) {
+	for _, k := range VersionKeys {
+		if _, ok := templateFiles[k]; !ok {
+			t.Errorf("VersionKeys entry %q has no template filename in templateFiles", k)
+		}
+	}
+}

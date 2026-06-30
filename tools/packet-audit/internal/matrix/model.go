@@ -11,7 +11,7 @@ import (
 )
 
 // VersionKeys is the canonical baseline column order (design §3).
-var VersionKeys = []string{"gms_v83", "gms_v84", "gms_v87", "gms_v95", "jms_v185"}
+var VersionKeys = []string{"gms_v79", "gms_v83", "gms_v84", "gms_v87", "gms_v95", "jms_v185"}
 
 // ExportPath maps a version key to its IDA export JSON. jms_v185's export
 // kept its historical gms_jms_185 name (see memory: jms audit-dir mismatch).
@@ -22,17 +22,23 @@ func ExportPath(versionKey string) string {
 	return "docs/packets/ida-exports/" + versionKey + ".json"
 }
 
+// templateFiles maps a version key to its tenant seed-template filename.
+// Guarded by TestEveryVersionKeyHasTemplateFile so a new VersionKeys entry that
+// forgets its template here fails `go test` instead of silently emitting a
+// "no template for <key>" matrix warning + an unrouted (wrong-applicability) column.
+var templateFiles = map[string]string{
+	"gms_v79":  "template_gms_79_1.json",
+	"gms_v83":  "template_gms_83_1.json",
+	"gms_v84":  "template_gms_84_1.json",
+	"gms_v87":  "template_gms_87_1.json",
+	"gms_v95":  "template_gms_95_1.json",
+	"jms_v185": "template_jms_185_1.json",
+}
+
 // TemplatePath maps a version key to the tenant seed template.
 // gms_v83 -> services/atlas-configurations/seed-data/templates/template_gms_83_1.json
 func TemplatePath(versionKey string) string {
-	name := map[string]string{
-		"gms_v83":  "template_gms_83_1.json",
-		"gms_v84":  "template_gms_84_1.json",
-		"gms_v87":  "template_gms_87_1.json",
-		"gms_v95":  "template_gms_95_1.json",
-		"jms_v185": "template_jms_185_1.json",
-	}[versionKey]
-	return "services/atlas-configurations/seed-data/templates/" + name
+	return "services/atlas-configurations/seed-data/templates/" + templateFiles[versionKey]
 }
 
 // State is the graded cell state. The declared order is the design §5

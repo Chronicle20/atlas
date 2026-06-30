@@ -6,6 +6,7 @@ import (
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=guild/serverbound/GuildBBSDeleteThread version=gms_v79 ida=0x7869ed
 // packet-audit:verify packet=guild/serverbound/GuildBBSDeleteThread version=gms_v87 ida=0x87a5df
 // packet-audit:verify packet=guild/serverbound/GuildBBSDeleteThread version=gms_v95 ida=0x7c6520
 // packet-audit:verify packet=guild/serverbound/GuildBBSDeleteThread version=gms_v83 ida=0x8168db

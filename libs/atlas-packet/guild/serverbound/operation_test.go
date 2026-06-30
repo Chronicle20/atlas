@@ -6,6 +6,7 @@ import (
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=guild/serverbound/GuildOperation version=gms_v79 ida=0x50e36f
 // packet-audit:verify packet=guild/serverbound/GuildOperation version=gms_v83 ida=0x522585
 // packet-audit:verify packet=guild/serverbound/GuildOperation version=gms_v84 ida=0x52dc20
 // packet-audit:verify packet=guild/serverbound/GuildOperation version=gms_v87 ida=0x548098

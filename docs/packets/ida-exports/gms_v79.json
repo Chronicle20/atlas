@@ -2743,13 +2743,57 @@
    ]
   },
   "CField::SendSetGradeNameMsg": {
-   "address": "",
+   "address": "0x51c411",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": ""
+    },
+    {
+     "op": "Delegate",
+     "comment": "",
+     "ref": "sub_416310"
+    },
+    {
+     "op": "DecodeStr",
+     "comment": ""
+    },
+    {
+     "op": "Delegate",
+     "comment": "",
+     "ref": "sub_416310"
+    },
+    {
+     "op": "DecodeStr",
+     "comment": ""
+    },
+    {
+     "op": "Delegate",
+     "comment": "",
+     "ref": "sub_416310"
+    },
+    {
+     "op": "DecodeStr",
+     "comment": ""
+    },
+    {
+     "op": "Delegate",
+     "comment": "",
+     "ref": "sub_416310"
+    },
+    {
+     "op": "DecodeStr",
+     "comment": ""
+    },
+    {
+     "op": "Delegate",
+     "comment": "",
+     "ref": "sub_416310"
+    },
+    {
+     "op": "DecodeStr",
+     "comment": ""
     }
    ]
   },
@@ -2780,24 +2824,34 @@
    ]
   },
   "CField::SendSetGuildNoticeMsg": {
-   "address": "",
+   "address": "0x51c59c",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": ""
+    },
+    {
+     "op": "DecodeStr",
+     "comment": ""
     }
    ]
   },
   "CField::SendSetMemberGradeMsg": {
-   "address": "",
+   "address": "0x51c3ad",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": ""
+    },
+    {
+     "op": "Decode4",
+     "comment": ""
+    },
+    {
+     "op": "Decode1",
+     "comment": ""
     }
    ]
   },

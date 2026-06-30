@@ -78,12 +78,12 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 | SUE_CHARACTER_RESULT | CWvsContext::OnSueCharacterResult |  | 0x034 | ❌ | 0x037 | ❌ | 0x037 | ❌ | 0x037 | ❌ | 0x037 | ❌ |  | ⬜ |
 | TRADE_MONEY_LIMIT | CWvsContext::OnTradeMoneyLimit |  | 0x036 | ❌ | 0x039 | ❌ | 0x039 | ❌ | 0x039 | ❌ | 0x039 | ❌ |  | ⬜ |
 | SET_GENDER | CWvsContext::OnSetGender |  | 0x037 | ❌ | 0x03A | ❌ | 0x03A | ❌ | 0x03A | ❌ | 0x03A | ❌ |  | ⬜ |
-| GUILD_BBS_PACKET | CUIGuildBBS::OnGuildBBSPacket | guild/clientbound/GuildBBSEntryNotFound (T1) | 0x038 | ❌ | 0x03B | ✅ | 0x03B | ✅ | 0x03B | ✅ | 0x03B | ✅ |  | ⬜ |
+| GUILD_BBS_PACKET | CUIGuildBBS::OnGuildBBSPacket | guild/clientbound/GuildBBSEntryNotFound (T1) | 0x038 | ✅ | 0x03B | ✅ | 0x03B | ✅ | 0x03B | ✅ | 0x03B | ✅ |  | ⬜ |
 | IDA_0X038 | CWvsContext::OnExpedtionResult |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x038 | ❌ |
 | CHAR_INFO | CWvsContext::OnCharacterInfo | character/clientbound/CharacterInfo (T1) | 0x03A | ❌ | 0x03D | ✅ | 0x03D | ✅ | 0x03D | ✅ | 0x03D | ✅ | 0x035 | ✅ |
 | PARTY_OPERATION | CWvsContext::OnPartyResult | party/clientbound/PartyAlreadyJoined1 (T1) | 0x03B | ✅ | 0x03E | ✅ | 0x03E | ✅ | 0x03E | ✅ | 0x03E | ✅ | 0x036 | ✅ |
 | BUDDYLIST | CWvsContext::OnFriendResult | buddy/clientbound/BuddyAlreadyBuddy (T1) | 0x03C | ✅ | 0x03F | ✅ | 0x041 | ✅ | 0x041 | ✅ | 0x041 | ✅ | 0x039 | ✅ |
-| GUILD_OPERATION | CWvsContext::OnGuildResult | guild/clientbound/GuildBoardAuthKeyUpdate (T1) | 0x03E | ❌ | 0x041 | ✅ | 0x043 | ✅ | 0x043 | ✅ | 0x043 | ✅ | 0x03B | ✅ |
+| GUILD_OPERATION | CWvsContext::OnGuildResult | guild/clientbound/GuildBoardAuthKeyUpdate (T1) | 0x03E | ✅ | 0x041 | ✅ | 0x043 | ✅ | 0x043 | ✅ | 0x043 | ✅ | 0x03B | ✅ |
 | ALLIANCE_OPERATION | CWvsContext::OnAllianceResult |  | 0x03F | ❌ | 0x042 | ❌ | 0x042 | ❌ | 0x044 | ❌ | 0x044 | ❌ | 0x03C | ❌ |
 | EXPEDITION_RESULT | CWvsContext::OnExpedtionResult |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x040 | ❌ | 0x040 | ❌ |  | ⬜ |
 | SPAWN_PORTAL | CWvsContext::OnTownPortal | door/clientbound/RemoveTownDoor | 0x040 | ❌ | 0x043 | ✅ | 0x045 | ✅ | 0x045 | ✅ | 0x045 | ✅ | 0x03D | ✅ |
@@ -259,9 +259,9 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 | GIVE_FOREIGN_BUFF | CUserRemote::OnSetTemporaryStat | character/clientbound/BuffGiveForeign (T1) | 0x0B9 | ❌ | 0x0C7 | ✅ | 0x0CB | ✅ | 0x0D4 | ✅ | 0x0E1 | ✅ | 0x0CD | ✅ |
 | CANCEL_FOREIGN_BUFF | CUserRemote::OnResetTemporaryStat | character/clientbound/BuffCancelForeign (T1) | 0x0BA | 🟡 | 0x0C8 | ✅ | 0x0CC | ✅ | 0x0D5 | ✅ | 0x0E2 | ✅ | 0x0CE | ✅ |
 | UPDATE_PARTYMEMBER_HP | CUserRemote::OnReceiveHP | party/clientbound/PartyMemberHP (T1) | 0x0BB | ✅ | 0x0C9 | ✅ | 0x0CD | ✅ | 0x0D6 | ✅ | 0x0E3 | ✅ | 0x0CF | ✅ |
-| GUILD_NAME_CHANGED | CUserRemote::OnGuildNameChanged | guild/clientbound/GuildForeignNameChanged (T1) | 0x0BC | ❌ | 0x0CA | ✅ | 0x0CE | ✅ | 0x0D7 | ✅ | 0x0E4 | ✅ | 0x0D0 | ✅ |
+| GUILD_NAME_CHANGED | CUserRemote::OnGuildNameChanged | guild/clientbound/GuildForeignNameChanged (T1) | 0x0BC | ✅ | 0x0CA | ✅ | 0x0CE | ✅ | 0x0D7 | ✅ | 0x0E4 | ✅ | 0x0D0 | ✅ |
 | SHOW_ITEM_OPTION_UPGRADE_EFFECT | CUser::ShowItemOptionUpgradeEffect |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0BC | ❌ |  | ⬜ |
-| GUILD_MARK_CHANGED | CUserRemote::OnGuildMarkChanged | guild/clientbound/GuildForeignEmblemChanged (T1) | 0x0BD | ❌ | 0x0CB | ✅ | 0x0CF | ✅ | 0x0D8 | ✅ | 0x0E5 | ✅ | 0x0D1 | ✅ |
+| GUILD_MARK_CHANGED | CUserRemote::OnGuildMarkChanged | guild/clientbound/GuildForeignEmblemChanged (T1) | 0x0BD | ✅ | 0x0CB | ✅ | 0x0CF | ✅ | 0x0D8 | ✅ | 0x0E5 | ✅ | 0x0D1 | ✅ |
 | SHOW_ITEM_RELEASE_EFFECT | CUser::ShowItemReleaseEffect |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0BD | ❌ |  | ⬜ |
 | SHOW_ITEM_UNRELEASE_EFFECT | CUser::ShowItemUnreleaseEffect |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0BE | ❌ |  | ⬜ |
 | THROW_GRENADE | CUserRemote::OnThrowGrenade |  | 0x0BE | ❌ | 0x0CC | ❌ | 0x0D0 | ❌ | 0x0D9 | ❌ | 0x0E6 | ❌ | 0x0D2 | ❌ |
@@ -946,7 +946,7 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v79 | 12 | 0 | 87 | 416 | 400 | 0 | 2.3% |
+| v79 | 16 | 0 | 87 | 412 | 400 | 0 | 3.1% |
 | v83 | 367 | 0 | 0 | 346 | 202 | 0 | 51.5% |
 | v84 | 345 | 0 | 0 | 347 | 223 | 0 | 49.9% |
 | v87 | 379 | 0 | 0 | 371 | 165 | 0 | 50.5% |

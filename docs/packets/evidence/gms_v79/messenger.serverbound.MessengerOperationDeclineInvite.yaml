@@ -1,0 +1,10 @@
+packet: messenger/serverbound/MessengerOperationDeclineInvite
+direction: serverbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CFadeWnd::SendCloseMessage
+    address: "0x50be2e"
+    decompile_sha256: 7484fc5e896af62f5fc3d27ebf47d4f0687b516543844862109e386fbc5daa3f
+verifies:
+  - libs/atlas-packet/messenger/serverbound/operation_decline_invite_test.go#TestOperationDeclineInviteRoundTrip

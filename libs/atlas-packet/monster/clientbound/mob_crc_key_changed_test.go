@@ -34,3 +34,25 @@ func TestMobCrcKeyChanged(t *testing.T) {
 		})
 	}
 }
+
+// TestMobCrcKeyChangedBytesV79 pins the exact wire bytes against the v79 client
+// read order. MOB_CRC_KEY_CHANGED (op 227) is NOT a per-mob OnMobPacket case; it
+// is dispatched at the CMobPool top level to CMobPool::OnMobCrcKeyChanged
+// @0x647197 (GMS_v79_1_DEVM.exe, port 13340), which reads:
+//
+//	Decode4 @0x6471af — m_dwMobCrcKey (the new mob CRC key)
+//
+// No uniqueId prefix (pool-level, no GetMob). Byte-identical to v83; no codec change.
+//
+// packet-audit:verify packet=monster/clientbound/MonsterMobCrcKeyChanged version=gms_v79 ida=0x647197
+func TestMobCrcKeyChangedBytesV79(t *testing.T) {
+	input := NewMobCrcKeyChanged(0x12345678)
+	ctx := pt.CreateContext("GMS", 79, 1)
+	want := []byte{
+		0x78, 0x56, 0x34, 0x12, // crcKey uint32 LE = 0x12345678 (Decode4 @0x6471af)
+	}
+	got := input.Encode(nil, ctx)(nil)
+	if !bytes.Equal(got, want) {
+		t.Errorf("v79 mobCrcKeyChanged bytes:\n got % x\nwant % x", got, want)
+	}
+}

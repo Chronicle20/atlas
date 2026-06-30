@@ -37,3 +37,27 @@ func TestMobDropPickupRequest(t *testing.T) {
 		})
 	}
 }
+
+// TestMobDropPickupRequestBytesV79 pins the exact wire bytes against the v79
+// client send order. CMob::SendDropPickUpRequest is the unnamed sub_63D8BF
+// @0x63d8bf (GMS_v79_1_DEVM.exe, port 13340), opcode 182:
+//
+//	COutPacket(182) @0x63d939
+//	Encode4 @0x63d95a — fused mob id (sub_4DC1C0(this+380, m_dwMobID)) -> mobCrc
+//	Encode4 @0x63d963 — a2 (dwDropID)                                 -> dropId
+//
+// Byte-identical to v83; no codec change.
+//
+// packet-audit:verify packet=monster/serverbound/MonsterMobDropPickupRequest version=gms_v79 ida=0x63d8bf
+func TestMobDropPickupRequestBytesV79(t *testing.T) {
+	input := MobDropPickupRequest{mobCrc: 0xAABBCCDD, dropId: 0x01020304}
+	ctx := pt.CreateContext("GMS", 79, 1)
+	want := []byte{
+		0xDD, 0xCC, 0xBB, 0xAA, // mobCrc uint32 LE (Encode4 @0x63d95a)
+		0x04, 0x03, 0x02, 0x01, // dropId uint32 LE (Encode4 @0x63d963)
+	}
+	got := input.Encode(nil, ctx)(nil)
+	if !bytes.Equal(got, want) {
+		t.Errorf("v79 mobDropPickupRequest bytes:\n got % x\nwant % x", got, want)
+	}
+}

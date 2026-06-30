@@ -30,3 +30,20 @@ func TestMobCrcKeyChangedReply(t *testing.T) {
 		})
 	}
 }
+
+// TestMobCrcKeyChangedReplyBytesV79 pins the v79 wire: EMPTY payload. The reply
+// is built inside CMobPool::OnMobCrcKeyChanged @0x647197 (GMS_v79_1_DEVM.exe,
+// port 13340): after Decode4(crcKey) and the mob-list re-checksum loop it does
+// COutPacket(154) @0x6471ee then SendPacket @0x647201 with zero Encode* calls.
+// Byte-identical to v83; no codec change.
+//
+// packet-audit:verify packet=monster/serverbound/MonsterMobCrcKeyChangedReply version=gms_v79 ida=0x647197
+func TestMobCrcKeyChangedReplyBytesV79(t *testing.T) {
+	input := MobCrcKeyChangedReply{}
+	ctx := pt.CreateContext("GMS", 79, 1)
+	want := []byte{}
+	got := input.Encode(nil, ctx)(nil)
+	if !bytes.Equal(got, want) {
+		t.Errorf("v79 mobCrcKeyChangedReply bytes:\n got % x\nwant % x", got, want)
+	}
+}

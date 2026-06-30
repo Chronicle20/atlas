@@ -1,7 +1,7 @@
 {
   "WriterName": "MonsterMonsterBomb",
   "IDAName": "CMob::TryFirstSelfDestruction",
-  "Address": "",
+  "Address": "0x63d5d6",
   "Variant": "GMS/v79",
   "BranchDepth": 0,
   "AtlasFile": "libs/atlas-packet/monster/serverbound/monster_bomb.go",
@@ -10,12 +10,12 @@
       "Index": 0,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 4,
-      "Note": "IDA read-order unresolved: function not found in IDB"
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 4,
+  "Verdict": 0,
   "FlatInvalid": false
 }

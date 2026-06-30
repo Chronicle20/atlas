@@ -1,7 +1,7 @@
 {
   "toolSha": "9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6",
   "exportHashes": {
-    "gms_v79": "1318be4a5159e2c26e616a99805a5b1ea0e08ae16523ed91d1602e270ba5cce4",
+    "gms_v79": "bb7d49903f0044c3b8108e75bea68dbaf422e3c496dfa92347f433924c3690a1",
     "gms_v83": "711bddcc2e1bdd417a75954148d2b50c64e70855e84259c0b8e50e700e393c0d",
     "gms_v84": "7eab9472e2afeda13faaf74273828d09d5f2481d67bec10235c3b2fd2f91e1eb",
     "gms_v87": "714817d376bb93732ef6b6fbe6b59f8c24515ff901801d213d676b501eae7f94",
@@ -14644,8 +14644,7 @@
       ],
       "cells": {
         "gms_v79": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
+          "state": "verified",
           "opcode": 154
         },
         "gms_v83": {
@@ -17226,13 +17225,11 @@
       "direction": "serverbound",
       "tier1": true,
       "fnames": [
-        "CMob::GenerateMovePath",
-        "sub_63A226"
+        "CMob::GenerateMovePath"
       ],
       "cells": {
         "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 180
         },
         "gms_v83": {
@@ -17464,13 +17461,11 @@
       "direction": "serverbound",
       "tier1": true,
       "fnames": [
-        "CMob::SendDropPickUpRequest",
-        "sub_63D8BF"
+        "CMob::SendDropPickUpRequest"
       ],
       "cells": {
         "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 182
         },
         "gms_v83": {
@@ -17883,13 +17878,11 @@
       "direction": "serverbound",
       "tier1": true,
       "fnames": [
-        "CMob::TryFirstSelfDestruction",
-        "sub_63D5D6"
+        "CMob::TryFirstSelfDestruction"
       ],
       "cells": {
         "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 185
         },
         "gms_v83": {
@@ -17958,13 +17951,11 @@
       "direction": "serverbound",
       "tier1": true,
       "fnames": [
-        "CMob::SetDamagedByMob",
-        "sub_63FBE8"
+        "CMob::SetDamagedByMob"
       ],
       "cells": {
         "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 186
         },
         "gms_v83": {
@@ -21552,8 +21543,7 @@
       ],
       "cells": {
         "gms_v79": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
+          "state": "verified",
           "opcode": 227
         },
         "gms_v83": {
@@ -32313,154 +32303,6 @@
         "gms_v79": {
           "state": "incomplete",
           "note": "tier-1 without fixture; verdict ❌",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "sub-struct",
-      "packet": "monster/serverbound/MonsterMobDamageMob",
-      "tier1": true,
-      "cells": {
-        "gms_v79": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "sub-struct",
-      "packet": "monster/serverbound/MonsterMobDropPickupRequest",
-      "tier1": true,
-      "cells": {
-        "gms_v79": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "sub-struct",
-      "packet": "monster/serverbound/MonsterMonsterBomb",
-      "tier1": true,
-      "cells": {
-        "gms_v79": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🚫",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "sub-struct",
-      "packet": "monster/serverbound/MonsterMovementRequest",
-      "tier1": true,
-      "cells": {
-        "gms_v79": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
           "opcode": -1
         },
         "gms_v83": {

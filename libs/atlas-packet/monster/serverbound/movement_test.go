@@ -1,6 +1,7 @@
 package serverbound
 
 import (
+	"bytes"
 	"testing"
 
 	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
@@ -102,6 +103,64 @@ func TestMonsterMovementGMS28(t *testing.T) {
 	}
 	if p.MonsterMoveStartResult() {
 		t.Error("expected monsterMoveStartResult false")
+	}
+}
+
+// TestMonsterMovementBytesV79 pins the exact wire bytes against the v79 client
+// send order. MOVE_LIFE (CMob move flush) is the unnamed sub_63A226 @0x63a226
+// (GMS_v79_1_DEVM.exe, port 13340), opcode 180; the COutPacket build block is at
+// @0x63a799:
+//
+//	COutPacket(180) @0x63a799
+//	Encode4 @0x63a7ba — fused mob id (sub_4DC1C0(this+380, m_dwMobID)) -> uniqueId
+//	Encode2 @0x63a7ec — move SN counter                               -> moveId
+//	Encode1 @0x63a803 — flags                                         -> dwFlag
+//	Encode1 @0x63a80e — (2*action)|dir                               -> nActionAndDir
+//	Encode4 @0x63a819 — skillData (HIDWORD)                          -> skillData
+//	Encode1 @0x63a83b — moveFlags                                    -> moveFlags
+//	Encode4 @0x63a849 — hackedCode (v12[288])                        -> hackedCode
+//	Encode4 @0x63a867 — flyCtx target X                              -> flyCtxTargetX
+//	Encode4 @0x63a880 — flyCtx target Y                              -> flyCtxTargetY
+//	CMovePath::Flush @0x63a8c6 — opaque movement payload (§5)
+//
+// v79 (<84) writes NO multiTargetForBall/randTimeForAreaAttack (v84+), NO
+// hackedCodeCRC and NO trailing chase block (v87+) — exactly the v83 baseline
+// path of the existing codec. model.Movement is OPAQUE (§5); fixtured empty
+// (StartX/StartY int16 + 0 element-count = 5 deterministic bytes). No codec change.
+//
+// packet-audit:verify packet=monster/serverbound/MonsterMovementRequest version=gms_v79 ida=0x63a226
+func TestMonsterMovementBytesV79(t *testing.T) {
+	p := MovementRequest{}
+	p.uniqueId = 1001
+	p.moveId = 55
+	p.dwFlag = 1
+	p.nActionAndDir = -3
+	p.skillData = 0x0305
+	p.moveFlags = 0
+	p.hackedCode = 0
+	p.flyCtxTargetX = 100
+	p.flyCtxTargetY = 200
+	// v87+ fields set but gated off at v79:
+	p.hackedCodeCRC = 999
+	p.tChaseDuration = 500
+
+	ctx := test.CreateContext("GMS", 79, 1)
+	want := []byte{
+		0xE9, 0x03, 0x00, 0x00, // uniqueId 1001 (Encode4 @0x63a7ba)
+		0x37, 0x00, // moveId 55 (Encode2 @0x63a7ec)
+		0x01, // dwFlag 1 (Encode1 @0x63a803)
+		0xFD, // nActionAndDir -3 (Encode1 @0x63a80e)
+		0x05, 0x03, 0x00, 0x00, // skillData 0x0305 (Encode4 @0x63a819)
+		0x00,                   // moveFlags 0 (Encode1 @0x63a83b)
+		0x00, 0x00, 0x00, 0x00, // hackedCode 0 (Encode4 @0x63a849)
+		0x64, 0x00, 0x00, 0x00, // flyCtxTargetX 100 (Encode4 @0x63a867)
+		0xC8, 0x00, 0x00, 0x00, // flyCtxTargetY 200 (Encode4 @0x63a880)
+		// opaque movement (empty): StartX int16, StartY int16, count byte
+		0x00, 0x00, 0x00, 0x00, 0x00,
+	}
+	got := test.Encode(t, ctx, p.Encode, nil)
+	if !bytes.Equal(got, want) {
+		t.Errorf("v79 movement bytes:\n got % x\nwant % x", got, want)
 	}
 }
 

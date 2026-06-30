@@ -9,11 +9,13 @@ import (
 	"github.com/Chronicle20/atlas/tools/packet-audit/internal/opregistry"
 )
 
+var shortLabels = map[string]string{
+	"gms_v83": "v83", "gms_v84": "v84", "gms_v87": "v87",
+	"gms_v95": "v95", "jms_v185": "JMS185",
+}
+
 func colLabel(vk string) string {
-	return map[string]string{
-		"gms_v83": "v83", "gms_v84": "v84", "gms_v87": "v87",
-		"gms_v95": "v95", "jms_v185": "JMS185",
-	}[vk]
+	return shortLabels[vk]
 }
 
 // RenderMarkdown produces STATUS.md (design §9): per direction one table,

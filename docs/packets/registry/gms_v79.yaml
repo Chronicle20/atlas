@@ -2455,11 +2455,21 @@
 - op: NPC_TALK_MORE
   direction: serverbound
   opcode: 58
-  fname: CScriptMan::OnAskMenu
+  fname: CScriptMan::OnAskMembershopAvatar
+  fname_alts:
+    - CScriptMan::OnSay
+    - CScriptMan::OnSayImage
+    - CScriptMan::OnAskYesNo
+    - CScriptMan::OnAskText
+    - CScriptMan::OnAskBoxText
+    - CScriptMan::OnAskNumber
+    - CScriptMan::OnAskMenu
+    - CScriptMan::OnAskAvatar
+    - CScriptMan::OnAskPet
   provenance: ida-discovered
   ida:
-    address: 7112803
-  note: 'v79 CScriptMan::OnAskMenu COutPacket(58); push 3Ah;a2 @0x6c89a1 (one of many CScriptMan::OnSay/OnAsk* response sends, all COutPacket(58)). v83 NPC_TALK_MORE=0x3c=60 (d-2). delta doc serverbound (ida-read).'
+    address: 7113725
+  note: 'v79 NPC_TALK_MORE COutPacket(58): every CScriptMan::OnSay/OnAsk* response send uses COutPacket(58). Primary fname = CScriptMan::OnAskMembershopAvatar (COutPacket(58)@0x6c8bfd, Encode1(9)); OnAskMenu (Encode1(7)) and the rest are fname_alts (mirrors v83, which lists OnAskSlideMenu primary + alts). Primary deliberately is NOT OnAskMenu so the clientbound NpcAskMenuConversationDetail detail report is graded as its own sub-struct, not consumed by this serverbound op. v83 NPC_TALK_MORE=0x3c=60 (d-2). delta doc serverbound (ida-read).'
 - op: NPC_SHOP
   direction: serverbound
   opcode: 59

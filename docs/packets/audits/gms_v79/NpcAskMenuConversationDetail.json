@@ -1,21 +1,30 @@
 {
   "WriterName": "NpcAskMenuConversationDetail",
   "IDAName": "CScriptMan::OnAskMenu#AskMenu",
-  "Address": "",
+  "Address": "0x6c8863",
   "Variant": "GMS/v79",
-  "BranchDepth": 0,
+  "BranchDepth": 3,
   "AtlasFile": "libs/atlas-packet/npc/clientbound/conversation.go",
   "Rows": [
     {
       "Index": 0,
       "AtlasOp": 4,
       "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 4,
-      "Note": "IDA read-order unresolved: function not found in IDB"
+      "IDAOp": 4,
+      "IDAComment": "message text",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "count (avatar look ids; 0 for plain #L# text menus)",
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 4,
+  "Verdict": 0,
   "FlatInvalid": false
 }

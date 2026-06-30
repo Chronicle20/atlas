@@ -181,10 +181,19 @@ type AskMenuConversationDetail struct {
 	Message string
 }
 
-func (s *AskMenuConversationDetail) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+func (s *AskMenuConversationDetail) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
 		w.WriteAsciiString(s.Message)
+		// GMS v79 merged the avatar-style menu into ASK_MENU: the client
+		// (CScriptMan::OnAskMenu @0x6c8863, GMS_v79_1_DEVM.exe port 13340) reads
+		// DecodeStr(message) + Decode1(count) + Decode4 x count (avatar look ids,
+		// SetUtilDlgEx_AVATAR). v83+ OnAskMenu (v83 @0x746fad, v95 @0x6dce00) read
+		// a plain single string with NO count. Atlas uses ASK_MENU only for plain
+		// #L#-token text menus, so count is always 0 (no avatar styles). delta §3.2
+		if t, err := tenant.FromContext(ctx)(); err == nil && t.IsRegion("GMS") && !t.MajorAtLeast(83) {
+			w.WriteByte(0)
+		}
 		return w.Bytes()
 	}
 }

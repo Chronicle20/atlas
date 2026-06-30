@@ -1,7 +1,7 @@
 {
   "toolSha": "9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6",
   "exportHashes": {
-    "gms_v79": "e9247ad8970e7c41d0a7659ebac6f06cdf23eab693ebea03eb5acd7bd307c07e",
+    "gms_v79": "5a3c2323bd108df016728727259d63c688d89305d1b987c7c9548d1831112424",
     "gms_v83": "711bddcc2e1bdd417a75954148d2b50c64e70855e84259c0b8e50e700e393c0d",
     "gms_v84": "7eab9472e2afeda13faaf74273828d09d5f2481d67bec10235c3b2fd2f91e1eb",
     "gms_v87": "714817d376bb93732ef6b6fbe6b59f8c24515ff901801d213d676b501eae7f94",
@@ -5007,7 +5007,7 @@
     {
       "kind": "op",
       "op": "NPC_TALK_MORE",
-      "packet": "npc/clientbound/NpcAskMenuConversationDetail",
+      "packet": "npc/clientbound/NpcAskMemberShopAvatarConversationDetail",
       "direction": "serverbound",
       "tier1": true,
       "fnames": [
@@ -5029,7 +5029,7 @@
       "cells": {
         "gms_v79": {
           "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🚫",
+          "note": "tier-1 without fixture; verdict ❌",
           "opcode": 58
         },
         "gms_v83": {
@@ -25936,8 +25936,7 @@
       ],
       "cells": {
         "gms_v79": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ⚠️",
+          "state": "verified",
           "opcode": 283
         },
         "gms_v83": {
@@ -26009,8 +26008,7 @@
       ],
       "cells": {
         "gms_v79": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ⚠️",
+          "state": "verified",
           "opcode": 284
         },
         "gms_v83": {
@@ -32666,7 +32664,7 @@
       "cells": {
         "gms_v79": {
           "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
+          "note": "no audit report",
           "opcode": -1
         },
         "gms_v83": {
@@ -32698,8 +32696,7 @@
       "tier1": true,
       "cells": {
         "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v83": {
@@ -33161,7 +33158,7 @@
       "cells": {
         "gms_v79": {
           "state": "incomplete",
-          "note": "no audit report",
+          "note": "tier-1 without fixture; verdict ⚠️",
           "opcode": -1
         },
         "gms_v83": {

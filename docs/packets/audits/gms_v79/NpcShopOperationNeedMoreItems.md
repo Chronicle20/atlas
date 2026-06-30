@@ -1,14 +1,14 @@
 # NpcShopOperationNeedMoreItems (← `CShopDlg::OnPacket#NeedMoreItems`)
 
-- **IDA:** 
+- **IDA:** 0x6d6eb9
 - **Atlas file:** `libs/atlas-packet/npc/clientbound/shop_operation.go`
 - **Variant:** GMS/v79
 - **Branch depth:** 0
-- **Verdict:** 🚫
+- **Verdict:** ✅
 
 ## Wire-level diff
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | byte | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
+| 0 | byte | byte `mode (NEED_MORE_ITEMS mode-only notice arm: v79 mode 13)` | ✅ |  |
 

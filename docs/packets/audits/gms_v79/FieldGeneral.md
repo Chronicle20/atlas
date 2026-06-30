@@ -1,6 +1,6 @@
 # FieldGeneral (← `CField::SendChatMsg`)
 
-- **IDA:** 
+- **IDA:** 0x517a02
 - **Atlas file:** `libs/atlas-packet/field/serverbound/general.go`
 - **Variant:** GMS/v79
 - **Branch depth:** 2
@@ -11,7 +11,7 @@
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | int32 | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
-| 1 | string | byte `` | ❌ | atlas: extra — client never reads this field |
-| 2 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 0 | int32 | string `sText @0x517abe` | ❌ | width mismatch |
+| 1 | string | byte `bOnlyBalloon @0x517ac9` | ❌ | width mismatch |
+| 2 | byte | byte `` | ⚠️ | atlas: trailing padding byte — client stops reading (harmless over-write) |
 

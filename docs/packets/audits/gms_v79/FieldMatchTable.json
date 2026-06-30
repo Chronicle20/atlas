@@ -1,7 +1,7 @@
 {
   "WriterName": "FieldMatchTable",
   "IDAName": "CField::SendChatMsgSlash#MatchTable",
-  "Address": "",
+  "Address": "0x51a2b8",
   "Variant": "GMS/v79",
   "BranchDepth": 0,
   "AtlasFile": "libs/atlas-packet/field/serverbound/match_table.go",
@@ -10,12 +10,12 @@
       "Index": 0,
       "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 4,
-      "Note": "IDA read-order unresolved: function not found in IDB"
+      "IDAOp": 0,
+      "IDAComment": "flag @0x51a2da",
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 4,
+  "Verdict": 0,
   "FlatInvalid": false
 }

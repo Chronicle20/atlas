@@ -34,6 +34,30 @@ func TestCoupleMessageByteOutput(t *testing.T) {
 	}
 }
 
+// TestCoupleMessageByteOutputV79 pins the gms_v79 SPOUSE_CHAT (op 0x76) serverbound wire.
+//
+// IDA-verified send-site (GMS_v79_1_DEVM.exe, port 13340):
+//
+//	CUIStatusBar::SendCoupleMessage (sub_83CD67 @0x83cd67):
+//	  GetCharacterData @0x83cdb9; marriage-record guard `if (*(v6 + 1291))` @0x83cdca
+//	  (married flag); COutPacket(118)=0x76 @0x83cdf6; EncodeStr(spouseName) @0x83ce13
+//	  (partner name from the local marriage record buffer); EncodeStr(message=a2)
+//	  @0x83ce2b. The not-married else-branch (@0x83ce4e) is StringPool::GetString(159)
+//	  + ChatLogAdd — it sends no packet. No leading mode byte, no get_update_time prefix.
+//
+// Wire byte-identical to v83 (only the opcode shifts 0x79→0x76); codec is opcode-agnostic.
+//
+// packet-audit:verify packet=field/serverbound/FieldCoupleMessage version=gms_v79 ida=0x83cd67
+func TestCoupleMessageByteOutputV79(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 79, 1)
+	input := CoupleMessage{spouseName: "Bob", message: "hi"}
+	expected := []byte{0x03, 0x00, 0x42, 0x6F, 0x62, 0x02, 0x00, 0x68, 0x69}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v79 couple_message golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
 // TestCoupleMessageByteOutputV84 pins the gms_v84 SPOUSE_CHAT (op 0x07B) serverbound wire.
 //
 // IDA-verified send-site (GMS_v84.1_U_DEVM, port 13337):

@@ -1,14 +1,51 @@
 package serverbound
 
 import (
+	"bytes"
 	"testing"
 
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// TestChangeByteOutputV79 pins the gms_v79 CHANGE_MAP (op 0x24) serverbound wire.
+//
+// IDA: CField::SendTransferFieldRequest @0x51b950 (GMS_v79_1_DEVM.exe) —
+//
+//	COutPacket(36)                  @0x51b98d → opcode 0x24 (matches registry).
+//	Encode1(get_field()+276)        @0x51b9b2 → fieldKey byte.
+//	Encode4(a2)                     @0x51b9bd → targetId (int32 LE).
+//	EncodeStr(Src)                  @0x51b9e2 → portalName.
+//	if (Src) Encode2(x)/Encode2(y)  @0x51ba00/@0x51ba1a → target x/y (only with a portal name).
+//	Encode1(0)                      @0x51ba23 → unused byte.
+//	Encode1(a4)                     @0x51ba2e → premium byte.
+//	Encode1(dword_B0D450)           @0x51ba3e → chase flag (present from v79; the legacy
+//	                                            codec gate was >=83 and wrongly dropped it).
+//	if (chase) Encode4(targetX)/Encode4(targetY) — omitted here (chase=false).
+//
+// WriteAsciiString = uint16-LE len + bytes; WriteInt = uint32-LE; WriteInt16 = uint16-LE.
+func TestChangeByteOutputV79(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 79, 1)
+	input := Change{fieldKey: 1, targetId: 100000000, portalName: "west00", x: 100, y: 200, unused: 0, premium: 0}
+	expected := []byte{
+		0x01,                   // fieldKey @0x51b9b2
+		0x00, 0xE1, 0xF5, 0x05, // targetId 100000000 @0x51b9bd
+		0x06, 0x00, 0x77, 0x65, 0x73, 0x74, 0x30, 0x30, // EncodeStr("west00") @0x51b9e2
+		0x64, 0x00, // x=100 @0x51ba00
+		0xC8, 0x00, // y=200 @0x51ba1a
+		0x00, // unused @0x51ba23
+		0x00, // premium @0x51ba2e
+		0x00, // chase=false @0x51ba3e
+	}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v79 change golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
 // TestChangeWithPortalRoundTrip covers a portal-named transfer. Per the v95
 // client (CField::SendTransferFieldRequest @0x5345c0) a non-empty portal name
 // carries the target x/y pair, so x/y participate in the round-trip here.
+// packet-audit:verify packet=field/serverbound/FieldChange version=gms_v79 ida=0x51b950
 // packet-audit:verify packet=field/serverbound/FieldChange version=gms_v95 ida=0x5345c0
 // packet-audit:verify packet=field/serverbound/FieldChange version=gms_v83 ida=0x53035d
 // packet-audit:verify packet=field/serverbound/FieldChange version=gms_v87 ida=0x557b5a

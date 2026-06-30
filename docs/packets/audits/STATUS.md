@@ -5,7 +5,7 @@
 
 Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 
-- export gms_v79: `5016ab436f600dee684613db8cdc39516f913890e5ed69359ee684a92b5aaa6e`
+- export gms_v79: `a0853f13a08d13b49ec8f315acca20086691aa1dec8c45181ab5d205b176a15b`
 - export gms_v83: `711bddcc2e1bdd417a75954148d2b50c64e70855e84259c0b8e50e700e393c0d`
 - export gms_v84: `7eab9472e2afeda13faaf74273828d09d5f2481d67bec10235c3b2fd2f91e1eb`
 - export gms_v87: `714817d376bb93732ef6b6fbe6b59f8c24515ff901801d213d676b501eae7f94`
@@ -158,7 +158,7 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 | IDA_0X074 | CWvsContext::OnSetPassenserRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x074 | ❌ |
 | SCRIPT_PROGRESS_MESSAGE | CWvsContext::OnScriptProgressMessage; sub_95F0D4 | quest/clientbound/ScriptProgress | 0x074 | ❌ | 0x07A | ✅ | 0x07D | ✅ | 0x07D | ✅ | 0x07F | ✅ | 0x076 | ✅ |
 | MACRO_SYS_DATA_INIT | CWvsContext::OnMacroSysDataInit |  | 0x075 | ❌ | 0x07C | ❌ | 0x07F | ❌ | 0x084 | ❌ | 0x08C | ❌ | 0x07A | ❌ |
-| SET_FIELD | CStage::OnSetField | field/clientbound/FieldSetField (T1) | 0x076 | ❌ | 0x07D | ✅ | 0x080 | ✅ | 0x085 | ✅ | 0x08D | ✅ | 0x07B | ✅ |
+| SET_FIELD | CStage::OnSetField | field/clientbound/FieldSetField (T1) | 0x076 | ✅ | 0x07D | ✅ | 0x080 | ✅ | 0x085 | ✅ | 0x08D | ✅ | 0x07B | ✅ |
 | SET_ITC | CStage::OnSetITC |  | 0x077 | ❌ | 0x07E | ❌ | 0x081 | ❌ | 0x086 | ❌ | 0x08E | ❌ | 0x07C | ❌ |
 | IDA_0X078 | sub_AF807A |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x078 | ❌ |
 | SET_CASH_SHOP | CStage::OnSetCashShop |  | 0x078 | ❌ | 0x07F | ❌ | 0x082 | ❌ | 0x087 | ❌ | 0x08F | ❌ | 0x07D | ❌ |
@@ -170,7 +170,7 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 | BLOCKED_SERVER | CField::OnTransferChannelReqIgnored | field/clientbound/FieldBlockedServer (T1) | 0x07C | 🟡 | 0x084 | ✅ | 0x087 | ✅ | 0x08C | ✅ | 0x094 | ✅ | 0x082 | ✅ |
 | FORCED_MAP_EQUIP | CField::OnFieldSpecificData | field/clientbound/FieldForcedMapEquip (T1) | 0x07D | 🟡 | 0x085 | ✅ | 0x088 | ✅ | 0x08D | ✅ | 0x095 | ✅ | 0x083 | ✅ |
 | IDA_0X07E | CWvsContext::OnSetPassenserRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x07E | ❌ |  | ⬜ |
-| MULTICHAT | CField::OnGroupMessage | field/clientbound/FieldMultiChat (T1) | 0x07E | ❌ | 0x086 | ✅ | 0x089 | ✅ | 0x08E | ✅ | 0x096 | ✅ | 0x084 | ✅ |
+| MULTICHAT | CField::OnGroupMessage | field/clientbound/FieldMultiChat (T1) | 0x07E | ✅ | 0x086 | ✅ | 0x089 | ✅ | 0x08E | ✅ | 0x096 | ✅ | 0x084 | ✅ |
 | CAKE_PIE_EVENT_RESULT | CWvsContext::OnCakePieEventResult |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x07F | ❌ | 0x081 | ❌ |  | ⬜ |
 | WHISPER | CField::OnWhisper | field/clientbound/FieldWhisperError (T1) | 0x07F | ❌ | 0x087 | ✅ | 0x08A | ✅ | 0x08F | ✅ | 0x097 | ✅ | 0x085 | ✅ |
 | SPOUSE_CHAT | CField::OnCoupleMessage | field/clientbound/FieldSpouseChat (T1) | 0x080 | ❌ | 0x088 | ✅ | 0x08B | ✅ | 0x090 | ✅ | 0x098 | ✅ |  | ⬜ |
@@ -518,7 +518,7 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 | UNNAMED_R38 |  |  |  | ⬜ | 0x021 | ❌ | 0x021 | ❌ | 0x021 | ❌ | 0x020 | ❌ | 0x016 | ❌ |
 | UNNAMED_R39 |  |  |  | ⬜ | 0x022 | ❌ | 0x022 | ❌ | 0x022 | ❌ | 0x021 | ❌ | 0x017 | ❌ |
 | CLIENT_START | CLogin::Init |  |  | ⬜ | 0x023 | ❌ | 0x023 | ❌ | 0x023 | ❌ | 0x022 | ❌ | 0x018 | ❌ |
-| CHANGE_MAP | CCashShop::SendTransferFieldPacket; CField::SendTransferFieldRequest; CITC::SendTransferFieldPacket | field/serverbound/FieldChange (T1) | 0x024 | ❌ | 0x026 | ❌ | 0x026 | ❌ | 0x028 | ❌ | 0x029 | ❌ | 0x01D | ❌ |
+| CHANGE_MAP | CCashShop::SendTransferFieldPacket; CField::SendTransferFieldRequest; CITC::SendTransferFieldPacket | field/serverbound/FieldChange (T1) | 0x024 | ✅ | 0x026 | ❌ | 0x026 | ❌ | 0x028 | ❌ | 0x029 | ❌ | 0x01D | ❌ |
 | NEXON_PASSPORT | CLogin::SendCheckPasswordPacket; CLogin::SendLoginPacket; CLogin::SendViewAllCharPacket | login/serverbound/Request |  | ⬜ | 0x024 | ✅ | 0x024 | ✅ | 0x001 | ✅ | 0x001 | ✅ |  | ⬜ |
 | CHANGE_CHANNEL | CField::SendTransferChannelRequest | channel/serverbound/ChannelChangeRequest | 0x025 | 🟡 | 0x027 | ✅ | 0x027 | ✅ | 0x029 | ✅ | 0x02A | ✅ | 0x01E | ✅ |
 | PACKET_ERROR | CWvsApp::SendBackupPacket; CWvsApp::SendClearStackLog |  |  | ⬜ | 0x025 | ❌ | 0x025 | ❌ | 0x025 | ❌ | 0x024 | ❌ |  | ⬜ |
@@ -535,7 +535,7 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 | MAGIC_ATTACK | CUserLocal::TryDoingMagicAttack | character/serverbound/CharacterAttackMagicRequest (T1) | 0x02C | ❌ | 0x02E | ✅ | 0x02E | ✅ | 0x030 | ✅ | 0x031 | ✅ | 0x025 | ✅ |
 | TOUCH_MONSTER_ATTACK | CUserLocal::TryDoingBodyAttack | character/serverbound/CharacterAttackTouchRequest (T1) | 0x02D | ❌ | 0x02F | ✅ | 0x02F | ✅ | 0x031 | ✅ | 0x032 | ✅ | 0x026 | ✅ |
 | TAKE_DAMAGE | CUserLocal::SetDamaged; CUserLocal::Update |  | 0x02E | ❌ | 0x030 | ❌ | 0x030 | ❌ | 0x032 | ❌ | 0x034 | ❌ | 0x027 | ❌ |
-| GENERAL_CHAT | CField::SendChatMsg; CField::SendChatMsgSlash; sub_517A02 | field/serverbound/FieldGeneral (T1) | 0x02F | ❌ | 0x031 | ✅ | 0x031 | ✅ | 0x034 | ✅ | 0x036 | ✅ | 0x029 | ✅ |
+| GENERAL_CHAT | CField::SendChatMsg; CField::SendChatMsgSlash | field/serverbound/FieldGeneral (T1) | 0x02F | ✅ | 0x031 | ✅ | 0x031 | ✅ | 0x034 | ✅ | 0x036 | ✅ | 0x029 | ✅ |
 | CLOSE_CHALKBOARD | CUserLocal::HandleLButtonClk; sub_8A80A3 | character/serverbound/ChalkboardClose (T1) | 0x030 | ❌ | 0x032 | ✅ | 0x032 | ✅ | 0x035 | ✅ | 0x037 | ✅ | 0x02A | ✅ |
 | FACE_EXPRESSION | CUserLocal::Update; CWvsContext::SendEmotionChange | character/serverbound/ExpressionRequest (T1) | 0x031 | 🟡 | 0x033 | ❌ | 0x033 | ❌ | 0x036 | ❌ | 0x038 | ❌ | 0x02B | ❌ |
 | MOVING_SHOOT_ATTACK_PREPARE | CUserLocal::TryDoingSmoothingMovingShootAttackPrepare |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x033 | ❌ |  | ⬜ |
@@ -607,9 +607,9 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 | GRENADE_EFFECT | CUserLocal::ThrowGrenade |  |  | ⬜ | 0x06D | ❌ | 0x06D | ❌ | 0x070 | ❌ | 0x079 | ❌ | 0x068 | ❌ |
 | NPC_ITEM_USE_REQUEST | CWvsContext::SendSelectNpcItemUseRequest |  |  | ⬜ | 0x06F | ❌ | 0x06F | ❌ | 0x072 | ❌ | 0x07B | ❌ | 0x06A | ❌ |
 | LOTTERY_ITEM_USE_REQUEST | CWvsContext::SendLotteryItemUseRequest |  |  | ⬜ | 0x070 | ❌ | 0x070 | ❌ | 0x073 | ❌ | 0x07C | ❌ | 0x06B | ❌ |
-| SUE_CHARACTER | CField::SendChatMsgSlash | field/serverbound/FieldAdminChat (T1) | 0x070 | ❌ | 0x072 | ✅ | 0x072 | ✅ | 0x075 | ✅ | 0x07E | ✅ |  | ⬜ |
+| SUE_CHARACTER | CField::SendChatMsgSlash | field/serverbound/FieldAdminChat (T1) | 0x070 | ✅ | 0x072 | ✅ | 0x072 | ✅ | 0x075 | ✅ | 0x07E | ✅ |  | ⬜ |
 | MAKER_SKILL | CUIItemMaker::RequestItemMake |  |  | ⬜ | 0x071 | ❌ | 0x071 | ❌ | 0x074 | ❌ | 0x07D | ❌ | 0x06C | ❌ |
-| ADMIN_CHAT | CField::SendChatMsgSlash | field/serverbound/FieldAdminChat (T1) | 0x073 | ❌ | 0x076 | ✅ | 0x078 | ✅ | 0x07C | ✅ | 0x08B | ✅ | 0x078 | ✅ |
+| ADMIN_CHAT | CField::SendChatMsgSlash | field/serverbound/FieldAdminChat (T1) | 0x073 | ✅ | 0x076 | ✅ | 0x078 | ✅ | 0x07C | ✅ | 0x08B | ✅ | 0x078 | ✅ |
 | USE_BACKGROUND_MUSIC_ITEM |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x073 | ❌ |
 | USE_GACHAPON_BOX_ITEM | CWvsContext::SendUseBoxGachaponItemRequest |  |  | ⬜ | 0x073 | ❌ | 0x073 | ❌ | 0x076 | ❌ | 0x07F | ❌ | 0x077 | ❌ |
 | MULTI_CHAT | CUIStatusBar::SendGroupMessage | chat/serverbound/ChatMulti (T1) | 0x074 | ✅ | 0x077 | ❌ | 0x079 | ❌ | 0x07D | ❌ | 0x08C | ❌ | 0x079 | ❌ |
@@ -617,7 +617,7 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 | FOLLOW_CHARACTER_WITHRDAW |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x075 | ❌ |
 | WATER_OF_LIFE | CWvsContext::SendWaterOfLife |  |  | ⬜ | 0x075 | ❌ | 0x075 | ❌ | 0x078 | ❌ | 0x081 | ❌ |  | ⬜ |
 | WHISPER | CField::SendChatMsgWhisper; CField::SendLocationWhisper | chat/serverbound/ChatWhisper (T1) | 0x075 | ✅ | 0x078 | ✅ | 0x07A | ✅ | 0x07E | ✅ | 0x08D | ✅ | 0x07A | ✅ |
-| SPOUSE_CHAT | CUIStatusBar::SendCoupleMessage | field/serverbound/FieldCoupleMessage (T1) | 0x076 | ❌ | 0x079 | ✅ | 0x07B | ✅ | 0x07F | ✅ | 0x08E | ✅ |  | ⬜ |
+| SPOUSE_CHAT | CUIStatusBar::SendCoupleMessage | field/serverbound/FieldCoupleMessage (T1) | 0x076 | ✅ | 0x079 | ✅ | 0x07B | ✅ | 0x07F | ✅ | 0x08E | ✅ |  | ⬜ |
 | MESSENGER | CFadeWnd::SendCloseMessage; CUIMessenger::OnCreate; CUIMessenger::OnDestroy; CUIMessenger::OnInvite; CUIMessenger::ProcessChat; CUIMessenger::SendInviteMsg; CUIMessenger::Update | messenger/serverbound/MessengerOperationDeclineInvite (T1) | 0x077 | ✅ | 0x07A | ✅ | 0x07C | ❌ | 0x080 | ✅ | 0x08F | ✅ | 0x07B | ✅ |
 | PLAYER_INTERACTION | CCashTradingRoomDlg::OnTrade; CCashTradingRoomDlg::PutItem; CCashTradingRoomDlg::PutMoney; CCashTradingRoomDlg::SetRet; CCashTradingRoomDlg::Trade; CEntrustedShopDlg::AddBlackList; CEntrustedShopDlg::DeleteBlackList; CEntrustedShopDlg::OnArrange; CEntrustedShopDlg::OnBlackList; CEntrustedShopDlg::OnCorrectSSN2; CEntrustedShopDlg::OnGoOut; CEntrustedShopDlg::OnVisitList; CEntrustedShopDlg::OnWithdrawMoney; CEntrustedShopDlg::SetRet; CField::AddBlackList; CField::DeleteBlackList; CField::SendInviteTradingRoomMsg; CMemoryGameDlg::OnClickBanButton; CMemoryGameDlg::OnClickEndButton; CMemoryGameDlg::OnClickReadyButton; CMemoryGameDlg::OnClickStartButton; CMemoryGameDlg::OnEnterResult; CMemoryGameDlg::OnTieRequest; CMemoryGameDlg::SendClaimGiveUp; CMemoryGameDlg::SendTieRequest; CMemoryGameDlg::SendTurnUpCard; CMemoryGameDlg::Update; CMiniRoomBaseDlg::CheckAndSendChat; CMiniRoomBaseDlg::OnCheckSSN2Static; CMiniRoomBaseDlg::SendCashInviteResult; CMiniRoomBaseDlg::SendInviteResult; COmokDlg::OnClickBanButton; COmokDlg::OnClickEndButton; COmokDlg::OnClickReadyButton; COmokDlg::OnClickStartButton; COmokDlg::OnEnterResult; COmokDlg::OnRetreatRequest; COmokDlg::OnTieRequest; COmokDlg::PutStoneChecker; COmokDlg::SendClaimGiveUp; COmokDlg::SendRetreatRequest; COmokDlg::SendTieRequest; COmokDlg::Update; CPersonalShopDlg::BuyItem; CPersonalShopDlg::CheckCashItemInList; CPersonalShopDlg::DeliverBlackList; CPersonalShopDlg::MoveItemToInventory; CPersonalShopDlg::OnClickBanButton; CPersonalShopDlg::OnCorrectSSN2; CPersonalShopDlg::PutItem; CPersonalShopDlg::SetRet; CPersonalShopDlg::Update; CTradingRoomDlg::OnTrade; CTradingRoomDlg::PutItem; CTradingRoomDlg::PutMoney; CTradingRoomDlg::SetRet; CTradingRoomDlg::Trade; CUserLocal::HandleLButtonDblClk; CUserLocal::HandleRButtonClk; CWvsContext::OnEntrustedShopCheckResult; CWvsContext::SendCreateMiniGameRequest; CWvsContext::SendOpenShopRequest; sub_62298D |  | 0x078 | ❌ | 0x07B | ❌ | 0x07D | ❌ | 0x081 | ❌ | 0x090 | ❌ | 0x07C | ❌ |
 | PARTY_OPERATION | CField::SendChangePartyBossMsg; CField::SendCreateNewPartyMsg; CField::SendJoinPartyMsg; CField::SendKickPartyMsg; CField::SendWithdrawPartyMsg; CWvsContext::OnPartyResult | party/serverbound/PartyOperation (T1) | 0x079 | 🟡 | 0x07C | ✅ | 0x07E | ✅ | 0x082 | ✅ | 0x091 | ✅ | 0x07D | ✅ |
@@ -627,8 +627,8 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 | GUILD_OPERATION | CField::InputGuildName; CField::SendCreateGuildAgreeMsg; CField::SendInviteGuildMsg; CField::SendKickGuildMsg; CField::SendSetGradeNameMsg; CField::SendSetGuildMarkMsg; CField::SendSetGuildNoticeMsg; CField::SendSetMemberGradeMsg; CField::SendWithdrawGuildMsg; CUIFadeYesNo::OnButtonClicked; CWvsContext::OnGuildResult | guild/serverbound/GuildJoin (T1) | 0x07B | ✅ | 0x07E | ✅ | 0x082 | ✅ | 0x086 | ✅ | 0x095 | ✅ | 0x081 | ✅ |
 | USER_QUEST_RECORD_SET_STATE | CDamageMeter::SaveDamageInfo |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x07B | ❌ | 0x084 | ❌ | 0x06F | ❌ |
 | DENY_GUILD_REQUEST | CFadeWnd::SendCloseMessage; CWvsContext::OnGuildResult | messenger/serverbound/MessengerOperationDeclineInvite (T1) | 0x07C | ✅ | 0x07F | ✅ | 0x083 | ✅ | 0x087 | ✅ | 0x096 | ✅ | 0x082 | ✅ |
-| ADMIN_COMMAND | CField::SendChatMsgSlash; CStage::OnSetField; CUserLocal::OnKey | field/serverbound/FieldAdminChat (T1) | 0x07D | ❌ | 0x080 | ✅ | 0x084 | ✅ | 0x088 | ✅ | 0x097 | ✅ | 0x083 | ✅ |
-| ADMIN_LOG | CField::SendChatMsgSlash | field/serverbound/FieldAdminChat (T1) | 0x07E | ❌ | 0x081 | ✅ | 0x085 | ✅ | 0x089 | ✅ | 0x098 | ✅ | 0x084 | ✅ |
+| ADMIN_COMMAND | CField::SendChatMsgSlash; CStage::OnSetField; CUserLocal::OnKey | field/serverbound/FieldAdminChat (T1) | 0x07D | ✅ | 0x080 | ✅ | 0x084 | ✅ | 0x088 | ✅ | 0x097 | ✅ | 0x083 | ✅ |
+| ADMIN_LOG | CField::SendChatMsgSlash | field/serverbound/FieldAdminChat (T1) | 0x07E | ✅ | 0x081 | ✅ | 0x085 | ✅ | 0x089 | ✅ | 0x098 | ✅ | 0x084 | ✅ |
 | BUDDYLIST_MODIFY | CField::SendAcceptFriendMsg; CField::SendDeleteFriendMsg; CField::SendSetFriendMsg; CWvsContext::LoadFriend | buddy/serverbound/BuddyOperationDelete (T1) | 0x07F | 🟡 | 0x082 | ✅ | 0x086 | ✅ | 0x08A | ✅ | 0x099 | ✅ | 0x085 | ✅ |
 | NOTE_ACTION | CCashShop::OnCashItemResLoadGiftDone; CMemoListDlg::SetRet; CWvsContext::OnMemoNotify_Receive | note/serverbound/NoteOperationDiscard (T1) | 0x080 | ✅ | 0x083 | ✅ | 0x087 | ✅ | 0x08B | ✅ | 0x09A | ✅ | 0x086 | ✅ |
 | USE_DOOR | CField::TryEnterTownPortal; CTownPortalPool::TryEnterTownPortal | field/serverbound/FieldUseDoor (T1) | 0x082 | ❌ | 0x085 | ✅ | 0x089 | ✅ | 0x08D | ✅ | 0x09C | ✅ | 0x088 | ✅ |
@@ -721,7 +721,7 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 | LEFT_KNOCKBACK | CField_SnowBall::Update | field/serverbound/FieldLeftKnockback (T1) | 0x0CC | ❌ | 0x0D4 | ✅ | 0x0DA | ✅ | 0x0E1 | ✅ | 0x100 | ✅ | 0x0DF | ✅ |
 | UNNAMED_R349 |  |  |  | ⬜ | 0x0CC | ❌ |  | ⬜ | 0x0D9 | ❌ | 0x0F8 | ❌ | 0x0D7 | ❌ |
 | COCONUT | CField_Coconut::BasicActionAttack; sub_5333C8 | field/serverbound/FieldCoconut (T1) | 0x0CD | ❌ | 0x0D5 | ✅ | 0x0DB | ✅ | 0x0E2 | ✅ | 0x101 | ✅ | 0x0E0 | ✅ |
-| MATCH_TABLE | CField::SendChatMsgSlash | field/serverbound/FieldAdminChat (T1) | 0x0CE | ❌ | 0x0D6 | ✅ | 0x0DC | ✅ | 0x0E3 | ✅ | 0x102 | ✅ | 0x0E1 | ✅ |
+| MATCH_TABLE | CField::SendChatMsgSlash | field/serverbound/FieldAdminChat (T1) | 0x0CE | ✅ | 0x0D6 | ✅ | 0x0DC | ✅ | 0x0E3 | ✅ | 0x102 | ✅ | 0x0E1 | ✅ |
 | TOUCHING_REACTOR | CReactorPool::FindTouchReactorAroundLocalUser |  |  | ⬜ | 0x0CE | ❌ | 0x0CE | ❌ | 0x0DB | ❌ | 0x0FA | ❌ | 0x0D9 | ❌ |
 | GUILD_BOSS | CField_GuildBoss::BasicActionAttack | field/serverbound/FieldGuildBoss (T1) | 0x0CF | ❌ | 0x0D7 | ✅ | 0x0DD | ✅ | 0x0E4 | ✅ | 0x103 | ✅ | 0x0E2 | ✅ |
 | PLAYER_MAP_TRANSFER | CUserLocal::ResetNLCPQ |  |  | ⬜ | 0x0CF | ❌ | 0x0CF | ❌ | 0x0DC | ❌ | 0x0FB | ❌ | 0x0DA | ❌ |
@@ -835,7 +835,6 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 | fame/serverbound/Change |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | field/serverbound/FieldChange (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | field/serverbound/FieldCoconut (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| field/serverbound/FieldGeneral (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | guild/serverbound/GuildAgreementResponse (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | guild/serverbound/GuildBBSCreateOrEditThread (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | guild/serverbound/GuildBBSDeleteReply (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
@@ -929,12 +928,12 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v79 | 84 | 0 | 75 | 339 | 400 | 0 | 16.9% |
-| v83 | 367 | 0 | 0 | 329 | 202 | 0 | 52.7% |
-| v84 | 345 | 0 | 0 | 330 | 223 | 0 | 51.1% |
-| v87 | 379 | 0 | 0 | 354 | 165 | 0 | 51.7% |
-| v95 | 399 | 0 | 0 | 418 | 81 | 0 | 48.8% |
-| JMS185 | 361 | 0 | 0 | 365 | 172 | 0 | 49.7% |
+| v79 | 94 | 0 | 75 | 328 | 400 | 0 | 18.9% |
+| v83 | 367 | 0 | 0 | 328 | 202 | 0 | 52.8% |
+| v84 | 345 | 0 | 0 | 329 | 223 | 0 | 51.2% |
+| v87 | 379 | 0 | 0 | 353 | 165 | 0 | 51.8% |
+| v95 | 399 | 0 | 0 | 417 | 81 | 0 | 48.9% |
+| JMS185 | 361 | 0 | 0 | 364 | 172 | 0 | 49.8% |
 
 ## Conflicts
 

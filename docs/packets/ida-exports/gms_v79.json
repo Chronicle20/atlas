@@ -1943,18 +1943,8 @@
      "comment": ""
     },
     {
-     "op": "Delegate",
-     "comment": "",
-     "ref": "sub_416310"
-    },
-    {
      "op": "DecodeStr",
      "comment": ""
-    },
-    {
-     "op": "Delegate",
-     "comment": "",
-     "ref": "CHATLOG_ADD"
     }
    ]
   },
@@ -2458,13 +2448,16 @@
    ]
   },
   "CField::SendChatMsg": {
-   "address": "",
+   "address": "0x517a02",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "EncodeStr",
+     "comment": "sText @0x517abe"
+    },
+    {
+     "op": "Encode1",
+     "comment": "bOnlyBalloon @0x517ac9"
     }
    ]
   },
@@ -2474,57 +2467,68 @@
    "calls": null
   },
   "CField::SendChatMsgSlash#AdminChat": {
-   "address": "",
+   "address": "0x5194ac",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Encode1",
+     "comment": "chatType @0x5194bf"
+    },
+    {
+     "op": "Encode1",
+     "comment": "flag @0x5194c9"
+    },
+    {
+     "op": "EncodeStr",
+     "comment": "message"
     }
    ]
   },
   "CField::SendChatMsgSlash#AdminCommand": {
-   "address": "",
+   "address": "0x51803a",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Encode1",
+     "comment": "subCommand @0x518044"
     }
    ]
   },
   "CField::SendChatMsgSlash#AdminLog": {
-   "address": "",
+   "address": "0x5198e6",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "EncodeStr",
+     "comment": "message"
     }
    ]
   },
   "CField::SendChatMsgSlash#MatchTable": {
-   "address": "",
+   "address": "0x51a2b8",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Encode1",
+     "comment": "flag @0x51a2da"
     }
    ]
   },
   "CField::SendChatMsgSlash#SueCharacter": {
-   "address": "",
+   "address": "0x51825e",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Encode4",
+     "comment": "characterId @0x518275"
+    },
+    {
+     "op": "Encode1",
+     "comment": "flag @0x51827e"
+    },
+    {
+     "op": "EncodeStr",
+     "comment": "reason"
     }
    ]
   },
@@ -7905,13 +7909,44 @@
    ]
   },
   "CStage::OnSetField#WarpToMap": {
-   "address": "",
+   "address": "0x6f07d9",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode4",
+     "comment": "m_nChannelID @0x6f080c"
+    },
+    {
+     "op": "Decode1",
+     "comment": "sNotifierMessage @0x6f082b"
+    },
+    {
+     "op": "Decode1",
+     "comment": "bCharacterData flag (warp path = 0) @0x6f0838"
+    },
+    {
+     "op": "Decode2",
+     "comment": "nNotifierCheck @0x6f084f"
+    },
+    {
+     "op": "Decode4",
+     "comment": "dwPosMap (target map id) @0x6f0997 — NO revive byte in v79 (else branch reads mapId immediately)"
+    },
+    {
+     "op": "Decode1",
+     "comment": "nPortal (target portal id) @0x6f09b5"
+    },
+    {
+     "op": "Decode2",
+     "comment": "nHP @0x6f09c6 — v79 Decode2 (2 bytes)"
+    },
+    {
+     "op": "Decode1",
+     "comment": "m_bChaseEnable @0x6f09de"
+    },
+    {
+     "op": "Decode8",
+     "comment": "timestamp (DecodeBuffer p,8u FILETIME) @0x6f0a76"
     }
    ]
   },
@@ -9017,13 +9052,16 @@
    ]
   },
   "CUIStatusBar::SendCoupleMessage": {
-   "address": "",
+   "address": "0x83cd67",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "EncodeStr",
+     "comment": "spouseName @0x83ce13"
+    },
+    {
+     "op": "EncodeStr",
+     "comment": "message @0x83ce2b"
     }
    ]
   },

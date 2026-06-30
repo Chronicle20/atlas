@@ -4,7 +4,7 @@
 - **Atlas file:** `libs/atlas-packet/field/clientbound/multi.go`
 - **Variant:** GMS/v79
 - **Branch depth:** 0
-- **Verdict:** ❌
+- **Verdict:** ✅
 
 ## Wire-level diff
 
@@ -13,5 +13,4 @@
 | 0 | byte | byte `` | ✅ |  |
 | 1 | string | string `` | ✅ |  |
 | 2 | string | string `` | ✅ |  |
-| 3 | byte | unresolved `function not found in IDB` | ❌ | atlas: short — missing trailing field |
 

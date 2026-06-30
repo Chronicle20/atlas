@@ -2071,11 +2071,11 @@
 - op: GENERAL_CHAT
   direction: serverbound
   opcode: 47
-  fname: sub_517A02
+  fname: CField::SendChatMsg
   provenance: ida-discovered
   ida:
     address: 5339650
-  note: 'sub_517A02=CField::SendChatMsg: COutPacket(47)+EncStr(text)+Enc1(bubbleOnly); v83 GENERAL_CHAT=49 (d-2). playthrough-critical.'
+  note: 'CField::SendChatMsg (sub_517A02 @0x517a02): COutPacket(47)+EncStr(text)+Enc1(bubbleOnly); v83 GENERAL_CHAT=49 (d-2). playthrough-critical. fname canonicalized to match export/report linkage.'
 - op: MOB_BANISH_PLAYER
   direction: serverbound
   opcode: 54

@@ -160,6 +160,171 @@
         "opCode": "0xC2",
         "validator": "LoggedInValidator",
         "handler": "DropPickUpHandle"
+      },
+      {
+        "opCode": "0x07",
+        "validator": "LoggedInValidator",
+        "handler": "AcceptTosHandle"
+      },
+      {
+        "opCode": "0x08",
+        "validator": "LoggedInValidator",
+        "handler": "SetGenderHandle"
+      },
+      {
+        "opCode": "0x0F",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterViewAllPongHandle"
+      },
+      {
+        "opCode": "0x14",
+        "validator": "NoOpValidator",
+        "handler": "CharacterLoggedInHandle"
+      },
+      {
+        "opCode": "0x18",
+        "validator": "NoOpValidator",
+        "handler": "PongHandle"
+      },
+      {
+        "opCode": "0x19",
+        "validator": "NoOpValidator",
+        "handler": "StartErrorHandle"
+      },
+      {
+        "opCode": "0x26",
+        "validator": "LoggedInValidator",
+        "handler": "CashShopEntryHandle"
+      },
+      {
+        "opCode": "0x29",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterChairPortableHandle"
+      },
+      {
+        "opCode": "0x2F",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterChatGeneralHandle"
+      },
+      {
+        "opCode": "0x36",
+        "validator": "LoggedInValidator",
+        "handler": "MobBanishPlayer"
+      },
+      {
+        "opCode": "0x4A",
+        "validator": "LoggedInValidator",
+        "handler": "PetFoodHandle"
+      },
+      {
+        "opCode": "0x57",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterHealOverTimeHandle"
+      },
+      {
+        "opCode": "0x5A",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterBuffCancel"
+      },
+      {
+        "opCode": "0x74",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterMultiChatHandle"
+      },
+      {
+        "opCode": "0x76",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterSpouseChatHandle"
+      },
+      {
+        "opCode": "0x7F",
+        "validator": "LoggedInValidator",
+        "handler": "BuddyOperationHandle"
+      },
+      {
+        "opCode": "0x82",
+        "validator": "LoggedInValidator",
+        "handler": "UseDoor"
+      },
+      {
+        "opCode": "0x84",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterKeyMapChangeHandle"
+      },
+      {
+        "opCode": "0x88",
+        "validator": "LoggedInValidator",
+        "handler": "WeddingAction"
+      },
+      {
+        "opCode": "0x89",
+        "validator": "LoggedInValidator",
+        "handler": "WeddingTalk"
+      },
+      {
+        "opCode": "0x98",
+        "validator": "LoggedInValidator",
+        "handler": "GuildBBSHandle"
+      },
+      {
+        "opCode": "0x9A",
+        "validator": "LoggedInValidator",
+        "handler": "MobCrcKeyChangedReply"
+      },
+      {
+        "opCode": "0xA4",
+        "validator": "LoggedInValidator",
+        "handler": "PetChatHandle"
+      },
+      {
+        "opCode": "0xA7",
+        "validator": "LoggedInValidator",
+        "handler": "PetItemUseHandle"
+      },
+      {
+        "opCode": "0xBD",
+        "validator": "LoggedInValidator",
+        "handler": "NPCActionHandle"
+      },
+      {
+        "opCode": "0xC5",
+        "validator": "LoggedInValidator",
+        "handler": "ReactorHitHandle"
+      },
+      {
+        "opCode": "0xD2",
+        "validator": "LoggedInValidator",
+        "handler": "MonsterCarnival"
+      },
+      {
+        "opCode": "0xDD",
+        "validator": "LoggedInValidator",
+        "handler": "CashShopOperationHandle"
+      },
+      {
+        "opCode": "0x69",
+        "validator": "LoggedInValidator",
+        "handler": "QuestActionHandle"
+      },
+      {
+        "opCode": "0x77",
+        "validator": "LoggedInValidator",
+        "handler": "MessengerOperationHandle"
+      },
+      {
+        "opCode": "0x7A",
+        "validator": "LoggedInValidator",
+        "handler": "PartyInviteRejectHandle"
+      },
+      {
+        "opCode": "0x7B",
+        "validator": "LoggedInValidator",
+        "handler": "GuildOperationHandle"
+      },
+      {
+        "opCode": "0x7C",
+        "validator": "LoggedInValidator",
+        "handler": "GuildInviteRejectHandle"
       }
     ],
     "writers": [

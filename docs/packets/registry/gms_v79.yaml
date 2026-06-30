@@ -2004,3 +2004,267 @@
   ida:
     address: 9784989
   note: 'COutPacket(194)=Enc1(field+276)+Enc4+Enc2(x)+Enc2(y)+Enc4 (read @0x954e9d); v83 ITEM_PICKUP=202 (d-8).'
+- op: ACCEPT_TOS
+  direction: serverbound
+  opcode: 7
+  fname: CLogin::OnAcceptLicense
+  provenance: ida-discovered
+  ida:
+    address: 6095992
+  note: 'COutPacket(7); v83 ACCEPT_TOS=7 (d0). login region.'
+- op: SET_GENDER
+  direction: serverbound
+  opcode: 8
+  fname: CLogin::SendSetGenderPacket
+  provenance: ida-discovered
+  ida:
+    address: 6096637
+  note: 'COutPacket(8); v83 SET_GENDER=8 (d0).'
+- op: VAC
+  direction: serverbound
+  opcode: 15
+  fname: CLogin::MakeVACDlg
+  provenance: ida-discovered
+  ida:
+    address: 6091406
+  note: 'COutPacket(15); v83 VAC=15 (d0).'
+- op: PLAYER_LOGGEDIN
+  direction: serverbound
+  opcode: 20
+  fname: CClientSocket::OnConnect
+  provenance: ida-discovered
+  ida:
+    address: 4770689
+  note: 'COutPacket(20)+Enc4(loginToken)+Enc1(pin)+Enc1(0); migrate-in. v83 PLAYER_LOGGEDIN=20 (d0).'
+- op: PONG
+  direction: serverbound
+  opcode: 24
+  fname: CClientSocket::OnAliveReq
+  provenance: ida-discovered
+  ida:
+    address: 4776649
+  note: 'COutPacket(24); v83 PONG=24 (d0).'
+- op: CLIENT_START_ERROR
+  direction: serverbound
+  opcode: 25
+  fname: CClientSocket::OnConnect
+  provenance: ida-discovered
+  ida:
+    address: 4770689
+  note: 'COutPacket(25)+Enc2+EncBuffer(exception); v83 CLIENT_START_ERROR=25 (d0).'
+- op: ENTER_CASHSHOP
+  direction: serverbound
+  opcode: 38
+  fname: CWvsContext::SendMigrateToShopRequest
+  provenance: ida-discovered
+  ida:
+    address: 9768831
+  note: 'COutPacket(38); v83 ENTER_CASHSHOP=40 (d-2).'
+- op: USE_CHAIR
+  direction: serverbound
+  opcode: 41
+  fname: CWvsContext::SendSitOnPortableChairRequest
+  provenance: ida-discovered
+  ida:
+    address: 9810640
+  note: 'COutPacket(41); v83 USE_CHAIR=43 (d-2).'
+- op: GENERAL_CHAT
+  direction: serverbound
+  opcode: 47
+  fname: sub_517A02
+  provenance: ida-discovered
+  ida:
+    address: 5339650
+  note: 'sub_517A02=CField::SendChatMsg: COutPacket(47)+EncStr(text)+Enc1(bubbleOnly); v83 GENERAL_CHAT=49 (d-2). playthrough-critical.'
+- op: MOB_BANISH_PLAYER
+  direction: serverbound
+  opcode: 54
+  fname: CUserLocal::SendBanMapByMobRequest
+  provenance: ida-discovered
+  ida:
+    address: 9129644
+  note: 'COutPacket(54)+Enc4; v83 MOB_BANISH_PLAYER=56 (d-2).'
+- op: PET_FOOD
+  direction: serverbound
+  opcode: 74
+  fname: CWvsContext::SendPetFoodItemUseRequest
+  provenance: ida-discovered
+  ida:
+    address: 9786914
+  note: 'COutPacket(74); v83 PET_FOOD=76 (d-2).'
+- op: HEAL_OVER_TIME
+  direction: serverbound
+  opcode: 87
+  fname: CWvsContext::SendStatChangeRequest
+  provenance: ida-discovered
+  ida:
+    address: 9868298
+  note: 'COutPacket(87)+Enc4(0x1400)+Enc2(hp)+Enc2(mp)+Enc1; v83 HEAL_OVER_TIME=89 (d-2).'
+- op: CANCEL_BUFF
+  direction: serverbound
+  opcode: 90
+  fname: CUserLocal::SendSkillCancelRequest
+  provenance: ida-discovered
+  ida:
+    address: 9192519
+  note: 'COutPacket(90)+Enc4(skillId); v83 CANCEL_BUFF=92 (d-2).'
+- op: MULTI_CHAT
+  direction: serverbound
+  opcode: 116
+  fname: CUIStatusBar::SendGroupMessage
+  provenance: ida-discovered
+  ida:
+    address: 8638141
+  note: 'COutPacket(116)+Enc1(type)+Enc1(count)+Enc4*+EncStr; v83 MULTI_CHAT=119 (d-3).'
+- op: SPOUSE_CHAT
+  direction: serverbound
+  opcode: 118
+  fname: CUIStatusBar::SendCoupleMessage
+  provenance: ida-discovered
+  ida:
+    address: 8637799
+  note: 'sub_83CD67=SendCoupleMessage: COutPacket(118)+EncStr(target)+EncStr(text); v83 SPOUSE_CHAT=121 (d-3).'
+- op: BUDDYLIST_MODIFY
+  direction: serverbound
+  opcode: 127
+  fname: CField::SendDeleteFriendMsg
+  provenance: ida-discovered
+  ida:
+    address: 5359537
+  note: 'COutPacket(127)+Enc1(3=delete)+Enc4(id); v83 BUDDYLIST_MODIFY=130 (d-3). buddy-op opcode (delete arm).'
+- op: USE_DOOR
+  direction: serverbound
+  opcode: 130
+  fname: CField::TryEnterTownPortal
+  provenance: ida-discovered
+  ida:
+    address: 5384518
+  note: 'COutPacket(130)+Enc4(townPortalId)+Enc1(1); v83 USE_DOOR=133 (d-3). NOTE: v83 also has EnterDoorHandle aliased at the SAME opcode (0x085); registered once as UseDoor.'
+- op: CHANGE_KEYMAP
+  direction: serverbound
+  opcode: 132
+  fname: CFuncKeyMappedMan::SaveFuncKeyMap
+  provenance: ida-discovered
+  ida:
+    address: 5677028
+  note: 'COutPacket(132)+Enc4(0)+Enc4(count)+per-key FUNCKEY_MAPPED::Encode; v83 CHANGE_KEYMAP=135 (d-3).'
+- op: WEDDING_ACTION
+  direction: serverbound
+  opcode: 136
+  fname: CField_Wedding::OnWeddingProgress
+  provenance: ida-discovered
+  ida:
+    address: 5627835
+  note: 'OnWeddingProgress builds COutPacket(136)+Enc1(readyByte); v83 WEDDING_ACTION=139 (d-3). paired by v83 order with WEDDING_TALK(137).'
+- op: WEDDING_TALK
+  direction: serverbound
+  opcode: 137
+  fname: CField_Wedding::OnWeddingProgress
+  provenance: ida-discovered
+  ida:
+    address: 5627835
+  note: 'OnWeddingProgress builds COutPacket(137) on YESNO confirm; v83 WEDDING_TALK=140 (d-3).'
+- op: BBS_OPERATION
+  direction: serverbound
+  opcode: 152
+  fname: CUIGuildBBS::SendLoadListRequest
+  provenance: ida-discovered
+  ida:
+    address: 7892091
+  note: 'COutPacket(152)+Enc1(2=list)+Enc4; v83 BBS_OPERATION=155 (d-3). list-load arm.'
+- op: MOB_CRC_KEY_CHANGED_REPLY
+  direction: serverbound
+  opcode: 154
+  fname: CMobPool::OnMobCrcKeyChanged
+  provenance: ida-discovered
+  ida:
+    address: 6582679
+  note: 'reply COutPacket(154); v83 MOB_CRC_KEY_CHANGED_REPLY=164 (d-10).'
+- op: PET_CHAT
+  direction: serverbound
+  opcode: 164
+  fname: CPet::DoAction
+  provenance: ida-discovered
+  ida:
+    address: 6888782
+  note: 'COutPacket(164)+EncBuffer(petLocator,8)+Enc1(act)+Enc1(anim)+EncStr; v83 PET_CHAT=168 (d-4).'
+- op: PET_AUTO_POT
+  direction: serverbound
+  opcode: 167
+  fname: CWvsContext::SendStatChangeItemUseRequestByPetQ
+  provenance: ida-discovered
+  ida:
+    address: 9786064
+  note: 'COutPacket(167)+EncBuffer(8)+Enc1+Enc4+Enc2+Enc4; v83 PET_AUTO_POT=171 (d-4).'
+- op: NPC_ACTION
+  direction: serverbound
+  opcode: 189
+  fname: CNpc::GenerateMovePath
+  provenance: ida-discovered
+  ida:
+    address: 6694511
+  note: 'COutPacket(189)+Enc4(npcOid)+Enc1+Enc1+MovePath::Flush; v83 NPC_ACTION=197 (d-8).'
+- op: DAMAGE_REACTOR
+  direction: serverbound
+  opcode: 197
+  fname: CReactorPool::FindHitReactor
+  provenance: ida-discovered
+  ida:
+    address: 7044374
+  note: 'COutPacket(197)+Enc4(reactorId)+Enc4(0)+Enc4(state)+Enc2+Enc4; v83 DAMAGE_REACTOR=205 (d-8).'
+- op: MONSTER_CARNIVAL
+  direction: serverbound
+  opcode: 210
+  fname: CUIMonsterCarnival::RequestSend
+  provenance: ida-discovered
+  ida:
+    address: 8237141
+  note: 'COutPacket(210)+Enc1+Enc4; v83 MONSTER_CARNIVAL=218 (d-8).'
+- op: CASHSHOP_OPERATION
+  direction: serverbound
+  opcode: 221
+  fname: CCashShop::RequestCashPurchaseRecord
+  provenance: ida-discovered
+  ida:
+    address: 4614123
+  note: 'COutPacket(221)+Enc1(0x28=GET_PURCHASE_RECORD)+Enc4; v83 CASHSHOP_OPERATION=229 (d-8). purchase-record arm.'
+- op: QUEST_ACTION
+  direction: serverbound
+  opcode: 105
+  fname: CQuest::StartQuest
+  provenance: ida-discovered
+  ida:
+    address: 6958279
+  note: 'COutPacket(105)+Enc1(mode 1/2/4/5)+Enc2(questId)+Enc4(npc)+Enc2(x)+Enc2(y); v83 QUEST_ACTION=107 (d-2).'
+- op: MESSENGER
+  direction: serverbound
+  opcode: 119
+  fname: CFadeWnd::SendCloseMessage
+  provenance: ida-discovered
+  ida:
+    address: 5291566
+  note: 'SendCloseMessage default(window-type 0) arm: COutPacket(119)+Enc1(mode)+EncStr+EncStr+Enc1(0) messenger-leave; v83 MESSENGER=122 (d-3).'
+- op: DENY_PARTY_REQUEST
+  direction: serverbound
+  opcode: 122
+  fname: CWvsContext::OnPartyResult
+  provenance: ida-discovered
+  ida:
+    address: 9991555
+  note: 'Party invite-received (OnPartyResult mode 4) builds the reject reply COutPacket(122) (block/report); delta doc (b) party. v83 DENY_PARTY_REQUEST=125 (d-3).'
+- op: GUILD_OPERATION
+  direction: serverbound
+  opcode: 123
+  fname: CUIFadeYesNo::OnButtonClicked
+  provenance: ida-discovered
+  ida:
+    address: 5301103
+  note: 'OnButtonClicked case 8 (guild respond): COutPacket(123)+Enc1(6)+Enc4(guildId)+Enc4(charId); v83 GUILD_OPERATION=126 (d-3).'
+- op: DENY_GUILD_REQUEST
+  direction: serverbound
+  opcode: 124
+  fname: CFadeWnd::SendCloseMessage
+  provenance: ida-discovered
+  ida:
+    address: 5291566
+  note: 'SendCloseMessage window-type 8 (guild reject): COutPacket(124)+Enc1(0x37=reject)+EncStr+EncStr; v83 DENY_GUILD_REQUEST=127 (d-3).'

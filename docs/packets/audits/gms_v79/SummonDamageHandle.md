@@ -1,6 +1,6 @@
 # SummonDamageHandle (← `CSummoned::SetDamaged`)
 
-- **IDA:** 
+- **IDA:** 0x71c7a7
 - **Atlas file:** `libs/atlas-packet/summon/serverbound/damage.go`
 - **Variant:** GMS/v79
 - **Branch depth:** 1
@@ -11,11 +11,11 @@
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | int32 | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
-| 1 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 2 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 3 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 4 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 5 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 6 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 0 | int32 | int32 `summonId = *(this+42) (sub_71C7A7 COutPacket(173)@0x71c9e9; Encode4@0x71c9fe)` | ✅ |  |
+| 1 | byte | byte `attackIdx (@0x71ca25)` | ✅ |  |
+| 2 | int32 | int32 `damage (@0x71ca2e)` | ✅ |  |
+| 3 | byte | int32 `monsterTemplateId (@0x71ca4b)` | ❌ | width mismatch |
+| 4 | int32 | byte `dir<0 flag (@0x71ca5b)` | ❌ | width mismatch |
+| 5 | int32 | byte `0xFE sentinel (@0x71ca0f)` | ❌ | width mismatch |
+| 6 | byte | int32 `damage (@0x71ca18)` | ❌ | width mismatch |
 

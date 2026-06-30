@@ -1047,7 +1047,7 @@
    "calls": [
     {
      "op": "COutPacket",
-     "comment": "CHECK_CASH op 220 (0xDC); empty body, opcode-only \u2014 v79 unnamed twin sub_46C34C @0x46C34C, COutPacket(220)+SendPacket, no Encode"
+     "comment": "CHECK_CASH op 220 (0xDC); empty body, opcode-only — v79 unnamed twin sub_46C34C @0x46C34C, COutPacket(220)+SendPacket, no Encode"
     }
    ]
   },
@@ -7847,13 +7847,42 @@
    ]
   },
   "CSummoned::SetDamaged": {
-   "address": "",
+   "address": "0x71c7a7",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Encode4",
+     "comment": "summonId = *(this+42) (sub_71C7A7 COutPacket(173)@0x71c9e9; Encode4@0x71c9fe)"
+    },
+    {
+     "op": "Encode1",
+     "comment": "attackIdx (@0x71ca25)",
+     "guard": "mob present"
+    },
+    {
+     "op": "Encode4",
+     "comment": "damage (@0x71ca2e)",
+     "guard": "mob present"
+    },
+    {
+     "op": "Encode4",
+     "comment": "monsterTemplateId (@0x71ca4b)",
+     "guard": "mob present"
+    },
+    {
+     "op": "Encode1",
+     "comment": "dir<0 flag (@0x71ca5b)",
+     "guard": "mob present"
+    },
+    {
+     "op": "Encode1",
+     "comment": "0xFE sentinel (@0x71ca0f)",
+     "guard": "no mob"
+    },
+    {
+     "op": "Encode4",
+     "comment": "damage (@0x71ca18)",
+     "guard": "no mob"
     }
    ]
   },
@@ -7869,68 +7898,175 @@
    ]
   },
   "CSummonedPool::OnAttack": {
-   "address": "",
+   "address": "0x71cfe9",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode4",
+     "comment": "cid/ownerId — CUserPool::OnUserCommonPacket@0x8c8c84 (consumed upstream before dispatch)"
+    },
+    {
+     "op": "Decode4",
+     "comment": "oid — summon cluster dispatcher sub_892500@0x89253f (read before leaf dispatch)"
+    },
+    {
+     "op": "Decode1",
+     "comment": "action byte: bLeft|direction (sub_71CFE9@0x71d06f); no leading charLevel on v79"
+    },
+    {
+     "op": "Decode1",
+     "comment": "count (@0x71d08b)"
+    },
+    {
+     "op": "Decode4",
+     "comment": "monsterOid (@0x71d0bf)",
+     "guard": "loop i<count"
+    },
+    {
+     "op": "Decode1",
+     "comment": "byte 6 (@0x71d0cd)",
+     "guard": "monsterOid != 0"
+    },
+    {
+     "op": "Decode4",
+     "comment": "damage (@0x71d0e0)",
+     "guard": "monsterOid != 0"
     }
    ]
   },
   "CSummonedPool::OnCreated": {
-   "address": "",
+   "address": "0x89268a",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode4",
+     "comment": "cid/ownerId — CUserPool::OnUserCommonPacket@0x8c8c84 (consumed upstream before dispatch)"
+    },
+    {
+     "op": "Decode4",
+     "comment": "oid (sub_89268A@0x8926a5)"
+    },
+    {
+     "op": "Decode4",
+     "comment": "skillId (@0x8926af)"
+    },
+    {
+     "op": "Decode1",
+     "comment": "charLevel (@0x8926b9); no SLV byte on v79"
+    },
+    {
+     "op": "Decode2",
+     "comment": "x (blob sub_719F7B@0x719f92)"
+    },
+    {
+     "op": "Decode2",
+     "comment": "y (@0x719f9f)"
+    },
+    {
+     "op": "Decode1",
+     "comment": "stance (@0x719fac)"
+    },
+    {
+     "op": "Decode2",
+     "comment": "foothold (@0x719faf)"
+    },
+    {
+     "op": "Decode1",
+     "comment": "movementType (@0x719fc3)"
+    },
+    {
+     "op": "Decode1",
+     "comment": "!puppet (@0x719fda)"
+    },
+    {
+     "op": "Decode1",
+     "comment": "!animated (@0x71a001)"
     }
    ]
   },
   "CSummonedPool::OnHit": {
-   "address": "",
+   "address": "0x71d643",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode4",
+     "comment": "cid/ownerId — CUserPool::OnUserCommonPacket@0x8c8c84 (consumed upstream before dispatch)"
+    },
+    {
+     "op": "Decode4",
+     "comment": "oid — summon cluster dispatcher sub_892500@0x89253f (read before leaf dispatch)"
+    },
+    {
+     "op": "Decode1",
+     "comment": "attackIdx (sub_71D643@0x71d674; atlas writes 12)"
+    },
+    {
+     "op": "Decode4",
+     "comment": "damage (@0x71d689)"
+    },
+    {
+     "op": "Decode4",
+     "comment": "monsterIdFrom -> GetMobTemplate (@0x71d69b)",
+     "guard": "attackIdx > -2"
+    },
+    {
+     "op": "Decode1",
+     "comment": "bLeft (@0x71d6a9; atlas writes 0)",
+     "guard": "attackIdx > -2"
     }
    ]
   },
   "CSummonedPool::OnMove": {
-   "address": "",
+   "address": "0x71cfc8",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode4",
+     "comment": "cid/ownerId — CUserPool::OnUserCommonPacket@0x8c8c84 (consumed upstream before dispatch)"
+    },
+    {
+     "op": "Decode4",
+     "comment": "oid — summon cluster dispatcher sub_892500@0x89253f (read before leaf dispatch)"
+    },
+    {
+     "op": "DecodeBuf",
+     "comment": "raw CMovePath movement blob — sub_71CFC8 -> CMovePath::OnMovePacket@0x6583fc (OPAQUE_LEDGER: begins with startX/startY, rebroadcast byte-faithfully)"
     }
    ]
   },
   "CSummonedPool::OnRemoved": {
-   "address": "",
+   "address": "0x71cc52",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode4",
+     "comment": "cid/ownerId — CUserPool::OnUserCommonPacket@0x8c8c84 (consumed upstream before dispatch)"
+    },
+    {
+     "op": "Decode4",
+     "comment": "oid — summon cluster dispatcher sub_892500@0x89253f (read before leaf dispatch)"
+    },
+    {
+     "op": "Decode1",
+     "comment": "leave/animated flag (sub_71CC52@0x71cc67); oid read in dispatcher"
     }
    ]
   },
   "CSummonedPool::OnSkill": {
-   "address": "",
+   "address": "0x71d5df",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode4",
+     "comment": "cid/ownerId — CUserPool::OnUserCommonPacket@0x8c8c84 (consumed upstream before dispatch)"
+    },
+    {
+     "op": "Decode4",
+     "comment": "oid — summon cluster dispatcher sub_892500@0x89253f (read before leaf dispatch)"
+    },
+    {
+     "op": "Decode1",
+     "comment": "single stance byte, masked 0x7F (sub_71D5DF@0x71d62e); oid read in dispatcher"
     }
    ]
   },

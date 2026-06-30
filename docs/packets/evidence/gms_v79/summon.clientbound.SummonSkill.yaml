@@ -1,0 +1,10 @@
+packet: summon/clientbound/SummonSkill
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CSummonedPool::OnSkill
+    address: "0x71d5df"
+    decompile_sha256: 3126150b333c8aef8b0244666b845de8d2ec45e6124a5d73e7252c6eae4966de
+verifies:
+  - libs/atlas-packet/summon/clientbound/skill_test.go#TestSummonSkillBytesV79

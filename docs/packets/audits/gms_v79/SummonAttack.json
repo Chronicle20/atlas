@@ -1,7 +1,7 @@
 {
   "WriterName": "SummonAttack",
   "IDAName": "CSummonedPool::OnAttack",
-  "Address": "",
+  "Address": "0x71cfe9",
   "Variant": "GMS/v79",
   "BranchDepth": 2,
   "AtlasFile": "libs/atlas-packet/summon/clientbound/attack.go",
@@ -10,64 +10,64 @@
       "Index": 0,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 4,
-      "Note": "IDA read-order unresolved: function not found in IDB"
+      "IDAOp": 2,
+      "IDAComment": "cid/ownerId — CUserPool::OnUserCommonPacket@0x8c8c84 (consumed upstream before dispatch)",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 1,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "IDAOp": 2,
+      "IDAComment": "oid — summon cluster dispatcher sub_892500@0x89253f (read before leaf dispatch)",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 2,
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "IDAComment": "action byte: bLeft|direction (sub_71CFE9@0x71d06f); no leading charLevel on v79",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 3,
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "IDAComment": "count (@0x71d08b)",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 4,
       "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
+      "IDAOp": 2,
+      "IDAComment": "monsterOid (@0x71d0bf)",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "width mismatch"
     },
     {
       "Index": 5,
       "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "",
+      "IDAComment": "byte 6 (@0x71d0cd)",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "width mismatch"
     },
     {
       "Index": 6,
       "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
+      "IDAOp": 2,
+      "IDAComment": "damage (@0x71d0e0)",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "width mismatch"
     },
     {
       "Index": 7,

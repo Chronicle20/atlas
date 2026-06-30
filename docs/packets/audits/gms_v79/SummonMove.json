@@ -1,7 +1,7 @@
 {
   "WriterName": "SummonMove",
   "IDAName": "CSummonedPool::OnMove",
-  "Address": "",
+  "Address": "0x71cfc8",
   "Variant": "GMS/v79",
   "BranchDepth": 0,
   "AtlasFile": "libs/atlas-packet/summon/clientbound/move.go",
@@ -10,30 +10,30 @@
       "Index": 0,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 4,
-      "Note": "IDA read-order unresolved: function not found in IDB"
+      "IDAOp": 2,
+      "IDAComment": "cid/ownerId — CUserPool::OnUserCommonPacket@0x8c8c84 (consumed upstream before dispatch)",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 1,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "IDAOp": 2,
+      "IDAComment": "oid — summon cluster dispatcher sub_892500@0x89253f (read before leaf dispatch)",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 2,
       "AtlasOp": 5,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "IDAOp": 5,
+      "IDAComment": "raw CMovePath movement blob — sub_71CFC8 -\u003e CMovePath::OnMovePacket@0x6583fc (OPAQUE_LEDGER: begins with startX/startY, rebroadcast byte-faithfully)",
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 2,
+  "Verdict": 0,
   "FlatInvalid": false
 }

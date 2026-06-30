@@ -1,7 +1,7 @@
 {
   "WriterName": "SummonDamageHandle",
   "IDAName": "CSummoned::SetDamaged",
-  "Address": "",
+  "Address": "0x71c7a7",
   "Variant": "GMS/v79",
   "BranchDepth": 1,
   "AtlasFile": "libs/atlas-packet/summon/serverbound/damage.go",
@@ -10,64 +10,64 @@
       "Index": 0,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 4,
-      "Note": "IDA read-order unresolved: function not found in IDB"
+      "IDAOp": 2,
+      "IDAComment": "summonId = *(this+42) (sub_71C7A7 COutPacket(173)@0x71c9e9; Encode4@0x71c9fe)",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 1,
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "IDAComment": "attackIdx (@0x71ca25)",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 2,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "IDAOp": 2,
+      "IDAComment": "damage (@0x71ca2e)",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 3,
       "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
+      "IDAOp": 2,
+      "IDAComment": "monsterTemplateId (@0x71ca4b)",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "width mismatch"
     },
     {
       "Index": 4,
       "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "",
+      "IDAComment": "dir\u003c0 flag (@0x71ca5b)",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "width mismatch"
     },
     {
       "Index": 5,
       "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "",
+      "IDAComment": "0xFE sentinel (@0x71ca0f)",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "width mismatch"
     },
     {
       "Index": 6,
       "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
+      "IDAOp": 2,
+      "IDAComment": "damage (@0x71ca18)",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "width mismatch"
     }
   ],
   "Verdict": 3,

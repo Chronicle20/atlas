@@ -1,7 +1,7 @@
 {
   "WriterName": "SummonSpawn",
   "IDAName": "CSummonedPool::OnCreated",
-  "Address": "",
+  "Address": "0x89268a",
   "Variant": "GMS/v79",
   "BranchDepth": 1,
   "AtlasFile": "libs/atlas-packet/summon/clientbound/spawn.go",
@@ -10,100 +10,100 @@
       "Index": 0,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 4,
-      "Note": "IDA read-order unresolved: function not found in IDB"
+      "IDAOp": 2,
+      "IDAComment": "cid/ownerId — CUserPool::OnUserCommonPacket@0x8c8c84 (consumed upstream before dispatch)",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 1,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "IDAOp": 2,
+      "IDAComment": "oid (sub_89268A@0x8926a5)",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 2,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "IDAOp": 2,
+      "IDAComment": "skillId (@0x8926af)",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 3,
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "IDAComment": "charLevel (@0x8926b9); no SLV byte on v79",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 4,
       "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
+      "IDAOp": 1,
+      "IDAComment": "x (blob sub_719F7B@0x719f92)",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "width mismatch"
     },
     {
       "Index": 5,
       "AtlasOp": 1,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "IDAOp": 1,
+      "IDAComment": "y (@0x719f9f)",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 6,
       "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "",
+      "IDAComment": "stance (@0x719fac)",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "width mismatch"
     },
     {
       "Index": 7,
       "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
+      "IDAOp": 1,
+      "IDAComment": "foothold (@0x719faf)",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "width mismatch"
     },
     {
       "Index": 8,
       "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "",
+      "IDAComment": "movementType (@0x719fc3)",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "width mismatch"
     },
     {
       "Index": 9,
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "IDAComment": "!puppet (@0x719fda)",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 10,
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "IDAComment": "!animated (@0x71a001)",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 11,

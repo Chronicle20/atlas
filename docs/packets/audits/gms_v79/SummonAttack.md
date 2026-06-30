@@ -1,6 +1,6 @@
 # SummonAttack (← `CSummonedPool::OnAttack`)
 
-- **IDA:** 
+- **IDA:** 0x71cfe9
 - **Atlas file:** `libs/atlas-packet/summon/clientbound/attack.go`
 - **Variant:** GMS/v79
 - **Branch depth:** 2
@@ -11,13 +11,13 @@
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | int32 | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
-| 1 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 2 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 3 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 4 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 5 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 6 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 0 | int32 | int32 `cid/ownerId — CUserPool::OnUserCommonPacket@0x8c8c84 (consumed upstream before dispatch)` | ✅ |  |
+| 1 | int32 | int32 `oid — summon cluster dispatcher sub_892500@0x89253f (read before leaf dispatch)` | ✅ |  |
+| 2 | byte | byte `action byte: bLeft\|direction (sub_71CFE9@0x71d06f); no leading charLevel on v79` | ✅ |  |
+| 3 | byte | byte `count (@0x71d08b)` | ✅ |  |
+| 4 | byte | int32 `monsterOid (@0x71d0bf)` | ❌ | width mismatch |
+| 5 | int32 | byte `byte 6 (@0x71d0cd)` | ❌ | width mismatch |
+| 6 | byte | int32 `damage (@0x71d0e0)` | ❌ | width mismatch |
 | 7 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 8 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
 

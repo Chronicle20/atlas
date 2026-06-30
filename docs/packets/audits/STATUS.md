@@ -5,7 +5,7 @@
 
 Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 
-- export gms_v79: `5a3c2323bd108df016728727259d63c688d89305d1b987c7c9548d1831112424`
+- export gms_v79: `49f6d75afdb20d79c949167fc9aba36c1860d5f12044da24e0163d77d1a66900`
 - export gms_v83: `711bddcc2e1bdd417a75954148d2b50c64e70855e84259c0b8e50e700e393c0d`
 - export gms_v84: `7eab9472e2afeda13faaf74273828d09d5f2481d67bec10235c3b2fd2f91e1eb`
 - export gms_v87: `714817d376bb93732ef6b6fbe6b59f8c24515ff901801d213d676b501eae7f94`
@@ -225,16 +225,16 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 | PET_EXCEPTION_LIST | CPet::OnLoadExceptionList | pet/clientbound/PetExcludeResponse (T1) | 0x0A2 | ❌ | 0x0AD | ✅ | 0x0B1 | ✅ | 0x0BA | ✅ | 0x0CC | ✅ | 0x0B3 | ✅ |
 | PET_COMMAND | CPet::OnActionCommand | pet/clientbound/PetCommandResponse (T1) | 0x0A3 | ❌ | 0x0AE | ✅ | 0x0B2 | ✅ | 0x0BB | ✅ | 0x0CD | ✅ | 0x0B4 | ✅ |
 | IDA_0X0A4 | CField::OnStalkResult | field/clientbound/FieldStalkResult (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x0A4 | ✅ |  | ⬜ |  | ⬜ |
-| SPAWN_SPECIAL_MAPOBJECT | CSummonedPool::OnCreated; CSummonedPool::OnPacket; sub_892500 | summon/clientbound/SummonSpawn (T1) | 0x0A4 | ❌ | 0x0AF | ✅ | 0x0B3 | ✅ | 0x0BC | ✅ | 0x116 | ✅ | 0x0B5 | ✅ |
-| REMOVE_SPECIAL_MAPOBJECT | CSummonedPool::OnPacket; CSummonedPool::OnRemoved; sub_892500 | summon/clientbound/SummonRemove (T1) | 0x0A5 | ❌ | 0x0B0 | ✅ | 0x0B4 | ✅ | 0x0BD | ✅ | 0x117 | ✅ | 0x0B6 | ✅ |
+| SPAWN_SPECIAL_MAPOBJECT | CSummonedPool::OnCreated; CSummonedPool::OnPacket | summon/clientbound/SummonSpawn (T1) | 0x0A4 | ✅ | 0x0AF | ✅ | 0x0B3 | ✅ | 0x0BC | ✅ | 0x116 | ✅ | 0x0B5 | ✅ |
+| REMOVE_SPECIAL_MAPOBJECT | CSummonedPool::OnPacket; CSummonedPool::OnRemoved | summon/clientbound/SummonRemove | 0x0A5 | ✅ | 0x0B0 | ✅ | 0x0B4 | ✅ | 0x0BD | ✅ | 0x117 | ✅ | 0x0B6 | ✅ |
 | IDA_0X0A6 | sub_9F1663 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0A6 | ❌ |
-| MOVE_SUMMON | CSummonedPool::OnMove; sub_71CFC8 | summon/clientbound/SummonMove (T1) | 0x0A6 | ❌ | 0x0B1 | ✅ | 0x0B5 | ✅ | 0x0BE | ✅ | 0x118 | ✅ | 0x0B7 | ✅ |
+| MOVE_SUMMON | CSummonedPool::OnMove | summon/clientbound/SummonMove | 0x0A6 | ✅ | 0x0B1 | ✅ | 0x0B5 | ✅ | 0x0BE | ✅ | 0x118 | ✅ | 0x0B7 | ✅ |
 | IDA_0X0A7 | sub_9F186A |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0A7 | ❌ |
-| SUMMON_ATTACK | CSummonedPool::OnAttack; sub_71CFE9 | summon/clientbound/SummonAttack (T1) | 0x0A7 | ❌ | 0x0B2 | ✅ | 0x0B6 | ✅ | 0x0BF | ✅ | 0x119 | ✅ | 0x0B8 | ✅ |
-| DAMAGE_SUMMON | CSummonedPool::OnHit; sub_71D5DF | summon/clientbound/SummonDamage (T1) | 0x0A8 | ❌ | 0x0B3 | ✅ | 0x0B8 | ✅ | 0x0C0 | ✅ | 0x11B | ✅ | 0x0B9 | ✅ |
+| SUMMON_ATTACK | CSummonedPool::OnAttack | summon/clientbound/SummonAttack (T1) | 0x0A7 | ✅ | 0x0B2 | ✅ | 0x0B6 | ✅ | 0x0BF | ✅ | 0x119 | ✅ | 0x0B8 | ✅ |
 | IDA_0X0A8 | sub_5604F9; sub_9F199E |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x0A8 | ❌ |  | ⬜ | 0x0A8 | ❌ |
+| SUMMON_SKILL | CSummonedPool::OnSkill | summon/clientbound/SummonSkill | 0x0A8 | ✅ | 0x0B4 | ✅ | 0x0B7 | ✅ | 0x0C1 | ✅ | 0x11A | ✅ | 0x0BA | ✅ |
+| DAMAGE_SUMMON | CSummonedPool::OnHit | summon/clientbound/SummonDamage | 0x0A9 | ✅ | 0x0B3 | ✅ | 0x0B8 | ✅ | 0x0C0 | ✅ | 0x11B | ✅ | 0x0B9 | ✅ |
 | IDA_0X0A9 | CUser::OnHitByUser; sub_5605FF |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x0A9 | ❌ |  | ⬜ | 0x0A9 | ❌ |
-| SUMMON_SKILL | CSummonedPool::OnSkill; sub_71D643 | summon/clientbound/SummonSkill (T1) | 0x0A9 | ❌ | 0x0B4 | ✅ | 0x0B7 | ✅ | 0x0C1 | ✅ | 0x11A | ✅ | 0x0BA | ✅ |
 | FOOTHOLD_INFO | CField::OnFootHoldInfo | field/clientbound/FieldFootholdInfo (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x0AA | ✅ | 0x0B0 | ✅ | 0x09C | ✅ |
 | IDA_0X0AB | CUser::OnFollowCharacter |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0AB | ❌ |
 | MOVE_PLAYER | CUserRemote::OnMove | character/clientbound/CharacterMovement (T1) | 0x0AB | ❌ | 0x0B9 | ✅ | 0x0BD | ✅ | 0x0C6 | ✅ | 0x0D2 | ✅ | 0x0BF | ✅ |
@@ -685,7 +685,7 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 | CASHSHOP_SURPRISE | CCashShop::SendChangeMaplePoint |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x0AB | ❌ | 0x0BB | ❌ | 0x0A7 | ❌ |
 | MOVE_SUMMON | CVecCtrlSummoned::EndUpdateActive; sub_9184E5 | summon/serverbound/SummonMoveHandle | 0x0AB | ❌ | 0x0AF | ✅ | 0x0B2 | ✅ | 0x0BB | ✅ | 0x0CF | ✅ | 0x0B2 | ✅ |
 | SUMMON_ATTACK | CSummoned::AttackToTargetMob; CSummoned::TryDoingAttackManual; CSummoned::TryDoingTaslaCoilAttack; sub_71B522 |  | 0x0AC | ❌ | 0x0B0 | ❌ | 0x0B3 | ❌ | 0x0BC | ❌ | 0x0D0 | ❌ | 0x0B3 | ❌ |
-| DAMAGE_SUMMON | CSummoned::SetDamaged; sub_71C7A7 | summon/serverbound/SummonDamageHandle (T1) | 0x0AD | ❌ | 0x0B1 | ✅ | 0x0B4 | ✅ | 0x0BD | ✅ | 0x0D1 | ✅ | 0x0B4 | ✅ |
+| DAMAGE_SUMMON | CSummoned::SetDamaged | summon/serverbound/SummonDamageHandle (T1) | 0x0AD | ✅ | 0x0B1 | ✅ | 0x0B4 | ✅ | 0x0BD | ✅ | 0x0D1 | ✅ | 0x0B4 | ✅ |
 | UNNAMED_R288 |  |  |  | ⬜ | 0x0AD | ❌ |  | ⬜ | 0x0B9 | ❌ | 0x0CD | ❌ | 0x0B0 | ❌ |
 | UNNAMED_R289 |  |  |  | ⬜ | 0x0AE | ❌ |  | ⬜ | 0x0BA | ❌ | 0x0CE | ❌ | 0x0B1 | ❌ |
 | OP_BOARD_HAS_NEW | CWvsContext::CheckOpBoardHasNew |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x0AF | ❌ | 0x0C0 | ❌ | 0x0A8 | ❌ |
@@ -930,14 +930,7 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 | storage/serverbound/StorageOperationMeso (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
 | storage/serverbound/StorageOperationRetrieveAsset (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
 | storage/serverbound/StorageOperationStoreAsset (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
-| summon/clientbound/SummonAttack (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| summon/clientbound/SummonDamage |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| summon/clientbound/SummonMove |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| summon/clientbound/SummonRemove |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| summon/clientbound/SummonSkill |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| summon/clientbound/SummonSpawn (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | summon/serverbound/SummonAttackHandle (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
-| summon/serverbound/SummonDamageHandle (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | summon/serverbound/SummonMoveHandle |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | ui/clientbound/Lock |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |
 
@@ -945,12 +938,12 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v79 | 49 | 0 | 75 | 390 | 400 | 0 | 9.5% |
-| v83 | 367 | 0 | 0 | 345 | 202 | 0 | 51.5% |
-| v84 | 345 | 0 | 0 | 346 | 223 | 0 | 49.9% |
-| v87 | 379 | 0 | 0 | 370 | 165 | 0 | 50.6% |
-| v95 | 399 | 0 | 0 | 434 | 81 | 0 | 47.9% |
-| JMS185 | 361 | 0 | 0 | 381 | 172 | 0 | 48.7% |
+| v79 | 56 | 0 | 75 | 376 | 400 | 0 | 11.0% |
+| v83 | 367 | 0 | 0 | 338 | 202 | 0 | 52.1% |
+| v84 | 345 | 0 | 0 | 339 | 223 | 0 | 50.4% |
+| v87 | 379 | 0 | 0 | 363 | 165 | 0 | 51.1% |
+| v95 | 399 | 0 | 0 | 427 | 81 | 0 | 48.3% |
+| JMS185 | 361 | 0 | 0 | 374 | 172 | 0 | 49.1% |
 
 ## Conflicts
 

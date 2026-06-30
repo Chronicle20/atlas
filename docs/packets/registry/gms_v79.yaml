@@ -1083,51 +1083,51 @@
 - op: SPAWN_SPECIAL_MAPOBJECT
   direction: clientbound
   opcode: 164
-  fname: sub_892500
-  provenance: manual
+  fname: CSummonedPool::OnCreated
+  provenance: ida-discovered
   ida:
-    address: 8987904
-  note: 'CUserPool::OnUserCommonPacket if-range 164-169 -> summon cluster sub_892500; a2==164 = vtable+0x24 spawn arm. v83 op via CSummonedPool::OnCreated.'
+    address: 8988298
+  note: 'CUserPool::OnUserCommonPacket@0x8c8c79 reads cid, ops 164-169 -> summon cluster sub_892500@0x892500; a2==164 vtable+0x24 -> spawn leaf CSummonedPool::OnCreated sub_89268A@0x89268a (reads oid, skillId, charLevel; blob via sub_719F7B). NO SLV byte on v79 (vs v83+).'
 - op: REMOVE_SPECIAL_MAPOBJECT
   direction: clientbound
   opcode: 165
-  fname: sub_892500
-  provenance: manual
+  fname: CSummonedPool::OnRemoved
+  provenance: ida-discovered
   ida:
-    address: 8987904
-  note: 'sub_892500 a2==165 remove arm (sub_71CC52). v83 op via CSummonedPool::OnRemoved.'
+    address: 7457874
+  note: 'sub_892500 reads oid then a2==165 remove leaf CSummonedPool::OnRemoved sub_71CC52@0x71cc52 (Decode1 animated flag).'
 - op: MOVE_SUMMON
   direction: clientbound
   opcode: 166
-  fname: sub_71CFC8
+  fname: CSummonedPool::OnMove
   provenance: ida-discovered
   ida:
     address: 7458760
-  note: 'v79 summon cluster via sub_892500; sub_71CFC8 = CSummonedPool::OnMove.'
+  note: 'v79 summon cluster via sub_892500; a2==166 -> CSummonedPool::OnMove sub_71CFC8@0x71cfc8 (forwards raw CMovePath blob to OnMovePacket@0x6583fc).'
 - op: SUMMON_ATTACK
   direction: clientbound
   opcode: 167
-  fname: sub_71CFE9
+  fname: CSummonedPool::OnAttack
   provenance: ida-discovered
   ida:
     address: 7458793
-  note: 'v79 summon cluster via sub_892500; sub_71CFE9 = CSummonedPool::OnAttack.'
+  note: 'v79 summon cluster via sub_892500; a2==167 -> CSummonedPool::OnAttack sub_71CFE9@0x71cfe9. Reads action byte FIRST (no leading charLevel byte vs v83+).'
 - op: DAMAGE_SUMMON
   direction: clientbound
-  opcode: 168
-  fname: sub_71D5DF
-  provenance: ida-discovered
-  ida:
-    address: 7460319
-  note: 'v79 summon cluster via sub_892500; sub_71D5DF = CSummonedPool::OnHit.'
-- op: SUMMON_SKILL
-  direction: clientbound
   opcode: 169
-  fname: sub_71D643
+  fname: CSummonedPool::OnHit
   provenance: ida-discovered
   ida:
     address: 7460419
-  note: 'v79 summon cluster via sub_892500; sub_71D643 = CSummonedPool::OnSkill.'
+  note: 'v79 summon cluster via sub_892500; a2==169 -> CSummonedPool::OnHit sub_71D643@0x71d643 (Decode1 attackIdx, Decode4 damage, if>-2: Decode4 monsterId, Decode1 bLeft). SWAP: the DAMAGE body sits at op 169 / SUMMON_SKILL single-byte body at op 168 on v79; template routes SummonDamage->0xA9.'
+- op: SUMMON_SKILL
+  direction: clientbound
+  opcode: 168
+  fname: CSummonedPool::OnSkill
+  provenance: ida-discovered
+  ida:
+    address: 7460319
+  note: 'v79 summon cluster via sub_892500; a2==168 -> CSummonedPool::OnSkill sub_71D5DF@0x71d5df (Decode1 single stance byte, masked 0x7F). SWAP: single-byte SKILL body at op 168 / DAMAGE body at op 169 on v79; template routes SummonSkill->0xA8.'
 - op: MOVE_PLAYER
   direction: clientbound
   opcode: 171
@@ -2729,7 +2729,7 @@
 - op: DAMAGE_SUMMON
   direction: serverbound
   opcode: 173
-  fname: sub_71C7A7
+  fname: CSummoned::SetDamaged
   provenance: ida-discovered
   ida:
     address: 7456679

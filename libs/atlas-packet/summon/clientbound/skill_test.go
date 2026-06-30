@@ -62,6 +62,35 @@ func TestSummonSkillBytes(t *testing.T) {
 	}
 }
 
+// TestSummonSkillBytesV79 pins the v79 wire byte-for-byte against the live
+// decompile (IDA, GMS_v79_1_DEVM.exe @port 13340). v79 is v83-shaped (cid + oid +
+// single stance byte). NOTE the v79 damage/skill opcode SWAP: the single-byte
+// SKILL body is reached at op 0xA8 (168); the v79 seed template routes SummonSkill
+// →0xA8 (matching the client) and SummonDamage→0xA9.
+//   - CUserPool::OnUserCommonPacket@0x8c8c79 reads cid (Decode4@0x8c8c84), ops
+//     164-169 → summon cluster sub_892500@0x892500; the else branch reads oid
+//     (Decode4@0x89253f) then case 168 calls the skill leaf sub_71D5DF@0x71d5df.
+//   - sub_71D5DF reads exactly ONE byte: Decode1@0x71d62e → sub_71C784(b & 0x7F)
+//     — a single stance byte masked 0x7F, and nothing else. There is NO summonSkillId
+//     int on the wire.
+// Wire: int cid (upstream) + int oid + byte stance.
+// packet-audit:verify packet=summon/clientbound/SummonSkill version=gms_v79 ida=0x71d5df
+func TestSummonSkillBytesV79(t *testing.T) {
+	in := NewSummonSkill(42, 1000001, 6)
+	ctx := test.CreateContext("GMS", 79, 1)
+	got := test.Encode(t, ctx, in.Encode, nil)
+
+	// cid=42, oid=1000001=0x000F4241, newStance=6 (single byte, masked 0x7F client-side)
+	want := []byte{
+		0x2A, 0x00, 0x00, 0x00, // cid (consumed by dispatcher)
+		0x41, 0x42, 0x0F, 0x00, // oid (Decode4@0x89253f in sub_892500)
+		0x06, // newStance (Decode1@0x71d62e)
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatalf("v79 bytes = % X, want % X", got, want)
+	}
+}
+
 // TestSummonSkillBytesV83 pins the v83 wire byte-for-byte against the live
 // decompile. Dispatch chain (IDA, MapleStory_dump.exe @port 13341):
 //   - CUserPool::OnUserCommonPacket@0x972401 reads cid (Decode4@0x97240c), routes

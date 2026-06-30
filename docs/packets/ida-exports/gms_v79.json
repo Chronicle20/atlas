@@ -1042,13 +1042,12 @@
    ]
   },
   "CCashShop::TrySendQueryCashRequest": {
-   "address": "",
+   "address": "0x46c34c",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "COutPacket",
+     "comment": "CHECK_CASH op 220 (0xDC); empty body, opcode-only — v79 unnamed twin sub_46C34C @0x46C34C, COutPacket(220)+SendPacket, no Encode"
     }
    ]
   },

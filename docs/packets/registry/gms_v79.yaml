@@ -2815,8 +2815,8 @@
 - op: CHECK_CASH
   direction: serverbound
   opcode: 220
-  fname: sub_46C34C
+  fname: CCashShop::TrySendQueryCashRequest
   provenance: ida-discovered
   ida:
     address: 4637516
-  note: 'v79 sub_46C34C COutPacket(220); push 0DCh;a2 @0x46c366. v83 CHECK_CASH=0xe4=228 (d-8). delta doc serverbound (ida-read).'
+  note: 'v79 sub_46C34C (unnamed twin of CCashShop::TrySendQueryCashRequest) COutPacket(220); push 0DCh;a2 @0x46c366, opcode-only empty body. v83 CHECK_CASH=0xe4=228 (d-8). delta doc serverbound (ida-read).'

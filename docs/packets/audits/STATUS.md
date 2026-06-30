@@ -5,7 +5,7 @@
 
 Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 
-- export gms_v79: `29ff1370c5cf76331cc89adf92a9b649f92ebae28ec3b09004fec65bfd87f6ed`
+- export gms_v79: `e9247ad8970e7c41d0a7659ebac6f06cdf23eab693ebea03eb5acd7bd307c07e`
 - export gms_v83: `711bddcc2e1bdd417a75954148d2b50c64e70855e84259c0b8e50e700e393c0d`
 - export gms_v84: `7eab9472e2afeda13faaf74273828d09d5f2481d67bec10235c3b2fd2f91e1eb`
 - export gms_v87: `714817d376bb93732ef6b6fbe6b59f8c24515ff901801d213d676b501eae7f94`
@@ -733,7 +733,7 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 | UNNAMED_R363 |  |  |  | ⬜ | 0x0D8 | ❌ | 0x0D8 | ❌ | 0x0E5 | ❌ | 0x104 | ❌ | 0x0E3 | ❌ |
 | UNNAMED_R364 |  |  |  | ⬜ | 0x0D9 | ❌ |  | ⬜ | 0x0E6 | ❌ | 0x105 | ❌ | 0x0E4 | ❌ |
 | UNNAMED_R366 |  |  |  | ⬜ | 0x0DB | ❌ |  | ⬜ | 0x0E8 | ❌ | 0x107 | ❌ |  | ⬜ |
-| CHECK_CASH | CCashShop::TrySendQueryCashRequest; sub_46C34C | cash/serverbound/CashCheckWallet (T1) | 0x0DC | ❌ | 0x0E4 | ✅ | 0x0EA | ✅ | 0x0F1 | ✅ | 0x112 | ✅ | 0x0F4 | ✅ |
+| CHECK_CASH | CCashShop::TrySendQueryCashRequest | cash/serverbound/CashCheckWallet (T1) | 0x0DC | ✅ | 0x0E4 | ✅ | 0x0EA | ✅ | 0x0F1 | ✅ | 0x112 | ✅ | 0x0F4 | ✅ |
 | USE_PAMS_SONG_REQUEST | CWvsContext::AskWhetherUsePamsSong |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0DC | ❌ | 0x0BD | ❌ |
 | CASHSHOP_OPERATION | CCashShop::ApplyWishListEvent; CCashShop::GiftWishItem; CCashShop::OnBuy; CCashShop::OnBuyCouple; CCashShop::OnBuyFriendship; CCashShop::OnBuyNormal; CCashShop::OnBuyPackage; CCashShop::OnBuySlotInc; CCashShop::OnCashGachaponCopy; CCashShop::OnEnableEquipSlotExt; CCashShop::OnExItemSlot; CCashShop::OnGiftMateInfoResult; CCashShop::OnGiftPackage; CCashShop::OnIncCharacterSlotCount; CCashShop::OnIncTrunkCount; CCashShop::OnMoveCashItemLtoS; CCashShop::OnMoveCashItemStoL; CCashShop::OnRebateLockerItem; CCashShop::OnRemoveWish; CCashShop::OnSetWish; CCashShop::RequestCashPurchaseRecord; CCashShop::SendBuyAvatarPacket; CCashShop::SendBuyNameChangeItemPacket; CCashShop::SendBuyTransferWorldItemPacket; CCashShop::SendGiftsPacket | cash/serverbound/CashShopOperationGetPurchaseRecord (T1) | 0x0DD | ✅ | 0x0E5 | ✅ | 0x0EB | ✅ | 0x0F2 | ✅ | 0x113 | ✅ | 0x0F5 | ✅ |
 | UNNAMED_R369 |  |  |  | ⬜ | 0x0DD | ❌ |  | ⬜ | 0x0EA | ❌ | 0x109 | ❌ |  | ⬜ |
@@ -803,7 +803,6 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 |--------|-------|-------|-----|-------|-----|-------|-----|-------|-----|-------|-----|-------|-----|
 | buddy/serverbound/BuddyOperationAccept (T1) |  |  | 🟡 |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | buddy/serverbound/BuddyOperationAdd (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
-| cash/serverbound/CashCheckWallet (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | cash/serverbound/CashShopOperationBuy (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | cash/serverbound/CashShopOperationBuyCouple (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | cash/serverbound/CashShopOperationBuyFriendship (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
@@ -946,12 +945,12 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v79 | 40 | 0 | 75 | 400 | 400 | 0 | 7.8% |
-| v83 | 367 | 0 | 0 | 346 | 202 | 0 | 51.5% |
-| v84 | 345 | 0 | 0 | 347 | 223 | 0 | 49.9% |
-| v87 | 379 | 0 | 0 | 371 | 165 | 0 | 50.5% |
-| v95 | 399 | 0 | 0 | 435 | 81 | 0 | 47.8% |
-| JMS185 | 361 | 0 | 0 | 382 | 172 | 0 | 48.6% |
+| v79 | 41 | 0 | 75 | 398 | 400 | 0 | 8.0% |
+| v83 | 367 | 0 | 0 | 345 | 202 | 0 | 51.5% |
+| v84 | 345 | 0 | 0 | 346 | 223 | 0 | 49.9% |
+| v87 | 379 | 0 | 0 | 370 | 165 | 0 | 50.6% |
+| v95 | 399 | 0 | 0 | 434 | 81 | 0 | 47.9% |
+| JMS185 | 361 | 0 | 0 | 381 | 172 | 0 | 48.7% |
 
 ## Conflicts
 

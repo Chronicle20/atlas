@@ -325,6 +325,106 @@
         "opCode": "0x7C",
         "validator": "LoggedInValidator",
         "handler": "GuildInviteRejectHandle"
+      },
+      {
+        "opCode": "0x04",
+        "validator": "LoggedInValidator",
+        "handler": "ServerListRequestHandle"
+      },
+      {
+        "opCode": "0x05",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterListWorldHandle"
+      },
+      {
+        "opCode": "0x06",
+        "validator": "LoggedInValidator",
+        "handler": "ServerStatusHandle"
+      },
+      {
+        "opCode": "0x09",
+        "validator": "LoggedInValidator",
+        "handler": "AfterLoginHandle"
+      },
+      {
+        "opCode": "0x0A",
+        "validator": "LoggedInValidator",
+        "handler": "RegisterPinHandle"
+      },
+      {
+        "opCode": "0x0B",
+        "validator": "LoggedInValidator",
+        "handler": "ServerListRequestHandle"
+      },
+      {
+        "opCode": "0x0D",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterViewAllHandle"
+      },
+      {
+        "opCode": "0x0E",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterViewAllSelectedHandle"
+      },
+      {
+        "opCode": "0x13",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterSelectedHandle"
+      },
+      {
+        "opCode": "0x15",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterCheckNameHandle"
+      },
+      {
+        "opCode": "0x16",
+        "validator": "LoggedInValidator",
+        "handler": "CreateCharacterHandle"
+      },
+      {
+        "opCode": "0x17",
+        "validator": "LoggedInValidator",
+        "handler": "DeleteCharacterHandle"
+      },
+      {
+        "opCode": "0x28",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterChairInteractionHandle"
+      },
+      {
+        "opCode": "0x2A",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterMeleeAttackHandle"
+      },
+      {
+        "opCode": "0x2B",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterRangedAttackHandle"
+      },
+      {
+        "opCode": "0x2C",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterMagicAttackHandle"
+      },
+      {
+        "opCode": "0x2D",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterTouchAttackHandle"
+      },
+      {
+        "opCode": "0x31",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterExpressionHandle"
+      },
+      {
+        "opCode": "0x53",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterItemUseTownScrollHandle"
+      },
+      {
+        "opCode": "0x62",
+        "validator": "LoggedInValidator",
+        "handler": "PortalScriptHandle"
       }
     ],
     "writers": [

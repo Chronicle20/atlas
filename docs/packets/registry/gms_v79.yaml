@@ -2268,3 +2268,163 @@
   ida:
     address: 5291566
   note: 'SendCloseMessage window-type 8 (guild reject): COutPacket(124)+Enc1(0x37=reject)+EncStr+EncStr; v83 DENY_GUILD_REQUEST=127 (d-3).'
+- op: SERVERLIST_REREQUEST
+  direction: serverbound
+  opcode: 4
+  fname: sub_5C9A09
+  provenance: ida-discovered
+  ida:
+    address: 6068745
+  note: 'send-site 0x5ca137 push 4 (a2) -> COutPacket(4); login region delta0 vs v83 SERVERLIST_REREQUEST=4.'
+- op: CHARLIST_REQUEST
+  direction: serverbound
+  opcode: 5
+  fname: sub_5CC905
+  provenance: ida-discovered
+  ida:
+    address: 6080773
+  note: 'COutPacket(5)+Enc1(worldId)+Enc1(channel)+Enc4(getsockname ip); world/channel select. v83 CHARLIST_REQUEST=5 (delta0). PLAYTHROUGH-CRITICAL.'
+- op: SERVERSTATUS_REQUEST
+  direction: serverbound
+  opcode: 6
+  fname: sub_5CD1A2
+  provenance: ida-discovered
+  ida:
+    address: 6082978
+  note: 'send-site 0x5cd1ce push 6 (a2) -> COutPacket(6); v83 SERVERSTATUS_REQUEST=6 (delta0).'
+- op: AFTER_LOGIN
+  direction: serverbound
+  opcode: 9
+  fname: CLogin::OnSetAccountResult
+  provenance: ida-discovered
+  ida:
+    address: 6096802
+  note: 'send-site 0x5d07fb push 9 (a2) -> COutPacket(9); v83 AFTER_LOGIN=9 (delta0).'
+- op: REGISTER_PIN
+  direction: serverbound
+  opcode: 10
+  fname: CLogin::OnCheckPinCodeResult
+  provenance: ida-discovered
+  ida:
+    address: 6097185
+  note: 'send-site 0x5d0b7d push 0Ah (a2) -> COutPacket(10); v83 REGISTER_PIN=10 (delta0).'
+- op: SERVERLIST_REQUEST
+  direction: serverbound
+  opcode: 11
+  fname: CLogin::OnCheckPinCodeResult
+  provenance: ida-discovered
+  ida:
+    address: 6097185
+  note: 'send-site 0x5d0c27 push 0Bh (a2) -> COutPacket(11); v83 SERVERLIST_REQUEST=11 (delta0).'
+- op: VIEW_ALL_CHAR
+  direction: serverbound
+  opcode: 13
+  fname: sub_5CEDE1
+  provenance: ida-discovered
+  ida:
+    address: 6090209
+  note: 'COutPacket(13)+send (view-all-char); v83 VIEW_ALL_CHAR=0x0D=13 (delta0). PLAYTHROUGH-CRITICAL.'
+- op: PICK_ALL_CHAR
+  direction: serverbound
+  opcode: 14
+  fname: sub_5CCC1F
+  provenance: ida-discovered
+  ida:
+    address: 6081567
+  note: 'send-site 0x5ccd43 push 0Eh (a2) -> COutPacket(14); v83 PICK_ALL_CHAR=0x0E=14 (delta0).'
+- op: CHAR_SELECT
+  direction: serverbound
+  opcode: 19
+  fname: sub_5CCAE3
+  provenance: ida-discovered
+  ida:
+    address: 6081251
+  note: 'COutPacket(19)+Enc4(charId)+EncStr(macAddr)+EncStr(hddSerial); = inlined CLogin::SendSelectCharPacket. v83 CHAR_SELECT=0x13=19 (delta0). PLAYTHROUGH-CRITICAL (migrate to channel).'
+- op: CHECK_CHAR_NAME
+  direction: serverbound
+  opcode: 21
+  fname: sub_5CD111
+  provenance: ida-discovered
+  ida:
+    address: 6082833
+  note: 'send-site 0x5cd155 push 15h (a2) -> COutPacket(21); v83 CHECK_CHAR_NAME=0x15=21 (delta0).'
+- op: CREATE_CHAR
+  direction: serverbound
+  opcode: 22
+  fname: sub_5CCFA4
+  provenance: ida-discovered
+  ida:
+    address: 6082468
+  note: 'send-site 0x5cd00b push 16h (a2) -> COutPacket(22); v83 CREATE_CHAR=0x16=22 (delta0).'
+- op: DELETE_CHAR
+  direction: serverbound
+  opcode: 23
+  fname: sub_5CCE4B
+  provenance: ida-discovered
+  ida:
+    address: 6082123
+  note: 'send-site 0x5ccf15 push 17h (a2) -> COutPacket(23); v83 DELETE_CHAR=0x17=23 (delta0).'
+- op: CANCEL_CHAIR
+  direction: serverbound
+  opcode: 40
+  fname: CWvsContext::SendGetUpFromChairRequest
+  provenance: ida-discovered
+  ida:
+    address: 9811179
+  note: 'COutPacket(40)+Enc2(0xFFFF) get-up-from-chair; v83 CANCEL_CHAIR=0x2A=42 (d-2).'
+- op: CLOSE_RANGE_ATTACK
+  direction: serverbound
+  opcode: 42
+  fname: CUserLocal::TryDoingMeleeAttack
+  provenance: ida-discovered
+  ida:
+    address: 9183997
+  note: 'send-site 0x8c2a00 push 2Ah (a2) -> COutPacket(42); v83 CLOSE_RANGE_ATTACK=0x2C=44 (d-2).'
+- op: RANGED_ATTACK
+  direction: serverbound
+  opcode: 43
+  fname: CUserLocal::TryDoingShootAttack
+  provenance: ida-discovered
+  ida:
+    address: 9092092
+  note: 'send-site 0x8ad557 push 2Bh (a2) -> COutPacket(43); v83 RANGED_ATTACK=0x2D=45 (d-2).'
+- op: MAGIC_ATTACK
+  direction: serverbound
+  opcode: 44
+  fname: CUserLocal::TryDoingMagicAttack
+  provenance: ida-discovered
+  ida:
+    address: 9100070
+  note: 'send-site 0x8aeef7 push 2Ch (a2) -> COutPacket(44); v83 MAGIC_ATTACK=0x2E=46 (d-2).'
+- op: TOUCH_MONSTER_ATTACK
+  direction: serverbound
+  opcode: 45
+  fname: CUserLocal::TryDoingBodyAttack
+  provenance: ida-discovered
+  ida:
+    address: 9138392
+  note: 'send-site 0x8b75a6 push 2Dh (a2) -> COutPacket(45); v83 TOUCH_MONSTER_ATTACK=0x2F=47 (d-2).'
+- op: FACE_EXPRESSION
+  direction: serverbound
+  opcode: 49
+  fname: CWvsContext::SendEmotionChange
+  provenance: ida-discovered
+  ida:
+    address: 9889222
+  note: 'COutPacket(49)+Enc4(emotion); v83 FACE_EXPRESSION=0x33=51 (d-2).'
+- op: USE_RETURN_SCROLL
+  direction: serverbound
+  opcode: 83
+  fname: CWvsContext::SendMapTransferItemUseRequest
+  provenance: ida-discovered
+  ida:
+    address: 9866322
+  note: 'COutPacket(83)+Enc4(time)+Enc2(slot)+Enc4(itemId) town/return scroll; v83 USE_RETURN_SCROLL=0x55=85 (d-2).'
+- op: CHANGE_MAP_SPECIAL
+  direction: serverbound
+  opcode: 98
+  fname: CUserLocal::HandleUpKeyDown
+  provenance: ida-discovered
+  ida:
+    address: 9070994
+  note: 'COutPacket(98)+Enc1(fieldKey)+EncStr(portalName)+Enc2(x)+Enc2(y) scripted portal (types 7/8/11); v83 CHANGE_MAP_SPECIAL=0x64=100 (d-2).'

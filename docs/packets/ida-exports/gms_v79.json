@@ -5893,13 +5893,16 @@
    ]
   },
   "CMob::OnIncMobChargeCount": {
-   "address": "",
+   "address": "0x640081",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode4",
+     "comment": ""
+    },
+    {
+     "op": "Decode4",
+     "comment": ""
     }
    ]
   },

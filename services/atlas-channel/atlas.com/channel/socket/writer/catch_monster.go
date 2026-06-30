@@ -12,10 +12,10 @@ import (
 // mob-capture effect on a targeted mob. No emitter wires this writer yet; it is
 // an intentional seam (the codec + route exist so the feature can be turned on
 // without a follow-up packet-plumbing pass).
-func CatchMonsterBody(result byte, success byte) packet.Encode {
+func CatchMonsterBody(uniqueId uint32, result byte, success byte) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 		return func(options map[string]interface{}) []byte {
-			return monsterpkt.NewCatchMonster(result, success).Encode(l, ctx)(options)
+			return monsterpkt.NewCatchMonster(uniqueId, result, success).Encode(l, ctx)(options)
 		}
 	}
 }

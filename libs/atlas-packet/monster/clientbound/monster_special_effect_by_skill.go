@@ -34,17 +34,24 @@ const MonsterSpecialEffectBySkillWriter = "MonsterSpecialEffectBySkill"
 //     a GMS-95 addition (jms v185, though numerically > 95, keeps the single-field
 //     shape), so the branch gates on GMS region AND major >= 95.
 //
+// Legacy (pre-v83) wire note: MONSTER_SPECIAL_EFFECT_BY_SKILL is a per-mob
+// OnMobPacket case (op 225), so the v79 client consumes a leading uniqueId via
+// CMobPool::OnMobPacket @0x646d46 (Decode4 @0x646d50 -> GetMob) BEFORE
+// CMob::OnSpecialEffectBySkill reads skillId. See legacyMobPoolPrefix.
+//
 // packet-audit:fname CMob::OnSpecialEffectBySkill
 type MonsterSpecialEffectBySkill struct {
+	uniqueId    uint32
 	skillId     int32
 	characterId int32
 	delay       uint16
 }
 
-func NewMonsterSpecialEffectBySkill(skillId int32, characterId int32, delay uint16) MonsterSpecialEffectBySkill {
-	return MonsterSpecialEffectBySkill{skillId: skillId, characterId: characterId, delay: delay}
+func NewMonsterSpecialEffectBySkill(uniqueId uint32, skillId int32, characterId int32, delay uint16) MonsterSpecialEffectBySkill {
+	return MonsterSpecialEffectBySkill{uniqueId: uniqueId, skillId: skillId, characterId: characterId, delay: delay}
 }
 
+func (m MonsterSpecialEffectBySkill) UniqueId() uint32   { return m.uniqueId }
 func (m MonsterSpecialEffectBySkill) SkillId() int32     { return m.skillId }
 func (m MonsterSpecialEffectBySkill) CharacterId() int32 { return m.characterId }
 func (m MonsterSpecialEffectBySkill) Delay() uint16      { return m.delay }
@@ -62,6 +69,9 @@ func (m MonsterSpecialEffectBySkill) Encode(l logrus.FieldLogger, ctx context.Co
 	w := response.NewWriter(l)
 	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
+		if legacyMobPoolPrefix(t) {
+			w.WriteInt(m.uniqueId)
+		}
 		w.WriteInt32(m.skillId)
 		if v95SpecialEffectLayout(t) {
 			w.WriteInt32(m.characterId)
@@ -74,6 +84,9 @@ func (m MonsterSpecialEffectBySkill) Encode(l logrus.FieldLogger, ctx context.Co
 func (m *MonsterSpecialEffectBySkill) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
+		if legacyMobPoolPrefix(t) {
+			m.uniqueId = r.ReadUint32()
+		}
 		m.skillId = r.ReadInt32()
 		if v95SpecialEffectLayout(t) {
 			m.characterId = r.ReadInt32()

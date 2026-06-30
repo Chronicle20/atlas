@@ -1528,7 +1528,7 @@
 - op: INC_MOB_CHARGE_COUNT
   direction: clientbound
   opcode: 232
-  fname: sub_640081
+  fname: CMob::OnIncMobChargeCount
   provenance: ida-discovered
   ida:
     address: 6553729

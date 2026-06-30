@@ -5,7 +5,7 @@
 
 Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 
-- export gms_v79: `bb7d49903f0044c3b8108e75bea68dbaf422e3c496dfa92347f433924c3690a1`
+- export gms_v79: `5016ab436f600dee684613db8cdc39516f913890e5ed69359ee684a92b5aaa6e`
 - export gms_v83: `711bddcc2e1bdd417a75954148d2b50c64e70855e84259c0b8e50e700e393c0d`
 - export gms_v84: `7eab9472e2afeda13faaf74273828d09d5f2481d67bec10235c3b2fd2f91e1eb`
 - export gms_v87: `714817d376bb93732ef6b6fbe6b59f8c24515ff901801d213d676b501eae7f94`
@@ -309,13 +309,13 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 | MOB_AFFECTED | CMob::OnAffected | monster/clientbound/MonsterMobAffected (T1) | 0x0DF | 🟡 | 0x0F5 | ✅ | 0x0FB | ✅ | 0x105 | ✅ | 0x125 | ✅ | 0x106 | ✅ |
 | DAMAGE_MONSTER | CMob::OnDamaged | monster/clientbound/MonsterDamage (T1) | 0x0E0 | ✅ | 0x0F6 | ✅ | 0x0FC | ✅ | 0x106 | ✅ | 0x126 | ✅ | 0x107 | ✅ |
 | IDA_0X0E1 | CUserLocal::OnNotifyHPDecByField |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x0E1 | ❌ |  | ⬜ |  | ⬜ |
-| MONSTER_SPECIAL_EFFECT_BY_SKILL | CMob::OnSpecialEffectBySkill | monster/clientbound/MonsterMonsterSpecialEffectBySkill (T1) | 0x0E1 | ❌ | 0x0F7 | ✅ | 0x0FD | ✅ | 0x107 | ✅ | 0x127 | ✅ | 0x108 | ✅ |
+| MONSTER_SPECIAL_EFFECT_BY_SKILL | CMob::OnSpecialEffectBySkill | monster/clientbound/MonsterMonsterSpecialEffectBySkill (T1) | 0x0E1 | ✅ | 0x0F7 | ✅ | 0x0FD | ✅ | 0x107 | ✅ | 0x127 | ✅ | 0x108 | ✅ |
 | MOB_CRC_KEY_CHANGED | CMobPool::OnMobCrcKeyChanged | monster/clientbound/MonsterMobCrcKeyChanged (T1) | 0x0E3 | ✅ | 0x0F9 | ✅ | 0x0FF | ✅ | 0x109 | ✅ | 0x129 | ✅ | 0x10A | ✅ |
 | RESIGN_QUEST_RETURN | CUserLocal::OnResignQuestReturn |  |  | ⬜ | 0x0E3 | ❌ | 0x0E8 | ❌ | 0x0F1 | ❌ | 0x103 | ❌ |  | ⬜ |
 | IDA_0X0E4 | sub_A2CEF5 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0E4 | ❌ |
 | PASS_MATE_NAME | CUserLocal::OnPassMateName |  |  | ⬜ | 0x0E4 | ❌ | 0x0E9 | ❌ | 0x0F2 | ❌ | 0x104 | ❌ |  | ⬜ |
 | SHOW_MONSTER_HP | CMob::OnHPIndicator | monster/clientbound/MonsterHealth (T1) | 0x0E4 | ✅ | 0x0FA | ✅ | 0x100 | ✅ | 0x10A | ✅ | 0x12A | ✅ | 0x10B | ✅ |
-| CATCH_MONSTER | CMob::OnCatchEffect; CMob::ShowCatchEffect; sub_6EAE5F | monster/clientbound/MonsterCatchMonster (T1) | 0x0E5 | ❌ | 0x0FB | ✅ | 0x101 | ✅ | 0x10B | ✅ | 0x12B | ✅ | 0x10C | ✅ |
+| CATCH_MONSTER | CMob::OnCatchEffect; CMob::ShowCatchEffect; sub_6EAE5F | monster/clientbound/MonsterCatchMonster (T1) | 0x0E5 | ✅ | 0x0FB | ✅ | 0x101 | ✅ | 0x10B | ✅ | 0x12B | ✅ | 0x10C | ✅ |
 | RADIO_SCHEDULE | CUserLocal::OnRadioSchedule |  |  | ⬜ | 0x0E5 | ❌ | 0x0EA | ❌ | 0x0F3 | ❌ | 0x105 | ❌ |  | ⬜ |
 | CATCH_MONSTER_WITH_ITEM | CMob::OnEffectByItem | monster/clientbound/MonsterCatchMonsterWithItem (T1) | 0x0E6 | 🟡 | 0x0FC | ✅ | 0x102 | ✅ | 0x10C | ✅ | 0x12C | ✅ | 0x10D | ✅ |
 | IDA_0X0E6 | CUserLocal::OnOpenUIWithOption |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0E6 | ❌ |
@@ -324,7 +324,7 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 | NOTICE_MSG | CUserLocal::OnNoticeMsg |  |  | ⬜ | 0x0E7 | ❌ | 0x0EC | ❌ | 0x0F5 | ❌ | 0x107 | ❌ |  | ⬜ |
 | CHAT_MSG | CUserLocal::OnChatMsg |  |  | ⬜ | 0x0E8 | ❌ | 0x0ED | ❌ | 0x0F6 | ❌ | 0x108 | ❌ |  | ⬜ |
 | IDA_0X0E8 | CUser::OnEmotion | character/clientbound/CharacterExpression (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0E8 | ✅ |  | ⬜ |
-| INC_MOB_CHARGE_COUNT | CMob::OnIncMobChargeCount; sub_640081 | monster/clientbound/MonsterIncMobChargeCount (T1) | 0x0E8 | ❌ | 0x0FE | ✅ | 0x104 | ✅ | 0x10E | ✅ | 0x12E | ✅ |  | ⬜ |
+| INC_MOB_CHARGE_COUNT | CMob::OnIncMobChargeCount | monster/clientbound/MonsterIncMobChargeCount (T1) | 0x0E8 | ✅ | 0x0FE | ✅ | 0x104 | ✅ | 0x10E | ✅ | 0x12E | ✅ |  | ⬜ |
 | BUFFZONE_EFFECT/SAY_IMAGE | CUserLocal::OnBuffzoneEffect |  |  | ⬜ | 0x0E9 | ❌ | 0x0EE | ❌ | 0x0F7 | ❌ | 0x109 | ❌ |  | ⬜ |
 | MOB_ATTACKED_BY_MOB | CMob::OnMobAttackedByMob | monster/clientbound/MonsterMobAttackedByMob (T1) | 0x0E9 | 🟡 | 0x0FF | ✅ | 0x106 | ✅ | 0x110 | ✅ | 0x135 | ✅ |  | ⬜ |
 | OPEN_UI_WITH_OPTION | CUserLocal::OnOpenUIWithOption |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x0EA | ❌ | 0x0FC | ❌ |  | ⬜ |
@@ -885,7 +885,6 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 | messenger/serverbound/MessengerOperationAnswerInvite (T1) |  |  | ❌ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
 | messenger/serverbound/MessengerOperationChat (T1) |  |  | ❌ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
 | messenger/serverbound/MessengerOperationInvite (T1) |  |  | ❌ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
-| monster/clientbound/MonsterIncMobChargeCount (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | note/serverbound/NoteOperation (T1) |  |  | 🟡 |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | note/serverbound/NoteOperationDiscard (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |
 | npc/clientbound/NpcAskAvatarConversationDetail (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
@@ -930,12 +929,12 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v79 | 81 | 0 | 75 | 343 | 400 | 0 | 16.2% |
-| v83 | 367 | 0 | 0 | 330 | 202 | 0 | 52.7% |
-| v84 | 345 | 0 | 0 | 331 | 223 | 0 | 51.0% |
-| v87 | 379 | 0 | 0 | 355 | 165 | 0 | 51.6% |
-| v95 | 399 | 0 | 0 | 419 | 81 | 0 | 48.8% |
-| JMS185 | 361 | 0 | 0 | 366 | 172 | 0 | 49.7% |
+| v79 | 84 | 0 | 75 | 339 | 400 | 0 | 16.9% |
+| v83 | 367 | 0 | 0 | 329 | 202 | 0 | 52.7% |
+| v84 | 345 | 0 | 0 | 330 | 223 | 0 | 51.1% |
+| v87 | 379 | 0 | 0 | 354 | 165 | 0 | 51.7% |
+| v95 | 399 | 0 | 0 | 418 | 81 | 0 | 48.8% |
+| JMS185 | 361 | 0 | 0 | 365 | 172 | 0 | 49.7% |
 
 ## Conflicts
 

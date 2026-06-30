@@ -7,6 +7,7 @@ import (
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=field/serverbound/FieldUseDoor version=gms_v79 ida=0x522946
 // packet-audit:verify packet=field/serverbound/FieldUseDoor version=gms_v83 ida=0x5375ed
 // packet-audit:verify packet=field/serverbound/FieldUseDoor version=gms_v84 ida=0x5438eb
 // packet-audit:verify packet=field/serverbound/FieldUseDoor version=gms_v87 ida=0x55ef62
@@ -19,6 +20,19 @@ func TestUseDoorGolden(t *testing.T) {
 	actual := pt.Encode(t, ctx, input.Encode, nil)
 	if !bytes.Equal(actual, expected) {
 		t.Errorf("golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
+// TestUseDoorByteOutputV79 pins the gms_v79 USE_DOOR (op 0x82) serverbound wire.
+// IDA: CField::TryEnterTownPortal @0x522946 (GMS_v79_1_DEVM.exe) builds
+// COutPacket(130) + Encode4(portalFieldId) @0x522b1b + Encode1(1) @0x522b24.
+func TestUseDoorByteOutputV79(t *testing.T) {
+	input := NewUseDoor(0x01020304, 0x01)
+	ctx := pt.CreateContext("GMS", 79, 1)
+	expected := []byte{0x04, 0x03, 0x02, 0x01, 0x01}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v79 golden mismatch: got %v want %v", actual, expected)
 	}
 }
 

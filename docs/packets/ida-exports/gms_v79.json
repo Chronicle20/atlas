@@ -1629,13 +1629,47 @@
    ]
   },
   "CField::OnClock": {
-   "address": "",
+   "address": "0x5215de",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": "clockType @0x5215f5"
+    },
+    {
+     "op": "Decode4",
+     "comment": "seconds (EventClock type 0) @0x5217ee",
+     "guard": "v3 == 0"
+    },
+    {
+     "op": "Decode1",
+     "comment": "hour (TownClock type 1) @0x5217bf",
+     "guard": "v3 == 1"
+    },
+    {
+     "op": "Decode1",
+     "comment": "minute (TownClock type 1) @0x5217cc",
+     "guard": "v3 == 1"
+    },
+    {
+     "op": "Decode1",
+     "comment": "second (TownClock type 1) @0x5217ce",
+     "guard": "v3 == 1"
+    },
+    {
+     "op": "Decode4",
+     "comment": "seconds (TimerClock type 2) @0x52179c",
+     "guard": "v3 == 2"
+    },
+    {
+     "op": "Decode1",
+     "comment": "flag (EventTimerClock type 3) @0x52165a",
+     "guard": "v3 == 3"
+    },
+    {
+     "op": "Decode4",
+     "comment": "seconds (EventTimerClock type 3) @0x5216e7",
+     "guard": "v3 == 3"
     }
    ]
   },
@@ -1821,58 +1855,47 @@
    ]
   },
   "CField::OnFieldEffect#BossHp": {
-   "address": "",
+   "address": "0x51e577",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
-    {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
+    {"op": "Decode4", "comment": "monsterId (case 5) @0x51e759"},
+    {"op": "Decode4", "comment": "currentHp @0x51e763"},
+    {"op": "Decode4", "comment": "maxHp @0x51e76d"},
+    {"op": "Decode1", "comment": "tagColor @0x51e779"},
+    {"op": "Decode1", "comment": "tagBackgroundColor @0x51e77b"}
    ]
   },
   "CField::OnFieldEffect#RewardRullet": {
-   "address": "",
+   "address": "0x51e577",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
-    {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
+    {"op": "Decode4", "comment": "nRewardJobIdx (case 7) @0x51e890"},
+    {"op": "Decode4", "comment": "nRewardPartIdx @0x51e899"},
+    {"op": "Decode4", "comment": "nRewardLevIdx @0x51e89b"}
    ]
   },
   "CField::OnFieldEffect#String": {
-   "address": "",
+   "address": "0x51e577",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
-    {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
+    {"op": "DecodeStr", "comment": "name (case 2) @0x51e67c"}
    ]
   },
   "CField::OnFieldEffect#Summon": {
-   "address": "",
+   "address": "0x51e577",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
-    {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
+    {"op": "Decode1", "comment": "effect (case 0) @0x51e5af"},
+    {"op": "Decode4", "comment": "x @0x51e5b9"},
+    {"op": "Decode4", "comment": "y @0x51e5c3"}
    ]
   },
   "CField::OnFieldEffect#Tremble": {
-   "address": "",
+   "address": "0x51e577",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
-    {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
+    {"op": "Decode1", "comment": "bHeavyNShortTremble (case 1) @0x51e861"},
+    {"op": "Decode4", "comment": "delay @0x51e864"}
    ]
   },
   "CField::OnFieldObstacleAllReset": {
@@ -2949,13 +2972,16 @@
    "calls": null
   },
   "CField::TryEnterTownPortal#UseDoor": {
-   "address": "",
+   "address": "0x522946",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Encode4",
+     "comment": "portalFieldId @0x522b1b"
+    },
+    {
+     "op": "Encode1",
+     "comment": "flag=1 @0x522b24"
     }
    ]
   },
@@ -3356,26 +3382,19 @@
    ]
   },
   "CField_Wedding::OnWeddingProgress#Action": {
-   "address": "",
+   "address": "0x55dfbb",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Encode1",
+     "comment": "readyByte (COutPacket 136) @0x55e55c"
     }
    ]
   },
   "CField_Wedding::OnWeddingProgress#Talk": {
-   "address": "",
+   "address": "0x55dfbb",
    "direction": "serverbound",
-   "unresolved": true,
-   "calls": [
-    {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
-   ]
+   "calls": []
   },
   "CField_Witchtower::OnPacket": {
    "address": "",

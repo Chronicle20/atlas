@@ -5,7 +5,7 @@
 
 Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 
-- export gms_v79: `a0853f13a08d13b49ec8f315acca20086691aa1dec8c45181ab5d205b176a15b`
+- export gms_v79: `2d1702770b3b53fe46b338ef6446baa6d18f4bab331542725aec91f9f79646c2`
 - export gms_v83: `711bddcc2e1bdd417a75954148d2b50c64e70855e84259c0b8e50e700e393c0d`
 - export gms_v84: `7eab9472e2afeda13faaf74273828d09d5f2481d67bec10235c3b2fd2f91e1eb`
 - export gms_v87: `714817d376bb93732ef6b6fbe6b59f8c24515ff901801d213d676b501eae7f94`
@@ -172,14 +172,14 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 | IDA_0X07E | CWvsContext::OnSetPassenserRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x07E | ❌ |  | ⬜ |
 | MULTICHAT | CField::OnGroupMessage | field/clientbound/FieldMultiChat (T1) | 0x07E | ✅ | 0x086 | ✅ | 0x089 | ✅ | 0x08E | ✅ | 0x096 | ✅ | 0x084 | ✅ |
 | CAKE_PIE_EVENT_RESULT | CWvsContext::OnCakePieEventResult |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x07F | ❌ | 0x081 | ❌ |  | ⬜ |
-| WHISPER | CField::OnWhisper | field/clientbound/FieldWhisperError (T1) | 0x07F | ❌ | 0x087 | ✅ | 0x08A | ✅ | 0x08F | ✅ | 0x097 | ✅ | 0x085 | ✅ |
-| SPOUSE_CHAT | CField::OnCoupleMessage | field/clientbound/FieldSpouseChat (T1) | 0x080 | ❌ | 0x088 | ✅ | 0x08B | ✅ | 0x090 | ✅ | 0x098 | ✅ |  | ⬜ |
+| WHISPER | CField::OnWhisper | field/clientbound/FieldWhisperError (T1) | 0x07F | ✅ | 0x087 | ✅ | 0x08A | ✅ | 0x08F | ✅ | 0x097 | ✅ | 0x085 | ✅ |
+| SPOUSE_CHAT | CField::OnCoupleMessage | field/clientbound/FieldSpouseChat (T1) | 0x080 | ✅ | 0x088 | ✅ | 0x08B | ✅ | 0x090 | ✅ | 0x098 | ✅ |  | ⬜ |
 | UPDATE_GM_BOARD | CWvsContext::OnUpdateGMBoard |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x080 | ❌ | 0x082 | ❌ |  | ⬜ |
 | SHOW_SLOT_MESSAGE | CWvsContext::OnShowSlotMessage |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x081 | ❌ | 0x083 | ❌ |  | ⬜ |
 | SUMMON_ITEM_INAVAILABLE | CField::OnSummonItemInavailable | field/clientbound/FieldSummonItemUnavailable (T1) | 0x081 | 🟡 | 0x089 | ✅ | 0x08C | ✅ | 0x091 | ✅ | 0x099 | ✅ | 0x086 | ✅ |
 | ACCOUNT_MORE_INFO | CWvsContext::OnAccountMoreInfo |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x082 | ❌ | 0x085 | ❌ |  | ⬜ |
 | CLEAR_BACK_EFFECT | CMapLoadable::OnClearBackEffect |  |  | ⬜ | 0x082 | ❌ | 0x085 | ❌ | 0x08A | ❌ | 0x092 | ❌ | 0x080 | ❌ |
-| FIELD_EFFECT | CField::OnFieldEffect | field/clientbound/FieldEffectBossHp (T1) | 0x082 | ❌ | 0x08A | ✅ | 0x08D | ✅ | 0x092 | ✅ | 0x09A | ✅ | 0x087 | ✅ |
+| FIELD_EFFECT | CField::OnFieldEffect | field/clientbound/FieldEffectBossHp (T1) | 0x082 | ✅ | 0x08A | ✅ | 0x08D | ✅ | 0x092 | ✅ | 0x09A | ✅ | 0x087 | ✅ |
 | FIELD_OBSTACLE_ONOFF | CField::OnFieldObstacleOnOff | field/clientbound/FieldFieldObstacleOnOff (T1) | 0x083 | 🟡 | 0x08B | ✅ | 0x08E | ✅ | 0x093 | ✅ | 0x09B | ✅ | 0x088 | ✅ |
 | FIND_FRIEND | CWvsContext::OnFindFirend |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x083 | ❌ | 0x086 | ❌ |  | ⬜ |
 | FIELD_OBSTACLE_ONOFF_LIST | CField::OnFieldObstacleOnOffStatus | field/clientbound/FieldFieldObstacleOnOffList (T1) | 0x084 | 🟡 | 0x08C | ✅ | 0x08F | ✅ | 0x094 | ✅ | 0x09C | ✅ | 0x089 | ✅ |
@@ -188,13 +188,13 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 | BLOW_WEATHER | CField::OnBlowWeather; sub_5723E6 | field/clientbound/FieldEffectWeather (T1) | 0x086 | 🟡 | 0x08E | ✅ | 0x091 | ✅ | 0x096 | ✅ | 0x09E | ✅ | 0x08B | ✅ |
 | PLAY_JUKEBOX | CField::OnPlayJukeBox | field/clientbound/FieldPlayJukebox (T1) | 0x087 | 🟡 | 0x08F | ✅ | 0x092 | ✅ | 0x097 | ✅ | 0x09F | ✅ | 0x08C | ✅ |
 | STAGE_CHANGE | CWvsContext::OnStageChange |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x087 | ❌ |  | ⬜ |
-| ADMIN_RESULT | CField::OnAdminResult; sub_57255F | field/clientbound/FieldAdminResult (T1) | 0x088 | ❌ | 0x090 | ✅ | 0x093 | ✅ | 0x098 | ✅ | 0x0A0 | ✅ | 0x08D | ✅ |
+| ADMIN_RESULT | CField::OnAdminResult; sub_57255F | field/clientbound/FieldAdminResult (T1) | 0x088 | ✅ | 0x090 | ✅ | 0x093 | ✅ | 0x098 | ✅ | 0x0A0 | ✅ | 0x08D | ✅ |
 | DRAGON_BALL_BOX | CWvsContext::OnDragonBallBox |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x088 | ❌ |  | ⬜ |
 | ASK_WHETHER_USE_PAMS_SONG | CWvsContext::OnAskWhetherUsePamsSong |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x089 | ❌ |  | ⬜ |
 | OX_QUIZ | CField::OnQuiz | field/clientbound/FieldOxQuiz (T1) | 0x089 | 🟡 | 0x091 | ✅ | 0x094 | ✅ | 0x099 | ✅ | 0x0A1 | ✅ | 0x08E | ✅ |
 | GMEVENT_INSTRUCTIONS | CField::OnDesc | field/clientbound/FieldGmEventInstructions (T1) | 0x08A | 🟡 | 0x092 | ✅ | 0x095 | ✅ | 0x09A | ✅ | 0x0A2 | ✅ | 0x08F | ✅ |
 | TRANSFER_CHANNEL | CWvsContext::OnTransferChannel |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x08A | ❌ |  | ⬜ |
-| CLOCK | CField::OnClock | field/clientbound/FieldClock (T1) | 0x08B | ❌ | 0x093 | ✅ | 0x096 | ✅ | 0x09B | ✅ | 0x0A3 | ✅ | 0x090 | ✅ |
+| CLOCK | CField::OnClock | field/clientbound/FieldClock (T1) | 0x08B | ✅ | 0x093 | ✅ | 0x096 | ✅ | 0x09B | ✅ | 0x0A3 | ✅ | 0x090 | ✅ |
 | DISALLOWED_DELIVERY_QUEST_LIST | CWvsContext::OnDisallowedDeliveryQuestList |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x08B | ❌ |  | ⬜ |
 | SET_QUEST_CLEAR | CField::OnSetQuestClear | field/clientbound/FieldSetQuestClear (T1) | 0x08E | 🟡 | 0x096 | ✅ | 0x099 | ✅ | 0x09E | ✅ | 0x0A6 | ✅ | 0x093 | ✅ |
 | SET_QUEST_TIME | CField::OnSetQuestTime | field/clientbound/FieldSetQuestTime (T1) | 0x08F | 🟡 | 0x097 | ✅ | 0x09A | ✅ | 0x09F | ✅ | 0x0A7 | ✅ | 0x094 | ✅ |
@@ -631,7 +631,7 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 | ADMIN_LOG | CField::SendChatMsgSlash | field/serverbound/FieldAdminChat (T1) | 0x07E | ✅ | 0x081 | ✅ | 0x085 | ✅ | 0x089 | ✅ | 0x098 | ✅ | 0x084 | ✅ |
 | BUDDYLIST_MODIFY | CField::SendAcceptFriendMsg; CField::SendDeleteFriendMsg; CField::SendSetFriendMsg; CWvsContext::LoadFriend | buddy/serverbound/BuddyOperationDelete (T1) | 0x07F | 🟡 | 0x082 | ✅ | 0x086 | ✅ | 0x08A | ✅ | 0x099 | ✅ | 0x085 | ✅ |
 | NOTE_ACTION | CCashShop::OnCashItemResLoadGiftDone; CMemoListDlg::SetRet; CWvsContext::OnMemoNotify_Receive | note/serverbound/NoteOperationDiscard (T1) | 0x080 | ✅ | 0x083 | ✅ | 0x087 | ✅ | 0x08B | ✅ | 0x09A | ✅ | 0x086 | ✅ |
-| USE_DOOR | CField::TryEnterTownPortal; CTownPortalPool::TryEnterTownPortal | field/serverbound/FieldUseDoor (T1) | 0x082 | ❌ | 0x085 | ✅ | 0x089 | ✅ | 0x08D | ✅ | 0x09C | ✅ | 0x088 | ✅ |
+| USE_DOOR | CField::TryEnterTownPortal; CTownPortalPool::TryEnterTownPortal | field/serverbound/FieldUseDoor (T1) | 0x082 | ✅ | 0x085 | ✅ | 0x089 | ✅ | 0x08D | ✅ | 0x09C | ✅ | 0x088 | ✅ |
 | PARTY_RESULT | CFadeWnd::SendCloseMessage; CUIFadeYesNo::OnButtonClicked; CWvsContext::OnPartyResult | messenger/serverbound/MessengerOperationDeclineInvite (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x083 | ✅ | 0x092 | ✅ | 0x07E | ✅ |
 | CHANGE_KEYMAP | CFuncKeyMappedMan::ChangePetConsumeItemID; CFuncKeyMappedMan::ChangePetConsumeMPItemID; CFuncKeyMappedMan::SaveFuncKeyMap | character/serverbound/KeyMapChange (T1) | 0x084 | ❌ | 0x087 | ✅ | 0x08B | ✅ | 0x08F | ✅ | 0x09F | ✅ | 0x08A | ✅ |
 | EXPEDITION_OPERATION | ExpeditionIntermediary::OnPacketExpNoti_Invite; ExpeditionIntermediary::SendExpChangeBossPacket; ExpeditionIntermediary::SendExpChangeMasterPacket; ExpeditionIntermediary::SendExpCreatePacket; ExpeditionIntermediary::SendExpInvitePacket; ExpeditionIntermediary::SendExpKickPacket; ExpeditionIntermediary::SendExpRelocatePartyPacket; ExpeditionIntermediary::SendResponseInvitePacket; ExpeditionIntermediary::SendWithdrawPacket |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x084 | ❌ | 0x093 | ❌ | 0x07F | ❌ |
@@ -642,10 +642,10 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 | UNNAMED_R190 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x087 | ❌ |  | ⬜ |
 | PQ_SELECT_REWARD | CUIPQReward::SelectReward |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x088 | ❌ |  | ⬜ |
 | RPS_ACTION | CRPSGameDlg::OnBtContinue; CRPSGameDlg::OnBtExit; CRPSGameDlg::OnBtRetry; CRPSGameDlg::OnBtStart; CRPSGameDlg::SendSelection; CRPSGameDlg::Update |  |  | ⬜ | 0x088 | ❌ | 0x08C | ❌ | 0x090 | ❌ | 0x0A0 | ❌ | 0x08B | ❌ |
-| WEDDING_ACTION | CField_Wedding::OnWeddingProgress | field/serverbound/FieldWeddingAction (T1) | 0x088 | ❌ | 0x08B | ✅ | 0x08F | ✅ | 0x093 | ✅ | 0x0A3 | ✅ |  | ⬜ |
+| WEDDING_ACTION | CField_Wedding::OnWeddingProgress | field/serverbound/FieldWeddingAction (T1) | 0x088 | ✅ | 0x08B | ✅ | 0x08F | ✅ | 0x093 | ✅ | 0x0A3 | ✅ |  | ⬜ |
 | PQ_REQUEST_REWARD | CUIPQReward::RequestReward |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x089 | ❌ |  | ⬜ |
 | RING_ACTION | CEngageDlg::SetRet; CWvsContext::OnMarriageRequest; CWvsContext::SendEngagementRequest; CWvsContext::SendInvitationQuery; CWvsContext::SendRingDropRequest; CWvsContext::SendSendInvitaionRequest; CWvsContext::SendWishListInput |  |  | ⬜ | 0x089 | ❌ | 0x08D | ❌ | 0x091 | ❌ | 0x0A1 | ❌ | 0x08C | ❌ |
-| WEDDING_TALK | CField_Wedding::OnWeddingProgress | field/serverbound/FieldWeddingAction (T1) | 0x089 | ❌ | 0x08C | ✅ | 0x090 | ✅ | 0x094 | ✅ | 0x0A4 | ✅ |  | ⬜ |
+| WEDDING_TALK | CField_Wedding::OnWeddingProgress | field/serverbound/FieldWeddingAction (T1) | 0x089 | ✅ | 0x08C | ✅ | 0x090 | ✅ | 0x094 | ✅ | 0x0A4 | ✅ |  | ⬜ |
 | FOLLOW_REQUEST_APPLY | CWvsContext::OnSetPassenserRequest; CWvsContext::SendFollowRequestApply |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x08A | ❌ | 0x076 | ❌ |
 | WEDDING_WISH_LIST_REQUEST | CWishListGiveDlg::SendPutItemRequest; CWishListGiveDlg::SetRet; CWishListRecvDlg::SendGetItemRequest; CWishListRecvDlg::SetRet |  |  | ⬜ | 0x08A | ❌ | 0x08E | ❌ | 0x092 | ❌ | 0x0A2 | ❌ | 0x08D | ❌ |
 | BOOBY_TRAP_ALERT | CWvsContext::SendBoobyTrapAlert |  |  | ⬜ | 0x08D | ❌ | 0x091 | ❌ | 0x095 | ❌ | 0x0A5 | ❌ | 0x08F | ❌ |
@@ -928,7 +928,7 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v79 | 94 | 0 | 75 | 328 | 400 | 0 | 18.9% |
+| v79 | 102 | 0 | 75 | 320 | 400 | 0 | 20.5% |
 | v83 | 367 | 0 | 0 | 328 | 202 | 0 | 52.8% |
 | v84 | 345 | 0 | 0 | 329 | 223 | 0 | 51.2% |
 | v87 | 379 | 0 | 0 | 353 | 165 | 0 | 51.8% |

@@ -926,8 +926,10 @@
   direction: clientbound
   opcode: 139
   fname: CField::OnClock
-  provenance: manual
-  note: 'CField::OnPacket @0x51c90f case 139 -> vtable+0x24 (CField::OnClock); v83 CLOCK=147. Vtable call, not direct-call-captured.'
+  provenance: ida-discovered
+  ida:
+    address: 5379550
+  note: 'CField::OnPacket @0x51c90f case 139 -> vtable+0x24 resolves to CField::OnClock @0x5215de (named task-113 batch10, was sub_5215DE); v83 CLOCK=147. Read order verified identical to v83 CField::OnClock.'
 - op: SET_QUEST_CLEAR
   direction: clientbound
   opcode: 142

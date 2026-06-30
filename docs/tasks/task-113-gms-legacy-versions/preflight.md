@@ -23,19 +23,21 @@ All four in-scope target IDBs (48/61/72/79) are loaded and reachable → **Task 
 
 Headers (`head -1`) of `docs/packets/MapleStory Ops - ClientBound.csv` and `… - ServerBound.csv`:
 
-- **ClientBound** columns: GMS v12, **GMS v48**, **GMS v61**, **GMS v72**, **GMS v79**, GMS v83, GMS v87, GMS v92, GMS v95, GMS v111, JMS v185.
-  → All four targets **have a clientbound column** → Stage B clientbound seeds directly from the CSV via `registry seed`.
-- **ServerBound** columns: GMS v12, GMS v83, GMS v87, GMS v92, GMS v95, GMS v111, JMS v185.
-  → **None** of the four targets has a serverbound column → Stage B serverbound must **copy the descending anchor's YAML** (`gms_v79`←`gms_v83`, `gms_v72`←`gms_v79`, `gms_v61`←`gms_v72`, `gms_v48`←`gms_v61`) and annotate `provenance` (manual entries carry an IDA citation), per Stage B step 1.
+- **ClientBound** column HEADERS exist for GMS v12, GMS v48, GMS v61, GMS v72, GMS v79, GMS v83, GMS v87, GMS v92, GMS v95, GMS v111, JMS v185.
+- **ServerBound** column HEADERS exist for GMS v12, GMS v83, GMS v87, GMS v92, GMS v95, GMS v111, JMS v185 (no v48/61/72/79).
 
-Per-version Stage B seeding consequence:
+> **CORRECTION (verified Task 1.A, 2026-06-30):** the clientbound column HEADERS for v48/61/72/79 exist but their VALUES are **100% placeholder `0x000`** (586 non-empty rows, 0 non-placeholder, all four versions; v83 by contrast has 359 real opcodes). The CSV is therefore **NOT a usable seed source for any of the four target versions, in either direction.** `registry seed` against these columns yields all-`0x000` garbage.
+>
+> **Consequence for Stage B (all four passes):** BOTH clientbound and serverbound registries must be **derived from the IDB** — copy the descending anchor's YAML as the structural starting point, then re-derive every opcode from the version's own dispatcher switch via `discover-ops --apply` + the Stage A delta doc, annotating `provenance: ida-discovered` (or `manual` with an `ida.address` citation). Do **not** seed from the CSV columns.
+
+Per-version Stage B seeding consequence (corrected):
 
 | Version | Clientbound seed | Serverbound seed |
 |---|---|---|
-| `gms_v79` | CSV `GMS v79` column | copy `gms_v83.yaml`, re-derive from v79 IDB, annotate provenance |
-| `gms_v72` | CSV `GMS v72` column | copy `gms_v79.yaml`, re-derive from v72 IDB, annotate provenance |
-| `gms_v61` | CSV `GMS v61` column | copy `gms_v72.yaml`, re-derive from v61 IDB, annotate provenance |
-| `gms_v48` | CSV `GMS v48` column | copy `gms_v61.yaml`, re-derive from v48 IDB, annotate provenance |
+| `gms_v79` | copy `gms_v83.yaml`, re-derive from v79 IDB (delta doc + discover-ops), annotate provenance | copy `gms_v83.yaml`, re-derive from v79 IDB, annotate provenance |
+| `gms_v72` | copy `gms_v79.yaml`, re-derive from v72 IDB, annotate provenance | copy `gms_v79.yaml`, re-derive from v72 IDB, annotate provenance |
+| `gms_v61` | copy `gms_v72.yaml`, re-derive from v61 IDB, annotate provenance | copy `gms_v72.yaml`, re-derive from v61 IDB, annotate provenance |
+| `gms_v48` | copy `gms_v61.yaml`, re-derive from v48 IDB, annotate provenance | copy `gms_v61.yaml`, re-derive from v48 IDB, annotate provenance |
 
 ## 3. WZ data availability (OQ-4)
 

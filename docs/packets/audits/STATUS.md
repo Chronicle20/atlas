@@ -292,29 +292,29 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 | RANDOM_EMOTION | CUser::OnRandomEmotion |  | 0x0D3 | ❌ | 0x0E2 | ❌ | 0x0E7 | ❌ | 0x0F0 | ❌ | 0x102 | ❌ |  | ⬜ |
 | COOLDOWN | CUserLocal::OnSkillCooltimeSet | character/clientbound/CharacterSkillCooldown (T1) | 0x0D4 | 🟡 | 0x0EA | ✅ | 0x0F0 | ✅ | 0x0FA | ✅ | 0x114 | ✅ | 0x0FB | ✅ |
 | IDA_0X0D4 | CUser::OnEmotion | character/clientbound/CharacterExpression (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0D4 | ✅ |
-| SPAWN_MONSTER | CMobPool::OnMobEnterField | monster/clientbound/MonsterSpawn (T1) | 0x0D6 | ❌ | 0x0EC | ✅ | 0x0F2 | ✅ | 0x0FC | ✅ | 0x11C | ✅ | 0x0FD | ✅ |
-| KILL_MONSTER | CMobPool::OnMobLeaveField | monster/clientbound/MonsterDestroy (T1) | 0x0D7 | ❌ | 0x0ED | ✅ | 0x0F3 | ✅ | 0x0FD | ✅ | 0x11D | ✅ | 0x0FE | ✅ |
+| SPAWN_MONSTER | CMobPool::OnMobEnterField | monster/clientbound/MonsterSpawn (T1) | 0x0D6 | ✅ | 0x0EC | ✅ | 0x0F2 | ✅ | 0x0FC | ✅ | 0x11C | ✅ | 0x0FD | ✅ |
+| KILL_MONSTER | CMobPool::OnMobLeaveField | monster/clientbound/MonsterDestroy (T1) | 0x0D7 | ✅ | 0x0ED | ✅ | 0x0F3 | ✅ | 0x0FD | ✅ | 0x11D | ✅ | 0x0FE | ✅ |
 | MOVING_SHOOT_ATTACK_PREPARE | CUserRemote::OnMovingShootAttackPrepare |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0D8 | ❌ |  | ⬜ |
-| SPAWN_MONSTER_CONTROL | CMobPool::OnMobChangeController | monster/clientbound/MonsterControl (T1) | 0x0D8 | ❌ | 0x0EE | ✅ | 0x0F4 | ✅ | 0x0FE | ✅ | 0x11E | ✅ | 0x0FF | ✅ |
-| MOVE_MONSTER | CMob::OnMove | monster/clientbound/MonsterMovement (T1) | 0x0D9 | ❌ | 0x0EF | ✅ | 0x0F5 | ✅ | 0x0FF | ✅ | 0x11F | ✅ | 0x100 | ✅ |
+| SPAWN_MONSTER_CONTROL | CMobPool::OnMobChangeController | monster/clientbound/MonsterControl (T1) | 0x0D8 | ✅ | 0x0EE | ✅ | 0x0F4 | ✅ | 0x0FE | ✅ | 0x11E | ✅ | 0x0FF | ✅ |
+| MOVE_MONSTER | CMob::OnMove | monster/clientbound/MonsterMovement (T1) | 0x0D9 | ✅ | 0x0EF | ✅ | 0x0F5 | ✅ | 0x0FF | ✅ | 0x11F | ✅ | 0x100 | ✅ |
 | IDA_0X0DA | CUserLocal::OnRandomMesobag_Succeeded |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0DA | ❌ |
-| MOVE_MONSTER_RESPONSE | CMob::OnCtrlAck | monster/clientbound/MonsterMovementAck (T1) | 0x0DA | ❌ | 0x0F0 | ✅ | 0x0F6 | ✅ | 0x100 | ✅ | 0x120 | ✅ | 0x101 | ✅ |
+| MOVE_MONSTER_RESPONSE | CMob::OnCtrlAck | monster/clientbound/MonsterMovementAck (T1) | 0x0DA | ✅ | 0x0F0 | ✅ | 0x0F6 | ✅ | 0x100 | ✅ | 0x120 | ✅ | 0x101 | ✅ |
 | IDA_0X0DB | CUserLocal::OnRandomMesobag_Failed |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0DB | ❌ |
-| APPLY_MONSTER_STATUS | CMob::OnStatSet | monster/clientbound/MonsterStatSet (T1) | 0x0DC | ❌ | 0x0F2 | ✅ | 0x0F8 | ✅ | 0x102 | ✅ | 0x122 | ✅ | 0x103 | ✅ |
+| APPLY_MONSTER_STATUS | CMob::OnStatSet | monster/clientbound/MonsterStatSet (T1) | 0x0DC | ✅ | 0x0F2 | ✅ | 0x0F8 | ✅ | 0x102 | ✅ | 0x122 | ✅ | 0x103 | ✅ |
 | OPEN_UI | CUserLocal::OnOpenUI | ui/clientbound/Open |  | ⬜ | 0x0DC | ✅ | 0x0E0 | ✅ | 0x0E9 | ✅ | 0x0FB | ✅ | 0x0E5 | ✅ |
-| CANCEL_MONSTER_STATUS | CMob::OnStatReset | monster/clientbound/MonsterStatReset (T1) | 0x0DD | ❌ | 0x0F3 | ✅ | 0x0F9 | ✅ | 0x103 | ✅ | 0x123 | ✅ | 0x104 | ✅ |
+| CANCEL_MONSTER_STATUS | CMob::OnStatReset | monster/clientbound/MonsterStatReset (T1) | 0x0DD | ✅ | 0x0F3 | ✅ | 0x0F9 | ✅ | 0x103 | ✅ | 0x123 | ✅ | 0x104 | ✅ |
 | IDA_0X0DD | CUserLocal::OnNotifyHPDecByField |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0DD | ❌ |
 | IDA_0X0DE | sub_A26957 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0DE | ❌ |
 | RESET_MONSTER_ANIMATION | CMob::OnSuspendReset | monster/clientbound/MonsterResetMonsterAnimation (T1) | 0x0DE | 🟡 | 0x0F4 | ✅ | 0x0FA | ✅ | 0x104 | ✅ | 0x124 | ✅ | 0x105 | ✅ |
 | MOB_AFFECTED | CMob::OnAffected | monster/clientbound/MonsterMobAffected (T1) | 0x0DF | 🟡 | 0x0F5 | ✅ | 0x0FB | ✅ | 0x105 | ✅ | 0x125 | ✅ | 0x106 | ✅ |
-| DAMAGE_MONSTER | CMob::OnDamaged | monster/clientbound/MonsterDamage (T1) | 0x0E0 | ❌ | 0x0F6 | ✅ | 0x0FC | ✅ | 0x106 | ✅ | 0x126 | ✅ | 0x107 | ✅ |
+| DAMAGE_MONSTER | CMob::OnDamaged | monster/clientbound/MonsterDamage (T1) | 0x0E0 | ✅ | 0x0F6 | ✅ | 0x0FC | ✅ | 0x106 | ✅ | 0x126 | ✅ | 0x107 | ✅ |
 | IDA_0X0E1 | CUserLocal::OnNotifyHPDecByField |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x0E1 | ❌ |  | ⬜ |  | ⬜ |
 | MONSTER_SPECIAL_EFFECT_BY_SKILL | CMob::OnSpecialEffectBySkill | monster/clientbound/MonsterMonsterSpecialEffectBySkill (T1) | 0x0E1 | ❌ | 0x0F7 | ✅ | 0x0FD | ✅ | 0x107 | ✅ | 0x127 | ✅ | 0x108 | ✅ |
 | MOB_CRC_KEY_CHANGED | CMobPool::OnMobCrcKeyChanged | monster/clientbound/MonsterMobCrcKeyChanged (T1) | 0x0E3 | ❌ | 0x0F9 | ✅ | 0x0FF | ✅ | 0x109 | ✅ | 0x129 | ✅ | 0x10A | ✅ |
 | RESIGN_QUEST_RETURN | CUserLocal::OnResignQuestReturn |  |  | ⬜ | 0x0E3 | ❌ | 0x0E8 | ❌ | 0x0F1 | ❌ | 0x103 | ❌ |  | ⬜ |
 | IDA_0X0E4 | sub_A2CEF5 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0E4 | ❌ |
 | PASS_MATE_NAME | CUserLocal::OnPassMateName |  |  | ⬜ | 0x0E4 | ❌ | 0x0E9 | ❌ | 0x0F2 | ❌ | 0x104 | ❌ |  | ⬜ |
-| SHOW_MONSTER_HP | CMob::OnHPIndicator | monster/clientbound/MonsterHealth (T1) | 0x0E4 | ❌ | 0x0FA | ✅ | 0x100 | ✅ | 0x10A | ✅ | 0x12A | ✅ | 0x10B | ✅ |
+| SHOW_MONSTER_HP | CMob::OnHPIndicator | monster/clientbound/MonsterHealth (T1) | 0x0E4 | ✅ | 0x0FA | ✅ | 0x100 | ✅ | 0x10A | ✅ | 0x12A | ✅ | 0x10B | ✅ |
 | CATCH_MONSTER | CMob::OnCatchEffect; CMob::ShowCatchEffect; sub_6EAE5F | monster/clientbound/MonsterCatchMonster (T1) | 0x0E5 | ❌ | 0x0FB | ✅ | 0x101 | ✅ | 0x10B | ✅ | 0x12B | ✅ | 0x10C | ✅ |
 | RADIO_SCHEDULE | CUserLocal::OnRadioSchedule |  |  | ⬜ | 0x0E5 | ❌ | 0x0EA | ❌ | 0x0F3 | ❌ | 0x105 | ❌ |  | ⬜ |
 | CATCH_MONSTER_WITH_ITEM | CMob::OnEffectByItem | monster/clientbound/MonsterCatchMonsterWithItem (T1) | 0x0E6 | 🟡 | 0x0FC | ✅ | 0x102 | ✅ | 0x10C | ✅ | 0x12C | ✅ | 0x10D | ✅ |
@@ -934,7 +934,7 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v79 | 66 | 0 | 75 | 362 | 400 | 0 | 13.1% |
+| v79 | 75 | 0 | 75 | 353 | 400 | 0 | 14.9% |
 | v83 | 367 | 0 | 0 | 334 | 202 | 0 | 52.4% |
 | v84 | 345 | 0 | 0 | 335 | 223 | 0 | 50.7% |
 | v87 | 379 | 0 | 0 | 359 | 165 | 0 | 51.4% |

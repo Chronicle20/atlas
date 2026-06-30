@@ -84,6 +84,96 @@ func TestMonsterStatSetByteOutputV83(t *testing.T) {
 	}
 }
 
+// TestMonsterStatSetByteOutputV79 verifies the same single-stat (Speed) wire
+// against the v79 client read order. uniqueId is consumed by
+// CMobPool::OnMobPacket @0x646d46 (Decode4 @0x646d50) before switching on op
+// 220 -> CMob::OnStatSet @0x63ae2b (GMS_v79_1_DEVM.exe, port 13340):
+//
+//	DecodeBuffer(16) @0x63ae55 — UINT128 stat mask
+//	MobStat::DecodeTemporary @0x63ae7c — per-stat body (value/source/expiry),
+//	                                      a register-boundary opaque blob
+//	Decode2 @0x63afa1 — tDelay (v13)
+//	Decode1 @0x63afa4 — m_nCalcDamageStatIndex (stored at +301)
+//
+// Per docs/packets/audits/OPAQUE_LEDGER.md ("mob temporary-stat blob",
+// VERIFIED-EXCEPTION) the mask-driven body cannot be statically decomposed; the
+// trailing bStat byte for movement-affecting stats (Speed) is absorbed within
+// the opaque body the client consumes. The MonsterTemporaryStat encoder is
+// version-independent, so the v79 wire is byte-identical to v83.
+//
+// packet-audit:verify packet=monster/clientbound/MonsterStatSet version=gms_v79 ida=0x63ae2b
+func TestMonsterStatSetByteOutputV79(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	ctx := test.CreateContext("GMS", 79, 1)
+	tn := tenant.MustFromContext(ctx)
+
+	stat := model.NewMonsterTemporaryStat()
+	stat.AddStat(l)(tn)(string(monster.TemporaryStatTypeSpeed), monster.SkillTypeSlow, 1, -40, time.Time{})
+	input := NewMonsterStatSet(5001, stat)
+
+	want := []byte{
+		0x89, 0x13, 0x00, 0x00, // mobId 5001 — pool Decode4 @0x646d50
+		0x00, 0x00, 0x00, 0x00, // mask H.hi — DecodeBuffer(16) @0x63ae55
+		0x00, 0x00, 0x00, 0x00, // mask H.lo
+		0x00, 0x00, 0x00, 0x00, // mask L.hi
+		0x40, 0x00, 0x00, 0x00, // mask L.lo — Speed bit (shift 6)
+		0xD8, 0xFF, // value -40 (opaque body @0x63ae7c)
+		0x7E, 0x00, // sourceId 126 (mob skill -> int16)
+		0x01, 0x00, // sourceLevel 1
+		0xFF, 0xFF, // expiry sentinel -1
+		0x00, 0x00, // tDelay — Decode2 @0x63afa1
+		0x00, // m_nCalcDamageStatIndex — Decode1 @0x63afa4
+		0x00, // bStat (movement-affecting; absorbed in opaque body)
+	}
+	got := input.Encode(l, ctx)(nil)
+	if !bytes.Equal(got, want) {
+		t.Errorf("v79 statset bytes:\n got % x\nwant % x", got, want)
+	}
+}
+
+// TestMonsterStatResetByteOutputV79 verifies the StatReset wire against the v79
+// client read order. uniqueId via CMobPool::OnMobPacket @0x646d50, op 221 ->
+// CMob::OnStatReset @0x63b3b2 (GMS_v79_1_DEVM.exe, port 13340):
+//
+//	DecodeBuffer(16) @0x63b3ce — UINT128 stat mask
+//	sub_704E92 @0x63b3f1 — MobStat reset body (opaque; absorbs tDelay)
+//	Decode1 @0x63b4b0 — m_nCalcDamageStatIndex (v7, stored at +301)
+//
+// The StatSet/StatReset codecs share the symmetric trailer
+// (tDelay+calcIndex+bStat); OnStatReset reads only the final Decode1 at the
+// function level, so tDelay/bStat fall inside the opaque reset body per the
+// OPAQUE_LEDGER discipline. Version-independent encoder -> byte-identical to v83.
+//
+// packet-audit:verify packet=monster/clientbound/MonsterStatReset version=gms_v79 ida=0x63b3b2
+func TestMonsterStatResetByteOutputV79(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	ctx := test.CreateContext("GMS", 79, 1)
+	tn := tenant.MustFromContext(ctx)
+
+	stat := model.NewMonsterTemporaryStat()
+	stat.AddStat(l)(tn)(string(monster.TemporaryStatTypeSpeed), monster.SkillTypeSlow, 1, -40, time.Time{})
+	input := NewMonsterStatReset(5001, stat)
+
+	want := []byte{
+		0x89, 0x13, 0x00, 0x00, // mobId 5001 — pool Decode4 @0x646d50
+		0x00, 0x00, 0x00, 0x00, // mask H.hi — DecodeBuffer(16) @0x63b3ce
+		0x00, 0x00, 0x00, 0x00, // mask H.lo
+		0x00, 0x00, 0x00, 0x00, // mask L.hi
+		0x40, 0x00, 0x00, 0x00, // mask L.lo — Speed bit (shift 6)
+		0xD8, 0xFF, // value -40 (opaque reset body @0x63b3f1)
+		0x7E, 0x00, // sourceId 126
+		0x01, 0x00, // sourceLevel 1
+		0xFF, 0xFF, // expiry sentinel -1
+		0x00, 0x00, // tDelay (absorbed in opaque reset body)
+		0x00, // m_nCalcDamageStatIndex — Decode1 @0x63b4b0
+		0x00, // bStat (movement-affecting; absorbed)
+	}
+	got := input.Encode(l, ctx)(nil)
+	if !bytes.Equal(got, want) {
+		t.Errorf("v79 statreset bytes:\n got % x\nwant % x", got, want)
+	}
+}
+
 func TestMonsterStatSet(t *testing.T) {
 	stat := model.NewMonsterTemporaryStat()
 	input := NewMonsterStatSet(5001, stat)

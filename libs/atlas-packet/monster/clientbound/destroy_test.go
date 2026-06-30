@@ -1,6 +1,7 @@
 package clientbound
 
 import (
+	"bytes"
 	"testing"
 
 	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
@@ -19,6 +20,33 @@ func TestMonsterDestroy(t *testing.T) {
 			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
 			test.RoundTrip(t, ctx, input.Encode, input.Decode, nil)
 		})
+	}
+}
+
+// TestMonsterDestroyBytesV79 pins the exact wire bytes against the v79 client
+// read order in CMobPool::OnMobLeaveField @0x646ff6 (GMS_v79_1_DEVM.exe, port
+// 13340):
+//
+//	Decode4 @0x647012 — uniqueId (v10)
+//	Decode1 @0x64701a — destroyType (v3): non-zero -> fade (sub_647329),
+//	                    zero -> death path
+//
+// v79 reads ONLY uniqueId(4)+destroyType(1); there is no destroyType==4 swallow
+// arm and no trailing swallowCharacterId read (that path is v95+). The codec's
+// swallow branch is gated on destroyType==4, which v79 never emits, so the
+// standard FadeOut(1) shape is byte-identical to v83.
+//
+// packet-audit:verify packet=monster/clientbound/MonsterDestroy version=gms_v79 ida=0x646ff6
+func TestMonsterDestroyBytesV79(t *testing.T) {
+	input := NewMonsterDestroy(5001, DestroyTypeFadeOut)
+	ctx := test.CreateContext("GMS", 79, 1)
+	want := []byte{
+		0x89, 0x13, 0x00, 0x00, // uniqueId 5001 — Decode4 @0x647012
+		0x01, // destroyType FadeOut — Decode1 @0x64701a
+	}
+	got := input.Encode(nil, ctx)(nil)
+	if !bytes.Equal(got, want) {
+		t.Errorf("v79 destroy bytes:\n got % x\nwant % x", got, want)
 	}
 }
 

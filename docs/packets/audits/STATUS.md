@@ -735,7 +735,7 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 | UNNAMED_R366 |  |  |  | ⬜ | 0x0DB | ❌ |  | ⬜ | 0x0E8 | ❌ | 0x107 | ❌ |  | ⬜ |
 | CHECK_CASH | CCashShop::TrySendQueryCashRequest; sub_46C34C | cash/serverbound/CashCheckWallet (T1) | 0x0DC | ❌ | 0x0E4 | ✅ | 0x0EA | ✅ | 0x0F1 | ✅ | 0x112 | ✅ | 0x0F4 | ✅ |
 | USE_PAMS_SONG_REQUEST | CWvsContext::AskWhetherUsePamsSong |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0DC | ❌ | 0x0BD | ❌ |
-| CASHSHOP_OPERATION | CCashShop::ApplyWishListEvent; CCashShop::GiftWishItem; CCashShop::OnBuy; CCashShop::OnBuyCouple; CCashShop::OnBuyFriendship; CCashShop::OnBuyNormal; CCashShop::OnBuyPackage; CCashShop::OnBuySlotInc; CCashShop::OnCashGachaponCopy; CCashShop::OnEnableEquipSlotExt; CCashShop::OnExItemSlot; CCashShop::OnGiftMateInfoResult; CCashShop::OnGiftPackage; CCashShop::OnIncCharacterSlotCount; CCashShop::OnIncTrunkCount; CCashShop::OnMoveCashItemLtoS; CCashShop::OnMoveCashItemStoL; CCashShop::OnRebateLockerItem; CCashShop::OnRemoveWish; CCashShop::OnSetWish; CCashShop::RequestCashPurchaseRecord; CCashShop::SendBuyAvatarPacket; CCashShop::SendBuyNameChangeItemPacket; CCashShop::SendBuyTransferWorldItemPacket; CCashShop::SendGiftsPacket | cash/serverbound/CashShopOperationGetPurchaseRecord (T1) | 0x0DD | ❌ | 0x0E5 | ✅ | 0x0EB | ✅ | 0x0F2 | ✅ | 0x113 | ✅ | 0x0F5 | ✅ |
+| CASHSHOP_OPERATION | CCashShop::ApplyWishListEvent; CCashShop::GiftWishItem; CCashShop::OnBuy; CCashShop::OnBuyCouple; CCashShop::OnBuyFriendship; CCashShop::OnBuyNormal; CCashShop::OnBuyPackage; CCashShop::OnBuySlotInc; CCashShop::OnCashGachaponCopy; CCashShop::OnEnableEquipSlotExt; CCashShop::OnExItemSlot; CCashShop::OnGiftMateInfoResult; CCashShop::OnGiftPackage; CCashShop::OnIncCharacterSlotCount; CCashShop::OnIncTrunkCount; CCashShop::OnMoveCashItemLtoS; CCashShop::OnMoveCashItemStoL; CCashShop::OnRebateLockerItem; CCashShop::OnRemoveWish; CCashShop::OnSetWish; CCashShop::RequestCashPurchaseRecord; CCashShop::SendBuyAvatarPacket; CCashShop::SendBuyNameChangeItemPacket; CCashShop::SendBuyTransferWorldItemPacket; CCashShop::SendGiftsPacket | cash/serverbound/CashShopOperationGetPurchaseRecord (T1) | 0x0DD | ✅ | 0x0E5 | ✅ | 0x0EB | ✅ | 0x0F2 | ✅ | 0x113 | ✅ | 0x0F5 | ✅ |
 | UNNAMED_R369 |  |  |  | ⬜ | 0x0DD | ❌ |  | ⬜ | 0x0EA | ❌ | 0x109 | ❌ |  | ⬜ |
 | PARTY_SEARCH_START | CWvsContext::SendPartyWanted |  |  | ⬜ | 0x0DE | ❌ | 0x0DE | ❌ | 0x0EB | ❌ | 0x10A | ❌ | 0x0E9 | ❌ |
 | REPEAT_EFFECT_REMOVE_REQ | CUserLocal::SendRepeatEffectRemoveRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0DE | ❌ | 0x0BF | ❌ |
@@ -946,7 +946,7 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v79 | 39 | 0 | 75 | 401 | 400 | 0 | 7.6% |
+| v79 | 40 | 0 | 75 | 400 | 400 | 0 | 7.8% |
 | v83 | 367 | 0 | 0 | 346 | 202 | 0 | 51.5% |
 | v84 | 345 | 0 | 0 | 347 | 223 | 0 | 49.9% |
 | v87 | 379 | 0 | 0 | 371 | 165 | 0 | 50.5% |

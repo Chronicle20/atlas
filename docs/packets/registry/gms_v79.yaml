@@ -2319,11 +2319,11 @@
 - op: VIEW_ALL_CHAR
   direction: serverbound
   opcode: 13
-  fname: sub_5CEDE1
+  fname: CLogin::SendViewAllCharPacket
   provenance: ida-discovered
   ida:
     address: 6090209
-  note: 'COutPacket(13)+send (view-all-char); v83 VIEW_ALL_CHAR=0x0D=13 (delta0). PLAYTHROUGH-CRITICAL.'
+  note: 'COutPacket(13)+send (view-all-char); the v79 IDB names this sender sub_5CEDE1 @0x5cede1 (named CLogin::SendViewAllCharPacket to match the report IDAName + candidatesFromFName, mirroring v83). v83 VIEW_ALL_CHAR=0x0D=13 (delta0). PLAYTHROUGH-CRITICAL.'
 - op: PICK_ALL_CHAR
   direction: serverbound
   opcode: 14

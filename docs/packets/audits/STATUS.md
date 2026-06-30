@@ -492,7 +492,7 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 | REGISTER_PIN | CLogin::OnCheckPinCodeResult | login/clientbound/PinOperation | 0x00A | ❌ | 0x00A | ✅ | 0x00A | ✅ | 0x00A | ✅ | 0x00A | ✅ |  | ⬜ |
 | SERVERLIST_REQUEST | CLicenseDlg::OnButtonClicked; CLogin::OnCheckPasswordResult; CLogin::OnCheckPinCodeResult | login/clientbound/PinOperation | 0x00B | ❌ | 0x00B | ✅ | 0x00B | ✅ | 0x00B | ✅ | 0x00B | ✅ |  | ⬜ |
 | PLAYER_DC | CLogin::GotoWorldSelect; CLogin::SendViewAllCharPacket |  |  | ⬜ | 0x00C | ❌ | 0x00C | ❌ | 0x00C | ❌ | 0x00C | ❌ |  | ⬜ |
-| VIEW_ALL_CHAR | CLogin::SendViewAllCharPacket; sub_5CEDE1 | login/serverbound/AllCharacterListRequest (T1) | 0x00D | ❌ | 0x00D | ✅ | 0x00D | ✅ | 0x00D | ✅ | 0x00D | ✅ | 0x00A | ✅ |
+| VIEW_ALL_CHAR | CLogin::SendViewAllCharPacket | login/serverbound/AllCharacterListRequest (T1) | 0x00D | ✅ | 0x00D | ✅ | 0x00D | ✅ | 0x00D | ✅ | 0x00D | ✅ | 0x00A | ✅ |
 | PICK_ALL_CHAR | CLogin::SendSelectCharPacketByVAC; sub_5CCC1F | login/serverbound/AllCharacterListSelect | 0x00E | ❌ | 0x00E | ✅ | 0x00E | ✅ | 0x00E | ✅ | 0x00E | ✅ |  | ⬜ |
 | VAC | CLogin::MakeVACDlg; CLogin::ResetVAC | login/serverbound/AllCharacterListPong | 0x00F | 🟡 | 0x00F | ✅ | 0x00F | ✅ | 0x00F | ✅ | 0x00F | ✅ |  | ⬜ |
 | NAME_TRANSFER | CCashShop::SendCheckNameChangePossiblePacket |  |  | ⬜ | 0x010 | ❌ | 0x010 | ❌ | 0x010 | ❌ | 0x010 | ❌ | 0x009 | ❌ |
@@ -879,7 +879,6 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 | login/clientbound/ServerListEnd |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | login/clientbound/ServerListEntry |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | login/clientbound/ServerStatus |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| login/serverbound/AllCharacterListRequest (T1) |  |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | login/serverbound/ServerListRequest |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | login/serverbound/ServerStatusRequest |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | login/serverbound/WorldCharacterListRequest |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
@@ -947,12 +946,12 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v79 | 12 | 0 | 87 | 417 | 400 | 0 | 2.3% |
-| v83 | 367 | 0 | 0 | 347 | 202 | 0 | 51.4% |
-| v84 | 345 | 0 | 0 | 348 | 223 | 0 | 49.8% |
-| v87 | 379 | 0 | 0 | 372 | 165 | 0 | 50.5% |
-| v95 | 399 | 0 | 0 | 436 | 81 | 0 | 47.8% |
-| JMS185 | 361 | 0 | 0 | 383 | 172 | 0 | 48.5% |
+| v79 | 12 | 0 | 87 | 416 | 400 | 0 | 2.3% |
+| v83 | 367 | 0 | 0 | 346 | 202 | 0 | 51.5% |
+| v84 | 345 | 0 | 0 | 347 | 223 | 0 | 49.9% |
+| v87 | 379 | 0 | 0 | 371 | 165 | 0 | 50.5% |
+| v95 | 399 | 0 | 0 | 435 | 81 | 0 | 47.8% |
+| JMS185 | 361 | 0 | 0 | 382 | 172 | 0 | 48.6% |
 
 ## Conflicts
 

@@ -19,6 +19,19 @@ All four in-scope target IDBs (48/61/72/79) are loaded and reachable → **Task 
 
 > These ports differ from the values recorded in project memory; that is expected (launch-order dependent). Re-confirm with `list_instances` at the start of every pass before reading — do not hardcode these numbers into later sessions.
 
+### packet-audit CLI endpoint (Stages B & D — `discover-ops`, `export`, `validate`, `decompose`, `triage`)
+
+The `packet-audit` CLI defaults `--ida-url` to `http://192.168.20.3:13337/mcp`. **Probed 2026-06-30:** from this WSL session the IDA-MCP HTTP server is reachable only at the **Windows host IP `192.168.20.3`** (each instance serves its own `/mcp` on its own port); `127.0.0.1:<port>/mcp` returns no connection (HTTP 000). So every CLI stage points at the target instance's port directly:
+
+| Version | CLI flags |
+|---|---|
+| v79 | `--ida-url http://192.168.20.3:13340/mcp --ida-port 13340` |
+| v72 | `--ida-url http://192.168.20.3:13339/mcp --ida-port 13339` |
+| v61 | `--ida-url http://192.168.20.3:13338/mcp --ida-port 13338` |
+| v48 | `--ida-url http://192.168.20.3:13337/mcp --ida-port 13337` |
+
+Re-probe the port↔binary mapping with `list_instances` each session before trusting these (launch-order dependent).
+
 ## 2. Ops CSV column inventory
 
 Headers (`head -1`) of `docs/packets/MapleStory Ops - ClientBound.csv` and `… - ServerBound.csv`:

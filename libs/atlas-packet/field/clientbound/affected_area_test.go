@@ -19,8 +19,15 @@ import (
 //	Decode1 nSLV, Decode2 phase, DecodeBuf(16) rcArea (4×int32 absolute RECT),
 //	[Decode4 tStart — v95 GMS only], Decode4 tEnd.
 //
-//	v83/v87/JMS185: 4+4+4+4+1+2+16+4 = 39 bytes (no tStart).
-//	v95:            +4 for tStart    = 43 bytes.
+//	v79/v83/v87/JMS185: 4+4+4+4+1+2+16+4 = 39 bytes (no tStart).
+//	v95:                +4 for tStart    = 43 bytes.
+//
+// gms_v79 read order verified in CAffectedAreaPool::OnAffectedAreaCreated
+// @0x42e7fc (GMS_v79_1_DEVM.exe): Decode4 dwId @0x42e82b, Decode4 nType
+// @0x42e835, Decode4 dwOwnerId @0x42e83f, Decode4 nSkillID @0x42e848, Decode1
+// nSLV @0x42e855, Decode2 phase @0x42e860, DecodeBuffer(16) rcArea @0x42e86b,
+// Decode4 tEnd @0x42e877 — NO tStart (matches the v83/v87/JMS path, 39 bytes).
+// packet-audit:verify packet=field/clientbound/FieldAffectedAreaCreated version=gms_v79 ida=0x42e7fc
 func TestAffectedAreaCreatedWireShape(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	id := uuid.New()
@@ -33,7 +40,7 @@ func TestAffectedAreaCreatedWireShape(t *testing.T) {
 		Name, Region string
 		Major, Minor uint16
 	}{
-		{"GMS v83", "GMS", 83, 1}, {"GMS v87", "GMS", 87, 1}, {"JMS v185", "JMS", 185, 1},
+		{"GMS v79", "GMS", 79, 1}, {"GMS v83", "GMS", 83, 1}, {"GMS v87", "GMS", 87, 1}, {"JMS v185", "JMS", 185, 1},
 	} {
 		b := in.Encode(l, pt.CreateContext(v.Region, v.Major, v.Minor))(nil)
 		if len(b) != 39 {

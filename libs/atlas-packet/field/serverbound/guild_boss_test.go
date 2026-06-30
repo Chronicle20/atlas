@@ -6,6 +6,7 @@ import (
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=field/serverbound/FieldGuildBoss version=gms_v79 ida=0x541895
 // packet-audit:verify packet=field/serverbound/FieldGuildBoss version=gms_v83 ida=0x558b45
 // packet-audit:verify packet=field/serverbound/FieldGuildBoss version=gms_v84 ida=0x5655e8
 // packet-audit:verify packet=field/serverbound/FieldGuildBoss version=gms_v87 ida=0x58319f
@@ -17,6 +18,18 @@ func TestGuildBossGolden(t *testing.T) {
 	actual := pt.Encode(t, ctx, input.Encode, nil)
 	if len(actual) != 0 {
 		t.Errorf("golden mismatch: got %v want empty", actual)
+	}
+}
+
+// TestGuildBossByteOutputV79 pins the gms_v79 GUILD_BOSS (op 0xCF) serverbound
+// wire. IDA: CField_GuildBoss::BasicActionAttack @0x541895 (GMS_v79_1_DEVM.exe) —
+// COutPacket(207) @0x54191c then SendPacket with NO Encode* calls: empty body.
+func TestGuildBossByteOutputV79(t *testing.T) {
+	input := NewGuildBoss()
+	ctx := pt.CreateContext("GMS", 79, 1)
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if len(actual) != 0 {
+		t.Errorf("v79 guild_boss golden mismatch: got %v want empty", actual)
 	}
 }
 

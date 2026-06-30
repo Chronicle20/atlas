@@ -1,6 +1,6 @@
 # PetDropPickUp (← `CPet::SendDropPickUpRequest`)
 
-- **IDA:** 
+- **IDA:** 0x6923af
 - **Atlas file:** `libs/atlas-packet/pet/serverbound/drop_pick_up.go`
 - **Variant:** GMS/v79
 - **Branch depth:** 3
@@ -11,15 +11,15 @@
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | int64 | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
-| 1 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 2 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 3 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 4 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 5 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 6 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 7 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 8 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 0 | int64 | bytes `` | ✅ |  |
+| 1 | byte | byte `` | ✅ |  |
+| 2 | int32 | int32 `` | ✅ |  |
+| 3 | int16 | int16 `` | ✅ |  |
+| 4 | int16 | int16 `` | ✅ |  |
+| 5 | int32 | int32 `` | ✅ |  |
+| 6 | int32 | byte `` | ❌ | width mismatch |
+| 7 | byte | byte `` | ✅ |  |
+| 8 | byte | byte `` | ✅ |  |
 | 9 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
 | 10 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 11 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |

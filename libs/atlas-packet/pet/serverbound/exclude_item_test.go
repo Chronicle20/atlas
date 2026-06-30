@@ -1,6 +1,7 @@
 package serverbound
 
 import (
+	"bytes"
 	"testing"
 
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
@@ -30,5 +31,24 @@ func TestExcludeItemRoundTrip(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+// v79 PET_EXCLUDE_ITEMS (sb op 168=0xA8) send order, verified GMS_v79_1_DEVM.exe
+// (port 13340): sub_692ABB — COutPacket(168)@0x692ad4, EncodeBuffer(petId,8)@0x692ae9,
+// Encode1(count)@0x692afe, count×Encode4(itemId)@0x692b16. Wire =
+// petId(8)+count(1)+itemIds(4 each); byte-identical to v83.
+// packet-audit:verify packet=pet/serverbound/PetExcludeItem version=gms_v79 ida=0x692abb
+func TestExcludeItemBytesV79(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 79, 1)
+	got := ExcludeItem{petId: 0x0102030405060708, itemIds: []int32{0x11223344, 0x55667788}}.Encode(nil, ctx)(nil)
+	want := []byte{
+		0x08, 0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01, // petId EncodeBuffer(8)@0x692ae9 (LE)
+		0x02,                   // count Encode1@0x692afe
+		0x44, 0x33, 0x22, 0x11, // itemId[0] Encode4@0x692b16 (LE)
+		0x88, 0x77, 0x66, 0x55, // itemId[1] Encode4@0x692b16 (LE)
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatalf("v79 = % X, want % X", got, want)
 	}
 }

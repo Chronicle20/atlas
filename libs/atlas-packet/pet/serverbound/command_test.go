@@ -1,6 +1,7 @@
 package serverbound
 
 import (
+	"bytes"
 	"testing"
 
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
@@ -28,5 +29,23 @@ func TestCommandRoundTrip(t *testing.T) {
 				t.Errorf("command: got %v, want %v", output.Command(), input.Command())
 			}
 		})
+	}
+}
+
+// v79 PET_COMMAND (sb op 165=0xA5) send order, verified GMS_v79_1_DEVM.exe (port
+// 13340): sub_6914DB — COutPacket(165)@0x69171c, EncodeBuffer(petId,8)@0x691731,
+// Encode1(byName/v35)@0x69173c, Encode1(command/v38)@0x691747. Wire =
+// petId(8)+byName(1)+command(1); byte-identical to v83.
+// packet-audit:verify packet=pet/serverbound/PetCommand version=gms_v79 ida=0x6914db
+func TestCommandBytesV79(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 79, 1)
+	got := Command{petId: 0x0102030405060708, byName: true, command: 0x09}.Encode(nil, ctx)(nil)
+	want := []byte{
+		0x08, 0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01, // petId EncodeBuffer(8)@0x691731 (LE)
+		0x01, // byName Encode1@0x69173c
+		0x09, // command Encode1@0x691747
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatalf("v79 = % X, want % X", got, want)
 	}
 }

@@ -6596,35 +6596,83 @@
    ]
   },
   "CPet::ParseCommand": {
-   "address": "",
+   "address": "0x6914db",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "DecodeBuf",
+     "comment": "",
+     "guard": "v38 != v30"
+    },
+    {
+     "op": "Decode1",
+     "comment": "",
+     "guard": "v38 != v30"
+    },
+    {
+     "op": "Decode1",
+     "comment": "",
+     "guard": "v38 != v30"
     }
    ]
   },
   "CPet::SendDropPickUpRequest": {
-   "address": "",
+   "address": "0x6923af",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "DecodeBuf",
+     "comment": ""
+    },
+    {
+     "op": "Decode1",
+     "comment": ""
+    },
+    {
+     "op": "Decode4",
+     "comment": ""
+    },
+    {
+     "op": "Decode2",
+     "comment": ""
+    },
+    {
+     "op": "Decode2",
+     "comment": ""
+    },
+    {
+     "op": "Decode4",
+     "comment": ""
+    },
+    {
+     "op": "Decode1",
+     "comment": ""
+    },
+    {
+     "op": "Decode1",
+     "comment": ""
+    },
+    {
+     "op": "Decode1",
+     "comment": ""
     }
    ]
   },
   "CPet::SendUpdateExceptionListRequest": {
-   "address": "",
+   "address": "0x692abb",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "DecodeBuf",
+     "comment": ""
+    },
+    {
+     "op": "Decode1",
+     "comment": ""
+    },
+    {
+     "op": "Decode4",
+     "comment": ""
     }
    ]
   },
@@ -11000,13 +11048,13 @@
    "calls": null
   },
   "CVecCtrlPet::EndUpdateActive": {
-   "address": "",
+   "address": "0x9150a1",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "DecodeBuf",
+     "comment": "",
+     "guard": "result"
     }
    ]
   },
@@ -15088,6 +15136,37 @@
     {
      "op": "Unresolved",
      "comment": "function not found in IDB"
+    }
+   ]
+  },
+  "CWvsContext::SendActivatePetRequest": {
+   "address": "0x96e251",
+   "direction": "serverbound",
+   "calls": [
+    {
+     "op": "Decode4",
+     "comment": "",
+     "guard": "result && !result && v5 && result == 3 && sub_4D82AE(v5)"
+    },
+    {
+     "op": "DecodeBuf",
+     "comment": "",
+     "guard": "result && !result && v5 && result == 3 && sub_4D82AE(v5)"
+    },
+    {
+     "op": "Decode4",
+     "comment": "",
+     "guard": "result && !result && v5 && result == 3 && <default>"
+    },
+    {
+     "op": "Decode2",
+     "comment": "",
+     "guard": "result && !result && v5 && result == 3 && <default>"
+    },
+    {
+     "op": "Decode1",
+     "comment": "",
+     "guard": "result && !result && v5 && result == 3 && <default>"
     }
    ]
   },

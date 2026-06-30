@@ -73,3 +73,25 @@ func TestChatUpdateTimeGate(t *testing.T) {
 		}
 	}
 }
+
+// v79 PET_CHAT (sb op 164=0xA4) send order, verified GMS_v79_1_DEVM.exe (port
+// 13340): CPet::DoAction@0x691d4e send block — COutPacket(164)@0x691f17,
+// EncodeBuffer(petId,8)@0x691f2c, Encode1(nType/a2)@0x691f37,
+// Encode1(nAction)@0x691f4b, EncodeStr(msg)@0x691f6b. NO updateTime (that field
+// is GMS v95+ only, gated off here). Wire = petId(8)+nType(1)+nAction(1)+msg(2+len).
+// packet-audit:verify packet=pet/serverbound/PetChatRequest version=gms_v79 ida=0x691d4e
+func TestChatBytesV79(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 79, 1)
+	in := ChatRequest{petId: 0x0102030405060708, updateTime: 0x11223344, nType: 0x07, nAction: 0x09, msg: "Hi"}
+	got := in.Encode(nil, ctx)(nil)
+	want := []byte{
+		0x08, 0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01, // petId EncodeBuffer(8)@0x691f2c (LE)
+		0x07,       // nType Encode1@0x691f37 (NO updateTime, GMS<95)
+		0x09,       // nAction Encode1@0x691f4b
+		0x02, 0x00, // msg length EncodeStr@0x691f6b
+		0x48, 0x69, // "Hi"
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatalf("v79 = % X, want % X", got, want)
+	}
+}

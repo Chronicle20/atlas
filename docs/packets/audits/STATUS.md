@@ -5,7 +5,7 @@
 
 Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 
-- export gms_v79: `49f6d75afdb20d79c949167fc9aba36c1860d5f12044da24e0163d77d1a66900`
+- export gms_v79: `1318be4a5159e2c26e616a99805a5b1ea0e08ae16523ed91d1602e270ba5cce4`
 - export gms_v83: `711bddcc2e1bdd417a75954148d2b50c64e70855e84259c0b8e50e700e393c0d`
 - export gms_v84: `7eab9472e2afeda13faaf74273828d09d5f2481d67bec10235c3b2fd2f91e1eb`
 - export gms_v87: `714817d376bb93732ef6b6fbe6b59f8c24515ff901801d213d676b501eae7f94`
@@ -218,12 +218,12 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 | SPAWN_PET | CUser::OnPetPacket |  | 0x09D | ❌ | 0x0A8 | ❌ | 0x0AB | ❌ | 0x0B4 | ❌ | 0x0C6 | ❌ | 0x0AD | ❌ |
 | EVOLVE_PET | CUser::OnPetPacket |  | 0x09E | ❌ | 0x0A9 | ❌ | 0x0AC | ❌ | 0x0B5 | ❌ | 0x0C7 | ❌ |  | ⬜ |
 | PYRAMID_SCORE | CField_MassacreResult::OnMassacreResult | field/clientbound/FieldPyramidScore (T1) |  | ⬜ | 0x09E | ✅ | 0x0A1 | ✅ | 0x0A6 | ✅ | 0x0AE | ✅ | 0x09A | ✅ |
-| MOVE_PET | CPet::OnMove | pet/clientbound/PetMovement (T1) | 0x09F | ❌ | 0x0AA | ✅ | 0x0AE | ✅ | 0x0B7 | ✅ | 0x0C9 | ✅ | 0x0B0 | ✅ |
+| MOVE_PET | CPet::OnMove | pet/clientbound/PetMovement (T1) | 0x09F | ✅ | 0x0AA | ✅ | 0x0AE | ✅ | 0x0B7 | ✅ | 0x0C9 | ✅ | 0x0B0 | ✅ |
 | QUICKSLOT_INIT | CQuickslotKeyMappedMan::OnInit |  |  | ⬜ | 0x09F | ❌ | 0x09F | ❌ | 0x0A7 | ❌ | 0x0AF | ❌ | 0x09B | ❌ |
-| PET_CHAT | CPet::OnAction | pet/clientbound/PetChat (T1) | 0x0A0 | ❌ | 0x0AB | ✅ | 0x0AF | ✅ | 0x0B8 | ✅ | 0x0CA | ✅ | 0x0B1 | ✅ |
+| PET_CHAT | CPet::OnAction | pet/clientbound/PetChat (T1) | 0x0A0 | ✅ | 0x0AB | ✅ | 0x0AF | ✅ | 0x0B8 | ✅ | 0x0CA | ✅ | 0x0B1 | ✅ |
 | PET_NAMECHANGE | CPet::OnNameChanged; CPet__OnNameChanged_recv_0xB0 |  | 0x0A1 | ❌ | 0x0AC | ❌ | 0x0B0 | ❌ | 0x0B9 | ❌ | 0x0CB | ❌ | 0x0B2 | ❌ |
-| PET_EXCEPTION_LIST | CPet::OnLoadExceptionList | pet/clientbound/PetExcludeResponse (T1) | 0x0A2 | ❌ | 0x0AD | ✅ | 0x0B1 | ✅ | 0x0BA | ✅ | 0x0CC | ✅ | 0x0B3 | ✅ |
-| PET_COMMAND | CPet::OnActionCommand | pet/clientbound/PetCommandResponse (T1) | 0x0A3 | ❌ | 0x0AE | ✅ | 0x0B2 | ✅ | 0x0BB | ✅ | 0x0CD | ✅ | 0x0B4 | ✅ |
+| PET_EXCEPTION_LIST | CPet::OnLoadExceptionList | pet/clientbound/PetExcludeResponse (T1) | 0x0A2 | ✅ | 0x0AD | ✅ | 0x0B1 | ✅ | 0x0BA | ✅ | 0x0CC | ✅ | 0x0B3 | ✅ |
+| PET_COMMAND | CPet::OnActionCommand | pet/clientbound/PetCommandResponse (T1) | 0x0A3 | ✅ | 0x0AE | ✅ | 0x0B2 | ✅ | 0x0BB | ✅ | 0x0CD | ✅ | 0x0B4 | ✅ |
 | IDA_0X0A4 | CField::OnStalkResult | field/clientbound/FieldStalkResult (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x0A4 | ✅ |  | ⬜ |  | ⬜ |
 | SPAWN_SPECIAL_MAPOBJECT | CSummonedPool::OnCreated; CSummonedPool::OnPacket | summon/clientbound/SummonSpawn (T1) | 0x0A4 | ✅ | 0x0AF | ✅ | 0x0B3 | ✅ | 0x0BC | ✅ | 0x116 | ✅ | 0x0B5 | ✅ |
 | REMOVE_SPECIAL_MAPOBJECT | CSummonedPool::OnPacket; CSummonedPool::OnRemoved | summon/clientbound/SummonRemove | 0x0A5 | ✅ | 0x0B0 | ✅ | 0x0B4 | ✅ | 0x0BD | ✅ | 0x117 | ✅ | 0x0B6 | ✅ |
@@ -588,7 +588,7 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 | HYPER_UPGRADE_ITEM_USE | CWvsContext::SendHyperUpgradeItemUseRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x05E | ❌ | 0x04F | ❌ |
 | CHAR_INFO_REQUEST | CWvsContext::SendCharacterInfoRequest; sub_96E184 | character/serverbound/InfoRequest (T1) | 0x05F | ❌ | 0x061 | ✅ | 0x061 | ✅ | 0x064 | ✅ | 0x06D | ✅ | 0x05C | ✅ |
 | ITEM_OPTION_UPGRADE_USE | CWvsContext::SendItemOptionUpgradeItemUseRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x05F | ❌ | 0x050 | ❌ |
-| SPAWN_PET | CWvsContext::SendActivatePetRequest; sub_96E251 | pet/serverbound/PetSpawn (T1) | 0x060 | ❌ | 0x062 | ❌ | 0x062 | ❌ | 0x065 | ✅ | 0x06E | ✅ | 0x05D | ✅ |
+| SPAWN_PET | CWvsContext::SendActivatePetRequest | pet/serverbound/PetSpawn (T1) | 0x060 | ✅ | 0x062 | ❌ | 0x062 | ❌ | 0x065 | ✅ | 0x06E | ✅ | 0x05D | ✅ |
 | UI_OPEN_ITEM_USE_REQUEST | CWvsContext::SendUIOpenItemRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x060 | ❌ |  | ⬜ |
 | UNNAMED_R149 |  |  |  | ⬜ | 0x060 | ❌ | 0x060 | ❌ | 0x063 | ❌ | 0x06C | ❌ | 0x05B | ❌ |
 | ITEM_RELEASE_REQUEST | CWvsContext::SendItemReleaseRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x061 | ❌ | 0x051 | ❌ |
@@ -674,13 +674,13 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 | CLICK_GUIDE | CUserLocal::HandleLButtonDblClk |  |  | ⬜ | 0x0A2 | ❌ |  | ⬜ | 0x0AC | ❌ | 0x0BC | ❌ | 0x09C | ❌ |
 | ARAN_COMBO_COUNTER | CUserLocal::RequestIncCombo |  |  | ⬜ | 0x0A3 | ❌ | 0x0A9 | ❌ | 0x0AD | ❌ | 0x0BD | ❌ | 0x09D | ❌ |
 | JMS_CONSUME_ITEM |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0A3 | ❌ |
-| MOVE_PET | CVecCtrlPet::EndUpdateActive; sub_9150A1 | pet/serverbound/PetMovementRequest (T1) | 0x0A3 | ❌ | 0x0A7 | ✅ | 0x0AC | ✅ | 0x0B3 | ✅ | 0x0C7 | ✅ | 0x0AA | ✅ |
-| PET_CHAT | CPet::DoAction | pet/serverbound/PetChatRequest (T1) | 0x0A4 | ❌ | 0x0A8 | ✅ | 0x0AD | ✅ | 0x0B4 | ✅ | 0x0C8 | ✅ | 0x0AB | ✅ |
-| PET_COMMAND | CPet::ParseCommand; sub_6914DB | pet/serverbound/PetCommand (T1) | 0x0A5 | ❌ | 0x0A9 | ✅ | 0x0AE | ✅ | 0x0B5 | ✅ | 0x0C9 | ✅ | 0x0AC | ✅ |
+| MOVE_PET | CVecCtrlPet::EndUpdateActive | pet/serverbound/PetMovementRequest (T1) | 0x0A3 | ✅ | 0x0A7 | ✅ | 0x0AC | ✅ | 0x0B3 | ✅ | 0x0C7 | ✅ | 0x0AA | ✅ |
+| PET_CHAT | CPet::DoAction | pet/serverbound/PetChatRequest (T1) | 0x0A4 | ✅ | 0x0A8 | ✅ | 0x0AD | ✅ | 0x0B4 | ✅ | 0x0C8 | ✅ | 0x0AB | ✅ |
+| PET_COMMAND | CPet::ParseCommand | pet/serverbound/PetCommand (T1) | 0x0A5 | ✅ | 0x0A9 | ✅ | 0x0AE | ✅ | 0x0B5 | ✅ | 0x0C9 | ✅ | 0x0AC | ✅ |
 | FIND_FRIEND | CUIFindFriend::SendMyInfoRequest; CUIFindFriend::SendSearchRequest; CUIFindFriendDetail::SetDetailInfo |  |  | ⬜ | 0x0A6 | ❌ | 0x0A6 | ❌ | 0x0B1 | ❌ | 0x0C2 | ❌ |  | ⬜ |
-| PET_LOOT | CPet::SendDropPickUpRequest; sub_6923AF | pet/serverbound/PetDropPickUp (T1) | 0x0A6 | ❌ | 0x0AA | ✅ | 0x0AF | ✅ | 0x0B6 | ✅ | 0x0CA | ✅ | 0x0AD | ✅ |
+| PET_LOOT | CPet::SendDropPickUpRequest | pet/serverbound/PetDropPickUp (T1) | 0x0A6 | ✅ | 0x0AA | ✅ | 0x0AF | ✅ | 0x0B6 | ✅ | 0x0CA | ✅ | 0x0AD | ✅ |
 | PET_AUTO_POT | CWvsContext::SendStatChangeItemUseRequestByPetQ | pet/serverbound/PetItemUse (T1) | 0x0A7 | 🟡 | 0x0AB | ✅ | 0x0B0 | ✅ | 0x0B7 | ✅ | 0x0CB | ✅ | 0x0AE | ✅ |
-| PET_EXCLUDE_ITEMS | CPet::SendUpdateExceptionListRequest; sub_692ABB | pet/serverbound/PetExcludeItem (T1) | 0x0A8 | ❌ | 0x0AC | ✅ | 0x0B1 | ✅ | 0x0B8 | ✅ | 0x0CC | ✅ | 0x0AF | ✅ |
+| PET_EXCLUDE_ITEMS | CPet::SendUpdateExceptionListRequest | pet/serverbound/PetExcludeItem (T1) | 0x0A8 | ✅ | 0x0AC | ✅ | 0x0B1 | ✅ | 0x0B8 | ✅ | 0x0CC | ✅ | 0x0AF | ✅ |
 | CASH_GACHAPON_BUTTON | CUICashGachapon::OnButtonClicked |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x0AA | ❌ | 0x0BA | ❌ |  | ⬜ |
 | CASHSHOP_SURPRISE | CCashShop::SendChangeMaplePoint |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x0AB | ❌ | 0x0BB | ❌ | 0x0A7 | ❌ |
 | MOVE_SUMMON | CVecCtrlSummoned::EndUpdateActive; sub_9184E5 | summon/serverbound/SummonMoveHandle | 0x0AB | ❌ | 0x0AF | ✅ | 0x0B2 | ✅ | 0x0BB | ✅ | 0x0CF | ✅ | 0x0B2 | ✅ |
@@ -920,10 +920,6 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 | party/serverbound/PartyOperationInvite (T1) |  |  | 🟡 |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | party/serverbound/PartyOperationJoin (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |
 | pet/clientbound/PetActivated (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |
-| pet/serverbound/PetCommand (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| pet/serverbound/PetDropPickUp (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| pet/serverbound/PetExcludeItem (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| pet/serverbound/PetMovementRequest (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | portal/serverbound/PortalScript |  |  | 🟡 |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | quest/clientbound/ScriptProgress |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | quest/serverbound/Action |  |  | ❌ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
@@ -938,12 +934,12 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v79 | 56 | 0 | 75 | 376 | 400 | 0 | 11.0% |
-| v83 | 367 | 0 | 0 | 338 | 202 | 0 | 52.1% |
-| v84 | 345 | 0 | 0 | 339 | 223 | 0 | 50.4% |
-| v87 | 379 | 0 | 0 | 363 | 165 | 0 | 51.1% |
-| v95 | 399 | 0 | 0 | 427 | 81 | 0 | 48.3% |
-| JMS185 | 361 | 0 | 0 | 374 | 172 | 0 | 49.1% |
+| v79 | 66 | 0 | 75 | 362 | 400 | 0 | 13.1% |
+| v83 | 367 | 0 | 0 | 334 | 202 | 0 | 52.4% |
+| v84 | 345 | 0 | 0 | 335 | 223 | 0 | 50.7% |
+| v87 | 379 | 0 | 0 | 359 | 165 | 0 | 51.4% |
+| v95 | 399 | 0 | 0 | 423 | 81 | 0 | 48.5% |
+| JMS185 | 361 | 0 | 0 | 370 | 172 | 0 | 49.4% |
 
 ## Conflicts
 

@@ -1,6 +1,7 @@
 package serverbound
 
 import (
+	"bytes"
 	"testing"
 
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
@@ -26,5 +27,23 @@ func TestSpawnRoundTrip(t *testing.T) {
 				t.Errorf("lead: got %v, want %v", output.Lead(), input.Lead())
 			}
 		})
+	}
+}
+
+// v79 SPAWN_PET (sb op 96=0x60) send order, verified GMS_v79_1_DEVM.exe (port
+// 13340): CWvsContext::SendActivatePetRequest (sub_96E251) — COutPacket(96)@0x96e550,
+// Encode4(updateTime)@0x96e56a, Encode2(slot)@0x96e575, Encode1(lead)@0x96e580.
+// Wire = updateTime(4)+slot(2)+lead(1); byte-identical to v83.
+// packet-audit:verify packet=pet/serverbound/PetSpawn version=gms_v79 ida=0x96e251
+func TestSpawnBytesV79(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 79, 1)
+	got := Spawn{updateTime: 0x01020304, slot: 0x0506, lead: true}.Encode(nil, ctx)(nil)
+	want := []byte{
+		0x04, 0x03, 0x02, 0x01, // updateTime Encode4@0x96e56a (LE)
+		0x06, 0x05, // slot Encode2@0x96e575 (LE)
+		0x01,       // lead Encode1@0x96e580
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatalf("v79 = % X, want % X", got, want)
 	}
 }

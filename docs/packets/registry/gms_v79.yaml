@@ -2617,11 +2617,11 @@
 - op: SPAWN_PET
   direction: serverbound
   opcode: 96
-  fname: sub_96E251
+  fname: CWvsContext::SendActivatePetRequest
   provenance: ida-discovered
   ida:
     address: 9888337
-  note: 'v79 sub_96E251 COutPacket(96); push 60h;a2 @0x96e550. v83 SPAWN_PET=0x62=98 (d-2). delta doc serverbound (ida-read).'
+  note: 'v79 sender named CWvsContext::SendActivatePetRequest @0x96e251 (was sub_96E251; named to match the report IDAName + candidatesFromFName, mirroring v83). COutPacket(96); Encode4(updateTime)+Encode2(slot)+Encode1(lead) @0x96e550. v83 SPAWN_PET=0x62=98 (d-2). delta doc serverbound (ida-read).'
 - op: SKILL_MACRO
   direction: serverbound
   opcode: 108
@@ -2681,35 +2681,35 @@
 - op: MOVE_PET
   direction: serverbound
   opcode: 163
-  fname: sub_9150A1
+  fname: CVecCtrlPet::EndUpdateActive
   provenance: ida-discovered
   ida:
     address: 9523361
-  note: 'v79 sub_9150A1 COutPacket(163); push 0A3h;a2 @0x9150c5 (CVecCtrlPet move flush). v83 MOVE_PET=0xa7=167 (d-4). delta doc serverbound (ida-read).'
+  note: 'v79 sender named CVecCtrlPet::EndUpdateActive @0x9150a1 (was sub_9150A1; named to match the report IDAName + candidatesFromFName, mirroring v83). COutPacket(163); EncodeBuffer(petId,8)@0x9150ef + CMovePath::Flush (opaque movement). v83 MOVE_PET=0xa7=167 (d-4). delta doc serverbound (ida-read).'
 - op: PET_COMMAND
   direction: serverbound
   opcode: 165
-  fname: sub_6914DB
+  fname: CPet::ParseCommand
   provenance: ida-discovered
   ida:
     address: 6886619
-  note: 'v79 sub_6914DB COutPacket(165); push 0A5h;a2 @0x691714. v83 PET_COMMAND=0xa9=169 (d-4). delta doc serverbound (ida-read).'
+  note: 'v79 sender named CPet::ParseCommand @0x6914db (was sub_6914DB; named to match the report IDAName + candidatesFromFName, mirroring v83). COutPacket(165); EncodeBuffer(petId,8)@0x691731+Encode1(byName)@0x69173c+Encode1(command)@0x691747. v83 PET_COMMAND=0xa9=169 (d-4). delta doc serverbound (ida-read).'
 - op: PET_LOOT
   direction: serverbound
   opcode: 166
-  fname: sub_6923AF
+  fname: CPet::SendDropPickUpRequest
   provenance: ida-discovered
   ida:
     address: 6890415
-  note: 'v79 sub_6923AF COutPacket(166); push 0A6h;a2 @0x6923e2. v83 PET_LOOT=0xaa=170 (d-4). delta doc serverbound (ida-read).'
+  note: 'v79 sender named CPet::SendDropPickUpRequest @0x6923af (was sub_6923AF; named to match the report IDAName + candidatesFromFName, mirroring v83). COutPacket(166); petId(8)+fieldKey+updateTime+x+y+dropId+3 bools — NO crc (v83@0x705c7c adds Encode4(crc)@0x705d29; codec gates crc to GMS>=83||JMS). v83 PET_LOOT=0xaa=170 (d-4). delta doc serverbound (ida-read).'
 - op: PET_EXCLUDE_ITEMS
   direction: serverbound
   opcode: 168
-  fname: sub_692ABB
+  fname: CPet::SendUpdateExceptionListRequest
   provenance: ida-discovered
   ida:
     address: 6892219
-  note: 'v79 sub_692ABB COutPacket(168); push 0A8h;a2 @0x692acc. v83 PET_EXCLUDE_ITEMS=0xac=172 (d-4). delta doc serverbound (ida-read).'
+  note: 'v79 sender named CPet::SendUpdateExceptionListRequest @0x692abb (was sub_692ABB; named to match the report IDAName + candidatesFromFName, mirroring v83). COutPacket(168); EncodeBuffer(petId,8)@0x692ae9+Encode1(count)@0x692afe+count×Encode4(itemId)@0x692b16. v83 PET_EXCLUDE_ITEMS=0xac=172 (d-4). delta doc serverbound (ida-read).'
 - op: MOVE_SUMMON
   direction: serverbound
   opcode: 171

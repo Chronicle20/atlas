@@ -1,6 +1,7 @@
 package clientbound
 
 import (
+	"bytes"
 	"testing"
 
 	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
@@ -28,5 +29,29 @@ func TestPetFoodResponse(t *testing.T) {
 			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
 			test.RoundTrip(t, ctx, input.Encode, input.Decode, nil)
 		})
+	}
+}
+
+// v79 PET_COMMAND (cb op 0xAE=174) read order, verified GMS_v79_1_DEVM.exe (port
+// 13340): CUserPool::OnUserCommonPacket@0x8c8c79 Decode4(ownerId)@0x8c8c84 →
+// CUser::OnPetPacket@0x892474 Decode1(slot)@0x8924b6 →
+// CPet::OnActionCommand@0x691029: Decode1(mode/v23)@0x69105f; mode==0 path reads
+// Decode1(animation)@0x691088, Decode1(success)@0x6910a1, then Decode1(balloon)@0x6911d4
+// (the static report's "trailing padding" note is wrong — the balloon byte IS read).
+// Wire = ownerId(4)+slot(1)+mode(1)+animation(1)+success(1)+balloon(1); identical to v83.
+// packet-audit:verify packet=pet/clientbound/PetCommandResponse version=gms_v79 ida=0x691029
+func TestPetCommandResponseBytesV79(t *testing.T) {
+	ctx := test.CreateContext("GMS", 79, 1)
+	got := NewPetCommandResponse(0x01020304, 0x05, 0x07, true, false).Encode(nil, ctx)(nil)
+	want := []byte{
+		0x04, 0x03, 0x02, 0x01, // ownerId Decode4@0x8c8c84 (LE)
+		0x05, // slot Decode1@0x8924b6
+		0x00, // mode Decode1@0x69105f (NewPetCommandResponse => mode 0)
+		0x07, // animation Decode1@0x691088
+		0x01, // success Decode1@0x6910a1
+		0x00, // balloon Decode1@0x6911d4
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatalf("v79 = % X, want % X", got, want)
 	}
 }

@@ -66,7 +66,14 @@ func (m SummonAttack) Encode(l logrus.FieldLogger, ctx context.Context) func(opt
 		// "no oid pre-95" reading missed the upstream cid read). The trailing flag
 		// byte below remains a genuine v95-only addition.
 		w.WriteInt(m.oid)
-		w.WriteByte(0) // char level
+		// char level: present on GMS v83+ and JMS v185, ABSENT on GMS v79. The v79
+		// attack reader CSummonedPool::OnAttack (sub_71CFE9@0x71cfe9) reads the
+		// action byte FIRST (Decode1@0x71d06f → bLeft|direction), then count
+		// (Decode1@0x71d08b) — no leading charLevel byte, where v83+ read charLevel
+		// then the action byte. Writing it on v79 shifts direction/count by one.
+		if t.MajorAtLeast(83) {
+			w.WriteByte(0) // char level
+		}
 		w.WriteByte(m.direction)
 		w.WriteByte(byte(len(m.targets)))
 		for _, t := range m.targets {
@@ -92,7 +99,9 @@ func (m *SummonAttack) Decode(l logrus.FieldLogger, ctx context.Context) func(r 
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.characterId = r.ReadUint32()
 		m.oid = r.ReadUint32() // present on all versions (see Encode)
-		_ = r.ReadByte() // char level
+		if t.MajorAtLeast(83) {
+			_ = r.ReadByte() // char level — absent on GMS v79 (see Encode)
+		}
 		m.direction = r.ReadByte()
 		count := int(r.ReadByte())
 		m.targets = make([]SummonAttackTarget, 0, count)

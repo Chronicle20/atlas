@@ -81,7 +81,7 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 | GUILD_BBS_PACKET | CUIGuildBBS::OnGuildBBSPacket | guild/clientbound/GuildBBSEntryNotFound (T1) | 0x038 | ❌ | 0x03B | ✅ | 0x03B | ✅ | 0x03B | ✅ | 0x03B | ✅ |  | ⬜ |
 | IDA_0X038 | CWvsContext::OnExpedtionResult |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x038 | ❌ |
 | CHAR_INFO | CWvsContext::OnCharacterInfo | character/clientbound/CharacterInfo (T1) | 0x03A | ❌ | 0x03D | ✅ | 0x03D | ✅ | 0x03D | ✅ | 0x03D | ✅ | 0x035 | ✅ |
-| PARTY_OPERATION | CWvsContext::OnPartyResult | party/clientbound/PartyAlreadyJoined1 (T1) | 0x03B | ❌ | 0x03E | ✅ | 0x03E | ✅ | 0x03E | ✅ | 0x03E | ✅ | 0x036 | ✅ |
+| PARTY_OPERATION | CWvsContext::OnPartyResult | party/clientbound/PartyAlreadyJoined1 (T1) | 0x03B | ✅ | 0x03E | ✅ | 0x03E | ✅ | 0x03E | ✅ | 0x03E | ✅ | 0x036 | ✅ |
 | BUDDYLIST | CWvsContext::OnFriendResult | buddy/clientbound/BuddyAlreadyBuddy (T1) | 0x03C | ✅ | 0x03F | ✅ | 0x041 | ✅ | 0x041 | ✅ | 0x041 | ✅ | 0x039 | ✅ |
 | GUILD_OPERATION | CWvsContext::OnGuildResult | guild/clientbound/GuildBoardAuthKeyUpdate (T1) | 0x03E | ❌ | 0x041 | ✅ | 0x043 | ✅ | 0x043 | ✅ | 0x043 | ✅ | 0x03B | ✅ |
 | ALLIANCE_OPERATION | CWvsContext::OnAllianceResult |  | 0x03F | ❌ | 0x042 | ❌ | 0x042 | ❌ | 0x044 | ❌ | 0x044 | ❌ | 0x03C | ❌ |
@@ -622,7 +622,7 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 | PLAYER_INTERACTION | CCashTradingRoomDlg::OnTrade; CCashTradingRoomDlg::PutItem; CCashTradingRoomDlg::PutMoney; CCashTradingRoomDlg::SetRet; CCashTradingRoomDlg::Trade; CEntrustedShopDlg::AddBlackList; CEntrustedShopDlg::DeleteBlackList; CEntrustedShopDlg::OnArrange; CEntrustedShopDlg::OnBlackList; CEntrustedShopDlg::OnCorrectSSN2; CEntrustedShopDlg::OnGoOut; CEntrustedShopDlg::OnVisitList; CEntrustedShopDlg::OnWithdrawMoney; CEntrustedShopDlg::SetRet; CField::AddBlackList; CField::DeleteBlackList; CField::SendInviteTradingRoomMsg; CMemoryGameDlg::OnClickBanButton; CMemoryGameDlg::OnClickEndButton; CMemoryGameDlg::OnClickReadyButton; CMemoryGameDlg::OnClickStartButton; CMemoryGameDlg::OnEnterResult; CMemoryGameDlg::OnTieRequest; CMemoryGameDlg::SendClaimGiveUp; CMemoryGameDlg::SendTieRequest; CMemoryGameDlg::SendTurnUpCard; CMemoryGameDlg::Update; CMiniRoomBaseDlg::CheckAndSendChat; CMiniRoomBaseDlg::OnCheckSSN2Static; CMiniRoomBaseDlg::SendCashInviteResult; CMiniRoomBaseDlg::SendInviteResult; COmokDlg::OnClickBanButton; COmokDlg::OnClickEndButton; COmokDlg::OnClickReadyButton; COmokDlg::OnClickStartButton; COmokDlg::OnEnterResult; COmokDlg::OnRetreatRequest; COmokDlg::OnTieRequest; COmokDlg::PutStoneChecker; COmokDlg::SendClaimGiveUp; COmokDlg::SendRetreatRequest; COmokDlg::SendTieRequest; COmokDlg::Update; CPersonalShopDlg::BuyItem; CPersonalShopDlg::CheckCashItemInList; CPersonalShopDlg::DeliverBlackList; CPersonalShopDlg::MoveItemToInventory; CPersonalShopDlg::OnClickBanButton; CPersonalShopDlg::OnCorrectSSN2; CPersonalShopDlg::PutItem; CPersonalShopDlg::SetRet; CPersonalShopDlg::Update; CTradingRoomDlg::OnTrade; CTradingRoomDlg::PutItem; CTradingRoomDlg::PutMoney; CTradingRoomDlg::SetRet; CTradingRoomDlg::Trade; CUserLocal::HandleLButtonDblClk; CUserLocal::HandleRButtonClk; CWvsContext::OnEntrustedShopCheckResult; CWvsContext::SendCreateMiniGameRequest; CWvsContext::SendOpenShopRequest; sub_62298D |  | 0x078 | ❌ | 0x07B | ❌ | 0x07D | ❌ | 0x081 | ❌ | 0x090 | ❌ | 0x07C | ❌ |
 | PARTY_OPERATION | CField::SendChangePartyBossMsg; CField::SendCreateNewPartyMsg; CField::SendJoinPartyMsg; CField::SendKickPartyMsg; CField::SendWithdrawPartyMsg; CWvsContext::OnPartyResult | party/serverbound/PartyOperation (T1) | 0x079 | 🟡 | 0x07C | ✅ | 0x07E | ✅ | 0x082 | ✅ | 0x091 | ✅ | 0x07D | ✅ |
 | REPAIR_DURABILITY_ALL | CRepairDurabilityDlg::SendRepairDurabilityAll |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x079 | ❌ | 0x082 | ❌ | 0x06D | ❌ |
-| DENY_PARTY_REQUEST | CFadeWnd::SendCloseMessage; CWvsContext::OnPartyResult | party/clientbound/PartyAlreadyJoined1 (T1) | 0x07A | ❌ | 0x07D | ❌ | 0x07F | ❌ |  | ⬜ |  | ⬜ |  | ⬜ |
+| DENY_PARTY_REQUEST | CFadeWnd::SendCloseMessage; CWvsContext::OnPartyResult | party/clientbound/PartyAlreadyJoined1 (T1) | 0x07A | ✅ | 0x07D | ❌ | 0x07F | ❌ |  | ⬜ |  | ⬜ |  | ⬜ |
 | REPAIR_DURABILITY | CRepairDurabilityDlg::SendRepairDurability |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x07A | ❌ | 0x083 | ❌ | 0x06E | ❌ |
 | GUILD_OPERATION | CField::InputGuildName; CField::SendCreateGuildAgreeMsg; CField::SendInviteGuildMsg; CField::SendKickGuildMsg; CField::SendSetGradeNameMsg; CField::SendSetGuildMarkMsg; CField::SendSetGuildNoticeMsg; CField::SendSetMemberGradeMsg; CField::SendWithdrawGuildMsg; CUIFadeYesNo::OnButtonClicked; CWvsContext::OnGuildResult | guild/serverbound/GuildJoin (T1) | 0x07B | ❌ | 0x07E | ✅ | 0x082 | ✅ | 0x086 | ✅ | 0x095 | ✅ | 0x081 | ✅ |
 | USER_QUEST_RECORD_SET_STATE | CDamageMeter::SaveDamageInfo |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x07B | ❌ | 0x084 | ❌ | 0x06F | ❌ |
@@ -947,7 +947,7 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v79 | 10 | 0 | 87 | 419 | 400 | 0 | 1.9% |
+| v79 | 12 | 0 | 87 | 417 | 400 | 0 | 2.3% |
 | v83 | 367 | 0 | 0 | 347 | 202 | 0 | 51.4% |
 | v84 | 345 | 0 | 0 | 348 | 223 | 0 | 49.8% |
 | v87 | 379 | 0 | 0 | 372 | 165 | 0 | 50.5% |

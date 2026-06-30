@@ -6,6 +6,12 @@ import (
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// v79 DENY_PARTY_REQUEST (op 122) — built in CWvsContext::OnPartyResult
+// @0x987583 case 4 (invite-received): COutPacket(122) @0x98772e, Encode1(mode)
+// @0x98774c, EncodeStr(blockedName) @0x987765, EncodeStr(charName) @0x987784.
+// atlas InviteReject decodes WriteByte(unk)+WriteAsciiString(from) (the leading
+// flag + first name); same shape as the verified v83 cell.
+// packet-audit:verify packet=party/serverbound/PartyInviteReject version=gms_v79 ida=0x987583
 // packet-audit:verify packet=party/serverbound/PartyInviteReject version=gms_v83 ida=0xa3e31c
 // packet-audit:verify packet=party/serverbound/PartyInviteReject version=gms_v87 ida=0xad697a
 // packet-audit:verify packet=party/serverbound/PartyInviteReject version=gms_v95 ida=0xa10ab0

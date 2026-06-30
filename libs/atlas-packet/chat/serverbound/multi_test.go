@@ -8,6 +8,45 @@ import (
 	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
+// TestMultiByteOutputV79 pins the gms_v79 MULTI_CHAT (op 0x074) serverbound wire.
+//
+// IDA-verified send-site (GMS_v79_1_DEVM.exe, port 13340) —
+// CUIStatusBar::SendGroupMessage @0x83cebd, send block at LABEL_25:
+//
+//	COutPacket::COutPacket(116)        @0x83d183 → opcode 0x74 (matches registry).
+//	COutPacket::Encode1(v47)           @0x83d192 → chatType byte (group kind: friend=0,
+//	                                                friend-group=0, multi=1, expedition=2,
+//	                                                family=3 per the per-branch v47 sets).
+//	COutPacket::Encode1((u8)v5)        @0x83d19b → recipient count (v5 = member-id array len).
+//	for i in 0..v5: Encode4(memberIds[i]) @0x83d1b3 → recipient ids (uint32 LE each).
+//	COutPacket::EncodeStr(a3)           @0x83d1d1 → chatText string.
+//
+// v79 is GMS<95 so there is NO leading get_update_time (the v95 prefix); the
+// audit report (ChatMulti @0x83cebd) is FlatInvalid/🔍 because it flattens the
+// branchy send. The wire shape is proven here. WriteInt = uint32-LE;
+// WriteAsciiString = uint16-LE length + ASCII bytes (admin_chat golden "hi" = 02 00 68 69).
+//
+// packet-audit:verify packet=chat/serverbound/ChatMulti version=gms_v79 ida=0x83cebd
+func TestMultiByteOutputV79(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 79, 1)
+
+	// chatType=1, recipients=[100,200,300], chatText="hi".
+	// 0x01 | 0x03 | 64 00 00 00 | C8 00 00 00 | 2C 01 00 00 | 02 00 'h' 'i'
+	input := Multi{chatType: 1, recipients: []uint32{100, 200, 300}, chatText: "hi"}
+	expected := []byte{
+		0x01,
+		0x03,
+		0x64, 0x00, 0x00, 0x00,
+		0xC8, 0x00, 0x00, 0x00,
+		0x2C, 0x01, 0x00, 0x00,
+		0x02, 0x00, 0x68, 0x69,
+	}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v79 multi golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
 func TestMultiRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

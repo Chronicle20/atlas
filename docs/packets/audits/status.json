@@ -5557,8 +5557,7 @@
       ],
       "cells": {
         "gms_v79": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 65
         },
         "gms_v83": {
@@ -10604,8 +10603,7 @@
       ],
       "cells": {
         "gms_v79": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 116
         },
         "gms_v83": {
@@ -10837,8 +10835,7 @@
       ],
       "cells": {
         "gms_v79": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 117
         },
         "gms_v83": {

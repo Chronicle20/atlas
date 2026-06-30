@@ -87,7 +87,7 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 | ALLIANCE_OPERATION | CWvsContext::OnAllianceResult |  | 0x03F | ❌ | 0x042 | ❌ | 0x042 | ❌ | 0x044 | ❌ | 0x044 | ❌ | 0x03C | ❌ |
 | EXPEDITION_RESULT | CWvsContext::OnExpedtionResult |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x040 | ❌ | 0x040 | ❌ |  | ⬜ |
 | SPAWN_PORTAL | CWvsContext::OnTownPortal | door/clientbound/RemoveTownDoor | 0x040 | ❌ | 0x043 | ✅ | 0x045 | ✅ | 0x045 | ✅ | 0x045 | ✅ | 0x03D | ✅ |
-| SERVERMESSAGE | CWvsContext::OnBroadcastMsg | chat/clientbound/ChatWorldMessageSimple (T1) | 0x041 | ❌ | 0x044 | ❌ | 0x044 | ❌ | 0x046 | ❌ | 0x047 | ❌ | 0x03E | ❌ |
+| SERVERMESSAGE | CWvsContext::OnBroadcastMsg | chat/clientbound/ChatWorldMessageSimple (T1) | 0x041 | ✅ | 0x044 | ❌ | 0x044 | ❌ | 0x046 | ❌ | 0x047 | ❌ | 0x03E | ❌ |
 | INCUBATOR_RESULT | CWvsContext::OnIncubatorResult |  | 0x042 | ❌ | 0x045 | ❌ | 0x047 | ❌ | 0x047 | ❌ | 0x048 | ❌ | 0x03F | ❌ |
 | SHOP_SCANNER_RESULT | CWvsContext::OnShopScannerResult |  | 0x043 | ❌ | 0x046 | ❌ | 0x048 | ❌ | 0x048 | ❌ | 0x049 | ❌ | 0x040 | ❌ |
 | SHOP_LINK_RESULT | CWvsContext::OnShopLinkResult |  | 0x044 | ❌ | 0x047 | ❌ | 0x049 | ❌ | 0x049 | ❌ | 0x04A | ❌ | 0x041 | ❌ |
@@ -612,11 +612,11 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 | ADMIN_CHAT | CField::SendChatMsgSlash | field/serverbound/FieldAdminChat (T1) | 0x073 | ❌ | 0x076 | ✅ | 0x078 | ✅ | 0x07C | ✅ | 0x08B | ✅ | 0x078 | ✅ |
 | USE_BACKGROUND_MUSIC_ITEM |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x073 | ❌ |
 | USE_GACHAPON_BOX_ITEM | CWvsContext::SendUseBoxGachaponItemRequest |  |  | ⬜ | 0x073 | ❌ | 0x073 | ❌ | 0x076 | ❌ | 0x07F | ❌ | 0x077 | ❌ |
-| MULTI_CHAT | CUIStatusBar::SendGroupMessage | chat/serverbound/ChatMulti (T1) | 0x074 | ❌ | 0x077 | ❌ | 0x079 | ❌ | 0x07D | ❌ | 0x08C | ❌ | 0x079 | ❌ |
+| MULTI_CHAT | CUIStatusBar::SendGroupMessage | chat/serverbound/ChatMulti (T1) | 0x074 | ✅ | 0x077 | ❌ | 0x079 | ❌ | 0x07D | ❌ | 0x08C | ❌ | 0x079 | ❌ |
 | USE_REMOTE | CWvsContext::SendUseGachaponRemoteRequest |  |  | ⬜ | 0x074 | ❌ | 0x074 | ❌ | 0x077 | ❌ | 0x080 | ❌ |  | ⬜ |
 | FOLLOW_CHARACTER_WITHRDAW |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x075 | ❌ |
 | WATER_OF_LIFE | CWvsContext::SendWaterOfLife |  |  | ⬜ | 0x075 | ❌ | 0x075 | ❌ | 0x078 | ❌ | 0x081 | ❌ |  | ⬜ |
-| WHISPER | CField::SendChatMsgWhisper; CField::SendLocationWhisper | chat/serverbound/ChatWhisper (T1) | 0x075 | ❌ | 0x078 | ✅ | 0x07A | ✅ | 0x07E | ✅ | 0x08D | ✅ | 0x07A | ✅ |
+| WHISPER | CField::SendChatMsgWhisper; CField::SendLocationWhisper | chat/serverbound/ChatWhisper (T1) | 0x075 | ✅ | 0x078 | ✅ | 0x07A | ✅ | 0x07E | ✅ | 0x08D | ✅ | 0x07A | ✅ |
 | SPOUSE_CHAT | CUIStatusBar::SendCoupleMessage | field/serverbound/FieldCoupleMessage (T1) | 0x076 | ❌ | 0x079 | ✅ | 0x07B | ✅ | 0x07F | ✅ | 0x08E | ✅ |  | ⬜ |
 | MESSENGER | CFadeWnd::SendCloseMessage; CUIMessenger::OnCreate; CUIMessenger::OnDestroy; CUIMessenger::OnInvite; CUIMessenger::ProcessChat; CUIMessenger::SendInviteMsg; CUIMessenger::Update | messenger/serverbound/MessengerOperationDeclineInvite (T1) | 0x077 | ❌ | 0x07A | ✅ | 0x07C | ❌ | 0x080 | ✅ | 0x08F | ✅ | 0x07B | ✅ |
 | PLAYER_INTERACTION | CCashTradingRoomDlg::OnTrade; CCashTradingRoomDlg::PutItem; CCashTradingRoomDlg::PutMoney; CCashTradingRoomDlg::SetRet; CCashTradingRoomDlg::Trade; CEntrustedShopDlg::AddBlackList; CEntrustedShopDlg::DeleteBlackList; CEntrustedShopDlg::OnArrange; CEntrustedShopDlg::OnBlackList; CEntrustedShopDlg::OnCorrectSSN2; CEntrustedShopDlg::OnGoOut; CEntrustedShopDlg::OnVisitList; CEntrustedShopDlg::OnWithdrawMoney; CEntrustedShopDlg::SetRet; CField::AddBlackList; CField::DeleteBlackList; CField::SendInviteTradingRoomMsg; CMemoryGameDlg::OnClickBanButton; CMemoryGameDlg::OnClickEndButton; CMemoryGameDlg::OnClickReadyButton; CMemoryGameDlg::OnClickStartButton; CMemoryGameDlg::OnEnterResult; CMemoryGameDlg::OnTieRequest; CMemoryGameDlg::SendClaimGiveUp; CMemoryGameDlg::SendTieRequest; CMemoryGameDlg::SendTurnUpCard; CMemoryGameDlg::Update; CMiniRoomBaseDlg::CheckAndSendChat; CMiniRoomBaseDlg::OnCheckSSN2Static; CMiniRoomBaseDlg::SendCashInviteResult; CMiniRoomBaseDlg::SendInviteResult; COmokDlg::OnClickBanButton; COmokDlg::OnClickEndButton; COmokDlg::OnClickReadyButton; COmokDlg::OnClickStartButton; COmokDlg::OnEnterResult; COmokDlg::OnRetreatRequest; COmokDlg::OnTieRequest; COmokDlg::PutStoneChecker; COmokDlg::SendClaimGiveUp; COmokDlg::SendRetreatRequest; COmokDlg::SendTieRequest; COmokDlg::Update; CPersonalShopDlg::BuyItem; CPersonalShopDlg::CheckCashItemInList; CPersonalShopDlg::DeliverBlackList; CPersonalShopDlg::MoveItemToInventory; CPersonalShopDlg::OnClickBanButton; CPersonalShopDlg::OnCorrectSSN2; CPersonalShopDlg::PutItem; CPersonalShopDlg::SetRet; CPersonalShopDlg::Update; CTradingRoomDlg::OnTrade; CTradingRoomDlg::PutItem; CTradingRoomDlg::PutMoney; CTradingRoomDlg::SetRet; CTradingRoomDlg::Trade; CUserLocal::HandleLButtonDblClk; CUserLocal::HandleRButtonClk; CWvsContext::OnEntrustedShopCheckResult; CWvsContext::SendCreateMiniGameRequest; CWvsContext::SendOpenShopRequest; sub_62298D |  | 0x078 | ❌ | 0x07B | ❌ | 0x07D | ❌ | 0x081 | ❌ | 0x090 | ❌ | 0x07C | ❌ |
@@ -947,7 +947,7 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v79 | 0 | 0 | 87 | 429 | 400 | 0 | 0.0% |
+| v79 | 3 | 0 | 87 | 426 | 400 | 0 | 0.6% |
 | v83 | 367 | 0 | 0 | 347 | 202 | 0 | 51.4% |
 | v84 | 345 | 0 | 0 | 348 | 223 | 0 | 49.8% |
 | v87 | 379 | 0 | 0 | 372 | 165 | 0 | 50.5% |

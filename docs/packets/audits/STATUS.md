@@ -394,17 +394,17 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 | ADMIN_SHOP | CAdminShopDlg::OnPacket |  | 0x11E | ❌ | 0x134 | ❌ | 0x13B | ❌ | 0x145 | ❌ | 0x16F | ❌ | 0x14D | ❌ |
 | COCONUT_SCORE | CField_Coconut::OnCoconutScore | field/clientbound/FieldCoconutScore (T1) |  | ⬜ | 0x11E | ✅ | 0x125 | ✅ | 0x12F | ✅ | 0x157 | ✅ | 0x136 | ✅ |
 | GUILD_BOSS_HEALER_MOVE | CField_GuildBoss::OnHealerMove | field/clientbound/FieldGuildBossHealerMove (T1) |  | ⬜ | 0x11F | ✅ | 0x126 | ✅ | 0x130 | ✅ | 0x158 | ✅ | 0x137 | ✅ |
-| STORAGE | CTrunkDlg::OnPacket | storage/clientbound/StorageErrorInventoryFull (T1) | 0x11F | ❌ | 0x135 | ✅ | 0x13C | ✅ | 0x146 | ✅ | 0x170 | ✅ | 0x14E | ✅ |
+| STORAGE | CTrunkDlg::OnPacket | storage/clientbound/StorageErrorInventoryFull (T1) | 0x11F | ✅ | 0x135 | ✅ | 0x13C | ✅ | 0x146 | ✅ | 0x170 | ✅ | 0x14E | ✅ |
 | FREDRICK_MESSAGE | CStoreBankDlg::OnPacket |  | 0x120 | ❌ | 0x136 | ❌ | 0x13D | ❌ | 0x147 | ❌ | 0x171 | ❌ | 0x14F | ❌ |
 | GUILD_BOSS_PULLEY_STATE_CHANGE | CField_GuildBoss::OnPulleyStateChange | field/clientbound/FieldGuildBossPulleyStateChange (T1) |  | ⬜ | 0x120 | ✅ | 0x127 | ✅ | 0x131 | ✅ | 0x159 | ✅ | 0x138 | ✅ |
 | FREDRICK | CStoreBankDlg::OnPacket |  | 0x121 | ❌ | 0x137 | ❌ | 0x13E | ❌ | 0x148 | ❌ | 0x172 | ❌ | 0x150 | ❌ |
 | MONSTER_CARNIVAL_START | CField_MonsterCarnival::OnEnter | monster/carnival/clientbound/MonsterCarnivalStart (T1) |  | ⬜ | 0x121 | ✅ | 0x128 | ✅ | 0x132 | ✅ | 0x15A | ✅ | 0x139 | ✅ |
 | MONSTER_CARNIVAL_OBTAINED_CP | CField_MonsterCarnival::OnPersonalCP | monster/carnival/clientbound/MonsterCarnivalObtainedCP (T1) |  | ⬜ | 0x122 | ✅ | 0x129 | ✅ | 0x133 | ✅ | 0x15B | ✅ | 0x13A | ✅ |
 | RPS_GAME | CRPSGameDlg::OnPacket |  | 0x122 | ❌ | 0x138 | ❌ | 0x13F | ❌ | 0x149 | ❌ | 0x173 | ❌ | 0x151 | ❌ |
-| MESSENGER | CUIMessenger::OnPacket | messenger/clientbound/MessengerAdd (T1) | 0x123 | ❌ | 0x139 | ✅ | 0x140 | ✅ | 0x14A | ✅ | 0x174 | ✅ | 0x152 | ✅ |
+| MESSENGER | CUIMessenger::OnPacket | messenger/clientbound/MessengerAdd (T1) | 0x123 | ✅ | 0x139 | ✅ | 0x140 | ✅ | 0x14A | ✅ | 0x174 | ✅ | 0x152 | ✅ |
 | MONSTER_CARNIVAL_PARTY_CP | CField_MonsterCarnival::OnTeamCP | monster/carnival/clientbound/MonsterCarnivalPartyCP (T1) |  | ⬜ | 0x123 | ✅ | 0x12A | ✅ | 0x134 | ✅ | 0x15C | ✅ | 0x13B | ✅ |
 | MONSTER_CARNIVAL_SUMMON | CField_MonsterCarnival::OnRequestResult | monster/carnival/clientbound/MonsterCarnivalMessage (T1) |  | ⬜ | 0x124 | ✅ | 0x12B | ✅ | 0x135 | ✅ | 0x15D | ✅ | 0x13C | ✅ |
-| PLAYER_INTERACTION | CMiniRoomBaseDlg::OnPacketBase | interaction/clientbound/InteractionInteractionEnter (T1) | 0x124 | ❌ | 0x13A | ✅ | 0x141 | ✅ | 0x14B | ✅ | 0x175 | ✅ | 0x153 | ✅ |
+| PLAYER_INTERACTION | CMiniRoomBaseDlg::OnPacketBase | interaction/clientbound/InteractionInteractionChat (T1) | 0x124 | ✅ | 0x13A | ✅ | 0x141 | ✅ | 0x14B | ✅ | 0x175 | ✅ | 0x153 | ✅ |
 | MONSTER_CARNIVAL_MESSAGE | CField_MonsterCarnival::OnRequestResult | monster/carnival/clientbound/MonsterCarnivalMessage (T1) |  | ⬜ | 0x125 | ✅ | 0x12C | ✅ | 0x136 | ✅ | 0x15E | ✅ | 0x13D | ✅ |
 | MONSTER_CARNIVAL_DIED | CField_MonsterCarnival::OnProcessForDeath | monster/carnival/clientbound/MonsterCarnivalDied (T1) |  | ⬜ | 0x126 | ✅ | 0x12D | ✅ | 0x137 | ✅ | 0x15F | ✅ | 0x13E | ✅ |
 | MONSTER_CARNIVAL_LEAVE | CField_MonsterCarnival::OnShowMemberOutMsg | monster/carnival/clientbound/MonsterCarnivalLeave (T1) |  | ⬜ | 0x127 | ✅ | 0x12E | ✅ | 0x138 | ✅ | 0x160 | ✅ | 0x13F | ✅ |
@@ -419,7 +419,7 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 | CHARGE_PARAM_RESULT | CCashShop::OnChargeParamResult |  | 0x12D | ❌ | 0x143 | ❌ | 0x14A | ❌ | 0x154 | ❌ | 0x17E | ❌ | 0x161 | ❌ |
 | WITCH_TOWER_SCORE_UPDATE | CField::OnChaosZakumTimer; CField_Witchtower::OnScoreUpdate | field/clientbound/FieldWitchTowerScoreUpdate (T1) |  | ⬜ | 0x12D | ✅ | 0x134 | ✅ | 0x13E | ✅ | 0x168 | ✅ | 0x146 | ✅ |
 | QUERY_CASH_RESULT | CCashShop::OnQueryCashResult | cash/clientbound/CashQueryResult (T1) | 0x12E | 🟡 | 0x144 | ✅ | 0x14B | ✅ | 0x155 | ✅ | 0x17F | ✅ | 0x163 | ✅ |
-| CASHSHOP_OPERATION | CCashShop::OnCashItemResult | cash/clientbound/CashCashItemMovedToCashInventory (T1) | 0x12F | ❌ | 0x145 | ✅ | 0x14C | ✅ | 0x156 | ✅ | 0x180 | ✅ | 0x164 | ✅ |
+| CASHSHOP_OPERATION | CCashShop::OnCashItemResult | cash/clientbound/CashCashItemMovedToCashInventory (T1) | 0x12F | ✅ | 0x145 | ✅ | 0x14C | ✅ | 0x156 | ✅ | 0x180 | ✅ | 0x164 | ✅ |
 | CASHSHOP_PURCHASE_EXP_CHANGED | CCashShop::OnPurchaseExpChanged |  | 0x130 | ❌ | 0x146 | ❌ | 0x14D | ❌ | 0x157 | ❌ | 0x181 | ❌ | 0x165 | ❌ |
 | MOB_ESCORT_FULL_PATH | CMob::OnEscortFullPath | monster/clientbound/MonsterMobEscortFullPath (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x130 | ✅ | 0x110 | ✅ |
 | CASHSHOP_CHECK_NAME_CHANGE | CCashShop::OnCheckDuplicatedIDResult |  | 0x131 | ❌ | 0x148 | ❌ | 0x14F | ❌ | 0x159 | ❌ | 0x183 | ❌ |  | ⬜ |
@@ -851,7 +851,7 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 | guild/serverbound/GuildSetNotice (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | guild/serverbound/GuildSetTitleNames (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | guild/serverbound/GuildWithdraw (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
-| interaction/clientbound/InteractionInteractionUpdateMerchant (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
+| interaction/clientbound/InteractionInteractionUpdateMerchant (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | interaction/serverbound/InteractionOperationChat (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | interaction/serverbound/InteractionOperationFieldAddToBlackList (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | interaction/serverbound/InteractionOperationFieldRemoveFromBlackList (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
@@ -946,7 +946,7 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v79 | 32 | 0 | 75 | 408 | 400 | 0 | 6.2% |
+| v79 | 37 | 0 | 75 | 403 | 400 | 0 | 7.2% |
 | v83 | 367 | 0 | 0 | 346 | 202 | 0 | 51.5% |
 | v84 | 345 | 0 | 0 | 347 | 223 | 0 | 49.9% |
 | v87 | 379 | 0 | 0 | 371 | 165 | 0 | 50.5% |

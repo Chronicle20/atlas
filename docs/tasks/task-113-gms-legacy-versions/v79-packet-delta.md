@@ -271,6 +271,7 @@ social region Δ−3). Core-flow anchors swept:
 | LOGIN_PASSWORD | `CLogin::SendCheckPasswordPacket` `0x5cbf50` | `COutPacket(1)` | 1 | **0** |
 | CHANGE_MAP | `CField::SendTransferFieldRequest` `0x51b950` | `COutPacket(36)` | 38 | **−2** |
 | CHANGE_CHANNEL | `CField::SendTransferChannelRequest` `0x51baa2` | `COutPacket(37)` | 39 | **−2** |
+| MOVE_PLAYER | `sub_91B6E6` (CVecCtrlUser flush, after `CVecCtrlUser::OnSit` `0x91b6bf`; via `xrefs_to(CMovePath::Flush 0x657924)`) `0x91b883` | `COutPacket(39)` | 41 | **−2** |
 | NPC_TALK | `CUserLocal::TalkToNpc` `0x8b7e10` | `COutPacket(56)` | 58 | **−2** |
 | WHISPER | `CField::SendChatMsgWhisper` `0x51a7bc` | `COutPacket(117)` | 120 | **−3** |
 | PARTY_OPERATION | `CField::SendCreateNewPartyMsg` `0x51b318` | `COutPacket(121)` | 124 | **−3** |
@@ -282,12 +283,13 @@ Enc4(t)`; NPC_TALK = `Enc4(npcOid)+Enc2(x)+Enc2(y)`; WHISPER = `Enc1(mode)+
 EncStr(target)+EncStr(text)` (mode `(found+1)|4` for whisper, `0x86` for
 find-buddy locate). These match the v83 serverbound bodies for the same ops.
 
-> **MOVE_PLAYER serverbound was not pinned in Stage A** — the v79 movement send
-> lives in `CVecCtrl*::EndUpdateActive` (not resolvable by a clean `name_regex`;
-> movement encode flows through `CMovePath::Encode` @ `0x6575fa` /
-> `CMovePath::Flush` @ `0x657924`). Stage B must read the `COutPacket` opcode at
-> the CVecCtrlUser flush site. Expected ~Δ−2 region (≈39) by the pattern above,
-> but **unverified — do not seed without the send-site read.**
+> **MOVE_PLAYER serverbound = opcode 39 (verified in Stage A review).** The v79
+> movement send flush is the unnamed `sub_91B6E6`, reachable in one `xrefs_to`
+> hop from the named `CMovePath::Flush` @ `0x657924` (it sits directly after
+> `CVecCtrlUser::OnSit` @ `0x91b6bf`). At `0x91b883` it builds `COutPacket(39)`
+> then `Encode1(field+276)+Encode4(field+483)` and calls `CMovePath::Flush`.
+> v83 MOVE_PLAYER sb = 41 → **Δ−2**, consistent with the mid-region shift. This
+> value is verified (not a prediction); Stage B may seed it directly.
 
 The full serverbound opcode table is a **Stage B deliverable** (derive each op
 from its v79 send-site, anchored on the v83 serverbound FName). Stage A
@@ -417,8 +419,9 @@ here (values captured), the remaining 8 are located but not byte-extracted.
 
 1. **CSV v79 column is placeholder-only** — seed v79 from this doc/IDB, not the
    CSV. (Documented above; not a blocker.)
-2. **MOVE_PLAYER serverbound opcode** unpinned — read `CVecCtrlUser` flush
-   `COutPacket` in Stage B.
+2. **MOVE_PLAYER serverbound opcode = 39 (RESOLVED in Stage A review)** —
+   `sub_91B6E6` flush @ `0x91b883` builds `COutPacket(39)`; Δ−2 vs v83=41.
+   Stage B seeds this verified value directly (see serverbound table above).
 3. **v79-extra ops** with no v83 registry equivalent: `OnPotionDiscountRateChanged`
    (cb 87), `CUserLocal::OnNotifyHPDecByField` (cb 198) — Stage B must decide
    whether to register them (v79-only) or treat as no-ops.

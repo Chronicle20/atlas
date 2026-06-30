@@ -1317,6 +1317,10 @@
         "writer": "CharacterChatGeneral"
       },
       {
+        "opCode": "0x98",
+        "writer": "ChatGeneralChat"
+      },
+      {
         "opCode": "0x99",
         "writer": "ChalkboardUse"
       },

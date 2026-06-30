@@ -5,7 +5,7 @@
 
 Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 
-- export gms_v79: `a5a63d5d7bc95680ebd6702a13e86bc3d63166842da9ffad0ee082c1e7270eec`
+- export gms_v79: `9601d22881c907d76e533d50d1ab806bd70da1e7c4de2982623aab6a33056217`
 - export gms_v83: `711bddcc2e1bdd417a75954148d2b50c64e70855e84259c0b8e50e700e393c0d`
 - export gms_v84: `7eab9472e2afeda13faaf74273828d09d5f2481d67bec10235c3b2fd2f91e1eb`
 - export gms_v87: `714817d376bb93732ef6b6fbe6b59f8c24515ff901801d213d676b501eae7f94`
@@ -52,7 +52,7 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 | INVENTORY_GROW | CWvsContext::OnInventoryGrow |  | 0x01B | ❌ | 0x01E | ❌ | 0x01E | ❌ | 0x01E | ❌ | 0x01D | ❌ | 0x01C | ❌ |
 | RECOMMENDED_WORLD_MESSAGE | CLogin::OnRecommendWorldMessage | login/clientbound/ServerListRecommendations |  | ⬜ | 0x01B | ✅ | 0x01B | ✅ | 0x01B | ✅ | 0x019 | ✅ | 0x017 | ✅ |
 | CHECK_SPW_RESULT | CLogin::OnCheckSPWResult |  |  | ⬜ | 0x01C | ❌ | 0x01C | ❌ | 0x01C | ❌ | 0x01B | ❌ |  | ⬜ |
-| STAT_CHANGED | CWvsContext::OnStatChanged | stat/clientbound/Changed (T1) | 0x01C | ❌ | 0x01F | ✅ | 0x01F | ✅ | 0x01F | ✅ | 0x01E | ✅ | 0x01D | ✅ |
+| STAT_CHANGED | CWvsContext::OnStatChanged | stat/clientbound/Changed (T1) | 0x01C | ✅ | 0x01F | ✅ | 0x01F | ✅ | 0x01F | ✅ | 0x01E | ✅ | 0x01D | ✅ |
 | GIVE_BUFF | CWvsContext::OnTemporaryStatSet | character/clientbound/BuffGive (T1) | 0x01D | ❌ | 0x020 | ✅ | 0x020 | ✅ | 0x020 | ✅ | 0x01F | ✅ | 0x01E | ✅ |
 | CANCEL_BUFF | CWvsContext::OnTemporaryStatReset | character/clientbound/BuffCancel (T1) | 0x01E | ❌ | 0x021 | ✅ | 0x021 | ✅ | 0x021 | ✅ | 0x020 | ✅ | 0x01F | ✅ |
 | FORCED_STAT_SET | CWvsContext::OnForcedStatSet |  | 0x01F | ❌ | 0x022 | ❌ | 0x022 | ❌ | 0x022 | ❌ | 0x021 | ❌ | 0x020 | ❌ |
@@ -258,7 +258,7 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 | SHOW_FOREIGN_EFFECT | CUser::OnEffect | character/clientbound/EffectQuest (T1) | 0x0B8 | ❌ | 0x0C6 | ✅ | 0x0CA | ✅ | 0x0D3 | ✅ | 0x0E0 | ✅ | 0x0CC | ✅ |
 | GIVE_FOREIGN_BUFF | CUserRemote::OnSetTemporaryStat | character/clientbound/BuffGiveForeign (T1) | 0x0B9 | ❌ | 0x0C7 | ✅ | 0x0CB | ✅ | 0x0D4 | ✅ | 0x0E1 | ✅ | 0x0CD | ✅ |
 | CANCEL_FOREIGN_BUFF | CUserRemote::OnResetTemporaryStat | character/clientbound/BuffCancelForeign (T1) | 0x0BA | 🟡 | 0x0C8 | ✅ | 0x0CC | ✅ | 0x0D5 | ✅ | 0x0E2 | ✅ | 0x0CE | ✅ |
-| UPDATE_PARTYMEMBER_HP | CUserRemote::OnReceiveHP | party/clientbound/PartyMemberHP (T1) | 0x0BB | ❌ | 0x0C9 | ✅ | 0x0CD | ✅ | 0x0D6 | ✅ | 0x0E3 | ✅ | 0x0CF | ✅ |
+| UPDATE_PARTYMEMBER_HP | CUserRemote::OnReceiveHP | party/clientbound/PartyMemberHP (T1) | 0x0BB | ✅ | 0x0C9 | ✅ | 0x0CD | ✅ | 0x0D6 | ✅ | 0x0E3 | ✅ | 0x0CF | ✅ |
 | GUILD_NAME_CHANGED | CUserRemote::OnGuildNameChanged | guild/clientbound/GuildForeignNameChanged (T1) | 0x0BC | ❌ | 0x0CA | ✅ | 0x0CE | ✅ | 0x0D7 | ✅ | 0x0E4 | ✅ | 0x0D0 | ✅ |
 | SHOW_ITEM_OPTION_UPGRADE_EFFECT | CUser::ShowItemOptionUpgradeEffect |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0BC | ❌ |  | ⬜ |
 | GUILD_MARK_CHANGED | CUserRemote::OnGuildMarkChanged | guild/clientbound/GuildForeignEmblemChanged (T1) | 0x0BD | ❌ | 0x0CB | ✅ | 0x0CF | ✅ | 0x0D8 | ✅ | 0x0E5 | ✅ | 0x0D1 | ✅ |
@@ -360,7 +360,7 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 | REMOVE_KITE | CMessageBoxPool::OnMessageBoxLeaveField | field/clientbound/FieldKiteDestroy (T1) | 0x0FA | 🟡 | 0x110 | ✅ | 0x117 | ✅ | 0x121 | ✅ | 0x147 | ✅ | 0x125 | ✅ |
 | SPAWN_MIST | CAffectedAreaPool::OnAffectedAreaCreated | field/clientbound/FieldAffectedAreaCreated (T1) | 0x0FB | ❌ | 0x111 | ❌ | 0x118 | ❌ | 0x122 | ❌ | 0x148 | ❌ | 0x126 | ❌ |
 | REMOVE_MIST | CAffectedAreaPool::OnAffectedAreaRemoved | field/clientbound/FieldAffectedAreaRemoved (T1) | 0x0FC | 🟡 | 0x112 | ✅ | 0x119 | ✅ | 0x123 | ✅ | 0x149 | ✅ | 0x127 | ✅ |
-| SPAWN_DOOR | CTownPortalPool::OnTownPortalCreated | door/clientbound/SpawnDoor (T1) | 0x0FD | ❌ | 0x113 | ✅ | 0x11A | ✅ | 0x124 | ✅ | 0x14A | ✅ | 0x128 | ✅ |
+| SPAWN_DOOR | CTownPortalPool::OnTownPortalCreated | door/clientbound/SpawnDoor (T1) | 0x0FD | ✅ | 0x113 | ✅ | 0x11A | ✅ | 0x124 | ✅ | 0x14A | ✅ | 0x128 | ✅ |
 | REMOVE_DOOR | CTownPortalPool::OnTownPortalRemoved | door/clientbound/RemoveDoor | 0x0FE | 🟡 | 0x114 | ✅ | 0x11B | ✅ | 0x125 | ✅ | 0x14B | ✅ | 0x129 | ✅ |
 | REACTOR_HIT | CReactorPool::OnReactorChangeState | reactor/clientbound/ReactorHit | 0x0FF | 🟡 | 0x115 | ✅ | 0x11C | ✅ | 0x126 | ✅ | 0x14E | ✅ | 0x12D | ✅ |
 | REACTOR_SPAWN | CReactorPool::OnReactorEnterField | reactor/clientbound/ReactorSpawn | 0x101 | ❌ | 0x117 | ✅ | 0x11E | ✅ | 0x128 | ✅ | 0x150 | ✅ | 0x12F | ✅ |
@@ -630,7 +630,7 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 | ADMIN_COMMAND | CField::SendChatMsgSlash; CStage::OnSetField; CUserLocal::OnKey | field/serverbound/FieldAdminChat (T1) | 0x07D | ❌ | 0x080 | ✅ | 0x084 | ✅ | 0x088 | ✅ | 0x097 | ✅ | 0x083 | ✅ |
 | ADMIN_LOG | CField::SendChatMsgSlash | field/serverbound/FieldAdminChat (T1) | 0x07E | ❌ | 0x081 | ✅ | 0x085 | ✅ | 0x089 | ✅ | 0x098 | ✅ | 0x084 | ✅ |
 | BUDDYLIST_MODIFY | CField::SendAcceptFriendMsg; CField::SendDeleteFriendMsg; CField::SendSetFriendMsg; CWvsContext::LoadFriend | buddy/serverbound/BuddyOperationDelete (T1) | 0x07F | 🟡 | 0x082 | ✅ | 0x086 | ✅ | 0x08A | ✅ | 0x099 | ✅ | 0x085 | ✅ |
-| NOTE_ACTION | CCashShop::OnCashItemResLoadGiftDone; CMemoListDlg::SetRet; CWvsContext::OnMemoNotify_Receive | note/serverbound/NoteOperationDiscard (T1) | 0x080 | ❌ | 0x083 | ✅ | 0x087 | ✅ | 0x08B | ✅ | 0x09A | ✅ | 0x086 | ✅ |
+| NOTE_ACTION | CCashShop::OnCashItemResLoadGiftDone; CMemoListDlg::SetRet; CWvsContext::OnMemoNotify_Receive | note/serverbound/NoteOperationDiscard (T1) | 0x080 | ✅ | 0x083 | ✅ | 0x087 | ✅ | 0x08B | ✅ | 0x09A | ✅ | 0x086 | ✅ |
 | USE_DOOR | CField::TryEnterTownPortal; CTownPortalPool::TryEnterTownPortal | field/serverbound/FieldUseDoor (T1) | 0x082 | ❌ | 0x085 | ✅ | 0x089 | ✅ | 0x08D | ✅ | 0x09C | ✅ | 0x088 | ✅ |
 | PARTY_RESULT | CFadeWnd::SendCloseMessage; CUIFadeYesNo::OnButtonClicked; CWvsContext::OnPartyResult | messenger/serverbound/MessengerOperationDeclineInvite (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x083 | ✅ | 0x092 | ✅ | 0x07E | ✅ |
 | CHANGE_KEYMAP | CFuncKeyMappedMan::ChangePetConsumeItemID; CFuncKeyMappedMan::ChangePetConsumeMPItemID; CFuncKeyMappedMan::SaveFuncKeyMap | character/serverbound/KeyMapChange (T1) | 0x084 | ❌ | 0x087 | ✅ | 0x08B | ✅ | 0x08F | ✅ | 0x09F | ✅ | 0x08A | ✅ |
@@ -879,7 +879,7 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 | login/clientbound/ServerListEnd |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | login/clientbound/ServerListEntry |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | login/clientbound/ServerStatus |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| login/serverbound/AllCharacterListRequest (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
+| login/serverbound/AllCharacterListRequest (T1) |  |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | login/serverbound/ServerListRequest |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | login/serverbound/ServerStatusRequest |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | login/serverbound/WorldCharacterListRequest |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
@@ -947,7 +947,7 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v79 | 3 | 0 | 87 | 426 | 400 | 0 | 0.6% |
+| v79 | 8 | 0 | 87 | 421 | 400 | 0 | 1.6% |
 | v83 | 367 | 0 | 0 | 347 | 202 | 0 | 51.4% |
 | v84 | 345 | 0 | 0 | 348 | 223 | 0 | 49.8% |
 | v87 | 379 | 0 | 0 | 372 | 165 | 0 | 50.5% |

@@ -1,6 +1,7 @@
 package clientbound
 
 import (
+	"bytes"
 	"testing"
 
 	constants "github.com/Chronicle20/atlas/libs/atlas-constants/stat"
@@ -109,6 +110,44 @@ func TestStatChangedV95WireWidths(t *testing.T) {
 	}
 	if v83 := in.Encode(l, pt.CreateContext("GMS", 83, 1))(opts); len(v83) != 8 {
 		t.Errorf("v83 single-HP packet = %d bytes, want 8 (2-byte HP + 1 trailing): % x", len(v83), v83)
+	}
+}
+
+// TestStatChangedV79 pins the gms_v79 STAT_CHANGED (op 28) clientbound wire.
+//
+// IDA-verified client decode (GMS_v79_1_DEVM.exe, port 13340) —
+// CWvsContext::OnStatChanged @0x96a140:
+//
+//	Decode1 @0x96a15c → exclRequestSent (bool).
+//	GW_CharacterStat::DecodeChangeStat @0x96a1c3 → mask + stat fields. Inside
+//	  DecodeChangeStat @0x4d72d1: Decode4(mask) @0x4d72de, then per-bit; LEVEL
+//	  (mask 0x10) reads Decode1 @0x4d735d → a single byte.
+//	The trailing bSecondaryStatChangedPoint Decode1 @0x96a1d3 is gated on
+//	  (mask & 0x180008) — the three pet-SN bits. LEVEL alone does NOT set those
+//	  bits, so the v79 client reads NO trailing byte here.
+//
+// v79 matches the v83/v87 shape exactly: narrow stat widths (LEVEL=1 byte) and
+// NO v95 battle-recovery second byte. atlas Changed.Encode writes one
+// unconditional trailing byte (the over-written secondary-stat flag, client-
+// conditional read — same accepted behavior verified for v83/v87 in
+// TestStatChangedV95WireWidths). LEVEL index 4 in testStatOptions → mask 0x10.
+//
+//	bool(1) + mask(4) + level(1) + trailing(1) = 7 bytes.
+//
+// packet-audit:verify packet=stat/clientbound/Changed version=gms_v79 ida=0x96a140
+func TestStatChangedV79(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	opts := testStatOptions()
+	ctx := pt.CreateContext("GMS", 79, 1)
+	in := NewStatChanged([]Update{NewUpdate(constants.TypeLevel, 120)}, true)
+	want := []byte{
+		0x01,                   // Decode1 exclRequestSent = true
+		0x10, 0x00, 0x00, 0x00, // Decode4 mask = 0x10 (LEVEL, index 4)
+		0x78,                   // Decode1 LEVEL = 120
+		0x00,                   // trailing secondary-stat flag (atlas over-writes; client reads only when mask&0x180008)
+	}
+	if got := in.Encode(l, ctx)(opts); !bytes.Equal(got, want) {
+		t.Errorf("v79 StatChanged golden mismatch\n got: % x\nwant: % x", got, want)
 	}
 }
 

@@ -1,7 +1,7 @@
 {
   "WriterName": "AllCharacterListRequest",
   "IDAName": "CLogin::SendViewAllCharPacket",
-  "Address": "",
+  "Address": "0x5cede1",
   "Variant": "GMS/v79",
   "BranchDepth": 2,
   "AtlasFile": "libs/atlas-packet/login/serverbound/all_character_list_request.go",
@@ -10,10 +10,10 @@
       "Index": 0,
       "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 4,
-      "Note": "IDA read-order unresolved: function not found in IDB"
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
     },
     {
       "Index": 1,

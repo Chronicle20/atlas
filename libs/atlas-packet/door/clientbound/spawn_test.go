@@ -27,6 +27,35 @@ import (
 // packet-audit:verify packet=door/clientbound/SpawnDoor version=gms_v87 ida=0x810af2
 // packet-audit:verify packet=door/clientbound/SpawnDoor version=gms_v95 ida=0x762c00
 // packet-audit:verify packet=door/clientbound/SpawnDoor version=jms_v185 ida=0x840fc6
+// TestSpawnDoorV79 pins the gms_v79 SPAWN_DOOR (op 0x0FD/253) clientbound wire.
+//
+// IDA-verified client decode (GMS_v79_1_DEVM.exe, port 13340) —
+// CTownPortalPool::OnTownPortalCreated @0x731176:
+//
+//	Decode1  @0x7311b6 → launched (bool, v3).
+//	Decode4  @0x7311be → ownerId (key, v117).
+//	Decode2  @0x731677 → x  (v111[1].Mid32, "new" branch; @0x73157f in "found" branch).
+//	Decode2  @0x731687 → y  (v111[2].Lo32,  "new" branch; @0x731598 in "found" branch).
+//
+// Byte-for-byte identical to the v83 layout. atlas SpawnDoor.Encode writes
+// WriteBool(launched) + WriteInt(ownerId) + WriteInt16(x) + WriteInt16(y) = 9 bytes.
+//
+// packet-audit:verify packet=door/clientbound/SpawnDoor version=gms_v79 ida=0x731176
+func TestSpawnDoorV79(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	ctx := pt.CreateContext("GMS", 79, 1)
+	m := NewSpawnDoor(1000, 100, 200, true)
+	want := []byte{
+		0x01,                   // Decode1 launched = true
+		0xE8, 0x03, 0x00, 0x00, // Decode4 ownerId = 1000 LE
+		0x64, 0x00, // Decode2 x = 100 LE
+		0xC8, 0x00, // Decode2 y = 200 LE
+	}
+	if got := m.Encode(l, ctx)(nil); !bytes.Equal(got, want) {
+		t.Errorf("v79 SpawnDoor golden mismatch\n got: % x\nwant: % x", got, want)
+	}
+}
+
 func TestSpawnDoor(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 

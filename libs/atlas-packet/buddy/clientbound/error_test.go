@@ -51,6 +51,23 @@ import (
 // packet-audit:verify packet=buddy/clientbound/BuddyCharacterNotFound version=gms_v87 ida=0xad7ae5
 // packet-audit:verify packet=buddy/clientbound/BuddyCharacterNotFound version=gms_v95 ida=0xa12630
 // packet-audit:verify packet=buddy/clientbound/BuddyCharacterNotFound version=jms_v185 ida=0xb2a873
+// TestBuddyAlreadyBuddyV79 pins the gms_v79 BUDDYLIST (op 60) ALREADY_BUDDY arm.
+//
+// IDA-verified (GMS_v79_1_DEVM.exe, port 13340) — CWvsContext::OnFriendResult
+// @0x98854f: switch(Decode1(mode)) @0x98857a. case 0xDu @0x9888c6 calls only
+// StringPool::GetInstance(722) + Notice and reads NOTHING further off the wire
+// → mode-only. v79 case byte = 13 (0xD), same as v83. atlas AlreadyBuddy.Encode
+// writes just WriteByte(mode).
+//
+// packet-audit:verify packet=buddy/clientbound/BuddyAlreadyBuddy version=gms_v79 ida=0x98854f
+func TestBuddyAlreadyBuddyV79(t *testing.T) {
+	const v79Mode = 13
+	got := NewAlreadyBuddy(v79Mode).Encode(nil, nil)(nil)
+	if want := []byte{v79Mode}; !bytes.Equal(got, want) {
+		t.Fatalf("v79 BuddyAlreadyBuddy: got %v want %v", got, want)
+	}
+}
+
 func TestModeOnlyBuddyErrorArms(t *testing.T) {
 	cases := map[string]struct {
 		mode   byte

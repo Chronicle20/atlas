@@ -6,6 +6,30 @@ import (
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// TestAllCharacterListRequestV79 pins the gms_v79 VIEW_ALL_CHAR (op 13)
+// serverbound wire: an EMPTY body.
+//
+// IDA-verified (GMS_v79_1_DEVM.exe, port 13340) — the view-all-char send
+// sub_5CEDE1 @0x5CEDE1 builds COutPacket(13) @0x5cee2b and SendPacket
+// @0x5cee3d with NO Encode* calls between → zero-length body. atlas
+// AllCharacterListRequest.Encode only emits the extra block for GMS>=87, so for
+// v79 (<87) it writes nothing — matching the empty client send.
+//
+// The gms_v79 export entry for CLogin::SendViewAllCharPacket was an unresolved
+// stub (the live v79 IDB names the sender sub_5CEDE1); it was surgically spliced
+// with addr 0x5cede1 + empty-body calls (COutPacket(13) with no Encode) so the
+// citation resolves. Report is FlatInvalid (the version-gated >=87 fields read
+// as "extra" for v79) — the same tolerated shape as the verified v83 cell.
+//
+// packet-audit:verify packet=login/serverbound/AllCharacterListRequest version=gms_v79 ida=0x5cede1
+func TestAllCharacterListRequestV79(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 79, 1)
+	input := AllCharacterListRequest{gameStartMode: 1, nexonPassport: "passport", machineId: make([]byte, 16), gameRoomClient: 42, gameStartMode2: 2}
+	if got := pt.Encode(t, ctx, input.Encode, nil); len(got) != 0 {
+		t.Errorf("v79 AllCharacterListRequest body: got % x, want empty", got)
+	}
+}
+
 // packet-audit:verify packet=login/serverbound/AllCharacterListRequest version=gms_v83 ida=0x5fac34
 // packet-audit:verify packet=login/serverbound/AllCharacterListRequest version=gms_v87 ida=0x6324e3
 // packet-audit:verify packet=login/serverbound/AllCharacterListRequest version=gms_v95 ida=0x5dfb40

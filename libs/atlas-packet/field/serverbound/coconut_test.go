@@ -7,6 +7,7 @@ import (
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=field/serverbound/FieldCoconut version=gms_v79 ida=0x5333c8
 // packet-audit:verify packet=field/serverbound/FieldCoconut version=gms_v83 ida=0x549902
 // packet-audit:verify packet=field/serverbound/FieldCoconut version=gms_v84 ida=0x556075
 // packet-audit:verify packet=field/serverbound/FieldCoconut version=gms_v87 ida=0x5735b7
@@ -19,6 +20,20 @@ func TestCoconutGolden(t *testing.T) {
 	actual := pt.Encode(t, ctx, input.Encode, nil)
 	if !bytes.Equal(actual, expected) {
 		t.Errorf("golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
+// TestCoconutByteOutputV79 pins the gms_v79 COCONUT (op 0xCD) serverbound wire.
+// IDA: CField_Coconut::BasicActionAttack (was sub_5333C8) @0x5333c8
+// (GMS_v79_1_DEVM.exe) — COutPacket(205) @0x533483, Encode2(attack v7) @0x533490,
+// Encode2(x v13) @0x53349b. Body = attack(2 LE) + x(2 LE).
+func TestCoconutByteOutputV79(t *testing.T) {
+	input := NewCoconut(0x0102, 0x0304)
+	ctx := pt.CreateContext("GMS", 79, 1)
+	expected := []byte{0x02, 0x01, 0x04, 0x03}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v79 coconut golden mismatch: got %v want %v", actual, expected)
 	}
 }
 

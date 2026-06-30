@@ -5,7 +5,7 @@
 
 Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 
-- export gms_v79: `2d1702770b3b53fe46b338ef6446baa6d18f4bab331542725aec91f9f79646c2`
+- export gms_v79: `45eaa8b043eb22d8d8abfa06b728946e385e3339a08777531223b13627baa166`
 - export gms_v83: `711bddcc2e1bdd417a75954148d2b50c64e70855e84259c0b8e50e700e393c0d`
 - export gms_v84: `7eab9472e2afeda13faaf74273828d09d5f2481d67bec10235c3b2fd2f91e1eb`
 - export gms_v87: `714817d376bb93732ef6b6fbe6b59f8c24515ff901801d213d676b501eae7f94`
@@ -202,7 +202,7 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 | SET_OBJECT_STATE | CField::OnSetObjectState | field/clientbound/FieldSetObjectState (T1) | 0x091 | 🟡 | 0x099 | ✅ | 0x09C | ✅ | 0x0A1 | ✅ | 0x0A9 | ✅ | 0x095 | ✅ |
 | STOP_CLOCK | CField::OnDestroyClock | field/clientbound/FieldStopClock (T1) | 0x092 | 🟡 | 0x09A | ✅ | 0x09D | ✅ | 0x0A2 | ✅ | 0x0AA | ✅ | 0x096 | ✅ |
 | CONTI_MOVE | CField_ContiMove::OnContiMove | field/clientbound/FieldContiMove (T1) |  | ⬜ | 0x094 | ✅ | 0x097 | ✅ | 0x09C | ✅ | 0x0A4 | ✅ | 0x091 | ✅ |
-| IDA_0X09C | CField::OnStalkResult; sub_522DC3 | field/clientbound/FieldStalkResult (T1) | 0x094 | ❌ | 0x09C | ✅ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
+| IDA_0X09C | CField::OnStalkResult | field/clientbound/FieldStalkResult (T1) | 0x094 | ✅ | 0x09C | ✅ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
 | CONTI_STATE | CField_ContiMove::OnContiState | field/clientbound/FieldTransport (T1) |  | ⬜ | 0x095 | ✅ | 0x098 | ✅ | 0x09D | ✅ | 0x0A5 | ✅ | 0x092 | ✅ |
 | SPAWN_PLAYER | CUserPool::OnUserEnterField | character/clientbound/CharacterSpawn (T1) | 0x095 | ❌ | 0x0A0 | ✅ | 0x0A3 | ✅ | 0x0AB | ✅ | 0x0B3 | ✅ | 0x09E | ✅ |
 | REMOVE_PLAYER_FROM_MAP | CUserPool::OnUserLeaveField | character/clientbound/CharacterDespawn (T1) | 0x096 | 🟡 | 0x0A1 | ✅ | 0x0A4 | ✅ | 0x0AC | ✅ | 0x0B4 | ✅ | 0x09F | ✅ |
@@ -720,7 +720,7 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 | UNNAMED_R348 |  |  |  | ⬜ | 0x0CB | ❌ |  | ⬜ | 0x0D8 | ❌ | 0x0F7 | ❌ | 0x0D6 | ❌ |
 | LEFT_KNOCKBACK | CField_SnowBall::Update | field/serverbound/FieldLeftKnockback (T1) | 0x0CC | ✅ | 0x0D4 | ✅ | 0x0DA | ✅ | 0x0E1 | ✅ | 0x100 | ✅ | 0x0DF | ✅ |
 | UNNAMED_R349 |  |  |  | ⬜ | 0x0CC | ❌ |  | ⬜ | 0x0D9 | ❌ | 0x0F8 | ❌ | 0x0D7 | ❌ |
-| COCONUT | CField_Coconut::BasicActionAttack; sub_5333C8 | field/serverbound/FieldCoconut (T1) | 0x0CD | ❌ | 0x0D5 | ✅ | 0x0DB | ✅ | 0x0E2 | ✅ | 0x101 | ✅ | 0x0E0 | ✅ |
+| COCONUT | CField_Coconut::BasicActionAttack | field/serverbound/FieldCoconut (T1) | 0x0CD | ✅ | 0x0D5 | ✅ | 0x0DB | ✅ | 0x0E2 | ✅ | 0x101 | ✅ | 0x0E0 | ✅ |
 | MATCH_TABLE | CField::SendChatMsgSlash | field/serverbound/FieldAdminChat (T1) | 0x0CE | ✅ | 0x0D6 | ✅ | 0x0DC | ✅ | 0x0E3 | ✅ | 0x102 | ✅ | 0x0E1 | ✅ |
 | TOUCHING_REACTOR | CReactorPool::FindTouchReactorAroundLocalUser |  |  | ⬜ | 0x0CE | ❌ | 0x0CE | ❌ | 0x0DB | ❌ | 0x0FA | ❌ | 0x0D9 | ❌ |
 | GUILD_BOSS | CField_GuildBoss::BasicActionAttack | field/serverbound/FieldGuildBoss (T1) | 0x0CF | ✅ | 0x0D7 | ✅ | 0x0DD | ✅ | 0x0E4 | ✅ | 0x103 | ✅ | 0x0E2 | ✅ |
@@ -834,7 +834,6 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 | character/serverbound/Move (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | fame/serverbound/Change |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | field/serverbound/FieldChange (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
-| field/serverbound/FieldCoconut (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | guild/serverbound/GuildAgreementResponse (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | guild/serverbound/GuildBBSCreateOrEditThread (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | guild/serverbound/GuildBBSDeleteReply (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
@@ -928,12 +927,12 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v79 | 106 | 0 | 75 | 316 | 400 | 0 | 21.3% |
-| v83 | 367 | 0 | 0 | 328 | 202 | 0 | 52.8% |
-| v84 | 345 | 0 | 0 | 329 | 223 | 0 | 51.2% |
-| v87 | 379 | 0 | 0 | 353 | 165 | 0 | 51.8% |
-| v95 | 399 | 0 | 0 | 417 | 81 | 0 | 48.9% |
-| JMS185 | 361 | 0 | 0 | 364 | 172 | 0 | 49.8% |
+| v79 | 108 | 0 | 75 | 313 | 400 | 0 | 21.8% |
+| v83 | 367 | 0 | 0 | 327 | 202 | 0 | 52.9% |
+| v84 | 345 | 0 | 0 | 328 | 223 | 0 | 51.3% |
+| v87 | 379 | 0 | 0 | 352 | 165 | 0 | 51.8% |
+| v95 | 399 | 0 | 0 | 416 | 81 | 0 | 49.0% |
+| JMS185 | 361 | 0 | 0 | 363 | 172 | 0 | 49.9% |
 
 ## Conflicts
 

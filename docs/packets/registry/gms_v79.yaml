@@ -968,11 +968,11 @@
 - op: IDA_0X09C
   direction: clientbound
   opcode: 148
-  fname: sub_522DC3
+  fname: CField::OnStalkResult
   provenance: ida-discovered
   ida:
     address: 5385667
-  note: 'v79 IDB unnamed sub_522DC3 = CField::OnStalkResult (delta doc a); op name IDA_0X09C carried from v83 (op 156).'
+  note: 'v79 sub_522DC3 named CField::OnStalkResult (task-113 stage E; matches v83+ fname). Count-prefixed stalkee loop @0x522dc3. op name IDA_0X09C carried from v83 (op 156).'
 - op: SPAWN_PLAYER
   direction: clientbound
   opcode: 149
@@ -2803,11 +2803,11 @@
 - op: COCONUT
   direction: serverbound
   opcode: 205
-  fname: sub_5333C8
+  fname: CField_Coconut::BasicActionAttack
   provenance: ida-discovered
   ida:
     address: 5452744
-  note: 'v79 sub_5333C8 COutPacket(205); push 0CDh;a2 @0x53347b (coconut field-event send; no named CField_Coconut in IDB). v83 COCONUT=0xd5=213 (d-8). delta doc serverbound (ida-read).'
+  note: 'v79 sub_5333C8 named CField_Coconut::BasicActionAttack (task-113 stage E; matches v83+ fname). COutPacket(205) @0x533483: Encode2(attack) + Encode2(x); push 0CDh;a2 @0x53347b. v83 COCONUT=0xd5=213 (d-8). delta doc serverbound (ida-read).'
 - op: MATCH_TABLE
   direction: serverbound
   opcode: 206

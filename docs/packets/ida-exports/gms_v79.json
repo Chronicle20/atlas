@@ -2079,13 +2079,37 @@
    ]
   },
   "CField::OnStalkResult": {
-   "address": "",
+   "address": "0x522dc3",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode4",
+     "comment": ""
+    },
+    {
+     "op": "Decode4",
+     "comment": "",
+     "guard": "v2 > 0"
+    },
+    {
+     "op": "Decode1",
+     "comment": "",
+     "guard": "v2 > 0"
+    },
+    {
+     "op": "DecodeStr",
+     "comment": "",
+     "guard": "v2 > 0 && <default>"
+    },
+    {
+     "op": "Decode4",
+     "comment": "",
+     "guard": "v2 > 0 && <default>"
+    },
+    {
+     "op": "Decode4",
+     "comment": "",
+     "guard": "v2 > 0 && <default>"
     }
    ]
   },
@@ -3030,15 +3054,9 @@
    ]
   },
   "CField_Coconut::BasicActionAttack": {
-   "address": "",
+   "address": "0x5333c8",
    "direction": "",
-   "unresolved": true,
-   "calls": [
-    {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
-   ]
+   "calls": null
   },
   "CField_Coconut::BasicActionAttack#Coconut": {
    "address": "",

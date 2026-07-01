@@ -18075,6 +18075,70 @@
      "comment": ""
     }
    ]
+  },
+  "sub_91EC5F": {
+   "address": "0x91ec5f",
+   "direction": "clientbound",
+   "calls": [
+    {
+     "op": "Decode1",
+     "comment": "fail"
+    },
+    {
+     "op": "DecodeStr",
+     "comment": "title"
+    },
+    {
+     "op": "DecodeStr",
+     "comment": "problem"
+    },
+    {
+     "op": "DecodeStr",
+     "comment": "hint"
+    },
+    {
+     "op": "Decode4",
+     "comment": "min"
+    },
+    {
+     "op": "Decode4",
+     "comment": "max"
+    },
+    {
+     "op": "Decode4",
+     "comment": "timeRemaining"
+    }
+   ]
+  },
+  "sub_91EDBC": {
+   "address": "0x91edbc",
+   "direction": "clientbound",
+   "calls": [
+    {
+     "op": "Decode1",
+     "comment": "fail"
+    },
+    {
+     "op": "Decode4",
+     "comment": "type"
+    },
+    {
+     "op": "Decode4",
+     "comment": "answer"
+    },
+    {
+     "op": "Decode4",
+     "comment": "correct"
+    },
+    {
+     "op": "Decode4",
+     "comment": "remain"
+    },
+    {
+     "op": "Decode4",
+     "comment": "timeRemaining"
+    }
+   ]
   }
  }
 }

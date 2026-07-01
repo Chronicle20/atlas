@@ -64,29 +64,44 @@ func (m NpcConversation) String() string {
 	return fmt.Sprintf("speakerTypeId [%d], speakerTemplateId [%d], msgType [%d], param [%d]", m.speakerTypeId, m.speakerTemplateId, m.msgType, m.param)
 }
 
-func (m NpcConversation) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+func (m NpcConversation) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
 		w.WriteByte(m.speakerTypeId)
 		w.WriteInt(m.speakerTemplateId)
 		w.WriteByte(m.msgType)
-		w.WriteByte(m.param)
-		if m.param&4 != 0 {
-			w.WriteInt(m.secondaryNpcTemplateId)
+		// GMS v72 CScriptMan::OnScriptMessage@0x6a0ba9 (GMS_v72.1_U_DEVM.exe, port
+		// 13339) reads only Decode1 speakerTypeId, Decode4 speakerTemplateId,
+		// Decode1 msgType before dispatching to the per-msgType body — there is NO
+		// param byte and NO param&4 secondaryNpcTemplateId at the frame level (the
+		// per-handler `param` arg is passed uninitialised, never read from the
+		// wire). The param byte + optional secondary int were introduced after the
+		// legacy range: v79 OnScriptMessage@0x6c7d3e reads Decode1 param + Decode4
+		// secondary when param&4. Legacy GMS (<79) omits both. delta §3.2
+		t := tenant.MustFromContext(ctx)
+		if !(t.IsRegion("GMS") && !t.MajorAtLeast(79)) {
+			w.WriteByte(m.param)
+			if m.param&4 != 0 {
+				w.WriteInt(m.secondaryNpcTemplateId)
+			}
 		}
 		w.WriteByteArray(m.conversationDetail)
 		return w.Bytes()
 	}
 }
 
-func (m *NpcConversation) Decode(l logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *NpcConversation) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
+		t := tenant.MustFromContext(ctx)
+		legacyNoParam := t.IsRegion("GMS") && !t.MajorAtLeast(79)
 		m.speakerTypeId = r.ReadByte()
 		m.speakerTemplateId = r.ReadUint32()
 		m.msgType = r.ReadByte()
-		m.param = r.ReadByte()
-		if m.param&4 != 0 {
-			m.secondaryNpcTemplateId = r.ReadUint32()
+		if !legacyNoParam {
+			m.param = r.ReadByte()
+			if m.param&4 != 0 {
+				m.secondaryNpcTemplateId = r.ReadUint32()
+			}
 		}
 		m.conversationDetail = r.ReadBytes(int(r.Available()))
 	}

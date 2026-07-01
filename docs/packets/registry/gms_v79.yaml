@@ -2587,11 +2587,11 @@
 - op: SKILL_EFFECT
   direction: serverbound
   opcode: 91
-  fname: sub_8C17F2
+  fname: CUserLocal::DoActiveSkill_Prepare
   provenance: ida-discovered
   ida:
     address: 9181170
-  note: 'v79 sub_8C17F2 COutPacket(91); push 5Bh;a2 @0x8c1fc0 (skill prepare/keydown). v83 SKILL_EFFECT=0x5d=93 (d-2). delta doc serverbound (ida-read).'
+  note: 'v79 CUserLocal::DoActiveSkill_Prepare @0x8c17f2 (was sub_8C17F2, named task-113 by byte-signature twin of v83 @0x96a86e): COutPacket(91)+Encode4(skillId)+Encode1(level)+Encode2(action)+Encode1(actionSpeed). v83 SKILL_EFFECT=0x5d=93 (d-2). delta doc serverbound (ida-read).'
 - op: MESO_DROP
   direction: serverbound
   opcode: 92

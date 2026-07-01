@@ -40,6 +40,7 @@ func TestSkillCancelForeignOperation(t *testing.T) {
 // All five versions encode identically (no version delta for clientbound cancel).
 //
 // Byte fixture: field order/opcode pinned per docs/tasks/task-099-keydown-skill-prepare-broadcast/wire-spec.md (IDB-verified).
+// packet-audit:verify packet=character/clientbound/CharacterSkillCancelForeign version=gms_v79 ida=0x8d6e4a
 // packet-audit:verify packet=character/clientbound/CharacterSkillCancelForeign version=gms_v83 ida=0x980bf5
 // packet-audit:verify packet=character/clientbound/CharacterSkillCancelForeign version=gms_v84 ida=0x9c0dd3
 // packet-audit:verify packet=character/clientbound/CharacterSkillCancelForeign version=gms_v87 ida=0xa062b1
@@ -58,6 +59,7 @@ func TestSkillCancelForeignByteFixture(t *testing.T) {
 		region string
 		major  uint16
 	}{
+		{"GMS v79", "GMS", 79},
 		{"GMS v83", "GMS", 83},
 		{"GMS v84", "GMS", 84},
 		{"GMS v87", "GMS", 87},

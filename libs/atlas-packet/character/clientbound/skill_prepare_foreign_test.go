@@ -50,6 +50,7 @@ func TestSkillPrepareForeignOperation(t *testing.T) {
 // All five versions encode identically (no version delta for clientbound prepare).
 //
 // Byte fixture: field order/opcode pinned per docs/tasks/task-099-keydown-skill-prepare-broadcast/wire-spec.md (IDB-verified).
+// packet-audit:verify packet=character/clientbound/CharacterSkillPrepareForeign version=gms_v79 ida=0x8d6cd6
 // packet-audit:verify packet=character/clientbound/CharacterSkillPrepareForeign version=gms_v83 ida=0x980a81
 // packet-audit:verify packet=character/clientbound/CharacterSkillPrepareForeign version=gms_v84 ida=0x9c0c5f
 // packet-audit:verify packet=character/clientbound/CharacterSkillPrepareForeign version=gms_v87 ida=0xa06135
@@ -74,6 +75,7 @@ func TestSkillPrepareForeignByteFixture(t *testing.T) {
 		region string
 		major  uint16
 	}{
+		{"GMS v79", "GMS", 79},
 		{"GMS v83", "GMS", 83},
 		{"GMS v84", "GMS", 84},
 		{"GMS v87", "GMS", 87},

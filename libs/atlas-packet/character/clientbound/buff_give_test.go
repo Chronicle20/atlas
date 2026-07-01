@@ -11,6 +11,8 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
+// packet-audit:verify packet=character/clientbound/BuffGive version=gms_v79 ida=0x96a6d1
+// packet-audit:verify packet=character/clientbound/BuffGiveForeign version=gms_v79 ida=0x8d9a03
 // packet-audit:verify packet=character/clientbound/BuffGive version=gms_v87 ida=0xab77ff
 // packet-audit:verify packet=character/clientbound/BuffGive version=gms_v95 ida=0xa02fc0
 // packet-audit:verify packet=character/clientbound/BuffGive version=gms_v83 ida=0xa202be
@@ -147,5 +149,63 @@ func TestBuffGiveForeignJMSMask(t *testing.T) {
 	wantTail := []byte{0x00, 0x00, 0x00}
 	if !bytes.Equal(got[len(got)-3:], wantTail) {
 		t.Errorf("jms BuffGiveForeign trailer: got %x want %x", got[len(got)-3:], wantTail)
+	}
+}
+
+// v79EmptyMask is the GMS v79 SecondaryStat flag word BuffGive / BuffGiveForeign
+// emit with no active per-stat buffs. The v79 CTS registry path is byte-identical
+// to v83 (no version gate fires below 87), so the two-state/base group
+// (EnergyCharge..Undead) occupies shifts 82-88 and those bits are set
+// unconditionally. Shifts 82-88 → H-word bits 18-24 → int1 = 0x01FC0000, so the
+// wire (H>>32, H&L, L>>32, L&L, 4 ints LE) is 00000000 0001FC00... i.e. bytes
+// 00 00 00 00 | 00 00 FC 01 | 00 00 00 00 | 00 00 00 00. The v79 client reads this
+// 16-byte mask as an opaque UINT128 via SecondaryStat::DecodeForLocal /
+// DecodeBuffer(16) (CWvsContext::OnTemporaryStatSet @0x96a6d1), then a trailing
+// Decode2 tDelay (§5 opaque caveat — blob absorbed by the trailing opaque buffer).
+var v79EmptyMask = []byte{
+	0x00, 0x00, 0x00, 0x00, // int0 = H>>32 = 0
+	0x00, 0x00, 0xFC, 0x01, // int1 = H&L = 0x01FC0000 (bits 82-88)
+	0x00, 0x00, 0x00, 0x00, // int2 = L>>32 = 0
+	0x00, 0x00, 0x00, 0x00, // int3 = L&L = 0
+}
+
+// TestBuffGiveV79Mask pins the v79 empty-CTS SecondaryStat flag word and the
+// giveBuff trailer for the local (own-player) BuffGive. The first 16 bytes are the
+// flag word read by SecondaryStat::DecodeForLocal (client @0x96a6d1); the trailing
+// 3 bytes are the buff trailer Short(0)+Byte(0). The trailing Decode2 tDelay is the
+// u16; the client only reads the trailing MovementAffectingStat byte when the mask
+// carries a movement stat (none here) — the emitted byte is harmless over-write.
+func TestBuffGiveV79Mask(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 79, 1)
+	got := NewBuffGive(*model.NewCharacterTemporaryStat()).Encode(nil, ctx)(nil)
+	if !bytes.Equal(got[:16], v79EmptyMask) {
+		t.Errorf("v79 BuffGive flag word: got %x want %x", got[:16], v79EmptyMask)
+	}
+	if got[16] != 0x00 || got[17] != 0x00 {
+		t.Errorf("v79 BuffGive defense bytes: got %x want 0000", got[16:18])
+	}
+	wantTail := []byte{0x00, 0x00, 0x00}
+	if !bytes.Equal(got[len(got)-3:], wantTail) {
+		t.Errorf("v79 BuffGive trailer: got %x want %x", got[len(got)-3:], wantTail)
+	}
+}
+
+// TestBuffGiveForeignV79Mask pins the v79 wire for the remote BuffGiveForeign:
+// Int(characterId) prefix, then the SecondaryStat flag word (DecodeForRemote,
+// client @0x8d9a03), then the Short(0)+Byte(0) trailer. charId is consumed by the
+// remote-packet dispatcher before the handler body.
+func TestBuffGiveForeignV79Mask(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 79, 1)
+	got := NewBuffGiveForeign(12345, *model.NewCharacterTemporaryStat()).Encode(nil, ctx)(nil)
+	wantPrefix := []byte{0x39, 0x30, 0x00, 0x00} // Int(12345) LE
+	if !bytes.Equal(got[:4], wantPrefix) {
+		t.Errorf("v79 BuffGiveForeign characterId: got %x want %x", got[:4], wantPrefix)
+	}
+	if !bytes.Equal(got[4:20], v79EmptyMask) {
+		t.Errorf("v79 BuffGiveForeign flag word: got %x want %x", got[4:20], v79EmptyMask)
+	}
+	wantTail := []byte{0x00, 0x00, 0x00}
+	if !bytes.Equal(got[len(got)-3:], wantTail) {
+		t.Errorf("v79 BuffGiveForeign trailer: got %x want %x", got[len(got)-3:], wantTail)
 	}
 }

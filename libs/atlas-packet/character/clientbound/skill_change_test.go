@@ -7,6 +7,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=character/clientbound/CharacterSkillChange version=gms_v79 ida=0x968f0e
 // packet-audit:verify packet=character/clientbound/CharacterSkillChange version=gms_v83 ida=0xa1e48c
 // packet-audit:verify packet=character/clientbound/CharacterSkillChange version=gms_v87 ida=0xab57c5
 // packet-audit:verify packet=character/clientbound/CharacterSkillChange version=gms_v95 ida=0x9f5f30
@@ -19,5 +20,49 @@ func TestCharacterSkillChange(t *testing.T) {
 			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
 			test.RoundTrip(t, ctx, input.Encode, input.Decode, nil)
 		})
+	}
+	// v79 legacy: no per-skill expiration field on the wire.
+	t.Run("GMS v79 roundtrip", func(t *testing.T) {
+		ctx := test.CreateContext("GMS", 79, 1)
+		out := CharacterSkillChange{}
+		test.RoundTrip(t, ctx, input.Encode, out.Decode, nil)
+	})
+}
+
+// TestCharacterSkillChangeV79ByteFixture pins the legacy GMS v79 wire, which OMITS
+// the 8-byte per-skill expiration field. CWvsContext::OnChangeSkillRecordResult
+// @0x968f0e reads, per skill: Decode4 skillId, Decode4 level, Decode4 masterLevel
+// (3 ints, no DecodeBuffer), then a trailing Decode1 (sn) after the loop — versus
+// v83 @0xa1e48c which additionally does DecodeBuffer(8) for the expiration. The
+// encoder gates the int64 off for GMS <83, so the total body is 16 bytes (not 24).
+// Verified against CWvsContext::OnChangeSkillRecordResult @0x968f0e (marker pinned
+// on TestCharacterSkillChange above).
+func TestCharacterSkillChangeV79ByteFixture(t *testing.T) {
+	ctx := test.CreateContext("GMS", 79, 1)
+	input := NewCharacterSkillChange(true, 1001003, 10, 0, time.Time{}, false)
+	// exclRequestSent=true (0x01)
+	// count=1 (0x0001 LE = 01 00)
+	// skillId=1001003 (0x000F462B LE = 2B 46 0F 00)
+	// level=10 (0x0000000A LE = 0A 00 00 00)
+	// masterLevel=0 (00 00 00 00)
+	// -- no int64 expiration on v79 --
+	// sn=false (0x00)
+	expected := []byte{
+		0x01,       // exclRequestSent
+		0x01, 0x00, // count=1
+		0x2B, 0x46, 0x0F, 0x00, // skillId=1001003 LE
+		0x0A, 0x00, 0x00, 0x00, // level=10 LE
+		0x00, 0x00, 0x00, 0x00, // masterLevel=0 LE
+		0x00, // sn=false
+	}
+	got := test.Encode(t, ctx, input.Encode, nil)
+	if len(got) != len(expected) {
+		t.Fatalf("byte length mismatch: got %d want %d\n  got:  %X\n  want: %X", len(got), len(expected), got, expected)
+	}
+	for i := range expected {
+		if got[i] != expected[i] {
+			t.Errorf("byte[%d] = %02X, want %02X\n  got:  %X\n  want: %X", i, got[i], expected[i], got, expected)
+			break
+		}
 	}
 }

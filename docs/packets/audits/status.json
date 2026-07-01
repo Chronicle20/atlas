@@ -1,7 +1,7 @@
 {
   "toolSha": "9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6",
   "exportHashes": {
-    "gms_v79": "49d57bc49abbda71461a339f5f3b4ce0047b95e87e2977ec73f7186777f74371",
+    "gms_v79": "d5b70557797c34ffea71a04e48dbce31f24a314db85e605bfb69ead622919aff",
     "gms_v83": "711bddcc2e1bdd417a75954148d2b50c64e70855e84259c0b8e50e700e393c0d",
     "gms_v84": "7eab9472e2afeda13faaf74273828d09d5f2481d67bec10235c3b2fd2f91e1eb",
     "gms_v87": "714817d376bb93732ef6b6fbe6b59f8c24515ff901801d213d676b501eae7f94",
@@ -2581,8 +2581,7 @@
       ],
       "cells": {
         "gms_v79": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 29
         },
         "gms_v83": {
@@ -2654,8 +2653,7 @@
       ],
       "cells": {
         "gms_v79": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 30
         },
         "gms_v83": {
@@ -2918,8 +2916,7 @@
       ],
       "cells": {
         "gms_v79": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 33
         },
         "gms_v83": {
@@ -8367,13 +8364,11 @@
       "direction": "serverbound",
       "tier1": true,
       "fnames": [
-        "CUserLocal::DoActiveSkill_Prepare",
-        "sub_8C17F2"
+        "CUserLocal::DoActiveSkill_Prepare"
       ],
       "cells": {
         "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 91
         },
         "gms_v83": {
@@ -16888,8 +16883,7 @@
       ],
       "cells": {
         "gms_v79": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
+          "state": "verified",
           "opcode": 176
         },
         "gms_v83": {
@@ -16926,8 +16920,7 @@
       ],
       "cells": {
         "gms_v79": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
+          "state": "verified",
           "opcode": 177
         },
         "gms_v83": {
@@ -17806,8 +17799,7 @@
       ],
       "cells": {
         "gms_v79": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 185
         },
         "gms_v83": {
@@ -30116,43 +30108,6 @@
     {
       "kind": "sub-struct",
       "packet": "character/serverbound/ChalkboardClose",
-      "tier1": true,
-      "cells": {
-        "gms_v79": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "sub-struct",
-      "packet": "character/serverbound/CharacterSkillPrepare",
       "tier1": true,
       "cells": {
         "gms_v79": {

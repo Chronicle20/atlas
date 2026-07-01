@@ -1,0 +1,10 @@
+packet: character/clientbound/CharacterSkillChange
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnChangeSkillRecordResult
+    address: "0x968f0e"
+    decompile_sha256: f45216bff385cd8a5ede887b440f1b5818bd2173c6ec55414d67fab297173c6e
+verifies:
+  - libs/atlas-packet/character/clientbound/skill_change_test.go#TestCharacterSkillChangeV79ByteFixture

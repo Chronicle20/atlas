@@ -41,6 +41,7 @@ func TestSkillPrepareRoundTrip(t *testing.T) {
 // identically. Bytes trace to CUserLocal::DoActiveSkill_Prepare's COutPacket
 // writes (skillId/level/action/actionSpeed) per wire-spec.md (IDB-verified).
 //
+// packet-audit:verify packet=character/serverbound/CharacterSkillPrepare version=gms_v79 ida=0x8c17f2
 // packet-audit:verify packet=character/serverbound/CharacterSkillPrepare version=gms_v83 ida=0x96a86e
 // packet-audit:verify packet=character/serverbound/CharacterSkillPrepare version=gms_v84 ida=0x9a9761
 // packet-audit:verify packet=character/serverbound/CharacterSkillPrepare version=gms_v87 ida=0x9ee1e6
@@ -63,6 +64,7 @@ func TestSkillPrepareByteFixture(t *testing.T) {
 		region string
 		major  uint16
 	}{
+		{"GMS v79", "GMS", 79},
 		{"GMS v83", "GMS", 83},
 		{"GMS v84", "GMS", 84},
 		{"GMS v87", "GMS", 87},

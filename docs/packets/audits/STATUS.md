@@ -79,12 +79,12 @@ Tool: `fa2892b4e82339df60c9ef0c33a6e4a08bdc3bf3`
 | SUE_CHARACTER_RESULT | CWvsContext::OnSueCharacterResult |  | 0x034 | ❌ | 0x034 | ❌ | 0x037 | ❌ | 0x037 | ❌ | 0x037 | ❌ | 0x037 | ❌ |  | ⬜ |
 | TRADE_MONEY_LIMIT | CWvsContext::OnTradeMoneyLimit |  | 0x036 | ❌ | 0x036 | ❌ | 0x039 | ❌ | 0x039 | ❌ | 0x039 | ❌ | 0x039 | ❌ |  | ⬜ |
 | SET_GENDER | CWvsContext::OnSetGender |  | 0x037 | ❌ | 0x037 | ❌ | 0x03A | ❌ | 0x03A | ❌ | 0x03A | ❌ | 0x03A | ❌ |  | ⬜ |
-| GUILD_BBS_PACKET | CUIGuildBBS::OnGuildBBSPacket | guild/clientbound/GuildBBSEntryNotFound (T1) | 0x038 | ❌ | 0x038 | ✅ | 0x03B | ✅ | 0x03B | ✅ | 0x03B | ✅ | 0x03B | ✅ |  | ⬜ |
+| GUILD_BBS_PACKET | CUIGuildBBS::OnGuildBBSPacket | guild/clientbound/GuildBBSEntryNotFound (T1) | 0x038 | ✅ | 0x038 | ✅ | 0x03B | ✅ | 0x03B | ✅ | 0x03B | ✅ | 0x03B | ✅ |  | ⬜ |
 | IDA_0X038 | CWvsContext::OnExpedtionResult |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x038 | ❌ |
 | CHAR_INFO | CWvsContext::OnCharacterInfo | character/clientbound/CharacterInfo (T1) | 0x03A | ❌ | 0x03A | ✅ | 0x03D | ✅ | 0x03D | ✅ | 0x03D | ✅ | 0x03D | ✅ | 0x035 | ✅ |
 | PARTY_OPERATION | CWvsContext::OnPartyResult | party/clientbound/PartyAlreadyJoined1 (T1) | 0x03B | ✅ | 0x03B | ✅ | 0x03E | ✅ | 0x03E | ✅ | 0x03E | ✅ | 0x03E | ✅ | 0x036 | ✅ |
 | BUDDYLIST | CWvsContext::OnFriendResult | buddy/clientbound/BuddyAlreadyBuddy (T1) | 0x03C | ✅ | 0x03C | ✅ | 0x03F | ✅ | 0x041 | ✅ | 0x041 | ✅ | 0x041 | ✅ | 0x039 | ✅ |
-| GUILD_OPERATION | CWvsContext::OnGuildResult | guild/clientbound/GuildBoardAuthKeyUpdate (T1) | 0x03E | ❌ | 0x03E | ✅ | 0x041 | ✅ | 0x043 | ✅ | 0x043 | ✅ | 0x043 | ✅ | 0x03B | ✅ |
+| GUILD_OPERATION | CWvsContext::OnGuildResult | guild/clientbound/GuildBoardAuthKeyUpdate (T1) | 0x03E | ✅ | 0x03E | ✅ | 0x041 | ✅ | 0x043 | ✅ | 0x043 | ✅ | 0x043 | ✅ | 0x03B | ✅ |
 | ALLIANCE_OPERATION | CWvsContext::OnAllianceResult |  | 0x03F | ❌ | 0x03F | ❌ | 0x042 | ❌ | 0x042 | ❌ | 0x044 | ❌ | 0x044 | ❌ | 0x03C | ❌ |
 | EXPEDITION_RESULT | CWvsContext::OnExpedtionResult |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x040 | ❌ | 0x040 | ❌ |  | ⬜ |
 | SPAWN_PORTAL | CWvsContext::OnTownPortal | door/clientbound/RemoveTownDoor | 0x040 | ❌ | 0x040 | ❌ | 0x043 | ✅ | 0x045 | ✅ | 0x045 | ✅ | 0x045 | ✅ | 0x03D | ✅ |
@@ -384,13 +384,13 @@ Tool: `fa2892b4e82339df60c9ef0c33a6e4a08bdc3bf3`
 | ADMIN_SHOP | CAdminShopDlg::OnPacket |  | 0x112 | ❌ | 0x11E | ❌ | 0x134 | ❌ | 0x13B | ❌ | 0x145 | ❌ | 0x16F | ❌ | 0x14D | ❌ |
 | IDA_0X112 | CUserLocal::OnQuestGuideResult |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x112 | ❌ |  | ⬜ |
 | IDA_0X113 | CUserLocal::OnDeliveryQuest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x113 | ❌ |  | ⬜ |
-| STORAGE | CTrunkDlg::OnPacket | storage/clientbound/StorageErrorInventoryFull (T1) | 0x113 | ❌ | 0x11F | ✅ | 0x135 | ✅ | 0x13C | ✅ | 0x146 | ✅ | 0x170 | ✅ | 0x14E | ✅ |
+| STORAGE | CTrunkDlg::OnPacket | storage/clientbound/StorageErrorInventoryFull (T1) | 0x113 | ✅ | 0x11F | ✅ | 0x135 | ✅ | 0x13C | ✅ | 0x146 | ✅ | 0x170 | ✅ | 0x14E | ✅ |
 | FREDRICK_MESSAGE | CStoreBankDlg::OnPacket |  | 0x114 | ❌ | 0x120 | ❌ | 0x136 | ❌ | 0x13D | ❌ | 0x147 | ❌ | 0x171 | ❌ | 0x14F | ❌ |
 | IDA_0X114 | CMob::OnMobAttackedByMob | monster/clientbound/MonsterMobAttackedByMob (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x114 | ✅ |
 | FREDRICK | CStoreBankDlg::OnPacket |  | 0x115 | ❌ | 0x121 | ❌ | 0x137 | ❌ | 0x13E | ❌ | 0x148 | ❌ | 0x172 | ❌ | 0x150 | ❌ |
 | REACTOR_MOVE | CReactorPool::OnReactorMove |  |  | ⬜ |  | ⬜ | 0x116 | ❌ | 0x116 | ❌ | 0x127 | ❌ | 0x14F | ❌ | 0x12E | ❌ |
 | RPS_GAME | CRPSGameDlg::OnPacket |  | 0x116 | ❌ | 0x122 | ❌ | 0x138 | ❌ | 0x13F | ❌ | 0x149 | ❌ | 0x173 | ❌ | 0x151 | ❌ |
-| MESSENGER | CUIMessenger::OnPacket | messenger/clientbound/MessengerAdd (T1) | 0x117 | ❌ | 0x123 | ✅ | 0x139 | ✅ | 0x140 | ✅ | 0x14A | ✅ | 0x174 | ✅ | 0x152 | ✅ |
+| MESSENGER | CUIMessenger::OnPacket | messenger/clientbound/MessengerAdd (T1) | 0x117 | ✅ | 0x123 | ✅ | 0x139 | ✅ | 0x140 | ✅ | 0x14A | ✅ | 0x174 | ✅ | 0x152 | ✅ |
 | PLAYER_INTERACTION | CMiniRoomBaseDlg::OnPacketBase | interaction/clientbound/InteractionInteractionEnter (T1) | 0x118 | ❌ | 0x124 | ✅ | 0x13A | ✅ | 0x141 | ✅ | 0x14B | ✅ | 0x175 | ✅ | 0x153 | ✅ |
 | SNOWBALL_STATE | CField_SnowBall::OnSnowBallState | field/clientbound/FieldSnowballState (T1) |  | ⬜ |  | ⬜ | 0x119 | ✅ | 0x120 | ✅ | 0x12A | ✅ | 0x152 | ✅ | 0x131 | ✅ |
 | HIT_SNOWBALL | CField_SnowBall::OnSnowBallHit | field/clientbound/FieldSnowballHit (T1) |  | ⬜ |  | ⬜ | 0x11A | ✅ | 0x121 | ✅ | 0x12B | ✅ | 0x153 | ✅ | 0x132 | ✅ |
@@ -919,7 +919,7 @@ Tool: `fa2892b4e82339df60c9ef0c33a6e4a08bdc3bf3`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v72 | 42 | 0 | 74 | 360 | 411 | 0 | 8.8% |
+| v72 | 46 | 0 | 74 | 356 | 411 | 0 | 9.7% |
 | v79 | 228 | 0 | 72 | 185 | 402 | 0 | 47.0% |
 | v83 | 367 | 0 | 0 | 316 | 204 | 0 | 53.7% |
 | v84 | 345 | 0 | 0 | 317 | 225 | 0 | 52.1% |

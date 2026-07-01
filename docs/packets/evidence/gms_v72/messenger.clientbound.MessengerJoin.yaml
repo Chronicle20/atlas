@@ -1,0 +1,10 @@
+packet: messenger/clientbound/MessengerJoin
+direction: clientbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CUIMessenger::OnPacket
+    address: "0x777b25"
+    decompile_sha256: 5a20e8ebb07a24d7c6a4855c5afbabb760a9500bf6761aef1265af62cf1a384e
+verifies:
+  - libs/atlas-packet/messenger/clientbound/v72_test.go#TestMessengerScalarArmsV72

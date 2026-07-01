@@ -1,7 +1,7 @@
 {
   "WriterName": "ServerStatusRequest",
   "IDAName": "CLogin::SendCheckUserLimitPacket",
-  "Address": "",
+  "Address": "0x5b238a",
   "Variant": "GMS/v72",
   "BranchDepth": 1,
   "AtlasFile": "libs/atlas-packet/login/serverbound/server_status_request.go",
@@ -10,12 +10,12 @@
       "Index": 0,
       "AtlasOp": 1,
       "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 4,
-      "Note": "IDA read-order unresolved: function not found in IDB"
+      "IDAOp": 1,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 4,
+  "Verdict": 0,
   "FlatInvalid": false
 }

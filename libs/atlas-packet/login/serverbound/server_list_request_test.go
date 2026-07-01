@@ -6,6 +6,11 @@ import (
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// gms_v72: the SERVERLIST_REQUEST send = sub_5B0067 @0x5b0067 (GMS_v72.1_U_DEVM.exe,
+// port 13339): COutPacket(4) @0x5b0232 then SendPacket @0x5b0248 with NO Encode*
+// calls between → empty body. Matches the codec's empty Encode. Marker-only (tier-0).
+//
+// packet-audit:verify packet=login/serverbound/ServerListRequest version=gms_v72 ida=0x5b0067
 // packet-audit:verify packet=login/serverbound/ServerListRequest version=gms_v95 ida=0x5d9730
 // packet-audit:verify packet=login/serverbound/ServerListRequest version=gms_v87 ida=0x62c951
 // packet-audit:verify packet=login/serverbound/ServerListRequest version=jms_v185 ida=0x66c55a

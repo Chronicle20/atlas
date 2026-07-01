@@ -1,6 +1,7 @@
 package serverbound
 
 import (
+	"bytes"
 	"testing"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
@@ -15,6 +16,23 @@ import (
 // packet-audit:verify packet=login/serverbound/WorldCharacterListRequest version=gms_v84 ida=0x60bca3
 // packet-audit:verify packet=login/serverbound/WorldCharacterListRequest version=jms_v185 ida=0x66db89
 // packet-audit:verify packet=login/serverbound/WorldCharacterListRequest version=gms_v79 ida=0x5cc905
+//
+// gms_v72: CLogin::SendLoginPacket = sub_5B1B25 @0x5b1b25 (GMS_v72.1_U_DEVM.exe,
+// port 13339): COutPacket(5) @0x5b1c45; Encode1(worldId) @0x5b1c56; Encode1(
+// channelId) @0x5b1c61; Encode4(socketAddr=getsockname) @0x5b1c92. NO
+// gameStartMode byte (v72<83) — matches the codec's >=83 gate. socketAddr present
+// (>12). Wire = worldId + channelId + socketAddr = 6 bytes.
+//
+// packet-audit:verify packet=login/serverbound/WorldCharacterListRequest version=gms_v72 ida=0x5b1b25
+func TestWorldCharacterListRequestV72Body(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 72, 1)
+	input := WorldCharacterListRequest{gameStartMode: 1, worldId: world.Id(2), channelId: channel.Id(3), socketAddr: 12345}
+	want := []byte{0x02, 0x03, 0x39, 0x30, 0x00, 0x00} // worldId, channelId, socketAddr LE (no gameStartMode)
+	if got := pt.Encode(t, ctx, input.Encode, nil); !bytes.Equal(got, want) {
+		t.Errorf("v72 WorldCharacterListRequest body: got % x, want % x", got, want)
+	}
+}
+
 func TestWorldCharacterListRequestRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

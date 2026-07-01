@@ -68,6 +68,24 @@ func TestBuddyAlreadyBuddyV79(t *testing.T) {
 	}
 }
 
+// TestBuddyAlreadyBuddyV72 pins the gms_v72 BUDDYLIST ALREADY_BUDDY arm.
+//
+// IDA-verified (GMS_v72.1_U_DEVM.exe, port 13339) — CWvsContext::OnFriendResult
+// @0x935ecf: switch(Decode1(mode)) @0x935efa. case 0xDu @0x936246 sets up
+// StringPool::GetInstance(722), then LABEL_39 @0x936284 calls GetString +
+// CUtilDlg::Notice and reads NOTHING further off the wire → mode-only. v72 case
+// byte = 13 (0xD), same as v79/v83. atlas AlreadyBuddy.Encode writes just
+// WriteByte(mode).
+//
+// packet-audit:verify packet=buddy/clientbound/BuddyAlreadyBuddy version=gms_v72 ida=0x935ecf
+func TestBuddyAlreadyBuddyV72(t *testing.T) {
+	const v72Mode = 13
+	got := NewAlreadyBuddy(v72Mode).Encode(nil, nil)(nil)
+	if want := []byte{v72Mode}; !bytes.Equal(got, want) {
+		t.Fatalf("v72 BuddyAlreadyBuddy: got %v want %v", got, want)
+	}
+}
+
 func TestModeOnlyBuddyErrorArms(t *testing.T) {
 	cases := map[string]struct {
 		mode   byte

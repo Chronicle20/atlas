@@ -4395,15 +4395,9 @@
    "calls": null
   },
   "CLogin::ChangeStepImmediate": {
-   "address": "",
+   "address": "0x5b0067",
    "direction": "serverbound",
-   "unresolved": true,
-   "calls": [
-    {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
-   ]
+   "calls": []
   },
   "CLogin::MakeVACDlg": {
    "address": "0x5b4394",
@@ -4542,13 +4536,20 @@
    ]
   },
   "CLogin::OnCheckPasswordResult#AuthLoginFailed": {
-   "address": "",
+   "address": "0x5b2577",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": ""
+    },
+    {
+     "op": "Decode1",
+     "comment": ""
+    },
+    {
+     "op": "Decode4",
+     "comment": ""
     }
    ]
   },
@@ -4596,13 +4597,12 @@
    ]
   },
   "CLogin::OnCheckUserLimitResult": {
-   "address": "",
+   "address": "0x5b33c7",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode2",
+     "comment": ""
     }
    ]
   },
@@ -4885,13 +4885,25 @@
    ]
   },
   "CLogin::OnSetAccountResult#AfterLogin": {
-   "address": "",
+   "address": "0x5b5598",
    "direction": "serverbound",
-   "unresolved": true,
+   "notes": "gms_v72 AFTER_LOGIN (COutPacket op 9) built by CLogin::OnSetAccountResult @0x5b553a send block @0x5b5598. Legacy wire carries Encode4(accountId @g_pWvsContext+8232) between opt2 and the pin string; v83 omits it. Atlas gates the int to GMS<83.",
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Encode1",
+     "comment": "pinMode @0x5b55a6 (literal 1u)"
+    },
+    {
+     "op": "Encode1",
+     "comment": "opt2 @0x5b55b0 (literal 1u)"
+    },
+    {
+     "op": "Encode4",
+     "comment": "accountId @0x5b55c3 (*(g_pWvsContext+8232)) \u2014 LEGACY-ONLY int, absent in v83+"
+    },
+    {
+     "op": "EncodeStr",
+     "comment": "pin @0x5b55e0 (EncodeStr, empty ZXString)"
     }
    ]
   },
@@ -5006,13 +5018,12 @@
    ]
   },
   "CLogin::OnWorldInformation#ServerListEnd": {
-   "address": "",
+   "address": "0x5b33f8",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": ""
     }
    ]
   },
@@ -5066,13 +5077,12 @@
    ]
   },
   "CLogin::SendCheckUserLimitPacket": {
-   "address": "",
+   "address": "0x5b238a",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Encode2",
+     "comment": ""
     }
    ]
   },
@@ -5088,13 +5098,20 @@
    ]
   },
   "CLogin::SendLoginPacket": {
-   "address": "",
+   "address": "0x5b1b25",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Encode1",
+     "comment": ""
+    },
+    {
+     "op": "Encode1",
+     "comment": ""
+    },
+    {
+     "op": "Encode4",
+     "comment": ""
     }
    ]
   },
@@ -5110,13 +5127,20 @@
    ]
   },
   "CLogin::SendSelectCharPacket": {
-   "address": "",
+   "address": "0x5b1d03",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Encode4",
+     "comment": ""
+    },
+    {
+     "op": "EncodeStr",
+     "comment": ""
+    },
+    {
+     "op": "EncodeStr",
+     "comment": ""
     }
    ]
   },
@@ -5132,13 +5156,24 @@
    ]
   },
   "CLogin::SendSelectCharPacketByVAC#AllCharacterListSelect": {
-   "address": "",
+   "address": "0x5b1e3f",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Encode4",
+     "comment": ""
+    },
+    {
+     "op": "Encode4",
+     "comment": ""
+    },
+    {
+     "op": "EncodeStr",
+     "comment": ""
+    },
+    {
+     "op": "EncodeStr",
+     "comment": ""
     }
    ]
   },
@@ -5157,15 +5192,9 @@
    ]
   },
   "CLogin::SendViewAllCharPacket": {
-   "address": "",
+   "address": "0x5b3ee7",
    "direction": "serverbound",
-   "unresolved": true,
-   "calls": [
-    {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
-   ]
+   "calls": []
   },
   "CMapLoadable::OnSetBackEffect": {
    "address": "0x5f5b4f",
@@ -14306,13 +14335,33 @@
    ]
   },
   "CWvsContext::SendDropPickUpRequest": {
-   "address": "",
+   "address": "0x903b77",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": "",
+     "guard": "result && !result && !result"
+    },
+    {
+     "op": "Decode4",
+     "comment": "",
+     "guard": "result && !result && !result"
+    },
+    {
+     "op": "Decode2",
+     "comment": "",
+     "guard": "result && !result && !result"
+    },
+    {
+     "op": "Decode2",
+     "comment": "",
+     "guard": "result && !result && !result"
+    },
+    {
+     "op": "Decode4",
+     "comment": "",
+     "guard": "result && !result && !result"
     }
    ]
   },

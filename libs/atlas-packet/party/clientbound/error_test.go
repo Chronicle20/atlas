@@ -131,6 +131,24 @@ func TestPartyAlreadyJoined1V79(t *testing.T) {
 	}
 }
 
+// TestPartyAlreadyJoined1V72 pins the gms_v72 PARTY_OPERATION
+// ALREADY_HAVE_JOINED_A_PARTY_1 arm.
+//
+// IDA-verified (GMS_v72.1_U_DEVM.exe, port 13339) — CWvsContext::OnPartyResult
+// @0x934f3c: switch(Decode1(mode)) @0x934f9c. case 9u @0x935bb9 calls only
+// StringPool::GetInstance(320) + GetString + sub_480FF9 (chat-log notice) and
+// reads NOTHING further off the wire → mode-only. v72 case byte = 9, same as
+// v79/v83. atlas AlreadyJoined1.Encode writes just WriteByte(mode).
+//
+// packet-audit:verify packet=party/clientbound/PartyAlreadyJoined1 version=gms_v72 ida=0x934f3c
+func TestPartyAlreadyJoined1V72(t *testing.T) {
+	const v72Mode = 9
+	got := NewAlreadyJoined1(v72Mode).Encode(nil, nil)(nil)
+	if want := []byte{v72Mode}; !bytes.Equal(got, want) {
+		t.Fatalf("v72 PartyAlreadyJoined1: got %v want %v", got, want)
+	}
+}
+
 func TestModeOnlyPartyErrorArms(t *testing.T) {
 	cases := map[string]modeOnlyArmCase{
 		"AlreadyJoined1":        {9, 9, 9, 9, 9, func(b byte) []byte { m := NewAlreadyJoined1(b); return m.Encode(nil, nil)(nil) }},

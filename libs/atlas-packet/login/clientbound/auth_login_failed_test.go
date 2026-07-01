@@ -11,6 +11,7 @@ import (
 // packet-audit:verify packet=login/clientbound/AuthLoginFailed version=gms_v87 ida=0x62fb84
 // packet-audit:verify packet=login/clientbound/AuthLoginFailed version=gms_v95 ida=0x5dc600
 // packet-audit:verify packet=login/clientbound/AuthLoginFailed version=gms_v79 ida=0x5cd38f
+// packet-audit:verify packet=login/clientbound/AuthLoginFailed version=gms_v72 ida=0x5b2577
 func TestAuthLoginFailedRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

@@ -11,6 +11,7 @@ import (
 // packet-audit:verify packet=login/clientbound/PinOperation version=gms_v95 ida=0x5db000
 // packet-audit:verify packet=login/clientbound/PinOperation version=gms_v84 ida=0x611975
 // packet-audit:verify packet=login/clientbound/PinOperation version=gms_v79 ida=0x5d0921
+// packet-audit:verify packet=login/clientbound/PinOperation version=gms_v72 ida=0x5b56b9
 func TestPinOperationRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

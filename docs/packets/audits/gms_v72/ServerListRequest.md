@@ -1,14 +1,13 @@
 # ServerListRequest (← `CLogin::ChangeStepImmediate`)
 
-- **IDA:** 
+- **IDA:** 0x5b0067
 - **Atlas file:** `libs/atlas-packet/login/serverbound/server_list_request.go`
 - **Variant:** GMS/v72
 - **Branch depth:** 0
-- **Verdict:** ❌
+- **Verdict:** ✅
 
 ## Wire-level diff
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | byte | unresolved `function not found in IDB` | ❌ | atlas: short — missing trailing field |
 

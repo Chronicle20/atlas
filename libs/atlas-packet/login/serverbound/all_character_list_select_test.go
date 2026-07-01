@@ -8,6 +8,12 @@ import (
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// gms_v72: CLogin::SendSelectCharPacketByVAC = sub_5B1E3F @0x5b1e3f
+// (GMS_v72.1_U_DEVM.exe, port 13339): COutPacket(14) @0x5b1f68; Encode4(charId)
+// @0x5b1f89; Encode4(worldId) @0x5b1fa0; EncodeStr(mac) @0x5b1fdb; EncodeStr(hwid)
+// @0x5b2011. Matches the codec. Marker-only (tier-0).
+//
+// packet-audit:verify packet=login/serverbound/AllCharacterListSelect version=gms_v72 ida=0x5b1e3f
 // packet-audit:verify packet=login/serverbound/AllCharacterListSelect version=gms_v83 ida=0x5f76ae
 // packet-audit:verify packet=login/serverbound/AllCharacterListSelect version=gms_v84 ida=0x60c624
 // packet-audit:verify packet=login/serverbound/AllCharacterListSelect version=gms_v87 ida=0x62ee37

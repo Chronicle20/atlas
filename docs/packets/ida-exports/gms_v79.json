@@ -6243,13 +6243,20 @@
    ]
   },
   "CMob::Update": {
-   "address": "",
+   "address": "0x6361df",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Encode4",
+     "comment": "attackerId this.m_dwMobID @0x636bb3"
+    },
+    {
+     "op": "Encode4",
+     "comment": "observerId dwCharacterID @0x636bc6"
+    },
+    {
+     "op": "Encode4",
+     "comment": "attackedId attacker.m_dwMobID @0x636be3"
     }
    ]
   },
@@ -13974,13 +13981,12 @@
    ]
   },
   "CWvsContext::OnMessage#CashItemExpire": {
-   "address": "",
+   "address": "0x96b944",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode4",
+     "comment": "itemId @0x96b953"
     }
    ]
   },

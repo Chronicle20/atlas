@@ -1,7 +1,7 @@
 {
   "WriterName": "CharacterList",
-  "IDAName": "CLogin::OnSelectWorldResult",
-  "Address": "0x5cf9ea",
+  "IDAName": "sub_5CE522",
+  "Address": "0x5ce522",
   "Variant": "GMS/v79",
   "BranchDepth": 2,
   "AtlasFile": "libs/atlas-packet/character/clientbound/list.go",

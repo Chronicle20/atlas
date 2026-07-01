@@ -1,7 +1,7 @@
 {
   "toolSha": "9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6",
   "exportHashes": {
-    "gms_v79": "6c4fe2edfa4a526dc112c5b6e195cbdc61c3887c640535cec7512a0d5e6de4b4",
+    "gms_v79": "34700c366669b63418cc0663847c64bf741c76f1918dbba3c7ee6cbd6204c6f5",
     "gms_v83": "711bddcc2e1bdd417a75954148d2b50c64e70855e84259c0b8e50e700e393c0d",
     "gms_v84": "7eab9472e2afeda13faaf74273828d09d5f2481d67bec10235c3b2fd2f91e1eb",
     "gms_v87": "714817d376bb93732ef6b6fbe6b59f8c24515ff901801d213d676b501eae7f94",
@@ -857,8 +857,7 @@
       ],
       "cells": {
         "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 11
         },
         "gms_v83": {
@@ -1827,9 +1826,8 @@
     {
       "kind": "op",
       "op": "RELOG_RESPONSE",
-      "packet": "character/clientbound/CharacterList",
       "direction": "clientbound",
-      "tier1": true,
+      "tier1": false,
       "fnames": [
         "CLogin::OnSelectWorldResult",
         "sub_5FB83D",
@@ -1837,7 +1835,8 @@
       ],
       "cells": {
         "gms_v79": {
-          "state": "verified",
+          "state": "incomplete",
+          "note": "no audit report",
           "opcode": 22
         },
         "gms_v83": {
@@ -12409,8 +12408,7 @@
       ],
       "cells": {
         "gms_v79": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 132
         },
         "gms_v83": {
@@ -17584,8 +17582,7 @@
       ],
       "cells": {
         "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 183
         },
         "gms_v83": {
@@ -17698,8 +17695,7 @@
       ],
       "cells": {
         "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 184
         },
         "gms_v83": {
@@ -27780,8 +27776,7 @@
       ],
       "cells": {
         "gms_v79": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 311
         },
         "gms_v83": {

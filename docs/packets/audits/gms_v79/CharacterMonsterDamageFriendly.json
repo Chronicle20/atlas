@@ -1,7 +1,7 @@
 {
   "WriterName": "CharacterMonsterDamageFriendly",
-  "IDAName": "CMob::Update",
-  "Address": "",
+  "IDAName": "sub_6361DF",
+  "Address": "0x6361df",
   "Variant": "GMS/v79",
   "BranchDepth": 0,
   "AtlasFile": "libs/atlas-packet/character/serverbound/monster_damage_friendly.go",

@@ -1,6 +1,6 @@
-# CharacterMonsterDamageFriendly (← `CMob::Update`)
+# CharacterMonsterDamageFriendly (← `sub_6361DF`)
 
-- **IDA:** 
+- **IDA:** 0x6361df
 - **Atlas file:** `libs/atlas-packet/character/serverbound/monster_damage_friendly.go`
 - **Variant:** GMS/v79
 - **Branch depth:** 0

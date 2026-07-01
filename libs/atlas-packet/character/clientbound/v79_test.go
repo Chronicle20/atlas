@@ -566,3 +566,82 @@ func TestCharacterSitResultByteOutputV79(t *testing.T) {
 		t.Errorf("v79 CharacterSitResult cancel: got %x want %x", gotCancel, wantCancel)
 	}
 }
+
+// ---------------------------------------------------------------------------
+// Stage E batch 18 — character part G (keymap / status / friendly-damage).
+// ---------------------------------------------------------------------------
+
+// CharacterKeyMap v79 byte-fixture — KEYMAP, op 311.
+//
+// Client read order — CFuncKeyMappedMan::OnInit @0x569e69:
+//
+//	reset = Decode1                        // 0 => read the full map          /*0x569e71*/
+//	if reset == 0:
+//	    89x FUNCKEY_MAPPED::Decode         // v5 = 89 loop @0x569ea6; each is
+//	                                       // DecodeBuffer(5) = nType[1]+nID[4] /*0x569ead*/
+//
+// Legacy divergence vs v83+: the v79 client reads 89 entries, NOT 90. Confirmed
+// by the loop counter (v5 = 89) and the post-loop memcpy of 0x1BD = 445 = 89*5
+// bytes (@0x569ece). v83 CFuncKeyMappedMan::OnInit @0x58ddb4 ALSO loops 89
+// (memcpy 445), but the v83 codec historically emits 90 (documented truncation,
+// gms_v83 CharacterKeyMap evidence notes); keymap.go now gates the count to 89
+// for GMS < 83 so the v79 wire is exact.
+//
+// packet-audit:verify packet=character/clientbound/CharacterKeyMap version=gms_v79 ida=0x569e69
+func TestCharacterKeyMapByteOutputV79(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 79, 1)
+	keys := map[int32]KeyBinding{
+		2:  {KeyType: 4, KeyAction: 10},
+		16: {KeyType: 4, KeyAction: 8},
+		41: {KeyType: 4, KeyAction: 11},
+	}
+	got := NewCharacterKeyMap(keys).Encode(nil, ctx)(nil)
+
+	var want []byte
+	want = append(want, 0x00) // not-reset flag (Decode1 == 0) /*0x569e71*/
+	for i := int32(0); i < 89; i++ { // v79 reads 89 FUNCKEY_MAPPED entries /*0x569ea6 v5=89*/
+		if k, ok := keys[i]; ok {
+			want = append(want, byte(k.KeyType)) // nType (DecodeBuffer byte 0) /*0x569ead*/
+			want = append(want, byte(k.KeyAction), byte(k.KeyAction>>8), byte(k.KeyAction>>16), byte(k.KeyAction>>24))
+		} else {
+			want = append(want, 0x00, 0x00, 0x00, 0x00, 0x00)
+		}
+	}
+	if len(got) != 1+89*5 {
+		t.Fatalf("v79 CharacterKeyMap length: got %d, want %d", len(got), 1+89*5)
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("v79 CharacterKeyMap wire:\n got %x\nwant %x", got, want)
+	}
+
+	// reset-to-default path: single flag byte (Decode1 != 0 short-circuits). /*0x569e71*/
+	gotReset := NewCharacterKeyMapResetToDefault().Encode(nil, ctx)(nil)
+	if !bytes.Equal(gotReset, []byte{0x01}) {
+		t.Errorf("v79 CharacterKeyMap reset: got %x want 01", gotReset)
+	}
+}
+
+// StatusMessageCashItemExpire v79 byte-fixture — SHOW_STATUS_INFO, op 36.
+//
+// Client read order — CWvsContext::OnMessage @0x96ade7 does Decode1(nType)
+// @0x96adf6 then dispatches; case 2 (CASH_ITEM_EXPIRE) → sub_96B944 @0x96b944:
+//
+//	nType  = Decode1                       // OnMessage dispatch byte (mode)  /*0x96adf6*/
+//	itemId = Decode4                       // CItemInfo::GetItemName(itemId)  /*0x96b953*/
+//
+// The arm reads exactly one Decode4(itemId) after the dispatch byte and formats
+// StringPool 297 ("... has expired"). Body has no version gate, so the v79 wire
+// is byte-identical to v83 (StatusMessageCashItemExpire.Encode: mode + itemId).
+//
+// packet-audit:verify packet=character/clientbound/StatusMessageCashItemExpire version=gms_v79 ida=0x96b944
+func TestStatusMessageCashItemExpireByteOutputV79(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 79, 1)
+	got := NewStatusMessageCashItemExpire(2, 5000000).Encode(nil, ctx)(nil)
+	want := []byte{
+		0x02,                   // mode = 2 (CASH_ITEM_EXPIRE dispatch byte) /*0x96adf6*/
+		0x40, 0x4b, 0x4c, 0x00, // itemId 5000000 (Decode4)                 /*0x96b953*/
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("v79 StatusMessageCashItemExpire wire: got %x want %x", got, want)
+	}
+}

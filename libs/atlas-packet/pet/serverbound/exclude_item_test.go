@@ -38,6 +38,25 @@ func TestExcludeItemRoundTrip(t *testing.T) {
 // (port 13340): sub_692ABB — COutPacket(168)@0x692ad4, EncodeBuffer(petId,8)@0x692ae9,
 // Encode1(count)@0x692afe, count×Encode4(itemId)@0x692b16. Wire =
 // petId(8)+count(1)+itemIds(4 each); byte-identical to v83.
+// TestExcludeItemBytesV72 pins the v72 wire = v79 (no version gate). IDA
+// GMS_v72.1_U_DEVM.exe @port 13339: CPet::SendUpdateExceptionListRequest@0x66dc34
+// builds COutPacket(166)@0x66dc4d, EncodeBuffer(petId,8)@0x66dc62, Encode1(count)
+// @0x66dc77, then Encode4(itemId)@0x66dc8f per entry.
+// packet-audit:verify packet=pet/serverbound/PetExcludeItem version=gms_v72 ida=0x66dc34
+func TestExcludeItemBytesV72(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 72, 1)
+	got := ExcludeItem{petId: 0x0102030405060708, itemIds: []int32{0x11223344, 0x55667788}}.Encode(nil, ctx)(nil)
+	want := []byte{
+		0x08, 0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01, // petId EncodeBuffer(8)@0x66dc62 (LE)
+		0x02,                   // count Encode1@0x66dc77
+		0x44, 0x33, 0x22, 0x11, // itemId[0] Encode4@0x66dc8f (LE)
+		0x88, 0x77, 0x66, 0x55, // itemId[1] Encode4@0x66dc8f (LE)
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatalf("v72 = % X, want % X", got, want)
+	}
+}
+
 // packet-audit:verify packet=pet/serverbound/PetExcludeItem version=gms_v79 ida=0x692abb
 func TestExcludeItemBytesV79(t *testing.T) {
 	ctx := pt.CreateContext("GMS", 79, 1)

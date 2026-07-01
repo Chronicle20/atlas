@@ -62,6 +62,33 @@ func TestDropPickUpDivisibleByThirteenRoundTrip(t *testing.T) {
 // Encode4(a4=dropId)@0x705d1e; v79 goes straight from dropId to the bool bytes.
 // The codec gates crc to (GMS>=83 || JMS), so v79 omits it. The v87+ owner block
 // is also absent (MajorAtLeast(87) false on v79).
+// TestDropPickUpBytesV72 pins the v72 wire = v79 (no crc, GMS<83; no v87+ block).
+// IDA GMS_v72.1_U_DEVM.exe @port 13339: CPet::SendDropPickUpRequest@0x66d52b builds
+// COutPacket(164)@0x66d566, EncodeBuffer(petId,8)@0x66d57b, Encode1(fieldKey)@0x66d594,
+// Encode4(updateTime)@0x66d5a2, Encode2(x)@0x66d5b3, Encode2(y)@0x66d5c2,
+// Encode4(dropId)@0x66d5cd, then STRAIGHT to Encode1(bPickupOthers)@0x66d5ea,
+// Encode1(bSweepForDrop)@0x66d607, Encode1(bLongRange)@0x66d624 — no crc int.
+// packet-audit:verify packet=pet/serverbound/PetDropPickUp version=gms_v72 ida=0x66d52b
+func TestDropPickUpBytesV72(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 72, 1)
+	in := DropPickUp{petId: 0x0102030405060708, fieldKey: 0x09, updateTime: 0x0A0B0C0D, x: 0x1011, y: 0x1213, dropId: 0x14, crc: 0x99999999, bPickupOthers: true, bSweepForDrop: false, bLongRange: true}
+	got := in.Encode(nil, ctx)(nil)
+	want := []byte{
+		0x08, 0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01, // petId EncodeBuffer(8)@0x66d57b (LE)
+		0x09,                   // fieldKey Encode1@0x66d594
+		0x0D, 0x0C, 0x0B, 0x0A, // updateTime Encode4@0x66d5a2 (LE)
+		0x11, 0x10, // x Encode2@0x66d5b3 (LE)
+		0x13, 0x12, // y Encode2@0x66d5c2 (LE)
+		0x14, 0x00, 0x00, 0x00, // dropId Encode4@0x66d5cd (LE) — NO crc follows on v72
+		0x01, // bPickupOthers Encode1@0x66d5ea
+		0x00, // bSweepForDrop Encode1@0x66d607
+		0x01, // bLongRange Encode1@0x66d624
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatalf("v72 = % X, want % X", got, want)
+	}
+}
+
 // packet-audit:verify packet=pet/serverbound/PetDropPickUp version=gms_v79 ida=0x6923af
 func TestDropPickUpBytesV79(t *testing.T) {
 	ctx := pt.CreateContext("GMS", 79, 1)

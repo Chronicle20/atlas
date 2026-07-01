@@ -28,6 +28,28 @@ func TestPetChat(t *testing.T) {
 // Decode1(nType)@0x690f1d, Decode1(nAction)@0x690f25, DecodeStr(msg)@0x690f2e,
 // Decode1(balloon)@0x690f41. Wire = ownerId(4)+slot(1)+nType(1)+nAction(1)+
 // msg(2+len)+balloon(1); byte-identical to v83 (codec version-unconditional).
+// TestPetChatBytesV72 pins the v72 wire = v79 (no version gate on the codec).
+// IDA GMS_v72.1_U_DEVM.exe @port 13339: CPet::OnAction@0x66c0a4 reads
+// Decode1(nType)@0x66c0d5, Decode1(nAction)@0x66c0dd, DecodeStr(message)@0x66c0e6,
+// Decode1(balloon)@0x66c0f9. ownerId + slot are read upstream by CUser::OnPetPacket.
+// packet-audit:verify packet=pet/clientbound/PetChat version=gms_v72 ida=0x66c0a4
+func TestPetChatBytesV72(t *testing.T) {
+	ctx := test.CreateContext("GMS", 72, 1)
+	got := NewPetChat(0x01020304, 0x05, 0x06, 0x07, "Hi", true).Encode(nil, ctx)(nil)
+	want := []byte{
+		0x04, 0x03, 0x02, 0x01, // ownerId (upstream)
+		0x05,       // slot (upstream)
+		0x06,       // nType Decode1@0x66c0d5
+		0x07,       // nAction Decode1@0x66c0dd
+		0x02, 0x00, // msg length DecodeStr@0x66c0e6
+		0x48, 0x69, // "Hi"
+		0x01, // balloon Decode1@0x66c0f9
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatalf("v72 = % X, want % X", got, want)
+	}
+}
+
 // packet-audit:verify packet=pet/clientbound/PetChat version=gms_v79 ida=0x690eec
 func TestPetChatBytesV79(t *testing.T) {
 	ctx := test.CreateContext("GMS", 79, 1)

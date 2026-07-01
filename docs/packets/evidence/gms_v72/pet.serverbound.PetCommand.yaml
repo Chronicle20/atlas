@@ -1,0 +1,10 @@
+packet: pet/serverbound/PetCommand
+direction: serverbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CPet::ParseCommand
+    address: "0x66c67b"
+    decompile_sha256: 13ef9c42cb0a7fcaa05bb415be64d13c5b3f564428b83be9aa28bfb22035ce96
+verifies:
+  - libs/atlas-packet/pet/serverbound/command_test.go#TestCommandBytesV72

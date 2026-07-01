@@ -39,6 +39,28 @@ func TestPetFoodResponse(t *testing.T) {
 // Decode1(animation)@0x691088, Decode1(success)@0x6910a1, then Decode1(balloon)@0x6911d4
 // (the static report's "trailing padding" note is wrong — the balloon byte IS read).
 // Wire = ownerId(4)+slot(1)+mode(1)+animation(1)+success(1)+balloon(1); identical to v83.
+// TestPetCommandResponseBytesV72 pins the v72 wire = v79 (no version gate).
+// IDA GMS_v72.1_U_DEVM.exe @port 13339: CPet::OnActionCommand@0x66c1de reads
+// Decode1(mode)@0x66c214; for mode 0 it then reads Decode1(animation)@0x66c23a,
+// Decode1(success)@0x66c253, and Decode1(balloon)@0x66c37d (mode/animation/
+// success/balloon = 4 bytes). ownerId + slot are read upstream by CUser::OnPetPacket.
+// packet-audit:verify packet=pet/clientbound/PetCommandResponse version=gms_v72 ida=0x66c1de
+func TestPetCommandResponseBytesV72(t *testing.T) {
+	ctx := test.CreateContext("GMS", 72, 1)
+	got := NewPetCommandResponse(0x01020304, 0x05, 0x07, true, false).Encode(nil, ctx)(nil)
+	want := []byte{
+		0x04, 0x03, 0x02, 0x01, // ownerId (upstream)
+		0x05, // slot (upstream)
+		0x00, // mode Decode1@0x66c214 (NewPetCommandResponse => mode 0)
+		0x07, // animation Decode1@0x66c23a
+		0x01, // success Decode1@0x66c253
+		0x00, // balloon Decode1@0x66c37d
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatalf("v72 = % X, want % X", got, want)
+	}
+}
+
 // packet-audit:verify packet=pet/clientbound/PetCommandResponse version=gms_v79 ida=0x691029
 func TestPetCommandResponseBytesV79(t *testing.T) {
 	ctx := test.CreateContext("GMS", 79, 1)

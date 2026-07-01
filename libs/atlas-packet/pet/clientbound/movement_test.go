@@ -29,6 +29,26 @@ func TestPetMovementRoundTrip(t *testing.T) {
 // CMovePath::OnMovePacket (opaque movement). Wire = ownerId(4) + slot(1) +
 // movement. Codec is version-unconditional; empty model.Movement encodes to
 // StartX(2)+StartY(2)+count(1) = 5 zero bytes. Layout byte-identical to v83.
+// TestPetMovementBytesV72 pins the v72 wire = v79 (no version gate on the codec).
+// IDA GMS_v72.1_U_DEVM.exe @port 13339: CPet::OnMove@0x66c083 forwards the
+// CInPacket to CMovePath::OnMovePacket@0x635bc2 (raw movement blob). ownerId +
+// slot are read upstream by CUser::OnPetPacket before the leaf dispatch.
+// packet-audit:verify packet=pet/clientbound/PetMovement version=gms_v72 ida=0x66c083
+func TestPetMovementBytesV72(t *testing.T) {
+	ctx := test.CreateContext("GMS", 72, 1)
+	got := NewPetMovement(0x01020304, 0x05, model.Movement{}).Encode(nil, ctx)(nil)
+	want := []byte{
+		0x04, 0x03, 0x02, 0x01, // ownerId (upstream)
+		0x05,       // slot (upstream)
+		0x00, 0x00, // movement StartX
+		0x00, 0x00, // movement StartY
+		0x00,       // movement element count = 0
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatalf("v72 = % X, want % X", got, want)
+	}
+}
+
 // packet-audit:verify packet=pet/clientbound/PetMovement version=gms_v79 ida=0x690ecb
 func TestPetMovementBytesV79(t *testing.T) {
 	ctx := test.CreateContext("GMS", 79, 1)

@@ -6657,37 +6657,19 @@
    ]
   },
   "CPet::ParseCommand": {
-   "address": "",
+   "address": "0x66c67b",
    "direction": "serverbound",
-   "unresolved": true,
-   "calls": [
-    {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
-   ]
+   "calls": []
   },
   "CPet::SendDropPickUpRequest": {
-   "address": "",
+   "address": "0x66d52b",
    "direction": "serverbound",
-   "unresolved": true,
-   "calls": [
-    {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
-   ]
+   "calls": []
   },
   "CPet::SendUpdateExceptionListRequest": {
-   "address": "",
+   "address": "0x66dc34",
    "direction": "serverbound",
-   "unresolved": true,
-   "calls": [
-    {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
-   ]
+   "calls": []
   },
   "CQuest::StartQuest": {
    "address": "0x67dbab",
@@ -10521,15 +10503,9 @@
    "calls": null
   },
   "CVecCtrlPet::EndUpdateActive": {
-   "address": "",
+   "address": "0x8c516e",
    "direction": "serverbound",
-   "unresolved": true,
-   "calls": [
-    {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
-   ]
+   "calls": []
   },
   "CVecCtrlSummoned::EndUpdateActive": {
    "address": "",
@@ -14503,15 +14479,9 @@
    ]
   },
   "CWvsContext::SendActivatePetRequest": {
-   "address": "",
+   "address": "0x91c241",
    "direction": "serverbound",
-   "unresolved": true,
-   "calls": [
-    {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
-   ]
+   "calls": []
   },
   "CWvsContext::SendChangeSlotPositionRequest": {
    "address": "0x903a69",

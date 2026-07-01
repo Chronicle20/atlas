@@ -4542,15 +4542,9 @@
    "calls": null
   },
   "CLogin::ChangeStepImmediate": {
-   "address": "",
+   "address": "0x5d0c27",
    "direction": "serverbound",
-   "unresolved": true,
-   "calls": [
-    {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
-   ]
+   "calls": []
   },
   "CLogin::MakeVACDlg": {
    "address": "0x5cf28e",

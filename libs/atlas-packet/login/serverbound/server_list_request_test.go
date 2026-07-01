@@ -11,6 +11,7 @@ import (
 // packet-audit:verify packet=login/serverbound/ServerListRequest version=jms_v185 ida=0x66c55a
 // packet-audit:verify packet=login/serverbound/ServerListRequest version=gms_v83 ida=0x5f53c0
 // packet-audit:verify packet=login/serverbound/ServerListRequest version=gms_v84 ida=0x609165
+// packet-audit:verify packet=login/serverbound/ServerListRequest version=gms_v79 ida=0x5d0c27
 func TestServerListRequestRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

@@ -1,7 +1,7 @@
 {
   "toolSha": "9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6",
   "exportHashes": {
-    "gms_v79": "a44ed3040e6d11d78cec3b8f744a0aea0b6233d950cfdfc33918ec6f5675448f",
+    "gms_v79": "57693a264e9b3b5eb60e61774a374457a000eaf399f5b129d3fb22ebe5a26b17",
     "gms_v83": "711bddcc2e1bdd417a75954148d2b50c64e70855e84259c0b8e50e700e393c0d",
     "gms_v84": "7eab9472e2afeda13faaf74273828d09d5f2481d67bec10235c3b2fd2f91e1eb",
     "gms_v87": "714817d376bb93732ef6b6fbe6b59f8c24515ff901801d213d676b501eae7f94",
@@ -910,18 +910,18 @@
     {
       "kind": "op",
       "op": "SERVERLIST_REQUEST",
-      "packet": "login/clientbound/PinOperation",
+      "packet": "login/serverbound/ServerListRequest",
       "direction": "serverbound",
       "tier1": false,
       "fnames": [
         "CLicenseDlg::OnButtonClicked",
+        "CLogin::ChangeStepImmediate",
         "CLogin::OnCheckPasswordResult",
         "CLogin::OnCheckPinCodeResult"
       ],
       "cells": {
         "gms_v79": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 11
         },
         "gms_v83": {
@@ -941,7 +941,8 @@
           "opcode": 11
         },
         "jms_v185": {
-          "state": "n-a",
+          "state": "conflict",
+          "note": "registry says absent but an Atlas audit report exists (ServerListRequest)",
           "opcode": -1
         }
       }
@@ -31283,7 +31284,7 @@
       "cells": {
         "gms_v79": {
           "state": "incomplete",
-          "note": "verdict ❌",
+          "note": "no audit report",
           "opcode": -1
         },
         "gms_v83": {
@@ -31303,7 +31304,8 @@
           "opcode": -1
         },
         "jms_v185": {
-          "state": "verified",
+          "state": "incomplete",
+          "note": "no audit report",
           "opcode": -1
         }
       }

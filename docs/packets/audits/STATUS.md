@@ -5,7 +5,7 @@
 
 Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 
-- export gms_v79: `34700c366669b63418cc0663847c64bf741c76f1918dbba3c7ee6cbd6204c6f5`
+- export gms_v79: `b17810f479c7ad291c992dbae883f0ae2f2eae76d6a2ee7b218777f72eb75da4`
 - export gms_v83: `711bddcc2e1bdd417a75954148d2b50c64e70855e84259c0b8e50e700e393c0d`
 - export gms_v84: `7eab9472e2afeda13faaf74273828d09d5f2481d67bec10235c3b2fd2f91e1eb`
 - export gms_v87: `714817d376bb93732ef6b6fbe6b59f8c24515ff901801d213d676b501eae7f94`
@@ -554,10 +554,10 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 | FREDRICK_ACTION | CStoreBankDlg::SendCalculateFeeRequest; CStoreBankDlg::SendGetAllRequest; CStoreBankDlg::SetRet |  |  | ⬜ | 0x040 | ❌ | 0x040 | ❌ | 0x043 | ❌ | 0x045 | ❌ | 0x038 | ❌ |
 | DUEY_ACTION | CParcelDlg::CloseParcelDlg; CTabQuickSend::SendQuickDelivery; CTabReceive::DiscardParcel; CTabReceive::ReceiveParcel; CTabSend::SendParcel; CUIFadeYesNo::OnButtonClicked |  |  | ⬜ | 0x041 | ❌ | 0x041 | ❌ | 0x044 | ❌ | 0x046 | ❌ | 0x039 | ❌ |
 | OWL_ACTION | CUIShopScanner::OnCreate |  |  | ⬜ | 0x042 | ❌ | 0x042 | ❌ | 0x045 | ❌ | 0x048 | ❌ | 0x03A | ❌ |
-| ITEM_SORT | CWvsContext::SendGatherItemRequest; sub_954C6B | inventory/serverbound/InventoryCompartmentMergeRequest (T1) | 0x043 | ❌ | 0x045 | ✅ | 0x045 | ✅ | 0x048 | ✅ | 0x04B | ✅ | 0x03D | ✅ |
+| ITEM_SORT | CWvsContext::SendGatherItemRequest; sub_954C6B | inventory/serverbound/InventoryCompartmentMergeRequest (T1) | 0x043 | ✅ | 0x045 | ✅ | 0x045 | ✅ | 0x048 | ✅ | 0x04B | ✅ | 0x03D | ✅ |
 | OWL_WARP | CUIShopScanResult::OnButtonClicked |  |  | ⬜ | 0x043 | ❌ | 0x043 | ❌ | 0x046 | ❌ | 0x049 | ❌ | 0x03B | ❌ |
 | ADMIN_SHOP | CAdminShopDlg::OnPacket; CAdminShopDlg::SendTradeRequest; CAdminShopDlg::SetRet; CUIAdminShopWishList::SendRegisterPacket |  |  | ⬜ | 0x044 | ❌ | 0x044 | ❌ | 0x047 | ❌ | 0x04A | ❌ | 0x03C | ❌ |
-| ITEM_SORT2 | CWvsContext::SendSortItemRequest; sub_954CFD | inventory/serverbound/InventoryCompartmentSortRequest (T1) | 0x044 | ❌ | 0x046 | ❌ | 0x046 | ❌ | 0x049 | ✅ | 0x04C | ✅ | 0x03E | ✅ |
+| ITEM_SORT2 | CWvsContext::SendSortItemRequest; sub_954CFD | inventory/serverbound/InventoryCompartmentSortRequest (T1) | 0x044 | ✅ | 0x046 | ❌ | 0x046 | ❌ | 0x049 | ✅ | 0x04C | ✅ | 0x03E | ✅ |
 | ITEM_MOVE | CWvsContext::SendChangeSlotPositionRequest | inventory/serverbound/InventoryMove (T1) | 0x045 | 🟡 | 0x047 | ❌ | 0x047 | ❌ | 0x04A | ✅ | 0x04D | ✅ | 0x03F | ✅ |
 | USE_ITEM | CWvsContext::SendStatChangeItemUseRequest | inventory/serverbound/InventoryItemUse (T1) | 0x046 | 🟡 | 0x048 | ✅ | 0x048 | ✅ | 0x04B | ✅ | 0x04E | ✅ | 0x040 | ✅ |
 | CANCEL_ITEM_EFFECT | CWvsContext::SendStatChangeItemCancelRequest | character/serverbound/ItemCancel (T1) | 0x047 | ✅ | 0x049 | ✅ | 0x049 | ✅ | 0x04C | ✅ | 0x04F | ✅ | 0x041 | ✅ |
@@ -574,7 +574,7 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 | USE_RETURN_SCROLL | CWvsContext::SendMapTransferItemUseRequest; CWvsContext::SendPortalScrollUseRequest |  | 0x053 | ❌ | 0x055 | ❌ | 0x055 | ❌ | 0x058 | ❌ | 0x05C | ❌ | 0x04D | ❌ |
 | USE_SKILL_RESET_BOOK | CWvsContext::SendSkillResetItemUseRequest |  |  | ⬜ | 0x053 | ❌ | 0x053 | ❌ | 0x056 | ❌ | 0x059 | ❌ | 0x04B | ❌ |
 | USE_TELEPORT_ROCK | CWvsContext::SendMapTransferItemUseRequest |  |  | ⬜ | 0x054 | ❌ | 0x054 | ❌ | 0x057 | ❌ | 0x05B | ❌ | 0x04C | ❌ |
-| USE_UPGRADE_SCROLL | CWvsContext::SendUpgradeItemUseRequest; sub_954F9B | inventory/serverbound/InventoryScrollUse (T1) | 0x054 | ❌ | 0x056 | ✅ | 0x056 | ✅ | 0x059 | ✅ | 0x05D | ✅ | 0x04E | ✅ |
+| USE_UPGRADE_SCROLL | CWvsContext::SendUpgradeItemUseRequest; sub_954F9B | inventory/serverbound/InventoryScrollUse (T1) | 0x054 | ✅ | 0x056 | ✅ | 0x056 | ✅ | 0x059 | ✅ | 0x05D | ✅ | 0x04E | ✅ |
 | DISTRIBUTE_AP | CWvsContext::SendAbilityUpRequest | character/serverbound/AutoDistributeAp (T1) | 0x055 | ✅ | 0x057 | ✅ | 0x057 | ✅ | 0x05B | ✅ | 0x062 | ✅ | 0x052 | ✅ |
 | AUTO_DISTRIBUTE_AP | CWvsContext::SendAbilityUpRequest | character/serverbound/AutoDistributeAp (T1) | 0x056 | ✅ | 0x058 | ✅ | 0x058 | ✅ | 0x05B | ✅ | 0x062 | ✅ | 0x052 | ✅ |
 | HEAL_OVER_TIME | CWvsContext::SendStatChangeRequest | character/serverbound/HealOverTime (T1) | 0x057 | ✅ | 0x059 | ✅ | 0x059 | ✅ | 0x05C | ✅ | 0x064 | ✅ | 0x054 | ✅ |
@@ -860,8 +860,6 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 | interaction/serverbound/InteractionOperationTradeConfirm (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | interaction/serverbound/InteractionOperationTradePutItem (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | interaction/serverbound/InteractionOperationTransaction (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
-| inventory/serverbound/InventoryCompartmentMergeRequest (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| inventory/serverbound/InventoryScrollUse (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | login/clientbound/ServerListEnd |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | login/clientbound/ServerListEntry |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | login/clientbound/ServerStatus |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
@@ -916,12 +914,12 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v79 | 157 | 0 | 74 | 254 | 400 | 0 | 32.4% |
-| v83 | 367 | 0 | 0 | 316 | 202 | 0 | 53.7% |
-| v84 | 345 | 0 | 0 | 317 | 223 | 0 | 52.1% |
-| v87 | 379 | 0 | 0 | 341 | 165 | 0 | 52.6% |
-| v95 | 399 | 0 | 0 | 405 | 81 | 0 | 49.6% |
-| JMS185 | 361 | 0 | 0 | 352 | 172 | 0 | 50.6% |
+| v79 | 160 | 0 | 74 | 249 | 400 | 0 | 33.1% |
+| v83 | 367 | 0 | 0 | 314 | 202 | 0 | 53.9% |
+| v84 | 345 | 0 | 0 | 315 | 223 | 0 | 52.3% |
+| v87 | 379 | 0 | 0 | 339 | 165 | 0 | 52.8% |
+| v95 | 399 | 0 | 0 | 403 | 81 | 0 | 49.8% |
+| JMS185 | 361 | 0 | 0 | 350 | 172 | 0 | 50.8% |
 
 ## Conflicts
 

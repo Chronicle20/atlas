@@ -1,7 +1,7 @@
 {
   "WriterName": "InventoryCompartmentMergeRequest",
   "IDAName": "CWvsContext::SendGatherItemRequest",
-  "Address": "",
+  "Address": "0x954c6b",
   "Variant": "GMS/v79",
   "BranchDepth": 0,
   "AtlasFile": "libs/atlas-packet/inventory/serverbound/compartment_merge.go",
@@ -10,21 +10,21 @@
       "Index": 0,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 4,
-      "Note": "IDA read-order unresolved: function not found in IDB"
+      "IDAOp": 2,
+      "IDAComment": "updateTime — sub_954C6B (SendGatherItemRequest twin) COutPacket(67) Encode4 get_update_time @0x954cae",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 1,
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 1,
-      "Note": "atlas: trailing padding byte — client stops reading (harmless over-write)"
+      "IDAComment": "compartmentType (nInvType, 1..5) — Encode1(a2) @0x954cb9",
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 1,
+  "Verdict": 0,
   "FlatInvalid": false
 }

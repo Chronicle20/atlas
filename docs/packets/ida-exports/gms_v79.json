@@ -15547,13 +15547,34 @@
    ]
   },
   "CWvsContext::SendGatherItemRequest": {
-   "address": "",
+   "address": "0x954c6b",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode4",
+     "comment": "updateTime \u2014 sub_954C6B (SendGatherItemRequest twin) COutPacket(67) Encode4 get_update_time @0x954cae",
+     "guard": "a2 in [1,5] and get_update_time() != 0"
+    },
+    {
+     "op": "Decode1",
+     "comment": "compartmentType (nInvType, 1..5) \u2014 Encode1(a2) @0x954cb9",
+     "guard": "a2 in [1,5] and get_update_time() != 0"
+    }
+   ]
+  },
+  "CWvsContext::SendSortItemRequest": {
+   "address": "0x954cfd",
+   "direction": "serverbound",
+   "calls": [
+    {
+     "op": "Decode4",
+     "comment": "updateTime \u2014 sub_954CFD (SendSortItemRequest twin) COutPacket(68) Encode4 get_update_time @0x954d40",
+     "guard": "a2 in [1,5] and get_update_time() != 0"
+    },
+    {
+     "op": "Decode1",
+     "comment": "compartmentType (nInvType, 1..5) \u2014 Encode1(a2) @0x954d4b",
+     "guard": "a2 in [1,5] and get_update_time() != 0"
     }
    ]
   },
@@ -15714,13 +15735,33 @@
    ]
   },
   "CWvsContext::SendUpgradeItemUseRequest": {
-   "address": "",
+   "address": "0x954f9b",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode4",
+     "comment": "updateTime \u2014 sub_954F9B COutPacket(84) Encode4 get_update_time @0x954fd6",
+     "guard": "get_update_time() != 0"
+    },
+    {
+     "op": "Decode2",
+     "comment": "scrollSlot (nUOL/nUpgradeItemPos, a2) \u2014 Encode2 @0x954fe1",
+     "guard": "get_update_time() != 0"
+    },
+    {
+     "op": "Decode2",
+     "comment": "equipSlot (nEquipPos, a3) \u2014 Encode2 @0x954fec",
+     "guard": "get_update_time() != 0"
+    },
+    {
+     "op": "Decode2",
+     "comment": "bWhiteScroll (a4) \u2014 Encode2 @0x954ff7",
+     "guard": "get_update_time() != 0"
+    },
+    {
+     "op": "Decode1",
+     "comment": "legendarySpirit (bLegendarySpirit, a5) \u2014 Encode1 @0x955002",
+     "guard": "get_update_time() != 0"
     }
    ]
   },

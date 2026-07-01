@@ -2501,19 +2501,23 @@
 - op: ITEM_SORT
   direction: serverbound
   opcode: 67
-  fname: sub_954C6B
+  fname: CWvsContext::SendGatherItemRequest
+  fname_alts:
+    - sub_954C6B
   provenance: ida-discovered
   ida:
     address: 9784427
-  note: 'v79 sub_954C6B COutPacket(67); push 43h;a2 @0x954c97 (gather/merge). v83 ITEM_SORT=0x45=69 (d-2). delta doc serverbound (ida-read).'
+  note: 'v79 SendGatherItemRequest twin sub_954C6B @0x954C6B COutPacket(67); push 43h;a2 @0x954c97 (gather/merge). Primary fname = demangled canonical (matches v83+ + export); sub_954C6B is the actual v79 IDB symbol. v83 ITEM_SORT=0x45=69 (d-2). delta doc serverbound (ida-read).'
 - op: ITEM_SORT2
   direction: serverbound
   opcode: 68
-  fname: sub_954CFD
+  fname: CWvsContext::SendSortItemRequest
+  fname_alts:
+    - sub_954CFD
   provenance: ida-discovered
   ida:
     address: 9784573
-  note: 'v79 sub_954CFD COutPacket(68); push 44h;a2 @0x954d29 (sort). v83 ITEM_SORT2=0x46=70 (d-2). delta doc serverbound (ida-read).'
+  note: 'v79 SendSortItemRequest twin sub_954CFD @0x954CFD COutPacket(68); push 44h;a2 @0x954d29 (sort). Primary fname = demangled canonical (matches v83+ + export); sub_954CFD is the actual v79 IDB symbol. v83 ITEM_SORT2=0x46=70 (d-2). delta doc serverbound (ida-read).'
 - op: CANCEL_ITEM_EFFECT
   direction: serverbound
   opcode: 71
@@ -2549,11 +2553,13 @@
 - op: USE_UPGRADE_SCROLL
   direction: serverbound
   opcode: 84
-  fname: sub_954F9B
+  fname: CWvsContext::SendUpgradeItemUseRequest
+  fname_alts:
+    - sub_954F9B
   provenance: ida-discovered
   ida:
     address: 9785243
-  note: 'v79 sub_954F9B COutPacket(84); push 54h;a2 @0x954fbf. v83 USE_UPGRADE_SCROLL=0x56=86 (d-2). delta doc serverbound (ida-read).'
+  note: 'v79 SendUpgradeItemUseRequest twin sub_954F9B @0x954F9B COutPacket(84); push 54h;a2 @0x954fbf. Primary fname = demangled canonical (matches v83+ + export); sub_954F9B is the actual v79 IDB symbol. v83 USE_UPGRADE_SCROLL=0x56=86 (d-2). delta doc serverbound (ida-read).'
 - op: DISTRIBUTE_AP
   direction: serverbound
   opcode: 85

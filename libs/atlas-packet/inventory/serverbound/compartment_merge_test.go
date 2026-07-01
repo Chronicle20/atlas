@@ -11,6 +11,12 @@ import (
 // packet-audit:verify packet=inventory/serverbound/InventoryCompartmentMergeRequest version=gms_v83 ida=0xa08ee6
 // packet-audit:verify packet=inventory/serverbound/InventoryCompartmentMergeRequest version=jms_v185 ida=0xaed8dd
 // packet-audit:verify packet=inventory/serverbound/InventoryCompartmentMergeRequest version=gms_v84 ida=0xa531fa
+//
+// v79 (ITEM_SORT op 67, unnamed twin sub_954C6B @0x954C6B): COutPacket(67) +
+// Encode4(get_update_time) + Encode1(a2=compartmentType, guarded a2 in [1,5]) —
+// matches Decode4(updateTime)+Decode1(compartmentType). Export entry resolved
+// from the unnamed twin's decompile.
+// packet-audit:verify packet=inventory/serverbound/InventoryCompartmentMergeRequest version=gms_v79 ida=0x954c6b
 func TestCompartmentMergeRequestRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

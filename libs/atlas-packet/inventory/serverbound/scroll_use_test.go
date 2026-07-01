@@ -11,6 +11,13 @@ import (
 // packet-audit:verify packet=inventory/serverbound/InventoryScrollUse version=gms_v83 ida=0xa09221
 // packet-audit:verify packet=inventory/serverbound/InventoryScrollUse version=jms_v185 ida=0xaeddcb
 // packet-audit:verify packet=inventory/serverbound/InventoryScrollUse version=gms_v84 ida=0xa53535
+//
+// v79 (USE_UPGRADE_SCROLL op 84, unnamed twin sub_954F9B @0x954F9B):
+// COutPacket(84) + Encode4(get_update_time) + Encode2(scrollSlot) +
+// Encode2(equipSlot) + Encode2(bWhiteScroll) + Encode1(legendarySpirit) —
+// matches Decode4+Decode2×3+Decode1. Export entry resolved from the unnamed
+// twin's decompile.
+// packet-audit:verify packet=inventory/serverbound/InventoryScrollUse version=gms_v79 ida=0x954f9b
 func TestScrollUseRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

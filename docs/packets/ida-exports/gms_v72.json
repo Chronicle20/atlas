@@ -2458,13 +2458,16 @@
    ]
   },
   "CField::SendChatMsg": {
-   "address": "",
+   "address": "0x50b7dc",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "DecodeStr",
+     "comment": "message @0x50b898"
+    },
+    {
+     "op": "Decode1",
+     "comment": "bOnlyBalloon @0x50b8a3"
     }
    ]
   },

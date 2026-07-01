@@ -3090,15 +3090,9 @@
    ]
   },
   "CField_Coconut::BasicActionAttack": {
-   "address": "",
+   "address": "0x52699c",
    "direction": "",
-   "unresolved": true,
-   "calls": [
-    {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
-   ]
+   "calls": null
   },
   "CField_Coconut::BasicActionAttack#Coconut": {
    "address": "",

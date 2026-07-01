@@ -37,6 +37,23 @@ func TestSnowballByteOutputV79(t *testing.T) {
 	}
 }
 
+// TestSnowballByteOutputV72 pins the gms_v72 SNOWBALL (op 0xC9 = 201)
+// serverbound wire. IDA: CField_SnowBall::BasicActionAttack @0x5404cc
+// (GMS_v72.1_U_DEVM.exe) — COutPacket(201) @0x5405b1, Encode1(attack v8)
+// @0x5405be, Encode2(damage v9) @0x5405c7, Encode2(x v13) @0x5405d2, then
+// SendPacket. Body = attack(1) + damage(2 LE) + x(2 LE) — identical to the v79
+// golden (op 203).
+// packet-audit:verify packet=field/serverbound/FieldSnowball version=gms_v72 ida=0x5404cc
+func TestSnowballByteOutputV72(t *testing.T) {
+	input := NewSnowball(0x01, 0x0203, 0x0405)
+	ctx := pt.CreateContext("GMS", 72, 1)
+	expected := []byte{0x01, 0x03, 0x02, 0x05, 0x04}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v72 snowball golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
 func TestSnowballRoundTrip(t *testing.T) {
 	input := NewSnowball(0x01, 0x0203, 0x0405)
 	for _, v := range pt.Variants {

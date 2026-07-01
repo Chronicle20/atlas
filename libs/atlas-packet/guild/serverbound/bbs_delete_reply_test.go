@@ -7,6 +7,8 @@ import (
 )
 
 // packet-audit:verify packet=guild/serverbound/GuildBBSDeleteReply version=gms_v79 ida=0x786bba
+// v72 CUIGuildBBS::OnCommentDelete @0x751b7c: COutPacket(153)+Encode1(5)+Encode4(threadId)+Encode4(replyId), == v79.
+// packet-audit:verify packet=guild/serverbound/GuildBBSDeleteReply version=gms_v72 ida=0x751b7c
 // packet-audit:verify packet=guild/serverbound/GuildBBSDeleteReply version=gms_v87 ida=0x87a5df
 // packet-audit:verify packet=guild/serverbound/GuildBBSDeleteReply version=gms_v95 ida=0x7c3b70
 // packet-audit:verify packet=guild/serverbound/GuildBBSDeleteReply version=gms_v83 ida=0x816aa8

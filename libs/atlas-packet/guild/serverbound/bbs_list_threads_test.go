@@ -7,6 +7,8 @@ import (
 )
 
 // packet-audit:verify packet=guild/serverbound/GuildBBSListThreads version=gms_v79 ida=0x786c7b
+// v72 CUIGuildBBS::SendLoadListRequest @0x751c3d: COutPacket(153=BBS_OPERATION)+Encode1(2)+Encode4(startIndex). Body=Encode4(startIndex), == v79.
+// packet-audit:verify packet=guild/serverbound/GuildBBSListThreads version=gms_v72 ida=0x751c3d
 // packet-audit:verify packet=guild/serverbound/GuildBBSListThreads version=gms_v87 ida=0x87a5df
 // packet-audit:verify packet=guild/serverbound/GuildBBSListThreads version=gms_v95 ida=0x7c3680
 // packet-audit:verify packet=guild/serverbound/GuildBBSListThreads version=gms_v83 ida=0x816b69

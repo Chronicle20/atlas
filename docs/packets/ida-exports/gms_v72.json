@@ -8220,35 +8220,62 @@
    ]
   },
   "CUIGuildBBS::OnComment": {
-   "address": "",
+   "address": "0x751a68",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": ""
+    },
+    {
+     "op": "Decode4",
+     "comment": ""
+    },
+    {
+     "op": "Delegate",
+     "comment": "",
+     "ref": "sub_4160CB"
+    },
+    {
+     "op": "DecodeStr",
+     "comment": ""
     }
    ]
   },
   "CUIGuildBBS::OnCommentDelete": {
-   "address": "",
+   "address": "0x751b7c",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": "",
+     "guard": "CUtilDlg::YesNo((char)v6, v7, v8, v9, v10) == 6"
+    },
+    {
+     "op": "Decode4",
+     "comment": "",
+     "guard": "CUtilDlg::YesNo((char)v6, v7, v8, v9, v10) == 6"
+    },
+    {
+     "op": "Decode4",
+     "comment": "",
+     "guard": "CUtilDlg::YesNo((char)v6, v7, v8, v9, v10) == 6"
     }
    ]
   },
   "CUIGuildBBS::OnDelete": {
-   "address": "",
+   "address": "0x7519af",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": "",
+     "guard": "CUtilDlg::YesNo((char)v5, v6, v7, v8, v9) == 6"
+    },
+    {
+     "op": "Decode4",
+     "comment": "",
+     "guard": "CUtilDlg::YesNo((char)v5, v6, v7, v8, v9) == 6"
     }
    ]
   },
@@ -8291,35 +8318,75 @@
    ]
   },
   "CUIGuildBBS::OnRegister": {
-   "address": "",
+   "address": "0x7517ca",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": ""
+    },
+    {
+     "op": "Decode1",
+     "comment": ""
+    },
+    {
+     "op": "Decode4",
+     "comment": "",
+     "guard": "a2"
+    },
+    {
+     "op": "Decode1",
+     "comment": ""
+    },
+    {
+     "op": "Delegate",
+     "comment": "",
+     "ref": "sub_4160CB"
+    },
+    {
+     "op": "DecodeStr",
+     "comment": ""
+    },
+    {
+     "op": "Delegate",
+     "comment": "",
+     "ref": "sub_4160CB"
+    },
+    {
+     "op": "DecodeStr",
+     "comment": ""
+    },
+    {
+     "op": "Decode4",
+     "comment": ""
     }
    ]
   },
   "CUIGuildBBS::SendLoadListRequest": {
-   "address": "",
+   "address": "0x751c3d",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": ""
+    },
+    {
+     "op": "Decode4",
+     "comment": ""
     }
    ]
   },
   "CUIGuildBBS::SendViewEntryRequest": {
-   "address": "",
+   "address": "0x751c9e",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": ""
+    },
+    {
+     "op": "Decode4",
+     "comment": ""
     }
    ]
   },

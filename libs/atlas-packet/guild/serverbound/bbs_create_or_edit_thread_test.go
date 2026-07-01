@@ -7,6 +7,8 @@ import (
 )
 
 // packet-audit:verify packet=guild/serverbound/GuildBBSCreateOrEditThread version=gms_v79 ida=0x786808
+// v72 CUIGuildBBS::OnRegister @0x7517ca: COutPacket(153)+Encode1(0)+Encode1(modify)+[if modify:Encode4(threadId)]+Encode1(notice)+EncodeStr(title)+EncodeStr(msg)+Encode4(emoticon), == v79.
+// packet-audit:verify packet=guild/serverbound/GuildBBSCreateOrEditThread version=gms_v72 ida=0x7517ca
 // packet-audit:verify packet=guild/serverbound/GuildBBSCreateOrEditThread version=gms_v87 ida=0x87a5df
 // packet-audit:verify packet=guild/serverbound/GuildBBSCreateOrEditThread version=gms_v95 ida=0x7c4250
 // packet-audit:verify packet=guild/serverbound/GuildBBSCreateOrEditThread version=gms_v83 ida=0x8166f6

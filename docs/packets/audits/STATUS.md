@@ -5,7 +5,7 @@
 
 Tool: `fa2892b4e82339df60c9ef0c33a6e4a08bdc3bf3`
 
-- export gms_v72: `0418d3dc23a632314249b44abc1ba8a448b548092f2d202acc38e83039eb6721`
+- export gms_v72: `e57124ea91e096b37167636c226a6ab38e558ff41c5f3b22ceebf4650e56b035`
 - export gms_v79: `370d6b720b633c12c71d40340f3952000705c4bddb98f87179e7193d112d210c`
 - export gms_v83: `711bddcc2e1bdd417a75954148d2b50c64e70855e84259c0b8e50e700e393c0d`
 - export gms_v84: `7eab9472e2afeda13faaf74273828d09d5f2481d67bec10235c3b2fd2f91e1eb`
@@ -663,7 +663,7 @@ Tool: `fa2892b4e82339df60c9ef0c33a6e4a08bdc3bf3`
 | ACCEPT_FAMILY | CWvsContext::SendFamilyInviteResult |  |  | ⬜ |  | ⬜ | 0x096 | ❌ | 0x09A | ❌ | 0x09E | ❌ | 0x0AE | ❌ | 0x098 | ❌ |
 | USE_FAMILY | CWvsContext::SendUseFamilyPrivilege |  |  | ⬜ |  | ⬜ | 0x097 | ❌ | 0x09B | ❌ | 0x09F | ❌ | 0x0AF | ❌ | 0x099 | ❌ |
 | CHANGE_FAMILY_MESSAGE | CWvsContext::SendSetFamilyPrecept |  |  | ⬜ |  | ⬜ | 0x098 | ❌ | 0x09C | ❌ | 0x0A0 | ❌ | 0x0B0 | ❌ | 0x09A | ❌ |
-| BBS_OPERATION | CUIGuildBBS::OnComment; CUIGuildBBS::OnCommentDelete; CUIGuildBBS::OnDelete; CUIGuildBBS::OnRegister; CUIGuildBBS::SendLoadListRequest; CUIGuildBBS::SendViewEntryRequest | guild/serverbound/GuildBBSListThreads (T1) | 0x099 | ❌ | 0x098 | ✅ | 0x09B | ✅ | 0x09F | ✅ | 0x0A3 | ✅ | 0x0B3 | ✅ |  | ⬜ |
+| BBS_OPERATION | CUIGuildBBS::OnComment; CUIGuildBBS::OnCommentDelete; CUIGuildBBS::OnDelete; CUIGuildBBS::OnRegister; CUIGuildBBS::SendLoadListRequest; CUIGuildBBS::SendViewEntryRequest | guild/serverbound/GuildBBSListThreads (T1) | 0x099 | ✅ | 0x098 | ✅ | 0x09B | ✅ | 0x09F | ✅ | 0x0A3 | ✅ | 0x0B3 | ✅ |  | ⬜ |
 | FAMILY_SUMMON_RESPONSE | CWvsContext::OnFamilySummonRequest |  |  | ⬜ |  | ⬜ | 0x099 | ❌ | 0x09D | ❌ | 0x0A1 | ❌ | 0x0B1 | ❌ | 0x09B | ❌ |
 | UNNAMED_R245 |  |  |  | ⬜ |  | ⬜ | 0x09A | ❌ |  | ⬜ | 0x0A2 | ❌ | 0x0B2 | ❌ |  | ⬜ |
 | MOB_CRC_KEY_CHANGED_REPLY | CMobPool::OnMobCrcKeyChanged | monster/clientbound/MonsterMobCrcKeyChanged (T1) | 0x09B | ❌ | 0x09A | ✅ | 0x0A4 | ✅ | 0x0AA | ✅ | 0x0AE | ✅ | 0x0BE | ✅ | 0x09E | ✅ |
@@ -827,11 +827,11 @@ Tool: `fa2892b4e82339df60c9ef0c33a6e4a08bdc3bf3`
 | fame/serverbound/Change |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | field/serverbound/FieldChange (T1) |  |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | guild/serverbound/GuildAgreementResponse (T1) |  |  | 🟡 |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
-| guild/serverbound/GuildBBSCreateOrEditThread (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
-| guild/serverbound/GuildBBSDeleteReply (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
-| guild/serverbound/GuildBBSDeleteThread (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
-| guild/serverbound/GuildBBSDisplayThread (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
-| guild/serverbound/GuildBBSReplyThread (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
+| guild/serverbound/GuildBBSCreateOrEditThread (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
+| guild/serverbound/GuildBBSDeleteReply (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
+| guild/serverbound/GuildBBSDeleteThread (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
+| guild/serverbound/GuildBBSDisplayThread (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
+| guild/serverbound/GuildBBSReplyThread (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | guild/serverbound/GuildInviteRequest (T1) |  |  | 🟡 |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | guild/serverbound/GuildKick (T1) |  |  | 🟡 |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | guild/serverbound/GuildRequestCreate (T1) |  |  | 🟡 |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
@@ -919,7 +919,7 @@ Tool: `fa2892b4e82339df60c9ef0c33a6e4a08bdc3bf3`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v72 | 35 | 0 | 74 | 367 | 411 | 0 | 7.4% |
+| v72 | 41 | 0 | 74 | 361 | 411 | 0 | 8.6% |
 | v79 | 228 | 0 | 72 | 185 | 402 | 0 | 47.0% |
 | v83 | 367 | 0 | 0 | 316 | 204 | 0 | 53.7% |
 | v84 | 345 | 0 | 0 | 317 | 225 | 0 | 52.1% |

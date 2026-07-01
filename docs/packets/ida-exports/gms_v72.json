@@ -9966,13 +9966,13 @@
    "calls": null
   },
   "CUserLocal::TalkToNpc": {
-   "address": "",
+   "address": "0x70dd49",
    "direction": "serverbound",
-   "unresolved": true,
+   "notes": "v72 TalkToNpc = sub_70DD49@0x70dd49 (the sole COutPacket(57) sender; called from the CUserLocal NPC-click path sub_69FE41 as sub_70DD49(-npcOid)): COutPacket(57) + Encode4(oid) ONLY. The user-position x/y shorts (present at v79 CUserLocal::TalkToNpc@0x8b7e10) were added after the legacy range. Matches Atlas StartConversation with the GMS<79 oid-only gate.",
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Encode4",
+     "comment": "oid"
     }
    ]
   },

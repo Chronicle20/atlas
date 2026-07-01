@@ -1,0 +1,10 @@
+packet: npc/serverbound/NpcStartConversation
+direction: serverbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CUserLocal::TalkToNpc
+    address: "0x70dd49"
+    decompile_sha256: eb9790c8208ea74400e79ed2c657b7b8b002edfd79a544fb1df93ecb7c81c275
+verifies:
+  - libs/atlas-packet/npc/serverbound/conversation_v72_test.go#TestStartConversationByteV72

@@ -16,10 +16,24 @@ import (
 // OnAskMenu@0x6a15a6, all verified against the v72 decompile), and the
 // NPC_ACTION send CNpc::GenerateMovePath@0x63fc49.
 //
+// packet-audit:verify packet=npc/serverbound/NpcStartConversation version=gms_v72 ida=0x70dd49
 // packet-audit:verify packet=npc/serverbound/NpcContinueConversation version=gms_v72 ida=0x6a0d23
 // packet-audit:verify packet=npc/serverbound/NpcContinueConversationText version=gms_v72 ida=0x6a1161
 // packet-audit:verify packet=npc/serverbound/NpcContinueConversationSelection version=gms_v72 ida=0x6a15a6
 // packet-audit:verify packet=npc/serverbound/NpcActionRequest version=gms_v72 ida=0x63fc49
+
+// StartConversation: v72 TalkToNpc (sub_70DD49@0x70dd49) sends ONLY Encode4(oid);
+// the user-position x/y shorts were added after v79. Legacy GMS (<79) is oid-only.
+func TestStartConversationByteV72(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	ctx := pt.CreateContext("GMS", 72, 1)
+	got := StartConversation{oid: 2100, x: -5, y: 200}.Encode(l, ctx)(nil)
+	// oid only, no x/y.
+	want := []byte{0x34, 0x08, 0x00, 0x00} // 2100 uint32-LE
+	if !bytes.Equal(got, want) {
+		t.Fatalf("v72 StartConversation: got % x, want % x", got, want)
+	}
+}
 
 func v72le16(v uint16) []byte { b := make([]byte, 2); binary.LittleEndian.PutUint16(b, v); return b }
 

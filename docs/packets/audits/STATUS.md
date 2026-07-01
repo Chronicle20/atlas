@@ -5,7 +5,7 @@
 
 Tool: `fa2892b4e82339df60c9ef0c33a6e4a08bdc3bf3`
 
-- export gms_v72: `585907e37f7106fdd18bddcd4eceee8516390e372e32c2df499eb37c49f1cd0c`
+- export gms_v72: `7724b0f80403b60e19a76302c19f333022c1353ccf7494794e93ed53db1fb71e`
 - export gms_v79: `370d6b720b633c12c71d40340f3952000705c4bddb98f87179e7193d112d210c`
 - export gms_v83: `711bddcc2e1bdd417a75954148d2b50c64e70855e84259c0b8e50e700e393c0d`
 - export gms_v84: `7eab9472e2afeda13faaf74273828d09d5f2481d67bec10235c3b2fd2f91e1eb`
@@ -169,10 +169,10 @@ Tool: `fa2892b4e82339df60c9ef0c33a6e4a08bdc3bf3`
 | IDA_0X078 | sub_AF807A |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x078 | ❌ |
 | FORCED_MAP_EQUIP | CField::OnFieldSpecificData | field/clientbound/FieldForcedMapEquip (T1) | 0x079 | 🟡 | 0x07D | 🟡 | 0x085 | ✅ | 0x088 | ✅ | 0x08D | ✅ | 0x095 | ✅ | 0x083 | ✅ |
 | IDA_0X079 | CWvsContext::OnAskWhetherUsePamsSong |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x079 | ❌ |
-| MULTICHAT | CField::OnGroupMessage | field/clientbound/FieldMultiChat (T1) | 0x07A | ❌ | 0x07E | ✅ | 0x086 | ✅ | 0x089 | ✅ | 0x08E | ✅ | 0x096 | ✅ | 0x084 | ✅ |
+| MULTICHAT | CField::OnGroupMessage | field/clientbound/FieldMultiChat (T1) | 0x07A | ✅ | 0x07E | ✅ | 0x086 | ✅ | 0x089 | ✅ | 0x08E | ✅ | 0x096 | ✅ | 0x084 | ✅ |
 | DATA_CRC_CHECK_FAILED | CWvsContext::OnDataCRCCheckFailed |  |  | ⬜ |  | ⬜ | 0x07B | ❌ | 0x07E | ❌ | 0x07E | ❌ | 0x080 | ❌ | 0x077 | ❌ |
 | WHISPER | CField::OnWhisper | field/clientbound/FieldWhisperError (T1) | 0x07B | ❌ | 0x07F | ✅ | 0x087 | ✅ | 0x08A | ✅ | 0x08F | ✅ | 0x097 | ✅ | 0x085 | ✅ |
-| SPOUSE_CHAT | CField::OnCoupleMessage | field/clientbound/FieldSpouseChat (T1) | 0x07C | ❌ | 0x080 | ✅ | 0x088 | ✅ | 0x08B | ✅ | 0x090 | ✅ | 0x098 | ✅ |  | ⬜ |
+| SPOUSE_CHAT | CField::OnCoupleMessage | field/clientbound/FieldSpouseChat (T1) | 0x07C | ✅ | 0x080 | ✅ | 0x088 | ✅ | 0x08B | ✅ | 0x090 | ✅ | 0x098 | ✅ |  | ⬜ |
 | SUMMON_ITEM_INAVAILABLE | CField::OnSummonItemInavailable | field/clientbound/FieldSummonItemUnavailable (T1) | 0x07D | 🟡 | 0x081 | 🟡 | 0x089 | ✅ | 0x08C | ✅ | 0x091 | ✅ | 0x099 | ✅ | 0x086 | ✅ |
 | FIELD_EFFECT | CField::OnFieldEffect | field/clientbound/FieldEffectBossHp (T1) | 0x07E | ❌ | 0x082 | ✅ | 0x08A | ✅ | 0x08D | ✅ | 0x092 | ✅ | 0x09A | ✅ | 0x087 | ✅ |
 | IDA_0X07E | CWvsContext::OnSetPassenserRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x07E | ❌ |  | ⬜ |
@@ -620,7 +620,7 @@ Tool: `fa2892b4e82339df60c9ef0c33a6e4a08bdc3bf3`
 | MULTI_CHAT | CUIStatusBar::SendGroupMessage | chat/serverbound/ChatMulti (T1) | 0x075 | ✅ | 0x074 | ✅ | 0x077 | ❌ | 0x079 | ❌ | 0x07D | ❌ | 0x08C | ❌ | 0x079 | ❌ |
 | WATER_OF_LIFE | CWvsContext::SendWaterOfLife |  |  | ⬜ |  | ⬜ | 0x075 | ❌ | 0x075 | ❌ | 0x078 | ❌ | 0x081 | ❌ |  | ⬜ |
 | WHISPER | CField::SendChatMsgWhisper; CField::SendLocationWhisper | chat/serverbound/ChatWhisper (T1) | 0x076 | ✅ | 0x075 | ✅ | 0x078 | ✅ | 0x07A | ✅ | 0x07E | ✅ | 0x08D | ✅ | 0x07A | ✅ |
-| SPOUSE_CHAT | CUIStatusBar::SendCoupleMessage | field/serverbound/FieldCoupleMessage (T1) | 0x077 | ❌ | 0x076 | ✅ | 0x079 | ✅ | 0x07B | ✅ | 0x07F | ✅ | 0x08E | ✅ |  | ⬜ |
+| SPOUSE_CHAT | CUIStatusBar::SendCoupleMessage | field/serverbound/FieldCoupleMessage (T1) | 0x077 | ✅ | 0x076 | ✅ | 0x079 | ✅ | 0x07B | ✅ | 0x07F | ✅ | 0x08E | ✅ |  | ⬜ |
 | MESSENGER | CFadeWnd::SendCloseMessage; CUIMessenger::OnCreate; CUIMessenger::OnDestroy; CUIMessenger::OnInvite; CUIMessenger::ProcessChat; CUIMessenger::SendInviteMsg; CUIMessenger::Update | messenger/serverbound/MessengerOperationDeclineInvite (T1) | 0x078 | ✅ | 0x077 | ✅ | 0x07A | ✅ | 0x07C | ❌ | 0x080 | ✅ | 0x08F | ✅ | 0x07B | ✅ |
 | PLAYER_INTERACTION | CCashTradingRoomDlg::OnTrade; CCashTradingRoomDlg::PutItem; CCashTradingRoomDlg::PutMoney; CCashTradingRoomDlg::SetRet; CCashTradingRoomDlg::Trade; CEntrustedShopDlg::AddBlackList; CEntrustedShopDlg::DeleteBlackList; CEntrustedShopDlg::OnArrange; CEntrustedShopDlg::OnBlackList; CEntrustedShopDlg::OnCorrectSSN2; CEntrustedShopDlg::OnGoOut; CEntrustedShopDlg::OnVisitList; CEntrustedShopDlg::OnWithdrawMoney; CEntrustedShopDlg::SetRet; CField::AddBlackList; CField::DeleteBlackList; CField::SendInviteTradingRoomMsg; CMemoryGameDlg::OnClickBanButton; CMemoryGameDlg::OnClickEndButton; CMemoryGameDlg::OnClickReadyButton; CMemoryGameDlg::OnClickStartButton; CMemoryGameDlg::OnEnterResult; CMemoryGameDlg::OnTieRequest; CMemoryGameDlg::SendClaimGiveUp; CMemoryGameDlg::SendTieRequest; CMemoryGameDlg::SendTurnUpCard; CMemoryGameDlg::Update; CMiniRoomBaseDlg::CheckAndSendChat; CMiniRoomBaseDlg::OnCheckSSN2Static; CMiniRoomBaseDlg::SendCashInviteResult; CMiniRoomBaseDlg::SendInviteResult; COmokDlg::OnClickBanButton; COmokDlg::OnClickEndButton; COmokDlg::OnClickReadyButton; COmokDlg::OnClickStartButton; COmokDlg::OnEnterResult; COmokDlg::OnRetreatRequest; COmokDlg::OnTieRequest; COmokDlg::PutStoneChecker; COmokDlg::SendClaimGiveUp; COmokDlg::SendRetreatRequest; COmokDlg::SendTieRequest; COmokDlg::Update; CPersonalShopDlg::BuyItem; CPersonalShopDlg::CheckCashItemInList; CPersonalShopDlg::DeliverBlackList; CPersonalShopDlg::MoveItemToInventory; CPersonalShopDlg::OnClickBanButton; CPersonalShopDlg::OnCorrectSSN2; CPersonalShopDlg::PutItem; CPersonalShopDlg::SetRet; CPersonalShopDlg::Update; CTradingRoomDlg::OnTrade; CTradingRoomDlg::PutItem; CTradingRoomDlg::PutMoney; CTradingRoomDlg::SetRet; CTradingRoomDlg::Trade; CUserLocal::HandleLButtonDblClk; CUserLocal::HandleRButtonClk; CWvsContext::OnEntrustedShopCheckResult; CWvsContext::SendCreateMiniGameRequest; CWvsContext::SendOpenShopRequest; sub_62298D |  | 0x079 | ❌ | 0x078 | ❌ | 0x07B | ❌ | 0x07D | ❌ | 0x081 | ❌ | 0x090 | ❌ | 0x07C | ❌ |
 | REPAIR_DURABILITY_ALL | CRepairDurabilityDlg::SendRepairDurabilityAll |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x079 | ❌ | 0x082 | ❌ | 0x06D | ❌ |
@@ -914,7 +914,7 @@ Tool: `fa2892b4e82339df60c9ef0c33a6e4a08bdc3bf3`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v72 | 100 | 0 | 74 | 297 | 411 | 0 | 21.2% |
+| v72 | 103 | 0 | 74 | 294 | 411 | 0 | 21.9% |
 | v79 | 228 | 0 | 72 | 180 | 402 | 0 | 47.5% |
 | v83 | 367 | 0 | 0 | 311 | 204 | 0 | 54.1% |
 | v84 | 345 | 0 | 0 | 312 | 225 | 0 | 52.5% |

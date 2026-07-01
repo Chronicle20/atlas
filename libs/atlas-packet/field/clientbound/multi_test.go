@@ -7,6 +7,7 @@ import (
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=field/clientbound/FieldMultiChat version=gms_v72 ida=0x51626c
 // packet-audit:verify packet=field/clientbound/FieldMultiChat version=gms_v79 ida=0x51d328
 // packet-audit:verify packet=field/clientbound/FieldMultiChat version=gms_v83 ida=0x531e00
 // packet-audit:verify packet=field/clientbound/FieldMultiChat version=gms_v84 ida=0x53e086
@@ -33,6 +34,31 @@ func TestMultiChatByteOutputV79(t *testing.T) {
 	actual := pt.Encode(t, ctx, input.Encode, nil)
 	if !bytes.Equal(actual, expected) {
 		t.Errorf("v79 multichat golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
+// TestMultiChatByteOutputV72 pins the gms_v72 MULTICHAT (op 0x7A) clientbound
+// wire. IDA: CField::OnGroupMessage @0x51626c (GMS_v72.1_U_DEVM.exe) reads —
+//
+//	Decode1(mode)     @0x516284 → mode byte.
+//	DecodeStr(from)   @0x5162c1 → sender name.
+//	DecodeStr(message)@0x516306 → chat message.
+//
+// (the interleaved sub_4160CB ZXString copy for the blacklist check and the
+// trailing CHATLOG_ADD are display logic, not wire reads). v72 is GMS<87 so the
+// body matches the v79 legacy codec byte-for-byte. WriteByte = 1 byte;
+// WriteAsciiString = uint16-LE len + ASCII bytes.
+func TestMultiChatByteOutputV72(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 72, 1)
+	input := MultiChat{mode: 1, from: "PlayerOne", message: "hi"}
+	expected := []byte{
+		0x01, // mode @0x516284
+		0x09, 0x00, 0x50, 0x6C, 0x61, 0x79, 0x65, 0x72, 0x4F, 0x6E, 0x65, // from "PlayerOne" @0x5162c1
+		0x02, 0x00, 0x68, 0x69, // message "hi" @0x516306
+	}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v72 multichat golden mismatch: got %v want %v", actual, expected)
 	}
 }
 

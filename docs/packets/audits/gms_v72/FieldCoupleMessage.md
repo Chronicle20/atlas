@@ -1,15 +1,15 @@
 # FieldCoupleMessage (← `CUIStatusBar::SendCoupleMessage`)
 
-- **IDA:** 
+- **IDA:** 0x7f4651
 - **Atlas file:** `libs/atlas-packet/field/serverbound/spouse_chat.go`
 - **Variant:** GMS/v72
 - **Branch depth:** 0
-- **Verdict:** ❌
+- **Verdict:** ✅
 
 ## Wire-level diff
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | string | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
-| 1 | string | byte `` | ❌ | atlas: extra — client never reads this field |
+| 0 | string | string `spouseName @0x7f46fd` | ✅ |  |
+| 1 | string | string `message @0x7f4715` | ✅ |  |
 

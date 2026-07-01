@@ -7,6 +7,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=field/clientbound/FieldSpouseChat version=gms_v72 ida=0x5164aa
 // packet-audit:verify packet=field/clientbound/FieldSpouseChat version=gms_v79 ida=0x51d566
 // packet-audit:verify packet=field/clientbound/FieldSpouseChat version=gms_v83 ida=0x532087
 // packet-audit:verify packet=field/clientbound/FieldSpouseChat version=gms_v84 ida=0x53e30d
@@ -52,6 +53,33 @@ func TestSpouseChatByteOutputV79(t *testing.T) {
 	actual := test.Encode(t, ctx, input.Encode, nil)
 	if !bytes.Equal(actual, expected) {
 		t.Errorf("v79 spouse chat golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
+// TestSpouseChatByteOutputV72 pins the gms_v72 SPOUSE_CHAT (op 0x7C) clientbound
+// wire. IDA: CField::OnCoupleMessage @0x5164aa (GMS_v72.1_U_DEVM.exe). The client
+// dispatches on `Decode1(mode) - 4` @0x5164ce; the two guarded arms flatten into a
+// single positional union read order (same shape as v79):
+//
+//	mode-5 arm (mode-4==1): DecodeStr(sender) @0x5164e4, Decode1(flag) @0x5164f0,
+//	                        DecodeStr(chatText) @0x5164fb.
+//	mode-4 arm (mode-4==0): Decode1(partnerFlag) @0x5165c9, DecodeStr(partnerText) @0x516629.
+//
+// v72 is GMS<87 so the body matches the v79 legacy codec byte-for-byte.
+func TestSpouseChatByteOutputV72(t *testing.T) {
+	input := NewSpouseChat(SpouseChatModeOwn, "lover", 0x01, "hi", 0x02, "yo")
+	ctx := test.CreateContext("GMS", 72, 1)
+	expected := []byte{
+		0x04,                                // mode @0x5164ce
+		0x05, 0x00, 'l', 'o', 'v', 'e', 'r', // sender (mode-5 DecodeStr @0x5164e4)
+		0x01,                 // flag (mode-5 Decode1 @0x5164f0)
+		0x02, 0x00, 'h', 'i', // chatText (mode-5 DecodeStr @0x5164fb)
+		0x02,                 // partnerFlag (mode-4 Decode1 @0x5165c9)
+		0x02, 0x00, 'y', 'o', // partnerText (mode-4 DecodeStr @0x516629)
+	}
+	actual := test.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v72 spouse chat golden mismatch: got %v want %v", actual, expected)
 	}
 }
 

@@ -11,7 +11,7 @@
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "",
+      "IDAComment": "mode @0x516284",
       "Verdict": 0,
       "Note": ""
     },
@@ -20,7 +20,7 @@
       "AtlasOp": 4,
       "AtlasKind": 0,
       "IDAOp": 4,
-      "IDAComment": "",
+      "IDAComment": "from @0x5162c1",
       "Verdict": 0,
       "Note": ""
     },
@@ -29,20 +29,11 @@
       "AtlasOp": 4,
       "AtlasKind": 0,
       "IDAOp": 4,
-      "IDAComment": "",
+      "IDAComment": "message @0x516306",
       "Verdict": 0,
       "Note": ""
-    },
-    {
-      "Index": 3,
-      "AtlasOp": 0,
-      "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
     }
   ],
-  "Verdict": 2,
+  "Verdict": 0,
   "FlatInvalid": false
 }

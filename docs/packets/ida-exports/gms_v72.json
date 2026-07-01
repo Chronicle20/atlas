@@ -1954,25 +1954,15 @@
    "calls": [
     {
      "op": "Decode1",
-     "comment": ""
+     "comment": "mode @0x516284"
     },
     {
      "op": "DecodeStr",
-     "comment": ""
-    },
-    {
-     "op": "Delegate",
-     "comment": "",
-     "ref": "sub_4160CB"
+     "comment": "from @0x5162c1"
     },
     {
      "op": "DecodeStr",
-     "comment": ""
-    },
-    {
-     "op": "Delegate",
-     "comment": "",
-     "ref": "CHATLOG_ADD"
+     "comment": "message @0x516306"
     }
    ]
   },
@@ -8835,13 +8825,16 @@
    ]
   },
   "CUIStatusBar::SendCoupleMessage": {
-   "address": "",
+   "address": "0x7f4651",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "EncodeStr",
+     "comment": "spouseName @0x7f46fd"
+    },
+    {
+     "op": "EncodeStr",
+     "comment": "message @0x7f4715"
     }
    ]
   },

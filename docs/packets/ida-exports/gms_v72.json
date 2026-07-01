@@ -5793,13 +5793,36 @@
    ]
   },
   "CMob::GenerateMovePath": {
-   "address": "",
+   "address": "0x61aa54",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode4",
+     "comment": ""
+    },
+    {
+     "op": "Decode2",
+     "comment": ""
+    },
+    {
+     "op": "Decode1",
+     "comment": ""
+    },
+    {
+     "op": "Decode1",
+     "comment": ""
+    },
+    {
+     "op": "Decode4",
+     "comment": ""
+    },
+    {
+     "op": "Decode1",
+     "comment": ""
+    },
+    {
+     "op": "Decode4",
+     "comment": ""
     }
    ]
   },
@@ -6040,13 +6063,25 @@
    ]
   },
   "CMob::OnStatSet": {
-   "address": "",
+   "address": "0x61b59e",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode4",
+     "comment": ""
+    },
+    {
+     "op": "Delegate",
+     "comment": "",
+     "ref": "MobStat::DecodeTemporary"
+    },
+    {
+     "op": "Decode2",
+     "comment": ""
+    },
+    {
+     "op": "Decode1",
+     "comment": ""
     }
    ]
   },
@@ -6061,24 +6096,62 @@
    ]
   },
   "CMob::SendDropPickUpRequest": {
-   "address": "",
+   "address": "0x61db0d",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode4",
+     "comment": ""
+    },
+    {
+     "op": "Decode4",
+     "comment": ""
     }
    ]
   },
   "CMob::SetDamagedByMob": {
-   "address": "",
+   "address": "0x61f2ab",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode4",
+     "comment": "",
+     "guard": "a5 && (unsigned int)v9 != this[192]"
+    },
+    {
+     "op": "Decode4",
+     "comment": "",
+     "guard": "a5 && (unsigned int)v9 != this[192]"
+    },
+    {
+     "op": "Decode4",
+     "comment": "",
+     "guard": "a5 && (unsigned int)v9 != this[192]"
+    },
+    {
+     "op": "Decode1",
+     "comment": "",
+     "guard": "a5 && (unsigned int)v9 != this[192]"
+    },
+    {
+     "op": "Decode4",
+     "comment": "",
+     "guard": "a5 && (unsigned int)v9 != this[192]"
+    },
+    {
+     "op": "Decode1",
+     "comment": "",
+     "guard": "a5 && (unsigned int)v9 != this[192]"
+    },
+    {
+     "op": "Decode2",
+     "comment": "",
+     "guard": "a5 && (unsigned int)v9 != this[192]"
+    },
+    {
+     "op": "Decode2",
+     "comment": "",
+     "guard": "a5 && (unsigned int)v9 != this[192]"
     }
    ]
   },
@@ -6098,13 +6171,13 @@
    ]
   },
   "CMob::TryFirstSelfDestruction": {
-   "address": "",
+   "address": "0x61d837",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode4",
+     "comment": "",
+     "guard": "result && result && !*(_DWORD *)(v3 + 12) && dword_AA76B0(v8, v9, Src)"
     }
    ]
   },

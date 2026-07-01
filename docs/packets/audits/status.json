@@ -1,7 +1,7 @@
 {
   "toolSha": "fa2892b4e82339df60c9ef0c33a6e4a08bdc3bf3",
   "exportHashes": {
-    "gms_v72": "bb9e26cae4d683aa9554f6761edc246e9dec12a704e2b2479cb1a604d86ad210",
+    "gms_v72": "6b66b0de4392740edeb520db5d73642d7c25aed23fa3a9503bdf79e4d9ecd18f",
     "gms_v79": "370d6b720b633c12c71d40340f3952000705c4bddb98f87179e7193d112d210c",
     "gms_v83": "711bddcc2e1bdd417a75954148d2b50c64e70855e84259c0b8e50e700e393c0d",
     "gms_v84": "7eab9472e2afeda13faaf74273828d09d5f2481d67bec10235c3b2fd2f91e1eb",
@@ -16564,8 +16564,7 @@
       ],
       "cells": {
         "gms_v72": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
+          "state": "verified",
           "opcode": 155
         },
         "gms_v79": {
@@ -19107,8 +19106,7 @@
       ],
       "cells": {
         "gms_v72": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 178
         },
         "gms_v79": {
@@ -19350,8 +19348,7 @@
       ],
       "cells": {
         "gms_v72": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
+          "state": "verified",
           "opcode": 180
         },
         "gms_v79": {
@@ -19857,8 +19854,7 @@
       ],
       "cells": {
         "gms_v72": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🚫",
+          "state": "verified",
           "opcode": 183
         },
         "gms_v79": {
@@ -20022,8 +20018,7 @@
       ],
       "cells": {
         "gms_v72": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
+          "state": "verified",
           "opcode": 184
         },
         "gms_v79": {
@@ -22218,8 +22213,7 @@
       ],
       "cells": {
         "gms_v72": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 208
         },
         "gms_v79": {
@@ -22299,8 +22293,7 @@
       ],
       "cells": {
         "gms_v72": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 209
         },
         "gms_v79": {
@@ -22508,8 +22501,7 @@
       ],
       "cells": {
         "gms_v72": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 210
         },
         "gms_v79": {
@@ -22590,8 +22582,7 @@
       ],
       "cells": {
         "gms_v72": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 211
         },
         "gms_v79": {
@@ -22712,8 +22703,7 @@
       ],
       "cells": {
         "gms_v72": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
+          "state": "verified",
           "opcode": 212
         },
         "gms_v79": {
@@ -22749,13 +22739,11 @@
       "direction": "clientbound",
       "tier1": true,
       "fnames": [
-        "CMob::OnStatSet",
-        "sub_61B59E"
+        "CMob::OnStatSet"
       ],
       "cells": {
         "gms_v72": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 214
         },
         "gms_v79": {
@@ -22795,8 +22783,7 @@
       ],
       "cells": {
         "gms_v72": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 215
         },
         "gms_v79": {
@@ -23082,8 +23069,7 @@
       ],
       "cells": {
         "gms_v72": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
+          "state": "verified",
           "opcode": 218
         },
         "gms_v79": {
@@ -23268,8 +23254,7 @@
       ],
       "cells": {
         "gms_v72": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 219
         },
         "gms_v79": {
@@ -23469,8 +23454,7 @@
       ],
       "cells": {
         "gms_v72": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
+          "state": "verified",
           "opcode": 221
         },
         "gms_v79": {
@@ -23674,8 +23658,7 @@
       ],
       "cells": {
         "gms_v72": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
+          "state": "verified",
           "opcode": 222
         },
         "gms_v79": {
@@ -23717,8 +23700,7 @@
       ],
       "cells": {
         "gms_v72": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 223
         },
         "gms_v79": {
@@ -35220,48 +35202,6 @@
         },
         "jms_v185": {
           "state": "verified",
-          "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "sub-struct",
-      "packet": "monster/clientbound/MonsterStatSet",
-      "tier1": true,
-      "cells": {
-        "gms_v72": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
           "opcode": -1
         }
       }

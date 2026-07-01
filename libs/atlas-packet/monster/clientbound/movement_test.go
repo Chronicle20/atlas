@@ -69,3 +69,37 @@ func TestMonsterMovementBytesV79(t *testing.T) {
 		t.Errorf("v79 movement bytes:\n got % x\nwant % x", got, want)
 	}
 }
+
+// TestMonsterMovementBytesV72 pins the exact wire bytes against the v72 client
+// read order. uniqueId is consumed by the pool dispatcher CMobPool::OnMobPacket
+// @0x62560d (Decode4 @0x625617) before switching on op 211 -> CMob::OnMove
+// @0x61b10d (GMS_v72.1_U_DEVM.exe, port 13339):
+//
+//	Decode1 @0x61b12c — bNotForceLandingWhenDiscard (v3)
+//	Decode1 @0x61b131 — bLeft/action byte (v46; v42=v46&1 left, v14=v46>>1 action)
+//	Decode4 @0x61b1f3 — skill word (skillId int16 + skillLevel int16)
+//	CMovePath::OnMovePacket @0x61b482 — opaque movement trailer
+//
+// v72 (<79) reads only TWO leading bytes: it OMITS bNextAttackPossible (the v79
+// second byte) — legacy gate movement.go. It also omits the v87 bNotChangeAction
+// and the multiTargets/randTime blocks. Empty model.Movement = 5 zero bytes.
+//
+// packet-audit:verify packet=monster/clientbound/MonsterMovement version=gms_v72 ida=0x61b10d
+func TestMonsterMovementBytesV72(t *testing.T) {
+	input := NewMonsterMovement(5001, true, true, true, 1, 100, 5, model.MultiTargetForBall{}, model.RandTimeForAreaAttack{}, model.Movement{})
+	ctx := test.CreateContext("GMS", 72, 1)
+	want := []byte{
+		0x89, 0x13, 0x00, 0x00, // uniqueId 5001 — pool Decode4 @0x625617
+		0x01,       // bNotForceLandingWhenDiscard — Decode1 @0x61b12c
+		0x01,       // bLeft 1 (action|left byte) — Decode1 @0x61b131 (bNextAttackPossible OMITTED)
+		0x64, 0x00, // skillId 100 int16 — first half of Decode4 @0x61b1f3
+		0x05, 0x00, // skillLevel 5 int16 — second half
+		0x00, 0x00, // movement StartX — OnMovePacket @0x61b482
+		0x00, 0x00, // movement StartY
+		0x00, // movement element count = 0
+	}
+	got := input.Encode(nil, ctx)(nil)
+	if !bytes.Equal(got, want) {
+		t.Errorf("v72 movement bytes:\n got % x\nwant % x", got, want)
+	}
+}

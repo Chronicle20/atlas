@@ -57,3 +57,24 @@ func TestMonsterBombBytesV79(t *testing.T) {
 		t.Errorf("v79 monsterBomb bytes:\n got % x\nwant % x", got, want)
 	}
 }
+
+// TestMonsterBombBytesV72 pins the v72 wire. MONSTER_BOMB is sub_61D837
+// @0x61d837 (GMS_v72.1_U_DEVM.exe, port 13339), opcode 183:
+//
+//	COutPacket(183) @0x61d95d
+//	Encode4 @0x61d97e — fused mob id -> mobId
+//
+// Exactly one wire field. Byte-identical to v79.
+//
+// packet-audit:verify packet=monster/serverbound/MonsterMonsterBomb version=gms_v72 ida=0x61d837
+func TestMonsterBombBytesV72(t *testing.T) {
+	input := MonsterBomb{mobId: 0xAABBCCDD}
+	ctx := pt.CreateContext("GMS", 72, 1)
+	want := []byte{
+		0xDD, 0xCC, 0xBB, 0xAA, // mobId uint32 LE (Encode4 @0x61d97e)
+	}
+	got := input.Encode(nil, ctx)(nil)
+	if !bytes.Equal(got, want) {
+		t.Errorf("v72 monsterBomb bytes:\n got % x\nwant % x", got, want)
+	}
+}

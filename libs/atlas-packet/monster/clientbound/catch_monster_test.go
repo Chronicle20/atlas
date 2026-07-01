@@ -68,3 +68,27 @@ func TestCatchMonsterBytesV79(t *testing.T) {
 		t.Errorf("v79 catchMonster bytes:\n got % x\nwant % x", got, want)
 	}
 }
+
+// TestCatchMonsterBytesV72 pins the v72 wire. CATCH_MONSTER (op 223) is a per-mob
+// OnMobPacket case: CMobPool::OnMobPacket @0x62560d reads uniqueId (Decode4
+// @0x625617) -> GetMob, THEN dispatches to CMob::OnCatchEffect @0x61c93f
+// (GMS_v72.1_U_DEVM.exe, port 13339):
+//
+//	Decode1 @0x61c946 — result byte (-> sub_6186D8); no success byte.
+//
+// Wire = [uniqueId int32][result byte]; leading uniqueId is the universal
+// OnMobPacket prefix (legacyMobPoolPrefix). Byte-identical to v79.
+//
+// packet-audit:verify packet=monster/clientbound/MonsterCatchMonster version=gms_v72 ida=0x61c93f
+func TestCatchMonsterBytesV72(t *testing.T) {
+	input := NewCatchMonster(0x07654321, 0x42, 0x01)
+	ctx := pt.CreateContext("GMS", 72, 1)
+	want := []byte{
+		0x21, 0x43, 0x65, 0x07, // uniqueId int32 LE (pool Decode4 @0x625617)
+		0x42, // result byte (Decode1 @0x61c946)
+	}
+	got := input.Encode(nil, ctx)(nil)
+	if !bytes.Equal(got, want) {
+		t.Errorf("v72 catchMonster bytes:\n got % x\nwant % x", got, want)
+	}
+}

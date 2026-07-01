@@ -75,8 +75,10 @@ func (m MovementRequest) Encode(l logrus.FieldLogger, ctx context.Context) func(
 
 		w.WriteByte(m.moveFlags)
 		w.WriteInt(m.hackedCode)
-		w.WriteInt(m.flyCtxTargetX)
-		w.WriteInt(m.flyCtxTargetY)
+		if (t.IsRegion("GMS") && t.MajorAtLeast(79)) || t.Region() == "JMS" { // flyCtxTargetX/Y added at v79; legacy GMS (v72 sub_61AA54 @0x61af58 goes hackedCode->Flush with no flyCtx) omits them
+			w.WriteInt(m.flyCtxTargetX)
+			w.WriteInt(m.flyCtxTargetY)
+		}
 		if (t.IsRegion("GMS") && t.MajorAtLeast(87)) || t.Region() == "JMS" { // v87+ fields; v84..86 == v83 (off-by-one fix). delta §3.2
 			w.WriteInt(m.hackedCodeCRC)
 		}
@@ -110,8 +112,10 @@ func (m *MovementRequest) Decode(l logrus.FieldLogger, ctx context.Context) func
 
 		m.moveFlags = r.ReadByte()
 		m.hackedCode = r.ReadUint32()
-		m.flyCtxTargetX = r.ReadUint32()
-		m.flyCtxTargetY = r.ReadUint32()
+		if (t.IsRegion("GMS") && t.MajorAtLeast(79)) || t.Region() == "JMS" { // mirror of Encode: flyCtxTargetX/Y added at v79
+			m.flyCtxTargetX = r.ReadUint32()
+			m.flyCtxTargetY = r.ReadUint32()
+		}
 		if (t.IsRegion("GMS") && t.MajorAtLeast(87)) || t.Region() == "JMS" { // v87+ fields; v84..86 == v83 (off-by-one fix). delta §3.2
 			m.hackedCodeCRC = r.ReadUint32()
 		}

@@ -1,0 +1,10 @@
+packet: monster/clientbound/MonsterDamage
+direction: clientbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CMob::OnDamaged
+    address: "0x61b933"
+    decompile_sha256: 24e827ba7b2beb508c449c5f8dcfbd026df24b398ecf06ff53f9ef5a7a75a820
+verifies:
+  - libs/atlas-packet/monster/clientbound/damage_test.go#TestMonsterDamageBytesV72

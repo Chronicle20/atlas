@@ -52,3 +52,33 @@ func TestMonsterMovementAckBytesV79(t *testing.T) {
 		t.Errorf("v79 movement-ack bytes:\n got % x\nwant % x", got, want)
 	}
 }
+
+// TestMonsterMovementAckBytesV72 pins the v72 wire. uniqueId via
+// CMobPool::OnMobPacket @0x62560d (Decode4 @0x625617), op 212 -> CMob::OnCtrlAck
+// @0x61b4d8 (GMS_v72.1_U_DEVM.exe, port 13339):
+//
+//	Decode2 @0x61b4fd — moveId (v10, int16)
+//	Decode1 @0x61b508 — useSkills (v4)
+//	Decode2 @0x61b512 — mp (v5, uint16)
+//	Decode1 @0x61b531 — skillId (v6)
+//	Decode1 @0x61b533 — skillLevel (v7)
+//
+// Byte-identical to v79; no codec change.
+//
+// packet-audit:verify packet=monster/clientbound/MonsterMovementAck version=gms_v72 ida=0x61b4d8
+func TestMonsterMovementAckBytesV72(t *testing.T) {
+	input := NewMonsterMovementAck(5001, 42, 300, true, 10, 3)
+	ctx := test.CreateContext("GMS", 72, 1)
+	want := []byte{
+		0x89, 0x13, 0x00, 0x00, // uniqueId 5001 — pool Decode4 @0x625617
+		0x2A, 0x00, // moveId 42 — Decode2 @0x61b4fd
+		0x01,       // useSkills true — Decode1 @0x61b508
+		0x2C, 0x01, // mp 300 — Decode2 @0x61b512
+		0x0A, // skillId 10 — Decode1 @0x61b531
+		0x03, // skillLevel 3 — Decode1 @0x61b533
+	}
+	got := input.Encode(nil, ctx)(nil)
+	if !bytes.Equal(got, want) {
+		t.Errorf("v72 movement-ack bytes:\n got % x\nwant % x", got, want)
+	}
+}

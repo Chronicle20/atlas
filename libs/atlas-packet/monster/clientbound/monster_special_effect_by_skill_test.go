@@ -72,3 +72,27 @@ func TestMonsterSpecialEffectBySkillBytesV79(t *testing.T) {
 		t.Errorf("v79 specialEffectBySkill bytes:\n got % x\nwant % x", got, want)
 	}
 }
+
+// TestMonsterSpecialEffectBySkillBytesV72 pins the v72 wire.
+// MONSTER_SPECIAL_EFFECT_BY_SKILL (op 219) is a per-mob OnMobPacket case:
+// CMobPool::OnMobPacket @0x62560d reads uniqueId (Decode4 @0x625617) -> GetMob,
+// THEN dispatches to CMob::OnSpecialEffectBySkill @0x61cb1c
+// (GMS_v72.1_U_DEVM.exe, port 13339):
+//
+//	Decode4 @0x61cb38 — skillId (no further wire reads; no characterId/delay).
+//
+// Wire = [uniqueId int32][skillId int32]. Byte-identical to v79.
+//
+// packet-audit:verify packet=monster/clientbound/MonsterMonsterSpecialEffectBySkill version=gms_v72 ida=0x61cb1c
+func TestMonsterSpecialEffectBySkillBytesV72(t *testing.T) {
+	input := NewMonsterSpecialEffectBySkill(0x07654321, 0x002F1801, 0x0000A1B2, 0x0190)
+	ctx := pt.CreateContext("GMS", 72, 1)
+	want := []byte{
+		0x21, 0x43, 0x65, 0x07, // uniqueId int32 LE (pool Decode4 @0x625617)
+		0x01, 0x18, 0x2F, 0x00, // skillId int32 LE = 0x002F1801 (Decode4 @0x61cb38)
+	}
+	got := input.Encode(nil, ctx)(nil)
+	if !bytes.Equal(got, want) {
+		t.Errorf("v72 specialEffectBySkill bytes:\n got % x\nwant % x", got, want)
+	}
+}

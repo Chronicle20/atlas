@@ -1440,11 +1440,11 @@
 - op: APPLY_MONSTER_STATUS
   direction: clientbound
   opcode: 214
-  fname: sub_61B59E
+  fname: CMob::OnStatSet
   provenance: ida-discovered
   ida:
     address: 6403486
-  note: 'v72 IDB unnamed sub_61B59E = CMob::OnStatSet (APPLY_MONSTER_STATUS): Decode4 flags + MobStat::DecodeTemporary. Δ-6 vs v79 (220).'
+  note: 'v72 sub_61B59E (named CMob::OnStatSet in the IDB, task-113) = APPLY_MONSTER_STATUS: Decode4 LEGACY 32-bit flags + MobStat::DecodeTemporary. Δ-6 vs v79 (220).'
 - op: CANCEL_MONSTER_STATUS
   direction: clientbound
   opcode: 215

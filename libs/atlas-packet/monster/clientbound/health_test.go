@@ -44,3 +44,25 @@ func TestMonsterHealthBytesV79(t *testing.T) {
 		t.Errorf("v79 health bytes:\n got % x\nwant % x", got, want)
 	}
 }
+
+// TestMonsterHealthBytesV72 pins the v72 wire. uniqueId via
+// CMobPool::OnMobPacket @0x62560d (Decode4 @0x625617), op 222 ->
+// CMob::OnHPIndicator @0x61c8aa (GMS_v72.1_U_DEVM.exe, port 13339):
+//
+//	Decode1 @0x61c8bd — hpPercent (stored at +302)
+//
+// Byte-identical to v79; no codec change.
+//
+// packet-audit:verify packet=monster/clientbound/MonsterHealth version=gms_v72 ida=0x61c8aa
+func TestMonsterHealthBytesV72(t *testing.T) {
+	input := NewMonsterHealth(5001, 85)
+	ctx := test.CreateContext("GMS", 72, 1)
+	want := []byte{
+		0x89, 0x13, 0x00, 0x00, // uniqueId 5001 — pool Decode4 @0x625617
+		0x55, // hpPercent 85 — Decode1 @0x61c8bd
+	}
+	got := input.Encode(nil, ctx)(nil)
+	if !bytes.Equal(got, want) {
+		t.Errorf("v72 health bytes:\n got % x\nwant % x", got, want)
+	}
+}

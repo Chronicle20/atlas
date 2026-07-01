@@ -79,3 +79,46 @@ func TestMonsterSpawnBytesV79(t *testing.T) {
 		t.Errorf("v79 spawn bytes:\n got % x\nwant % x", got, want)
 	}
 }
+
+// TestMonsterSpawnBytesV72 pins the exact wire bytes against the v72 client read
+// order in CMobPool::OnMobEnterField @0x6256de (GMS_v72.1_U_DEVM.exe, port
+// 13339):
+//
+//	Decode4 @0x625700 — uniqueId
+//	Decode1 @0x62570d — control byte
+//	Decode4 @0x62571a — monsterId (template id)
+//	CMob::SetTemporaryStat @0x625742/@0x6257d1 -> Decode4 mask @0x61ebfa (LEGACY
+//	  single 32-bit mob temp-stat mask, not the v79 128-bit UINT128), then
+//	  MobStat::DecodeTemporary + CMob::Init @0x6257de — monster blob
+//
+// v72 is GMS major 72 (>12, <79, <87): the control byte is present (spawn gate
+// MajorVersion()>12), the mob temp-stat mask is a bare 4-byte word (legacy gate,
+// model.go legacyMobStatMask), and the blob omits the v87+ phase field. Empty
+// MonsterTemporaryStat encodes as the 4-byte empty mask.
+//
+// packet-audit:verify packet=monster/clientbound/MonsterSpawn version=gms_v72 ida=0x6256de
+func TestMonsterSpawnBytesV72(t *testing.T) {
+	m := model.NewMonster(100, 200, 5, 300, model.MonsterAppearTypeRegen, 0)
+	input := NewMonsterSpawn(5001, true, 100100, m)
+	ctx := test.CreateContext("GMS", 72, 1)
+	want := []byte{
+		0x89, 0x13, 0x00, 0x00, // uniqueId 5001 — Decode4 @0x625700
+		0x01,                   // control byte (controlled) — Decode1 @0x62570d
+		0x04, 0x87, 0x01, 0x00, // monsterId 100100 (0x18704) — Decode4 @0x62571a
+		// --- monster blob (model.MonsterModel.Encode, GMS>12 && <87) ---
+		0x00, 0x00, 0x00, 0x00, // temp-stat mask (empty, LEGACY 4-byte) — Decode4 @0x61ebfa
+		0x64, 0x00, // x 100
+		0xC8, 0x00, // y 200
+		0x05,       // moveAction 5
+		0x00, 0x00, // foothold 0
+		0x2C, 0x01, // homeFoothold 300
+		0xFE,       // appearType -2 (Regen)
+		0x00,                   // team 0
+		0x00, 0x00, 0x00, 0x00, // effectItemId 0
+		// phase omitted (<87)
+	}
+	got := input.Encode(nil, ctx)(nil)
+	if !bytes.Equal(got, want) {
+		t.Errorf("v72 spawn bytes:\n got % x\nwant % x", got, want)
+	}
+}

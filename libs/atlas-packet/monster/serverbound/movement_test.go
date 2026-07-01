@@ -164,6 +164,60 @@ func TestMonsterMovementBytesV79(t *testing.T) {
 	}
 }
 
+// TestMonsterMovementBytesV72 pins the exact wire bytes against the v72 client
+// send order. MOVE_LIFE is sub_61AA54 @0x61aa54 (GMS_v72.1_U_DEVM.exe, port
+// 13339), opcode 178; the COutPacket build block is at @0x61af58:
+//
+//	COutPacket(178) @0x61af58
+//	Encode4 @0x61af78 — fused mob id                 -> uniqueId
+//	Encode2 @0x61afaa — move SN counter              -> moveId
+//	Encode1 @0x61afbc — flags                        -> dwFlag
+//	Encode1 @0x61afc7 — (2*action)|dir               -> nActionAndDir
+//	Encode4 @0x61afd2 — skillData (a4)               -> skillData
+//	Encode1 @0x61aff4 — moveFlags                    -> moveFlags
+//	Encode4 @0x61b002 — hackedCode (v14[286])        -> hackedCode
+//	CMovePath::Flush @0x61b048 — opaque movement payload (§5)
+//
+// v72 (<79) writes hackedCode then goes STRAIGHT to Flush — it OMITS
+// flyCtxTargetX/flyCtxTargetY (added at v79), plus NO multiTarget/randTime (v84+),
+// hackedCodeCRC and chase block (v87+). Legacy gate movement.go. model.Movement
+// OPAQUE (§5); fixtured empty (5 bytes).
+//
+// packet-audit:verify packet=monster/serverbound/MonsterMovementRequest version=gms_v72 ida=0x61aa54
+func TestMonsterMovementBytesV72(t *testing.T) {
+	p := MovementRequest{}
+	p.uniqueId = 1001
+	p.moveId = 55
+	p.dwFlag = 1
+	p.nActionAndDir = -3
+	p.skillData = 0x0305
+	p.moveFlags = 0
+	p.hackedCode = 0
+	// v79+ fields set but gated off at v72:
+	p.flyCtxTargetX = 100
+	p.flyCtxTargetY = 200
+	p.hackedCodeCRC = 999
+	p.tChaseDuration = 500
+
+	ctx := test.CreateContext("GMS", 72, 1)
+	want := []byte{
+		0xE9, 0x03, 0x00, 0x00, // uniqueId 1001 (Encode4 @0x61af78)
+		0x37, 0x00, // moveId 55 (Encode2 @0x61afaa)
+		0x01, // dwFlag 1 (Encode1 @0x61afbc)
+		0xFD, // nActionAndDir -3 (Encode1 @0x61afc7)
+		0x05, 0x03, 0x00, 0x00, // skillData 0x0305 (Encode4 @0x61afd2)
+		0x00,                   // moveFlags 0 (Encode1 @0x61aff4)
+		0x00, 0x00, 0x00, 0x00, // hackedCode 0 (Encode4 @0x61b002)
+		// flyCtxTargetX/Y OMITTED (v79+)
+		// opaque movement (empty): StartX int16, StartY int16, count byte
+		0x00, 0x00, 0x00, 0x00, 0x00,
+	}
+	got := test.Encode(t, ctx, p.Encode, nil)
+	if !bytes.Equal(got, want) {
+		t.Errorf("v72 movement bytes:\n got % x\nwant % x", got, want)
+	}
+}
+
 func TestMonsterMovementOperationString(t *testing.T) {
 	p := MovementRequest{}
 	if p.Operation() != MonsterMovementHandle {

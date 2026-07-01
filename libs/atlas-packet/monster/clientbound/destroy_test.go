@@ -50,6 +50,29 @@ func TestMonsterDestroyBytesV79(t *testing.T) {
 	}
 }
 
+// TestMonsterDestroyBytesV72 pins the v72 wire against CMobPool::OnMobLeaveField
+// @0x6258a1 (GMS_v72.1_U_DEVM.exe, port 13339):
+//
+//	Decode4 @0x6258bd — uniqueId (v10)
+//	Decode1 @0x6258c5 — destroyType (v3): non-zero -> fade, zero -> death path
+//
+// v72 reads ONLY uniqueId(4)+destroyType(1); no destroyType==4 swallow arm
+// (v95+). Byte-identical to v79.
+//
+// packet-audit:verify packet=monster/clientbound/MonsterDestroy version=gms_v72 ida=0x6258a1
+func TestMonsterDestroyBytesV72(t *testing.T) {
+	input := NewMonsterDestroy(5001, DestroyTypeFadeOut)
+	ctx := test.CreateContext("GMS", 72, 1)
+	want := []byte{
+		0x89, 0x13, 0x00, 0x00, // uniqueId 5001 — Decode4 @0x6258bd
+		0x01, // destroyType FadeOut — Decode1 @0x6258c5
+	}
+	got := input.Encode(nil, ctx)(nil)
+	if !bytes.Equal(got, want) {
+		t.Errorf("v72 destroy bytes:\n got % x\nwant % x", got, want)
+	}
+}
+
 func TestMonsterDestroyBySwallow(t *testing.T) {
 	input := NewMonsterDestroyBySwallow(5001, 12345)
 	for _, v := range test.Variants {

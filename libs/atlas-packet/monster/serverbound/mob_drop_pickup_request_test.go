@@ -61,3 +61,26 @@ func TestMobDropPickupRequestBytesV79(t *testing.T) {
 		t.Errorf("v79 mobDropPickupRequest bytes:\n got % x\nwant % x", got, want)
 	}
 }
+
+// TestMobDropPickupRequestBytesV72 pins the v72 wire. MOB_DROP_PICKUP_REQUEST is
+// sub_61DB0D @0x61db0d (GMS_v72.1_U_DEVM.exe, port 13339), opcode 180:
+//
+//	COutPacket(180) @0x61db87
+//	Encode4 @0x61dba8 — fused mob id -> mobCrc
+//	Encode4 @0x61dbb1 — a2 (dwDropID) -> dropId
+//
+// Byte-identical to v79.
+//
+// packet-audit:verify packet=monster/serverbound/MonsterMobDropPickupRequest version=gms_v72 ida=0x61db0d
+func TestMobDropPickupRequestBytesV72(t *testing.T) {
+	input := MobDropPickupRequest{mobCrc: 0xAABBCCDD, dropId: 0x01020304}
+	ctx := pt.CreateContext("GMS", 72, 1)
+	want := []byte{
+		0xDD, 0xCC, 0xBB, 0xAA, // mobCrc uint32 LE (Encode4 @0x61dba8)
+		0x04, 0x03, 0x02, 0x01, // dropId uint32 LE (Encode4 @0x61dbb1)
+	}
+	got := input.Encode(nil, ctx)(nil)
+	if !bytes.Equal(got, want) {
+		t.Errorf("v72 mobDropPickupRequest bytes:\n got % x\nwant % x", got, want)
+	}
+}

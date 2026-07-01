@@ -53,3 +53,31 @@ func TestMonsterDamageBytesV79(t *testing.T) {
 		t.Errorf("v79 damage bytes:\n got % x\nwant % x", got, want)
 	}
 }
+
+// TestMonsterDamageBytesV72 pins the v72 wire. uniqueId via
+// CMobPool::OnMobPacket @0x62560d (Decode4 @0x625617), op 218 -> CMob::OnDamaged
+// @0x61b933 (GMS_v72.1_U_DEVM.exe, port 13339):
+//
+//	Decode1 @0x61b93e — damageType
+//	Decode4 @0x61b94e — damage (v3)
+//	Decode4 @0x61b97a — hp (v4)     ] read when the mob carries the HP-gauge flag
+//	Decode4 @0x61b97c — maxHp (v5)  ] (template +472); codec writes both always.
+//
+// Byte-identical to v79; no codec change.
+//
+// packet-audit:verify packet=monster/clientbound/MonsterDamage version=gms_v72 ida=0x61b933
+func TestMonsterDamageBytesV72(t *testing.T) {
+	input := NewMonsterDamage(5001, MonsterDamageTypeUnk2, 1500, 8500, 10000)
+	ctx := test.CreateContext("GMS", 72, 1)
+	want := []byte{
+		0x89, 0x13, 0x00, 0x00, // uniqueId 5001 — pool Decode4 @0x625617
+		0x01,                   // damageType Unk2 — Decode1 @0x61b93e
+		0xDC, 0x05, 0x00, 0x00, // damage 1500 — Decode4 @0x61b94e
+		0x34, 0x21, 0x00, 0x00, // hp 8500 — Decode4 @0x61b97a
+		0x10, 0x27, 0x00, 0x00, // maxHp 10000 — Decode4 @0x61b97c
+	}
+	got := input.Encode(nil, ctx)(nil)
+	if !bytes.Equal(got, want) {
+		t.Errorf("v72 damage bytes:\n got % x\nwant % x", got, want)
+	}
+}

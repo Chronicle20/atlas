@@ -7158,15 +7158,19 @@
    ]
   },
   "CScriptMan::OnAskMembershopAvatar#AskMemberShopAvatar": {
-   "address": "",
+   "address": "0x6c8bc8",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "DecodeStr",
+     "comment": "message text"
+    },
+    {
+     "op": "Decode1",
+     "comment": "count (cash-avatar SN entries; 0 for the legacy range, Atlas drives no candidates)"
     }
-   ]
+   ],
+   "notes": "v79 CScriptMan::OnAskMembershopAvatar@0x6c8bc8 (msgType 9 = ASK_MEMBER_SHOP_AVATAR): DecodeStr(message @0x6c8be2) + Decode1(count @0x6c8bfb) + count x [DecodeBuffer(&v15,8 @0x6c8c45)=cash item SN int64 + Decode1(@0x6c8c4d) byte] (candidates read from the incoming packet then looked up via CharacterData::GetItem(5,slot)). That per-entry format (int64 SN + byte) is incompatible with the v83+ int32 style-id list; Atlas has no server-side SN data to drive it, so count=0 for the legacy range. Atlas AskMemberShopAvatarConversationDetail (GMS<83 gate): AsciiString(Message)+WriteByte(0) -> matches DecodeStr+Decode1(0). v83 @0x74730b read Decode4 style ids."
   },
   "CScriptMan::OnAskMenu": {
    "address": "0x6c8863",

@@ -274,13 +274,27 @@ type AskMemberShopAvatarConversationDetail struct {
 	Candidates []uint32
 }
 
-func (a *AskMemberShopAvatarConversationDetail) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+func (a *AskMemberShopAvatarConversationDetail) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
 		w.WriteAsciiString(a.Message)
-		w.WriteByte(byte(len(a.Candidates)))
-		for _, candidate := range a.Candidates {
-			w.WriteInt(candidate)
+		// GMS v79 member-shop-avatar candidates are client-inventory-driven: the
+		// client (CScriptMan::OnAskMembershopAvatar @0x6c8bc8, GMS_v79_1_DEVM.exe
+		// port 13340) reads DecodeStr(message) + Decode1(count) + count x
+		// (DecodeBuffer(8)=cash item SN int64 + Decode1 byte). That per-entry
+		// format is incompatible with the v83+ int32 style-id list, and Atlas has
+		// no server-side SN data to drive it, so count is always 0 for the legacy
+		// range (msgType 9). v83+ (CScriptMan::OnAskMembershopAvatar#AskMemberShopAvatar)
+		// read Decode4 style ids — unchanged. delta §3.2
+		t := tenant.MustFromContext(ctx)
+		if t.Region() == "GMS" && t.MajorVersion() < 83 {
+			w.WriteByte(0)
+		}
+		if (t.Region() == "GMS" && t.MajorVersion() >= 83) || t.Region() == "JMS" {
+			w.WriteByte(byte(len(a.Candidates)))
+			for _, candidate := range a.Candidates {
+				w.WriteInt(candidate)
+			}
 		}
 		return w.Bytes()
 	}

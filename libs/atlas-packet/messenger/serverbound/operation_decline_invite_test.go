@@ -19,6 +19,14 @@ import (
 // guild-deny arms (case 6 op141 / case 8 op124) are the DENY_GUILD_REQUEST
 // siblings. Body codec carries no MajorVersion gate (== v83).
 // packet-audit:verify packet=messenger/serverbound/MessengerOperationDeclineInvite version=gms_v79 ida=0x50be2e
+//
+// v72 (CFadeWnd::SendCloseMessage @0x5004ca): the window-type-0 arm (else branch)
+// emits COutPacket(120=MESSENGER sb op) + Encode1(5)=mode + EncodeStr(fromName) +
+// EncodeStr(myName) + Encode1(0), byte-identical body to v79 (opcode 120 vs v79's
+// 119; the op byte and leading mode byte are stripped by dispatch). No MajorVersion
+// gate → == v79. The guild-deny arms (case op124/op125/op142) are the
+// DENY_GUILD_REQUEST siblings.
+// packet-audit:verify packet=messenger/serverbound/MessengerOperationDeclineInvite version=gms_v72 ida=0x5004ca
 func TestOperationDeclineInviteRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

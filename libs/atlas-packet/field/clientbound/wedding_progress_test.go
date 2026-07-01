@@ -7,6 +7,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=field/clientbound/FieldWeddingProgress version=gms_v72 ida=0x548c50
 // packet-audit:verify packet=field/clientbound/FieldWeddingProgress version=gms_v79 ida=0x55dfbb
 // packet-audit:verify packet=field/clientbound/FieldWeddingProgress version=gms_v83 ida=0x58153d
 // packet-audit:verify packet=field/clientbound/FieldWeddingProgress version=gms_v84 ida=0x5911e6
@@ -33,6 +34,22 @@ func TestWeddingProgressByteOutputV79(t *testing.T) {
 	actual := test.Encode(t, ctx, input.Encode, nil)
 	if !bytes.Equal(actual, expected) {
 		t.Errorf("v79 golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
+// TestWeddingProgressByteOutputV72 pins the gms_v72 WEDDING_PROGRESS clientbound
+// read. IDA: CField_Wedding::OnWeddingProgress @0x548c50 (GMS_v72.1_U_DEVM.exe)
+// reads Decode1(step)@0x548cb6 + Decode4(groomId this+483)@0x548cbb +
+// Decode4(brideId this+484)@0x548cce. Body identical to v79 (GMS keeps the step
+// byte). This clientbound fixture completes the OnWeddingProgress worst-of family
+// so the serverbound WEDDING_ACTION/WEDDING_TALK v72 cells can promote.
+func TestWeddingProgressByteOutputV72(t *testing.T) {
+	input := NewWeddingProgress(0x02, 0x01020304, 0x05060708)
+	ctx := test.CreateContext("GMS", 72, 1)
+	expected := []byte{0x02, 0x04, 0x03, 0x02, 0x01, 0x08, 0x07, 0x06, 0x05}
+	actual := test.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v72 golden mismatch: got %v want %v", actual, expected)
 	}
 }
 

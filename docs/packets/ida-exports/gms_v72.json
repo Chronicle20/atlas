@@ -2943,13 +2943,16 @@
    "calls": null
   },
   "CField::TryEnterTownPortal#UseDoor": {
-   "address": "",
+   "address": "0x51b86c",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Encode4",
+     "comment": "portalFieldId @0x51ba41"
+    },
+    {
+     "op": "Encode1",
+     "comment": "flag=1 @0x51ba4a"
     }
    ]
   },
@@ -3350,26 +3353,19 @@
    ]
   },
   "CField_Wedding::OnWeddingProgress#Action": {
-   "address": "",
+   "address": "0x548c50",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Encode1",
+     "comment": "readyByte (COutPacket 137) @0x5491f1"
     }
    ]
   },
   "CField_Wedding::OnWeddingProgress#Talk": {
-   "address": "",
+   "address": "0x548c50",
    "direction": "serverbound",
-   "unresolved": true,
-   "calls": [
-    {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
-   ]
+   "calls": []
   },
   "CField_Witchtower::OnPacket": {
    "address": "",

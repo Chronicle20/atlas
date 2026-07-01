@@ -7,6 +7,7 @@ import (
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=field/serverbound/FieldWeddingAction version=gms_v72 ida=0x548c50
 // packet-audit:verify packet=field/serverbound/FieldWeddingAction version=gms_v79 ida=0x55dfbb
 // packet-audit:verify packet=field/serverbound/FieldWeddingAction version=gms_v83 ida=0x58153d
 // packet-audit:verify packet=field/serverbound/FieldWeddingAction version=gms_v84 ida=0x5911e6
@@ -33,6 +34,21 @@ func TestWeddingActionByteOutputV79(t *testing.T) {
 	actual := pt.Encode(t, ctx, input.Encode, nil)
 	if !bytes.Equal(actual, expected) {
 		t.Errorf("v79 golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
+// TestWeddingActionByteOutputV72 pins the gms_v72 WEDDING_ACTION (op 0x89 / 137)
+// serverbound wire. IDA: CField_Wedding::OnWeddingProgress @0x548c50
+// (GMS_v72.1_U_DEVM.exe) Action arm builds COutPacket(137) @0x5491dc +
+// Encode1(readyByte this+1920) @0x5491f1 — single-byte body. Body identical to
+// v79 (op 136); only the opcode shifts +1 (registry gms_v72 op 137).
+func TestWeddingActionByteOutputV72(t *testing.T) {
+	input := NewWeddingAction(0x02)
+	ctx := pt.CreateContext("GMS", 72, 1)
+	expected := []byte{0x02}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v72 golden mismatch: got %v want %v", actual, expected)
 	}
 }
 

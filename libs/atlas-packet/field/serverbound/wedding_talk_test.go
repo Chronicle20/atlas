@@ -6,6 +6,7 @@ import (
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=field/serverbound/FieldWeddingTalk version=gms_v72 ida=0x548c50
 // packet-audit:verify packet=field/serverbound/FieldWeddingTalk version=gms_v79 ida=0x55dfbb
 // packet-audit:verify packet=field/serverbound/FieldWeddingTalk version=gms_v83 ida=0x58153d
 // packet-audit:verify packet=field/serverbound/FieldWeddingTalk version=gms_v84 ida=0x5911e6
@@ -29,6 +30,20 @@ func TestWeddingTalkByteOutputV79(t *testing.T) {
 	actual := pt.Encode(t, ctx, input.Encode, nil)
 	if len(actual) != 0 {
 		t.Errorf("v79 golden mismatch: got %v want empty", actual)
+	}
+}
+
+// TestWeddingTalkByteOutputV72 pins the gms_v72 WEDDING_TALK (op 0x8A / 138)
+// serverbound wire. IDA: CField_Wedding::OnWeddingProgress @0x548c50
+// (GMS_v72.1_U_DEVM.exe) Talk arm builds COutPacket(138) @0x548ede with no Encode
+// calls before SendPacket @0x548ef1 — header-only, empty body. Body identical to
+// v79 (op 137); only the opcode shifts +1 (registry gms_v72 op 138).
+func TestWeddingTalkByteOutputV72(t *testing.T) {
+	input := NewWeddingTalk()
+	ctx := pt.CreateContext("GMS", 72, 1)
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if len(actual) != 0 {
+		t.Errorf("v72 golden mismatch: got %v want empty", actual)
 	}
 }
 

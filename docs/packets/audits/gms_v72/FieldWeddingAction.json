@@ -1,7 +1,7 @@
 {
   "WriterName": "FieldWeddingAction",
   "IDAName": "CField_Wedding::OnWeddingProgress#Action",
-  "Address": "",
+  "Address": "0x548c50",
   "Variant": "GMS/v72",
   "BranchDepth": 0,
   "AtlasFile": "libs/atlas-packet/field/serverbound/wedding_action.go",
@@ -10,12 +10,12 @@
       "Index": 0,
       "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 4,
-      "Note": "IDA read-order unresolved: function not found in IDB"
+      "IDAOp": 0,
+      "IDAComment": "readyByte (COutPacket 137) @0x5491f1",
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 4,
+  "Verdict": 0,
   "FlatInvalid": false
 }

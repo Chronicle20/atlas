@@ -1,7 +1,7 @@
 {
   "WriterName": "AuthPermanentBan",
   "IDAName": "CLogin::OnCheckPasswordResult#AuthPermanentBan",
-  "Address": "",
+  "Address": "0x5cd38f",
   "Variant": "GMS/v79",
   "BranchDepth": 1,
   "AtlasFile": "libs/atlas-packet/login/clientbound/auth_permanent_ban.go",
@@ -10,30 +10,30 @@
       "Index": 0,
       "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 4,
-      "Note": "IDA read-order unresolved: function not found in IDB"
+      "IDAOp": 0,
+      "IDAComment": "resultCode (== 27)",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 1,
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "IDAComment": "post-auth flag",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 2,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "IDAOp": 2,
+      "IDAComment": "reserved (always decoded before branch); v79 27-branch reads no trailing (GMS)",
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 2,
+  "Verdict": 0,
   "FlatInvalid": false
 }

@@ -1,7 +1,7 @@
 {
   "toolSha": "9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6",
   "exportHashes": {
-    "gms_v79": "67889cc64366e9cba8664d95d607a50a690e8a26f68c42524dcca443d2e0da15",
+    "gms_v79": "289b35c429d17895a76bee1ec876a3f1566b11fd746fe7346ffcde433998702e",
     "gms_v83": "711bddcc2e1bdd417a75954148d2b50c64e70855e84259c0b8e50e700e393c0d",
     "gms_v84": "7eab9472e2afeda13faaf74273828d09d5f2481d67bec10235c3b2fd2f91e1eb",
     "gms_v87": "714817d376bb93732ef6b6fbe6b59f8c24515ff901801d213d676b501eae7f94",
@@ -20,8 +20,7 @@
       ],
       "cells": {
         "gms_v79": {
-          "state": "incomplete",
-          "note": "verdict ❌"
+          "state": "verified"
         },
         "gms_v83": {
           "state": "verified"

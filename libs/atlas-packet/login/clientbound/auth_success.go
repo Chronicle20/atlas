@@ -66,12 +66,18 @@ func (m AuthSuccess) Encode(l logrus.FieldLogger, ctx context.Context) func(opti
 				w.WriteLong(0)  // quiet ban timestamp
 				w.WriteLong(0)  // creation timestamp
 				w.WriteInt(1)   // nNumOfCharacter
-				w.WriteBool(!m.usesPin)
-				var needsPic = byte(0)
-				if m.pic != "" {
-					needsPic = byte(1)
+				// pin/pic flags: absent on the legacy (< v83) login-result wire.
+				// IDA v79 CLogin::OnCheckPasswordResult@0x5cd38f reads the success
+				// path only through nNumOfCharacter (Decode4) — no pinFlag/picFlag
+				// follow (v79 usesPin=false). Introduced at v83.
+				if t.MajorVersion() >= 83 {
+					w.WriteBool(!m.usesPin)
+					var needsPic = byte(0)
+					if m.pic != "" {
+						needsPic = byte(1)
+					}
+					w.WriteByte(needsPic)
 				}
-				w.WriteByte(needsPic)
 			} else {
 				w.WriteLong(0)
 				w.WriteLong(0)
@@ -128,11 +134,15 @@ func (m *AuthSuccess) Decode(l logrus.FieldLogger, ctx context.Context) func(r *
 				_ = r.ReadUint64() // quiet ban timestamp
 				_ = r.ReadUint64() // creation timestamp
 				_ = r.ReadUint32() // nNumOfCharacter
-				pinDisabled := r.ReadBool()
-				m.usesPin = !pinDisabled
-				needsPic := r.ReadByte()
-				if needsPic == 1 {
-					m.pic = "set"
+				// pin/pic flags absent below v83 (IDA v79 OnCheckPasswordResult
+				// @0x5cd38f reads no pinFlag/picFlag). Mirror of Encode gate.
+				if t.MajorVersion() >= 83 {
+					pinDisabled := r.ReadBool()
+					m.usesPin = !pinDisabled
+					needsPic := r.ReadByte()
+					if needsPic == 1 {
+						m.pic = "set"
+					}
 				}
 			} else {
 				_ = r.ReadUint64()

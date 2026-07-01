@@ -4599,104 +4599,59 @@
    "calls": [
     {
      "op": "Decode1",
-     "comment": ""
+     "comment": "resultCode (== 0 success)"
     },
     {
      "op": "Decode1",
-     "comment": ""
+     "comment": "post-auth flag"
     },
     {
      "op": "Decode4",
-     "comment": ""
-    },
-    {
-     "op": "Decode1",
-     "comment": "",
-     "guard": "v105 == (void *)2"
-    },
-    {
-     "op": "DecodeBuf",
-     "comment": "",
-     "guard": "v105 == (void *)2"
-    },
-    {
-     "op": "Delegate",
-     "comment": "",
-     "guard": "v105 == (void *)2",
-     "ref": "dword_B0FEA8"
-    },
-    {
-     "op": "Delegate",
-     "comment": "",
-     "guard": "v105 == (void *)2",
-     "ref": "dword_B0FEA4"
+     "comment": "reserved (always decoded before branch)"
     },
     {
      "op": "Decode4",
-     "comment": "",
-     "guard": "v41 <= 1u && v39 != (void *)23"
+     "comment": "accountId"
     },
     {
      "op": "Decode1",
-     "comment": "",
-     "guard": "v41 <= 1u && v39 != (void *)23"
+     "comment": "gender"
     },
     {
      "op": "Decode1",
-     "comment": "",
-     "guard": "v41 <= 1u && v39 != (void *)23"
+     "comment": "GM/admin flag"
     },
     {
      "op": "Decode1",
-     "comment": "",
-     "guard": "v41 <= 1u && v39 != (void *)23"
+     "comment": "admin byte (v79 byte; v95 widened to int16)"
     },
     {
      "op": "Decode1",
-     "comment": "",
-     "guard": "v41 <= 1u && v39 != (void *)23"
+     "comment": "countryCode"
     },
     {
      "op": "DecodeStr",
-     "comment": "",
-     "guard": "v41 <= 1u && v39 != (void *)23"
+     "comment": "nexonClubID (atlas writes character name into this slot)"
     },
     {
      "op": "Decode1",
-     "comment": "",
-     "guard": "v41 <= 1u && v39 != (void *)23"
+     "comment": "purchaseExp/quiet-ban reason"
     },
     {
      "op": "Decode1",
-     "comment": "",
-     "guard": "v41 <= 1u && v39 != (void *)23"
+     "comment": "quiet-ban code"
     },
     {
-     "op": "DecodeBuf",
-     "comment": "",
-     "guard": "v41 <= 1u && v39 != (void *)23"
+     "op": "Decode8",
+     "comment": "chatUnblockDate FILETIME (8-byte buffer)"
     },
     {
-     "op": "Delegate",
-     "comment": "",
-     "guard": "v41 <= 1u && v39 != (void *)23",
-     "ref": "dword_B0FEA8"
-    },
-    {
-     "op": "DecodeBuf",
-     "comment": "",
-     "guard": "v41 <= 1u && v39 != (void *)23"
-    },
-    {
-     "op": "Delegate",
-     "comment": "",
-     "guard": "v41 <= 1u && v39 != (void *)23",
-     "ref": "dword_B0FEA8"
+     "op": "Decode8",
+     "comment": "registerDate FILETIME (8-byte buffer)"
     },
     {
      "op": "Decode4",
-     "comment": "",
-     "guard": "v41 <= 1u && v39 != (void *)23"
+     "comment": "numOfCharacter (v79 success path ends here \u2014 no pinFlag/picFlag, no clientKey; usesPin=false)"
     }
    ]
   },
@@ -4719,24 +4674,46 @@
    ]
   },
   "CLogin::OnCheckPasswordResult#AuthPermanentBan": {
-   "address": "",
+   "address": "0x5cd38f",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": "resultCode (== 27)"
+    },
+    {
+     "op": "Decode1",
+     "comment": "post-auth flag"
+    },
+    {
+     "op": "Decode4",
+     "comment": "reserved (always decoded before branch); v79 27-branch reads no trailing (GMS)"
     }
    ]
   },
   "CLogin::OnCheckPasswordResult#AuthTemporaryBan": {
-   "address": "",
+   "address": "0x5cd38f",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": "resultCode (== 2)"
+    },
+    {
+     "op": "Decode1",
+     "comment": "post-auth flag"
+    },
+    {
+     "op": "Decode4",
+     "comment": "reserved (always decoded before branch)"
+    },
+    {
+     "op": "Decode1",
+     "comment": "ban reason (v6=Decode1)"
+    },
+    {
+     "op": "Decode8",
+     "comment": "chatUnblockDate FILETIME (DecodeBuffer 8)"
     }
    ]
   },

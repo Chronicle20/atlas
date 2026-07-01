@@ -12,6 +12,7 @@ import (
 // packet-audit:verify packet=login/clientbound/AuthSuccess version=gms_v95 ida=0x5dc600
 // packet-audit:verify packet=login/clientbound/AuthSuccess version=gms_v84 ida=0x60d368
 // packet-audit:verify packet=login/clientbound/AuthSuccess version=jms_v185 ida=0x66e79f
+// packet-audit:verify packet=login/clientbound/AuthSuccess version=gms_v79 ida=0x5cd38f
 func TestAuthSuccessV95WireWidthMatchesIDA(t *testing.T) {
 	// Spike: docs/packets/spike-login-v95.md Packet 1.
 	// Field 7 (subGradeCode+testerAccount) is int16 in v95, byte before.
@@ -57,7 +58,9 @@ func TestAuthSuccessRoundTrip(t *testing.T) {
 			if output.Gender() != input.Gender() {
 				t.Errorf("gender: got %v, want %v", output.Gender(), input.Gender())
 			}
-			if v.Region == "GMS" && v.MajorVersion > 12 {
+			// pin/pic flags exist only at GMS v83+ (IDA v79 OnCheckPasswordResult
+			// @0x5cd38f reads none; introduced at v83).
+			if v.Region == "GMS" && v.MajorVersion >= 83 {
 				if output.UsesPin() != input.UsesPin() {
 					t.Errorf("usesPin: got %v, want %v", output.UsesPin(), input.UsesPin())
 				}

@@ -628,7 +628,7 @@ Tool: `fa2892b4e82339df60c9ef0c33a6e4a08bdc3bf3`
 | REPAIR_DURABILITY | CRepairDurabilityDlg::SendRepairDurability |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x07A | ❌ | 0x083 | ❌ | 0x06E | ❌ |
 | DENY_PARTY_REQUEST | CFadeWnd::SendCloseMessage; CWvsContext::OnPartyResult | party/clientbound/PartyAlreadyJoined1 (T1) | 0x07B | ✅ | 0x07A | ✅ | 0x07D | ❌ | 0x07F | ❌ |  | ⬜ |  | ⬜ |  | ⬜ |
 | USER_QUEST_RECORD_SET_STATE | CDamageMeter::SaveDamageInfo |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x07B | ❌ | 0x084 | ❌ | 0x06F | ❌ |
-| GUILD_OPERATION | CField::InputGuildName; CField::SendCreateGuildAgreeMsg; CField::SendInviteGuildMsg; CField::SendKickGuildMsg; CField::SendSetGradeNameMsg; CField::SendSetGuildMarkMsg; CField::SendSetGuildNoticeMsg; CField::SendSetMemberGradeMsg; CField::SendWithdrawGuildMsg; CUIFadeYesNo::OnButtonClicked; CWvsContext::OnGuildResult | guild/serverbound/GuildJoin (T1) | 0x07C | ❌ | 0x07B | ✅ | 0x07E | ✅ | 0x082 | ✅ | 0x086 | ✅ | 0x095 | ✅ | 0x081 | ✅ |
+| GUILD_OPERATION | CField::InputGuildName; CField::SendCreateGuildAgreeMsg; CField::SendInviteGuildMsg; CField::SendKickGuildMsg; CField::SendSetGradeNameMsg; CField::SendSetGuildMarkMsg; CField::SendSetGuildNoticeMsg; CField::SendSetMemberGradeMsg; CField::SendWithdrawGuildMsg; CUIFadeYesNo::OnButtonClicked; CWvsContext::OnGuildResult | guild/serverbound/GuildJoin (T1) | 0x07C | ✅ | 0x07B | ✅ | 0x07E | ✅ | 0x082 | ✅ | 0x086 | ✅ | 0x095 | ✅ | 0x081 | ✅ |
 | DENY_GUILD_REQUEST | CFadeWnd::SendCloseMessage; CWvsContext::OnGuildResult | messenger/serverbound/MessengerOperationDeclineInvite (T1) | 0x07D | ✅ | 0x07C | ✅ | 0x07F | ✅ | 0x083 | ✅ | 0x087 | ✅ | 0x096 | ✅ | 0x082 | ✅ |
 | ADMIN_COMMAND | CField::SendChatMsgSlash; CStage::OnSetField; CUserLocal::OnKey | field/serverbound/FieldAdminChat (T1) | 0x07E | ❌ | 0x07D | ✅ | 0x080 | ✅ | 0x084 | ✅ | 0x088 | ✅ | 0x097 | ✅ | 0x083 | ✅ |
 | ADMIN_LOG | CField::SendChatMsgSlash | field/serverbound/FieldAdminChat (T1) | 0x07F | ❌ | 0x07E | ✅ | 0x081 | ✅ | 0x085 | ✅ | 0x089 | ✅ | 0x098 | ✅ | 0x084 | ✅ |
@@ -919,7 +919,7 @@ Tool: `fa2892b4e82339df60c9ef0c33a6e4a08bdc3bf3`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v72 | 41 | 0 | 74 | 361 | 411 | 0 | 8.6% |
+| v72 | 42 | 0 | 74 | 360 | 411 | 0 | 8.8% |
 | v79 | 228 | 0 | 72 | 185 | 402 | 0 | 47.0% |
 | v83 | 367 | 0 | 0 | 316 | 204 | 0 | 53.7% |
 | v84 | 345 | 0 | 0 | 317 | 225 | 0 | 52.1% |

@@ -13051,8 +13051,7 @@
       ],
       "cells": {
         "gms_v72": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
+          "state": "verified",
           "opcode": 124
         },
         "gms_v79": {

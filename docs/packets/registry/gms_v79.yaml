@@ -2443,19 +2443,19 @@
 - op: CLOSE_CHALKBOARD
   direction: serverbound
   opcode: 48
-  fname: sub_8A80A3
+  fname: CUserLocal::HandleLButtonClk
   provenance: ida-discovered
   ida:
     address: 9076899
-  note: 'v79 sub_8A80A3 COutPacket(48); push 30h;a2 @0x8a80d6. v83 CLOSE_CHALKBOARD=0x32=50 (d-2). delta doc serverbound (ida-read).'
+  note: 'v79 CUserLocal::HandleLButtonClk @0x8a80a3 (was sub_8A80A3, named task-113 by byte-signature twin of v83 CUserLocal::HandleLButtonClk @0x94fa8e): mouse-click handler; on close-area hit sends COutPacket(48) empty body (chalkboard close). v83 CLOSE_CHALKBOARD=0x32=50 (d-2). delta doc serverbound (ida-read).'
 - op: MONSTER_BOOK_COVER
   direction: serverbound
   opcode: 55
-  fname: sub_7D1772
+  fname: CUserLocal::SetMonsterBookCover
   provenance: ida-discovered
   ida:
-    address: 8198002
-  note: 'v79 sub_7D1772 COutPacket(55); push 37h;a2 @0x7d17ab (monster-book UI; SetMonsterBookCover @0x8b7ab0 only sets char-data+ZRef release, no COutPacket). v83 MONSTER_BOOK_COVER=0x39=57 (d-2). delta doc serverbound (ida-read).'
+    address: 9140912
+  note: 'v79 CUserLocal::SetMonsterBookCover @0x8b7ab0 (named setter; sets char-data+1447, no COutPacket — same as v83 SetMonsterBookCover @0x95fb3e which also does not send). The actual send site is the inlined monster-book UI helper sub_7D1772 @0x7d1772 (COutPacket(55)+Encode4 cover @0x7d17bd). Pinned fname = setter, mirroring the cross-version convention (cover.go). v83 MONSTER_BOOK_COVER=0x39=57 (d-2). delta doc serverbound (ida-read).'
 - op: NPC_TALK_MORE
   direction: serverbound
   opcode: 58
@@ -2517,11 +2517,11 @@
 - op: CANCEL_ITEM_EFFECT
   direction: serverbound
   opcode: 71
-  fname: sub_9553CD
+  fname: CWvsContext::SendStatChangeItemCancelRequest
   provenance: ida-discovered
   ida:
     address: 9786317
-  note: 'v79 sub_9553CD COutPacket(71); push 47h;a2 @0x955454. v83 CANCEL_ITEM_EFFECT=0x49=73 (d-2). delta doc serverbound (ida-read).'
+  note: 'v79 CWvsContext::SendStatChangeItemCancelRequest @0x9553cd (was sub_9553CD, named task-113 by byte-signature twin of v83 @0xa096af): CanSendExcl guard + IsNoCancelMouse check, else COutPacket(71)+Encode4(sourceId). v83 CANCEL_ITEM_EFFECT=0x49=73 (d-2). delta doc serverbound (ida-read).'
 - op: USE_SUMMON_BAG
   direction: serverbound
   opcode: 73
@@ -2597,11 +2597,11 @@
 - op: MESO_DROP
   direction: serverbound
   opcode: 92
-  fname: sub_96DFAF
+  fname: CWvsContext::SendDropMoneyRequest
   provenance: ida-discovered
   ida:
     address: 9887663
-  note: 'v79 sub_96DFAF COutPacket(92); push 5Ch;a2 @0x96e01d. v83 MESO_DROP=0x5e=94 (d-2). delta doc serverbound (ida-read).'
+  note: 'v79 CWvsContext::SendDropMoneyRequest @0x96dfaf (was sub_96DFAF, named task-113 by byte-signature twin of v83 @0xa23de5): drop-disabled field-flag guard, else COutPacket(92)+Encode4(update_time)+Encode4(amount). v83 MESO_DROP=0x5e=94 (d-2). delta doc serverbound (ida-read).'
 - op: GIVE_FAME
   direction: serverbound
   opcode: 93

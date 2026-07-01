@@ -9677,15 +9677,14 @@
    ]
   },
   "CUserLocal::HandleLButtonClk": {
-   "address": "",
+   "address": "0x8a80a3",
    "direction": "serverbound",
-   "unresolved": true,
-   "calls": [
-    {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
-   ]
+   "calls": []
+  },
+  "CUserLocal::SetMonsterBookCover": {
+   "address": "0x8b7ab0",
+   "direction": "serverbound",
+   "calls": []
   },
   "CUserLocal::HandleUpKeyDown": {
    "address": "0x8a6992",
@@ -15486,13 +15485,16 @@
    "calls": null
   },
   "CWvsContext::SendDropMoneyRequest": {
-   "address": "",
+   "address": "0x96dfaf",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode4",
+     "comment": ""
+    },
+    {
+     "op": "Decode4",
+     "comment": ""
     }
    ]
   },
@@ -15622,13 +15624,12 @@
    ]
   },
   "CWvsContext::SendStatChangeItemCancelRequest": {
-   "address": "",
+   "address": "0x9553cd",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode4",
+     "comment": ""
     }
    ]
   },

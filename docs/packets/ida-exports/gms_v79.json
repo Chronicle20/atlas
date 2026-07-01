@@ -7344,13 +7344,13 @@
    ]
   },
   "CScriptMan::OnAskMenu#Selection": {
-   "address": "",
+   "address": "0x6c8863",
    "direction": "serverbound",
-   "unresolved": true,
+   "notes": "v79 ask-menu selection reply: after the msgType+action frame the client appends Encode1(selection index) (OnAskMenu@0x6c89d6 Encode1(v18)). Narrow (single byte) for v79. Matches Atlas ContinueConversationSelection narrow (Byte selection). task-113 stage E close.",
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Encode1",
+     "comment": "selection"
     }
    ]
   },
@@ -7591,13 +7591,13 @@
    ]
   },
   "CScriptMan::OnAskText#Reply": {
-   "address": "",
+   "address": "0x6c836c",
    "direction": "serverbound",
-   "unresolved": true,
+   "notes": "v79 ask-text reply: after the msgType+action frame the client appends EncodeStr(text) (OnAskText@0x6c84ad EncodeStr on result==1). Matches Atlas ContinueConversationText (AsciiString text). task-113 stage E close.",
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "EncodeStr",
+     "comment": "text"
     }
    ]
   },
@@ -7667,13 +7667,17 @@
    ]
   },
   "CScriptMan::OnSay#Reply": {
-   "address": "",
+   "address": "0x6c7ed1",
    "direction": "serverbound",
-   "unresolved": true,
+   "notes": "v79 NPC conversation reply frame: the per-msgType handler builds COutPacket(58) Encode1 msgType + Encode1 action (e.g. OnSay@0x6c7fd4 Encode1(0)+Encode1(action)). Matches Atlas ContinueConversation (Byte lastMessageType + Byte action). task-113 stage E close.",
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Encode1",
+     "comment": "lastMessageType"
+    },
+    {
+     "op": "Encode1",
+     "comment": "action"
     }
    ]
   },
@@ -10367,21 +10371,19 @@
   "CUserLocal::TalkToNpc": {
    "address": "0x8b7e10",
    "direction": "serverbound",
+   "notes": "v79 CUserLocal::TalkToNpc@0x8b7e10 sends COutPacket(56): Encode4 npc oid, Encode2 x, Encode2 y. Matches Atlas StartConversation (Int oid + Int16 x + Int16 y). task-113 stage E close.",
    "calls": [
     {
-     "op": "Decode4",
-     "comment": "",
-     "guard": "<default>"
+     "op": "Encode4",
+     "comment": "oid"
     },
     {
-     "op": "Decode2",
-     "comment": "",
-     "guard": "<default>"
+     "op": "Encode2",
+     "comment": "x"
     },
     {
-     "op": "Decode2",
-     "comment": "",
-     "guard": "<default>"
+     "op": "Encode2",
+     "comment": "y"
     }
    ]
   },

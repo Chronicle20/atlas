@@ -5,7 +5,7 @@
 
 Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 
-- export gms_v79: `bda5435e34e60ba6c17ab26ae9d3e75752da88a2659533e7cb42402a638d16af`
+- export gms_v79: `a6440e0f174f4d9ec61ca6b7dda9071e9009df69cc99d75e185322f9d66ef099`
 - export gms_v83: `711bddcc2e1bdd417a75954148d2b50c64e70855e84259c0b8e50e700e393c0d`
 - export gms_v84: `7eab9472e2afeda13faaf74273828d09d5f2481d67bec10235c3b2fd2f91e1eb`
 - export gms_v87: `714817d376bb93732ef6b6fbe6b59f8c24515ff901801d213d676b501eae7f94`
@@ -545,7 +545,7 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 | UNNAMED_R74 |  |  |  | ⬜ | 0x036 | ❌ | 0x036 | ❌ | 0x039 | ❌ | 0x03B | ❌ | 0x02E | ❌ |
 | MONSTER_BOOK_COVER | CUserLocal::SetMonsterBookCover | character/serverbound/monsterbook/CharacterCover (T1) | 0x037 | ✅ | 0x039 | ✅ | 0x039 | ✅ | 0x03C | ✅ | 0x03E | ✅ | 0x031 | ✅ |
 | UNNAMED_R75 |  |  |  | ⬜ | 0x037 | ❌ | 0x037 | ❌ | 0x03A | ❌ | 0x03C | ❌ | 0x02F | ❌ |
-| NPC_TALK | CNpc::ShowQuestList; CUserLocal::TalkToNpc | npc/serverbound/NpcStartConversation (T1) | 0x038 | 🟡 | 0x03A | ❌ | 0x03A | ❌ | 0x03D | ❌ | 0x03F | ❌ | 0x032 | ❌ |
+| NPC_TALK | CNpc::ShowQuestList; CUserLocal::TalkToNpc | npc/serverbound/NpcStartConversation (T1) | 0x038 | ✅ | 0x03A | ❌ | 0x03A | ❌ | 0x03D | ❌ | 0x03F | ❌ | 0x032 | ❌ |
 | NPC_TALK_MORE | CScriptMan::OnAskAvatar; CScriptMan::OnAskBoxText; CScriptMan::OnAskMembershopAvatar; CScriptMan::OnAskMenu; CScriptMan::OnAskNumber; CScriptMan::OnAskPet; CScriptMan::OnAskPetAll; CScriptMan::OnAskSlideMenu; CScriptMan::OnAskText; CScriptMan::OnAskYesNo; CScriptMan::OnSay; CScriptMan::OnSayImage; CUIInitialQuiz::SendResult; CUISpeedQuiz::SendResult | npc/clientbound/NpcAskMemberShopAvatarConversationDetail (T1) | 0x03A | ✅ | 0x03C | ✅ | 0x03C | ✅ | 0x03F | ✅ | 0x041 | ✅ | 0x034 | ✅ |
 | NPC_SHOP | CShopDlg::SendBuyRequest; CShopDlg::SendRechargeRequest; CShopDlg::SendSellRequest; CShopDlg::SetRet; sub_6D68A3 |  | 0x03B | ❌ | 0x03D | ❌ | 0x03D | ❌ | 0x040 | ❌ | 0x042 | ❌ | 0x035 | ❌ |
 | REMOTE_STORE | CWvsContext::SendRemoteShopOpenRequest |  |  | ⬜ | 0x03B | ❌ | 0x03B | ❌ | 0x03E | ❌ | 0x040 | ❌ | 0x033 | ❌ |
@@ -883,9 +883,9 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 | npc/clientbound/NpcSayConversationDetail (T1) |  |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
 | npc/clientbound/NpcSayImageConversationDetail (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | npc/clientbound/NpcShopList (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| npc/serverbound/NpcContinueConversation (T1) |  |  | ❌ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
-| npc/serverbound/NpcContinueConversationSelection (T1) |  |  | ❌ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
-| npc/serverbound/NpcContinueConversationText (T1) |  |  | ❌ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
+| npc/serverbound/NpcContinueConversation (T1) |  |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
+| npc/serverbound/NpcContinueConversationSelection (T1) |  |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
+| npc/serverbound/NpcContinueConversationText (T1) |  |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
 | npc/serverbound/NpcShopBuy (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | npc/serverbound/NpcShopRecharge (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | npc/serverbound/NpcShopSell (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
@@ -909,7 +909,7 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v79 | 210 | 0 | 73 | 195 | 400 | 0 | 43.9% |
+| v79 | 214 | 0 | 72 | 192 | 400 | 0 | 44.8% |
 | v83 | 367 | 0 | 0 | 309 | 202 | 0 | 54.3% |
 | v84 | 345 | 0 | 0 | 310 | 223 | 0 | 52.7% |
 | v87 | 379 | 0 | 0 | 334 | 165 | 0 | 53.2% |

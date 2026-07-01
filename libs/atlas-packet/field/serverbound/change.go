@@ -69,12 +69,13 @@ func (m Change) Encode(l logrus.FieldLogger, ctx context.Context) func(options m
 		}
 		w.WriteByte(m.unused)
 		w.WriteByte(m.premium)
-		// The chase flag (s_bChase / dword_B0D450) is emitted by every GMS client
-		// from at least v79 onward. v79 IDA: CField::SendTransferFieldRequest
-		// @0x51b950 Encode1(dword_B0D450) @0x51ba3e, then Encode4(targetX)/Encode4
-		// (targetY) when set. The legacy gate was >=83, which wrongly dropped the
-		// byte for v79; lowered to >=79 (legacy range). v83/84/87/95 unchanged.
-		if t.Region() == "GMS" && t.MajorVersion() >= 79 {
+		// The chase flag (s_bChase / dword_AA4E60 in v72, dword_B0D450 in v79) is
+		// emitted by every GMS client from at least v72 onward. v72 IDA:
+		// CField::SendTransferFieldRequest @0x5148b1 Encode1(dword_AA4E60) @0x51499f,
+		// then Encode4(targetX)/Encode4(targetY) when set — structurally identical to
+		// the v79 @0x51ba3e pattern. The legacy gate was >=79, which wrongly dropped
+		// the byte for v72; lowered to >=72 (legacy range). v79/83/84/87/95 unchanged.
+		if t.Region() == "GMS" && t.MajorVersion() >= 72 {
 			w.WriteBool(m.chase)
 		}
 		if m.chase {
@@ -103,8 +104,8 @@ func (m *Change) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *reque
 		}
 		m.unused = r.ReadByte()
 		m.premium = r.ReadByte()
-		// chase flag present from at least v79 (see Encode comment): >=79 legacy gate.
-		if t.Region() == "GMS" && t.MajorVersion() >= 79 {
+		// chase flag present from at least v72 (see Encode comment): >=72 legacy gate.
+		if t.Region() == "GMS" && t.MajorVersion() >= 72 {
 			m.chase = r.ReadBool()
 		}
 		if m.chase {

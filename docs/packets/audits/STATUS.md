@@ -5,7 +5,7 @@
 
 Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 
-- export gms_v79: `c527569b6bdf6301a3165bd9828df67b4a323be3c1ff4155dfa09587d5f7ae02`
+- export gms_v79: `226cf5230c6819f092c467c9ca7abdc1498306df7477c2be561997c66fc359a4`
 - export gms_v83: `711bddcc2e1bdd417a75954148d2b50c64e70855e84259c0b8e50e700e393c0d`
 - export gms_v84: `7eab9472e2afeda13faaf74273828d09d5f2481d67bec10235c3b2fd2f91e1eb`
 - export gms_v87: `714817d376bb93732ef6b6fbe6b59f8c24515ff901801d213d676b501eae7f94`
@@ -886,9 +886,9 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 | npc/serverbound/NpcContinueConversation (T1) |  |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
 | npc/serverbound/NpcContinueConversationSelection (T1) |  |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
 | npc/serverbound/NpcContinueConversationText (T1) |  |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
-| npc/serverbound/NpcShopBuy (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
-| npc/serverbound/NpcShopRecharge (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
-| npc/serverbound/NpcShopSell (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
+| npc/serverbound/NpcShopBuy (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
+| npc/serverbound/NpcShopRecharge (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
+| npc/serverbound/NpcShopSell (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | npc/serverbound/NpcStartConversation (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | party/serverbound/PartyOperationChangeLeader (T1) |  |  | ❌ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
 | party/serverbound/PartyOperationExpel (T1) |  |  | 🟡 |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
@@ -909,7 +909,7 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v79 | 224 | 0 | 72 | 182 | 400 | 0 | 46.9% |
+| v79 | 227 | 0 | 72 | 179 | 400 | 0 | 47.5% |
 | v83 | 367 | 0 | 0 | 309 | 202 | 0 | 54.3% |
 | v84 | 345 | 0 | 0 | 310 | 223 | 0 | 52.7% |
 | v87 | 379 | 0 | 0 | 334 | 165 | 0 | 53.2% |

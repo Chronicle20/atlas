@@ -1,10 +1,42 @@
 package serverbound
 
 import (
+	"bytes"
 	"testing"
 
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
+	testlog "github.com/sirupsen/logrus/hooks/test"
 )
+
+// TestShopBuyByteV79 pins the gms_v79 NPC_SHOP BUY body (op byte 0, written by
+// the dispatcher; body only here).
+//
+// IDA: CShopDlg::SendBuyRequest @0x6d68a3 (renamed from sub_6D68A3;
+// GMS_v79_1_DEVM.exe, port 13340) builds COutPacket(59):
+//
+//	Encode1 op=0 (BUY)          @0x6d6a58  (dispatcher prefix, not in body)
+//	Encode2 slot                @0x6d6a76
+//	Encode4 itemId              @0x6d6a86
+//	Encode2 quantity            @0x6d6a91
+//	Encode4 discountPrice        @0x6d6a9c
+//
+// v79 is GMS so the trailing discountPrice int is present (region-gated).
+//
+// packet-audit:verify packet=npc/serverbound/NpcShopBuy version=gms_v79 ida=0x6d68a3
+func TestShopBuyByteV79(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	ctx := pt.CreateContext("GMS", 79, 1)
+	got := ShopBuy{slot: 3, itemId: 2000000, quantity: 5, discountPrice: 1000}.Encode(l, ctx)(nil)
+	want := []byte{
+		0x03, 0x00, // slot=3           @0x6d6a76
+		0x80, 0x84, 0x1E, 0x00, // itemId=2000000  @0x6d6a86
+		0x05, 0x00, // quantity=5       @0x6d6a91
+		0xE8, 0x03, 0x00, 0x00, // discountPrice=1000 @0x6d6a9c
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatalf("v79 ShopBuy: got % x, want % x", got, want)
+	}
+}
 
 // packet-audit:verify packet=npc/serverbound/NpcShopBuy version=gms_v83 ida=0x7561c1
 // packet-audit:verify packet=npc/serverbound/NpcShopBuy version=gms_v87 ida=0x7a1d49

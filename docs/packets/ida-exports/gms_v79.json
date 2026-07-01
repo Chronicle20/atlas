@@ -8038,38 +8038,70 @@
    ]
   },
   "CShopDlg::SendBuyRequest": {
-   "address": "",
-   "direction": "serverbound",
-   "unresolved": true,
-   "calls": [
-    {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
-   ]
-  },
+    "address": "0x6d68a3",
+    "direction": "serverbound",
+    "notes": "v79 CShopDlg::SendBuyRequest@0x6d68a3 (renamed from sub_6D68A3) builds COutPacket(59) NPC_SHOP op0 (BUY): Encode1 op=0@0x6d6a58, Encode2 slot@0x6d6a76, Encode4 itemId@0x6d6a86, Encode2 quantity@0x6d6a91, Encode4 discountPrice@0x6d6a9c. Matches Atlas ShopBuy (Short slot+Int itemId+Short qty+Int price). task-113 stage E close.",
+    "calls": [
+     {
+      "op": "Encode1",
+      "comment": "op=0 BUY"
+     },
+     {
+      "op": "Encode2",
+      "comment": "slot"
+     },
+     {
+      "op": "Encode4",
+      "comment": "itemId"
+     },
+     {
+      "op": "Encode2",
+      "comment": "quantity"
+     },
+     {
+      "op": "Encode4",
+      "comment": "discountPrice"
+     }
+    ]
+   },
   "CShopDlg::SendRechargeRequest": {
-   "address": "",
-   "direction": "serverbound",
-   "unresolved": true,
-   "calls": [
-    {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
-   ]
-  },
+    "address": "0x6d6d40",
+    "direction": "serverbound",
+    "notes": "v79 CShopDlg::SendRechargeRequest@0x6d6d40 (renamed from sub_6D6D40) builds COutPacket(59) NPC_SHOP op2 (RECHARGE): Encode1 op=2@0x6d6e63, Encode2 slot@0x6d6e6c. Matches Atlas ShopRecharge (Short slot). task-113 stage E close.",
+    "calls": [
+     {
+      "op": "Encode1",
+      "comment": "op=2 RECHARGE"
+     },
+     {
+      "op": "Encode2",
+      "comment": "slot"
+     }
+    ]
+   },
   "CShopDlg::SendSellRequest": {
-   "address": "",
-   "direction": "serverbound",
-   "unresolved": true,
-   "calls": [
-    {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
-   ]
-  },
+    "address": "0x6d6b1d",
+    "direction": "serverbound",
+    "notes": "v79 CShopDlg::SendSellRequest@0x6d6b1d (renamed from sub_6D6B1D) builds COutPacket(59) NPC_SHOP op1 (SELL): Encode1 op=1@0x6d6cd9, Encode2 slot@0x6d6ce4, Encode4 itemId@0x6d6cef, Encode2 quantity@0x6d6cfa. Matches Atlas ShopSell (Int16 slot+Int itemId+Short qty). task-113 stage E close.",
+    "calls": [
+     {
+      "op": "Encode1",
+      "comment": "op=1 SELL"
+     },
+     {
+      "op": "Encode2",
+      "comment": "slot"
+     },
+     {
+      "op": "Encode4",
+      "comment": "itemId"
+     },
+     {
+      "op": "Encode2",
+      "comment": "quantity"
+     }
+    ]
+   },
   "CShopDlg::SetShopDlg": {
    "address": "0x6d3459",
    "direction": "clientbound",

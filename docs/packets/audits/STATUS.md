@@ -5,7 +5,7 @@
 
 Tool: `dde4cb7f9c62159772672195dd4a20bb7d2f1343`
 
-- export gms_v72: `7cb164d7a7bdcfac32d7aaddb5d77ea79636cb970c533115b99ed1def1439a3c`
+- export gms_v72: `17326b1316ca9d1b5ea10bfed47c5226654415bc6a1797e4594daa239252fd67`
 - export gms_v79: `370d6b720b633c12c71d40340f3952000705c4bddb98f87179e7193d112d210c`
 - export gms_v83: `711bddcc2e1bdd417a75954148d2b50c64e70855e84259c0b8e50e700e393c0d`
 - export gms_v84: `7eab9472e2afeda13faaf74273828d09d5f2481d67bec10235c3b2fd2f91e1eb`
@@ -234,7 +234,7 @@ Tool: `dde4cb7f9c62159772672195dd4a20bb7d2f1343`
 | DAMAGE_SUMMON | CSummonedPool::OnHit; sub_6E9839 | summon/clientbound/SummonDamage | 0x0A5 | ✅ | 0x0A9 | ✅ | 0x0B3 | ✅ | 0x0B8 | ✅ | 0x0C0 | ✅ | 0x11B | ✅ | 0x0B9 | ✅ |
 | IDA_0X0A6 | sub_9F1663 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0A6 | ❌ |
 | IDA_0X0A7 | sub_9F186A |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0A7 | ❌ |
-| MOVE_PLAYER | CUserRemote::OnMove | character/clientbound/CharacterMovement (T1) | 0x0A7 | ❌ | 0x0AB | ✅ | 0x0B9 | ✅ | 0x0BD | ✅ | 0x0C6 | ✅ | 0x0D2 | ✅ | 0x0BF | ✅ |
+| MOVE_PLAYER | CUserRemote::OnMove | character/clientbound/CharacterMovement (T1) | 0x0A7 | ✅ | 0x0AB | ✅ | 0x0B9 | ✅ | 0x0BD | ✅ | 0x0C6 | ✅ | 0x0D2 | ✅ | 0x0BF | ✅ |
 | CLOSE_RANGE_ATTACK | CUserRemote::OnAttack | character/clientbound/Attack (T1) | 0x0A8 | ✅ | 0x0AC | ✅ | 0x0BA | ✅ | 0x0BE | ✅ | 0x0C7 | ✅ | 0x0D3 | ✅ | 0x0C0 | ✅ |
 | IDA_0X0A8 | sub_5604F9; sub_9F199E |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0A8 | ❌ |  | ⬜ | 0x0A8 | ❌ |
 | IDA_0X0A9 | CUser::OnHitByUser; sub_5605FF |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0A9 | ❌ |  | ⬜ | 0x0A9 | ❌ |
@@ -529,7 +529,7 @@ Tool: `dde4cb7f9c62159772672195dd4a20bb7d2f1343`
 | ENTER_CASHSHOP | CWvsContext::SendMigrateToShopRequest |  | 0x027 | ❌ | 0x026 | ❌ | 0x028 | ❌ | 0x028 | ❌ | 0x02A | ❌ | 0x02B | ❌ | 0x01F | ❌ |
 | UNNAMED_R46 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x027 | ❌ | 0x026 | ❌ | 0x01C | ❌ |
 | UNNAMED_R47 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x027 | ❌ |  | ⬜ |
-| MOVE_PLAYER | CMovePath::Flush; CUserLocal::OnKey; CVecCtrlUser::EndUpdateActive; sub_91B6E6 | character/serverbound/Move (T1) | 0x028 | ❌ | 0x027 | ✅ | 0x029 | ❌ | 0x029 | ❌ | 0x02B | ❌ | 0x02C | ❌ | 0x020 | ❌ |
+| MOVE_PLAYER | CMovePath::Flush; CUserLocal::OnKey; CVecCtrlUser::EndUpdateActive; sub_91B6E6 | character/serverbound/Move (T1) | 0x028 | ✅ | 0x027 | ✅ | 0x029 | ❌ | 0x029 | ❌ | 0x02B | ❌ | 0x02C | ❌ | 0x020 | ❌ |
 | UNNAMED_R48 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x028 | ❌ |  | ⬜ |
 | CANCEL_CHAIR | CUserLocal::HandleXKeyDown; CWvsContext::SendGetUpFromChairRequest | character/serverbound/ChairFixed (T1) | 0x029 | ❌ | 0x028 | ✅ | 0x02A | ✅ | 0x02A | ✅ | 0x02C | ✅ | 0x02D | ✅ | 0x021 | ✅ |
 | USE_CHAIR | CWvsContext::SendSitOnPortableChairRequest | character/serverbound/ChairPortable (T1) | 0x02A | 🟡 | 0x029 | 🟡 | 0x02B | ✅ | 0x02B | ✅ | 0x02D | ✅ | 0x02E | ✅ | 0x022 | ✅ |
@@ -914,7 +914,7 @@ Tool: `dde4cb7f9c62159772672195dd4a20bb7d2f1343`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v72 | 179 | 0 | 73 | 219 | 411 | 0 | 38.0% |
+| v72 | 181 | 0 | 73 | 217 | 411 | 0 | 38.4% |
 | v79 | 228 | 0 | 72 | 180 | 402 | 0 | 47.5% |
 | v83 | 367 | 0 | 0 | 311 | 204 | 0 | 54.1% |
 | v84 | 345 | 0 | 0 | 312 | 225 | 0 | 52.5% |

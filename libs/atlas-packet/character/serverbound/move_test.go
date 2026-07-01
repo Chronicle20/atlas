@@ -43,6 +43,39 @@ func TestCharacterMoveByteV79(t *testing.T) {
 	}
 }
 
+// TestCharacterMoveByteV72 pins the gms_v72 MOVE_PLAYER (op 40) serverbound wire.
+//
+// IDA: CVecCtrlUser::EndUpdateActive @0x8cb63e (GMS_v72.1_U_DEVM.exe, port 13339)
+// builds COutPacket(40):
+//
+//	Encode1 fieldKey  (*(get_field()+276))  @0x8cb7f7
+//	Encode4 crc       (*(get_field()+476))  @0x8cb80a
+//	CMovePath::Flush(&pkt) movement blob                @0x8cb818
+//
+// v72 major 72 < 84 so the dr0/dr1/dr2/dr3/dwKey/crc32 anti-cheat header (added at
+// GMS v84) is ABSENT — byte-identical lean fieldKey+crc layout to the verified v79
+// fixture. The movement blob is written by CMovePath::Flush; bytes OPAQUE (§5) and
+// derived from the shared model.Movement encoder (v72 < 88 so no XOffset/YOffset),
+// same as v79.
+//
+// packet-audit:verify packet=character/serverbound/Move version=gms_v72 ida=0x8cb63e
+func TestCharacterMoveByteV72(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	ctx := test.CreateContext("GMS", 72, 1)
+	p := Move{fieldKey: 0x2A, crc: 500, movement: model.Movement{StartX: 10, StartY: 20}}
+	got := p.Encode(l, ctx)(nil)
+	want := []byte{
+		0x2A,                   // fieldKey        @0x8cb7f7
+		0xF4, 0x01, 0x00, 0x00, // crc=500         @0x8cb80a
+		0x0A, 0x00, // movement StartX=10  (opaque, CMovePath::Flush @0x8cb818)
+		0x14, 0x00, // movement StartY=20  (opaque)
+		0x00, // movement element count=0 (opaque)
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatalf("v72 Move: got % x, want % x", got, want)
+	}
+}
+
 // packet-audit:verify packet=character/serverbound/Move version=gms_v87 ida=0xa5c937
 // packet-audit:verify packet=character/serverbound/Move version=gms_v95 ida=0x9a0d20
 // packet-audit:verify packet=character/serverbound/Move version=jms_v185 ida=0xaaa076

@@ -10841,13 +10841,18 @@
    ]
   },
   "CVecCtrlUser::EndUpdateActive": {
-   "address": "",
+   "address": "0x8cb63e",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": "",
+     "guard": "result"
+    },
+    {
+     "op": "Decode4",
+     "comment": "",
+     "guard": "result"
     }
    ]
   },

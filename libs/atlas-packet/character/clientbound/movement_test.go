@@ -38,6 +38,7 @@ func normalTypesOptions() map[string]interface{} {
 	}
 }
 
+// packet-audit:verify packet=character/clientbound/CharacterMovement version=gms_v72 ida=0x87c1f8
 // packet-audit:verify packet=character/clientbound/CharacterMovement version=gms_v83 ida=0x9726ae
 // packet-audit:verify packet=character/clientbound/CharacterMovement version=gms_v84 ida=0x9b26cd
 // packet-audit:verify packet=character/clientbound/CharacterMovement version=gms_v87 ida=0x9f7647
@@ -55,6 +56,7 @@ func TestCharacterMovementByteOutput(t *testing.T) {
 		Region       string
 		Major, Minor uint16
 	}{
+		{"GMS v72", "GMS", 72, 1},
 		{"GMS v83", "GMS", 83, 1},
 		{"GMS v84", "GMS", 84, 1},
 		{"GMS v87", "GMS", 87, 1},

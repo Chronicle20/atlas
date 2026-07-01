@@ -5,7 +5,7 @@
 
 Tool: `fa2892b4e82339df60c9ef0c33a6e4a08bdc3bf3`
 
-- export gms_v72: `a942a99fa312878a1fae4398bb2ee8de802295949e8fbcd9c06642c0eb8cb70e`
+- export gms_v72: `1e6b23a35610a94f3fec717debbd552f6cf40a7d5586d0ea546247b555ab3197`
 - export gms_v79: `370d6b720b633c12c71d40340f3952000705c4bddb98f87179e7193d112d210c`
 - export gms_v83: `711bddcc2e1bdd417a75954148d2b50c64e70855e84259c0b8e50e700e393c0d`
 - export gms_v84: `7eab9472e2afeda13faaf74273828d09d5f2481d67bec10235c3b2fd2f91e1eb`
@@ -376,8 +376,8 @@ Tool: `fa2892b4e82339df60c9ef0c33a6e4a08bdc3bf3`
 | FOLLOW_CHARACTER_FAILED | CUserLocal::OnFollowCharacterFailed |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x10E | ❌ |  | ⬜ |
 | NPC_TALK | CScriptMan::OnPacket |  | 0x10E | ❌ | 0x11A | ❌ | 0x130 | ❌ | 0x137 | ❌ | 0x141 | ❌ | 0x16B | ❌ | 0x149 | ❌ |
 | IDA_0X10F | CUserLocal::OnVengeanceSkillApply |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x10F | ❌ |  | ⬜ |
-| OPEN_NPC_SHOP | CShopDlg::OnPacket; CShopDlg::SetShopDlg | npc/clientbound/NpcShopOperationGenericError (T1) | 0x10F | ❌ | 0x11B | ✅ | 0x131 | ✅ | 0x138 | ✅ | 0x142 | ✅ | 0x16C | ✅ | 0x14A | ✅ |
-| CONFIRM_SHOP_TRANSACTION | CShopDlg::OnPacket | npc/clientbound/NpcShopOperationGenericError (T1) | 0x110 | ❌ | 0x11C | ✅ | 0x132 | ✅ | 0x139 | ✅ | 0x143 | ✅ | 0x16D | ✅ | 0x14B | ✅ |
+| OPEN_NPC_SHOP | CShopDlg::OnPacket; CShopDlg::SetShopDlg | npc/clientbound/NpcShopOperationGenericError (T1) | 0x10F | ✅ | 0x11B | ✅ | 0x131 | ✅ | 0x138 | ✅ | 0x142 | ✅ | 0x16C | ✅ | 0x14A | ✅ |
+| CONFIRM_SHOP_TRANSACTION | CShopDlg::OnPacket | npc/clientbound/NpcShopOperationGenericError (T1) | 0x110 | ✅ | 0x11C | ✅ | 0x132 | ✅ | 0x139 | ✅ | 0x143 | ✅ | 0x16D | ✅ | 0x14B | ✅ |
 | IDA_0X110 | CUserLocal::OnExJablinApply |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x110 | ❌ |  | ⬜ |
 | ADMIN_SHOP_MESSAGE | CAdminShopDlg::OnPacket |  | 0x111 | ❌ | 0x11D | ❌ | 0x133 | ❌ | 0x13A | ❌ | 0x144 | ❌ | 0x16E | ❌ | 0x14C | ❌ |
 | IDA_0X111 | CUserLocal::OnAskAPSPEvent |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x111 | ❌ |  | ⬜ |
@@ -914,7 +914,7 @@ Tool: `fa2892b4e82339df60c9ef0c33a6e4a08bdc3bf3`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v72 | 130 | 0 | 74 | 267 | 411 | 0 | 27.6% |
+| v72 | 132 | 0 | 74 | 265 | 411 | 0 | 28.0% |
 | v79 | 228 | 0 | 72 | 180 | 402 | 0 | 47.5% |
 | v83 | 367 | 0 | 0 | 311 | 204 | 0 | 54.1% |
 | v84 | 345 | 0 | 0 | 312 | 225 | 0 | 52.5% |

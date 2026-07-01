@@ -1,0 +1,10 @@
+packet: npc/clientbound/NpcShopOperationNeedMoreItems
+direction: clientbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CShopDlg::OnPacket#NeedMoreItems
+    address: "0x6a912b"
+    decompile_sha256: 3e9bebc8bdf93dbec351fa742d99b5d5679632b664e5f957b25178a85b1d5d87
+verifies:
+  - libs/atlas-packet/npc/clientbound/shop_operation_v72_test.go#TestShopOperationArmsV72

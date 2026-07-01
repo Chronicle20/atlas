@@ -1,14 +1,14 @@
 # NpcShopOperationOk (← `CShopDlg::OnPacket#Ok`)
 
-- **IDA:** 
+- **IDA:** 0x6a912b
 - **Atlas file:** `libs/atlas-packet/npc/clientbound/shop_operation.go`
 - **Variant:** GMS/v72
 - **Branch depth:** 0
-- **Verdict:** 🚫
+- **Verdict:** ✅
 
 ## Wire-level diff
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | byte | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
+| 0 | byte | byte `mode (OK mode-only notice arm: v72 mode 0)` | ✅ |  |
 

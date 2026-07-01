@@ -7571,35 +7571,65 @@
    ]
   },
   "CShopDlg::OnPacket#GenericError": {
-   "address": "",
+   "address": "0x6a912b",
    "direction": "clientbound",
-   "unresolved": true,
+   "notes": "v72 CShopDlg::OnPacket@0x6a912b (op 272) sole data-bearing arm = mode 14: Decode1(hasReason); hasReason==0 -> plain notice (no string). Atlas ShopOperationGenericError writes Byte(mode)+Bool(false). Mode 14 per npc_shop_operation.yaml (gms_v72). No Decode4 anywhere -> OVER/UNDER_LEVEL version-absent.",
+   "dispatch": [
+    {
+     "discriminator": "nType",
+     "case": 272
+    }
+   ],
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": "mode (generic-error sub-op: v72 mode 14)"
+    },
+    {
+     "op": "Decode1",
+     "comment": "hasReason flag (0 for plain GENERIC_ERROR; no reason string follows)"
     }
    ]
   },
   "CShopDlg::OnPacket#GenericErrorWithReason": {
-   "address": "",
+   "address": "0x6a912b",
    "direction": "clientbound",
-   "unresolved": true,
+   "notes": "v72 CShopDlg::OnPacket@0x6a912b (op 272) mode 14: Decode1(hasReason)!=0 -> DecodeStr(reason) shown as Notice. Atlas ShopOperationGenericErrorWithReason writes Byte(mode)+Bool(true)+AsciiString(reason). Mode 14 per npc_shop_operation.yaml (gms_v72).",
+   "dispatch": [
+    {
+     "discriminator": "nType",
+     "case": 272
+    }
+   ],
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": "mode (generic-error-with-reason sub-op: v72 mode 14)"
+    },
+    {
+     "op": "Decode1",
+     "comment": "hasReason flag (1 -> reason string follows)"
+    },
+    {
+     "op": "DecodeStr",
+     "comment": "reason (DecodeStr; shown as the Notice text)"
     }
    ]
   },
   "CShopDlg::OnPacket#InventoryFull": {
-   "address": "",
+   "address": "0x6a912b",
    "direction": "clientbound",
-   "unresolved": true,
+   "notes": "v72 CShopDlg::OnPacket@0x6a912b (op 272) INVENTORY_FULL arm = mode 3 (Decode1(mode) only -> StringPool Notice). Mode byte from docs/packets/dispatchers/npc_shop_operation.yaml (gms_v72). Atlas writes Byte(mode).",
+   "dispatch": [
+    {
+     "discriminator": "nType",
+     "case": 272
+    }
+   ],
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": "mode (INVENTORY_FULL mode-only notice arm: v72 mode 3)"
     }
    ]
   },
@@ -7615,79 +7645,121 @@
    ]
   },
   "CShopDlg::OnPacket#NeedMoreItems": {
-   "address": "",
+   "address": "0x6a912b",
    "direction": "clientbound",
-   "unresolved": true,
+   "notes": "v72 CShopDlg::OnPacket@0x6a912b (op 272) NEED_MORE_ITEMS arm = mode 13 (Decode1(mode) only -> StringPool Notice). Mode byte from docs/packets/dispatchers/npc_shop_operation.yaml (gms_v72). Atlas writes Byte(mode).",
+   "dispatch": [
+    {
+     "discriminator": "nType",
+     "case": 272
+    }
+   ],
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": "mode (NEED_MORE_ITEMS mode-only notice arm: v72 mode 13)"
     }
    ]
   },
   "CShopDlg::OnPacket#NotEnoughMoney": {
-   "address": "",
+   "address": "0x6a912b",
    "direction": "clientbound",
-   "unresolved": true,
+   "notes": "v72 CShopDlg::OnPacket@0x6a912b (op 272) NOT_ENOUGH_MONEY arm = mode 2 (Decode1(mode) only -> StringPool Notice). Mode byte from docs/packets/dispatchers/npc_shop_operation.yaml (gms_v72). Atlas writes Byte(mode).",
+   "dispatch": [
+    {
+     "discriminator": "nType",
+     "case": 272
+    }
+   ],
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": "mode (NOT_ENOUGH_MONEY mode-only notice arm: v72 mode 2)"
     }
    ]
   },
   "CShopDlg::OnPacket#NotEnoughMoney2": {
-   "address": "",
+   "address": "0x6a912b",
    "direction": "clientbound",
-   "unresolved": true,
+   "notes": "v72 CShopDlg::OnPacket@0x6a912b (op 272) NOT_ENOUGH_MONEY_2 arm = mode 10 (Decode1(mode) only -> StringPool Notice). Mode byte from docs/packets/dispatchers/npc_shop_operation.yaml (gms_v72). Atlas writes Byte(mode).",
+   "dispatch": [
+    {
+     "discriminator": "nType",
+     "case": 272
+    }
+   ],
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": "mode (NOT_ENOUGH_MONEY_2 mode-only notice arm: v72 mode 10)"
     }
    ]
   },
   "CShopDlg::OnPacket#Ok": {
-   "address": "",
+   "address": "0x6a912b",
    "direction": "clientbound",
-   "unresolved": true,
+   "notes": "v72 CShopDlg::OnPacket@0x6a912b (op 272) OK arm = mode 0 (Decode1(mode) only -> StringPool Notice). Mode byte from docs/packets/dispatchers/npc_shop_operation.yaml (gms_v72). Atlas writes Byte(mode).",
+   "dispatch": [
+    {
+     "discriminator": "nType",
+     "case": 272
+    }
+   ],
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": "mode (OK mode-only notice arm: v72 mode 0)"
     }
    ]
   },
   "CShopDlg::OnPacket#OutOfStock": {
-   "address": "",
+   "address": "0x6a912b",
    "direction": "clientbound",
-   "unresolved": true,
+   "notes": "v72 CShopDlg::OnPacket@0x6a912b (op 272) OUT_OF_STOCK arm = mode 1 (Decode1(mode) only -> StringPool Notice). Mode byte from docs/packets/dispatchers/npc_shop_operation.yaml (gms_v72). Atlas writes Byte(mode).",
+   "dispatch": [
+    {
+     "discriminator": "nType",
+     "case": 272
+    }
+   ],
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": "mode (OUT_OF_STOCK mode-only notice arm: v72 mode 1)"
     }
    ]
   },
   "CShopDlg::OnPacket#OutOfStock2": {
-   "address": "",
+   "address": "0x6a912b",
    "direction": "clientbound",
-   "unresolved": true,
+   "notes": "v72 CShopDlg::OnPacket@0x6a912b (op 272) OUT_OF_STOCK_2 arm = mode 5 (Decode1(mode) only -> StringPool Notice). Mode byte from docs/packets/dispatchers/npc_shop_operation.yaml (gms_v72). Atlas writes Byte(mode).",
+   "dispatch": [
+    {
+     "discriminator": "nType",
+     "case": 272
+    }
+   ],
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": "mode (OUT_OF_STOCK_2 mode-only notice arm: v72 mode 5)"
     }
    ]
   },
   "CShopDlg::OnPacket#OutOfStock3": {
-   "address": "",
+   "address": "0x6a912b",
    "direction": "clientbound",
-   "unresolved": true,
+   "notes": "v72 CShopDlg::OnPacket@0x6a912b (op 272) OUT_OF_STOCK_3 arm = mode 9 (Decode1(mode) only -> StringPool Notice). Mode byte from docs/packets/dispatchers/npc_shop_operation.yaml (gms_v72). Atlas writes Byte(mode).",
+   "dispatch": [
+    {
+     "discriminator": "nType",
+     "case": 272
+    }
+   ],
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": "mode (OUT_OF_STOCK_3 mode-only notice arm: v72 mode 9)"
     }
    ]
   },
@@ -7714,13 +7786,19 @@
    ]
   },
   "CShopDlg::OnPacket#TradeLimit": {
-   "address": "",
+   "address": "0x6a912b",
    "direction": "clientbound",
-   "unresolved": true,
+   "notes": "v72 CShopDlg::OnPacket@0x6a912b (op 272) TRADE_LIMIT arm = mode 16 (Decode1(mode) only -> StringPool Notice). Mode byte from docs/packets/dispatchers/npc_shop_operation.yaml (gms_v72). Atlas writes Byte(mode).",
+   "dispatch": [
+    {
+     "discriminator": "nType",
+     "case": 272
+    }
+   ],
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": "mode (TRADE_LIMIT mode-only notice arm: v72 mode 16)"
     }
    ]
   },

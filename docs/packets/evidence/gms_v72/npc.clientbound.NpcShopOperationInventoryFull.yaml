@@ -1,0 +1,10 @@
+packet: npc/clientbound/NpcShopOperationInventoryFull
+direction: clientbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CShopDlg::OnPacket#InventoryFull
+    address: "0x6a912b"
+    decompile_sha256: 2ef456c8043ff18cefcc87bd8c87abb06996e45ba942d558f532261c3215518c
+verifies:
+  - libs/atlas-packet/npc/clientbound/shop_operation_v72_test.go#TestShopOperationArmsV72

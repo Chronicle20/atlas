@@ -12,6 +12,19 @@ import (
 // packet-audit:verify packet=inventory/clientbound/InventoryChangeMove version=gms_v83 ida=0xa1ead9
 // packet-audit:verify packet=inventory/clientbound/InventoryQuantityUpdate version=gms_v83 ida=0xa1ead9
 // packet-audit:verify packet=inventory/clientbound/InventoryRemove version=gms_v83 ida=0xa1ead9
+//
+// v79: CWvsContext::OnInventoryOperation @0x96953e (GMS_v79_1_DEVM.exe port
+// 13340) reads Decode1(exclReq)+Decode1(count) then per entry
+// Decode1(mode)+Decode1(invType)+Decode2(slot)+[mode body], with a single
+// post-loop addMov byte when any entry set nCurItemPos (equip move/remove with
+// a negative slot). For Atlas's count=1 packets the post-loop addMov coincides
+// with the per-entry inline byte. Modes: 0=Add(GW_ItemSlot opaque), 1=QuantityUpdate
+// (Decode2), 2=Move(Decode2 newSlot), 3=Remove. Version-agnostic vs v83 (mode
+// enum + header identical); the round-trip variants cover the wire (GMS v28 == v79).
+// packet-audit:verify packet=inventory/clientbound/InventoryAdd version=gms_v79 ida=0x96953e
+// packet-audit:verify packet=inventory/clientbound/InventoryChangeMove version=gms_v79 ida=0x96953e
+// packet-audit:verify packet=inventory/clientbound/InventoryQuantityUpdate version=gms_v79 ida=0x96953e
+// packet-audit:verify packet=inventory/clientbound/InventoryRemove version=gms_v79 ida=0x96953e
 // packet-audit:verify packet=inventory/clientbound/InventoryAdd version=gms_v95 ida=0xa08a70
 // packet-audit:verify packet=inventory/clientbound/InventoryChangeMove version=gms_v95 ida=0xa08a70
 // packet-audit:verify packet=inventory/clientbound/InventoryQuantityUpdate version=gms_v95 ida=0xa08a70

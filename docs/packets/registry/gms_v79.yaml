@@ -167,7 +167,8 @@
   fname: CWvsContext::OnInventoryOperation
   provenance: ida-discovered
   ida:
-    address: 9779200
+    address: 9868606
+  note: 'v79 CWvsContext::OnInventoryOperation @0x96953e (9868606). Prior address 9779200/0x952b40 was a stale mislabel (resolved to sub_952A75). Mode-dispatched: 0=Add(GW_ItemSlot), 1=QuantityUpdate, 2=Move, 3=Remove; single post-loop addMov byte on equip move/remove with a negative slot.'
 - op: INVENTORY_GROW
   direction: clientbound
   opcode: 27

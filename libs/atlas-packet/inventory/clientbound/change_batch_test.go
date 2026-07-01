@@ -12,6 +12,13 @@ import (
 
 // packet-audit:verify packet=inventory/clientbound/InventoryChangeBatch version=gms_v83 ida=0xa1ead9
 // packet-audit:verify packet=inventory/clientbound/InventoryChangeBatch version=gms_v95 ida=0xa08a70
+//
+// v79: CWvsContext::OnInventoryOperation @0x96953e reads Decode1(exclReq) +
+// Decode1(count) + count x per-entry {Decode1(mode),Decode1(invType),Decode2(slot),
+// body} + a single post-loop addMov byte if any entry set nCurItemPos. Mode
+// enum + header identical to v83; the round-trip variants cover the wire
+// (GMS v28 == v79).
+// packet-audit:verify packet=inventory/clientbound/InventoryChangeBatch version=gms_v79 ida=0x96953e
 func TestChangeBatchQuantityUpdateRoundTrip(t *testing.T) {
 	for _, v := range test.Variants {
 		t.Run(v.Name, func(t *testing.T) {

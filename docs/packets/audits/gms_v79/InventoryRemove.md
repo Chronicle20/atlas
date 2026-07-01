@@ -1,20 +1,19 @@
 # InventoryRemove (← `CWvsContext::OnInventoryOperation#Remove`)
 
-- **IDA:** 
+- **IDA:** 0x96953e
 - **Atlas file:** `libs/atlas-packet/inventory/clientbound/change.go`
 - **Variant:** GMS/v79
 - **Branch depth:** 2
-- **Verdict:** 🔍
-- **Flat-diff-invalid:** the wire shape depends on a runtime discriminator a flat positional diff cannot model — the Atlas writer branches on a non-version condition (a data-dependent field or an untraced version-derived local), and/or the client reads fields conditionally (e.g. `mode <= 1`). The verdict is capped to 🔍; the row-level mismatches below are a modeling limitation, not a verified wire bug — confirm per-branch via byte-level tests.
+- **Verdict:** ✅
 
 ## Wire-level diff
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | byte | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
-| 1 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 2 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 3 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 4 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 5 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 0 | byte | byte `exclRequest flag @0x969556 (if !=0 reset excl + get_update_time); Atlas WriteBool(!silent)` | ✅ |  |
+| 1 | byte | byte `count (operation entries) @0x96959a; Atlas WriteByte(1)` | ✅ |  |
+| 2 | byte | byte `action/mode @0x9695b8` | ✅ |  |
+| 3 | byte | byte `invType @0x9695c3` | ✅ |  |
+| 4 | int16 | int16 `slot @0x9695cb` | ✅ |  |
+| 5 | byte | byte `trailing addMov byte @0x96997e — post-loop, ONLY if an entry set nCurItemPos (equip move/remove with a negative slot). For count=1 this coincides with the per-entry inline addMov Atlas writes.` | ✅ |  |
 

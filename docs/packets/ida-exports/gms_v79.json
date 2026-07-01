@@ -13657,59 +13657,158 @@
    ]
   },
   "CWvsContext::OnInventoryOperation#Add": {
-   "address": "",
+   "address": "0x96953e",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": "exclRequest flag @0x969556 (if !=0 reset excl + get_update_time); Atlas WriteBool(!silent)"
+    },
+    {
+     "op": "Decode1",
+     "comment": "count (operation entries) @0x96959a; Atlas WriteByte(1)"
+    },
+    {
+     "op": "Decode1",
+     "comment": "action/mode @0x9695b8"
+    },
+    {
+     "op": "Decode1",
+     "comment": "invType @0x9695c3"
+    },
+    {
+     "op": "Decode2",
+     "comment": "slot @0x9695cb"
+    },
+    {
+     "op": "DecodeBuffer",
+     "comment": "asset GW_ItemSlotBase::Decode @0x9698f2 (mode 0=Add) \u2014 sub-struct, tool-opaque; Atlas WriteByteArray(asset.Encode)"
     }
-   ]
+   ],
+   "notes": "v79 CWvsContext::OnInventoryOperation@0x96953e mode 0 (Add): shared header (exclReq,count,mode,invType,slot) + GW_ItemSlotBase::Decode. Item slot is graded opaque (per-tab GW_ItemSlot). Add sets no addMov. Matches v83 @0xa1ead9 shape."
   },
   "CWvsContext::OnInventoryOperation#ChangeBatch": {
-   "address": "",
+   "address": "0x96953e",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": "exclRequest flag @0x969556; Atlas WriteBool(!silent)"
+    },
+    {
+     "op": "Decode1",
+     "comment": "count @0x96959a; Atlas WriteByte(len(entries))"
+    },
+    {
+     "op": "Decode1",
+     "comment": "per-entry action switch (0/1/2/3) repeated count times @0x9695b8"
+    },
+    {
+     "op": "Decode1",
+     "comment": "trailing addMov byte @0x96997e \u2014 post-loop, ONLY if an entry set nCurItemPos (equip move/remove with a negative slot). For count=1 this coincides with the per-entry inline addMov Atlas writes.",
+     "guard": "invType==1 && slot<0 (or newSlot<0)"
     }
-   ]
+   ],
+   "notes": "v79 OnInventoryOperation@0x96953e batch: exclReq+count then count x per-entry {mode,invType,slot,body}; trailing addMov byte post-loop if any entry set nCurItemPos. Matches v83 shape."
   },
   "CWvsContext::OnInventoryOperation#ChangeMove": {
-   "address": "",
+   "address": "0x96953e",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": "exclRequest flag @0x969556 (if !=0 reset excl + get_update_time); Atlas WriteBool(!silent)"
+    },
+    {
+     "op": "Decode1",
+     "comment": "count (operation entries) @0x96959a; Atlas WriteByte(1)"
+    },
+    {
+     "op": "Decode1",
+     "comment": "action/mode @0x9695b8"
+    },
+    {
+     "op": "Decode1",
+     "comment": "invType @0x9695c3"
+    },
+    {
+     "op": "Decode2",
+     "comment": "oldSlot @0x9695cb (v8)"
+    },
+    {
+     "op": "Decode2",
+     "comment": "newSlot @0x96974f (v19, mode 2=Move); Atlas WriteInt16(newSlot)"
+    },
+    {
+     "op": "Decode1",
+     "comment": "trailing addMov byte @0x96997e \u2014 post-loop, ONLY if an entry set nCurItemPos (equip move/remove with a negative slot). For count=1 this coincides with the per-entry inline addMov Atlas writes.",
+     "guard": "invType==1 && slot<0 (or newSlot<0)"
     }
-   ]
+   ],
+   "notes": "v79 OnInventoryOperation@0x96953e mode 2 (Move): header(oldSlot=top Decode2) + Decode2(newSlot) + post-loop addMov byte if invType==1 && (oldSlot<0||newSlot<0). Matches v83 shape."
   },
   "CWvsContext::OnInventoryOperation#QuantityUpdate": {
-   "address": "",
+   "address": "0x96953e",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": "exclRequest flag @0x969556 (if !=0 reset excl + get_update_time); Atlas WriteBool(!silent)"
+    },
+    {
+     "op": "Decode1",
+     "comment": "count (operation entries) @0x96959a; Atlas WriteByte(1)"
+    },
+    {
+     "op": "Decode1",
+     "comment": "action/mode @0x9695b8"
+    },
+    {
+     "op": "Decode1",
+     "comment": "invType @0x9695c3"
+    },
+    {
+     "op": "Decode2",
+     "comment": "slot @0x9695cb"
+    },
+    {
+     "op": "Decode2",
+     "comment": "quantity @0x969893 (mode 1=QuantityUpdate); Atlas WriteShort(quantity)"
     }
-   ]
+   ],
+   "notes": "v79 OnInventoryOperation@0x96953e mode 1 (QuantityUpdate): header + Decode2(quantity). No addMov. Matches v83 shape."
   },
   "CWvsContext::OnInventoryOperation#Remove": {
-   "address": "",
+   "address": "0x96953e",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": "exclRequest flag @0x969556 (if !=0 reset excl + get_update_time); Atlas WriteBool(!silent)"
+    },
+    {
+     "op": "Decode1",
+     "comment": "count (operation entries) @0x96959a; Atlas WriteByte(1)"
+    },
+    {
+     "op": "Decode1",
+     "comment": "action/mode @0x9695b8"
+    },
+    {
+     "op": "Decode1",
+     "comment": "invType @0x9695c3"
+    },
+    {
+     "op": "Decode2",
+     "comment": "slot @0x9695cb"
+    },
+    {
+     "op": "Decode1",
+     "comment": "trailing addMov byte @0x96997e \u2014 post-loop, ONLY if an entry set nCurItemPos (equip move/remove with a negative slot). For count=1 this coincides with the per-entry inline addMov Atlas writes.",
+     "guard": "invType==1 && slot<0 (or newSlot<0)"
     }
-   ]
+   ],
+   "notes": "v79 OnInventoryOperation@0x96953e mode 3 (Remove): header(slot) + post-loop addMov byte if invType==1 && slot<0. No inline body (v79 mode 3 reads no extra field; the v83 #Remove Decode4 is the equip cash-serial path). Matches v83 shape for the count=1 wire."
   },
   "CWvsContext::OnLimitedNPCDisableInfo": {
    "address": "0x954113",

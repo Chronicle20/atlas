@@ -1,14 +1,14 @@
 # InteractionOperationMerchantAddToBlackList (← `CEntrustedShopDlg::AddBlackList`)
 
-- **IDA:** 
+- **IDA:** 0x505911
 - **Atlas file:** `libs/atlas-packet/interaction/serverbound/operation_merchant_add_to_black_list.go`
 - **Variant:** GMS/v79
 - **Branch depth:** 0
-- **Verdict:** 🚫
+- **Verdict:** ✅
 
 ## Wire-level diff
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | string | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
+| 0 | string | string `` | ✅ |  |
 

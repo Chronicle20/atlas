@@ -1382,13 +1382,12 @@
    ]
   },
   "CEntrustedShopDlg::AddBlackList": {
-   "address": "",
+   "address": "0x505911",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "DecodeStr",
+     "comment": ""
     }
    ]
   },
@@ -1492,24 +1491,22 @@
    ]
   },
   "CField::AddBlackList": {
-   "address": "",
+   "address": "0x522c87",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "DecodeStr",
+     "comment": ""
     }
    ]
   },
   "CField::DeleteBlackList": {
-   "address": "",
+   "address": "0x522cff",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "DecodeStr",
+     "comment": ""
     }
    ]
   },
@@ -5640,24 +5637,26 @@
    ]
   },
   "CMemoryGameDlg::OnTieRequest": {
-   "address": "",
+   "address": "0x61d6a6",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": ""
     }
    ]
   },
   "CMemoryGameDlg::SendTurnUpCard": {
-   "address": "",
+   "address": "0x61e16e",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": ""
+    },
+    {
+     "op": "Decode1",
+     "comment": ""
     }
    ]
   },
@@ -5716,13 +5715,12 @@
    ]
   },
   "CMiniRoomBaseDlg::CheckAndSendChat": {
-   "address": "",
+   "address": "0x62e124",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "DecodeStr",
+     "comment": ""
     }
    ]
   },
@@ -6694,24 +6692,22 @@
    ]
   },
   "CPersonalShopDlg::MoveItemToInventory": {
-   "address": "",
+   "address": "0x68a756",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode2",
+     "comment": ""
     }
    ]
   },
   "CPersonalShopDlg::MoveItemToInventory#Merchant": {
-   "address": "",
+   "address": "0x68a756",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode2",
+     "comment": ""
     }
    ]
   },

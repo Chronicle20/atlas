@@ -6,6 +6,7 @@ import (
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=interaction/serverbound/InteractionOperationInvite version=gms_v79 ida=0x51b10b
 // packet-audit:verify packet=interaction/serverbound/InteractionOperationInvite version=gms_v95 ida=0x52e9e0
 // packet-audit:verify packet=interaction/serverbound/InteractionOperationInvite version=gms_v84 ida=0x53bc2a
 // packet-audit:verify packet=interaction/serverbound/InteractionOperationInvite version=gms_v83 ida=0x52fad4

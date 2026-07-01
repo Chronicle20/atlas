@@ -8,6 +8,7 @@ import (
 	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
+// packet-audit:verify packet=interaction/serverbound/InteractionOperationMerchantRemoveItem version=gms_v79 ida=0x68a756
 // packet-audit:verify packet=interaction/serverbound/InteractionOperationMerchantRemoveItem version=gms_v95 ida=0x6987a0
 func TestOperationMerchantRemoveItemRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {

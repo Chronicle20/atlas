@@ -6,6 +6,7 @@ import (
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=interaction/serverbound/InteractionOperationMemoryGameFlipCard version=gms_v79 ida=0x61e16e
 // packet-audit:verify packet=interaction/serverbound/InteractionOperationMemoryGameFlipCard version=gms_v95 ida=0x6279b0
 // packet-audit:verify packet=interaction/serverbound/InteractionOperationMemoryGameFlipCard version=gms_v87 ida=0x688d3b
 // packet-audit:verify packet=interaction/serverbound/InteractionOperationMemoryGameFlipCard version=gms_v83 ida=0x64ee2b

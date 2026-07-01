@@ -1,7 +1,7 @@
 {
   "WriterName": "InteractionOperationFieldAddToBlackList",
   "IDAName": "CField::AddBlackList",
-  "Address": "",
+  "Address": "0x522c87",
   "Variant": "GMS/v79",
   "BranchDepth": 0,
   "AtlasFile": "libs/atlas-packet/interaction/serverbound/operation_field_add_to_black_list.go",
@@ -10,12 +10,12 @@
       "Index": 0,
       "AtlasOp": 4,
       "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 4,
-      "Note": "IDA read-order unresolved: function not found in IDB"
+      "IDAOp": 4,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 4,
+  "Verdict": 0,
   "FlatInvalid": false
 }

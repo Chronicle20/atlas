@@ -1,7 +1,7 @@
 {
   "WriterName": "InteractionOperationPersonalStoreRemoveItem",
   "IDAName": "CPersonalShopDlg::MoveItemToInventory",
-  "Address": "",
+  "Address": "0x68a756",
   "Variant": "GMS/v79",
   "BranchDepth": 0,
   "AtlasFile": "libs/atlas-packet/interaction/serverbound/operation_personal_store_remove_item.go",
@@ -10,12 +10,12 @@
       "Index": 0,
       "AtlasOp": 1,
       "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 4,
-      "Note": "IDA read-order unresolved: function not found in IDB"
+      "IDAOp": 1,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 4,
+  "Verdict": 0,
   "FlatInvalid": false
 }

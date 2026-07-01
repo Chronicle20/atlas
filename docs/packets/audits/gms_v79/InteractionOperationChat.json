@@ -1,7 +1,7 @@
 {
   "WriterName": "InteractionOperationChat",
   "IDAName": "CMiniRoomBaseDlg::CheckAndSendChat",
-  "Address": "",
+  "Address": "0x62e124",
   "Variant": "GMS/v79",
   "BranchDepth": 1,
   "AtlasFile": "libs/atlas-packet/interaction/serverbound/operation_chat.go",
@@ -10,10 +10,10 @@
       "Index": 0,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 4,
-      "Note": "IDA read-order unresolved: function not found in IDB"
+      "IDAOp": 4,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "width mismatch"
     },
     {
       "Index": 1,

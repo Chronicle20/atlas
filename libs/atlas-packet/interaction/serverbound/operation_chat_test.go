@@ -8,6 +8,7 @@ import (
 	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
+// packet-audit:verify packet=interaction/serverbound/InteractionOperationChat version=gms_v79 ida=0x62e124
 // packet-audit:verify packet=interaction/serverbound/InteractionOperationChat version=gms_v95 ida=0x6382a0
 // packet-audit:verify packet=interaction/serverbound/InteractionOperationChat version=gms_v84 ida=0x6752d8
 func TestOperationChatRoundTrip(t *testing.T) {

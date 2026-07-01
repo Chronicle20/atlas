@@ -264,3 +264,65 @@ func TestCharacterNameResponseByteOutputV79(t *testing.T) {
 		t.Errorf("v79 CharacterNameResponse wire: got %x want %x", got, want)
 	}
 }
+
+// The remaining three VIEW_ALL_CHAR sub-modes share CLogin::OnViewAllCharResult
+// @0x5cee77 with CharacterViewAllCharacters; the leading Decode1 (mode/code
+// @0x5ceead) selects the branch. Like every other version (v83 @0x5facca etc.),
+// all sub-writers pin against the same base function address.
+
+// CharacterViewAllCount v79 byte-fixture — mode 1 (case 1u @0x5ceead):
+//	mode  = Decode1                       // dispatcher mode (1 = world/char count) /*0x5ceead*/
+//	svrCount = Decode4                    // *((_DWORD*)this+66)                     /*0x5ceeca*/
+//	charCount= Decode4                    // *((_DWORD*)this+67)                     /*0x5ceee1*/
+// Atlas CharacterViewAllCount writes [byte code][int worldCount][int unk]; code
+// carries the mode byte (1).
+//
+// packet-audit:verify packet=character/clientbound/CharacterViewAllCount version=gms_v79 ida=0x5cee77
+func TestCharacterViewAllCountByteOutputV79(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 79, 1)
+	got := NewCharacterViewAllCount(1, 2, 3).Encode(nil, ctx)(nil)
+	want := []byte{
+		0x01,                   // mode/code = 1 (case 1u)            /*0x5ceead*/
+		0x02, 0x00, 0x00, 0x00, // worldCount (Decode4)              /*0x5ceeca*/
+		0x03, 0x00, 0x00, 0x00, // unk (Decode4)                     /*0x5ceee1*/
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("v79 CharacterViewAllCount wire: got %x want %x", got, want)
+	}
+}
+
+// CharacterViewAllSearchFailed v79 byte-fixture — mode 2 (case 2u @0x5ceead):
+// after the mode byte the client performs NO further wire reads (it clears the
+// VAC state and shows a StringPool notice @0x5cef55). Atlas CharacterViewAllSearchFailed
+// writes just [byte code]; code carries the mode byte (2).
+//
+// packet-audit:verify packet=character/clientbound/CharacterViewAllSearchFailed version=gms_v79 ida=0x5cee77
+func TestCharacterViewAllSearchFailedByteOutputV79(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 79, 1)
+	got := NewCharacterViewAllSearchFailed(2).Encode(nil, ctx)(nil)
+	want := []byte{
+		0x02, // mode/code = 2 (case 2u, no further reads)           /*0x5ceead*/
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("v79 CharacterViewAllSearchFailed wire: got %x want %x", got, want)
+	}
+}
+
+// CharacterViewAllError v79 byte-fixture — default mode (an unhandled mode byte,
+// e.g. 8, falls through to the default branch @0x5cf22a which shows an error
+// modal and performs NO further wire reads). Atlas CharacterViewAllError writes
+// just [byte code]; code carries the mode byte. This mirrors the SearchFailed
+// shape and, like v83/v87/v95, pins against the same base function (no distinct
+// #CharacterViewAllError export slice exists).
+//
+// packet-audit:verify packet=character/clientbound/CharacterViewAllError version=gms_v79 ida=0x5cee77
+func TestCharacterViewAllErrorByteOutputV79(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 79, 1)
+	got := NewCharacterViewAllError(8).Encode(nil, ctx)(nil)
+	want := []byte{
+		0x08, // mode/code = 8 (default branch, no further reads)     /*0x5cf22a*/
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("v79 CharacterViewAllError wire: got %x want %x", got, want)
+	}
+}

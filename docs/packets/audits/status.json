@@ -28956,7 +28956,7 @@
     {
       "kind": "op",
       "op": "PLAYER_INTERACTION",
-      "packet": "interaction/clientbound/InteractionInteractionEnter",
+      "packet": "interaction/clientbound/InteractionInteractionChat",
       "direction": "clientbound",
       "tier1": true,
       "fnames": [
@@ -28964,8 +28964,7 @@
       ],
       "cells": {
         "gms_v72": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
+          "state": "verified",
           "opcode": 280
         },
         "gms_v79": {
@@ -34159,8 +34158,7 @@
       "tier1": true,
       "cells": {
         "gms_v72": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v79": {

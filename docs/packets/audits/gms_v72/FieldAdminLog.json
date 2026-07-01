@@ -1,7 +1,7 @@
 {
   "WriterName": "FieldAdminLog",
   "IDAName": "CField::SendChatMsgSlash#AdminLog",
-  "Address": "",
+  "Address": "0x51275f",
   "Variant": "GMS/v72",
   "BranchDepth": 0,
   "AtlasFile": "libs/atlas-packet/field/serverbound/admin_log.go",
@@ -10,12 +10,12 @@
       "Index": 0,
       "AtlasOp": 4,
       "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 4,
-      "Note": "IDA read-order unresolved: function not found in IDB"
+      "IDAOp": 4,
+      "IDAComment": "message @0x512785",
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 4,
+  "Verdict": 0,
   "FlatInvalid": false
 }

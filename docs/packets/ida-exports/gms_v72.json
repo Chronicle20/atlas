@@ -2474,57 +2474,68 @@
    "calls": null
   },
   "CField::SendChatMsgSlash#AdminChat": {
-   "address": "",
+   "address": "0x50f8b8",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Encode1",
+     "comment": "chatType @0x50f8d1"
+    },
+    {
+     "op": "Encode1",
+     "comment": "flag @0x50f8de"
+    },
+    {
+     "op": "EncodeStr",
+     "comment": "message @0x50f8f8"
     }
    ]
   },
   "CField::SendChatMsgSlash#AdminCommand": {
-   "address": "",
+   "address": "0x50bf7c",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Encode1",
+     "comment": "subCommand @0x50bf95"
     }
    ]
   },
   "CField::SendChatMsgSlash#AdminLog": {
-   "address": "",
+   "address": "0x51275f",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "EncodeStr",
+     "comment": "message @0x512785"
     }
    ]
   },
   "CField::SendChatMsgSlash#MatchTable": {
-   "address": "",
+   "address": "0x5131a7",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Encode1",
+     "comment": "flag @0x5131d2"
     }
    ]
   },
   "CField::SendChatMsgSlash#SueCharacter": {
-   "address": "",
+   "address": "0x50c2c3",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Encode4",
+     "comment": "characterId @0x50c2e3"
+    },
+    {
+     "op": "Encode1",
+     "comment": "flag @0x50c2f1"
+    },
+    {
+     "op": "EncodeStr",
+     "comment": "reason @0x50c30e"
     }
    ]
   },

@@ -7,6 +7,7 @@ import (
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=field/serverbound/FieldAdminCommand version=gms_v72 ida=0x50bf7c
 // packet-audit:verify packet=field/serverbound/FieldAdminCommand version=gms_v79 ida=0x51803a
 // packet-audit:verify packet=field/serverbound/FieldAdminCommand version=gms_v83 ida=0x52c958
 // packet-audit:verify packet=field/serverbound/FieldAdminCommand version=gms_v84 ida=0x53891a
@@ -25,6 +26,22 @@ func TestAdminCommandByteOutputV79(t *testing.T) {
 	actual := pt.Encode(t, ctx, input.Encode, nil)
 	if !bytes.Equal(actual, expected) {
 		t.Errorf("v79 admin_command golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
+// TestAdminCommandByteOutputV72 pins the gms_v72 ADMIN_COMMAND (op 0x7E)
+// serverbound wire. IDA: CField::SendChatMsgSlash send-site @0x50bf7c
+// (GMS_v72.1_U_DEVM.exe) — one of many COutPacket(0x7E) send-sites, each leading
+// with a single sub-command byte: push 0x7E; ctor @0x50bf84 then Encode1
+// @0x50bf95 (the leading sub-command byte; remaining payload is per-subcommand
+// and modeled decode-and-log). Body == v79 legacy wire.
+func TestAdminCommandByteOutputV72(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 72, 1)
+	input := NewAdminCommand(0x23)
+	expected := []byte{0x23}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v72 admin_command golden mismatch: got %v want %v", actual, expected)
 	}
 }
 

@@ -5,7 +5,7 @@
 
 Tool: `fa2892b4e82339df60c9ef0c33a6e4a08bdc3bf3`
 
-- export gms_v72: `3339b4c56c22177edc051f24efe4c24f5cbdcdcf32f11113f0a2302ced1d80d2`
+- export gms_v72: `89d10582d0f6378f49a8d596daa1d088df3c5cbda60bbe843b82b9fb5895451f`
 - export gms_v79: `370d6b720b633c12c71d40340f3952000705c4bddb98f87179e7193d112d210c`
 - export gms_v83: `711bddcc2e1bdd417a75954148d2b50c64e70855e84259c0b8e50e700e393c0d`
 - export gms_v84: `7eab9472e2afeda13faaf74273828d09d5f2481d67bec10235c3b2fd2f91e1eb`
@@ -611,10 +611,10 @@ Tool: `fa2892b4e82339df60c9ef0c33a6e4a08bdc3bf3`
 | NPC_ITEM_USE_REQUEST | CWvsContext::SendSelectNpcItemUseRequest |  |  | ⬜ |  | ⬜ | 0x06F | ❌ | 0x06F | ❌ | 0x072 | ❌ | 0x07B | ❌ | 0x06A | ❌ |
 | LOTTERY_ITEM_USE_REQUEST | CWvsContext::SendLotteryItemUseRequest |  |  | ⬜ |  | ⬜ | 0x070 | ❌ | 0x070 | ❌ | 0x073 | ❌ | 0x07C | ❌ | 0x06B | ❌ |
 | MAKER_SKILL | CUIItemMaker::RequestItemMake |  |  | ⬜ |  | ⬜ | 0x071 | ❌ | 0x071 | ❌ | 0x074 | ❌ | 0x07D | ❌ | 0x06C | ❌ |
-| SUE_CHARACTER | CField::SendChatMsgSlash | field/serverbound/FieldAdminChat (T1) | 0x071 | ❌ | 0x070 | ✅ | 0x072 | ✅ | 0x072 | ✅ | 0x075 | ✅ | 0x07E | ✅ |  | ⬜ |
+| SUE_CHARACTER | CField::SendChatMsgSlash | field/serverbound/FieldAdminChat (T1) | 0x071 | ✅ | 0x070 | ✅ | 0x072 | ✅ | 0x072 | ✅ | 0x075 | ✅ | 0x07E | ✅ |  | ⬜ |
 | USE_BACKGROUND_MUSIC_ITEM |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x073 | ❌ |
 | USE_GACHAPON_BOX_ITEM | CWvsContext::SendUseBoxGachaponItemRequest |  |  | ⬜ |  | ⬜ | 0x073 | ❌ | 0x073 | ❌ | 0x076 | ❌ | 0x07F | ❌ | 0x077 | ❌ |
-| ADMIN_CHAT | CField::SendChatMsgSlash | field/serverbound/FieldAdminChat (T1) | 0x074 | ❌ | 0x073 | ✅ | 0x076 | ✅ | 0x078 | ✅ | 0x07C | ✅ | 0x08B | ✅ | 0x078 | ✅ |
+| ADMIN_CHAT | CField::SendChatMsgSlash | field/serverbound/FieldAdminChat (T1) | 0x074 | ✅ | 0x073 | ✅ | 0x076 | ✅ | 0x078 | ✅ | 0x07C | ✅ | 0x08B | ✅ | 0x078 | ✅ |
 | USE_REMOTE | CWvsContext::SendUseGachaponRemoteRequest |  |  | ⬜ |  | ⬜ | 0x074 | ❌ | 0x074 | ❌ | 0x077 | ❌ | 0x080 | ❌ |  | ⬜ |
 | FOLLOW_CHARACTER_WITHRDAW |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x075 | ❌ |
 | MULTI_CHAT | CUIStatusBar::SendGroupMessage | chat/serverbound/ChatMulti (T1) | 0x075 | ✅ | 0x074 | ✅ | 0x077 | ❌ | 0x079 | ❌ | 0x07D | ❌ | 0x08C | ❌ | 0x079 | ❌ |
@@ -630,8 +630,8 @@ Tool: `fa2892b4e82339df60c9ef0c33a6e4a08bdc3bf3`
 | USER_QUEST_RECORD_SET_STATE | CDamageMeter::SaveDamageInfo |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x07B | ❌ | 0x084 | ❌ | 0x06F | ❌ |
 | GUILD_OPERATION | CField::InputGuildName; CField::SendCreateGuildAgreeMsg; CField::SendInviteGuildMsg; CField::SendKickGuildMsg; CField::SendSetGradeNameMsg; CField::SendSetGuildMarkMsg; CField::SendSetGuildNoticeMsg; CField::SendSetMemberGradeMsg; CField::SendWithdrawGuildMsg; CUIFadeYesNo::OnButtonClicked; CWvsContext::OnGuildResult | guild/serverbound/GuildJoin (T1) | 0x07C | ✅ | 0x07B | ✅ | 0x07E | ✅ | 0x082 | ✅ | 0x086 | ✅ | 0x095 | ✅ | 0x081 | ✅ |
 | DENY_GUILD_REQUEST | CFadeWnd::SendCloseMessage; CWvsContext::OnGuildResult | messenger/serverbound/MessengerOperationDeclineInvite (T1) | 0x07D | ✅ | 0x07C | ✅ | 0x07F | ✅ | 0x083 | ✅ | 0x087 | ✅ | 0x096 | ✅ | 0x082 | ✅ |
-| ADMIN_COMMAND | CField::SendChatMsgSlash; CStage::OnSetField; CUserLocal::OnKey | field/serverbound/FieldAdminChat (T1) | 0x07E | ❌ | 0x07D | ✅ | 0x080 | ✅ | 0x084 | ✅ | 0x088 | ✅ | 0x097 | ✅ | 0x083 | ✅ |
-| ADMIN_LOG | CField::SendChatMsgSlash | field/serverbound/FieldAdminChat (T1) | 0x07F | ❌ | 0x07E | ✅ | 0x081 | ✅ | 0x085 | ✅ | 0x089 | ✅ | 0x098 | ✅ | 0x084 | ✅ |
+| ADMIN_COMMAND | CField::SendChatMsgSlash; CStage::OnSetField; CUserLocal::OnKey | field/serverbound/FieldAdminChat (T1) | 0x07E | ✅ | 0x07D | ✅ | 0x080 | ✅ | 0x084 | ✅ | 0x088 | ✅ | 0x097 | ✅ | 0x083 | ✅ |
+| ADMIN_LOG | CField::SendChatMsgSlash | field/serverbound/FieldAdminChat (T1) | 0x07F | ✅ | 0x07E | ✅ | 0x081 | ✅ | 0x085 | ✅ | 0x089 | ✅ | 0x098 | ✅ | 0x084 | ✅ |
 | BUDDYLIST_MODIFY | CField::SendAcceptFriendMsg; CField::SendDeleteFriendMsg; CField::SendSetFriendMsg; CWvsContext::LoadFriend | buddy/serverbound/BuddyOperationDelete (T1) | 0x080 | 🟡 | 0x07F | 🟡 | 0x082 | ✅ | 0x086 | ✅ | 0x08A | ✅ | 0x099 | ✅ | 0x085 | ✅ |
 | NOTE_ACTION | CCashShop::OnCashItemResLoadGiftDone; CMemoListDlg::SetRet; CWvsContext::OnMemoNotify_Receive | note/serverbound/NoteOperationDiscard (T1) | 0x081 | ✅ | 0x080 | ✅ | 0x083 | ✅ | 0x087 | ✅ | 0x08B | ✅ | 0x09A | ✅ | 0x086 | ✅ |
 | PARTY_RESULT | CFadeWnd::SendCloseMessage; CUIFadeYesNo::OnButtonClicked; CWvsContext::OnPartyResult | messenger/serverbound/MessengerOperationDeclineInvite (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x083 | ✅ | 0x092 | ✅ | 0x07E | ✅ |
@@ -723,7 +723,7 @@ Tool: `fa2892b4e82339df60c9ef0c33a6e4a08bdc3bf3`
 | LEFT_KNOCKBACK | CField_SnowBall::Update | field/serverbound/FieldLeftKnockback (T1) | 0x0CA | ❌ | 0x0CC | ✅ | 0x0D4 | ✅ | 0x0DA | ✅ | 0x0E1 | ✅ | 0x100 | ✅ | 0x0DF | ✅ |
 | COCONUT | CField_Coconut::BasicActionAttack | field/serverbound/FieldCoconut (T1) | 0x0CB | ❌ | 0x0CD | ✅ | 0x0D5 | ✅ | 0x0DB | ✅ | 0x0E2 | ✅ | 0x101 | ✅ | 0x0E0 | ✅ |
 | UNNAMED_R348 |  |  |  | ⬜ |  | ⬜ | 0x0CB | ❌ |  | ⬜ | 0x0D8 | ❌ | 0x0F7 | ❌ | 0x0D6 | ❌ |
-| MATCH_TABLE | CField::SendChatMsgSlash | field/serverbound/FieldAdminChat (T1) | 0x0CC | ❌ | 0x0CE | ✅ | 0x0D6 | ✅ | 0x0DC | ✅ | 0x0E3 | ✅ | 0x102 | ✅ | 0x0E1 | ✅ |
+| MATCH_TABLE | CField::SendChatMsgSlash | field/serverbound/FieldAdminChat (T1) | 0x0CC | ✅ | 0x0CE | ✅ | 0x0D6 | ✅ | 0x0DC | ✅ | 0x0E3 | ✅ | 0x102 | ✅ | 0x0E1 | ✅ |
 | UNNAMED_R349 |  |  |  | ⬜ |  | ⬜ | 0x0CC | ❌ |  | ⬜ | 0x0D9 | ❌ | 0x0F8 | ❌ | 0x0D7 | ❌ |
 | GUILD_BOSS | CField_GuildBoss::BasicActionAttack | field/serverbound/FieldGuildBoss (T1) | 0x0CD | ❌ | 0x0CF | ✅ | 0x0D7 | ✅ | 0x0DD | ✅ | 0x0E4 | ✅ | 0x103 | ✅ | 0x0E2 | ✅ |
 | TOUCHING_REACTOR | CReactorPool::FindTouchReactorAroundLocalUser |  |  | ⬜ |  | ⬜ | 0x0CE | ❌ | 0x0CE | ❌ | 0x0DB | ❌ | 0x0FA | ❌ | 0x0D9 | ❌ |
@@ -914,7 +914,7 @@ Tool: `fa2892b4e82339df60c9ef0c33a6e4a08bdc3bf3`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v72 | 93 | 0 | 74 | 304 | 411 | 0 | 19.7% |
+| v72 | 98 | 0 | 74 | 299 | 411 | 0 | 20.8% |
 | v79 | 228 | 0 | 72 | 180 | 402 | 0 | 47.5% |
 | v83 | 367 | 0 | 0 | 311 | 204 | 0 | 54.1% |
 | v84 | 345 | 0 | 0 | 312 | 225 | 0 | 52.5% |

@@ -7,6 +7,7 @@ import (
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=field/serverbound/FieldMatchTable version=gms_v72 ida=0x5131a7
 // packet-audit:verify packet=field/serverbound/FieldMatchTable version=gms_v79 ida=0x51a2b8
 // packet-audit:verify packet=field/serverbound/FieldMatchTable version=gms_v83 ida=0x52ec6c
 // packet-audit:verify packet=field/serverbound/FieldMatchTable version=gms_v84 ida=0x53ad6d
@@ -23,6 +24,20 @@ func TestMatchTableByteOutputV79(t *testing.T) {
 	actual := pt.Encode(t, ctx, input.Encode, nil)
 	if !bytes.Equal(actual, expected) {
 		t.Errorf("v79 match_table golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
+// TestMatchTableByteOutputV72 pins the gms_v72 MATCH_TABLE (op 0xCC) serverbound
+// wire. IDA: CField::SendChatMsgSlash send-site @0x5131a7 (GMS_v72.1_U_DEVM.exe)
+// — push 0xCC; ctor @0x5131b2 then Encode1(bool flag) @0x5131d2 (single byte
+// body). Body == v79 legacy wire.
+func TestMatchTableByteOutputV72(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 72, 1)
+	input := NewMatchTable(0x01)
+	expected := []byte{0x01}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v72 match_table golden mismatch: got %v want %v", actual, expected)
 	}
 }
 

@@ -7815,13 +7815,44 @@
    ]
   },
   "CStage::OnSetField#WarpToMap": {
-   "address": "",
+   "address": "0x6c0c9b",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode4",
+     "comment": "m_nChannelID (channel id) @0x6c0cce — v72 NO DecodeOpt, NO m_dwOldDriverID"
+    },
+    {
+     "op": "Decode1",
+     "comment": "sNotifierMessage flag @0x6c0ced"
+    },
+    {
+     "op": "Decode1",
+     "comment": "bCharacterData flag (warp path = 0) @0x6c0cfa"
+    },
+    {
+     "op": "Decode2",
+     "comment": "nNotifierCheck @0x6c0d11"
+    },
+    {
+     "op": "Decode4",
+     "comment": "dwPosMap (target map id) @0x6c0e59 — NO revive byte in v72 (else branch reads mapId immediately, v72 < v83)"
+    },
+    {
+     "op": "Decode1",
+     "comment": "nPortal (target portal id) @0x6c0e77"
+    },
+    {
+     "op": "Decode2",
+     "comment": "nHP @0x6c0e88 — v72 Decode2 (2 bytes)"
+    },
+    {
+     "op": "Decode1",
+     "comment": "m_bChaseEnable @0x6c0ea0"
+    },
+    {
+     "op": "Decode8",
+     "comment": "timestamp (DecodeBuffer p,8u FILETIME) @0x6c0f38"
     }
    ]
   },

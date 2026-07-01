@@ -57,9 +57,14 @@ func (m ShopList) Encode(l logrus.FieldLogger, ctx context.Context) func(options
 			if t.Region() == "GMS" && t.MajorVersion() >= 95 {
 				w.WriteInt(c.TokenTemplateId)
 			}
-			w.WriteInt(c.TokenPrice)
-			w.WriteInt(c.Period)
-			w.WriteInt(c.LevelLimit)
+			// GMS v79 CShopDlg::SetShopDlg@0x6d3459 reads only itemId, mesoPrice,
+			// then the quantity/unitPrice branch and maxPerSlot short — the
+			// tokenPrice/period/levelLimit ints were added after v79. delta §3.2
+			if !(t.Region() == "GMS" && t.MajorVersion() < 83) {
+				w.WriteInt(c.TokenPrice)
+				w.WriteInt(c.Period)
+				w.WriteInt(c.LevelLimit)
+			}
 			if !c.IsAmmo {
 				w.WriteShort(c.Quantity)
 			} else {
@@ -86,9 +91,12 @@ func (m *ShopList) Decode(l logrus.FieldLogger, ctx context.Context) func(r *req
 			if t.Region() == "GMS" && t.MajorVersion() >= 95 {
 				m.commodities[i].TokenTemplateId = r.ReadUint32()
 			}
-			m.commodities[i].TokenPrice = r.ReadUint32()
-			m.commodities[i].Period = r.ReadUint32()
-			m.commodities[i].LevelLimit = r.ReadUint32()
+			// GMS v79 omits tokenPrice/period/levelLimit (SetShopDlg@0x6d3459).
+			if !(t.Region() == "GMS" && t.MajorVersion() < 83) {
+				m.commodities[i].TokenPrice = r.ReadUint32()
+				m.commodities[i].Period = r.ReadUint32()
+				m.commodities[i].LevelLimit = r.ReadUint32()
+			}
 			if !m.commodities[i].IsAmmo {
 				m.commodities[i].Quantity = r.ReadUint16()
 			} else {

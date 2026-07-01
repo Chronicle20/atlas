@@ -19,6 +19,16 @@
    "fname": "CLogin::SendSelectCharPacketByVAC#AllCharacterListSelectWithPicRegister",
    "case": 0,
    "reason": "v79-absent: usesPic=false. IDA sub_5CCC1F@0x5ccc1f has no register-PIC branch; the view-all register-PIC send does not exist in v79 (task-113 stage E close)."
+  },
+  {
+   "fname": "CScriptMan::OnAskSlideMenu#AskSlideMenu",
+   "case": 0,
+   "reason": "v79-absent: the conversation dispatcher CScriptMan::OnScriptMessage@0x6c7d3e has no switch case for ASK_SLIDE_MENU (msgType 14). Cases present are 0,1,2,3,4,5,6,7,8,9,10,12,13; there is no slide-menu handler. The slide-menu dialog was introduced after v79 (task-113 stage E close)."
+  },
+  {
+   "fname": "CScriptMan::OnAskPet#AskPet",
+   "case": 0,
+   "reason": "v79-absent (single-pet variant): the sole v79 pet handler is CScriptMan::OnAskPet@0x6c8e82 (dispatcher case 10, msgType 10), which is the UNIFIED pet handler and always reads DecodeStr message + Decode1 count + Decode1 exceptionExists + count x (DecodeBuffer(8)+Decode1) -- i.e. the AskPetAll body (verified separately). The pre-exception single-pet AskPetConversationDetail format (no exceptionExists byte) has no distinct v79 handler; ASK_PET routes to the unified handler (task-113 stage E close)."
   }
  ]
 }

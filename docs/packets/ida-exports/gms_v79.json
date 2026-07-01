@@ -8073,37 +8073,31 @@
   "CShopDlg::SetShopDlg": {
    "address": "0x6d3459",
    "direction": "clientbound",
+   "notes": "v79 CShopDlg::SetShopDlg@0x6d3459 reads: Decode4 npcTemplateId, Decode2 count, then per item Decode4 itemId, Decode4 mesoPrice, (itemId/10000 in {207,233} rechargeable -> DecodeBuffer(8) unitPrice double, else Decode2 quantity), Decode2 maxPerSlot. The tokenPrice/period/levelLimit ints present at v83+ are absent in v79; Atlas ShopList gates them off for GMS<83. task-113 stage E close.",
    "calls": [
     {
      "op": "Decode4",
-     "comment": ""
+     "comment": "npcTemplateId"
     },
     {
      "op": "Decode2",
-     "comment": ""
+     "comment": "count"
     },
     {
      "op": "Decode4",
-     "comment": "",
-     "guard": "v4"
+     "comment": "itemId"
     },
     {
      "op": "Decode4",
-     "comment": "",
-     "guard": "v4"
-    },
-    {
-     "op": "DecodeBuf",
-     "comment": "",
-     "guard": "v4"
+     "comment": "mesoPrice"
     },
     {
      "op": "Decode2",
-     "comment": ""
+     "comment": "quantity(or DecodeBuffer8 unitPrice when rechargeable)"
     },
     {
      "op": "Decode2",
-     "comment": ""
+     "comment": "maxPerSlot"
     }
    ]
   },

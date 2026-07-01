@@ -188,7 +188,6 @@ func TestStatusMessageCompleteQuestRecord(t *testing.T) {
 // packet-audit:verify packet=character/clientbound/StatusMessageCashItemExpire version=gms_v87 ida=0xab8d8e
 // packet-audit:verify packet=character/clientbound/StatusMessageCashItemExpire version=gms_v95 ida=0x9f8060
 // packet-audit:verify packet=character/clientbound/StatusMessageCashItemExpire version=jms_v185 ida=0xb085df
-// packet-audit:verify packet=character/clientbound/StatusMessageCashItemExpire version=gms_v79 ida=0x96b944
 func TestStatusMessageCashItemExpire(t *testing.T) {
 	input := NewStatusMessageCashItemExpire(2, 5000000)
 	for _, v := range test.Variants {

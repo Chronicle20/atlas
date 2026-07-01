@@ -7,4 +7,4 @@ ida:
     address: "0x96b944"
     decompile_sha256: 08752a3d8f0625a156cf9860d82565846fbe04184bacf9812ac4abeaf8c79ba7
 verifies:
-  - libs/atlas-packet/character/clientbound/status_message_test.go#TestStatusMessageCashItemExpire
+  - libs/atlas-packet/character/clientbound/v79_test.go#TestStatusMessageCashItemExpireByteOutputV79

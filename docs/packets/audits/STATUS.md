@@ -5,7 +5,7 @@
 
 Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 
-- export gms_v79: `2d70b240015392d945aae4bc37baef6cb1dcd8ba0c291e4e4418a4f6fb3da1b7`
+- export gms_v79: `fc71494276370dde846b6c74554ddfedaa3a0a7d3339aa1225115b1ca13a041c`
 - export gms_v83: `711bddcc2e1bdd417a75954148d2b50c64e70855e84259c0b8e50e700e393c0d`
 - export gms_v84: `7eab9472e2afeda13faaf74273828d09d5f2481d67bec10235c3b2fd2f91e1eb`
 - export gms_v87: `714817d376bb93732ef6b6fbe6b59f8c24515ff901801d213d676b501eae7f94`
@@ -20,7 +20,7 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 | GUEST_ID_LOGIN | CLogin::OnGuestIDLoginResult |  | 0x001 | ❌ | 0x001 | ❌ | 0x001 | ❌ | 0x001 | ❌ | 0x001 | ❌ | 0x001 | ❌ |
 | ACCOUNT_INFO | CLogin::OnAccountInfoResult |  |  | ⬜ | 0x002 | ❌ | 0x002 | ❌ | 0x002 | ❌ | 0x002 | ❌ |  | ⬜ |
 | SERVERSTATUS | CLogin::OnCheckUserLimitResult; sub_5CE217 | login/clientbound/ServerStatus | 0x003 | ❌ | 0x003 | ✅ | 0x003 | ✅ | 0x003 | ✅ | 0x003 | ✅ |  | ⬜ |
-| GENDER_DONE | CLogin::OnSetAccountResult | login/serverbound/AfterLogin (T1) | 0x004 | ❌ | 0x004 | ✅ | 0x004 | ✅ | 0x004 | ✅ | 0x004 | ✅ |  | ⬜ |
+| GENDER_DONE | CLogin::OnSetAccountResult | login/serverbound/AfterLogin | 0x004 | ✅ | 0x004 | ✅ | 0x004 | ✅ | 0x004 | ✅ | 0x004 | ✅ |  | ⬜ |
 | CONFIRM_EULA_RESULT | CLogin::OnConfirmEULAResult |  | 0x005 | ❌ | 0x005 | ❌ | 0x005 | ❌ | 0x005 | ❌ | 0x005 | ❌ |  | ⬜ |
 | CHECK_PINCODE | CLogin::OnCheckPinCodeResult | login/clientbound/PinOperation | 0x006 | ❌ | 0x006 | ✅ | 0x006 | ✅ | 0x006 | ✅ | 0x006 | ✅ |  | ⬜ |
 | UPDATE_PINCODE | CLogin::OnUpdatePinCodeResult | login/clientbound/PinUpdate | 0x007 | 🟡 | 0x007 | ✅ | 0x007 | ✅ | 0x007 | ✅ | 0x007 | ✅ |  | ⬜ |
@@ -488,7 +488,7 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 | SERVERSTATUS_REQUEST | CLogin::SendCheckUserLimitPacket; sub_5CD1A2 | login/serverbound/ServerStatusRequest | 0x006 | ❌ | 0x006 | ✅ | 0x006 | ✅ | 0x006 | ✅ | 0x006 | ✅ |  | ⬜ |
 | ACCEPT_TOS | CLogin::OnAcceptLicense; CLogin::OnDenyLicense | account/serverbound/AcceptTos | 0x007 | 🟡 | 0x007 | ❌ | 0x007 | ❌ | 0x007 | ✅ | 0x007 | ✅ |  | ⬜ |
 | SET_GENDER | CLogin::SendCancelGenderPacket; CLogin::SendSetGenderPacket | account/serverbound/SetGender | 0x008 | 🟡 | 0x008 | ❌ | 0x008 | ❌ | 0x008 | ✅ | 0x008 | ✅ |  | ⬜ |
-| AFTER_LOGIN | CLogin::OnCheckPasswordResult; CLogin::OnCheckPinCodeResult; CLogin::OnSelectWorldResult; CLogin::OnSetAccountResult | login/serverbound/AfterLogin (T1) | 0x009 | ❌ | 0x009 | ✅ | 0x009 | ✅ | 0x009 | ✅ | 0x009 | ✅ |  | ⬜ |
+| AFTER_LOGIN | CLogin::OnCheckPasswordResult; CLogin::OnCheckPinCodeResult; CLogin::OnSelectWorldResult; CLogin::OnSetAccountResult | login/serverbound/AfterLogin | 0x009 | ✅ | 0x009 | ✅ | 0x009 | ✅ | 0x009 | ✅ | 0x009 | ✅ |  | ⬜ |
 | REGISTER_PIN | CLogin::OnCheckPinCodeResult | login/clientbound/PinOperation | 0x00A | ❌ | 0x00A | ✅ | 0x00A | ✅ | 0x00A | ✅ | 0x00A | ✅ |  | ⬜ |
 | SERVERLIST_REQUEST | CLicenseDlg::OnButtonClicked; CLogin::OnCheckPasswordResult; CLogin::OnCheckPinCodeResult | login/clientbound/PinOperation | 0x00B | ❌ | 0x00B | ✅ | 0x00B | ✅ | 0x00B | ✅ | 0x00B | ✅ |  | ⬜ |
 | PLAYER_DC | CLogin::GotoWorldSelect; CLogin::SendViewAllCharPacket |  |  | ⬜ | 0x00C | ❌ | 0x00C | ❌ | 0x00C | ❌ | 0x00C | ❌ |  | ⬜ |
@@ -914,7 +914,7 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v79 | 163 | 0 | 74 | 246 | 400 | 0 | 33.7% |
+| v79 | 165 | 0 | 74 | 244 | 400 | 0 | 34.2% |
 | v83 | 367 | 0 | 0 | 314 | 202 | 0 | 53.9% |
 | v84 | 345 | 0 | 0 | 315 | 223 | 0 | 52.3% |
 | v87 | 379 | 0 | 0 | 339 | 165 | 0 | 52.8% |

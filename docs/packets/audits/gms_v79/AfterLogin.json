@@ -1,39 +1,48 @@
 {
   "WriterName": "AfterLogin",
   "IDAName": "CLogin::OnSetAccountResult#AfterLogin",
-  "Address": "",
+  "Address": "0x5d0800",
   "Variant": "GMS/v79",
-  "BranchDepth": 1,
+  "BranchDepth": 3,
   "AtlasFile": "libs/atlas-packet/login/serverbound/after_login.go",
   "Rows": [
     {
       "Index": 0,
       "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 4,
-      "Note": "IDA read-order unresolved: function not found in IDB"
+      "IDAOp": 0,
+      "IDAComment": "pinMode @0x5d080e (OnSetAccountResult literal 1u; OnCheckPinCodeResult Encode1(pin-result) @0x5d0abc/@0x5d09cb)",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 1,
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "IDAComment": "opt2 @0x5d0818 (literal; 0 in OnCheckPinCodeResult @0x5d0ad8/@0x5d09e7)",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 2,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "accountId @0x5d082b (*(g_pWvsContext+8232); OnCheckPinCodeResult @0x5d0aeb/@0x5d09fa) — LEGACY-ONLY int, absent in v83+",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 3,
       "AtlasOp": 4,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "IDAOp": 4,
+      "IDAComment": "pin @0x5d0848 (EncodeStr; empty ZXString byte_B0C24C in OnSetAccountResult)",
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 3,
-  "FlatInvalid": true
+  "Verdict": 0,
+  "FlatInvalid": false
 }

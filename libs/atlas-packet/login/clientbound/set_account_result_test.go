@@ -10,6 +10,7 @@ import (
 // packet-audit:verify packet=login/clientbound/SetAccountResult version=gms_v87 ida=0x634144
 // packet-audit:verify packet=login/clientbound/SetAccountResult version=gms_v95 ida=0x5d5e80
 // packet-audit:verify packet=login/clientbound/SetAccountResult version=gms_v84 ida=0x611809
+// packet-audit:verify packet=login/clientbound/SetAccountResult version=gms_v79 ida=0x5d07a2
 func TestSetAccountResultRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

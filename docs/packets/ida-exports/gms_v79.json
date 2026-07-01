@@ -5027,13 +5027,25 @@
    ]
   },
   "CLogin::OnSetAccountResult#AfterLogin": {
-   "address": "",
+   "address": "0x5d0800",
    "direction": "serverbound",
-   "unresolved": true,
+   "notes": "v79 AFTER_LOGIN (COutPacket op 9) built by CLogin::OnSetAccountResult @0x5d0800 and CLogin::OnCheckPinCodeResult @0x5d0aaf/@0x5d09be. Legacy wire carries Encode4(accountId @g_pWvsContext+8232) between opt2 and the pin string; v83 @0x5fc731 omits it. Atlas gates the int to GMS<83.",
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Encode1",
+     "comment": "pinMode @0x5d080e (OnSetAccountResult literal 1u; OnCheckPinCodeResult Encode1(pin-result) @0x5d0abc/@0x5d09cb)"
+    },
+    {
+     "op": "Encode1",
+     "comment": "opt2 @0x5d0818 (literal; 0 in OnCheckPinCodeResult @0x5d0ad8/@0x5d09e7)"
+    },
+    {
+     "op": "Encode4",
+     "comment": "accountId @0x5d082b (*(g_pWvsContext+8232); OnCheckPinCodeResult @0x5d0aeb/@0x5d09fa) \u2014 LEGACY-ONLY int, absent in v83+"
+    },
+    {
+     "op": "EncodeStr",
+     "comment": "pin @0x5d0848 (EncodeStr; empty ZXString byte_B0C24C in OnSetAccountResult)"
     }
    ]
   },

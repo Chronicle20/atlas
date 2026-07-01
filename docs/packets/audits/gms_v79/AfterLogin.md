@@ -1,17 +1,17 @@
 # AfterLogin (← `CLogin::OnSetAccountResult#AfterLogin`)
 
-- **IDA:** 
+- **IDA:** 0x5d0800
 - **Atlas file:** `libs/atlas-packet/login/serverbound/after_login.go`
 - **Variant:** GMS/v79
-- **Branch depth:** 1
-- **Verdict:** 🔍
-- **Flat-diff-invalid:** the wire shape depends on a runtime discriminator a flat positional diff cannot model — the Atlas writer branches on a non-version condition (a data-dependent field or an untraced version-derived local), and/or the client reads fields conditionally (e.g. `mode <= 1`). The verdict is capped to 🔍; the row-level mismatches below are a modeling limitation, not a verified wire bug — confirm per-branch via byte-level tests.
+- **Branch depth:** 3
+- **Verdict:** ✅
 
 ## Wire-level diff
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | byte | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
-| 1 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 2 | string | byte `` | ❌ | atlas: extra — client never reads this field |
+| 0 | byte | byte `pinMode @0x5d080e (OnSetAccountResult literal 1u; OnCheckPinCodeResult Encode1(pin-result) @0x5d0abc/@0x5d09cb)` | ✅ |  |
+| 1 | byte | byte `opt2 @0x5d0818 (literal; 0 in OnCheckPinCodeResult @0x5d0ad8/@0x5d09e7)` | ✅ |  |
+| 2 | int32 | int32 `accountId @0x5d082b (*(g_pWvsContext+8232); OnCheckPinCodeResult @0x5d0aeb/@0x5d09fa) — LEGACY-ONLY int, absent in v83+` | ✅ |  |
+| 3 | string | string `pin @0x5d0848 (EncodeStr; empty ZXString byte_B0C24C in OnSetAccountResult)` | ✅ |  |
 

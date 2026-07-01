@@ -1,0 +1,21 @@
+{
+  "WriterName": "GuildSetNotice",
+  "IDAName": "CField::SendSetGuildNoticeMsg",
+  "Address": "",
+  "Variant": "GMS/v72",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/guild/serverbound/operation_set_notice.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 6,
+      "IDAComment": "function not found in IDB",
+      "Verdict": 4,
+      "Note": "IDA read-order unresolved: function not found in IDB"
+    }
+  ],
+  "Verdict": 4,
+  "FlatInvalid": false
+}

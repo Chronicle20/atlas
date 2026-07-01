@@ -2555,27 +2555,27 @@
 - op: DISTRIBUTE_AP
   direction: serverbound
   opcode: 85
-  fname: sub_96DB81
+  fname: CWvsContext::SendAbilityUpRequest
   provenance: ida-discovered
   ida:
     address: 9886593
-  note: 'v79 sub_96DB81 COutPacket(85); push 55h;a2 @0x96dc9c. v83 DISTRIBUTE_AP=0x57=87 (d-2). delta doc serverbound (ida-read).'
+  note: 'v79 sub_96DB81 (SendAbilityUpRequest, single-stat AP) COutPacket(85); push 55h;a2 @0x96dc9c. v83 DISTRIBUTE_AP=0x57=87 (d-2). delta doc serverbound (ida-read).'
 - op: AUTO_DISTRIBUTE_AP
   direction: serverbound
   opcode: 86
-  fname: sub_96DD07
+  fname: CWvsContext::SendAbilityUpRequest
   provenance: ida-discovered
   ida:
     address: 9886983
-  note: 'v79 sub_96DD07 COutPacket(86); push 56h;a2 @0x96de22. v83 AUTO_DISTRIBUTE_AP=0x58=88 (d-2). delta doc serverbound (ida-read).'
+  note: 'v79 sub_96DD07 (SendAbilityUpRequest, stat-pair array) COutPacket(86); push 56h;a2 @0x96de22. v83 AUTO_DISTRIBUTE_AP=0x58=88 (d-2). delta doc serverbound (ida-read).'
 - op: DISTRIBUTE_SP
   direction: serverbound
   opcode: 88
-  fname: sub_96DEBD
+  fname: CWvsContext::SendSkillUpRequest
   provenance: ida-discovered
   ida:
     address: 9887421
-  note: 'v79 sub_96DEBD COutPacket(88); push 58h;a2 @0x96dedd. v83 DISTRIBUTE_SP=0x5a=90 (d-2). delta doc serverbound (ida-read).'
+  note: 'v79 sub_96DEBD (SendSkillUpRequest) COutPacket(88); push 58h;a2 @0x96dedd. v83 DISTRIBUTE_SP=0x5a=90 (d-2). delta doc serverbound (ida-read).'
 - op: SPECIAL_MOVE
   direction: serverbound
   opcode: 89
@@ -2611,11 +2611,11 @@
 - op: CHAR_INFO_REQUEST
   direction: serverbound
   opcode: 95
-  fname: sub_96E184
+  fname: CWvsContext::SendCharacterInfoRequest
   provenance: ida-discovered
   ida:
     address: 9888132
-  note: 'v79 sub_96E184 COutPacket(95); push 5Fh;a2 @0x96e1e1. v83 CHAR_INFO_REQUEST=0x61=97 (d-2). delta doc serverbound (ida-read).'
+  note: 'v79 sub_96E184 (SendCharacterInfoRequest) COutPacket(95); push 5Fh;a2 @0x96e1e1. v83 CHAR_INFO_REQUEST=0x61=97 (d-2). delta doc serverbound (ida-read).'
 - op: SPAWN_PET
   direction: serverbound
   opcode: 96

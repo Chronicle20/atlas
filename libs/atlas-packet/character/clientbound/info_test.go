@@ -14,6 +14,7 @@ import (
 // packet-audit:verify packet=character/clientbound/CharacterInfo version=gms_v95 ida=0xa05750
 // packet-audit:verify packet=character/clientbound/CharacterInfo version=gms_v84 ida=0xa6eda8
 // packet-audit:verify packet=character/clientbound/CharacterInfo version=jms_v185 ida=0xb0aa6e
+// packet-audit:verify packet=character/clientbound/CharacterInfo version=gms_v79 ida=0x96d8d5
 
 // TestCharacterInfo_MountRoundTrip locks the tamed-mob block: when a mount is
 // active the writer emits flag=1 + level/exp/tiredness (3×int32), and the decoder
@@ -149,6 +150,46 @@ func TestCharacterInfoJMSGolden(t *testing.T) {
 		"393000003264000a00000900546573744775696c6400000001404b4c0005004b697474790fc80050000000000000000107000000d20400002a00000002104a0f00114a0f00050000000a000000030000000d000000e1502400f76c1100000000000000")
 	if !bytes.Equal(got, want) {
 		t.Errorf("jms CharacterInfo wire (len got=%d want=%d):\n got %x\nwant %x", len(got), len(want), got, want)
+	}
+}
+
+// TestCharacterInfoV79Golden pins the full gms_v79 CharacterInfo wire.
+//
+// Client read order — CWvsContext::OnCharacterInfo (GMS_v79_1_DEVM.exe @0x96d8d5):
+//
+//	Decode4(charId) /*0x96d90a*/, Decode1(level) /*0x96d931*/, Decode2(job) /*0x96d934*/,
+//	Decode2(fame) /*0x96d93e*/, Decode1(married) /*0x96d955*/, DecodeStr(guild) /*0x96d95c*/,
+//	DecodeStr(alliance) /*0x96d96b*/, Decode1(medalInfo byte) /*0x96d980*/,
+//	Decode1(first pet flag) /*0x96d983*/ → sub_86040E pet loop @0x86040e (per pet:
+//	  Decode4(templateId), DecodeStr(name), Decode1(level), Decode2(closeness),
+//	  Decode1(fullness), Decode2(skill), Decode4(itemId), Decode1(next flag) — bool-term),
+//	Decode1(mount flag)+3×Decode4 /*0x96da02..0x96da26*/ → SetTamingMobInfo,
+//	Decode1(wish count)+count×Decode4 (DecodeBuffer 4*n) /*0x96da4d..*/,
+//	sub_651B3B monster-book @0x651b3b: 5×Decode4 (level,normal,special,total,cover-mobid),
+//	sub_8613D0 medal @0x8613d0: Decode4(medalId) + Decode2(quest count) + count×Decode2.
+//	NO trailing chair int (the >=87 branch is absent in v79; sub_8613D0 is the last read).
+//
+// v79 gates == v83: monster-book present (GMS<=87), chair absent (GMS<87). The wire is
+// therefore byte-identical to v83 and equals the jms golden MINUS the jms-only trailing
+// int (dword §3.1). Cross-checked against a v83-context encode of the same fixture.
+func TestCharacterInfoV79Golden(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 79, 1)
+	pets := []InfoPet{{Slot: 0, TemplateId: 5000000, Name: "Kitty", Level: 15, Closeness: 200, Fullness: 80}}
+	mb := MonsterBookInfo{Level: 5, NormalCards: 10, SpecialCards: 3, TotalCards: 13, Cover: 2380001}
+	mount := MountInfo{Active: true, Level: 7, Exp: 1234, Tiredness: 42}
+	in := NewCharacterInfo(12345, 50, 100, 10, "TestGuild", pets, []uint32{1002000, 1002001}, 1142007, mb, mount)
+
+	got := in.Encode(nil, ctx)(nil)
+	// == jms golden without the jms-only trailing 4-byte int.
+	want, _ := hex.DecodeString(
+		"393000003264000a00000900546573744775696c6400000001404b4c0005004b697474790fc80050000000000000000107000000d20400002a00000002104a0f00114a0f00050000000a000000030000000d000000e1502400f76c11000000")
+	if !bytes.Equal(got, want) {
+		t.Errorf("v79 CharacterInfo wire (len got=%d want=%d):\n got %x\nwant %x", len(got), len(want), got, want)
+	}
+	// Cross-version equality: v79 shape is byte-identical to v83.
+	v83 := in.Encode(nil, pt.CreateContext("GMS", 83, 1))(nil)
+	if !bytes.Equal(got, v83) {
+		t.Errorf("v79 CharacterInfo must equal v83:\n v79 %x\n v83 %x", got, v83)
 	}
 }
 

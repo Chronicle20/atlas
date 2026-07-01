@@ -1,6 +1,7 @@
 package serverbound
 
 import (
+	"bytes"
 	"testing"
 
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
@@ -25,5 +26,29 @@ func TestDistributeSpRoundTrip(t *testing.T) {
 				t.Errorf("skillId: got %v, want %v", output.SkillId(), input.SkillId())
 			}
 		})
+	}
+}
+
+// TestDistributeSpV79ByteOutput pins the gms_v79 DISTRIBUTE_SP (op 0x58) wire.
+//
+// Sender sub_96DEBD (GMS_v79_1_DEVM.exe @0x96debd):
+//
+//	COutPacket::COutPacket(v8, 88)  @0x96dee2 → opcode 88 (matches registry)
+//	COutPacket::Encode4(v8, v5)     @0x96def4 → update_time (get_update_time @0x96ded4)
+//	COutPacket::Encode4(v8, a2)     @0x96deff → skillId
+//
+// Body = updateTime(4) + skillId(4) = 8 bytes. Version-invariant vs v83.
+//
+// packet-audit:verify packet=character/serverbound/DistributeSp version=gms_v79 ida=0x96debd
+func TestDistributeSpV79ByteOutput(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 79, 1)
+	input := DistributeSp{updateTime: 100, skillId: 1000000}
+	expected := []byte{
+		0x64, 0x00, 0x00, 0x00, // updateTime 100 (Encode4)          /*0x96def4*/
+		0x40, 0x42, 0x0F, 0x00, // skillId 1000000=0xF4240 (Encode4) /*0x96deff*/
+	}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v79 distribute-sp golden mismatch:\n got %x\nwant %x", actual, expected)
 	}
 }

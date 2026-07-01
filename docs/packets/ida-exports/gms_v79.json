@@ -15363,24 +15363,40 @@
    ]
   },
   "CWvsContext::SendAbilityUpRequest#AutoDistributeAp": {
-   "address": "",
+   "address": "0x96dd07",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Encode4",
+     "comment": "update_time (get_update_time()) @0x96de39"
+    },
+    {
+     "op": "Encode4",
+     "comment": "nValue (count of stat pairs = *(aStatUp-4)) @0x96de4b"
+    },
+    {
+     "op": "Encode4",
+     "comment": "dwStatFlag (stat flag for each pair) @0x96de63",
+     "guard": "loop nValue"
+    },
+    {
+     "op": "Encode4",
+     "comment": "nValue (amount for each stat pair) @0x96de71",
+     "guard": "loop nValue"
     }
    ]
   },
   "CWvsContext::SendAbilityUpRequest#DistributeAp": {
-   "address": "",
+   "address": "0x96db81",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Encode4",
+     "comment": "update_time (get_update_time()) @0x96dcb3"
+    },
+    {
+     "op": "Encode4",
+     "comment": "dwStatFlag (single stat flag) @0x96dcbe"
     }
    ]
   },
@@ -15447,13 +15463,20 @@
    ]
   },
   "CWvsContext::SendCharacterInfoRequest": {
-   "address": "",
+   "address": "0x96e184",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Encode4",
+     "comment": "update_time (get_update_time()) @0x96e1f8"
+    },
+    {
+     "op": "Encode4",
+     "comment": "dwCharacterID (target character ID) @0x96e201"
+    },
+    {
+     "op": "Encode1",
+     "comment": "bPetInfo (1 = include pet info) @0x96e20c"
     }
    ]
   },
@@ -15585,13 +15608,16 @@
    ]
   },
   "CWvsContext::SendSkillUpRequest": {
-   "address": "",
+   "address": "0x96debd",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Encode4",
+     "comment": "update_time (get_update_time()) @0x96def4"
+    },
+    {
+     "op": "Encode4",
+     "comment": "nSkillID (skill to level up) @0x96deff"
     }
    ]
   },

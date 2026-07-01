@@ -1,7 +1,7 @@
 {
   "WriterName": "DistributeAp",
   "IDAName": "CWvsContext::SendAbilityUpRequest#DistributeAp",
-  "Address": "",
+  "Address": "0x96db81",
   "Variant": "GMS/v79",
   "BranchDepth": 0,
   "AtlasFile": "libs/atlas-packet/character/serverbound/distribute_ap.go",
@@ -10,21 +10,21 @@
       "Index": 0,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 4,
-      "Note": "IDA read-order unresolved: function not found in IDB"
+      "IDAOp": 2,
+      "IDAComment": "update_time (get_update_time()) @0x96dcb3",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 1,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "IDAOp": 2,
+      "IDAComment": "dwStatFlag (single stat flag) @0x96dcbe",
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 2,
+  "Verdict": 0,
   "FlatInvalid": false
 }

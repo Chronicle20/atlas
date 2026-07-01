@@ -29,6 +29,41 @@
    "fname": "CScriptMan::OnAskPet#AskPet",
    "case": 0,
    "reason": "v79-absent (single-pet variant): the sole v79 pet handler is CScriptMan::OnAskPet@0x6c8e82 (dispatcher case 10, msgType 10), which is the UNIFIED pet handler and always reads DecodeStr message + Decode1 count + Decode1 exceptionExists + count x (DecodeBuffer(8)+Decode1) -- i.e. the AskPetAll body (verified separately). The pre-exception single-pet AskPetConversationDetail format (no exceptionExists byte) has no distinct v79 handler; ASK_PET routes to the unified handler (task-113 stage E close)."
+  },
+  {
+   "fname": "CCashShop::SendBuyNameChangeItemPacket",
+   "case": 0,
+   "reason": "v79-absent: no name-change BUY send-site in the v79 CCashShop class. func_query name_regex over CCashShop lists only the clientbound receive CCashShop::OnCheckNameChangePossibleResult@0x474ab1; there is no SendBuyNameChangeItemPacket / OnBuyNameChange sender emitting CASHSHOP_OPERATION(221). The cash name-change BUY mode-arm postdates v79 (task-113 stage E close batch 4)."
+  },
+  {
+   "fname": "CCashShop::SendBuyTransferWorldItemPacket",
+   "case": 0,
+   "reason": "v79-absent as a CASHSHOP mode-arm: v79 CCashShop::OnBuyTransferWorldItem@0x469dd6 does NOT build a COutPacket(221); after CheckTransferWorldPossible it calls sub_46CF90@0x46cf90 which sends COutPacket(18)+Encode4+Encode4 (a separate world-transfer/migrate opcode, not CASHSHOP_OPERATION). The CASHSHOP_OPERATION world-transfer-buy mode-arm the Atlas codec models postdates v79 (task-113 stage E close batch 4)."
+  },
+  {
+   "fname": "CCashShop::OnBuySlotInc",
+   "case": 0,
+   "reason": "v79-absent: no inventory-slot-increase send in v79 CCashShop. func_query name_regex SlotInc/IncSlot returns only CUIToolTip::SetToolTip_SlotInc and CItemInfo::GetSlotIncDelta (no COutPacket sender). The IncreaseInventory (slot-inc) cash purchase mode-arm postdates v79 (task-113 stage E close batch 4)."
+  },
+  {
+   "fname": "CCashShop::OnIncTrunkCount",
+   "case": 0,
+   "reason": "v79-absent: no storage/trunk-count send in v79 CCashShop. func_query name_regex TrunkCount/IncTrunk/BuyTrunk returns no CCashShop sender. The IncreaseStorage cash purchase mode-arm postdates v79 (task-113 stage E close batch 4)."
+  },
+  {
+   "fname": "CCashShop::OnMoveCashItemLtoS",
+   "case": 0,
+   "reason": "v79-absent: no CCashShop locker->slot cash-item move send in v79. func_query name_regex MoveCashItem/LtoS/StoL returns only CITC::OnMoveITCPurchaseItemLtoSDone/Failed (CITC/ITC domain, clientbound receive) \u2014 not a CCashShop CASHSHOP_OPERATION send. The MoveFromCashInventory mode-arm postdates v79 (task-113 stage E close batch 4)."
+  },
+  {
+   "fname": "CCashShop::OnMoveCashItemStoL",
+   "case": 0,
+   "reason": "v79-absent: no CCashShop slot->locker cash-item move send in v79 (same func_query basis as OnMoveCashItemLtoS; only CITC receive handlers exist). The MoveToCashInventory mode-arm postdates v79 (task-113 stage E close batch 4)."
+  },
+  {
+   "fname": "CCashShop::OnRebateLockerItem",
+   "case": 0,
+   "reason": "v79-absent: no rebate-locker-item send in the v79 CCashShop class (full CCashShop function enumeration has no OnRebateLockerItem / rebate sender). The RebateLockerItem mode-arm postdates v79 (task-113 stage E close batch 4)."
   }
  ]
 }

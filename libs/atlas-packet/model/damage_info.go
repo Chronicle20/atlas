@@ -45,7 +45,13 @@ func (m *DamageInfo) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *r
 		for range m.hits {
 			m.damages = append(m.damages, r.ReadUint32())
 		}
-		if t.Region() == "GMS" && t.MajorVersion() >= 83 {
+		// Per-mob anti-hack CRC. Present on the GMS legacy pre-83 client too:
+		// v79 IDA-verified — TryDoingMeleeAttack (@0x8c2c57), TryDoingBodyAttack
+		// (@0x8b77d3) and TryDoingMagicAttack (@0x8af1c4) all Encode4 the mob CRC
+		// (sub_640131) as the final per-target field. The prior `>= 83` gate wrongly
+		// dropped it for v79, desyncing the server decode by 4 bytes/target. Lowered
+		// to `>= 79`; no in-range variant (v83..jms) changes (all already >= 83).
+		if t.Region() == "GMS" && t.MajorVersion() >= 79 {
 			m.crc = r.ReadUint32()
 		}
 	}
@@ -70,7 +76,8 @@ func (m *DamageInfo) Encode(l logrus.FieldLogger, ctx context.Context) func(opti
 		for _, d := range m.damages {
 			w.WriteInt(d)
 		}
-		if t.Region() == "GMS" && t.MajorVersion() >= 83 {
+		// Symmetric with Decode: per-mob CRC present GMS v79+ (see Decode note).
+		if t.Region() == "GMS" && t.MajorVersion() >= 79 {
 			w.WriteInt(m.crc)
 		}
 		return w.Bytes()

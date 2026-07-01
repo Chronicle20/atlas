@@ -97,3 +97,45 @@ func TestAttackTouchRequest(t *testing.T) {
 		})
 	}
 }
+
+// --- GMS v79 (legacy pre-83) ---
+//
+// The v79 client attack senders were IDA-verified (GMS_v79_1_DEVM.exe, port 13340).
+// The AttackInfo base path (all the >=84 dr-block / >=95 gates are false at v79) plus
+// the per-mob DamageInfo match the client Encode order field-for-field, with ONE
+// legacy fix applied this task: the per-mob anti-hack CRC. All three multi-target
+// senders — TryDoingMeleeAttack (Encode4 sub_640131 @0x8c2c57), TryDoingBodyAttack
+// (@0x8b77d3) and TryDoingMagicAttack (@0x8af1c4) — write the CRC as the final
+// per-target field, so model.DamageInfo now emits it for GMS >= 79 (was >= 83).
+// v79 has no TryDoingNormalAttack; CLOSE_RANGE_ATTACK is sent by TryDoingMeleeAttack.
+//
+// These round-trips pin the wrapper->AttackInfo delegation on the v79 base path,
+// matching the shared-model verification standard used for the other five versions.
+
+// packet-audit:verify packet=character/serverbound/CharacterAttackMeleeRequest version=gms_v79 ida=0x8c22fd
+func TestAttackMeleeRequestV79(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 79, 1)
+	m := AttackMeleeRequest{attackInfo: buildSampleAttack(model.AttackTypeMelee)}
+	pt.RoundTrip(t, ctx, m.Encode, m.Decode, nil)
+}
+
+// packet-audit:verify packet=character/serverbound/CharacterAttackRangedRequest version=gms_v79 ida=0x8abbfc
+func TestAttackRangedRequestV79(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 79, 1)
+	m := AttackRangedRequest{attackInfo: buildSampleAttack(model.AttackTypeRanged)}
+	pt.RoundTrip(t, ctx, m.Encode, m.Decode, nil)
+}
+
+// packet-audit:verify packet=character/serverbound/CharacterAttackMagicRequest version=gms_v79 ida=0x8adb26
+func TestAttackMagicRequestV79(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 79, 1)
+	m := AttackMagicRequest{attackInfo: buildSampleAttack(model.AttackTypeMagic)}
+	pt.RoundTrip(t, ctx, m.Encode, m.Decode, nil)
+}
+
+// packet-audit:verify packet=character/serverbound/CharacterAttackTouchRequest version=gms_v79 ida=0x8b70d8
+func TestAttackTouchRequestV79(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 79, 1)
+	m := AttackTouchRequest{attackInfo: buildSampleAttack(model.AttackTypeEnergy)}
+	pt.RoundTrip(t, ctx, m.Encode, m.Decode, nil)
+}

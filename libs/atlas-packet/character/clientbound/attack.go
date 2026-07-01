@@ -97,7 +97,15 @@ func (m Attack) Encode(l logrus.FieldLogger, ctx context.Context) func(options m
 		ai := m.attackInfo
 		w.WriteInt(m.characterId)
 		w.WriteByte(byte(ai.Damage()<<4 | uint32(ai.Hits())))
-		w.WriteByte(m.level)
+		// Character-level byte. Present GMS v83+ and JMS (client CUserRemote::OnAttack
+		// stores `*(this+10976)=Decode1` between the packed byte and the skillLevel
+		// byte). ABSENT on the legacy GMS pre-83 client (v79 IDA-verified @0x8d66d2:
+		// only ONE Decode1 — the skillLevel — sits between the packed byte and the
+		// conditional skillId Decode4; there is no character-level byte). Gate keeps
+		// v83/84/87/95/jms unchanged and drops the byte for the legacy range.
+		if t.MajorVersion() >= 83 {
+			w.WriteByte(m.level)
+		}
 		if ai.SkillId() > 0 {
 			w.WriteByte(m.skillLevel)
 			w.WriteInt(ai.SkillId())
@@ -153,7 +161,11 @@ func (m *Attack) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *reque
 		damage := uint32((packed >> 4) & 0x0F)
 		hits := packed & 0x0F
 
-		m.level = r.ReadByte()
+		// Character-level byte, GMS v83+ / JMS only (see Encode). The legacy pre-83
+		// GMS client (v79) does not send it.
+		if t.MajorVersion() >= 83 {
+			m.level = r.ReadByte()
+		}
 
 		if m.skillId > 0 {
 			m.skillLevel = r.ReadByte()

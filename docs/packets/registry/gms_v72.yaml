@@ -911,10 +911,10 @@
   direction: clientbound
   opcode: 135
   fname: CField::OnClock
-  provenance: manual
+  provenance: ida-discovered
   ida:
-    address: 5331065
-  note: 'CField::OnPacket @0x515879 case 135 -> vtable+0x20 (OnClock). Δ-4 vs v79 (139).'
+    address: 5350690
+  note: 'CField::OnPacket @0x515879 case 135 -> vtable+0x20 resolves to CField::OnClock @0x51a522 (was sub_51A522, named task-113 stage E; structurally identical to v79 CField::OnClock, same clock-window field this[107]). Read order verified identical to v79. Δ-4 vs v79 (139).'
 - op: SET_QUEST_CLEAR
   direction: clientbound
   opcode: 138
@@ -953,11 +953,11 @@
 - op: IDA_0X09C
   direction: clientbound
   opcode: 144
-  fname: sub_51BCE9
+  fname: CField::OnStalkResult
   provenance: ida-discovered
   ida:
     address: 5356777
-  note: 'v72 sub_51BCE9 = CField::OnStalkResult; op name IDA_0X09C carried from v83. Δ-4 vs v79 (148).'
+  note: 'v72 CField::OnStalkResult (was sub_51BCE9 @0x51bce9, named task-113 stage E; matches v83+ fname so the FName->writer join resolves the FieldStalkResult report). op name IDA_0X09C carried from v83. Δ-4 vs v79 (148).'
 - op: SPAWN_PLAYER
   direction: clientbound
   opcode: 145

@@ -1,19 +1,19 @@
 # FieldStalkResult (← `CField::OnStalkResult`)
 
-- **IDA:** 
+- **IDA:** 0x51bce9
 - **Atlas file:** `libs/atlas-packet/field/clientbound/stalk_result.go`
 - **Variant:** GMS/v72
 - **Branch depth:** 0
-- **Verdict:** ❌
+- **Verdict:** ✅
 
 ## Wire-level diff
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | int32 | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
-| 1 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 2 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 3 | string | byte `` | ❌ | atlas: extra — client never reads this field |
-| 4 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 5 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 0 | int32 | int32 `count @0x51bcfa` | ✅ |  |
+| 1 | int32 | int32 `charId @0x51bd11` | ✅ |  |
+| 2 | byte | byte `flag @0x51bd13` | ✅ |  |
+| 3 | string | string `name @0x51bd25` | ✅ |  |
+| 4 | int32 | int32 `x @0x51bd37` | ✅ |  |
+| 5 | int32 | int32 `y @0x51bd39` | ✅ |  |
 

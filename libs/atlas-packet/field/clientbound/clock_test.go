@@ -13,6 +13,35 @@ import (
 // packet-audit:verify packet=field/clientbound/FieldClock version=gms_v95 ida=0x531510
 // packet-audit:verify packet=field/clientbound/FieldClock version=jms_v185 ida=0x56e849
 // packet-audit:verify packet=field/clientbound/FieldClock version=gms_v84 ida=0x5424c1
+// packet-audit:verify packet=field/clientbound/FieldClock version=gms_v72 ida=0x51a522
+// TestClockByteOutputV72 pins the gms_v72 CLOCK (op 0x087) clientbound wire. IDA:
+// CField::OnClock = sub_51A522 @0x51a522 (GMS_v72.1_U_DEVM.exe, dispatched via
+// CField::OnPacket @0x515879 case 135 -> vtable+0x20; structurally identical to v79
+// CField::OnClock, same clock-window field this[107]). Decode1(clockType) @0x51a539
+// then per-type: EventClock(0)=Decode4 @0x51a732; TownClock(1)=3x Decode1
+// @0x51a703/710/712; TimerClock(2)=Decode4 @0x51a6e0; EventTimerClock(3)=Decode1(flag)
+// @0x51a59e + Decode4 @0x51a62b. Byte-identical read order to the v79 golden.
+func TestClockByteOutputV72(t *testing.T) {
+	ctx := test.CreateContext("GMS", 72, 1)
+
+	event := NewEventClock(300)
+	if got := test.Encode(t, ctx, event.Encode, nil); !bytes.Equal(got, []byte{0x00, 0x2C, 0x01, 0x00, 0x00}) {
+		t.Errorf("v72 event clock: got %v", got)
+	}
+	town := NewTownClock(14, 30, 45)
+	if got := test.Encode(t, ctx, town.Encode, nil); !bytes.Equal(got, []byte{0x01, 0x0E, 0x1E, 0x2D}) {
+		t.Errorf("v72 town clock: got %v", got)
+	}
+	timer := NewTimerClock(600)
+	if got := test.Encode(t, ctx, timer.Encode, nil); !bytes.Equal(got, []byte{0x02, 0x58, 0x02, 0x00, 0x00}) {
+		t.Errorf("v72 timer clock: got %v", got)
+	}
+	eventTimer := NewEventTimerClock(120)
+	if got := test.Encode(t, ctx, eventTimer.Encode, nil); !bytes.Equal(got, []byte{0x03, 0x01, 0x78, 0x00, 0x00, 0x00}) {
+		t.Errorf("v72 event timer clock: got %v", got)
+	}
+}
+
 // TestClockByteOutputV79 pins the gms_v79 CLOCK (op 0x8B) clientbound wire. IDA:
 // CField::OnClock @0x5215de (GMS_v79_1_DEVM.exe, named this session — formerly
 // sub_5215DE, dispatched via CField::OnPacket case 139 vtable+0x24). Decode1(type)

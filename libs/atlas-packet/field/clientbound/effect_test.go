@@ -37,6 +37,11 @@ import (
 // packet-audit:verify packet=field/clientbound/FieldEffectSummon version=gms_v84 ida=0x53f37d
 // packet-audit:verify packet=field/clientbound/FieldEffectTremble version=gms_v84 ida=0x53f37d
 // packet-audit:verify packet=field/clientbound/FieldEffectString version=gms_v84 ida=0x53f37d
+// packet-audit:verify packet=field/clientbound/FieldEffectBossHp version=gms_v72 ida=0x5174bb
+// packet-audit:verify packet=field/clientbound/FieldEffectSummon version=gms_v72 ida=0x5174bb
+// packet-audit:verify packet=field/clientbound/FieldEffectTremble version=gms_v72 ida=0x5174bb
+// packet-audit:verify packet=field/clientbound/FieldEffectString version=gms_v72 ida=0x5174bb
+// packet-audit:verify packet=field/clientbound/FieldEffectRewardRullet version=gms_v72 ida=0x5174bb
 // TestFieldEffectByteOutputV79 pins every gms_v79 FIELD_EFFECT (op 0x82)
 // dispatcher sub-mode so the op-cell lifts off worst-of-siblings. IDA:
 // CField::OnFieldEffect @0x51e577 (GMS_v79_1_DEVM.exe) switches on Decode1(mode)
@@ -83,6 +88,56 @@ func TestFieldEffectByteOutputV79(t *testing.T) {
 		0x07, 0x01, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00,
 	}) {
 		t.Errorf("v79 rewardRullet: got %v", got)
+	}
+}
+
+// TestFieldEffectByteOutputV72 pins every gms_v72 FIELD_EFFECT (op 0x07E)
+// dispatcher sub-mode so the op-cell lifts off worst-of-siblings. IDA:
+// CField::OnFieldEffect @0x5174bb (GMS_v72.1_U_DEVM.exe) switches on Decode1(mode)
+// @0x5174d7 (switch @0x5174e3); each v72 arm matches the codec field-for-field and
+// is byte-identical to the v79 golden (addresses cited inline).
+func TestFieldEffectByteOutputV72(t *testing.T) {
+	ctx := test.CreateContext("GMS", 72, 1)
+
+	// Summon (case 0): Decode1(effect)@0x5174f3 + Decode4(x)@0x5174fd + Decode4(y)@0x517507.
+	summon := NewFieldEffectSummon(0, 3, 100, 200)
+	if got := test.Encode(t, ctx, summon.Encode, nil); !bytes.Equal(got, []byte{
+		0x00, 0x03, 0x64, 0x00, 0x00, 0x00, 0xC8, 0x00, 0x00, 0x00,
+	}) {
+		t.Errorf("v72 summon: got %v", got)
+	}
+
+	// Tremble (case 1): Decode1(bHeavy)@0x5177a5 + Decode4(delay)@0x5177a8.
+	tremble := NewFieldEffectTremble(1, true, 500)
+	if got := test.Encode(t, ctx, tremble.Encode, nil); !bytes.Equal(got, []byte{
+		0x01, 0x01, 0xF4, 0x01, 0x00, 0x00,
+	}) {
+		t.Errorf("v72 tremble: got %v", got)
+	}
+
+	// String (case 2/3/4/6): Decode1(mode) + DecodeStr(name)@0x5175c0.
+	str := NewFieldEffectObject(2, "x")
+	if got := test.Encode(t, ctx, str.Encode, nil); !bytes.Equal(got, []byte{
+		0x02, 0x01, 0x00, 'x',
+	}) {
+		t.Errorf("v72 string: got %v", got)
+	}
+
+	// BossHp (case 5): Decode4(monsterId)@0x51769d + Decode4(curHp)@0x5176a7 +
+	// Decode4(maxHp)@0x5176b1 + Decode1(tagColor)@0x5176bd + Decode1(tagBg)@0x5176bf.
+	bossHp := NewFieldEffectBossHp(5, 8500003, 50000, 100000, 6, 1)
+	if got := test.Encode(t, ctx, bossHp.Encode, nil); !bytes.Equal(got, []byte{
+		0x05, 0x23, 0xB3, 0x81, 0x00, 0x50, 0xC3, 0x00, 0x00, 0xA0, 0x86, 0x01, 0x00, 0x06, 0x01,
+	}) {
+		t.Errorf("v72 bossHp: got %v", got)
+	}
+
+	// RewardRullet (case 7): Decode4@0x5177d4 + Decode4@0x5177dd + Decode4@0x5177df.
+	rullet := NewFieldEffectRewardRullet(7, 1, 2, 3)
+	if got := test.Encode(t, ctx, rullet.Encode, nil); !bytes.Equal(got, []byte{
+		0x07, 0x01, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00,
+	}) {
+		t.Errorf("v72 rewardRullet: got %v", got)
 	}
 }
 

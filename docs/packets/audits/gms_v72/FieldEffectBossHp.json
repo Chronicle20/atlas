@@ -1,7 +1,7 @@
 {
   "WriterName": "FieldEffectBossHp",
   "IDAName": "CField::OnFieldEffect#BossHp",
-  "Address": "",
+  "Address": "0x5174bb",
   "Variant": "GMS/v72",
   "BranchDepth": 0,
   "AtlasFile": "libs/atlas-packet/field/clientbound/effect.go",
@@ -10,46 +10,46 @@
       "Index": 0,
       "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 4,
-      "Note": "IDA read-order unresolved: function not found in IDB"
+      "IDAOp": 2,
+      "IDAComment": "monsterId (case 5) @0x51769d",
+      "Verdict": 2,
+      "Note": "width mismatch"
     },
     {
       "Index": 1,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "IDAOp": 2,
+      "IDAComment": "currentHp @0x5176a7",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 2,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "IDAOp": 2,
+      "IDAComment": "maxHp @0x5176b1",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 3,
       "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "",
+      "IDAComment": "tagColor @0x5176bd",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "width mismatch"
     },
     {
       "Index": 4,
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "IDAComment": "tagBackgroundColor @0x5176bf",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 5,
@@ -57,8 +57,8 @@
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Verdict": 1,
+      "Note": "atlas: trailing padding byte — client stops reading (harmless over-write)"
     }
   ],
   "Verdict": 2,

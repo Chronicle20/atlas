@@ -1647,13 +1647,47 @@
    ]
   },
   "CField::OnClock": {
-   "address": "",
+   "address": "0x51a522",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": "clockType @0x51a539"
+    },
+    {
+     "op": "Decode4",
+     "comment": "seconds (EventClock type 0) @0x51a732",
+     "guard": "v3 == 0"
+    },
+    {
+     "op": "Decode1",
+     "comment": "hour (TownClock type 1) @0x51a703",
+     "guard": "v3 == 1"
+    },
+    {
+     "op": "Decode1",
+     "comment": "minute (TownClock type 1) @0x51a710",
+     "guard": "v3 == 1"
+    },
+    {
+     "op": "Decode1",
+     "comment": "second (TownClock type 1) @0x51a712",
+     "guard": "v3 == 1"
+    },
+    {
+     "op": "Decode4",
+     "comment": "seconds (TimerClock type 2) @0x51a6e0",
+     "guard": "v3 == 2"
+    },
+    {
+     "op": "Decode1",
+     "comment": "flag (EventTimerClock type 3) @0x51a59e",
+     "guard": "v3 == 3"
+    },
+    {
+     "op": "Decode4",
+     "comment": "seconds (EventTimerClock type 3) @0x51a62b",
+     "guard": "v3 == 3"
     }
    ]
   },
@@ -1839,57 +1873,88 @@
    ]
   },
   "CField::OnFieldEffect#BossHp": {
-   "address": "",
+   "address": "0x5174bb",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode4",
+     "comment": "monsterId (case 5) @0x51769d"
+    },
+    {
+     "op": "Decode4",
+     "comment": "currentHp @0x5176a7"
+    },
+    {
+     "op": "Decode4",
+     "comment": "maxHp @0x5176b1"
+    },
+    {
+     "op": "Decode1",
+     "comment": "tagColor @0x5176bd"
+    },
+    {
+     "op": "Decode1",
+     "comment": "tagBackgroundColor @0x5176bf"
     }
    ]
   },
   "CField::OnFieldEffect#RewardRullet": {
-   "address": "",
+   "address": "0x5174bb",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode4",
+     "comment": "nRewardJobIdx (case 7) @0x5177d4"
+    },
+    {
+     "op": "Decode4",
+     "comment": "nRewardPartIdx @0x5177dd"
+    },
+    {
+     "op": "Decode4",
+     "comment": "nRewardLevIdx @0x5177df"
     }
    ]
   },
   "CField::OnFieldEffect#String": {
-   "address": "",
+   "address": "0x5174bb",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "DecodeStr",
+     "comment": "name (case 2) @0x5175c0"
     }
    ]
   },
   "CField::OnFieldEffect#Summon": {
-   "address": "",
+   "address": "0x5174bb",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": "effect (case 0) @0x5174f3"
+    },
+    {
+     "op": "Decode4",
+     "comment": "x @0x5174fd"
+    },
+    {
+     "op": "Decode4",
+     "comment": "y @0x517507"
     }
    ]
   },
   "CField::OnFieldEffect#Tremble": {
-   "address": "",
+   "address": "0x5174bb",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": "bHeavyNShortTremble (case 1) @0x5177a5"
+    },
+    {
+     "op": "Decode4",
+     "comment": "delay @0x5177a8"
     }
    ]
   },
@@ -2074,13 +2139,37 @@
    ]
   },
   "CField::OnStalkResult": {
-   "address": "",
+   "address": "0x51bce9",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode4",
+     "comment": "count @0x51bcfa"
+    },
+    {
+     "op": "Decode4",
+     "comment": "charId @0x51bd11",
+     "guard": "v2 > 0"
+    },
+    {
+     "op": "Decode1",
+     "comment": "flag @0x51bd13",
+     "guard": "v2 > 0"
+    },
+    {
+     "op": "DecodeStr",
+     "comment": "name @0x51bd25",
+     "guard": "v2 > 0 && <default>"
+    },
+    {
+     "op": "Decode4",
+     "comment": "x @0x51bd37",
+     "guard": "v2 > 0 && <default>"
+    },
+    {
+     "op": "Decode4",
+     "comment": "y @0x51bd39",
+     "guard": "v2 > 0 && <default>"
     }
    ]
   },

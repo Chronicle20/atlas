@@ -1,7 +1,7 @@
 {
   "WriterName": "FieldClock",
   "IDAName": "CField::OnClock",
-  "Address": "",
+  "Address": "0x51a522",
   "Variant": "GMS/v72",
   "BranchDepth": 1,
   "AtlasFile": "libs/atlas-packet/field/clientbound/clock.go",
@@ -10,73 +10,73 @@
       "Index": 0,
       "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 4,
-      "Note": "IDA read-order unresolved: function not found in IDB"
+      "IDAOp": 0,
+      "IDAComment": "clockType @0x51a539",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 1,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "IDAOp": 2,
+      "IDAComment": "seconds (EventClock type 0) @0x51a732",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 2,
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "IDAComment": "hour (TownClock type 1) @0x51a703",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 3,
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "IDAComment": "minute (TownClock type 1) @0x51a710",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 4,
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "IDAComment": "second (TownClock type 1) @0x51a712",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 5,
       "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
+      "IDAOp": 2,
+      "IDAComment": "seconds (TimerClock type 2) @0x51a6e0",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "width mismatch"
     },
     {
       "Index": 6,
       "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "",
+      "IDAComment": "flag (EventTimerClock type 3) @0x51a59e",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "width mismatch"
     },
     {
       "Index": 7,
       "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
+      "IDAOp": 2,
+      "IDAComment": "seconds (EventTimerClock type 3) @0x51a62b",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "width mismatch"
     },
     {
       "Index": 8,

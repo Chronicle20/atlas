@@ -1,7 +1,7 @@
 {
   "WriterName": "FieldEffectString",
   "IDAName": "CField::OnFieldEffect#String",
-  "Address": "",
+  "Address": "0x5174bb",
   "Variant": "GMS/v72",
   "BranchDepth": 0,
   "AtlasFile": "libs/atlas-packet/field/clientbound/effect.go",
@@ -10,10 +10,10 @@
       "Index": 0,
       "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 4,
-      "Note": "IDA read-order unresolved: function not found in IDB"
+      "IDAOp": 4,
+      "IDAComment": "name (case 2) @0x5175c0",
+      "Verdict": 2,
+      "Note": "width mismatch"
     },
     {
       "Index": 1,

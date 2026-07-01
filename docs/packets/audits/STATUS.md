@@ -5,7 +5,7 @@
 
 Tool: `fa2892b4e82339df60c9ef0c33a6e4a08bdc3bf3`
 
-- export gms_v72: `18dd9a296f7de2d8d70f68742f3c00dfdf51d50cf3579a6cf5f85f140c557e95`
+- export gms_v72: `a7e0f6d802249c91d94cd0b1e97464287ad0b84199532af52997dafd26aecebe`
 - export gms_v79: `370d6b720b633c12c71d40340f3952000705c4bddb98f87179e7193d112d210c`
 - export gms_v83: `711bddcc2e1bdd417a75954148d2b50c64e70855e84259c0b8e50e700e393c0d`
 - export gms_v84: `7eab9472e2afeda13faaf74273828d09d5f2481d67bec10235c3b2fd2f91e1eb`
@@ -174,7 +174,7 @@ Tool: `fa2892b4e82339df60c9ef0c33a6e4a08bdc3bf3`
 | WHISPER | CField::OnWhisper | field/clientbound/FieldWhisperError (T1) | 0x07B | ✅ | 0x07F | ✅ | 0x087 | ✅ | 0x08A | ✅ | 0x08F | ✅ | 0x097 | ✅ | 0x085 | ✅ |
 | SPOUSE_CHAT | CField::OnCoupleMessage | field/clientbound/FieldSpouseChat (T1) | 0x07C | ✅ | 0x080 | ✅ | 0x088 | ✅ | 0x08B | ✅ | 0x090 | ✅ | 0x098 | ✅ |  | ⬜ |
 | SUMMON_ITEM_INAVAILABLE | CField::OnSummonItemInavailable | field/clientbound/FieldSummonItemUnavailable (T1) | 0x07D | 🟡 | 0x081 | 🟡 | 0x089 | ✅ | 0x08C | ✅ | 0x091 | ✅ | 0x099 | ✅ | 0x086 | ✅ |
-| FIELD_EFFECT | CField::OnFieldEffect | field/clientbound/FieldEffectBossHp (T1) | 0x07E | ❌ | 0x082 | ✅ | 0x08A | ✅ | 0x08D | ✅ | 0x092 | ✅ | 0x09A | ✅ | 0x087 | ✅ |
+| FIELD_EFFECT | CField::OnFieldEffect | field/clientbound/FieldEffectBossHp (T1) | 0x07E | ✅ | 0x082 | ✅ | 0x08A | ✅ | 0x08D | ✅ | 0x092 | ✅ | 0x09A | ✅ | 0x087 | ✅ |
 | IDA_0X07E | CWvsContext::OnSetPassenserRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x07E | ❌ |  | ⬜ |
 | CAKE_PIE_EVENT_RESULT | CWvsContext::OnCakePieEventResult |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x07F | ❌ | 0x081 | ❌ |  | ⬜ |
 | FIELD_OBSTACLE_ONOFF | CField::OnFieldObstacleOnOff | field/clientbound/FieldFieldObstacleOnOff (T1) | 0x07F | 🟡 | 0x083 | 🟡 | 0x08B | ✅ | 0x08E | ✅ | 0x093 | ✅ | 0x09B | ✅ | 0x088 | ✅ |
@@ -191,7 +191,7 @@ Tool: `fa2892b4e82339df60c9ef0c33a6e4a08bdc3bf3`
 | WILD_HUNTER_INFO | CWvsContext::OnWildHunterInfo |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x084 | ❌ |  | ⬜ |
 | OX_QUIZ | CField::OnQuiz | field/clientbound/FieldOxQuiz (T1) | 0x085 | 🟡 | 0x089 | 🟡 | 0x091 | ✅ | 0x094 | ✅ | 0x099 | ✅ | 0x0A1 | ✅ | 0x08E | ✅ |
 | GMEVENT_INSTRUCTIONS | CField::OnDesc | field/clientbound/FieldGmEventInstructions (T1) | 0x086 | 🟡 | 0x08A | 🟡 | 0x092 | ✅ | 0x095 | ✅ | 0x09A | ✅ | 0x0A2 | ✅ | 0x08F | ✅ |
-| CLOCK | CField::OnClock | field/clientbound/FieldClock (T1) | 0x087 | ❌ | 0x08B | ✅ | 0x093 | ✅ | 0x096 | ✅ | 0x09B | ✅ | 0x0A3 | ✅ | 0x090 | ✅ |
+| CLOCK | CField::OnClock | field/clientbound/FieldClock (T1) | 0x087 | ✅ | 0x08B | ✅ | 0x093 | ✅ | 0x096 | ✅ | 0x09B | ✅ | 0x0A3 | ✅ | 0x090 | ✅ |
 | STAGE_CHANGE | CWvsContext::OnStageChange |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x087 | ❌ |  | ⬜ |
 | DRAGON_BALL_BOX | CWvsContext::OnDragonBallBox |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x088 | ❌ |  | ⬜ |
 | ASK_WHETHER_USE_PAMS_SONG | CWvsContext::OnAskWhetherUsePamsSong |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x089 | ❌ |  | ⬜ |
@@ -202,7 +202,7 @@ Tool: `fa2892b4e82339df60c9ef0c33a6e4a08bdc3bf3`
 | ARIANT_RESULT | CField::OnWarnMessage | field/clientbound/FieldAriantResult (T1) | 0x08C | 🟡 | 0x090 | 🟡 | 0x098 | ✅ | 0x09B | ✅ | 0x0A0 | ✅ | 0x0A8 | ✅ |  | ⬜ |
 | SET_OBJECT_STATE | CField::OnSetObjectState | field/clientbound/FieldSetObjectState (T1) | 0x08D | 🟡 | 0x091 | 🟡 | 0x099 | ✅ | 0x09C | ✅ | 0x0A1 | ✅ | 0x0A9 | ✅ | 0x095 | ✅ |
 | STOP_CLOCK | CField::OnDestroyClock | field/clientbound/FieldStopClock (T1) | 0x08E | 🟡 | 0x092 | 🟡 | 0x09A | ✅ | 0x09D | ✅ | 0x0A2 | ✅ | 0x0AA | ✅ | 0x096 | ✅ |
-| IDA_0X09C | CField::OnStalkResult; sub_51BCE9 | field/clientbound/FieldStalkResult (T1) | 0x090 | ❌ | 0x094 | ✅ | 0x09C | ✅ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
+| IDA_0X09C | CField::OnStalkResult | field/clientbound/FieldStalkResult (T1) | 0x090 | ✅ | 0x094 | ✅ | 0x09C | ✅ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
 | SPAWN_PLAYER | CUserPool::OnUserEnterField | character/clientbound/CharacterSpawn (T1) | 0x091 | ❌ | 0x095 | ✅ | 0x0A0 | ✅ | 0x0A3 | ✅ | 0x0AB | ✅ | 0x0B3 | ✅ | 0x09E | ✅ |
 | REMOVE_PLAYER_FROM_MAP | CUserPool::OnUserLeaveField | character/clientbound/CharacterDespawn (T1) | 0x092 | 🟡 | 0x096 | 🟡 | 0x0A1 | ✅ | 0x0A4 | ✅ | 0x0AC | ✅ | 0x0B4 | ✅ | 0x09F | ✅ |
 | CHATTEXT | CUser::OnChat | chat/clientbound/ChatGeneralChat | 0x093 | ❌ | 0x097 | ❌ | 0x0A2 | ❌ | 0x0A5 | ❌ | 0x0AD | ❌ | 0x0B5 | ✅ | 0x0A0 | ✅ |
@@ -914,7 +914,7 @@ Tool: `fa2892b4e82339df60c9ef0c33a6e4a08bdc3bf3`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v72 | 108 | 0 | 74 | 289 | 411 | 0 | 22.9% |
+| v72 | 111 | 0 | 74 | 286 | 411 | 0 | 23.6% |
 | v79 | 228 | 0 | 72 | 180 | 402 | 0 | 47.5% |
 | v83 | 367 | 0 | 0 | 311 | 204 | 0 | 54.1% |
 | v84 | 345 | 0 | 0 | 312 | 225 | 0 | 52.5% |

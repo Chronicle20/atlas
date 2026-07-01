@@ -1,6 +1,6 @@
 # FieldEffectRewardRullet (← `CField::OnFieldEffect#RewardRullet`)
 
-- **IDA:** 
+- **IDA:** 0x5174bb
 - **Atlas file:** `libs/atlas-packet/field/clientbound/effect.go`
 - **Variant:** GMS/v72
 - **Branch depth:** 0
@@ -10,8 +10,8 @@
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | byte | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
-| 1 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 2 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 0 | byte | int32 `nRewardJobIdx (case 7) @0x5177d4` | ❌ | width mismatch |
+| 1 | int32 | int32 `nRewardPartIdx @0x5177dd` | ✅ |  |
+| 2 | int32 | int32 `nRewardLevIdx @0x5177df` | ✅ |  |
 | 3 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 

@@ -537,7 +537,7 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 | TAKE_DAMAGE | CUserLocal::SetDamaged; CUserLocal::Update |  | 0x02E | ❌ | 0x030 | ❌ | 0x030 | ❌ | 0x032 | ❌ | 0x034 | ❌ | 0x027 | ❌ |
 | GENERAL_CHAT | CField::SendChatMsg; CField::SendChatMsgSlash | field/serverbound/FieldGeneral (T1) | 0x02F | ✅ | 0x031 | ✅ | 0x031 | ✅ | 0x034 | ✅ | 0x036 | ✅ | 0x029 | ✅ |
 | CLOSE_CHALKBOARD | CUserLocal::HandleLButtonClk | character/serverbound/ChalkboardClose (T1) | 0x030 | ✅ | 0x032 | ✅ | 0x032 | ✅ | 0x035 | ✅ | 0x037 | ✅ | 0x02A | ✅ |
-| FACE_EXPRESSION | CUserLocal::Update; CWvsContext::SendEmotionChange | character/serverbound/ExpressionRequest (T1) | 0x031 | 🟡 | 0x033 | ❌ | 0x033 | ❌ | 0x036 | ❌ | 0x038 | ❌ | 0x02B | ❌ |
+| FACE_EXPRESSION | CUserLocal::Update; CWvsContext::SendEmotionChange | character/serverbound/ExpressionRequest (T1) | 0x031 | ✅ | 0x033 | ❌ | 0x033 | ❌ | 0x036 | ❌ | 0x038 | ❌ | 0x02B | ❌ |
 | MOVING_SHOOT_ATTACK_PREPARE | CUserLocal::TryDoingSmoothingMovingShootAttackPrepare |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x033 | ❌ |  | ⬜ |
 | USE_ITEMEFFECT | CWvsContext::SendActiveEffectItemChange |  |  | ⬜ | 0x034 | ❌ | 0x034 | ❌ | 0x037 | ❌ | 0x039 | ❌ | 0x02C | ❌ |
 | USE_DEATHITEM | CUserLocal::RequestUpgradeTombEffect |  |  | ⬜ | 0x035 | ❌ | 0x035 | ❌ | 0x038 | ❌ | 0x03A | ❌ | 0x02D | ❌ |
@@ -914,7 +914,7 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v79 | 165 | 0 | 74 | 244 | 400 | 0 | 34.2% |
+| v79 | 166 | 0 | 73 | 244 | 400 | 0 | 34.4% |
 | v83 | 367 | 0 | 0 | 314 | 202 | 0 | 53.9% |
 | v84 | 345 | 0 | 0 | 315 | 223 | 0 | 52.3% |
 | v87 | 379 | 0 | 0 | 339 | 165 | 0 | 52.8% |

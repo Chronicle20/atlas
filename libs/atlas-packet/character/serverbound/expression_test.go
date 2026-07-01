@@ -11,6 +11,9 @@ import (
 // packet-audit:verify packet=character/serverbound/ExpressionRequest version=gms_v87 ida=0xabbfbb
 // packet-audit:verify packet=character/serverbound/ExpressionRequest version=gms_v95 ida=0x9f9320
 // packet-audit:verify packet=character/serverbound/ExpressionRequest version=gms_v84 ida=0xa6fb0d
+// packet-audit:verify packet=character/serverbound/ExpressionRequest version=gms_v79 ida=0x96e5c6
+// v79 CWvsContext::SendEmotionChange@0x96e5c6: COutPacket(0x31)+Encode4(emotionId) only — no
+// duration/byItemOption (added v95). GMS major 79 <= 87 takes the emote-only wire (same as v83/v87).
 func TestExpressionRequestRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

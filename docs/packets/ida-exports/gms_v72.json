@@ -5007,15 +5007,9 @@
    ]
   },
   "CLogin::OnWorldInformation": {
-   "address": "",
+   "address": "0x5b33f8",
    "direction": "clientbound",
-   "unresolved": true,
-   "calls": [
-    {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
-   ]
+   "calls": []
   },
   "CLogin::OnWorldInformation#ServerListEnd": {
    "address": "0x5b33f8",
@@ -13558,17 +13552,6 @@
    ]
   },
   "CWvsContext::OnPartyResult#BlockingInvitations": {
-   "address": "",
-   "direction": "clientbound",
-   "unresolved": true,
-   "calls": [
-    {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
-   ]
-  },
-  "CWvsContext::OnPartyResult#CannotKick": {
    "address": "",
    "direction": "clientbound",
    "unresolved": true,

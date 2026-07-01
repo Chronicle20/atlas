@@ -11,6 +11,11 @@ import (
 	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
+// gms_v72: WORLD_INFORMATION (op 10) world-list entries are decoded by
+// CLogin::OnWorldInformation = sub_5B33F8 @0x5b33f8 (GMS_v72.1_U_DEVM.exe, port
+// 13339); the per-world entry fields (worldId, name, channel loop, balloons) are
+// version-stable and round-trip below. Marker-only (tier-0).
+// packet-audit:verify packet=login/clientbound/ServerListEntry version=gms_v72 ida=0x5b33f8
 // packet-audit:verify packet=login/clientbound/ServerListEntry version=gms_v83 ida=0x5f95b7
 // packet-audit:verify packet=login/clientbound/ServerListEntry version=gms_v87 ida=0x630e7c
 // packet-audit:verify packet=login/clientbound/ServerListEntry version=gms_v95 ida=0x5da7f0

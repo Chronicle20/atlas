@@ -1,0 +1,9 @@
+{
+ "entries": [
+  {
+   "fname": "CWvsContext::OnPartyResult",
+   "case": 25,
+   "reason": "CannotKick (v83 SP_5059 'Cannot kick another user in this map') is version-absent in gms_v72: no OnPartyResult switch case @0x934f3c decrypts to that string, and v72 lacks the v83 case-25 slot (upper arms shift -1). Proven via in-process StringPool decryption (task-113 party-family agent). party.yaml CANNOT_KICK lists only gms_v83+."
+  }
+ ]
+}

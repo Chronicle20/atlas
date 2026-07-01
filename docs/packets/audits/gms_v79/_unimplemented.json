@@ -1,0 +1,24 @@
+{
+ "entries": [
+  {
+   "fname": "CLogin::SendSelectCharPacket#CharacterSelectWithPic",
+   "case": 0,
+   "reason": "v79-absent: usesPin/usesPic=false. IDA CLogin::SendSelectCharPacket(sub_5CCAE3)@0x5ccae3 emits only the non-PIC CHAR_SELECT wire (COutPacket(19)+Encode4(charId)+EncodeStr(mac)+EncodeStr(hddSerial)); there is no PIC branch. The PIC character-select variant was introduced after v79 (task-113 stage E close)."
+  },
+  {
+   "fname": "CLogin::SendSelectCharPacket#CharacterSelectRegisterPic",
+   "case": 0,
+   "reason": "v79-absent: usesPic=false. IDA sub_5CCAE3@0x5ccae3 has no register-PIC branch; the register-PIC send does not exist in v79 (task-113 stage E close)."
+  },
+  {
+   "fname": "CLogin::SendSelectCharPacketByVAC#AllCharacterListSelectWithPic",
+   "case": 0,
+   "reason": "v79-absent: usesPic=false. IDA CLogin::SendSelectCharPacketByVAC(sub_5CCC1F)@0x5ccc1f emits only the non-PIC PICK_ALL_CHAR wire (COutPacket(14)+Encode4(charId)+Encode4(worldId)+EncodeStr(mac)+EncodeStr(hddSerial)); no PIC branch (task-113 stage E close)."
+  },
+  {
+   "fname": "CLogin::SendSelectCharPacketByVAC#AllCharacterListSelectWithPicRegister",
+   "case": 0,
+   "reason": "v79-absent: usesPic=false. IDA sub_5CCC1F@0x5ccc1f has no register-PIC branch; the view-all register-PIC send does not exist in v79 (task-113 stage E close)."
+  }
+ ]
+}

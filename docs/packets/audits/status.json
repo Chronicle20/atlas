@@ -1,7 +1,7 @@
 {
   "toolSha": "9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6",
   "exportHashes": {
-    "gms_v79": "289b35c429d17895a76bee1ec876a3f1566b11fd746fe7346ffcde433998702e",
+    "gms_v79": "a44ed3040e6d11d78cec3b8f744a0aea0b6233d950cfdfc33918ec6f5675448f",
     "gms_v83": "711bddcc2e1bdd417a75954148d2b50c64e70855e84259c0b8e50e700e393c0d",
     "gms_v84": "7eab9472e2afeda13faaf74273828d09d5f2481d67bec10235c3b2fd2f91e1eb",
     "gms_v87": "714817d376bb93732ef6b6fbe6b59f8c24515ff901801d213d676b501eae7f94",
@@ -351,13 +351,11 @@
       "direction": "serverbound",
       "tier1": false,
       "fnames": [
-        "CLogin::SendLoginPacket",
-        "sub_5CC905"
+        "CLogin::SendLoginPacket"
       ],
       "cells": {
         "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 5
         },
         "gms_v83": {
@@ -466,13 +464,11 @@
       "direction": "serverbound",
       "tier1": false,
       "fnames": [
-        "CLogin::SendCheckUserLimitPacket",
-        "sub_5CD1A2"
+        "CLogin::SendCheckUserLimitPacket"
       ],
       "cells": {
         "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 6
         },
         "gms_v83": {
@@ -1142,13 +1138,11 @@
       "direction": "serverbound",
       "tier1": false,
       "fnames": [
-        "CLogin::SendSelectCharPacketByVAC",
-        "sub_5CCC1F"
+        "CLogin::SendSelectCharPacketByVAC"
       ],
       "cells": {
         "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 14
         },
         "gms_v83": {
@@ -1556,13 +1550,11 @@
       "direction": "serverbound",
       "tier1": false,
       "fnames": [
-        "CLogin::SendSelectCharPacket",
-        "sub_5CCAE3"
+        "CLogin::SendSelectCharPacket"
       ],
       "cells": {
         "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 19
         },
         "gms_v83": {
@@ -31312,80 +31304,6 @@
         },
         "jms_v185": {
           "state": "verified",
-          "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "sub-struct",
-      "packet": "login/serverbound/ServerStatusRequest",
-      "tier1": false,
-      "cells": {
-        "gms_v79": {
-          "state": "incomplete",
-          "note": "verdict 🚫",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "sub-struct",
-      "packet": "login/serverbound/WorldCharacterListRequest",
-      "tier1": false,
-      "cells": {
-        "gms_v79": {
-          "state": "incomplete",
-          "note": "verdict ❌",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
           "opcode": -1
         }
       }

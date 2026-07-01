@@ -12,6 +12,7 @@ import (
 // packet-audit:verify packet=login/serverbound/AllCharacterListSelect version=gms_v84 ida=0x60c624
 // packet-audit:verify packet=login/serverbound/AllCharacterListSelect version=gms_v87 ida=0x62ee37
 // packet-audit:verify packet=login/serverbound/AllCharacterListSelect version=gms_v95 ida=0x5d7550
+// packet-audit:verify packet=login/serverbound/AllCharacterListSelect version=gms_v79 ida=0x5ccc1f
 func TestAllCharacterListSelectRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

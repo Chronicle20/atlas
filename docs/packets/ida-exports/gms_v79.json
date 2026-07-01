@@ -5319,13 +5319,12 @@
    ]
   },
   "CLogin::SendCheckUserLimitPacket": {
-   "address": "",
+   "address": "0x5cd1a2",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Encode2",
+     "comment": "nWorldID (v79 sub_5CD1A2@0x5cd1a2 Encode2)"
     }
    ]
   },
@@ -5344,13 +5343,20 @@
    ]
   },
   "CLogin::SendLoginPacket": {
-   "address": "",
+   "address": "0x5cc905",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Encode1",
+     "comment": "nWorldID (v79 sub_5CC905@0x5cc905 *v9 byte; no gameStartMode below v83)"
+    },
+    {
+     "op": "Encode1",
+     "comment": "nChannelID (a3)"
+    },
+    {
+     "op": "Encode4",
+     "comment": "socket addr (S_addr from getsockname)"
     }
    ]
   },
@@ -5405,68 +5411,42 @@
    ]
   },
   "CLogin::SendSelectCharPacket": {
-   "address": "",
+   "address": "0x5ccae3",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
-   ]
-  },
-  "CLogin::SendSelectCharPacket#CharacterSelectRegisterPic": {
-   "address": "",
-   "direction": "serverbound",
-   "unresolved": true,
-   "calls": [
+     "op": "Encode4",
+     "comment": "charId (v79 sub_5CCAE3@0x5ccae3)"
+    },
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
-   ]
-  },
-  "CLogin::SendSelectCharPacket#CharacterSelectWithPic": {
-   "address": "",
-   "direction": "serverbound",
-   "unresolved": true,
-   "calls": [
+     "op": "EncodeStr",
+     "comment": "sMacAddress (GetLocalMacAddress)"
+    },
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "EncodeStr",
+     "comment": "sMacAddressWithHDDSerial (GetLocalMacAddressWithHDDSerialNo)"
     }
    ]
   },
   "CLogin::SendSelectCharPacketByVAC#AllCharacterListSelect": {
-   "address": "",
+   "address": "0x5ccc1f",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
-   ]
-  },
-  "CLogin::SendSelectCharPacketByVAC#AllCharacterListSelectWithPic": {
-   "address": "",
-   "direction": "serverbound",
-   "unresolved": true,
-   "calls": [
+     "op": "Encode4",
+     "comment": "charId (v79 sub_5CCC1F@0x5ccc1f)"
+    },
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
-   ]
-  },
-  "CLogin::SendSelectCharPacketByVAC#AllCharacterListSelectWithPicRegister": {
-   "address": "",
-   "direction": "serverbound",
-   "unresolved": true,
-   "calls": [
+     "op": "Encode4",
+     "comment": "worldId (dwWorldID)"
+    },
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "EncodeStr",
+     "comment": "sMacAddress (GetLocalMacAddress)"
+    },
+    {
+     "op": "EncodeStr",
+     "comment": "sMacAddressWithHDDSerial (GetLocalMacAddressWithHDDSerialNo)"
     }
    ]
   },

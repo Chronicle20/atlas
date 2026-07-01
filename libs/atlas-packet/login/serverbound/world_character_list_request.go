@@ -50,7 +50,10 @@ func (m WorldCharacterListRequest) Encode(l logrus.FieldLogger, ctx context.Cont
 	w := response.NewWriter(l)
 	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
-		if t.Region() == "GMS" && t.MajorVersion() > 28 {
+		// gameStartMode byte absent on the legacy (< v83) char-list request wire.
+		// IDA v79 CLogin::SendLoginPacket(sub_5CC905)@0x5cc905 emits
+		// COutPacket(5)+Encode1(worldId)+Encode1(channel)+Encode4(ip) only.
+		if t.Region() == "GMS" && t.MajorVersion() >= 83 {
 			w.WriteByte(m.gameStartMode)
 		}
 		w.WriteByte(byte(m.worldId))
@@ -67,8 +70,8 @@ func (m WorldCharacterListRequest) Encode(l logrus.FieldLogger, ctx context.Cont
 func (m *WorldCharacterListRequest) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
-		if t.Region() == "GMS" && t.MajorVersion() > 28 {
-			// GMS v28 is not definite here, but this is not present in 28.
+		if t.Region() == "GMS" && t.MajorVersion() >= 83 {
+			// gameStartMode absent below v83 (IDA v79 SendLoginPacket@0x5cc905). Mirror of Encode.
 			m.gameStartMode = r.ReadByte()
 		}
 		m.worldId = world.Id(r.ReadByte())

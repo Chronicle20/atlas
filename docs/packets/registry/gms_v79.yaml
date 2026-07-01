@@ -2282,7 +2282,7 @@
 - op: CHARLIST_REQUEST
   direction: serverbound
   opcode: 5
-  fname: sub_5CC905
+  fname: CLogin::SendLoginPacket
   provenance: ida-discovered
   ida:
     address: 6080773
@@ -2290,7 +2290,7 @@
 - op: SERVERSTATUS_REQUEST
   direction: serverbound
   opcode: 6
-  fname: sub_5CD1A2
+  fname: CLogin::SendCheckUserLimitPacket
   provenance: ida-discovered
   ida:
     address: 6082978
@@ -2330,7 +2330,7 @@
 - op: PICK_ALL_CHAR
   direction: serverbound
   opcode: 14
-  fname: sub_5CCC1F
+  fname: CLogin::SendSelectCharPacketByVAC
   provenance: ida-discovered
   ida:
     address: 6081567
@@ -2338,7 +2338,7 @@
 - op: CHAR_SELECT
   direction: serverbound
   opcode: 19
-  fname: sub_5CCAE3
+  fname: CLogin::SendSelectCharPacket
   provenance: ida-discovered
   ida:
     address: 6081251

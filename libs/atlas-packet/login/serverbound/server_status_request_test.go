@@ -12,6 +12,7 @@ import (
 // packet-audit:verify packet=login/serverbound/ServerStatusRequest version=gms_v87 ida=0x62f80a
 // packet-audit:verify packet=login/serverbound/ServerStatusRequest version=gms_v95 ida=0x5d43d0
 // packet-audit:verify packet=login/serverbound/ServerStatusRequest version=gms_v84 ida=0x60cfee
+// packet-audit:verify packet=login/serverbound/ServerStatusRequest version=gms_v79 ida=0x5cd1a2
 func TestServerStatusRequestRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

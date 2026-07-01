@@ -51,6 +51,7 @@ func le4(v uint32) []byte {
 // packet-audit:verify packet=login/serverbound/CharacterSelect version=gms_v87 ida=0x62e9f6
 // packet-audit:verify packet=login/serverbound/CharacterSelect version=gms_v95 ida=0x5da2a0
 // packet-audit:verify packet=login/serverbound/CharacterSelect version=jms_v185 ida=0x66ddac
+// packet-audit:verify packet=login/serverbound/CharacterSelect version=gms_v79 ida=0x5ccae3
 //
 // jms CLogin::SendSelectCharPacket @0x66ddac, m_bLoginOpt<=3 arm:
 //

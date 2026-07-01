@@ -14,6 +14,7 @@ import (
 // packet-audit:verify packet=login/serverbound/WorldCharacterListRequest version=gms_v95 ida=0x5dbef0
 // packet-audit:verify packet=login/serverbound/WorldCharacterListRequest version=gms_v84 ida=0x60bca3
 // packet-audit:verify packet=login/serverbound/WorldCharacterListRequest version=jms_v185 ida=0x66db89
+// packet-audit:verify packet=login/serverbound/WorldCharacterListRequest version=gms_v79 ida=0x5cc905
 func TestWorldCharacterListRequestRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {
@@ -26,7 +27,8 @@ func TestWorldCharacterListRequestRoundTrip(t *testing.T) {
 			}
 			output := WorldCharacterListRequest{}
 			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
-			if v.Region == "GMS" && v.MajorVersion > 28 {
+			// gameStartMode exists only at GMS v83+ (IDA v79 SendLoginPacket@0x5cc905 omits it).
+			if v.Region == "GMS" && v.MajorVersion >= 83 {
 				if output.GameStartMode() != input.GameStartMode() {
 					t.Errorf("gameStartMode: got %v, want %v", output.GameStartMode(), input.GameStartMode())
 				}

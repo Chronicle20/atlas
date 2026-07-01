@@ -1382,7 +1382,7 @@
    ]
   },
   "CEntrustedShopDlg::AddBlackList": {
-   "address": "0x505911",
+   "address": "0x50588d",
    "direction": "serverbound",
    "calls": [
     {
@@ -1392,13 +1392,12 @@
    ]
   },
   "CEntrustedShopDlg::DeleteBlackList": {
-   "address": "",
+   "address": "0x505911",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "DecodeStr",
+     "comment": ""
     }
    ]
   },
@@ -6580,24 +6579,26 @@
    ]
   },
   "COmokDlg::OnRetreatRequest": {
-   "address": "",
+   "address": "0x672728",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": ""
     }
    ]
   },
   "COmokDlg::PutStoneChecker": {
-   "address": "",
+   "address": "0x676fd6",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "DecodeBuffer",
+     "comment": ""
+    },
+    {
+     "op": "Decode1",
+     "comment": ""
     }
    ]
   },
@@ -8525,24 +8526,34 @@
    ]
   },
   "CTradingRoomDlg::PutItem": {
-   "address": "",
+   "address": "0x736c99",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": ""
+    },
+    {
+     "op": "Decode2",
+     "comment": ""
+    },
+    {
+     "op": "Decode2",
+     "comment": ""
+    },
+    {
+     "op": "Decode1",
+     "comment": ""
     }
    ]
   },
   "CTradingRoomDlg::PutMoney": {
-   "address": "",
+   "address": "0x736ec4",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode4",
+     "comment": ""
     }
    ]
   },

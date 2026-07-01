@@ -1,7 +1,7 @@
 {
   "WriterName": "InteractionOperationMemoryGameMoveStone",
   "IDAName": "COmokDlg::PutStoneChecker",
-  "Address": "",
+  "Address": "0x676fd6",
   "Variant": "GMS/v79",
   "BranchDepth": 0,
   "AtlasFile": "libs/atlas-packet/interaction/serverbound/operation_memory_game_move_stone.go",
@@ -10,10 +10,10 @@
       "Index": 0,
       "AtlasOp": 3,
       "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 4,
-      "Note": "IDA read-order unresolved: function not found in IDB"
+      "IDAOp": 5,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 1,
@@ -21,10 +21,10 @@
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
-      "Verdict": 1,
-      "Note": "atlas: trailing padding byte — client stops reading (harmless over-write)"
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 1,
+  "Verdict": 0,
   "FlatInvalid": false
 }

@@ -4,7 +4,7 @@ version: gms_v79
 category: TIER1-FIXTURE
 ida:
     function: CEntrustedShopDlg::AddBlackList
-    address: "0x505911"
-    decompile_sha256: 4597111d460e6b5ed3ae0ed2bd774055099fe56b3e3d2c3439b640295a814c6b
+    address: "0x50588d"
+    decompile_sha256: 81a61b1017f3317d638b8df38434de834e0a1d21c1d728eada6a88cfcdf5e94e
 verifies:
   - libs/atlas-packet/interaction/serverbound/operation_merchant_add_to_black_list_test.go#TestOperationMerchantAddToBlackListRoundTrip

@@ -5,7 +5,7 @@
 
 Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 
-- export gms_v79: `2100d17404d398cdd4f2ac967c40106671359214b2ee7990e57cffedf55d4fb2`
+- export gms_v79: `f2da24d4a4b7d18e019e80d2a416db5c63f4022df0c15b808590d96cf0dc2341`
 - export gms_v83: `711bddcc2e1bdd417a75954148d2b50c64e70855e84259c0b8e50e700e393c0d`
 - export gms_v84: `7eab9472e2afeda13faaf74273828d09d5f2481d67bec10235c3b2fd2f91e1eb`
 - export gms_v87: `714817d376bb93732ef6b6fbe6b59f8c24515ff901801d213d676b501eae7f94`
@@ -843,22 +843,22 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 | interaction/serverbound/InteractionOperationFieldRemoveFromBlackList (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | interaction/serverbound/InteractionOperationInvite (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | interaction/serverbound/InteractionOperationMemoryGameFlipCard (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
-| interaction/serverbound/InteractionOperationMemoryGameMoveStone (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
-| interaction/serverbound/InteractionOperationMemoryGameRetreatAnswer (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
+| interaction/serverbound/InteractionOperationMemoryGameMoveStone (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
+| interaction/serverbound/InteractionOperationMemoryGameRetreatAnswer (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | interaction/serverbound/InteractionOperationMemoryGameTieAnswer (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | interaction/serverbound/InteractionOperationMerchantAddToBlackList (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | interaction/serverbound/InteractionOperationMerchantBuy (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | interaction/serverbound/InteractionOperationMerchantPutItem (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
-| interaction/serverbound/InteractionOperationMerchantRemoveFromBlackList (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
+| interaction/serverbound/InteractionOperationMerchantRemoveFromBlackList (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | interaction/serverbound/InteractionOperationMerchantRemoveItem (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | interaction/serverbound/InteractionOperationPersonalStoreAddToBlackList (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | interaction/serverbound/InteractionOperationPersonalStoreBuy (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | interaction/serverbound/InteractionOperationPersonalStorePutItem (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | interaction/serverbound/InteractionOperationPersonalStoreRemoveItem (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | interaction/serverbound/InteractionOperationPersonalStoreSetBlackList (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
-| interaction/serverbound/InteractionOperationTradeAddMeso (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
+| interaction/serverbound/InteractionOperationTradeAddMeso (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | interaction/serverbound/InteractionOperationTradeConfirm (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
-| interaction/serverbound/InteractionOperationTradePutItem (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
+| interaction/serverbound/InteractionOperationTradePutItem (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | interaction/serverbound/InteractionOperationTransaction (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | login/serverbound/ServerListRequest |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | messenger/serverbound/MessengerOperation (T1) |  |  | ❌ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
@@ -909,7 +909,7 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v79 | 190 | 0 | 73 | 215 | 400 | 0 | 39.7% |
+| v79 | 195 | 0 | 73 | 210 | 400 | 0 | 40.8% |
 | v83 | 367 | 0 | 0 | 309 | 202 | 0 | 54.3% |
 | v84 | 345 | 0 | 0 | 310 | 223 | 0 | 52.7% |
 | v87 | 379 | 0 | 0 | 334 | 165 | 0 | 53.2% |

@@ -43,8 +43,16 @@ func TestShopOperationSetWishlistV79Bytes(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	input := ShopOperationSetWishlist{serialNumbers: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}}
 	got := hex.EncodeToString(input.Encode(l, pt.CreateContext("GMS", 79, 1))(nil))
+	// v72 body == v79: fixed 10×Encode4 wishlist serials, no count prefix.
+	// IDA v72 CCashShop::OnSetWish@0x46956d COutPacket(219) Encode1(5)=mode
+	// @0x469654 then a 10-iter Encode4 loop @0x469681.
+	// packet-audit:verify packet=cash/serverbound/CashShopOperationSetWishlist version=gms_v72 ida=0x46956d
+	got72 := hex.EncodeToString(input.Encode(l, pt.CreateContext("GMS", 72, 1))(nil))
 	want := "01000000" + "02000000" + "03000000" + "04000000" + "05000000" +
 		"06000000" + "07000000" + "08000000" + "09000000" + "0a000000"
+	if got72 != want {
+		t.Errorf("v72 bytes: got %s, want %s", got72, want)
+	}
 	if got != want {
 		t.Errorf("v79 bytes: got %s, want %s", got, want)
 	}

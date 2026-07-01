@@ -1064,15 +1064,9 @@
    ]
   },
   "CCashShop::TrySendQueryCashRequest": {
-   "address": "",
+   "address": "0x46b1e6",
    "direction": "serverbound",
-   "unresolved": true,
-   "calls": [
-    {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
-   ]
+   "calls": null
   },
   "CCashTradingRoomDlg::Trade": {
    "address": "",

@@ -132,3 +132,18 @@ func TestShopOperationBuyCoupleV79Bytes(t *testing.T) {
 		t.Errorf("v79 bytes: got %s, want 010403020108070605", got)
 	}
 }
+
+// TestShopOperationBuyCoupleV72Bytes pins the v72 legacy body. IDA v72
+// CCashShop::OnBuyCouple@0x467515 (GMS_v72.1_U_DEVM.exe, port 13339):
+// COutPacket(219) Encode1(0x1D)=mode @0x467842 (routed op) then Encode1(v43==2)=
+// isPoints @0x467852, Encode4(v43)=currency @0x46785d, Encode4(a2)=serialNumber
+// @0x467868. Body after the mode byte == v79: isPoints(1)+currency(4)+serial(4).
+// packet-audit:verify packet=cash/serverbound/CashShopOperationBuyCouple version=gms_v72 ida=0x467515
+func TestShopOperationBuyCoupleV72Bytes(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	input := ShopOperationBuyCouple{isPoints: true, currency: 0x01020304, serialNumber: 0x05060708, birthday: 999, option: 9, name: "x", message: "y"}
+	got := hex.EncodeToString(input.Encode(l, pt.CreateContext("GMS", 72, 1))(nil))
+	if got != "01"+"04030201"+"08070605" {
+		t.Errorf("v72 bytes: got %s, want 010403020108070605", got)
+	}
+}

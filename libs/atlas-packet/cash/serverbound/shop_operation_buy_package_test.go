@@ -51,6 +51,13 @@ func TestShopOperationBuyPackageRoundTrip(t *testing.T) {
 func TestShopOperationBuyPackageV79Bytes(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	input := ShopOperationBuyPackage{pointType: true, option: 1, serialNumber: 0x05060708}
+	got72 := hex.EncodeToString(input.Encode(l, pt.CreateContext("GMS", 72, 1))(nil))
+	// v72 body == v79: serialNumber(4) only. IDA v72 CCashShop::OnBuyPackage@0x4678da
+	// COutPacket(219) Encode1(0x1F)=mode @0x467ac9, Encode4(a2)=serialNumber @0x467ad4.
+	// packet-audit:verify packet=cash/serverbound/CashShopOperationBuyPackage version=gms_v72 ida=0x4678da
+	if got72 != "08070605" {
+		t.Errorf("v72 bytes: got %s, want 08070605", got72)
+	}
 	got := hex.EncodeToString(input.Encode(l, pt.CreateContext("GMS", 79, 1))(nil))
 	if got != "08070605" {
 		t.Errorf("v79 bytes: got %s, want 08070605", got)

@@ -91,6 +91,21 @@ func TestShopOperationBuyBytes(t *testing.T) {
 	}
 }
 
+// TestShopOperationBuyV72Bytes pins the v72 body. IDA v72 CCashShop::OnBuy
+// @0x466e70 (GMS_v72.1_U_DEVM.exe, port 13339): COutPacket(219) Encode1(3)=mode
+// @0x467355 (routed op), then Encode1(v47==2)=isPoints @0x467365, Encode4(v47)=
+// currency @0x467370, Encode4(a2)=serialNumber @0x46737c, Encode4(v43)=trailing
+// @0x467387. Body after the mode byte == v79 (v72<87 takes the legacy else branch).
+// packet-audit:verify packet=cash/serverbound/CashShopOperationBuy version=gms_v72 ida=0x466e70
+func TestShopOperationBuyV72Bytes(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	input := ShopOperationBuy{isPoints: true, currency: 1, serialNumber: 2, zero: 3, oneADay: 1, eventSN: 4}
+	got := hex.EncodeToString(input.Encode(l, pt.CreateContext("GMS", 72, 1))(nil))
+	if got != "01"+"01000000"+"02000000"+"03000000" {
+		t.Errorf("v72 bytes: got %s", got)
+	}
+}
+
 // TestShopOperationBuyJMS pins the JMS185 buy body. IDA JMS185
 // CCashShop::OnBuy@0x47eaa7 normal-buy SendPacket: Encode1(3) mode (routed as
 // op byte, not body), Encode1(usePoints), Encode4(nCommSN). The body after the

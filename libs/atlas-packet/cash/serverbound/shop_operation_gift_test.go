@@ -112,6 +112,22 @@ func TestShopOperationGiftBytes(t *testing.T) {
 	}
 }
 
+// TestShopOperationGiftV72Bytes pins the v72 legacy body. IDA v72
+// CCashShop::SendGiftsPacket@0x467f9a (GMS_v72.1_U_DEVM.exe, port 13339):
+// COutPacket(219) Encode1(4)=mode @0x4681ed (routed op) then Encode4(this[326])=
+// birthday/leading @0x4681fb, Encode4(this[327])=serialNumber @0x468209,
+// EncodeStr(name) @0x468222, EncodeStr(message) @0x46823e. No oneADay (v87+), no
+// SPW (v95+). Body after the mode byte == v79.
+// packet-audit:verify packet=cash/serverbound/CashShopOperationGift version=gms_v72 ida=0x467f9a
+func TestShopOperationGiftV72Bytes(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	input := ShopOperationGift{birthday: 0x01020304, spw: "x", serialNumber: 0x05060708, oneADay: 1, name: "", message: ""}
+	got := hex.EncodeToString(input.Encode(l, pt.CreateContext("GMS", 72, 1))(nil))
+	if got != "04030201"+"08070605"+"0000"+"0000" {
+		t.Errorf("v72 bytes: got %s", got)
+	}
+}
+
 // TestShopOperationGiftJMS pins the JMS185 gift body. IDA JMS185
 // CCashShop::SendGiftsPacket@0x47bced: Encode1(0x2E) gift sub-op (routed as the
 // op byte, NOT part of the body) then Encode4(commSN). The body after the sub-op

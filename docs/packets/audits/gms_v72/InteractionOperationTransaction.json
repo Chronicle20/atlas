@@ -1,7 +1,7 @@
 {
   "WriterName": "InteractionOperationTransaction",
   "IDAName": "CCashTradingRoomDlg::Trade",
-  "Address": "",
+  "Address": "0x6ff5bf",
   "Variant": "GMS/v72",
   "BranchDepth": 1,
   "AtlasFile": "libs/atlas-packet/interaction/serverbound/operation_transaction.go",
@@ -10,10 +10,10 @@
       "Index": 0,
       "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 4,
-      "Note": "IDA read-order unresolved: function not found in IDB"
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
     },
     {
       "Index": 1,

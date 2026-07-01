@@ -61,3 +61,15 @@ func TestOperationPersonalStoreBuyBytes(t *testing.T) {
 		t.Errorf("v79 bytes: got %s, want 020a00", got79)
 	}
 }
+
+// TestOperationPersonalStoreBuyV72Bytes pins the GMS v72 legacy body (mode byte is
+// dispatcher-framed, not part of this sub-struct). IDA v72 CPersonalShopDlg::BuyItem (sub_665B58): Encode1(0x15 personal)=mode @0x665f00 then Encode1(index)@0x665f0b, Encode2(qty)@0x665f16. NO trailing itemCRC (that is v83+, tradeCrcPresent gate). Body == v79.
+// packet-audit:verify packet=interaction/serverbound/InteractionOperationPersonalStoreBuy version=gms_v72 ida=0x665b58
+func TestOperationPersonalStoreBuyV72Bytes(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	input := OperationPersonalStoreBuy{index: 3, quantity: 25}
+	got := hex.EncodeToString(input.Encode(l, pt.CreateContext("GMS", 72, 1))(nil))
+	if got != "031900" {
+		t.Errorf("v72 bytes: got %s, want 031900", got)
+	}
+}

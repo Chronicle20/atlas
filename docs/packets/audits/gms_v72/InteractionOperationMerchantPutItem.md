@@ -1,18 +1,18 @@
 # InteractionOperationMerchantPutItem (← `CPersonalShopDlg::PutItem#Merchant`)
 
-- **IDA:** 
+- **IDA:** 0x665f5f
 - **Atlas file:** `libs/atlas-packet/interaction/serverbound/operation_merchant_put_item.go`
 - **Variant:** GMS/v72
 - **Branch depth:** 0
-- **Verdict:** ❌
+- **Verdict:** ✅
 
 ## Wire-level diff
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | byte | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
-| 1 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 2 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 3 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 4 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 0 | byte | byte `inventoryType` | ✅ |  |
+| 1 | int16 | int16 `slot` | ✅ |  |
+| 2 | int16 | int16 `quantity` | ✅ |  |
+| 3 | int16 | int16 `set` | ✅ |  |
+| 4 | int32 | int32 `price` | ✅ |  |
 

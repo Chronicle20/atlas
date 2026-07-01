@@ -49,3 +49,15 @@ func TestOperationPersonalStoreSetBlackListBytes(t *testing.T) {
 		t.Errorf("bytes: got %s, want %s", got, want)
 	}
 }
+
+// TestOperationPersonalStoreSetBlackListV72Bytes pins the GMS v72 legacy body (mode byte is
+// dispatcher-framed, not part of this sub-struct). IDA v72 CPersonalShopDlg::DeliverBlackList (sub_6664D6): Encode1(0x1C)=mode @0x666505 then Encode2(count)@0x666524, loop EncodeStr(name)@0x666557. Body == v79.
+// packet-audit:verify packet=interaction/serverbound/InteractionOperationPersonalStoreSetBlackList version=gms_v72 ida=0x6664d6
+func TestOperationPersonalStoreSetBlackListV72Bytes(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	input := OperationPersonalStoreSetBlackList{entries: []string{"ab"}}
+	got := hex.EncodeToString(input.Encode(l, pt.CreateContext("GMS", 72, 1))(nil))
+	if got != "010002006162" {
+		t.Errorf("v72 bytes: got %s, want 010002006162", got)
+	}
+}

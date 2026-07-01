@@ -1,6 +1,6 @@
 # InteractionOperationPersonalStoreBuy (← `CPersonalShopDlg::BuyItem`)
 
-- **IDA:** 
+- **IDA:** 0x665b58
 - **Atlas file:** `libs/atlas-packet/interaction/serverbound/operation_personal_store_buy.go`
 - **Variant:** GMS/v72
 - **Branch depth:** 1
@@ -11,7 +11,7 @@
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | byte | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
-| 1 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 0 | byte | byte `index` | ✅ |  |
+| 1 | int16 | int16 `quantity` | ✅ |  |
 | 2 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 

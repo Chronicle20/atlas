@@ -1,7 +1,7 @@
 {
   "WriterName": "InteractionOperationFieldRemoveFromBlackList",
   "IDAName": "CField::DeleteBlackList",
-  "Address": "",
+  "Address": "0x51bc25",
   "Variant": "GMS/v72",
   "BranchDepth": 0,
   "AtlasFile": "libs/atlas-packet/interaction/serverbound/operation_field_remove_from_black_list.go",
@@ -10,12 +10,12 @@
       "Index": 0,
       "AtlasOp": 4,
       "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 4,
-      "Note": "IDA read-order unresolved: function not found in IDB"
+      "IDAOp": 4,
+      "IDAComment": "name",
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 4,
+  "Verdict": 0,
   "FlatInvalid": false
 }

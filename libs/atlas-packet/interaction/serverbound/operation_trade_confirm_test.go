@@ -65,3 +65,15 @@ func TestOperationTradeConfirmBytes(t *testing.T) {
 		t.Errorf("v83 bytes: got %s, want %s", got83, want83)
 	}
 }
+
+// TestOperationTradeConfirmV72Bytes pins the GMS v72 legacy body: bodyless.
+// IDA v72 CTradingRoomDlg::Trade (sub_6FF5BF): Encode1(0x10)=mode @0x6ff687 only, no entry list (tradeCrcPresent gate false for v72). Bodyless, == v79.
+// packet-audit:verify packet=interaction/serverbound/InteractionOperationTradeConfirm version=gms_v72 ida=0x6ff5bf
+func TestOperationTradeConfirmV72Bytes(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	input := OperationTradeConfirm{entries: []TradeConfirmEntry{{data: 100, crc: 200}}}
+	got := hex.EncodeToString(input.Encode(l, pt.CreateContext("GMS", 72, 1))(nil))
+	if got != "" {
+		t.Errorf("v72 bytes: got %s, want (empty)", got)
+	}
+}

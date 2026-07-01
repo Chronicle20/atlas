@@ -1,6 +1,6 @@
 # InteractionOperationTradeConfirm (← `CTradingRoomDlg::Trade`)
 
-- **IDA:** 
+- **IDA:** 0x6ff5bf
 - **Atlas file:** `libs/atlas-packet/interaction/serverbound/operation_trade_confirm.go`
 - **Variant:** GMS/v72
 - **Branch depth:** 1
@@ -11,7 +11,7 @@
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | byte | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
+| 0 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
 | 1 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 2 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 

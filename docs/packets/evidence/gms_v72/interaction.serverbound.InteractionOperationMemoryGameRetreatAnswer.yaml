@@ -1,0 +1,10 @@
+packet: interaction/serverbound/InteractionOperationMemoryGameRetreatAnswer
+direction: serverbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: COmokDlg::OnRetreatRequest
+    address: "0x5febf2"
+    decompile_sha256: fe526a82c784c8361034051a0901656cf4aed71b498ab3e66f159bfa1b0863b1
+verifies:
+  - libs/atlas-packet/interaction/serverbound/operation_memory_game_retreat_answer_test.go#TestOperationMemoryGameRetreatAnswerV72Bytes

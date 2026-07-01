@@ -1069,15 +1069,9 @@
    "calls": null
   },
   "CCashTradingRoomDlg::Trade": {
-   "address": "",
+   "address": "0x6ff5bf",
    "direction": "serverbound",
-   "unresolved": true,
-   "calls": [
-    {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
-   ]
+   "calls": null
   },
   "CClientSocket::OnAliveReq": {
    "address": "0x4869e2",
@@ -1504,24 +1498,22 @@
    ]
   },
   "CField::AddBlackList": {
-   "address": "",
+   "address": "0x51bbad",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "DecodeStr",
+     "comment": "name"
     }
    ]
   },
   "CField::DeleteBlackList": {
-   "address": "",
+   "address": "0x51bc25",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "DecodeStr",
+     "comment": "name"
     }
    ]
   },
@@ -2721,13 +2713,12 @@
    ]
   },
   "CField::SendInviteTradingRoomMsg": {
-   "address": "",
+   "address": "0x514092",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode4",
+     "comment": "targetCharacterId"
     }
    ]
   },
@@ -5070,7 +5061,7 @@
     },
     {
      "op": "Encode4",
-     "comment": "accountId @0x5b55c3 (*(g_pWvsContext+8232)) — LEGACY-ONLY int, absent in v83+"
+     "comment": "accountId @0x5b55c3 (*(g_pWvsContext+8232)) \u2014 LEGACY-ONLY int, absent in v83+"
     },
     {
      "op": "EncodeStr",
@@ -5612,24 +5603,26 @@
    ]
   },
   "CMemoryGameDlg::OnTieRequest": {
-   "address": "",
+   "address": "0x64e893",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": "response"
     }
    ]
   },
   "CMemoryGameDlg::SendTurnUpCard": {
-   "address": "",
+   "address": "0x5ff6ba",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": "first"
+    },
+    {
+     "op": "Decode1",
+     "comment": "index"
     }
    ]
   },
@@ -5688,13 +5681,12 @@
    ]
   },
   "CMiniRoomBaseDlg::CheckAndSendChat": {
-   "address": "",
+   "address": "0x60f318",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "DecodeStr",
+     "comment": "message"
     }
    ]
   },
@@ -6507,24 +6499,26 @@
    ]
   },
   "COmokDlg::OnRetreatRequest": {
-   "address": "",
+   "address": "0x5febf2",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": "response"
     }
    ]
   },
   "COmokDlg::PutStoneChecker": {
-   "address": "",
+   "address": "0x65320c",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "DecodeBuffer",
+     "comment": "point(8)"
+    },
+    {
+     "op": "Decode1",
+     "comment": "color"
     }
    ]
   },
@@ -6581,68 +6575,78 @@
    ]
   },
   "CPersonalShopDlg::BuyItem": {
-   "address": "",
+   "address": "0x665b58",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": "index"
+    },
+    {
+     "op": "Decode2",
+     "comment": "quantity"
     }
    ]
   },
   "CPersonalShopDlg::BuyItem#Merchant": {
-   "address": "",
+   "address": "0x665b58",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": "index"
+    },
+    {
+     "op": "Decode2",
+     "comment": "quantity"
     }
    ]
   },
   "CPersonalShopDlg::DeliverBlackList": {
-   "address": "",
+   "address": "0x6664d6",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode2",
+     "comment": "count"
+    },
+    {
+     "op": "DecodeStr",
+     "comment": "name"
     }
    ]
   },
   "CPersonalShopDlg::MoveItemToInventory": {
-   "address": "",
+   "address": "0x6662db",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode2",
+     "comment": "index"
     }
    ]
   },
   "CPersonalShopDlg::MoveItemToInventory#Merchant": {
-   "address": "",
+   "address": "0x6662db",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode2",
+     "comment": "index"
     }
    ]
   },
   "CPersonalShopDlg::OnClickBanButton": {
-   "address": "",
+   "address": "0x66658a",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": "slot"
+    },
+    {
+     "op": "DecodeStr",
+     "comment": "name"
     }
    ]
   },
@@ -6658,24 +6662,54 @@
    ]
   },
   "CPersonalShopDlg::PutItem": {
-   "address": "",
+   "address": "0x665f5f",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": "inventoryType"
+    },
+    {
+     "op": "Decode2",
+     "comment": "slot"
+    },
+    {
+     "op": "Decode2",
+     "comment": "quantity"
+    },
+    {
+     "op": "Decode2",
+     "comment": "set"
+    },
+    {
+     "op": "Decode4",
+     "comment": "price"
     }
    ]
   },
   "CPersonalShopDlg::PutItem#Merchant": {
-   "address": "",
+   "address": "0x665f5f",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": "inventoryType"
+    },
+    {
+     "op": "Decode2",
+     "comment": "slot"
+    },
+    {
+     "op": "Decode2",
+     "comment": "quantity"
+    },
+    {
+     "op": "Decode2",
+     "comment": "set"
+    },
+    {
+     "op": "Decode4",
+     "comment": "price"
     }
    ]
   },
@@ -7989,7 +8023,7 @@
    "calls": [
     {
      "op": "Decode4",
-     "comment": "m_nChannelID (channel id) @0x6c0cce — v72 NO DecodeOpt, NO m_dwOldDriverID"
+     "comment": "m_nChannelID (channel id) @0x6c0cce \u2014 v72 NO DecodeOpt, NO m_dwOldDriverID"
     },
     {
      "op": "Decode1",
@@ -8005,7 +8039,7 @@
     },
     {
      "op": "Decode4",
-     "comment": "dwPosMap (target map id) @0x6c0e59 — NO revive byte in v72 (else branch reads mapId immediately, v72 < v83)"
+     "comment": "dwPosMap (target map id) @0x6c0e59 \u2014 NO revive byte in v72 (else branch reads mapId immediately, v72 < v83)"
     },
     {
      "op": "Decode1",
@@ -8013,7 +8047,7 @@
     },
     {
      "op": "Decode2",
-     "comment": "nHP @0x6c0e88 — v72 Decode2 (2 bytes)"
+     "comment": "nHP @0x6c0e88 \u2014 v72 Decode2 (2 bytes)"
     },
     {
      "op": "Decode1",
@@ -8102,11 +8136,11 @@
    "calls": [
     {
      "op": "Decode4",
-     "comment": "cid/ownerId — CUserPool::OnUserCommonPacket (consumed upstream before dispatch)"
+     "comment": "cid/ownerId \u2014 CUserPool::OnUserCommonPacket (consumed upstream before dispatch)"
     },
     {
      "op": "Decode4",
-     "comment": "oid — summon cluster dispatcher sub_848023@0x848062 (read before leaf dispatch)"
+     "comment": "oid \u2014 summon cluster dispatcher sub_848023@0x848062 (read before leaf dispatch)"
     },
     {
      "op": "Decode1",
@@ -8132,15 +8166,15 @@
    "calls": [
     {
      "op": "Decode4",
-     "comment": "cid/ownerId — CUserPool::OnUserCommonPacket (consumed upstream before dispatch)"
+     "comment": "cid/ownerId \u2014 CUserPool::OnUserCommonPacket (consumed upstream before dispatch)"
     },
     {
      "op": "Decode4",
-     "comment": "oid — summon cluster dispatcher sub_848023@0x848062 (read before leaf dispatch)"
+     "comment": "oid \u2014 summon cluster dispatcher sub_848023@0x848062 (read before leaf dispatch)"
     },
     {
      "op": "DecodeBuf",
-     "comment": "raw CMovePath movement blob — sub_6E9285 -> CMovePath::OnMovePacket@0x635bc2"
+     "comment": "raw CMovePath movement blob \u2014 sub_6E9285 -> CMovePath::OnMovePacket@0x635bc2"
     }
    ]
   },
@@ -8150,11 +8184,11 @@
    "calls": [
     {
      "op": "Decode4",
-     "comment": "cid/ownerId — CUserPool::OnUserCommonPacket (consumed upstream before dispatch)"
+     "comment": "cid/ownerId \u2014 CUserPool::OnUserCommonPacket (consumed upstream before dispatch)"
     },
     {
      "op": "Decode4",
-     "comment": "oid — summon cluster dispatcher sub_848023@0x848062 (read before leaf dispatch)"
+     "comment": "oid \u2014 summon cluster dispatcher sub_848023@0x848062 (read before leaf dispatch)"
     },
     {
      "op": "Decode1",
@@ -8168,11 +8202,11 @@
    "calls": [
     {
      "op": "Decode4",
-     "comment": "cid/ownerId — CUserPool::OnUserCommonPacket (consumed upstream before dispatch)"
+     "comment": "cid/ownerId \u2014 CUserPool::OnUserCommonPacket (consumed upstream before dispatch)"
     },
     {
      "op": "Decode4",
-     "comment": "oid — summon cluster dispatcher sub_848023@0x848062 (read before leaf dispatch)"
+     "comment": "oid \u2014 summon cluster dispatcher sub_848023@0x848062 (read before leaf dispatch)"
     },
     {
      "op": "Decode1",
@@ -8229,37 +8263,41 @@
    ]
   },
   "CTradingRoomDlg::PutItem": {
-   "address": "",
+   "address": "0x6ff1be",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": "inventoryType"
+    },
+    {
+     "op": "Decode2",
+     "comment": "slot"
+    },
+    {
+     "op": "Decode2",
+     "comment": "quantity"
+    },
+    {
+     "op": "Decode1",
+     "comment": "targetSlot"
     }
    ]
   },
   "CTradingRoomDlg::PutMoney": {
-   "address": "",
+   "address": "0x6ff3e9",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode4",
+     "comment": "amount"
     }
    ]
   },
   "CTradingRoomDlg::Trade": {
-   "address": "",
+   "address": "0x6ff5bf",
    "direction": "serverbound",
-   "unresolved": true,
-   "calls": [
-    {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
-   ]
+   "calls": null
   },
   "CTrunkDlg::OnPacket": {
    "address": "0x704175",

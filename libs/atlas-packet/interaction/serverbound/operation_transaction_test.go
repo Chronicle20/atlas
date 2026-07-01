@@ -65,3 +65,15 @@ func TestOperationTransactionBytes(t *testing.T) {
 		t.Errorf("v83 bytes: got %s, want %s", got83, want83)
 	}
 }
+
+// TestOperationTransactionV72Bytes pins the GMS v72 legacy body: bodyless.
+// IDA v72 CCashTradingRoomDlg::Trade: the cash trade-room confirm inherits the base CTradingRoomDlg::Trade path (sub_6FF5BF) in v72 — Encode1(mode) only, no entry list (tradeCrcPresent gate false). Bodyless, == v79.
+// packet-audit:verify packet=interaction/serverbound/InteractionOperationTransaction version=gms_v72 ida=0x6ff5bf
+func TestOperationTransactionV72Bytes(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	input := OperationTransaction{entries: []TransactionEntry{{data: 100, crc: 200}}}
+	got := hex.EncodeToString(input.Encode(l, pt.CreateContext("GMS", 72, 1))(nil))
+	if got != "" {
+		t.Errorf("v72 bytes: got %s, want (empty)", got)
+	}
+}

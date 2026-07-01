@@ -1,9 +1,11 @@
 package serverbound
 
 import (
+	"encoding/hex"
 	"testing"
 
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
+	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
 // packet-audit:verify packet=interaction/serverbound/InteractionOperationTradeAddMeso version=gms_v79 ida=0x736ec4
@@ -23,5 +25,17 @@ func TestOperationTradeAddMesoRoundTrip(t *testing.T) {
 				t.Errorf("amount: got %v, want %v", output.Amount(), input.Amount())
 			}
 		})
+	}
+}
+
+// TestOperationTradeAddMesoV72Bytes pins the GMS v72 legacy body (mode byte is
+// dispatcher-framed, not part of this sub-struct). IDA v72 CTradingRoomDlg::PutMoney (sub_6FF3E9): Encode1(0xF)=mode @0x6ff560 then Encode4(amount) @0x6ff571. Body == v79.
+// packet-audit:verify packet=interaction/serverbound/InteractionOperationTradeAddMeso version=gms_v72 ida=0x6ff3e9
+func TestOperationTradeAddMesoV72Bytes(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	input := OperationTradeAddMeso{amount: 1000000}
+	got := hex.EncodeToString(input.Encode(l, pt.CreateContext("GMS", 72, 1))(nil))
+	if got != "40420f00" {
+		t.Errorf("v72 bytes: got %s, want 40420f00", got)
 	}
 }

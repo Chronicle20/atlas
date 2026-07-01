@@ -1,7 +1,7 @@
 {
   "WriterName": "InteractionOperationPersonalStoreAddToBlackList",
   "IDAName": "CPersonalShopDlg::OnClickBanButton",
-  "Address": "",
+  "Address": "0x66658a",
   "Variant": "GMS/v72",
   "BranchDepth": 0,
   "AtlasFile": "libs/atlas-packet/interaction/serverbound/operation_personal_store_add_to_black_list.go",
@@ -10,21 +10,21 @@
       "Index": 0,
       "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 4,
-      "Note": "IDA read-order unresolved: function not found in IDB"
+      "IDAOp": 0,
+      "IDAComment": "slot",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 1,
       "AtlasOp": 4,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "IDAOp": 4,
+      "IDAComment": "name",
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 2,
+  "Verdict": 0,
   "FlatInvalid": false
 }

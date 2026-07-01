@@ -5006,6 +5006,53 @@
     }
    ]
   },
+  "sub_5CE522": {
+   "address": "0x5ce522",
+   "direction": "clientbound",
+   "calls": [
+    {
+     "op": "Decode1",
+     "comment": "status"
+    },
+    {
+     "op": "Decode1",
+     "comment": "count",
+     "guard": "status success"
+    },
+    {
+     "op": "Delegate",
+     "comment": "",
+     "guard": "status success && v7 < count",
+     "ref": "GW_CharacterStat::Decode"
+    },
+    {
+     "op": "Delegate",
+     "comment": "",
+     "guard": "status success && v7 < count",
+     "ref": "AvatarLook::Decode"
+    },
+    {
+     "op": "Decode1",
+     "comment": "family/viewAll flag",
+     "guard": "status success && v7 < count"
+    },
+    {
+     "op": "Decode1",
+     "comment": "rankEnabled",
+     "guard": "status success && v7 < count"
+    },
+    {
+     "op": "DecodeBuf",
+     "comment": "rank 16",
+     "guard": "status success && v7 < count && rankEnabled"
+    },
+    {
+     "op": "Decode4",
+     "comment": "slots",
+     "guard": "status success"
+    }
+   ]
+  },
   "CLogin::OnViewAllCharResult": {
    "address": "0x5cee77",
    "direction": "",
@@ -5118,13 +5165,12 @@
    ]
   },
   "CLogin::SendCheckDuplicateIDPacket": {
-   "address": "",
+   "address": "0x5cd111",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "EncodeStr",
+     "comment": "name @0x5cd177"
     }
    ]
   },
@@ -5178,13 +5224,16 @@
    ]
   },
   "CLogin::SendDeleteCharPacket": {
-   "address": "",
+   "address": "0x5cce4b",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Encode4",
+     "comment": "dob @0x5ccf28"
+    },
+    {
+     "op": "Encode4",
+     "comment": "characterId @0x5ccf45"
     }
    ]
   },
@@ -5200,13 +5249,52 @@
    ]
   },
   "CLogin::SendNewCharPacket": {
-   "address": "",
+   "address": "0x5ccfa4",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "EncodeStr",
+     "comment": "name @0x5cd029"
+    },
+    {
+     "op": "Encode4",
+     "comment": "jobIndex @0x5cd037"
+    },
+    {
+     "op": "Encode4",
+     "comment": "face @0x5cd048"
+    },
+    {
+     "op": "Encode4",
+     "comment": "hair @0x5cd048"
+    },
+    {
+     "op": "Encode4",
+     "comment": "hairColor @0x5cd048"
+    },
+    {
+     "op": "Encode4",
+     "comment": "skinColor @0x5cd048"
+    },
+    {
+     "op": "Encode4",
+     "comment": "top @0x5cd048"
+    },
+    {
+     "op": "Encode4",
+     "comment": "bottom @0x5cd048"
+    },
+    {
+     "op": "Encode4",
+     "comment": "shoes @0x5cd048"
+    },
+    {
+     "op": "Encode4",
+     "comment": "weapon @0x5cd048"
+    },
+    {
+     "op": "Encode1",
+     "comment": "gender @0x5cd05f"
     }
    ]
   },

@@ -5,7 +5,7 @@
 
 Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 
-- export gms_v79: `45eaa8b043eb22d8d8abfa06b728946e385e3339a08777531223b13627baa166`
+- export gms_v79: `044234c45af5eca1f159f041f76613905dd906182087491e303ff881016e5ab3`
 - export gms_v83: `711bddcc2e1bdd417a75954148d2b50c64e70855e84259c0b8e50e700e393c0d`
 - export gms_v84: `7eab9472e2afeda13faaf74273828d09d5f2481d67bec10235c3b2fd2f91e1eb`
 - export gms_v87: `714817d376bb93732ef6b6fbe6b59f8c24515ff901801d213d676b501eae7f94`
@@ -42,7 +42,7 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 | IDA_0X013 | CClientSocket::OnAuthenMessage; sub_671717 |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x013 | ❌ | 0x013 | ❌ | 0x013 | ❌ |
 | CHANNEL_SELECTED | CSecurityClient::OnPacket |  | 0x014 | ❌ | 0x014 | ❌ | 0x014 | ❌ | 0x014 | ❌ | 0x014 | ❌ |  | ⬜ |
 | HACKSHIELD_REQUEST | CLogin::OnEnableSPWResult |  |  | ⬜ | 0x015 | ❌ | 0x015 | ❌ | 0x015 | ❌ | 0x015 | ❌ |  | ⬜ |
-| RELOG_RESPONSE | CLogin::OnSelectWorldResult; sub_5FB83D; sub_633496 | character/clientbound/CharacterList (T1) | 0x016 | ❌ | 0x016 | ❌ | 0x016 | ❌ | 0x016 | ❌ | 0x016 | ❌ |  | ⬜ |
+| RELOG_RESPONSE | CLogin::OnSelectWorldResult; sub_5FB83D; sub_633496 | character/clientbound/CharacterList (T1) | 0x016 | ✅ | 0x016 | ❌ | 0x016 | ❌ | 0x016 | ❌ | 0x016 | ❌ |  | ⬜ |
 | LOGIN_AUTH | CLogin::LoginAuth; CLogin::OnEnableSPWResult |  |  | ⬜ | 0x017 | ❌ | 0x017 | ❌ | 0x017 | ❌ | 0x000 | ❌ | 0x018 | ❌ |
 | CHECK_CRC_RESULT | CClientSocket::OnCheckCrcResult |  |  | ⬜ | 0x019 | ❌ | 0x019 | ❌ | 0x019 | ❌ | 0x017 | ❌ | 0x00D | ❌ |
 | IDA_0X019 | sub_66F0D7 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x019 | ❌ |
@@ -500,10 +500,10 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 | WORLD_TRANSFER | CCashShop::SendCheckTransferWorldPossiblePacket |  |  | ⬜ | 0x012 | ❌ | 0x012 | ❌ | 0x012 | ❌ | 0x012 | ❌ |  | ⬜ |
 | CHAR_SELECT | CLogin::SendSelectCharPacket; sub_5CCAE3 | login/serverbound/CharacterSelect | 0x013 | ❌ | 0x013 | ✅ | 0x013 | ✅ | 0x013 | ✅ | 0x013 | ✅ | 0x006 | ✅ |
 | PLAYER_LOGGEDIN | CClientSocket::OnConnect | socket/serverbound/ChannelConnect | 0x014 | ❌ | 0x014 | ✅ | 0x014 | ❌ | 0x014 | ✅ | 0x014 | ✅ | 0x007 | ✅ |
-| CHECK_CHAR_NAME | CCashShop::SendCheckDuplicateIDPacket; CLogin::SendCheckDuplicateIDPacket; sub_5CD111 | character/serverbound/CheckName (T1) | 0x015 | ❌ | 0x015 | ✅ | 0x015 | ✅ | 0x015 | ✅ | 0x015 | ✅ | 0x008 | ✅ |
-| CREATE_CHAR | CLogin::SendNewCharPacket; sub_5CCFA4 | character/serverbound/CreateCharacter (T1) | 0x016 | ❌ | 0x016 | ✅ | 0x016 | ✅ | 0x016 | ✅ | 0x016 | ✅ | 0x00B | ✅ |
+| CHECK_CHAR_NAME | CCashShop::SendCheckDuplicateIDPacket; CLogin::SendCheckDuplicateIDPacket | character/serverbound/CheckName (T1) | 0x015 | ✅ | 0x015 | ✅ | 0x015 | ✅ | 0x015 | ✅ | 0x015 | ✅ | 0x008 | ✅ |
+| CREATE_CHAR | CLogin::SendNewCharPacket | character/serverbound/CreateCharacter (T1) | 0x016 | ✅ | 0x016 | ✅ | 0x016 | ✅ | 0x016 | ✅ | 0x016 | ✅ | 0x00B | ✅ |
 | CREATE_CHAR_IN_CS | CLogin::SendNewCharPacket | character/serverbound/CreateCharacter (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x017 | ✅ |  | ⬜ |
-| DELETE_CHAR | CLogin::SendDeleteCharPacket; sub_5CCE4B | character/serverbound/DeleteCharacter (T1) | 0x017 | ❌ | 0x017 | ✅ | 0x017 | ✅ | 0x017 | ✅ | 0x018 | ✅ | 0x00D | ✅ |
+| DELETE_CHAR | CLogin::SendDeleteCharPacket | character/serverbound/DeleteCharacter (T1) | 0x017 | ✅ | 0x017 | ✅ | 0x017 | ✅ | 0x017 | ✅ | 0x018 | ✅ | 0x00D | ✅ |
 | PONG | CClientSocket::OnAliveReq | socket/clientbound/Ping | 0x018 | ❌ | 0x018 | ✅ | 0x018 | ❌ | 0x018 | ✅ | 0x019 | ✅ | 0x00E | ✅ |
 | CLIENT_START_ERROR | CClientSocket::OnConnect | socket/serverbound/ChannelConnect | 0x019 | ❌ | 0x019 | ✅ | 0x019 | ❌ | 0x019 | ✅ | 0x01A | ✅ | 0x00F | ✅ |
 | SECURE_PASSWORD |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x019 | ❌ |
@@ -823,8 +823,6 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 | character/serverbound/ChairFixed (T1) |  |  | 🟡 |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | character/serverbound/ChalkboardClose (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | character/serverbound/CharacterSkillPrepare (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| character/serverbound/CheckName (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| character/serverbound/DeleteCharacter (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | character/serverbound/DistributeAp (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | character/serverbound/DistributeSp (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | character/serverbound/DropMeso (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
@@ -927,12 +925,12 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v79 | 108 | 0 | 75 | 313 | 400 | 0 | 21.8% |
-| v83 | 367 | 0 | 0 | 327 | 202 | 0 | 52.9% |
-| v84 | 345 | 0 | 0 | 328 | 223 | 0 | 51.3% |
-| v87 | 379 | 0 | 0 | 352 | 165 | 0 | 51.8% |
-| v95 | 399 | 0 | 0 | 416 | 81 | 0 | 49.0% |
-| JMS185 | 361 | 0 | 0 | 363 | 172 | 0 | 49.9% |
+| v79 | 112 | 0 | 75 | 307 | 400 | 0 | 22.7% |
+| v83 | 367 | 0 | 0 | 325 | 202 | 0 | 53.0% |
+| v84 | 345 | 0 | 0 | 326 | 223 | 0 | 51.4% |
+| v87 | 379 | 0 | 0 | 350 | 165 | 0 | 52.0% |
+| v95 | 399 | 0 | 0 | 414 | 81 | 0 | 49.1% |
+| JMS185 | 361 | 0 | 0 | 361 | 172 | 0 | 50.0% |
 
 ## Conflicts
 

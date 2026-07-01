@@ -2345,7 +2345,7 @@
 - op: CHECK_CHAR_NAME
   direction: serverbound
   opcode: 21
-  fname: sub_5CD111
+  fname: CLogin::SendCheckDuplicateIDPacket
   provenance: ida-discovered
   ida:
     address: 6082833
@@ -2353,7 +2353,7 @@
 - op: CREATE_CHAR
   direction: serverbound
   opcode: 22
-  fname: sub_5CCFA4
+  fname: CLogin::SendNewCharPacket
   provenance: ida-discovered
   ida:
     address: 6082468
@@ -2361,7 +2361,7 @@
 - op: DELETE_CHAR
   direction: serverbound
   opcode: 23
-  fname: sub_5CCE4B
+  fname: CLogin::SendDeleteCharPacket
   provenance: ida-discovered
   ida:
     address: 6082123

@@ -1,6 +1,6 @@
 # CreateCharacter (← `CLogin::SendNewCharPacket`)
 
-- **IDA:** 
+- **IDA:** 0x5ccfa4
 - **Atlas file:** `libs/atlas-packet/character/serverbound/create.go`
 - **Variant:** GMS/v79
 - **Branch depth:** 3
@@ -11,16 +11,16 @@
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | string | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
-| 1 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 2 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 3 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 4 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 5 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 6 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 7 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 8 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 9 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 10 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 11 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 0 | string | string `name @0x5cd029` | ✅ |  |
+| 1 | int32 | int32 `jobIndex @0x5cd037` | ✅ |  |
+| 2 | int16 | int32 `face @0x5cd048` | ❌ | width mismatch |
+| 3 | int32 | int32 `hair @0x5cd048` | ✅ |  |
+| 4 | int32 | int32 `hairColor @0x5cd048` | ✅ |  |
+| 5 | int32 | int32 `skinColor @0x5cd048` | ✅ |  |
+| 6 | int32 | int32 `top @0x5cd048` | ✅ |  |
+| 7 | int32 | int32 `bottom @0x5cd048` | ✅ |  |
+| 8 | int32 | int32 `shoes @0x5cd048` | ✅ |  |
+| 9 | int32 | int32 `weapon @0x5cd048` | ✅ |  |
+| 10 | int32 | byte `gender @0x5cd05f` | ❌ | width mismatch |
+| 11 | byte | byte `` | ⚠️ | atlas: trailing padding byte — client stops reading (harmless over-write) |
 

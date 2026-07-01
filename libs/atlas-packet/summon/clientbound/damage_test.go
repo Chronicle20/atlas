@@ -76,6 +76,26 @@ func TestSummonDamageBytesV79(t *testing.T) {
 	}
 }
 
+// TestSummonDamageBytesV72 pins the v72 wire byte-for-byte against the live
+// decompile (IDA, GMS_v72.1_U_DEVM.exe @port 13339). v72 is v79/v83-shaped (cid +
+// oid + body, no trailing dir byte). NOTE the damage/skill opcode SWAP: DAMAGE at
+// op 165, SKILL at 164 (mirrors v79 169/168).
+//   - the summon cluster dispatcher sub_848023@0x848023 else branch reads oid
+//     (Decode4@0x848062) then case 165 calls the damage leaf sub_6E9839@0x6e9839.
+//   - sub_6E9839 reads: Decode1@0x6e986a → attackIdx (atlas writes 12),
+//     Decode4@0x6e987f → damage; if (attackIdx > -2): Decode4@0x6e9891 →
+//     monsterIdFrom (→ CMobTemplate::GetMobTemplate), Decode1@0x6e989f → bLeft
+//     (atlas writes 0). Nothing after — no trailing dir byte.
+// packet-audit:verify packet=summon/clientbound/SummonDamage version=gms_v72 ida=0x6e9839
+func TestSummonDamageBytesV72(t *testing.T) {
+	in := NewSummonDamage(42, 1000001, 1234, 9300018)
+	ctx := test.CreateContext("GMS", 72, 1)
+	got := test.Encode(t, ctx, in.Encode, nil)
+	if !bytes.Equal(got, summonDamageV83Body) {
+		t.Fatalf("v72 bytes = % X, want % X (identical to v83)", got, summonDamageV83Body)
+	}
+}
+
 // TestSummonDamageBytesV83 pins the v83 wire byte-for-byte against the live
 // decompile. Dispatch chain (IDA, MapleStory_dump.exe @port 13341):
 //   - CUserPool::OnUserCommonPacket@0x972401 reads cid (Decode4@0x97240c), routes

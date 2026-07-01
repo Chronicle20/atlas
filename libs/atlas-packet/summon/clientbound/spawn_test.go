@@ -147,6 +147,32 @@ func TestSummonSpawnBytesV79(t *testing.T) {
 	}
 }
 
+// TestSummonSpawnBytesV72 pins that the GMS v72 spawn wire is byte-identical to
+// v79 (cid, oid, skillId, charLevel, Init blob; NO SLV byte, NO avatar byte).
+// Verified live (IDA, GMS_v72.1_U_DEVM.exe @port 13339). Dispatch chain:
+//   - CUserPool::OnUserCommonPacket reads cid; the summon cluster dispatcher
+//     sub_848023@0x848023 case 160 (SPAWN_SPECIAL_MAPOBJECT) vtable-calls the spawn
+//     leaf sub_8481AD@0x8481ad (Δ-4 vs v79 op 164).
+//   - sub_8481AD reads (cid consumed upstream): Decode4(oid)@0x8481cf,
+//     Decode4(skillId)@0x8481d9, Decode1(charLevel)@0x8481e8 — the ONLY byte before
+//     the Init blob (NO SLV; spawnHasSkillLevel(GMS,72)=false), then sub_6E5F3C@0x6e5f3c
+//     reads the Init blob: Decode2(x)@0x6e5f62, Decode2(y)@0x6e5f70,
+//     Decode1(stance)@0x6e5f90, Decode2(foothold)@0x6e5fb3, Decode1(movementType)@0x6e5fc0,
+//     Decode1(!puppet)@0x6e5fc6, and later Decode1(!animated)@0x6e630e. NO trailing
+//     avatar byte (spawnHasAvatarLook(GMS,72)=false).
+// packet-audit:verify packet=summon/clientbound/SummonSpawn version=gms_v72 ida=0x8481ad
+func TestSummonSpawnBytesV72(t *testing.T) {
+	in := NewSummonSpawn(42, 1000001, 3111002, 20, 100, -50, 0, 0, true, false)
+	ctx := test.CreateContext("GMS", 72, 1)
+	got := test.Encode(t, ctx, in.Encode, nil)
+	if !bytes.Equal(got, summonSpawnV79Body) {
+		t.Fatalf("v72 bytes = % X, want % X (identical to v79)", got, summonSpawnV79Body)
+	}
+	if len(got) != len(summonSpawnV83Body)-1 {
+		t.Fatalf("v72 len = %d, want v83 len - 1 (no SLV) = %d", len(got), len(summonSpawnV83Body)-1)
+	}
+}
+
 // TestSummonSpawnBytesV84 pins that v84 is byte-identical to v83 (no trailing avatar
 // byte). Verified live (IDA, GMS_v84.1_U_DEVM.exe @port 13337). Dispatch chain:
 //   - CUserPool::OnUserCommonPacket@0x9b23a1 reads cid (Decode4@0x9b23ac), routes

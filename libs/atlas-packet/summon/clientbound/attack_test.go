@@ -150,6 +150,33 @@ func TestSummonAttackBytesV79(t *testing.T) {
 	}
 }
 
+// TestSummonAttackBytesV72 pins the v72 attack wire byte-for-byte against the live
+// decompile (IDA, GMS_v72.1_U_DEVM.exe @port 13339). Identical to v79 (no leading
+// charLevel byte; t.MajorAtLeast(83)=false). Dispatch chain:
+//   - the summon cluster dispatcher sub_848023@0x848023 else branch reads oid
+//     (Decode4@0x848062) then for a2==163 (SUMMON_ATTACK) calls the OnAttack leaf
+//     sub_6E92A6@0x6e92a6.
+//   - sub_6E92A6 reads: Decode1@0x6e932c → action byte (v6=(b>>7)&1 bLeft,
+//     v73=b&0x7F direction) — NO leading charLevel byte; Decode1@0x6e9351 → count;
+//     per target: Decode4@0x6e937a monsterOid; if(oid){ Decode1@0x6e9388 byte(6);
+//     Decode4@0x6e939b damage } and NOTHING after the loop.
+// packet-audit:verify packet=summon/clientbound/SummonAttack version=gms_v72 ida=0x6e92a6
+func TestSummonAttackBytesV72(t *testing.T) {
+	targets := []SummonAttackTarget{
+		NewSummonAttackTarget(1000001, 1234),
+		NewSummonAttackTarget(1000002, 5678),
+	}
+	in := NewSummonAttack(42, 2000001, 3, targets)
+	ctx := test.CreateContext("GMS", 72, 1)
+	got := test.Encode(t, ctx, in.Encode, nil)
+	if !bytes.Equal(got, summonAttackV79Body) {
+		t.Fatalf("v72 bytes = % X, want % X", got, summonAttackV79Body)
+	}
+	if len(got) != len(summonAttackV83Body)-1 {
+		t.Fatalf("v72 len = %d, want v83 len - 1 (no charLevel) = %d", len(got), len(summonAttackV83Body)-1)
+	}
+}
+
 // TestSummonAttackBytesV83 pins the v83 wire byte-for-byte against the live
 // decompile. Dispatch chain (IDA, MapleStory_dump.exe @port 13341):
 //   - CUserPool::OnUserCommonPacket@0x972401 reads cid (Decode4@0x97240c), routes

@@ -5,7 +5,7 @@
 
 Tool: `fa2892b4e82339df60c9ef0c33a6e4a08bdc3bf3`
 
-- export gms_v72: `e57124ea91e096b37167636c226a6ab38e558ff41c5f3b22ceebf4650e56b035`
+- export gms_v72: `1887ef7ec91ae0961a6c0bd9d480d2a72705f48b877ae2218a8b3f6bbfc1e077`
 - export gms_v79: `370d6b720b633c12c71d40340f3952000705c4bddb98f87179e7193d112d210c`
 - export gms_v83: `711bddcc2e1bdd417a75954148d2b50c64e70855e84259c0b8e50e700e393c0d`
 - export gms_v84: `7eab9472e2afeda13faaf74273828d09d5f2481d67bec10235c3b2fd2f91e1eb`
@@ -225,13 +225,13 @@ Tool: `fa2892b4e82339df60c9ef0c33a6e4a08bdc3bf3`
 | PYRAMID_SCORE | CField_MassacreResult::OnMassacreResult | field/clientbound/FieldPyramidScore (T1) |  | ⬜ |  | ⬜ | 0x09E | ✅ | 0x0A1 | ✅ | 0x0A6 | ✅ | 0x0AE | ✅ | 0x09A | ✅ |
 | PET_COMMAND | CPet::OnActionCommand | pet/clientbound/PetCommandResponse (T1) | 0x09F | ❌ | 0x0A3 | ✅ | 0x0AE | ✅ | 0x0B2 | ✅ | 0x0BB | ✅ | 0x0CD | ✅ | 0x0B4 | ✅ |
 | QUICKSLOT_INIT | CQuickslotKeyMappedMan::OnInit |  |  | ⬜ |  | ⬜ | 0x09F | ❌ | 0x09F | ❌ | 0x0A7 | ❌ | 0x0AF | ❌ | 0x09B | ❌ |
-| SPAWN_SPECIAL_MAPOBJECT | CSummonedPool::OnCreated; CSummonedPool::OnPacket | summon/clientbound/SummonSpawn (T1) | 0x0A0 | ❌ | 0x0A4 | ✅ | 0x0AF | ✅ | 0x0B3 | ✅ | 0x0BC | ✅ | 0x116 | ✅ | 0x0B5 | ✅ |
-| REMOVE_SPECIAL_MAPOBJECT | CSummonedPool::OnPacket; CSummonedPool::OnRemoved | summon/clientbound/SummonRemove | 0x0A1 | ❌ | 0x0A5 | ✅ | 0x0B0 | ✅ | 0x0B4 | ✅ | 0x0BD | ✅ | 0x117 | ✅ | 0x0B6 | ✅ |
-| MOVE_SUMMON | CSummonedPool::OnMove; sub_6E9285 | summon/clientbound/SummonMove | 0x0A2 | ❌ | 0x0A6 | ✅ | 0x0B1 | ✅ | 0x0B5 | ✅ | 0x0BE | ✅ | 0x118 | ✅ | 0x0B7 | ✅ |
-| SUMMON_ATTACK | CSummonedPool::OnAttack; sub_6E92A6 | summon/clientbound/SummonAttack (T1) | 0x0A3 | ❌ | 0x0A7 | ✅ | 0x0B2 | ✅ | 0x0B6 | ✅ | 0x0BF | ✅ | 0x119 | ✅ | 0x0B8 | ✅ |
+| SPAWN_SPECIAL_MAPOBJECT | CSummonedPool::OnCreated; CSummonedPool::OnPacket | summon/clientbound/SummonSpawn (T1) | 0x0A0 | ✅ | 0x0A4 | ✅ | 0x0AF | ✅ | 0x0B3 | ✅ | 0x0BC | ✅ | 0x116 | ✅ | 0x0B5 | ✅ |
+| REMOVE_SPECIAL_MAPOBJECT | CSummonedPool::OnPacket; CSummonedPool::OnRemoved | summon/clientbound/SummonRemove | 0x0A1 | ✅ | 0x0A5 | ✅ | 0x0B0 | ✅ | 0x0B4 | ✅ | 0x0BD | ✅ | 0x117 | ✅ | 0x0B6 | ✅ |
+| MOVE_SUMMON | CSummonedPool::OnMove; sub_6E9285 | summon/clientbound/SummonMove | 0x0A2 | ✅ | 0x0A6 | ✅ | 0x0B1 | ✅ | 0x0B5 | ✅ | 0x0BE | ✅ | 0x118 | ✅ | 0x0B7 | ✅ |
+| SUMMON_ATTACK | CSummonedPool::OnAttack; sub_6E92A6 | summon/clientbound/SummonAttack (T1) | 0x0A3 | ✅ | 0x0A7 | ✅ | 0x0B2 | ✅ | 0x0B6 | ✅ | 0x0BF | ✅ | 0x119 | ✅ | 0x0B8 | ✅ |
 | IDA_0X0A4 | CField::OnStalkResult | field/clientbound/FieldStalkResult (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0A4 | ✅ |  | ⬜ |  | ⬜ |
-| SUMMON_SKILL | CSummonedPool::OnSkill; sub_6E97D5 | summon/clientbound/SummonSkill | 0x0A4 | ❌ | 0x0A8 | ✅ | 0x0B4 | ✅ | 0x0B7 | ✅ | 0x0C1 | ✅ | 0x11A | ✅ | 0x0BA | ✅ |
-| DAMAGE_SUMMON | CSummonedPool::OnHit; sub_6E9839 | summon/clientbound/SummonDamage | 0x0A5 | ❌ | 0x0A9 | ✅ | 0x0B3 | ✅ | 0x0B8 | ✅ | 0x0C0 | ✅ | 0x11B | ✅ | 0x0B9 | ✅ |
+| SUMMON_SKILL | CSummonedPool::OnSkill; sub_6E97D5 | summon/clientbound/SummonSkill | 0x0A4 | ✅ | 0x0A8 | ✅ | 0x0B4 | ✅ | 0x0B7 | ✅ | 0x0C1 | ✅ | 0x11A | ✅ | 0x0BA | ✅ |
+| DAMAGE_SUMMON | CSummonedPool::OnHit; sub_6E9839 | summon/clientbound/SummonDamage | 0x0A5 | ✅ | 0x0A9 | ✅ | 0x0B3 | ✅ | 0x0B8 | ✅ | 0x0C0 | ✅ | 0x11B | ✅ | 0x0B9 | ✅ |
 | IDA_0X0A6 | sub_9F1663 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0A6 | ❌ |
 | IDA_0X0A7 | sub_9F186A |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0A7 | ❌ |
 | MOVE_PLAYER | CUserRemote::OnMove | character/clientbound/CharacterMovement (T1) | 0x0A7 | ❌ | 0x0AB | ✅ | 0x0B9 | ✅ | 0x0BD | ✅ | 0x0C6 | ✅ | 0x0D2 | ✅ | 0x0BF | ✅ |
@@ -906,10 +906,6 @@ Tool: `fa2892b4e82339df60c9ef0c33a6e4a08bdc3bf3`
 | storage/serverbound/StorageOperationMeso (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
 | storage/serverbound/StorageOperationRetrieveAsset (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
 | storage/serverbound/StorageOperationStoreAsset (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
-| summon/clientbound/SummonAttack (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| summon/clientbound/SummonDamage |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| summon/clientbound/SummonMove |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| summon/clientbound/SummonSkill |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | summon/serverbound/SummonAttackHandle (T1) |  |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | summon/serverbound/SummonMoveHandle |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | ui/clientbound/Disable |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
@@ -919,13 +915,13 @@ Tool: `fa2892b4e82339df60c9ef0c33a6e4a08bdc3bf3`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v72 | 46 | 0 | 74 | 356 | 411 | 0 | 9.7% |
-| v79 | 228 | 0 | 72 | 185 | 402 | 0 | 47.0% |
-| v83 | 367 | 0 | 0 | 316 | 204 | 0 | 53.7% |
-| v84 | 345 | 0 | 0 | 317 | 225 | 0 | 52.1% |
-| v87 | 379 | 0 | 0 | 341 | 167 | 0 | 52.6% |
-| v95 | 399 | 0 | 0 | 405 | 83 | 0 | 49.6% |
-| JMS185 | 361 | 0 | 0 | 352 | 174 | 0 | 50.6% |
+| v72 | 52 | 0 | 74 | 346 | 411 | 0 | 11.0% |
+| v79 | 228 | 0 | 72 | 181 | 402 | 0 | 47.4% |
+| v83 | 367 | 0 | 0 | 312 | 204 | 0 | 54.1% |
+| v84 | 345 | 0 | 0 | 313 | 225 | 0 | 52.4% |
+| v87 | 379 | 0 | 0 | 337 | 167 | 0 | 52.9% |
+| v95 | 399 | 0 | 0 | 401 | 83 | 0 | 49.9% |
+| JMS185 | 361 | 0 | 0 | 348 | 174 | 0 | 50.9% |
 
 ## Conflicts
 

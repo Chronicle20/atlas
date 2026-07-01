@@ -1091,35 +1091,43 @@
 - op: MOVE_SUMMON
   direction: clientbound
   opcode: 162
-  fname: sub_6E9285
+  fname: CSummonedPool::OnMove
+  fname_alts:
+  - sub_6E9285
   provenance: ida-discovered
   ida:
     address: 7246469
-  note: 'v72 summon cluster sub_848023 case 162 -> sub_6E9285 = CSummonedPool::OnMove (MOVE_SUMMON). Δ-4 vs v79 (166).'
+  note: 'v72 summon cluster sub_848023 case 162 -> sub_6E9285 = CSummonedPool::OnMove (MOVE_SUMMON). Δ-4 vs v79 (166). Primary fname set to the semantic CSummonedPool::OnMove (report linkage); sub_6E9285 is the IDB name.'
 - op: SUMMON_ATTACK
   direction: clientbound
   opcode: 163
-  fname: sub_6E92A6
+  fname: CSummonedPool::OnAttack
+  fname_alts:
+  - sub_6E92A6
   provenance: ida-discovered
   ida:
     address: 7246502
-  note: 'v72 summon cluster case 163 -> sub_6E92A6 = CSummonedPool::OnAttack (SUMMON_ATTACK).'
+  note: 'v72 summon cluster case 163 -> sub_6E92A6 = CSummonedPool::OnAttack (SUMMON_ATTACK). Primary fname set to the semantic CSummonedPool::OnAttack (report linkage); sub_6E92A6 is the IDB name.'
 - op: SUMMON_SKILL
   direction: clientbound
   opcode: 164
-  fname: sub_6E97D5
+  fname: CSummonedPool::OnSkill
+  fname_alts:
+  - sub_6E97D5
   provenance: ida-discovered
   ida:
     address: 7247829
-  note: 'v72 summon cluster case 164 -> sub_6E97D5 = CSummonedPool::OnSkill (SUMMON_SKILL, single stance byte). SWAP: SKILL at lower opcode 164 / DAMAGE at 165 (mirrors v79 168/169).'
+  note: 'v72 summon cluster case 164 -> sub_6E97D5 = CSummonedPool::OnSkill (SUMMON_SKILL, single stance byte). SWAP: SKILL at lower opcode 164 / DAMAGE at 165 (mirrors v79 168/169). Primary fname set to semantic CSummonedPool::OnSkill (report linkage; naming swap: IDB OnSkill body is the byte body).'
 - op: DAMAGE_SUMMON
   direction: clientbound
   opcode: 165
-  fname: sub_6E9839
+  fname: CSummonedPool::OnHit
+  fname_alts:
+  - sub_6E9839
   provenance: ida-discovered
   ida:
     address: 7247929
-  note: 'v72 summon cluster case 165 -> sub_6E9839 = CSummonedPool::OnHit (DAMAGE_SUMMON): Decode1 attackIdx + Decode4 damage + (if>-2) Decode4 monsterId. Body-confirmed.'
+  note: 'v72 summon cluster case 165 -> sub_6E9839 = CSummonedPool::OnHit (DAMAGE_SUMMON): Decode1 attackIdx + Decode4 damage + (if>-2) Decode4 monsterId. Body-confirmed. Primary fname set to semantic CSummonedPool::OnHit (report linkage; naming swap: IDB OnHit body is the damage body).'
 - op: MOVE_PLAYER
   direction: clientbound
   opcode: 167

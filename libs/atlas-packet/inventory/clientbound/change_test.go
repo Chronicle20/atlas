@@ -1,12 +1,70 @@
 package clientbound
 
 import (
+	"bytes"
 	"testing"
 	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
+
+// TestAddEquipmentBytesV72 pins that the v72 InventoryAdd wire is byte-identical
+// to the verified v79 output. Neither the InventoryAdd codec nor the opaque
+// model.Asset equipment blob carries a version gate that differs between GMS v72
+// and v79: the Asset gates are (GMS>12) [both true], (GMS>28) [both true] and
+// (GMS>=84) [both false], so the two versions encode the same bytes. The v72
+// client handler is CWvsContext::OnInventoryOperation@0x917ad0 (dispatched from
+// CWvsContext::OnPacket case 26 @0x9025e4), the same read structure the v79 leaf
+// (@0x96953e) verifies. Opaque-family verification (OPAQUE_LEDGER exception): the
+// bytes inside the Asset blob are derived from the encoder and asserted here by
+// equality with the verified v79 encoding.
+// packet-audit:verify packet=inventory/clientbound/InventoryAdd version=gms_v72 ida=0x917ad0
+func TestAddEquipmentBytesV72(t *testing.T) {
+	asset := model.NewAsset(true, 0, 1302000, time.Time{}).
+		SetEquipmentStats(5, 3, 2, 1, 10, 5, 15, 8, 4, 3, 7, 6, 10, 5, 3).
+		SetEquipmentMeta(7, 0, 0, 0, 0, 0)
+	input := NewInventoryAdd(false, 1, -1, asset)
+	got72 := test.Encode(t, test.CreateContext("GMS", 72, 1), input.Encode, nil)
+	got79 := test.Encode(t, test.CreateContext("GMS", 79, 1), input.Encode, nil)
+	if !bytes.Equal(got72, got79) {
+		t.Fatalf("v72 = % X, want (v79) % X", got72, got79)
+	}
+}
+
+// The remaining INVENTORY_OPERATION dispatcher modes are byte-identical between
+// GMS v72 and v79 (no version gate on the codec; same handler
+// CWvsContext::OnInventoryOperation@0x917ad0). Each v72 cell is proven by
+// equality with the verified v79 encoding of the same input.
+// packet-audit:verify packet=inventory/clientbound/InventoryChangeMove version=gms_v72 ida=0x917ad0
+func TestChangeMoveBytesV72(t *testing.T) {
+	input := NewChangeMove(false, 2, 3, 7)
+	got72 := test.Encode(t, test.CreateContext("GMS", 72, 1), input.Encode, nil)
+	got79 := test.Encode(t, test.CreateContext("GMS", 79, 1), input.Encode, nil)
+	if !bytes.Equal(got72, got79) {
+		t.Fatalf("v72 = % X, want (v79) % X", got72, got79)
+	}
+}
+
+// packet-audit:verify packet=inventory/clientbound/InventoryQuantityUpdate version=gms_v72 ida=0x917ad0
+func TestQuantityUpdateBytesV72(t *testing.T) {
+	input := NewQuantityUpdate(true, 2, 5, 100)
+	got72 := test.Encode(t, test.CreateContext("GMS", 72, 1), input.Encode, nil)
+	got79 := test.Encode(t, test.CreateContext("GMS", 79, 1), input.Encode, nil)
+	if !bytes.Equal(got72, got79) {
+		t.Fatalf("v72 = % X, want (v79) % X", got72, got79)
+	}
+}
+
+// packet-audit:verify packet=inventory/clientbound/InventoryRemove version=gms_v72 ida=0x917ad0
+func TestRemoveBytesV72(t *testing.T) {
+	input := NewInventoryRemove(false, 2, 3)
+	got72 := test.Encode(t, test.CreateContext("GMS", 72, 1), input.Encode, nil)
+	got79 := test.Encode(t, test.CreateContext("GMS", 79, 1), input.Encode, nil)
+	if !bytes.Equal(got72, got79) {
+		t.Fatalf("v72 = % X, want (v79) % X", got72, got79)
+	}
+}
 
 // packet-audit:verify packet=inventory/clientbound/InventoryAdd version=gms_v83 ida=0xa1ead9
 // packet-audit:verify packet=inventory/clientbound/InventoryChangeMove version=gms_v83 ida=0xa1ead9

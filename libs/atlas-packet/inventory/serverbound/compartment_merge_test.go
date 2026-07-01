@@ -1,6 +1,7 @@
 package serverbound
 
 import (
+	"bytes"
 	"testing"
 
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
@@ -17,6 +18,20 @@ import (
 // matches Decode4(updateTime)+Decode1(compartmentType). Export entry resolved
 // from the unnamed twin's decompile.
 // packet-audit:verify packet=inventory/serverbound/InventoryCompartmentMergeRequest version=gms_v79 ida=0x954c6b
+//
+// v72 (ITEM_SORT op 68, sub_903945 @0x903945): COutPacket(68) + Encode4(updateTime)
+// @0x903988 + Encode1(a2=compartmentType, guarded a2 in [1,5])@0x903993 — identical
+// to v79 (updateTime + compartmentType). No version gate on the codec.
+// packet-audit:verify packet=inventory/serverbound/InventoryCompartmentMergeRequest version=gms_v72 ida=0x903945
+func TestCompartmentMergeRequestBytesV72(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 72, 1)
+	got := pt.Encode(t, ctx, CompartmentMergeRequest{updateTime: 100, compartmentType: 1}.Encode, nil)
+	want := []byte{0x64, 0x00, 0x00, 0x00, 0x01} // updateTime=100 (LE), compartmentType=1
+	if !bytes.Equal(got, want) {
+		t.Fatalf("v72 = % X, want % X", got, want)
+	}
+}
+
 func TestCompartmentMergeRequestRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

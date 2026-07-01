@@ -12797,59 +12797,29 @@
    ]
   },
   "CWvsContext::OnInventoryOperation#Add": {
-   "address": "",
+   "address": "0x917ad0",
    "direction": "clientbound",
-   "unresolved": true,
-   "calls": [
-    {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
-   ]
+   "calls": []
   },
   "CWvsContext::OnInventoryOperation#ChangeBatch": {
-   "address": "",
+   "address": "0x917ad0",
    "direction": "clientbound",
-   "unresolved": true,
-   "calls": [
-    {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
-   ]
+   "calls": []
   },
   "CWvsContext::OnInventoryOperation#ChangeMove": {
-   "address": "",
+   "address": "0x917ad0",
    "direction": "clientbound",
-   "unresolved": true,
-   "calls": [
-    {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
-   ]
+   "calls": []
   },
   "CWvsContext::OnInventoryOperation#QuantityUpdate": {
-   "address": "",
+   "address": "0x917ad0",
    "direction": "clientbound",
-   "unresolved": true,
-   "calls": [
-    {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
-   ]
+   "calls": []
   },
   "CWvsContext::OnInventoryOperation#Remove": {
-   "address": "",
+   "address": "0x917ad0",
    "direction": "clientbound",
-   "unresolved": true,
-   "calls": [
-    {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
-   ]
+   "calls": []
   },
   "CWvsContext::OnLimitedNPCDisableInfo": {
    "address": "",
@@ -14584,15 +14554,9 @@
    ]
   },
   "CWvsContext::SendGatherItemRequest": {
-   "address": "",
+   "address": "0x903945",
    "direction": "serverbound",
-   "unresolved": true,
-   "calls": [
-    {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
-   ]
+   "calls": []
   },
   "CWvsContext::SendGivePopularityRequest": {
    "address": "",
@@ -14659,15 +14623,9 @@
    ]
   },
   "CWvsContext::SendSortItemRequest": {
-   "address": "",
+   "address": "0x9039d7",
    "direction": "serverbound",
-   "unresolved": true,
-   "calls": [
-    {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
-   ]
+   "calls": []
   },
   "CWvsContext::SendStatChangeItemCancelRequest": {
    "address": "",
@@ -14755,15 +14713,9 @@
    ]
   },
   "CWvsContext::SendUpgradeItemUseRequest": {
-   "address": "",
+   "address": "0x903c75",
    "direction": "serverbound",
-   "unresolved": true,
-   "calls": [
-    {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
-   ]
+   "calls": []
   },
   "CharacterData::Decode": {
    "address": "0x4d1c60",

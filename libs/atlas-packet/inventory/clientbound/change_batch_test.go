@@ -1,6 +1,7 @@
 package clientbound
 
 import (
+	"bytes"
 	"testing"
 	"time"
 
@@ -9,6 +10,18 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 	testlog "github.com/sirupsen/logrus/hooks/test"
 )
+
+// TestChangeBatchBytesV72 pins that InventoryChangeBatch is byte-identical between
+// GMS v72 and v79 (no version gate; handler CWvsContext::OnInventoryOperation@0x917ad0).
+// packet-audit:verify packet=inventory/clientbound/InventoryChangeBatch version=gms_v72 ida=0x917ad0
+func TestChangeBatchBytesV72(t *testing.T) {
+	input := NewChangeBatch(true, inventory.NewMoveEntry(2, 3, 7))
+	got72 := test.Encode(t, test.CreateContext("GMS", 72, 1), input.Encode, nil)
+	got79 := test.Encode(t, test.CreateContext("GMS", 79, 1), input.Encode, nil)
+	if !bytes.Equal(got72, got79) {
+		t.Fatalf("v72 = % X, want (v79) % X", got72, got79)
+	}
+}
 
 // packet-audit:verify packet=inventory/clientbound/InventoryChangeBatch version=gms_v83 ida=0xa1ead9
 // packet-audit:verify packet=inventory/clientbound/InventoryChangeBatch version=gms_v95 ida=0xa08a70

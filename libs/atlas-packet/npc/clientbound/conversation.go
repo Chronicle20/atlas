@@ -114,9 +114,22 @@ type SayImageConversationDetail struct {
 	Images []string
 }
 
-func (s *SayImageConversationDetail) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+func (s *SayImageConversationDetail) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
+		// GMS v79 CScriptMan::OnSayImage@0x6c8052 reads a SINGLE DecodeStr (one
+		// image path) with NO count prefix; the count-prefixed multi-image list
+		// was introduced after v79 (v83 @0x961275, v95 @0x6dc310 read Decode1
+		// count + count x DecodeStr). For the legacy GMS range emit just the
+		// first image string (no count). delta §3.2
+		if t, err := tenant.FromContext(ctx)(); err == nil && t.IsRegion("GMS") && !t.MajorAtLeast(83) {
+			if len(s.Images) > 0 {
+				w.WriteAsciiString(s.Images[0])
+			} else {
+				w.WriteAsciiString("")
+			}
+			return w.Bytes()
+		}
 		w.WriteByte(byte(len(s.Images)))
 		for _, image := range s.Images {
 			w.WriteAsciiString(image)

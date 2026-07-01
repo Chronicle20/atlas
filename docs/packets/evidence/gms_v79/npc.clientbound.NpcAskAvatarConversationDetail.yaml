@@ -1,0 +1,10 @@
+packet: npc/clientbound/NpcAskAvatarConversationDetail
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CScriptMan::OnAskAvatar#AskAvatar
+    address: "0x6c8a31"
+    decompile_sha256: b3408bbeeef4a0b407fb7dba41f02a45ef47762141fab08442fb6250d8dadfa3
+verifies:
+  - libs/atlas-packet/npc/clientbound/conversation_v79_details_test.go#TestNpcConversationAskAvatarV79

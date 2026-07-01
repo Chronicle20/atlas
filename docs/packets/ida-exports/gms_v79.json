@@ -7188,13 +7188,21 @@
    ]
   },
   "CScriptMan::OnAskAvatar#AskAvatar": {
-   "address": "",
+   "address": "0x6c8a31",
    "direction": "clientbound",
-   "unresolved": true,
+   "notes": "v79 OnAskAvatar@0x6c8a31: DecodeStr message, Decode1 count, count x Decode4 style id (InsertBefore). Matches Atlas AskAvatarConversationDetail (AsciiString+Byte count+Int*count). task-113 stage E close.",
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "DecodeStr",
+     "comment": "message"
+    },
+    {
+     "op": "Decode1",
+     "comment": "count"
+    },
+    {
+     "op": "Decode4",
+     "comment": "styleId"
     }
    ]
   },
@@ -7221,13 +7229,25 @@
    ]
   },
   "CScriptMan::OnAskBoxText#AskBoxText": {
-   "address": "",
+   "address": "0x6c81b1",
    "direction": "clientbound",
-   "unresolved": true,
+   "notes": "v79 ask-box-text detail body DecodeStr(message)+DecodeStr(default)+Decode2(col)+Decode2(line) is read by the msgType-2 arm @0x6c81b1 (IDA symbol OnAskYesNo; 3-cycle rotation, body is ground truth). Matches Atlas AskBoxTextConversationDetail (AsciiString+AsciiString+Short+Short). task-113 stage E close.",
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "DecodeStr",
+     "comment": "message"
+    },
+    {
+     "op": "DecodeStr",
+     "comment": "default"
+    },
+    {
+     "op": "Decode2",
+     "comment": "col"
+    },
+    {
+     "op": "Decode2",
+     "comment": "line"
     }
    ]
   },
@@ -7345,13 +7365,25 @@
    ]
   },
   "CScriptMan::OnAskNumber#AskNumber": {
-   "address": "",
+   "address": "0x6c8525",
    "direction": "clientbound",
-   "unresolved": true,
+   "notes": "v79 ask-number detail body DecodeStr(message)+Decode4(default)+Decode4(min)+Decode4(max) is read by the msgType-3 arm @0x6c8525 (IDA symbol OnAskBoxText; 3-cycle rotation, body is ground truth). Matches Atlas AskNumberConversationDetail (AsciiString+Int+Int+Int). task-113 stage E close.",
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "DecodeStr",
+     "comment": "message"
+    },
+    {
+     "op": "Decode4",
+     "comment": "default"
+    },
+    {
+     "op": "Decode4",
+     "comment": "min"
+    },
+    {
+     "op": "Decode4",
+     "comment": "max"
     }
    ]
   },
@@ -7405,24 +7437,64 @@
    ]
   },
   "CScriptMan::OnAskPetAll#AskPetAll": {
-   "address": "",
+   "address": "0x6c8e82",
    "direction": "clientbound",
-   "unresolved": true,
+   "notes": "v79 OnAskPet@0x6c8e82 is the unified pet handler (dispatcher case 10): DecodeStr message, Decode1 count, Decode1 exceptionExists, count x (DecodeBuffer(8) cash sn + Decode1). Matches Atlas AskPetAllConversationDetail (AsciiString+Byte count+Bool exceptionExists+(Long+Byte)*count). task-113 stage E close.",
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "DecodeStr",
+     "comment": "message"
+    },
+    {
+     "op": "Decode1",
+     "comment": "count"
+    },
+    {
+     "op": "Decode1",
+     "comment": "exceptionExists"
+    },
+    {
+     "op": "DecodeBuffer",
+     "comment": "cashSn(8)"
+    },
+    {
+     "op": "Decode1",
+     "comment": "pad"
     }
    ]
   },
   "CScriptMan::OnAskQuiz#AskQuiz": {
-   "address": "",
+   "address": "0x970baa",
    "direction": "clientbound",
-   "unresolved": true,
+   "notes": "v79 quiz reader sub_970BAA@0x970baa (dispatcher case 5 -> sub_6C9148 -> sub_970BAA): Decode1 fail; if !fail DecodeStr title, DecodeStr problem, DecodeStr hint, Decode4 min, Decode4 max, Decode4(*1000) timeRemaining. Matches Atlas AskQuizConversationDetail (Bool+[AsciiString*3+Int*3]). task-113 stage E close.",
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": "fail"
+    },
+    {
+     "op": "DecodeStr",
+     "comment": "title"
+    },
+    {
+     "op": "DecodeStr",
+     "comment": "problem"
+    },
+    {
+     "op": "DecodeStr",
+     "comment": "hint"
+    },
+    {
+     "op": "Decode4",
+     "comment": "min"
+    },
+    {
+     "op": "Decode4",
+     "comment": "max"
+    },
+    {
+     "op": "Decode4",
+     "comment": "timeRemaining"
     }
    ]
   },
@@ -7438,13 +7510,33 @@
    ]
   },
   "CScriptMan::OnAskSpeedQuiz#AskSpeedQuiz": {
-   "address": "",
+   "address": "0x970d07",
    "direction": "clientbound",
-   "unresolved": true,
+   "notes": "v79 speed-quiz reader sub_970D07@0x970d07 (dispatcher case 6 -> sub_6C915A): Decode1 fail; if !fail Decode4 type, Decode4 answer, Decode4 correct, Decode4 remain, Decode4(*1000) timeRemaining. Matches Atlas AskSpeedQuizConversationDetail (Bool+[Int*5]). task-113 stage E close.",
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": "fail"
+    },
+    {
+     "op": "Decode4",
+     "comment": "type"
+    },
+    {
+     "op": "Decode4",
+     "comment": "answer"
+    },
+    {
+     "op": "Decode4",
+     "comment": "correct"
+    },
+    {
+     "op": "Decode4",
+     "comment": "remain"
+    },
+    {
+     "op": "Decode4",
+     "comment": "timeRemaining"
     }
    ]
   },
@@ -7476,13 +7568,25 @@
    ]
   },
   "CScriptMan::OnAskText#AskText": {
-   "address": "",
+   "address": "0x6c836c",
    "direction": "clientbound",
-   "unresolved": true,
+   "notes": "v79 OnAskText@0x6c836c: DecodeStr message, DecodeStr default, Decode2 min, Decode2 max. Matches Atlas AskTextConversationDetail (AsciiString+AsciiString+Short+Short). task-113 stage E close.",
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "DecodeStr",
+     "comment": "message"
+    },
+    {
+     "op": "DecodeStr",
+     "comment": "default"
+    },
+    {
+     "op": "Decode2",
+     "comment": "min"
+    },
+    {
+     "op": "Decode2",
+     "comment": "max"
     }
    ]
   },
@@ -7525,13 +7629,13 @@
    ]
   },
   "CScriptMan::OnAskYesNo#AskYesNo": {
-   "address": "",
+   "address": "0x6c86d3",
    "direction": "clientbound",
-   "unresolved": true,
+   "notes": "v79 ask-yes/no detail body is DecodeStr(message) only. The handler reading it is the msgType-4 arm @0x6c86d3 (IDA symbol OnAskNumber; the v79 {YesNo,BoxText,Number} handler symbols are a clean 3-cycle rotation, body is ground truth). Matches Atlas AskYesNoConversationDetail (AsciiString). task-113 stage E close.",
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "DecodeStr",
+     "comment": "message"
     }
    ]
   },
@@ -7574,13 +7678,21 @@
    ]
   },
   "CScriptMan::OnSay#Say": {
-   "address": "",
+   "address": "0x6c7ed1",
    "direction": "clientbound",
-   "unresolved": true,
+   "notes": "v79 OnSay@0x6c7ed1 detail body: [Decode4 secondaryNpcTemplateId if param&4], DecodeStr message, Decode1 previous, Decode1 next. Matches Atlas SayConversationDetail (AsciiString+Bool(prev)+Bool(next)). task-113 stage E close.",
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "DecodeStr",
+     "comment": "message"
+    },
+    {
+     "op": "Decode1",
+     "comment": "previous"
+    },
+    {
+     "op": "Decode1",
+     "comment": "next"
     }
    ]
   },
@@ -7595,107 +7707,36 @@
    ]
   },
   "CScriptMan::OnSayImage#SayImage": {
-   "address": "",
+   "address": "0x6c8052",
    "direction": "clientbound",
-   "unresolved": true,
+   "notes": "v79 OnSayImage@0x6c8052 reads a single DecodeStr (one image path) with NO count prefix; the count-prefixed multi-image list was introduced after v79 (v83 @0x961275, v95 @0x6dc310 read Decode1 count + count x DecodeStr). Atlas SayImageConversationDetail gates GMS<83 to a single image string (no count). task-113 stage E close.",
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "DecodeStr",
+     "comment": "image"
     }
    ]
   },
   "CScriptMan::OnScriptMessage": {
    "address": "0x6c7d3e",
    "direction": "clientbound",
+   "notes": "v79 NPC conversation frame dispatcher @0x6c7d3e: Decode1 speakerTypeId, Decode4 speakerTemplateId, Decode1 msgType, Decode1 param. If (param&4) the secondaryNpcTemplateId Decode4 is read at the head of each per-msgType handler (e.g. OnSay@0x6c7ef3). Matches Atlas NpcConversation.Encode (Byte+Int+Byte+Byte+[Int if param&4]+detail). task-113 stage E close.",
    "calls": [
     {
      "op": "Decode1",
-     "comment": ""
+     "comment": "speakerTypeId"
     },
     {
      "op": "Decode4",
-     "comment": ""
+     "comment": "speakerTemplateId"
     },
     {
      "op": "Decode1",
-     "comment": ""
+     "comment": "msgType"
     },
     {
      "op": "Decode1",
-     "comment": ""
-    },
-    {
-     "op": "Delegate",
-     "comment": "",
-     "guard": "v9 == 0",
-     "ref": "CScriptMan::OnSay"
-    },
-    {
-     "op": "Delegate",
-     "comment": "",
-     "guard": "v9 == 12",
-     "ref": "CScriptMan::OnSayImage"
-    },
-    {
-     "op": "Delegate",
-     "comment": "",
-     "guard": "v9 == 2",
-     "ref": "CScriptMan::OnAskYesNo"
-    },
-    {
-     "op": "Delegate",
-     "comment": "",
-     "guard": "v9 == 3",
-     "ref": "CScriptMan::OnAskBoxText"
-    },
-    {
-     "op": "Delegate",
-     "comment": "",
-     "guard": "v9 == 4",
-     "ref": "CScriptMan::OnAskNumber"
-    },
-    {
-     "op": "Delegate",
-     "comment": "",
-     "guard": "v9 == 5",
-     "ref": "sub_6C9148"
-    },
-    {
-     "op": "Delegate",
-     "comment": "",
-     "guard": "v9 == 6",
-     "ref": "sub_6C915A"
-    },
-    {
-     "op": "Delegate",
-     "comment": "",
-     "guard": "v9 == 7",
-     "ref": "CScriptMan::OnAskMenu"
-    },
-    {
-     "op": "Delegate",
-     "comment": "",
-     "guard": "v9 == 8",
-     "ref": "CScriptMan::OnAskAvatar"
-    },
-    {
-     "op": "Delegate",
-     "comment": "",
-     "guard": "v9 == 9",
-     "ref": "CScriptMan::OnAskMembershopAvatar"
-    },
-    {
-     "op": "Delegate",
-     "comment": "",
-     "guard": "v9 == 10",
-     "ref": "CScriptMan::OnAskPet"
-    },
-    {
-     "op": "Delegate",
-     "comment": "",
-     "guard": "v9 == 13",
-     "ref": "CScriptMan::OnAskText"
+     "comment": "param"
     }
    ]
   },

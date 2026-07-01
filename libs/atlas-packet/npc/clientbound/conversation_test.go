@@ -142,9 +142,16 @@ func TestSayImageConversationDetailEncode(t *testing.T) {
 			d := &SayImageConversationDetail{Images: []string{"img/a", "img/b"}}
 			got := d.Encode(l, ctx)(nil)
 
-			want := []byte{byte(2)}
-			want = append(want, asciiBytes("img/a")...)
-			want = append(want, asciiBytes("img/b")...)
+			var want []byte
+			// GMS <83 (v79 etc.): CScriptMan::OnSayImage @0x6c8052 reads a single
+			// DecodeStr (one image, no count). v83+/JMS read Decode1 count + list.
+			if v.Region == "GMS" && v.MajorVersion < 83 {
+				want = asciiBytes("img/a")
+			} else {
+				want = []byte{byte(2)}
+				want = append(want, asciiBytes("img/a")...)
+				want = append(want, asciiBytes("img/b")...)
+			}
 			if !bytesEqual(got, want) {
 				t.Errorf("SayImage encode mismatch\n got=%v\nwant=%v", got, want)
 			}

@@ -237,6 +237,71 @@ func TestAttackBytesV79(t *testing.T) {
 	}
 }
 
+// attackV72MeleeBody pins the GMS v72 CLOSE_RANGE_ATTACK (168) wire byte-for-byte
+// against the live client reader CUserRemote::OnAttack@0x889828 (GMS_v72.1_U_DEVM.exe,
+// port 13339). The four attack ops (CLOSE_RANGE 168 / RANGED 169 / MAGIC 170 /
+// ENERGY 171) all funnel through this one reader (CUserPool::OnUserRemotePacket
+// @0x87c046 cases 168-171), so this fixture covers the shared
+// character/clientbound/Attack struct for all four cells.
+//
+// Read order (each byte traced to a Decode call in OnAttack; only divergence from
+// v79 is the 1-byte action field):
+//
+//	Decode1 @0x889844  packed = (nMob<<4)|nDamagePerMob   -> 0x23  (damage 2, hits 3)
+//	Decode1 @0x889859  skillLevel byte (gates skillId)    -> 0x00  (no skill; no Decode4)
+//	  --- NO character-level byte on v72 (v83+ inserts Decode1 here) ---
+//	Decode1 @0x8898ba  option (client keeps &0x20)         -> 0x10
+//	Decode1 @0x889928  action byte = (bLeft<<7)|(nAction&0x7F) -> 0x85 (left, action 5)
+//	                    *** v72 DIVERGENCE: 1 byte (v79 @0x8d67a4 uses Decode2) ***
+//	Decode1 @0x88994d  nActionSpeed                        -> 0x04
+//	Decode1 @0x88995a  nMastery                            -> 0x0F
+//	Decode4 @0x889962  nBulletItemID                       -> 2070000
+//	per target (loop nMob=2, @0x889993):
+//	  Decode4 monsterOid; if !=0: Decode1 hitAction; loop nDamagePerMob(3) Decode4 damages
+//	a2==169? (RANGED only) -> no bulletX/Y for melee
+//	keydown skill? skillId 0 -> none
+// packet-audit:verify packet=character/clientbound/Attack version=gms_v72 ida=0x889828
+var attackV72MeleeBody = []byte{
+	0x39, 0x30, 0x00, 0x00, // characterId 12345
+	0x23,                   // packed (nMob 2 << 4) | hits 3
+	0x00,                   // skillLevel byte = 0 (no skill) -- NO level byte on v72
+	0x10,                   // option
+	0x85,                   // action byte = (1<<7)|0x05  -- 1 BYTE on v72
+	0x04,                   // actionSpeed
+	0x0F,                   // mastery
+	0xF0, 0x95, 0x1F, 0x00, // bulletItemId 2070000 (=0x1F95F0)
+	0x29, 0x23, 0x00, 0x00, // target0 monsterId 9001
+	0x07,                   // target0 hitAction
+	0xE8, 0x03, 0x00, 0x00, // 1000
+	0xD0, 0x07, 0x00, 0x00, // 2000
+	0xB8, 0x0B, 0x00, 0x00, // 3000
+	0x2A, 0x23, 0x00, 0x00, // target1 monsterId 9002
+	0x08,                   // target1 hitAction
+	0xA0, 0x0F, 0x00, 0x00, // 4000
+	0x88, 0x13, 0x00, 0x00, // 5000
+	0x70, 0x17, 0x00, 0x00, // 6000
+}
+
+func TestAttackBytesV72(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 72, 1)
+
+	ai := model.NewAttackInfo(model.AttackTypeMelee)
+	ai.SetDamage(2).SetHits(3).SetOption(0x10).SetLeft(true).SetAttackAction(0x05).SetActionSpeed(4)
+	di := model.NewDamageInfo(3)
+	di.SetMonsterId(9001).SetHitAction(0x07).SetDamages([]uint32{1000, 2000, 3000})
+	ai.AddDamageInfo(*di)
+	di2 := model.NewDamageInfo(3)
+	di2.SetMonsterId(9002).SetHitAction(0x08).SetDamages([]uint32{4000, 5000, 6000})
+	ai.AddDamageInfo(*di2)
+
+	// level=50 is supplied but MUST NOT appear on the v72 wire (gated >=83).
+	in := NewAttackMelee(12345, 50, 0, 15, 2070000, false, false, *ai)
+	got := pt.Encode(t, ctx, in.Encode, nil)
+	if !bytes.Equal(got, attackV72MeleeBody) {
+		t.Fatalf("v72 bytes = % X, want % X", got, attackV72MeleeBody)
+	}
+}
+
 func assertAttack(t *testing.T, ctx context.Context, input Attack, output Attack) {
 	t.Helper()
 	if output.CharacterId() != input.CharacterId() {

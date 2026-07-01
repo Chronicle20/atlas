@@ -1,0 +1,10 @@
+packet: character/clientbound/Attack
+direction: clientbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CUserRemote::OnAttack
+    address: "0x889828"
+    decompile_sha256: 37f7f9f3b305faf88b63471866ee43d66d5f88e275f1a7a32ba8cc4942cb03fe
+verifies:
+  - libs/atlas-packet/character/clientbound/attack_test.go#TestAttackBytesV72

@@ -235,13 +235,13 @@ Tool: `dde4cb7f9c62159772672195dd4a20bb7d2f1343`
 | IDA_0X0A6 | sub_9F1663 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0A6 | ❌ |
 | IDA_0X0A7 | sub_9F186A |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0A7 | ❌ |
 | MOVE_PLAYER | CUserRemote::OnMove | character/clientbound/CharacterMovement (T1) | 0x0A7 | ❌ | 0x0AB | ✅ | 0x0B9 | ✅ | 0x0BD | ✅ | 0x0C6 | ✅ | 0x0D2 | ✅ | 0x0BF | ✅ |
-| CLOSE_RANGE_ATTACK | CUserRemote::OnAttack | character/clientbound/Attack (T1) | 0x0A8 | ❌ | 0x0AC | ✅ | 0x0BA | ✅ | 0x0BE | ✅ | 0x0C7 | ✅ | 0x0D3 | ✅ | 0x0C0 | ✅ |
+| CLOSE_RANGE_ATTACK | CUserRemote::OnAttack | character/clientbound/Attack (T1) | 0x0A8 | ✅ | 0x0AC | ✅ | 0x0BA | ✅ | 0x0BE | ✅ | 0x0C7 | ✅ | 0x0D3 | ✅ | 0x0C0 | ✅ |
 | IDA_0X0A8 | sub_5604F9; sub_9F199E |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0A8 | ❌ |  | ⬜ | 0x0A8 | ❌ |
 | IDA_0X0A9 | CUser::OnHitByUser; sub_5605FF |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0A9 | ❌ |  | ⬜ | 0x0A9 | ❌ |
-| RANGED_ATTACK | CUserRemote::OnAttack | character/clientbound/Attack (T1) | 0x0A9 | ❌ | 0x0AD | ✅ | 0x0BB | ✅ | 0x0BF | ✅ | 0x0C8 | ✅ | 0x0D4 | ✅ | 0x0C1 | ✅ |
+| RANGED_ATTACK | CUserRemote::OnAttack | character/clientbound/Attack (T1) | 0x0A9 | ✅ | 0x0AD | ✅ | 0x0BB | ✅ | 0x0BF | ✅ | 0x0C8 | ✅ | 0x0D4 | ✅ | 0x0C1 | ✅ |
 | FOOTHOLD_INFO | CField::OnFootHoldInfo | field/clientbound/FieldFootholdInfo (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0AA | ✅ | 0x0B0 | ✅ | 0x09C | ✅ |
-| MAGIC_ATTACK | CUserRemote::OnAttack | character/clientbound/Attack (T1) | 0x0AA | ❌ | 0x0AE | ✅ | 0x0BC | ✅ | 0x0C0 | ✅ | 0x0C9 | ✅ | 0x0D5 | ✅ | 0x0C2 | ✅ |
-| ENERGY_ATTACK | CUserRemote::OnAttack | character/clientbound/Attack (T1) | 0x0AB | ❌ | 0x0AF | ✅ | 0x0BD | ✅ | 0x0C1 | ✅ | 0x0CA | ✅ | 0x0D6 | ✅ | 0x0C3 | ✅ |
+| MAGIC_ATTACK | CUserRemote::OnAttack | character/clientbound/Attack (T1) | 0x0AA | ✅ | 0x0AE | ✅ | 0x0BC | ✅ | 0x0C0 | ✅ | 0x0C9 | ✅ | 0x0D5 | ✅ | 0x0C2 | ✅ |
+| ENERGY_ATTACK | CUserRemote::OnAttack | character/clientbound/Attack (T1) | 0x0AB | ✅ | 0x0AF | ✅ | 0x0BD | ✅ | 0x0C1 | ✅ | 0x0CA | ✅ | 0x0D6 | ✅ | 0x0C3 | ✅ |
 | IDA_0X0AB | CUser::OnFollowCharacter |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0AB | ❌ |
 | IDA_0X0AC | CField::OnStalkResult | field/clientbound/FieldStalkResult (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0AC | ✅ |  | ⬜ |
 | SKILL_EFFECT | CUserRemote::OnSkillPrepare | character/clientbound/CharacterSkillPrepareForeign (T1) | 0x0AC | ❌ | 0x0B0 | ✅ | 0x0BE | ✅ | 0x0C2 | ✅ | 0x0CB | ✅ | 0x0D7 | ✅ | 0x0C4 | ✅ |
@@ -914,7 +914,7 @@ Tool: `dde4cb7f9c62159772672195dd4a20bb7d2f1343`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v72 | 175 | 0 | 73 | 223 | 411 | 0 | 37.2% |
+| v72 | 179 | 0 | 73 | 219 | 411 | 0 | 38.0% |
 | v79 | 228 | 0 | 72 | 180 | 402 | 0 | 47.5% |
 | v83 | 367 | 0 | 0 | 311 | 204 | 0 | 54.1% |
 | v84 | 345 | 0 | 0 | 312 | 225 | 0 | 52.5% |

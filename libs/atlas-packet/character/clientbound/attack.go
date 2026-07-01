@@ -122,7 +122,17 @@ func (m Attack) Encode(l logrus.FieldLogger, ctx context.Context) func(options m
 		if ai.Left() {
 			left = 1
 		}
-		w.WriteInt16(int16((left << 15) | ai.AttackAction()))
+		// Attack-action / direction field. On the legacy pre-79 GMS client this is a
+		// SINGLE byte: bit7 = bLeft, bits0-6 = nAction (client reads Decode1 then
+		// >>7 &1 / &0x7F). IDA-verified: v72 CUserRemote::OnAttack @0x889928 and v61
+		// @0x7c94fc both read one byte. It widens to a 2-byte short (bit15 = bLeft,
+		// bits0-14 = nAction, Decode2) on GMS v79+ (v79 @0x8d67a4) and JMS. Gate keeps
+		// v79/v83/84/87/95/jms unchanged and emits the lean 1-byte form for legacy GMS.
+		if t.Region() == "GMS" && t.MajorVersion() < 79 {
+			w.WriteByte(byte((left << 7) | (ai.AttackAction() & 0x7F)))
+		} else {
+			w.WriteInt16(int16((left << 15) | ai.AttackAction()))
+		}
 		if ai.AttackAction() <= 0x110 {
 			w.WriteByte(ai.ActionSpeed())
 			w.WriteByte(m.mastery)
@@ -181,9 +191,19 @@ func (m *Attack) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *reque
 		}
 
 		option := r.ReadByte()
-		mask := r.ReadUint16()
-		left := (mask >> 15) & 1
-		attackAction := int(mask & 0x7FFF)
+		// See Encode: legacy pre-79 GMS packs bLeft/nAction into one byte (bit7/&0x7F);
+		// GMS v79+ and JMS use a 2-byte short (bit15/&0x7FFF).
+		var left uint16
+		var attackAction int
+		if t.Region() == "GMS" && t.MajorVersion() < 79 {
+			b := r.ReadByte()
+			left = uint16((b >> 7) & 1)
+			attackAction = int(b & 0x7F)
+		} else {
+			mask := r.ReadUint16()
+			left = (mask >> 15) & 1
+			attackAction = int(mask & 0x7FFF)
+		}
 
 		var at model.AttackType
 		switch m.attackType {

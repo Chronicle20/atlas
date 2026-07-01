@@ -9,6 +9,9 @@ import (
 // CField::SendSetGuildNoticeMsg: COutPacket(GUILD_OPERATION)+Encode1(0x10=SET_NOTICE)+EncodeStr(notice).
 // Body = EncodeStr(notice). IDA-verified: v83@0x530fa9, v84@0x53d228, v87@0x5587c9.
 // packet-audit:verify packet=guild/serverbound/GuildSetNotice version=gms_v79 ida=0x51c59c
+// v72 CField::SendSetGuildNoticeMsg @0x5154fd: COutPacket(124)+Encode1(0x10=SET_NOTICE)
+// +EncodeStr(notice). Body = EncodeStr(notice), == v79.
+// packet-audit:verify packet=guild/serverbound/GuildSetNotice version=gms_v72 ida=0x5154fd
 // packet-audit:verify packet=guild/serverbound/GuildSetNotice version=gms_v95 ida=0x535180
 // packet-audit:verify packet=guild/serverbound/GuildSetNotice version=jms_v185 ida=0x56e3a2
 // packet-audit:verify packet=guild/serverbound/GuildSetNotice version=gms_v87 ida=0x5587c9

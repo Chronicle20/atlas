@@ -2737,13 +2737,57 @@
    ]
   },
   "CField::SendSetGradeNameMsg": {
-   "address": "",
+   "address": "0x515372",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": ""
+    },
+    {
+     "op": "Delegate",
+     "comment": "",
+     "ref": "sub_4160CB"
+    },
+    {
+     "op": "DecodeStr",
+     "comment": ""
+    },
+    {
+     "op": "Delegate",
+     "comment": "",
+     "ref": "sub_4160CB"
+    },
+    {
+     "op": "DecodeStr",
+     "comment": ""
+    },
+    {
+     "op": "Delegate",
+     "comment": "",
+     "ref": "sub_4160CB"
+    },
+    {
+     "op": "DecodeStr",
+     "comment": ""
+    },
+    {
+     "op": "Delegate",
+     "comment": "",
+     "ref": "sub_4160CB"
+    },
+    {
+     "op": "DecodeStr",
+     "comment": ""
+    },
+    {
+     "op": "Delegate",
+     "comment": "",
+     "ref": "sub_4160CB"
+    },
+    {
+     "op": "DecodeStr",
+     "comment": ""
     }
    ]
   },
@@ -2774,24 +2818,39 @@
    ]
   },
   "CField::SendSetGuildNoticeMsg": {
-   "address": "",
+   "address": "0x5154fd",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": ""
+    },
+    {
+     "op": "Delegate",
+     "comment": "",
+     "ref": "sub_4160CB"
+    },
+    {
+     "op": "DecodeStr",
+     "comment": ""
     }
    ]
   },
   "CField::SendSetMemberGradeMsg": {
-   "address": "",
+   "address": "0x51530e",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": ""
+    },
+    {
+     "op": "Decode4",
+     "comment": ""
+    },
+    {
+     "op": "Decode1",
+     "comment": ""
     }
    ]
   },
@@ -2860,13 +2919,23 @@
    ]
   },
   "CField::SendWithdrawGuildMsg": {
-   "address": "",
+   "address": "0x514e34",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": "",
+     "guard": "CUtilDlg::YesNo((char)v7, v8, v9, v10, v11) == 6"
+    },
+    {
+     "op": "Decode4",
+     "comment": "",
+     "guard": "CUtilDlg::YesNo((char)v7, v8, v9, v10, v11) == 6"
+    },
+    {
+     "op": "DecodeStr",
+     "comment": "",
+     "guard": "CUtilDlg::YesNo((char)v7, v8, v9, v10, v11) == 6"
     }
    ]
   },
@@ -4924,7 +4993,7 @@
     },
     {
      "op": "Encode4",
-     "comment": "accountId @0x5b55c3 (*(g_pWvsContext+8232)) \u2014 LEGACY-ONLY int, absent in v83+"
+     "comment": "accountId @0x5b55c3 (*(g_pWvsContext+8232)) — LEGACY-ONLY int, absent in v83+"
     },
     {
      "op": "EncodeStr",

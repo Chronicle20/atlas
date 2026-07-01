@@ -524,7 +524,14 @@ func (m StatusMessageIncreaseExperience) Encode(l logrus.FieldLogger, ctx contex
 		w.WriteInt32(m.partyBonusExp)
 		w.WriteInt32(m.itemBonusEXP)
 		w.WriteInt32(m.premiumIPExp)
-		w.WriteInt32(m.rainbowWeekEventEXP)
+		// Legacy GMS (< v83) OnMessage IncEXP arm sub_96BD0D (GMS_v79_1_DEVM.exe
+		// @13340, @0x96bd0d) reads only 6 Decode4 exp ints and has NO trailing
+		// rainbowWeekEventEXP int, unlike v83 CWvsContext::OnIncEXPMessage @0xa21ac5
+		// which reads a 7th Decode4 (v34, formatted with SP_5436_RAINBOW_WEEK_BONUS_EXP).
+		// Leave v83/84/87/95/JMS unchanged.
+		if !(t.Region() == "GMS" && t.MajorVersion() < 83) {
+			w.WriteInt32(m.rainbowWeekEventEXP)
+		}
 		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
 			w.WriteInt32(m.partyEXPRingEXP)
 			w.WriteInt32(m.cakePieEventBonus)
@@ -557,7 +564,11 @@ func (m *StatusMessageIncreaseExperience) Decode(_ logrus.FieldLogger, ctx conte
 		m.partyBonusExp = r.ReadInt32()
 		m.itemBonusEXP = r.ReadInt32()
 		m.premiumIPExp = r.ReadInt32()
-		m.rainbowWeekEventEXP = r.ReadInt32()
+		// Legacy GMS (< v83) has no trailing rainbowWeekEventEXP int (v79
+		// sub_96BD0D @0x96bd0d reads 6 exp ints vs v83 @0xa21ac5's 7).
+		if !(t.Region() == "GMS" && t.MajorVersion() < 83) {
+			m.rainbowWeekEventEXP = r.ReadInt32()
+		}
 		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
 			m.partyEXPRingEXP = r.ReadInt32()
 			m.cakePieEventBonus = r.ReadInt32()

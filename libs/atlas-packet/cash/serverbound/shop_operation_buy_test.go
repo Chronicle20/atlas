@@ -55,9 +55,22 @@ func TestShopOperationBuyRoundTrip(t *testing.T) {
 // (the byte+eventSN tail is present from v87, not v95). Gate GMS && MajorVersion>=87.
 // packet-audit:verify packet=cash/serverbound/CashShopOperationBuy version=gms_v83 ida=0x46dadd
 // packet-audit:verify packet=cash/serverbound/CashShopOperationBuy version=gms_v87 ida=0x477bd9
+//
+// v79 CCashShop::OnBuy@0x467f58: COutPacket(221) Encode1(3)=mode (routed op),
+// then Encode1(v38==2)=isPoints, Encode4(v38)=currency, Encode4(a2)=serialNumber,
+// Encode4(v34)=trailing zero/bundle int. Body after the mode byte is exactly the
+// v83 shape (bool + int + int + 4-byte tail); no v87 oneADay/eventSN. v79<87 gate
+// takes the else branch, identical to v83.
+// packet-audit:verify packet=cash/serverbound/CashShopOperationBuy version=gms_v79 ida=0x467f58
 func TestShopOperationBuyBytes(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	input := ShopOperationBuy{isPoints: true, currency: 1, serialNumber: 2, zero: 3, oneADay: 1, eventSN: 4}
+
+	// v79: 01 | 01000000 | 02000000 | 03000000  (4-byte zero tail, == v83)
+	got79 := hex.EncodeToString(input.Encode(l, pt.CreateContext("GMS", 79, 1))(nil))
+	if got79 != "01"+"01000000"+"02000000"+"03000000" {
+		t.Errorf("v79 bytes: got %s", got79)
+	}
 
 	// v83: 01 | 01000000 | 02000000 | 03000000  (4-byte zero tail)
 	got83 := hex.EncodeToString(input.Encode(l, pt.CreateContext("GMS", 83, 1))(nil))

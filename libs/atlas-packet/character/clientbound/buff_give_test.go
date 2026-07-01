@@ -11,6 +11,8 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
+// packet-audit:verify packet=character/clientbound/BuffGive version=gms_v72 ida=0x918b24
+// packet-audit:verify packet=character/clientbound/BuffGiveForeign version=gms_v72 ida=0x88cb10
 // packet-audit:verify packet=character/clientbound/BuffGive version=gms_v79 ida=0x96a6d1
 // packet-audit:verify packet=character/clientbound/BuffGiveForeign version=gms_v79 ida=0x8d9a03
 // packet-audit:verify packet=character/clientbound/BuffGive version=gms_v87 ida=0xab77ff
@@ -207,5 +209,44 @@ func TestBuffGiveForeignV79Mask(t *testing.T) {
 	wantTail := []byte{0x00, 0x00, 0x00}
 	if !bytes.Equal(got[len(got)-3:], wantTail) {
 		t.Errorf("v79 BuffGiveForeign trailer: got %x want %x", got[len(got)-3:], wantTail)
+	}
+}
+
+// TestBuffGiveV72Mask pins the legacy GMS v72 empty-CTS wire. v72 < 87 so the CTS
+// model's only version gates (87 / 95) do not fire: the SecondaryStat flag word is
+// byte-identical to v79 (same v79EmptyMask). IDA-verified: CWvsContext::
+// OnTemporaryStatSet @0x918b24 (GMS_v72.1_U_DEVM.exe, port 13339) reads the mask via
+// SecondaryStat::DecodeForLocal @0x918b79 into a UINT128 (0x80 bits), then Decode2
+// tDelay @0x918b95, then a trailing Decode1 only when IsMovementAffectingStat (none
+// here) — the same opaque structure as v79 (§5 caveat).
+func TestBuffGiveV72Mask(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 72, 1)
+	got := NewBuffGive(*model.NewCharacterTemporaryStat()).Encode(nil, ctx)(nil)
+	if !bytes.Equal(got[:16], v79EmptyMask) {
+		t.Errorf("v72 BuffGive flag word: got %x want %x", got[:16], v79EmptyMask)
+	}
+	wantTail := []byte{0x00, 0x00, 0x00}
+	if !bytes.Equal(got[len(got)-3:], wantTail) {
+		t.Errorf("v72 BuffGive trailer: got %x want %x", got[len(got)-3:], wantTail)
+	}
+}
+
+// TestBuffGiveForeignV72Mask pins the legacy GMS v72 remote wire. Int(characterId)
+// prefix, then the SecondaryStat flag word via SecondaryStat::DecodeForRemote (client
+// CUserRemote::OnSetTemporaryStat @0x88cb10, UINT128 0x80 bits), then the Short(0)+
+// Byte(0) trailer. v72 < 87 so the mask is byte-identical to v79.
+func TestBuffGiveForeignV72Mask(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 72, 1)
+	got := NewBuffGiveForeign(12345, *model.NewCharacterTemporaryStat()).Encode(nil, ctx)(nil)
+	wantPrefix := []byte{0x39, 0x30, 0x00, 0x00} // Int(12345) LE
+	if !bytes.Equal(got[:4], wantPrefix) {
+		t.Errorf("v72 BuffGiveForeign characterId: got %x want %x", got[:4], wantPrefix)
+	}
+	if !bytes.Equal(got[4:20], v79EmptyMask) {
+		t.Errorf("v72 BuffGiveForeign flag word: got %x want %x", got[4:20], v79EmptyMask)
+	}
+	wantTail := []byte{0x00, 0x00, 0x00}
+	if !bytes.Equal(got[len(got)-3:], wantTail) {
+		t.Errorf("v72 BuffGiveForeign trailer: got %x want %x", got[len(got)-3:], wantTail)
 	}
 }

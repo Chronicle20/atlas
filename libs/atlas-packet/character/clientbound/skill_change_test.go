@@ -7,6 +7,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=character/clientbound/CharacterSkillChange version=gms_v72 ida=0x9174dd
 // packet-audit:verify packet=character/clientbound/CharacterSkillChange version=gms_v79 ida=0x968f0e
 // packet-audit:verify packet=character/clientbound/CharacterSkillChange version=gms_v83 ida=0xa1e48c
 // packet-audit:verify packet=character/clientbound/CharacterSkillChange version=gms_v87 ida=0xab57c5
@@ -37,6 +38,35 @@ func TestCharacterSkillChange(t *testing.T) {
 // encoder gates the int64 off for GMS <83, so the total body is 16 bytes (not 24).
 // Verified against CWvsContext::OnChangeSkillRecordResult @0x968f0e (marker pinned
 // on TestCharacterSkillChange above).
+// TestCharacterSkillChangeV72ByteFixture pins the legacy GMS v72 wire. IDA-verified
+// CWvsContext::OnChangeSkillRecordResult @0x9174dd (GMS_v72.1_U_DEVM.exe, port 13339)
+// reads: Decode1 exclRequestSent @0x9174eb, Decode2 count @0x917526, then per skill
+// Decode4 skillId @0x917544 + Decode4 level @0x91754e + Decode4 masterLevel @0x91757f
+// (3 ints, NO DecodeBuffer), then a trailing Decode1 sn @0x9175cb after the loop —
+// byte-identical to v79 (the 8-byte expiration was added at v83). 16-byte body.
+func TestCharacterSkillChangeV72ByteFixture(t *testing.T) {
+	ctx := test.CreateContext("GMS", 72, 1)
+	input := NewCharacterSkillChange(true, 1001003, 10, 0, time.Time{}, false)
+	expected := []byte{
+		0x01,       // exclRequestSent           @0x9174eb
+		0x01, 0x00, // count=1                    @0x917526
+		0x2B, 0x46, 0x0F, 0x00, // skillId=1001003 LE   @0x917544
+		0x0A, 0x00, 0x00, 0x00, // level=10 LE          @0x91754e
+		0x00, 0x00, 0x00, 0x00, // masterLevel=0 LE     @0x91757f
+		0x00, // sn=false (no expiration on v72) @0x9175cb
+	}
+	got := test.Encode(t, ctx, input.Encode, nil)
+	if len(got) != len(expected) {
+		t.Fatalf("byte length mismatch: got %d want %d\n  got:  %X\n  want: %X", len(got), len(expected), got, expected)
+	}
+	for i := range expected {
+		if got[i] != expected[i] {
+			t.Errorf("byte[%d] = %02X, want %02X\n  got:  %X\n  want: %X", i, got[i], expected[i], got, expected)
+			break
+		}
+	}
+}
+
 func TestCharacterSkillChangeV79ByteFixture(t *testing.T) {
 	ctx := test.CreateContext("GMS", 79, 1)
 	input := NewCharacterSkillChange(true, 1001003, 10, 0, time.Time{}, false)

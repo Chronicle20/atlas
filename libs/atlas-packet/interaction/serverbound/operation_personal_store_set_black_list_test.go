@@ -8,6 +8,7 @@ import (
 	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
+// packet-audit:verify packet=interaction/serverbound/InteractionOperationPersonalStoreSetBlackList version=gms_v79 ida=0x68a951
 // packet-audit:verify packet=interaction/serverbound/InteractionOperationPersonalStoreSetBlackList version=gms_v87 ida=0x74146f
 // packet-audit:verify packet=interaction/serverbound/InteractionOperationPersonalStoreSetBlackList version=jms_v185 ida=0x763021
 // packet-audit:verify packet=interaction/serverbound/InteractionOperationPersonalStoreSetBlackList version=gms_v84 ida=0x71a1f8

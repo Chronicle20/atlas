@@ -6681,13 +6681,16 @@
    ]
   },
   "CPersonalShopDlg::DeliverBlackList": {
-   "address": "",
+   "address": "0x68a951",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode2",
+     "comment": ""
+    },
+    {
+     "op": "DecodeStr",
+     "comment": ""
     }
    ]
   },
@@ -6712,13 +6715,16 @@
    ]
   },
   "CPersonalShopDlg::OnClickBanButton": {
-   "address": "",
+   "address": "0x68ab52",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": ""
+    },
+    {
+     "op": "DecodeStr",
+     "comment": ""
     }
    ]
   },
@@ -6734,24 +6740,54 @@
    ]
   },
   "CPersonalShopDlg::PutItem": {
-   "address": "",
+   "address": "0x68a3e3",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": ""
+    },
+    {
+     "op": "Decode2",
+     "comment": ""
+    },
+    {
+     "op": "Decode2",
+     "comment": ""
+    },
+    {
+     "op": "Decode2",
+     "comment": ""
+    },
+    {
+     "op": "Decode4",
+     "comment": ""
     }
    ]
   },
   "CPersonalShopDlg::PutItem#Merchant": {
-   "address": "",
+   "address": "0x68a3e3",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": ""
+    },
+    {
+     "op": "Decode2",
+     "comment": ""
+    },
+    {
+     "op": "Decode2",
+     "comment": ""
+    },
+    {
+     "op": "Decode2",
+     "comment": ""
+    },
+    {
+     "op": "Decode4",
+     "comment": ""
     }
    ]
   },

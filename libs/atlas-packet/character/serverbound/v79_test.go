@@ -100,3 +100,24 @@ func TestDeleteCharacterByteOutputV79(t *testing.T) {
 		t.Errorf("v79 DeleteCharacter wire: got %x want %x", got, want)
 	}
 }
+
+// ChairFixed v79 byte-fixture — CANCEL_CHAIR serverbound, op 40.
+//
+// Client send — CUserLocal::HandleXKeyDown @0x8a6e56 (the sit-on/get-up-from
+// map-seat request): COutPacket(40) @0x8a6f4b then Encode2(v3) @0x8a6f58, where
+// v3 is the resolved seat index (or 0xFFFF to get up, matching
+// CWvsContext::SendGetUpFromChairRequest @0x95b4eb: COutPacket(40) +
+// Encode2(0xFFFF)). Single int16, body only (opcode framing is out of scope).
+// Matches ChairFixed.Encode ([int16 chairId]) exactly.
+//
+// packet-audit:verify packet=character/serverbound/ChairFixed version=gms_v79 ida=0x8a6e56
+func TestChairFixedByteOutputV79(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 79, 1)
+	got := ChairFixed{chairId: 42}.Encode(nil, ctx)(nil)
+	want := []byte{
+		0x2a, 0x00, // chairId 42 (Encode2 @0x8a6f58) /*0x8a6f58*/
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("v79 ChairFixed wire: got %x want %x", got, want)
+	}
+}

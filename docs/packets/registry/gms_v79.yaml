@@ -1190,9 +1190,9 @@
 - op: FACIAL_EXPRESSION
   direction: clientbound
   opcode: 179
-  fname: CAvatar::SetEmotion
+  fname: CUser::OnEmotion
   fname_alts:
-    - CUser::OnEmotion
+    - CAvatar::SetEmotion
   provenance: ida-discovered
   ida:
     address: 9211210
@@ -2369,11 +2369,13 @@
 - op: CANCEL_CHAIR
   direction: serverbound
   opcode: 40
-  fname: CWvsContext::SendGetUpFromChairRequest
+  fname: CUserLocal::HandleXKeyDown
+  fname_alts:
+    - CWvsContext::SendGetUpFromChairRequest
   provenance: ida-discovered
   ida:
-    address: 9811179
-  note: 'COutPacket(40)+Enc2(0xFFFF) get-up-from-chair; v83 CANCEL_CHAIR=0x2A=42 (d-2).'
+    address: 9072214
+  note: 'CUserLocal::HandleXKeyDown @0x8a6e56 COutPacket(40)+Encode2(seatId); get-up path CWvsContext::SendGetUpFromChairRequest @0x95b4eb COutPacket(40)+Encode2(0xFFFF). v83 CANCEL_CHAIR=0x2A=42 (d-2). Primary fname aligned to report/v83 convention (task-113 stage E).'
 - op: CLOSE_RANGE_ATTACK
   direction: serverbound
   opcode: 42

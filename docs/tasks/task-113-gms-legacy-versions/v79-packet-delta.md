@@ -83,19 +83,39 @@ login opcode layout **diverges structurally** — this is not a uniform shift.
 | 10 | `sub_5CE248` = OnWorldInformation | `OnWorldInformation` (WORLD_INFORMATION) | same op |
 | 11 | `sub_5CE522` = char-list decode | `OnSelectWorldResult` (CHARLIST) | same op |
 | 12 | `OnSelectCharacterResult` | `OnSelectCharacterResult` (SERVER_IP) | same |
-| 13 | `OnCreateNewCharacterResult` | `OnCheckDuplicatedIDResult` | **PERMUTED** |
-| 14 | `OnDeleteCharacterResult` | `OnCreateNewCharacterResult` | **PERMUTED** |
-| 15 | `OnCheckDuplicatedIDResult` | `OnDeleteCharacterResult` | **PERMUTED** |
+| 13 | `OnCreateNewCharacterResult` (symbol) — body = CHAR_NAME_RESPONSE | `OnCheckDuplicatedIDResult` (CHAR_NAME_RESPONSE) | **same by body** (see CORRECTION below) |
+| 14 | `OnDeleteCharacterResult` (symbol) — body = ADD_NEW_CHAR_ENTRY | `OnCreateNewCharacterResult` (ADD_NEW_CHAR_ENTRY) | **same by body** |
+| 15 | `OnCheckDuplicatedIDResult` (symbol) — body = DELETE_CHAR_RESPONSE | `OnDeleteCharacterResult` (DELETE_CHAR_RESPONSE) | **same by body** |
 | 22 | `OnSelectWorldResult` @0x5cf9ea (relog-to-title) | `sub_5FB83D` (RELOG_RESPONSE) | distinct |
 | 23 / 26 / 27 / 28 | **— (no case)** | `OnEnableSPWResult` / `OnLatestConnectedWorld` / `OnRecommendWorldMessage` / `OnCheckSPWResult` | **v79 ABSENT** |
 
 **Connect-critical deltas:**
 
 1. **ACCOUNT_INFO (op 2) is absent in v79.** No `OnAccountInfoResult` case.
-2. **Char-management ops 13/14/15 are PERMUTED** (the load-bearing one):
-   - `CHAR_NAME_RESPONSE` (OnCheckDuplicatedIDResult): **v79 = 15**, v83 = 13
-   - `ADD_NEW_CHAR_ENTRY` (OnCreateNewCharacterResult): **v79 = 13**, v83 = 14
-   - `DELETE_CHAR_RESPONSE` (OnDeleteCharacterResult): **v79 = 14**, v83 = 15
+2. ~~**Char-management ops 13/14/15 are PERMUTED** (the load-bearing one):~~
+   - ~~`CHAR_NAME_RESPONSE` (OnCheckDuplicatedIDResult): **v79 = 15**, v83 = 13~~
+   - ~~`ADD_NEW_CHAR_ENTRY` (OnCreateNewCharacterResult): **v79 = 13**, v83 = 14~~
+   - ~~`DELETE_CHAR_RESPONSE` (OnDeleteCharacterResult): **v79 = 14**, v83 = 15~~
+
+   > ### ⚠️ CORRECTION (task-113 Stage E) — the "PERMUTED" finding was FALSE
+   >
+   > The permutation above was derived by trusting the v79 IDB **symbol names**
+   > on the `CLogin::OnPacket` switch cases. Those symbol names are **rotated one
+   > step off their actual handler bodies** in the v79 IDB. Decompiling the three
+   > handler BODIES (the wire truth) shows v79 char-management is **IDENTICAL to
+   > v83** — no permutation:
+   >
+   > | v79 op | case-symbol (IDB) | body read-order (decompiled) | packet = |
+   > |---|---|---|---|
+   > | **13** | `OnCreateNewCharacterResult` @`0x5ce875` | `DecodeStr + Decode1` | **CHAR_NAME_RESPONSE** (name-check) |
+   > | **14** | `OnDeleteCharacterResult` @`0x5ceb55` | `Decode1 + GW_CharacterStat::Decode + AvatarLook::Decode` | **ADD_NEW_CHAR_ENTRY** |
+   > | **15** | `OnCheckDuplicatedIDResult` @`0x5ce90a` | `Decode4 + Decode1` + slot-removal | **DELETE_CHAR_RESPONSE** |
+   >
+   > So by handler-body behavior: **CHAR_NAME_RESPONSE=13, ADD_NEW_CHAR_ENTRY=14,
+   > DELETE_CHAR_RESPONSE=15 — the same as v83.** The registry (`gms_v79.yaml`)
+   > and `template_gms_79_1.json` were corrected to these opcodes; the earlier
+   > Add=13/Delete=14/Name=15 mapping would have crashed the client (ADD's
+   > stat+avatar payload sent to op 13, whose handler reads a leading string).
 3. **Absent vs v83:** `LOGIN_AUTH` (23), `LAST_CONNECTED_WORLD` (26),
    `RECOMMENDED_WORLD_MESSAGE` (27), `CHECK_SPW_RESULT` (28) — none dispatched.
 4. CLogin's default forwards **118–120 → CStage::OnPacket** only (v83 forwards

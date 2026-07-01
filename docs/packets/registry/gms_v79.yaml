@@ -95,28 +95,28 @@
     address: 6083113
 - op: ADD_NEW_CHAR_ENTRY
   direction: clientbound
-  opcode: 13
+  opcode: 14
   fname: CLogin::OnCreateNewCharacterResult
-  provenance: ida-discovered
+  provenance: manual
   ida:
-    address: 6083113
-  note: 'PERMUTED vs v83 (v83 op 14). v79 char-management ops 13/14/15 are renumbered (delta doc f).'
+    address: 6089557
+  note: 'CORRECTED (task-113 stage E, rotated-symbol fix): the v79 IDB SYMBOL names for the CLogin char-mgmt handlers are rotated one step off their actual bodies; the function at 0x5ceb55 (6089557) is LABELLED CLogin::OnDeleteCharacterResult in the v79 IDB but its BODY is the ADD_NEW_CHAR_ENTRY read order (Decode1 + GW_CharacterStat::Decode + AvatarLook::Decode). fname carries the body-canonical (v83) name so the shared candidatesFromFName symbol->packet map joins correctly; the rotated IDB symbol at this address is OnDeleteCharacterResult. By handler-body behavior v79==v83, so ADD=14. The prior ida-discovered mapping (op 13) trusted the rotated symbol and was WRONG.'
 - op: DELETE_CHAR_RESPONSE
   direction: clientbound
-  opcode: 14
+  opcode: 15
   fname: CLogin::OnDeleteCharacterResult
-  provenance: ida-discovered
+  provenance: manual
   ida:
-    address: 6083113
-  note: 'PERMUTED vs v83 (v83 op 15).'
+    address: 6088970
+  note: 'CORRECTED (task-113 stage E, rotated-symbol fix): the function at 0x5ce90a (6088970) is LABELLED CLogin::OnCheckDuplicatedIDResult in the v79 IDB but its BODY is the DELETE_CHAR_RESPONSE read order (Decode4 + Decode1 + slot-removal). fname carries the body-canonical (v83) name OnDeleteCharacterResult; the rotated IDB symbol at this address is OnCheckDuplicatedIDResult. By handler-body behavior v79==v83, so DELETE=15. Prior ida-discovered op 14 trusted the rotated symbol and was WRONG.'
 - op: CHAR_NAME_RESPONSE
   direction: clientbound
-  opcode: 15
+  opcode: 13
   fname: CLogin::OnCheckDuplicatedIDResult
-  provenance: ida-discovered
+  provenance: manual
   ida:
-    address: 6083113
-  note: 'PERMUTED vs v83 (v83 op 13).'
+    address: 6088821
+  note: 'CORRECTED (task-113 stage E, rotated-symbol fix): the function at 0x5ce875 (6088821) is LABELLED CLogin::OnCreateNewCharacterResult in the v79 IDB but its BODY is the CHAR_NAME_RESPONSE read order (DecodeStr + Decode1). fname carries the body-canonical (v83) name OnCheckDuplicatedIDResult; the rotated IDB symbol at this address is OnCreateNewCharacterResult. By handler-body behavior v79==v83, so NAME=13. Prior ida-discovered op 15 trusted the rotated symbol and was WRONG.'
 - op: CHANGE_CHANNEL
   direction: clientbound
   opcode: 16

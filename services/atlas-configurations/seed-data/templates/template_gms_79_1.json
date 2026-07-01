@@ -862,7 +862,7 @@
         }
       },
       {
-        "opCode": "0x0F",
+        "opCode": "0x0D",
         "writer": "CharacterNameResponse",
         "options": {
           "codes": {
@@ -874,7 +874,7 @@
         }
       },
       {
-        "opCode": "0x0D",
+        "opCode": "0x0E",
         "writer": "AddCharacterEntry",
         "options": {
           "codes": {
@@ -887,7 +887,7 @@
         }
       },
       {
-        "opCode": "0x0E",
+        "opCode": "0x0F",
         "writer": "DeleteCharacterResponse",
         "options": {
           "codes": {

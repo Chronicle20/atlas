@@ -1,0 +1,10 @@
+packet: interaction/serverbound/InteractionOperationTransaction
+direction: serverbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CCashTradingRoomDlg::Trade
+    address: "0x47e5f5"
+    decompile_sha256: 42c20d1cd7a30c94e6c0f33ea0a52d2ef9fa0e78a34de2ed7b0687e0dae064a3
+verifies:
+  - libs/atlas-packet/interaction/serverbound/operation_transaction_test.go#TestOperationTransactionBytes

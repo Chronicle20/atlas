@@ -1052,15 +1052,9 @@
    ]
   },
   "CCashTradingRoomDlg::Trade": {
-   "address": "",
+   "address": "0x47e5f5",
    "direction": "serverbound",
-   "unresolved": true,
-   "calls": [
-    {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
-   ]
+   "calls": []
   },
   "CClientSocket::OnAliveReq": {
    "address": "0x48e2c9",
@@ -6660,24 +6654,30 @@
    ]
   },
   "CPersonalShopDlg::BuyItem": {
-   "address": "",
+   "address": "0x689ce7",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": ""
+    },
+    {
+     "op": "Decode2",
+     "comment": ""
     }
    ]
   },
   "CPersonalShopDlg::BuyItem#Merchant": {
-   "address": "",
+   "address": "0x689ce7",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": ""
+    },
+    {
+     "op": "Decode2",
+     "comment": ""
     }
    ]
   },
@@ -8558,15 +8558,9 @@
    ]
   },
   "CTradingRoomDlg::Trade": {
-   "address": "",
+   "address": "0x73709a",
    "direction": "serverbound",
-   "unresolved": true,
-   "calls": [
-    {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
-   ]
+   "calls": []
   },
   "CTrunkDlg::OnPacket": {
    "address": "0x73bc53",

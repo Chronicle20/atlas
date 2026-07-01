@@ -8365,16 +8365,84 @@
    ]
   },
   "CSummoned::TryDoingAttackManual": {
-   "address": "",
-   "direction": "serverbound",
-   "unresolved": true,
-   "calls": [
-    {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
-   ]
-  },
+    "address": "0x71b522",
+    "direction": "serverbound",
+    "notes": "v79 CSummoned::TryDoingAttackManual@0x71b522 (renamed from sub_71B522) send block COutPacket(172)@0x71bfe1: legacy-lean SUMMON_ATTACK. Encode4 summonId@0x71bff6, Encode4 updateTime@0x71c004, Encode1 action|left@0x71c019, Encode1 count@0x71c025, per-target{Encode4 mobOID@0x71c051 (sub_4DC1C0(mob+380), NO templateId), Encode1 hitAction@0x71c05f, Encode1 foreAction|left@0x71c07a, Encode1 frameIdx@0x71c088, Encode1 calcDmgStatIdx@0x71c098, Encode2 curX/curY/hitX/hitY@0x71c0ae..0x71c0f2, Encode2 tDelay@0x71c101, Encode4 damage@0x71c10c}, Encode2 summonX@0x71c130, Encode2 summonY@0x71c144, Encode4 skillCRC@0x71c15d. No anti-hack envelope, no leading position block (v83 has 4 pos shorts + per-target templateId). task-113 stage E close.",
+    "calls": [
+     {
+      "op": "Encode4",
+      "comment": "summonId"
+     },
+     {
+      "op": "Encode4",
+      "comment": "updateTime"
+     },
+     {
+      "op": "Encode1",
+      "comment": "action|left"
+     },
+     {
+      "op": "Encode1",
+      "comment": "count"
+     },
+     {
+      "op": "Encode4",
+      "comment": "per-target mobOID"
+     },
+     {
+      "op": "Encode1",
+      "comment": "hitAction"
+     },
+     {
+      "op": "Encode1",
+      "comment": "foreAction|left"
+     },
+     {
+      "op": "Encode1",
+      "comment": "frameIdx"
+     },
+     {
+      "op": "Encode1",
+      "comment": "calcDamageStatIndex"
+     },
+     {
+      "op": "Encode2",
+      "comment": "curX"
+     },
+     {
+      "op": "Encode2",
+      "comment": "curY"
+     },
+     {
+      "op": "Encode2",
+      "comment": "hitX"
+     },
+     {
+      "op": "Encode2",
+      "comment": "hitY"
+     },
+     {
+      "op": "Encode2",
+      "comment": "tDelay"
+     },
+     {
+      "op": "Encode4",
+      "comment": "damage"
+     },
+     {
+      "op": "Encode2",
+      "comment": "summonX"
+     },
+     {
+      "op": "Encode2",
+      "comment": "summonY"
+     },
+     {
+      "op": "Encode4",
+      "comment": "skillCRC"
+     }
+    ]
+   },
   "CSummonedPool::OnAttack": {
    "address": "0x71cfe9",
    "direction": "clientbound",

@@ -30,6 +30,94 @@ func le32(v uint32) []byte {
 	return []byte{byte(v), byte(v >> 8), byte(v >> 16), byte(v >> 24)}
 }
 
+// mobBlockV79 builds one 22-byte per-target block as the v79 client SEND emits
+// it: mobOid(4) — NO templateId — hitAction(1) foreAction|left(1) frameIdx(1)
+// calcDamageStatIndex(1) curX(2) curY(2) hitX(2) hitY(2) tDelay(2) damage(4).
+func mobBlockV79(mobOid uint32, tDelay int16, damage uint32) []byte {
+	b := make([]byte, 0, 22)
+	b = append(b, le32(mobOid)...)
+	b = append(b, 0x01, 0x02, 0x03, 0x04) // hitAction, foreAction|left, frameIdx, calcDamageStatIndex
+	b = append(b, le16(11)...)            // curX
+	b = append(b, le16(22)...)            // curY
+	b = append(b, le16(33)...)            // hitX
+	b = append(b, le16(44)...)            // hitY
+	b = append(b, le16(uint16(tDelay))...) // tDelay
+	b = append(b, le32(damage)...)         // damage
+	return b
+}
+
+// TestSummonAttackByteV79 pins the gms_v79 SUMMON_ATTACK (op 0xAC) serverbound
+// send. IDA: CSummoned::TryDoingAttackManual @0x71b522, send block
+// COutPacket(172)@0x71bfe1 (GMS_v79_1_DEVM.exe, port 13340). The v79 layout is
+// the legacy-lean frame: summonId + updateTime + action|left + count, then the
+// per-target loop (mob OID only — NO templateId), then summonX + summonY, then
+// skillCRC. There is NO anti-hack envelope and NO leading position block.
+//
+//	Encode4 summonId               @0x71bff6 (v130[42])
+//	Encode4 updateTime             @0x71c004
+//	Encode1 action|left            @0x71c019 ((left<<7)|attackType&0x7F)
+//	Encode1 count                  @0x71c025
+//	per-target:
+//	  Encode4 mobOID               @0x71c051 (sub_4DC1C0(mob+380))
+//	  Encode1 hitAction            @0x71c05f
+//	  Encode1 foreAction|left      @0x71c07a
+//	  Encode1 frameIdx             @0x71c088
+//	  Encode1 calcDamageStatIndex  @0x71c098
+//	  Encode2 curX,curY,hitX,hitY  @0x71c0ae..0x71c0f2
+//	  Encode2 tDelay               @0x71c101
+//	  Encode4 damage               @0x71c10c
+//	Encode2 summonX                @0x71c130
+//	Encode2 summonY                @0x71c144
+//	Encode4 skillCRC               @0x71c15d
+//
+// This is a DECODE fixture (like the v83/v87 siblings): the encoder zero-fills
+// the positions/crc/updateTime, so decoding a hand-built real-shaped body and
+// asserting a clean cursor + correct mob oids/damage/delay proves the field
+// alignment.
+//
+// packet-audit:verify packet=summon/serverbound/SummonAttackHandle version=gms_v79 ida=0x71b522
+func TestSummonAttackByteV79(t *testing.T) {
+	body := []byte{}
+	body = append(body, le32(1000005)...) // summonId
+	body = append(body, le32(123456)...)   // updateTime
+	body = append(body, 0x83)              // action|left (left bit + action 3)
+	body = append(body, 0x02)              // count = 2
+	body = append(body, mobBlockV79(2000001, 100, 1234)...)
+	body = append(body, mobBlockV79(2000002, -50, 5678)...)
+	body = append(body, le16(510)...)    // summonX (after targets)
+	body = append(body, le16(590)...)    // summonY
+	body = append(body, le32(0xABCD)...) // skillCRC
+
+	ctx := test.CreateContext("GMS", 79, 1)
+	l, _ := testlog.NewNullLogger()
+	req := request.Request(body)
+	reader := request.NewRequestReader(&req, 0)
+	var m Attack
+	m.Decode(l, ctx)(&reader, nil)
+
+	if m.SummonId() != 1000005 {
+		t.Errorf("summonId = %d, want 1000005", m.SummonId())
+	}
+	if m.Direction() != 0x83 {
+		t.Errorf("direction = %#x, want 0x83", m.Direction())
+	}
+	if len(m.Targets()) != 2 {
+		t.Fatalf("targets len = %d, want 2", len(m.Targets()))
+	}
+	// v79 sends no templateId, so TemplateId() stays 0.
+	t0 := m.Targets()[0]
+	if t0.MonsterOid() != 2000001 || t0.TemplateId() != 0 || t0.Damage() != 1234 || t0.Delay() != 100 {
+		t.Errorf("target[0] = %+v, want oid=2000001 tmpl=0 dmg=1234 delay=100", t0)
+	}
+	t1 := m.Targets()[1]
+	if t1.MonsterOid() != 2000002 || t1.TemplateId() != 0 || t1.Damage() != 5678 || t1.Delay() != -50 {
+		t.Errorf("target[1] = %+v, want oid=2000002 tmpl=0 dmg=5678 delay=-50", t1)
+	}
+	if reader.Available() > 0 {
+		t.Errorf("reader has %d unconsumed bytes after decode", reader.Available())
+	}
+}
+
 // TestSummonAttackDecodeV83 decodes a real-shaped 2-target LEAN v83 attack send
 // (no anti-hack envelope) and asserts the cursor ends clean with the right
 // target mob oids + damages. Confirmed against CSummoned::TryDoingAttackManual

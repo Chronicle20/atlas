@@ -2733,11 +2733,13 @@
 - op: SUMMON_ATTACK
   direction: serverbound
   opcode: 172
-  fname: sub_71B522
+  fname: CSummoned::TryDoingAttackManual
+  fname_alts:
+    - sub_71B522
   provenance: ida-discovered
   ida:
     address: 7451938
-  note: 'v79 sub_71B522 COutPacket(172); push 0ACh;a2 @0x71bfd9. v83 SUMMON_ATTACK=0xb0=176 (d-4). delta doc serverbound (ida-read).'
+  note: 'v79 CSummoned::TryDoingAttackManual@0x71b522 (renamed from sub_71B522) send block COutPacket(172)@0x71bfe1; legacy-lean layout: no anti-hack envelope, no leading position block, per-target mobOID only (NO templateId), summonX/summonY footer after targets. push 0ACh;a2 @0x71bfd9. v83 SUMMON_ATTACK=0xb0=176 (d-4). delta doc serverbound (ida-read).'
 - op: DAMAGE_SUMMON
   direction: serverbound
   opcode: 173

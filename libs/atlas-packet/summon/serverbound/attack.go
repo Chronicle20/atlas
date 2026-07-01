@@ -136,6 +136,30 @@ func hasRepeatSkillPoint(t tenant.Model) bool {
 	return t.IsRegion("GMS") && t.MajorAtLeast(95)
 }
 
+// isLegacyLeanAttack reports whether the version uses the pre-v83 (v79-era)
+// summon ATTACK layout. IDA v79 CSummoned::TryDoingAttackManual@0x71b522 (send
+// block COutPacket(172)@0x71bfe1) writes a leaner frame than v83:
+//   - header: summonId + updateTime + action|left + count, then STRAIGHT into
+//     the per-target loop — NO userX/userY/summonX/summonY position block before
+//     the targets (v83 emits four Encode2 positions @0x7a5839..; v79 does not);
+//   - per-target: only the mob OID leads (Encode4 sub_4DC1C0(mob+380)@0x71c051,
+//     the same secure mob-id getter the v79 melee attack uses @0x8c2b21) — NO
+//     templateId int (v83 sends both mobOid AND templateId);
+//   - footer: Encode2 summonX@0x71c130 + Encode2 summonY@0x71c144 AFTER the
+//     targets, then Encode4 skillCRC@0x71c15d.
+//
+// Only GMS < 83 takes this path; v83+ and JMS keep their existing layouts.
+func isLegacyLeanAttack(t tenant.Model) bool {
+	return t.IsRegion("GMS") && !t.MajorAtLeast(83)
+}
+
+// hasTargetTemplateId reports whether the per-target block carries the templateId
+// int after the mob OID. Present everywhere EXCEPT the v79 legacy-lean layout,
+// which sends the mob OID only (IDA @0x71c051, no second Encode4).
+func hasTargetTemplateId(t tenant.Model) bool {
+	return !isLegacyLeanAttack(t)
+}
+
 func (m Attack) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	t := tenant.MustFromContext(ctx)
@@ -169,26 +193,37 @@ func (m Attack) Encode(l logrus.FieldLogger, ctx context.Context) func(options m
 			w.WriteInt(0) // updateTime
 			w.WriteByte(m.direction)
 			w.WriteByte(byte(len(m.targets)))
-			w.WriteInt16(0) // userX
-			w.WriteInt16(0) // userY
-			w.WriteInt16(0) // summonX
-			w.WriteInt16(0) // summonY
+			// v83 emits the four position shorts BEFORE the targets; the v79
+			// legacy-lean layout emits none here (summonX/Y come after the loop).
+			if !isLegacyLeanAttack(t) {
+				w.WriteInt16(0) // userX
+				w.WriteInt16(0) // userY
+				w.WriteInt16(0) // summonX
+				w.WriteInt16(0) // summonY
+			}
 		}
 		for _, tg := range m.targets {
-			w.WriteInt(tg.monsterOid) // mob[i].mobId       @0x7524ac
-			w.WriteInt(tg.templateId) // mob[i].templateId  @0x7524cc
-			w.WriteByte(0)            // hitAction          @0x7524e2
-			w.WriteByte(0)            // foreAction|left    @0x75250c
-			w.WriteByte(0)            // frameIdx           @0x752522
-			w.WriteByte(0)            // calcDamageStatIdx  @0x75253b
-			w.WriteInt16(0)           // curX (hitX)        @0x75256c
-			w.WriteInt16(0)           // curY (hitY)        @0x7525a0
-			w.WriteInt16(0)           // hitX (posX)        @0x7525d3
-			w.WriteInt16(0)           // hitY (posY)        @0x752607
-			w.WriteInt16(tg.delay)    // tDelay             @0x75261d
-			w.WriteInt(tg.damage)     // damage             @0x752632
+			w.WriteInt(tg.monsterOid) // mob[i].mobId       @0x7524ac (v79 @0x71c051)
+			if hasTargetTemplateId(t) {
+				w.WriteInt(tg.templateId) // mob[i].templateId  @0x7524cc (absent v79)
+			}
+			w.WriteByte(0)         // hitAction          @0x7524e2
+			w.WriteByte(0)         // foreAction|left    @0x75250c
+			w.WriteByte(0)         // frameIdx           @0x752522
+			w.WriteByte(0)         // calcDamageStatIdx  @0x75253b
+			w.WriteInt16(0)        // curX (hitX)        @0x75256c
+			w.WriteInt16(0)        // curY (hitY)        @0x7525a0
+			w.WriteInt16(0)        // hitX (posX)        @0x7525d3
+			w.WriteInt16(0)        // hitY (posY)        @0x752607
+			w.WriteInt16(tg.delay) // tDelay             @0x75261d
+			w.WriteInt(tg.damage)  // damage             @0x752632
 		}
-		w.WriteInt(0) // skillCRC @0x75266f
+		if isLegacyLeanAttack(t) {
+			// v79 footer: summonX/summonY come AFTER the per-target loop.
+			w.WriteInt16(0) // summonX @0x71c130
+			w.WriteInt16(0) // summonY @0x71c144
+		}
+		w.WriteInt(0) // skillCRC @0x75266f (v79 @0x71c15d)
 		return w.Bytes()
 	}
 }
@@ -216,17 +251,25 @@ func (m *Attack) Decode(l logrus.FieldLogger, ctx context.Context) func(r *reque
 			r.Skip(4) // updateTime
 			m.direction = r.ReadByte()
 			count = int(r.ReadByte())
-			r.Skip(8) // user x,y + summon x,y
+			if !isLegacyLeanAttack(t) {
+				r.Skip(8) // user x,y + summon x,y (v79 has no leading positions)
+			}
 		}
 		m.targets = make([]AttackTarget, 0, count)
 		for i := 0; i < count; i++ {
 			monsterOid := r.ReadUint32()
-			templateId := r.ReadUint32()
+			var templateId uint32
+			if hasTargetTemplateId(t) {
+				templateId = r.ReadUint32()
+			}
 			r.Skip(4) // hitAction(1), foreAction|left(1), frameIdx(1), calcDamageStatIndex(1)
 			r.Skip(8) // curX(2), curY(2), hitX(2), hitY(2)
 			delay := r.ReadInt16()
 			damage := r.ReadUint32()
 			m.targets = append(m.targets, AttackTarget{monsterOid: monsterOid, templateId: templateId, damage: damage, delay: delay})
+		}
+		if isLegacyLeanAttack(t) {
+			r.Skip(4) // v79 footer: summonX(2) + summonY(2) after the targets
 		}
 		r.Skip(4) // skillCRC trailer
 	}

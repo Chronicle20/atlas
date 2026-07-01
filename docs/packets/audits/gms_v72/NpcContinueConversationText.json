@@ -1,7 +1,7 @@
 {
   "WriterName": "NpcContinueConversationText",
   "IDAName": "CScriptMan::OnAskText#Reply",
-  "Address": "",
+  "Address": "0x6a1161",
   "Variant": "GMS/v72",
   "BranchDepth": 0,
   "AtlasFile": "libs/atlas-packet/npc/serverbound/continue_conversation_text.go",
@@ -10,12 +10,12 @@
       "Index": 0,
       "AtlasOp": 4,
       "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 4,
-      "Note": "IDA read-order unresolved: function not found in IDB"
+      "IDAOp": 4,
+      "IDAComment": "text",
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 4,
+  "Verdict": 0,
   "FlatInvalid": false
 }

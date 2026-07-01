@@ -1,7 +1,7 @@
 {
   "WriterName": "NpcContinueConversationSelection",
   "IDAName": "CScriptMan::OnAskMenu#Selection",
-  "Address": "",
+  "Address": "0x6a15a6",
   "Variant": "GMS/v72",
   "BranchDepth": 1,
   "AtlasFile": "libs/atlas-packet/npc/serverbound/continue_conversation_selection.go",
@@ -10,10 +10,10 @@
       "Index": 0,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 4,
-      "Note": "IDA read-order unresolved: function not found in IDB"
+      "IDAOp": 0,
+      "IDAComment": "selection",
+      "Verdict": 2,
+      "Note": "width mismatch"
     },
     {
       "Index": 1,
@@ -25,6 +25,6 @@
       "Note": "atlas: trailing padding byte — client stops reading (harmless over-write)"
     }
   ],
-  "Verdict": 1,
-  "FlatInvalid": false
+  "Verdict": 3,
+  "FlatInvalid": true
 }

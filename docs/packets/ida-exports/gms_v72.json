@@ -7094,13 +7094,17 @@
    ]
   },
   "CScriptMan::OnAskMembershopAvatar#AskMemberShopAvatar": {
-   "address": "",
+   "address": "0x6a18d4",
    "direction": "clientbound",
-   "unresolved": true,
+   "notes": "v72 CScriptMan::OnAskMembershopAvatar@0x6a18d4 (msgType 9 = ASK_MEMBER_SHOP_AVATAR): DecodeStr(message) + Decode1(count) + count x [DecodeBuffer(8) SN + Decode1] (candidates read then looked up via CharacterData::GetItem). Per-entry int64 SN + byte is incompatible with the v83+ int32 style-id list; Atlas has no server-side SN data, so count=0 for the legacy range. Atlas AskMemberShopAvatarConversationDetail (GMS<83 gate): AsciiString(Message)+WriteByte(0) -> matches DecodeStr+Decode1(0).",
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "DecodeStr",
+     "comment": "message text"
+    },
+    {
+     "op": "Decode1",
+     "comment": "count (cash-avatar SN entries; 0 for the legacy range, Atlas drives no candidates)"
     }
    ]
   },
@@ -7135,13 +7139,13 @@
    ]
   },
   "CScriptMan::OnAskMenu#Selection": {
-   "address": "",
+   "address": "0x6a15a6",
    "direction": "serverbound",
-   "unresolved": true,
+   "notes": "v72 ask-menu selection reply: after the msgType+action frame the client appends Encode1(selection index) (OnAskMenu@0x6a15a6 Encode1(v18)). Narrow (single byte) for v72. Matches Atlas ContinueConversationSelection narrow (Byte selection).",
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Encode1",
+     "comment": "selection"
     }
    ]
   },
@@ -7310,13 +7314,13 @@
    ]
   },
   "CScriptMan::OnAskText#Reply": {
-   "address": "",
+   "address": "0x6a1161",
    "direction": "serverbound",
-   "unresolved": true,
+   "notes": "v72 ask-text reply: after the msgType+action frame the client appends EncodeStr(text) (OnAskText@0x6a1161 EncodeStr on result==1). Matches Atlas ContinueConversationText (AsciiString text).",
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "EncodeStr",
+     "comment": "text"
     }
    ]
   },
@@ -7382,13 +7386,17 @@
    ]
   },
   "CScriptMan::OnSay#Reply": {
-   "address": "",
+   "address": "0x6a0d23",
    "direction": "serverbound",
-   "unresolved": true,
+   "notes": "v72 NPC conversation reply frame: the per-msgType handler builds COutPacket(59) Encode1 msgType + Encode1 action (OnSay@0x6a0d23 Encode1(0)+Encode1(action)). Matches Atlas ContinueConversation (Byte lastMessageType + Byte action).",
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Encode1",
+     "comment": "lastMessageType"
+    },
+    {
+     "op": "Encode1",
+     "comment": "action"
     }
    ]
   },

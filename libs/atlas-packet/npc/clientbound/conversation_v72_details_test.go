@@ -35,6 +35,7 @@ import (
 // packet-audit:verify packet=npc/clientbound/NpcAskQuizConversationDetail version=gms_v72 ida=0x91ec5f
 // packet-audit:verify packet=npc/clientbound/NpcAskSpeedQuizConversationDetail version=gms_v72 ida=0x91edbc
 // packet-audit:verify packet=npc/clientbound/NpcAskPetAllConversationDetail version=gms_v72 ida=0x6a1b47
+// packet-audit:verify packet=npc/clientbound/NpcAskMemberShopAvatarConversationDetail version=gms_v72 ida=0x6a18d4
 
 // NpcNpcConversation frame: v72 reads Decode1 speakerTypeId, Decode4
 // speakerTemplateId, Decode1 msgType, detail body — NO param byte / secondary
@@ -207,5 +208,21 @@ func TestNpcConversationAskPetAllV72(t *testing.T) {
 	want := cat(asciiBytes("Pet?"), []byte{0x01, 0x01}, le64(0x0102030405060708), []byte{0x00})
 	if !bytes.Equal(got, want) {
 		t.Fatalf("v72 AskPetAll: got % x, want % x", got, want)
+	}
+}
+
+// AskMemberShopAvatarConversationDetail (msgType 9): DecodeStr message, Decode1
+// count, count x (DecodeBuffer(8) SN + Decode1). The v72 handler
+// OnAskMembershopAvatar@0x6a18d4 reads per-entry int64 SN + byte (incompatible
+// with the v83+ int32 style-id list); Atlas drives no candidates in the legacy
+// range, so the GMS<83 gate emits AsciiString(message) + Byte(0).
+func TestNpcConversationAskMemberShopAvatarV72(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	ctx := test.CreateContext("GMS", 72, 1)
+	detail := &AskMemberShopAvatarConversationDetail{Message: "Pick avatar"}
+	got := detail.Encode(l, ctx)(nil)
+	want := cat(asciiBytes("Pick avatar"), []byte{0x00})
+	if !bytes.Equal(got, want) {
+		t.Fatalf("v72 AskMemberShopAvatar: got % x, want % x", got, want)
 	}
 }

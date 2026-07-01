@@ -121,6 +121,31 @@ func TestDamageDecodeNoMob(t *testing.T) {
 	}
 }
 
+// TestDamageBytesV72Mob pins the v72 client SEND (CSummoned::SetDamaged) byte-for-
+// byte against the live decompile (IDA, GMS_v72.1_U_DEVM.exe @port 13339). The v72
+// send sub_6E8A64@0x6e8a64 builds COutPacket(171)@0x6e8ca6 and emits a body
+// byte-identical to v79/v83/v87/v95: Encode4(summonId)@0x6e8cbb = *(this+39); then
+// the mob-present branch Encode1(attackIdx)@0x6e8ce2, Encode4(damage)@0x6e8ceb,
+// Encode4(monsterTemplateId)@0x6e8d08, Encode1(a7<0 dir)@0x6e8d18; or the no-mob
+// branch Encode1(0xFE)@0x6e8ccc, Encode4(damage)@0x6e8cd5. No version gate on the body.
+// packet-audit:verify packet=summon/serverbound/SummonDamageHandle version=gms_v72 ida=0x6e8a64
+func TestDamageBytesV72Mob(t *testing.T) {
+	in := NewDamage(1000001, 1234, 9300018)
+	ctx := test.CreateContext("GMS", 72, 1)
+	got := test.Encode(t, ctx, in.Encode, nil)
+
+	want := []byte{
+		0x41, 0x42, 0x0F, 0x00, // summonId (Encode4@0x6e8cbb)
+		0x00,                   // attackIdx (NewDamage default; Encode1@0x6e8ce2)
+		0xD2, 0x04, 0x00, 0x00, // damage (Encode4@0x6e8ceb)
+		0x32, 0xE8, 0x8D, 0x00, // monsterIdFrom (Encode4@0x6e8d08)
+		0x00, // dir<0 flag (Encode1@0x6e8d18)
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatalf("v72 bytes = % X, want % X", got, want)
+	}
+}
+
 // TestDamageBytesV79Mob pins the v79 client SEND (CSummoned::SetDamaged) byte-for-
 // byte against the live decompile (IDA, GMS_v79_1_DEVM.exe @port 13340). The v79
 // send sub_71C7A7@0x71c7a7 builds COutPacket(173)@0x71c9e9 and emits a body

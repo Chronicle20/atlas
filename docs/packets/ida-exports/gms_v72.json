@@ -7828,26 +7828,14 @@
    ]
   },
   "CSummoned::SetDamaged": {
-   "address": "",
+   "address": "0x6e8a64",
    "direction": "serverbound",
-   "unresolved": true,
-   "calls": [
-    {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
-   ]
+   "calls": []
   },
   "CSummoned::TryDoingAttackManual": {
-   "address": "",
+   "address": "0x6e787f",
    "direction": "serverbound",
-   "unresolved": true,
-   "calls": [
-    {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
-   ]
+   "calls": []
   },
   "CSummonedPool::OnAttack": {
    "address": "0x6e92a6",

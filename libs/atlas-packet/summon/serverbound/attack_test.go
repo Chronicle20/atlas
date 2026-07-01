@@ -46,6 +46,75 @@ func mobBlockV79(mobOid uint32, tDelay int16, damage uint32) []byte {
 	return b
 }
 
+// TestSummonAttackByteV72 pins the gms_v72 SUMMON_ATTACK (op 170) serverbound
+// send. IDA: the op-170 sender sub_6E787F @0x6e787f (GMS_v72.1_U_DEVM.exe, port
+// 13339) — CSummoned::TryDoingAttackManual is unnamed in the v72 IDB; the send
+// block was located by the COutPacket(170) harvest. The v72 frame is the
+// legacy-lean layout, IDENTICAL to v79 EXCEPT it has NO trailing skillCRC int —
+// the send closes at Encode2 summonY@0x6e841a then SendPacket@0x6e8429 (disasm
+// confirmed: no further Encode4). skillCRC was added between v72 and v79.
+//
+//	Encode4 summonId               @0x6e82c4
+//	Encode4 updateTime             @0x6e82d2
+//	Encode1 action|left            @0x6e82eb ((v129<<7)|v123&0x7F)
+//	Encode1 count                  @0x6e82f6 (HitMobInRect)
+//	per-target (25 bytes, mob OID only — NO templateId):
+//	  Encode4 mobOID               @0x6e8327
+//	  Encode1 hitAction            @0x6e8335
+//	  Encode1 foreAction|left      @0x6e8350
+//	  Encode1 frameIdx             @0x6e835e
+//	  Encode1 calcDamageStatIndex  @0x6e836e
+//	  Encode2 curX,curY,hitX,hitY  @0x6e8384..0x6e83c8
+//	  Encode2 tDelay               @0x6e83d7
+//	  Encode4 damage               @0x6e83e2
+//	Encode2 summonX                @0x6e8406
+//	Encode2 summonY                @0x6e841a
+//	(NO skillCRC — SendPacket@0x6e8429)
+//
+// DECODE fixture (like the v79 sibling): hand-build a real-shaped body with NO
+// trailing skillCRC and assert a clean cursor. hasSkillCrcTrailer(GMS,72)=false.
+// packet-audit:verify packet=summon/serverbound/SummonAttackHandle version=gms_v72 ida=0x6e787f
+func TestSummonAttackByteV72(t *testing.T) {
+	body := []byte{}
+	body = append(body, le32(1000005)...) // summonId
+	body = append(body, le32(123456)...)   // updateTime
+	body = append(body, 0x83)              // action|left (left bit + action 3)
+	body = append(body, 0x02)              // count = 2
+	body = append(body, mobBlockV79(2000001, 100, 1234)...)
+	body = append(body, mobBlockV79(2000002, -50, 5678)...)
+	body = append(body, le16(510)...) // summonX (after targets)
+	body = append(body, le16(590)...) // summonY
+	// NO skillCRC on v72
+
+	ctx := test.CreateContext("GMS", 72, 1)
+	l, _ := testlog.NewNullLogger()
+	req := request.Request(body)
+	reader := request.NewRequestReader(&req, 0)
+	var m Attack
+	m.Decode(l, ctx)(&reader, nil)
+
+	if m.SummonId() != 1000005 {
+		t.Errorf("summonId = %d, want 1000005", m.SummonId())
+	}
+	if m.Direction() != 0x83 {
+		t.Errorf("direction = %#x, want 0x83", m.Direction())
+	}
+	if len(m.Targets()) != 2 {
+		t.Fatalf("targets len = %d, want 2", len(m.Targets()))
+	}
+	t0 := m.Targets()[0]
+	if t0.MonsterOid() != 2000001 || t0.TemplateId() != 0 || t0.Damage() != 1234 || t0.Delay() != 100 {
+		t.Errorf("target[0] = %+v, want oid=2000001 tmpl=0 dmg=1234 delay=100", t0)
+	}
+	t1 := m.Targets()[1]
+	if t1.MonsterOid() != 2000002 || t1.TemplateId() != 0 || t1.Damage() != 5678 || t1.Delay() != -50 {
+		t.Errorf("target[1] = %+v, want oid=2000002 tmpl=0 dmg=5678 delay=-50", t1)
+	}
+	if reader.Available() > 0 {
+		t.Errorf("reader has %d unconsumed bytes after decode", reader.Available())
+	}
+}
+
 // TestSummonAttackByteV79 pins the gms_v79 SUMMON_ATTACK (op 0xAC) serverbound
 // send. IDA: CSummoned::TryDoingAttackManual @0x71b522, send block
 // COutPacket(172)@0x71bfe1 (GMS_v79_1_DEVM.exe, port 13340). The v79 layout is

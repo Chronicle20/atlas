@@ -5,7 +5,7 @@
 
 Tool: `fa2892b4e82339df60c9ef0c33a6e4a08bdc3bf3`
 
-- export gms_v72: `1887ef7ec91ae0961a6c0bd9d480d2a72705f48b877ae2218a8b3f6bbfc1e077`
+- export gms_v72: `9b9b5a3be48796db79456e729eaf76b966ff99fdd9035dfe73a4fd8d3fe34707`
 - export gms_v79: `370d6b720b633c12c71d40340f3952000705c4bddb98f87179e7193d112d210c`
 - export gms_v83: `711bddcc2e1bdd417a75954148d2b50c64e70855e84259c0b8e50e700e393c0d`
 - export gms_v84: `7eab9472e2afeda13faaf74273828d09d5f2481d67bec10235c3b2fd2f91e1eb`
@@ -686,9 +686,9 @@ Tool: `fa2892b4e82339df60c9ef0c33a6e4a08bdc3bf3`
 | PET_EXCLUDE_ITEMS | CPet::SendUpdateExceptionListRequest | pet/serverbound/PetExcludeItem (T1) | 0x0A6 | ❌ | 0x0A8 | ✅ | 0x0AC | ✅ | 0x0B1 | ✅ | 0x0B8 | ✅ | 0x0CC | ✅ | 0x0AF | ✅ |
 | MOVE_SUMMON | CVecCtrlSummoned::EndUpdateActive; sub_9184E5 | summon/serverbound/SummonMoveHandle | 0x0A9 | ❌ | 0x0AB | ❌ | 0x0AF | ✅ | 0x0B2 | ✅ | 0x0BB | ✅ | 0x0CF | ✅ | 0x0B2 | ✅ |
 | CASH_GACHAPON_BUTTON | CUICashGachapon::OnButtonClicked |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0AA | ❌ | 0x0BA | ❌ |  | ⬜ |
-| SUMMON_ATTACK | CSummoned::AttackToTargetMob; CSummoned::TryDoingAttackManual; CSummoned::TryDoingTaslaCoilAttack; sub_71B522 | summon/serverbound/SummonAttackHandle (T1) | 0x0AA | ❌ | 0x0AC | ✅ | 0x0B0 | ❌ | 0x0B3 | ❌ | 0x0BC | ❌ | 0x0D0 | ❌ | 0x0B3 | ❌ |
+| SUMMON_ATTACK | CSummoned::AttackToTargetMob; CSummoned::TryDoingAttackManual; CSummoned::TryDoingTaslaCoilAttack; sub_71B522 | summon/serverbound/SummonAttackHandle (T1) | 0x0AA | ✅ | 0x0AC | ✅ | 0x0B0 | ❌ | 0x0B3 | ❌ | 0x0BC | ❌ | 0x0D0 | ❌ | 0x0B3 | ❌ |
 | CASHSHOP_SURPRISE | CCashShop::SendChangeMaplePoint |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0AB | ❌ | 0x0BB | ❌ | 0x0A7 | ❌ |
-| DAMAGE_SUMMON | CSummoned::SetDamaged | summon/serverbound/SummonDamageHandle (T1) | 0x0AB | ❌ | 0x0AD | ✅ | 0x0B1 | ✅ | 0x0B4 | ✅ | 0x0BD | ✅ | 0x0D1 | ✅ | 0x0B4 | ✅ |
+| DAMAGE_SUMMON | CSummoned::SetDamaged | summon/serverbound/SummonDamageHandle (T1) | 0x0AB | ✅ | 0x0AD | ✅ | 0x0B1 | ✅ | 0x0B4 | ✅ | 0x0BD | ✅ | 0x0D1 | ✅ | 0x0B4 | ✅ |
 | UNNAMED_R288 |  |  |  | ⬜ |  | ⬜ | 0x0AD | ❌ |  | ⬜ | 0x0B9 | ❌ | 0x0CD | ❌ | 0x0B0 | ❌ |
 | UNNAMED_R289 |  |  |  | ⬜ |  | ⬜ | 0x0AE | ❌ |  | ⬜ | 0x0BA | ❌ | 0x0CE | ❌ | 0x0B1 | ❌ |
 | OP_BOARD_HAS_NEW | CWvsContext::CheckOpBoardHasNew |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0AF | ❌ | 0x0C0 | ❌ | 0x0A8 | ❌ |
@@ -915,7 +915,7 @@ Tool: `fa2892b4e82339df60c9ef0c33a6e4a08bdc3bf3`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v72 | 52 | 0 | 74 | 346 | 411 | 0 | 11.0% |
+| v72 | 54 | 0 | 74 | 344 | 411 | 0 | 11.4% |
 | v79 | 228 | 0 | 72 | 181 | 402 | 0 | 47.4% |
 | v83 | 367 | 0 | 0 | 312 | 204 | 0 | 54.1% |
 | v84 | 345 | 0 | 0 | 313 | 225 | 0 | 52.4% |

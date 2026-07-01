@@ -160,6 +160,20 @@ func hasTargetTemplateId(t tenant.Model) bool {
 	return !isLegacyLeanAttack(t)
 }
 
+// hasSkillCrcTrailer reports whether the summon ATTACK send closes with the
+// trailing skillCRC int. Present on GMS v79+ and JMS v185 (IDA-verified: v79
+// CSummoned::TryDoingAttackManual Encode4 skillCRC@0x71c15d) but ABSENT on the
+// oldest GMS legacy build v72, whose op-170 sender (sub_6E787F, send block
+// @0x6e787f) closes at Encode2 summonY@0x6e841a then SendPacket@0x6e8429 with no
+// further Encode4 (IDA GMS_v72.1_U_DEVM.exe @port 13339). The anti-hack skillCRC
+// was added between v72 and v79; MajorAtLeast(79) places the gate at the first
+// version known to carry it (matches the spawnHasSkillLevel convention). Every
+// currently-handled version except GMS v72 is >= 79, so this leaves v79/v83/v84/
+// v87/v95/jms185 byte-identical.
+func hasSkillCrcTrailer(t tenant.Model) bool {
+	return t.MajorAtLeast(79)
+}
+
 func (m Attack) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	t := tenant.MustFromContext(ctx)
@@ -223,7 +237,9 @@ func (m Attack) Encode(l logrus.FieldLogger, ctx context.Context) func(options m
 			w.WriteInt16(0) // summonX @0x71c130
 			w.WriteInt16(0) // summonY @0x71c144
 		}
-		w.WriteInt(0) // skillCRC @0x75266f (v79 @0x71c15d)
+		if hasSkillCrcTrailer(t) {
+			w.WriteInt(0) // skillCRC @0x75266f (v79 @0x71c15d) — absent on GMS v72
+		}
 		return w.Bytes()
 	}
 }
@@ -271,6 +287,8 @@ func (m *Attack) Decode(l logrus.FieldLogger, ctx context.Context) func(r *reque
 		if isLegacyLeanAttack(t) {
 			r.Skip(4) // v79 footer: summonX(2) + summonY(2) after the targets
 		}
-		r.Skip(4) // skillCRC trailer
+		if hasSkillCrcTrailer(t) {
+			r.Skip(4) // skillCRC trailer — absent on GMS v72
+		}
 	}
 }

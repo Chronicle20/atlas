@@ -151,6 +151,43 @@ func TestStatChangedV79(t *testing.T) {
 	}
 }
 
+// TestStatChangedV72 pins the gms_v72 STAT_CHANGED clientbound wire.
+//
+// IDA-verified client decode (GMS_v72.1_U_DEVM.exe, port 13339) —
+// CWvsContext::OnStatChanged @0x9186db:
+//
+//	Decode1 @0x9186f8 → exclRequestSent (bool).
+//	GW_CharacterStat::DecodeChangeStat @0x91874f → mask + stat fields. Inside
+//	  DecodeChangeStat @0x4cf59e: Decode4(mask) @0x4cf5ab, then per-bit; LEVEL
+//	  (mask 0x10) reads Decode1 @0x4cf62a → a single byte.
+//	The trailing bSecondaryStatChangedPoint Decode1 @0x91875f is gated on
+//	  (mask & 0x180008) @0x918752 — the three pet-SN bits. LEVEL alone does NOT
+//	  set those bits, so the v72 client reads NO trailing byte here.
+//
+// Byte-identical to the verified v79 wire (narrow LEVEL=1 byte, no v95
+// battle-recovery second byte). atlas Changed.Encode writes one unconditional
+// trailing byte (over-written secondary-stat flag, client-conditional read —
+// same accepted behavior verified for v79/v83/v87). LEVEL index 4 → mask 0x10.
+//
+//	bool(1) + mask(4) + level(1) + trailing(1) = 7 bytes.
+//
+// packet-audit:verify packet=stat/clientbound/Changed version=gms_v72 ida=0x9186db
+func TestStatChangedV72(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	opts := testStatOptions()
+	ctx := pt.CreateContext("GMS", 72, 1)
+	in := NewStatChanged([]Update{NewUpdate(constants.TypeLevel, 120)}, true)
+	want := []byte{
+		0x01,                   // Decode1 exclRequestSent = true (@0x9186f8)
+		0x10, 0x00, 0x00, 0x00, // Decode4 mask = 0x10 (LEVEL, index 4) (@0x4cf5ab)
+		0x78,                   // Decode1 LEVEL = 120 (@0x4cf62a)
+		0x00,                   // trailing secondary-stat flag (atlas over-writes; client reads only when mask&0x180008 @0x918752)
+	}
+	if got := in.Encode(l, ctx)(opts); !bytes.Equal(got, want) {
+		t.Errorf("v72 StatChanged golden mismatch\n got: % x\nwant: % x", got, want)
+	}
+}
+
 func TestStatChangedEmptyRoundTrip(t *testing.T) {
 	opts := testStatOptions()
 	for _, v := range pt.Variants {

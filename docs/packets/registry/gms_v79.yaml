@@ -2314,14 +2314,11 @@
 - op: SERVERLIST_REQUEST
   direction: serverbound
   opcode: 11
-  fname: CLogin::ChangeStepImmediate
-  fname_alts:
-    - CLogin::OnCheckPinCodeResult
-    - CLogin::OnCheckPasswordResult
+  fname: CLogin::OnCheckPinCodeResult
   provenance: ida-discovered
   ida:
     address: 6097185
-  note: 'send-site 0x5d0c27 push 0Bh (a2) -> COutPacket(11) bodyless; v83 SERVERLIST_REQUEST=11 (delta0). fname carries the canonical ChangeStepImmediate so the FName->writer join resolves the ServerListRequest report (task-113 stage E close); the send is inlined (unnamed) in the v79 IDB.'
+  note: 'send-site 0x5d0c27 push 0Bh (a2) -> COutPacket(11); v83 SERVERLIST_REQUEST=11 (delta0). Verified via the bodyless CLogin::ChangeStepImmediate ServerListRequest report; op FName kept as v83 (OnCheckPinCodeResult) so cross-version fallback stays consistent (task-113 stage E close).'
 - op: VIEW_ALL_CHAR
   direction: serverbound
   opcode: 13

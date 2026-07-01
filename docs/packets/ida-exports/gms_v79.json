@@ -4722,13 +4722,16 @@
    ]
   },
   "CLogin::OnCheckPinCodeResult#RegisterPin": {
-   "address": "",
+   "address": "0x5d0921",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": "pinInput flag (v79 OnCheckPinCodeResult@0x5d0921 v3==1 branch: COutPacket(10)+Encode1(1|0))"
+    },
+    {
+     "op": "DecodeStr",
+     "comment": "pin string (only when pinInput=1: EncodeStr(pin))"
     }
    ]
   },

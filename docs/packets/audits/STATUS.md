@@ -5,7 +5,7 @@
 
 Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 
-- export gms_v79: `57693a264e9b3b5eb60e61774a374457a000eaf399f5b129d3fb22ebe5a26b17`
+- export gms_v79: `ab9e37db4a64c72139bcd0d8948639437bdb1c19caae2b313dbe6c7f6954f43d`
 - export gms_v83: `711bddcc2e1bdd417a75954148d2b50c64e70855e84259c0b8e50e700e393c0d`
 - export gms_v84: `7eab9472e2afeda13faaf74273828d09d5f2481d67bec10235c3b2fd2f91e1eb`
 - export gms_v87: `714817d376bb93732ef6b6fbe6b59f8c24515ff901801d213d676b501eae7f94`
@@ -22,7 +22,7 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 | SERVERSTATUS | CLogin::OnCheckUserLimitResult | login/clientbound/ServerStatus | 0x003 | ✅ | 0x003 | ✅ | 0x003 | ✅ | 0x003 | ✅ | 0x003 | ✅ |  | ⬜ |
 | GENDER_DONE | CLogin::OnSetAccountResult | login/serverbound/AfterLogin | 0x004 | ✅ | 0x004 | ✅ | 0x004 | ✅ | 0x004 | ✅ | 0x004 | ✅ |  | ⬜ |
 | CONFIRM_EULA_RESULT | CLogin::OnConfirmEULAResult |  | 0x005 | ❌ | 0x005 | ❌ | 0x005 | ❌ | 0x005 | ❌ | 0x005 | ❌ |  | ⬜ |
-| CHECK_PINCODE | CLogin::OnCheckPinCodeResult | login/clientbound/PinOperation | 0x006 | ❌ | 0x006 | ✅ | 0x006 | ✅ | 0x006 | ✅ | 0x006 | ✅ |  | ⬜ |
+| CHECK_PINCODE | CLogin::OnCheckPinCodeResult | login/clientbound/PinOperation | 0x006 | ✅ | 0x006 | ✅ | 0x006 | ✅ | 0x006 | ✅ | 0x006 | ✅ |  | ⬜ |
 | UPDATE_PINCODE | CLogin::OnUpdatePinCodeResult | login/clientbound/PinUpdate | 0x007 | 🟡 | 0x007 | ✅ | 0x007 | ✅ | 0x007 | ✅ | 0x007 | ✅ |  | ⬜ |
 | VIEW_ALL_CHAR | CLogin::OnViewAllCharResult | character/clientbound/CharacterViewAllCharacters (T1) | 0x008 | ✅ | 0x008 | ✅ | 0x008 | ✅ | 0x008 | ✅ | 0x008 | ✅ | 0x014 | ✅ |
 | SELECT_CHARACTER_BY_VAC | CLogin::OnSelectCharacterByVACResult |  | 0x009 | ❌ | 0x009 | ❌ | 0x009 | ❌ | 0x009 | ❌ | 0x009 | ❌ |  | ⬜ |
@@ -489,8 +489,8 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 | ACCEPT_TOS | CLogin::OnAcceptLicense; CLogin::OnDenyLicense | account/serverbound/AcceptTos | 0x007 | 🟡 | 0x007 | ❌ | 0x007 | ❌ | 0x007 | ✅ | 0x007 | ✅ |  | ⬜ |
 | SET_GENDER | CLogin::SendCancelGenderPacket; CLogin::SendSetGenderPacket | account/serverbound/SetGender | 0x008 | 🟡 | 0x008 | ❌ | 0x008 | ❌ | 0x008 | ✅ | 0x008 | ✅ |  | ⬜ |
 | AFTER_LOGIN | CLogin::OnCheckPasswordResult; CLogin::OnCheckPinCodeResult; CLogin::OnSelectWorldResult; CLogin::OnSetAccountResult | login/serverbound/AfterLogin | 0x009 | ✅ | 0x009 | ✅ | 0x009 | ✅ | 0x009 | ✅ | 0x009 | ✅ |  | ⬜ |
-| REGISTER_PIN | CLogin::OnCheckPinCodeResult | login/clientbound/PinOperation | 0x00A | ❌ | 0x00A | ✅ | 0x00A | ✅ | 0x00A | ✅ | 0x00A | ✅ |  | ⬜ |
-| SERVERLIST_REQUEST | CLicenseDlg::OnButtonClicked; CLogin::ChangeStepImmediate; CLogin::OnCheckPasswordResult; CLogin::OnCheckPinCodeResult | login/serverbound/ServerListRequest | 0x00B | ✅ | 0x00B | ✅ | 0x00B | ✅ | 0x00B | ✅ | 0x00B | ✅ |  | 🟥 |
+| REGISTER_PIN | CLogin::OnCheckPinCodeResult | login/clientbound/PinOperation | 0x00A | ✅ | 0x00A | ✅ | 0x00A | ✅ | 0x00A | ✅ | 0x00A | ✅ |  | ⬜ |
+| SERVERLIST_REQUEST | CLicenseDlg::OnButtonClicked; CLogin::OnCheckPasswordResult; CLogin::OnCheckPinCodeResult | login/clientbound/PinOperation | 0x00B | ✅ | 0x00B | ✅ | 0x00B | ✅ | 0x00B | ✅ | 0x00B | ✅ |  | ⬜ |
 | PLAYER_DC | CLogin::GotoWorldSelect; CLogin::SendViewAllCharPacket |  |  | ⬜ | 0x00C | ❌ | 0x00C | ❌ | 0x00C | ❌ | 0x00C | ❌ |  | ⬜ |
 | VIEW_ALL_CHAR | CLogin::SendViewAllCharPacket | login/serverbound/AllCharacterListRequest (T1) | 0x00D | ✅ | 0x00D | ✅ | 0x00D | ✅ | 0x00D | ✅ | 0x00D | ✅ | 0x00A | ✅ |
 | PICK_ALL_CHAR | CLogin::SendSelectCharPacketByVAC | login/serverbound/AllCharacterListSelect | 0x00E | ✅ | 0x00E | ✅ | 0x00E | ✅ | 0x00E | ✅ | 0x00E | ✅ |  | ⬜ |
@@ -860,7 +860,7 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 | interaction/serverbound/InteractionOperationTradeConfirm (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | interaction/serverbound/InteractionOperationTradePutItem (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | interaction/serverbound/InteractionOperationTransaction (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
-| login/serverbound/ServerListRequest |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |
+| login/serverbound/ServerListRequest |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | messenger/serverbound/MessengerOperation (T1) |  |  | ❌ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
 | messenger/serverbound/MessengerOperationAnswerInvite (T1) |  |  | ❌ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
 | messenger/serverbound/MessengerOperationChat (T1) |  |  | ❌ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
@@ -909,14 +909,14 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v79 | 174 | 0 | 73 | 231 | 400 | 0 | 36.4% |
+| v79 | 177 | 0 | 73 | 228 | 400 | 0 | 37.0% |
 | v83 | 367 | 0 | 0 | 309 | 202 | 0 | 54.3% |
 | v84 | 345 | 0 | 0 | 310 | 223 | 0 | 52.7% |
 | v87 | 379 | 0 | 0 | 334 | 165 | 0 | 53.2% |
 | v95 | 399 | 0 | 0 | 398 | 81 | 0 | 50.1% |
-| JMS185 | 360 | 0 | 0 | 346 | 171 | 1 | 50.9% |
+| JMS185 | 361 | 0 | 0 | 345 | 172 | 0 | 51.1% |
 
 ## Conflicts
 
-- 🟥 **SERVERLIST_REQUEST** × JMS185 — registry says absent but an Atlas audit report exists (ServerListRequest)
+None.
 

@@ -334,7 +334,7 @@ func TestEffectSkillUseNoFlagsRoundTrip(t *testing.T) {
 			input := NewEffectSkillUse(1, 1001004, 50, 10, false, false, false, false, false, false)
 			output := NewEffectSkillUseForDecode(false, false, false)
 			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
-			assertEffectSkillUse(t, input, output)
+			assertEffectSkillUse(t, input, output, v.Region != "GMS" || v.MajorVersion >= 83)
 		})
 	}
 }
@@ -346,7 +346,7 @@ func TestEffectSkillUseBerserkRoundTrip(t *testing.T) {
 			input := NewEffectSkillUse(1, 1320006, 120, 30, true, true, false, false, false, false)
 			output := NewEffectSkillUseForDecode(true, false, false)
 			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
-			assertEffectSkillUse(t, input, output)
+			assertEffectSkillUse(t, input, output, v.Region != "GMS" || v.MajorVersion >= 83)
 			if output.BerserkDarkForce() != input.BerserkDarkForce() {
 				t.Errorf("berserkDarkForce: got %v, want %v", output.BerserkDarkForce(), input.BerserkDarkForce())
 			}
@@ -361,7 +361,7 @@ func TestEffectSkillUseAllFlagsRoundTrip(t *testing.T) {
 			input := NewEffectSkillUse(1, 2221006, 200, 20, true, true, true, true, true, true)
 			output := NewEffectSkillUseForDecode(true, true, true)
 			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
-			assertEffectSkillUse(t, input, output)
+			assertEffectSkillUse(t, input, output, v.Region != "GMS" || v.MajorVersion >= 83)
 			if output.BerserkDarkForce() != input.BerserkDarkForce() {
 				t.Errorf("berserkDarkForce: got %v, want %v", output.BerserkDarkForce(), input.BerserkDarkForce())
 			}
@@ -375,7 +375,7 @@ func TestEffectSkillUseAllFlagsRoundTrip(t *testing.T) {
 	}
 }
 
-func assertEffectSkillUse(t *testing.T, input EffectSkillUse, output EffectSkillUse) {
+func assertEffectSkillUse(t *testing.T, input EffectSkillUse, output EffectSkillUse, includeCharLevel bool) {
 	t.Helper()
 	if output.Mode() != input.Mode() {
 		t.Errorf("mode: got %v, want %v", output.Mode(), input.Mode())
@@ -383,7 +383,10 @@ func assertEffectSkillUse(t *testing.T, input EffectSkillUse, output EffectSkill
 	if output.SkillId() != input.SkillId() {
 		t.Errorf("skillId: got %v, want %v", output.SkillId(), input.SkillId())
 	}
-	if output.CharacterLevel() != input.CharacterLevel() {
+	// characterLevel is only on the wire for GMS >= v83 (added at v83; v72/v79
+	// omit it — IDA-verified, see effect_skill_use.go). Legacy variants carry no
+	// byte for it, so the decoded field stays at its zero default.
+	if includeCharLevel && output.CharacterLevel() != input.CharacterLevel() {
 		t.Errorf("characterLevel: got %v, want %v", output.CharacterLevel(), input.CharacterLevel())
 	}
 	if output.SkillLevel() != input.SkillLevel() {
@@ -400,7 +403,7 @@ func TestEffectSkillUseForeignNoFlagsRoundTrip(t *testing.T) {
 			input := NewEffectSkillUseForeign(12345, 1, 1001004, 50, 10, false, false, false, false, false, false)
 			output := NewEffectSkillUseForeignForDecode(false, false, false)
 			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
-			assertEffectSkillUseForeign(t, input, output)
+			assertEffectSkillUseForeign(t, input, output, v.Region != "GMS" || v.MajorVersion >= 83)
 		})
 	}
 }
@@ -412,7 +415,7 @@ func TestEffectSkillUseForeignAllFlagsRoundTrip(t *testing.T) {
 			input := NewEffectSkillUseForeign(67890, 1, 2221006, 200, 20, true, false, true, true, true, true)
 			output := NewEffectSkillUseForeignForDecode(true, true, true)
 			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
-			assertEffectSkillUseForeign(t, input, output)
+			assertEffectSkillUseForeign(t, input, output, v.Region != "GMS" || v.MajorVersion >= 83)
 			if output.BerserkDarkForce() != input.BerserkDarkForce() {
 				t.Errorf("berserkDarkForce: got %v, want %v", output.BerserkDarkForce(), input.BerserkDarkForce())
 			}
@@ -426,7 +429,7 @@ func TestEffectSkillUseForeignAllFlagsRoundTrip(t *testing.T) {
 	}
 }
 
-func assertEffectSkillUseForeign(t *testing.T, input EffectSkillUseForeign, output EffectSkillUseForeign) {
+func assertEffectSkillUseForeign(t *testing.T, input EffectSkillUseForeign, output EffectSkillUseForeign, includeCharLevel bool) {
 	t.Helper()
 	if output.CharacterId() != input.CharacterId() {
 		t.Errorf("characterId: got %v, want %v", output.CharacterId(), input.CharacterId())
@@ -437,7 +440,8 @@ func assertEffectSkillUseForeign(t *testing.T, input EffectSkillUseForeign, outp
 	if output.SkillId() != input.SkillId() {
 		t.Errorf("skillId: got %v, want %v", output.SkillId(), input.SkillId())
 	}
-	if output.CharacterLevel() != input.CharacterLevel() {
+	// characterLevel is only on the wire for GMS >= v83 (see assertEffectSkillUse).
+	if includeCharLevel && output.CharacterLevel() != input.CharacterLevel() {
 		t.Errorf("characterLevel: got %v, want %v", output.CharacterLevel(), input.CharacterLevel())
 	}
 	if output.SkillLevel() != input.SkillLevel() {

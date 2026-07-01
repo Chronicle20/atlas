@@ -100,7 +100,11 @@ func TestCharacterSpawnRoundTrip(t *testing.T) {
 			if output.CharacterId() != input.CharacterId() {
 				t.Errorf("characterId: got %v, want %v", output.CharacterId(), input.CharacterId())
 			}
-			if output.Level() != input.Level() {
+			// Legacy GMS (< v83) SPAWN_PLAYER carries no level byte on the wire
+			// (v79 CUserRemote::Init @0x8d589e reads name first), so level is not
+			// round-trippable for those variants. v83+ and JMS transmit it.
+			legacy := v.Region == "GMS" && v.MajorVersion < 83
+			if !legacy && output.Level() != input.Level() {
 				t.Errorf("level: got %v, want %v", output.Level(), input.Level())
 			}
 			if output.Name() != input.Name() {

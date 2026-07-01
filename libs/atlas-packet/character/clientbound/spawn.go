@@ -61,9 +61,20 @@ func (m CharacterSpawn) String() string {
 func (m CharacterSpawn) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	t := tenant.MustFromContext(ctx)
+	// Legacy GMS (< v83) SPAWN_PLAYER wire divergences (task-113 stage E, v79
+	// GMS_v79_1_DEVM.exe @13340): CUserRemote::Init sub_8D589E reads name as its
+	// FIRST field (@0x8d58c9 DecodeStr) with NO leading Decode1 level byte, unlike
+	// v83 CUserRemote::Init @0x97f55d (@0x97f589 Decode1 level) and v95 @0x955460
+	// (m_nLevel = Decode1). v79 also has a single trailing effect byte (@0x8d5f67)
+	// vs v83's two (@0x97fc33 + @0x97fd90), and no trailing team byte (base
+	// CField::DecodeFieldSpecificData @0x513a15 forwards only the CUser, never the
+	// packet). Leave v83/84/87/95/JMS unchanged.
+	legacy := t.Region() == "GMS" && t.MajorVersion() < 83
 	return func(options map[string]interface{}) []byte {
 		w.WriteInt(m.characterId)
-		w.WriteByte(m.level)
+		if !legacy {
+			w.WriteByte(m.level)
+		}
 		w.WriteAsciiString(m.name)
 
 		w.WriteAsciiString(m.guild.Name)
@@ -139,8 +150,8 @@ func (m CharacterSpawn) Encode(l logrus.FieldLogger, ctx context.Context) func(o
 		w.WriteByte(0) // berserk
 
 		if t.Region() == "GMS" {
-			if t.MajorVersion() <= 87 {
-				w.WriteByte(0)
+			if t.MajorVersion() >= 83 && t.MajorVersion() <= 87 {
+				w.WriteByte(0) // v84..v87 2nd (dragon) effect byte; v79 Init has one effect byte only (@0x8d5f67)
 			}
 			if t.MajorVersion() > 87 {
 				w.WriteByte(0) // new year card
@@ -151,7 +162,9 @@ func (m CharacterSpawn) Encode(l logrus.FieldLogger, ctx context.Context) func(o
 		}
 		// team (carnival) byte: GMS reads a trailing team byte; the jms_v185 client's
 		// last packet read is the final-effect flag above (call 47) — no team byte.
-		if t.Region() != "JMS" {
+		// v79 base CField::DecodeFieldSpecificData @0x513a15 forwards only the CUser
+		// (not the packet) so legacy GMS reads no team byte either.
+		if t.Region() != "JMS" && !legacy {
 			w.WriteByte(0) // team
 		}
 		return w.Bytes()
@@ -173,9 +186,12 @@ func (m CharacterSpawn) Stance() byte                     { return m.stance }
 func (m *CharacterSpawn) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
 		t := tenant.MustFromContext(ctx)
+		legacy := t.Region() == "GMS" && t.MajorVersion() < 83
 
 		m.characterId = r.ReadUint32()
-		m.level = r.ReadByte()
+		if !legacy {
+			m.level = r.ReadByte()
+		}
 		m.name = r.ReadAsciiString()
 
 		m.guild.Name = r.ReadAsciiString()
@@ -237,7 +253,7 @@ func (m *CharacterSpawn) Decode(l logrus.FieldLogger, ctx context.Context) func(
 		_ = r.ReadByte() // berserk
 
 		if t.Region() == "GMS" {
-			if t.MajorVersion() <= 87 {
+			if t.MajorVersion() >= 83 && t.MajorVersion() <= 87 {
 				_ = r.ReadByte()
 			}
 			if t.MajorVersion() > 87 {
@@ -247,8 +263,8 @@ func (m *CharacterSpawn) Decode(l logrus.FieldLogger, ctx context.Context) func(
 		} else if t.Region() == "JMS" {
 			_ = r.ReadByte() // final-effect flag (jms last read)
 		}
-		if t.Region() != "JMS" {
-			_ = r.ReadByte() // team (GMS-only)
+		if t.Region() != "JMS" && !legacy {
+			_ = r.ReadByte() // team (GMS>=83-only)
 		}
 	}
 }

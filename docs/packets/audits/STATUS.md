@@ -5,7 +5,7 @@
 
 Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 
-- export gms_v79: `59f551851b2ea87d9bd37baa08ac24a0b17559cff9946f6a718953338a5e8ae6`
+- export gms_v79: `c527569b6bdf6301a3165bd9828df67b4a323be3c1ff4155dfa09587d5f7ae02`
 - export gms_v83: `711bddcc2e1bdd417a75954148d2b50c64e70855e84259c0b8e50e700e393c0d`
 - export gms_v84: `7eab9472e2afeda13faaf74273828d09d5f2481d67bec10235c3b2fd2f91e1eb`
 - export gms_v87: `714817d376bb93732ef6b6fbe6b59f8c24515ff901801d213d676b501eae7f94`
@@ -524,7 +524,7 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 | PACKET_ERROR | CWvsApp::SendBackupPacket; CWvsApp::SendClearStackLog |  |  | ⬜ | 0x025 | ❌ | 0x025 | ❌ | 0x025 | ❌ | 0x024 | ❌ |  | ⬜ |
 | ENTER_CASHSHOP | CWvsContext::SendMigrateToShopRequest |  | 0x026 | ❌ | 0x028 | ❌ | 0x028 | ❌ | 0x02A | ❌ | 0x02B | ❌ | 0x01F | ❌ |
 | UNNAMED_R45 |  |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x026 | ❌ | 0x025 | ❌ | 0x01B | ❌ |
-| MOVE_PLAYER | CMovePath::Flush; CUserLocal::OnKey; CVecCtrlUser::EndUpdateActive; sub_91B6E6 |  | 0x027 | ❌ | 0x029 | ❌ | 0x029 | ❌ | 0x02B | ❌ | 0x02C | ❌ | 0x020 | ❌ |
+| MOVE_PLAYER | CMovePath::Flush; CUserLocal::OnKey; CVecCtrlUser::EndUpdateActive; sub_91B6E6 | character/serverbound/Move (T1) | 0x027 | ✅ | 0x029 | ❌ | 0x029 | ❌ | 0x02B | ❌ | 0x02C | ❌ | 0x020 | ❌ |
 | UNNAMED_R46 |  |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x027 | ❌ | 0x026 | ❌ | 0x01C | ❌ |
 | UNNAMED_R47 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x027 | ❌ |  | ⬜ |
 | CANCEL_CHAIR | CUserLocal::HandleXKeyDown; CWvsContext::SendGetUpFromChairRequest | character/serverbound/ChairFixed (T1) | 0x028 | ✅ | 0x02A | ✅ | 0x02A | ✅ | 0x02C | ✅ | 0x02D | ✅ | 0x021 | ✅ |
@@ -909,7 +909,7 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v79 | 223 | 0 | 72 | 183 | 400 | 0 | 46.7% |
+| v79 | 224 | 0 | 72 | 182 | 400 | 0 | 46.9% |
 | v83 | 367 | 0 | 0 | 309 | 202 | 0 | 54.3% |
 | v84 | 345 | 0 | 0 | 310 | 223 | 0 | 52.7% |
 | v87 | 379 | 0 | 0 | 334 | 165 | 0 | 53.2% |

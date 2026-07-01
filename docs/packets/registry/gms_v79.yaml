@@ -1952,13 +1952,14 @@
 - op: MOVE_PLAYER
   direction: serverbound
   opcode: 39
-  fname: sub_91B6E6
+  fname: CVecCtrlUser::EndUpdateActive
   fname_alts:
     - CMovePath::Flush
+    - sub_91B6E6
   provenance: ida-discovered
   ida:
-    address: 9549955
-  note: 'v79 movement flush (unnamed sub_91B6E6, one xrefs hop from CMovePath::Flush @0x657924) builds COutPacket(39); v83 MOVE_PLAYER=41 (d-2). delta doc serverbound (verified).'
+    address: 9549542
+  note: 'v79 movement flush CVecCtrlUser::EndUpdateActive@0x91b6e6 (renamed from sub_91B6E6; one xrefs hop from CMovePath::Flush @0x657924) builds COutPacket(39): Encode1 fieldKey@0x91b89f + Encode4 crc@0x91b8b2 + CMovePath::Flush opaque movement blob; v79<84 so no dr/dwKey/crc32 header (matches Atlas Move v83 lean layout). v83 MOVE_PLAYER=41 (d-2). delta doc serverbound (verified).'
 - op: NPC_TALK
   direction: serverbound
   opcode: 56

@@ -11483,16 +11483,20 @@
    ]
   },
   "CVecCtrlUser::EndUpdateActive": {
-   "address": "",
-   "direction": "serverbound",
-   "unresolved": true,
-   "calls": [
-    {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
-   ]
-  },
+    "address": "0x91b6e6",
+    "direction": "serverbound",
+    "notes": "v79 CVecCtrlUser::EndUpdateActive@0x91b6e6 (renamed from sub_91B6E6; one xrefs hop from CMovePath::Flush@0x657924) sends COutPacket(39): Encode1 fieldKey (*(get_field()+276))@0x91b89f, Encode4 crc (*(get_field()+483))@0x91b8b2, then CMovePath::Flush opaque movement blob. v79<84 so no dr0/dr1/dr2/dr3/dwKey/crc32 header (matches Atlas Move v83 lean layout). task-113 stage E close.",
+    "calls": [
+     {
+      "op": "Encode1",
+      "comment": "fieldKey"
+     },
+     {
+      "op": "Encode4",
+      "comment": "crc"
+     }
+    ]
+   },
   "CWvsContext::GetCharacterData": {
    "address": "0x423135",
    "direction": "",

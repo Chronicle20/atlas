@@ -513,6 +513,12 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "AuthSuccess", dir: csvpkg.DirClientbound}}
 	case "CLogin::OnSelectWorldResult":
 		return []candidate{{name: "CharacterList", dir: csvpkg.DirClientbound}}
+	case "sub_5B3646":
+		// v72 CHARLIST (op 11) — the standalone character-list decoder distinct
+		// from OnSelectWorldResult (op 22, RELOG). Registry gms_v72 CHARLIST fname
+		// is sub_5B3646; this mirrors v79's sub_5CE522 char-list decoder. The v72
+		// export omits OnSelectWorldResult so this is the sole CharacterList report.
+		return []candidate{{name: "CharacterList", dir: csvpkg.DirClientbound}}
 	case "CLogin::OnWorldInformation":
 		return []candidate{{name: "ServerListEntry", dir: csvpkg.DirClientbound}}
 	case "CLogin::OnSelectCharacterResult":

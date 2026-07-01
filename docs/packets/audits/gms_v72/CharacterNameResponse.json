@@ -1,7 +1,7 @@
 {
   "WriterName": "CharacterNameResponse",
   "IDAName": "CLogin::OnCheckDuplicatedIDResult",
-  "Address": "0x5b3a18",
+  "Address": "0x5b3983",
   "Variant": "GMS/v72",
   "BranchDepth": 0,
   "AtlasFile": "libs/atlas-packet/character/clientbound/name_response.go",
@@ -10,21 +10,21 @@
       "Index": 0,
       "AtlasOp": 4,
       "AtlasKind": 0,
-      "IDAOp": 2,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "IDAOp": 4,
+      "IDAComment": "name @0x5b39a2",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 1,
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "",
+      "IDAComment": "code @0x5b39ad",
       "Verdict": 0,
       "Note": ""
     }
   ],
-  "Verdict": 2,
+  "Verdict": 0,
   "FlatInvalid": false
 }

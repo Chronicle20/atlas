@@ -382,7 +382,7 @@
         "handler": "CreateCharacterHandle"
       },
       {
-        "opCode": "0x17",
+        "opCode": "0x18",
         "validator": "LoggedInValidator",
         "handler": "DeleteCharacterHandle"
       },

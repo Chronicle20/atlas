@@ -4558,16 +4558,16 @@
    ]
   },
   "CLogin::OnCheckDuplicatedIDResult": {
-   "address": "0x5b3a18",
+   "address": "0x5b3983",
    "direction": "clientbound",
    "calls": [
     {
-     "op": "Decode4",
-     "comment": ""
+     "op": "DecodeStr",
+     "comment": "name @0x5b39a2"
     },
     {
      "op": "Decode1",
-     "comment": ""
+     "comment": "code @0x5b39ad"
     }
    ]
   },
@@ -4779,53 +4779,46 @@
    ]
   },
   "CLogin::OnCreateNewCharacterResult": {
-   "address": "0x5b3983",
-   "direction": "clientbound",
-   "calls": [
-    {
-     "op": "DecodeStr",
-     "comment": ""
-    },
-    {
-     "op": "Decode1",
-     "comment": ""
-    },
-    {
-     "op": "Delegate",
-     "comment": "",
-     "guard": "v3 <= 0 && <default>",
-     "ref": "sub_4160CB"
-    }
-   ]
-  },
-  "CLogin::OnCreateNewCharacterResult#AddCharacterError": {
-   "address": "",
-   "direction": "clientbound",
-   "unresolved": true,
-   "calls": [
-    {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
-   ]
-  },
-  "CLogin::OnDeleteCharacterResult": {
    "address": "0x5b3c65",
    "direction": "clientbound",
    "calls": [
     {
      "op": "Decode1",
-     "comment": ""
+     "comment": "code @0x5b3c80"
     },
     {
      "op": "Delegate",
-     "comment": "",
+     "comment": "GW_CharacterStat::Decode @0x5b3d1e",
      "ref": "GW_CharacterStat::Decode"
     },
     {
      "op": "Delegate",
-     "comment": "",
+     "comment": "AvatarLook::Decode @0x5b3d2c",
      "ref": "AvatarLook::Decode"
+    }
+   ]
+  },
+  "CLogin::OnCreateNewCharacterResult#AddCharacterError": {
+   "address": "0x5b3c65",
+   "direction": "clientbound",
+   "calls": [
+    {
+     "op": "Decode1",
+     "comment": "errorCode @0x5b3c80"
+    }
+   ]
+  },
+  "CLogin::OnDeleteCharacterResult": {
+   "address": "0x5b3a18",
+   "direction": "clientbound",
+   "calls": [
+    {
+     "op": "Decode4",
+     "comment": "characterId @0x5b3a3c"
+    },
+    {
+     "op": "Decode1",
+     "comment": "code @0x5b3a3f"
     }
    ]
   },
@@ -5013,22 +5006,6 @@
      "op": "Decode4",
      "comment": "",
      "guard": "!v4"
-    }
-   ]
-  },
-  "CLogin::OnSelectWorldResult": {
-   "address": "0x5b4abc",
-   "direction": "clientbound",
-   "calls": [
-    {
-     "op": "Decode1",
-     "comment": ""
-    },
-    {
-     "op": "Delegate",
-     "comment": "",
-     "guard": "!(_BYTE)result && CLogin::GotoTitle(36)",
-     "ref": "HIBYTE"
     }
    ]
   },
@@ -5261,13 +5238,12 @@
    ]
   },
   "CLogin::SendCheckDuplicateIDPacket": {
-   "address": "",
+   "address": "0x46bb81",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "EncodeStr",
+     "comment": "name @0x46bc04"
     }
    ]
   },
@@ -5320,13 +5296,16 @@
    ]
   },
   "CLogin::SendDeleteCharPacket": {
-   "address": "",
+   "address": "0x5b206b",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Encode4",
+     "comment": "dob @0x5b211e"
+    },
+    {
+     "op": "Encode4",
+     "comment": "characterId @0x5b213b"
     }
    ]
   },
@@ -5349,13 +5328,48 @@
    ]
   },
   "CLogin::SendNewCharPacket": {
-   "address": "",
+   "address": "0x5b219a",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "EncodeStr",
+     "comment": "name @0x5b221f"
+    },
+    {
+     "op": "Encode4",
+     "comment": "face @0x5b2230 loop"
+    },
+    {
+     "op": "Encode4",
+     "comment": "hair"
+    },
+    {
+     "op": "Encode4",
+     "comment": "hairColor"
+    },
+    {
+     "op": "Encode4",
+     "comment": "skinColor"
+    },
+    {
+     "op": "Encode4",
+     "comment": "top"
+    },
+    {
+     "op": "Encode4",
+     "comment": "bottom"
+    },
+    {
+     "op": "Encode4",
+     "comment": "shoes"
+    },
+    {
+     "op": "Encode4",
+     "comment": "weapon"
+    },
+    {
+     "op": "Encode1",
+     "comment": "gender @0x5b2247"
     }
    ]
   },
@@ -13408,13 +13422,12 @@
    ]
   },
   "CWvsContext::OnMessage#CashItemExpire": {
-   "address": "",
+   "address": "0x919b59",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode4",
+     "comment": "itemId @0x919b68"
     }
    ]
   },
@@ -14735,24 +14748,38 @@
    ]
   },
   "CWvsContext::SendAbilityUpRequest#AutoDistributeAp": {
-   "address": "",
+   "address": "0x91bce8",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Encode4",
+     "comment": "update_time @0x91be29"
+    },
+    {
+     "op": "Encode4",
+     "comment": "count @0x91be3b"
+    },
+    {
+     "op": "Encode4",
+     "comment": "flag @0x91be53"
+    },
+    {
+     "op": "Encode4",
+     "comment": "value @0x91be61"
     }
    ]
   },
   "CWvsContext::SendAbilityUpRequest#DistributeAp": {
-   "address": "",
+   "address": "0x91bbad",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Encode4",
+     "comment": "update_time @0x91bc97"
+    },
+    {
+     "op": "Encode4",
+     "comment": "dwFlag @0x91bca2"
     }
    ]
   },
@@ -14793,13 +14820,20 @@
    ]
   },
   "CWvsContext::SendCharacterInfoRequest": {
-   "address": "",
+   "address": "0x91c174",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Encode4",
+     "comment": "update_time @0x91c1e8"
+    },
+    {
+     "op": "Encode4",
+     "comment": "characterId @0x91c1f1"
+    },
+    {
+     "op": "Encode1",
+     "comment": "petInfo @0x91c1fc"
     }
    ]
   },
@@ -14920,13 +14954,16 @@
    ]
   },
   "CWvsContext::SendSkillUpRequest": {
-   "address": "",
+   "address": "0x91bead",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Encode4",
+     "comment": "update_time @0x91bee4"
+    },
+    {
+     "op": "Encode4",
+     "comment": "skillId @0x91beef"
     }
    ]
   },
@@ -18261,6 +18298,42 @@
     {
      "op": "Decode4",
      "comment": "timeRemaining"
+    }
+   ]
+  },
+  "sub_5B3646": {
+   "address": "0x5b3646",
+   "direction": "clientbound",
+   "calls": [
+    {
+     "op": "Decode1",
+     "comment": "status @0x5b369e"
+    },
+    {
+     "op": "Decode1",
+     "comment": "count @0x5b3808"
+    },
+    {
+     "op": "Delegate",
+     "comment": "GW_CharacterStat::Decode @0x5b3837",
+     "ref": "GW_CharacterStat::Decode"
+    },
+    {
+     "op": "Delegate",
+     "comment": "AvatarLook::Decode @0x5b3845",
+     "ref": "AvatarLook::Decode"
+    },
+    {
+     "op": "Decode1",
+     "comment": "rankEnabled @0x5b384d"
+    },
+    {
+     "op": "DecodeBuf",
+     "comment": "rank16 @0x5b3868"
+    },
+    {
+     "op": "Decode4",
+     "comment": "slots @0x5b38ba"
     }
    ]
   }

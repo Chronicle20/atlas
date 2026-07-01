@@ -2023,12 +2023,12 @@
   note: 'v72 COutPacket(22) verified via global COutPacket-ctor harvest @0x5b219a; Δ+0 vs v79 op 22 (login Δ0).'
 - op: DELETE_CHAR
   direction: serverbound
-  opcode: 23
+  opcode: 24
   fname: CLogin::SendDeleteCharPacket
   provenance: ida-discovered
   ida:
-    address: 7432638
-  note: 'v72 COutPacket(23) verified via global COutPacket-ctor harvest @0x7169be; Δ+0 vs v79 op 23 (login Δ0).'
+    address: 5972075
+  note: 'v72 COutPacket(24) verified by body: CLogin::SendDeleteCharPacket sub_5B206B @0x5b206b (login delete-char sender — prompts DOB via sub_5C728E, Encode4(dob)+Encode4(charId), deselects slot). The prior 0x7169be/op-23 mapping was a mis-harvested unrelated dialog sender (EncodeStr+6 ints). CSV has no v72 column; op 24 matches the v92/v95 DELETE_CHAR column, not v83''s 23.'
 - op: PONG
   direction: serverbound
   opcode: 25

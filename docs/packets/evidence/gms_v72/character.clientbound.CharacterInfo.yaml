@@ -1,0 +1,10 @@
+packet: character/clientbound/CharacterInfo
+direction: clientbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnCharacterInfo
+    address: "0x91b961"
+    decompile_sha256: 10ea3e8983342e786af3193531cf74d76768c3b0279dde854924d847f793843c
+verifies:
+  - libs/atlas-packet/character/clientbound/v72_test.go#TestCharacterInfoByteOutputV72

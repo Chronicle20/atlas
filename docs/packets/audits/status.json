@@ -1,7 +1,7 @@
 {
   "toolSha": "9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6",
   "exportHashes": {
-    "gms_v79": "fc71494276370dde846b6c74554ddfedaa3a0a7d3339aa1225115b1ca13a041c",
+    "gms_v79": "f16328d0962415cf263958771e012dc772547ca24f2f6484c1f4592bb9652b57",
     "gms_v83": "711bddcc2e1bdd417a75954148d2b50c64e70855e84259c0b8e50e700e393c0d",
     "gms_v84": "7eab9472e2afeda13faaf74273828d09d5f2481d67bec10235c3b2fd2f91e1eb",
     "gms_v87": "714817d376bb93732ef6b6fbe6b59f8c24515ff901801d213d676b501eae7f94",
@@ -237,13 +237,11 @@
       "direction": "clientbound",
       "tier1": false,
       "fnames": [
-        "CLogin::OnCheckUserLimitResult",
-        "sub_5CE217"
+        "CLogin::OnCheckUserLimitResult"
       ],
       "cells": {
         "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 3
         },
         "gms_v83": {
@@ -31295,8 +31293,7 @@
       "tier1": false,
       "cells": {
         "gms_v79": {
-          "state": "incomplete",
-          "note": "verdict 🚫",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v83": {
@@ -31334,43 +31331,6 @@
         "gms_v79": {
           "state": "incomplete",
           "note": "verdict ❌",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "sub-struct",
-      "packet": "login/clientbound/ServerStatus",
-      "tier1": false,
-      "cells": {
-        "gms_v79": {
-          "state": "incomplete",
-          "note": "verdict 🚫",
           "opcode": -1
         },
         "gms_v83": {

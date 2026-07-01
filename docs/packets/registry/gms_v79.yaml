@@ -22,11 +22,11 @@
 - op: SERVERSTATUS
   direction: clientbound
   opcode: 3
-  fname: sub_5CE217
+  fname: CLogin::OnCheckUserLimitResult
   provenance: ida-discovered
   ida:
     address: 6087191
-  note: 'v79 IDB leaves the handler unnamed (sub_5CE217) = CLogin::OnCheckUserLimitResult (delta doc f).'
+  note: 'v79 IDB leaves the handler unnamed (sub_5CE217 @0x5ce217) = CLogin::OnCheckUserLimitResult (delta doc f); fname carries the body-canonical name so the FName->writer join resolves the ServerStatus report (task-113 stage E close).'
 - op: GENDER_DONE
   direction: clientbound
   opcode: 4

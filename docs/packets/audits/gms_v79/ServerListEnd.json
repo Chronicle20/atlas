@@ -1,7 +1,7 @@
 {
   "WriterName": "ServerListEnd",
   "IDAName": "CLogin::OnWorldInformation#ServerListEnd",
-  "Address": "",
+  "Address": "0x5ce269",
   "Variant": "GMS/v79",
   "BranchDepth": 0,
   "AtlasFile": "libs/atlas-packet/login/clientbound/server_list_end.go",
@@ -10,12 +10,12 @@
       "Index": 0,
       "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 4,
-      "Note": "IDA read-order unresolved: function not found in IDB"
+      "IDAOp": 0,
+      "IDAComment": "nWorldID terminator (0xFF dispatch — end of world list) — v79 sub_5CE248@0x5ce269 Decode1, negative branch",
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 4,
+  "Verdict": 0,
   "FlatInvalid": false
 }

@@ -4701,13 +4701,20 @@
    ]
   },
   "CLogin::OnCheckPasswordResult#AuthLoginFailed": {
-   "address": "",
+   "address": "0x5cd38f",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": "resultCode (failure code) \u2014 v79 OnCheckPasswordResult@0x5cd38f v105=Decode1"
+    },
+    {
+     "op": "Decode1",
+     "comment": "post-auth flag \u2014 this+416=Decode1"
+    },
+    {
+     "op": "Decode4",
+     "comment": "reserved (always decoded before branch) \u2014 Decode4(v2)"
     }
    ]
   },
@@ -4755,13 +4762,12 @@
    ]
   },
   "CLogin::OnCheckUserLimitResult": {
-   "address": "",
+   "address": "0x5ce217",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode2",
+     "comment": "world status (2 bytes; v79 sub_5CE217@0x5ce217 reads as 2 \u00d7 Decode1, atlas writes WriteShort \u2014 wire-equivalent)"
     }
    ]
   },
@@ -5207,13 +5213,12 @@
    ]
   },
   "CLogin::OnWorldInformation#ServerListEnd": {
-   "address": "",
+   "address": "0x5ce269",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": "nWorldID terminator (0xFF dispatch \u2014 end of world list) \u2014 v79 sub_5CE248@0x5ce269 Decode1, negative branch"
     }
    ]
   },

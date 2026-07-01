@@ -1,7 +1,7 @@
 {
   "WriterName": "AddCharacterError",
   "IDAName": "CLogin::OnCreateNewCharacterResult#AddCharacterError",
-  "Address": "",
+  "Address": "0x5ceb55",
   "Variant": "GMS/v79",
   "BranchDepth": 0,
   "AtlasFile": "libs/atlas-packet/character/clientbound/add_entry_error.go",
@@ -10,12 +10,12 @@
       "Index": 0,
       "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 4,
-      "Note": "IDA read-order unresolved: function not found in IDB"
+      "IDAOp": 0,
+      "IDAComment": "result code: non-zero = error (10=limit, 26=accountTransfer, 30=cannotUse)",
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 4,
+  "Verdict": 0,
   "FlatInvalid": false
 }

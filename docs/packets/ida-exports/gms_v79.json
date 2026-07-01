@@ -4532,16 +4532,22 @@
    ]
   },
   "CLogin::OnCheckDuplicatedIDResult": {
-   "address": "0x5ce90a",
+   "address": "0x5ce875",
    "direction": "clientbound",
    "calls": [
     {
-     "op": "Decode4",
+     "op": "DecodeStr",
      "comment": ""
     },
     {
      "op": "Decode1",
      "comment": ""
+    },
+    {
+     "op": "Delegate",
+     "comment": "",
+     "guard": "v3 <= 0 && <default>",
+     "ref": "sub_416310"
     }
    ]
   },
@@ -4728,37 +4734,6 @@
    ]
   },
   "CLogin::OnCreateNewCharacterResult": {
-   "address": "0x5ce875",
-   "direction": "clientbound",
-   "calls": [
-    {
-     "op": "DecodeStr",
-     "comment": ""
-    },
-    {
-     "op": "Decode1",
-     "comment": ""
-    },
-    {
-     "op": "Delegate",
-     "comment": "",
-     "guard": "v3 <= 0 && <default>",
-     "ref": "sub_416310"
-    }
-   ]
-  },
-  "CLogin::OnCreateNewCharacterResult#AddCharacterError": {
-   "address": "",
-   "direction": "clientbound",
-   "unresolved": true,
-   "calls": [
-    {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
-   ]
-  },
-  "CLogin::OnDeleteCharacterResult": {
    "address": "0x5ceb55",
    "direction": "clientbound",
    "calls": [
@@ -4775,6 +4750,30 @@
      "op": "Delegate",
      "comment": "",
      "ref": "AvatarLook::Decode"
+    }
+   ]
+  },
+  "CLogin::OnCreateNewCharacterResult#AddCharacterError": {
+   "address": "0x5ceb55",
+   "direction": "clientbound",
+   "calls": [
+    {
+     "op": "Decode1",
+     "comment": "result code: non-zero = error (10=limit, 26=accountTransfer, 30=cannotUse)"
+    }
+   ]
+  },
+  "CLogin::OnDeleteCharacterResult": {
+   "address": "0x5ce90a",
+   "direction": "clientbound",
+   "calls": [
+    {
+     "op": "Decode4",
+     "comment": ""
+    },
+    {
+     "op": "Decode1",
+     "comment": ""
     }
    ]
   },

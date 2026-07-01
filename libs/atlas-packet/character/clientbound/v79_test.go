@@ -185,17 +185,15 @@ func TestCharacterViewAllCharactersByteOutputV79(t *testing.T) {
 // The legacy divergence vs v83+: the v79 add result has NO entry trailer
 // (family/rank). add_entry.go writes only stat+avatar for GMS v29..v82.
 //
-// NOTE (matrix promotion BLOCKED — registry/export/template opcode permutation):
-// This wire is verified below, but the cell cannot be promoted without correcting
-// the v79 opcode permutation. The v79 IDB mislabels the three char-management
-// handlers; by wire shape they are IDENTICAL to v83 (op13=CHAR_NAME_RESPONSE
-// [string][byte] @0x5ce875, op14=ADD_NEW_CHAR_ENTRY [byte][stat][avatar] @0x5ceb55,
-// op15=DELETE_CHAR_RESPONSE [int][byte] @0x5ce90a). registry/gms_v79.yaml,
-// ida-exports/gms_v79.json (incl. the #AddCharacterError slice) and
-// template_gms_79_1.json all carry the permuted mapping (Add=0x0D, Delete=0x0E,
-// Name=0x0F). Correcting it changes runtime seed-template opcodes and re-slices
-// entangled #suffix export entries — escalated for owner sequencing/live-tenant
-// validation. See the batch report for the exact corrective mapping.
+// CORRECTED (task-113 stage E): the v79 IDB SYMBOL names for the three
+// char-management handlers are rotated one step off their actual bodies. By
+// handler-body behavior v79 is IDENTICAL to v83 — op13=CHAR_NAME_RESPONSE
+// [string][byte] @0x5ce875, op14=ADD_NEW_CHAR_ENTRY [byte][stat][avatar]
+// @0x5ceb55, op15=DELETE_CHAR_RESPONSE [int][byte] @0x5ce90a. registry/gms_v79.yaml
+// and template_gms_79_1.json now carry the behavior-correct mapping (Add=0x0E,
+// Delete=0x0F, Name=0x0D). The prior permuted mapping trusted the rotated symbols.
+//
+// packet-audit:verify packet=character/clientbound/AddCharacterEntry version=gms_v79 ida=0x5ceb55
 func TestAddCharacterEntryByteOutputV79(t *testing.T) {
 	ctx := pt.CreateContext("GMS", 79, 1)
 	entry := model.NewCharacterListEntry(heroStatsV79(), heroAvatarV79(), false, false, 1, 2, 3, 4)
@@ -223,9 +221,10 @@ func TestAddCharacterEntryByteOutputV79(t *testing.T) {
 //
 // Matches DeleteCharacterResponse.Encode exactly ([int charId][byte code]).
 //
-// NOTE: matrix promotion BLOCKED by the v79 opcode permutation (see the
-// AddCharacterEntry note above). Wire verified here; cell stays ❌ pending the
-// registry/export/template correction.
+// CORRECTED (task-113 stage E): rotated-symbol fix — DELETE_CHAR_RESPONSE is
+// v79 op 15 (0x0F), same as v83, per the case-15 handler body @0x5ce90a.
+//
+// packet-audit:verify packet=character/clientbound/DeleteCharacterResponse version=gms_v79 ida=0x5ce90a
 func TestDeleteCharacterResponseByteOutputV79(t *testing.T) {
 	ctx := pt.CreateContext("GMS", 79, 1)
 	got := NewDeleteCharacterResponse(12345, 0).Encode(nil, ctx)(nil)
@@ -249,9 +248,10 @@ func TestDeleteCharacterResponseByteOutputV79(t *testing.T) {
 //
 // Matches CharacterNameResponse.Encode exactly ([string name][byte code]).
 //
-// NOTE: matrix promotion BLOCKED by the v79 opcode permutation (see the
-// AddCharacterEntry note above). Wire verified here; cell stays ❌ pending the
-// registry/export/template correction.
+// CORRECTED (task-113 stage E): rotated-symbol fix — CHAR_NAME_RESPONSE is
+// v79 op 13 (0x0D), same as v83, per the case-13 handler body @0x5ce875.
+//
+// packet-audit:verify packet=character/clientbound/CharacterNameResponse version=gms_v79 ida=0x5ce875
 func TestCharacterNameResponseByteOutputV79(t *testing.T) {
 	ctx := pt.CreateContext("GMS", 79, 1)
 	got := NewCharacterNameResponse("TestChar", 0).Encode(nil, ctx)(nil)

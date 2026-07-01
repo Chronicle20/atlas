@@ -1,7 +1,7 @@
 {
   "toolSha": "9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6",
   "exportHashes": {
-    "gms_v79": "044234c45af5eca1f159f041f76613905dd906182087491e303ff881016e5ab3",
+    "gms_v79": "49d57bc49abbda71461a339f5f3b4ce0047b95e87e2977ec73f7186777f74371",
     "gms_v83": "711bddcc2e1bdd417a75954148d2b50c64e70855e84259c0b8e50e700e393c0d",
     "gms_v84": "7eab9472e2afeda13faaf74273828d09d5f2481d67bec10235c3b2fd2f91e1eb",
     "gms_v87": "714817d376bb93732ef6b6fbe6b59f8c24515ff901801d213d676b501eae7f94",
@@ -1037,38 +1037,37 @@
     },
     {
       "kind": "op",
-      "op": "ADD_NEW_CHAR_ENTRY",
-      "packet": "character/clientbound/AddCharacterEntry",
+      "op": "CHAR_NAME_RESPONSE",
+      "packet": "character/clientbound/CharacterNameResponse",
       "direction": "clientbound",
       "tier1": true,
       "fnames": [
-        "CLogin::OnCreateNewCharacterResult"
+        "CLogin::OnCheckDuplicatedIDResult"
       ],
       "cells": {
         "gms_v79": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
+          "state": "verified",
           "opcode": 13
         },
         "gms_v83": {
           "state": "verified",
-          "opcode": 14
+          "opcode": 13
         },
         "gms_v84": {
           "state": "verified",
-          "opcode": 14
+          "opcode": 13
         },
         "gms_v87": {
           "state": "verified",
-          "opcode": 14
+          "opcode": 13
         },
         "gms_v95": {
           "state": "verified",
-          "opcode": 14
+          "opcode": 13
         },
         "jms_v185": {
           "state": "verified",
-          "opcode": 6
+          "opcode": 5
         }
       }
     },
@@ -1110,38 +1109,37 @@
     },
     {
       "kind": "op",
-      "op": "DELETE_CHAR_RESPONSE",
-      "packet": "character/clientbound/DeleteCharacterResponse",
+      "op": "ADD_NEW_CHAR_ENTRY",
+      "packet": "character/clientbound/AddCharacterEntry",
       "direction": "clientbound",
       "tier1": true,
       "fnames": [
-        "CLogin::OnDeleteCharacterResult"
+        "CLogin::OnCreateNewCharacterResult"
       ],
       "cells": {
         "gms_v79": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
+          "state": "verified",
           "opcode": 14
         },
         "gms_v83": {
           "state": "verified",
-          "opcode": 15
+          "opcode": 14
         },
         "gms_v84": {
           "state": "verified",
-          "opcode": 15
+          "opcode": 14
         },
         "gms_v87": {
           "state": "verified",
-          "opcode": 15
+          "opcode": 14
         },
         "gms_v95": {
           "state": "verified",
-          "opcode": 15
+          "opcode": 14
         },
         "jms_v185": {
           "state": "verified",
-          "opcode": 7
+          "opcode": 6
         }
       }
     },
@@ -1185,38 +1183,37 @@
     },
     {
       "kind": "op",
-      "op": "CHAR_NAME_RESPONSE",
-      "packet": "character/clientbound/CharacterNameResponse",
+      "op": "DELETE_CHAR_RESPONSE",
+      "packet": "character/clientbound/DeleteCharacterResponse",
       "direction": "clientbound",
       "tier1": true,
       "fnames": [
-        "CLogin::OnCheckDuplicatedIDResult"
+        "CLogin::OnDeleteCharacterResult"
       ],
       "cells": {
         "gms_v79": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
+          "state": "verified",
           "opcode": 15
         },
         "gms_v83": {
           "state": "verified",
-          "opcode": 13
+          "opcode": 15
         },
         "gms_v84": {
           "state": "verified",
-          "opcode": 13
+          "opcode": 15
         },
         "gms_v87": {
           "state": "verified",
-          "opcode": 13
+          "opcode": 15
         },
         "gms_v95": {
           "state": "verified",
-          "opcode": 13
+          "opcode": 15
         },
         "jms_v185": {
           "state": "verified",
-          "opcode": 5
+          "opcode": 7
         }
       }
     },

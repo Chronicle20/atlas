@@ -1,46 +1,46 @@
 {
   "WriterName": "AddCharacterEntry",
   "IDAName": "CLogin::OnCreateNewCharacterResult",
-  "Address": "0x5ce875",
+  "Address": "0x5ceb55",
   "Variant": "GMS/v79",
-  "BranchDepth": 0,
+  "BranchDepth": 1,
   "AtlasFile": "libs/atlas-packet/character/clientbound/add_entry.go",
   "Rows": [
     {
       "Index": 0,
       "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 4,
+      "IDAOp": 0,
       "IDAComment": "",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 1,
-      "AtlasOp": 2,
-      "AtlasKind": 0,
-      "IDAOp": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 1,
+      "IDAOp": 2,
       "IDAComment": "",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 3,
+      "Note": "sub-struct:  — see _substruct/"
     },
     {
       "Index": 2,
-      "AtlasOp": 5,
-      "AtlasKind": 0,
-      "IDAOp": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 1,
+      "IDAOp": 2,
       "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Verdict": 3,
+      "Note": "sub-struct:  — see _substruct/"
     },
     {
       "Index": 3,
-      "AtlasOp": 0,
+      "AtlasOp": 5,
       "AtlasKind": 0,
-      "IDAOp": 0,
+      "IDAOp": 5,
       "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 4,
@@ -49,223 +49,223 @@
       "IDAOp": 0,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: short — missing trailing field"
     },
     {
       "Index": 5,
-      "AtlasOp": 2,
+      "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: short — missing trailing field"
     },
     {
       "Index": 6,
-      "AtlasOp": 2,
+      "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: short — missing trailing field"
     },
     {
       "Index": 7,
-      "AtlasOp": 3,
+      "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: short — missing trailing field"
     },
     {
       "Index": 8,
       "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 0,
+      "IDAOp": 2,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: short — missing trailing field"
     },
     {
       "Index": 9,
-      "AtlasOp": 1,
+      "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 0,
+      "IDAOp": 2,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: short — missing trailing field"
     },
     {
       "Index": 10,
-      "AtlasOp": 1,
+      "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 0,
+      "IDAOp": 2,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: short — missing trailing field"
     },
     {
       "Index": 11,
-      "AtlasOp": 1,
+      "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 0,
+      "IDAOp": 2,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: short — missing trailing field"
     },
     {
       "Index": 12,
-      "AtlasOp": 1,
+      "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 0,
+      "IDAOp": 5,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: short — missing trailing field"
     },
     {
       "Index": 13,
-      "AtlasOp": 1,
+      "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: short — missing trailing field"
     },
     {
       "Index": 14,
-      "AtlasOp": 1,
+      "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 0,
+      "IDAOp": 1,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: short — missing trailing field"
     },
     {
       "Index": 15,
-      "AtlasOp": 1,
+      "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 0,
+      "IDAOp": 1,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: short — missing trailing field"
     },
     {
       "Index": 16,
-      "AtlasOp": 1,
+      "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 0,
+      "IDAOp": 1,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: short — missing trailing field"
     },
     {
       "Index": 17,
-      "AtlasOp": 1,
+      "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 0,
+      "IDAOp": 1,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: short — missing trailing field"
     },
     {
       "Index": 18,
-      "AtlasOp": 1,
+      "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 0,
+      "IDAOp": 1,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: short — missing trailing field"
     },
     {
       "Index": 19,
-      "AtlasOp": 1,
+      "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 0,
+      "IDAOp": 1,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: short — missing trailing field"
     },
     {
       "Index": 20,
-      "AtlasOp": 2,
+      "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 0,
+      "IDAOp": 1,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: short — missing trailing field"
     },
     {
       "Index": 21,
-      "AtlasOp": 1,
+      "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 0,
+      "IDAOp": 1,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: short — missing trailing field"
     },
     {
       "Index": 22,
-      "AtlasOp": 2,
+      "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 0,
+      "IDAOp": 1,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: short — missing trailing field"
     },
     {
       "Index": 23,
-      "AtlasOp": 2,
+      "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 0,
+      "IDAOp": 1,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: short — missing trailing field"
     },
     {
       "Index": 24,
       "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 0,
+      "IDAOp": 1,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: short — missing trailing field"
     },
     {
       "Index": 25,
-      "AtlasOp": 2,
+      "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 0,
+      "IDAOp": 2,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: short — missing trailing field"
     },
     {
       "Index": 26,
       "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 0,
+      "IDAOp": 1,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: short — missing trailing field"
     },
     {
       "Index": 27,
       "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 0,
+      "IDAOp": 2,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: short — missing trailing field"
     },
     {
       "Index": 28,
-      "AtlasOp": 2,
+      "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 0,
+      "IDAOp": 2,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: short — missing trailing field"
     },
     {
       "Index": 29,
@@ -274,16 +274,16 @@
       "IDAOp": 0,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: short — missing trailing field"
     },
     {
       "Index": 30,
-      "AtlasOp": 2,
+      "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 0,
+      "IDAOp": 2,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: short — missing trailing field"
     },
     {
       "Index": 31,
@@ -292,25 +292,25 @@
       "IDAOp": 0,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: short — missing trailing field"
     },
     {
       "Index": 32,
-      "AtlasOp": 2,
-      "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
-    },
-    {
-      "Index": 33,
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 33,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
     },
     {
       "Index": 34,
@@ -319,16 +319,16 @@
       "IDAOp": 0,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: short — missing trailing field"
     },
     {
       "Index": 35,
-      "AtlasOp": 2,
+      "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 0,
+      "IDAOp": 2,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: short — missing trailing field"
     },
     {
       "Index": 36,
@@ -337,90 +337,54 @@
       "IDAOp": 0,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: short — missing trailing field"
     },
     {
       "Index": 37,
-      "AtlasOp": 2,
+      "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 0,
+      "IDAOp": 2,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: short — missing trailing field"
     },
     {
       "Index": 38,
-      "AtlasOp": 2,
+      "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: short — missing trailing field"
     },
     {
       "Index": 39,
-      "AtlasOp": 2,
+      "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 0,
+      "IDAOp": 2,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: short — missing trailing field"
     },
     {
       "Index": 40,
       "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 0,
+      "IDAOp": 2,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: short — missing trailing field"
     },
     {
       "Index": 41,
       "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 0,
+      "IDAOp": 5,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
-    },
-    {
-      "Index": 42,
-      "AtlasOp": 2,
-      "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
-    },
-    {
-      "Index": 43,
-      "AtlasOp": 2,
-      "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
-    },
-    {
-      "Index": 44,
-      "AtlasOp": 2,
-      "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
-    },
-    {
-      "Index": 45,
-      "AtlasOp": 2,
-      "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: short — missing trailing field"
     }
   ],
-  "Verdict": 2,
-  "FlatInvalid": false
+  "Verdict": 3,
+  "FlatInvalid": true
 }

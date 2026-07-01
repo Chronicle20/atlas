@@ -324,7 +324,7 @@ Tool: `fa2892b4e82339df60c9ef0c33a6e4a08bdc3bf3`
 | RADIO_SCHEDULE | CUserLocal::OnRadioSchedule |  |  | ⬜ |  | ⬜ | 0x0E5 | ❌ | 0x0EA | ❌ | 0x0F3 | ❌ | 0x105 | ❌ |  | ⬜ |
 | SPAWN_NPC_REQUEST_CONTROLLER | CNpcPool::OnNpcChangeController | npc/clientbound/NpcSpawnRequestController (T1) | 0x0E5 | 🟡 | 0x0ED | 🟡 | 0x103 | ✅ | 0x10A | ✅ | 0x114 | ✅ | 0x139 | ✅ | 0x118 | ✅ |
 | IDA_0X0E6 | CUserLocal::OnOpenUIWithOption |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0E6 | ❌ |
-| NPC_ACTION | CNpc::OnMove | npc/clientbound/NpcAction (T1) | 0x0E6 | ❌ | 0x0EE | ✅ | 0x104 | ❌ | 0x10B | ❌ | 0x115 | ❌ | 0x13A | ❌ | 0x119 | ❌ |
+| NPC_ACTION | CNpc::OnMove | npc/clientbound/NpcAction (T1) | 0x0E6 | ✅ | 0x0EE | ✅ | 0x104 | ❌ | 0x10B | ❌ | 0x115 | ❌ | 0x13A | ❌ | 0x119 | ❌ |
 | OPEN_SKILL_GUIDE | CUserLocal::OnOpenSkillGuide |  |  | ⬜ |  | ⬜ | 0x0E6 | ❌ | 0x0EB | ❌ | 0x0F4 | ❌ | 0x106 | ❌ |  | ⬜ |
 | MOB_SPEAKING | CMob::OnMobSpeaking | monster/clientbound/MonsterMobSpeaking (T1) |  | ⬜ | 0x0E7 | 🟡 | 0x0FD | ✅ | 0x103 | ✅ | 0x10D | ✅ | 0x12D | ✅ | 0x10E | ✅ |
 | NOTICE_MSG | CUserLocal::OnNoticeMsg |  |  | ⬜ |  | ⬜ | 0x0E7 | ❌ | 0x0EC | ❌ | 0x0F5 | ❌ | 0x107 | ❌ |  | ⬜ |
@@ -886,7 +886,7 @@ Tool: `fa2892b4e82339df60c9ef0c33a6e4a08bdc3bf3`
 | npc/clientbound/NpcNpcConversation (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | npc/clientbound/NpcSayConversationDetail (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
 | npc/clientbound/NpcSayImageConversationDetail (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
-| npc/clientbound/NpcShopList (T1) |  |  | ❌ |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
+| npc/clientbound/NpcShopList (T1) |  |  | ✅ |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | npc/serverbound/NpcContinueConversation (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
 | npc/serverbound/NpcContinueConversationSelection (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
 | npc/serverbound/NpcContinueConversationText (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
@@ -914,7 +914,7 @@ Tool: `fa2892b4e82339df60c9ef0c33a6e4a08bdc3bf3`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v72 | 128 | 0 | 74 | 269 | 411 | 0 | 27.2% |
+| v72 | 130 | 0 | 74 | 267 | 411 | 0 | 27.6% |
 | v79 | 228 | 0 | 72 | 180 | 402 | 0 | 47.5% |
 | v83 | 367 | 0 | 0 | 311 | 204 | 0 | 54.1% |
 | v84 | 345 | 0 | 0 | 312 | 225 | 0 | 52.5% |

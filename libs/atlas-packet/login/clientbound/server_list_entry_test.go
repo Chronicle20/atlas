@@ -16,6 +16,7 @@ import (
 // packet-audit:verify packet=login/clientbound/ServerListEntry version=gms_v95 ida=0x5da7f0
 // packet-audit:verify packet=login/clientbound/ServerListEntry version=gms_v84 ida=0x60e5b3
 // packet-audit:verify packet=login/clientbound/ServerListEntry version=jms_v185 ida=0x66f107
+// packet-audit:verify packet=login/clientbound/ServerListEntry version=gms_v79 ida=0x5ce248
 func TestServerListEntryWorldIdInChannels(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

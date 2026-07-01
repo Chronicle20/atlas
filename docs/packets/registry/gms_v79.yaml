@@ -73,11 +73,11 @@
 - op: WORLD_INFORMATION
   direction: clientbound
   opcode: 10
-  fname: sub_5CE248
+  fname: CLogin::OnWorldInformation
   provenance: ida-discovered
   ida:
     address: 6087240
-  note: 'v79 IDB unnamed sub_5CE248 = CLogin::OnWorldInformation.'
+  note: 'v79 IDB unnamed sub_5CE248 @0x5ce248 = CLogin::OnWorldInformation; fname carries the body-canonical name so the FName->writer join resolves the ServerListEntry/ServerListEnd reports (task-113 stage E close).'
 - op: CHARLIST
   direction: clientbound
   opcode: 11

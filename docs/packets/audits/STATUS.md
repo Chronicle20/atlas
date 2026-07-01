@@ -5,7 +5,7 @@
 
 Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 
-- export gms_v79: `f16328d0962415cf263958771e012dc772547ca24f2f6484c1f4592bb9652b57`
+- export gms_v79: `67889cc64366e9cba8664d95d607a50a690e8a26f68c42524dcca443d2e0da15`
 - export gms_v83: `711bddcc2e1bdd417a75954148d2b50c64e70855e84259c0b8e50e700e393c0d`
 - export gms_v84: `7eab9472e2afeda13faaf74273828d09d5f2481d67bec10235c3b2fd2f91e1eb`
 - export gms_v87: `714817d376bb93732ef6b6fbe6b59f8c24515ff901801d213d676b501eae7f94`
@@ -27,7 +27,7 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 | VIEW_ALL_CHAR | CLogin::OnViewAllCharResult | character/clientbound/CharacterViewAllCharacters (T1) | 0x008 | ✅ | 0x008 | ✅ | 0x008 | ✅ | 0x008 | ✅ | 0x008 | ✅ | 0x014 | ✅ |
 | SELECT_CHARACTER_BY_VAC | CLogin::OnSelectCharacterByVACResult |  | 0x009 | ❌ | 0x009 | ❌ | 0x009 | ❌ | 0x009 | ❌ | 0x009 | ❌ |  | ⬜ |
 | IDA_0X00A | CClientSocket::OnAuthenCodeChanged |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x00A | ❌ |
-| WORLD_INFORMATION | CLogin::OnWorldInformation; sub_5CE248 | login/clientbound/ServerListEnd | 0x00A | ❌ | 0x00A | ✅ | 0x00A | ✅ | 0x00A | ✅ | 0x00A | ✅ | 0x002 | ✅ |
+| WORLD_INFORMATION | CLogin::OnWorldInformation | login/clientbound/ServerListEnd | 0x00A | ✅ | 0x00A | ✅ | 0x00A | ✅ | 0x00A | ✅ | 0x00A | ✅ | 0x002 | ✅ |
 | CHARLIST | CLogin::OnSelectWorldResult; sub_5CE522 | character/clientbound/CharacterList (T1) | 0x00B | ✅ | 0x00B | ✅ | 0x00B | ✅ | 0x00B | ✅ | 0x00B | ✅ | 0x003 | ✅ |
 | IDA_0X00B | CClientSocket::OnAuthenMessage |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x00B | ❌ |
 | SERVER_IP | CLogin::OnSelectCharacterResult | login/clientbound/ServerIP | 0x00C | 🟡 | 0x00C | ✅ | 0x00C | ✅ | 0x00C | ✅ | 0x00C | ✅ | 0x004 | ✅ |
@@ -860,8 +860,6 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 | interaction/serverbound/InteractionOperationTradeConfirm (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | interaction/serverbound/InteractionOperationTradePutItem (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | interaction/serverbound/InteractionOperationTransaction (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
-| login/clientbound/ServerListEnd |  |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| login/clientbound/ServerListEntry |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | login/serverbound/ServerListRequest |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | login/serverbound/ServerStatusRequest |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | login/serverbound/WorldCharacterListRequest |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
@@ -913,12 +911,12 @@ Tool: `9e0b2e9ea1b8320d936ce7b7ed8bbc8bae234db6`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v79 | 168 | 0 | 73 | 241 | 400 | 0 | 34.9% |
-| v83 | 367 | 0 | 0 | 313 | 202 | 0 | 54.0% |
-| v84 | 345 | 0 | 0 | 314 | 223 | 0 | 52.4% |
-| v87 | 379 | 0 | 0 | 338 | 165 | 0 | 52.9% |
-| v95 | 399 | 0 | 0 | 402 | 81 | 0 | 49.8% |
-| JMS185 | 361 | 0 | 0 | 349 | 172 | 0 | 50.8% |
+| v79 | 168 | 0 | 73 | 239 | 400 | 0 | 35.0% |
+| v83 | 367 | 0 | 0 | 311 | 202 | 0 | 54.1% |
+| v84 | 345 | 0 | 0 | 312 | 223 | 0 | 52.5% |
+| v87 | 379 | 0 | 0 | 336 | 165 | 0 | 53.0% |
+| v95 | 399 | 0 | 0 | 400 | 81 | 0 | 49.9% |
+| JMS185 | 361 | 0 | 0 | 347 | 172 | 0 | 51.0% |
 
 ## Conflicts
 

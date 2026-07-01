@@ -5202,13 +5202,84 @@
    ]
   },
   "CLogin::OnWorldInformation": {
-   "address": "",
+   "address": "0x5ce248",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": "nWorldID"
+    },
+    {
+     "op": "DecodeStr",
+     "comment": "sName"
+    },
+    {
+     "op": "Decode1",
+     "comment": "nWorldState"
+    },
+    {
+     "op": "DecodeStr",
+     "comment": "sWorldEventDesc"
+    },
+    {
+     "op": "Decode2",
+     "comment": "nWorldEventEXP_WSE"
+    },
+    {
+     "op": "Decode2",
+     "comment": "nWorldEventDrop_WSE"
+    },
+    {
+     "op": "Decode1",
+     "comment": "nBlockCharCreation"
+    },
+    {
+     "op": "Decode1",
+     "comment": "nChannelCount"
+    },
+    {
+     "op": "DecodeStr",
+     "comment": "channel sName (loop body)",
+     "guard": "loop nChannelCount"
+    },
+    {
+     "op": "Decode4",
+     "comment": "channel nUserNo",
+     "guard": "loop nChannelCount"
+    },
+    {
+     "op": "Decode1",
+     "comment": "channel nWorldID",
+     "guard": "loop nChannelCount"
+    },
+    {
+     "op": "Decode1",
+     "comment": "channel nChannelID",
+     "guard": "loop nChannelCount"
+    },
+    {
+     "op": "Decode1",
+     "comment": "channel bAdultChannel",
+     "guard": "loop nChannelCount"
+    },
+    {
+     "op": "Decode2",
+     "comment": "nBalloonCount"
+    },
+    {
+     "op": "Decode2",
+     "comment": "balloon x (loop body)",
+     "guard": "loop nBalloonCount"
+    },
+    {
+     "op": "Decode2",
+     "comment": "balloon y",
+     "guard": "loop nBalloonCount"
+    },
+    {
+     "op": "DecodeStr",
+     "comment": "balloon msg",
+     "guard": "loop nBalloonCount"
     }
    ]
   },

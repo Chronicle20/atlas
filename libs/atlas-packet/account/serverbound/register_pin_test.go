@@ -6,6 +6,10 @@ import (
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// gms_v72: REGISTER_PIN send built in CLogin::OnCheckPinCodeResult @0x5b56b9
+// (#RegisterPin arm) — Encode1(pinInput flag) + EncodeStr(pin); same shape as
+// v79 (GMS_v72.1_U_DEVM.exe, port 13339). Matches atlas RegisterPin.Encode.
+// packet-audit:verify packet=account/serverbound/RegisterPin version=gms_v72 ida=0x5b56b9
 // packet-audit:verify packet=account/serverbound/RegisterPin version=gms_v83 ida=0x5fc89d
 // packet-audit:verify packet=account/serverbound/RegisterPin version=gms_v87 ida=0x6342b0
 // packet-audit:verify packet=account/serverbound/RegisterPin version=gms_v95 ida=0x5db000

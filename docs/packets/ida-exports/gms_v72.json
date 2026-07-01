@@ -4554,24 +4554,46 @@
    ]
   },
   "CLogin::OnCheckPasswordResult#AuthPermanentBan": {
-   "address": "",
+   "address": "0x5b2577",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": ""
+    },
+    {
+     "op": "Decode1",
+     "comment": ""
+    },
+    {
+     "op": "Decode4",
+     "comment": ""
     }
    ]
   },
   "CLogin::OnCheckPasswordResult#AuthTemporaryBan": {
-   "address": "",
+   "address": "0x5b2577",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": ""
+    },
+    {
+     "op": "Decode1",
+     "comment": ""
+    },
+    {
+     "op": "Decode4",
+     "comment": ""
+    },
+    {
+     "op": "Decode1",
+     "comment": ""
+    },
+    {
+     "op": "Decode8",
+     "comment": ""
     }
    ]
   },
@@ -4586,13 +4608,16 @@
    ]
   },
   "CLogin::OnCheckPinCodeResult#RegisterPin": {
-   "address": "",
+   "address": "0x5b56b9",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": ""
+    },
+    {
+     "op": "DecodeStr",
+     "comment": ""
     }
    ]
   },
@@ -5009,7 +5034,84 @@
   "CLogin::OnWorldInformation": {
    "address": "0x5b33f8",
    "direction": "clientbound",
-   "calls": []
+   "calls": [
+    {
+     "op": "Decode1",
+     "comment": ""
+    },
+    {
+     "op": "DecodeStr",
+     "comment": ""
+    },
+    {
+     "op": "Decode1",
+     "comment": ""
+    },
+    {
+     "op": "DecodeStr",
+     "comment": ""
+    },
+    {
+     "op": "Decode2",
+     "comment": ""
+    },
+    {
+     "op": "Decode2",
+     "comment": ""
+    },
+    {
+     "op": "Decode1",
+     "comment": ""
+    },
+    {
+     "op": "Decode1",
+     "comment": ""
+    },
+    {
+     "op": "DecodeStr",
+     "comment": "",
+     "guard": "loop nChannelCount"
+    },
+    {
+     "op": "Decode4",
+     "comment": "",
+     "guard": "loop nChannelCount"
+    },
+    {
+     "op": "Decode1",
+     "comment": "",
+     "guard": "loop nChannelCount"
+    },
+    {
+     "op": "Decode1",
+     "comment": "",
+     "guard": "loop nChannelCount"
+    },
+    {
+     "op": "Decode1",
+     "comment": "",
+     "guard": "loop nChannelCount"
+    },
+    {
+     "op": "Decode2",
+     "comment": ""
+    },
+    {
+     "op": "Decode2",
+     "comment": "",
+     "guard": "loop nBalloonCount"
+    },
+    {
+     "op": "Decode2",
+     "comment": "",
+     "guard": "loop nBalloonCount"
+    },
+    {
+     "op": "DecodeStr",
+     "comment": "",
+     "guard": "loop nBalloonCount"
+    }
+   ]
   },
   "CLogin::OnWorldInformation#ServerListEnd": {
    "address": "0x5b33f8",

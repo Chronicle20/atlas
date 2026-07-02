@@ -4758,13 +4758,12 @@
    ]
   },
   "CLogin::SendCheckDuplicateIDPacket": {
-   "address": "",
+   "address": "0x565537",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "EncodeStr",
+     "comment": "name @0x5655a8"
     }
    ]
   },
@@ -4818,13 +4817,16 @@
    ]
   },
   "CLogin::SendDeleteCharPacket": {
-   "address": "",
+   "address": "0x5652e3",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Encode4",
+     "comment": "dob @0x56536d"
+    },
+    {
+     "op": "Encode4",
+     "comment": "characterId @0x56538a"
     }
    ]
   },
@@ -4844,13 +4846,64 @@
    ]
   },
   "CLogin::SendNewCharPacket": {
-   "address": "",
+   "address": "0x5653e9",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "EncodeStr",
+     "comment": "name @0x56544c"
+    },
+    {
+     "op": "Encode4",
+     "comment": "face @0x565463 loop"
+    },
+    {
+     "op": "Encode4",
+     "comment": "hair"
+    },
+    {
+     "op": "Encode4",
+     "comment": "hairColor"
+    },
+    {
+     "op": "Encode4",
+     "comment": "skinColor"
+    },
+    {
+     "op": "Encode4",
+     "comment": "top"
+    },
+    {
+     "op": "Encode4",
+     "comment": "bottom"
+    },
+    {
+     "op": "Encode4",
+     "comment": "shoes"
+    },
+    {
+     "op": "Encode4",
+     "comment": "weapon"
+    },
+    {
+     "op": "Encode1",
+     "comment": "gender @0x565482"
+    },
+    {
+     "op": "Encode1",
+     "comment": "strength @0x565495 loop"
+    },
+    {
+     "op": "Encode1",
+     "comment": "dexterity"
+    },
+    {
+     "op": "Encode1",
+     "comment": "intelligence"
+    },
+    {
+     "op": "Encode1",
+     "comment": "luck"
     }
    ]
   },
@@ -13345,17 +13398,6 @@
     }
    ]
   },
-  "CWvsContext::SendAbilityUpRequest": {
-   "address": "",
-   "direction": "",
-   "unresolved": true,
-   "calls": [
-    {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
-   ]
-  },
   "CWvsContext::SendAbilityUpRequest#AutoDistributeAp": {
    "address": "",
    "direction": "serverbound",
@@ -13368,13 +13410,16 @@
    ]
   },
   "CWvsContext::SendAbilityUpRequest#DistributeAp": {
-   "address": "",
+   "address": "0x8457ee",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Encode4",
+     "comment": "update_time @0x84589a"
+    },
+    {
+     "op": "Encode4",
+     "comment": "dwFlag @0x8458a5"
     }
    ]
   },
@@ -13401,13 +13446,20 @@
    ]
   },
   "CWvsContext::SendCharacterInfoRequest": {
-   "address": "",
+   "address": "0x845b68",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Encode4",
+     "comment": "update_time @0x845bdc"
+    },
+    {
+     "op": "Encode4",
+     "comment": "characterId @0x845be5"
+    },
+    {
+     "op": "Encode1",
+     "comment": "petInfo @0x845bf0"
     }
    ]
   },
@@ -13524,13 +13576,16 @@
    ]
   },
   "CWvsContext::SendSkillUpRequest": {
-   "address": "",
+   "address": "0x8458eb",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Encode4",
+     "comment": "update_time @0x845924"
+    },
+    {
+     "op": "Encode4",
+     "comment": "skillId @0x84592f"
     }
    ]
   },
@@ -13597,20 +13652,20 @@
    "direction": "serverbound",
    "calls": [
     {
-     "op": "Decode4",
-     "comment": ""
+     "op": "Encode4",
+     "comment": "val 0x1400 @0x842215"
     },
     {
-     "op": "Decode2",
-     "comment": ""
+     "op": "Encode2",
+     "comment": "hp @0x842220"
     },
     {
-     "op": "Decode2",
-     "comment": ""
+     "op": "Encode2",
+     "comment": "mp @0x84222b"
     },
     {
-     "op": "Decode1",
-     "comment": ""
+     "op": "Encode1",
+     "comment": "option @0x842236"
     }
    ]
   },

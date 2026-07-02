@@ -10,8 +10,8 @@
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | int32 | int32 `` | ✅ |  |
-| 1 | int16 | int16 `` | ✅ |  |
-| 2 | int16 | int16 `` | ✅ |  |
-| 3 | byte | byte `` | ✅ |  |
+| 0 | int32 | int32 `val 0x1400 @0x842215` | ✅ |  |
+| 1 | int16 | int16 `hp @0x842220` | ✅ |  |
+| 2 | int16 | int16 `mp @0x84222b` | ✅ |  |
+| 3 | byte | byte `option @0x842236` | ✅ |  |
 

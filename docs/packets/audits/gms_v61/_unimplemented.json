@@ -39,6 +39,10 @@
   {
    "fname": "CShopDlg::OnPacket#UnderLevelRequirement",
    "reason": "OVER/UNDER_LEVEL_REQUIREMENT are version-absent in gms_v61: the shop transaction dispatcher CShopDlg::OnPacket @0x64723c (GMS_v61.1_U_DEVM.exe, port 13338) reads Decode1(mode) and has NO Decode4 branch anywhere \u2014 every mode maps to a StringPool notice, except mode 14 which reads Decode1(flag)+optional DecodeStr (GENERIC_ERROR / GENERIC_ERROR_WITH_REASON). The level-requirement int32 payload (v83+ CShopDlg::OnPacket cases 14/15) does not exist in the legacy range; same disposition as gms_v72."
+  },
+  {
+   "fname": "CWvsContext::SendAbilityUpRequest#AutoDistributeAp",
+   "reason": "AutoDistributeAp (the auto-assign-all-AP send) is version-absent in gms_v61: an exhaustive scan of every COutPacket send site in GMS_v61.1_U_DEVM.exe (port 13338; 391 ctor xrefs) found NO array/loop-Encode4 sender matching the v72 anchor CWvsContext::SendAbilityUpRequest(ZArray<StatPair>*) sub_91BCE8 (Encode4 update_time + Encode4 count + [Encode4 flag + Encode4 value]*count). The v61 CUIStatDlg button handler sub_72DFBB @0x72dfbb has ONLY the six single-stat +buttons (STR 0x40/DEX 0x80/INT 0x100/LUK 0x200/HP 0x800/MP 0x2000), each calling the single-stat DISTRIBUTE_AP sender sub_8457EE (op 80) \u2014 there is no auto-assign button and no batch array send. The auto-distribute feature was added after v61. Report + (absent) export stub removed so the DISTRIBUTE_AP (SendAbilityUpRequest) worst-of-siblings grade excludes this arm. (task-113)"
   }
  ]
 }

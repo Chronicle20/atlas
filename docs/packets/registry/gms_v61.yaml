@@ -1800,7 +1800,9 @@
 - op: CHECK_CHAR_NAME
   direction: serverbound
   opcode: 21
-  fname: sub_565537
+  fname: CLogin::SendCheckDuplicateIDPacket
+  fname_alts:
+  - sub_565537
   provenance: ida-discovered
   ida:
     address: 6291023
@@ -1808,7 +1810,9 @@
 - op: CREATE_CHAR
   direction: serverbound
   opcode: 22
-  fname: sub_5653E9
+  fname: CLogin::SendNewCharPacket
+  fname_alts:
+  - sub_5653E9
   provenance: ida-discovered
   ida:
     address: 6291023
@@ -1816,7 +1820,9 @@
 - op: DELETE_CHAR
   direction: serverbound
   opcode: 23
-  fname: sub_5652E3
+  fname: CLogin::SendDeleteCharPacket
+  fname_alts:
+  - sub_5652E3
   provenance: ida-discovered
   ida:
     address: 6291023
@@ -1962,7 +1968,9 @@
 - op: DISTRIBUTE_AP
   direction: serverbound
   opcode: 80
-  fname: sub_8457EE
+  fname: CWvsContext::SendAbilityUpRequest
+  fname_alts:
+  - sub_8457EE
   provenance: ida-discovered
   ida:
     address: 8673262
@@ -1970,7 +1978,9 @@
 - op: GIVE_FAME
   direction: serverbound
   opcode: 87
-  fname: sub_845A65
+  fname: CWvsContext::SendGivePopularityRequest
+  fname_alts:
+  - sub_845A65
   provenance: ida-discovered
   ida:
     address: 8674917
@@ -1986,7 +1996,9 @@
 - op: DISTRIBUTE_SP
   direction: serverbound
   opcode: 82
-  fname: sub_8458EB
+  fname: CWvsContext::SendSkillUpRequest
+  fname_alts:
+  - sub_8458EB
   provenance: ida-discovered
   ida:
     address: 8673003
@@ -2020,7 +2032,9 @@
 - op: CHAR_INFO_REQUEST
   direction: serverbound
   opcode: 89
-  fname: sub_845B68
+  fname: CWvsContext::SendCharacterInfoRequest
+  fname_alts:
+  - sub_845B68
   provenance: ida-discovered
   ida:
     address: 8674664
@@ -2354,7 +2368,9 @@
 - op: MESO_DROP
   direction: serverbound
   opcode: 86
-  fname: sub_8459DD
+  fname: CWvsContext::SendDropMoneyRequest
+  fname_alts:
+  - sub_8459DD
   provenance: ida-discovered
   ida:
     address: 8673757

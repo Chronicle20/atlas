@@ -1,14 +1,14 @@
 # CheckName (← `CLogin::SendCheckDuplicateIDPacket`)
 
-- **IDA:** 
+- **IDA:** 0x565537
 - **Atlas file:** `libs/atlas-packet/character/serverbound/check_name.go`
 - **Variant:** GMS/v61
 - **Branch depth:** 0
-- **Verdict:** 🚫
+- **Verdict:** ✅
 
 ## Wire-level diff
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | string | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
+| 0 | string | string `name @0x5655a8` | ✅ |  |
 

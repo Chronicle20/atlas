@@ -1,15 +1,15 @@
 # DeleteCharacter (← `CLogin::SendDeleteCharPacket`)
 
-- **IDA:** 
+- **IDA:** 0x5652e3
 - **Atlas file:** `libs/atlas-packet/character/serverbound/delete.go`
 - **Variant:** GMS/v61
 - **Branch depth:** 3
-- **Verdict:** ❌
+- **Verdict:** ✅
 
 ## Wire-level diff
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | int32 | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
-| 1 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 0 | int32 | int32 `dob @0x56536d` | ✅ |  |
+| 1 | int32 | int32 `characterId @0x56538a` | ✅ |  |
 

@@ -722,3 +722,85 @@ func TestChalkboardUseByteOutputV72(t *testing.T) {
 		}
 	})
 }
+
+// StatusMessageDropPickUpMeso v72 byte-fixture — SHOW_STATUS_INFO, op 36.
+//
+// Client read order — CWvsContext::OnMessage @0x9191EE case 0 → drops arm
+// sub_9192D0 @0x9192d0. Inner drop-type Decode1@0x9192ef == 1 (meso) branch:
+//
+//	mode      = Decode1  // OnMessage dispatch byte @0x9191fd
+//	dropType  = Decode1  // inner type = 1 (meso)   @0x9192ef
+//	meso      = Decode4  // @0x91930b
+//	cafeBonus = Decode2  // @0x919314
+//
+// LEGACY DIVERGENCE vs v79: v72 reads NO partial-pickup flag between dropType and
+// meso (confirmed by disassembly — the meso branch has a single leading Decode1
+// then Decode4+Decode2). v79 sub_96AEEC meso branch reads Decode1(partial)@0x96af28
+// first. status_message.go gates the partial byte on GMS>=79; the v72 wire omits it.
+//
+// packet-audit:verify packet=character/clientbound/StatusMessageDropPickUpMeso version=gms_v72 ida=0x9192d0
+func TestStatusMessageDropPickUpMesoByteOutputV72(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 72, 1)
+	got := NewStatusMessageDropPickUpMeso(0, true, 1000, 0).Encode(nil, ctx)(nil)
+	want := []byte{
+		0x00,                   // mode = 0 (drops dispatch byte)   /*0x9191fd*/
+		0x01,                   // inner drop-type = 1 (meso)       /*0x9192ef*/
+		// NO partial-pickup byte (v72 < 79)
+		0xe8, 0x03, 0x00, 0x00, // meso 1000 (Decode4)              /*0x91930b*/
+		0x00, 0x00, // internetCafeBonus 0 (Decode2)   /*0x919314*/
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("v72 StatusMessageDropPickUpMeso wire: got %x want %x", got, want)
+	}
+}
+
+// StatusMessageIncreaseExperience v72 byte-fixture — SHOW_STATUS_INFO, op 36.
+//
+// Client read order — CWvsContext::OnMessage @0x9191EE case 3 → sub_919E04
+// @0x919e04 (all Decode1 unless noted, verified by disassembly — 8 Decode1 +
+// 4 Decode4):
+//
+//	mode                 = Decode1  // dispatch byte @0x9191fd
+//	white                = Decode1  // @0x919e1c
+//	amount               = Decode4  // @0x919e29
+//	inChat               = Decode1  // @0x919e32
+//	monsterBookBonus     = Decode4  // @0x919e3f
+//	mobEventBonusPct     = Decode1  // @0x919e49
+//	partyBonusPct        = Decode1  // @0x919e56
+//	weddingBonusEXP      = Decode4  // @0x919e63
+//	[mobEventBonusPct>0] playTimeHour        = Decode1  // @0x919e74
+//	[inChat] questBonusRate                  = Decode1  // @0x919e8b
+//	    [questBonusRate>0] questBonusRemain   = Decode1  // @0x919ea2
+//	partyBonusEventRate  = Decode1  // @0x919eb4
+//	partyBonusExp        = Decode4  // @0x919ec1 (the ONLY trailing int)
+//
+// LEGACY DIVERGENCE vs v79: v72 reads exactly ONE trailing Decode4 after
+// partyBonusEventRate; v79 sub_96BD0D reads THREE (partyBonusExp @0x96bdcb,
+// itemBonusEXP @0x96bdd5, premiumIPExp @0x96bde0). Everything up to and including
+// partyBonusEventRate is byte-identical. status_message.go gates the 2nd/3rd
+// trailing ints (and rainbow/ring/cake) on GMS>=79; the v72 wire stops at 1.
+//
+// packet-audit:verify packet=character/clientbound/StatusMessageIncreaseExperience version=gms_v72 ida=0x919e04
+func TestStatusMessageIncreaseExperienceByteOutputV72(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 72, 1)
+	got := NewStatusMessageIncreaseExperience(3, true, 500, true, 10, 5, 0, 0, 2, 3, 1, 0, 0, 50, 0, 0, 100, 200).Encode(nil, ctx)(nil)
+	want := []byte{
+		0x03,                   // mode = 3 (IncEXP dispatch byte)       /*0x9191fd*/
+		0x01,                   // white = true (Decode1)               /*0x919e1c*/
+		0xf4, 0x01, 0x00, 0x00, // amount 500 (Decode4)                 /*0x919e29*/
+		0x01,                   // inChat = true (Decode1)              /*0x919e32*/
+		0x0a, 0x00, 0x00, 0x00, // monsterBookBonus 10 (Decode4)        /*0x919e3f*/
+		0x05,                   // mobEventBonusPct 5 (Decode1)         /*0x919e49*/
+		0x00,                   // partyBonusPct 0 (Decode1)            /*0x919e56*/
+		0x00, 0x00, 0x00, 0x00, // weddingBonusEXP 0 (Decode4)          /*0x919e63*/
+		0x02,                   // playTimeHour 2 (Decode1, mob>0)      /*0x919e74*/
+		0x03,                   // questBonusRate 3 (Decode1, inChat)   /*0x919e8b*/
+		0x01,                   // questBonusRemain 1 (Decode1, rate>0) /*0x919ea2*/
+		0x00,                   // partyBonusEventRate 0 (Decode1)      /*0x919eb4*/
+		0x00, 0x00, 0x00, 0x00, // partyBonusExp 0 (Decode4, sole trailing int) /*0x919ec1*/
+		// NO itemBonusEXP / premiumIPExp (v72 < 79)
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("v72 StatusMessageIncreaseExperience wire:\n got %x\nwant %x", got, want)
+	}
+}

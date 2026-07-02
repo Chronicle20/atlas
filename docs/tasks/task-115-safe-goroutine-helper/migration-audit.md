@@ -22,71 +22,71 @@ Every row must carry a disposition before the branch is done. Row count must equ
 | 15 | services/atlas-ban/atlas.com/ban/main.go:81 | named-call | | | | |
 | 16 | services/atlas-ban/atlas.com/ban/main.go:82 | named-call | | | | |
 | 17 | services/atlas-asset-expiration/atlas.com/asset-expiration/task/periodic.go:43 | named-call | | | | |
-| 18 | services/atlas-channel/atlas.com/channel/listener/registry.go:208 | anon | | | | |
-| 19 | services/atlas-channel/atlas.com/channel/kafka/consumer/asset/consumer.go:346 | anon | | | | |
-| 20 | services/atlas-channel/atlas.com/channel/kafka/consumer/asset/consumer.go:357 | anon | | | | |
-| 21 | services/atlas-channel/atlas.com/channel/kafka/consumer/asset/consumer.go:366 | anon | | | | |
-| 22 | services/atlas-channel/atlas.com/channel/kafka/consumer/map/consumer.go:180 | anon | | | | |
-| 23 | services/atlas-channel/atlas.com/channel/kafka/consumer/map/consumer.go:200 | anon | | | | |
-| 24 | services/atlas-channel/atlas.com/channel/kafka/consumer/map/consumer.go:216 | anon | | | | |
-| 25 | services/atlas-channel/atlas.com/channel/kafka/consumer/map/consumer.go:222 | anon | | | | |
-| 26 | services/atlas-channel/atlas.com/channel/kafka/consumer/map/consumer.go:228 | anon | | | | |
-| 27 | services/atlas-channel/atlas.com/channel/kafka/consumer/map/consumer.go:234 | anon | | | | |
-| 28 | services/atlas-channel/atlas.com/channel/kafka/consumer/map/consumer.go:240 | anon | | | | |
-| 29 | services/atlas-channel/atlas.com/channel/kafka/consumer/map/consumer.go:246 | anon | | | | |
-| 30 | services/atlas-channel/atlas.com/channel/kafka/consumer/map/consumer.go:251 | anon | | | | |
-| 31 | services/atlas-channel/atlas.com/channel/kafka/consumer/map/consumer.go:257 | anon | | | | |
-| 32 | services/atlas-channel/atlas.com/channel/kafka/consumer/map/consumer.go:263 | anon | | | | |
-| 33 | services/atlas-channel/atlas.com/channel/kafka/consumer/map/consumer.go:269 | anon | | | | |
-| 34 | services/atlas-channel/atlas.com/channel/kafka/consumer/map/consumer.go:275 | anon | | | | |
-| 35 | services/atlas-channel/atlas.com/channel/kafka/consumer/map/consumer.go:281 | anon | | | | |
-| 36 | services/atlas-channel/atlas.com/channel/kafka/consumer/map/consumer.go:293 | anon | | | | |
-| 37 | services/atlas-channel/atlas.com/channel/kafka/consumer/map/consumer.go:306 | anon | | | | |
-| 38 | services/atlas-channel/atlas.com/channel/kafka/consumer/map/consumer.go:317 | anon | | | | |
-| 39 | services/atlas-channel/atlas.com/channel/kafka/consumer/map/consumer.go:380 | anon | | | | |
-| 40 | services/atlas-channel/atlas.com/channel/kafka/consumer/map/consumer.go:707 | named-call | | | | |
-| 41 | services/atlas-channel/atlas.com/channel/kafka/consumer/drop/consumer.go:163 | anon | | | | |
-| 42 | services/atlas-channel/atlas.com/channel/kafka/consumer/drop/consumer.go:195 | anon | | | | |
-| 43 | services/atlas-channel/atlas.com/channel/kafka/consumer/messenger/consumer.go:81 | anon | | | | |
-| 44 | services/atlas-channel/atlas.com/channel/kafka/consumer/messenger/consumer.go:89 | anon | | | | |
-| 45 | services/atlas-channel/atlas.com/channel/kafka/consumer/messenger/consumer.go:138 | anon | | | | |
-| 46 | services/atlas-channel/atlas.com/channel/kafka/consumer/messenger/consumer.go:151 | anon | | | | |
-| 47 | services/atlas-channel/atlas.com/channel/movement/processor.go:47 | anon | | | | |
-| 48 | services/atlas-channel/atlas.com/channel/movement/processor.go:54 | anon | | | | |
-| 49 | services/atlas-channel/atlas.com/channel/movement/processor.go:68 | anon | | | | |
-| 50 | services/atlas-channel/atlas.com/channel/movement/processor.go:85 | anon | | | | |
-| 51 | services/atlas-channel/atlas.com/channel/movement/processor.go:98 | anon | | | | |
-| 52 | services/atlas-channel/atlas.com/channel/movement/processor.go:135 | anon | | | | |
-| 53 | services/atlas-channel/atlas.com/channel/movement/processor.go:158 | anon | | | | |
-| 54 | services/atlas-channel/atlas.com/channel/movement/processor.go:165 | anon | | | | |
-| 55 | services/atlas-channel/atlas.com/channel/movement/processor.go:196 | anon | | | | |
-| 56 | services/atlas-channel/atlas.com/channel/movement/processor.go:205 | anon | | | | |
-| 57 | services/atlas-channel/atlas.com/channel/kafka/consumer/monster/consumer.go:218 | anon | | | | |
-| 58 | services/atlas-channel/atlas.com/channel/kafka/consumer/monster/consumer.go:244 | anon | | | | |
-| 59 | services/atlas-channel/atlas.com/channel/kafka/consumer/party/consumer.go:208 | anon | | | | |
-| 60 | services/atlas-channel/atlas.com/channel/kafka/consumer/party/consumer.go:216 | anon | | | | |
-| 61 | services/atlas-channel/atlas.com/channel/kafka/consumer/party/consumer.go:259 | anon | | | | |
-| 62 | services/atlas-channel/atlas.com/channel/kafka/consumer/party/consumer.go:267 | anon | | | | |
-| 63 | services/atlas-channel/atlas.com/channel/kafka/consumer/party/consumer.go:304 | anon | | | | |
-| 64 | services/atlas-channel/atlas.com/channel/kafka/consumer/party/consumer.go:312 | anon | | | | |
-| 65 | services/atlas-channel/atlas.com/channel/kafka/consumer/party/consumer.go:406 | anon | | | | |
-| 66 | services/atlas-channel/atlas.com/channel/kafka/consumer/party/consumer.go:414 | anon | | | | |
-| 67 | services/atlas-channel/atlas.com/channel/kafka/consumer/party/member/consumer.go:124 | anon | | | | |
-| 68 | services/atlas-channel/atlas.com/channel/kafka/consumer/party/member/consumer.go:157 | anon | | | | |
-| 69 | services/atlas-channel/atlas.com/channel/kafka/consumer/pet/consumer.go:210 | anon | | | | |
-| 70 | services/atlas-channel/atlas.com/channel/kafka/consumer/pet/consumer.go:216 | anon | | | | |
-| 71 | services/atlas-channel/atlas.com/channel/kafka/consumer/session/consumer.go:204 | anon | | | | |
-| 72 | services/atlas-channel/atlas.com/channel/kafka/consumer/session/consumer.go:214 | anon | | | | |
-| 73 | services/atlas-channel/atlas.com/channel/kafka/consumer/session/consumer.go:244 | anon | | | | |
-| 74 | services/atlas-channel/atlas.com/channel/kafka/consumer/session/consumer.go:283 | anon | | | | |
-| 75 | services/atlas-channel/atlas.com/channel/kafka/consumer/session/consumer.go:309 | anon | | | | |
-| 76 | services/atlas-channel/atlas.com/channel/kafka/consumer/session/consumer.go:320 | anon | | | | |
-| 77 | services/atlas-channel/atlas.com/channel/kafka/consumer/session/consumer.go:340 | anon | | | | |
-| 78 | services/atlas-channel/atlas.com/channel/socket/init.go:22 | anon | | | | |
-| 79 | services/atlas-channel/atlas.com/channel/socket/init.go:39 | anon | | | | |
-| 80 | services/atlas-channel/atlas.com/channel/tasks/task.go:18 | anon | | | | |
-| 81 | services/atlas-channel/atlas.com/channel/main.go:318 | named-call | | | | |
-| 82 | services/atlas-channel/atlas.com/channel/main.go:327 | named-call | | | | |
+| 18 | services/atlas-channel/atlas.com/channel/listener/registry.go:208 | anon | lifecycle | r.l | h.Ctx | migrated |
+| 19 | services/atlas-channel/atlas.com/channel/kafka/consumer/asset/consumer.go:346 | anon | handler-spawned | l | ctx | migrated |
+| 20 | services/atlas-channel/atlas.com/channel/kafka/consumer/asset/consumer.go:357 | anon | handler-spawned | l | ctx | migrated |
+| 21 | services/atlas-channel/atlas.com/channel/kafka/consumer/asset/consumer.go:366 | anon | handler-spawned | l | ctx | migrated |
+| 22 | services/atlas-channel/atlas.com/channel/kafka/consumer/map/consumer.go:180 | anon | handler-spawned | l | ctx | migrated |
+| 23 | services/atlas-channel/atlas.com/channel/kafka/consumer/map/consumer.go:200 | anon | handler-spawned | l | ctx | migrated |
+| 24 | services/atlas-channel/atlas.com/channel/kafka/consumer/map/consumer.go:216 | anon | handler-spawned | l | ctx | migrated |
+| 25 | services/atlas-channel/atlas.com/channel/kafka/consumer/map/consumer.go:222 | anon | handler-spawned | l | ctx | migrated |
+| 26 | services/atlas-channel/atlas.com/channel/kafka/consumer/map/consumer.go:228 | anon | handler-spawned | l | ctx | migrated |
+| 27 | services/atlas-channel/atlas.com/channel/kafka/consumer/map/consumer.go:234 | anon | handler-spawned | l | ctx | migrated |
+| 28 | services/atlas-channel/atlas.com/channel/kafka/consumer/map/consumer.go:240 | anon | handler-spawned | l | ctx | migrated |
+| 29 | services/atlas-channel/atlas.com/channel/kafka/consumer/map/consumer.go:246 | anon | handler-spawned | l | ctx | migrated |
+| 30 | services/atlas-channel/atlas.com/channel/kafka/consumer/map/consumer.go:251 | anon | handler-spawned | l | ctx | migrated |
+| 31 | services/atlas-channel/atlas.com/channel/kafka/consumer/map/consumer.go:257 | anon | handler-spawned | l | ctx | migrated |
+| 32 | services/atlas-channel/atlas.com/channel/kafka/consumer/map/consumer.go:263 | anon | handler-spawned | l | ctx | migrated |
+| 33 | services/atlas-channel/atlas.com/channel/kafka/consumer/map/consumer.go:269 | anon | handler-spawned | l | ctx | migrated |
+| 34 | services/atlas-channel/atlas.com/channel/kafka/consumer/map/consumer.go:275 | anon | handler-spawned | l | ctx | migrated |
+| 35 | services/atlas-channel/atlas.com/channel/kafka/consumer/map/consumer.go:281 | anon | handler-spawned | l | ctx | migrated |
+| 36 | services/atlas-channel/atlas.com/channel/kafka/consumer/map/consumer.go:293 | anon | handler-spawned | l | ctx | migrated |
+| 37 | services/atlas-channel/atlas.com/channel/kafka/consumer/map/consumer.go:306 | anon | handler-spawned | l | ctx | migrated |
+| 38 | services/atlas-channel/atlas.com/channel/kafka/consumer/map/consumer.go:317 | anon | handler-spawned | l | ctx | migrated |
+| 39 | services/atlas-channel/atlas.com/channel/kafka/consumer/map/consumer.go:380 | anon | handler-spawned | l | ctx | migrated |
+| 40 | services/atlas-channel/atlas.com/channel/kafka/consumer/map/consumer.go:707 | named-call | handler-spawned | l | ctx | migrated |
+| 41 | services/atlas-channel/atlas.com/channel/kafka/consumer/drop/consumer.go:163 | anon | handler-spawned | l | ctx | migrated |
+| 42 | services/atlas-channel/atlas.com/channel/kafka/consumer/drop/consumer.go:195 | anon | handler-spawned | l | ctx | migrated |
+| 43 | services/atlas-channel/atlas.com/channel/kafka/consumer/messenger/consumer.go:81 | anon | handler-spawned | l | ctx | migrated |
+| 44 | services/atlas-channel/atlas.com/channel/kafka/consumer/messenger/consumer.go:89 | anon | handler-spawned | l | ctx | migrated |
+| 45 | services/atlas-channel/atlas.com/channel/kafka/consumer/messenger/consumer.go:138 | anon | handler-spawned | l | ctx | migrated |
+| 46 | services/atlas-channel/atlas.com/channel/kafka/consumer/messenger/consumer.go:151 | anon | handler-spawned | l | ctx | migrated |
+| 47 | services/atlas-channel/atlas.com/channel/movement/processor.go:47 | anon | handler-spawned | p.l | p.ctx | migrated |
+| 48 | services/atlas-channel/atlas.com/channel/movement/processor.go:54 | anon | handler-spawned | p.l | p.ctx | migrated |
+| 49 | services/atlas-channel/atlas.com/channel/movement/processor.go:68 | anon | handler-spawned | p.l | p.ctx | migrated |
+| 50 | services/atlas-channel/atlas.com/channel/movement/processor.go:85 | anon | handler-spawned | p.l | p.ctx | migrated |
+| 51 | services/atlas-channel/atlas.com/channel/movement/processor.go:98 | anon | handler-spawned | p.l | p.ctx | migrated |
+| 52 | services/atlas-channel/atlas.com/channel/movement/processor.go:135 | anon | handler-spawned | p.l | p.ctx | migrated |
+| 53 | services/atlas-channel/atlas.com/channel/movement/processor.go:158 | anon | handler-spawned | p.l | p.ctx | migrated |
+| 54 | services/atlas-channel/atlas.com/channel/movement/processor.go:165 | anon | handler-spawned | p.l | p.ctx | migrated |
+| 55 | services/atlas-channel/atlas.com/channel/movement/processor.go:196 | anon | handler-spawned | p.l | p.ctx | migrated |
+| 56 | services/atlas-channel/atlas.com/channel/movement/processor.go:205 | anon | handler-spawned | p.l | p.ctx | migrated |
+| 57 | services/atlas-channel/atlas.com/channel/kafka/consumer/monster/consumer.go:218 | anon | handler-spawned | l | ctx | migrated |
+| 58 | services/atlas-channel/atlas.com/channel/kafka/consumer/monster/consumer.go:244 | anon | handler-spawned | l | ctx | migrated |
+| 59 | services/atlas-channel/atlas.com/channel/kafka/consumer/party/consumer.go:208 | anon | handler-spawned | l | ctx | migrated |
+| 60 | services/atlas-channel/atlas.com/channel/kafka/consumer/party/consumer.go:216 | anon | handler-spawned | l | ctx | migrated |
+| 61 | services/atlas-channel/atlas.com/channel/kafka/consumer/party/consumer.go:259 | anon | handler-spawned | l | ctx | migrated |
+| 62 | services/atlas-channel/atlas.com/channel/kafka/consumer/party/consumer.go:267 | anon | handler-spawned | l | ctx | migrated |
+| 63 | services/atlas-channel/atlas.com/channel/kafka/consumer/party/consumer.go:304 | anon | handler-spawned | l | ctx | migrated |
+| 64 | services/atlas-channel/atlas.com/channel/kafka/consumer/party/consumer.go:312 | anon | handler-spawned | l | ctx | migrated |
+| 65 | services/atlas-channel/atlas.com/channel/kafka/consumer/party/consumer.go:406 | anon | handler-spawned | l | ctx | migrated |
+| 66 | services/atlas-channel/atlas.com/channel/kafka/consumer/party/consumer.go:414 | anon | handler-spawned | l | ctx | migrated |
+| 67 | services/atlas-channel/atlas.com/channel/kafka/consumer/party/member/consumer.go:124 | anon | handler-spawned | l | ctx | migrated |
+| 68 | services/atlas-channel/atlas.com/channel/kafka/consumer/party/member/consumer.go:157 | anon | handler-spawned | l | ctx | migrated |
+| 69 | services/atlas-channel/atlas.com/channel/kafka/consumer/pet/consumer.go:210 | anon | handler-spawned | l | ctx | migrated |
+| 70 | services/atlas-channel/atlas.com/channel/kafka/consumer/pet/consumer.go:216 | anon | handler-spawned | l | ctx | migrated |
+| 71 | services/atlas-channel/atlas.com/channel/kafka/consumer/session/consumer.go:204 | anon | handler-spawned | l | ctx | migrated |
+| 72 | services/atlas-channel/atlas.com/channel/kafka/consumer/session/consumer.go:214 | anon | handler-spawned | l | ctx | migrated |
+| 73 | services/atlas-channel/atlas.com/channel/kafka/consumer/session/consumer.go:244 | anon | handler-spawned | l | ctx | migrated |
+| 74 | services/atlas-channel/atlas.com/channel/kafka/consumer/session/consumer.go:283 | anon | handler-spawned | l | ctx | migrated |
+| 75 | services/atlas-channel/atlas.com/channel/kafka/consumer/session/consumer.go:309 | anon | handler-spawned | l | ctx | migrated |
+| 76 | services/atlas-channel/atlas.com/channel/kafka/consumer/session/consumer.go:320 | anon | handler-spawned | l | ctx | migrated |
+| 77 | services/atlas-channel/atlas.com/channel/kafka/consumer/session/consumer.go:340 | anon | handler-spawned | l | ctx | migrated |
+| 78 | services/atlas-channel/atlas.com/channel/socket/init.go:22 | anon | lifecycle | l | ctx | migrated |
+| 79 | services/atlas-channel/atlas.com/channel/socket/init.go:39 | anon | lifecycle | l | ctx | migrated |
+| 80 | services/atlas-channel/atlas.com/channel/tasks/task.go:18 | anon | ticker | l | ctx | migrated |
+| 81 | services/atlas-channel/atlas.com/channel/main.go:318 | named-call | lifecycle | l | tdm.Context() | migrated |
+| 82 | services/atlas-channel/atlas.com/channel/main.go:327 | named-call | ticker | l | tdm.Context() | migrated |
 | 83 | services/atlas-guilds/atlas.com/guilds/tasks/task.go:18 | anon | | | | |
 | 84 | services/atlas-guilds/atlas.com/guilds/main.go:101 | named-call | | | | |
 | 85 | services/atlas-pets/atlas.com/pets/pet/task.go:37 | anon | | | | |

@@ -5,7 +5,7 @@
 
 Tool: `bfecda916f252908d2fafda8adbe41d5763d4a1e`
 
-- export gms_v61: `ddbcc97bbd24a8db71b3368eec57ac4475f037eeb8604b0068f9e366637db806`
+- export gms_v61: `ba45daf2d8a0c8dc3833ed764519d27345a0c560c762010bd591e7f6e3751eae`
 - export gms_v72: `a0ac2be6578395455f491976bcb11aa27e2e57376b46ee8816b90324bad60c02`
 - export gms_v79: `370d6b720b633c12c71d40340f3952000705c4bddb98f87179e7193d112d210c`
 - export gms_v83: `711bddcc2e1bdd417a75954148d2b50c64e70855e84259c0b8e50e700e393c0d`
@@ -290,7 +290,7 @@ Tool: `bfecda916f252908d2fafda8adbe41d5763d4a1e`
 | MOB_AFFECTED | CMob::OnAffected | monster/clientbound/MonsterMobAffected (T1) | 0x0B8 | 🟡 | 0x0D9 | 🟡 | 0x0DF | 🟡 | 0x0F5 | ✅ | 0x0FB | ✅ | 0x105 | ✅ | 0x125 | ✅ | 0x106 | ✅ |
 | DAMAGE_MONSTER | CMob::OnDamaged | monster/clientbound/MonsterDamage (T1) | 0x0B9 | ✅ | 0x0DA | ✅ | 0x0E0 | ✅ | 0x0F6 | ✅ | 0x0FC | ✅ | 0x106 | ✅ | 0x126 | ✅ | 0x107 | ✅ |
 | MONSTER_SPECIAL_EFFECT_BY_SKILL | CMob::OnSpecialEffectBySkill | monster/clientbound/MonsterMonsterSpecialEffectBySkill (T1) | 0x0BA | ✅ | 0x0DB | ✅ | 0x0E1 | ✅ | 0x0F7 | ✅ | 0x0FD | ✅ | 0x107 | ✅ | 0x127 | ✅ | 0x108 | ✅ |
-| MOB_CRC_KEY_CHANGED | CMobPool::OnMobCrcKeyChanged | monster/clientbound/MonsterMobCrcKeyChanged (T1) | 0x0BC | ❌ | 0x0DD | ✅ | 0x0E3 | ✅ | 0x0F9 | ✅ | 0x0FF | ✅ | 0x109 | ✅ | 0x129 | ✅ | 0x10A | ✅ |
+| MOB_CRC_KEY_CHANGED | CMobPool::OnMobCrcKeyChanged | monster/clientbound/MonsterMobCrcKeyChanged (T1) | 0x0BC | ✅ | 0x0DD | ✅ | 0x0E3 | ✅ | 0x0F9 | ✅ | 0x0FF | ✅ | 0x109 | ✅ | 0x129 | ✅ | 0x10A | ✅ |
 | SHOW_ITEM_OPTION_UPGRADE_EFFECT | CUser::ShowItemOptionUpgradeEffect |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0BC | ❌ |  | ⬜ |
 | SHOW_ITEM_RELEASE_EFFECT | CUser::ShowItemReleaseEffect |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0BD | ❌ |  | ⬜ |
 | SHOW_MONSTER_HP | CMob::OnHPIndicator | monster/clientbound/MonsterHealth (T1) | 0x0BD | ✅ | 0x0DE | ✅ | 0x0E4 | ✅ | 0x0FA | ✅ | 0x100 | ✅ | 0x10A | ✅ | 0x12A | ✅ | 0x10B | ✅ |
@@ -650,7 +650,7 @@ Tool: `bfecda916f252908d2fafda8adbe41d5763d4a1e`
 | FOLLOW_CHARACTER_REQUEST | CWvsContext::SendFollowCharacterRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x086 | ❌ | 0x074 | ❌ |
 | OPEN_GATE | COpenGatePool::TryEnterOpenGate |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x086 | ❌ |  | ⬜ | 0x08E | ❌ | 0x09D | ❌ | 0x0A2 | ❌ |
 | UNNAMED_R190 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x087 | ❌ |  | ⬜ |
-| MOB_CRC_KEY_CHANGED_REPLY | CMobPool::OnMobCrcKeyChanged | monster/clientbound/MonsterMobCrcKeyChanged (T1) | 0x088 | ❌ | 0x09B | ✅ | 0x09A | ✅ | 0x0A4 | ✅ | 0x0AA | ✅ | 0x0AE | ✅ | 0x0BE | ✅ | 0x09E | ✅ |
+| MOB_CRC_KEY_CHANGED_REPLY | CMobPool::OnMobCrcKeyChanged | monster/clientbound/MonsterMobCrcKeyChanged (T1) | 0x088 | ✅ | 0x09B | ✅ | 0x09A | ✅ | 0x0A4 | ✅ | 0x0AA | ✅ | 0x0AE | ✅ | 0x0BE | ✅ | 0x09E | ✅ |
 | PQ_SELECT_REWARD | CUIPQReward::SelectReward |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x088 | ❌ |  | ⬜ |
 | RPS_ACTION | CRPSGameDlg::OnBtContinue; CRPSGameDlg::OnBtExit; CRPSGameDlg::OnBtRetry; CRPSGameDlg::OnBtStart; CRPSGameDlg::SendSelection; CRPSGameDlg::Update |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x088 | ❌ | 0x08C | ❌ | 0x090 | ❌ | 0x0A0 | ❌ | 0x08B | ❌ |
 | PQ_REQUEST_REWARD | CUIPQReward::RequestReward |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x089 | ❌ |  | ⬜ |
@@ -680,19 +680,19 @@ Tool: `bfecda916f252908d2fafda8adbe41d5763d4a1e`
 | CHANGE_FAMILY_MESSAGE | CWvsContext::SendSetFamilyPrecept |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x098 | ❌ | 0x09C | ❌ | 0x0A0 | ❌ | 0x0B0 | ❌ | 0x09A | ❌ |
 | FAMILY_SUMMON_RESPONSE | CWvsContext::OnFamilySummonRequest |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x099 | ❌ | 0x09D | ❌ | 0x0A1 | ❌ | 0x0B1 | ❌ | 0x09B | ❌ |
 | UNNAMED_R245 |  |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x09A | ❌ |  | ⬜ | 0x0A2 | ❌ | 0x0B2 | ❌ |  | ⬜ |
-| MOVE_LIFE | CMob::GenerateMovePath; sub_5CADA5 | monster/serverbound/MonsterMovementRequest (T1) | 0x09B | ❌ | 0x0B2 | ✅ | 0x0B4 | ✅ | 0x0BC | ✅ | 0x0C1 | ✅ | 0x0C8 | ✅ | 0x0E3 | ✅ | 0x0C2 | ✅ |
+| MOVE_LIFE | CMob::GenerateMovePath | monster/serverbound/MonsterMovementRequest (T1) | 0x09B | ✅ | 0x0B2 | ✅ | 0x0B4 | ✅ | 0x0BC | ✅ | 0x0C1 | ✅ | 0x0C8 | ✅ | 0x0E3 | ✅ | 0x0C2 | ✅ |
 | ENTER_MTS | CWvsContext::SendMigrateToITCRequest |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x09C | ❌ | 0x0A0 | ❌ | 0x0A4 | ❌ | 0x0B4 | ❌ | 0x0A6 | ❌ |
-| MOB_DROP_PICKUP_REQUEST | CMob::SendDropPickUpRequest; sub_5CD6D2 | monster/serverbound/MonsterMobDropPickupRequest (T1) | 0x09D | ❌ | 0x0B4 | ✅ | 0x0B6 | ✅ | 0x0BE | ✅ | 0x0C3 | ✅ | 0x0CA | ✅ | 0x0E5 | ✅ | 0x0C4 | ✅ |
+| MOB_DROP_PICKUP_REQUEST | CMob::SendDropPickUpRequest | monster/serverbound/MonsterMobDropPickupRequest (T1) | 0x09D | ✅ | 0x0B4 | ✅ | 0x0B6 | ✅ | 0x0BE | ✅ | 0x0C3 | ✅ | 0x0CA | ✅ | 0x0E5 | ✅ | 0x0C4 | ✅ |
 | USE_SOLOMON_ITEM | CWvsContext::SendExpUpItemUseRequest |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x09D | ❌ | 0x0A1 | ❌ | 0x0A5 | ❌ | 0x0B5 | ❌ | 0x071 | ❌ |
 | FIELD_DAMAGE_MOB | CMob::Update; sub_5C71B7; sub_6361DF | character/serverbound/CharacterMonsterDamageFriendly (T1) | 0x09E | ❌ | 0x0B5 | ✅ | 0x0B7 | ✅ | 0x0BF | ✅ | 0x0C4 | ✅ | 0x0CB | ✅ | 0x0E6 | ✅ | 0x0C5 | ✅ |
 | SLIDE_REQUEST | CField::SendChatMsgSlash | field/serverbound/FieldAdminChat (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x09E | ✅ | 0x089 | ✅ |
 | USE_GACHA_EXP | CWvsContext::SendTempExpUseRequest |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x09E | ❌ | 0x0A2 | ❌ | 0x0A6 | ❌ | 0x0B6 | ❌ | 0x072 | ❌ |
 | MOB_DAMAGE_MOB_FRIENDLY | CMob::Update; sub_5C71B7; sub_6361DF | character/serverbound/CharacterMonsterDamageFriendly (T1) | 0x09F | ❌ | 0x0B6 | ✅ | 0x0B8 | ✅ | 0x0C0 | ✅ | 0x0C5 | ✅ | 0x0CC | ✅ | 0x0E7 | ✅ | 0x0C6 | ✅ |
 | NEW_YEAR_CARD_REQUEST | CUIFadeYesNo::OnButtonClicked; CUINewYearCardSenderDlg::_SendNewYearCard | guild/serverbound/GuildJoin (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x09F | ✅ | 0x0A3 | ✅ | 0x0A7 | ✅ | 0x0B7 | ✅ |  | ⬜ |
-| MONSTER_BOMB | CMob::TryFirstSelfDestruction; sub_5CD3FD | monster/serverbound/MonsterMonsterBomb (T1) | 0x0A0 | ❌ | 0x0B7 | ✅ | 0x0B9 | ✅ | 0x0C1 | ✅ | 0x0C6 | ✅ | 0x0CD | ✅ | 0x0E8 | ✅ | 0x0C7 | ✅ |
+| MONSTER_BOMB | CMob::TryFirstSelfDestruction | monster/serverbound/MonsterMonsterBomb (T1) | 0x0A0 | ✅ | 0x0B7 | ✅ | 0x0B9 | ✅ | 0x0C1 | ✅ | 0x0C6 | ✅ | 0x0CD | ✅ | 0x0E8 | ✅ | 0x0C7 | ✅ |
 | MORPH_REQUEST | CUINewYearCardSenderDlg::_SendNewYearCard; CUIRandomMorphDlg::_SendMorphRequest |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x0A0 | ❌ | 0x0A4 | ❌ | 0x0A8 | ❌ | 0x0B8 | ❌ |  | ⬜ |
 | CASH_ITEM_GACHAPON_BUTTON | CUICashItemGachapon::OnButtonClicked |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x0A1 | ❌ | 0x0A5 | ❌ | 0x0A9 | ❌ | 0x0B9 | ❌ |  | ⬜ |
-| MOB_DAMAGE_MOB | CMob::SetDamagedByMob; sub_5CED89 | monster/serverbound/MonsterMobDamageMob (T1) | 0x0A1 | ❌ | 0x0B8 | ✅ | 0x0BA | ✅ | 0x0C2 | ✅ | 0x0C7 | ✅ | 0x0CE | ✅ | 0x0E9 | ✅ | 0x0C8 | ✅ |
+| MOB_DAMAGE_MOB | CMob::SetDamagedByMob | monster/serverbound/MonsterMobDamageMob (T1) | 0x0A1 | ✅ | 0x0B8 | ✅ | 0x0BA | ✅ | 0x0C2 | ✅ | 0x0C7 | ✅ | 0x0CE | ✅ | 0x0E9 | ✅ | 0x0C8 | ✅ |
 | CLICK_GUIDE | CUserLocal::HandleLButtonDblClk |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x0A2 | ❌ |  | ⬜ | 0x0AC | ❌ | 0x0BC | ❌ | 0x09C | ❌ |
 | ARAN_COMBO_COUNTER | CUserLocal::RequestIncCombo |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x0A3 | ❌ | 0x0A9 | ❌ | 0x0AD | ❌ | 0x0BD | ❌ | 0x09D | ❌ |
 | JMS_CONSUME_ITEM |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0A3 | ❌ |
@@ -915,10 +915,6 @@ Tool: `bfecda916f252908d2fafda8adbe41d5763d4a1e`
 | messenger/serverbound/MessengerOperationChat (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
 | messenger/serverbound/MessengerOperationInvite (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
 | monster/carnival/serverbound/MonsterCarnival (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| monster/serverbound/MonsterMobDamageMob (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| monster/serverbound/MonsterMobDropPickupRequest (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| monster/serverbound/MonsterMonsterBomb (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| monster/serverbound/MonsterMovementRequest (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | note/serverbound/NoteOperation (T1) |  |  | ❌ |  | 🟡 |  | 🟡 |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | note/serverbound/NoteOperationDiscard (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |
 | note/serverbound/NoteOperationSend (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
@@ -966,14 +962,14 @@ Tool: `bfecda916f252908d2fafda8adbe41d5763d4a1e`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v61 | 75 | 0 | 62 | 342 | 454 | 0 | 15.7% |
-| v72 | 216 | 0 | 73 | 230 | 414 | 0 | 41.6% |
-| v79 | 228 | 0 | 72 | 228 | 405 | 0 | 43.2% |
-| v83 | 367 | 0 | 0 | 359 | 207 | 0 | 50.6% |
-| v84 | 345 | 0 | 0 | 360 | 228 | 0 | 48.9% |
-| v87 | 379 | 0 | 0 | 384 | 170 | 0 | 49.7% |
-| v95 | 399 | 0 | 0 | 448 | 86 | 0 | 47.1% |
-| JMS185 | 362 | 0 | 0 | 394 | 177 | 0 | 47.9% |
+| v61 | 81 | 0 | 62 | 332 | 454 | 0 | 17.1% |
+| v72 | 216 | 0 | 73 | 226 | 414 | 0 | 41.9% |
+| v79 | 228 | 0 | 72 | 224 | 405 | 0 | 43.5% |
+| v83 | 367 | 0 | 0 | 355 | 207 | 0 | 50.8% |
+| v84 | 345 | 0 | 0 | 356 | 228 | 0 | 49.2% |
+| v87 | 379 | 0 | 0 | 380 | 170 | 0 | 49.9% |
+| v95 | 399 | 0 | 0 | 444 | 86 | 0 | 47.3% |
+| JMS185 | 362 | 0 | 0 | 390 | 177 | 0 | 48.1% |
 
 ## Conflicts
 

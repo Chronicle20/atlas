@@ -2454,7 +2454,7 @@
 - op: MOVE_LIFE
   direction: serverbound
   opcode: 155
-  fname: sub_5CADA5
+  fname: CMob::GenerateMovePath
   provenance: ida-discovered
   ida:
     address: 6075050
@@ -2462,7 +2462,7 @@
 - op: MOB_DROP_PICKUP_REQUEST
   direction: serverbound
   opcode: 157
-  fname: sub_5CD6D2
+  fname: CMob::SendDropPickUpRequest
   provenance: ida-discovered
   ida:
     address: 6084430
@@ -2486,7 +2486,7 @@
 - op: MONSTER_BOMB
   direction: serverbound
   opcode: 160
-  fname: sub_5CD3FD
+  fname: CMob::TryFirstSelfDestruction
   provenance: ida-discovered
   ida:
     address: 6083877
@@ -2494,7 +2494,7 @@
 - op: MOB_DAMAGE_MOB
   direction: serverbound
   opcode: 161
-  fname: sub_5CED89
+  fname: CMob::SetDamagedByMob
   provenance: ida-discovered
   ida:
     address: 6090666

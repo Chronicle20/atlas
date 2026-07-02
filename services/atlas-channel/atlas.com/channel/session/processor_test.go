@@ -205,7 +205,7 @@ func TestSetCharacterId(t *testing.T) {
 	}
 }
 
-func TestSetMapId(t *testing.T) {
+func TestSetField_PreservesInstance(t *testing.T) {
 	logger, cleanup := testSetup()
 	defer cleanup()
 
@@ -217,20 +217,21 @@ func TestSetMapId(t *testing.T) {
 	session.AddSessionToRegistry(tenant.Id(), s)
 
 	p := session.NewProcessor(logger, ctx)
-	mapId := _map.Id(100000000)
-	updatedSession := p.SetMapId(sessionId, mapId)
+	inst := uuid.New()
+	f := field.NewBuilder(0, 0, _map.Id(100000000)).SetInstance(inst).Build()
+	updated := p.SetField(sessionId, f)
 
-	if updatedSession.MapId() != mapId {
-		t.Errorf("SetMapId() returned session with MapId %d, want %d", updatedSession.MapId(), mapId)
+	if !updated.Field().Equals(f) {
+		t.Errorf("SetField() field = %v/%v/%v/%v, want it to equal f (map 100000000, instance %s)",
+			updated.WorldId(), updated.ChannelId(), updated.MapId(), updated.Instance(), inst)
 	}
 
-	// Verify the registry was updated
 	retrieved, err := p.ByIdModelProvider(sessionId)()
 	if err != nil {
 		t.Fatalf("ByIdModelProvider() unexpected error: %v", err)
 	}
-	if retrieved.MapId() != mapId {
-		t.Errorf("Registry session MapId = %d, want %d", retrieved.MapId(), mapId)
+	if !retrieved.Field().Equals(f) {
+		t.Errorf("registry session field does not equal f; instance = %s, want %s", retrieved.Instance(), inst)
 	}
 }
 
@@ -605,18 +606,19 @@ func TestSetCharacterId_NonExistent(t *testing.T) {
 	}
 }
 
-func TestSetMapId_NonExistent(t *testing.T) {
+func TestSetField_NonExistent(t *testing.T) {
 	logger, cleanup := testSetup()
 	defer cleanup()
 
 	ctx := test.CreateTestContext()
+	p := session.NewProcessor(logger, ctx)
 	nonExistentId := uuid.New()
 
-	p := session.NewProcessor(logger, ctx)
-	result := p.SetMapId(nonExistentId, 100000000)
+	f := field.NewBuilder(0, 0, _map.Id(100000000)).Build()
+	result := p.SetField(nonExistentId, f)
 
 	if result.SessionId() != uuid.Nil {
-		t.Errorf("SetMapId() for non-existent session returned non-nil SessionId")
+		t.Errorf("SetField() for non-existent session returned non-zero SessionId")
 	}
 }
 

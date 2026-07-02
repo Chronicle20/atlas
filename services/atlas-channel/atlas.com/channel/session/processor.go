@@ -253,17 +253,6 @@ func (p *Processor) SetCharacterId(id uuid.UUID, characterId uint32) Model {
 	return s
 }
 
-func (p *Processor) SetMapId(id uuid.UUID, mapId _map.Id) Model {
-	s := Model{}
-	var ok bool
-	if s, ok = getRegistry().Get(p.t.Id(), id); ok {
-		s = s.setMapId(mapId)
-		getRegistry().Update(p.t.Id(), s)
-		return s
-	}
-	return s
-}
-
 func (p *Processor) SetField(id uuid.UUID, f field.Model) Model {
 	s := Model{}
 	var ok bool

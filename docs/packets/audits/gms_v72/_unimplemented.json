@@ -14,6 +14,10 @@
    "fname": "CWvsContext::OnMessage#SkillExpire",
    "case": 13,
    "reason": "SkillExpire (Atlas mode 14) is version-absent in gms_v72: CWvsContext::OnMessage @0x9191ee dispatches only switch cases 0-11. v79 case 13 (sub_96BC06) is the skill-expire arm; v72 has no case 13 arm. Confirmed by decompiling the v72 OnMessage switch (task-113 stage E). Report + export stub removed so the SHOW_STATUS_INFO op cell excludes this arm."
+  },
+  {
+   "fname": "CCashShop::OnIncCharacterSlotCount",
+   "reason": "CASHSHOP_OPERATION IncreaseCharacterSlot (mode 9) send is version-absent in gms_v72. v79 has TWO distinct CCashShop slot sends: OnIncCharacterSlotCount @0x4673be (size 0x21d, COutPacket Encode1(9)+isPoints+serial) and OnEnableEquipSlotExt @0x469fa9 (size 0x407). v72 CCashShop has only ONE slot send @0x468e43 (size 0x407) whose body is Encode1(6|7 mode)+pointType+currency+flag(1)+serial = EnableEquipSlot (the IDB symbol OnIncCharacterSlotCount is a mislabel; size + body confirm it is EnableEquipSlot). No mode-9 IncCharacterSlot send exists in v72. Report + mislabeled export stub removed so the cell is excluded. (task-113 stage E)"
   }
  ]
 }

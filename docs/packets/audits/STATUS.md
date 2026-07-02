@@ -5,7 +5,7 @@
 
 Tool: `dde4cb7f9c62159772672195dd4a20bb7d2f1343`
 
-- export gms_v72: `dd7d3cd697751e8ec93cad168b128e3dec3b70fdde4f60e45b80ce0943425b51`
+- export gms_v72: `34c8404f8bf67ef5c576292a2eed6fe068b070e1c484d6e4abb1c257552b3623`
 - export gms_v79: `370d6b720b633c12c71d40340f3952000705c4bddb98f87179e7193d112d210c`
 - export gms_v83: `711bddcc2e1bdd417a75954148d2b50c64e70855e84259c0b8e50e700e393c0d`
 - export gms_v84: `7eab9472e2afeda13faaf74273828d09d5f2481d67bec10235c3b2fd2f91e1eb`
@@ -407,7 +407,7 @@ Tool: `dde4cb7f9c62159772672195dd4a20bb7d2f1343`
 | MONSTER_CARNIVAL_START | CField_MonsterCarnival::OnEnter | monster/carnival/clientbound/MonsterCarnivalStart (T1) |  | ⬜ |  | ⬜ | 0x121 | ✅ | 0x128 | ✅ | 0x132 | ✅ | 0x15A | ✅ | 0x139 | ✅ |
 | CASHSHOP_ONE_A_DAY | CCashShop::OnOneADay |  | 0x122 | ❌ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
 | MONSTER_CARNIVAL_OBTAINED_CP | CField_MonsterCarnival::OnPersonalCP | monster/carnival/clientbound/MonsterCarnivalObtainedCP (T1) |  | ⬜ |  | ⬜ | 0x122 | ✅ | 0x129 | ✅ | 0x133 | ✅ | 0x15B | ✅ | 0x13A | ✅ |
-| CASHSHOP_OPERATION | CCashShop::OnCashItemResult | cash/clientbound/CashCashItemMovedToCashInventory (T1) | 0x123 | ❌ | 0x12F | ✅ | 0x145 | ✅ | 0x14C | ✅ | 0x156 | ✅ | 0x180 | ✅ | 0x164 | ✅ |
+| CASHSHOP_OPERATION | CCashShop::OnCashItemResult | cash/clientbound/CashCashItemMovedToCashInventory (T1) | 0x123 | ✅ | 0x12F | ✅ | 0x145 | ✅ | 0x14C | ✅ | 0x156 | ✅ | 0x180 | ✅ | 0x164 | ✅ |
 | MONSTER_CARNIVAL_PARTY_CP | CField_MonsterCarnival::OnTeamCP | monster/carnival/clientbound/MonsterCarnivalPartyCP (T1) |  | ⬜ |  | ⬜ | 0x123 | ✅ | 0x12A | ✅ | 0x134 | ✅ | 0x15C | ✅ | 0x13B | ✅ |
 | CASHSHOP_CASH_ITEM_GACHAPON_RESULT | CCashShop::OnCashItemGachaponResult |  | 0x124 | ❌ |  | ⬜ | 0x14D | ❌ | 0x154 | ❌ | 0x15E | ❌ | 0x188 | ❌ | 0x16D | ❌ |
 | MONSTER_CARNIVAL_SUMMON | CField_MonsterCarnival::OnRequestResult | monster/carnival/clientbound/MonsterCarnivalMessage (T1) |  | ⬜ |  | ⬜ | 0x124 | ✅ | 0x12B | ✅ | 0x135 | ✅ | 0x15D | ✅ | 0x13C | ✅ |
@@ -813,7 +813,7 @@ Tool: `dde4cb7f9c62159772672195dd4a20bb7d2f1343`
 | cash/serverbound/CashShopOperationBuyNormal (T1) |  |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | cash/serverbound/CashShopOperationBuyPackage (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
 | cash/serverbound/CashShopOperationBuyWorldTransfer (T1) |  |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
-| cash/serverbound/CashShopOperationEnableEquipSlot (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
+| cash/serverbound/CashShopOperationEnableEquipSlot (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | cash/serverbound/CashShopOperationGift (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | cash/serverbound/CashShopOperationIncreaseCharacterSlot (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | cash/serverbound/CashShopOperationIncreaseInventory (T1) |  |  | ❌ |  | ❌ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
@@ -914,7 +914,7 @@ Tool: `dde4cb7f9c62159772672195dd4a20bb7d2f1343`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v72 | 211 | 0 | 73 | 187 | 411 | 0 | 44.8% |
+| v72 | 213 | 0 | 73 | 185 | 411 | 0 | 45.2% |
 | v79 | 228 | 0 | 72 | 180 | 402 | 0 | 47.5% |
 | v83 | 367 | 0 | 0 | 311 | 204 | 0 | 54.1% |
 | v84 | 345 | 0 | 0 | 312 | 225 | 0 | 52.5% |

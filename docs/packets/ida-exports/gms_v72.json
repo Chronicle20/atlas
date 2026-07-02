@@ -840,44 +840,24 @@
    ]
   },
   "CCashShop::OnEnableEquipSlotExt": {
-   "address": "",
-   "direction": "serverbound",
-   "unresolved": true,
-   "calls": [
-    {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
-   ]
-  },
-  "CCashShop::OnIncCharacterSlotCount": {
    "address": "0x468e43",
    "direction": "serverbound",
    "calls": [
     {
-     "op": "Decode1",
-     "comment": "",
-     "guard": "v2 && sub_467406(v25, v26, v27, (char)v28, v29, v30) == 1"
+     "op": "Encode1",
+     "comment": "pointType/isPoints (v45==2) @0x469194"
     },
     {
-     "op": "Decode1",
-     "comment": "",
-     "guard": "v2 && sub_467406(v25, v26, v27, (char)v28, v29, v30) == 1"
+     "op": "Encode4",
+     "comment": "currency bitmask (v45) @0x46919f"
     },
     {
-     "op": "Decode4",
-     "comment": "",
-     "guard": "v2 && sub_467406(v25, v26, v27, (char)v28, v29, v30) == 1"
+     "op": "Encode1",
+     "comment": "constant flag 1 @0x4691a8"
     },
     {
-     "op": "Decode1",
-     "comment": "",
-     "guard": "v2 && sub_467406(v25, v26, v27, (char)v28, v29, v30) == 1"
-    },
-    {
-     "op": "Decode4",
-     "comment": "",
-     "guard": "v2 && sub_467406(v25, v26, v27, (char)v28, v29, v30) == 1"
+     "op": "Encode4",
+     "comment": "serialNumber (a2) @0x4691b3"
     }
    ]
   },

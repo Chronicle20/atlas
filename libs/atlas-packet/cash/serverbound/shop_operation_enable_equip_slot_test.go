@@ -58,3 +58,22 @@ func TestShopOperationEnableEquipSlotV79Bytes(t *testing.T) {
 		t.Errorf("v79 bytes: got %s, want 01040302010108070605", got)
 	}
 }
+
+// TestShopOperationEnableEquipSlotV72Bytes pins the v72 legacy body. The v72
+// send is CCashShop @0x468e43 — the IDB symbol names it OnIncCharacterSlotCount
+// but that is a mislabel: its size (0x407) and body match v79
+// CCashShop::OnEnableEquipSlotExt@0x469fa9 (0x407), NOT v79 OnIncCharacterSlotCount
+// (0x21d). Body: COutPacket(219) Encode1((v/1000==9110)+6)=mode 6|7 (routed op)
+// @0x469184 then Encode1(v45==2)=pointType @0x469194, Encode4(v45)=currency
+// @0x46919f, Encode1(1)=constant flag @0x4691a8, Encode4(a2)=serialNumber
+// @0x4691b3. Body after the mode byte is pointType(1)+currency(4)+flag(1)+
+// serialNumber(4) — byte-identical to the v79 legacy body (both GMS<83).
+// packet-audit:verify packet=cash/serverbound/CashShopOperationEnableEquipSlot version=gms_v72 ida=0x468e43
+func TestShopOperationEnableEquipSlotV72Bytes(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	input := ShopOperationEnableEquipSlot{pointType: true, currency: 0x01020304, flag: 1, serialNumber: 0x05060708}
+	got := hex.EncodeToString(input.Encode(l, pt.CreateContext("GMS", 72, 1))(nil))
+	if got != "01"+"04030201"+"01"+"08070605" {
+		t.Errorf("v72 bytes: got %s, want 01040302010108070605", got)
+	}
+}

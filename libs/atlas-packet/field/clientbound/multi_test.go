@@ -62,6 +62,25 @@ func TestMultiChatByteOutputV72(t *testing.T) {
 	}
 }
 
+// TestMultiChatByteOutputV61 pins the gms_v61 MULTICHAT (op 0x64 = 100)
+// clientbound wire. IDA: CField::OnGroupMessage @0x4ea7ec (GMS_v61.1_U_DEVM.exe)
+// reads Decode1(mode) + DecodeStr(from) + DecodeStr(message). Body identical to
+// v72 (version-agnostic codec).
+// packet-audit:verify packet=field/clientbound/FieldMultiChat version=gms_v61 ida=0x4ea7ec
+func TestMultiChatByteOutputV61(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 61, 1)
+	input := MultiChat{mode: 1, from: "PlayerOne", message: "hi"}
+	expected := []byte{
+		0x01, // mode
+		0x09, 0x00, 0x50, 0x6C, 0x61, 0x79, 0x65, 0x72, 0x4F, 0x6E, 0x65, // from "PlayerOne"
+		0x02, 0x00, 0x68, 0x69, // message "hi"
+	}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v61 multichat golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
 func TestMultiChatRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

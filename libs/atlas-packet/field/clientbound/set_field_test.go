@@ -141,6 +141,57 @@ func TestSetFieldByteOutputV72(t *testing.T) {
 	}
 }
 
+// TestSetFieldByteOutputV61 pins the gms_v61 SET_FIELD (op 0x5C = 92) clientbound
+// framing. IDA: CStage::OnSetField @0x659fd3 (GMS_v61.1_U_DEVM.exe). v61 is GMS<87
+// and <95, so — like v72 — there is NO decode-opt header, NO m_dwOldDriverID, and
+// NO logout-gift block; the >28 damage-seed path (3 seeds) applies. Framing read
+// order is byte-identical to v72; per the §5 opaque caveat the CharacterData middle
+// is asserted as an opaque span while the header and trailing timestamp are pinned.
+// packet-audit:verify packet=field/clientbound/FieldSetField version=gms_v61 ida=0x659fd3
+func TestSetFieldByteOutputV61(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 61, 1)
+	cd := charpkt.CharacterData{
+		Stats: charpkt.CharacterStats{
+			Id: 1000, Name: "TestChar", Gender: 0, SkinColor: 1,
+			Face: 20000, Hair: 30000,
+			Level: 50, JobId: 312, Str: 100, Dex: 50, Int: 30, Luk: 20,
+			Hp: 5000, MaxHp: 5000, Mp: 3000, MaxMp: 3000,
+			Ap: 5, Sp: 3, Exp: 50000, Fame: 10,
+			MapId: 100000000, SpawnPoint: 0,
+		},
+		BuddyCapacity: 20,
+		Meso:          100000,
+		Inventory: charpkt.InventoryData{
+			EquipCapacity: 24, UseCapacity: 24, SetupCapacity: 24,
+			EtcCapacity: 24, CashCapacity: 24,
+			Timestamp: 94354848000000000,
+		},
+	}
+	input := SetField{
+		channelId:     channel.Id(1),
+		characterData: cd,
+		damageSeeds:   []uint32{0x11111111, 0x22222222, 0x33333333, 0x44444444},
+		timestamp:     0x0011223344556677,
+	}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+
+	header := []byte{
+		0x01, 0x00, 0x00, 0x00, // channelId=1
+		0x01,       // sNotifierMessage
+		0x01,       // bCharacterData
+		0x00, 0x00, // nNotifierCheck=0
+		0x11, 0x11, 0x11, 0x11, // seed[0]
+		0x22, 0x22, 0x22, 0x22, // seed[1]
+		0x33, 0x33, 0x33, 0x33, // seed[2]
+	}
+	trailer := []byte{0x77, 0x66, 0x55, 0x44, 0x33, 0x22, 0x11, 0x00} // timestamp int64-LE
+	cdBytes := pt.Encode(t, ctx, cd.Encode, nil)                      // opaque CharacterData span (§5)
+	expected := append(append(append([]byte{}, header...), cdBytes...), trailer...)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v61 set_field golden mismatch:\n got %v\nwant %v", actual, expected)
+	}
+}
+
 func TestSetFieldRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

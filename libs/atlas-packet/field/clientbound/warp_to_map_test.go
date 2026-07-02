@@ -82,6 +82,34 @@ func TestWarpToMapByteOutputV72(t *testing.T) {
 	}
 }
 
+// TestWarpToMapByteOutputV61 pins the gms_v61 SET_FIELD warp else-branch (op 0x5C
+// = 92). IDA: CStage::OnSetField @0x659fd3 (GMS_v61.1_U_DEVM.exe) bCharacterData=0
+// branch reads Decode4(mapId) + Decode1(portalId) + Decode2(hp) + Decode1(chase);
+// no revive byte (gated GMS>=83, v61<83), hp is Decode2 (v61<95). The trailing
+// DecodeBuffer(8) timestamp closes both branches. Envelope = 24 bytes, byte-
+// identical to v72. This clientbound fixture completes the CStage::OnSetField
+// worst-of family so the SET_FIELD v61 cell can promote.
+// packet-audit:verify packet=field/clientbound/FieldWarpToMap version=gms_v61 ida=0x659fd3
+func TestWarpToMapByteOutputV61(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 61, 1)
+	input := WarpToMap{channelId: 1, mapId: 100000000, portalId: 0, hp: 500, timestamp: 116444736000000000}
+	expected := []byte{
+		0x01, 0x00, 0x00, 0x00, // channelId=1
+		0x00,       // sNotifierMessage
+		0x00,       // bCharacterData=0
+		0x00, 0x00, // nNotifierCheck=0
+		0x00, 0xE1, 0xF5, 0x05, // mapId=100000000 (no revive before it)
+		0x00,       // portalId=0
+		0xF4, 0x01, // hp=500 (Decode2)
+		0x00,                                           // chase=false
+		0x00, 0x80, 0x3E, 0xD5, 0xDE, 0xB1, 0x9D, 0x01, // timestamp int64-LE
+	}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v61 warp_to_map golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
 // TestWarpToMapWireLength pins the exact encoded envelope length per version,
 // proving (a) m_dwOldDriverID (4 bytes) is present only on GMS v95+ and (b) nHP
 // is 2 bytes on GMS v83/v87 vs 4 bytes on GMS v95+/JMS.

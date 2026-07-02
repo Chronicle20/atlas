@@ -5,7 +5,7 @@
 
 Tool: `bfecda916f252908d2fafda8adbe41d5763d4a1e`
 
-- export gms_v61: `7629cae22b2385695b148352bc46f59b1aedc568fecf8dc3792316032601e5ce`
+- export gms_v61: `28c1403c3c2222db679ffd4802d4b7c609a8113fb2802b2da6d070325cf96753`
 - export gms_v72: `a0ac2be6578395455f491976bcb11aa27e2e57376b46ee8816b90324bad60c02`
 - export gms_v79: `370d6b720b633c12c71d40340f3952000705c4bddb98f87179e7193d112d210c`
 - export gms_v83: `711bddcc2e1bdd417a75954148d2b50c64e70855e84259c0b8e50e700e393c0d`
@@ -146,7 +146,7 @@ Tool: `bfecda916f252908d2fafda8adbe41d5763d4a1e`
 | MACRO_SYS_DATA_INIT | CWvsContext::OnMacroSysDataInit |  | 0x05B | ❌ | 0x071 | ❌ | 0x075 | ❌ | 0x07C | ❌ | 0x07F | ❌ | 0x084 | ❌ | 0x08C | ❌ | 0x07A | ❌ |
 | FAMILY_JOIN_ACCEPTED | CWvsContext::OnFamilyJoinAccepted |  |  | ⬜ | 0x05C | ❌ | 0x05D | ❌ | 0x063 | ❌ | 0x066 | ❌ | 0x066 | ❌ | 0x067 | ❌ | 0x06A | ❌ |
 | IDA_0X05C | sub_AEC8D7 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x05C | ❌ |
-| SET_FIELD | CStage::OnSetField | field/clientbound/FieldSetField (T1) | 0x05C | ❌ | 0x072 | ✅ | 0x076 | ✅ | 0x07D | ✅ | 0x080 | ✅ | 0x085 | ✅ | 0x08D | ✅ | 0x07B | ✅ |
+| SET_FIELD | CStage::OnSetField | field/clientbound/FieldSetField (T1) | 0x05C | ✅ | 0x072 | ✅ | 0x076 | ✅ | 0x07D | ✅ | 0x080 | ✅ | 0x085 | ✅ | 0x08D | ✅ | 0x07B | ✅ |
 | FAMILY_PRIVILEGE_LIST | CWvsContext::OnFamilyPrivilegeList |  |  | ⬜ | 0x05D | ❌ | 0x05E | ❌ | 0x064 | ❌ | 0x067 | ❌ | 0x067 | ❌ | 0x068 | ❌ | 0x06B | ❌ |
 | SET_ITC | CStage::OnSetITC |  | 0x05D | ❌ | 0x073 | ❌ | 0x077 | ❌ | 0x07E | ❌ | 0x081 | ❌ | 0x086 | ❌ | 0x08E | ❌ | 0x07C | ❌ |
 | FAMILY_REP_GAIN | CWvsContext::OnFamilyFamousPointIncResult |  |  | ⬜ | 0x05E | ❌ | 0x05F | ❌ | 0x065 | ❌ | 0x068 | ❌ | 0x068 | ❌ | 0x069 | ❌ | 0x06C | ❌ |
@@ -161,10 +161,10 @@ Tool: `bfecda916f252908d2fafda8adbe41d5763d4a1e`
 | NOTIFY_LEVELUP | CWvsContext::OnNotifyLevelUp; sub_90D651 |  |  | ⬜ | 0x062 | ❌ | 0x063 | ❌ | 0x069 | ❌ | 0x06C | ❌ | 0x06C | ❌ | 0x06D | ❌ | 0x070 | ❌ |
 | FORCED_MAP_EQUIP | CField::OnFieldSpecificData | field/clientbound/FieldForcedMapEquip (T1) | 0x063 | 🟡 | 0x079 | 🟡 | 0x07D | 🟡 | 0x085 | ✅ | 0x088 | ✅ | 0x08D | ✅ | 0x095 | ✅ | 0x083 | ✅ |
 | NOTIFY_MARRIAGE | CWvsContext::OnNotifyWedding; sub_90D65D |  |  | ⬜ | 0x063 | ❌ | 0x064 | ❌ | 0x06A | ❌ | 0x06D | ❌ | 0x06D | ❌ | 0x06E | ❌ | 0x071 | ❌ |
-| MULTICHAT | CField::OnGroupMessage | field/clientbound/FieldMultiChat (T1) | 0x064 | ❌ | 0x07A | ✅ | 0x07E | ✅ | 0x086 | ✅ | 0x089 | ✅ | 0x08E | ✅ | 0x096 | ✅ | 0x084 | ✅ |
+| MULTICHAT | CField::OnGroupMessage | field/clientbound/FieldMultiChat (T1) | 0x064 | ✅ | 0x07A | ✅ | 0x07E | ✅ | 0x086 | ✅ | 0x089 | ✅ | 0x08E | ✅ | 0x096 | ✅ | 0x084 | ✅ |
 | NOTIFY_JOB_CHANGE | CWvsContext::OnNotifyJobChange |  |  | ⬜ |  | ⬜ | 0x065 | ❌ | 0x06B | ❌ | 0x06E | ❌ | 0x06E | ❌ | 0x06F | ❌ | 0x072 | ❌ |
 | WHISPER | CField::OnWhisper | field/clientbound/FieldWhisperError (T1) | 0x065 | ❌ | 0x07B | ✅ | 0x07F | ✅ | 0x087 | ✅ | 0x08A | ✅ | 0x08F | ✅ | 0x097 | ✅ | 0x085 | ✅ |
-| SPOUSE_CHAT | CField::OnCoupleMessage | field/clientbound/FieldSpouseChat (T1) | 0x066 | ❌ | 0x07C | ✅ | 0x080 | ✅ | 0x088 | ✅ | 0x08B | ✅ | 0x090 | ✅ | 0x098 | ✅ |  | ⬜ |
+| SPOUSE_CHAT | CField::OnCoupleMessage | field/clientbound/FieldSpouseChat (T1) | 0x066 | ✅ | 0x07C | ✅ | 0x080 | ✅ | 0x088 | ✅ | 0x08B | ✅ | 0x090 | ✅ | 0x098 | ✅ |  | ⬜ |
 | SUMMON_ITEM_INAVAILABLE | CField::OnSummonItemInavailable | field/clientbound/FieldSummonItemUnavailable (T1) | 0x067 | 🟡 | 0x07D | 🟡 | 0x081 | 🟡 | 0x089 | ✅ | 0x08C | ✅ | 0x091 | ✅ | 0x099 | ✅ | 0x086 | ✅ |
 | FIELD_EFFECT | CField::OnFieldEffect; sub_4EB523 | field/clientbound/FieldEffectBossHp (T1) | 0x068 | ❌ | 0x07E | ✅ | 0x082 | ✅ | 0x08A | ✅ | 0x08D | ✅ | 0x092 | ✅ | 0x09A | ✅ | 0x087 | ✅ |
 | FIELD_OBSTACLE_ONOFF_LIST | CField::OnFieldObstacleOnOffStatus | field/clientbound/FieldFieldObstacleOnOffList (T1) | 0x069 | ❌ | 0x080 | 🟡 | 0x084 | 🟡 | 0x08C | ✅ | 0x08F | ✅ | 0x094 | ✅ | 0x09C | ✅ | 0x089 | ✅ |
@@ -187,7 +187,7 @@ Tool: `bfecda916f252908d2fafda8adbe41d5763d4a1e`
 | SET_BACK_EFFECT | CMapLoadable::OnSetBackEffect |  |  | ⬜ | 0x075 | ❌ | 0x079 | ❌ | 0x080 | ❌ | 0x083 | ❌ | 0x088 | ❌ | 0x090 | ❌ | 0x07E | ❌ |
 | STOP_CLOCK | CField::OnDestroyClock | field/clientbound/FieldStopClock (T1) | 0x075 | 🟡 | 0x08E | 🟡 | 0x092 | 🟡 | 0x09A | ✅ | 0x09D | ✅ | 0x0A2 | ✅ | 0x0AA | ✅ | 0x096 | ✅ |
 | SET_MAP_OBJECT_VISIBLE | CMapLoadable::OnSetMapObjectVisible; sub_5F5F54; sub_614977 |  |  | ⬜ | 0x076 | ❌ | 0x07A | ❌ | 0x081 | ❌ | 0x084 | ❌ | 0x089 | ❌ | 0x091 | ❌ | 0x07F | ❌ |
-| IDA_0X09C | CField::OnStalkResult; sub_4EFABF | field/clientbound/FieldStalkResult (T1) | 0x077 | ❌ | 0x090 | ✅ | 0x094 | ✅ | 0x09C | ✅ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
+| IDA_0X09C | CField::OnStalkResult; sub_4EFABF | field/clientbound/FieldStalkResult (T1) | 0x077 | ✅ | 0x090 | ✅ | 0x094 | ✅ | 0x09C | ✅ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
 | IDA_0X078 | sub_AF807A |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x078 | ❌ |
 | SPAWN_PLAYER | CUserPool::OnUserEnterField | character/clientbound/CharacterSpawn (T1) | 0x078 | ❌ | 0x091 | ✅ | 0x095 | ✅ | 0x0A0 | ✅ | 0x0A3 | ✅ | 0x0AB | ✅ | 0x0B3 | ✅ | 0x09E | ✅ |
 | IDA_0X079 | CWvsContext::OnAskWhetherUsePamsSong |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x079 | ❌ |
@@ -327,7 +327,7 @@ Tool: `bfecda916f252908d2fafda8adbe41d5763d4a1e`
 | TALK_GUIDE | CUserLocal::OnTutorMsg | npc/clientbound/NpcGuideTalkIdx (T1) |  | ⬜ |  | ⬜ | 0x0D1 | ✅ | 0x0E0 | ✅ | 0x0E5 | ✅ | 0x0EE | ✅ | 0x100 | ✅ | 0x0EA | ✅ |
 | MESO_BAG_MESSAGE | CUserLocal::OnRandomMesobag_Succeeded |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x0D2 | ❌ |  | ⬜ | 0x0DD | ❌ | 0x0EE | ❌ |  | ⬜ |
 | SHOW_COMBO | CUserLocal::OnIncComboResponse |  |  | ⬜ |  | ⬜ | 0x0D2 | ❌ | 0x0E1 | ❌ | 0x0E6 | ❌ | 0x0EF | ❌ | 0x101 | ❌ | 0x0EB | ❌ |
-| SPAWN_MIST | CAffectedAreaPool::OnAffectedAreaCreated | field/clientbound/FieldAffectedAreaCreated (T1) | 0x0D2 | ❌ | 0x0F3 | ✅ | 0x0FB | ✅ | 0x111 | ❌ | 0x118 | ❌ | 0x122 | ❌ | 0x148 | ❌ | 0x126 | ❌ |
+| SPAWN_MIST | CAffectedAreaPool::OnAffectedAreaCreated | field/clientbound/FieldAffectedAreaCreated (T1) | 0x0D2 | ✅ | 0x0F3 | ✅ | 0x0FB | ✅ | 0x111 | ❌ | 0x118 | ❌ | 0x122 | ❌ | 0x148 | ❌ | 0x126 | ❌ |
 | REMOVE_MIST | CAffectedAreaPool::OnAffectedAreaRemoved | field/clientbound/FieldAffectedAreaRemoved (T1) | 0x0D3 | 🟡 | 0x0F4 | 🟡 | 0x0FC | 🟡 | 0x112 | ✅ | 0x119 | ✅ | 0x123 | ✅ | 0x149 | ✅ | 0x127 | ✅ |
 | IDA_0X0D4 | CUser::OnEmotion | character/clientbound/CharacterExpression (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0D4 | ✅ |
 | SPAWN_DOOR | CTownPortalPool::OnTownPortalCreated | door/clientbound/SpawnDoor (T1) | 0x0D4 | ✅ | 0x0F5 | ✅ | 0x0FD | ✅ | 0x113 | ✅ | 0x11A | ✅ | 0x124 | ✅ | 0x14A | ✅ | 0x128 | ✅ |
@@ -961,7 +961,7 @@ Tool: `bfecda916f252908d2fafda8adbe41d5763d4a1e`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v61 | 98 | 0 | 62 | 314 | 454 | 0 | 20.7% |
+| v61 | 103 | 0 | 62 | 309 | 454 | 0 | 21.7% |
 | v72 | 216 | 0 | 73 | 225 | 414 | 0 | 42.0% |
 | v79 | 228 | 0 | 72 | 223 | 405 | 0 | 43.6% |
 | v83 | 367 | 0 | 0 | 354 | 207 | 0 | 50.9% |

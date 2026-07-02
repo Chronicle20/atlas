@@ -84,6 +84,30 @@ func TestStalkResultByteOutputV72(t *testing.T) {
 	}
 }
 
+// TestStalkResultByteOutputV61 pins the gms_v61 IDA_0X09C (op 0x77 = 119)
+// clientbound wire. IDA: CField::OnStalkResult = sub_4EFABF @0x4efabf
+// (GMS_v61.1_U_DEVM.exe): Decode4(count), then per stalkee Decode4(charId),
+// Decode1(flag); on the insert arm (flag==0) DecodeStr(name), Decode4(x),
+// Decode4(y) (remove arm calls sub_6DD1C5). The export flattens one insert
+// iteration — byte-identical to the v72 golden.
+// packet-audit:verify packet=field/clientbound/FieldStalkResult version=gms_v61 ida=0x4efabf
+func TestStalkResultByteOutputV61(t *testing.T) {
+	input := NewStalkResult(1, 0x11223344, 0, "GM", 100, 200)
+	ctx := test.CreateContext("GMS", 61, 1)
+	actual := test.Encode(t, ctx, input.Encode, nil)
+	want := []byte{
+		0x01, 0x00, 0x00, 0x00, // count=1
+		0x44, 0x33, 0x22, 0x11, // charId=0x11223344
+		0x00,                 // flag=0 (insert)
+		0x02, 0x00, 'G', 'M', // name="GM"
+		0x64, 0x00, 0x00, 0x00, // x=100
+		0xC8, 0x00, 0x00, 0x00, // y=200
+	}
+	if !bytes.Equal(actual, want) {
+		t.Fatalf("v61 golden mismatch:\n got %v\nwant %v", actual, want)
+	}
+}
+
 func TestStalkResultRoundTrip(t *testing.T) {
 	input := NewStalkResult(1, 0x11223344, 0, "GM", 100, 200)
 	for _, v := range test.Variants {

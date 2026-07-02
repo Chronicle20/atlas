@@ -83,6 +83,29 @@ func TestSpouseChatByteOutputV72(t *testing.T) {
 	}
 }
 
+// TestSpouseChatByteOutputV61 pins the gms_v61 SPOUSE_CHAT (op 0x66 = 102)
+// clientbound wire. IDA: CField::OnCoupleMessage @0x4ea9d1 (GMS_v61.1_U_DEVM.exe)
+// dispatches on Decode1(mode)-4: mode-5 arm (==1) DecodeStr(sender)+Decode1(flag)+
+// DecodeStr(chatText); mode-4 arm (==0) Decode1(partnerFlag)+DecodeStr(partnerText).
+// The flattened union read order is byte-identical to v72 (version-agnostic codec).
+// packet-audit:verify packet=field/clientbound/FieldSpouseChat version=gms_v61 ida=0x4ea9d1
+func TestSpouseChatByteOutputV61(t *testing.T) {
+	input := NewSpouseChat(SpouseChatModeOwn, "lover", 0x01, "hi", 0x02, "yo")
+	ctx := test.CreateContext("GMS", 61, 1)
+	expected := []byte{
+		0x04,                                // mode
+		0x05, 0x00, 'l', 'o', 'v', 'e', 'r', // sender
+		0x01,                 // flag
+		0x02, 0x00, 'h', 'i', // chatText
+		0x02,                 // partnerFlag
+		0x02, 0x00, 'y', 'o', // partnerText
+	}
+	actual := test.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v61 spouse chat golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
 func TestSpouseChatRoundTrip(t *testing.T) {
 	input := NewSpouseChat(SpouseChatModeOwn, "lover", 0x01, "hi there", 0x02, "partner reply")
 	for _, v := range test.Variants {

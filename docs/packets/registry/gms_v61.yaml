@@ -803,7 +803,9 @@
 - op: IDA_0X09C
   direction: clientbound
   opcode: 119
-  fname: sub_4EFABF
+  fname: CField::OnStalkResult
+  fname_alts:
+  - sub_4EFABF
   provenance: manual
   ida:
     address: 5175999

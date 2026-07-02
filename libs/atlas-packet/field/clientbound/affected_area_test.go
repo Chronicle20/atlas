@@ -95,6 +95,34 @@ func TestAffectedAreaCreatedByteOutputV72(t *testing.T) {
 	require.Equal(t, int32(10000), int32(binary.LittleEndian.Uint32(b[35:39])), "tEnd")
 }
 
+// TestAffectedAreaCreatedByteOutputV61 pins the gms_v61 SPAWN_MIST (op 0xD2 = 210)
+// clientbound wire. IDA: CAffectedAreaPool::OnAffectedAreaCreated @0x423edc
+// (GMS_v61.1_U_DEVM.exe, dispatched from CAffectedAreaPool::OnPacket @0x423eb7 when
+// a2==210). v61 is GMS<95 so tStart is absent (inserted between rcArea and tEnd in
+// v95); body is 39 bytes, byte-identical to the v72 path.
+// packet-audit:verify packet=field/clientbound/FieldAffectedAreaCreated version=gms_v61 ida=0x423edc
+func TestAffectedAreaCreatedByteOutputV61(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	id := uuid.MustParse("00000000-0000-0000-0000-00000000000a")
+	in := NewAffectedAreaCreated(id /*ownerId*/, 42 /*nType*/, 7 /*skillId*/, 2121006,
+		/*skillLevel*/ 20 /*phase*/, 3 /*originX*/, 100 /*originY*/, 200,
+		/*ltX*/ -50 /*ltY*/, -30 /*rbX*/, 50 /*rbY*/, 30 /*tStart*/, 0 /*tEnd*/, 10000)
+
+	b := in.Encode(l, pt.CreateContext("GMS", 61, 1))(nil)
+	require.Len(t, b, 39, "v61 body is 39 bytes (no tStart)")
+	require.Equal(t, mistKey(id), binary.LittleEndian.Uint32(b[0:4]), "dwId")
+	require.Equal(t, int32(7), int32(binary.LittleEndian.Uint32(b[4:8])), "nType")
+	require.Equal(t, uint32(42), binary.LittleEndian.Uint32(b[8:12]), "dwOwnerId")
+	require.Equal(t, int32(2121006), int32(binary.LittleEndian.Uint32(b[12:16])), "nSkillID")
+	require.Equal(t, byte(20), b[16], "nSLV")
+	require.Equal(t, int16(3), int16(binary.LittleEndian.Uint16(b[17:19])), "phase")
+	require.Equal(t, int32(50), int32(binary.LittleEndian.Uint32(b[19:23])), "rcArea.left")
+	require.Equal(t, int32(170), int32(binary.LittleEndian.Uint32(b[23:27])), "rcArea.top")
+	require.Equal(t, int32(150), int32(binary.LittleEndian.Uint32(b[27:31])), "rcArea.right")
+	require.Equal(t, int32(230), int32(binary.LittleEndian.Uint32(b[31:35])), "rcArea.bottom")
+	require.Equal(t, int32(10000), int32(binary.LittleEndian.Uint32(b[35:39])), "tEnd")
+}
+
 // TestAffectedAreaCreatedFields verifies the exact field offsets and the absolute
 // RECT computation (origin + offset) at the rcArea offset, little-endian.
 func TestAffectedAreaCreatedFields(t *testing.T) {

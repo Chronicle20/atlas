@@ -2046,14 +2046,14 @@
         "writer": "MessengerOperation",
         "options": {
           "operations": {
-            "ADD": 0,
+            "ADD": 4,
             "JOIN": 1,
-            "REMOVE": 2,
-            "REQUEST_INVITE": 3,
-            "INVITE_SENT": 4,
+            "REMOVE": 10,
+            "REQUEST_INVITE": 2,
+            "INVITE_SENT": 3,
             "INVITE_DECLINED": 5,
             "CHAT": 6,
-            "UPDATE": 7
+            "UPDATE": 9
           }
         }
       },

@@ -211,3 +211,22 @@ func TestNpcConversationAskPetAllV61(t *testing.T) {
 		t.Fatalf("v61 AskPetAll: got % x, want % x", got, want)
 	}
 }
+
+// AskMemberShopAvatarConversationDetail (msgType 9): DecodeStr message, Decode1
+// count, count x (DecodeBuffer(8) SN + Decode1). The v61 handler
+// CScriptMan::OnAskMembershopAvatar@0x6406ec reads per-entry int64 SN + byte
+// (incompatible with the v83+ int32 style-id list); Atlas drives no candidates
+// in the legacy range, so the encoder emits AsciiString(message) + Byte(0).
+// This is the representative writer for the v61 NPC_TALK_MORE op row.
+//
+// packet-audit:verify packet=npc/clientbound/NpcAskMemberShopAvatarConversationDetail version=gms_v61 ida=0x6406ec
+func TestNpcConversationAskMemberShopAvatarV61(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	ctx := test.CreateContext("GMS", 61, 1)
+	detail := &AskMemberShopAvatarConversationDetail{Message: "Pick avatar"}
+	got := detail.Encode(l, ctx)(nil)
+	want := cat(asciiBytes("Pick avatar"), []byte{0x00})
+	if !bytes.Equal(got, want) {
+		t.Fatalf("v61 AskMemberShopAvatar: got % x, want % x", got, want)
+	}
+}

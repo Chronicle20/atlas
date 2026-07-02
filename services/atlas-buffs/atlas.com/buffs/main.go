@@ -4,8 +4,9 @@ import (
 	"atlas-buffs/character"
 	character2 "atlas-buffs/kafka/consumer/character"
 	"atlas-buffs/logger"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-buffs/tasks"
+	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-service"
 	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
 
@@ -14,6 +15,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 )
 
 const serviceName = "atlas-buffs"
@@ -62,8 +64,12 @@ func main() {
 
 	tdm.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 
-	go tasks.Register(tasks.NewExpiration(l, 10000))
-	go tasks.Register(tasks.NewPoisonTick(l, 1000))
+	routine.Go(l, tdm.Context(), func(_ context.Context) {
+		tasks.Register(l, tdm.Context())(tasks.NewExpiration(l, 10000))
+	})
+	routine.Go(l, tdm.Context(), func(_ context.Context) {
+		tasks.Register(l, tdm.Context())(tasks.NewPoisonTick(l, 1000))
+	})
 
 	server.New(l).
 		WithContext(tdm.Context()).

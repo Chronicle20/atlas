@@ -8,6 +8,7 @@ import (
 	"context"
 	"time"
 
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -36,13 +37,13 @@ func (r *Respawn) Run() {
 	for _, mk := range mks {
 		tctx := tenant.WithContext(ctx, mk.Tenant)
 		transactionId := uuid.New()
-		go func(mk character.MapKey) {
+		routine.Go(r.l, tctx, func(_ context.Context) {
 			_ = monster.NewProcessor(r.l, tctx).SpawnMonsters(transactionId, mk.Field)
-		}(mk)
-		go func(mk character.MapKey) {
+		})
+		routine.Go(r.l, tctx, func(_ context.Context) {
 			rp := reactor.NewProcessor(r.l, tctx, producer.ProviderImpl(r.l)(tctx))
 			_ = rp.SpawnAndEmit(transactionId, mk.Field)
-		}(mk)
+		})
 	}
 }
 

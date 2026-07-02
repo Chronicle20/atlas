@@ -5,7 +5,7 @@
 
 Tool: `bfecda916f252908d2fafda8adbe41d5763d4a1e`
 
-- export gms_v61: `d9301013e52982ee17210e1af40c78c9c9f7bd73cfac3eda19a0ff53f7c9cf3c`
+- export gms_v61: `ddbcc97bbd24a8db71b3368eec57ac4475f037eeb8604b0068f9e366637db806`
 - export gms_v72: `a0ac2be6578395455f491976bcb11aa27e2e57376b46ee8816b90324bad60c02`
 - export gms_v79: `370d6b720b633c12c71d40340f3952000705c4bddb98f87179e7193d112d210c`
 - export gms_v83: `711bddcc2e1bdd417a75954148d2b50c64e70855e84259c0b8e50e700e393c0d`
@@ -274,27 +274,27 @@ Tool: `bfecda916f252908d2fafda8adbe41d5763d4a1e`
 | IDA_0X0AC | CField::OnStalkResult | field/clientbound/FieldStalkResult (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0AC | ✅ |  | ⬜ |
 | RANDOM_EMOTION | CUser::OnRandomEmotion |  | 0x0AC | ❌ | 0x0CD | ❌ | 0x0D3 | ❌ | 0x0E2 | ❌ | 0x0E7 | ❌ | 0x0F0 | ❌ | 0x102 | ❌ |  | ⬜ |
 | COOLDOWN | CUserLocal::OnSkillCooltimeSet | character/clientbound/CharacterSkillCooldown (T1) | 0x0AD | 🟡 | 0x0CE | 🟡 | 0x0D4 | 🟡 | 0x0EA | ✅ | 0x0F0 | ✅ | 0x0FA | ✅ | 0x114 | ✅ | 0x0FB | ✅ |
-| SPAWN_MONSTER | CMobPool::OnMobEnterField | monster/clientbound/MonsterSpawn (T1) | 0x0AF | ❌ | 0x0D0 | ✅ | 0x0D6 | ✅ | 0x0EC | ✅ | 0x0F2 | ✅ | 0x0FC | ✅ | 0x11C | ✅ | 0x0FD | ✅ |
-| KILL_MONSTER | CMobPool::OnMobLeaveField | monster/clientbound/MonsterDestroy (T1) | 0x0B0 | ❌ | 0x0D1 | ✅ | 0x0D7 | ✅ | 0x0ED | ✅ | 0x0F3 | ✅ | 0x0FD | ✅ | 0x11D | ✅ | 0x0FE | ✅ |
+| SPAWN_MONSTER | CMobPool::OnMobEnterField | monster/clientbound/MonsterSpawn (T1) | 0x0AF | ✅ | 0x0D0 | ✅ | 0x0D6 | ✅ | 0x0EC | ✅ | 0x0F2 | ✅ | 0x0FC | ✅ | 0x11C | ✅ | 0x0FD | ✅ |
+| KILL_MONSTER | CMobPool::OnMobLeaveField | monster/clientbound/MonsterDestroy (T1) | 0x0B0 | ✅ | 0x0D1 | ✅ | 0x0D7 | ✅ | 0x0ED | ✅ | 0x0F3 | ✅ | 0x0FD | ✅ | 0x11D | ✅ | 0x0FE | ✅ |
 | SHOW_UPGRADE_TOMB_EFFECT | CUserRemote::OnShowUpgradeTombEffect |  |  | ⬜ | 0x0B1 | ❌ | 0x0B5 | ❌ | 0x0C3 | ❌ | 0x0C7 | ❌ | 0x0D0 | ❌ | 0x0DD | ❌ | 0x0C9 | ❌ |
-| SPAWN_MONSTER_CONTROL | CMobPool::OnMobChangeController | monster/clientbound/MonsterControl (T1) | 0x0B1 | ❌ | 0x0D2 | ✅ | 0x0D8 | ✅ | 0x0EE | ✅ | 0x0F4 | ✅ | 0x0FE | ✅ | 0x11E | ✅ | 0x0FF | ✅ |
-| MOVE_MONSTER | CMob::OnMove | monster/clientbound/MonsterMovement (T1) | 0x0B2 | ❌ | 0x0D3 | ✅ | 0x0D9 | ✅ | 0x0EF | ✅ | 0x0F5 | ✅ | 0x0FF | ✅ | 0x11F | ✅ | 0x100 | ✅ |
-| MOVE_MONSTER_RESPONSE | CMob::OnCtrlAck | monster/clientbound/MonsterMovementAck (T1) | 0x0B3 | ❌ | 0x0D4 | ✅ | 0x0DA | ✅ | 0x0F0 | ✅ | 0x0F6 | ✅ | 0x100 | ✅ | 0x120 | ✅ | 0x101 | ✅ |
+| SPAWN_MONSTER_CONTROL | CMobPool::OnMobChangeController | monster/clientbound/MonsterControl (T1) | 0x0B1 | ✅ | 0x0D2 | ✅ | 0x0D8 | ✅ | 0x0EE | ✅ | 0x0F4 | ✅ | 0x0FE | ✅ | 0x11E | ✅ | 0x0FF | ✅ |
+| MOVE_MONSTER | CMob::OnMove | monster/clientbound/MonsterMovement (T1) | 0x0B2 | ✅ | 0x0D3 | ✅ | 0x0D9 | ✅ | 0x0EF | ✅ | 0x0F5 | ✅ | 0x0FF | ✅ | 0x11F | ✅ | 0x100 | ✅ |
+| MOVE_MONSTER_RESPONSE | CMob::OnCtrlAck | monster/clientbound/MonsterMovementAck (T1) | 0x0B3 | ✅ | 0x0D4 | ✅ | 0x0DA | ✅ | 0x0F0 | ✅ | 0x0F6 | ✅ | 0x100 | ✅ | 0x120 | ✅ | 0x101 | ✅ |
 | SHOW_ITEM_HYPER_UPGRADE_EFFECT | CUser::OnHitByUser; CUser::ShowItemHyperUpgradeEffect |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0B3 | ❌ | 0x0BB | ❌ |  | ⬜ |
-| APPLY_MONSTER_STATUS | CMob::OnStatSet; sub_5CB8ED | monster/clientbound/MonsterStatSet (T1) | 0x0B5 | ❌ | 0x0D6 | ✅ | 0x0DC | ✅ | 0x0F2 | ✅ | 0x0F8 | ✅ | 0x102 | ✅ | 0x122 | ✅ | 0x103 | ✅ |
+| APPLY_MONSTER_STATUS | CMob::OnStatSet | monster/clientbound/MonsterStatSet (T1) | 0x0B5 | ✅ | 0x0D6 | ✅ | 0x0DC | ✅ | 0x0F2 | ✅ | 0x0F8 | ✅ | 0x102 | ✅ | 0x122 | ✅ | 0x103 | ✅ |
 | SPAWN_DRAGON | CDragon::OnCreated |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x0B5 | ❌ | 0x0B9 | ❌ | 0x0C2 | ❌ | 0x0CE | ❌ | 0x0BB | ❌ |
-| CANCEL_MONSTER_STATUS | CMob::OnStatReset | monster/clientbound/MonsterStatReset (T1) | 0x0B6 | ❌ | 0x0D7 | ✅ | 0x0DD | ✅ | 0x0F3 | ✅ | 0x0F9 | ✅ | 0x103 | ✅ | 0x123 | ✅ | 0x104 | ✅ |
+| CANCEL_MONSTER_STATUS | CMob::OnStatReset | monster/clientbound/MonsterStatReset (T1) | 0x0B6 | ✅ | 0x0D7 | ✅ | 0x0DD | ✅ | 0x0F3 | ✅ | 0x0F9 | ✅ | 0x103 | ✅ | 0x123 | ✅ | 0x104 | ✅ |
 | MOVE_DRAGON | CDragon::OnMove |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x0B6 | ❌ | 0x0BA | ❌ | 0x0C3 | ❌ | 0x0CF | ❌ | 0x0BC | ❌ |
 | REMOVE_DRAGON | CUser::OnDragonPacket |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x0B7 | ❌ | 0x0BB | ❌ | 0x0C4 | ❌ | 0x0D0 | ❌ | 0x0BD | ❌ |
 | RESET_MONSTER_ANIMATION | CMob::OnSuspendReset | monster/clientbound/MonsterResetMonsterAnimation (T1) | 0x0B7 | 🟡 | 0x0D8 | 🟡 | 0x0DE | 🟡 | 0x0F4 | ✅ | 0x0FA | ✅ | 0x104 | ✅ | 0x124 | ✅ | 0x105 | ✅ |
 | MOB_AFFECTED | CMob::OnAffected | monster/clientbound/MonsterMobAffected (T1) | 0x0B8 | 🟡 | 0x0D9 | 🟡 | 0x0DF | 🟡 | 0x0F5 | ✅ | 0x0FB | ✅ | 0x105 | ✅ | 0x125 | ✅ | 0x106 | ✅ |
-| DAMAGE_MONSTER | CMob::OnDamaged | monster/clientbound/MonsterDamage (T1) | 0x0B9 | ❌ | 0x0DA | ✅ | 0x0E0 | ✅ | 0x0F6 | ✅ | 0x0FC | ✅ | 0x106 | ✅ | 0x126 | ✅ | 0x107 | ✅ |
-| MONSTER_SPECIAL_EFFECT_BY_SKILL | CMob::OnSpecialEffectBySkill | monster/clientbound/MonsterMonsterSpecialEffectBySkill (T1) | 0x0BA | ❌ | 0x0DB | ✅ | 0x0E1 | ✅ | 0x0F7 | ✅ | 0x0FD | ✅ | 0x107 | ✅ | 0x127 | ✅ | 0x108 | ✅ |
+| DAMAGE_MONSTER | CMob::OnDamaged | monster/clientbound/MonsterDamage (T1) | 0x0B9 | ✅ | 0x0DA | ✅ | 0x0E0 | ✅ | 0x0F6 | ✅ | 0x0FC | ✅ | 0x106 | ✅ | 0x126 | ✅ | 0x107 | ✅ |
+| MONSTER_SPECIAL_EFFECT_BY_SKILL | CMob::OnSpecialEffectBySkill | monster/clientbound/MonsterMonsterSpecialEffectBySkill (T1) | 0x0BA | ✅ | 0x0DB | ✅ | 0x0E1 | ✅ | 0x0F7 | ✅ | 0x0FD | ✅ | 0x107 | ✅ | 0x127 | ✅ | 0x108 | ✅ |
 | MOB_CRC_KEY_CHANGED | CMobPool::OnMobCrcKeyChanged | monster/clientbound/MonsterMobCrcKeyChanged (T1) | 0x0BC | ❌ | 0x0DD | ✅ | 0x0E3 | ✅ | 0x0F9 | ✅ | 0x0FF | ✅ | 0x109 | ✅ | 0x129 | ✅ | 0x10A | ✅ |
 | SHOW_ITEM_OPTION_UPGRADE_EFFECT | CUser::ShowItemOptionUpgradeEffect |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0BC | ❌ |  | ⬜ |
 | SHOW_ITEM_RELEASE_EFFECT | CUser::ShowItemReleaseEffect |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0BD | ❌ |  | ⬜ |
-| SHOW_MONSTER_HP | CMob::OnHPIndicator | monster/clientbound/MonsterHealth (T1) | 0x0BD | ❌ | 0x0DE | ✅ | 0x0E4 | ✅ | 0x0FA | ✅ | 0x100 | ✅ | 0x10A | ✅ | 0x12A | ✅ | 0x10B | ✅ |
-| CATCH_MONSTER | CMob::OnCatchEffect; CMob::ShowCatchEffect; sub_6EAE5F | monster/clientbound/MonsterCatchMonster (T1) | 0x0BE | ❌ | 0x0DF | ✅ | 0x0E5 | ✅ | 0x0FB | ✅ | 0x101 | ✅ | 0x10B | ✅ | 0x12B | ✅ | 0x10C | ✅ |
+| SHOW_MONSTER_HP | CMob::OnHPIndicator | monster/clientbound/MonsterHealth (T1) | 0x0BD | ✅ | 0x0DE | ✅ | 0x0E4 | ✅ | 0x0FA | ✅ | 0x100 | ✅ | 0x10A | ✅ | 0x12A | ✅ | 0x10B | ✅ |
+| CATCH_MONSTER | CMob::OnCatchEffect; CMob::ShowCatchEffect; sub_6EAE5F | monster/clientbound/MonsterCatchMonster (T1) | 0x0BE | ✅ | 0x0DF | ✅ | 0x0E5 | ✅ | 0x0FB | ✅ | 0x101 | ✅ | 0x10B | ✅ | 0x12B | ✅ | 0x10C | ✅ |
 | SHOW_ITEM_UNRELEASE_EFFECT | CUser::ShowItemUnreleaseEffect |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0BE | ❌ |  | ⬜ |
 | CATCH_MONSTER_WITH_ITEM | CMob::OnEffectByItem | monster/clientbound/MonsterCatchMonsterWithItem (T1) | 0x0BF | 🟡 | 0x0E0 | 🟡 | 0x0E6 | 🟡 | 0x0FC | ✅ | 0x102 | ✅ | 0x10C | ✅ | 0x12C | ✅ | 0x10D | ✅ |
 | HIT_BY_USER | CUser::OnHitByUser |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0BF | ❌ |  | ⬜ |
@@ -915,7 +915,6 @@ Tool: `bfecda916f252908d2fafda8adbe41d5763d4a1e`
 | messenger/serverbound/MessengerOperationChat (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
 | messenger/serverbound/MessengerOperationInvite (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
 | monster/carnival/serverbound/MonsterCarnival (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| monster/clientbound/MonsterStatSet (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | monster/serverbound/MonsterMobDamageMob (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | monster/serverbound/MonsterMobDropPickupRequest (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | monster/serverbound/MonsterMonsterBomb (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
@@ -967,14 +966,14 @@ Tool: `bfecda916f252908d2fafda8adbe41d5763d4a1e`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v61 | 64 | 0 | 62 | 354 | 454 | 0 | 13.3% |
-| v72 | 216 | 0 | 73 | 231 | 414 | 0 | 41.5% |
-| v79 | 228 | 0 | 72 | 229 | 405 | 0 | 43.1% |
-| v83 | 367 | 0 | 0 | 360 | 207 | 0 | 50.5% |
-| v84 | 345 | 0 | 0 | 361 | 228 | 0 | 48.9% |
-| v87 | 379 | 0 | 0 | 385 | 170 | 0 | 49.6% |
-| v95 | 399 | 0 | 0 | 449 | 86 | 0 | 47.1% |
-| JMS185 | 362 | 0 | 0 | 395 | 177 | 0 | 47.8% |
+| v61 | 75 | 0 | 62 | 342 | 454 | 0 | 15.7% |
+| v72 | 216 | 0 | 73 | 230 | 414 | 0 | 41.6% |
+| v79 | 228 | 0 | 72 | 228 | 405 | 0 | 43.2% |
+| v83 | 367 | 0 | 0 | 359 | 207 | 0 | 50.6% |
+| v84 | 345 | 0 | 0 | 360 | 228 | 0 | 48.9% |
+| v87 | 379 | 0 | 0 | 384 | 170 | 0 | 49.7% |
+| v95 | 399 | 0 | 0 | 448 | 86 | 0 | 47.1% |
+| JMS185 | 362 | 0 | 0 | 394 | 177 | 0 | 47.9% |
 
 ## Conflicts
 

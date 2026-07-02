@@ -4907,7 +4907,7 @@
   "CLogin::SendLoginPacket": {
    "address": "0x564dc9",
    "direction": "serverbound",
-   "notes": "v61 CHARLIST_REQUEST send = sub_564DC9 @0x564dc9: COutPacket(5)@0x564eeb + Encode1(worldId)+Encode1(channelId) then SendPacket. NO getsockname/Encode4(socketAddr) \u2014 that is a v72+ addition (v72 twin sub_5B1B25 adds it @0x5b1c92). Surgically spliced (IDB unnamed sub_564DC9).",
+   "notes": "v61 CHARLIST_REQUEST send = sub_564DC9 @0x564dc9: COutPacket(5)@0x564eeb + Encode1(worldId)+Encode1(channelId) then SendPacket. NO getsockname/Encode4(socketAddr) — that is a v72+ addition (v72 twin sub_5B1B25 adds it @0x5b1c92). Surgically spliced (IDB unnamed sub_564DC9).",
    "calls": [
     {
      "op": "Encode1",
@@ -5566,13 +5566,25 @@
    ]
   },
   "CMob::OnStatSet": {
-   "address": "",
+   "address": "0x5cb8ed",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode4",
+     "comment": "LEGACY 4-byte mob temp-stat mask (v9)"
+    },
+    {
+     "op": "Delegate",
+     "comment": "MobStat::DecodeTemporary opaque body",
+     "ref": "MobStat::DecodeTemporary"
+    },
+    {
+     "op": "Decode2",
+     "comment": "tDelay"
+    },
+    {
+     "op": "Decode1",
+     "comment": "m_nCalcDamageStatIndex"
     }
    ]
   },
@@ -7345,27 +7357,27 @@
    "calls": [
     {
      "op": "Decode4",
-     "comment": "cid/ownerId \u2014 CUserPool::OnUserCommonPacket (consumed upstream before dispatch)"
+     "comment": "cid/ownerId — CUserPool::OnUserCommonPacket (consumed upstream before dispatch)"
     },
     {
      "op": "Decode4",
-     "comment": "oid \u2014 summon cluster dispatcher sub_7922E8 Decode4@0x792327 (read before leaf dispatch)"
+     "comment": "oid — summon cluster dispatcher sub_7922E8 Decode4@0x792327 (read before leaf dispatch)"
     },
     {
      "op": "Decode1",
-     "comment": "attackIdx \u2014 damage leaf sub_67C936 Decode1@0x67c967"
+     "comment": "attackIdx — damage leaf sub_67C936 Decode1@0x67c967"
     },
     {
      "op": "Decode4",
-     "comment": "damage \u2014 Decode4@0x67c97c"
+     "comment": "damage — Decode4@0x67c97c"
     },
     {
      "op": "Decode4",
-     "comment": "monsterIdFrom \u2014 Decode4@0x67c98e"
+     "comment": "monsterIdFrom — Decode4@0x67c98e"
     },
     {
      "op": "Decode1",
-     "comment": "bLeft \u2014 Decode1@0x67c99c"
+     "comment": "bLeft — Decode1@0x67c99c"
     }
    ]
   },
@@ -7375,15 +7387,15 @@
    "calls": [
     {
      "op": "Decode4",
-     "comment": "cid/ownerId \u2014 CUserPool::OnUserCommonPacket (consumed upstream before dispatch)"
+     "comment": "cid/ownerId — CUserPool::OnUserCommonPacket (consumed upstream before dispatch)"
     },
     {
      "op": "Decode4",
-     "comment": "oid \u2014 summon cluster dispatcher sub_7922E8 Decode4@0x792327 (read before leaf dispatch)"
+     "comment": "oid — summon cluster dispatcher sub_7922E8 Decode4@0x792327 (read before leaf dispatch)"
     },
     {
      "op": "DecodeBuf",
-     "comment": "raw CMovePath movement blob \u2014 sub_67C37E@0x67c37e -> CMovePath::OnMovePacket"
+     "comment": "raw CMovePath movement blob — sub_67C37E@0x67c37e -> CMovePath::OnMovePacket"
     }
    ]
   },
@@ -7393,15 +7405,15 @@
    "calls": [
     {
      "op": "Decode4",
-     "comment": "cid/ownerId \u2014 CUserPool::OnUserCommonPacket (consumed upstream before dispatch)"
+     "comment": "cid/ownerId — CUserPool::OnUserCommonPacket (consumed upstream before dispatch)"
     },
     {
      "op": "Decode4",
-     "comment": "oid \u2014 summon cluster dispatcher sub_7922E8 Decode4@0x792327 (read before leaf dispatch)"
+     "comment": "oid — summon cluster dispatcher sub_7922E8 Decode4@0x792327 (read before leaf dispatch)"
     },
     {
      "op": "Decode1",
-     "comment": "leave/animated flag \u2014 sub_67BFED Decode1@0x67c002 (branched 0/2/3/4)"
+     "comment": "leave/animated flag — sub_67BFED Decode1@0x67c002 (branched 0/2/3/4)"
     }
    ]
   },
@@ -7411,15 +7423,15 @@
    "calls": [
     {
      "op": "Decode4",
-     "comment": "cid/ownerId \u2014 CUserPool::OnUserCommonPacket (consumed upstream before dispatch)"
+     "comment": "cid/ownerId — CUserPool::OnUserCommonPacket (consumed upstream before dispatch)"
     },
     {
      "op": "Decode4",
-     "comment": "oid \u2014 summon cluster dispatcher sub_7922E8 Decode4@0x792327 (read before leaf dispatch)"
+     "comment": "oid — summon cluster dispatcher sub_7922E8 Decode4@0x792327 (read before leaf dispatch)"
     },
     {
      "op": "Decode1",
-     "comment": "newStance \u2014 skill leaf sub_67C8D2 Decode1@0x67c921 (masked 0x7F)"
+     "comment": "newStance — skill leaf sub_67C8D2 Decode1@0x67c921 (masked 0x7F)"
     }
    ]
   },

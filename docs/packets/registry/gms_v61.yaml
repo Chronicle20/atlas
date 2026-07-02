@@ -1247,7 +1247,7 @@
 - op: APPLY_MONSTER_STATUS
   direction: clientbound
   opcode: 181
-  fname: sub_5CB8ED
+  fname: CMob::OnStatSet
   provenance: ida-discovered
   ida:
     address: 6076653

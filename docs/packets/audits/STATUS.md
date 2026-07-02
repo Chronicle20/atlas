@@ -5,7 +5,7 @@
 
 Tool: `dde4cb7f9c62159772672195dd4a20bb7d2f1343`
 
-- export gms_v72: `60d18f712361ec04133b3d423bb56627d2998bee1898ecea819bc79c3ac8d622`
+- export gms_v72: `dd7d3cd697751e8ec93cad168b128e3dec3b70fdde4f60e45b80ce0943425b51`
 - export gms_v79: `370d6b720b633c12c71d40340f3952000705c4bddb98f87179e7193d112d210c`
 - export gms_v83: `711bddcc2e1bdd417a75954148d2b50c64e70855e84259c0b8e50e700e393c0d`
 - export gms_v84: `7eab9472e2afeda13faaf74273828d09d5f2481d67bec10235c3b2fd2f91e1eb`
@@ -61,7 +61,7 @@ Tool: `dde4cb7f9c62159772672195dd4a20bb7d2f1343`
 | UPDATE_SKILLS | CWvsContext::OnChangeSkillRecordResult | character/clientbound/CharacterSkillChange (T1) | 0x021 | ✅ | 0x021 | ✅ | 0x024 | ✅ | 0x024 | ✅ | 0x024 | ✅ | 0x023 | ✅ | 0x022 | ✅ |
 | SKILL_USE_RESULT | CWvsContext::OnSkillUseResult |  | 0x022 | ❌ | 0x022 | ❌ | 0x025 | ❌ | 0x025 | ❌ | 0x025 | ❌ | 0x024 | ❌ | 0x023 | ❌ |
 | FAME_RESPONSE | CWvsContext::OnGivePopularityResult | fame/clientbound/ErrorResponse | 0x023 | ❌ | 0x023 | ❌ | 0x026 | ✅ | 0x026 | ✅ | 0x026 | ✅ | 0x025 | ✅ | 0x024 | ✅ |
-| SHOW_STATUS_INFO | CWvsContext::OnMessage | character/clientbound/StatusMessageCashItemExpire (T1) | 0x024 | ❌ | 0x024 | ✅ | 0x027 | ✅ | 0x027 | ✅ | 0x027 | ✅ | 0x026 | ✅ | 0x025 | ✅ |
+| SHOW_STATUS_INFO | CWvsContext::OnMessage | character/clientbound/StatusMessageCashItemExpire (T1) | 0x024 | ✅ | 0x024 | ✅ | 0x027 | ✅ | 0x027 | ✅ | 0x027 | ✅ | 0x026 | ✅ | 0x025 | ✅ |
 | OPEN_FULL_CLIENT_DOWNLOAD_LINK | CWvsContext::OnOpenFullClientDownloadLink |  | 0x025 | ❌ | 0x025 | ❌ | 0x028 | ❌ | 0x028 | ❌ | 0x028 | ❌ | 0x027 | ❌ |  | ⬜ |
 | MEMO_RESULT | CWvsContext::OnMemoResult | note/clientbound/NoteDisplay (T1) | 0x026 | ✅ | 0x026 | ✅ | 0x029 | ✅ | 0x029 | ❌ | 0x029 | ✅ | 0x028 | ✅ | 0x026 | ❌ |
 | MAP_TRANSFER_RESULT | CWvsContext::OnMapTransferResult |  | 0x027 | ❌ | 0x027 | ❌ | 0x02A | ❌ | 0x02A | ❌ | 0x02A | ❌ | 0x029 | ❌ | 0x027 | ❌ |
@@ -914,7 +914,7 @@ Tool: `dde4cb7f9c62159772672195dd4a20bb7d2f1343`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v72 | 210 | 0 | 73 | 188 | 411 | 0 | 44.6% |
+| v72 | 211 | 0 | 73 | 187 | 411 | 0 | 44.8% |
 | v79 | 228 | 0 | 72 | 180 | 402 | 0 | 47.5% |
 | v83 | 367 | 0 | 0 | 311 | 204 | 0 | 54.1% |
 | v84 | 345 | 0 | 0 | 312 | 225 | 0 | 52.5% |

@@ -5038,7 +5038,7 @@
     },
     {
      "op": "Encode4",
-     "comment": "accountId @0x5b55c3 (*(g_pWvsContext+8232)) \u2014 LEGACY-ONLY int, absent in v83+"
+     "comment": "accountId @0x5b55c3 (*(g_pWvsContext+8232)) — LEGACY-ONLY int, absent in v83+"
     },
     {
      "op": "EncodeStr",
@@ -8044,7 +8044,7 @@
    "calls": [
     {
      "op": "Decode4",
-     "comment": "m_nChannelID (channel id) @0x6c0cce \u2014 v72 NO DecodeOpt, NO m_dwOldDriverID"
+     "comment": "m_nChannelID (channel id) @0x6c0cce — v72 NO DecodeOpt, NO m_dwOldDriverID"
     },
     {
      "op": "Decode1",
@@ -8060,7 +8060,7 @@
     },
     {
      "op": "Decode4",
-     "comment": "dwPosMap (target map id) @0x6c0e59 \u2014 NO revive byte in v72 (else branch reads mapId immediately, v72 < v83)"
+     "comment": "dwPosMap (target map id) @0x6c0e59 — NO revive byte in v72 (else branch reads mapId immediately, v72 < v83)"
     },
     {
      "op": "Decode1",
@@ -8068,7 +8068,7 @@
     },
     {
      "op": "Decode2",
-     "comment": "nHP @0x6c0e88 \u2014 v72 Decode2 (2 bytes)"
+     "comment": "nHP @0x6c0e88 — v72 Decode2 (2 bytes)"
     },
     {
      "op": "Decode1",
@@ -8157,11 +8157,11 @@
    "calls": [
     {
      "op": "Decode4",
-     "comment": "cid/ownerId \u2014 CUserPool::OnUserCommonPacket (consumed upstream before dispatch)"
+     "comment": "cid/ownerId — CUserPool::OnUserCommonPacket (consumed upstream before dispatch)"
     },
     {
      "op": "Decode4",
-     "comment": "oid \u2014 summon cluster dispatcher sub_848023@0x848062 (read before leaf dispatch)"
+     "comment": "oid — summon cluster dispatcher sub_848023@0x848062 (read before leaf dispatch)"
     },
     {
      "op": "Decode1",
@@ -8187,15 +8187,15 @@
    "calls": [
     {
      "op": "Decode4",
-     "comment": "cid/ownerId \u2014 CUserPool::OnUserCommonPacket (consumed upstream before dispatch)"
+     "comment": "cid/ownerId — CUserPool::OnUserCommonPacket (consumed upstream before dispatch)"
     },
     {
      "op": "Decode4",
-     "comment": "oid \u2014 summon cluster dispatcher sub_848023@0x848062 (read before leaf dispatch)"
+     "comment": "oid — summon cluster dispatcher sub_848023@0x848062 (read before leaf dispatch)"
     },
     {
      "op": "DecodeBuf",
-     "comment": "raw CMovePath movement blob \u2014 sub_6E9285 -> CMovePath::OnMovePacket@0x635bc2"
+     "comment": "raw CMovePath movement blob — sub_6E9285 -> CMovePath::OnMovePacket@0x635bc2"
     }
    ]
   },
@@ -8205,11 +8205,11 @@
    "calls": [
     {
      "op": "Decode4",
-     "comment": "cid/ownerId \u2014 CUserPool::OnUserCommonPacket (consumed upstream before dispatch)"
+     "comment": "cid/ownerId — CUserPool::OnUserCommonPacket (consumed upstream before dispatch)"
     },
     {
      "op": "Decode4",
-     "comment": "oid \u2014 summon cluster dispatcher sub_848023@0x848062 (read before leaf dispatch)"
+     "comment": "oid — summon cluster dispatcher sub_848023@0x848062 (read before leaf dispatch)"
     },
     {
      "op": "Decode1",
@@ -8223,11 +8223,11 @@
    "calls": [
     {
      "op": "Decode4",
-     "comment": "cid/ownerId \u2014 CUserPool::OnUserCommonPacket (consumed upstream before dispatch)"
+     "comment": "cid/ownerId — CUserPool::OnUserCommonPacket (consumed upstream before dispatch)"
     },
     {
      "op": "Decode4",
-     "comment": "oid \u2014 summon cluster dispatcher sub_848023@0x848062 (read before leaf dispatch)"
+     "comment": "oid — summon cluster dispatcher sub_848023@0x848062 (read before leaf dispatch)"
     },
     {
      "op": "Decode1",
@@ -13442,244 +13442,310 @@
    ]
   },
   "CWvsContext::OnMessage#CompleteQuestRecord": {
-   "address": "",
+   "address": "0x919604",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode2",
+     "comment": "questId @0x919627"
+    },
+    {
+     "op": "Decode1",
+     "comment": "subtype 2 @0x919638"
+    },
+    {
+     "op": "DecodeBuffer",
+     "comment": "completedAt FILETIME int64 (8) @0x919659"
     }
    ]
   },
   "CWvsContext::OnMessage#DropLossStackableItem": {
-   "address": "",
+   "address": "0x9192d0",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": "drop type 0 @0x9192f4"
+    },
+    {
+     "op": "Decode4",
+     "comment": "itemId @0x9193e7"
+    },
+    {
+     "op": "Decode4",
+     "comment": "amount (negative) @0x9193f4"
     }
    ]
   },
   "CWvsContext::OnMessage#DropLossUnStackableItem": {
-   "address": "",
+   "address": "0x9192d0",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": "drop type 2 @0x9192f4"
+    },
+    {
+     "op": "Decode4",
+     "comment": "itemId @0x9194d9"
     }
    ]
   },
   "CWvsContext::OnMessage#DropPickUpGameFileDamaged": {
-   "address": "",
+   "address": "0x9192d0",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": "drop type -3 (game file damaged, no further read) @0x9192f4"
     }
    ]
   },
   "CWvsContext::OnMessage#DropPickUpInventoryFull": {
-   "address": "",
+   "address": "0x9192d0",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": "drop type -1 (inventory full, no further read) @0x9192f4"
     }
    ]
   },
   "CWvsContext::OnMessage#DropPickUpItemUnavailable": {
-   "address": "",
+   "address": "0x9192d0",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": "drop type -2 (item unavailable, no further read) @0x9192f4"
     }
    ]
   },
   "CWvsContext::OnMessage#DropPickUpMeso": {
-   "address": "",
+   "address": "0x9192d0",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": "drop type 1 (meso) @0x9192f4"
+    },
+    {
+     "op": "Decode4",
+     "comment": "meso @0x91930b"
+    },
+    {
+     "op": "Decode2",
+     "comment": "internetCafeBonus @0x919314"
     }
    ]
   },
   "CWvsContext::OnMessage#DropPickUpStackableItem": {
-   "address": "",
+   "address": "0x9192d0",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": "drop type 0 @0x9192f4"
+    },
+    {
+     "op": "Decode4",
+     "comment": "itemId @0x9193e7"
+    },
+    {
+     "op": "Decode4",
+     "comment": "amount @0x9193f4"
     }
    ]
   },
   "CWvsContext::OnMessage#DropPickUpUnStackableItem": {
-   "address": "",
+   "address": "0x9192d0",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": "drop type 2 @0x9192f4"
+    },
+    {
+     "op": "Decode4",
+     "comment": "itemId @0x9194d9"
     }
    ]
   },
   "CWvsContext::OnMessage#ForfeitQuestRecord": {
-   "address": "",
+   "address": "0x919604",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode2",
+     "comment": "questId @0x919627"
+    },
+    {
+     "op": "Decode1",
+     "comment": "subtype 0 (forfeit, no further read) @0x919638"
     }
    ]
   },
   "CWvsContext::OnMessage#GeneralItemExpire": {
-   "address": "",
+   "address": "0x919bff",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": "count @0x919c12"
+    },
+    {
+     "op": "Decode4",
+     "comment": "itemId (count loop) @0x919c30"
     }
    ]
   },
   "CWvsContext::OnMessage#GiveBuff": {
-   "address": "",
+   "address": "0x91a6bd",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode4",
+     "comment": "itemId @0x91a6ca"
     }
    ]
   },
   "CWvsContext::OnMessage#IncreaseExperience": {
-   "address": "",
+   "address": "0x919e04",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": "white @0x919e1c"
+    },
+    {
+     "op": "Decode4",
+     "comment": "amount @0x919e29"
+    },
+    {
+     "op": "Decode1",
+     "comment": "inChat @0x919e32"
+    },
+    {
+     "op": "Decode4",
+     "comment": "monsterBookBonus @0x919e3f"
+    },
+    {
+     "op": "Decode1",
+     "comment": "mobEventBonusPct @0x919e49"
+    },
+    {
+     "op": "Decode1",
+     "comment": "partyBonusPct @0x919e56"
+    },
+    {
+     "op": "Decode4",
+     "comment": "weddingBonusEXP @0x919e63"
+    },
+    {
+     "op": "Decode1",
+     "comment": "playTimeHour (mob>0) @0x919e74"
+    },
+    {
+     "op": "Decode1",
+     "comment": "questBonusRate (inChat) @0x919e8b"
+    },
+    {
+     "op": "Decode1",
+     "comment": "questBonusRemain (rate>0) @0x919ea2"
+    },
+    {
+     "op": "Decode1",
+     "comment": "partyBonusEventRate @0x919eb4"
+    },
+    {
+     "op": "Decode4",
+     "comment": "partyBonusExp (sole trailing int) @0x919ec1"
     }
    ]
   },
   "CWvsContext::OnMessage#IncreaseFame": {
-   "address": "",
+   "address": "0x91a45b",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode4",
+     "comment": "amount @0x91a471"
     }
    ]
   },
   "CWvsContext::OnMessage#IncreaseGuildPoint": {
-   "address": "",
+   "address": "0x91a5f7",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode4",
+     "comment": "amount @0x91a60d"
     }
    ]
   },
   "CWvsContext::OnMessage#IncreaseMeso": {
-   "address": "",
+   "address": "0x91a521",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
-   ]
-  },
-  "CWvsContext::OnMessage#ItemExpireReplace": {
-   "address": "",
-   "direction": "clientbound",
-   "unresolved": true,
-   "calls": [
-    {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode4",
+     "comment": "amount @0x91a53a"
     }
    ]
   },
   "CWvsContext::OnMessage#ItemProtectExpire": {
-   "address": "",
+   "address": "0x919cdb",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": "count @0x919cee"
+    },
+    {
+     "op": "Decode4",
+     "comment": "itemId (count loop) @0x919d0c"
     }
    ]
   },
   "CWvsContext::OnMessage#QuestRecordEx": {
-   "address": "",
+   "address": "0x919a7b",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
-   ]
-  },
-  "CWvsContext::OnMessage#SkillExpire": {
-   "address": "",
-   "direction": "clientbound",
-   "unresolved": true,
-   "calls": [
+     "op": "Decode2",
+     "comment": "questId @0x919a98"
+    },
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "DecodeStr",
+     "comment": "info @0x919a9e"
     }
    ]
   },
   "CWvsContext::OnMessage#SystemMessage": {
-   "address": "",
+   "address": "0x919db7",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "DecodeStr",
+     "comment": "message @0x919dc8"
     }
    ]
   },
   "CWvsContext::OnMessage#UpdateQuestRecord": {
-   "address": "",
+   "address": "0x919604",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode2",
+     "comment": "questId @0x919627"
+    },
+    {
+     "op": "Decode1",
+     "comment": "subtype 1 @0x919638"
+    },
+    {
+     "op": "DecodeStr",
+     "comment": "info @0x9196fa"
     }
    ]
   },

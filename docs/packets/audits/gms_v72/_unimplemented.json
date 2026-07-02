@@ -4,6 +4,16 @@
    "fname": "CWvsContext::OnPartyResult",
    "case": 25,
    "reason": "CannotKick (v83 SP_5059 'Cannot kick another user in this map') is version-absent in gms_v72: no OnPartyResult switch case @0x934f3c decrypts to that string, and v72 lacks the v83 case-25 slot (upper arms shift -1). Proven via in-process StringPool decryption (task-113 party-family agent). party.yaml CANNOT_KICK lists only gms_v83+."
+  },
+  {
+   "fname": "CWvsContext::OnMessage#ItemExpireReplace",
+   "case": 12,
+   "reason": "ItemExpireReplace (Atlas mode 13) is version-absent in gms_v72: CWvsContext::OnMessage @0x9191ee dispatches only switch cases 0-11 (SHRUNK from v79's 0-13). v79 case 12 (sub_96BBA2) is the item-expire-replace arm; v72 has no case 12 arm. Confirmed by decompiling the v72 OnMessage switch (task-113 stage E). Report + export stub removed so the SHOW_STATUS_INFO op cell excludes this arm."
+  },
+  {
+   "fname": "CWvsContext::OnMessage#SkillExpire",
+   "case": 13,
+   "reason": "SkillExpire (Atlas mode 14) is version-absent in gms_v72: CWvsContext::OnMessage @0x9191ee dispatches only switch cases 0-11. v79 case 13 (sub_96BC06) is the skill-expire arm; v72 has no case 13 arm. Confirmed by decompiling the v72 OnMessage switch (task-113 stage E). Report + export stub removed so the SHOW_STATUS_INFO op cell excludes this arm."
   }
  ]
 }

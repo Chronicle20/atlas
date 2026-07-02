@@ -1367,28 +1367,6 @@
     }
    ]
   },
-  "CEntrustedShopDlg::AddBlackList": {
-   "address": "",
-   "direction": "serverbound",
-   "unresolved": true,
-   "calls": [
-    {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
-   ]
-  },
-  "CEntrustedShopDlg::DeleteBlackList": {
-   "address": "",
-   "direction": "serverbound",
-   "unresolved": true,
-   "calls": [
-    {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
-   ]
-  },
   "CEntrustedShopDlg::OnRefresh#UpdateMerchant": {
    "address": "",
    "direction": "clientbound",

@@ -18,6 +18,14 @@
   {
    "fname": "CCashShop::OnIncCharacterSlotCount",
    "reason": "CASHSHOP_OPERATION IncreaseCharacterSlot (mode 9) send is version-absent in gms_v72. v79 has TWO distinct CCashShop slot sends: OnIncCharacterSlotCount @0x4673be (size 0x21d, COutPacket Encode1(9)+isPoints+serial) and OnEnableEquipSlotExt @0x469fa9 (size 0x407). v72 CCashShop has only ONE slot send @0x468e43 (size 0x407) whose body is Encode1(6|7 mode)+pointType+currency+flag(1)+serial = EnableEquipSlot (the IDB symbol OnIncCharacterSlotCount is a mislabel; size + body confirm it is EnableEquipSlot). No mode-9 IncCharacterSlot send exists in v72. Report + mislabeled export stub removed so the cell is excluded. (task-113 stage E)"
+  },
+  {
+   "fname": "CEntrustedShopDlg::AddBlackList",
+   "reason": "Entrusted-shop (hired merchant) blacklist ADD send is version-absent in gms_v72: the v72 binary has NO CEntrustedShopDlg::AddBlackList (func_query *EntrustedShop* yields only CWvsContext::OnEntrustedShopCheckResult @0x91ff18; *BlackList* yields only CConfig::IsInBlackList, CField::AddBlackList/DeleteBlackList, CPersonalShopDlg::DeliverBlackList). The CEntrustedShopDlg blacklist feature is post-v72; Field + PersonalStore blacklist sends DO exist and are verified. Report + unresolved export stub removed. (task-113 stage E)"
+  },
+  {
+   "fname": "CEntrustedShopDlg::DeleteBlackList",
+   "reason": "Entrusted-shop (hired merchant) blacklist DELETE send is version-absent in gms_v72: no CEntrustedShopDlg::DeleteBlackList in the v72 binary (same exhaustive class/BlackList scan as AddBlackList). Post-v72 feature. Report + unresolved export stub removed. (task-113 stage E)"
   }
  ]
 }

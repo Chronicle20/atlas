@@ -58,9 +58,20 @@ func (m ShopOperationBuy) encodeGMS(t tenant.Model, w *response.Writer) {
 	if t.Region() == "GMS" && t.MajorVersion() >= 87 {
 		w.WriteByte(m.oneADay)
 		w.WriteInt(m.eventSN)
-	} else {
+	} else if !buyOmitsTrailingZero(t) {
 		w.WriteInt(m.zero)
 	}
+	// GMS < 72 (v61 CCashShop::OnBuy @0x457ea4) sends only isPoints+currency+
+	// serialNumber; the trailing IsZeroGoods int is absent (added at v72).
+}
+
+// buyOmitsTrailingZero reports whether the pre-v87 CCashShop::OnBuy body omits
+// the trailing IsZeroGoods int. v61 (CCashShop::OnBuy @0x457ea4) sends only
+// isPoints+currency+serialNumber; the trailing Decode4 first appears at v72
+// (CCashShop::OnBuy, verified fixture). Scoped to the legacy GMS < 72 range so
+// v72/v79/v83/v84 keep the trailing int.
+func buyOmitsTrailingZero(t tenant.Model) bool {
+	return t.Region() == "GMS" && t.MajorVersion() < 72
 }
 
 // encodeJMS - JMS185 CCashShop::OnBuy@0x47eaa7: Encode1(usePoints),
@@ -88,7 +99,7 @@ func (m *ShopOperationBuy) decodeGMS(t tenant.Model, r *request.Reader) {
 	if t.Region() == "GMS" && t.MajorVersion() >= 87 {
 		m.oneADay = r.ReadByte()
 		m.eventSN = r.ReadUint32()
-	} else {
+	} else if !buyOmitsTrailingZero(t) {
 		m.zero = r.ReadUint32()
 	}
 }

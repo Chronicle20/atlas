@@ -1,6 +1,6 @@
 # CashShopOperationGift (← `CCashShop::SendGiftsPacket`)
 
-- **IDA:** 
+- **IDA:** 0x45c607
 - **Atlas file:** `libs/atlas-packet/cash/serverbound/shop_operation_gift.go`
 - **Variant:** GMS/v61
 - **Branch depth:** 3
@@ -10,8 +10,9 @@
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | int32 | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
-| 1 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 2 | string | byte `` | ❌ | atlas: extra — client never reads this field |
-| 3 | string | byte `` | ❌ | atlas: extra — client never reads this field |
+| 0 | int32 | byte `mode (4 = regular gift)` | ❌ | width mismatch |
+| 1 | int32 | int32 `birthday` | ✅ |  |
+| 2 | string | int32 `serialNumber` | ❌ | width mismatch |
+| 3 | string | string `name` | ✅ |  |
+| 4 | byte | string `message` | ❌ | atlas: short — missing trailing field |
 

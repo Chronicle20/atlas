@@ -1,7 +1,7 @@
 {
   "toolSha": "bfecda916f252908d2fafda8adbe41d5763d4a1e",
   "exportHashes": {
-    "gms_v61": "ba45daf2d8a0c8dc3833ed764519d27345a0c560c762010bd591e7f6e3751eae",
+    "gms_v61": "c7d6eae34adc28ccd5c483d7f064f2dd40828a1da34d1601ddb83128bcccb79c",
     "gms_v72": "a0ac2be6578395455f491976bcb11aa27e2e57376b46ee8816b90324bad60c02",
     "gms_v79": "370d6b720b633c12c71d40340f3952000705c4bddb98f87179e7193d112d210c",
     "gms_v83": "711bddcc2e1bdd417a75954148d2b50c64e70855e84259c0b8e50e700e393c0d",
@@ -24490,8 +24490,7 @@
       ],
       "cells": {
         "gms_v61": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
+          "state": "verified",
           "opcode": 195
         },
         "gms_v72": {
@@ -31140,8 +31139,7 @@
       ],
       "cells": {
         "gms_v61": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
+          "state": "verified",
           "opcode": 255
         },
         "gms_v72": {
@@ -36543,8 +36541,7 @@
       "tier1": true,
       "cells": {
         "gms_v61": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v72": {
@@ -36583,8 +36580,7 @@
       "tier1": true,
       "cells": {
         "gms_v61": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v72": {
@@ -36623,8 +36619,7 @@
       "tier1": true,
       "cells": {
         "gms_v61": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v72": {
@@ -36748,8 +36743,7 @@
       "tier1": true,
       "cells": {
         "gms_v61": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v72": {
@@ -36831,8 +36825,7 @@
       "tier1": true,
       "cells": {
         "gms_v61": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v72": {
@@ -36861,53 +36854,6 @@
         },
         "jms_v185": {
           "state": "verified",
-          "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "sub-struct",
-      "packet": "cash/serverbound/CashShopOperationGetPurchaseRecord",
-      "tier1": true,
-      "cells": {
-        "gms_v61": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🚫",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
           "opcode": -1
         }
       }
@@ -36918,8 +36864,7 @@
       "tier1": true,
       "cells": {
         "gms_v61": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v72": {
@@ -37210,8 +37155,7 @@
       "tier1": true,
       "cells": {
         "gms_v61": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v72": {

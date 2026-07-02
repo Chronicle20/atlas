@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
@@ -41,7 +42,8 @@ func TestShopOperationBuyRoundTrip(t *testing.T) {
 				if output.EventSN() != input.EventSN() {
 					t.Errorf("eventSN: got %v, want %v", output.EventSN(), input.EventSN())
 				}
-			} else if output.Zero() != input.Zero() {
+			} else if !buyOmitsTrailingZero(tenant.MustFromContext(ctx)) && output.Zero() != input.Zero() {
+				// GMS < 72 (v61) omits the trailing IsZeroGoods int entirely.
 				t.Errorf("zero: got %v, want %v", output.Zero(), input.Zero())
 			}
 		})

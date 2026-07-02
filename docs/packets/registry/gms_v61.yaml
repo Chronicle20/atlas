@@ -2526,8 +2526,8 @@
 - op: CASHSHOP_OPERATION
   direction: serverbound
   opcode: 196
-  fname: CCashShop::SendBuyAvatarPacket
+  fname: CCashShop::RequestCashPurchaseRecord
   provenance: ida-discovered
   ida:
     address: 4549752
-  note: 'v61 op196: CCashShop cash-purchase family (SendBuyAvatarPacket/OnBuy/OnBuyCouple/OnGift/OnBuyNormal/OnIncCharacterSlotCount/... all COutPacket(196)+Encode1(sub-op)+...). v72 CASHSHOP_OPERATION=219 (Δ-23).'
+  note: 'v61 op196: CCashShop cash-purchase family — all sub-ops COutPacket(196)+Encode1(sub-op)+body (OnBuy/OnBuyCouple/OnBuyFriendship/OnBuyPackage/OnEnableEquipSlotExt/SendGiftsPacket/OnSetWish all verified as sub-structs). Representative fname kept = CCashShop::RequestCashPurchaseRecord (v72 parity), but that purchase-record sub-op is v61-ABSENT — an exhaustive COutPacket(196) send-site sweep found no mode+single-serial sender; v61 mode 0x27 is a name-entry dialog, not a record query (see _unimplemented.json). v72 CASHSHOP_OPERATION=219 (Δ-23).'

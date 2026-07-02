@@ -808,13 +808,29 @@
    ]
   },
   "CCashShop::OnEnableEquipSlotExt": {
-   "address": "",
+   "address": "0x459928",
    "direction": "serverbound",
-   "unresolved": true,
+   "notes": "v61 EnableEquipSlot: IDB-mislabeled OnIncCharacterSlotCount @0x459928, send @0x459bb2: COutPacket(196) Encode1((v/1000==9110)+6=mode 6|7) Encode1(pointType) Encode4(currency) Encode1(flag=1) Encode4(serial). Body after mode = v72.",
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": "mode 6|7"
+    },
+    {
+     "op": "Decode1",
+     "comment": "pointType"
+    },
+    {
+     "op": "Decode4",
+     "comment": "currency"
+    },
+    {
+     "op": "Decode1",
+     "comment": "flag"
+    },
+    {
+     "op": "Decode4",
+     "comment": "serialNumber"
     }
    ]
   },
@@ -933,17 +949,6 @@
     }
    ]
   },
-  "CCashShop::RequestCashPurchaseRecord": {
-   "address": "",
-   "direction": "serverbound",
-   "unresolved": true,
-   "calls": [
-    {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
-   ]
-  },
   "CCashShop::SendBuyAvatarPacket": {
    "address": "0x456a42",
    "direction": "",
@@ -972,26 +977,37 @@
    ]
   },
   "CCashShop::SendGiftsPacket": {
-   "address": "",
+   "address": "0x45c607",
    "direction": "serverbound",
-   "unresolved": true,
+   "notes": "v61 SendGiftsPacket sub_45C607 @0x45c607, send @0x45c981: COutPacket(196) Encode1(mode 4 regular gift) Encode4(birthday) Encode4(serial) EncodeStr(name) EncodeStr(message). = v72 (couple/friendship arms use other modes+option).",
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": "mode (4 = regular gift)"
+    },
+    {
+     "op": "Decode4",
+     "comment": "birthday"
+    },
+    {
+     "op": "Decode4",
+     "comment": "serialNumber"
+    },
+    {
+     "op": "DecodeStr",
+     "comment": "name"
+    },
+    {
+     "op": "DecodeStr",
+     "comment": "message"
     }
    ]
   },
   "CCashShop::TrySendQueryCashRequest": {
-   "address": "",
+   "address": "0x45c33e",
    "direction": "serverbound",
-   "unresolved": true,
-   "calls": [
-    {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
-   ]
+   "notes": "v61 CheckWallet: sub_45C33E COutPacket(195) @0x45c362, SendPacket with zero Encode* (empty query).",
+   "calls": []
   },
   "CCashTradingRoomDlg::Trade": {
    "address": "",

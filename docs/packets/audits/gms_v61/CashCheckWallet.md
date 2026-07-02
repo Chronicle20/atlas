@@ -1,14 +1,13 @@
 # CashCheckWallet (← `CCashShop::TrySendQueryCashRequest`)
 
-- **IDA:** 
+- **IDA:** 0x45c33e
 - **Atlas file:** `libs/atlas-packet/cash/serverbound/check_wallet.go`
 - **Variant:** GMS/v61
 - **Branch depth:** 0
-- **Verdict:** ❌
+- **Verdict:** ✅
 
 ## Wire-level diff
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | byte | unresolved `function not found in IDB` | ❌ | atlas: short — missing trailing field |
 

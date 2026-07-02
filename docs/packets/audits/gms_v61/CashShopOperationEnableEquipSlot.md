@@ -1,6 +1,6 @@
 # CashShopOperationEnableEquipSlot (← `CCashShop::OnEnableEquipSlotExt`)
 
-- **IDA:** 
+- **IDA:** 0x459928
 - **Atlas file:** `libs/atlas-packet/cash/serverbound/shop_operation_enable_equip_slot.go`
 - **Variant:** GMS/v61
 - **Branch depth:** 1
@@ -11,10 +11,10 @@
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | byte | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
-| 1 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 2 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 3 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 4 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 0 | byte | byte `mode 6\|7` | ✅ |  |
+| 1 | int32 | byte `pointType` | ❌ | width mismatch |
+| 2 | byte | int32 `currency` | ❌ | width mismatch |
+| 3 | int32 | byte `flag` | ❌ | width mismatch |
+| 4 | byte | int32 `serialNumber` | ❌ | width mismatch |
 | 5 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 

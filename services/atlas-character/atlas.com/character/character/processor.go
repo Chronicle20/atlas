@@ -846,9 +846,15 @@ func (p *ProcessorImpl) RequestChangeFame(transactionId uuid.UUID, characterId u
 		}
 
 		total := c.Fame() + int16(amount)
-		err = dynamicUpdate(tx)(SetFame(total))(c)
-		_ = producer.ProviderImpl(p.l)(p.ctx)(character2.EnvEventTopicCharacterStatus)(fameChangedStatusEventProvider(transactionId, characterId, c.WorldId(), amount, actorId, actorType))
-		return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvEventTopicCharacterStatus)(statChangedProvider(transactionId, channel.NewModel(c.WorldId(), 0), characterId, []stat.Type{stat.TypeFame}, nil))
+		if err = dynamicUpdate(tx)(SetFame(total))(c); err != nil {
+			return err
+		}
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			if err := buf.Put(character2.EnvEventTopicCharacterStatus, fameChangedStatusEventProvider(transactionId, characterId, c.WorldId(), amount, actorId, actorType)); err != nil {
+				return err
+			}
+			return buf.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel.NewModel(c.WorldId(), 0), characterId, []stat.Type{stat.TypeFame}, nil))
+		})
 	})
 }
 
@@ -858,14 +864,16 @@ type Distribution struct {
 }
 
 func (p *ProcessorImpl) RequestDistributeAp(transactionId uuid.UUID, characterId uint32, distributions []Distribution) error {
-	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+	var rejectEmit func() error
+	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 		c, err := p.WithTransaction(tx).GetById()(characterId)
 		if err != nil {
-			_ = producer.ProviderImpl(p.l)(p.ctx)(character2.EnvEventTopicCharacterStatus)(statChangedProvider(transactionId, channel.NewModel(c.WorldId(), 0), characterId, []stat.Type{}, nil))
 			return err
 		}
 		if c.AP() < uint16(len(distributions)) {
-			_ = producer.ProviderImpl(p.l)(p.ctx)(character2.EnvEventTopicCharacterStatus)(statChangedProvider(transactionId, channel.NewModel(c.WorldId(), 0), characterId, []stat.Type{}, nil))
+			rejectEmit = func() error {
+				return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvEventTopicCharacterStatus)(statChangedProvider(transactionId, channel.NewModel(c.WorldId(), 0), characterId, []stat.Type{}, nil))
+			}
 			return errors.New("not enough ap")
 		}
 
@@ -927,7 +935,9 @@ func (p *ProcessorImpl) RequestDistributeAp(transactionId uuid.UUID, characterId
 		}
 
 		if len(eufs) == 0 {
-			_ = producer.ProviderImpl(p.l)(p.ctx)(character2.EnvEventTopicCharacterStatus)(statChangedProvider(transactionId, channel.NewModel(c.WorldId(), 0), characterId, []stat.Type{}, nil))
+			rejectEmit = func() error {
+				return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvEventTopicCharacterStatus)(statChangedProvider(transactionId, channel.NewModel(c.WorldId(), 0), characterId, []stat.Type{}, nil))
+			}
 			return errors.New("invalid ability")
 		}
 
@@ -936,13 +946,20 @@ func (p *ProcessorImpl) RequestDistributeAp(transactionId uuid.UUID, characterId
 
 		err = dynamicUpdate(tx)(eufs...)(c)
 		if err != nil {
-			_ = producer.ProviderImpl(p.l)(p.ctx)(character2.EnvEventTopicCharacterStatus)(statChangedProvider(transactionId, channel.NewModel(c.WorldId(), 0), characterId, []stat.Type{stat.TypeAvailableAP}, nil))
+			rejectEmit = func() error {
+				return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvEventTopicCharacterStatus)(statChangedProvider(transactionId, channel.NewModel(c.WorldId(), 0), characterId, []stat.Type{stat.TypeAvailableAP}, nil))
+			}
 			return err
 		}
 
-		_ = producer.ProviderImpl(p.l)(p.ctx)(character2.EnvEventTopicCharacterStatus)(statChangedProvider(transactionId, channel.NewModel(c.WorldId(), 0), characterId, stats, values))
-		return nil
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return buf.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel.NewModel(c.WorldId(), 0), characterId, stats, values))
+		})
 	})
+	if txErr != nil && rejectEmit != nil {
+		_ = rejectEmit()
+	}
+	return txErr
 }
 
 func (p *ProcessorImpl) RequestDistributeSp(transactionId uuid.UUID, characterId uint32, skillId uint32, amount int8) error {

@@ -1,7 +1,7 @@
 # PetCommandResponse (← `CPet::OnActionCommand`)
 
 - **IDA:** 0x61367f
-- **Atlas file:** `libs/atlas-packet/pet/clientbound/command.go`
+- **Atlas file:** `../../libs/atlas-packet/pet/clientbound/command.go`
 - **Variant:** GMS/v61
 - **Branch depth:** 0
 - **Verdict:** 🔍

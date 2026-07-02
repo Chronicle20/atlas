@@ -5,7 +5,7 @@
 
 Tool: `bfecda916f252908d2fafda8adbe41d5763d4a1e`
 
-- export gms_v61: `b45d89ca28e5765052e20e7611c836e2526c29671dff6d5f750d7084b474b000`
+- export gms_v61: `16878a2970de02cc3567ed021cb159910fc4667544c0fdc261c2b00bb92b25a9`
 - export gms_v72: `a0ac2be6578395455f491976bcb11aa27e2e57376b46ee8816b90324bad60c02`
 - export gms_v79: `370d6b720b633c12c71d40340f3952000705c4bddb98f87179e7193d112d210c`
 - export gms_v83: `711bddcc2e1bdd417a75954148d2b50c64e70855e84259c0b8e50e700e393c0d`
@@ -205,17 +205,17 @@ Tool: `bfecda916f252908d2fafda8adbe41d5763d4a1e`
 | EVOLVE_PET | CUser::OnPetPacket |  | 0x080 | ❌ | 0x09A | ❌ | 0x09E | ❌ | 0x0A9 | ❌ | 0x0AC | ❌ | 0x0B5 | ❌ | 0x0C7 | ❌ |  | ⬜ |
 | UPDATE_GM_BOARD | CWvsContext::OnUpdateGMBoard |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x080 | ❌ | 0x082 | ❌ |  | ⬜ |
 | FIELD_OBSTACLE_ALL_RESET | CField::OnFieldObstacleAllReset | field/clientbound/FieldFieldObstacleAllReset (T1) |  | ⬜ | 0x081 | 🟡 | 0x085 | 🟡 | 0x08D | ✅ | 0x090 | ✅ | 0x095 | ✅ | 0x09D | ✅ | 0x08A | ✅ |
-| MOVE_PET | CPet::OnMove | pet/clientbound/PetMovement (T1) | 0x081 | ❌ | 0x09B | ✅ | 0x09F | ✅ | 0x0AA | ✅ | 0x0AE | ✅ | 0x0B7 | ✅ | 0x0C9 | ✅ | 0x0B0 | ✅ |
+| MOVE_PET | CPet::OnMove | pet/clientbound/PetMovement (T1) | 0x081 | ✅ | 0x09B | ✅ | 0x09F | ✅ | 0x0AA | ✅ | 0x0AE | ✅ | 0x0B7 | ✅ | 0x0C9 | ✅ | 0x0B0 | ✅ |
 | SHOW_SLOT_MESSAGE | CWvsContext::OnShowSlotMessage |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x081 | ❌ | 0x083 | ❌ |  | ⬜ |
 | ACCOUNT_MORE_INFO | CWvsContext::OnAccountMoreInfo |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x082 | ❌ | 0x085 | ❌ |  | ⬜ |
 | CLEAR_BACK_EFFECT | CMapLoadable::OnClearBackEffect |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x082 | ❌ | 0x085 | ❌ | 0x08A | ❌ | 0x092 | ❌ | 0x080 | ❌ |
-| PET_CHAT | CPet::OnAction | pet/clientbound/PetChat (T1) | 0x082 | ❌ | 0x09C | ✅ | 0x0A0 | ✅ | 0x0AB | ✅ | 0x0AF | ✅ | 0x0B8 | ✅ | 0x0CA | ✅ | 0x0B1 | ✅ |
+| PET_CHAT | CPet::OnAction | pet/clientbound/PetChat (T1) | 0x082 | ✅ | 0x09C | ✅ | 0x0A0 | ✅ | 0x0AB | ✅ | 0x0AF | ✅ | 0x0B8 | ✅ | 0x0CA | ✅ | 0x0B1 | ✅ |
 | FIND_FRIEND | CWvsContext::OnFindFirend |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x083 | ❌ | 0x086 | ❌ |  | ⬜ |
 | PET_NAMECHANGE | CPet::OnNameChanged; CPet__OnNameChanged_recv_0xB0 |  | 0x083 | ❌ | 0x09D | ❌ | 0x0A1 | ❌ | 0x0AC | ❌ | 0x0B0 | ❌ | 0x0B9 | ❌ | 0x0CB | ❌ | 0x0B2 | ❌ |
 | PLAY_JUKEBOX | CField::OnPlayJukeBox | field/clientbound/FieldPlayJukebox (T1) |  | ⬜ | 0x083 | 🟡 | 0x087 | 🟡 | 0x08F | ✅ | 0x092 | ✅ | 0x097 | ✅ | 0x09F | ✅ | 0x08C | ✅ |
-| PET_EXCEPTION_LIST | CPet::OnLoadExceptionList | pet/clientbound/PetExcludeResponse (T1) | 0x084 | ❌ | 0x09E | ✅ | 0x0A2 | ✅ | 0x0AD | ✅ | 0x0B1 | ✅ | 0x0BA | ✅ | 0x0CC | ✅ | 0x0B3 | ✅ |
+| PET_EXCEPTION_LIST | CPet::OnLoadExceptionList | pet/clientbound/PetExcludeResponse (T1) | 0x084 | ✅ | 0x09E | ✅ | 0x0A2 | ✅ | 0x0AD | ✅ | 0x0B1 | ✅ | 0x0BA | ✅ | 0x0CC | ✅ | 0x0B3 | ✅ |
 | WILD_HUNTER_INFO | CWvsContext::OnWildHunterInfo |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x084 | ❌ |  | ⬜ |
-| PET_COMMAND | CPet::OnActionCommand | pet/clientbound/PetCommandResponse (T1) | 0x085 | ❌ | 0x09F | ✅ | 0x0A3 | ✅ | 0x0AE | ✅ | 0x0B2 | ✅ | 0x0BB | ✅ | 0x0CD | ✅ | 0x0B4 | ✅ |
+| PET_COMMAND | CPet::OnActionCommand | pet/clientbound/PetCommandResponse (T1) | 0x085 | ✅ | 0x09F | ✅ | 0x0A3 | ✅ | 0x0AE | ✅ | 0x0B2 | ✅ | 0x0BB | ✅ | 0x0CD | ✅ | 0x0B4 | ✅ |
 | SPAWN_SPECIAL_MAPOBJECT | CSummonedPool::OnCreated; CSummonedPool::OnPacket; sub_7922E8 | summon/clientbound/SummonSpawn (T1) | 0x086 | ✅ | 0x0A0 | ✅ | 0x0A4 | ✅ | 0x0AF | ✅ | 0x0B3 | ✅ | 0x0BC | ✅ | 0x116 | ✅ | 0x0B5 | ✅ |
 | REMOVE_SPECIAL_MAPOBJECT | CSummonedPool::OnPacket; CSummonedPool::OnRemoved; sub_7922E8 | summon/clientbound/SummonRemove | 0x087 | ✅ | 0x0A1 | ✅ | 0x0A5 | ✅ | 0x0B0 | ✅ | 0x0B4 | ✅ | 0x0BD | ✅ | 0x117 | ✅ | 0x0B6 | ✅ |
 | STAGE_CHANGE | CWvsContext::OnStageChange |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x087 | ❌ |  | ⬜ |
@@ -975,7 +975,7 @@ Tool: `bfecda916f252908d2fafda8adbe41d5763d4a1e`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v61 | 49 | 0 | 62 | 377 | 454 | 0 | 10.0% |
+| v61 | 53 | 0 | 62 | 373 | 454 | 0 | 10.9% |
 | v72 | 216 | 0 | 73 | 239 | 414 | 0 | 40.9% |
 | v79 | 228 | 0 | 72 | 237 | 405 | 0 | 42.5% |
 | v83 | 367 | 0 | 0 | 368 | 207 | 0 | 49.9% |

@@ -6112,12 +6112,12 @@
     {
      "op": "Decode4",
      "comment": "",
-     "guard": "(_BYTE)result"
+     "guard": "(_BYTE)v3"
     },
     {
      "op": "Delegate",
      "comment": "",
-     "guard": "v23 > 0 && loop v23",
+     "guard": "v25 > 0 && loop v25",
      "ref": "CItemInfo::GetItemName"
     }
    ]

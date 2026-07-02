@@ -23,6 +23,18 @@ func TestChangeBatchBytesV72(t *testing.T) {
 	}
 }
 
+// TestChangeBatchBytesV61 pins that InventoryChangeBatch is byte-identical between
+// GMS v61 and v79 (no version gate; handler CWvsContext::OnInventoryOperation@0x8422fc v61).
+// packet-audit:verify packet=inventory/clientbound/InventoryChangeBatch version=gms_v61 ida=0x8422fc
+func TestChangeBatchBytesV61(t *testing.T) {
+	input := NewChangeBatch(true, inventory.NewMoveEntry(2, 3, 7))
+	got61 := test.Encode(t, test.CreateContext("GMS", 61, 1), input.Encode, nil)
+	got79 := test.Encode(t, test.CreateContext("GMS", 79, 1), input.Encode, nil)
+	if !bytes.Equal(got61, got79) {
+		t.Fatalf("v61 = % X, want (v79) % X", got61, got79)
+	}
+}
+
 // packet-audit:verify packet=inventory/clientbound/InventoryChangeBatch version=gms_v83 ida=0xa1ead9
 // packet-audit:verify packet=inventory/clientbound/InventoryChangeBatch version=gms_v95 ida=0xa08a70
 //

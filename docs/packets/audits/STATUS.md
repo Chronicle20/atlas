@@ -5,7 +5,7 @@
 
 Tool: `bfecda916f252908d2fafda8adbe41d5763d4a1e`
 
-- export gms_v61: `179b1da6c1e4fe98c6951fc3abcf3caf671fcd1f629584254da6a23945372853`
+- export gms_v61: `d9301013e52982ee17210e1af40c78c9c9f7bd73cfac3eda19a0ff53f7c9cf3c`
 - export gms_v72: `a0ac2be6578395455f491976bcb11aa27e2e57376b46ee8816b90324bad60c02`
 - export gms_v79: `370d6b720b633c12c71d40340f3952000705c4bddb98f87179e7193d112d210c`
 - export gms_v83: `711bddcc2e1bdd417a75954148d2b50c64e70855e84259c0b8e50e700e393c0d`
@@ -50,7 +50,7 @@ Tool: `bfecda916f252908d2fafda8adbe41d5763d4a1e`
 | CHECK_CRC_RESULT | CClientSocket::OnCheckCrcResult |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x019 | ❌ | 0x019 | ❌ | 0x019 | ❌ | 0x017 | ❌ | 0x00D | ❌ |
 | IDA_0X019 | sub_66F0D7 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x019 | ❌ |
 | IDA_0X01A | CLogin::OnExtraCharInfoResult |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x01A | ❌ |  | ⬜ |
-| INVENTORY_OPERATION | CWvsContext::OnInventoryOperation | inventory/clientbound/InventoryAdd (T1) | 0x01A | ❌ | 0x01A | ✅ | 0x01A | ✅ | 0x01D | ✅ | 0x01D | ❌ | 0x01D | ❌ | 0x01C | ✅ | 0x01B | ❌ |
+| INVENTORY_OPERATION | CWvsContext::OnInventoryOperation | inventory/clientbound/InventoryAdd (T1) | 0x01A | ✅ | 0x01A | ✅ | 0x01A | ✅ | 0x01D | ✅ | 0x01D | ❌ | 0x01D | ❌ | 0x01C | ✅ | 0x01B | ❌ |
 | LAST_CONNECTED_WORLD | CLogin::OnLatestConnectedWorld | login/clientbound/SelectWorld |  | ⬜ |  | ⬜ |  | ⬜ | 0x01A | ✅ | 0x01A | ✅ | 0x01A | ✅ | 0x018 | ✅ | 0x016 | ✅ |
 | INVENTORY_GROW | CWvsContext::OnInventoryGrow |  | 0x01B | ❌ | 0x01B | ❌ | 0x01B | ❌ | 0x01E | ❌ | 0x01E | ❌ | 0x01E | ❌ | 0x01D | ❌ | 0x01C | ❌ |
 | RECOMMENDED_WORLD_MESSAGE | CLogin::OnRecommendWorldMessage | login/clientbound/ServerListRecommendations |  | ⬜ |  | ⬜ |  | ⬜ | 0x01B | ✅ | 0x01B | ✅ | 0x01B | ✅ | 0x019 | ✅ | 0x017 | ✅ |
@@ -967,7 +967,7 @@ Tool: `bfecda916f252908d2fafda8adbe41d5763d4a1e`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v61 | 63 | 0 | 62 | 355 | 454 | 0 | 13.1% |
+| v61 | 64 | 0 | 62 | 354 | 454 | 0 | 13.3% |
 | v72 | 216 | 0 | 73 | 231 | 414 | 0 | 41.5% |
 | v79 | 228 | 0 | 72 | 229 | 405 | 0 | 43.1% |
 | v83 | 367 | 0 | 0 | 360 | 207 | 0 | 50.5% |

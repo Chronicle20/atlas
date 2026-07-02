@@ -11761,7 +11761,7 @@
    ]
   },
   "CWvsContext::OnInventoryOperation#Add": {
-   "address": "",
+   "address": "0x8422fc",
    "direction": "clientbound",
    "unresolved": true,
    "calls": [
@@ -11772,7 +11772,7 @@
    ]
   },
   "CWvsContext::OnInventoryOperation#ChangeBatch": {
-   "address": "",
+   "address": "0x8422fc",
    "direction": "clientbound",
    "unresolved": true,
    "calls": [
@@ -11783,7 +11783,7 @@
    ]
   },
   "CWvsContext::OnInventoryOperation#ChangeMove": {
-   "address": "",
+   "address": "0x8422fc",
    "direction": "clientbound",
    "unresolved": true,
    "calls": [
@@ -11794,7 +11794,7 @@
    ]
   },
   "CWvsContext::OnInventoryOperation#QuantityUpdate": {
-   "address": "",
+   "address": "0x8422fc",
    "direction": "clientbound",
    "unresolved": true,
    "calls": [
@@ -11805,7 +11805,7 @@
    ]
   },
   "CWvsContext::OnInventoryOperation#Remove": {
-   "address": "",
+   "address": "0x8422fc",
    "direction": "clientbound",
    "unresolved": true,
    "calls": [

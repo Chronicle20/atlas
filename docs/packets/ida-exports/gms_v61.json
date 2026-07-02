@@ -4535,22 +4535,6 @@
     }
    ]
   },
-  "CLogin::OnSelectWorldResult": {
-   "address": "0x567ccb",
-   "direction": "clientbound",
-   "calls": [
-    {
-     "op": "Decode1",
-     "comment": ""
-    },
-    {
-     "op": "Delegate",
-     "comment": "",
-     "guard": "!(_BYTE)result && v4",
-     "ref": "HIBYTE"
-    }
-   ]
-  },
   "CLogin::OnSetAccountResult": {
    "address": "0x56874d",
    "direction": "clientbound",
@@ -16959,6 +16943,42 @@
     {
      "op": "Encode1",
      "comment": "COutPacket(111); mode 0x10 = TRADE confirm; bodyless (sub_68CBE3 @0x68cc56). Cash trade-room (Transaction) shares this bodyless base confirm."
+    }
+   ]
+  },
+  "sub_56688D": {
+   "address": "0x56688d",
+   "direction": "clientbound",
+   "calls": [
+    {
+     "op": "Decode1",
+     "comment": "status @0x5668e5"
+    },
+    {
+     "op": "Decode1",
+     "comment": "count @0x566a4c"
+    },
+    {
+     "op": "Delegate",
+     "comment": "GW_CharacterStat::Decode @0x566a72",
+     "ref": "GW_CharacterStat::Decode"
+    },
+    {
+     "op": "Delegate",
+     "comment": "AvatarLook::Decode @0x566a80",
+     "ref": "AvatarLook::Decode"
+    },
+    {
+     "op": "Decode1",
+     "comment": "rankEnabled @0x566a88"
+    },
+    {
+     "op": "DecodeBuf",
+     "comment": "rank16 @0x566aa3"
+    },
+    {
+     "op": "Decode4",
+     "comment": "slots @0x566b02"
     }
    ]
   }

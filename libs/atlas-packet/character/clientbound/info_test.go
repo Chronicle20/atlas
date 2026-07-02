@@ -94,8 +94,13 @@ func TestCharacterInfoRoundTrip(t *testing.T) {
 			if len(output.WishList()) != len(input.WishList()) {
 				t.Errorf("wishList count: got %v, want %v", len(output.WishList()), len(input.WishList()))
 			}
-			if output.MedalId() != input.MedalId() {
-				t.Errorf("medalId: got %v, want %v", output.MedalId(), input.MedalId())
+			// The medal block only rides the wire for GMS v72+ and JMS; the legacy
+			// GMS <=61 clients (verified v61 @0x8455ed) omit it, so medalId is not
+			// round-tripped there.
+			if (v.Region == "GMS" && v.MajorVersion > 61) || v.Region == "JMS" {
+				if output.MedalId() != input.MedalId() {
+					t.Errorf("medalId: got %v, want %v", output.MedalId(), input.MedalId())
+				}
 			}
 		})
 	}

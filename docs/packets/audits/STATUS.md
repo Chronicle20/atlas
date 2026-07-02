@@ -5,7 +5,7 @@
 
 Tool: `bfecda916f252908d2fafda8adbe41d5763d4a1e`
 
-- export gms_v61: `429bc72c554538b4d3f0bcbe434f00d4ad8fb47a4ec9e1d10920b004b0ac2606`
+- export gms_v61: `f4fb0a8d45e4d07cbf7028a293b13056059ded337100a8a32d3647aea7cd72ce`
 - export gms_v72: `a0ac2be6578395455f491976bcb11aa27e2e57376b46ee8816b90324bad60c02`
 - export gms_v79: `370d6b720b633c12c71d40340f3952000705c4bddb98f87179e7193d112d210c`
 - export gms_v83: `711bddcc2e1bdd417a75954148d2b50c64e70855e84259c0b8e50e700e393c0d`
@@ -26,16 +26,16 @@ Tool: `bfecda916f252908d2fafda8adbe41d5763d4a1e`
 | CONFIRM_EULA_RESULT | CLogin::OnConfirmEULAResult |  | 0x005 | ❌ | 0x005 | ❌ | 0x005 | ❌ | 0x005 | ❌ | 0x005 | ❌ | 0x005 | ❌ | 0x005 | ❌ |  | ⬜ |
 | CHECK_PINCODE | CLogin::OnCheckPinCodeResult | login/clientbound/PinOperation | 0x006 | ✅ | 0x006 | ✅ | 0x006 | ✅ | 0x006 | ✅ | 0x006 | ✅ | 0x006 | ✅ | 0x006 | ✅ |  | ⬜ |
 | UPDATE_PINCODE | CLogin::OnUpdatePinCodeResult | login/clientbound/PinUpdate | 0x007 | 🟡 | 0x007 | 🟡 | 0x007 | 🟡 | 0x007 | ✅ | 0x007 | ✅ | 0x007 | ✅ | 0x007 | ✅ |  | ⬜ |
-| VIEW_ALL_CHAR | CLogin::OnViewAllCharResult | character/clientbound/CharacterViewAllCharacters (T1) | 0x008 | ❌ | 0x008 | ✅ | 0x008 | ✅ | 0x008 | ✅ | 0x008 | ✅ | 0x008 | ✅ | 0x008 | ✅ | 0x014 | ✅ |
+| VIEW_ALL_CHAR | CLogin::OnViewAllCharResult | character/clientbound/CharacterViewAllCharacters (T1) | 0x008 | ✅ | 0x008 | ✅ | 0x008 | ✅ | 0x008 | ✅ | 0x008 | ✅ | 0x008 | ✅ | 0x008 | ✅ | 0x014 | ✅ |
 | SELECT_CHARACTER_BY_VAC | CLogin::OnSelectCharacterByVACResult |  | 0x009 | ❌ | 0x009 | ❌ | 0x009 | ❌ | 0x009 | ❌ | 0x009 | ❌ | 0x009 | ❌ | 0x009 | ❌ |  | ⬜ |
 | IDA_0X00A | CClientSocket::OnAuthenCodeChanged |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x00A | ❌ |
 | WORLD_INFORMATION | CLogin::OnWorldInformation | login/clientbound/ServerListEnd | 0x00A | ✅ | 0x00A | ✅ | 0x00A | ✅ | 0x00A | ✅ | 0x00A | ✅ | 0x00A | ✅ | 0x00A | ✅ | 0x002 | ✅ |
-| CHARLIST | CLogin::OnSelectWorldResult; sub_56688D; sub_5B3646; sub_5CE522 | character/clientbound/CharacterList (T1) | 0x00B | ❌ | 0x00B | ✅ | 0x00B | ✅ | 0x00B | ✅ | 0x00B | ✅ | 0x00B | ✅ | 0x00B | ✅ | 0x003 | ✅ |
+| CHARLIST | CLogin::OnSelectWorldResult; sub_56688D; sub_5B3646; sub_5CE522 | character/clientbound/CharacterList (T1) | 0x00B | ✅ | 0x00B | ✅ | 0x00B | ✅ | 0x00B | ✅ | 0x00B | ✅ | 0x00B | ✅ | 0x00B | ✅ | 0x003 | ✅ |
 | IDA_0X00B | CClientSocket::OnAuthenMessage |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x00B | ❌ |
 | SERVER_IP | CLogin::OnSelectCharacterResult | login/clientbound/ServerIP | 0x00C | 🟡 | 0x00C | 🟡 | 0x00C | 🟡 | 0x00C | ✅ | 0x00C | ✅ | 0x00C | ✅ | 0x00C | ✅ | 0x004 | ✅ |
-| CHAR_NAME_RESPONSE | CLogin::OnCheckDuplicatedIDResult; CLogin::OnCreateNewCharacterResult | character/clientbound/CharacterNameResponse (T1) | 0x00D | ❌ | 0x00D | ✅ | 0x00D | ✅ | 0x00D | ✅ | 0x00D | ✅ | 0x00D | ✅ | 0x00D | ✅ | 0x005 | ✅ |
-| ADD_NEW_CHAR_ENTRY | CLogin::OnCreateNewCharacterResult; CLogin::OnDeleteCharacterResult | character/clientbound/AddCharacterEntry (T1) | 0x00E | ❌ | 0x00E | ✅ | 0x00E | ✅ | 0x00E | ✅ | 0x00E | ✅ | 0x00E | ✅ | 0x00E | ✅ | 0x006 | ✅ |
-| DELETE_CHAR_RESPONSE | CLogin::OnCheckDuplicatedIDResult; CLogin::OnDeleteCharacterResult | character/clientbound/DeleteCharacterResponse (T1) | 0x00F | ❌ | 0x00F | ✅ | 0x00F | ✅ | 0x00F | ✅ | 0x00F | ✅ | 0x00F | ✅ | 0x00F | ✅ | 0x007 | ✅ |
+| CHAR_NAME_RESPONSE | CLogin::OnCheckDuplicatedIDResult; CLogin::OnCreateNewCharacterResult | character/clientbound/CharacterNameResponse (T1) | 0x00D | ✅ | 0x00D | ✅ | 0x00D | ✅ | 0x00D | ✅ | 0x00D | ✅ | 0x00D | ✅ | 0x00D | ✅ | 0x005 | ✅ |
+| ADD_NEW_CHAR_ENTRY | CLogin::OnCreateNewCharacterResult; CLogin::OnDeleteCharacterResult | character/clientbound/AddCharacterEntry (T1) | 0x00E | ✅ | 0x00E | ✅ | 0x00E | ✅ | 0x00E | ✅ | 0x00E | ✅ | 0x00E | ✅ | 0x00E | ✅ | 0x006 | ✅ |
+| DELETE_CHAR_RESPONSE | CLogin::OnCheckDuplicatedIDResult; CLogin::OnDeleteCharacterResult | character/clientbound/DeleteCharacterResponse (T1) | 0x00F | ✅ | 0x00F | ✅ | 0x00F | ✅ | 0x00F | ✅ | 0x00F | ✅ | 0x00F | ✅ | 0x00F | ✅ | 0x007 | ✅ |
 | CHANGE_CHANNEL | CClientSocket::OnMigrateCommand | channel/clientbound/ChannelChannelChange | 0x010 | 🟡 | 0x010 | 🟡 | 0x010 | 🟡 | 0x010 | ✅ | 0x010 | ✅ | 0x010 | ✅ | 0x010 | ✅ | 0x008 | ✅ |
 | PING | CClientSocket::OnAliveReq | socket/clientbound/Ping | 0x011 | ❌ | 0x011 | ❌ | 0x011 | ❌ | 0x011 | ✅ | 0x011 | ❌ | 0x011 | ✅ | 0x011 | ✅ | 0x009 | ✅ |
 | IDA_0X012 | sub_6717FE |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x012 | ❌ |
@@ -45,7 +45,7 @@ Tool: `bfecda916f252908d2fafda8adbe41d5763d4a1e`
 | CHANNEL_SELECTED | CSecurityClient::OnPacket |  | 0x014 | ❌ | 0x014 | ❌ | 0x014 | ❌ | 0x014 | ❌ | 0x014 | ❌ | 0x014 | ❌ | 0x014 | ❌ |  | ⬜ |
 | HACKSHIELD_REQUEST | CLogin::OnEnableSPWResult |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x015 | ❌ | 0x015 | ❌ | 0x015 | ❌ | 0x015 | ❌ |  | ⬜ |
 | IDA_0X015 | sub_4747E2 |  | 0x015 | ❌ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
-| RELOG_RESPONSE | CLogin::OnSelectWorldResult; sub_5FB83D; sub_633496 | character/clientbound/CharacterList (T1) | 0x016 | ❌ | 0x016 | ❌ | 0x016 | ❌ | 0x016 | ❌ | 0x016 | ❌ | 0x016 | ❌ | 0x016 | ❌ |  | ⬜ |
+| RELOG_RESPONSE | CLogin::OnSelectWorldResult; sub_5FB83D; sub_633496 |  | 0x016 | ❌ | 0x016 | ❌ | 0x016 | ❌ | 0x016 | ❌ | 0x016 | ❌ | 0x016 | ❌ | 0x016 | ❌ |  | ⬜ |
 | LOGIN_AUTH | CLogin::LoginAuth; CLogin::OnEnableSPWResult |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x017 | ❌ | 0x017 | ❌ | 0x017 | ❌ | 0x000 | ❌ | 0x018 | ❌ |
 | CHECK_CRC_RESULT | CClientSocket::OnCheckCrcResult |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x019 | ❌ | 0x019 | ❌ | 0x019 | ❌ | 0x017 | ❌ | 0x00D | ❌ |
 | IDA_0X019 | sub_66F0D7 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x019 | ❌ |
@@ -83,7 +83,7 @@ Tool: `bfecda916f252908d2fafda8adbe41d5763d4a1e`
 | SET_GENDER | CWvsContext::OnSetGender |  | 0x037 | ❌ | 0x037 | ❌ | 0x037 | ❌ | 0x03A | ❌ | 0x03A | ❌ | 0x03A | ❌ | 0x03A | ❌ |  | ⬜ |
 | GUILD_BBS_PACKET | CUIGuildBBS::OnGuildBBSPacket | guild/clientbound/GuildBBSEntryNotFound (T1) | 0x038 | ✅ | 0x038 | ✅ | 0x038 | ✅ | 0x03B | ✅ | 0x03B | ✅ | 0x03B | ✅ | 0x03B | ✅ |  | ⬜ |
 | IDA_0X038 | CWvsContext::OnExpedtionResult |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x038 | ❌ |
-| CHAR_INFO | CWvsContext::OnCharacterInfo | character/clientbound/CharacterInfo (T1) | 0x03A | ❌ | 0x03A | ✅ | 0x03A | ✅ | 0x03D | ✅ | 0x03D | ✅ | 0x03D | ✅ | 0x03D | ✅ | 0x035 | ✅ |
+| CHAR_INFO | CWvsContext::OnCharacterInfo | character/clientbound/CharacterInfo (T1) | 0x03A | ✅ | 0x03A | ✅ | 0x03A | ✅ | 0x03D | ✅ | 0x03D | ✅ | 0x03D | ✅ | 0x03D | ✅ | 0x035 | ✅ |
 | PARTY_OPERATION | CWvsContext::OnPartyResult | party/clientbound/PartyAlreadyJoined1 (T1) | 0x03B | ✅ | 0x03B | ✅ | 0x03B | ✅ | 0x03E | ✅ | 0x03E | ✅ | 0x03E | ✅ | 0x03E | ✅ | 0x036 | ✅ |
 | BUDDYLIST | CWvsContext::OnFriendResult | buddy/clientbound/BuddyAlreadyBuddy (T1) | 0x03C | ✅ | 0x03C | ✅ | 0x03C | ✅ | 0x03F | ✅ | 0x041 | ✅ | 0x041 | ✅ | 0x041 | ✅ | 0x039 | ✅ |
 | GUILD_OPERATION | CWvsContext::OnGuildResult | guild/clientbound/GuildBoardAuthKeyUpdate (T1) | 0x03E | ✅ | 0x03E | ✅ | 0x03E | ✅ | 0x041 | ✅ | 0x043 | ✅ | 0x043 | ✅ | 0x043 | ✅ | 0x03B | ✅ |
@@ -242,7 +242,7 @@ Tool: `bfecda916f252908d2fafda8adbe41d5763d4a1e`
 | SHOW_ITEM_EFFECT | CUser::SetActiveEffectItem; CUserRemote::OnSetActiveEffectItem |  | 0x096 | ❌ | 0x0B0 | ❌ | 0x0B4 | ❌ | 0x0C2 | ❌ | 0x0C6 | ❌ | 0x0CF | ❌ | 0x0DC | ❌ | 0x0C8 | ❌ |
 | SHOW_CHAIR | CUserRemote::OnSetActivePortableChair | character/clientbound/CharacterChairShow (T1) | 0x097 | ❌ | 0x0B2 | ✅ | 0x0B6 | ✅ | 0x0C4 | ✅ | 0x0C8 | ✅ | 0x0D1 | ✅ | 0x0DE | ✅ | 0x0CA | ✅ |
 | IDA_0X098 | CField::OnStalkResult | field/clientbound/FieldStalkResult (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x098 | ✅ |
-| UPDATE_CHAR_LOOK | CUserRemote::OnAvatarModified | character/clientbound/CharacterAppearanceUpdate (T1) | 0x098 | ❌ | 0x0B3 | ✅ | 0x0B7 | ✅ | 0x0C5 | ✅ | 0x0C9 | ✅ | 0x0D2 | ✅ | 0x0DF | ✅ | 0x0CB | ✅ |
+| UPDATE_CHAR_LOOK | CUserRemote::OnAvatarModified | character/clientbound/CharacterAppearanceUpdate (T1) | 0x098 | ✅ | 0x0B3 | ✅ | 0x0B7 | ✅ | 0x0C5 | ✅ | 0x0C9 | ✅ | 0x0D2 | ✅ | 0x0DF | ✅ | 0x0CB | ✅ |
 | SHOW_FOREIGN_EFFECT | CUser::OnEffect | character/clientbound/EffectQuest (T1) | 0x099 | ❌ | 0x0B4 | ✅ | 0x0B8 | ✅ | 0x0C6 | ✅ | 0x0CA | ✅ | 0x0D3 | ✅ | 0x0E0 | ✅ | 0x0CC | ✅ |
 | GIVE_FOREIGN_BUFF | CUserRemote::OnSetTemporaryStat | character/clientbound/BuffGiveForeign (T1) | 0x09A | ❌ | 0x0B5 | ✅ | 0x0B9 | ✅ | 0x0C7 | ✅ | 0x0CB | ✅ | 0x0D4 | ✅ | 0x0E1 | ✅ | 0x0CD | ✅ |
 | ARIANT_ARENA_SHOW_RESULT | CField_AriantArena::OnShowResult | field/clientbound/FieldAriantArenaShowResult (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x09B | ✅ | 0x09E | ✅ | 0x0A3 | ✅ | 0x0AB | ✅ | 0x097 | ✅ |
@@ -948,7 +948,7 @@ Tool: `bfecda916f252908d2fafda8adbe41d5763d4a1e`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v61 | 156 | 0 | 62 | 243 | 454 | 0 | 33.8% |
+| v61 | 163 | 0 | 62 | 236 | 454 | 0 | 35.4% |
 | v72 | 216 | 0 | 73 | 212 | 414 | 0 | 43.1% |
 | v79 | 228 | 0 | 72 | 210 | 405 | 0 | 44.7% |
 | v83 | 367 | 0 | 0 | 341 | 207 | 0 | 51.8% |

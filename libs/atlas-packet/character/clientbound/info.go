@@ -134,8 +134,14 @@ func (m CharacterInfo) Encode(l logrus.FieldLogger, ctx context.Context) func(op
 			w.WriteInt(m.monsterBook.Cover)        // cover
 		}
 
-		w.WriteInt(m.medalId)
-		w.WriteShort(0) // medal quests
+		// The medal block (medalId + quest count) entered CharacterInfo in the legacy
+		// range: absent at GMS v61 (verified — v61 CWvsContext::OnCharacterInfo @0x8455ed
+		// reads the 5 monster-book ints in sub_5DD5A3 @0x5dd5a3 then returns, with no
+		// further wire reads), present by GMS v72.
+		if (t.Region() == "GMS" && t.MajorVersion() > 61) || t.Region() == "JMS" {
+			w.WriteInt(m.medalId)
+			w.WriteShort(0) // medal quests
+		}
 		if (t.IsRegion("GMS") && t.MajorAtLeast(87)) || t.Region() == "JMS" {
 			// v87+ trailing chair int; v84..86 == v83 (off-by-one fix). delta §3.1.11
 			w.WriteInt(0) // chair
@@ -208,8 +214,11 @@ func (m *CharacterInfo) Decode(_ logrus.FieldLogger, ctx context.Context) func(r
 			m.monsterBook.Cover = r.ReadUint32()        // cover
 		}
 
-		m.medalId = r.ReadUint32()
-		_ = r.ReadUint16() // medal quests
+		// Mirror of Encode: medal block absent at GMS v61, present by v72.
+		if (t.Region() == "GMS" && t.MajorVersion() > 61) || t.Region() == "JMS" {
+			m.medalId = r.ReadUint32()
+			_ = r.ReadUint16() // medal quests
+		}
 		if (t.IsRegion("GMS") && t.MajorAtLeast(87)) || t.Region() == "JMS" {
 			// v87+ trailing chair int; v84..86 == v83 (off-by-one fix). delta §3.1.11
 			_ = r.ReadUint32() // chair

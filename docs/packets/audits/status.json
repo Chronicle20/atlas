@@ -1,7 +1,7 @@
 {
   "toolSha": "bfecda916f252908d2fafda8adbe41d5763d4a1e",
   "exportHashes": {
-    "gms_v61": "429bc72c554538b4d3f0bcbe434f00d4ad8fb47a4ec9e1d10920b004b0ac2606",
+    "gms_v61": "f4fb0a8d45e4d07cbf7028a293b13056059ded337100a8a32d3647aea7cd72ce",
     "gms_v72": "a0ac2be6578395455f491976bcb11aa27e2e57376b46ee8816b90324bad60c02",
     "gms_v79": "370d6b720b633c12c71d40340f3952000705c4bddb98f87179e7193d112d210c",
     "gms_v83": "711bddcc2e1bdd417a75954148d2b50c64e70855e84259c0b8e50e700e393c0d",
@@ -764,8 +764,7 @@
       ],
       "cells": {
         "gms_v61": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
+          "state": "verified",
           "opcode": 8
         },
         "gms_v72": {
@@ -1041,8 +1040,7 @@
       ],
       "cells": {
         "gms_v61": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 11
         },
         "gms_v72": {
@@ -1272,8 +1270,7 @@
       ],
       "cells": {
         "gms_v61": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
+          "state": "verified",
           "opcode": 13
         },
         "gms_v72": {
@@ -1362,8 +1359,7 @@
       ],
       "cells": {
         "gms_v61": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 14
         },
         "gms_v72": {
@@ -1452,8 +1448,7 @@
       ],
       "cells": {
         "gms_v61": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
+          "state": "verified",
           "opcode": 15
         },
         "gms_v72": {
@@ -2284,9 +2279,8 @@
     {
       "kind": "op",
       "op": "RELOG_RESPONSE",
-      "packet": "character/clientbound/CharacterList",
       "direction": "clientbound",
-      "tier1": true,
+      "tier1": false,
       "fnames": [
         "CLogin::OnSelectWorldResult",
         "sub_5FB83D",
@@ -2295,7 +2289,7 @@
       "cells": {
         "gms_v61": {
           "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "note": "no audit report",
           "opcode": 22
         },
         "gms_v72": {
@@ -6202,8 +6196,7 @@
       ],
       "cells": {
         "gms_v61": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 58
         },
         "gms_v72": {
@@ -19700,8 +19693,7 @@
       ],
       "cells": {
         "gms_v61": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 152
         },
         "gms_v72": {

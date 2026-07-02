@@ -1,0 +1,10 @@
+packet: character/clientbound/CharacterList
+direction: clientbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: sub_56688D
+    address: "0x56688d"
+    decompile_sha256: 21f0e8613cce1bc14b6ba993516738275a9593a2ff9c73fdba7944b1185766fb
+verifies:
+    - libs/atlas-packet/character/clientbound/v61_test.go#TestCharacterListByteOutputV61

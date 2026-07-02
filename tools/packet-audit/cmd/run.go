@@ -519,6 +519,12 @@ func candidatesFromFName(fname string) []candidate {
 		// is sub_5B3646; this mirrors v79's sub_5CE522 char-list decoder. The v72
 		// export omits OnSelectWorldResult so this is the sole CharacterList report.
 		return []candidate{{name: "CharacterList", dir: csvpkg.DirClientbound}}
+	case "sub_56688D":
+		// v61 CHARLIST (op 11) — the standalone character-list decoder, the v61
+		// analogue of v72's sub_5B3646. In v61 OnSelectWorldResult (op 22) is a
+		// distinct RELOG_RESPONSE handler, so the char-list report must key off
+		// this decoder, not the shared OnSelectWorldResult mapping.
+		return []candidate{{name: "CharacterList", dir: csvpkg.DirClientbound}}
 	case "CLogin::OnWorldInformation":
 		return []candidate{{name: "ServerListEntry", dir: csvpkg.DirClientbound}}
 	case "CLogin::OnSelectCharacterResult":

@@ -5,7 +5,7 @@
 
 Tool: `dde4cb7f9c62159772672195dd4a20bb7d2f1343`
 
-- export gms_v72: `51e1a84eb0052a0447e79cc4cb5cc3632036a50287076caa0323be1c8fd5cf74`
+- export gms_v72: `e19be15caaae68c3bf3cededa23c8ed26d4d4d5a6000e942477b638ddef8b36c`
 - export gms_v79: `370d6b720b633c12c71d40340f3952000705c4bddb98f87179e7193d112d210c`
 - export gms_v83: `711bddcc2e1bdd417a75954148d2b50c64e70855e84259c0b8e50e700e393c0d`
 - export gms_v84: `7eab9472e2afeda13faaf74273828d09d5f2481d67bec10235c3b2fd2f91e1eb`
@@ -533,10 +533,10 @@ Tool: `dde4cb7f9c62159772672195dd4a20bb7d2f1343`
 | UNNAMED_R48 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x028 | ❌ |  | ⬜ |
 | CANCEL_CHAIR | CUserLocal::HandleXKeyDown; CWvsContext::SendGetUpFromChairRequest | character/serverbound/ChairFixed (T1) | 0x029 | ❌ | 0x028 | ✅ | 0x02A | ✅ | 0x02A | ✅ | 0x02C | ✅ | 0x02D | ✅ | 0x021 | ✅ |
 | USE_CHAIR | CWvsContext::SendSitOnPortableChairRequest | character/serverbound/ChairPortable (T1) | 0x02A | 🟡 | 0x029 | 🟡 | 0x02B | ✅ | 0x02B | ✅ | 0x02D | ✅ | 0x02E | ✅ | 0x022 | ✅ |
-| CLOSE_RANGE_ATTACK | CUserLocal::DoActiveSkill_MesoExplosion; CUserLocal::TryDoingMeleeAttack; CUserLocal::TryDoingNormalAttack | character/serverbound/CharacterAttackMeleeRequest (T1) | 0x02B | ❌ | 0x02A | ✅ | 0x02C | ✅ | 0x02C | ✅ | 0x02E | ✅ | 0x02F | ✅ | 0x023 | ✅ |
-| RANGED_ATTACK | CUserLocal::TryDoingShootAttack; CUserLocal::TryDoingSmoothingMovingShootAttack | character/serverbound/CharacterAttackRangedRequest (T1) | 0x02C | ❌ | 0x02B | ✅ | 0x02D | ✅ | 0x02D | ✅ | 0x02F | ✅ | 0x030 | ✅ | 0x024 | ✅ |
-| MAGIC_ATTACK | CUserLocal::TryDoingMagicAttack | character/serverbound/CharacterAttackMagicRequest (T1) | 0x02D | ❌ | 0x02C | ✅ | 0x02E | ✅ | 0x02E | ✅ | 0x030 | ✅ | 0x031 | ✅ | 0x025 | ✅ |
-| TOUCH_MONSTER_ATTACK | CUserLocal::TryDoingBodyAttack | character/serverbound/CharacterAttackTouchRequest (T1) | 0x02E | ❌ | 0x02D | ✅ | 0x02F | ✅ | 0x02F | ✅ | 0x031 | ✅ | 0x032 | ✅ | 0x026 | ✅ |
+| CLOSE_RANGE_ATTACK | CUserLocal::DoActiveSkill_MesoExplosion; CUserLocal::TryDoingMeleeAttack; CUserLocal::TryDoingNormalAttack | character/serverbound/CharacterAttackMeleeRequest (T1) | 0x02B | ✅ | 0x02A | ✅ | 0x02C | ✅ | 0x02C | ✅ | 0x02E | ✅ | 0x02F | ✅ | 0x023 | ✅ |
+| RANGED_ATTACK | CUserLocal::TryDoingShootAttack; CUserLocal::TryDoingSmoothingMovingShootAttack | character/serverbound/CharacterAttackRangedRequest (T1) | 0x02C | ✅ | 0x02B | ✅ | 0x02D | ✅ | 0x02D | ✅ | 0x02F | ✅ | 0x030 | ✅ | 0x024 | ✅ |
+| MAGIC_ATTACK | CUserLocal::TryDoingMagicAttack | character/serverbound/CharacterAttackMagicRequest (T1) | 0x02D | ✅ | 0x02C | ✅ | 0x02E | ✅ | 0x02E | ✅ | 0x030 | ✅ | 0x031 | ✅ | 0x025 | ✅ |
+| TOUCH_MONSTER_ATTACK | CUserLocal::TryDoingBodyAttack | character/serverbound/CharacterAttackTouchRequest (T1) | 0x02E | ✅ | 0x02D | ✅ | 0x02F | ✅ | 0x02F | ✅ | 0x031 | ✅ | 0x032 | ✅ | 0x026 | ✅ |
 | TAKE_DAMAGE | CUserLocal::SetDamaged; CUserLocal::Update |  | 0x02F | ❌ | 0x02E | ❌ | 0x030 | ❌ | 0x030 | ❌ | 0x032 | ❌ | 0x034 | ❌ | 0x027 | ❌ |
 | GENERAL_CHAT | CField::SendChatMsg; CField::SendChatMsgSlash | field/serverbound/FieldGeneral (T1) | 0x030 | ✅ | 0x02F | ✅ | 0x031 | ✅ | 0x031 | ✅ | 0x034 | ✅ | 0x036 | ✅ | 0x029 | ✅ |
 | CLOSE_CHALKBOARD | CUserLocal::HandleLButtonClk | character/serverbound/ChalkboardClose (T1) | 0x031 | ❌ | 0x030 | ✅ | 0x032 | ✅ | 0x032 | ✅ | 0x035 | ✅ | 0x037 | ✅ | 0x02A | ✅ |
@@ -914,7 +914,7 @@ Tool: `dde4cb7f9c62159772672195dd4a20bb7d2f1343`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v72 | 188 | 0 | 73 | 210 | 411 | 0 | 39.9% |
+| v72 | 192 | 0 | 73 | 206 | 411 | 0 | 40.8% |
 | v79 | 228 | 0 | 72 | 180 | 402 | 0 | 47.5% |
 | v83 | 367 | 0 | 0 | 311 | 204 | 0 | 54.1% |
 | v84 | 345 | 0 | 0 | 312 | 225 | 0 | 52.5% |

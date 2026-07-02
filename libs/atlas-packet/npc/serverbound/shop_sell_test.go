@@ -85,3 +85,29 @@ func TestShopSellByteV72(t *testing.T) {
 		t.Fatalf("v72 ShopSell: got % x, want % x", got, want)
 	}
 }
+
+// TestShopSellByteV61 pins the gms_v61 NPC_SHOP SELL body. The v61 shop dialog
+// sell-button handler sub_646EAE@0x646eae (GMS_v61.1_U_DEVM.exe) builds
+// COutPacket(57):
+//
+//	Encode1 op=1 (SELL)  @0x64705d  (dispatcher prefix, not in body)
+//	Encode2 slot         @0x647068
+//	Encode4 itemId       @0x647073
+//	Encode2 quantity     @0x64707e
+//
+// Body byte-identical to v72.
+//
+// packet-audit:verify packet=npc/serverbound/NpcShopSell version=gms_v61 ida=0x646eae
+func TestShopSellByteV61(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	ctx := pt.CreateContext("GMS", 61, 1)
+	got := ShopSell{slot: 5, itemId: 1000000, quantity: 10}.Encode(l, ctx)(nil)
+	want := []byte{
+		0x05, 0x00, // slot=5           @0x647068
+		0x40, 0x42, 0x0F, 0x00, // itemId=1000000  @0x647073
+		0x0A, 0x00, // quantity=10      @0x64707e
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatalf("v61 ShopSell: got % x, want % x", got, want)
+	}
+}

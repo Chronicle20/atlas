@@ -1,7 +1,7 @@
 {
   "WriterName": "AuthLoginFailed",
   "IDAName": "CLogin::OnCheckPasswordResult#AuthLoginFailed",
-  "Address": "",
+  "Address": "0x5657ce",
   "Variant": "GMS/v61",
   "BranchDepth": 1,
   "AtlasFile": "libs/atlas-packet/login/clientbound/auth_login_failed.go",
@@ -10,30 +10,30 @@
       "Index": 0,
       "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 4,
-      "Note": "IDA read-order unresolved: function not found in IDB"
+      "IDAOp": 0,
+      "IDAComment": "status/result @0x5657f9 (v4)",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 1,
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "IDAComment": "@0x5657ff (stored this+384)",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 2,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "IDAOp": 2,
+      "IDAComment": "@0x56580d (GMS int, discarded)",
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 2,
+  "Verdict": 0,
   "FlatInvalid": false
 }

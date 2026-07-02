@@ -25,7 +25,7 @@
 - op: SERVERSTATUS
   direction: clientbound
   opcode: 3
-  fname: sub_56660E
+  fname: CLogin::OnCheckUserLimitResult
   provenance: ida-discovered
   ida:
     address: 5662222
@@ -76,7 +76,7 @@
 - op: WORLD_INFORMATION
   direction: clientbound
   opcode: 10
-  fname: sub_56663F
+  fname: CLogin::OnWorldInformation
   provenance: ida-discovered
   ida:
     address: 5662271
@@ -1702,7 +1702,7 @@
 - op: CHARLIST_REQUEST
   direction: serverbound
   opcode: 5
-  fname: sub_564DC9
+  fname: CLogin::SendLoginPacket
   provenance: ida-discovered
   ida:
     address: 6291023
@@ -1710,7 +1710,7 @@
 - op: SERVERSTATUS_REQUEST
   direction: serverbound
   opcode: 6
-  fname: sub_5655DF
+  fname: CLogin::SendCheckUserLimitPacket
   provenance: ida-discovered
   ida:
     address: 6291023
@@ -1758,7 +1758,7 @@
 - op: VIEW_ALL_CHAR
   direction: serverbound
   opcode: 13
-  fname: sub_567117
+  fname: CLogin::SendViewAllCharPacket
   provenance: ida-discovered
   ida:
     address: 6291023
@@ -1766,7 +1766,7 @@
 - op: PICK_ALL_CHAR
   direction: serverbound
   opcode: 14
-  fname: sub_5650B6
+  fname: CLogin::SendSelectCharPacketByVAC
   provenance: ida-discovered
   ida:
     address: 6291023
@@ -1782,7 +1782,7 @@
 - op: CHAR_SELECT
   direction: serverbound
   opcode: 19
-  fname: sub_564F79
+  fname: CLogin::SendSelectCharPacket
   provenance: ida-discovered
   ida:
     address: 6291023

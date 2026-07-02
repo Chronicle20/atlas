@@ -1,10 +1,25 @@
 package clientbound
 
 import (
+	"bytes"
 	"testing"
 
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
+
+// gms_v61: GENDER_DONE — CLogin::OnSetAccountResult @0x56874d (GMS_v61.1_U_DEVM.exe,
+// port 13338): Decode1(gender)@0x568766, Decode1(success)@0x568768; matches atlas
+// SetAccountResult (gender byte + success bool). gender=1,success=true → 01 01.
+//
+// packet-audit:verify packet=login/clientbound/SetAccountResult version=gms_v61 ida=0x56874d
+func TestSetAccountResultV61Body(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 61, 1)
+	input := SetAccountResult{gender: 1, success: true}
+	want := []byte{0x01, 0x01} // gender, success
+	if got := pt.Encode(t, ctx, input.Encode, nil); !bytes.Equal(got, want) {
+		t.Errorf("v61 SetAccountResult body: got % x, want % x", got, want)
+	}
+}
 
 // packet-audit:verify packet=login/clientbound/SetAccountResult version=gms_v83 ida=0x5fc731
 // packet-audit:verify packet=login/clientbound/SetAccountResult version=gms_v87 ida=0x634144

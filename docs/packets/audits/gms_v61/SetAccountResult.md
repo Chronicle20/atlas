@@ -10,6 +10,6 @@
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | byte | byte `` | ✅ |  |
-| 1 | byte | byte `` | ✅ |  |
+| 0 | byte | byte `gender @0x568766 (v2)` | ✅ |  |
+| 1 | byte | byte `success @0x568768 (if -> resend AFTER_LOGIN)` | ✅ |  |
 

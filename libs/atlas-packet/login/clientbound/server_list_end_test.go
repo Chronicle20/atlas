@@ -1,10 +1,25 @@
 package clientbound
 
 import (
+	"bytes"
 	"testing"
 
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
+
+// gms_v61: WORLD_INFORMATION handler sub_56663F @0x56663f (GMS_v61.1_U_DEVM.exe,
+// port 13338) reads (char)Decode1(worldId)@0x566660; when < 0 (0xFF = -1) it takes
+// the else branch (end-of-world-list → DrawWorldItems) instead of decoding a world
+// record. atlas ServerListEnd.Encode writes the single 0xFF terminator byte.
+//
+// packet-audit:verify packet=login/clientbound/ServerListEnd version=gms_v61 ida=0x56663f
+func TestServerListEndV61Body(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 61, 1)
+	input := ServerListEnd{}
+	if got := pt.Encode(t, ctx, input.Encode, nil); !bytes.Equal(got, []byte{0xFF}) {
+		t.Errorf("v61 ServerListEnd body: got % x, want ff", got)
+	}
+}
 
 // packet-audit:verify packet=login/clientbound/ServerListEnd version=gms_v83 ida=0x5f95b7
 // packet-audit:verify packet=login/clientbound/ServerListEnd version=gms_v87 ida=0x630e7c

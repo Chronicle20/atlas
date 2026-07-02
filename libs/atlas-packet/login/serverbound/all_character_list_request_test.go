@@ -48,6 +48,29 @@ func TestAllCharacterListRequestV72(t *testing.T) {
 	}
 }
 
+// TestAllCharacterListRequestV61 pins the gms_v61 VIEW_ALL_CHAR (op 13)
+// serverbound wire: an EMPTY body.
+//
+// IDA-verified (GMS_v61.1_U_DEVM.exe, port 13338) — the view-all-char send
+// sub_567117 @0x567117 builds COutPacket(13)@0x567165 then SendPacket@0x567177
+// with NO Encode* calls between → zero-length body (it first sends op 12 when
+// this[79]!=1, then the empty op 13). atlas AllCharacterListRequest.Encode only
+// emits the extra block for GMS>=87, so for v61 (<87) it writes nothing.
+//
+// The gms_v61 export entry for CLogin::SendViewAllCharPacket was an unresolved
+// stub (the live v61 IDB names the sender sub_567117); it was surgically spliced
+// with addr 0x567117 + empty-body calls so the citation resolves (same shape as
+// the verified v79 cell).
+//
+// packet-audit:verify packet=login/serverbound/AllCharacterListRequest version=gms_v61 ida=0x567117
+func TestAllCharacterListRequestV61(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 61, 1)
+	input := AllCharacterListRequest{gameStartMode: 1, nexonPassport: "passport", machineId: make([]byte, 16), gameRoomClient: 42, gameStartMode2: 2}
+	if got := pt.Encode(t, ctx, input.Encode, nil); len(got) != 0 {
+		t.Errorf("v61 AllCharacterListRequest body: got % x, want empty", got)
+	}
+}
+
 // packet-audit:verify packet=login/serverbound/AllCharacterListRequest version=gms_v83 ida=0x5fac34
 // packet-audit:verify packet=login/serverbound/AllCharacterListRequest version=gms_v87 ida=0x6324e3
 // packet-audit:verify packet=login/serverbound/AllCharacterListRequest version=gms_v95 ida=0x5dfb40

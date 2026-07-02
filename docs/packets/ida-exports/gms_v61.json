@@ -4071,15 +4071,10 @@
       "calls": null
     },
     "CLogin::ChangeStepImmediate": {
-      "address": "",
+      "address": "0x56261b",
       "direction": "serverbound",
-      "unresolved": true,
-      "calls": [
-        {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
-        }
-      ]
+      "notes": "v61 SERVERLIST_REQUEST/step-change send sub_56261B @0x56261b builds COutPacket(4)@0x562cbd + SendPacket@0x562cd0 with no Encode -> empty body. Surgically spliced (IDB unnamed sub_56261B).",
+      "calls": []
     },
     "CLogin::MakeVACDlg": {
       "address": "0x5675c4",
@@ -4213,36 +4208,44 @@
       ]
     },
     "CLogin::OnCheckPasswordResult#AuthLoginFailed": {
-      "address": "",
+      "address": "0x5657ce",
       "direction": "clientbound",
-      "unresolved": true,
+      "notes": "v61 LOGIN_STATUS head. Surgically spliced (live v61 IDB has no demangled #AuthLoginFailed symbol; body at CLogin::OnCheckPasswordResult @0x5657ce).",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "status/result @0x5657f9 (v4)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "@0x5657ff (stored this+384)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "@0x56580d (GMS int, discarded)"
         }
       ]
     },
     "CLogin::OnCheckPasswordResult#AuthPermanentBan": {
-      "address": "",
+      "address": "0x5657ce",
       "direction": "clientbound",
-      "unresolved": true,
+      "notes": "v61 LOGIN_STATUS perm-ban arm (resultCode v4==27) of CLogin::OnCheckPasswordResult @0x5657ce: reads only the shared head (result+byte+int) then routes to a dialog (CUtilDlg::YesNo @0x565c5a); no trailing reason/timestamp is decoded. Matches atlas AuthPermanentBan GMS path (byte+byte+GMSint, no trailing bytes). Surgically spliced.",
       "calls": [
-        {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
-        }
+        {"op": "Decode1", "comment": "bannedCode/resultCode @0x5657f9 (==27)"},
+        {"op": "Decode1", "comment": "post-auth flag @0x5657ff"},
+        {"op": "Decode4", "comment": "reserved GMS int @0x56580d"}
       ]
     },
     "CLogin::OnCheckPasswordResult#AuthTemporaryBan": {
-      "address": "",
+      "address": "0x5657ce",
       "direction": "clientbound",
-      "unresolved": true,
+      "notes": "v61 LOGIN_STATUS temp-ban arm (resultCode v4==2) of CLogin::OnCheckPasswordResult @0x5657ce: after the shared head (result+byte+int) reads Value=Decode1(reason)@0x56583f + DecodeBuffer(8)@0x565848 (chatUnblockDate FILETIME). Matches atlas AuthTemporaryBan (byte+byte+GMSint+reason byte+long8). Surgically spliced.",
       "calls": [
-        {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
-        }
+        {"op": "Decode1", "comment": "bannedCode/resultCode @0x5657f9 (==2)"},
+        {"op": "Decode1", "comment": "post-auth flag @0x5657ff"},
+        {"op": "Decode4", "comment": "reserved GMS int @0x56580d"},
+        {"op": "Decode1", "comment": "ban reason @0x56583f (Value)"},
+        {"op": "Decode8", "comment": "chatUnblockDate FILETIME @0x565848 (DecodeBuffer 8)"}
       ]
     },
     "CLogin::OnCheckPinCodeResult": {
@@ -4256,24 +4259,28 @@
       ]
     },
     "CLogin::OnCheckPinCodeResult#RegisterPin": {
-      "address": "",
+      "address": "0x5688ce",
       "direction": "serverbound",
-      "unresolved": true,
+      "notes": "v61 REGISTER_PIN send built in CLogin::OnCheckPinCodeResult @0x5688ce (v3==1 register arm @0x568b31): COutPacket(10) + Encode1(pinInput flag) then, when the flag is set, EncodeStr(pin). Matches atlas RegisterPin.Encode (WriteBool + conditional WriteAsciiString). Surgically spliced (IDB has no demangled #RegisterPin symbol).",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Encode1",
+          "comment": "pinInput flag @0x568b59 (1u register / @0x568b42 0u cancel)"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "pin @0x568b9a (only when pinInput=1)"
         }
       ]
     },
     "CLogin::OnCheckUserLimitResult": {
-      "address": "",
+      "address": "0x56660e",
       "direction": "clientbound",
-      "unresolved": true,
+      "notes": "v61 SERVERSTATUS handler sub_56660E @0x56660e reads the 2-byte status word as 2 x Decode1 (@0x566623 status enum, @0x566626 flag), both -> sub_58FF89(status,flag); atlas writes WriteShort(status<256) = [status,0] so flag=0 -- wire-equivalent to the short. Recorded as one Decode2 (same convention as the verified v79 cell). Surgically spliced (IDB unnamed sub_56660E).",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode2",
+          "comment": "world status (2 bytes; v61 sub_56660E@0x56660e reads as 2 x Decode1 @0x566623/@0x566626, atlas writes WriteShort -- wire-equivalent)"
         }
       ]
     },
@@ -4547,22 +4554,34 @@
       "calls": [
         {
           "op": "Decode1",
-          "comment": ""
+          "comment": "gender @0x568766 (v2)"
         },
         {
           "op": "Decode1",
-          "comment": ""
+          "comment": "success @0x568768 (if -> resend AFTER_LOGIN)"
         }
       ]
     },
     "CLogin::OnSetAccountResult#AfterLogin": {
-      "address": "",
+      "address": "0x56874d",
       "direction": "serverbound",
-      "unresolved": true,
+      "notes": "v61 AFTER_LOGIN (COutPacket op 9) built by CLogin::OnSetAccountResult @0x56874d and CLogin::OnCheckPinCodeResult @0x568a5c/@0x56896c. Legacy wire carries Encode4(accountId @g_pWvsContext+8232) between opt2 and the pin string; v83 @0x5fc731 omits it. Atlas gates the int to GMS<83. Surgically spliced (live v61 IDB has no demangled #AfterLogin symbol).",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Encode1",
+          "comment": "pinMode @0x5687bb (OnSetAccountResult literal 1u; OnCheckPinCodeResult Encode1(pin-result) @0x568a69/@0x568979)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "opt2 @0x5687c5 (literal 1u; 0 in OnCheckPinCodeResult @0x568a85/@0x568995)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "accountId @0x5687d8 (*(g_pWvsContext+8232); OnCheckPinCodeResult @0x568a98/@0x5689a8) - LEGACY-ONLY int, absent in v83+"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "pin @0x5687f5 (EncodeStr; empty ZXString in OnSetAccountResult)"
         }
       ]
     },
@@ -4666,24 +4685,37 @@
       ]
     },
     "CLogin::OnWorldInformation": {
-      "address": "",
+      "address": "0x56663f",
       "direction": "clientbound",
-      "unresolved": true,
+      "notes": "v61 WORLD_INFORMATION world-record decoder sub_56663F @0x56663f (present-world branch, worldId >= 0). Structure identical to the verified v79 cell. Surgically spliced (IDB unnamed sub_56663F).",
       "calls": [
-        {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
-        }
+        {"op": "Decode1", "comment": "nWorldID @0x566660"},
+        {"op": "DecodeStr", "comment": "sName @0x5666c4"},
+        {"op": "Decode1", "comment": "nWorldState @0x5666f8"},
+        {"op": "DecodeStr", "comment": "sWorldEventDesc @0x566701"},
+        {"op": "Decode2", "comment": "nWorldEventEXP_WSE @0x566737"},
+        {"op": "Decode2", "comment": "nWorldEventDrop_WSE @0x566744"},
+        {"op": "Decode1", "comment": "nBlockCharCreation @0x566751"},
+        {"op": "Decode1", "comment": "nChannelCount @0x566754"},
+        {"op": "DecodeStr", "comment": "channel sName @0x56677b (loop body)"},
+        {"op": "Decode4", "comment": "channel nUserNo @0x5667ad"},
+        {"op": "Decode1", "comment": "channel nWorldID @0x5667ba"},
+        {"op": "Decode1", "comment": "channel nChannelID @0x5667c7"},
+        {"op": "Decode1", "comment": "channel bAdultChannel @0x5667ca"},
+        {"op": "Decode2", "comment": "nBalloonCount @0x5667ea"},
+        {"op": "Decode2", "comment": "balloon x @0x56681c (loop body)"},
+        {"op": "Decode2", "comment": "balloon y @0x566827"},
+        {"op": "DecodeStr", "comment": "balloon msg @0x566830"}
       ]
     },
     "CLogin::OnWorldInformation#ServerListEnd": {
-      "address": "",
+      "address": "0x56663f",
       "direction": "clientbound",
-      "unresolved": true,
+      "notes": "v61 WORLD_INFORMATION handler sub_56663F @0x56663f reads (char)Decode1(worldId)@0x566660; 0xFF (-1) < 0 takes the end-of-list else branch. atlas ServerListEnd writes the single 0xFF terminator. Surgically spliced (IDB unnamed sub_56663F).",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "worldId/terminator @0x566660 (0xFF = end of world list)"
         }
       ]
     },
@@ -4737,13 +4769,13 @@
       ]
     },
     "CLogin::SendCheckUserLimitPacket": {
-      "address": "",
+      "address": "0x5655df",
       "direction": "serverbound",
-      "unresolved": true,
+      "notes": "v61 SERVERSTATUS_REQUEST send = sub_5655DF @0x5655df: COutPacket(6)@0x565612 + Encode2(worldId)@0x56562e short. Surgically spliced (IDB unnamed sub_5655DF).",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Encode2",
+          "comment": "worldId @0x56562e (short)"
         }
       ]
     },
@@ -4759,13 +4791,17 @@
       ]
     },
     "CLogin::SendLoginPacket": {
-      "address": "",
+      "address": "0x564dc9",
       "direction": "serverbound",
-      "unresolved": true,
+      "notes": "v61 CHARLIST_REQUEST send = sub_564DC9 @0x564dc9: COutPacket(5)@0x564eeb + Encode1(worldId)+Encode1(channelId) then SendPacket. NO getsockname/Encode4(socketAddr) — that is a v72+ addition (v72 twin sub_5B1B25 adds it @0x5b1c92). Surgically spliced (IDB unnamed sub_564DC9).",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Encode1",
+          "comment": "worldId @0x564efc (*(BYTE*)v9)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "channelId @0x564f07 (a3)"
         }
       ]
     },
@@ -4781,13 +4817,21 @@
       ]
     },
     "CLogin::SendSelectCharPacket": {
-      "address": "",
+      "address": "0x564f79",
       "direction": "serverbound",
-      "unresolved": true,
+      "notes": "v61 CHAR_SELECT send = sub_564F79 @0x564f79: COutPacket(19)@0x564fe3 + Encode4(charId)+EncodeStr(mac)+EncodeStr(hwid). Surgically spliced (IDB unnamed sub_564F79).",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Encode4",
+          "comment": "charId @0x565003"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "mac = GetLocalMacAddress @0x56503e"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "hwid = GetLocalMacAddressWithHDDSerialNo @0x565074"
         }
       ]
     },
@@ -4803,13 +4847,25 @@
       ]
     },
     "CLogin::SendSelectCharPacketByVAC#AllCharacterListSelect": {
-      "address": "",
+      "address": "0x5650b6",
       "direction": "serverbound",
-      "unresolved": true,
+      "notes": "v61 PICK_ALL_CHAR send = sub_5650B6 @0x5650b6: COutPacket(14)@0x5651e0 + Encode4(charId)+Encode4(worldId)+EncodeStr(mac)+EncodeStr(hwid). Surgically spliced (IDB unnamed sub_5650B6).",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Encode4",
+          "comment": "charId @0x565201"
+        },
+        {
+          "op": "Encode4",
+          "comment": "worldId @0x565218"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "mac = GetLocalMacAddress @0x565253"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "hwid = GetLocalMacAddressWithHDDSerialNo @0x565289"
         }
       ]
     },
@@ -4828,15 +4884,10 @@
       ]
     },
     "CLogin::SendViewAllCharPacket": {
-      "address": "",
+      "address": "0x567117",
       "direction": "serverbound",
-      "unresolved": true,
-      "calls": [
-        {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
-        }
-      ]
+      "notes": "v61 VIEW_ALL_CHAR (COutPacket op 13) send sub_567117 @0x567117: COutPacket(13)@0x567165 + SendPacket@0x567177 with no Encode -> empty body (first sends op 12 when this[79]!=1). Surgically spliced (live v61 IDB names it sub_567117); mirrors the v79 empty-body entry.",
+      "calls": []
     },
     "CMapLoadable::OnSetBackEffect": {
       "address": "",

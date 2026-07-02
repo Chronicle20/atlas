@@ -20,6 +20,17 @@ import (
 // opt2 and the pin string); atlas gates that int to GMS<83, so v72 (<83) emits it.
 //
 // packet-audit:verify packet=login/serverbound/AfterLogin version=gms_v72 ida=0x5b5598
+//
+// gms_v61 AFTER_LOGIN (COutPacket op 9) built by CLogin::OnSetAccountResult
+// @0x56874d send block @0x5687ad: Encode1(pinMode=1)@0x5687bb, Encode1(opt2=1)
+// @0x5687c5, Encode4(accountId @g_pWvsContext+8232)@0x5687d8, EncodeStr(pin)
+// @0x5687f5. CLogin::OnCheckPinCodeResult @0x5688ce builds the same op 9 in its
+// pincode arms (@0x568a5c/@0x56896c: Encode1(result)+Encode1(0)+Encode4(accountId)
+// +EncodeStr(pin)). Byte-for-byte the LEGACY wire (accountId int between opt2 and
+// the pin string); atlas gates that int to GMS<83, so v61 (<83) emits it. Proven
+// by TestAfterLoginLegacyAccountIdWire/gms_v61_legacy.
+//
+// packet-audit:verify packet=login/serverbound/AfterLogin version=gms_v61 ida=0x56874d
 func TestAfterLoginRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name+"/with_pin", func(t *testing.T) {
@@ -65,6 +76,7 @@ func TestAfterLoginLegacyAccountIdWire(t *testing.T) {
 		major, minor uint16
 		want         []byte
 	}{
+		{"gms_v61_legacy", "GMS", 61, 1, legacyWant},
 		{"gms_v72_legacy", "GMS", 72, 1, legacyWant},
 		{"gms_v79_legacy", "GMS", 79, 1, legacyWant},
 		{"gms_v83", "GMS", 83, 1, modernWant},

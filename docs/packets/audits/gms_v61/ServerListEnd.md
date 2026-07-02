@@ -1,14 +1,14 @@
 # ServerListEnd (← `CLogin::OnWorldInformation#ServerListEnd`)
 
-- **IDA:** 
+- **IDA:** 0x56663f
 - **Atlas file:** `libs/atlas-packet/login/clientbound/server_list_end.go`
 - **Variant:** GMS/v61
 - **Branch depth:** 0
-- **Verdict:** 🚫
+- **Verdict:** ✅
 
 ## Wire-level diff
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | byte | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
+| 0 | byte | byte `worldId/terminator @0x566660 (0xFF = end of world list)` | ✅ |  |
 

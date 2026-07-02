@@ -60,6 +60,13 @@ func le4(v uint32) []byte {
 //
 // packet-audit:verify packet=login/serverbound/CharacterSelect version=gms_v72 ida=0x5b1d03
 //
+// gms_v61: CHAR_SELECT send = sub_564F79 @0x564f79 (GMS_v61.1_U_DEVM.exe, port
+// 13338): COutPacket(19)@0x564fe3; Encode4(charId)@0x565003; EncodeStr(mac=
+// GetLocalMacAddress)@0x56503e; EncodeStr(hwid=GetLocalMacAddressWithHDDSerialNo)
+// @0x565074 — charId + mac + hwid, same as the GMS >12 path. Fixtured below.
+//
+// packet-audit:verify packet=login/serverbound/CharacterSelect version=gms_v61 ida=0x564f79
+//
 // jms CLogin::SendSelectCharPacket @0x66ddac, m_bLoginOpt<=3 arm:
 //
 //	COutPacket(6) + Encode4(charId) — NO mac/hwid (differs from GMS).
@@ -74,6 +81,7 @@ func TestCharacterSelectByteOutput(t *testing.T) {
 		Region       string
 		Major, Minor uint16
 	} {
+		{"GMS v61", "GMS", 61, 1},
 		{"GMS v72", "GMS", 72, 1},
 		{"GMS v83", "GMS", 83, 1},
 		{"GMS v84", "GMS", 84, 1},

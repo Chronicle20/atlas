@@ -1,16 +1,15 @@
 # RegisterPin (← `CLogin::OnCheckPinCodeResult#RegisterPin`)
 
-- **IDA:** 
+- **IDA:** 0x5688ce
 - **Atlas file:** `libs/atlas-packet/account/serverbound/register_pin.go`
 - **Variant:** GMS/v61
 - **Branch depth:** 1
-- **Verdict:** 🔍
-- **Flat-diff-invalid:** the wire shape depends on a runtime discriminator a flat positional diff cannot model — the Atlas writer branches on a non-version condition (a data-dependent field or an untraced version-derived local), and/or the client reads fields conditionally (e.g. `mode <= 1`). The verdict is capped to 🔍; the row-level mismatches below are a modeling limitation, not a verified wire bug — confirm per-branch via byte-level tests.
+- **Verdict:** ✅
 
 ## Wire-level diff
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | byte | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
-| 1 | string | byte `` | ❌ | atlas: extra — client never reads this field |
+| 0 | byte | byte `pinInput flag @0x568b59 (1u register / @0x568b42 0u cancel)` | ✅ |  |
+| 1 | string | string `pin @0x568b9a (only when pinInput=1)` | ✅ |  |
 

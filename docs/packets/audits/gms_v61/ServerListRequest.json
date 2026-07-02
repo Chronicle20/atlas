@@ -1,21 +1,11 @@
 {
   "WriterName": "ServerListRequest",
   "IDAName": "CLogin::ChangeStepImmediate",
-  "Address": "",
+  "Address": "0x56261b",
   "Variant": "GMS/v61",
   "BranchDepth": 0,
   "AtlasFile": "libs/atlas-packet/login/serverbound/server_list_request.go",
-  "Rows": [
-    {
-      "Index": 0,
-      "AtlasOp": 0,
-      "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
-    }
-  ],
-  "Verdict": 2,
+  "Rows": null,
+  "Verdict": 0,
   "FlatInvalid": false
 }

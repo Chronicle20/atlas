@@ -55,24 +55,24 @@ type poolMinRow struct {
 }
 
 var pointResetMinHpRows = []poolMinRow{
-	{refs: []job.Id{job.Id(110), job.DawnWarriorStage2Id, job.AranStage2Id}, mult: 24, off: 418},               // Fighter-line, DW2+, Aran2+
-	{refs: []job.Id{job.Id(100), job.DawnWarriorStage1Id, job.AranStage1Id}, mult: 24, off: 118},               // rest of the warrior branch (incl. Page/Spearman lines)
-	{refs: []job.Id{job.Id(200), job.BlazeWizardStage1Id}, mult: 10, off: 54},                                  // Magician-line, Blaze Wizard
+	{refs: []job.Id{job.Id(110), job.DawnWarriorStage2Id, job.AranStage2Id}, mult: 24, off: 418},                                              // Fighter-line, DW2+, Aran2+
+	{refs: []job.Id{job.Id(100), job.DawnWarriorStage1Id, job.AranStage1Id}, mult: 24, off: 118},                                              // rest of the warrior branch (incl. Page/Spearman lines)
+	{refs: []job.Id{job.Id(200), job.BlazeWizardStage1Id}, mult: 10, off: 54},                                                                 // Magician-line, Blaze Wizard
 	{refs: []job.Id{job.Id(310), job.Id(320), job.Id(410), job.Id(420), job.WindArcherStage2Id, job.NightWalkerStage2Id}, mult: 20, off: 358}, // 2nd-job+ bowman/thief lines
 	{refs: []job.Id{job.Id(300), job.Id(400), job.WindArcherStage1Id, job.NightWalkerStage1Id}, mult: 20, off: 58},                            // bowman/thief base
-	{refs: []job.Id{job.Id(510), job.Id(520), job.ThunderBreakerStage2Id}, mult: 22, off: 338},                 // Brawler/Gunslinger lines, TB2+
-	{refs: []job.Id{job.Id(500), job.ThunderBreakerStage1Id}, mult: 22, off: 38},                               // Pirate base, TB1
+	{refs: []job.Id{job.Id(510), job.Id(520), job.ThunderBreakerStage2Id}, mult: 22, off: 338},                                                // Brawler/Gunslinger lines, TB2+
+	{refs: []job.Id{job.Id(500), job.ThunderBreakerStage1Id}, mult: 22, off: 38},                                                              // Pirate base, TB1
 }
 
 var pointResetMinMpRows = []poolMinRow{
-	{refs: []job.Id{job.Id(120), job.Id(130)}, mult: 4, off: 155},                                              // Page-/Spearman-line
-	{refs: []job.Id{job.Id(100), job.DawnWarriorStage1Id, job.AranStage1Id}, mult: 4, off: 55},                 // Warrior, Fighter-line, DW, Aran
-	{refs: []job.Id{job.Id(210), job.Id(220), job.Id(230), job.BlazeWizardStage2Id}, mult: 22, off: 449},       // Magician 2nd job+
-	{refs: []job.Id{job.Id(200), job.BlazeWizardStage1Id}, mult: 22, off: -1},                                  // Magician base, BW1
+	{refs: []job.Id{job.Id(120), job.Id(130)}, mult: 4, off: 155},                                                                             // Page-/Spearman-line
+	{refs: []job.Id{job.Id(100), job.DawnWarriorStage1Id, job.AranStage1Id}, mult: 4, off: 55},                                                // Warrior, Fighter-line, DW, Aran
+	{refs: []job.Id{job.Id(210), job.Id(220), job.Id(230), job.BlazeWizardStage2Id}, mult: 22, off: 449},                                      // Magician 2nd job+
+	{refs: []job.Id{job.Id(200), job.BlazeWizardStage1Id}, mult: 22, off: -1},                                                                 // Magician base, BW1
 	{refs: []job.Id{job.Id(310), job.Id(320), job.Id(410), job.Id(420), job.WindArcherStage2Id, job.NightWalkerStage2Id}, mult: 14, off: 135}, // bowman/thief 2nd job+
 	{refs: []job.Id{job.Id(300), job.Id(400), job.WindArcherStage1Id, job.NightWalkerStage1Id}, mult: 14, off: -15},                           // bowman/thief base
-	{refs: []job.Id{job.Id(510), job.Id(520), job.ThunderBreakerStage2Id}, mult: 18, off: 95},                  // Brawler/Gunslinger lines, TB2+
-	{refs: []job.Id{job.Id(500), job.ThunderBreakerStage1Id}, mult: 18, off: -55},                              // Pirate base, TB1
+	{refs: []job.Id{job.Id(510), job.Id(520), job.ThunderBreakerStage2Id}, mult: 18, off: 95},                                                 // Brawler/Gunslinger lines, TB2+
+	{refs: []job.Id{job.Id(500), job.ThunderBreakerStage1Id}, mult: 18, off: -55},                                                             // Pirate base, TB1
 }
 
 func resolvePoolMin(rows []poolMinRow, defaultMult int, defaultOff int, jobId job.Id, level byte) int {

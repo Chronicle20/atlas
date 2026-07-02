@@ -6997,134 +6997,114 @@
    ]
   },
   "CShopDlg::OnPacket#GenericError": {
-   "address": "",
+   "address": "0x64723c",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": "mode discriminator"
+    },
+    {
+     "op": "Decode1",
+     "comment": "hasReason flag (0)"
     }
    ]
   },
   "CShopDlg::OnPacket#GenericErrorWithReason": {
-   "address": "",
+   "address": "0x64723c",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": "mode discriminator"
+    },
+    {
+     "op": "Decode1",
+     "comment": "hasReason flag (1)"
+    },
+    {
+     "op": "DecodeStr",
+     "comment": "reason"
     }
    ]
   },
   "CShopDlg::OnPacket#InventoryFull": {
-   "address": "",
+   "address": "0x64723c",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
-   ]
-  },
-  "CShopDlg::OnPacket#LevelRequirement": {
-   "address": "",
-   "direction": "clientbound",
-   "unresolved": true,
-   "calls": [
-    {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": "mode discriminator"
     }
    ]
   },
   "CShopDlg::OnPacket#NeedMoreItems": {
-   "address": "",
+   "address": "0x64723c",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": "mode discriminator"
     }
    ]
   },
   "CShopDlg::OnPacket#NotEnoughMoney": {
-   "address": "",
+   "address": "0x64723c",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": "mode discriminator"
     }
    ]
   },
   "CShopDlg::OnPacket#NotEnoughMoney2": {
-   "address": "",
+   "address": "0x64723c",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": "mode discriminator"
     }
    ]
   },
   "CShopDlg::OnPacket#Ok": {
-   "address": "",
+   "address": "0x64723c",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": "mode discriminator"
     }
    ]
   },
   "CShopDlg::OnPacket#OutOfStock": {
-   "address": "",
+   "address": "0x64723c",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": "mode discriminator"
     }
    ]
   },
   "CShopDlg::OnPacket#OutOfStock2": {
-   "address": "",
+   "address": "0x64723c",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": "mode discriminator"
     }
    ]
   },
   "CShopDlg::OnPacket#OutOfStock3": {
-   "address": "",
+   "address": "0x64723c",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
-   ]
-  },
-  "CShopDlg::OnPacket#OverLevelRequirement": {
-   "address": "",
-   "direction": "clientbound",
-   "unresolved": true,
-   "calls": [
-    {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": "mode discriminator"
     }
    ]
   },
@@ -7140,24 +7120,12 @@
    ]
   },
   "CShopDlg::OnPacket#TradeLimit": {
-   "address": "",
+   "address": "0x64723c",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
-   ]
-  },
-  "CShopDlg::OnPacket#UnderLevelRequirement": {
-   "address": "",
-   "direction": "clientbound",
-   "unresolved": true,
-   "calls": [
-    {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": "mode discriminator"
     }
    ]
   },

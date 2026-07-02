@@ -202,6 +202,71 @@ func TestWhisperFindResultErrorRoundTrip(t *testing.T) {
 // packet-audit:verify packet=field/clientbound/FieldWhisperError version=gms_v87 ida=0x559b1d
 // packet-audit:verify packet=field/clientbound/FieldWhisperError version=gms_v95 ida=0x5448a0
 // packet-audit:verify packet=field/clientbound/FieldWhisperError version=jms_v185 ida=0x56f4df
+// packet-audit:verify packet=field/clientbound/FieldWhisperSendResult version=gms_v61 ida=0x4eabd7
+// packet-audit:verify packet=field/clientbound/FieldWhisperReceive version=gms_v61 ida=0x4eabd7
+// packet-audit:verify packet=field/clientbound/FieldWhisperFindResultCashShop version=gms_v61 ida=0x4eabd7
+// packet-audit:verify packet=field/clientbound/FieldWhisperFindResultMap version=gms_v61 ida=0x4eabd7
+// packet-audit:verify packet=field/clientbound/FieldWhisperFindResultChannel version=gms_v61 ida=0x4eabd7
+// packet-audit:verify packet=field/clientbound/FieldWhisperFindResultError version=gms_v61 ida=0x4eabd7
+// packet-audit:verify packet=field/clientbound/FieldWhisperError version=gms_v61 ida=0x4eabd7
+//
+// TestWhisperByteOutputV61 pins every present gms_v61 WHISPER (op 0x65 = 101)
+// clientbound sub-mode. IDA: CField::OnWhisper @0x4eabd7 (GMS_v61.1_U_DEVM.exe)
+// dispatches on Decode1(mode)-9 over exactly four top-level modes:
+//   mode 10 SendResult : DecodeStr(target) + Decode1(success)
+//   mode 18 Receive    : DecodeStr(from) + Decode1(ch) + Decode1(gm) + DecodeStr(msg)
+//   mode 34 Error      : DecodeStr(target) + Decode1(whispersEnabled)
+//   mode  9 FindResult : DecodeStr(target) + Decode1(findMode) + Decode4(value)
+//                        [findMode 1 (Map) adds Decode4 x + Decode4 y]
+// The find-mode sub-switch covers findMode 2 (CashShop, value -1), 1 (Map),
+// 3 (Channel), 0/default (Error). Any other top-level mode returns without a
+// read, so WhisperWeather (mode 146) is version-absent in v61 (dispositioned n-a).
+// Every present arm matches the codec field-for-field and is byte-identical to the
+// v72 golden (version-invariant layout).
+func TestWhisperByteOutputV61(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 61, 1)
+
+	send := NewWhisperSendResult(0x0A, "TargetPlayer", true)
+	if got := pt.Encode(t, ctx, send.Encode, nil); !bytes.Equal(got, append(append([]byte{0x0A}, wstrV79("TargetPlayer")...), 0x01)) {
+		t.Errorf("v61 sendResult: got %v", got)
+	}
+
+	recv := NewWhisperReceive(0x12, "SenderPlayer", 3, false, "secret whisper")
+	var rw []byte
+	rw = append(rw, 0x12)
+	rw = append(rw, wstrV79("SenderPlayer")...)
+	rw = append(rw, 0x03, 0x00)
+	rw = append(rw, wstrV79("secret whisper")...)
+	if got := pt.Encode(t, ctx, recv.Encode, nil); !bytes.Equal(got, rw) {
+		t.Errorf("v61 receive: got %v want %v", got, rw)
+	}
+
+	cash := NewWhisperFindResultCashShop(0x09, "ShopPlayer")
+	if got := pt.Encode(t, ctx, cash.Encode, nil); !bytes.Equal(got, append(append([]byte{0x09}, wstrV79("ShopPlayer")...), 0x02, 0xFF, 0xFF, 0xFF, 0xFF)) {
+		t.Errorf("v61 cashShop: got %v", got)
+	}
+
+	mp := NewWhisperFindResultMap(0x09, "MapPlayer", 100000000)
+	if got := pt.Encode(t, ctx, mp.Encode, nil); !bytes.Equal(got, append(append([]byte{0x09}, wstrV79("MapPlayer")...), 0x01, 0x00, 0xE1, 0xF5, 0x05)) {
+		t.Errorf("v61 map: got %v", got)
+	}
+
+	ch := NewWhisperFindResultChannel(0x09, "ChannelPlayer", 5)
+	if got := pt.Encode(t, ctx, ch.Encode, nil); !bytes.Equal(got, append(append([]byte{0x09}, wstrV79("ChannelPlayer")...), 0x03, 0x05, 0x00, 0x00, 0x00)) {
+		t.Errorf("v61 channel: got %v", got)
+	}
+
+	fe := NewWhisperFindResultError(0x09, "MissingPlayer")
+	if got := pt.Encode(t, ctx, fe.Encode, nil); !bytes.Equal(got, append(append([]byte{0x09}, wstrV79("MissingPlayer")...), 0x00, 0x00, 0x00, 0x00, 0x00)) {
+		t.Errorf("v61 findError: got %v", got)
+	}
+
+	er := WhisperError{mode: 0x22, targetName: "BlockedPlayer", whispersEnabled: false}
+	if got := pt.Encode(t, ctx, er.Encode, nil); !bytes.Equal(got, append(append([]byte{0x22}, wstrV79("BlockedPlayer")...), 0x00)) {
+		t.Errorf("v61 error: got %v", got)
+	}
+}
+
 // TestWhisperErrorByteOutputV79 pins the gms_v79 WHISPER (op 0x7F) clientbound
 // error sub-mode. IDA: CField::OnWhisper @0x51d76d (GMS_v79_1_DEVM.exe), v93==34
 // arm reads — Decode1(mode) @0x51d79f, DecodeStr(target) @0x51d87f,

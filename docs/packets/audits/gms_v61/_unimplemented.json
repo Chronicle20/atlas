@@ -27,6 +27,10 @@
   {
    "fname": "CField::OnFieldEffect#RewardRullet",
    "reason": "FieldEffectRewardRullet (reward-roulette / gachapon field effect, mode 7) is version-absent in gms_v61: the v61 CField::OnFieldEffect switch (sub_4EB523 @0x4eb523, GMS_v61.1_U_DEVM.exe port 13338) dispatches Decode1(mode) over modes 0 (Summon), 1 (Tremble), 2/3 (screen/quest string), 4 (field sound), 5 (BossHp, sub_4EBAE0), 6 (BGM, PlayBGM) and returns for anything else \u2014 there is NO mode-7 reward-roulette arm (added after v61; present from the v72 anchor onward at @0x5177d4). Report + unresolved export stub removed so the FIELD_EFFECT worst-of-siblings grade excludes this arm. (task-113 stage E)"
+  },
+  {
+   "fname": "CField::OnWhisper#Weather",
+   "reason": "FieldWhisperWeather (GM weather-notification whisper, mode 146) is version-absent in gms_v61: the v61 CField::OnWhisper dispatcher (@0x4eabd7, GMS_v61.1_U_DEVM.exe port 13338) computes Decode1(mode)-9 and handles ONLY modes 9 (FindResult family), 10 (SendResult), 18 (Receive) and 34 (Error); the else-branch (if v7!=16) returns without a read, so mode 146 (Weather) is not handled. The v72 anchor adds the case-146 Weather arm at @0x516729 (DecodeStr(from)+Decode1(flag)+DecodeStr(msg)). Report + unresolved export stub removed so the WHISPER worst-of-siblings grade excludes this arm. (task-113 stage E)"
   }
  ]
 }

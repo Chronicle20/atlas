@@ -5,7 +5,7 @@
 
 Tool: `bfecda916f252908d2fafda8adbe41d5763d4a1e`
 
-- export gms_v61: `e206c096a5f0b3c47cedb825a06da8e10c815be6e5a23daa0868f6b18fbcc027`
+- export gms_v61: `78d57c3e2bf2564983c462a21f3f5143242e5a39d9c060e41f33c25cd1475ee7`
 - export gms_v72: `a0ac2be6578395455f491976bcb11aa27e2e57376b46ee8816b90324bad60c02`
 - export gms_v79: `370d6b720b633c12c71d40340f3952000705c4bddb98f87179e7193d112d210c`
 - export gms_v83: `711bddcc2e1bdd417a75954148d2b50c64e70855e84259c0b8e50e700e393c0d`
@@ -163,7 +163,7 @@ Tool: `bfecda916f252908d2fafda8adbe41d5763d4a1e`
 | NOTIFY_MARRIAGE | CWvsContext::OnNotifyWedding; sub_90D65D |  |  | ⬜ | 0x063 | ❌ | 0x064 | ❌ | 0x06A | ❌ | 0x06D | ❌ | 0x06D | ❌ | 0x06E | ❌ | 0x071 | ❌ |
 | MULTICHAT | CField::OnGroupMessage | field/clientbound/FieldMultiChat (T1) | 0x064 | ✅ | 0x07A | ✅ | 0x07E | ✅ | 0x086 | ✅ | 0x089 | ✅ | 0x08E | ✅ | 0x096 | ✅ | 0x084 | ✅ |
 | NOTIFY_JOB_CHANGE | CWvsContext::OnNotifyJobChange |  |  | ⬜ |  | ⬜ | 0x065 | ❌ | 0x06B | ❌ | 0x06E | ❌ | 0x06E | ❌ | 0x06F | ❌ | 0x072 | ❌ |
-| WHISPER | CField::OnWhisper | field/clientbound/FieldWhisperError (T1) | 0x065 | ❌ | 0x07B | ✅ | 0x07F | ✅ | 0x087 | ✅ | 0x08A | ✅ | 0x08F | ✅ | 0x097 | ✅ | 0x085 | ✅ |
+| WHISPER | CField::OnWhisper | field/clientbound/FieldWhisperError (T1) | 0x065 | ✅ | 0x07B | ✅ | 0x07F | ✅ | 0x087 | ✅ | 0x08A | ✅ | 0x08F | ✅ | 0x097 | ✅ | 0x085 | ✅ |
 | SPOUSE_CHAT | CField::OnCoupleMessage | field/clientbound/FieldSpouseChat (T1) | 0x066 | ✅ | 0x07C | ✅ | 0x080 | ✅ | 0x088 | ✅ | 0x08B | ✅ | 0x090 | ✅ | 0x098 | ✅ |  | ⬜ |
 | SUMMON_ITEM_INAVAILABLE | CField::OnSummonItemInavailable | field/clientbound/FieldSummonItemUnavailable (T1) | 0x067 | 🟡 | 0x07D | 🟡 | 0x081 | 🟡 | 0x089 | ✅ | 0x08C | ✅ | 0x091 | ✅ | 0x099 | ✅ | 0x086 | ✅ |
 | FIELD_EFFECT | CField::OnFieldEffect; sub_4EB523 | field/clientbound/FieldEffectBossHp (T1) | 0x068 | ✅ | 0x07E | ✅ | 0x082 | ✅ | 0x08A | ✅ | 0x08D | ✅ | 0x092 | ✅ | 0x09A | ✅ | 0x087 | ✅ |
@@ -954,7 +954,7 @@ Tool: `bfecda916f252908d2fafda8adbe41d5763d4a1e`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v61 | 109 | 0 | 62 | 296 | 454 | 0 | 23.3% |
+| v61 | 110 | 0 | 62 | 295 | 454 | 0 | 23.6% |
 | v72 | 216 | 0 | 73 | 218 | 414 | 0 | 42.6% |
 | v79 | 228 | 0 | 72 | 216 | 405 | 0 | 44.2% |
 | v83 | 367 | 0 | 0 | 347 | 207 | 0 | 51.4% |

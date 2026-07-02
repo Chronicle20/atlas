@@ -578,24 +578,26 @@ Tool: `658928fc9bd41408e0a83bb6acf59fb6dff6eda8`
 | USE_RETURN_SCROLL | CWvsContext::SendMapTransferItemUseRequest; CWvsContext::SendPortalScrollUseRequest; sub_841AA5 |  | 0x04E | ❌ | 0x054 | ❌ | 0x053 | ❌ | 0x055 | ❌ | 0x055 | ❌ | 0x058 | ❌ | 0x05C | ❌ | 0x04D | ❌ |
 | USE_UPGRADE_SCROLL | CWvsContext::SendUpgradeItemUseRequest; sub_954F9B | inventory/serverbound/InventoryScrollUse (T1) | 0x04F | ✅ | 0x055 | ✅ | 0x054 | ✅ | 0x056 | ✅ | 0x056 | ✅ | 0x059 | ✅ | 0x05D | ✅ | 0x04E | ✅ |
 | DESTROY_PET_ITEM_REQUEST | CWvsContext::SendActivatePetRequest | pet/serverbound/PetSpawn (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x050 | ❌ | 0x050 | ❌ | 0x053 | ✅ | 0x056 | ✅ | 0x048 | ✅ |
+| DISTRIBUTE_AP | CWvsContext::SendAbilityUpRequest; sub_8457EE | character/serverbound/AutoDistributeAp (T1) | 0x050 | ❌ | 0x056 | ✅ | 0x055 | ✅ | 0x057 | ✅ | 0x057 | ✅ | 0x05B | ✅ | 0x062 | ✅ | 0x052 | ✅ |
 | HEAL_OVER_TIME | CWvsContext::SendStatChangeRequest | character/serverbound/HealOverTime (T1) | 0x051 | 🟡 | 0x058 | ✅ | 0x057 | ✅ | 0x059 | ✅ | 0x059 | ✅ | 0x05C | ✅ | 0x064 | ✅ | 0x054 | ✅ |
 | USE_CATCH_ITEM | CWvsContext::SendBridleItemUseRequest |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x051 | ❌ | 0x051 | ❌ | 0x054 | ❌ | 0x057 | ❌ | 0x049 | ❌ |
-| MESO_DROP | CWvsContext::SendDropMoneyRequest; sub_8458EB | character/serverbound/DropMeso (T1) | 0x052 | ❌ | 0x05D | ✅ | 0x05C | ✅ | 0x05E | ✅ | 0x05E | ✅ | 0x061 | ✅ | 0x06A | ✅ | 0x059 | ✅ |
+| DISTRIBUTE_SP | CWvsContext::SendSkillUpRequest; sub_8458EB | character/serverbound/DistributeSp (T1) | 0x052 | ❌ | 0x059 | ✅ | 0x058 | ✅ | 0x05A | ✅ | 0x05A | ✅ | 0x05D | ✅ | 0x066 | ✅ | 0x055 | ✅ |
 | USE_SKILL_BOOK | CWvsContext::SendSkillLearnItemUseRequest |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x052 | ❌ | 0x052 | ❌ | 0x055 | ❌ | 0x058 | ❌ | 0x04A | ❌ |
 | USE_SKILL_RESET_BOOK | CWvsContext::SendSkillResetItemUseRequest |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x053 | ❌ | 0x053 | ❌ | 0x056 | ❌ | 0x059 | ❌ | 0x04B | ❌ |
 | CANCEL_BUFF | CUserLocal::SendSkillCancelRequest | character/serverbound/BuffCancelRequest (T1) | 0x054 | 🟡 | 0x05B | 🟡 | 0x05A | 🟡 | 0x05C | ✅ | 0x05C | ✅ | 0x05F | ✅ | 0x068 | ✅ | 0x057 | ✅ |
 | USE_TELEPORT_ROCK | CWvsContext::SendMapTransferItemUseRequest |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x054 | ❌ | 0x054 | ❌ | 0x057 | ❌ | 0x05B | ❌ | 0x04C | ❌ |
 | SKILL_EFFECT | CUserLocal::DoActiveSkill_Prepare; sub_7B8001 | character/serverbound/CharacterSkillPrepare (T1) | 0x055 | ❌ | 0x05C | ✅ | 0x05B | ✅ | 0x05D | ✅ | 0x05D | ✅ | 0x060 | ✅ | 0x069 | ✅ | 0x058 | ✅ |
-| DISTRIBUTE_AP | CWvsContext::SendAbilityUpRequest; sub_8459DD | character/serverbound/AutoDistributeAp (T1) | 0x056 | ❌ | 0x056 | ✅ | 0x055 | ✅ | 0x057 | ✅ | 0x057 | ✅ | 0x05B | ✅ | 0x062 | ✅ | 0x052 | ✅ |
-| AUTO_DISTRIBUTE_AP | CWvsContext::SendAbilityUpRequest; sub_845A65 | character/serverbound/AutoDistributeAp (T1) | 0x057 | ❌ | 0x057 | ✅ | 0x056 | ✅ | 0x058 | ✅ | 0x058 | ✅ | 0x05B | ✅ | 0x062 | ✅ | 0x052 | ✅ |
-| DISTRIBUTE_SP | CWvsContext::SendSkillUpRequest; sub_845B68 | character/serverbound/DistributeSp (T1) | 0x059 | ❌ | 0x059 | ✅ | 0x058 | ✅ | 0x05A | ✅ | 0x05A | ✅ | 0x05D | ✅ | 0x066 | ✅ | 0x055 | ✅ |
+| MESO_DROP | CWvsContext::SendDropMoneyRequest; sub_8459DD | character/serverbound/DropMeso (T1) | 0x056 | ❌ | 0x05D | ✅ | 0x05C | ✅ | 0x05E | ✅ | 0x05E | ✅ | 0x061 | ✅ | 0x06A | ✅ | 0x059 | ✅ |
+| AUTO_DISTRIBUTE_AP | CWvsContext::SendAbilityUpRequest | character/serverbound/AutoDistributeAp (T1) |  | ⬜ | 0x057 | ✅ | 0x056 | ✅ | 0x058 | ✅ | 0x058 | ✅ | 0x05B | ✅ | 0x062 | ✅ | 0x052 | ✅ |
+| GIVE_FAME | CWvsContext::SendGivePopularityRequest; sub_845A65; sub_96E07F | fame/serverbound/Change | 0x057 | ❌ | 0x05E | ❌ | 0x05D | ❌ | 0x05F | ✅ | 0x05F | ✅ | 0x062 | ✅ | 0x06B | ✅ | 0x05A | ✅ |
+| CHAR_INFO_REQUEST | CWvsContext::SendCharacterInfoRequest; sub_845B68 | character/serverbound/InfoRequest (T1) | 0x059 | ❌ | 0x060 | ✅ | 0x05F | ✅ | 0x061 | ✅ | 0x061 | ✅ | 0x064 | ✅ | 0x06D | ✅ | 0x05C | ✅ |
 | SPECIAL_MOVE | CGrenade::SendTimeBombInfo; CUserLocal::DoActiveSkill_DamageMeter; CUserLocal::DoActiveSkill_Flying; CUserLocal::DoActiveSkill_Heal; CUserLocal::DoActiveSkill_MobCapture; CUserLocal::DoActiveSkill_OpenGate; CUserLocal::DoActiveSkill_RecoveryAura; CUserLocal::DoActiveSkill_SmokeShell; CUserLocal::DoActiveSkill_StatChangeAdmin; CUserLocal::DoActiveSkill_Summon; CUserLocal::DoActiveSkill_SummonMonster; CUserLocal::DoActiveSkill_TownPortal; CUserLocal::SendSkillUseRequest; CUserLocal::TryDoingMonsterMagnet; CUserLocal::TryDoingSwallowAbsorb; sub_845C36; sub_8C0CBE |  | 0x05A | ❌ | 0x05A | ❌ | 0x059 | ❌ | 0x05B | ❌ | 0x05B | ❌ | 0x05E | ❌ | 0x067 | ❌ | 0x056 | ❌ |
 | USE_SHOP_SCANNER_ITEM | CWvsContext::SendShopScannerItemUseRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x05A | ❌ |  | ⬜ |
 | CHANGE_MAP_SPECIAL | CUserLocal::CheckPortal_Collision; CUserLocal::HandleUpKeyDown | portal/serverbound/PortalScript | 0x05C | 🟡 | 0x063 | ❌ | 0x062 | ❌ | 0x064 | ❌ | 0x064 | ❌ | 0x067 | ❌ | 0x070 | ❌ | 0x05F | ❌ |
-| GIVE_FAME | CWvsContext::SendGivePopularityRequest; sub_8478EA; sub_96E07F | fame/serverbound/Change | 0x05E | ❌ | 0x05E | ❌ | 0x05D | ❌ | 0x05F | ✅ | 0x05F | ✅ | 0x062 | ✅ | 0x06B | ✅ | 0x05A | ✅ |
 | HYPER_UPGRADE_ITEM_USE | CWvsContext::SendHyperUpgradeItemUseRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x05E | ❌ | 0x04F | ❌ |
+| TROCK_ADD_MAP | CWvsContext::SendMapTransferRequest; sub_8478EA |  | 0x05E | ❌ |  | ⬜ |  | ⬜ | 0x066 | ❌ | 0x066 | ❌ | 0x069 | ❌ | 0x072 | ❌ | 0x061 | ❌ |
 | ITEM_OPTION_UPGRADE_USE | CWvsContext::SendItemOptionUpgradeItemUseRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x05F | ❌ | 0x050 | ❌ |
-| CHAR_INFO_REQUEST | CWvsContext::SendCharacterInfoRequest; sub_69C480 | character/serverbound/InfoRequest (T1) | 0x060 | ❌ | 0x060 | ✅ | 0x05F | ✅ | 0x061 | ✅ | 0x061 | ✅ | 0x064 | ✅ | 0x06D | ✅ | 0x05C | ✅ |
+| ANTI_MACRO_RESULT | CUIAdminAntiMacro::SetRet; CUIAntiMacro::SetRet; sub_69C480 |  | 0x060 | ❌ |  | ⬜ |  | ⬜ | 0x069 | ❌ | 0x069 | ❌ | 0x06C | ❌ | 0x075 | ❌ | 0x064 | ❌ |
 | UI_OPEN_ITEM_USE_REQUEST | CWvsContext::SendUIOpenItemRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x060 | ❌ |  | ⬜ |
 | UNNAMED_R149 |  |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x060 | ❌ | 0x060 | ❌ | 0x063 | ❌ | 0x06C | ❌ | 0x05B | ❌ |
 | ITEM_RELEASE_REQUEST | CWvsContext::SendItemReleaseRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x061 | ❌ | 0x051 | ❌ |
@@ -604,11 +606,9 @@ Tool: `658928fc9bd41408e0a83bb6acf59fb6dff6eda8`
 | CANCEL_DEBUFF | CWvsContext::CheckTemporaryStatDuration |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x063 | ❌ | 0x063 | ❌ | 0x066 | ❌ | 0x06F | ❌ | 0x05E | ❌ |
 | USER_CHANGE_STAT_REQUEST_BY_ITEM | CWvsContext::SendStatChangeRequestByItemOption |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x065 | ❌ |  | ⬜ |
 | USE_INNER_PORTAL | CUserLocal::TryRegisterTeleport |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x065 | ❌ | 0x065 | ❌ | 0x068 | ❌ | 0x071 | ❌ | 0x060 | ❌ |
-| TROCK_ADD_MAP | CWvsContext::SendMapTransferRequest |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x066 | ❌ | 0x066 | ❌ | 0x069 | ❌ | 0x072 | ❌ | 0x061 | ❌ |
 | ANTI_MACRO_ITEM_USE | CWvsContext::SendAntiMacroItemUseRequest |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x067 | ❌ | 0x067 | ❌ | 0x06A | ❌ | 0x073 | ❌ | 0x062 | ❌ |
 | ANTI_MACRO_TARGET | CUserLocal::DoAntiMacroSkill |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x068 | ❌ | 0x068 | ❌ | 0x06B | ❌ | 0x074 | ❌ | 0x063 | ❌ |
 | SUE_CHARACTER | CField::SendChatMsgSlash; sub_849F27 | field/serverbound/FieldAdminCommand (T1) | 0x068 | ✅ | 0x071 | ✅ | 0x070 | ✅ | 0x072 | ✅ | 0x072 | ✅ | 0x075 | ✅ | 0x07E | ✅ |  | ⬜ |
-| ANTI_MACRO_RESULT | CUIAdminAntiMacro::SetRet; CUIAntiMacro::SetRet |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x069 | ❌ | 0x069 | ❌ | 0x06C | ❌ | 0x075 | ❌ | 0x064 | ❌ |
 | CLAIM_REQUEST | CWvsContext::SendClaimRequest |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x06A | ❌ | 0x06A | ❌ | 0x06D | ❌ | 0x076 | ❌ | 0x065 | ❌ |
 | MULTI_CHAT | CUIStatusBar::SendGroupMessage | chat/serverbound/ChatMulti (T1) | 0x06B | ✅ | 0x075 | ✅ | 0x074 | ✅ | 0x077 | ❌ | 0x079 | ❌ | 0x07D | ❌ | 0x08C | ❌ | 0x079 | ❌ |
 | USER_CALC_DAMAGE_STAT_SET_REQUEST | CWvsContext::CheckDarkForce; CWvsContext::CheckDragonFury; CWvsContext::OnTemporaryStatReset; CWvsContext::OnTemporaryStatSet | character/clientbound/BuffCancel (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x06C | ✅ | 0x06C | ✅ | 0x06F | ✅ | 0x078 | ✅ | 0x067 | ✅ |
@@ -828,7 +828,6 @@ Tool: `658928fc9bd41408e0a83bb6acf59fb6dff6eda8`
 | cash/serverbound/CashShopOperationMoveToCashInventory (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | cash/serverbound/CashShopOperationRebateLockerItem (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | cash/serverbound/CashShopOperationSetWishlist (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
-| character/serverbound/AutoDistributeAp (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | character/serverbound/ChairFixed (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | character/serverbound/ChairPortable (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | character/serverbound/ChalkboardClose (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
@@ -837,7 +836,6 @@ Tool: `658928fc9bd41408e0a83bb6acf59fb6dff6eda8`
 | character/serverbound/CharacterSkillPrepare (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | character/serverbound/CheckName (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | character/serverbound/DeleteCharacter (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| character/serverbound/DistributeAp (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | character/serverbound/DistributeSp (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | character/serverbound/DropMeso (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | character/serverbound/ExpressionRequest (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
@@ -948,14 +946,14 @@ Tool: `658928fc9bd41408e0a83bb6acf59fb6dff6eda8`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v61 | 163 | 0 | 62 | 236 | 454 | 0 | 35.4% |
-| v72 | 216 | 0 | 73 | 212 | 414 | 0 | 43.1% |
-| v79 | 228 | 0 | 72 | 210 | 405 | 0 | 44.7% |
-| v83 | 367 | 0 | 0 | 341 | 207 | 0 | 51.8% |
-| v84 | 345 | 0 | 0 | 342 | 228 | 0 | 50.2% |
-| v87 | 379 | 0 | 0 | 366 | 170 | 0 | 50.9% |
-| v95 | 399 | 0 | 0 | 430 | 86 | 0 | 48.1% |
-| JMS185 | 362 | 0 | 0 | 376 | 177 | 0 | 49.1% |
+| v61 | 163 | 0 | 62 | 235 | 453 | 0 | 35.4% |
+| v72 | 216 | 0 | 73 | 210 | 414 | 0 | 43.3% |
+| v79 | 228 | 0 | 72 | 208 | 405 | 0 | 44.9% |
+| v83 | 367 | 0 | 0 | 339 | 207 | 0 | 52.0% |
+| v84 | 345 | 0 | 0 | 340 | 228 | 0 | 50.4% |
+| v87 | 379 | 0 | 0 | 364 | 170 | 0 | 51.0% |
+| v95 | 399 | 0 | 0 | 428 | 86 | 0 | 48.2% |
+| JMS185 | 362 | 0 | 0 | 374 | 177 | 0 | 49.2% |
 
 ## Conflicts
 

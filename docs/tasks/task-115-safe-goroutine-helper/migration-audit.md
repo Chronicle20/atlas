@@ -163,12 +163,12 @@ Every row must carry a disposition before the branch is done. Row count must equ
 | 156 | libs/atlas-kafka/consumer/manager.go:523 | anon | lib-internal | l | ctx | migrated |
 | 157 | libs/atlas-kafka/consumer/manager.go:558 | anon | lib-internal | handlerLogger | wctx | migrated |
 | 158 | libs/atlas-seeder/handlers.go:49 | anon | | | | |
-| 159 | libs/atlas-model/model/processor.go:155 | anon | | | | |
-| 160 | libs/atlas-model/model/processor.go:167 | anon | | | | |
-| 161 | libs/atlas-model/model/processor.go:208 | anon | | | | |
-| 162 | libs/atlas-model/model/processor.go:220 | anon | | | | |
-| 163 | libs/atlas-model/model/processor.go:441 | named-call | | | | |
-| 164 | libs/atlas-model/async/processor.go:72 | anon | | | | |
-| 165 | libs/atlas-model/testutil/helpers.go:189 | anon | | | | |
+| 159 | libs/atlas-model/model/processor.go:155 | anon | lib-internal | logrus.StandardLogger() | ctx | migrated (accepted: recovered worker panic never reaches errChannels — wg.Done() still fires, ExecuteForEachSlice returns nil for that item; Error log is the detection path, design §6.1) |
+| 160 | libs/atlas-model/model/processor.go:167 | anon | lib-internal | logrus.StandardLogger() | ctx | migrated |
+| 161 | libs/atlas-model/model/processor.go:208 | anon | lib-internal | logrus.StandardLogger() | ctx | migrated (accepted: recovered worker panic never reaches errChannels — wg.Done() still fires, ExecuteForEachMap returns nil for that item; Error log is the detection path, design §6.1) |
+| 162 | libs/atlas-model/model/processor.go:220 | anon | lib-internal | logrus.StandardLogger() | ctx | migrated |
+| 163 | libs/atlas-model/model/processor.go:441 | named-call | lib-internal | logrus.StandardLogger() | context.Background() (no ctx in SliceMap scope) | migrated (accepted: recovered panic leaves a zero-value element in results at res.index; Error log is the detection path, design §6.1) |
+| 164 | libs/atlas-model/async/processor.go:72 | anon | lib-internal | logrus.StandardLogger() | ctx | migrated (accepted: recovered provider panic never reaches resultChannels/errChannels — AwaitSlice times out with ErrAwaitTimeout; Error log is the detection path, design §6.1) |
+| 165 | libs/atlas-model/testutil/helpers.go:189 | anon | test-support | n/a | n/a | allowlisted — panic propagation is the point of a test harness |
 | 166 | libs/atlas-lock/leader.go:155 | anon | lifecycle | le.cfg.log | leaderCtx | migrated |
 | 167 | libs/atlas-lock/leader.go:167 | anon | lifecycle | le.cfg.log | leaderCtx | migrated |

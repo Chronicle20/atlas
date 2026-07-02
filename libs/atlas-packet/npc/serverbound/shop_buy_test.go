@@ -87,3 +87,34 @@ func TestShopBuyDiscountPriceGate(t *testing.T) {
 		t.Errorf("JMS: expected 8 bytes (no discountPrice), got %d", len(jms))
 	}
 }
+
+// TestShopBuyByteV72 pins the gms_v72 NPC_SHOP BUY body (op byte 0, dispatcher
+// prefix; body only here).
+//
+// IDA: the v72 buy handler sub_6A8B15 (GMS_v72.1_U_DEVM.exe, port 13339) builds
+// COutPacket(60) — the prior agent found only the CLOSE arm @0x6a5f39; the buy
+// send is this shop-dialog OK-button handler:
+//
+//	Encode1 op=0 (BUY)     @0x6a8cca  (dispatcher prefix, not in body)
+//	Encode2 slot           @0x6a8ce8
+//	Encode4 itemId         @0x6a8cf8
+//	Encode2 quantity       @0x6a8d03
+//	Encode4 discountPrice  @0x6a8d0e
+//
+// v72 is GMS so the trailing discountPrice int is present. Body byte-identical to v79.
+//
+// packet-audit:verify packet=npc/serverbound/NpcShopBuy version=gms_v72 ida=0x6a8b15
+func TestShopBuyByteV72(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	ctx := pt.CreateContext("GMS", 72, 1)
+	got := ShopBuy{slot: 3, itemId: 2000000, quantity: 5, discountPrice: 1000}.Encode(l, ctx)(nil)
+	want := []byte{
+		0x03, 0x00, // slot=3           @0x6a8ce8
+		0x80, 0x84, 0x1E, 0x00, // itemId=2000000  @0x6a8cf8
+		0x05, 0x00, // quantity=5       @0x6a8d03
+		0xE8, 0x03, 0x00, 0x00, // discountPrice=1000 @0x6a8d0e
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatalf("v72 ShopBuy: got % x, want % x", got, want)
+	}
+}

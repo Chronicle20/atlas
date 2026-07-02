@@ -58,3 +58,30 @@ func TestShopSellRoundTrip(t *testing.T) {
 		})
 	}
 }
+
+// TestShopSellByteV72 pins the gms_v72 NPC_SHOP SELL body (op byte 1, dispatcher
+// prefix; body only here).
+//
+// IDA: the v72 sell handler sub_6A8D8F (GMS_v72.1_U_DEVM.exe) builds COutPacket(60):
+//
+//	Encode1 op=1 (SELL)  @0x6a8f4b  (dispatcher prefix, not in body)
+//	Encode2 slot         @0x6a8f56
+//	Encode4 itemId       @0x6a8f61
+//	Encode2 quantity     @0x6a8f6c
+//
+// Body byte-identical to v79.
+//
+// packet-audit:verify packet=npc/serverbound/NpcShopSell version=gms_v72 ida=0x6a8d8f
+func TestShopSellByteV72(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	ctx := pt.CreateContext("GMS", 72, 1)
+	got := ShopSell{slot: 5, itemId: 1000000, quantity: 10}.Encode(l, ctx)(nil)
+	want := []byte{
+		0x05, 0x00, // slot=5           @0x6a8f56
+		0x40, 0x42, 0x0F, 0x00, // itemId=1000000  @0x6a8f61
+		0x0A, 0x00, // quantity=10      @0x6a8f6c
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatalf("v72 ShopSell: got % x, want % x", got, want)
+	}
+}

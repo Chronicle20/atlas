@@ -46,3 +46,24 @@ func TestShopRechargeRoundTrip(t *testing.T) {
 		})
 	}
 }
+
+// TestShopRechargeByteV72 pins the gms_v72 NPC_SHOP RECHARGE body (op byte 2,
+// dispatcher prefix; body only here).
+//
+// IDA: the v72 recharge handler sub_6A8FB2 (GMS_v72.1_U_DEVM.exe) builds COutPacket(60):
+//
+//	Encode1 op=2 (RECHARGE)  @0x6a90d5  (dispatcher prefix, not in body)
+//	Encode2 slot             @0x6a90de
+//
+// Body byte-identical to v79.
+//
+// packet-audit:verify packet=npc/serverbound/NpcShopRecharge version=gms_v72 ida=0x6a8fb2
+func TestShopRechargeByteV72(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	ctx := pt.CreateContext("GMS", 72, 1)
+	got := ShopRecharge{slot: 7}.Encode(l, ctx)(nil)
+	want := []byte{0x07, 0x00} // slot=7  @0x6a90de
+	if !bytes.Equal(got, want) {
+		t.Fatalf("v72 ShopRecharge: got % x, want % x", got, want)
+	}
+}

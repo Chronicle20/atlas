@@ -5,7 +5,7 @@
 
 Tool: `dde4cb7f9c62159772672195dd4a20bb7d2f1343`
 
-- export gms_v72: `26b3b333384a012ba3a1e44e1c94ff423c7b1a002e70c70b65c69257112d539a`
+- export gms_v72: `a0ac2be6578395455f491976bcb11aa27e2e57376b46ee8816b90324bad60c02`
 - export gms_v79: `370d6b720b633c12c71d40340f3952000705c4bddb98f87179e7193d112d210c`
 - export gms_v83: `711bddcc2e1bdd417a75954148d2b50c64e70855e84259c0b8e50e700e393c0d`
 - export gms_v84: `7eab9472e2afeda13faaf74273828d09d5f2481d67bec10235c3b2fd2f91e1eb`
@@ -890,9 +890,9 @@ Tool: `dde4cb7f9c62159772672195dd4a20bb7d2f1343`
 | npc/serverbound/NpcContinueConversation (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
 | npc/serverbound/NpcContinueConversationSelection (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
 | npc/serverbound/NpcContinueConversationText (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
-| npc/serverbound/NpcShopBuy (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
-| npc/serverbound/NpcShopRecharge (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
-| npc/serverbound/NpcShopSell (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
+| npc/serverbound/NpcShopBuy (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
+| npc/serverbound/NpcShopRecharge (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
+| npc/serverbound/NpcShopSell (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | npc/serverbound/NpcStartConversation (T1) |  |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | party/serverbound/PartyOperationChangeLeader (T1) |  |  | ❌ |  | ❌ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
 | party/serverbound/PartyOperationExpel (T1) |  |  | 🟡 |  | 🟡 |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
@@ -914,7 +914,7 @@ Tool: `dde4cb7f9c62159772672195dd4a20bb7d2f1343`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v72 | 213 | 0 | 73 | 185 | 411 | 0 | 45.2% |
+| v72 | 216 | 0 | 73 | 182 | 411 | 0 | 45.9% |
 | v79 | 228 | 0 | 72 | 180 | 402 | 0 | 47.5% |
 | v83 | 367 | 0 | 0 | 311 | 204 | 0 | 54.1% |
 | v84 | 345 | 0 | 0 | 312 | 225 | 0 | 52.5% |

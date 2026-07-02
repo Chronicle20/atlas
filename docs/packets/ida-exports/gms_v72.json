@@ -7835,35 +7835,64 @@
    ]
   },
   "CShopDlg::SendBuyRequest": {
-   "address": "",
+   "address": "0x6a8b15",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Encode1",
+     "comment": "NPC_SHOP op 0 BUY (dispatcher prefix) @0x6a8cca"
+    },
+    {
+     "op": "Encode2",
+     "comment": "slot/nPOS @0x6a8ce8"
+    },
+    {
+     "op": "Encode4",
+     "comment": "itemId @0x6a8cf8"
+    },
+    {
+     "op": "Encode2",
+     "comment": "quantity @0x6a8d03"
+    },
+    {
+     "op": "Encode4",
+     "comment": "unit/discountPrice @0x6a8d0e"
     }
    ]
   },
   "CShopDlg::SendRechargeRequest": {
-   "address": "",
+   "address": "0x6a8fb2",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Encode1",
+     "comment": "NPC_SHOP op 2 RECHARGE (dispatcher prefix) @0x6a90d5"
+    },
+    {
+     "op": "Encode2",
+     "comment": "slot/nPos @0x6a90de"
     }
    ]
   },
   "CShopDlg::SendSellRequest": {
-   "address": "",
+   "address": "0x6a8d8f",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Encode1",
+     "comment": "NPC_SHOP op 1 SELL (dispatcher prefix) @0x6a8f4b"
+    },
+    {
+     "op": "Encode2",
+     "comment": "slot/nPOS @0x6a8f56"
+    },
+    {
+     "op": "Encode4",
+     "comment": "itemId @0x6a8f61"
+    },
+    {
+     "op": "Encode2",
+     "comment": "quantity @0x6a8f6c"
     }
    ]
   },

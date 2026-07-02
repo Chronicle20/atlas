@@ -1,7 +1,7 @@
 {
   "WriterName": "StatusMessageUpdateQuestRecord",
   "IDAName": "CWvsContext::OnMessage#UpdateQuestRecord",
-  "Address": "",
+  "Address": "0x919604",
   "Variant": "GMS/v72",
   "BranchDepth": 0,
   "AtlasFile": "libs/atlas-packet/character/clientbound/status_message.go",
@@ -10,28 +10,28 @@
       "Index": 0,
       "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 4,
-      "Note": "IDA read-order unresolved: function not found in IDB"
+      "IDAOp": 1,
+      "IDAComment": "questId @0x919627",
+      "Verdict": 2,
+      "Note": "width mismatch"
     },
     {
       "Index": 1,
       "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "",
+      "IDAComment": "subtype 1 @0x919638",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "width mismatch"
     },
     {
       "Index": 2,
       "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
+      "IDAOp": 4,
+      "IDAComment": "info @0x9196fa",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "width mismatch"
     },
     {
       "Index": 3,

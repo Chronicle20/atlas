@@ -1,6 +1,6 @@
 # StatusMessageQuestRecordEx (← `CWvsContext::OnMessage#QuestRecordEx`)
 
-- **IDA:** 
+- **IDA:** 0x919a7b
 - **Atlas file:** `libs/atlas-packet/character/clientbound/status_message.go`
 - **Variant:** GMS/v72
 - **Branch depth:** 0
@@ -10,7 +10,7 @@
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | byte | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
-| 1 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 0 | byte | int16 `questId @0x919a98` | ❌ | width mismatch |
+| 1 | int16 | string `info @0x919a9e` | ❌ | width mismatch |
 | 2 | string | byte `` | ❌ | atlas: extra — client never reads this field |
 

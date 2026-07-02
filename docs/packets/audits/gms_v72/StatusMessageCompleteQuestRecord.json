@@ -1,7 +1,7 @@
 {
   "WriterName": "StatusMessageCompleteQuestRecord",
   "IDAName": "CWvsContext::OnMessage#CompleteQuestRecord",
-  "Address": "",
+  "Address": "0x919604",
   "Variant": "GMS/v72",
   "BranchDepth": 0,
   "AtlasFile": "libs/atlas-packet/character/clientbound/status_message.go",
@@ -10,28 +10,28 @@
       "Index": 0,
       "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 4,
-      "Note": "IDA read-order unresolved: function not found in IDB"
+      "IDAOp": 1,
+      "IDAComment": "questId @0x919627",
+      "Verdict": 2,
+      "Note": "width mismatch"
     },
     {
       "Index": 1,
       "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "",
+      "IDAComment": "subtype 2 @0x919638",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "width mismatch"
     },
     {
       "Index": 2,
       "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "IDAOp": 5,
+      "IDAComment": "completedAt FILETIME int64 (8) @0x919659",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 3,
@@ -39,8 +39,8 @@
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Verdict": 0,
+      "Note": "absorbed by trailing opaque buffer"
     }
   ],
   "Verdict": 2,

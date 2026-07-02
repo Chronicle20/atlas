@@ -1,6 +1,6 @@
 # StatusMessageGeneralItemExpire (← `CWvsContext::OnMessage#GeneralItemExpire`)
 
-- **IDA:** 
+- **IDA:** 0x919bff
 - **Atlas file:** `libs/atlas-packet/character/clientbound/status_message.go`
 - **Variant:** GMS/v72
 - **Branch depth:** 0
@@ -10,7 +10,7 @@
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | byte | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
-| 1 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 0 | byte | byte `count @0x919c12` | ✅ |  |
+| 1 | byte | int32 `itemId (count loop) @0x919c30` | ❌ | width mismatch |
 | 2 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 

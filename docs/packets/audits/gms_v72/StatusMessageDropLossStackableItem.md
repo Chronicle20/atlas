@@ -1,6 +1,6 @@
 # StatusMessageDropLossStackableItem (← `CWvsContext::OnMessage#DropLossStackableItem`)
 
-- **IDA:** 
+- **IDA:** 0x9192d0
 - **Atlas file:** `libs/atlas-packet/character/clientbound/status_message.go`
 - **Variant:** GMS/v72
 - **Branch depth:** 0
@@ -10,8 +10,8 @@
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | byte | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
-| 1 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 2 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 0 | byte | byte `drop type 0 @0x9192f4` | ✅ |  |
+| 1 | byte | int32 `itemId @0x9193e7` | ❌ | width mismatch |
+| 2 | int32 | int32 `amount (negative) @0x9193f4` | ✅ |  |
 | 3 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 

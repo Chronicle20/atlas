@@ -144,3 +144,24 @@ func TestPagedQueryRejectsInvalidPage(t *testing.T) {
 		t.Fatal("expected error for page.Size=0")
 	}
 }
+
+// noPKEntity deliberately has no primary key: no Id/ID field, no
+// gorm:"primaryKey" tag, and no field GORM auto-promotes to a PK. It exists
+// only to exercise the PrioritizedPrimaryField == nil branch of PagedQuery.
+type noPKEntity struct {
+	TenantId uuid.UUID `gorm:"not null"`
+	Label    string
+}
+
+func (noPKEntity) TableName() string { return "no_pk_entities" }
+
+func migrateNoPK(db *gorm.DB) error { return db.AutoMigrate(&noPKEntity{}) }
+
+func TestPagedQueryRejectsEntityWithoutPrimaryKey(t *testing.T) {
+	db := databasetest.NewInMemoryTenantDB(t, migrateNoPK)
+
+	_, err := database.PagedQuery[noPKEntity](db, model.Page{Number: 1, Size: 10})()
+	if err == nil {
+		t.Fatal("expected error for entity with no primary key")
+	}
+}

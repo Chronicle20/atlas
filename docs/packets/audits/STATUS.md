@@ -5,7 +5,7 @@
 
 Tool: `bfecda916f252908d2fafda8adbe41d5763d4a1e`
 
-- export gms_v61: `15134cf26d9fdfcbe759e114979470d64a34de295efff47874bc50db0978746a`
+- export gms_v61: `b45d89ca28e5765052e20e7611c836e2526c29671dff6d5f750d7084b474b000`
 - export gms_v72: `a0ac2be6578395455f491976bcb11aa27e2e57376b46ee8816b90324bad60c02`
 - export gms_v79: `370d6b720b633c12c71d40340f3952000705c4bddb98f87179e7193d112d210c`
 - export gms_v83: `711bddcc2e1bdd417a75954148d2b50c64e70855e84259c0b8e50e700e393c0d`
@@ -216,16 +216,16 @@ Tool: `bfecda916f252908d2fafda8adbe41d5763d4a1e`
 | PET_EXCEPTION_LIST | CPet::OnLoadExceptionList | pet/clientbound/PetExcludeResponse (T1) | 0x084 | ❌ | 0x09E | ✅ | 0x0A2 | ✅ | 0x0AD | ✅ | 0x0B1 | ✅ | 0x0BA | ✅ | 0x0CC | ✅ | 0x0B3 | ✅ |
 | WILD_HUNTER_INFO | CWvsContext::OnWildHunterInfo |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x084 | ❌ |  | ⬜ |
 | PET_COMMAND | CPet::OnActionCommand | pet/clientbound/PetCommandResponse (T1) | 0x085 | ❌ | 0x09F | ✅ | 0x0A3 | ✅ | 0x0AE | ✅ | 0x0B2 | ✅ | 0x0BB | ✅ | 0x0CD | ✅ | 0x0B4 | ✅ |
-| SPAWN_SPECIAL_MAPOBJECT | CSummonedPool::OnCreated; CSummonedPool::OnPacket; sub_7922E8 | summon/clientbound/SummonSpawn (T1) | 0x086 | ❌ | 0x0A0 | ✅ | 0x0A4 | ✅ | 0x0AF | ✅ | 0x0B3 | ✅ | 0x0BC | ✅ | 0x116 | ✅ | 0x0B5 | ✅ |
-| REMOVE_SPECIAL_MAPOBJECT | CSummonedPool::OnPacket; CSummonedPool::OnRemoved; sub_7922E8 | summon/clientbound/SummonRemove | 0x087 | ❌ | 0x0A1 | ✅ | 0x0A5 | ✅ | 0x0B0 | ✅ | 0x0B4 | ✅ | 0x0BD | ✅ | 0x117 | ✅ | 0x0B6 | ✅ |
+| SPAWN_SPECIAL_MAPOBJECT | CSummonedPool::OnCreated; CSummonedPool::OnPacket; sub_7922E8 | summon/clientbound/SummonSpawn (T1) | 0x086 | ✅ | 0x0A0 | ✅ | 0x0A4 | ✅ | 0x0AF | ✅ | 0x0B3 | ✅ | 0x0BC | ✅ | 0x116 | ✅ | 0x0B5 | ✅ |
+| REMOVE_SPECIAL_MAPOBJECT | CSummonedPool::OnPacket; CSummonedPool::OnRemoved; sub_7922E8 | summon/clientbound/SummonRemove | 0x087 | ✅ | 0x0A1 | ✅ | 0x0A5 | ✅ | 0x0B0 | ✅ | 0x0B4 | ✅ | 0x0BD | ✅ | 0x117 | ✅ | 0x0B6 | ✅ |
 | STAGE_CHANGE | CWvsContext::OnStageChange |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x087 | ❌ |  | ⬜ |
 | DRAGON_BALL_BOX | CWvsContext::OnDragonBallBox |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x088 | ❌ |  | ⬜ |
-| MOVE_SUMMON | CSummonedPool::OnMove; sub_67C37E; sub_6E9285 | summon/clientbound/SummonMove | 0x088 | ❌ | 0x0A2 | ✅ | 0x0A6 | ✅ | 0x0B1 | ✅ | 0x0B5 | ✅ | 0x0BE | ✅ | 0x118 | ✅ | 0x0B7 | ✅ |
+| MOVE_SUMMON | CSummonedPool::OnMove; sub_67C37E; sub_6E9285 | summon/clientbound/SummonMove | 0x088 | ✅ | 0x0A2 | ✅ | 0x0A6 | ✅ | 0x0B1 | ✅ | 0x0B5 | ✅ | 0x0BE | ✅ | 0x118 | ✅ | 0x0B7 | ✅ |
 | ASK_WHETHER_USE_PAMS_SONG | CWvsContext::OnAskWhetherUsePamsSong |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x089 | ❌ |  | ⬜ |
-| SUMMON_ATTACK | CSummonedPool::OnAttack; sub_67C39F; sub_6E92A6 | summon/clientbound/SummonAttack (T1) | 0x089 | ❌ | 0x0A3 | ✅ | 0x0A7 | ✅ | 0x0B2 | ✅ | 0x0B6 | ✅ | 0x0BF | ✅ | 0x119 | ✅ | 0x0B8 | ✅ |
-| SUMMON_SKILL | CSummonedPool::OnSkill; sub_67C8D2; sub_6E97D5 | summon/clientbound/SummonSkill | 0x08A | ❌ | 0x0A4 | ✅ | 0x0A8 | ✅ | 0x0B4 | ✅ | 0x0B7 | ✅ | 0x0C1 | ✅ | 0x11A | ✅ | 0x0BA | ✅ |
+| SUMMON_ATTACK | CSummonedPool::OnAttack; sub_67C39F; sub_6E92A6 | summon/clientbound/SummonAttack (T1) | 0x089 | ✅ | 0x0A3 | ✅ | 0x0A7 | ✅ | 0x0B2 | ✅ | 0x0B6 | ✅ | 0x0BF | ✅ | 0x119 | ✅ | 0x0B8 | ✅ |
+| SUMMON_SKILL | CSummonedPool::OnSkill; sub_67C8D2; sub_6E97D5 | summon/clientbound/SummonSkill | 0x08A | ✅ | 0x0A4 | ✅ | 0x0A8 | ✅ | 0x0B4 | ✅ | 0x0B7 | ✅ | 0x0C1 | ✅ | 0x11A | ✅ | 0x0BA | ✅ |
 | TRANSFER_CHANNEL | CWvsContext::OnTransferChannel |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x08A | ❌ |  | ⬜ |
-| DAMAGE_SUMMON | CSummonedPool::OnHit; sub_67C936; sub_6E9839 | summon/clientbound/SummonDamage | 0x08B | ❌ | 0x0A5 | ✅ | 0x0A9 | ✅ | 0x0B3 | ✅ | 0x0B8 | ✅ | 0x0C0 | ✅ | 0x11B | ✅ | 0x0B9 | ✅ |
+| DAMAGE_SUMMON | CSummonedPool::OnHit; sub_67C936; sub_6E9839 | summon/clientbound/SummonDamage | 0x08B | ✅ | 0x0A5 | ✅ | 0x0A9 | ✅ | 0x0B3 | ✅ | 0x0B8 | ✅ | 0x0C0 | ✅ | 0x11B | ✅ | 0x0B9 | ✅ |
 | DISALLOWED_DELIVERY_QUEST_LIST | CWvsContext::OnDisallowedDeliveryQuestList |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x08B | ❌ |  | ⬜ |
 | MOVE_PLAYER | CUserRemote::OnMove | character/clientbound/CharacterMovement (T1) | 0x08D | ❌ | 0x0A7 | ✅ | 0x0AB | ✅ | 0x0B9 | ✅ | 0x0BD | ✅ | 0x0C6 | ✅ | 0x0D2 | ✅ | 0x0BF | ✅ |
 | CLOSE_RANGE_ATTACK | CUserRemote::OnAttack | character/clientbound/Attack (T1) | 0x08E | ❌ | 0x0A8 | ✅ | 0x0AC | ✅ | 0x0BA | ✅ | 0x0BE | ✅ | 0x0C7 | ✅ | 0x0D3 | ✅ | 0x0C0 | ✅ |
@@ -965,12 +965,6 @@ Tool: `bfecda916f252908d2fafda8adbe41d5763d4a1e`
 | storage/serverbound/StorageOperationMeso (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
 | storage/serverbound/StorageOperationRetrieveAsset (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
 | storage/serverbound/StorageOperationStoreAsset (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
-| summon/clientbound/SummonAttack (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| summon/clientbound/SummonDamage |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| summon/clientbound/SummonMove |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| summon/clientbound/SummonRemove |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| summon/clientbound/SummonSkill |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| summon/clientbound/SummonSpawn (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | summon/serverbound/SummonAttackHandle (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | summon/serverbound/SummonDamageHandle (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | summon/serverbound/SummonMoveHandle |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
@@ -981,14 +975,14 @@ Tool: `bfecda916f252908d2fafda8adbe41d5763d4a1e`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v61 | 43 | 0 | 62 | 389 | 454 | 0 | 8.7% |
-| v72 | 216 | 0 | 73 | 245 | 414 | 0 | 40.4% |
-| v79 | 228 | 0 | 72 | 243 | 405 | 0 | 42.0% |
-| v83 | 367 | 0 | 0 | 374 | 207 | 0 | 49.5% |
-| v84 | 345 | 0 | 0 | 375 | 228 | 0 | 47.9% |
-| v87 | 379 | 0 | 0 | 399 | 170 | 0 | 48.7% |
-| v95 | 399 | 0 | 0 | 463 | 86 | 0 | 46.3% |
-| JMS185 | 362 | 0 | 0 | 409 | 177 | 0 | 47.0% |
+| v61 | 49 | 0 | 62 | 377 | 454 | 0 | 10.0% |
+| v72 | 216 | 0 | 73 | 239 | 414 | 0 | 40.9% |
+| v79 | 228 | 0 | 72 | 237 | 405 | 0 | 42.5% |
+| v83 | 367 | 0 | 0 | 368 | 207 | 0 | 49.9% |
+| v84 | 345 | 0 | 0 | 369 | 228 | 0 | 48.3% |
+| v87 | 379 | 0 | 0 | 393 | 170 | 0 | 49.1% |
+| v95 | 399 | 0 | 0 | 457 | 86 | 0 | 46.6% |
+| JMS185 | 362 | 0 | 0 | 403 | 177 | 0 | 47.3% |
 
 ## Conflicts
 

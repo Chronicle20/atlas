@@ -1,39 +1,39 @@
 {
   "WriterName": "SummonRemove",
   "IDAName": "CSummonedPool::OnRemoved",
-  "Address": "",
+  "Address": "0x7922e8",
   "Variant": "GMS/v61",
   "BranchDepth": 0,
-  "AtlasFile": "libs/atlas-packet/summon/clientbound/remove.go",
+  "AtlasFile": "../../libs/atlas-packet/summon/clientbound/remove.go",
   "Rows": [
     {
       "Index": 0,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 4,
-      "Note": "IDA read-order unresolved: function not found in IDB"
+      "IDAOp": 2,
+      "IDAComment": "cid/ownerId — CUserPool::OnUserCommonPacket (consumed upstream before dispatch)",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 1,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "IDAOp": 2,
+      "IDAComment": "oid — summon cluster dispatcher sub_7922E8 Decode4@0x792327 (read before leaf dispatch)",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 2,
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "IDAComment": "leave/animated flag — sub_67BFED Decode1@0x67c002 (branched 0/2/3/4)",
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 2,
+  "Verdict": 0,
   "FlatInvalid": false
 }

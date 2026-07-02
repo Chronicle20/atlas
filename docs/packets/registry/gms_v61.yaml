@@ -925,9 +925,9 @@
 - op: SPAWN_SPECIAL_MAPOBJECT
   direction: clientbound
   opcode: 134
-  fname: sub_7922E8
+  fname: CSummonedPool::OnCreated
   fname_alts:
-  - CSummonedPool::OnCreated
+  - sub_7922E8
   provenance: manual
   ida:
     address: 7938792
@@ -935,9 +935,9 @@
 - op: REMOVE_SPECIAL_MAPOBJECT
   direction: clientbound
   opcode: 135
-  fname: sub_7922E8
+  fname: CSummonedPool::OnRemoved
   fname_alts:
-  - CSummonedPool::OnRemoved
+  - sub_7922E8
   provenance: manual
   ida:
     address: 7938792
@@ -945,9 +945,9 @@
 - op: MOVE_SUMMON
   direction: clientbound
   opcode: 136
-  fname: sub_67C37E
+  fname: CSummonedPool::OnMove
   fname_alts:
-  - CSummonedPool::OnMove
+  - sub_67C37E
   provenance: manual
   ida:
     address: 6800254
@@ -955,9 +955,9 @@
 - op: SUMMON_ATTACK
   direction: clientbound
   opcode: 137
-  fname: sub_67C39F
+  fname: CSummonedPool::OnAttack
   fname_alts:
-  - CSummonedPool::OnAttack
+  - sub_67C39F
   provenance: manual
   ida:
     address: 6800287
@@ -965,9 +965,9 @@
 - op: SUMMON_SKILL
   direction: clientbound
   opcode: 138
-  fname: sub_67C8D2
+  fname: CSummonedPool::OnSkill
   fname_alts:
-  - CSummonedPool::OnSkill
+  - sub_67C8D2
   provenance: manual
   ida:
     address: 6801618
@@ -975,9 +975,9 @@
 - op: DAMAGE_SUMMON
   direction: clientbound
   opcode: 139
-  fname: sub_67C936
+  fname: CSummonedPool::OnHit
   fname_alts:
-  - CSummonedPool::OnHit
+  - sub_67C936
   provenance: manual
   ida:
     address: 6801718

@@ -17,8 +17,10 @@ import (
 )
 
 func TestKafkaCreateCharacterIntegration(t *testing.T) {
-	// Setup test database
-	db := testDatabase(t)
+	// Setup test database. CreateAndEmit now enqueues via the outbox inside
+	// the same transaction as the character insert (task-114/Task 9), so the
+	// outbox table must exist or the transaction rolls back.
+	db := outboxTestDb(t)
 	tctx := tenant.WithContext(context.Background(), testTenant())
 	logger := testLogger()
 
@@ -230,7 +232,9 @@ func TestKafkaCreateCharacterIntegrationWithInvalidName(t *testing.T) {
 }
 
 func TestKafkaCreateCharacterIntegrationWithDuplicateName(t *testing.T) {
-	// Setup test database
+	// Setup test database. The duplicate-name CreateAndEmit call fails
+	// IsValidName before any transaction opens, so the plain (non-outbox)
+	// test database is sufficient here.
 	db := testDatabase(t)
 	tctx := tenant.WithContext(context.Background(), testTenant())
 	logger := testLogger()

@@ -1,0 +1,10 @@
+packet: npc/clientbound/NpcAskPetAllConversationDetail
+direction: clientbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: CScriptMan::OnAskPet
+    address: "0x640961"
+    decompile_sha256: a7694c3a8d8bd2b698b03513d850de496beb7cce33c9de5c8f76069fa9da8efc
+verifies:
+  - libs/atlas-packet/npc/clientbound/conversation_v61_details_test.go#TestNpcConversationAskPetAllV61

@@ -6613,13 +6613,36 @@
    ]
   },
   "CScriptMan::OnAskQuiz#AskQuiz": {
-   "address": "",
+   "address": "0x84816e",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": "fail flag"
+    },
+    {
+     "op": "DecodeStr",
+     "comment": "title (if !fail)"
+    },
+    {
+     "op": "DecodeStr",
+     "comment": "problem (if !fail)"
+    },
+    {
+     "op": "DecodeStr",
+     "comment": "hint (if !fail)"
+    },
+    {
+     "op": "Decode4",
+     "comment": "min (if !fail)"
+    },
+    {
+     "op": "Decode4",
+     "comment": "max (if !fail)"
+    },
+    {
+     "op": "Decode4",
+     "comment": "timeRemaining (if !fail)"
     }
    ]
   },
@@ -6635,13 +6658,32 @@
    ]
   },
   "CScriptMan::OnAskSpeedQuiz#AskSpeedQuiz": {
-   "address": "",
+   "address": "0x8482cb",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": "fail flag"
+    },
+    {
+     "op": "Decode4",
+     "comment": "type (if !fail)"
+    },
+    {
+     "op": "Decode4",
+     "comment": "answer (if !fail)"
+    },
+    {
+     "op": "Decode4",
+     "comment": "correct (if !fail)"
+    },
+    {
+     "op": "Decode4",
+     "comment": "remain (if !fail)"
+    },
+    {
+     "op": "Decode4",
+     "comment": "timeRemaining (if !fail)"
     }
    ]
   },

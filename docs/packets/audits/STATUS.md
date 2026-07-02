@@ -5,7 +5,7 @@
 
 Tool: `bfecda916f252908d2fafda8adbe41d5763d4a1e`
 
-- export gms_v61: `78d57c3e2bf2564983c462a21f3f5143242e5a39d9c060e41f33c25cd1475ee7`
+- export gms_v61: `b1e2d0a618c4f5c32a666df18d89ae5865d5b9f9be807164f3494227dd8aa91a`
 - export gms_v72: `a0ac2be6578395455f491976bcb11aa27e2e57376b46ee8816b90324bad60c02`
 - export gms_v79: `370d6b720b633c12c71d40340f3952000705c4bddb98f87179e7193d112d210c`
 - export gms_v83: `711bddcc2e1bdd417a75954148d2b50c64e70855e84259c0b8e50e700e393c0d`
@@ -552,7 +552,7 @@ Tool: `bfecda916f252908d2fafda8adbe41d5763d4a1e`
 | USE_DEATHITEM | CUserLocal::RequestUpgradeTombEffect |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x035 | ❌ | 0x035 | ❌ | 0x038 | ❌ | 0x03A | ❌ | 0x02D | ❌ |
 | UNNAMED_R74 |  |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x036 | ❌ | 0x036 | ❌ | 0x039 | ❌ | 0x03B | ❌ | 0x02E | ❌ |
 | UNNAMED_R75 |  |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x037 | ❌ | 0x037 | ❌ | 0x03A | ❌ | 0x03C | ❌ | 0x02F | ❌ |
-| NPC_TALK_MORE | CScriptMan::OnAskAvatar; CScriptMan::OnAskBoxText; CScriptMan::OnAskMembershopAvatar; CScriptMan::OnAskMenu; CScriptMan::OnAskNumber; CScriptMan::OnAskPet; CScriptMan::OnAskPetAll; CScriptMan::OnAskSlideMenu; CScriptMan::OnAskText; CScriptMan::OnAskYesNo; CScriptMan::OnSay; CScriptMan::OnSayImage; CUIInitialQuiz::SendResult; CUISpeedQuiz::SendResult | npc/serverbound/NpcContinueConversation (T1) | 0x038 | ❌ | 0x03B | ✅ | 0x03A | ✅ | 0x03C | ✅ | 0x03C | ✅ | 0x03F | ✅ | 0x041 | ✅ | 0x034 | ✅ |
+| NPC_TALK_MORE | CScriptMan::OnAskAvatar; CScriptMan::OnAskBoxText; CScriptMan::OnAskMembershopAvatar; CScriptMan::OnAskMenu; CScriptMan::OnAskNumber; CScriptMan::OnAskPet; CScriptMan::OnAskPetAll; CScriptMan::OnAskSlideMenu; CScriptMan::OnAskText; CScriptMan::OnAskYesNo; CScriptMan::OnSay; CScriptMan::OnSayImage; CUIInitialQuiz::SendResult; CUISpeedQuiz::SendResult | npc/clientbound/NpcAskMemberShopAvatarConversationDetail (T1) | 0x038 | ❌ | 0x03B | ✅ | 0x03A | ✅ | 0x03C | ✅ | 0x03C | ✅ | 0x03F | ✅ | 0x041 | ✅ | 0x034 | ✅ |
 | NPC_TALK | CNpc::ShowQuestList; CUserLocal::TalkToNpc; sub_644090 | npc/serverbound/NpcStartConversation (T1) | 0x039 | ❌ | 0x039 | ✅ | 0x038 | ✅ | 0x03A | ❌ | 0x03A | ❌ | 0x03D | ❌ | 0x03F | ❌ | 0x032 | ❌ |
 | REMOTE_STORE | CWvsContext::SendRemoteShopOpenRequest |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x03B | ❌ | 0x03B | ❌ | 0x03E | ❌ | 0x040 | ❌ | 0x033 | ❌ |
 | NPC_SHOP | CShopDlg::SendBuyRequest; CShopDlg::SendRechargeRequest; CShopDlg::SendSellRequest; CShopDlg::SetRet; sub_6744D9; sub_6D68A3 |  | 0x03C | ❌ | 0x03C | ❌ | 0x03B | ❌ | 0x03D | ❌ | 0x03D | ❌ | 0x040 | ❌ | 0x042 | ❌ | 0x035 | ❌ |
@@ -910,21 +910,21 @@ Tool: `bfecda916f252908d2fafda8adbe41d5763d4a1e`
 | note/serverbound/NoteOperation (T1) |  |  | ❌ |  | 🟡 |  | 🟡 |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | note/serverbound/NoteOperationDiscard (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |
 | note/serverbound/NoteOperationSend (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| npc/clientbound/NpcAskAvatarConversationDetail (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
-| npc/clientbound/NpcAskBoxTextConversationDetail (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
+| npc/clientbound/NpcAskAvatarConversationDetail (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
+| npc/clientbound/NpcAskBoxTextConversationDetail (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | npc/clientbound/NpcAskMemberShopAvatarConversationDetail (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |
-| npc/clientbound/NpcAskMenuConversationDetail (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
-| npc/clientbound/NpcAskNumberConversationDetail (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
-| npc/clientbound/NpcAskPetAllConversationDetail (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
+| npc/clientbound/NpcAskMenuConversationDetail (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
+| npc/clientbound/NpcAskNumberConversationDetail (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
+| npc/clientbound/NpcAskPetAllConversationDetail (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | npc/clientbound/NpcAskPetConversationDetail (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
-| npc/clientbound/NpcAskQuizConversationDetail (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
+| npc/clientbound/NpcAskQuizConversationDetail (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | npc/clientbound/NpcAskSlideMenuConversationDetail (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| npc/clientbound/NpcAskSpeedQuizConversationDetail (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
-| npc/clientbound/NpcAskTextConversationDetail (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
-| npc/clientbound/NpcAskYesNoConversationDetail (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
-| npc/clientbound/NpcNpcConversation (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
-| npc/clientbound/NpcSayConversationDetail (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
-| npc/clientbound/NpcSayImageConversationDetail (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
+| npc/clientbound/NpcAskSpeedQuizConversationDetail (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
+| npc/clientbound/NpcAskTextConversationDetail (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
+| npc/clientbound/NpcAskYesNoConversationDetail (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
+| npc/clientbound/NpcNpcConversation (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
+| npc/clientbound/NpcSayConversationDetail (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
+| npc/clientbound/NpcSayImageConversationDetail (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | npc/clientbound/NpcShopList (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | npc/serverbound/NpcContinueConversation (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
 | npc/serverbound/NpcContinueConversationSelection (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
@@ -954,7 +954,7 @@ Tool: `bfecda916f252908d2fafda8adbe41d5763d4a1e`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v61 | 110 | 0 | 62 | 295 | 454 | 0 | 23.6% |
+| v61 | 122 | 0 | 62 | 283 | 454 | 0 | 26.1% |
 | v72 | 216 | 0 | 73 | 218 | 414 | 0 | 42.6% |
 | v79 | 228 | 0 | 72 | 216 | 405 | 0 | 44.2% |
 | v83 | 367 | 0 | 0 | 347 | 207 | 0 | 51.4% |

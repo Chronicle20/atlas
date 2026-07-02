@@ -6509,13 +6509,20 @@
    ]
   },
   "CScriptMan::OnAskMenu#Selection": {
-   "address": "",
+   "address": "0x6403bc",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Encode1",
+     "comment": "msgType"
+    },
+    {
+     "op": "Encode1",
+     "comment": "result flag"
+    },
+    {
+     "op": "Encode1",
+     "comment": "selection index"
     }
    ]
   },
@@ -6726,13 +6733,20 @@
    ]
   },
   "CScriptMan::OnAskText#Reply": {
-   "address": "",
+   "address": "0x63ff86",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Encode1",
+     "comment": "msgType"
+    },
+    {
+     "op": "Encode1",
+     "comment": "result flag"
+    },
+    {
+     "op": "EncodeStr",
+     "comment": "text"
     }
    ]
   },
@@ -6798,13 +6812,16 @@
    ]
   },
   "CScriptMan::OnSay#Reply": {
-   "address": "",
+   "address": "0x63fb44",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Encode1",
+     "comment": "lastMessageType (0)"
+    },
+    {
+     "op": "Encode1",
+     "comment": "action"
     }
    ]
   },

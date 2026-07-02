@@ -425,6 +425,7 @@ func (c *modelBuilder) Build() Model {
 		spawnPoint:         c.spawnPoint,
 		gm:                 c.gm,
 		meso:               c.meso,
+		hpMpUsed:           c.hpMpUsed,
 		skills:             c.skills,
 	}
 }

@@ -107,67 +107,75 @@ CWvsContext item/ability cluster is Δ0.
   `ida.address` = the COutPacket-ctor harvest anchor; the per-op note names the v61
   sender and the COutPacket(N) literal).
 
-### Serverbound REMAINING (43 — clean partial; send-site read pending)
+### Serverbound COMPLETION (the 43 remaining — RESOLVED Stage B2)
 
-These v72 serverbound ops have their v61 sender **inlined or renamed to an
-unnamed `sub_XXXX`** so the name-join did not resolve them, and the harvested
-opcode at the analogous slot is **ambiguous** (multiple candidate senders / a
-displaced cluster) — resolving each requires decompiling the specific v61 sender
-and reading its `COutPacket(N)` + body. **Not fabricated; not blind-shifted.**
-Anchors already prove the region deltas, but each of these must be confirmed from
-its own send-site before seeding.
+The 43 remaining ops were resolved by **body-signature matching**, not
+name-join or blind-shift. Method: harvested v72's `COutPacket(N)` encode-sequence
+per opcode (ground truth from `gms_v72.yaml`'s verified opcodes), harvested v61's
+full opcode→(fname, encode-signature) map from the ctor (`0x5ffc4f`), then matched
+each v72 op to the v61 opcode whose **body signature** matches — never the symbol
+label. This caught the "name trap" repeatedly (v61 op92 = CheckPortal_Collision =
+CHANGE_MAP_SPECIAL, NOT SKILL_EFFECT which is op85; v61 op85 body `[E4,E1,E1,E1]`
+matches v72 SKILL_EFFECT). Where a v61 function keeps the same demangled name in
+both IDBs (CheckPortal_Collision, TryEnterTownPortal, CField_Coconut::BasicActionAttack,
+CCashShop::TrySendQueryCashRequest), that confirmed identity directly.
 
-| v72 op | v72 opcode | v72 fname |
-|---|---|---|
-| `CANCEL_CHAIR` | 41 | `CUserLocal::HandleXKeyDown` |
-| `USE_CHAIR` | 42 | `CWvsContext::SendSitOnPortableChairRequest` |
-| `CLOSE_RANGE_ATTACK` | 43 | `CUserLocal::TryDoingMeleeAttack` |
-| `MAGIC_ATTACK` | 45 | `CUserLocal::TryDoingMagicAttack` |
-| `TAKE_DAMAGE` | 47 | `CUserLocal::Update` |
-| `GENERAL_CHAT` | 48 | `CField::SendChatMsg` |
-| `CLOSE_CHALKBOARD` | 49 | `CUserLocal::HandleLButtonClk` |
-| `MONSTER_BOOK_COVER` | 56 | `CUserLocal::SetMonsterBookCover` |
-| `ITEM_SORT2` | 69 | `CWvsContext::SendSortItemRequest` |
-| `USE_RETURN_SCROLL` | 84 | `CWvsContext::SendMapTransferItemUseRequest` |
-| `USE_UPGRADE_SCROLL` | 85 | `CWvsContext::SendUpgradeItemUseRequest` |
-| `SKILL_EFFECT` | 92 | `CUserLocal::DoActiveSkill_Prepare` |
-| `MESO_DROP` | 93 | `CWvsContext::SendDropMoneyRequest` |
-| `SPAWN_PET` | 97 | `CWvsContext::SendActivatePetRequest` |
-| `CHANGE_MAP_SPECIAL` | 99 | `CUserLocal::HandleUpKeyDown` |
-| `SUE_CHARACTER` | 113 | `CField::SendChatMsgSlash` |
-| `ADMIN_CHAT` | 116 | `CField::SendChatMsgSlash` |
-| `WHISPER` | 118 | `CField::SendChatMsgWhisper` |
-| `SPOUSE_CHAT` | 119 | `CUIStatusBar::SendCoupleMessage` |
-| `MESSENGER` | 120 | `CFadeWnd::SendCloseMessage` |
-| `DENY_GUILD_REQUEST` | 125 | `CFadeWnd::SendCloseMessage` |
-| `ADMIN_COMMAND` | 126 | `CField::SendChatMsgSlash` |
-| `ADMIN_LOG` | 127 | `CField::SendChatMsgSlash` |
-| `USE_DOOR` | 131 | `CField::TryEnterTownPortal` |
-| `BBS_OPERATION` | 153 | `CUIGuildBBS::SendLoadListRequest` |
-| `MOVE_PET` | 161 | `CVecCtrlPet::EndUpdateActive` |
-| `PET_COMMAND` | 163 | `CPet::ParseCommand` |
-| `PET_LOOT` | 164 | `CPet::SendDropPickUpRequest` |
-| `PET_EXCLUDE_ITEMS` | 166 | `CPet::SendUpdateExceptionListRequest` |
-| `SUMMON_ATTACK` | 170 | `CSummoned::TryDoingAttackManual` |
-| `DAMAGE_SUMMON` | 171 | `CSummoned::SetDamaged` |
-| `MOVE_LIFE` | 178 | `CMob::GenerateMovePath` |
-| `MOB_DROP_PICKUP_REQUEST` | 180 | `CMob::SendDropPickUpRequest` |
-| `FIELD_DAMAGE_MOB` | 181 | `CMob::Update` |
-| `MOB_DAMAGE_MOB_FRIENDLY` | 182 | `CMob::Update` |
-| `MONSTER_BOMB` | 183 | `CMob::TryFirstSelfDestruction` |
-| `MOB_DAMAGE_MOB` | 184 | `CMob::SetDamagedByMob` |
-| `ITEM_PICKUP` | 192 | `CWvsContext::SendDropPickUpRequest` |
-| `COCONUT` | 203 | `CField_Coconut::BasicActionAttack` |
-| `MATCH_TABLE` | 204 | `CField::SendChatMsgSlash` |
-| `MONSTER_CARNIVAL` | 208 | `CUIMonsterCarnival::RequestSend` |
-| `CHECK_CASH` | 218 | `CCashShop::TrySendQueryCashRequest` |
-| `CASHSHOP_OPERATION` | 219 | `CCashShop::RequestCashPurchaseRecord` |
+**38 RESOLVED** (v61 opcode ← v72 opcode):
+CANCEL_CHAIR=39, USE_CHAIR=40, CLOSE_RANGE_ATTACK=41, MAGIC_ATTACK=43,
+TAKE_DAMAGE=45, GENERAL_CHAT=46, CLOSE_CHALKBOARD=47, MONSTER_BOOK_COVER=53,
+ITEM_SORT2=69, USE_RETURN_SCROLL=78, USE_UPGRADE_SCROLL=79, MESO_DROP=82,
+SKILL_EFFECT=85, CHANGE_MAP_SPECIAL=92, SUE_CHARACTER=104, WHISPER=108,
+SPOUSE_CHAT=109, MESSENGER=110, USE_DOOR=121, ADMIN_COMMAND=126, BBS_OPERATION=134,
+MOVE_PET=138, PET_COMMAND=140, PET_LOOT=141, PET_EXCLUDE_ITEMS=143,
+SUMMON_ATTACK=147, DAMAGE_SUMMON=148, MOVE_LIFE=155, MOB_DROP_PICKUP_REQUEST=157,
+FIELD_DAMAGE_MOB=158, MOB_DAMAGE_MOB_FRIENDLY=159, MONSTER_BOMB=160,
+MOB_DAMAGE_MOB=161, ITEM_PICKUP=169, COCONUT=178, MONSTER_CARNIVAL=183,
+CHECK_CASH=195, CASHSHOP_OPERATION=196. Each entry's `note` quotes the
+`COutPacket(N)` + encode body and cites the send-site address.
 
-Resolution recipe (per remaining op): `func_query` the v61 caller (or the
-clientbound handler that pairs with it), `xrefs_to 0x5ffc4f` within its range,
-read the `push imm` feeding the ctor → v61 opcode; body-confirm against the v72
-send-order. The core-flow attack cluster (41-49), chat family (GENERAL_CHAT/WHISPER/
-SPOUSE_CHAT/admin), and the pet/mob/summon send families are the priority set.
+**3 pre-existing blind-inheritance mislabels CORRECTED** (the earlier Stage-B pass
+had assigned these v61 opcodes the *op-name of the v72 opcode with the same number*
+— exactly the trap the delta doc warned against; body evidence overturns them):
+
+| existing entry (WRONG) | v61 opcode | true identity (body-verified) | correction |
+|---|---|---|---|
+| `SKILL_MACRO=109` | 109 | `[Str,Str]` from `CUIStatusBar::OnKey` = couple msg | → **SPOUSE_CHAT=109** |
+| `PLAYER_INTERACTION=121` | 121 | `GetPartyTownPortal`+`Encode4(map)+Encode1` = door | → **USE_DOOR=121** |
+| `MOVE_SUMMON=169` | 169 | `[E1,E4,E2,E2,E4]` inventory region, no movepath | → **ITEM_PICKUP=169** |
+
+The true opcodes for the displaced ops were then located and **added**:
+`PLAYER_INTERACTION=111` (the miniroom/trade/entrusted-shop dispatcher, dozens of
+`COutPacket(111)+Encode1(mode)` sub-senders) and `MOVE_SUMMON=146` (`Encode4(summonId)+
+CMovePath::Flush`, contiguous with SUMMON_ATTACK 147 / DAMAGE_SUMMON 148, Δ-23).
+`SKILL_MACRO`'s true v61 send-site was **not located** (see flagged, below).
+
+**4 DROPPED-ABSENT (IDA evidence):**
+- `ADMIN_CHAT` (v72 116) — v72 body is a multi-line `[E1,E1,Str]×N` GM notice; **no
+  v61 opcode carries that repeated pattern**. v61 GM chat is the single
+  ADMIN_COMMAND=126 packet.
+- `ADMIN_LOG` (v72 127) — v61 opcode 127 is `WEDDING_ACTION`; no standalone `[Str]`
+  GM-log sender exists in v61.
+- `MATCH_TABLE` (v72 204) — v61 opcode 204 = `sub_70AE2E [E2,E4,E4,E4]` (a
+  VARIANTARG script-field event), not the v72 `[E1]` match-table; no `[E1]`
+  match-table sender found.
+- `DENY_GUILD_REQUEST` (v72 125) — v61 opcode 125 is the marriage-decline family
+  (`sub_837578` etc); the guild decline is folded into `GUILD_OPERATION=114`
+  (`OnGuildResult` reply), no separate opcode.
+
+**2 FLAGGED-UNRESOLVABLE:**
+- `SPAWN_PET` (v72 97, `SendActivatePetRequest`, body `[E4,E2,E1]`). Searched: the
+  full ctor-xref harvest (no push/mov-imm resolves to a pet-activate), every
+  `*Pet*`-named ctor caller (only DoAction/PET_CHAT, PetQ/PET_AUTO_POT — no
+  activate), and every v61 opcode with signature `[E4,E2,E1]` (only op90 =
+  SPECIAL_MOVE, `CSkillInfo::GetSkillLevel` skill-cast — not pet). Pets are
+  otherwise fully present (MOVE_PET/PET_CHAT/PET_LOOT/PET_AUTO_POT/PET_COMMAND/
+  PET_EXCLUDE all resolved). The activate sender is either inlined with a
+  runtime-computed opcode or absent from the harvest reach; needs a live capture
+  or wider-window disasm to confirm — not fabricated.
+- `SKILL_MACRO` (v72 109) — displaced when op109 was corrected to SPOUSE_CHAT; the
+  v61 skill-macro-save send (`[Str,E1]×N`) was not located (only
+  `CFuncKeyMappedMan::SaveFuncKeyMap`=CHANGE_KEYMAP=123 exists among
+  FuncKey/Macro-named senders). Likely client-only or inlined in v61.
 
 ## Run record
 
@@ -175,6 +183,10 @@ SPOUSE_CHAT/admin), and the pet/mob/summon send families are the priority set.
 - Clientbound `--apply` harvested 140 numeric-switch ops (CNpcPool held out for the
   0x4E gate); 80 manual entries added by hand-decompile. Total 220.
 - Serverbound COutPacket-ctor harvest (@0x5ffc4f) → 353 caller functions; 69 mapped
-  to v72 serverbound FNames and registered; 43 remaining (above).
-- Registry `gms_v61.yaml`: **289 entries** (220 clientbound + 69 serverbound).
-  YAML self-validates; no duplicate opcodes within either direction.
+  by FName-join (Stage B). Stage B2 resolved the 43 remaining by **body-signature
+  matching against v72's verified opcodes**: 38 resolved, 3 pre-existing mislabels
+  corrected (+2 displaced-op additions), 4 dropped-absent, 2 flagged (SPAWN_PET,
+  SKILL_MACRO).
+- Registry `gms_v61.yaml`: **326 entries** (220 clientbound + 106 serverbound).
+  YAML self-validates; no duplicate opcodes within either direction (verified by
+  parse + per-direction opcode Counter).

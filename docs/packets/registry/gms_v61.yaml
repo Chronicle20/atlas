@@ -2019,14 +2019,14 @@
   ida:
     address: 6291023
   note: 'v61 send-site harvest (COutPacket ctor @0x5ffc4f): CQuest::StartQuest. COutPacket(98); Δ-8 vs v72 op106.'
-- op: SKILL_MACRO
+- op: SPOUSE_CHAT
   direction: serverbound
   opcode: 109
   fname: sub_744528
   provenance: ida-discovered
   ida:
-    address: 6291023
-  note: 'v61 send-site harvest (COutPacket ctor @0x5ffc4f): sub_744528. COutPacket(109); Δ0 vs v72.'
+    address: 7620024
+  note: 'v61 send-site (0x7445b8, CUIStatusBar region, called from CUIStatusBar::OnKey): COutPacket(109)+EncodeStr(target)+EncodeStr(msg). Body-verified = CUIStatusBar::SendCoupleMessage (v72 SPOUSE_CHAT=119, sub_7F4651, identical [Str,Str]/OnKey profile). CORRECTS prior blind-inheritance mislabel SKILL_MACRO=109 (v72 opcode-number join); v61 SKILL_MACRO send-site not located (see discover doc).'
 - op: MULTI_CHAT
   direction: serverbound
   opcode: 107
@@ -2035,14 +2035,14 @@
   ida:
     address: 6291023
   note: 'v61 send-site harvest (COutPacket ctor @0x5ffc4f): CUIStatusBar::SendGroupMessage. COutPacket(107); Δ-10 vs v72 op117.'
-- op: PLAYER_INTERACTION
+- op: USE_DOOR
   direction: serverbound
   opcode: 121
-  fname: sub_4EF641
+  fname: CField::TryEnterTownPortal
   provenance: ida-discovered
   ida:
-    address: 6291023
-  note: 'v61 send-site harvest (COutPacket ctor @0x5ffc4f): sub_4EF641/sub_68734F. COutPacket(121); Δ0 vs v72.'
+    address: 5175061
+  note: 'v61 send-site (0x4ef715 CField::TryEnterTownPortal via CWvsContext::GetPartyTownPortal, + CTownPortalPool sub_68734F @0x6873f2): COutPacket(121)+Encode4(mapId)+Encode1(portalIdx). Body-verified door/town-portal (v72 USE_DOOR=131 TryEnterTownPortal [E4,E1,E4,E1]/[E4,E1]). CORRECTS prior blind-inheritance mislabel PLAYER_INTERACTION=121; true PLAYER_INTERACTION=111 (added).'
 - op: NOTE_ACTION
   direction: serverbound
   opcode: 119
@@ -2131,14 +2131,14 @@
   ida:
     address: 6291023
   note: 'v61 send-site harvest (COutPacket ctor @0x5ffc4f): CWvsContext::SendStatChangeItemUseRequestByPetQ. COutPacket(142); Δ-23 vs v72 op165.'
-- op: MOVE_SUMMON
+- op: ITEM_PICKUP
   direction: serverbound
   opcode: 169
   fname: sub_8316B8
   provenance: ida-discovered
   ida:
-    address: 6291023
-  note: 'v61 send-site harvest (COutPacket ctor @0x5ffc4f): sub_8316B8. COutPacket(169), CWvsContext summon region; Δ0 vs v72.'
+    address: 8591109
+  note: 'v61 send-site (0x831705, CWvsContext inventory region between op66/op67 senders): COutPacket(169)+Encode1+Encode4+Encode2(x)+Encode2(y)+Encode4(dropId). EXACT match to v72 ITEM_PICKUP=192 (sub_903B77 [E1,E4,E2,E2,E4]); no movepath so NOT a move. CORRECTS prior blind-inheritance mislabel MOVE_SUMMON=169; true MOVE_SUMMON=146 (added).'
 - op: NPC_ACTION
   direction: serverbound
   opcode: 164
@@ -2235,3 +2235,299 @@
   ida:
     address: 6291023
   note: 'v61 send-site harvest (COutPacket ctor @0x5ffc4f): sub_832680 COutPacket(76), CWvsContext item region; Δ0 vs v72.'
+- op: CANCEL_CHAIR
+  direction: serverbound
+  opcode: 39
+  fname: CWvsContext::SendGetUpFromChairRequest
+  provenance: ida-discovered
+  ida:
+    address: 8615203
+  note: 'v61 send-site (0x837523): COutPacket(39)+Encode2(0xFFFF). get-up-from-chair = v72 CANCEL_CHAIR=41 (Δ-2).'
+- op: USE_CHAIR
+  direction: serverbound
+  opcode: 40
+  fname: sub_8372C1
+  provenance: ida-discovered
+  ida:
+    address: 8614839
+  note: 'v61 send-site (0x8373b7, CWvsContext, adjacent to SendGetUpFromChairRequest): COutPacket(40)+Encode4(chairItemId) = SendSitOnPortableChairRequest, v72 USE_CHAIR=42 (Δ-2).'
+- op: CLOSE_RANGE_ATTACK
+  direction: serverbound
+  opcode: 41
+  fname: sub_7A45F1
+  provenance: ida-discovered
+  ida:
+    address: 8018814
+  note: 'v61 send-site (0x7a5b7e, CUserLocal): COutPacket(41)+attack body (Enc1 count/dmg + per-target dmg + Enc2 x/y). Melee = v72 CLOSE_RANGE_ATTACK=43 (Δ-2); sits directly before TryDoingShootAttack(42).'
+- op: MAGIC_ATTACK
+  direction: serverbound
+  opcode: 43
+  fname: sub_7A8572
+  provenance: ida-discovered
+  ida:
+    address: 8034011
+  note: 'v61 send-site (0x7a96db, CUserLocal): COutPacket(43)+attack body. Magic = v72 MAGIC_ATTACK=45 (Δ-2); between shoot(42) and body(44).'
+- op: TAKE_DAMAGE
+  direction: serverbound
+  opcode: 45
+  fname: CUserLocal::Update
+  provenance: ida-discovered
+  ida:
+    address: 7997824
+  note: 'v61 send-site (0x7a0980, CUserLocal::Update): COutPacket(45)+Encode4+Encode1(0xFE)+Encode1(type)+Encode4+Encode2. v72 TAKE_DAMAGE=47 (Δ-2).'
+- op: GENERAL_CHAT
+  direction: serverbound
+  opcode: 46
+  fname: sub_4E7469
+  provenance: ida-discovered
+  ida:
+    address: 5145749
+  note: 'v61 send-site (0x4e8495, CField chat-input parser): COutPacket(46)+EncodeStr(msg)+Encode1(showFlag). Fallthrough normal chat = v72 GENERAL_CHAT=48 (Δ-2).'
+- op: CLOSE_CHALKBOARD
+  direction: serverbound
+  opcode: 47
+  fname: sub_7A3981
+  provenance: ida-discovered
+  ida:
+    address: 8010172
+  note: 'v61 send-site (0x7a39bc, CUserLocal): COutPacket(47) empty (HandleLButtonClk close chalkboard). v72 CLOSE_CHALKBOARD=49 (Δ-2).'
+- op: MONSTER_BOOK_COVER
+  direction: serverbound
+  opcode: 53
+  fname: sub_6E78F2
+  provenance: ida-discovered
+  ida:
+    address: 7239970
+  note: 'v61 send-site (0x6e7922): COutPacket(53)+Encode4(coverCardId). v72 MONSTER_BOOK_COVER=56 (Δ-3, matches MOB_BANISH=52 Δ-3).'
+- op: ITEM_SORT2
+  direction: serverbound
+  opcode: 69
+  fname: CWvsContext::TryRecovery
+  provenance: ida-discovered
+  ida:
+    address: 8573700
+  note: 'v61 send-site (0x82d304): COutPacket(69) empty body. Opcode-adjacent to ITEM_SORT=68 (v72 ITEM_SORT2=69, Δ0). NOTE: v61 body is empty vs v72 [E4,E1] — v61 sort-request carries no args (server sorts active tab). fname label unreliable (harvest).'
+- op: USE_RETURN_SCROLL
+  direction: serverbound
+  opcode: 78
+  fname: sub_841AA5
+  provenance: ida-discovered
+  ida:
+    address: 8658104
+  note: 'v61 send-site (0x841cb8, CWvsContext item region): COutPacket(78)+Encode4(time)+Encode2(useSlot)+Encode4(targetMap) = SendMapTransferItemUseRequest, v72 USE_RETURN_SCROLL=84 (Δ-6).'
+- op: USE_UPGRADE_SCROLL
+  direction: serverbound
+  opcode: 79
+  fname: sub_8317A4
+  provenance: ida-discovered
+  ida:
+    address: 8591311
+  note: 'v61 send-site (0x8317cf, CWvsContext item region): COutPacket(79)+Encode4(time)+Encode2(useSlot)+Encode2(eqSlot)+Encode2(whiteScroll)+Encode1 = SendUpgradeItemUseRequest, v72 USE_UPGRADE_SCROLL=85 (Δ-6).'
+- op: MESO_DROP
+  direction: serverbound
+  opcode: 82
+  fname: sub_8458EB
+  provenance: ida-discovered
+  ida:
+    address: 8673554
+  note: 'v61 send-site (0x845912, CWvsContext): COutPacket(82)+Encode4(crc/time)+Encode4(amount); caller sub_7201E6 reads CharacterData + amount = SendDropMoneyRequest, v72 MESO_DROP=93. (op80 [E4,E4] is a stat-flag packet, not meso.)'
+- op: SKILL_EFFECT
+  direction: serverbound
+  opcode: 85
+  fname: sub_7B8001
+  provenance: ida-discovered
+  ida:
+    address: 8095505
+  note: 'v61 send-site (0x7b8711, CUserLocal): COutPacket(85)+Encode4(skillId)+Encode1(level)+Encode1(keydir)+Encode1. EXACT match to v72 SKILL_EFFECT=92 (DoActiveSkill_Prepare [E4,E1,E1,E1]); Δ-7.'
+- op: CHANGE_MAP_SPECIAL
+  direction: serverbound
+  opcode: 92
+  fname: CUserLocal::CheckPortal_Collision
+  provenance: ida-discovered
+  ida:
+    address: 8005887
+  note: 'v61 send-site (0x7a28ff CheckPortal_Collision + sub_7A2A64): COutPacket(92)+Encode1(fieldKey)+EncodeStr(portalName)+Encode2(x)+Encode2(y). Same CheckPortal_Collision function builds this op in BOTH v61(92) and v72(99=CHANGE_MAP_SPECIAL); Δ-7. Name-trap avoided: NOT SKILL_EFFECT.'
+- op: SUE_CHARACTER
+  direction: serverbound
+  opcode: 104
+  fname: sub_849F27
+  provenance: ida-discovered
+  ida:
+    address: 8691673
+  note: 'v61 send-site (0x849fd9, CWvsContext): COutPacket(104)+Encode4(charId)+Encode1(type)+EncodeStr(reason). Matches v72 SUE_CHARACTER=113 (SendChatMsgSlash [E4,E1,Str]).'
+- op: WHISPER
+  direction: serverbound
+  opcode: 108
+  fname: sub_4E8635
+  provenance: ida-discovered
+  ida:
+    address: 5146336
+  note: 'v61 send-site (0x4e86e0, called from CField chat parser cmd): COutPacket(108)+Encode1(mode=(!v9+1)|4 find/whisper)+EncodeStr(target)+EncodeStr(msg). v72 WHISPER=118. Resolves the Stage-A UNVERIFIED whisper flag.'
+- op: MESSENGER
+  direction: serverbound
+  opcode: 110
+  fname: sub_6D3765
+  provenance: ida-discovered
+  ida:
+    address: 7157739
+  note: 'v61 send-site (0x6d37eb, CUIMessenger region 0x6D....): COutPacket(110)+Encode1(mode)+EncodeStr+EncodeStr+Encode1 (messenger open/invite/chat family; multiple 0x6D senders share op110). v72 MESSENGER=120 (Δ-10).'
+- op: ADMIN_COMMAND
+  direction: serverbound
+  opcode: 126
+  fname: sub_80C896
+  provenance: ida-discovered
+  ida:
+    address: 8439981
+  note: 'v61 send-site (0x80c8ad + sub_80DA28/80E60F/80F492, CField GM region): COutPacket(126)+Encode1(cmdType). GM slash-command = v72 ADMIN_COMMAND=126 (Δ0).'
+- op: BBS_OPERATION
+  direction: serverbound
+  opcode: 134
+  fname: sub_6BB129
+  provenance: ida-discovered
+  ida:
+    address: 7057965
+  note: 'v61 send-site (0x6bb22d, CUIGuildBBS): COutPacket(134)+Encode1+Encode1+Encode4+Encode1+EncodeStr+EncodeStr+Encode4. EXACT match to v72 BBS_OPERATION=153 (SendLoadListRequest); Δ-19. Sub-ops share op134.'
+- op: MOVE_PET
+  direction: serverbound
+  opcode: 138
+  fname: sub_7FBB76
+  provenance: ida-discovered
+  ida:
+    address: 8371109
+  note: 'v61 send-site (0x7fbba5): COutPacket(138)+EncodeBuffer(pos,8)+CMovePath::Flush. v72 MOVE_PET=161 (Δ-23).'
+- op: PET_COMMAND
+  direction: serverbound
+  opcode: 140
+  fname: sub_613B18
+  provenance: ida-discovered
+  ida:
+    address: 6372689
+  note: 'v61 send-site (0x613d51, CPet): COutPacket(140)+EncodeBuffer(8)+Encode1+Encode1. Matches v72 PET_COMMAND=163 [EncBuf,E1,E1]; Δ-23.'
+- op: PET_LOOT
+  direction: serverbound
+  opcode: 141
+  fname: sub_6149DB
+  provenance: ida-discovered
+  ida:
+    address: 6375926
+  note: 'v61 send-site (0x6149f6, CPet): COutPacket(141)+EncodeBuffer(8)+Encode1+Encode4+Encode2+Encode2+Encode4+Encode1+Encode1+Encode1. EXACT match to v72 PET_LOOT=164; Δ-23.'
+- op: PET_EXCLUDE_ITEMS
+  direction: serverbound
+  opcode: 143
+  fname: sub_61504D
+  provenance: ida-discovered
+  ida:
+    address: 6377576
+  note: 'v61 send-site (0x615068, CPet): COutPacket(143)+EncodeBuffer(8)+Encode1(count)+Encode4(loop). Matches v72 PET_EXCLUDE_ITEMS=166 [EncBuf,E1,E4]; Δ-23.'
+- op: SUMMON_ATTACK
+  direction: serverbound
+  opcode: 147
+  fname: sub_67A9CA
+  provenance: ida-discovered
+  ida:
+    address: 6796170
+  note: 'v61 send-site (0x67b38a, CSummoned region 0x67....): COutPacket(147)+full attack body. EXACT 17-field match to v72 SUMMON_ATTACK=170; Δ-23. Contiguous with DAMAGE_SUMMON(148)/MOVE_SUMMON(146).'
+- op: DAMAGE_SUMMON
+  direction: serverbound
+  opcode: 148
+  fname: sub_67BB40
+  provenance: ida-discovered
+  ida:
+    address: 6798724
+  note: 'v61 send-site (0x67bd84, CSummoned): COutPacket(148)+Encode4+Encode1+Encode4+Encode4+Encode1+Encode1+Encode4. EXACT match to v72 DAMAGE_SUMMON=171; Δ-23.'
+- op: MOVE_SUMMON
+  direction: serverbound
+  opcode: 146
+  fname: sub_7FE86B
+  provenance: ida-discovered
+  ida:
+    address: 8382639
+  note: 'v61 send-site (0x7fe8af, movement-flush region next to MOVE_PET): COutPacket(146)+Encode4(summonId)+CMovePath::Flush. v72 MOVE_SUMMON=169 (Δ-23); contiguous with SUMMON_ATTACK(147)/DAMAGE_SUMMON(148). CORRECTS prior mislabel MOVE_SUMMON=169 (=ITEM_PICKUP).'
+- op: PLAYER_INTERACTION
+  direction: serverbound
+  opcode: 111
+  fname: sub_4EF97F
+  provenance: ida-discovered
+  ida:
+    address: 5175703
+  note: 'v61 op111 dispatcher: dozens of miniroom/trade/entrusted-shop/minigame sub-action senders (0x4d9..,0x5af..,0x5bf.. CMiniRoomBaseDlg::SendInviteResult,0x5f..,0x60..,0x68..) all COutPacket(111)+Encode1(mode)+... = the CFieldMiniRoom/PLAYER_INTERACTION family. v72 PLAYER_INTERACTION=121 (Δ-10). CORRECTS prior mislabel PLAYER_INTERACTION=121 (=USE_DOOR).'
+- op: MOVE_LIFE
+  direction: serverbound
+  opcode: 155
+  fname: sub_5CADA5
+  provenance: ida-discovered
+  ida:
+    address: 6075050
+  note: 'v61 send-site (0x5cb2aa, CMob controller): COutPacket(155)+Encode4(mobId)+Encode2+Encode1+Encode1+Encode4+Encode1+Encode4+CMovePath::Flush. Matches v72 MOVE_LIFE=178 (CMob::GenerateMovePath); Δ-23.'
+- op: MOB_DROP_PICKUP_REQUEST
+  direction: serverbound
+  opcode: 157
+  fname: sub_5CD6D2
+  provenance: ida-discovered
+  ida:
+    address: 6084430
+  note: 'v61 send-site (0x5cd74e, CMob): COutPacket(157)+Encode4+Encode4. v72 MOB_DROP_PICKUP_REQUEST=180 (CMob::SendDropPickUpRequest [E4,E4]); Δ-23.'
+- op: FIELD_DAMAGE_MOB
+  direction: serverbound
+  opcode: 158
+  fname: sub_5C71B7
+  provenance: ida-discovered
+  ida:
+    address: 6060213
+  note: 'v61 send-site (0x5c78b5, CMob): COutPacket(158)+Encode4+Encode4. v72 FIELD_DAMAGE_MOB=181 [E4,E4]; Δ-23.'
+- op: MOB_DAMAGE_MOB_FRIENDLY
+  direction: serverbound
+  opcode: 159
+  fname: sub_5C71B7
+  provenance: ida-discovered
+  ida:
+    address: 6060707
+  note: 'v61 send-site (0x5c7aa3, same fn as 158): COutPacket(159)+Encode4+Encode4+Encode4. v72 MOB_DAMAGE_MOB_FRIENDLY=182 [E4,E4,E4]; Δ-23.'
+- op: MONSTER_BOMB
+  direction: serverbound
+  opcode: 160
+  fname: sub_5CD3FD
+  provenance: ida-discovered
+  ida:
+    address: 6083877
+  note: 'v61 send-site (0x5cd525, CMob): COutPacket(160)+Encode4(mobId). Self-destruct = v72 MONSTER_BOMB=183 (CMob::TryFirstSelfDestruction [E4]); Δ-23.'
+- op: MOB_DAMAGE_MOB
+  direction: serverbound
+  opcode: 161
+  fname: sub_5CED89
+  provenance: ida-discovered
+  ida:
+    address: 6090666
+  note: 'v61 send-site (0x5cefaa, CMob): COutPacket(161)+Encode4+Encode4+Encode4+Encode1+Encode4+Encode1+Encode2+Encode2. EXACT match to v72 MOB_DAMAGE_MOB=184 (CMob::SetDamagedByMob); Δ-23.'
+- op: COCONUT
+  direction: serverbound
+  opcode: 178
+  fname: CField_Coconut::BasicActionAttack
+  provenance: ida-discovered
+  ida:
+    address: 5215198
+  note: 'v61 send-site (0x4f93de): COutPacket(178)+Encode2(x)+Encode2(y). v72 COCONUT=203 (CField_Coconut::BasicActionAttack [E2,E2]); Δ-25 (matches SnowBall 176/177, GuildBoss 180 field-object family).'
+- op: MONSTER_CARNIVAL
+  direction: serverbound
+  opcode: 183
+  fname: sub_6F0D5F
+  provenance: ida-discovered
+  ida:
+    address: 7277967
+  note: 'v61 send-site (0x6f0d8f, 3 caller sub_6F0457/6F0518/6F0DFA): COutPacket(183)+Encode1(type)+Encode4(*(this+2792)-1). EXACT structural match to v72 MONSTER_CARNIVAL=208 (sub_7966CD Encode1+Encode4(*(this+2892)-1), 3 callers). CClassCompetition/carnival family.'
+- op: CHECK_CASH
+  direction: serverbound
+  opcode: 195
+  fname: CCashShop::TrySendQueryCashRequest
+  provenance: ida-discovered
+  ida:
+    address: 4572002
+  note: 'v61 send-site (0x45c362, CCashShop): COutPacket(195) empty query. v72 CHECK_CASH=218 (TrySendQueryCashRequest, empty); Δ-23.'
+- op: CASHSHOP_OPERATION
+  direction: serverbound
+  opcode: 196
+  fname: CCashShop::SendBuyAvatarPacket
+  provenance: ida-discovered
+  ida:
+    address: 4549752
+  note: 'v61 op196: CCashShop cash-purchase family (SendBuyAvatarPacket/OnBuy/OnBuyCouple/OnGift/OnBuyNormal/OnIncCharacterSlotCount/... all COutPacket(196)+Encode1(sub-op)+...). v72 CASHSHOP_OPERATION=219 (Δ-23).'

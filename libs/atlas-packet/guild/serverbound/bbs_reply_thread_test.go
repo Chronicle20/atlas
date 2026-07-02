@@ -15,6 +15,8 @@ import (
 // v84 OnComment COutPacket(0x9F)+Encode1(4)+Encode4(threadId)+EncodeStr(message), IDA-verified.
 // packet-audit:verify packet=guild/serverbound/GuildBBSReplyThread version=gms_v84 ida=0x841c2b
 // packet-audit:verify packet=guild/serverbound/GuildBBSReplyThread version=jms_v185 ida=ABSENT
+// v61 COutPacket(134)+Encode1(4=REPLY)+Encode4(threadId)+EncodeStr(message); body=Encode4+EncodeStr, == v72/v83 (CUIGuildBBS::OnComment @0x6bb3c4).
+// packet-audit:verify packet=guild/serverbound/GuildBBSReplyThread version=gms_v61 ida=0x6bb3c4
 func TestBBSReplyThreadRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

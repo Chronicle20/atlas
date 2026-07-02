@@ -2386,7 +2386,7 @@
   provenance: ida-discovered
   ida:
     address: 7057965
-  note: 'v61 send-site (0x6bb22d, CUIGuildBBS): COutPacket(134)+Encode1+Encode1+Encode4+Encode1+EncodeStr+EncodeStr+Encode4. EXACT match to v72 BBS_OPERATION=153 (SendLoadListRequest); Δ-19. Sub-ops share op134.'
+  note: 'v61 BBS_OPERATION serverbound (op134). Sub-op senders all COutPacket(134)+Encode1(subop): SendLoadListRequest@0x6bb596 (2=LIST, Encode4 startIndex), OnRegister@0x6bb129 (0=create/edit), OnDelete@0x6bb30c (1=delete), SendViewEntryRequest@0x6bb5f9 (3=display), OnComment@0x6bb3c4 (4=reply), OnCommentDelete@0x6bb4d6 (5=delete-reply). All six sub-op DECODERS are byte-verified (guild/serverbound BBS* v61 fixtures). Δ-19 vs v72 op153. Primary kept as sub_6BB129 (jms-absent) so the op-row does not fold jms verified-absent BBS sub-struct rows via the lookupAnyVersion fallback.'
 - op: MOVE_PET
   direction: serverbound
   opcode: 138

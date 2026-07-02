@@ -15,6 +15,8 @@ import (
 // v84 OnDelete COutPacket(0x9F)+Encode1(1)+Encode4(threadId), IDA-verified.
 // packet-audit:verify packet=guild/serverbound/GuildBBSDeleteThread version=gms_v84 ida=0x841b72
 // packet-audit:verify packet=guild/serverbound/GuildBBSDeleteThread version=jms_v185 ida=ABSENT
+// v61 COutPacket(134)+Encode1(1=DELETE)+Encode4(threadId); body=Encode4, == v72/v83 (CUIGuildBBS::OnDelete @0x6bb30c).
+// packet-audit:verify packet=guild/serverbound/GuildBBSDeleteThread version=gms_v61 ida=0x6bb30c
 func TestBBSDeleteThreadRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

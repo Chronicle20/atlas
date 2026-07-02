@@ -17,6 +17,8 @@ import (
 // packet-audit:verify packet=guild/serverbound/GuildSetMemberTitle version=gms_v83 ida=0x530dba
 // packet-audit:verify packet=guild/serverbound/GuildSetMemberTitle version=gms_v84 ida=0x53d030
 // packet-audit:verify packet=guild/serverbound/GuildSetMemberTitle version=gms_v87 ida=0x5585d1
+// v61 COutPacket(114)+Encode1(14=SET_MEMBER_GRADE)+Encode4(cid)+Encode1(title); body=Encode4+Encode1, == v72/v83 (CField::SendSetMemberGradeMsg @0x4e9995).
+// packet-audit:verify packet=guild/serverbound/GuildSetMemberTitle version=gms_v61 ida=0x4e9995
 func TestSetMemberTitleRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

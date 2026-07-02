@@ -17,6 +17,8 @@ import (
 // packet-audit:verify packet=guild/serverbound/GuildSetNotice version=gms_v87 ida=0x5587c9
 // packet-audit:verify packet=guild/serverbound/GuildSetNotice version=gms_v83 ida=0x530fa9
 // packet-audit:verify packet=guild/serverbound/GuildSetNotice version=gms_v84 ida=0x53d228
+// v61 COutPacket(114)+Encode1(16=SET_NOTICE)+EncodeStr(notice); body=EncodeStr, == v72/v83 (CField::SendSetGuildNoticeMsg @0x4e9b89).
+// packet-audit:verify packet=guild/serverbound/GuildSetNotice version=gms_v61 ida=0x4e9b89
 func TestSetNoticeRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

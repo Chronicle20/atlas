@@ -15,6 +15,8 @@ import (
 // v84 OnRegister COutPacket(0x9F)+Encode1(0)+Encode1(modify)+[if modify:Encode4(threadId)]+Encode1(notice)+EncodeStr(title)+EncodeStr(msg)+Encode4(emoticon), IDA-verified.
 // packet-audit:verify packet=guild/serverbound/GuildBBSCreateOrEditThread version=gms_v84 ida=0x84198d
 // packet-audit:verify packet=guild/serverbound/GuildBBSCreateOrEditThread version=jms_v185 ida=ABSENT
+// v61 COutPacket(134)+Encode1(0=REGISTER)+Encode1(modify)+[Encode4(threadId) if modify]+Encode1(notice)+EncodeStr(title)+EncodeStr(message)+Encode4(emoticon), == v72/v83 (CUIGuildBBS::OnRegister @0x6bb129).
+// packet-audit:verify packet=guild/serverbound/GuildBBSCreateOrEditThread version=gms_v61 ida=0x6bb129
 func TestBBSCreateOrEditThreadRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name+"/create", func(t *testing.T) {

@@ -15,6 +15,8 @@ import (
 // v84 BBS opcode 0x9F (NOT v83's 0x9B): SendLoadListRequest COutPacket(159)+Encode1(2)+Encode4(startIndex), IDA-verified.
 // packet-audit:verify packet=guild/serverbound/GuildBBSListThreads version=gms_v84 ida=0x841e00
 // packet-audit:verify packet=guild/serverbound/GuildBBSListThreads version=jms_v185 ida=ABSENT
+// v61 COutPacket(134)+Encode1(2=LIST)+Encode4(startIndex); body=Encode4, == v72/v83 (CUIGuildBBS::SendLoadListRequest @0x6bb596).
+// packet-audit:verify packet=guild/serverbound/GuildBBSListThreads version=gms_v61 ida=0x6bb596
 func TestBBSListThreadsRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

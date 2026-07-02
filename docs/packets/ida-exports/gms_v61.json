@@ -2393,13 +2393,28 @@
       ]
     },
     "CField::SendSetGradeNameMsg": {
-      "address": "",
+      "address": "0x4e99fb",
       "direction": "serverbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": ""
         }
       ]
     },
@@ -2430,24 +2445,26 @@
       ]
     },
     "CField::SendSetGuildNoticeMsg": {
-      "address": "",
+      "address": "0x4e9b89",
       "direction": "serverbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "DecodeStr",
+          "comment": ""
         }
       ]
     },
     "CField::SendSetMemberGradeMsg": {
-      "address": "",
+      "address": "0x4e9995",
       "direction": "serverbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
         }
       ]
     },
@@ -2516,13 +2533,16 @@
       ]
     },
     "CField::SendWithdrawGuildMsg": {
-      "address": "",
+      "address": "0x4e94cf",
       "direction": "serverbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": ""
         }
       ]
     },
@@ -7604,35 +7624,40 @@
       ]
     },
     "CUIGuildBBS::OnComment": {
-      "address": "",
+      "address": "0x6bb3c4",
       "direction": "serverbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": ""
         }
       ]
     },
     "CUIGuildBBS::OnCommentDelete": {
-      "address": "",
+      "address": "0x6bb4d6",
       "direction": "serverbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
         }
       ]
     },
     "CUIGuildBBS::OnDelete": {
-      "address": "",
+      "address": "0x6bb30c",
       "direction": "serverbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode4",
+          "comment": ""
         }
       ]
     },
@@ -7675,35 +7700,52 @@
       ]
     },
     "CUIGuildBBS::OnRegister": {
-      "address": "",
+      "address": "0x6bb129",
       "direction": "serverbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
         }
       ]
     },
     "CUIGuildBBS::SendLoadListRequest": {
-      "address": "",
+      "address": "0x6bb596",
       "direction": "serverbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode4",
+          "comment": ""
         }
       ]
     },
     "CUIGuildBBS::SendViewEntryRequest": {
-      "address": "",
+      "address": "0x6bb5f9",
       "direction": "serverbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode4",
+          "comment": ""
         }
       ]
     },

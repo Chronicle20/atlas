@@ -17,6 +17,8 @@ import (
 // packet-audit:verify packet=guild/serverbound/GuildWithdraw version=gms_v83 ida=0x5308e0
 // packet-audit:verify packet=guild/serverbound/GuildWithdraw version=gms_v84 ida=0x53cb4d
 // packet-audit:verify packet=guild/serverbound/GuildWithdraw version=gms_v87 ida=0x5580ee
+// v61 COutPacket(114)+Encode1(7=WITHDRAW)+Encode4(cid)+EncodeStr(name); body=Encode4+EncodeStr, == v72/v83 (CField::SendWithdrawGuildMsg @0x4e94cf).
+// packet-audit:verify packet=guild/serverbound/GuildWithdraw version=gms_v61 ida=0x4e94cf
 func TestWithdrawRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

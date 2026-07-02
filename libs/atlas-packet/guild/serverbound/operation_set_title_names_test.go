@@ -17,6 +17,8 @@ import (
 // packet-audit:verify packet=guild/serverbound/GuildSetTitleNames version=gms_v83 ida=0x530e1e
 // packet-audit:verify packet=guild/serverbound/GuildSetTitleNames version=gms_v84 ida=0x53d097
 // packet-audit:verify packet=guild/serverbound/GuildSetTitleNames version=gms_v87 ida=0x558638
+// v61 COutPacket(114)+Encode1(13=SET_GRADE_NAME)+5xEncodeStr; body=5xEncodeStr, == v72/v83 (CField::SendSetGradeNameMsg @0x4e99fb).
+// packet-audit:verify packet=guild/serverbound/GuildSetTitleNames version=gms_v61 ida=0x4e99fb
 func TestSetTitleNamesRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

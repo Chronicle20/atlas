@@ -15,6 +15,8 @@ import (
 // v84 OnCommentDelete COutPacket(0x9F)+Encode1(5)+Encode4(threadId)+Encode4(replyId), IDA-verified.
 // packet-audit:verify packet=guild/serverbound/GuildBBSDeleteReply version=gms_v84 ida=0x841d3f
 // packet-audit:verify packet=guild/serverbound/GuildBBSDeleteReply version=jms_v185 ida=ABSENT
+// v61 COutPacket(134)+Encode1(5=DELETE_REPLY)+Encode4(threadId)+Encode4(replyId); body=Encode4+Encode4, == v72/v83 (CUIGuildBBS::OnCommentDelete @0x6bb4d6).
+// packet-audit:verify packet=guild/serverbound/GuildBBSDeleteReply version=gms_v61 ida=0x6bb4d6
 func TestBBSDeleteReplyRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

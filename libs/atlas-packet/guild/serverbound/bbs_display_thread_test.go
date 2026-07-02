@@ -15,6 +15,8 @@ import (
 // v84 SendViewEntryRequest COutPacket(0x9F)+Encode1(3)+Encode4(threadId), IDA-verified.
 // packet-audit:verify packet=guild/serverbound/GuildBBSDisplayThread version=gms_v84 ida=0x841e61
 // packet-audit:verify packet=guild/serverbound/GuildBBSDisplayThread version=jms_v185 ida=ABSENT
+// v61 COutPacket(134)+Encode1(3=DISPLAY)+Encode4(threadId); body=Encode4, == v72/v83 (CUIGuildBBS::SendViewEntryRequest @0x6bb5f9).
+// packet-audit:verify packet=guild/serverbound/GuildBBSDisplayThread version=gms_v61 ida=0x6bb5f9
 func TestBBSDisplayThreadRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

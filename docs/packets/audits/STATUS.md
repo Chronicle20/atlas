@@ -524,7 +524,7 @@ Tool: `bfecda916f252908d2fafda8adbe41d5763d4a1e`
 | VIEW_ALL_WITH_PIC | CLogin::SendSelectCharPacketByVAC | login/serverbound/AllCharacterListSelect |  | ⬜ |  | ⬜ |  | ⬜ | 0x020 | ✅ | 0x020 | ✅ | 0x020 | ✅ | 0x01F | ✅ |  | ⬜ |
 | UNNAMED_R38 |  |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x021 | ❌ | 0x021 | ❌ | 0x021 | ❌ | 0x020 | ❌ | 0x016 | ❌ |
 | UNNAMED_R39 |  |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x022 | ❌ | 0x022 | ❌ | 0x022 | ❌ | 0x021 | ❌ | 0x017 | ❌ |
-| CHANGE_MAP | CCashShop::SendTransferFieldPacket; CField::SendTransferFieldRequest; CITC::SendTransferFieldPacket | field/serverbound/FieldChange (T1) | 0x023 | ❌ | 0x025 | ✅ | 0x024 | ✅ | 0x026 | ❌ | 0x026 | ❌ | 0x028 | ❌ | 0x029 | ❌ | 0x01D | ❌ |
+| CHANGE_MAP | CCashShop::SendTransferFieldPacket; CField::SendTransferFieldRequest; CITC::SendTransferFieldPacket | field/serverbound/FieldChange (T1) | 0x023 | ✅ | 0x025 | ✅ | 0x024 | ✅ | 0x026 | ❌ | 0x026 | ❌ | 0x028 | ❌ | 0x029 | ❌ | 0x01D | ❌ |
 | CLIENT_START | CLogin::Init |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x023 | ❌ | 0x023 | ❌ | 0x023 | ❌ | 0x022 | ❌ | 0x018 | ❌ |
 | CHANGE_CHANNEL | CField::SendTransferChannelRequest | channel/serverbound/ChannelChangeRequest | 0x024 | 🟡 | 0x026 | 🟡 | 0x025 | 🟡 | 0x027 | ✅ | 0x027 | ✅ | 0x029 | ✅ | 0x02A | ✅ | 0x01E | ✅ |
 | NEXON_PASSPORT | CLogin::SendCheckPasswordPacket; CLogin::SendLoginPacket; CLogin::SendViewAllCharPacket | login/serverbound/Request |  | ⬜ |  | ⬜ |  | ⬜ | 0x024 | ✅ | 0x024 | ✅ | 0x001 | ✅ | 0x001 | ✅ |  | ⬜ |
@@ -961,7 +961,7 @@ Tool: `bfecda916f252908d2fafda8adbe41d5763d4a1e`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v61 | 90 | 0 | 62 | 322 | 454 | 0 | 19.0% |
+| v61 | 91 | 0 | 62 | 321 | 454 | 0 | 19.2% |
 | v72 | 216 | 0 | 73 | 225 | 414 | 0 | 42.0% |
 | v79 | 228 | 0 | 72 | 223 | 405 | 0 | 43.6% |
 | v83 | 367 | 0 | 0 | 354 | 207 | 0 | 50.9% |

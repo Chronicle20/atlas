@@ -3764,8 +3764,7 @@
       ],
       "cells": {
         "gms_v61": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 35
         },
         "gms_v72": {

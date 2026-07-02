@@ -78,6 +78,42 @@ func TestChangeByteOutputV72(t *testing.T) {
 	}
 }
 
+// TestChangeByteOutputV61 pins the gms_v61 CHANGE_MAP (op 0x23 / 35) serverbound
+// wire. IDA: CField::SendTransferFieldRequest @0x4e8f58 (GMS_v61.1_U_DEVM.exe) —
+//
+//	COutPacket(35)                 @op ctor → opcode 0x23 (matches registry op 35).
+//	Encode1(get_field()+248)               → fieldKey byte.
+//	Encode4(a2)                            → targetId (int32 LE).
+//	EncodeStr(Src)                         → portalName.
+//	if (Src) Encode2(x)/Encode2(y)         → target x/y (only with a portal name).
+//	Encode1(0)                             → unused byte.
+//	Encode1(a4)                            → premium byte.
+//	Encode1(dword_975DD4)                  → chase flag (emitted UNCONDITIONALLY —
+//	                                         same as v72; the >=72 gate wrongly
+//	                                         dropped it for v61, lowered to >=61).
+//	if (chase) Encode4(targetX)/Encode4(targetY) — omitted here (chase=false).
+//
+// Wire byte-identical to gms_v72 (only the opcode shifts). WriteAsciiString =
+// uint16-LE len + bytes; WriteInt = uint32-LE; WriteInt16 = uint16-LE.
+func TestChangeByteOutputV61(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 61, 1)
+	input := Change{fieldKey: 1, targetId: 100000000, portalName: "west00", x: 100, y: 200, unused: 0, premium: 0}
+	expected := []byte{
+		0x01,                   // fieldKey
+		0x00, 0xE1, 0xF5, 0x05, // targetId 100000000
+		0x06, 0x00, 0x77, 0x65, 0x73, 0x74, 0x30, 0x30, // EncodeStr("west00")
+		0x64, 0x00, // x=100
+		0xC8, 0x00, // y=200
+		0x00, // unused
+		0x00, // premium
+		0x00, // chase=false @Encode1(dword_975DD4)
+	}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v61 change golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
 // TestChangeWithPortalRoundTrip covers a portal-named transfer. Per the v95
 // client (CField::SendTransferFieldRequest @0x5345c0) a non-empty portal name
 // carries the target x/y pair, so x/y participate in the round-trip here.
@@ -88,6 +124,7 @@ func TestChangeByteOutputV72(t *testing.T) {
 // packet-audit:verify packet=field/serverbound/FieldChange version=jms_v185 ida=0x56d75a
 // packet-audit:verify packet=field/serverbound/FieldChange version=gms_v84 ida=0x53c5b9
 // packet-audit:verify packet=field/serverbound/FieldChange version=gms_v72 ida=0x5148b1
+// packet-audit:verify packet=field/serverbound/FieldChange version=gms_v61 ida=0x4e8f58
 func TestChangeWithPortalRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

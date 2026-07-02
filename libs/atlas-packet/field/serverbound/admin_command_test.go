@@ -45,6 +45,22 @@ func TestAdminCommandByteOutputV72(t *testing.T) {
 	}
 }
 
+// TestAdminCommandByteOutputV61 pins the gms_v61 ADMIN_COMMAND (op 0x7E = 126)
+// serverbound wire. IDA: CField::SendChatMsgSlash#AdminCommand = sub_80C896
+// @0x80c896 (GMS_v61.1_U_DEVM.exe) builds COutPacket(126) + Encode1(subCommand)
+// (this send-site uses subcommand 8; the codec models the leading sub-command byte
+// decode-and-log). GM slash-command opcode = v72 ADMIN_COMMAND=126 (Δ0).
+// packet-audit:verify packet=field/serverbound/FieldAdminCommand version=gms_v61 ida=0x80c896
+func TestAdminCommandByteOutputV61(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 61, 1)
+	input := NewAdminCommand(0x23)
+	expected := []byte{0x23}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v61 admin_command golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
 func TestAdminCommandGolden(t *testing.T) {
 	input := NewAdminCommand(0x05)
 	ctx := pt.CreateContext("GMS", 83, 1)

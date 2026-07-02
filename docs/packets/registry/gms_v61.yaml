@@ -2024,7 +2024,9 @@
 - op: SPOUSE_CHAT
   direction: serverbound
   opcode: 109
-  fname: sub_744528
+  fname: CUIStatusBar::SendCoupleMessage
+  fname_alts:
+  - sub_744528
   provenance: ida-discovered
   ida:
     address: 7620024
@@ -2280,7 +2282,9 @@
 - op: GENERAL_CHAT
   direction: serverbound
   opcode: 46
-  fname: sub_4E7469
+  fname: CField::SendChatMsg
+  fname_alts:
+  - sub_4E7469
   provenance: ida-discovered
   ida:
     address: 5145749
@@ -2352,7 +2356,9 @@
 - op: SUE_CHARACTER
   direction: serverbound
   opcode: 104
-  fname: sub_849F27
+  fname: CField::SendChatMsgSlash
+  fname_alts:
+  - sub_849F27
   provenance: ida-discovered
   ida:
     address: 8691673
@@ -2376,7 +2382,9 @@
 - op: ADMIN_COMMAND
   direction: serverbound
   opcode: 126
-  fname: sub_80C896
+  fname: CField::SendChatMsgSlash
+  fname_alts:
+  - sub_80C896
   provenance: ida-discovered
   ida:
     address: 8439981

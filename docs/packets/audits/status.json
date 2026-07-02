@@ -1,7 +1,7 @@
 {
   "toolSha": "bfecda916f252908d2fafda8adbe41d5763d4a1e",
   "exportHashes": {
-    "gms_v61": "28c1403c3c2222db679ffd4802d4b7c609a8113fb2802b2da6d070325cf96753",
+    "gms_v61": "77a690bc338770f0d42e743cbd9f666384c0db29893621fc78eeab319cf9fea7",
     "gms_v72": "a0ac2be6578395455f491976bcb11aa27e2e57376b46ee8816b90324bad60c02",
     "gms_v79": "370d6b720b633c12c71d40340f3952000705c4bddb98f87179e7193d112d210c",
     "gms_v83": "711bddcc2e1bdd417a75954148d2b50c64e70855e84259c0b8e50e700e393c0d",
@@ -5098,8 +5098,7 @@
       ],
       "cells": {
         "gms_v61": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 46
         },
         "gms_v72": {
@@ -12814,7 +12813,7 @@
     {
       "kind": "op",
       "op": "SUE_CHARACTER",
-      "packet": "field/serverbound/FieldAdminChat",
+      "packet": "field/serverbound/FieldAdminCommand",
       "direction": "serverbound",
       "tier1": true,
       "fnames": [
@@ -12823,8 +12822,7 @@
       ],
       "cells": {
         "gms_v61": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 104
         },
         "gms_v72": {
@@ -13444,8 +13442,7 @@
       ],
       "cells": {
         "gms_v61": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 109
         },
         "gms_v72": {
@@ -15766,7 +15763,7 @@
     {
       "kind": "op",
       "op": "ADMIN_COMMAND",
-      "packet": "field/serverbound/FieldAdminChat",
+      "packet": "field/serverbound/FieldAdminCommand",
       "direction": "serverbound",
       "tier1": true,
       "fnames": [
@@ -15777,8 +15774,7 @@
       ],
       "cells": {
         "gms_v61": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 126
         },
         "gms_v72": {
@@ -38284,100 +38280,6 @@
         },
         "jms_v185": {
           "state": "verified",
-          "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "sub-struct",
-      "packet": "field/serverbound/FieldCoupleMessage",
-      "tier1": true,
-      "cells": {
-        "gms_v61": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "sub-struct",
-      "packet": "field/serverbound/FieldGeneral",
-      "tier1": true,
-      "cells": {
-        "gms_v61": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
           "opcode": -1
         }
       }

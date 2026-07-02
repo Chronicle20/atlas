@@ -61,6 +61,25 @@ func TestGeneralByteOutputV72(t *testing.T) {
 	}
 }
 
+// TestGeneralByteOutputV61 pins the gms_v61 GENERAL_CHAT (op 0x2E = 46)
+// serverbound wire. IDA: the CField chat-input parser sub_4E7469 @0x4e7469
+// (GMS_v61.1_U_DEVM.exe) builds the normal-chat fallthrough at COutPacket(46) +
+// EncodeStr(msg) + Encode1(0=bOnlyBalloon). v61 is GMS<87 so there is NO leading
+// get_update_time prefix (MajorAtLeast(87) gate); body identical to v72.
+// packet-audit:verify packet=field/serverbound/FieldGeneral version=gms_v61 ida=0x4e7469
+func TestGeneralByteOutputV61(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 61, 1)
+	input := General{msg: "hi", bOnlyBalloon: false}
+	expected := []byte{
+		0x02, 0x00, 0x68, 0x69, // EncodeStr("hi")
+		0x00, // Encode1(bOnlyBalloon=false)
+	}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v61 general golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
 func TestGeneralRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

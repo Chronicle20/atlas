@@ -7,6 +7,22 @@
   {
    "fname": "CCashShop::RequestCashPurchaseRecord",
    "reason": "CashShopOperationGetPurchaseRecord (the 'request cash purchase record' send) is version-absent in gms_v61. The v72 anchor sends it via CCashShop::RequestCashPurchaseRecord @0x4659b4 as COutPacket(219)+Encode1(0x27 mode)+Encode4(serialNumber) with NO other fields. An exhaustive sweep of every CCashShop COutPacket(196) send site in GMS_v61.1_U_DEVM.exe @port 13338 (~20 sites incl. OnBuy/OnBuyCouple/OnBuyFriendship/OnBuyPackage/OnBuyNormal/OnGift/OnGiftPackage/SendGiftsPacket/OnEnableEquipSlotExt/OnSetWish/OnRemoveWish/OnIncCharacterSlotCount/OnBuySlotInc/move L<->S/SendBuyAvatarPacket) found NO mode + single-Encode4(serialNumber)-only sender. v61 sub-op mode 0x27 (sub_45CDD9, callers sub_6A2881/sub_6A2AE1) is a NAME-ENTRY dialog (name string 4-12 chars + curse-filter -> Encode4(serial)+EncodeStr+EncodeStr), i.e. the name-change buy, NOT a purchase-record query. The 'view cash purchase record' feature was added after v61; no v61 client sender exists to byte-verify. Report + unresolved RequestCashPurchaseRecord export stub removed so the CASHSHOP_OPERATION serverbound grade excludes this arm. (task-113 stage E)"
+  },
+  {
+   "fname": "CField::SendChatMsgSlash#AdminChat",
+   "reason": "ADMIN_CHAT (admin type+flag+message chat) is version-absent in gms_v61: the v61 /-command send parser CField::SendChatMsgSlash (sub_4E7469 @0x4e7469, GMS_v61.1_U_DEVM.exe port 13338) builds only the general-chat (COutPacket 46), whisper, party/guild and ADMIN_COMMAND (sub_80C896 COutPacket 126) sends plus SUE_CHARACTER (sub_849F27 COutPacket 104); it has NO type+flag+message admin-chat / admin-log / match-table send-site. The exporter's harvest could not locate the function in the v61 IDB (entry was 'function not found in IDB'), and the v61 registry carries no op for it. Report + unresolved export stub removed so the SendChatMsgSlash worst-of-siblings grade (shared by SUE_CHARACTER/ADMIN_COMMAND) excludes this arm. (task-113 stage E)"
+  },
+  {
+   "fname": "CField::SendChatMsgSlash#AdminLog",
+   "reason": "ADMIN_LOG (admin action log) is version-absent in gms_v61: the v61 /-command send parser CField::SendChatMsgSlash (sub_4E7469 @0x4e7469, GMS_v61.1_U_DEVM.exe port 13338) builds only the general-chat (COutPacket 46), whisper, party/guild and ADMIN_COMMAND (sub_80C896 COutPacket 126) sends plus SUE_CHARACTER (sub_849F27 COutPacket 104); it has NO type+flag+message admin-chat / admin-log / match-table send-site. The exporter's harvest could not locate the function in the v61 IDB (entry was 'function not found in IDB'), and the v61 registry carries no op for it. Report + unresolved export stub removed so the SendChatMsgSlash worst-of-siblings grade (shared by SUE_CHARACTER/ADMIN_COMMAND) excludes this arm. (task-113 stage E)"
+  },
+  {
+   "fname": "CField::SendChatMsgSlash#MatchTable",
+   "reason": "MATCH_TABLE (tournament match-table request) is version-absent in gms_v61: the v61 /-command send parser CField::SendChatMsgSlash (sub_4E7469 @0x4e7469, GMS_v61.1_U_DEVM.exe port 13338) builds only the general-chat (COutPacket 46), whisper, party/guild and ADMIN_COMMAND (sub_80C896 COutPacket 126) sends plus SUE_CHARACTER (sub_849F27 COutPacket 104); it has NO type+flag+message admin-chat / admin-log / match-table send-site. The exporter's harvest could not locate the function in the v61 IDB (entry was 'function not found in IDB'), and the v61 registry carries no op for it. Report + unresolved export stub removed so the SendChatMsgSlash worst-of-siblings grade (shared by SUE_CHARACTER/ADMIN_COMMAND) excludes this arm. (task-113 stage E)"
+  },
+  {
+   "fname": "CField::SendChatMsgSlash#SlideRequest",
+   "reason": "SLIDE_REQUEST is a v95+-only send (n-a in the v72 anchor as well); absent in gms_v61. Unresolved export stub removed so the SendChatMsgSlash worst-of-siblings grade excludes this arm. (task-113 stage E)"
   }
  ]
 }

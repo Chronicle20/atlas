@@ -2194,9 +2194,8 @@
    ]
   },
   "CField::SendChatMsg": {
-   "address": "",
+   "address": "0x4e7469",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
      "op": "Unresolved",
@@ -2215,43 +2214,9 @@
     }
    ]
   },
-  "CField::SendChatMsgSlash#AdminChat": {
-   "address": "",
-   "direction": "serverbound",
-   "unresolved": true,
-   "calls": [
-    {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
-   ]
-  },
   "CField::SendChatMsgSlash#AdminCommand": {
-   "address": "",
+   "address": "0x80c896",
    "direction": "serverbound",
-   "unresolved": true,
-   "calls": [
-    {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
-   ]
-  },
-  "CField::SendChatMsgSlash#AdminLog": {
-   "address": "",
-   "direction": "serverbound",
-   "unresolved": true,
-   "calls": [
-    {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
-   ]
-  },
-  "CField::SendChatMsgSlash#MatchTable": {
-   "address": "",
-   "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
      "op": "Unresolved",
@@ -2260,9 +2225,8 @@
    ]
   },
   "CField::SendChatMsgSlash#SueCharacter": {
-   "address": "",
+   "address": "0x849f27",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
      "op": "Unresolved",
@@ -8171,9 +8135,8 @@
    ]
   },
   "CUIStatusBar::SendCoupleMessage": {
-   "address": "",
+   "address": "0x744528",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
      "op": "Unresolved",

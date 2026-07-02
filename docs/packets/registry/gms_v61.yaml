@@ -1961,20 +1961,20 @@
   note: 'v61 send-site harvest (COutPacket ctor @0x5ffc4f): CWvsContext::SendConsumeCashItemUseRequest. COutPacket(73); Δ-5 vs v72 op78.'
 - op: DISTRIBUTE_AP
   direction: serverbound
-  opcode: 86
-  fname: sub_8459DD
+  opcode: 80
+  fname: sub_8457EE
   provenance: ida-discovered
   ida:
-    address: 6291023
-  note: 'v61 send-site harvest (COutPacket ctor @0x5ffc4f): sub_8459DD. COutPacket(86), CWvsContext ability region; Δ0 vs v72.'
-- op: AUTO_DISTRIBUTE_AP
+    address: 8673262
+  note: 'v61 send-site sub_8457EE @0x8457ee: COutPacket(80)+Encode4(updateTime)+Encode4(statFlag); ForcedStat guard sub_65F573 + remaining-AP check (+129) = v72 DISTRIBUTE_AP (SendAbilityUpRequest sub_91BBAD) twin. Caller sub_72DFBB = CUIStatDlg stat +buttons passing STR 0x40/DEX 0x80/INT 0x100/LUK 0x200/HP 0x800/MP 0x2000. task-113 CWvsContext serverbound scramble fix: the Stage-B harvest blind-inherited a wrong (foreign) op table; real v61 op is 80, NOT 86 (op86 = MESO_DROP).'
+- op: GIVE_FAME
   direction: serverbound
   opcode: 87
   fname: sub_845A65
   provenance: ida-discovered
   ida:
-    address: 6291023
-  note: 'v61 send-site harvest (COutPacket ctor @0x5ffc4f): sub_845A65. COutPacket(87), CWvsContext ability region; Δ0 vs v72.'
+    address: 8674917
+  note: 'v61 send-site sub_845A65 @0x845a65: COutPacket(87)+Encode4(targetCharId=*(user+3448))+Encode1(flag); 5-min (300000ms) cooldown in this[3142] + user-lookup sub_7BDE65 + "not found"/"wait" notices = v72 GIVE_FAME (sub_91C06F) twin. Caller sub_75F539 = CUIUserInfo::OnButtonClicked fame up(0x7D4→flag 1)/down(0x7D5→flag 0) on this[390]=targetCharId. task-113 scramble fix: real v61 GIVE_FAME is op 87 (was mislabeled AUTO_DISTRIBUTE_AP; and prior GIVE_FAME=op94 was actually TROCK_ADD_MAP). AUTO_DISTRIBUTE_AP is v61-ABSENT (no array/loop Encode4 sender exists in the whole IDB).'
 - op: HEAL_OVER_TIME
   direction: serverbound
   opcode: 81
@@ -1985,12 +1985,12 @@
   note: 'v61 send-site harvest (COutPacket ctor @0x5ffc4f): CWvsContext::SendStatChangeRequest. COutPacket(81); Δ-7 vs v72 op88.'
 - op: DISTRIBUTE_SP
   direction: serverbound
-  opcode: 89
-  fname: sub_845B68
+  opcode: 82
+  fname: sub_8458EB
   provenance: ida-discovered
   ida:
-    address: 6291023
-  note: 'v61 send-site harvest (COutPacket ctor @0x5ffc4f): sub_845B68. COutPacket(89), CWvsContext region; Δ0 vs v72.'
+    address: 8673003
+  note: 'v61 send-site sub_8458EB @0x8458eb: COutPacket(82)+Encode4(updateTime)+Encode4(skillId); no GetRemoteUser = v72 DISTRIBUTE_SP (SendSkillUpRequest sub_91BEAD) twin. Caller sub_7201E6 = skill-window "+" validator (reads the selected SKILLENTRY *(v4+1007)/(+1011), computes skillId/10000 job class, validates SP caps with notices 3434/3435/3436, then sub_8458EB(ctx, skillId)). task-113 scramble fix: real v61 DISTRIBUTE_SP is op 82, NOT 89 (op89 = CHAR_INFO_REQUEST). op82 was mislabeled MESO_DROP.'
 - op: SPECIAL_MOVE
   direction: serverbound
   opcode: 90
@@ -2007,22 +2007,34 @@
   ida:
     address: 6291023
   note: 'v61 send-site harvest (COutPacket ctor @0x5ffc4f): CUserLocal::SendSkillCancelRequest. COutPacket(84); Δ-7 vs v72 op91.'
-- op: GIVE_FAME
+- op: TROCK_ADD_MAP
   direction: serverbound
   opcode: 94
-  fname: sub_8478EA
+  fname: CWvsContext::SendMapTransferRequest
+  fname_alts:
+  - sub_8478EA
   provenance: ida-discovered
   ida:
-    address: 6291023
-  note: 'v61 send-site harvest (COutPacket ctor @0x5ffc4f): sub_8478EA. COutPacket(94), CWvsContext region; Δ0 vs v72.'
+    address: 8681194
+  note: 'v61 send-site sub_8478EA @0x8478ea: COutPacket(94)+Encode1(mode)+Encode1(mapIndex)+[if mode==0: Encode4(mapId)]. Callers sub_6CA4C9/sub_6CA6D8 = the teleport-rock saved-map list dialog (map-id decomposition + CItemInfo::GetMapString + YesNo → sub_8478EA(1,0,mapIndex)). = TROCK_ADD_MAP (CWvsContext::SendMapTransferRequest). task-113 scramble fix: op94 was mislabeled GIVE_FAME (real GIVE_FAME = op87).'
 - op: CHAR_INFO_REQUEST
+  direction: serverbound
+  opcode: 89
+  fname: sub_845B68
+  provenance: ida-discovered
+  ida:
+    address: 8674664
+  note: 'v61 send-site sub_845B68 @0x845b68: COutPacket(89)+Encode4(updateTime)+Encode4(charId)+Encode1(petInfo); CUserPool::GetRemoteUser + exclusive-request bookkeeping = v72 CHAR_INFO_REQUEST (SendCharacterInfoRequest sub_91C174) twin exactly. task-113 scramble fix: real v61 CHAR_INFO_REQUEST is op 89, NOT 96 (op96 = ANTI_MACRO_RESULT captcha dialog).'
+- op: ANTI_MACRO_RESULT
   direction: serverbound
   opcode: 96
   fname: sub_69C480
+  fname_alts:
+  - CUIAntiMacro::SetRet
   provenance: ida-discovered
   ida:
-    address: 6291023
-  note: 'v61 send-site harvest (COutPacket ctor @0x5ffc4f): sub_69C480. COutPacket(96); Δ0 vs v72.'
+    address: 6931584
+  note: 'v61 send-site sub_69C480 @0x69c480: anti-macro captcha dialog OnButtonClicked — writes the timer field g_pWvsContext+12948 (=*(this+36)-timeGetTime(); same field OnAntiMacroResult @0x847e49 uses) then COutPacket(96)+Encode2(atoi(editText)). Single Encode2 of the typed captcha answer = ANTI_MACRO_RESULT (CUIAntiMacro::SetRet). task-113: op96 is NOT CHAR_INFO_REQUEST (that is op89); this resolves the 3-way op82/89/96 scramble.'
 - op: QUEST_ACTION
   direction: serverbound
   opcode: 98
@@ -2341,12 +2353,12 @@
   note: 'v61 send-site sub_8317A4 @0x8317a4: COutPacket(79)+Encode4(updateTime)+Encode2(scrollSlot)+Encode2(equipSlot)+Encode2(whiteScroll)+Encode1(legendarySpirit) = SendUpgradeItemUseRequest; body == v72. v72 op85 (Δ-6).'
 - op: MESO_DROP
   direction: serverbound
-  opcode: 82
-  fname: sub_8458EB
+  opcode: 86
+  fname: sub_8459DD
   provenance: ida-discovered
   ida:
-    address: 8673554
-  note: 'v61 send-site (0x845912, CWvsContext): COutPacket(82)+Encode4(crc/time)+Encode4(amount); caller sub_7201E6 reads CharacterData + amount = SendDropMoneyRequest, v72 MESO_DROP=93. (op80 [E4,E4] is a stat-flag packet, not meso.)'
+    address: 8673757
+  note: 'v61 send-site sub_8459DD @0x8459dd: COutPacket(86)+Encode4(updateTime)+Encode4(amount) = v72 MESO_DROP (SendDropMoneyRequest sub_91BF9F) twin. Caller sub_6BF6BD = the drop-meso spinner dialog (min 10, value capped at min(meso field +165, 50000), sends the picked amount). task-113 scramble fix: real v61 MESO_DROP is op 86 (was mislabeled DISTRIBUTE_AP); op82 = DISTRIBUTE_SP. The prior "op82 = meso, caller reads amount" note misread sub_7201E6 (which is the skill-up SP validator, not a meso reader).'
 - op: SKILL_EFFECT
   direction: serverbound
   opcode: 85

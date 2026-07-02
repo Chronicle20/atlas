@@ -507,17 +507,12 @@
         "handler": "CharacterItemUseScrollHandle"
       },
       {
-        "opCode": "0x56",
+        "opCode": "0x50",
         "validator": "LoggedInValidator",
         "handler": "CharacterDistributeApHandle"
       },
       {
-        "opCode": "0x57",
-        "validator": "LoggedInValidator",
-        "handler": "CharacterAutoDistributeApHandle"
-      },
-      {
-        "opCode": "0x59",
+        "opCode": "0x52",
         "validator": "LoggedInValidator",
         "handler": "CharacterDistributeSpHandle"
       },
@@ -532,17 +527,17 @@
         "handler": "CharacterSkillPrepareHandle"
       },
       {
-        "opCode": "0x52",
+        "opCode": "0x56",
         "validator": "LoggedInValidator",
         "handler": "CharacterDropMesoHandle"
       },
       {
-        "opCode": "0x5E",
+        "opCode": "0x57",
         "validator": "LoggedInValidator",
         "handler": "FameChangeHandle"
       },
       {
-        "opCode": "0x60",
+        "opCode": "0x59",
         "validator": "LoggedInValidator",
         "handler": "CharacterInfoRequestHandle"
       },

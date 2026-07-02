@@ -2042,7 +2042,7 @@
         }
       },
       {
-        "opCode": "0xF4",
+        "opCode": "0xF3",
         "writer": "MessengerOperation",
         "options": {
           "operations": {
@@ -2058,7 +2058,7 @@
         }
       },
       {
-        "opCode": "0xF3",
+        "opCode": "0xF4",
         "writer": "CharacterInteraction",
         "options": {
           "operations": {

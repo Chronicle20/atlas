@@ -1559,20 +1559,20 @@
   note: 'CTrunkDlg::OnPacket = STORAGE (v72 275). Dialog demuxer; Stage E.'
 - op: PLAYER_INTERACTION
   direction: clientbound
+  opcode: 244
+  fname: CMiniRoomBaseDlg::OnPacketBase
+  provenance: ida-discovered
+  ida:
+    address: 6024297
+  note: 'CORRECTED (task-113 stage E): CField::OnPacket @0x4e9ea3 switch routes case 244->sub_5BEC69 = CMiniRoomBaseDlg::OnPacketBase (the mini-room dispatcher: case 6 OnChat, case 9 OnEnterBase, default->vtable[64] CPersonalShopDlg::OnPacket mode 25 hired-merchant refresh). Prior seed had PLAYER_INTERACTION at 243 with fname sub_6D34F1 — that function is the MESSENGER dispatcher (its case 3 calls sub_6D3765, the messenger invite/auto-decline handler). Op-names were swapped vs the true client routing; MESSENGER is 243, PLAYER_INTERACTION is 244 (v72 ordering: MESSENGER 279 < CMiniRoomBaseDlg 280).'
+- op: MESSENGER
+  direction: clientbound
   opcode: 243
   fname: sub_6D34F1
   provenance: ida-discovered
   ida:
     address: 7156977
-  note: 'CField::OnPacket routes 243->sub_6D34F1 (Decode1-mode demuxer, modes 0-8). Provisional op-name PLAYER_INTERACTION (v72 CMiniRoomBaseDlg 280); exact family = Stage E.'
-- op: MESSENGER
-  direction: clientbound
-  opcode: 244
-  fname: sub_5BEC69
-  provenance: ida-discovered
-  ida:
-    address: 6024297
-  note: 'CField::OnPacket routes 244->sub_5BEC69 (Decode1-mode demuxer, modes 2-10). Provisional op-name MESSENGER (v72 CUIMessenger 279); exact family = Stage E.'
+  note: 'CORRECTED (task-113 stage E): CField::OnPacket @0x4e9ea3 switch routes case 243->sub_6D34F1 (CUIMessenger::OnPacket messenger dispatcher; case 3->sub_6D3765 invite/auto-decline @0x6d3765). Swapped with PLAYER_INTERACTION (was 244); see that entry.'
 - op: RPS_GAME
   direction: clientbound
   opcode: 252

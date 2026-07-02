@@ -1,7 +1,7 @@
 {
   "toolSha": "bfecda916f252908d2fafda8adbe41d5763d4a1e",
   "exportHashes": {
-    "gms_v61": "ae97c886e9b84f46af0d144fe698e3bac7c0f9167fe30dac7d691b11cf4fdc6f",
+    "gms_v61": "429bc72c554538b4d3f0bcbe434f00d4ad8fb47a4ec9e1d10920b004b0ac2606",
     "gms_v72": "a0ac2be6578395455f491976bcb11aa27e2e57376b46ee8816b90324bad60c02",
     "gms_v79": "370d6b720b633c12c71d40340f3952000705c4bddb98f87179e7193d112d210c",
     "gms_v83": "711bddcc2e1bdd417a75954148d2b50c64e70855e84259c0b8e50e700e393c0d",
@@ -30080,12 +30080,12 @@
     },
     {
       "kind": "op",
-      "op": "PLAYER_INTERACTION",
-      "packet": "interaction/clientbound/InteractionInteractionChat",
+      "op": "MESSENGER",
+      "packet": "messenger/clientbound/MessengerAdd",
       "direction": "clientbound",
       "tier1": true,
       "fnames": [
-        "CMiniRoomBaseDlg::OnPacketBase",
+        "CUIMessenger::OnPacket",
         "sub_6D34F1"
       ],
       "cells": {
@@ -30096,31 +30096,31 @@
         },
         "gms_v72": {
           "state": "verified",
-          "opcode": 280
+          "opcode": 279
         },
         "gms_v79": {
           "state": "verified",
-          "opcode": 292
+          "opcode": 291
         },
         "gms_v83": {
           "state": "verified",
-          "opcode": 314
+          "opcode": 313
         },
         "gms_v84": {
           "state": "verified",
-          "opcode": 321
+          "opcode": 320
         },
         "gms_v87": {
           "state": "verified",
-          "opcode": 331
+          "opcode": 330
         },
         "gms_v95": {
           "state": "verified",
-          "opcode": 373
+          "opcode": 372
         },
         "jms_v185": {
           "state": "verified",
-          "opcode": 339
+          "opcode": 338
         }
       }
     },
@@ -30215,47 +30215,45 @@
     },
     {
       "kind": "op",
-      "op": "MESSENGER",
-      "packet": "messenger/clientbound/MessengerAdd",
+      "op": "PLAYER_INTERACTION",
+      "packet": "interaction/clientbound/InteractionInteractionChat",
       "direction": "clientbound",
       "tier1": true,
       "fnames": [
-        "CUIMessenger::OnPacket",
-        "sub_5BEC69"
+        "CMiniRoomBaseDlg::OnPacketBase"
       ],
       "cells": {
         "gms_v61": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 244
         },
         "gms_v72": {
           "state": "verified",
-          "opcode": 279
+          "opcode": 280
         },
         "gms_v79": {
           "state": "verified",
-          "opcode": 291
+          "opcode": 292
         },
         "gms_v83": {
           "state": "verified",
-          "opcode": 313
+          "opcode": 314
         },
         "gms_v84": {
           "state": "verified",
-          "opcode": 320
+          "opcode": 321
         },
         "gms_v87": {
           "state": "verified",
-          "opcode": 330
+          "opcode": 331
         },
         "gms_v95": {
           "state": "verified",
-          "opcode": 372
+          "opcode": 373
         },
         "jms_v185": {
           "state": "verified",
-          "opcode": 338
+          "opcode": 339
         }
       }
     },
@@ -38644,294 +38642,11 @@
     },
     {
       "kind": "sub-struct",
-      "packet": "interaction/clientbound/InteractionInteractionEnter",
-      "tier1": true,
-      "cells": {
-        "gms_v61": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "sub-struct",
-      "packet": "interaction/clientbound/InteractionInteractionEnterResultError",
-      "tier1": true,
-      "cells": {
-        "gms_v61": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "sub-struct",
-      "packet": "interaction/clientbound/InteractionInteractionEnterResultSuccess",
-      "tier1": true,
-      "cells": {
-        "gms_v61": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "sub-struct",
-      "packet": "interaction/clientbound/InteractionInteractionInvite",
-      "tier1": true,
-      "cells": {
-        "gms_v61": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "sub-struct",
-      "packet": "interaction/clientbound/InteractionInteractionInviteResult",
-      "tier1": true,
-      "cells": {
-        "gms_v61": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "sub-struct",
-      "packet": "interaction/clientbound/InteractionInteractionLeave",
-      "tier1": true,
-      "cells": {
-        "gms_v61": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "sub-struct",
       "packet": "interaction/clientbound/InteractionInteractionUpdateMerchant",
       "tier1": true,
       "cells": {
         "gms_v61": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v72": {

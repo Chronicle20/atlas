@@ -5,7 +5,7 @@
 
 Tool: `bfecda916f252908d2fafda8adbe41d5763d4a1e`
 
-- export gms_v61: `ae97c886e9b84f46af0d144fe698e3bac7c0f9167fe30dac7d691b11cf4fdc6f`
+- export gms_v61: `429bc72c554538b4d3f0bcbe434f00d4ad8fb47a4ec9e1d10920b004b0ac2606`
 - export gms_v72: `a0ac2be6578395455f491976bcb11aa27e2e57376b46ee8816b90324bad60c02`
 - export gms_v79: `370d6b720b633c12c71d40340f3952000705c4bddb98f87179e7193d112d210c`
 - export gms_v83: `711bddcc2e1bdd417a75954148d2b50c64e70855e84259c0b8e50e700e393c0d`
@@ -371,9 +371,9 @@ Tool: `bfecda916f252908d2fafda8adbe41d5763d4a1e`
 | IDA_0X0F2 | CUserLocal::OnPassMateName |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0F2 | ❌ |
 | STORAGE | CTrunkDlg::OnPacket | storage/clientbound/StorageErrorMessage (T1) | 0x0F2 | ❌ | 0x113 | ✅ | 0x11F | ✅ | 0x135 | ✅ | 0x13C | ✅ | 0x146 | ✅ | 0x170 | ✅ | 0x14E | ✅ |
 | IDA_0X0F3 | CUserLocal::OnNotifyHPDecByField; CUserLocal::OnRadioSchedule |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0F3 | ❌ | 0x0F3 | ❌ |
-| PLAYER_INTERACTION | CMiniRoomBaseDlg::OnPacketBase; sub_6D34F1 | interaction/clientbound/InteractionInteractionChat (T1) | 0x0F3 | ❌ | 0x118 | ✅ | 0x124 | ✅ | 0x13A | ✅ | 0x141 | ✅ | 0x14B | ✅ | 0x175 | ✅ | 0x153 | ✅ |
+| MESSENGER | CUIMessenger::OnPacket; sub_6D34F1 | messenger/clientbound/MessengerAdd (T1) | 0x0F3 | ❌ | 0x117 | ✅ | 0x123 | ✅ | 0x139 | ✅ | 0x140 | ✅ | 0x14A | ✅ | 0x174 | ✅ | 0x152 | ✅ |
 | IDA_0X0F4 | CUserLocal::OnOpenSkillGuide |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0F4 | ❌ |
-| MESSENGER | CUIMessenger::OnPacket; sub_5BEC69 | messenger/clientbound/MessengerAdd (T1) | 0x0F4 | ❌ | 0x117 | ✅ | 0x123 | ✅ | 0x139 | ✅ | 0x140 | ✅ | 0x14A | ✅ | 0x174 | ✅ | 0x152 | ✅ |
+| PLAYER_INTERACTION | CMiniRoomBaseDlg::OnPacketBase | interaction/clientbound/InteractionInteractionChat (T1) | 0x0F4 | ✅ | 0x118 | ✅ | 0x124 | ✅ | 0x13A | ✅ | 0x141 | ✅ | 0x14B | ✅ | 0x175 | ✅ | 0x153 | ✅ |
 | IDA_0X0F5 | CUserLocal::OnNoticeMsg |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0F5 | ❌ |
 | IDA_0X0F6 | CUserLocal::OnChatMsg |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0F6 | ❌ |
 | IDA_0X0F7 | CUserLocal::OnBuffzoneEffect |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0F7 | ❌ |
@@ -862,13 +862,7 @@ Tool: `bfecda916f252908d2fafda8adbe41d5763d4a1e`
 | guild/serverbound/GuildSetNotice (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | guild/serverbound/GuildSetTitleNames (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | guild/serverbound/GuildWithdraw (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
-| interaction/clientbound/InteractionInteractionEnter (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| interaction/clientbound/InteractionInteractionEnterResultError (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| interaction/clientbound/InteractionInteractionEnterResultSuccess (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| interaction/clientbound/InteractionInteractionInvite (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| interaction/clientbound/InteractionInteractionInviteResult (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| interaction/clientbound/InteractionInteractionLeave (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| interaction/clientbound/InteractionInteractionUpdateMerchant (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
+| interaction/clientbound/InteractionInteractionUpdateMerchant (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | interaction/serverbound/InteractionOperationChat (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | interaction/serverbound/InteractionOperationFieldAddToBlackList (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | interaction/serverbound/InteractionOperationFieldRemoveFromBlackList (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
@@ -954,14 +948,14 @@ Tool: `bfecda916f252908d2fafda8adbe41d5763d4a1e`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v61 | 154 | 0 | 62 | 251 | 454 | 0 | 33.0% |
-| v72 | 216 | 0 | 73 | 218 | 414 | 0 | 42.6% |
-| v79 | 228 | 0 | 72 | 216 | 405 | 0 | 44.2% |
-| v83 | 367 | 0 | 0 | 347 | 207 | 0 | 51.4% |
-| v84 | 345 | 0 | 0 | 348 | 228 | 0 | 49.8% |
-| v87 | 379 | 0 | 0 | 372 | 170 | 0 | 50.5% |
-| v95 | 399 | 0 | 0 | 436 | 86 | 0 | 47.8% |
-| JMS185 | 362 | 0 | 0 | 382 | 177 | 0 | 48.7% |
+| v61 | 156 | 0 | 62 | 243 | 454 | 0 | 33.8% |
+| v72 | 216 | 0 | 73 | 212 | 414 | 0 | 43.1% |
+| v79 | 228 | 0 | 72 | 210 | 405 | 0 | 44.7% |
+| v83 | 367 | 0 | 0 | 341 | 207 | 0 | 51.8% |
+| v84 | 345 | 0 | 0 | 342 | 228 | 0 | 50.2% |
+| v87 | 379 | 0 | 0 | 366 | 170 | 0 | 50.9% |
+| v95 | 399 | 0 | 0 | 430 | 86 | 0 | 48.1% |
+| JMS185 | 362 | 0 | 0 | 376 | 177 | 0 | 49.1% |
 
 ## Conflicts
 

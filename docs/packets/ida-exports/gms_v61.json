@@ -5176,13 +5176,12 @@
    ]
   },
   "CMiniRoomBaseDlg::OnPacketBase": {
-   "address": "",
-   "direction": "",
-   "unresolved": true,
+   "address": "0x5bec69",
+   "direction": "clientbound",
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": "mode (sub_5BEC69 @0x5bec69). Active mini-room: 3->OnLeaveBase(sub_5BF352), 4->OnAvatar(sub_5BF5AE), 6->vtable[80] OnChat -> InteractionChat, 9->OnEnterBase(sub_5BF6FE), 10->OnInviteResult(sub_5BF647), default->vtable[64] sub-dispatch (CPersonalShopDlg::OnPacket; mode 25 = hired-merchant refresh -> OnRefresh -> InteractionUpdateMerchant). No-room arms: 2->OnCheckSSN2(sub_5BF17B), 5->OnInvite(sub_5BED05). Read order byte-identical to v72 @0x60e235 / v79 @0x62cd21 / v83; no MajorVersion gate in the interaction clientbound codecs."
     }
    ]
   },

@@ -14,6 +14,12 @@ import (
 // packet-audit:verify packet=character/serverbound/monsterbook/CharacterCover version=gms_v95 ida=0x908dd0
 // packet-audit:verify packet=character/serverbound/monsterbook/CharacterCover version=jms_v185 ida=0xa2c930
 // packet-audit:verify packet=character/serverbound/monsterbook/CharacterCover version=gms_v79 ida=0x8b7ab0
+// packet-audit:verify packet=character/serverbound/monsterbook/CharacterCover version=gms_v72 ida=0x86c0aa
+//
+// v72: CUserLocal::SetMonsterBookCover @0x86c0aa is the named char-data setter
+// (writes cover cardId to CharacterData+1419; no COutPacket, same setter role as
+// v83/v87/v95/jms). The single Encode4(cardId) TestCoverEncode pins is the
+// version-invariant wire and covers v72 like the other versions.
 //
 // v79: CUserLocal::SetMonsterBookCover @0x8b7ab0 is the named char-data setter
 // (no COutPacket, same as v83/v87/v95/jms setters); the actual send is the inlined

@@ -1,21 +1,11 @@
 {
   "WriterName": "ChalkboardClose",
   "IDAName": "CUserLocal::HandleLButtonClk",
-  "Address": "",
+  "Address": "0x85d00c",
   "Variant": "GMS/v72",
   "BranchDepth": 0,
   "AtlasFile": "libs/atlas-packet/character/serverbound/chalkboard_close.go",
-  "Rows": [
-    {
-      "Index": 0,
-      "AtlasOp": 0,
-      "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
-    }
-  ],
-  "Verdict": 2,
+  "Rows": null,
+  "Verdict": 0,
   "FlatInvalid": false
 }

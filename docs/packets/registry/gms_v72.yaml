@@ -2695,7 +2695,7 @@
 - op: FIELD_DAMAGE_MOB
   direction: serverbound
   opcode: 181
-  fname: sub_6361DF
+  fname: CMob::Update
   provenance: ida-discovered
   ida:
     address: 6385104
@@ -2703,7 +2703,7 @@
 - op: MOB_DAMAGE_MOB_FRIENDLY
   direction: serverbound
   opcode: 182
-  fname: sub_6361DF
+  fname: CMob::Update
   provenance: ida-discovered
   ida:
     address: 6385104

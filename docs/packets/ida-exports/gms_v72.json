@@ -6265,13 +6265,20 @@
    ]
   },
   "CMob::Update": {
-   "address": "",
+   "address": "0x616dd0",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Encode4",
+     "comment": "attackerId this.m_dwMobID @0x6176e1"
+    },
+    {
+     "op": "Encode4",
+     "comment": "observerId dwCharacterID @0x6176f4"
+    },
+    {
+     "op": "Encode4",
+     "comment": "attackedId target.m_dwMobID @0x617711"
     }
    ]
   },
@@ -9531,15 +9538,9 @@
    ]
   },
   "CUserLocal::HandleLButtonClk": {
-   "address": "",
+   "address": "0x85d00c",
    "direction": "serverbound",
-   "unresolved": true,
-   "calls": [
-    {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
-   ]
+   "calls": []
   },
   "CUserLocal::HandleUpKeyDown": {
    "address": "0x85b9b0",
@@ -9547,13 +9548,12 @@
    "calls": null
   },
   "CUserLocal::HandleXKeyDown": {
-   "address": "",
+   "address": "0x90a12b",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode2",
+     "comment": "chairId Encode2 @0x90a15f (get-up 0xFFFF); sit-down twin sub_85BF1A @0x85c028 emits COutPacket(41)+Encode2(seatIdx)"
     }
    ]
   },
@@ -14853,13 +14853,16 @@
    "calls": null
   },
   "CWvsContext::SendDropMoneyRequest": {
-   "address": "",
+   "address": "0x91bf9f",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode4",
+     "comment": "updateTime Encode4 @0x91c023"
+    },
+    {
+     "op": "Decode4",
+     "comment": "amount Encode4 @0x91c02e"
     }
    ]
   },
@@ -14983,13 +14986,12 @@
    "calls": []
   },
   "CWvsContext::SendStatChangeItemCancelRequest": {
-   "address": "",
+   "address": "0x904088",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode4",
+     "comment": "sourceId Encode4 @0x904126"
     }
    ]
   },

@@ -240,3 +240,99 @@ func TestHealOverTimeByteOutputV72(t *testing.T) {
 		t.Errorf("v72 HealOverTime wire:\n got %x\nwant %x", got, want)
 	}
 }
+
+// ---------------------------------------------------------------------------
+// Stage E — v72 character part G (chair / keymap / friendly-damage serverbound).
+// Codecs carry NO version gate, so the v72 wire is byte-identical to the
+// already-verified v79 fixtures; each byte below traces to a v72 decompile line.
+// ---------------------------------------------------------------------------
+
+// ChairFixed v72 byte-fixture — CANCEL_CHAIR, op 41 (0x29).
+//
+// Client send — CWvsContext::SendGetUpFromChairRequest @0x90a12b (the get-up
+// twin, registry ida.address 9478443): COutPacket(41) @0x90a14e then
+// Encode2(0xFFFF) @0x90a15f. The sit-down handler sub_85BF1A @0x85bf1a emits the
+// identical COutPacket(41) @0x85c018 + Encode2(seatIdx) @0x85c028 (seat index from
+// sub_51A7BA, guarded by CUser::IsStand). Both are a single int16 body — matches
+// ChairFixed.Encode ([int16 chairId]). op 41 = v79 op 40 + 1 (mid/field/social Δ+1).
+//
+// packet-audit:verify packet=character/serverbound/ChairFixed version=gms_v72 ida=0x90a12b
+func TestChairFixedByteOutputV72(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 72, 1)
+	got := ChairFixed{chairId: 42}.Encode(nil, ctx)(nil)
+	want := []byte{
+		0x2a, 0x00, // chairId 42 (Encode2) /*0x90a15f / 0x85c028*/
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("v72 ChairFixed wire: got %x want %x", got, want)
+	}
+}
+
+// KeyMapChange v72 byte-fixture — CHANGE_KEYMAP, op 133 (0x85).
+//
+// Client send — CFuncKeyMappedMan::SaveFuncKeyMap @0x5514eb:
+//
+//	COutPacket(133)                                                  /*0x551505*/
+//	Encode4(0)                             // mode (always 0)         /*0x551513*/
+//	Encode4(count)                         // # changed keys          /*0x551560*/
+//	per changed key:
+//	    Encode4(keyIdx)                    // key index               /*0x551574*/
+//	    FUNCKEY_MAPPED::Encode             // EncodeBuffer(5) = nType[1]+nID[4] /*0x55158a*/
+//
+// Byte-identical to v79 (mode int32 + count int32 + per-entry [keyId int32 +
+// theType int8 + action int32] = 9 bytes/entry). No version gate in the codec.
+//
+// packet-audit:verify packet=character/serverbound/KeyMapChange version=gms_v72 ida=0x5514eb
+func TestKeyMapChangeByteOutputV72(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 72, 1)
+	input := KeyMapChange{
+		mode: 0,
+		entries: []KeyMapEntry{
+			{KeyId: 2, TheType: 4, Action: 10},
+			{KeyId: 16, TheType: 4, Action: 8},
+		},
+	}
+	got := input.Encode(nil, ctx)(nil)
+	want := []byte{
+		0x00, 0x00, 0x00, 0x00, // mode = 0 (Encode4)            /*0x551513*/
+		0x02, 0x00, 0x00, 0x00, // count = 2 (Encode4)           /*0x551560*/
+		0x02, 0x00, 0x00, 0x00, // keyIdx 2 (Encode4)            /*0x551574*/
+		0x04,                   // theType 4 (FUNCKEY byte 0)     /*0x55158a*/
+		0x0a, 0x00, 0x00, 0x00, // action 10 (FUNCKEY bytes 1-4)
+		0x10, 0x00, 0x00, 0x00, // keyIdx 16 (Encode4)           /*0x551574*/
+		0x04,                   // theType 4
+		0x08, 0x00, 0x00, 0x00, // action 8
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("v72 KeyMapChange wire:\n got %x\nwant %x", got, want)
+	}
+}
+
+// MonsterDamageFriendly v72 byte-fixture — MOB_DAMAGE_MOB_FRIENDLY, op 182
+// (and FIELD_DAMAGE_MOB op 181; both map to CMob::Update in the matrix).
+//
+// Client send — CMob::Update (v72 sub_616DD0 @0x616dd0), friendly-damage send
+// site @0x6176bd:
+//
+//	COutPacket(182)                                                 /*0x6176bd*/
+//	Encode4(SecureFuse(this.m_dwMobID))    // attackerId (friendly mob) /*0x6176e1*/
+//	Encode4(*(g_pWvsContext+8352))         // observerId (dwCharacterID) /*0x6176f4*/
+//	Encode4(SecureFuse(target.m_dwMobID))  // attackedId (hostile mob)   /*0x617711*/
+//
+// Three Encode4, no version gate — byte-identical to the v79/v83 golden fixture.
+// op 182 = v79 op 184 - 2 (deep-cluster Δ-2).
+//
+// packet-audit:verify packet=character/serverbound/CharacterMonsterDamageFriendly version=gms_v72 ida=0x616dd0
+func TestMonsterDamageFriendlyByteOutputV72(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 72, 1)
+	input := MonsterDamageFriendly{attackerId: 0x11223344, observerId: 0x0010F447, attackedId: 0xAABBCCDD}
+	got := input.Encode(nil, ctx)(nil)
+	want := []byte{
+		0x44, 0x33, 0x22, 0x11, // attackerId (Encode4 this.m_dwMobID)     /*0x6176e1*/
+		0x47, 0xF4, 0x10, 0x00, // observerId (Encode4 dwCharacterID)      /*0x6176f4*/
+		0xDD, 0xCC, 0xBB, 0xAA, // attackedId (Encode4 target.m_dwMobID)   /*0x617711*/
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatalf("v72 MonsterDamageFriendly wire:\n got % x\nwant % x", got, want)
+	}
+}

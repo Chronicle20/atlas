@@ -1,7 +1,7 @@
 {
   "WriterName": "ChairFixed",
   "IDAName": "CUserLocal::HandleXKeyDown",
-  "Address": "",
+  "Address": "0x90a12b",
   "Variant": "GMS/v72",
   "BranchDepth": 0,
   "AtlasFile": "libs/atlas-packet/character/serverbound/chair_fixed.go",
@@ -10,12 +10,12 @@
       "Index": 0,
       "AtlasOp": 1,
       "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 4,
-      "Note": "IDA read-order unresolved: function not found in IDB"
+      "IDAOp": 1,
+      "IDAComment": "chairId Encode2 @0x90a15f (get-up 0xFFFF); sit-down twin sub_85BF1A @0x85c028 emits COutPacket(41)+Encode2(seatIdx)",
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 4,
+  "Verdict": 0,
   "FlatInvalid": false
 }

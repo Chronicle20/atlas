@@ -5,7 +5,7 @@
 
 Tool: `f7115324e91c1ab5036202417e1e0e7aa96ea97e`
 
-- export gms_v61: `24d9ebeea14c79a28895d4b07aabbc908bc217dc8457f35fb2924f0cca562db1`
+- export gms_v61: `b0c7fd0879ea610cf4c2d9fe5c54a6dae70c7748f6cc1b98a0dd430959084cd7`
 - export gms_v72: `a0ac2be6578395455f491976bcb11aa27e2e57376b46ee8816b90324bad60c02`
 - export gms_v79: `370d6b720b633c12c71d40340f3952000705c4bddb98f87179e7193d112d210c`
 - export gms_v83: `711bddcc2e1bdd417a75954148d2b50c64e70855e84259c0b8e50e700e393c0d`
@@ -65,7 +65,7 @@ Tool: `f7115324e91c1ab5036202417e1e0e7aa96ea97e`
 | FAME_RESPONSE | CWvsContext::OnGivePopularityResult | fame/clientbound/ErrorResponse | 0x023 | ❌ | 0x023 | ❌ | 0x023 | ❌ | 0x026 | ✅ | 0x026 | ✅ | 0x026 | ✅ | 0x025 | ✅ | 0x024 | ✅ |
 | SHOW_STATUS_INFO | CWvsContext::OnMessage | character/clientbound/StatusMessageCashItemExpire (T1) | 0x024 | ❌ | 0x024 | ✅ | 0x024 | ✅ | 0x027 | ✅ | 0x027 | ✅ | 0x027 | ✅ | 0x026 | ✅ | 0x025 | ✅ |
 | OPEN_FULL_CLIENT_DOWNLOAD_LINK | CWvsContext::OnOpenFullClientDownloadLink |  | 0x025 | ❌ | 0x025 | ❌ | 0x025 | ❌ | 0x028 | ❌ | 0x028 | ❌ | 0x028 | ❌ | 0x027 | ❌ |  | ⬜ |
-| MEMO_RESULT | CWvsContext::OnMemoResult | note/clientbound/NoteDisplay (T1) | 0x026 | ❌ | 0x026 | ✅ | 0x026 | ✅ | 0x029 | ✅ | 0x029 | ❌ | 0x029 | ✅ | 0x028 | ✅ | 0x026 | ❌ |
+| MEMO_RESULT | CWvsContext::OnMemoResult | note/clientbound/NoteDisplay (T1) | 0x026 | ✅ | 0x026 | ✅ | 0x026 | ✅ | 0x029 | ✅ | 0x029 | ❌ | 0x029 | ✅ | 0x028 | ✅ | 0x026 | ❌ |
 | MAP_TRANSFER_RESULT | CWvsContext::OnMapTransferResult |  | 0x027 | ❌ | 0x027 | ❌ | 0x027 | ❌ | 0x02A | ❌ | 0x02A | ❌ | 0x02A | ❌ | 0x029 | ❌ | 0x027 | ❌ |
 | WEDDING_PHOTO | CWvsContext::OnAntiMacroResult |  | 0x028 | ❌ | 0x028 | ❌ | 0x028 | ❌ | 0x02B | ❌ | 0x02B | ❌ | 0x02B | ❌ | 0x02A | ❌ | 0x028 | ❌ |
 | CLAIM_RESULT | CWvsContext::OnClaimResult |  | 0x02A | ❌ | 0x02A | ❌ | 0x02A | ❌ | 0x02D | ❌ | 0x02D | ❌ | 0x02D | ❌ | 0x02C | ❌ | 0x02A | ❌ |
@@ -631,7 +631,7 @@ Tool: `f7115324e91c1ab5036202417e1e0e7aa96ea97e`
 | FOLLOW_CHARACTER_WITHRDAW |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x075 | ❌ |
 | WATER_OF_LIFE | CWvsContext::SendWaterOfLife |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x075 | ❌ | 0x075 | ❌ | 0x078 | ❌ | 0x081 | ❌ |  | ⬜ |
 | BUDDYLIST_MODIFY | CField::SendAcceptFriendMsg; CField::SendDeleteFriendMsg; CField::SendSetFriendMsg; CWvsContext::LoadFriend | buddy/serverbound/BuddyOperationAccept (T1) | 0x076 | 🟡 | 0x080 | 🟡 | 0x07F | 🟡 | 0x082 | ✅ | 0x086 | ✅ | 0x08A | ✅ | 0x099 | ✅ | 0x085 | ✅ |
-| NOTE_ACTION | CCashShop::OnCashItemResLoadGiftDone; CMemoListDlg::SetRet; CWvsContext::OnMemoNotify_Receive | note/serverbound/NoteOperationDiscard (T1) | 0x077 | ❌ | 0x081 | ✅ | 0x080 | ✅ | 0x083 | ✅ | 0x087 | ✅ | 0x08B | ✅ | 0x09A | ✅ | 0x086 | ✅ |
+| NOTE_ACTION | CCashShop::OnCashItemResLoadGiftDone; CMemoListDlg::SetRet; CWvsContext::OnMemoNotify_Receive | note/serverbound/NoteOperationDiscard (T1) | 0x077 | ✅ | 0x081 | ✅ | 0x080 | ✅ | 0x083 | ✅ | 0x087 | ✅ | 0x08B | ✅ | 0x09A | ✅ | 0x086 | ✅ |
 | REPAIR_DURABILITY_ALL | CRepairDurabilityDlg::SendRepairDurabilityAll |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x079 | ❌ | 0x082 | ❌ | 0x06D | ❌ |
 | USE_DOOR | CField::TryEnterTownPortal; CTownPortalPool::TryEnterTownPortal | field/serverbound/FieldUseDoor (T1) | 0x079 | ❌ | 0x083 | ✅ | 0x082 | ✅ | 0x085 | ✅ | 0x089 | ✅ | 0x08D | ✅ | 0x09C | ✅ | 0x088 | ✅ |
 | REPAIR_DURABILITY | CRepairDurabilityDlg::SendRepairDurability |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x07A | ❌ | 0x083 | ❌ | 0x06E | ❌ |
@@ -982,7 +982,7 @@ Tool: `f7115324e91c1ab5036202417e1e0e7aa96ea97e`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v61 | 21 | 0 | 62 | 412 | 452 | 2 | 4.2% |
+| v61 | 23 | 0 | 62 | 410 | 452 | 2 | 4.6% |
 | v72 | 216 | 0 | 73 | 246 | 414 | 0 | 40.4% |
 | v79 | 228 | 0 | 72 | 244 | 405 | 0 | 41.9% |
 | v83 | 367 | 0 | 0 | 375 | 207 | 0 | 49.5% |

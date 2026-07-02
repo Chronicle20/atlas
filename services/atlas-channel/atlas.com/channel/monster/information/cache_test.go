@@ -36,7 +36,7 @@ func testCtx(t *testing.T) (context.Context, tenant.Model) {
 }
 
 func testModel(id uint32) Model {
-	return Model{monsterId: id, attacks: []AttackInfo{{Pos: 1, ConMP: 5}}}
+	return NewModelBuilder().SetMonsterId(id).SetAttacks([]AttackInfo{{Pos: 1, ConMP: 5}}).Build()
 }
 
 func TestCache_PositiveHitAvoidsSecondFetch(t *testing.T) {

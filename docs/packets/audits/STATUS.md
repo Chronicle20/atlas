@@ -5,7 +5,7 @@
 
 Tool: `dde4cb7f9c62159772672195dd4a20bb7d2f1343`
 
-- export gms_v72: `17326b1316ca9d1b5ea10bfed47c5226654415bc6a1797e4594daa239252fd67`
+- export gms_v72: `51e1a84eb0052a0447e79cc4cb5cc3632036a50287076caa0323be1c8fd5cf74`
 - export gms_v79: `370d6b720b633c12c71d40340f3952000705c4bddb98f87179e7193d112d210c`
 - export gms_v83: `711bddcc2e1bdd417a75954148d2b50c64e70855e84259c0b8e50e700e393c0d`
 - export gms_v84: `7eab9472e2afeda13faaf74273828d09d5f2481d67bec10235c3b2fd2f91e1eb`
@@ -585,7 +585,7 @@ Tool: `dde4cb7f9c62159772672195dd4a20bb7d2f1343`
 | SPECIAL_MOVE | CGrenade::SendTimeBombInfo; CUserLocal::DoActiveSkill_DamageMeter; CUserLocal::DoActiveSkill_Flying; CUserLocal::DoActiveSkill_Heal; CUserLocal::DoActiveSkill_MobCapture; CUserLocal::DoActiveSkill_OpenGate; CUserLocal::DoActiveSkill_RecoveryAura; CUserLocal::DoActiveSkill_SmokeShell; CUserLocal::DoActiveSkill_StatChangeAdmin; CUserLocal::DoActiveSkill_Summon; CUserLocal::DoActiveSkill_SummonMonster; CUserLocal::DoActiveSkill_TownPortal; CUserLocal::SendSkillUseRequest; CUserLocal::TryDoingMonsterMagnet; CUserLocal::TryDoingSwallowAbsorb; sub_8C0CBE |  | 0x05A | ❌ | 0x059 | ❌ | 0x05B | ❌ | 0x05B | ❌ | 0x05E | ❌ | 0x067 | ❌ | 0x056 | ❌ |
 | USE_SHOP_SCANNER_ITEM | CWvsContext::SendShopScannerItemUseRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x05A | ❌ |  | ⬜ |
 | CANCEL_BUFF | CUserLocal::SendSkillCancelRequest | character/serverbound/BuffCancelRequest (T1) | 0x05B | 🟡 | 0x05A | 🟡 | 0x05C | ✅ | 0x05C | ✅ | 0x05F | ✅ | 0x068 | ✅ | 0x057 | ✅ |
-| SKILL_EFFECT | CUserLocal::DoActiveSkill_Prepare | character/serverbound/CharacterSkillPrepare (T1) | 0x05C | ❌ | 0x05B | ✅ | 0x05D | ✅ | 0x05D | ✅ | 0x060 | ✅ | 0x069 | ✅ | 0x058 | ✅ |
+| SKILL_EFFECT | CUserLocal::DoActiveSkill_Prepare | character/serverbound/CharacterSkillPrepare (T1) | 0x05C | ✅ | 0x05B | ✅ | 0x05D | ✅ | 0x05D | ✅ | 0x060 | ✅ | 0x069 | ✅ | 0x058 | ✅ |
 | MESO_DROP | CWvsContext::SendDropMoneyRequest | character/serverbound/DropMeso (T1) | 0x05D | ❌ | 0x05C | ✅ | 0x05E | ✅ | 0x05E | ✅ | 0x061 | ✅ | 0x06A | ✅ | 0x059 | ✅ |
 | GIVE_FAME | CWvsContext::SendGivePopularityRequest; sub_96E07F | fame/serverbound/Change | 0x05E | ❌ | 0x05D | ❌ | 0x05F | ✅ | 0x05F | ✅ | 0x062 | ✅ | 0x06B | ✅ | 0x05A | ✅ |
 | HYPER_UPGRADE_ITEM_USE | CWvsContext::SendHyperUpgradeItemUseRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x05E | ❌ | 0x04F | ❌ |
@@ -914,7 +914,7 @@ Tool: `dde4cb7f9c62159772672195dd4a20bb7d2f1343`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v72 | 187 | 0 | 73 | 211 | 411 | 0 | 39.7% |
+| v72 | 188 | 0 | 73 | 210 | 411 | 0 | 39.9% |
 | v79 | 228 | 0 | 72 | 180 | 402 | 0 | 47.5% |
 | v83 | 367 | 0 | 0 | 311 | 204 | 0 | 54.1% |
 | v84 | 345 | 0 | 0 | 312 | 225 | 0 | 52.5% |

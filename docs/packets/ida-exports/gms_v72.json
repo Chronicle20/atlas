@@ -9509,13 +9509,24 @@
    ]
   },
   "CUserLocal::DoActiveSkill_Prepare": {
-   "address": "",
+   "address": "0x874c8f",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode4",
+     "comment": ""
+    },
+    {
+     "op": "Decode1",
+     "comment": ""
+    },
+    {
+     "op": "Decode1",
+     "comment": ""
+    },
+    {
+     "op": "Decode1",
+     "comment": ""
     }
    ]
   },

@@ -353,3 +353,372 @@ func TestCharacterInfoByteOutputV72(t *testing.T) {
 		t.Errorf("v72 CharacterInfo must equal v83:\n v72 %x\n v83 %x", got, v83)
 	}
 }
+
+// ---------------------------------------------------------------------------
+// Stage E batch 10 — character part C (spawn/damage/expression/chair/sit/keymap
+// /effect/upgrade/chalkboard). v72 IDB GMS_v72.1_U_DEVM.exe @13339.
+//
+// The remote-user clientbound ops route through CUserPool::OnUserRemotePacket
+// @0x87c046, which reads Decode4(characterId) @0x87c050 BEFORE dispatch; SPAWN's
+// charId is read by CUserPool::OnUserEnterField @0x87bc74 (Decode4 @0x87bc88).
+// Every read order below was decompiled on the v72 IDB and matches the verified
+// v79 golden (v79_test.go) byte-for-byte, so these fixtures mirror the v79 ones.
+// ---------------------------------------------------------------------------
+
+// CharacterSpawn v72 byte-fixture — SPAWN_PLAYER, op 145.
+//
+// CUserPool::OnUserEnterField @0x87bc74 reads Decode4 characterId (@0x87bc88) then
+// builds CUserRemote via sub_888AF4 (the v72 CUserRemote::Init) whose read order is:
+//
+//	name        = DecodeStr   // this+3884   /*0x888b1f*/ (NO leading level byte)
+//	guildName   = DecodeStr   // this+3888   /*0x888b4f*/
+//	logoBg      = Decode2     // this+3892   /*0x888b85*/
+//	logoBgColor = Decode1     // this+3894   /*0x888b93*/
+//	logo        = Decode2     // this+3896   /*0x888ba0*/
+//	logoColor   = Decode1     // this+3898   /*0x888bac*/
+//	SecondaryStat::DecodeForRemote          // cts (opaque §5) /*0x888bbf*/
+//	jobId       = Decode2     // this+11640  /*0x888bd0*/
+//	AvatarLook::Decode                      // avatar (opaque §5) /*0x888c09*/
+//	choco       = Decode4     // SetCarryItemEffect     /*0x888c1e*/
+//	itemEffect  = Decode4     // SetActiveEffectItem     /*0x888c28*/
+//	chair       = Decode4     // SetActivePortableChair  /*0x888c32*/
+//	x           = Decode2                                /*0x888c42*/
+//	y           = Decode2                                /*0x888c4f*/
+//	stance      = Decode1     // this+1360   /*0x888c5a*/
+//	foothold    = Decode2                                /*0x888c6a*/
+//	bShowAdmin  = Decode1                                /*0x888ce7*/
+//	pets while(Decode1) loop, 0 terminator              /*0x888d7e*/
+//	mountLevel  = Decode4     // this+8788   /*0x888df4*/
+//	mountExp    = Decode4     // this+8792   /*0x888e01*/
+//	mountTired  = Decode4     // this+8796   /*0x888e0e*/
+//	miniRoom    = Decode1 (0 => skip)                    /*0x888e23*/
+//	adBoard     = Decode1 (0 => skip)                    /*0x888f89*/
+//	couple      = Decode1 (0 => skip)                    /*0x8890b6*/
+//	friend      = Decode1 (0 => skip)                    /*0x8890fb*/
+//	marriage    = Decode1 (0 => skip)                    /*0x889140*/
+//	newYearCard = Decode1 (0 => skip)                    /*0x889185*/
+//	effectFlag  = Decode1 (last read)                    /*0x8891c1*/
+//
+// As in v79 (and unlike v83+): NO leading Decode1 level byte and NO trailing team
+// / 2nd-effect byte. Byte-identical to the v79 fixture.
+//
+// packet-audit:verify packet=character/clientbound/CharacterSpawn version=gms_v72 ida=0x87bc74
+func TestCharacterSpawnByteOutputV72(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 72, 1)
+	guild := GuildEmblem{Name: "TestGuild", LogoBackground: 1, LogoBackgroundColor: 2, Logo: 3, LogoColor: 4}
+	cts := model.NewCharacterTemporaryStat()
+	in := NewCharacterSpawn(12345, 50, "TestChar", guild, cts, 100, model.Avatar{}, nil, false, 100, 200, 3)
+	got := in.Encode(nil, ctx)(nil)
+
+	// Prefix through the guild emblem — proves NO level byte follows charId.
+	var wantPrefix []byte
+	wantPrefix = append(wantPrefix, 0x39, 0x30, 0x00, 0x00) // characterId 12345 (Decode4) /*0x87bc88*/
+	// NO level byte
+	wantPrefix = append(wantPrefix, 0x08, 0x00, 0x54, 0x65, 0x73, 0x74, 0x43, 0x68, 0x61, 0x72) // "TestChar" /*0x888b1f*/
+	wantPrefix = append(wantPrefix, 0x09, 0x00, 0x54, 0x65, 0x73, 0x74, 0x47, 0x75, 0x69, 0x6c, 0x64) // "TestGuild" /*0x888b4f*/
+	wantPrefix = append(wantPrefix, 0x01, 0x00) // logoBg (Decode2)      /*0x888b85*/
+	wantPrefix = append(wantPrefix, 0x02)       // logoBgColor (Decode1) /*0x888b93*/
+	wantPrefix = append(wantPrefix, 0x03, 0x00) // logo (Decode2)        /*0x888ba0*/
+	wantPrefix = append(wantPrefix, 0x04)       // logoColor (Decode1)   /*0x888bac*/
+	if !bytes.HasPrefix(got, wantPrefix) {
+		t.Errorf("v72 CharacterSpawn prefix (no level byte):\n got %x\nwant %x", got[:min(len(got), len(wantPrefix))], wantPrefix)
+	}
+
+	// Suffix from jobId — proves NO trailing team byte (last wire byte is effectFlag @0x8891c1).
+	avatarBytes := model.Avatar{}.Encode(nil, ctx)(nil)
+	var wantSuffix []byte
+	wantSuffix = append(wantSuffix, 0x64, 0x00) // jobId 100 (Decode2)   /*0x888bd0*/
+	wantSuffix = append(wantSuffix, avatarBytes...) // avatar (opaque §5) /*0x888c09*/
+	wantSuffix = append(wantSuffix, 0x00, 0x00, 0x00, 0x00) // choco (Decode4)      /*0x888c1e*/
+	wantSuffix = append(wantSuffix, 0x00, 0x00, 0x00, 0x00) // itemEffect (Decode4) /*0x888c28*/
+	wantSuffix = append(wantSuffix, 0x00, 0x00, 0x00, 0x00) // chair (Decode4)      /*0x888c32*/
+	wantSuffix = append(wantSuffix, 0x64, 0x00) // x 100 (Decode2)       /*0x888c42*/
+	wantSuffix = append(wantSuffix, 0xc8, 0x00) // y 200 (Decode2)       /*0x888c4f*/
+	wantSuffix = append(wantSuffix, 0x03)       // stance (Decode1)      /*0x888c5a*/
+	wantSuffix = append(wantSuffix, 0x00, 0x00) // foothold (Decode2)    /*0x888c6a*/
+	wantSuffix = append(wantSuffix, 0x00)       // bShowAdmin (Decode1)  /*0x888ce7*/
+	wantSuffix = append(wantSuffix, 0x00)       // pets terminator       /*0x888d7e*/
+	wantSuffix = append(wantSuffix, 0x01, 0x00, 0x00, 0x00) // mountLevel (Decode4) /*0x888df4*/
+	wantSuffix = append(wantSuffix, 0x00, 0x00, 0x00, 0x00) // mountExp (Decode4)   /*0x888e01*/
+	wantSuffix = append(wantSuffix, 0x00, 0x00, 0x00, 0x00) // mountTired (Decode4) /*0x888e0e*/
+	wantSuffix = append(wantSuffix, 0x00) // miniRoom (Decode1)    /*0x888e23*/
+	wantSuffix = append(wantSuffix, 0x00) // adBoard (Decode1)     /*0x888f89*/
+	wantSuffix = append(wantSuffix, 0x00) // couple (Decode1)      /*0x8890b6*/
+	wantSuffix = append(wantSuffix, 0x00) // friend (Decode1)      /*0x8890fb*/
+	wantSuffix = append(wantSuffix, 0x00) // marriage (Decode1)    /*0x889140*/
+	wantSuffix = append(wantSuffix, 0x00) // newYearCard (Decode1) /*0x889185*/
+	wantSuffix = append(wantSuffix, 0x00) // effectFlag (Decode1, last read) /*0x8891c1*/
+	if !bytes.HasSuffix(got, wantSuffix) {
+		n := len(wantSuffix)
+		if n > len(got) {
+			n = len(got)
+		}
+		t.Errorf("v72 CharacterSpawn suffix (no team byte):\n got %x\nwant %x", got[len(got)-n:], wantSuffix)
+	}
+}
+
+// CharacterDamage v72 byte-fixture — DAMAGE_PLAYER, op 174.
+//
+// CUserRemote::OnHit @0x88c5ad read order (physical, attackIdx = -1; -1 > -2 so the
+// LABEL_32 shortcut is NOT taken):
+//
+//	attackIdx        = Decode1   /*0x88c5ca*/
+//	damage           = Decode4   /*0x88c5e0*/
+//	monsterTemplate  = Decode4   /*0x88c5f4*/
+//	left             = Decode1   /*0x88c602*/
+//	stance           = Decode1 (0 => inner block skipped) /*0x88c756*/
+//	stanceRelated    = Decode1   /*0x88c870*/
+//	damage (repeat)  = Decode4   /*0x88c897*/
+//
+// characterId(4) is read by the pool dispatcher (Decode4 @0x87c050). No bGuard byte
+// (GMS>=95 only; v72 < 95). Byte-identical to the v79 fixture.
+//
+// packet-audit:verify packet=character/clientbound/CharacterDamage version=gms_v72 ida=0x88c5ad
+func TestCharacterDamageByteOutputV72(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 72, 1)
+	got := NewCharacterDamage(1234, model.DamageTypePhysical, 500, 100100, true).Encode(nil, ctx)(nil)
+	want := []byte{
+		0xd2, 0x04, 0x00, 0x00, // characterId 1234 (dispatcher Decode4) /*0x87c050*/
+		0xff,                   // attackIdx -1 (Decode1)                /*0x88c5ca*/
+		0xf4, 0x01, 0x00, 0x00, // damage 500 (Decode4)                  /*0x88c5e0*/
+		0x04, 0x87, 0x01, 0x00, // monsterTemplateId 100100 (Decode4)    /*0x88c5f4*/
+		0x01,                   // left (Decode1)                        /*0x88c602*/
+		0x00,                   // stance (Decode1)                      /*0x88c756*/
+		0x00,                   // stanceRelated (Decode1)               /*0x88c870*/
+		0xf4, 0x01, 0x00, 0x00, // damage repeated (Decode4)             /*0x88c897*/
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("v72 CharacterDamage wire:\n got %x\nwant %x", got, want)
+	}
+}
+
+// CharacterExpression v72 byte-fixture — FACIAL_EXPRESSION, op 175.
+//
+// Read inline in CUserPool::OnUserRemotePacket case 175 @0x87c0c6: v6 = Decode4,
+// then CAvatar::SetEmotion(RemoteUser+124, v6, -1) — NO duration, NO byItemOption
+// (GMS>87 / JMS only; v72 < 87). characterId(4) is read by the dispatcher
+// (Decode4 @0x87c050). Byte-identical to the v79 fixture.
+//
+// packet-audit:verify packet=character/clientbound/CharacterExpression version=gms_v72 ida=0x44cb1a
+func TestCharacterExpressionByteOutputV72(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 72, 1)
+	got := NewCharacterExpression(12345, 5, 3000).Encode(nil, ctx)(nil)
+	want := []byte{
+		0x39, 0x30, 0x00, 0x00, // characterId 12345 (dispatcher Decode4) /*0x87c050*/
+		0x05, 0x00, 0x00, 0x00, // expression 5 (Decode4)                 /*0x87c0c6*/
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("v72 CharacterExpression wire: got %x want %x", got, want)
+	}
+}
+
+// CharacterChairShow v72 byte-fixture — SHOW_CHAIR, op 178.
+//
+// Read inline in CUserPool::OnUserRemotePacket case 178 @0x87c12e:
+// *((_DWORD*)RemoteUser + 2902) = Decode4(chairId); characterId(4) is read by the
+// dispatcher (Decode4 @0x87c050). Two LE uint32s. Byte-identical to the v79 fixture.
+//
+// packet-audit:verify packet=character/clientbound/CharacterChairShow version=gms_v72 ida=0x87c046
+func TestCharacterChairShowByteOutputV72(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 72, 1)
+	got := NewCharacterChairShow(1234, 3010000).Encode(nil, ctx)(nil)
+	want := []byte{
+		0xd2, 0x04, 0x00, 0x00, // characterId 1234 (dispatcher Decode4) /*0x87c050*/
+		0xd0, 0xed, 0x2d, 0x00, // chairId 3010000 (Decode4)             /*0x87c12e*/
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("v72 CharacterChairShow wire: got %x want %x", got, want)
+	}
+}
+
+// CharacterSitResult v72 byte-fixture — CANCEL_CHAIR clientbound, op 187.
+//
+// CUserLocal::OnSitResult @0x865e68: flag = Decode1; if flag != 0 then
+// nSeat = Decode2 @0x865ee5 (else stand-up branch reads nothing more). Byte-identical
+// to the v79 fixture.
+//
+// packet-audit:verify packet=character/clientbound/CharacterSitResult version=gms_v72 ida=0x865e68
+func TestCharacterSitResultByteOutputV72(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 72, 1)
+	// sit: flag(1)=1 then chairId(2, LE) read.
+	gotSit := NewCharacterSit(17).Encode(nil, ctx)(nil)
+	wantSit := []byte{0x01, 0x11, 0x00} // flag=1, chairId 17 (Decode2) /*0x865ee5*/
+	if !bytes.Equal(gotSit, wantSit) {
+		t.Errorf("v72 CharacterSitResult sit: got %x want %x", gotSit, wantSit)
+	}
+	// cancel: flag(1)=0, stand-up branch reads nothing else.
+	gotCancel := NewCharacterCancelSit().Encode(nil, ctx)(nil)
+	wantCancel := []byte{0x00} // flag=0
+	if !bytes.Equal(gotCancel, wantCancel) {
+		t.Errorf("v72 CharacterSitResult cancel: got %x want %x", gotCancel, wantCancel)
+	}
+}
+
+// CharacterKeyMap v72 byte-fixture — KEYMAP, op 298.
+//
+// CFuncKeyMappedMan::OnInit @0x551370: reset = Decode1 @0x551378; if reset == 0 the
+// client loops v5 = 89 FUNCKEY_MAPPED::Decode (each DecodeBuffer(5) = nType[1]+nID[4])
+// @0x5513ad, then memcpy 0x1BD = 445 = 89*5 @0x5513d5. v72 reads 89 entries (== v79,
+// NOT the 90 the v83 codec historically emits); keymap.go gates the count to 89 for
+// GMS < 83.
+//
+// packet-audit:verify packet=character/clientbound/CharacterKeyMap version=gms_v72 ida=0x551370
+func TestCharacterKeyMapByteOutputV72(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 72, 1)
+	keys := map[int32]KeyBinding{
+		2:  {KeyType: 4, KeyAction: 10},
+		16: {KeyType: 4, KeyAction: 8},
+		41: {KeyType: 4, KeyAction: 11},
+	}
+	got := NewCharacterKeyMap(keys).Encode(nil, ctx)(nil)
+
+	var want []byte
+	want = append(want, 0x00) // not-reset flag (Decode1 == 0) /*0x551378*/
+	for i := int32(0); i < 89; i++ { // v72 reads 89 FUNCKEY_MAPPED entries /*0x5513ad v5=89*/
+		if k, ok := keys[i]; ok {
+			want = append(want, byte(k.KeyType)) // nType /*0x5513b4*/
+			want = append(want, byte(k.KeyAction), byte(k.KeyAction>>8), byte(k.KeyAction>>16), byte(k.KeyAction>>24))
+		} else {
+			want = append(want, 0x00, 0x00, 0x00, 0x00, 0x00)
+		}
+	}
+	if len(got) != 1+89*5 {
+		t.Fatalf("v72 CharacterKeyMap length: got %d, want %d", len(got), 1+89*5)
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("v72 CharacterKeyMap wire:\n got %x\nwant %x", got, want)
+	}
+
+	gotReset := NewCharacterKeyMapResetToDefault().Encode(nil, ctx)(nil)
+	if !bytes.Equal(gotReset, []byte{0x01}) {
+		t.Errorf("v72 CharacterKeyMap reset: got %x want 01", gotReset)
+	}
+}
+
+// EffectQuest v72 byte-fixture — SHOW_FOREIGN_EFFECT (180) / SHOW_ITEM_GAIN_INCHAT (188).
+//
+// CUser::OnEffect @0x846e1e dispatches on Decode1(mode); mode 3 (case 3u) reads:
+//
+//	count = Decode1                        /*0x8471dd*/
+//	if count == 0:
+//	    message = DecodeStr                /*0x847357*/
+//	    nEffect = Decode4                  /*0x847397*/
+//	else (count>0): repeat count times:
+//	    itemId  = Decode4                  /*0x8471f9*/
+//	    amount  = Decode4                  /*0x84720a*/
+//
+// EffectQuestForeign prepends Decode4(characterId) consumed by
+// CUserPool::OnUserRemotePacket before dispatch. Byte-identical to the v79 fixture.
+//
+// packet-audit:verify packet=character/clientbound/EffectQuest version=gms_v72 ida=0x846e1e
+func TestEffectQuestByteOutputV72(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 72, 1)
+
+	t.Run("message", func(t *testing.T) {
+		got := NewEffectQuest(3, "Hello", 0x10, nil).Encode(nil, ctx)(nil)
+		want := []byte{
+			0x03,                         // mode (OnEffect selector = case 3) /*0x846e31*/
+			0x00,                         // count = 0 (Decode1)               /*0x8471dd*/
+			0x05, 0x00, 0x48, 0x65, 0x6c, 0x6c, 0x6f, // "Hello" (DecodeStr)    /*0x847357*/
+			0x10, 0x00, 0x00, 0x00, // nEffect 0x10 (Decode4)                  /*0x847397*/
+		}
+		if !bytes.Equal(got, want) {
+			t.Errorf("v72 EffectQuest message:\n got %x\nwant %x", got, want)
+		}
+	})
+
+	t.Run("rewards", func(t *testing.T) {
+		got := NewEffectQuest(3, "", 0, []QuestReward{{ItemId: 2000000, Amount: 5}}).Encode(nil, ctx)(nil)
+		want := []byte{
+			0x03,                   // mode                                  /*0x846e31*/
+			0x01,                   // count = 1 (Decode1)                   /*0x8471dd*/
+			0x80, 0x84, 0x1e, 0x00, // itemId 2000000 (Decode4)              /*0x8471f9*/
+			0x05, 0x00, 0x00, 0x00, // amount 5 (Decode4)                    /*0x84720a*/
+		}
+		if !bytes.Equal(got, want) {
+			t.Errorf("v72 EffectQuest rewards:\n got %x\nwant %x", got, want)
+		}
+	})
+
+	t.Run("foreign", func(t *testing.T) {
+		got := NewEffectQuestForeign(0x12345678, 3, "Hi", 7, nil).Encode(nil, ctx)(nil)
+		want := []byte{
+			0x78, 0x56, 0x34, 0x12, // characterId (dispatcher Decode4)      /*0x87c050*/
+			0x03,             // mode                                        /*0x846e31*/
+			0x00,             // count = 0                                   /*0x8471dd*/
+			0x02, 0x00, 0x48, 0x69, // "Hi"                                  /*0x847357*/
+			0x07, 0x00, 0x00, 0x00, // nEffect 7 (Decode4)                   /*0x847397*/
+		}
+		if !bytes.Equal(got, want) {
+			t.Errorf("v72 EffectQuestForeign:\n got %x\nwant %x", got, want)
+		}
+	})
+}
+
+// ItemUpgrade v72 byte-fixture — SHOW_SCROLL_EFFECT, op 152.
+//
+// CUser::ShowItemUpgradeEffect @0x84315c reads, after the dispatcher's Decode4
+// characterId, exactly four Decode1 flags:
+//
+//	success         = Decode1  /*0x843191*/
+//	cursed          = Decode1  /*0x84319b*/
+//	legendarySpirit = Decode1  /*0x8431ac*/
+//	whiteScroll     = Decode1  /*0x8431b7*/
+//
+// v72 (GMS < 87) reads NO Decode4 enchantCategory and NO 5th Decode1 enchantResultFlag
+// (both are GMS>87 / JMS additions). Matches item_upgrade.go's <=87 path; identical to
+// the v83/v87 wire.
+//
+// packet-audit:verify packet=character/clientbound/ItemUpgrade version=gms_v72 ida=0x84315c
+func TestItemUpgradeByteOutputV72(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 72, 1)
+	got := NewItemUpgrade(12345, true, false, true, false).Encode(nil, ctx)(nil)
+	want := []byte{
+		0x39, 0x30, 0x00, 0x00, // characterId 12345 (dispatcher Decode4)
+		0x01, // success = true (Decode1)         /*0x843191*/
+		0x00, // cursed = false (Decode1)         /*0x84319b*/
+		0x01, // legendarySpirit = true (Decode1) /*0x8431ac*/
+		0x00, // whiteScroll = false (Decode1)    /*0x8431b7*/
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("v72 ItemUpgrade wire:\n got %x\nwant %x", got, want)
+	}
+}
+
+// ChalkboardUse v72 byte-fixture — CHALKBOARD, op 149.
+//
+// CUser::OnADBoard @0x846c4c reads, after the dispatcher's Decode4 characterId:
+//
+//	active  = Decode1  // if-guard (0 => clear, no message)
+//	message = DecodeStr // only when active                 /*0x846cae*/
+//
+// Byte-identical to the v79 fixture.
+//
+// packet-audit:verify packet=character/clientbound/ChalkboardUse version=gms_v72 ida=0x846c4c
+func TestChalkboardUseByteOutputV72(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 72, 1)
+
+	t.Run("active", func(t *testing.T) {
+		got := NewChalkboardUse(1234, "Hi").Encode(nil, ctx)(nil)
+		want := []byte{
+			0xD2, 0x04, 0x00, 0x00, // characterId (dispatcher prefix)
+			0x01,       // active = 1 (Decode1)
+			0x02, 0x00, // message len = 2 (DecodeStr) /*0x846cae*/
+			0x48, 0x69, // "Hi"
+		}
+		if !bytes.Equal(got, want) {
+			t.Errorf("v72 ChalkboardUse active:\n got %x\nwant %x", got, want)
+		}
+	})
+
+	t.Run("clear", func(t *testing.T) {
+		got := NewChalkboardClear(1234).Encode(nil, ctx)(nil)
+		want := []byte{
+			0xD2, 0x04, 0x00, 0x00, // characterId (dispatcher prefix)
+			0x00, // active = 0 (Decode1 false)
+		}
+		if !bytes.Equal(got, want) {
+			t.Errorf("v72 ChalkboardUse clear:\n got %x\nwant %x", got, want)
+		}
+	})
+}

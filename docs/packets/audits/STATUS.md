@@ -81,12 +81,12 @@ Tool: `bfecda916f252908d2fafda8adbe41d5763d4a1e`
 | SUE_CHARACTER_RESULT | CWvsContext::OnSueCharacterResult |  | 0x034 | ❌ | 0x034 | ❌ | 0x034 | ❌ | 0x037 | ❌ | 0x037 | ❌ | 0x037 | ❌ | 0x037 | ❌ |  | ⬜ |
 | TRADE_MONEY_LIMIT | CWvsContext::OnTradeMoneyLimit |  | 0x036 | ❌ | 0x036 | ❌ | 0x036 | ❌ | 0x039 | ❌ | 0x039 | ❌ | 0x039 | ❌ | 0x039 | ❌ |  | ⬜ |
 | SET_GENDER | CWvsContext::OnSetGender |  | 0x037 | ❌ | 0x037 | ❌ | 0x037 | ❌ | 0x03A | ❌ | 0x03A | ❌ | 0x03A | ❌ | 0x03A | ❌ |  | ⬜ |
-| GUILD_BBS_PACKET | CUIGuildBBS::OnGuildBBSPacket | guild/clientbound/GuildBBSEntryNotFound (T1) | 0x038 | ❌ | 0x038 | ✅ | 0x038 | ✅ | 0x03B | ✅ | 0x03B | ✅ | 0x03B | ✅ | 0x03B | ✅ |  | ⬜ |
+| GUILD_BBS_PACKET | CUIGuildBBS::OnGuildBBSPacket | guild/clientbound/GuildBBSEntryNotFound (T1) | 0x038 | ✅ | 0x038 | ✅ | 0x038 | ✅ | 0x03B | ✅ | 0x03B | ✅ | 0x03B | ✅ | 0x03B | ✅ |  | ⬜ |
 | IDA_0X038 | CWvsContext::OnExpedtionResult |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x038 | ❌ |
 | CHAR_INFO | CWvsContext::OnCharacterInfo | character/clientbound/CharacterInfo (T1) | 0x03A | ❌ | 0x03A | ✅ | 0x03A | ✅ | 0x03D | ✅ | 0x03D | ✅ | 0x03D | ✅ | 0x03D | ✅ | 0x035 | ✅ |
 | PARTY_OPERATION | CWvsContext::OnPartyResult | party/clientbound/PartyAlreadyJoined1 (T1) | 0x03B | ✅ | 0x03B | ✅ | 0x03B | ✅ | 0x03E | ✅ | 0x03E | ✅ | 0x03E | ✅ | 0x03E | ✅ | 0x036 | ✅ |
 | BUDDYLIST | CWvsContext::OnFriendResult | buddy/clientbound/BuddyAlreadyBuddy (T1) | 0x03C | ✅ | 0x03C | ✅ | 0x03C | ✅ | 0x03F | ✅ | 0x041 | ✅ | 0x041 | ✅ | 0x041 | ✅ | 0x039 | ✅ |
-| GUILD_OPERATION | CWvsContext::OnGuildResult | guild/clientbound/GuildBoardAuthKeyUpdate (T1) | 0x03E | ❌ | 0x03E | ✅ | 0x03E | ✅ | 0x041 | ✅ | 0x043 | ✅ | 0x043 | ✅ | 0x043 | ✅ | 0x03B | ✅ |
+| GUILD_OPERATION | CWvsContext::OnGuildResult | guild/clientbound/GuildBoardAuthKeyUpdate (T1) | 0x03E | ✅ | 0x03E | ✅ | 0x03E | ✅ | 0x041 | ✅ | 0x043 | ✅ | 0x043 | ✅ | 0x043 | ✅ | 0x03B | ✅ |
 | ALLIANCE_OPERATION | CWvsContext::OnAllianceResult |  | 0x03F | ❌ | 0x03F | ❌ | 0x03F | ❌ | 0x042 | ❌ | 0x042 | ❌ | 0x044 | ❌ | 0x044 | ❌ | 0x03C | ❌ |
 | EXPEDITION_RESULT | CWvsContext::OnExpedtionResult |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x040 | ❌ | 0x040 | ❌ |  | ⬜ |
 | SPAWN_PORTAL | CWvsContext::OnTownPortal | door/clientbound/RemoveTownDoor | 0x040 | ❌ | 0x040 | ❌ | 0x040 | ❌ | 0x043 | ✅ | 0x045 | ✅ | 0x045 | ✅ | 0x045 | ✅ | 0x03D | ✅ |
@@ -248,9 +248,9 @@ Tool: `bfecda916f252908d2fafda8adbe41d5763d4a1e`
 | ARIANT_ARENA_SHOW_RESULT | CField_AriantArena::OnShowResult | field/clientbound/FieldAriantArenaShowResult (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x09B | ✅ | 0x09E | ✅ | 0x0A3 | ✅ | 0x0AB | ✅ | 0x097 | ✅ |
 | CANCEL_FOREIGN_BUFF | CUserRemote::OnResetTemporaryStat | character/clientbound/BuffCancelForeign (T1) | 0x09B | 🟡 | 0x0B6 | 🟡 | 0x0BA | 🟡 | 0x0C8 | ✅ | 0x0CC | ✅ | 0x0D5 | ✅ | 0x0E2 | ✅ | 0x0CE | ✅ |
 | UPDATE_PARTYMEMBER_HP | CUserRemote::OnReceiveHP | party/clientbound/PartyMemberHP (T1) | 0x09C | ✅ | 0x0B7 | ✅ | 0x0BB | ✅ | 0x0C9 | ✅ | 0x0CD | ✅ | 0x0D6 | ✅ | 0x0E3 | ✅ | 0x0CF | ✅ |
-| GUILD_NAME_CHANGED | CUserRemote::OnGuildNameChanged | guild/clientbound/GuildForeignNameChanged (T1) | 0x09D | ❌ | 0x0B8 | ✅ | 0x0BC | ✅ | 0x0CA | ✅ | 0x0CE | ✅ | 0x0D7 | ✅ | 0x0E4 | ✅ | 0x0D0 | ✅ |
+| GUILD_NAME_CHANGED | CUserRemote::OnGuildNameChanged | guild/clientbound/GuildForeignNameChanged (T1) | 0x09D | ✅ | 0x0B8 | ✅ | 0x0BC | ✅ | 0x0CA | ✅ | 0x0CE | ✅ | 0x0D7 | ✅ | 0x0E4 | ✅ | 0x0D0 | ✅ |
 | PYRAMID_GAUGE | CField_Massacre::OnMassacreIncGauge | field/clientbound/FieldPyramidGauge (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x09D | ✅ | 0x0A0 | ✅ | 0x0A5 | ✅ | 0x0AD | ✅ | 0x099 | ✅ |
-| GUILD_MARK_CHANGED | CUserRemote::OnGuildMarkChanged | guild/clientbound/GuildForeignEmblemChanged (T1) | 0x09E | ❌ | 0x0B9 | ✅ | 0x0BD | ✅ | 0x0CB | ✅ | 0x0CF | ✅ | 0x0D8 | ✅ | 0x0E5 | ✅ | 0x0D1 | ✅ |
+| GUILD_MARK_CHANGED | CUserRemote::OnGuildMarkChanged | guild/clientbound/GuildForeignEmblemChanged (T1) | 0x09E | ✅ | 0x0B9 | ✅ | 0x0BD | ✅ | 0x0CB | ✅ | 0x0CF | ✅ | 0x0D8 | ✅ | 0x0E5 | ✅ | 0x0D1 | ✅ |
 | PYRAMID_SCORE | CField_MassacreResult::OnMassacreResult | field/clientbound/FieldPyramidScore (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x09E | ✅ | 0x0A1 | ✅ | 0x0A6 | ✅ | 0x0AE | ✅ | 0x09A | ✅ |
 | QUICKSLOT_INIT | CQuickslotKeyMappedMan::OnInit |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x09F | ❌ | 0x09F | ❌ | 0x0A7 | ❌ | 0x0AF | ❌ | 0x09B | ❌ |
 | THROW_GRENADE | CUserRemote::OnThrowGrenade |  | 0x09F | ❌ | 0x0BA | ❌ | 0x0BE | ❌ | 0x0CC | ❌ | 0x0D0 | ❌ | 0x0D9 | ❌ | 0x0E6 | ❌ | 0x0D2 | ❌ |
@@ -981,7 +981,7 @@ Tool: `bfecda916f252908d2fafda8adbe41d5763d4a1e`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v61 | 27 | 0 | 62 | 405 | 452 | 2 | 5.4% |
+| v61 | 31 | 0 | 62 | 401 | 452 | 2 | 6.2% |
 | v72 | 216 | 0 | 73 | 245 | 414 | 0 | 40.4% |
 | v79 | 228 | 0 | 72 | 243 | 405 | 0 | 42.0% |
 | v83 | 367 | 0 | 0 | 374 | 207 | 0 | 49.5% |

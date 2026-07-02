@@ -1,6 +1,6 @@
 # PetCommand (← `CPet::ParseCommand`)
 
-- **IDA:** 
+- **IDA:** 0x613b18
 - **Atlas file:** `libs/atlas-packet/pet/serverbound/command.go`
 - **Variant:** GMS/v61
 - **Branch depth:** 0
@@ -10,7 +10,7 @@
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | int64 | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
+| 0 | int64 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 1 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
 | 2 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
 

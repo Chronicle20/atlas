@@ -4907,7 +4907,7 @@
   "CLogin::SendLoginPacket": {
    "address": "0x564dc9",
    "direction": "serverbound",
-   "notes": "v61 CHARLIST_REQUEST send = sub_564DC9 @0x564dc9: COutPacket(5)@0x564eeb + Encode1(worldId)+Encode1(channelId) then SendPacket. NO getsockname/Encode4(socketAddr) — that is a v72+ addition (v72 twin sub_5B1B25 adds it @0x5b1c92). Surgically spliced (IDB unnamed sub_564DC9).",
+   "notes": "v61 CHARLIST_REQUEST send = sub_564DC9 @0x564dc9: COutPacket(5)@0x564eeb + Encode1(worldId)+Encode1(channelId) then SendPacket. NO getsockname/Encode4(socketAddr) \u2014 that is a v72+ addition (v72 twin sub_5B1B25 adds it @0x5b1c92). Surgically spliced (IDB unnamed sub_564DC9).",
    "calls": [
     {
      "op": "Encode1",
@@ -6019,12 +6019,6 @@
    "direction": "serverbound",
    "calls": [
     {
-     "op": "Delegate",
-     "comment": "",
-     "guard": "a3 >= 0 && a3 >= 9",
-     "ref": "sub_612B04"
-    },
-    {
      "op": "DecodeBuf",
      "comment": "",
      "guard": "a3 >= 0 && a5"
@@ -6142,37 +6136,19 @@
    ]
   },
   "CPet::ParseCommand": {
-   "address": "",
+   "address": "0x613b18",
    "direction": "serverbound",
-   "unresolved": true,
-   "calls": [
-    {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
-   ]
+   "calls": []
   },
   "CPet::SendDropPickUpRequest": {
-   "address": "",
+   "address": "0x6149db",
    "direction": "serverbound",
-   "unresolved": true,
-   "calls": [
-    {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
-   ]
+   "calls": []
   },
   "CPet::SendUpdateExceptionListRequest": {
-   "address": "",
+   "address": "0x61504d",
    "direction": "serverbound",
-   "unresolved": true,
-   "calls": [
-    {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
-   ]
+   "calls": []
   },
   "CQuest::StartQuest": {
    "address": "0x623b12",
@@ -7344,26 +7320,14 @@
    ]
   },
   "CSummoned::SetDamaged": {
-   "address": "",
+   "address": "0x67bb40",
    "direction": "serverbound",
-   "unresolved": true,
-   "calls": [
-    {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
-   ]
+   "calls": []
   },
   "CSummoned::TryDoingAttackManual": {
-   "address": "",
+   "address": "0x67a9ca",
    "direction": "serverbound",
-   "unresolved": true,
-   "calls": [
-    {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
-   ]
+   "calls": []
   },
   "CSummonedPool::OnAttack": {
    "address": "0x67c39f",
@@ -7381,27 +7345,27 @@
    "calls": [
     {
      "op": "Decode4",
-     "comment": "cid/ownerId — CUserPool::OnUserCommonPacket (consumed upstream before dispatch)"
+     "comment": "cid/ownerId \u2014 CUserPool::OnUserCommonPacket (consumed upstream before dispatch)"
     },
     {
      "op": "Decode4",
-     "comment": "oid — summon cluster dispatcher sub_7922E8 Decode4@0x792327 (read before leaf dispatch)"
+     "comment": "oid \u2014 summon cluster dispatcher sub_7922E8 Decode4@0x792327 (read before leaf dispatch)"
     },
     {
      "op": "Decode1",
-     "comment": "attackIdx — damage leaf sub_67C936 Decode1@0x67c967"
+     "comment": "attackIdx \u2014 damage leaf sub_67C936 Decode1@0x67c967"
     },
     {
      "op": "Decode4",
-     "comment": "damage — Decode4@0x67c97c"
+     "comment": "damage \u2014 Decode4@0x67c97c"
     },
     {
      "op": "Decode4",
-     "comment": "monsterIdFrom — Decode4@0x67c98e"
+     "comment": "monsterIdFrom \u2014 Decode4@0x67c98e"
     },
     {
      "op": "Decode1",
-     "comment": "bLeft — Decode1@0x67c99c"
+     "comment": "bLeft \u2014 Decode1@0x67c99c"
     }
    ]
   },
@@ -7411,15 +7375,15 @@
    "calls": [
     {
      "op": "Decode4",
-     "comment": "cid/ownerId — CUserPool::OnUserCommonPacket (consumed upstream before dispatch)"
+     "comment": "cid/ownerId \u2014 CUserPool::OnUserCommonPacket (consumed upstream before dispatch)"
     },
     {
      "op": "Decode4",
-     "comment": "oid — summon cluster dispatcher sub_7922E8 Decode4@0x792327 (read before leaf dispatch)"
+     "comment": "oid \u2014 summon cluster dispatcher sub_7922E8 Decode4@0x792327 (read before leaf dispatch)"
     },
     {
      "op": "DecodeBuf",
-     "comment": "raw CMovePath movement blob — sub_67C37E@0x67c37e -> CMovePath::OnMovePacket"
+     "comment": "raw CMovePath movement blob \u2014 sub_67C37E@0x67c37e -> CMovePath::OnMovePacket"
     }
    ]
   },
@@ -7429,15 +7393,15 @@
    "calls": [
     {
      "op": "Decode4",
-     "comment": "cid/ownerId — CUserPool::OnUserCommonPacket (consumed upstream before dispatch)"
+     "comment": "cid/ownerId \u2014 CUserPool::OnUserCommonPacket (consumed upstream before dispatch)"
     },
     {
      "op": "Decode4",
-     "comment": "oid — summon cluster dispatcher sub_7922E8 Decode4@0x792327 (read before leaf dispatch)"
+     "comment": "oid \u2014 summon cluster dispatcher sub_7922E8 Decode4@0x792327 (read before leaf dispatch)"
     },
     {
      "op": "Decode1",
-     "comment": "leave/animated flag — sub_67BFED Decode1@0x67c002 (branched 0/2/3/4)"
+     "comment": "leave/animated flag \u2014 sub_67BFED Decode1@0x67c002 (branched 0/2/3/4)"
     }
    ]
   },
@@ -7447,15 +7411,15 @@
    "calls": [
     {
      "op": "Decode4",
-     "comment": "cid/ownerId — CUserPool::OnUserCommonPacket (consumed upstream before dispatch)"
+     "comment": "cid/ownerId \u2014 CUserPool::OnUserCommonPacket (consumed upstream before dispatch)"
     },
     {
      "op": "Decode4",
-     "comment": "oid — summon cluster dispatcher sub_7922E8 Decode4@0x792327 (read before leaf dispatch)"
+     "comment": "oid \u2014 summon cluster dispatcher sub_7922E8 Decode4@0x792327 (read before leaf dispatch)"
     },
     {
      "op": "Decode1",
-     "comment": "newStance — skill leaf sub_67C8D2 Decode1@0x67c921 (masked 0x7F)"
+     "comment": "newStance \u2014 skill leaf sub_67C8D2 Decode1@0x67c921 (masked 0x7F)"
     }
    ]
   },
@@ -9693,15 +9657,9 @@
    "calls": null
   },
   "CVecCtrlPet::EndUpdateActive": {
-   "address": "",
+   "address": "0x7fbb76",
    "direction": "serverbound",
-   "unresolved": true,
-   "calls": [
-    {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
-   ]
+   "calls": []
   },
   "CVecCtrlSummoned::EndUpdateActive": {
    "address": "",
@@ -13461,15 +13419,9 @@
    ]
   },
   "CWvsContext::SendGatherItemRequest": {
-   "address": "",
+   "address": "0x8314d0",
    "direction": "serverbound",
-   "unresolved": true,
-   "calls": [
-    {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
-   ]
+   "calls": []
   },
   "CWvsContext::SendGetUpFromChairRequest": {
    "address": "0x8374fe",
@@ -13537,15 +13489,9 @@
    ]
   },
   "CWvsContext::SendSortItemRequest": {
-   "address": "",
+   "address": "0x831564",
    "direction": "serverbound",
-   "unresolved": true,
-   "calls": [
-    {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
-   ]
+   "calls": []
   },
   "CWvsContext::SendStatChangeItemCancelRequest": {
    "address": "",
@@ -13623,15 +13569,9 @@
    ]
   },
   "CWvsContext::SendUpgradeItemUseRequest": {
-   "address": "",
+   "address": "0x8317a4",
    "direction": "serverbound",
-   "unresolved": true,
-   "calls": [
-    {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
-   ]
+   "calls": []
   },
   "CWvsContext::TryRecovery": {
    "address": "0x82ceaa",

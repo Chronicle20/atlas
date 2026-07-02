@@ -31,6 +31,23 @@ func TestCompartmentSortRequestBytesV72(t *testing.T) {
 	}
 }
 
+// v61 (ITEM_SORT2 op 65, sub_831564 @0x831564): COutPacket(65) +
+// Encode4(get_update_time)@0x8315a9 + Encode1(a2=compartmentType, guarded a2 in
+// [1,5])@0x8315b4 — body byte-identical to v72 [E4,E1]. Located by structure-match
+// to the v72 sort twin sub_9039D7 (consecutive with the gather twin;
+// SetExclRequestSent + this[2083..2084] + guard [1,5]). CORRECTS the prior mislabel
+// op69/CWvsContext::TryRecovery (an EMPTY-body portable-chair packet @0x82d304);
+// v61 sort is NOT empty — it carries updateTime+compartmentType like v72. No gate.
+// packet-audit:verify packet=inventory/serverbound/InventoryCompartmentSortRequest version=gms_v61 ida=0x831564
+func TestCompartmentSortRequestBytesV61(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 61, 1)
+	got := pt.Encode(t, ctx, CompartmentSortRequest{updateTime: 100, compartmentType: 2}.Encode, nil)
+	want := []byte{0x64, 0x00, 0x00, 0x00, 0x02} // updateTime=100 (LE), compartmentType=2
+	if !bytes.Equal(got, want) {
+		t.Fatalf("v61 = % X, want % X", got, want)
+	}
+}
+
 func TestCompartmentSortRequestRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

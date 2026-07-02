@@ -55,6 +55,26 @@ func TestPetMovementBytesV72(t *testing.T) {
 	}
 }
 
+// TestPetMovementBytesV61 pins the v61 wire = v72 (no version gate). IDA
+// GMS_v61.1_U_DEVM.exe @port 13338: CVecCtrlPet::EndUpdateActive sub_7FBB76@0x7fbb76
+// builds COutPacket(138)@0x7fbba5, EncodeBuffer(petId,8)@0x7fbbc6, then
+// CMovePath::Flush writes the raw movement blob. v72 op161 (Δ-23).
+// packet-audit:verify packet=pet/serverbound/PetMovementRequest version=gms_v61 ida=0x7fbb76
+func TestPetMovementBytesV61(t *testing.T) {
+	ctx := test.CreateContext("GMS", 61, 1)
+	p := MovementRequest{petId: 0x0102030405060708}
+	got := p.Encode(nil, ctx)(nil)
+	want := []byte{
+		0x08, 0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01, // petId EncodeBuffer(8)@0x7fbbc6 (LE)
+		0x00, 0x00, // movement StartX
+		0x00, 0x00, // movement StartY
+		0x00, // movement element count = 0
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatalf("v61 = % X, want % X", got, want)
+	}
+}
+
 // packet-audit:verify packet=pet/serverbound/PetMovementRequest version=gms_v79 ida=0x9150a1
 func TestPetMovementBytesV79(t *testing.T) {
 	ctx := test.CreateContext("GMS", 79, 1)

@@ -1,7 +1,7 @@
 {
   "WriterName": "InventoryScrollUse",
   "IDAName": "CWvsContext::SendUpgradeItemUseRequest",
-  "Address": "",
+  "Address": "0x8317a4",
   "Variant": "GMS/v61",
   "BranchDepth": 0,
   "AtlasFile": "libs/atlas-packet/inventory/serverbound/scroll_use.go",
@@ -10,10 +10,10 @@
       "Index": 0,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 4,
-      "Note": "IDA read-order unresolved: function not found in IDB"
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
     },
     {
       "Index": 1,

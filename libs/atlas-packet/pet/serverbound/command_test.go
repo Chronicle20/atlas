@@ -54,6 +54,24 @@ func TestCommandBytesV72(t *testing.T) {
 	}
 }
 
+// TestCommandBytesV61 pins the v61 wire = v72 (no version gate). IDA
+// GMS_v61.1_U_DEVM.exe @port 13338: CPet::ParseCommand sub_613B18@0x613b18 send
+// block builds COutPacket(140)@0x613d51, EncodeBuffer(petId,8)@0x613d66,
+// Encode1(byName)@0x613d71, Encode1(command)@0x613d7c. v72 op163 (Δ-23).
+// packet-audit:verify packet=pet/serverbound/PetCommand version=gms_v61 ida=0x613b18
+func TestCommandBytesV61(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 61, 1)
+	got := Command{petId: 0x0102030405060708, byName: true, command: 0x09}.Encode(nil, ctx)(nil)
+	want := []byte{
+		0x08, 0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01, // petId EncodeBuffer(8)@0x613d66 (LE)
+		0x01, // byName Encode1@0x613d71
+		0x09, // command Encode1@0x613d7c
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatalf("v61 = % X, want % X", got, want)
+	}
+}
+
 // packet-audit:verify packet=pet/serverbound/PetCommand version=gms_v79 ida=0x6914db
 func TestCommandBytesV79(t *testing.T) {
 	ctx := pt.CreateContext("GMS", 79, 1)

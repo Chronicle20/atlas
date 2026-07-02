@@ -472,12 +472,12 @@
         "handler": "HiredMerchantOperationHandle"
       },
       {
-        "opCode": "0x44",
+        "opCode": "0x40",
         "validator": "LoggedInValidator",
         "handler": "CompartmentMergeHandle"
       },
       {
-        "opCode": "0x45",
+        "opCode": "0x41",
         "validator": "LoggedInValidator",
         "handler": "CompartmentSortHandle"
       },

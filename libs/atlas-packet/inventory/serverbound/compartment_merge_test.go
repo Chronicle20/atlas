@@ -32,6 +32,22 @@ func TestCompartmentMergeRequestBytesV72(t *testing.T) {
 	}
 }
 
+// v61 (ITEM_SORT op 64, sub_8314D0 @0x8314d0): COutPacket(64) +
+// Encode4(get_update_time)@0x831515 + Encode1(a2=compartmentType, guarded a2 in
+// [1,5])@0x831520 — body byte-identical to v72 [E4,E1]. The op-64 send-site was
+// located by structure-match to the v72 gather twin sub_903945 (SetExclRequestSent
+// + this[2083..2084] + guard [1,5]); the prior registry op68/sub_831BB7 was a
+// different item-id send (mislabel). No version gate on the codec.
+// packet-audit:verify packet=inventory/serverbound/InventoryCompartmentMergeRequest version=gms_v61 ida=0x8314d0
+func TestCompartmentMergeRequestBytesV61(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 61, 1)
+	got := pt.Encode(t, ctx, CompartmentMergeRequest{updateTime: 100, compartmentType: 1}.Encode, nil)
+	want := []byte{0x64, 0x00, 0x00, 0x00, 0x01} // updateTime=100 (LE), compartmentType=1
+	if !bytes.Equal(got, want) {
+		t.Fatalf("v61 = % X, want % X", got, want)
+	}
+}
+
 func TestCompartmentMergeRequestRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

@@ -1,0 +1,10 @@
+packet: inventory/serverbound/InventoryCompartmentSortRequest
+direction: serverbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::SendSortItemRequest
+    address: "0x831564"
+    decompile_sha256: 37faec732812c68eae1efb718656d1e6730f2d29e3a7ff99f1c980934e610931
+verifies:
+  - libs/atlas-packet/inventory/serverbound/compartment_sort_test.go#TestCompartmentSortRequestBytesV61

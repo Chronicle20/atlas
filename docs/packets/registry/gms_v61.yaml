@@ -2121,8 +2121,8 @@
   fname: CPet::DoAction
   provenance: ida-discovered
   ida:
-    address: 6291023
-  note: 'v61 send-site harvest (COutPacket ctor @0x5ffc4f): CPet::DoAction. COutPacket(139); Δ-23 vs v72 op162.'
+    address: 6374306
+  note: 'v61 send-site CPet::DoAction @0x6143a2, send block @0x61455a: COutPacket(139)+EncodeBuffer(petId,8)+Encode1(nType)+Encode1(nAction)+EncodeStr(msg); no updateTime (GMS<95). body == v72. v72 op162 (Δ-23).'
 - op: PET_AUTO_POT
   direction: serverbound
   opcode: 142
@@ -2181,12 +2181,12 @@
   note: 'v61 send-site harvest (COutPacket ctor @0x5ffc4f): CField_GuildBoss::BasicActionAttack. COutPacket(180); Δ-25 vs v72 op205.'
 - op: ITEM_SORT
   direction: serverbound
-  opcode: 68
-  fname: sub_831BB7
+  opcode: 64
+  fname: CWvsContext::SendGatherItemRequest
   provenance: ida-discovered
   ida:
-    address: 6291023
-  note: 'v61 send-site harvest (COutPacket ctor @0x5ffc4f): sub_831BB7 COutPacket(68), CWvsContext item region; Δ0 vs v72.'
+    address: 8590544
+  note: 'v61 send-site sub_8314D0 @0x8314d0: COutPacket(64)+Encode4(updateTime)+Encode1(compartmentType,guarded[1,5]) = SendGatherItemRequest twin; body == v72 [E4,E1]. CORRECTS prior mislabel op68/sub_831BB7 (a different item-id send).'
 - op: ITEM_MOVE
   direction: serverbound
   opcode: 70
@@ -2301,12 +2301,12 @@
   note: 'v61 send-site (0x6e7922): COutPacket(53)+Encode4(coverCardId). v72 MONSTER_BOOK_COVER=56 (Δ-3, matches MOB_BANISH=52 Δ-3).'
 - op: ITEM_SORT2
   direction: serverbound
-  opcode: 69
-  fname: CWvsContext::TryRecovery
+  opcode: 65
+  fname: CWvsContext::SendSortItemRequest
   provenance: ida-discovered
   ida:
-    address: 8573700
-  note: 'v61 send-site (0x82d304): COutPacket(69) empty body. Opcode-adjacent to ITEM_SORT=68 (v72 ITEM_SORT2=69, Δ0). NOTE: v61 body is empty vs v72 [E4,E1] — v61 sort-request carries no args (server sorts active tab). fname label unreliable (harvest).'
+    address: 8590692
+  note: 'v61 send-site sub_831564 @0x831564: COutPacket(65)+Encode4(updateTime)+Encode1(compartmentType,guarded[1,5]) = SendSortItemRequest twin; body == v72 [E4,E1]. CORRECTS prior mislabel op69/CWvsContext::TryRecovery (empty-body portable-chair packet); v61 sort is NOT empty.'
 - op: USE_RETURN_SCROLL
   direction: serverbound
   opcode: 78
@@ -2318,11 +2318,11 @@
 - op: USE_UPGRADE_SCROLL
   direction: serverbound
   opcode: 79
-  fname: sub_8317A4
+  fname: CWvsContext::SendUpgradeItemUseRequest
   provenance: ida-discovered
   ida:
-    address: 8591311
-  note: 'v61 send-site (0x8317cf, CWvsContext item region): COutPacket(79)+Encode4(time)+Encode2(useSlot)+Encode2(eqSlot)+Encode2(whiteScroll)+Encode1 = SendUpgradeItemUseRequest, v72 USE_UPGRADE_SCROLL=85 (Δ-6).'
+    address: 8591268
+  note: 'v61 send-site sub_8317A4 @0x8317a4: COutPacket(79)+Encode4(updateTime)+Encode2(scrollSlot)+Encode2(equipSlot)+Encode2(whiteScroll)+Encode1(legendarySpirit) = SendUpgradeItemUseRequest; body == v72. v72 op85 (Δ-6).'
 - op: MESO_DROP
   direction: serverbound
   opcode: 82
@@ -2390,51 +2390,51 @@
 - op: MOVE_PET
   direction: serverbound
   opcode: 138
-  fname: sub_7FBB76
+  fname: CVecCtrlPet::EndUpdateActive
   provenance: ida-discovered
   ida:
-    address: 8371109
-  note: 'v61 send-site (0x7fbba5): COutPacket(138)+EncodeBuffer(pos,8)+CMovePath::Flush. v72 MOVE_PET=161 (Δ-23).'
+    address: 8371062
+  note: 'v61 send-site sub_7FBB76 @0x7fbb76: COutPacket(138)+EncodeBuffer(petId,8)+CMovePath::Flush = EndUpdateActive; body == v72. v72 op161 (Δ-23).'
 - op: PET_COMMAND
   direction: serverbound
   opcode: 140
-  fname: sub_613B18
+  fname: CPet::ParseCommand
   provenance: ida-discovered
   ida:
-    address: 6372689
-  note: 'v61 send-site (0x613d51, CPet): COutPacket(140)+EncodeBuffer(8)+Encode1+Encode1. Matches v72 PET_COMMAND=163 [EncBuf,E1,E1]; Δ-23.'
+    address: 6372120
+  note: 'v61 send-site sub_613B18 @0x613b18: COutPacket(140)+EncodeBuffer(petId,8)+Encode1(byName)+Encode1(command) = ParseCommand; body == v72. v72 op163 (Δ-23).'
 - op: PET_LOOT
   direction: serverbound
   opcode: 141
-  fname: sub_6149DB
+  fname: CPet::SendDropPickUpRequest
   provenance: ida-discovered
   ida:
-    address: 6375926
-  note: 'v61 send-site (0x6149f6, CPet): COutPacket(141)+EncodeBuffer(8)+Encode1+Encode4+Encode2+Encode2+Encode4+Encode1+Encode1+Encode1. EXACT match to v72 PET_LOOT=164; Δ-23.'
+    address: 6375899
+  note: 'v61 send-site sub_6149DB @0x6149db: COutPacket(141)+EncodeBuffer(petId,8)+Encode1(fieldKey)+Encode4(updateTime)+Encode2(x)+Encode2(y)+Encode4(dropId)+Encode1x3(bools); NO crc (v61<83). body == v72. v72 op164 (Δ-23).'
 - op: PET_EXCLUDE_ITEMS
   direction: serverbound
   opcode: 143
-  fname: sub_61504D
+  fname: CPet::SendUpdateExceptionListRequest
   provenance: ida-discovered
   ida:
-    address: 6377576
-  note: 'v61 send-site (0x615068, CPet): COutPacket(143)+EncodeBuffer(8)+Encode1(count)+Encode4(loop). Matches v72 PET_EXCLUDE_ITEMS=166 [EncBuf,E1,E4]; Δ-23.'
+    address: 6377549
+  note: 'v61 send-site sub_61504D @0x61504d: COutPacket(143)+EncodeBuffer(petId,8)+Encode1(count)+Encode4(loop itemId) = SendUpdateExceptionListRequest; body == v72. v72 op166 (Δ-23).'
 - op: SUMMON_ATTACK
   direction: serverbound
   opcode: 147
-  fname: sub_67A9CA
+  fname: CSummoned::TryDoingAttackManual
   provenance: ida-discovered
   ida:
-    address: 6796170
-  note: 'v61 send-site (0x67b38a, CSummoned region 0x67....): COutPacket(147)+full attack body. EXACT 17-field match to v72 SUMMON_ATTACK=170; Δ-23. Contiguous with DAMAGE_SUMMON(148)/MOVE_SUMMON(146).'
+    address: 6793674
+  note: 'v61 send-site sub_67A9CA @0x67a9ca, send block @0x67b38a: COutPacket(147)+summonId+updateTime+action|left+count+per-target(mobId,hitAction,fore|left,frameIdx,calcDmgIdx,curX,curY,hitX,hitY,tDelay,damage)+summonX+summonY; NO templateId, NO skillCRC = v72 legacy-lean. v72 op170 (Δ-23).'
 - op: DAMAGE_SUMMON
   direction: serverbound
   opcode: 148
-  fname: sub_67BB40
+  fname: CSummoned::SetDamaged
   provenance: ida-discovered
   ida:
-    address: 6798724
-  note: 'v61 send-site (0x67bd84, CSummoned): COutPacket(148)+Encode4+Encode1+Encode4+Encode4+Encode1+Encode1+Encode4. EXACT match to v72 DAMAGE_SUMMON=171; Δ-23.'
+    address: 6798144
+  note: 'v61 send-site sub_67BB40 @0x67bb40, send block @0x67bd84: COutPacket(148)+Encode4(summonId)+mob-branch{Encode1(attackIdx),Encode4(damage),Encode4(mobTemplateId),Encode1(dir<0)} or no-mob{Encode1(0xFE),Encode4(damage)}; body == v72. v72 op171 (Δ-23).'
 - op: MOVE_SUMMON
   direction: serverbound
   opcode: 146

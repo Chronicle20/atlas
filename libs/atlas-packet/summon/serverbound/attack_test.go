@@ -115,6 +115,57 @@ func TestSummonAttackByteV72(t *testing.T) {
 	}
 }
 
+// TestSummonAttackByteV61 pins the gms_v61 SUMMON_ATTACK (op 147) serverbound
+// send. IDA GMS_v61.1_U_DEVM.exe @port 13338: CSummoned::TryDoingAttackManual
+// sub_67A9CA@0x67a9ca, send block @0x67b38a builds COutPacket(147)@0x67b38a,
+// Encode4(summonId)@0x67b39c, Encode4(updateTime)@0x67b3aa, Encode1(action|left)
+// @0x67b3c3, Encode1(count)@0x67b3ce, then per-target(mobId only — NO templateId)
+// @0x67b3ff..0x67b4ba, Encode2(summonX)@0x67b4de, Encode2(summonY)@0x67b4f2, then
+// SendPacket — NO skillCRC (v61<79). Byte-identical to the v72 legacy-lean frame;
+// isLegacyLeanAttack(GMS,61)=true, hasTargetTemplateId=false, hasSkillCrcTrailer=false.
+// DECODE fixture: hand-build a real-shaped body and assert a clean cursor.
+// packet-audit:verify packet=summon/serverbound/SummonAttackHandle version=gms_v61 ida=0x67a9ca
+func TestSummonAttackByteV61(t *testing.T) {
+	body := []byte{}
+	body = append(body, le32(1000005)...) // summonId
+	body = append(body, le32(123456)...)   // updateTime
+	body = append(body, 0x83)              // action|left (left bit + action 3)
+	body = append(body, 0x02)              // count = 2
+	body = append(body, mobBlockV79(2000001, 100, 1234)...)
+	body = append(body, mobBlockV79(2000002, -50, 5678)...)
+	body = append(body, le16(510)...) // summonX (after targets)
+	body = append(body, le16(590)...) // summonY
+	// NO skillCRC on v61
+
+	ctx := test.CreateContext("GMS", 61, 1)
+	l, _ := testlog.NewNullLogger()
+	req := request.Request(body)
+	reader := request.NewRequestReader(&req, 0)
+	var m Attack
+	m.Decode(l, ctx)(&reader, nil)
+
+	if m.SummonId() != 1000005 {
+		t.Errorf("summonId = %d, want 1000005", m.SummonId())
+	}
+	if m.Direction() != 0x83 {
+		t.Errorf("direction = %#x, want 0x83", m.Direction())
+	}
+	if len(m.Targets()) != 2 {
+		t.Fatalf("targets len = %d, want 2", len(m.Targets()))
+	}
+	t0 := m.Targets()[0]
+	if t0.MonsterOid() != 2000001 || t0.TemplateId() != 0 || t0.Damage() != 1234 || t0.Delay() != 100 {
+		t.Errorf("target[0] = %+v, want oid=2000001 tmpl=0 dmg=1234 delay=100", t0)
+	}
+	t1 := m.Targets()[1]
+	if t1.MonsterOid() != 2000002 || t1.TemplateId() != 0 || t1.Damage() != 5678 || t1.Delay() != -50 {
+		t.Errorf("target[1] = %+v, want oid=2000002 tmpl=0 dmg=5678 delay=-50", t1)
+	}
+	if reader.Available() > 0 {
+		t.Errorf("reader has %d unconsumed bytes after decode", reader.Available())
+	}
+}
+
 // TestSummonAttackByteV79 pins the gms_v79 SUMMON_ATTACK (op 0xAC) serverbound
 // send. IDA: CSummoned::TryDoingAttackManual @0x71b522, send block
 // COutPacket(172)@0x71bfe1 (GMS_v79_1_DEVM.exe, port 13340). The v79 layout is

@@ -57,6 +57,25 @@ func TestExcludeItemBytesV72(t *testing.T) {
 	}
 }
 
+// TestExcludeItemBytesV61 pins the v61 wire = v72 (no version gate). IDA
+// GMS_v61.1_U_DEVM.exe @port 13338: CPet::SendUpdateExceptionListRequest
+// sub_61504D@0x61504d builds COutPacket(143)@0x615068, EncodeBuffer(petId,8)@0x61507d,
+// Encode1(count)@0x615092, then Encode4(itemId)@0x6150aa per entry. v72 op166 (Δ-23).
+// packet-audit:verify packet=pet/serverbound/PetExcludeItem version=gms_v61 ida=0x61504d
+func TestExcludeItemBytesV61(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 61, 1)
+	got := ExcludeItem{petId: 0x0102030405060708, itemIds: []int32{0x11223344, 0x55667788}}.Encode(nil, ctx)(nil)
+	want := []byte{
+		0x08, 0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01, // petId EncodeBuffer(8)@0x61507d (LE)
+		0x02,                   // count Encode1@0x615092
+		0x44, 0x33, 0x22, 0x11, // itemId[0] Encode4@0x6150aa (LE)
+		0x88, 0x77, 0x66, 0x55, // itemId[1] Encode4@0x6150aa (LE)
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatalf("v61 = % X, want % X", got, want)
+	}
+}
+
 // packet-audit:verify packet=pet/serverbound/PetExcludeItem version=gms_v79 ida=0x692abb
 func TestExcludeItemBytesV79(t *testing.T) {
 	ctx := pt.CreateContext("GMS", 79, 1)

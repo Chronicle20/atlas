@@ -100,6 +100,27 @@ func TestChatBytesV72(t *testing.T) {
 	}
 }
 
+// TestChatBytesV61 pins the v61 wire = v72 (no updateTime, GMS<95). IDA
+// GMS_v61.1_U_DEVM.exe @port 13338: CPet::DoAction@0x6143a2 send block builds
+// COutPacket(139)@0x61455a, EncodeBuffer(petId,8)@0x61456f, Encode1(nType)@0x61457a,
+// Encode1(nAction)@0x61458e, EncodeStr(msg)@0x6145ae. No updateTime int. v72 op162 (Δ-23).
+// packet-audit:verify packet=pet/serverbound/PetChatRequest version=gms_v61 ida=0x6143a2
+func TestChatBytesV61(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 61, 1)
+	in := ChatRequest{petId: 0x0102030405060708, updateTime: 0x11223344, nType: 0x07, nAction: 0x09, msg: "Hi"}
+	got := in.Encode(nil, ctx)(nil)
+	want := []byte{
+		0x08, 0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01, // petId EncodeBuffer(8)@0x61456f (LE)
+		0x07,       // nType Encode1@0x61457a (NO updateTime, GMS<95)
+		0x09,       // nAction Encode1@0x61458e
+		0x02, 0x00, // msg length EncodeStr@0x6145ae
+		0x48, 0x69, // "Hi"
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatalf("v61 = % X, want % X", got, want)
+	}
+}
+
 // packet-audit:verify packet=pet/serverbound/PetChatRequest version=gms_v79 ida=0x691d4e
 func TestChatBytesV79(t *testing.T) {
 	ctx := pt.CreateContext("GMS", 79, 1)

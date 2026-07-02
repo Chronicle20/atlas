@@ -53,6 +53,7 @@ import (
 	"atlas-channel/listener"
 	"atlas-channel/logger"
 	monsterDomain "atlas-channel/monster"
+	monsterinfo "atlas-channel/monster/information"
 	"atlas-channel/server"
 	"atlas-channel/session"
 	_ "atlas-channel/skill/handler/registrations"
@@ -290,6 +291,7 @@ func main() {
 		account.GetRegistry().EvictTenant(tid)
 		monsterDomain.GetStatusMirror().EvictTenant(tid)
 		monsterDomain.GetLiveMirror().EvictTenant(tid)
+		monsterinfo.EvictTenant(tid)
 		if inbox := monsterDomain.GetNextSkillInbox(); inbox != nil {
 			inbox.EvictTenant(tid)
 		}

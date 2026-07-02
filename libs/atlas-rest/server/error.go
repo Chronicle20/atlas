@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 	"sync/atomic"
@@ -62,5 +63,15 @@ func WriteErrorResponse(l logrus.FieldLogger) func(w http.ResponseWriter) func(e
 				l.WithError(encodeErr).Errorf("Encoding error response body.")
 			}
 		}
+	}
+}
+
+// WriteBadRequest writes a JSON:API error object with HTTP 400.
+func WriteBadRequest(l logrus.FieldLogger, w http.ResponseWriter, detail string) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusBadRequest)
+	body := fmt.Sprintf(`{"errors":[{"status":"400","title":"Bad Request","detail":%q}]}`, detail)
+	if _, err := w.Write([]byte(body)); err != nil {
+		l.WithError(err).Errorf("Unable to write error response.")
 	}
 }

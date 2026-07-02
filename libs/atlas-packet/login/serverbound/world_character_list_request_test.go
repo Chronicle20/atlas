@@ -33,6 +33,23 @@ func TestWorldCharacterListRequestV72Body(t *testing.T) {
 	}
 }
 
+// gms_v61: CLogin::SendLoginPacket twin = sub_564DC9 @0x564dc9 (GMS_v61.1_U_DEVM.exe,
+// port 13338): COutPacket(5) @0x564eeb; Encode1(worldId=*(BYTE*)v9) @0x564efc;
+// Encode1(channelId=a3) @0x564f07; SendPacket @0x564f16. NO gameStartMode byte
+// (v61<83) and — unlike v72 — NO getsockname/Encode4(socketAddr): the v72 twin
+// sub_5B1B25@0x5b1b25 adds getsockname->Encode4@0x5b1c92, absent here. Wire =
+// worldId + channelId = 2 bytes only.
+//
+// packet-audit:verify packet=login/serverbound/WorldCharacterListRequest version=gms_v61 ida=0x564dc9
+func TestWorldCharacterListRequestV61Body(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 61, 1)
+	input := WorldCharacterListRequest{gameStartMode: 1, worldId: world.Id(2), channelId: channel.Id(3), socketAddr: 12345}
+	want := []byte{0x02, 0x03} // worldId, channelId (no gameStartMode, no socketAddr)
+	if got := pt.Encode(t, ctx, input.Encode, nil); !bytes.Equal(got, want) {
+		t.Errorf("v61 WorldCharacterListRequest body: got % x, want % x", got, want)
+	}
+}
+
 func TestWorldCharacterListRequestRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {
@@ -57,7 +74,8 @@ func TestWorldCharacterListRequestRoundTrip(t *testing.T) {
 			if output.ChannelId() != input.ChannelId() {
 				t.Errorf("channelId: got %v, want %v", output.ChannelId(), input.ChannelId())
 			}
-			if (v.Region == "GMS" && v.MajorVersion > 12) || v.Region == "JMS" {
+			// socketAddr int is a v72+ addition (IDA v61 sub_564DC9@0x564dc9 omits it).
+			if (v.Region == "GMS" && v.MajorVersion >= 72) || v.Region == "JMS" {
 				if output.SocketAddr() != input.SocketAddr() {
 					t.Errorf("socketAddr: got %v, want %v", output.SocketAddr(), input.SocketAddr())
 				}

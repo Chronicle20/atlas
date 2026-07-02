@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
@@ -20,8 +21,14 @@ type Processor interface {
 	// GetActiveSession returns the current active session for a character, if any
 	GetActiveSession(characterId uint32) (Model, error)
 
-	// GetSessionsSince returns all sessions since the given timestamp
+	// GetSessionsSince returns all sessions since the given timestamp. Kept
+	// unpaged for internal callers (ComputePlaytimeSince needs every matching
+	// row to sum durations correctly).
 	GetSessionsSince(characterId uint32, since time.Time) ([]Model, error)
+
+	// GetSessionsSinceProvider returns one page of sessions since the given
+	// timestamp. Used only by the REST list handler.
+	GetSessionsSinceProvider(characterId uint32, since time.Time, page model.Page) model.Provider[model.Paged[Model]]
 
 	// GetSessionsInRange returns all sessions that overlap with the given time range
 	GetSessionsInRange(characterId uint32, start, end time.Time) ([]Model, error)
@@ -83,6 +90,11 @@ func (p *ProcessorImpl) GetActiveSession(characterId uint32) (Model, error) {
 
 func (p *ProcessorImpl) GetSessionsSince(characterId uint32, since time.Time) ([]Model, error) {
 	return getSessionsSince(p.db.WithContext(p.ctx), characterId, since)
+}
+
+func (p *ProcessorImpl) GetSessionsSinceProvider(characterId uint32, since time.Time, page model.Page) model.Provider[model.Paged[Model]] {
+	ep := getSessionsSincePaged(p.db.WithContext(p.ctx), characterId, since, page)
+	return model.MapPaged(modelFromEntityProvider)(ep)(model.ParallelMap())
 }
 
 func (p *ProcessorImpl) GetSessionsInRange(characterId uint32, start, end time.Time) ([]Model, error) {

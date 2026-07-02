@@ -16694,6 +16694,274 @@
      "comment": "function not found in IDB"
     }
    ]
+  },
+  "sub_5BFCE3": {
+   "address": "0x5bfce3",
+   "direction": "serverbound",
+   "calls": [
+    {
+     "op": "Encode1",
+     "comment": "COutPacket(111); mode 6 = CHAT (sub_5BFCE3 @0x5bfce3)"
+    },
+    {
+     "op": "EncodeStr",
+     "comment": "message"
+    }
+   ]
+  },
+  "sub_4EF97F": {
+   "address": "0x4ef97f",
+   "direction": "serverbound",
+   "calls": [
+    {
+     "op": "Encode1",
+     "comment": "COutPacket(111); mode 0x1D = FIELD add-blacklist (sub_4EF97F @0x4ef97f)"
+    },
+    {
+     "op": "EncodeStr",
+     "comment": "name"
+    }
+   ]
+  },
+  "sub_4EF9F9": {
+   "address": "0x4ef9f9",
+   "direction": "serverbound",
+   "calls": [
+    {
+     "op": "Encode1",
+     "comment": "COutPacket(111); mode 0x1E = FIELD remove-blacklist (sub_4EF9F9 @0x4ef9f9)"
+    },
+    {
+     "op": "EncodeStr",
+     "comment": "name"
+    }
+   ]
+  },
+  "sub_4E87E1": {
+   "address": "0x4e87e1",
+   "direction": "serverbound",
+   "calls": [
+    {
+     "op": "Encode1",
+     "comment": "COutPacket(111); mode 2 = INVITE trading-room (sub_4E87E1 @0x4e8915)"
+    },
+    {
+     "op": "Encode4",
+     "comment": "targetCharacterId"
+    }
+   ]
+  },
+  "sub_5B10FA": {
+   "address": "0x5b10fa",
+   "direction": "serverbound",
+   "calls": [
+    {
+     "op": "Encode1",
+     "comment": "COutPacket(111); mode 0x3E = memory-game turn-up-card (sub_5B10FA @0x5b10fa)"
+    },
+    {
+     "op": "Encode1",
+     "comment": "first (bool)"
+    },
+    {
+     "op": "Encode1",
+     "comment": "index"
+    }
+   ]
+  },
+  "sub_5FC4D7": {
+   "address": "0x5fc4d7",
+   "direction": "serverbound",
+   "calls": [
+    {
+     "op": "Encode1",
+     "comment": "COutPacket(111); mode 0x3A = omok put-stone (sub_5FC4D7 @0x5fc4d7)"
+    },
+    {
+     "op": "EncodeBuffer",
+     "comment": "point (int64, 8 bytes)"
+    },
+    {
+     "op": "Encode1",
+     "comment": "color"
+    }
+   ]
+  },
+  "sub_5F7BA3": {
+   "address": "0x5f7ba3",
+   "direction": "serverbound",
+   "calls": [
+    {
+     "op": "Encode1",
+     "comment": "COutPacket(111); mode 0x2D = omok retreat-answer (sub_5F7BA3 @0x5f7ba3)"
+    },
+    {
+     "op": "Encode1",
+     "comment": "response (YesNo==6 bool)"
+    }
+   ]
+  },
+  "sub_5F7C60": {
+   "address": "0x5f7c60",
+   "direction": "serverbound",
+   "calls": [
+    {
+     "op": "Encode1",
+     "comment": "COutPacket(111); mode 0x31 = memory-game tie-answer (sub_5F7C60 @0x5f7c60)"
+    },
+    {
+     "op": "Encode1",
+     "comment": "response (YesNo==6 bool)"
+    }
+   ]
+  },
+  "sub_60D81E": {
+   "address": "0x60d81e",
+   "direction": "serverbound",
+   "calls": [
+    {
+     "op": "Encode1",
+     "comment": "COutPacket(111); mode isMerchant?0x20:0x15 = BUY (sub_60D81E @0x60db63)"
+    },
+    {
+     "op": "Encode1",
+     "comment": "index"
+    },
+    {
+     "op": "Encode2",
+     "comment": "quantity"
+    }
+   ]
+  },
+  "sub_60DBE2": {
+   "address": "0x60dbe2",
+   "direction": "serverbound",
+   "calls": [
+    {
+     "op": "Encode1",
+     "comment": "COutPacket(111); mode isMerchant?0x1F:0x14 = PUT-ITEM (sub_60DBE2 @0x60de56)"
+    },
+    {
+     "op": "Encode1",
+     "comment": "inventoryType"
+    },
+    {
+     "op": "Encode2",
+     "comment": "slot"
+    },
+    {
+     "op": "Encode2",
+     "comment": "quantity"
+    },
+    {
+     "op": "Encode2",
+     "comment": "set"
+    },
+    {
+     "op": "Encode4",
+     "comment": "price"
+    }
+   ]
+  },
+  "sub_60DF59": {
+   "address": "0x60df59",
+   "direction": "serverbound",
+   "calls": [
+    {
+     "op": "Encode1",
+     "comment": "COutPacket(111); mode isMerchant?0x24:0x19 = REMOVE-ITEM (sub_60DF59 @0x60e019)"
+    },
+    {
+     "op": "Encode2",
+     "comment": "index"
+    }
+   ]
+  },
+  "sub_60E20A": {
+   "address": "0x60e20a",
+   "direction": "serverbound",
+   "calls": [
+    {
+     "op": "Encode1",
+     "comment": "COutPacket(111); mode 0x1A = personal-store add-blacklist (sub_60E20A @0x60e2b2)"
+    },
+    {
+     "op": "Encode1",
+     "comment": "slot"
+    },
+    {
+     "op": "EncodeStr",
+     "comment": "name"
+    }
+   ]
+  },
+  "sub_60E154": {
+   "address": "0x60e154",
+   "direction": "serverbound",
+   "calls": [
+    {
+     "op": "Encode1",
+     "comment": "COutPacket(111); mode 0x1C = personal-store set-blacklist (sub_60E154 @0x60e185)"
+    },
+    {
+     "op": "Encode2",
+     "comment": "count"
+    },
+    {
+     "op": "EncodeStr",
+     "comment": "name (loop x count)"
+    }
+   ]
+  },
+  "sub_68C7E6": {
+   "address": "0x68c7e6",
+   "direction": "serverbound",
+   "calls": [
+    {
+     "op": "Encode1",
+     "comment": "COutPacket(111); mode 0xE = TRADE put-item (sub_68C7E6 @0x68c96c)"
+    },
+    {
+     "op": "Encode1",
+     "comment": "inventoryType"
+    },
+    {
+     "op": "Encode2",
+     "comment": "slot"
+    },
+    {
+     "op": "Encode2",
+     "comment": "quantity"
+    },
+    {
+     "op": "Encode1",
+     "comment": "targetSlot"
+    }
+   ]
+  },
+  "sub_68CA10": {
+   "address": "0x68ca10",
+   "direction": "serverbound",
+   "calls": [
+    {
+     "op": "Encode1",
+     "comment": "COutPacket(111); mode 0xF = TRADE add-meso (sub_68CA10 @0x68cb76)"
+    },
+    {
+     "op": "Encode4",
+     "comment": "amount"
+    }
+   ]
+  },
+  "sub_68CBE3": {
+   "address": "0x68cbe3",
+   "direction": "serverbound",
+   "calls": [
+    {
+     "op": "Encode1",
+     "comment": "COutPacket(111); mode 0x10 = TRADE confirm; bodyless (sub_68CBE3 @0x68cc56). Cash trade-room (Transaction) shares this bodyless base confirm."
+    }
+   ]
   }
  }
 }

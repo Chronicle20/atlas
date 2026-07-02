@@ -330,7 +330,7 @@ Tool: `bfecda916f252908d2fafda8adbe41d5763d4a1e`
 | SPAWN_MIST | CAffectedAreaPool::OnAffectedAreaCreated | field/clientbound/FieldAffectedAreaCreated (T1) | 0x0D2 | ❌ | 0x0F3 | ✅ | 0x0FB | ✅ | 0x111 | ❌ | 0x118 | ❌ | 0x122 | ❌ | 0x148 | ❌ | 0x126 | ❌ |
 | REMOVE_MIST | CAffectedAreaPool::OnAffectedAreaRemoved | field/clientbound/FieldAffectedAreaRemoved (T1) | 0x0D3 | 🟡 | 0x0F4 | 🟡 | 0x0FC | 🟡 | 0x112 | ✅ | 0x119 | ✅ | 0x123 | ✅ | 0x149 | ✅ | 0x127 | ✅ |
 | IDA_0X0D4 | CUser::OnEmotion | character/clientbound/CharacterExpression (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0D4 | ✅ |
-| SPAWN_DOOR | CTownPortalPool::OnTownPortalCreated | door/clientbound/SpawnDoor (T1) | 0x0D4 | ❌ | 0x0F5 | ✅ | 0x0FD | ✅ | 0x113 | ✅ | 0x11A | ✅ | 0x124 | ✅ | 0x14A | ✅ | 0x128 | ✅ |
+| SPAWN_DOOR | CTownPortalPool::OnTownPortalCreated | door/clientbound/SpawnDoor (T1) | 0x0D4 | ✅ | 0x0F5 | ✅ | 0x0FD | ✅ | 0x113 | ✅ | 0x11A | ✅ | 0x124 | ✅ | 0x14A | ✅ | 0x128 | ✅ |
 | REMOVE_DOOR | CTownPortalPool::OnTownPortalRemoved | door/clientbound/RemoveDoor | 0x0D5 | 🟡 | 0x0F6 | 🟡 | 0x0FE | 🟡 | 0x114 | ✅ | 0x11B | ✅ | 0x125 | ✅ | 0x14B | ✅ | 0x129 | ✅ |
 | REACTOR_HIT | CReactorPool::OnReactorChangeState | reactor/clientbound/ReactorHit | 0x0D6 | 🟡 | 0x0F7 | 🟡 | 0x0FF | 🟡 | 0x115 | ✅ | 0x11C | ✅ | 0x126 | ✅ | 0x14E | ✅ | 0x12D | ✅ |
 | MOVING_SHOOT_ATTACK_PREPARE | CUserRemote::OnMovingShootAttackPrepare |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0D8 | ❌ |  | ⬜ |
@@ -981,7 +981,7 @@ Tool: `bfecda916f252908d2fafda8adbe41d5763d4a1e`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v61 | 26 | 0 | 62 | 406 | 452 | 2 | 5.2% |
+| v61 | 27 | 0 | 62 | 405 | 452 | 2 | 5.4% |
 | v72 | 216 | 0 | 73 | 245 | 414 | 0 | 40.4% |
 | v79 | 228 | 0 | 72 | 243 | 405 | 0 | 42.0% |
 | v83 | 367 | 0 | 0 | 374 | 207 | 0 | 49.5% |

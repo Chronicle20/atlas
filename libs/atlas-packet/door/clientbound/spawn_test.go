@@ -85,6 +85,37 @@ func TestSpawnDoorV79(t *testing.T) {
 	}
 }
 
+// TestSpawnDoorV61Body pins the gms_v61 SPAWN_DOOR (op 0x0D4/212) clientbound wire.
+//
+// IDA-verified client decode (GMS_v61.1_U_DEVM.exe, port 13338) —
+// CTownPortalPool::OnTownPortalCreated @0x68747f:
+//
+//	Decode1 @0x6874bf → launched (bool, v3).
+//	Decode4 @0x6874c7 → ownerId (key v93; feeds ZMap::GetAt keyed lookup).
+//	Decode2 @0x68787b → x  ("found" branch, v32[1].Mid32; @0x687973 in "new" branch).
+//	Decode2 @0x687894 → y  ("found" branch, v35[2].Lo32; @0x687983 in "new" branch).
+//
+// Both the found/existing and new-portal branches read the same trailing
+// Decode2(x)/Decode2(y) — byte-for-byte identical to the v72/v79/v83 layout.
+// atlas SpawnDoor.Encode writes WriteBool(launched) + WriteInt(ownerId) +
+// WriteInt16(x) + WriteInt16(y) = 9 bytes. v61 is below all v72+ gates.
+//
+// packet-audit:verify packet=door/clientbound/SpawnDoor version=gms_v61 ida=0x68747f
+func TestSpawnDoorV61Body(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	ctx := pt.CreateContext("GMS", 61, 1)
+	m := NewSpawnDoor(1000, 100, 200, true)
+	want := []byte{
+		0x01,                   // Decode1 launched = true
+		0xE8, 0x03, 0x00, 0x00, // Decode4 ownerId = 1000 LE
+		0x64, 0x00, // Decode2 x = 100 LE
+		0xC8, 0x00, // Decode2 y = 200 LE
+	}
+	if got := m.Encode(l, ctx)(nil); !bytes.Equal(got, want) {
+		t.Errorf("v61 SpawnDoor golden mismatch\n got: % x\nwant: % x", got, want)
+	}
+}
+
 func TestSpawnDoor(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 

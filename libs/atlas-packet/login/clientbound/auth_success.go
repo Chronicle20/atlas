@@ -55,7 +55,12 @@ func (m AuthSuccess) Encode(l logrus.FieldLogger, ctx context.Context) func(opti
 		}
 
 		if t.Region() == "GMS" {
-			if t.MajorVersion() > 12 {
+			// country code byte is a v72+ addition. IDA v61
+			// CLogin::OnCheckPasswordResult@0x5657ce success path reads only
+			// 3 bytes between accountId and the name (gender@0x565eb8, GM@0x565ec7,
+			// admin@0x565ecf, then DecodeStr@0x565ed8) — one fewer than v72's 4
+			// (gender/GM/admin/country); the country byte is absent below v72.
+			if t.MajorVersion() >= 72 {
 				w.WriteByte(0) // country code
 			}
 			w.WriteAsciiString(m.name)
@@ -123,7 +128,9 @@ func (m *AuthSuccess) Decode(l logrus.FieldLogger, ctx context.Context) func(r *
 		}
 
 		if t.Region() == "GMS" {
-			if t.MajorVersion() > 12 {
+			// country code byte is v72+ (IDA v61 @0x5657ce reads 3 bytes before the
+			// name, not 4). Mirror of Encode.
+			if t.MajorVersion() >= 72 {
 				_ = r.ReadByte() // country code
 			}
 			m.name = r.ReadAsciiString()

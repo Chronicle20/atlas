@@ -2,7 +2,6 @@ package server
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strconv"
 	"sync/atomic"
@@ -66,12 +65,32 @@ func WriteErrorResponse(l logrus.FieldLogger) func(w http.ResponseWriter) func(e
 	}
 }
 
+// badRequestError is the JSON:API error object shape emitted by
+// WriteBadRequest: {"errors":[{"status":"400","title":"Bad Request","detail":"..."}]}.
+type badRequestError struct {
+	Status string `json:"status"`
+	Title  string `json:"title"`
+	Detail string `json:"detail"`
+}
+
+type badRequestBody struct {
+	Errors []badRequestError `json:"errors"`
+}
+
 // WriteBadRequest writes a JSON:API error object with HTTP 400.
 func WriteBadRequest(l logrus.FieldLogger, w http.ResponseWriter, detail string) {
+	body, err := json.Marshal(badRequestBody{Errors: []badRequestError{{
+		Status: "400",
+		Title:  "Bad Request",
+		Detail: detail,
+	}}})
+	if err != nil {
+		l.WithError(err).Errorf("Unable to marshal error response.")
+		body = []byte(`{"errors":[{"status":"400","title":"Bad Request","detail":"invalid request"}]}`)
+	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusBadRequest)
-	body := fmt.Sprintf(`{"errors":[{"status":"400","title":"Bad Request","detail":%q}]}`, detail)
-	if _, err := w.Write([]byte(body)); err != nil {
+	if _, err := w.Write(body); err != nil {
 		l.WithError(err).Errorf("Unable to write error response.")
 	}
 }

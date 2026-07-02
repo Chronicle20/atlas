@@ -9,7 +9,7 @@ import "github.com/Chronicle20/atlas/libs/atlas-model/model"
 func Slice[T any](items []T, page model.Page) model.Paged[T] {
 	total := len(items)
 	start := (page.Number - 1) * page.Size
-	if start >= total {
+	if start < 0 || start >= total {
 		return model.Paged[T]{Items: []T{}, Total: total, Page: page}
 	}
 	end := start + page.Size

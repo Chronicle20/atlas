@@ -26,6 +26,20 @@ func TestSlice(t *testing.T) {
 	}
 }
 
+func TestSlice_InvalidLowPageDoesNotPanic(t *testing.T) {
+	items := []int{1, 2, 3, 4, 5, 6, 7}
+
+	zero := Slice(items, model.Page{Number: 0, Size: 3})
+	if len(zero.Items) != 0 || zero.Total != len(items) || zero.Page.Number != 0 {
+		t.Fatalf("page number 0: %+v", zero)
+	}
+
+	negative := Slice(items, model.Page{Number: -2, Size: 3})
+	if len(negative.Items) != 0 || negative.Total != len(items) || negative.Page.Number != -2 {
+		t.Fatalf("negative page number: %+v", negative)
+	}
+}
+
 func TestEnvelopeFor(t *testing.T) {
 	env := EnvelopeFor(model.Paged[int]{Items: []int{1}, Total: 9, Page: model.Page{Number: 2, Size: 4}})
 	if env.Total != 9 || env.PageNumber != 2 || env.PageSize != 4 {

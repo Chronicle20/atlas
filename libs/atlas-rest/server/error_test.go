@@ -1,13 +1,53 @@
 package server
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
 	"github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus/hooks/test"
 )
+
+type badRequestErrorFixture struct {
+	Status string `json:"status"`
+	Title  string `json:"title"`
+	Detail string `json:"detail"`
+}
+
+type badRequestBodyFixture struct {
+	Errors []badRequestErrorFixture `json:"errors"`
+}
+
+func TestWriteBadRequest_EscapesControlCharsAsValidJSON(t *testing.T) {
+	l, _ := test.NewNullLogger()
+	w := httptest.NewRecorder()
+
+	detail := "bad\x07value"
+	WriteBadRequest(l, w, detail)
+
+	if w.Code != 400 {
+		t.Fatalf("status: got %d, want 400", w.Code)
+	}
+	if ct := w.Header().Get("Content-Type"); ct != "application/json" {
+		t.Fatalf("content-type: got %q, want application/json", ct)
+	}
+
+	var body badRequestBodyFixture
+	if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil {
+		t.Fatalf("body did not round-trip through json.Unmarshal: %v (body=%q)", err, w.Body.String())
+	}
+
+	if len(body.Errors) != 1 {
+		t.Fatalf("errors: got %d entries, want 1", len(body.Errors))
+	}
+	e := body.Errors[0]
+	if e.Status != "400" || e.Title != "Bad Request" || e.Detail != detail {
+		t.Fatalf("error object: %+v, want detail=%q", e, detail)
+	}
+}
 
 func quietLogger() logrus.FieldLogger {
 	l := logrus.New()

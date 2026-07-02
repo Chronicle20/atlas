@@ -1345,6 +1345,28 @@
         }
       ]
     },
+    "sub_6D3765": {
+      "address": "0x6d3765",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "COutPacket(110); sub-op 5 = DECLINE (sub_6D3765 @0x6d3765, auto-decline path)"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "fromName (inviter)"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "myName (CWvsContext::GetCharacterName)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "trailing flag Encode1(1u)"
+        }
+      ]
+    },
     "CField::AddBlackList": {
       "address": "",
       "direction": "serverbound",
@@ -7860,13 +7882,20 @@
       ]
     },
     "CUIMessenger::OnPacket#Add": {
-      "address": "",
+      "address": "0x5bf5ae",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "position (sub_5BF5AE @0x5bf5ae)"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "AvatarLook via sub_5BFB65 @0x5bfb65 (>28 path == v83)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "name"
         }
       ]
     },

@@ -1,6 +1,6 @@
 {
   "WriterName": "MessengerOperationDeclineInvite",
-  "IDAName": "CFadeWnd::SendCloseMessage",
+  "IDAName": "sub_6D3765",
   "Address": "",
   "Variant": "GMS/v61",
   "BranchDepth": 0,
@@ -22,7 +22,7 @@
       "IDAOp": 0,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: extra \u2014 client never reads this field"
     },
     {
       "Index": 2,
@@ -31,7 +31,7 @@
       "IDAOp": 0,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: extra \u2014 client never reads this field"
     }
   ],
   "Verdict": 2,

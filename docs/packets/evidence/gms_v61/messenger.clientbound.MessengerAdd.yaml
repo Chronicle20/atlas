@@ -1,0 +1,10 @@
+packet: messenger/clientbound/MessengerAdd
+direction: clientbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: CUIMessenger::OnPacket#Add
+    address: "0x5bf5ae"
+    decompile_sha256: 6adb61ec17aff9a183b988ef800227d2ce9d2601654b16083955cbc7ad8c343a
+verifies:
+    - libs/atlas-packet/messenger/clientbound/v61_test.go#TestMessengerAddV61Body

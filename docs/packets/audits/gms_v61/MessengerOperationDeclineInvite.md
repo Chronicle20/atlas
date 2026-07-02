@@ -1,4 +1,4 @@
-# MessengerOperationDeclineInvite (← `CFadeWnd::SendCloseMessage`)
+# MessengerOperationDeclineInvite (← `sub_6D3765`)
 
 - **IDA:** 
 - **Atlas file:** `libs/atlas-packet/messenger/serverbound/operation_decline_invite.go`

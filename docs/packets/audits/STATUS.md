@@ -247,13 +247,13 @@ Tool: `dde4cb7f9c62159772672195dd4a20bb7d2f1343`
 | SKILL_EFFECT | CUserRemote::OnSkillPrepare | character/clientbound/CharacterSkillPrepareForeign (T1) | 0x0AC | ✅ | 0x0B0 | ✅ | 0x0BE | ✅ | 0x0C2 | ✅ | 0x0CB | ✅ | 0x0D7 | ✅ | 0x0C4 | ✅ |
 | CANCEL_SKILL_EFFECT | CUserRemote::OnSkillCancel; sub_980BF5 | character/clientbound/CharacterSkillCancelForeign (T1) | 0x0AD | ✅ | 0x0B1 | ✅ | 0x0BF | ✅ | 0x0C3 | ✅ | 0x0CC | ✅ | 0x0D9 | ✅ | 0x0C5 | ✅ |
 | DAMAGE_PLAYER | CUserRemote::OnHit | character/clientbound/CharacterDamage (T1) | 0x0AE | ✅ | 0x0B2 | ✅ | 0x0C0 | ✅ | 0x0C4 | ✅ | 0x0CD | ✅ | 0x0DA | ✅ | 0x0C6 | ✅ |
-| FACIAL_EXPRESSION | CAvatar::SetEmotion; CUser::OnEmotion | character/clientbound/CharacterExpression (T1) | 0x0AF | ❌ | 0x0B3 | ✅ | 0x0C1 | ✅ | 0x0C5 | ✅ | 0x0CE | ✅ | 0x0DB | ✅ | 0x0C7 | ✅ |
+| FACIAL_EXPRESSION | CAvatar::SetEmotion; CUser::OnEmotion | character/clientbound/CharacterExpression (T1) | 0x0AF | ✅ | 0x0B3 | ✅ | 0x0C1 | ✅ | 0x0C5 | ✅ | 0x0CE | ✅ | 0x0DB | ✅ | 0x0C7 | ✅ |
 | SHOW_ITEM_EFFECT | CUser::SetActiveEffectItem; CUserRemote::OnSetActiveEffectItem |  | 0x0B0 | ❌ | 0x0B4 | ❌ | 0x0C2 | ❌ | 0x0C6 | ❌ | 0x0CF | ❌ | 0x0DC | ❌ | 0x0C8 | ❌ |
 | SHOW_UPGRADE_TOMB_EFFECT | CUserRemote::OnShowUpgradeTombEffect |  | 0x0B1 | ❌ | 0x0B5 | ❌ | 0x0C3 | ❌ | 0x0C7 | ❌ | 0x0D0 | ❌ | 0x0DD | ❌ | 0x0C9 | ❌ |
 | SHOW_CHAIR | CUserRemote::OnSetActivePortableChair | character/clientbound/CharacterChairShow (T1) | 0x0B2 | ✅ | 0x0B6 | ✅ | 0x0C4 | ✅ | 0x0C8 | ✅ | 0x0D1 | ✅ | 0x0DE | ✅ | 0x0CA | ✅ |
 | SHOW_ITEM_HYPER_UPGRADE_EFFECT | CUser::OnHitByUser; CUser::ShowItemHyperUpgradeEffect |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0B3 | ❌ | 0x0BB | ❌ |  | ⬜ |
 | UPDATE_CHAR_LOOK | CUserRemote::OnAvatarModified | character/clientbound/CharacterAppearanceUpdate (T1) | 0x0B3 | ✅ | 0x0B7 | ✅ | 0x0C5 | ✅ | 0x0C9 | ✅ | 0x0D2 | ✅ | 0x0DF | ✅ | 0x0CB | ✅ |
-| SHOW_FOREIGN_EFFECT | CUser::OnEffect | character/clientbound/EffectQuest (T1) | 0x0B4 | ❌ | 0x0B8 | ✅ | 0x0C6 | ✅ | 0x0CA | ✅ | 0x0D3 | ✅ | 0x0E0 | ✅ | 0x0CC | ✅ |
+| SHOW_FOREIGN_EFFECT | CUser::OnEffect | character/clientbound/EffectQuest (T1) | 0x0B4 | ✅ | 0x0B8 | ✅ | 0x0C6 | ✅ | 0x0CA | ✅ | 0x0D3 | ✅ | 0x0E0 | ✅ | 0x0CC | ✅ |
 | GIVE_FOREIGN_BUFF | CUserRemote::OnSetTemporaryStat | character/clientbound/BuffGiveForeign (T1) | 0x0B5 | ✅ | 0x0B9 | ✅ | 0x0C7 | ✅ | 0x0CB | ✅ | 0x0D4 | ✅ | 0x0E1 | ✅ | 0x0CD | ✅ |
 | SPAWN_DRAGON | CDragon::OnCreated |  |  | ⬜ |  | ⬜ | 0x0B5 | ❌ | 0x0B9 | ❌ | 0x0C2 | ❌ | 0x0CE | ❌ | 0x0BB | ❌ |
 | CANCEL_FOREIGN_BUFF | CUserRemote::OnResetTemporaryStat | character/clientbound/BuffCancelForeign (T1) | 0x0B6 | 🟡 | 0x0BA | 🟡 | 0x0C8 | ✅ | 0x0CC | ✅ | 0x0D5 | ✅ | 0x0E2 | ✅ | 0x0CE | ✅ |
@@ -264,7 +264,7 @@ Tool: `dde4cb7f9c62159772672195dd4a20bb7d2f1343`
 | GUILD_MARK_CHANGED | CUserRemote::OnGuildMarkChanged | guild/clientbound/GuildForeignEmblemChanged (T1) | 0x0B9 | ✅ | 0x0BD | ✅ | 0x0CB | ✅ | 0x0CF | ✅ | 0x0D8 | ✅ | 0x0E5 | ✅ | 0x0D1 | ✅ |
 | THROW_GRENADE | CUserRemote::OnThrowGrenade |  | 0x0BA | ❌ | 0x0BE | ❌ | 0x0CC | ❌ | 0x0D0 | ❌ | 0x0D9 | ❌ | 0x0E6 | ❌ | 0x0D2 | ❌ |
 | CANCEL_CHAIR | CUserLocal::OnSitResult | character/clientbound/CharacterSitResult (T1) | 0x0BB | ✅ | 0x0BF | ✅ | 0x0CD | ✅ | 0x0D1 | ✅ | 0x0DA | ✅ | 0x0E7 | ✅ | 0x0D3 | ✅ |
-| SHOW_ITEM_GAIN_INCHAT | CUser::OnEffect | character/clientbound/EffectQuest (T1) | 0x0BC | ❌ | 0x0C0 | ✅ | 0x0CE | ✅ | 0x0D2 | ✅ | 0x0DB | ✅ | 0x0E9 | ✅ | 0x0D5 | ✅ |
+| SHOW_ITEM_GAIN_INCHAT | CUser::OnEffect | character/clientbound/EffectQuest (T1) | 0x0BC | ✅ | 0x0C0 | ✅ | 0x0CE | ✅ | 0x0D2 | ✅ | 0x0DB | ✅ | 0x0E9 | ✅ | 0x0D5 | ✅ |
 | SHOW_ITEM_OPTION_UPGRADE_EFFECT | CUser::ShowItemOptionUpgradeEffect |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0BC | ❌ |  | ⬜ |
 | DOJO_WARP_UP | CUserLocal::OnTeleport |  | 0x0BD | ❌ | 0x0C1 | ❌ | 0x0CF | ❌ | 0x0D3 | ❌ | 0x0DC | ❌ | 0x0EA | ❌ | 0x0D6 | ❌ |
 | SHOW_ITEM_RELEASE_EFFECT | CUser::ShowItemReleaseEffect |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0BD | ❌ |  | ⬜ |
@@ -914,7 +914,7 @@ Tool: `dde4cb7f9c62159772672195dd4a20bb7d2f1343`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v72 | 207 | 0 | 73 | 191 | 411 | 0 | 43.9% |
+| v72 | 210 | 0 | 73 | 188 | 411 | 0 | 44.6% |
 | v79 | 228 | 0 | 72 | 180 | 402 | 0 | 47.5% |
 | v83 | 367 | 0 | 0 | 311 | 204 | 0 | 54.1% |
 | v84 | 345 | 0 | 0 | 312 | 225 | 0 | 52.5% |

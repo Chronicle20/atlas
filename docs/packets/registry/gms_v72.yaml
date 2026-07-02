@@ -1188,9 +1188,9 @@
 - op: FACIAL_EXPRESSION
   direction: clientbound
   opcode: 175
-  fname: CAvatar::SetEmotion
+  fname: CUser::OnEmotion
   fname_alts:
-  - CUser::OnEmotion
+  - CAvatar::SetEmotion
   provenance: ida-discovered
   ida:
     address: 8896582

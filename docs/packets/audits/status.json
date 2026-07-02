@@ -14141,7 +14141,7 @@
     {
       "kind": "op",
       "op": "GUILD_OPERATION",
-      "packet": "guild/serverbound/GuildAgreementResponse",
+      "packet": "guild/serverbound/GuildJoin",
       "direction": "serverbound",
       "tier1": true,
       "fnames": [
@@ -14159,8 +14159,8 @@
       ],
       "cells": {
         "gms_v61": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "incomplete",
+          "note": "tier-1 without fixture; verdict ❌",
           "opcode": 114
         },
         "gms_v72": {
@@ -18345,8 +18345,7 @@
       ],
       "cells": {
         "gms_v61": {
-          "state": "conflict",
-          "note": "registry says absent but an Atlas audit report exists (GuildOperation)",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v72": {
@@ -20661,8 +20660,7 @@
       ],
       "cells": {
         "gms_v61": {
-          "state": "conflict",
-          "note": "registry says absent but an Atlas audit report exists (GuildOperation)",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v72": {
@@ -38512,8 +38510,8 @@
       "tier1": true,
       "cells": {
         "gms_v61": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": -1
         },
         "gms_v72": {

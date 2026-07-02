@@ -2078,11 +2078,11 @@
 - op: GUILD_OPERATION
   direction: serverbound
   opcode: 114
-  fname: CField::SendCreateGuildAgreeMsg
+  fname: CUIFadeYesNo::OnButtonClicked
   provenance: ida-discovered
   ida:
-    address: 6291023
-  note: 'v61 send-site harvest (COutPacket ctor @0x5ffc4f): CField::SendCreateGuildAgreeMsg/SendInviteGuildMsg/SendKickGuildMsg/SendSetGuildMarkMsg + CWvsContext::OnGuildResult. COutPacket(114); Δ-10 vs v72 op124.'
+    address: 5109158
+  note: 'v61 GUILD_OPERATION serverbound. Primary send site CUIFadeYesNo::OnButtonClicked @0x4df6a6 case 7: COutPacket(114)+Encode1(6)+Encode4(guildId)+Encode4(charId) (mirrors v72 op124 same fname). Other COutPacket(114) senders in the CField send-region: SendCreateGuildAgreeMsg/SendInviteGuildMsg/SendKickGuildMsg/SendSetGuildMarkMsg + CWvsContext::OnGuildResult. Δ-10 vs v72 op124. No CTabGuildAlliance/CUINewYearCardSenderDlg send site exists in the v61 IDB → ALLIANCE_REQUEST/NEW_YEAR_CARD_REQUEST serverbound are v61-absent (n-a, as in v72).'
 - op: BUDDYLIST_MODIFY
   direction: serverbound
   opcode: 118

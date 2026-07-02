@@ -7430,17 +7430,6 @@
         }
       ]
     },
-    "CTrunkDlg::OnPacket#ErrorInventoryFull": {
-      "address": "",
-      "direction": "clientbound",
-      "unresolved": true,
-      "calls": [
-        {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
-        }
-      ]
-    },
     "CTrunkDlg::OnPacket#ErrorMessage": {
       "address": "",
       "direction": "clientbound",

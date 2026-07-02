@@ -1,0 +1,8 @@
+{
+ "entries": [
+  {
+   "fname": "CTrunkDlg::OnPacket#ErrorInventoryFull",
+   "reason": "StorageErrorInventoryFull (a discrete inventory-full mode) is version-absent in gms_v61: the v61 storage dispatcher CTrunkDlg::OnPacket @0x63bf0e + sub_63C166 @0x63c166 (GMS_v61.1_U_DEVM.exe, port 13338) has NO per-error-type mode. Decode1(mode): mode<6 return; mode 6 -> sub_63C166 CUtilDlg::Notice(StringPool 3602) @0x63c2..; mode 7 -> sub_63C166 CUtilDlg::Notice(StringPool 3601); mode 8 -> Decode4(meso)+dialog StringPool 3593; modes 9/10/11/12/14 -> dialog-state only (no notice); mode 13 -> close. v72's four distinct storage error strings (SP854 InventoryFull, SP5092 NotEnoughMesos, SP867 OneOfAKind, SP866 Unknown) collapse to exactly TWO generic error notices (modes 6/7, SP3602/SP3601) in v61. Deciding which of {6,7} is 'inventory full' vs 'not enough mesos' requires resolving StringPool 3601/3602 text, which is loaded from String.wz at runtime (GetString(id)) and is NOT stored in the binary. String.wz is WZ data not available this session (same deferral class as the runtime WZ stages). Guessing the mode byte is disallowed (CLAUDE.md no-inventing). Report + unresolved export stub removed so the STORAGE worst-of-siblings grade excludes this arm. (task-113 stage E)"
+  }
+ ]
+}

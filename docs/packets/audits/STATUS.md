@@ -5,7 +5,7 @@
 
 Tool: `bfecda916f252908d2fafda8adbe41d5763d4a1e`
 
-- export gms_v61: `cdec05fcac08a2722f0e09f394ef5afab263183ba28eefb9516fde37598b07b8`
+- export gms_v61: `2942238164bdcd1e23bf3d3368144d49117c7a947f19dc09e2101fc6b07e7f8b`
 - export gms_v72: `a0ac2be6578395455f491976bcb11aa27e2e57376b46ee8816b90324bad60c02`
 - export gms_v79: `370d6b720b633c12c71d40340f3952000705c4bddb98f87179e7193d112d210c`
 - export gms_v83: `711bddcc2e1bdd417a75954148d2b50c64e70855e84259c0b8e50e700e393c0d`
@@ -369,7 +369,7 @@ Tool: `bfecda916f252908d2fafda8adbe41d5763d4a1e`
 | FREDRICK | CStoreBankDlg::OnPacket |  | 0x0F1 | ❌ | 0x115 | ❌ | 0x121 | ❌ | 0x137 | ❌ | 0x13E | ❌ | 0x148 | ❌ | 0x172 | ❌ | 0x150 | ❌ |
 | IDA_0X0F1 | CUserLocal::OnFieldFadeOutForce; CUserLocal::OnResignQuestReturn |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0F1 | ❌ | 0x0F1 | ❌ |
 | IDA_0X0F2 | CUserLocal::OnPassMateName |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0F2 | ❌ |
-| STORAGE | CTrunkDlg::OnPacket | storage/clientbound/StorageErrorInventoryFull (T1) | 0x0F2 | ❌ | 0x113 | ✅ | 0x11F | ✅ | 0x135 | ✅ | 0x13C | ✅ | 0x146 | ✅ | 0x170 | ✅ | 0x14E | ✅ |
+| STORAGE | CTrunkDlg::OnPacket | storage/clientbound/StorageErrorMessage (T1) | 0x0F2 | ❌ | 0x113 | ✅ | 0x11F | ✅ | 0x135 | ✅ | 0x13C | ✅ | 0x146 | ✅ | 0x170 | ✅ | 0x14E | ✅ |
 | IDA_0X0F3 | CUserLocal::OnNotifyHPDecByField; CUserLocal::OnRadioSchedule |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0F3 | ❌ | 0x0F3 | ❌ |
 | PLAYER_INTERACTION | CMiniRoomBaseDlg::OnPacketBase; sub_6D34F1 | interaction/clientbound/InteractionInteractionChat (T1) | 0x0F3 | ❌ | 0x118 | ✅ | 0x124 | ✅ | 0x13A | ✅ | 0x141 | ✅ | 0x14B | ✅ | 0x175 | ✅ | 0x153 | ✅ |
 | IDA_0X0F4 | CUserLocal::OnOpenSkillGuide |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0F4 | ❌ |

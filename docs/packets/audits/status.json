@@ -1,7 +1,7 @@
 {
-  "toolSha": "0d2a71691fac50edb0fa35903ca63f9f6fb3010d",
+  "toolSha": "4e3f97d89b60d7633f0d4ced5f2bdac0ecd1a81c",
   "exportHashes": {
-    "gms_v83": "711bddcc2e1bdd417a75954148d2b50c64e70855e84259c0b8e50e700e393c0d",
+    "gms_v83": "32ea73867d2c5ee4ea2f7b587a3f96e9a597a2245c8befcae47b4ea7d0407da9",
     "gms_v84": "7eab9472e2afeda13faaf74273828d09d5f2481d67bec10235c3b2fd2f91e1eb",
     "gms_v87": "714817d376bb93732ef6b6fbe6b59f8c24515ff901801d213d676b501eae7f94",
     "gms_v95": "d630364f4d84b433c62329d3756f4f97efdb9ce8056c62b60842bc9b91b24b97",
@@ -26029,6 +26029,38 @@
         },
         "jms_v185": {
           "state": "verified",
+          "opcode": -1
+        }
+      }
+    },
+    {
+      "kind": "sub-struct",
+      "packet": "cash/serverbound/CashItemUsePointReset",
+      "tier1": true,
+      "cells": {
+        "gms_v83": {
+          "state": "incomplete",
+          "note": "byte-test marker present but no fresh evidence record",
+          "opcode": -1
+        },
+        "gms_v84": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "gms_v87": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "gms_v95": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "jms_v185": {
+          "state": "incomplete",
+          "note": "no audit report",
           "opcode": -1
         }
       }

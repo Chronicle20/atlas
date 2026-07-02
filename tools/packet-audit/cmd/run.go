@@ -1839,6 +1839,8 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "ItemUse", dir: csvpkg.DirServerbound, pkg: "inventory"}}
 	case "CWvsContext::SendUpgradeItemUseRequest":
 		return []candidate{{name: "ScrollUse", dir: csvpkg.DirServerbound, pkg: "inventory"}}
+	case "CWvsContext::SendConsumeCashItemUseRequest", "CItemSpeakerDlg::_SendConsumeCashItemUseRequest":
+		return []candidate{{name: "ItemUsePointReset", dir: csvpkg.DirServerbound, pkg: "cash"}}
 	// --- interaction sub-domain (task-067) ---
 	// NOTE: the interaction serverbound dispatcher struct is also named `Operation`
 	// (collides with storage's CTrunkDlg `Operation` under the flat report layout;

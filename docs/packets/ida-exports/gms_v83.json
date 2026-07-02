@@ -12813,6 +12813,25 @@
           "comment": "nEmotion (expression/emote ID) — only field; no duration, no byItemOption in v83"
         }
       ]
+    },
+    "CWvsContext::SendConsumeCashItemUseRequest": {
+      "address": "0xa0a63f",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "to: AP stat flag (5050000) / SP skill id (5050001-4). Encode4 @case23/24 in CWvsContext::SendConsumeCashItemUseRequest 0xa0a63f"
+        },
+        {
+          "op": "Decode4",
+          "comment": "from: AP stat flag / SP skill id. second Encode4"
+        },
+        {
+          "op": "Decode4",
+          "comment": "trailing update_time = get_update_time(); Encode4 in common send tail (LABEL_41)",
+          "guard": "CWvsContext::CanSendExclRequest(this, 500, 0)"
+        }
+      ]
     }
   }
 }

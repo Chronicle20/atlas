@@ -13260,14 +13260,29 @@
         }
       ]
     },
-    "CWvsContext::SendDropPickUpRequest": {
-      "address": "",
+    "sub_8316B8": {
+      "address": "0x8316b8",
       "direction": "serverbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "Encode1 fieldKey=*((_BYTE*)get_field()+248) @0x831721"
+        },
+        {
+          "op": "Decode4",
+          "comment": "Encode4 updateTime @0x83172f"
+        },
+        {
+          "op": "Decode2",
+          "comment": "Encode2 x=*a2 @0x831740"
+        },
+        {
+          "op": "Decode2",
+          "comment": "Encode2 y=a2[2] @0x83174f"
+        },
+        {
+          "op": "Decode4",
+          "comment": "Encode4 dropId=a3 @0x83175a"
         }
       ]
     },

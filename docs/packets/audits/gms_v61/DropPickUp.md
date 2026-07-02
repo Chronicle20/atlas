@@ -1,6 +1,6 @@
-# DropPickUp (← `CWvsContext::SendDropPickUpRequest`)
+# DropPickUp (← `sub_8316B8`)
 
-- **IDA:** 
+- **IDA:** 0x8316b8
 - **Atlas file:** `libs/atlas-packet/drop/serverbound/pick_up.go`
 - **Variant:** GMS/v61
 - **Branch depth:** 1
@@ -11,10 +11,10 @@
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | byte | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
-| 1 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 2 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 3 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 4 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 0 | byte | byte `Encode1 fieldKey=*((_BYTE*)get_field()+248) @0x831721` | ✅ |  |
+| 1 | int32 | int32 `Encode4 updateTime @0x83172f` | ✅ |  |
+| 2 | int16 | int16 `Encode2 x=*a2 @0x831740` | ✅ |  |
+| 3 | int16 | int16 `Encode2 y=a2[2] @0x83174f` | ✅ |  |
+| 4 | int32 | int32 `Encode4 dropId=a3 @0x83175a` | ✅ |  |
 | 5 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 

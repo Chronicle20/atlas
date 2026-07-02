@@ -1050,6 +1050,14 @@ func candidatesFromFName(fname string) []candidate {
 	case "CWvsContext::SendDropPickUpRequest":
 		// CSV: ITEM_PICKUP — atlas PickUp (handle = "DropPickUpHandle").
 		return []candidate{{name: "PickUp", pkg: "drop", dir: csvpkg.DirServerbound}}
+	case "sub_8316B8":
+		// ITEM_PICKUP (serverbound) in gms_v61: the send-site is UNNAMED in the
+		// IDB — sub_8316B8 @0x8316b8, structurally the CWvsContext::SendDropPickUpRequest
+		// twin (COutPacket(169) + Encode1(fieldKey) + Encode4(updateTime) +
+		// Encode2(x) + Encode2(y) + Encode4(dropId); no trailing crc, pre-83). The
+		// v61 registry primary fname is sub_8316B8, so it keys to the same drop.PickUp
+		// codec as the named twin above.
+		return []candidate{{name: "PickUp", pkg: "drop", dir: csvpkg.DirServerbound}}
 
 	// --- Combat: reactor (serverbound) ---
 	case "CReactorPool::FindHitReactor":

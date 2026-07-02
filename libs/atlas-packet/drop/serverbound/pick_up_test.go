@@ -39,6 +39,43 @@ func TestPickUpByteOutputV79(t *testing.T) {
 	}
 }
 
+// TestPickUpByteOutputV61 pins the gms_v61 ITEM_PICKUP (op 169 / 0xA9) serverbound
+// wire. IDA-verified send site (GMS_v61.1_U_DEVM.exe, port 13338) —
+// sub_8316B8 @0x8316b8 (UNNAMED in the IDB; structurally the
+// CWvsContext::SendDropPickUpRequest twin), send block:
+//
+//	COutPacket::COutPacket(169)             @0x831705 → opcode 0xA9 (registry op 169).
+//	COutPacket::Encode1(*(get_field()+248)) @0x831721 → fieldKey byte.
+//	COutPacket::Encode4(updateTime)         @0x83172f → updateTime uint32-LE.
+//	COutPacket::Encode2(*a2 = x)            @0x831740 → x int16-LE.
+//	COutPacket::Encode2(a2[2] = y)          @0x83174f → y int16-LE.
+//	COutPacket::Encode4(a3 = dropId)        @0x83175a → dropId uint32-LE.
+//	(NO trailing Encode4 — v61<83 sends NO client-crc; the crc Encode4 first
+//	 appears at v83 @0xa091d7, gated by pickUpHasCRC = MajorAtLeast(83).)
+//
+// Byte-identical field order to the VERIFIED v72/v79 wire (only the opcode
+// differs: 169 vs 192/194, already in the registry). The codec is version-gated
+// on MajorAtLeast(83) for the crc, so v61 emits the no-crc shape.
+//
+// packet-audit:verify packet=drop/serverbound/DropPickUp version=gms_v61 ida=0x8316b8
+func TestPickUpByteOutputV61(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 61, 1)
+	// fieldKey=1, updateTime=0x00000064, x=50, y=60, dropId=12345(0x3039).
+	input := PickUp{fieldKey: 1, updateTime: 100, x: 50, y: 60, dropId: 12345, crc: 99}
+	expected := []byte{
+		0x01,                   // Encode1 fieldKey @0x831721
+		0x64, 0x00, 0x00, 0x00, // Encode4 updateTime @0x83172f
+		0x32, 0x00, // Encode2 x = 50 @0x831740
+		0x3C, 0x00, // Encode2 y = 60 @0x83174f
+		0x39, 0x30, 0x00, 0x00, // Encode4 dropId = 12345 @0x83175a
+		// no crc on v61 (<83)
+	}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v61 pickup golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
 // TestPickUpByteOutputV72 pins the gms_v72 ITEM_PICKUP (op 192 / 0xC0) serverbound
 // wire. IDA-verified send site (GMS_v72.1_U_DEVM.exe, port 13339) —
 // CWvsContext::SendDropPickUpRequest = sub_903B77 @0x903b77, send block:

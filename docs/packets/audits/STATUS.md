@@ -5,7 +5,7 @@
 
 Tool: `f7115324e91c1ab5036202417e1e0e7aa96ea97e`
 
-- export gms_v61: `b0c7fd0879ea610cf4c2d9fe5c54a6dae70c7748f6cc1b98a0dd430959084cd7`
+- export gms_v61: `7134b31c3eef9ce481235a3c54bf4bf076c50269987779cf8783303c30959f4e`
 - export gms_v72: `a0ac2be6578395455f491976bcb11aa27e2e57376b46ee8816b90324bad60c02`
 - export gms_v79: `370d6b720b633c12c71d40340f3952000705c4bddb98f87179e7193d112d210c`
 - export gms_v83: `711bddcc2e1bdd417a75954148d2b50c64e70855e84259c0b8e50e700e393c0d`
@@ -320,7 +320,7 @@ Tool: `f7115324e91c1ab5036202417e1e0e7aa96ea97e`
 | SPAWN_GUIDE | CUserLocal::OnHireTutor; sub_86C65C |  |  | ⬜ | 0x0CC | ❌ | 0x0D0 | ❌ | 0x0DF | ❌ | 0x0E4 | ❌ | 0x0ED | ❌ | 0x0FF | ❌ | 0x0E9 | ❌ |
 | UPDATE_HIRED_MERCHANT | CEmployeePool::OnEmployeeMiniRoomBalloon |  | 0x0CC | ❌ | 0x0ED | ❌ | 0x0F5 | ❌ | 0x10B | ❌ | 0x112 | ❌ | 0x11C | ❌ | 0x141 | ❌ | 0x120 | ❌ |
 | DROP_ITEM_FROM_MAPOBJECT | CDropPool::OnDropEnterField | drop/clientbound/DropSpawn | 0x0CD | 🟡 | 0x0EE | 🟡 | 0x0F6 | 🟡 | 0x10C | ✅ | 0x113 | ✅ | 0x11D | ✅ | 0x142 | ✅ | 0x121 | ✅ |
-| REMOVE_ITEM_FROM_MAP | CDropPool::OnDropLeaveField | drop/clientbound/DropDestroy (T1) | 0x0CE | ❌ | 0x0EF | ✅ | 0x0F7 | ✅ | 0x10D | ✅ | 0x114 | ✅ | 0x11E | ✅ | 0x144 | ✅ | 0x122 | ✅ |
+| REMOVE_ITEM_FROM_MAP | CDropPool::OnDropLeaveField | drop/clientbound/DropDestroy (T1) | 0x0CE | ✅ | 0x0EF | ✅ | 0x0F7 | ✅ | 0x10D | ✅ | 0x114 | ✅ | 0x11E | ✅ | 0x144 | ✅ | 0x122 | ✅ |
 | CANNOT_SPAWN_KITE | CMessageBoxPool::OnCreateFailed | field/clientbound/FieldKiteError (T1) | 0x0CF | 🟡 | 0x0F0 | 🟡 | 0x0F8 | 🟡 | 0x10E | ✅ | 0x10E | ✅ | 0x11F | ✅ | 0x145 | ✅ | 0x123 | ✅ |
 | SPAWN_KITE | CMessageBoxPool::OnMessageBoxEnterField | field/clientbound/FieldKiteSpawn (T1) | 0x0D0 | 🟡 | 0x0F1 | 🟡 | 0x0F9 | 🟡 | 0x10F | ✅ | 0x10F | ✅ | 0x120 | ✅ | 0x146 | ✅ | 0x124 | ✅ |
 | REMOVE_KITE | CMessageBoxPool::OnMessageBoxLeaveField | field/clientbound/FieldKiteDestroy (T1) | 0x0D1 | 🟡 | 0x0F2 | 🟡 | 0x0FA | 🟡 | 0x110 | ✅ | 0x117 | ✅ | 0x121 | ✅ | 0x147 | ✅ | 0x125 | ✅ |
@@ -698,7 +698,7 @@ Tool: `f7115324e91c1ab5036202417e1e0e7aa96ea97e`
 | JMS_CONSUME_ITEM |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0A3 | ❌ |
 | NPC_ACTION | CNpc::GenerateMovePath | npc/serverbound/NpcActionRequest (T1) | 0x0A4 | ❌ | 0x0BB | ✅ | 0x0BD | ✅ | 0x0C5 | ❌ | 0x0CB | ✅ | 0x0D2 | ❌ | 0x0F1 | ✅ | 0x0D0 | ✅ |
 | FIND_FRIEND | CUIFindFriend::SendMyInfoRequest; CUIFindFriend::SendSearchRequest; CUIFindFriendDetail::SetDetailInfo |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x0A6 | ❌ | 0x0A6 | ❌ | 0x0B1 | ❌ | 0x0C2 | ❌ |  | ⬜ |
-| ITEM_PICKUP | CWvsContext::SendDropPickUpRequest; sub_8316B8 | drop/serverbound/DropPickUp (T1) | 0x0A9 | ❌ | 0x0C0 | ✅ | 0x0C2 | ✅ | 0x0CA | ✅ | 0x0D0 | ✅ | 0x0D7 | ✅ | 0x0F6 | ✅ | 0x0D5 | ✅ |
+| ITEM_PICKUP | CWvsContext::SendDropPickUpRequest; sub_8316B8 | drop/serverbound/DropPickUp (T1) | 0x0A9 | ✅ | 0x0C0 | ✅ | 0x0C2 | ✅ | 0x0CA | ✅ | 0x0D0 | ✅ | 0x0D7 | ✅ | 0x0F6 | ✅ | 0x0D5 | ✅ |
 | CASH_GACHAPON_BUTTON | CUICashGachapon::OnButtonClicked |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0AA | ❌ | 0x0BA | ❌ |  | ⬜ |
 | CASHSHOP_SURPRISE | CCashShop::SendChangeMaplePoint |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0AB | ❌ | 0x0BB | ❌ | 0x0A7 | ❌ |
 | DAMAGE_REACTOR | CReactorPool::FindHitReactor; CReactorPool::FindSkillReactor | reactor/serverbound/ReactorHitRequest (T1) | 0x0AC | ❌ | 0x0C3 | ❌ | 0x0C5 | 🟡 | 0x0CD | ✅ | 0x0D3 | ✅ | 0x0DA | ✅ | 0x0F9 | ✅ | 0x0D8 | ✅ |
@@ -845,7 +845,6 @@ Tool: `f7115324e91c1ab5036202417e1e0e7aa96ea97e`
 | character/serverbound/InfoRequest (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | character/serverbound/ItemCancel (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | character/serverbound/Move (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
-| drop/serverbound/DropPickUp (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | fame/serverbound/Change |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | field/clientbound/FieldEffectBossHp (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | field/clientbound/FieldEffectRewardRullet (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
@@ -982,14 +981,14 @@ Tool: `f7115324e91c1ab5036202417e1e0e7aa96ea97e`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v61 | 23 | 0 | 62 | 410 | 452 | 2 | 4.6% |
-| v72 | 216 | 0 | 73 | 246 | 414 | 0 | 40.4% |
-| v79 | 228 | 0 | 72 | 244 | 405 | 0 | 41.9% |
-| v83 | 367 | 0 | 0 | 375 | 207 | 0 | 49.5% |
-| v84 | 345 | 0 | 0 | 376 | 228 | 0 | 47.9% |
-| v87 | 379 | 0 | 0 | 400 | 170 | 0 | 48.7% |
-| v95 | 399 | 0 | 0 | 464 | 86 | 0 | 46.2% |
-| JMS185 | 362 | 0 | 0 | 410 | 177 | 0 | 46.9% |
+| v61 | 25 | 0 | 62 | 407 | 452 | 2 | 5.0% |
+| v72 | 216 | 0 | 73 | 245 | 414 | 0 | 40.4% |
+| v79 | 228 | 0 | 72 | 243 | 405 | 0 | 42.0% |
+| v83 | 367 | 0 | 0 | 374 | 207 | 0 | 49.5% |
+| v84 | 345 | 0 | 0 | 375 | 228 | 0 | 47.9% |
+| v87 | 379 | 0 | 0 | 399 | 170 | 0 | 48.7% |
+| v95 | 399 | 0 | 0 | 463 | 86 | 0 | 46.3% |
+| JMS185 | 362 | 0 | 0 | 409 | 177 | 0 | 47.0% |
 
 ## Conflicts
 

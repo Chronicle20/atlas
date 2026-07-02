@@ -159,9 +159,9 @@ Every row must carry a disposition before the branch is done. Row count must equ
 | 152 | libs/atlas-outbox/notify.go:28 | named-call | | | | |
 | 153 | libs/atlas-rest/server/server.go:171 | anon | | | | |
 | 154 | libs/atlas-rest/server/server.go:186 | anon | | | | |
-| 155 | libs/atlas-kafka/consumer/manager.go:145 | named-call | | | | |
-| 156 | libs/atlas-kafka/consumer/manager.go:523 | anon | | | | |
-| 157 | libs/atlas-kafka/consumer/manager.go:558 | anon | | | | |
+| 155 | libs/atlas-kafka/consumer/manager.go:145 | named-call | lib-internal | l | ctx | migrated |
+| 156 | libs/atlas-kafka/consumer/manager.go:523 | anon | lib-internal | l | ctx | migrated |
+| 157 | libs/atlas-kafka/consumer/manager.go:558 | anon | lib-internal | handlerLogger | wctx | migrated |
 | 158 | libs/atlas-seeder/handlers.go:49 | anon | | | | |
 | 159 | libs/atlas-model/model/processor.go:155 | anon | | | | |
 | 160 | libs/atlas-model/model/processor.go:167 | anon | | | | |

@@ -130,3 +130,54 @@ func TestCharacterIdsInMapAllInstancesModelProvider_UnionsInstances(t *testing.T
 		t.Errorf("CharacterIdsInMapAllInstancesModelProvider() = %v, want exactly {100, 200}", ids)
 	}
 }
+
+// FR-4.2: a session warped from map A to map B stops receiving A-broadcasts and
+// starts receiving B-broadcasts, with no state in which it is in both or neither.
+func TestTransition_WarpMovesRecipientSetAtomically(t *testing.T) {
+	logger, cleanup := mapTestSetup()
+	defer cleanup()
+	ctx := test.CreateTestContext()
+	sp := session.NewProcessor(logger, ctx)
+	p := _map.NewProcessor(logger, ctx)
+
+	fA := field.NewBuilder(0, 0, mapid.Id(100000000)).Build()
+	fB := field.NewBuilder(0, 0, mapid.Id(200000000)).Build()
+	addFieldSession(t, sp, 100, fA) // stays in A
+	bId := addFieldSession(t, sp, 200, fA)
+
+	// Before the warp: both in A, none in B.
+	idsA, err := p.GetCharacterIdsInMap(fA)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	setA := idSet(idsA)
+	if len(idsA) != 2 || !setA[100] || !setA[200] {
+		t.Fatalf("pre-warp map A = %v, want exactly {100, 200}", idsA)
+	}
+	idsB, err := p.GetCharacterIdsInMap(fB)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(idsB) != 0 {
+		t.Fatalf("pre-warp map B = %v, want empty", idsB)
+	}
+
+	// Warp B's session — same call the MAP_CHANGED consumer makes
+	// (kafka/consumer/character/consumer.go, SetField before dependent broadcasts).
+	sp.SetField(bId, fB)
+
+	idsA, err = p.GetCharacterIdsInMap(fA)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(idsA) != 1 || idsA[0] != 100 {
+		t.Errorf("post-warp map A = %v, want exactly [100]", idsA)
+	}
+	idsB, err = p.GetCharacterIdsInMap(fB)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(idsB) != 1 || idsB[0] != 200 {
+		t.Errorf("post-warp map B = %v, want exactly [200]", idsB)
+	}
+}

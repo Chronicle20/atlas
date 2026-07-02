@@ -26,6 +26,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/stat"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -34,6 +35,13 @@ import (
 
 var blockedNameErr = errors.New("blocked name")
 var invalidLevelErr = errors.New("invalid level")
+
+// ErrNotEnoughMeso signals a rejected meso change: no state was written and
+// the rejection status event is emitted outside the transaction.
+var ErrNotEnoughMeso = errors.New("not enough meso")
+
+// ErrMesoOverflow rejects a change that would overflow the uint32 meso field.
+var ErrMesoOverflow = errors.New("meso overflow")
 
 type NameValidityResult struct {
 	Valid  bool
@@ -731,7 +739,8 @@ func (p *ProcessorImpl) Move(characterId uint32, x int16, y int16, stance byte) 
 }
 
 func (p *ProcessorImpl) RequestChangeMeso(transactionId uuid.UUID, characterId uint32, amount int32, actorId uint32, actorType string, showEffect bool) error {
-	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+	var rejectEmit func() error
+	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 		c, err := p.WithTransaction(tx).GetById()(characterId)
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to retrieve character [%d] who is having their meso adjusted.", characterId)
@@ -739,17 +748,31 @@ func (p *ProcessorImpl) RequestChangeMeso(transactionId uuid.UUID, characterId u
 		}
 		if int64(c.Meso())+int64(amount) < 0 {
 			p.l.Debugf("Request for character [%d] would leave their meso negative. Amount [%d]. Existing [%d].", characterId, amount, c.Meso())
-			return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvEventTopicCharacterStatus)(notEnoughMesoErrorStatusEventProvider(transactionId, characterId, c.WorldId(), amount))
+			rejectEmit = func() error {
+				return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvEventTopicCharacterStatus)(notEnoughMesoErrorStatusEventProvider(transactionId, characterId, c.WorldId(), amount))
+			}
+			return ErrNotEnoughMeso
 		}
 		if amount > 0 && uint32(amount) > (math.MaxUint32-c.Meso()) {
 			p.l.Errorf("Transaction for character [%d] would result in a uint32 overflow. Rejecting transaction.", characterId)
-			return err
+			return ErrMesoOverflow
 		}
 
-		err = dynamicUpdate(tx)(SetMeso(uint32(int64(c.Meso()) + int64(amount))))(c)
-		_ = producer.ProviderImpl(p.l)(p.ctx)(character2.EnvEventTopicCharacterStatus)(mesoChangedStatusEventProvider(transactionId, characterId, c.WorldId(), amount, actorId, actorType, showEffect))
-		return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvEventTopicCharacterStatus)(statChangedProvider(transactionId, channel.NewModel(c.WorldId(), 0), characterId, []stat.Type{stat.TypeMeso}, nil))
+		if err = dynamicUpdate(tx)(SetMeso(uint32(int64(c.Meso()) + int64(amount))))(c); err != nil {
+			return err
+		}
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			if err := buf.Put(character2.EnvEventTopicCharacterStatus, mesoChangedStatusEventProvider(transactionId, characterId, c.WorldId(), amount, actorId, actorType, showEffect)); err != nil {
+				return err
+			}
+			return buf.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel.NewModel(c.WorldId(), 0), characterId, []stat.Type{stat.TypeMeso}, nil))
+		})
 	})
+	if errors.Is(txErr, ErrNotEnoughMeso) && rejectEmit != nil {
+		_ = rejectEmit()
+		return nil
+	}
+	return txErr
 }
 
 func (p *ProcessorImpl) AttemptMesoPickUp(transactionId uuid.UUID, field field.Model, characterId uint32, dropId uint32, meso uint32) error {
@@ -761,11 +784,15 @@ func (p *ProcessorImpl) AttemptMesoPickUp(transactionId uuid.UUID, field field.M
 		}
 		if meso > (math.MaxUint32 - c.Meso()) {
 			p.l.Errorf("Transaction for character [%d] would result in a uint32 overflow. Rejecting transaction.", characterId)
-			return err
+			return ErrMesoOverflow
 		}
 
-		err = dynamicUpdate(tx)(SetMeso(uint32(int64(c.Meso()) + int64(meso))))(c)
-		return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvEventTopicCharacterStatus)(statChangedProvider(transactionId, channel.NewModel(field.WorldId(), field.ChannelId()), characterId, []stat.Type{stat.TypeMeso}, nil))
+		if err = dynamicUpdate(tx)(SetMeso(uint32(int64(c.Meso()) + int64(meso))))(c); err != nil {
+			return err
+		}
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return buf.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel.NewModel(field.WorldId(), field.ChannelId()), characterId, []stat.Type{stat.TypeMeso}, nil))
+		})
 	})
 	if txErr != nil {
 		return txErr
@@ -774,6 +801,7 @@ func (p *ProcessorImpl) AttemptMesoPickUp(transactionId uuid.UUID, field field.M
 }
 
 func (p *ProcessorImpl) RequestDropMeso(transactionId uuid.UUID, field field.Model, characterId uint32, amount uint32) error {
+	var rejectEmit func() error
 	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 		c, err := p.WithTransaction(tx).GetById()(characterId)
 		if err != nil {
@@ -782,18 +810,28 @@ func (p *ProcessorImpl) RequestDropMeso(transactionId uuid.UUID, field field.Mod
 		}
 		if int64(c.Meso())-int64(amount) < 0 {
 			p.l.Debugf("Request for character [%d] would leave their meso negative. Amount [%d]. Existing [%d].", characterId, amount, c.Meso())
-			return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvEventTopicCharacterStatus)(notEnoughMesoErrorStatusEventProvider(transactionId, characterId, c.WorldId(), int32(amount)))
+			rejectEmit = func() error {
+				return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvEventTopicCharacterStatus)(notEnoughMesoErrorStatusEventProvider(transactionId, characterId, c.WorldId(), int32(amount)))
+			}
+			return ErrNotEnoughMeso
 		}
 
-		return dynamicUpdate(tx)(SetMeso(c.Meso() - amount))(c)
+		if err = dynamicUpdate(tx)(SetMeso(c.Meso() - amount))(c); err != nil {
+			return err
+		}
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return buf.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel.NewModel(field.WorldId(), field.ChannelId()), characterId, []stat.Type{stat.TypeMeso}, nil))
+		})
 	})
+	if errors.Is(txErr, ErrNotEnoughMeso) && rejectEmit != nil {
+		_ = rejectEmit()
+		return nil
+	}
 	if txErr != nil {
 		return txErr
 	}
 
 	tc := GetTemporalRegistry().GetById(p.ctx, tenant.MustFromContext(p.ctx), characterId)
-
-	_ = producer.ProviderImpl(p.l)(p.ctx)(character2.EnvEventTopicCharacterStatus)(statChangedProvider(transactionId, channel.NewModel(field.WorldId(), field.ChannelId()), characterId, []stat.Type{stat.TypeMeso}, nil))
 	// TODO determine appropriate drop type and mod
 	_ = drop.NewProcessor(p.l, p.ctx).CreateForMesos(field, amount, 2, tc.X(), tc.Y(), characterId)
 	return nil

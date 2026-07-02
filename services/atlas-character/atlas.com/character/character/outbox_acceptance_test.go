@@ -19,34 +19,34 @@ import (
 
 // Rollback in a migrated flow should leave zero outbox rows.
 //
-// SKIPPED — confirmed empirically (not assumed) that this fails against the
-// current library code, for a reason stronger than the documented bug:
-// gorm.Open() itself populates db.Statement.ConnPool on the root *gorm.DB
-// immediately, before any WithContext/query/transaction call. So
-// database.ExecuteTransaction's isTransaction() check
-// (db.Statement != nil && db.Statement.ConnPool != nil,
-// libs/atlas-database/transaction.go:16-18) is true for EVERY *gorm.DB,
-// including a freshly-opened in-memory sqlite handle in this test — not only
+// This uses gorm's own db.Transaction(fn) primitive directly, NOT
+// database.ExecuteTransaction. Confirmed empirically (not assumed) that
+// database.ExecuteTransaction's OWN routing is inert against current library
+// code: gorm.Open() populates db.Statement.ConnPool on the root *gorm.DB
+// immediately, before any WithContext/query/transaction call, so
+// isTransaction() (db.Statement != nil && db.Statement.ConnPool != nil,
+// libs/atlas-database/transaction.go:16-18) is true for EVERY *gorm.DB —
+// including a freshly-opened in-memory sqlite handle — not only
 // request-scoped Postgres handles as bug_execute_transaction_noop.md
-// describes. ExecuteTransaction therefore never calls db.Transaction(fn)
-// here either, fn(db) runs directly with no real BEGIN/ROLLBACK, and the
-// enqueued row survives the "rollback". Verified directly: running this test
-// body without t.Skip reports "Should be zero, but was 1".
+// describes. That means database.ExecuteTransaction never calls
+// db.Transaction(fn) itself; fixing it is task-119's TxCommitter work (see
+// docs/tasks/task-114-outbox-adoption/inventory.md), and this test file's
+// scope (character acceptance tests) is not the place to fix
+// libs/atlas-database.
 //
-// This is the same pre-existing, already-tracked gap (task-119's TxCommitter
-// fix, see docs/tasks/task-114-outbox-adoption/inventory.md) — not a defect
-// introduced by this migration and not something this test file's task scope
-// (character acceptance tests) is meant to fix. The assertions below are
-// left in place, unmodified, so removing this t.Skip is the only change
-// needed to turn this into a real regression test once task-119 lands.
+// gorm's db.Transaction(fn) does genuinely BEGIN/COMMIT/ROLLBACK today, so
+// using it here exercises exactly the thing Tasks 7-9 depend on: enqueuing
+// an outbox row inside a real transaction, then having that row vanish when
+// the transaction rolls back. This keeps the test a real regression check
+// now instead of a permanently-skipped stub, and it still doubles as the
+// exact case that becomes redundant (but harmless) once task-119 makes
+// database.ExecuteTransaction itself route to a real transaction.
 func TestOutbox_RollbackDiscardsEnqueuedEvents(t *testing.T) {
-	t.Skip("blocked on task-119: database.ExecuteTransaction's isTransaction() check is always true (gorm.Open sets Statement.ConnPool on the root *gorm.DB), so no real rollback occurs for any db, including this in-test sqlite handle — see comment above and inventory.md")
-
 	tctx := tenant.WithContext(context.Background(), testTenant())
 	db := outboxTestDb(t)
 
 	boom := errors.New("boom")
-	err := database.ExecuteTransaction(db, func(tx *gorm.DB) error {
+	err := db.Transaction(func(tx *gorm.DB) error {
 		err := message.Emit(outbox.EmitProvider(testLogger(), tctx, tx))(func(buf *message.Buffer) error {
 			return buf.Put(character2.EnvEventTopicCharacterStatus, fixedMessageProvider())
 		})
@@ -57,7 +57,8 @@ func TestOutbox_RollbackDiscardsEnqueuedEvents(t *testing.T) {
 	require.Zero(t, outboxRowCount(t, db))
 }
 
-// Commit publishes exactly what was enqueued, via the drainer.
+// Commit enqueues exactly one outbox row per emitted message; no
+// drainer/publish is exercised here, only the enqueue count.
 func TestOutbox_CommitYieldsExactlyEnqueuedEvents(t *testing.T) {
 	tctx := tenant.WithContext(context.Background(), testTenant())
 	db := outboxTestDb(t)

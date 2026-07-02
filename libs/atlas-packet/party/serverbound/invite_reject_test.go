@@ -1,10 +1,35 @@
 package serverbound
 
 import (
+	"bytes"
 	"testing"
 
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
+
+// TestInviteRejectV61 pins the gms_v61 DENY_PARTY_REQUEST (op 113) wire.
+//
+// IDA-verified send site (GMS_v61.1_U_DEVM.exe, port 13338) — the client builds
+// DENY_PARTY_REQUEST inside CWvsContext::OnPartyResult @0x857a8c case 4
+// (invite-received, auto-decline branch): COutPacket(113) @0x857c29,
+// Encode1(declineCode) @0x857c47, EncodeStr(inviterName) @0x857c60,
+// EncodeStr(myName) @0x857c7f. atlas InviteReject models the leading flag +
+// first name (WriteByte(unk)+WriteAsciiString(from)); the trailing myName is not
+// modelled — same shape as the verified v72/v79/v83 cells.
+//
+// packet-audit:verify packet=party/serverbound/PartyInviteReject version=gms_v61 ida=0x857a8c
+func TestInviteRejectV61(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 61, 1)
+	m := InviteReject{unk: 1, from: "SomePartyLeader"}
+	want := []byte{
+		0x01,       // Encode1 declineCode (@0x857c47)
+		0x0F, 0x00, // WriteAsciiString length prefix (15)
+		0x53, 0x6F, 0x6D, 0x65, 0x50, 0x61, 0x72, 0x74, 0x79, 0x4C, 0x65, 0x61, 0x64, 0x65, 0x72, // "SomePartyLeader" (@0x857c60)
+	}
+	if got := m.Encode(nil, ctx)(nil); !bytes.Equal(got, want) {
+		t.Errorf("v61 InviteReject golden mismatch\n got: % x\nwant: % x", got, want)
+	}
+}
 
 // v79 DENY_PARTY_REQUEST (op 122) — built in CWvsContext::OnPartyResult
 // @0x987583 case 4 (invite-received): COutPacket(122) @0x98772e, Encode1(mode)

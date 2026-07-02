@@ -10,7 +10,7 @@ Every row must carry a disposition before the branch is done. Row count must equ
 | 3 | services/atlas-buffs/atlas.com/buffs/tasks/task.go:12 | anon | ticker | l | ctx (plumbed: Register(t Task) → Register(l, ctx) func(t Task)) | migrated |
 | 4 | services/atlas-buffs/atlas.com/buffs/main.go:65 | named-call | ticker | l | tdm.Context() | migrated |
 | 5 | services/atlas-buffs/atlas.com/buffs/main.go:66 | named-call | ticker | l | tdm.Context() | migrated |
-| 6 | services/atlas-cashshop/atlas.com/cashshop/cashshop/inventory/asset/reservation/cache.go:31 | named-call | | | | |
+| 6 | services/atlas-cashshop/atlas.com/cashshop/cashshop/inventory/asset/reservation/cache.go:31 | named-call | lifecycle | logrus.StandardLogger() | ctx (local cancellable; singleton has no logger/caller to plumb) | migrated |
 | 7 | services/atlas-login/atlas.com/login/listener/registry.go:220 | anon | lifecycle | r.l | h.Ctx | migrated |
 | 8 | services/atlas-login/atlas.com/login/socket/init.go:22 | anon | lifecycle | l | ctx | migrated |
 | 9 | services/atlas-login/atlas.com/login/socket/init.go:38 | anon | lifecycle | l | ctx | migrated |
@@ -18,10 +18,10 @@ Every row must carry a disposition before the branch is done. Row count must equ
 | 11 | services/atlas-login/atlas.com/login/main.go:165 | named-call | lifecycle | l | tdm.Context() | migrated |
 | 12 | services/atlas-login/atlas.com/login/main.go:178 | anon | ticker | l | tdm.Context() | migrated |
 | 13 | services/atlas-login/atlas.com/login/main.go:205 | named-call | ticker | l | tdm.Context() | migrated |
-| 14 | services/atlas-ban/atlas.com/ban/tasks/task.go:18 | anon | | | | |
-| 15 | services/atlas-ban/atlas.com/ban/main.go:81 | named-call | | | | |
-| 16 | services/atlas-ban/atlas.com/ban/main.go:82 | named-call | | | | |
-| 17 | services/atlas-asset-expiration/atlas.com/asset-expiration/task/periodic.go:43 | named-call | | | | |
+| 14 | services/atlas-ban/atlas.com/ban/tasks/task.go:18 | anon | ticker | l | ctx | migrated |
+| 15 | services/atlas-ban/atlas.com/ban/main.go:81 | named-call | ticker | l | tdm.Context() | migrated |
+| 16 | services/atlas-ban/atlas.com/ban/main.go:82 | named-call | ticker | l | tdm.Context() | migrated |
+| 17 | services/atlas-asset-expiration/atlas.com/asset-expiration/task/periodic.go:43 | named-call | ticker | t.l | t.ctx (plumbed: NewPeriodicTask(l, interval) -> NewPeriodicTask(l, ctx, interval); main passes tdm.Context()) | migrated |
 | 18 | services/atlas-channel/atlas.com/channel/listener/registry.go:208 | anon | lifecycle | r.l | h.Ctx | migrated |
 | 19 | services/atlas-channel/atlas.com/channel/kafka/consumer/asset/consumer.go:346 | anon | handler-spawned | l | ctx | migrated |
 | 20 | services/atlas-channel/atlas.com/channel/kafka/consumer/asset/consumer.go:357 | anon | handler-spawned | l | ctx | migrated |
@@ -87,22 +87,22 @@ Every row must carry a disposition before the branch is done. Row count must equ
 | 80 | services/atlas-channel/atlas.com/channel/tasks/task.go:18 | anon | ticker | l | ctx | migrated |
 | 81 | services/atlas-channel/atlas.com/channel/main.go:318 | named-call | lifecycle | l | tdm.Context() | migrated |
 | 82 | services/atlas-channel/atlas.com/channel/main.go:327 | named-call | ticker | l | tdm.Context() | migrated |
-| 83 | services/atlas-guilds/atlas.com/guilds/tasks/task.go:18 | anon | | | | |
-| 84 | services/atlas-guilds/atlas.com/guilds/main.go:101 | named-call | | | | |
+| 83 | services/atlas-guilds/atlas.com/guilds/tasks/task.go:18 | anon | ticker | l | ctx | migrated |
+| 84 | services/atlas-guilds/atlas.com/guilds/main.go:101 | named-call | ticker | l | tdm.Context() | migrated |
 | 85 | services/atlas-pets/atlas.com/pets/pet/task.go:37 | anon | ticker | t.l | sctx | migrated |
 | 86 | services/atlas-pets/atlas.com/pets/tasks/task.go:18 | anon | ticker | l | ctx | migrated |
 | 87 | services/atlas-pets/atlas.com/pets/main.go:91 | named-call | ticker | l | tdm.Context() | migrated |
-| 88 | services/atlas-character-factory/atlas.com/character-factory/main.go:111 | named-call | | | | |
-| 89 | services/atlas-skills/atlas.com/skills/tasks/task.go:12 | anon | | | | |
-| 90 | services/atlas-skills/atlas.com/skills/main.go:79 | named-call | | | | |
-| 91 | services/atlas-invites/atlas.com/invites/tasks/task.go:18 | anon | | | | |
-| 92 | services/atlas-invites/atlas.com/invites/main.go:82 | named-call | | | | |
-| 93 | services/atlas-reactors/atlas.com/reactors/tasks/task.go:12 | anon | | | | |
-| 94 | services/atlas-reactors/atlas.com/reactors/main.go:70 | named-call | | | | |
-| 95 | services/atlas-summons/atlas.com/summons/tasks/task.go:18 | anon | | | | |
-| 96 | services/atlas-summons/atlas.com/summons/main.go:109 | anon | | | | |
-| 97 | services/atlas-expressions/atlas.com/expressions/tasks/task.go:18 | anon | | | | |
-| 98 | services/atlas-expressions/atlas.com/expressions/main.go:51 | named-call | | | | |
+| 88 | services/atlas-character-factory/atlas.com/character-factory/main.go:111 | named-call | lifecycle | l | tdm.Context() | migrated |
+| 89 | services/atlas-skills/atlas.com/skills/tasks/task.go:12 | anon | ticker | l | ctx (plumbed: Register(t Task) -> Register(l, ctx) func(t Task)) | migrated |
+| 90 | services/atlas-skills/atlas.com/skills/main.go:79 | named-call | ticker | l | tdm.Context() | migrated |
+| 91 | services/atlas-invites/atlas.com/invites/tasks/task.go:18 | anon | ticker | l | ctx | migrated |
+| 92 | services/atlas-invites/atlas.com/invites/main.go:82 | named-call | ticker | l | tdm.Context() | migrated |
+| 93 | services/atlas-reactors/atlas.com/reactors/tasks/task.go:12 | anon | ticker | l | ctx (plumbed: Register(t Task) -> Register(l, ctx) func(t Task)) | migrated |
+| 94 | services/atlas-reactors/atlas.com/reactors/main.go:70 | named-call | ticker | l | tdm.Context() | migrated |
+| 95 | services/atlas-summons/atlas.com/summons/tasks/task.go:18 | anon | ticker | l | ctx | migrated |
+| 96 | services/atlas-summons/atlas.com/summons/main.go:109 | anon | lifecycle | l | tdm.Context() | migrated |
+| 97 | services/atlas-expressions/atlas.com/expressions/tasks/task.go:18 | anon | ticker | l | ctx | migrated |
+| 98 | services/atlas-expressions/atlas.com/expressions/main.go:51 | named-call | ticker | l | tdm.Context() | migrated |
 | 99 | services/atlas-maps/atlas.com/maps/map/monster/processor.go:142 | named-call | handler-spawned | p.l | p.ctx | migrated |
 | 100 | services/atlas-maps/atlas.com/maps/map/processor.go:84 | anon | handler-spawned | p.l | p.ctx | migrated |
 | 101 | services/atlas-maps/atlas.com/maps/map/processor.go:87 | anon | handler-spawned | p.l | p.ctx | migrated |
@@ -113,50 +113,50 @@ Every row must carry a disposition before the branch is done. Row count must equ
 | 106 | services/atlas-maps/atlas.com/maps/main.go:116 | named-call | ticker | l | tdm.Context() | migrated |
 | 107 | services/atlas-maps/atlas.com/maps/main.go:117 | named-call | ticker | l | tdm.Context() | migrated |
 | 108 | services/atlas-maps/atlas.com/maps/main.go:118 | named-call | ticker | l | tdm.Context() | migrated |
-| 109 | services/atlas-drops/atlas.com/drops/tasks/task.go:18 | anon | | | | |
-| 110 | services/atlas-drops/atlas.com/drops/main.go:94 | named-call | | | | |
-| 111 | services/atlas-configurations/atlas.com/configurations/main.go:61 | named-call | | | | |
-| 112 | services/atlas-npc-conversations/atlas.com/npc/map/processor.go:56 | anon | | | | |
-| 113 | services/atlas-renders/atlas.com/renders/character/handler.go:137 | anon | | | | |
-| 114 | services/atlas-renders/atlas.com/renders/mapr/handler.go:133 | anon | | | | |
+| 109 | services/atlas-drops/atlas.com/drops/tasks/task.go:18 | anon | ticker | l | ctx | migrated |
+| 110 | services/atlas-drops/atlas.com/drops/main.go:94 | named-call | ticker | l | tdm.Context() | migrated |
+| 111 | services/atlas-configurations/atlas.com/configurations/main.go:61 | named-call | lifecycle | l | tdm.Context() | migrated |
+| 112 | services/atlas-npc-conversations/atlas.com/npc/map/processor.go:56 | anon | handler-spawned | p.l | p.ctx (loop var hoisted: id := mapId) | migrated |
+| 113 | services/atlas-renders/atlas.com/renders/character/handler.go:137 | anon | handler-spawned | l | r.Context() | migrated |
+| 114 | services/atlas-renders/atlas.com/renders/mapr/handler.go:133 | anon | handler-spawned | l | r.Context() (arg hoisted: payload := body) | migrated |
 | 115 | services/atlas-data/atlas.com/data/baseline/restore.go:234 | anon | handler-spawned | l | ctx (plumbed: runRestoreTables/restoreOneTable/copyInBinary gained an `l logrus.FieldLogger` param threaded from Restorer.L, no `l` was in scope 3 frames deep) | migrated |
 | 116 | services/atlas-data/atlas.com/data/data/processor.go:224 | anon | handler-spawned | l | ctx | migrated |
 | 117 | services/atlas-data/atlas.com/data/data/processor.go:236 | anon | handler-spawned | l | ctx | migrated |
 | 118 | services/atlas-data/atlas.com/data/runtime/ingest/run.go:42 | named-call | ticker | l | ctx | migrated |
 | 119 | services/atlas-data/atlas.com/data/main.go:111 | named-call | lifecycle | l | tdm.Context() | migrated |
-| 120 | services/atlas-doors/atlas.com/doors/tasks/task.go:18 | anon | | | | |
-| 121 | services/atlas-doors/atlas.com/doors/main.go:110 | anon | | | | |
+| 120 | services/atlas-doors/atlas.com/doors/tasks/task.go:18 | anon | ticker | l | ctx | migrated |
+| 121 | services/atlas-doors/atlas.com/doors/main.go:110 | anon | lifecycle | l | tdm.Context() | migrated |
 | 122 | services/atlas-monster-death/atlas.com/monster/kafka/consumer/monster/consumer.go:47 | anon | handler-spawned | l | ctx | migrated |
 | 123 | services/atlas-monster-death/atlas.com/monster/kafka/consumer/monster/consumer.go:61 | anon | handler-spawned | l | ctx | migrated |
-| 124 | services/atlas-transports/atlas.com/transports/main.go:125 | anon | | | | |
-| 125 | services/atlas-character/atlas.com/character/tasks/task.go:18 | anon | | | | |
-| 126 | services/atlas-character/atlas.com/character/main.go:104 | named-call | | | | |
-| 127 | services/atlas-marriages/atlas.com/marriages/scheduler/ceremony_timeout.go:48 | named-call | | | | |
-| 128 | services/atlas-marriages/atlas.com/marriages/scheduler/proposal_expiry.go:48 | named-call | | | | |
+| 124 | services/atlas-transports/atlas.com/transports/main.go:125 | anon | ticker | l | tdm.Context() | migrated |
+| 125 | services/atlas-character/atlas.com/character/tasks/task.go:18 | anon | ticker | l | ctx | migrated |
+| 126 | services/atlas-character/atlas.com/character/main.go:104 | named-call | ticker | l | tdm.Context() | migrated |
+| 127 | services/atlas-marriages/atlas.com/marriages/scheduler/ceremony_timeout.go:48 | named-call | ticker | s.log | s.ctx | migrated |
+| 128 | services/atlas-marriages/atlas.com/marriages/scheduler/proposal_expiry.go:48 | named-call | ticker | s.log | s.ctx | migrated |
 | 129 | services/atlas-monsters/atlas.com/monsters/monster/processor.go:700 | anon | handler-spawned | p.l | p.ctx | migrated |
 | 130 | services/atlas-monsters/atlas.com/monsters/tasks/task.go:18 | anon | ticker | l | ctx | migrated |
 | 131 | services/atlas-monsters/atlas.com/monsters/main.go:120 | anon | lifecycle | l | tdm.Context() | migrated |
-| 132 | services/atlas-families/atlas.com/family/scheduler/reputation_reset.go:72 | named-call | | | | |
-| 133 | services/atlas-account/atlas.com/account/tasks/task.go:18 | anon | | | | |
-| 134 | services/atlas-account/atlas.com/account/main.go:78 | named-call | | | | |
-| 135 | services/atlas-mounts/atlas.com/mounts/tasks/task.go:18 | anon | | | | |
-| 136 | services/atlas-mounts/atlas.com/mounts/main.go:88 | named-call | | | | |
-| 137 | services/atlas-merchant/atlas.com/merchant/service/teardown.go:41 | anon | | | | |
-| 138 | services/atlas-merchant/atlas.com/merchant/tasks/task.go:18 | anon | | | | |
+| 132 | services/atlas-families/atlas.com/family/scheduler/reputation_reset.go:72 | named-call | ticker | j.log | ctx (Start(ctx) param) | migrated |
+| 133 | services/atlas-account/atlas.com/account/tasks/task.go:18 | anon | ticker | l | ctx | migrated |
+| 134 | services/atlas-account/atlas.com/account/main.go:78 | named-call | ticker | l | tdm.Context() | migrated |
+| 135 | services/atlas-mounts/atlas.com/mounts/tasks/task.go:18 | anon | ticker | l | ctx | migrated |
+| 136 | services/atlas-mounts/atlas.com/mounts/main.go:88 | named-call | ticker | l | tdm.Context() | migrated |
+| 137 | services/atlas-merchant/atlas.com/merchant/service/teardown.go:41 | anon | lifecycle | logrus.StandardLogger() | m.context (Manager has no logger field; vendored copy of atlas-service) | migrated |
+| 138 | services/atlas-merchant/atlas.com/merchant/tasks/task.go:18 | anon | ticker | l | ctx | migrated |
 | 139 | services/atlas-world/atlas.com/world/tasks/task.go:18 | anon | ticker | l | ctx | migrated |
 | 140 | services/atlas-world/atlas.com/world/main.go:134 | named-call | lifecycle | l | tdm.Context() | migrated |
 | 141 | services/atlas-world/atlas.com/world/main.go:147 | named-call | ticker | l | tdm.Context() | migrated |
-| 142 | services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/main.go:222 | anon | | | | |
-| 143 | services/atlas-party-quests/atlas.com/party-quests/main.go:87 | anon | | | | |
-| 144 | libs/atlas-service/teardown.go:41 | anon | | | | |
-| 145 | libs/atlas-redis/coalesced.go:80 | named-call | | | | |
-| 146 | libs/atlas-redis/tenant_coalesced.go:64 | named-call | | | | |
+| 142 | services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/main.go:222 | anon | ticker | l | tdm.Context() | migrated |
+| 143 | services/atlas-party-quests/atlas.com/party-quests/main.go:87 | anon | ticker | l | tdm.Context() | migrated |
+| 144 | libs/atlas-service/teardown.go:41 | anon | lifecycle | logrus.StandardLogger() | m.context (lib Manager has no logger field) | migrated |
+| 145 | libs/atlas-redis/coalesced.go:80 | named-call | lib-internal | logrus.StandardLogger() | context.Background() (lib: registry has no ctx; stopCh-based lifecycle) | migrated |
+| 146 | libs/atlas-redis/tenant_coalesced.go:64 | named-call | lib-internal | logrus.StandardLogger() | context.Background() (lib: registry has no ctx; stopCh-based lifecycle) | migrated |
 | 147 | libs/atlas-socket/server.go:125 | anon | lifecycle | l | ctx | migrated |
 | 148 | libs/atlas-socket/server.go:152 | named-call | lib-internal | l | ctx | migrated |
 | 149 | libs/atlas-socket/server.go:173 | anon | lifecycle | l | ctx | migrated |
 | 150 | libs/atlas-socket/server.go:226 | named-call | lib-internal | fl | ctx | migrated |
-| 151 | libs/atlas-outbox/drainer.go:148 | named-call | | | | |
-| 152 | libs/atlas-outbox/notify.go:28 | named-call | | | | |
+| 151 | libs/atlas-outbox/drainer.go:148 | named-call | lib-internal | d.l | sweepCtx | migrated |
+| 152 | libs/atlas-outbox/notify.go:28 | named-call | lib-internal | l | context.Background() (lib: newNotifier has no ctx; range-over-channel pump) | migrated |
 | 153 | libs/atlas-rest/server/server.go:171 | anon | lifecycle | sb.l | sb.ctx | migrated |
 | 154 | libs/atlas-rest/server/server.go:186 | anon | lifecycle | sb.l | ctx | migrated |
 | 155 | libs/atlas-kafka/consumer/manager.go:145 | named-call | lib-internal | l | ctx | migrated |

@@ -6,6 +6,9 @@ import (
 	"os/signal"
 	"sync"
 	"syscall"
+
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+	"github.com/sirupsen/logrus"
 )
 
 type Manager struct {
@@ -38,11 +41,11 @@ func GetTeardownManager() *Manager {
 
 func (m *Manager) TeardownFunc(f func()) {
 	m.waitGroup.Add(1)
-	go func() {
+	routine.Go(logrus.StandardLogger(), m.context, func(_ context.Context) {
 		defer m.waitGroup.Done()
 		<-m.doneChan
 		f()
-	}()
+	})
 }
 
 func (m *Manager) Wait() {

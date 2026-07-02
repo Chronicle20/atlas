@@ -1,6 +1,10 @@
 package main
 
 import (
+	"context"
+
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+
 	"atlas-mounts/kafka/consumer/buff"
 	"atlas-mounts/kafka/consumer/character"
 	"atlas-mounts/kafka/consumer/food"
@@ -85,7 +89,9 @@ func main() {
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
 		Run()
 
-	go tasks.Register(l, tdm.Context())(mount.NewTirednessTask(l, db, time.Minute))
+	routine.Go(l, tdm.Context(), func(_ context.Context) {
+		tasks.Register(l, tdm.Context())(mount.NewTirednessTask(l, db, time.Minute))
+	})
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))
 

@@ -1,6 +1,8 @@
 package mapr
 
 import (
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+
 	"bytes"
 	"context"
 	"fmt"
@@ -130,13 +132,14 @@ func serveRender(l logrus.FieldLogger, s *storage.Storage, w http.ResponseWriter
 	//    straight stream. Uses a fresh context so client cancellation does
 	//    not abort the cache write.
 	body := buf.Bytes()
-	go func(payload []byte) {
+	payload := body
+	routine.Go(l, r.Context(), func(_ context.Context) {
 		putCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 		if err := s.MC.Put(putCtx, s.Cfg.BucketRenders, renderKey, bytes.NewReader(payload), int64(len(payload)), "image/png"); err != nil {
 			l.WithError(err).Debug("render cache put failed")
 		}
-	}(body)
+	})
 
 	w.Header().Set("Content-Type", "image/png")
 	w.Header().Set("Cache-Control", "public, max-age=86400, immutable")

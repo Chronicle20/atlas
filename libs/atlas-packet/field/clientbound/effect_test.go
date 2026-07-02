@@ -42,6 +42,53 @@ import (
 // packet-audit:verify packet=field/clientbound/FieldEffectTremble version=gms_v72 ida=0x5174bb
 // packet-audit:verify packet=field/clientbound/FieldEffectString version=gms_v72 ida=0x5174bb
 // packet-audit:verify packet=field/clientbound/FieldEffectRewardRullet version=gms_v72 ida=0x5174bb
+// packet-audit:verify packet=field/clientbound/FieldEffectSummon version=gms_v61 ida=0x4eb523
+// packet-audit:verify packet=field/clientbound/FieldEffectTremble version=gms_v61 ida=0x4eb523
+// packet-audit:verify packet=field/clientbound/FieldEffectString version=gms_v61 ida=0x4eb523
+// packet-audit:verify packet=field/clientbound/FieldEffectBossHp version=gms_v61 ida=0x4eb523
+//
+// TestFieldEffectByteOutputV61 pins the gms_v61 FIELD_EFFECT (op 0x68 = 104)
+// dispatcher sub-modes. IDA: CField::OnFieldEffect = sub_4EB523 @0x4eb523
+// (GMS_v61.1_U_DEVM.exe) switches on Decode1(mode): mode 0 (Summon) =
+// Decode1(effect)+Decode4(x)+Decode4(y); mode 1 (Tremble) = Decode1(bHeavy)+
+// Decode4(delay); modes 2/3/4/6 (String/screen/sound/BGM) = DecodeStr(name);
+// mode 5 (BossHp) = Decode4(monsterId)+Decode4(curHp)+Decode4(maxHp)+
+// Decode1(tagColor)+Decode1(tagBg). The switch tops out at mode 6 (BGM) — there is
+// NO reward-roulette (mode 7) arm, so FieldEffectRewardRullet is version-absent in
+// v61 (dispositioned n-a). All present arms match the codec field-for-field and are
+// byte-identical to the v72 golden (version-invariant layout).
+func TestFieldEffectByteOutputV61(t *testing.T) {
+	ctx := test.CreateContext("GMS", 61, 1)
+
+	summon := NewFieldEffectSummon(0, 3, 100, 200)
+	if got := test.Encode(t, ctx, summon.Encode, nil); !bytes.Equal(got, []byte{
+		0x00, 0x03, 0x64, 0x00, 0x00, 0x00, 0xC8, 0x00, 0x00, 0x00,
+	}) {
+		t.Errorf("v61 summon: got %v", got)
+	}
+
+	tremble := NewFieldEffectTremble(1, true, 500)
+	if got := test.Encode(t, ctx, tremble.Encode, nil); !bytes.Equal(got, []byte{
+		0x01, 0x01, 0xF4, 0x01, 0x00, 0x00,
+	}) {
+		t.Errorf("v61 tremble: got %v", got)
+	}
+
+	str := NewFieldEffectObject(2, "x")
+	if got := test.Encode(t, ctx, str.Encode, nil); !bytes.Equal(got, []byte{
+		0x02, 0x01, 0x00, 'x',
+	}) {
+		t.Errorf("v61 string: got %v", got)
+	}
+
+	bossHp := NewFieldEffectBossHp(5, 8500003, 50000, 100000, 6, 1)
+	if got := test.Encode(t, ctx, bossHp.Encode, nil); !bytes.Equal(got, []byte{
+		0x05, 0x23, 0xB3, 0x81, 0x00, 0x50, 0xC3, 0x00, 0x00, 0xA0, 0x86, 0x01, 0x00, 0x06, 0x01,
+	}) {
+		t.Errorf("v61 bossHp: got %v", got)
+	}
+}
+
 // TestFieldEffectByteOutputV79 pins every gms_v79 FIELD_EFFECT (op 0x82)
 // dispatcher sub-mode so the op-cell lifts off worst-of-siblings. IDA:
 // CField::OnFieldEffect @0x51e577 (GMS_v79_1_DEVM.exe) switches on Decode1(mode)

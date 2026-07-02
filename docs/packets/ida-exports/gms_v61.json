@@ -1588,9 +1588,8 @@
    "calls": null
   },
   "CField::OnFieldEffect": {
-   "address": "",
+   "address": "0x4eb523",
    "direction": "",
-   "unresolved": true,
    "calls": [
     {
      "op": "Unresolved",
@@ -1599,20 +1598,8 @@
    ]
   },
   "CField::OnFieldEffect#BossHp": {
-   "address": "",
+   "address": "0x4eb523",
    "direction": "clientbound",
-   "unresolved": true,
-   "calls": [
-    {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
-   ]
-  },
-  "CField::OnFieldEffect#RewardRullet": {
-   "address": "",
-   "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
      "op": "Unresolved",
@@ -1621,9 +1608,8 @@
    ]
   },
   "CField::OnFieldEffect#String": {
-   "address": "",
+   "address": "0x4eb523",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
      "op": "Unresolved",
@@ -1632,9 +1618,8 @@
    ]
   },
   "CField::OnFieldEffect#Summon": {
-   "address": "",
+   "address": "0x4eb523",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
      "op": "Unresolved",
@@ -1643,9 +1628,8 @@
    ]
   },
   "CField::OnFieldEffect#Tremble": {
-   "address": "",
+   "address": "0x4eb523",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
      "op": "Unresolved",

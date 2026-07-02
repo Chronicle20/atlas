@@ -5,7 +5,7 @@
 
 Tool: `bfecda916f252908d2fafda8adbe41d5763d4a1e`
 
-- export gms_v61: `903049e4db142c952ba1d1487d25c2d7e6768b59e1496a0cea51cce5ef05d02f`
+- export gms_v61: `e206c096a5f0b3c47cedb825a06da8e10c815be6e5a23daa0868f6b18fbcc027`
 - export gms_v72: `a0ac2be6578395455f491976bcb11aa27e2e57376b46ee8816b90324bad60c02`
 - export gms_v79: `370d6b720b633c12c71d40340f3952000705c4bddb98f87179e7193d112d210c`
 - export gms_v83: `711bddcc2e1bdd417a75954148d2b50c64e70855e84259c0b8e50e700e393c0d`
@@ -166,7 +166,7 @@ Tool: `bfecda916f252908d2fafda8adbe41d5763d4a1e`
 | WHISPER | CField::OnWhisper | field/clientbound/FieldWhisperError (T1) | 0x065 | ❌ | 0x07B | ✅ | 0x07F | ✅ | 0x087 | ✅ | 0x08A | ✅ | 0x08F | ✅ | 0x097 | ✅ | 0x085 | ✅ |
 | SPOUSE_CHAT | CField::OnCoupleMessage | field/clientbound/FieldSpouseChat (T1) | 0x066 | ✅ | 0x07C | ✅ | 0x080 | ✅ | 0x088 | ✅ | 0x08B | ✅ | 0x090 | ✅ | 0x098 | ✅ |  | ⬜ |
 | SUMMON_ITEM_INAVAILABLE | CField::OnSummonItemInavailable | field/clientbound/FieldSummonItemUnavailable (T1) | 0x067 | 🟡 | 0x07D | 🟡 | 0x081 | 🟡 | 0x089 | ✅ | 0x08C | ✅ | 0x091 | ✅ | 0x099 | ✅ | 0x086 | ✅ |
-| FIELD_EFFECT | CField::OnFieldEffect; sub_4EB523 | field/clientbound/FieldEffectBossHp (T1) | 0x068 | ❌ | 0x07E | ✅ | 0x082 | ✅ | 0x08A | ✅ | 0x08D | ✅ | 0x092 | ✅ | 0x09A | ✅ | 0x087 | ✅ |
+| FIELD_EFFECT | CField::OnFieldEffect; sub_4EB523 | field/clientbound/FieldEffectBossHp (T1) | 0x068 | ✅ | 0x07E | ✅ | 0x082 | ✅ | 0x08A | ✅ | 0x08D | ✅ | 0x092 | ✅ | 0x09A | ✅ | 0x087 | ✅ |
 | FIELD_OBSTACLE_ONOFF_LIST | CField::OnFieldObstacleOnOffStatus | field/clientbound/FieldFieldObstacleOnOffList (T1) | 0x069 | ❌ | 0x080 | 🟡 | 0x084 | 🟡 | 0x08C | ✅ | 0x08F | ✅ | 0x094 | ✅ | 0x09C | ✅ | 0x089 | ✅ |
 | BLOW_WEATHER | CField::OnBlowWeather; sub_4ED39C; sub_5723E6 | field/clientbound/FieldEffectWeather (T1) | 0x06A | ❌ | 0x082 | 🟡 | 0x086 | 🟡 | 0x08E | ✅ | 0x091 | ✅ | 0x096 | ✅ | 0x09E | ✅ | 0x08B | ✅ |
 | ADMIN_RESULT | CField::OnAdminResult; sub_57255F | field/clientbound/FieldAdminResult (T1) | 0x06B | 🟡 | 0x084 | 🟡 | 0x088 | ✅ | 0x090 | ✅ | 0x093 | ✅ | 0x098 | ✅ | 0x0A0 | ✅ | 0x08D | ✅ |
@@ -845,11 +845,6 @@ Tool: `bfecda916f252908d2fafda8adbe41d5763d4a1e`
 | character/serverbound/ItemCancel (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | character/serverbound/Move (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | fame/serverbound/Change |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| field/clientbound/FieldEffectBossHp (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| field/clientbound/FieldEffectRewardRullet (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| field/clientbound/FieldEffectString (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| field/clientbound/FieldEffectSummon (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| field/clientbound/FieldEffectTremble (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | field/clientbound/FieldEffectWeather (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | field/serverbound/FieldChange (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | guild/serverbound/GuildAgreementResponse (T1) |  |  | 🟡 |  | 🟡 |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
@@ -959,14 +954,14 @@ Tool: `bfecda916f252908d2fafda8adbe41d5763d4a1e`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v61 | 108 | 0 | 62 | 302 | 454 | 0 | 22.9% |
-| v72 | 216 | 0 | 73 | 223 | 414 | 0 | 42.2% |
-| v79 | 228 | 0 | 72 | 221 | 405 | 0 | 43.8% |
-| v83 | 367 | 0 | 0 | 352 | 207 | 0 | 51.0% |
-| v84 | 345 | 0 | 0 | 353 | 228 | 0 | 49.4% |
-| v87 | 379 | 0 | 0 | 377 | 170 | 0 | 50.1% |
-| v95 | 399 | 0 | 0 | 441 | 86 | 0 | 47.5% |
-| JMS185 | 362 | 0 | 0 | 387 | 177 | 0 | 48.3% |
+| v61 | 109 | 0 | 62 | 296 | 454 | 0 | 23.3% |
+| v72 | 216 | 0 | 73 | 218 | 414 | 0 | 42.6% |
+| v79 | 228 | 0 | 72 | 216 | 405 | 0 | 44.2% |
+| v83 | 367 | 0 | 0 | 347 | 207 | 0 | 51.4% |
+| v84 | 345 | 0 | 0 | 348 | 228 | 0 | 49.8% |
+| v87 | 379 | 0 | 0 | 372 | 170 | 0 | 50.5% |
+| v95 | 399 | 0 | 0 | 436 | 86 | 0 | 47.8% |
+| JMS185 | 362 | 0 | 0 | 382 | 177 | 0 | 48.7% |
 
 ## Conflicts
 

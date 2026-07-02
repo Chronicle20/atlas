@@ -703,9 +703,9 @@
 - op: FIELD_EFFECT
   direction: clientbound
   opcode: 104
-  fname: sub_4EB523
+  fname: CField::OnFieldEffect
   fname_alts:
-  - CField::OnFieldEffect
+  - sub_4EB523
   provenance: manual
   ida:
     address: 5158179

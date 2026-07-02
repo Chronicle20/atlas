@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldEffectString
+direction: clientbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnFieldEffect#String
+    address: "0x4eb523"
+    decompile_sha256: 5c2c6bfd92f7b5fc979c346ea65eee5999f865c58379ee3205d25e2750e87abd
+verifies:
+    - libs/atlas-packet/field/clientbound/effect_test.go#TestFieldEffectByteOutputV61

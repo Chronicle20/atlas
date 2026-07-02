@@ -5,7 +5,7 @@
 
 Tool: `bfecda916f252908d2fafda8adbe41d5763d4a1e`
 
-- export gms_v61: `77a690bc338770f0d42e743cbd9f666384c0db29893621fc78eeab319cf9fea7`
+- export gms_v61: `903049e4db142c952ba1d1487d25c2d7e6768b59e1496a0cea51cce5ef05d02f`
 - export gms_v72: `a0ac2be6578395455f491976bcb11aa27e2e57376b46ee8816b90324bad60c02`
 - export gms_v79: `370d6b720b633c12c71d40340f3952000705c4bddb98f87179e7193d112d210c`
 - export gms_v83: `711bddcc2e1bdd417a75954148d2b50c64e70855e84259c0b8e50e700e393c0d`
@@ -172,7 +172,7 @@ Tool: `bfecda916f252908d2fafda8adbe41d5763d4a1e`
 | ADMIN_RESULT | CField::OnAdminResult; sub_57255F | field/clientbound/FieldAdminResult (T1) | 0x06B | 🟡 | 0x084 | 🟡 | 0x088 | ✅ | 0x090 | ✅ | 0x093 | ✅ | 0x098 | ✅ | 0x0A0 | ✅ | 0x08D | ✅ |
 | OX_QUIZ | CField::OnQuiz | field/clientbound/FieldOxQuiz (T1) | 0x06C | 🟡 | 0x085 | 🟡 | 0x089 | 🟡 | 0x091 | ✅ | 0x094 | ✅ | 0x099 | ✅ | 0x0A1 | ✅ | 0x08E | ✅ |
 | GMEVENT_INSTRUCTIONS | CField::OnDesc | field/clientbound/FieldGmEventInstructions (T1) | 0x06D | 🟡 | 0x086 | 🟡 | 0x08A | 🟡 | 0x092 | ✅ | 0x095 | ✅ | 0x09A | ✅ | 0x0A2 | ✅ | 0x08F | ✅ |
-| CLOCK | CField::OnClock | field/clientbound/FieldClock (T1) | 0x06E | ❌ | 0x087 | ✅ | 0x08B | ✅ | 0x093 | ✅ | 0x096 | ✅ | 0x09B | ✅ | 0x0A3 | ✅ | 0x090 | ✅ |
+| CLOCK | CField::OnClock | field/clientbound/FieldClock (T1) | 0x06E | ✅ | 0x087 | ✅ | 0x08B | ✅ | 0x093 | ✅ | 0x096 | ✅ | 0x09B | ✅ | 0x0A3 | ✅ | 0x090 | ✅ |
 | NEW_YEAR_CARD_RES | CWvsContext::OnNewYearCardRes |  |  | ⬜ | 0x06E | ❌ | 0x070 | ❌ | 0x076 | ❌ | 0x079 | ❌ | 0x079 | ❌ | 0x07A | ❌ |  | ⬜ |
 | RANDOM_MORPH_RES | CWvsContext::OnRandomMorphRes |  |  | ⬜ | 0x06F | ❌ | 0x071 | ❌ | 0x077 | ❌ | 0x07A | ❌ | 0x07A | ❌ | 0x07B | ❌ |  | ⬜ |
 | CANCEL_NAME_CHANGE_BY_OTHER | CWvsContext::OnCancelNameChangebyOther |  |  | ⬜ | 0x070 | ❌ | 0x072 | ❌ | 0x078 | ❌ | 0x07B | ❌ | 0x07B | ❌ | 0x07C | ❌ |  | ⬜ |
@@ -959,7 +959,7 @@ Tool: `bfecda916f252908d2fafda8adbe41d5763d4a1e`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v61 | 107 | 0 | 62 | 303 | 454 | 0 | 22.7% |
+| v61 | 108 | 0 | 62 | 302 | 454 | 0 | 22.9% |
 | v72 | 216 | 0 | 73 | 223 | 414 | 0 | 42.2% |
 | v79 | 228 | 0 | 72 | 221 | 405 | 0 | 43.8% |
 | v83 | 367 | 0 | 0 | 352 | 207 | 0 | 51.0% |

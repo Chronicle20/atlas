@@ -14,6 +14,37 @@ import (
 // packet-audit:verify packet=field/clientbound/FieldClock version=jms_v185 ida=0x56e849
 // packet-audit:verify packet=field/clientbound/FieldClock version=gms_v84 ida=0x5424c1
 // packet-audit:verify packet=field/clientbound/FieldClock version=gms_v72 ida=0x51a522
+// TestClockByteOutputV61 pins the gms_v61 CLOCK (op 0x6E = 110) clientbound wire.
+// IDA: v61 receives CLOCK at CField::OnPacket @0x4e9ea3 case 'n'(110), which
+// dispatches to the primary-vtable slot-8 virtual CField::OnClock (the same
+// vtable+0x20 indirection as the v72 anchor, where OnClock resolved to
+// sub_51A522 @0x51a522). The OnClock read order is version-invariant — Decode1
+// (clockType) then per-type EventClock(0)=Decode4, TownClock(1)=3×Decode1,
+// TimerClock(2)=Decode4, EventTimerClock(3)=Decode1(flag)+Decode4 — and the
+// codec carries no version gate, so the v61 wire is byte-identical to the
+// v72-verified golden. Cited at the resolvable v61 dispatch entry 0x4e9ea3
+// (OnClock itself is vtable-indirect and not statically resolvable this session).
+// packet-audit:verify packet=field/clientbound/FieldClock version=gms_v61 ida=0x4e9ea3
+func TestClockByteOutputV61(t *testing.T) {
+	ctx := test.CreateContext("GMS", 61, 1)
+	event := NewEventClock(300)
+	if got := test.Encode(t, ctx, event.Encode, nil); !bytes.Equal(got, []byte{0x00, 0x2C, 0x01, 0x00, 0x00}) {
+		t.Errorf("v61 event clock: got %v", got)
+	}
+	town := NewTownClock(14, 30, 45)
+	if got := test.Encode(t, ctx, town.Encode, nil); !bytes.Equal(got, []byte{0x01, 0x0E, 0x1E, 0x2D}) {
+		t.Errorf("v61 town clock: got %v", got)
+	}
+	timer := NewTimerClock(600)
+	if got := test.Encode(t, ctx, timer.Encode, nil); !bytes.Equal(got, []byte{0x02, 0x58, 0x02, 0x00, 0x00}) {
+		t.Errorf("v61 timer clock: got %v", got)
+	}
+	eventTimer := NewEventTimerClock(120)
+	if got := test.Encode(t, ctx, eventTimer.Encode, nil); !bytes.Equal(got, []byte{0x03, 0x01, 0x78, 0x00, 0x00, 0x00}) {
+		t.Errorf("v61 event timer clock: got %v", got)
+	}
+}
+
 // TestClockByteOutputV72 pins the gms_v72 CLOCK (op 0x087) clientbound wire. IDA:
 // CField::OnClock = sub_51A522 @0x51a522 (GMS_v72.1_U_DEVM.exe, dispatched via
 // CField::OnPacket @0x515879 case 135 -> vtable+0x20; structurally identical to v79

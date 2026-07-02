@@ -170,5 +170,5 @@ Every row must carry a disposition before the branch is done. Row count must equ
 | 163 | libs/atlas-model/model/processor.go:441 | named-call | | | | |
 | 164 | libs/atlas-model/async/processor.go:72 | anon | | | | |
 | 165 | libs/atlas-model/testutil/helpers.go:189 | anon | | | | |
-| 166 | libs/atlas-lock/leader.go:155 | anon | | | | |
-| 167 | libs/atlas-lock/leader.go:167 | anon | | | | |
+| 166 | libs/atlas-lock/leader.go:155 | anon | lifecycle | le.cfg.log | leaderCtx | migrated |
+| 167 | libs/atlas-lock/leader.go:167 | anon | lifecycle | le.cfg.log | leaderCtx | migrated |

@@ -11,6 +11,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
@@ -66,10 +67,12 @@ func (p *ProcessorImpl) ByCharacterIdProvider(characterId uint32) model.Provider
 
 func (p *ProcessorImpl) CreateAndEmit(transactionId uuid.UUID, characterId uint32) (Model, error) {
 	var m Model
-	err := message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
-		var err error
-		m, err = p.Create(buf)(transactionId, characterId)
-		return err
+	err := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			var err error
+			m, err = p.WithTransaction(tx).Create(buf)(transactionId, characterId)
+			return err
+		})
 	})
 	return m, err
 }
@@ -119,8 +122,10 @@ func (p *ProcessorImpl) Create(mb *message.Buffer) func(transactionId uuid.UUID,
 }
 
 func (p *ProcessorImpl) DeleteAndEmit(transactionId uuid.UUID, characterId uint32) error {
-	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
-		return p.Delete(buf)(transactionId, characterId)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).Delete(buf)(transactionId, characterId)
+		})
 	})
 }
 

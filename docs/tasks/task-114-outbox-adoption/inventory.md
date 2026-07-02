@@ -163,3 +163,145 @@ fire-and-forget after the transaction closed.
   Task 7's `meso_outbox_test.go` and this task's
   `outbox_acceptance_test.go` are the only outbox-row-count assertions in
   this module.
+
+## atlas-inventory
+
+Module: `services/atlas-inventory/atlas.com/inventory`. Line numbers below
+reflect `compartment/processor.go`, `inventory/processor.go`, and
+`asset/processor.go` as of the Task 11 commit. Wiring: `main.go` appends
+`outboxlib.Migration` to `database.SetMigrations(...)` and boots the
+drainer right after `database.Connect(...)`, using the existing
+`tdm := service.GetTeardownManager()` var (this service's local name for
+the teardown manager, not `lifecycle`).
+
+### Migrated
+
+Each site now wraps its own `database.ExecuteTransaction` (a new outer one
+for sites that previously had none, or the site's pre-existing one) and
+enqueues its buffer via `message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))`
+instead of `message.Emit(p.producer)` / `message.Emit(producer.ProviderImpl(p.l)(p.ctx))`,
+calling `p.WithTransaction(tx).Method(mb)(...)` so the wrapped method's own
+(often nested/reentrant) `ExecuteTransaction` and DB writes run against the
+same `tx`.
+
+- `inventory/processor.go:68` `CreateAndEmit` — Pattern A.
+- `inventory/processor.go:124` `DeleteAndEmit` — Pattern A.
+- `asset/processor.go:268` `ChangeTemplateAndEmit` — Pattern A.
+- `asset/processor.go:297` `DeleteAndEmit` — Pattern A; the wrapped
+  `Delete` had no `ExecuteTransaction` of its own (bare `deleteById` call),
+  so this site gains a **new** outer transaction wrapping the write.
+- `compartment/processor.go:236` `EquipItemAndEmit` — Pattern A.
+- `compartment/processor.go:350` `RemoveEquipAndEmit` — Pattern A.
+- `compartment/processor.go:408` `MoveAndEmit` — Pattern A (wraps
+  `MoveAndLock`, which locks then delegates to `Move`).
+- `compartment/processor.go:610` `IncreaseCapacityAndEmit` — Pattern A.
+- `compartment/processor.go:647` `DropAndEmit` — Pattern A.
+- `compartment/processor.go:816` `ConsumeAssetAndEmit` — Pattern A.
+- `compartment/processor.go:878` `DestroyAssetAndEmit` — Pattern A.
+- `compartment/processor.go:929` `ExpireAssetAndEmit` — Pattern A.
+- `compartment/processor.go:989` `CreateAssetAndEmit` — Pattern A (wraps
+  `CreateAssetAndLock`, which locks then delegates to `CreateAsset`). The
+  failure branch's `CreationFailedEventStatusProvider` is put on the same
+  `mb` as the success path inside `CreateAsset` (not a separate
+  `message.Emit` call), so it rides along into the outbox with the rest of
+  the site's buffer — consistent with the `character/processor.go`
+  precedent (Task 9 inventory note on `AwardExperienceAndEmit`'s bundled
+  command) of migrating a call site's whole buffer rather than
+  splitting sub-`Put`s out of an already-migrated site.
+- `compartment/processor.go:1093` `AttemptEquipmentPickUpAndEmit` — Pattern
+  A. Bundles the post-tx `dropProcessor.CancelReservation`/no call in this
+  method (success path only calls `RequestPickUp`); see Notes.
+- `compartment/processor.go:1167` `AttemptItemPickUpAndEmit` — Pattern A.
+  Bundles the pickup-consume command and both
+  `dropProcessor.RequestPickUp`/`CancelReservation` outcomes into the same
+  migrated buffer; see Notes.
+- `compartment/processor.go:1280` `RechargeAssetAndEmit` — Pattern A.
+- `compartment/processor.go:1338` `MergeAndCompactAndEmit` — Pattern A.
+- `compartment/processor.go:1346` `CompactAndSortAndEmit` — Pattern A.
+- `compartment/processor.go:1467` `AcceptAndEmit` — Pattern A. The failure
+  branch's `ErrorEventStatusProvider` (compartment `AcceptCommandFailed`)
+  is put on the same shared `mb` inside `Accept`, riding along into the
+  outbox with the rest of the buffer for the same reason as `CreateAsset`
+  above.
+- `compartment/processor.go:1580` `ReleaseAndEmit` — Pattern A. Same
+  shared-buffer rejection pattern (`ReleaseCommandFailed`) as `Accept`.
+- `compartment/processor.go:1782` `ModifyEquipmentAndEmit` — Pattern A
+  (wraps a method whose body already was `return
+  database.ExecuteTransaction(...)`; now the outer transaction is opened
+  first so `outbox.EmitProvider` can bind to `tx`, and the inner call
+  nests/re-enters against the same handle).
+- `compartment/processor.go:1805` `ChangeTemplateAndEmit` — Pattern A, same
+  shape as `ModifyEquipmentAndEmit`.
+
+### Left direct
+
+- `compartment/processor.go:743` `RequestReserveAndEmit` — wrapped method
+  `RequestReserve` performs **no DB write**: it only reads the compartment/
+  asset (gorm reads), mutates the Redis-backed `ReservationRegistry`
+  (`AddReservation`), and puts a `ReservedEventStatusProvider` event. Kept
+  on `p.producer` (struct-field direct provider) despite the pre-existing
+  (superfluous) `database.ExecuteTransaction` wrapper around the read+
+  registry-write; verified by reading, not assumed from the tx wrapper's
+  presence.
+- `compartment/processor.go:790` `CancelReservationAndEmit` — wrapped
+  method `CancelReservation` has no `ExecuteTransaction` at all: reads the
+  compartment (gorm read), removes the reservation from the Redis-backed
+  registry, and puts the cancellation event. No DB write. Kept on
+  `p.producer`.
+- `inventory/processor.go:109` `CreateAndEmit`'s rollback-failure branch —
+  already structurally its own `message.Emit(producer.ProviderImpl(...))`
+  call on a **fresh** buffer (separate from the tx-scoped one used for the
+  success path), firing `CreationFailedEventStatusProvider` only after the
+  inner `ExecuteTransaction` has already rolled back/failed. This is the
+  textbook rejection-event shape from the recipe (own dedicated emit call,
+  no state change) and needed no restructuring.
+
+### Notes
+
+- **Struct-init stored provider (`compartment/processor.go:97,109`,
+  `p.producer producer.Provider`)**: traced every method that read
+  `p.producer`. Fourteen `message.Emit(p.producer)` call sites existed
+  before this migration; twelve write to the DB and were restructured to
+  Pattern A (they no longer read `p.producer` — they build
+  `outbox.EmitProvider(p.l, p.ctx, tx)` fresh inside their own
+  `ExecuteTransaction`). The remaining two (`RequestReserveAndEmit`,
+  `CancelReservationAndEmit`, listed above under Left Direct) do no DB
+  write, so they keep reading the struct-bound `p.producer` field
+  unchanged — matching the recipe's carve-out ("Methods on that struct
+  whose flow does NO DB write may keep the direct provider"). The field
+  itself, its initialization at `NewProcessor`, and its propagation through
+  `WithTransaction`/`WithAssetProcessor` were left untouched since it is
+  still live for those two methods.
+- **Bundled drop/pickup commands ride the migrated buffer, not split out**:
+  `AttemptEquipmentPickUpAndEmit` and `AttemptItemPickUpAndEmit` each emit,
+  in addition to their compartment/asset state-change events,
+  `COMMAND_TOPIC_DROP` commands (`CancelReservation`/`RequestPickUp` via
+  `drop.Processor`) and, on the consume-on-pickup branch,
+  `pickupMsg.EnvCommandTopic`. These are commands to the separate
+  atlas-drop-domain, and D7 lists "COMMAND emits to OTHER services" as a
+  leave-direct category — but here they are `mb.Put` calls sharing the
+  *same* buffer/`message.Emit` call as the migrated state-change writes,
+  not separate `message.Emit` sites of their own. Splitting them out would
+  require threading a second buffer (or an out-of-band `rejectEmit`-style
+  closure) through `AttemptEquipmentPickUp`/`AttemptItemPickUp`, which are
+  exercised directly (bypassing `*AndEmit`) by
+  `TestAttemptItemPickUpInventoryFull` and
+  `TestAttemptItemPickUpConsumeOnPickup` — both assert the drop/pickup
+  commands land in the *same* buffer passed to the un-wrapped method. Per
+  the `character/processor.go` Task 9 precedent (`AwardExperienceAndEmit`'s
+  bundled command note), a command that is a call site's own bundled
+  follow-on effect migrates with the rest of that site's buffer rather than
+  being split out. Flagging as a concern for review: these two commands
+  will now be delayed until outbox drain instead of firing immediately,
+  which is a latency change (not a correctness change) for the drop
+  service's reservation cancel/pickup-finalize signal.
+- `database.ExecuteTransaction` atomicity is still latent fleet-wide
+  pending task-119 (see the `atlas-character` section above and project
+  memory `bug_execute_transaction_noop.md`); this task's migrations use the
+  correct seam and become atomic for free once task-119 lands.
+- No pre-existing test asserted DIRECT-path (non-outbox) emission for any
+  now-migrated flow in this module — all `*AndEmit` wrapper methods were
+  untested in isolation; every existing test in `compartment/processor_test.go`,
+  `asset/processor_test.go` exercises the un-wrapped `Method(mb)(...)` form
+  directly against a manually constructed `message.Buffer`, so none needed
+  updating. `go test -race ./...` passes unchanged.

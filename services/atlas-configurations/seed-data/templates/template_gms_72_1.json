@@ -574,7 +574,28 @@
       {
         "opCode": "0x79",
         "validator": "LoggedInValidator",
-        "handler": "CharacterInteractionHandle"
+        "handler": "CharacterInteractionHandle",
+        "options": {
+          "operations": {
+            "CREATE": 0,
+            "INVITE": 2,
+            "VISIT": 4,
+            "CHAT": 6,
+            "TRADE_PUT_ITEM": 14,
+            "TRADE_ADD_MESO": 15,
+            "TRADE_CONFIRM": 16,
+            "PERSONAL_STORE_PUT_ITEM": 20,
+            "PERSONAL_STORE_BUY": 21,
+            "PERSONAL_STORE_REMOVE_ITEM": 25,
+            "PERSONAL_STORE_ADD_TO_BLACKLIST": 26,
+            "PERSONAL_STORE_SET_BLACK_LIST": 28,
+            "FIELD_ADD_TO_BLACK_LIST": 29,
+            "FIELD_REMOVE_FROM_BLACK_LIST": 30,
+            "MERCHANT_PUT_ITEM": 31,
+            "MERCHANT_BUY": 32,
+            "MERCHANT_REMOVE_ITEM": 36
+          }
+        }
       },
       {
         "opCode": "0x7E",

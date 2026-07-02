@@ -63,6 +63,9 @@ type Processor interface {
 	// DeleteForSagaCompensation is the buffer-based inner form (tests use this to
 	// avoid Kafka dependency).
 	DeleteForSagaCompensation(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, skillId uint32) error
+
+	// WithTransaction returns a Processor that executes against the given transaction
+	WithTransaction(tx *gorm.DB) Processor
 }
 
 // ProcessorImpl implements the Processor interface

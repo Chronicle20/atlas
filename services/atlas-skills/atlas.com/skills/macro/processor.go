@@ -28,6 +28,9 @@ type Processor interface {
 
 	// Delete deletes all macros for a character
 	Delete(characterId uint32) error
+
+	// WithTransaction returns a Processor that executes against the given transaction
+	WithTransaction(tx *gorm.DB) Processor
 }
 
 // ProcessorImpl implements the Processor interface
@@ -45,6 +48,16 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 		ctx: ctx,
 		db:  db,
 		t:   tenant.MustFromContext(ctx),
+	}
+}
+
+// WithTransaction returns a Processor that executes against the given transaction
+func (p *ProcessorImpl) WithTransaction(tx *gorm.DB) Processor {
+	return &ProcessorImpl{
+		l:   p.l,
+		ctx: p.ctx,
+		db:  tx,
+		t:   p.t,
 	}
 }
 

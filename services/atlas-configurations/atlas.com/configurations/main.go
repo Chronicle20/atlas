@@ -2,7 +2,6 @@ package main
 
 import (
 	"atlas-configurations/logger"
-	"atlas-configurations/outbox"
 	"atlas-configurations/seeder"
 	"atlas-configurations/services"
 	"atlas-configurations/templates"
@@ -56,7 +55,7 @@ func main() {
 	// the poll interval as the fallback. Leadership is gated by a postgres
 	// advisory lock — multiple atlas-configurations replicas can run safely;
 	// only the lock holder publishes.
-	publisher := outbox.NewTopicWriterPool()
+	publisher := outboxlib.NewTopicWriterPool()
 	drainer := outboxlib.NewDrainer(l, db, publisher, outboxlib.WithDSN(database.DSN()))
 	go drainer.Run(tdm.Context())
 	tdm.TeardownFunc(func() {

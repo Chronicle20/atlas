@@ -53,6 +53,21 @@ func TestCoconutByteOutputV72(t *testing.T) {
 	}
 }
 
+// TestCoconutByteOutputV61 pins the gms_v61 COCONUT (op 0xB2 = 178) serverbound
+// wire. IDA: CField_Coconut::BasicActionAttack @0x4f9322 (GMS_v61.1_U_DEVM.exe) —
+// COutPacket(178), Encode2(attack v6), Encode2(x v12), then SendPacket. Body =
+// attack(2 LE) + x(2 LE) — identical to the v72 golden (op 203).
+// packet-audit:verify packet=field/serverbound/FieldCoconut version=gms_v61 ida=0x4f9322
+func TestCoconutByteOutputV61(t *testing.T) {
+	input := NewCoconut(0x0102, 0x0304)
+	ctx := pt.CreateContext("GMS", 61, 1)
+	expected := []byte{0x02, 0x01, 0x04, 0x03}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v61 coconut golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
 func TestCoconutRoundTrip(t *testing.T) {
 	input := NewCoconut(0x0102, 0x0304)
 	for _, v := range pt.Variants {

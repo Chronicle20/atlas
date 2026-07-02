@@ -52,6 +52,22 @@ func TestUseDoorByteOutputV72(t *testing.T) {
 	}
 }
 
+// TestUseDoorByteOutputV61 pins the gms_v61 USE_DOOR (op 0x79 = 121) serverbound
+// wire. IDA: CField::TryEnterTownPortal @0x4ef641 (GMS_v61.1_U_DEVM.exe) builds
+// COutPacket(121) + Encode4(portalFieldId) + Encode1(1) (both the party-portal and
+// single-portal paths are byte-identical). Body = portalFieldId(4 LE) + flag(1) —
+// identical to the v72 golden (op 131).
+// packet-audit:verify packet=field/serverbound/FieldUseDoor version=gms_v61 ida=0x4ef641
+func TestUseDoorByteOutputV61(t *testing.T) {
+	input := NewUseDoor(0x01020304, 0x01)
+	ctx := pt.CreateContext("GMS", 61, 1)
+	expected := []byte{0x04, 0x03, 0x02, 0x01, 0x01}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v61 golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
 func TestUseDoorRoundTrip(t *testing.T) {
 	input := NewUseDoor(0x01020304, 0x05)
 	for _, v := range pt.Variants {

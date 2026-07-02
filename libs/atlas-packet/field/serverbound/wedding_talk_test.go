@@ -47,6 +47,21 @@ func TestWeddingTalkByteOutputV72(t *testing.T) {
 	}
 }
 
+// TestWeddingTalkByteOutputV61 pins the gms_v61 WEDDING_TALK (op 0x80 = 128)
+// serverbound wire. IDA: CField_Wedding::OnWeddingProgress @0x513473
+// (GMS_v61.1_U_DEVM.exe) Talk arm (bless YESNO==6) builds COutPacket(128) with no
+// Encode calls before SendPacket — header-only, empty body. Identical to the v72
+// golden (op 138).
+// packet-audit:verify packet=field/serverbound/FieldWeddingTalk version=gms_v61 ida=0x513473
+func TestWeddingTalkByteOutputV61(t *testing.T) {
+	input := NewWeddingTalk()
+	ctx := pt.CreateContext("GMS", 61, 1)
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if len(actual) != 0 {
+		t.Errorf("v61 golden mismatch: got %v want empty", actual)
+	}
+}
+
 func TestWeddingTalkRoundTrip(t *testing.T) {
 	input := NewWeddingTalk()
 	for _, v := range pt.Variants {

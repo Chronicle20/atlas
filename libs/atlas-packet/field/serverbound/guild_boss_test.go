@@ -48,6 +48,20 @@ func TestGuildBossByteOutputV72(t *testing.T) {
 	}
 }
 
+// TestGuildBossByteOutputV61 pins the gms_v61 GUILD_BOSS (op 0xB4 = 180)
+// serverbound wire. IDA: CField_GuildBoss::BasicActionAttack @0x4ff6d2
+// (GMS_v61.1_U_DEVM.exe) — COutPacket(180) then SendPacket with NO Encode*
+// calls: empty body (header only) — identical to the v72 golden (op 205).
+// packet-audit:verify packet=field/serverbound/FieldGuildBoss version=gms_v61 ida=0x4ff6d2
+func TestGuildBossByteOutputV61(t *testing.T) {
+	input := NewGuildBoss()
+	ctx := pt.CreateContext("GMS", 61, 1)
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if len(actual) != 0 {
+		t.Errorf("v61 guild_boss golden mismatch: got %v want empty", actual)
+	}
+}
+
 func TestGuildBossRoundTrip(t *testing.T) {
 	input := NewGuildBoss()
 	for _, v := range pt.Variants {

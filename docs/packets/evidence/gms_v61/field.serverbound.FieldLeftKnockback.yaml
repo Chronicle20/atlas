@@ -1,0 +1,10 @@
+packet: field/serverbound/FieldLeftKnockback
+direction: serverbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: CField_SnowBall::Update
+    address: "0x50bb50"
+    decompile_sha256: 1e24e1c0b8666fa6b48e36778bff0b97df0c11f7a6c0a06527ffba22651d5fcf
+verifies:
+    - libs/atlas-packet/field/serverbound/left_knockback_test.go#TestLeftKnockbackByteOutputV61

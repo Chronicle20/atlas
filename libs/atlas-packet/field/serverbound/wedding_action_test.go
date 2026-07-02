@@ -52,6 +52,21 @@ func TestWeddingActionByteOutputV72(t *testing.T) {
 	}
 }
 
+// TestWeddingActionByteOutputV61 pins the gms_v61 WEDDING_ACTION (op 0x7F = 127)
+// serverbound wire. IDA: CField_Wedding::OnWeddingProgress @0x513473
+// (GMS_v61.1_U_DEVM.exe) Action arm builds COutPacket(127) + Encode1(readyByte
+// this+1832) — single-byte body. Identical to the v72 golden (op 137).
+// packet-audit:verify packet=field/serverbound/FieldWeddingAction version=gms_v61 ida=0x513473
+func TestWeddingActionByteOutputV61(t *testing.T) {
+	input := NewWeddingAction(0x02)
+	ctx := pt.CreateContext("GMS", 61, 1)
+	expected := []byte{0x02}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v61 golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
 func TestWeddingActionRoundTrip(t *testing.T) {
 	input := NewWeddingAction(0x02)
 	for _, v := range pt.Variants {

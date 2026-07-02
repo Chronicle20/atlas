@@ -1,6 +1,6 @@
 module github.com/Chronicle20/atlas/libs/atlas-seeder
 
-go 1.25.0
+go 1.25.5
 
 replace github.com/Chronicle20/atlas/libs/atlas-model => ../atlas-model
 
@@ -26,6 +26,7 @@ require (
 require (
 	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/Chronicle20/atlas/libs/atlas-model v0.0.0 // indirect
+	github.com/Chronicle20/atlas/libs/atlas-routine v0.0.0-00010101000000-000000000000 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/gedex/inflector v0.0.0-20170307190818-16278e9db813 // indirect
@@ -51,3 +52,5 @@ require (
 	google.golang.org/protobuf v1.36.8 // indirect
 	gorm.io/driver/mysql v1.5.6 // indirect
 )
+
+replace github.com/Chronicle20/atlas/libs/atlas-routine => ../atlas-routine

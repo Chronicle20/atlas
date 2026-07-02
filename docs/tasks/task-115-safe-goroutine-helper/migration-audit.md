@@ -151,18 +151,18 @@ Every row must carry a disposition before the branch is done. Row count must equ
 | 144 | libs/atlas-service/teardown.go:41 | anon | | | | |
 | 145 | libs/atlas-redis/coalesced.go:80 | named-call | | | | |
 | 146 | libs/atlas-redis/tenant_coalesced.go:64 | named-call | | | | |
-| 147 | libs/atlas-socket/server.go:125 | anon | | | | |
-| 148 | libs/atlas-socket/server.go:152 | named-call | | | | |
-| 149 | libs/atlas-socket/server.go:173 | anon | | | | |
-| 150 | libs/atlas-socket/server.go:226 | named-call | | | | |
+| 147 | libs/atlas-socket/server.go:125 | anon | lifecycle | l | ctx | migrated |
+| 148 | libs/atlas-socket/server.go:152 | named-call | lib-internal | l | ctx | migrated |
+| 149 | libs/atlas-socket/server.go:173 | anon | lifecycle | l | ctx | migrated |
+| 150 | libs/atlas-socket/server.go:226 | named-call | lib-internal | fl | ctx | migrated |
 | 151 | libs/atlas-outbox/drainer.go:148 | named-call | | | | |
 | 152 | libs/atlas-outbox/notify.go:28 | named-call | | | | |
-| 153 | libs/atlas-rest/server/server.go:171 | anon | | | | |
-| 154 | libs/atlas-rest/server/server.go:186 | anon | | | | |
+| 153 | libs/atlas-rest/server/server.go:171 | anon | lifecycle | sb.l | sb.ctx | migrated |
+| 154 | libs/atlas-rest/server/server.go:186 | anon | lifecycle | sb.l | ctx | migrated |
 | 155 | libs/atlas-kafka/consumer/manager.go:145 | named-call | lib-internal | l | ctx | migrated |
 | 156 | libs/atlas-kafka/consumer/manager.go:523 | anon | lib-internal | l | ctx | migrated |
 | 157 | libs/atlas-kafka/consumer/manager.go:558 | anon | lib-internal | handlerLogger | wctx | migrated |
-| 158 | libs/atlas-seeder/handlers.go:49 | anon | | | | |
+| 158 | libs/atlas-seeder/handlers.go:49 | anon | lib-internal | l | ctx | migrated |
 | 159 | libs/atlas-model/model/processor.go:155 | anon | lib-internal | logrus.StandardLogger() | ctx | migrated (accepted: recovered worker panic never reaches errChannels — wg.Done() still fires, ExecuteForEachSlice returns nil for that item; Error log is the detection path, design §6.1) |
 | 160 | libs/atlas-model/model/processor.go:167 | anon | lib-internal | logrus.StandardLogger() | ctx | migrated |
 | 161 | libs/atlas-model/model/processor.go:208 | anon | lib-internal | logrus.StandardLogger() | ctx | migrated (accepted: recovered worker panic never reaches errChannels — wg.Done() still fires, ExecuteForEachMap returns nil for that item; Error log is the detection path, design §6.1) |

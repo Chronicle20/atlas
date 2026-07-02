@@ -24,9 +24,11 @@ func PagedQuery[E any](db *gorm.DB, page model.Page) model.Provider[model.Paged[
 		// Count on a session clone with ORDER BY stripped explicitly —
 		// GORM's own order-stripping inside Count is an implementation
 		// detail we do not rely on (design §3.2). The clause map is copied
-		// explicitly so deleting the ORDER BY entry cannot mutate the
-		// original db's Statement.Clauses (they share the same underlying
-		// map by default under Session()).
+		// before the delete so this cannot mutate the original db's
+		// Statement.Clauses even if a future GORM version shares the map
+		// across Session() clones; verified against gorm.io/gorm v1.31.2
+		// that Session() already deep-copies Clauses, but we don't rely on
+		// that holding across versions.
 		countDB := db.Session(&gorm.Session{}).Model(&e)
 		clauses := make(map[string]clause.Clause, len(countDB.Statement.Clauses))
 		for k, v := range countDB.Statement.Clauses {

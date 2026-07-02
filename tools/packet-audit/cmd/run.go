@@ -1372,6 +1372,14 @@ func candidatesFromFName(fname string) []candidate {
 	case "CField::SendLocationWhisper":
 		return []candidate{{name: "Whisper", pkg: "chat", dir: csvpkg.DirServerbound}}
 
+	// WHISPER (serverbound) in gms_v61: the send-site is UNNAMED in the IDB —
+	// sub_4E8635 @0x4e8635, structurally the CField::SendChatMsgWhisper twin
+	// (COutPacket(108) + Encode1(mode=(!msgEmpty+1)|4) + EncodeStr(target) +
+	// optional EncodeStr(msg)). The v61 registry primary fname is sub_4E8635, so
+	// it must key to the same chat.Whisper codec as the named twins above.
+	case "sub_4E8635":
+		return []candidate{{name: "Whisper", pkg: "chat", dir: csvpkg.DirServerbound}}
+
 	// CSV: SPOUSE_CHAT (serverbound) → CUIStatusBar::SendCoupleMessage. The client
 	// reads the partner name from the local marriage record and sends two strings
 	// with NO leading mode byte / NO updateTime: EncodeStr(spouseName) +

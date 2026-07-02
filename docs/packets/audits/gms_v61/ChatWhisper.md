@@ -1,6 +1,6 @@
-# ChatWhisper (← `CField::SendChatMsgWhisper`)
+# ChatWhisper (← `sub_4E8635`)
 
-- **IDA:** 
+- **IDA:** 0x4e8635
 - **Atlas file:** `libs/atlas-packet/chat/serverbound/whisper.go`
 - **Variant:** GMS/v61
 - **Branch depth:** 1
@@ -11,8 +11,8 @@
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | byte | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
-| 1 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 2 | string | byte `` | ❌ | atlas: extra — client never reads this field |
+| 0 | byte | byte `Encode1 mode=(!msgEmpty+1)\|4 @0x4e870a` | ✅ |  |
+| 1 | int32 | string `EncodeStr targetName @0x4e8722` | ❌ | width mismatch |
+| 2 | string | string `EncodeStr msg @0x4e8742` | ✅ |  |
 | 3 | string | byte `` | ❌ | atlas: extra — client never reads this field |
 

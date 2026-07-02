@@ -1,7 +1,7 @@
 {
   "WriterName": "ChatWhisper",
-  "IDAName": "CField::SendChatMsgWhisper",
-  "Address": "",
+  "IDAName": "sub_4E8635",
+  "Address": "0x4e8635",
   "Variant": "GMS/v61",
   "BranchDepth": 1,
   "AtlasFile": "libs/atlas-packet/chat/serverbound/whisper.go",
@@ -10,28 +10,28 @@
       "Index": 0,
       "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 4,
-      "Note": "IDA read-order unresolved: function not found in IDB"
+      "IDAOp": 0,
+      "IDAComment": "Encode1 mode=(!msgEmpty+1)|4 @0x4e870a",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 1,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
+      "IDAOp": 4,
+      "IDAComment": "EncodeStr targetName @0x4e8722",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "width mismatch"
     },
     {
       "Index": 2,
       "AtlasOp": 4,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "IDAOp": 4,
+      "IDAComment": "EncodeStr msg @0x4e8742",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 3,

@@ -2233,14 +2233,22 @@
         }
       ]
     },
-    "CField::SendChatMsgWhisper": {
-      "address": "",
+    "sub_4E8635": {
+      "address": "0x4e8635",
       "direction": "serverbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "Encode1 mode=(!msgEmpty+1)|4 @0x4e870a"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "EncodeStr targetName @0x4e8722"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "EncodeStr msg @0x4e8742",
+          "guard": "*a2 \u0026\u0026 **a2"
         }
       ]
     },
@@ -2381,17 +2389,6 @@
           "op": "Decode4",
           "comment": "",
           "guard": "v2"
-        }
-      ]
-    },
-    "CField::SendLocationWhisper": {
-      "address": "",
-      "direction": "serverbound",
-      "unresolved": true,
-      "calls": [
-        {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
         }
       ]
     },

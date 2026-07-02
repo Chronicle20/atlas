@@ -986,10 +986,9 @@
         "writer": "NoteOperation",
         "options": {
           "operations": {
-            "SHOW": 3,
-            "SEND_SUCCESS": 4,
-            "SEND_ERROR": 5,
-            "REFRESH": 7
+            "SHOW": 2,
+            "SEND_SUCCESS": 3,
+            "SEND_ERROR": 4
           },
           "errors": {
             "RECEIVER_ONLINE": 0,

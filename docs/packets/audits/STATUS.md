@@ -800,7 +800,7 @@ Tool: `4e3f97d89b60d7633f0d4ced5f2bdac0ecd1a81c`
 |--------|-------|-------|-----|-------|-----|-------|-----|-------|-----|-------|-----|
 | buddy/serverbound/BuddyOperationAccept (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | buddy/serverbound/BuddyOperationAdd (T1) |  |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
-| cash/serverbound/CashItemUsePointReset (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
+| cash/serverbound/CashItemUsePointReset (T1) |  |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | cash/serverbound/CashShopOperationBuy (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | cash/serverbound/CashShopOperationBuyCouple (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | cash/serverbound/CashShopOperationBuyFriendship (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
@@ -902,7 +902,7 @@ Tool: `4e3f97d89b60d7633f0d4ced5f2bdac0ecd1a81c`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v83 | 367 | 0 | 0 | 305 | 200 | 0 | 54.6% |
+| v83 | 368 | 0 | 0 | 304 | 200 | 0 | 54.8% |
 | v84 | 345 | 0 | 0 | 306 | 221 | 0 | 53.0% |
 | v87 | 379 | 0 | 0 | 330 | 163 | 0 | 53.5% |
 | v95 | 399 | 0 | 0 | 394 | 79 | 0 | 50.3% |

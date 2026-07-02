@@ -35,7 +35,8 @@ func TestItemUsePointResetRoundTrip(t *testing.T) {
 // TestItemUsePointResetBytesV83 pins the AP/SP-reset sub-body wire for gms_v83.
 //
 // IDA (live MapleStory_dump.exe v83, port 13342):
-// CWvsContext::SendConsumeCashItemUseRequest @0xa0a63f. Item type resolves via
+// CWvsContext::SendConsumeCashItemUseRequest @0xa0a63f. The sender resolves the
+// item type via get_consume_cash_item_type (@0x4863d5), which delegates to
 // get_cashslot_item_type (@0x48645b): 5050000 (%10==0) -> type 23 = AP reset;
 // 5050001-5050004 (%10 in 1..4) -> type 24 = SP reset. Both branches encode the
 // sub-body as exactly two Encode4 (case 23 @s[42783]: Encode4(p_p_pvargDest)

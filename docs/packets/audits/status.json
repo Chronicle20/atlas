@@ -26039,8 +26039,7 @@
       "tier1": true,
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "byte-test marker present but no fresh evidence record",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v84": {

@@ -1705,3 +1705,59 @@ already-executed writes before the failure point are not undone at the SQL
 level; only the outbox-enqueue suppression and error propagation are
 verified, which is what this fix pass delivers and what is testable given
 the current transaction infra.
+
+## atlas-npc-shops
+
+**Zero tx-coupled emit sites; no code change to any emit/tx pairing.**
+Wiring (go.mod + main.go outbox drainer boot) applied per the recipe
+template so the drainer runs, but no call site needed migration.
+
+- **Migrated**: none.
+- **Left direct**:
+  - `shops/processor.go:268` (`EnterAndEmit`/`Enter`) — `GetRegistry().AddCharacter`
+    is a Redis-backed registry write (`shops/registry.go`), not a Postgres
+    DB write inside `p.db`; the only Kafka event is `EnvStatusEventTopic`
+    `enteredEventProvider`. No SQL state to couple atomically with.
+  - `shops/processor.go:287` (`ExitAndEmit`/`Exit`) — same reasoning;
+    `GetRegistry().RemoveCharacter` is Redis-only, event is `exitedEventProvider`.
+  - `shops/processor.go:369` (`BuyAndEmit`/`Buy`) — no local DB write at all;
+    success path only enqueues `RequestChangeMeso`/`RequestCreateItem`
+    COMMAND events on `character.EnvCommandTopic`/`compartment.EnvCommandTopic`
+    (relayed to other services, which own the actual state change and their
+    own outbox); failure paths only `mb.Put` rejection/error events
+    (`EnvStatusEventTopic`, `errorEventProvider`/`reasonErrorEventProvider`)
+    reflecting no state change in this service.
+  - `shops/processor.go:480` (`SellAndEmit`/`Sell`) — same reasoning as Buy:
+    COMMAND relay (`RequestChangeMeso`, `RequestDestroyItem`) plus
+    rejection-only status events, no local DB write.
+  - `shops/processor.go:570` (`RechargeAndEmit`/`Recharge`) — same reasoning:
+    COMMAND relay (`RequestChangeMeso`, `RequestRechargeItem`) plus
+    rejection-only status events, no local DB write.
+  - `shops/processor.go:92` (struct-init `kp: producer.ProviderImpl(l)(ctx)`)
+    — kept as-is per the recipe's "struct-init stored providers" guidance:
+    every method that flushes through `p.kp` (the five `*AndEmit` methods
+    above) does no DB write, so the direct provider is the correct choice
+    for all of them; there is no tx-coupled use to restructure.
+  - `shops/processor.go:194` (`UpdateShop`, `ExecuteTransaction`) and
+    `shops/processor.go:312` (`DeleteAllShops`, `ExecuteTransaction`) —
+    pure DB writes via `commodities.Processor`/local entity calls, no Kafka
+    emit anywhere in either method or in their callers
+    (`shops/resource.go:186,304`, plain REST CRUD handlers with no emit).
+  - `shops/administrator.go:69` (`BulkCreateShops`, `ExecuteTransaction`)
+    and `commodities/administrator.go:86` (`BulkCreateCommodities`,
+    `ExecuteTransaction`) — pure DB writes, sole caller is
+    `shops/subdomain.go:91` `ShopSubdomain.BulkCreate` (seeder subdomain
+    ingestion), which has no coupled emit anywhere in its call chain.
+- **Notes**: Verified by reading every method reachable from the step-2 and
+  the hand-rolled-flush greps (`.GetAll()`/`NewBuffer()`/`p.p(`/`AndEmit(`)
+  — no hidden per-topic loop over `p.kp` exists (the five `*AndEmit`
+  methods are the only consumers, and each already goes through
+  `message.Emit(p.kp)(...)`). `shops.ProcessorImpl` has no `WithTransaction`
+  method (unlike its `cp commodities.Processor` field, which does); none
+  was needed since no method required rebinding a tx-bound outbox provider.
+  `main.go` wiring (import, `outboxlib.Migration` appended as 4th
+  `SetMigrations` arg after the seeder func, drainer boot block using
+  `tdm := service.GetTeardownManager()`) applied per the recipe template so
+  the drainer/publisher run in this service even though no emit path uses
+  the outbox yet — consistent with how other unaffected sites are wired
+  service-wide per the plan.

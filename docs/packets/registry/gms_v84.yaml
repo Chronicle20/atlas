@@ -2301,12 +2301,12 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: VICIOUS_HAMMER
   direction: clientbound
-  opcode: 361
+  opcode: 364
   fname: CField::OnItemUpgrade
   provenance: ida-discovered
   ida:
-    address: 5522325
-  note: 'task-096 IDA v84: CField::OnPacket (0x53d5a7) routes headers [359,362] (0x167-0x16A) to the OnItemUpgrade vtable forwarder (sub_544395 @0x544395). v83 CSV VICIOUS_HAMMER=354; applying the v84 opcode-table +7 region shift (matches ZAKUM_SHRINE 303->310 and WITCH_TOWER_SCORE_UPDATE) gives 361, which falls inside the confirmed forwarding range. The prior csv-import value 354 was a v83 copy.'
+    address: 5522351
+  note: 'task-129 IDA v84 (CORRECTS task-096): the Vicious Hammer decoder is CUIItemUpgrade::OnItemUpgradeResult (sub_85676C 0x85676c) — verified by content (mode==61 success 2-count str 5059 / mode==62 failure horntail switch 5057/5058/5060 / else open echo token+count), the exact v83 sub_82B2C3 clone. It is reached via CUIItemUpgrade::OnPacket (sub_856756) gate header==364 (0x16C) from the CField forwarder at 0x5443af (this[135]; IDB symbol CField::OnCharacterSale, but functionally the hammer forwarder — CField::OnPacket routes headers 363-366 there). The prior task-096 value 361/0x169 was a WRONG inference: 361 falls in the 359-362 range routed to sub_544395/this[134], whose gate (sub_7FD845) only handles 359 (name-change) and 360 (world-transfer) — 361 is a DEAD opcode there. Matches the +10 v84 clientbound shift (v83 0x162 -> v84 0x16C).'
 - op: VEGA_SCROLL
   direction: clientbound
   opcode: 358
@@ -4069,10 +4069,12 @@
   note: 'task-102: v84 opcode corrected 253->260 (0xFD->0x104). CITC::OnRegisterSaleEntry @0x5aefd2 (GMS_v84.1_U_DEVM.exe, IDA port 13337) builds COutPacket(0x104) — push 104h @0x5aefff; all 16 sibling CITC senders (OnSaleCurrentItem @0x5af1db, OnBuy @0x5af9fa, OnBuyAuctionImm @0x5afa6d, OnSetZzim @0x5afc00, OnBuyZzim @0x5afc73, OnDeleteZzim @0x5afd11, OnViewWish @0x5afd84, OnBuyWish @0x5afdf7, OnCancelWish @0x5afe6a, OnCancelSaleItem @0x5afedd, OnMoveITCPurchaseItemLtoS @0x5aff86, OnChangedCategory @0x5af5fa, OnChangedCategorySub @0x5af6d9, OnChangedPage @0x5af7c8, OnRegisterWishEntry @0x5af8a5) plus the two inlined dialog handlers (CITCWnd_Tab::OnButtonClicked @0x5c77ca, CITCBidAuctionDlg::OnButtonClicked @0x5d3ec7) all build COutPacket(260). The stale csv value 253 (0xFD) was the v83 opcode carried over unshifted — same +7 region shift as the sibling ITC_STATUS_CHARGE 251->258 and ITC_QUERY_CASH_REQUEST 252->259 corrections (CATCH_MONSTER_WITH_ITEM 251->257 class). Serverbound 260 has no other claimant.'
 - op: ITEM_UPGRADE_UPDATE
   direction: serverbound
-  opcode: 260
+  opcode: 267
   fname: CUIItemUpgrade::Update
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 8741585
+  note: 'task-129 IDA v84: CUIItemUpgrade::Update (sub_8562D1 0x8562d1) sends COutPacket::COutPacket(&v6, 267) then Encode4(m_nReturnResult=a1[34]) + Encode4(m_nResult=a1[35]). Serverbound opcode = 267/0x10B. Prior value 260/0x104 was a v83 CSV copy and is wrong (0x104 collides with a CITC sender in v84). Matches the +7 v84 serverbound shift (v83 0x104 -> v84 0x10B).'
 - op: POTION_DISCOUNT_RATE_CHANGED
   direction: clientbound
   opcode: 96

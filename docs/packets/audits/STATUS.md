@@ -10,7 +10,7 @@ Tool: `fd77c93e420d0418af53c7e992ffef4cd6795c43`
 - export gms_v72: `01e628692f47408c523f939acd8f6ae5defa4118536ff7334eeb10845abf114b`
 - export gms_v79: `9d338d86ee25e6483cd1018a25935a6f68e5f486c2d5ff0e718904914c39702b`
 - export gms_v83: `593acd1b954d46215afed342f2f809b8dfdaf26dda73acac5f90aa1c8bbd8fae`
-- export gms_v84: `703081652623b280e2c6697596321dc455ebbc7f88b03a22327662565a103c17`
+- export gms_v84: `b6e4b290ae43502324d21e94c9c4fd2fc2e90cb186ebbc031a46ec1311233d1f`
 - export gms_v87: `db2801fecee67081bb792877473ce2b5176d053dfe9b777679f8783b31364c58`
 - export gms_v95: `c415427d2ff0b732b5b802965ef5d9b9ffc343ba42d25f0e1a9ddb3c05a842a2`
 - export jms_v185: `884635e9cff438e732a010c256a82819b61198775ba054cfd2e3b88442fe4a05`
@@ -487,7 +487,7 @@ Tool: `fd77c93e420d0418af53c7e992ffef4cd6795c43`
 | UPDATE_BEANS |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x15F | ❌ |
 | ONE_A_DAY | CCashShop::OnOneADay |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x161 | ❌ | 0x18B | ❌ |  | ⬜ |
 | IDA_0X162 | CCashShop::OnNoticeFreeCashItem |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x162 | ❌ |
-| VICIOUS_HAMMER | CField::OnItemUpgrade | field/clientbound/FieldViciousHammerFailure (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x162 | ✅ | 0x169 | ❌ | 0x177 | ✅ | 0x1A9 | ✅ |  | ⬜ |
+| VICIOUS_HAMMER | CField::OnItemUpgrade | field/clientbound/FieldViciousHammerFailure (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x162 | ✅ | 0x16C | ✅ | 0x177 | ✅ | 0x1A9 | ✅ |  | ⬜ |
 | ARIANT_SCORE | CField_Witchtower::OnPacket; CField_Witchtower::OnScoreUpdate | field/clientbound/FieldAriantScore (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x166 | ✅ |  | ⬜ |
 | VEGA_SCROLL | CUIVega::OnVegaResult |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x166 | ❌ | 0x166 | ❌ | 0x17B | ❌ | 0x1AD | ❌ | 0x183 | ❌ |
 | HONTALE_TIMER | CField::OnHontaleTimer |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x167 | ❌ |  | ⬜ |
@@ -803,7 +803,7 @@ Tool: `fd77c93e420d0418af53c7e992ffef4cd6795c43`
 | UNNAMED_R404 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0F7 | ❌ | 0x0F7 | ❌ | 0x105 | ❌ | 0x126 | ❌ | 0x108 | ❌ |
 | UNNAMED_R405 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0F8 | ❌ | 0x0F8 | ❌ | 0x106 | ❌ | 0x127 | ❌ | 0x109 | ❌ |
 | UNNAMED_R392 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0F9 | ❌ | 0x11A | ❌ | 0x0FC | ❌ |
-| ITEM_UPGRADE_UPDATE | CUIItemUpgrade::Update | field/serverbound/FieldItemUpgradeUpdate (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x104 | ✅ | 0x104 | ❌ | 0x112 | ✅ | 0x128 | ✅ | 0x114 | ❌ |
+| ITEM_UPGRADE_UPDATE | CUIItemUpgrade::Update | field/serverbound/FieldItemUpgradeUpdate (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x104 | ✅ | 0x10B | ✅ | 0x112 | ✅ | 0x128 | ✅ | 0x114 | ❌ |
 | UNNAMED_R419 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x10C | ❌ | 0x135 | ❌ | 0x10D | ❌ |
 | UNNAMED_R420 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x10D | ❌ | 0x136 | ❌ | 0x10E | ❌ |
 | FOOTHOLD_INFO | CField::OnRequestFootHoldInfo | field/serverbound/FieldRequestFootholdInfo (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x10E | ✅ | 0x0ED | ✅ |
@@ -997,7 +997,7 @@ Tool: `fd77c93e420d0418af53c7e992ffef4cd6795c43`
 | v72 | 240 | 0 | 73 | 219 | 426 | 0 | 45.1% |
 | v79 | 252 | 0 | 72 | 217 | 417 | 0 | 46.6% |
 | v83 | 393 | 0 | 0 | 341 | 224 | 0 | 53.5% |
-| v84 | 368 | 0 | 0 | 346 | 244 | 0 | 51.5% |
+| v84 | 370 | 0 | 0 | 344 | 244 | 0 | 51.8% |
 | v87 | 404 | 0 | 0 | 367 | 187 | 0 | 52.4% |
 | v95 | 424 | 0 | 0 | 431 | 103 | 0 | 49.6% |
 | JMS185 | 385 | 0 | 0 | 379 | 194 | 0 | 50.4% |

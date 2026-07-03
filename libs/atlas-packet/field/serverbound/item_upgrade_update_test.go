@@ -6,11 +6,16 @@ import (
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
-// Byte layout (IDA v83 CUIItemUpgrade::Update 0x82ae28 / v95 0x7bef50):
+// Byte layout (IDA v83 CUIItemUpgrade::Update 0x82ae28 / v95 0x7bef50 / v84
+// CUIItemUpgrade::Update sub_8562D1 0x8562d1):
 //   Encode4(m_nReturnResult) + Encode4(m_nResult) = 8 bytes. No version gate.
 // m_nReturnResult echoes the open-arm mode byte; m_nResult echoes the
 // server-chosen round-trip token.
+// NOTE (task-129): v84 COutPacket ctor opcode = 267/0x10B (verified live at
+// sub_8562D1) — NOT 0x104. The template's ItemUpgradeUpdateHandle 0x104 was a
+// mis-derived seed value (0x104 is a CITC sender) and is corrected to 0x10B.
 // packet-audit:verify packet=field/serverbound/FieldItemUpgradeUpdate version=gms_v83 ida=0x82ae28
+// packet-audit:verify packet=field/serverbound/FieldItemUpgradeUpdate version=gms_v84 ida=0x8562d1
 // packet-audit:verify packet=field/serverbound/FieldItemUpgradeUpdate version=gms_v87 ida=0x88eea2
 // packet-audit:verify packet=field/serverbound/FieldItemUpgradeUpdate version=gms_v95 ida=0x7bef50
 func TestItemUpgradeUpdateByteOutput(t *testing.T) {

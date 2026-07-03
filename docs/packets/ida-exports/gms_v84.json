@@ -26914,6 +26914,82 @@
           "comment": "m_nPortableChairID (chairId) @0x9b25fe"
         }
       ]
+    },
+    "CField::OnItemUpgrade#Open": {
+      "address": "0x5443af",
+      "direction": "clientbound",
+      "notes": "task-129 gms_v84: the Vicious Hammer forwarder is at 0x5443af (IDB symbol CField::OnCharacterSale, but functionally CField::OnItemUpgrade for v84 — verified by decoder content). It reads this[135] (CField+0x21C) and calls vtable[15] (0xb8ce4c+0x3C) = CUIItemUpgrade::OnPacket (sub_856756) which gates header==364 (0x16C) -> CUIItemUpgrade::OnItemUpgradeResult (sub_85676C). Routed from CField::OnPacket for headers 363-366. NOTE: the IDB-named CField::OnItemUpgrade @0x544395 (this[134]) routes headers 359/360 to the name/world-transfer dialog (sub_7FD949/sub_7FDA6F), NOT the hammer; header 361 (registry's old 0x169) is a DEAD opcode there. inferred-high-confidence @0x5443af",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (a1[34]=m_nReturnResult; open/arm token — any value not 61 or 62) — sub_85676C via CUIItemUpgrade::OnPacket sub_856756 (header==364)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "token (a1[35]=m_nResult; echoed back verbatim by CUIItemUpgrade::Update in ITEM_UPGRADE_UPDATE)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "hammerCount (a1[36]=v16; current hammersApplied) — a1[33]=m_nResultState=1; ShowResult sub_856C9F fires if a1[32]==2"
+        }
+      ]
+    },
+    "CField::OnItemUpgrade#Success": {
+      "address": "0x5443af",
+      "direction": "clientbound",
+      "dispatch": [
+        {
+          "discriminator": "switch",
+          "case": 61
+        }
+      ],
+      "notes": "task-129 gms_v84: SUCCESS mode = 61, read in CUIItemUpgrade::OnItemUpgradeResult (sub_85676C, a1[34]=v6), reached via CUIItemUpgrade::OnPacket sub_856756 (header==364) from the 0x5443af forwarder. inferred-high-confidence @0x5443af",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (= 61; success) — sub_85676C a1[34]=v6"
+        },
+        {
+          "op": "Decode4",
+          "comment": "flag (0 = success -> \"Increased available upgrade by 1. N upgrades are left\" StringPool 5059 where N = 2-a1[36]; non-0 -> \"Unknown error %d\" StringPool 5757 using a1[35])"
+        }
+      ]
+    },
+    "CField::OnItemUpgrade#Failure": {
+      "address": "0x5443af",
+      "direction": "clientbound",
+      "dispatch": [
+        {
+          "discriminator": "switch",
+          "case": 62
+        }
+      ],
+      "notes": "task-129 gms_v84: FAILURE mode = 62, read in CUIItemUpgrade::OnItemUpgradeResult (sub_85676C, a1[34]=v6), reached via CUIItemUpgrade::OnPacket sub_856756 (header==364) from the 0x5443af forwarder. inferred-high-confidence @0x5443af",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (= 62; failure) — sub_85676C a1[34]=v6"
+        },
+        {
+          "op": "Decode4",
+          "comment": "errorCode (v12; switch 1=not-upgradable StringPool 5057, 2=used-already StringPool 5058, 3=horntail-necklace StringPool 5060, default=unknown-error StringPool 5757 using a1[35])"
+        }
+      ]
+    },
+    "CUIItemUpgrade::Update": {
+      "address": "0x8562d1",
+      "direction": "serverbound",
+      "notes": "task-129 gms_v84: CUIItemUpgrade::Update (sub_8562D1) — gauge-confirm send, fires once a1[32]==2 (m_nState) && a1[33]==1 (m_nResultState) && get_update_time()>a1[49] (m_tEnd). COutPacket::COutPacket(&v6, 267) — ctor opcode = 267/0x10B (NOT 0x104; the template's 0x104 collides with a CITC sender and is corrected to 0x10B in task-129).",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "m_nReturnResult (a1[34]; open-arm mode byte, set by CUIItemUpgrade::OnItemUpgradeResult's Decode1, widened to int32)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "m_nResult (a1[35]; server-chosen round-trip token, set by the decoder's open-arm Decode4)"
+        }
+      ]
     }
   }
 }

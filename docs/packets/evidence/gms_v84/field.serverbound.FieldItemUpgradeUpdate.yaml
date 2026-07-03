@@ -1,0 +1,10 @@
+packet: field/serverbound/FieldItemUpgradeUpdate
+direction: serverbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CUIItemUpgrade::Update
+    address: "0x8562d1"
+    decompile_sha256: a98c1db2510d12a48bb44c1cbbfbe84323c12e9dad2baaf0172ab11b18e6a286
+verifies:
+  - libs/atlas-packet/field/serverbound/item_upgrade_update_test.go#TestItemUpgradeUpdateByteOutput

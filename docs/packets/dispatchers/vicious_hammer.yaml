@@ -14,8 +14,15 @@
 # design OQ-1).
 # jms_v185 has no VICIOUS_HAMMER op (registry-absent) - omitted.
 # gms_v92 has no registry/IDB/template routing - omitted.
-# gms_v84 SUCCESS/FAILURE below are UNVERIFIED placeholders (v84 IDB not in
-# scope for task-129 v87 work; do not treat as confirmed).
+# gms_v84 SUCCESS=61/FAILURE=62 IDA-VERIFIED (task-129): decoder
+# CUIItemUpgrade::OnItemUpgradeResult sub_85676C 0x85676c (mode==61 branch /
+# mode==62 switch, 2-count success str 5059 / horntail switch 5057/5058/5060),
+# reached via CUIItemUpgrade::OnPacket sub_856756 (header==364/0x16C) from the
+# forwarder 0x5443af (this[135]; IDB symbol CField::OnCharacterSale but
+# functionally the hammer's CField::OnItemUpgrade in v84). Serverbound sender
+# CUIItemUpgrade::Update sub_8562D1 0x8562d1 COutPacket(267/0x10B). Clientbound
+# header = 0x16C and serverbound = 0x10B (both corrected in template_gms_84_1;
+# the prior 0x169/0x104 were mis-derived/dead).
 writer: ViciousHammer
 fname: CField::OnItemUpgrade
 op: VICIOUS_HAMMER

@@ -30,9 +30,22 @@ import (
 // FAILURE=64 and gms_v95 SUCCESS=65 / FAILURE=66 modes match this decompile
 // (corrected in task-129; the prior placeholder 61/62 entries for both
 // versions were disproven).
+//
+// NOTE (task-129 gms_v84): v84 uses SUCCESS=61 / FAILURE=62 (same literals as
+// v83), verified live in CUIItemUpgrade::OnItemUpgradeResult sub_85676C
+// (mode==61 branch / mode==62 switch), reached via CUIItemUpgrade::OnPacket
+// sub_856756 (header==364/0x16C) from the forwarder at 0x5443af (this[135];
+// IDB symbol CField::OnCharacterSale, but functionally the hammer's
+// CField::OnItemUpgrade in v84). The clientbound header is 364/0x16C — the
+// prior template value 0x169 (361) was a DEAD opcode (it routes to the
+// name/world-transfer dialog whose gate only handles 359/360); corrected to
+// 0x16C in task-129.
 // packet-audit:verify packet=field/clientbound/FieldViciousHammerOpen version=gms_v83 ida=0x537f8c
 // packet-audit:verify packet=field/clientbound/FieldViciousHammerSuccess version=gms_v83 ida=0x537f8c
 // packet-audit:verify packet=field/clientbound/FieldViciousHammerFailure version=gms_v83 ida=0x537f8c
+// packet-audit:verify packet=field/clientbound/FieldViciousHammerOpen version=gms_v84 ida=0x5443af
+// packet-audit:verify packet=field/clientbound/FieldViciousHammerSuccess version=gms_v84 ida=0x5443af
+// packet-audit:verify packet=field/clientbound/FieldViciousHammerFailure version=gms_v84 ida=0x5443af
 // packet-audit:verify packet=field/clientbound/FieldViciousHammerOpen version=gms_v87 ida=0x55fa12
 // packet-audit:verify packet=field/clientbound/FieldViciousHammerSuccess version=gms_v87 ida=0x55fa12
 // packet-audit:verify packet=field/clientbound/FieldViciousHammerFailure version=gms_v87 ida=0x55fa12

@@ -1213,7 +1213,7 @@
         }
       },
       {
-        "opCode": "0x104",
+        "opCode": "0x10B",
         "validator": "LoggedInValidator",
         "handler": "ItemUpgradeUpdateHandle"
       }
@@ -2805,7 +2805,7 @@
         "writer": "WitchTowerScoreUpdate"
       },
       {
-        "opCode": "0x169",
+        "opCode": "0x16C",
         "writer": "ViciousHammer",
         "options": {
           "operations": {

@@ -911,6 +911,34 @@
   ida:
     address: 5748606
   note: 'send-site 0x70e4fe: COutPacket(62). v61 USE_CASH_ITEM=73.'
+- op: USE_ITEM
+  direction: serverbound
+  opcode: 65
+  fname: sub_719DD9
+  provenance: ida-discovered
+  ida:
+    address: 7445977
+  note: 'BODY-VERIFIED send-site 0x719dd9: sub_713039(itemId) inventory-validate + item WZ props (StringPool 2089/2090) + map-restriction flags (get_field+58 >>5 / >>8 "cannot use here") + return-scroll target-map check (sub_71E860, notice 2678), then COutPacket(65)+Encode4(updateTime)+Encode2(a2=slot)+Encode4(a3=itemId) + SetExclRequestSent. = USE_ITEM (consumable/return-scroll use; Enc4(time)+Enc2(slot)+Enc4(itemId)). v61 USE_ITEM=71.'
+- op: DISTRIBUTE_AP
+  direction: serverbound
+  opcode: 67
+  fname: sub_71CD00
+  fname_alts:
+  - CWvsContext::SendAbilityUpRequest
+  provenance: ida-discovered
+  ida:
+    address: 7458560
+  note: 'BODY-VERIFIED send-site 0x71cd00: guard _ZtlSecureFuse<short>(charStat+113, +117) > 0 (remaining-AP secure-stored check) then COutPacket(67)+Encode4(updateTime)+Encode4(a2=statFlag) + SetExclRequestSent. Exact v61 DISTRIBUTE_AP (SendAbilityUpRequest Enc4(time)+Enc4(statFlag), remaining-AP gated) twin. v61 DISTRIBUTE_AP=80 (Delta-13).'
+- op: DISTRIBUTE_SP
+  direction: serverbound
+  opcode: 73
+  fname: sub_71CEB3
+  fname_alts:
+  - CWvsContext::SendSkillUpRequest
+  provenance: ida-discovered
+  ida:
+    address: 7458995
+  note: 'BODY-VERIFIED send-site 0x71ceb3: 200ms throttle (sub_4A2518) then COutPacket(73)+Encode4(updateTime)+Encode4(a2=skillId) + SetExclRequestSent. No remaining-points/GetRemoteUser guard (matches v61 DISTRIBUTE_SP "no GetRemoteUser" note; contrast op67 DISTRIBUTE_AP which HAS the remaining-AP guard). Exact v61 DISTRIBUTE_SP (SendSkillUpRequest Enc4(time)+Enc4(skillId)) twin. v61 DISTRIBUTE_SP=82 (Delta-9).'
 - op: HEAL_OVER_TIME
   direction: serverbound
   opcode: 68
@@ -939,14 +967,14 @@
   note: 'BODY-VERIFIED send-site 0x71d059: CUserPool::GetRemoteUser(a2) then COutPacket(76)+Encode4(remoteCharOid)+Encode4(a2=charId) + SetExclRequestSent, sets this[2079]=1. Called from the field cursor-click handler sub_69FA53 when clicking a remote player. No trailing Enc1(petInfo) (added post-v48). = CHAR_INFO_REQUEST. v61 CHAR_INFO_REQUEST=89 (Delta-13; non-uniform — GIVE_FAME below is Delta0).'
 - op: GIVE_FAME
   direction: serverbound
-  opcode: 87
-  fname: sub_72069A
+  opcode: 74
+  fname: sub_71CF3B
   fname_alts:
   - CWvsContext::SendGivePopularityRequest
   provenance: ida-discovered
   ida:
-    address: 7473818
-  note: 'BODY-VERIFIED send-site 0x72069a: 300000ms (5-min) cooldown in this[2846] + CUserPool::GetRemoteUser + not-found (ChatLogAdd 355)/wait (298) notices, then COutPacket(87)+Encode4(RemoteUser[405]=targetCharId)+Encode1(a3=flag up/down)+EncodeStr(a4). Exact v61 GIVE_FAME (SendGivePopularityRequest Enc4(charId)+Enc1(flag), 5-min cooldown) twin. v61 GIVE_FAME=87 (Delta0).'
+    address: 7458875
+  note: 'BODY-VERIFIED send-site 0x71cf3b: 300000ms (5-min) cooldown in this[2834] + sub_6B2D42(charId) lookup + not-found (ChatLogAdd 355)/wait (298) notices, then COutPacket(74)+Encode4(*(obj+1620)=targetCharId)+Encode1(a3=flag). CALLER sub_673B1E = CUIUserInfo::OnButtonClicked: case 0x7D4 -> sub_71CF3B(ctx, this[372], 1) fame-UP, case 0x7D5 -> sub_71CF3B(ctx, this[372], 0) fame-DOWN, on this[372]=targetCharId. Exact v61 GIVE_FAME (SendGivePopularityRequest, CUIUserInfo fame up 0x7D4=flag1/down 0x7D5=flag0, Enc4(charId)+Enc1(flag), 5-min cooldown) twin. v61 GIVE_FAME=87 (Delta-13). NOTE: op87 (sub_72069A, a field right-click context-menu social sender with a trailing EncStr + separate cooldown field this[2846]) has a similar fame-like shape but is NOT GIVE_FAME (the UserInfo fame buttons drive op74); op87 left unresolved.'
 - op: MULTI_CHAT
   direction: serverbound
   opcode: 89

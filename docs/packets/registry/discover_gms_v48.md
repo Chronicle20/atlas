@@ -103,29 +103,74 @@ match, but were confirmed here **only** by decompiled send-site body — not see
 
 ### Serverbound totals
 
-- **22 serverbound** registered (`provenance: ida-discovered` @ ctor anchor
-  `5748606` for named-caller joins; `provenance: manual` @ the specific send-site
-  for the 3 body-verified flagged ops). Covers the connect-critical path
+- **28 serverbound** registered. Stage B (22): connect-critical path
   (LOGIN_PASSWORD, CHANGE_MAP, CHANGE_CHANNEL, MOVE_PLAYER) + social/field/pet/
-  cashshop named senders.
+  cashshop named senders. **Stage B2 (this pass, +6 body-verified from the actual
+  `COutPacket(N)` send-site — never blind-shifted):** the **chair + attack cluster**
+  CANCEL_CHAIR=34, USE_CHAIR=35, CLOSE_RANGE_ATTACK=36, RANGED_ATTACK=37,
+  MAGIC_ATTACK=38, TAKE_DAMAGE=39.
 
-### Serverbound remaining (full parity — DEFERRED)
+### Stage B2 — chair/attack cluster (body-verified 34–39)
 
-The full 128-opcode ctor harvest is recorded below. ~106 additional opcodes
-(login-region senders 3–27; item/ability cluster 46–92; movement/attack region
-34–43; note/keymap/messenger; mob/npc/summon/reactor/dialog region) have send-site
-callers that are **unnamed `sub_XXXX`** and require **body-signature matching**
-against `gms_v61.yaml`'s verified opcodes (the v61 "Stage B2" method) — this is the
-outstanding full-parity work. **Do NOT blind-map by v61 opcode number** (the v48
-serverbound space is its own enumeration, e.g. SET_GENDER=7 vs the login-region
-shift). One flagged op remains genuinely unresolved:
+Each read from its v48 send-site body (addresses in `gms_v48.yaml`):
 
-- **NPC_TALK (serverbound)** — op 54 (`sub_63AADB`) is a CWnd **list-selection
-  dialog** with body `COutPacket(54)+Encode4+Encode4`, NOT the v61 click-path
-  `TalkToNpc [E4,E2,E2]`. The basic NPC-click talk sender is an unnamed sub not
-  isolated in this pass; needs the field-click → CNpcPool::FindNpc → talk-sender
-  chain body-walk (v61 twin: sub_7B1403). **Left explicitly unresolved — not
-  fabricated.**
+| v48 op | v48 sub | body evidence | v61 op | Δ |
+|---|---|---|---|---|
+| 34 CANCEL_CHAIR | `sub_69DF44` | `COutPacket(34)+Enc2(0xFFFF)` (chairId=-1 get-up) | 39 | −5 |
+| 35 USE_CHAIR | `sub_712894` | `COutPacket(35)+Enc4(itemId)` + `SetActivePortableChair` | 40 | −5 |
+| 36 CLOSE_RANGE_ATTACK | `sub_6A0528` | attack hdr, **no** projectile/bullet field | 41 | −5 |
+| 37 RANGED_ATTACK | `sub_6A228C` | attack hdr + `Enc1(shootRange)`+`Enc4(bulletItemId)` | 42 | −5 |
+| 38 MAGIC_ATTACK | `sub_6A3AC7` | attack hdr, area-magic skill switch (BigBang etc) | 43 | −5 |
+| 39 TAKE_DAMAGE | `sub_69D6BF` | `COutPacket(39)+Enc4(crc)+Enc1(0xFE)+Enc4(dmg)+Enc2(mob)` periodic HP-loss | 45 | **−6** |
+
+**TAKE_DAMAGE at Δ−6 (not −5)** confirms the enumeration is non-uniform even inside
+one cluster — **TOUCH_MONSTER_ATTACK (v61 44) is NOT at any v48 op in 34–39**;
+it is either absent in v48 or at an as-yet-unlocated opcode (find CUserLocal
+body-attack sender). Do NOT infer it by adjacency.
+
+### Serverbound remaining (full parity — DEFERRED, ~79 ops)
+
+The full 128-opcode ctor harvest is recorded below. The remaining ops have
+**unnamed `sub_XXXX`** send-callers and require **cross-IDB body-signature
+matching**: read the v48 `COutPacket(N)` body AND the v61 twin body (the v61
+`gms_v61.yaml` serverbound `ida.address` is often imprecise — it can point mid
+another function; re-derive the v61 body from the named send fn, not the raw addr).
+**Do NOT blind-map by v61 opcode number** (space is its own enumeration).
+
+**Negatives established this pass (guard against future mis-registration):**
+
+- **op 46 (`sub_568A2A`)** body = `COutPacket(46)+Enc4(id)+Enc2(x)+Enc2(y)` (a
+  commodity/player-shop UtilDlg confirm). This is **NOT GENERAL_CHAT** — v61
+  GENERAL_CHAT (op46, `CField::SendChatMsg`) body = `EncodeStr(text)+Enc1(flag)`
+  (verified in v61 chat-parser sub_4E7469). GENERAL_CHAT sits at a *different* v48
+  opcode (find the v48 chat-command parser, twin of sub_4E7469, and read its
+  SendChatMsg opcode). NB the harvest's op46→sub_568A2A row is a "nearest push imm"
+  artifact of that huge multi-COutPacket fn; the real GENERAL_CHAT sender is the
+  second caller `sub_69FA53` — verify its opcode by body.
+- **op 53 (`sub_6378D4`)** = `COutPacket(53)+Enc1(5)` (a CCtrlWnd action, SetFocus).
+  NOT MONSTER_BOOK_COVER (v61 op53 = `Enc4(crc)+Enc2(slot)+Enc1`).
+- **op 54 (`sub_63AADB`)** = CWnd list-selection dialog `Enc4(npcId)+Enc4` for
+  entries 3000–3007 (NPC quick-list). Confirmed the discover-doc flag: NOT the
+  field click-path.
+- **op 81 (`sub_71E7F3`)** = `Enc1+Enc1+[Enc4]`. NOT DISTRIBUTE_AP (v61 op80,
+  `SendAbilityUpRequest` = `Enc4(crc)+Enc4(stat)`).
+- **op 82 (`sub_71E912`)** = `EncStr+Enc2+Enc4` (dialog, finds user). NOT
+  DISTRIBUTE_SP (v61 op82 `SendSkillUpRequest` = `Enc4(skillId)`-family).
+- **op 66 (`sub_70DA60`)** = `Enc4(crc)+Enc2+Enc2+Enc2+Enc1` (+SetExclRequestSent,
+  calls sub_5FE86B summon-move). Identity unresolved.
+
+**v61 reference bodies derived this pass (fingerprints for the match):**
+DISTRIBUTE_AP = `Enc4(crc)+Enc4(stat)` (gated remainingAP>0);
+MESO_DROP = `Enc4(crc)+Enc4(meso)`; SPECIAL_MOVE = `Enc4(crc)+Enc2(slot)+Enc1(flag)`;
+CHAR_INFO_REQUEST = `Enc4(crc)+Enc4(cid)`; GENERAL_CHAT = `EncStr(text)+Enc1(flag)`.
+
+**NPC_TALK (serverbound) — still genuinely unresolved.** op 54 (`sub_63AADB`) is a
+CWnd list dialog (confirmed above), NOT the click-path. The field-click talk sender
+(v61 `CUserLocal::TalkToNpc`; note the v61 registry addr `0x7b1003` is imprecise —
+it resolves to a damage-reduction helper, so re-locate the real v61 TalkToNpc by
+its `Enc4(npcId)` body first) is an unnamed v48 sub not isolated in this pass;
+needs the field-click → CNpcPool::FindNpc → talk-sender chain body-walk.
+**Left explicitly unresolved — not fabricated.**
 
 ### Full COutPacket(N) harvest (opcode → caller functions) — reference for Stage B2
 
@@ -211,9 +256,9 @@ blind-map by v61 opcode number.
   CCashShop) with real `ida.address`; 22 CField-base + 2 CUserPool spawn/leave
   added by hand-decompile of `0x4c66f2` / `0x6b2710`. Total **93 clientbound**.
 - Serverbound COutPacket-ctor harvest (@`0x57b77e`) → 317 xrefs / 128 distinct
-  opcodes; **22 registered** (named-caller joins + 4 delta anchors + 3
-  body-verified flagged send-sites CHANGE_CHANNEL=31/MOVE_PLAYER=33/WHISPER=90).
-- Registry `gms_v48.yaml`: **115 entries** (93 clientbound + 22 serverbound).
+  opcodes; **28 registered** (Stage B 22 + Stage B2 body-verified chair/attack
+  cluster 34–39: CANCEL_CHAIR/USE_CHAIR/CLOSE_RANGE/RANGED/MAGIC/TAKE_DAMAGE).
+- Registry `gms_v48.yaml`: **121 entries** (93 clientbound + 28 serverbound).
   YAML self-validates; no duplicate opcodes within either direction.
 - **Clean PARTIAL** — remaining full-parity worklist (deep pool leaves + unnamed-
   sub identity + serverbound tail + NPC_TALK) enumerated above with dispatcher

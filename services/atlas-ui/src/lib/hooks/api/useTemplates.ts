@@ -21,7 +21,7 @@ export const templateKeys = {
   all: ['templates'] as const,
   lists: () => [...templateKeys.all, 'list'] as const,
   list: (options?: QueryOptions) => [...templateKeys.lists(), options] as const,
-  pagedList: (page: number, size: number) => [...templateKeys.all, 'page', page, size] as const,
+  pagedList: (page: number, size: number) => [...templateKeys.lists(), 'page', page, size] as const,
   details: () => [...templateKeys.all, 'detail'] as const,
   detail: (id: string) => [...templateKeys.details(), id] as const,
   

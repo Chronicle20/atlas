@@ -15,7 +15,7 @@ export const banKeys = {
   list: (tenant: Tenant | null, options?: BanQueryOptions) =>
     [...banKeys.lists(), tenant?.id ?? "no-tenant", options] as const,
   pagedList: (tenant: Tenant | null, page: number, size: number, options?: BanQueryOptions) =>
-    [...banKeys.all, tenant?.id ?? "no-tenant", page, size, options?.type ?? "all"] as const,
+    [...banKeys.lists(), tenant?.id ?? "no-tenant", page, size, options?.type ?? "all"] as const,
   details: () => [...banKeys.all, "detail"] as const,
   detail: (tenant: Tenant | null, id: string) =>
     [...banKeys.details(), tenant?.id ?? "no-tenant", id] as const,

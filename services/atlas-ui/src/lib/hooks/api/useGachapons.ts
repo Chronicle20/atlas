@@ -10,7 +10,7 @@ export const gachaponKeys = {
   all: ['gachapons'] as const,
   lists: () => [...gachaponKeys.all, 'list'] as const,
   list: (options?: QueryOptions) => [...gachaponKeys.lists(), options] as const,
-  pagedList: (page: number, size: number) => [...gachaponKeys.all, 'page', page, size] as const,
+  pagedList: (page: number, size: number) => [...gachaponKeys.lists(), 'page', page, size] as const,
   details: () => [...gachaponKeys.all, 'detail'] as const,
   detail: (id: string) => [...gachaponKeys.details(), id] as const,
   prizePools: () => [...gachaponKeys.all, 'prize-pool'] as const,

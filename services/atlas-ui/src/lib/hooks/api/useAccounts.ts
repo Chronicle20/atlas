@@ -21,7 +21,7 @@ export const accountKeys = {
   lists: () => [...accountKeys.all, 'list'] as const,
   list: (tenant: Tenant | null, options?: AccountQueryOptions) => [...accountKeys.lists(), tenant?.id || 'no-tenant', options] as const,
   pagedList: (tenant: Tenant | null, page: number, size: number) =>
-    [...accountKeys.all, tenant?.id || 'no-tenant', page, size] as const,
+    [...accountKeys.lists(), tenant?.id || 'no-tenant', page, size] as const,
   details: () => [...accountKeys.all, 'detail'] as const,
   detail: (tenant: Tenant | null, id: string) => [...accountKeys.details(), tenant?.id || 'no-tenant', id] as const,
   

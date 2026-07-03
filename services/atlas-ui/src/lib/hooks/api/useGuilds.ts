@@ -22,7 +22,7 @@ export const guildKeys = {
   lists: () => [...guildKeys.all, 'list'] as const,
   list: (tenant: Tenant | null, options?: QueryOptions) => [...guildKeys.lists(), tenant?.id, options] as const,
   pagedList: (tenant: Tenant | null, page: number, size: number) =>
-    [...guildKeys.all, tenant?.id ?? 'no-tenant', page, size] as const,
+    [...guildKeys.lists(), tenant?.id ?? 'no-tenant', page, size] as const,
   details: () => [...guildKeys.all, 'detail'] as const,
   detail: (tenant: Tenant | null, id: string) => [...guildKeys.details(), tenant?.id, id] as const,
 

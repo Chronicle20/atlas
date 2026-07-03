@@ -243,7 +243,7 @@ describe('useGuilds', () => {
       expect(guildKeys.all).toEqual(['guilds']);
       expect(guildKeys.lists()).toEqual(['guilds', 'list']);
       expect(guildKeys.list(mockTenant)).toEqual(['guilds', 'list', 'tenant-1', undefined]);
-      expect(guildKeys.pagedList(mockTenant, 1, 50)).toEqual(['guilds', 'tenant-1', 1, 50]);
+      expect(guildKeys.pagedList(mockTenant, 1, 50)).toEqual(['guilds', 'list', 'tenant-1', 1, 50]);
       expect(guildKeys.detail(mockTenant, 'guild-1')).toEqual(['guilds', 'detail', 'tenant-1', 'guild-1']);
       expect(guildKeys.byWorld(mockTenant, 1)).toEqual(['guilds', 'list', 'tenant-1', 'world', 1]);
       expect(guildKeys.search(mockTenant, 'test', 1, 50)).toEqual(['guilds', 'search', 'tenant-1', 'test', 1, 50]);

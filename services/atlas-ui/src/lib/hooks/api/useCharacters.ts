@@ -22,7 +22,7 @@ export const characterKeys = {
   lists: () => [...characterKeys.all, 'list'] as const,
   list: (tenant: Tenant, options?: ServiceOptions) => [...characterKeys.lists(), tenant?.id, options] as const,
   pagedList: (tenant: Tenant | null, page: number, size: number) =>
-    [...characterKeys.all, tenant?.id ?? 'no-tenant', page, size] as const,
+    [...characterKeys.lists(), tenant?.id ?? 'no-tenant', page, size] as const,
   details: () => [...characterKeys.all, 'detail'] as const,
   detail: (tenant: Tenant, characterId: string) => [...characterKeys.details(), tenant?.id, characterId] as const,
 };
@@ -127,11 +127,15 @@ export function useUpdateCharacter(): UseMutationResult<
     },
     onSettled: (_data, _error, variables) => {
       // Invalidate and refetch relevant queries
-      queryClient.invalidateQueries({ 
-        queryKey: characterKeys.detail(variables.tenant, variables.characterId) 
+      queryClient.invalidateQueries({
+        queryKey: characterKeys.detail(variables.tenant, variables.characterId)
       });
-      queryClient.invalidateQueries({ 
-        queryKey: characterKeys.list(variables.tenant) 
+      // Use a tenant-scoped prefix (not characterKeys.list(), which pins a
+      // trailing `options` slot to undefined and therefore fails to
+      // partial-match longer keys like pagedList(tenant, page, size)) so
+      // both the unpaged list and every paged view for this tenant refresh.
+      queryClient.invalidateQueries({
+        queryKey: [...characterKeys.lists(), variables.tenant?.id]
       });
     },
   });

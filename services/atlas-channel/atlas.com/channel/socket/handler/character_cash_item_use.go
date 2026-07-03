@@ -118,8 +118,6 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			return
 		}
 
-		// TODO for v83 there is a trailing updateTime.
-
 		l.Warnf("Character [%d] attempting to use cash item [%d] in slot [%d] of type [%d]. updateTime [%d].", s.CharacterId(), itemId, source, it, updateTime)
 	}
 }

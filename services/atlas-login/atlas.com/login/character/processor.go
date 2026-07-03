@@ -65,9 +65,14 @@ func (p *ProcessorImpl) IsValidName(name string) (bool, error) {
 	return true, nil
 }
 
+// ByAccountAndWorldProvider fetches every character an account has in a
+// world. atlas-character's GET /characters?accountId=&worldId= is now
+// paginated (task-117); the character-select screen needs the complete set
+// (a truncated page would silently hide characters from the player), so
+// this drains every page rather than fetching just the first.
 func (p *ProcessorImpl) ByAccountAndWorldProvider(decorators ...model.Decorator[Model]) func(accountId uint32, worldId world.Id) model.Provider[[]Model] {
 	return func(accountId uint32, worldId world.Id) model.Provider[[]Model] {
-		mp := requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByAccountAndWorld(accountId, worldId), Extract, model.Filters[Model]())
+		mp := requests.DrainProvider[RestModel, Model](p.l, p.ctx)(byAccountAndWorldUrl(accountId, worldId), 250, Extract, model.Filters[Model]())
 		return model.SliceMap(model.Decorate(decorators))(mp)(model.ParallelMap())
 	}
 }

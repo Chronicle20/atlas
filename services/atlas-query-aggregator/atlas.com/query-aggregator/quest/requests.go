@@ -31,10 +31,14 @@ func byCharacterUrl(characterId uint32) string {
 	return fmt.Sprintf(getBaseRequest()+ByCharacter, characterId)
 }
 
-func requestStartedByCharacter(characterId uint32) requests.Request[[]RestModel] {
-	return requests.GetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+StartedQuests, characterId))
+// startedByCharacterUrl and completedByCharacterUrl are bare URLs (not
+// requests.Request) because both lists are now paginated server-side
+// (task-117) and consumed via requests.DrainProvider, which appends its own
+// page[number]/page[size] query params per request.
+func startedByCharacterUrl(characterId uint32) string {
+	return fmt.Sprintf(getBaseRequest()+StartedQuests, characterId)
 }
 
-func requestCompletedByCharacter(characterId uint32) requests.Request[[]RestModel] {
-	return requests.GetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+CompletedQuests, characterId))
+func completedByCharacterUrl(characterId uint32) string {
+	return fmt.Sprintf(getBaseRequest()+CompletedQuests, characterId)
 }

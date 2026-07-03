@@ -1152,16 +1152,35 @@ along with its now-unused `atlas-notes/kafka/producer` import in
   is a COMMAND emit to the separate `atlas-saga-orchestrator` service (a
   saga-kickoff command, not a notes-domain status event) with no local DB
   write in this function — per the D7 classification rule, COMMAND emits
-  to other services stay on the direct path. Called from
-  `note/processor.go:290` `awardFameToSender` (invoked from inside
-  `Discard`'s per-note loop, itself now running inside `DiscardAndEmit`'s
-  outer tx) — the saga-create command fires unconditionally after a
-  successful per-note delete, i.e. it reflects a state change that has
-  (from the caller's point of view) already happened, the same shape the
-  atlas-inventory/atlas-buddies inventory entries treat as an acceptable
-  direct COMMAND rather than a rejection-style failure emit that must be
-  deferred outside the tx. No behavioral change to this call site was
-  made or needed.
+  to other services stay on the direct path. **Post-review fix (task-114
+  review pass):** this call site is now reached only from
+  `note/processor.go:302` `DiscardAndEmit`'s post-commit firing loop, not
+  from inside the transaction. The original migration left
+  `awardFameToSender` firing this command unconditionally, synchronously,
+  from inside `Discard`'s per-note loop — but that loop now runs inside
+  `DiscardAndEmit`'s single shared `ExecuteTransaction` closure (this
+  task's own change), so a *later* note's failure in the same call could
+  roll back an *earlier* note's delete after its fame-award command had
+  already been irrevocably sent — a non-atomic side effect this migration
+  introduced (it did not exist pre-migration, when each note's delete
+  committed in its own immediately-committed mini-tx). Fixed by splitting
+  `awardFameToSender` into a pure `buildFameAwardSaga` (called from inside
+  `Discard`'s loop; only builds and collects a `pendingFameAward`, no
+  side effect) and `fireFameAwardSaga` (called from `DiscardAndEmit`,
+  once per collected item, only after `database.ExecuteTransaction`
+  returns nil). `Discard`'s signature changed from returning `error` to
+  returning `([]pendingFameAward, error)` so the collected-but-unfired
+  sagas can cross the transaction-closure boundary. The command itself
+  (topic, payload, one-per-successfully-discarded-non-self-non-system-note
+  semantics) is unchanged — only *when* it fires moved from mid-loop to
+  post-commit. Verified by
+  `note/processor_fame_award_test.go`'s
+  `TestDiscardAndEmit_FameAwardNotFiredWhenDiscardFails` (proves 0 saga
+  commands fire when a later note id in the same call fails) and
+  `TestDiscardAndEmit_FameAwardFiresAfterSuccess` (proves exactly one
+  command per discarded note fires on the happy path); both tests were
+  confirmed to fail against the pre-fix inline-fire behavior before being
+  confirmed to pass against the fix.
 
 ### Notes
 
@@ -1183,9 +1202,21 @@ along with its now-unused `atlas-notes/kafka/producer` import in
   (`processor_test.go` only exercises the `mb`-taking `Create`/`Update`/
   `Delete`/`DeleteAll`/`Discard` methods directly, never the `*AndEmit`
   wrappers), so no test needed updating to assert outbox rows instead.
+  **Post-review update:** `processor_test.go`'s two `Discard(...)` call
+  sites were updated for the new `([]pendingFameAward, error)` return
+  shape, and a new internal (`package note`) test file
+  `note/processor_fame_award_test.go` was added specifically to exercise
+  `DiscardAndEmit` — the first test in this module to call an `*AndEmit`
+  method directly — using a `fakeSagaProcessor` injected via a
+  package-internal `ProcessorImpl{...}` literal (the mock file at
+  `note/mock/processor.go` couldn't be reused since it's the pre-existing
+  stale/inert mock noted above). This required also migrating
+  `libs/atlas-outbox`'s `Entity` table (`outbox.Migration(db)`) in the new
+  file's test-db setup, which no prior test in this module needed.
 - `go test -race ./...`, `go vet ./...`, `go build ./...` all clean;
   `docker buildx bake atlas-notes` succeeded; `tools/redis-key-guard.sh`
-  clean (this service doesn't touch Redis directly).
+  clean (this service doesn't touch Redis directly). Re-verified clean
+  after the post-review fame-award-ordering fix.
 - `database.ExecuteTransaction` atomicity is still latent fleet-wide
   pending task-119 (see `bug_execute_transaction_noop.md`); this task's
   migration uses the correct seam and becomes atomic for free once

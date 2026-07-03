@@ -26,7 +26,7 @@ type Processor interface {
 	DeleteAndEmit(id uint32) error
 	DeleteAll(mb *message.Buffer) func(characterId uint32) error
 	DeleteAllAndEmit(characterId uint32) error
-	Discard(mb *message.Buffer) func(ch channel.Model) func(characterId uint32) func(noteIds []uint32) error
+	Discard(mb *message.Buffer) func(ch channel.Model) func(characterId uint32) func(noteIds []uint32) ([]pendingFameAward, error)
 	DiscardAndEmit(ch channel.Model, characterId uint32, noteIds []uint32) error
 	ByIdProvider(id uint32) model.Provider[Model]
 	ByCharacterProvider(characterId uint32) model.Provider[[]Model]
@@ -225,16 +225,30 @@ func (p *ProcessorImpl) InTenantProvider() model.Provider[[]Model] {
 	return model.SliceMap[Entity, Model](Make)(getAllProvider()(p.db.WithContext(p.ctx)))(model.ParallelMap())
 }
 
-// Discard discards multiple notes for a character
-func (p *ProcessorImpl) Discard(mb *message.Buffer) func(ch channel.Model) func(characterId uint32) func(noteIds []uint32) error {
-	return func(ch channel.Model) func(characterId uint32) func(noteIds []uint32) error {
-		return func(characterId uint32) func(noteIds []uint32) error {
-			return func(noteIds []uint32) error {
+// pendingFameAward pairs a built fame-award saga with the note/sender ids used for logging when it
+// is later fired. It is collected during Discard's per-note loop (which runs inside the shared
+// discard transaction) but must NOT be fired until that transaction has committed successfully -
+// firing mid-loop would send an unrecallable saga command for a delete that a later note's failure
+// could still roll back.
+type pendingFameAward struct {
+	saga     saga.Saga
+	noteId   uint32
+	senderId uint32
+}
+
+// Discard discards multiple notes for a character. It collects (but does not fire) the fame-award
+// saga command for each successfully discarded note; the caller is responsible for firing them only
+// after the enclosing transaction has committed (see DiscardAndEmit).
+func (p *ProcessorImpl) Discard(mb *message.Buffer) func(ch channel.Model) func(characterId uint32) func(noteIds []uint32) ([]pendingFameAward, error) {
+	return func(ch channel.Model) func(characterId uint32) func(noteIds []uint32) ([]pendingFameAward, error) {
+		return func(characterId uint32) func(noteIds []uint32) ([]pendingFameAward, error) {
+			return func(noteIds []uint32) ([]pendingFameAward, error) {
+				var pending []pendingFameAward
 				for _, noteId := range noteIds {
 					// Check if the note exists and belongs to the character
 					m, err := p.ByIdProvider(noteId)()
 					if err != nil {
-						return err
+						return nil, err
 					}
 
 					if m.CharacterId() != characterId {
@@ -244,34 +258,39 @@ func (p *ProcessorImpl) Discard(mb *message.Buffer) func(ch channel.Model) func(
 					// Delete the note
 					err = deleteNote(p.db.WithContext(p.ctx), noteId)
 					if err != nil {
-						return err
+						return nil, err
 					}
 
 					// Add delete event to message buffer
 					err = mb.Put(note.EnvEventTopicNoteStatus, DeleteNoteStatusEventProvider(characterId, noteId))
 					if err != nil {
-						return err
+						return nil, err
 					}
 
-					// Award fame to the note sender
-					p.awardFameToSender(ch, characterId, m.SenderId(), noteId)
+					// Build (but do not fire) the fame-award saga for the note sender
+					if pa, ok := p.buildFameAwardSaga(ch, characterId, m.SenderId(), noteId); ok {
+						pending = append(pending, pa)
+					}
 				}
-				return nil
+				return pending, nil
 			}
 		}
 	}
 }
 
-// awardFameToSender creates a saga to award +1 fame to the note sender
-func (p *ProcessorImpl) awardFameToSender(ch channel.Model, recipientId uint32, senderId uint32, noteId uint32) {
+// buildFameAwardSaga builds (without firing) the saga to award +1 fame to a note sender. It returns
+// ok=false when the award should be skipped (system note or self-note). This is a pure builder with
+// no side effects, so it is safe to call from inside a transaction closure; firing it is a separate
+// step performed by fireFameAwardSaga.
+func (p *ProcessorImpl) buildFameAwardSaga(ch channel.Model, recipientId uint32, senderId uint32, noteId uint32) (pendingFameAward, bool) {
 	// Skip if sender is 0 (system note) or sender is the same as recipient (self-note)
 	if senderId == 0 {
 		p.l.Debugf("Skipping fame award for note [%d]: system note (senderId=0)", noteId)
-		return
+		return pendingFameAward{}, false
 	}
 	if senderId == recipientId {
 		p.l.Debugf("Skipping fame award for note [%d]: self-note (senderId=%d equals recipientId)", noteId, senderId)
-		return
+		return pendingFameAward{}, false
 	}
 
 	s := saga.NewBuilder().
@@ -289,21 +308,40 @@ func (p *ProcessorImpl) awardFameToSender(ch channel.Model, recipientId uint32, 
 			},
 		).Build()
 
-	err := p.sagaP.Create(s)
+	return pendingFameAward{saga: s, noteId: noteId, senderId: senderId}, true
+}
+
+// fireFameAwardSaga sends a previously built fame-award saga command to atlas-saga-orchestrator.
+// Errors are logged but do not fail the discard operation, matching prior behavior.
+func (p *ProcessorImpl) fireFameAwardSaga(pa pendingFameAward) {
+	err := p.sagaP.Create(pa.saga)
 	if err != nil {
 		// Log error but don't fail the discard operation
-		p.l.WithError(err).Errorf("Failed to create fame award saga for note [%d] sender [%d]", noteId, senderId)
+		p.l.WithError(err).Errorf("Failed to create fame award saga for note [%d] sender [%d]", pa.noteId, pa.senderId)
 	} else {
-		p.l.Debugf("Created fame award saga for note [%d] sender [%d]", noteId, senderId)
+		p.l.Debugf("Created fame award saga for note [%d] sender [%d]", pa.noteId, pa.senderId)
 	}
 }
 
-// DiscardAndEmit discards multiple notes for a character and emits status events
+// DiscardAndEmit discards multiple notes for a character and emits status events. The fame-award
+// saga commands collected during the discard are fired only after the transaction has committed
+// successfully, so a rolled-back delete can never leave behind an already-fired, unrecallable fame
+// award (see task-114 review: ExecuteTransaction wraps the whole loop in one shared tx).
 func (p *ProcessorImpl) DiscardAndEmit(ch channel.Model, characterId uint32, noteIds []uint32) error {
-	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+	var pending []pendingFameAward
+	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 		tp := p.WithTransaction(tx)
 		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
-			return tp.Discard(mb)(ch)(characterId)(noteIds)
+			var err error
+			pending, err = tp.Discard(mb)(ch)(characterId)(noteIds)
+			return err
 		})
 	})
+	if txErr != nil {
+		return txErr
+	}
+	for _, pa := range pending {
+		p.fireFameAwardSaga(pa)
+	}
+	return nil
 }

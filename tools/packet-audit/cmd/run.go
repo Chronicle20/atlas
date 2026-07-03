@@ -2694,6 +2694,13 @@ func candidatesFromFName(fname string) []candidate {
 			{name: "SpawnPortal", dir: csvpkg.DirClientbound},
 			{name: "RemoveTownDoor", dir: csvpkg.DirClientbound},
 		}
+	case "CWvsContext::OnIncubatorResult":
+		// INCUBATOR_RESULT. v83/v84/v87/jms_v185: Decode4(itemId) Decode2(count)
+		// = 6B. v95 adds Decode4(gachaponItemId) Decode4(bonusItemId)
+		// Decode4(bonusCount) = 18B (task-19 IDA verification of the live v83,
+		// v84, v87, v95, jms_v185 IDBs; v87/jms_v185 do NOT read the extended
+		// tail the Atlas writer sends for GMS>=87/JMS — see result_test.go).
+		return []candidate{{name: "IncubatorResult", pkg: "incubator", dir: csvpkg.DirClientbound, reportName: "IncubatorResult"}}
 	}
 	return nil
 }

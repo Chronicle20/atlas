@@ -38,6 +38,17 @@ func legacyGmsSingleCrc(t tenant.Model) bool {
 	return t.Region() == "GMS" && t.MajorVersion() < 79
 }
 
+// legacyGmsNoSkillDataCrc reports whether the serverbound attack head carries NO
+// skill-data CRC at all (the field appears at GMS v72; the very-legacy pre-72
+// client omits it entirely). IDA-verified: v61 CLOSE_RANGE sender sub_7A45F1
+// @0x7a5bc3 Encode4(skillId) is followed directly by the mask1/option Encode1
+// @0x7a5d3d — there is no CRC Encode4 in between (only a conditional keydown
+// Encode4 for charge skills). v72 TryDoingMeleeAttack @0x85f96c writes one CRC.
+// So the head skill-data CRC is present GMS v72+ and absent below.
+func legacyGmsNoSkillDataCrc(t tenant.Model) bool {
+	return t.Region() == "GMS" && t.MajorVersion() < 72
+}
+
 type AttackInfo struct {
 	attackType           AttackType
 	fieldKey             byte
@@ -123,10 +134,13 @@ func (m *AttackInfo) Encode(l logrus.FieldLogger, ctx context.Context) func(opti
 				w.WriteInt(0) //2crc
 			}
 		}
-		w.WriteInt(m.skillDataCrc)
-		// The legacy pre-79 GMS client writes a SINGLE skill-data CRC (v72
-		// TryDoingMeleeAttack @0x85f96c: one Encode4 = SKILLLEVELDATA::GetCrc);
-		// GMS v79+ adds a second CRC (v79 @0x8c2ab2 + @0x8c2abb — two Encode4s).
+		// The head skill-data CRC block. The very-legacy pre-72 GMS client (v61)
+		// writes NO CRC at all (sub_7A45F1 @0x7a5bc3→@0x7a5d3d: skillId then
+		// straight to mask1). v72 writes a SINGLE CRC (TryDoingMeleeAttack
+		// @0x85f96c); GMS v79+ adds a second (v79 @0x8c2ab2 + @0x8c2abb).
+		if !legacyGmsNoSkillDataCrc(t) {
+			w.WriteInt(m.skillDataCrc)
+		}
 		if !legacyGmsSingleCrc(t) {
 			w.WriteInt(m.skillDataCrc2)
 		}
@@ -259,7 +273,9 @@ func (m *AttackInfo) Decode(l logrus.FieldLogger, ctx context.Context) func(r *r
 			}
 		}
 
-		m.skillDataCrc = r.ReadUint32()
+		if !legacyGmsNoSkillDataCrc(t) {
+			m.skillDataCrc = r.ReadUint32()
+		}
 		if !legacyGmsSingleCrc(t) {
 			m.skillDataCrc2 = r.ReadUint32()
 		}

@@ -1,0 +1,12 @@
+{
+ "entries": [
+  {
+   "fname": "CWvsContext::SendGatherItemRequest",
+   "reason": "ITEM_SORT (inventory gather/organize request) is version-absent in gms_v48. The v61 gather sender CWvsContext::SendGatherItemRequest sub_8314D0 @0x8314d0 (GMS_v61.1_U_DEVM.exe, port 13338) has a distinctive shape: if(compartment in [1,5]){ throttle; COutPacket(64)+Encode4(updateTime)+Encode1(compartment) } — and lives in the 0x831xxx secondary CWvsContext send region alongside the sort twin sub_831564. gms_v48 (GMS_v48_1_DEVM.exe, port 13337) has NO 0x831xxx region; every inventory send-helper lives in the 0x70dxxx-0x71xxxx cluster that opens the 500ms exclusive-request throttle sub_4A2518 @0x4a2518. A complete enumeration of that throttle's callers (xrefs_to sub_4A2518, 72 refs, no truncation) yields the inventory senders sub_70D8DE(op55 ITEM_MOVE), sub_70D987(drop), sub_70DA60(op66), sub_70DC8D(op117), sub_70DF2F(op60), sub_70E00B(op61), sub_719DD9(op65 USE_ITEM) — NONE carries the [1,5]-compartment-guarded Encode4+Encode1 gather/sort body. The feature's request senders are therefore not implemented in the v48 client. Stage B carried this as flagged-blocked; resolved n-a here with the complete-enumeration decompile evidence. The matching clientbound results (GATHER_ITEM_RESULT/SORT_ITEM_RESULT) are likewise version-absent (no request path to answer)."
+  },
+  {
+   "fname": "CWvsContext::SendSortItemRequest",
+   "reason": "ITEM_SORT2 (inventory sort request) is version-absent in gms_v48. The v61 sort sender CWvsContext::SendSortItemRequest sub_831564 @0x831564 (GMS_v61.1_U_DEVM.exe, port 13338) is the [1,5]-guarded COutPacket(65)+Encode4(updateTime)+Encode1(compartment) twin of the gather sender in the 0x831xxx region. gms_v48 has no such sender: the complete xrefs_to sub_4A2518 (500ms exclusive-request throttle) enumeration of the 0x70dxxx-0x71xxxx inventory send cluster contains no compartment-guarded Encode4+Encode1 body, and v48 has no 0x831xxx send region. Note the v48 opcode space cannot host the v61 numbering here anyway: v48 op65 is USE_ITEM (sub_719DD9 @0x719dd9, body-verified), not the v61 ITEM_SORT2 slot. Resolved n-a with complete-enumeration decompile evidence (Stage B flag cleared)."
+  }
+ ]
+}

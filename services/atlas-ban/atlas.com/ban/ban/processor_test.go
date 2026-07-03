@@ -168,13 +168,16 @@ func TestProcessorGetByType(t *testing.T) {
 	createTestBan(t, db, st, BanTypeHWID, "HWID123", true, time.Time{})
 
 	p := NewProcessor(l, ctx, db)
-	bans, err := p.GetByType(BanTypeIP)
+	paged, err := p.ByTypePagedProvider(BanTypeIP, model.Page{Number: 1, Size: 50})()
 	if err != nil {
 		t.Fatalf("Failed to get bans by type: %v", err)
 	}
 
-	if len(bans) != 2 {
-		t.Errorf("Expected 2 IP bans, got %d", len(bans))
+	if len(paged.Items) != 2 {
+		t.Errorf("Expected 2 IP bans, got %d", len(paged.Items))
+	}
+	if paged.Total != 2 {
+		t.Errorf("Expected total 2, got %d", paged.Total)
 	}
 }
 

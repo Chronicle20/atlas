@@ -31,12 +31,17 @@ func handleGetHistory(d *rest.HandlerDependency, c *rest.HandlerContext) http.Ha
 		hwid := r.URL.Query().Get("hwid")
 
 		if ip != "" || hwid != "" {
-			var entries []Model
-			var err error
+			page, err := paginate.ParseParams(r.URL.Query(), paginate.DefaultPageSize, paginate.MaxPageSize)
+			if err != nil {
+				server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+				return
+			}
+
+			var paged model.Paged[Model]
 			if ip != "" {
-				entries, err = NewProcessor(d.Logger(), d.Context(), d.DB()).GetByIP(ip)
+				paged, err = NewProcessor(d.Logger(), d.Context(), d.DB()).ByIPPagedProvider(ip, page)()
 			} else {
-				entries, err = NewProcessor(d.Logger(), d.Context(), d.DB()).GetByHWID(hwid)
+				paged, err = NewProcessor(d.Logger(), d.Context(), d.DB()).ByHWIDPagedProvider(hwid, page)()
 			}
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Unable to locate login history.")
@@ -44,7 +49,7 @@ func handleGetHistory(d *rest.HandlerDependency, c *rest.HandlerContext) http.Ha
 				return
 			}
 
-			res, err := model.SliceMap(Transform)(model.FixedProvider(entries))(model.ParallelMap())()
+			res, err := model.SliceMap(Transform)(model.FixedProvider(paged.Items))(model.ParallelMap())()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
 				server.WriteErrorResponse(d.Logger())(w)(err)
@@ -53,7 +58,7 @@ func handleGetHistory(d *rest.HandlerDependency, c *rest.HandlerContext) http.Ha
 
 			query := r.URL.Query()
 			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+			server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res, paginate.EnvelopeFor(paged), r)
 			return
 		}
 

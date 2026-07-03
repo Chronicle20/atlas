@@ -154,11 +154,12 @@ func TestGetHistoryPaginates(t *testing.T) {
 		assert.NotContains(t, doc.Links, "next")
 	})
 
-	// IPFilterStillUnpaginated is a regression guard for the ?ip=/?hwid=
-	// branches, which are out of this task's scope and must keep their
-	// pre-existing unpaginated (bare-array, no meta/links) response shape.
-	t.Run("IPFilterStillUnpaginated", func(t *testing.T) {
-		url := fmt.Sprintf("%s/history/?ip=10.0.0.1", srv.URL)
+	// TestGetHistoryByIPPaginates drives the ?ip= branch through the same
+	// paginated envelope as the bare list, preserving created_at-desc order.
+	// Filtered growing logs (login history by ip/hwid) must not be exempt
+	// from pagination (task-117).
+	t.Run("IPFilterPaginates", func(t *testing.T) {
+		url := fmt.Sprintf("%s/history/?ip=10.0.0.1&page[number]=1&page[size]=50", srv.URL)
 		req := requestWithTenant(http.MethodGet, url, tenantId)
 
 		resp, err := (&http.Client{}).Do(req)
@@ -172,7 +173,77 @@ func TestGetHistoryPaginates(t *testing.T) {
 
 		require.NotNil(t, doc.Data)
 		assert.Len(t, doc.Data.DataArray, 1)
-		assert.Nil(t, doc.Meta, "ip-filtered branch must remain unpaginated (no meta envelope)")
+
+		require.NotNil(t, doc.Meta, "ip-filtered branch must now be paginated (meta envelope present)")
+		assert.EqualValues(t, 1, doc.Meta["total"])
+	})
+
+	t.Run("IPFilterPageSizeZeroIsBadRequest", func(t *testing.T) {
+		url := fmt.Sprintf("%s/history/?ip=10.0.0.1&page[size]=0", srv.URL)
+		req := requestWithTenant(http.MethodGet, url, tenantId)
+
+		resp, err := (&http.Client{}).Do(req)
+		require.NoError(t, err)
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+	})
+
+	t.Run("IPFilterOrderedByCreatedAtDesc", func(t *testing.T) {
+		// Seed a second row sharing the IP so ordering is observable.
+		seedHistoryEntry(t, db, tenantId, 10, 10, "10.0.0.1", "HWID10", now.Add(-30*time.Minute))
+
+		url := fmt.Sprintf("%s/history/?ip=10.0.0.1&page[number]=1&page[size]=50", srv.URL)
+		req := requestWithTenant(http.MethodGet, url, tenantId)
+
+		resp, err := (&http.Client{}).Do(req)
+		require.NoError(t, err)
+		defer resp.Body.Close()
+
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+
+		var doc jsonapi.Document
+		require.NoError(t, json.NewDecoder(resp.Body).Decode(&doc))
+
+		require.NotNil(t, doc.Data)
+		require.Len(t, doc.Data.DataArray, 2)
+
+		var first, second RestModel
+		require.NoError(t, json.Unmarshal(doc.Data.DataArray[0].Attributes, &first))
+		require.NoError(t, json.Unmarshal(doc.Data.DataArray[1].Attributes, &second))
+		assert.EqualValues(t, 10, first.AccountId, "newest row (created_at desc) should be first")
+		assert.EqualValues(t, 1, second.AccountId, "older row should be second")
+	})
+
+	t.Run("HWIDFilterPaginates", func(t *testing.T) {
+		url := fmt.Sprintf("%s/history/?hwid=HWID2&page[number]=1&page[size]=50", srv.URL)
+		req := requestWithTenant(http.MethodGet, url, tenantId)
+
+		resp, err := (&http.Client{}).Do(req)
+		require.NoError(t, err)
+		defer resp.Body.Close()
+
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+
+		var doc jsonapi.Document
+		require.NoError(t, json.NewDecoder(resp.Body).Decode(&doc))
+
+		require.NotNil(t, doc.Data)
+		assert.Len(t, doc.Data.DataArray, 1)
+
+		require.NotNil(t, doc.Meta, "hwid-filtered branch must now be paginated (meta envelope present)")
+		assert.EqualValues(t, 1, doc.Meta["total"])
+	})
+
+	t.Run("HWIDFilterPageSizeZeroIsBadRequest", func(t *testing.T) {
+		url := fmt.Sprintf("%s/history/?hwid=HWID2&page[size]=0", srv.URL)
+		req := requestWithTenant(http.MethodGet, url, tenantId)
+
+		resp, err := (&http.Client{}).Do(req)
+		require.NoError(t, err)
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 	})
 }
 

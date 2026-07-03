@@ -147,13 +147,16 @@ func TestProcessorGetByIP(t *testing.T) {
 	recordTestEntry(t, db, st, 44, "user3", "10.0.0.2", "HWID3", true, "")
 
 	p := NewProcessor(l, ctx, db)
-	entries, err := p.GetByIP("10.0.0.1")
+	paged, err := p.ByIPPagedProvider("10.0.0.1", model.Page{Number: 1, Size: 50})()
 	if err != nil {
 		t.Fatalf("Failed to get by IP: %v", err)
 	}
 
-	if len(entries) != 2 {
-		t.Errorf("Expected 2 entries for IP 10.0.0.1, got %d", len(entries))
+	if len(paged.Items) != 2 {
+		t.Errorf("Expected 2 entries for IP 10.0.0.1, got %d", len(paged.Items))
+	}
+	if paged.Total != 2 {
+		t.Errorf("Expected total 2, got %d", paged.Total)
 	}
 }
 
@@ -168,13 +171,16 @@ func TestProcessorGetByHWID(t *testing.T) {
 	recordTestEntry(t, db, st, 44, "user3", "10.0.0.3", "XYZ789", true, "")
 
 	p := NewProcessor(l, ctx, db)
-	entries, err := p.GetByHWID("ABC123")
+	paged, err := p.ByHWIDPagedProvider("ABC123", model.Page{Number: 1, Size: 50})()
 	if err != nil {
 		t.Fatalf("Failed to get by HWID: %v", err)
 	}
 
-	if len(entries) != 2 {
-		t.Errorf("Expected 2 entries for HWID ABC123, got %d", len(entries))
+	if len(paged.Items) != 2 {
+		t.Errorf("Expected 2 entries for HWID ABC123, got %d", len(paged.Items))
+	}
+	if paged.Total != 2 {
+		t.Errorf("Expected total 2, got %d", paged.Total)
 	}
 }
 

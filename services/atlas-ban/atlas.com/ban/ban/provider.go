@@ -25,14 +25,9 @@ func entitiesByTenant(page model.Page) database.EntityProvider[model.Paged[Entit
 	}
 }
 
-func entitiesByType(banType BanType) database.EntityProvider[[]Entity] {
-	return func(db *gorm.DB) model.Provider[[]Entity] {
-		var results []Entity
-		err := db.Where("ban_type = ?", byte(banType)).Find(&results).Error
-		if err != nil {
-			return model.ErrorProvider[[]Entity](err)
-		}
-		return model.FixedProvider[[]Entity](results)
+func entitiesByType(banType BanType, page model.Page) database.EntityProvider[model.Paged[Entity]] {
+	return func(db *gorm.DB) model.Provider[model.Paged[Entity]] {
+		return database.PagedQuery[Entity](db.Where("ban_type = ?", byte(banType)), page)
 	}
 }
 

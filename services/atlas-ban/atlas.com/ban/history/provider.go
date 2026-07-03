@@ -13,25 +13,15 @@ func entitiesByAccountId(accountId uint32, page model.Page) database.EntityProvi
 	}
 }
 
-func entitiesByIP(ip string) database.EntityProvider[[]Entity] {
-	return func(db *gorm.DB) model.Provider[[]Entity] {
-		var results []Entity
-		err := db.Where("ip_address = ?", ip).Order("created_at desc").Find(&results).Error
-		if err != nil {
-			return model.ErrorProvider[[]Entity](err)
-		}
-		return model.FixedProvider[[]Entity](results)
+func entitiesByIP(ip string, page model.Page) database.EntityProvider[model.Paged[Entity]] {
+	return func(db *gorm.DB) model.Provider[model.Paged[Entity]] {
+		return database.PagedQuery[Entity](db.Where("ip_address = ?", ip).Order("created_at desc"), page)
 	}
 }
 
-func entitiesByHWID(hwid string) database.EntityProvider[[]Entity] {
-	return func(db *gorm.DB) model.Provider[[]Entity] {
-		var results []Entity
-		err := db.Where("hw_id = ?", hwid).Order("created_at desc").Find(&results).Error
-		if err != nil {
-			return model.ErrorProvider[[]Entity](err)
-		}
-		return model.FixedProvider[[]Entity](results)
+func entitiesByHWID(hwid string, page model.Page) database.EntityProvider[model.Paged[Entity]] {
+	return func(db *gorm.DB) model.Provider[model.Paged[Entity]] {
+		return database.PagedQuery[Entity](db.Where("hw_id = ?", hwid).Order("created_at desc"), page)
 	}
 }
 

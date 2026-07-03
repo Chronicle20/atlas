@@ -142,11 +142,12 @@ func TestGetBansPaginates(t *testing.T) {
 		assert.NotContains(t, doc.Links, "next")
 	})
 
-	// TypeFilterStillUnpaginated is a regression guard for the ?type= branch,
-	// which is out of this task's scope and must keep its pre-existing
-	// unpaginated (bare-array, no meta/links) response shape.
-	t.Run("TypeFilterStillUnpaginated", func(t *testing.T) {
-		url := fmt.Sprintf("%s/bans/?type=%d", srv.URL, BanTypeIP)
+	// TestGetBansByTypePaginates drives the ?type= branch through the same
+	// paginated envelope as the bare list: meta.total/page and 400 on
+	// invalid paging params. Filtered growing logs must not be exempt from
+	// pagination (task-117).
+	t.Run("TypeFilterPaginates", func(t *testing.T) {
+		url := fmt.Sprintf("%s/bans/?type=%d&page[number]=1&page[size]=50", srv.URL, BanTypeIP)
 		req := requestWithTenant(http.MethodGet, url, tenantId)
 
 		resp, err := (&http.Client{}).Do(req)
@@ -160,6 +161,30 @@ func TestGetBansPaginates(t *testing.T) {
 
 		require.NotNil(t, doc.Data)
 		assert.Len(t, doc.Data.DataArray, 1)
-		assert.Nil(t, doc.Meta, "type-filtered branch must remain unpaginated (no meta envelope)")
+
+		require.NotNil(t, doc.Meta, "type-filtered branch must now be paginated (meta envelope present)")
+		assert.EqualValues(t, 1, doc.Meta["total"])
+	})
+
+	t.Run("TypeFilterPageSizeZeroIsBadRequest", func(t *testing.T) {
+		url := fmt.Sprintf("%s/bans/?type=%d&page[size]=0", srv.URL, BanTypeIP)
+		req := requestWithTenant(http.MethodGet, url, tenantId)
+
+		resp, err := (&http.Client{}).Do(req)
+		require.NoError(t, err)
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+	})
+
+	t.Run("TypeFilterBadTypeIsBadRequest", func(t *testing.T) {
+		url := fmt.Sprintf("%s/bans/?type=notanumber", srv.URL)
+		req := requestWithTenant(http.MethodGet, url, tenantId)
+
+		resp, err := (&http.Client{}).Do(req)
+		require.NoError(t, err)
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 	})
 }

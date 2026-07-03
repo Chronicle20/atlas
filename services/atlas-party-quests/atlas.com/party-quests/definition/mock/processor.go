@@ -13,7 +13,7 @@ type ProcessorMock struct {
 	DeleteFunc              func(id uuid.UUID) error
 	ByIdProviderFunc        func(id uuid.UUID) model.Provider[definition.Model]
 	ByQuestIdProviderFunc   func(questId string) model.Provider[definition.Model]
-	AllProviderFunc         func() model.Provider[[]definition.Model]
+	AllProviderFunc         func(page model.Page) model.Provider[model.Paged[definition.Model]]
 	DeleteAllForTenantFunc  func() (int64, error)
 	ValidateDefinitionsFunc func() []definition.ValidationResult
 }
@@ -57,12 +57,12 @@ func (m *ProcessorMock) ByQuestIdProvider(questId string) model.Provider[definit
 	}
 }
 
-func (m *ProcessorMock) AllProvider() model.Provider[[]definition.Model] {
+func (m *ProcessorMock) AllProvider(page model.Page) model.Provider[model.Paged[definition.Model]] {
 	if m.AllProviderFunc != nil {
-		return m.AllProviderFunc()
+		return m.AllProviderFunc(page)
 	}
-	return func() ([]definition.Model, error) {
-		return []definition.Model{}, nil
+	return func() (model.Paged[definition.Model], error) {
+		return model.Paged[definition.Model]{Page: page}, nil
 	}
 }
 

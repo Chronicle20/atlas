@@ -4940,28 +4940,6 @@
         }
       ]
     },
-    "CPet::ParseCommand": {
-      "address": "",
-      "direction": "serverbound",
-      "unresolved": true,
-      "calls": [
-        {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
-        }
-      ]
-    },
-    "CPet::SendDropPickUpRequest": {
-      "address": "",
-      "direction": "serverbound",
-      "unresolved": true,
-      "calls": [
-        {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
-        }
-      ]
-    },
     "CPet::SendUpdateExceptionListRequest": {
       "address": "",
       "direction": "serverbound",
@@ -7132,17 +7110,6 @@
     "CUtilDlgEx::SetUtilDlgEx_INPUT_STR": {
       "address": "",
       "direction": "",
-      "unresolved": true,
-      "calls": [
-        {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
-        }
-      ]
-    },
-    "CVecCtrlPet::EndUpdateActive": {
-      "address": "",
-      "direction": "serverbound",
       "unresolved": true,
       "calls": [
         {

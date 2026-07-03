@@ -1127,6 +1127,24 @@ func candidatesFromFName(fname string) []candidate {
 	case "CPet::SendDropPickUpRequest":
 		// CSV: PET_LOOT — atlas DropPickUp.
 		return []candidate{{name: "DropPickUp", pkg: "pet", dir: csvpkg.DirServerbound}}
+	case "sub_6E5BD6":
+		// MOVE_PET (serverbound) in gms_v48: CVecCtrlPet::EndUpdateActive is UNNAMED
+		// — sub_6E5BD6 @0x6e5bd6, COutPacket(113)+CMovePath::Flush (no leading petId,
+		// single-pet). The v48 registry primary fname is sub_6E5BD6, so it keys to
+		// the same pet.MovementRequest codec as the named CVecCtrlPet::EndUpdateActive.
+		return []candidate{{name: "MovementRequest", pkg: "pet", dir: csvpkg.DirServerbound}}
+	case "sub_58DF8A":
+		// PET_COMMAND (serverbound) in gms_v48: CPet::ParseCommand is UNNAMED —
+		// sub_58DF8A @0x58df8a, COutPacket(115)+Encode1(byName)+Encode1(command) (no
+		// leading petId). The v48 registry primary fname is sub_58DF8A, so it keys to
+		// the same pet.Command codec as the named CPet::ParseCommand.
+		return []candidate{{name: "Command", pkg: "pet", dir: csvpkg.DirServerbound}}
+	case "sub_58ED98":
+		// PET_LOOT (serverbound) in gms_v48: CPet::SendDropPickUpRequest is UNNAMED —
+		// sub_58ED98 @0x58ed98, COutPacket(116)+fieldKey/time/x/y/dropId+3 pet-flag
+		// bytes (no leading petId, no crc). The v48 registry primary fname is
+		// sub_58ED98, so it keys to the same pet.DropPickUp codec as the named twin.
+		return []candidate{{name: "DropPickUp", pkg: "pet", dir: csvpkg.DirServerbound}}
 
 	// --- Social: note ---
 	// CSV: MEMO_RESULT (clientbound, opcode 0x28/40 in GMS v95) → CWvsContext::OnMemoResult

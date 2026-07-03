@@ -20,7 +20,9 @@ func TestDropPickUpRoundTrip(t *testing.T) {
 			input := DropPickUp{petId: 12345, fieldKey: 1, updateTime: 100, x: 50, y: -30, dropId: 14, crc: 999, bPickupOthers: true, bSweepForDrop: false, bLongRange: true, ownerX: 10, ownerY: 20, posCrc: 111, rectCrc: 222}
 			output := DropPickUp{}
 			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
-			if output.PetId() != input.PetId() {
+			// GMS v48 and older drop the leading petId (single-pet); only assert it
+			// on versions that carry the id (GMS v61+ or JMS).
+			if (v.Region != "GMS" || v.MajorVersion >= 61) && output.PetId() != input.PetId() {
 				t.Errorf("petId: got %v, want %v", output.PetId(), input.PetId())
 			}
 			if output.DropId() != input.DropId() {
@@ -140,5 +142,32 @@ func TestDropPickUpBytesV79(t *testing.T) {
 	b83 := in.Encode(nil, pt.CreateContext("GMS", 83, 1))(nil)
 	if len(b83)-len(got) != 4 {
 		t.Fatalf("v83 len %d vs v79 len %d: want v79 to omit the 4-byte crc", len(b83), len(got))
+	}
+}
+
+// TestDropPickUpBytesV48 pins the v48 PET_LOOT (sb op 116 / 0x74) send. IDA
+// GMS_v48_1_DEVM.exe @port 13337: sub_58ED98@0x58edb0 builds COutPacket(116),
+// Encode1(fieldKey)@0x58edcd, Encode4(updateTime)@0x58eddb, Encode2(x)@0x58edec,
+// Encode2(y)@0x58edfb, Encode4(dropId)@0x58ee06, Encode1(bPickupOthers)@0x58ee23,
+// Encode1(bSweepForDrop)@0x58ee40, Encode1(bLongRange)@0x58ee5d — NO leading
+// EncodeBuffer(petId,8) (single-pet), NO crc int (v48<83). v61 op141 carries petId.
+// packet-audit:verify packet=pet/serverbound/PetDropPickUp version=gms_v48 ida=0x58ed98
+func TestDropPickUpBytesV48(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 48, 1)
+	in := DropPickUp{petId: 0x0102030405060708, fieldKey: 0x09, updateTime: 0x0A0B0C0D, x: 0x1011, y: 0x1213, dropId: 0x14, crc: 0x99999999, bPickupOthers: true, bSweepForDrop: false, bLongRange: true}
+	got := in.Encode(nil, ctx)(nil)
+	want := []byte{
+		// NO petId on v48 (single-pet)
+		0x09,                   // fieldKey Encode1@0x58edcd
+		0x0D, 0x0C, 0x0B, 0x0A, // updateTime Encode4@0x58eddb (LE)
+		0x11, 0x10, // x Encode2@0x58edec (LE)
+		0x13, 0x12, // y Encode2@0x58edfb (LE)
+		0x14, 0x00, 0x00, 0x00, // dropId Encode4@0x58ee06 (LE) — NO crc on v48
+		0x01, // bPickupOthers Encode1@0x58ee23
+		0x00, // bSweepForDrop Encode1@0x58ee40
+		0x01, // bLongRange Encode1@0x58ee5d
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatalf("v48 = % X, want % X", got, want)
 	}
 }

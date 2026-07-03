@@ -1,19 +1,19 @@
 {
   "WriterName": "PetCommand",
-  "IDAName": "CPet::ParseCommand",
-  "Address": "",
+  "IDAName": "sub_58DF8A",
+  "Address": "0x58df8a",
   "Variant": "GMS/v48",
-  "BranchDepth": 0,
+  "BranchDepth": 1,
   "AtlasFile": "libs/atlas-packet/pet/serverbound/command.go",
   "Rows": [
     {
       "Index": 0,
       "AtlasOp": 3,
       "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 4,
-      "Note": "IDA read-order unresolved: function not found in IDB"
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
     },
     {
       "Index": 1,
@@ -34,6 +34,6 @@
       "Note": "atlas: extra — client never reads this field"
     }
   ],
-  "Verdict": 2,
-  "FlatInvalid": false
+  "Verdict": 3,
+  "FlatInvalid": true
 }

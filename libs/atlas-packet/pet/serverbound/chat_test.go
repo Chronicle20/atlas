@@ -20,7 +20,9 @@ func TestChatRoundTrip(t *testing.T) {
 			input := ChatRequest{petId: 12345, updateTime: 100, nType: 1, nAction: 2, msg: "meow"}
 			output := ChatRequest{}
 			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
-			if output.PetId() != input.PetId() {
+			// GMS v48 and older drop the leading petId (single-pet); only assert it
+			// on versions that carry the id (GMS v61+ or JMS).
+			if (v.Region != "GMS" || v.MajorVersion >= 61) && output.PetId() != input.PetId() {
 				t.Errorf("petId: got %v, want %v", output.PetId(), input.PetId())
 			}
 			if output.NType() != input.NType() {
@@ -135,5 +137,28 @@ func TestChatBytesV79(t *testing.T) {
 	}
 	if !bytes.Equal(got, want) {
 		t.Fatalf("v79 = % X, want % X", got, want)
+	}
+}
+
+// TestChatBytesV48 pins the v48 PET_CHAT (sb op 114 / 0x72) send. IDA
+// GMS_v48_1_DEVM.exe @port 13337: CPet::DoAction@0x58e90b builds COutPacket(114),
+// Encode1(nType/a2)@0x58e91a, Encode1(nAction/v8)@0x58e92a, EncodeStr(msg)@0x58e94a
+// — NO leading EncodeBuffer(petId,8) (v48 single-pet), NO updateTime (GMS<95).
+// NB the gms_v48 registry note claimed a leading petId buffer; the send-site
+// decompile proves it absent (body-verified). v61 op139 carries petId.
+// packet-audit:verify packet=pet/serverbound/PetChatRequest version=gms_v48 ida=0x58e7a8
+func TestChatBytesV48(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 48, 1)
+	in := ChatRequest{petId: 0x0102030405060708, updateTime: 0x11223344, nType: 0x07, nAction: 0x09, msg: "Hi"}
+	got := in.Encode(nil, ctx)(nil)
+	want := []byte{
+		// NO petId on v48 (single-pet), NO updateTime (GMS<95)
+		0x07,       // nType Encode1@0x58e91a
+		0x09,       // nAction Encode1@0x58e92a
+		0x02, 0x00, // msg length EncodeStr@0x58e94a
+		0x48, 0x69, // "Hi"
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatalf("v48 = % X, want % X", got, want)
 	}
 }

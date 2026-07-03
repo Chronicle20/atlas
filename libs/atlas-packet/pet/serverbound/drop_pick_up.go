@@ -57,7 +57,9 @@ func (m DropPickUp) Encode(l logrus.FieldLogger, ctx context.Context) func(optio
 	t := tenant.MustFromContext(ctx)
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
-		w.WriteLong(m.petId)
+		if hasLeadingPetId(t) {
+			w.WriteLong(m.petId) // absent on GMS v48 (single-pet; @0x58edb0 leads with fieldKey)
+		}
 		w.WriteByte(m.fieldKey)
 		w.WriteInt(m.updateTime)
 		w.WriteInt16(m.x)
@@ -90,7 +92,9 @@ func (m DropPickUp) Encode(l logrus.FieldLogger, ctx context.Context) func(optio
 func (m *DropPickUp) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
-		m.petId = r.ReadUint64()
+		if hasLeadingPetId(t) {
+			m.petId = r.ReadUint64() // absent on GMS v48 (single-pet)
+		}
 		m.fieldKey = r.ReadByte()
 		m.updateTime = r.ReadUint32()
 		m.x = r.ReadInt16()

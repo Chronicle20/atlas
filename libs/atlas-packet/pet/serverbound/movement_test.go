@@ -100,3 +100,24 @@ func TestPetMovementOperationString(t *testing.T) {
 		t.Error("expected non-empty string")
 	}
 }
+
+// TestPetMovementBytesV48 pins the v48 MOVE_PET (sb op 113 / 0x71) send. IDA
+// GMS_v48_1_DEVM.exe @port 13337: sub_6E5BD6@0x6e5bff builds COutPacket(113)
+// then sub_5622DA (CMovePath::Flush) writes the raw movement blob — NO leading
+// EncodeBuffer(petId,8) (v48 single-pet; hasLeadingPetId(GMS,48)=false). Empty
+// model.Movement = StartX(2)+StartY(2)+count(1) = 5 zero bytes. v61 op138 carries petId.
+// packet-audit:verify packet=pet/serverbound/PetMovementRequest version=gms_v48 ida=0x6e5bd6
+func TestPetMovementBytesV48(t *testing.T) {
+	ctx := test.CreateContext("GMS", 48, 1)
+	p := MovementRequest{petId: 0x0102030405060708}
+	got := p.Encode(nil, ctx)(nil)
+	want := []byte{
+		// NO petId on v48 (single-pet)
+		0x00, 0x00, // movement StartX
+		0x00, 0x00, // movement StartY
+		0x00, // movement element count = 0
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatalf("v48 = % X, want % X", got, want)
+	}
+}

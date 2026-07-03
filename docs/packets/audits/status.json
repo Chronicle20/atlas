@@ -1,7 +1,7 @@
 {
-  "toolSha": "b2d5c47a9fd2253fa5d1165a913a01170d583ccd",
+  "toolSha": "6e596b977913c63eca8d00a3a842712428f32f17",
   "exportHashes": {
-    "gms_v48": "91176cf490eded97f911e791fe227ca8831d5c4b74d1bba7a353f10f1b1c73ac",
+    "gms_v48": "468d1dfcb68defa5600c2be1d3aff172b5de28747c465fdb84ebbd09e412018e",
     "gms_v61": "8023cfe3b5868d7a19f2067627f84e8da849588dfe87e86f48eb721225ac717b",
     "gms_v72": "a0ac2be6578395455f491976bcb11aa27e2e57376b46ee8816b90324bad60c02",
     "gms_v79": "370d6b720b633c12c71d40340f3952000705c4bddb98f87179e7193d112d210c",
@@ -16869,8 +16869,7 @@
       ],
       "cells": {
         "gms_v48": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 113
         },
         "gms_v61": {
@@ -16918,8 +16917,7 @@
       ],
       "cells": {
         "gms_v48": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 114
         },
         "gms_v61": {
@@ -17016,8 +17014,7 @@
       ],
       "cells": {
         "gms_v48": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 115
         },
         "gms_v61": {
@@ -17312,8 +17309,7 @@
       ],
       "cells": {
         "gms_v48": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 116
         },
         "gms_v61": {
@@ -48086,110 +48082,6 @@
     },
     {
       "kind": "sub-struct",
-      "packet": "pet/serverbound/PetCommand",
-      "tier1": true,
-      "cells": {
-        "gms_v48": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "sub-struct",
-      "packet": "pet/serverbound/PetDropPickUp",
-      "tier1": true,
-      "cells": {
-        "gms_v48": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "sub-struct",
       "packet": "pet/serverbound/PetFood",
       "tier1": true,
       "cells": {
@@ -48201,58 +48093,6 @@
         "gms_v61": {
           "state": "incomplete",
           "note": "tier-1 without fixture; verdict ❌",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "sub-struct",
-      "packet": "pet/serverbound/PetMovementRequest",
-      "tier1": true,
-      "cells": {
-        "gms_v48": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "incomplete",
-          "note": "no audit report",
           "opcode": -1
         },
         "gms_v72": {

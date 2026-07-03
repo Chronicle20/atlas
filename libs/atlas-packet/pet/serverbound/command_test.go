@@ -19,7 +19,9 @@ func TestCommandRoundTrip(t *testing.T) {
 			input := Command{petId: 12345, byName: true, command: 3}
 			output := Command{}
 			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
-			if output.PetId() != input.PetId() {
+			// GMS v48 and older drop the leading petId (single-pet); only assert it
+			// on versions that carry the id (GMS v61+ or JMS).
+			if (v.Region != "GMS" || v.MajorVersion >= 61) && output.PetId() != input.PetId() {
 				t.Errorf("petId: got %v, want %v", output.PetId(), input.PetId())
 			}
 			if output.ByName() != input.ByName() {
@@ -83,5 +85,24 @@ func TestCommandBytesV79(t *testing.T) {
 	}
 	if !bytes.Equal(got, want) {
 		t.Fatalf("v79 = % X, want % X", got, want)
+	}
+}
+
+// TestCommandBytesV48 pins the v48 PET_COMMAND (sb op 115 / 0x73) send. IDA
+// GMS_v48_1_DEVM.exe @port 13337: CPet::ParseCommand sub_58DF8A@0x58df8a send
+// block builds COutPacket(115)@0x58e1b8, Encode1(byName/v29)@0x58e1c7,
+// Encode1(command/v32)@0x58e1d2 — NO leading EncodeBuffer(petId,8) (v48 predates
+// multi-pet; hasLeadingPetId(GMS,48)=false). v61 op140 carries the petId.
+// packet-audit:verify packet=pet/serverbound/PetCommand version=gms_v48 ida=0x58df8a
+func TestCommandBytesV48(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 48, 1)
+	got := Command{petId: 0x0102030405060708, byName: true, command: 0x09}.Encode(nil, ctx)(nil)
+	want := []byte{
+		// NO petId on v48 (single-pet)
+		0x01, // byName Encode1@0x58e1c7
+		0x09, // command Encode1@0x58e1d2
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatalf("v48 = % X, want % X", got, want)
 	}
 }

@@ -53,7 +53,9 @@ func (m ChatRequest) Encode(l logrus.FieldLogger, ctx context.Context) func(opti
 	t := tenant.MustFromContext(ctx)
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
-		w.WriteLong(m.petId)
+		if hasLeadingPetId(t) {
+			w.WriteLong(m.petId) // absent on GMS v48 (single-pet; @0x58e90b leads with type)
+		}
 		// updateTime is GMS v95+ only: CPet::DoAction sends 5 encode calls in
 		// v95 vs 4 in v87 (no updateTime) — task-081 live-IDA. v84..v94 == v83
 		// here, which also satisfies task-083's off-by-one (v84..86 == v83).
@@ -70,7 +72,9 @@ func (m ChatRequest) Encode(l logrus.FieldLogger, ctx context.Context) func(opti
 func (m *ChatRequest) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
-		m.petId = r.ReadUint64()
+		if hasLeadingPetId(t) {
+			m.petId = r.ReadUint64() // absent on GMS v48 (single-pet)
+		}
 		// updateTime is GMS v95+ only: CPet::DoAction sends 5 encode calls in
 		// v95 vs 4 in v87 (no updateTime) — task-081 live-IDA. v84..v94 == v83
 		// here, which also satisfies task-083's off-by-one (v84..86 == v83).

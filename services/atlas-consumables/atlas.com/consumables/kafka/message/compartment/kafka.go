@@ -13,6 +13,7 @@ const (
 	CommandDestroy           = "DESTROY"
 	CommandCancelReservation = "CANCEL_RESERVATION"
 	CommandModifyEquipment   = "MODIFY_EQUIPMENT"
+	CommandCreateAsset       = "CREATE_ASSET"
 )
 
 type Command[E any] struct {
@@ -48,13 +49,31 @@ type CancelReservationCommandBody struct {
 	Slot          int16     `json:"slot"`
 }
 
+type CreateAssetCommandBody struct {
+	TemplateId      uint32    `json:"templateId"`
+	Quantity        uint32    `json:"quantity"`
+	Expiration      time.Time `json:"expiration"`
+	OwnerId         uint32    `json:"ownerId"`
+	Flag            uint16    `json:"flag"`
+	Rechargeable    uint64    `json:"rechargeable"`
+	UseAverageStats bool      `json:"useAverageStats,omitempty"`
+}
+
 const (
 	EnvEventTopicStatus                 = "EVENT_TOPIC_COMPARTMENT_STATUS"
 	StatusEventTypeReserved             = "RESERVED"
 	StatusEventTypeReservationCancelled = "RESERVATION_CANCELLED"
+
+	StatusEventTypeCreated        = "CREATED"
+	StatusEventTypeCreationFailed = "CREATION_FAILED"
+
+	CreateAssetTemplateNotFound = "CREATE_ASSET_TEMPLATE_NOT_FOUND"
+	CreateAssetInventoryFull    = "CREATE_ASSET_INVENTORY_FULL"
+	CreateAssetUnknownError     = "CREATE_ASSET_UNKNOWN_ERROR"
 )
 
 type StatusEvent[E any] struct {
+	TransactionId uuid.UUID `json:"transactionId"`
 	CharacterId   uint32    `json:"characterId"`
 	CompartmentId uuid.UUID `json:"compartmentId"`
 	Type          string    `json:"type"`
@@ -71,6 +90,16 @@ type ReservationCancelledEventBody struct {
 	ItemId   uint32 `json:"itemId"`
 	Slot     int16  `json:"slot"`
 	Quantity uint32 `json:"quantity"`
+}
+
+// CreateResultEventBody is a union over the CREATED ({type,capacity}) and
+// CREATION_FAILED ({errorCode,message}) event bodies so a single once-handler
+// can await either; branch on StatusEvent.Type.
+type CreateResultEventBody struct {
+	Type      byte   `json:"type"`
+	Capacity  uint32 `json:"capacity"`
+	ErrorCode string `json:"errorCode"`
+	Message   string `json:"message"`
 }
 
 type ModifyEquipmentCommandBody struct {

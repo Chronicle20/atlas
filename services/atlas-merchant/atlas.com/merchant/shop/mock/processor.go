@@ -23,7 +23,7 @@ type ProcessorMock struct {
 	GetByFieldFunc             func(worldId world.Id, channelId channel.Id, mapId uint32, instanceId uuid.UUID) ([]shop.Model, error)
 	GetAllOpenFunc             func() ([]shop.Model, error)
 	GetListingCountsFunc       func(shopIds []uuid.UUID) (map[uuid.UUID]int64, error)
-	SearchListingsByItemIdFunc func(itemId uint32) ([]shop.ListingSearchResult, error)
+	SearchListingsByItemIdFunc func(criteria shop.ListingSearchCriteria) ([]shop.ListingSearchResult, error)
 	GetListingsFunc            func(shopId uuid.UUID) ([]listing.Model, error)
 	CreateShopFunc             func(characterId uint32, shopType shop.ShopType, title string, worldId world.Id, channelId channel.Id, mapId uint32, instanceId uuid.UUID, x int16, y int16, permitItemId uint32) (shop.Model, error)
 	OpenShopFunc               func(shopId uuid.UUID, characterId uint32) error
@@ -106,9 +106,9 @@ func (m *ProcessorMock) GetListingCounts(shopIds []uuid.UUID) (map[uuid.UUID]int
 	return make(map[uuid.UUID]int64), nil
 }
 
-func (m *ProcessorMock) SearchListingsByItemId(itemId uint32) ([]shop.ListingSearchResult, error) {
+func (m *ProcessorMock) SearchListingsByItemId(criteria shop.ListingSearchCriteria) ([]shop.ListingSearchResult, error) {
 	if m.SearchListingsByItemIdFunc != nil {
-		return m.SearchListingsByItemIdFunc(itemId)
+		return m.SearchListingsByItemIdFunc(criteria)
 	}
 	return []shop.ListingSearchResult{}, nil
 }

@@ -33,6 +33,10 @@ import (
 const MaxListings = 16
 const MaxVisitors = 3
 
+// MaxSearchResults caps the shop-scanner search (client renders at most
+// 200 rows — SP_3630/3631, task-127 design §1.4).
+const MaxSearchResults = 200
+
 type Processor interface {
 	WithTransaction(tx *gorm.DB) Processor
 	GetById(id uuid.UUID) (Model, error)
@@ -41,7 +45,7 @@ type Processor interface {
 	GetByField(worldId world.Id, channelId channel.Id, mapId uint32, instanceId uuid.UUID) ([]Model, error)
 	GetAllOpen() ([]Model, error)
 	GetListingCounts(shopIds []uuid.UUID) (map[uuid.UUID]int64, error)
-	SearchListingsByItemId(itemId uint32) ([]ListingSearchResult, error)
+	SearchListingsByItemId(criteria ListingSearchCriteria) ([]ListingSearchResult, error)
 	GetListings(shopId uuid.UUID) ([]listing.Model, error)
 	CreateShop(characterId uint32, shopType ShopType, title string, worldId world.Id, channelId channel.Id, mapId uint32, instanceId uuid.UUID, x int16, y int16, permitItemId uint32) (Model, error)
 	OpenShop(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32) error
@@ -89,13 +93,24 @@ type PurchaseResult struct {
 	ShopClosed       bool
 }
 
+// ListingSearchCriteria narrows a listing search. WorldId nil means
+// tenant-wide (pre-task-127 behavior); the owl path always sets it.
+type ListingSearchCriteria struct {
+	ItemId     uint32
+	WorldId    *world.Id
+	Descending bool
+}
+
 type ListingSearchResult struct {
-	Listing   listing.Model
-	ShopId    uuid.UUID
-	Title     string
-	WorldId   world.Id
-	ChannelId channel.Id
-	MapId     uint32
+	Listing     listing.Model
+	ShopId      uuid.UUID
+	Title       string
+	WorldId     world.Id
+	ChannelId   channel.Id
+	MapId       uint32
+	ShopOwnerId uint32
+	ShopType    ShopType
+	State       State
 }
 
 var ErrNotFound = errors.New("not found")
@@ -162,8 +177,8 @@ func (p *ProcessorImpl) GetListingCounts(shopIds []uuid.UUID) (map[uuid.UUID]int
 	return listing.NewProcessor(p.db.WithContext(p.ctx)).CountByShopIds(shopIds)
 }
 
-func (p *ProcessorImpl) SearchListingsByItemId(itemId uint32) ([]ListingSearchResult, error) {
-	return searchListingsByItemId(itemId)(p.db.WithContext(p.ctx))()
+func (p *ProcessorImpl) SearchListingsByItemId(criteria ListingSearchCriteria) ([]ListingSearchResult, error) {
+	return searchListingsByItemId(p.t.Id(), criteria)(p.db.WithContext(p.ctx))()
 }
 
 func (p *ProcessorImpl) GetListings(shopId uuid.UUID) ([]listing.Model, error) {

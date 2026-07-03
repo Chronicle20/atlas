@@ -37,6 +37,7 @@ Character shops close automatically on owner disconnect. Hired merchants operate
 | GET | `/merchants/{shopId}` | Get shop details with listings |
 | GET | `/merchants/{shopId}/relationships/listings` | Get shop listings |
 | GET | `/characters/{characterId}/merchants` | Get shops owned by character |
+| GET | `/merchants/search/listings?itemId={id}&worldId={id}&order=asc\|desc` | Search Open/Maintenance shop listings for an item. `itemId` is required; `worldId` and `order` are optional (omitted `worldId` searches tenant-wide; `order` defaults to `asc`). Results are capped at 200 rows and include `ownerId`, `shopType`, `state`, and `itemSnapshot` per listing. |
 
 ## Kafka Commands Consumed
 

@@ -86,21 +86,33 @@ func getExpired() database.EntityProvider[[]Entity] {
 
 type listingSearchRow struct {
 	listing.Entity
-	ShopTitle     string     `gorm:"column:shop_title"`
-	ShopWorldId   world.Id   `gorm:"column:shop_world_id"`
-	ShopChannelId channel.Id `gorm:"column:shop_channel_id"`
-	ShopMapId     uint32     `gorm:"column:shop_map_id"`
+	ShopTitle       string     `gorm:"column:shop_title"`
+	ShopWorldId     world.Id   `gorm:"column:shop_world_id"`
+	ShopChannelId   channel.Id `gorm:"column:shop_channel_id"`
+	ShopMapId       uint32     `gorm:"column:shop_map_id"`
+	ShopCharacterId uint32     `gorm:"column:shop_character_id"`
+	ShopShopType    byte       `gorm:"column:shop_shop_type"`
+	ShopState       byte       `gorm:"column:shop_state"`
 }
 
-func searchListingsByItemId(itemId uint32) database.EntityProvider[[]ListingSearchResult] {
+// searchListingsByItemId joins listings to shops for the shop-scanner search.
+// The .Table() form bypasses the automatic tenant callback (no bound schema),
+// so tenant_id predicates are explicit here.
+func searchListingsByItemId(tenantId uuid.UUID, criteria ListingSearchCriteria) database.EntityProvider[[]ListingSearchResult] {
 	return func(db *gorm.DB) model.Provider[[]ListingSearchResult] {
-		var rows []listingSearchRow
-		err := db.Table("listings").
-			Select("listings.*, shops.title AS shop_title, shops.world_id AS shop_world_id, shops.channel_id AS shop_channel_id, shops.map_id AS shop_map_id").
+		order := "listings.price_per_bundle ASC"
+		if criteria.Descending {
+			order = "listings.price_per_bundle DESC"
+		}
+		q := db.Table("listings").
+			Select("listings.*, shops.title AS shop_title, shops.world_id AS shop_world_id, shops.channel_id AS shop_channel_id, shops.map_id AS shop_map_id, shops.character_id AS shop_character_id, shops.shop_type AS shop_shop_type, shops.state AS shop_state").
 			Joins("JOIN shops ON shops.id = listings.shop_id").
-			Where("listings.item_id = ? AND shops.state IN (?, ?)", itemId, byte(Open), byte(Maintenance)).
-			Order("listings.price_per_bundle ASC").
-			Find(&rows).Error
+			Where("listings.item_id = ? AND listings.tenant_id = ? AND shops.tenant_id = ? AND shops.state IN (?, ?)", criteria.ItemId, tenantId, tenantId, byte(Open), byte(Maintenance))
+		if criteria.WorldId != nil {
+			q = q.Where("shops.world_id = ?", *criteria.WorldId)
+		}
+		var rows []listingSearchRow
+		err := q.Order(order).Limit(MaxSearchResults).Find(&rows).Error
 		if err != nil {
 			return model.ErrorProvider[[]ListingSearchResult](err)
 		}
@@ -112,12 +124,15 @@ func searchListingsByItemId(itemId uint32) database.EntityProvider[[]ListingSear
 				return model.ErrorProvider[[]ListingSearchResult](err)
 			}
 			results = append(results, ListingSearchResult{
-				Listing:   lm,
-				ShopId:    r.Entity.ShopId,
-				Title:     r.ShopTitle,
-				WorldId:   r.ShopWorldId,
-				ChannelId: r.ShopChannelId,
-				MapId:     r.ShopMapId,
+				Listing:     lm,
+				ShopId:      r.Entity.ShopId,
+				Title:       r.ShopTitle,
+				WorldId:     r.ShopWorldId,
+				ChannelId:   r.ShopChannelId,
+				MapId:       r.ShopMapId,
+				ShopOwnerId: r.ShopCharacterId,
+				ShopType:    ShopType(r.ShopShopType),
+				State:       State(r.ShopState),
 			})
 		}
 		return model.FixedProvider(results)

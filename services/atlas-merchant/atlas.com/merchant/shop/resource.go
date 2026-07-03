@@ -166,8 +166,20 @@ func handleSearchListings(db *gorm.DB) rest.GetHandler {
 				return
 			}
 
+			criteria := ListingSearchCriteria{ItemId: uint32(v)}
+			if ws := r.URL.Query().Get("worldId"); ws != "" {
+				wv, err := strconv.ParseUint(ws, 10, 8)
+				if err != nil {
+					w.WriteHeader(http.StatusBadRequest)
+					return
+				}
+				wid := world.Id(wv)
+				criteria.WorldId = &wid
+			}
+			criteria.Descending = r.URL.Query().Get("order") == "desc"
+
 			p := NewProcessor(d.Logger(), d.Context(), db)
-			results, err := p.SearchListingsByItemId(uint32(v))
+			results, err := p.SearchListingsByItemId(criteria)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Searching listings by item.")
 				server.WriteErrorResponse(d.Logger())(w)(err)

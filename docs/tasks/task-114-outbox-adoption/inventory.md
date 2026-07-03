@@ -2034,3 +2034,98 @@ a saga command that accompanies one), so none of the failure-path pitfalls
 - `data/processor.go:287` (`emitDataUpdated`, called from `:195`) — `DATA_UPDATED` event on `EnvEventTopic` fired once AFTER a whole worker run completes across many independent transactions; TTL-guarded; no single transaction could make it atomic. Aggregate/post-worker emit → left direct.
 
 **Notes:** Zero tx-coupled emit sites; no code change (no drainer, no outbox migration registration). design §7 anticipated `EnqueueBuffer` use here, but the authoritative FR-3.1 sweep (and this re-verification, 2026-07-03) found no qualifying tx-coupled site — both producer calls are non-transactional. Exactly the 2 `producer.ProviderImpl` sites expected; nothing else.
+
+## atlas-monster-book
+
+Module: `services/atlas-monster-book/atlas.com/monster-book`. Missed by the
+original fleet sweep (0 mentions in context.md); added under Task 25 fix B
+because `tools/outboxguard` flagged an in-tx direct emit here.
+
+**Migrated:**
+- `card/processor.go:99` (`AddAndEmit`) — was a bare `p.db`-scoped write
+  (`upsertCard` via `Add`) followed by a direct `message.Emit(producer.ProviderImpl(...))`
+  of the `CARD_ADDED` status event with no transaction wrapping either. Wrapped in
+  `database.ExecuteTransaction(p.db.WithContext(p.ctx), ...)`, threaded `tx` into
+  `p.WithTransaction(tx).Add(buf)(...)`, and switched the emit provider to
+  `outbox.EmitProvider(p.l, p.ctx, tx)` (Pattern A). Not called anywhere in
+  production code today (dead-but-public interface method) — migrated anyway
+  per D7 since it wraps a bare `Create`/`Update` write with a state-asserting
+  emit.
+- `collection/processor.go:236` (`SetCoverAndEmit`) — same shape: bare
+  `p.db`-scoped `setCover` write plus a direct emit of `COVER_CHANGED`, no
+  transaction. Ownership/validation checks stay before the transaction (they
+  do no writes); wrapped the write+emit in
+  `database.ExecuteTransaction(p.db.WithContext(p.ctx), ...)` and switched to
+  `outbox.EmitProvider(p.l, p.ctx, tx)` (Pattern A). Called from both the REST
+  PATCH handler (`character/resource.go:76`) and the `SET_COVER` Kafka command
+  handler (`kafka/consumer/monsterbook/consumer.go:86`).
+- `kafka/consumer/monsterbook/consumer.go:57` (`handleCardPickedUp`) — the
+  brief's flagged site: `db.WithContext(ctx).Transaction(func(tx){ return
+  message.Emit(producer.ProviderImpl(l)(ctx))(...) })`, an IN-TX DIRECT emit
+  (outboxguard's exact target — `producer.ProviderImpl` lexically inside a
+  `.Transaction(` closure). Switched the transaction entry point to
+  `database.ExecuteTransaction` and the emit provider to
+  `outbox.EmitProvider(l, ctx, tx)` (Pattern C — `cp`/`colp` were already
+  constructed from `tx`, so only the tx-entry-point and emit-provider swap
+  were needed). This buffers `CARD_ADDED` (from `card.Add`) plus, when the
+  card was newly inserted, `STATS_CHANGED` + `EXPERIENCE_CHANGED` (from
+  `collection.RecomputeAndEmit`) atomically with the card/collection writes.
+
+**Left direct:**
+- `kafka/consumer/character/consumer.go:49` (`handleStatusEventDeleted`) —
+  `db.WithContext(ctx).Transaction(...)` wraps only `cp.DeleteByCharacterId`
+  + `colp.DeleteByCharacterId` (cascading delete on character deletion); no
+  `message.Emit`/`producer.ProviderImpl` call exists anywhere in this
+  handler or the methods it calls. No event to migrate — left as a plain
+  gorm transaction.
+- `collection/processor.go:142` (`RecomputeAndEmit`) — a buffer-taking
+  method (like `card.Add`), not an `AndEmit` that calls `message.Emit`
+  itself; it writes `upsertStats` and `mb.Put`s `STATS_CHANGED` +
+  `EXPERIENCE_CHANGED` into the caller-supplied buffer. Its only call site
+  (`kafka/consumer/monsterbook/consumer.go:69`) is inside the migrated
+  Pattern C transaction above, so it inherits the outbox emit for free; no
+  changes needed to the method itself beyond `WithTransaction` already
+  rebinding its `cp` sub-processor field to `tx`.
+
+**Notes:**
+- Enumeration ran the full recipe grep set (`message.Emit`,
+  `producer.ProviderImpl`, `database.ExecuteTransaction`/`.Transaction`,
+  `.GetAll()`/`NewBuffer()`/`AndEmit(`) across the module; the 4 sites above
+  (3 migrated + 1 no-emit-cascade) are the complete set. No hand-rolled
+  buffer-flush loop over a struct-stored provider field exists in this
+  service.
+- `collection.ProcessorImpl.WithTransaction` already rebinds its `cp`
+  (`card.Processor`) sub-processor field to the incoming `tx`
+  (`cp: p.cp.WithTransaction(tx)`); its other sub-processor field `dp`
+  (`consumable.Processor`, an atlas-data REST client with no local DB) is
+  correctly left unchanged — it takes no `db` argument at all.
+- **Test fix required**: `kafka/consumer/monsterbook/consumer_test.go`'s
+  `TestHandleCardPickedUpInsertsAndRecomputes` exercises the full migrated
+  `handleCardPickedUp` path against an in-memory sqlite db that was migrated
+  for `card`/`collection` but not `outbox`. Pre-fix, the migrated code
+  attempted `tx.Create(&outbox.Entity{})` against a nonexistent
+  `outbox_entries` table, which failed with `no such table: outbox_entries`
+  — but the test still reported `PASS`, because (a) `ExecuteTransaction` is
+  currently a no-op (the known cross-cutting caveat) so the card/collection
+  writes had already landed directly on `db` before the outbox insert
+  failed, and (b) the handler only logs the returned error
+  (`l.WithError(err).Errorf(...)`) rather than surfacing it to the test.
+  This would have been a silently-broken assertion masquerading as a pass.
+  Fixed by adding `outbox.Migration(db)` to the test's setup and asserting
+  `db.Model(&outbox.Entity{}).Count(&count)` == 3 (`CARD_ADDED` +
+  `STATS_CHANGED` + `EXPERIENCE_CHANGED`) — the test now genuinely proves
+  the atomic-enqueue contract instead of masking a swallowed error. Also
+  added two new tests exercising the previously-untested `AddAndEmit` and
+  `SetCoverAndEmit` success paths directly
+  (`card/processor_test.go:TestProcessorAddAndEmitEnqueuesOutboxRow`,
+  `collection/processor_test.go:TestSetCoverAndEmitEnqueuesOutboxRow`), each
+  asserting exactly 1 outbox row landed for the respective status event.
+- Wiring: `service.GetTeardownManager()` (var `tdm`) matches the recipe
+  template exactly (same pattern as atlas-configurations); `../../../../`
+  replace depth confirmed against sibling `atlas-database` replace line;
+  `go mod tidy` added `atlas-outbox` cleanly with no other dependency
+  churn beyond its own transitive deps (postgres notify listener,
+  datatypes, mysql driver pulled in transitively by atlas-outbox/go.mod).
+- `go test -race ./...`, `go vet ./...`, `go build ./...` all clean;
+  `docker buildx bake atlas-monster-book` succeeded; `tools/outbox-guard.sh`
+  exits 0 across the whole repo (including this module) after this change.

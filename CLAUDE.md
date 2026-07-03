@@ -25,6 +25,10 @@ For large refactors expect multiple fix-and-rebuild cycles. Don't shortcut the b
 5. **`tools/redis-key-guard.sh` clean from the repo root.** Bans keyed Redis
    commands on the raw `go-redis` client outside `libs/atlas-redis` (FR-1.5,
    task-045). Runs alongside `go vet ./...`.
+6. **`tools/goroutine-guard.sh` clean from the repo root.** Bans bare `go`
+   statements outside `libs/atlas-routine` and justified
+   `//goroutine-guard:allow` sites (RR-6, task-115) — every goroutine must be
+   spawned via `routine.Go`. Runs alongside `go vet ./...`.
 
 ## Code Patterns
 

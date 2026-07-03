@@ -3,70 +3,65 @@ package _map
 type Id uint32
 
 const (
-	MapleRoadEntranceMushroomTownTrainingCamp1Id   = Id(0)
-	MapleRoadUpperLevelOfTheTrainingCampId         = Id(1)
-	MapleRoadLowerLevelOfTheTrainingCampId         = Id(2)
-	MapleRoadEntranceMushroomTownTrainingCamp2Id   = Id(3)
-	MapleRoadMushroomTownId                        = Id(10000)
-	MapleRoadSnailGardenId                         = Id(20000)
-	MapleRoadMushroomTownTownstreet1Id             = Id(20001)
-	MapleRoadSnailFieldOfFlowersId                 = Id(30000)
-	MapleRoadMushroomTownTownstreet2Id             = Id(30001)
-	MapleRoadInASmallForestId                      = Id(40000)
-	MapleRoadSnailHuntingGround2Id                 = Id(40001)
-	MapleRoadSnailHuntingGround3Id                 = Id(40002)
-	MapleRoadDangerousForestId                     = Id(50000)
-	MapleRoadTheFieldWestOfSouthperryId            = Id(50001)
-	MapleRoadSouthperryOldId                       = Id(60000) // old maple island
-	MapleRoadSouthperryArmorStoreOldId             = Id(60001) // old maple island
-	RainbowStreetAmherstId                         = Id(1000000)
-	RainbowStreetAmherstWeaponStoreOldId           = Id(1000001) // old maple island
-	RainbowStreetAmherstTownstreetOldId            = Id(1000002) // old maple island
-	RainbowStreetAmherstDepartmentStoreOldId       = Id(1000003) // old maple island
-	RainbowStreetSnailGardenId                     = Id(1000004)
-	RainbowStreetHuntingGroundMiddleOfTheForest1Id = Id(1000005)
-	RainbowStreetHuntingGroundMiddleOfTheForest2Id = Id(1000006)
-	MapleRoadEntranceToAdventurerTrainingCenterId  = Id(1010000)
-	RainbowStreetAmherstWeaponStoreNewId           = Id(1010001) // new maple island
-	RainbowStreetAmherstTownstreetNewId            = Id(1010002) // new maple island
-	RainbowStreetAmherstDepartmentStoreNewId       = Id(1010003) // new maple island
-	RainbowStreetSnailFieldOfFlowersId             = Id(1010004)
-	MapleRoadAdventurerTrainingCenter1Id           = Id(1010100)
-	MapleRoadAdventurerTrainingCenter2Id           = Id(1010200)
-	MapleRoadAdventurerTrainingCenter3Id           = Id(1010300)
-	MapleRoadAdventurerTrainingCenter4Id           = Id(1010400)
-	MapleRoadSplitRoadOfDestinyId                  = Id(1020000)
-	RainbowStreetTomatoFieldId                     = Id(1020001)
-	MapleRoadSouthperryNewId                       = Id(2000000) // new maple island
-	MapleRoadSouthperryArmorStoreNewId             = Id(2000001) // new maple island
-	VictoriaRoadHenesysId                          = Id(100000000)
-	VictoriaRoadHenesysTownstreetId                = Id(100000001)
-	HiddenStreetAnEmptyHouseId                     = Id(100000002)
-	HiddenStreetPigParkId                          = Id(100000003)
-	HiddenStreetPigParkIiId                        = Id(100000004)
-	HiddenStreetSomeoneElsesHouseId                = Id(100000005)
-	HiddenStreetTheRestingSpotPigParkId            = Id(100000006)
-	VictoriaRoadHenesysMarketId                    = Id(100000100)
-	VictoriaRoadHenesysWeaponStoreId               = Id(100000101)
-	VictoriaRoadHenesysDepartmentStoreId           = Id(100000102)
-	VictoriaRoadHenesysPlasticSurgeryId            = Id(100000103)
-	VictoriaRoadHenesysHairSalonId                 = Id(100000104)
-	VictoriaRoadHenesysSkinCareId                  = Id(100000105)
-	VictoriaRoadHenesysFreeMarketEntranceId        = Id(100000110)
-	VictoriaRoadHenesysFreeMarket1Id               = Id(100000111)
-	VictoriaRoadHenesysFreeMarket2Id               = Id(100000112)
-	VictoriaRoadHenesysFreeMarket3Id               = Id(100000113)
-	VictoriaRoadHenesysFreeMarket4Id               = Id(100000114)
-	VictoriaRoadHenesysFreeMarket5Id               = Id(100000115)
-	VictoriaRoadHenesysFreeMarket6Id               = Id(100000116)
-	VictoriaRoadHenesysFreeMarket7Id               = Id(100000117)
-	VictoriaRoadHenesysFreeMarket8Id               = Id(100000118)
-	VictoriaRoadHenesysFreeMarket9Id               = Id(100000119)
-	// Free Market interior maps (entrance + rooms 1-22). Range verified against
-	// RunShopScanner in GMS v83 (0xa0a2dc) and v95 (0x9deb50) — the client
-	// hard-blocks the shop scanner outside this range (task-127).
-	FreeMarketEntranceId                                   = Id(910000000)
-	FreeMarketRoomLastId                                   = Id(910000022)
+	MapleRoadEntranceMushroomTownTrainingCamp1Id           = Id(0)
+	MapleRoadUpperLevelOfTheTrainingCampId                 = Id(1)
+	MapleRoadLowerLevelOfTheTrainingCampId                 = Id(2)
+	MapleRoadEntranceMushroomTownTrainingCamp2Id           = Id(3)
+	MapleRoadMushroomTownId                                = Id(10000)
+	MapleRoadSnailGardenId                                 = Id(20000)
+	MapleRoadMushroomTownTownstreet1Id                     = Id(20001)
+	MapleRoadSnailFieldOfFlowersId                         = Id(30000)
+	MapleRoadMushroomTownTownstreet2Id                     = Id(30001)
+	MapleRoadInASmallForestId                              = Id(40000)
+	MapleRoadSnailHuntingGround2Id                         = Id(40001)
+	MapleRoadSnailHuntingGround3Id                         = Id(40002)
+	MapleRoadDangerousForestId                             = Id(50000)
+	MapleRoadTheFieldWestOfSouthperryId                    = Id(50001)
+	MapleRoadSouthperryOldId                               = Id(60000) // old maple island
+	MapleRoadSouthperryArmorStoreOldId                     = Id(60001) // old maple island
+	RainbowStreetAmherstId                                 = Id(1000000)
+	RainbowStreetAmherstWeaponStoreOldId                   = Id(1000001) // old maple island
+	RainbowStreetAmherstTownstreetOldId                    = Id(1000002) // old maple island
+	RainbowStreetAmherstDepartmentStoreOldId               = Id(1000003) // old maple island
+	RainbowStreetSnailGardenId                             = Id(1000004)
+	RainbowStreetHuntingGroundMiddleOfTheForest1Id         = Id(1000005)
+	RainbowStreetHuntingGroundMiddleOfTheForest2Id         = Id(1000006)
+	MapleRoadEntranceToAdventurerTrainingCenterId          = Id(1010000)
+	RainbowStreetAmherstWeaponStoreNewId                   = Id(1010001) // new maple island
+	RainbowStreetAmherstTownstreetNewId                    = Id(1010002) // new maple island
+	RainbowStreetAmherstDepartmentStoreNewId               = Id(1010003) // new maple island
+	RainbowStreetSnailFieldOfFlowersId                     = Id(1010004)
+	MapleRoadAdventurerTrainingCenter1Id                   = Id(1010100)
+	MapleRoadAdventurerTrainingCenter2Id                   = Id(1010200)
+	MapleRoadAdventurerTrainingCenter3Id                   = Id(1010300)
+	MapleRoadAdventurerTrainingCenter4Id                   = Id(1010400)
+	MapleRoadSplitRoadOfDestinyId                          = Id(1020000)
+	RainbowStreetTomatoFieldId                             = Id(1020001)
+	MapleRoadSouthperryNewId                               = Id(2000000) // new maple island
+	MapleRoadSouthperryArmorStoreNewId                     = Id(2000001) // new maple island
+	VictoriaRoadHenesysId                                  = Id(100000000)
+	VictoriaRoadHenesysTownstreetId                        = Id(100000001)
+	HiddenStreetAnEmptyHouseId                             = Id(100000002)
+	HiddenStreetPigParkId                                  = Id(100000003)
+	HiddenStreetPigParkIiId                                = Id(100000004)
+	HiddenStreetSomeoneElsesHouseId                        = Id(100000005)
+	HiddenStreetTheRestingSpotPigParkId                    = Id(100000006)
+	VictoriaRoadHenesysMarketId                            = Id(100000100)
+	VictoriaRoadHenesysWeaponStoreId                       = Id(100000101)
+	VictoriaRoadHenesysDepartmentStoreId                   = Id(100000102)
+	VictoriaRoadHenesysPlasticSurgeryId                    = Id(100000103)
+	VictoriaRoadHenesysHairSalonId                         = Id(100000104)
+	VictoriaRoadHenesysSkinCareId                          = Id(100000105)
+	VictoriaRoadHenesysFreeMarketEntranceId                = Id(100000110)
+	VictoriaRoadHenesysFreeMarket1Id                       = Id(100000111)
+	VictoriaRoadHenesysFreeMarket2Id                       = Id(100000112)
+	VictoriaRoadHenesysFreeMarket3Id                       = Id(100000113)
+	VictoriaRoadHenesysFreeMarket4Id                       = Id(100000114)
+	VictoriaRoadHenesysFreeMarket5Id                       = Id(100000115)
+	VictoriaRoadHenesysFreeMarket6Id                       = Id(100000116)
+	VictoriaRoadHenesysFreeMarket7Id                       = Id(100000117)
+	VictoriaRoadHenesysFreeMarket8Id                       = Id(100000118)
+	VictoriaRoadHenesysFreeMarket9Id                       = Id(100000119)
 	VictoriaRoadHenesysParkId                              = Id(100000200)
 	VictoriaRoadBowmanInstructionalSchoolId                = Id(100000201)
 	VictoriaRoadPetWalkingRoadId                           = Id(100000202)
@@ -2270,4 +2265,12 @@ const (
 	SharenianReturningPathId                           = Id(990001100)
 	SharenianGuildUnionCampId                          = Id(990001101)
 	EmptyMapId                                         = Id(999999999)
+)
+
+// Free Market interior maps (entrance + rooms 1-22). Range verified against
+// RunShopScanner in GMS v83 (0xa0a2dc) and v95 (0x9deb50) — the client
+// hard-blocks the shop scanner outside this range (task-127).
+const (
+	FreeMarketEntranceId = Id(910000000)
+	FreeMarketRoomLastId = Id(910000022)
 )

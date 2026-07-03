@@ -76,10 +76,14 @@ func (p *ProcessorImpl) GetQuest(characterId uint32, questId uint32) model.Provi
 	}
 }
 
-// GetQuestsByCharacter returns all quests for a character
+// GetQuestsByCharacter returns all quests for a character. The upstream
+// atlas-quest list is now paginated (task-117); GetValidationContextProvider
+// (validation/processor.go) builds a complete questId->Model map for
+// validation checks, so this drains every page rather than fetching just
+// the first.
 func (p *ProcessorImpl) GetQuestsByCharacter(characterId uint32) model.Provider[[]Model] {
 	return func() ([]Model, error) {
-		questsProvider := requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByCharacter(characterId), Extract, model.Filters[Model]())
+		questsProvider := requests.DrainProvider[RestModel, Model](p.l, p.ctx)(byCharacterUrl(characterId), 250, Extract, model.Filters[Model]())
 		quests, err := questsProvider()
 		if err != nil {
 			p.l.WithError(err).Errorf("Failed to get quests for character %d", characterId)

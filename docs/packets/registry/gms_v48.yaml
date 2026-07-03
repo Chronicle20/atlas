@@ -1245,3 +1245,14 @@
   ida:
     address: 5871599
   note: 'BODY-VERIFIED send-site 0x5997ef: quest-op sender, this=CQuest entry (this[12]=questId u16, this[16]=npcId u32, this[20]=quest-state). COutPacket(85)+Encode1(action)+Encode2(questId)+Encode4(npcId)+Encode2(userX)+Encode2(userY)[+Encode4(answer) for action 2]. Multiple action arms: 1=complete-quest, 2=select-quest-item(+Enc4 selection), 4=start-quest, 5=(re)start. = v61 QUEST_ACTION (CQuest::StartQuest quest operation Enc1(action)+Enc2(questId)+Enc4(npcId)+...). v61 QUEST_ACTION=98. Quest accept/complete/item-select from NPC dialog + quest UI.'
+- op: USE_DOOR
+  direction: serverbound
+  opcode: 103
+  fname: sub_5E3082
+  fname_alts:
+  - CField::TryEnterTownPortal
+  - sub_4CB90A
+  provenance: ida-discovered
+  ida:
+    address: 6172802
+  note: 'BODY-VERIFIED send-site 0x5e3082 (own/field town-portal) + 0x4cb90a (party-member town-portal). Both hit-test the town-portal (door) rect (dword_80EBD4 build-rect + dword_80EC4C point-in-rect) then send COutPacket(103)+Encode4(townPortalOwnerCharId)+Encode1(enterFlag). sub_5E3082 walks the field door pool this[10] and sends Enc1(0) (own/field door, id=portal[2]); sub_4CB90A walks CWvsContext::GetPartyTownPortal and sends Enc1(1) (party door, id=owner char). = v61 USE_DOOR (CField::TryEnterTownPortal [Encode4(ownerId),Encode1(enter)]). v61 USE_DOOR=121. Mystic-door / town-portal enter -- playthrough-critical.'

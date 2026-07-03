@@ -28,3 +28,13 @@ func getByOwnerId(ownerId uint32) database.EntityProvider[[]Entity] {
 		return model.FixedProvider(results)
 	}
 }
+
+// getByOwnerIdPaged backs the REST list handler only (GET
+// /characters/{characterId}/pets, task-117). getByOwnerId above stays
+// unpaged for the internal business-logic callers (spawn/despawn/hunger
+// evaluation) that genuinely need every pet a character owns.
+func getByOwnerIdPaged(ownerId uint32, page model.Page) database.EntityProvider[model.Paged[Entity]] {
+	return func(db *gorm.DB) model.Provider[model.Paged[Entity]] {
+		return database.PagedQuery[Entity](db.Where("owner_id = ?", ownerId).Preload("Excludes"), page)
+	}
+}

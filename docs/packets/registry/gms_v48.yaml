@@ -306,9 +306,9 @@
 - op: SET_TAMING_MOB_INFO
   direction: clientbound
   opcode: 40
-  fname: sub_72032B
+  fname: CWvsContext::OnSetTamingMobInfo
   fname_alts:
-  - CWvsContext::OnSetTamingMobInfo
+  - sub_72032B
   provenance: ida-discovered
   ida:
     address: 7471915
@@ -706,9 +706,9 @@
 - op: REMOVE_PLAYER_FROM_MAP
   direction: clientbound
   opcode: 101
-  fname: sub_6B2976
+  fname: CUserPool::OnUserLeaveField
   fname_alts:
-  - CUserPool::OnUserLeaveField
+  - sub_6B2976
   provenance: manual
   ida:
     address: 7022966

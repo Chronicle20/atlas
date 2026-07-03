@@ -10,8 +10,14 @@ import (
 )
 
 type Processor interface {
-	GetAll() model.Provider[[]Model]
+	GetAll(page model.Page) model.Provider[model.Paged[Model]]
+	// GetByTier returns every global item for the given tier, unpaged. Kept
+	// for reward.getMergedPool's semantic-all read (the reward-selection
+	// roulette needs the complete pool, not one page of it).
 	GetByTier(tier string) model.Provider[[]Model]
+	// GetByTierPaged is the resource-handler-facing paged sibling of
+	// GetByTier.
+	GetByTierPaged(tier string, page model.Page) model.Provider[model.Paged[Model]]
 	Create(m Model) error
 	Delete(id uint32) error
 	Count() (int64, *time.Time, error)
@@ -29,12 +35,18 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 
 var _ Processor = (*ProcessorImpl)(nil)
 
-func (p *ProcessorImpl) GetAll() model.Provider[[]Model] {
-	return model.SliceMap(modelFromEntity)(getAll()(p.db.WithContext(p.ctx)))()
+func (p *ProcessorImpl) GetAll(page model.Page) model.Provider[model.Paged[Model]] {
+	ep := getAllPagedProvider(page)(p.db.WithContext(p.ctx))
+	return model.MapPaged(modelFromEntity)(ep)(model.ParallelMap())
 }
 
 func (p *ProcessorImpl) GetByTier(tier string) model.Provider[[]Model] {
 	return model.SliceMap(modelFromEntity)(getByTier(tier)(p.db.WithContext(p.ctx)))()
+}
+
+func (p *ProcessorImpl) GetByTierPaged(tier string, page model.Page) model.Provider[model.Paged[Model]] {
+	ep := getByTierPagedProvider(tier, page)(p.db.WithContext(p.ctx))
+	return model.MapPaged(modelFromEntity)(ep)(model.ParallelMap())
 }
 
 func (p *ProcessorImpl) Create(m Model) error {

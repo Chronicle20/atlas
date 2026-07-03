@@ -7,6 +7,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
@@ -32,13 +33,18 @@ func handleGetAllGlobalItems(d *rest.HandlerDependency, c *rest.HandlerContext) 
 	return func(w http.ResponseWriter, r *http.Request) {
 		tier := r.URL.Query().Get("tier")
 
-		var ms []Model
-		var err error
+		page, err := paginate.ParseParams(r.URL.Query(), paginate.DefaultPageSize, paginate.MaxPageSize)
+		if err != nil {
+			server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+			return
+		}
+
+		var paged model.Paged[Model]
 		p := NewProcessor(d.Logger(), d.Context(), d.DB())
 		if tier != "" {
-			ms, err = p.GetByTier(tier)()
+			paged, err = p.GetByTierPaged(tier, page)()
 		} else {
-			ms, err = p.GetAll()()
+			paged, err = p.GetAll(page)()
 		}
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Retrieving global items.")
@@ -46,7 +52,7 @@ func handleGetAllGlobalItems(d *rest.HandlerDependency, c *rest.HandlerContext) 
 			return
 		}
 
-		res, err := model.SliceMap(Transform)(model.FixedProvider(ms))(model.ParallelMap())()
+		res, err := model.SliceMap(Transform)(model.FixedProvider(paged.Items))(model.ParallelMap())()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Creating REST model.")
 			server.WriteErrorResponse(d.Logger())(w)(err)
@@ -55,7 +61,7 @@ func handleGetAllGlobalItems(d *rest.HandlerDependency, c *rest.HandlerContext) 
 
 		query := r.URL.Query()
 		queryParams := jsonapi.ParseQueryFields(&query)
-		server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+		server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res, paginate.EnvelopeFor(paged), r)
 	}
 }
 

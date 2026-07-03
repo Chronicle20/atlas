@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	atlasmodel "github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -257,13 +258,13 @@ func TestGachaponProcessorCRUD(t *testing.T) {
 		}
 
 		// Get all
-		all, err := processor.GetAll()()
+		paged, err := processor.GetAll(atlasmodel.Page{Number: 1, Size: 50})()
 		if err != nil {
 			t.Fatalf("Failed to get all gachapons: %v", err)
 		}
 
-		if len(all) < 2 {
-			t.Errorf("Expected at least 2 gachapons, got %d", len(all))
+		if len(paged.Items) < 2 {
+			t.Errorf("Expected at least 2 gachapons, got %d", len(paged.Items))
 		}
 	})
 

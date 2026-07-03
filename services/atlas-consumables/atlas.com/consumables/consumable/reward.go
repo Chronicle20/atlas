@@ -39,6 +39,32 @@ func rollReward(rewards []consumable3.RewardModel) (consumable3.RewardModel, err
 	return rewards[len(rewards)-1], nil
 }
 
+// validateRewardTable is the pre-reserve guard used by RequestItemReward. It
+// rejects an item that has no reward table or whose entries sum to zero
+// probability (nothing could ever be rolled).
+func validateRewardTable(rewards []consumable3.RewardModel) error {
+	if len(rewards) == 0 {
+		return errors.New("item has no reward table")
+	}
+	var total uint32
+	for _, r := range rewards {
+		total += r.Prob()
+	}
+	if total == 0 {
+		return errors.New("reward table has zero total probability")
+	}
+	return nil
+}
+
+// grantQuantity clamps a reward entry's count up to 1 (design §5.4): a count of
+// zero still grants a single item.
+func grantQuantity(count uint32) uint32 {
+	if count == 0 {
+		return 1
+	}
+	return count
+}
+
 // rewardExpiration converts a reward entry's period (MINUTES; design §2.3) to an
 // absolute expiration timestamp. period <= 0 (default -1) means no expiration.
 func rewardExpiration(period int32, now time.Time) time.Time {

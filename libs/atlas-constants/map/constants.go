@@ -62,13 +62,11 @@ const (
 	VictoriaRoadHenesysFreeMarket7Id               = Id(100000117)
 	VictoriaRoadHenesysFreeMarket8Id               = Id(100000118)
 	VictoriaRoadHenesysFreeMarket9Id               = Id(100000119)
-
 	// Free Market interior maps (entrance + rooms 1-22). Range verified against
 	// RunShopScanner in GMS v83 (0xa0a2dc) and v95 (0x9deb50) — the client
 	// hard-blocks the shop scanner outside this range (task-127).
-	FreeMarketEntranceId = Id(910000000)
-	FreeMarketRoomLastId = Id(910000022)
-
+	FreeMarketEntranceId                                   = Id(910000000)
+	FreeMarketRoomLastId                                   = Id(910000022)
 	VictoriaRoadHenesysParkId                              = Id(100000200)
 	VictoriaRoadBowmanInstructionalSchoolId                = Id(100000201)
 	VictoriaRoadPetWalkingRoadId                           = Id(100000202)

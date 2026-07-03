@@ -18,6 +18,7 @@ import (
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
+	cashpkt "github.com/Chronicle20/atlas/libs/atlas-packet/cash/clientbound"
 	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
 	petpkt "github.com/Chronicle20/atlas/libs/atlas-packet/pet/clientbound"
 	statpkt "github.com/Chronicle20/atlas/libs/atlas-packet/stat/clientbound"
@@ -48,6 +49,11 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 					return nil, err
 				}
 				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleVegaScrollConsumableEvent(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
 				return handles, nil
 			}
 		}
@@ -67,6 +73,23 @@ func handleErrorConsumableEvent(sc server.Model, wp writer.Producer) message.Han
 
 		if e.Body.Error == consumable2.ErrorTypePetCannotConsume {
 			err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(uint32(e.CharacterId), session.Announce(l)(ctx)(wp)(petpkt.PetCashFoodResultWriter)(petpkt.NewPetCashFoodResultError().Encode))
+			if err != nil {
+				l.WithError(err).Errorf("Unable to process error event for character [%d].", e.CharacterId)
+			}
+			return
+		}
+
+		if e.Body.Error == consumable2.ErrorTypeVegaInvalid {
+			// INVALID (0x42 on both verified versions) closes the dialog with
+			// the client's own "This item cannot be used." notice — required,
+			// since the dialog is excl-request-blocked after sending (design
+			// §2.3/§4.7); then enable-actions.
+			err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(uint32(e.CharacterId), func(s session.Model) error {
+				if err := session.Announce(l)(ctx)(wp)(cashpkt.VegaScrollWriter)(cashpkt.VegaScrollInvalidBody())(s); err != nil {
+					return err
+				}
+				return session.Announce(l)(ctx)(wp)(statpkt.StatChangedWriter)(statpkt.NewStatChanged(make([]statpkt.Update, 0), true).Encode)(s)
+			})
 			if err != nil {
 				l.WithError(err).Errorf("Unable to process error event for character [%d].", e.CharacterId)
 			}
@@ -96,6 +119,38 @@ func handleScrollConsumableEvent(sc server.Model, wp writer.Producer) message.Ha
 		})
 		if err != nil {
 			l.WithError(err).Errorf("Unable to process scroll event for character [%d].", e.CharacterId)
+		}
+	}
+}
+
+func handleVegaScrollConsumableEvent(sc server.Model, wp writer.Producer) message.Handler[consumable2.Event[consumable2.VegaScrollBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e consumable2.Event[consumable2.VegaScrollBody]) {
+		if e.Type != consumable2.EventTypeVegaScroll {
+			return
+		}
+
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(uint32(e.CharacterId), func(s session.Model) error {
+			// Start + result back-to-back: the result is resolved immediately
+			// server-side (owner decision); the client animates on its own
+			// clock and latches the result byte.
+			if err := session.Announce(l)(ctx)(wp)(cashpkt.VegaScrollWriter)(cashpkt.VegaScrollStartBody(e.Body.Success))(s); err != nil {
+				return err
+			}
+			if err := session.Announce(l)(ctx)(wp)(cashpkt.VegaScrollWriter)(cashpkt.VegaScrollResultBody(e.Body.Success))(s); err != nil {
+				return err
+			}
+			if err := _map.NewProcessor(l, ctx).ForSessionsInMap(s.Field(), session.Announce(l)(ctx)(wp)(charpkt.CharacterItemUpgradeWriter)(charpkt.NewItemUpgrade(uint32(e.CharacterId), e.Body.Success, e.Body.Cursed, false, false).Encode)); err != nil {
+				return err
+			}
+			return session.Announce(l)(ctx)(wp)(statpkt.StatChangedWriter)(statpkt.NewStatChanged(make([]statpkt.Update, 0), true).Encode)(s)
+		})
+		if err != nil {
+			l.WithError(err).Errorf("Unable to process vega scroll event for character [%d].", e.CharacterId)
 		}
 	}
 }

@@ -921,3 +921,167 @@ reflect `list/processor.go` as of the Task 14 commit.
   pending task-119 (see `bug_execute_transaction_noop.md`); this task's
   migration uses the correct seam and becomes atomic for free once
   task-119 lands.
+
+## atlas-guilds
+
+Module: `services/atlas-guilds/atlas.com/guilds`. Two processors migrated:
+`guild/processor.go` (13 `*AndEmit` sites) and `thread/processor.go` (5
+`*AndEmit` sites). Line numbers reflect the state after this task's commit.
+
+### Migrated
+
+`guild/processor.go`:
+
+- `guild/processor.go:298` `CreateAndEmit` — Pattern A. `Create` already
+  wrapped its own `database.ExecuteTransaction` (guild + `member.AddMember`
+  + `title.CreateDefaults`) and put the success event via `mb.Put` AFTER
+  that inner tx returned but BEFORE the outer wrapper flushed — the outer
+  wrapper previously used the direct producer. Now `CreateAndEmit` opens the
+  outer tx + `outbox.EmitProvider(tx)` and calls
+  `p.WithTransaction(tx).Create(mb)(...)`; the inner nested
+  `ExecuteTransaction` re-enters the same (currently no-op) seam per the
+  recipe's re-entrancy note, and the success `mb.Put` now lands inside the
+  outbox-bound closure.
+- `guild/processor.go:361` `CreationAgreementResponseAndEmit` — Pattern A.
+  Calls `p.Create(mb)(...)` internally (DB write) and, for non-leader
+  requesters, `member.NewProcessor(p.l, p.ctx, p.db).AddMember(...)` (a
+  second, previously untethered DB write) before putting the created event.
+  No sub-processor struct fields exist on `guild.ProcessorImpl` — every
+  internal call constructs `member.NewProcessor`/`title.NewProcessor`/
+  `character.NewProcessor` fresh from `p.db` per call, so invoking this
+  method via `p.WithTransaction(tx).CreationAgreementResponse(mb)(...)`
+  correctly rebinds every one of those fresh constructions to the shared
+  `tx` (see "Sub-processor rebind" note below) with zero body edits.
+- `guild/processor.go:393` `ChangeEmblemAndEmit` — Pattern A (bare
+  `updateEmblem(p.db...)` write, not previously wrapped in any tx; now
+  explicitly wrapped per the classification rule).
+- `guild/processor.go:423` `UpdateMemberOnlineAndEmit` — Pattern A around an
+  already-tx-wrapped inner method (`UpdateMemberOnline` opens its own
+  `ExecuteTransaction`); outer tx now supplies the outbox provider so the
+  `member.UpdateStatus` write and the `MEMBER_STATUS` event share one tx.
+- `guild/processor.go:449` `ChangeNoticeAndEmit` — Pattern A (bare
+  `updateNotice(p.db...)` write, explicitly wrapped).
+- `guild/processor.go:481` `LeaveAndEmit` — Pattern A (bare
+  `member.NewProcessor(p.l,p.ctx,p.db).RemoveMember(...)` call at the guild
+  layer — `RemoveMember` itself opens its own inner tx — now threaded
+  through the outer tx via `WithTransaction`).
+- `guild/processor.go:542` `JoinAndEmit` — Pattern A (bare
+  `member.NewProcessor(...).AddMember(...)` call, same shape as Leave).
+- `guild/processor.go:574` `ChangeTitlesAndEmit` — Pattern A (bare
+  `title.NewProcessor(...).Replace(...)` call — `Replace` opens its own
+  inner tx — now threaded through the outer tx).
+- `guild/processor.go:609` `ChangeMemberTitleAndEmit` — Pattern A around an
+  already-tx-wrapped inner method (`ChangeMemberTitle` opens its own
+  `ExecuteTransaction` around `member.UpdateTitle`).
+- `guild/processor.go:645` `RequestDisbandAndEmit` — Pattern A around an
+  already-tx-wrapped inner method (`RequestDisband` opens its own
+  `ExecuteTransaction` around the member-removal loop, `title.Clear`, and
+  `deleteGuild`).
+- `guild/processor.go:675` `RequestCapacityIncreaseAndEmit` — Pattern A
+  (bare `updateCapacity(p.db...)` write, explicitly wrapped).
+
+`thread/processor.go`:
+
+- `thread/processor.go:107` `CreateAndEmit` — Pattern A (bare `create(p.db...)`
+  write, not previously wrapped; now explicitly wrapped).
+- `thread/processor.go:163` `UpdateAndEmit` — Pattern A around an
+  already-tx-wrapped inner method (`Update` opens its own
+  `ExecuteTransaction` around the thread row update).
+- `thread/processor.go:219` `DeleteAndEmit` — Pattern A around an
+  already-tx-wrapped inner method (`Delete` opens its own
+  `ExecuteTransaction` covering the reply-cascade delete via
+  `reply.NewProcessor(p.l,p.ctx,tx).Delete(...)` plus the thread row
+  delete).
+- `thread/processor.go:270` `ReplyAndEmit` — Pattern A around an
+  already-tx-wrapped inner method (`Reply` opens its own
+  `ExecuteTransaction` around `reply.NewProcessor(p.l,p.ctx,tx).Add(...)`).
+- `thread/processor.go:324` `DeleteReplyAndEmit` — Pattern A around an
+  already-tx-wrapped inner method (`DeleteReply` opens its own
+  `ExecuteTransaction` around `reply.NewProcessor(p.l,p.ctx,tx).Delete(...)`).
+
+### Left direct
+
+- `guild/processor.go:226` `RequestCreateAndEmit` — no DB write in this
+  flow at all: the method only queries (character/party HTTP reads),
+  validates, and calls `coordinator.GetRegistry().Initiate(...)`, an
+  in-process registry (not a DB write). Every `mb.Put` here (both the
+  error/rejection events on each validation failure and the success
+  `REQUEST_AGREEMENT` event) reflects no committed DB state, so per D7 the
+  whole method stays on the direct producer path. Verified by reading the
+  full method body — zero `p.db`/`tx` references anywhere in it.
+- `guild/processor.go:510` `RequestInviteAndEmit` — the wrapped method,
+  `RequestInvite`, takes its `mb` parameter as `_` (explicitly unused) and
+  never calls `mb.Put`; the actual invite creation delegates to
+  `invite.NewProcessor(p.l, p.ctx).Create(...)`, which emits its own
+  COMMAND event directly (see next bullet). The `message.Emit(...)` wrapper
+  around `RequestInvite` is therefore a no-op flush of an always-empty
+  buffer — left unchanged (no behavior to migrate).
+- `invite/processor.go:29` `Create` — a COMMAND emit to another service
+  (`producer.ProviderImpl(p.l)(p.ctx)(EnvCommandTopic)(...)`), not a status
+  event reflecting a local committed state change; `invite.ProcessorImpl`
+  has no `db` field at all (it's a pure command-emitter, per the brief).
+  Per D7, command emits to other services stay direct. Left unchanged.
+
+### Notes
+
+- **Enumeration.** Ran both recipe greps (`message.Emit|EmitWithResult|
+  producer.ProviderImpl|database.ExecuteTransaction` and
+  `.GetAll()|NewBuffer()|\bp\.p(|producer.Provider\b|AndEmit(`) from the
+  module dir. No hand-rolled buffer-flush-over-stored-provider sites were
+  found (`kafka/message/message.go`'s own `Emit`/`EmitWithResult`
+  definitions and `guild/task.go:44` / the four `kafka/consumer/*`
+  packages calling into the now-migrated `*AndEmit` methods are the only
+  other grep hits — none are additional emit sites to migrate). Also read
+  `thread/reply/processor.go`, `guild/title/processor.go`,
+  `guild/member/processor.go`, and `guild/character/processor.go` in full:
+  none of them independently emit Kafka messages — they are pure
+  DB-write sub-processors invoked by the two migrated processors.
+- **Sub-processor rebind.** Unlike the `atlas-cashshop`/`atlas-buddies`
+  shape (a long-lived sub-processor field set once in `NewProcessor` and
+  silently NOT copied by `WithTransaction`), `guild.ProcessorImpl` and
+  `thread.ProcessorImpl` hold **no** sub-processor struct fields at all —
+  every call site constructs `member.NewProcessor(p.l, p.ctx, p.db)` /
+  `title.NewProcessor(...)` / `character.NewProcessor(...)` /
+  `reply.NewProcessor(...)` fresh, inline, per call, always passing the
+  CURRENT receiver's `p.db`. This means the correct rebind mechanism here
+  is simply: every migrated `*AndEmit` wrapper must invoke the pure method
+  on `p.WithTransaction(tx)`, never on the original `p`. All 16 migrated
+  wrappers (11 in `guild`, 5 in `thread`) do this consistently, so every
+  fresh sub-processor constructed inside the wrapped method inherits `tx`
+  automatically via the receiver's `p.db` field — no struct-field changes
+  were needed in either `ProcessorImpl`.
+- **Failure-path pitfalls.** Audited every migrated method for the
+  "rejection/command-only branch that `return nil`s after an `mb.Put`"
+  shape described in the recipe. None exists in this service: every
+  early-return-`nil` branch in both processors (e.g.
+  `UpdateMemberOnline`'s `GetByMemberId` failure, `ChangeMemberTitle`'s
+  `GetByMemberId` failure) occurs strictly BEFORE any `mb.Put` in that
+  call, so nothing is queued that could leak to the wrong path. All other
+  failure branches propagate the real error (`return err`) rather than
+  swallowing it to `nil`, so no scratch-buffer/D7 restructuring was
+  needed — a plain Pattern A wrap was sufficient everywhere.
+- **Unused import cleanup.** `thread/processor.go` no longer references
+  `atlas-guilds/kafka/producer` after all 5 sites migrated off
+  `producer.ProviderImpl`; the import was removed. `guild/processor.go`
+  still uses `producer.ProviderImpl` directly in the two left-direct sites
+  (`RequestCreateAndEmit`, `RequestInviteAndEmit`), so its import was kept.
+- **Tests.** No pre-existing test in `guild/processor_test.go` or
+  `thread/processor_test.go` exercised any `*AndEmit` method (both files
+  only cover read paths, builders, and `WithTransaction` identity), so
+  nothing needed updating for the new outbox contract. Added
+  `guild/processor_outbox_test.go` and `thread/processor_outbox_test.go`
+  (new files, in-package `guild`/`thread`) covering: (1) a
+  previously-bare-write site committing exactly one outbox row
+  (`ChangeEmblemAndEmit` / `CreateAndEmit`), (2) an
+  already-nested-tx site committing exactly one outbox row
+  (`UpdateMemberOnlineAndEmit` / `ReplyAndEmit`), and (3) the generic
+  rollback-discards-enqueued-events seam test using gorm's `db.Transaction`
+  directly (per the recipe's no-op-`ExecuteTransaction` caveat), ported
+  from `atlas-character/character/outbox_acceptance_test.go`.
+- `go test -race ./...`, `go vet ./...`, `go build ./...` all clean;
+  `docker buildx bake atlas-guilds` succeeded; `tools/redis-key-guard.sh`
+  clean (this service doesn't touch Redis directly).
+- `database.ExecuteTransaction` atomicity is still latent fleet-wide
+  pending task-119 (see `bug_execute_transaction_noop.md`); this task's
+  migration uses the correct seam and becomes atomic for free once
+  task-119 lands.

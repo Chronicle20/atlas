@@ -1840,3 +1840,76 @@ up no extra sites beyond the 12 listed.
     / `CreateStatusEventProvider` (tenant) are untouched; only the delivery
     path (outbox vs. direct-after-return) changed, not the header/body
     construction, so byte-parity for the projection is preserved.
+
+## atlas-mounts
+
+Module: `services/atlas-mounts/atlas.com/mounts`. This is a Pattern C
+(call-site wrapping) service: `mount/processor.go`'s three tx-bearing
+methods (`ApplyTick`, `ApplyFeedAndEmit`, `EmitSet` — via its
+`GetByCharacterId` default-create path) take an already-open `*message.Buffer`
+and never call `producer.ProviderImpl` or open their own emit; the
+`database.ExecuteTransaction` + `message.Emit(...)` wiring lives entirely at
+the three call sites outside the processor (a 60s tiredness ticker and two
+Kafka consumers), so the processor itself needed zero changes beyond
+accepting `tx` as its `db` via `NewProcessor(l, ctx, tx)`.
+
+### Migrated
+
+- `mount/task.go:29` (`applyTick` seam, called from `TirednessTask.Run`) —
+  Pattern C. Wraps `NewProcessor(l, ctx, tx)` + `ApplyTick` (persists the
+  tiredness increment and `LastTirednessTickAt`, buffers the `TICK` status
+  event) in one `database.ExecuteTransaction(db.WithContext(ctx), ...)`,
+  enqueuing via `mountmessage.Emit(outbox.EmitProvider(l, ctx, tx))`.
+- `kafka/consumer/buff/consumer.go:33` (`emitSet` seam, called from
+  `handleBuffApplied` after a tamed-mount buff activation) — Pattern C.
+  Wraps `NewProcessor(l, ctx, tx)` + `EmitSet` the same way. `EmitSet` calls
+  `GetByCharacterId`, which default-creates a mount row inside its own
+  `ExecuteTransaction` on first read (re-entrant into the same outer `tx`)
+  before buffering the `SET` status event — a genuine DB write, not a pure
+  read, on first activation.
+- `kafka/consumer/food/consumer.go:24` (`applyFeed` seam, called from
+  `handleTamingMobFood`) — Pattern C. Wraps `NewProcessor(l, ctx, tx)` +
+  `ApplyFeedAndEmit` (persists level/exp/tiredness from the feed math,
+  buffers the `FEED` status event) the same way.
+
+All three call sites already had `l`, `ctx`, and `db` in scope pre-migration
+(the ticker seam takes them as explicit params from `TirednessTask.Run`;
+both consumer seams take them as explicit params from their `handle*`
+functions, which receive `db` via `InitHandlers(l)(db)(...)` closures) — no
+new plumbing was needed to reach a DB handle at any of the three sites.
+
+### Left direct
+
+None. All three tx-coupled emit sites in the brief were migrated; no
+rejection/error event topic exists in this service's message package
+(`kafka/message/mount` defines only the one `EnvStatusEventTopic` used for
+`TICK`/`FEED`/`SET` bodies), so none of the failure-path pitfalls
+(rejection-then-`return nil`, shared-buffer-forwarded-on-failure) apply.
+
+### Notes
+
+- Enumeration: the step-2 grep (`message.Emit`/`EmitWithResult`/
+  `producer.ProviderImpl`/`database.ExecuteTransaction`) plus the extra
+  `GetAll()`/`NewBuffer()`/`p.p(`/`producer.Provider`/`AndEmit(` sweep both
+  landed on exactly the 3 call sites named in the brief plus
+  `processor.go`'s 3 `ExecuteTransaction` sites (`GetByCharacterId`,
+  `ApplyTick`, `ApplyFeedAndEmit` — all pre-existing, unchanged bodies) —
+  no additional hand-rolled buffer-flush loop anywhere else in the module.
+- `ProcessorImpl` has an unused `kp producer.Provider` field (set in
+  `NewProcessor` via `producer.ProviderImpl(l)(ctx)` but never read anywhere
+  in the module — confirmed via `grep -rn "\.kp\b"`). It predates this task,
+  is dead code independent of the migration, and is out of this task's
+  scope (Task 22 is call-site wrapping only); left as-is.
+- No pre-existing test asserted direct-path emission for a migrated flow:
+  `mount/task_test.go`, `kafka/consumer/buff/consumer_test.go`, and
+  `kafka/consumer/food/consumer_test.go` all override the `applyTick`/
+  `emitSet`/`applyFeed` function-seam variables with fakes that record their
+  arguments, never exercising the real `ExecuteTransaction`/producer wiring
+  — so no test needed updating to assert outbox rows instead.
+- `go test -race ./...`, `go vet ./...`, `go build ./...` all clean;
+  `docker buildx bake atlas-mounts` succeeded; `tools/redis-key-guard.sh`
+  clean (exit 0 across the whole repo).
+- `database.ExecuteTransaction` atomicity is still latent fleet-wide
+  pending task-119 (see `bug_execute_transaction_noop.md`); this task's
+  migration uses the correct seam and becomes atomic for free once
+  task-119 lands.

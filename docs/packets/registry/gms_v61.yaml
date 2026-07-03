@@ -2294,19 +2294,19 @@
 - op: CLOSE_RANGE_ATTACK
   direction: serverbound
   opcode: 41
-  fname: sub_7A45F1
+  fname: CUserLocal::TryDoingMeleeAttack
   provenance: ida-discovered
   ida:
     address: 8018814
-  note: 'v61 send-site (0x7a5b7e, CUserLocal): COutPacket(41)+attack body (Enc1 count/dmg + per-target dmg + Enc2 x/y). Melee = v72 CLOSE_RANGE_ATTACK=43 (Δ-2); sits directly before TryDoingShootAttack(42).'
+  note: 'v61 send-site (0x7a5b7e, CUserLocal::TryDoingMeleeAttack @0x7a45f1): COutPacket(41)+attack body (Enc1 count/dmg + per-target dmg + Enc2 x/y). Melee = v72 CLOSE_RANGE_ATTACK=43 (Δ-2); sits directly before TryDoingShootAttack(42). Named from sub_7A45F1 (twin of v72/v83 TryDoingMeleeAttack).'
 - op: MAGIC_ATTACK
   direction: serverbound
   opcode: 43
-  fname: sub_7A8572
+  fname: CUserLocal::TryDoingMagicAttack
   provenance: ida-discovered
   ida:
     address: 8034011
-  note: 'v61 send-site (0x7a96db, CUserLocal): COutPacket(43)+attack body. Magic = v72 MAGIC_ATTACK=45 (Δ-2); between shoot(42) and body(44).'
+  note: 'v61 send-site (0x7a96db, CUserLocal::TryDoingMagicAttack @0x7a8572): COutPacket(43)+attack body. Magic = v72 MAGIC_ATTACK=45 (Δ-2); between shoot(42) and body(44). Named from sub_7A8572 (twin of v72/v83 TryDoingMagicAttack).'
 - op: TAKE_DAMAGE
   direction: serverbound
   opcode: 45

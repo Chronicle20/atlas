@@ -9079,24 +9079,208 @@
    ]
   },
   "CUserLocal::TryDoingMagicAttack": {
-   "address": "",
+   "address": "0x7a8572",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": ""
+    },
+    {
+     "op": "Decode1",
+     "comment": ""
+    },
+    {
+     "op": "Decode4",
+     "comment": ""
+    },
+    {
+     "op": "Decode4",
+     "comment": ""
+    },
+    {
+     "op": "Decode1",
+     "comment": ""
+    },
+    {
+     "op": "Decode1",
+     "comment": ""
+    },
+    {
+     "op": "Decode1",
+     "comment": ""
+    },
+    {
+     "op": "Decode1",
+     "comment": ""
+    },
+    {
+     "op": "Decode4",
+     "comment": ""
+    },
+    {
+     "op": "Decode4",
+     "comment": "",
+     "guard": "i > 0"
+    },
+    {
+     "op": "Decode1",
+     "comment": "",
+     "guard": "i > 0"
+    },
+    {
+     "op": "Decode1",
+     "comment": "",
+     "guard": "i > 0"
+    },
+    {
+     "op": "Decode1",
+     "comment": "",
+     "guard": "i > 0"
+    },
+    {
+     "op": "Decode1",
+     "comment": ""
+    },
+    {
+     "op": "Decode2",
+     "comment": ""
+    },
+    {
+     "op": "Decode2",
+     "comment": ""
+    },
+    {
+     "op": "Decode2",
+     "comment": ""
+    },
+    {
+     "op": "Decode2",
+     "comment": ""
+    },
+    {
+     "op": "Decode2",
+     "comment": ""
+    },
+    {
+     "op": "Decode4",
+     "comment": "",
+     "guard": "v183 > 0"
+    },
+    {
+     "op": "Decode4",
+     "comment": ""
+    },
+    {
+     "op": "Decode2",
+     "comment": ""
+    },
+    {
+     "op": "Decode2",
+     "comment": ""
     }
    ]
   },
   "CUserLocal::TryDoingMeleeAttack": {
-   "address": "",
+   "address": "0x7a45f1",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": ""
+    },
+    {
+     "op": "Decode1",
+     "comment": ""
+    },
+    {
+     "op": "Decode4",
+     "comment": ""
+    },
+    {
+     "op": "Decode4",
+     "comment": ""
+    },
+    {
+     "op": "Decode1",
+     "comment": ""
+    },
+    {
+     "op": "Decode1",
+     "comment": ""
+    },
+    {
+     "op": "Decode1",
+     "comment": ""
+    },
+    {
+     "op": "Decode1",
+     "comment": ""
+    },
+    {
+     "op": "Decode4",
+     "comment": ""
+    },
+    {
+     "op": "Decode4",
+     "comment": "",
+     "guard": "i > 0"
+    },
+    {
+     "op": "Decode1",
+     "comment": "",
+     "guard": "i > 0"
+    },
+    {
+     "op": "Decode1",
+     "comment": "",
+     "guard": "i > 0"
+    },
+    {
+     "op": "Decode1",
+     "comment": "",
+     "guard": "i > 0"
+    },
+    {
+     "op": "Decode1",
+     "comment": ""
+    },
+    {
+     "op": "Decode2",
+     "comment": ""
+    },
+    {
+     "op": "Decode2",
+     "comment": ""
+    },
+    {
+     "op": "Decode2",
+     "comment": ""
+    },
+    {
+     "op": "Decode2",
+     "comment": ""
+    },
+    {
+     "op": "Decode2",
+     "comment": ""
+    },
+    {
+     "op": "Decode4",
+     "comment": "",
+     "guard": "v183 > 0"
+    },
+    {
+     "op": "Decode4",
+     "comment": ""
+    },
+    {
+     "op": "Decode2",
+     "comment": ""
+    },
+    {
+     "op": "Decode2",
+     "comment": ""
     }
    ]
   },

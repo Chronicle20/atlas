@@ -5,7 +5,7 @@
 
 Tool: `658928fc9bd41408e0a83bb6acf59fb6dff6eda8`
 
-- export gms_v61: `c263f072e967eec2dd7b694e90918b7f1044fa9ffdc5d5cf3dbd42f8f1c71f86`
+- export gms_v61: `d432347c5f9fb475a06b2cf1dbb2cfc535d64526ce9a30cd4d07d4d0f235603b`
 - export gms_v72: `a0ac2be6578395455f491976bcb11aa27e2e57376b46ee8816b90324bad60c02`
 - export gms_v79: `370d6b720b633c12c71d40340f3952000705c4bddb98f87179e7193d112d210c`
 - export gms_v83: `711bddcc2e1bdd417a75954148d2b50c64e70855e84259c0b8e50e700e393c0d`
@@ -537,9 +537,9 @@ Tool: `658928fc9bd41408e0a83bb6acf59fb6dff6eda8`
 | UNNAMED_R47 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x027 | ❌ |  | ⬜ |
 | UNNAMED_R48 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x028 | ❌ |  | ⬜ |
 | USE_CHAIR | CWvsContext::SendSitOnPortableChairRequest; sub_8372C1 | character/serverbound/ChairPortable (T1) | 0x028 | ❌ | 0x02A | 🟡 | 0x029 | 🟡 | 0x02B | ✅ | 0x02B | ✅ | 0x02D | ✅ | 0x02E | ✅ | 0x022 | ✅ |
-| CLOSE_RANGE_ATTACK | CUserLocal::DoActiveSkill_MesoExplosion; CUserLocal::TryDoingMeleeAttack; CUserLocal::TryDoingNormalAttack; sub_7A45F1 | character/serverbound/CharacterAttackMeleeRequest (T1) | 0x029 | ❌ | 0x02B | ✅ | 0x02A | ✅ | 0x02C | ✅ | 0x02C | ✅ | 0x02E | ✅ | 0x02F | ✅ | 0x023 | ✅ |
+| CLOSE_RANGE_ATTACK | CUserLocal::DoActiveSkill_MesoExplosion; CUserLocal::TryDoingMeleeAttack; CUserLocal::TryDoingNormalAttack | character/serverbound/CharacterAttackMeleeRequest (T1) | 0x029 | ✅ | 0x02B | ✅ | 0x02A | ✅ | 0x02C | ✅ | 0x02C | ✅ | 0x02E | ✅ | 0x02F | ✅ | 0x023 | ✅ |
 | RANGED_ATTACK | CUserLocal::TryDoingShootAttack; CUserLocal::TryDoingSmoothingMovingShootAttack | character/serverbound/CharacterAttackRangedRequest (T1) | 0x02A | ✅ | 0x02C | ✅ | 0x02B | ✅ | 0x02D | ✅ | 0x02D | ✅ | 0x02F | ✅ | 0x030 | ✅ | 0x024 | ✅ |
-| MAGIC_ATTACK | CUserLocal::TryDoingMagicAttack; sub_7A8572 | character/serverbound/CharacterAttackMagicRequest (T1) | 0x02B | ❌ | 0x02D | ✅ | 0x02C | ✅ | 0x02E | ✅ | 0x02E | ✅ | 0x030 | ✅ | 0x031 | ✅ | 0x025 | ✅ |
+| MAGIC_ATTACK | CUserLocal::TryDoingMagicAttack | character/serverbound/CharacterAttackMagicRequest (T1) | 0x02B | ✅ | 0x02D | ✅ | 0x02C | ✅ | 0x02E | ✅ | 0x02E | ✅ | 0x030 | ✅ | 0x031 | ✅ | 0x025 | ✅ |
 | TOUCH_MONSTER_ATTACK | CUserLocal::TryDoingBodyAttack | character/serverbound/CharacterAttackTouchRequest (T1) | 0x02C | ✅ | 0x02E | ✅ | 0x02D | ✅ | 0x02F | ✅ | 0x02F | ✅ | 0x031 | ✅ | 0x032 | ✅ | 0x026 | ✅ |
 | TAKE_DAMAGE | CUserLocal::SetDamaged; CUserLocal::Update |  | 0x02D | ❌ | 0x02F | ❌ | 0x02E | ❌ | 0x030 | ❌ | 0x030 | ❌ | 0x032 | ❌ | 0x034 | ❌ | 0x027 | ❌ |
 | GENERAL_CHAT | CField::SendChatMsg; CField::SendChatMsgSlash; sub_4E7469 | field/serverbound/FieldGeneral (T1) | 0x02E | ✅ | 0x030 | ✅ | 0x02F | ✅ | 0x031 | ✅ | 0x031 | ✅ | 0x034 | ✅ | 0x036 | ✅ | 0x029 | ✅ |
@@ -831,8 +831,6 @@ Tool: `658928fc9bd41408e0a83bb6acf59fb6dff6eda8`
 | character/serverbound/ChairFixed (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | character/serverbound/ChairPortable (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | character/serverbound/ChalkboardClose (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| character/serverbound/CharacterAttackMagicRequest (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| character/serverbound/CharacterAttackMeleeRequest (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | character/serverbound/CharacterSkillPrepare (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | character/serverbound/ExpressionRequest (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | character/serverbound/ItemCancel (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
@@ -941,14 +939,14 @@ Tool: `658928fc9bd41408e0a83bb6acf59fb6dff6eda8`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v61 | 176 | 0 | 61 | 218 | 453 | 0 | 38.7% |
-| v72 | 216 | 0 | 73 | 205 | 414 | 0 | 43.7% |
-| v79 | 228 | 0 | 72 | 203 | 405 | 0 | 45.3% |
-| v83 | 367 | 0 | 0 | 334 | 207 | 0 | 52.4% |
-| v84 | 345 | 0 | 0 | 335 | 228 | 0 | 50.7% |
-| v87 | 379 | 0 | 0 | 359 | 170 | 0 | 51.4% |
-| v95 | 399 | 0 | 0 | 423 | 86 | 0 | 48.5% |
-| JMS185 | 362 | 0 | 0 | 369 | 177 | 0 | 49.5% |
+| v61 | 178 | 0 | 61 | 214 | 453 | 0 | 39.3% |
+| v72 | 216 | 0 | 73 | 203 | 414 | 0 | 43.9% |
+| v79 | 228 | 0 | 72 | 201 | 405 | 0 | 45.5% |
+| v83 | 367 | 0 | 0 | 332 | 207 | 0 | 52.5% |
+| v84 | 345 | 0 | 0 | 333 | 228 | 0 | 50.9% |
+| v87 | 379 | 0 | 0 | 357 | 170 | 0 | 51.5% |
+| v95 | 399 | 0 | 0 | 421 | 86 | 0 | 48.7% |
+| JMS185 | 362 | 0 | 0 | 367 | 177 | 0 | 49.7% |
 
 ## Conflicts
 

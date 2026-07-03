@@ -1,40 +1,38 @@
 # CharacterAttackMeleeRequest (← `CUserLocal::TryDoingMeleeAttack`)
 
-- **IDA:** 
+- **IDA:** 0x7a45f1
 - **Atlas file:** `libs/atlas-packet/character/serverbound/attack_request.go`
 - **Variant:** GMS/v61
 - **Branch depth:** 0
-- **Verdict:** ❌
+- **Verdict:** 🔍
+- **Flat-diff-invalid:** the wire shape depends on a runtime discriminator a flat positional diff cannot model — the Atlas writer branches on a non-version condition (a data-dependent field or an untraced version-derived local), and/or the client reads fields conditionally (e.g. `mode <= 1`). The verdict is capped to 🔍; the row-level mismatches below are a modeling limitation, not a verified wire bug — confirm per-branch via byte-level tests.
 
 ## Wire-level diff
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | byte | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
-| 1 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 2 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 3 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 4 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 5 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 6 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 7 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 8 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 9 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 10 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 11 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 12 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 13 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 14 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 15 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 16 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 17 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 18 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 19 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 20 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 21 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 22 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 23 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 24 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 25 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 26 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 0 | byte | byte `` | ✅ |  |
+| 1 | byte | byte `` | ✅ |  |
+| 2 | int32 | int32 `` | ✅ |  |
+| 3 | int32 | int32 `` | ✅ |  |
+| 4 | int32 | byte `` | ❌ | width mismatch |
+| 5 | int32 | byte `` | ❌ | width mismatch |
+| 6 | byte | byte `` | ✅ |  |
+| 7 | byte | byte `` | ✅ |  |
+| 8 | int32 | int32 `` | ✅ |  |
+| 9 | int32 | int32 `` | ✅ |  |
+| 10 | int16 | byte `` | ❌ | width mismatch |
+| 11 | int16 | byte `` | ❌ | width mismatch |
+| 12 | byte | byte `` | ✅ |  |
+| 13 | int32 | byte `` | ❌ | width mismatch |
+| 14 | byte | int16 `` | 🔍 | sub-struct: di — see _substruct/ |
+| 15 | int16 | int16 `` | ✅ |  |
+| 16 | int16 | int16 `` | ✅ |  |
+| 17 | int16 | int16 `` | ✅ |  |
+| 18 | int16 | int16 `` | ✅ |  |
+| 19 | int32 | int32 `` | ✅ |  |
+| 20 | int32 | int32 `` | ✅ |  |
+| 21 | byte | int16 `` | ❌ | width mismatch |
+| 22 | int16 | int16 `` | ✅ |  |
+| 23 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
 

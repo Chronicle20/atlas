@@ -9967,13 +9967,13 @@
    ]
   },
   "CVecCtrlUser::EndUpdateActive": {
-   "address": "",
+   "address": "0x801109",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": "",
+     "guard": "result"
     }
    ]
   },

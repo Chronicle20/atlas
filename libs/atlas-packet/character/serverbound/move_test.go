@@ -43,6 +43,41 @@ func TestCharacterMoveByteV79(t *testing.T) {
 	}
 }
 
+// TestCharacterMoveByteV61 pins the very-legacy GMS v61 MOVE_PLAYER (op 38) serverbound
+// wire, which OMITS the 4-byte crc that v72+ carry.
+//
+// IDA: CVecCtrlUser::EndUpdateActive @0x801109 (GMS_v61.1_U_DEVM.exe, port 13338 — named
+// from sub_801109) builds COutPacket(38):
+//
+//	Encode1 fieldKey  (*(get_field()+248))  @0x8012c3
+//	CMovePath::Flush(&pkt) movement blob                @0x8012d1
+//
+// There is NO Encode4(crc) between fieldKey and Flush — unlike v72
+// CVecCtrlUser::EndUpdateActive @0x8cb63e (fieldKey+crc+Flush). The move-crc was added
+// after v61; the codec now gates it >=72 (was the incorrect >28 assumption). v61 < 84 so
+// the dr-block header is also absent. The movement blob is written by CMovePath::Flush;
+// its bytes are OPAQUE (§5 OPAQUE-EXCEPTION — the export's calls stop at the Flush
+// boundary) and derive from the shared model.Movement encoder (StartX Int16 + StartY
+// Int16 + count byte), not a per-field decompile line.
+//
+// packet-audit:verify packet=character/serverbound/Move version=gms_v61 ida=0x801109
+func TestCharacterMoveByteV61(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	ctx := test.CreateContext("GMS", 61, 1)
+	p := Move{fieldKey: 0x2A, crc: 500, movement: model.Movement{StartX: 10, StartY: 20}}
+	got := p.Encode(l, ctx)(nil)
+	want := []byte{
+		0x2A,       // fieldKey        @0x8012c3
+		// NO crc (v61 < 72)
+		0x0A, 0x00, // movement StartX=10  (opaque, CMovePath::Flush @0x8012d1)
+		0x14, 0x00, // movement StartY=20  (opaque)
+		0x00, // movement element count=0 (opaque)
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatalf("v61 Move: got % x, want % x", got, want)
+	}
+}
+
 // TestCharacterMoveByteV72 pins the gms_v72 MOVE_PLAYER (op 40) serverbound wire.
 //
 // IDA: CVecCtrlUser::EndUpdateActive @0x8cb63e (GMS_v72.1_U_DEVM.exe, port 13339)

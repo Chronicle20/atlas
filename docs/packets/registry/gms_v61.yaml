@@ -1870,11 +1870,11 @@
 - op: MOVE_PLAYER
   direction: serverbound
   opcode: 38
-  fname: sub_801109
+  fname: CVecCtrlUser::EndUpdateActive
   provenance: ida-discovered
   ida:
     address: 6291023
-  note: 'v61 send-site harvest (COutPacket ctor @0x5ffc4f): sub_801109. COutPacket(38) after CMovePath::Flush; Δ-2 vs v72. delta doc anchor.'
+  note: 'v61 send-site (0x8012a7, CVecCtrlUser::EndUpdateActive @0x801109, named from sub_801109): COutPacket(38)+Encode1(fieldKey @0x8012c3)+CMovePath::Flush @0x8012d1 — NO Encode4(crc), unlike v72 EndUpdateActive @0x8cb63e (fieldKey+crc+Flush). crc gated >=72 in move.go. Δ-2 vs v72 op40.'
 - op: RANGED_ATTACK
   direction: serverbound
   opcode: 42

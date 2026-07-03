@@ -5,7 +5,7 @@
 
 Tool: `658928fc9bd41408e0a83bb6acf59fb6dff6eda8`
 
-- export gms_v61: `d432347c5f9fb475a06b2cf1dbb2cfc535d64526ce9a30cd4d07d4d0f235603b`
+- export gms_v61: `63cebd7414e68641ea1f1a42d3df4cfdf940ec3d1c1d1cbc096938d8f3d935f5`
 - export gms_v72: `a0ac2be6578395455f491976bcb11aa27e2e57376b46ee8816b90324bad60c02`
 - export gms_v79: `370d6b720b633c12c71d40340f3952000705c4bddb98f87179e7193d112d210c`
 - export gms_v83: `711bddcc2e1bdd417a75954148d2b50c64e70855e84259c0b8e50e700e393c0d`
@@ -586,7 +586,7 @@ Tool: `658928fc9bd41408e0a83bb6acf59fb6dff6eda8`
 | USE_SKILL_RESET_BOOK | CWvsContext::SendSkillResetItemUseRequest |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x053 | ❌ | 0x053 | ❌ | 0x056 | ❌ | 0x059 | ❌ | 0x04B | ❌ |
 | CANCEL_BUFF | CUserLocal::SendSkillCancelRequest | character/serverbound/BuffCancelRequest (T1) | 0x054 | 🟡 | 0x05B | 🟡 | 0x05A | 🟡 | 0x05C | ✅ | 0x05C | ✅ | 0x05F | ✅ | 0x068 | ✅ | 0x057 | ✅ |
 | USE_TELEPORT_ROCK | CWvsContext::SendMapTransferItemUseRequest |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x054 | ❌ | 0x054 | ❌ | 0x057 | ❌ | 0x05B | ❌ | 0x04C | ❌ |
-| SKILL_EFFECT | CUserLocal::DoActiveSkill_Prepare; sub_7B8001 | character/serverbound/CharacterSkillPrepare (T1) | 0x055 | ❌ | 0x05C | ✅ | 0x05B | ✅ | 0x05D | ✅ | 0x05D | ✅ | 0x060 | ✅ | 0x069 | ✅ | 0x058 | ✅ |
+| SKILL_EFFECT | CUserLocal::DoActiveSkill_Prepare | character/serverbound/CharacterSkillPrepare (T1) | 0x055 | ✅ | 0x05C | ✅ | 0x05B | ✅ | 0x05D | ✅ | 0x05D | ✅ | 0x060 | ✅ | 0x069 | ✅ | 0x058 | ✅ |
 | MESO_DROP | CWvsContext::SendDropMoneyRequest; sub_8459DD | character/serverbound/DropMeso (T1) | 0x056 | ❌ | 0x05D | ✅ | 0x05C | ✅ | 0x05E | ✅ | 0x05E | ✅ | 0x061 | ✅ | 0x06A | ✅ | 0x059 | ✅ |
 | AUTO_DISTRIBUTE_AP | CWvsContext::SendAbilityUpRequest | character/serverbound/AutoDistributeAp (T1) |  | ⬜ | 0x057 | ✅ | 0x056 | ✅ | 0x058 | ✅ | 0x058 | ✅ | 0x05B | ✅ | 0x062 | ✅ | 0x052 | ✅ |
 | GIVE_FAME | CWvsContext::SendGivePopularityRequest; sub_845A65; sub_96E07F | fame/serverbound/Change | 0x057 | ❌ | 0x05E | ❌ | 0x05D | ❌ | 0x05F | ✅ | 0x05F | ✅ | 0x062 | ✅ | 0x06B | ✅ | 0x05A | ✅ |
@@ -831,7 +831,6 @@ Tool: `658928fc9bd41408e0a83bb6acf59fb6dff6eda8`
 | character/serverbound/ChairFixed (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | character/serverbound/ChairPortable (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | character/serverbound/ChalkboardClose (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| character/serverbound/CharacterSkillPrepare (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | character/serverbound/ExpressionRequest (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | character/serverbound/ItemCancel (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | character/serverbound/Move (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
@@ -939,14 +938,14 @@ Tool: `658928fc9bd41408e0a83bb6acf59fb6dff6eda8`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v61 | 185 | 0 | 61 | 207 | 453 | 0 | 40.8% |
-| v72 | 216 | 0 | 73 | 203 | 414 | 0 | 43.9% |
-| v79 | 228 | 0 | 72 | 201 | 405 | 0 | 45.5% |
-| v83 | 367 | 0 | 0 | 332 | 207 | 0 | 52.5% |
-| v84 | 345 | 0 | 0 | 333 | 228 | 0 | 50.9% |
-| v87 | 379 | 0 | 0 | 357 | 170 | 0 | 51.5% |
-| v95 | 399 | 0 | 0 | 421 | 86 | 0 | 48.7% |
-| JMS185 | 362 | 0 | 0 | 367 | 177 | 0 | 49.7% |
+| v61 | 186 | 0 | 61 | 205 | 453 | 0 | 41.2% |
+| v72 | 216 | 0 | 73 | 202 | 414 | 0 | 44.0% |
+| v79 | 228 | 0 | 72 | 200 | 405 | 0 | 45.6% |
+| v83 | 367 | 0 | 0 | 331 | 207 | 0 | 52.6% |
+| v84 | 345 | 0 | 0 | 332 | 228 | 0 | 51.0% |
+| v87 | 379 | 0 | 0 | 356 | 170 | 0 | 51.6% |
+| v95 | 399 | 0 | 0 | 420 | 86 | 0 | 48.7% |
+| JMS185 | 362 | 0 | 0 | 366 | 177 | 0 | 49.7% |
 
 ## Conflicts
 

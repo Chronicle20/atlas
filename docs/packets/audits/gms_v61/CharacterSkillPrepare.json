@@ -1,7 +1,7 @@
 {
   "WriterName": "CharacterSkillPrepare",
   "IDAName": "CUserLocal::DoActiveSkill_Prepare",
-  "Address": "",
+  "Address": "0x7b8001",
   "Variant": "GMS/v61",
   "BranchDepth": 0,
   "AtlasFile": "libs/atlas-packet/character/serverbound/skill_prepare.go",
@@ -10,10 +10,10 @@
       "Index": 0,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 4,
-      "Note": "IDA read-order unresolved: function not found in IDB"
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 1,
@@ -21,8 +21,8 @@
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 2,
@@ -30,8 +30,8 @@
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 3,
@@ -40,7 +40,7 @@
       "IDAOp": 0,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "width mismatch"
     },
     {
       "Index": 4,

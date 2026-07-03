@@ -79,6 +79,39 @@ func TestSkillPrepareByteFixtureV72(t *testing.T) {
 	}
 }
 
+// TestSkillPrepareByteFixtureV61 pins the very-legacy GMS v61 wire, which encodes the
+// action/direction field as a SINGLE byte (bit7=bLeft, bits0-6=nAction) — the same as
+// v72 (both < 79). IDA-verified: CUserLocal::DoActiveSkill_Prepare @0x7b8001
+// (GMS_v61.1_U_DEVM.exe, port 13338 — named from sub_7B8001; registry opcode 85 matches
+// the send-site COutPacket(85) @0x7b8711) builds Encode4 skillId @0x7b8723, Encode1 level
+// @0x7b872e, Encode1 action @0x7b874b (`(nAction&0x7F)|(bLeft<<7)` — ONE byte), Encode1
+// actionSpeed @0x7b8754. Byte-identical to v72 (Δ-7 opcode).
+// packet-audit:verify packet=character/serverbound/CharacterSkillPrepare version=gms_v61 ida=0x7b8001
+func TestSkillPrepareByteFixtureV61(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 61, 1)
+	m := SkillPrepare{info: *model.NewSkillPrepareInfo()}
+	m.info.SetSkillId(3121004)
+	m.info.SetLevel(10)
+	m.info.SetAction(0x42) // fits the legacy 1-byte field
+	m.info.SetActionSpeed(4)
+	expected := []byte{
+		0x6C, 0x9F, 0x2F, 0x00, // skillId=3121004 LE  @0x7b8723
+		0x0A, // level=10                              @0x7b872e
+		0x42, // action=0x42 (1 BYTE on v61)           @0x7b874b
+		0x04, // actionSpeed=4                          @0x7b8754
+	}
+	got := pt.Encode(t, ctx, m.Encode, nil)
+	if len(got) != len(expected) {
+		t.Fatalf("byte length mismatch: got %d want %d\n  got:  %X\n  want: %X", len(got), len(expected), got, expected)
+	}
+	for i := range expected {
+		if got[i] != expected[i] {
+			t.Errorf("byte[%d] = %02X, want %02X\n  got:  %X\n  want: %X", i, got[i], expected[i], got, expected)
+			break
+		}
+	}
+}
+
 func TestSkillPrepareByteFixture(t *testing.T) {
 	// skillId=3121004 (0x002F9F6C LE = 6C 9F 2F 00)
 	// level=10 (0x0A)

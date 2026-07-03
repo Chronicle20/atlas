@@ -2378,11 +2378,11 @@
 - op: SKILL_EFFECT
   direction: serverbound
   opcode: 85
-  fname: sub_7B8001
+  fname: CUserLocal::DoActiveSkill_Prepare
   provenance: ida-discovered
   ida:
     address: 8095505
-  note: 'v61 send-site (0x7b8711, CUserLocal): COutPacket(85)+Encode4(skillId)+Encode1(level)+Encode1(keydir)+Encode1. EXACT match to v72 SKILL_EFFECT=92 (DoActiveSkill_Prepare [E4,E1,E1,E1]); Δ-7.'
+  note: 'v61 send-site (0x7b8711, CUserLocal::DoActiveSkill_Prepare @0x7b8001): COutPacket(85)+Encode4(skillId)+Encode1(level)+Encode1(keydir 1-byte)+Encode1(actionSpeed). EXACT match to v72 SKILL_EFFECT=92 (DoActiveSkill_Prepare [E4,E1,E1,E1]); Δ-7. Named from sub_7B8001 (twin of v72 DoActiveSkill_Prepare); COutPacket opcode 85 verified.'
 - op: CHANGE_MAP_SPECIAL
   direction: serverbound
   opcode: 92

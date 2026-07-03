@@ -17245,6 +17245,16 @@
    "address": "0x7a3981",
    "direction": "serverbound",
    "calls": []
+  },
+  "CUserLocal::SetMonsterBookCover": {
+   "address": "0x6e78f2",
+   "direction": "serverbound",
+   "calls": [
+    {
+     "op": "Encode4",
+     "comment": "coverCardId @0x6e7935 (COutPacket(53) ctor @0x6e7922)"
+    }
+   ]
   }
  }
 }

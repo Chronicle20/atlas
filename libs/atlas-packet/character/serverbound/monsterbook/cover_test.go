@@ -15,6 +15,7 @@ import (
 // packet-audit:verify packet=character/serverbound/monsterbook/CharacterCover version=jms_v185 ida=0xa2c930
 // packet-audit:verify packet=character/serverbound/monsterbook/CharacterCover version=gms_v79 ida=0x8b7ab0
 // packet-audit:verify packet=character/serverbound/monsterbook/CharacterCover version=gms_v72 ida=0x86c0aa
+// packet-audit:verify packet=character/serverbound/monsterbook/CharacterCover version=gms_v61 ida=0x6e78f2
 //
 // v72: CUserLocal::SetMonsterBookCover @0x86c0aa is the named char-data setter
 // (writes cover cardId to CharacterData+1419; no COutPacket, same setter role as

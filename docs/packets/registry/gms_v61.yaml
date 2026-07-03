@@ -2336,11 +2336,11 @@
 - op: MONSTER_BOOK_COVER
   direction: serverbound
   opcode: 53
-  fname: sub_6E78F2
+  fname: CUserLocal::SetMonsterBookCover
   provenance: ida-discovered
   ida:
-    address: 7239970
-  note: 'v61 send-site (0x6e7922): COutPacket(53)+Encode4(coverCardId). v72 MONSTER_BOOK_COVER=56 (Δ-3, matches MOB_BANISH=52 Δ-3).'
+    address: 7239922
+  note: 'v61 cover setter sub_6E78F2@0x6e78f2 (COutPacket(53) ctor @0x6e7922) + Encode4(coverCardId). v72 MONSTER_BOOK_COVER=56 (Δ-3, matches MOB_BANISH=52 Δ-3). fname canonicalised to CUserLocal::SetMonsterBookCover (candidatesFromFName linkage; unnamed sub_6E78F2 in the IDB).'
 - op: ITEM_SORT2
   direction: serverbound
   opcode: 65

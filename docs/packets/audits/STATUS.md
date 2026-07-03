@@ -5,7 +5,7 @@
 
 Tool: `658928fc9bd41408e0a83bb6acf59fb6dff6eda8`
 
-- export gms_v61: `6d410a5f1a2546d326e55b755b1dfddcd72aba9373a51d69d4d8225289dc9df4`
+- export gms_v61: `be4c5b88db82a5f7871ca70155781a747dd43594d1d4edec1d995c04484af36b`
 - export gms_v72: `a0ac2be6578395455f491976bcb11aa27e2e57376b46ee8816b90324bad60c02`
 - export gms_v79: `370d6b720b633c12c71d40340f3952000705c4bddb98f87179e7193d112d210c`
 - export gms_v83: `711bddcc2e1bdd417a75954148d2b50c64e70855e84259c0b8e50e700e393c0d`
@@ -548,7 +548,7 @@ Tool: `658928fc9bd41408e0a83bb6acf59fb6dff6eda8`
 | MOVING_SHOOT_ATTACK_PREPARE | CUserLocal::TryDoingSmoothingMovingShootAttackPrepare |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x033 | ❌ |  | ⬜ |
 | MOB_BANISH_PLAYER | CUserLocal::SendBanMapByMobRequest | character/serverbound/CharacterMobBanishPlayer (T1) | 0x034 | 🟡 | 0x037 | 🟡 | 0x036 | 🟡 | 0x038 | ✅ | 0x038 | ✅ | 0x03B | ✅ | 0x03D | ✅ | 0x030 | ✅ |
 | USE_ITEMEFFECT | CWvsContext::SendActiveEffectItemChange |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x034 | ❌ | 0x034 | ❌ | 0x037 | ❌ | 0x039 | ❌ | 0x02C | ❌ |
-| MONSTER_BOOK_COVER | CUserLocal::SetMonsterBookCover; sub_6E78F2 | character/serverbound/monsterbook/CharacterCover (T1) | 0x035 | ❌ | 0x038 | ✅ | 0x037 | ✅ | 0x039 | ✅ | 0x039 | ✅ | 0x03C | ✅ | 0x03E | ✅ | 0x031 | ✅ |
+| MONSTER_BOOK_COVER | CUserLocal::SetMonsterBookCover | character/serverbound/monsterbook/CharacterCover (T1) | 0x035 | ✅ | 0x038 | ✅ | 0x037 | ✅ | 0x039 | ✅ | 0x039 | ✅ | 0x03C | ✅ | 0x03E | ✅ | 0x031 | ✅ |
 | USE_DEATHITEM | CUserLocal::RequestUpgradeTombEffect |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x035 | ❌ | 0x035 | ❌ | 0x038 | ❌ | 0x03A | ❌ | 0x02D | ❌ |
 | UNNAMED_R74 |  |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x036 | ❌ | 0x036 | ❌ | 0x039 | ❌ | 0x03B | ❌ | 0x02E | ❌ |
 | UNNAMED_R75 |  |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x037 | ❌ | 0x037 | ❌ | 0x03A | ❌ | 0x03C | ❌ | 0x02F | ❌ |
@@ -936,7 +936,7 @@ Tool: `658928fc9bd41408e0a83bb6acf59fb6dff6eda8`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v61 | 204 | 0 | 60 | 186 | 453 | 0 | 45.3% |
+| v61 | 205 | 0 | 60 | 185 | 453 | 0 | 45.6% |
 | v72 | 216 | 0 | 73 | 200 | 414 | 0 | 44.2% |
 | v79 | 228 | 0 | 72 | 198 | 405 | 0 | 45.8% |
 | v83 | 367 | 0 | 0 | 329 | 207 | 0 | 52.7% |

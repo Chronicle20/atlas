@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestUnmarshalRebalanceAPStep(t *testing.T) {
@@ -301,5 +302,69 @@ func TestUnmarshalAwaitInventoryCreatedStep_ZeroCharacterId(t *testing.T) {
 	}
 	if p.CharacterId != 0 {
 		t.Errorf("expected sentinel characterId=0, got %d", p.CharacterId)
+	}
+}
+
+func TestUnmarshalSetAssetOwnerStep(t *testing.T) {
+	data := []byte(`{"stepId":"s1","status":"pending","action":"set_asset_owner","payload":{"characterId":7,"inventoryType":1,"slot":-5,"owner":"Tumi"},"createdAt":"2026-07-02T00:00:00Z","updatedAt":"2026-07-02T00:00:00Z"}`)
+	var s Step[any]
+	if err := json.Unmarshal(data, &s); err != nil {
+		t.Fatal(err)
+	}
+	p, ok := s.Payload.(SetAssetOwnerPayload)
+	if !ok {
+		t.Fatalf("payload type = %T", s.Payload)
+	}
+	if p.Owner != "Tumi" || p.Slot != -5 || p.InventoryType != 1 || p.CharacterId != 7 {
+		t.Fatalf("payload = %+v", p)
+	}
+}
+
+func TestUnmarshalApplyAssetLockStep(t *testing.T) {
+	data := []byte(`{"stepId":"s1","status":"pending","action":"apply_asset_lock","payload":{"characterId":7,"inventoryType":1,"slot":3,"expiration":"2026-08-01T12:00:00Z"},"createdAt":"2026-07-02T00:00:00Z","updatedAt":"2026-07-02T00:00:00Z"}`)
+	var s Step[any]
+	if err := json.Unmarshal(data, &s); err != nil {
+		t.Fatal(err)
+	}
+	p, ok := s.Payload.(ApplyAssetLockPayload)
+	if !ok {
+		t.Fatalf("payload type = %T", s.Payload)
+	}
+	wantExpiration, err := time.Parse(time.RFC3339, "2026-08-01T12:00:00Z")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if p.CharacterId != 7 || p.InventoryType != 1 || p.Slot != 3 || !p.Expiration.Equal(wantExpiration) {
+		t.Fatalf("payload = %+v", p)
+	}
+}
+
+func TestUnmarshalIncubatorResultStep(t *testing.T) {
+	data := []byte(`{"stepId":"s1","status":"pending","action":"incubator_result","payload":{"characterId":7,"worldId":0,"channelId":1,"itemId":4001126,"count":3},"createdAt":"2026-07-02T00:00:00Z","updatedAt":"2026-07-02T00:00:00Z"}`)
+	var s Step[any]
+	if err := json.Unmarshal(data, &s); err != nil {
+		t.Fatal(err)
+	}
+	p, ok := s.Payload.(IncubatorResultPayload)
+	if !ok {
+		t.Fatalf("payload type = %T", s.Payload)
+	}
+	if p.CharacterId != 7 || p.WorldId != 0 || p.ChannelId != 1 || p.ItemId != 4001126 || p.Count != 3 {
+		t.Fatalf("payload = %+v", p)
+	}
+}
+
+func TestUnmarshalDestroyAssetFromSlotTemplateId(t *testing.T) {
+	data := []byte(`{"stepId":"s1","status":"pending","action":"destroy_asset_from_slot","payload":{"characterId":7,"inventoryType":4,"slot":2,"quantity":1,"templateId":4001126},"createdAt":"2026-07-02T00:00:00Z","updatedAt":"2026-07-02T00:00:00Z"}`)
+	var s Step[any]
+	if err := json.Unmarshal(data, &s); err != nil {
+		t.Fatal(err)
+	}
+	p, ok := s.Payload.(DestroyAssetFromSlotPayload)
+	if !ok {
+		t.Fatalf("payload type = %T", s.Payload)
+	}
+	if p.TemplateId != 4001126 {
+		t.Fatalf("payload = %+v", p)
 	}
 }

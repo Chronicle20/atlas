@@ -101,9 +101,51 @@ their send-sites (decompiled), not inferred from adjacency.
 The delta doc's adjacency *predictions* (CHANGE_CHANNEL≈31, MOVE≈33) happened to
 match, but were confirmed here **only** by decompiled send-site body — not seeded.
 
+### Stage B2b (this pass) — body-signature resolutions (+16 net, 44 total)
+
+Body-verified from the v48 `COutPacket(N)` send-sites (never blind-shifted); each
+quoted in `gms_v48.yaml`:
+
+| v48 op | op-name | body fingerprint | v61 op / Δ |
+|---|---|---|---|
+| 32 | ENTER_CASHSHOP | throttled CWvsContext migrate, `Enc4` | 37 / −5 |
+| **46** | **NPC_TALK** | field NPC-click (sub_56D1F0 pool hit-test) `Enc4(npcOid)+Enc2(x)+Enc2(y)` | 54 / −8 |
+| 55 | ITEM_MOVE | `Enc4(t)+Enc1(invType)+Enc2(src)+Enc2(dst)+Enc2(qty)` | 70 / −15 |
+| 65 | USE_ITEM | `Enc4(t)+Enc2(slot)+Enc4(itemId)` + map-restrict | 71 / −6 |
+| 67 | DISTRIBUTE_AP | `Enc4(t)+Enc4(statFlag)`, remaining-AP gated | 80 / −13 |
+| 73 | DISTRIBUTE_SP | `Enc4(t)+Enc4(skillId)`, no guard | 82 / −9 |
+| **74** | **GIVE_FAME** | `Enc4(charId)+Enc1(flag)`, 5-min cd; caller = CUIUserInfo fame btns 0x7D4/0x7D5 | 87 / −13 |
+| 76 | CHAR_INFO_REQUEST | `Enc4(oid)+Enc4`, remote-user click | 89 / −13 |
+| 83 | ANTI_MACRO_RESULT | `Enc2(atoi(captcha))` + timer field 2911 | 96 / −13 |
+| 89 | MULTI_CHAT | `Enc1(type)+Enc1(count)+Enc4[]+EncStr` | 107 / −18 |
+| 91 | SPOUSE_CHAT | married-gated `EncStr(spouse)+EncStr(msg)` | 109 / −18 |
+| 92 | MESSENGER | invite dispatcher arm `Enc1(mode)+EncStr+EncStr` (moderate) | — |
+| 93 | PLAYER_INTERACTION | `Enc1(mode)+Enc4(charId)+Enc1` | 111 / −18 |
+| 110 | CHANGE_KEYMAP | CFuncKeyMappedMan 89-key diff `Enc4(0)+Enc4(n)+per-key{Enc4+Enc1+Enc4}` | 123 / −13 |
+| 115 | PET_COMMAND | pet chat-command parse → `Enc1(flag)+Enc1(cmdIdx)` | 140 / −25 |
+| 121 | SUMMON_ATTACK | summon skill + mob-damage list, this[36]==1 | 147 / −26 |
+
+**CORRECTION:** GIVE_FAME was mis-registered at op87 (sub_72069A) then corrected to
+op74 (sub_71CF3B) — op74's caller is unambiguously the CUIUserInfo fame up(0x7D4→flag1)/
+down(0x7D5→flag0) buttons. op87 (a field right-click social sender, `Enc4(charId)+Enc1+EncStr`,
+separate cooldown field this[2846]) is left unresolved.
+
+**NPC_TALK RESOLVED** (was the long-standing gap): op46. sub_56D1F0 (called from
+`CField::Update` @0x4c6cb3 + click handler sub_69FA53) walks the clickable field-object
+pool and returns the hit NPC; the click sends `COutPacket(46)+Enc4(npcOid)+Enc2(x)+Enc2(y)`
+= exact v61 NPC_TALK shape. Both op46 senders (sub_568A2A membership-commodity NPC,
+sub_69FA53 plain) emit the identical body. Still ≠ GENERAL_CHAT (that sender — the CField
+chat-input parser twin of v61 CField::SendChatMsg `EncStr+Enc1` — remains unlocated).
+
+**Documented-unresolved (bodies captured, no clean unique v61 match):** op57 (Enc4 keymapped
+action), op60/op61/op117 (item-use-family variants, category-gated), op77 (item-slot-5 action
+Enc4+Enc2), op78 (empty-body 200ms throttle), op79 (type-9 scripted-portal Enc1+EncStr+Enc2+Enc2),
+op80 (foothold teleport EncStr+Enc2×4 — NOT DISTRIBUTE_AP), op87 (right-click fame-like social),
+op122/op123 (summon damage / beholder skill 1320008), op113/op120 (pet/summon movepath Enc4(id)+MovePath).
+
 ### Serverbound totals
 
-- **28 serverbound** registered. Stage B (22): connect-critical path
+- **44 serverbound** registered (Stage B2b +16 net). Stage B (22): connect-critical path
   (LOGIN_PASSWORD, CHANGE_MAP, CHANGE_CHANNEL, MOVE_PLAYER) + social/field/pet/
   cashshop named senders. **Stage B2 (this pass, +6 body-verified from the actual
   `COutPacket(N)` send-site — never blind-shifted):** the **chair + attack cluster**

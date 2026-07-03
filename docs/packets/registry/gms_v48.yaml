@@ -1031,6 +1031,16 @@
   ida:
     address: 5001202
   note: 'BODY-VERIFIED send-site 0x4c4ff2: COutPacket(90)+Encode1(mode=(found?2:1)|4)+EncodeStr(target)+[EncodeStr(msg)]. Exact v61 WHISPER (op 108) body match. Resolves the delta-doc-flagged whisper opcode. Delta-18 vs v61.'
+- op: MESSENGER
+  direction: serverbound
+  opcode: 92
+  fname: sub_4BCE54
+  fname_alts:
+  - CUIMessenger::SendPacket
+  provenance: ida-discovered
+  ida:
+    address: 4967508
+  note: 'BODY-VERIFIED send-site 0x4bce54: invite-response dispatcher on this[47] — arm this[47]==0 sends COutPacket(92)+Encode1(5=mode)+EncodeStr(inviterName this+48)+EncodeStr(selfCharName)+Encode1(0); sibling arms route to party op95 (Enc1(0x15)) and guild op97 (Enc1(0x37)), and CMiniRoomBaseDlg::SendInviteResult. op92 + the 7 harvest callers in the 0x61A701-0x61E25E CUIMessenger UI region = MESSENGER (multi-person chat invite/enter). v61 has this as the messenger dispatcher family. Moderate confidence (messenger arm of a shared invite dispatcher).'
 - op: PARTY_OPERATION
   direction: serverbound
   opcode: 94
@@ -1088,6 +1098,16 @@
   ida:
     address: 5748606
   note: 'send-site 0x4e258f: COutPacket(108). v61 WEDDING_TALK=128.'
+- op: PET_COMMAND
+  direction: serverbound
+  opcode: 115
+  fname: sub_58DF8A
+  fname_alts:
+  - CPet::ParseCommand
+  provenance: ida-discovered
+  ida:
+    address: 5824394
+  note: 'BODY-VERIFIED send-site 0x58df8a: parses the typed pet-command string (TrimRight/TrimLeft, prefix chars ''!''(33)/'',''(44)/''~''(126)), scans the pet action-command table (this+116 by pet level range sub_58CFAD), then COutPacket(115)+Encode1(v29=parsedFlag)+Encode1(v32=commandIndex). = v61 PET_COMMAND (CPet::ParseCommand). v61 PET_COMMAND=140 (Delta-25). NB adjacent CPet ops op116 (Enc1(fieldKey)+Enc4(time)+Enc2(x)+Enc2(y)+Enc4(id)+Enc1x3 pet action-at-position) and movepath ops op113/op120 (Enc4(id)+MovePath) are the pet/summon move cluster, left unresolved pending MOVE_PET/MOVE_SUMMON/PET_LOOT disambiguation.'
 - op: PET_CHAT
   direction: serverbound
   opcode: 114

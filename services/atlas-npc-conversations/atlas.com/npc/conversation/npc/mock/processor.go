@@ -27,10 +27,10 @@ type ProcessorMock struct {
 	ByNpcIdProviderFunc func(npcId uint32) model.Provider[npc.Model]
 
 	// AllByNpcIdProviderFunc is a function field for the AllByNpcIdProvider method
-	AllByNpcIdProviderFunc func(npcId uint32) model.Provider[[]npc.Model]
+	AllByNpcIdProviderFunc func(npcId uint32, page model.Page) model.Provider[model.Paged[npc.Model]]
 
 	// AllProviderFunc is a function field for the AllProvider method
-	AllProviderFunc func() model.Provider[[]npc.Model]
+	AllProviderFunc func(page model.Page) model.Provider[model.Paged[npc.Model]]
 
 	// DeleteAllForTenantFunc is a function field for the DeleteAllForTenant method
 	DeleteAllForTenantFunc func() (int64, error)
@@ -87,22 +87,22 @@ func (m *ProcessorMock) ByNpcIdProvider(npcId uint32) model.Provider[npc.Model] 
 }
 
 // AllByNpcIdProvider is a mock implementation of the npc.Processor.AllByNpcIdProvider method
-func (m *ProcessorMock) AllByNpcIdProvider(npcId uint32) model.Provider[[]npc.Model] {
+func (m *ProcessorMock) AllByNpcIdProvider(npcId uint32, page model.Page) model.Provider[model.Paged[npc.Model]] {
 	if m.AllByNpcIdProviderFunc != nil {
-		return m.AllByNpcIdProviderFunc(npcId)
+		return m.AllByNpcIdProviderFunc(npcId, page)
 	}
-	return func() ([]npc.Model, error) {
-		return []npc.Model{}, nil
+	return func() (model.Paged[npc.Model], error) {
+		return model.Paged[npc.Model]{Page: page}, nil
 	}
 }
 
 // AllProvider is a mock implementation of the npc.Processor.AllProvider method
-func (m *ProcessorMock) AllProvider() model.Provider[[]npc.Model] {
+func (m *ProcessorMock) AllProvider(page model.Page) model.Provider[model.Paged[npc.Model]] {
 	if m.AllProviderFunc != nil {
-		return m.AllProviderFunc()
+		return m.AllProviderFunc(page)
 	}
-	return func() ([]npc.Model, error) {
-		return []npc.Model{}, nil
+	return func() (model.Paged[npc.Model], error) {
+		return model.Paged[npc.Model]{Page: page}, nil
 	}
 }
 

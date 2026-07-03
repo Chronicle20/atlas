@@ -1169,3 +1169,51 @@
   ida:
     address: 5748606
   note: 'send-site 0x44a44d etc: COutPacket(160), CCashShop cash-purchase family (OnBuy/OnBuyCouple/OnBuyFriendship/OnBuyPackage/OnGift/OnSetWish all COutPacket(160)+Enc1(sub-op)). v61 CASHSHOP_OPERATION=196.'
+- op: GENERAL_CHAT
+  direction: serverbound
+  opcode: 40
+  fname: sub_4C3DEF
+  fname_alts:
+  - CField::SendChatMsg
+  provenance: ida-discovered
+  ida:
+    address: 4996591
+  note: 'BODY-VERIFIED send-site 0x4c3def: COutPacket(40)+EncodeStr(msg). Sender resolved via the CUIStatusBar chat-input Enter handler sub_656FF2 (a2==13/Enter): after TrimLeft/Right, if text does NOT start with ''/'' it dispatches by chat-mode this[1560]: mode<=2 -> sub_65EB4F(MULTI_CHAT op89), mode==3 -> sub_65EA0D(SPOUSE_CHAT op91), mode==5 -> sub_4C3DEF(GENERAL_CHAT op40). CONNECT-CRITICAL. v48 general chat is EncodeStr(msg) ONLY (predates the Encode1 showFlag byte present in v61 CField::SendChatMsg EncodeStr+Enc1). v61 GENERAL_CHAT=46. Resolves the long-standing gap; op46 is NPC_TALK, NOT GENERAL_CHAT.'
+- op: PET_LOOT
+  direction: serverbound
+  opcode: 116
+  fname: sub_58ED98
+  fname_alts:
+  - CPet::SendDropPickUpRequest
+  provenance: ida-discovered
+  ida:
+    address: 5827992
+  note: 'BODY-VERIFIED send-site 0x58ed98: COutPacket(116)+Encode1(fieldKey=field+216)+Encode4(exclReqTime via SetExclRequestSent)+Encode2(x=*a2)+Encode2(y=a2[2])+Encode4(dropId=a3)+Encode1(petFlag this[57])+Encode1(petFlag this[63])+Encode1(petFlag this[60]). this = CPet. = v61 PET_LOOT (CPet::SendDropPickUpRequest) drop-pickup body. v48 predates multi-pet so NO leading EncodeBuffer(petId,8) that v61 op141 carries; the three trailing pet-flag Enc1 bytes + CPet receiver + fieldKey/coords/dropId are the definitive PET_LOOT signature. v61 PET_LOOT=141.'
+- op: MOVE_SUMMON
+  direction: serverbound
+  opcode: 120
+  fname: sub_6E7CF8
+  provenance: ida-discovered
+  ida:
+    address: 7240952
+  note: 'BODY-VERIFIED send-site 0x6e7cf8: COutPacket(120)+Encode4(summonId=this[136])+sub_5622DA (CMovePath::Flush helper @0x5622da, contains ZList<CMovePath::ELEM>::AddTail + off_79F898 vtable). = v61 MOVE_SUMMON (Encode4(summonId)+CMovePath::Flush) shape exactly. Guard sub_562275(this[139]==3). v61 MOVE_SUMMON=146.'
+- op: DAMAGE_SUMMON
+  direction: serverbound
+  opcode: 122
+  fname: sub_5DA381
+  fname_alts:
+  - CSummoned::SetDamaged
+  provenance: ida-discovered
+  ida:
+    address: 6136705
+  note: 'BODY-VERIFIED send-site 0x5da381: COutPacket(122)+Encode4(summonId=this[33])+ if(mob!=0){Encode1(attackIdx=a6)+Encode4(damage=a2)+Encode4(mobTemplateId)+Encode1(dir<0 = a7<0)} else {Encode1(0xFE)+Encode4(damage=a2)}. EXACT v61 DAMAGE_SUMMON (CSummoned::SetDamaged) mob/no-mob branch shape. v61 DAMAGE_SUMMON=148. Resolves the prior op122 documented-unresolved summon-damage row.'
+- op: MOVE_PET
+  direction: serverbound
+  opcode: 113
+  fname: sub_6E5BD6
+  fname_alts:
+  - CVecCtrlPet::EndUpdateActive
+  provenance: ida-discovered
+  ida:
+    address: 7232470
+  note: 'send-site 0x6e5bd6: COutPacket(113)+sub_5622DA (CMovePath::Flush, same movepath helper as MOVE_SUMMON op120). Sibling movepath sender to MOVE_SUMMON (op120) but with NO leading id encode -- consistent with v48 single-pet (pre-multipet, matches PET_LOOT op116 also omitting the petId buffer). Vtable-referenced (0x7a386c) CVecCtrl::EndUpdateActive override. = MOVE_PET (v61 op138 CVecCtrlPet::EndUpdateActive EncodeBuffer(petId,8)+CMovePath::Flush; v48 drops the petId buffer). MODERATE confidence: body is movepath-only; the pet-vs-other-movable identity rests on the single-pet no-id shape + sibling adjacency to the Enc4-id MOVE_SUMMON. Resolves the prior op113 documented-unresolved movepath row.'

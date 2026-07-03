@@ -9,6 +9,7 @@ import (
 	"atlas-channel/merchant"
 	"atlas-channel/server"
 	"atlas-channel/session"
+	"atlas-channel/shopscanner"
 	"atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
 	"context"
@@ -189,6 +190,9 @@ func handleVisitorEvent(sc server.Model, wp writer.Producer) func(l logrus.Field
 		case merchant2.StatusEventVisitorEntered:
 			l.Debugf("Visitor [%d] entered shop [%s] at slot [%d].", e.Body.CharacterId, e.Body.ShopId, e.Body.Slot)
 
+			// A completed visit consumes any pending owl-warp entry (task-127).
+			shopscanner.GetRegistry().RemovePending(t, e.Body.CharacterId)
+
 			// Send full shop interior to the entering visitor.
 			room, err := buildShopRoom(l, ctx, e.Body.ShopId, e.Body.CharacterId)
 			if err != nil {
@@ -292,6 +296,15 @@ func handleCapacityFullEvent(sc server.Model, wp writer.Producer) func(l logrus.
 		}
 
 		l.Debugf("Shop [%s] is full, character [%d] cannot enter.", e.Body.ShopId, e.CharacterId)
+
+		reg := shopscanner.GetRegistry()
+		if _, ok := reg.GetPending(t, e.CharacterId); ok {
+			// Owl warp arrival hit a full shop: answer with the faithful
+			// SHOP_LINK code 2 instead of the mini-room error (task-127).
+			reg.RemovePending(t, e.CharacterId)
+			_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, session.Announce(l)(ctx)(wp)(merchantcb.ShopLinkResultWriter)(writer.ShopLinkResultBody(merchantpkt.ShopLinkResultCodeFull)))
+			return
+		}
 
 		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, session.Announce(l)(ctx)(wp)(interactioncb.CharacterInteractionWriter)(interactioncb.CharacterInteractionEnterResultErrorBody(interactioncb.CharacterInteractionEnterErrorModeFull)))
 	}

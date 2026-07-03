@@ -39704,9 +39704,8 @@
     {
       "kind": "op",
       "op": "VICIOUS_HAMMER",
-      "packet": "field/clientbound/FieldViciousHammer",
       "direction": "clientbound",
-      "tier1": true,
+      "tier1": false,
       "fnames": [
         "CField::OnItemUpgrade"
       ],
@@ -39728,19 +39727,23 @@
           "opcode": -1
         },
         "gms_v83": {
-          "state": "verified",
+          "state": "incomplete",
+          "note": "no audit report",
           "opcode": 354
         },
         "gms_v84": {
-          "state": "verified",
+          "state": "incomplete",
+          "note": "no audit report",
           "opcode": 361
         },
         "gms_v87": {
-          "state": "verified",
+          "state": "incomplete",
+          "note": "no audit report",
           "opcode": 375
         },
         "gms_v95": {
-          "state": "verified",
+          "state": "incomplete",
+          "note": "no audit report",
           "opcode": 425
         },
         "jms_v185": {

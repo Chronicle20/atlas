@@ -487,7 +487,7 @@ Tool: `9eb19e8a4f36684cb89919c2b68f247713dde11a`
 | UPDATE_BEANS |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x15F | ❌ |
 | ONE_A_DAY | CCashShop::OnOneADay |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x161 | ❌ | 0x18B | ❌ |  | ⬜ |
 | IDA_0X162 | CCashShop::OnNoticeFreeCashItem |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x162 | ❌ |
-| VICIOUS_HAMMER | CField::OnItemUpgrade | field/clientbound/FieldViciousHammer (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x162 | ✅ | 0x169 | ✅ | 0x177 | ✅ | 0x1A9 | ✅ |  | ⬜ |
+| VICIOUS_HAMMER | CField::OnItemUpgrade |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x162 | ❌ | 0x169 | ❌ | 0x177 | ❌ | 0x1A9 | ❌ |  | ⬜ |
 | ARIANT_SCORE | CField_Witchtower::OnPacket; CField_Witchtower::OnScoreUpdate | field/clientbound/FieldAriantScore (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x166 | ✅ |  | ⬜ |
 | VEGA_SCROLL | CUIVega::OnVegaResult |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x166 | ❌ | 0x166 | ❌ | 0x17B | ❌ | 0x1AD | ❌ | 0x183 | ❌ |
 | HONTALE_TIMER | CField::OnHontaleTimer |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x167 | ❌ |  | ⬜ |
@@ -996,10 +996,10 @@ Tool: `9eb19e8a4f36684cb89919c2b68f247713dde11a`
 | v61 | 232 | 0 | 60 | 201 | 465 | 0 | 47.1% |
 | v72 | 240 | 0 | 73 | 219 | 426 | 0 | 45.1% |
 | v79 | 252 | 0 | 72 | 217 | 417 | 0 | 46.6% |
-| v83 | 392 | 0 | 0 | 342 | 224 | 0 | 53.4% |
-| v84 | 369 | 0 | 0 | 345 | 244 | 0 | 51.7% |
-| v87 | 403 | 0 | 0 | 368 | 187 | 0 | 52.3% |
-| v95 | 423 | 0 | 0 | 432 | 103 | 0 | 49.5% |
+| v83 | 391 | 0 | 0 | 343 | 224 | 0 | 53.3% |
+| v84 | 368 | 0 | 0 | 346 | 244 | 0 | 51.5% |
+| v87 | 402 | 0 | 0 | 369 | 187 | 0 | 52.1% |
+| v95 | 422 | 0 | 0 | 433 | 103 | 0 | 49.4% |
 | JMS185 | 385 | 0 | 0 | 379 | 194 | 0 | 50.4% |
 
 ## Conflicts

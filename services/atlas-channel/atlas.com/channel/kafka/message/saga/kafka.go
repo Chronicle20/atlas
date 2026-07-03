@@ -21,6 +21,7 @@ const (
 // Saga type constants
 const (
 	SagaTypeStorageOperation = "storage_operation"
+	SagaTypeIncubatorUse     = "incubator_use"
 )
 
 type StatusEvent[T any] struct {

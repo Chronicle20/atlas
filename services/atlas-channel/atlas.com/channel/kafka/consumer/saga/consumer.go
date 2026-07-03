@@ -14,6 +14,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	incubatorcb "github.com/Chronicle20/atlas/libs/atlas-packet/incubator/clientbound"
 	storagepkt "github.com/Chronicle20/atlas/libs/atlas-packet/storage"
 	storagecb "github.com/Chronicle20/atlas/libs/atlas-packet/storage/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
@@ -125,6 +126,18 @@ func handleFailedEvent(sc server.Model, wp writer.Producer) message.Handler[saga
 				"character_id": e.Body.CharacterId,
 				"error_code":   e.Body.ErrorCode,
 			}).Debug("Sent storage operation error packet to client.")
+			return
+		}
+
+		// Handle incubator use failures by announcing a zero/failed result to the client
+		if e.Body.SagaType == saga.SagaTypeIncubatorUse {
+			err = session.Announce(l)(ctx)(wp)(incubatorcb.IncubatorResultWriter)(incubatorcb.NewIncubatorResult(0, 0).Encode)(s)
+			if err != nil {
+				l.WithError(err).WithField("character_id", e.Body.CharacterId).Error("Failed to send incubator result packet to client.")
+				return
+			}
+
+			l.WithField("character_id", e.Body.CharacterId).Debug("Sent incubator failure result packet to client.")
 		}
 	}
 }

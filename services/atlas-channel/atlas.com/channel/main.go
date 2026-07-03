@@ -24,6 +24,7 @@ import (
 	"atlas-channel/kafka/consumer/gachapon"
 	"atlas-channel/kafka/consumer/guild"
 	"atlas-channel/kafka/consumer/guild/thread"
+	incubatorconsumer "atlas-channel/kafka/consumer/incubator"
 	"atlas-channel/kafka/consumer/instance_transport"
 	"atlas-channel/kafka/consumer/invite"
 	"atlas-channel/kafka/consumer/map"
@@ -214,6 +215,7 @@ func main() {
 	saga.InitConsumers(l)(cmf)(consumerGroupId)
 	storage3.InitConsumers(l)(cmf)(consumerGroupId)
 	gachapon.InitConsumers(l)(cmf)(consumerGroupId)
+	incubatorconsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	merchantConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	mountConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 
@@ -544,6 +546,9 @@ func buildListener(
 			return nil, err
 		}
 		if err := register(gachapon.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
+		if err := register(incubatorconsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
 			return nil, err
 		}
 		if err := register(merchantConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {

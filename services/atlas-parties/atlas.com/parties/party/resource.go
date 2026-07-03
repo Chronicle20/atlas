@@ -148,6 +148,12 @@ func handleUpdateParty(d *rest.HandlerDependency, _ *rest.HandlerContext, i Rest
 func handleGetPartyMembers(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParsePartyId(d.Logger(), func(partyId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
+			page, err := paginate.ParseParams(r.URL.Query(), paginate.MaxPageSize, paginate.MaxPageSize)
+			if err != nil {
+				server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+				return
+			}
+
 			p, err := NewProcessor(d.Logger(), d.Context()).GetById(partyId)
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
@@ -161,7 +167,12 @@ func handleGetPartyMembers(d *rest.HandlerDependency, c *rest.HandlerContext) ht
 				return
 			}
 
-			server.MarshalResponse[[]MemberRestModel](d.Logger())(w)(c.ServerInformation())(r.URL.Query())(res.Members)
+			sortedMembers := make([]MemberRestModel, len(res.Members))
+			copy(sortedMembers, res.Members)
+			sort.Slice(sortedMembers, func(i, j int) bool { return sortedMembers[i].Id < sortedMembers[j].Id })
+			paged := paginate.Slice(sortedMembers, page)
+
+			server.MarshalPaginatedResponse[[]MemberRestModel](d.Logger())(w)(c.ServerInformation())(r.URL.Query())(paged.Items, paginate.EnvelopeFor(paged), r)
 		}
 	})
 }

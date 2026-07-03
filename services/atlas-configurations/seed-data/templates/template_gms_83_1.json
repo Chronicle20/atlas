@@ -1190,6 +1190,11 @@
         "opCode": "0x085",
         "validator": "LoggedInValidator",
         "handler": "EnterDoorHandle"
+      },
+      {
+        "opCode": "0x104",
+        "validator": "LoggedInValidator",
+        "handler": "ItemUpgradeUpdateHandle"
       }
     ],
     "writers": [
@@ -2787,7 +2792,14 @@
       },
       {
         "opCode": "0x162",
-        "writer": "ViciousHammer"
+        "writer": "ViciousHammer",
+        "options": {
+          "operations": {
+            "OPEN": 0,
+            "SUCCESS": 61,
+            "FAILURE": 62
+          }
+        }
       },
       {
         "opCode": "0x144",

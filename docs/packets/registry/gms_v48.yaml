@@ -1016,13 +1016,19 @@
 - op: CHANGE_KEYMAP
   direction: serverbound
   opcode: 110
-  fname: sub_4E5FAE
-  fname_alts:
-  - CFuncKeyMappedMan::SaveFuncKeyMap
+  fname: CFuncKeyMappedMan::SaveFuncKeyMap
   provenance: ida-discovered
   ida:
     address: 5136302
-  note: 'BODY-VERIFIED send-site 0x4e5fae (this=CFuncKeyMappedMan): diffs the 89-entry keymap vs the saved copy (offset +4 vs +449), then COutPacket(110)+Encode4(mode=0)+Encode4(changedCount)+per-key{Encode4(keyIndex)+Encode1(type)+Encode4(action) via sub_49C937} + CFuncKeyMappedMan::AdaptVirtualKey. = v61 CHANGE_KEYMAP (SaveFuncKeyMap). v61 CHANGE_KEYMAP=123 (Delta-13).'
+  note: 'BODY-VERIFIED send-site 0x4e5fae (this=CFuncKeyMappedMan): diffs the 89-entry keymap vs the saved copy (offset +4 vs +449), then COutPacket(110)+Encode4(mode=0)+Encode4(changedCount)+per-key{Encode4(keyIndex)+Encode1(type)+Encode4(action) via sub_49C937} + CFuncKeyMappedMan::AdaptVirtualKey. = v61 CHANGE_KEYMAP (SaveFuncKeyMap). v61 CHANGE_KEYMAP=123 (Delta-13). task-113(v48) stage D: named the send-site (was unnamed sub_4E5FAE in the v48 IDB) to CFuncKeyMappedMan::SaveFuncKeyMap, uniform with all sibling versions (task-109) so the op-identity guard treats v48 like its siblings and does not regress the verified v87/jms CHANGE_KEYMAP cells to a false template-wiring conflict.'
+- op: NOTE_ACTION
+  direction: serverbound
+  opcode: 101
+  fname: CMemoListDlg::SetRet
+  provenance: ida-discovered
+  ida:
+    address: 5459396
+  note: 'task-113(v48) stage D: NOTE_ACTION was omitted from the v48 Stage-B registry although the send-site exists. BODY-VERIFIED CMemoListDlg::SetRet @0x534dc4: on YesNo confirm it COutPacket(101)+Encode1(mode=1)+Encode1(totalCount)+Encode1(deleteCount)+Encode1(emptySlotCount)+per-memo{type==2(receive): Encode4(memoId)+Encode1(type)+Encode4(charId); else: Encode4(memoId)+Encode1(type)} = v61 NOTE_ACTION (CMemoListDlg::SetRet, op 119). Delete-type memos (type==1) additionally fire a secondary COutPacket(102) via sub_57B7C7. v48 opcode 101 (Delta-18 vs v61 119).'
 - op: WHISPER
   direction: serverbound
   opcode: 90

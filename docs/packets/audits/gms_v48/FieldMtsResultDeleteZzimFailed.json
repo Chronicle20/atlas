@@ -1,0 +1,21 @@
+{
+  "WriterName": "FieldMtsResultDeleteZzimFailed",
+  "IDAName": "CITC::OnNormalItemResult#DeleteZzimFailed",
+  "Address": "",
+  "Variant": "GMS/v48",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/field/clientbound/mts_operation.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 6,
+      "IDAComment": "function not found in IDB",
+      "Verdict": 4,
+      "Note": "IDA read-order unresolved: function not found in IDB"
+    }
+  ],
+  "Verdict": 4,
+  "FlatInvalid": false
+}

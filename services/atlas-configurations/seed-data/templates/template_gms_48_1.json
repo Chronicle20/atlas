@@ -343,6 +343,11 @@
         "handler": "CharacterKeyMapChangeHandle"
       },
       {
+        "opCode": "0x65",
+        "validator": "LoggedInValidator",
+        "handler": "NoteOperationHandle"
+      },
+      {
         "opCode": "0x5A",
         "validator": "LoggedInValidator",
         "handler": "CharacterChatWhisperHandle"

@@ -11,7 +11,7 @@ import (
 )
 
 // VersionKeys is the canonical baseline column order (design §3).
-var VersionKeys = []string{"gms_v61", "gms_v72", "gms_v79", "gms_v83", "gms_v84", "gms_v87", "gms_v95", "jms_v185"}
+var VersionKeys = []string{"gms_v48", "gms_v61", "gms_v72", "gms_v79", "gms_v83", "gms_v84", "gms_v87", "gms_v95", "jms_v185"}
 
 // ExportPath maps a version key to its IDA export JSON. jms_v185's export
 // kept its historical gms_jms_185 name (see memory: jms audit-dir mismatch).
@@ -27,6 +27,7 @@ func ExportPath(versionKey string) string {
 // forgets its template here fails `go test` instead of silently emitting a
 // "no template for <key>" matrix warning + an unrouted (wrong-applicability) column.
 var templateFiles = map[string]string{
+	"gms_v48":  "template_gms_48_1.json",
 	"gms_v61":  "template_gms_61_1.json",
 	"gms_v72":  "template_gms_72_1.json",
 	"gms_v79":  "template_gms_79_1.json",

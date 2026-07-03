@@ -10,6 +10,7 @@ import (
 )
 
 var shortLabels = map[string]string{
+	"gms_v48": "v48",
 	"gms_v61": "v61",
 	"gms_v72": "v72",
 	"gms_v79": "v79",

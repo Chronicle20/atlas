@@ -1,0 +1,21 @@
+{
+  "WriterName": "BuddyOperationDelete",
+  "IDAName": "CField::SendDeleteFriendMsg",
+  "Address": "",
+  "Variant": "GMS/v48",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/buddy/serverbound/operation_delete.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 6,
+      "IDAComment": "function not found in IDB",
+      "Verdict": 4,
+      "Note": "IDA read-order unresolved: function not found in IDB"
+    }
+  ],
+  "Verdict": 4,
+  "FlatInvalid": false
+}

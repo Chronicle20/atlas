@@ -16,6 +16,12 @@ func (r *RewardRestModel) SetID(id string) error {
 	return nil
 }
 
+// SetToOneReferenceID satisfies the api2go UnmarshalToOneRelations interface.
+func (r *RewardRestModel) SetToOneReferenceID(_ string, _ string) error { return nil }
+
+// SetToManyReferenceIDs satisfies the api2go UnmarshalToManyRelations interface.
+func (r *RewardRestModel) SetToManyReferenceIDs(_ string, _ []string) error { return nil }
+
 // Reward is one weighted incubator reward entry.
 type Reward struct {
 	itemId   uint32

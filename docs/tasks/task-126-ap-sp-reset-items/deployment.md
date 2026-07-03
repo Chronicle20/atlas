@@ -82,31 +82,63 @@ needed for either version in this task.
 - New **gms_83**/**gms_84** tenants already seed the handler as before (unchanged, pre-existing
   rows).
 
-## 4. Known limitation — skill-macro echo writer not wired on gms_95 (pre-existing gap, out of scope)
+## 4. CharacterSkillMacro clientbound writer wired on gms_95 (FR-18 macro refresh — RESOLVED)
 
 Part of this feature's SP-reset flow (FR-18, macro cleanup visibility) re-pushes the character's
 skill macros to the client via the `CharacterSkillMacro` clientbound writer
-(`charpkt.CharacterSkillMacroWriter`) when the macro-status Kafka topic fires an `UPDATED`
-event. This writer is **not present** in `template_gms_95_1.json` (nor in
-`template_gms_87_1.json`, `template_gms_92_1.json`, or `template_jms_185_1.json`) — it exists
-only in `template_gms_83_1.json` (opcode `0x7C`) and `template_gms_84_1.json` (opcode `0x7F`),
-confirming the opcode is version-shifted and cannot be guessed for other versions without IDA
-verification.
+(`charpkt.CharacterSkillMacroWriter`, `libs/atlas-packet/character/skill_macro.go` —
+`CUser::SendSkillMacroModifiedMessage` family) when the macro-status Kafka topic fires an
+`UPDATED` event. It is also called unconditionally at character login
+(`kafka/consumer/session/consumer.go:320-339`).
 
-This is a **pre-existing gap**, not introduced by this task: `CharacterSkillMacroWriter` is
-already called unconditionally at character login (`kafka/consumer/session/consumer.go:320-339`)
-regardless of tenant version, so gms_95 (and gms_87/92/jms) tenants already silently fail to
-receive the login-time macro push today, independent of the AP/SP-reset feature. The
-`session.Announce` write is non-fatal on a missing writer (same "silently dropped" behavior as
-an unrouted handler opcode) — the macro data itself is correctly persisted server-side, but the
-client's macro UI does not refresh until the next full login on these versions.
+This writer was **previously absent** from `template_gms_95_1.json`, so both FR-18's live
+macro refresh and the pre-existing login-time macro push silently no-op'd on gms_95 (the
+`session.Announce` write is non-fatal on a missing writer — same "silently dropped" behavior as
+an unrouted handler opcode; the macro data itself persists server-side but the client's macro UI
+never refreshes). This task **fixes that gap** for gms_95.
 
-This task does not fix that gap: doing so would require IDA-verifying the `CharacterSkillMacro`
-writer opcode for gms_95 (and separately for gms_87/92/jms), which is outside this task's scope
-(wiring the point-reset serverbound handler) and outside what can be produced without an IDB.
-It is called out here so the AP/SP-reset feature's known behavior on gms_95 is documented
-accurately: AP reset and SP reset both complete correctly (stat/skill changes, pink-text
-messaging, and action re-enable all use writers confirmed present in `template_gms_95_1.json` —
-`StatChanged` opcode `0x1E`, `WorldMessage` opcode `0x47`, `CharacterSkillChange` opcode
-`0x23`), but the client's macro list will not visibly refresh until the player's next login if
-the reset invalidated a bound macro.
+**IDA-verified opcode (live `GMS_v95.0_U_DEVM.exe` IDB):** the clientbound macro packet
+(`CWvsContext::OnMacroSysDataInit` @`0x9f0c70`, which calls `CMacroSysMan::SetMacro(CInPacket&)`)
+is dispatched from `CWvsContext::OnPacket` (@`0x9e5830`) at `case 140:` (dispatch site
+@`0x9e5ad6`). `CClientSocket::ProcessPacket` (@`0x4b00f0`) passes the raw wire opcode from
+`CInPacket::Decode2` directly into `CWvsContext::OnPacket` with no offset (`v5 = v4;` →
+`OnPacket(..., v5, iPacket)`), and the default-branch guard `(v5 - 28) > 0x70` bounds the
+CWvsContext range to opcodes 28..140, with macro as the exact upper bound. So the v95 clientbound
+macro opcode is **140 = `0x8C`**. Cross-check: `0x8C` falls between `ScriptProgress` (`0x7F`) and
+`SetField` (`0x8D`) in the v95 writers array, matching gms_83's ordering (macro sits between
+`ScriptProgress 0x7A` and `SetField 0x7D`). The opcode is version-shifted (gms_83 uses `0x7C`),
+confirming it could not have been copied and had to be read from the v95 client.
+
+Row added to `template_gms_95_1.json`'s top-level `writers` array:
+
+```json
+{
+  "opCode": "0x8C",
+  "writer": "CharacterSkillMacro"
+}
+```
+
+### Live gms_95 tenant patch (required)
+
+Existing gms_95 tenants do **not** re-seed from the updated template. This writer row must be
+PATCHed into each live gms_95 tenant's socket configuration the same way as the
+`CharacterCashItemUseHandle` handler row (section 1): `GET` the socket/writers configuration
+resource, append the `{"opCode": "0x8C", "writer": "CharacterSkillMacro"}` entry (preserving
+existing entries and numeric ordering), `PATCH` it back, then **restart atlas-channel** for that
+tenant/cluster — writer wiring is resolved once at config load and does not hot-reload on a live
+PATCH.
+
+### Parked versions — FR-18 macro refresh still degraded
+
+On the parked versions (`gms_87`, `jms_185`, `gms_92`) the `CharacterSkillMacro` writer is
+**likewise still absent** and cannot be added without an IDB to IDA-verify the version-specific
+opcode (the opcode is version-shifted, as proven above). FR-18's live macro refresh and the
+login-time macro push therefore remain degraded on those versions — consistent with, and for the
+same reason as, the point-reset handler park in section 2. They unblock together: once an IDB
+exists for that version, the macro writer opcode can be IDA-verified and wired alongside the
+point-reset handler. (`gms_83`/`gms_84` already carry the writer — `0x7C`/`0x7F` respectively.)
+
+With the writer now wired on gms_95, AP reset and SP reset both complete correctly *and* the
+client's macro list refreshes live on gms_95 (via the FR-18 `UPDATED` push and at login), in
+addition to the stat/skill/pink-text writers already confirmed present in
+`template_gms_95_1.json` (`StatChanged 0x1E`, `WorldMessage 0x47`, `CharacterSkillChange 0x23`).

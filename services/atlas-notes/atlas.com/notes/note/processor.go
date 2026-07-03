@@ -29,9 +29,16 @@ type Processor interface {
 	Discard(mb *message.Buffer) func(ch channel.Model) func(characterId uint32) func(noteIds []uint32) ([]pendingFameAward, error)
 	DiscardAndEmit(ch channel.Model, characterId uint32, noteIds []uint32) error
 	ByIdProvider(id uint32) model.Provider[Model]
-	ByCharacterProvider(characterId uint32) model.Provider[[]Model]
-	InTenantProvider() model.Provider[[]Model]
+	ByCharacterProvider(characterId uint32, page model.Page) model.Provider[model.Paged[Model]]
+	AllProvider(page model.Page) model.Provider[model.Paged[Model]]
 }
+
+// notesDrainPageSize is the page size used for in-service drain loops that
+// need every note for a character (e.g. DeleteAll). Kept as a private
+// processor-local constant duplicating paginate.MaxPageSize's value (250) to
+// avoid a layering import from processor -> server/paginate (see task-117
+// task-9 report, "Concerns").
+const notesDrainPageSize = 250
 
 type ProcessorImpl struct {
 	l     logrus.FieldLogger
@@ -183,10 +190,32 @@ func (p *ProcessorImpl) DeleteAndEmit(id uint32) error {
 	})
 }
 
+// drainByCharacter retrieves every note for a character across all pages.
+// DeleteAll needs the complete set (to emit a delete-status event per note),
+// not a single page, so it drains ByCharacterProvider in a loop rather than
+// calling it once. See task-117 task-9 report's LoggedInTenantProvider
+// drain for the identical rationale.
+func (p *ProcessorImpl) drainByCharacter(characterId uint32) ([]Model, error) {
+	var results []Model
+	page := model.Page{Number: 1, Size: notesDrainPageSize}
+	for {
+		paged, err := p.ByCharacterProvider(characterId, page)()
+		if err != nil {
+			return nil, err
+		}
+		results = append(results, paged.Items...)
+		if len(results) >= paged.Total || len(paged.Items) < page.Size {
+			break
+		}
+		page.Number++
+	}
+	return results, nil
+}
+
 // DeleteAll deletes all notes for a character
 func (p *ProcessorImpl) DeleteAll(mb *message.Buffer) func(characterId uint32) error {
 	return func(characterId uint32) error {
-		ms, err := p.ByCharacterProvider(characterId)()
+		ms, err := p.drainByCharacter(characterId)
 		if err != nil {
 			return err
 		}
@@ -217,14 +246,16 @@ func (p *ProcessorImpl) ByIdProvider(id uint32) model.Provider[Model] {
 	return model.Map[Entity, Model](Make)(getByIdProvider(id)(p.db.WithContext(p.ctx)))
 }
 
-// ByCharacterProvider retrieves all notes for a character
-func (p *ProcessorImpl) ByCharacterProvider(characterId uint32) model.Provider[[]Model] {
-	return model.SliceMap[Entity, Model](Make)(getByCharacterIdProvider(characterId)(p.db.WithContext(p.ctx)))(model.ParallelMap())
+// ByCharacterProvider retrieves one page of notes for a character
+func (p *ProcessorImpl) ByCharacterProvider(characterId uint32, page model.Page) model.Provider[model.Paged[Model]] {
+	ep := getByCharacterIdPagedProvider(characterId, page)(p.db.WithContext(p.ctx))
+	return model.MapPaged(Make)(ep)(model.ParallelMap())
 }
 
-// InTenantProvider retrieves all notes in a tenant
-func (p *ProcessorImpl) InTenantProvider() model.Provider[[]Model] {
-	return model.SliceMap[Entity, Model](Make)(getAllProvider()(p.db.WithContext(p.ctx)))(model.ParallelMap())
+// AllProvider retrieves one page of notes in a tenant
+func (p *ProcessorImpl) AllProvider(page model.Page) model.Provider[model.Paged[Model]] {
+	ep := getAllInTenantProvider(page)(p.db.WithContext(p.ctx))
+	return model.MapPaged(Make)(ep)(model.ParallelMap())
 }
 
 // pendingFameAward pairs a built fame-award saga with the note/sender ids used for logging when it

@@ -1,0 +1,10 @@
+packet: character/clientbound/CharacterExpression
+direction: clientbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: CAvatar::SetEmotion
+    address: "0x43e877"
+    decompile_sha256: 2d445e207bd5f184d20ccc37ad254cc028d398ad840ad83473a56977d7b00dee
+verifies:
+    - libs/atlas-packet/character/clientbound/v61_test.go#TestCharacterExpressionByteOutputV61

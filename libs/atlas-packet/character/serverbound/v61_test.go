@@ -286,3 +286,43 @@ func TestExpressionRequestByteOutputV61(t *testing.T) {
 		t.Errorf("v61 ExpressionRequest wire: got %x want %x", got, want)
 	}
 }
+
+// DropMeso v61 byte-fixture — MESO_DROP, op 86 (0x56).
+//
+// Client send — CWvsContext::SendDropMoneyRequest (sub_8459DD) @0x8459DD:
+//   COutPacket(86)                                                  /*0x845a04*/
+//   Encode4(updateTime)                                             /*0x845a16*/
+//   Encode4(amount)                                                 /*0x845a21*/
+//
+// Body = updateTime(4) + amount(4) == v72 MESO_DROP. task-113 scramble fix: real
+// v61 MESO_DROP is op 86 (was mislabeled DISTRIBUTE_AP). Caller = drop-meso spinner.
+//
+// packet-audit:verify packet=character/serverbound/DropMeso version=gms_v61 ida=0x8459dd
+func TestDropMesoByteOutputV61(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 61, 1)
+	got := DropMeso{updateTime: 100, amount: 5000}.Encode(nil, ctx)(nil)
+	want := []byte{
+		0x64, 0x00, 0x00, 0x00, // updateTime 100 (Encode4)   /*0x845a16*/
+		0x88, 0x13, 0x00, 0x00, // amount 5000 (Encode4)       /*0x845a21*/
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("v61 DropMeso wire:\n got %x\nwant %x", got, want)
+	}
+}
+
+// ChalkboardClose v61 byte-fixture — CLOSE_CHALKBOARD, op 47 (0x2F).
+//
+// Client send — sub_7A3981 @0x7A3981 (CUserLocal close-chalkboard on cursor):
+//   COutPacket(47)                                                  /*0x7a39bc*/
+//   SendPacket                             // NO body               /*0x7a39cf*/
+//
+// Empty body == v72. v61 op 47 (v72 CLOSE_CHALKBOARD=49, Δ-2).
+//
+// packet-audit:verify packet=character/serverbound/ChalkboardClose version=gms_v61 ida=0x7a3981
+func TestChalkboardCloseByteOutputV61(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 61, 1)
+	got := ChalkboardClose{}.Encode(nil, ctx)(nil)
+	if len(got) != 0 {
+		t.Errorf("v61 ChalkboardClose wire: got %x want empty", got)
+	}
+}

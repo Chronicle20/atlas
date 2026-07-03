@@ -709,3 +709,23 @@ func TestEffectQuestByteOutputV61(t *testing.T) {
 		}
 	})
 }
+
+// CharacterExpression v61 byte-fixture — FACIAL_EXPRESSION, op 149.
+//
+// Read inline in CUserPool::OnUserRemotePacket case 149: v6 = Decode4(expression),
+// then CAvatar::SetEmotion(RemoteUser, v6, -1) — NO duration, NO byItemOption
+// (GMS>87 / JMS only; v61 < 87). characterId(4) is read by the dispatcher.
+// Byte-identical to the v72 fixture.
+//
+// packet-audit:verify packet=character/clientbound/CharacterExpression version=gms_v61 ida=0x43e877
+func TestCharacterExpressionByteOutputV61(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 61, 1)
+	got := NewCharacterExpression(12345, 5, 3000).Encode(nil, ctx)(nil)
+	want := []byte{
+		0x39, 0x30, 0x00, 0x00, // characterId 12345 (dispatcher Decode4)
+		0x05, 0x00, 0x00, 0x00, // expression 5 (Decode4)
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("v61 CharacterExpression wire: got %x want %x", got, want)
+	}
+}

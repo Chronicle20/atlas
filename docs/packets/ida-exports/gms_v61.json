@@ -13664,13 +13664,16 @@
    "calls": null
   },
   "CWvsContext::SendDropMoneyRequest": {
-   "address": "",
+   "address": "0x8459dd",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Encode4",
+     "comment": "updateTime"
+    },
+    {
+     "op": "Encode4",
+     "comment": "amount"
     }
    ]
   },
@@ -17231,6 +17234,11 @@
      "comment": "slots @0x566b02"
     }
    ]
+  },
+  "sub_7A3981": {
+   "address": "0x7a3981",
+   "direction": "serverbound",
+   "calls": []
   }
  }
 }

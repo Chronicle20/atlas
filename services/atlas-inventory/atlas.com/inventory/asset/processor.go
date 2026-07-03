@@ -16,6 +16,7 @@ import (
 	"math/rand"
 	"time"
 
+	af "github.com/Chronicle20/atlas/libs/atlas-constants/asset"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
@@ -262,6 +263,39 @@ func (p *Processor) UpdateEquipmentStats(mb *message.Buffer) func(transactionId 
 			return err
 		}
 		return mb.Put(asset.EnvEventTopicStatus, UpdatedEventStatusProvider(transactionId, characterId, updated))
+	}
+}
+
+// UpdateOwner stamps the owner field onto an asset in place and emits the
+// existing UPDATED status event.
+func (p *Processor) UpdateOwner(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32) func(a Model, owner string) error {
+	return func(transactionId uuid.UUID, characterId uint32) func(a Model, owner string) error {
+		return func(a Model, owner string) error {
+			updated := Clone(a).SetOwner(owner).Build()
+			if err := updateOwner(p.db.WithContext(p.ctx), a.Id(), owner); err != nil {
+				return err
+			}
+			return mb.Put(asset.EnvEventTopicStatus, UpdatedEventStatusProvider(transactionId, characterId, updated))
+		}
+	}
+}
+
+// ApplyLock sets FlagLock and the expiration on an asset in place, emitting
+// the existing UPDATED status event. It rejects an asset that is not already
+// locked but carries a non-zero expiration — a genuinely time-limited item —
+// to prevent laundering it into a permanent lock.
+func (p *Processor) ApplyLock(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32) func(a Model, expiration time.Time) error {
+	return func(transactionId uuid.UUID, characterId uint32) func(a Model, expiration time.Time) error {
+		return func(a Model, expiration time.Time) error {
+			if !a.Locked() && !a.Expiration().IsZero() {
+				return errors.New("asset has a non-lock expiration")
+			}
+			updated := Clone(a).AddFlag(af.FlagLock).SetExpiration(expiration).Build()
+			if err := updateFlagAndExpiration(p.db.WithContext(p.ctx), a.Id(), updated.Flag(), expiration); err != nil {
+				return err
+			}
+			return mb.Put(asset.EnvEventTopicStatus, UpdatedEventStatusProvider(transactionId, characterId, updated))
+		}
 	}
 }
 

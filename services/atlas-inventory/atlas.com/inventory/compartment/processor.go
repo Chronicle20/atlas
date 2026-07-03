@@ -83,6 +83,10 @@ type Provider interface {
 	ModifyEquipment(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, assetId uint32, stats asset.Model) error
 	ChangeTemplateAndEmit(transactionId uuid.UUID, characterId uint32, petId uint32, newTemplateId uint32) error
 	ChangeTemplate(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, petId uint32, newTemplateId uint32) error
+	SetAssetOwnerAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, owner string) error
+	SetAssetOwner(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, owner string) error
+	ApplyAssetLockAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, expiration time.Time) error
+	ApplyAssetLock(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, expiration time.Time) error
 }
 
 type Processor struct {
@@ -965,6 +969,74 @@ func (p *Processor) ExpireAsset(mb *message.Buffer) func(transactionId uuid.UUID
 			return txErr
 		}
 		p.l.Debugf("Character [%d] expired asset [%d].", characterId, a.Id())
+		return nil
+	}
+}
+
+func (p *Processor) SetAssetOwnerAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, owner string) error {
+	return message.Emit(p.producer)(func(buf *message.Buffer) error {
+		return p.SetAssetOwner(buf)(transactionId, characterId, inventoryType, slot, owner)
+	})
+}
+
+func (p *Processor) SetAssetOwner(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, owner string) error {
+	return func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, owner string) error {
+		p.l.Debugf("Character [%d] attempting to set owner of asset in inventory [%d] slot [%d] to [%s].", characterId, inventoryType, slot, owner)
+		invLock := LockRegistry().Get(characterId, inventoryType)
+		invLock.Lock()
+		defer invLock.Unlock()
+
+		var a asset.Model
+		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+			c, err := p.WithTransaction(tx).GetByCharacterAndType(characterId)(inventoryType)
+			if err != nil {
+				return err
+			}
+			a, err = p.assetProcessor.WithTransaction(tx).GetBySlot(c.Id(), slot)
+			if err != nil {
+				return err
+			}
+			return p.assetProcessor.WithTransaction(tx).UpdateOwner(mb)(transactionId, characterId)(a, owner)
+		})
+		if txErr != nil {
+			p.l.WithError(txErr).Errorf("Character [%d] unable to set owner of asset in inventory [%d] slot [%d].", characterId, inventoryType, slot)
+			return txErr
+		}
+		p.l.Debugf("Character [%d] set owner of asset [%d] in inventory [%d] slot [%d].", characterId, a.Id(), inventoryType, slot)
+		return nil
+	}
+}
+
+func (p *Processor) ApplyAssetLockAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, expiration time.Time) error {
+	return message.Emit(p.producer)(func(buf *message.Buffer) error {
+		return p.ApplyAssetLock(buf)(transactionId, characterId, inventoryType, slot, expiration)
+	})
+}
+
+func (p *Processor) ApplyAssetLock(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, expiration time.Time) error {
+	return func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, expiration time.Time) error {
+		p.l.Debugf("Character [%d] attempting to apply lock to asset in inventory [%d] slot [%d].", characterId, inventoryType, slot)
+		invLock := LockRegistry().Get(characterId, inventoryType)
+		invLock.Lock()
+		defer invLock.Unlock()
+
+		var a asset.Model
+		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+			c, err := p.WithTransaction(tx).GetByCharacterAndType(characterId)(inventoryType)
+			if err != nil {
+				return err
+			}
+			a, err = p.assetProcessor.WithTransaction(tx).GetBySlot(c.Id(), slot)
+			if err != nil {
+				return err
+			}
+			return p.assetProcessor.WithTransaction(tx).ApplyLock(mb)(transactionId, characterId)(a, expiration)
+		})
+		if txErr != nil {
+			p.l.WithError(txErr).Errorf("Character [%d] unable to apply lock to asset in inventory [%d] slot [%d].", characterId, inventoryType, slot)
+			return txErr
+		}
+		p.l.Debugf("Character [%d] applied lock to asset [%d] in inventory [%d] slot [%d].", characterId, a.Id(), inventoryType, slot)
 		return nil
 	}
 }

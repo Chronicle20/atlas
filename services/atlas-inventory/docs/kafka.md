@@ -34,6 +34,8 @@ Compartment operation commands.
 | RELEASE | Releases an asset from compartment |
 | EXPIRE | Expires an asset with optional replacement |
 | MODIFY_EQUIPMENT | Updates equipment stats on an asset |
+| SET_OWNER | Stamps the owner field onto an asset in a given slot |
+| APPLY_LOCK | Applies a permanent or timed lock (FlagLock + expiration) to an asset in a given slot; rejects a non-locked asset that already has a non-zero expiration |
 
 ### EVENT_TOPIC_DROP_STATUS
 

@@ -804,3 +804,134 @@ func TestAttemptItemPickUpConsumeOnPickup(t *testing.T) {
 		}
 	}
 }
+
+// TestSetAssetOwner verifies that SetAssetOwnerAndEmit stamps the owner onto
+// an equipped asset and emits an asset UPDATED event.
+func TestSetAssetOwner(t *testing.T) {
+	characterId := uint32(401)
+	templateId := uint32(1040010)
+
+	l := testLogger()
+	te := testTenant()
+	ctx := tenant.WithContext(context.Background(), te)
+	db := testDatabase(t, l)
+
+	mb := message.NewBuffer()
+
+	ap := asset.NewProcessor(l, ctx, db)
+	cp := compartment.NewProcessor(l, ctx, db).WithAssetProcessor(ap)
+
+	c, err := cp.Create(mb)(uuid.New(), characterId, inventory.TypeValueEquip, 24)
+	if err != nil {
+		t.Fatalf("Failed to create compartment: %v", err)
+	}
+
+	slot := int16(-5)
+	m := asset.NewBuilder(c.Id(), templateId).SetSlot(slot).SetCreatedAt(time.Now()).Build()
+	if _, err := ap.CreateFromModel(mb)(uuid.New(), characterId, m); err != nil {
+		t.Fatalf("Failed to create asset: %v", err)
+	}
+
+	if err := cp.SetAssetOwner(mb)(uuid.New(), characterId, inventory.TypeValueEquip, slot, "Tumi"); err != nil {
+		t.Fatalf("SetAssetOwner returned unexpected error: %v", err)
+	}
+
+	a, err := ap.GetBySlot(c.Id(), slot)
+	if err != nil {
+		t.Fatalf("Failed to reload asset: %v", err)
+	}
+	if a.Owner() != "Tumi" {
+		t.Fatalf("expected owner %q, got %q", "Tumi", a.Owner())
+	}
+}
+
+// TestApplyAssetLock verifies that ApplyAssetLockAndEmit sets the lock flag
+// and the expiration on an asset that has no pre-existing time-limited state.
+func TestApplyAssetLock(t *testing.T) {
+	characterId := uint32(402)
+	templateId := uint32(1040010)
+
+	l := testLogger()
+	te := testTenant()
+	ctx := tenant.WithContext(context.Background(), te)
+	db := testDatabase(t, l)
+
+	mb := message.NewBuffer()
+
+	ap := asset.NewProcessor(l, ctx, db)
+	cp := compartment.NewProcessor(l, ctx, db).WithAssetProcessor(ap)
+
+	c, err := cp.Create(mb)(uuid.New(), characterId, inventory.TypeValueEquip, 24)
+	if err != nil {
+		t.Fatalf("Failed to create compartment: %v", err)
+	}
+
+	slot := int16(-5)
+	m := asset.NewBuilder(c.Id(), templateId).SetSlot(slot).SetCreatedAt(time.Now()).Build()
+	if _, err := ap.CreateFromModel(mb)(uuid.New(), characterId, m); err != nil {
+		t.Fatalf("Failed to create asset: %v", err)
+	}
+
+	exp := time.Now().AddDate(0, 0, 7).Truncate(time.Second)
+	if err := cp.ApplyAssetLock(mb)(uuid.New(), characterId, inventory.TypeValueEquip, slot, exp); err != nil {
+		t.Fatalf("ApplyAssetLock returned unexpected error: %v", err)
+	}
+
+	a, err := ap.GetBySlot(c.Id(), slot)
+	if err != nil {
+		t.Fatalf("Failed to reload asset: %v", err)
+	}
+	if !a.Locked() {
+		t.Fatalf("expected asset to be locked after ApplyAssetLockAndEmit")
+	}
+	if !a.Expiration().Equal(exp) {
+		t.Fatalf("expected expiration %v, got %v", exp, a.Expiration())
+	}
+}
+
+// TestApplyAssetLockRejectsTimeLimitedItem is the seal-launder guard: an asset
+// that is not locked but already carries a non-zero expiration is a genuinely
+// time-limited item, and ApplyAssetLockAndEmit must reject converting it into
+// a permanent lock.
+func TestApplyAssetLockRejectsTimeLimitedItem(t *testing.T) {
+	characterId := uint32(403)
+	templateId := uint32(1040010)
+
+	l := testLogger()
+	te := testTenant()
+	ctx := tenant.WithContext(context.Background(), te)
+	db := testDatabase(t, l)
+
+	mb := message.NewBuffer()
+
+	ap := asset.NewProcessor(l, ctx, db)
+	cp := compartment.NewProcessor(l, ctx, db).WithAssetProcessor(ap)
+
+	c, err := cp.Create(mb)(uuid.New(), characterId, inventory.TypeValueEquip, 24)
+	if err != nil {
+		t.Fatalf("Failed to create compartment: %v", err)
+	}
+
+	slot := int16(-5)
+	existingExpiration := time.Now().AddDate(0, 0, 1).Truncate(time.Second)
+	m := asset.NewBuilder(c.Id(), templateId).SetSlot(slot).SetCreatedAt(time.Now()).SetExpiration(existingExpiration).Build()
+	if _, err := ap.CreateFromModel(mb)(uuid.New(), characterId, m); err != nil {
+		t.Fatalf("Failed to create asset: %v", err)
+	}
+
+	newExp := time.Now().AddDate(0, 0, 7).Truncate(time.Second)
+	if err := cp.ApplyAssetLock(mb)(uuid.New(), characterId, inventory.TypeValueEquip, slot, newExp); err == nil {
+		t.Fatalf("expected ApplyAssetLock to reject a non-locked time-limited asset, got nil error")
+	}
+
+	a, err := ap.GetBySlot(c.Id(), slot)
+	if err != nil {
+		t.Fatalf("Failed to reload asset: %v", err)
+	}
+	if a.Locked() {
+		t.Fatalf("expected asset to remain unlocked after rejected ApplyAssetLockAndEmit")
+	}
+	if !a.Expiration().Equal(existingExpiration) {
+		t.Fatalf("expected expiration to remain %v, got %v", existingExpiration, a.Expiration())
+	}
+}

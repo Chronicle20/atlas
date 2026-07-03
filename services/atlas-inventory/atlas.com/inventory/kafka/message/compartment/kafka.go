@@ -30,6 +30,8 @@ const (
 	CommandExpire            = "EXPIRE"
 	CommandModifyEquipment   = "MODIFY_EQUIPMENT"
 	CommandChangeTemplate    = "CHANGE_TEMPLATE"
+	CommandSetOwner          = "SET_OWNER"
+	CommandApplyLock         = "APPLY_LOCK"
 )
 
 type Command[E any] struct {
@@ -172,6 +174,16 @@ type ModifyEquipmentCommandBody struct {
 type ChangeTemplateCommandBody struct {
 	PetId         uint32 `json:"petId"`
 	NewTemplateId uint32 `json:"newTemplateId"`
+}
+
+type SetOwnerCommandBody struct {
+	Slot  int16  `json:"slot"`
+	Owner string `json:"owner"`
+}
+
+type ApplyLockCommandBody struct {
+	Slot       int16     `json:"slot"`
+	Expiration time.Time `json:"expiration"` // zero time = permanent lock
 }
 
 const (

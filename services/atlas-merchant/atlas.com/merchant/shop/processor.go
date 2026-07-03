@@ -457,7 +457,9 @@ func (p *ProcessorImpl) CloseShop(mb *message.Buffer) func(shopId uuid.UUID, cha
 		emitEjectionEvents(mb, visitors, shopId)
 
 		if shopType == HiredMerchant {
-			p.storeToFrederick(shopId, characterId, mesoBalance)
+			if err := p.storeToFrederick(shopId, characterId, mesoBalance); err != nil {
+				return err
+			}
 		}
 
 		// Return items to character shop owner's inventory.
@@ -470,11 +472,17 @@ func (p *ProcessorImpl) CloseShop(mb *message.Buffer) func(shopId uuid.UUID, cha
 	}
 }
 
-func (p *ProcessorImpl) storeToFrederick(shopId uuid.UUID, characterId uint32, mesoBalance uint32) {
+// storeToFrederick persists unsold listing items and meso balance to
+// Frederick storage on shop close. Returns an error on the first failed
+// write so the caller (CloseShop, inside CloseShopAndEmit's outer tx) can
+// abort the closure — a partial/failed store must NOT let the shop-closed
+// event enqueue to the outbox, otherwise unsold items/mesos would silently
+// vanish while the client is told the shop closed cleanly.
+func (p *ProcessorImpl) storeToFrederick(shopId uuid.UUID, characterId uint32, mesoBalance uint32) error {
 	listings, err := p.GetListings(shopId)
 	if err != nil {
 		p.l.WithError(err).Errorf("Error retrieving listings for Frederick storage, shop [%s].", shopId)
-		return
+		return err
 	}
 
 	fp := frederick.NewProcessor(p.l, p.ctx, p.db)
@@ -492,12 +500,14 @@ func (p *ProcessorImpl) storeToFrederick(shopId uuid.UUID, characterId uint32, m
 
 		if err := fp.StoreItems(characterId, items); err != nil {
 			p.l.WithError(err).Errorf("Error storing items to Frederick for character [%d].", characterId)
+			return err
 		}
 	}
 
 	if mesoBalance > 0 {
 		if err := fp.StoreMesos(characterId, mesoBalance); err != nil {
 			p.l.WithError(err).Errorf("Error storing mesos to Frederick for character [%d].", characterId)
+			return err
 		}
 	}
 
@@ -505,8 +515,11 @@ func (p *ProcessorImpl) storeToFrederick(shopId uuid.UUID, characterId uint32, m
 	if len(listings) > 0 || mesoBalance > 0 {
 		if err := fp.CreateNotification(characterId); err != nil {
 			p.l.WithError(err).Errorf("Error creating Frederick notification for character [%d].", characterId)
+			return err
 		}
 	}
+
+	return nil
 }
 
 func (p *ProcessorImpl) AddListing(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32, itemId uint32, itemType byte, bundleSize uint16, bundleCount uint16, pricePerBundle uint32, itemSnapshot asset2.AssetData, inventoryType byte, assetId uint32) (listing.Model, error) {
@@ -977,15 +990,22 @@ func (p *ProcessorImpl) RetrieveFrederick(mb *message.Buffer) func(characterId u
 			_ = mb.Put(character.EnvCommandTopic, ChangeMesoCommandProvider(transactionId, worldId, characterId, 0, "FREDERICK", int32(totalMesos)))
 		}
 
-		// Clear Frederick storage and notifications.
+		// Clear Frederick storage and notifications. A failure here must abort
+		// the enclosing tx (RetrieveFrederickAndEmit) so the asset/meso grant
+		// commands buffered above are NOT enqueued to the outbox — otherwise
+		// the character would receive a duplicate grant on retry while the
+		// items/mesos remain stuck at Frederick.
 		if err := fp.ClearItems(characterId); err != nil {
 			p.l.WithError(err).Errorf("Error clearing Frederick items for character [%d].", characterId)
+			return err
 		}
 		if err := fp.ClearMesos(characterId); err != nil {
 			p.l.WithError(err).Errorf("Error clearing Frederick mesos for character [%d].", characterId)
+			return err
 		}
 		if err := fp.ClearNotifications(characterId); err != nil {
 			p.l.WithError(err).Errorf("Error clearing Frederick notifications for character [%d].", characterId)
+			return err
 		}
 
 		p.l.Infof("Retrieved %d items and %d meso records from Frederick for character [%d].", len(items), len(mesos), characterId)

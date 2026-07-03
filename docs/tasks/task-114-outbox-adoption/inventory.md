@@ -1673,3 +1673,35 @@ change).
   pending task-119 (see `bug_execute_transaction_noop.md`); this task's
   migration uses the correct seam and becomes atomic for free once
   task-119 lands.
+
+### Fix pass: propagate swallowed Frederick errors (post-review)
+
+Review flagged that `RetrieveFrederick` and `CloseShop`'s `storeToFrederick`
+helper logged-and-continued on Frederick DB-write failures instead of
+returning the error, which defeated the atomicity contract this task
+introduced (a failed clear/store would still let the tx "commit" and the
+outbox event enqueue — duplication risk on retrieve, silent item loss on
+close). Fixed in `shop/processor.go`:
+
+- `RetrieveFrederick` (~:981-993): `ClearItems`/`ClearMesos`/`ClearNotifications`
+  now `return err` (log preserved) on first failure instead of continuing.
+- `storeToFrederick` (~:473-517): signature changed from `void` to
+  `error`; `StoreItems`/`StoreMesos`/`CreateNotification` now `return err`
+  (log preserved) on first failure. Sole caller `CloseShop` (~:459-463)
+  updated to propagate the error (`if err := p.storeToFrederick(...); err
+  != nil { return err }`).
+
+Added two tests in `shop/processor_test.go` (`TestRetrieveFrederick_ClearFailure_SkipsOutbox`,
+`TestCloseShop_FrederickStoreFailure_SkipsOutbox`) using table-drop as the
+failure-injection seam (`frederick.Processor` has no mock/fake in this
+module; `shop.ProcessorImpl` constructs it directly, so there's no
+injectable interface at the shop-processor level). Both assert the error
+propagates through `RetrieveFrederickAndEmit`/`CloseShopAndEmit` and that
+zero rows land in `outbox_entries`. Per the pre-existing
+`bug_execute_transaction_noop` limitation (task-119), the tests do **not**
+assert DB-row rollback (e.g. shop staying Open, cleared item reappearing) —
+`ExecuteTransaction` never actually starts a real transaction today, so the
+already-executed writes before the failure point are not undone at the SQL
+level; only the outbox-enqueue suppression and error propagation are
+verified, which is what this fix pass delivers and what is testable given
+the current transaction infra.

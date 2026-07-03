@@ -164,8 +164,80 @@ Body-verified from the v48 `COutPacket(N)` send-sites (never blind-shifted); eac
 - **TOUCH_MONSTER_ATTACK** — CUserLocal::TryDoingBodyAttack body/touch attack; confirmed NOT at op34-39 (per Stage B2); separate opcode unlocated.
 - **MOB_DAMAGE (mob-to-player)** — this is the player-take-damage report = TAKE_DAMAGE=39 (already registered); the CMob mutual/self MOB_DAMAGE_MOB family = op131/132/133/134/135 (documented-unresolved, exact field counts differ from v61 twins).
 
+### Stage B2e (continuation 5) — 5 in-scope ops closed + item-USE cluster resolved
+
+Method unchanged: decompile the actual v48 `COutPacket(N)` send-site body and
+match wire shape to the v61 anchor (fingerprints re-derived from the *named* v61
+send fns this pass: `sub_6E78F2` COVER, `sub_8314D0`/`sub_831564` GATHER/SORT,
+`sub_8459DD` MESO, `CUserLocal::TryDoingBodyAttack@0x7b084b` TOUCH). Symbols in
+v48 are stripped; every claim below is body/constant-verified, none blind-shifted.
+
+**1. NPC_TALK_MORE = op47 — REGISTERED (body-verified).** The v48 conversation-reply
+dispatcher is the 9-arm `CScriptMan`/`CUtilDlgEx` Say/Ask handler family
+`sub_5B0C11..sub_5B18B5`, all emitting `COutPacket(47)+Encode1(msgType)+Encode1(action)
++[type payload]`. `sub_5B0C11` (SAY): decodes the server dialog (CInPacket
+DecodeStr+Decode1+Decode1), shows CUtilDlgEx, replies `Encode1(0=msgType)+Encode1(dlg-ret
+0x2001->1 / 0x2000->0 / else -1)`. `sub_5B1640` (ASK_AVATAR/membership): `Encode1(8=msgType)
++Encode1(result)+EncodeBuffer(8, selected avatar look)`. = exact v61 NPC_TALK_MORE
+(op56 CScriptMan::On{Say,Ask*} dispatcher). Δ-9. **The B2d note that "v48 op56 is the
+reply" was WRONG** — op56 is an item-use arm (cat 221, below); the reply is op47.
+
+**2. TOUCH_MONSTER_ATTACK — EVIDENCE-DROPPED (v48-absent).** v61
+`CUserLocal::TryDoingBodyAttack@0x7b084b` builds its attack packet keyed on the
+body-attack skill **5110001** (`v72=5110001; v60=5110001`, `this[330]=5000` cooldown).
+That skill id (0x004DFAF1) **does not appear anywhere in the v48 binary**
+(`find_bytes "F1 FA 4D 00"` -> 0 matches). 5110001 is a Pirate skill; Pirates are a
+post-v48 (GMS v.55) feature. The v48 attack senders at op34-39 are chair /
+close-range / ranged / magic / take-damage only. No distinct body-attack opcode
+exists. Not fabricated — dropped on binary evidence.
+
+**3. MONSTER_BOOK_COVER — EVIDENCE-DROPPED (v48-absent).** v61 cover setter
+`sub_6E78F2` = `if(cardId != <current-cover getter sub_7B10D5()>) COutPacket(53)+Encode4(cardId)`.
+The v48 binary has **no "MonsterBook" string** (`find_regex MonsterBook` -> 0) and no
+single-Encode4 sender guarded by a cover-getter compare. Monster Book / card system is a
+post-v48 feature. v48 op53 is `Encode1(5)` SetFocus (a CCtrlWnd action), unrelated.
+
+**4. MESO_DROP — EVIDENCE-DROPPED (folded into ITEM_MOVE=op55).** v61 dedicated
+`SendDropMoneyRequest sub_8459DD` = `throttle(200,0)+COutPacket(86)+SetExclRequestSent
++Encode4(time)+Encode4(amount)` is a later split-out. In v48 the ONLY `Encode4+Encode4`
+CWvsContext exclusive senders are DISTRIBUTE_AP(op67 sub_71CD00) and DISTRIBUTE_SP(op73
+sub_71CEB3) — verified by full enumeration of the `sub_4A2518` throttle-caller set (73
+callers). v48 meso-drop goes through **ITEM_MOVE op55** (`sub_70D8DE`:
+`COutPacket(55)+Encode4(time)+Encode1(invType)+Encode2(src)+Encode2(dst)+Encode2(qty)`,
+= `CP_UserItemMoveRequest`; dst=0 drops), already registered. No distinct MESO_DROP
+opcode in v48.
+
+**5. ITEM_SORT / ITEM_SORT2 — FLAGGED-BLOCKED (not located; probable v48-absent).**
+v61 GATHER `sub_8314D0` / SORT `sub_831564` = `if(compartment in [1,5]) throttle(500,0);
+COutPacket(64|65)+SetExclRequestSent+Encode4(time)+Encode1(compartment)`. The full v48
+`sub_4A2518` throttle-caller set (73) + the CWvsContext item-send cluster (item-move,
+6 category use-arms, cash-item, use-item, AP, food, SP, char-info, cash-slot5, op66)
+contains **no [1,5]-compartment-guarded `Encode4(time)+Encode1(compartment)` sender**.
+Gather/Sort inventory-request opcodes appear post-v48. Not proven absent as strongly as
+1-4 (they could route a non-exclusive path), so flagged rather than dropped. NOT fabricated.
+
+**Item-USE-family cluster (task deliverable) — resolved as USE_ITEM-family category
+variants; documented, not fabricated.** All arms are `CP_UserStatChangeItemUseRequest`-shape
+`COutPacket(N)+SetExclRequestSent+Encode4(time)+Encode2(slot)+Encode4(itemId)`, throttle
+`sub_4A2518(200,0)`, gated on `itemId/10000` (client-side category branch). The MAIN use
+(op65 USE_ITEM `sub_719DD9`) and cash use (op62 USE_CASH_ITEM `SendConsumeCashItemUseRequest`)
+are already registered; the remaining arms are per-category specializations of the same
+request whose category→named-v61-Atlas-op mapping is NOT cleanly derivable (v61 assigns a
+different opcode layout and the 221/226/227/228 category meanings are unverified against
+WZ). Bodies verified this pass:
+- op56 `sub_70DB3C`: gate `itemId/10000==221` (+fuse 5120 guard), then `E4+E2+E4`, post-call `sub_6C3502(itemId,29)`.
+- op59 `sub_70DDAA`: map-restrict (get_field map data +58) + YesNo confirm (StringPool 273), then `E4+E2+E4(itemId)`. Return/teleport-style, but sends itemId (NOT v61 USE_RETURN_SCROLL's targetMap) — so NOT a clean USE_RETURN_SCROLL match.
+- op60 `sub_70DF2F`: no category gate, `E4+E2+E4` + graphic effect `sub_6C417A`.
+- op61 `sub_70E00B`: gate `itemId/10000==226`, `E4+E2+E4`.
+- op63 `sub_70E0C5`: gate cat 227, `E4+E2+E4+Encode4(petSN)` (pet-summon).
+- op64 `sub_70E3E7`: gate cat 228/229, `E4+E2+E4`.
+Per the no-fabrication rule these ambiguous category arms are LEFT DOCUMENTED (not
+registered with guessed USE_* names). Registering them requires a WZ item-category
+cross-ref to name each branch.
+
 ### Serverbound totals
 
+- **58 serverbound** registered (Stage B2e +1: NPC_TALK_MORE op47).
 - **44 serverbound** registered (Stage B2b +16 net). Stage B (22): connect-critical path
   (LOGIN_PASSWORD, CHANGE_MAP, CHANGE_CHANNEL, MOVE_PLAYER) + social/field/pet/
   cashshop named senders. **Stage B2 (this pass, +6 body-verified from the actual

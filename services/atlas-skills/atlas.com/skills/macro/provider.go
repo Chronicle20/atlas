@@ -17,3 +17,9 @@ func getByCharacterId(characterId uint32) database.EntityProvider[[]Entity] {
 		return model.FixedProvider[[]Entity](result)
 	}
 }
+
+func getByCharacterIdPaged(characterId uint32, page model.Page) database.EntityProvider[model.Paged[Entity]] {
+	return func(db *gorm.DB) model.Provider[model.Paged[Entity]] {
+		return database.PagedQuery[Entity](db.Where("character_id = ?", characterId), page)
+	}
+}

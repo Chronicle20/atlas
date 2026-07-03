@@ -6,6 +6,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
@@ -29,42 +30,16 @@ func handleGetHistory(d *rest.HandlerDependency, c *rest.HandlerContext) http.Ha
 		ip := r.URL.Query().Get("ip")
 		hwid := r.URL.Query().Get("hwid")
 
-		var entries []Model
-		var err error
-
-		if ip != "" {
-			entries, err = NewProcessor(d.Logger(), d.Context(), d.DB()).GetByIP(ip)
-		} else if hwid != "" {
-			entries, err = NewProcessor(d.Logger(), d.Context(), d.DB()).GetByHWID(hwid)
-		} else {
-			entries, err = NewProcessor(d.Logger(), d.Context(), d.DB()).GetByTenant()
-		}
-
-		if err != nil {
-			d.Logger().WithError(err).Errorf("Unable to locate login history.")
-			server.WriteErrorResponse(d.Logger())(w)(err)
-			return
-		}
-
-		res, err := model.SliceMap(Transform)(model.FixedProvider(entries))(model.ParallelMap())()
-		if err != nil {
-			d.Logger().WithError(err).Errorf("Creating REST model.")
-			server.WriteErrorResponse(d.Logger())(w)(err)
-			return
-		}
-
-		query := r.URL.Query()
-		queryParams := jsonapi.ParseQueryFields(&query)
-		server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
-	}
-}
-
-func handleGetHistoryByAccountId(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-	return rest.ParseAccountId(d.Logger(), func(accountId uint32) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
-			entries, err := NewProcessor(d.Logger(), d.Context(), d.DB()).GetByAccountId(accountId)
+		if ip != "" || hwid != "" {
+			var entries []Model
+			var err error
+			if ip != "" {
+				entries, err = NewProcessor(d.Logger(), d.Context(), d.DB()).GetByIP(ip)
+			} else {
+				entries, err = NewProcessor(d.Logger(), d.Context(), d.DB()).GetByHWID(hwid)
+			}
 			if err != nil {
-				d.Logger().WithError(err).Errorf("Unable to locate login history for account [%d].", accountId)
+				d.Logger().WithError(err).Errorf("Unable to locate login history.")
 				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
@@ -79,6 +54,61 @@ func handleGetHistoryByAccountId(d *rest.HandlerDependency, c *rest.HandlerConte
 			query := r.URL.Query()
 			queryParams := jsonapi.ParseQueryFields(&query)
 			server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+			return
+		}
+
+		page, err := paginate.ParseParams(r.URL.Query(), paginate.DefaultPageSize, paginate.MaxPageSize)
+		if err != nil {
+			server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+			return
+		}
+
+		paged, err := NewProcessor(d.Logger(), d.Context(), d.DB()).AllProvider(page)()
+		if err != nil {
+			d.Logger().WithError(err).Errorf("Unable to locate login history.")
+			server.WriteErrorResponse(d.Logger())(w)(err)
+			return
+		}
+
+		res, err := model.SliceMap(Transform)(model.FixedProvider(paged.Items))(model.ParallelMap())()
+		if err != nil {
+			d.Logger().WithError(err).Errorf("Creating REST model.")
+			server.WriteErrorResponse(d.Logger())(w)(err)
+			return
+		}
+
+		query := r.URL.Query()
+		queryParams := jsonapi.ParseQueryFields(&query)
+		server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res, paginate.EnvelopeFor(paged), r)
+	}
+}
+
+func handleGetHistoryByAccountId(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return rest.ParseAccountId(d.Logger(), func(accountId uint32) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			page, err := paginate.ParseParams(r.URL.Query(), paginate.DefaultPageSize, paginate.MaxPageSize)
+			if err != nil {
+				server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+				return
+			}
+
+			paged, err := NewProcessor(d.Logger(), d.Context(), d.DB()).ByAccountIdProvider(accountId, page)()
+			if err != nil {
+				d.Logger().WithError(err).Errorf("Unable to locate login history for account [%d].", accountId)
+				server.WriteErrorResponse(d.Logger())(w)(err)
+				return
+			}
+
+			res, err := model.SliceMap(Transform)(model.FixedProvider(paged.Items))(model.ParallelMap())()
+			if err != nil {
+				d.Logger().WithError(err).Errorf("Creating REST model.")
+				server.WriteErrorResponse(d.Logger())(w)(err)
+				return
+			}
+
+			query := r.URL.Query()
+			queryParams := jsonapi.ParseQueryFields(&query)
+			server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res, paginate.EnvelopeFor(paged), r)
 		}
 	})
 }

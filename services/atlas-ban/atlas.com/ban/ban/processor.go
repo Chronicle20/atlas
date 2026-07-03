@@ -22,7 +22,7 @@ type Processor interface {
 	ExpireBan(banId uint32) error
 	ExpireBanAndEmit(banId uint32) error
 	GetById(banId uint32) (Model, error)
-	GetByTenant() ([]Model, error)
+	AllProvider(page model.Page) model.Provider[model.Paged[Model]]
 	GetByType(banType BanType) ([]Model, error)
 	CheckBan(ip string, hwid string, accountId uint32) (*Model, error)
 	ByIdProvider(banId uint32) model.Provider[Model]
@@ -131,8 +131,9 @@ func (p *ProcessorImpl) ByIdProvider(banId uint32) model.Provider[Model] {
 	return model.Map(Make)(entityById(banId)(p.db.WithContext(p.ctx)))
 }
 
-func (p *ProcessorImpl) GetByTenant() ([]Model, error) {
-	return model.SliceMap(Make)(entitiesByTenant()(p.db.WithContext(p.ctx)))(model.ParallelMap())()
+func (p *ProcessorImpl) AllProvider(page model.Page) model.Provider[model.Paged[Model]] {
+	ep := entitiesByTenant(page)(p.db.WithContext(p.ctx))
+	return model.MapPaged(Make)(ep)(model.ParallelMap())
 }
 
 func (p *ProcessorImpl) GetByType(banType BanType) ([]Model, error) {

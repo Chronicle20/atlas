@@ -31,6 +31,9 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestItemConsume))); err != nil {
 			return err
 		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestItemReward))); err != nil {
+			return err
+		}
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestScroll))); err != nil {
 			return err
 		}
@@ -52,6 +55,17 @@ func handleRequestItemConsume(l logrus.FieldLogger, ctx context.Context, c consu
 	err := consumable.NewProcessor(l, ctx).RequestItemConsume(ch, uint32(c.CharacterId), int16(c.Body.Source), c.Body.ItemId, c.Body.Quantity)
 	if err != nil {
 		l.WithError(err).Errorf("Character [%d] unable to consume item in slot [%d] as expected.", c.CharacterId, c.Body.Source)
+	}
+}
+
+func handleRequestItemReward(l logrus.FieldLogger, ctx context.Context, c consumable2.Command[consumable2.RequestItemRewardBody]) {
+	if c.Type != consumable2.CommandRequestItemReward {
+		return
+	}
+	f := field.NewBuilder(c.WorldId, c.ChannelId, c.MapId).SetInstance(c.Instance).Build()
+	err := consumable.NewProcessor(l, ctx).RequestItemReward(f, uint32(c.CharacterId), c.Body.ItemId, int16(c.Body.Source))
+	if err != nil {
+		l.WithError(err).Errorf("Character [%d] unable to use reward box in slot [%d].", c.CharacterId, c.Body.Source)
 	}
 }
 

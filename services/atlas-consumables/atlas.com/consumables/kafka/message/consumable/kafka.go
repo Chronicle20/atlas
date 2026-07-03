@@ -17,6 +17,7 @@ const (
 	CommandRequestScroll          = "REQUEST_SCROLL"
 	CommandApplyConsumableEffect  = "APPLY_CONSUMABLE_EFFECT"
 	CommandCancelConsumableEffect = "CANCEL_CONSUMABLE_EFFECT"
+	CommandRequestItemReward      = "REQUEST_ITEM_REWARD"
 )
 
 type Command[E any] struct {
@@ -34,6 +35,11 @@ type RequestItemConsumeBody struct {
 	Source   slot.Position `json:"source"`
 	ItemId   item.Id       `json:"itemId"`
 	Quantity int16         `json:"quantity"`
+}
+
+type RequestItemRewardBody struct {
+	Source slot.Position `json:"source"`
+	ItemId item.Id       `json:"itemId"`
 }
 
 type RequestScrollBody struct {

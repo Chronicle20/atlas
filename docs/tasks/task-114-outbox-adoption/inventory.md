@@ -1761,3 +1761,82 @@ template so the drainer runs, but no call site needed migration.
   the drainer/publisher run in this service even though no emit path uses
   the outbox yet — consistent with how other unaffected sites are wired
   service-wide per the plan.
+
+## atlas-tenants
+
+All 12 tx-coupled emit sites (3 `message.Emit` + 6 `message.EmitWithResult`
+in `configuration/processor.go`, 1 `message.Emit` + 2
+`message.EmitWithResult` in `tenant/processor.go`) migrated to the outbox.
+Enumeration matched the brief exactly — the step-2 grep and the
+hand-rolled-flush grep (`.GetAll()`/`NewBuffer()`/`p.p(`/`AndEmit(`) turned
+up no extra sites beyond the 12 listed.
+
+- **Migrated**:
+  - `tenant/processor.go:113` (`CreateAndEmit`) — Pattern B (EmitWithResult).
+  - `tenant/processor.go:183` (`UpdateAndEmit`) — Pattern B (EmitWithResult).
+  - `tenant/processor.go:245` (`DeleteAndEmit`) — Pattern A (Emit).
+  - `configuration/processor.go:210` (`CreateRouteAndEmit`) — Pattern B.
+  - `configuration/processor.go:299` (`UpdateRouteAndEmit`) — Pattern B.
+  - `configuration/processor.go:332` (`DeleteRouteAndEmit`) — Pattern A.
+  - `configuration/processor.go:456` (`CreateVesselAndEmit`) — Pattern B.
+  - `configuration/processor.go:545` (`UpdateVesselAndEmit`) — Pattern B.
+  - `configuration/processor.go:578` (`DeleteVesselAndEmit`) — Pattern A.
+  - `configuration/processor.go:693` (`CreateInstanceRouteAndEmit`) — Pattern B.
+  - `configuration/processor.go:778` (`UpdateInstanceRouteAndEmit`) — Pattern B.
+  - `configuration/processor.go:810` (`DeleteInstanceRouteAndEmit`) — Pattern A.
+- **Left direct**: none — every emit site asserts a DB state change
+  (route/vessel/instance-route/tenant create-update-delete), so all 12
+  migrated. No rejection/error-only or cross-service COMMAND emit paths
+  exist in either processor.
+- **Notes**:
+  - Neither `tenant.ProcessorImpl` nor `configuration.ProcessorImpl`
+    exposes a `WithTransaction` method, so every migrated site follows the
+    recipe's fallback: `NewProcessor(p.l, p.ctx, tx)` constructs a
+    tx-scoped processor and the wrapped `Foo(mb)(args...)` call runs
+    against it, while the enqueue itself uses
+    `outbox.EmitProvider(p.l, p.ctx, tx)` built directly from the same
+    `tx` — enqueue and domain write share one transaction.
+  - Struct-init stored providers at `tenant/processor.go:64`
+    (`p: producer.ProviderImpl(l)(ctx)`, originally line 62 in the brief
+    before the new `database`/`outbox` imports shifted it) and
+    `configuration/processor.go:110` (same, originally line 108) are now
+    dead in the migrated
+    `*AndEmit` paths — no site reads `p.p` any more (confirmed via
+    `grep -n "p\.p\b"` returning empty in both files after migration). The
+    field is left in place (still set by `NewProcessor` for API-compat and
+    because Go does not flag unused struct fields); it has zero remaining
+    call sites doing a direct-path emit, so there is no lingering
+    tx-vs-direct-provider hazard.
+  - `tenant/administrator.go` (`CreateTenant`/`UpdateTenant`/`DeleteTenant`)
+    and `configuration/administrator.go`
+    (`CreateConfiguration`/`UpdateConfiguration`/`DeleteConfiguration`)
+    each open their own `database.ExecuteTransaction(db, ...)`. Because the
+    migrated `*AndEmit` methods pass `tx` through as the `db` field of a
+    freshly-constructed processor, these administrator calls now run
+    `database.ExecuteTransaction(tx, ...)` — re-entrant nesting inside the
+    outer tx, exactly as the recipe describes; no administrator.go edits
+    were needed.
+  - No sub-processor fields exist on either `ProcessorImpl` (no
+    `WithTransaction` rebind concern applies).
+  - No rejection/error-only emit branches exist in either processor (every
+    `mb.Put` in both files sits on a success path immediately after a
+    completed write); no `rejectEmit` closure pattern was needed.
+  - The three `Seed*` methods (`SeedRoutes`, `SeedInstanceRoutes`,
+    `SeedVessels`) loop calling `p.CreateRouteAndEmit` /
+    `p.CreateInstanceRouteAndEmit` / `p.CreateVesselAndEmit` per item; each
+    call now opens its own `ExecuteTransaction`, preserving the
+    pre-migration per-item-commit semantics (no shared-loop-tx batching
+    pitfall from the atlas-notes case applies here — there is no
+    cross-service command to defer, only same-service status events per
+    item).
+  - Existing tests (`tenant/processor_test.go`, `configuration/processor_test.go`)
+    exercise the buffer-based `Create`/`Update`/`Delete` methods directly
+    via a local `testProcessor` shim (bypassing Kafka/producer entirely) —
+    none of them call the `*AndEmit` methods, so no test needed updating
+    for the new outbox-enqueue behavior.
+  - Config-status projection consumers (login/channel) read the emitted
+    event payloads unchanged — `CreateRouteStatusEventProvider` /
+    `CreateVesselStatusEventProvider` / `CreateInstanceRouteStatusEventProvider`
+    / `CreateStatusEventProvider` (tenant) are untouched; only the delivery
+    path (outbox vs. direct-after-return) changed, not the header/body
+    construction, so byte-parity for the projection is preserved.

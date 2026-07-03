@@ -3,6 +3,7 @@ package main
 import (
 	"atlas-tenants/configuration"
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	outboxlib "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	"atlas-tenants/logger"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-tenants/tenant"
@@ -50,7 +51,17 @@ func main() {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
 
-	db := database.Connect(l, database.SetMigrations(tenant.MigrateEntities, configuration.MigrateEntities))
+	db := database.Connect(l, database.SetMigrations(tenant.MigrateEntities, configuration.MigrateEntities, outboxlib.Migration))
+
+	// Boot the outbox drainer: publishes the transactional outbox to Kafka.
+	// Leadership is gated by a postgres advisory lock — replicas are safe.
+	publisher := outboxlib.NewTopicWriterPool()
+	drainer := outboxlib.NewDrainer(l, db, publisher, outboxlib.WithDSN(database.DSN()))
+	go drainer.Run(tdm.Context())
+	tdm.TeardownFunc(func() {
+		drainer.Stop()
+		publisher.Close()
+	})
 
 	_ = consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 

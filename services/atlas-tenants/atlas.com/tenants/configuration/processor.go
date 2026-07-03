@@ -8,7 +8,9 @@ import (
 	"errors"
 	"fmt"
 
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
@@ -206,11 +208,17 @@ func (p *ProcessorImpl) CreateRoute(mb *message.Buffer) func(tenantId uuid.UUID)
 
 // CreateRouteAndEmit creates a new route configuration and emits events
 func (p *ProcessorImpl) CreateRouteAndEmit(tenantId uuid.UUID, route map[string]interface{}) (Model, error) {
-	return message.EmitWithResult[Model, uuid.UUID](p.p)(func(mb *message.Buffer) func(uuid.UUID) (Model, error) {
-		return func(tenantId uuid.UUID) (Model, error) {
-			return p.CreateRoute(mb)(tenantId)(route)
-		}
-	})(tenantId)
+	var result Model
+	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		var err error
+		result, err = message.EmitWithResult[Model, uuid.UUID](outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) func(uuid.UUID) (Model, error) {
+			return func(tenantId uuid.UUID) (Model, error) {
+				return NewProcessor(p.l, p.ctx, tx).CreateRoute(mb)(tenantId)(route)
+			}
+		})(tenantId)
+		return err
+	})
+	return result, txErr
 }
 
 // Update updates an existing route configuration
@@ -289,11 +297,17 @@ func (p *ProcessorImpl) UpdateRoute(mb *message.Buffer) func(tenantId uuid.UUID)
 
 // UpdateRouteAndEmit updates an existing route configuration and emits events
 func (p *ProcessorImpl) UpdateRouteAndEmit(tenantId uuid.UUID, routeID string, route map[string]interface{}) (Model, error) {
-	return message.EmitWithResult[Model, uuid.UUID](p.p)(func(mb *message.Buffer) func(uuid.UUID) (Model, error) {
-		return func(tenantId uuid.UUID) (Model, error) {
-			return p.UpdateRoute(mb)(tenantId)(routeID)(route)
-		}
-	})(tenantId)
+	var result Model
+	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		var err error
+		result, err = message.EmitWithResult[Model, uuid.UUID](outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) func(uuid.UUID) (Model, error) {
+			return func(tenantId uuid.UUID) (Model, error) {
+				return NewProcessor(p.l, p.ctx, tx).UpdateRoute(mb)(tenantId)(routeID)(route)
+			}
+		})(tenantId)
+		return err
+	})
+	return result, txErr
 }
 
 // Delete deletes a route configuration
@@ -316,8 +330,10 @@ func (p *ProcessorImpl) DeleteRoute(mb *message.Buffer) func(tenantId uuid.UUID)
 
 // DeleteRouteAndEmit deletes a route configuration and emits events
 func (p *ProcessorImpl) DeleteRouteAndEmit(tenantId uuid.UUID, routeID string) error {
-	return message.Emit(p.p)(func(mb *message.Buffer) error {
-		return p.DeleteRoute(mb)(tenantId)(routeID)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
+			return NewProcessor(p.l, p.ctx, tx).DeleteRoute(mb)(tenantId)(routeID)
+		})
 	})
 }
 
@@ -438,11 +454,17 @@ func (p *ProcessorImpl) CreateVessel(mb *message.Buffer) func(tenantId uuid.UUID
 
 // CreateVesselAndEmit creates a new vessel configuration and emits events
 func (p *ProcessorImpl) CreateVesselAndEmit(tenantId uuid.UUID, vessel map[string]interface{}) (Model, error) {
-	return message.EmitWithResult[Model, uuid.UUID](p.p)(func(mb *message.Buffer) func(uuid.UUID) (Model, error) {
-		return func(tenantId uuid.UUID) (Model, error) {
-			return p.CreateVessel(mb)(tenantId)(vessel)
-		}
-	})(tenantId)
+	var result Model
+	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		var err error
+		result, err = message.EmitWithResult[Model, uuid.UUID](outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) func(uuid.UUID) (Model, error) {
+			return func(tenantId uuid.UUID) (Model, error) {
+				return NewProcessor(p.l, p.ctx, tx).CreateVessel(mb)(tenantId)(vessel)
+			}
+		})(tenantId)
+		return err
+	})
+	return result, txErr
 }
 
 // UpdateVessel updates an existing vessel configuration
@@ -521,11 +543,17 @@ func (p *ProcessorImpl) UpdateVessel(mb *message.Buffer) func(tenantId uuid.UUID
 
 // UpdateVesselAndEmit updates an existing vessel configuration and emits events
 func (p *ProcessorImpl) UpdateVesselAndEmit(tenantId uuid.UUID, vesselID string, vessel map[string]interface{}) (Model, error) {
-	return message.EmitWithResult[Model, uuid.UUID](p.p)(func(mb *message.Buffer) func(uuid.UUID) (Model, error) {
-		return func(tenantId uuid.UUID) (Model, error) {
-			return p.UpdateVessel(mb)(tenantId)(vesselID)(vessel)
-		}
-	})(tenantId)
+	var result Model
+	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		var err error
+		result, err = message.EmitWithResult[Model, uuid.UUID](outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) func(uuid.UUID) (Model, error) {
+			return func(tenantId uuid.UUID) (Model, error) {
+				return NewProcessor(p.l, p.ctx, tx).UpdateVessel(mb)(tenantId)(vesselID)(vessel)
+			}
+		})(tenantId)
+		return err
+	})
+	return result, txErr
 }
 
 // DeleteVessel deletes a vessel configuration
@@ -548,8 +576,10 @@ func (p *ProcessorImpl) DeleteVessel(mb *message.Buffer) func(tenantId uuid.UUID
 
 // DeleteVesselAndEmit deletes a vessel configuration and emits events
 func (p *ProcessorImpl) DeleteVesselAndEmit(tenantId uuid.UUID, vesselID string) error {
-	return message.Emit(p.p)(func(mb *message.Buffer) error {
-		return p.DeleteVessel(mb)(tenantId)(vesselID)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
+			return NewProcessor(p.l, p.ctx, tx).DeleteVessel(mb)(tenantId)(vesselID)
+		})
 	})
 }
 
@@ -661,11 +691,17 @@ func (p *ProcessorImpl) CreateInstanceRoute(mb *message.Buffer) func(tenantId uu
 
 // CreateInstanceRouteAndEmit creates a new instance route configuration and emits events
 func (p *ProcessorImpl) CreateInstanceRouteAndEmit(tenantId uuid.UUID, route map[string]interface{}) (Model, error) {
-	return message.EmitWithResult[Model, uuid.UUID](p.p)(func(mb *message.Buffer) func(uuid.UUID) (Model, error) {
-		return func(tenantId uuid.UUID) (Model, error) {
-			return p.CreateInstanceRoute(mb)(tenantId)(route)
-		}
-	})(tenantId)
+	var result Model
+	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		var err error
+		result, err = message.EmitWithResult[Model, uuid.UUID](outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) func(uuid.UUID) (Model, error) {
+			return func(tenantId uuid.UUID) (Model, error) {
+				return NewProcessor(p.l, p.ctx, tx).CreateInstanceRoute(mb)(tenantId)(route)
+			}
+		})(tenantId)
+		return err
+	})
+	return result, txErr
 }
 
 // UpdateInstanceRoute updates an existing instance route configuration
@@ -740,11 +776,17 @@ func (p *ProcessorImpl) UpdateInstanceRoute(mb *message.Buffer) func(tenantId uu
 
 // UpdateInstanceRouteAndEmit updates an existing instance route configuration and emits events
 func (p *ProcessorImpl) UpdateInstanceRouteAndEmit(tenantId uuid.UUID, routeID string, route map[string]interface{}) (Model, error) {
-	return message.EmitWithResult[Model, uuid.UUID](p.p)(func(mb *message.Buffer) func(uuid.UUID) (Model, error) {
-		return func(tenantId uuid.UUID) (Model, error) {
-			return p.UpdateInstanceRoute(mb)(tenantId)(routeID)(route)
-		}
-	})(tenantId)
+	var result Model
+	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		var err error
+		result, err = message.EmitWithResult[Model, uuid.UUID](outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) func(uuid.UUID) (Model, error) {
+			return func(tenantId uuid.UUID) (Model, error) {
+				return NewProcessor(p.l, p.ctx, tx).UpdateInstanceRoute(mb)(tenantId)(routeID)(route)
+			}
+		})(tenantId)
+		return err
+	})
+	return result, txErr
 }
 
 // DeleteInstanceRoute deletes an instance route configuration
@@ -766,8 +808,10 @@ func (p *ProcessorImpl) DeleteInstanceRoute(mb *message.Buffer) func(tenantId uu
 
 // DeleteInstanceRouteAndEmit deletes an instance route configuration and emits events
 func (p *ProcessorImpl) DeleteInstanceRouteAndEmit(tenantId uuid.UUID, routeID string) error {
-	return message.Emit(p.p)(func(mb *message.Buffer) error {
-		return p.DeleteInstanceRoute(mb)(tenantId)(routeID)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
+			return NewProcessor(p.l, p.ctx, tx).DeleteInstanceRoute(mb)(tenantId)(routeID)
+		})
 	})
 }
 

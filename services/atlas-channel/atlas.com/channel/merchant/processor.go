@@ -55,8 +55,12 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 
 var _ Processor = (*ProcessorImpl)(nil)
 
+// InFieldModelProvider fetches the complete set of shops on a field.
+// atlas-merchant's field-scoped list is now paginated (task-117); callers
+// here (session spawn on map load) need the whole set, so this drains every
+// page rather than fetching one.
 func (p *ProcessorImpl) InFieldModelProvider(f field.Model) model.Provider[[]Model] {
-	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestInField(f), Extract, model.Filters[Model]())
+	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(inFieldUrl(f), 250, Extract, model.Filters[Model]())
 }
 
 func (p *ProcessorImpl) ForEachInField(f field.Model, o model.Operator[Model]) error {
@@ -71,8 +75,13 @@ func (p *ProcessorImpl) GetShop(shopId string) (Model, error) {
 	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestShop(shopId), Extract)()
 }
 
+// GetByCharacterId fetches the complete set of shops for a character.
+// atlas-merchant's per-character list is now paginated (task-117); callers
+// here (visit lookup, hired-merchant permit check) need the whole set (a
+// character has at most one active shop per ShopType, so it is naturally
+// small), so this drains every page rather than fetching one.
 func (p *ProcessorImpl) GetByCharacterId(characterId uint32) ([]Model, error) {
-	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByCharacterId(characterId), Extract, model.Filters[Model]())()
+	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(byCharacterIdUrl(characterId), 250, Extract, model.Filters[Model]())()
 }
 
 func (p *ProcessorImpl) HasFrederickPending(characterId uint32) (bool, error) {

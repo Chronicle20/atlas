@@ -33,12 +33,18 @@ func requestShop(shopId string) requests.Request[RestModel] {
 	return requests.GetRequest[RestModel](fmt.Sprintf(getBaseRequest()+ShopResource+"?include=listings", shopId))
 }
 
-func requestInField(f field.Model) requests.Request[[]RestModel] {
-	return requests.GetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+Resource, f.WorldId(), f.ChannelId(), f.MapId(), f.Instance().String()))
+// inFieldUrl returns the list URL for shops on a field. It is a bare URL
+// (not a requests.Request) because the list is now paginated server-side
+// (task-117) and consumed via requests.DrainProvider, which appends its own
+// page[number]/page[size] query params per request.
+func inFieldUrl(f field.Model) string {
+	return fmt.Sprintf(getBaseRequest()+Resource, f.WorldId(), f.ChannelId(), f.MapId(), f.Instance().String())
 }
 
-func requestByCharacterId(characterId uint32) requests.Request[[]RestModel] {
-	return requests.GetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+CharacterResource, characterId))
+// byCharacterIdUrl is the bare-URL sibling of inFieldUrl for the
+// per-character shop list (task-117).
+func byCharacterIdUrl(characterId uint32) string {
+	return fmt.Sprintf(getBaseRequest()+CharacterResource, characterId)
 }
 
 func requestVisiting(characterId uint32) requests.Request[RestModel] {

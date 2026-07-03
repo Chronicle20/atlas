@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
@@ -28,16 +29,22 @@ func InitResource(db *gorm.DB) func(si jsonapi.ServerInformation) server.RouteIn
 func handleGetQuests(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
+			query := r.URL.Query()
+			page, err := paginate.ParseParams(query, paginate.DefaultPageSize, paginate.MaxPageSize)
+			if err != nil {
+				server.WriteBadRequest(d.Logger(), w, err.Error())
+				return
+			}
+
 			s := NewStorage(d.Logger(), db)
-			res, err := s.GetAll(d.Context())
+			paged, err := s.AllPagedProvider(d.Context())(page)()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Unable to get quests.")
 				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
-			query := r.URL.Query()
 			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+			server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(paged.Items, paginate.EnvelopeFor(paged), r)
 		}
 	}
 }
@@ -64,6 +71,13 @@ func handleGetQuest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Handler
 func handleGetAutoStartQuests(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
+			query := r.URL.Query()
+			page, err := paginate.ParseParams(query, paginate.DefaultPageSize, paginate.MaxPageSize)
+			if err != nil {
+				server.WriteBadRequest(d.Logger(), w, err.Error())
+				return
+			}
+
 			s := NewStorage(d.Logger(), db)
 			allQuests, err := s.GetAll(d.Context())
 			if err != nil {
@@ -73,16 +87,16 @@ func handleGetAutoStartQuests(db *gorm.DB) func(d *rest.HandlerDependency, c *re
 			}
 
 			// Filter for auto-start quests
-			var autoStartQuests []RestModel
+			autoStartQuests := make([]RestModel, 0)
 			for _, q := range allQuests {
 				if q.AutoStart {
 					autoStartQuests = append(autoStartQuests, q)
 				}
 			}
 
-			query := r.URL.Query()
+			paged := paginate.Slice(autoStartQuests, page)
 			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(autoStartQuests)
+			server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(paged.Items, paginate.EnvelopeFor(paged), r)
 		}
 	}
 }

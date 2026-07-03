@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
@@ -34,6 +35,12 @@ func handleSearchSkillsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *r
 
 			if len(idParams) == 0 && nameQuery == "" {
 				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+
+			page, err := paginate.ParseParams(query, paginate.DefaultPageSize, paginate.MaxPageSize)
+			if err != nil {
+				server.WriteBadRequest(d.Logger(), w, err.Error())
 				return
 			}
 
@@ -73,15 +80,13 @@ func handleSearchSkillsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *r
 				for _, sk := range allSkills {
 					if strings.Contains(strings.ToLower(sk.Name), nameQueryLower) {
 						results = append(results, sk)
-						if len(results) >= 10 {
-							break
-						}
 					}
 				}
 			}
 
+			paged := paginate.Slice(results, page)
 			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(results)
+			server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(paged.Items, paginate.EnvelopeFor(paged), r)
 		}
 	}
 }

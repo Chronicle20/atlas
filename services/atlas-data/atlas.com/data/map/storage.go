@@ -49,6 +49,10 @@ func (s *Storage) GetAll(ctx context.Context) ([]RestModel, error) {
 	return s.doc.GetAll(ctx)
 }
 
+func (s *Storage) AllPagedProvider(ctx context.Context) func(page model.Page) model.Provider[model.Paged[RestModel]] {
+	return s.doc.AllPagedProvider(ctx)
+}
+
 func (s *Storage) Add(ctx context.Context) func(m RestModel) model.Provider[RestModel] {
 	return func(m RestModel) model.Provider[RestModel] {
 		t := tenant.MustFromContext(ctx)

@@ -1,14 +1,15 @@
 # BuddyOperationDelete (← `CField::SendDeleteFriendMsg`)
 
-- **IDA:** 
+- **IDA:** 0x4c659b
 - **Atlas file:** `libs/atlas-packet/buddy/serverbound/operation_delete.go`
 - **Variant:** GMS/v48
 - **Branch depth:** 0
-- **Verdict:** 🚫
+- **Verdict:** ✅
 
 ## Wire-level diff
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | int32 | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
+| 0 | byte | byte `BUDDYLIST_MODIFY mode = 3 (delete) @0x4c6608` | ✅ |  |
+| 1 | int32 | int32 `buddyCharacterId (target) @0x4c6613` | ✅ |  |
 

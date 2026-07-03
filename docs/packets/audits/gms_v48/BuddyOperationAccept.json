@@ -1,21 +1,30 @@
 {
   "WriterName": "BuddyOperationAccept",
   "IDAName": "CField::SendAcceptFriendMsg",
-  "Address": "",
+  "Address": "0x4c6643",
   "Variant": "GMS/v48",
   "BranchDepth": 0,
   "AtlasFile": "libs/atlas-packet/buddy/serverbound/operation_accept.go",
   "Rows": [
     {
       "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "BUDDYLIST_MODIFY mode = 2 (accept) @0x4c66b7",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 4,
-      "Note": "IDA read-order unresolved: function not found in IDB"
+      "IDAOp": 2,
+      "IDAComment": "fromCharacterId (inviter) @0x4c66c2",
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 4,
+  "Verdict": 0,
   "FlatInvalid": false
 }

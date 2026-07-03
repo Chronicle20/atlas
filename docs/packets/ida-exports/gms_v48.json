@@ -1928,14 +1928,31 @@
         }
       ]
     },
-    "CField::SendAcceptFriendMsg": {
-      "address": "",
+    "CField::SendSetFriendMsg": {
+      "address": "0x4c6452",
       "direction": "serverbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Encode1",
+          "comment": "BUDDYLIST_MODIFY mode = 1 (add) @0x4c6546"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "buddy character name @0x4c655f (v48 sends NO group name)"
+        }
+      ]
+    },
+  "CField::SendAcceptFriendMsg": {
+      "address": "0x4c6643",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "BUDDYLIST_MODIFY mode = 2 (accept) @0x4c66b7"
+        },
+        {
+          "op": "Encode4",
+          "comment": "fromCharacterId (inviter) @0x4c66c2"
         }
       ]
     },
@@ -2024,13 +2041,16 @@
       ]
     },
     "CField::SendDeleteFriendMsg": {
-      "address": "",
+      "address": "0x4c659b",
       "direction": "serverbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Encode1",
+          "comment": "BUDDYLIST_MODIFY mode = 3 (delete) @0x4c6608"
+        },
+        {
+          "op": "Encode4",
+          "comment": "buddyCharacterId (target) @0x4c6613"
         }
       ]
     },

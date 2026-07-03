@@ -49,8 +49,8 @@ type Entity struct {
 	Hands          uint16
 	Speed          uint16
 	Jump           uint16
-	Slots     uint16
-	LevelType byte
+	Slots          uint16
+	LevelType      byte
 	Level          byte
 	Experience     uint32
 	HammersApplied uint32
@@ -95,8 +95,8 @@ func Make(e Entity) (Model, error) {
 		hands:          e.Hands,
 		speed:          e.Speed,
 		jump:           e.Jump,
-		slots:     e.Slots,
-		levelType: e.LevelType,
+		slots:          e.Slots,
+		levelType:      e.LevelType,
 		level:          e.Level,
 		experience:     e.Experience,
 		hammersApplied: e.HammersApplied,

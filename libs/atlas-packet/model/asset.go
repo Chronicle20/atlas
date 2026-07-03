@@ -63,39 +63,39 @@ func NewAsset(zeroPosition bool, slot int16, templateId uint32, expiration time.
 	}
 }
 
-func (m Asset) ZeroPosition() bool   { return m.zeroPosition }
-func (m Asset) Slot() int16          { return m.slot }
-func (m Asset) TemplateId() uint32   { return m.templateId }
-func (m Asset) Expiration() time.Time { return m.expiration }
-func (m Asset) Strength() uint16     { return m.strength }
-func (m Asset) Dexterity() uint16    { return m.dexterity }
-func (m Asset) Intelligence() uint16 { return m.intelligence }
-func (m Asset) Luck() uint16         { return m.luck }
-func (m Asset) Hp() uint16           { return m.hp }
-func (m Asset) Mp() uint16           { return m.mp }
-func (m Asset) WeaponAttack() uint16 { return m.weaponAttack }
-func (m Asset) MagicAttack() uint16  { return m.magicAttack }
-func (m Asset) WeaponDefense() uint16 { return m.weaponDefense }
-func (m Asset) MagicDefense() uint16 { return m.magicDefense }
-func (m Asset) Accuracy() uint16     { return m.accuracy }
-func (m Asset) Avoidability() uint16 { return m.avoidability }
-func (m Asset) Hands() uint16        { return m.hands }
-func (m Asset) Speed() uint16        { return m.speed }
-func (m Asset) Jump() uint16         { return m.jump }
-func (m Asset) Slots() uint16        { return m.slots }
-func (m Asset) LevelType() byte      { return m.levelType }
-func (m Asset) Level() byte          { return m.level }
-func (m Asset) Experience() uint32   { return m.experience }
+func (m Asset) ZeroPosition() bool     { return m.zeroPosition }
+func (m Asset) Slot() int16            { return m.slot }
+func (m Asset) TemplateId() uint32     { return m.templateId }
+func (m Asset) Expiration() time.Time  { return m.expiration }
+func (m Asset) Strength() uint16       { return m.strength }
+func (m Asset) Dexterity() uint16      { return m.dexterity }
+func (m Asset) Intelligence() uint16   { return m.intelligence }
+func (m Asset) Luck() uint16           { return m.luck }
+func (m Asset) Hp() uint16             { return m.hp }
+func (m Asset) Mp() uint16             { return m.mp }
+func (m Asset) WeaponAttack() uint16   { return m.weaponAttack }
+func (m Asset) MagicAttack() uint16    { return m.magicAttack }
+func (m Asset) WeaponDefense() uint16  { return m.weaponDefense }
+func (m Asset) MagicDefense() uint16   { return m.magicDefense }
+func (m Asset) Accuracy() uint16       { return m.accuracy }
+func (m Asset) Avoidability() uint16   { return m.avoidability }
+func (m Asset) Hands() uint16          { return m.hands }
+func (m Asset) Speed() uint16          { return m.speed }
+func (m Asset) Jump() uint16           { return m.jump }
+func (m Asset) Slots() uint16          { return m.slots }
+func (m Asset) LevelType() byte        { return m.levelType }
+func (m Asset) Level() byte            { return m.level }
+func (m Asset) Experience() uint32     { return m.experience }
 func (m Asset) HammersApplied() uint32 { return m.hammersApplied }
-func (m Asset) Flag() uint16         { return m.flag }
-func (m Asset) CashId() int64        { return m.cashId }
-func (m Asset) Quantity() uint32     { return m.quantity }
-func (m Asset) Rechargeable() uint64 { return m.rechargeable }
-func (m Asset) PetId() uint32        { return m.petId }
-func (m Asset) PetName() string      { return m.petName }
-func (m Asset) PetLevel() byte       { return m.petLevel }
-func (m Asset) Closeness() uint16    { return m.closeness }
-func (m Asset) Fullness() byte       { return m.fullness }
+func (m Asset) Flag() uint16           { return m.flag }
+func (m Asset) CashId() int64          { return m.cashId }
+func (m Asset) Quantity() uint32       { return m.quantity }
+func (m Asset) Rechargeable() uint64   { return m.rechargeable }
+func (m Asset) PetId() uint32          { return m.petId }
+func (m Asset) PetName() string        { return m.petName }
+func (m Asset) PetLevel() byte         { return m.petLevel }
+func (m Asset) Closeness() uint16      { return m.closeness }
+func (m Asset) Fullness() byte         { return m.fullness }
 
 func (m Asset) inventoryType() inventory.Type {
 	t, _ := inventory.TypeFromItemId(item.Id(m.templateId))

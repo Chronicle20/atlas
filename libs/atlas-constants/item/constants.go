@@ -10,23 +10,23 @@ type WeaponType byte
 
 const (
 	// Equipment armor classifications (compartment 1).
-	ClassificationHat            = Classification(100)
-	ClassificationFaceAccessory  = Classification(101)
-	ClassificationEyeAccessory   = Classification(102)
-	ClassificationEarring        = Classification(103)
-	ClassificationTop            = Classification(104)
-	ClassificationOverall        = Classification(105)
-	ClassificationBottom         = Classification(106)
-	ClassificationShoes          = Classification(107)
-	ClassificationGloves         = Classification(108)
-	ClassificationShield         = Classification(109)
-	ClassificationCape           = Classification(110)
-	ClassificationRing           = Classification(111)
-	ClassificationPendant        = Classification(112)
-	ClassificationBelt           = Classification(113)
-	ClassificationMedal          = Classification(114)
-	ClassificationTamedMob       = Classification(190)
-	ClassificationSaddle         = Classification(191)
+	ClassificationHat           = Classification(100)
+	ClassificationFaceAccessory = Classification(101)
+	ClassificationEyeAccessory  = Classification(102)
+	ClassificationEarring       = Classification(103)
+	ClassificationTop           = Classification(104)
+	ClassificationOverall       = Classification(105)
+	ClassificationBottom        = Classification(106)
+	ClassificationShoes         = Classification(107)
+	ClassificationGloves        = Classification(108)
+	ClassificationShield        = Classification(109)
+	ClassificationCape          = Classification(110)
+	ClassificationRing          = Classification(111)
+	ClassificationPendant       = Classification(112)
+	ClassificationBelt          = Classification(113)
+	ClassificationMedal         = Classification(114)
+	ClassificationTamedMob      = Classification(190)
+	ClassificationSaddle        = Classification(191)
 
 	// Use compartment classifications (compartment 2).
 	ClassificationConsumableTownWarp       = Classification(203)
@@ -49,8 +49,8 @@ const (
 	MonsterBookCardBase = Id(2380000)
 
 	// Setup compartment classifications (compartment 3).
-	ClassificationChair               = Classification(301)
-	ClassificationSetupHiredMerchant  = Classification(303)
+	ClassificationChair              = Classification(301)
+	ClassificationSetupHiredMerchant = Classification(303)
 
 	// Etc compartment classifications (compartment 4). Singletons only;
 	// monster-drop (411-419) and quest-item (422-428) are ranges, expressed

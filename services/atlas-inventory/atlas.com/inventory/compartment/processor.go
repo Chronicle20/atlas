@@ -3,7 +3,6 @@ package compartment
 import (
 	"atlas-inventory/asset"
 	"atlas-inventory/data/equipment"
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"atlas-inventory/drop"
 	"atlas-inventory/kafka/message"
 	"atlas-inventory/kafka/message/compartment"
@@ -13,6 +12,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"math"
 	"sort"
 	"time"

@@ -257,11 +257,11 @@ func TestAsset_IsStackable(t *testing.T) {
 		templateId  uint32
 		isStackable bool
 	}{
-		{"equip", 1302000, false},       // equip (1xxx)
-		{"consumable", 2000000, true},   // use (2xxx)
-		{"setup", 3000000, true},        // setup (3xxx)
-		{"etc", 4000000, true},          // etc (4xxx)
-		{"cash", 5000000, false},        // cash (5xxx)
+		{"equip", 1302000, false},     // equip (1xxx)
+		{"consumable", 2000000, true}, // use (2xxx)
+		{"setup", 3000000, true},      // setup (3xxx)
+		{"etc", 4000000, true},        // etc (4xxx)
+		{"cash", 5000000, false},      // cash (5xxx)
 	}
 
 	testStorageId := uuid.New()

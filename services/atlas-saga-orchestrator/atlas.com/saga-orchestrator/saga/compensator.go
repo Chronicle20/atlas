@@ -40,6 +40,7 @@ type Compensator interface {
 	compensateSelectGachaponReward(s Saga, failedStep Step[any]) error
 	compensateCharacterCreation(s Saga, failedStep Step[any]) error
 	compensatePetEvolution(s Saga, failedStep Step[any]) error
+	compensatePointReset(s Saga, failedStep Step[any]) error
 
 	// DispatchCharacterCreationRollbacks is the dispatch half of the reverse-walk
 	// compensator. It fires the inverse commands (DestroyItem / DeleteSkill /
@@ -54,6 +55,12 @@ type Compensator interface {
 	// and the deducted mesos (AwardMesos → inverse credit). No lifecycle
 	// transitions, no Failed emission, no cache eviction — callers handle those.
 	DispatchPetEvolutionRollbacks(s Saga)
+
+	// DispatchPointResetRollbacks reverse-walks the completed steps of a
+	// point_reset saga, re-awarding the destroyed AP/SP Reset item
+	// (DestroyAsset → CreateItem). No lifecycle transitions, no Failed emission,
+	// no cache eviction — callers handle those.
+	DispatchPointResetRollbacks(s Saga)
 }
 
 type CompensatorImpl struct {
@@ -194,6 +201,15 @@ func (c *CompensatorImpl) CompensateFailedStep(s Saga) error {
 	// rather than only compensating the failed step.
 	if s.SagaType() == PetEvolution {
 		return c.compensatePetEvolution(s, failedStep)
+	}
+
+	// Point-reset reverse-walk (task-126, shape B). A destroy-first saga:
+	// invert the already-completed destroy_asset via re-award, then emit the
+	// saga-failed event carrying the service's machine-readable error code
+	// (threaded via the failed step's result map) so atlas-channel can render
+	// specific pink text (Task 14).
+	if s.SagaType() == PointReset {
+		return c.compensatePointReset(s, failedStep)
 	}
 
 	c.l.WithFields(logrus.Fields{
@@ -1134,6 +1150,106 @@ func (c *CompensatorImpl) DispatchPetEvolutionRollbacks(s Saga) {
 						"amount":         payload.Amount,
 					}).Error("Reverse-walk: AwardMesos refund dispatch failed; continuing chain.")
 				}
+			}
+		}
+	}
+}
+
+// compensatePointReset is the point-reset reverse-walk compensator (task-126,
+// design §3 shape B). On a failed transfer_ap / transfer_sp it re-awards the
+// already-consumed AP/SP Reset item (destroy-first saga) and emits exactly one
+// StatusEventTypeFailed carrying the service's machine-readable error code and
+// detail, threaded off the failed step's result map (Task 14 contract:
+// reason = errorDetail). Mirrors compensatePetEvolution for the lifecycle
+// idioms — TryTransition(Compensating → Failed) guards against a double-emit
+// where the Phase-4 timer already emitted Failed.
+func (c *CompensatorImpl) compensatePointReset(s Saga, failedStep Step[any]) error {
+	c.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"failed_step":    failedStep.StepId(),
+		"failed_action":  failedStep.Action(),
+		"tenant_id":      c.t.Id().String(),
+	}).Info("PointReset saga failing — dispatching reverse-walk compensation.")
+
+	c.DispatchPointResetRollbacks(s)
+
+	if !GetCache().TryTransition(c.ctx, s.TransactionId(), SagaLifecycleCompensating, SagaLifecycleFailed) {
+		c.l.WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId().String(),
+			"tenant_id":      c.t.Id().String(),
+		}).Info("saga already in terminal Failed state; reverse-walk emission skipped.")
+		SagaTimers().Cancel(s.TransactionId())
+		GetCache().Remove(c.ctx, s.TransactionId())
+		return nil
+	}
+
+	SagaTimers().Cancel(s.TransactionId())
+	GetCache().Remove(c.ctx, s.TransactionId())
+
+	errorCode, reason := pointResetFailureFields(failedStep)
+	if err := EmitSagaFailed(c.l, c.ctx, s, errorCode, reason, failedStep.StepId()); err != nil {
+		c.l.WithError(err).WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId().String(),
+			"tenant_id":      c.t.Id().String(),
+		}).Error("Failed to emit saga failed event after point-reset compensation.")
+		return err
+	}
+
+	c.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"tenant_id":      c.t.Id().String(),
+	}).Info("Point-reset reverse-walk compensation complete; saga terminated.")
+	return nil
+}
+
+// pointResetFailureFields extracts the machine-readable error code and the
+// human/detail reason to place on the saga-failed event from a failed
+// point_reset step. Per the Task 14 error-threading contract, the failed
+// step's result map carries `errorCode` + `errorDetail`; reason is the
+// errorDetail (the channel branch reads Body.Reason as the detail carrier,
+// e.g. the offending stat name). Falls back to ErrorCodeUnknown + a generic
+// reason when the result map lacks the keys.
+func pointResetFailureFields(failedStep Step[any]) (string, string) {
+	errorCode := sagaMsg.ErrorCodeUnknown
+	reason := fmt.Sprintf("Point reset failed at step [%s] action [%s]", failedStep.StepId(), failedStep.Action())
+	if res := failedStep.Result(); res != nil {
+		if v, ok := res["errorCode"].(string); ok && v != "" {
+			errorCode = v
+		}
+		if v, ok := res["errorDetail"].(string); ok && v != "" {
+			reason = v
+		}
+	}
+	return errorCode, reason
+}
+
+// DispatchPointResetRollbacks reverse-walks the saga's completed steps and
+// re-awards each destroyed AP/SP Reset item (DestroyAsset → CreateItem). This
+// is the pure "dispatch" half — no lifecycle transitions, no event emission,
+// no cache eviction. Only Completed destroy steps are inverted; the failed
+// transfer step produced no committed mutation and has no inverse. An error
+// re-awarding one step does not abort the chain.
+func (c *CompensatorImpl) DispatchPointResetRollbacks(s Saga) {
+	steps := s.Steps()
+	for i := len(steps) - 1; i >= 0; i-- {
+		step := steps[i]
+		if step.Status() != Completed {
+			continue
+		}
+		if step.Action() != DestroyAsset {
+			continue
+		}
+		if payload, ok := step.Payload().(DestroyAssetPayload); ok {
+			qty := payload.Quantity
+			if qty == 0 {
+				qty = 1
+			}
+			if err := c.compP.RequestCreateItem(s.TransactionId(), payload.CharacterId, payload.TemplateId, qty, time.Time{}); err != nil {
+				c.l.WithError(err).WithFields(logrus.Fields{
+					"transaction_id": s.TransactionId().String(),
+					"step_id":        step.StepId(),
+					"template_id":    payload.TemplateId,
+				}).Error("Reverse-walk: DestroyAsset → CreateItem dispatch failed; continuing chain.")
 			}
 		}
 	}

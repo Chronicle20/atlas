@@ -37,6 +37,7 @@ const (
 	CharacterRespawn     = sharedsaga.CharacterRespawn
 	GachaponTransaction  = sharedsaga.GachaponTransaction
 	PetEvolution         = sharedsaga.PetEvolution
+	PointReset           = sharedsaga.PointReset
 )
 
 // Status constants
@@ -77,6 +78,8 @@ const (
 	CancelAllBuffs         = sharedsaga.CancelAllBuffs
 	ResetStats             = sharedsaga.ResetStats
 	RebalanceAP            = sharedsaga.RebalanceAP
+	TransferAP             = sharedsaga.TransferAP
+	TransferSP             = sharedsaga.TransferSP
 	ValidateCharacterState = sharedsaga.ValidateCharacterState
 	IncreaseBuddyCapacity  = sharedsaga.IncreaseBuddyCapacity
 	GainCloseness          = sharedsaga.GainCloseness
@@ -199,6 +202,8 @@ type (
 	CancelAllBuffsPayload               = sharedsaga.CancelAllBuffsPayload
 	ResetStatsPayload                   = sharedsaga.ResetStatsPayload
 	RebalanceAPPayload                  = sharedsaga.RebalanceAPPayload
+	TransferAPPayload                   = sharedsaga.TransferAPPayload
+	TransferSPPayload                   = sharedsaga.TransferSPPayload
 	RebalanceTarget                     = sharedsaga.RebalanceTarget
 	RebalanceStat                       = sharedsaga.RebalanceStat
 	IncreaseBuddyCapacityPayload        = sharedsaga.IncreaseBuddyCapacityPayload
@@ -1132,6 +1137,18 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.payload = any(payload).(T)
 	case RebalanceAP:
 		var payload RebalanceAPPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case TransferAP:
+		var payload TransferAPPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case TransferSP:
+		var payload TransferSPPayload
 		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}

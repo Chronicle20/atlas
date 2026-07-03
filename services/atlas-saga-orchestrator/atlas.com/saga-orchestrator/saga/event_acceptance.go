@@ -22,6 +22,7 @@ const (
 	EventKindCharacterCreationFailed    EventKind = "character.creation_failed"
 	EventKindCharacterStatChanged       EventKind = "character.stat_changed"
 	EventKindCharacterMesoError         EventKind = "character.meso_error"
+	EventKindCharacterApTransferError   EventKind = "character.ap_transfer_error"
 	EventKindCharacterDeleted           EventKind = "character.deleted"
 
 	// Asset subsystem.
@@ -36,9 +37,11 @@ const (
 	EventKindQuestForfeited EventKind = "quest.forfeited"
 
 	// Skill subsystem.
-	EventKindSkillCreated EventKind = "skill.created"
-	EventKindSkillUpdated EventKind = "skill.updated"
-	EventKindSkillDeleted EventKind = "skill.deleted"
+	EventKindSkillCreated         EventKind = "skill.created"
+	EventKindSkillUpdated         EventKind = "skill.updated"
+	EventKindSkillDeleted         EventKind = "skill.deleted"
+	EventKindSkillSpTransferred   EventKind = "skill.sp_transferred"
+	EventKindSkillSpTransferError EventKind = "skill.sp_transfer_error"
 
 	// Buddy list.
 	EventKindBuddyCapacityChanged EventKind = "buddy.capacity_changed"
@@ -117,6 +120,8 @@ var acceptanceTable = map[sharedsaga.Action][]EventKind{
 	sharedsaga.CancelAllBuffs:         {EventKindCharacterStatChanged},
 	sharedsaga.ResetStats:             {EventKindCharacterStatChanged},
 	sharedsaga.RebalanceAP:            {EventKindCharacterStatChanged},
+	sharedsaga.TransferAP:             {EventKindCharacterStatChanged, EventKindCharacterApTransferError},
+	sharedsaga.TransferSP:             {EventKindSkillSpTransferred, EventKindSkillSpTransferError},
 	sharedsaga.ValidateCharacterState: {},
 	sharedsaga.IncreaseBuddyCapacity:  {EventKindBuddyCapacityChanged},
 	sharedsaga.GainCloseness:          {EventKindPetClosenessChanged},

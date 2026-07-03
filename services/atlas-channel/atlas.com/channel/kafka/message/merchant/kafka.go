@@ -21,6 +21,7 @@ const (
 	CommandRemoveListing    = "REMOVE_LISTING"
 	CommandUpdateListing    = "UPDATE_LISTING"
 	CommandPurchaseBundle   = "PURCHASE_BUNDLE"
+	CommandRecordItemSearch = "RECORD_ITEM_SEARCH"
 )
 
 type Command[E any] struct {
@@ -99,6 +100,10 @@ type CommandPurchaseBundleBody struct {
 	ShopId       string `json:"shopId"`
 	ListingIndex uint16 `json:"listingIndex"`
 	BundleCount  uint16 `json:"bundleCount"`
+}
+
+type CommandRecordItemSearchBody struct {
+	ItemId uint32 `json:"itemId"`
 }
 
 const (

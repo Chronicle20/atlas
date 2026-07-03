@@ -158,3 +158,17 @@ func PurchaseBundleCommandProvider(characterId uint32, shopId uuid.UUID, listing
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func RecordItemSearchCommandProvider(f field.Model, characterId uint32, itemId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &merchant2.Command[merchant2.CommandRecordItemSearchBody]{
+		WorldId:     f.WorldId(),
+		ChannelId:   f.ChannelId(),
+		CharacterId: characterId,
+		Type:        merchant2.CommandRecordItemSearch,
+		Body: merchant2.CommandRecordItemSearchBody{
+			ItemId: itemId,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

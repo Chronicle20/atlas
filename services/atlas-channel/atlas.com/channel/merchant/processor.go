@@ -6,6 +6,7 @@ import (
 	"context"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 	"github.com/google/uuid"
@@ -104,4 +105,16 @@ func (p *ProcessorImpl) RemoveListing(characterId uint32, shopId uuid.UUID, list
 
 func (p *ProcessorImpl) PurchaseBundle(characterId uint32, shopId uuid.UUID, listingIndex uint16, bundleCount uint16) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(merchant2.EnvCommandTopic)(PurchaseBundleCommandProvider(characterId, shopId, listingIndex, bundleCount))
+}
+
+func (p *Processor) SearchListings(worldId world.Id, itemId uint32, descending bool) ([]SearchListing, error) {
+	return requests.SliceProvider[ListingSearchRestModel, SearchListing](p.l, p.ctx)(requestSearchListings(itemId, worldId, descending), ExtractSearchListing, model.Filters[SearchListing]())()
+}
+
+func (p *Processor) GetTopSearches(worldId world.Id) ([]TopSearch, error) {
+	return requests.SliceProvider[TopSearchRestModel, TopSearch](p.l, p.ctx)(requestTopSearches(worldId), ExtractTopSearch, model.Filters[TopSearch]())()
+}
+
+func (p *Processor) RecordItemSearch(f field.Model, characterId uint32, itemId uint32) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(merchant2.EnvCommandTopic)(RecordItemSearchCommandProvider(f, characterId, itemId))
 }

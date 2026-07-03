@@ -41,3 +41,79 @@ func (m Model) MesoBalance() uint32       { return m.mesoBalance }
 func (m Model) ListingCount() int64       { return m.listingCount }
 func (m Model) Visitors() []uint32        { return m.visitors }
 func (m Model) Listings() []ListingModel  { return m.listings }
+
+// Shop states mirroring atlas-merchant shop/state.go (byte on the wire).
+const (
+	StateOpen        byte = 2
+	StateMaintenance byte = 3
+)
+
+type SearchListing struct {
+	shopId           uuid.UUID
+	title            string
+	worldId          world.Id
+	channelId        channel.Id
+	mapId            uint32
+	ownerId          uint32
+	shopType         byte
+	state            byte
+	itemId           uint32
+	itemType         byte
+	quantity         uint16
+	bundleSize       uint16
+	bundlesRemaining uint16
+	pricePerBundle   uint32
+	itemSnapshot     SnapshotRestModel
+}
+
+func (m SearchListing) ShopId() uuid.UUID               { return m.shopId }
+func (m SearchListing) Title() string                   { return m.title }
+func (m SearchListing) WorldId() world.Id               { return m.worldId }
+func (m SearchListing) ChannelId() channel.Id           { return m.channelId }
+func (m SearchListing) MapId() uint32                   { return m.mapId }
+func (m SearchListing) OwnerId() uint32                 { return m.ownerId }
+func (m SearchListing) ShopType() byte                  { return m.shopType }
+func (m SearchListing) State() byte                     { return m.state }
+func (m SearchListing) ItemId() uint32                  { return m.itemId }
+func (m SearchListing) ItemType() byte                  { return m.itemType }
+func (m SearchListing) Quantity() uint16                { return m.quantity }
+func (m SearchListing) BundleSize() uint16              { return m.bundleSize }
+func (m SearchListing) BundlesRemaining() uint16        { return m.bundlesRemaining }
+func (m SearchListing) PricePerBundle() uint32          { return m.pricePerBundle }
+func (m SearchListing) ItemSnapshot() SnapshotRestModel { return m.itemSnapshot }
+
+func ExtractSearchListing(rm ListingSearchRestModel) (SearchListing, error) {
+	shopId, err := uuid.Parse(rm.ShopId)
+	if err != nil {
+		return SearchListing{}, err
+	}
+	return SearchListing{
+		shopId:           shopId,
+		title:            rm.ShopTitle,
+		worldId:          world.Id(rm.WorldId),
+		channelId:        channel.Id(rm.ChannelId),
+		mapId:            rm.MapId,
+		ownerId:          rm.OwnerId,
+		shopType:         rm.ShopType,
+		state:            rm.State,
+		itemId:           rm.ItemId,
+		itemType:         rm.ItemType,
+		quantity:         rm.Quantity,
+		bundleSize:       rm.BundleSize,
+		bundlesRemaining: rm.BundlesRemaining,
+		pricePerBundle:   rm.PricePerBundle,
+		itemSnapshot:     rm.ItemSnapshot,
+	}, nil
+}
+
+type TopSearch struct {
+	itemId uint32
+	count  uint64
+}
+
+func (m TopSearch) ItemId() uint32 { return m.itemId }
+func (m TopSearch) Count() uint64  { return m.count }
+
+func ExtractTopSearch(rm TopSearchRestModel) (TopSearch, error) {
+	return TopSearch{itemId: rm.ItemId, count: rm.Count}, nil
+}

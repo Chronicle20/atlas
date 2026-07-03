@@ -5,6 +5,6 @@ category: TIER1-FIXTURE
 ida:
     function: CField::OnItemUpgrade#Failure
     address: "0x52a430"
-    decompile_sha256: d17be63b5e67f242111490a79b12c5fbb91e0149168b9df58c55f28fe6a1cc0b
+    decompile_sha256: 5b64743ed4c3d282beec9e52e037cfde56039b442fff65f31f83ae1129d7e929
 verifies:
   - libs/atlas-packet/field/clientbound/vicious_hammer_test.go#TestViciousHammerFailureByteOutput

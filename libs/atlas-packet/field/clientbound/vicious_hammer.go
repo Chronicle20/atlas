@@ -11,13 +11,16 @@ import (
 
 // Discrete per-mode body codecs for the CField::OnItemUpgrade dispatcher
 // (VICIOUS_HAMMER). The forwarder delegates to CUIItemUpgrade::OnPacket
-// (v83 sub_82B2C3 via sub_82B2AD; v95 CUIItemUpgrade::ShowResult 0x7bec20),
-// which reads Decode1(mode) and branches: 61 = success (closes the dialog,
-// "Increased available upgrade by 1"), 62 = failure (closes with a notice
-// keyed by the error code), any other byte = the non-terminal open/arm result
-// (arms the gauge: m_nReturnResult = mode, m_nResult = token,
-// m_nResultState = 1). Mode values are version-stable across v83/v95 but are
-// still config-resolved from the tenant "operations" table by the body funcs
+// (v83 sub_82B2C3 via sub_82B2AD; v95 CUIItemUpgrade::OnItemUpgradeResult
+// 0x7c0fd0, reached via CUIItemUpgrade::OnPacket 0x7c2e10 when nType==425),
+// which reads Decode1(mode) and branches: success/failure (closes the
+// dialog — success shows "Increased available upgrade by 1", failure shows
+// a notice keyed by the error code), any other byte = the non-terminal
+// open/arm result (arms the gauge: m_nReturnResult = mode, m_nResult =
+// token, m_nResultState = 1). Mode values are VERSION-DEPENDENT (IDA-
+// verified: v83 SUCCESS=61/FAILURE=62 @sub_82B2C3 0x82b2c3; v95
+// SUCCESS=65/FAILURE=66 @CUIItemUpgrade::OnItemUpgradeResult 0x7c0fd0) and
+// are config-resolved from the tenant "operations" table by the body funcs
 // in field/vicious_hammer_body.go — never hard-coded (DISPATCHER_FAMILY.md).
 // The op is absent from the jms registry (jms VERSION-ABSENT).
 
@@ -51,7 +54,7 @@ func (m ViciousHammerOpen) String() string {
 func (m ViciousHammerOpen) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
-		w.WriteByte(m.mode)       // dispatcher mode byte (server-chosen, != 61/62)
+		w.WriteByte(m.mode)       // dispatcher mode byte (server-chosen, != version's SUCCESS/FAILURE)
 		w.WriteInt(m.token)       // Decode4 -> m_nResult (round-trip token)
 		w.WriteInt(m.hammerCount) // Decode4 -> current hammersApplied
 		return w.Bytes()
@@ -66,7 +69,7 @@ func (m *ViciousHammerOpen) Decode(_ logrus.FieldLogger, _ context.Context) func
 	}
 }
 
-// ViciousHammerSuccess — terminal success (mode 61). Body after the mode byte:
+// ViciousHammerSuccess — terminal success (mode 61 for v83, 65 for v95). Body after the mode byte:
 // Decode4(flag); 0 = success, non-0 renders "Unknown error %d". The server
 // only ever sends 0.
 // packet-audit:fname CField::OnItemUpgrade#Success
@@ -89,7 +92,7 @@ func (m ViciousHammerSuccess) String() string {
 func (m ViciousHammerSuccess) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
-		w.WriteByte(m.mode) // dispatcher mode byte (61)
+		w.WriteByte(m.mode) // dispatcher mode byte (61 for v83, 65 for v95)
 		w.WriteInt(m.flag)  // Decode4; 0 = success
 		return w.Bytes()
 	}
@@ -102,7 +105,7 @@ func (m *ViciousHammerSuccess) Decode(_ logrus.FieldLogger, _ context.Context) f
 	}
 }
 
-// ViciousHammerFailure — terminal failure (mode 62). Body after the mode byte:
+// ViciousHammerFailure — terminal failure (mode 62 for v83, 66 for v95). Body after the mode byte:
 // Decode4(errorCode); client notices: 1 = "The item is not upgradable",
 // 2 = "2 upgrade increases have been used already", 3 = "You can't use
 // Vicious Hammer on Horntail Necklace", default = "Unknown error %d".
@@ -126,7 +129,7 @@ func (m ViciousHammerFailure) String() string {
 func (m ViciousHammerFailure) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
-		w.WriteByte(m.mode)     // dispatcher mode byte (62)
+		w.WriteByte(m.mode)     // dispatcher mode byte (62 for v83, 66 for v95)
 		w.WriteInt(m.errorCode) // Decode4 -> notice selector
 		return w.Bytes()
 	}

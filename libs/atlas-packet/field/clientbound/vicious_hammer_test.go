@@ -7,8 +7,9 @@ import (
 )
 
 // Arm bodies IDA-verified in v83 (CUIItemUpgrade::OnPacket sub_82B2C3, reached
-// via CField::OnItemUpgrade 0x537f8c) and v95 (CUIItemUpgrade::ShowResult
-// 0x7bec20). Wire shapes are version-invariant; the mode byte is
+// via CField::OnItemUpgrade 0x537f8c) and v95 (CUIItemUpgrade::
+// OnItemUpgradeResult 0x7c0fd0, reached via CUIItemUpgrade::OnPacket 0x7c2e10
+// when nType==425). Wire shapes are version-invariant; the mode byte is
 // config-resolved in production (literal bytes below are test-only).
 //
 // Open  — mode(1) + token(4) + hammerCount(4) = 9 bytes
@@ -21,9 +22,10 @@ import (
 // (mode + flag / mode + errorCode / mode + token + count) is version-invariant
 // and confirmed identical in both binaries — that is what these fixtures test
 // (the mode field is a generic byte param, never a literal in production
-// code). See task-129 report for the full contradiction against
-// docs/packets/dispatchers/vicious_hammer.yaml's gms_v95 SUCCESS/FAILURE
-// modes (currently 61/62 — unverified/incorrect for v95).
+// code). docs/packets/dispatchers/vicious_hammer.yaml's gms_v95 SUCCESS=65 /
+// FAILURE=66 modes match this decompile (corrected in task-129; the prior
+// 61/62 v95 entries and the ShowResult 0x7bec20 decoder attribution were
+// disproven).
 // packet-audit:verify packet=field/clientbound/FieldViciousHammerOpen version=gms_v83 ida=0x537f8c
 // packet-audit:verify packet=field/clientbound/FieldViciousHammerSuccess version=gms_v83 ida=0x537f8c
 // packet-audit:verify packet=field/clientbound/FieldViciousHammerFailure version=gms_v83 ida=0x537f8c

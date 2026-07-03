@@ -1,6 +1,7 @@
 # ViciousHammer - CField::OnItemUpgrade per-version mode table.
 # The forwarder delegates to CUIItemUpgrade::OnPacket (v83 sub_82B2C3 via
-# sub_82B2AD; v95 CUIItemUpgrade::ShowResult 0x7bec20). Terminal modes are
+# sub_82B2AD; v95 CUIItemUpgrade::OnItemUpgradeResult 0x7c0fd0, reached via
+# CUIItemUpgrade::OnPacket 0x7c2e10 when nType==425). Terminal modes are
 # hard-coded in the client and VERSION-DEPENDENT (IDA-verified: v83
 # SUCCESS=61/FAILURE=62 @sub_82B2C3 0x82b2c3; v95 SUCCESS=65/FAILURE=66
 # @CUIItemUpgrade::OnItemUpgradeResult 0x7c0fd0). OPEN is SERVER-CHOSEN: the

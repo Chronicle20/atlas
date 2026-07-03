@@ -27,7 +27,7 @@
     "gms_v83": "8b1027051634214661c597f4659fc16200b305068027080a7cfa029f7f455ef7",
     "gms_v84": "7eab9472e2afeda13faaf74273828d09d5f2481d67bec10235c3b2fd2f91e1eb",
     "gms_v87": "714817d376bb93732ef6b6fbe6b59f8c24515ff901801d213d676b501eae7f94",
-    "gms_v95": "d4ff6159aa0a0a5cca9c4af5ec57988632bfa9283b0ca463ca6d991a37d7c6f1",
+    "gms_v95": "5fe2d80fe2637f17ba8c1703b8bfde0cdc5f863b279cf56d4acf0a33189c36c1",
     "jms_v185": "3e0070b0e1faf703005f88595cee7ccb192add0d66ecbd5de436171fd52bd4d2"
 >>>>>>> 6e39e72ab (verify(packet): ITEM_UPGRADE_UPDATE + ViciousHammer dispatcher arms — gms_v83 + gms_v95 promoted)
   },

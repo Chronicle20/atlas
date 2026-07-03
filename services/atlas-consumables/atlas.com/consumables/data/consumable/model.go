@@ -230,10 +230,19 @@ type RewardModelBuilderType struct {
 
 func RewardModelBuilder() *RewardModelBuilderType { return &RewardModelBuilderType{} }
 
-func (b *RewardModelBuilderType) SetItemId(v uint32) *RewardModelBuilderType   { b.m.itemId = v; return b }
-func (b *RewardModelBuilderType) SetCount(v uint32) *RewardModelBuilderType    { b.m.count = v; return b }
-func (b *RewardModelBuilderType) SetProb(v uint32) *RewardModelBuilderType     { b.m.prob = v; return b }
-func (b *RewardModelBuilderType) SetEffect(v string) *RewardModelBuilderType   { b.m.effect = v; return b }
-func (b *RewardModelBuilderType) SetWorldMsg(v string) *RewardModelBuilderType { b.m.worldMsg = v; return b }
-func (b *RewardModelBuilderType) SetPeriod(v int32) *RewardModelBuilderType    { b.m.period = v; return b }
-func (b *RewardModelBuilderType) Build() RewardModel                          { return b.m }
+func (b *RewardModelBuilderType) SetItemId(v uint32) *RewardModelBuilderType {
+	b.m.itemId = v
+	return b
+}
+func (b *RewardModelBuilderType) SetCount(v uint32) *RewardModelBuilderType { b.m.count = v; return b }
+func (b *RewardModelBuilderType) SetProb(v uint32) *RewardModelBuilderType  { b.m.prob = v; return b }
+func (b *RewardModelBuilderType) SetEffect(v string) *RewardModelBuilderType {
+	b.m.effect = v
+	return b
+}
+func (b *RewardModelBuilderType) SetWorldMsg(v string) *RewardModelBuilderType {
+	b.m.worldMsg = v
+	return b
+}
+func (b *RewardModelBuilderType) SetPeriod(v int32) *RewardModelBuilderType { b.m.period = v; return b }
+func (b *RewardModelBuilderType) Build() RewardModel                        { return b.m }

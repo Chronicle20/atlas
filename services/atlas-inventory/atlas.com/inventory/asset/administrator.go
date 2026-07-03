@@ -15,6 +15,7 @@ func create(db *gorm.DB, tenantId uuid.UUID, m Model) (Model, error) {
 		CreatedAt:      m.createdAt,
 		Quantity:       m.quantity,
 		OwnerId:        m.ownerId,
+		Owner:          m.owner,
 		Flag:           m.flag,
 		Rechargeable:   m.rechargeable,
 		Strength:       m.strength,
@@ -53,6 +54,10 @@ func create(db *gorm.DB, tenantId uuid.UUID, m Model) (Model, error) {
 
 func updateSlot(db *gorm.DB, id uint32, slot int16) error {
 	return db.Model(&Entity{Id: id}).Select("Slot").Updates(&Entity{Slot: slot}).Error
+}
+
+func updateOwner(db *gorm.DB, id uint32, owner string) error {
+	return db.Model(&Entity{Id: id}).Select("Owner").Updates(&Entity{Owner: owner}).Error
 }
 
 func updateQuantity(db *gorm.DB, id uint32, quantity uint32) error {

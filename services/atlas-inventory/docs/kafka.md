@@ -127,7 +127,7 @@ Body types:
 - `ReleasedStatusEventBody` - embeds `AssetData` (all asset fields)
 - `ExpiredStatusEventBody` - isCash (bool), replaceItemId (uint32), replaceMessage (string)
 
-`AssetData` contains: expiration, createdAt, quantity, ownerId, flag, rechargeable, strength, dexterity, intelligence, luck, hp, mp, weaponAttack, magicAttack, weaponDefense, magicDefense, accuracy, avoidability, hands, speed, jump, slots, levelType, level, experience, hammersApplied, equippedSince, cashId, commodityId, purchaseBy, petId.
+`AssetData` contains: expiration, createdAt, quantity, ownerId, owner, flag, rechargeable, strength, dexterity, intelligence, luck, hp, mp, weaponAttack, magicAttack, weaponDefense, magicDefense, accuracy, avoidability, hands, speed, jump, slots, levelType, level, experience, hammersApplied, equippedSince, cashId, commodityId, purchaseBy, petId.
 
 ### Compartment Command
 

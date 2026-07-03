@@ -258,6 +258,7 @@ func handleAcceptCommand(db *gorm.DB) message.Handler[compartment2.Command[compa
 			SetExpiration(c.Body.Expiration).
 			SetQuantity(c.Body.Quantity).
 			SetOwnerId(c.Body.OwnerId).
+			SetOwner(c.Body.Owner).
 			SetFlag(c.Body.Flag).
 			SetRechargeable(c.Body.Rechargeable).
 			SetStrength(c.Body.Strength).

@@ -107,7 +107,7 @@ Represents a unified inventory item in a compartment slot. All item types (equip
 
 - `Model` - Contains:
   - Identity: id (uint32), compartmentId (UUID), slot (int16), templateId (uint32), expiration, createdAt
-  - Stackable fields: quantity, ownerId, flag, rechargeable
+  - Stackable fields: quantity, ownerId, owner, flag, rechargeable
   - Equipment fields: strength, dexterity, intelligence, luck, hp, mp, weaponAttack, magicAttack, weaponDefense, magicDefense, accuracy, avoidability, hands, speed, jump, slots, levelType, level, experience, hammersApplied, equippedSince
   - Cash fields: cashId, commodityId, purchaseBy
   - Pet reference: petId

@@ -187,3 +187,141 @@ character build hold up.
    to avoid false-positiving deferred rejectEmit closures; this leaves a blind spot for a
    nested func literal *synchronously invoked* inside a tx. Acceptable given the fleet's
    uniform patterns, but worth a comment in the analyzer if not already covered.
+
+---
+
+# Backend Guidelines Audit (DOM-*/SUB-*/SEC-*) — 2026-07-03
+
+Adversarial backend-guidelines pass over the task-114 migration surface (new
+`libs/atlas-outbox`, `tools/outboxguard`, 16 service processor/consumer
+changes). Builds on the plan-adherence section above; does not re-litigate the
+accepted context (task-119 atomicity latency; D7 command-routing). Scope is the
+migration delta, not a ground-up re-audit of untouched domain files.
+
+## Verdict
+
+**NEEDS-WORK (non-blocking cleanups only).** No Critical or Important DOM-*/SEC-*
+finding blocks the PR. The uniform migration pattern is applied correctly: the
+Processor Interface+Impl shape is preserved, `WithTransaction(tx)` rebinding is
+correct (including sub-processor rebinds), tenant/span headers ride the outbox
+path exactly as the direct path derives them, and enqueue errors propagate to
+fail the enclosing transaction on the state-asserting emit sites. Immutable
+models / Builder pattern are untouched. New lib + tool `go build`/`go vet`
+clean. Remaining items are cleanup (dead fields, one stricter-validation
+divergence, one guard blind spot) plus two corrections to the prior audit.
+
+## DOM checklist assessment (migration-scoped)
+
+| ID | Check | Status | Evidence |
+|----|-------|--------|----------|
+| Processor Interface+Impl preserved | new methods keep the pattern | PASS | quest `processor.go:36-134`; `WithTransaction` returns `Processor`, copies all fields incl. sub-processors |
+| `WithTransaction(tx)` rebinds sub-processors | tx-scoped sub-processors, no stale `db` | PASS | cashshop `cashshop/inventory/compartment/processor.go:72` (`astP: asset.NewProcessor(p.l,p.ctx,tx)`); character `character/processor.go:161-163` (`sdp` copy fix landed) |
+| Tenant context flows through outbox | headers carry tenant; table not tenant-scoped by design | PASS | `libs/atlas-outbox/bridge.go:41-57` merges `SpanHeaderDecorator`+`TenantHeaderDecorator(ctx)`; `entity.go` has no `tenant_id` (intentional — tenancy in headers, byte-exact via base64 `headers.go:11-30`) |
+| Enqueue errors propagate → tx rollback | state-asserting emits return err | PASS | `libs/atlas-outbox/provider.go:22-28` returns err; quest status sites `processor.go:229,377,482,555,605,614` now `return err` (see Update A) |
+| DOM-21 no reinvented shared types/consts | lib uses shared types | PASS | outbox lib imports `atlas-constants/world`, `atlas-kafka`, `kafka-go`; only new const is `notifyChannel="atlas_outbox_new"` (`outbox.go:50`) — no item/inventory/id types redeclared |
+| Dead code after refactoring | anti-patterns.md line 35 | FAIL (minor) | see M3 |
+| DOM-24 Kafka producer stubbed in emitting tests | shared `producertest` | PASS | `producertest.InstallNoop()` present in migrated emitting test pkgs (character, inventory, monster-book, buddies `testmain_test.go`/`processor_test.go`) |
+| SEC-04 no hardcoded secrets in new lib/tool | grep | PASS | lib reads `BOOTSTRAP_SERVERS` (`publisher.go:26`) + injected DSN (`drainer.go:53`); no embedded keys/passwords. SEC-01..03 N/A (no auth/token/redirect surface) |
+
+## Updates / corrections to the prior (plan-adherence) findings
+
+**Update A — Prior Finding #2 (atlas-quest swallows status enqueue errors) is
+RESOLVED in the current tree.** All six quest status-event sites now
+log-and-`return err` inside the tx closure, matching the fleet `message.Emit`
+contract: `quest/processor.go:231, 379, 484, 557, 607, 616`. The prior audit was
+written against an earlier commit; the "log-and-return nil" divergence no longer
+exists. Action item #1 can be closed.
+
+**Correction B — Prior Finding #5 / Action item #3 wrongly lists atlas-npc-shops
+`kp` as dead.** `kp` (`shops/processor.go:79`, init `:92`) is READ at five
+`message.Emit(p.kp)` sites: `:268` (`EnterAndEmit`), `:287` (`ExitAndEmit`),
+`:369` (`BuyAndEmit`), `:480`, `:570`. All are left-direct command relays with
+no local DB write (the DB-writing methods `UpdateShop:194`/`DeleteAllShops:312`
+emit nothing; `Enter`/`Exit`/`Buy` forward commands to other services), so `kp`
+is legitimately live and correctly left direct. Remove npc-shops from the
+dead-field cleanup list. No missed migration in npc-shops (no `p.kp` emit sits
+inside a `database.ExecuteTransaction` with a write).
+
+## New minor findings (non-blocking)
+
+**M3 — Dead `producer.Provider` struct fields (anti-pattern: "Leaving dead code
+after refactoring").** Confirmed unread by any emit path, yet still constructed
+via `producer.ProviderImpl(l)(ctx)` at `NewProcessor` and (where present)
+copied through `WithTransaction`:
+- atlas-cashshop ×5: `wallet/processor.go:41` (init `:50`, copied `:61`),
+  `wishlist/processor.go:35` (init `:44`, never copied/read — fully dead),
+  `cashshop/processor.go:54` (init `:72`, never copied/read — fully dead),
+  `cashshop/inventory/processor.go:36` (init `:47`, copied `:60`),
+  `cashshop/inventory/compartment/processor.go:50` (init `:60`, copied `:71`).
+- atlas-mounts ×1: `mount/processor.go:36` `kp` (init `:45`, never read).
+- atlas-quest: `KafkaEventEmitter`/`NewKafkaEventEmitter`
+  (`quest/event_emitter.go:25-33`) constructed at `processor.go:100` and copied
+  at `:131`, but never invoked in production (all emits go through
+  `txEmitter`→`OutboxEventEmitter`). Live only for the mock-injection seam
+  (`NewProcessorWithDependencies:117-119`). Remove once the mock path injects a
+  `txEmitter` directly.
+- NOTE: cashshop `cashshop/inventory/asset/processor.go:44` `p` is NOT dead — it
+  is read at `:202`/`:218` for the two left-direct no-op emits. Leave it.
+
+**M1 — `outbox.Enqueue` validation is stricter than the direct producer (latent
+behavior divergence).** `Enqueue` returns an error for an empty topic or an
+**empty message key** (`libs/atlas-outbox/outbox.go:20-25`), which propagates
+out of the emit closure and (post-task-119) rolls back the domain write. The
+direct producer path performs no such check — `libs/atlas-kafka/producer/
+producer.go` `Produce`/`tryMessage` writes whatever key the message carries,
+including nil/empty. Any migrated event whose provider builds a `kafka.Message`
+with no `Key` will now fail its transaction where it previously published. No
+concrete empty-key emitter was found among the migrated services (the fleet norm
+is `producer.CreateKey(...)`, always 8 bytes), so this is a latent robustness
+risk, not a confirmed regression. Recommend a one-time grep of the migrated
+`producer.go` files for `kafka.Message{` constructions omitting `Key` before
+task-119 makes the rollback real.
+
+**M2 — atlas-quest saga-command enqueue error is swallowed at the caller
+(narrow atomicity gap for quest rewards).** `processStartActions`/
+`processEndActions` correctly return the `EmitSaga` enqueue error
+(`quest/processor.go:901, 971`), but both callers discard it and continue:
+`processor.go:207-210` (Start) and `:468-471` (Complete) log a Warn and fall
+through with "Don't fail the quest start/completion." Because the status-event
+emit that follows in the same tx also writes `outbox_entries`, a *DB-level*
+failure would still be caught there and roll back; the residual gap is a
+saga-*specific* enqueue failure (e.g. saga command-topic resolution error via
+`topic.EnvProvider`) that would let the quest commit with the reward saga
+lost — precisely the CD-2 failure mode for the item/exp/meso/fame/skill grants.
+Pre-existing best-effort policy on start/end actions, unchanged in mechanism by
+the migration; low real-world likelihood. Optional: propagate the saga error for
+reward-bearing completions, or document the carve-out.
+
+**M4 — `outboxguard` blind spot + overstated doc claim.** The analyzer detects
+only the literal `producer.ProviderImpl` selector inside a tx closure
+(`tools/outboxguard/analyzer.go:43-56`) and deliberately does not descend into
+nested func literals (`:36-42`). It therefore cannot catch a direct emit made
+through a *stored* `producer.Provider` field (`message.Emit(p.p)(...)`) or a
+hand-rolled `for t,ms := range mb.GetAll(){ p.p(t)(...) }` loop inside a tx — the
+exact shapes the cashshop fix-pass had to find by manual grep. The analyzer's doc
+comment (`:19-22`) asserts "the fleet's only direct-producer entry point in
+service code is the local kafka/producer.ProviderImpl," which the cashshop
+hand-rolled loops disprove. Fine as a `ProviderImpl`-regression tripwire, but the
+comment overstates coverage; a future stored-provider in-tx emit would pass the
+guard silently.
+
+## Build / vet (new components)
+
+- `libs/atlas-outbox`: `go build ./...` + `go vet ./...` clean.
+- `tools/outboxguard`: `GOWORK=off go build ./...` clean.
+- Did not re-run the 18-module `-race` matrix or docker bake (reported green in
+  inventory Task 26; plan-adherence section spot-checked).
+
+## Action items (supersedes/augments prior list)
+
+1. ~~(Important) quest status-emit error propagation~~ — **DONE** (Update A;
+   verified `processor.go:231,379,484,557,607,616`).
+2. (Cleanup) Remove dead fields per M3: cashshop ×5, mounts `kp`, quest
+   `KafkaEventEmitter`. **Do NOT** remove npc-shops `kp` or cashshop asset `p`
+   (Correction B / M3 note — both live).
+3. (Robustness) M1 — confirm no migrated event emits with an empty key before
+   task-119, or relax the `Enqueue` empty-key guard to match the direct path.
+4. (Optional) M2 — decide whether reward-bearing quest saga enqueue failures
+   should roll back the quest, or document the best-effort carve-out.
+5. (Doc) M4 — soften the `outboxguard` doc comment; note the stored-provider
+   blind spot.

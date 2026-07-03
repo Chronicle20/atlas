@@ -14,6 +14,12 @@ func getByCompartmentId(compartmentId uuid.UUID) database.EntityProvider[[]Entit
 	}
 }
 
+func getByCompartmentIdPaged(compartmentId uuid.UUID, page model.Page) database.EntityProvider[model.Paged[Entity]] {
+	return func(db *gorm.DB) model.Provider[model.Paged[Entity]] {
+		return database.PagedQuery[Entity](db.Where(&Entity{CompartmentId: compartmentId}), page)
+	}
+}
+
 func getBySlot(compartmentId uuid.UUID, slot int16) database.EntityProvider[Entity] {
 	return func(db *gorm.DB) model.Provider[Entity] {
 		return database.Query[Entity](db, &Entity{CompartmentId: compartmentId, Slot: slot})

@@ -122,7 +122,7 @@
         }
       },
       {
-        "opCode": "0x39",
+        "opCode": "0x36",
         "validator": "LoggedInValidator",
         "handler": "NPCStartConversationHandle"
       },

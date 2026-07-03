@@ -12,6 +12,29 @@ import (
 
 const NPCStartConversationHandle = "NPCStartConversationHandle"
 
+// startConversationHasXY reports whether the NPC-click "talk to npc" packet
+// carries the user's current x/y shorts after the npc oid.
+//
+// IDA-verified send sites: v61 sub_7B1403@0x7b1403 COutPacket(54) +
+// Encode4(oid) + Encode2(x) + Encode2(y); v79 CUserLocal::TalkToNpc@0x8b7e10
+// and v83+ likewise append x + y; JMS also includes them.
+//
+// v72 note: the shipped v72 fixture (TestStartConversationByteV72, marker
+// ida=0x70dd49) asserts oid-ONLY, but 0x70dd49 is a stale symbol that now
+// resolves to CUICharacterSaleDlg::OnCreate. The real v72 NPC_TALK sender is
+// sub_63FD91@0x640151 (COutPacket(57) + Encode4(oid) + Encode2(x) + Encode2(y))
+// — i.e. v72 ALSO includes x/y. Correcting v72 is out of scope for task-113's
+// v61 pass (it would change the v72 wire + its existing fixture), so this gate
+// deliberately leaves v72 at its current oid-only behavior and only adds v61.
+// Follow-up: re-baseline v72 NPC_TALK to sub_63FD91 and fold v72 into the >=79
+// (x/y-present) branch. Pre-v61 GMS (e.g. v28, no IDB) stays oid-only.
+func startConversationHasXY(t tenant.Model) bool {
+	if !t.IsRegion("GMS") {
+		return true // JMS and other regions carry x/y
+	}
+	return t.MajorAtLeast(79) || t.MajorVersion() == 61
+}
+
 // packet-audit:fname CUserLocal::TalkToNpc
 type StartConversation struct {
 	oid uint32
@@ -43,14 +66,8 @@ func (m StartConversation) Encode(l logrus.FieldLogger, ctx context.Context) fun
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
 		w.WriteInt(m.oid)
-		// GMS v72 TalkToNpc (sub_70DD49@0x70dd49, GMS_v72.1_U_DEVM.exe port 13339;
-		// the sole COutPacket(57) sender, called from the CUserLocal NPC-click
-		// path sub_69FE41 as sub_70DD49(-npcOid)) encodes ONLY Encode4(oid) — the
-		// user-position x/y shorts were added after the legacy range (v79
-		// CUserLocal::TalkToNpc@0x8b7e10 appends Encode2 x + Encode2 y). Legacy
-		// GMS (<79) omits both. delta §3.2
 		t := tenant.MustFromContext(ctx)
-		if !(t.IsRegion("GMS") && !t.MajorAtLeast(79)) {
+		if startConversationHasXY(t) {
 			w.WriteInt16(m.x)
 			w.WriteInt16(m.y)
 		}
@@ -62,7 +79,7 @@ func (m *StartConversation) Decode(_ logrus.FieldLogger, ctx context.Context) fu
 	return func(r *request.Reader, options map[string]interface{}) {
 		t := tenant.MustFromContext(ctx)
 		m.oid = r.ReadUint32()
-		if !(t.IsRegion("GMS") && !t.MajorAtLeast(79)) {
+		if startConversationHasXY(t) {
 			m.x = r.ReadInt16()
 			m.y = r.ReadInt16()
 		}

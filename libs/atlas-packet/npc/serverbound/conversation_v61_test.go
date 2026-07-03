@@ -69,3 +69,23 @@ func TestNPCActionRequestByteV61(t *testing.T) {
 		t.Fatalf("v61 ActionRequest: got % x, want % x", got, want)
 	}
 }
+
+// NPC_TALK (v61 send op 54) — sub_7B1403@0x7b1403 builds COutPacket(54) then
+// Encode4(npcOid) + Encode2(userX) + Encode2(userY) (@0x7b143a / 0x7b1450 /
+// 0x7b1461). v61 includes the user-position x/y (verified; v72 twin sub_63FD91
+// op57 has the same layout). oid=42, x=100, y=-50 (0xFFCE LE).
+//
+// packet-audit:verify packet=npc/serverbound/NpcStartConversation version=gms_v61 ida=0x7b1403
+func TestStartConversationByteV61(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	ctx := pt.CreateContext("GMS", 61, 1)
+	got := StartConversation{oid: 42, x: 100, y: -50}.Encode(l, ctx)(nil)
+	want := []byte{
+		0x2A, 0x00, 0x00, 0x00, // npcOid = 42 (Encode4 @0x7b143a)
+		0x64, 0x00, // userX = 100 (Encode2 @0x7b1450)
+		0xCE, 0xFF, // userY = -50 int16 LE (Encode2 @0x7b1461)
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatalf("v61 StartConversation: got % x, want % x", got, want)
+	}
+}

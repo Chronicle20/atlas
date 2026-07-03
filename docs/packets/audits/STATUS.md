@@ -5,7 +5,7 @@
 
 Tool: `658928fc9bd41408e0a83bb6acf59fb6dff6eda8`
 
-- export gms_v61: `911433c109667ffff9e50b0dd8b1062bf3822d36320edabae13d93120d7ca058`
+- export gms_v61: `4fa12ffe0b86ca0254b6bc0afc299c689fb3dccabbe40614d0fa49f47e4461e7`
 - export gms_v72: `a0ac2be6578395455f491976bcb11aa27e2e57376b46ee8816b90324bad60c02`
 - export gms_v79: `370d6b720b633c12c71d40340f3952000705c4bddb98f87179e7193d112d210c`
 - export gms_v83: `711bddcc2e1bdd417a75954148d2b50c64e70855e84259c0b8e50e700e393c0d`
@@ -550,10 +550,10 @@ Tool: `658928fc9bd41408e0a83bb6acf59fb6dff6eda8`
 | USE_ITEMEFFECT | CWvsContext::SendActiveEffectItemChange |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x034 | ❌ | 0x034 | ❌ | 0x037 | ❌ | 0x039 | ❌ | 0x02C | ❌ |
 | MONSTER_BOOK_COVER | CUserLocal::SetMonsterBookCover | character/serverbound/monsterbook/CharacterCover (T1) | 0x035 | ✅ | 0x038 | ✅ | 0x037 | ✅ | 0x039 | ✅ | 0x039 | ✅ | 0x03C | ✅ | 0x03E | ✅ | 0x031 | ✅ |
 | USE_DEATHITEM | CUserLocal::RequestUpgradeTombEffect |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x035 | ❌ | 0x035 | ❌ | 0x038 | ❌ | 0x03A | ❌ | 0x02D | ❌ |
+| NPC_TALK | CNpc::ShowQuestList; CUserLocal::TalkToNpc | npc/serverbound/NpcStartConversation (T1) | 0x036 | ✅ | 0x039 | ✅ | 0x038 | ✅ | 0x03A | ❌ | 0x03A | ❌ | 0x03D | ❌ | 0x03F | ❌ | 0x032 | ❌ |
 | UNNAMED_R74 |  |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x036 | ❌ | 0x036 | ❌ | 0x039 | ❌ | 0x03B | ❌ | 0x02E | ❌ |
 | UNNAMED_R75 |  |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x037 | ❌ | 0x037 | ❌ | 0x03A | ❌ | 0x03C | ❌ | 0x02F | ❌ |
 | NPC_TALK_MORE | CScriptMan::OnAskAvatar; CScriptMan::OnAskBoxText; CScriptMan::OnAskMembershopAvatar; CScriptMan::OnAskMenu; CScriptMan::OnAskNumber; CScriptMan::OnAskPet; CScriptMan::OnAskPetAll; CScriptMan::OnAskSlideMenu; CScriptMan::OnAskText; CScriptMan::OnAskYesNo; CScriptMan::OnSay; CScriptMan::OnSayImage; CUIInitialQuiz::SendResult; CUISpeedQuiz::SendResult | npc/clientbound/NpcAskMemberShopAvatarConversationDetail (T1) | 0x038 | ✅ | 0x03B | ✅ | 0x03A | ✅ | 0x03C | ✅ | 0x03C | ✅ | 0x03F | ✅ | 0x041 | ✅ | 0x034 | ✅ |
-| NPC_TALK | CNpc::ShowQuestList; CUserLocal::TalkToNpc; sub_644090 | npc/serverbound/NpcStartConversation (T1) | 0x039 | ❌ | 0x039 | ✅ | 0x038 | ✅ | 0x03A | ❌ | 0x03A | ❌ | 0x03D | ❌ | 0x03F | ❌ | 0x032 | ❌ |
 | REMOTE_STORE | CWvsContext::SendRemoteShopOpenRequest |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x03B | ❌ | 0x03B | ❌ | 0x03E | ❌ | 0x040 | ❌ | 0x033 | ❌ |
 | NPC_SHOP | CShopDlg::SendBuyRequest; CShopDlg::SendRechargeRequest; CShopDlg::SendSellRequest; CShopDlg::SetRet; sub_6744D9; sub_6D68A3 |  | 0x03C | ❌ | 0x03C | ❌ | 0x03B | ❌ | 0x03D | ❌ | 0x03D | ❌ | 0x040 | ❌ | 0x042 | ❌ | 0x035 | ❌ |
 | STORAGE | CTrunkDlg::SendGetItemRequest; CTrunkDlg::SendGetMoneyRequest; CTrunkDlg::SendPutItemRequest; CTrunkDlg::SendPutMoneyRequest; CTrunkDlg::SendSortItemRequest; CTrunkDlg::SetRet; sub_603341; sub_73B5B6 |  | 0x03D | ❌ | 0x03D | ❌ | 0x03C | ❌ | 0x03E | ❌ | 0x03E | ❌ | 0x041 | ❌ | 0x043 | ❌ | 0x036 | ❌ |
@@ -935,7 +935,7 @@ Tool: `658928fc9bd41408e0a83bb6acf59fb6dff6eda8`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v61 | 206 | 0 | 60 | 183 | 453 | 0 | 45.9% |
+| v61 | 207 | 0 | 60 | 182 | 453 | 0 | 46.1% |
 | v72 | 216 | 0 | 73 | 199 | 414 | 0 | 44.3% |
 | v79 | 228 | 0 | 72 | 197 | 405 | 0 | 45.9% |
 | v83 | 367 | 0 | 0 | 328 | 207 | 0 | 52.8% |

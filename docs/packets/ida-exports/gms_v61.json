@@ -8980,13 +8980,20 @@
    ]
   },
   "CUserLocal::TalkToNpc": {
-   "address": "",
+   "address": "0x7b1403",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode4",
+     "comment": "npcOid Encode4 @0x7b143a (COutPacket(54) ctor @0x7b142d)"
+    },
+    {
+     "op": "Decode2",
+     "comment": "userX Encode2 @0x7b1450"
+    },
+    {
+     "op": "Decode2",
+     "comment": "userY Encode2 @0x7b1461"
     }
    ]
   },

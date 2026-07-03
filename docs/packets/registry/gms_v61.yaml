@@ -1927,12 +1927,12 @@
   note: 'v61 conversation-reply dispatcher: every CScriptMan::On{Say,SayImage,Ask*} handler builds the COutPacket(56) reply (NPC_TALK_MORE). Primary fname + alts mirror the verified gms_v72 NPC_TALK_MORE structure so the clientbound detail sub-struct reports are not swallowed by op-row consumption. OnAskMembershopAvatar @0x6406ec. Δ-3 vs v72 op59.'
 - op: NPC_TALK
   direction: serverbound
-  opcode: 57
-  fname: sub_644090
+  opcode: 54
+  fname: CUserLocal::TalkToNpc
   provenance: ida-discovered
   ida:
-    address: 6291023
-  note: 'v61 send-site harvest (COutPacket ctor @0x5ffc4f): sub_644090/sub_646C41/sub_646EAE/sub_6470C4. COutPacket(57), npc-script send region; Δ0 vs v72 (no named TalkToNpc in v61; delta doc OQ-7).'
+    address: 8065027
+  note: 'v61 NPC-click talk sender sub_7B1403@0x7b1403 (field-click path sub_7A3A19 -> CNpcPool::FindNpc -> sub_7B1403): COutPacket(54)+Encode4(npcOid)+Encode2(userX)+Encode2(userY). Prior op57/sub_644090 was a shop-dialog COutPacket(57) mode-3 arm mislabel. v72 twin sub_63FD91@0x640151 = COutPacket(57)+same layout (also includes x/y); v61=54 is Δ-3 vs v72=57 (social/mid region). fname canonicalised to CUserLocal::TalkToNpc for candidatesFromFName linkage.'
 - op: NPC_SHOP
   direction: serverbound
   opcode: 60

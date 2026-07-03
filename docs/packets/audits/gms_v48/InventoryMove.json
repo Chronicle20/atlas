@@ -1,7 +1,7 @@
 {
   "WriterName": "InventoryMove",
-  "IDAName": "CWvsContext::SendChangeSlotPositionRequest",
-  "Address": "",
+  "IDAName": "sub_70D8DE",
+  "Address": "0x70d8de",
   "Variant": "GMS/v48",
   "BranchDepth": 0,
   "AtlasFile": "libs/atlas-packet/inventory/serverbound/move.go",
@@ -10,10 +10,10 @@
       "Index": 0,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 4,
-      "Note": "IDA read-order unresolved: function not found in IDB"
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
     },
     {
       "Index": 1,

@@ -10402,17 +10402,6 @@
         }
       ]
     },
-    "CWvsContext::SendChangeSlotPositionRequest": {
-      "address": "",
-      "direction": "serverbound",
-      "unresolved": true,
-      "calls": [
-        {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
-        }
-      ]
-    },
     "CWvsContext::SendCharacterInfoRequest": {
       "address": "",
       "direction": "serverbound",
@@ -10551,17 +10540,6 @@
       ]
     },
     "CWvsContext::SendStatChangeItemCancelRequest": {
-      "address": "",
-      "direction": "serverbound",
-      "unresolved": true,
-      "calls": [
-        {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
-        }
-      ]
-    },
-    "CWvsContext::SendStatChangeItemUseRequest": {
       "address": "",
       "direction": "serverbound",
       "unresolved": true,

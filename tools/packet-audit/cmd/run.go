@@ -1926,6 +1926,18 @@ func candidatesFromFName(fname string) []candidate {
 	// Serverbound CWvsContext senders.
 	case "CWvsContext::SendChangeSlotPositionRequest":
 		return []candidate{{name: "Move", dir: csvpkg.DirServerbound, pkg: "inventory"}}
+	case "sub_70D8DE":
+		// ITEM_MOVE (serverbound) in gms_v48: CWvsContext::SendChangeSlotPositionRequest
+		// is UNNAMED — sub_70D8DE @0x70d8de, COutPacket(55)+Encode4(updateTime)+Encode1
+		// (inventoryType)+Encode2(src)+Encode2(dst)+Encode2(count). The v48 registry
+		// primary fname is sub_70D8DE, so it keys to the same inventory.Move codec.
+		return []candidate{{name: "Move", dir: csvpkg.DirServerbound, pkg: "inventory"}}
+	case "sub_719DD9":
+		// USE_ITEM (serverbound) in gms_v48: CWvsContext::SendStatChangeItemUseRequest
+		// is UNNAMED — sub_719DD9 @0x719dd9, COutPacket(65)+Encode4(updateTime)+Encode2
+		// (slot)+Encode4(itemId). The v48 registry primary fname is sub_719DD9, so it
+		// keys to the same inventory.ItemUse codec.
+		return []candidate{{name: "ItemUse", dir: csvpkg.DirServerbound, pkg: "inventory"}}
 	case "CWvsContext::SendGatherItemRequest":
 		return []candidate{{name: "CompartmentMergeRequest", dir: csvpkg.DirServerbound, pkg: "inventory"}}
 	case "CWvsContext::SendSortItemRequest":

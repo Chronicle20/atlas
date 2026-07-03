@@ -42,6 +42,21 @@ func ScrollEventProvider(characterId character.Id) func(success bool, cursed boo
 	}
 }
 
+func VegaScrollEventProvider(characterId character.Id) func(success bool, cursed bool) model.Provider[[]kafka.Message] {
+	return func(success bool, cursed bool) model.Provider[[]kafka.Message] {
+		key := producer.CreateKey(int(characterId))
+		value := &consumable.Event[consumable.VegaScrollBody]{
+			CharacterId: characterId,
+			Type:        consumable.EventTypeVegaScroll,
+			Body: consumable.VegaScrollBody{
+				Success: success,
+				Cursed:  cursed,
+			},
+		}
+		return producer.SingleMessageProvider(key, value)
+	}
+}
+
 // TamingMobFedEventProvider builds the TamingMobFed event emitted after a
 // revitalizer (classification 226) is consumed. Keyed by characterId so
 // atlas-mounts processes a character's feeds in order. tirednessHeal is the

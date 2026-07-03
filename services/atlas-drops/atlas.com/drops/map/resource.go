@@ -4,6 +4,7 @@ import (
 	"atlas-drops/drop"
 	"atlas-drops/rest"
 	"net/http"
+	"sort"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
@@ -11,6 +12,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
@@ -31,6 +33,12 @@ func handleGetDropsInMap(d *rest.HandlerDependency, c *rest.HandlerContext) http
 			return rest.ParseMapId(d.Logger(), func(mapId _map.Id) http.HandlerFunc {
 				return rest.ParseInstanceId(d.Logger(), func(instanceId uuid.UUID) http.HandlerFunc {
 					return func(w http.ResponseWriter, r *http.Request) {
+						page, err := paginate.ParseParams(r.URL.Query(), paginate.MaxPageSize, paginate.MaxPageSize)
+						if err != nil {
+							server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+							return
+						}
+
 						f := field.NewBuilder(worldId, channelId, mapId).SetInstance(instanceId).Build()
 						p := drop.NewProcessor(d.Logger(), d.Context())
 						ds, err := p.GetForMap(f)
@@ -39,7 +47,12 @@ func handleGetDropsInMap(d *rest.HandlerDependency, c *rest.HandlerContext) http
 							return
 						}
 
-						res, err := model.SliceMap(drop.Transform)(model.FixedProvider(ds))()()
+						sorted := make([]drop.Model, len(ds))
+						copy(sorted, ds)
+						sort.Slice(sorted, func(i, j int) bool { return sorted[i].Id() < sorted[j].Id() })
+						paged := paginate.Slice(sorted, page)
+
+						res, err := model.SliceMap(drop.Transform)(model.FixedProvider(paged.Items))()()
 						if err != nil {
 							d.Logger().WithError(err).Errorf("Creating REST model.")
 							w.WriteHeader(http.StatusInternalServerError)
@@ -48,7 +61,7 @@ func handleGetDropsInMap(d *rest.HandlerDependency, c *rest.HandlerContext) http
 
 						query := r.URL.Query()
 						queryParams := jsonapi.ParseQueryFields(&query)
-						server.MarshalResponse[[]drop.RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+						server.MarshalPaginatedResponse[[]drop.RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res, paginate.EnvelopeFor(paged), r)
 					}
 				})
 			})

@@ -640,6 +640,20 @@ func candidatesFromFName(fname string) []candidate {
 	case "CWvsContext::OnEntrustedShopCheckResult#FreeFormNotice":
 		return []candidate{{name: "FreeFormNotice", dir: csvpkg.DirClientbound}}
 
+	// --- shop scanner / owl (task-127) ---
+	case "CUIShopScanner::OnCreate":
+		return []candidate{{name: "OwlAction", pkg: "merchant", dir: csvpkg.DirServerbound}}
+	case "CUIShopScanResult::OnButtonClicked":
+		return []candidate{{name: "OwlWarp", pkg: "merchant", dir: csvpkg.DirServerbound}}
+	case "CWvsContext::SendShopScannerItemUseRequest":
+		return []candidate{{name: "ShopScannerItemUse", pkg: "merchant", dir: csvpkg.DirServerbound}}
+	case "CWvsContext::OnShopScannerResult#Result":
+		return []candidate{{name: "ShopScannerResult", pkg: "merchant", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnShopScannerResult#HotList":
+		return []candidate{{name: "ShopScannerHotList", pkg: "merchant", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnShopLinkResult":
+		return []candidate{{name: "ShopLinkResult", pkg: "merchant", dir: csvpkg.DirClientbound}}
+
 	// --- quest bucket (task-069, sub-phase 2g) ---
 	case "CWvsContext::OnScriptProgressMessage":
 		return []candidate{{name: "ScriptProgress", dir: csvpkg.DirClientbound}}

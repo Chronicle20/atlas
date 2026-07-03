@@ -2221,11 +2221,14 @@
   opcode: 82
   fname: CWvsContext::SendSkillLearnItemUseRequest
   provenance: csv-import
-- op: USE_SKILL_RESET_BOOK
+- op: USE_SHOP_SCANNER_ITEM
   direction: serverbound
   opcode: 83
-  fname: CWvsContext::SendSkillResetItemUseRequest
-  provenance: csv-import
+  fname: CWvsContext::SendShopScannerItemUseRequest
+  provenance: ida-discovered
+  ida:
+    address: 0xa0a25e
+  note: task-127 — full COutPacket(0x53) construction-site scan of the v83 binary found exactly one sender, SendShopScannerItemUseRequest (0xa0a25e); no skill-reset-book sender exists in v83 (func_query for SkillReset/resetbook = zero hits). Supersedes the csv-import USE_SKILL_RESET_BOOK row, which also wrongly recorded USE_SHOP_SCANNER_ITEM as 0x000.
 - op: USE_TELEPORT_ROCK
   direction: serverbound
   opcode: 84

@@ -2896,12 +2896,12 @@
   fname: CWvsContext::SendSkillLearnItemUseRequest
   provenance: csv-import
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
-- op: USE_SKILL_RESET_BOOK
+- op: USE_SHOP_SCANNER_ITEM
   direction: serverbound
   opcode: 83
-  fname: CWvsContext::SendSkillResetItemUseRequest
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  fname: CWvsContext::SendShopScannerItemUseRequest
+  provenance: manual
+  note: task-127 — inherited from the v83 IDA finding (0xa0a25e) via the established v84-serverbound≡v83 rule; UNVERIFIED against a v84 IDB (none loaded); provenance is 'manual' (not 'ida-discovered') because no v84-address evidence exists — matches the file's established convention for v83-inherited-but-unverified corrections (see e.g. the FRIEND_RESULT/CASH_PET_FOOD_RESULT rows). See gms_v83.yaml for the primary evidence.
 - op: USE_TELEPORT_ROCK
   direction: serverbound
   opcode: 84

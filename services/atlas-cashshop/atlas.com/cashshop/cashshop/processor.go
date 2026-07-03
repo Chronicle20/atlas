@@ -21,6 +21,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
+	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
@@ -29,6 +30,13 @@ import (
 var ErrInsufficientFunds = errors.New("insufficient funds")
 var ErrMaxSlots = errors.New("max slots")
 var ErrAssetAlreadyReserved = errors.New("asset already reserved")
+
+// errPurchaseRejected is an internal sentinel used to abort the Purchase
+// transaction closure on a handled rejection (e.g. inventory full) whose
+// event must fire on the direct producer path rather than the outbox. It
+// never escapes Purchase(): the rejectEmit != nil check short-circuits
+// before txErr is inspected.
+var errPurchaseRejected = errors.New("purchase rejected")
 
 type Processor interface {
 	PurchaseAndEmit(characterId uint32, currency uint32, serialNumber uint32) error
@@ -76,13 +84,20 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 }
 
 func (p *ProcessorImpl) PurchaseAndEmit(characterId uint32, currency uint32, serialNumber uint32) error {
-	return message.Emit(p.p)(func(buf *message.Buffer) error {
-		return p.Purchase(buf)(characterId, currency, serialNumber)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return NewProcessor(p.l, p.ctx, tx).Purchase(buf)(characterId, currency, serialNumber)
+		})
 	})
 }
 
 func (p *ProcessorImpl) Purchase(mb *message.Buffer) func(characterId uint32, currency uint32, serialNumber uint32) error {
 	return func(characterId uint32, currency uint32, serialNumber uint32) error {
+		// rejectEmit captures the INVENTORY_FULL rejection (no state change
+		// committed) so it can be fired on the DIRECT producer path, outside
+		// the tx closure below, instead of leaking into the outbox as if it
+		// were part of the committed transaction (recipe failure-path pitfall #1).
+		var rejectEmit func() error
 		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 
 			ci, err := p.comP.GetById(serialNumber)
@@ -123,8 +138,11 @@ func (p *ProcessorImpl) Purchase(mb *message.Buffer) func(characterId uint32, cu
 				return err
 			}
 			if ccm.Capacity() <= uint32(len(ccm.Assets())) {
-				_ = mb.Put(cashshop.EnvEventTopicStatus, cashshop2.ErrorStatusEventProvider(characterId, "INVENTORY_FULL"))
-				return nil
+				p.l.Debugf("Character [%d] has no room for purchase. Compartment [%s] capacity [%d].", characterId, ccm.Id(), ccm.Capacity())
+				rejectEmit = func() error {
+					return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvEventTopicStatus)(cashshop2.ErrorStatusEventProvider(characterId, "INVENTORY_FULL"))
+				}
+				return errPurchaseRejected
 			}
 
 			w = w.Purchase(currency, ci.Price())
@@ -166,6 +184,10 @@ func (p *ProcessorImpl) Purchase(mb *message.Buffer) func(characterId uint32, cu
 
 			return nil
 		})
+		if rejectEmit != nil {
+			_ = rejectEmit()
+			return nil
+		}
 		if txErr != nil {
 			p.l.WithError(txErr).Errorf("Unable to complete purchase for character [%d].", characterId)
 			return txErr
@@ -180,14 +202,18 @@ func (p *ProcessorImpl) PurchaseInventoryIncreaseByItemAndEmit(characterId uint3
 		return err
 	}
 	inventoryType := inventory.Type(ci.ItemId() - 9110000/1000)
-	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
-		return p.PurchaseInventoryIncrease(buf)(characterId, currency, inventoryType, ci.Price(), 4)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return NewProcessor(p.l, p.ctx, tx).PurchaseInventoryIncrease(buf)(characterId, currency, inventoryType, ci.Price(), 4)
+		})
 	})
 }
 
 func (p *ProcessorImpl) PurchaseInventoryIncreaseByTypeAndEmit(characterId uint32, currency uint32, inventoryType inventory.Type) error {
-	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
-		return p.PurchaseInventoryIncrease(buf)(characterId, currency, inventoryType, 4000, 8)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return NewProcessor(p.l, p.ctx, tx).PurchaseInventoryIncrease(buf)(characterId, currency, inventoryType, 4000, 8)
+		})
 	})
 }
 
@@ -228,15 +254,22 @@ func (p *ProcessorImpl) PurchaseInventoryIncrease(mb *message.Buffer) func(chara
 			if err != nil {
 				return err
 			}
-			return nil
+
+			// InventoryCapacityIncreasedStatusEventProvider asserts a
+			// committed state change (capacity was increased in this same
+			// tx), so per D7 it is enqueued through mb inside the tx rather
+			// than fired directly after the fact.
+			return mb.Put(cashshop.EnvEventTopicStatus, cashshop2.InventoryCapacityIncreasedStatusEventProvider(characterId, byte(inventoryType), newCapacity, amount))
 		})
 		if txErr != nil {
+			// UNKNOWN_ERROR reflects no committed state change (the tx
+			// above rolled back / never wrote), so it stays on the direct
+			// producer path outside the tx rather than the outbox.
 			_ = producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvEventTopicStatus)(cashshop2.ErrorStatusEventProvider(characterId, "UNKNOWN_ERROR"))
 			return txErr
 		}
 
 		p.l.Debugf("Character [%d] purchased inventory [%d] increase. New capacity will be [%d].", characterId, inventoryType, newCapacity)
-		_ = producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvEventTopicStatus)(cashshop2.InventoryCapacityIncreasedStatusEventProvider(characterId, byte(inventoryType), newCapacity, amount))
 		return nil
 	}
 }

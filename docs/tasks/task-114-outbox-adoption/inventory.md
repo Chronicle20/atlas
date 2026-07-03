@@ -441,3 +441,152 @@ stays Pattern A/migrated for its success path):
   instead of retrying against an unreachable broker for ~42s.
   `TestAttemptItemPickUpConsumeOnPickup` (success/no-write branch)
   required no change. `go test -race ./...` — all packages `ok`.
+
+## atlas-cashshop
+
+Module: `services/atlas-cashshop/atlas.com/cashshop`. Task 12. Line numbers
+below reflect the module as of this commit.
+
+### Migrated
+
+Pattern A/B sites now enqueue their success-path event(s) via
+`message.Emit`/`message.EmitWithResult` wired to
+`outbox.EmitProvider(p.l, p.ctx, tx)` inside the same
+`database.ExecuteTransaction` closure that performs the DB write.
+
+- `wallet/processor.go:91` `CreateAndEmit` — Pattern B.
+- `wallet/processor.go:115` `UpdateAndEmit` — Pattern B.
+- `wallet/processor.go:141` `UpdateAndEmitWithTransaction` — Pattern B.
+- `wallet/processor.go:205` `DeleteAndEmit` — Pattern A (`Delete` was a bare
+  `deleteEntity` write with no existing `ExecuteTransaction`; now wrapped).
+- `wishlist/processor.go:71` `AddAndEmit` — Pattern B (no `WithTransaction`
+  on this processor; rebuilt via `NewProcessor(p.l, p.ctx, tx)`).
+- `wishlist/processor.go:90` `DeleteAndEmit` — Pattern A, `NewProcessor`
+  fallback.
+- `wishlist/processor.go:107` `DeleteAllAndEmit` — Pattern A, `NewProcessor`
+  fallback.
+- `cashshop/inventory/asset/processor.go:119` `CreateAndEmit` — Pattern A,
+  `NewProcessor` fallback (no `WithTransaction` on this processor).
+- `cashshop/inventory/asset/processor.go:173`
+  `CreateWithCashIdAndEmit` — Pattern A, `NewProcessor` fallback.
+- `cashshop/inventory/asset/processor.go:246` `ExpireAndEmit` — Pattern A,
+  `NewProcessor` fallback. `Expire`'s bare `deleteById` (previously
+  unwrapped) plus its conditional replacement `Create` call are now both
+  inside the enclosing tx.
+- `cashshop/inventory/compartment/processor.go:260` `AcceptAndEmit` —
+  Pattern A, uses the processor's existing `WithTransaction(tx)`.
+- `cashshop/inventory/compartment/processor.go:298` `ReleaseAndEmit` —
+  Pattern A, uses the existing `WithTransaction(tx)`.
+- `cashshop/processor.go:78` `PurchaseAndEmit` — Pattern A, `NewProcessor`
+  fallback (top-level `ProcessorImpl` has no `WithTransaction`). See Notes
+  for the `INVENTORY_FULL` failure-path split inside `Purchase`.
+- `cashshop/processor.go:199` `PurchaseInventoryIncreaseByItemAndEmit` /
+  `cashshop/processor.go:210` `PurchaseInventoryIncreaseByTypeAndEmit` —
+  Pattern A, `NewProcessor` fallback. Also reclassified the
+  `InventoryCapacityIncreasedStatusEventProvider` emit inside
+  `PurchaseInventoryIncrease` (originally a bare direct `producer.ProviderImpl`
+  call immediately after a successful `ExecuteTransaction`) from
+  left-direct to migrated per D7 ("immediately after" a committed tx = a
+  state-asserting event): it is now `mb.Put` inside the tx closure and
+  flows through the same outbox provider as the wallet/capacity writes it
+  reports on.
+
+### Left direct
+
+- `cashshop/processor.go` (`Purchase`'s `INVENTORY_FULL` branch) — rejection
+  event, no state change committed (the check runs before any write in the
+  transaction). **Failure-path pitfall #1 applied**: the branch previously
+  did `mb.Put(...); return nil`, which would have leaked the rejection into
+  the outbox once `PurchaseAndEmit` was wrapped in Pattern A. Fixed by
+  capturing a `rejectEmit func() error` closure (fires
+  `producer.ProviderImpl(p.l)(p.ctx)(...)` directly) set inside the tx
+  closure, returning the new internal sentinel `errPurchaseRejected` to
+  abort the closure, then checking `rejectEmit != nil` *before* `txErr` in
+  `Purchase`'s post-tx logic — fires the rejection on the direct path and
+  returns `nil`, preserving the original external contract (this branch
+  never returned a Go error to callers). All other `mb.Put` + `return err`
+  branches in `Purchase` (UNKNOWN_ERROR ×5, NOT_ENOUGH_CASH) return a
+  non-nil error today, so `message.Emit`'s `f(b)` error short-circuit
+  already discards their buffered event before any flush — behavior is
+  identical pre/post migration for those branches (pre-existing: those
+  status events never actually publish today; not a regression introduced
+  here, out of scope to fix).
+- `cashshop/processor.go` (`PurchaseInventoryIncrease`'s `UNKNOWN_ERROR`
+  branch, fired via `producer.ProviderImpl` right after `txErr != nil`) —
+  rejection with no committed state change (the tx rolled back / never
+  wrote); already lives outside the `ExecuteTransaction` closure, matching
+  the recipe's prescribed remedy shape exactly, so no restructuring needed
+  beyond adding an explanatory comment.
+- `cashshop/inventory/asset/processor.go:198` `DeleteAndEmit` — wrapped
+  method `Delete(_ *message.Buffer)` discards its `mb` argument and never
+  calls `Put`; the `message.Emit` around it always flushes an empty buffer
+  today. No event to migrate.
+- `cashshop/inventory/asset/processor.go:211` `ReleaseAndEmit` — same
+  reason; `Release(_ *message.Buffer)` also discards `mb`.
+- `kafka/consumer/cashshop/consumer.go:93,102,111` — `RequestStorageIncrease`
+  / `RequestStorageIncreaseByItem` / `RequestCharacterSlotIncreaseByItem`
+  command handlers are unconditional "not implemented" stubs: they always
+  fire `ErrorStatusEventProvider(..., "UNKNOWN_ERROR")` with no DB access
+  at all. No state change, no tx to enqueue into.
+
+### Notes
+
+- The brief's `cashshop/processor.go:234,239` (pre-edit line numbers) were
+  reviewed independently against D7 rather than both being taken as
+  left-direct: `:234` (`UNKNOWN_ERROR` after `txErr != nil`) is a rejection
+  with no state change → left direct; `:239`
+  (`InventoryCapacityIncreasedStatusEventProvider`, fired unconditionally
+  right after a successful tx) asserts a committed state change → migrated
+  (see Migrated list). The brief flagged both for classification rather
+  than dictating the outcome; this is the applied result.
+- **Discovered gap, not migrated (flagged for the task owner)**: two files
+  in this module route `*AndEmit` events through a hand-rolled
+  `mb := message.NewBuffer(); ...; for t, ms := range mb.GetAll() { p.p(t)(...) }`
+  loop instead of `message.Emit(...)`, so they never matched the recipe's
+  enumeration grep (`message.Emit(\|message.EmitWithResult\|producer.ProviderImpl\|database.ExecuteTransaction`)
+  even though `producer.ProviderImpl` construction in the same files *was*
+  caught. These are genuinely tx-coupled, state-asserting emits of the
+  same category this task migrates elsewhere, but were left **unmigrated**
+  to stay inside the brief's exact enumerated scope (4 EmitWithResult + 13
+  Emit, matching the grep precisely) rather than unilaterally expanding
+  scope: `cashshop/inventory/processor.go:146` `CreateAndEmit` (wraps 3
+  nested `compartment.CreateAndEmit` calls, each independently
+  migrated/atomic on its own, plus a summary `CreateStatusEventProvider`
+  Put with no direct bare write of its own) and `:183` `DeleteAndEmit`;
+  `cashshop/inventory/compartment/processor.go:129` `CreateAndEmit`
+  (wraps bare `createEntity`), `:145` `UpdateCapacityAndEmit` (wraps bare
+  `updateCapacity`), `:200` `DeleteAndEmit` (wraps bare `deleteEntity`),
+  and `:244` `DeleteAllByAccountIdAndEmit` (uses gorm's raw
+  `p.db.WithContext(p.ctx).Transaction(...)` directly — not
+  `database.ExecuteTransaction` — and its inner `deleteEntity` call
+  already ignores that `tx` in favor of `p.db`, a separate pre-existing
+  scoping bug unrelated to this migration). Recommend a follow-up task (or
+  brief amendment) to convert these 6 sites to `message.Emit`/Pattern A for
+  consistency with the rest of the module.
+- `cashshop/inventory/compartment/processor.go`'s `WithTransaction(tx)`
+  copies `astP` (the nested `asset.Processor`) unchanged — it does not
+  rebind the sub-processor to `tx`. `Accept`/`Release`'s calls into
+  `p.astP.CreateWithCashId`/`Release` therefore still open their own
+  independent `ExecuteTransaction` against the asset processor's
+  original construction-time `db`, not the outer `tx`. Per the recipe's
+  explicit re-entrancy guarantee this is safe (no double-transaction
+  errors) but is not fully atomic with the compartment-level enqueue
+  until a separate fix threads `tx` through nested sub-processor
+  construction — pre-existing structural limitation, out of scope here,
+  same caveat as the cross-cutting `database.ExecuteTransaction` no-op
+  note below.
+- `database.ExecuteTransaction` atomicity is still latent fleet-wide
+  pending task-119 (see the `atlas-character` section above and project
+  memory `bug_execute_transaction_noop.md`); this task's migrations use
+  the correct seam and become atomic for free once task-119 lands.
+- No pre-existing test in this module asserted direct-path (non-outbox)
+  emission for any now-migrated flow — all touched `*AndEmit` methods were
+  untested in isolation; the module's existing tests (`wallet/rest_test.go`,
+  `wallet/provider_test.go`, `wallet/model_test.go`,
+  `wishlist/rest_test.go`, `cashshop/inventory/rest_test.go`,
+  `cashshop/inventory/asset/rest_test.go`,
+  `cashshop/inventory/compartment/{rest,model}_test.go`,
+  `cashshop/inventory/asset/reservation/cache_test.go`) exercise REST/model/
+  provider layers only and do not reference `AndEmit`, `producer.`, or
+  `message.Emit`. No test changes were required; `go test -race ./...` —
+  all packages `ok`.

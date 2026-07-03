@@ -7,7 +7,9 @@ import (
 	wishlist2 "atlas-cashshop/kafka/producer/wishlist"
 	"context"
 
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -69,7 +71,14 @@ func (p *ProcessorImpl) Add(mb *message.Buffer) func(characterId uint32) func(se
 }
 
 func (p *ProcessorImpl) AddAndEmit(characterId uint32, serialNumber uint32) (Model, error) {
-	return message.EmitWithResult[Model, uint32](p.p)(model.Flip(p.Add)(characterId))(serialNumber)
+	var result Model
+	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		var err error
+		wp := NewProcessor(p.l, p.ctx, tx)
+		result, err = message.EmitWithResult[Model, uint32](outbox.EmitProvider(p.l, p.ctx, tx))(model.Flip(wp.Add)(characterId))(serialNumber)
+		return err
+	})
+	return result, txErr
 }
 
 func (p *ProcessorImpl) Delete(mb *message.Buffer) func(characterId uint32) func(itemId uuid.UUID) error {
@@ -88,7 +97,10 @@ func (p *ProcessorImpl) Delete(mb *message.Buffer) func(characterId uint32) func
 }
 
 func (p *ProcessorImpl) DeleteAndEmit(characterId uint32, itemId uuid.UUID) error {
-	return message.Emit(p.p)(model.Flip(model.Flip(p.Delete)(characterId))(itemId))
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		wp := NewProcessor(p.l, p.ctx, tx)
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(model.Flip(model.Flip(wp.Delete)(characterId))(itemId))
+	})
 }
 
 func (p *ProcessorImpl) DeleteAll(mb *message.Buffer) func(characterId uint32) error {
@@ -105,5 +117,8 @@ func (p *ProcessorImpl) DeleteAll(mb *message.Buffer) func(characterId uint32) e
 }
 
 func (p *ProcessorImpl) DeleteAllAndEmit(characterId uint32) error {
-	return message.Emit(p.p)(model.Flip(p.DeleteAll)(characterId))
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		wp := NewProcessor(p.l, p.ctx, tx)
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(model.Flip(wp.DeleteAll)(characterId))
+	})
 }

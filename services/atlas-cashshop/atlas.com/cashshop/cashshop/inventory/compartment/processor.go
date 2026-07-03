@@ -9,7 +9,9 @@ import (
 	"context"
 	"errors"
 
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -258,8 +260,10 @@ func (p *ProcessorImpl) DeleteAllByAccountIdAndEmit(accountId uint32) error {
 }
 
 func (p *ProcessorImpl) AcceptAndEmit(accountId uint32, characterId uint32, id uuid.UUID, type_ CompartmentType, cashId int64, templateId uint32, quantity uint32, commodityId uint32, purchasedBy uint32, flag uint16, transactionId uuid.UUID) error {
-	return message.Emit(p.p)(func(buf *message.Buffer) error {
-		return p.Accept(buf)(accountId, characterId, id, type_, cashId, templateId, quantity, commodityId, purchasedBy, flag, transactionId)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).Accept(buf)(accountId, characterId, id, type_, cashId, templateId, quantity, commodityId, purchasedBy, flag, transactionId)
+		})
 	})
 }
 
@@ -296,8 +300,10 @@ func (p *ProcessorImpl) Accept(mb *message.Buffer) func(accountId uint32, charac
 }
 
 func (p *ProcessorImpl) ReleaseAndEmit(accountId uint32, characterId uint32, id uuid.UUID, type_ CompartmentType, assetId uint32, transactionId uuid.UUID, cashId int64, templateId uint32) error {
-	return message.Emit(p.p)(func(buf *message.Buffer) error {
-		return p.Release(buf)(accountId, characterId, id, type_, assetId, transactionId, cashId, templateId)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).Release(buf)(accountId, characterId, id, type_, assetId, transactionId, cashId, templateId)
+		})
 	})
 }
 

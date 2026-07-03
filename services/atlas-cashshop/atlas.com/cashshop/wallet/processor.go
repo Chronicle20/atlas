@@ -8,7 +8,9 @@ import (
 	"context"
 	"fmt"
 
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -89,7 +91,14 @@ func (p *ProcessorImpl) Create(mb *message.Buffer) func(accountId uint32) func(c
 }
 
 func (p *ProcessorImpl) CreateAndEmit(accountId uint32, credit uint32, points uint32, prepaid uint32) (Model, error) {
-	return message.EmitWithResult[Model, uint32](p.p)(model.Flip(model.Flip(model.Flip(p.Create)(accountId))(credit))(points))(prepaid)
+	var result Model
+	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		var err error
+		wp := p.WithTransaction(tx)
+		result, err = message.EmitWithResult[Model, uint32](outbox.EmitProvider(p.l, p.ctx, tx))(model.Flip(model.Flip(model.Flip(wp.Create)(accountId))(credit))(points))(prepaid)
+		return err
+	})
+	return result, txErr
 }
 
 func (p *ProcessorImpl) Update(mb *message.Buffer) func(accountId uint32) func(credit uint32) func(points uint32) func(prepaid uint32) (Model, error) {
@@ -113,7 +122,14 @@ func (p *ProcessorImpl) Update(mb *message.Buffer) func(accountId uint32) func(c
 }
 
 func (p *ProcessorImpl) UpdateAndEmit(accountId uint32, credit uint32, points uint32, prepaid uint32) (Model, error) {
-	return message.EmitWithResult[Model, uint32](p.p)(model.Flip(model.Flip(model.Flip(p.Update)(accountId))(credit))(points))(prepaid)
+	var result Model
+	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		var err error
+		wp := p.WithTransaction(tx)
+		result, err = message.EmitWithResult[Model, uint32](outbox.EmitProvider(p.l, p.ctx, tx))(model.Flip(model.Flip(model.Flip(wp.Update)(accountId))(credit))(points))(prepaid)
+		return err
+	})
+	return result, txErr
 }
 
 func (p *ProcessorImpl) UpdateWithTransaction(mb *message.Buffer) func(transactionId uuid.UUID) func(accountId uint32) func(credit uint32) func(points uint32) func(prepaid uint32) (Model, error) {
@@ -139,7 +155,14 @@ func (p *ProcessorImpl) UpdateWithTransaction(mb *message.Buffer) func(transacti
 }
 
 func (p *ProcessorImpl) UpdateAndEmitWithTransaction(transactionId uuid.UUID, accountId uint32, credit uint32, points uint32, prepaid uint32) (Model, error) {
-	return message.EmitWithResult[Model, uint32](p.p)(model.Flip(model.Flip(model.Flip(model.Flip(p.UpdateWithTransaction)(transactionId))(accountId))(credit))(points))(prepaid)
+	var result Model
+	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		var err error
+		wp := p.WithTransaction(tx)
+		result, err = message.EmitWithResult[Model, uint32](outbox.EmitProvider(p.l, p.ctx, tx))(model.Flip(model.Flip(model.Flip(model.Flip(wp.UpdateWithTransaction)(transactionId))(accountId))(credit))(points))(prepaid)
+		return err
+	})
+	return result, txErr
 }
 
 func (p *ProcessorImpl) AdjustCurrency(accountId uint32, currencyType uint32, amount int32) (Model, error) {
@@ -203,5 +226,7 @@ func (p *ProcessorImpl) Delete(mb *message.Buffer) func(accountId uint32) error 
 }
 
 func (p *ProcessorImpl) DeleteAndEmit(accountId uint32) error {
-	return message.Emit(p.p)(model.Flip(p.Delete)(accountId))
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(model.Flip(p.WithTransaction(tx).Delete)(accountId))
+	})
 }

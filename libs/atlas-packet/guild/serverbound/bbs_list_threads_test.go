@@ -6,6 +6,8 @@ import (
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// v48 CUIGuildBBS::SendLoadListRequest @0x6091b1 (sub_6091B1): COutPacket(109=BBS_OPERATION)+Encode1(2=LIST)+Encode4(startIndex). Body=Encode4(startIndex), == v83.
+// packet-audit:verify packet=guild/serverbound/GuildBBSListThreads version=gms_v48 ida=0x6091b1
 // packet-audit:verify packet=guild/serverbound/GuildBBSListThreads version=gms_v79 ida=0x786c7b
 // v72 CUIGuildBBS::SendLoadListRequest @0x751c3d: COutPacket(153=BBS_OPERATION)+Encode1(2)+Encode4(startIndex). Body=Encode4(startIndex), == v79.
 // packet-audit:verify packet=guild/serverbound/GuildBBSListThreads version=gms_v72 ida=0x751c3d

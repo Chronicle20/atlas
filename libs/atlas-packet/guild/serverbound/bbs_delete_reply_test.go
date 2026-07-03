@@ -6,6 +6,8 @@ import (
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// v48 CUIGuildBBS::OnCommentDelete @0x6090f4 (sub_6090F4): COutPacket(109=BBS_OPERATION)+Encode1(5=DELETE_REPLY)+Encode4(threadId)+Encode4(replyId). Body=Encode4(threadId)+Encode4(replyId), == v83.
+// packet-audit:verify packet=guild/serverbound/GuildBBSDeleteReply version=gms_v48 ida=0x6090f4
 // packet-audit:verify packet=guild/serverbound/GuildBBSDeleteReply version=gms_v79 ida=0x786bba
 // v72 CUIGuildBBS::OnCommentDelete @0x751b7c: COutPacket(153)+Encode1(5)+Encode4(threadId)+Encode4(replyId), == v79.
 // packet-audit:verify packet=guild/serverbound/GuildBBSDeleteReply version=gms_v72 ida=0x751b7c

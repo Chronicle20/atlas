@@ -6041,35 +6041,40 @@
       ]
     },
     "CUIGuildBBS::OnComment": {
-      "address": "",
+      "address": "0x608fe6",
       "direction": "serverbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Encode4",
+          "comment": "threadId @0x60909a (after BBS_OPERATION mode 4=REPLY @0x609089)"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "reply message @0x6090b3"
         }
       ]
     },
     "CUIGuildBBS::OnCommentDelete": {
-      "address": "",
+      "address": "0x6090f4",
       "direction": "serverbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Encode4",
+          "comment": "threadId @0x609158 (after BBS_OPERATION mode 5=DELETE_REPLY @0x609141)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "replyId @0x60917a"
         }
       ]
     },
     "CUIGuildBBS::OnDelete": {
-      "address": "",
+      "address": "0x608f31",
       "direction": "serverbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Encode4",
+          "comment": "threadId @0x608f90 (after BBS_OPERATION mode 1=DELETE @0x608f7f)"
         }
       ]
     },
@@ -6118,35 +6123,52 @@
       ]
     },
     "CUIGuildBBS::OnRegister": {
-      "address": "",
+      "address": "0x608d55",
       "direction": "serverbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Encode1",
+          "comment": "modify flag @0x608e6a (after BBS_OPERATION mode 0=REGISTER @0x608e5f)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "threadId (only when modify != 0) @0x608e80"
+        },
+        {
+          "op": "Encode1",
+          "comment": "notice flag @0x608e8b"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "title @0x608ea4"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "message @0x608ebd"
+        },
+        {
+          "op": "Encode4",
+          "comment": "emoticonId @0x608ecb"
         }
       ]
     },
     "CUIGuildBBS::SendLoadListRequest": {
-      "address": "",
+      "address": "0x6091b1",
       "direction": "serverbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Encode4",
+          "comment": "startIndex @0x6091e4 (after BBS_OPERATION mode 2=LIST @0x6091d6)"
         }
       ]
     },
     "CUIGuildBBS::SendViewEntryRequest": {
-      "address": "",
+      "address": "0x609211",
       "direction": "serverbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Encode4",
+          "comment": "threadId @0x609244 (after BBS_OPERATION mode 3=DISPLAY @0x609236)"
         }
       ]
     },

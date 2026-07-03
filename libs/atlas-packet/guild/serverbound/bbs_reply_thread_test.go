@@ -6,6 +6,8 @@ import (
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// v48 CUIGuildBBS::OnComment @0x608fe6 (sub_608FE6): COutPacket(109=BBS_OPERATION)+Encode1(4=REPLY)+Encode4(threadId)+EncodeStr(message). Body=Encode4(threadId)+EncodeStr(message), == v83.
+// packet-audit:verify packet=guild/serverbound/GuildBBSReplyThread version=gms_v48 ida=0x608fe6
 // packet-audit:verify packet=guild/serverbound/GuildBBSReplyThread version=gms_v79 ida=0x786aa6
 // v72 CUIGuildBBS::OnComment @0x751a68: COutPacket(153)+Encode1(4)+Encode4(threadId)+EncodeStr(message), == v79.
 // packet-audit:verify packet=guild/serverbound/GuildBBSReplyThread version=gms_v72 ida=0x751a68

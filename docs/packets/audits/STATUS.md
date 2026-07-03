@@ -5,7 +5,7 @@
 
 Tool: `46f121c4a0f649a42249ab39feefdc56c1837263`
 
-- export gms_v48: `7fc8df7399be8691977165fa1ac7f0753f6e7c384f97227dae2962308e08c12c`
+- export gms_v48: `2982525f0e71fd997748033db8da1e7a40fa4d71a6ebe56c8d003a50fb82c5c5`
 - export gms_v61: `8023cfe3b5868d7a19f2067627f84e8da849588dfe87e86f48eb721225ac717b`
 - export gms_v72: `a0ac2be6578395455f491976bcb11aa27e2e57376b46ee8816b90324bad60c02`
 - export gms_v79: `370d6b720b633c12c71d40340f3952000705c4bddb98f87179e7193d112d210c`
@@ -884,12 +884,12 @@ Tool: `46f121c4a0f649a42249ab39feefdc56c1837263`
 | field/serverbound/FieldGeneral (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | field/serverbound/FieldUseDoor (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | guild/serverbound/GuildAgreementResponse (T1) |  |  | ❌ |  | 🟡 |  | 🟡 |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
-| guild/serverbound/GuildBBSCreateOrEditThread (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
-| guild/serverbound/GuildBBSDeleteReply (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
-| guild/serverbound/GuildBBSDeleteThread (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
-| guild/serverbound/GuildBBSDisplayThread (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
-| guild/serverbound/GuildBBSListThreads (T1) |  |  | ❌ |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |
-| guild/serverbound/GuildBBSReplyThread (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
+| guild/serverbound/GuildBBSCreateOrEditThread (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
+| guild/serverbound/GuildBBSDeleteReply (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
+| guild/serverbound/GuildBBSDeleteThread (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
+| guild/serverbound/GuildBBSDisplayThread (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
+| guild/serverbound/GuildBBSListThreads (T1) |  |  | ✅ |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |
+| guild/serverbound/GuildBBSReplyThread (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | guild/serverbound/GuildInviteRequest (T1) |  |  | ✅ |  | 🟡 |  | 🟡 |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | guild/serverbound/GuildKick (T1) |  |  | ✅ |  | 🟡 |  | 🟡 |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | guild/serverbound/GuildRequestCreate (T1) |  |  | ✅ |  | 🟡 |  | 🟡 |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
@@ -1003,7 +1003,7 @@ Tool: `46f121c4a0f649a42249ab39feefdc56c1837263`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v48 | 34 | 0 | 17 | 289 | 629 | 0 | 10.0% |
+| v48 | 40 | 0 | 17 | 283 | 629 | 0 | 11.8% |
 | v61 | 208 | 0 | 60 | 230 | 471 | 0 | 41.8% |
 | v72 | 216 | 0 | 73 | 248 | 432 | 0 | 40.2% |
 | v79 | 228 | 0 | 72 | 246 | 423 | 0 | 41.8% |

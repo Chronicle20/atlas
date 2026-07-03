@@ -1,7 +1,7 @@
 {
   "WriterName": "GuildBBSCreateOrEditThread",
   "IDAName": "CUIGuildBBS::OnRegister",
-  "Address": "",
+  "Address": "0x608d55",
   "Variant": "GMS/v48",
   "BranchDepth": 1,
   "AtlasFile": "libs/atlas-packet/guild/serverbound/bbs_create_or_edit_thread.go",
@@ -10,49 +10,58 @@
       "Index": 0,
       "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 4,
-      "Note": "IDA read-order unresolved: function not found in IDB"
+      "IDAOp": 0,
+      "IDAComment": "modify flag @0x608e6a (after BBS_OPERATION mode 0=REGISTER @0x608e5f)",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 1,
-      "AtlasOp": 2,
+      "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
+      "IDAOp": 2,
+      "IDAComment": "threadId (only when modify != 0) @0x608e80",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "width mismatch"
     },
     {
       "Index": 2,
-      "AtlasOp": 0,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "",
+      "IDAComment": "notice flag @0x608e8b",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "width mismatch"
     },
     {
       "Index": 3,
-      "AtlasOp": 4,
+      "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
+      "IDAOp": 4,
+      "IDAComment": "title @0x608ea4",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "width mismatch"
     },
     {
       "Index": 4,
       "AtlasOp": 4,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "IDAOp": 4,
+      "IDAComment": "message @0x608ebd",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 5,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "emoticonId @0x608ecb",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 6,
       "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 0,

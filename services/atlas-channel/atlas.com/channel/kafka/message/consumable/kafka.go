@@ -15,6 +15,7 @@ const (
 
 	CommandRequestItemConsume = "REQUEST_ITEM_CONSUME"
 	CommandRequestScroll      = "REQUEST_SCROLL"
+	CommandRequestItemReward  = "REQUEST_ITEM_REWARD"
 )
 
 type Command[E any] struct {
@@ -31,6 +32,11 @@ type RequestItemConsumeBody struct {
 	Source   slot.Position `json:"source"`
 	ItemId   item.Id       `json:"itemId"`
 	Quantity int16         `json:"quantity"`
+}
+
+type RequestItemRewardBody struct {
+	Source slot.Position `json:"source"`
+	ItemId item.Id       `json:"itemId"`
 }
 
 type RequestScrollBody struct {

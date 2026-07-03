@@ -30,6 +30,11 @@ func (p *Processor) RequestItemConsume(f field.Model, characterId character.Id, 
 	return producer.ProviderImpl(p.l)(p.ctx)(consumable2.EnvCommandTopic)(RequestItemConsumeCommandProvider(f, characterId, source, itemId, 1))
 }
 
+func (p *Processor) RequestItemReward(f field.Model, characterId character.Id, itemId item.Id, source slot.Position) error {
+	p.l.Debugf("Character [%d] using reward box [%d] from slot [%d].", characterId, itemId, source)
+	return producer.ProviderImpl(p.l)(p.ctx)(consumable2.EnvCommandTopic)(RequestItemRewardCommandProvider(f, characterId, source, itemId))
+}
+
 func (p *Processor) RequestScrollUse(f field.Model, characterId character.Id, scrollSlot slot.Position, equipSlot slot.Position, whiteScroll bool, legendarySpirit bool, updateTime uint32) error {
 	p.l.Debugf("Character [%d] attempting to scroll item in slot [%d] with scroll from slot [%d]. whiteScroll [%t], legendarySpirit [%t], updateTime [%d].", characterId, equipSlot, scrollSlot, whiteScroll, legendarySpirit, updateTime)
 	return producer.ProviderImpl(p.l)(p.ctx)(consumable2.EnvCommandTopic)(RequestScrollCommandProvider(f, characterId, scrollSlot, equipSlot, whiteScroll, legendarySpirit))

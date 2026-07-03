@@ -49,3 +49,12 @@ func CharacterItemUseSummonBagHandleFunc(l logrus.FieldLogger, ctx context.Conte
 		_ = consumable.NewProcessor(l, ctx).RequestItemConsume(s.Field(), character.Id(s.CharacterId()), item.Id(p.ItemId()), slot.Position(p.Source()), p.UpdateTime())
 	}
 }
+
+func CharacterItemUseLotteryHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
+	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
+		p := inventory2.NewLotteryItemUse()
+		p.Decode(l, ctx)(r, readerOptions)
+		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
+		_ = consumable.NewProcessor(l, ctx).RequestItemReward(s.Field(), character.Id(s.CharacterId()), item.Id(p.ItemId()), slot.Position(p.Source()))
+	}
+}

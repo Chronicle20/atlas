@@ -889,6 +889,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[invsb.CompartmentMergeRequestHandle] = handler.CompartmentMergeHandleFunc
 	handlerMap[invsb.CompartmentSortRequestHandle] = handler.CompartmentSortHandleFunc
 	handlerMap[invsb.CharacterItemUseSummonBagHandle] = handler.CharacterItemUseSummonBagHandleFunc
+	handlerMap[invsb.CharacterItemUseLotteryHandle] = handler.CharacterItemUseLotteryHandleFunc
 	handlerMap[notesb.NoteOperationHandle] = handler.NoteOperationHandleFunc
 	handlerMap[questsb.QuestActionHandle] = handler.QuestActionHandleFunc
 	handlerMap[storagesb.StorageOperationHandle] = handler.StorageOperationHandleFunc

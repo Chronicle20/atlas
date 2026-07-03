@@ -246,4 +246,13 @@ const (
 	LiarTreeSapOneHundredPercent          = Id(2049101)
 	MapleSyrupOneHundredPercent           = Id(2049102)
 	AgentEquipmentScrollOneHundredPercent = Id(2049104)
+
+	// Cash imprint family (Item.wz/Cash/0506.img, task-128)
+	ItemTag           = Id(5060000)
+	SealingLock       = Id(5060001)
+	Incubator         = Id(5060002)
+	SealingLock7Day   = Id(5061000)
+	SealingLock30Day  = Id(5061001)
+	SealingLock90Day  = Id(5061002)
+	SealingLock365Day = Id(5061003)
 )

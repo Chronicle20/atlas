@@ -954,6 +954,21 @@
             "BUY_AUCTION_IMM": 20
           }
         }
+      },
+      {
+        "opCode": "0x3A",
+        "validator": "LoggedInValidator",
+        "handler": "OwlActionHandle",
+        "options": {
+          "operations": {
+            "OPEN": 5
+          }
+        }
+      },
+      {
+        "opCode": "0x3B",
+        "validator": "LoggedInValidator",
+        "handler": "OwlWarpHandle"
       }
     ],
     "writers": [
@@ -2525,6 +2540,33 @@
             "RESULT_SUCCESS": 60,
             "RESULT_FAILURE": 62,
             "INVALID": 61
+          }
+        }
+      },
+      {
+        "opCode": "0x40",
+        "writer": "ShopScannerResult",
+        "options": {
+          "operations": {
+            "RESULT": 6,
+            "HOT_LIST": 7
+          }
+        }
+      },
+      {
+        "opCode": "0x41",
+        "writer": "ShopLinkResult",
+        "options": {
+          "operations": {
+            "SUCCESS": 0,
+            "CLOSED": 1,
+            "FULL": 2,
+            "BUSY": 3,
+            "DEAD": 4,
+            "NO_TRADE": 7,
+            "DENIED": 17,
+            "MAINTENANCE": 18,
+            "FM_ONLY": 23
           }
         }
       }

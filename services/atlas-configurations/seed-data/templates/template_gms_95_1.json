@@ -570,6 +570,26 @@
         "opCode": "0x128",
         "validator": "LoggedInValidator",
         "handler": "ItemUpgradeUpdateHandle"
+      },
+      {
+        "opCode": "0x48",
+        "validator": "LoggedInValidator",
+        "handler": "OwlActionHandle",
+        "options": {
+          "operations": {
+            "OPEN": 5
+          }
+        }
+      },
+      {
+        "opCode": "0x49",
+        "validator": "LoggedInValidator",
+        "handler": "OwlWarpHandle"
+      },
+      {
+        "opCode": "0x5A",
+        "validator": "LoggedInValidator",
+        "handler": "ShopScannerItemUseHandle"
       }
     ],
     "writers": [
@@ -1886,6 +1906,33 @@
             "RESULT_SUCCESS": 69,
             "RESULT_FAILURE": 71,
             "INVALID": 66
+          }
+        }
+      },
+      {
+        "opCode": "0x49",
+        "writer": "ShopScannerResult",
+        "options": {
+          "operations": {
+            "RESULT": 6,
+            "HOT_LIST": 7
+          }
+        }
+      },
+      {
+        "opCode": "0x4A",
+        "writer": "ShopLinkResult",
+        "options": {
+          "operations": {
+            "SUCCESS": 0,
+            "CLOSED": 1,
+            "FULL": 2,
+            "BUSY": 3,
+            "DEAD": 4,
+            "NO_TRADE": 7,
+            "DENIED": 17,
+            "MAINTENANCE": 18,
+            "FM_ONLY": 23
           }
         }
       }

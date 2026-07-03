@@ -56,7 +56,7 @@ Tool: `6e7dd1248eff278a05b5e7516dbe220239c4e10c`
 | INVENTORY_GROW | CWvsContext::OnInventoryGrow |  | 0x01A | ❌ | 0x01B | ❌ | 0x01B | ❌ | 0x01B | ❌ | 0x01E | ❌ | 0x01E | ❌ | 0x01E | ❌ | 0x01D | ❌ | 0x01C | ❌ |
 | LAST_CONNECTED_WORLD | CLogin::OnLatestConnectedWorld | login/clientbound/SelectWorld |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x01A | ✅ | 0x01A | ✅ | 0x01A | ✅ | 0x018 | ✅ | 0x016 | ✅ |
 | RECOMMENDED_WORLD_MESSAGE | CLogin::OnRecommendWorldMessage | login/clientbound/ServerListRecommendations |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x01B | ✅ | 0x01B | ✅ | 0x01B | ✅ | 0x019 | ✅ | 0x017 | ✅ |
-| STAT_CHANGED | CWvsContext::OnStatChanged | stat/clientbound/Changed (T1) | 0x01B | ❌ | 0x01C | ✅ | 0x01C | ✅ | 0x01C | ✅ | 0x01F | ✅ | 0x01F | ✅ | 0x01F | ✅ | 0x01E | ✅ | 0x01D | ✅ |
+| STAT_CHANGED | CWvsContext::OnStatChanged | stat/clientbound/Changed (T1) | 0x01B | ✅ | 0x01C | ✅ | 0x01C | ✅ | 0x01C | ✅ | 0x01F | ✅ | 0x01F | ✅ | 0x01F | ✅ | 0x01E | ✅ | 0x01D | ✅ |
 | CHECK_SPW_RESULT | CLogin::OnCheckSPWResult |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x01C | ❌ | 0x01C | ❌ | 0x01C | ❌ | 0x01B | ❌ |  | ⬜ |
 | GIVE_BUFF | CWvsContext::OnTemporaryStatSet | character/clientbound/BuffGive (T1) | 0x01C | ❌ | 0x01D | ✅ | 0x01D | ✅ | 0x01D | ✅ | 0x020 | ✅ | 0x020 | ✅ | 0x020 | ✅ | 0x01F | ✅ | 0x01E | ✅ |
 | CANCEL_BUFF | CWvsContext::OnTemporaryStatReset | character/clientbound/BuffCancel (T1) | 0x01D | ❌ | 0x01E | ✅ | 0x01E | ✅ | 0x01E | ✅ | 0x021 | ✅ | 0x021 | ✅ | 0x021 | ✅ | 0x020 | ✅ | 0x01F | ✅ |
@@ -91,7 +91,7 @@ Tool: `6e7dd1248eff278a05b5e7516dbe220239c4e10c`
 | GUILD_OPERATION | CWvsContext::OnGuildResult | guild/clientbound/GuildBoardAuthKeyUpdate (T1) | 0x035 | ❌ | 0x03E | ✅ | 0x03E | ✅ | 0x03E | ✅ | 0x041 | ✅ | 0x043 | ✅ | 0x043 | ✅ | 0x043 | ✅ | 0x03B | ✅ |
 | SPAWN_PORTAL | CWvsContext::OnTownPortal | door/clientbound/RemoveTownDoor | 0x036 | ❌ | 0x040 | ❌ | 0x040 | ❌ | 0x040 | ❌ | 0x043 | ✅ | 0x045 | ✅ | 0x045 | ✅ | 0x045 | ✅ | 0x03D | ✅ |
 | TRADE_MONEY_LIMIT | CWvsContext::OnTradeMoneyLimit |  |  | ⬜ | 0x036 | ❌ | 0x036 | ❌ | 0x036 | ❌ | 0x039 | ❌ | 0x039 | ❌ | 0x039 | ❌ | 0x039 | ❌ |  | ⬜ |
-| SERVERMESSAGE | CWvsContext::OnBroadcastMsg | chat/clientbound/ChatWorldMessageSimple (T1) | 0x037 | ❌ | 0x041 | ✅ | 0x041 | ✅ | 0x041 | ✅ | 0x044 | ❌ | 0x044 | ❌ | 0x046 | ❌ | 0x047 | ❌ | 0x03E | ❌ |
+| SERVERMESSAGE | CWvsContext::OnBroadcastMsg | chat/clientbound/ChatWorldMessageSimple (T1) | 0x037 | ✅ | 0x041 | ✅ | 0x041 | ✅ | 0x041 | ✅ | 0x044 | ❌ | 0x044 | ❌ | 0x046 | ❌ | 0x047 | ❌ | 0x03E | ❌ |
 | SET_GENDER | CWvsContext::OnSetGender |  |  | ⬜ | 0x037 | ❌ | 0x037 | ❌ | 0x037 | ❌ | 0x03A | ❌ | 0x03A | ❌ | 0x03A | ❌ | 0x03A | ❌ |  | ⬜ |
 | GUILD_BBS_PACKET | CUIGuildBBS::OnGuildBBSPacket | guild/clientbound/GuildBBSEntryNotFound (T1) |  | ⬜ | 0x038 | ✅ | 0x038 | ✅ | 0x038 | ✅ | 0x03B | ✅ | 0x03B | ✅ | 0x03B | ✅ | 0x03B | ✅ |  | ⬜ |
 | IDA_0X038 | CWvsContext::OnExpedtionResult |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x038 | ❌ |
@@ -612,10 +612,10 @@ Tool: `6e7dd1248eff278a05b5e7516dbe220239c4e10c`
 | QUEST_ACTION | CQuest::OnCompleteQuestFailed; CQuest::StartQuest; CWvsContext::ResignQuest; sub_5997EF | quest/serverbound/ActionScriptEnd | 0x055 | ❌ | 0x062 | ❌ | 0x06A | ❌ | 0x069 | ❌ | 0x06B | ✅ | 0x06B | ❌ | 0x06E | ✅ | 0x077 | ✅ | 0x066 | ✅ |
 | MESO_DROP | CWvsContext::SendDropMoneyRequest; sub_8459DD | character/serverbound/DropMeso (T1) |  | ⬜ | 0x056 | ✅ | 0x05D | ✅ | 0x05C | ✅ | 0x05E | ✅ | 0x05E | ✅ | 0x061 | ✅ | 0x06A | ✅ | 0x059 | ✅ |
 | AUTO_DISTRIBUTE_AP | CWvsContext::SendAbilityUpRequest | character/serverbound/AutoDistributeAp (T1) |  | ⬜ |  | ⬜ | 0x057 | ✅ | 0x056 | ✅ | 0x058 | ✅ | 0x058 | ✅ | 0x05B | ✅ | 0x062 | ✅ | 0x052 | ✅ |
-| MULTI_CHAT | CUIStatusBar::SendGroupMessage; sub_65EB4F | chat/serverbound/ChatMulti (T1) | 0x059 | ❌ | 0x06B | ✅ | 0x075 | ✅ | 0x074 | ✅ | 0x077 | ❌ | 0x079 | ❌ | 0x07D | ❌ | 0x08C | ❌ | 0x079 | ❌ |
+| MULTI_CHAT | CUIStatusBar::SendGroupMessage; sub_65EB4F | chat/serverbound/ChatMulti (T1) | 0x059 | ✅ | 0x06B | ✅ | 0x075 | ✅ | 0x074 | ✅ | 0x077 | ❌ | 0x079 | ❌ | 0x07D | ❌ | 0x08C | ❌ | 0x079 | ❌ |
 | SPECIAL_MOVE | CGrenade::SendTimeBombInfo; CUserLocal::DoActiveSkill_DamageMeter; CUserLocal::DoActiveSkill_Flying; CUserLocal::DoActiveSkill_Heal; CUserLocal::DoActiveSkill_MobCapture; CUserLocal::DoActiveSkill_OpenGate; CUserLocal::DoActiveSkill_RecoveryAura; CUserLocal::DoActiveSkill_SmokeShell; CUserLocal::DoActiveSkill_StatChangeAdmin; CUserLocal::DoActiveSkill_Summon; CUserLocal::DoActiveSkill_SummonMonster; CUserLocal::DoActiveSkill_TownPortal; CUserLocal::SendSkillUseRequest; CUserLocal::TryDoingMonsterMagnet; CUserLocal::TryDoingSwallowAbsorb; sub_845C36; sub_8C0CBE |  |  | ⬜ | 0x05A | ❌ | 0x05A | ❌ | 0x059 | ❌ | 0x05B | ❌ | 0x05B | ❌ | 0x05E | ❌ | 0x067 | ❌ | 0x056 | ❌ |
 | USE_SHOP_SCANNER_ITEM | CWvsContext::SendShopScannerItemUseRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x05A | ❌ |  | ⬜ |
-| WHISPER | CField::SendChatMsgWhisper; CField::SendLocationWhisper; sub_4C4F3B; sub_4E8635 | chat/serverbound/ChatWhisper (T1) | 0x05A | ❌ | 0x06C | ✅ | 0x076 | ✅ | 0x075 | ✅ | 0x078 | ✅ | 0x07A | ✅ | 0x07E | ✅ | 0x08D | ✅ | 0x07A | ✅ |
+| WHISPER | CField::SendChatMsgWhisper; CField::SendLocationWhisper; sub_4C4F3B; sub_4E8635 | chat/serverbound/ChatWhisper (T1) | 0x05A | ✅ | 0x06C | ✅ | 0x076 | ✅ | 0x075 | ✅ | 0x078 | ✅ | 0x07A | ✅ | 0x07E | ✅ | 0x08D | ✅ | 0x07A | ✅ |
 | SPOUSE_CHAT | CUIStatusBar::SendCoupleMessage; sub_65EA0D; sub_744528 | field/serverbound/FieldCoupleMessage (T1) | 0x05B | ❌ | 0x06D | ✅ | 0x077 | ✅ | 0x076 | ✅ | 0x079 | ✅ | 0x07B | ✅ | 0x07F | ✅ | 0x08E | ✅ |  | ⬜ |
 | CHANGE_MAP_SPECIAL | CUserLocal::CheckPortal_Collision; CUserLocal::HandleUpKeyDown | portal/serverbound/PortalScript |  | ⬜ | 0x05C | 🟡 | 0x063 | ❌ | 0x062 | ❌ | 0x064 | ❌ | 0x064 | ❌ | 0x067 | ❌ | 0x070 | ❌ | 0x05F | ❌ |
 | MESSENGER | CFadeWnd::SendCloseMessage; CUIMessenger::OnCreate; CUIMessenger::OnDestroy; CUIMessenger::OnInvite; CUIMessenger::ProcessChat; CUIMessenger::SendInviteMsg; CUIMessenger::SendPacket; CUIMessenger::Update; sub_4BCE54; sub_6D3765 | messenger/serverbound/MessengerOperationDeclineInvite (T1) | 0x05C | ❌ | 0x06E | ✅ | 0x078 | ✅ | 0x077 | ✅ | 0x07A | ✅ | 0x07C | ❌ | 0x080 | ✅ | 0x08F | ✅ | 0x07B | ✅ |
@@ -686,7 +686,7 @@ Tool: `6e7dd1248eff278a05b5e7516dbe220239c4e10c`
 | WEDDING_WISH_LIST_REQUEST | CWishListGiveDlg::SendPutItemRequest; CWishListGiveDlg::SetRet; CWishListRecvDlg::SendGetItemRequest; CWishListRecvDlg::SetRet |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x08A | ❌ | 0x08E | ❌ | 0x092 | ❌ | 0x0A2 | ❌ | 0x08D | ❌ |
 | BOOBY_TRAP_ALERT | CWvsContext::SendBoobyTrapAlert |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x08D | ❌ | 0x091 | ❌ | 0x095 | ❌ | 0x0A5 | ❌ | 0x08F | ❌ |
 | ALLIANCE_REQUEST | CTabGuildAlliance::OnChangeMaster; CTabGuildAlliance::OnGradeChange; CTabGuildAlliance::OnInvite; CTabGuildAlliance::OnKick; CTabGuildAlliance::OnSetNotice; CTabGuildAlliance::OnWithdraw; CUIFadeYesNo::OnButtonClicked; CWndAllianceGrade::OnSaveGradeName; CWvsContext::OnAllianceResult; CWvsContext::OnGuildResult | guild/serverbound/GuildJoin (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x08E | ✅ |  | ⬜ | 0x096 | ✅ | 0x0A7 | ✅ | 0x091 | ✅ |
-| ITEM_PICKUP | CWvsContext::SendDropPickUpRequest; sub_70D987; sub_8316B8 | drop/serverbound/DropPickUp (T1) | 0x08E | ❌ | 0x0A9 | ✅ | 0x0C0 | ✅ | 0x0C2 | ✅ | 0x0CA | ✅ | 0x0D0 | ✅ | 0x0D7 | ✅ | 0x0F6 | ✅ | 0x0D5 | ✅ |
+| ITEM_PICKUP | CWvsContext::SendDropPickUpRequest; sub_70D987; sub_8316B8 | drop/serverbound/DropPickUp (T1) | 0x08E | ✅ | 0x0A9 | ✅ | 0x0C0 | ✅ | 0x0C2 | ✅ | 0x0CA | ✅ | 0x0D0 | ✅ | 0x0D7 | ✅ | 0x0F6 | ✅ | 0x0D5 | ✅ |
 | PET_AUTO_POT | CWvsContext::SendStatChangeItemUseRequestByPetQ | pet/serverbound/PetItemUse (T1) |  | ⬜ | 0x08E | 🟡 | 0x0A5 | 🟡 | 0x0A7 | 🟡 | 0x0AB | ✅ | 0x0B0 | ✅ | 0x0B7 | ✅ | 0x0CB | ✅ | 0x0AE | ✅ |
 | ALLIANCE_OPERATION | CFadeWnd::SendCloseMessage; CUIFadeYesNo::OnButtonClicked; CWvsContext::OnAllianceResult | messenger/serverbound/MessengerOperationDeclineInvite (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x08F | ✅ | 0x093 | ✅ | 0x097 | ✅ | 0x0A8 | ✅ | 0x092 | ✅ |
 | PET_EXCLUDE_ITEMS | CPet::SendUpdateExceptionListRequest | pet/serverbound/PetExcludeItem (T1) |  | ⬜ | 0x08F | ✅ | 0x0A6 | ✅ | 0x0A8 | ✅ | 0x0AC | ✅ | 0x0B1 | ✅ | 0x0B8 | ✅ | 0x0CC | ✅ | 0x0AF | ✅ |
@@ -870,7 +870,6 @@ Tool: `6e7dd1248eff278a05b5e7516dbe220239c4e10c`
 | character/serverbound/InfoRequest (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | character/serverbound/ItemCancel (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | character/serverbound/Move (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
-| chat/serverbound/ChatMulti (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | fame/serverbound/Change |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | field/clientbound/FieldEffectBossHp (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | field/clientbound/FieldEffectString (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
@@ -1009,15 +1008,15 @@ Tool: `6e7dd1248eff278a05b5e7516dbe220239c4e10c`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v48 | 2 | 0 | 22 | 322 | 629 | 0 | 0.6% |
-| v61 | 208 | 0 | 60 | 236 | 471 | 0 | 41.3% |
-| v72 | 216 | 0 | 73 | 254 | 432 | 0 | 39.8% |
-| v79 | 228 | 0 | 72 | 252 | 423 | 0 | 41.3% |
-| v83 | 367 | 0 | 0 | 383 | 225 | 0 | 48.9% |
-| v84 | 345 | 0 | 0 | 384 | 246 | 0 | 47.3% |
-| v87 | 379 | 0 | 0 | 408 | 188 | 0 | 48.2% |
-| v95 | 399 | 0 | 0 | 472 | 104 | 0 | 45.8% |
-| JMS185 | 362 | 0 | 0 | 418 | 195 | 0 | 46.4% |
+| v48 | 7 | 0 | 22 | 316 | 629 | 0 | 2.0% |
+| v61 | 208 | 0 | 60 | 235 | 471 | 0 | 41.4% |
+| v72 | 216 | 0 | 73 | 253 | 432 | 0 | 39.9% |
+| v79 | 228 | 0 | 72 | 251 | 423 | 0 | 41.4% |
+| v83 | 367 | 0 | 0 | 382 | 225 | 0 | 49.0% |
+| v84 | 345 | 0 | 0 | 383 | 246 | 0 | 47.4% |
+| v87 | 379 | 0 | 0 | 407 | 188 | 0 | 48.2% |
+| v95 | 399 | 0 | 0 | 471 | 104 | 0 | 45.9% |
+| JMS185 | 362 | 0 | 0 | 417 | 195 | 0 | 46.5% |
 
 ## Conflicts
 

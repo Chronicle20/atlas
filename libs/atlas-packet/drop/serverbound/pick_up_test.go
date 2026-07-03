@@ -107,6 +107,44 @@ func TestPickUpByteOutputV72(t *testing.T) {
 	}
 }
 
+// TestPickUpByteOutputV48 pins the gms_v48 ITEM_PICKUP (op 142 / 0x8E) serverbound
+// wire. IDA-verified send site (GMS_v48_1_DEVM.exe, port 13337) —
+// sub_70D987 @0x70d987 (UNNAMED in the IDB; structurally the
+// CWvsContext::SendDropPickUpRequest twin), send block after the 30ms throttle
+// (sub_4A2518(30,0)):
+//
+//	COutPacket::COutPacket(142)              @0x70d9c6 → opcode 0x8E (registry op 142).
+//	COutPacket::Encode1(*(get_field()+216))  @0x70d9e2 → fieldKey byte.
+//	COutPacket::Encode4(exclReqTime)         @0x70d9f0 → updateTime uint32-LE.
+//	COutPacket::Encode2(*a2 = x)             @0x70da01 → x int16-LE.
+//	COutPacket::Encode2(a2[2] = y)           @0x70da10 → y int16-LE.
+//	COutPacket::Encode4(a3 = dropId)         @0x70da1b → dropId uint32-LE.
+//	(NO trailing Encode4 — v48<83 sends NO client-crc; the crc Encode4 first
+//	 appears at v83 @0xa091d7, gated by pickUpHasCRC = MajorAtLeast(83).)
+//
+// Byte-identical field order to the VERIFIED v61/v72/v79 wire (only the opcode
+// differs: 142 vs 169/192/194, already in the registry). The codec is version-
+// gated on MajorAtLeast(83) for the crc, so v48 emits the no-crc shape.
+//
+// packet-audit:verify packet=drop/serverbound/DropPickUp version=gms_v48 ida=0x70d987
+func TestPickUpByteOutputV48(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 48, 1)
+	// fieldKey=1, updateTime=0x00000064, x=50, y=60, dropId=12345(0x3039).
+	input := PickUp{fieldKey: 1, updateTime: 100, x: 50, y: 60, dropId: 12345, crc: 99}
+	expected := []byte{
+		0x01,                   // Encode1 fieldKey @0x70d9e2
+		0x64, 0x00, 0x00, 0x00, // Encode4 updateTime @0x70d9f0
+		0x32, 0x00, // Encode2 x = 50 @0x70da01
+		0x3C, 0x00, // Encode2 y = 60 @0x70da10
+		0x39, 0x30, 0x00, 0x00, // Encode4 dropId = 12345 @0x70da1b
+		// no crc on v48 (<83)
+	}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v48 pickup golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
 // packet-audit:verify packet=drop/serverbound/DropPickUp version=gms_v83 ida=0xa09118
 // packet-audit:verify packet=drop/serverbound/DropPickUp version=gms_v87 ida=0xa9e8f6
 // packet-audit:verify packet=drop/serverbound/DropPickUp version=gms_v95 ida=0x9d5d50

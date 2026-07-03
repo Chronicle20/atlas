@@ -258,6 +258,69 @@ func TestStatChangedV61(t *testing.T) {
 	}
 }
 
+// TestStatChangedV48 pins the gms_v48 STAT_CHANGED (op 27 / 0x1B) clientbound wire
+// with the same representative multi-bit mask as the verified v61 twin.
+//
+// IDA-verified client decode (GMS_v48_1_DEVM.exe, port 13337) —
+// CWvsContext::OnStatChanged @0x71aa68:
+//
+//	Decode1 @0x71aa80 → exclRequestSent (bool).
+//	GW_CharacterStat::DecodeChangeStat @0x71aaea → mask + stat fields.
+//	The trailing bSecondaryStatChangedPoint Decode1 @0x71aafa is gated on
+//	  (v53 & 8) @0x71aaed — the PET_SN_1 bit (0x8). This fixture includes
+//	  PET_SN_1 so the client DOES read the trailing byte; atlas over-writes it
+//	  (0) unconditionally. (v48 gates on 0x8 only, vs v61's 0x180008; bit 0x8 is
+//	  in both, so the byte is read for this fixture either way.)
+//
+// GW_CharacterStat::DecodeChangeStat @0x49ba4a — Decode4(mask) @0x49ba5a then
+// per-set-bit in STRICT ascending bit order. Per-bit field widths:
+//
+//	0x1 SKIN Decode1 @0x49ba68 (1); 0x2 FACE Decode4 @0x49ba77 (4);
+//	0x4 HAIR Decode4 @0x49ba86 (4); 0x8 PET_SN_1 DecodeBuffer 8 @0x49ba96;
+//	0x10 LEVEL Decode1 @0x49baaa (1); 0x20 JOB Decode2 @0x49babb (2);
+//	0x40..0x2000 STR..MAX_MP Decode2 (2) incl. HP 0x400 Decode2 @0x49bb38
+//	(NARROW int16, NOT the v95 Decode4 widening — v48 < 95); 0x8000 AVAILABLE_SP
+//	Decode2 @0x49bbb5 (2); 0x10000 EXPERIENCE Decode4 @0x49bbd1 (4); 0x20000 FAME
+//	Decode2 @0x49bbf3 (2); 0x40000 MESO Decode4 @0x49bc15 (4). v48 has NO
+//	0x80000/0x100000 PET_SN_2/3 bits (highest handled bit is MESO 0x40000).
+//
+// Every per-bit width equals the atlas non-v95 encoder width for the same stat
+// TYPE, and the mask is Decode4 — BYTE-IDENTICAL to the IDA-verified v61 wire
+// (TestStatChangedV61). No codec gate needed: v48 takes the same !v95Plus path.
+// This fixture uses no PET_SN_2/3 (indices 19/20), so v48's narrower bit set
+// does not affect the byte sequence. Fixture mask = 0x00050439 (as in v61).
+//
+// packet-audit:verify packet=stat/clientbound/Changed version=gms_v48 ida=0x71aa68
+func TestStatChangedV48(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	opts := testStatOptions()
+	ctx := pt.CreateContext("GMS", 48, 1)
+	in := NewStatChanged([]Update{
+		NewUpdate(constants.TypeSkin, 7),
+		NewUpdate(constants.TypePetSn1, 0x1122334455667788),
+		NewUpdate(constants.TypeLevel, 120),
+		NewUpdate(constants.TypeJob, 100),
+		NewUpdate(constants.TypeHp, 5000),
+		NewUpdate(constants.TypeExperience, 100000),
+		NewUpdate(constants.TypeMeso, 999999),
+	}, true)
+	want := []byte{
+		0x01,                   // Decode1 exclRequestSent = true (@0x71aa80)
+		0x39, 0x04, 0x05, 0x00, // Decode4 mask = 0x00050439 (@0x49ba5a)
+		0x07,                                           // SKIN=7 Decode1 (bit 0x1 @0x49ba68)
+		0x88, 0x77, 0x66, 0x55, 0x44, 0x33, 0x22, 0x11, // PET_SN_1 DecodeBuffer(8) (bit 0x8 @0x49ba96)
+		0x78,                   // LEVEL=120 Decode1 (bit 0x10 @0x49baaa)
+		0x64, 0x00,             // JOB=100 Decode2 (bit 0x20 @0x49babb)
+		0x88, 0x13,             // HP=5000 Decode2 narrow (bit 0x400 @0x49bb38)
+		0xA0, 0x86, 0x01, 0x00, // EXPERIENCE=100000 Decode4 (bit 0x10000 @0x49bbd1)
+		0x3F, 0x42, 0x0F, 0x00, // MESO=999999 Decode4 (bit 0x40000 @0x49bc15)
+		0x00, // trailing bSecondaryStatChangedPoint (mask&8 set via PET_SN_1 → client reads; atlas over-writes 0) @0x71aafa
+	}
+	if got := in.Encode(l, ctx)(opts); !bytes.Equal(got, want) {
+		t.Errorf("v48 StatChanged golden mismatch\n got: % x\nwant: % x", got, want)
+	}
+}
+
 func TestStatChangedEmptyRoundTrip(t *testing.T) {
 	opts := testStatOptions()
 	for _, v := range pt.Variants {

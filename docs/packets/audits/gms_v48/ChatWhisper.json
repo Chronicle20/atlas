@@ -1,14 +1,14 @@
 {
-  "WriterName": "ChatMulti",
-  "IDAName": "sub_65EB4F",
-  "Address": "0x65eb4f",
+  "WriterName": "ChatWhisper",
+  "IDAName": "sub_4C4F3B",
+  "Address": "0x4c4f3b",
   "Variant": "GMS/v48",
   "BranchDepth": 1,
-  "AtlasFile": "libs/atlas-packet/chat/serverbound/multi.go",
+  "AtlasFile": "libs/atlas-packet/chat/serverbound/whisper.go",
   "Rows": [
     {
       "Index": 0,
-      "AtlasOp": 2,
+      "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
@@ -17,24 +17,6 @@
     },
     {
       "Index": 1,
-      "AtlasOp": 0,
-      "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
-    },
-    {
-      "Index": 2,
-      "AtlasOp": 0,
-      "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
-    },
-    {
-      "Index": 3,
       "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 0,
@@ -43,7 +25,16 @@
       "Note": "atlas: extra — client never reads this field"
     },
     {
-      "Index": 4,
+      "Index": 2,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    },
+    {
+      "Index": 3,
       "AtlasOp": 4,
       "AtlasKind": 0,
       "IDAOp": 0,

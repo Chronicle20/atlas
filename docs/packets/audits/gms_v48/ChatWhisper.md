@@ -1,7 +1,7 @@
-# ChatMulti (← `sub_65EB4F`)
+# ChatWhisper (← `sub_4C4F3B`)
 
-- **IDA:** 0x65eb4f
-- **Atlas file:** `libs/atlas-packet/chat/serverbound/multi.go`
+- **IDA:** 0x4c4f3b
+- **Atlas file:** `libs/atlas-packet/chat/serverbound/whisper.go`
 - **Variant:** GMS/v48
 - **Branch depth:** 1
 - **Verdict:** 🔍
@@ -11,9 +11,8 @@
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 1 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 2 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 3 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 4 | string | byte `` | ❌ | atlas: extra — client never reads this field |
+| 0 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 1 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 2 | string | byte `` | ❌ | atlas: extra — client never reads this field |
+| 3 | string | byte `` | ❌ | atlas: extra — client never reads this field |
 

@@ -1064,6 +1064,14 @@ func candidatesFromFName(fname string) []candidate {
 		// v61 registry primary fname is sub_8316B8, so it keys to the same drop.PickUp
 		// codec as the named twin above.
 		return []candidate{{name: "PickUp", pkg: "drop", dir: csvpkg.DirServerbound}}
+	case "sub_70D987":
+		// ITEM_PICKUP (serverbound) in gms_v48: the send-site is UNNAMED in the
+		// IDB — sub_70D987 @0x70d987, structurally the CWvsContext::SendDropPickUpRequest
+		// twin (COutPacket(142) + Encode1(fieldKey) + Encode4(exclReqTime) +
+		// Encode2(x) + Encode2(y) + Encode4(dropId); no trailing crc, pre-83). The
+		// v48 registry primary fname is sub_70D987, so it keys to the same drop.PickUp
+		// codec as the named twins above.
+		return []candidate{{name: "PickUp", pkg: "drop", dir: csvpkg.DirServerbound}}
 
 	// --- Combat: reactor (serverbound) ---
 	case "CReactorPool::FindHitReactor":
@@ -1369,6 +1377,15 @@ func candidatesFromFName(fname string) []candidate {
 		// CSV: MULTI_CHAT — atlas Multi (serverbound chat/multi.go).
 		return []candidate{{name: "Multi", pkg: "chat", dir: csvpkg.DirServerbound}}
 
+	// MULTI_CHAT (serverbound) in gms_v48: the send-site is UNNAMED in the IDB —
+	// sub_65EB4F @0x65eb4f, structurally the CUIStatusBar::SendGroupMessage twin
+	// (type demux 0/1/2 then COutPacket(89) + Encode1(chatType) + Encode1(count) +
+	// loop Encode4(targetCharId[i]) + EncodeStr(msg); no updateTime prefix, pre-95).
+	// The v48 registry primary fname is sub_65EB4F, so it keys to the same chat.Multi
+	// codec as the named twin above.
+	case "sub_65EB4F":
+		return []candidate{{name: "Multi", pkg: "chat", dir: csvpkg.DirServerbound}}
+
 	// CSV: WHISPER (0xDE / 222) → CField::SendChatMsgWhisper (and SendLocationWhisper for find queries).
 	// Wire for chat path (LABEL_79): Encode1(mode=6) + Encode4(updateTime) + EncodeStr(targetName) + EncodeStr(msg).
 	// Atlas Whisper writes: WriteByte(mode) + WriteInt(updateTime, GMS>=95) + WriteAsciiString(targetName) +
@@ -1392,6 +1409,14 @@ func candidatesFromFName(fname string) []candidate {
 	// optional EncodeStr(msg)). The v61 registry primary fname is sub_4E8635, so
 	// it must key to the same chat.Whisper codec as the named twins above.
 	case "sub_4E8635":
+		return []candidate{{name: "Whisper", pkg: "chat", dir: csvpkg.DirServerbound}}
+
+	// WHISPER (serverbound) in gms_v48: the send-site is UNNAMED in the IDB —
+	// sub_4C4F3B @0x4c4f3b, structurally the CField::SendChatMsgWhisper twin
+	// (COutPacket(90) + Encode1(mode=(found?2:1)|4) + EncodeStr(target) + optional
+	// EncodeStr(msg); no updateTime prefix, pre-87). The v48 registry primary fname
+	// is sub_4C4F3B, so it keys to the same chat.Whisper codec as the named twins above.
+	case "sub_4C4F3B":
 		return []candidate{{name: "Whisper", pkg: "chat", dir: csvpkg.DirServerbound}}
 
 	// CSV: SPOUSE_CHAT (serverbound) → CUIStatusBar::SendCoupleMessage. The client

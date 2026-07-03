@@ -1,7 +1,7 @@
-# ChatMulti (← `sub_65EB4F`)
+# DropPickUp (← `sub_70D987`)
 
-- **IDA:** 0x65eb4f
-- **Atlas file:** `libs/atlas-packet/chat/serverbound/multi.go`
+- **IDA:** 0x70d987
+- **Atlas file:** `libs/atlas-packet/drop/serverbound/pick_up.go`
 - **Variant:** GMS/v48
 - **Branch depth:** 1
 - **Verdict:** 🔍
@@ -11,9 +11,10 @@
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 1 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 2 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 3 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 4 | string | byte `` | ❌ | atlas: extra — client never reads this field |
+| 0 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 1 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 2 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 3 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 4 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 5 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 

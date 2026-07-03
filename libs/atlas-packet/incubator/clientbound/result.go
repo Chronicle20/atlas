@@ -13,8 +13,10 @@ const IncubatorResultWriter = "IncubatorResult"
 // IncubatorResult is CWvsContext::OnIncubatorResult. itemId <= 0 renders the
 // client's "inventory is full, try again later" dialog.
 //
-// v83 (0xa28298) / v84: int itemId, short count (6 bytes).
-// v87 (0xa00380) / v95 / JMS: those two fields plus three trailing zero ints
+// v83 (0xa28298) / v84 (0xa73a5b) / v87 (0xabff10) / JMS (0xb0f30b): int
+// itemId, short count (6 bytes) — live IDA re-verified for all four; none of
+// them read anything past the count field.
+// v95 (0xa00380) only: those two fields plus three trailing zero ints
 // (gachaponItemId, bonusItemId, bonusCount) — Atlas rolls a single reward so
 // the bonus tail is always zero and the client skips the bonus branch.
 type IncubatorResult struct {
@@ -33,7 +35,7 @@ func (m IncubatorResult) Count() uint16     { return m.count }
 func (m IncubatorResult) Operation() string { return IncubatorResultWriter }
 
 // Encode encodes the OnIncubatorResult body (no opcode — config-driven at
-// runtime). The v87+/JMS extended tail is version-switched here, matching the
+// runtime). The v95-only extended tail is version-switched here, matching the
 // model/asset.go idiom, rather than via a constructor flag.
 func (m IncubatorResult) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
@@ -41,7 +43,7 @@ func (m IncubatorResult) Encode(l logrus.FieldLogger, ctx context.Context) func(
 	return func(options map[string]interface{}) []byte {
 		w.WriteInt(m.itemId)
 		w.WriteShort(m.count)
-		if (t.Region() == "GMS" && t.MajorVersion() >= 87) || t.Region() == "JMS" {
+		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
 			// Atlas rolls a single reward; the gachapon/bonus tail is unused.
 			w.WriteInt(0)
 			w.WriteInt(0)

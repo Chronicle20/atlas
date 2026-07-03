@@ -105,7 +105,7 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			return
 		}
 
-		if it == CashSlotItemTypeApReset || it == CashSlotItemTypeSpReset {
+		if it == CashSlotItemTypePointResetTier1 || it == CashSlotItemTypePointResetShared {
 			sp := cashsb.NewItemUsePointReset(updateTimeFirst)
 			sp.Decode(l, ctx)(r, readerOptions)
 			handlePointResetItemUse(l, ctx, wp)(s, itemId, *sp)
@@ -124,13 +124,14 @@ const (
 	CashSlotItemTypeFieldEffect   = CashSlotItemType(16)
 	CashSlotItemTypePetConsumable = CashSlotItemType(30)
 	CashSlotItemTypeChalkboard    = CashSlotItemType(32)
-	// GetCashSlotItemType's ClassificationPointReset branch (above) collapses
-	// AP Reset (5050000) and SP Reset tiers 2-4 (5050002-5050004) onto type 23,
-	// and SP Reset tier 1 (5050001) alone onto type 24 — the type byte cannot
-	// distinguish AP-vs-SP. The arm below matches on either constant and then
-	// dispatches by item id (design §2.4), never by this type.
-	CashSlotItemTypeSpReset = CashSlotItemType(23)
-	CashSlotItemTypeApReset = CashSlotItemType(24)
+	// GetCashSlotItemType's ClassificationPointReset branch (above) routes by
+	// itemId%10==1: AP Reset (5050000) and SP Reset tiers 2-4 (5050002-5050004)
+	// collapse onto type 23, while SP Reset tier 1 (5050001) alone lands on
+	// type 24. The type byte therefore CANNOT distinguish AP-vs-SP — the labels
+	// below name only which numeric bucket each is. The arm matches on either
+	// bucket and then dispatches by item id (design §2.4), never by this type.
+	CashSlotItemTypePointResetShared = CashSlotItemType(23) // AP Reset + SP Reset tiers 2-4
+	CashSlotItemTypePointResetTier1  = CashSlotItemType(24) // SP Reset tier 1 only
 )
 
 func GetCashSlotItemType(t tenant.Model) func(itemId item.Id) CashSlotItemType {

@@ -167,7 +167,7 @@ func handleRewardWonConsumableEvent(sc server.Model, wp writer.Producer) message
 			return
 		}
 
-		announceOp := session.Announce(l)(ctx)(wp)(chatcb.WorldMessageWriter)(writer.WorldMessageBlueTextBody("", "", e.Body.Message))
+		announceOp := session.Announce(l)(ctx)(wp)(chatcb.WorldMessageWriter)(writer.WorldMessageBlueTextItemBody("", "", e.Body.Message, e.Body.ItemId))
 		for _, s := range sessions {
 			if aerr := announceOp(s); aerr != nil {
 				l.WithError(aerr).Warnf("Unable to send reward-won announce to session.")

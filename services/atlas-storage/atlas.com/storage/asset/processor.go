@@ -85,6 +85,7 @@ func Transform(m Model) (RestModel, error) {
 		Expiration:     m.Expiration(),
 		Quantity:       m.quantity,
 		OwnerId:        m.OwnerId(),
+		Owner:          m.Owner(),
 		Flag:           m.Flag(),
 		Rechargeable:   m.Rechargeable(),
 		Strength:       m.Strength(),

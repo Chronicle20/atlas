@@ -16,6 +16,7 @@ func Clone(m Model) *ModelBuilder {
 		expiration:     m.expiration,
 		quantity:       m.quantity,
 		ownerId:        m.ownerId,
+		owner:          m.owner,
 		flag:           m.flag,
 		rechargeable:   m.rechargeable,
 		strength:       m.strength,
@@ -54,6 +55,7 @@ type ModelBuilder struct {
 	// stackable fields
 	quantity     uint32
 	ownerId      uint32
+	owner        string
 	flag         uint16
 	rechargeable uint64
 	// equipment fields
@@ -99,6 +101,7 @@ func (b *ModelBuilder) SetTemplateId(id uint32) *ModelBuilder          { b.templ
 func (b *ModelBuilder) SetExpiration(e time.Time) *ModelBuilder        { b.expiration = e; return b }
 func (b *ModelBuilder) SetQuantity(q uint32) *ModelBuilder             { b.quantity = q; return b }
 func (b *ModelBuilder) SetOwnerId(id uint32) *ModelBuilder             { b.ownerId = id; return b }
+func (b *ModelBuilder) SetOwner(o string) *ModelBuilder                { b.owner = o; return b }
 func (b *ModelBuilder) SetFlag(f uint16) *ModelBuilder                 { b.flag = f; return b }
 func (b *ModelBuilder) SetRechargeable(r uint64) *ModelBuilder         { b.rechargeable = r; return b }
 func (b *ModelBuilder) SetStrength(v uint16) *ModelBuilder             { b.strength = v; return b }
@@ -183,6 +186,7 @@ func (b *ModelBuilder) Build() Model {
 		expiration:     b.expiration,
 		quantity:       b.quantity,
 		ownerId:        b.ownerId,
+		owner:          b.owner,
 		flag:           b.flag,
 		rechargeable:   b.rechargeable,
 		strength:       b.strength,

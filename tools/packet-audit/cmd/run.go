@@ -642,17 +642,17 @@ func candidatesFromFName(fname string) []candidate {
 
 	// --- shop scanner / owl (task-127) ---
 	case "CUIShopScanner::OnCreate":
-		return []candidate{{name: "OwlAction", pkg: "merchant", dir: csvpkg.DirServerbound}}
+		return []candidate{{name: "OwlAction", dir: csvpkg.DirServerbound}}
 	case "CUIShopScanResult::OnButtonClicked":
-		return []candidate{{name: "OwlWarp", pkg: "merchant", dir: csvpkg.DirServerbound}}
+		return []candidate{{name: "OwlWarp", dir: csvpkg.DirServerbound}}
 	case "CWvsContext::SendShopScannerItemUseRequest":
-		return []candidate{{name: "ShopScannerItemUse", pkg: "merchant", dir: csvpkg.DirServerbound}}
+		return []candidate{{name: "ShopScannerItemUse", dir: csvpkg.DirServerbound}}
 	case "CWvsContext::OnShopScannerResult#Result":
-		return []candidate{{name: "ShopScannerResult", pkg: "merchant", dir: csvpkg.DirClientbound}}
+		return []candidate{{name: "ShopScannerResult", dir: csvpkg.DirClientbound}}
 	case "CWvsContext::OnShopScannerResult#HotList":
-		return []candidate{{name: "ShopScannerHotList", pkg: "merchant", dir: csvpkg.DirClientbound}}
+		return []candidate{{name: "ShopScannerHotList", dir: csvpkg.DirClientbound}}
 	case "CWvsContext::OnShopLinkResult":
-		return []candidate{{name: "ShopLinkResult", pkg: "merchant", dir: csvpkg.DirClientbound}}
+		return []candidate{{name: "ShopLinkResult", dir: csvpkg.DirClientbound}}
 
 	// --- quest bucket (task-069, sub-phase 2g) ---
 	case "CWvsContext::OnScriptProgressMessage":

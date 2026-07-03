@@ -8,6 +8,7 @@ import (
 	"atlas-merchant/listing"
 	"atlas-merchant/logger"
 	"atlas-merchant/message"
+	"atlas-merchant/searchcount"
 	"atlas-merchant/service"
 	"atlas-merchant/shop"
 	"atlas-merchant/tasks"
@@ -65,7 +66,7 @@ func main() {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
 
-	db := database.Connect(l, database.SetMigrations(shop.Migration, listing.Migration, message.Migration, frederick.Migration, outboxlib.Migration))
+	db := database.Connect(l, database.SetMigrations(shop.Migration, listing.Migration, message.Migration, frederick.Migration, searchcount.Migration, outboxlib.Migration))
 
 	// Boot the outbox drainer: publishes the transactional outbox to Kafka.
 	// Leadership is gated by a postgres advisory lock — replicas are safe.

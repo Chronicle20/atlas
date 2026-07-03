@@ -167,7 +167,11 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			})
 			return
 		}
-		if it == CashSlotItemTypeSeal || it == CashSlotItemTypeSealTimed || it == CashSlotItemTypeSealTimedV95 {
+		sealTimed := CashSlotItemTypeSealTimed
+		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
+			sealTimed = CashSlotItemTypeSealTimedV95
+		}
+		if it == CashSlotItemTypeSeal || it == sealTimed {
 			sp := cashsb.NewItemUseSeal(updateTimeFirst)
 			sp.Decode(l, ctx)(r, readerOptions)
 			invType := inventory.Type(sp.InventoryType())

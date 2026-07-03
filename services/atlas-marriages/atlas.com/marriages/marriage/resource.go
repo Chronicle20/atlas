@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
@@ -83,15 +84,21 @@ func getMarriageHistoryHandler(db *gorm.DB) rest.GetHandler {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
+				page, err := paginate.ParseParams(r.URL.Query(), paginate.MaxPageSize, paginate.MaxPageSize)
+				if err != nil {
+					server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+					return
+				}
+
 				processor := NewProcessor(d.Logger(), d.Context(), db)
-				marriages, err := processor.GetMarriageHistory(characterId)()
+				paged, err := processor.GetMarriageHistory(characterId, page)()
 				if err != nil {
 					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
 				// Transform marriages to REST models
-				restMarriages, err := TransformMarriages(marriages)
+				restMarriages, err := TransformMarriages(paged.Items)
 				if err != nil {
 					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
@@ -99,7 +106,7 @@ func getMarriageHistoryHandler(db *gorm.DB) rest.GetHandler {
 
 				query := r.URL.Query()
 				queryParams := jsonapi.ParseQueryFields(&query)
-				server.MarshalResponse[[]RestMarriage](d.Logger())(w)(c.ServerInformation())(queryParams)(restMarriages)
+				server.MarshalPaginatedResponse[[]RestMarriage](d.Logger())(w)(c.ServerInformation())(queryParams)(restMarriages, paginate.EnvelopeFor(paged), r)
 			}
 		})
 	}
@@ -110,15 +117,21 @@ func getProposalsHandler(db *gorm.DB) rest.GetHandler {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
+				page, err := paginate.ParseParams(r.URL.Query(), paginate.MaxPageSize, paginate.MaxPageSize)
+				if err != nil {
+					server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+					return
+				}
+
 				processor := NewProcessor(d.Logger(), d.Context(), db)
-				proposals, err := processor.GetPendingProposalsByCharacter(characterId)()
+				paged, err := processor.GetPendingProposalsByCharacter(characterId, page)()
 				if err != nil {
 					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
 				// Transform proposals to REST models
-				restProposals, err := TransformProposals(proposals)
+				restProposals, err := TransformProposals(paged.Items)
 				if err != nil {
 					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
@@ -126,7 +139,7 @@ func getProposalsHandler(db *gorm.DB) rest.GetHandler {
 
 				query := r.URL.Query()
 				queryParams := jsonapi.ParseQueryFields(&query)
-				server.MarshalResponse[[]RestProposal](d.Logger())(w)(c.ServerInformation())(queryParams)(restProposals)
+				server.MarshalPaginatedResponse[[]RestProposal](d.Logger())(w)(c.ServerInformation())(queryParams)(restProposals, paginate.EnvelopeFor(paged), r)
 			}
 		})
 	}

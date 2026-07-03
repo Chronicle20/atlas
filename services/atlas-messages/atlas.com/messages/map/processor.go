@@ -54,6 +54,11 @@ func (p *ProcessorImpl) CharacterIdsInMapStringProvider(ch channel.Model, mapStr
 	return p.CharacterIdsInFieldProvider(f)
 }
 
+// CharacterIdsInFieldProvider fetches every character currently in one map
+// instance, for message-broadcast targeting. The upstream atlas-maps list is
+// now paginated (task-117), so this drains every page rather than fetching
+// just the first -- a truncated list here means some players in the map
+// silently miss the broadcast message.
 func (p *ProcessorImpl) CharacterIdsInFieldProvider(f field.Model) model.Provider[[]uint32] {
-	return requests.SliceProvider[RestModel, uint32](p.l, p.ctx)(requestCharactersInMap(f), Extract, model.Filters[uint32]())
+	return requests.DrainProvider[RestModel, uint32](p.l, p.ctx)(charactersInMapUrl(f), 250, Extract, model.Filters[uint32]())
 }

@@ -1360,3 +1360,127 @@ registry — so there is nothing to migrate there.
   pending task-119 (see `bug_execute_transaction_noop.md`); this task's
   migration uses the correct seam and becomes atomic for free once
   task-119 lands.
+
+## atlas-skills
+
+Module: `services/atlas-skills/atlas.com/skills`. Line numbers below
+reflect `skill/processor.go` and `macro/processor.go` as of the Task 18
+commit.
+
+### Migrated
+
+- `skill/processor.go:140` `CreateAndEmit` — Pattern A. `Create` (mb-taking,
+  `:109`) already wraps its existence-check + row insert in its own
+  `ExecuteTransaction` (`:113`); `CreateAndEmit` now opens an outer
+  `ExecuteTransaction`, builds `outbox.EmitProvider(p.l, p.ctx, tx)`, and
+  calls `p.WithTransaction(tx).Create(buf)(...)` so the insert and the
+  `EnvStatusEventTopic` `StatusEventTypeCreated` enqueue share one tx (the
+  inner `ExecuteTransaction` re-enters the outer one, per the recipe's
+  re-entrancy guarantee).
+- `skill/processor.go:188` `UpdateAndEmit` — Pattern A, same shape as
+  `CreateAndEmit`. `Update` (`:153`) wraps its existence-check + dynamic
+  update in its own `ExecuteTransaction` (`:157`); `UpdateAndEmit` now
+  wraps that in an outer tx and enqueues `StatusEventTypeUpdated` through
+  `outbox.EmitProvider`.
+- `skill/processor.go:301` `DeleteForSagaCompensationAndEmit` — Pattern A,
+  with an added explicit transaction. Pre-migration, the underlying
+  `DeleteForSagaCompensation` (`:280`) called `deleteSkill` directly
+  against `p.db` with **no** `ExecuteTransaction` wrap at all (a bare
+  write) and then buffered the DELETED event outside any tx. Per the
+  classification rule ("wrap bare Save/Create/Update writes in an
+  explicit ExecuteTransaction with the enqueue"), `DeleteForSagaCompensationAndEmit`
+  now opens `database.ExecuteTransaction` itself and calls
+  `p.WithTransaction(tx).DeleteForSagaCompensation(buf)(...)` inside it, so
+  the delete (or idempotent no-op) and the `StatusEventTypeDeleted`/synthetic
+  event enqueue commit atomically.
+- `macro/processor.go:108` `UpdateAndEmit` — Pattern A. `Update` (`:69`)
+  wraps its delete-then-recreate loop in its own `ExecuteTransaction`
+  (`:73`); `UpdateAndEmit` now opens an outer `ExecuteTransaction` and
+  enqueues `EnvStatusEventTopic` `StatusEventTypeUpdated` via
+  `outbox.EmitProvider`. `macro.ProcessorImpl` had no `WithTransaction`
+  method before this task (only `skill.ProcessorImpl` had one) — added a
+  `WithTransaction(tx *gorm.DB) *ProcessorImpl` matching the skill
+  package's shape (rebinds `db`, keeps `l`/`ctx`/`t`) so `Update` can run
+  against the outer tx.
+
+### Left direct
+
+- `skill/processor.go:232` `ExpireCooldowns(l, ctx)` — package-level
+  function invoked from `tasks/expiration.go:29` as a background ticker.
+  Read in full: it iterates `GetRegistry().GetAll(ctx)` (a Redis-backed
+  `atlas.TenantRegistry`, see `skill/cooldown_registry.go`), calls
+  `GetRegistry().Clear(...)` (Redis `Remove`, not a Postgres write), and
+  emits `StatusEventTypeCooldownExpired` directly via
+  `producer.ProviderImpl`. No `gorm.DB`/`ExecuteTransaction` call appears
+  anywhere in this function — genuinely no DB write, confirmed by reading
+  both this function and `cooldown_registry.go` end to end.
+- `skill/processor.go:221` `SetCooldownAndEmit` (and its mb-taking
+  `SetCooldown` at `:201`) — same reasoning as `ExpireCooldowns`.
+  `SetCooldown` calls only `GetRegistry().Apply(...)` (Redis `Put` +
+  `Set.Add`) and `p.ByIdProvider` (a read); it performs no Postgres write,
+  so the `StatusEventTypeCooldownApplied` event asserts no DB state
+  change. Left on the direct `message.Emit(producer.ProviderImpl(...))`
+  path. Not called out by name in the task brief (which only named
+  `ExpireCooldowns` as the registry-only example), but it is the same
+  Redis-only cooldown registry with the identical no-DB-write
+  justification, so it is classified the same way.
+- `skill/processor.go:268` `RequestCreate` and `skill/processor.go:273`
+  `RequestUpdate` — command emits (`CommandTypeRequestCreate` /
+  `CommandTypeRequestUpdate`, `EnvCommandTopic`) to the atlas-skills
+  service's own command consumer (a self-loop used by the REST layer,
+  `skill/resource.go:53,91`), not a DB-state-asserting event; both methods
+  are one-line direct `producer.ProviderImpl` calls with no DB read or
+  write at all. Left direct per the "COMMAND emits to other services"
+  classification rule.
+- `macro/processor.go:121` `Delete(characterId)` — has its own
+  `ExecuteTransaction` (the 2nd of the 2 tx sites counted in the brief)
+  but emits no Kafka event at all (no `message.Emit`, no `mb.Put`); there
+  is nothing to migrate here, it is a pure DB delete used by the
+  saga/cleanup path.
+
+### Notes
+
+- **Enumeration.** Both the base grep (`message.Emit`/`EmitWithResult`/
+  `producer.ProviderImpl`/`database.ExecuteTransaction`) and the extra
+  sweep (`GetAll()`/`NewBuffer()`/`p.p(`/`producer.Provider`/`AndEmit(`)
+  were run from the module root. They landed on exactly the 4 `message.Emit`
+  + 3 `ExecuteTransaction` sites in `skill/processor.go` and the 1
+  `message.Emit` + 2 `ExecuteTransaction` sites in `macro/processor.go`
+  named in the brief — no hand-rolled stored-provider flush loop and no
+  additional `*AndEmit` method anywhere else in the module. Every
+  `*AndEmit` method in both packages was read in full (`CreateAndEmit`,
+  `UpdateAndEmit`, `SetCooldownAndEmit`, `DeleteForSagaCompensationAndEmit`
+  in `skill/`; `UpdateAndEmit` in `macro/`).
+- **No sub-processor fields.** Neither `skill.ProcessorImpl` nor
+  `macro.ProcessorImpl` holds a nested sub-processor field (both are
+  `{l, ctx, db, t}`), so the "rebind nested sub-processors in
+  WithTransaction" pitfall does not apply — `WithTransaction` only needed
+  to swap `db`.
+- **No rejection/error event topic.** `kafka/message/skill` and
+  `kafka/message/macro` each define only `EnvStatusEventTopic` and
+  `EnvCommandTopic` (skill) / `EnvStatusEventTopic` (macro) — there is no
+  rejection/error topic in this service's message packages, so none of
+  the failure-path pitfalls (rejection-then-`return nil`, or
+  shared-buffer-forwarded-on-failure) apply; no `rejectEmit` closures were
+  needed.
+- **No batching-per-item-command concern.** `macro.Update` loops over
+  `macros` and calls `create` per item, but every `create` call is a plain
+  DB write inside the shared `tx` — no per-item direct-path command or
+  side effect fires mid-loop, so the atlas-notes batching pitfall does not
+  apply.
+- **Pre-existing tests untouched.** No test in `skill/processor_test.go`,
+  `macro/processor_test.go`, `kafka/consumer/skill/consumer_test.go`, or
+  `kafka/consumer/macro/consumer_test.go` calls any `*AndEmit` method —
+  every test exercises the `mb`-taking methods (`Create`, `Update`,
+  `SetCooldown`, `DeleteForSagaCompensation`, macro `Update`) directly with
+  an explicit `message.NewBuffer()` and asserts against buffer contents or
+  DB state. None asserted direct-path emission for a now-migrated flow, so
+  no test needed updating to assert outbox rows instead.
+- `go mod tidy`, `go build ./...`, `go vet ./...`, and `go test -race
+  ./...` all clean in `services/atlas-skills/atlas.com/skills`;
+  `docker buildx bake atlas-skills` succeeded; `tools/redis-key-guard.sh`
+  clean (exit 0 across the whole repo).
+- `database.ExecuteTransaction` atomicity is still latent fleet-wide
+  pending task-119 (see `bug_execute_transaction_noop.md`); this task's
+  migration uses the correct seam and becomes atomic for free once
+  task-119 lands.

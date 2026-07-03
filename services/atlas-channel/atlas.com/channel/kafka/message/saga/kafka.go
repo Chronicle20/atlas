@@ -21,6 +21,7 @@ const (
 // Saga type constants
 const (
 	SagaTypeStorageOperation = "storage_operation"
+	SagaTypePointReset       = "point_reset"
 )
 
 type StatusEvent[T any] struct {

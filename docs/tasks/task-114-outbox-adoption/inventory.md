@@ -1913,3 +1913,103 @@ rejection/error event topic exists in this service's message package
   pending task-119 (see `bug_execute_transaction_noop.md`); this task's
   migration uses the correct seam and becomes atomic for free once
   task-119 lands.
+
+## atlas-quest
+
+Divergent case: no `message.Emit`/`EmitWithResult` call sites and no local
+`producer.ProviderImpl`; emission ran through an `EventEmitter` interface
+(`quest/event_emitter.go`) whose `KafkaEventEmitter` impl published directly,
+with all 8 call sites running AFTER their associated `ExecuteTransaction`
+block(s) had already committed. Migration added a per-transaction
+`OutboxEventEmitter` (`quest/outbox_event_emitter.go`) and restructured the
+5 methods that own the 8 sites so each event enqueues inside the same
+transaction as the domain write(s) it reports on.
+
+### Migrated
+
+- `quest/processor.go` `startWithDefinition` (EmitQuestStarted, was line 216)
+  — restructured: `startCore` lost its own internal `ExecuteTransaction` and
+  now takes `tx *gorm.DB` directly; `startWithDefinition` wraps
+  `startCore` + `processStartActions` (which also now takes `tx`) + the
+  post-write reload (`p.WithTransaction(tx).GetByCharacterIdAndQuestId`) +
+  `p.txEmitter(tx).EmitQuestStarted(...)` in one outer
+  `database.ExecuteTransaction`, capturing `updated` outside the closure
+  (Pattern-B style) and returning it after.
+- `quest/processor.go` `StartChained` (EmitQuestStarted, was line 361) —
+  same restructure: `startChainedCore` takes `tx` directly (no more own
+  tx), wrapped with `processStartActions(tx, ...)` + reload + emit in one
+  outer `ExecuteTransaction`.
+- `quest/processor.go` `Complete` (EmitQuestCompleted, was line 461) — same
+  shape: `completeCore` takes `tx` directly, wrapped with
+  `processEndActions(tx, ...)` + emit in one outer `ExecuteTransaction`;
+  `nextQuestId` captured outside the closure.
+- `quest/processor.go` `Forfeit` (EmitQuestForfeited, was line 535) — emit
+  moved literally inside the existing `ExecuteTransaction` closure, right
+  after `forfeitQuest(tx, ...)`.
+- `quest/processor.go` `SetProgress` (EmitProgressUpdated ×2, was lines
+  580/586, one per reload-success/reload-failure branch) — emit(s) and the
+  post-write reload moved inside the existing `ExecuteTransaction` closure,
+  reading via `p.WithTransaction(tx).GetByCharacterIdAndQuestId` so the
+  reload sees the just-written row through the same tx handle.
+- `quest/processor.go` `processStartActions` (EmitSaga, was line 866) —
+  Pattern B: no longer opens its own transaction (it never had a DB write
+  of its own — only builds and emits a saga command); now takes `tx` from
+  its caller (`startWithDefinition`/`StartChained`) and calls
+  `p.txEmitter(tx).EmitSaga(s)`, so the reward-saga command enqueues
+  atomically with the quest-start write it accompanies. `awardedItems` is
+  still returned as the first return value regardless of the emit outcome
+  (unchanged from pre-migration).
+- `quest/processor.go` `processEndActions` (EmitSaga, was line 936) — same
+  restructure as `processStartActions`, called from `Complete` with the
+  same outer `tx`.
+
+### Left direct
+
+None — all 8 emit sites named in the brief were migrated. No
+rejection/error-only event exists on this service's `EventEmitter`
+interface (every method reports a state change that already committed, or
+a saga command that accompanies one), so none of the failure-path pitfalls
+(rejection-then-`return nil`, shared-buffer-forwarded-on-failure) apply.
+
+### Notes
+
+- `startCore`, `startChainedCore`, `completeCore`, `processStartActions`,
+  and `processEndActions` are all private, single-call-site helpers (each
+  called from exactly one public method), so changing their signatures to
+  accept `tx *gorm.DB` directly (instead of opening their own
+  `database.ExecuteTransaction`) was a safe, contained refactor — no other
+  caller exists (`CheckAutoStart`/`CheckAutoComplete` call the *public*
+  `startWithDefinition`/`Complete`, not the private core helpers).
+- The `ProcessorImpl.eventEmitter` field is still populated (by
+  `NewProcessor` via `NewKafkaEventEmitter` and by
+  `NewProcessorWithDependencies` via the injected mock) but is no longer
+  read anywhere in `processor.go` — every former `p.eventEmitter.EmitX(...)`
+  call site now goes through `p.txEmitter(tx).EmitX(...)`. It's kept
+  because `NewProcessorWithDependencies`'s signature (test-facing, used by
+  `quest/processor_test.go` and 4 consumer test files) still takes an
+  `EventEmitter` param, and `txEmitter` is defined in terms of it
+  (`func(*gorm.DB) EventEmitter { return eventEmitter }`) so injected test
+  mocks keep observing every emit unchanged.
+- `NewProcessor`'s `txEmitter` defaults to
+  `func(tx *gorm.DB) EventEmitter { return NewOutboxEventEmitter(l, ctx, tx) }`;
+  `WithTransaction` carries the field forward unchanged so a
+  `WithTransaction(tx)`-derived processor still resolves to the same
+  emitter strategy (mock or outbox) as its parent.
+- No pre-existing test asserted direct-path (Kafka) emission for a migrated
+  flow — `quest/processor_test.go` and `quest/set_progress_cap_test.go` both
+  inject `test.NewMockEventEmitter()` via `NewProcessorWithDependencies`
+  and assert against its recorded `StartedEvents`/`CompletedEvents`/
+  `ForfeitedEvents`/`ProgressEvents`/`SagaEvents` slices — these assertions
+  are agnostic to whether the emit happened via direct Kafka publish or an
+  outbox enqueue, since the mock's `EmitX` methods just append to a slice
+  and return nil regardless of caller. No test file was modified.
+- `go test -race ./...`, `go vet ./...`, `go build ./...` all clean;
+  `docker buildx bake atlas-quest` succeeded; `tools/redis-key-guard.sh`
+  clean (exit 0 across the whole repo).
+- `database.ExecuteTransaction` atomicity is still latent fleet-wide
+  pending task-119 (see `bug_execute_transaction_noop.md`); this task's
+  migration uses the correct seam and becomes atomic for free once
+  task-119 lands. Until then, nesting `startCore`/`processStartActions`/etc
+  calls inside one outer `ExecuteTransaction` closure is behaviorally
+  identical to the pre-migration separate-transaction sequence (since
+  `ExecuteTransaction` just invokes its callback directly today).

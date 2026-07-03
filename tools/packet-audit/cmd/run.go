@@ -1988,8 +1988,14 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "ItemUse", dir: csvpkg.DirServerbound, pkg: "inventory"}}
 	case "CWvsContext::SendUpgradeItemUseRequest":
 		return []candidate{{name: "ScrollUse", dir: csvpkg.DirServerbound, pkg: "inventory"}}
+	// Vega's Spell (category 561) USE_CASH_ITEM sub-body (task-130 §2.1) shares
+	// the cash-item-use sender fname with task-126's AP/SP point-reset arm. Both
+	// candidates are keyed to the same fname, so return them together.
 	case "CWvsContext::SendConsumeCashItemUseRequest", "CItemSpeakerDlg::_SendConsumeCashItemUseRequest":
-		return []candidate{{name: "ItemUsePointReset", dir: csvpkg.DirServerbound, pkg: "cash"}}
+		return []candidate{
+			{name: "ItemUsePointReset", dir: csvpkg.DirServerbound, pkg: "cash"},
+			{name: "ItemUseVegaScroll", dir: csvpkg.DirServerbound, pkg: "cash"},
+		}
 	// --- interaction sub-domain (task-067) ---
 	// NOTE: the interaction serverbound dispatcher struct is also named `Operation`
 	// (collides with storage's CTrunkDlg `Operation` under the flat report layout;
@@ -2071,6 +2077,10 @@ func candidatesFromFName(fname string) []candidate {
 	// a SEPARATE dispatcher from OnCashItemResult.
 	case "CCashShop::OnQueryCashResult":
 		return []candidate{{name: "QueryResult", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	// Vega's Spell result dialog — single mode byte (task-130 §2.2). v83 opcode
+	// 0x166 via CUIVega::OnPacket; v95 0x1AD.
+	case "CUIVega::OnVegaResult":
+		return []candidate{{name: "VegaScroll", dir: csvpkg.DirClientbound, pkg: "cash"}}
 	// Clientbound CCashShop::OnCashItemResult is a mode-dispatched reader (op-bytes 0x54-0xBC);
 	// synthetic #-suffix FNames map each CashShopOperation result struct to its OnCashItemRes* sub-handler.
 	case "CCashShop::OnCashItemResult#CashShopInventory":

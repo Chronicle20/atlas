@@ -1,0 +1,21 @@
+{
+  "WriterName": "CashVegaScroll",
+  "IDAName": "CUIVega::OnVegaResult",
+  "Address": "0x8b89ad",
+  "Variant": "JMS/v185",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/cash/clientbound/vega_scroll.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "vega result mode byte; single Decode1 routed to START/RESULT/notice arms (jms_v185 CUIVega::OnPacket(0x183), task-130 Task 4 IDA-verified 0x8b89ad)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

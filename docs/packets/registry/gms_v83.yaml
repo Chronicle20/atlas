@@ -1712,7 +1712,10 @@
   direction: clientbound
   opcode: 358
   fname: CUIVega::OnVegaResult
-  provenance: csv-import
+  provenance: ida-discovered
+  ida:
+    address: 0x82d8d5
+  note: 'task-130 Task 4: IDA v83 CUIVega::OnPacket (0x82d8bf) case 0x166 -> OnVegaResult (0x82d8d5). Opcode 0x166/358 confirmed. Single Decode1 mode byte; START in {0x40,0x45}, RESULT in {0x41,0x43}, else -> "cannot be used" notice. START byte carries outcome (Draw sub_82C28B + popup sub_82DA77: 0x40->SUCCESSWND, 0x45->FAILWND).'
 - op: LOGIN_PASSWORD
   direction: serverbound
   opcode: 1

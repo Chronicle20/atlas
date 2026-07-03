@@ -2312,7 +2312,7 @@
   opcode: 358
   fname: CUIVega::OnVegaResult
   provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  note: 'task-130 Task 4: SUSPECT / UNVERIFIED. Seeded from the v83 CSV column (the CSVs have no v84 column). 358 is a csv-import carryover of the v83 value, but VEGA_SCROLL sits well above the v84 clientbound reshift threshold (~0x3D, +2..+10). No live v84 IDB and the checked-in gms_v84.json export has no CUIVega function, so the opcode could not be verified. BLOCKED — do not wire a v84 VegaScroll writer/template entry until the opcode is IDA-confirmed (an unverified wrong opcode can crash the client; absence is the safe failure).'
 - op: LOGIN_PASSWORD
   direction: serverbound
   opcode: 1

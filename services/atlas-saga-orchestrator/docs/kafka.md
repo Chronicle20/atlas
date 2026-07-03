@@ -5,7 +5,7 @@
 | Topic | Environment Variable | Direction | Description |
 |-------|---------------------|-----------|-------------|
 | Saga Commands | COMMAND_TOPIC_SAGA | Command | Saga creation requests |
-| Asset Status | EVENT_TOPIC_ASSET_STATUS | Event | Asset service status events (CREATED, DELETED, MOVED, QUANTITY_CHANGED) |
+| Asset Status | EVENT_TOPIC_ASSET_STATUS | Event | Asset service status events (CREATED, DELETED, MOVED, QUANTITY_CHANGED, UPDATED) |
 | Buddy List Status | EVENT_TOPIC_BUDDY_LIST_STATUS | Event | Buddy list status events |
 | Wallet Status | EVENT_TOPIC_WALLET_STATUS | Event | Wallet status events (UPDATED) |
 | Cash Shop Compartment Status | EVENT_TOPIC_CASH_COMPARTMENT_STATUS | Event | Cash shop compartment status events (ACCEPTED, RELEASED, ERROR) |
@@ -95,9 +95,9 @@ StatusEvent[E]
   body: E
 ```
 
-Status types: CREATED, DELETED, MOVED, QUANTITY_CHANGED
+Status types: CREATED, DELETED, MOVED, QUANTITY_CHANGED, UPDATED
 
-The asset consumer handles `CREATED` events with special logic for `CreateAndEquipAsset` steps -- it dynamically adds an `EquipAsset` step to the saga after the current step, using the slot and template from the event to determine source slot and inventory type. For CREATED and QUANTITY_CHANGED events, the step is completed with a result containing `assetId`.
+The asset consumer handles `CREATED` events with special logic for `CreateAndEquipAsset` steps -- it dynamically adds an `EquipAsset` step to the saga after the current step, using the slot and template from the event to determine source slot and inventory type. For CREATED and QUANTITY_CHANGED events, the step is completed with a result containing `assetId`. `UPDATED` events complete `SetAssetOwner`/`ApplyAssetLock` steps (gated via `AcceptEvent`/`EventKindAssetUpdated`); the body carries no fields of its own, since the step is matched by transaction id, not by content.
 
 ### Compartment Command
 
@@ -112,7 +112,7 @@ Command[E]
   body: E
 ```
 
-Command types: CREATE_ASSET, DESTROY, EQUIP, UNEQUIP, ACCEPT, RELEASE
+Command types: CREATE_ASSET, DESTROY, EQUIP, UNEQUIP, ACCEPT, RELEASE, SET_OWNER, APPLY_LOCK
 
 #### ACCEPT Body
 
@@ -130,6 +130,22 @@ ReleaseCommandBody
   transactionId: uuid.UUID
   assetId: uint32
   quantity: uint32
+```
+
+#### SET_OWNER Body
+
+```
+SetOwnerCommandBody
+  slot: int16
+  owner: string
+```
+
+#### APPLY_LOCK Body
+
+```
+ApplyLockCommandBody
+  slot: int16
+  expiration: time.Time
 ```
 
 ### Compartment Status Event (Consumed)

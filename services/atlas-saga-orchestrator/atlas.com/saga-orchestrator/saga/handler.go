@@ -859,6 +859,10 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleEnterPartyQuestBonus, true
 	case FieldEffectWeather:
 		return h.handleFieldEffectWeather, true
+	case SetAssetOwner:
+		return h.handleSetAssetOwner, true
+	case ApplyAssetLock:
+		return h.handleApplyAssetLock, true
 	}
 	return nil, false
 }
@@ -1029,6 +1033,34 @@ func (h *HandlerImpl) handleDestroyAsset(s Saga, st Step[any]) error {
 		return err
 	}
 
+	return nil
+}
+
+// handleSetAssetOwner handles the SetAssetOwner action
+func (h *HandlerImpl) handleSetAssetOwner(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(SetAssetOwnerPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+	err := h.compP.RequestSetOwner(s.TransactionId(), payload.CharacterId, payload.InventoryType, payload.Slot, payload.Owner)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to set asset owner.")
+		return err
+	}
+	return nil
+}
+
+// handleApplyAssetLock handles the ApplyAssetLock action
+func (h *HandlerImpl) handleApplyAssetLock(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(ApplyAssetLockPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+	err := h.compP.RequestApplyLock(s.TransactionId(), payload.CharacterId, payload.InventoryType, payload.Slot, payload.Expiration)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to apply asset lock.")
+		return err
+	}
 	return nil
 }
 

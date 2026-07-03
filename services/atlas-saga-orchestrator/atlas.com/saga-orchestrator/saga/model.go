@@ -37,6 +37,9 @@ const (
 	CharacterRespawn     = sharedsaga.CharacterRespawn
 	GachaponTransaction  = sharedsaga.GachaponTransaction
 	PetEvolution         = sharedsaga.PetEvolution
+	ItemTagUse           = sharedsaga.ItemTagUse
+	SealingLockUse       = sharedsaga.SealingLockUse
+	IncubatorUse         = sharedsaga.IncubatorUse
 )
 
 // Status constants
@@ -172,6 +175,11 @@ const (
 	RebalanceStatDexterity    = sharedsaga.RebalanceStatDexterity
 	RebalanceStatIntelligence = sharedsaga.RebalanceStatIntelligence
 	RebalanceStatLuck         = sharedsaga.RebalanceStatLuck
+
+	// Item tag / sealing lock / incubator actions
+	SetAssetOwner   = sharedsaga.SetAssetOwner
+	ApplyAssetLock  = sharedsaga.ApplyAssetLock
+	IncubatorResult = sharedsaga.IncubatorResult
 )
 
 // Re-exported payload types from shared library
@@ -254,6 +262,9 @@ type (
 	StageClearAttemptPqPayload          = sharedsaga.StageClearAttemptPqPayload
 	FieldEffectWeatherPayload           = sharedsaga.FieldEffectWeatherPayload
 	ExperienceDistributions             = sharedsaga.ExperienceDistributions
+	SetAssetOwnerPayload                = sharedsaga.SetAssetOwnerPayload
+	ApplyAssetLockPayload               = sharedsaga.ApplyAssetLockPayload
+	IncubatorResultPayload              = sharedsaga.IncubatorResultPayload
 )
 
 // ============================================================
@@ -1378,6 +1389,24 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.payload = any(payload).(T)
 	case RequestGuildCapacityIncrease:
 		var payload RequestGuildCapacityIncreasePayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case SetAssetOwner:
+		var payload SetAssetOwnerPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case ApplyAssetLock:
+		var payload ApplyAssetLockPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case IncubatorResult:
+		var payload IncubatorResultPayload
 		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}

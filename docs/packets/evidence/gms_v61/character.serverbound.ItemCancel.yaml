@@ -1,0 +1,10 @@
+packet: character/serverbound/ItemCancel
+direction: serverbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::SendStatChangeItemCancelRequest
+    address: "0x831bb7"
+    decompile_sha256: ad44bf3a89688c6692d8846279e7e21daa6200677d52342777065b0b86c3eaa2
+verifies:
+  - libs/atlas-packet/character/serverbound/item_cancel_test.go#TestItemCancelByteFixtureV61

@@ -482,7 +482,7 @@
         "handler": "CompartmentSortHandle"
       },
       {
-        "opCode": "0x48",
+        "opCode": "0x44",
         "validator": "LoggedInValidator",
         "handler": "CharacterItemCancelHandle"
       },

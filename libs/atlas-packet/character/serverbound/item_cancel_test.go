@@ -14,6 +14,7 @@ import (
 // packet-audit:verify packet=character/serverbound/ItemCancel version=jms_v185 ida=0xaee339
 // packet-audit:verify packet=character/serverbound/ItemCancel version=gms_v79 ida=0x9553cd
 // packet-audit:verify packet=character/serverbound/ItemCancel version=gms_v72 ida=0x904088
+// packet-audit:verify packet=character/serverbound/ItemCancel version=gms_v61 ida=0x831bb7
 func TestItemCancelRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {
@@ -56,5 +57,19 @@ func TestItemCancelByteFixtureV72(t *testing.T) {
 	want := []byte{0x69, 0x88, 0x1E, 0x00} // sourceId (Encode4) /*0x904126*/
 	if !bytes.Equal(got, want) {
 		t.Errorf("v72 bytes:\n got %x\nwant %x", got, want)
+	}
+}
+
+// TestItemCancelByteFixtureV61 pins CANCEL_ITEM_EFFECT (v61 send op 68) against
+// CWvsContext::SendStatChangeItemCancelRequest sub_831BB7@0x831bb7: the item-buff
+// right-click cancel path (CWndMan proc sub_4486B0 v5==1 -> sub_831BB7(-sourceId))
+// builds COutPacket(68) then a single Encode4(sourceId) @0x831c55. No version gate.
+func TestItemCancelByteFixtureV61(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 61, 1)
+	// sourceId=2001001 (0x001E8869 LE)
+	got := pt.Encode(t, ctx, ItemCancel{sourceId: 2001001}.Encode, nil)
+	want := []byte{0x69, 0x88, 0x1E, 0x00} // sourceId (Encode4) @0x831c55
+	if !bytes.Equal(got, want) {
+		t.Errorf("v61 bytes:\n got %x\nwant %x", got, want)
 	}
 }

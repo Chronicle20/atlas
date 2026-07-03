@@ -2245,12 +2245,12 @@
   note: 'v61 send-site harvest (COutPacket ctor @0x5ffc4f): sub_831DE9 COutPacket(71), CWvsContext item region; Δ0 vs v72.'
 - op: CANCEL_ITEM_EFFECT
   direction: serverbound
-  opcode: 72
-  fname: sub_831F44
+  opcode: 68
+  fname: CWvsContext::SendStatChangeItemCancelRequest
   provenance: ida-discovered
   ida:
-    address: 6291023
-  note: 'v61 send-site harvest (COutPacket ctor @0x5ffc4f): sub_831F44 COutPacket(72), CWvsContext item region; Δ0 vs v72.'
+    address: 8592311
+  note: 'v61 item-buff right-click cancel: CWndMan proc sub_4486B0 (v5==1 branch) calls sub_831BB7(-sourceId)@0x831bb7 = SendStatChangeItemCancelRequest: guard sub_4BDB9F(200,0); if sourceId/-10000==221 -> StringPool(4271) message; else COutPacket(68)+Encode4(sourceId). SINGLE Encode4. Prior registry op72/sub_831F44 was a mislabel (that is the IsRidingTamedMob 226xxxx MOUNT cancel, COutPacket(72)+[E4,E2,E4], a distinct packet). v61 item region shifted Δ-4 vs v72 (ITEM_SORT 64=v72 68-4; CANCEL 68=v72 72-4), so v72 CANCEL_ITEM_EFFECT=72 -> v61=68.'
 - op: USE_SUMMON_BAG
   direction: serverbound
   opcode: 74

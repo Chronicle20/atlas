@@ -13799,13 +13799,12 @@
    "calls": []
   },
   "CWvsContext::SendStatChangeItemCancelRequest": {
-   "address": "",
+   "address": "0x831bb7",
    "direction": "serverbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode4",
+     "comment": "sourceId Encode4(a1) @0x831c55 (COutPacket(68) ctor @0x831c43)"
     }
    ]
   },

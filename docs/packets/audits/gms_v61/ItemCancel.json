@@ -1,7 +1,7 @@
 {
   "WriterName": "ItemCancel",
   "IDAName": "CWvsContext::SendStatChangeItemCancelRequest",
-  "Address": "",
+  "Address": "0x831bb7",
   "Variant": "GMS/v61",
   "BranchDepth": 0,
   "AtlasFile": "libs/atlas-packet/character/serverbound/item_cancel.go",
@@ -10,12 +10,12 @@
       "Index": 0,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 4,
-      "Note": "IDA read-order unresolved: function not found in IDB"
+      "IDAOp": 2,
+      "IDAComment": "sourceId Encode4(a1) @0x831c55 (COutPacket(68) ctor @0x831c43)",
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 4,
+  "Verdict": 0,
   "FlatInvalid": false
 }

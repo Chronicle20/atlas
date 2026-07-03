@@ -5,7 +5,7 @@
 
 Tool: `658928fc9bd41408e0a83bb6acf59fb6dff6eda8`
 
-- export gms_v61: `be4c5b88db82a5f7871ca70155781a747dd43594d1d4edec1d995c04484af36b`
+- export gms_v61: `911433c109667ffff9e50b0dd8b1062bf3822d36320edabae13d93120d7ca058`
 - export gms_v72: `a0ac2be6578395455f491976bcb11aa27e2e57376b46ee8816b90324bad60c02`
 - export gms_v79: `370d6b720b633c12c71d40340f3952000705c4bddb98f87179e7193d112d210c`
 - export gms_v83: `711bddcc2e1bdd417a75954148d2b50c64e70855e84259c0b8e50e700e393c0d`
@@ -565,10 +565,10 @@ Tool: `658928fc9bd41408e0a83bb6acf59fb6dff6eda8`
 | OWL_ACTION | CUIShopScanner::OnCreate |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x042 | ❌ | 0x042 | ❌ | 0x045 | ❌ | 0x048 | ❌ | 0x03A | ❌ |
 | OWL_WARP | CUIShopScanResult::OnButtonClicked |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x043 | ❌ | 0x043 | ❌ | 0x046 | ❌ | 0x049 | ❌ | 0x03B | ❌ |
 | ADMIN_SHOP | CAdminShopDlg::OnPacket; CAdminShopDlg::SendTradeRequest; CAdminShopDlg::SetRet; CUIAdminShopWishList::SendRegisterPacket |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x044 | ❌ | 0x044 | ❌ | 0x047 | ❌ | 0x04A | ❌ | 0x03C | ❌ |
+| CANCEL_ITEM_EFFECT | CWvsContext::SendStatChangeItemCancelRequest | character/serverbound/ItemCancel (T1) | 0x044 | ✅ | 0x048 | ✅ | 0x047 | ✅ | 0x049 | ✅ | 0x049 | ✅ | 0x04C | ✅ | 0x04F | ✅ | 0x041 | ✅ |
 | ITEM_MOVE | CWvsContext::SendChangeSlotPositionRequest; sub_831C83 | inventory/serverbound/InventoryMove (T1) | 0x046 | ❌ | 0x046 | 🟡 | 0x045 | 🟡 | 0x047 | ❌ | 0x047 | ❌ | 0x04A | ✅ | 0x04D | ✅ | 0x03F | ✅ |
 | USER_EFFECT_LOCAL | CUserLocal::SendSkillEffectRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x047 | ❌ |  | ⬜ |
 | USE_ITEM | CWvsContext::SendStatChangeItemUseRequest; sub_831DE9 | inventory/serverbound/InventoryItemUse (T1) | 0x047 | ❌ | 0x047 | 🟡 | 0x046 | 🟡 | 0x048 | ✅ | 0x048 | ✅ | 0x04B | ✅ | 0x04E | ✅ | 0x040 | ✅ |
-| CANCEL_ITEM_EFFECT | CWvsContext::SendStatChangeItemCancelRequest; sub_831F44 | character/serverbound/ItemCancel (T1) | 0x048 | ❌ | 0x048 | ✅ | 0x047 | ✅ | 0x049 | ✅ | 0x049 | ✅ | 0x04C | ✅ | 0x04F | ✅ | 0x041 | ✅ |
 | USE_CASH_ITEM | CItemSpeakerDlg::_SendConsumeCashItemUseRequest; CUICharacterSaleDlg::SendCreateNewCharacter; CUIIncubator::OnButtonClicked; CUIKarmaDlg::_SendConsumeCashItemUseRequest; CUIUnreleaseDlg::UnreleaseEquipItem; CWvsContext::SendConsumeCashItemUseRequest |  | 0x049 | ❌ | 0x04E | ❌ | 0x04D | ❌ | 0x04F | ❌ | 0x04F | ❌ | 0x052 | ❌ | 0x055 | ❌ | 0x047 | ❌ |
 | STATE_CHANGE_BY_PORTABLE_CHAIR_REQUEST | CWvsContext::TryRecovery |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x04A | ❌ | 0x04A | ❌ | 0x04D | ❌ | 0x050 | ❌ | 0x042 | ❌ |
 | USE_SUMMON_BAG | CWvsContext::SendMobSummonItemUseRequest; sub_832005; sub_955499 |  | 0x04A | ❌ | 0x04A | ❌ | 0x049 | ❌ | 0x04B | ❌ | 0x04B | ❌ | 0x04E | ❌ | 0x051 | ❌ | 0x043 | ❌ |
@@ -830,7 +830,6 @@ Tool: `658928fc9bd41408e0a83bb6acf59fb6dff6eda8`
 | cash/serverbound/CashShopOperationSetWishlist (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | character/serverbound/ChairPortable (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | character/serverbound/ExpressionRequest (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
-| character/serverbound/ItemCancel (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | character/serverbound/Move (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | fame/serverbound/Change |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | field/clientbound/FieldEffectWeather (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
@@ -936,14 +935,14 @@ Tool: `658928fc9bd41408e0a83bb6acf59fb6dff6eda8`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v61 | 205 | 0 | 60 | 185 | 453 | 0 | 45.6% |
-| v72 | 216 | 0 | 73 | 200 | 414 | 0 | 44.2% |
-| v79 | 228 | 0 | 72 | 198 | 405 | 0 | 45.8% |
-| v83 | 367 | 0 | 0 | 329 | 207 | 0 | 52.7% |
-| v84 | 345 | 0 | 0 | 330 | 228 | 0 | 51.1% |
-| v87 | 379 | 0 | 0 | 354 | 170 | 0 | 51.7% |
-| v95 | 399 | 0 | 0 | 418 | 86 | 0 | 48.8% |
-| JMS185 | 362 | 0 | 0 | 364 | 177 | 0 | 49.9% |
+| v61 | 206 | 0 | 60 | 183 | 453 | 0 | 45.9% |
+| v72 | 216 | 0 | 73 | 199 | 414 | 0 | 44.3% |
+| v79 | 228 | 0 | 72 | 197 | 405 | 0 | 45.9% |
+| v83 | 367 | 0 | 0 | 328 | 207 | 0 | 52.8% |
+| v84 | 345 | 0 | 0 | 329 | 228 | 0 | 51.2% |
+| v87 | 379 | 0 | 0 | 353 | 170 | 0 | 51.8% |
+| v95 | 399 | 0 | 0 | 417 | 86 | 0 | 48.9% |
+| JMS185 | 362 | 0 | 0 | 363 | 177 | 0 | 49.9% |
 
 ## Conflicts
 

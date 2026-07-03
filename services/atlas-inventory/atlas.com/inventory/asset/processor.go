@@ -299,6 +299,21 @@ func (p *Processor) ApplyLock(mb *message.Buffer) func(transactionId uuid.UUID, 
 	}
 }
 
+// ClearLock clears FlagLock and zeroes the expiration on an asset in place,
+// emitting the existing UPDATED status event. It is used when a locked
+// asset's expiration passes: the lock expires, not the asset.
+func (p *Processor) ClearLock(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32) func(a Model) error {
+	return func(transactionId uuid.UUID, characterId uint32) func(a Model) error {
+		return func(a Model) error {
+			updated := Clone(a).RemoveFlag(af.FlagLock).SetExpiration(time.Time{}).Build()
+			if err := updateFlagAndExpiration(p.db.WithContext(p.ctx), a.Id(), updated.Flag(), time.Time{}); err != nil {
+				return err
+			}
+			return mb.Put(asset.EnvEventTopicStatus, UpdatedEventStatusProvider(transactionId, characterId, updated))
+		}
+	}
+}
+
 func (p *Processor) ChangeTemplateAndEmit(transactionId uuid.UUID, characterId uint32, assetId uint32, newTemplateId uint32) error {
 	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(mb *message.Buffer) error {
 		return p.ChangeTemplate(mb)(transactionId, characterId, assetId, newTemplateId)

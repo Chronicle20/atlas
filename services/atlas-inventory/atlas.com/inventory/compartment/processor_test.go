@@ -15,6 +15,7 @@ import (
 	"testing"
 	"time"
 
+	af "github.com/Chronicle20/atlas/libs/atlas-constants/asset"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
@@ -933,5 +934,88 @@ func TestApplyAssetLockRejectsTimeLimitedItem(t *testing.T) {
 	}
 	if !a.Expiration().Equal(existingExpiration) {
 		t.Fatalf("expected expiration to remain %v, got %v", existingExpiration, a.Expiration())
+	}
+}
+
+// TestExpireAssetLockedClearsLock verifies that when a LOCKED asset's
+// expiration (the lock's expiration) passes, ExpireAsset unlocks it instead
+// of destroying it: the row survives, the lock flag is cleared, and the
+// expiration is zeroed.
+func TestExpireAssetLockedClearsLock(t *testing.T) {
+	characterId := uint32(404)
+	templateId := uint32(1040010)
+
+	l := testLogger()
+	te := testTenant()
+	ctx := tenant.WithContext(context.Background(), te)
+	db := testDatabase(t, l)
+
+	mb := message.NewBuffer()
+
+	ap := asset.NewProcessor(l, ctx, db)
+	cp := compartment.NewProcessor(l, ctx, db).WithAssetProcessor(ap)
+
+	c, err := cp.Create(mb)(uuid.New(), characterId, inventory.TypeValueEquip, 24)
+	if err != nil {
+		t.Fatalf("Failed to create compartment: %v", err)
+	}
+
+	slot := int16(-5)
+	pastExpiration := time.Now().AddDate(0, 0, -1).Truncate(time.Second)
+	m := asset.NewBuilder(c.Id(), templateId).SetSlot(slot).SetCreatedAt(time.Now()).AddFlag(af.FlagLock).SetExpiration(pastExpiration).Build()
+	if _, err := ap.CreateFromModel(mb)(uuid.New(), characterId, m); err != nil {
+		t.Fatalf("Failed to create asset: %v", err)
+	}
+
+	if err := cp.ExpireAsset(mb)(uuid.New(), characterId, inventory.TypeValueEquip, slot, false, 0, ""); err != nil {
+		t.Fatalf("ExpireAsset returned unexpected error: %v", err)
+	}
+
+	a, err := ap.GetBySlot(c.Id(), slot)
+	if err != nil {
+		t.Fatalf("expected locked asset to survive expiration, but it was destroyed: %v", err)
+	}
+	if a.Locked() {
+		t.Fatalf("expected asset to be unlocked after ExpireAsset")
+	}
+	if !a.Expiration().IsZero() {
+		t.Fatalf("expected expiration to be zeroed, got %v", a.Expiration())
+	}
+}
+
+// TestExpireAssetUnlockedStillDestroys verifies that an unlocked asset whose
+// expiration passes keeps today's behavior: it is destroyed.
+func TestExpireAssetUnlockedStillDestroys(t *testing.T) {
+	characterId := uint32(405)
+	templateId := uint32(1040010)
+
+	l := testLogger()
+	te := testTenant()
+	ctx := tenant.WithContext(context.Background(), te)
+	db := testDatabase(t, l)
+
+	mb := message.NewBuffer()
+
+	ap := asset.NewProcessor(l, ctx, db)
+	cp := compartment.NewProcessor(l, ctx, db).WithAssetProcessor(ap)
+
+	c, err := cp.Create(mb)(uuid.New(), characterId, inventory.TypeValueEquip, 24)
+	if err != nil {
+		t.Fatalf("Failed to create compartment: %v", err)
+	}
+
+	slot := int16(-5)
+	pastExpiration := time.Now().AddDate(0, 0, -1).Truncate(time.Second)
+	m := asset.NewBuilder(c.Id(), templateId).SetSlot(slot).SetCreatedAt(time.Now()).SetExpiration(pastExpiration).Build()
+	if _, err := ap.CreateFromModel(mb)(uuid.New(), characterId, m); err != nil {
+		t.Fatalf("Failed to create asset: %v", err)
+	}
+
+	if err := cp.ExpireAsset(mb)(uuid.New(), characterId, inventory.TypeValueEquip, slot, false, 0, ""); err != nil {
+		t.Fatalf("ExpireAsset returned unexpected error: %v", err)
+	}
+
+	if _, err := ap.GetBySlot(c.Id(), slot); err == nil {
+		t.Fatalf("expected unlocked expired asset to be destroyed, but it still exists")
 	}
 }

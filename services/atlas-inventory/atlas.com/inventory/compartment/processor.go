@@ -939,6 +939,11 @@ func (p *Processor) ExpireAsset(mb *message.Buffer) func(transactionId uuid.UUID
 				return err
 			}
 
+			if a.Locked() {
+				// Lock expiration passed: clear the lock and keep the asset (PRD 4.2.5).
+				return p.assetProcessor.WithTransaction(tx).ClearLock(mb)(transactionId, characterId)(a)
+			}
+
 			// Expire the asset (deletes and emits EXPIRED event)
 			err = p.assetProcessor.WithTransaction(tx).Expire(mb)(transactionId, characterId, c.Id(), isCash, replaceItemId, replaceMessage)(a)
 			if err != nil {

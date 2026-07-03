@@ -1,0 +1,8 @@
+packet: cash/serverbound/CashShopOperationBuy
+direction: serverbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnBuy
+    address: "0x44b0cf"
+    decompile_sha256: a372db3da7595c75772f8f30ad892624925ba99ed0d876cc026d5c33d1ebeeb3

@@ -19,6 +19,7 @@ const CashShopOperationBuyFriendshipHandle = "CashShopOperationBuyFriendshipHand
 type ShopOperationBuyFriendship struct {
 	isPoints     bool   // v79 legacy leading bool (currency==MaplePoint)
 	currency     uint32 // v79 legacy currency bitmask int
+	flag         byte   // v48 legacy constant byte (client sends 1)
 	birthday     uint32 // v83 leading ask_SPW int
 	spw          string // v95 leading ask_SPW string
 	option       uint32
@@ -29,6 +30,7 @@ type ShopOperationBuyFriendship struct {
 
 func (m ShopOperationBuyFriendship) IsPoints() bool       { return m.isPoints }
 func (m ShopOperationBuyFriendship) Currency() uint32     { return m.currency }
+func (m ShopOperationBuyFriendship) Flag() byte           { return m.flag }
 func (m ShopOperationBuyFriendship) Birthday() uint32     { return m.birthday }
 func (m ShopOperationBuyFriendship) SPW() string          { return m.spw }
 func (m ShopOperationBuyFriendship) Option() uint32       { return m.option }
@@ -62,6 +64,17 @@ func (m ShopOperationBuyFriendship) encodeGMS(t tenant.Model, w *response.Writer
 	// (routed op), Encode1(v24==2)=isPoints, Encode4(v24)=currency, Encode4(a2)=
 	// serialNumber. No SPW/birthday/option, no recipient name/message on the wire.
 	if legacyGMS(t) {
+		// v48 CCashShop::OnBuyFriendship@0x44c879 (send @0x44cadb): COutPacket(160)
+		// Encode1((v19/1000==9110)+5)=mode, Encode1(v37==2)=pointType, Encode1(1)=
+		// constant flag byte, Encode4(a2)=serialNumber. The friendship-ring buy
+		// below v61 carries a flag byte (not the currency int) — see
+		// buyOmitsCurrency.
+		if buyOmitsCurrency(t) {
+			w.WriteBool(m.isPoints)
+			w.WriteByte(m.flag)
+			w.WriteInt(m.serialNumber)
+			return
+		}
 		w.WriteBool(m.isPoints)
 		w.WriteInt(m.currency)
 		w.WriteInt(m.serialNumber)
@@ -101,6 +114,12 @@ func (m *ShopOperationBuyFriendship) Decode(_ logrus.FieldLogger, ctx context.Co
 
 func (m *ShopOperationBuyFriendship) decodeGMS(t tenant.Model, r *request.Reader) {
 	if legacyGMS(t) {
+		if buyOmitsCurrency(t) {
+			m.isPoints = r.ReadBool()
+			m.flag = r.ReadByte()
+			m.serialNumber = r.ReadUint32()
+			return
+		}
 		m.isPoints = r.ReadBool()
 		m.currency = r.ReadUint32()
 		m.serialNumber = r.ReadUint32()

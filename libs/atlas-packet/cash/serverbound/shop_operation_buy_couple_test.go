@@ -20,11 +20,16 @@ func TestShopOperationBuyCoupleRoundTrip(t *testing.T) {
 			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
 			if v.Region == "GMS" && v.MajorVersion < 83 {
 				// Legacy GMS (v79): isPoints + currency + serialNumber only.
+				// v48/v28 (GMS < 61) drop the currency int (isPoints+serial).
 				if output.IsPoints() != input.IsPoints() {
 					t.Errorf("isPoints: got %v, want %v", output.IsPoints(), input.IsPoints())
 				}
-				if output.Currency() != input.Currency() {
-					t.Errorf("currency: got %v, want %v", output.Currency(), input.Currency())
+				wantCurrency := input.Currency()
+				if v.MajorVersion < 61 {
+					wantCurrency = 0
+				}
+				if output.Currency() != wantCurrency {
+					t.Errorf("currency: got %v, want %v", output.Currency(), wantCurrency)
 				}
 				if output.SerialNumber() != input.SerialNumber() {
 					t.Errorf("serialNumber: got %v, want %v", output.SerialNumber(), input.SerialNumber())

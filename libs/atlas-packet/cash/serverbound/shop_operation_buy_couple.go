@@ -62,8 +62,14 @@ func (m ShopOperationBuyCouple) encodeGMS(t tenant.Model, w *response.Writer) {
 	// (routed op), Encode1(v46==2)=isPoints, Encode4(v46)=currency, Encode4(a2)=
 	// serialNumber. No SPW/birthday/option, no recipient name/message on the wire.
 	if legacyGMS(t) {
+		// v48 CCashShop::OnBuyCouple@0x44b4c1 (send @0x44b79b): COutPacket(160)
+		// Encode1(0x1A)=mode, Encode1(v37==2)=isPoints, Encode4(a2)=serialNumber.
+		// The currency int (present in the v61/v79 legacy body) is absent below
+		// v61 — see buyOmitsCurrency.
 		w.WriteBool(m.isPoints)
-		w.WriteInt(m.currency)
+		if !buyOmitsCurrency(t) {
+			w.WriteInt(m.currency)
+		}
 		w.WriteInt(m.serialNumber)
 		return
 	}
@@ -102,7 +108,9 @@ func (m *ShopOperationBuyCouple) Decode(_ logrus.FieldLogger, ctx context.Contex
 func (m *ShopOperationBuyCouple) decodeGMS(t tenant.Model, r *request.Reader) {
 	if legacyGMS(t) {
 		m.isPoints = r.ReadBool()
-		m.currency = r.ReadUint32()
+		if !buyOmitsCurrency(t) {
+			m.currency = r.ReadUint32()
+		}
 		m.serialNumber = r.ReadUint32()
 		return
 	}

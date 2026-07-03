@@ -15,9 +15,29 @@ func TestShopOperationBuyFriendshipRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {
 			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
-			input := ShopOperationBuyFriendship{isPoints: true, currency: 2, birthday: 19900101, spw: "secret", option: 1, serialNumber: 12345, name: "Player1", message: "Friends forever"}
+			input := ShopOperationBuyFriendship{isPoints: true, currency: 2, flag: 1, birthday: 19900101, spw: "secret", option: 1, serialNumber: 12345, name: "Player1", message: "Friends forever"}
 			output := ShopOperationBuyFriendship{}
 			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
+			if v.Region == "GMS" && v.MajorVersion < 61 {
+				// v48/v28 (GMS < 61): the friendship-ring buy carries a flag byte
+				// in place of the currency int (isPoints + flag + serialNumber).
+				if output.IsPoints() != input.IsPoints() {
+					t.Errorf("isPoints: got %v, want %v", output.IsPoints(), input.IsPoints())
+				}
+				if output.Flag() != input.Flag() {
+					t.Errorf("flag: got %v, want %v", output.Flag(), input.Flag())
+				}
+				if output.Currency() != 0 {
+					t.Errorf("currency: got %v, want 0", output.Currency())
+				}
+				if output.SerialNumber() != input.SerialNumber() {
+					t.Errorf("serialNumber: got %v, want %v", output.SerialNumber(), input.SerialNumber())
+				}
+				if output.Birthday() != 0 || output.Option() != 0 || output.Name() != "" || output.Message() != "" {
+					t.Errorf("v48 should not carry birthday/option/name/message for %s", v.Name)
+				}
+				return
+			}
 			if v.Region == "GMS" && v.MajorVersion < 83 {
 				// Legacy GMS (v79): isPoints + currency + serialNumber only.
 				if output.IsPoints() != input.IsPoints() {

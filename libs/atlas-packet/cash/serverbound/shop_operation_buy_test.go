@@ -32,6 +32,14 @@ func TestShopOperationBuyRoundTrip(t *testing.T) {
 				}
 				return
 			}
+			if buyOmitsCurrency(tenant.MustFromContext(ctx)) {
+				// GMS < 61 (v48/v28) sends only isPoints+serialNumber; the
+				// currency int is version-absent (added at v61).
+				if output.Currency() != 0 {
+					t.Errorf("currency: got %v, want 0", output.Currency())
+				}
+				return
+			}
 			if output.Currency() != input.Currency() {
 				t.Errorf("currency: got %v, want %v", output.Currency(), input.Currency())
 			}

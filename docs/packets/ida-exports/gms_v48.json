@@ -226,17 +226,6 @@
         }
       ]
     },
-    "CCashShop::OnBuySlotInc": {
-      "address": "",
-      "direction": "serverbound",
-      "unresolved": true,
-      "calls": [
-        {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
-        }
-      ]
-    },
     "CCashShop::OnCashItemGachaponResult": {
       "address": "0x4536b9",
       "direction": "",
@@ -744,54 +733,10 @@
         }
       ]
     },
-    "CCashShop::OnEnableEquipSlotExt": {
-      "address": "",
-      "direction": "serverbound",
-      "unresolved": true,
-      "calls": [
-        {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
-        }
-      ]
-    },
     "CCashShop::OnGift": {
       "address": "0x44ba5d",
       "direction": "",
       "calls": null
-    },
-    "CCashShop::OnIncTrunkCount": {
-      "address": "",
-      "direction": "serverbound",
-      "unresolved": true,
-      "calls": [
-        {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
-        }
-      ]
-    },
-    "CCashShop::OnMoveCashItemLtoS": {
-      "address": "",
-      "direction": "serverbound",
-      "unresolved": true,
-      "calls": [
-        {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
-        }
-      ]
-    },
-    "CCashShop::OnMoveCashItemStoL": {
-      "address": "",
-      "direction": "serverbound",
-      "unresolved": true,
-      "calls": [
-        {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
-        }
-      ]
     },
     "CCashShop::OnNoticeFreeCashItem": {
       "address": "0x453553",
@@ -848,17 +793,6 @@
         }
       ]
     },
-    "CCashShop::OnRebateLockerItem": {
-      "address": "",
-      "direction": "serverbound",
-      "unresolved": true,
-      "calls": [
-        {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
-        }
-      ]
-    },
     "CCashShop::OnSetWish": {
       "address": "0x44ce9b",
       "direction": "serverbound",
@@ -890,28 +824,6 @@
       "address": "0x44a21d",
       "direction": "",
       "calls": null
-    },
-    "CCashShop::SendBuyNameChangeItemPacket": {
-      "address": "",
-      "direction": "serverbound",
-      "unresolved": true,
-      "calls": [
-        {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
-        }
-      ]
-    },
-    "CCashShop::SendBuyTransferWorldItemPacket": {
-      "address": "",
-      "direction": "serverbound",
-      "unresolved": true,
-      "calls": [
-        {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
-        }
-      ]
     },
     "CCashShop::SendGiftsPacket": {
       "address": "",

@@ -7,6 +7,42 @@
   {
    "fname": "CWvsContext::SendSortItemRequest",
    "reason": "ITEM_SORT2 (inventory sort request) is version-absent in gms_v48. The v61 sort sender CWvsContext::SendSortItemRequest sub_831564 @0x831564 (GMS_v61.1_U_DEVM.exe, port 13338) is the [1,5]-guarded COutPacket(65)+Encode4(updateTime)+Encode1(compartment) twin of the gather sender in the 0x831xxx region. gms_v48 has no such sender: the complete xrefs_to sub_4A2518 (500ms exclusive-request throttle) enumeration of the 0x70dxxx-0x71xxxx inventory send cluster contains no compartment-guarded Encode4+Encode1 body, and v48 has no 0x831xxx send region. Note the v48 opcode space cannot host the v61 numbering here anyway: v48 op65 is USE_ITEM (sub_719DD9 @0x719dd9, body-verified), not the v61 ITEM_SORT2 slot. Resolved n-a with complete-enumeration decompile evidence (Stage B flag cleared)."
+  },
+  {
+   "fname": "CCashShop::SendBuyNameChangeItemPacket",
+   "reason": "CASHSHOP_OPERATION name-change buy arm is version-absent in gms_v48. A func_query name_regex 'NameChange|CheckDuplicate' over GMS_v48_1_DEVM.exe (port 13337) returns no CCashShop name-change send function (only CUISendGifts ctor matches the broader cash-UI regex). The complete list of CCashShop send functions that build COutPacket(160) (the v48 cash-operation dispatcher opcode) is OnBuy@0x44b0cf, OnBuyCouple@0x44b4c1, OnBuyPackage@0x44b837, OnGift@0x44ba5d, OnBuyFriendship@0x44c879, OnBuyNormal@0x44cbb2, OnSetWish@0x44ce9b — none is a name-change buy. The character name-change cash item does not exist in this 2009-era client. The export carried an unresolved stub (address empty, 'function not found in IDB'); stripped here so matrix grading excludes the arm."
+  },
+  {
+   "fname": "CCashShop::SendBuyTransferWorldItemPacket",
+   "reason": "CASHSHOP_OPERATION world-transfer buy arm is version-absent from the v48 cash-operation dispatcher. The v48 world-transfer flow is CCashShop::OnBuyTransferWorldItem@0x44c707, which delegates to sub_44FB95@0x44fb95 — and that helper builds COutPacket(20) (a SEPARATE opcode), not COutPacket(160): Encode4+Encode4 on op 20. World transfer is therefore NOT a mode arm of the cash-operation dispatcher in v48; the modeled CashShopOperationBuyWorldTransfer sub-op does not exist under op 160. func_query 'NameChange|...|CheckDuplicate' confirms no SendBuyTransferWorldItemPacket send function exists. The export carried an unresolved stub; stripped here."
+  },
+  {
+   "fname": "CCashShop::OnEnableEquipSlotExt",
+   "reason": "CASHSHOP_OPERATION enable-equip-slot arm is version-absent in gms_v48. func_query name_regex 'EnableEquipSlot' over GMS_v48_1_DEVM.exe (port 13337) returns no match. The equip-slot-extension purchase in v48 is folded into the friendship-ring buy CCashShop::OnBuyFriendship@0x44c879 (item class 911xxxx / 9110xxx, GetSlotIncDelta, 48-slot cap; send @0x44cadb mode (serial/1000==9110)+5, body pointType(1)+flag(1)+serial(4)) — there is no dedicated OnEnableEquipSlotExt op with the modern pointType+currency+flag+serial shape. The export carried an unresolved stub; stripped here."
+  },
+  {
+   "fname": "CCashShop::OnIncCharacterSlotCount",
+   "reason": "CASHSHOP_OPERATION increase-character-slot arm is version-absent in gms_v48. func_query name_regex 'IncCharacterSlot' over GMS_v48_1_DEVM.exe (port 13337) returns no match, and the fname is absent from the v48 export entirely (no stub). The complete set of COutPacket(160) send functions in v48 (OnBuy/OnBuyCouple/OnBuyPackage/OnGift/OnBuyFriendship/OnBuyNormal/OnSetWish) contains no character-slot-increase op; the feature does not exist in this client."
+  },
+  {
+   "fname": "CCashShop::OnBuySlotInc",
+   "reason": "CASHSHOP_OPERATION increase-inventory (slot-inc) arm is version-absent in gms_v48. func_query name_regex 'BuySlotInc' over GMS_v48_1_DEVM.exe (port 13337) returns no match. None of the v48 COutPacket(160) send functions (OnBuy/OnBuyCouple/OnBuyPackage/OnGift/OnBuyFriendship/OnBuyNormal/OnSetWish) implements the isPoints+currency+item+inventoryType inventory-slot buy. The export carried an unresolved stub; stripped here."
+  },
+  {
+   "fname": "CCashShop::OnIncTrunkCount",
+   "reason": "CASHSHOP_OPERATION increase-storage (trunk-inc) arm is version-absent in gms_v48. func_query name_regex 'IncTrunk' over GMS_v48_1_DEVM.exe (port 13337) returns no match. No v48 COutPacket(160) send function implements the isPoints+currency+item storage-slot buy. The export carried an unresolved stub; stripped here."
+  },
+  {
+   "fname": "CCashShop::OnMoveCashItemLtoS",
+   "reason": "CASHSHOP_OPERATION move-from-cash-inventory (locker-to-slot) arm is version-absent in gms_v48. func_query name_regex 'MoveCashItem' over GMS_v48_1_DEVM.exe (port 13337) returns no match. The v48 cash shop has no cash-inventory transfer ops; none of its COutPacket(160) senders moves a cash item L-to-S (serial(8)+inventoryType(1)+slot(2)). The export carried an unresolved stub; stripped here."
+  },
+  {
+   "fname": "CCashShop::OnMoveCashItemStoL",
+   "reason": "CASHSHOP_OPERATION move-to-cash-inventory (slot-to-locker) arm is version-absent in gms_v48. func_query name_regex 'MoveCashItem' over GMS_v48_1_DEVM.exe (port 13337) returns no match (twin of OnMoveCashItemLtoS). The v48 cash shop has no cash-inventory transfer ops. The export carried an unresolved stub; stripped here."
+  },
+  {
+   "fname": "CCashShop::OnRebateLockerItem",
+   "reason": "CASHSHOP_OPERATION rebate-locker-item arm is version-absent in gms_v48. func_query name_regex 'RebateLocker' over GMS_v48_1_DEVM.exe (port 13337) returns no match. None of the v48 COutPacket(160) send functions implements a locker rebate (ask_SPW + 8-byte locker serial). The export carried an unresolved stub; stripped here."
   }
  ]
 }

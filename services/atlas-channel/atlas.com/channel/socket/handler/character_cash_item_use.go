@@ -22,7 +22,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
+func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 		p := cashsb.ItemUse{}
@@ -105,6 +105,13 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, _
 			return
 		}
 
+		if it == CashSlotItemTypeApReset || it == CashSlotItemTypeSpReset {
+			sp := cashsb.NewItemUsePointReset(updateTimeFirst)
+			sp.Decode(l, ctx)(r, readerOptions)
+			handlePointResetItemUse(l, ctx, wp)(s, itemId, *sp)
+			return
+		}
+
 		// TODO for v83 there is a trailing updateTime.
 
 		l.Warnf("Character [%d] attempting to use cash item [%d] in slot [%d] of type [%d]. updateTime [%d].", s.CharacterId(), itemId, source, it, updateTime)
@@ -117,6 +124,13 @@ const (
 	CashSlotItemTypeFieldEffect   = CashSlotItemType(16)
 	CashSlotItemTypePetConsumable = CashSlotItemType(30)
 	CashSlotItemTypeChalkboard    = CashSlotItemType(32)
+	// GetCashSlotItemType's ClassificationPointReset branch (above) collapses
+	// AP Reset (5050000) and SP Reset tiers 2-4 (5050002-5050004) onto type 23,
+	// and SP Reset tier 1 (5050001) alone onto type 24 — the type byte cannot
+	// distinguish AP-vs-SP. The arm below matches on either constant and then
+	// dispatches by item id (design §2.4), never by this type.
+	CashSlotItemTypeSpReset = CashSlotItemType(23)
+	CashSlotItemTypeApReset = CashSlotItemType(24)
 )
 
 func GetCashSlotItemType(t tenant.Model) func(itemId item.Id) CashSlotItemType {

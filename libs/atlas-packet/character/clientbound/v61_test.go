@@ -592,3 +592,120 @@ func TestCharacterSpawnByteOutputV61(t *testing.T) {
 		t.Errorf("v61 CharacterSpawn suffix (no team byte):\n got %x\nwant %x", got[len(got)-n:], wantSuffix)
 	}
 }
+
+// ItemUpgrade v61 byte-fixture — SHOW_SCROLL_EFFECT, op 126.
+//
+// Client read order — CUser::ShowItemUpgradeEffect @0x78DC86 reads, after the
+// pool dispatcher's Decode4 characterId, exactly four Decode1 flags:
+//
+//	success         = Decode1  /*0x78dcbb*/
+//	cursed          = Decode1  /*0x78dcc5*/
+//	legendarySpirit = Decode1  /*0x78dcd6*/
+//	whiteScroll     = Decode1  /*0x78dce1*/
+//
+// v61 (GMS < 87) reads NO Decode4 enchantCategory and NO 5th Decode1
+// enchantResultFlag (both are GMS>87 / JMS additions). Byte-identical to v72.
+//
+// packet-audit:verify packet=character/clientbound/ItemUpgrade version=gms_v61 ida=0x78dc86
+func TestItemUpgradeByteOutputV61(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 61, 1)
+	got := NewItemUpgrade(12345, true, false, true, false).Encode(nil, ctx)(nil)
+	want := []byte{
+		0x39, 0x30, 0x00, 0x00, // characterId 12345 (dispatcher Decode4)
+		0x01, // success = true (Decode1)         /*0x78dcbb*/
+		0x00, // cursed = false (Decode1)         /*0x78dcc5*/
+		0x01, // legendarySpirit = true (Decode1) /*0x78dcd6*/
+		0x00, // whiteScroll = false (Decode1)    /*0x78dce1*/
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("v61 ItemUpgrade wire:\n got %x\nwant %x", got, want)
+	}
+}
+
+// EffectSimple v61 byte-fixture — CUser::OnEffect mode-only arms.
+//
+// CUser::OnEffect @0x79148D dispatches on Decode1(mode); case 0 (LevelUp,
+// @0x7914b0) reads ONLY that mode byte and plays a client-side quest effect —
+// no further wire fields. EffectSimple.Encode writes exactly that byte. Shares the
+// OnEffect demux with EffectQuest/EffectSkillUse (SHOW_FOREIGN_EFFECT /
+// SHOW_ITEM_GAIN_INCHAT grade worst-of all three).
+//
+// packet-audit:verify packet=character/clientbound/EffectSimple version=gms_v61 ida=0x79148d
+func TestEffectSimpleByteOutputV61(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 61, 1)
+	gotSelf := NewEffectSimple(0).Encode(nil, ctx)(nil)
+	if want := []byte{0x00}; !bytes.Equal(gotSelf, want) {
+		t.Errorf("v61 EffectSimple self: got %x want %x", gotSelf, want)
+	}
+	gotForeign := NewEffectSimpleForeign(0x12345678, 8).Encode(nil, ctx)(nil)
+	if want := []byte{0x78, 0x56, 0x34, 0x12, 0x08}; !bytes.Equal(gotForeign, want) {
+		t.Errorf("v61 EffectSimpleForeign: got %x want %x", gotForeign, want)
+	}
+}
+
+// EffectSkillUse v61 byte-fixture — CUser::OnEffect case 1 (SHOW_SKILL_USE_EFFECT).
+//
+// CUser::OnEffect @0x79148D case 1u (@0x791570) reads: Decode4(skillId) @0x79157a
+// then Decode1(skillLevel) @0x79158e (fed to SKILLENTRY::IsActionAppointed). v61
+// (GMS < 83) reads NO caster-level byte (introduced at v83); effect_skill_use.go
+// gates it via effectSkillUseIncludesCharacterLevel. mode(1)+skillId(4)+skillLevel(1).
+//
+// packet-audit:verify packet=character/clientbound/EffectSkillUse version=gms_v61 ida=0x79148d
+func TestEffectSkillUseByteOutputV61(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 61, 1)
+	got := NewEffectSkillUse(1, 1001004, 0, 5, false, false, false, false, false, false).Encode(nil, ctx)(nil)
+	want := []byte{
+		0x01,                   // mode = 1 (Decode1 selector)
+		0x2c, 0x46, 0x0f, 0x00, // skillId 1001004 (Decode4)   /*0x79157a*/
+		// NO caster-level byte (v61 < 83)
+		0x05, // skillLevel = 5 (Decode1)                       /*0x79158e*/
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("v61 EffectSkillUse wire:\n got %x\nwant %x", got, want)
+	}
+}
+
+// EffectQuest v61 byte-fixture — SHOW_FOREIGN_EFFECT (153) / SHOW_ITEM_GAIN_INCHAT (161).
+//
+// CUser::OnEffect @0x79148D case 3u (@0x791820) reads:
+//
+//	count = Decode1                        /*0x79182c*/
+//	if count == 0:
+//	    message = DecodeStr                /*0x791993*/
+//	    nEffect = Decode4                  /*0x7919ca*/
+//	else (count>0): repeat count times:
+//	    itemId  = Decode4                  /*0x79184f*/
+//	    amount  = Decode4                  /*0x791860*/
+//
+// mode byte (case 3) precedes. Byte-identical to v72.
+//
+// packet-audit:verify packet=character/clientbound/EffectQuest version=gms_v61 ida=0x79148d
+func TestEffectQuestByteOutputV61(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 61, 1)
+
+	t.Run("message", func(t *testing.T) {
+		got := NewEffectQuest(3, "Hello", 0x10, nil).Encode(nil, ctx)(nil)
+		want := []byte{
+			0x03,                                     // mode (OnEffect case 3)
+			0x00,                                     // count = 0 (Decode1)
+			0x05, 0x00, 0x48, 0x65, 0x6c, 0x6c, 0x6f, // "Hello" (DecodeStr)
+			0x10, 0x00, 0x00, 0x00, // nEffect 0x10 (Decode4)
+		}
+		if !bytes.Equal(got, want) {
+			t.Errorf("v61 EffectQuest message:\n got %x\nwant %x", got, want)
+		}
+	})
+
+	t.Run("rewards", func(t *testing.T) {
+		got := NewEffectQuest(3, "", 0, []QuestReward{{ItemId: 2000000, Amount: 5}}).Encode(nil, ctx)(nil)
+		want := []byte{
+			0x03,                   // mode
+			0x01,                   // count = 1 (Decode1)
+			0x80, 0x84, 0x1e, 0x00, // itemId 2000000 (Decode4)
+			0x05, 0x00, 0x00, 0x00, // amount 5 (Decode4)
+		}
+		if !bytes.Equal(got, want) {
+			t.Errorf("v61 EffectQuest rewards:\n got %x\nwant %x", got, want)
+		}
+	})
+}

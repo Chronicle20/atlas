@@ -198,7 +198,7 @@ Tool: `658928fc9bd41408e0a83bb6acf59fb6dff6eda8`
 | UPDATE_CHAR_BOX | CUser::OnMiniRoomBalloon |  | 0x07C | ❌ | 0x096 | ❌ | 0x09A | ❌ | 0x0A5 | ❌ | 0x0A8 | ❌ | 0x0B0 | ❌ | 0x0B8 | ❌ | 0x0A3 | ❌ |
 | SHOW_CONSUME_EFFECT | CUser::SetConsumeItemEffect |  | 0x07D | ❌ | 0x097 | ❌ | 0x09B | ❌ | 0x0A6 | ❌ | 0x0A9 | ❌ | 0x0B1 | ❌ | 0x0B9 | ❌ | 0x0A4 | ❌ |
 | IDA_0X07E | CWvsContext::OnSetPassenserRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x07E | ❌ |  | ⬜ |
-| SHOW_SCROLL_EFFECT | CUser::ShowItemUpgradeEffect | character/clientbound/ItemUpgrade (T1) | 0x07E | ❌ | 0x098 | ✅ | 0x09C | ✅ | 0x0A7 | ✅ | 0x0AA | ✅ | 0x0B2 | ✅ | 0x0BA | ✅ | 0x0A5 | ✅ |
+| SHOW_SCROLL_EFFECT | CUser::ShowItemUpgradeEffect | character/clientbound/ItemUpgrade (T1) | 0x07E | ✅ | 0x098 | ✅ | 0x09C | ✅ | 0x0A7 | ✅ | 0x0AA | ✅ | 0x0B2 | ✅ | 0x0BA | ✅ | 0x0A5 | ✅ |
 | CAKE_PIE_EVENT_RESULT | CWvsContext::OnCakePieEventResult |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x07F | ❌ | 0x081 | ❌ |  | ⬜ |
 | FIELD_OBSTACLE_ONOFF | CField::OnFieldObstacleOnOff | field/clientbound/FieldFieldObstacleOnOff (T1) |  | ⬜ | 0x07F | 🟡 | 0x083 | 🟡 | 0x08B | ✅ | 0x08E | ✅ | 0x093 | ✅ | 0x09B | ✅ | 0x088 | ✅ |
 | SPAWN_PET | CUser::OnPetPacket; CUser::OnPetPacket_Spawn |  | 0x07F | ❌ | 0x099 | ❌ | 0x09D | ❌ | 0x0A8 | ❌ | 0x0AB | ❌ | 0x0B4 | ❌ | 0x0C6 | ❌ | 0x0AD | ❌ |
@@ -243,7 +243,7 @@ Tool: `658928fc9bd41408e0a83bb6acf59fb6dff6eda8`
 | SHOW_CHAIR | CUserRemote::OnSetActivePortableChair | character/clientbound/CharacterChairShow (T1) | 0x097 | ❌ | 0x0B2 | ✅ | 0x0B6 | ✅ | 0x0C4 | ✅ | 0x0C8 | ✅ | 0x0D1 | ✅ | 0x0DE | ✅ | 0x0CA | ✅ |
 | IDA_0X098 | CField::OnStalkResult | field/clientbound/FieldStalkResult (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x098 | ✅ |
 | UPDATE_CHAR_LOOK | CUserRemote::OnAvatarModified | character/clientbound/CharacterAppearanceUpdate (T1) | 0x098 | ✅ | 0x0B3 | ✅ | 0x0B7 | ✅ | 0x0C5 | ✅ | 0x0C9 | ✅ | 0x0D2 | ✅ | 0x0DF | ✅ | 0x0CB | ✅ |
-| SHOW_FOREIGN_EFFECT | CUser::OnEffect | character/clientbound/EffectQuest (T1) | 0x099 | ❌ | 0x0B4 | ✅ | 0x0B8 | ✅ | 0x0C6 | ✅ | 0x0CA | ✅ | 0x0D3 | ✅ | 0x0E0 | ✅ | 0x0CC | ✅ |
+| SHOW_FOREIGN_EFFECT | CUser::OnEffect | character/clientbound/EffectQuest (T1) | 0x099 | ✅ | 0x0B4 | ✅ | 0x0B8 | ✅ | 0x0C6 | ✅ | 0x0CA | ✅ | 0x0D3 | ✅ | 0x0E0 | ✅ | 0x0CC | ✅ |
 | GIVE_FOREIGN_BUFF | CUserRemote::OnSetTemporaryStat | character/clientbound/BuffGiveForeign (T1) | 0x09A | ✅ | 0x0B5 | ✅ | 0x0B9 | ✅ | 0x0C7 | ✅ | 0x0CB | ✅ | 0x0D4 | ✅ | 0x0E1 | ✅ | 0x0CD | ✅ |
 | ARIANT_ARENA_SHOW_RESULT | CField_AriantArena::OnShowResult | field/clientbound/FieldAriantArenaShowResult (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x09B | ✅ | 0x09E | ✅ | 0x0A3 | ✅ | 0x0AB | ✅ | 0x097 | ✅ |
 | CANCEL_FOREIGN_BUFF | CUserRemote::OnResetTemporaryStat | character/clientbound/BuffCancelForeign (T1) | 0x09B | 🟡 | 0x0B6 | 🟡 | 0x0BA | 🟡 | 0x0C8 | ✅ | 0x0CC | ✅ | 0x0D5 | ✅ | 0x0E2 | ✅ | 0x0CE | ✅ |
@@ -255,7 +255,7 @@ Tool: `658928fc9bd41408e0a83bb6acf59fb6dff6eda8`
 | QUICKSLOT_INIT | CQuickslotKeyMappedMan::OnInit |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x09F | ❌ | 0x09F | ❌ | 0x0A7 | ❌ | 0x0AF | ❌ | 0x09B | ❌ |
 | THROW_GRENADE | CUserRemote::OnThrowGrenade |  | 0x09F | ❌ | 0x0BA | ❌ | 0x0BE | ❌ | 0x0CC | ❌ | 0x0D0 | ❌ | 0x0D9 | ❌ | 0x0E6 | ❌ | 0x0D2 | ❌ |
 | CANCEL_CHAIR | CUserLocal::OnSitResult | character/clientbound/CharacterSitResult (T1) | 0x0A0 | ✅ | 0x0BB | ✅ | 0x0BF | ✅ | 0x0CD | ✅ | 0x0D1 | ✅ | 0x0DA | ✅ | 0x0E7 | ✅ | 0x0D3 | ✅ |
-| SHOW_ITEM_GAIN_INCHAT | CUser::OnEffect | character/clientbound/EffectQuest (T1) | 0x0A1 | ❌ | 0x0BC | ✅ | 0x0C0 | ✅ | 0x0CE | ✅ | 0x0D2 | ✅ | 0x0DB | ✅ | 0x0E9 | ✅ | 0x0D5 | ✅ |
+| SHOW_ITEM_GAIN_INCHAT | CUser::OnEffect | character/clientbound/EffectQuest (T1) | 0x0A1 | ✅ | 0x0BC | ✅ | 0x0C0 | ✅ | 0x0CE | ✅ | 0x0D2 | ✅ | 0x0DB | ✅ | 0x0E9 | ✅ | 0x0D5 | ✅ |
 | DOJO_WARP_UP | CUserLocal::OnTeleport |  | 0x0A2 | ❌ | 0x0BD | ❌ | 0x0C1 | ❌ | 0x0CF | ❌ | 0x0D3 | ❌ | 0x0DC | ❌ | 0x0EA | ❌ | 0x0D6 | ❌ |
 | IDA_0X0A4 | CField::OnStalkResult | field/clientbound/FieldStalkResult (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0A4 | ✅ |  | ⬜ |  | ⬜ |
 | LUCKSACK_PASS | CUserLocal::OnMesoGive_Succeeded |  | 0x0A4 | ❌ | 0x0BF | ❌ | 0x0C3 | ❌ | 0x0D0 | ❌ | 0x0D5 | ❌ | 0x0DE | ❌ | 0x0EC | ❌ | 0x0D8 | ❌ |
@@ -938,7 +938,7 @@ Tool: `658928fc9bd41408e0a83bb6acf59fb6dff6eda8`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v61 | 192 | 0 | 61 | 199 | 453 | 0 | 42.5% |
+| v61 | 195 | 0 | 61 | 196 | 453 | 0 | 43.1% |
 | v72 | 216 | 0 | 73 | 202 | 414 | 0 | 44.0% |
 | v79 | 228 | 0 | 72 | 200 | 405 | 0 | 45.6% |
 | v83 | 367 | 0 | 0 | 331 | 207 | 0 | 52.6% |

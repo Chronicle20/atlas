@@ -2195,13 +2195,16 @@
       ]
     },
     "CField::SendSetGuildNoticeMsg": {
-      "address": "",
+      "address": "0x4c63d8",
       "direction": "serverbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "GUILD_OPERATION mode = 0x10 (SET_NOTICE) @0x4c63fe"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "guild notice @0x4c6418"
         }
       ]
     },

@@ -209,3 +209,80 @@ func TestHealOverTimeByteOutputV61(t *testing.T) {
 		t.Errorf("v61 HealOverTime wire:\n got %x\nwant %x", got, want)
 	}
 }
+
+// ChairFixed v61 byte-fixture — CANCEL_CHAIR serverbound, op 39.
+//
+// Client send — CWvsContext::SendGetUpFromChairRequest @0x8374FE:
+//   COutPacket(39)                                                  /*0x837523*/
+//   Encode2(0xFFFF)   // seat index; 0xFFFF (-1) = get-up-from-chair /*0x837534*/
+//
+// Single int16 body == v72 ChairFixed.Encode ([int16 chairId]); the get-up path
+// always sends 0xFFFF. v61 op 39 (v72 CANCEL_CHAIR=41, Δ-2).
+//
+// packet-audit:verify packet=character/serverbound/ChairFixed version=gms_v61 ida=0x8374fe
+func TestChairFixedByteOutputV61(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 61, 1)
+	got := ChairFixed{chairId: -1}.Encode(nil, ctx)(nil)
+	want := []byte{0xff, 0xff} // chairId 0xFFFF (Encode2) /*0x837534*/
+	if !bytes.Equal(got, want) {
+		t.Errorf("v61 ChairFixed wire: got %x want %x", got, want)
+	}
+}
+
+// KeyMapChange v61 byte-fixture — CHANGE_KEYMAP, op 123 (0x7B).
+//
+// Client send — CFuncKeyMappedMan::SaveFuncKeyMap @0x51AC0D:
+//   COutPacket(123)                                                 /*0x51ac27*/
+//   Encode4(0)                             // mode (always 0)        /*0x51ac33*/
+//   Encode4(count)                         // # changed keys         /*0x51ac80*/
+//   per changed key:
+//       Encode4(keyIdx)                    // key index              /*0x51ac94*/
+//       FUNCKEY_MAPPED::Encode             // nType[1]+nID[4]        /*0x51acaa*/
+//
+// mode int32 + count int32 + per-entry [keyId int32 + theType int8 + action int32].
+// No version gate; byte-identical to v72.
+//
+// packet-audit:verify packet=character/serverbound/KeyMapChange version=gms_v61 ida=0x51ac0d
+func TestKeyMapChangeByteOutputV61(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 61, 1)
+	input := KeyMapChange{
+		mode: 0,
+		entries: []KeyMapEntry{
+			{KeyId: 2, TheType: 4, Action: 10},
+			{KeyId: 16, TheType: 4, Action: 8},
+		},
+	}
+	got := input.Encode(nil, ctx)(nil)
+	want := []byte{
+		0x00, 0x00, 0x00, 0x00, // mode = 0 (Encode4)      /*0x51ac33*/
+		0x02, 0x00, 0x00, 0x00, // count = 2 (Encode4)     /*0x51ac80*/
+		0x02, 0x00, 0x00, 0x00, // keyIdx 2 (Encode4)      /*0x51ac94*/
+		0x04,                   // theType 4               /*0x51acaa*/
+		0x0a, 0x00, 0x00, 0x00, // action 10
+		0x10, 0x00, 0x00, 0x00, // keyIdx 16 (Encode4)
+		0x04,                   // theType 4
+		0x08, 0x00, 0x00, 0x00, // action 8
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("v61 KeyMapChange wire:\n got %x\nwant %x", got, want)
+	}
+}
+
+// ExpressionRequest v61 byte-fixture — FACE_EXPRESSION serverbound, op 48.
+//
+// Client send — CWvsContext::SendEmotionChange @0x845E8F:
+//   COutPacket(48)                                                  /*0x845f27*/
+//   Encode4(emotion)   // SecureFuse(avatar emotion); validated <= 0x17 /*0x845f4b*/
+//
+// v61 (GMS < 87) sends NO Encode4(duration) and NO Encode1(byItemOption) — both
+// are GMS>87 additions. expression.go gates them on GMS>87. Body = emote(4).
+//
+// packet-audit:verify packet=character/serverbound/ExpressionRequest version=gms_v61 ida=0x845e8f
+func TestExpressionRequestByteOutputV61(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 61, 1)
+	got := ExpressionRequest{emote: 5}.Encode(nil, ctx)(nil)
+	want := []byte{0x05, 0x00, 0x00, 0x00} // emote 5 (Encode4) /*0x845f4b*/
+	if !bytes.Equal(got, want) {
+		t.Errorf("v61 ExpressionRequest wire: got %x want %x", got, want)
+	}
+}

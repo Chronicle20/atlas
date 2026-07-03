@@ -532,7 +532,7 @@ Tool: `658928fc9bd41408e0a83bb6acf59fb6dff6eda8`
 | PACKET_ERROR | CWvsApp::SendBackupPacket; CWvsApp::SendClearStackLog |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x025 | ❌ | 0x025 | ❌ | 0x025 | ❌ | 0x024 | ❌ |  | ⬜ |
 | MOVE_PLAYER | CMovePath::Flush; CUserLocal::OnKey; CVecCtrlUser::EndUpdateActive; sub_91B6E6 | character/serverbound/Move (T1) | 0x026 | ✅ | 0x028 | ✅ | 0x027 | ✅ | 0x029 | ❌ | 0x029 | ❌ | 0x02B | ❌ | 0x02C | ❌ | 0x020 | ❌ |
 | UNNAMED_R45 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x026 | ❌ | 0x025 | ❌ | 0x01B | ❌ |
-| CANCEL_CHAIR | CUserLocal::HandleXKeyDown; CWvsContext::SendGetUpFromChairRequest | character/serverbound/ChairFixed (T1) | 0x027 | ❌ | 0x029 | ✅ | 0x028 | ✅ | 0x02A | ✅ | 0x02A | ✅ | 0x02C | ✅ | 0x02D | ✅ | 0x021 | ✅ |
+| CANCEL_CHAIR | CUserLocal::HandleXKeyDown; CWvsContext::SendGetUpFromChairRequest | character/serverbound/ChairFixed (T1) | 0x027 | ✅ | 0x029 | ✅ | 0x028 | ✅ | 0x02A | ✅ | 0x02A | ✅ | 0x02C | ✅ | 0x02D | ✅ | 0x021 | ✅ |
 | UNNAMED_R46 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x027 | ❌ | 0x026 | ❌ | 0x01C | ❌ |
 | UNNAMED_R47 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x027 | ❌ |  | ⬜ |
 | UNNAMED_R48 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x028 | ❌ |  | ⬜ |
@@ -544,7 +544,7 @@ Tool: `658928fc9bd41408e0a83bb6acf59fb6dff6eda8`
 | TAKE_DAMAGE | CUserLocal::SetDamaged; CUserLocal::Update |  | 0x02D | ❌ | 0x02F | ❌ | 0x02E | ❌ | 0x030 | ❌ | 0x030 | ❌ | 0x032 | ❌ | 0x034 | ❌ | 0x027 | ❌ |
 | GENERAL_CHAT | CField::SendChatMsg; CField::SendChatMsgSlash; sub_4E7469 | field/serverbound/FieldGeneral (T1) | 0x02E | ✅ | 0x030 | ✅ | 0x02F | ✅ | 0x031 | ✅ | 0x031 | ✅ | 0x034 | ✅ | 0x036 | ✅ | 0x029 | ✅ |
 | CLOSE_CHALKBOARD | CUserLocal::HandleLButtonClk; sub_7A3981 | character/serverbound/ChalkboardClose (T1) | 0x02F | ❌ | 0x031 | ✅ | 0x030 | ✅ | 0x032 | ✅ | 0x032 | ✅ | 0x035 | ✅ | 0x037 | ✅ | 0x02A | ✅ |
-| FACE_EXPRESSION | CUserLocal::Update; CWvsContext::SendEmotionChange | character/serverbound/ExpressionRequest (T1) | 0x030 | 🟡 | 0x032 | 🟡 | 0x031 | ✅ | 0x033 | ❌ | 0x033 | ❌ | 0x036 | ❌ | 0x038 | ❌ | 0x02B | ❌ |
+| FACE_EXPRESSION | CUserLocal::Update; CWvsContext::SendEmotionChange | character/serverbound/ExpressionRequest (T1) | 0x030 | ✅ | 0x032 | 🟡 | 0x031 | ✅ | 0x033 | ❌ | 0x033 | ❌ | 0x036 | ❌ | 0x038 | ❌ | 0x02B | ❌ |
 | MOVING_SHOOT_ATTACK_PREPARE | CUserLocal::TryDoingSmoothingMovingShootAttackPrepare |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x033 | ❌ |  | ⬜ |
 | MOB_BANISH_PLAYER | CUserLocal::SendBanMapByMobRequest | character/serverbound/CharacterMobBanishPlayer (T1) | 0x034 | 🟡 | 0x037 | 🟡 | 0x036 | 🟡 | 0x038 | ✅ | 0x038 | ✅ | 0x03B | ✅ | 0x03D | ✅ | 0x030 | ✅ |
 | USE_ITEMEFFECT | CWvsContext::SendActiveEffectItemChange |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x034 | ❌ | 0x034 | ❌ | 0x037 | ❌ | 0x039 | ❌ | 0x02C | ❌ |
@@ -635,7 +635,7 @@ Tool: `658928fc9bd41408e0a83bb6acf59fb6dff6eda8`
 | REPAIR_DURABILITY_ALL | CRepairDurabilityDlg::SendRepairDurabilityAll |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x079 | ❌ | 0x082 | ❌ | 0x06D | ❌ |
 | USE_DOOR | CField::TryEnterTownPortal; CTownPortalPool::TryEnterTownPortal | field/serverbound/FieldUseDoor (T1) | 0x079 | ✅ | 0x083 | ✅ | 0x082 | ✅ | 0x085 | ✅ | 0x089 | ✅ | 0x08D | ✅ | 0x09C | ✅ | 0x088 | ✅ |
 | REPAIR_DURABILITY | CRepairDurabilityDlg::SendRepairDurability |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x07A | ❌ | 0x083 | ❌ | 0x06E | ❌ |
-| CHANGE_KEYMAP | CFuncKeyMappedMan::ChangePetConsumeItemID; CFuncKeyMappedMan::ChangePetConsumeMPItemID; CFuncKeyMappedMan::SaveFuncKeyMap | character/serverbound/KeyMapChange (T1) | 0x07B | ❌ | 0x085 | ✅ | 0x084 | ✅ | 0x087 | ✅ | 0x08B | ✅ | 0x08F | ✅ | 0x09F | ✅ | 0x08A | ✅ |
+| CHANGE_KEYMAP | CFuncKeyMappedMan::ChangePetConsumeItemID; CFuncKeyMappedMan::ChangePetConsumeMPItemID; CFuncKeyMappedMan::SaveFuncKeyMap | character/serverbound/KeyMapChange (T1) | 0x07B | ✅ | 0x085 | ✅ | 0x084 | ✅ | 0x087 | ✅ | 0x08B | ✅ | 0x08F | ✅ | 0x09F | ✅ | 0x08A | ✅ |
 | USER_QUEST_RECORD_SET_STATE | CDamageMeter::SaveDamageInfo |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x07B | ❌ | 0x084 | ❌ | 0x06F | ❌ |
 | DENY_GUILD_REQUEST | CFadeWnd::SendCloseMessage; CWvsContext::OnGuildResult | messenger/serverbound/MessengerOperationDeclineInvite (T1) |  | ⬜ | 0x07D | ✅ | 0x07C | ✅ | 0x07F | ✅ | 0x083 | ✅ | 0x087 | ✅ | 0x096 | ✅ | 0x082 | ✅ |
 | ADMIN_COMMAND | CField::SendChatMsgSlash; CStage::OnSetField; CUserLocal::OnKey; sub_80C896 | field/serverbound/FieldAdminCommand (T1) | 0x07E | ✅ | 0x07E | ✅ | 0x07D | ✅ | 0x080 | ✅ | 0x084 | ✅ | 0x088 | ✅ | 0x097 | ✅ | 0x083 | ✅ |
@@ -828,7 +828,6 @@ Tool: `658928fc9bd41408e0a83bb6acf59fb6dff6eda8`
 | cash/serverbound/CashShopOperationMoveToCashInventory (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | cash/serverbound/CashShopOperationRebateLockerItem (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | cash/serverbound/CashShopOperationSetWishlist (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
-| character/serverbound/ChairFixed (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | character/serverbound/ChairPortable (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | character/serverbound/ChalkboardClose (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | character/serverbound/ExpressionRequest (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
@@ -938,14 +937,14 @@ Tool: `658928fc9bd41408e0a83bb6acf59fb6dff6eda8`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v61 | 195 | 0 | 61 | 196 | 453 | 0 | 43.1% |
-| v72 | 216 | 0 | 73 | 202 | 414 | 0 | 44.0% |
-| v79 | 228 | 0 | 72 | 200 | 405 | 0 | 45.6% |
-| v83 | 367 | 0 | 0 | 331 | 207 | 0 | 52.6% |
-| v84 | 345 | 0 | 0 | 332 | 228 | 0 | 51.0% |
-| v87 | 379 | 0 | 0 | 356 | 170 | 0 | 51.6% |
-| v95 | 399 | 0 | 0 | 420 | 86 | 0 | 48.7% |
-| JMS185 | 362 | 0 | 0 | 366 | 177 | 0 | 49.7% |
+| v61 | 198 | 0 | 60 | 193 | 453 | 0 | 43.9% |
+| v72 | 216 | 0 | 73 | 201 | 414 | 0 | 44.1% |
+| v79 | 228 | 0 | 72 | 199 | 405 | 0 | 45.7% |
+| v83 | 367 | 0 | 0 | 330 | 207 | 0 | 52.7% |
+| v84 | 345 | 0 | 0 | 331 | 228 | 0 | 51.0% |
+| v87 | 379 | 0 | 0 | 355 | 170 | 0 | 51.6% |
+| v95 | 399 | 0 | 0 | 419 | 86 | 0 | 48.8% |
+| JMS185 | 362 | 0 | 0 | 365 | 177 | 0 | 49.8% |
 
 ## Conflicts
 

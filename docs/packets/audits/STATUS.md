@@ -136,7 +136,7 @@ Tool: `46f121c4a0f649a42249ab39feefdc56c1837263`
 | MONSTER_BOOK_SET_CARD | CWvsContext::OnMonsterBookSetCard | character/clientbound/monsterbook/CharacterSetCard (T1) |  | ⬜ | 0x04F | 🟡 | 0x04F | 🟡 | 0x050 | 🟡 | 0x053 | ✅ | 0x055 | ✅ | 0x055 | ✅ | 0x056 | ✅ | 0x057 | ✅ |
 | IDA_0X050 | sub_AF879C |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x050 | ❌ |
 | MONSTER_BOOK_SET_COVER | CWvsContext::OnMonsterBookSetCover | character/clientbound/monsterbook/CharacterSetCover (T1) |  | ⬜ | 0x050 | 🟡 | 0x050 | 🟡 | 0x051 | 🟡 | 0x054 | ✅ | 0x056 | ✅ | 0x056 | ✅ | 0x057 | ✅ | 0x058 | ✅ |
-| MULTICHAT | CField::OnGroupMessage | field/clientbound/FieldMultiChat (T1) | 0x050 | ❌ | 0x064 | ✅ | 0x07A | ✅ | 0x07E | ✅ | 0x086 | ✅ | 0x089 | ✅ | 0x08E | ✅ | 0x096 | ✅ | 0x084 | ✅ |
+| MULTICHAT | CField::OnGroupMessage | field/clientbound/FieldMultiChat (T1) | 0x050 | ✅ | 0x064 | ✅ | 0x07A | ✅ | 0x07E | ✅ | 0x086 | ✅ | 0x089 | ✅ | 0x08E | ✅ | 0x096 | ✅ | 0x084 | ✅ |
 | HOUR_CHANGED | CWvsContext::OnHourChanged |  |  | ⬜ |  | ⬜ | 0x051 | ❌ | 0x052 | ❌ | 0x055 | ❌ | 0x057 | ❌ | 0x057 | ❌ | 0x058 | ❌ |  | ⬜ |
 | IDA_0X051 | sub_B1135F |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x051 | ❌ |
 | WHISPER | CField::OnWhisper | field/clientbound/FieldWhisperError (T1) | 0x051 | ❌ | 0x065 | ✅ | 0x07B | ✅ | 0x07F | ✅ | 0x087 | ✅ | 0x08A | ✅ | 0x08F | ✅ | 0x097 | ✅ | 0x085 | ✅ |
@@ -1003,7 +1003,7 @@ Tool: `46f121c4a0f649a42249ab39feefdc56c1837263`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v48 | 87 | 0 | 17 | 236 | 629 | 0 | 25.6% |
+| v48 | 88 | 0 | 17 | 235 | 629 | 0 | 25.9% |
 | v61 | 208 | 0 | 60 | 230 | 471 | 0 | 41.8% |
 | v72 | 216 | 0 | 73 | 248 | 432 | 0 | 40.2% |
 | v79 | 228 | 0 | 72 | 246 | 423 | 0 | 41.8% |

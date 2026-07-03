@@ -2901,7 +2901,7 @@
   opcode: 83
   fname: CWvsContext::SendShopScannerItemUseRequest
   provenance: manual
-  note: task-127 — inherited from the v83 IDA finding (0xa0a25e) via the established v84-serverbound≡v83 rule; UNVERIFIED against a v84 IDB (none loaded); provenance is 'manual' (not 'ida-discovered') because no v84-address evidence exists — matches the file's established convention for v83-inherited-but-unverified corrections (see e.g. the FRIEND_RESULT/CASH_PET_FOOD_RESULT rows). See gms_v83.yaml for the primary evidence.
+  note: task-127 — inherited from the v83 IDA finding (0xa0a25e) via the established v84-serverbound≡v83 rule; UNVERIFIED against a v84 IDB (none loaded); provenance is 'manual' (not 'ida-discovered') because no v84-address evidence exists. The BUDDYLIST (CWvsContext::OnFriendResult) / CASH_PET_FOOD_RESULT rows are examples elsewhere in this file of 'manual' provenance used for rows lacking a discrete ida.address — but unlike this row, those were v84-IDB-confirmed (task-085 IDB dispatcher case labels), not carryovers. This row differs — it is a v83-carryover with NO v84 verification (v83 IDA 0xa0a25e; v84 UNVERIFIED, no IDB loaded). See gms_v83.yaml for the primary evidence.
 - op: USE_TELEPORT_ROCK
   direction: serverbound
   opcode: 84

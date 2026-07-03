@@ -34,4 +34,3 @@ func getAll(page model.Page) database.EntityProvider[model.Paged[Entity]] {
 		return database.PagedQuery[Entity](db, page)
 	}
 }
-

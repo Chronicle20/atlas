@@ -881,6 +881,28 @@
   ida:
     address: 5748606
   note: 'send-site 0x71d2f6: COutPacket(42). v61 FACE_EXPRESSION=48 (Delta-6).'
+- op: NPC_TALK
+  direction: serverbound
+  opcode: 46
+  fname: sub_56D1F0
+  fname_alts:
+  - CUserLocal::TalkToNpc
+  - sub_568A2A
+  - sub_69FA53
+  provenance: ida-discovered
+  ida:
+    address: 5689840
+  note: 'BODY-VERIFIED. Field NPC-click path: sub_56D1F0 (called from CField::Update @0x4c6cb3 + the cursor-click handler sub_69FA53) walks the clickable field-object pool this[10] (per-node rects via sub_569770/sub_5697BB, point-in-rect dword_80EC4C) and returns the hit NPC object; the click then sends COutPacket(46)+Encode4(npcObjId=obj[34])+Encode2(userX)+Encode2(userY). The membership/commodity-NPC variant sub_568A2A sends the identical op46+Enc4(obj[34])+Enc2(x)+Enc2(y) after its CS_COMMODITY_EX UtilDlg. EXACT v61 NPC_TALK (CUserLocal::TalkToNpc Enc4(npcOid)+Enc2(userX)+Enc2(userY)) shape. v61 NPC_TALK=54 (Delta-8). REFINES the prior op46 negative: op46 is NPC_TALK, NOT GENERAL_CHAT (real GENERAL_CHAT sender is the CField chat-input parser, still unlocated) and NOT a bare shop confirm.'
+- op: ANTI_MACRO_RESULT
+  direction: serverbound
+  opcode: 83
+  fname: sub_5F9718
+  fname_alts:
+  - CUIAntiMacro::SetRet
+  provenance: ida-discovered
+  ida:
+    address: 6264600
+  note: 'BODY-VERIFIED send-site 0x5f9718: CWnd captcha-dialog OnButtonClicked (a2==1 OK) — writes the anti-macro timer field off_80C8A0[2911]=*(this+36)-timeGetTime() then COutPacket(83)+Encode2(sub_744C27(editText)=atoi(typed answer)). Single Enc2 of the typed captcha answer + same timer-field pattern = v61 ANTI_MACRO_RESULT (op96, sub_69C480 Enc2(atoi(editText)), timer field). v61 ANTI_MACRO_RESULT=96 (Delta-13).'
 - op: USE_CASH_ITEM
   direction: serverbound
   opcode: 62

@@ -1,7 +1,7 @@
 {
   "WriterName": "MonsterMovementRequest",
-  "IDAName": "CMob::GenerateMovePath",
-  "Address": "",
+  "IDAName": "sub_550383",
+  "Address": "0x550383",
   "Variant": "GMS/v48",
   "BranchDepth": 2,
   "AtlasFile": "libs/atlas-packet/monster/serverbound/movement.go",
@@ -10,10 +10,10 @@
       "Index": 0,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 4,
-      "Note": "IDA read-order unresolved: function not found in IDB"
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
     },
     {
       "Index": 1,

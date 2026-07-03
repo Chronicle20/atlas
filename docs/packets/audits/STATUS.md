@@ -5,7 +5,7 @@
 
 Tool: `006194d83f8b20e417578b20da792c4e9d588939`
 
-- export gms_v48: `4b0234c5a6a64c54aba439b91c00e390fcaf17365d4d2a95348d0f0f2961a81f`
+- export gms_v48: `fee138f5e25de4661f99813b7d5dfcb9ade54b1fef7a32cb7e88041d8dac22f4`
 - export gms_v61: `8023cfe3b5868d7a19f2067627f84e8da849588dfe87e86f48eb721225ac717b`
 - export gms_v72: `a0ac2be6578395455f491976bcb11aa27e2e57376b46ee8816b90324bad60c02`
 - export gms_v79: `370d6b720b633c12c71d40340f3952000705c4bddb98f87179e7193d112d210c`
@@ -668,7 +668,7 @@ Tool: `006194d83f8b20e417578b20da792c4e9d588939`
 | DENY_GUILD_REQUEST | CFadeWnd::SendCloseMessage; CWvsContext::OnGuildResult | messenger/serverbound/MessengerOperationDeclineInvite (T1) |  | ⬜ |  | ⬜ | 0x07D | ✅ | 0x07C | ✅ | 0x07F | ✅ | 0x083 | ✅ | 0x087 | ✅ | 0x096 | ✅ | 0x082 | ✅ |
 | ADMIN_COMMAND | CField::SendChatMsgSlash; CStage::OnSetField; CUserLocal::OnKey; sub_80C896 | field/serverbound/FieldAdminCommand (T1) |  | ⬜ | 0x07E | ✅ | 0x07E | ✅ | 0x07D | ✅ | 0x080 | ✅ | 0x084 | ✅ | 0x088 | ✅ | 0x097 | ✅ | 0x083 | ✅ |
 | ADMIN_LOG | CField::SendChatMsgSlash | field/serverbound/FieldAdminChat (T1) |  | ⬜ |  | ⬜ | 0x07F | ✅ | 0x07E | ✅ | 0x081 | ✅ | 0x085 | ✅ | 0x089 | ✅ | 0x098 | ✅ | 0x084 | ✅ |
-| MOVE_LIFE | CMob::GenerateMovePath; sub_550383 | monster/serverbound/MonsterMovementRequest (T1) | 0x081 | ❌ | 0x09B | ✅ | 0x0B2 | ✅ | 0x0B4 | ✅ | 0x0BC | ✅ | 0x0C1 | ✅ | 0x0C8 | ✅ | 0x0E3 | ✅ | 0x0C2 | ✅ |
+| MOVE_LIFE | CMob::GenerateMovePath; sub_550383 | monster/serverbound/MonsterMovementRequest (T1) | 0x081 | ✅ | 0x09B | ✅ | 0x0B2 | ✅ | 0x0B4 | ✅ | 0x0BC | ✅ | 0x0C1 | ✅ | 0x0C8 | ✅ | 0x0E3 | ✅ | 0x0C2 | ✅ |
 | PARTY_RESULT | CFadeWnd::SendCloseMessage; CUIFadeYesNo::OnButtonClicked; CWvsContext::OnPartyResult | messenger/serverbound/MessengerOperationDeclineInvite (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x083 | ✅ | 0x092 | ✅ | 0x07E | ✅ |
 | EXPEDITION_OPERATION | ExpeditionIntermediary::OnPacketExpNoti_Invite; ExpeditionIntermediary::SendExpChangeBossPacket; ExpeditionIntermediary::SendExpChangeMasterPacket; ExpeditionIntermediary::SendExpCreatePacket; ExpeditionIntermediary::SendExpInvitePacket; ExpeditionIntermediary::SendExpKickPacket; ExpeditionIntermediary::SendExpRelocatePartyPacket; ExpeditionIntermediary::SendResponseInvitePacket; ExpeditionIntermediary::SendWithdrawPacket |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x084 | ❌ | 0x093 | ❌ | 0x07F | ❌ |
 | UNNAMED_R221 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x084 | ❌ |  | ⬜ | 0x08C | ❌ | 0x09B | ❌ | 0x087 | ❌ |
@@ -691,7 +691,7 @@ Tool: `006194d83f8b20e417578b20da792c4e9d588939`
 | ALLIANCE_OPERATION | CFadeWnd::SendCloseMessage; CUIFadeYesNo::OnButtonClicked; CWvsContext::OnAllianceResult | messenger/serverbound/MessengerOperationDeclineInvite (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x08F | ✅ | 0x093 | ✅ | 0x097 | ✅ | 0x0A8 | ✅ | 0x092 | ✅ |
 | PET_EXCLUDE_ITEMS | CPet::SendUpdateExceptionListRequest | pet/serverbound/PetExcludeItem (T1) |  | ⬜ | 0x08F | ✅ | 0x0A6 | ✅ | 0x0A8 | ✅ | 0x0AC | ✅ | 0x0B1 | ✅ | 0x0B8 | ✅ | 0x0CC | ✅ | 0x0AF | ✅ |
 | DENY_ALLIANCE_REQUEST | CFadeWnd::SendCloseMessage; CWvsContext::OnAllianceResult |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x090 | ❌ | 0x094 | ❌ | 0x098 | ❌ |  | ⬜ |  | ⬜ |
-| DAMAGE_REACTOR | CReactorPool::FindHitReactor; CReactorPool::FindSkillReactor | reactor/serverbound/ReactorHitRequest (T1) | 0x091 | ❌ | 0x0AC | ❌ | 0x0C3 | ❌ | 0x0C5 | 🟡 | 0x0CD | ✅ | 0x0D3 | ✅ | 0x0DA | ✅ | 0x0F9 | ✅ | 0x0D8 | ✅ |
+| DAMAGE_REACTOR | CReactorPool::FindHitReactor; CReactorPool::FindSkillReactor | reactor/serverbound/ReactorHitRequest (T1) | 0x091 | ✅ | 0x0AC | ❌ | 0x0C3 | ❌ | 0x0C5 | 🟡 | 0x0CD | ✅ | 0x0D3 | ✅ | 0x0DA | ✅ | 0x0F9 | ✅ | 0x0D8 | ✅ |
 | OPEN_FAMILY_PEDIGREE | CWvsContext::SendFamilyChartRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x091 | ❌ | 0x095 | ❌ | 0x099 | ❌ | 0x0A9 | ❌ | 0x093 | ❌ |
 | OPEN_FAMILY | CWvsContext::SendFamilyInfoRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x092 | ❌ | 0x096 | ❌ | 0x09A | ❌ | 0x0AA | ❌ | 0x094 | ❌ |
 | ADD_FAMILY | CWvsContext::SendRegisterJunior |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x093 | ❌ | 0x097 | ❌ | 0x09B | ❌ | 0x0AB | ❌ | 0x095 | ❌ |
@@ -953,7 +953,6 @@ Tool: `006194d83f8b20e417578b20da792c4e9d588939`
 | messenger/serverbound/MessengerOperationChat (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
 | messenger/serverbound/MessengerOperationInvite (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
 | monster/carnival/serverbound/MonsterCarnival (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| monster/serverbound/MonsterMovementRequest (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | note/serverbound/NoteOperation (T1) |  |  | ❌ |  | ❌ |  | 🟡 |  | 🟡 |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | note/serverbound/NoteOperationDiscard (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |
 | note/serverbound/NoteOperationSend (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
@@ -1008,15 +1007,15 @@ Tool: `006194d83f8b20e417578b20da792c4e9d588939`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v48 | 12 | 0 | 22 | 311 | 629 | 0 | 3.5% |
-| v61 | 208 | 0 | 60 | 235 | 471 | 0 | 41.4% |
-| v72 | 216 | 0 | 73 | 253 | 432 | 0 | 39.9% |
-| v79 | 228 | 0 | 72 | 251 | 423 | 0 | 41.4% |
-| v83 | 367 | 0 | 0 | 382 | 225 | 0 | 49.0% |
-| v84 | 345 | 0 | 0 | 383 | 246 | 0 | 47.4% |
-| v87 | 379 | 0 | 0 | 407 | 188 | 0 | 48.2% |
-| v95 | 399 | 0 | 0 | 471 | 104 | 0 | 45.9% |
-| JMS185 | 362 | 0 | 0 | 417 | 195 | 0 | 46.5% |
+| v48 | 14 | 0 | 22 | 308 | 629 | 0 | 4.1% |
+| v61 | 208 | 0 | 60 | 234 | 471 | 0 | 41.4% |
+| v72 | 216 | 0 | 73 | 252 | 432 | 0 | 39.9% |
+| v79 | 228 | 0 | 72 | 250 | 423 | 0 | 41.5% |
+| v83 | 367 | 0 | 0 | 381 | 225 | 0 | 49.1% |
+| v84 | 345 | 0 | 0 | 382 | 246 | 0 | 47.5% |
+| v87 | 379 | 0 | 0 | 406 | 188 | 0 | 48.3% |
+| v95 | 399 | 0 | 0 | 470 | 104 | 0 | 45.9% |
+| JMS185 | 362 | 0 | 0 | 416 | 195 | 0 | 46.5% |
 
 ## Conflicts
 

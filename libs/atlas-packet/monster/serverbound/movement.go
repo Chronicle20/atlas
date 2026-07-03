@@ -74,7 +74,9 @@ func (m MovementRequest) Encode(l logrus.FieldLogger, ctx context.Context) func(
 		}
 
 		w.WriteByte(m.moveFlags)
-		w.WriteInt(m.hackedCode)
+		if (t.IsRegion("GMS") && t.MajorAtLeast(61)) || t.Region() == "JMS" { // hackedCode added between v48 and v61: v48 sub_550383 @0x5508f2 goes moveFlags->CMovePath::Flush with NO hackedCode Encode4; v61 CMob::GenerateMovePath @0x5cada5 inserts it. Legacy (<61) omits.
+			w.WriteInt(m.hackedCode)
+		}
 		if (t.IsRegion("GMS") && t.MajorAtLeast(79)) || t.Region() == "JMS" { // flyCtxTargetX/Y added at v79; legacy GMS (v72 sub_61AA54 @0x61af58 goes hackedCode->Flush with no flyCtx) omits them
 			w.WriteInt(m.flyCtxTargetX)
 			w.WriteInt(m.flyCtxTargetY)
@@ -111,7 +113,9 @@ func (m *MovementRequest) Decode(l logrus.FieldLogger, ctx context.Context) func
 		}
 
 		m.moveFlags = r.ReadByte()
-		m.hackedCode = r.ReadUint32()
+		if (t.IsRegion("GMS") && t.MajorAtLeast(61)) || t.Region() == "JMS" { // mirror of Encode: hackedCode added between v48 and v61
+			m.hackedCode = r.ReadUint32()
+		}
 		if (t.IsRegion("GMS") && t.MajorAtLeast(79)) || t.Region() == "JMS" { // mirror of Encode: flyCtxTargetX/Y added at v79
 			m.flyCtxTargetX = r.ReadUint32()
 			m.flyCtxTargetY = r.ReadUint32()

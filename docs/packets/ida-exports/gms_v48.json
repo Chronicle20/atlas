@@ -4333,17 +4333,6 @@
       "direction": "",
       "calls": null
     },
-    "CMob::GenerateMovePath": {
-      "address": "",
-      "direction": "serverbound",
-      "unresolved": true,
-      "calls": [
-        {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
-        }
-      ]
-    },
     "CMob::Init": {
       "address": "",
       "direction": "",

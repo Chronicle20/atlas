@@ -1016,6 +1016,15 @@ func candidatesFromFName(fname string) []candidate {
 	case "CMob::GenerateMovePath":
 		// CSV: MOVE_LIFE — atlas MovementRequest (handle = "MonsterMovementHandle").
 		return []candidate{{name: "MovementRequest", pkg: "monster", dir: csvpkg.DirServerbound}}
+	case "sub_550383":
+		// MOVE_LIFE (serverbound) in gms_v48: the CMob move/action send-site is
+		// UNNAMED in the IDB — sub_550383 @0x550383, structurally the
+		// CMob::GenerateMovePath twin (COutPacket(129) + Encode4(mobId) + Encode2
+		// (moveSN) + Encode1(flags) + Encode1(action) + Encode4(skillData) +
+		// Encode1(moveFlags) + CMovePath::Flush; NO hackedCode, pre-61). The v48
+		// registry primary fname is sub_550383, so it keys to the same monster
+		// MovementRequest codec as the named twin above.
+		return []candidate{{name: "MovementRequest", pkg: "monster", dir: csvpkg.DirServerbound}}
 	case "CMob::SendDropPickUpRequest":
 		// task-092 Cluster-D: MOB_DROP_PICKUP_REQUEST — atlas MobDropPickupRequest
 		// (handle = "MobDropPickupRequest"). Two Encode4 (mobCrc, dropId).

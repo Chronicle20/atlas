@@ -1,0 +1,10 @@
+packet: login/clientbound/AuthSuccess
+direction: clientbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: sub_500931
+    address: "0x500931"
+    decompile_sha256: 937151a9e1b15df16ca277bcf7b6843168675542b0c2432fb48ac2ebd961d44b
+verifies:
+    - libs/atlas-packet/login/clientbound/v48_test.go#TestAuthSuccessV48Body

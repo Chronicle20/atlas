@@ -2013,3 +2013,24 @@ a saga command that accompanies one), so none of the failure-path pitfalls
   calls inside one outer `ExecuteTransaction` closure is behaviorally
   identical to the pre-migration separate-transaction sequence (since
   `ExecuteTransaction` just invokes its callback directly today).
+
+## atlas-gachapons
+
+**Migrated:** None.
+**Left direct:** None.
+**Notes:** Zero Kafka producer usage; no tx-coupled emit sites; no code change. Re-verified 2026-07-03: `grep -rn "producer\.|message.Emit|EmitWithResult" services/atlas-gachapons/atlas.com/gachapons` (excluding tests/consumers) returns no producer/emit sites. No drainer, no outbox migration registration.
+
+## atlas-drop-information
+
+**Migrated:** None.
+**Left direct:** None.
+**Notes:** Zero Kafka producer usage; no tx-coupled emit sites; no code change. Re-verified 2026-07-03: `grep -rn "producer\.|message.Emit|EmitWithResult" services/atlas-drop-information/atlas.com/dis` (excluding tests) returns no producer/emit sites. Module short name is `dis`. No drainer, no outbox migration registration.
+
+## atlas-data
+
+**Migrated:** None.
+**Left direct:**
+- `data/processor.go:85` (`InstructWorker`) — pure `START_WORKER` command dispatch to `EnvCommandTopic`; no DB write, not inside any `ExecuteTransaction`. Command emit → left direct.
+- `data/processor.go:287` (`emitDataUpdated`, called from `:195`) — `DATA_UPDATED` event on `EnvEventTopic` fired once AFTER a whole worker run completes across many independent transactions; TTL-guarded; no single transaction could make it atomic. Aggregate/post-worker emit → left direct.
+
+**Notes:** Zero tx-coupled emit sites; no code change (no drainer, no outbox migration registration). design §7 anticipated `EnqueueBuffer` use here, but the authoritative FR-3.1 sweep (and this re-verification, 2026-07-03) found no qualifying tx-coupled site — both producer calls are non-transactional. Exactly the 2 `producer.ProviderImpl` sites expected; nothing else.

@@ -1,7 +1,7 @@
 {
   "WriterName": "StatusMessageSystemMessage",
   "IDAName": "CWvsContext::OnMessage#SystemMessage",
-  "Address": "",
+  "Address": "0x84413d",
   "Variant": "GMS/v61",
   "BranchDepth": 0,
   "AtlasFile": "libs/atlas-packet/character/clientbound/status_message.go",
@@ -10,10 +10,10 @@
       "Index": 0,
       "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 4,
-      "Note": "IDA read-order unresolved: function not found in IDB"
+      "IDAOp": 4,
+      "IDAComment": "message @0x919dc8",
+      "Verdict": 2,
+      "Note": "width mismatch"
     },
     {
       "Index": 1,

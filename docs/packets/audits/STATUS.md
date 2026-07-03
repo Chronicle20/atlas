@@ -5,7 +5,7 @@
 
 Tool: `658928fc9bd41408e0a83bb6acf59fb6dff6eda8`
 
-- export gms_v61: `4fa12ffe0b86ca0254b6bc0afc299c689fb3dccabbe40614d0fa49f47e4461e7`
+- export gms_v61: `8023cfe3b5868d7a19f2067627f84e8da849588dfe87e86f48eb721225ac717b`
 - export gms_v72: `a0ac2be6578395455f491976bcb11aa27e2e57376b46ee8816b90324bad60c02`
 - export gms_v79: `370d6b720b633c12c71d40340f3952000705c4bddb98f87179e7193d112d210c`
 - export gms_v83: `711bddcc2e1bdd417a75954148d2b50c64e70855e84259c0b8e50e700e393c0d`
@@ -63,7 +63,7 @@ Tool: `658928fc9bd41408e0a83bb6acf59fb6dff6eda8`
 | UPDATE_SKILLS | CWvsContext::OnChangeSkillRecordResult | character/clientbound/CharacterSkillChange (T1) | 0x021 | ✅ | 0x021 | ✅ | 0x021 | ✅ | 0x024 | ✅ | 0x024 | ✅ | 0x024 | ✅ | 0x023 | ✅ | 0x022 | ✅ |
 | SKILL_USE_RESULT | CWvsContext::OnSkillUseResult |  | 0x022 | ❌ | 0x022 | ❌ | 0x022 | ❌ | 0x025 | ❌ | 0x025 | ❌ | 0x025 | ❌ | 0x024 | ❌ | 0x023 | ❌ |
 | FAME_RESPONSE | CWvsContext::OnGivePopularityResult | fame/clientbound/ErrorResponse | 0x023 | ❌ | 0x023 | ❌ | 0x023 | ❌ | 0x026 | ✅ | 0x026 | ✅ | 0x026 | ✅ | 0x025 | ✅ | 0x024 | ✅ |
-| SHOW_STATUS_INFO | CWvsContext::OnMessage | character/clientbound/StatusMessageCashItemExpire (T1) | 0x024 | ❌ | 0x024 | ✅ | 0x024 | ✅ | 0x027 | ✅ | 0x027 | ✅ | 0x027 | ✅ | 0x026 | ✅ | 0x025 | ✅ |
+| SHOW_STATUS_INFO | CWvsContext::OnMessage | character/clientbound/StatusMessageCashItemExpire (T1) | 0x024 | ✅ | 0x024 | ✅ | 0x024 | ✅ | 0x027 | ✅ | 0x027 | ✅ | 0x027 | ✅ | 0x026 | ✅ | 0x025 | ✅ |
 | OPEN_FULL_CLIENT_DOWNLOAD_LINK | CWvsContext::OnOpenFullClientDownloadLink |  | 0x025 | ❌ | 0x025 | ❌ | 0x025 | ❌ | 0x028 | ❌ | 0x028 | ❌ | 0x028 | ❌ | 0x027 | ❌ |  | ⬜ |
 | MEMO_RESULT | CWvsContext::OnMemoResult | note/clientbound/NoteDisplay (T1) | 0x026 | ✅ | 0x026 | ✅ | 0x026 | ✅ | 0x029 | ✅ | 0x029 | ❌ | 0x029 | ✅ | 0x028 | ✅ | 0x026 | ❌ |
 | MAP_TRANSFER_RESULT | CWvsContext::OnMapTransferResult |  | 0x027 | ❌ | 0x027 | ❌ | 0x027 | ❌ | 0x02A | ❌ | 0x02A | ❌ | 0x02A | ❌ | 0x029 | ❌ | 0x027 | ❌ |
@@ -935,7 +935,7 @@ Tool: `658928fc9bd41408e0a83bb6acf59fb6dff6eda8`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v61 | 207 | 0 | 60 | 182 | 453 | 0 | 46.1% |
+| v61 | 208 | 0 | 60 | 181 | 453 | 0 | 46.3% |
 | v72 | 216 | 0 | 73 | 199 | 414 | 0 | 44.3% |
 | v79 | 228 | 0 | 72 | 197 | 405 | 0 | 45.9% |
 | v83 | 367 | 0 | 0 | 328 | 207 | 0 | 52.8% |

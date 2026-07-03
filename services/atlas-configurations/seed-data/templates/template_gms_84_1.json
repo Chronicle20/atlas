@@ -3003,6 +3003,19 @@
       {
         "opCode": "0xB7",
         "writer": "SummonSkill"
+      },
+      {
+        "opCode": "0x170",
+        "writer": "VegaScroll",
+        "options": {
+          "operations": {
+            "START_SUCCESS": 64,
+            "START_FAILURE": 69,
+            "RESULT_SUCCESS": 65,
+            "RESULT_FAILURE": 67,
+            "INVALID": 66
+          }
+        }
       }
     ]
   },

@@ -31,6 +31,23 @@ func vegaOpsV83() map[string]interface{} {
 	}
 }
 
+// vegaOpsV84 — IDA v84 CUIVega::OnVegaResult sub_858D7E 0x858d7e (start∈{0x40,0x45},
+// result∈{0x41,0x43}); CUIVega::OnPacket sub_858D68 case 368 (0x170); Draw
+// sub_857734 (this[34]==0x40→sub_858F20 type1 SUCCESS, 0x45→type2 FAIL). v84
+// is byte-identical to v83 here (task-130 Task 4b, verified vs the now-live
+// GMS_v84.1_U_DEVM IDB — the modes match v83 but the OPCODE is 0x170, not v83's 0x166).
+func vegaOpsV84() map[string]interface{} {
+	return map[string]interface{}{
+		"operations": map[string]interface{}{
+			"START_SUCCESS":  float64(0x40),
+			"START_FAILURE":  float64(0x45),
+			"RESULT_SUCCESS": float64(0x41),
+			"RESULT_FAILURE": float64(0x43),
+			"INVALID":        float64(0x42),
+		},
+	}
+}
+
 // vegaOpsV87 — IDA v87 CUIVega::OnVegaResult 0x8919b6 (start∈{0x42,0x47},
 // result∈{0x43,0x45}); Draw sub_890325 + popup sub_891B4E (type1=success).
 func vegaOpsV87() map[string]interface{} {
@@ -92,6 +109,7 @@ type vegaVariant struct {
 func vegaVariants() []vegaVariant {
 	return []vegaVariant{
 		{"gms_v83", "GMS", 83, 1, vegaOpsV83, 0x40, 0x45, 0x41, 0x43, 0x42},
+		{"gms_v84", "GMS", 84, 1, vegaOpsV84, 0x40, 0x45, 0x41, 0x43, 0x42},
 		{"gms_v87", "GMS", 87, 1, vegaOpsV87, 0x42, 0x47, 0x43, 0x45, 0x44},
 		{"gms_v95", "GMS", 95, 1, vegaOpsV95, 0x44, 0x49, 0x45, 0x47, 0x42},
 		{"jms_v185", "JMS", 185, 1, vegaOpsJMS, 0x3B, 0x40, 0x3C, 0x3E, 0x3D},
@@ -104,6 +122,7 @@ func vegaVariants() []vegaVariant {
 // is one Decode1 on the client — CUIVega::OnVegaResult).
 //
 // packet-audit:verify packet=cash/clientbound/CashVegaScroll version=gms_v83 ida=0x82d8d5
+// packet-audit:verify packet=cash/clientbound/CashVegaScroll version=gms_v84 ida=0x858d7e
 // packet-audit:verify packet=cash/clientbound/CashVegaScroll version=gms_v87 ida=0x8919b6
 // packet-audit:verify packet=cash/clientbound/CashVegaScroll version=gms_v95 ida=0x7bf7b0
 // packet-audit:verify packet=cash/clientbound/CashVegaScroll version=jms_v185 ida=0x8b89ad

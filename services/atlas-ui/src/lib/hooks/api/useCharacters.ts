@@ -9,8 +9,9 @@
  * - Tenant-aware operations
  */
 
-import { useMutation, useQuery, useQueryClient, type UseMutationResult, type UseQueryResult } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient, keepPreviousData, type UseMutationResult, type UseQueryResult } from '@tanstack/react-query';
 import { charactersService } from '@/services/api/characters.service';
+import type { PagedResult } from '@/services/api/pagination';
 import type { Character, UpdateCharacterData } from '@/types/models/character';
 import type { Tenant } from '@/types/models/tenant';
 import type { ServiceOptions } from '@/lib/api/query-params';
@@ -20,6 +21,8 @@ export const characterKeys = {
   all: ['characters'] as const,
   lists: () => [...characterKeys.all, 'list'] as const,
   list: (tenant: Tenant, options?: ServiceOptions) => [...characterKeys.lists(), tenant?.id, options] as const,
+  pagedList: (tenant: Tenant | null, page: number, size: number) =>
+    [...characterKeys.all, tenant?.id ?? 'no-tenant', page, size] as const,
   details: () => [...characterKeys.all, 'detail'] as const,
   detail: (tenant: Tenant, characterId: string) => [...characterKeys.details(), tenant?.id, characterId] as const,
 };
@@ -37,6 +40,25 @@ export function useCharacters(tenant: Tenant, options?: ServiceOptions): UseQuer
     queryFn: () => charactersService.getAll({ ...options, useCache: false }),
     enabled: !!tenant?.id,
     gcTime: 5 * 60 * 1000, // 5 minutes
+  });
+}
+
+/**
+ * Hook to fetch a single page of characters for a tenant (task-117). Backs
+ * the Characters list view, which pages server-side; keeps the previous
+ * page's data on screen while the next page loads.
+ */
+export function useCharactersPage(
+  tenant: Tenant | null,
+  page: { number: number; size: number },
+  options?: ServiceOptions
+): UseQueryResult<PagedResult<Character>, Error> {
+  return useQuery({
+    queryKey: characterKeys.pagedList(tenant, page.number, page.size),
+    queryFn: () => charactersService.getPage(page, { ...options, useCache: false }),
+    enabled: !!tenant?.id,
+    placeholderData: keepPreviousData,
+    gcTime: 5 * 60 * 1000,
   });
 }
 

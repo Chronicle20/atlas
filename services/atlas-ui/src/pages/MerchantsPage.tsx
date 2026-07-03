@@ -1,8 +1,9 @@
 import { useTenant } from "@/context/tenant-context";
 import { Suspense, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { merchantsService } from "@/services/api/merchants.service";
 import { itemsService } from "@/services/api/items.service";
+import type { PagedResult } from "@/services/api/pagination";
 import type { MerchantShop, ListingSearchResult } from "@/types/models/merchant";
 import type { TenantConfig } from "@/services/api/tenants.service";
 import { useTenantConfiguration } from "@/lib/hooks/api/useTenants";
@@ -54,6 +55,8 @@ async function fetchMatchingItemIds(query: string): Promise<string[]> {
   return ids.slice(0, MERCHANTS_ITEM_MATCH_CEILING);
 }
 
+const SHOPS_PAGE_SIZE = 50;
+
 export function MerchantsPage() {
   return (
     <Suspense>
@@ -85,11 +88,13 @@ function MerchantsPageContent() {
   const initialTab = searchParams.get("tab") ?? "shops";
   const urlQuery = searchParams.get("q") ?? "";
   const [searchInput, setSearchInput] = useState(urlQuery);
+  const [shopsPageNumber, setShopsPageNumber] = useState(1);
 
-  const shopsQuery = useQuery<MerchantShop[], Error>({
-    queryKey: ["merchants", "shops", activeTenant?.id ?? "no-tenant"],
-    queryFn: () => merchantsService.getAllShops(),
+  const shopsQuery = useQuery<PagedResult<MerchantShop>, Error>({
+    queryKey: ["merchants", "shops", activeTenant?.id ?? "no-tenant", shopsPageNumber, SHOPS_PAGE_SIZE],
+    queryFn: () => merchantsService.getShopsPage({ number: shopsPageNumber, size: SHOPS_PAGE_SIZE }),
     enabled: !!activeTenant,
+    placeholderData: keepPreviousData,
   });
 
   const { isRefreshing, onRefresh } = useGridRefresh([shopsQuery]);
@@ -102,7 +107,8 @@ function MerchantsPageContent() {
     enabled: !!activeTenant && urlQuery.length > 0,
   });
 
-  const shops = shopsQuery.data ?? [];
+  const shops = shopsQuery.data?.data ?? [];
+  const shopsMeta = shopsQuery.data?.meta ?? null;
   const loading = shopsQuery.isLoading;
   const error = shopsQuery.error?.message ?? null;
   const tenantConfig: TenantConfig | null = tenantConfigQuery.data ?? null;
@@ -170,6 +176,15 @@ function MerchantsPageContent() {
             initialVisibilityState={hiddenColumns}
             emptyState={{ title: "No merchant shops found", description: "There are no active merchant shops for this tenant." }}
           />
+          {shopsMeta && shops.length > 0 && (
+            <Pager
+              page={shopsMeta.page.number}
+              lastPage={shopsMeta.page.last}
+              total={shopsMeta.total}
+              pageSize={shopsMeta.page.size}
+              onPageChange={setShopsPageNumber}
+            />
+          )}
         </TabsContent>
 
         <TabsContent value="search" className="flex-1 min-h-0 flex flex-col space-y-4">

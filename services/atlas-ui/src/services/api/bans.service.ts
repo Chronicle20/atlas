@@ -1,5 +1,6 @@
 import { api } from "@/lib/api/client";
 import { type ServiceOptions, type QueryOptions, type ValidationError } from "@/lib/api/query-params";
+import { fetchAll, fetchPaged, type PagedResult } from "@/services/api/pagination";
 import type { Ban, BanAttributes, CreateBanRequest, CheckBanResult, BanType } from "@/types/models/ban";
 
 const BASE_PATH = "/api/bans";
@@ -50,14 +51,31 @@ function validateCreateBan(data: CreateBanRequest): ValidationError[] {
   return errors;
 }
 
+function banListUrl(options?: BanQueryOptions): string {
+  return options?.type !== undefined ? `${BASE_PATH}?type=${options.type}` : BASE_PATH;
+}
+
 export const bansService = {
+  /**
+   * Get every ban (matching `options`), draining all pages (task-117). Used
+   * by consumers that genuinely need the whole collection (e.g. looking up
+   * the active ban for one account by type).
+   */
   async getAllBans(options?: BanQueryOptions): Promise<Ban[]> {
-    let url = BASE_PATH;
-    if (options?.type !== undefined) {
-      url += `?type=${options.type}`;
-    }
-    const bans = await api.getList<Ban>(url, options);
+    const bans = await fetchAll<Ban>(banListUrl(options), undefined, options);
     return sortBans(bans.map(transformBan));
+  },
+
+  /**
+   * Get a single page of bans (matching `options`). Used by the Bans list
+   * view (task-117), which pages server-side.
+   */
+  async getBansPage(
+    page: { number: number; size: number },
+    options?: BanQueryOptions,
+  ): Promise<PagedResult<Ban>> {
+    const result = await fetchPaged<Ban>(banListUrl(options), page, options);
+    return { data: sortBans(result.data.map(transformBan)), meta: result.meta };
   },
 
   async getBanById(id: string, options?: ServiceOptions): Promise<Ban> {

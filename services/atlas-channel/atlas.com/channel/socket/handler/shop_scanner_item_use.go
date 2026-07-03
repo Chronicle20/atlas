@@ -27,7 +27,7 @@ func ShopScannerItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, wp 
 		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
 
 		itemId := item.Id(p.ItemId())
-		if uint32(itemId)/10000 != 231 {
+		if item.GetClassification(itemId) != item.ClassificationConsumableStoreSearch {
 			l.Warnf("Character [%d] attempted shop scanner item use with non-scanner item [%d].", s.CharacterId(), itemId)
 			return
 		}

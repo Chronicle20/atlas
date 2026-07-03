@@ -38,9 +38,10 @@ type ProcessorMock struct {
 	AllInstanceRoutesProviderFunc  func(tenantID uuid.UUID) model.Provider[[]map[string]interface{}]
 
 	// Seed operations
-	SeedRoutesFunc         func(tenantID uuid.UUID) (configuration.SeedResult, error)
-	SeedInstanceRoutesFunc func(tenantID uuid.UUID) (configuration.SeedResult, error)
-	SeedVesselsFunc        func(tenantID uuid.UUID) (configuration.SeedResult, error)
+	SeedRoutesFunc           func(tenantID uuid.UUID) (configuration.SeedResult, error)
+	SeedInstanceRoutesFunc   func(tenantID uuid.UUID) (configuration.SeedResult, error)
+	SeedVesselsFunc          func(tenantID uuid.UUID) (configuration.SeedResult, error)
+	SeedIncubatorRewardsFunc func(tenantID uuid.UUID) (configuration.SeedResult, error)
 
 	// Vessel operations
 	CreateVesselFunc        func(mb *message.Buffer) func(tenantID uuid.UUID) func(vessel map[string]interface{}) (configuration.Model, error)
@@ -53,6 +54,18 @@ type ProcessorMock struct {
 	GetAllVesselsFunc       func(tenantID uuid.UUID) ([]map[string]interface{}, error)
 	VesselByIdProviderFunc  func(tenantID uuid.UUID, vesselID string) model.Provider[map[string]interface{}]
 	AllVesselsProviderFunc  func(tenantID uuid.UUID) model.Provider[[]map[string]interface{}]
+
+	// Incubator reward operations
+	CreateIncubatorRewardFunc        func(mb *message.Buffer) func(tenantID uuid.UUID) func(reward map[string]interface{}) (configuration.Model, error)
+	CreateIncubatorRewardAndEmitFunc func(tenantID uuid.UUID, reward map[string]interface{}) (configuration.Model, error)
+	UpdateIncubatorRewardFunc        func(mb *message.Buffer) func(tenantID uuid.UUID) func(incubatorRewardID string) func(reward map[string]interface{}) (configuration.Model, error)
+	UpdateIncubatorRewardAndEmitFunc func(tenantID uuid.UUID, incubatorRewardID string, reward map[string]interface{}) (configuration.Model, error)
+	DeleteIncubatorRewardFunc        func(mb *message.Buffer) func(tenantID uuid.UUID) func(incubatorRewardID string) error
+	DeleteIncubatorRewardAndEmitFunc func(tenantID uuid.UUID, incubatorRewardID string) error
+	GetIncubatorRewardByIdFunc       func(tenantID uuid.UUID, incubatorRewardID string) (map[string]interface{}, error)
+	GetAllIncubatorRewardsFunc       func(tenantID uuid.UUID) ([]map[string]interface{}, error)
+	IncubatorRewardByIdProviderFunc  func(tenantID uuid.UUID, incubatorRewardID string) model.Provider[map[string]interface{}]
+	AllIncubatorRewardsProviderFunc  func(tenantID uuid.UUID) model.Provider[[]map[string]interface{}]
 }
 
 // CreateRoute is a mock implementation
@@ -371,4 +384,110 @@ func (m *ProcessorMock) SeedVessels(tenantID uuid.UUID) (configuration.SeedResul
 		return m.SeedVesselsFunc(tenantID)
 	}
 	return configuration.SeedResult{}, nil
+}
+
+// SeedIncubatorRewards is a mock implementation
+func (m *ProcessorMock) SeedIncubatorRewards(tenantID uuid.UUID) (configuration.SeedResult, error) {
+	if m.SeedIncubatorRewardsFunc != nil {
+		return m.SeedIncubatorRewardsFunc(tenantID)
+	}
+	return configuration.SeedResult{}, nil
+}
+
+// CreateIncubatorReward is a mock implementation
+func (m *ProcessorMock) CreateIncubatorReward(mb *message.Buffer) func(tenantID uuid.UUID) func(reward map[string]interface{}) (configuration.Model, error) {
+	if m.CreateIncubatorRewardFunc != nil {
+		return m.CreateIncubatorRewardFunc(mb)
+	}
+	return func(tenantID uuid.UUID) func(reward map[string]interface{}) (configuration.Model, error) {
+		return func(reward map[string]interface{}) (configuration.Model, error) {
+			return configuration.Model{}, nil
+		}
+	}
+}
+
+// CreateIncubatorRewardAndEmit is a mock implementation
+func (m *ProcessorMock) CreateIncubatorRewardAndEmit(tenantID uuid.UUID, reward map[string]interface{}) (configuration.Model, error) {
+	if m.CreateIncubatorRewardAndEmitFunc != nil {
+		return m.CreateIncubatorRewardAndEmitFunc(tenantID, reward)
+	}
+	return configuration.Model{}, nil
+}
+
+// UpdateIncubatorReward is a mock implementation
+func (m *ProcessorMock) UpdateIncubatorReward(mb *message.Buffer) func(tenantID uuid.UUID) func(incubatorRewardID string) func(reward map[string]interface{}) (configuration.Model, error) {
+	if m.UpdateIncubatorRewardFunc != nil {
+		return m.UpdateIncubatorRewardFunc(mb)
+	}
+	return func(tenantID uuid.UUID) func(incubatorRewardID string) func(reward map[string]interface{}) (configuration.Model, error) {
+		return func(incubatorRewardID string) func(reward map[string]interface{}) (configuration.Model, error) {
+			return func(reward map[string]interface{}) (configuration.Model, error) {
+				return configuration.Model{}, nil
+			}
+		}
+	}
+}
+
+// UpdateIncubatorRewardAndEmit is a mock implementation
+func (m *ProcessorMock) UpdateIncubatorRewardAndEmit(tenantID uuid.UUID, incubatorRewardID string, reward map[string]interface{}) (configuration.Model, error) {
+	if m.UpdateIncubatorRewardAndEmitFunc != nil {
+		return m.UpdateIncubatorRewardAndEmitFunc(tenantID, incubatorRewardID, reward)
+	}
+	return configuration.Model{}, nil
+}
+
+// DeleteIncubatorReward is a mock implementation
+func (m *ProcessorMock) DeleteIncubatorReward(mb *message.Buffer) func(tenantID uuid.UUID) func(incubatorRewardID string) error {
+	if m.DeleteIncubatorRewardFunc != nil {
+		return m.DeleteIncubatorRewardFunc(mb)
+	}
+	return func(tenantID uuid.UUID) func(incubatorRewardID string) error {
+		return func(incubatorRewardID string) error {
+			return nil
+		}
+	}
+}
+
+// DeleteIncubatorRewardAndEmit is a mock implementation
+func (m *ProcessorMock) DeleteIncubatorRewardAndEmit(tenantID uuid.UUID, incubatorRewardID string) error {
+	if m.DeleteIncubatorRewardAndEmitFunc != nil {
+		return m.DeleteIncubatorRewardAndEmitFunc(tenantID, incubatorRewardID)
+	}
+	return nil
+}
+
+// GetIncubatorRewardById is a mock implementation
+func (m *ProcessorMock) GetIncubatorRewardById(tenantID uuid.UUID, incubatorRewardID string) (map[string]interface{}, error) {
+	if m.GetIncubatorRewardByIdFunc != nil {
+		return m.GetIncubatorRewardByIdFunc(tenantID, incubatorRewardID)
+	}
+	return map[string]interface{}{}, nil
+}
+
+// GetAllIncubatorRewards is a mock implementation
+func (m *ProcessorMock) GetAllIncubatorRewards(tenantID uuid.UUID) ([]map[string]interface{}, error) {
+	if m.GetAllIncubatorRewardsFunc != nil {
+		return m.GetAllIncubatorRewardsFunc(tenantID)
+	}
+	return []map[string]interface{}{}, nil
+}
+
+// IncubatorRewardByIdProvider is a mock implementation
+func (m *ProcessorMock) IncubatorRewardByIdProvider(tenantID uuid.UUID, incubatorRewardID string) model.Provider[map[string]interface{}] {
+	if m.IncubatorRewardByIdProviderFunc != nil {
+		return m.IncubatorRewardByIdProviderFunc(tenantID, incubatorRewardID)
+	}
+	return func() (map[string]interface{}, error) {
+		return map[string]interface{}{}, nil
+	}
+}
+
+// AllIncubatorRewardsProvider is a mock implementation
+func (m *ProcessorMock) AllIncubatorRewardsProvider(tenantID uuid.UUID) model.Provider[[]map[string]interface{}] {
+	if m.AllIncubatorRewardsProviderFunc != nil {
+		return m.AllIncubatorRewardsProviderFunc(tenantID)
+	}
+	return func() ([]map[string]interface{}, error) {
+		return []map[string]interface{}{}, nil
+	}
 }

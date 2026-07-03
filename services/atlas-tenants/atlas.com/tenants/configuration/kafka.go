@@ -8,16 +8,19 @@ import (
 )
 
 const (
-	EventTopicConfigurationStatus = "EVENT_TOPIC_CONFIGURATION_STATUS"
-	EventTypeRouteCreated         = "ROUTE_CREATED"
-	EventTypeRouteUpdated         = "ROUTE_UPDATED"
-	EventTypeRouteDeleted         = "ROUTE_DELETED"
-	EventTypeVesselCreated             = "VESSEL_CREATED"
-	EventTypeVesselUpdated             = "VESSEL_UPDATED"
-	EventTypeVesselDeleted             = "VESSEL_DELETED"
-	EventTypeInstanceRouteCreated      = "INSTANCE_ROUTE_CREATED"
-	EventTypeInstanceRouteUpdated      = "INSTANCE_ROUTE_UPDATED"
-	EventTypeInstanceRouteDeleted      = "INSTANCE_ROUTE_DELETED"
+	EventTopicConfigurationStatus   = "EVENT_TOPIC_CONFIGURATION_STATUS"
+	EventTypeRouteCreated           = "ROUTE_CREATED"
+	EventTypeRouteUpdated           = "ROUTE_UPDATED"
+	EventTypeRouteDeleted           = "ROUTE_DELETED"
+	EventTypeVesselCreated          = "VESSEL_CREATED"
+	EventTypeVesselUpdated          = "VESSEL_UPDATED"
+	EventTypeVesselDeleted          = "VESSEL_DELETED"
+	EventTypeInstanceRouteCreated   = "INSTANCE_ROUTE_CREATED"
+	EventTypeInstanceRouteUpdated   = "INSTANCE_ROUTE_UPDATED"
+	EventTypeInstanceRouteDeleted   = "INSTANCE_ROUTE_DELETED"
+	EventTypeIncubatorRewardCreated = "INCUBATOR_REWARD_CREATED"
+	EventTypeIncubatorRewardUpdated = "INCUBATOR_REWARD_UPDATED"
+	EventTypeIncubatorRewardDeleted = "INCUBATOR_REWARD_DELETED"
 )
 
 // ConfigurationStatusEvent is a generic event for configuration status changes
@@ -48,6 +51,18 @@ func CreateVesselStatusEventProvider(tenantId uuid.UUID, eventType string, vesse
 		Type:         eventType,
 		ResourceType: "vessel",
 		ResourceId:   vesselId,
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+// CreateIncubatorRewardStatusEventProvider creates a provider for incubator reward status events
+func CreateIncubatorRewardStatusEventProvider(tenantId uuid.UUID, eventType string, incubatorRewardId string) model.Provider[[]kafka.Message] {
+	key := []byte(tenantId.String())
+	value := ConfigurationStatusEvent{
+		TenantId:     tenantId,
+		Type:         eventType,
+		ResourceType: "incubator-reward",
+		ResourceId:   incubatorRewardId,
 	}
 	return producer.SingleMessageProvider(key, value)
 }

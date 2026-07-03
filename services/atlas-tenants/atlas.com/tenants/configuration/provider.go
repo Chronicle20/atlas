@@ -1,8 +1,8 @@
 package configuration
 
 import (
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"encoding/json"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
@@ -122,6 +122,71 @@ func GetVesselByIdProvider(tenantID uuid.UUID, vesselID string) func(db *gorm.DB
 func GetAllVesselsProvider(tenantID uuid.UUID) func(db *gorm.DB) model.Provider[[]map[string]interface{}] {
 	return func(db *gorm.DB) model.Provider[[]map[string]interface{}] {
 		entityProvider := GetByTenantIdAndResourceNameProvider(tenantID, "vessels")(db)
+		return model.Map(func(e Entity) ([]map[string]interface{}, error) {
+			var resourceData map[string]interface{}
+			if err := json.Unmarshal(e.ResourceData, &resourceData); err != nil {
+				return nil, err
+			}
+
+			// Check if it's an array of resources
+			if resources, ok := resourceData["data"].([]interface{}); ok {
+				result := make([]map[string]interface{}, 0, len(resources))
+				for _, resource := range resources {
+					if resourceMap, ok := resource.(map[string]interface{}); ok {
+						result = append(result, resourceMap)
+					}
+				}
+				return result, nil
+			}
+
+			// Check if it's a single resource
+			if data, ok := resourceData["data"].(map[string]interface{}); ok {
+				return []map[string]interface{}{data}, nil
+			}
+
+			return []map[string]interface{}{}, nil
+		})(entityProvider)
+	}
+}
+
+// GetIncubatorRewardByIdProvider returns a provider for a specific incubator reward by ID
+func GetIncubatorRewardByIdProvider(tenantID uuid.UUID, incubatorRewardID string) func(db *gorm.DB) model.Provider[map[string]interface{}] {
+	return func(db *gorm.DB) model.Provider[map[string]interface{}] {
+		entityProvider := GetByTenantIdAndResourceNameProvider(tenantID, "incubator-rewards")(db)
+		return model.Map(func(e Entity) (map[string]interface{}, error) {
+			var resourceData map[string]interface{}
+			if err := json.Unmarshal(e.ResourceData, &resourceData); err != nil {
+				return nil, err
+			}
+
+			// Check if it's an array of resources
+			if resources, ok := resourceData["data"].([]interface{}); ok {
+				for _, resource := range resources {
+					if resourceMap, ok := resource.(map[string]interface{}); ok {
+						if id, ok := resourceMap["id"].(string); ok && id == incubatorRewardID {
+							return resourceMap, nil
+						}
+					}
+				}
+				return nil, gorm.ErrRecordNotFound
+			}
+
+			// Check if it's a single resource
+			if data, ok := resourceData["data"].(map[string]interface{}); ok {
+				if id, ok := data["id"].(string); ok && id == incubatorRewardID {
+					return data, nil
+				}
+			}
+
+			return nil, gorm.ErrRecordNotFound
+		})(entityProvider)
+	}
+}
+
+// GetAllIncubatorRewardsProvider returns a provider for all incubator rewards for a tenant
+func GetAllIncubatorRewardsProvider(tenantID uuid.UUID) func(db *gorm.DB) model.Provider[[]map[string]interface{}] {
+	return func(db *gorm.DB) model.Provider[[]map[string]interface{}] {
+		entityProvider := GetByTenantIdAndResourceNameProvider(tenantID, "incubator-rewards")(db)
 		return model.Map(func(e Entity) ([]map[string]interface{}, error) {
 			var resourceData map[string]interface{}
 			if err := json.Unmarshal(e.ResourceData, &resourceData); err != nil {

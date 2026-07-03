@@ -82,6 +82,28 @@ type Processor interface {
 	// AllVesselsProvider returns a provider for all vessels for a tenant
 	AllVesselsProvider(tenantId uuid.UUID) model.Provider[[]map[string]interface{}]
 
+	// Incubator reward operations
+	// CreateIncubatorReward creates a new incubator reward configuration
+	CreateIncubatorReward(mb *message.Buffer) func(tenantId uuid.UUID) func(reward map[string]interface{}) (Model, error)
+	// CreateIncubatorRewardAndEmit creates a new incubator reward configuration and emits events
+	CreateIncubatorRewardAndEmit(tenantId uuid.UUID, reward map[string]interface{}) (Model, error)
+	// UpdateIncubatorReward updates an existing incubator reward configuration
+	UpdateIncubatorReward(mb *message.Buffer) func(tenantId uuid.UUID) func(incubatorRewardID string) func(reward map[string]interface{}) (Model, error)
+	// UpdateIncubatorRewardAndEmit updates an existing incubator reward configuration and emits events
+	UpdateIncubatorRewardAndEmit(tenantId uuid.UUID, incubatorRewardID string, reward map[string]interface{}) (Model, error)
+	// DeleteIncubatorReward deletes an incubator reward configuration
+	DeleteIncubatorReward(mb *message.Buffer) func(tenantId uuid.UUID) func(incubatorRewardID string) error
+	// DeleteIncubatorRewardAndEmit deletes an incubator reward configuration and emits events
+	DeleteIncubatorRewardAndEmit(tenantId uuid.UUID, incubatorRewardID string) error
+	// GetIncubatorRewardById gets an incubator reward by ID
+	GetIncubatorRewardById(tenantId uuid.UUID, incubatorRewardID string) (map[string]interface{}, error)
+	// GetAllIncubatorRewards gets all incubator rewards for a tenant
+	GetAllIncubatorRewards(tenantId uuid.UUID) ([]map[string]interface{}, error)
+	// IncubatorRewardByIdProvider returns a provider for an incubator reward by ID
+	IncubatorRewardByIdProvider(tenantId uuid.UUID, incubatorRewardID string) model.Provider[map[string]interface{}]
+	// AllIncubatorRewardsProvider returns a provider for all incubator rewards for a tenant
+	AllIncubatorRewardsProvider(tenantId uuid.UUID) model.Provider[[]map[string]interface{}]
+
 	// Seed operations
 	// SeedRoutes clears existing routes for a tenant and loads them from seed files
 	SeedRoutes(tenantId uuid.UUID) (SeedResult, error)
@@ -89,6 +111,8 @@ type Processor interface {
 	SeedInstanceRoutes(tenantId uuid.UUID) (SeedResult, error)
 	// SeedVessels clears existing vessels for a tenant and loads them from seed files
 	SeedVessels(tenantId uuid.UUID) (SeedResult, error)
+	// SeedIncubatorRewards clears existing incubator rewards for a tenant and loads them from seed files
+	SeedIncubatorRewards(tenantId uuid.UUID) (SeedResult, error)
 }
 
 // ProcessorImpl implements the Processor interface
@@ -573,6 +597,238 @@ func (p *ProcessorImpl) AllVesselsProvider(tenantId uuid.UUID) model.Provider[[]
 	return GetAllVesselsProvider(tenantId)(p.db)
 }
 
+// CreateIncubatorReward creates a new incubator reward configuration
+func (p *ProcessorImpl) CreateIncubatorReward(mb *message.Buffer) func(tenantId uuid.UUID) func(reward map[string]interface{}) (Model, error) {
+	return func(tenantId uuid.UUID) func(reward map[string]interface{}) (Model, error) {
+		return func(reward map[string]interface{}) (Model, error) {
+			// Check if configuration already exists
+			existingProvider := GetByTenantIdAndResourceNameProvider(tenantId, "incubator-rewards")(p.db)
+			existing, err := existingProvider()
+
+			var resourceData json.RawMessage
+
+			if err == nil {
+				// Configuration exists, update it
+				var existingData map[string]interface{}
+				if err := json.Unmarshal(existing.ResourceData, &existingData); err != nil {
+					return Model{}, err
+				}
+
+				// Check if it's an array of resources
+				if resources, ok := existingData["data"].([]interface{}); ok {
+					// Add the new incubator reward to the array
+					resources = append(resources, reward)
+					existingData["data"] = resources
+					resourceData, err = json.Marshal(existingData)
+					if err != nil {
+						return Model{}, err
+					}
+				} else {
+					// CreateRoute a new array with the existing resource and the new one
+					resourceData, err = CreateIncubatorRewardJsonData([]map[string]interface{}{reward})
+					if err != nil {
+						return Model{}, err
+					}
+				}
+
+				existing.ResourceData = resourceData
+				if err := UpdateConfiguration(p.db, existing); err != nil {
+					return Model{}, err
+				}
+
+				m, err := Make(existing)
+				if err != nil {
+					return Model{}, err
+				}
+
+				// Add event to message buffer
+				incubatorRewardID := ""
+				if id, ok := reward["id"].(string); ok {
+					incubatorRewardID = id
+				}
+				if err := mb.Put(EventTopicConfigurationStatus, CreateIncubatorRewardStatusEventProvider(tenantId, EventTypeIncubatorRewardCreated, incubatorRewardID)); err != nil {
+					return Model{}, err
+				}
+
+				return m, nil
+			} else if errors.Is(err, gorm.ErrRecordNotFound) {
+				// Configuration doesn't exist, create it
+				resourceData, err = CreateSingleIncubatorRewardJsonData(reward)
+				if err != nil {
+					return Model{}, err
+				}
+
+				entity := Entity{
+					ID:           uuid.New(),
+					TenantId:     tenantId,
+					ResourceName: "incubator-rewards",
+					ResourceData: resourceData,
+				}
+
+				if err := CreateConfiguration(p.db, entity); err != nil {
+					return Model{}, err
+				}
+
+				m, err := Make(entity)
+				if err != nil {
+					return Model{}, err
+				}
+
+				// Add event to message buffer
+				incubatorRewardID := ""
+				if id, ok := reward["id"].(string); ok {
+					incubatorRewardID = id
+				}
+				if err := mb.Put(EventTopicConfigurationStatus, CreateIncubatorRewardStatusEventProvider(tenantId, EventTypeIncubatorRewardCreated, incubatorRewardID)); err != nil {
+					return Model{}, err
+				}
+
+				return m, nil
+			} else {
+				// Other error
+				return Model{}, err
+			}
+		}
+	}
+}
+
+// CreateIncubatorRewardAndEmit creates a new incubator reward configuration and emits events
+func (p *ProcessorImpl) CreateIncubatorRewardAndEmit(tenantId uuid.UUID, reward map[string]interface{}) (Model, error) {
+	return message.EmitWithResult[Model, uuid.UUID](p.p)(func(mb *message.Buffer) func(uuid.UUID) (Model, error) {
+		return func(tenantId uuid.UUID) (Model, error) {
+			return p.CreateIncubatorReward(mb)(tenantId)(reward)
+		}
+	})(tenantId)
+}
+
+// UpdateIncubatorReward updates an existing incubator reward configuration
+func (p *ProcessorImpl) UpdateIncubatorReward(mb *message.Buffer) func(tenantId uuid.UUID) func(incubatorRewardID string) func(reward map[string]interface{}) (Model, error) {
+	return func(tenantId uuid.UUID) func(incubatorRewardID string) func(reward map[string]interface{}) (Model, error) {
+		return func(incubatorRewardID string) func(reward map[string]interface{}) (Model, error) {
+			return func(reward map[string]interface{}) (Model, error) {
+				// Check if configuration exists
+				existingProvider := GetByTenantIdAndResourceNameProvider(tenantId, "incubator-rewards")(p.db)
+				existing, err := existingProvider()
+				if err != nil {
+					return Model{}, err
+				}
+
+				var existingData map[string]interface{}
+				if err := json.Unmarshal(existing.ResourceData, &existingData); err != nil {
+					return Model{}, err
+				}
+
+				// Ensure the incubator reward ID matches
+				reward["id"] = incubatorRewardID
+
+				// Check if it's an array of resources
+				if resources, ok := existingData["data"].([]interface{}); ok {
+					found := false
+					for i, resource := range resources {
+						if resourceMap, ok := resource.(map[string]interface{}); ok {
+							if id, ok := resourceMap["id"].(string); ok && id == incubatorRewardID {
+								resources[i] = reward
+								found = true
+								break
+							}
+						}
+					}
+
+					if !found {
+						return Model{}, errors.New("incubator reward not found")
+					}
+
+					existingData["data"] = resources
+				} else if data, ok := existingData["data"].(map[string]interface{}); ok {
+					if id, ok := data["id"].(string); ok && id == incubatorRewardID {
+						existingData["data"] = reward
+					} else {
+						return Model{}, errors.New("incubator reward not found")
+					}
+				} else {
+					return Model{}, errors.New("invalid resource data format")
+				}
+
+				resourceData, err := json.Marshal(existingData)
+				if err != nil {
+					return Model{}, err
+				}
+
+				existing.ResourceData = resourceData
+				if err := UpdateConfiguration(p.db, existing); err != nil {
+					return Model{}, err
+				}
+
+				m, err := Make(existing)
+				if err != nil {
+					return Model{}, err
+				}
+
+				// Add event to message buffer
+				if err := mb.Put(EventTopicConfigurationStatus, CreateIncubatorRewardStatusEventProvider(tenantId, EventTypeIncubatorRewardUpdated, incubatorRewardID)); err != nil {
+					return Model{}, err
+				}
+
+				return m, nil
+			}
+		}
+	}
+}
+
+// UpdateIncubatorRewardAndEmit updates an existing incubator reward configuration and emits events
+func (p *ProcessorImpl) UpdateIncubatorRewardAndEmit(tenantId uuid.UUID, incubatorRewardID string, reward map[string]interface{}) (Model, error) {
+	return message.EmitWithResult[Model, uuid.UUID](p.p)(func(mb *message.Buffer) func(uuid.UUID) (Model, error) {
+		return func(tenantId uuid.UUID) (Model, error) {
+			return p.UpdateIncubatorReward(mb)(tenantId)(incubatorRewardID)(reward)
+		}
+	})(tenantId)
+}
+
+// DeleteIncubatorReward deletes an incubator reward configuration
+func (p *ProcessorImpl) DeleteIncubatorReward(mb *message.Buffer) func(tenantId uuid.UUID) func(incubatorRewardID string) error {
+	return func(tenantId uuid.UUID) func(incubatorRewardID string) error {
+		return func(incubatorRewardID string) error {
+			if err := DeleteConfiguration(p.db, tenantId, "incubator-rewards", incubatorRewardID); err != nil {
+				return err
+			}
+
+			// Add event to message buffer
+			if err := mb.Put(EventTopicConfigurationStatus, CreateIncubatorRewardStatusEventProvider(tenantId, EventTypeIncubatorRewardDeleted, incubatorRewardID)); err != nil {
+				return err
+			}
+
+			return nil
+		}
+	}
+}
+
+// DeleteIncubatorRewardAndEmit deletes an incubator reward configuration and emits events
+func (p *ProcessorImpl) DeleteIncubatorRewardAndEmit(tenantId uuid.UUID, incubatorRewardID string) error {
+	return message.Emit(p.p)(func(mb *message.Buffer) error {
+		return p.DeleteIncubatorReward(mb)(tenantId)(incubatorRewardID)
+	})
+}
+
+// GetIncubatorRewardById gets an incubator reward by ID
+func (p *ProcessorImpl) GetIncubatorRewardById(tenantId uuid.UUID, incubatorRewardID string) (map[string]interface{}, error) {
+	return p.IncubatorRewardByIdProvider(tenantId, incubatorRewardID)()
+}
+
+// GetAllIncubatorRewards gets all incubator rewards for a tenant
+func (p *ProcessorImpl) GetAllIncubatorRewards(tenantId uuid.UUID) ([]map[string]interface{}, error) {
+	return p.AllIncubatorRewardsProvider(tenantId)()
+}
+
+// IncubatorRewardByIdProvider returns a provider for an incubator reward by ID
+func (p *ProcessorImpl) IncubatorRewardByIdProvider(tenantId uuid.UUID, incubatorRewardID string) model.Provider[map[string]interface{}] {
+	return GetIncubatorRewardByIdProvider(tenantId, incubatorRewardID)(p.db)
+}
+
+// AllIncubatorRewardsProvider returns a provider for all incubator rewards for a tenant
+func (p *ProcessorImpl) AllIncubatorRewardsProvider(tenantId uuid.UUID) model.Provider[[]map[string]interface{}] {
+	return GetAllIncubatorRewardsProvider(tenantId)(p.db)
+}
+
 // CreateInstanceRoute creates a new instance route configuration
 func (p *ProcessorImpl) CreateInstanceRoute(mb *message.Buffer) func(tenantId uuid.UUID) func(route map[string]interface{}) (Model, error) {
 	return func(tenantId uuid.UUID) func(route map[string]interface{}) (Model, error) {
@@ -900,6 +1156,44 @@ func (p *ProcessorImpl) SeedVessels(tenantId uuid.UUID) (SeedResult, error) {
 	}
 
 	p.l.Infof("Vessel seed complete for tenant [%s]: deleted=%d, created=%d, failed=%d",
+		tenantId, result.DeletedCount, result.CreatedCount, result.FailedCount)
+
+	return result, nil
+}
+
+// SeedIncubatorRewards clears existing incubator rewards for a tenant and loads them from seed files
+func (p *ProcessorImpl) SeedIncubatorRewards(tenantId uuid.UUID) (SeedResult, error) {
+	p.l.Infof("Seeding incubator rewards for tenant [%s]", tenantId)
+
+	result := SeedResult{}
+
+	// Delete all existing incubator rewards for this tenant
+	deletedCount, err := DeleteConfigurationByResourceName(p.db, tenantId, "incubator-rewards")
+	if err != nil {
+		return result, fmt.Errorf("failed to clear existing incubator rewards: %w", err)
+	}
+	result.DeletedCount = int(deletedCount)
+
+	// Load incubator reward files from the filesystem
+	rewards, loadErrors := LoadIncubatorRewardFiles()
+	for _, err := range loadErrors {
+		result.Errors = append(result.Errors, err.Error())
+		result.FailedCount++
+	}
+
+	// Create each incubator reward
+	for _, reward := range rewards {
+		id, _ := reward["id"].(string)
+		_, err := p.CreateIncubatorRewardAndEmit(tenantId, reward)
+		if err != nil {
+			result.Errors = append(result.Errors, fmt.Sprintf("%s: failed to create: %v", id, err))
+			result.FailedCount++
+			continue
+		}
+		result.CreatedCount++
+	}
+
+	p.l.Infof("Incubator reward seed complete for tenant [%s]: deleted=%d, created=%d, failed=%d",
 		tenantId, result.DeletedCount, result.CreatedCount, result.FailedCount)
 
 	return result, nil

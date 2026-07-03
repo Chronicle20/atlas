@@ -41,8 +41,8 @@ Configuration resource lifecycle events.
 ```json
 {
   "tenantId": "uuid",
-  "type": "ROUTE_CREATED | ROUTE_UPDATED | ROUTE_DELETED | VESSEL_CREATED | VESSEL_UPDATED | VESSEL_DELETED | INSTANCE_ROUTE_CREATED | INSTANCE_ROUTE_UPDATED | INSTANCE_ROUTE_DELETED",
-  "resourceType": "route | vessel | instance-route",
+  "type": "ROUTE_CREATED | ROUTE_UPDATED | ROUTE_DELETED | VESSEL_CREATED | VESSEL_UPDATED | VESSEL_DELETED | INSTANCE_ROUTE_CREATED | INSTANCE_ROUTE_UPDATED | INSTANCE_ROUTE_DELETED | INCUBATOR_REWARD_CREATED | INCUBATOR_REWARD_UPDATED | INCUBATOR_REWARD_DELETED",
+  "resourceType": "route | vessel | instance-route | incubator-reward",
   "resourceId": "string"
 }
 ```
@@ -57,6 +57,9 @@ Configuration resource lifecycle events.
 - `INSTANCE_ROUTE_CREATED`: Emitted when an instance route is created
 - `INSTANCE_ROUTE_UPDATED`: Emitted when an instance route is updated
 - `INSTANCE_ROUTE_DELETED`: Emitted when an instance route is deleted
+- `INCUBATOR_REWARD_CREATED`: Emitted when an incubator reward is created
+- `INCUBATOR_REWARD_UPDATED`: Emitted when an incubator reward is updated
+- `INCUBATOR_REWARD_DELETED`: Emitted when an incubator reward is deleted
 
 ## Transaction Semantics
 

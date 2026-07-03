@@ -1,0 +1,9 @@
+{
+  "id": "red-potion",
+  "type": "incubator-rewards",
+  "attributes": {
+    "itemId": 2000000,
+    "quantity": 50,
+    "weight": 40
+  }
+}

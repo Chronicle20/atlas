@@ -1,0 +1,9 @@
+{
+  "id": "white-potion",
+  "type": "incubator-rewards",
+  "attributes": {
+    "itemId": 2000003,
+    "quantity": 50,
+    "weight": 15
+  }
+}

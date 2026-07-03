@@ -386,6 +386,214 @@ func DeleteVesselHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Ha
 	}
 }
 
+// GetAllIncubatorRewardsHandler handles GET /tenants/{tenantId}/configurations/incubator-rewards
+func GetAllIncubatorRewardsHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseTenantId(d.Logger(), func(tenantId uuid.UUID) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				processor := NewProcessor(d.Logger(), d.Context(), db)
+
+				rewards, err := processor.GetAllIncubatorRewards(tenantId)
+				if err != nil {
+					if errors.Is(err, gorm.ErrRecordNotFound) {
+						// If no incubator rewards exist, return an empty array instead of an error
+						d.Logger().Info("No incubator rewards found for tenant, returning empty array")
+						rewards = []map[string]interface{}{}
+					} else {
+						d.Logger().WithError(err).Error("Failed to get incubator rewards")
+						w.WriteHeader(http.StatusInternalServerError)
+						return
+					}
+				}
+
+				restModels := make([]IncubatorRewardRestModel, 0, len(rewards))
+				for _, reward := range rewards {
+					rm, err := TransformIncubatorReward(reward)
+					if err != nil {
+						d.Logger().WithError(err).Error("Failed to transform incubator reward")
+						w.WriteHeader(http.StatusInternalServerError)
+						return
+					}
+					restModels = append(restModels, rm)
+				}
+
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				server.MarshalResponse[[]IncubatorRewardRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(restModels)
+			}
+		})
+	}
+}
+
+// GetIncubatorRewardByIdHandler handles GET /tenants/{tenantId}/configurations/incubator-rewards/{incubatorRewardId}
+func GetIncubatorRewardByIdHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseTenantId(d.Logger(), func(tenantId uuid.UUID) http.HandlerFunc {
+			return rest.ParseIncubatorRewardId(d.Logger(), func(incubatorRewardId string) http.HandlerFunc {
+				return func(w http.ResponseWriter, r *http.Request) {
+					processor := NewProcessor(d.Logger(), d.Context(), db)
+
+					reward, err := processor.GetIncubatorRewardById(tenantId, incubatorRewardId)
+					if err != nil {
+						d.Logger().WithError(err).Error("Failed to get incubator reward")
+						w.WriteHeader(http.StatusNotFound)
+						return
+					}
+
+					rm, err := TransformIncubatorReward(reward)
+					if err != nil {
+						d.Logger().WithError(err).Error("Failed to transform incubator reward")
+						w.WriteHeader(http.StatusInternalServerError)
+						return
+					}
+
+					query := r.URL.Query()
+					queryParams := jsonapi.ParseQueryFields(&query)
+					server.MarshalResponse[IncubatorRewardRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
+				}
+			})
+		})
+	}
+}
+
+// CreateIncubatorRewardHandler handles POST /tenants/{tenantId}/configurations/incubator-rewards
+func CreateIncubatorRewardHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext, model IncubatorRewardRestModel) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext, model IncubatorRewardRestModel) http.HandlerFunc {
+		return rest.ParseTenantId(d.Logger(), func(tenantId uuid.UUID) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				reward, err := ExtractIncubatorReward(model)
+				if err != nil {
+					d.Logger().WithError(err).Error("Failed to extract incubator reward data")
+					w.WriteHeader(http.StatusBadRequest)
+					return
+				}
+
+				processor := NewProcessor(d.Logger(), d.Context(), db)
+				_, err = processor.CreateIncubatorRewardAndEmit(tenantId, reward)
+				if err != nil {
+					d.Logger().WithError(err).Error("Failed to create incubator reward")
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+
+				// Get the incubator reward ID from the created incubator reward
+				incubatorRewardId := ""
+				if id, ok := reward["id"].(string); ok {
+					incubatorRewardId = id
+				}
+
+				// Get the specific incubator reward that was just created
+				createdReward, err := processor.GetIncubatorRewardById(tenantId, incubatorRewardId)
+				if err != nil {
+					d.Logger().WithError(err).Error("Failed to get created incubator reward")
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+
+				rm, err := TransformIncubatorReward(createdReward)
+				if err != nil {
+					d.Logger().WithError(err).Error("Failed to transform incubator reward")
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				w.WriteHeader(http.StatusCreated)
+				server.MarshalResponse[IncubatorRewardRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
+			}
+		})
+	}
+}
+
+// UpdateIncubatorRewardHandler handles PATCH /tenants/{tenantId}/configurations/incubator-rewards/{incubatorRewardId}
+func UpdateIncubatorRewardHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext, model IncubatorRewardRestModel) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext, model IncubatorRewardRestModel) http.HandlerFunc {
+		return rest.ParseTenantId(d.Logger(), func(tenantId uuid.UUID) http.HandlerFunc {
+			return rest.ParseIncubatorRewardId(d.Logger(), func(incubatorRewardId string) http.HandlerFunc {
+				return func(w http.ResponseWriter, r *http.Request) {
+					reward, err := ExtractIncubatorReward(model)
+					if err != nil {
+						d.Logger().WithError(err).Error("Failed to extract incubator reward data")
+						w.WriteHeader(http.StatusBadRequest)
+						return
+					}
+
+					processor := NewProcessor(d.Logger(), d.Context(), db)
+					_, err = processor.UpdateIncubatorRewardAndEmit(tenantId, incubatorRewardId, reward)
+					if err != nil {
+						d.Logger().WithError(err).Error("Failed to update incubator reward")
+						w.WriteHeader(http.StatusInternalServerError)
+						return
+					}
+
+					// Get the specific incubator reward that was just updated
+					updatedReward, err := processor.GetIncubatorRewardById(tenantId, incubatorRewardId)
+					if err != nil {
+						d.Logger().WithError(err).Error("Failed to get updated incubator reward")
+						w.WriteHeader(http.StatusInternalServerError)
+						return
+					}
+
+					rm, err := TransformIncubatorReward(updatedReward)
+					if err != nil {
+						d.Logger().WithError(err).Error("Failed to transform incubator reward")
+						w.WriteHeader(http.StatusInternalServerError)
+						return
+					}
+
+					query := r.URL.Query()
+					queryParams := jsonapi.ParseQueryFields(&query)
+					server.MarshalResponse[IncubatorRewardRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
+				}
+			})
+		})
+	}
+}
+
+// DeleteIncubatorRewardHandler handles DELETE /tenants/{tenantId}/configurations/incubator-rewards/{incubatorRewardId}
+func DeleteIncubatorRewardHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseTenantId(d.Logger(), func(tenantId uuid.UUID) http.HandlerFunc {
+			return rest.ParseIncubatorRewardId(d.Logger(), func(incubatorRewardId string) http.HandlerFunc {
+				return func(w http.ResponseWriter, r *http.Request) {
+					processor := NewProcessor(d.Logger(), d.Context(), db)
+					err := processor.DeleteIncubatorRewardAndEmit(tenantId, incubatorRewardId)
+					if err != nil {
+						d.Logger().WithError(err).Error("Failed to delete incubator reward")
+						w.WriteHeader(http.StatusInternalServerError)
+						return
+					}
+
+					w.WriteHeader(http.StatusNoContent)
+				}
+			})
+		})
+	}
+}
+
+// SeedIncubatorRewardsHandler handles POST /tenants/{tenantId}/configurations/incubator-rewards/seed
+func SeedIncubatorRewardsHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseTenantId(d.Logger(), func(tenantId uuid.UUID) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				processor := NewProcessor(d.Logger(), d.Context(), db)
+				result, err := processor.SeedIncubatorRewards(tenantId)
+				if err != nil {
+					d.Logger().WithError(err).Error("Failed to seed incubator rewards")
+					w.WriteHeader(http.StatusInternalServerError)
+					json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+					return
+				}
+
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusOK)
+				json.NewEncoder(w).Encode(result)
+			}
+		})
+	}
+}
+
 // GetAllInstanceRoutesHandler handles GET /tenants/{tenantId}/configurations/instance-routes
 func GetAllInstanceRoutesHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
@@ -642,6 +850,7 @@ func RegisterRoutes(db *gorm.DB) func(si jsonapi.ServerInformation) server.Route
 			registerRouteInputHandler := rest.RegisterInputHandler[RouteRestModel](l)(si)
 			registerVesselInputHandler := rest.RegisterInputHandler[VesselRestModel](l)(si)
 			registerInstanceRouteInputHandler := rest.RegisterInputHandler[InstanceRouteRestModel](l)(si)
+			registerIncubatorRewardInputHandler := rest.RegisterInputHandler[IncubatorRewardRestModel](l)(si)
 
 			// Route endpoints
 			r.HandleFunc("/tenants/{tenantId}/configurations/routes/seed", registerHandler("seed_routes", SeedRoutesHandler(db))).Methods(http.MethodPost)
@@ -658,6 +867,14 @@ func RegisterRoutes(db *gorm.DB) func(si jsonapi.ServerInformation) server.Route
 			r.HandleFunc("/tenants/{tenantId}/configurations/vessels", registerVesselInputHandler("create_vessel", CreateVesselHandler(db))).Methods(http.MethodPost)
 			r.HandleFunc("/tenants/{tenantId}/configurations/vessels/{vesselId}", registerVesselInputHandler("update_vessel", UpdateVesselHandler(db))).Methods(http.MethodPatch)
 			r.HandleFunc("/tenants/{tenantId}/configurations/vessels/{vesselId}", registerHandler("delete_vessel", DeleteVesselHandler(db))).Methods(http.MethodDelete)
+
+			// Incubator reward endpoints
+			r.HandleFunc("/tenants/{tenantId}/configurations/incubator-rewards/seed", registerHandler("seed_incubator_rewards", SeedIncubatorRewardsHandler(db))).Methods(http.MethodPost)
+			r.HandleFunc("/tenants/{tenantId}/configurations/incubator-rewards", registerHandler("get_all_incubator_rewards", GetAllIncubatorRewardsHandler(db))).Methods(http.MethodGet)
+			r.HandleFunc("/tenants/{tenantId}/configurations/incubator-rewards/{incubatorRewardId}", registerHandler("get_incubator_reward_by_id", GetIncubatorRewardByIdHandler(db))).Methods(http.MethodGet)
+			r.HandleFunc("/tenants/{tenantId}/configurations/incubator-rewards", registerIncubatorRewardInputHandler("create_incubator_reward", CreateIncubatorRewardHandler(db))).Methods(http.MethodPost)
+			r.HandleFunc("/tenants/{tenantId}/configurations/incubator-rewards/{incubatorRewardId}", registerIncubatorRewardInputHandler("update_incubator_reward", UpdateIncubatorRewardHandler(db))).Methods(http.MethodPatch)
+			r.HandleFunc("/tenants/{tenantId}/configurations/incubator-rewards/{incubatorRewardId}", registerHandler("delete_incubator_reward", DeleteIncubatorRewardHandler(db))).Methods(http.MethodDelete)
 
 			// Instance route endpoints
 			r.HandleFunc("/tenants/{tenantId}/configurations/instance-routes/seed", registerHandler("seed_instance_routes", SeedInstanceRoutesHandler(db))).Methods(http.MethodPost)

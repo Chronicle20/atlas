@@ -1,0 +1,9 @@
+{
+  "id": "orange-potion",
+  "type": "incubator-rewards",
+  "attributes": {
+    "itemId": 2000001,
+    "quantity": 50,
+    "weight": 30
+  }
+}

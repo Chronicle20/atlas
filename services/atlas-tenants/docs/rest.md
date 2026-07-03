@@ -820,3 +820,195 @@ Deletes all existing instance routes for a tenant and loads them from seed files
 **Error Conditions**:
 - 400: Invalid tenant ID format
 - 500: Internal server error
+
+---
+
+### GET /tenants/{tenantId}/configurations/incubator-rewards
+
+Retrieves all incubator rewards for a tenant.
+
+**Parameters**:
+- `tenantId` (path, uuid): Tenant identifier
+
+**Request Model**: None
+
+**Response Model**:
+```json
+{
+  "data": [
+    {
+      "type": "incubator-rewards",
+      "id": "string",
+      "attributes": {
+        "itemId": 0,
+        "quantity": 0,
+        "weight": 0
+      }
+    }
+  ]
+}
+```
+
+**Error Conditions**:
+- 400: Invalid tenant ID format
+- 500: Internal server error
+
+---
+
+### GET /tenants/{tenantId}/configurations/incubator-rewards/{incubatorRewardId}
+
+Retrieves an incubator reward by ID.
+
+**Parameters**:
+- `tenantId` (path, uuid): Tenant identifier
+- `incubatorRewardId` (path, string): Incubator reward identifier
+
+**Request Model**: None
+
+**Response Model**:
+```json
+{
+  "data": {
+    "type": "incubator-rewards",
+    "id": "string",
+    "attributes": {
+      "itemId": 0,
+      "quantity": 0,
+      "weight": 0
+    }
+  }
+}
+```
+
+**Error Conditions**:
+- 400: Invalid tenant ID format or missing incubator reward ID
+- 404: Incubator reward not found
+
+---
+
+### POST /tenants/{tenantId}/configurations/incubator-rewards
+
+Creates a new incubator reward.
+
+**Parameters**:
+- `tenantId` (path, uuid): Tenant identifier
+
+**Request Model**:
+```json
+{
+  "data": {
+    "type": "incubator-rewards",
+    "attributes": {
+      "itemId": 0,
+      "quantity": 0,
+      "weight": 0
+    }
+  }
+}
+```
+
+**Response Model**:
+```json
+{
+  "data": {
+    "type": "incubator-rewards",
+    "id": "string",
+    "attributes": {
+      "itemId": 0,
+      "quantity": 0,
+      "weight": 0
+    }
+  }
+}
+```
+
+**Error Conditions**:
+- 400: Invalid request body or tenant ID format
+- 500: Internal server error
+
+---
+
+### PATCH /tenants/{tenantId}/configurations/incubator-rewards/{incubatorRewardId}
+
+Updates an existing incubator reward.
+
+**Parameters**:
+- `tenantId` (path, uuid): Tenant identifier
+- `incubatorRewardId` (path, string): Incubator reward identifier
+
+**Request Model**:
+```json
+{
+  "data": {
+    "type": "incubator-rewards",
+    "id": "string",
+    "attributes": {
+      "itemId": 0,
+      "quantity": 0,
+      "weight": 0
+    }
+  }
+}
+```
+
+**Response Model**:
+```json
+{
+  "data": {
+    "type": "incubator-rewards",
+    "id": "string",
+    "attributes": {
+      "itemId": 0,
+      "quantity": 0,
+      "weight": 0
+    }
+  }
+}
+```
+
+**Error Conditions**:
+- 400: Invalid request body, tenant ID format, or missing incubator reward ID
+- 500: Internal server error (includes incubator reward not found)
+
+---
+
+### DELETE /tenants/{tenantId}/configurations/incubator-rewards/{incubatorRewardId}
+
+Deletes an incubator reward.
+
+**Parameters**:
+- `tenantId` (path, uuid): Tenant identifier
+- `incubatorRewardId` (path, string): Incubator reward identifier
+
+**Request Model**: None
+
+**Response Model**: None (204 No Content)
+
+**Error Conditions**:
+- 400: Invalid tenant ID format or missing incubator reward ID
+- 500: Internal server error
+
+---
+
+### POST /tenants/{tenantId}/configurations/incubator-rewards/seed
+
+Deletes all existing incubator rewards for a tenant and loads them from seed files.
+
+**Parameters**:
+- `tenantId` (path, uuid): Tenant identifier
+
+**Request Model**: None
+
+**Response Model**:
+```json
+{
+  "deletedCount": 0,
+  "createdCount": 0,
+  "failedCount": 0,
+  "errors": ["string"]
+}
+```
+
+**Error Conditions**:
+- 400: Invalid tenant ID format
+- 500: Internal server error

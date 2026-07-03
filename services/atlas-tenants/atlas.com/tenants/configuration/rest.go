@@ -224,17 +224,99 @@ func CreateSingleVesselJsonData(vessel map[string]interface{}) (json.RawMessage,
 	return CreateVesselJsonData([]map[string]interface{}{vessel})
 }
 
+// IncubatorRewardRestModel is the JSON:API resource for incubator reward pool entries
+type IncubatorRewardRestModel struct {
+	Id       string `json:"-"`
+	ItemId   uint32 `json:"itemId"`
+	Quantity uint32 `json:"quantity"`
+	Weight   uint32 `json:"weight"`
+}
+
+// GetID returns the resource ID
+func (v IncubatorRewardRestModel) GetID() string {
+	return v.Id
+}
+
+// SetID sets the resource ID
+func (v *IncubatorRewardRestModel) SetID(id string) error {
+	v.Id = id
+	return nil
+}
+
+// GetName returns the resource name
+func (v IncubatorRewardRestModel) GetName() string {
+	return "incubator-rewards"
+}
+
+// TransformIncubatorReward converts a map[string]interface{} to an IncubatorRewardRestModel
+func TransformIncubatorReward(data map[string]interface{}) (IncubatorRewardRestModel, error) {
+	id, _ := data["id"].(string)
+
+	attributes, ok := data["attributes"].(map[string]interface{})
+	if !ok {
+		attributes = make(map[string]interface{})
+	}
+
+	itemId := uint32(0)
+	if val, ok := attributes["itemId"].(float64); ok {
+		itemId = uint32(val)
+	}
+
+	quantity := uint32(0)
+	if val, ok := attributes["quantity"].(float64); ok {
+		quantity = uint32(val)
+	}
+
+	weight := uint32(0)
+	if val, ok := attributes["weight"].(float64); ok {
+		weight = uint32(val)
+	}
+
+	return IncubatorRewardRestModel{
+		Id:       id,
+		ItemId:   itemId,
+		Quantity: quantity,
+		Weight:   weight,
+	}, nil
+}
+
+// ExtractIncubatorReward converts an IncubatorRewardRestModel to a map[string]interface{}
+func ExtractIncubatorReward(v IncubatorRewardRestModel) (map[string]interface{}, error) {
+	return map[string]interface{}{
+		"type": "incubator-rewards",
+		"id":   v.Id,
+		"attributes": map[string]interface{}{
+			"itemId":   v.ItemId,
+			"quantity": v.Quantity,
+			"weight":   v.Weight,
+		},
+	}, nil
+}
+
+// CreateIncubatorRewardJsonData creates a JSON:API compliant data structure for incubator rewards
+func CreateIncubatorRewardJsonData(rewards []map[string]interface{}) (json.RawMessage, error) {
+	data := map[string]interface{}{
+		"data": rewards,
+	}
+	return json.Marshal(data)
+}
+
+// CreateSingleIncubatorRewardJsonData creates a JSON:API compliant data structure for a single incubator reward
+func CreateSingleIncubatorRewardJsonData(reward map[string]interface{}) (json.RawMessage, error) {
+	return CreateIncubatorRewardJsonData([]map[string]interface{}{reward})
+}
+
 // InstanceRouteRestModel is the JSON:API resource for instance routes
 type InstanceRouteRestModel struct {
-	Id                    string `json:"-"`
-	Name                  string `json:"name"`
-	StartMapId            uint32 `json:"startMapId"`
+	Id                    string   `json:"-"`
+	Name                  string   `json:"name"`
+	StartMapId            uint32   `json:"startMapId"`
 	TransitMapIds         []uint32 `json:"transitMapIds"`
-	DestinationMapId      uint32 `json:"destinationMapId"`
-	Capacity              uint32 `json:"capacity"`
-	BoardingWindowSeconds uint32 `json:"boardingWindowSeconds"`
-	TravelDurationSeconds uint32 `json:"travelDurationSeconds"`
-	TransitMessage        string `json:"transitMessage,omitempty"`
+	DestinationMapId      uint32   `json:"destinationMapId"`
+	Capacity              uint32   `json:"capacity"`
+	BoardingWindowSeconds uint32   `json:"boardingWindowSeconds"`
+	TravelDurationSeconds uint32   `json:"travelDurationSeconds"`
+	TransitMessage        string   `json:"transitMessage,omitempty"`
 }
 
 // GetID returns the resource ID

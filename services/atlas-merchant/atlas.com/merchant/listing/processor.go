@@ -11,6 +11,7 @@ import (
 
 type Processor interface {
 	GetByShopId(shopId uuid.UUID) ([]Model, error)
+	GetByShopIdPaged(shopId uuid.UUID, page model.Page) (model.Paged[Model], error)
 	GetByShopIdAndDisplayOrder(shopId uuid.UUID, displayOrder uint16) (Model, error)
 	CountByShopId(shopId uuid.UUID) (int64, error)
 	CountByShopIds(shopIds []uuid.UUID) (map[uuid.UUID]int64, error)
@@ -35,6 +36,11 @@ var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) GetByShopId(shopId uuid.UUID) ([]Model, error) {
 	return model.SliceMap(Make)(getByShopId(shopId)(p.db))(model.ParallelMap())()
+}
+
+func (p *ProcessorImpl) GetByShopIdPaged(shopId uuid.UUID, page model.Page) (model.Paged[Model], error) {
+	ep := getByShopIdPaged(shopId, page)(p.db)
+	return model.MapPaged(Make)(ep)(model.ParallelMap())()
 }
 
 func (p *ProcessorImpl) GetByShopIdAndDisplayOrder(shopId uuid.UUID, displayOrder uint16) (Model, error) {

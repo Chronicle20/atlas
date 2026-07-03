@@ -9,6 +9,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
@@ -75,9 +76,11 @@ func seedSearchData(t *testing.T) (*gorm.DB, uuid.UUID, uuid.UUID) {
 func TestSearchListings_WorldScopedAndTenantScoped(t *testing.T) {
 	db, tidA, _ := seedSearchData(t)
 	w0 := world.Id(0)
-	results, err := searchListingsByItemId(tidA, ListingSearchCriteria{ItemId: 2060000, WorldId: &w0})(db.WithContext(databasetest.TenantContext(tidA)))()
+	paged, err := searchListingsByItemIdPaged(tidA, ListingSearchCriteria{ItemId: 2060000, WorldId: &w0}, model.Page{Number: 1, Size: MaxSearchResults})(db.WithContext(databasetest.TenantContext(tidA)))()
 	require.NoError(t, err)
+	results := paged.Items
 	require.Len(t, results, 2) // w0 open + w0 maintenance; w1 and tenantB excluded
+	require.Equal(t, 2, paged.Total)
 	require.Equal(t, uint32(1000), results[0].Listing.PricePerBundle())
 	require.Equal(t, uint32(3000), results[1].Listing.PricePerBundle())
 	require.Equal(t, uint32(1001), results[0].ShopOwnerId)
@@ -88,21 +91,22 @@ func TestSearchListings_WorldScopedAndTenantScoped(t *testing.T) {
 
 func TestSearchListings_NoWorldFilterKeepsOldBehavior(t *testing.T) {
 	db, tidA, _ := seedSearchData(t)
-	results, err := searchListingsByItemId(tidA, ListingSearchCriteria{ItemId: 2060000})(db.WithContext(databasetest.TenantContext(tidA)))()
+	paged, err := searchListingsByItemIdPaged(tidA, ListingSearchCriteria{ItemId: 2060000}, model.Page{Number: 1, Size: MaxSearchResults})(db.WithContext(databasetest.TenantContext(tidA)))()
 	require.NoError(t, err)
-	require.Len(t, results, 3) // all tenant-A worlds, tenant B still excluded
+	require.Len(t, paged.Items, 3) // all tenant-A worlds, tenant B still excluded
+	require.Equal(t, 3, paged.Total)
 }
 
 func TestSearchListings_DescendingOrder(t *testing.T) {
 	db, tidA, _ := seedSearchData(t)
 	w0 := world.Id(0)
-	results, err := searchListingsByItemId(tidA, ListingSearchCriteria{ItemId: 2060000, WorldId: &w0, Descending: true})(db.WithContext(databasetest.TenantContext(tidA)))()
+	paged, err := searchListingsByItemIdPaged(tidA, ListingSearchCriteria{ItemId: 2060000, WorldId: &w0, Descending: true}, model.Page{Number: 1, Size: MaxSearchResults})(db.WithContext(databasetest.TenantContext(tidA)))()
 	require.NoError(t, err)
-	require.Len(t, results, 2)
-	require.Equal(t, uint32(3000), results[0].Listing.PricePerBundle())
+	require.Len(t, paged.Items, 2)
+	require.Equal(t, uint32(3000), paged.Items[0].Listing.PricePerBundle())
 }
 
-func TestSearchListings_CapAt200(t *testing.T) {
+func TestSearchListings_PageCappedAt200(t *testing.T) {
 	db := databasetest.NewInMemoryTenantDB(t, Migration, listing.Migration)
 	tid := uuid.New()
 	now := time.Now()
@@ -122,9 +126,13 @@ func TestSearchListings_CapAt200(t *testing.T) {
 		}).Error)
 	}
 	w0 := world.Id(0)
-	results, err := searchListingsByItemId(tid, ListingSearchCriteria{ItemId: 2060000, WorldId: &w0})(db.WithContext(databasetest.TenantContext(tid)))()
+	// The game cap is now the route's max page size (task-117): one page
+	// never exceeds MaxSearchResults, while Total reports the full match.
+	paged, err := searchListingsByItemIdPaged(tid, ListingSearchCriteria{ItemId: 2060000, WorldId: &w0}, model.Page{Number: 1, Size: MaxSearchResults})(db.WithContext(databasetest.TenantContext(tid)))()
 	require.NoError(t, err)
+	results := paged.Items
 	require.Len(t, results, MaxSearchResults)
+	require.Equal(t, 205, paged.Total)
 	// ascending truncates the most expensive tail
 	require.Equal(t, uint32(1000), results[0].Listing.PricePerBundle())
 	require.Equal(t, uint32(1000+MaxSearchResults-1), results[len(results)-1].Listing.PricePerBundle())

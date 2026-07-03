@@ -815,6 +815,54 @@
   ida:
     address: 7248577
   note: 'BODY-VERIFIED send-site 0x6e9ac1: COutPacket(33)+Encode1(fieldKey=get_field+216)+CMovePath::Flush (sub_5622DA); NO Encode4(crc) (crc gated GMS>=72). = MOVE_PLAYER. Resolves the delta-doc-flagged unverified opcode (predicted ~33). Delta-5 vs v61 (38).'
+- op: CANCEL_CHAIR
+  direction: serverbound
+  opcode: 34
+  fname: sub_69DF44
+  provenance: ida-discovered
+  ida:
+    address: 6938436
+  note: 'BODY-VERIFIED send-site 0x69df44: COutPacket(34)+Encode2(0xFFFF) (chairId=-1 = get up from chair) after CWvsContext::SetExclRequestSent. = CANCEL_CHAIR. Sits directly before USE_CHAIR=35 (chair pair). v61 CANCEL_CHAIR=39 (Delta-5). (caller sub_69DF44 also carries keydown-skill state, but the COutPacket(34) arm is the get-up send.)'
+- op: USE_CHAIR
+  direction: serverbound
+  opcode: 35
+  fname: sub_712894
+  provenance: ida-discovered
+  ida:
+    address: 7415956
+  note: 'BODY-VERIFIED send-site 0x712894: COutPacket(35)+Encode4(itemId) then CUser::SetActivePortableChair(itemId). = USE_CHAIR (portable-chair item path). v61 USE_CHAIR=40 (Delta-5).'
+- op: CLOSE_RANGE_ATTACK
+  direction: serverbound
+  opcode: 36
+  fname: sub_6A0528
+  provenance: ida-discovered
+  ida:
+    address: 6948136
+  note: 'BODY-VERIFIED send-site 0x6a0528: COutPacket(36)+Enc1(fieldKey=get_field+216)+Enc1(nDamagePerMob|count<<4)+Enc4(skillId)+Enc1(flags)+Enc1(bLeft<<7|action&0x7F)+Enc1(v776)+Enc1(mastery)+Enc4(crc)+per-mob{Enc4(mobId)+Enc1(hitAction)+...+Enc4(damage)}+Enc2(x)+Enc2(y). Physical melee skill attack, NO projectile/bullet field (contrast RANGED=37). v61 CLOSE_RANGE_ATTACK=41 (Delta-5).'
+- op: RANGED_ATTACK
+  direction: serverbound
+  opcode: 37
+  fname: sub_6A228C
+  provenance: ida-discovered
+  ida:
+    address: 6955660
+  note: 'BODY-VERIFIED send-site 0x6a228c: COutPacket(37)+Enc1(fieldKey)+Enc1(nDamage|count<<4)+Enc4(skillId)+[Enc4(keyDown) if 3121004 etc]+Enc1(flags)+Enc1(bLeft<<7|action)+Enc1(v776)+Enc1(mastery)+Enc4(crc)+Enc2(v164)+Enc2(v154)+Enc1(shootRange a3)+[Enc4(bulletItemId v183)]+per-mob+Enc2(x)+Enc2(y). Has projectile shootRange + bulletItemId (sub_69D19D reads the star/arrow slot). = RANGED_ATTACK. v61 RANGED_ATTACK=42 (Delta-5).'
+- op: MAGIC_ATTACK
+  direction: serverbound
+  opcode: 38
+  fname: sub_6A3AC7
+  provenance: ida-discovered
+  ida:
+    address: 6961863
+  note: 'BODY-VERIFIED send-site 0x6a3ac7: COutPacket(38)+Enc1(fieldKey)+Enc1(nDamage|count<<4)+Enc4(skillId)+[Enc4(a5) if BigBang 2121001/2221001/2321001]+Enc1(0)+Enc1(bLeft<<7|action)+Enc1(v776)+Enc1(mastery)+Enc4(crc)+per-mob+Enc2(x)+Enc2(y). Magic/area skill attack (skill switch on 2121006/2321008 etc; harvest annotated magic-area). = MAGIC_ATTACK. v61 MAGIC_ATTACK=43 (Delta-5).'
+- op: TAKE_DAMAGE
+  direction: serverbound
+  opcode: 39
+  fname: sub_69D6BF
+  provenance: ida-discovered
+  ida:
+    address: 6936255
+  note: 'BODY-VERIFIED send-site 0x69d6bf: COutPacket(39)+Enc4(crc)+Enc1(0xFE)+Enc4(damage)+Enc2(obstacle/mobId) from the periodic CUserLocal::Update HP-loss path (MakeIncDecHPEffect; 0xFE=obstacle-damage type). = TAKE_DAMAGE. v61 TAKE_DAMAGE=45 (Delta-6, NOT Delta-5 — TOUCH_MONSTER_ATTACK v61 44 not at this opcode).'
 - op: FACE_EXPRESSION
   direction: serverbound
   opcode: 42

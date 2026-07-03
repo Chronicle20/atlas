@@ -10321,8 +10321,7 @@
       ],
       "cells": {
         "gms_v48": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": 77
         },
         "gms_v61": {
@@ -10477,8 +10476,7 @@
       ],
       "cells": {
         "gms_v48": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": 78
         },
         "gms_v61": {
@@ -10745,8 +10743,7 @@
       ],
       "cells": {
         "gms_v48": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": 79
         },
         "gms_v61": {
@@ -11763,8 +11760,7 @@
       ],
       "cells": {
         "gms_v48": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": 83
         },
         "gms_v61": {
@@ -12866,8 +12862,7 @@
       ],
       "cells": {
         "gms_v48": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": 88
         },
         "gms_v61": {
@@ -13027,8 +13022,7 @@
       ],
       "cells": {
         "gms_v48": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": 89
         },
         "gms_v61": {
@@ -14841,8 +14835,7 @@
       ],
       "cells": {
         "gms_v48": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": 95
         },
         "gms_v61": {
@@ -15306,8 +15299,7 @@
       ],
       "cells": {
         "gms_v48": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": 97
         },
         "gms_v61": {

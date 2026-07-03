@@ -7,6 +7,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=field/clientbound/FieldSetQuestTime version=gms_v48 ida=0x4cbcad
 // packet-audit:verify packet=field/clientbound/FieldSetQuestTime version=gms_v83 ida=0x5378cd
 // packet-audit:verify packet=field/clientbound/FieldSetQuestTime version=gms_v84 ida=0x543bcb
 // packet-audit:verify packet=field/clientbound/FieldSetQuestTime version=gms_v87 ida=0x55f242
@@ -24,6 +25,25 @@ func TestSetQuestTimeGolden(t *testing.T) {
 	actual := test.Encode(t, ctx, input.Encode, nil)
 	if !bytes.Equal(actual, expected) {
 		t.Errorf("golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
+// TestSetQuestTimeByteOutputV48 pins the gms_v48 SET_QUEST_TIME (op 0x5F=95)
+// clientbound wire. IDA: CField::OnSetQuestTime @0x4cbcad (GMS_v48_1_DEVM.exe) reads
+// Decode1(count) then per-quest Decode4(questId) + DecodeBuffer(8)(startTime) +
+// DecodeBuffer(8)(endTime) — byte-identical to the version-invariant golden.
+func TestSetQuestTimeByteOutputV48(t *testing.T) {
+	input := NewSetQuestTime([]QuestTime{NewQuestTime(0x000004D2, 0x0000000000000001, 0x00000000000000FF)})
+	ctx := test.CreateContext("GMS", 48, 1)
+	expected := []byte{
+		0x01,
+		0xD2, 0x04, 0x00, 0x00,
+		0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	}
+	actual := test.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v48 golden mismatch: got %v want %v", actual, expected)
 	}
 }
 

@@ -124,13 +124,13 @@ Tool: `46f121c4a0f649a42249ab39feefdc56c1837263`
 | SET_POTION_DISCOUNT_RATE | CWvsContext::OnSetPotionDiscountRate; sub_8422E3; sub_917AB7 |  |  | ⬜ | 0x04B | ❌ | 0x04B | ❌ | 0x04B | ❌ | 0x04E | ❌ | 0x050 | ❌ | 0x050 | ❌ | 0x051 | ❌ | 0x048 | ❌ |
 | BRIDLE_MOB_CATCH_FAIL | CWvsContext::OnBridleMobCatchFail | character/clientbound/CharacterBridleMobCatchFail (T1) |  | ⬜ | 0x04C | 🟡 | 0x04C | 🟡 | 0x04C | 🟡 | 0x04F | ✅ | 0x051 | ✅ | 0x051 | ✅ | 0x052 | ✅ | 0x049 | ✅ |
 | IDA_0X04C | sub_AF8F08 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x04C | ❌ |
-| BLOCKED_MAP | CField::OnTransferFieldReqIgnored | field/clientbound/FieldBlockedMap (T1) | 0x04D | 🟡 | 0x061 | 🟡 | 0x077 | 🟡 | 0x07B | 🟡 | 0x083 | ✅ | 0x086 | ✅ | 0x08B | ✅ | 0x093 | ✅ | 0x081 | ✅ |
+| BLOCKED_MAP | CField::OnTransferFieldReqIgnored | field/clientbound/FieldBlockedMap (T1) | 0x04D | ✅ | 0x061 | 🟡 | 0x077 | 🟡 | 0x07B | 🟡 | 0x083 | ✅ | 0x086 | ✅ | 0x08B | ✅ | 0x093 | ✅ | 0x081 | ✅ |
 | IDA_0X04D | sub_AECC23 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x04D | ❌ |
 | IMITATED_NPC_RESULT | CWvsContext::OnImitatedNPCResult; sub_830AFF; sub_902E77 |  |  | ⬜ | 0x04D | ❌ | 0x04D | ❌ | 0x04D | ❌ | 0x050 | ❌ | 0x052 | ❌ | 0x052 | ❌ | 0x053 | ❌ |  | ⬜ |
-| BLOCKED_SERVER | CField::OnTransferChannelReqIgnored | field/clientbound/FieldBlockedServer (T1) | 0x04E | 🟡 | 0x062 | 🟡 | 0x078 | 🟡 | 0x07C | 🟡 | 0x084 | ✅ | 0x087 | ✅ | 0x08C | ✅ | 0x094 | ✅ | 0x082 | ✅ |
+| BLOCKED_SERVER | CField::OnTransferChannelReqIgnored | field/clientbound/FieldBlockedServer (T1) | 0x04E | ✅ | 0x062 | 🟡 | 0x078 | 🟡 | 0x07C | 🟡 | 0x084 | ✅ | 0x087 | ✅ | 0x08C | ✅ | 0x094 | ✅ | 0x082 | ✅ |
 | IDA_0X04E | sub_B0FDF2 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x04E | ❌ |
 | IMITATED_NPC_DATA | CNpcPool::OnNpcImitateData; CWvsContext::OnImitatedNPCData; sub_830B0B; sub_902E83; sub_AEC92E |  |  | ⬜ | 0x04E | ❌ | 0x04E | ❌ | 0x04E | ❌ | 0x051 | ❌ | 0x053 | ❌ | 0x053 | ❌ | 0x054 | ❌ | 0x055 | ❌ |
-| FORCED_MAP_EQUIP | CField::OnFieldSpecificData | field/clientbound/FieldForcedMapEquip (T1) | 0x04F | 🟡 | 0x063 | 🟡 | 0x079 | 🟡 | 0x07D | 🟡 | 0x085 | ✅ | 0x088 | ✅ | 0x08D | ✅ | 0x095 | ✅ | 0x083 | ✅ |
+| FORCED_MAP_EQUIP | CField::OnFieldSpecificData | field/clientbound/FieldForcedMapEquip (T1) | 0x04F | ✅ | 0x063 | 🟡 | 0x079 | 🟡 | 0x07D | 🟡 | 0x085 | ✅ | 0x088 | ✅ | 0x08D | ✅ | 0x095 | ✅ | 0x083 | ✅ |
 | IDA_0X04F | sub_AEC942 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x04F | ❌ |
 | LIMITED_NPC_DISABLE_INFO | CNpcPool::OnUpdateLimitedDisableInfo; CWvsContext::OnLimitedNPCDisableInfo; sub_AECCBF |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x04F | ❌ | 0x052 | ❌ | 0x054 | ❌ | 0x054 | ❌ | 0x055 | ❌ | 0x056 | ❌ |
 | MONSTER_BOOK_SET_CARD | CWvsContext::OnMonsterBookSetCard | character/clientbound/monsterbook/CharacterSetCard (T1) |  | ⬜ | 0x04F | 🟡 | 0x04F | 🟡 | 0x050 | 🟡 | 0x053 | ✅ | 0x055 | ✅ | 0x055 | ✅ | 0x056 | ✅ | 0x057 | ✅ |
@@ -145,7 +145,7 @@ Tool: `46f121c4a0f649a42249ab39feefdc56c1837263`
 | SPOUSE_CHAT | CField::OnCoupleMessage | field/clientbound/FieldSpouseChat (T1) | 0x052 | ❌ | 0x066 | ✅ | 0x07C | ✅ | 0x080 | ✅ | 0x088 | ✅ | 0x08B | ✅ | 0x090 | ✅ | 0x098 | ✅ |  | ⬜ |
 | IDA_0X053 | sub_B11485 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x053 | ❌ |
 | PARTY_VALUE | CWvsContext::OnPartyValue |  |  | ⬜ |  | ⬜ | 0x053 | ❌ | 0x054 | ❌ | 0x05B | ❌ | 0x05D | ❌ | 0x05D | ❌ | 0x05E | ❌ | 0x062 | ❌ |
-| SUMMON_ITEM_INAVAILABLE | CField::OnSummonItemInavailable | field/clientbound/FieldSummonItemUnavailable (T1) | 0x053 | 🟡 | 0x067 | 🟡 | 0x07D | 🟡 | 0x081 | 🟡 | 0x089 | ✅ | 0x08C | ✅ | 0x091 | ✅ | 0x099 | ✅ | 0x086 | ✅ |
+| SUMMON_ITEM_INAVAILABLE | CField::OnSummonItemInavailable | field/clientbound/FieldSummonItemUnavailable (T1) | 0x053 | ✅ | 0x067 | 🟡 | 0x07D | 🟡 | 0x081 | 🟡 | 0x089 | ✅ | 0x08C | ✅ | 0x091 | ✅ | 0x099 | ✅ | 0x086 | ✅ |
 | FIELD_EFFECT | CField::OnFieldEffect; sub_4C7B59; sub_4EB523 | field/clientbound/FieldEffectBossHp (T1) | 0x054 | ❌ | 0x068 | ✅ | 0x07E | ✅ | 0x082 | ✅ | 0x08A | ✅ | 0x08D | ✅ | 0x092 | ✅ | 0x09A | ✅ | 0x087 | ✅ |
 | FIELD_SET_VARIABLE | CWvsContext::OnFieldSetVariable |  |  | ⬜ |  | ⬜ | 0x054 | ❌ | 0x055 | ❌ | 0x05C | ❌ | 0x05E | ❌ | 0x05E | ❌ | 0x05F | ❌ | 0x063 | ❌ |
 | IDA_0X054 | sub_AEC922 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x054 | ❌ |
@@ -161,10 +161,10 @@ Tool: `46f121c4a0f649a42249ab39feefdc56c1837263`
 | FAMILY_CHART_RESULT | CWvsContext::OnFamilyChartResult |  |  | ⬜ |  | ⬜ | 0x057 | ❌ | 0x058 | ❌ | 0x05E | ❌ | 0x061 | ❌ | 0x061 | ❌ | 0x062 | ❌ | 0x065 | ❌ |
 | CLASS_COMPETITION_AUTHKEY_UPDATE | CWvsContext::OnClassCompetitionAuthkeyUpdate |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x058 | ❌ | 0x05A | ❌ | 0x05A | ❌ | 0x05B | ❌ | 0x05F | ❌ |
 | FAMILY_INFO_RESULT | CWvsContext::OnFamilyInfoResult |  |  | ⬜ |  | ⬜ | 0x058 | ❌ | 0x059 | ❌ | 0x05F | ❌ | 0x062 | ❌ | 0x062 | ❌ | 0x063 | ❌ | 0x066 | ❌ |
-| OX_QUIZ | CField::OnQuiz | field/clientbound/FieldOxQuiz (T1) | 0x058 | 🟡 | 0x06C | 🟡 | 0x085 | 🟡 | 0x089 | 🟡 | 0x091 | ✅ | 0x094 | ✅ | 0x099 | ✅ | 0x0A1 | ✅ | 0x08E | ✅ |
+| OX_QUIZ | CField::OnQuiz | field/clientbound/FieldOxQuiz (T1) | 0x058 | ✅ | 0x06C | 🟡 | 0x085 | 🟡 | 0x089 | 🟡 | 0x091 | ✅ | 0x094 | ✅ | 0x099 | ✅ | 0x0A1 | ✅ | 0x08E | ✅ |
 | FAKE_GM_NOTICE | CWvsContext::OnFakeGMNotice; sub_AC26E5 |  |  | ⬜ | 0x059 | ❌ | 0x06C | ❌ | 0x06E | ❌ | 0x074 | ❌ | 0x077 | ❌ | 0x077 | ❌ | 0x078 | ❌ |  | ⬜ |
 | FAMILY_RESULT | CWvsContext::OnFamilyResult |  |  | ⬜ |  | ⬜ | 0x059 | ❌ | 0x05A | ❌ | 0x060 | ❌ | 0x063 | ❌ | 0x063 | ❌ | 0x064 | ❌ | 0x067 | ❌ |
-| GMEVENT_INSTRUCTIONS | CField::OnDesc | field/clientbound/FieldGmEventInstructions (T1) | 0x059 | 🟡 | 0x06D | 🟡 | 0x086 | 🟡 | 0x08A | 🟡 | 0x092 | ✅ | 0x095 | ✅ | 0x09A | ✅ | 0x0A2 | ✅ | 0x08F | ✅ |
+| GMEVENT_INSTRUCTIONS | CField::OnDesc | field/clientbound/FieldGmEventInstructions (T1) | 0x059 | ✅ | 0x06D | 🟡 | 0x086 | 🟡 | 0x08A | 🟡 | 0x092 | ✅ | 0x095 | ✅ | 0x09A | ✅ | 0x0A2 | ✅ | 0x08F | ✅ |
 | IDA_0X059 | CWvsContext::OnMapleTVUseRes |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x059 | ❌ |
 | WEB_BOARD_AUTHKEY_UPDATE | CWvsContext::OnWebBoardAuthkeyUpdate |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x059 | ❌ | 0x05B | ❌ | 0x05B | ❌ | 0x05C | ❌ | 0x060 | ❌ |
 | CLOCK | CField::OnClock | field/clientbound/FieldClock (T1) | 0x05A | ❌ | 0x06E | ✅ | 0x087 | ✅ | 0x08B | ✅ | 0x093 | ✅ | 0x096 | ✅ | 0x09B | ✅ | 0x0A3 | ✅ | 0x090 | ✅ |
@@ -184,12 +184,12 @@ Tool: `46f121c4a0f649a42249ab39feefdc56c1837263`
 | SET_CASH_SHOP | CStage::OnSetCashShop |  |  | ⬜ | 0x05E | ❌ | 0x074 | ❌ | 0x078 | ❌ | 0x07F | ❌ | 0x082 | ❌ | 0x087 | ❌ | 0x08F | ❌ | 0x07D | ❌ |
 | FAMILY_NOTIFY_LOGIN_OR_LOGOUT | CWvsContext::OnFamilyNotifyLoginOrLogout |  |  | ⬜ |  | ⬜ | 0x05F | ❌ | 0x060 | ❌ | 0x066 | ❌ | 0x069 | ❌ | 0x069 | ❌ | 0x06A | ❌ | 0x06D | ❌ |
 | IDA_0X05F | sub_5A8316 |  |  | ⬜ | 0x05F | ❌ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
-| SET_QUEST_TIME | CField::OnSetQuestTime | field/clientbound/FieldSetQuestTime (T1) | 0x05F | 🟡 | 0x072 | 🟡 | 0x08B | 🟡 | 0x08F | 🟡 | 0x097 | ✅ | 0x09A | ✅ | 0x09F | ✅ | 0x0A7 | ✅ | 0x094 | ✅ |
+| SET_QUEST_TIME | CField::OnSetQuestTime | field/clientbound/FieldSetQuestTime (T1) | 0x05F | ✅ | 0x072 | 🟡 | 0x08B | 🟡 | 0x08F | 🟡 | 0x097 | ✅ | 0x09A | ✅ | 0x09F | ✅ | 0x0A7 | ✅ | 0x094 | ✅ |
 | ARIANT_RESULT | CField::OnWarnMessage | field/clientbound/FieldAriantResult (T1) | 0x060 | 🟡 | 0x073 | 🟡 | 0x08C | 🟡 | 0x090 | 🟡 | 0x098 | ✅ | 0x09B | ✅ | 0x0A0 | ✅ | 0x0A8 | ✅ |  | ⬜ |
 | FAMILY_SET_PRIVILEGE | CWvsContext::OnFamilySetPrivilege |  |  | ⬜ |  | ⬜ | 0x060 | ❌ | 0x061 | ❌ | 0x067 | ❌ | 0x06A | ❌ | 0x06A | ❌ | 0x06B | ❌ | 0x06E | ❌ |
 | IDA_0X060 | sub_5A871B |  |  | ⬜ | 0x060 | ❌ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
 | FAMILY_SUMMON_REQUEST | CWvsContext::OnFamilySummonRequest |  |  | ⬜ |  | ⬜ | 0x061 | ❌ | 0x062 | ❌ | 0x068 | ❌ | 0x06B | ❌ | 0x06B | ❌ | 0x06C | ❌ | 0x06F | ❌ |
-| SET_OBJECT_STATE | CField::OnSetObjectState | field/clientbound/FieldSetObjectState (T1) | 0x061 | 🟡 | 0x074 | 🟡 | 0x08D | 🟡 | 0x091 | 🟡 | 0x099 | ✅ | 0x09C | ✅ | 0x0A1 | ✅ | 0x0A9 | ✅ | 0x095 | ✅ |
+| SET_OBJECT_STATE | CField::OnSetObjectState | field/clientbound/FieldSetObjectState (T1) | 0x061 | ✅ | 0x074 | 🟡 | 0x08D | 🟡 | 0x091 | 🟡 | 0x099 | ✅ | 0x09C | ✅ | 0x0A1 | ✅ | 0x0A9 | ✅ | 0x095 | ✅ |
 | NOTIFY_LEVELUP | CWvsContext::OnNotifyLevelUp; sub_90D651 |  |  | ⬜ |  | ⬜ | 0x062 | ❌ | 0x063 | ❌ | 0x069 | ❌ | 0x06C | ❌ | 0x06C | ❌ | 0x06D | ❌ | 0x070 | ❌ |
 | STOP_CLOCK | CField::OnDestroyClock; sub_4C6AEF | field/clientbound/FieldStopClock (T1) | 0x062 | ❌ | 0x075 | 🟡 | 0x08E | 🟡 | 0x092 | 🟡 | 0x09A | ✅ | 0x09D | ✅ | 0x0A2 | ✅ | 0x0AA | ✅ | 0x096 | ✅ |
 | NOTIFY_MARRIAGE | CWvsContext::OnNotifyWedding; sub_90D65D |  |  | ⬜ |  | ⬜ | 0x063 | ❌ | 0x064 | ❌ | 0x06A | ❌ | 0x06D | ❌ | 0x06D | ❌ | 0x06E | ❌ | 0x071 | ❌ |
@@ -1003,7 +1003,7 @@ Tool: `46f121c4a0f649a42249ab39feefdc56c1837263`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v48 | 88 | 0 | 17 | 235 | 629 | 0 | 25.9% |
+| v48 | 96 | 0 | 9 | 235 | 629 | 0 | 28.2% |
 | v61 | 208 | 0 | 60 | 230 | 471 | 0 | 41.8% |
 | v72 | 216 | 0 | 73 | 248 | 432 | 0 | 40.2% |
 | v79 | 228 | 0 | 72 | 246 | 423 | 0 | 41.8% |

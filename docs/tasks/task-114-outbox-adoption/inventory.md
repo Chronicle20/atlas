@@ -1221,3 +1221,142 @@ along with its now-unused `atlas-notes/kafka/producer` import in
   pending task-119 (see `bug_execute_transaction_noop.md`); this task's
   migration uses the correct seam and becomes atomic for free once
   task-119 lands.
+
+## atlas-pets
+
+Module: `services/atlas-pets/atlas.com/pets`. All line numbers below
+reflect `pet/processor.go` as of the Task 17 commit.
+
+### Migrated
+
+Every `*AndEmit` site now wraps its own outer
+`database.ExecuteTransaction(p.db.WithContext(p.ctx), ...)`, builds the
+outbox provider from that outer `tx` via
+`outbox.EmitProvider(p.l, p.ctx, tx)`, and calls the underlying
+`mb`-taking method via `p.With(WithTransaction(tx))` so the method's own
+internal `ExecuteTransaction` call re-enters the same outer transaction
+(re-entrant per design). All 12 emit call sites in the brief (11
+`message.Emit` + 1 `message.EmitWithResult`) were migrated; none were
+left direct.
+
+- `pet/processor.go:234` `CreateAndEmit` — Pattern B (`EmitWithResult`).
+  Captures `result Model` outside the closure; `Create` itself already
+  wraps its write + `EnvStatusEventTopic` `createdEventProvider` put in
+  its own `ExecuteTransaction`, which now re-enters the outer tx.
+- `pet/processor.go:283` `DeleteOnRemoveAndEmit` — Pattern A. Wraps
+  `DeleteOnRemove`, which does pure reads (character/inventory lookup)
+  then delegates to the already-migrated `Delete` write.
+- `pet/processor.go:312` `DeleteForCharacterAndEmit` — Pattern A. Wraps
+  `DeleteForCharacter`, which loops `GetByOwner` results and calls
+  `p.With(WithTransaction(tx)).Delete(mb)(...)` per pet — all deletes and
+  their `deletedEventProvider` events now share the one outer tx/buffer.
+- `pet/processor.go:386` `SpawnAndEmit` — Pattern A. `Spawn` covers the
+  egg-hatch-on-summon branch (in-place template swap + `ip.ChangeTemplate`
+  command), the lead-migration slot-shift loop, and the final
+  `spawnEventProvider` — all inside the one re-entrant tx/buffer.
+- `pet/processor.go:541` `DespawnAndEmit` — Pattern A. Wraps
+  `Despawn`/`defaultDespawn`'s slot-shift loop and `despawnEventProvider`.
+- `pet/processor.go:622` `AttemptCommandAndEmit` — Pattern A. `AttemptCommand`
+  calls `p.With(WithTransaction(tx)).AwardCloseness(mb)(...)` internally,
+  which re-enters the same outer tx a second level deep — still one
+  physical transaction/buffer.
+- `pet/processor.go:683` `EvaluateHungerAndEmit` — Pattern A.
+  `EvaluateHunger` loops spawned pets, updates fullness, and conditionally
+  calls `p.With(WithTransaction(tx)).Despawn(mb)(...)` on hunger-triggered
+  despawn — nested re-entrant call, same tx/buffer.
+- `pet/processor.go:761` `AwardClosenessWithTransactionAndEmit` — Pattern A.
+  (`AwardClosenessAndEmit` is a thin `uuid.Nil` wrapper around this and
+  needed no separate change.) `AwardClosenessWithTransaction` calls
+  `p.With(WithTransaction(tx)).AwardLevel(mb)(...)` internally on
+  level-up — nested re-entrant call.
+- `pet/processor.go:837` `EvolveAndEmit` — Pattern A. `Evolve` performs the
+  template-roll write + `ip.ChangeTemplate` command +
+  `evolvedEventProvider` inside its own re-entrant tx, then (outside that
+  inner tx but still inside the outer one, since `p` here is already
+  tx-rebound) best-effort calls `p.Despawn`/`p.Spawn` for the
+  summoned-pet appearance refresh, swallowing their errors as warnings —
+  unchanged control flow, now folded into the single outer transaction
+  instead of three separately-committed ones (see Notes).
+- `pet/processor.go:918` `AwardFullnessAndEmit` — Pattern A.
+- `pet/processor.go:959` `AwardLevelAndEmit` — Pattern A.
+- `pet/processor.go:1000` `SetExcludeAndEmit` — Pattern A.
+
+`inv.Processor.ChangeTemplate` (called from `Spawn`'s egg-hatch branch and
+from `Evolve`) buffers an `EnvCommandTopic` `CHANGE_TEMPLATE` command to
+atlas-inventory into the same shared `mb` as the status event — this is
+the method's own follow-on effect of the state change it just made (not a
+cross-service command emitted independently of any local write), so per
+the atlas-character precedent it migrates with the rest of the buffer
+rather than being left direct.
+
+### Left direct
+
+None. `ClearPositions` (`pet/processor.go:737`) has its own
+`ExecuteTransaction` (the 13th tx site counted in the brief) but performs
+no Kafka emit at all — it only clears the Redis-backed temporal-position
+registry — so there is nothing to migrate there.
+
+### Notes
+
+- **Struct-init stored provider (`:108`, pre-migration).** `ProcessorImpl`
+  held a `kp producer.Provider` field constructed once in `NewProcessor`
+  via `producer.ProviderImpl(l)(ctx)` and bound to the *original*
+  construction-time context — every one of the 12 `*AndEmit` sites read
+  through this single field. Since all 12 tx-coupled sites migrated and no
+  method needed to keep a direct-producer flow (there's no method here
+  whose flow does no DB write among the `*AndEmit` set), the field, its
+  `NewProcessor` initializer, and the now-dead `atlas-pets/kafka/producer`
+  import were deleted outright rather than left dead — same call as
+  atlas-notes made for its equivalent stored field.
+- Enumeration: the step-2 grep (`message.Emit`/`EmitWithResult`/
+  `producer.ProviderImpl`/`database.ExecuteTransaction`) plus the extra
+  `GetAll()`/`NewBuffer()`/`p.kp(`/`producer.Provider`/`AndEmit(` sweep
+  both landed on exactly the 12 `*AndEmit` sites and 13
+  `ExecuteTransaction` sites called out in the brief — no hand-rolled
+  buffer-flush loop over `p.kp` and no additional stored-provider fan-out
+  anywhere else in the module (`character`, `inventory`, `data/pet`,
+  `data/position`, `skill` sub-processors are all REST-only clients with
+  no local `db` field, so `WithTransaction`'s existing behavior of only
+  swapping `p.db` needed no rebind of those fields).
+- No rejection/error event topic exists in this service's message
+  package (`kafka/message/pet` defines only `EnvStatusEventTopic` and
+  `EnvCommandTopic`) — every `mb.Put` in every migrated method represents
+  a genuine committed state change, so none of the failure-path
+  pitfalls (rejection-then-`return nil`, or shared-buffer-forwarded-on-
+  failure) apply here; no `rejectEmit` closures were needed anywhere in
+  this migration.
+- `EvolveAndEmit`'s post-evolve despawn/respawn appearance-refresh calls
+  (`Evolve`'s `wasSummoned` branch) already swallowed despawn/spawn errors
+  as warnings pre-migration and always returned `nil` from `Evolve`
+  regardless. Post-migration those nested calls re-enter the *same*
+  physical transaction as the main evolve write (previously each ran in
+  its own separately-committed transaction), so a swallowed despawn/spawn
+  failure now shares fate with the evolve commit instead of failing
+  independently. This is an accepted side effect of the recipe's
+  re-entrant-nested-tx design (same as every other migrated service where
+  an `AndEmit` method calls into another already-tx-wrapped method) and
+  not a new rejection-path bug — there is no separate rejection event on
+  this branch, and the existing log-and-continue semantics are unchanged.
+  No behavior change is user-visible today since `ExecuteTransaction` is
+  still a no-op pending task-119.
+- No batching-per-item-command concern (per the atlas-notes lesson):
+  `DeleteForCharacter` and `EvaluateHunger` loop over pets and call
+  `Delete`/`Despawn` per item, but neither buffers a *direct-path*
+  side-effecting command outside `mb` — everything they emit goes through
+  the shared buffer, which only flushes once, after the single outer
+  `ExecuteTransaction` commits. There is no separate immediate-fire
+  command needing post-commit collection here.
+- No pre-existing test asserted direct-path emission for a migrated flow:
+  every test in `pet/processor_test.go` calls the `mb`-taking methods
+  (`Create`, `Delete`, `Spawn`, `Despawn`, `AttemptCommand`,
+  `EvaluateHunger`, `AwardCloseness*`, `AwardFullness`, `AwardLevel`,
+  `SetExclude`, `Evolve`) directly with an explicit `message.NewBuffer()`
+  and asserts against the buffer contents — never the `*AndEmit`
+  wrappers — so no test needed updating to assert outbox rows instead.
+- `go test -race ./...`, `go vet ./...`, `go build ./...` all clean;
+  `docker buildx bake atlas-pets` succeeded; `tools/redis-key-guard.sh`
+  clean (exit 0 across the whole repo).
+- `database.ExecuteTransaction` atomicity is still latent fleet-wide
+  pending task-119 (see `bug_execute_transaction_noop.md`); this task's
+  migration uses the correct seam and becomes atomic for free once
+  task-119 lands.

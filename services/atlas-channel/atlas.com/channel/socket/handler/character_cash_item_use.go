@@ -34,7 +34,7 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 		p.Decode(l, ctx)(r, readerOptions)
 		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
 
-		updateTimeFirst := t.Region() == "GMS" && t.MajorVersion() >= 95
+		updateTimeFirst := (t.Region() == "GMS" && t.MajorVersion() >= 87) || t.Region() == "JMS"
 		updateTime := p.UpdateTime()
 		source := slot.Position(p.Source())
 		itemId := item.Id(p.ItemId())

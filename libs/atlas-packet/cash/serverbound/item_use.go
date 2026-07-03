@@ -35,7 +35,7 @@ func (m ItemUse) Encode(l logrus.FieldLogger, ctx context.Context) func(options 
 	w := response.NewWriter(l)
 	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
-		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
+		if (t.Region() == "GMS" && t.MajorVersion() >= 87) || t.Region() == "JMS" {
 			w.WriteInt(m.updateTime)
 		}
 		w.WriteInt16(m.source)
@@ -47,7 +47,7 @@ func (m ItemUse) Encode(l logrus.FieldLogger, ctx context.Context) func(options 
 func (m *ItemUse) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
-		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
+		if (t.Region() == "GMS" && t.MajorVersion() >= 87) || t.Region() == "JMS" {
 			m.updateTime = r.ReadUint32()
 		}
 		m.source = r.ReadInt16()

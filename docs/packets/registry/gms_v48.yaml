@@ -911,6 +911,14 @@
   ida:
     address: 5748606
   note: 'send-site 0x70e4fe: COutPacket(62). v61 USE_CASH_ITEM=73.'
+- op: ITEM_MOVE
+  direction: serverbound
+  opcode: 55
+  fname: sub_70D8DE
+  provenance: ida-discovered
+  ida:
+    address: 7395038
+  note: 'BODY-VERIFIED send-site 0x70d8de: COutPacket(55)+Encode4(updateTime)+Encode1(a2=inventoryType)+Encode2(a3=srcSlot)+Encode2(a4=dstSlot)+Encode2(a5=quantity) + SetExclRequestSent. Canonical inventory item-move/drop = v61 ITEM_MOVE (sub_831C83). v61 ITEM_MOVE=70 (Delta-15). NB v48 op57/op60/op61 are item-USE-family variants (Enc4(time)+Enc2(slot)+Enc4(itemId), category-gated e.g. op61 only itemId/10000==226) left unresolved pending item-category cross-ref.'
 - op: USE_ITEM
   direction: serverbound
   opcode: 65
@@ -995,6 +1003,26 @@
   ida:
     address: 6945363
   note: 'BODY-VERIFIED send-site 0x69fa53 (field cursor-click handler): clicking a remote player sends COutPacket(93)+Encode1(4=invite mode)+Encode4(targetCharId)+Encode1(hasName)+[EncodeStr(name) if set]; a second arm (already-open miniroom) sends COutPacket(93)+Enc1(4)+Enc4(charId)+Enc1(0). = PLAYER_INTERACTION (miniroom/trade invite family; harvest also names op93 CMiniRoomBaseDlg::SendInviteResult). v61 PLAYER_INTERACTION=111 (Delta-18). NB the same handler sends op46 (Enc4(id)+Enc2(x)+Enc2(y)) for clicking a hired-merchant/player-shop object — op46 is NOT GENERAL_CHAT (confirms prior negative; real GENERAL_CHAT sender is the CField chat-input parser, twin of v61 CField::SendChatMsg EncStr+Enc1).'
+- op: SPOUSE_CHAT
+  direction: serverbound
+  opcode: 91
+  fname: sub_65EA0D
+  fname_alts:
+  - CUIStatusBar::SendCoupleMessage
+  provenance: ida-discovered
+  ida:
+    address: 6679053
+  note: 'BODY-VERIFIED send-site 0x65ea0d: gated on married flag charData+879 (else notice 154 "not married"), reads spouse name charData+883, then COutPacket(91)+EncodeStr(spouseName)+EncodeStr(a2=message). = v61 SPOUSE_CHAT (CUIStatusBar::SendCoupleMessage). v61 SPOUSE_CHAT=109 (Delta-18).'
+- op: CHANGE_KEYMAP
+  direction: serverbound
+  opcode: 110
+  fname: sub_4E5FAE
+  fname_alts:
+  - CFuncKeyMappedMan::SaveFuncKeyMap
+  provenance: ida-discovered
+  ida:
+    address: 5136302
+  note: 'BODY-VERIFIED send-site 0x4e5fae (this=CFuncKeyMappedMan): diffs the 89-entry keymap vs the saved copy (offset +4 vs +449), then COutPacket(110)+Encode4(mode=0)+Encode4(changedCount)+per-key{Encode4(keyIndex)+Encode1(type)+Encode4(action) via sub_49C937} + CFuncKeyMappedMan::AdaptVirtualKey. = v61 CHANGE_KEYMAP (SaveFuncKeyMap). v61 CHANGE_KEYMAP=123 (Delta-13).'
 - op: WHISPER
   direction: serverbound
   opcode: 90
@@ -1068,6 +1096,16 @@
   ida:
     address: 5748606
   note: 'send-site 0x58e90b: COutPacket(114)+EncBuffer(petId,8)+Enc1(type)+Enc1(action)+EncStr(msg). v61 PET_CHAT=139.'
+- op: SUMMON_ATTACK
+  direction: serverbound
+  opcode: 121
+  fname: sub_5D9424
+  fname_alts:
+  - CSummoned::TryDoingAttackManual
+  provenance: ida-discovered
+  ida:
+    address: 6132260
+  note: 'BODY-VERIFIED send-site 0x5d9424: summon-attack state this[36]==1, summon skillId this[33] (2121005/2221005/2311006/2321003/3121006/3221005 summon skills), builds mob-hit list, then COutPacket(121)+Encode4(summonSkillId)+Encode1((left<<7)|4)+Encode1(mobCount)+per-mob{Encode4(mobId)+Encode1(hitAction)+Encode1(left<<7|action)+Encode1(...)+Encode1(...)+Encode2(x)+Encode2(y)+Encode2(x2)+Encode2(y2)+Encode2(delay)+Encode4(...)}+Encode2(myX)+Encode2(myY). = v61 SUMMON_ATTACK (CSummoned::TryDoingAttackManual). v61 SUMMON_ATTACK=147 (Delta-26). NB v48 op122 (summon-vs-mob damage, Enc4(summonId)+Enc1(action/0xFE)+Enc4(dmg)+Enc4(mobId)) and op123 (beholder skill 1320008, Enc4(summonId)+Enc4(skillId)+Enc1(flag|5)) are the same summon cluster, left unresolved pending exact SetDamaged/summon-skill disambiguation.'
 - op: DAMAGE_REACTOR
   direction: serverbound
   opcode: 145

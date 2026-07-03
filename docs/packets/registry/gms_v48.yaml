@@ -805,6 +805,16 @@
   ida:
     address: 5003524
   note: 'BODY-VERIFIED send-site 0x4c5904: COutPacket(31)+Encode1(channel a1)+Encode4 (SetExclRequestSent). = CHANGE_CHANNEL. Resolves the delta-doc-flagged unverified opcode (predicted ~31). Delta-5 vs v61 (36).'
+- op: ENTER_CASHSHOP
+  direction: serverbound
+  opcode: 32
+  fname: sub_70BD0D
+  fname_alts:
+  - CWvsContext::SendMigrateToShopRequest
+  provenance: ida-discovered
+  ida:
+    address: 7388429
+  note: 'BODY-VERIFIED send-site 0x70bd0d: CWvsContext throttled (500ms) migrate request — checks migrating flag this[2079] + trade/party guards then COutPacket(32)+Encode4(v8) + SetExclRequestSent, sets this[2079]=1. = ENTER_CASHSHOP (SendMigrateToShopRequest). v61 ENTER_CASHSHOP=37 (Delta-5, matches the 30-38 region).'
 - op: MOVE_PLAYER
   direction: serverbound
   opcode: 33
@@ -895,6 +905,46 @@
   ida:
     address: 5748606
   note: 'send-site 0x6afcf0: COutPacket(71). v61 CANCEL_BUFF=84.'
+- op: CHAR_INFO_REQUEST
+  direction: serverbound
+  opcode: 76
+  fname: sub_71D059
+  fname_alts:
+  - CWvsContext::SendCharacterInfoRequest
+  provenance: ida-discovered
+  ida:
+    address: 7458905
+  note: 'BODY-VERIFIED send-site 0x71d059: CUserPool::GetRemoteUser(a2) then COutPacket(76)+Encode4(remoteCharOid)+Encode4(a2=charId) + SetExclRequestSent, sets this[2079]=1. Called from the field cursor-click handler sub_69FA53 when clicking a remote player. No trailing Enc1(petInfo) (added post-v48). = CHAR_INFO_REQUEST. v61 CHAR_INFO_REQUEST=89 (Delta-13; non-uniform — GIVE_FAME below is Delta0).'
+- op: GIVE_FAME
+  direction: serverbound
+  opcode: 87
+  fname: sub_72069A
+  fname_alts:
+  - CWvsContext::SendGivePopularityRequest
+  provenance: ida-discovered
+  ida:
+    address: 7473818
+  note: 'BODY-VERIFIED send-site 0x72069a: 300000ms (5-min) cooldown in this[2846] + CUserPool::GetRemoteUser + not-found (ChatLogAdd 355)/wait (298) notices, then COutPacket(87)+Encode4(RemoteUser[405]=targetCharId)+Encode1(a3=flag up/down)+EncodeStr(a4). Exact v61 GIVE_FAME (SendGivePopularityRequest Enc4(charId)+Enc1(flag), 5-min cooldown) twin. v61 GIVE_FAME=87 (Delta0).'
+- op: MULTI_CHAT
+  direction: serverbound
+  opcode: 89
+  fname: sub_65EB4F
+  fname_alts:
+  - CUIStatusBar::SendGroupMessage
+  provenance: ida-discovered
+  ida:
+    address: 6679375
+  note: 'BODY-VERIFIED send-site 0x65eb4f: type demux (0=buddy sub_72ADD4, 1=party sub_72AC26, 2=guild sub_727148 target lists) then COutPacket(89)+Encode1(type 0/1/2)+Encode1(count)+loop Encode4(targetCharId[i])+EncodeStr(msg). = MULTI_CHAT (SendGroupMessage). v61 MULTI_CHAT=107 (Delta-18).'
+- op: PLAYER_INTERACTION
+  direction: serverbound
+  opcode: 93
+  fname: sub_69FA53
+  fname_alts:
+  - CMiniRoomBaseDlg::SendInviteResult
+  provenance: ida-discovered
+  ida:
+    address: 6945363
+  note: 'BODY-VERIFIED send-site 0x69fa53 (field cursor-click handler): clicking a remote player sends COutPacket(93)+Encode1(4=invite mode)+Encode4(targetCharId)+Encode1(hasName)+[EncodeStr(name) if set]; a second arm (already-open miniroom) sends COutPacket(93)+Enc1(4)+Enc4(charId)+Enc1(0). = PLAYER_INTERACTION (miniroom/trade invite family; harvest also names op93 CMiniRoomBaseDlg::SendInviteResult). v61 PLAYER_INTERACTION=111 (Delta-18). NB the same handler sends op46 (Enc4(id)+Enc2(x)+Enc2(y)) for clicking a hired-merchant/player-shop object — op46 is NOT GENERAL_CHAT (confirms prior negative; real GENERAL_CHAT sender is the CField chat-input parser, twin of v61 CField::SendChatMsg EncStr+Enc1).'
 - op: WHISPER
   direction: serverbound
   opcode: 90

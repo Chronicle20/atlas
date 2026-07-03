@@ -908,6 +908,11 @@
         "opCode": "0xB4",
         "validator": "LoggedInValidator",
         "handler": "SummonDamageHandle"
+      },
+      {
+        "opCode": "0x47",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterCashItemUseHandle"
       }
     ],
     "writers": [
@@ -2460,6 +2465,10 @@
             "JMS_COUNTER_NOTICE": 15
           }
         }
+      },
+      {
+        "opCode": "0x3F",
+        "writer": "IncubatorResult"
       }
     ]
   },

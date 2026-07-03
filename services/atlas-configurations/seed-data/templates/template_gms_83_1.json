@@ -2895,6 +2895,10 @@
       {
         "opCode": "0x12C",
         "writer": "SheepRanchClothes"
+      },
+      {
+        "opCode": "0x45",
+        "writer": "IncubatorResult"
       }
     ]
   },

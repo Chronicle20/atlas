@@ -2933,6 +2933,10 @@
       {
         "opCode": "0xB7",
         "writer": "SummonSkill"
+      },
+      {
+        "opCode": "0x47",
+        "writer": "IncubatorResult"
       }
     ]
   },

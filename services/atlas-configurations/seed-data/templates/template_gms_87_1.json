@@ -836,6 +836,11 @@
         "opCode": "0xBD",
         "validator": "LoggedInValidator",
         "handler": "SummonDamageHandle"
+      },
+      {
+        "opCode": "0x52",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterCashItemUseHandle"
       }
     ],
     "writers": [
@@ -2376,6 +2381,10 @@
             "BBS_ENTRY_NOT_FOUND": 8
           }
         }
+      },
+      {
+        "opCode": "0x47",
+        "writer": "IncubatorResult"
       }
     ]
   },

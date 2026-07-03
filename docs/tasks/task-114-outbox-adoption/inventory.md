@@ -3,6 +3,87 @@
 Per-service audit record (FR-3.5). Sections are appended as each service
 migrates. "Left direct" sites keep the direct producer path deliberately.
 
+## Final acceptance sweep (Task 26, 2026-07-03)
+
+- **`tools/outbox-guard.sh`: exit 0.** Ran clean across every `services/*/go.mod`
+  module in the monorepo (the analyzer bans `producer.ProviderImpl`/direct-producer
+  calls lexically inside an open DB transaction, fleet-wide — not just the 15
+  migrated services).
+- **`grep -rn "producer.ProviderImpl" --include='*.go' services/ | grep -v
+  _test.go | grep -v "kafka/producer"` — 461 remaining call sites, all
+  classified:**
+  - **57 sites in the 15 migrated services + atlas-data** (12 character, 6
+    inventory, 11 cashshop, 7 fame, 6 buddies, 3 guilds, 1 notes, 4 skills, 1
+    merchant, 1 npc-shops, 2 tenants, 1 mounts, 2 atlas-data; 0 in pets/quest/
+    monster-book/atlas-configurations — fully migrated or never had any) — every
+    one individually cross-checked against this file's per-service "Left
+    direct" lists (and, for atlas-cashshop's five struct-field
+    `p: producer.ProviderImpl(l)(ctx)` initializers that are never read by any
+    emit path — `cashshop/inventory/processor.go:47`,
+    `cashshop/inventory/compartment/processor.go:60`, `cashshop/processor.go:72`,
+    `wallet/processor.go:50`, `wishlist/processor.go:44` — confirmed dead via
+    `grep -n "p\.p\b"` returning no emit-site reader in any of the five files,
+    consistent with the "NewProcessor fallback" pattern already documented in
+    the atlas-cashshop Notes section). Zero unexplained sites; zero sites that
+    should have migrated but didn't.
+  - **404 sites in 34 services task-114 never touched** (atlas-channel 128,
+    atlas-saga-orchestrator 53, atlas-messengers 34, atlas-monsters 23,
+    atlas-consumables 18, atlas-messages 17, atlas-marriages 16, atlas-maps 16,
+    atlas-storage 11, atlas-reactors 11, atlas-chairs 8, atlas-parties 7,
+    atlas-drops 7, atlas-npc-conversations 6, atlas-summons 5, atlas-portals 4,
+    atlas-account 4, atlas-world 3, atlas-transports 3, atlas-expressions 3,
+    atlas-character-factory 3, atlas-portal-actions 2, atlas-monster-death 2,
+    atlas-map-actions 2, atlas-login 2, atlas-invites 2, atlas-families 2,
+    atlas-effective-stats 2, atlas-chalkboards 2, atlas-buffs 2,
+    atlas-asset-expiration 2, atlas-reactor-actions 1, atlas-party-quests 1,
+    atlas-doors 1, atlas-ban 1) — out of this task's scope (never in the §7
+    service list, no `libs/atlas-outbox` wiring, no inventory.md section).
+    `tools/outbox-guard.sh`'s clean exit across all of them (guard runs on
+    every `services/*/go.mod`, not just the 15 migrated ones) independently
+    confirms none of these 404 sites sit inside an open DB transaction either —
+    they are non-tx command/relay/event emits by construction, the same shape
+    as this task's own "left direct" carve-outs, just never inventoried
+    because the service was never in scope.
+- **Per-module gates** (`go test -race ./... && go vet ./... && go build
+  ./...`): PASS in all 18 changed modules — `libs/atlas-outbox`,
+  `tools/outboxguard` (`GOWORK=off`), and the 16 service modules
+  (atlas-configurations, atlas-character, atlas-inventory, atlas-cashshop,
+  atlas-fame, atlas-buddies, atlas-guilds, atlas-notes, atlas-pets,
+  atlas-skills, atlas-merchant, atlas-npc-shops [module dir `npc`],
+  atlas-tenants, atlas-mounts, atlas-quest, atlas-monster-book). No failures
+  of any kind.
+- **`tools/redis-key-guard.sh`: exit 0**, repo-wide, invoked bare (no
+  `GOWORK=off` on the outer call — the script already scopes `GOWORK=off` to
+  just its own analyzer-binary build step; forcing it on the outer invocation
+  breaks module-mode resolution for atlas-data's `go.sum`, a harness artifact,
+  not a code defect).
+- **`docker buildx bake all-go-services`: exit 0.** Every Go service image
+  built successfully, confirming `libs/atlas-outbox`'s `COPY` lines in the
+  shared root `Dockerfile` are present and correct for all consumers.
+
+## atlas-configurations
+
+Not migrated by task-114 — **already on the outbox before this task started**.
+`libs/atlas-outbox` itself originated here: `services/atlas-configurations/atlas.com/configurations`
+was the one pre-existing adopter of the full outbox design (enqueue-in-tx,
+drainer with Postgres advisory-lock leadership, NOTIFY wakeup, retention
+sweeper, backfill) that every other service's migration in this task ports.
+Task 2 promoted the one piece that was still service-local
+(`outbox.NewTopicWriterPool`, `outbox/publisher.go`) into `libs/atlas-outbox`
+so the rest of the fleet could reuse it, and repointed `main.go` at
+`outboxlib.NewTopicWriterPool()` — a straight move, no alias/re-export (see
+`task-2-report.md`). `services/processor.go:48` and `tenants/processor.go:41`
+call `outboxlib.Enqueue(tx, outboxlib.Message{...})` directly (a lower-level
+API than the `outbox.EmitProvider`/`message.Emit` bridge used by the other 15
+services, since atlas-configurations predates that bridge) — both already
+inside the same transaction as their domain write, so no restructuring was
+needed. Zero `producer.ProviderImpl` call sites exist anywhere in this module
+(confirmed via grep): every emit path already goes through the outbox.
+`docs/kafka.md` in this service is stale/pre-existing drift (it claims "This
+service does not integrate with Kafka," written before the outbox's Kafka
+topics existed) — out of this task's scope to fix, noted here rather than
+silently left inconsistent.
+
 ## atlas-character
 
 Module: `services/atlas-character/atlas.com/character`. All line numbers

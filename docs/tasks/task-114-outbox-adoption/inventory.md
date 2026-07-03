@@ -621,3 +621,119 @@ Pattern A/B sites now enqueue their success-path event(s) via
   provider layers only and do not reference `AndEmit`, `producer.`, or
   `message.Emit`. No test changes were required; `go test -race ./...` —
   all packages `ok`.
+
+## atlas-fame
+
+Module: `services/atlas-fame/atlas.com/fame`. Task 13. Line numbers below
+reflect `fame/processor.go` and `character/processor.go` as of this commit.
+
+### Migrated
+
+- `fame/processor.go:166` `RequestChangeAndEmit` — Pattern A. Was a
+  struct-init-shaped inversion problem (recipe's `:120` local-var-capture
+  pitfall, pre-edit line numbers): `producerProvider :=
+  producer.ProviderImpl(p.l)(p.ctx)` was captured into a local var
+  *outside* any transaction, then handed to `message.Emit`, whose closure
+  called the tx-opening `RequestChange(mb)(...)` — so the buffer flush rode
+  the direct producer while the actual DB write (`create()`) happened
+  inside `RequestChange`'s own, separate `database.ExecuteTransaction`. Per
+  the recipe's guidance the fix moves the *whole* `message.Emit` inside a
+  new outer `ExecuteTransaction` in `RequestChangeAndEmit` itself, built
+  from `outbox.EmitProvider(p.l, p.ctx, tx)`, and rebinds via a new
+  `WithTransaction(tx)` method (added to `Processor`) so
+  `RequestChange`'s own nested `ExecuteTransaction` call re-enters the same
+  tx (`database.ExecuteTransaction` is documented re-entrant). The
+  resulting flow: validation reads, the `create()` fame-log write, and the
+  follow-on `REQUEST_CHANGE_FAME` command to atlas-character
+  (`character/processor.go:54` `RequestChangeFame`, called *without* `Emit`
+  from inside `fame/processor.go:150`) now all commit and enqueue as one
+  atomic unit via the outbox-bound `mb`.
+- `fame/processor.go:77` `RequestChange` (the tx-opening building block
+  wrapped by the above) — required an additional D7 fix beyond the Pattern
+  A inversion itself: five early-return validation branches (character not
+  found, target not found, below minimum level, already famed today,
+  already famed this target this month) originally did
+  `return mb.Put(EnvEventTopicFameStatus, errorEventStatusProvider(...))`
+  — since `mb.Put` returns `nil` on success, these branches returned `nil`
+  from the tx closure *before any write occurred*, which after the Pattern
+  A inversion would have flushed the rejection event through the
+  newly-outbox-bound `mb` — a textbook instance of the recipe's
+  failure-path pitfall #1 (rejection event riding an empty, no-op commit
+  into the outbox as if it reflected a state change). Fixed by restructuring
+  around a `rejectEmit func() error` var (declared before the
+  `ExecuteTransaction` call, matching the `atlas-cashshop`
+  `Purchase`/`errPurchaseRejected` precedent): each validation branch now
+  sets `rejectEmit` to a closure that fires
+  `producer.ProviderImpl(p.l)(p.ctx)(...)` directly and returns the new
+  package-level sentinel `errFameChangeRejected` to abort the tx; after
+  `ExecuteTransaction` returns, `if rejectEmit != nil { rejectEmit();
+  return nil }` fires the rejection on the direct path and swallows the
+  sentinel (it never escapes `RequestChange`). The `create()`-write failure
+  branch (`StatusEventErrorTypeUnexpected`, also no committed state) was
+  converted the same way. The success branch (`create()` succeeds) is
+  unchanged — it still returns
+  `characterProcessor.RequestChangeFame(mb)(...)`, which buffers the
+  command into the outbox-bound `mb`, since at that point a real write
+  *did* commit.
+
+### Left direct
+
+- `character/processor.go:69` `RequestChangeFameAndEmit` — pure relay: the
+  wrapped `RequestChangeFame` (`character/processor.go:54`) only builds a
+  `REQUEST_CHANGE_FAME` command provider and `mb.Put`s it
+  (`character/producer.go`'s `requestChangeFameCommandProvider`); it never
+  touches this service's DB (`ProcessorImpl` here has no local write
+  methods at all — `GetById`/`ByIdProvider` are read-only HTTP calls to
+  atlas-character via `character/requests.go`). A COMMAND emit to another
+  service with no local DB write, per the classification rule. Grepped for
+  callers of `RequestChangeFameAndEmit` — none exist in this module besides
+  the interface/mock declarations; the only live path to a
+  `REQUEST_CHANGE_FAME` command is the already-migrated
+  `fame/processor.go:150` call to the non-`Emit` `RequestChangeFame`
+  variant, which shares the caller's (now outbox-bound) `mb`.
+- `fame/processor.go:174` `DeleteByCharacterId` — bare
+  `ExecuteTransaction` wrapping a `Delete`; no Kafka emit of any kind on
+  this path (unchanged, nothing to migrate).
+
+### Notes
+
+- Enumeration: base grep (`message.Emit`, `producer.ProviderImpl`,
+  `database.ExecuteTransaction`) found exactly the 3 sites named in the
+  brief (`fame/processor.go:73` tx, `fame/processor.go:120-121` emit pre-edit
+  → now `:166-171`, `fame/processor.go:127` tx pre-edit → now `:174-177`,
+  `character/processor.go:70-71` emit). The extended enumeration grep
+  (`.GetAll()`, `NewBuffer()`, `p.p(`, `producer.Provider\b`, `AndEmit(`)
+  surfaced no additional hand-rolled flush loops or struct-stored-provider
+  shapes — `ProcessorImpl` in both `fame` and `character` packages holds no
+  provider field; every emit goes through `message.Emit`/`producer.ProviderImpl`
+  directly. No hidden sites.
+- Added `fame.Processor.WithTransaction(tx *gorm.DB) Processor` (new
+  interface method + impl, mirrors the `atlas-monster-book`/`atlas-cashshop`
+  pattern: `&ProcessorImpl{l: p.l, ctx: p.ctx, db: tx, t: p.t}`). No
+  sub-processor fields exist on `fame.ProcessorImpl` to rebind — the
+  `character.NewProcessor(p.l, p.ctx, tx)` call inside `RequestChange`
+  already constructs a fresh, correctly-tx-bound instance per call (it was
+  never a stored field), so no separate-transaction-write risk applies
+  here.
+- Added two tests to `fame/processor_test.go` (previously no
+  `TestMain`/producer setup existed in this package) exercising the fixed
+  failure path end-to-end via a `capturingWriter` (ported from the
+  `atlas-inventory` test helper) installed over the process-wide producer
+  singleton, plus an `httptest` stub for `CHARACTERS_SERVICE_URL`:
+  - `TestProcessor_RequestChangeAndEmit_RejectsOnCharacterNotFound` —
+    asserts (a) the rejection fires on the direct path (captured under
+    `EnvEventTopicFameStatus`), (b) no fame log is created, (c)
+    `outbox_entries` has 0 rows.
+  - `TestProcessor_RequestChangeAndEmit_SuccessEnqueuesOutbox` — asserts
+    (a) nothing fires on the direct path, (b) the fame log is created, (c)
+    exactly one `outbox_entries` row exists with `Topic ==
+    EnvCommandTopic` (the character command).
+  Both are new tests (no pre-existing test in this module referenced
+  `AndEmit`, `producer.`, or `message.Emit`, so nothing needed updating for
+  the new outbox contract). `go test -race ./...`, `go vet ./...`, `go
+  build ./...` all clean; `docker buildx bake atlas-fame` succeeded;
+  `tools/redis-key-guard.sh` clean (this service doesn't touch Redis).
+- `database.ExecuteTransaction` atomicity is still latent fleet-wide
+  pending task-119 (see `bug_execute_transaction_noop.md`); this task's
+  migration uses the correct seam and becomes atomic for free once
+  task-119 lands.

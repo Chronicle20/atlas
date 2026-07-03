@@ -26,6 +26,7 @@ import (
 	"atlas-channel/kafka/consumer/guild/thread"
 	"atlas-channel/kafka/consumer/instance_transport"
 	"atlas-channel/kafka/consumer/invite"
+	"atlas-channel/kafka/consumer/macro"
 	"atlas-channel/kafka/consumer/map"
 	merchantConsumer "atlas-channel/kafka/consumer/merchant"
 	"atlas-channel/kafka/consumer/message"
@@ -197,6 +198,7 @@ func main() {
 	drop.InitConsumers(l)(cmf)(consumerGroupId)
 	reactor.InitConsumers(l)(cmf)(consumerGroupId)
 	skill.InitConsumers(l)(cmf)(consumerGroupId)
+	macro.InitConsumers(l)(cmf)(consumerGroupId)
 	buff.InitConsumers(l)(cmf)(consumerGroupId)
 	chalkboard.InitConsumers(l)(cmf)(consumerGroupId)
 	messenger.InitConsumers(l)(cmf)(consumerGroupId)
@@ -495,6 +497,9 @@ func buildListener(
 			return nil, err
 		}
 		if err := register(skill.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
+		if err := register(macro.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
 			return nil, err
 		}
 		if err := register(buff.InitHandlers(fl)(sc)(wp)(rh)); err != nil {

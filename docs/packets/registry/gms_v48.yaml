@@ -1315,3 +1315,156 @@
   ida:
     address: 7396681
   note: 'BODY-VERIFIED send-site 0x70dd49: sub_4A2518(200,0) throttle then COutPacket(57)+Encode4(a1=sourceId). CALLER sub_43D498 = the CWndMan buff-icon right-click handler (a1==517 WM_RBUTTONDOWN): CWndMan::GetCursorPos + sub_5E0D72 resolves the clicked buff-icon into v5(buffType)+a1(sourceId); v5==1 (item buff) -> sub_70DD49(-a1) [negative sourceId, item-buff cancel]; v5==2 (skill buff, !=1311006) -> CUserLocal::SendSkillCancelRequest (op71 CANCEL_BUFF). Exact v61 CANCEL_ITEM_EFFECT twin (sub_831BB7(-sourceId), single Encode4(sourceId), 200ms guard, item-buff right-click). v61 CANCEL_ITEM_EFFECT=68.'
+
+# ---------------- serverbound: LOGIN/SELECTION FLOW COutPacket(N) send-sites (Task 4.B2f, anchor v61) ----------------
+# v48 login serverbound is its OWN enumeration (non-uniform shift vs v61): world/select region Delta-1
+# (ACCEPT_TOS/SERVERSTATUS/CHARLIST/SERVERLIST/AFTER_LOGIN/REGISTER_PIN/VIEW_ALL/PICK_ALL/VAC each -1),
+# CHAR_SELECT Delta-4 (v61 19 -> v48 15), PLAYER_LOGGEDIN Delta-4 (v61 20 -> v48 16), CHECK/CREATE/DELETE
+# Delta-4, PONG/CLIENT_START_ERROR Delta-1. Every opcode BODY-VERIFIED against its v61 twin send-site
+# (never blind-shifted). Anchors already present: LOGIN_PASSWORD=1, SET_GENDER=7. See v48-loginflow-sb.md.
+- op: SERVERLIST_REREQUEST
+  direction: serverbound
+  opcode: 3
+  fname: sub_4FE15D
+  provenance: ida-discovered
+  ida:
+    address: 5235037
+  note: 'BODY-VERIFIED send-site 0x4fe7ff: the CLogin world-select-screen init (COM UI build) sends bare COutPacket(3) (when off_80C8A0[2056]==1, world-select state) + a second bare COutPacket(27) (when dword_80CA08+44). EXACT twin of v61 CStage/CLogin world-select init sub_56261B which sends bare COutPacket(4) (SERVERLIST_REREQUEST) + bare COutPacket(28). = SERVERLIST_REREQUEST (world/server-list request on entering the world-select screen). v61 SERVERLIST_REREQUEST=4 (Delta-1). op27 = v61 op28 (unregistered, no Atlas handler).'
+- op: CHARLIST_REQUEST
+  direction: serverbound
+  opcode: 4
+  fname: sub_4FFFC4
+  provenance: ida-discovered
+  ida:
+    address: 5242820
+  note: 'BODY-VERIFIED send-site 0x5000e6: after resolving the selected world[i]/channel[a3] node from the world pool this[77], COutPacket(4)+Encode1(worldId=*(_BYTE*)v9)+Encode1(a3=channel) + SetExclRequestSent (this[74]=1). EXACT twin of v61 CHARLIST_REQUEST (SendLoginPacket sub_564DC9: COutPacket(5)+Encode1(world)+Encode1(channel)). Select world+channel -> request character list. v61 CHARLIST_REQUEST=5 (Delta-1). Atlas handler: CharacterListWorldHandle.'
+- op: SERVERSTATUS_REQUEST
+  direction: serverbound
+  opcode: 5
+  fname: sub_50073B
+  provenance: ida-discovered
+  ida:
+    address: 5244731
+  note: 'BODY-VERIFIED send-site 0x50076e: bounds-checks a2 against the world pool this[77] count then COutPacket(5)+Encode2(*(_WORD*)(32*a2+this[77])=worldId) + SetExclRequestSent. EXACT twin of v61 SERVERSTATUS_REQUEST (SendCheckUserLimitPacket sub_5655DF: COutPacket(6)+Encode2(worldEntry)). World user-limit / server-status check. v61 SERVERSTATUS_REQUEST=6 (Delta-1). Atlas handler: ServerStatusHandle.'
+- op: ACCEPT_TOS
+  direction: serverbound
+  opcode: 6
+  fname: sub_5034B2
+  fname_alts:
+  - sub_503517
+  provenance: ida-discovered
+  ida:
+    address: 5256370
+  note: 'BODY-VERIFIED send-site 0x5034dd: on EULA/TOS accept (this[72]==0), sub_51C26A(1) then COutPacket(6)+Encode1(1). The decline arm sub_503517 sends COutPacket(6)+Encode1(0). EXACT twin of v61 ACCEPT_TOS (sub_56842A: EnableLoginCtrl + COutPacket(7)+Encode1(1)). v61 ACCEPT_TOS=7 (Delta-1; v48 SET_GENDER took op7). Atlas handler: AcceptTosHandle.'
+- op: AFTER_LOGIN
+  direction: serverbound
+  opcode: 8
+  fname: sub_503956
+  fname_alts:
+  - CLogin::OnCheckPinCodeResult
+  provenance: ida-discovered
+  ida:
+    address: 5257558
+  note: 'BODY-VERIFIED send-site 0x503bb8 (sub_503956 = v48 OnCheckPinCodeResult, receive case 6): Decode1==2 arm reads the pin dialog result (sub_518ED5) then COutPacket(8)+Encode1(pinResult)+[Encode1(0)+Encode4(off_80C8A0[2057]=accountId)+EncodeStr(chatlog)]. EXACT structural twin of v61 OnCheckPinCodeResult (sub_5688CE) Decode1==2 arm which sends op9 (AFTER_LOGIN, Encode1(pin)+Encode1(0)+Encode4(g_pWvsContext+8232=accountId)+EncodeStr). v61 AFTER_LOGIN=9 (Delta-1). Atlas handler: AfterLoginHandle. (usesPin=false gates the client PIN UI at runtime; the send-site + handler are body-present, registered for anchor parity.)'
+- op: REGISTER_PIN
+  direction: serverbound
+  opcode: 9
+  fname: sub_503956
+  fname_alts:
+  - CLogin::OnCheckPinCodeResult
+  provenance: ida-discovered
+  ida:
+    address: 5257558
+  note: 'BODY-VERIFIED send-site 0x5039f3 (sub_503956, receive case 6): Decode1==1 arm sends COutPacket(9)+Encode1(1)+EncodeStr(chatlog) on success (sub_519081>=0) or COutPacket(9)+Encode1(0) on failure. EXACT twin of v61 OnCheckPinCodeResult (sub_5688CE) Decode1==1 arm which sends op10 (REGISTER_PIN, Encode1(1)+EncodeStr / Encode1(0)). v61 REGISTER_PIN=10 (Delta-1). Atlas handler: RegisterPinHandle. (usesPin=false; registered for anchor parity, body-present.)'
+- op: SERVERLIST_REQUEST
+  direction: serverbound
+  opcode: 10
+  fname: sub_503956
+  fname_alts:
+  - CLogin::OnCheckPinCodeResult
+  provenance: ida-discovered
+  ida:
+    address: 5257558
+  note: 'BODY-VERIFIED send-site 0x503956 (sub_503956, receive case 6): Decode1==0 arm sends bare COutPacket(10). EXACT twin of v61 OnCheckPinCodeResult (sub_5688CE) Decode1==0 arm which sends bare op11 (SERVERLIST_REQUEST). v61 SERVERLIST_REQUEST=11 (Delta-1). Atlas handler: ServerListRequestHandle (second binding; also at op3 SERVERLIST_REREQUEST).'
+- op: VIEW_ALL_CHAR
+  direction: serverbound
+  opcode: 12
+  fname: sub_502293
+  provenance: ida-discovered
+  ida:
+    address: 5251731
+  note: 'BODY-VERIFIED send-site 0x5022e1: sends bare COutPacket(11) (if this[72]!=1) then bare COutPacket(12), setting this[54]=1 (timer). EXACT twin of v61 VIEW_ALL_CHAR (sub_567117: bare op12 then bare op13, this[61]=1). The leading bare op11 = v61 bare op12 (unregistered migrate-to-charlist request, no Atlas handler). op12 = view-all-characters request. v61 VIEW_ALL_CHAR=13 (Delta-1). Atlas handler: CharacterViewAllHandle.'
+- op: PICK_ALL_CHAR
+  direction: serverbound
+  opcode: 13
+  fname: sub_500254
+  provenance: ida-discovered
+  ida:
+    address: 5243476
+  note: 'BODY-VERIFIED send-site 0x50037f: after mapping the selected slot this[78] through the view-all char arrays this[60]/this[64] (sub_70A921), COutPacket(13)+Encode4(charId=436*this[78]+this[60])+Encode4(*(this[64]+4*this[78]))+EncodeStr(macAddr). EXACT twin of v61 PICK_ALL_CHAR (SendSelectCharPacketByVAC sub_5650B6: COutPacket(14)+Encode4(charId)+Encode4(worldCharId)+EncodeStr(mac)+EncodeStr(mac+HDD)). v48 has ONE EncodeStr (predates GetLocalMacAddressWithHDDSerialNo). Select character from the view-all-char list. v61 PICK_ALL_CHAR=14 (Delta-1). Atlas handler: CharacterViewAllSelectedHandle.'
+- op: VAC
+  direction: serverbound
+  opcode: 14
+  fname: sub_50273F
+  fname_alts:
+  - CLogin::ResetVAC
+  provenance: ida-discovered
+  ida:
+    address: 5252927
+  note: 'BODY-VERIFIED send-site 0x502773: COutPacket(14)+Encode1(1), setting this[55]=1 (view-all-char pong state). The reset arm CLogin::ResetVAC (0x502851) sends COutPacket(14)+Encode1(0). EXACT twin of v61 VAC (MakeVACDlg sub_5675C4: COutPacket(15)+Encode1(1)). v61 VAC=15 (Delta-1). Atlas handler: CharacterViewAllPongHandle.'
+- op: CHAR_SELECT
+  direction: serverbound
+  opcode: 15
+  fname: sub_500174
+  provenance: ida-discovered
+  ida:
+    address: 5243252
+  note: 'BODY-VERIFIED send-site 0x5001c5: for the selected slot this[78] in the single-world char array this[79], COutPacket(15)+Encode4(charId=436*this[78]+this[79])+EncodeStr(macAddr). EXACT twin of v61 CHAR_SELECT (SendSelectCharPacket sub_564F79: COutPacket(19)+Encode4(charId)+EncodeStr(mac)+EncodeStr(mac+HDD)). v48 has ONE EncodeStr (predates HDD-serial variant). Enter game by charId. v61 CHAR_SELECT=19 (Delta-4). Atlas handler: CharacterSelectedHandle.'
+- op: PLAYER_LOGGEDIN
+  direction: serverbound
+  opcode: 16
+  fname: CClientSocket::OnConnect
+  provenance: ida-discovered
+  ida:
+    address: 4602176
+  note: 'BODY-VERIFIED send-site 0x463d9f (CClientSocket::OnConnect @0x463940, normal/non-exception branch): COutPacket(16)+Encode4(off_80C8A0[2078]=localSocketSN/charId)+Encode1(0). EXACT twin of v61 PLAYER_LOGGEDIN (OnConnect @0x472d42 else-branch: COutPacket(20)+Encode4(g_pWvsContext+8328)+Encode1(0)+Encode1(0)); v48 has ONE trailing Encode1(0). Post-connect migrate-in announce. v61 PLAYER_LOGGEDIN=20 (Delta-4). Atlas handler: CharacterLoggedInHandle (NoOpValidator: runs pre-LoggedIn).'
+- op: CHECK_CHAR_NAME
+  direction: serverbound
+  opcode: 17
+  fname: sub_500693
+  provenance: ida-discovered
+  ida:
+    address: 5244563
+  note: 'BODY-VERIFIED send-site 0x5006e7: name-validate (sub_6C1BD8) then COutPacket(17)+EncodeStr(name a2) + SetExclRequestSent. EXACT twin of v61 CHECK_CHAR_NAME (SendCheckDuplicateIDPacket sub_565537: COutPacket(21)+EncodeStr(name)). Check character-name duplication during creation. v61 CHECK_CHAR_NAME=21 (Delta-4). Atlas handler: CharacterCheckNameHandle.'
+- op: CREATE_CHAR
+  direction: serverbound
+  opcode: 21
+  fname: sub_500545
+  provenance: ida-discovered
+  ida:
+    address: 5244229
+  note: 'BODY-VERIFIED send-site 0x50058b: COutPacket(21)+EncodeStr(name a2)+loop 8x Encode4(sub_500630(i)=appearance: face/hair/skin/coat/pants/shoes/weapon/...)+Encode1(gender=*(dword_80D490+212))+4x Encode1(macAddr bytes a3[i*4]). EXACT twin of v61 CREATE_CHAR (SendNewCharPacket sub_5653E9: name + appearance ints + gender). Create character. v61 CREATE_CHAR=22 (Delta-4). Atlas handler: CreateCharacterHandle.'
+- op: DELETE_CHAR
+  direction: serverbound
+  opcode: 22
+  fname: sub_50043F
+  provenance: ida-discovered
+  ida:
+    address: 5243967
+  note: 'BODY-VERIFIED send-site 0x5004bb: after parsing the DOB edit field (sub_51002E on this+97) and validating (sub_50FAB6(13,...)), COutPacket(22)+Encode4(DOB=v5)+Encode4(charId=436*this[78]+this[79]). EXACT twin of v61 DELETE_CHAR (SendDeleteCharPacket sub_5652E3: Encode4(DOB)+Encode4(charId)). Delete character (DOB confirm). v61 DELETE_CHAR=23 (Delta-1). Atlas handler: DeleteCharacterHandle.'
+- op: PONG
+  direction: serverbound
+  opcode: 23
+  fname: CClientSocket::OnAliveReq
+  provenance: ida-discovered
+  ida:
+    address: 4608131
+  note: 'BODY-VERIFIED send-site 0x46509a (CClientSocket::OnAliveReq @0x465083): bare COutPacket(23) heartbeat reply. EXACT twin of v61 PONG (OnAliveReq: bare COutPacket(24)). v61 PONG=24 (Delta-1). Atlas handler: PongHandle (NoOpValidator: heartbeat).'
+- op: CLIENT_START_ERROR
+  direction: serverbound
+  opcode: 24
+  fname: CClientSocket::OnConnect
+  provenance: ida-discovered
+  ida:
+    address: 4602176
+  note: 'BODY-VERIFIED send-site 0x463d42 (CClientSocket::OnConnect @0x463940, exception/crash branch, this[9] set): reads the crash exception file (CWvsApp::GetExceptionFileName) then COutPacket(24)+Encode2(len)+EncodeBuffer(exceptionData). EXACT twin of v61 CLIENT_START_ERROR (OnConnect @0x472d42 exception branch: COutPacket(25)+Encode2(len)+EncodeBuffer). Client start/exception (crash) log report. v61 CLIENT_START_ERROR=25 (Delta-1). Atlas handler: StartErrorHandle (NoOpValidator: pre-LoggedIn). This IS the ExceptionLog send.'

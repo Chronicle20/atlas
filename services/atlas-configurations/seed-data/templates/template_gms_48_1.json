@@ -16,6 +16,91 @@
         "handler": "SetGenderHandle"
       },
       {
+        "opCode": "0x03",
+        "validator": "LoggedInValidator",
+        "handler": "ServerListRequestHandle"
+      },
+      {
+        "opCode": "0x04",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterListWorldHandle"
+      },
+      {
+        "opCode": "0x05",
+        "validator": "LoggedInValidator",
+        "handler": "ServerStatusHandle"
+      },
+      {
+        "opCode": "0x06",
+        "validator": "LoggedInValidator",
+        "handler": "AcceptTosHandle"
+      },
+      {
+        "opCode": "0x08",
+        "validator": "LoggedInValidator",
+        "handler": "AfterLoginHandle"
+      },
+      {
+        "opCode": "0x09",
+        "validator": "LoggedInValidator",
+        "handler": "RegisterPinHandle"
+      },
+      {
+        "opCode": "0x0A",
+        "validator": "LoggedInValidator",
+        "handler": "ServerListRequestHandle"
+      },
+      {
+        "opCode": "0x0C",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterViewAllHandle"
+      },
+      {
+        "opCode": "0x0D",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterViewAllSelectedHandle"
+      },
+      {
+        "opCode": "0x0E",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterViewAllPongHandle"
+      },
+      {
+        "opCode": "0x0F",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterSelectedHandle"
+      },
+      {
+        "opCode": "0x10",
+        "validator": "NoOpValidator",
+        "handler": "CharacterLoggedInHandle"
+      },
+      {
+        "opCode": "0x11",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterCheckNameHandle"
+      },
+      {
+        "opCode": "0x15",
+        "validator": "LoggedInValidator",
+        "handler": "CreateCharacterHandle"
+      },
+      {
+        "opCode": "0x16",
+        "validator": "LoggedInValidator",
+        "handler": "DeleteCharacterHandle"
+      },
+      {
+        "opCode": "0x17",
+        "validator": "NoOpValidator",
+        "handler": "PongHandle"
+      },
+      {
+        "opCode": "0x18",
+        "validator": "NoOpValidator",
+        "handler": "StartErrorHandle"
+      },
+      {
         "opCode": "0x1E",
         "validator": "LoggedInValidator",
         "handler": "MapChangeHandle"

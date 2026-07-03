@@ -4,6 +4,7 @@ import (
 	"atlas-reactors/kafka/producer"
 	"atlas-reactors/rest"
 	"net/http"
+	"sort"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
@@ -11,6 +12,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
@@ -107,6 +109,12 @@ func handleGetInMap(d *rest.HandlerDependency, c *rest.HandlerContext) http.Hand
 			return rest.ParseMapId(d.Logger(), func(mapId _map.Id) http.HandlerFunc {
 				return rest.ParseInstanceId(d.Logger(), func(instanceId uuid.UUID) http.HandlerFunc {
 					return func(w http.ResponseWriter, r *http.Request) {
+						page, err := paginate.ParseParams(r.URL.Query(), paginate.MaxPageSize, paginate.MaxPageSize)
+						if err != nil {
+							server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+							return
+						}
+
 						f := field.NewBuilder(worldId, channelId, mapId).SetInstance(instanceId).Build()
 						ms, err := NewProcessor(d.Logger(), d.Context()).GetInField(f)
 						if err != nil {
@@ -114,7 +122,11 @@ func handleGetInMap(d *rest.HandlerDependency, c *rest.HandlerContext) http.Hand
 							return
 						}
 
-						// Filter by name if query parameter provided.
+						// Filter by name if query parameter provided. Applied
+						// before pagination, matching the filter[isSpecial]
+						// precedent (atlas-monster-book task-117): filter first,
+						// then page over the filtered result so meta.total
+						// reflects the filtered count, not the unfiltered one.
 						if name := r.URL.Query().Get("name"); name != "" {
 							filtered := make([]Model, 0)
 							for _, m := range ms {
@@ -125,14 +137,19 @@ func handleGetInMap(d *rest.HandlerDependency, c *rest.HandlerContext) http.Hand
 							ms = filtered
 						}
 
-						res, err := model.SliceMap(Transform)(model.FixedProvider(ms))()()
+						sorted := make([]Model, len(ms))
+						copy(sorted, ms)
+						sort.Slice(sorted, func(i, j int) bool { return sorted[i].Id() < sorted[j].Id() })
+						paged := paginate.Slice(sorted, page)
+
+						res, err := model.SliceMap(Transform)(model.FixedProvider(paged.Items))()()
 						if err != nil {
 							d.Logger().WithError(err).Errorf("Creating REST model.")
 							w.WriteHeader(http.StatusInternalServerError)
 							return
 						}
 
-						server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(r.URL.Query())(res)
+						server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(r.URL.Query())(res, paginate.EnvelopeFor(paged), r)
 					}
 				})
 			})

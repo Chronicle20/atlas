@@ -60,6 +60,23 @@ func TestItemCancelByteFixtureV72(t *testing.T) {
 	}
 }
 
+// TestItemCancelV48ByteOutput pins CANCEL_ITEM_EFFECT (v48 send op 57) against
+// CWvsContext::SendStatChangeItemCancelRequest sub_70DD49@0x70dd49: the item-buff
+// right-click cancel path (CWndMan handler sub_43D498 v5==1 -> sub_70DD49(-sourceId))
+// runs the sub_4A2518(200,0) throttle then COutPacket(57)@0x70dd6d +
+// Encode4(sourceId)@0x70dd7c. Single int32 body, no version gate == v61.
+//
+// packet-audit:verify packet=character/serverbound/ItemCancel version=gms_v48 ida=0x70dd49
+func TestItemCancelV48ByteOutput(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 48, 1)
+	// sourceId=2001001 (0x001E8869 LE)
+	got := pt.Encode(t, ctx, ItemCancel{sourceId: 2001001}.Encode, nil)
+	want := []byte{0x69, 0x88, 0x1E, 0x00} // sourceId (Encode4) /*0x70dd7c*/
+	if !bytes.Equal(got, want) {
+		t.Errorf("v48 bytes:\n got %x\nwant %x", got, want)
+	}
+}
+
 // TestItemCancelByteFixtureV61 pins CANCEL_ITEM_EFFECT (v61 send op 68) against
 // CWvsContext::SendStatChangeItemCancelRequest sub_831BB7@0x831bb7: the item-buff
 // right-click cancel path (CWndMan proc sub_4486B0 v5==1 -> sub_831BB7(-sourceId))

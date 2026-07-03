@@ -828,19 +828,23 @@
 - op: CANCEL_CHAIR
   direction: serverbound
   opcode: 34
-  fname: sub_69DF44
+  fname: CUserLocal::HandleXKeyDown
+  fname_alts:
+    - sub_69DF44
   provenance: ida-discovered
   ida:
     address: 6938436
-  note: 'BODY-VERIFIED send-site 0x69df44: COutPacket(34)+Encode2(0xFFFF) (chairId=-1 = get up from chair) after CWvsContext::SetExclRequestSent. = CANCEL_CHAIR. Sits directly before USE_CHAIR=35 (chair pair). v61 CANCEL_CHAIR=39 (Delta-5). (caller sub_69DF44 also carries keydown-skill state, but the COutPacket(34) arm is the get-up send.)'
+  note: 'BODY-VERIFIED send-site 0x69df44 (= CUserLocal::HandleXKeyDown, the X-key-down handler; uniform with v72+ siblings): COutPacket(34)+Encode2(0xFFFF) (chairId=-1 = get up from chair) after CWvsContext::SetExclRequestSent. = CANCEL_CHAIR. Sits directly before USE_CHAIR=35 (chair pair). v61 CANCEL_CHAIR=39 (Delta-5). task-113(v48) stage E: registry fname set to the canonical CUserLocal::HandleXKeyDown so the ChairFixed report links (report.IDAName==registry.fname); evidence pins the real send-site sub_69DF44@0x69df44.'
 - op: USE_CHAIR
   direction: serverbound
   opcode: 35
-  fname: sub_712894
+  fname: CWvsContext::SendSitOnPortableChairRequest
+  fname_alts:
+    - sub_712894
   provenance: ida-discovered
   ida:
     address: 7415956
-  note: 'BODY-VERIFIED send-site 0x712894: COutPacket(35)+Encode4(itemId) then CUser::SetActivePortableChair(itemId). = USE_CHAIR (portable-chair item path). v61 USE_CHAIR=40 (Delta-5).'
+  note: 'BODY-VERIFIED send-site 0x712894 (= CWvsContext::SendSitOnPortableChairRequest; uniform with v72+ siblings): COutPacket(35)+Encode4(itemId) then CUser::SetActivePortableChair(itemId). = USE_CHAIR (portable-chair item path). v61 USE_CHAIR=40 (Delta-5). task-113(v48) stage E: registry fname set to canonical CWvsContext::SendSitOnPortableChairRequest so the ChairPortable report links; evidence pins the real send-site sub_712894@0x712894.'
 - op: CLOSE_RANGE_ATTACK
   direction: serverbound
   opcode: 36
@@ -1314,9 +1318,9 @@
 - op: CANCEL_ITEM_EFFECT
   direction: serverbound
   opcode: 57
-  fname: sub_70DD49
+  fname: CWvsContext::SendStatChangeItemCancelRequest
   fname_alts:
-  - CWvsContext::SendStatChangeItemCancelRequest
+  - sub_70DD49
   provenance: ida-discovered
   ida:
     address: 7396681

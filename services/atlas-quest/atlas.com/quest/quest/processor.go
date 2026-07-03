@@ -85,7 +85,6 @@ type ProcessorImpl struct {
 	t                   tenant.Model
 	dataProcessor       dataquest.Processor
 	validationProcessor validation.Processor
-	eventEmitter        EventEmitter
 	txEmitter           func(tx *gorm.DB) EventEmitter
 }
 
@@ -97,7 +96,6 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 		t:                   tenant.MustFromContext(ctx),
 		dataProcessor:       dataquest.NewProcessor(l, ctx),
 		validationProcessor: validation.NewProcessor(l, ctx),
-		eventEmitter:        NewKafkaEventEmitter(l, ctx),
 		txEmitter: func(tx *gorm.DB) EventEmitter {
 			return NewOutboxEventEmitter(l, ctx, tx)
 		},
@@ -113,7 +111,6 @@ func NewProcessorWithDependencies(l logrus.FieldLogger, ctx context.Context, db 
 		t:                   tenant.MustFromContext(ctx),
 		dataProcessor:       dataProc,
 		validationProcessor: validationProc,
-		eventEmitter:        eventEmitter,
 		txEmitter: func(*gorm.DB) EventEmitter {
 			return eventEmitter
 		},
@@ -128,7 +125,6 @@ func (p *ProcessorImpl) WithTransaction(tx *gorm.DB) Processor {
 		t:                   p.t,
 		dataProcessor:       p.dataProcessor,
 		validationProcessor: p.validationProcessor,
-		eventEmitter:        p.eventEmitter,
 		txEmitter:           p.txEmitter,
 	}
 }

@@ -43,6 +43,16 @@
   {
    "fname": "CCashShop::OnRebateLockerItem",
    "reason": "CASHSHOP_OPERATION rebate-locker-item arm is version-absent in gms_v48. func_query name_regex 'RebateLocker' over GMS_v48_1_DEVM.exe (port 13337) returns no match. None of the v48 COutPacket(160) send functions implements a locker rebate (ask_SPW + 8-byte locker serial). The export carried an unresolved stub; stripped here."
+  },
+  {
+   "fname": "CEntrustedShopDlg::AddBlackList",
+   "reason": "PLAYER_INTERACTION hired/entrusted-merchant add-to-blacklist arm (OperationMerchantAddToBlackList, modeled body EncodeStr(name) only) is version-absent in gms_v48. A complete enumeration of the v48 opcode-93 (PLAYER_INTERACTION) send-sites (find_bytes '6A 5D' -> 69 push-93 sites, GMS_v48_1_DEVM.exe port 13337) yields only these blacklist senders: CPersonalShopDlg::OnClickBanButton sub_588DFC @0x588ea4 (mode 0x19: Encode1(slot)+EncodeStr(name)), the CPersonalShopDlg auto-reban sub_588F0F @0x588f56 (mode 0x1A: Encode1(slot)+EncodeStr(name)), CPersonalShopDlg::DeliverBlackList sub_588D46 @0x588d77 (mode 0x1B: Encode2(count)+loop EncodeStr), and the CField list-blacklist add/remove sub_4CBD0E/sub_4CBD88 @0x4cbd34/0x4cbdae (modes 0x1C/0x1D: EncodeStr(name)) which are the distinct FieldAddToBlackList/FieldRemoveFromBlackList arms. There is NO CEntrustedShopDlg (hired-merchant) name-only add-to-blacklist send: the entrusted-shop feature that carries this by-name blacklist op does not exist in this 2009-era client. The fname is absent from the v48 export (no stub). Matches the v61 anchor, where this arm is likewise absent (incomplete); v83+ is where the entrusted shop appears.",
+   "packet": "interaction/serverbound/InteractionOperationMerchantAddToBlackList"
+  },
+  {
+   "fname": "CEntrustedShopDlg::DeleteBlackList",
+   "reason": "PLAYER_INTERACTION hired/entrusted-merchant remove-from-blacklist arm (OperationMerchantRemoveFromBlackList, modeled body EncodeStr(name) only) is version-absent in gms_v48. Same complete opcode-93 send-site enumeration as its AddBlackList twin: the only v48 blacklist senders are CPersonalShopDlg (slot+name / count+names) and CField (name-only, = the Field*BlackList arms); no CEntrustedShopDlg name-only delete-from-blacklist send exists. The fname is absent from the v48 export (no stub). Matches the v61 anchor (incomplete); the entrusted shop first appears at v83+.",
+   "packet": "interaction/serverbound/InteractionOperationMerchantRemoveFromBlackList"
   }
  ]
 }

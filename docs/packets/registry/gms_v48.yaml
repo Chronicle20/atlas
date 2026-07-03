@@ -940,9 +940,9 @@
 - op: DISTRIBUTE_SP
   direction: serverbound
   opcode: 73
-  fname: sub_71CEB3
+  fname: CWvsContext::SendSkillUpRequest
   fname_alts:
-  - CWvsContext::SendSkillUpRequest
+  - sub_71CEB3
   provenance: ida-discovered
   ida:
     address: 7458995
@@ -966,9 +966,9 @@
 - op: CHAR_INFO_REQUEST
   direction: serverbound
   opcode: 76
-  fname: sub_71D059
+  fname: CWvsContext::SendCharacterInfoRequest
   fname_alts:
-  - CWvsContext::SendCharacterInfoRequest
+  - sub_71D059
   provenance: ida-discovered
   ida:
     address: 7458905
@@ -1437,15 +1437,19 @@
 - op: CHECK_CHAR_NAME
   direction: serverbound
   opcode: 17
-  fname: sub_500693
+  fname: CLogin::SendCheckDuplicateIDPacket
+  fname_alts:
+  - sub_500693
   provenance: ida-discovered
   ida:
     address: 5244563
-  note: 'BODY-VERIFIED send-site 0x5006e7: name-validate (sub_6C1BD8) then COutPacket(17)+EncodeStr(name a2) + SetExclRequestSent. EXACT twin of v61 CHECK_CHAR_NAME (SendCheckDuplicateIDPacket sub_565537: COutPacket(21)+EncodeStr(name)). Check character-name duplication during creation. v61 CHECK_CHAR_NAME=21 (Delta-4). Atlas handler: CharacterCheckNameHandle.'
+  note: 'BODY-VERIFIED send-site 0x5006e7: name-validate (sub_6C1BD8) then COutPacket(17)+EncodeStr(name a2) + SetExclRequestSent. EXACT twin of v61 CHECK_CHAR_NAME (SendCheckDuplicateIDPacket sub_565537: COutPacket(21)+EncodeStr(name)). fname carries body-canonical name for candidatesFromFName (matches the CheckName audit report); sub_500693 @0x500693 is the resolved v48 send-site. v61 CHECK_CHAR_NAME=21 (Delta-4). Atlas handler: CharacterCheckNameHandle.'
 - op: CREATE_CHAR
   direction: serverbound
   opcode: 21
-  fname: sub_500545
+  fname: CLogin::SendNewCharPacket
+  fname_alts:
+  - sub_500545
   provenance: ida-discovered
   ida:
     address: 5244229
@@ -1453,7 +1457,9 @@
 - op: DELETE_CHAR
   direction: serverbound
   opcode: 22
-  fname: sub_50043F
+  fname: CLogin::SendDeleteCharPacket
+  fname_alts:
+  - sub_50043F
   provenance: ida-discovered
   ida:
     address: 5243967

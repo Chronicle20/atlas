@@ -39,6 +39,23 @@ func TestDistributeSpRoundTrip(t *testing.T) {
 //
 // Body = updateTime(4) + skillId(4) = 8 bytes. Version-invariant vs v83.
 //
+// packet-audit:verify packet=character/serverbound/DistributeSp version=gms_v48 ida=0x71ceb3
+// TestDistributeSpV48ByteOutput pins the gms_v48 DISTRIBUTE_SP (op 73). IDA:
+// CWvsContext::SendSkillUpRequest = sub_71CEB3 @0x71ceb3 (GMS_v48_1_DEVM.exe) builds
+// COutPacket(73) then Encode4(updateTime)@0x71cee6 + Encode4(skillId)@0x71ceee. Same
+// shape as v79. No codec gate.
+func TestDistributeSpV48ByteOutput(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 48, 1)
+	input := DistributeSp{updateTime: 100, skillId: 1000000}
+	expected := []byte{
+		0x64, 0x00, 0x00, 0x00, // updateTime 100 (Encode4)
+		0x40, 0x42, 0x0F, 0x00, // skillId 1000000=0xF4240 (Encode4)
+	}
+	if actual := pt.Encode(t, ctx, input.Encode, nil); !bytes.Equal(actual, expected) {
+		t.Errorf("v48 distribute-sp golden mismatch:\n got %x\nwant %x", actual, expected)
+	}
+}
+
 // packet-audit:verify packet=character/serverbound/DistributeSp version=gms_v79 ida=0x96debd
 func TestDistributeSpV79ByteOutput(t *testing.T) {
 	ctx := pt.CreateContext("GMS", 79, 1)

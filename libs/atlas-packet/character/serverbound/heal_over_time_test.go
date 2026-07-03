@@ -66,6 +66,26 @@ func TestHealOverTimeRoundTrip(t *testing.T) {
 // There is NO get_update_time call in the v79 sender → no leading updateTime
 // dword (unlike v83+). Body = val(4) + hp(2) + mp(2) + option(1) = 9 bytes.
 //
+// packet-audit:verify packet=character/serverbound/HealOverTime version=gms_v48 ida=0x71a482
+// TestHealOverTimeV48ByteOutput pins the gms_v48 HEAL_OVER_TIME (op 68). IDA:
+// CWvsContext::SendStatChangeRequest = @0x71a482 (GMS_v48_1_DEVM.exe) builds
+// COutPacket(68) then Encode4(0x1400)@0x71a49b + Encode2(hp)@0x71a4a6 +
+// Encode2(mp)@0x71a4b1 + Encode1(option)@0x71a4bc — NO leading updateTime tick on
+// legacy GMS (<83). Matches the codec's <83 branch (byte-identical to v79).
+func TestHealOverTimeV48ByteOutput(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 48, 1)
+	input := HealOverTime{updateTime: 100, val: 0x1400, hp: 50, mp: 30, unknown: 1}
+	expected := []byte{
+		0x00, 0x14, 0x00, 0x00, // val 0x1400 (Encode4)
+		0x32, 0x00, // hp 50 (Encode2)
+		0x1E, 0x00, // mp 30 (Encode2)
+		0x01, // option (Encode1)
+	}
+	if actual := pt.Encode(t, ctx, input.Encode, nil); !bytes.Equal(actual, expected) {
+		t.Errorf("v48 heal-over-time golden mismatch:\n got %x\nwant %x", actual, expected)
+	}
+}
+
 // packet-audit:verify packet=character/serverbound/HealOverTime version=gms_v79 ida=0x96940a
 func TestHealOverTimeV79ByteOutput(t *testing.T) {
 	ctx := pt.CreateContext("GMS", 79, 1)

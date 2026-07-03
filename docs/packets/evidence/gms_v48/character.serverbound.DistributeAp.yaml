@@ -1,0 +1,10 @@
+packet: character/serverbound/DistributeAp
+direction: serverbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: sub_71CD00
+    address: "0x71cd00"
+    decompile_sha256: 158018341ed6f0c3ab2ed473affa6595d05319806fc7cdeb5b47ede34b269c6e
+verifies:
+    - libs/atlas-packet/character/serverbound/distribute_ap_test.go#TestDistributeApV48ByteOutput

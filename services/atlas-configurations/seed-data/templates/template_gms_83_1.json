@@ -2965,6 +2965,19 @@
       {
         "opCode": "0x12C",
         "writer": "SheepRanchClothes"
+      },
+      {
+        "opCode": "0x166",
+        "writer": "VegaScroll",
+        "options": {
+          "operations": {
+            "START_SUCCESS": 64,
+            "START_FAILURE": 69,
+            "RESULT_SUCCESS": 65,
+            "RESULT_FAILURE": 67,
+            "INVALID": 66
+          }
+        }
       }
     ]
   },

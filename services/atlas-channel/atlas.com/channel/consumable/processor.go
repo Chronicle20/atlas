@@ -41,3 +41,8 @@ func (p *ProcessorImpl) RequestScrollUse(f field.Model, characterId character.Id
 	p.l.Debugf("Character [%d] attempting to scroll item in slot [%d] with scroll from slot [%d]. whiteScroll [%t], legendarySpirit [%t], updateTime [%d].", characterId, equipSlot, scrollSlot, whiteScroll, legendarySpirit, updateTime)
 	return producer.ProviderImpl(p.l)(p.ctx)(consumable2.EnvCommandTopic)(RequestScrollCommandProvider(f, characterId, scrollSlot, equipSlot, whiteScroll, legendarySpirit))
 }
+
+func (p *Processor) RequestVegaScrollUse(f field.Model, characterId character.Id, vegaItemId item.Id, vegaSlot slot.Position, scrollSlot slot.Position, equipSlot slot.Position) error {
+	p.l.Debugf("Character [%d] attempting vega scroll [%d] from cash slot [%d]: scroll slot [%d] onto equip slot [%d].", characterId, vegaItemId, vegaSlot, scrollSlot, equipSlot)
+	return producer.ProviderImpl(p.l)(p.ctx)(consumable2.EnvCommandTopic)(RequestVegaScrollCommandProvider(f, characterId, vegaSlot, vegaItemId, scrollSlot, equipSlot))
+}

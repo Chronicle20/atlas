@@ -15,6 +15,7 @@ const (
 
 	CommandRequestItemConsume = "REQUEST_ITEM_CONSUME"
 	CommandRequestScroll      = "REQUEST_SCROLL"
+	CommandRequestVegaScroll  = "REQUEST_VEGA_SCROLL"
 )
 
 type Command[E any] struct {
@@ -40,12 +41,21 @@ type RequestScrollBody struct {
 	LegendarySpirit bool          `json:"legendarySpirit"`
 }
 
+type RequestVegaScrollBody struct {
+	VegaSlot   slot.Position `json:"vegaSlot"`
+	VegaItemId item.Id       `json:"vegaItemId"`
+	ScrollSlot slot.Position `json:"scrollSlot"`
+	EquipSlot  slot.Position `json:"equipSlot"`
+}
+
 const (
-	EnvEventTopic   = "EVENT_TOPIC_CONSUMABLE_STATUS"
-	EventTypeError  = "ERROR"
-	EventTypeScroll = "SCROLL"
+	EnvEventTopic       = "EVENT_TOPIC_CONSUMABLE_STATUS"
+	EventTypeError      = "ERROR"
+	EventTypeScroll     = "SCROLL"
+	EventTypeVegaScroll = "VEGA_SCROLL"
 
 	ErrorTypePetCannotConsume = "PET_CANNOT_CONSUME"
+	ErrorTypeVegaInvalid      = "VEGA_INVALID"
 )
 
 type Event[E any] struct {
@@ -63,4 +73,9 @@ type ScrollBody struct {
 	Cursed          bool `json:"cursed"`
 	LegendarySpirit bool `json:"legendarySpirit"`
 	WhiteScroll     bool `json:"whiteScroll"`
+}
+
+type VegaScrollBody struct {
+	Success bool `json:"success"`
+	Cursed  bool `json:"cursed"`
 }

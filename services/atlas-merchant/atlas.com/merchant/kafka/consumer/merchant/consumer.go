@@ -4,6 +4,7 @@ import (
 	consumer2 "atlas-merchant/kafka/consumer"
 	merchant2 "atlas-merchant/kafka/message/merchant"
 	"atlas-merchant/kafka/producer"
+	"atlas-merchant/searchcount"
 	"atlas-merchant/shop"
 	"context"
 	"errors"
@@ -43,6 +44,7 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleExitShopCommand(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleSendMessageCommand(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleRetrieveFrederickCommand(db))))
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleRecordItemSearchCommand(db))))
 		}
 	}
 }
@@ -266,6 +268,17 @@ func handleRetrieveFrederickCommand(db *gorm.DB) message.Handler[merchant2.Comma
 
 		if err := shop.NewProcessor(l, ctx, db).RetrieveFrederickAndEmit(e.CharacterId, e.WorldId); err != nil {
 			l.WithError(err).Errorf("Error retrieving Frederick items for character [%d].", e.CharacterId)
+		}
+	}
+}
+
+func handleRecordItemSearchCommand(db *gorm.DB) message.Handler[merchant2.Command[merchant2.CommandRecordItemSearchBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e merchant2.Command[merchant2.CommandRecordItemSearchBody]) {
+		if e.Type != merchant2.CommandRecordItemSearch {
+			return
+		}
+		if err := searchcount.NewProcessor(l, ctx, db).RecordSearch(e.WorldId, e.Body.ItemId); err != nil {
+			l.WithError(err).Errorf("Error recording item search for item [%d] in world [%d].", e.Body.ItemId, e.WorldId)
 		}
 	}
 }

@@ -38,6 +38,7 @@ Character shops close automatically on owner disconnect. Hired merchants operate
 | GET | `/merchants/{shopId}/relationships/listings` | Get shop listings |
 | GET | `/characters/{characterId}/merchants` | Get shops owned by character |
 | GET | `/merchants/search/listings?itemId={id}&worldId={id}&order=asc\|desc` | Search Open/Maintenance shop listings for an item. `itemId` is required; `worldId` and `order` are optional (omitted `worldId` searches tenant-wide; `order` defaults to `asc`). Results are capped at 200 rows and include `ownerId`, `shopType`, `state`, and `itemSnapshot` per listing. |
+| GET | `/worlds/{worldId}/shop-searches/top` | Top 10 most-searched item ids for the world, by search count (`shop-search-counts` JSON:API resource). Service-internal (not exposed via ingress); called by atlas-channel. |
 
 ## Kafka Commands Consumed
 
@@ -56,6 +57,7 @@ Character shops close automatically on owner disconnect. Hired merchants operate
 | `COMMAND_TOPIC_MERCHANT` | `EXIT_SHOP` | Visitor exits shop |
 | `COMMAND_TOPIC_MERCHANT` | `SEND_MESSAGE` | Send chat message in shop |
 | `COMMAND_TOPIC_MERCHANT` | `RETRIEVE_FREDERICK` | Retrieve items/mesos from Frederick |
+| `COMMAND_TOPIC_MERCHANT` | `RECORD_ITEM_SEARCH` | Record a shop-listing search (`{worldId, characterId, type, body:{itemId}}`); increments the per-tenant+world search counter for the item |
 
 ## Kafka Events Produced
 

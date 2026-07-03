@@ -24,6 +24,7 @@ const (
 	CommandExitShop         = "EXIT_SHOP"
 	CommandSendMessage      = "SEND_MESSAGE"
 	CommandRetrieveFrederick = "RETRIEVE_FREDERICK"
+	CommandRecordItemSearch = "RECORD_ITEM_SEARCH"
 )
 
 type Command[E any] struct {
@@ -106,6 +107,10 @@ type CommandSendMessageBody struct {
 }
 
 type CommandRetrieveFrederickBody struct {
+}
+
+type CommandRecordItemSearchBody struct {
+	ItemId uint32 `json:"itemId"`
 }
 
 const (

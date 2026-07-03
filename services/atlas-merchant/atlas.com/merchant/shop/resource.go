@@ -3,6 +3,7 @@ package shop
 import (
 	"atlas-merchant/listing"
 	"atlas-merchant/rest"
+	"atlas-merchant/searchcount"
 	"errors"
 	"net/http"
 	"strconv"
@@ -36,6 +37,7 @@ func InitializeRoutes(si jsonapi.ServerInformation) func(db *gorm.DB) server.Rou
 
 			wr := router.PathPrefix("/worlds/{worldId}").Subrouter()
 			wr.HandleFunc("/channels/{channelId}/maps/{mapId}/instances/{instanceId}/merchants", registerHandler("get_field_merchants", handleGetFieldMerchants(db))).Methods(http.MethodGet)
+			wr.HandleFunc("/shop-searches/top", registerHandler("get_top_shop_searches", handleGetTopShopSearches(db))).Methods(http.MethodGet)
 		}
 	}
 }
@@ -306,6 +308,32 @@ func handleGetFieldMerchants(db *gorm.DB) rest.GetHandler {
 					})
 				})
 			})
+		})
+	}
+}
+
+func handleGetTopShopSearches(db *gorm.DB) rest.GetHandler {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseWorldId(d.Logger(), func(worldId world.Id) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				results, err := searchcount.NewProcessor(d.Logger(), d.Context(), db).GetTop(worldId, 10)
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Getting top shop searches.")
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+
+				res, err := model.SliceMap(searchcount.Transform)(model.FixedProvider(results))(model.ParallelMap())()
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Creating REST models.")
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				server.MarshalResponse[[]searchcount.RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+			}
 		})
 	}
 }

@@ -17,6 +17,7 @@ const (
 	CommandRequestScroll          = "REQUEST_SCROLL"
 	CommandApplyConsumableEffect  = "APPLY_CONSUMABLE_EFFECT"
 	CommandCancelConsumableEffect = "CANCEL_CONSUMABLE_EFFECT"
+	CommandRequestViciousHammer   = "REQUEST_VICIOUS_HAMMER"
 )
 
 type Command[E any] struct {
@@ -43,6 +44,14 @@ type RequestScrollBody struct {
 	LegendarySpirit bool          `json:"legendarySpirit"`
 }
 
+// RequestViciousHammerBody carries the two slots the CUIItemUpgrade dialog
+// round-trip token packs: the hammer's cash-compartment slot and the target
+// equip slot (negative = equipped, positive = equip inventory).
+type RequestViciousHammerBody struct {
+	HammerSlot slot.Position `json:"hammerSlot"`
+	EquipSlot  slot.Position `json:"equipSlot"`
+}
+
 // ApplyConsumableEffectBody is the body for applying consumable effects without consuming from inventory
 // Used for NPC-initiated buffs (e.g., NPC blessings)
 type ApplyConsumableEffectBody struct {
@@ -56,10 +65,11 @@ type CancelConsumableEffectBody struct {
 }
 
 const (
-	EnvEventTopic   = "EVENT_TOPIC_CONSUMABLE_STATUS"
-	EventTypeError  = "ERROR"
-	EventTypeScroll = "SCROLL"
+	EnvEventTopic          = "EVENT_TOPIC_CONSUMABLE_STATUS"
+	EventTypeError         = "ERROR"
+	EventTypeScroll        = "SCROLL"
 	EventTypeEffectApplied = "EFFECT_APPLIED"
+	EventTypeViciousHammer = "VICIOUS_HAMMER"
 
 	ErrorTypePetCannotConsume = "PET_CANNOT_CONSUME"
 )
@@ -79,6 +89,14 @@ type ScrollBody struct {
 	Cursed          bool `json:"cursed"`
 	LegendarySpirit bool `json:"legendarySpirit"`
 	WhiteScroll     bool `json:"whiteScroll"`
+}
+
+// ViciousHammerBody reports the terminal result of a hammer use. ErrorCode is
+// the client notice selector (1 = not upgradable, 2 = cap reached,
+// 3 = Horntail Necklace, 0 = unknown/internal); meaningful when !Success.
+type ViciousHammerBody struct {
+	Success   bool   `json:"success"`
+	ErrorCode uint32 `json:"errorCode"`
 }
 
 type EffectAppliedBody struct {

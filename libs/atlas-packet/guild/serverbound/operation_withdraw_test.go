@@ -8,6 +8,8 @@ import (
 
 // CField::SendWithdrawGuildMsg: COutPacket(GUILD_OPERATION)+Encode1(7=WITHDRAW)+Encode4(cid)+EncodeStr(name).
 // Body = Encode4(cid)+EncodeStr(name). IDA-verified: v83@0x5308e0, v84@0x53cb4d, v87@0x5580ee.
+// v48 CField::SendWithdrawGuildMsg @0x4c5cc4 (sub_4C5CC4, YesNo==6 arm): COutPacket(96=GUILD_OPERATION)+Encode1(7=WITHDRAW)+Encode4(cid)+EncodeStr(GetCharacterName). Body=Encode4(cid)+EncodeStr(name), == v83.
+// packet-audit:verify packet=guild/serverbound/GuildWithdraw version=gms_v48 ida=0x4c5cc4
 // packet-audit:verify packet=guild/serverbound/GuildWithdraw version=gms_v79 ida=0x51bed3
 // v72 CField::SendWithdrawGuildMsg @0x514e34 (YesNo==6 arm): COutPacket(124=GUILD_OPERATION)
 // +Encode1(7=WITHDRAW)+Encode4(cid)+EncodeStr(GetCharacterName). Body = Encode4(cid)+EncodeStr(name), == v79.

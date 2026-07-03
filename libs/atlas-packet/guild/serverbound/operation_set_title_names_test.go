@@ -8,6 +8,8 @@ import (
 
 // CField::SendSetGradeNameMsg: COutPacket(GUILD_OPERATION)+Encode1(0xD=SET_TITLE_NAMES)+5×EncodeStr(title).
 // Body = 5×EncodeStr. IDA-verified: v83@0x530e1e, v84@0x53d097, v87@0x558638, v95@0x534fe0.
+// v48 CField::SendSetGradeNameMsg @0x4c624a (sub_4C624A): COutPacket(96=GUILD_OPERATION)+Encode1(0xD=SET_TITLE_NAMES)+5xEncodeStr(title). Body=5xEncodeStr, == v83.
+// packet-audit:verify packet=guild/serverbound/GuildSetTitleNames version=gms_v48 ida=0x4c624a
 // packet-audit:verify packet=guild/serverbound/GuildSetTitleNames version=gms_v79 ida=0x51c411
 // v72 CField::SendSetGradeNameMsg @0x515372: COutPacket(124)+Encode1(0xD=SET_TITLE_NAMES)
 // +5×EncodeStr(title). Body = 5×EncodeStr, == v79.

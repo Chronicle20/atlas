@@ -2158,13 +2158,32 @@
       ]
     },
     "CField::SendSetGradeNameMsg": {
-      "address": "",
+      "address": "0x4c624a",
       "direction": "serverbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "GUILD_OPERATION mode = 0xD (SET_TITLE_NAMES) @0x4c6275"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "grade title 1 @0x4c628e"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "grade title 2 @0x4c62a7"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "grade title 3 @0x4c62c0"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "grade title 4 @0x4c62d9"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "grade title 5 @0x4c62f2"
         }
       ]
     },
@@ -2209,13 +2228,20 @@
       ]
     },
     "CField::SendSetMemberGradeMsg": {
-      "address": "",
+      "address": "0x4c61e4",
       "direction": "serverbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "GUILD_OPERATION mode = 0xE (SET_MEMBER_TITLE) @0x4c6206"
+        },
+        {
+          "op": "Decode4",
+          "comment": "target character id @0x4c6211"
+        },
+        {
+          "op": "Decode1",
+          "comment": "new grade/title @0x4c621c"
         }
       ]
     },
@@ -2281,13 +2307,20 @@
       ]
     },
     "CField::SendWithdrawGuildMsg": {
-      "address": "",
+      "address": "0x4c5cc4",
       "direction": "serverbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "GUILD_OPERATION mode = 7 (WITHDRAW) @0x4c5dab"
+        },
+        {
+          "op": "Decode4",
+          "comment": "character id @0x4c5db9"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "character name @0x4c5dd8"
         }
       ]
     },

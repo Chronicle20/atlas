@@ -1,15 +1,16 @@
 # GuildWithdraw (← `CField::SendWithdrawGuildMsg`)
 
-- **IDA:** 
+- **IDA:** 0x4c5cc4
 - **Atlas file:** `libs/atlas-packet/guild/serverbound/operation_withdraw.go`
 - **Variant:** GMS/v48
 - **Branch depth:** 0
-- **Verdict:** ❌
+- **Verdict:** ✅
 
 ## Wire-level diff
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | int32 | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
-| 1 | string | byte `` | ❌ | atlas: extra — client never reads this field |
+| 0 | byte | byte `GUILD_OPERATION mode = 7 (WITHDRAW) @0x4c5dab` | ✅ |  |
+| 1 | int32 | int32 `character id @0x4c5db9` | ✅ |  |
+| 2 | string | string `character name @0x4c5dd8` | ✅ |  |
 

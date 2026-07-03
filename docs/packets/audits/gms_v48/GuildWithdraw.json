@@ -1,30 +1,39 @@
 {
   "WriterName": "GuildWithdraw",
   "IDAName": "CField::SendWithdrawGuildMsg",
-  "Address": "",
+  "Address": "0x4c5cc4",
   "Variant": "GMS/v48",
   "BranchDepth": 0,
   "AtlasFile": "libs/atlas-packet/guild/serverbound/operation_withdraw.go",
   "Rows": [
     {
       "Index": 0,
-      "AtlasOp": 2,
+      "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 4,
-      "Note": "IDA read-order unresolved: function not found in IDB"
+      "IDAOp": 0,
+      "IDAComment": "GUILD_OPERATION mode = 7 (WITHDRAW) @0x4c5dab",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "character id @0x4c5db9",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
       "AtlasOp": 4,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "IDAOp": 4,
+      "IDAComment": "character name @0x4c5dd8",
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 2,
+  "Verdict": 0,
   "FlatInvalid": false
 }

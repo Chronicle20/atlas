@@ -737,3 +737,187 @@ reflect `fame/processor.go` and `character/processor.go` as of this commit.
   pending task-119 (see `bug_execute_transaction_noop.md`); this task's
   migration uses the correct seam and becomes atomic for free once
   task-119 lands.
+
+## atlas-buddies
+
+Module: `services/atlas-buddies/atlas.com/buddies`. All line numbers below
+reflect `list/processor.go` as of the Task 14 commit.
+
+### Migrated
+
+- `list/processor.go:108` `DeleteAndEmit` → wraps `Delete` (Pattern A,
+  clean — `Delete` already propagates `txErr` unswallowed on failure and
+  puts no rejection event, so no D7 fix was needed here).
+- `list/processor.go:143` `RequestAddBuddyAndEmit` → wraps `RequestAddBuddy`
+  (Pattern A **+ D7 fix**, see Notes: the pure method previously logged
+  `txErr` and returned `nil` — i.e. it *swallowed* the tx failure — so any
+  rejection `ErrorStatusEventProvider` `mb.Put` during a rolled-back inner
+  tx would otherwise flush into the same outbox-bound buffer the outer
+  wrapper now enqueues on success. Restructured to a scratch `innerMb`:
+  merged into the caller buffer on success, fired on the direct producer
+  path on failure).
+- `list/processor.go:276` `RequestDeleteBuddyAndEmit` → wraps
+  `RequestDeleteBuddy` (Pattern A + same D7 scratch-buffer fix as above;
+  also swallowed `txErr` to `nil` pre-migration).
+- `list/processor.go:361` `AcceptInviteAndEmit` → wraps `AcceptInvite`
+  (Pattern A + same D7 scratch-buffer fix; also swallowed `txErr` to `nil`
+  pre-migration).
+- `list/processor.go:471` `DeleteBuddyAndEmit` → wraps `DeleteBuddy`
+  (Pattern A, clean — propagates `txErr`, puts no rejection event on
+  failure).
+- `list/processor.go:509` `UpdateBuddyChannelAndEmit` → wraps
+  `UpdateBuddyChannel` (Pattern A, clean — same shape).
+- `list/processor.go:547` `UpdateBuddyShopStatusAndEmit` → wraps
+  `UpdateBuddyShopStatus` (Pattern A, clean — same shape).
+- `list/processor.go:624` `IncreaseCapacityWithTransactionAndEmit` (and
+  `:620` `IncreaseCapacityAndEmit`, which delegates straight to it with
+  `transactionId = uuid.Nil`) → wraps `IncreaseCapacityWithTransaction`
+  (Pattern A). This one DOES `mb.Put` a rejection event on each failure
+  branch, but the pre-existing wrapper already propagated `txErr`
+  unswallowed, and `message.Emit`'s closure only flushes the buffer when
+  the wrapped function returns `nil` (see `kafka/message/message.go`) — so
+  the rejection event was already silently discarded (never published,
+  pre- and post-migration) whenever this method fails. That is a
+  pre-existing behavior gap unrelated to D7 (nothing rides the outbox
+  incorrectly); left as-is, out of this task's scope, and not a new
+  regression.
+
+### Left direct
+
+- `list/resource.go:69` `handleCreateBuddyList` — a REST POST handler that
+  emits a `CREATE` COMMAND (`list2.EnvCommandTopic`) to trigger buddy-list
+  creation asynchronously via the `list2` Kafka consumer
+  (`kafka/consumer/list/consumer.go`, which calls `list.Create`, a plain DB
+  write with no emit of its own). The handler itself performs no DB write —
+  per D7 (REST-handler emit with no local state change), left on the
+  direct producer path.
+- `invite/processor.go:32` `Create` — pure COMMAND emit
+  (`invite2.EnvCommandTopic`) to the separate `atlas-invites` service (per
+  the brief); `invite.ProcessorImpl` has no `db` field at all, so there is
+  no DB write to be atomic with. Called synchronously (not via the shared
+  `message.Buffer`) from `list/processor.go`'s `RequestAddBuddy`, inside
+  the inner tx, but bypasses `mb`/`innerMb` entirely — already architecturally
+  separate from the migrated buffer-flush path.
+- `invite/processor.go:37` `Reject` — same shape as `Create` above, a
+  COMMAND emit to `atlas-invites` with no local DB write, called from
+  `list/processor.go`'s `RequestDeleteBuddy`.
+
+### Notes
+
+- **Enumeration.** Base grep (`message.Emit`, `producer.ProviderImpl`,
+  `database.ExecuteTransaction`) found the 8 `AndEmit`/tx pairs in
+  `list/processor.go` named in the brief, plus the two direct
+  `producer.ProviderImpl` calls in `invite/processor.go` and the one in
+  `list/resource.go:69`. The extended enumeration grep (`.GetAll()`,
+  `NewBuffer()`, `p.p(`, `producer.Provider\b`, `AndEmit(`) surfaced the
+  `list/processor.go:74` (pre-edit line) struct-init stored provider
+  (`p producer.Provider`, set to `producer.ProviderImpl(l)(ctx)` in
+  `NewProcessor` and copied unchanged in `WithTransaction`) referenced by
+  all 8 `AndEmit` wrappers via `message.Emit(p.p)(...)` — i.e. exactly the
+  "struct-init stored provider" case flagged in the brief, but every one of
+  its 8 call sites was already covered by the base grep (all 8 are
+  `message.Emit(p.p)(...)`, not a hand-rolled per-topic flush loop). No
+  additional hidden hand-rolled flush loop was found. Read every
+  `*AndEmit` method and its wrapped pure method in full before migrating.
+- **`list/processor.go:74` struct-init stored provider.** Per the recipe's
+  "Struct-init stored providers" guidance, the `p producer.Provider` field
+  was removed entirely from `ProcessorImpl` (struct definition, `NewProcessor`,
+  and `WithTransaction`) rather than kept — after migrating all 8 call
+  sites off `message.Emit(p.p)(...)` to `message.Emit(outbox.EmitProvider(...))`
+  built fresh from `tx` per the recipe, the field had zero remaining
+  readers; a lingering unused-but-still-populated field would have been
+  misleading (looks live, isn't). The three D7-fix reject-emit closures use
+  `producer.ProviderImpl(p.l)(p.ctx)` directly instead (matches the
+  pre-existing convention in `invite/processor.go` and `list/resource.go`).
+- **`list/resource.go:69` classification.** `handleCreateBuddyList` is a
+  REST POST handler (not GET, despite the brief's generic "REST GET
+  handler" phrasing — read the actual method and confirmed it's a POST).
+  It performs no DB write of its own (`producer.ProviderImpl(...)(list2.EnvCommandTopic)(list3.CreateCommandProvider(...))`
+  is the entire handler body besides status-code plumbing); the actual DB
+  write (`list.create`) happens later, in the `list2` consumer, on a
+  separate request/transaction with no emit of its own. Left direct per
+  D7 (no local state change to be atomic with).
+- **Failure-path pitfall (3 sites).** `RequestAddBuddy`, `RequestDeleteBuddy`,
+  and `AcceptInvite` all had the exact "swallow txErr to nil" shape flagged
+  in the recipe: the pure method's outer `if txErr != nil { p.l.Errorf(...); return nil }`
+  discarded the tx failure and returned success to the caller — meaning
+  the pre-migration behavior already always flushed whatever was in `mb`
+  (rejection event on failure, success event(s) on success) via the direct
+  producer, since `message.Emit`'s wrapping closure only sees the
+  swallowed `nil`. Migrating naively (Pattern A with no other change) would
+  have made the OUTER (new, outbox-bound) `ExecuteTransaction`+`message.Emit`
+  wrapper see that same swallowed `nil` and commit the rejection event to
+  the outbox as if it reflected a committed state change — a direct D7
+  violation. Fixed identically in all three methods: introduced a scratch
+  `innerMb := message.NewBuffer()`, redirected every `mb.Put` inside the
+  method to `innerMb.Put`, and after the (pre-existing) inner
+  `ExecuteTransaction` returns: on `txErr != nil`, fire `innerMb`'s
+  contents on the direct producer path
+  (`message.Emit(producer.ProviderImpl(p.l)(p.ctx))(...)`) and return
+  `nil`; on success, merge `innerMb.GetAll()` into the caller-supplied `mb`
+  via `mb.Put(t, model.FixedProvider(ms))` per topic. Verified each single
+  invocation of these methods puts either only-rejection or only-success
+  events (no interleaving within one call — every failure branch is an
+  immediate `mb.Put`+`return`), so no cross-branch leakage is possible.
+  Pattern ported from the `atlas-inventory` D7 fix (commit `b820a3db7`).
+- **Rebind nested sub-processors.** `list.ProcessorImpl` holds two
+  sub-processor fields, `cp character.Processor` and `ip invite.Processor`,
+  set in `NewProcessor` but — pre-migration — **not copied** in
+  `WithTransaction` (silently dropped to their zero value, `nil`, on any
+  `p.WithTransaction(tx)`-derived instance). This was latent/dormant
+  pre-migration because every existing internal call site invoked `p.cp`/
+  `p.ip` on the ORIGINAL (non-`WithTransaction`'d) receiver. This task's
+  migration introduces the first `p.WithTransaction(tx).RequestAddBuddy(...)`
+  /`.RequestDeleteBuddy(...)`/`.AcceptInvite(...)` call from each new
+  `*AndEmit` wrapper — inside those methods, `p.cp.GetById(...)` and
+  `p.ip.Create(...)`/`p.ip.Reject(...)` are now called on the
+  `WithTransaction`-derived receiver, which would have nil-pointer-panicked
+  without a fix. Fixed by adding `cp: p.cp, ip: p.ip` to `WithTransaction`'s
+  return value (neither sub-processor has a `db` field to further rebind to
+  `tx` — `character.Processor` is REST-only, `invite.Processor` is a pure
+  command-emitter — so a plain field copy, not a tx-bound reconstruction,
+  is correct here).
+- **Tests.** No pre-existing test in this module exercised any `AndEmit`
+  method or the pure buffer-taking methods directly (`list/processor_test.go`
+  only exercises the `updateCapacity` administrator function against a raw
+  DB, explicitly avoiding "processor tenant context complexity" per its own
+  comment) — nothing needed updating for the new outbox contract. Added
+  `list/processor_outbox_test.go` (new file, `package list`) with a
+  `TestMain` installing `producertest.InstallNoop()` and a
+  `capturingWriter`/`installCapturingProducer` helper (ported from the
+  `atlas-inventory` D7-fix test pattern) to guard the D7 fix:
+  - `TestRequestDeleteBuddyMissingListRoutesRejectDirect` — no buddy list
+    exists for the character (fast, deterministic, DB-only failure, no
+    HTTP mocking needed); asserts (a) the caller-supplied buffer is empty
+    (the rejection did NOT ride the would-be-outbox path), (b) exactly one
+    `ERROR` status event was captured on the DIRECT producer path.
+  - `TestRequestDeleteBuddySuccessMergesIntoCallerBuffer` — full success
+    path (character + target both have list rows, target is a buddy);
+    asserts (a) exactly one `BUDDY_REMOVED` event lands in the
+    caller-supplied buffer, (b) nothing fires on the direct path. Also
+    surfaced and fixed a pre-existing test-infra gap: `setupProcessorTestDB`'s
+    raw-SQL `buddies` table (in `list/processor_test.go`) predates
+    `buddy.Entity.TenantId` and has no `tenant_id` column, which silently
+    breaks tenant-scoped `Preload("Buddies")` reads for any test that
+    inserts a buddy row with a real tenant in context; worked around
+    locally in the new test via `db.AutoMigrate(&buddy.Entity{})` (adds the
+    missing column without touching other tests' schema).
+  - `TestAcceptInviteMissingListRoutesRejectDirect` — same shape as the
+    `RequestDeleteBuddy` failure test, guarding `AcceptInvite`'s identical
+    fix.
+  `RequestAddBuddy`'s own failure branches were verified by code
+  inspection only (not a dedicated test): its first failure branch
+  requires `character.Processor.GetById` — a real HTTP call with no mock
+  seam in this package — to fail, which happens deterministically in this
+  sandboxed test environment (no `atlas-character` reachable) but isn't a
+  hermetic/portable test fixture; the fix is structurally identical
+  (byte-for-byte the same scratch-buffer pattern) to the two tested
+  methods, and `go test -race`/`go vet`/`go build` all pass with the fix in
+  place.
+- `go test -race ./...`, `go vet ./...`, `go build ./...` all clean;
+  `docker buildx bake atlas-buddies` succeeded; `tools/redis-key-guard.sh`
+  clean (this service doesn't touch Redis).
+- `database.ExecuteTransaction` atomicity is still latent fleet-wide
+  pending task-119 (see `bug_execute_transaction_noop.md`); this task's
+  migration uses the correct seam and becomes atomic for free once
+  task-119 lands.

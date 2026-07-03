@@ -1217,3 +1217,31 @@
   ida:
     address: 7232470
   note: 'send-site 0x6e5bd6: COutPacket(113)+sub_5622DA (CMovePath::Flush, same movepath helper as MOVE_SUMMON op120). Sibling movepath sender to MOVE_SUMMON (op120) but with NO leading id encode -- consistent with v48 single-pet (pre-multipet, matches PET_LOOT op116 also omitting the petId buffer). Vtable-referenced (0x7a386c) CVecCtrl::EndUpdateActive override. = MOVE_PET (v61 op138 CVecCtrlPet::EndUpdateActive EncodeBuffer(petId,8)+CMovePath::Flush; v48 drops the petId buffer). MODERATE confidence: body is movepath-only; the pet-vs-other-movable identity rests on the single-pet no-id shape + sibling adjacency to the Enc4-id MOVE_SUMMON. Resolves the prior op113 documented-unresolved movepath row.'
+- op: MOVE_LIFE
+  direction: serverbound
+  opcode: 129
+  fname: sub_550383
+  fname_alts:
+  - CMob::GenerateMovePath
+  provenance: ida-discovered
+  ida:
+    address: 5571459
+  note: 'BODY-VERIFIED send-site 0x550383: CMob controller move/action sender (calls CMob::DoAttack, CMob::PrepareActionLayer; this = CMob*, this[84]=mobObjId). COutPacket(129)+Encode4(mobId=fuse this+328)+Encode2(moveSeqNo=this[67]+1)+Encode1(flags v63|16*v64)+Encode1(action a2)+Encode4(a4=target)+Encode1(sub_6E1C55)+sub_5622DA(CMovePath::Flush). = v61 MOVE_LIFE (CMob::GenerateMovePath Enc4(mobId)+Enc2+Enc1+Enc1+Enc4+Enc1+...+CMovePath::Flush) -- client is authoritative for mob movement and sends the mob move+action path. v61 MOVE_LIFE=155. NB the sibling CMob::Update senders in the same 0x54/0x55 cluster emit the mob-vs-mob damage family: op132 (sub_54D546: Enc4(mobId)+Enc4(count)), op133 (Enc4(mobId)+Enc4(otherMobId)), op134 (Enc4(mobId)), op135 (sub_551F38: Enc4(mobId)) -- these are the CMob mutual/self-damage senders (v61 MOB_DAMAGE_MOB family 155-161) but their exact field counts differ from the v61 twins; left DOCUMENTED-UNRESOLVED pending per-op disambiguation (not fabricated).'
+- op: ITEM_PICKUP
+  direction: serverbound
+  opcode: 142
+  fname: sub_70D987
+  provenance: ida-discovered
+  ida:
+    address: 7395719
+  note: 'BODY-VERIFIED send-site 0x70d987: COutPacket(142)+Encode1(fieldKey=field+216)+Encode4(exclReqTime via SetExclRequestSent)+Encode2(x=*a2)+Encode2(y=a2[2])+Encode4(dropId=a3). 30ms throttle (sub_4A2518(30,0)) + SetExclRequestSent (this[2079]=1). EXACT v61 ITEM_PICKUP (Enc1(fieldKey)+Enc4+Enc2(x)+Enc2(y)+Enc4(dropId)); the non-pet twin of PET_LOOT (op116, which adds the CPet receiver + 3 pet-flag bytes). v61 ITEM_PICKUP=169. Player drop-pickup (Z key). Resolves the connect/playthrough-critical pickup op.'
+- op: QUEST_ACTION
+  direction: serverbound
+  opcode: 85
+  fname: sub_5997EF
+  fname_alts:
+  - CQuest::StartQuest
+  provenance: ida-discovered
+  ida:
+    address: 5871599
+  note: 'BODY-VERIFIED send-site 0x5997ef: quest-op sender, this=CQuest entry (this[12]=questId u16, this[16]=npcId u32, this[20]=quest-state). COutPacket(85)+Encode1(action)+Encode2(questId)+Encode4(npcId)+Encode2(userX)+Encode2(userY)[+Encode4(answer) for action 2]. Multiple action arms: 1=complete-quest, 2=select-quest-item(+Enc4 selection), 4=start-quest, 5=(re)start. = v61 QUEST_ACTION (CQuest::StartQuest quest operation Enc1(action)+Enc2(questId)+Enc4(npcId)+...). v61 QUEST_ACTION=98. Quest accept/complete/item-select from NPC dialog + quest UI.'

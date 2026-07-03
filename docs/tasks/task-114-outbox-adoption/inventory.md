@@ -477,6 +477,47 @@ Pattern A/B sites now enqueue their success-path event(s) via
   Pattern A, uses the processor's existing `WithTransaction(tx)`.
 - `cashshop/inventory/compartment/processor.go:298` `ReleaseAndEmit` —
   Pattern A, uses the existing `WithTransaction(tx)`.
+- `cashshop/inventory/compartment/processor.go:131` `CreateAndEmit` —
+  **fix-pass migration** (was routed through a hand-rolled
+  `mb := message.NewBuffer(); ...; for t, ms := range mb.GetAll() { p.p(t)(...) }`
+  flush loop over the struct-stored `p.p producer.Provider` field, not
+  `message.Emit`, so it evaded the recipe's enumeration grep on the initial
+  pass). Now Pattern A: `database.ExecuteTransaction` builds `tx`,
+  `message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))` wraps
+  `p.WithTransaction(tx).Create(buf)(...)`, replacing the hand-rolled loop
+  entirely (not left alongside it).
+- `cashshop/inventory/compartment/processor.go:161` `UpdateCapacityAndEmit`
+  — same fix-pass treatment: hand-rolled flush loop → Pattern A around
+  `UpdateCapacity`.
+- `cashshop/inventory/compartment/processor.go:194` `DeleteAndEmit` — same
+  fix-pass treatment: hand-rolled flush loop → Pattern A around `Delete`.
+- `cashshop/inventory/compartment/processor.go:230`
+  `DeleteAllByAccountIdAndEmit` — same fix-pass treatment, plus two
+  additional fixes to the wrapped `DeleteAllByAccountId` (line 202): (1)
+  swapped its raw `p.db.WithContext(p.ctx).Transaction(...)` for
+  `database.ExecuteTransaction(p.db.WithContext(p.ctx), ...)`, consistent
+  with the rest of the module and safely re-entrant when
+  `DeleteAllByAccountIdAndEmit`'s outer `ExecuteTransaction` already holds
+  `tx`; (2) fixed the pre-existing bug where the inner per-compartment
+  `deleteEntity(p.db.WithContext(p.ctx), ccm.Id())` call ignored the
+  closure's own `tx` parameter in favor of the outer `p.db` — now
+  `deleteEntity(tx.WithContext(p.ctx), ccm.Id())`, threading the actual
+  transaction handle through.
+- `cashshop/inventory/processor.go:150` `CreateAndEmit` — same fix-pass
+  treatment. `createDefaultCompartments` (helper called from `Create`) was
+  rewritten to take the shared `mb *message.Buffer` and call the
+  compartment sub-processor's buffered `Create(mb)(...)` three times
+  (Explorer/Cygnus/Legend) instead of its previous `CreateAndEmit(...)`
+  (which opened its own independent `ExecuteTransaction`/outbox-provider
+  bind per call); all three compartment writes plus the inventory-level
+  `CreateStatusEventProvider` now share the single outer `tx` and the
+  single outer `mb`/outbox flush.
+- `cashshop/inventory/processor.go:183` `DeleteAndEmit` — same fix-pass
+  treatment. `Delete` now calls the compartment sub-processor's buffered
+  `DeleteAllByAccountId(mb)(accountId)` instead of
+  `DeleteAllByAccountIdAndEmit(accountId)`, so the per-compartment deletes
+  and the inventory-level `DeleteStatusEventProvider` share the one outer
+  `tx`/`mb`.
 - `cashshop/processor.go:78` `PurchaseAndEmit` — Pattern A, `NewProcessor`
   fallback (top-level `ProcessorImpl` has no `WithTransaction`). See Notes
   for the `INVENTORY_FULL` failure-path split inside `Purchase`.
@@ -539,42 +580,32 @@ Pattern A/B sites now enqueue their success-path event(s) via
   right after a successful tx) asserts a committed state change → migrated
   (see Migrated list). The brief flagged both for classification rather
   than dictating the outcome; this is the applied result.
-- **Discovered gap, not migrated (flagged for the task owner)**: two files
-  in this module route `*AndEmit` events through a hand-rolled
+- **Fix pass (resolves the prior "discovered gap" note)**: the 6 sites
+  previously flagged as tx-coupled, state-asserting emits left unmigrated
+  because they routed through a hand-rolled
   `mb := message.NewBuffer(); ...; for t, ms := range mb.GetAll() { p.p(t)(...) }`
-  loop instead of `message.Emit(...)`, so they never matched the recipe's
-  enumeration grep (`message.Emit(\|message.EmitWithResult\|producer.ProviderImpl\|database.ExecuteTransaction`)
-  even though `producer.ProviderImpl` construction in the same files *was*
-  caught. These are genuinely tx-coupled, state-asserting emits of the
-  same category this task migrates elsewhere, but were left **unmigrated**
-  to stay inside the brief's exact enumerated scope (4 EmitWithResult + 13
-  Emit, matching the grep precisely) rather than unilaterally expanding
-  scope: `cashshop/inventory/processor.go:146` `CreateAndEmit` (wraps 3
-  nested `compartment.CreateAndEmit` calls, each independently
-  migrated/atomic on its own, plus a summary `CreateStatusEventProvider`
-  Put with no direct bare write of its own) and `:183` `DeleteAndEmit`;
-  `cashshop/inventory/compartment/processor.go:129` `CreateAndEmit`
-  (wraps bare `createEntity`), `:145` `UpdateCapacityAndEmit` (wraps bare
-  `updateCapacity`), `:200` `DeleteAndEmit` (wraps bare `deleteEntity`),
-  and `:244` `DeleteAllByAccountIdAndEmit` (uses gorm's raw
-  `p.db.WithContext(p.ctx).Transaction(...)` directly — not
-  `database.ExecuteTransaction` — and its inner `deleteEntity` call
-  already ignores that `tx` in favor of `p.db`, a separate pre-existing
-  scoping bug unrelated to this migration). Recommend a follow-up task (or
-  brief amendment) to convert these 6 sites to `message.Emit`/Pattern A for
-  consistency with the rest of the module.
+  flush loop over the struct-stored `producer.Provider` field (evading the
+  recipe's enumeration grep) have now been migrated to Pattern A — see the
+  Migrated list above (`cashshop/inventory/processor.go:150,183` and
+  `cashshop/inventory/compartment/processor.go:131,161,194,230`). The
+  hand-rolled loops were replaced outright, not left alongside the outbox
+  path. Per the recipe's "struct-init stored providers" guidance, the
+  struct-stored `p` field on both `compartment.ProcessorImpl` and
+  `inventory.ProcessorImpl` is no longer read by any of these methods —
+  each now builds its own `outbox.EmitProvider(p.l, p.ctx, tx)` from the
+  tx it owns.
 - `cashshop/inventory/compartment/processor.go`'s `WithTransaction(tx)`
-  copies `astP` (the nested `asset.Processor`) unchanged — it does not
-  rebind the sub-processor to `tx`. `Accept`/`Release`'s calls into
-  `p.astP.CreateWithCashId`/`Release` therefore still open their own
-  independent `ExecuteTransaction` against the asset processor's
-  original construction-time `db`, not the outer `tx`. Per the recipe's
-  explicit re-entrancy guarantee this is safe (no double-transaction
-  errors) but is not fully atomic with the compartment-level enqueue
-  until a separate fix threads `tx` through nested sub-processor
-  construction — pre-existing structural limitation, out of scope here,
-  same caveat as the cross-cutting `database.ExecuteTransaction` no-op
-  note below.
+  previously copied `astP` (the nested `asset.Processor`) unchanged — it
+  did not rebind the sub-processor to `tx`, so `Accept`/`Release`'s calls
+  into `p.astP.CreateWithCashId`/`Release` opened their own independent
+  `ExecuteTransaction` against the asset processor's original
+  construction-time `db`, not the outer `tx` used for the
+  compartment-level enqueue. **Fixed in this pass**: `WithTransaction` now
+  rebinds via `astP: asset.NewProcessor(p.l, p.ctx, tx)` (matching
+  `asset.NewProcessor`'s actual 3-arg constructor signature — the `asset`
+  package exposes no `WithTransaction` method of its own), so
+  `AcceptAndEmit`/`ReleaseAndEmit`'s asset write now joins the same `tx` as
+  their compartment-level enqueue.
 - `database.ExecuteTransaction` atomicity is still latent fleet-wide
   pending task-119 (see the `atlas-character` section above and project
   memory `bug_execute_transaction_noop.md`); this task's migrations use

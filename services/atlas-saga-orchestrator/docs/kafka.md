@@ -46,6 +46,7 @@
 | Drop Commands | COMMAND_TOPIC_DROP | Command | Drop spawn operations (SPAWN) |
 | Map Commands | COMMAND_TOPIC_MAP | Command | Map operations (WEATHER_START) |
 | Gachapon Reward Won | EVENT_TOPIC_GACHAPON_REWARD_WON | Event | Gachapon reward win announcements |
+| Incubator Result | EVENT_TOPIC_INCUBATOR_RESULT | Event | Incubator use result (item-tag/sealing-lock/incubator sagas) for the channel to announce via packet |
 
 ## Message Types
 
@@ -541,6 +542,19 @@ RewardWonEvent
   assetId: uint32
 ```
 
+### Incubator Result Event
+
+Produced when an `incubator_result` step runs (item_tag_use / sealing_lock_use / incubator_use sagas). Fire-and-forget: the channel consumer only announces a packet, so the step completes immediately after emission with no response event advancing it. On saga failure, the `FAILED` status event (emitted after the cash-item-use reverse-walk compensation) is what triggers the channel's zero-result announcement.
+
+```
+ResultEvent
+  characterId: uint32
+  worldId: byte
+  channelId: byte
+  itemId: uint32
+  count: uint32
+```
+
 ## Transaction Semantics
 
 - Each saga step produces a command with the saga's transactionId
@@ -549,8 +563,9 @@ RewardWonEvent
 - Failed status events trigger step failure and compensation
 - Synchronous actions (play_portal_sound, show_info, show_info_text, update_area_info, show_hint, show_guide_hint, show_intro, field_effect, ui_lock, block_portal, unblock_portal, emit_gachapon_win, send_message, field_effect_weather) complete immediately after command emission
 - REST-based synchronous actions (start_instance_transport, save_location, warp_to_saved_location, select_gachapon_reward, spawn_monster) complete after the REST call returns
-- Fire-and-forget actions (register_party_quest, leave_party_quest, warp_party_quest_members_to_map, update_pq_custom_data, hit_reactor, broadcast_pq_message, stage_clear_attempt_pq, enter_party_quest_bonus) produce commands and complete immediately
+- Fire-and-forget actions (register_party_quest, leave_party_quest, warp_party_quest_members_to_map, update_pq_custom_data, hit_reactor, broadcast_pq_message, stage_clear_attempt_pq, enter_party_quest_bonus, incubator_result) produce commands/events and complete immediately
 - Terminal failure actions (register_party_quest, warp_party_quest_members_to_map, enter_party_quest_bonus) remove the saga from cache and emit a FAILED event on error, with no compensation
+- Cash-item-use sagas (item_tag_use, sealing_lock_use, incubator_use) run a reverse-walk compensation on failure: consumed items (destroy_asset / destroy_asset_from_slot) are re-created and awarded results (award_asset) are destroyed, mirroring pet_evolution's reverse-walk
 - Asset CREATED and QUANTITY_CHANGED events carry `assetId` as step result data for downstream steps
 
 ## Ordering

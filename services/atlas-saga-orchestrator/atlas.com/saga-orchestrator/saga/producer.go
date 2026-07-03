@@ -3,6 +3,7 @@ package saga
 import (
 	"atlas-saga-orchestrator/kafka/message/conversation_reward_notice"
 	"atlas-saga-orchestrator/kafka/message/gachapon"
+	"atlas-saga-orchestrator/kafka/message/incubator"
 	"atlas-saga-orchestrator/kafka/message/saga"
 	"atlas-saga-orchestrator/kafka/producer"
 	"context"
@@ -156,6 +157,22 @@ func GachaponRewardWonEventProvider(payload EmitGachaponWinPayload, assetId uint
 		GachaponId:   payload.GachaponId,
 		GachaponName: payload.GachaponName,
 		AssetId:      assetId,
+	}
+	return kproducer.SingleMessageProvider(key, value)
+}
+
+// IncubatorResultEventProvider builds the EVENT_TOPIC_INCUBATOR_RESULT message
+// consumed by the channel service, which announces the incubator result via a
+// packet. WorldId/ChannelId are narrowed from world.Id/channel.Id (both
+// underlying byte) to the wire event's byte fields.
+func IncubatorResultEventProvider(payload IncubatorResultPayload) model.Provider[[]kafka.Message] {
+	key := kproducer.CreateKey(int(payload.CharacterId))
+	value := &incubator.ResultEvent{
+		CharacterId: payload.CharacterId,
+		WorldId:     byte(payload.WorldId),
+		ChannelId:   byte(payload.ChannelId),
+		ItemId:      payload.ItemId,
+		Count:       payload.Count,
 	}
 	return kproducer.SingleMessageProvider(key, value)
 }

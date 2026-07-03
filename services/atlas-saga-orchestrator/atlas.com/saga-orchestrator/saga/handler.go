@@ -14,6 +14,7 @@ import (
 	"atlas-saga-orchestrator/invite"
 	character2 "atlas-saga-orchestrator/kafka/message/character"
 	gachapon2 "atlas-saga-orchestrator/kafka/message/gachapon"
+	incubator2 "atlas-saga-orchestrator/kafka/message/incubator"
 	questmessage "atlas-saga-orchestrator/kafka/message/quest"
 	saga2 "atlas-saga-orchestrator/kafka/message/saga"
 	storage2 "atlas-saga-orchestrator/kafka/message/storage"
@@ -149,6 +150,7 @@ type Handler interface {
 	handleStageClearAttemptPq(s Saga, st Step[any]) error
 	handleEnterPartyQuestBonus(s Saga, st Step[any]) error
 	handleFieldEffectWeather(s Saga, st Step[any]) error
+	handleIncubatorResult(s Saga, st Step[any]) error
 }
 
 type HandlerImpl struct {
@@ -863,6 +865,8 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleSetAssetOwner, true
 	case ApplyAssetLock:
 		return h.handleApplyAssetLock, true
+	case IncubatorResult:
+		return h.handleIncubatorResult, true
 	}
 	return nil, false
 }
@@ -1061,6 +1065,28 @@ func (h *HandlerImpl) handleApplyAssetLock(s Saga, st Step[any]) error {
 		h.logActionError(s, st, err, "Unable to apply asset lock.")
 		return err
 	}
+	return nil
+}
+
+// handleIncubatorResult handles the IncubatorResult action by emitting the
+// EVENT_TOPIC_INCUBATOR_RESULT event for the channel to announce via packet.
+// Fire-and-forget: the channel consumer only announces a packet, no response
+// event advances the step, so the step is marked complete immediately after
+// the emit succeeds.
+func (h *HandlerImpl) handleIncubatorResult(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(IncubatorResultPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+	err := producer.ProviderImpl(h.l)(h.ctx)(incubator2.EnvEventTopicIncubatorResult)(IncubatorResultEventProvider(payload))
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to emit incubator result event.")
+		return err
+	}
+
+	// Fire-and-forget: mark step complete immediately
+	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
+
 	return nil
 }
 

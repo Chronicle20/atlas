@@ -82,10 +82,22 @@ func addJuniorHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Handl
 }
 
 // breakLinkHandler handles DELETE /families/links/{characterId}
+//
+// The updated member set is bounded (self + senior + juniors + siblings,
+// same shape as getFamilyTreeHandler above), materialized in full by
+// BreakLinkAndEmit, stable-sorted by CharacterId (unique within the set)
+// for determinism, then paginate.Slice applied — same paginated-collection
+// envelope as every other route in this task family (task-117 Task 25).
 func breakLinkHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
+				page, err := paginate.ParseParams(r.URL.Query(), paginate.MaxPageSize, paginate.MaxPageSize)
+				if err != nil {
+					server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+					return
+				}
+
 				reason := r.URL.Query().Get("reason")
 				if reason == "" {
 					reason = "Member requested link break"
@@ -106,8 +118,16 @@ func breakLinkHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Handl
 					return
 				}
 
+				sorted := make([]FamilyMember, len(updatedMembers))
+				copy(sorted, updatedMembers)
+				sort.SliceStable(sorted, func(i, j int) bool {
+					return sorted[i].CharacterId() < sorted[j].CharacterId()
+				})
+
+				paged := paginate.Slice(sorted, page)
+
 				// Transform to REST models
-				rms, err := model.SliceMap(Transform)(model.FixedProvider(updatedMembers))(model.ParallelMap())()
+				rms, err := model.SliceMap(Transform)(model.FixedProvider(paged.Items))(model.ParallelMap())()
 				if err != nil {
 					d.Logger().WithError(err).Error("Failed to transform family member to REST model")
 					server.WriteErrorResponse(d.Logger())(w)(err)
@@ -116,7 +136,7 @@ func breakLinkHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Handl
 
 				query := r.URL.Query()
 				queryParams := jsonapi.ParseQueryFields(&query)
-				server.MarshalResponse[[]RestFamilyMember](d.Logger())(w)(c.ServerInformation())(queryParams)(rms)
+				server.MarshalPaginatedResponse[[]RestFamilyMember](d.Logger())(w)(c.ServerInformation())(queryParams)(rms, paginate.EnvelopeFor(paged), r)
 			}
 		})
 	}

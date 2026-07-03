@@ -1,14 +1,19 @@
 package family
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
+	"sort"
 	"testing"
 	"time"
 
 	databasetest "github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
@@ -156,4 +161,172 @@ func TestGetFamilyTreePaginates(t *testing.T) {
 		assert.Contains(t, doc.Links["prev"].Href, "page%5Bnumber%5D=3")
 		assert.NotContains(t, doc.Links, "next")
 	})
+}
+
+// TestBreakLinkHandlerBadPageParamsIsBadRequest verifies DELETE
+// /families/links/{characterId} validates page[number]/page[size] before
+// doing any work — same param-parsing gate getFamilyTreeHandler uses. This
+// path returns before the processor's BreakLinkAndEmit call, so it also
+// requires no live Kafka broker.
+func TestBreakLinkHandlerBadPageParamsIsBadRequest(t *testing.T) {
+	db := databasetest.NewInMemoryTenantDB(t, Migration)
+	tenantId := uuid.New()
+
+	srv := httptest.NewServer(setupFamilyRouter(db))
+	defer srv.Close()
+
+	url := fmt.Sprintf("%s/families/links/20?page[size]=0", srv.URL)
+	req := requestWithTenant(http.MethodDelete, url, tenantId)
+
+	resp, err := (&http.Client{}).Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+}
+
+// TestBreakLinkHandlerLegacyLimitParamIsBadRequest mirrors the tree
+// handler's rejection of the legacy ?limit= param.
+func TestBreakLinkHandlerLegacyLimitParamIsBadRequest(t *testing.T) {
+	db := databasetest.NewInMemoryTenantDB(t, Migration)
+	tenantId := uuid.New()
+
+	srv := httptest.NewServer(setupFamilyRouter(db))
+	defer srv.Close()
+
+	url := fmt.Sprintf("%s/families/links/20?limit=5", srv.URL)
+	req := requestWithTenant(http.MethodDelete, url, tenantId)
+
+	resp, err := (&http.Client{}).Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+}
+
+// TestBreakLinkHandlerMemberNotFoundIs404 and
+// TestBreakLinkHandlerNoLinkToBreakIsConflict drive the two error branches
+// that return before BreakLink ever touches the Kafka emission buffer
+// (ErrMemberNotFound / ErrNoLinkToBreak both return out of
+// ProcessorImpl.BreakLink before its `buf.Put` calls), so — like the bad
+// page-param case above — they need no live broker.
+func TestBreakLinkHandlerMemberNotFoundIs404(t *testing.T) {
+	db := databasetest.NewInMemoryTenantDB(t, Migration)
+	tenantId := uuid.New()
+
+	srv := httptest.NewServer(setupFamilyRouter(db))
+	defer srv.Close()
+
+	url := fmt.Sprintf("%s/families/links/999", srv.URL)
+	req := requestWithTenant(http.MethodDelete, url, tenantId)
+
+	resp, err := (&http.Client{}).Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
+}
+
+func TestBreakLinkHandlerNoLinkToBreakIsConflict(t *testing.T) {
+	db := databasetest.NewInMemoryTenantDB(t, Migration)
+	tenantId := uuid.New()
+	seedFamilyMember(t, db, tenantId, 20, 20, nil, nil)
+
+	srv := httptest.NewServer(setupFamilyRouter(db))
+	defer srv.Close()
+
+	url := fmt.Sprintf("%s/families/links/20", srv.URL)
+	req := requestWithTenant(http.MethodDelete, url, tenantId)
+
+	resp, err := (&http.Client{}).Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	assert.Equal(t, http.StatusConflict, resp.StatusCode)
+}
+
+// TestBreakLinkPaginatesUpdatedMembers exercises the exact sort +
+// paginate.Slice + paginate.EnvelopeFor pipeline breakLinkHandler applies
+// to BreakLinkAndEmit's result (resource.go breakLinkHandler, task-117 Task
+// 25). It drives the shared logic through Processor.BreakLink(nil) rather
+// than the full HTTP route / BreakLinkAndEmit, because BreakLinkAndEmit is
+// a thin message.EmitWithResult wrapper around this identical BreakLink
+// call (see processor.go) that additionally emits a Kafka event on success
+// — and every AndEmit handler in this service (add_junior included)
+// requires a live, reachable Kafka broker to complete without error; none
+// is available in this unit-test environment, and this service has no
+// injectable-producer test seam (unlike atlas-doors' `emit` field or
+// atlas-marriages' WithProducer). BreakLink already treats buf==nil as
+// "skip event emission" (see the `if buf != nil` guard around every
+// `buf.Put` call), so calling it directly exercises the identical DB
+// mutation and result-set construction BreakLinkAndEmit would have
+// produced, letting this test verify the *pagination* logic — the actual
+// change under test — against real DB-backed data without a broker
+// dependency that predates and is orthogonal to this task.
+//
+// The break target (10) has juniors only (no senior) so the
+// updatedMembers set stays duplicate-free: BreakLink's dedup-append
+// fallback (processor.go, "Update the member in the result" loop, ~line
+// 383) only scans for the member's own CharacterId among *already
+// appended* entries and otherwise unconditionally appends it again keyed
+// off whether the *last* entry happens to be the member — that check is
+// wrong whenever a member has BOTH a senior and juniors (the member gets
+// appended once by the HasSenior branch, then juniors get appended after
+// it, so the "last entry" check misses the earlier in-place replace and
+// double-appends the member). Confirmed empirically: breaking link 20
+// (which has both a senior and juniors) yields a 5-entry slice with 20
+// appearing twice, not the expected 4. That's a pre-existing bug in
+// BreakLink's result-set construction, orthogonal to this task's response-
+// envelope fix — not touched here.
+func TestBreakLinkPaginatesUpdatedMembers(t *testing.T) {
+	db := databasetest.NewInMemoryTenantDB(t, Migration)
+	tenantId := uuid.New()
+
+	// entity.ID must equal CharacterId here: Processor.GetByCharacterId
+	// (used internally by BreakLink for the member/senior/junior lookups)
+	// resolves by primary key id via provider.GetByIdProvider, not by the
+	// character_id column — a pre-existing quirk in this service unrelated
+	// to this task; seedFamilyMember's (id, characterId) pair must match
+	// for BreakLink's internal lookups to succeed.
+	seedFamilyMember(t, db, tenantId, 10, 10, nil, []uint32{20, 21})
+	seedFamilyMember(t, db, tenantId, 20, 20, uint32Ptr(10), nil)
+	seedFamilyMember(t, db, tenantId, 21, 21, uint32Ptr(10), nil)
+
+	tm, err := tenant.Create(tenantId, "GMS", 83, 1)
+	require.NoError(t, err)
+	ctx := tenant.WithContext(context.Background(), tm)
+
+	l := logrus.New()
+	l.SetLevel(logrus.ErrorLevel)
+
+	updatedMembers, err := NewProcessor(l, ctx, db).BreakLink(nil)(10, "test")()
+	require.NoError(t, err)
+	// junior(20, senior cleared) + junior(21, senior cleared) + member(10,
+	// juniors cleared) = 3 members.
+	require.Len(t, updatedMembers, 3)
+
+	sorted := make([]FamilyMember, len(updatedMembers))
+	copy(sorted, updatedMembers)
+	sort.SliceStable(sorted, func(i, j int) bool {
+		return sorted[i].CharacterId() < sorted[j].CharacterId()
+	})
+
+	page, err := paginate.ParseParams(url.Values{"page[number]": {"1"}, "page[size]": {"2"}}, paginate.MaxPageSize, paginate.MaxPageSize)
+	require.NoError(t, err)
+
+	paged := paginate.Slice(sorted, page)
+	require.Len(t, paged.Items, 2)
+	assert.EqualValues(t, 10, paged.Items[0].CharacterId())
+	assert.EqualValues(t, 20, paged.Items[1].CharacterId())
+
+	env := paginate.EnvelopeFor(paged)
+	assert.Equal(t, 3, env.Total)
+	assert.Equal(t, 1, env.PageNumber)
+	assert.Equal(t, 2, env.LastPage())
+}
+
+// uint32Ptr returns a pointer to the given uint32, for building SeniorId
+// fields in test fixtures.
+func uint32Ptr(v uint32) *uint32 {
+	return &v
 }

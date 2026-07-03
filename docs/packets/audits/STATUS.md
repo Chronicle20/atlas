@@ -625,7 +625,7 @@ Tool: `46f121c4a0f649a42249ab39feefdc56c1837263`
 | TROCK_ADD_MAP | CWvsContext::SendMapTransferRequest; sub_8478EA |  |  | ⬜ | 0x05E | ❌ |  | ⬜ |  | ⬜ | 0x066 | ❌ | 0x066 | ❌ | 0x069 | ❌ | 0x072 | ❌ | 0x061 | ❌ |
 | DENY_PARTY_REQUEST | CFadeWnd::SendCloseMessage; CWvsContext::OnPartyResult | party/clientbound/PartyAlreadyJoined1 (T1) | 0x05F | ❌ | 0x071 | ✅ | 0x07B | ✅ | 0x07A | ✅ | 0x07D | ❌ | 0x07F | ❌ |  | ⬜ |  | ⬜ |  | ⬜ |
 | ITEM_OPTION_UPGRADE_USE | CWvsContext::SendItemOptionUpgradeItemUseRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x05F | ❌ | 0x050 | ❌ |
-| GUILD_OPERATION | CField::InputGuildName; CField::SendCreateGuildAgreeMsg; CField::SendInviteGuildMsg; CField::SendKickGuildMsg; CField::SendSetGradeNameMsg; CField::SendSetGuildMarkMsg; CField::SendSetGuildNoticeMsg; CField::SendSetMemberGradeMsg; CField::SendWithdrawGuildMsg; CUIFadeYesNo::OnButtonClicked; CWvsContext::OnGuildResult | guild/serverbound/GuildAgreementResponse (T1) | 0x060 | 🟡 | 0x072 | ❌ | 0x07C | ✅ | 0x07B | ✅ | 0x07E | ✅ | 0x082 | ✅ | 0x086 | ✅ | 0x095 | ✅ | 0x081 | ✅ |
+| GUILD_OPERATION | CField::InputGuildName; CField::SendCreateGuildAgreeMsg; CField::SendInviteGuildMsg; CField::SendKickGuildMsg; CField::SendSetGradeNameMsg; CField::SendSetGuildMarkMsg; CField::SendSetGuildNoticeMsg; CField::SendSetMemberGradeMsg; CField::SendWithdrawGuildMsg; CUIFadeYesNo::OnButtonClicked; CWvsContext::OnGuildResult | guild/serverbound/GuildAgreementResponse (T1) | 0x060 | ✅ | 0x072 | ❌ | 0x07C | ✅ | 0x07B | ✅ | 0x07E | ✅ | 0x082 | ✅ | 0x086 | ✅ | 0x095 | ✅ | 0x081 | ✅ |
 | UI_OPEN_ITEM_USE_REQUEST | CWvsContext::SendUIOpenItemRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x060 | ❌ |  | ⬜ |
 | UNNAMED_R149 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x060 | ❌ | 0x060 | ❌ | 0x063 | ❌ | 0x06C | ❌ | 0x05B | ❌ |
 | ITEM_RELEASE_REQUEST | CWvsContext::SendItemReleaseRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x061 | ❌ | 0x051 | ❌ |
@@ -890,10 +890,10 @@ Tool: `46f121c4a0f649a42249ab39feefdc56c1837263`
 | guild/serverbound/GuildBBSDisplayThread (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | guild/serverbound/GuildBBSListThreads (T1) |  |  | ❌ |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |
 | guild/serverbound/GuildBBSReplyThread (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
-| guild/serverbound/GuildInviteRequest (T1) |  |  | 🟡 |  | 🟡 |  | 🟡 |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
-| guild/serverbound/GuildKick (T1) |  |  | 🟡 |  | 🟡 |  | 🟡 |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
-| guild/serverbound/GuildRequestCreate (T1) |  |  | 🟡 |  | 🟡 |  | 🟡 |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
-| guild/serverbound/GuildSetEmblem (T1) |  |  | 🟡 |  | 🟡 |  | 🟡 |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
+| guild/serverbound/GuildInviteRequest (T1) |  |  | ✅ |  | 🟡 |  | 🟡 |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
+| guild/serverbound/GuildKick (T1) |  |  | ✅ |  | 🟡 |  | 🟡 |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
+| guild/serverbound/GuildRequestCreate (T1) |  |  | ✅ |  | 🟡 |  | 🟡 |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
+| guild/serverbound/GuildSetEmblem (T1) |  |  | ✅ |  | 🟡 |  | 🟡 |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | guild/serverbound/GuildSetMemberTitle (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | guild/serverbound/GuildSetNotice (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | guild/serverbound/GuildSetTitleNames (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
@@ -1003,7 +1003,7 @@ Tool: `46f121c4a0f649a42249ab39feefdc56c1837263`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v48 | 25 | 0 | 22 | 293 | 629 | 0 | 7.4% |
+| v48 | 30 | 0 | 17 | 293 | 629 | 0 | 8.8% |
 | v61 | 208 | 0 | 60 | 230 | 471 | 0 | 41.8% |
 | v72 | 216 | 0 | 73 | 248 | 432 | 0 | 40.2% |
 | v79 | 228 | 0 | 72 | 246 | 423 | 0 | 41.8% |

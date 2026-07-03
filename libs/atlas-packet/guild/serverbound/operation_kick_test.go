@@ -8,6 +8,8 @@ import (
 
 // CField::SendKickGuildMsg: COutPacket(GUILD_OPERATION)+Encode1(8=KICK)+Encode4(cid)+EncodeStr(name).
 // Body = Encode4(cid)+EncodeStr(name). IDA-verified: v83@0x530a0d, v84@0x53cc7d, v87@0x55821e.
+// v48 CField::SendKickGuildMsg @0x4c5e06 (send block @0x4c5ff1): COutPacket(96=GUILD_OPERATION)+Encode1(8=KICK)+Encode4(cid)+EncodeStr(name). Body=Encode4(cid)+EncodeStr(name), == v83.
+// packet-audit:verify packet=guild/serverbound/GuildKick version=gms_v48 ida=0x4c5e06
 // packet-audit:verify packet=guild/serverbound/GuildKick version=gms_v79 ida=0x51c000
 // packet-audit:verify packet=guild/serverbound/GuildKick version=jms_v185 ida=0x56ddf7
 // packet-audit:verify packet=guild/serverbound/GuildKick version=gms_v95 ida=0x534cb0

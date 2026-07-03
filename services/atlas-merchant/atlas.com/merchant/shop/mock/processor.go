@@ -10,11 +10,13 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 var _ shop.Processor = (*ProcessorMock)(nil)
 
 type ProcessorMock struct {
+	WithTransactionFunc        func(tx *gorm.DB) shop.Processor
 	GetByIdFunc                func(id uuid.UUID) (shop.Model, error)
 	ByIdProviderFunc           func(id uuid.UUID) model.Provider[shop.Model]
 	GetByCharacterIdFunc       func(characterId uint32) ([]shop.Model, error)
@@ -51,6 +53,13 @@ type ProcessorMock struct {
 	PurchaseBundleAndEmitFunc  func(buyerCharacterId uint32, shopId uuid.UUID, listingIndex uint16, bundleCount uint16, worldId world.Id) (shop.PurchaseResult, error)
 	SendMessageAndEmitFunc     func(shopId uuid.UUID, characterId uint32, content string) error
 	RetrieveFrederickAndEmitFunc func(characterId uint32, worldId world.Id) error
+}
+
+func (m *ProcessorMock) WithTransaction(tx *gorm.DB) shop.Processor {
+	if m.WithTransactionFunc != nil {
+		return m.WithTransactionFunc(tx)
+	}
+	return m
 }
 
 func (m *ProcessorMock) GetById(id uuid.UUID) (shop.Model, error) {

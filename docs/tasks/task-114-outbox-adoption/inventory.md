@@ -1484,3 +1484,192 @@ commit.
   pending task-119 (see `bug_execute_transaction_noop.md`); this task's
   migration uses the correct seam and becomes atomic for free once
   task-119 lands.
+
+## atlas-merchant
+
+Module: `services/atlas-merchant/atlas.com/merchant`. All line numbers below
+reflect `shop/processor.go` pre-migration (Task 19).
+
+### Migrated
+
+Each site now opens (or reuses) `database.ExecuteTransaction` and enqueues its
+event(s) via `message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))`, calling
+`p.WithTransaction(tx).<Method>(buf)(...)` instead of the direct
+`message.Emit(p.producer)(...)` path. `shop.ProcessorImpl` had no
+`WithTransaction` method before this task — added
+`WithTransaction(tx *gorm.DB) Processor` (rebinds `db`, keeps
+`l`/`ctx`/`t`/`producer`) and added it to the `Processor` interface (and to
+`shop/mock/processor.go`'s `ProcessorMock`, which asserts `var _
+shop.Processor = (*ProcessorMock)(nil)` and otherwise had no reason to
+change).
+
+- `shop/processor.go:986` `OpenShopAndEmit` — Pattern A. `OpenShop` (`:257`)
+  transitions Draft→Open via its own `ExecuteTransaction`; the
+  `StatusEventShopOpenedProvider` now enqueues in the same outer tx
+  (re-entrant with the inner one).
+- `shop/processor.go:992` `CloseShopAndEmit` — Pattern A. `CloseShop`
+  (`:386`) transitions the shop to Closed via its own `ExecuteTransaction`,
+  then (post-tx in the pre-migration code, now inside the outer tx) ejects
+  visitors (Redis, buffers `VISITOR_EJECTED` events), conditionally calls
+  `storeToFrederick` (which constructs `frederick.NewProcessor(p.l, p.ctx,
+  p.db)` — now `p.db == tx` after rebinding, so `frederick.storeItems`'s own
+  `ExecuteTransaction` (the "1 tx" in `frederick/administrator.go:15`) is
+  re-entrant against the same outer tx), and buffers `AcceptAssetCommand`
+  for returned listings before the final `StatusEventShopClosedProvider`.
+  All of these events/commands are consequences of the same close
+  operation and are now enqueued atomically with the shop-state write and
+  the Frederick storage write. This resolves the brief's "check frederick's
+  caller for a coupled emit" instruction: the emit is coupled (via
+  `CloseShop`'s final status event), so `storeItems`'s tx rides along
+  instead of needing its own separate Pattern A treatment.
+- `shop/processor.go:998` `EnterMaintenanceAndEmit` — Pattern A.
+  `EnterMaintenance` (`:303`) transitions Open→Maintenance via its own
+  `ExecuteTransaction`; ejection events + `StatusEventMaintenanceEnteredProvider`
+  now enqueue in the outer tx.
+- `shop/processor.go:1004` `ExitMaintenanceAndEmit` — Pattern A.
+  `ExitMaintenance` (`:335`) transitions Maintenance→Open or →Closed (if
+  empty) via its own `ExecuteTransaction`; the resulting
+  `StatusEventShopClosedProvider`/`StatusEventMaintenanceExitedProvider` now
+  enqueue in the outer tx.
+- `shop/processor.go:1022` `AddListingAndEmit` — Pattern A (result captured
+  via outer `var result listing.Model` + closure, since this service has no
+  `EmitWithResult`). `AddListing` (`:500`) creates the listing row via its
+  own `ExecuteTransaction`; the `ReleaseAssetCommand` now enqueues in the
+  outer tx.
+- `shop/processor.go:1032` `RemoveListingAndEmit` — Pattern A (same
+  result-capture shape). `RemoveListing` (`:553`) deletes the listing row
+  via its own `ExecuteTransaction`; the `AcceptAssetCommand` (item return)
+  now enqueues in the outer tx.
+- `shop/processor.go:1042` `PurchaseBundleAndEmit` — Pattern A (same
+  result-capture shape). `PurchaseBundle` (`:625`) updates/deletes the
+  listing and optionally closes the shop via its own `ExecuteTransaction`;
+  the meso-debit command, asset-grant command, meso-credit command,
+  `ListingEventPurchasedProvider`, and (if sold out)
+  `StatusEventShopClosedProvider` all now enqueue atomically with the
+  purchase write in the outer tx. The version-conflict/insufficient-bundles
+  error paths return from inside the inner `ExecuteTransaction` before any
+  `mb.Put` call, so no event is ever buffered on a failed purchase (nothing
+  new needed here — already correct pre-migration, just carried through).
+- `shop/processor.go:1052` `SendMessageAndEmit` — Pattern A. `SendMessage`
+  (`:891`) calls `msg.NewProcessor(p.l, p.ctx, p.db).SendMessage(...)`
+  (`message/processor.go:35`, a bare `create(...)` with no
+  `ExecuteTransaction` of its own) to persist the chat message; wrapped the
+  whole `AndEmit` in a new `ExecuteTransaction` so the persisted message row
+  and `StatusEventMessageSentProvider` commit/enqueue together (this is the
+  "wrap bare Save/Create/Update writes in an explicit ExecuteTransaction"
+  classification case — `SendMessage`'s DB write had no tx at all
+  pre-migration).
+- `shop/processor.go:1058` `RetrieveFrederickAndEmit` — Pattern A.
+  `RetrieveFrederick` (`:925`) reads Frederick items/mesos, buffers
+  `AcceptAssetCommand`/`ChangeMesoCommand` per item/mesos-total, then calls
+  `fp.ClearItems`/`ClearMesos`/`ClearNotifications` (`frederick/processor.go`
+  — bare deletes, no `ExecuteTransaction`). Wrapped the whole `AndEmit` in a
+  new `ExecuteTransaction`; `frederick.NewProcessor(p.l, p.ctx, p.db)` picks
+  up `tx` automatically since it is constructed fresh from `p.db` on every
+  call (no stored sub-processor field to rebind), so the clears and the
+  command enqueue now commit together.
+
+### Left direct
+
+- `shop/processor.go:1010` `EnterShopAndEmit` — `EnterShop` (`:763`) only
+  reads the shop row (`getById`, no write) and mutates the Redis visitor
+  registry (`visitor.GetRegistry().AddVisitor`/`GetVisitors`); no Postgres
+  write. `StatusEventVisitorEnteredProvider` (and the capacity-full
+  rejection `StatusEventCapacityFullProvider`) asserts no DB state change.
+  Left on the direct `message.Emit(p.producer)` path.
+- `shop/processor.go:1016` `ExitShopAndEmit` — `ExitShop` (`:803`) only
+  touches the Redis visitor registry (`RemoveVisitor`); no Postgres write.
+  `StatusEventVisitorExitedProvider` left direct for the same reason.
+- `kafka/consumer/merchant/consumer.go:198` — `handlePurchaseBundleCommand`
+  builds `producer.ProviderImpl(l)(ctx)` outside any tx to fire
+  `StatusEventPurchaseFailedProvider` when `PurchaseBundleAndEmit` returns
+  an error (version conflict / insufficient bundles / other). This is the
+  D7 rejection-event case: the purchase did not commit, so there is no DB
+  state change to couple the emit to. Already correctly on the direct path
+  pre-migration (fired from the caller, after the failed `ExecuteTransaction`
+  returned) — no change needed, confirmed by reading `PurchaseBundle` end
+  to end (its error returns happen before any `mb.Put`).
+- `shop/processor.go:605` `UpdateListing` — has its own `ExecuteTransaction`
+  (counted as 1 of the brief's "8 tx" in `shop/processor.go`, alongside
+  `UpdateFields`) but emits no Kafka event at all (no `message.Emit`, no
+  `mb.Put`, no `*AndEmit` variant in the `Processor` interface). Nothing to
+  migrate.
+- `shop/processor.go:163` `CreateShop` — writes the shop entity directly
+  (no `message.Emit`/`mb.Put` anywhere in the method or its callers'
+  `handlePlaceShopCommand`); not part of the 11-site enumeration, no change.
+
+### Notes
+
+- **Enumeration.** Ran both the base grep
+  (`message.Emit(\|message.EmitWithResult\|producer.ProviderImpl\|database.ExecuteTransaction`)
+  and the extra sweep (`\.GetAll()\|NewBuffer()\|\bp\.p(\|producer.Provider\b\|AndEmit(`)
+  from the module root. They landed on exactly the 11 `message.Emit`
+  (`AndEmit` wrappers) + 8 `database.ExecuteTransaction` sites in
+  `shop/processor.go` and the 1 `database.ExecuteTransaction` site in
+  `frederick/administrator.go` named in the brief, plus the 1
+  `producer.ProviderImpl` site in `kafka/consumer/merchant/consumer.go:198`
+  — no hand-rolled stored-provider flush loop anywhere. Every `*AndEmit`
+  method was read in full, including the two (`EnterShopAndEmit`,
+  `ExitShopAndEmit`) whose underlying method has no DB write at all — these
+  do not appear in the "8 tx" count, confirming the brief's implicit
+  classification.
+- **No EmitWithResult.** Confirmed by reading `kafka/message/message.go`:
+  only `NewBuffer`/`Put`/`GetAll`/`Emit` exist, no `EmitWithResult`. The
+  three result-returning `AndEmit` methods (`AddListingAndEmit`,
+  `RemoveListingAndEmit`, `PurchaseBundleAndEmit`) already captured their
+  result via an outer `var result T` + closure assignment even
+  pre-migration (a hand-rolled Pattern-B shape built on plain `Emit`), so
+  the migration kept that shape and just swapped the producer + added the
+  outer `ExecuteTransaction`.
+- **No sub-processor fields.** `shop.ProcessorImpl` is `{l, ctx, db, t,
+  producer}` — no stored sub-processor field, so the "rebind nested
+  sub-processors" pitfall doesn't apply structurally. However, `CloseShop`
+  and `RetrieveFrederick` construct `frederick.NewProcessor(p.l, p.ctx,
+  p.db)` and `SendMessage` constructs `msg.NewProcessor(p.l, p.ctx, p.db)`
+  fresh on every call using the (now possibly tx-bound) `p.db` — this has
+  the same effect as rebinding, without needing a stored-field rebind in
+  `WithTransaction`.
+- **No shared-buffer failure-forwarding pitfall.** Checked every migrated
+  method for a handled-failure branch that `mb.Put`s then `return nil`s:
+  none exists. All error returns in `OpenShop`/`CloseShop`/
+  `EnterMaintenance`/`ExitMaintenance`/`AddListing`/`RemoveListing`/
+  `PurchaseBundle`/`SendMessage`/`RetrieveFrederick` happen before any
+  `mb.Put` call for that invocation, so no `rejectEmit`-closure
+  restructuring was needed. The one genuine rejection event in this module
+  (`StatusEventPurchaseFailedProvider`) is already fired from the consumer
+  caller on the direct path, never through the shared buffer.
+- **No batching-per-item-command concern.** `shop/task.go`'s
+  `ExpirationTask.Run()` loops over expired shops and calls
+  `CloseShopAndEmit` once per shop — each call is an independent, fully
+  committed `ExecuteTransaction` (not one shared outer tx wrapping the
+  loop), so the atlas-notes per-item-command-timing pitfall does not apply.
+  Same reasoning for `kafka/consumer/character/consumer.go`'s
+  `handleLogout`, which loops over a character's open shops calling
+  `CloseShopAndEmit` per shop.
+- **Frederick's "1 tx" is not migrated separately.** Per the brief's
+  instruction to check the caller: `frederick/administrator.go:15`'s
+  `storeItems` `ExecuteTransaction` is only ever invoked (via
+  `frederick.ProcessorImpl.StoreItems`) from `shop.storeToFrederick`, which
+  is only called from the now-migrated `CloseShop`. Since
+  `frederick.NewProcessor` is constructed with `p.db` (== `tx` after
+  `WithTransaction` rebinding) at call time, `storeItems`'s own
+  `ExecuteTransaction(db, ...)` runs against `tx` re-entrantly — no
+  separate Pattern A wrap needed on the frederick side.
+- **Pre-existing tests untouched.** No test in `shop/processor_test.go`,
+  `frederick/processor_test.go`, `frederick/notification_test.go`, or
+  `message/processor_test.go` calls any `*AndEmit` method — every test
+  exercises the `mb`-taking methods (`OpenShop`, `CloseShop`,
+  `EnterMaintenance`, `ExitMaintenance`, `AddListing`, `RemoveListing`,
+  `PurchaseBundle`, `UpdateListing`) directly against a hand-built
+  `message.Buffer`/`testBuffer()`, or the plain frederick/message processor
+  methods against a test DB. None asserted direct-path Kafka emission for a
+  now-migrated flow, so no test needed updating to assert outbox rows
+  instead.
+- `go mod tidy`, `go build ./...`, `go vet ./...`, and `go test -race ./...`
+  all clean in `services/atlas-merchant/atlas.com/merchant`; `docker buildx
+  bake atlas-merchant` succeeded; `tools/redis-key-guard.sh` clean (exit 0
+  across the whole repo).
+- `database.ExecuteTransaction` atomicity is still latent fleet-wide
+  pending task-119 (see `bug_execute_transaction_noop.md`); this task's
+  migration uses the correct seam and becomes atomic for free once
+  task-119 lands.

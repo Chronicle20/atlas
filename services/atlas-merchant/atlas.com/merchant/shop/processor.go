@@ -23,6 +23,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -33,6 +34,7 @@ const MaxListings = 16
 const MaxVisitors = 3
 
 type Processor interface {
+	WithTransaction(tx *gorm.DB) Processor
 	GetById(id uuid.UUID) (Model, error)
 	ByIdProvider(id uuid.UUID) model.Provider[Model]
 	GetByCharacterId(characterId uint32) ([]Model, error)
@@ -121,6 +123,16 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 		db:       db,
 		t:        tenant.MustFromContext(ctx),
 		producer: kafkaProducer.ProviderImpl(l)(ctx),
+	}
+}
+
+func (p *ProcessorImpl) WithTransaction(tx *gorm.DB) Processor {
+	return &ProcessorImpl{
+		l:        p.l,
+		ctx:      p.ctx,
+		db:       tx,
+		t:        p.t,
+		producer: p.producer,
 	}
 }
 
@@ -984,35 +996,49 @@ func (p *ProcessorImpl) RetrieveFrederick(mb *message.Buffer) func(characterId u
 // AndEmit wrappers.
 
 func (p *ProcessorImpl) OpenShopAndEmit(shopId uuid.UUID, characterId uint32) error {
-	return message.Emit(p.producer)(func(buf *message.Buffer) error {
-		return p.OpenShop(buf)(shopId, characterId)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).OpenShop(buf)(shopId, characterId)
+		})
 	})
 }
 
 func (p *ProcessorImpl) CloseShopAndEmit(shopId uuid.UUID, characterId uint32, reason CloseReason) error {
-	return message.Emit(p.producer)(func(buf *message.Buffer) error {
-		return p.CloseShop(buf)(shopId, characterId, reason)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).CloseShop(buf)(shopId, characterId, reason)
+		})
 	})
 }
 
 func (p *ProcessorImpl) EnterMaintenanceAndEmit(shopId uuid.UUID, characterId uint32) error {
-	return message.Emit(p.producer)(func(buf *message.Buffer) error {
-		return p.EnterMaintenance(buf)(shopId, characterId)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).EnterMaintenance(buf)(shopId, characterId)
+		})
 	})
 }
 
 func (p *ProcessorImpl) ExitMaintenanceAndEmit(shopId uuid.UUID, characterId uint32) error {
-	return message.Emit(p.producer)(func(buf *message.Buffer) error {
-		return p.ExitMaintenance(buf)(shopId, characterId)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).ExitMaintenance(buf)(shopId, characterId)
+		})
 	})
 }
 
+// EnterShopAndEmit stays on the direct producer path: EnterShop only mutates
+// the Redis visitor registry (no Postgres write), so there is no DB state
+// change to couple the emit to.
 func (p *ProcessorImpl) EnterShopAndEmit(characterId uint32, shopId uuid.UUID) error {
 	return message.Emit(p.producer)(func(buf *message.Buffer) error {
 		return p.EnterShop(buf)(characterId, shopId)
 	})
 }
 
+// ExitShopAndEmit stays on the direct producer path: ExitShop only mutates
+// the Redis visitor registry (no Postgres write), so there is no DB state
+// change to couple the emit to.
 func (p *ProcessorImpl) ExitShopAndEmit(characterId uint32, shopId uuid.UUID) error {
 	return message.Emit(p.producer)(func(buf *message.Buffer) error {
 		return p.ExitShop(buf)(characterId, shopId)
@@ -1021,43 +1047,53 @@ func (p *ProcessorImpl) ExitShopAndEmit(characterId uint32, shopId uuid.UUID) er
 
 func (p *ProcessorImpl) AddListingAndEmit(shopId uuid.UUID, characterId uint32, itemId uint32, itemType byte, bundleSize uint16, bundleCount uint16, pricePerBundle uint32, itemSnapshot asset2.AssetData, inventoryType byte, assetId uint32) (listing.Model, error) {
 	var result listing.Model
-	err := message.Emit(p.producer)(func(buf *message.Buffer) error {
-		var err error
-		result, err = p.AddListing(buf)(shopId, characterId, itemId, itemType, bundleSize, bundleCount, pricePerBundle, itemSnapshot, inventoryType, assetId)
-		return err
+	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			var err error
+			result, err = p.WithTransaction(tx).AddListing(buf)(shopId, characterId, itemId, itemType, bundleSize, bundleCount, pricePerBundle, itemSnapshot, inventoryType, assetId)
+			return err
+		})
 	})
-	return result, err
+	return result, txErr
 }
 
 func (p *ProcessorImpl) RemoveListingAndEmit(shopId uuid.UUID, characterId uint32, listingIndex uint16) (listing.Model, error) {
 	var result listing.Model
-	err := message.Emit(p.producer)(func(buf *message.Buffer) error {
-		var err error
-		result, err = p.RemoveListing(buf)(shopId, characterId, listingIndex)
-		return err
+	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			var err error
+			result, err = p.WithTransaction(tx).RemoveListing(buf)(shopId, characterId, listingIndex)
+			return err
+		})
 	})
-	return result, err
+	return result, txErr
 }
 
 func (p *ProcessorImpl) PurchaseBundleAndEmit(buyerCharacterId uint32, shopId uuid.UUID, listingIndex uint16, bundleCount uint16, worldId world.Id) (PurchaseResult, error) {
 	var result PurchaseResult
-	err := message.Emit(p.producer)(func(buf *message.Buffer) error {
-		var err error
-		result, err = p.PurchaseBundle(buf)(buyerCharacterId, shopId, listingIndex, bundleCount, worldId)
-		return err
+	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			var err error
+			result, err = p.WithTransaction(tx).PurchaseBundle(buf)(buyerCharacterId, shopId, listingIndex, bundleCount, worldId)
+			return err
+		})
 	})
-	return result, err
+	return result, txErr
 }
 
 func (p *ProcessorImpl) SendMessageAndEmit(shopId uuid.UUID, characterId uint32, content string) error {
-	return message.Emit(p.producer)(func(buf *message.Buffer) error {
-		return p.SendMessage(buf)(shopId, characterId, content)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).SendMessage(buf)(shopId, characterId, content)
+		})
 	})
 }
 
 func (p *ProcessorImpl) RetrieveFrederickAndEmit(characterId uint32, worldId world.Id) error {
-	return message.Emit(p.producer)(func(buf *message.Buffer) error {
-		return p.RetrieveFrederick(buf)(characterId, worldId)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).RetrieveFrederick(buf)(characterId, worldId)
+		})
 	})
 }
 

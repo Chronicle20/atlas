@@ -33,6 +33,13 @@ func run(pass *analysis.Pass) (interface{}, error) {
 				continue
 			}
 			ast.Inspect(fl.Body, func(inner ast.Node) bool {
+				if innerFl, ok := inner.(*ast.FuncLit); ok && innerFl != fl {
+					// A nested func literal (e.g. a deferred rejectEmit
+					// closure) may capture producer.ProviderImpl for
+					// invocation strictly after the transaction returns.
+					// That's not in-tx execution, so don't descend into it.
+					return false
+				}
 				sel, ok := inner.(*ast.SelectorExpr)
 				if !ok || sel.Sel.Name != "ProviderImpl" {
 					return true

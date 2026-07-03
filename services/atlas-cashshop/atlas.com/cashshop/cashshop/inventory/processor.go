@@ -4,7 +4,6 @@ import (
 	"atlas-cashshop/cashshop/inventory/compartment"
 	"atlas-cashshop/kafka/message"
 	inventoryMsg "atlas-cashshop/kafka/message/cashshop/inventory"
-	"atlas-cashshop/kafka/producer"
 	inventory2 "atlas-cashshop/kafka/producer/cashshop/inventory"
 	"context"
 
@@ -33,7 +32,6 @@ type ProcessorImpl struct {
 	ctx context.Context
 	db  *gorm.DB
 	t   tenant.Model
-	p   producer.Provider
 	ccp compartment.Processor
 }
 
@@ -44,7 +42,6 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 		ctx: ctx,
 		db:  db,
 		t:   tenant.MustFromContext(ctx),
-		p:   producer.ProviderImpl(l)(ctx),
 		ccp: compartment.NewProcessor(l, ctx, db),
 	}
 	return p
@@ -57,7 +54,6 @@ func (p *ProcessorImpl) WithTransaction(tx *gorm.DB) Processor {
 		ctx: p.ctx,
 		db:  tx,
 		t:   p.t,
-		p:   p.p,
 		ccp: p.ccp,
 	}
 }

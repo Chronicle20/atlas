@@ -3,7 +3,6 @@ package wallet
 import (
 	"atlas-cashshop/kafka/message"
 	"atlas-cashshop/kafka/message/wallet"
-	"atlas-cashshop/kafka/producer"
 	wallet2 "atlas-cashshop/kafka/producer/wallet"
 	"context"
 	"fmt"
@@ -38,7 +37,6 @@ type ProcessorImpl struct {
 	ctx context.Context
 	db  *gorm.DB
 	t   tenant.Model
-	p   producer.Provider
 }
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor {
@@ -47,7 +45,6 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 		ctx: ctx,
 		db:  db,
 		t:   tenant.MustFromContext(ctx),
-		p:   producer.ProviderImpl(l)(ctx),
 	}
 	return p
 }
@@ -58,7 +55,6 @@ func (p *ProcessorImpl) WithTransaction(tx *gorm.DB) Processor {
 		ctx: p.ctx,
 		db:  tx,
 		t:   p.t,
-		p:   p.p,
 	}
 }
 

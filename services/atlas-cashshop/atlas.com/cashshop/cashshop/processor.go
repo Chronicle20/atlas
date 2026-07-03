@@ -51,7 +51,6 @@ type ProcessorImpl struct {
 	ctx      context.Context
 	db       *gorm.DB
 	t        tenant.Model
-	p        producer.Provider
 	chaP     character.Processor
 	comP     commodity.Processor
 	cicP     compartment.Processor
@@ -69,7 +68,6 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 		ctx:      ctx,
 		db:       db,
 		t:        tenant.MustFromContext(ctx),
-		p:        producer.ProviderImpl(l)(ctx),
 		chaP:     character.NewProcessor(l, ctx),
 		comP:     commodity.NewProcessor(l, ctx),
 		cicP:     compartment.NewProcessor(l, ctx, db),

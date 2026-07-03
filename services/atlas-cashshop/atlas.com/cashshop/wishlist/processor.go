@@ -3,7 +3,6 @@ package wishlist
 import (
 	"atlas-cashshop/kafka/message"
 	"atlas-cashshop/kafka/message/wishlist"
-	"atlas-cashshop/kafka/producer"
 	wishlist2 "atlas-cashshop/kafka/producer/wishlist"
 	"context"
 
@@ -32,7 +31,6 @@ type ProcessorImpl struct {
 	ctx context.Context
 	db  *gorm.DB
 	t   tenant.Model
-	p   producer.Provider
 }
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor {
@@ -41,7 +39,6 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 		ctx: ctx,
 		db:  db,
 		t:   tenant.MustFromContext(ctx),
-		p:   producer.ProviderImpl(l)(ctx),
 	}
 	return p
 }

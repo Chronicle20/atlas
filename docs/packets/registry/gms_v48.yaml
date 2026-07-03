@@ -1266,6 +1266,22 @@
   ida:
     address: 6995788
   note: 'BODY-VERIFIED send-site 0x6adf?? in sub_6ADD4C: the active-skill/keydown prepare sender. Validates CSkillInfo::GetSkillLevel(skillId)>0, handles keydown skills (Hurricane 3121004, Rapid Fire/Big Bang 2121001/2221001/2321001/3221001, Dark Sight 4211001 fusion guard) and routes physical arms through sub_6A0528 (CLOSE_RANGE op36), then COutPacket(72)+Encode4(v50=skillId)+Encode1(a3=level)+Encode1(this[896]&0x7F | (this[223]<<7) = action|bLeft)+Encode1(v30=actionSpeed). EXACT v61 SKILL_EFFECT (CUserLocal::DoActiveSkill_Prepare Enc4(skillId)+Enc1(level)+Enc1(keydir)+Enc1(actionSpeed)). v61 SKILL_EFFECT=85. Non-attack skill cast (buffs/movement/keydown-prepare) — playthrough-critical. (harvest op70 sub_6AD3BC..6AFA91 cluster nearest-push-imm approximates this 0x6AD-0x6AF skill region; actual opcode read = 72.)'
+- op: NPC_TALK_MORE
+  direction: serverbound
+  opcode: 47
+  fname: sub_5B0C11
+  fname_alts:
+  - sub_5B1037
+  - sub_5B1195
+  - sub_5B12E8
+  - sub_5B1494
+  - sub_5B1640
+  - sub_5B18B5
+  - CScriptMan::OnAskMembershopAvatar
+  provenance: ida-discovered
+  ida:
+    address: 5966865
+  note: 'BODY-VERIFIED. NPC conversation-reply dispatcher family (the CScriptMan/CUtilDlgEx Say/Ask handlers), all arms COutPacket(47)+Encode1(msgType)+Encode1(action)+[type-specific payload]. sub_5B0C11 (SAY arm): decodes server dialog (CInPacket DecodeStr+Decode1+Decode1), shows CUtilDlgEx, replies Encode1(0=msgType)+Encode1(action: dlg-ret 0x2001->1 next / 0x2000->0 prev / else -1 end). sub_5B1640 (ASK_AVATAR/membership arm): Encode1(8=msgType)+Encode1(result 0/1/2)+[EncodeBuffer(8) selected avatar look] — reads style-coupon items GetItem(5,...). The 7 sibling handlers sub_5B0C11..sub_5B18B5 each encode a distinct msgType (SAY=0, ASK_YESNO/TEXT/NUMBER/MENU/QUIZ/AVATAR/PET...) then action then optional Encode4(selection)/EncodeStr(text)/buffer. = exact v61 NPC_TALK_MORE (CScriptMan::On{Say,Ask*} COutPacket(56) reply dispatcher). v61 NPC_TALK_MORE=56 (Delta-9, dialog region).'
 - op: NPC_SHOP
   direction: serverbound
   opcode: 48

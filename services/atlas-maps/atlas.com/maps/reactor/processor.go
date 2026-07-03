@@ -37,8 +37,14 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, p producer.Provider
 
 var _ Processor = (*ProcessorImpl)(nil)
 
+// InMapModelProvider fetches every reactor currently in one map instance.
+// Spawn's dedupe logic (doesNotExist) needs the COMPLETE existing set to
+// correctly avoid double-spawning a reactor already present -- a truncated
+// list here is a real duplicate-spawn hazard, not just a display gap. The
+// upstream atlas-reactors list is now paginated (task-117), so this drains
+// every page rather than fetching just the first.
 func (p *ProcessorImpl) InMapModelProvider(_ uuid.UUID, field field.Model) model.Provider[[]Model] {
-	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestInMap(field), Extract, model.Filters[Model]())
+	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(inMapUrl(field), 250, Extract, model.Filters[Model]())
 }
 
 func (p *ProcessorImpl) GetInMap(transactionId uuid.UUID, field field.Model) ([]Model, error) {

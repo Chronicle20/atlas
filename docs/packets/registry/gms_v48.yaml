@@ -1256,6 +1256,16 @@
   ida:
     address: 6172802
   note: 'BODY-VERIFIED send-site 0x5e3082 (own/field town-portal) + 0x4cb90a (party-member town-portal). Both hit-test the town-portal (door) rect (dword_80EBD4 build-rect + dword_80EC4C point-in-rect) then send COutPacket(103)+Encode4(townPortalOwnerCharId)+Encode1(enterFlag). sub_5E3082 walks the field door pool this[10] and sends Enc1(0) (own/field door, id=portal[2]); sub_4CB90A walks CWvsContext::GetPartyTownPortal and sends Enc1(1) (party door, id=owner char). = v61 USE_DOOR (CField::TryEnterTownPortal [Encode4(ownerId),Encode1(enter)]). v61 USE_DOOR=121. Mystic-door / town-portal enter -- playthrough-critical.'
+- op: SKILL_EFFECT
+  direction: serverbound
+  opcode: 72
+  fname: sub_6ADD4C
+  fname_alts:
+  - CUserLocal::DoActiveSkill_Prepare
+  provenance: ida-discovered
+  ida:
+    address: 6995788
+  note: 'BODY-VERIFIED send-site 0x6adf?? in sub_6ADD4C: the active-skill/keydown prepare sender. Validates CSkillInfo::GetSkillLevel(skillId)>0, handles keydown skills (Hurricane 3121004, Rapid Fire/Big Bang 2121001/2221001/2321001/3221001, Dark Sight 4211001 fusion guard) and routes physical arms through sub_6A0528 (CLOSE_RANGE op36), then COutPacket(72)+Encode4(v50=skillId)+Encode1(a3=level)+Encode1(this[896]&0x7F | (this[223]<<7) = action|bLeft)+Encode1(v30=actionSpeed). EXACT v61 SKILL_EFFECT (CUserLocal::DoActiveSkill_Prepare Enc4(skillId)+Enc1(level)+Enc1(keydir)+Enc1(actionSpeed)). v61 SKILL_EFFECT=85. Non-attack skill cast (buffs/movement/keydown-prepare) — playthrough-critical. (harvest op70 sub_6AD3BC..6AFA91 cluster nearest-push-imm approximates this 0x6AD-0x6AF skill region; actual opcode read = 72.)'
 - op: NPC_SHOP
   direction: serverbound
   opcode: 48

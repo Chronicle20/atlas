@@ -143,6 +143,27 @@ Enc4+Enc2), op78 (empty-body 200ms throttle), op79 (type-9 scripted-portal Enc1+
 op80 (foothold teleport EncStr+Enc2×4 — NOT DISTRIBUTE_AP), op87 (right-click fame-like social),
 op122/op123 (summon damage / beholder skill 1320008), op113/op120 (pet/summon movepath Enc4(id)+MovePath).
 
+### Stage B2d (continuation) — dialog + skill body-signature resolutions (+4, 53->57)
+
+Body-verified from the v48 `COutPacket(N)` send-sites (never blind-shifted); each quoted in `gms_v48.yaml`:
+
+| v48 op | op-name | body fingerprint | v61 op |
+|---|---|---|---|
+| **48** | **NPC_SHOP** | CShopDlg mode-prefix: buy `Enc1(0)+Enc2(slot)+Enc4(itemId)+Enc2(qty)` (sub_5B7422), sell `Enc1(1)+…` (sub_5B7693), close `Enc1(3)` (sub_5B4B82) | 60 |
+| **52** | **STORAGE** | CTrunkDlg mode-prefix: withdraw `Enc1(4)+Enc4(itemId)` (sub_57E987), close `Enc1(7)` (sub_5832D1) | 61 |
+| **57** | **CANCEL_ITEM_EFFECT** | `Enc4(sourceId)` single, 200ms guard (sub_70DD49); caller sub_43D498 buff-icon right-click, item-buff arm `sub_70DD49(-sourceId)` (skill-buff arm -> SendSkillCancelRequest op71) | 68 |
+| **72** | **SKILL_EFFECT** | `Enc4(skillId)+Enc1(level)+Enc1(action\|bLeft<<7)+Enc1(actionSpeed)` (sub_6ADD4C DoActiveSkill_Prepare; keydown Hurricane 3121004 / BigBang 21x1001) | 85 |
+
+**Item-USE-family cluster mapped (long-tail, category-gated variants, all body `Enc4(time)+Enc2(slot)+Enc4(itemId)` unless noted):** op43=cat501 pet-item `Enc4(itemId)` (sub_71D34B), op56=cat221 (sub_70DB3C), op59=teleport+restrict-check (sub_70DDAA), op60=generic (sub_70DF2F), op61=cat226 mount (sub_70E00B), op63=cat227 pet-summon `+Enc4(petSN)` (sub_70E0C5), op64=cat228/229 (sub_70E3E7), op69=food/recovery `Enc4(time)+Enc4(itemId)` (sub_71CDC1, caller sub_63F330 overheal-cap), op77=cash-slot5 `Enc4+Enc2` (sub_71D118). These are distinct USE_* Atlas ops keyed on item-category; DEFERRED pending item-category cross-ref (not core). op78=empty-body 200ms throttle (sub_71B126, unresolved). op131=CMob-controller `Enc4(mobId)+Enc4` 3000ms dedup (mob-damage-mob family, not mob-to-player).
+
+**IN-SCOPE serverbound still unresolved (genuinely need per-op body walks — NOT fabricated):**
+- **NPC_TALK_MORE** — CScriptMan Say/Ask reply. v48 op56 is item-use (NOT the reply, unlike v61 op56); the script-dialog OK/Next/Yes/No/select reply sender (twin of v61 CScriptMan::OnSay/OnAsk* `Enc1(msgType)+Enc1(action)+[Enc4/EncStr]`) is an unnamed v48 sub in the 0x63F-0x641 NPC-dialog region not isolated this pass.
+- **MONSTER_BOOK_COVER** — single `Enc4(coverCardId)` set-cover button; v48 op53 negative (=`Enc1(5)` SetFocus). Real sender (twin of v61 sub_6E78F2) not located.
+- **MESO_DROP / DROP_MESO** — `Enc4(time)+Enc4(amount)` drop-money spinner (min 10, cap 50000); twin of v61 sub_8459DD/caller sub_6BF6BD not located.
+- **ITEM_SORT / ITEM_SORT2** — `Enc4(time)+Enc1(compartment[1,5])` gather/sort buttons; twins of v61 sub_8314D0 / sub_831564 not located (not in the sub_70Dxxx item-USE cluster).
+- **TOUCH_MONSTER_ATTACK** — CUserLocal::TryDoingBodyAttack body/touch attack; confirmed NOT at op34-39 (per Stage B2); separate opcode unlocated.
+- **MOB_DAMAGE (mob-to-player)** — this is the player-take-damage report = TAKE_DAMAGE=39 (already registered); the CMob mutual/self MOB_DAMAGE_MOB family = op131/132/133/134/135 (documented-unresolved, exact field counts differ from v61 twins).
+
 ### Serverbound totals
 
 - **44 serverbound** registered (Stage B2b +16 net). Stage B (22): connect-critical path

@@ -49,6 +49,17 @@ func legacyGmsNoSkillDataCrc(t tenant.Model) bool {
 	return t.Region() == "GMS" && t.MajorVersion() < 72
 }
 
+// legacyGmsNoRangedBulletCoords reports whether the ranged-attack trailer OMITS the
+// bulletX/bulletY world-coordinate shorts. The very-legacy pre-61 GMS shoot sender
+// (v48 sub_6A228C @0x6a3965/0x6a3979: after the per-mob loop it Encode2s only
+// characterX/characterY then SendPacket @0x6a3988 — no bullet coords) does not carry
+// them; the head properBulletPosition/cashBulletPosition/nShootRange block is still
+// present. Gate to GMS < 61 so v48 omits the 4-byte trailer while v61+/JMS are
+// unchanged (their fixtures pin the existing trailer).
+func legacyGmsNoRangedBulletCoords(t tenant.Model) bool {
+	return t.Region() == "GMS" && t.MajorVersion() < 61
+}
+
 type AttackInfo struct {
 	attackType           AttackType
 	fieldKey             byte
@@ -198,7 +209,7 @@ func (m *AttackInfo) Encode(l logrus.FieldLogger, ctx context.Context) func(opti
 
 		w.WriteShort(m.characterX)
 		w.WriteShort(m.characterY)
-		if m.attackType == AttackTypeRanged {
+		if m.attackType == AttackTypeRanged && !legacyGmsNoRangedBulletCoords(t) {
 			w.WriteShort(m.bulletX)
 			w.WriteShort(m.bulletY)
 		}
@@ -351,7 +362,7 @@ func (m *AttackInfo) Decode(l logrus.FieldLogger, ctx context.Context) func(r *r
 
 		m.characterX = r.ReadUint16()
 		m.characterY = r.ReadUint16()
-		if m.attackType == AttackTypeRanged {
+		if m.attackType == AttackTypeRanged && !legacyGmsNoRangedBulletCoords(t) {
 			m.bulletX = r.ReadUint16()
 			m.bulletY = r.ReadUint16()
 		}

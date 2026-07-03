@@ -1,6 +1,6 @@
 {
   "WriterName": "CharacterSkillPrepare",
-  "IDAName": "CUserLocal::DoActiveSkill_Prepare",
+  "IDAName": "sub_6ADD4C",
   "Address": "",
   "Variant": "GMS/v48",
   "BranchDepth": 0,
@@ -22,7 +22,7 @@
       "IDAOp": 0,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: extra \u2014 client never reads this field"
     },
     {
       "Index": 2,
@@ -31,7 +31,7 @@
       "IDAOp": 0,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: extra \u2014 client never reads this field"
     },
     {
       "Index": 3,
@@ -40,7 +40,7 @@
       "IDAOp": 0,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: extra \u2014 client never reads this field"
     },
     {
       "Index": 4,
@@ -49,7 +49,7 @@
       "IDAOp": 0,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: extra \u2014 client never reads this field"
     },
     {
       "Index": 5,
@@ -58,7 +58,7 @@
       "IDAOp": 0,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: extra \u2014 client never reads this field"
     }
   ],
   "Verdict": 2,

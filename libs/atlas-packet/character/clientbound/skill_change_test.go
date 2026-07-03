@@ -99,6 +99,37 @@ func TestCharacterSkillChangeV61ByteFixture(t *testing.T) {
 	}
 }
 
+// TestCharacterSkillChangeV48ByteFixture pins the very-legacy GMS v48 wire, which OMITS
+// the 8-byte per-skill expiration field (added at v83) — byte-identical to v61/v72/v79.
+// IDA-verified: CWvsContext::OnChangeSkillRecordResult @0x71a02c (GMS_v48_1_DEVM.exe,
+// port 13337) reads Decode1 exclRequestSent @0x71a03a, Decode2 count @0x71a075, then per
+// skill Decode4 skillId @0x71a093 + Decode4 level @0x71a09d + Decode4 masterLevel
+// @0x71a0ce (3 ints, NO DecodeBuffer expiration), then a trailing Decode1 sn @0x71a11a
+// after the loop. The encoder gates the int64 off for GMS <83, so the body is 16 bytes.
+// packet-audit:verify packet=character/clientbound/CharacterSkillChange version=gms_v48 ida=0x71a02c
+func TestCharacterSkillChangeV48ByteFixture(t *testing.T) {
+	ctx := test.CreateContext("GMS", 48, 1)
+	input := NewCharacterSkillChange(true, 1001003, 10, 0, time.Time{}, false)
+	expected := []byte{
+		0x01,       // exclRequestSent           @0x71a03a
+		0x01, 0x00, // count=1                    @0x71a075
+		0x2B, 0x46, 0x0F, 0x00, // skillId=1001003 LE   @0x71a093
+		0x0A, 0x00, 0x00, 0x00, // level=10 LE          @0x71a09d
+		0x00, 0x00, 0x00, 0x00, // masterLevel=0 LE     @0x71a0ce
+		0x00, // sn=false (no expiration on v48) @0x71a11a
+	}
+	got := test.Encode(t, ctx, input.Encode, nil)
+	if len(got) != len(expected) {
+		t.Fatalf("byte length mismatch: got %d want %d\n  got:  %X\n  want: %X", len(got), len(expected), got, expected)
+	}
+	for i := range expected {
+		if got[i] != expected[i] {
+			t.Errorf("byte[%d] = %02X, want %02X\n  got:  %X\n  want: %X", i, got[i], expected[i], got, expected)
+			break
+		}
+	}
+}
+
 func TestCharacterSkillChangeV79ByteFixture(t *testing.T) {
 	ctx := test.CreateContext("GMS", 79, 1)
 	input := NewCharacterSkillChange(true, 1001003, 10, 0, time.Time{}, false)

@@ -1,0 +1,8 @@
+packet: character/serverbound/CharacterAttackMeleeRequest
+direction: serverbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: sub_6A0528
+    address: "0x6a0528"
+    decompile_sha256: cead2aa09b449c92384c405d6ca3dbbcf6d925a99fb652d6ca2cff896c0a566b

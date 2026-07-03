@@ -60,7 +60,7 @@ Tool: `46f121c4a0f649a42249ab39feefdc56c1837263`
 | CHECK_SPW_RESULT | CLogin::OnCheckSPWResult |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x01C | ❌ | 0x01C | ❌ | 0x01C | ❌ | 0x01B | ❌ |  | ⬜ |
 | GIVE_BUFF | CWvsContext::OnTemporaryStatSet | character/clientbound/BuffGive (T1) | 0x01C | ❌ | 0x01D | ✅ | 0x01D | ✅ | 0x01D | ✅ | 0x020 | ✅ | 0x020 | ✅ | 0x020 | ✅ | 0x01F | ✅ | 0x01E | ✅ |
 | CANCEL_BUFF | CWvsContext::OnTemporaryStatReset | character/clientbound/BuffCancel (T1) | 0x01D | ❌ | 0x01E | ✅ | 0x01E | ✅ | 0x01E | ✅ | 0x021 | ✅ | 0x021 | ✅ | 0x021 | ✅ | 0x020 | ✅ | 0x01F | ✅ |
-| UPDATE_SKILLS | CWvsContext::OnChangeSkillRecordResult | character/clientbound/CharacterSkillChange (T1) | 0x01E | ❌ | 0x021 | ✅ | 0x021 | ✅ | 0x021 | ✅ | 0x024 | ✅ | 0x024 | ✅ | 0x024 | ✅ | 0x023 | ✅ | 0x022 | ✅ |
+| UPDATE_SKILLS | CWvsContext::OnChangeSkillRecordResult | character/clientbound/CharacterSkillChange (T1) | 0x01E | ✅ | 0x021 | ✅ | 0x021 | ✅ | 0x021 | ✅ | 0x024 | ✅ | 0x024 | ✅ | 0x024 | ✅ | 0x023 | ✅ | 0x022 | ✅ |
 | FORCED_STAT_SET | CWvsContext::OnForcedStatSet |  |  | ⬜ | 0x01F | ❌ | 0x01F | ❌ | 0x01F | ❌ | 0x022 | ❌ | 0x022 | ❌ | 0x022 | ❌ | 0x021 | ❌ | 0x020 | ❌ |
 | SKILL_USE_RESULT | CWvsContext::OnSkillUseResult |  | 0x01F | ❌ | 0x022 | ❌ | 0x022 | ❌ | 0x022 | ❌ | 0x025 | ❌ | 0x025 | ❌ | 0x025 | ❌ | 0x024 | ❌ | 0x023 | ❌ |
 | FAME_RESPONSE | CWvsContext::OnGivePopularityResult | fame/clientbound/ErrorResponse | 0x020 | ❌ | 0x023 | ❌ | 0x023 | ❌ | 0x023 | ❌ | 0x026 | ✅ | 0x026 | ✅ | 0x026 | ✅ | 0x025 | ✅ | 0x024 | ✅ |
@@ -544,17 +544,17 @@ Tool: `46f121c4a0f649a42249ab39feefdc56c1837263`
 | VIEW_ALL_PIC_REGISTER | CLogin::SendSelectCharPacketByVAC | login/serverbound/AllCharacterListSelect |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x01F | ✅ | 0x01F | ✅ | 0x01F | ✅ | 0x01E | ✅ |  | ⬜ |
 | ENTER_CASHSHOP | CWvsContext::SendMigrateToShopRequest; sub_70BD0D |  | 0x020 | ❌ | 0x025 | ❌ | 0x027 | ❌ | 0x026 | ❌ | 0x028 | ❌ | 0x028 | ❌ | 0x02A | ❌ | 0x02B | ❌ | 0x01F | ❌ |
 | VIEW_ALL_WITH_PIC | CLogin::SendSelectCharPacketByVAC | login/serverbound/AllCharacterListSelect |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x020 | ✅ | 0x020 | ✅ | 0x020 | ✅ | 0x01F | ✅ |  | ⬜ |
-| MOVE_PLAYER | CMovePath::Flush; CUserLocal::OnKey; CVecCtrlUser::EndUpdateActive; sub_6E9923; sub_91B6E6 | character/serverbound/Move (T1) | 0x021 | ❌ | 0x026 | ✅ | 0x028 | ✅ | 0x027 | ✅ | 0x029 | ❌ | 0x029 | ❌ | 0x02B | ❌ | 0x02C | ❌ | 0x020 | ❌ |
+| MOVE_PLAYER | CMovePath::Flush; CUserLocal::OnKey; CVecCtrlUser::EndUpdateActive; sub_6E9923; sub_91B6E6 | character/serverbound/Move (T1) | 0x021 | ✅ | 0x026 | ✅ | 0x028 | ✅ | 0x027 | ✅ | 0x029 | ❌ | 0x029 | ❌ | 0x02B | ❌ | 0x02C | ❌ | 0x020 | ❌ |
 | UNNAMED_R38 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x021 | ❌ | 0x021 | ❌ | 0x021 | ❌ | 0x020 | ❌ | 0x016 | ❌ |
 | CANCEL_CHAIR | CUserLocal::HandleXKeyDown; CWvsContext::SendGetUpFromChairRequest; sub_69DF44 | character/serverbound/ChairFixed (T1) | 0x022 | ❌ | 0x027 | ✅ | 0x029 | ✅ | 0x028 | ✅ | 0x02A | ✅ | 0x02A | ✅ | 0x02C | ✅ | 0x02D | ✅ | 0x021 | ✅ |
 | UNNAMED_R39 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x022 | ❌ | 0x022 | ❌ | 0x022 | ❌ | 0x021 | ❌ | 0x017 | ❌ |
 | CLIENT_START | CLogin::Init |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x023 | ❌ | 0x023 | ❌ | 0x023 | ❌ | 0x022 | ❌ | 0x018 | ❌ |
 | USE_CHAIR | CWvsContext::SendSitOnPortableChairRequest; sub_712894; sub_8372C1 | character/serverbound/ChairPortable (T1) | 0x023 | ❌ | 0x028 | ❌ | 0x02A | 🟡 | 0x029 | 🟡 | 0x02B | ✅ | 0x02B | ✅ | 0x02D | ✅ | 0x02E | ✅ | 0x022 | ✅ |
-| CLOSE_RANGE_ATTACK | CUserLocal::DoActiveSkill_MesoExplosion; CUserLocal::TryDoingMeleeAttack; CUserLocal::TryDoingNormalAttack; sub_6A0528 | character/serverbound/CharacterAttackMeleeRequest (T1) | 0x024 | ❌ | 0x029 | ✅ | 0x02B | ✅ | 0x02A | ✅ | 0x02C | ✅ | 0x02C | ✅ | 0x02E | ✅ | 0x02F | ✅ | 0x023 | ✅ |
+| CLOSE_RANGE_ATTACK | CUserLocal::DoActiveSkill_MesoExplosion; CUserLocal::TryDoingMeleeAttack; CUserLocal::TryDoingNormalAttack; sub_6A0528 | character/serverbound/CharacterAttackMeleeRequest (T1) | 0x024 | ✅ | 0x029 | ✅ | 0x02B | ✅ | 0x02A | ✅ | 0x02C | ✅ | 0x02C | ✅ | 0x02E | ✅ | 0x02F | ✅ | 0x023 | ✅ |
 | NEXON_PASSPORT | CLogin::SendCheckPasswordPacket; CLogin::SendLoginPacket; CLogin::SendViewAllCharPacket | login/serverbound/Request |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x024 | ✅ | 0x024 | ✅ | 0x001 | ✅ | 0x001 | ✅ |  | ⬜ |
 | PACKET_ERROR | CWvsApp::SendBackupPacket; CWvsApp::SendClearStackLog |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x025 | ❌ | 0x025 | ❌ | 0x025 | ❌ | 0x024 | ❌ |  | ⬜ |
-| RANGED_ATTACK | CUserLocal::TryDoingShootAttack; CUserLocal::TryDoingSmoothingMovingShootAttack; sub_6A228C | character/serverbound/CharacterAttackRangedRequest (T1) | 0x025 | ❌ | 0x02A | ✅ | 0x02C | ✅ | 0x02B | ✅ | 0x02D | ✅ | 0x02D | ✅ | 0x02F | ✅ | 0x030 | ✅ | 0x024 | ✅ |
-| MAGIC_ATTACK | CUserLocal::TryDoingMagicAttack; sub_6A3AC7 | character/serverbound/CharacterAttackMagicRequest (T1) | 0x026 | ❌ | 0x02B | ✅ | 0x02D | ✅ | 0x02C | ✅ | 0x02E | ✅ | 0x02E | ✅ | 0x030 | ✅ | 0x031 | ✅ | 0x025 | ✅ |
+| RANGED_ATTACK | CUserLocal::TryDoingShootAttack; CUserLocal::TryDoingSmoothingMovingShootAttack; sub_6A228C | character/serverbound/CharacterAttackRangedRequest (T1) | 0x025 | ✅ | 0x02A | ✅ | 0x02C | ✅ | 0x02B | ✅ | 0x02D | ✅ | 0x02D | ✅ | 0x02F | ✅ | 0x030 | ✅ | 0x024 | ✅ |
+| MAGIC_ATTACK | CUserLocal::TryDoingMagicAttack; sub_6A3AC7 | character/serverbound/CharacterAttackMagicRequest (T1) | 0x026 | ✅ | 0x02B | ✅ | 0x02D | ✅ | 0x02C | ✅ | 0x02E | ✅ | 0x02E | ✅ | 0x030 | ✅ | 0x031 | ✅ | 0x025 | ✅ |
 | UNNAMED_R45 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x026 | ❌ | 0x025 | ❌ | 0x01B | ❌ |
 | TAKE_DAMAGE | CUserLocal::SetDamaged; CUserLocal::Update; sub_69D6BF |  | 0x027 | ❌ | 0x02D | ❌ | 0x02F | ❌ | 0x02E | ❌ | 0x030 | ❌ | 0x030 | ❌ | 0x032 | ❌ | 0x034 | ❌ | 0x027 | ❌ |
 | UNNAMED_R46 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x027 | ❌ | 0x026 | ❌ | 0x01C | ❌ |
@@ -590,9 +590,9 @@ Tool: `46f121c4a0f649a42249ab39feefdc56c1837263`
 | OWL_WARP | CUIShopScanResult::OnButtonClicked |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x043 | ❌ | 0x043 | ❌ | 0x046 | ❌ | 0x049 | ❌ | 0x03B | ❌ |
 | ADMIN_SHOP | CAdminShopDlg::OnPacket; CAdminShopDlg::SendTradeRequest; CAdminShopDlg::SetRet; CUIAdminShopWishList::SendRegisterPacket |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x044 | ❌ | 0x044 | ❌ | 0x047 | ❌ | 0x04A | ❌ | 0x03C | ❌ |
 | HEAL_OVER_TIME | CWvsContext::SendStatChangeRequest | character/serverbound/HealOverTime (T1) | 0x044 | ✅ | 0x051 | ✅ | 0x058 | ✅ | 0x057 | ✅ | 0x059 | ✅ | 0x059 | ✅ | 0x05C | ✅ | 0x064 | ✅ | 0x054 | ✅ |
-| CANCEL_BUFF | CUserLocal::SendSkillCancelRequest | character/serverbound/BuffCancelRequest (T1) | 0x047 | 🟡 | 0x054 | 🟡 | 0x05B | 🟡 | 0x05A | 🟡 | 0x05C | ✅ | 0x05C | ✅ | 0x05F | ✅ | 0x068 | ✅ | 0x057 | ✅ |
+| CANCEL_BUFF | CUserLocal::SendSkillCancelRequest | character/serverbound/BuffCancelRequest (T1) | 0x047 | ✅ | 0x054 | 🟡 | 0x05B | 🟡 | 0x05A | 🟡 | 0x05C | ✅ | 0x05C | ✅ | 0x05F | ✅ | 0x068 | ✅ | 0x057 | ✅ |
 | USER_EFFECT_LOCAL | CUserLocal::SendSkillEffectRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x047 | ❌ |  | ⬜ |
-| SKILL_EFFECT | CUserLocal::DoActiveSkill_Prepare; sub_6ADD4C | character/serverbound/CharacterSkillPrepare (T1) | 0x048 | ❌ | 0x055 | ✅ | 0x05C | ✅ | 0x05B | ✅ | 0x05D | ✅ | 0x05D | ✅ | 0x060 | ✅ | 0x069 | ✅ | 0x058 | ✅ |
+| SKILL_EFFECT | CUserLocal::DoActiveSkill_Prepare; sub_6ADD4C | character/serverbound/CharacterSkillPrepare (T1) | 0x048 | ✅ | 0x055 | ✅ | 0x05C | ✅ | 0x05B | ✅ | 0x05D | ✅ | 0x05D | ✅ | 0x060 | ✅ | 0x069 | ✅ | 0x058 | ✅ |
 | DISTRIBUTE_SP | CWvsContext::SendSkillUpRequest; sub_71CEB3; sub_8458EB | character/serverbound/DistributeSp (T1) | 0x049 | ✅ | 0x052 | ✅ | 0x059 | ✅ | 0x058 | ✅ | 0x05A | ✅ | 0x05A | ✅ | 0x05D | ✅ | 0x066 | ✅ | 0x055 | ✅ |
 | GIVE_FAME | CWvsContext::SendGivePopularityRequest; sub_71CF3B; sub_845A65; sub_96E07F | fame/serverbound/Change | 0x04A | ❌ | 0x057 | ❌ | 0x05E | ❌ | 0x05D | ❌ | 0x05F | ✅ | 0x05F | ✅ | 0x062 | ✅ | 0x06B | ✅ | 0x05A | ✅ |
 | STATE_CHANGE_BY_PORTABLE_CHAIR_REQUEST | CWvsContext::TryRecovery |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x04A | ❌ | 0x04A | ❌ | 0x04D | ❌ | 0x050 | ❌ | 0x042 | ❌ |
@@ -859,10 +859,6 @@ Tool: `46f121c4a0f649a42249ab39feefdc56c1837263`
 | character/serverbound/ChairFixed (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | character/serverbound/ChairPortable (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | character/serverbound/ChalkboardClose (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| character/serverbound/CharacterAttackMagicRequest (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| character/serverbound/CharacterAttackMeleeRequest (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| character/serverbound/CharacterAttackRangedRequest (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| character/serverbound/CharacterSkillPrepare (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | character/serverbound/ExpressionRequest (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | character/serverbound/ItemCancel (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | character/serverbound/Move (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
@@ -999,15 +995,15 @@ Tool: `46f121c4a0f649a42249ab39feefdc56c1837263`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v48 | 113 | 0 | 7 | 216 | 629 | 0 | 33.6% |
-| v61 | 208 | 0 | 60 | 226 | 471 | 0 | 42.1% |
-| v72 | 216 | 0 | 73 | 244 | 432 | 0 | 40.5% |
-| v79 | 228 | 0 | 72 | 242 | 423 | 0 | 42.1% |
-| v83 | 367 | 0 | 0 | 373 | 225 | 0 | 49.6% |
-| v84 | 345 | 0 | 0 | 374 | 246 | 0 | 48.0% |
-| v87 | 379 | 0 | 0 | 398 | 188 | 0 | 48.8% |
-| v95 | 399 | 0 | 0 | 462 | 104 | 0 | 46.3% |
-| JMS185 | 362 | 0 | 0 | 408 | 195 | 0 | 47.0% |
+| v48 | 120 | 0 | 6 | 206 | 629 | 0 | 36.1% |
+| v61 | 208 | 0 | 60 | 222 | 471 | 0 | 42.4% |
+| v72 | 216 | 0 | 73 | 240 | 432 | 0 | 40.8% |
+| v79 | 228 | 0 | 72 | 238 | 423 | 0 | 42.4% |
+| v83 | 367 | 0 | 0 | 369 | 225 | 0 | 49.9% |
+| v84 | 345 | 0 | 0 | 370 | 246 | 0 | 48.3% |
+| v87 | 379 | 0 | 0 | 394 | 188 | 0 | 49.0% |
+| v95 | 399 | 0 | 0 | 458 | 104 | 0 | 46.6% |
+| JMS185 | 362 | 0 | 0 | 404 | 195 | 0 | 47.3% |
 
 ## Conflicts
 

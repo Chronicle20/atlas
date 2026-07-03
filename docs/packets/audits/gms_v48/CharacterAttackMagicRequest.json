@@ -1,6 +1,6 @@
 {
   "WriterName": "CharacterAttackMagicRequest",
-  "IDAName": "CUserLocal::TryDoingMagicAttack",
+  "IDAName": "sub_6A3AC7",
   "Address": "",
   "Variant": "GMS/v48",
   "BranchDepth": 0,
@@ -22,7 +22,7 @@
       "IDAOp": 0,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: extra \u2014 client never reads this field"
     },
     {
       "Index": 2,
@@ -31,7 +31,7 @@
       "IDAOp": 0,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: extra \u2014 client never reads this field"
     },
     {
       "Index": 3,
@@ -40,7 +40,7 @@
       "IDAOp": 0,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: extra \u2014 client never reads this field"
     },
     {
       "Index": 4,
@@ -49,7 +49,7 @@
       "IDAOp": 0,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: extra \u2014 client never reads this field"
     },
     {
       "Index": 5,
@@ -58,7 +58,7 @@
       "IDAOp": 0,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: extra \u2014 client never reads this field"
     },
     {
       "Index": 6,
@@ -67,7 +67,7 @@
       "IDAOp": 0,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: extra \u2014 client never reads this field"
     },
     {
       "Index": 7,
@@ -76,7 +76,7 @@
       "IDAOp": 0,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: extra \u2014 client never reads this field"
     },
     {
       "Index": 8,
@@ -85,7 +85,7 @@
       "IDAOp": 0,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: extra \u2014 client never reads this field"
     },
     {
       "Index": 9,
@@ -94,7 +94,7 @@
       "IDAOp": 0,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: extra \u2014 client never reads this field"
     },
     {
       "Index": 10,
@@ -103,7 +103,7 @@
       "IDAOp": 0,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: extra \u2014 client never reads this field"
     },
     {
       "Index": 11,
@@ -112,7 +112,7 @@
       "IDAOp": 0,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: extra \u2014 client never reads this field"
     },
     {
       "Index": 12,
@@ -121,7 +121,7 @@
       "IDAOp": 0,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: extra \u2014 client never reads this field"
     },
     {
       "Index": 13,
@@ -130,7 +130,7 @@
       "IDAOp": 0,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: extra \u2014 client never reads this field"
     },
     {
       "Index": 14,
@@ -139,7 +139,7 @@
       "IDAOp": 0,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: extra \u2014 client never reads this field"
     },
     {
       "Index": 15,
@@ -148,7 +148,7 @@
       "IDAOp": 0,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: extra \u2014 client never reads this field"
     },
     {
       "Index": 16,
@@ -157,7 +157,7 @@
       "IDAOp": 0,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: extra \u2014 client never reads this field"
     },
     {
       "Index": 17,
@@ -166,7 +166,7 @@
       "IDAOp": 0,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: extra \u2014 client never reads this field"
     },
     {
       "Index": 18,
@@ -175,7 +175,7 @@
       "IDAOp": 0,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: extra \u2014 client never reads this field"
     },
     {
       "Index": 19,
@@ -184,7 +184,7 @@
       "IDAOp": 0,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: extra \u2014 client never reads this field"
     },
     {
       "Index": 20,
@@ -193,7 +193,7 @@
       "IDAOp": 0,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: extra \u2014 client never reads this field"
     },
     {
       "Index": 21,
@@ -202,7 +202,7 @@
       "IDAOp": 0,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: extra \u2014 client never reads this field"
     },
     {
       "Index": 22,
@@ -211,7 +211,7 @@
       "IDAOp": 0,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: extra \u2014 client never reads this field"
     },
     {
       "Index": 23,
@@ -220,7 +220,7 @@
       "IDAOp": 0,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: extra \u2014 client never reads this field"
     },
     {
       "Index": 24,
@@ -229,7 +229,7 @@
       "IDAOp": 0,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: extra \u2014 client never reads this field"
     },
     {
       "Index": 25,
@@ -238,7 +238,7 @@
       "IDAOp": 0,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: extra \u2014 client never reads this field"
     },
     {
       "Index": 26,
@@ -247,7 +247,7 @@
       "IDAOp": 0,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: extra \u2014 client never reads this field"
     }
   ],
   "Verdict": 2,

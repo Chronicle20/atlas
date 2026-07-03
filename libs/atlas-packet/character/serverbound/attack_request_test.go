@@ -480,3 +480,133 @@ func TestAttackTouchRequestBytesV61(t *testing.T) {
 		t.Fatalf("v61 touch bytes:\n got=% X\nwant=% X", got, want)
 	}
 }
+
+// --- GMS v48 (very-legacy pre-61) ---
+//
+// v48 serverbound attack senders diverge from v61 in ONE field: the per-mob
+// DamageInfo carries NO trailing anti-hack CRC. IDA-verified against all three
+// senders (GMS_v48_1_DEVM.exe, port 13337):
+//   - CLOSE_RANGE  sub_6A0528  (COutPacket 36, @0x6a1711): per-mob loop @0x6a17b5
+//     Encode4(monsterId)@0x6a17e0 .. Encode2(delay)@0x6a18f8, damages loop
+//     Encode4@0x6a1910, then v106+=152 and loops — NO Encode4(crc) before the next
+//     mob or the characterX/Y trailer @0x6a193e/0x6a1952.
+//   - RANGED       sub_6A228C  (COutPacket 37, @0x6a36bd): same per-mob shape with
+//     no CRC; head properBullet/cashBullet/nShootRange @0x6a37a4/0x6a37b2/0x6a37bd;
+//     trailer is characterX/Y @0x6a3965/0x6a3979 then SendPacket @0x6a3988 — NO
+//     bulletX/bulletY (the v61 shoot sender @0x7a67e9 also ends at characterX/Y; the
+//     4-byte bullet trailer is gated off for GMS<61 via legacyGmsNoRangedBulletCoords).
+//   - MAGIC        sub_6A3AC7  (COutPacket 38, @0x6a4af8): per-mob loop with no CRC;
+//     trailer characterX/Y @0x6a4d5e/0x6a4d75 then SendPacket @0x6a4d87 (no dragon,
+//     Evan is v84+; legacyGmsByteAction already gates it <79).
+// The head is byte-identical to v61 (v48 < 72 → legacyGmsNoSkillDataCrc drops both
+// skill-data CRCs; v48 < 79 → single-byte action). Each v48 fixture is the v61 wire
+// MINUS the 4-byte per-mob CRC (model.DamageInfo gates the mob CRC to GMS >= 61).
+
+// packet-audit:verify packet=character/serverbound/CharacterAttackMeleeRequest version=gms_v48 ida=0x6a0528
+func TestAttackMeleeRequestBytesV48(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 48, 1)
+	m := AttackMeleeRequest{attackInfo: buildSampleAttack(model.AttackTypeMelee)}
+	got := pt.Encode(t, ctx, m.Encode, nil)
+	want := []byte{
+		0x00,                   // fieldKey                        @0x6a172e
+		0x12,                   // (hits=2)|(damage=1<<4)          @0x6a1742
+		0x00, 0x00, 0x00, 0x00, // skillId=0                       @0x6a174d
+		// NO head skill-data CRC (v48 < 72)
+		0x10,                   // mask1/option                    @0x6a176a
+		0x00,                   // mask2/action (1 BYTE)           @0x6a1780
+		0x00,                   // attackActionType                @0x6a1791
+		0x04,                   // attackSpeed                     @0x6a179f
+		0x00, 0x00, 0x00, 0x00, // attackTime                      @0x6a17ad
+		// --- DamageInfo[0] (per-mob loop @0x6a17b5) ---
+		0x29, 0x23, 0x00, 0x00, // monsterId=9001                  @0x6a17e0
+		0x07,                   // hitAction                       @0x6a17ee
+		0x00,                   // forceAction                     @0x6a1809
+		0x00,                   // frameIdx                        @0x6a1817
+		0x00,                   // calcDamageStatIndex             @0x6a188b
+		0x00, 0x00, // hitPositionX                                @0x6a18a2
+		0x00, 0x00, // hitPositionY                                @0x6a18ba
+		0x00, 0x00, // previousPositionX                           @0x6a18d1
+		0x00, 0x00, // previousPositionY                           @0x6a18e9
+		0x00, 0x00, // delay                                       @0x6a18f8
+		0xE8, 0x03, 0x00, 0x00, // damage[0]=1000 (loop @0x6a1910)
+		0xD0, 0x07, 0x00, 0x00, // damage[1]=2000
+		// NO per-mob CRC (v48 < 61)
+		// --- trailer ---
+		0x00, 0x00, // characterX                                  @0x6a193e
+		0x00, 0x00, // characterY                                  @0x6a1952
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatalf("v48 melee bytes:\n got=% X\nwant=% X", got, want)
+	}
+}
+
+// packet-audit:verify packet=character/serverbound/CharacterAttackRangedRequest version=gms_v48 ida=0x6a228c
+func TestAttackRangedRequestBytesV48(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 48, 1)
+	m := AttackRangedRequest{attackInfo: buildSampleAttack(model.AttackTypeRanged)}
+	got := pt.Encode(t, ctx, m.Encode, nil)
+	want := []byte{
+		0x00,                   // fieldKey                        @0x6a36da
+		0x12,                   // (hits=2)|(damage=1<<4)          @0x6a36ee
+		0x00, 0x00, 0x00, 0x00, // skillId=0                       @0x6a36f7
+		// NO head skill-data CRC (v48 < 72)
+		0x10,                   // mask1                           @0x6a3753
+		0x00,                   // mask2 (1 BYTE)                  @0x6a3769
+		0x00,                   // attackActionType                @0x6a377a
+		0x04,                   // attackSpeed                     @0x6a3788
+		0x00, 0x00, 0x00, 0x00, // attackTime                      @0x6a3796
+		0x00, 0x00, // properBulletPosition                        @0x6a37a4
+		0x00, 0x00, // cashBulletPosition                          @0x6a37b2
+		0x00, // nShootRange                                       @0x6a37bd
+		// --- DamageInfo[0] ---
+		0x29, 0x23, 0x00, 0x00, // monsterId=9001
+		0x07,             // hitAction
+		0x00, 0x00, 0x00, // forceAction, frameIdx, calcDamageStatIndex
+		0x00, 0x00, 0x00, 0x00, // hitPositionX, hitPositionY
+		0x00, 0x00, 0x00, 0x00, // previousPositionX, previousPositionY
+		0x00, 0x00, // delay
+		0xE8, 0x03, 0x00, 0x00, // damage[0]=1000
+		0xD0, 0x07, 0x00, 0x00, // damage[1]=2000
+		// NO per-mob CRC (v48 < 61)
+		// --- trailer (characterX/Y only; NO bulletX/Y on v48, @0x6a3965/0x6a3979) ---
+		0x00, 0x00, // characterX
+		0x00, 0x00, // characterY
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatalf("v48 ranged bytes:\n got=% X\nwant=% X", got, want)
+	}
+}
+
+// packet-audit:verify packet=character/serverbound/CharacterAttackMagicRequest version=gms_v48 ida=0x6a3ac7
+func TestAttackMagicRequestBytesV48(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 48, 1)
+	m := AttackMagicRequest{attackInfo: buildSampleAttack(model.AttackTypeMagic)}
+	got := pt.Encode(t, ctx, m.Encode, nil)
+	want := []byte{
+		0x00,                   // fieldKey                        @0x6a4b18
+		0x12,                   // (hits=2)|(damage=1<<4)          @0x6a4b2f
+		0x00, 0x00, 0x00, 0x00, // skillId=0                       @0x6a4b3e
+		// NO head skill-data CRC (v48 < 72)
+		0x10,                   // mask1                           @0x6a4b71 (client sends 0; codec writes model option)
+		0x00,                   // mask2 (1 BYTE)                  @0x6a4b8a
+		0x00,                   // attackActionType                @0x6a4b9e
+		0x04,                   // attackSpeed                     @0x6a4bb3
+		0x00, 0x00, 0x00, 0x00, // attackTime                      @0x6a4bc4
+		// --- DamageInfo[0] ---
+		0x29, 0x23, 0x00, 0x00, // monsterId=9001
+		0x07,             // hitAction
+		0x00, 0x00, 0x00, // forceAction, frameIdx, calcDamageStatIndex
+		0x00, 0x00, 0x00, 0x00, // hitPositionX, hitPositionY
+		0x00, 0x00, 0x00, 0x00, // previousPositionX, previousPositionY
+		0x00, 0x00, // delay
+		0xE8, 0x03, 0x00, 0x00, // damage[0]=1000
+		0xD0, 0x07, 0x00, 0x00, // damage[1]=2000
+		// NO per-mob CRC (v48 < 61)
+		// --- trailer (no dragon on v48, Evan is v84+) ---
+		0x00, 0x00, // characterX                                  @0x6a4d5e
+		0x00, 0x00, // characterY                                  @0x6a4d75
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatalf("v48 magic bytes:\n got=% X\nwant=% X", got, want)
+	}
+}

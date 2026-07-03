@@ -78,6 +78,35 @@ func TestCharacterMoveByteV61(t *testing.T) {
 	}
 }
 
+// TestCharacterMoveByteV48 pins the very-legacy GMS v48 MOVE_PLAYER (op 33) serverbound
+// wire, byte-identical to v61: OMITS the crc (v48 < 72) and the dr-block (v48 < 84).
+//
+// IDA: sub_6E9923 (GMS_v48_1_DEVM.exe, port 13337) builds COutPacket(33) @0x6e9ac1:
+//
+//	Encode1 fieldKey  (*(get_field()+216))  @0x6e9add
+//	CMovePath::Flush(&pkt) (sub_5622DA) movement blob   @0x6e9aeb
+//
+// There is NO Encode4(crc) between fieldKey and Flush. The movement blob is written by
+// CMovePath::Flush; bytes OPAQUE (§5) from the shared model.Movement encoder.
+//
+// packet-audit:verify packet=character/serverbound/Move version=gms_v48 ida=0x6e9923
+func TestCharacterMoveByteV48(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	ctx := test.CreateContext("GMS", 48, 1)
+	p := Move{fieldKey: 0x2A, crc: 500, movement: model.Movement{StartX: 10, StartY: 20}}
+	got := p.Encode(l, ctx)(nil)
+	want := []byte{
+		0x2A, // fieldKey        @0x6e9add
+		// NO crc (v48 < 72)
+		0x0A, 0x00, // movement StartX=10  (opaque, CMovePath::Flush @0x6e9aeb)
+		0x14, 0x00, // movement StartY=20  (opaque)
+		0x00, // movement element count=0 (opaque)
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatalf("v48 Move: got % x, want % x", got, want)
+	}
+}
+
 // TestCharacterMoveByteV72 pins the gms_v72 MOVE_PLAYER (op 40) serverbound wire.
 //
 // IDA: CVecCtrlUser::EndUpdateActive @0x8cb63e (GMS_v72.1_U_DEVM.exe, port 13339)

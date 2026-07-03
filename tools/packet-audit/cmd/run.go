@@ -703,6 +703,35 @@ func candidatesFromFName(fname string) []candidate {
 	case "CUserLocal::TryDoingBodyAttack":
 		// TOUCH_MONSTER_ATTACK (0x2F v83). AttackTypeEnergy variant.
 		return []candidate{{name: "AttackTouchRequest", pkg: "character", dir: csvpkg.DirServerbound}}
+	case "sub_6A0528":
+		// CLOSE_RANGE_ATTACK (serverbound) in gms_v48: the basic-melee sender is
+		// UNNAMED — sub_6A0528 @0x6a0528, COutPacket(36) + no head skill-data CRC
+		// (v48<72) + per-mob DamageInfo with NO trailing mob CRC (v48<61). The v48
+		// registry primary fname is sub_6A0528, so it keys to the same shared
+		// model.AttackInfo(AttackTypeMelee) wrapper as the named TryDoingNormalAttack.
+		return []candidate{{name: "AttackMeleeRequest", pkg: "character", dir: csvpkg.DirServerbound}}
+	case "sub_6A228C":
+		// RANGED_ATTACK (serverbound) in gms_v48: TryDoingShootAttack is UNNAMED —
+		// sub_6A228C @0x6a228c, COutPacket(37); trailer is characterX/Y only (NO
+		// bulletX/Y on v48). Keys to the same AttackRangedRequest wrapper.
+		return []candidate{{name: "AttackRangedRequest", pkg: "character", dir: csvpkg.DirServerbound}}
+	case "sub_6A3AC7":
+		// MAGIC_ATTACK (serverbound) in gms_v48: TryDoingMagicAttack is UNNAMED —
+		// sub_6A3AC7 @0x6a3ac7, COutPacket(38); no per-mob CRC (v48<61), no dragon
+		// (Evan is v84+). Keys to the same AttackMagicRequest wrapper.
+		return []candidate{{name: "AttackMagicRequest", pkg: "character", dir: csvpkg.DirServerbound}}
+	case "sub_6ADD4C":
+		// SKILL_EFFECT (serverbound) in gms_v48: DoActiveSkill_Prepare is UNNAMED —
+		// sub_6ADD4C @0x6add4c, COutPacket(72) @0x6ae20e + Encode4(skillId) +
+		// Encode1(level) + Encode1(action|bLeft, 1 byte <79) + Encode1(actionSpeed).
+		// Keys to the same character.SkillPrepare wrapper as DoActiveSkill_Prepare.
+		return []candidate{{name: "SkillPrepare", pkg: "character", dir: csvpkg.DirServerbound}}
+	case "sub_6E9923":
+		// MOVE_PLAYER (serverbound) in gms_v48: CVecCtrlUser::EndUpdateActive is
+		// UNNAMED — sub_6E9923 @0x6e9923, COutPacket(33) @0x6e9ac1 + Encode1(fieldKey)
+		// + CMovePath::Flush, NO crc (v48<72), NO dr-block (v48<84). Keys to the same
+		// character.Move codec as the named CVecCtrlUser::EndUpdateActive.
+		return []candidate{{name: "Move", dir: csvpkg.DirServerbound}}
 	case "CWvsContext::SendStatChangeRequest":
 		// Struct is HealOverTime; handler constant = "CharacterHealOverTimeHandle".
 		// Client sends opcode 0x64 (100) with Encode4(updateTime)+Encode4(val)+

@@ -164,8 +164,9 @@ func (m *VegaScrollInvalid) Decode(_ logrus.FieldLogger, _ context.Context) func
 
 // VegaScrollStartBody resolves the outcome-keyed START mode from the tenant
 // operations table. The server resolves the outcome before sending (immediate
-// resolution, no 3s timer), so the start byte can be outcome-selected; v83
-// collapses both keys to the same byte.
+// resolution, no 3s timer), so the start byte can be outcome-selected; on
+// every version, including v83, the START byte carries the outcome, since
+// CUIVega::Draw picks the success/fail popup from it.
 func VegaScrollStartBody(success bool) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	if success {
 		return atlas_packet.WithResolvedCode("operations", VegaScrollModeStartSuccess, func(mode byte) packet.Encoder {

@@ -287,6 +287,11 @@
         "handler": "QuestActionHandle"
       },
       {
+        "opCode": "0x7C",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterItemUseLotteryHandle"
+      },
+      {
         "opCode": "0x7E",
         "validator": "LoggedInValidator",
         "handler": "SueCharacter"

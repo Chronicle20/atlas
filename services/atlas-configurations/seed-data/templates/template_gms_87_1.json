@@ -420,6 +420,11 @@
         "handler": "QuestActionHandle"
       },
       {
+        "opCode": "0x73",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterItemUseLotteryHandle"
+      },
+      {
         "opCode": "0x75",
         "validator": "LoggedInValidator",
         "handler": "SueCharacter"

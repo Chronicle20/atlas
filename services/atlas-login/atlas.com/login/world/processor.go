@@ -35,8 +35,12 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 
 var _ Processor = (*ProcessorImpl)(nil)
 
+// AllProvider fetches every world for the tenant. The upstream atlas-world
+// worlds list is now paginated (task-117); this is a genuine startup
+// consumer (server list / world-select screens need every world, not just
+// page 1), so it drains every page rather than fetching just the first.
 func (p *ProcessorImpl) AllProvider() model.Provider[[]Model] {
-	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestWorlds(), Extract, model.Filters[Model]())
+	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(worldsUrl(), 250, Extract, model.Filters[Model]())
 }
 
 func (p *ProcessorImpl) GetAll() ([]Model, error) {

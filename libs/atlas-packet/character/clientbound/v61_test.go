@@ -394,3 +394,201 @@ func TestAddCharacterErrorByteOutputV61(t *testing.T) {
 		t.Errorf("v61 AddCharacterError wire: got %x want %x", got, want)
 	}
 }
+
+// ChalkboardUse v61 byte-fixture — CHALKBOARD, op 123.
+//
+// Client read order — CUser::OnADBoard @0x7912BB (characterId is read by the
+// pool dispatcher CUserPool::OnUserCommonPacket before the body):
+//
+//	active  = Decode1                    // if-guard (0 => clear, no message)
+//	message = DecodeStr                  // only when active
+//
+// No version gate below 72; byte-identical to the v72 fixture.
+//
+// packet-audit:verify packet=character/clientbound/ChalkboardUse version=gms_v61 ida=0x7912bb
+func TestChalkboardUseByteOutputV61(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 61, 1)
+
+	t.Run("active", func(t *testing.T) {
+		got := NewChalkboardUse(1234, "Hi").Encode(nil, ctx)(nil)
+		want := []byte{
+			0xD2, 0x04, 0x00, 0x00, // characterId (dispatcher prefix)
+			0x01,       // active = 1 (Decode1)
+			0x02, 0x00, // message len = 2 (DecodeStr)
+			0x48, 0x69, // "Hi"
+		}
+		if !bytes.Equal(got, want) {
+			t.Errorf("v61 ChalkboardUse active:\n got %x\nwant %x", got, want)
+		}
+	})
+
+	t.Run("clear", func(t *testing.T) {
+		got := NewChalkboardClear(1234).Encode(nil, ctx)(nil)
+		want := []byte{0xD2, 0x04, 0x00, 0x00, 0x00} // characterId + active=0
+		if !bytes.Equal(got, want) {
+			t.Errorf("v61 ChalkboardUse clear:\n got %x\nwant %x", got, want)
+		}
+	})
+}
+
+// CharacterDamage v61 byte-fixture — DAMAGE_PLAYER, op 148.
+//
+// Client read order — CUserRemote::OnHit @0x7CB9FF (export calls: Decode1,
+// Decode4, Decode4, Decode1, Decode1, Decode1(guard), Decode4):
+//
+//	attackIdx        = Decode1
+//	damage           = Decode4
+//	monsterTemplate  = Decode4
+//	left             = Decode1
+//	stance           = Decode1
+//	stanceRelated    = Decode1
+//	damage (repeat)  = Decode4
+//
+// characterId(4) read by the pool dispatcher. No bGuard byte (GMS>=95 only; v61
+// < 95). Byte-identical to the v72 fixture.
+//
+// packet-audit:verify packet=character/clientbound/CharacterDamage version=gms_v61 ida=0x7cb9ff
+func TestCharacterDamageByteOutputV61(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 61, 1)
+	got := NewCharacterDamage(1234, model.DamageTypePhysical, 500, 100100, true).Encode(nil, ctx)(nil)
+	want := []byte{
+		0xd2, 0x04, 0x00, 0x00, // characterId 1234 (dispatcher Decode4)
+		0xff,                   // attackIdx -1 (Decode1)
+		0xf4, 0x01, 0x00, 0x00, // damage 500 (Decode4)
+		0x04, 0x87, 0x01, 0x00, // monsterTemplateId 100100 (Decode4)
+		0x01,                   // left (Decode1)
+		0x00,                   // stance (Decode1)
+		0x00,                   // stanceRelated (Decode1)
+		0xf4, 0x01, 0x00, 0x00, // damage repeated (Decode4)
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("v61 CharacterDamage wire:\n got %x\nwant %x", got, want)
+	}
+}
+
+// CharacterSitResult v61 byte-fixture — CANCEL_CHAIR clientbound, op 160.
+//
+// Client read order — CUserLocal::OnSitResult @0x7AB9D9: flag = Decode1; if
+// flag != 0 then nSeat = Decode2 (else stand-up branch reads nothing more).
+// Byte-identical to the v72 fixture.
+//
+// packet-audit:verify packet=character/clientbound/CharacterSitResult version=gms_v61 ida=0x7ab9d9
+func TestCharacterSitResultByteOutputV61(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 61, 1)
+	gotSit := NewCharacterSit(17).Encode(nil, ctx)(nil)
+	wantSit := []byte{0x01, 0x11, 0x00} // flag=1, chairId 17 (Decode2)
+	if !bytes.Equal(gotSit, wantSit) {
+		t.Errorf("v61 CharacterSitResult sit: got %x want %x", gotSit, wantSit)
+	}
+	gotCancel := NewCharacterCancelSit().Encode(nil, ctx)(nil)
+	wantCancel := []byte{0x00} // flag=0
+	if !bytes.Equal(gotCancel, wantCancel) {
+		t.Errorf("v61 CharacterSitResult cancel: got %x want %x", gotCancel, wantCancel)
+	}
+}
+
+// CharacterKeyMap v61 byte-fixture — KEYMAP, op 262.
+//
+// Client read order — CFuncKeyMappedMan::OnInit @0x51AA92: reset = Decode1; if
+// reset == 0 the client loops 89 FUNCKEY_MAPPED::Decode entries (each
+// DecodeBuffer(5) = nType[1]+nID[4]). v61 reads 89 entries (== v72/v79, NOT the
+// 90 the v83 codec emits); keymap.go gates the count to 89 for GMS < 83.
+//
+// packet-audit:verify packet=character/clientbound/CharacterKeyMap version=gms_v61 ida=0x51aa92
+func TestCharacterKeyMapByteOutputV61(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 61, 1)
+	keys := map[int32]KeyBinding{
+		2:  {KeyType: 4, KeyAction: 10},
+		16: {KeyType: 4, KeyAction: 8},
+		41: {KeyType: 4, KeyAction: 11},
+	}
+	got := NewCharacterKeyMap(keys).Encode(nil, ctx)(nil)
+
+	var want []byte
+	want = append(want, 0x00) // not-reset flag (Decode1 == 0)
+	for i := int32(0); i < 89; i++ { // v61 reads 89 FUNCKEY_MAPPED entries
+		if k, ok := keys[i]; ok {
+			want = append(want, byte(k.KeyType))
+			want = append(want, byte(k.KeyAction), byte(k.KeyAction>>8), byte(k.KeyAction>>16), byte(k.KeyAction>>24))
+		} else {
+			want = append(want, 0x00, 0x00, 0x00, 0x00, 0x00)
+		}
+	}
+	if len(got) != 1+89*5 {
+		t.Fatalf("v61 CharacterKeyMap length: got %d, want %d", len(got), 1+89*5)
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("v61 CharacterKeyMap wire:\n got %x\nwant %x", got, want)
+	}
+
+	gotReset := NewCharacterKeyMapResetToDefault().Encode(nil, ctx)(nil)
+	if !bytes.Equal(gotReset, []byte{0x01}) {
+		t.Errorf("v61 CharacterKeyMap reset: got %x want 01", gotReset)
+	}
+}
+
+// CharacterSpawn v61 byte-fixture — SPAWN_PLAYER, op 120.
+//
+// Client read order — CUserPool::OnUserEnterField @0x7BD862. As in v72/v79 (all
+// GMS < 83): NO level byte after characterId, and NO trailing team byte after
+// the effectFlag (both are >=83 additions). spawn.go gates those on the version.
+// The avatar/temporary-stat block is the shared opaque model. Byte-identical to
+// the v72 fixture (op differs — Δ-25 — but op is not part of the body).
+//
+// packet-audit:verify packet=character/clientbound/CharacterSpawn version=gms_v61 ida=0x7bd862
+func TestCharacterSpawnByteOutputV61(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 61, 1)
+	guild := GuildEmblem{Name: "TestGuild", LogoBackground: 1, LogoBackgroundColor: 2, Logo: 3, LogoColor: 4}
+	cts := model.NewCharacterTemporaryStat()
+	in := NewCharacterSpawn(12345, 50, "TestChar", guild, cts, 100, model.Avatar{}, nil, false, 100, 200, 3)
+	got := in.Encode(nil, ctx)(nil)
+
+	// Prefix through the guild emblem — proves NO level byte follows charId.
+	var wantPrefix []byte
+	wantPrefix = append(wantPrefix, 0x39, 0x30, 0x00, 0x00) // characterId 12345 (Decode4)
+	wantPrefix = append(wantPrefix, 0x08, 0x00, 0x54, 0x65, 0x73, 0x74, 0x43, 0x68, 0x61, 0x72)       // "TestChar"
+	wantPrefix = append(wantPrefix, 0x09, 0x00, 0x54, 0x65, 0x73, 0x74, 0x47, 0x75, 0x69, 0x6c, 0x64) // "TestGuild"
+	wantPrefix = append(wantPrefix, 0x01, 0x00) // logoBg (Decode2)
+	wantPrefix = append(wantPrefix, 0x02)       // logoBgColor (Decode1)
+	wantPrefix = append(wantPrefix, 0x03, 0x00) // logo (Decode2)
+	wantPrefix = append(wantPrefix, 0x04)       // logoColor (Decode1)
+	if !bytes.HasPrefix(got, wantPrefix) {
+		n := len(wantPrefix)
+		if n > len(got) {
+			n = len(got)
+		}
+		t.Errorf("v61 CharacterSpawn prefix (no level byte):\n got %x\nwant %x", got[:n], wantPrefix)
+	}
+
+	// Suffix from jobId — proves NO trailing team byte (last wire byte is effectFlag).
+	avatarBytes := model.Avatar{}.Encode(nil, ctx)(nil)
+	var wantSuffix []byte
+	wantSuffix = append(wantSuffix, 0x64, 0x00) // jobId 100 (Decode2)
+	wantSuffix = append(wantSuffix, avatarBytes...)
+	wantSuffix = append(wantSuffix, 0x00, 0x00, 0x00, 0x00) // choco (Decode4)
+	wantSuffix = append(wantSuffix, 0x00, 0x00, 0x00, 0x00) // itemEffect (Decode4)
+	wantSuffix = append(wantSuffix, 0x00, 0x00, 0x00, 0x00) // chair (Decode4)
+	wantSuffix = append(wantSuffix, 0x64, 0x00) // x 100 (Decode2)
+	wantSuffix = append(wantSuffix, 0xc8, 0x00) // y 200 (Decode2)
+	wantSuffix = append(wantSuffix, 0x03)       // stance (Decode1)
+	wantSuffix = append(wantSuffix, 0x00, 0x00) // foothold (Decode2)
+	wantSuffix = append(wantSuffix, 0x00)       // bShowAdmin (Decode1)
+	wantSuffix = append(wantSuffix, 0x00)       // pets terminator
+	wantSuffix = append(wantSuffix, 0x01, 0x00, 0x00, 0x00) // mountLevel (Decode4)
+	wantSuffix = append(wantSuffix, 0x00, 0x00, 0x00, 0x00) // mountExp (Decode4)
+	wantSuffix = append(wantSuffix, 0x00, 0x00, 0x00, 0x00) // mountTired (Decode4)
+	wantSuffix = append(wantSuffix, 0x00) // miniRoom (Decode1)
+	wantSuffix = append(wantSuffix, 0x00) // adBoard (Decode1)
+	wantSuffix = append(wantSuffix, 0x00) // couple (Decode1)
+	wantSuffix = append(wantSuffix, 0x00) // friend (Decode1)
+	wantSuffix = append(wantSuffix, 0x00) // marriage (Decode1)
+	wantSuffix = append(wantSuffix, 0x00) // newYearCard (Decode1)
+	wantSuffix = append(wantSuffix, 0x00) // effectFlag (Decode1, last read)
+	if !bytes.HasSuffix(got, wantSuffix) {
+		n := len(wantSuffix)
+		if n > len(got) {
+			n = len(got)
+		}
+		t.Errorf("v61 CharacterSpawn suffix (no team byte):\n got %x\nwant %x", got[len(got)-n:], wantSuffix)
+	}
+}

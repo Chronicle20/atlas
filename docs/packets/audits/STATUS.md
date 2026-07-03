@@ -189,11 +189,11 @@ Tool: `658928fc9bd41408e0a83bb6acf59fb6dff6eda8`
 | SET_MAP_OBJECT_VISIBLE | CMapLoadable::OnSetMapObjectVisible; sub_5F5F54; sub_614977 |  |  | ⬜ | 0x076 | ❌ | 0x07A | ❌ | 0x081 | ❌ | 0x084 | ❌ | 0x089 | ❌ | 0x091 | ❌ | 0x07F | ❌ |
 | IDA_0X09C | CField::OnStalkResult; sub_4EFABF | field/clientbound/FieldStalkResult (T1) | 0x077 | ✅ | 0x090 | ✅ | 0x094 | ✅ | 0x09C | ✅ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
 | IDA_0X078 | sub_AF807A |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x078 | ❌ |
-| SPAWN_PLAYER | CUserPool::OnUserEnterField | character/clientbound/CharacterSpawn (T1) | 0x078 | ❌ | 0x091 | ✅ | 0x095 | ✅ | 0x0A0 | ✅ | 0x0A3 | ✅ | 0x0AB | ✅ | 0x0B3 | ✅ | 0x09E | ✅ |
+| SPAWN_PLAYER | CUserPool::OnUserEnterField | character/clientbound/CharacterSpawn (T1) | 0x078 | ✅ | 0x091 | ✅ | 0x095 | ✅ | 0x0A0 | ✅ | 0x0A3 | ✅ | 0x0AB | ✅ | 0x0B3 | ✅ | 0x09E | ✅ |
 | IDA_0X079 | CWvsContext::OnAskWhetherUsePamsSong |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x079 | ❌ |
 | REMOVE_PLAYER_FROM_MAP | CUserPool::OnUserLeaveField | character/clientbound/CharacterDespawn (T1) | 0x079 | 🟡 | 0x092 | 🟡 | 0x096 | 🟡 | 0x0A1 | ✅ | 0x0A4 | ✅ | 0x0AC | ✅ | 0x0B4 | ✅ | 0x09F | ✅ |
 | CHATTEXT | CUser::OnChat | chat/clientbound/ChatGeneralChat | 0x07A | ❌ | 0x093 | ❌ | 0x097 | ❌ | 0x0A2 | ❌ | 0x0A5 | ❌ | 0x0AD | ❌ | 0x0B5 | ✅ | 0x0A0 | ✅ |
-| CHALKBOARD | CUser::OnADBoard | character/clientbound/ChalkboardUse (T1) | 0x07B | ❌ | 0x095 | ✅ | 0x099 | ✅ | 0x0A4 | ✅ | 0x0A7 | ✅ | 0x0AF | ✅ | 0x0B7 | ✅ | 0x0A2 | ✅ |
+| CHALKBOARD | CUser::OnADBoard | character/clientbound/ChalkboardUse (T1) | 0x07B | ✅ | 0x095 | ✅ | 0x099 | ✅ | 0x0A4 | ✅ | 0x0A7 | ✅ | 0x0AF | ✅ | 0x0B7 | ✅ | 0x0A2 | ✅ |
 | DATA_CRC_CHECK_FAILED | CWvsContext::OnDataCRCCheckFailed |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x07B | ❌ | 0x07E | ❌ | 0x07E | ❌ | 0x080 | ❌ | 0x077 | ❌ |
 | UPDATE_CHAR_BOX | CUser::OnMiniRoomBalloon |  | 0x07C | ❌ | 0x096 | ❌ | 0x09A | ❌ | 0x0A5 | ❌ | 0x0A8 | ❌ | 0x0B0 | ❌ | 0x0B8 | ❌ | 0x0A3 | ❌ |
 | SHOW_CONSUME_EFFECT | CUser::SetConsumeItemEffect |  | 0x07D | ❌ | 0x097 | ❌ | 0x09B | ❌ | 0x0A6 | ❌ | 0x0A9 | ❌ | 0x0B1 | ❌ | 0x0B9 | ❌ | 0x0A4 | ❌ |
@@ -236,7 +236,7 @@ Tool: `658928fc9bd41408e0a83bb6acf59fb6dff6eda8`
 | CANCEL_SKILL_EFFECT | CUserRemote::OnSkillCancel; sub_980BF5 | character/clientbound/CharacterSkillCancelForeign (T1) | 0x093 | ✅ | 0x0AD | ✅ | 0x0B1 | ✅ | 0x0BF | ✅ | 0x0C3 | ✅ | 0x0CC | ✅ | 0x0D9 | ✅ | 0x0C5 | ✅ |
 | CHATTEXT1 | CUser::OnChat | chat/clientbound/ChatGeneralChat |  | ⬜ | 0x094 | ❌ | 0x098 | ❌ | 0x0A3 | ❌ | 0x0A6 | ❌ | 0x0AE | ❌ | 0x0B6 | ✅ | 0x0A1 | ✅ |
 | CONTI_MOVE | CField_ContiMove::OnContiMove | field/clientbound/FieldContiMove (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x094 | ✅ | 0x097 | ✅ | 0x09C | ✅ | 0x0A4 | ✅ | 0x091 | ✅ |
-| DAMAGE_PLAYER | CUserRemote::OnHit | character/clientbound/CharacterDamage (T1) | 0x094 | ❌ | 0x0AE | ✅ | 0x0B2 | ✅ | 0x0C0 | ✅ | 0x0C4 | ✅ | 0x0CD | ✅ | 0x0DA | ✅ | 0x0C6 | ✅ |
+| DAMAGE_PLAYER | CUserRemote::OnHit | character/clientbound/CharacterDamage (T1) | 0x094 | ✅ | 0x0AE | ✅ | 0x0B2 | ✅ | 0x0C0 | ✅ | 0x0C4 | ✅ | 0x0CD | ✅ | 0x0DA | ✅ | 0x0C6 | ✅ |
 | CONTI_STATE | CField_ContiMove::OnContiState | field/clientbound/FieldTransport (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x095 | ✅ | 0x098 | ✅ | 0x09D | ✅ | 0x0A5 | ✅ | 0x092 | ✅ |
 | FACIAL_EXPRESSION | CAvatar::SetEmotion; CUser::OnEmotion | character/clientbound/CharacterExpression (T1) | 0x095 | ❌ | 0x0AF | ✅ | 0x0B3 | ✅ | 0x0C1 | ✅ | 0x0C5 | ✅ | 0x0CE | ✅ | 0x0DB | ✅ | 0x0C7 | ✅ |
 | SHOW_ITEM_EFFECT | CUser::SetActiveEffectItem; CUserRemote::OnSetActiveEffectItem |  | 0x096 | ❌ | 0x0B0 | ❌ | 0x0B4 | ❌ | 0x0C2 | ❌ | 0x0C6 | ❌ | 0x0CF | ❌ | 0x0DC | ❌ | 0x0C8 | ❌ |
@@ -254,7 +254,7 @@ Tool: `658928fc9bd41408e0a83bb6acf59fb6dff6eda8`
 | PYRAMID_SCORE | CField_MassacreResult::OnMassacreResult | field/clientbound/FieldPyramidScore (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x09E | ✅ | 0x0A1 | ✅ | 0x0A6 | ✅ | 0x0AE | ✅ | 0x09A | ✅ |
 | QUICKSLOT_INIT | CQuickslotKeyMappedMan::OnInit |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x09F | ❌ | 0x09F | ❌ | 0x0A7 | ❌ | 0x0AF | ❌ | 0x09B | ❌ |
 | THROW_GRENADE | CUserRemote::OnThrowGrenade |  | 0x09F | ❌ | 0x0BA | ❌ | 0x0BE | ❌ | 0x0CC | ❌ | 0x0D0 | ❌ | 0x0D9 | ❌ | 0x0E6 | ❌ | 0x0D2 | ❌ |
-| CANCEL_CHAIR | CUserLocal::OnSitResult | character/clientbound/CharacterSitResult (T1) | 0x0A0 | ❌ | 0x0BB | ✅ | 0x0BF | ✅ | 0x0CD | ✅ | 0x0D1 | ✅ | 0x0DA | ✅ | 0x0E7 | ✅ | 0x0D3 | ✅ |
+| CANCEL_CHAIR | CUserLocal::OnSitResult | character/clientbound/CharacterSitResult (T1) | 0x0A0 | ✅ | 0x0BB | ✅ | 0x0BF | ✅ | 0x0CD | ✅ | 0x0D1 | ✅ | 0x0DA | ✅ | 0x0E7 | ✅ | 0x0D3 | ✅ |
 | SHOW_ITEM_GAIN_INCHAT | CUser::OnEffect | character/clientbound/EffectQuest (T1) | 0x0A1 | ❌ | 0x0BC | ✅ | 0x0C0 | ✅ | 0x0CE | ✅ | 0x0D2 | ✅ | 0x0DB | ✅ | 0x0E9 | ✅ | 0x0D5 | ✅ |
 | DOJO_WARP_UP | CUserLocal::OnTeleport |  | 0x0A2 | ❌ | 0x0BD | ❌ | 0x0C1 | ❌ | 0x0CF | ❌ | 0x0D3 | ❌ | 0x0DC | ❌ | 0x0EA | ❌ | 0x0D6 | ❌ |
 | IDA_0X0A4 | CField::OnStalkResult | field/clientbound/FieldStalkResult (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0A4 | ✅ |  | ⬜ |  | ⬜ |
@@ -389,7 +389,7 @@ Tool: `658928fc9bd41408e0a83bb6acf59fb6dff6eda8`
 | CASHSHOP_GACHAPON_STAMP_RESULT | CCashShop::OnCashShopGachaponStampResult |  | 0x102 | ❌ | 0x126 | ❌ | 0x135 | ❌ | 0x14C | ❌ | 0x153 | ❌ | 0x15D | ❌ | 0x187 | ❌ | 0x16B | ❌ |
 | CASHSHOP_CHECK_TRANSFER_WORLD_POSSIBLE_RESULT | CCashShop::OnCheckTransferWorldPossibleResult |  | 0x104 | ❌ | 0x128 | ❌ | 0x134 | ❌ | 0x14B | ❌ | 0x152 | ❌ | 0x15C | ❌ | 0x186 | ❌ | 0x16C | ❌ |
 | MOB_SKILL_DELAY | CMob::OnMobSkillDelay | monster/clientbound/MonsterMobSkillDelay (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x105 | ✅ | 0x10F | ✅ | 0x12F | ✅ | 0x10F | ✅ |
-| KEYMAP | CFuncKeyMappedMan::OnInit | character/clientbound/CharacterKeyMap (T1) | 0x106 | ❌ | 0x12A | ✅ | 0x137 | ✅ | 0x14F | ✅ | 0x158 | ✅ | 0x163 | ✅ | 0x18E | ✅ | 0x170 | ✅ |
+| KEYMAP | CFuncKeyMappedMan::OnInit | character/clientbound/CharacterKeyMap (T1) | 0x106 | ✅ | 0x12A | ✅ | 0x137 | ✅ | 0x14F | ✅ | 0x158 | ✅ | 0x163 | ✅ | 0x18E | ✅ | 0x170 | ✅ |
 | AUTO_HP_POT | CFuncKeyMappedMan::OnPetConsumeItemInit | character/clientbound/CharacterKeyMapAutoHp (T1) | 0x107 | 🟡 | 0x12B | 🟡 | 0x138 | 🟡 | 0x150 | ✅ | 0x159 | ✅ | 0x164 | ✅ | 0x18F | ✅ | 0x171 | ✅ |
 | AUTO_MP_POT | CFuncKeyMappedMan::OnPetConsumeMPItemInit | character/clientbound/CharacterKeyMapAutoMp (T1) | 0x108 | 🟡 | 0x12C | 🟡 | 0x139 | 🟡 | 0x151 | ✅ | 0x15A | ✅ | 0x165 | ✅ | 0x190 | ✅ | 0x172 | ✅ |
 | IDA_0X10A | CUserLocal::OnGoToCommoditySN |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x10A | ❌ |  | ⬜ |
@@ -938,7 +938,7 @@ Tool: `658928fc9bd41408e0a83bb6acf59fb6dff6eda8`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v61 | 187 | 0 | 61 | 204 | 453 | 0 | 41.4% |
+| v61 | 192 | 0 | 61 | 199 | 453 | 0 | 42.5% |
 | v72 | 216 | 0 | 73 | 202 | 414 | 0 | 44.0% |
 | v79 | 228 | 0 | 72 | 200 | 405 | 0 | 45.6% |
 | v83 | 367 | 0 | 0 | 331 | 207 | 0 | 52.6% |

@@ -1291,17 +1291,24 @@ func (p *Processor) AttemptItemPickUp(mb *message.Buffer) func(transactionId uui
 		})
 
 		if txErr != nil {
-			// The inner tx rolled back, so innerMb's contents (e.g.
-			// CreateAsset's own CreationFailedEventStatusProvider rejection)
-			// reflect no committed state change and must not ride into the
-			// outbox-bound mb (D7). CancelReservation is a COMMAND to the
-			// separate atlas-drop service reflecting the same failed/
-			// rolled-back pickup attempt. Both are fired together on the
-			// DIRECT producer path via a fresh, throwaway buffer instead.
+			// The inner tx rolled back, so innerMb's contents reflect no
+			// committed state change. Discard it wholesale and forward only
+			// the CREATION_FAILED rejection: CreateAsset buffers that event
+			// (under the compartment status topic) into innerMb solely when
+			// the creation step itself is the one that failed, so filtering
+			// on that topic reproduces the pre-existing semantic exactly —
+			// e.g. in the split-overflow branch, UpdateQuantity's buffered
+			// success (QuantityChanged, on the asset topic) is dropped, not
+			// forwarded alongside the rejection, and failures upstream of
+			// CreateAsset (which never populate that topic) forward nothing
+			// but the cancel below (D7). CancelReservation is a COMMAND to
+			// the separate atlas-drop service reflecting the same failed/
+			// rolled-back pickup attempt; both are fired together on the
+			// DIRECT producer path via a fresh, throwaway buffer.
 			rejectEmit := func() error {
 				return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
-					for t, ms := range innerMb.GetAll() {
-						if putErr := buf.Put(t, model.FixedProvider(ms)); putErr != nil {
+					if creationFailedMsgs, ok := innerMb.GetAll()[compartment.EnvEventTopicStatus]; ok {
+						if putErr := buf.Put(compartment.EnvEventTopicStatus, model.FixedProvider(creationFailedMsgs)); putErr != nil {
 							return putErr
 						}
 					}

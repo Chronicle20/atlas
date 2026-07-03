@@ -387,6 +387,37 @@ stays Pattern A/migrated for its success path):
   guards the merge-on-success side: the inner `CreateAsset`'s `CREATED`
   asset event must still land in the outbox-bound `mb` alongside
   `REQUEST_PICK_UP`.
+- **Further scope fix (2026-07-02, same day)**: the fix above still forwarded
+  `innerMb` *wholesale* on failure (looping over `innerMb.GetAll()` and
+  `Put`-ing every topic's messages onto the direct-path buffer). In the
+  split-overflow branch this meant a buffered *success* event —
+  `UpdateQuantity`'s `QuantityChanged` (asset topic), fired when the
+  existing stack is topped up to `slotMax` — rode along with
+  `CREATION_FAILED` on the direct path even though that write belongs to
+  the same rolled-back inner tx. Harmless today only because
+  `ExecuteTransaction` is the task-119 no-op (the quantity update is not
+  actually undone), but wrong in principle and wrong for real once task-119
+  lands. **Fix**: `AttemptItemPickUp`'s failure branch now filters
+  `innerMb` down to just the `compartment.EnvEventTopicStatus` topic before
+  forwarding — `CreateAsset` buffers `CreationFailedEventStatusProvider`
+  under that exact topic only when the creation step itself is the one
+  that fails, so the filter reproduces the intended semantic exactly:
+  `CREATION_FAILED` still reaches atlas-channel on a creation failure, and
+  any other buffered writes (asset-topic success events from steps that
+  ran before the failing step) are discarded, never forwarded. Failures
+  upstream of `CreateAsset` (e.g. `GetByCharacterAndType`) never populate
+  that topic in `innerMb`, so they still forward nothing but the
+  `CancelReservation` command, matching the pre-existing semantic. A new
+  test, `TestAttemptItemPickUpSplitOverflowThenFail`
+  (`compartment/processor_test.go`), reproduces the split-then-fail
+  scenario (capacity-1 compartment, existing stack topped to `slotMax`,
+  remainder create fails on no free slot) using a capturing producer
+  writer (`installCapturingProducer`, swaps the process-wide manager
+  singleton in place of `producertest.InstallNoop()` for the duration of
+  the test) to assert the direct path carries `CREATION_FAILED` and
+  `CANCEL_RESERVATION` but *not* `QuantityChanged`, while the outbox-bound
+  `mb` stays empty. `TestAttemptItemPickUpInventoryFull` and
+  `TestAttemptItemPickUpSuccess` continue to pass unchanged.
 - `database.ExecuteTransaction` atomicity is still latent fleet-wide
   pending task-119 (see the `atlas-character` section above and project
   memory `bug_execute_transaction_noop.md`); this task's migrations use the

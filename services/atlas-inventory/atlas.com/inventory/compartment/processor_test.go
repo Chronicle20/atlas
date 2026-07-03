@@ -13,6 +13,7 @@ import (
 	"context"
 	"encoding/json"
 	"os"
+	"sync"
 	"testing"
 	"time"
 
@@ -22,16 +23,55 @@ import (
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	kafkaproducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer/producertest"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
 	goredis "github.com/redis/go-redis/v9"
+	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
+
+// capturingWriter records every message written to it, keyed by resolved
+// topic name, instead of discarding (producertest.NoopWriter) or hitting a
+// real broker. Used to inspect what the DIRECT producer path (rejectEmit
+// closures fired outside the outbox-bound mb) actually sends.
+type capturingWriter struct {
+	topic string
+	mu    *sync.Mutex
+	msgs  *map[string][]kafka.Message
+}
+
+func (w capturingWriter) Topic() string { return w.topic }
+
+func (w capturingWriter) WriteMessages(_ context.Context, msgs ...kafka.Message) error {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	(*w.msgs)[w.topic] = append((*w.msgs)[w.topic], msgs...)
+	return nil
+}
+
+func (w capturingWriter) Close() error { return nil }
+
+// installCapturingProducer swaps the process-wide producer manager singleton
+// for one that records messages instead of discarding them, returning the
+// captured-messages map and a restore func that must be deferred to put the
+// TestMain-installed no-op writer back for subsequent tests.
+func installCapturingProducer() (*map[string][]kafka.Message, func()) {
+	var mu sync.Mutex
+	captured := make(map[string][]kafka.Message)
+	kafkaproducer.ResetInstance()
+	kafkaproducer.GetManager(kafkaproducer.ConfigWriterFactory(func(topicName string) kafkaproducer.Writer {
+		return capturingWriter{topic: topicName, mu: &mu, msgs: &captured}
+	}))
+	return &captured, func() {
+		producertest.InstallNoop()
+	}
+}
 
 func TestMain(m *testing.M) {
 	// Failure-path rejections/commands (Accept/Release/AttemptXPickUp) fire
@@ -711,6 +751,110 @@ func TestAttemptItemPickUpInventoryFull(t *testing.T) {
 		if cmd.Type == dropMsg.CommandTypeCancelReservation {
 			t.Fatalf("CANCEL_RESERVATION must not be enqueued in the outbox-bound buffer; it must go via the direct producer path (D7)")
 		}
+	}
+}
+
+// TestAttemptItemPickUpSplitOverflowThenFail guards the failure-path scope
+// fix (task-114): in the split-overflow branch, UpdateQuantity(innerMb) can
+// succeed (filling the existing stack to slotMax, buffering a QuantityChanged
+// success event) and then the follow-on CreateAsset(innerMb) for the
+// remainder can fail (e.g. no free slot for the new asset). The direct
+// producer path must forward ONLY the CREATION_FAILED rejection buffered by
+// CreateAsset — never the QuantityChanged success event describing a write
+// that belongs to the rolled-back inner tx.
+func TestAttemptItemPickUpSplitOverflowThenFail(t *testing.T) {
+	characterId := uint32(307)
+	templateId := uint32(2070000) // subi throwing-stars, USE inventory
+
+	l := testLogger()
+	te := testTenant()
+	ctx := tenant.WithContext(context.Background(), te)
+	db := testDatabase(t, l)
+
+	mb := message.NewBuffer()
+
+	dcpi := &dcp.ProcessorImpl{}
+	dcpi.GetByIdFn = func(itemId uint32) (consumable.Model, error) {
+		return consumable.Extract(consumable.RestModel{SlotMax: 10})
+	}
+
+	ap := asset.NewProcessor(l, ctx, db).WithConsumableProcessor(dcpi)
+	cp := compartment.NewProcessor(l, ctx, db).WithAssetProcessor(ap)
+
+	// Capacity-1 USE compartment seeded with 5 of templateId (slotMax 10):
+	// the sole slot is occupied, so once the existing stack is topped up to
+	// slotMax there is no free slot left for the split remainder.
+	if _, err := cp.Create(mb)(uuid.New(), characterId, inventory.TypeValueUse, 1); err != nil {
+		t.Fatalf("Failed to create compartment: %v", err)
+	}
+	if err := cp.CreateAsset(mb)(uuid.New(), characterId, inventory.TypeValueUse, templateId, 5, time.Time{}, 0, 0, 0, false); err != nil {
+		t.Fatalf("Failed to seed compartment with existing item: %v", err)
+	}
+
+	// Reset the buffer so we only inspect events from the failing pickup.
+	mb = message.NewBuffer()
+
+	captured, restore := installCapturingProducer()
+	defer restore()
+
+	// Picking up 10 more pushes 5+10=15 past slotMax 10: the split branch
+	// tops the existing asset up to 10 (success) then tries to create a new
+	// asset for the remaining 5, which fails (no free slot, capacity 1).
+	if err := cp.AttemptItemPickUp(mb)(uuid.New(), testFieldModel(), characterId, uint32(45), templateId, uint32(10)); err != nil {
+		t.Fatalf("AttemptItemPickUp returned unexpected error: %v", err)
+	}
+
+	// Nothing should have landed in the outbox-bound buffer on this failure
+	// path (matches the InventoryFull regression guard above).
+	events := mb.GetAll()
+	if len(events) != 0 {
+		t.Fatalf("expected no events in the outbox-bound buffer on a failed pickup, got %v", events)
+	}
+
+	capturedMsgs := *captured
+
+	// The direct path must carry the CREATION_FAILED rejection.
+	var sawCreationFailed bool
+	for _, msg := range capturedMsgs[compartmentMsg.EnvEventTopicStatus] {
+		var ev compartmentMsg.StatusEvent[compartmentMsg.CreationFailedStatusEventBody]
+		if err := json.Unmarshal(msg.Value, &ev); err != nil {
+			continue
+		}
+		if ev.Type == compartmentMsg.StatusEventTypeCreationFailed {
+			sawCreationFailed = true
+		}
+	}
+	if !sawCreationFailed {
+		t.Fatalf("expected CREATION_FAILED on the direct producer path, got %v", capturedMsgs[compartmentMsg.EnvEventTopicStatus])
+	}
+
+	// The direct path must NOT carry the QuantityChanged success event
+	// buffered by the UpdateQuantity call that filled the existing asset to
+	// slotMax before the follow-on CreateAsset failed and rolled the tx back.
+	for _, msg := range capturedMsgs[assetMsg.EnvEventTopicStatus] {
+		var ev assetMsg.StatusEvent[assetMsg.QuantityChangedEventBody]
+		if err := json.Unmarshal(msg.Value, &ev); err != nil {
+			continue
+		}
+		if ev.Type == assetMsg.StatusEventTypeQuantityChanged {
+			t.Fatalf("QuantityChanged success event must not be forwarded on the direct path alongside a CREATION_FAILED rejection (rolled-back tx)")
+		}
+	}
+
+	// The direct path must also carry the CANCEL_RESERVATION command to the
+	// separate atlas-drop service, same as the plain inventory-full case.
+	var sawCancelReservation bool
+	for _, msg := range capturedMsgs[dropMsg.EnvCommandTopic] {
+		var cmd dropMsg.Command[dropMsg.CancelReservationCommandBody]
+		if err := json.Unmarshal(msg.Value, &cmd); err != nil {
+			continue
+		}
+		if cmd.Type == dropMsg.CommandTypeCancelReservation {
+			sawCancelReservation = true
+		}
+	}
+	if !sawCancelReservation {
+		t.Fatalf("expected CANCEL_RESERVATION on the direct producer path, got %v", capturedMsgs[dropMsg.EnvCommandTopic])
 	}
 }
 

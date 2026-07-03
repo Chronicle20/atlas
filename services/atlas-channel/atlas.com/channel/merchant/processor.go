@@ -1,11 +1,13 @@
 package merchant
 
 import (
+	"atlas-channel/character"
 	merchant2 "atlas-channel/kafka/message/merchant"
 	"atlas-channel/kafka/producer"
 	"context"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	inventory2 "github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
@@ -96,7 +98,12 @@ func (p *ProcessorImpl) ExitMaintenance(characterId uint32, shopId uuid.UUID) er
 }
 
 func (p *ProcessorImpl) AddListing(characterId uint32, shopId uuid.UUID, inventoryType byte, slot int16, quantity uint16, bundleSize uint16, pricePerBundle uint32) error {
-	return producer.ProviderImpl(p.l)(p.ctx)(merchant2.EnvCommandTopic)(AddListingCommandProvider(characterId, shopId, inventoryType, slot, quantity, bundleSize, pricePerBundle))
+	a, err := character.NewProcessor(p.l, p.ctx).GetItemInSlot(characterId, inventory2.Type(inventoryType), slot)()
+	if err != nil {
+		p.l.WithError(err).Errorf("Character [%d] attempting to list item from inventory [%d] slot [%d], but the item could not be resolved.", characterId, inventoryType, slot)
+		return err
+	}
+	return producer.ProviderImpl(p.l)(p.ctx)(merchant2.EnvCommandTopic)(AddListingCommandProvider(characterId, shopId, inventoryType, slot, quantity, bundleSize, pricePerBundle, a))
 }
 
 func (p *ProcessorImpl) RemoveListing(characterId uint32, shopId uuid.UUID, listingIndex uint16) error {

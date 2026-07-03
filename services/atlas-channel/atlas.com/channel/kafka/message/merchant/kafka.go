@@ -1,6 +1,8 @@
 package merchant
 
 import (
+	"atlas-channel/kafka/message/asset"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/google/uuid"
@@ -72,15 +74,16 @@ type CommandExitMaintenanceBody struct {
 }
 
 type CommandAddListingBody struct {
-	ShopId         string `json:"shopId"`
-	ItemId         uint32 `json:"itemId"`
-	ItemType       byte   `json:"itemType"`
-	BundleSize     uint16 `json:"bundleSize"`
-	BundleCount    uint16 `json:"bundleCount"`
-	PricePerBundle uint32 `json:"pricePerBundle"`
-	Slot           int16  `json:"slot"`
-	InventoryType  byte   `json:"inventoryType"`
-	AssetId        uint32 `json:"assetId"`
+	ShopId         string          `json:"shopId"`
+	ItemId         uint32          `json:"itemId"`
+	ItemType       byte            `json:"itemType"`
+	BundleSize     uint16          `json:"bundleSize"`
+	BundleCount    uint16          `json:"bundleCount"`
+	PricePerBundle uint32          `json:"pricePerBundle"`
+	Slot           int16           `json:"slot"`
+	InventoryType  byte            `json:"inventoryType"`
+	AssetId        uint32          `json:"assetId"`
+	ItemSnapshot   asset.AssetData `json:"itemSnapshot"`
 }
 
 type CommandRemoveListingBody struct {

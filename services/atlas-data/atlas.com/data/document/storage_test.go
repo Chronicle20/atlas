@@ -112,7 +112,7 @@ func TestAllProvider_FallsBackToCanonicalWhenTenantEmpty(t *testing.T) {
 
 	// A real tenant with no rows of its own.
 	realTenant := uuid.New()
-	got, err := newTestStorage(t, db).GetAll(ctxForTenant(t, realTenant))
+	got, err := newTestStorage(t, db).DrainAllProvider(ctxForTenant(t, realTenant))()
 	require.NoError(t, err)
 	require.Len(t, got, 2, "expected fallback to canonical dataset")
 }
@@ -129,7 +129,7 @@ func TestAllProvider_PrefersTenantOwnData(t *testing.T) {
 	realTenant := uuid.New()
 	seedTestDoc(t, db, ctxForTenant(t, realTenant), 2000000, "tenant-only")
 
-	got, err := newTestStorage(t, db).GetAll(ctxForTenant(t, realTenant))
+	got, err := newTestStorage(t, db).DrainAllProvider(ctxForTenant(t, realTenant))()
 	require.NoError(t, err)
 	require.Len(t, got, 1, "tenant with its own data should not fall back")
 	require.Equal(t, uint32(2000000), got[0].Id)
@@ -139,7 +139,7 @@ func TestAllProvider_PrefersTenantOwnData(t *testing.T) {
 // without error.
 func TestAllProvider_EmptyWhenNeitherHasData(t *testing.T) {
 	db := newStorageTestDB(t)
-	got, err := newTestStorage(t, db).GetAll(ctxForTenant(t, uuid.New()))
+	got, err := newTestStorage(t, db).DrainAllProvider(ctxForTenant(t, uuid.New()))()
 	require.NoError(t, err)
 	require.Len(t, got, 0)
 }
@@ -163,7 +163,7 @@ func TestVersionScopedCanonicalFallback_GetAll(t *testing.T) {
 
 	// A v83 tenant with no per-tenant rows should fall back to v83 canonical data.
 	v83TenantCtx := ctxForVersionedTenant(t, uuid.New(), "GMS", 83, 1)
-	got83, err := newTestStorage(t, db).GetAll(v83TenantCtx)
+	got83, err := newTestStorage(t, db).DrainAllProvider(v83TenantCtx)()
 	require.NoError(t, err)
 	require.Len(t, got83, 2, "v83 tenant should fall back to v83 canonical dataset")
 	ids83 := make(map[uint32]bool)
@@ -175,7 +175,7 @@ func TestVersionScopedCanonicalFallback_GetAll(t *testing.T) {
 
 	// A v84 tenant with no per-tenant rows should fall back to v84 canonical data (no cross-version bleed).
 	v84TenantCtx := ctxForVersionedTenant(t, uuid.New(), "GMS", 84, 1)
-	got84, err := newTestStorage(t, db).GetAll(v84TenantCtx)
+	got84, err := newTestStorage(t, db).DrainAllProvider(v84TenantCtx)()
 	require.NoError(t, err)
 	require.Len(t, got84, 1, "v84 tenant should fall back to v84 canonical dataset only")
 	require.Equal(t, uint32(8400000), got84[0].Id, "v84 fallback should not contain v83 docs")
@@ -223,7 +223,7 @@ func TestVersionScopedCanonicalFallback_OwnDataPreferred(t *testing.T) {
 	realCtx := ctxForVersionedTenant(t, realId, "GMS", 83, 1)
 	seedTestDoc(t, db, realCtx, 5000000, "tenant-name")
 
-	gotAll, err := newTestStorage(t, db).GetAll(realCtx)
+	gotAll, err := newTestStorage(t, db).DrainAllProvider(realCtx)()
 	require.NoError(t, err)
 	require.Len(t, gotAll, 1)
 	require.Equal(t, "tenant-name", gotAll[0].Name, "tenant's own data should be preferred over canonical fallback")
@@ -247,7 +247,7 @@ func TestVersionScopedCanonicalFallback_GetByIdAndGetAllAgree(t *testing.T) {
 	tenantCtx := ctxForVersionedTenant(t, uuid.New(), "GMS", 83, 1)
 	sto := newTestStorage(t, db)
 
-	all, err := sto.GetAll(tenantCtx)
+	all, err := sto.DrainAllProvider(tenantCtx)()
 	require.NoError(t, err)
 	require.Len(t, all, 2)
 

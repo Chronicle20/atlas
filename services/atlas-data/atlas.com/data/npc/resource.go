@@ -246,7 +246,7 @@ func handleGetNpcQuestsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *r
 
 				start := time.Now()
 				s := quest.NewStorage(d.Logger(), db)
-				all, qerr := s.GetAll(d.Context())
+				all, qerr := s.DrainAllProvider(d.Context())()
 				if qerr != nil {
 					d.Logger().WithError(qerr).Errorf("Unable to retrieve quests for npcId=%d.", npcId)
 					server.WriteErrorResponse(d.Logger())(w)(qerr)

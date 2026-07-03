@@ -68,42 +68,6 @@ func (s *Storage[I, M]) GetById(ctx context.Context) func(id I) (M, error) {
 	}
 }
 
-func (s *Storage[I, M]) AllProvider(ctx context.Context) model.Provider[[]M] {
-	t := tenant.MustFromContext(ctx)
-	var ms []M
-	var err error
-	ms, err = s.dbSto.All(ctx)()
-	if err == nil && len(ms) > 0 {
-		return model.FixedProvider(ms)
-	}
-	// A tenant with no rows of this document type falls back to the
-	// version-scoped canonical dataset (canonical.TenantId), mirroring
-	// ByIdProvider. Without this, a tenant that was never directly seeded
-	// (e.g. a version provisioned after canonical ingestion) gets an empty
-	// batch result while per-id lookups silently succeed via the same
-	// canonical fallback — an asymmetry that surfaced as preset skill
-	// validation rejecting every skill for such tenants.
-	nt, cerr := tenant.Create(canonical.TenantId(t.Region(), t.MajorVersion(), t.MinorVersion()), t.Region(), t.MajorVersion(), t.MinorVersion())
-	if cerr != nil {
-		return model.ErrorProvider[[]M](cerr)
-	}
-	nctx := tenant.WithContext(ctx, nt)
-	cms, cerr := s.dbSto.All(nctx)()
-	if cerr == nil && len(cms) > 0 {
-		return model.FixedProvider(cms)
-	}
-	// No canonical rows either: prefer a real error from the original lookup,
-	// otherwise return the (empty) original result rather than masking it.
-	if err != nil {
-		return model.ErrorProvider[[]M](err)
-	}
-	return model.FixedProvider(ms)
-}
-
-func (s *Storage[I, M]) GetAll(ctx context.Context) ([]M, error) {
-	return s.AllProvider(ctx)()
-}
-
 // AllPagedProvider pages this document type for the context tenant. A tenant
 // page with Total 0 falls back to the version-scoped canonical dataset
 // (canonical.TenantId), mirroring AllProvider's fallback so the paged

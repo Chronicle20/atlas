@@ -80,7 +80,7 @@ func handleGetAutoStartQuests(db *gorm.DB) func(d *rest.HandlerDependency, c *re
 			}
 
 			s := NewStorage(d.Logger(), db)
-			allQuests, err := s.GetAll(d.Context())
+			allQuests, err := s.DrainAllProvider(d.Context())()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Unable to get quests for auto-start filter.")
 				server.WriteErrorResponse(d.Logger())(w)(err)

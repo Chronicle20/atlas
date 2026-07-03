@@ -125,11 +125,11 @@ func TestQuestsAutoStart_RejectsBadPageNumber(t *testing.T) {
 // seedScrambledAutoStartQuests seeds 5 auto-start quests (ids 5000-5004)
 // PLUS 2 non-auto-start quests (5010, 5011), inserted in an order that does
 // NOT match ascending quest id. This exercises the task-117 fix: the
-// auto-start handler filters an unordered document.Storage.GetAll() result
-// (a plain "type = ?" Find with no ORDER BY — see document/db_storage.go
-// DbStorage.All) before paginate.Slice. Without a stable sort keyed on the
-// quest id, the page split reflects whatever order the DB/registry happens
-// to return rather than a deterministic total order.
+// auto-start handler filters an unordered document.Storage.DrainAllProvider()
+// result (which internally pages a plain "type = ?" Find with no ORDER BY —
+// see document/db_storage.go DbStorage.All) before paginate.Slice. Without a
+// stable sort keyed on the quest id, the page split reflects whatever order
+// the DB/registry happens to return rather than a deterministic total order.
 func seedScrambledAutoStartQuests(t *testing.T, db *gorm.DB, tenantId uuid.UUID) {
 	l := logrus.New()
 	l.SetLevel(logrus.ErrorLevel)

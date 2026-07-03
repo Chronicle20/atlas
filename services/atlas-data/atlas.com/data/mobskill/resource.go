@@ -63,7 +63,7 @@ func handleGetMobSkillsByTypeRequest(db *gorm.DB) func(d *rest.HandlerDependency
 				}
 
 				s := NewStorage(d.Logger(), db)
-				all, err := s.GetAll(d.Context())
+				all, err := s.DrainAllProvider(d.Context())()
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Unable to retrieve mob skills.")
 					server.WriteErrorResponse(d.Logger())(w)(err)

@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldEffectWeather
+direction: clientbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: sub_4C95F2
+    address: "0x4c95f2"
+    decompile_sha256: c4d1ef147670fb48726d083c4dc0ec2b02b5af46b0dbcdba4335d7350e226841
+verifies:
+    - libs/atlas-packet/field/clientbound/effect_weather_test.go#TestFieldEffectWeatherByteOutputV48

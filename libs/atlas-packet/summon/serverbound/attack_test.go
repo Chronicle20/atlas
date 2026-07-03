@@ -459,3 +459,58 @@ func TestSummonAttackRoundTrip(t *testing.T) {
 		})
 	}
 }
+
+// TestSummonAttackByteV48 pins the gms_v48 SUMMON_ATTACK (op 121 / 0x79)
+// serverbound send. IDA GMS_v48_1_DEVM.exe @port 13337:
+// CSummoned::TryDoingAttackManual sub_5D9424@0x5d9424, send block @0x5d9bae
+// builds COutPacket(121)@0x5d9bae, Encode4(summonSkillId this[33])@0x5d9bc0,
+// Encode1(action|left (v111<<7)|4)@0x5d9bd2, Encode1(count)@0x5d9bde, then
+// per-target(mobId only — NO templateId)@0x5d9bff..0x5d9cc5, Encode2(summonX)
+// @0x5d9ce9, Encode2(summonY)@0x5d9cfd, SendPacket@0x5d9d0c. NO skillCRC (v48<79)
+// and — the v48-specific divergence from v61/v72/v79 — NO updateTime int between
+// the leading identity and the action byte (v61 Encode4 updateTime@0x67b3aa is
+// absent here). The v48 leading int is the summon's skill id (this[33], the
+// pre-multipet summon identity), surfaced via SummonId(). Layout:
+// isLegacyLeanAttack(GMS,48)=true, hasSummonAttackUpdateTime(GMS,48)=false,
+// hasTargetTemplateId=false, hasSkillCrcTrailer=false.
+// packet-audit:verify packet=summon/serverbound/SummonAttackHandle version=gms_v48 ida=0x5d9424
+func TestSummonAttackByteV48(t *testing.T) {
+	body := []byte{}
+	body = append(body, le32(2121005)...) // summonId (= summon skillId @0x5d9bc0)
+	// NO updateTime int on v48 (absent @ send block; present v61+)
+	body = append(body, 0x84)             // action|left ((left<<7)|4, action fixed 4) @0x5d9bd2
+	body = append(body, 0x02)             // count = 2 @0x5d9bde
+	body = append(body, mobBlockV79(2000001, 100, 1234)...)
+	body = append(body, mobBlockV79(2000002, -50, 5678)...)
+	body = append(body, le16(510)...) // summonX (after targets) @0x5d9ce9
+	body = append(body, le16(590)...) // summonY @0x5d9cfd
+	// NO skillCRC on v48
+
+	ctx := test.CreateContext("GMS", 48, 1)
+	l, _ := testlog.NewNullLogger()
+	req := request.Request(body)
+	reader := request.NewRequestReader(&req, 0)
+	var m Attack
+	m.Decode(l, ctx)(&reader, nil)
+
+	if m.SummonId() != 2121005 {
+		t.Errorf("summonId = %d, want 2121005", m.SummonId())
+	}
+	if m.Direction() != 0x84 {
+		t.Errorf("direction = %#x, want 0x84", m.Direction())
+	}
+	if len(m.Targets()) != 2 {
+		t.Fatalf("targets len = %d, want 2", len(m.Targets()))
+	}
+	t0 := m.Targets()[0]
+	if t0.MonsterOid() != 2000001 || t0.TemplateId() != 0 || t0.Damage() != 1234 || t0.Delay() != 100 {
+		t.Errorf("target[0] = %+v, want oid=2000001 tmpl=0 dmg=1234 delay=100", t0)
+	}
+	t1 := m.Targets()[1]
+	if t1.MonsterOid() != 2000002 || t1.TemplateId() != 0 || t1.Damage() != 5678 || t1.Delay() != -50 {
+		t.Errorf("target[1] = %+v, want oid=2000002 tmpl=0 dmg=5678 delay=-50", t1)
+	}
+	if reader.Available() > 0 {
+		t.Errorf("reader has %d unconsumed bytes after decode", reader.Available())
+	}
+}

@@ -174,6 +174,19 @@ func hasSkillCrcTrailer(t tenant.Model) bool {
 	return t.MajorAtLeast(79)
 }
 
+// hasSummonAttackUpdateTime reports whether the summon ATTACK header carries the
+// updateTime int between the summon identity and the action|left byte. Present
+// on GMS v61+ and JMS (IDA: v61 Encode4 updateTime@0x67b3aa, v72 @0x6e82d2, v79
+// @0x71c004). ABSENT on the oldest GMS build v48: CSummoned::TryDoingAttackManual
+// send block @0x5d9bae (GMS_v48_1_DEVM.exe, port 13337) emits COutPacket(121) +
+// Encode4 summonSkillId@0x5d9bc0 + Encode1 action|left@0x5d9bd2 + Encode1
+// count@0x5d9bde with NO updateTime int in between. The v48 leading int is the
+// summon's skill id (this[33], the pre-multipet summon identity — the same value
+// SetDamaged sends as summonId), carried in SummonId().
+func hasSummonAttackUpdateTime(t tenant.Model) bool {
+	return !(t.IsRegion("GMS") && !t.MajorAtLeast(61))
+}
+
 func (m Attack) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	t := tenant.MustFromContext(ctx)
@@ -204,7 +217,9 @@ func (m Attack) Encode(l logrus.FieldLogger, ctx context.Context) func(options m
 				w.WriteInt(0) // repeatSkillPoint (v95 only) @0x752450
 			}
 		} else {
-			w.WriteInt(0) // updateTime
+			if hasSummonAttackUpdateTime(t) {
+				w.WriteInt(0) // updateTime (absent on GMS v48, present v61+)
+			}
 			w.WriteByte(m.direction)
 			w.WriteByte(byte(len(m.targets)))
 			// v83 emits the four position shorts BEFORE the targets; the v79
@@ -264,7 +279,9 @@ func (m *Attack) Decode(l logrus.FieldLogger, ctx context.Context) func(r *reque
 				r.Skip(4) // repeatSkillPoint (v95 only)
 			}
 		} else {
-			r.Skip(4) // updateTime
+			if hasSummonAttackUpdateTime(t) {
+				r.Skip(4) // updateTime (absent on GMS v48, present v61+)
+			}
 			m.direction = r.ReadByte()
 			count = int(r.ReadByte())
 			if !isLegacyLeanAttack(t) {

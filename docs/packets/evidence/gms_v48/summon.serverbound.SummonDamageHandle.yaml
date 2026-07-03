@@ -1,0 +1,10 @@
+packet: summon/serverbound/SummonDamageHandle
+direction: serverbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: sub_5DA381
+    address: "0x5da381"
+    decompile_sha256: 0d268dd99677a77b3a736fa4e1152b57aae9131ed339429f3f5d3a0a5ae3cf67
+verifies:
+  - libs/atlas-packet/summon/serverbound/damage_test.go#TestDamageBytesV48Mob

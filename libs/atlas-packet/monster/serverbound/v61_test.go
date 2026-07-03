@@ -138,3 +138,22 @@ func TestMobCrcKeyChangedReplyBytesV61(t *testing.T) {
 		t.Errorf("v61 mobCrcKeyChangedReply bytes: got % x, want empty", got)
 	}
 }
+
+// FIELD_DAMAGE_MOB (op158) — CMob::Update field-damage send site sub_5C71B7
+// @0x5c78b5: COutPacket(158); Encode4(SecureFuse(m_dwMobID)) @0x5c78d9;
+// Encode4(nFieldDamage v155) @0x5c78e4; SendPacket. Two Encode4, no version gate
+// (identical layout to the verified v72 anchor; v61 op158 = v72 op181 − 23).
+//
+// packet-audit:verify packet=monster/serverbound/MonsterFieldDamageMob version=gms_v61 ida=0x5c71b7
+func TestFieldDamageMobV61(t *testing.T) {
+	ctx := test.CreateContext("GMS", 61, 1)
+	input := FieldDamageMob{mobCrc: 0xAABBCCDD, damage: 0x000003E7}
+	got := input.Encode(nil, ctx)(nil)
+	want := []byte{
+		0xDD, 0xCC, 0xBB, 0xAA, // mobCrc uint32 LE (Encode4 @0x5c78d9)
+		0xE7, 0x03, 0x00, 0x00, // damage uint32 LE = 999 (Encode4 @0x5c78e4)
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatalf("v61 FieldDamageMob layout mismatch\n got % x\nwant % x", got, want)
+	}
+}

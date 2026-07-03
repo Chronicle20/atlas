@@ -326,3 +326,25 @@ func TestChalkboardCloseByteOutputV61(t *testing.T) {
 		t.Errorf("v61 ChalkboardClose wire: got %x want empty", got)
 	}
 }
+
+// MOB_DAMAGE_MOB_FRIENDLY (op159) — CMob::Update mob-vs-mob-friendly send site
+// sub_5C71B7 @0x5c7aa3: COutPacket(159); Encode4(SecureFuse(this.m_dwMobID))
+// @0x5c78d9→@0x5c7ac7 (attacker); Encode4(g_pWvsContext dwCharacterID +0x2088)
+// @0x5c7ada (observer/local char); Encode4(SecureFuse(v48.m_dwMobID)) @0x5c7af7
+// (attacked); SendPacket. Three Encode4, no version gate — byte-identical to the
+// verified v72 anchor. v61 op159 = v72 op182 − 23.
+//
+// packet-audit:verify packet=character/serverbound/CharacterMonsterDamageFriendly version=gms_v61 ida=0x5c71b7
+func TestMonsterDamageFriendlyByteOutputV61(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 61, 1)
+	input := MonsterDamageFriendly{attackerId: 0x11223344, observerId: 0x0010F447, attackedId: 0xAABBCCDD}
+	got := input.Encode(nil, ctx)(nil)
+	want := []byte{
+		0x44, 0x33, 0x22, 0x11, // attackerId (Encode4 @0x5c7ac7)
+		0x47, 0xF4, 0x10, 0x00, // observerId (Encode4 dwCharacterID @0x5c7ada)
+		0xDD, 0xCC, 0xBB, 0xAA, // attackedId (Encode4 @0x5c7af7)
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatalf("v61 MonsterDamageFriendly wire:\n got % x\nwant % x", got, want)
+	}
+}

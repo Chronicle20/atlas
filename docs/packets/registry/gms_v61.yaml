@@ -2518,19 +2518,19 @@
 - op: FIELD_DAMAGE_MOB
   direction: serverbound
   opcode: 158
-  fname: sub_5C71B7
+  fname: CMob::Update
   provenance: ida-discovered
   ida:
-    address: 6060213
-  note: 'v61 send-site (0x5c78b5, CMob): COutPacket(158)+Encode4+Encode4. v72 FIELD_DAMAGE_MOB=181 [E4,E4]; Δ-23.'
+    address: 6058935
+  note: 'v61 send-site (0x5c78b5, CMob::Update sub_5C71B7@0x5c71b7): COutPacket(158)+Encode4(mobCrc)+Encode4(damage). v72 FIELD_DAMAGE_MOB=181 [E4,E4]; Δ-23. fname canonicalised to CMob::Update (candidatesFromFName linkage; unnamed sub_5C71B7 in the IDB).'
 - op: MOB_DAMAGE_MOB_FRIENDLY
   direction: serverbound
   opcode: 159
-  fname: sub_5C71B7
+  fname: CMob::Update
   provenance: ida-discovered
   ida:
-    address: 6060707
-  note: 'v61 send-site (0x5c7aa3, same fn as 158): COutPacket(159)+Encode4+Encode4+Encode4. v72 MOB_DAMAGE_MOB_FRIENDLY=182 [E4,E4,E4]; Δ-23.'
+    address: 6058935
+  note: 'v61 send-site (0x5c7aa3, same CMob::Update fn as 158): COutPacket(159)+Encode4(attacker)+Encode4(observerChar)+Encode4(attacked). v72 MOB_DAMAGE_MOB_FRIENDLY=182 [E4,E4,E4]; Δ-23.'
 - op: MONSTER_BOMB
   direction: serverbound
   opcode: 160

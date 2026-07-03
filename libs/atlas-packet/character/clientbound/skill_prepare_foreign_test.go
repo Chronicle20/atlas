@@ -68,6 +68,37 @@ func TestSkillPrepareForeignV72ByteFixture(t *testing.T) {
 	}
 }
 
+// TestSkillPrepareForeignV61ByteFixture pins the very-legacy GMS v61 wire, which reads
+// the action/direction field as a SINGLE byte (bit7=bLeft, bits0-6=nAction) — the same
+// as v72 (both < 79). IDA-verified: the real per-op handler CUserRemote::OnSkillPrepare
+// @0x7c9963 (GMS_v61.1_U_DEVM.exe, port 13338 — registry's dispatcher note-address
+// 0x7bd75a is the pool switch, not the handler) reads Decode4 skillId @0x7c99ac, Decode1
+// level @0x7c99bf, Decode1 action @0x7c99ed (>>7 / &0x7F — ONE byte), Decode1 actionSpeed
+// @0x7c9a0e. charId(4) leads (consumed by the pool dispatcher). Byte-identical to v72.
+// packet-audit:verify packet=character/clientbound/CharacterSkillPrepareForeign version=gms_v61 ida=0x7c9963
+func TestSkillPrepareForeignV61ByteFixture(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 61, 1)
+	// action=0x42 fits the legacy 1-byte field (bit7=0, action=0x42).
+	input := NewSkillPrepareForeign(1001, 3121004, 10, 0x42, 4)
+	expected := []byte{
+		0xE9, 0x03, 0x00, 0x00, // charId=1001 LE
+		0x6C, 0x9F, 0x2F, 0x00, // skillId=3121004 LE
+		0x0A, // level=10                          @0x7c99bf
+		0x42, // action=0x42 (1 BYTE on v61)       @0x7c99ed
+		0x04, // actionSpeed=4                      @0x7c9a0e
+	}
+	got := pt.Encode(t, ctx, input.Encode, nil)
+	if len(got) != len(expected) {
+		t.Fatalf("byte length mismatch: got %d want %d\n  got:  %X\n  want: %X", len(got), len(expected), got, expected)
+	}
+	for i := range expected {
+		if got[i] != expected[i] {
+			t.Errorf("byte[%d] = %02X, want %02X\n  got:  %X\n  want: %X", i, got[i], expected[i], got, expected)
+			break
+		}
+	}
+}
+
 // TestSkillPrepareForeignOperation verifies Operation() returns the foreign writer
 // const (not the bug pattern where foreign structs return the non-foreign const).
 func TestSkillPrepareForeignOperation(t *testing.T) {

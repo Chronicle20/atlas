@@ -26,6 +26,31 @@ func TestSkillCancelForeignRoundTrip(t *testing.T) {
 	}
 }
 
+// TestSkillCancelForeignV61ByteFixture pins the very-legacy GMS v61 wire: charId(4) +
+// skillId(4), no version delta. IDA-verified: the real per-op handler
+// CUserRemote::OnSkillCancel @0x7c9b1f (GMS_v61.1_U_DEVM.exe, port 13338 — registry's
+// dispatcher note-address 0x7bd75a is the pool switch, not the handler) reads a single
+// Decode4 skillId; charId(4) leads (consumed by the pool dispatcher). Byte-identical to v72.
+// packet-audit:verify packet=character/clientbound/CharacterSkillCancelForeign version=gms_v61 ida=0x7c9b1f
+func TestSkillCancelForeignV61ByteFixture(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 61, 1)
+	input := NewSkillCancelForeign(1001, 3121004)
+	expected := []byte{
+		0xE9, 0x03, 0x00, 0x00, // charId=1001 LE
+		0x6C, 0x9F, 0x2F, 0x00, // skillId=3121004 LE
+	}
+	got := pt.Encode(t, ctx, input.Encode, nil)
+	if len(got) != len(expected) {
+		t.Fatalf("byte length mismatch: got %d want %d\n  got:  %X\n  want: %X", len(got), len(expected), got, expected)
+	}
+	for i := range expected {
+		if got[i] != expected[i] {
+			t.Errorf("byte[%d] = %02X, want %02X\n  got:  %X\n  want: %X", i, got[i], expected[i], got, expected)
+			break
+		}
+	}
+}
+
 // TestSkillCancelForeignOperation verifies Operation() returns the foreign writer
 // const (not the bug pattern where foreign structs return the non-foreign const).
 func TestSkillCancelForeignOperation(t *testing.T) {

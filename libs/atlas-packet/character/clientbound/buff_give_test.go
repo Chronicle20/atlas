@@ -250,3 +250,47 @@ func TestBuffGiveForeignV72Mask(t *testing.T) {
 		t.Errorf("v72 BuffGiveForeign trailer: got %x want %x", got[len(got)-3:], wantTail)
 	}
 }
+
+// TestBuffGiveV61Mask pins the very-legacy GMS v61 empty-CTS wire. v61 < 87 so the
+// CTS model's only version gates (87 / 95) do not fire → the SecondaryStat flag word
+// is byte-identical to v72/v79 (v79EmptyMask, bits 82-88). IDA-verified: the real
+// per-op handler CWvsContext::OnTemporaryStatSet @0x84311f (GMS_v61.1_U_DEVM.exe, port
+// 13338 — registry's dispatcher note-address 0x830d6b is the CWvsContext switch, not
+// the handler) reads the mask via SecondaryStat::DecodeForLocal @0x843174 into a UINT128
+// (0x80 bits), Decode2 tDelay @0x843190, then a trailing Decode1 only when
+// IsMovementAffectingStat (none here, @0x8433f6) — structurally identical to v72
+// @0x918b24 (§5 opaque caveat).
+// packet-audit:verify packet=character/clientbound/BuffGive version=gms_v61 ida=0x84311f
+func TestBuffGiveV61Mask(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 61, 1)
+	got := NewBuffGive(*model.NewCharacterTemporaryStat()).Encode(nil, ctx)(nil)
+	if !bytes.Equal(got[:16], v79EmptyMask) {
+		t.Errorf("v61 BuffGive flag word: got %x want %x", got[:16], v79EmptyMask)
+	}
+	wantTail := []byte{0x00, 0x00, 0x00}
+	if !bytes.Equal(got[len(got)-3:], wantTail) {
+		t.Errorf("v61 BuffGive trailer: got %x want %x", got[len(got)-3:], wantTail)
+	}
+}
+
+// TestBuffGiveForeignV61Mask pins the very-legacy GMS v61 remote wire. Int(characterId)
+// prefix, then the SecondaryStat flag word via SecondaryStat::DecodeForRemote (client
+// CUserRemote::OnSetTemporaryStat @0x7cbf5f: DecodeForRemote @0x7cbf7d + Decode2 tDelay
+// @0x7cbf9b, UINT128 0x80 bits), then the Short(0)+Byte(0) trailer. v61 < 87 so the mask
+// is byte-identical to v72/v79 (§5 opaque caveat).
+// packet-audit:verify packet=character/clientbound/BuffGiveForeign version=gms_v61 ida=0x7cbf5f
+func TestBuffGiveForeignV61Mask(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 61, 1)
+	got := NewBuffGiveForeign(12345, *model.NewCharacterTemporaryStat()).Encode(nil, ctx)(nil)
+	wantPrefix := []byte{0x39, 0x30, 0x00, 0x00} // Int(12345) LE
+	if !bytes.Equal(got[:4], wantPrefix) {
+		t.Errorf("v61 BuffGiveForeign characterId: got %x want %x", got[:4], wantPrefix)
+	}
+	if !bytes.Equal(got[4:20], v79EmptyMask) {
+		t.Errorf("v61 BuffGiveForeign flag word: got %x want %x", got[4:20], v79EmptyMask)
+	}
+	wantTail := []byte{0x00, 0x00, 0x00}
+	if !bytes.Equal(got[len(got)-3:], wantTail) {
+		t.Errorf("v61 BuffGiveForeign trailer: got %x want %x", got[len(got)-3:], wantTail)
+	}
+}

@@ -51,7 +51,11 @@ const (
 	EventTypeError  = "ERROR"
 	EventTypeScroll = "SCROLL"
 
+	EventTypeRewardEffect = "REWARD_EFFECT"
+	EventTypeRewardWon    = "REWARD_WON"
+
 	ErrorTypePetCannotConsume = "PET_CANNOT_CONSUME"
+	ErrorTypeInventoryFull    = "INVENTORY_FULL"
 )
 
 type Event[E any] struct {
@@ -69,4 +73,15 @@ type ScrollBody struct {
 	Cursed          bool `json:"cursed"`
 	LegendarySpirit bool `json:"legendarySpirit"`
 	WhiteScroll     bool `json:"whiteScroll"`
+}
+
+type RewardEffectBody struct {
+	BoxItemId uint32 `json:"boxItemId"`
+	Effect    string `json:"effect"`
+}
+
+type RewardWonBody struct {
+	BoxItemId uint32 `json:"boxItemId"`
+	ItemId    uint32 `json:"itemId"`
+	Message   string `json:"message"`
 }

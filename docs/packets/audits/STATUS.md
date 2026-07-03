@@ -142,7 +142,7 @@ Tool: `46f121c4a0f649a42249ab39feefdc56c1837263`
 | WHISPER | CField::OnWhisper | field/clientbound/FieldWhisperError (T1) | 0x051 | ❌ | 0x065 | ✅ | 0x07B | ✅ | 0x07F | ✅ | 0x087 | ✅ | 0x08A | ✅ | 0x08F | ✅ | 0x097 | ✅ | 0x085 | ✅ |
 | IDA_0X052 | sub_B113C8 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x052 | ❌ |
 | MINIMAP_ON_OFF | CWvsContext::OnMiniMapOnOff; sub_90CE83; sub_95E24B |  |  | ⬜ |  | ⬜ | 0x052 | ❌ | 0x053 | ❌ | 0x056 | ❌ | 0x058 | ❌ | 0x058 | ❌ | 0x059 | ❌ | 0x05D | ❌ |
-| SPOUSE_CHAT | CField::OnCoupleMessage | field/clientbound/FieldSpouseChat (T1) | 0x052 | ❌ | 0x066 | ✅ | 0x07C | ✅ | 0x080 | ✅ | 0x088 | ✅ | 0x08B | ✅ | 0x090 | ✅ | 0x098 | ✅ |  | ⬜ |
+| SPOUSE_CHAT | CField::OnCoupleMessage | field/clientbound/FieldSpouseChat (T1) | 0x052 | ✅ | 0x066 | ✅ | 0x07C | ✅ | 0x080 | ✅ | 0x088 | ✅ | 0x08B | ✅ | 0x090 | ✅ | 0x098 | ✅ |  | ⬜ |
 | IDA_0X053 | sub_B11485 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x053 | ❌ |
 | PARTY_VALUE | CWvsContext::OnPartyValue |  |  | ⬜ |  | ⬜ | 0x053 | ❌ | 0x054 | ❌ | 0x05B | ❌ | 0x05D | ❌ | 0x05D | ❌ | 0x05E | ❌ | 0x062 | ❌ |
 | SUMMON_ITEM_INAVAILABLE | CField::OnSummonItemInavailable | field/clientbound/FieldSummonItemUnavailable (T1) | 0x053 | ✅ | 0x067 | 🟡 | 0x07D | 🟡 | 0x081 | 🟡 | 0x089 | ✅ | 0x08C | ✅ | 0x091 | ✅ | 0x099 | ✅ | 0x086 | ✅ |
@@ -185,7 +185,7 @@ Tool: `46f121c4a0f649a42249ab39feefdc56c1837263`
 | FAMILY_NOTIFY_LOGIN_OR_LOGOUT | CWvsContext::OnFamilyNotifyLoginOrLogout |  |  | ⬜ |  | ⬜ | 0x05F | ❌ | 0x060 | ❌ | 0x066 | ❌ | 0x069 | ❌ | 0x069 | ❌ | 0x06A | ❌ | 0x06D | ❌ |
 | IDA_0X05F | sub_5A8316 |  |  | ⬜ | 0x05F | ❌ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
 | SET_QUEST_TIME | CField::OnSetQuestTime | field/clientbound/FieldSetQuestTime (T1) | 0x05F | ✅ | 0x072 | 🟡 | 0x08B | 🟡 | 0x08F | 🟡 | 0x097 | ✅ | 0x09A | ✅ | 0x09F | ✅ | 0x0A7 | ✅ | 0x094 | ✅ |
-| ARIANT_RESULT | CField::OnWarnMessage | field/clientbound/FieldAriantResult (T1) | 0x060 | 🟡 | 0x073 | 🟡 | 0x08C | 🟡 | 0x090 | 🟡 | 0x098 | ✅ | 0x09B | ✅ | 0x0A0 | ✅ | 0x0A8 | ✅ |  | ⬜ |
+| ARIANT_RESULT | CField::OnWarnMessage | field/clientbound/FieldAriantResult (T1) | 0x060 | ✅ | 0x073 | 🟡 | 0x08C | 🟡 | 0x090 | 🟡 | 0x098 | ✅ | 0x09B | ✅ | 0x0A0 | ✅ | 0x0A8 | ✅ |  | ⬜ |
 | FAMILY_SET_PRIVILEGE | CWvsContext::OnFamilySetPrivilege |  |  | ⬜ |  | ⬜ | 0x060 | ❌ | 0x061 | ❌ | 0x067 | ❌ | 0x06A | ❌ | 0x06A | ❌ | 0x06B | ❌ | 0x06E | ❌ |
 | IDA_0X060 | sub_5A871B |  |  | ⬜ | 0x060 | ❌ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
 | FAMILY_SUMMON_REQUEST | CWvsContext::OnFamilySummonRequest |  |  | ⬜ |  | ⬜ | 0x061 | ❌ | 0x062 | ❌ | 0x068 | ❌ | 0x06B | ❌ | 0x06B | ❌ | 0x06C | ❌ | 0x06F | ❌ |
@@ -1003,7 +1003,7 @@ Tool: `46f121c4a0f649a42249ab39feefdc56c1837263`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v48 | 102 | 0 | 9 | 229 | 629 | 0 | 30.0% |
+| v48 | 104 | 0 | 8 | 228 | 629 | 0 | 30.6% |
 | v61 | 208 | 0 | 60 | 230 | 471 | 0 | 41.8% |
 | v72 | 216 | 0 | 73 | 248 | 432 | 0 | 40.2% |
 | v79 | 228 | 0 | 72 | 246 | 423 | 0 | 41.8% |

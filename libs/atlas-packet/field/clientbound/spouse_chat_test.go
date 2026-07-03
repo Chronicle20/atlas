@@ -106,6 +106,36 @@ func TestSpouseChatByteOutputV61(t *testing.T) {
 	}
 }
 
+// TestSpouseChatByteOutputV48 pins the gms_v48 SPOUSE_CHAT (op 0x52 = 82) clientbound
+// wire. IDA: CField::OnCoupleMessage @0x4c6faf (GMS_v48_1_DEVM.exe) dispatches on
+// `Decode1(mode) - 3` @0x4c6fd2 — the arm modes are shifted DOWN by one vs v61's 4/5:
+//
+//	mode-4 arm (mode-3==1): DecodeStr(sender) @0x4c6fe8, Decode1(flag) @0x4c6ff4,
+//	                        DecodeStr(chatText) @0x4c6fff.
+//	mode-3 arm (mode-3==0): Decode1(partnerFlag) @0x4c70d4, DecodeStr(partnerText) @0x4c711e.
+//
+// The mode-4 (sender) arm sits at the lower address, so the flattened union read
+// order (mode + sender + flag + chatText + partnerFlag + partnerText) is
+// byte-identical to the v61 golden. mode value 4 selects the sender arm in v48
+// (the version-invariant flattened-union codec does not branch on the mode value).
+// packet-audit:verify packet=field/clientbound/FieldSpouseChat version=gms_v48 ida=0x4c6faf
+func TestSpouseChatByteOutputV48(t *testing.T) {
+	input := NewSpouseChat(SpouseChatModeOwn, "lover", 0x01, "hi", 0x02, "yo")
+	ctx := test.CreateContext("GMS", 48, 1)
+	expected := []byte{
+		0x04,                                // mode @0x4c6fd2
+		0x05, 0x00, 'l', 'o', 'v', 'e', 'r', // sender (mode-4 DecodeStr @0x4c6fe8)
+		0x01,                 // flag (mode-4 Decode1 @0x4c6ff4)
+		0x02, 0x00, 'h', 'i', // chatText (mode-4 DecodeStr @0x4c6fff)
+		0x02,                 // partnerFlag (mode-3 Decode1 @0x4c70d4)
+		0x02, 0x00, 'y', 'o', // partnerText (mode-3 DecodeStr @0x4c711e)
+	}
+	actual := test.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v48 spouse chat golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
 func TestSpouseChatRoundTrip(t *testing.T) {
 	input := NewSpouseChat(SpouseChatModeOwn, "lover", 0x01, "hi there", 0x02, "partner reply")
 	for _, v := range test.Variants {

@@ -1,7 +1,7 @@
 {
   "WriterName": "NoteSendError",
   "IDAName": "CWvsContext::OnMemoResult#SendError",
-  "Address": "",
+  "Address": "0x71d8e2",
   "Variant": "GMS/v48",
   "BranchDepth": 0,
   "AtlasFile": "libs/atlas-packet/note/clientbound/operation.go",
@@ -10,21 +10,21 @@
       "Index": 0,
       "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 4,
-      "Note": "IDA read-order unresolved: function not found in IDB"
+      "IDAOp": 0,
+      "IDAComment": "mode (=4, SEND_ERROR) — raw sub-op 4 (Decode1-2==2)",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 1,
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 1,
-      "Note": "atlas: trailing padding byte — client stops reading (harmless over-write)"
+      "IDAComment": "errorCode @0x71d937 — 0/1/2 → Notice 2372/2373/2374",
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 1,
+  "Verdict": 0,
   "FlatInvalid": false
 }

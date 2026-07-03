@@ -11,7 +11,7 @@
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "",
+      "IDAComment": "count — number of checked (nFlag==2) memos to discard (deleteCount @0x534e9a)",
       "Verdict": 0,
       "Note": ""
     },
@@ -20,7 +20,7 @@
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "",
+      "IDAComment": "emptySlotCount — free inventory slots (tab 4, CharacterData::GetEmptySlotCount @0x534ea5)",
       "Verdict": 0,
       "Note": ""
     },
@@ -28,75 +28,21 @@
       "Index": 2,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "IDAOp": 2,
+      "IDAComment": "dwSN (memo serial number) — per-entry loop body @0x534ed7 (count iterations; analyzer flattens)",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 3,
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "",
+      "IDAComment": "nFlag (memo type flag) @0x534eec",
       "Verdict": 0,
       "Note": ""
-    },
-    {
-      "Index": 4,
-      "AtlasOp": 0,
-      "AtlasKind": 0,
-      "IDAOp": 2,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
-    },
-    {
-      "Index": 5,
-      "AtlasOp": 0,
-      "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
-    },
-    {
-      "Index": 6,
-      "AtlasOp": 0,
-      "AtlasKind": 0,
-      "IDAOp": 2,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
-    },
-    {
-      "Index": 7,
-      "AtlasOp": 0,
-      "AtlasKind": 0,
-      "IDAOp": 2,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
-    },
-    {
-      "Index": 8,
-      "AtlasOp": 0,
-      "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
-    },
-    {
-      "Index": 9,
-      "AtlasOp": 0,
-      "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
     }
   ],
-  "Verdict": 3,
-  "FlatInvalid": true
+  "Verdict": 0,
+  "FlatInvalid": false
 }

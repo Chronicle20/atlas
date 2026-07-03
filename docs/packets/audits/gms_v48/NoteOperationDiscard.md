@@ -4,21 +4,14 @@
 - **Atlas file:** `libs/atlas-packet/note/serverbound/operation_discard.go`
 - **Variant:** GMS/v48
 - **Branch depth:** 0
-- **Verdict:** 🔍
-- **Flat-diff-invalid:** the wire shape depends on a runtime discriminator a flat positional diff cannot model — the Atlas writer branches on a non-version condition (a data-dependent field or an untraced version-derived local), and/or the client reads fields conditionally (e.g. `mode <= 1`). The verdict is capped to 🔍; the row-level mismatches below are a modeling limitation, not a verified wire bug — confirm per-branch via byte-level tests.
+- **Verdict:** ✅
 
 ## Wire-level diff
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | byte | byte `` | ✅ |  |
-| 1 | byte | byte `` | ✅ |  |
-| 2 | int32 | byte `` | ❌ | width mismatch |
-| 3 | byte | byte `` | ✅ |  |
-| 4 | byte | int32 `` | ❌ | atlas: short — missing trailing field |
-| 5 | byte | byte `` | ❌ | atlas: short — missing trailing field |
-| 6 | byte | int32 `` | ❌ | atlas: short — missing trailing field |
-| 7 | byte | int32 `` | ❌ | atlas: short — missing trailing field |
-| 8 | byte | byte `` | ❌ | atlas: short — missing trailing field |
-| 9 | byte | byte `` | ❌ | atlas: short — missing trailing field |
+| 0 | byte | byte `count — number of checked (nFlag==2) memos to discard (deleteCount @0x534e9a)` | ✅ |  |
+| 1 | byte | byte `emptySlotCount — free inventory slots (tab 4, CharacterData::GetEmptySlotCount @0x534ea5)` | ✅ |  |
+| 2 | int32 | int32 `dwSN (memo serial number) — per-entry loop body @0x534ed7 (count iterations; analyzer flattens)` | ✅ |  |
+| 3 | byte | byte `nFlag (memo type flag) @0x534eec` | ✅ |  |
 

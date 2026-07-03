@@ -5,7 +5,7 @@
 
 Tool: `6e7dd1248eff278a05b5e7516dbe220239c4e10c`
 
-- export gms_v48: `e456309d755a52392c040caf1ac4d4829735ea366212936e93d64146865f790f`
+- export gms_v48: `4b0234c5a6a64c54aba439b91c00e390fcaf17365d4d2a95348d0f0f2961a81f`
 - export gms_v61: `8023cfe3b5868d7a19f2067627f84e8da849588dfe87e86f48eb721225ac717b`
 - export gms_v72: `a0ac2be6578395455f491976bcb11aa27e2e57376b46ee8816b90324bad60c02`
 - export gms_v79: `370d6b720b633c12c71d40340f3952000705c4bddb98f87179e7193d112d210c`
@@ -66,7 +66,7 @@ Tool: `6e7dd1248eff278a05b5e7516dbe220239c4e10c`
 | FAME_RESPONSE | CWvsContext::OnGivePopularityResult | fame/clientbound/ErrorResponse | 0x020 | ❌ | 0x023 | ❌ | 0x023 | ❌ | 0x023 | ❌ | 0x026 | ✅ | 0x026 | ✅ | 0x026 | ✅ | 0x025 | ✅ | 0x024 | ✅ |
 | FORCED_STAT_RESET | CWvsContext::OnForcedStatReset |  |  | ⬜ | 0x020 | ❌ | 0x020 | ❌ | 0x020 | ❌ | 0x023 | ❌ | 0x023 | ❌ | 0x023 | ❌ | 0x022 | ❌ | 0x021 | ❌ |
 | SHOW_STATUS_INFO | CWvsContext::OnMessage | character/clientbound/StatusMessageCashItemExpire (T1) | 0x021 | ❌ | 0x024 | ✅ | 0x024 | ✅ | 0x024 | ✅ | 0x027 | ✅ | 0x027 | ✅ | 0x027 | ✅ | 0x026 | ✅ | 0x025 | ✅ |
-| MEMO_RESULT | CWvsContext::OnMemoResult | note/clientbound/NoteDisplay (T1) | 0x022 | ❌ | 0x026 | ✅ | 0x026 | ✅ | 0x026 | ✅ | 0x029 | ✅ | 0x029 | ❌ | 0x029 | ✅ | 0x028 | ✅ | 0x026 | ❌ |
+| MEMO_RESULT | CWvsContext::OnMemoResult | note/clientbound/NoteDisplay (T1) | 0x022 | ✅ | 0x026 | ✅ | 0x026 | ✅ | 0x026 | ✅ | 0x029 | ✅ | 0x029 | ❌ | 0x029 | ✅ | 0x028 | ✅ | 0x026 | ❌ |
 | MAP_TRANSFER_RESULT | CWvsContext::OnMapTransferResult |  | 0x023 | ❌ | 0x027 | ❌ | 0x027 | ❌ | 0x027 | ❌ | 0x02A | ❌ | 0x02A | ❌ | 0x02A | ❌ | 0x029 | ❌ | 0x027 | ❌ |
 | WEDDING_PHOTO | CWvsContext::OnAntiMacroResult |  | 0x024 | ❌ | 0x028 | ❌ | 0x028 | ❌ | 0x028 | ❌ | 0x02B | ❌ | 0x02B | ❌ | 0x02B | ❌ | 0x02A | ❌ | 0x028 | ❌ |
 | CLAIM_RESULT | CWvsContext::OnClaimResult |  | 0x025 | ❌ | 0x02A | ❌ | 0x02A | ❌ | 0x02A | ❌ | 0x02D | ❌ | 0x02D | ❌ | 0x02D | ❌ | 0x02C | ❌ | 0x02A | ❌ |
@@ -632,7 +632,7 @@ Tool: `6e7dd1248eff278a05b5e7516dbe220239c4e10c`
 | SPAWN_PET | CWvsContext::SendActivatePetRequest | pet/serverbound/PetSpawn (T1) |  | ⬜ |  | ⬜ | 0x061 | ✅ | 0x060 | ✅ | 0x062 | ❌ | 0x062 | ❌ | 0x065 | ✅ | 0x06E | ✅ | 0x05D | ✅ |
 | CANCEL_DEBUFF | CWvsContext::CheckTemporaryStatDuration |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x063 | ❌ | 0x063 | ❌ | 0x066 | ❌ | 0x06F | ❌ | 0x05E | ❌ |
 | BUDDYLIST_MODIFY | CField::SendAcceptFriendMsg; CField::SendDeleteFriendMsg; CField::SendSetFriendMsg; CWvsContext::LoadFriend | buddy/serverbound/BuddyOperationAccept (T1) | 0x064 | ❌ | 0x076 | 🟡 | 0x080 | 🟡 | 0x07F | 🟡 | 0x082 | ✅ | 0x086 | ✅ | 0x08A | ✅ | 0x099 | ✅ | 0x085 | ✅ |
-| NOTE_ACTION | CCashShop::OnCashItemResLoadGiftDone; CMemoListDlg::SetRet; CWvsContext::OnMemoNotify_Receive | note/serverbound/NoteOperationDiscard (T1) | 0x065 | ❌ | 0x077 | ✅ | 0x081 | ✅ | 0x080 | ✅ | 0x083 | ✅ | 0x087 | ✅ | 0x08B | ✅ | 0x09A | ✅ | 0x086 | ✅ |
+| NOTE_ACTION | CCashShop::OnCashItemResLoadGiftDone; CMemoListDlg::SetRet; CWvsContext::OnMemoNotify_Receive | note/serverbound/NoteOperationDiscard (T1) | 0x065 | ✅ | 0x077 | ✅ | 0x081 | ✅ | 0x080 | ✅ | 0x083 | ✅ | 0x087 | ✅ | 0x08B | ✅ | 0x09A | ✅ | 0x086 | ✅ |
 | USER_CHANGE_STAT_REQUEST_BY_ITEM | CWvsContext::SendStatChangeRequestByItemOption |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x065 | ❌ |  | ⬜ |
 | USE_INNER_PORTAL | CUserLocal::TryRegisterTeleport |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x065 | ❌ | 0x065 | ❌ | 0x068 | ❌ | 0x071 | ❌ | 0x060 | ❌ |
 | ANTI_MACRO_ITEM_USE | CWvsContext::SendAntiMacroItemUseRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x067 | ❌ | 0x067 | ❌ | 0x06A | ❌ | 0x073 | ❌ | 0x062 | ❌ |
@@ -1009,7 +1009,7 @@ Tool: `6e7dd1248eff278a05b5e7516dbe220239c4e10c`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v48 | 0 | 0 | 22 | 324 | 629 | 0 | 0.0% |
+| v48 | 2 | 0 | 22 | 322 | 629 | 0 | 0.6% |
 | v61 | 208 | 0 | 60 | 236 | 471 | 0 | 41.3% |
 | v72 | 216 | 0 | 73 | 254 | 432 | 0 | 39.8% |
 | v79 | 228 | 0 | 72 | 252 | 423 | 0 | 41.3% |

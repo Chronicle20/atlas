@@ -4135,54 +4135,20 @@
       "direction": "serverbound",
       "calls": [
         {
-          "op": "Decode1",
-          "comment": "",
-          "guard": "result == (void *)6"
+          "op": "Encode1",
+          "comment": "count \u2014 number of checked (nFlag==2) memos to discard (deleteCount @0x534e9a)"
         },
         {
-          "op": "Decode1",
-          "comment": "",
-          "guard": "result == (void *)6"
+          "op": "Encode1",
+          "comment": "emptySlotCount \u2014 free inventory slots (tab 4, CharacterData::GetEmptySlotCount @0x534ea5)"
         },
         {
-          "op": "Decode1",
-          "comment": "",
-          "guard": "result == (void *)6"
+          "op": "Encode4",
+          "comment": "dwSN (memo serial number) \u2014 per-entry loop body @0x534ed7 (count iterations; analyzer flattens)"
         },
         {
-          "op": "Decode1",
-          "comment": "",
-          "guard": "result == (void *)6"
-        },
-        {
-          "op": "Decode4",
-          "comment": "",
-          "guard": "result == (void *)6 && (unsigned int)v35 >= *(_DWORD *)(v13 - 4)"
-        },
-        {
-          "op": "Decode1",
-          "comment": "",
-          "guard": "result == (void *)6 && (unsigned int)v35 >= *(_DWORD *)(v13 - 4)"
-        },
-        {
-          "op": "Decode4",
-          "comment": "",
-          "guard": "result == (void *)6 && (unsigned int)v35 >= *(_DWORD *)(v13 - 4)"
-        },
-        {
-          "op": "Decode4",
-          "comment": "",
-          "guard": "result == (void *)6 && <default>"
-        },
-        {
-          "op": "Decode1",
-          "comment": "",
-          "guard": "result == (void *)6 && <default>"
-        },
-        {
-          "op": "Decode1",
-          "comment": "",
-          "guard": "result == (void *)6"
+          "op": "Encode1",
+          "comment": "nFlag (memo type flag) @0x534eec"
         }
       ]
     },
@@ -9203,35 +9169,81 @@
       ]
     },
     "CWvsContext::OnMemoResult#Display": {
-      "address": "",
+      "address": "0x71d8e2",
       "direction": "clientbound",
-      "unresolved": true,
+      "dispatch": [
+        {
+          "discriminator": "switch",
+          "case": 2
+        }
+      ],
+      "notes": "inferred from CWvsContext::OnMemoResult @0x71d8e2 else-arm (Decode1-2==0); GW_Memo loop body sub_49CCDB @0x49ccdb",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "mode (=2, Display/SHOW) \u2014 raw sub-op 2 (Decode1-2==0 @0x71d8fe)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "count \u2014 number of GW_Memo entries @0x71d9a9"
+        },
+        {
+          "op": "Decode4",
+          "comment": "dwSN (memo id) \u2014 GW_Memo loop body sub_49CCDB @0x49cced (count iterations; analyzer flattens)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "sSender (sender name) @0x49ccf5"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "sContent (message body) @0x49cd16"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "dateSent (8-byte FILETIME via DecodeBuffer(8)) @0x49cd33"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nFlag (memo status flag) @0x49cd3f"
         }
       ]
     },
     "CWvsContext::OnMemoResult#SendError": {
-      "address": "",
+      "address": "0x71d8e2",
       "direction": "clientbound",
-      "unresolved": true,
+      "dispatch": [
+        {
+          "discriminator": "switch",
+          "case": 4
+        }
+      ],
+      "notes": "CWvsContext::OnMemoResult @0x71d8e2 arm v3==2 (raw sub-op 4) @0x71d937 \u2014 Decode1(errorCode) then Notice 2372/2373/2374",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "mode (=4, SEND_ERROR) \u2014 raw sub-op 4 (Decode1-2==2)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode @0x71d937 \u2014 0/1/2 \u2192 Notice 2372/2373/2374"
         }
       ]
     },
     "CWvsContext::OnMemoResult#SendSuccess": {
-      "address": "",
+      "address": "0x71d8e2",
       "direction": "clientbound",
-      "unresolved": true,
+      "dispatch": [
+        {
+          "discriminator": "switch",
+          "case": 3
+        }
+      ],
+      "notes": "CWvsContext::OnMemoResult @0x71d8e2 arm v3==1,v5==0 (raw sub-op 3) @0x71d99f \u2014 Notice(2425), no further wire read",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "mode (=3, SEND_SUCCESS) \u2014 no further bytes; success path shows UI notification only"
         }
       ]
     },

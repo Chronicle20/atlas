@@ -1,7 +1,7 @@
 {
   "WriterName": "NoteDisplay",
   "IDAName": "CWvsContext::OnMemoResult#Display",
-  "Address": "",
+  "Address": "0x71d8e2",
   "Variant": "GMS/v48",
   "BranchDepth": 0,
   "AtlasFile": "libs/atlas-packet/note/clientbound/display.go",
@@ -10,66 +10,66 @@
       "Index": 0,
       "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 4,
-      "Note": "IDA read-order unresolved: function not found in IDB"
+      "IDAOp": 0,
+      "IDAComment": "mode (=2, Display/SHOW) — raw sub-op 2 (Decode1-2==0 @0x71d8fe)",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 1,
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "IDAComment": "count — number of GW_Memo entries @0x71d9a9",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 2,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "IDAOp": 2,
+      "IDAComment": "dwSN (memo id) — GW_Memo loop body sub_49CCDB @0x49cced (count iterations; analyzer flattens)",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 3,
       "AtlasOp": 4,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "IDAOp": 4,
+      "IDAComment": "sSender (sender name) @0x49ccf5",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 4,
       "AtlasOp": 4,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "IDAOp": 4,
+      "IDAComment": "sContent (message body) @0x49cd16",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 5,
       "AtlasOp": 3,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "IDAOp": 5,
+      "IDAComment": "dateSent (8-byte FILETIME via DecodeBuffer(8)) @0x49cd33",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 6,
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "IDAComment": "nFlag (memo status flag) @0x49cd3f",
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 2,
+  "Verdict": 0,
   "FlatInvalid": false
 }

@@ -11,6 +11,7 @@ import (
 // m_nReturnResult echoes the open-arm mode byte; m_nResult echoes the
 // server-chosen round-trip token.
 // packet-audit:verify packet=field/serverbound/FieldItemUpgradeUpdate version=gms_v83 ida=0x82ae28
+// packet-audit:verify packet=field/serverbound/FieldItemUpgradeUpdate version=gms_v87 ida=0x88eea2
 // packet-audit:verify packet=field/serverbound/FieldItemUpgradeUpdate version=gms_v95 ida=0x7bef50
 func TestItemUpgradeUpdateByteOutput(t *testing.T) {
 	for _, v := range pt.Variants {

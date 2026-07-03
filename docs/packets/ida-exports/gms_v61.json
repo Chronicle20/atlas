@@ -9858,13 +9858,12 @@
    ]
   },
   "CUserRemote::OnSetActivePortableChair": {
-   "address": "",
+   "address": "0x7bdbda",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode4",
+     "comment": "chairId (RemoteUser+2546, inline OnUserRemotePacket case 151)"
     }
    ]
   },

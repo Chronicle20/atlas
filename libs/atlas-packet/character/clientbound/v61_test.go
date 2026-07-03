@@ -729,3 +729,22 @@ func TestCharacterExpressionByteOutputV61(t *testing.T) {
 		t.Errorf("v61 CharacterExpression wire: got %x want %x", got, want)
 	}
 }
+
+// CharacterChairShow v61 byte-fixture — SHOW_CHAIR, op 151.
+//
+// Read inline in CUserPool::OnUserRemotePacket case 151 (RemoteUser+2546 =
+// Decode4(chairId), CUserRemote::OnSetActivePortableChair @0x7BDBDA); characterId(4)
+// is read by the dispatcher. Two LE uint32s. Byte-identical to the v72 fixture.
+//
+// packet-audit:verify packet=character/clientbound/CharacterChairShow version=gms_v61 ida=0x7bdbda
+func TestCharacterChairShowByteOutputV61(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 61, 1)
+	got := NewCharacterChairShow(1234, 3010000).Encode(nil, ctx)(nil)
+	want := []byte{
+		0xd2, 0x04, 0x00, 0x00, // characterId 1234 (dispatcher Decode4)
+		0xd0, 0xed, 0x2d, 0x00, // chairId 3010000 (Decode4)
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("v61 CharacterChairShow wire: got %x want %x", got, want)
+	}
+}

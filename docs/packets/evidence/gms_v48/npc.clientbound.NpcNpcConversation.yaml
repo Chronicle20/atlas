@@ -1,0 +1,10 @@
+packet: npc/clientbound/NpcNpcConversation
+direction: clientbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: sub_5B0AE4
+    address: "0x5b0ae4"
+    decompile_sha256: 7aa860717db1f026a367e0c462e7e78a97ce83ae43009998605e698e2358e33f
+verifies:
+  - libs/atlas-packet/npc/clientbound/conversation_v48_details_test.go#TestNpcConversationFrameV48

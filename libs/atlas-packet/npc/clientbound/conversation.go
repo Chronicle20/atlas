@@ -219,7 +219,14 @@ func (s *AskMenuConversationDetail) Encode(l logrus.FieldLogger, ctx context.Con
 		// SetUtilDlgEx_AVATAR). v83+ OnAskMenu (v83 @0x746fad, v95 @0x6dce00) read
 		// a plain single string with NO count. Atlas uses ASK_MENU only for plain
 		// #L#-token text menus, so count is always 0 (no avatar styles). delta §3.2
-		if t, err := tenant.FromContext(ctx)(); err == nil && t.IsRegion("GMS") && !t.MajorAtLeast(83) {
+		//
+		// v48 (pre-v61) predates the avatar-merge: its ASK_MENU arm (dialog
+		// type 4, dispatch case 5 sub_5B1195@0x5b1195, GMS_v48_1_DEVM.exe port
+		// 13337) reads a SINGLE DecodeStr with NO count byte — the menu items are
+		// #L-token embedded in the string, and the count-prefixed avatar list is a
+		// SEPARATE dispatch arm (ASK_AVATAR, case 6). So the count byte is emitted
+		// only for the v61..v82 merged-menu range, not for v48. task-113 v48 Stage E.
+		if t, err := tenant.FromContext(ctx)(); err == nil && t.IsRegion("GMS") && t.MajorAtLeast(61) && !t.MajorAtLeast(83) {
 			w.WriteByte(0)
 		}
 		return w.Bytes()

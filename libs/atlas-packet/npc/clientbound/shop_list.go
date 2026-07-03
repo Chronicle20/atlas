@@ -65,6 +65,21 @@ func (m ShopList) Encode(l logrus.FieldLogger, ctx context.Context) func(options
 				w.WriteInt(c.Period)
 				w.WriteInt(c.LevelLimit)
 			}
+			// v48 (pre-v61) CShopDlg::SetShopDlg sub_5B430A@0x5b430a
+			// (GMS_v48_1_DEVM.exe port 13337) reads per item Decode4 itemId,
+			// Decode4 mesoPrice, then — only for rechargeable/ammo
+			// (itemId/10000==207) — DecodeBuffer(8) unitPrice, and ALWAYS Decode2
+			// quantity; there is NO trailing maxPerSlot short (added between v48
+			// and v61: v61 SetShopDlg@0x6437e3 / v79 @0x6d3459 both read it). So
+			// v48 emits [unitPrice(8) if ammo] + quantity(2), no slotMax.
+			// task-113 v48 Stage E.
+			if t.Region() == "GMS" && t.MajorVersion() < 61 {
+				if c.IsAmmo {
+					w.WriteLong(math.Float64bits(c.UnitPrice))
+				}
+				w.WriteShort(c.Quantity)
+				continue
+			}
 			if !c.IsAmmo {
 				w.WriteShort(c.Quantity)
 			} else {
@@ -96,6 +111,14 @@ func (m *ShopList) Decode(l logrus.FieldLogger, ctx context.Context) func(r *req
 				m.commodities[i].TokenPrice = r.ReadUint32()
 				m.commodities[i].Period = r.ReadUint32()
 				m.commodities[i].LevelLimit = r.ReadUint32()
+			}
+			if t.Region() == "GMS" && t.MajorVersion() < 61 {
+				// v48: [unitPrice(8) if ammo] + quantity(2), no slotMax.
+				if m.commodities[i].IsAmmo {
+					m.commodities[i].UnitPrice = math.Float64frombits(r.ReadUint64())
+				}
+				m.commodities[i].Quantity = r.ReadUint16()
+				continue
 			}
 			if !m.commodities[i].IsAmmo {
 				m.commodities[i].Quantity = r.ReadUint16()

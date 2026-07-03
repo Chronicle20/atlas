@@ -884,15 +884,15 @@
 - op: NPC_TALK
   direction: serverbound
   opcode: 46
-  fname: sub_56D1F0
+  fname: sub_568A2A
   fname_alts:
   - CUserLocal::TalkToNpc
-  - sub_568A2A
+  - sub_56D1F0
   - sub_69FA53
   provenance: ida-discovered
   ida:
-    address: 5689840
-  note: 'BODY-VERIFIED. Field NPC-click path: sub_56D1F0 (called from CField::Update @0x4c6cb3 + the cursor-click handler sub_69FA53) walks the clickable field-object pool this[10] (per-node rects via sub_569770/sub_5697BB, point-in-rect dword_80EC4C) and returns the hit NPC object; the click then sends COutPacket(46)+Encode4(npcObjId=obj[34])+Encode2(userX)+Encode2(userY). The membership/commodity-NPC variant sub_568A2A sends the identical op46+Enc4(obj[34])+Enc2(x)+Enc2(y) after its CS_COMMODITY_EX UtilDlg. EXACT v61 NPC_TALK (CUserLocal::TalkToNpc Enc4(npcOid)+Enc2(userX)+Enc2(userY)) shape. v61 NPC_TALK=54 (Delta-8). REFINES the prior op46 negative: op46 is NPC_TALK, NOT GENERAL_CHAT (real GENERAL_CHAT sender is the CField chat-input parser, still unlocated) and NOT a bare shop confirm.'
+    address: 5671466
+  note: 'BODY-VERIFIED. Primary fname is the fully-decompiled op46 sender sub_568A2A@0x568a2a (Encode4 npcObjId @0x569297/0x569380 + Encode2 userX @0x5692b0/0x569399 + Encode2 userY @0x5692ca/0x5693b3); sub_56D1F0 (now an alt) is only the field hit-test that RETURNS the clicked NPC (no COutPacket). Field NPC-click path: sub_56D1F0 (called from CField::Update @0x4c6cb3 + the cursor-click handler sub_69FA53) walks the clickable field-object pool this[10] (per-node rects via sub_569770/sub_5697BB, point-in-rect dword_80EC4C) and returns the hit NPC object; the click then sends COutPacket(46)+Encode4(npcObjId=obj[34])+Encode2(userX)+Encode2(userY). The membership/commodity-NPC variant sub_568A2A sends the identical op46+Enc4(obj[34])+Enc2(x)+Enc2(y) after its CS_COMMODITY_EX UtilDlg. EXACT v61 NPC_TALK (CUserLocal::TalkToNpc Enc4(npcOid)+Enc2(userX)+Enc2(userY)) shape. v61 NPC_TALK=54 (Delta-8). REFINES the prior op46 negative: op46 is NPC_TALK, NOT GENERAL_CHAT (real GENERAL_CHAT sender is the CField chat-input parser, still unlocated) and NOT a bare shop confirm.'
 - op: ANTI_MACRO_RESULT
   direction: serverbound
   opcode: 83

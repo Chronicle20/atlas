@@ -1,0 +1,10 @@
+packet: npc/clientbound/NpcAskYesNoConversationDetail
+direction: clientbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: sub_5B0D5C
+    address: "0x5b0d5c"
+    decompile_sha256: af5637fc106902276f87dc3cd116633b473e2190c440d0fa05ce72b4ad5dc59c
+verifies:
+  - libs/atlas-packet/npc/clientbound/conversation_v48_details_test.go#TestNpcConversationAskYesNoV48

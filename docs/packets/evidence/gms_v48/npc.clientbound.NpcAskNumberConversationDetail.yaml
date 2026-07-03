@@ -1,0 +1,10 @@
+packet: npc/clientbound/NpcAskNumberConversationDetail
+direction: clientbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: sub_5B1037
+    address: "0x5b1037"
+    decompile_sha256: b00f4653b0c5b03c58b866d058e1b6b676c3e168d933caa48a056ee08a3a63ba
+verifies:
+  - libs/atlas-packet/npc/clientbound/conversation_v48_details_test.go#TestNpcConversationAskNumberV48

@@ -1,7 +1,7 @@
 {
   "WriterName": "NpcStartConversation",
-  "IDAName": "CUserLocal::TalkToNpc",
-  "Address": "",
+  "IDAName": "sub_568A2A",
+  "Address": "0x568a2a",
   "Variant": "GMS/v48",
   "BranchDepth": 1,
   "AtlasFile": "libs/atlas-packet/npc/serverbound/start_conversation.go",

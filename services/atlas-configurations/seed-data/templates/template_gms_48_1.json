@@ -495,15 +495,13 @@
           "messageType": {
             "SAY": 0,
             "ASK_YES_NO": 2,
-            "ASK_BOX_TEXT": 3,
+            "ASK_TEXT": 3,
             "ASK_NUMBER": 4,
-            "ASK_QUIZ": 5,
-            "ASK_SPEED_QUIZ": 6,
-            "ASK_MENU": 7,
-            "ASK_AVATAR": 8,
-            "ASK_MEMBER_SHOP_AVATAR": 9,
-            "ASK_PET": 10,
-            "ASK_TEXT": 13
+            "ASK_MENU": 5,
+            "ASK_AVATAR": 6,
+            "ASK_MEMBER_SHOP_AVATAR": 7,
+            "ASK_PET": 8,
+            "ASK_PET_ALL": 9
           }
         }
       },

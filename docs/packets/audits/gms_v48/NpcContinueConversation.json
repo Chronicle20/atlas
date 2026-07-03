@@ -1,7 +1,7 @@
 {
   "WriterName": "NpcContinueConversation",
-  "IDAName": "CScriptMan::OnSay#Reply",
-  "Address": "",
+  "IDAName": "sub_5B0C11",
+  "Address": "0x5b0c11",
   "Variant": "GMS/v48",
   "BranchDepth": 0,
   "AtlasFile": "libs/atlas-packet/npc/serverbound/continue_conversation.go",

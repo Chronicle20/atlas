@@ -12800,8 +12800,21 @@
     },
     "sub_568A2A": {
       "address": "0x568a2a",
-      "direction": "",
-      "calls": null
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "COutPacket(46) NPC_TALK; npcObjId @0x569297/0x569380"
+        },
+        {
+          "op": "Encode2",
+          "comment": "userX @0x5692b0/0x569399"
+        },
+        {
+          "op": "Encode2",
+          "comment": "userY @0x5692ca/0x5693b3"
+        }
+      ]
     },
     "sub_56D1F0": {
       "address": "0x56d1f0",
@@ -14837,6 +14850,100 @@
         {
           "op": "DecodeBuf",
           "comment": ""
+        }
+      ]
+    },
+    "sub_5B0AE4": {
+      "address": "0x5b0ae4",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "speakerTypeId @0x5b0b2c"
+        },
+        {
+          "op": "Decode4",
+          "comment": "speakerTemplateId @0x5b0b35"
+        },
+        {
+          "op": "Decode1",
+          "comment": "msgType @0x5b0b3d; switch cases 0..9 @0x5b0b49"
+        }
+      ]
+    },
+    "sub_5B0D5C": {
+      "address": "0x5b0d5c",
+      "direction": "",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": "AskYesNo message @0x5b0d75 (dialog type 1)"
+        }
+      ]
+    },
+    "sub_5B0E90": {
+      "address": "0x5b0e90",
+      "direction": "",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": "AskText message @0x5b0eab"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "default @0x5b0ebb"
+        },
+        {
+          "op": "Decode2",
+          "comment": "min @0x5b0ed0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "max @0x5b0ee2"
+        }
+      ]
+    },
+    "sub_5B78C0": {
+      "address": "0x5b78c0",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "COutPacket(48); mode 2 = RECHARGE @0x5b79e2"
+        },
+        {
+          "op": "Encode2",
+          "comment": "slot @0x5b79eb"
+        }
+      ]
+    },
+    "sub_5B430A": {
+      "address": "0x5b430a",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "npcTemplateId @0x5b4325"
+        },
+        {
+          "op": "Decode2",
+          "comment": "count @0x5b4338"
+        },
+        {
+          "op": "Decode4",
+          "comment": "itemId @0x5b435b"
+        },
+        {
+          "op": "Decode4",
+          "comment": "mesoPrice @0x5b436b"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "unitPrice(8) if itemId/10000==207 @0x5b4397"
+        },
+        {
+          "op": "Decode2",
+          "comment": "quantity @0x5b43af; NO maxPerSlot"
         }
       ]
     }

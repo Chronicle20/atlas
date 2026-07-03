@@ -19,6 +19,12 @@ const NPCStartConversationHandle = "NPCStartConversationHandle"
 // Encode4(oid) + Encode2(x) + Encode2(y); v79 CUserLocal::TalkToNpc@0x8b7e10
 // and v83+ likewise append x + y; JMS also includes them.
 //
+// v48 (GMS_v48_1_DEVM.exe port 13337) ALSO carries x + y: the field NPC-click
+// / membership-NPC talk sender sub_568A2A@0x568a2a builds COutPacket(46) +
+// Encode4(npcObjId @0x569297/0x569380) + Encode2(userX @0x5692b0/0x569399) +
+// Encode2(userY @0x5692ca/0x5693b3). So v48 is oid+x+y, not oid-only.
+// task-113 v48 Stage E.
+//
 // v72 note: the shipped v72 fixture (TestStartConversationByteV72, marker
 // ida=0x70dd49) asserts oid-ONLY, but 0x70dd49 is a stale symbol that now
 // resolves to CUICharacterSaleDlg::OnCreate. The real v72 NPC_TALK sender is
@@ -32,7 +38,7 @@ func startConversationHasXY(t tenant.Model) bool {
 	if !t.IsRegion("GMS") {
 		return true // JMS and other regions carry x/y
 	}
-	return t.MajorAtLeast(79) || t.MajorVersion() == 61
+	return t.MajorAtLeast(79) || t.MajorVersion() == 61 || t.MajorVersion() == 48
 }
 
 // packet-audit:fname CUserLocal::TalkToNpc

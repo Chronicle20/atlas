@@ -53,6 +53,31 @@
    "fname": "CEntrustedShopDlg::DeleteBlackList",
    "reason": "PLAYER_INTERACTION hired/entrusted-merchant remove-from-blacklist arm (OperationMerchantRemoveFromBlackList, modeled body EncodeStr(name) only) is version-absent in gms_v48. Same complete opcode-93 send-site enumeration as its AddBlackList twin: the only v48 blacklist senders are CPersonalShopDlg (slot+name / count+names) and CField (name-only, = the Field*BlackList arms); no CEntrustedShopDlg name-only delete-from-blacklist send exists. The fname is absent from the v48 export (no stub). Matches the v61 anchor (incomplete); the entrusted shop first appears at v83+.",
    "packet": "interaction/serverbound/InteractionOperationMerchantRemoveFromBlackList"
+  },
+  {
+   "fname": "CScriptMan::OnSayImage",
+   "packet": "npc/clientbound/NpcSayImageConversationDetail",
+   "reason": "SAY_IMAGE is version-absent in gms_v48. The v48 NPC conversation dispatcher sub_5B0AE4@0x5b0ae4 (GMS_v48_1_DEVM.exe port 13337) switches msgType over ONLY cases 0..9 (default = no-op): 0 Say, 1/2 yes/no (dialog type 1), 3 AskText (GetText), 4 AskNumber (GetNumber), 5 AskMenu (menu #L), 6 AskAvatar, 7 membershop-avatar, 8 AskPet, 9 AskPetAll. None of the arms loads/displays an image path — every arm builds a CUtilDlgEx text dialog. The image-message arm (v61 msgType 1 CScriptMan::OnSayImage@0x63fc8f) does not exist in the v48 switch. No fixture; residual incomplete accepted (cap = anchor: v61 SayImage exists, v48 does not)."
+  },
+  {
+   "fname": "CScriptMan::OnAskQuiz",
+   "packet": "npc/clientbound/NpcAskQuizConversationDetail",
+   "reason": "ASK_QUIZ is version-absent in gms_v48. The dispatcher sub_5B0AE4@0x5b0ae4 has no quiz arm (cases 0..9 mapped to Say/yes-no/AskText/AskNumber/AskMenu/AskAvatar/membershop/AskPet/AskPetAll; the v61 quiz arm is case 5 sub_84816E@0x84816e, absent here — v48 case 5 is AskMenu). The Decode1(fail)+DecodeStr×3+Decode4×3 quiz body has no reader in the v48 client. Residual incomplete accepted (cap = anchor)."
+  },
+  {
+   "fname": "CScriptMan::OnAskSpeedQuiz",
+   "packet": "npc/clientbound/NpcAskSpeedQuizConversationDetail",
+   "reason": "ASK_SPEED_QUIZ is version-absent in gms_v48. sub_5B0AE4@0x5b0ae4 has no speed-quiz arm (v61's is case 6 sub_8482CB@0x8482cb; v48 case 6 is AskAvatar). The Decode1(fail)+Decode4×5 body has no reader in v48. Residual incomplete accepted (cap = anchor)."
+  },
+  {
+   "fname": "CScriptMan::OnAskBoxText",
+   "packet": "npc/clientbound/NpcAskBoxTextConversationDetail",
+   "reason": "ASK_BOX_TEXT is version-absent in gms_v48. The v48 switch has a single GetText dialog (case 3 sub_5B0E90@0x5b0e90, dialog type 3 = single-line AskText: DecodeStr,DecodeStr,Decode2,Decode2); there is NO separate multi-line box-text dialog (the box-text col/line variant was added after v48). The str,str,short,short body is byte-identical to AskText and is claimed by the AskText arm (case 3); box-text as a distinct feature does not exist. Residual incomplete accepted (cap = anchor)."
+  },
+  {
+   "fname": "CScriptMan::OnAskSlideMenu",
+   "packet": "npc/clientbound/NpcAskSlideMenuConversationDetail",
+   "reason": "ASK_SLIDE_MENU is version-absent in gms_v48. Slide-menu is a v83+ feature (CScriptMan::OnAskSlideMenu, first present in gms_v83); it has no arm in the v48 dispatcher sub_5B0AE4@0x5b0ae4 (cases 0..9 only). Matches the v61/v72 anchors, which likewise leave AskSlideMenu incomplete (residual accepted, cap = anchor)."
   }
  ]
 }

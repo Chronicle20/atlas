@@ -1,0 +1,10 @@
+packet: npc/serverbound/NpcContinueConversationSelection
+direction: serverbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: sub_5B1195
+    address: "0x5b1195"
+    decompile_sha256: 95f24ce27d6768213cbbce0379fc6dafe02841150ad348ffa1748ac80f2efbdf
+verifies:
+  - libs/atlas-packet/npc/serverbound/conversation_v48_test.go#TestContinueConversationSelectionByteV48

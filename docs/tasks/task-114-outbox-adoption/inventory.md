@@ -347,31 +347,46 @@ stays Pattern A/migrated for its success path):
   `CancelReservation`'s *absence* from the outbox-bound `mb` instead of
   its presence; `TestAttemptItemPickUpConsumeOnPickup` (success/no-write
   branch) needed no change.
-- **Residual nuance, not fixed in this pass**: `CreateAsset`'s own
+- **Residual nuance, FIXED in a follow-up review pass (Task 11 code
+  review, 2026-07-02)**: `CreateAsset`'s own
   `CreationFailedEventStatusProvider` rejection is a genuine no-op when
   reached via its direct entry point (`CreateAssetAndEmit` →
   `CreateAssetAndLock` → `CreateAsset`, see the corrected Migrated-list
   note above) because `CreateAsset` returns the error non-nil, which
   propagates all the way to `CreateAssetAndEmit`'s `Emit` call and
-  discards the whole buffer. However, `CreateAsset` is *also* called from
-  inside `AttemptItemPickUp`'s own tx closure (the merge/overflow and
-  fresh-create branches), which does not propagate that error the same
-  way: `AttemptItemPickUp` catches it, and — after this fix pass — still
-  returns `nil` from its failure branch (unchanged contract; only the
-  `CancelReservation` command was moved off the shared buffer). That means
-  a `CreateAsset` failure reached through `AttemptItemPickUp` (e.g. the
-  `INVENTORY_FULL` case exercised by `TestAttemptItemPickUpInventoryFull`)
-  still leaves `CreationFailedEventStatusProvider` sitting in the
-  outbox-bound `mb` and flushes it via the outbox — the exact D7
-  "rejection event reflecting no state change" pattern this task set out
-  to fix, just for a *different* trigger than the two items in this fix
-  pass's explicit scope. Not corrected here because the only clean fix
-  (either making `AttemptItemPickUp`'s failure branch return the original
-  `txErr` so `Emit` discards the whole buffer, or threading a second
-  scratch buffer through `CreateAsset`'s nested writes) changes behavior
-  or plumbing beyond what was asked, and interacts with the still-latent
-  `ExecuteTransaction`-no-op atomicity gap (task-119) in ways that need
-  their own review. Flagging explicitly for a follow-up fix pass.
+  discards the whole buffer. `CreateAsset` is *also* called from inside
+  `AttemptItemPickUp`'s own tx closure (the merge/overflow and
+  fresh-create branches), which did not propagate that error the same
+  way: `AttemptItemPickUp` catches it and returns `nil` from its failure
+  branch (unchanged contract) — previously that meant `CreateAsset`'s
+  `CreationFailedEventStatusProvider` (and any other event optimistically
+  buffered by the rolled-back inner tx before the failure, e.g. a
+  same-branch `UpdateQuantity` Put) stayed sitting in the outbox-bound
+  `mb` and flushed via the outbox on the swallowed-nil return — the exact
+  D7 "rejection event reflecting no state change" pattern.
+  **Fix**: `AttemptItemPickUp` now writes its inner tx's events to a local
+  scratch buffer (`innerMb`, `compartment/processor.go`) instead of the
+  caller-supplied `mb` directly. On success, `innerMb`'s contents are
+  folded into `mb` before `RequestPickUp` (success path unchanged — same
+  events end up in the same outbox-bound buffer). On failure, `innerMb`
+  is **not** folded into `mb`; instead its contents ride along with
+  `CancelReservation` on the existing DIRECT producer path (a fresh,
+  throwaway buffer via `producer.ProviderImpl`), since atlas-channel's
+  `handleCompartmentCreationFailedEvent` consumer
+  (`services/atlas-channel/.../kafka/consumer/compartment/consumer.go`)
+  needs `CREATION_FAILED` to reach the client to render the
+  "inventory full" status message — it is not safe to simply drop the
+  event. This preserves the caller-visible contract (`AttemptItemPickUp`
+  still returns `nil` on a handled pickup failure) with no restructuring
+  of `CreateAsset` or its other callers, and does not touch the
+  still-latent `ExecuteTransaction`-no-op atomicity gap (task-119).
+  `TestAttemptItemPickUpInventoryFull` was updated to assert
+  `CREATION_FAILED`'s *absence* from `mb` (mirroring the existing
+  `CancelReservation` absence assertion) instead of its presence with the
+  correct error code. A new `TestAttemptItemPickUpSuccess` regression test
+  guards the merge-on-success side: the inner `CreateAsset`'s `CREATED`
+  asset event must still land in the outbox-bound `mb` alongside
+  `REQUEST_PICK_UP`.
 - `database.ExecuteTransaction` atomicity is still latent fleet-wide
   pending task-119 (see the `atlas-character` section above and project
   memory `bug_execute_transaction_noop.md`); this task's migrations use the

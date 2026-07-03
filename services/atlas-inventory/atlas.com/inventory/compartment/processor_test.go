@@ -6,6 +6,7 @@ import (
 	"atlas-inventory/data/consumable"
 	dcp "atlas-inventory/data/consumable/mock"
 	"atlas-inventory/kafka/message"
+	assetMsg "atlas-inventory/kafka/message/asset"
 	compartmentMsg "atlas-inventory/kafka/message/compartment"
 	dropMsg "atlas-inventory/kafka/message/drop"
 	pickupMsg "atlas-inventory/kafka/message/pickup"
@@ -628,21 +629,23 @@ func TestDropNonRechargeableInsufficientQuantity(t *testing.T) {
 // TestAttemptItemPickUpInventoryFull guards two related behaviors in the
 // drop pickup failure path:
 //
-//  1. The inner CreateAsset must emit CREATION_FAILED with the dedicated
-//     INVENTORY_FULL error code (not the generic UNKNOWN_ERROR), so atlas-channel
-//     can render the right client status message. This event still lands in
-//     the caller-supplied (outbox-bound in production) mb — CreateAsset's
-//     own rejection handling is unchanged by the D7 fix (see
-//     docs/tasks/task-114-outbox-adoption/inventory.md, atlas-inventory
-//     Notes, for the residual nuance this leaves open).
+//  1. The inner CreateAsset's CREATION_FAILED rejection (with the dedicated
+//     INVENTORY_FULL error code, not the generic UNKNOWN_ERROR — so
+//     atlas-channel can render the right client status message) must NOT be
+//     enqueued on the caller-supplied (outbox-bound in production) mb. Per
+//     D7, a rejection reflecting no committed state change (the inner tx
+//     rolled back) must not ride into the outbox. It now fires via
+//     producer.ProviderImpl on a fresh, throwaway buffer alongside the
+//     CANCEL_RESERVATION command below (TestMain installs
+//     producertest.InstallNoop so that direct send succeeds instantly
+//     instead of retrying against an unreachable broker); this test can only
+//     observe its ABSENCE from mb, not its delivery.
 //  2. The outer AttemptItemPickUp must NOT put the drop-side
 //     CANCEL_RESERVATION command on the caller-supplied mb. Per D7, a
 //     COMMAND to another service (atlas-drop) reflecting a failed/rolled-back
 //     pickup must go on the DIRECT producer path, not ride into the outbox
 //     alongside a state change that never happened. It now fires via
-//     producer.ProviderImpl on its own throwaway buffer (TestMain installs
-//     producertest.InstallNoop so that direct send succeeds instantly
-//     instead of retrying against an unreachable broker); this test can only
+//     producer.ProviderImpl on its own throwaway buffer; this test can only
 //     observe its ABSENCE from mb, not its delivery.
 func TestAttemptItemPickUpInventoryFull(t *testing.T) {
 	characterId := uint32(304)
@@ -682,23 +685,18 @@ func TestAttemptItemPickUpInventoryFull(t *testing.T) {
 
 	events := mb.GetAll()
 
+	// D7: CREATION_FAILED is a rejection reflecting no committed state
+	// change (the inner tx rolled back); it must not be enqueued in the
+	// outbox-bound buffer. It now fires via the direct producer path.
 	statusMsgs := events[compartmentMsg.EnvEventTopicStatus]
-	var sawCreationFailed bool
 	for _, msg := range statusMsgs {
 		var ev compartmentMsg.StatusEvent[compartmentMsg.CreationFailedStatusEventBody]
 		if err := json.Unmarshal(msg.Value, &ev); err != nil {
 			continue
 		}
-		if ev.Type != compartmentMsg.StatusEventTypeCreationFailed {
-			continue
+		if ev.Type == compartmentMsg.StatusEventTypeCreationFailed {
+			t.Fatalf("CREATION_FAILED must not be enqueued in the outbox-bound buffer; it must go via the direct producer path (D7)")
 		}
-		sawCreationFailed = true
-		if ev.Body.ErrorCode != compartmentMsg.CreateAssetInventoryFull {
-			t.Fatalf("CREATION_FAILED error code = %q, want %q", ev.Body.ErrorCode, compartmentMsg.CreateAssetInventoryFull)
-		}
-	}
-	if !sawCreationFailed {
-		t.Fatalf("expected a CREATION_FAILED compartment status event, got %d events on topic", len(statusMsgs))
 	}
 
 	// D7: CANCEL_RESERVATION is a cross-service COMMAND fired on a failed
@@ -713,6 +711,76 @@ func TestAttemptItemPickUpInventoryFull(t *testing.T) {
 		if cmd.Type == dropMsg.CommandTypeCancelReservation {
 			t.Fatalf("CANCEL_RESERVATION must not be enqueued in the outbox-bound buffer; it must go via the direct producer path (D7)")
 		}
+	}
+}
+
+// TestAttemptItemPickUpSuccess guards the merge-on-success side of the D7
+// scratch-buffer fix: when the inner tx commits, the inner CreateAsset's
+// ASSET CREATED event (buffered on a scratch innerMb, per the fix) must
+// still land in the caller-supplied (outbox-bound in production) mb
+// alongside the drop-side REQUEST_PICK_UP follow-on command. Regression
+// guard for the AttemptItemPickUpInventoryFull fix, which introduced the
+// scratch buffer and must not accidentally drop events on the success path.
+func TestAttemptItemPickUpSuccess(t *testing.T) {
+	characterId := uint32(306)
+	templateId := uint32(2070000) // subi throwing-stars, USE inventory
+
+	l := testLogger()
+	te := testTenant()
+	ctx := tenant.WithContext(context.Background(), te)
+	db := testDatabase(t, l)
+
+	mb := message.NewBuffer()
+
+	dcpi := &dcp.ProcessorImpl{}
+	dcpi.GetByIdFn = func(itemId uint32) (consumable.Model, error) {
+		return consumable.Extract(consumable.RestModel{SlotMax: 100})
+	}
+
+	ap := asset.NewProcessor(l, ctx, db).WithConsumableProcessor(dcpi)
+	cp := compartment.NewProcessor(l, ctx, db).WithAssetProcessor(ap)
+
+	if _, err := cp.Create(mb)(uuid.New(), characterId, inventory.TypeValueUse, 24); err != nil {
+		t.Fatalf("Failed to create compartment: %v", err)
+	}
+
+	// Reset the buffer so we only inspect events from the pickup itself.
+	mb = message.NewBuffer()
+
+	if err := cp.AttemptItemPickUp(mb)(uuid.New(), testFieldModel(), characterId, uint32(44), templateId, uint32(1)); err != nil {
+		t.Fatalf("AttemptItemPickUp returned unexpected error: %v", err)
+	}
+
+	events := mb.GetAll()
+
+	assetStatusMsgs := events[assetMsg.EnvEventTopicStatus]
+	var sawAssetCreated bool
+	for _, msg := range assetStatusMsgs {
+		var ev assetMsg.StatusEvent[assetMsg.CreatedStatusEventBody]
+		if err := json.Unmarshal(msg.Value, &ev); err != nil {
+			continue
+		}
+		if ev.Type == assetMsg.StatusEventTypeCreated {
+			sawAssetCreated = true
+		}
+	}
+	if !sawAssetCreated {
+		t.Fatalf("expected the inner CreateAsset's ASSET CREATED event to land in the outbox-bound mb on success, got %d events on topic", len(assetStatusMsgs))
+	}
+
+	dropCmds := events[dropMsg.EnvCommandTopic]
+	var sawRequestPickUp bool
+	for _, msg := range dropCmds {
+		var cmd dropMsg.Command[dropMsg.RequestPickUpCommandBody]
+		if err := json.Unmarshal(msg.Value, &cmd); err != nil {
+			continue
+		}
+		if cmd.Type == dropMsg.CommandTypeRequestPickUp {
+			sawRequestPickUp = true
+		}
+	}
+	if !sawRequestPickUp {
+		t.Fatalf("expected a REQUEST_PICK_UP drop command in the outbox-bound mb on success, got %d events on topic", len(dropCmds))
 	}
 }
 

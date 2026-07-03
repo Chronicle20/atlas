@@ -1209,6 +1209,13 @@ func (p *Processor) AttemptItemPickUp(mb *message.Buffer) func(transactionId uui
 		invLock.Lock()
 		defer invLock.Unlock()
 
+		// innerMb is a scratch buffer for this inner tx's writes. It is only
+		// merged into the caller-supplied (outbox-bound in production) mb on
+		// success. On failure the inner tx rolled back, so nothing written
+		// to innerMb (e.g. CreateAsset's own CreationFailedEventStatusProvider
+		// rejection) may ride into the outbox alongside a state change that
+		// never happened (D7) — see the failure branch below.
+		innerMb := message.NewBuffer()
 		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 			// Get the compartment for the character and inventory type
 			c, err := p.WithTransaction(tx).GetByCharacterAndType(characterId)(inventoryType)
@@ -1250,7 +1257,7 @@ func (p *Processor) AttemptItemPickUp(mb *message.Buffer) func(transactionId uui
 					remainingQuantity := newQuantity - slotMax
 
 					// Update the existing asset to max
-					err = p.assetProcessor.WithTransaction(tx).UpdateQuantity(mb)(transactionId, characterId, c.Id(), assetToUpdate, slotMax)
+					err = p.assetProcessor.WithTransaction(tx).UpdateQuantity(innerMb)(transactionId, characterId, c.Id(), assetToUpdate, slotMax)
 					if err != nil {
 						p.l.WithError(err).Errorf("Unable to update quantity of asset [%d] to [%d].", assetToUpdate.Id(), slotMax)
 						return err
@@ -1258,14 +1265,14 @@ func (p *Processor) AttemptItemPickUp(mb *message.Buffer) func(transactionId uui
 					p.l.Debugf("Character [%d] increased quantity of asset [%d] to max [%d].", characterId, assetToUpdate.Id(), slotMax)
 
 					// Create a new asset with the remaining quantity
-					err = p.CreateAsset(mb)(transactionId, characterId, inventoryType, templateId, remainingQuantity, time.Time{}, 0, 0, 0, false)
+					err = p.CreateAsset(innerMb)(transactionId, characterId, inventoryType, templateId, remainingQuantity, time.Time{}, 0, 0, 0, false)
 					if err != nil {
 						p.l.WithError(err).Errorf("Unable to create asset [%d] for character [%d] with remaining quantity [%d].", templateId, characterId, remainingQuantity)
 						return err
 					}
 				} else {
 					// Update the quantity of the existing asset
-					err = p.assetProcessor.WithTransaction(tx).UpdateQuantity(mb)(transactionId, characterId, c.Id(), assetToUpdate, newQuantity)
+					err = p.assetProcessor.WithTransaction(tx).UpdateQuantity(innerMb)(transactionId, characterId, c.Id(), assetToUpdate, newQuantity)
 					if err != nil {
 						p.l.WithError(err).Errorf("Unable to update quantity of asset [%d] to [%d].", assetToUpdate.Id(), newQuantity)
 						return err
@@ -1274,7 +1281,7 @@ func (p *Processor) AttemptItemPickUp(mb *message.Buffer) func(transactionId uui
 				}
 			} else {
 				// Create a new asset
-				err = p.CreateAsset(mb)(transactionId, characterId, inventoryType, templateId, quantity, time.Time{}, 0, 0, 0, false)
+				err = p.CreateAsset(innerMb)(transactionId, characterId, inventoryType, templateId, quantity, time.Time{}, 0, 0, 0, false)
 				if err != nil {
 					p.l.WithError(err).Errorf("Unable to create asset [%d] for character [%d].", templateId, characterId)
 					return err
@@ -1284,13 +1291,20 @@ func (p *Processor) AttemptItemPickUp(mb *message.Buffer) func(transactionId uui
 		})
 
 		if txErr != nil {
-			// CancelReservation is a COMMAND to the separate atlas-drop
-			// service reflecting a failed (rolled-back) pickup attempt; per
-			// D7 it must not ride into the outbox-bound mb alongside a state
-			// change that never happened. Fire it on the DIRECT producer
-			// path with a fresh, throwaway buffer instead.
+			// The inner tx rolled back, so innerMb's contents (e.g.
+			// CreateAsset's own CreationFailedEventStatusProvider rejection)
+			// reflect no committed state change and must not ride into the
+			// outbox-bound mb (D7). CancelReservation is a COMMAND to the
+			// separate atlas-drop service reflecting the same failed/
+			// rolled-back pickup attempt. Both are fired together on the
+			// DIRECT producer path via a fresh, throwaway buffer instead.
 			rejectEmit := func() error {
 				return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
+					for t, ms := range innerMb.GetAll() {
+						if putErr := buf.Put(t, model.FixedProvider(ms)); putErr != nil {
+							return putErr
+						}
+					}
 					return p.dropProcessor.CancelReservation(buf)(f, dropId, characterId)
 				})
 			}
@@ -1298,6 +1312,14 @@ func (p *Processor) AttemptItemPickUp(mb *message.Buffer) func(transactionId uui
 				p.l.WithError(emitErr).Errorf("Unable to emit drop cancel-reservation for character [%d], drop [%d].", characterId, dropId)
 			}
 			return nil
+		}
+		// The inner tx committed: fold innerMb's writes into the
+		// caller-supplied (outbox-bound in production) mb alongside the
+		// RequestPickUp follow-on effect.
+		for t, ms := range innerMb.GetAll() {
+			if err := mb.Put(t, model.FixedProvider(ms)); err != nil {
+				return err
+			}
 		}
 		return p.dropProcessor.RequestPickUp(mb)(f, dropId, characterId)
 	}

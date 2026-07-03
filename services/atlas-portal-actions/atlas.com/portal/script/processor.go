@@ -25,7 +25,7 @@ type Processor interface {
 	// Query operations
 	ByIdProvider(id uuid.UUID) model.Provider[PortalScript]
 	ByPortalIdProvider(portalId string) model.Provider[PortalScript]
-	AllProvider() model.Provider[[]PortalScript]
+	AllProvider(page model.Page) model.Provider[model.Paged[PortalScript]]
 
 	// Count returns the number of portal scripts for the current tenant and the max updated_at timestamp.
 	// Returns (0, nil, nil) when the tenant has no rows.
@@ -73,9 +73,10 @@ func (p *ProcessorImpl) ByPortalIdProvider(portalId string) model.Provider[Porta
 	return model.Map[Entity, PortalScript](Make)(getByPortalIdProvider(portalId)(p.db.WithContext(p.ctx)))
 }
 
-// AllProvider returns a provider for retrieving all portal scripts
-func (p *ProcessorImpl) AllProvider() model.Provider[[]PortalScript] {
-	return model.SliceMap[Entity, PortalScript](Make)(getAllProvider(p.db.WithContext(p.ctx)))(model.ParallelMap())
+// AllProvider returns a provider for retrieving one page of portal scripts
+func (p *ProcessorImpl) AllProvider(page model.Page) model.Provider[model.Paged[PortalScript]] {
+	ep := getAllPagedProvider(page)(p.db.WithContext(p.ctx))
+	return model.MapPaged(Make)(ep)(model.ParallelMap())
 }
 
 // Create creates a new portal script

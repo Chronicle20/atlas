@@ -2,7 +2,6 @@ package tenant
 
 import (
 	"atlas-tenants/kafka/message"
-	"atlas-tenants/kafka/producer"
 	"context"
 	"errors"
 
@@ -52,7 +51,6 @@ type ProcessorImpl struct {
 	l   logrus.FieldLogger
 	ctx context.Context
 	db  *gorm.DB
-	p   producer.Provider
 }
 
 // NewProcessor creates a new processor
@@ -61,7 +59,6 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 		l:   l,
 		ctx: ctx,
 		db:  db,
-		p:   producer.ProviderImpl(l)(ctx),
 	}
 }
 

@@ -3,6 +3,7 @@ package skill
 import (
 	"atlas-data/rest"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -83,6 +84,10 @@ func handleSearchSkillsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *r
 					}
 				}
 			}
+
+			sort.SliceStable(results, func(i, j int) bool {
+				return results[i].Id < results[j].Id
+			})
 
 			paged := paginate.Slice(results, page)
 			queryParams := jsonapi.ParseQueryFields(&query)

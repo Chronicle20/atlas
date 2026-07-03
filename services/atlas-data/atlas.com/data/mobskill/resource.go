@@ -3,6 +3,7 @@ package mobskill
 import (
 	"atlas-data/rest"
 	"net/http"
+	"sort"
 	"strconv"
 
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
@@ -75,6 +76,10 @@ func handleGetMobSkillsByTypeRequest(db *gorm.DB) func(d *rest.HandlerDependency
 						results = append(results, m)
 					}
 				}
+
+				sort.SliceStable(results, func(i, j int) bool {
+					return results[i].Level < results[j].Level
+				})
 
 				paged := paginate.Slice(results, page)
 				queryParams := jsonapi.ParseQueryFields(&query)

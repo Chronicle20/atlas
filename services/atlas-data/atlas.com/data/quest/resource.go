@@ -3,6 +3,7 @@ package quest
 import (
 	"atlas-data/rest"
 	"net/http"
+	"sort"
 	"strconv"
 
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
@@ -93,6 +94,10 @@ func handleGetAutoStartQuests(db *gorm.DB) func(d *rest.HandlerDependency, c *re
 					autoStartQuests = append(autoStartQuests, q)
 				}
 			}
+
+			sort.SliceStable(autoStartQuests, func(i, j int) bool {
+				return autoStartQuests[i].Id < autoStartQuests[j].Id
+			})
 
 			paged := paginate.Slice(autoStartQuests, page)
 			queryParams := jsonapi.ParseQueryFields(&query)

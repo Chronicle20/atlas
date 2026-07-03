@@ -82,6 +82,47 @@ func (m SearchListing) BundlesRemaining() uint16        { return m.bundlesRemain
 func (m SearchListing) PricePerBundle() uint32          { return m.pricePerBundle }
 func (m SearchListing) ItemSnapshot() SnapshotRestModel { return m.itemSnapshot }
 
+// SearchListingSeed carries the constructor arguments for SearchListing.
+type SearchListingSeed struct {
+	ShopId           uuid.UUID
+	Title            string
+	WorldId          world.Id
+	ChannelId        channel.Id
+	MapId            uint32
+	OwnerId          uint32
+	ShopType         byte
+	State            byte
+	ItemId           uint32
+	ItemType         byte
+	Quantity         uint16
+	BundleSize       uint16
+	BundlesRemaining uint16
+	PricePerBundle   uint32
+	Snapshot         SnapshotRestModel
+}
+
+// NewSearchListing builds a SearchListing from explicit values (the model's
+// constructor for locally-built values; Extract remains the REST path).
+func NewSearchListing(s SearchListingSeed) SearchListing {
+	return SearchListing{
+		shopId:           s.ShopId,
+		title:            s.Title,
+		worldId:          s.WorldId,
+		channelId:        s.ChannelId,
+		mapId:            s.MapId,
+		ownerId:          s.OwnerId,
+		shopType:         s.ShopType,
+		state:            s.State,
+		itemId:           s.ItemId,
+		itemType:         s.ItemType,
+		quantity:         s.Quantity,
+		bundleSize:       s.BundleSize,
+		bundlesRemaining: s.BundlesRemaining,
+		pricePerBundle:   s.PricePerBundle,
+		itemSnapshot:     s.Snapshot,
+	}
+}
+
 func ExtractSearchListing(rm ListingSearchRestModel) (SearchListing, error) {
 	shopId, err := uuid.Parse(rm.ShopId)
 	if err != nil {

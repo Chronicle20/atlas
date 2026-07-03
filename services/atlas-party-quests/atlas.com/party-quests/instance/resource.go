@@ -3,9 +3,11 @@ package instance
 import (
 	"atlas-party-quests/rest"
 	"net/http"
+	"sort"
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
@@ -29,8 +31,22 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 
 func GetAllInstancesHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		page, err := paginate.ParseParams(r.URL.Query(), paginate.DefaultPageSize, paginate.MaxPageSize)
+		if err != nil {
+			server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+			return
+		}
+
 		instances := NewProcessor(d.Logger(), d.Context(), d.DB()).GetAll()
-		rm, err := model.SliceMap(Transform)(model.FixedProvider(instances))(model.ParallelMap())()
+
+		sorted := make([]Model, len(instances))
+		copy(sorted, instances)
+		sort.Slice(sorted, func(i, j int) bool {
+			return sorted[i].Id().String() < sorted[j].Id().String()
+		})
+		paged := paginate.Slice(sorted, page)
+
+		rm, err := model.SliceMap(Transform)(model.FixedProvider(paged.Items))(model.ParallelMap())()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Creating REST model.")
 			server.WriteErrorResponse(d.Logger())(w)(err)
@@ -39,7 +55,7 @@ func GetAllInstancesHandler(d *rest.HandlerDependency, c *rest.HandlerContext) h
 
 		query := r.URL.Query()
 		queryParams := jsonapi.ParseQueryFields(&query)
-		server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
+		server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm, paginate.EnvelopeFor(paged), r)
 	}
 }
 

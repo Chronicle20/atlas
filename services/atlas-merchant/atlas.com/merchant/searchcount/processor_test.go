@@ -14,16 +14,6 @@ import (
 func newTestProcessor(t *testing.T) (Processor, Processor) {
 	t.Helper()
 	db := databasetest.NewInMemoryTenantDB(t, Migration)
-	// sqlite's ":memory:" DSN gives each new physical connection its own
-	// separate database; without a shared cache, concurrent goroutines
-	// pulling distinct connections from the pool would each see an
-	// un-migrated schema ("no such table"). Capping the pool at one
-	// connection keeps every query on the same in-memory database, which
-	// also matches the "sqlite serializes writers" note in the concurrent
-	// test below.
-	sqlDB, err := db.DB()
-	require.NoError(t, err)
-	sqlDB.SetMaxOpenConns(1)
 	l := logrus.New()
 	tidA, tidB := uuid.New(), uuid.New()
 	pA := NewProcessor(l, databasetest.TenantContext(tidA), db)

@@ -5,7 +5,7 @@
 
 Tool: `b2d5c47a9fd2253fa5d1165a913a01170d583ccd`
 
-- export gms_v48: `64c9501827a68b4893c7ffd026e080f5e7ce4c60250e2c05ca575689633ccbbd`
+- export gms_v48: `91176cf490eded97f911e791fe227ca8831d5c4b74d1bba7a353f10f1b1c73ac`
 - export gms_v61: `8023cfe3b5868d7a19f2067627f84e8da849588dfe87e86f48eb721225ac717b`
 - export gms_v72: `a0ac2be6578395455f491976bcb11aa27e2e57376b46ee8816b90324bad60c02`
 - export gms_v79: `370d6b720b633c12c71d40340f3952000705c4bddb98f87179e7193d112d210c`
@@ -661,8 +661,8 @@ Tool: `b2d5c47a9fd2253fa5d1165a913a01170d583ccd`
 | WATER_OF_LIFE | CWvsContext::SendWaterOfLife |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x075 | ❌ | 0x075 | ❌ | 0x078 | ❌ | 0x081 | ❌ |  | ⬜ |
 | MOVE_SUMMON | CVecCtrlSummoned::EndUpdateActive; sub_6E7CF8; sub_7FE86B; sub_9184E5 | summon/serverbound/SummonMoveHandle | 0x078 | ❌ | 0x092 | ❌ | 0x0A9 | ❌ | 0x0AB | ❌ | 0x0AF | ✅ | 0x0B2 | ✅ | 0x0BB | ✅ | 0x0CF | ✅ | 0x0B2 | ✅ |
 | REPAIR_DURABILITY_ALL | CRepairDurabilityDlg::SendRepairDurabilityAll |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x079 | ❌ | 0x082 | ❌ | 0x06D | ❌ |
-| SUMMON_ATTACK | CSummoned::AttackToTargetMob; CSummoned::TryDoingAttackManual; CSummoned::TryDoingTaslaCoilAttack; sub_5D9424; sub_71B522 | summon/serverbound/SummonAttackHandle (T1) | 0x079 | ❌ | 0x093 | ✅ | 0x0AA | ✅ | 0x0AC | ✅ | 0x0B0 | ❌ | 0x0B3 | ❌ | 0x0BC | ❌ | 0x0D0 | ❌ | 0x0B3 | ❌ |
-| DAMAGE_SUMMON | CSummoned::SetDamaged; sub_5DA381 | summon/serverbound/SummonDamageHandle (T1) | 0x07A | ❌ | 0x094 | ✅ | 0x0AB | ✅ | 0x0AD | ✅ | 0x0B1 | ✅ | 0x0B4 | ✅ | 0x0BD | ✅ | 0x0D1 | ✅ | 0x0B4 | ✅ |
+| SUMMON_ATTACK | CSummoned::AttackToTargetMob; CSummoned::TryDoingAttackManual; CSummoned::TryDoingTaslaCoilAttack; sub_5D9424; sub_71B522 | summon/serverbound/SummonAttackHandle (T1) | 0x079 | ✅ | 0x093 | ✅ | 0x0AA | ✅ | 0x0AC | ✅ | 0x0B0 | ❌ | 0x0B3 | ❌ | 0x0BC | ❌ | 0x0D0 | ❌ | 0x0B3 | ❌ |
+| DAMAGE_SUMMON | CSummoned::SetDamaged; sub_5DA381 | summon/serverbound/SummonDamageHandle (T1) | 0x07A | ✅ | 0x094 | ✅ | 0x0AB | ✅ | 0x0AD | ✅ | 0x0B1 | ✅ | 0x0B4 | ✅ | 0x0BD | ✅ | 0x0D1 | ✅ | 0x0B4 | ✅ |
 | REPAIR_DURABILITY | CRepairDurabilityDlg::SendRepairDurability |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x07A | ❌ | 0x083 | ❌ | 0x06E | ❌ |
 | USER_QUEST_RECORD_SET_STATE | CDamageMeter::SaveDamageInfo |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x07B | ❌ | 0x084 | ❌ | 0x06F | ❌ |
 | DENY_GUILD_REQUEST | CFadeWnd::SendCloseMessage; CWvsContext::OnGuildResult | messenger/serverbound/MessengerOperationDeclineInvite (T1) |  | ⬜ |  | ⬜ | 0x07D | ✅ | 0x07C | ✅ | 0x07F | ✅ | 0x083 | ✅ | 0x087 | ✅ | 0x096 | ✅ | 0x082 | ✅ |
@@ -997,8 +997,7 @@ Tool: `b2d5c47a9fd2253fa5d1165a913a01170d583ccd`
 | storage/serverbound/StorageOperationMeso (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
 | storage/serverbound/StorageOperationRetrieveAsset (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
 | storage/serverbound/StorageOperationStoreAsset (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
-| summon/serverbound/SummonAttackHandle (T1) |  |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
-| summon/serverbound/SummonDamageHandle (T1) |  |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
+| summon/serverbound/SummonAttackHandle (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | summon/serverbound/SummonMoveHandle |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | ui/clientbound/Disable |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | ui/clientbound/Lock |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |
@@ -1007,15 +1006,15 @@ Tool: `b2d5c47a9fd2253fa5d1165a913a01170d583ccd`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v48 | 19 | 0 | 22 | 303 | 629 | 0 | 5.5% |
-| v61 | 208 | 0 | 60 | 234 | 471 | 0 | 41.4% |
-| v72 | 216 | 0 | 73 | 252 | 432 | 0 | 39.9% |
-| v79 | 228 | 0 | 72 | 250 | 423 | 0 | 41.5% |
-| v83 | 367 | 0 | 0 | 381 | 225 | 0 | 49.1% |
-| v84 | 345 | 0 | 0 | 382 | 246 | 0 | 47.5% |
-| v87 | 379 | 0 | 0 | 406 | 188 | 0 | 48.3% |
-| v95 | 399 | 0 | 0 | 470 | 104 | 0 | 45.9% |
-| JMS185 | 362 | 0 | 0 | 416 | 195 | 0 | 46.5% |
+| v48 | 19 | 0 | 22 | 302 | 629 | 0 | 5.5% |
+| v61 | 208 | 0 | 60 | 233 | 471 | 0 | 41.5% |
+| v72 | 216 | 0 | 73 | 251 | 432 | 0 | 40.0% |
+| v79 | 228 | 0 | 72 | 249 | 423 | 0 | 41.5% |
+| v83 | 367 | 0 | 0 | 380 | 225 | 0 | 49.1% |
+| v84 | 345 | 0 | 0 | 381 | 246 | 0 | 47.5% |
+| v87 | 379 | 0 | 0 | 405 | 188 | 0 | 48.3% |
+| v95 | 399 | 0 | 0 | 469 | 104 | 0 | 46.0% |
+| JMS185 | 362 | 0 | 0 | 415 | 195 | 0 | 46.6% |
 
 ## Conflicts
 

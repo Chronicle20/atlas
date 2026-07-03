@@ -1011,6 +1011,21 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "Attack", pkg: "summon", dir: csvpkg.DirServerbound, reportName: "SummonAttackHandle"}}
 	case "CSummoned::SetDamaged":
 		return []candidate{{name: "Damage", pkg: "summon", dir: csvpkg.DirServerbound, reportName: "SummonDamageHandle"}}
+	case "sub_5D9424":
+		// SUMMON_ATTACK (serverbound) in gms_v48: CSummoned::TryDoingAttackManual
+		// is UNNAMED in the v48 IDB — sub_5D9424 @0x5d9424, the summon manual-attack
+		// send-site (COutPacket(121) + Encode4 summonSkillId + Encode1 action|left +
+		// Encode1 count + per-target(mobId-only) + Encode2 summonX/Y; NO updateTime,
+		// NO skillCRC — pre-61). The v48 registry primary fname is sub_5D9424, so it
+		// keys to the same summon.Attack codec as the named CSummoned::TryDoingAttackManual twin.
+		return []candidate{{name: "Attack", pkg: "summon", dir: csvpkg.DirServerbound, reportName: "SummonAttackHandle"}}
+	case "sub_5DA381":
+		// DAMAGE_SUMMON (serverbound) in gms_v48: CSummoned::SetDamaged is UNNAMED in
+		// the v48 IDB — sub_5DA381 @0x5da381, the summon-damage send-site (COutPacket
+		// (122) + Encode4 summonId + mob/no-mob branch; == v61 body). The v48 registry
+		// primary fname is sub_5DA381, so it keys to the same summon.Damage codec as
+		// the named CSummoned::SetDamaged twin.
+		return []candidate{{name: "Damage", pkg: "summon", dir: csvpkg.DirServerbound, reportName: "SummonDamageHandle"}}
 
 	// --- Combat: monster (serverbound) ---
 	case "CMob::GenerateMovePath":

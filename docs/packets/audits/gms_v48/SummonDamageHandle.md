@@ -1,6 +1,6 @@
-# SummonDamageHandle (← `CSummoned::SetDamaged`)
+# SummonDamageHandle (← `sub_5DA381`)
 
-- **IDA:** 
+- **IDA:** 0x5da381
 - **Atlas file:** `libs/atlas-packet/summon/serverbound/damage.go`
 - **Variant:** GMS/v48
 - **Branch depth:** 1
@@ -11,7 +11,7 @@
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | int32 | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
+| 0 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 1 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
 | 2 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 3 | byte | byte `` | ❌ | atlas: extra — client never reads this field |

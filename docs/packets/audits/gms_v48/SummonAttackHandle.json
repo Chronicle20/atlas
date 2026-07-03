@@ -1,7 +1,7 @@
 {
   "WriterName": "SummonAttackHandle",
-  "IDAName": "CSummoned::TryDoingAttackManual",
-  "Address": "",
+  "IDAName": "sub_5D9424",
+  "Address": "0x5d9424",
   "Variant": "GMS/v48",
   "BranchDepth": 2,
   "AtlasFile": "libs/atlas-packet/summon/serverbound/attack.go",
@@ -10,10 +10,10 @@
       "Index": 0,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 4,
-      "Note": "IDA read-order unresolved: function not found in IDB"
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
     },
     {
       "Index": 1,

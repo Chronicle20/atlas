@@ -5704,28 +5704,6 @@
         }
       ]
     },
-    "CSummoned::SetDamaged": {
-      "address": "",
-      "direction": "serverbound",
-      "unresolved": true,
-      "calls": [
-        {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
-        }
-      ]
-    },
-    "CSummoned::TryDoingAttackManual": {
-      "address": "",
-      "direction": "serverbound",
-      "unresolved": true,
-      "calls": [
-        {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
-        }
-      ]
-    },
     "CSummonedPool::OnAttack": {
       "address": "",
       "direction": "clientbound",

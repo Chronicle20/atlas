@@ -1,6 +1,6 @@
-# SummonAttackHandle (← `CSummoned::TryDoingAttackManual`)
+# SummonAttackHandle (← `sub_5D9424`)
 
-- **IDA:** 
+- **IDA:** 0x5d9424
 - **Atlas file:** `libs/atlas-packet/summon/serverbound/attack.go`
 - **Variant:** GMS/v48
 - **Branch depth:** 2
@@ -11,7 +11,7 @@
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | int32 | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
+| 0 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 1 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 2 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 3 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |

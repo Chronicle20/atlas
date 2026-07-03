@@ -3,6 +3,8 @@
 Pre-migration `tools/goroutine-guard.sh` findings: 167 (recorded 2026-07-02).
 Every row must carry a disposition before the branch is done. Row count must equal 167.
 
+**Completion (2026-07-02):** all 167 rows dispositioned — 166 `migrated` (4 carrying the design §6.1 accepted-consequence note for the atlas-model combinators) + 1 `allowlisted` (`libs/atlas-model/testutil/helpers.go`, the sole `//goroutine-guard:allow` marker in the repo). `tools/goroutine-guard.sh` exits 0 (clean, zero findings) and `tools/redis-key-guard.sh` exits 0, both from the repo root.
+
 | # | file:line | form | classification | logger source | ctx source | disposition |
 |---|---|---|---|---|---|---|
 | 1 | services/atlas-buffs/atlas.com/buffs/character/processor.go:152 | anon | ticker | l | ctx | migrated |

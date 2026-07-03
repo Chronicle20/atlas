@@ -1256,6 +1256,18 @@
   ida:
     address: 6172802
   note: 'BODY-VERIFIED send-site 0x5e3082 (own/field town-portal) + 0x4cb90a (party-member town-portal). Both hit-test the town-portal (door) rect (dword_80EBD4 build-rect + dword_80EC4C point-in-rect) then send COutPacket(103)+Encode4(townPortalOwnerCharId)+Encode1(enterFlag). sub_5E3082 walks the field door pool this[10] and sends Enc1(0) (own/field door, id=portal[2]); sub_4CB90A walks CWvsContext::GetPartyTownPortal and sends Enc1(1) (party door, id=owner char). = v61 USE_DOOR (CField::TryEnterTownPortal [Encode4(ownerId),Encode1(enter)]). v61 USE_DOOR=121. Mystic-door / town-portal enter -- playthrough-critical.'
+- op: NPC_SHOP
+  direction: serverbound
+  opcode: 48
+  fname: sub_5B7422
+  fname_alts:
+  - sub_5B7693
+  - sub_5B4B82
+  - CShopDlg::SendPacket
+  provenance: ida-discovered
+  ida:
+    address: 5993506
+  note: 'BODY-VERIFIED. Mode-prefix NPC_SHOP (CShopDlg) dispatcher, all arms COutPacket(48)+Encode1(mode): sub_5B7422 BUY arm Encode1(0)+Encode2(slot=this[55])+Encode4(itemId=TSecType::GetData(commodity))+Encode2(count) — meso-affordability check (charData meso fuse +149/+153, "not enough mesos" notice 263); sub_5B7693 SELL arm Encode1(1)+Encode2(slot)+Encode4(itemId)+Encode2(count) — reads inventory GetItem(invType,slot); sub_5B4B82 CLOSE arm Encode1(3)+dialog-close sub_4B7230. Enc1(mode 0=buy/1=sell/2=recharge/3=close)+per-mode body = exact v61 NPC_SHOP (sub_6744D9 mode-prefix dispatcher). v61 NPC_SHOP=60.'
 - op: STORAGE
   direction: serverbound
   opcode: 52

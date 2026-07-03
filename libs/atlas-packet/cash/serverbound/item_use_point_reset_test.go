@@ -93,3 +93,75 @@ func TestItemUsePointResetBytesV95(t *testing.T) {
 		t.Errorf("v95 bytes: got %s want %s", got, want)
 	}
 }
+
+// TestItemUsePointResetBytesV87 pins the AP/SP-reset sub-body wire for gms_v87.
+//
+// IDA (live GMSv87_4GB.exe, port 13343):
+// CWvsContext::SendConsumeCashItemUseRequest @0xa9fef9, opcode 0x52. Unlike v83
+// (and identical to v95), the header encodes update_time FIRST:
+//
+//	COutPacket(0x52); Encode4(get_update_time()); Encode2(nPOS); Encode4(nItemID)
+//
+// then switches on get_consume_cash_item_type. case 0x17 (AP reset) @line 1375
+// encodes Encode4(to) then Encode4(from); case 0x18 (SP reset) @line 1545 encodes
+// Encode4(to) then Encode4(from). The send tail (LABEL_41 @0x...; decompiler line
+// 2965) contains NO trailing Encode4(update_time). So the v87 point-reset sub-body
+// is exactly:
+//
+//	Encode4(to) + Encode4(from)                          [updateTime is in header]
+//
+// => updateTimeFirst == true for v87. This CONTRADICTS the original task-126
+// hypothesis (which assumed v87 was trailing, like v83). The header gate was
+// therefore corrected from MajorVersion()>=95 to MajorVersion()>=87 in item_use.go
+// and character_cash_item_use.go so v87 reads update_time from the header.
+//
+// NOTE (no packet-audit:verify marker): like the v95 case above, the shared codec
+// gates the trailing updateTime on the runtime bool updateTimeFirst, which the
+// version-based (not value-based) packet-audit analyzer cannot evaluate; it
+// statically counts three writes and grades the generated gms_v87 report
+// FlatInvalid ("atlas extra field"). The read order below is nonetheless
+// IDA-verified; the marker path for updateTime-first versions is the same known
+// tooling gap documented on the v95 fixture, not a codec defect.
+func TestItemUsePointResetBytesV87(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	input := ItemUsePointReset{to: 2048, from: 64, updateTime: 0x12345678, updateTimeFirst: true}
+	got := hex.EncodeToString(input.Encode(l, pt.CreateContext("GMS", 87, 1))(nil))
+	// 00080000 (to) | 40000000 (from) = 8 bytes; no trailing updateTime.
+	if want := "00080000" + "40000000"; got != want {
+		t.Errorf("v87 bytes: got %s want %s", got, want)
+	}
+}
+
+// TestItemUsePointResetBytesJMS185 pins the AP/SP-reset sub-body wire for jms_v185.
+//
+// IDA (live MapleStory_dump_SCY.exe, port 13344):
+// CWvsContext::SendConsumeCashItemUseRequest @0xaef2f5, opcode 0x47 (71). As with
+// gms_v87/v95, the header encodes update_time FIRST:
+//
+//	COutPacket(0x47); Encode4(get_update_time()); Encode2(nPOS); Encode4(nItemID)
+//
+// then switches on get_consume_cash_item_type. case 0x17 (AP reset) @line 1585
+// encodes Encode4(to) then Encode4(from); case 0x18 (SP reset) @line 1766 encodes
+// Encode4(to) then Encode4(from). The send tail (LABEL_528; decompiler line 1024)
+// contains NO trailing Encode4(update_time). So the jms_v185 point-reset sub-body
+// is exactly:
+//
+//	Encode4(to) + Encode4(from)                          [updateTime is in header]
+//
+// => updateTimeFirst == true for jms_v185. This CONTRADICTS the original task-126
+// hypothesis (which assumed JMS was trailing because Region != "GMS"). The header
+// gate is region-independent MajorVersion()>=87, so jms_v185 (185) reads
+// update_time from the header.
+//
+// NOTE (no packet-audit:verify marker): same runtime-bool tooling gap as the v95
+// and v87 fixtures — the analyzer grades the generated jms_v185 report FlatInvalid.
+// Read order is IDA-verified.
+func TestItemUsePointResetBytesJMS185(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	input := ItemUsePointReset{to: 2048, from: 64, updateTime: 0x12345678, updateTimeFirst: true}
+	got := hex.EncodeToString(input.Encode(l, pt.CreateContext("JMS", 185, 1))(nil))
+	// 00080000 (to) | 40000000 (from) = 8 bytes; no trailing updateTime.
+	if want := "00080000" + "40000000"; got != want {
+		t.Errorf("jms_v185 bytes: got %s want %s", got, want)
+	}
+}

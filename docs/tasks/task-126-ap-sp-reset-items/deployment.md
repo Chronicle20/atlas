@@ -47,25 +47,81 @@ Procedure per live gms_95 tenant:
 5. Confirm via atlas-channel startup logs that the handler map includes opcode `0x55` for the
    tenant (absence of a "validator not found" / missing-handler warning at startup).
 
-Do not patch gms_87, jms_185, or gms_92 tenants — see the park section below.
+Do not patch gms_92 tenants — see the park section below. gms_87 and jms_185 are now
+**SHIPPED** (IDA-verified) — see section 2A.
 
-## 2. Parked versions — gms_87 (0x52), jms_185 (0x47), gms_92 (no opcode)
+## 2A. SHIPPED versions — gms_87 (0x52) and jms_185 (0x47) — IDA-verified (task-16 unblock)
+
+The v87 and jms_185 IDBs are now loaded, so both versions were IDA-verified and wired in this
+unblock pass (superseding the earlier controller-directed park). Both are seeded automatically
+onto new tenants and must be PATCHed onto live tenants (procedure below).
+
+| Version | Handler opcode | Sender fname / IDA addr | Codec (sub-body) | Macro writer opcode / IDA addr |
+|---|---|---|---|---|
+| gms_87 | `0x52` | `CWvsContext::SendConsumeCashItemUseRequest` @`0xa9fef9` | `Encode4(to) + Encode4(from)`; **update_time in header (first)** | `0x84` — `case 0x84`→`OnMacroSysDataInit` @`0xac0d6e` in `OnPacket` @`0xa9d011`; `ProcessPacket` @`0x4a8622` passes raw `Decode2` opcode (no offset) |
+| jms_185 | `0x47` | `CWvsContext::SendConsumeCashItemUseRequest` @`0xaef2f5` | `Encode4(to) + Encode4(from)`; **update_time in header (first)** | `0x7A` — `case 0x7A`→`OnMacroSysDataInit` @`0xb10384` in `OnPacket` @`0xaebfe7`; `ProcessPacket` @`0x4b17eb` passes raw `Decode2` opcode (no offset) |
+
+### KEY FINDING — hypothesis overturned: v87 and jms_185 are update_time-FIRST, not trailing
+
+The task hypothesis assumed both versions carried a **trailing** update_time in the point-reset
+sub-body (matching gms_83). IDA disproved this: on **both** gms_87 (@`0xa9fef9`) and jms_185
+(@`0xaef2f5`), `CWvsContext::SendConsumeCashItemUseRequest` encodes
+`Encode4(get_update_time())` in the packet **header** (before the `get_consume_cash_item_type`
+switch), then the AP-reset (`case 0x17`) and SP-reset (`case 0x18`) arms encode only
+`Encode4(to) + Encode4(from)`. The send tail (gms_87 `LABEL_41`; jms_185 `LABEL_528`) contains
+**no** trailing `Encode4(update_time)`. This is the same header-first layout already verified for
+gms_95. Only gms_83/gms_84 keep update_time in the send tail (trailing).
+
+Consequently the shared header gate was **corrected**: the update_time-first predicate in
+`libs/atlas-packet/cash/serverbound/item_use.go` (`ItemUse.Encode`/`ItemUse.Decode`) and
+`services/atlas-channel/.../socket/handler/character_cash_item_use.go` (`updateTimeFirst`) was
+changed from `Region()=="GMS" && MajorVersion()>=95` to **`MajorVersion() >= 87`**. This yields:
+gms_83/84 → trailing (unchanged); gms_87/95 → header-first; jms_185 (185) → header-first. Without
+this fix a v87/jms tenant would misparse the header (reading the 4 update_time bytes as
+source+itemId) and never reach the point-reset logic — so the fix is required to ship, not
+cosmetic. The change only flips versions ≥ 87 that had no cash-item-use handler wired before
+(v87 newly wired here; v92 parked; v95 already header-first), so no working path regresses.
+
+### Coverage-matrix note (v87/jms cells stay ❌ — same tooling gap as v95)
+
+Because both versions are update_time-first, their `cash/serverbound/CashItemUsePointReset` cells
+CANNOT be promoted via a `packet-audit:verify` marker: the codec gates the trailing write on the
+runtime bool `updateTimeFirst`, which the version-based (not value-based) analyzer cannot
+evaluate — it statically counts three writes and grades the report FlatInvalid. This is the exact
+pre-existing tooling gap the gms_95 fixture documents, so the v87/jms cells remain `❌` alongside
+v95 in `docs/packets/audits/STATUS.md`. The read order is nonetheless IDA-verified and pinned by
+byte-exact fixtures (`TestItemUsePointResetBytesV87`, `TestItemUsePointResetBytesJMS185`).
+`matrix --check` stays exit 0 (no drift).
+
+### Live tenant patch — gms_87 and jms_185 (required)
+
+Existing v87/jms tenants do **not** re-seed. Per live tenant, append BOTH rows and restart
+atlas-channel (handler + writer wiring resolve once at config load; no hot-reload):
+
+- gms_87 handler: `{"opCode": "0x52", "validator": "LoggedInValidator", "handler": "CharacterCashItemUseHandle"}`
+- gms_87 writer: `{"opCode": "0x84", "writer": "CharacterSkillMacro"}`
+- jms_185 handler: `{"opCode": "0x47", "validator": "LoggedInValidator", "handler": "CharacterCashItemUseHandle"}`
+- jms_185 writer: `{"opCode": "0x7A", "writer": "CharacterSkillMacro"}`
+
+Procedure is identical to section 1 (GET → append to `handlers`/`writers` arrays → PATCH →
+**restart atlas-channel**).
+
+## 2. Parked version — gms_92 (no opcode)
 
 | Version | Registry opcode | Status | Reason |
 |---|---|---|---|
-| gms_87 | `0x52` (`USE_CASH_ITEM`, csv-import provenance, `docs/packets/registry/gms_v87.yaml`) | Parked | No v87 IDB checked in; sender fname `CItemSpeakerDlg::_SendConsumeCashItemUseRequest` cannot be located in any checked-in export, so the point-reset request body layout is unverified for this version. |
-| jms_185 | `0x47` (`USE_CASH_ITEM`, csv-import provenance, `docs/packets/registry/jms_v185.yaml`) | Parked | Same as gms_87 — no jms IDB checked in, sender fname unresolved in checked-in exports. |
 | gms_92 | none | Parked | No IDB and no `USE_CASH_ITEM` registry row exists for gms_92 at all; there is no opcode value to wire, verified or otherwise. |
 
-On these three versions, the AP/SP-reset cash items stay inert exactly as they do today: the
-client can send the request, but no handler is wired for the opcode on these tenants (gms_92
-because the opcode itself is unknown), so the request is dropped server-side with no effect —
-no crash, no silent partial application.
+On gms_92, the AP/SP-reset cash items stay inert exactly as they do today: no handler is wired
+for the opcode (the opcode itself is unknown), so the request is dropped server-side with no
+effect — no crash, no silent partial application.
 
-Each park unblocks the same way the pre-existing v92 mount-food park does (see project memory
-`bug_v92_mount_food_parked`): once a corresponding IDB exists for that version and the
-`ItemUsePointReset` codec is IDA-verified against it (handler wiring + byte-level fixture),
-these rows can be added to their respective seed templates and PATCHed onto any live tenants.
+gms_92 unblocks the same way the pre-existing v92 mount-food park does (see project memory
+`bug_v92_mount_food_parked`): once a gms_92 IDB exists and the `ItemUsePointReset` codec + macro
+writer opcode are IDA-verified against it, the rows can be added to `template_gms_92_1.json` and
+PATCHed onto any live tenants. Note the header-gate fix already treats gms_92 (92 ≥ 87) as
+update_time-first, matching the v87→v95 trend, but this is unverified for v92 and has no runtime
+effect while v92 stays unwired.
 
 `gms_83` and `gms_84` are not part of this park list: `gms_83`'s handler is IDA-verified and was
 wired before this feature (pre-existing `template_gms_83_1.json` row, opcode `0x4F`). `gms_84`
@@ -77,8 +133,11 @@ needed for either version in this task.
 
 - New **gms_95** tenants seed the `CharacterCashItemUseHandle` handler automatically from the
   updated `template_gms_95_1.json` — no manual step required.
-- New **gms_87**, **jms_185**, and **gms_92** tenants do **not** get this handler seeded — they
-  remain parked per section 2 until their respective codecs are IDA-verified.
+- New **gms_87** and **jms_185** tenants now seed BOTH the `CharacterCashItemUseHandle` handler
+  (0x52 / 0x47) and the `CharacterSkillMacro` writer (0x84 / 0x7A) automatically from their
+  updated templates — no manual step required (task-16 unblock, section 2A).
+- New **gms_92** tenants do **not** get this handler seeded — parked per section 2 until a gms_92
+  IDB exists.
 - New **gms_83**/**gms_84** tenants already seed the handler as before (unchanged, pre-existing
   rows).
 
@@ -128,15 +187,22 @@ existing entries and numeric ordering), `PATCH` it back, then **restart atlas-ch
 tenant/cluster — writer wiring is resolved once at config load and does not hot-reload on a live
 PATCH.
 
-### Parked versions — FR-18 macro refresh still degraded
+### gms_87 / jms_185 macro writer — now SHIPPED (task-16 unblock)
 
-On the parked versions (`gms_87`, `jms_185`, `gms_92`) the `CharacterSkillMacro` writer is
-**likewise still absent** and cannot be added without an IDB to IDA-verify the version-specific
-opcode (the opcode is version-shifted, as proven above). FR-18's live macro refresh and the
-login-time macro push therefore remain degraded on those versions — consistent with, and for the
-same reason as, the point-reset handler park in section 2. They unblock together: once an IDB
-exists for that version, the macro writer opcode can be IDA-verified and wired alongside the
-point-reset handler. (`gms_83`/`gms_84` already carry the writer — `0x7C`/`0x7F` respectively.)
+The `CharacterSkillMacro` writer is now IDA-verified and wired for both versions (section 2A):
+gms_87 = `0x84` (`case 0x84`→`OnMacroSysDataInit` @`0xac0d6e`), jms_185 = `0x7A`
+(`case 0x7A`→`OnMacroSysDataInit` @`0xb10384`). The opcode is version-shifted per version
+(gms_83 `0x7C`, gms_95 `0x8C`, gms_87 `0x84`, jms_185 `0x7A`), confirming each had to be read from
+its own client. FR-18's live macro refresh and the login-time macro push now work on gms_87 and
+jms_185.
+
+### Parked version — FR-18 macro refresh still degraded (gms_92 only)
+
+On the remaining parked version (`gms_92`) the `CharacterSkillMacro` writer is **still absent**
+and cannot be added without a gms_92 IDB to IDA-verify the version-specific opcode. FR-18's live
+macro refresh and the login-time macro push therefore remain degraded on gms_92 — consistent with
+the point-reset handler park in section 2. They unblock together once a gms_92 IDB exists.
+(`gms_83`/`gms_84` already carry the writer — `0x7C`/`0x7F` respectively.)
 
 With the writer now wired on gms_95, AP reset and SP reset both complete correctly *and* the
 client's macro list refreshes live on gms_95 (via the FR-18 `UPDATED` push and at login), in

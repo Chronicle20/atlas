@@ -29,7 +29,13 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 		p.Decode(l, ctx)(r, readerOptions)
 		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
 
-		updateTimeFirst := t.Region() == "GMS" && t.MajorVersion() >= 95
+		// update_time is a leading header int32 (updateTimeFirst) from GMS v87
+		// onward and on JMS v185; only the two oldest GMS builds (v83/v84) carry
+		// it as a trailing int32 in the per-type sub-body. IDA-verified via
+		// CWvsContext::SendConsumeCashItemUseRequest: gms_v87 @0xa9fef9 and
+		// jms_v185 @0xaef2f5 both Encode4(update_time) in the header before the
+		// sub-body switch (task-126). Must match ItemUse's header gate.
+		updateTimeFirst := t.MajorVersion() >= 87
 		updateTime := p.UpdateTime()
 		source := slot.Position(p.Source())
 		itemId := item.Id(p.ItemId())

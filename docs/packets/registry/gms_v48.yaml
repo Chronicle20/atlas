@@ -1256,3 +1256,24 @@
   ida:
     address: 6172802
   note: 'BODY-VERIFIED send-site 0x5e3082 (own/field town-portal) + 0x4cb90a (party-member town-portal). Both hit-test the town-portal (door) rect (dword_80EBD4 build-rect + dword_80EC4C point-in-rect) then send COutPacket(103)+Encode4(townPortalOwnerCharId)+Encode1(enterFlag). sub_5E3082 walks the field door pool this[10] and sends Enc1(0) (own/field door, id=portal[2]); sub_4CB90A walks CWvsContext::GetPartyTownPortal and sends Enc1(1) (party door, id=owner char). = v61 USE_DOOR (CField::TryEnterTownPortal [Encode4(ownerId),Encode1(enter)]). v61 USE_DOOR=121. Mystic-door / town-portal enter -- playthrough-critical.'
+- op: STORAGE
+  direction: serverbound
+  opcode: 52
+  fname: sub_57E987
+  fname_alts:
+  - sub_5832D1
+  - CTrunkDlg::SendPacket
+  provenance: ida-discovered
+  ida:
+    address: 5761927
+  note: 'BODY-VERIFIED. Mode-prefix STORAGE dispatcher, senders in the CTrunkDlg region (0x583xxx, CTrunkDlg::OnPacket receive @0x58332c). sub_57E987: withdraw-item arm — reads storage slot this[1], time-gate sub_744D30(...)<30, then COutPacket(52)+Encode1(4=take-out mode)+Encode4(itemId=**(slot+4)). sub_5832D1: exit arm — COutPacket(52)+Encode1(7=close mode)+close. Enc1(mode)+[Enc4/…] dispatcher = exact v61 STORAGE (sub_603341/… mode-prefix Enc1(mode)+…). v61 STORAGE=61. (op52 cluster = 6 CTrunkDlg send arms 0x57E987..0x5832D1; the sub_4BE880 co-caller is a distinct field-region push-imm artifact.)'
+- op: CANCEL_ITEM_EFFECT
+  direction: serverbound
+  opcode: 57
+  fname: sub_70DD49
+  fname_alts:
+  - CWvsContext::SendStatChangeItemCancelRequest
+  provenance: ida-discovered
+  ida:
+    address: 7396681
+  note: 'BODY-VERIFIED send-site 0x70dd49: sub_4A2518(200,0) throttle then COutPacket(57)+Encode4(a1=sourceId). CALLER sub_43D498 = the CWndMan buff-icon right-click handler (a1==517 WM_RBUTTONDOWN): CWndMan::GetCursorPos + sub_5E0D72 resolves the clicked buff-icon into v5(buffType)+a1(sourceId); v5==1 (item buff) -> sub_70DD49(-a1) [negative sourceId, item-buff cancel]; v5==2 (skill buff, !=1311006) -> CUserLocal::SendSkillCancelRequest (op71 CANCEL_BUFF). Exact v61 CANCEL_ITEM_EFFECT twin (sub_831BB7(-sourceId), single Encode4(sourceId), 200ms guard, item-buff right-click). v61 CANCEL_ITEM_EFFECT=68.'

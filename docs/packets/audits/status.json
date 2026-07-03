@@ -7,6 +7,7 @@
   "toolSha": "417a93d52ba758b2430e8d8816f03b2f010698b6",
 >>>>>>> 4120efe50 (chore(packet-audit): refresh matrix provenance after run.go commit (task-129))
   "exportHashes": {
+<<<<<<< HEAD
     "gms_v48": "054d404fcb6f0feed776b8c1453f2ab48a35f479463e82ea00d6d28ebca512dc",
     "gms_v61": "3294c3796405376978b0d209e1451eee68ff11a0e57198da251c77f8e84b998b",
     "gms_v72": "01e628692f47408c523f939acd8f6ae5defa4118536ff7334eeb10845abf114b",
@@ -16,6 +17,19 @@
     "gms_v87": "c561e4674388fb4f6cc8f6102df6a0b905ea9ef540efc5d5c4f8aa27f06f1d64",
     "gms_v95": "0dbb9f6f84dac7bfc1b5c37ae9fdd4ada69b1392b702eab3557f702a0101245e",
     "jms_v185": "884635e9cff438e732a010c256a82819b61198775ba054cfd2e3b88442fe4a05"
+||||||| parent of 6e39e72ab (verify(packet): ITEM_UPGRADE_UPDATE + ViciousHammer dispatcher arms — gms_v83 + gms_v95 promoted)
+    "gms_v83": "711bddcc2e1bdd417a75954148d2b50c64e70855e84259c0b8e50e700e393c0d",
+    "gms_v84": "7eab9472e2afeda13faaf74273828d09d5f2481d67bec10235c3b2fd2f91e1eb",
+    "gms_v87": "714817d376bb93732ef6b6fbe6b59f8c24515ff901801d213d676b501eae7f94",
+    "gms_v95": "d630364f4d84b433c62329d3756f4f97efdb9ce8056c62b60842bc9b91b24b97",
+    "jms_v185": "3e0070b0e1faf703005f88595cee7ccb192add0d66ecbd5de436171fd52bd4d2"
+=======
+    "gms_v83": "8b1027051634214661c597f4659fc16200b305068027080a7cfa029f7f455ef7",
+    "gms_v84": "7eab9472e2afeda13faaf74273828d09d5f2481d67bec10235c3b2fd2f91e1eb",
+    "gms_v87": "714817d376bb93732ef6b6fbe6b59f8c24515ff901801d213d676b501eae7f94",
+    "gms_v95": "d4ff6159aa0a0a5cca9c4af5ec57988632bfa9283b0ca463ca6d991a37d7c6f1",
+    "jms_v185": "3e0070b0e1faf703005f88595cee7ccb192add0d66ecbd5de436171fd52bd4d2"
+>>>>>>> 6e39e72ab (verify(packet): ITEM_UPGRADE_UPDATE + ViciousHammer dispatcher arms — gms_v83 + gms_v95 promoted)
   },
   "rows": [
     {
@@ -27662,9 +27676,16 @@
     },
     {
       "kind": "op",
+<<<<<<< HEAD
       "op": "DRAGON_BALL_SUMMON_REQUEST",
+||||||| parent of 6e39e72ab (verify(packet): ITEM_UPGRADE_UPDATE + ViciousHammer dispatcher arms — gms_v83 + gms_v95 promoted)
+      "op": "ITEM_UPGRADE_UPDATE",
+=======
+      "op": "ITEM_UPGRADE_UPDATE",
+      "packet": "field/serverbound/FieldItemUpgradeUpdate",
+>>>>>>> 6e39e72ab (verify(packet): ITEM_UPGRADE_UPDATE + ViciousHammer dispatcher arms — gms_v83 + gms_v95 promoted)
       "direction": "serverbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CWvsContext::SendDragonBallSummonRequest"
       ],
@@ -27686,8 +27707,17 @@
           "opcode": -1
         },
         "gms_v83": {
+<<<<<<< HEAD
           "state": "n-a",
           "opcode": -1
+||||||| parent of 6e39e72ab (verify(packet): ITEM_UPGRADE_UPDATE + ViciousHammer dispatcher arms — gms_v83 + gms_v95 promoted)
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 260
+=======
+          "state": "verified",
+          "opcode": 260
+>>>>>>> 6e39e72ab (verify(packet): ITEM_UPGRADE_UPDATE + ViciousHammer dispatcher arms — gms_v83 + gms_v95 promoted)
         },
         "gms_v84": {
           "state": "n-a",
@@ -27698,9 +27728,18 @@
           "opcode": -1
         },
         "gms_v95": {
+<<<<<<< HEAD
           "state": "incomplete",
           "note": "no audit report",
           "opcode": 197
+||||||| parent of 6e39e72ab (verify(packet): ITEM_UPGRADE_UPDATE + ViciousHammer dispatcher arms — gms_v83 + gms_v95 promoted)
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 296
+=======
+          "state": "verified",
+          "opcode": 296
+>>>>>>> 6e39e72ab (verify(packet): ITEM_UPGRADE_UPDATE + ViciousHammer dispatcher arms — gms_v83 + gms_v95 promoted)
         },
         "jms_v185": {
           "state": "n-a",
@@ -39710,8 +39749,9 @@
     {
       "kind": "op",
       "op": "VICIOUS_HAMMER",
+      "packet": "field/clientbound/FieldViciousHammerFailure",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CField::OnItemUpgrade"
       ],
@@ -39733,8 +39773,7 @@
           "opcode": -1
         },
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 354
         },
         "gms_v84": {
@@ -39748,8 +39787,7 @@
           "opcode": 375
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 425
         },
         "jms_v185": {

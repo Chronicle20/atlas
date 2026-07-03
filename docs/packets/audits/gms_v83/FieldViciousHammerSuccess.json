@@ -1,0 +1,30 @@
+{
+  "WriterName": "FieldViciousHammerSuccess",
+  "IDAName": "CField::OnItemUpgrade#Success",
+  "Address": "0x537f8c",
+  "Variant": "GMS/v83",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/field/clientbound/vicious_hammer.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode (= 61; success) — read in sub_82B2C3 (this[34]=v5), reached via sub_82B2AD (gates nType==354) from the CField::OnItemUpgrade vtable forwarder",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "flag (0 = success -\u003e \"Increased available upgrade by 1. N upgrades are left\" where N = 2-this[36]; non-0 -\u003e \"Unknown error %d\" using this[35])",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

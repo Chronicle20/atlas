@@ -14,6 +14,22 @@ import (
 // Open  — mode(1) + token(4) + hammerCount(4) = 9 bytes
 // Success — mode(1)=61 + flag(4) = 5 bytes
 // Failure — mode(1)=62 + errorCode(4) = 5 bytes
+//
+// NOTE (task-129): the mode-byte LITERAL differs by version — v83 uses 61
+// (success) / 62 (failure); v95 uses 65 (success) / 66 (failure), per live
+// decompile of CUIItemUpgrade::OnItemUpgradeResult 0x7c0fd0. The byte SHAPE
+// (mode + flag / mode + errorCode / mode + token + count) is version-invariant
+// and confirmed identical in both binaries — that is what these fixtures test
+// (the mode field is a generic byte param, never a literal in production
+// code). See task-129 report for the full contradiction against
+// docs/packets/dispatchers/vicious_hammer.yaml's gms_v95 SUCCESS/FAILURE
+// modes (currently 61/62 — unverified/incorrect for v95).
+// packet-audit:verify packet=field/clientbound/FieldViciousHammerOpen version=gms_v83 ida=0x537f8c
+// packet-audit:verify packet=field/clientbound/FieldViciousHammerSuccess version=gms_v83 ida=0x537f8c
+// packet-audit:verify packet=field/clientbound/FieldViciousHammerFailure version=gms_v83 ida=0x537f8c
+// packet-audit:verify packet=field/clientbound/FieldViciousHammerOpen version=gms_v95 ida=0x52a430
+// packet-audit:verify packet=field/clientbound/FieldViciousHammerSuccess version=gms_v95 ida=0x52a430
+// packet-audit:verify packet=field/clientbound/FieldViciousHammerFailure version=gms_v95 ida=0x52a430
 func TestViciousHammerOpenByteOutput(t *testing.T) {
 	// token packs hammerSlot=1 (high int16), equipSlot=-5/0xFFFB (low int16).
 	input := NewViciousHammerOpen(0, 0x0001FFFB, 1)

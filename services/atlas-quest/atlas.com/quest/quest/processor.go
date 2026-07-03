@@ -228,6 +228,7 @@ func (p *ProcessorImpl) startWithDefinition(transactionId uuid.UUID, characterId
 		// Emit quest started event
 		if err := p.txEmitter(tx).EmitQuestStarted(transactionId, characterId, f.WorldId(), questId, updated.ProgressString(), reportedItems); err != nil {
 			p.l.WithError(err).Warnf("Unable to emit quest started event for quest [%d] character [%d].", questId, characterId)
+			return err
 		}
 
 		return nil
@@ -375,6 +376,7 @@ func (p *ProcessorImpl) StartChained(transactionId uuid.UUID, characterId uint32
 		// Emit quest started event
 		if err := p.txEmitter(tx).EmitQuestStarted(transactionId, characterId, f.WorldId(), questId, updated.ProgressString(), reportedItems); err != nil {
 			p.l.WithError(err).Warnf("Unable to emit quest started event for chained quest [%d] character [%d].", questId, characterId)
+			return err
 		}
 
 		return nil
@@ -479,6 +481,7 @@ func (p *ProcessorImpl) Complete(transactionId uuid.UUID, characterId uint32, qu
 		// Emit quest completed event with awarded items
 		if err := p.txEmitter(tx).EmitQuestCompleted(transactionId, characterId, f.WorldId(), questId, completedAt, reportedItems); err != nil {
 			p.l.WithError(err).Warnf("Unable to emit quest completed event for quest [%d] character [%d].", questId, characterId)
+			return err
 		}
 
 		return nil
@@ -551,6 +554,7 @@ func (p *ProcessorImpl) Forfeit(transactionId uuid.UUID, characterId uint32, que
 		// Emit quest forfeited event (worldId is 0 as it's not available in forfeit context)
 		if err := p.txEmitter(tx).EmitQuestForfeited(transactionId, characterId, 0, questId); err != nil {
 			p.l.WithError(err).Warnf("Unable to emit quest forfeited event for quest [%d] character [%d].", questId, characterId)
+			return err
 		}
 
 		return nil
@@ -600,6 +604,7 @@ func (p *ProcessorImpl) SetProgress(transactionId uuid.UUID, characterId uint32,
 			// Still emit with just the single value as fallback
 			if err := p.txEmitter(tx).EmitProgressUpdated(transactionId, characterId, 0, questId, infoNumber, progressValue); err != nil {
 				p.l.WithError(err).Warnf("Unable to emit quest progress updated event for quest [%d] character [%d].", questId, characterId)
+				return err
 			}
 			return nil
 		}
@@ -608,6 +613,7 @@ func (p *ProcessorImpl) SetProgress(transactionId uuid.UUID, characterId uint32,
 		fullProgress := updated.ProgressString()
 		if err := p.txEmitter(tx).EmitProgressUpdated(transactionId, characterId, 0, questId, infoNumber, fullProgress); err != nil {
 			p.l.WithError(err).Warnf("Unable to emit quest progress updated event for quest [%d] character [%d].", questId, characterId)
+			return err
 		}
 
 		return nil

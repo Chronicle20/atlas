@@ -2094,6 +2094,23 @@ a saga command that accompanies one), so none of the failure-path pitfalls
   calls inside one outer `ExecuteTransaction` closure is behaviorally
   identical to the pre-migration separate-transaction sequence (since
   `ExecuteTransaction` just invokes its callback directly today).
+- **Post-review fix**: the 6 STATUS-event sites (`EmitQuestStarted` ×2 in
+  `startWithDefinition`/`StartChained`, `EmitQuestCompleted` in `Complete`,
+  `EmitQuestForfeited` in `Forfeit`, `EmitProgressUpdated` ×2 in
+  `SetProgress`) originally logged the enqueue error via `Warnf` and then
+  `return nil`'d, so the transaction closure reported success and the tx
+  committed even when the outbox enqueue failed — silently defeating the
+  atomicity this migration exists to provide, and inconsistent with the 2
+  `EmitSaga` sites (`processStartActions`/`processEndActions`) which already
+  propagated. All 6 now `return err` after the log line, matching the
+  `EmitSaga` shape, so an enqueue failure aborts the closure and the
+  `ExecuteTransaction` call reports the error to its caller. Added
+  `quest/emit_failure_propagation_test.go` (4 new tests, using new
+  `MockEventEmitter.{Started,Completed,Forfeited,Progress}Err` injection
+  fields in `test/mocks.go`) asserting each site now returns the injected
+  error and records no event. `go test -race ./...`, `go vet ./...`,
+  `go build ./...` clean; `docker buildx bake atlas-quest` clean;
+  `tools/redis-key-guard.sh` clean.
 
 ## atlas-gachapons
 

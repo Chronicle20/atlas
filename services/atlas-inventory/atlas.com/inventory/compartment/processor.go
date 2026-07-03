@@ -1158,7 +1158,20 @@ func (p *Processor) AttemptEquipmentPickUp(mb *message.Buffer) func(transactionI
 			return nil
 		})
 		if txErr != nil {
-			return p.dropProcessor.CancelReservation(mb)(f, dropId, characterId)
+			// CancelReservation is a COMMAND to the separate atlas-drop
+			// service reflecting a failed (rolled-back) pickup attempt; per
+			// D7 it must not ride into the outbox-bound mb alongside a state
+			// change that never happened. Fire it on the DIRECT producer
+			// path with a fresh, throwaway buffer instead.
+			rejectEmit := func() error {
+				return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
+					return p.dropProcessor.CancelReservation(buf)(f, dropId, characterId)
+				})
+			}
+			if emitErr := rejectEmit(); emitErr != nil {
+				p.l.WithError(emitErr).Errorf("Unable to emit drop cancel-reservation for character [%d], drop [%d].", characterId, dropId)
+			}
+			return nil
 		}
 		return p.dropProcessor.RequestPickUp(mb)(f, dropId, characterId)
 	}
@@ -1271,7 +1284,20 @@ func (p *Processor) AttemptItemPickUp(mb *message.Buffer) func(transactionId uui
 		})
 
 		if txErr != nil {
-			return p.dropProcessor.CancelReservation(mb)(f, dropId, characterId)
+			// CancelReservation is a COMMAND to the separate atlas-drop
+			// service reflecting a failed (rolled-back) pickup attempt; per
+			// D7 it must not ride into the outbox-bound mb alongside a state
+			// change that never happened. Fire it on the DIRECT producer
+			// path with a fresh, throwaway buffer instead.
+			rejectEmit := func() error {
+				return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
+					return p.dropProcessor.CancelReservation(buf)(f, dropId, characterId)
+				})
+			}
+			if emitErr := rejectEmit(); emitErr != nil {
+				p.l.WithError(emitErr).Errorf("Unable to emit drop cancel-reservation for character [%d], drop [%d].", characterId, dropId)
+			}
+			return nil
 		}
 		return p.dropProcessor.RequestPickUp(mb)(f, dropId, characterId)
 	}
@@ -1568,7 +1594,16 @@ func (p *Processor) Accept(mb *message.Buffer) func(transactionId uuid.UUID, cha
 
 		if txErr != nil {
 			p.l.WithError(txErr).Errorf("Character [%d] unable to accept item [%d] to inventory [%d].", characterId, m.TemplateId(), inventoryType)
-			_ = mb.Put(compartment.EnvEventTopicStatus, ErrorEventStatusProvider(transactionId, c.Id(), characterId, compartment.AcceptCommandFailed))
+			// AcceptCommandFailed reflects no committed state change (the inner
+			// tx rolled back), so per D7 it must not ride into the outbox-bound
+			// mb. Capture it as a rejectEmit closure and fire it on the DIRECT
+			// producer path, outside the outbox tx, then return nil as before.
+			rejectEmit := func() error {
+				return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvEventTopicStatus)(ErrorEventStatusProvider(transactionId, c.Id(), characterId, compartment.AcceptCommandFailed))
+			}
+			if emitErr := rejectEmit(); emitErr != nil {
+				p.l.WithError(emitErr).Errorf("Unable to emit accept command failed for character [%d].", characterId)
+			}
 			return nil
 		}
 
@@ -1657,7 +1692,16 @@ func (p *Processor) Release(mb *message.Buffer) func(transactionId uuid.UUID, ch
 
 		if txErr != nil {
 			p.l.WithError(txErr).Errorf("Character [%d] unable to release asset [%d] from inventory [%d].", characterId, assetId, inventoryType)
-			_ = mb.Put(compartment.EnvEventTopicStatus, ErrorEventStatusProvider(transactionId, c.Id(), characterId, compartment.ReleaseCommandFailed))
+			// ReleaseCommandFailed reflects no committed state change (the inner
+			// tx rolled back), so per D7 it must not ride into the outbox-bound
+			// mb. Capture it as a rejectEmit closure and fire it on the DIRECT
+			// producer path, outside the outbox tx, then return nil as before.
+			rejectEmit := func() error {
+				return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvEventTopicStatus)(ErrorEventStatusProvider(transactionId, c.Id(), characterId, compartment.ReleaseCommandFailed))
+			}
+			if emitErr := rejectEmit(); emitErr != nil {
+				p.l.WithError(emitErr).Errorf("Unable to emit release command failed for character [%d].", characterId)
+			}
 			return nil
 		}
 

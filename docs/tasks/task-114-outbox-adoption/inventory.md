@@ -168,11 +168,22 @@ fire-and-forget after the transaction closed.
 
 Module: `services/atlas-inventory/atlas.com/inventory`. Line numbers below
 reflect `compartment/processor.go`, `inventory/processor.go`, and
-`asset/processor.go` as of the Task 11 commit. Wiring: `main.go` appends
-`outboxlib.Migration` to `database.SetMigrations(...)` and boots the
-drainer right after `database.Connect(...)`, using the existing
+`asset/processor.go` as of the Task 11 commit, updated for the D7
+review-fix pass (see "Fix pass (D7 review)" at the end of this section).
+Wiring: `main.go` appends `outboxlib.Migration` to
+`database.SetMigrations(...)` and boots the drainer right after
+`database.Connect(...)`, using the existing
 `tdm := service.GetTeardownManager()` var (this service's local name for
 the teardown manager, not `lifecycle`).
+
+**Counts**: 22 `*AndEmit` call sites migrated to the outbox (Pattern A;
+unchanged by the D7 fix pass — no site was un-migrated). 7 left-direct
+entries: 3 whole-method sites with no DB write (`RequestReserveAndEmit`,
+`CancelReservationAndEmit`, `inventory/processor.go`'s `CreateAndEmit`
+rollback branch), plus 4 failure-path sub-sites *inside* already-migrated
+methods (`Accept`, `Release`, `AttemptEquipmentPickUp`,
+`AttemptItemPickUp`) that were incorrectly riding into the outbox buffer
+and are now routed direct per the fix pass below.
 
 ### Migrated
 
@@ -200,31 +211,45 @@ same `tx`.
 - `compartment/processor.go:878` `DestroyAssetAndEmit` — Pattern A.
 - `compartment/processor.go:929` `ExpireAssetAndEmit` — Pattern A.
 - `compartment/processor.go:989` `CreateAssetAndEmit` — Pattern A (wraps
-  `CreateAssetAndLock`, which locks then delegates to `CreateAsset`). The
-  failure branch's `CreationFailedEventStatusProvider` is put on the same
-  `mb` as the success path inside `CreateAsset` (not a separate
-  `message.Emit` call), so it rides along into the outbox with the rest of
-  the site's buffer — consistent with the `character/processor.go`
-  precedent (Task 9 inventory note on `AwardExperienceAndEmit`'s bundled
-  command) of migrating a call site's whole buffer rather than
-  splitting sub-`Put`s out of an already-migrated site.
+  `CreateAssetAndLock`, which locks then delegates to `CreateAsset`).
+  **Corrected in the D7 review-fix pass**: the original note here claimed
+  the failure branch's `CreationFailedEventStatusProvider` "rides along
+  into the outbox" — that is **wrong** for this call path.
+  `CreateAsset`'s failure branch puts the rejection on `mb` *and then
+  `return txErr`* (non-nil); since `CreateAssetAndLock` just forwards that
+  error up to `CreateAssetAndEmit`'s `message.Emit(outbox.EmitProvider(...))`
+  closure, `Emit`'s `f(b)` returns non-nil and the buffer is **discarded,
+  never flushed** — a pre-existing no-op emit on this path, in both the old
+  (direct-producer) and new (outbox) code. Behavior unchanged by Task 11.
+  Left uncorrected in code (no fix needed here). NOTE: this no-op claim
+  holds only for *this* direct entry point — see the Notes-section caveat
+  below for the residual case where `CreateAsset` is invoked from
+  `AttemptItemPickUp` instead.
 - `compartment/processor.go:1093` `AttemptEquipmentPickUpAndEmit` — Pattern
-  A. Bundles the post-tx `dropProcessor.CancelReservation`/no call in this
-  method (success path only calls `RequestPickUp`); see Notes.
+  A. Success path (`RequestPickUp`, bundled with the committed
+  `CreateFromModel` write) is correctly migrated and **unchanged** by the
+  D7 fix pass. The failure branch (`CancelReservation`, a COMMAND to
+  atlas-drop after a rolled-back write) was incorrectly riding into the
+  outbox and is now routed DIRECT — see Left direct below.
 - `compartment/processor.go:1167` `AttemptItemPickUpAndEmit` — Pattern A.
-  Bundles the pickup-consume command and both
-  `dropProcessor.RequestPickUp`/`CancelReservation` outcomes into the same
-  migrated buffer; see Notes.
+  Success path (pickup-consume command + `RequestPickUp`, bundled with the
+  committed `CreateAsset`/`UpdateQuantity` writes) is correctly migrated
+  and **unchanged** by the D7 fix pass. The failure branch
+  (`CancelReservation`) was incorrectly riding into the outbox and is now
+  routed DIRECT — see Left direct below and the residual-nuance Note.
 - `compartment/processor.go:1280` `RechargeAssetAndEmit` — Pattern A.
 - `compartment/processor.go:1338` `MergeAndCompactAndEmit` — Pattern A.
 - `compartment/processor.go:1346` `CompactAndSortAndEmit` — Pattern A.
-- `compartment/processor.go:1467` `AcceptAndEmit` — Pattern A. The failure
-  branch's `ErrorEventStatusProvider` (compartment `AcceptCommandFailed`)
-  is put on the same shared `mb` inside `Accept`, riding along into the
-  outbox with the rest of the buffer for the same reason as `CreateAsset`
-  above.
-- `compartment/processor.go:1580` `ReleaseAndEmit` — Pattern A. Same
-  shared-buffer rejection pattern (`ReleaseCommandFailed`) as `Accept`.
+- `compartment/processor.go:1467` `AcceptAndEmit` — Pattern A. Success path
+  unchanged. **Fixed in the D7 review-fix pass**: the failure branch's
+  `ErrorEventStatusProvider` (compartment `AcceptCommandFailed`) — a
+  rejection reflecting no committed state change — was riding along into
+  the outbox on the same shared `mb`; it is now captured in a `rejectEmit
+  func() error` closure and fired via `producer.ProviderImpl(p.l)(p.ctx)`
+  on the DIRECT path after the inner tx returns, then `Accept` still
+  returns `nil` to the caller (unchanged contract). See Left direct below.
+- `compartment/processor.go:1580` `ReleaseAndEmit` — Pattern A. Same fix as
+  `Accept` above for the `ReleaseCommandFailed` rejection.
 - `compartment/processor.go:1782` `ModifyEquipmentAndEmit` — Pattern A
   (wraps a method whose body already was `return
   database.ExecuteTransaction(...)`; now the outer transaction is opened
@@ -256,6 +281,31 @@ same `tx`.
   textbook rejection-event shape from the recipe (own dedicated emit call,
   no state change) and needed no restructuring.
 
+**Added by the D7 review-fix pass** (failure-path sub-sites inside
+already-migrated `*AndEmit` methods; the outer `AndEmit` wrapper itself
+stays Pattern A/migrated for its success path):
+
+- `compartment/processor.go:1467` `Accept`'s failure branch
+  (`AcceptCommandFailed`) — a rejection reflecting no committed state
+  change (inner tx rolled back). Captured as a `rejectEmit func() error`
+  closure and fired via `producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvEventTopicStatus)(...)`
+  on the direct path, then `Accept` returns `nil` (unchanged contract).
+- `compartment/processor.go:1580` `Release`'s failure branch
+  (`ReleaseCommandFailed`) — same shape as `Accept` above.
+- `compartment/processor.go:1093` `AttemptEquipmentPickUp`'s failure branch
+  — `dropProcessor.CancelReservation`, a cross-service COMMAND to
+  atlas-drop reflecting a failed/rolled-back pickup. Fired via
+  `message.Emit(producer.ProviderImpl(p.l)(p.ctx))(...)` on a fresh,
+  throwaway buffer, then `AttemptEquipmentPickUp` returns `nil` (unchanged
+  contract). The success path (`RequestPickUp`, bundled with the committed
+  `CreateFromModel` write) is untouched.
+- `compartment/processor.go:1167` `AttemptItemPickUp`'s failure branch —
+  same `CancelReservation` fix as `AttemptEquipmentPickUp` above. The
+  success path (pickup-consume command + `RequestPickUp`, bundled with the
+  committed `CreateAsset`/`UpdateQuantity` writes) is untouched. See the
+  residual-nuance Note below re: `CreateAsset`'s own `CreationFailedEventStatusProvider`
+  when reached through this call path.
+
 ### Notes
 
 - **Struct-init stored provider (`compartment/processor.go:97,109`,
@@ -272,36 +322,76 @@ same `tx`.
   itself, its initialization at `NewProcessor`, and its propagation through
   `WithTransaction`/`WithAssetProcessor` were left untouched since it is
   still live for those two methods.
-- **Bundled drop/pickup commands ride the migrated buffer, not split out**:
-  `AttemptEquipmentPickUpAndEmit` and `AttemptItemPickUpAndEmit` each emit,
-  in addition to their compartment/asset state-change events,
+- **Bundled drop/pickup commands — split by success/failure (D7 review-fix
+  pass)**: `AttemptEquipmentPickUpAndEmit` and `AttemptItemPickUpAndEmit`
+  each emit, in addition to their compartment/asset state-change events,
   `COMMAND_TOPIC_DROP` commands (`CancelReservation`/`RequestPickUp` via
-  `drop.Processor`) and, on the consume-on-pickup branch,
-  `pickupMsg.EnvCommandTopic`. These are commands to the separate
-  atlas-drop-domain, and D7 lists "COMMAND emits to OTHER services" as a
-  leave-direct category — but here they are `mb.Put` calls sharing the
-  *same* buffer/`message.Emit` call as the migrated state-change writes,
-  not separate `message.Emit` sites of their own. Splitting them out would
-  require threading a second buffer (or an out-of-band `rejectEmit`-style
-  closure) through `AttemptEquipmentPickUp`/`AttemptItemPickUp`, which are
-  exercised directly (bypassing `*AndEmit`) by
-  `TestAttemptItemPickUpInventoryFull` and
-  `TestAttemptItemPickUpConsumeOnPickup` — both assert the drop/pickup
-  commands land in the *same* buffer passed to the un-wrapped method. Per
-  the `character/processor.go` Task 9 precedent (`AwardExperienceAndEmit`'s
-  bundled command note), a command that is a call site's own bundled
-  follow-on effect migrates with the rest of that site's buffer rather than
-  being split out. Flagging as a concern for review: these two commands
-  will now be delayed until outbox drain instead of firing immediately,
-  which is a latency change (not a correctness change) for the drop
-  service's reservation cancel/pickup-finalize signal.
+  `drop.Processor`) and, on the consume-on-pickup branch (no DB write at
+  all — out of scope for this pass, see below),
+  `pickupMsg.EnvCommandTopic`. The original Task 11 migration bundled
+  *all* of these onto the same migrated `mb`, reasoning by analogy to the
+  `character/processor.go` Task 9 `AwardExperienceAndEmit` precedent
+  (a call site's own bundled follow-on effect migrates with the rest of
+  the buffer). A subsequent D7 review found that analogy doesn't hold for
+  the FAILURE branch: `RequestPickUp` (success, bundled with the committed
+  write) is a legitimate follow-on effect of a state change that actually
+  happened, but `CancelReservation` (failure) is a COMMAND fired *because*
+  the write did NOT happen — D7 explicitly lists "COMMAND emits to OTHER
+  services" as leave-direct, and this command exists specifically to
+  signal a rollback, so it must not wait on (or ride along with) an
+  outbox flush that has nothing to commit. Fixed: `CancelReservation` now
+  fires via a fresh, throwaway buffer on the direct producer path (see
+  "Added by the D7 review-fix pass" above); `RequestPickUp` (success) and
+  the consume-on-pickup branch's `pickupMsg` command are untouched.
+  `TestAttemptItemPickUpInventoryFull` was updated to assert
+  `CancelReservation`'s *absence* from the outbox-bound `mb` instead of
+  its presence; `TestAttemptItemPickUpConsumeOnPickup` (success/no-write
+  branch) needed no change.
+- **Residual nuance, not fixed in this pass**: `CreateAsset`'s own
+  `CreationFailedEventStatusProvider` rejection is a genuine no-op when
+  reached via its direct entry point (`CreateAssetAndEmit` →
+  `CreateAssetAndLock` → `CreateAsset`, see the corrected Migrated-list
+  note above) because `CreateAsset` returns the error non-nil, which
+  propagates all the way to `CreateAssetAndEmit`'s `Emit` call and
+  discards the whole buffer. However, `CreateAsset` is *also* called from
+  inside `AttemptItemPickUp`'s own tx closure (the merge/overflow and
+  fresh-create branches), which does not propagate that error the same
+  way: `AttemptItemPickUp` catches it, and — after this fix pass — still
+  returns `nil` from its failure branch (unchanged contract; only the
+  `CancelReservation` command was moved off the shared buffer). That means
+  a `CreateAsset` failure reached through `AttemptItemPickUp` (e.g. the
+  `INVENTORY_FULL` case exercised by `TestAttemptItemPickUpInventoryFull`)
+  still leaves `CreationFailedEventStatusProvider` sitting in the
+  outbox-bound `mb` and flushes it via the outbox — the exact D7
+  "rejection event reflecting no state change" pattern this task set out
+  to fix, just for a *different* trigger than the two items in this fix
+  pass's explicit scope. Not corrected here because the only clean fix
+  (either making `AttemptItemPickUp`'s failure branch return the original
+  `txErr` so `Emit` discards the whole buffer, or threading a second
+  scratch buffer through `CreateAsset`'s nested writes) changes behavior
+  or plumbing beyond what was asked, and interacts with the still-latent
+  `ExecuteTransaction`-no-op atomicity gap (task-119) in ways that need
+  their own review. Flagging explicitly for a follow-up fix pass.
 - `database.ExecuteTransaction` atomicity is still latent fleet-wide
   pending task-119 (see the `atlas-character` section above and project
   memory `bug_execute_transaction_noop.md`); this task's migrations use the
   correct seam and become atomic for free once task-119 lands.
 - No pre-existing test asserted DIRECT-path (non-outbox) emission for any
-  now-migrated flow in this module — all `*AndEmit` wrapper methods were
-  untested in isolation; every existing test in `compartment/processor_test.go`,
-  `asset/processor_test.go` exercises the un-wrapped `Method(mb)(...)` form
-  directly against a manually constructed `message.Buffer`, so none needed
-  updating. `go test -race ./...` passes unchanged.
+  now-migrated flow in this module as of the original Task 11 commit — all
+  `*AndEmit` wrapper methods were untested in isolation; every existing
+  test exercised the un-wrapped `Method(mb)(...)` form directly against a
+  manually constructed `message.Buffer`.
+- **D7 review-fix pass test changes**: `TestAttemptItemPickUpInventoryFull`
+  (`compartment/processor_test.go`) previously asserted that the
+  `CancelReservation` drop command landed in the *same* buffer as the
+  `CREATION_FAILED` compartment event; updated to assert its *absence*
+  instead (it now fires via the direct producer, invisible to this test's
+  buffer). Two new tests, `TestAcceptCommandFailedRoutesDirect` and
+  `TestReleaseCommandFailedRoutesDirect`, were added to cover `Accept`/
+  `Release`'s failure-path rejections, which had no prior test coverage.
+  `TestMain` now calls `producertest.InstallNoop()` (from
+  `github.com/Chronicle20/atlas/libs/atlas-kafka/producer/producertest`)
+  so these failure-path direct-producer calls succeed instantly in tests
+  instead of retrying against an unreachable broker for ~42s.
+  `TestAttemptItemPickUpConsumeOnPickup` (success/no-write branch)
+  required no change. `go test -race ./...` — all packages `ok`.

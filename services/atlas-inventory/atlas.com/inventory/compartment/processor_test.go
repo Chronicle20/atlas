@@ -21,6 +21,7 @@ import (
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer/producertest"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
@@ -32,6 +33,12 @@ import (
 )
 
 func TestMain(m *testing.M) {
+	// Failure-path rejections/commands (Accept/Release/AttemptXPickUp) fire
+	// via the DIRECT producer path (see D7 fix). Swap in a no-op writer so
+	// those real-Kafka calls succeed instantly instead of retrying against
+	// an unreachable broker for ~42s (see producertest package doc).
+	producertest.InstallNoop()
+
 	mr, err := miniredis.Run()
 	if err != nil {
 		panic(err)
@@ -618,17 +625,25 @@ func TestDropNonRechargeableInsufficientQuantity(t *testing.T) {
 	}
 }
 
-// TestAttemptItemPickUpInventoryFull guards two related bugs in the drop pickup
-// failure path:
+// TestAttemptItemPickUpInventoryFull guards two related behaviors in the
+// drop pickup failure path:
 //
 //  1. The inner CreateAsset must emit CREATION_FAILED with the dedicated
 //     INVENTORY_FULL error code (not the generic UNKNOWN_ERROR), so atlas-channel
-//     can render the right client status message.
-//  2. The outer AttemptItemPickUp must keep CREATION_FAILED *and* the drop-side
-//     CANCEL_RESERVATION command in the same buffer. A previous version
-//     reassigned the local `mb` to a fresh buffer before queueing the cancel,
-//     orphaning that command so atlas-drops never learned the reservation
-//     should be released.
+//     can render the right client status message. This event still lands in
+//     the caller-supplied (outbox-bound in production) mb — CreateAsset's
+//     own rejection handling is unchanged by the D7 fix (see
+//     docs/tasks/task-114-outbox-adoption/inventory.md, atlas-inventory
+//     Notes, for the residual nuance this leaves open).
+//  2. The outer AttemptItemPickUp must NOT put the drop-side
+//     CANCEL_RESERVATION command on the caller-supplied mb. Per D7, a
+//     COMMAND to another service (atlas-drop) reflecting a failed/rolled-back
+//     pickup must go on the DIRECT producer path, not ride into the outbox
+//     alongside a state change that never happened. It now fires via
+//     producer.ProviderImpl on its own throwaway buffer (TestMain installs
+//     producertest.InstallNoop so that direct send succeeds instantly
+//     instead of retrying against an unreachable broker); this test can only
+//     observe its ABSENCE from mb, not its delivery.
 func TestAttemptItemPickUpInventoryFull(t *testing.T) {
 	characterId := uint32(304)
 
@@ -686,20 +701,18 @@ func TestAttemptItemPickUpInventoryFull(t *testing.T) {
 		t.Fatalf("expected a CREATION_FAILED compartment status event, got %d events on topic", len(statusMsgs))
 	}
 
+	// D7: CANCEL_RESERVATION is a cross-service COMMAND fired on a failed
+	// (rolled-back) pickup attempt; it must be routed via the DIRECT
+	// producer path, not enqueued in the outbox-bound mb.
 	dropCmds := events[dropMsg.EnvCommandTopic]
-	var sawCancel bool
 	for _, msg := range dropCmds {
 		var cmd dropMsg.Command[dropMsg.CancelReservationCommandBody]
 		if err := json.Unmarshal(msg.Value, &cmd); err != nil {
 			continue
 		}
 		if cmd.Type == dropMsg.CommandTypeCancelReservation {
-			sawCancel = true
-			break
+			t.Fatalf("CANCEL_RESERVATION must not be enqueued in the outbox-bound buffer; it must go via the direct producer path (D7)")
 		}
-	}
-	if !sawCancel {
-		t.Fatalf("expected a CANCEL_RESERVATION drop command in the same buffer; got %d drop commands", len(dropCmds))
 	}
 }
 
@@ -801,6 +814,75 @@ func TestAttemptItemPickUpConsumeOnPickup(t *testing.T) {
 		// in this buffer would indicate a stray inventory mutation.
 		if ev.Type == compartmentMsg.StatusEventTypeCreated {
 			t.Fatalf("unexpected CREATED status event on consume-on-pickup path")
+		}
+	}
+}
+
+// TestAcceptCommandFailedRoutesDirect verifies that Accept's rejection event
+// (ACCEPT_COMMAND_FAILED) does not land in the caller-supplied buffer when
+// the inner tx fails/rolls back. Per D7 a rejection reflecting no committed
+// state change must fire via the direct producer path, not ride into the
+// outbox alongside a state change that never happened.
+func TestAcceptCommandFailedRoutesDirect(t *testing.T) {
+	characterId := uint32(306)
+
+	l := testLogger()
+	te := testTenant()
+	ctx := tenant.WithContext(context.Background(), te)
+	db := testDatabase(t, l)
+
+	cp := compartment.NewProcessor(l, ctx, db)
+
+	// No compartment exists for this character/type, so the inner
+	// GetByCharacterAndType lookup fails and Accept must reject.
+	m := asset.NewBuilder(uuid.New(), 2000000).SetSlot(1).SetQuantity(1).Build()
+
+	mb := message.NewBuffer()
+	if err := cp.Accept(mb)(uuid.New(), characterId, inventory.TypeValueUse, m); err != nil {
+		t.Fatalf("Accept returned unexpected error: %v", err)
+	}
+
+	events := mb.GetAll()
+	statusMsgs := events[compartmentMsg.EnvEventTopicStatus]
+	for _, msg := range statusMsgs {
+		var ev compartmentMsg.StatusEvent[compartmentMsg.ErrorEventBody]
+		if err := json.Unmarshal(msg.Value, &ev); err != nil {
+			continue
+		}
+		if ev.Type == compartmentMsg.StatusEventTypeError && ev.Body.ErrorCode == compartmentMsg.AcceptCommandFailed {
+			t.Fatalf("ACCEPT_COMMAND_FAILED must not be enqueued in the outbox-bound buffer; it must go via the direct producer path (D7)")
+		}
+	}
+}
+
+// TestReleaseCommandFailedRoutesDirect verifies the same for Release's
+// RELEASE_COMMAND_FAILED rejection.
+func TestReleaseCommandFailedRoutesDirect(t *testing.T) {
+	characterId := uint32(307)
+
+	l := testLogger()
+	te := testTenant()
+	ctx := tenant.WithContext(context.Background(), te)
+	db := testDatabase(t, l)
+
+	cp := compartment.NewProcessor(l, ctx, db)
+
+	// No compartment exists for this character/type, so the inner
+	// GetByCharacterAndType lookup fails and Release must reject.
+	mb := message.NewBuffer()
+	if err := cp.Release(mb)(uuid.New(), characterId, inventory.TypeValueUse, 1, 1); err != nil {
+		t.Fatalf("Release returned unexpected error: %v", err)
+	}
+
+	events := mb.GetAll()
+	statusMsgs := events[compartmentMsg.EnvEventTopicStatus]
+	for _, msg := range statusMsgs {
+		var ev compartmentMsg.StatusEvent[compartmentMsg.ErrorEventBody]
+		if err := json.Unmarshal(msg.Value, &ev); err != nil {
+			continue
+		}
+		if ev.Type == compartmentMsg.StatusEventTypeError && ev.Body.ErrorCode == compartmentMsg.ReleaseCommandFailed {
+			t.Fatalf("RELEASE_COMMAND_FAILED must not be enqueued in the outbox-bound buffer; it must go via the direct producer path (D7)")
 		}
 	}
 }

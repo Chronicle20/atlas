@@ -3,19 +3,21 @@ package note
 import (
 	"atlas-notes/kafka/message"
 	"atlas-notes/kafka/message/note"
-	"atlas-notes/kafka/producer"
 	"atlas-notes/saga"
 	"context"
 	"fmt"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
 type Processor interface {
+	WithTransaction(tx *gorm.DB) Processor
 	Create(mb *message.Buffer) func(characterId uint32) func(senderId uint32) func(msg string) func(flag byte) (Model, error)
 	CreateAndEmit(characterId uint32, senderId uint32, msg string, flag byte) (Model, error)
 	Update(mb *message.Buffer) func(id uint32) func(characterId uint32) func(senderId uint32) func(msg string) func(flag byte) (Model, error)
@@ -32,22 +34,33 @@ type Processor interface {
 }
 
 type ProcessorImpl struct {
-	l        logrus.FieldLogger
-	ctx      context.Context
-	db       *gorm.DB
-	t        tenant.Model
-	producer producer.Provider
-	sagaP    saga.Processor
+	l     logrus.FieldLogger
+	ctx   context.Context
+	db    *gorm.DB
+	t     tenant.Model
+	sagaP saga.Processor
 }
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor {
 	return &ProcessorImpl{
-		l:        l,
-		ctx:      ctx,
-		db:       db,
-		t:        tenant.MustFromContext(ctx),
-		producer: producer.ProviderImpl(l)(ctx),
-		sagaP:    saga.NewProcessor(l, ctx),
+		l:     l,
+		ctx:   ctx,
+		db:    db,
+		t:     tenant.MustFromContext(ctx),
+		sagaP: saga.NewProcessor(l, ctx),
+	}
+}
+
+// WithTransaction returns a copy of the processor bound to the given transaction, so
+// nested administrator writes and the outbox enqueue for a migrated *AndEmit method
+// join the same transaction.
+func (p *ProcessorImpl) WithTransaction(tx *gorm.DB) Processor {
+	return &ProcessorImpl{
+		l:     p.l,
+		ctx:   p.ctx,
+		db:    tx,
+		t:     p.t,
+		sagaP: p.sagaP,
 	}
 }
 
@@ -84,7 +97,14 @@ func (p *ProcessorImpl) Create(mb *message.Buffer) func(characterId uint32) func
 
 // CreateAndEmit creates a new note and emits a status event
 func (p *ProcessorImpl) CreateAndEmit(characterId uint32, senderId uint32, msg string, flag byte) (Model, error) {
-	return message.EmitWithResult[Model, byte](p.producer)(model.Flip(model.Flip(model.Flip(p.Create)(characterId))(senderId))(msg))(flag)
+	var result Model
+	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		var err error
+		tp := p.WithTransaction(tx)
+		result, err = message.EmitWithResult[Model, byte](outbox.EmitProvider(p.l, p.ctx, tx))(model.Flip(model.Flip(model.Flip(tp.Create)(characterId))(senderId))(msg))(flag)
+		return err
+	})
+	return result, txErr
 }
 
 // Update updates an existing note
@@ -123,7 +143,14 @@ func (p *ProcessorImpl) Update(mb *message.Buffer) func(id uint32) func(characte
 
 // UpdateAndEmit updates an existing note and emits a status event
 func (p *ProcessorImpl) UpdateAndEmit(id uint32, characterId uint32, senderId uint32, msg string, flag byte) (Model, error) {
-	return message.EmitWithResult[Model, byte](p.producer)(model.Flip(model.Flip(model.Flip(model.Flip(p.Update)(id))(characterId))(senderId))(msg))(flag)
+	var result Model
+	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		var err error
+		tp := p.WithTransaction(tx)
+		result, err = message.EmitWithResult[Model, byte](outbox.EmitProvider(p.l, p.ctx, tx))(model.Flip(model.Flip(model.Flip(model.Flip(tp.Update)(id))(characterId))(senderId))(msg))(flag)
+		return err
+	})
+	return result, txErr
 }
 
 // Delete deletes a note
@@ -148,7 +175,10 @@ func (p *ProcessorImpl) Delete(mb *message.Buffer) func(id uint32) error {
 
 // DeleteAndEmit deletes a note and emits a status event
 func (p *ProcessorImpl) DeleteAndEmit(id uint32) error {
-	return message.Emit(p.producer)(model.Flip(p.Delete)(id))
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		tp := p.WithTransaction(tx)
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(model.Flip(tp.Delete)(id))
+	})
 }
 
 // DeleteAll deletes all notes for a character
@@ -174,7 +204,10 @@ func (p *ProcessorImpl) DeleteAll(mb *message.Buffer) func(characterId uint32) e
 
 // DeleteAllAndEmit deletes all notes for a character and emits status events
 func (p *ProcessorImpl) DeleteAllAndEmit(characterId uint32) error {
-	return message.Emit(p.producer)(model.Flip(p.DeleteAll)(characterId))
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		tp := p.WithTransaction(tx)
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(model.Flip(tp.DeleteAll)(characterId))
+	})
 }
 
 // ByIdProvider retrieves a note by ID
@@ -267,7 +300,10 @@ func (p *ProcessorImpl) awardFameToSender(ch channel.Model, recipientId uint32, 
 
 // DiscardAndEmit discards multiple notes for a character and emits status events
 func (p *ProcessorImpl) DiscardAndEmit(ch channel.Model, characterId uint32, noteIds []uint32) error {
-	return message.Emit(p.producer)(func(mb *message.Buffer) error {
-		return p.Discard(mb)(ch)(characterId)(noteIds)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		tp := p.WithTransaction(tx)
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
+			return tp.Discard(mb)(ch)(characterId)(noteIds)
+		})
 	})
 }

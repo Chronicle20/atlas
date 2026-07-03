@@ -1085,3 +1085,108 @@ Module: `services/atlas-guilds/atlas.com/guilds`. Two processors migrated:
   pending task-119 (see `bug_execute_transaction_noop.md`); this task's
   migration uses the correct seam and becomes atomic for free once
   task-119 lands.
+
+## atlas-notes
+
+Module: `services/atlas-notes/atlas.com/notes`. One processor migrated
+(`note/processor.go`, all 5 `*AndEmit` sites); the four tx-coupled writes
+live in `note/administrator.go`, which is re-entered through the shared
+`database.ExecuteTransaction` seam rather than edited directly. Line
+numbers reflect the state after this task's commit.
+
+### Migrated
+
+- `note/processor.go:99` `CreateAndEmit` — Pattern B. Opens
+  `database.ExecuteTransaction`, builds `outbox.EmitProvider(p.l, p.ctx,
+  tx)`, and calls `p.WithTransaction(tx).Create(mb)(...)`, which in turn
+  calls `createNote(tx.WithContext(ctx), ...)` in `administrator.go:9`.
+  `createNote` opens its own `database.ExecuteTransaction(db, ...)`
+  internally; since `db` here is already the outer `tx`, `isTransaction`
+  is true and the administrator's `tx.Create(&entity)` re-enters the same
+  transaction (recipe re-entrancy guarantee) rather than opening a second
+  one. The result (`Model`) is captured in a `var result Model` outside
+  the `ExecuteTransaction` closure per Pattern B.
+- `note/processor.go:145` `UpdateAndEmit` — Pattern B, same shape as
+  Create. Calls `p.WithTransaction(tx).Update(mb)(...)` →
+  `updateNote(tx.WithContext(ctx), ...)` in `administrator.go:23`, which
+  re-enters the outer tx for its `tx.Where(...).Updates(&entity)` call
+  (and then re-reads the row via `getByIdProvider` on the same `db`/`tx`
+  handle before returning).
+- `note/processor.go:177` `DeleteAndEmit` — Pattern A. Calls
+  `p.WithTransaction(tx).Delete(mb)(id)` → `deleteNote(tx.WithContext(ctx),
+  id)` in `administrator.go:40`, re-entering the outer tx.
+- `note/processor.go:206` `DeleteAllAndEmit` — Pattern A. Calls
+  `p.WithTransaction(tx).DeleteAll(mb)(characterId)` →
+  `deleteAllNotes(tx.WithContext(ctx), characterId)` in
+  `administrator.go:46`, re-entering the outer tx. `DeleteAll` buffers one
+  `NOTE_STATUS` delete event per existing note (read via
+  `ByCharacterProvider` before the bulk delete) — all buffered events flush
+  through the single outbox provider built from the one outer `tx`.
+- `note/processor.go:302` `DiscardAndEmit` — Pattern A (call-site-shaped
+  closure, since `Discard` takes `mb` plus three more curried args). Wraps
+  `p.WithTransaction(tx).Discard(mb)(ch)(characterId)(noteIds)` in the
+  outer `ExecuteTransaction`; each loop iteration's `deleteNote(tx...)`
+  call re-enters the same outer tx (same seam as `DeleteAndEmit`, just
+  looped).
+
+`ProcessorImpl` gained a `WithTransaction(tx *gorm.DB) Processor` method
+(added to the `Processor` interface) that copies `l`/`ctx`/`t`/`sagaP` and
+swaps `db` for the given `tx`. The struct's former `producer
+producer.Provider` field (constructed once in `NewProcessor` via
+`producer.ProviderImpl(l)(ctx)`) was the sole reason none of the five
+`*AndEmit` sites previously threaded a transaction through their
+administrator calls — every DB write in `Create`/`Update`/`Delete`/
+`DeleteAll`/`Discard` used `p.db` directly with no tx-scoping, and the
+buffered events flushed through that stored direct producer strictly
+*after* each administrator write had already committed on its own.
+Because all five emit sites are now migrated and nothing else in the
+package reads a stored provider (the classification rule's "methods with
+no DB write may keep the direct provider" carve-out doesn't apply to any
+method here), the field was deleted outright rather than left dead,
+along with its now-unused `atlas-notes/kafka/producer` import in
+`processor.go`.
+
+### Left direct
+
+- `saga/processor.go:27` `Create` — `producer.ProviderImpl(p.l)(p.ctx)(msgsaga.EnvCommandTopic)(CreateCommandProvider(s))`
+  is a COMMAND emit to the separate `atlas-saga-orchestrator` service (a
+  saga-kickoff command, not a notes-domain status event) with no local DB
+  write in this function — per the D7 classification rule, COMMAND emits
+  to other services stay on the direct path. Called from
+  `note/processor.go:290` `awardFameToSender` (invoked from inside
+  `Discard`'s per-note loop, itself now running inside `DiscardAndEmit`'s
+  outer tx) — the saga-create command fires unconditionally after a
+  successful per-note delete, i.e. it reflects a state change that has
+  (from the caller's point of view) already happened, the same shape the
+  atlas-inventory/atlas-buddies inventory entries treat as an acceptable
+  direct COMMAND rather than a rejection-style failure emit that must be
+  deferred outside the tx. No behavioral change to this call site was
+  made or needed.
+
+### Notes
+
+- Enumeration: the step-2 grep plus the extra
+  `GetAll()`/`NewBuffer()`/`p.p(`/`producer.Provider`/`AndEmit(` sweep
+  found exactly the 5 `note/processor.go` `*AndEmit` sites (3 `Emit`, 2
+  `EmitWithResult`) plus the 1 `saga/processor.go` command emit called out
+  in the brief — no hand-rolled buffer-flush loops or struct-stored
+  provider fan-outs beyond the single `producer` field already accounted
+  for above. `note/mock/processor.go`'s `ProcessorMock` does not
+  implement the current `note.Processor` interface (its `Discard`/
+  `DiscardAndEmit` signatures are missing the `ch channel.Model` param
+  that the real interface has carried since before this task, and it now
+  also lacks `WithTransaction`); it isn't referenced anywhere in the
+  module or asserted against the interface, so it compiles as inert dead
+  code both before and after this change — pre-existing drift, left
+  untouched as out of scope for this task.
+- No pre-existing test asserted direct-path emission for a migrated flow
+  (`processor_test.go` only exercises the `mb`-taking `Create`/`Update`/
+  `Delete`/`DeleteAll`/`Discard` methods directly, never the `*AndEmit`
+  wrappers), so no test needed updating to assert outbox rows instead.
+- `go test -race ./...`, `go vet ./...`, `go build ./...` all clean;
+  `docker buildx bake atlas-notes` succeeded; `tools/redis-key-guard.sh`
+  clean (this service doesn't touch Redis directly).
+- `database.ExecuteTransaction` atomicity is still latent fleet-wide
+  pending task-119 (see `bug_execute_transaction_noop.md`); this task's
+  migration uses the correct seam and becomes atomic for free once
+  task-119 lands.

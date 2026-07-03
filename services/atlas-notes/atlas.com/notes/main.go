@@ -13,6 +13,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	outboxlib "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
@@ -52,7 +53,17 @@ func main() {
 	}
 
 	// Connect to the database
-	db := database.Connect(l, database.SetMigrations(note.Migration))
+	db := database.Connect(l, database.SetMigrations(note.Migration, outboxlib.Migration))
+
+	// Boot the outbox drainer: publishes the transactional outbox to Kafka.
+	// Leadership is gated by a postgres advisory lock — replicas are safe.
+	publisher := outboxlib.NewTopicWriterPool()
+	drainer := outboxlib.NewDrainer(l, db, publisher, outboxlib.WithDSN(database.DSN()))
+	go drainer.Run(tdm.Context())
+	tdm.TeardownFunc(func() {
+		drainer.Stop()
+		publisher.Close()
+	})
 
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	character.InitConsumers(l)(cmf)(consumerGroupId)

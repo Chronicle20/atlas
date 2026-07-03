@@ -20,6 +20,20 @@ func TestStopClockGolden(t *testing.T) {
 	}
 }
 
+// TestStopClockByteOutputV48 pins the gms_v48 STOP_CLOCK (op 0x62 = 98) clientbound
+// wire. IDA: sub_4C6AEF @0x4c6aef (GMS_v48_1_DEVM.exe) reads NOTHING — it destroys
+// the clock CWnd (this[92]) and decodes no packet fields. Empty wire matches the
+// version-invariant golden.
+// packet-audit:verify packet=field/clientbound/FieldStopClock version=gms_v48 ida=0x4c6aef
+func TestStopClockByteOutputV48(t *testing.T) {
+	input := NewStopClock()
+	ctx := test.CreateContext("GMS", 48, 1)
+	actual := test.Encode(t, ctx, input.Encode, nil)
+	if len(actual) != 0 {
+		t.Errorf("v48 golden mismatch: got %v want empty", actual)
+	}
+}
+
 func TestStopClockRoundTrip(t *testing.T) {
 	input := NewStopClock()
 	for _, v := range test.Variants {

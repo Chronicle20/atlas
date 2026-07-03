@@ -639,24 +639,24 @@
   ida:
     address: 5007090
   note: "base case 'Z'(90) -> vtable+28 (CField::OnClock). address = dispatcher; vtable-resolved."
-- op: SET_QUEST_CLEAR
+- op: IDA_0X05D
   direction: clientbound
   opcode: 93
   fname: sub_4CBB78
+  provenance: manual
+  ida:
+    address: 5028728
+  note: "base case ']'(93). BODY-VERIFIED (task-113 batch8): sub_4CBB78 reads DecodeBuffer(8) FILETIME + stores this[103/104] via sub_4CBBEE — a v48-inserted per-quest-timer packet, NOT SetQuestClear (empty). v48 inserted this opcode between CLOCK and SetQuestClear vs v61's adjacent layout; true op-identity unknown."
+- op: SET_QUEST_CLEAR
+  direction: clientbound
+  opcode: 94
+  fname: sub_4CBC9A
   fname_alts:
   - CField::OnSetQuestClear
   provenance: manual
   ida:
-    address: 5028728
-  note: "base case ']'(93). Gaps at '['(91)/'\\'(92) mirror v61 base-switch subclass gaps."
-- op: IDA_0X05E
-  direction: clientbound
-  opcode: 94
-  fname: sub_4CBC9A
-  provenance: manual
-  ida:
     address: 5029018
-  note: "base case '^'(94); SET_QUEST_TIME sibling (delta doc). v61 op-identity body-map DEFERRED (see remaining)."
+  note: "base case '^'(94). BODY-VERIFIED (task-113 batch8): sub_4CBC9A reads NOTHING, returns sub_4CC659(global+184) — structurally identical to v61 CField::OnSetQuestClear@0x4ef90b (empty, QuestMan helper). Registry SET_QUEST_CLEAR was mislabeled to op 93 (sub_4CBB78, 8-byte read); corrected here to op 94."
 - op: SET_QUEST_TIME
   direction: clientbound
   opcode: 95

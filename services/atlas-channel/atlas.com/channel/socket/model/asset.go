@@ -12,6 +12,7 @@ import (
 
 func NewAsset(zeroPosition bool, a asset.Model) packetmodel.Asset {
 	base := packetmodel.NewAsset(zeroPosition, a.Slot(), a.TemplateId(), a.Expiration())
+	base = base.SetOwner(a.Owner())
 
 	if a.IsEquipment() {
 		base = base.SetEquipmentStats(

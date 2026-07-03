@@ -960,6 +960,10 @@
         "writer": "ScriptProgress"
       },
       {
+        "opCode": "0x8C",
+        "writer": "CharacterSkillMacro"
+      },
+      {
         "opCode": "0x8D",
         "writer": "SetField"
       },

@@ -6394,24 +6394,28 @@
       ]
     },
     "CUIMessenger::OnCreate": {
-      "address": "",
+      "address": "0x61a701",
       "direction": "serverbound",
-      "unresolved": true,
+      "note": "mode=0 (self-enter / answer-invite). BODY-VERIFIED v48 send sub_61A701 @0x61a701: COutPacket(92)+Encode1(0)+Encode4(messengerId=a2).",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Encode1",
+          "comment": "op (0)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "messengerId"
         }
       ]
     },
     "CUIMessenger::OnDestroy": {
-      "address": "",
+      "address": "0x61ac75",
       "direction": "serverbound",
-      "unresolved": true,
+      "note": "mode=2 (leave). BODY-VERIFIED v48 send sub_61AC75 @0x61ac75: COutPacket(92)+Encode1(2).",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Encode1",
+          "comment": "op (2)"
         }
       ]
     },
@@ -6653,24 +6657,32 @@
       ]
     },
     "CUIMessenger::ProcessChat": {
-      "address": "",
+      "address": "0x61b27c",
       "direction": "serverbound",
-      "unresolved": true,
+      "note": "mode=6 (chat). BODY-VERIFIED v48 send sub_61B27C @0x61b27c: COutPacket(92)+Encode1(6)+EncodeStr(charName+text).",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Encode1",
+          "comment": "op (6)"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "text"
         }
       ]
     },
     "CUIMessenger::SendInviteMsg": {
-      "address": "",
+      "address": "0x61d8b8",
       "direction": "serverbound",
-      "unresolved": true,
+      "note": "mode=3 (INVITE). Real send-site not located in the CUIMessenger UI region (as in v83, where SendInviteMsg is likewise synthetic); pinned at the messenger dispatcher sub_61D8B8 @0x61d8b8. Mode 3 is grounded: v83 verified body uses sub-op 3, and the v48 clientbound dispatcher reserves case 3 for the reciprocal RequestInvite (sub_61DB2C).",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Encode1",
+          "comment": "sub-op = 3 (INVITE)"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "target character name"
         }
       ]
     },

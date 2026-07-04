@@ -5,7 +5,7 @@
 
 Tool: `b3219228b3ee416c6cbd11793fed7d0fe4c58a04`
 
-- export gms_v48: `55eeaeaf13079fa8bc5c67d360c8ae0b1a08eae9da0f474f862c4de70f6279ec`
+- export gms_v48: `a8c4c3d57ac13399da6bd893d67ba0371be1d470db071b23d55aeb981ca13cef`
 - export gms_v61: `fa18b943e0711623e99e49fc165b4c97df7fc1b480c854fc0fe1cf477e585781`
 - export gms_v72: `a0ac2be6578395455f491976bcb11aa27e2e57376b46ee8816b90324bad60c02`
 - export gms_v79: `370d6b720b633c12c71d40340f3952000705c4bddb98f87179e7193d112d210c`
@@ -924,10 +924,10 @@ Tool: `b3219228b3ee416c6cbd11793fed7d0fe4c58a04`
 | messenger/clientbound/MessengerRemove (T1) |  |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | messenger/clientbound/MessengerRequestInvite (T1) |  |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | messenger/clientbound/MessengerUpdate (T1) |  |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| messenger/serverbound/MessengerOperation (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
-| messenger/serverbound/MessengerOperationAnswerInvite (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
-| messenger/serverbound/MessengerOperationChat (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
-| messenger/serverbound/MessengerOperationInvite (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
+| messenger/serverbound/MessengerOperation (T1) |  |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
+| messenger/serverbound/MessengerOperationAnswerInvite (T1) |  |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
+| messenger/serverbound/MessengerOperationChat (T1) |  |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
+| messenger/serverbound/MessengerOperationInvite (T1) |  |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
 | monster/carnival/serverbound/MonsterCarnival (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | note/serverbound/NoteOperation (T1) |  |  | ❌ |  | ❌ |  | 🟡 |  | 🟡 |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | note/serverbound/NoteOperationDiscard (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |
@@ -979,7 +979,7 @@ Tool: `b3219228b3ee416c6cbd11793fed7d0fe4c58a04`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v48 | 154 | 0 | 4 | 158 | 629 | 0 | 48.7% |
+| v48 | 158 | 0 | 4 | 154 | 629 | 0 | 50.0% |
 | v61 | 208 | 0 | 60 | 206 | 471 | 0 | 43.9% |
 | v72 | 216 | 0 | 73 | 224 | 432 | 0 | 42.1% |
 | v79 | 228 | 0 | 72 | 222 | 423 | 0 | 43.7% |

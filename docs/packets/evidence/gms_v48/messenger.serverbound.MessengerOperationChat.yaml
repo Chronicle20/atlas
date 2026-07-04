@@ -1,0 +1,8 @@
+packet: messenger/serverbound/MessengerOperationChat
+direction: serverbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: CUIMessenger::ProcessChat
+    address: "0x61b27c"
+    decompile_sha256: 3b820d98a090256bc2df8317e339c7472587b1a40e1ad45d01d6aa39b86d34fa

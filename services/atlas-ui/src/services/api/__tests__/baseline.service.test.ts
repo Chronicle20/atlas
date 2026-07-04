@@ -143,4 +143,53 @@ describe('baselineService', () => {
       );
     });
   });
+
+  describe('listBaselines', () => {
+    it('GETs /api/data/baselines with canonical dummy headers and decodes the collection', async () => {
+      fetchMock.mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          data: [
+            {
+              type: 'baselines',
+              id: 'GMS/83.1',
+              attributes: {
+                region: 'GMS',
+                majorVersion: 83,
+                minorVersion: 1,
+                sha256: 'a'.repeat(64),
+                publishedAt: '2026-07-04T12:34:56Z',
+                sizeBytes: 123456789,
+              },
+            },
+          ],
+        }),
+      });
+      const baselines = await baselineService.listBaselines();
+      expect(fetchMock).toHaveBeenCalledWith('/api/data/baselines', expect.objectContaining({ method: 'GET' }));
+      const headers = (fetchMock.mock.calls[0]![1] as RequestInit).headers as Headers;
+      expect(headers.get('TENANT_ID')).toBe('00000000-0000-0000-0000-000000000000');
+      expect(headers.get('X-Atlas-Operator')).toBe('1');
+      expect(baselines).toEqual([
+        {
+          region: 'GMS',
+          majorVersion: 83,
+          minorVersion: 1,
+          sha256: 'a'.repeat(64),
+          publishedAt: '2026-07-04T12:34:56Z',
+          sizeBytes: 123456789,
+        },
+      ]);
+    });
+
+    it('throws with the decoded server message on failure', async () => {
+      fetchMock.mockResolvedValue({
+        ok: false,
+        status: 503,
+        json: async () => ({ error: 'minio unavailable' }),
+      });
+      await expect(baselineService.listBaselines()).rejects.toThrow('minio unavailable');
+    });
+  });
 });

@@ -57,3 +57,22 @@ entry on the channel.
 ## 6. Restart the channel
 After patching the live tenant config, restart `atlas-channel` so it re-reads the
 handler/writer/operations tables (the projection does not hot-reload handlers).
+
+## 7. E2E test routes (optional, dev only)
+`atlas-mts` ships env-gated test routes (seed / force-expire / sweep /
+simulated purchase / simulated bid) under `/api/test/*`. Enable with:
+
+```
+kubectl set env deployment/atlas-mts MTS_TEST_ROUTES_ENABLED=true
+```
+
+Disable with:
+
+```
+kubectl set env deployment/atlas-mts MTS_TEST_ROUTES_ENABLED-
+```
+
+These routes are **not** routed through the nginx ingress — reach them via a
+port-forward to `atlas-mts:8080`. **Never enable in production.** Full usage
+recipes (seeding listings/bids, forcing expirations, driving a purchase/bid
+end-to-end) are in `e2e-test-playbook.md` (same folder).

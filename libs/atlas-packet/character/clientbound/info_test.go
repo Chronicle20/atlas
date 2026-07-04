@@ -198,6 +198,59 @@ func TestCharacterInfoV79Golden(t *testing.T) {
 	}
 }
 
+// TestCharacterInfoV48Golden pins the full gms_v48 CharacterInfo wire.
+//
+// Client read order — CWvsContext::OnCharacterInfo (GMS_v48_1_DEVM.exe, port 13337
+// @0x71caed):
+//
+//	Decode4(charId) /*0x71cb22*/, Decode1(level) /*0x71cb49*/, Decode2(job) /*0x71cb53*/,
+//	Decode2(fame) /*0x71cb5d*/, DecodeStr(guild) /*0x71cb64*/, Decode1(pet flag) /*0x71cb6f*/;
+//	if set a SINGLE pet: Decode4(templateId) /*0x71cbe1*/, DecodeStr(name) /*0x71cbe9*/,
+//	Decode1(level) /*0x71cbfb*/, Decode2(closeness) /*0x71cc05*/, Decode1(fullness) /*0x71cc0e*/,
+//	Decode2(skill) /*0x71cc18*/, Decode4(itemId) /*0x71cc20*/ (NO "more pets" terminator);
+//	Decode1(mount flag) /*0x71cc62*/ + 3×Decode4 /*0x71cc77*/ → SetTamingMobInfo;
+//	Decode1(wish count) /*0x71cc97*/ + count×Decode4 (DecodeBuffer 4*n) /*0x71ccc3*/. Returns.
+//
+// v48 is MUCH shorter than v61+ (@0x8455ed): it OMITS the marriage-ring bool, the
+// alliance string, the medalInfo byte, and the monster-book block, and single-pets the
+// pet section (v61+ is a bool-terminated multi-pet loop). Same fixture input as the v79
+// golden; the v48 wire is the v79 wire with those four sections removed.
+//
+// packet-audit:verify packet=character/clientbound/CharacterInfo version=gms_v48 ida=0x71caed
+func TestCharacterInfoV48Golden(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 48, 1)
+	pets := []InfoPet{{Slot: 0, TemplateId: 5000000, Name: "Kitty", Level: 15, Closeness: 200, Fullness: 80}}
+	mount := MountInfo{Active: true, Level: 7, Exp: 1234, Tiredness: 42}
+	in := NewCharacterInfo(12345, 50, 100, 10, "TestGuild", pets, []uint32{1002000, 1002001}, 1142007, MonsterBookInfo{}, mount)
+
+	got := in.Encode(nil, ctx)(nil)
+	want := []byte{
+		0x39, 0x30, 0x00, 0x00, // charId 12345          @0x71cb22
+		0x32,                   // level 50               @0x71cb49
+		0x64, 0x00,             // job 100                @0x71cb53
+		0x0a, 0x00,             // fame 10                @0x71cb5d
+		0x09, 0x00, 'T', 'e', 's', 't', 'G', 'u', 'i', 'l', 'd', // guild "TestGuild" @0x71cb64
+		0x01,                   // pet flag = 1           @0x71cb6f
+		0x40, 0x4b, 0x4c, 0x00, // pet templateId 5000000 @0x71cbe1
+		0x05, 0x00, 'K', 'i', 't', 't', 'y', // pet name "Kitty" @0x71cbe9
+		0x0f,                   // pet level 15           @0x71cbfb
+		0xc8, 0x00,             // pet closeness 200      @0x71cc05
+		0x50,                   // pet fullness 80        @0x71cc0e
+		0x00, 0x00,             // pet skill 0            @0x71cc18
+		0x00, 0x00, 0x00, 0x00, // pet itemId 0           @0x71cc20
+		0x01,                   // mount flag = 1         @0x71cc62
+		0x07, 0x00, 0x00, 0x00, // mount level 7          @0x71cc77
+		0xd2, 0x04, 0x00, 0x00, // mount exp 1234
+		0x2a, 0x00, 0x00, 0x00, // mount tiredness 42
+		0x02,                   // wish count 2           @0x71cc97
+		0x10, 0x4a, 0x0f, 0x00, // wish 1002000           @0x71ccc3
+		0x11, 0x4a, 0x0f, 0x00, // wish 1002001
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("v48 CharacterInfo wire (len got=%d want=%d):\n got %x\nwant %x", len(got), len(want), got, want)
+	}
+}
+
 func TestCharacterInfoEmptyRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

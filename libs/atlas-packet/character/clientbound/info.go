@@ -77,6 +77,51 @@ func (m CharacterInfo) Encode(l logrus.FieldLogger, ctx context.Context) func(op
 	w := response.NewWriter(l)
 	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
+		// Legacy GMS v29..v60 (v48): CWvsContext::OnCharacterInfo (v48 @0x71caed)
+		// reads a much shorter body than v61+ — NO marriage-ring bool, NO alliance
+		// string, NO medalInfo byte, a SINGLE flag-gated pet (no bool-terminated
+		// multi-pet loop and no "more pets" terminator), and NO monster-book block.
+		// v61 (@0x8455ed) is the first to add marriage/alliance/medalInfo/monster-book.
+		// The medal block (>61) and chair int (>=87) are already absent below.
+		if t.Region() == "GMS" && t.MajorVersion() > 28 && t.MajorVersion() < 61 {
+			w.WriteInt(m.characterId) // Decode4     @0x71cb22
+			w.WriteByte(m.level)      // Decode1      @0x71cb49
+			w.WriteShort(m.jobId)     // Decode2      @0x71cb53
+			w.WriteInt16(m.fame)      // Decode2      @0x71cb5d
+			w.WriteAsciiString(m.guildName) // DecodeStr @0x71cb64
+			// Single flag-gated pet: Decode1(flag) @0x71cb6f; if set the 7 pet
+			// fields @0x71cbe1..0x71cc20 (no trailing "more pets" byte).
+			if len(m.pets) > 0 {
+				p := m.pets[0]
+				w.WriteBool(true)
+				w.WriteInt(p.TemplateId)     // Decode4  @0x71cbe1
+				w.WriteAsciiString(p.Name)   // DecodeStr @0x71cbe9
+				w.WriteByte(p.Level)         // Decode1  @0x71cbfb
+				w.WriteShort(p.Closeness)    // Decode2  @0x71cc05
+				w.WriteByte(p.Fullness)      // Decode1  @0x71cc0e
+				w.WriteShort(0)              // Decode2 skill  @0x71cc18
+				w.WriteInt(0)                // Decode4 itemId @0x71cc20
+			} else {
+				w.WriteBool(false)
+			}
+			// Tamed-mob (mount) block: Decode1(flag) @0x71cc62; if set 3×Decode4
+			// @0x71cc77 → SetTamingMobInfo(level, exp, tiredness).
+			if m.mount.Active {
+				w.WriteBool(true)
+				w.WriteInt(m.mount.Level)
+				w.WriteInt(m.mount.Exp)
+				w.WriteInt(m.mount.Tiredness)
+			} else {
+				w.WriteByte(0)
+			}
+			// Wishlist: Decode1(count) @0x71cc97; count×Decode4 @0x71ccc3.
+			w.WriteByte(byte(len(m.wishList)))
+			for _, sn := range m.wishList {
+				w.WriteInt(sn)
+			}
+			return w.Bytes()
+		}
+
 		w.WriteInt(m.characterId)
 		w.WriteByte(m.level)
 		w.WriteShort(m.jobId)
@@ -165,6 +210,40 @@ func (m CharacterInfo) Mount() MountInfo             { return m.mount }
 func (m *CharacterInfo) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
 		t := tenant.MustFromContext(ctx)
+		// Mirror of Encode: legacy GMS v29..v60 (v48) short body.
+		if t.Region() == "GMS" && t.MajorVersion() > 28 && t.MajorVersion() < 61 {
+			m.characterId = r.ReadUint32()
+			m.level = r.ReadByte()
+			m.jobId = r.ReadUint16()
+			m.fame = r.ReadInt16()
+			m.guildName = r.ReadAsciiString()
+			m.pets = nil
+			if r.ReadBool() {
+				pet := InfoPet{
+					Slot:       0,
+					TemplateId: r.ReadUint32(),
+					Name:       r.ReadAsciiString(),
+					Level:      r.ReadByte(),
+					Closeness:  r.ReadUint16(),
+					Fullness:   r.ReadByte(),
+				}
+				_ = r.ReadUint16() // skill
+				_ = r.ReadUint32() // itemId
+				m.pets = append(m.pets, pet)
+			}
+			if r.ReadBool() { // mount present flag
+				m.mount.Active = true
+				m.mount.Level = r.ReadUint32()
+				m.mount.Exp = r.ReadUint32()
+				m.mount.Tiredness = r.ReadUint32()
+			}
+			wishCount := r.ReadByte()
+			m.wishList = make([]uint32, wishCount)
+			for i := byte(0); i < wishCount; i++ {
+				m.wishList[i] = r.ReadUint32()
+			}
+			return
+		}
 		m.characterId = r.ReadUint32()
 		m.level = r.ReadByte()
 		m.jobId = r.ReadUint16()

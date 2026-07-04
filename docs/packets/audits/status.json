@@ -14377,8 +14377,7 @@
       ],
       "cells": {
         "gms_v48": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": 94
         },
         "gms_v61": {
@@ -46301,8 +46300,7 @@
       "tier1": true,
       "cells": {
         "gms_v48": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v61": {

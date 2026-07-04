@@ -48,3 +48,40 @@ func (r *SweepResultRestModel) SetID(idStr string) error {
 	r.Id = idStr
 	return nil
 }
+
+// PurchaseRestModel is the input for POST /test/purchases — simulate another
+// character buying a listing. BuyNow=true is the auction immediate-buyout arm.
+type PurchaseRestModel struct {
+	Id             string `json:"-"`
+	ListingId      string `json:"listingId"`
+	BuyerId        uint32 `json:"buyerId"`
+	BuyerAccountId uint32 `json:"buyerAccountId"`
+	BuyNow         bool   `json:"buyNow,omitempty"`
+}
+
+func (r PurchaseRestModel) GetName() string { return "test-purchases" }
+
+func (r PurchaseRestModel) GetID() string { return r.Id }
+
+func (r *PurchaseRestModel) SetID(idStr string) error {
+	r.Id = idStr
+	return nil
+}
+
+// BidRestModel is the input for POST /test/bids — simulate a competing bidder.
+type BidRestModel struct {
+	Id              string `json:"-"`
+	ListingId       string `json:"listingId"`
+	BidderId        uint32 `json:"bidderId"`
+	BidderAccountId uint32 `json:"bidderAccountId"`
+	Amount          uint32 `json:"amount"`
+}
+
+func (r BidRestModel) GetName() string { return "test-bids" }
+
+func (r BidRestModel) GetID() string { return r.Id }
+
+func (r *BidRestModel) SetID(idStr string) error {
+	r.Id = idStr
+	return nil
+}

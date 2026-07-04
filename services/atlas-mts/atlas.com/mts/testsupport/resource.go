@@ -4,14 +4,19 @@ import (
 	"atlas-mts/listing"
 	"atlas-mts/rest"
 	"atlas-mts/task"
+	"context"
 	"errors"
 	"net/http"
 	"strconv"
 	"time"
 
+	mtsmsg "atlas-mts/kafka/message/mts"
+	producer2 "atlas-mts/kafka/producer"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	kprod "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
@@ -21,6 +26,10 @@ import (
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
+
+// providerFn matches the per-context producer factory shape the Kafka
+// consumers use (producer2.ProviderImpl(l)), so tests can inject a recorder.
+type providerFn = func(ctx context.Context) func(token string) kprod.MessageProducer
 
 // seedMaxListings caps one seed call; bigger requests are a client mistake,
 // not a load test (design-e2e-testing.md §4.5).
@@ -54,6 +63,111 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 			registerGet := rest.RegisterHandler(l)(db)(si)
 			r.HandleFunc("/listings/{listingId}/expire", registerGet("test_expire_listing", handleExpireListing)).Methods(http.MethodPost)
 			r.HandleFunc("/sweep", registerGet("test_run_sweep", handleRunSweep)).Methods(http.MethodPost)
+
+			registerSimulateRoutes(r, l, db, si, producer2.ProviderImpl(l))
+		}
+	}
+}
+
+// registerSimulateRoutes wires the simulated-actor routes onto sub-router r.
+// Split out so simulate_test.go can mount the identical wiring with a
+// recording producer.
+func registerSimulateRoutes(r *mux.Router, l logrus.FieldLogger, db *gorm.DB, si jsonapi.ServerInformation, pf providerFn) {
+	registerPurchase := rest.RegisterInputHandler[PurchaseRestModel](l)(db)(si)
+	registerBid := rest.RegisterInputHandler[BidRestModel](l)(db)(si)
+	r.HandleFunc("/purchases", registerPurchase("test_simulate_purchase", handleSimulatePurchase(pf))).Methods(http.MethodPost)
+	r.HandleFunc("/bids", registerBid("test_simulate_bid", handleSimulateBid(pf))).Methods(http.MethodPost)
+}
+
+// muxRouterWithSimulateRoutes builds a standalone router holding only the
+// simulate routes — test scaffolding for simulate_test.go kept beside the
+// production wiring so the two can't drift.
+func muxRouterWithSimulateRoutes(l logrus.FieldLogger, db *gorm.DB, pf providerFn) *mux.Router {
+	router := mux.NewRouter()
+	registerSimulateRoutes(router.PathPrefix("/test").Subrouter(), l, db, testsupportServerInfo{}, pf)
+	return router
+}
+
+// testsupportServerInfo is minimal ServerInformation for the standalone router.
+type testsupportServerInfo struct{}
+
+func (testsupportServerInfo) GetBaseURL() string { return "http://localhost:8080" }
+func (testsupportServerInfo) GetPrefix() string  { return "/api" }
+
+// handleSimulatePurchase emits the channel-identical BUY command for the
+// supplied buyer against an existing listing. Structural pre-checks only
+// (listing exists + purchasable state) — economic validation (wallet balance,
+// buy-now price) belongs to the production consumer path, which emits
+// BUY_FAILED exactly as it would for a real client. 202 = command emitted,
+// NOT purchase completed; observe the outcome via listing state / transaction
+// history / logs.
+func handleSimulatePurchase(pf providerFn) func(d *rest.HandlerDependency, c *rest.HandlerContext, rm PurchaseRestModel) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext, rm PurchaseRestModel) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			if rm.ListingId == "" || rm.BuyerId == 0 || rm.BuyerAccountId == 0 {
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+			m, err := listing.NewProcessor(d.Logger(), d.Context(), d.DB()).GetById(rm.ListingId)
+			if err != nil {
+				if errors.Is(err, gorm.ErrRecordNotFound) {
+					w.WriteHeader(http.StatusNotFound)
+					return
+				}
+				d.Logger().WithError(err).Errorf("Retrieving listing [%s] for simulated purchase.", rm.ListingId)
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			if m.State() != listing.StateActive {
+				d.Logger().Errorf("Simulated purchase of listing [%s] in state [%s]; conflict.", rm.ListingId, m.State())
+				w.WriteHeader(http.StatusConflict)
+				return
+			}
+			txn := uuid.New()
+			if err := pf(d.Context())(mtsmsg.EnvCommandTopic)(BuyCommandProvider(txn, m.WorldId(), m.Serial(), rm.BuyerId, rm.BuyerAccountId, rm.BuyNow)); err != nil {
+				d.Logger().WithError(err).Errorf("Emitting simulated BUY for listing [%s].", rm.ListingId)
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			d.Logger().Infof("[TEST ROUTE] Emitted BUY txn [%s] — buyer [%d] listing [%s] serial [%d] buyNow [%t].", txn, rm.BuyerId, rm.ListingId, m.Serial(), rm.BuyNow)
+			w.WriteHeader(http.StatusAccepted)
+		}
+	}
+}
+
+// handleSimulateBid emits the channel-identical PLACE_BID command. Structural
+// pre-checks only (active auction) — increment/escrow validation stays in the
+// production consumer, which emits BID_FAILED as for a real client.
+func handleSimulateBid(pf providerFn) func(d *rest.HandlerDependency, c *rest.HandlerContext, rm BidRestModel) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext, rm BidRestModel) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			if rm.ListingId == "" || rm.BidderId == 0 || rm.BidderAccountId == 0 || rm.Amount == 0 {
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+			m, err := listing.NewProcessor(d.Logger(), d.Context(), d.DB()).GetById(rm.ListingId)
+			if err != nil {
+				if errors.Is(err, gorm.ErrRecordNotFound) {
+					w.WriteHeader(http.StatusNotFound)
+					return
+				}
+				d.Logger().WithError(err).Errorf("Retrieving listing [%s] for simulated bid.", rm.ListingId)
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			if m.SaleType() != listing.SaleTypeAuction || m.State() != listing.StateActive {
+				d.Logger().Errorf("Simulated bid on listing [%s] (saleType [%s], state [%s]); conflict.", rm.ListingId, m.SaleType(), m.State())
+				w.WriteHeader(http.StatusConflict)
+				return
+			}
+			txn := uuid.New()
+			if err := pf(d.Context())(mtsmsg.EnvCommandTopic)(PlaceBidCommandProvider(txn, m.WorldId(), m.Serial(), rm.BidderId, rm.BidderAccountId, rm.Amount)); err != nil {
+				d.Logger().WithError(err).Errorf("Emitting simulated PLACE_BID for listing [%s].", rm.ListingId)
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			d.Logger().Infof("[TEST ROUTE] Emitted PLACE_BID txn [%s] — bidder [%d] listing [%s] serial [%d] amount [%d].", txn, rm.BidderId, rm.ListingId, m.Serial(), rm.Amount)
+			w.WriteHeader(http.StatusAccepted)
 		}
 	}
 }

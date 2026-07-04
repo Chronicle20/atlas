@@ -230,7 +230,7 @@ describe('seedService status projections', () => {
   });
 });
 
-describe('seedService scope-aware data status reads', () => {
+describe('seedService tenant-scope data status reads', () => {
   let fetchMock: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
@@ -248,37 +248,54 @@ describe('seedService scope-aware data status reads', () => {
     };
   }
 
-  it('defaults getWzInputStatus to tenant scope without operator header', async () => {
+  it('requests getWzInputStatus at scope=tenant without the operator header', async () => {
     fetchMock.mockResolvedValue(jsonApi({ fileCount: 0, totalBytes: 0, updatedAt: null }));
     await seedService.getWzInputStatus(mockTenant);
     const call = fetchMock.mock.calls[0];
     if (!call) throw new Error('fetch was not called');
     expect(call[0]).toBe('/api/data/wz?scope=tenant');
-    const headers = (call[1] as RequestInit).headers as Headers;
+    // Tenant path is structurally incapable of shared scope.
+    expect(fetchMock.mock.calls[0]![0]).toContain('scope=tenant');
+    const headers = (fetchMock.mock.calls[0]![1] as RequestInit).headers as Headers;
     expect(headers.get('X-Atlas-Operator')).toBeNull();
   });
 
-  it('requests shared scope and sends the operator header for getWzInputStatus', async () => {
-    fetchMock.mockResolvedValue(jsonApi({ fileCount: 8, totalBytes: 100, updatedAt: null }));
-    const s = await seedService.getWzInputStatus(mockTenant, 'shared');
-    const call = fetchMock.mock.calls[0];
-    if (!call) throw new Error('fetch was not called');
-    expect(call[0]).toBe('/api/data/wz?scope=shared');
-    const headers = (call[1] as RequestInit).headers as Headers;
-    expect(headers.get('X-Atlas-Operator')).toBe('1');
-    expect(s.fileCount).toBe(8);
-  });
-
-  it('requests shared scope and sends the operator header for getDataStatus', async () => {
+  it('requests getDataStatus at scope=tenant without the operator header', async () => {
     fetchMock.mockResolvedValue(
       jsonApi({ documentCount: 5, updatedAt: null, baselineRestoredAt: null, baselineSha256: null }),
     );
-    await seedService.getDataStatus(mockTenant, 'shared');
-    const call = fetchMock.mock.calls[0];
-    if (!call) throw new Error('fetch was not called');
-    expect(call[0]).toBe('/api/data/status?scope=shared');
-    const headers = (call[1] as RequestInit).headers as Headers;
-    expect(headers.get('X-Atlas-Operator')).toBe('1');
+    await seedService.getDataStatus(mockTenant);
+    // Tenant path is structurally incapable of shared scope.
+    expect(fetchMock.mock.calls[0]![0]).toContain('scope=tenant');
+    const headers = (fetchMock.mock.calls[0]![1] as RequestInit).headers as Headers;
+    expect(headers.get('X-Atlas-Operator')).toBeNull();
+  });
+
+  it('PATCHes uploadWzFiles at scope=tenant without the operator header', async () => {
+    fetchMock.mockResolvedValue({ ok: true, status: 202 });
+    const file = new File(['zipbytes'], 'Data.zip', { type: 'application/zip' });
+    await seedService.uploadWzFiles(mockTenant, file);
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/data/wz?scope=tenant',
+      expect.objectContaining({ method: 'PATCH' }),
+    );
+    // Tenant path is structurally incapable of shared scope.
+    expect(fetchMock.mock.calls[0]![0]).toContain('scope=tenant');
+    const headers = (fetchMock.mock.calls[0]![1] as RequestInit).headers as Headers;
+    expect(headers.get('X-Atlas-Operator')).toBeNull();
+  });
+
+  it('POSTs runDataProcessing at scope=tenant without the operator header', async () => {
+    fetchMock.mockResolvedValue({ ok: true, status: 202 });
+    await seedService.runDataProcessing(mockTenant);
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/data/process?scope=tenant',
+      expect.objectContaining({ method: 'POST' }),
+    );
+    // Tenant path is structurally incapable of shared scope.
+    expect(fetchMock.mock.calls[0]![0]).toContain('scope=tenant');
+    const headers = (fetchMock.mock.calls[0]![1] as RequestInit).headers as Headers;
+    expect(headers.get('X-Atlas-Operator')).toBeNull();
   });
 });
 

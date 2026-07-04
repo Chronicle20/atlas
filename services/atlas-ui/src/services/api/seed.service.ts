@@ -181,40 +181,20 @@ class SeedService {
     return api.post<SeedResult>('/api/maps/actions/seed', {});
   }
 
-  async uploadWzFiles(tenant: Tenant, file: File, scope: 'tenant' | 'shared' = 'tenant'): Promise<void> {
-    const headers = tenantHeaders(tenant);
-    if (scope === 'shared') {
-      headers.set('X-Atlas-Operator', '1');
-    }
-    return patchWzZip(`/api/data/wz?scope=${scope}`, headers, file);
+  async uploadWzFiles(tenant: Tenant, file: File): Promise<void> {
+    return patchWzZip('/api/data/wz?scope=tenant', tenantHeaders(tenant), file);
   }
 
-  async runDataProcessing(tenant: Tenant, scope: 'tenant' | 'shared' = 'tenant'): Promise<void> {
-    const headers = tenantHeaders(tenant);
-    if (scope === 'shared') {
-      headers.set('X-Atlas-Operator', '1');
-    }
-    return postProcess(`/api/data/process?scope=${scope}`, headers);
+  async runDataProcessing(tenant: Tenant): Promise<void> {
+    return postProcess('/api/data/process?scope=tenant', tenantHeaders(tenant));
   }
 
-  // scope must match the scope the WZ files were uploaded under
-  // (uploadWzFiles). The status handler is scope-aware; omitting the
-  // param made it always read the tenant prefix, so a shared/canonical
-  // upload reported "0 .wz files" and left Process Data disabled.
-  async getWzInputStatus(tenant: Tenant, scope: 'tenant' | 'shared' = 'tenant'): Promise<WzInputStatus> {
-    const headers = tenantHeaders(tenant);
-    if (scope === 'shared') {
-      headers.set('X-Atlas-Operator', '1');
-    }
-    return fetchJsonApi<WzInputStatus>(`/api/data/wz?scope=${scope}`, headers);
+  async getWzInputStatus(tenant: Tenant): Promise<WzInputStatus> {
+    return fetchJsonApi<WzInputStatus>('/api/data/wz?scope=tenant', tenantHeaders(tenant));
   }
 
-  async getDataStatus(tenant: Tenant, scope: 'tenant' | 'shared' = 'tenant'): Promise<DataStatus> {
-    const headers = tenantHeaders(tenant);
-    if (scope === 'shared') {
-      headers.set('X-Atlas-Operator', '1');
-    }
-    return fetchJsonApi<DataStatus>(`/api/data/status?scope=${scope}`, headers);
+  async getDataStatus(tenant: Tenant): Promise<DataStatus> {
+    return fetchJsonApi<DataStatus>('/api/data/status?scope=tenant', tenantHeaders(tenant));
   }
 
   // Canonical (deployment-wide) variants: no Tenant anywhere — headers are

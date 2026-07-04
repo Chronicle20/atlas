@@ -39,8 +39,13 @@ export const ROUTE_CONFIGS: RouteConfig[] = [
     parent: '/',
   },
   {
+    pattern: '/baselines',
+    label: 'Baselines',
+    parent: '/',
+  },
+  {
     pattern: '/characters',
-    label: 'Characters', 
+    label: 'Characters',
     parent: '/',
   },
   {
@@ -450,6 +455,7 @@ export const ROUTE_PATTERNS = {
   HOME: '/',
   ACCOUNTS: '/accounts',
   ACCOUNT_DETAIL: '/accounts/[id]',
+  BASELINES: '/baselines',
   CHARACTERS: '/characters',
   CHARACTER_DETAIL: '/characters/[id]',
   GUILDS: '/guilds',

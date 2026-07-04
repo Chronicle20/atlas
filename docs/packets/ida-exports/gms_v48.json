@@ -2161,17 +2161,6 @@
         }
       ]
     },
-    "CField::SendChangePartyBossMsg": {
-      "address": "",
-      "direction": "serverbound",
-      "unresolved": true,
-      "calls": [
-        {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
-        }
-      ]
-    },
     "CField::SendChatMsg": {
       "address": "",
       "direction": "serverbound",

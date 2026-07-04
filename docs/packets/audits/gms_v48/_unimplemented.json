@@ -82,6 +82,10 @@
   {
    "fname": "CWvsContext::SendAbilityUpRequest#AutoDistributeAp",
    "reason": "AUTO_DISTRIBUTE_AP (auto-assign of ability points) is version-absent in gms_v48. The v48 ability-up sender CWvsContext::SendAbilityUpRequest = sub_71CD00 @0x71cd00 (GMS_v48_1_DEVM.exe, port 13337) builds only the single-stat request: guard _ZtlSecureFuse<short>(charStat+113,+117)>0 then COutPacket(67)+Encode4(updateTime)+Encode4(statFlag)+SetExclRequestSent. There is NO ZArray<StatPair> auto-distribute overload in this 2009-era client (the AutoDistributeAp demux arm modeled by newer clients, e.g. v95 CWvsContext::SendAbilityUpRequest(ZArray<StatPair>*)@0x9f63b0, does not exist). The export carried an unresolved stub (CWvsContext::SendAbilityUpRequest#AutoDistributeAp, address empty, 'function not found in IDB'); stripped here so the DISTRIBUTE_AP op's demux worst-of grades only the resolved single-stat DistributeAp arm. Mirrors v61, which has no AutoDistributeAp report."
+  },
+  {
+   "fname": "CField::SendChangePartyBossMsg",
+   "reason": "PARTY_OPERATION change-leader (party-boss handover) send is version-absent in gms_v48. func_query name_regex 'PartyBoss|ChangeParty|PartyLeader|ChangeBoss' over GMS_v48_1_DEVM.exe (port 13337) returns no match; the complete set of *Party* functions is PARTYDATA::Decode@0x49c925, CField::SendJoinPartyMsg@0x4c54dd, CField::SendKickPartyMsg@0x4c55f3, CField::OnTownPortalChanged@0x4ca8d7, CWvsContext::OnPartyResult@0x729935, CWvsContext::GetPartyTownPortal@0x72ac8d — no change-boss/leader send. Among CField helpers the v48 party serverbound dispatcher opcode 94 carries only the invite (subop 4, SendJoinPartyMsg = COutPacket(94)+Encode1(4)+EncodeStr name @0x4c54dd) and kick (subop 5, SendKickPartyMsg = COutPacket(94)+Encode1(5)+Encode4 charId @0x4c55f3) mode sends; party-leadership handover post-dates this 2009-era client (v83 has the discrete CField::SendChangePartyBossMsg). The export carried an unresolved stub (address empty, 'function not found in IDB'); stripped here so matrix grading excludes the arm."
   }
  ]
 }

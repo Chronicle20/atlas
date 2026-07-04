@@ -100,7 +100,11 @@ func (testsupportServerInfo) GetPrefix() string  { return "/api" }
 // buy-now price) belongs to the production consumer path, which emits
 // BUY_FAILED exactly as it would for a real client. 202 = command emitted,
 // NOT purchase completed; observe the outcome via listing state / transaction
-// history / logs.
+// history / logs. Unlike handleSimulateBid, there is deliberately no SaleType
+// gate here: a BUY against an auction (with or without BuyNow) is validated
+// economically/semantically by the production consumer the same way a
+// real client's would be, so rejecting it structurally here would diverge
+// from that fidelity contract.
 func handleSimulatePurchase(pf providerFn) func(d *rest.HandlerDependency, c *rest.HandlerContext, rm PurchaseRestModel) http.HandlerFunc {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext, rm PurchaseRestModel) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {

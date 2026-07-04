@@ -17,6 +17,7 @@ import (
 
 	kprod "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
@@ -179,8 +180,15 @@ func TestSimulatePurchaseEmitsBuyCommand(t *testing.T) {
 	if err := json.Unmarshal(rec.commands[0].value, &c); err != nil {
 		t.Fatalf("decode: %v", err)
 	}
-	if c.Type != mtsmsg.CommandBuy || c.Body.Serial != m.Serial() || c.Body.BuyerId != 2001 || c.Body.BuyerAccountId != 3001 || c.Body.BuyNow {
+	if c.TransactionId == uuid.Nil {
+		t.Fatalf("expected non-nil transaction id")
+	}
+	if c.Type != mtsmsg.CommandBuy || c.Body.WorldId != 0 || c.Body.Serial != m.Serial() || c.Body.BuyerId != 2001 || c.Body.BuyerAccountId != 3001 || c.Body.BuyNow {
 		t.Fatalf("bad command: %+v", c)
+	}
+	wantKey := kprod.CreateKey(int(uint32(2001)))
+	if !bytes.Equal(rec.commands[0].key, wantKey) {
+		t.Fatalf("key = %v, want buyer-keyed %v", rec.commands[0].key, wantKey)
 	}
 }
 
@@ -225,12 +233,22 @@ func TestSimulateBidEmitsPlaceBidCommand(t *testing.T) {
 	if res.StatusCode != http.StatusAccepted {
 		t.Fatalf("status = %d, want 202", res.StatusCode)
 	}
+	if len(rec.commands) != 1 {
+		t.Fatalf("expected 1 emitted command, got %d", len(rec.commands))
+	}
 	var c mtsmsg.Command[mtsmsg.PlaceBidCommandBody]
 	if err := json.Unmarshal(rec.commands[0].value, &c); err != nil {
 		t.Fatalf("decode: %v", err)
 	}
-	if c.Type != mtsmsg.CommandPlaceBid || c.Body.Serial != m.Serial() || c.Body.Amount != 1500 {
+	if c.TransactionId == uuid.Nil {
+		t.Fatalf("expected non-nil transaction id")
+	}
+	if c.Type != mtsmsg.CommandPlaceBid || c.Body.WorldId != 0 || c.Body.Serial != m.Serial() || c.Body.BidderId != 2001 || c.Body.BidderAccountId != 3001 || c.Body.Amount != 1500 {
 		t.Fatalf("bad command: %+v", c)
+	}
+	wantKey := kprod.CreateKey(int(uint32(2001)))
+	if !bytes.Equal(rec.commands[0].key, wantKey) {
+		t.Fatalf("key = %v, want bidder-keyed %v", rec.commands[0].key, wantKey)
 	}
 }
 
@@ -256,5 +274,86 @@ func TestSimulateBidOnFixedSale409s(t *testing.T) {
 	}
 	if len(rec.commands) != 0 {
 		t.Fatalf("expected no emission on 409, got %d", len(rec.commands))
+	}
+}
+
+func TestSimulatePurchaseMissingBuyerId400s(t *testing.T) {
+	db := test.SetupTestDB(t, listing.Migration)
+	defer test.CleanupTestDB(t, db)
+
+	m := seedFixedListing(t, db, 1000)
+
+	rec := &recordingProducer{}
+	ts := newSimulateServer(t, db, rec)
+	defer ts.Close()
+
+	body := jsonApiBody(t, "test-purchases", map[string]any{
+		"listingId":      m.Id().String(),
+		"buyerId":        0,
+		"buyerAccountId": 3001,
+	})
+	res := doPost(t, ts, "/test/purchases", body)
+	if res.StatusCode != http.StatusBadRequest {
+		t.Fatalf("status = %d, want 400", res.StatusCode)
+	}
+	if len(rec.commands) != 0 {
+		t.Fatalf("expected no emission on 400, got %d", len(rec.commands))
+	}
+}
+
+func TestSimulateBidZeroAmount400s(t *testing.T) {
+	db := test.SetupTestDB(t, listing.Migration)
+	defer test.CleanupTestDB(t, db)
+
+	m := seedAuctionListing(t, db, 1000, time.Hour)
+
+	rec := &recordingProducer{}
+	ts := newSimulateServer(t, db, rec)
+	defer ts.Close()
+
+	body := jsonApiBody(t, "test-bids", map[string]any{
+		"listingId":       m.Id().String(),
+		"bidderId":        2001,
+		"bidderAccountId": 3001,
+		"amount":          0,
+	})
+	res := doPost(t, ts, "/test/bids", body)
+	if res.StatusCode != http.StatusBadRequest {
+		t.Fatalf("status = %d, want 400", res.StatusCode)
+	}
+	if len(rec.commands) != 0 {
+		t.Fatalf("expected no emission on 400, got %d", len(rec.commands))
+	}
+}
+
+func TestSimulatePurchaseBuyNowEmitsBuyCommandWithBuyNowTrue(t *testing.T) {
+	db := test.SetupTestDB(t, listing.Migration)
+	defer test.CleanupTestDB(t, db)
+
+	m := seedAuctionListing(t, db, 1000, time.Hour)
+
+	rec := &recordingProducer{}
+	ts := newSimulateServer(t, db, rec)
+	defer ts.Close()
+
+	body := jsonApiBody(t, "test-purchases", map[string]any{
+		"listingId":      m.Id().String(),
+		"buyerId":        2001,
+		"buyerAccountId": 3001,
+		"buyNow":         true,
+	})
+	res := doPost(t, ts, "/test/purchases", body)
+	if res.StatusCode != http.StatusAccepted {
+		t.Fatalf("status = %d, want 202", res.StatusCode)
+	}
+	if len(rec.commands) != 1 {
+		t.Fatalf("expected 1 emitted command, got %d", len(rec.commands))
+	}
+	var c mtsmsg.Command[mtsmsg.BuyCommandBody]
+	if err := json.Unmarshal(rec.commands[0].value, &c); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if !c.Body.BuyNow {
+		t.Fatalf("expected BuyNow = true, got %+v", c.Body)
 	}
 }

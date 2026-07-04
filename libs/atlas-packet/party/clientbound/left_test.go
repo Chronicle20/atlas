@@ -26,7 +26,7 @@ func TestLeftByteOutput(t *testing.T) {
 		variant   pt.TenantVariant
 		wantBytes int
 	}{
-		{pt.Variants[0], 318}, // GMS v28  — v83 PARTYDATA
+		{pt.Variants[0], 314}, // GMS v28  — GMS legacy PARTYDATA (294 bytes, no leaderId; task-113 close-I)
 		{pt.Variants[1], 318}, // GMS v83  — v83 PARTYDATA
 		{pt.Variants[2], 318}, // GMS v87  — v83 PARTYDATA
 		{pt.Variants[3], 398}, // GMS v95  — v95 PARTYDATA
@@ -70,8 +70,13 @@ func TestLeftRoundTrip(t *testing.T) {
 			if output.Forced() != input.Forced() {
 				t.Errorf("forced: got %v, want %v", output.Forced(), input.Forced())
 			}
-			if output.LeaderId() != input.LeaderId() {
-				t.Errorf("leaderId: got %v, want %v", output.LeaderId(), input.LeaderId())
+			// GMS legacy (< v61) carries no leaderId; it round-trips as 0 (close-I).
+			wantLeader := input.LeaderId()
+			if v.Region == "GMS" && v.MajorVersion < 61 {
+				wantLeader = 0
+			}
+			if output.LeaderId() != wantLeader {
+				t.Errorf("leaderId: got %v, want %v", output.LeaderId(), wantLeader)
 			}
 			if len(output.Members()) != len(input.Members()) {
 				t.Errorf("members length: got %v, want %v", len(output.Members()), len(input.Members()))

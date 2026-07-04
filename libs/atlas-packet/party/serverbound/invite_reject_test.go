@@ -19,7 +19,23 @@ import (
 //
 // packet-audit:verify packet=party/serverbound/PartyInviteReject version=gms_v61 ida=0x857a8c
 func TestInviteRejectV61(t *testing.T) {
-	ctx := pt.CreateContext("GMS", 61, 1)
+	runInviteRejectGolden(t, 61)
+}
+
+// TestInviteRejectV48 pins the gms_v48 DENY_PARTY_REQUEST (op 95) wire. The
+// client builds it inside CWvsContext::OnPartyResult @0x729935 case 4 (invite
+// auto-decline branch): COutPacket(95), Encode1((sub_71D7ED(4)!=0)+19)
+// declineCode, EncodeStr(inviterName), EncodeStr(myName). atlas InviteReject
+// models the leading flag + first name (byte+AsciiString) — same shape as the
+// verified v61/v72/v79/v83 cells (the encode carries no version gate).
+// packet-audit:verify packet=party/serverbound/PartyInviteReject version=gms_v48 ida=0x729935
+func TestInviteRejectV48(t *testing.T) {
+	runInviteRejectGolden(t, 48)
+}
+
+func runInviteRejectGolden(t *testing.T, major uint16) {
+	t.Helper()
+	ctx := pt.CreateContext("GMS", major, 1)
 	m := InviteReject{unk: 1, from: "SomePartyLeader"}
 	want := []byte{
 		0x01,       // Encode1 declineCode (@0x857c47)
@@ -27,7 +43,7 @@ func TestInviteRejectV61(t *testing.T) {
 		0x53, 0x6F, 0x6D, 0x65, 0x50, 0x61, 0x72, 0x74, 0x79, 0x4C, 0x65, 0x61, 0x64, 0x65, 0x72, // "SomePartyLeader" (@0x857c60)
 	}
 	if got := m.Encode(nil, ctx)(nil); !bytes.Equal(got, want) {
-		t.Errorf("v61 InviteReject golden mismatch\n got: % x\nwant: % x", got, want)
+		t.Errorf("v%d InviteReject golden mismatch\n got: % x\nwant: % x", major, got, want)
 	}
 }
 

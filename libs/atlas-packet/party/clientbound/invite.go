@@ -43,6 +43,11 @@ func (m Invite) Encode(l logrus.FieldLogger, ctx context.Context) func(options m
 	// v87 case-4 reads partyId+name+jobId+level+autoJoin (IDA v87 OnPartyResult@0xad697a).
 	// v95+ same as v87. Gate: GMS >= 87 or JMS; v84..86 == v83 (off-by-one fix). delta §3.2
 	v87plus := (t.IsRegion("GMS") && t.MajorAtLeast(87)) || t.Region() == "JMS"
+	// GMS legacy (< v61): case-4 reads Decode4(partyId)+DecodeStr(name) only — NO
+	// trailing autoJoin byte (IDA v48 OnPartyResult@0x729935 case 4). v61/v83+
+	// append Decode1(autoJoin). task-113 v48 close-I. v28 unverified-by-inference
+	// (no v28 IDB) — folded into the v48 legacy shape.
+	legacyNoAutoJoin := t.IsRegion("GMS") && t.MajorVersion() < 61
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
 		w.WriteByte(m.mode)
@@ -52,7 +57,9 @@ func (m Invite) Encode(l logrus.FieldLogger, ctx context.Context) func(options m
 			w.WriteInt(m.originatorJobId)
 			w.WriteInt(m.originatorLevel)
 		}
-		w.WriteByte(0) // autoJoinFlag
+		if !legacyNoAutoJoin {
+			w.WriteByte(0) // autoJoinFlag
+		}
 		return w.Bytes()
 	}
 }
@@ -61,6 +68,8 @@ func (m *Invite) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *reque
 	t := tenant.MustFromContext(ctx)
 	// v87plus gate: see Encode comment above.
 	v87plus := (t.IsRegion("GMS") && t.MajorAtLeast(87)) || t.Region() == "JMS"
+	// GMS legacy (< v61): no trailing autoJoin byte (see Encode). task-113 close-I.
+	legacyNoAutoJoin := t.IsRegion("GMS") && t.MajorVersion() < 61
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.mode = r.ReadByte()
 		m.partyId = r.ReadUint32()
@@ -69,6 +78,8 @@ func (m *Invite) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *reque
 			m.originatorJobId = r.ReadUint32()
 			m.originatorLevel = r.ReadUint32()
 		}
-		_ = r.ReadByte() // autoJoinFlag
+		if !legacyNoAutoJoin {
+			_ = r.ReadByte() // autoJoinFlag
+		}
 	}
 }

@@ -84,7 +84,7 @@ Tool: `b3219228b3ee416c6cbd11793fed7d0fe4c58a04`
 | SKILL_LEARN_ITEM_RESULT | CWvsContext::OnSkillLearnItemResult; sub_841E5F; sub_9175E6; sub_969022 |  |  | ⬜ | 0x030 | ❌ | 0x030 | ❌ | 0x030 | ❌ | 0x033 | ❌ | 0x033 | ❌ | 0x033 | ❌ | 0x032 | ❌ | 0x030 | ❌ |
 | CHAR_INFO | CWvsContext::OnCharacterInfo | character/clientbound/CharacterInfo (T1) | 0x031 | ✅ | 0x03A | ✅ | 0x03A | ✅ | 0x03A | ✅ | 0x03D | ✅ | 0x03D | ✅ | 0x03D | ✅ | 0x03D | ✅ | 0x035 | ✅ |
 | GATHER_ITEM_RESULT | CWvsContext::OnGatherItemResult | inventory/clientbound/InventoryCompartmentMerge (T1) |  | ⬜ | 0x031 | 🟡 | 0x031 | 🟡 | 0x031 | 🟡 | 0x034 | ✅ | 0x034 | ✅ | 0x034 | ✅ | 0x034 | ✅ | 0x031 | ✅ |
-| PARTY_OPERATION | CWvsContext::OnPartyResult | party/clientbound/PartyAlreadyJoined1 (T1) | 0x032 | ❌ | 0x03B | ✅ | 0x03B | ✅ | 0x03B | ✅ | 0x03E | ✅ | 0x03E | ✅ | 0x03E | ✅ | 0x03E | ✅ | 0x036 | ✅ |
+| PARTY_OPERATION | CWvsContext::OnPartyResult | party/clientbound/PartyAlreadyJoined1 (T1) | 0x032 | ✅ | 0x03B | ✅ | 0x03B | ✅ | 0x03B | ✅ | 0x03E | ✅ | 0x03E | ✅ | 0x03E | ✅ | 0x03E | ✅ | 0x036 | ✅ |
 | SORT_ITEM_RESULT | CWvsContext::OnSortItemResult | inventory/clientbound/InventoryCompartmentSort (T1) |  | ⬜ | 0x032 | 🟡 | 0x032 | 🟡 | 0x032 | 🟡 | 0x035 | ✅ | 0x035 | ✅ | 0x035 | ✅ | 0x035 | ✅ | 0x032 | ✅ |
 | ALLIANCE_OPERATION | CWvsContext::OnAllianceResult |  | 0x033 | ❌ | 0x03F | ❌ | 0x03F | ❌ | 0x03F | ❌ | 0x042 | ❌ | 0x042 | ❌ | 0x044 | ❌ | 0x044 | ❌ | 0x03C | ❌ |
 | SKILL_RESET_ITEM_RESULT | CWvsContext::OnSkillResetItemResult |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x033 | ❌ |  | ⬜ |
@@ -623,7 +623,7 @@ Tool: `b3219228b3ee416c6cbd11793fed7d0fe4c58a04`
 | HYPER_UPGRADE_ITEM_USE | CWvsContext::SendHyperUpgradeItemUseRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x05E | ❌ | 0x04F | ❌ |
 | PARTY_OPERATION | CField::SendChangePartyBossMsg; CField::SendCreateNewPartyMsg; CField::SendJoinPartyMsg; CField::SendKickPartyMsg; CField::SendWithdrawPartyMsg; CWvsContext::OnPartyResult | party/serverbound/PartyOperationInvite (T1) | 0x05E | ✅ | 0x070 | 🟡 | 0x07A | 🟡 | 0x079 | 🟡 | 0x07C | ✅ | 0x07E | ✅ | 0x082 | ✅ | 0x091 | ✅ | 0x07D | ✅ |
 | TROCK_ADD_MAP | CWvsContext::SendMapTransferRequest; sub_8478EA |  |  | ⬜ | 0x05E | ❌ |  | ⬜ |  | ⬜ | 0x066 | ❌ | 0x066 | ❌ | 0x069 | ❌ | 0x072 | ❌ | 0x061 | ❌ |
-| DENY_PARTY_REQUEST | CFadeWnd::SendCloseMessage; CWvsContext::OnPartyResult | party/clientbound/PartyAlreadyJoined1 (T1) | 0x05F | ❌ | 0x071 | ✅ | 0x07B | ✅ | 0x07A | ✅ | 0x07D | ❌ | 0x07F | ❌ |  | ⬜ |  | ⬜ |  | ⬜ |
+| DENY_PARTY_REQUEST | CFadeWnd::SendCloseMessage; CWvsContext::OnPartyResult | party/clientbound/PartyAlreadyJoined1 (T1) | 0x05F | ✅ | 0x071 | ✅ | 0x07B | ✅ | 0x07A | ✅ | 0x07D | ❌ | 0x07F | ❌ |  | ⬜ |  | ⬜ |  | ⬜ |
 | ITEM_OPTION_UPGRADE_USE | CWvsContext::SendItemOptionUpgradeItemUseRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x05F | ❌ | 0x050 | ❌ |
 | GUILD_OPERATION | CField::InputGuildName; CField::SendCreateGuildAgreeMsg; CField::SendInviteGuildMsg; CField::SendKickGuildMsg; CField::SendSetGradeNameMsg; CField::SendSetGuildMarkMsg; CField::SendSetGuildNoticeMsg; CField::SendSetMemberGradeMsg; CField::SendWithdrawGuildMsg; CUIFadeYesNo::OnButtonClicked; CWvsContext::OnGuildResult | guild/serverbound/GuildAgreementResponse (T1) | 0x060 | ✅ | 0x072 | ❌ | 0x07C | ✅ | 0x07B | ✅ | 0x07E | ✅ | 0x082 | ✅ | 0x086 | ✅ | 0x095 | ✅ | 0x081 | ✅ |
 | UI_OPEN_ITEM_USE_REQUEST | CWvsContext::SendUIOpenItemRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x060 | ❌ |  | ⬜ |
@@ -975,7 +975,7 @@ Tool: `b3219228b3ee416c6cbd11793fed7d0fe4c58a04`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v48 | 162 | 0 | 2 | 148 | 629 | 0 | 51.9% |
+| v48 | 164 | 0 | 2 | 146 | 629 | 0 | 52.6% |
 | v61 | 208 | 0 | 60 | 202 | 471 | 0 | 44.3% |
 | v72 | 216 | 0 | 73 | 220 | 432 | 0 | 42.4% |
 | v79 | 228 | 0 | 72 | 218 | 423 | 0 | 44.0% |

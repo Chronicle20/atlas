@@ -27,7 +27,7 @@ func TestInviteByteOutput(t *testing.T) {
 		variant   pt.TenantVariant
 		wantBytes int
 	}{
-		{pt.Variants[0], 19}, // GMS v28  — no jobId/level
+		{pt.Variants[0], 18}, // GMS v28  — GMS legacy: no jobId/level AND no autoJoin byte (task-113 close-I)
 		{pt.Variants[1], 19}, // GMS v83  — no jobId/level
 		{pt.Variants[2], 27}, // GMS v87  — with jobId+level (IDA confirmed v87@0xad6edf)
 		{pt.Variants[3], 27}, // GMS v95  — with jobId+level

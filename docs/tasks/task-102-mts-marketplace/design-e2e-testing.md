@@ -1,7 +1,18 @@
 # task-102 addendum — E2E test endpoints for MTS verification
 
-Status: proposed (awaiting approval)
+Status: implemented (plan-e2e-testing.md, commits 3478d9e0ca..42162214a7)
 Scope: `services/atlas-mts` + a playbook doc. No channel/UI/schema changes.
+
+> **As-built deltas** (the plan superseded this doc on four details; the code
+> follows the plan): routes are plural — `POST /test/purchases` / `POST
+> /test/bids`; the emitted commands are buyer-/bidder-keyed (matching the
+> channel's producers exactly), not listing-serial-keyed as §4.2 sketches;
+> purchase/bid return a bare 202 with no command echo (observe outcomes via
+> listing state / transaction history / logs); seed derives
+> `category`/`subCategory` from sale type + template id (mirroring the custody
+> consumer) instead of accepting them as request attributes. Also note
+> `/test/sweep` runs cross-tenant exactly like the production ticker — it is
+> the one endpoint whose effect is not scoped to the caller's tenant headers.
 
 ## 1. Problem
 

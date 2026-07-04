@@ -62,6 +62,20 @@ func TestLeftKnockbackByteOutputV61(t *testing.T) {
 	}
 }
 
+// TestLeftKnockbackByteOutputV48 pins the gms_v48 LEFT_KNOCKBACK (op 0x96 = 150)
+// serverbound wire. IDA: CField_SnowBall::Update @0x4dc55c (GMS_v48_1_DEVM.exe) —
+// COutPacket(150) @0x4dc5d8 then SendPacket @0x4dc5eb with NO Encode* calls:
+// empty body (header only) — identical to the v61 golden (op 177).
+// packet-audit:verify packet=field/serverbound/FieldLeftKnockback version=gms_v48 ida=0x4dc55c
+func TestLeftKnockbackByteOutputV48(t *testing.T) {
+	input := NewLeftKnockback()
+	ctx := pt.CreateContext("GMS", 48, 1)
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if len(actual) != 0 {
+		t.Errorf("v48 left_knockback golden mismatch: got %v want empty", actual)
+	}
+}
+
 func TestLeftKnockbackRoundTrip(t *testing.T) {
 	input := NewLeftKnockback()
 	for _, v := range pt.Variants {

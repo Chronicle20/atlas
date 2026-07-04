@@ -70,6 +70,23 @@ func TestSnowballByteOutputV61(t *testing.T) {
 	}
 }
 
+// TestSnowballByteOutputV48 pins the gms_v48 SNOWBALL (op 0x95 = 149)
+// serverbound wire. IDA: CField_SnowBall::BasicActionAttack @0x4dcb14
+// (GMS_v48_1_DEVM.exe) — COutPacket(149) @0x4dcbff, Encode1(attack v8)
+// @0x4dcc0c, Encode2(damage v9) @0x4dcc15, Encode2(x v13) @0x4dcc20, then
+// SendPacket. Body = attack(1) + damage(2 LE) + x(2 LE) — identical to the v61
+// golden (op 176); only the opcode shifts.
+// packet-audit:verify packet=field/serverbound/FieldSnowball version=gms_v48 ida=0x4dcb14
+func TestSnowballByteOutputV48(t *testing.T) {
+	input := NewSnowball(0x01, 0x0203, 0x0405)
+	ctx := pt.CreateContext("GMS", 48, 1)
+	expected := []byte{0x01, 0x03, 0x02, 0x05, 0x04}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v48 snowball golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
 func TestSnowballRoundTrip(t *testing.T) {
 	input := NewSnowball(0x01, 0x0203, 0x0405)
 	for _, v := range pt.Variants {

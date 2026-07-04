@@ -53,6 +53,23 @@ func TestWeddingProgressByteOutputV72(t *testing.T) {
 	}
 }
 
+// TestWeddingProgressByteOutputV48 pins the gms_v48 WEDDING_PROGRESS clientbound
+// read. IDA: CField_Wedding::OnWeddingProgress @0x4e22ff (GMS_v48_1_DEVM.exe)
+// reads Decode1(mode/step) @0x4e2365 + Decode4(groomId this+113) @0x4e236a +
+// Decode4(brideId this+114) @0x4e237d. Body identical to v61 (GMS keeps the step
+// byte). This clientbound fixture completes the OnWeddingProgress worst-of family
+// so the serverbound WEDDING_ACTION/WEDDING_TALK v48 cells can promote.
+// packet-audit:verify packet=field/clientbound/FieldWeddingProgress version=gms_v48 ida=0x4e22ff
+func TestWeddingProgressByteOutputV48(t *testing.T) {
+	input := NewWeddingProgress(0x02, 0x01020304, 0x05060708)
+	ctx := test.CreateContext("GMS", 48, 1)
+	expected := []byte{0x02, 0x04, 0x03, 0x02, 0x01, 0x08, 0x07, 0x06, 0x05}
+	actual := test.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v48 golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
 // TestWeddingProgressByteOutputV61 pins the gms_v61 WEDDING_PROGRESS clientbound
 // read. IDA: CField_Wedding::OnWeddingProgress @0x513473 (GMS_v61.1_U_DEVM.exe)
 // reads Decode1(step) + Decode4(groomId this+461) + Decode4(brideId this+462).

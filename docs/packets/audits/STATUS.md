@@ -538,7 +538,7 @@ Tool: `8b766a86ca649b12aeb7e925dc5795e6a1a5424f`
 | STRANGE_DATA |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x01B | ❌ | 0x01B | ❌ | 0x01B | ❌ |  | ⬜ |  | ⬜ |
 | RELOG |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x01C | ❌ | 0x01C | ❌ | 0x01C | ❌ |  | ⬜ |  | ⬜ |
 | REGISTER_PIC | CLogin::SendSelectCharPacket | login/serverbound/CharacterSelect |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x01D | ✅ | 0x01D | ✅ | 0x01D | ✅ | 0x01C | ✅ | 0x013 | ✅ |
-| CHANGE_MAP | CCashShop::SendTransferFieldPacket; CField::SendTransferFieldRequest; CITC::SendTransferFieldPacket | field/serverbound/FieldChange (T1) | 0x01E | ❌ | 0x023 | ✅ | 0x025 | ✅ | 0x024 | ✅ | 0x026 | ❌ | 0x026 | ❌ | 0x028 | ❌ | 0x029 | ❌ | 0x01D | ❌ |
+| CHANGE_MAP | CCashShop::SendTransferFieldPacket; CField::SendTransferFieldRequest; CITC::SendTransferFieldPacket | field/serverbound/FieldChange (T1) | 0x01E | ✅ | 0x023 | ✅ | 0x025 | ✅ | 0x024 | ✅ | 0x026 | ❌ | 0x026 | ❌ | 0x028 | ❌ | 0x029 | ❌ | 0x01D | ❌ |
 | CHAR_SELECT_WITH_PIC | CLogin::SendSelectCharPacket | login/serverbound/CharacterSelect |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x01E | ✅ | 0x01E | ✅ | 0x01E | ✅ | 0x01D | ✅ | 0x014 | ✅ |
 | CHANGE_CHANNEL | CField::SendTransferChannelRequest; sub_4C5886 | channel/serverbound/ChannelChangeRequest | 0x01F | ❌ | 0x024 | 🟡 | 0x026 | 🟡 | 0x025 | 🟡 | 0x027 | ✅ | 0x027 | ✅ | 0x029 | ✅ | 0x02A | ✅ | 0x01E | ✅ |
 | VIEW_ALL_PIC_REGISTER | CLogin::SendSelectCharPacketByVAC | login/serverbound/AllCharacterListSelect |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x01F | ✅ | 0x01F | ✅ | 0x01F | ✅ | 0x01E | ✅ |  | ⬜ |
@@ -640,9 +640,9 @@ Tool: `8b766a86ca649b12aeb7e925dc5795e6a1a5424f`
 | ANTI_MACRO_TARGET | CUserLocal::DoAntiMacroSkill |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x068 | ❌ | 0x068 | ❌ | 0x06B | ❌ | 0x074 | ❌ | 0x063 | ❌ |
 | SUE_CHARACTER | CField::SendChatMsgSlash; sub_849F27 | field/serverbound/FieldAdminCommand (T1) |  | ⬜ | 0x068 | ✅ | 0x071 | ✅ | 0x070 | ✅ | 0x072 | ✅ | 0x072 | ✅ | 0x075 | ✅ | 0x07E | ✅ |  | ⬜ |
 | CLAIM_REQUEST | CWvsContext::SendClaimRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x06A | ❌ | 0x06A | ❌ | 0x06D | ❌ | 0x076 | ❌ | 0x065 | ❌ |
-| WEDDING_ACTION | CField_Wedding::OnWeddingProgress | field/serverbound/FieldWeddingAction (T1) | 0x06B | ❌ | 0x07F | ✅ | 0x089 | ✅ | 0x088 | ✅ | 0x08B | ✅ | 0x08F | ✅ | 0x093 | ✅ | 0x0A3 | ✅ |  | ⬜ |
+| WEDDING_ACTION | CField_Wedding::OnWeddingProgress | field/serverbound/FieldWeddingAction (T1) | 0x06B | ✅ | 0x07F | ✅ | 0x089 | ✅ | 0x088 | ✅ | 0x08B | ✅ | 0x08F | ✅ | 0x093 | ✅ | 0x0A3 | ✅ |  | ⬜ |
 | USER_CALC_DAMAGE_STAT_SET_REQUEST | CWvsContext::CheckDarkForce; CWvsContext::CheckDragonFury; CWvsContext::OnTemporaryStatReset; CWvsContext::OnTemporaryStatSet | character/clientbound/BuffCancel (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x06C | ✅ | 0x06C | ✅ | 0x06F | ✅ | 0x078 | ✅ | 0x067 | ✅ |
-| WEDDING_TALK | CField_Wedding::OnWeddingProgress | field/serverbound/FieldWeddingAction (T1) | 0x06C | ❌ | 0x080 | ✅ | 0x08A | ✅ | 0x089 | ✅ | 0x08C | ✅ | 0x090 | ✅ | 0x094 | ✅ | 0x0A4 | ✅ |  | ⬜ |
+| WEDDING_TALK | CField_Wedding::OnWeddingProgress | field/serverbound/FieldWeddingAction (T1) | 0x06C | ✅ | 0x080 | ✅ | 0x08A | ✅ | 0x089 | ✅ | 0x08C | ✅ | 0x090 | ✅ | 0x094 | ✅ | 0x0A4 | ✅ |  | ⬜ |
 | GRENADE_EFFECT | CUserLocal::ThrowGrenade |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x06D | ❌ | 0x06D | ❌ | 0x070 | ❌ | 0x079 | ❌ | 0x068 | ❌ |
 | SKILL_MACRO | CMacroSysMan::FlushToSvr; sub_6022DB |  |  | ⬜ |  | ⬜ | 0x06D | ❌ | 0x06C | ❌ | 0x06E | ❌ | 0x06E | ❌ | 0x071 | ❌ | 0x07A | ❌ | 0x069 | ❌ |
 | CHANGE_KEYMAP | CFuncKeyMappedMan::ChangePetConsumeItemID; CFuncKeyMappedMan::ChangePetConsumeMPItemID; CFuncKeyMappedMan::SaveFuncKeyMap | character/serverbound/KeyMapChange (T1) | 0x06E | ✅ | 0x07B | ✅ | 0x085 | ✅ | 0x084 | ✅ | 0x087 | ✅ | 0x08B | ✅ | 0x08F | ✅ | 0x09F | ✅ | 0x08A | ✅ |
@@ -697,13 +697,13 @@ Tool: `8b766a86ca649b12aeb7e925dc5795e6a1a5424f`
 | ADD_FAMILY | CWvsContext::SendRegisterJunior |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x093 | ❌ | 0x097 | ❌ | 0x09B | ❌ | 0x0AB | ❌ | 0x095 | ❌ |
 | SEPARATE_FAMILY_BY_SENIOR | CWvsContext::SendUnregisterJunior |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x094 | ❌ | 0x098 | ❌ | 0x09C | ❌ | 0x0AC | ❌ | 0x096 | ❌ |
 | SEPARATE_FAMILY_BY_JUNIOR | CWvsContext::SendUnregisterParent |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x095 | ❌ | 0x099 | ❌ | 0x09D | ❌ | 0x0AD | ❌ | 0x097 | ❌ |
-| SNOWBALL | CField_SnowBall::BasicActionAttack | field/serverbound/FieldSnowball (T1) | 0x095 | ❌ | 0x0B0 | ✅ | 0x0C9 | ✅ | 0x0CB | ✅ | 0x0D3 | ✅ | 0x0D9 | ✅ | 0x0E0 | ✅ | 0x0FF | ✅ | 0x0DE | ✅ |
+| SNOWBALL | CField_SnowBall::BasicActionAttack | field/serverbound/FieldSnowball (T1) | 0x095 | ✅ | 0x0B0 | ✅ | 0x0C9 | ✅ | 0x0CB | ✅ | 0x0D3 | ✅ | 0x0D9 | ✅ | 0x0E0 | ✅ | 0x0FF | ✅ | 0x0DE | ✅ |
 | ACCEPT_FAMILY | CWvsContext::SendFamilyInviteResult |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x096 | ❌ | 0x09A | ❌ | 0x09E | ❌ | 0x0AE | ❌ | 0x098 | ❌ |
-| LEFT_KNOCKBACK | CField_SnowBall::Update | field/serverbound/FieldLeftKnockback (T1) | 0x096 | ❌ | 0x0B1 | ✅ | 0x0CA | ✅ | 0x0CC | ✅ | 0x0D4 | ✅ | 0x0DA | ✅ | 0x0E1 | ✅ | 0x100 | ✅ | 0x0DF | ✅ |
+| LEFT_KNOCKBACK | CField_SnowBall::Update | field/serverbound/FieldLeftKnockback (T1) | 0x096 | ✅ | 0x0B1 | ✅ | 0x0CA | ✅ | 0x0CC | ✅ | 0x0D4 | ✅ | 0x0DA | ✅ | 0x0E1 | ✅ | 0x100 | ✅ | 0x0DF | ✅ |
 | USE_FAMILY | CWvsContext::SendUseFamilyPrivilege |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x097 | ❌ | 0x09B | ❌ | 0x09F | ❌ | 0x0AF | ❌ | 0x099 | ❌ |
 | CHANGE_FAMILY_MESSAGE | CWvsContext::SendSetFamilyPrecept |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x098 | ❌ | 0x09C | ❌ | 0x0A0 | ❌ | 0x0B0 | ❌ | 0x09A | ❌ |
 | FAMILY_SUMMON_RESPONSE | CWvsContext::OnFamilySummonRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x099 | ❌ | 0x09D | ❌ | 0x0A1 | ❌ | 0x0B1 | ❌ | 0x09B | ❌ |
-| GUILD_BOSS | CField_GuildBoss::BasicActionAttack | field/serverbound/FieldGuildBoss (T1) | 0x099 | ❌ | 0x0B4 | ✅ | 0x0CD | ✅ | 0x0CF | ✅ | 0x0D7 | ✅ | 0x0DD | ✅ | 0x0E4 | ✅ | 0x103 | ✅ | 0x0E2 | ✅ |
+| GUILD_BOSS | CField_GuildBoss::BasicActionAttack | field/serverbound/FieldGuildBoss (T1) | 0x099 | ✅ | 0x0B4 | ✅ | 0x0CD | ✅ | 0x0CF | ✅ | 0x0D7 | ✅ | 0x0DD | ✅ | 0x0E4 | ✅ | 0x103 | ✅ | 0x0E2 | ✅ |
 | UNNAMED_R245 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x09A | ❌ |  | ⬜ | 0x0A2 | ❌ | 0x0B2 | ❌ |  | ⬜ |
 | ENTER_MTS | CWvsContext::SendMigrateToITCRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x09C | ❌ | 0x0A0 | ❌ | 0x0A4 | ❌ | 0x0B4 | ❌ | 0x0A6 | ❌ |
 | MOB_DROP_PICKUP_REQUEST | CMob::SendDropPickUpRequest | monster/serverbound/MonsterMobDropPickupRequest (T1) |  | ⬜ | 0x09D | ✅ | 0x0B4 | ✅ | 0x0B6 | ✅ | 0x0BE | ✅ | 0x0C3 | ✅ | 0x0CA | ✅ | 0x0E5 | ✅ | 0x0C4 | ✅ |
@@ -991,7 +991,7 @@ Tool: `8b766a86ca649b12aeb7e925dc5795e6a1a5424f`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v48 | 127 | 0 | 5 | 196 | 629 | 0 | 38.7% |
+| v48 | 133 | 0 | 5 | 190 | 629 | 0 | 40.5% |
 | v61 | 208 | 0 | 60 | 218 | 471 | 0 | 42.8% |
 | v72 | 216 | 0 | 73 | 236 | 432 | 0 | 41.1% |
 | v79 | 228 | 0 | 72 | 234 | 423 | 0 | 42.7% |

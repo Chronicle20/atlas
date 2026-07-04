@@ -114,6 +114,43 @@ func TestChangeByteOutputV61(t *testing.T) {
 	}
 }
 
+// TestChangeByteOutputV48 pins the gms_v48 CHANGE_MAP (op 0x1E / 30) serverbound
+// wire. IDA: CField::SendTransferFieldRequest @0x4c5733 (GMS_v48_1_DEVM.exe) —
+//
+//	COutPacket(30)                 @0x4c5771 → opcode 0x1E (matches registry op 30).
+//	Encode1(get_field()+216)       @0x4c5796 → fieldKey byte.
+//	Encode4(a2)                    @0x4c57a1 → targetId (int32 LE).
+//	EncodeStr(Src)                 @0x4c57c6 → portalName.
+//	if (a3) Encode2(x)/Encode2(y)  @0x4c57e4/@0x4c57fe → target x/y (only with a portal name).
+//	Encode1(0)                     @0x4c5807 → unused byte.
+//	Encode1(a4)                    @0x4c5812 → premium byte.
+//	Encode1(dword_80D3EC)          @0x4c5822 → chase flag (emitted UNCONDITIONALLY;
+//	                                           the >=61 gate wrongly dropped it for v48,
+//	                                           lowered to >=48).
+//	if (chase) Encode4(a5)/Encode4(a6) — omitted here (chase=false).
+//
+// Wire byte-identical to gms_v61 (only the opcode shifts). WriteAsciiString =
+// uint16-LE len + bytes; WriteInt = uint32-LE; WriteInt16 = uint16-LE.
+// packet-audit:verify packet=field/serverbound/FieldChange version=gms_v48 ida=0x4c5733
+func TestChangeByteOutputV48(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 48, 1)
+	input := Change{fieldKey: 1, targetId: 100000000, portalName: "west00", x: 100, y: 200, unused: 0, premium: 0}
+	expected := []byte{
+		0x01,                   // fieldKey @0x4c5796
+		0x00, 0xE1, 0xF5, 0x05, // targetId 100000000 @0x4c57a1
+		0x06, 0x00, 0x77, 0x65, 0x73, 0x74, 0x30, 0x30, // EncodeStr("west00") @0x4c57c6
+		0x64, 0x00, // x=100 @0x4c57e4
+		0xC8, 0x00, // y=200 @0x4c57fe
+		0x00, // unused @0x4c5807
+		0x00, // premium @0x4c5812
+		0x00, // chase=false @0x4c5822
+	}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v48 change golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
 // TestChangeWithPortalRoundTrip covers a portal-named transfer. Per the v95
 // client (CField::SendTransferFieldRequest @0x5345c0) a non-empty portal name
 // carries the target x/y pair, so x/y participate in the round-trip here.

@@ -1486,9 +1486,8 @@
       ]
     },
     "CField::OnClock": {
-      "address": "",
+      "address": "0x4c66f2",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",

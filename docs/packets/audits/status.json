@@ -1,7 +1,7 @@
 {
   "toolSha": "8b766a86ca649b12aeb7e925dc5795e6a1a5424f",
   "exportHashes": {
-    "gms_v48": "d3e2eda72bf616c89cb8ddedf58f28bbe89db16baab07e5acc439569705769f1",
+    "gms_v48": "0d7948e7c9e28f44ced61efe59f5fd8ada35414fabe3eaea85585371e11f0e60",
     "gms_v61": "8023cfe3b5868d7a19f2067627f84e8da849588dfe87e86f48eb721225ac717b",
     "gms_v72": "a0ac2be6578395455f491976bcb11aa27e2e57376b46ee8816b90324bad60c02",
     "gms_v79": "370d6b720b633c12c71d40340f3952000705c4bddb98f87179e7193d112d210c",
@@ -13201,8 +13201,7 @@
       ],
       "cells": {
         "gms_v48": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 90
         },
         "gms_v61": {

@@ -5,7 +5,7 @@
 
 Tool: `8b766a86ca649b12aeb7e925dc5795e6a1a5424f`
 
-- export gms_v48: `d3e2eda72bf616c89cb8ddedf58f28bbe89db16baab07e5acc439569705769f1`
+- export gms_v48: `0d7948e7c9e28f44ced61efe59f5fd8ada35414fabe3eaea85585371e11f0e60`
 - export gms_v61: `8023cfe3b5868d7a19f2067627f84e8da849588dfe87e86f48eb721225ac717b`
 - export gms_v72: `a0ac2be6578395455f491976bcb11aa27e2e57376b46ee8816b90324bad60c02`
 - export gms_v79: `370d6b720b633c12c71d40340f3952000705c4bddb98f87179e7193d112d210c`
@@ -167,7 +167,7 @@ Tool: `8b766a86ca649b12aeb7e925dc5795e6a1a5424f`
 | GMEVENT_INSTRUCTIONS | CField::OnDesc | field/clientbound/FieldGmEventInstructions (T1) | 0x059 | ✅ | 0x06D | 🟡 | 0x086 | 🟡 | 0x08A | 🟡 | 0x092 | ✅ | 0x095 | ✅ | 0x09A | ✅ | 0x0A2 | ✅ | 0x08F | ✅ |
 | IDA_0X059 | CWvsContext::OnMapleTVUseRes |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x059 | ❌ |
 | WEB_BOARD_AUTHKEY_UPDATE | CWvsContext::OnWebBoardAuthkeyUpdate |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x059 | ❌ | 0x05B | ❌ | 0x05B | ❌ | 0x05C | ❌ | 0x060 | ❌ |
-| CLOCK | CField::OnClock | field/clientbound/FieldClock (T1) | 0x05A | ❌ | 0x06E | ✅ | 0x087 | ✅ | 0x08B | ✅ | 0x093 | ✅ | 0x096 | ✅ | 0x09B | ✅ | 0x0A3 | ✅ | 0x090 | ✅ |
+| CLOCK | CField::OnClock | field/clientbound/FieldClock (T1) | 0x05A | ✅ | 0x06E | ✅ | 0x087 | ✅ | 0x08B | ✅ | 0x093 | ✅ | 0x096 | ✅ | 0x09B | ✅ | 0x0A3 | ✅ | 0x090 | ✅ |
 | FAMILY_JOIN_REQUEST | CWvsContext::OnFamilyJoinRequest |  |  | ⬜ |  | ⬜ | 0x05A | ❌ | 0x05B | ❌ | 0x061 | ❌ | 0x064 | ❌ | 0x064 | ❌ | 0x065 | ❌ | 0x068 | ❌ |
 | SESSION_VALUE | CWvsContext::OnSessionValue |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x05A | ❌ | 0x05C | ❌ | 0x05C | ❌ | 0x05D | ❌ | 0x061 | ❌ |
 | SUCCESS_IN_USE_GACHAPON_BOX | CWvsContext::OnSuccessInUsegachaponBox |  |  | ⬜ | 0x05A | ❌ | 0x06D | ❌ | 0x06F | ❌ | 0x075 | ❌ | 0x078 | ❌ | 0x078 | ❌ | 0x079 | ❌ | 0x075 | ❌ |
@@ -981,7 +981,7 @@ Tool: `8b766a86ca649b12aeb7e925dc5795e6a1a5424f`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v48 | 134 | 0 | 4 | 180 | 629 | 0 | 42.1% |
+| v48 | 135 | 0 | 4 | 179 | 629 | 0 | 42.5% |
 | v61 | 208 | 0 | 60 | 208 | 471 | 0 | 43.7% |
 | v72 | 216 | 0 | 73 | 226 | 432 | 0 | 41.9% |
 | v79 | 228 | 0 | 72 | 224 | 423 | 0 | 43.5% |

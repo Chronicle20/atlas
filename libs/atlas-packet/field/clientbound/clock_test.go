@@ -14,6 +14,38 @@ import (
 // packet-audit:verify packet=field/clientbound/FieldClock version=jms_v185 ida=0x56e849
 // packet-audit:verify packet=field/clientbound/FieldClock version=gms_v84 ida=0x5424c1
 // packet-audit:verify packet=field/clientbound/FieldClock version=gms_v72 ida=0x51a522
+// TestClockByteOutputV48 pins the gms_v48 CLOCK (op 0x5A = 90) clientbound wire.
+// IDA: v48 receives CLOCK at CField::OnPacket @0x4c66f2 case 'Z'(90) @0x4c67f7,
+// which dispatches to the CField primary-vtable slot-7 (offset +28) virtual
+// CField::OnClock. The primary CField vtable is unsymbolized in this IDB (the
+// case 'Z' target is a secondary-base MI vtable-indirect call), so OnClock's body
+// is not statically resolvable — cited at the resolvable dispatch entry 0x4c66f2
+// (the registry ida.address), mirroring the accepted gms_v61 precedent (0x4e9ea3).
+// The OnClock read order is version-invariant (no codec gate): Decode1(clockType)
+// then EventClock(0)=Decode4, TownClock(1)=3×Decode1, TimerClock(2)=Decode4,
+// EventTimerClock(3)=Decode1(flag)+Decode4 — so the v48 wire is byte-identical to
+// the v61/v72-verified goldens.
+// packet-audit:verify packet=field/clientbound/FieldClock version=gms_v48 ida=0x4c66f2
+func TestClockByteOutputV48(t *testing.T) {
+	ctx := test.CreateContext("GMS", 48, 1)
+	event := NewEventClock(300)
+	if got := test.Encode(t, ctx, event.Encode, nil); !bytes.Equal(got, []byte{0x00, 0x2C, 0x01, 0x00, 0x00}) {
+		t.Errorf("v48 event clock: got %v", got)
+	}
+	town := NewTownClock(14, 30, 45)
+	if got := test.Encode(t, ctx, town.Encode, nil); !bytes.Equal(got, []byte{0x01, 0x0E, 0x1E, 0x2D}) {
+		t.Errorf("v48 town clock: got %v", got)
+	}
+	timer := NewTimerClock(600)
+	if got := test.Encode(t, ctx, timer.Encode, nil); !bytes.Equal(got, []byte{0x02, 0x58, 0x02, 0x00, 0x00}) {
+		t.Errorf("v48 timer clock: got %v", got)
+	}
+	eventTimer := NewEventTimerClock(120)
+	if got := test.Encode(t, ctx, eventTimer.Encode, nil); !bytes.Equal(got, []byte{0x03, 0x01, 0x78, 0x00, 0x00, 0x00}) {
+		t.Errorf("v48 event timer clock: got %v", got)
+	}
+}
+
 // TestClockByteOutputV61 pins the gms_v61 CLOCK (op 0x6E = 110) clientbound wire.
 // IDA: v61 receives CLOCK at CField::OnPacket @0x4e9ea3 case 'n'(110), which
 // dispatches to the primary-vtable slot-8 virtual CField::OnClock (the same

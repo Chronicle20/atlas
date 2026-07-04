@@ -31,7 +31,7 @@ Tool: `8b766a86ca649b12aeb7e925dc5795e6a1a5424f`
 | SELECT_CHARACTER_BY_VAC | CLogin::OnSelectCharacterByVACResult; sub_5028A6 |  | 0x009 | ❌ | 0x009 | ❌ | 0x009 | ❌ | 0x009 | ❌ | 0x009 | ❌ | 0x009 | ❌ | 0x009 | ❌ | 0x009 | ❌ |  | ⬜ |
 | IDA_0X00A | CClientSocket::OnAuthenCodeChanged |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x00A | ❌ |
 | WORLD_INFORMATION | CLogin::OnWorldInformation; sub_50120A | login/clientbound/ServerListEnd | 0x00A | ❌ | 0x00A | ✅ | 0x00A | ✅ | 0x00A | ✅ | 0x00A | ✅ | 0x00A | ✅ | 0x00A | ✅ | 0x00A | ✅ | 0x002 | ✅ |
-| CHARLIST | CLogin::OnSelectWorldResult; sub_5013ED; sub_56688D; sub_5B3646; sub_5CE522 | character/clientbound/CharacterList (T1) | 0x00B | ❌ | 0x00B | ✅ | 0x00B | ✅ | 0x00B | ✅ | 0x00B | ✅ | 0x00B | ✅ | 0x00B | ✅ | 0x00B | ✅ | 0x003 | ✅ |
+| CHARLIST | CLogin::OnSelectWorldResult; sub_5013ED; sub_56688D; sub_5B3646; sub_5CE522 | character/clientbound/CharacterList (T1) | 0x00B | ✅ | 0x00B | ✅ | 0x00B | ✅ | 0x00B | ✅ | 0x00B | ✅ | 0x00B | ✅ | 0x00B | ✅ | 0x00B | ✅ | 0x003 | ✅ |
 | IDA_0X00B | CClientSocket::OnAuthenMessage |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x00B | ❌ |
 | SERVER_IP | CLogin::OnSelectCharacterResult; sub_502B70 | login/clientbound/ServerIP | 0x00C | ❌ | 0x00C | 🟡 | 0x00C | 🟡 | 0x00C | 🟡 | 0x00C | ✅ | 0x00C | ✅ | 0x00C | ✅ | 0x00C | ✅ | 0x004 | ✅ |
 | CHAR_NAME_RESPONSE | CLogin::OnCheckDuplicatedIDResult; CLogin::OnCreateNewCharacterResult; sub_5016DB | character/clientbound/CharacterNameResponse (T1) | 0x00D | ✅ | 0x00D | ✅ | 0x00D | ✅ | 0x00D | ✅ | 0x00D | ✅ | 0x00D | ✅ | 0x00D | ✅ | 0x00D | ✅ | 0x005 | ✅ |
@@ -850,10 +850,10 @@ Tool: `8b766a86ca649b12aeb7e925dc5795e6a1a5424f`
 | cash/serverbound/CashShopOperationSetWishlist (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | channel/serverbound/ChannelChangeRequest |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | character/clientbound/CharacterSpawn (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| character/clientbound/CharacterViewAllCharacters (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| character/clientbound/CharacterViewAllCount (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| character/clientbound/CharacterViewAllError (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| character/clientbound/CharacterViewAllSearchFailed (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
+| character/clientbound/CharacterViewAllCharacters (T1) |  |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
+| character/clientbound/CharacterViewAllCount (T1) |  |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
+| character/clientbound/CharacterViewAllError (T1) |  |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
+| character/clientbound/CharacterViewAllSearchFailed (T1) |  |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | character/serverbound/ChairPortable (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | character/serverbound/ChalkboardClose (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | character/serverbound/ExpressionRequest (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
@@ -981,7 +981,7 @@ Tool: `8b766a86ca649b12aeb7e925dc5795e6a1a5424f`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v48 | 136 | 0 | 4 | 178 | 629 | 0 | 42.8% |
+| v48 | 141 | 0 | 4 | 173 | 629 | 0 | 44.3% |
 | v61 | 208 | 0 | 60 | 208 | 471 | 0 | 43.7% |
 | v72 | 216 | 0 | 73 | 226 | 432 | 0 | 41.9% |
 | v79 | 228 | 0 | 72 | 224 | 423 | 0 | 43.5% |

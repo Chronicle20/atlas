@@ -55,6 +55,76 @@ func TestAddCharacterEntryRoundTrip(t *testing.T) {
 	}
 }
 
+// AddCharacterEntry v48 byte-fixture (GMS_v48_1_DEVM.exe, port 13337).
+//
+// Client read order — CLogin::OnCreateNewCharacterResult sub_501973 @0x501973:
+//   Decode1(code) /*0x501987*/ → on success GW_CharacterStat::Decode (sub_49B627)
+//   → AvatarLook::Decode (sub_49E1E0) into a free slot, then the family byte and
+//   16-byte rank buffer are zeroed LOCALLY (not read from the wire). So the legacy
+//   v29..v82 wire is [code][GW_CharacterStat][AvatarLook] with NO list-entry trailer
+//   (legacyAddEntry gate in add_entry.go). GW_CharacterStat / AvatarLook use the v48
+//   single-pet legacy shape (single 8-byte pet in stat, single 4-byte pet in avatar);
+//   see TestCharacterListByteOutputV48 for the byte-by-byte field trace.
+//
+// packet-audit:verify packet=character/clientbound/AddCharacterEntry version=gms_v48 ida=0x501973
+func TestAddCharacterEntryByteOutputV48(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 48, 1)
+
+	stats := model.NewCharacterStatistics(
+		0x01020304, "Hero", 0, 0, 0x4D2, 0x7B, [3]uint64{0, 0, 0},
+		0x0A, 0x64, 4, 5, 6, 7, 0x64, 0x64, 0x32, 0x32, 3, false, 2, 0, 8, 0, 0x0BB8, 0,
+	)
+	avatar := model.NewAvatar(0, 0, 0x4D2, false, 0x7B, nil, nil, nil)
+	entry := model.NewCharacterListEntry(stats, avatar, false, false, 1, 2, 3, 4)
+
+	got := NewAddCharacterEntry(0, entry).Encode(nil, ctx)(nil)
+
+	want := []byte{
+		0x00, // code (Decode1)                                    /*0x501987*/
+
+		// --- GW_CharacterStat block --- sub_49B627 @0x49b627
+		0x04, 0x03, 0x02, 0x01, // id
+		0x48, 0x65, 0x72, 0x6f, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // "Hero"+pad13
+		0x00,                   // gender
+		0x00,                   // skin
+		0xd2, 0x04, 0x00, 0x00, // face
+		0x7b, 0x00, 0x00, 0x00, // hair
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // SINGLE pet long (8 bytes)
+		0x0a,       // level
+		0x64, 0x00, // jobId
+		0x04, 0x00, // str
+		0x05, 0x00, // dex
+		0x06, 0x00, // int
+		0x07, 0x00, // luck
+		0x64, 0x00, // hp
+		0x64, 0x00, // maxHp
+		0x32, 0x00, // mp
+		0x32, 0x00, // maxMp
+		0x03, 0x00, // ap
+		0x02, 0x00, // sp
+		0x00, 0x00, 0x00, 0x00, // exp
+		0x08, 0x00,             // fame
+		0xb8, 0x0b, 0x00, 0x00, // mapId
+		0x00,                   // spawnPoint
+
+		// --- AvatarLook block --- sub_49E1E0 @0x49e1e0
+		0x00,                   // gender
+		0x00,                   // skin
+		0xd2, 0x04, 0x00, 0x00, // face
+		0x01,                   // !mega
+		0x7b, 0x00, 0x00, 0x00, // hair
+		0xff,                   // equip terminator
+		0xff,                   // masked terminator
+		0x00, 0x00, 0x00, 0x00, // cash weapon
+		0x00, 0x00, 0x00, 0x00, // SINGLE pet int (4 bytes)
+
+		// --- NO entry trailer: family/rank zeroed locally (legacy add) ---
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("AddCharacterEntry v48 bytes:\n got %x\nwant %x", got, want)
+	}
+}
+
 // TestAddCharacterEntryJMSGolden pins the full jms_v185 wire for a ranked (non-GM)
 // AddCharacterEntry. jms read order is CLogin::OnCreateNewCharacterResult @0x66ffa8:
 //   Decode1(code) → GW_CharacterStat::Decode @0x50ec17 → AvatarLook::Decode @0x51517e,

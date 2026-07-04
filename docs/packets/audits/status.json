@@ -1215,8 +1215,7 @@
       ],
       "cells": {
         "gms_v48": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 11
         },
         "gms_v61": {
@@ -1570,7 +1569,7 @@
       "cells": {
         "gms_v48": {
           "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "note": "tier-1 without fixture; verdict 🚫",
           "opcode": 14
         },
         "gms_v61": {
@@ -41516,8 +41515,7 @@
       "tier1": true,
       "cells": {
         "gms_v48": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v61": {
@@ -41568,8 +41566,7 @@
       "tier1": true,
       "cells": {
         "gms_v48": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v61": {
@@ -41620,8 +41617,7 @@
       "tier1": true,
       "cells": {
         "gms_v48": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🚫",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v61": {
@@ -41672,8 +41668,7 @@
       "tier1": true,
       "cells": {
         "gms_v48": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🚫",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v61": {

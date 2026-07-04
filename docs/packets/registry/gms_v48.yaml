@@ -95,7 +95,7 @@
   provenance: ida-discovered
   ida:
     address: 5247981
-  note: 'Per-slot GW_CharacterStat::Decode+AvatarLook::Decode+Decode1?DecodeBuffer(16):memset. v48 CHARLIST OMITS the trailing Decode4 that v61 had after the slot loop (structure delta). delta doc c.'
+  note: 'Per-slot GW_CharacterStat::Decode+AvatarLook::Decode+Decode1?DecodeBuffer(16):memset. v48 CHARLIST OMITS the trailing Decode4 that v61 had after the slot loop (structure delta). Standalone char-list decoder sub_5013ED (the v48 analogue of v61 sub_56688D / v72 sub_5B3646), NOT the shared OnSelectWorldResult; candidatesFromFName maps sub_5013ED -> CharacterList. delta doc c.'
 - op: SERVER_IP
   direction: clientbound
   opcode: 12

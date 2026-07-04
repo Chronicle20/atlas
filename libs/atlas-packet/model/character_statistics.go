@@ -95,7 +95,12 @@ func (m CharacterStatistics) Encode(l logrus.FieldLogger, ctx context.Context) f
 		w.WriteInt(m.face)
 		w.WriteInt(m.hair)
 
-		if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
+		// Multi-pet (3 pet locker SNs) is the v61+ GW_CharacterStat shape (v61
+		// Decode @0x4b4081 reads DecodeBuffer(24)=3 longs). Legacy GMS v29..v60
+		// (v48, GW_CharacterStat::Decode sub_49B627 @0x49b6bc) reads a single 8-byte
+		// pet locker SN (DecodeBuffer(this+27, 8)); v28 and below likewise single.
+		// Boundary verified: v48 single (IDA @0x49b6bc), v61 triple (IDA @0x4b4081).
+		if (t.Region() == "GMS" && t.MajorVersion() >= 61) || t.Region() == "JMS" {
 			for i := 0; i < 3; i++ {
 				w.WriteLong(m.petIds[i])
 			}
@@ -180,7 +185,9 @@ func (m *CharacterStatistics) Decode(_ logrus.FieldLogger, ctx context.Context) 
 		m.face = r.ReadUint32()
 		m.hair = r.ReadUint32()
 
-		if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
+		// Mirror of Encode: multi-pet (3 longs) is v61+; legacy GMS v29..v60 (v48)
+		// and v28 read a single 8-byte pet locker SN.
+		if (t.Region() == "GMS" && t.MajorVersion() >= 61) || t.Region() == "JMS" {
 			for i := 0; i < 3; i++ {
 				m.petIds[i] = r.ReadUint64()
 			}

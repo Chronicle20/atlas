@@ -8,6 +8,7 @@ import (
 	"atlas-mts/listing"
 	"atlas-mts/logger"
 	"atlas-mts/task"
+	"atlas-mts/testsupport"
 	"atlas-mts/transaction"
 	"atlas-mts/wallet"
 	"atlas-mts/wish"
@@ -85,7 +86,7 @@ func main() {
 	expirationTask.Start()
 	tdm.TeardownFunc(expirationTask.Stop)
 
-	server.New(l).
+	srv := server.New(l).
 		WithContext(tdm.Context()).
 		WithWaitGroup(tdm.WaitGroup()).
 		SetBasePath(GetServer().GetPrefix()).
@@ -95,8 +96,18 @@ func main() {
 		AddRouteInitializer(wish.InitResource(GetServer())(db)).
 		AddRouteInitializer(transaction.InitResource(GetServer())(db)).
 		AddRouteInitializer(wallet.InitResource(GetServer())(db)).
-		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
-		Run()
+		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler()))
+
+	// E2E test routes (seed/expire/sweep/simulated purchase+bid) — env-gated,
+	// never routed through ingress, never enabled in any overlay. Enable ad hoc:
+	//   kubectl set env deployment/atlas-mts MTS_TEST_ROUTES_ENABLED=true
+	// See docs/tasks/task-102-mts-marketplace/design-e2e-testing.md.
+	if os.Getenv("MTS_TEST_ROUTES_ENABLED") == "true" {
+		l.Warnln("MTS TEST ROUTES ENABLED — /api/test/* is live. This must never be set in production.")
+		srv = srv.AddRouteInitializer(testsupport.InitResource(GetServer())(db))
+	}
+
+	srv.Run()
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))
 

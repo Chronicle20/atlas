@@ -61,22 +61,22 @@ export class BaselineService {
     }
   }
 
-  async publish(
-    tenant: Tenant,
-    region: string,
-    majorVersion: number,
-    minorVersion: number,
-  ): Promise<void> {
-    const headers = tenantHeaders(tenant);
+  // publish was always a shared-scope operation; the former Tenant argument
+  // only fed headers. It now takes the explicit canonical selection.
+  async publish(sel: CanonicalSelection): Promise<void> {
+    const headers = canonicalHeaders(sel);
     headers.set('Content-Type', 'application/json');
-    headers.set('X-Atlas-Operator', '1');
     const r = await fetch('/api/data/baseline/publish', {
       method: 'POST',
       headers,
       body: JSON.stringify({
         data: {
           type: 'baselinePublishes',
-          attributes: { region, majorVersion, minorVersion },
+          attributes: {
+            region: sel.region,
+            majorVersion: sel.majorVersion,
+            minorVersion: sel.minorVersion,
+          },
         },
       }),
     });

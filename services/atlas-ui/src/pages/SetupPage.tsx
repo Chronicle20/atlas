@@ -16,7 +16,6 @@ import {
   FileArchive,
   FileText,
   RotateCcw,
-  Send,
 } from "lucide-react";
 import { Toaster, toast } from "sonner";
 import {
@@ -43,7 +42,7 @@ import {
 } from "@/lib/hooks/api/useSeed";
 import { SetupRow, formatCount, pluralize } from "@/components/features/setup/SetupRow";
 import { ScopeToggle, type Scope } from "@/components/features/setup/ScopeToggle";
-import { useRestoreBaseline, usePublishBaseline } from "@/lib/hooks/api/useBaseline";
+import { useRestoreBaseline } from "@/lib/hooks/api/useBaseline";
 import { useTenant } from "@/context/tenant-context";
 import { formatBytes } from "@/lib/format";
 
@@ -77,7 +76,6 @@ export function SetupPage() {
   const mapActionScriptsSeed = useMapActionScriptsSeedStatus();
 
   const restoreMutation = useRestoreBaseline(activeTenant);
-  const publishMutation = usePublishBaseline(activeTenant);
 
   const wzInputData = wzInput.data;
   const dataStatusData = dataStatus.data;
@@ -159,25 +157,6 @@ export function SetupPage() {
     );
   };
 
-  const handlePublishBaseline = () => {
-    if (!activeTenant) return;
-    publishMutation.mutate(
-      {
-        region: activeTenant.attributes.region,
-        majorVersion: activeTenant.attributes.majorVersion,
-        minorVersion: activeTenant.attributes.minorVersion,
-      },
-      {
-        onSuccess: () => {
-          toast.success("Canonical baseline published");
-        },
-        onError: (error) => {
-          toast.error(`Baseline publish failed: ${error.message}`);
-        },
-      },
-    );
-  };
-
   const wzInputBadge = !wzInputData ? (
     "—"
   ) : wzInputData.fileCount === 0 ? (
@@ -191,8 +170,6 @@ export function SetupPage() {
     : `${formatCount(dataStatusData.documentCount)} ${pluralize(dataStatusData.documentCount, "document loaded", "documents loaded")}`;
 
   const showRestoreRow = dataStatusData?.documentCount === 0;
-  const showPublishRow =
-    scope === 'shared' && !!dataStatusData && dataStatusData.documentCount > 0;
 
   const tenantRegion = activeTenant?.attributes.region ?? "";
   const tenantVersion = activeTenant
@@ -372,35 +349,6 @@ export function SetupPage() {
               </Button>
             }
           />
-
-          {showPublishRow && (
-            <SetupRow
-              icon={<Send className="h-5 w-5" />}
-              label="Publish Canonical Baseline"
-              badge={
-                dataStatusData?.baselineSha256
-                  ? `sha256:${dataStatusData.baselineSha256.slice(0, 12)}…`
-                  : "—"
-              }
-              action={
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={handlePublishBaseline}
-                  disabled={publishMutation.isPending || !activeTenant}
-                >
-                  {publishMutation.isPending ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Publishing…
-                    </>
-                  ) : (
-                    "Publish Baseline"
-                  )}
-                </Button>
-              }
-            />
-          )}
 
           {showRestoreRow && (
             <SetupRow

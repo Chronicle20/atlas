@@ -100,13 +100,17 @@ describe('baselineService', () => {
   describe('publish', () => {
     it('sets X-Atlas-Operator: 1 header', async () => {
       fetchMock.mockResolvedValue({ ok: true, status: 202, json: async () => ({}) });
-      await baselineService.publish(mockTenant, 'GMS', 83, 1);
+      await baselineService.publish({ region: 'GMS', majorVersion: 83, minorVersion: 1 });
       const call = fetchMock.mock.calls[0];
       if (!call) throw new Error('fetch was not called');
       const init = call[1] as RequestInit;
       const headers = init.headers as Headers;
+      expect(headers.get('TENANT_ID')).toBe('00000000-0000-0000-0000-000000000000');
+      expect(headers.get('REGION')).toBe('GMS');
+      expect(headers.get('MAJOR_VERSION')).toBe('83');
+      expect(headers.get('MINOR_VERSION')).toBe('1');
       expect(headers.get('X-Atlas-Operator')).toBe('1');
-      expect(headers.get('TENANT_ID')).toBe(mockTenant.id);
+      expect(headers.get('Content-Type')).toBe('application/json');
       expect(init.body).toBe(
         JSON.stringify({
           data: {
@@ -124,9 +128,9 @@ describe('baselineService', () => {
         statusText: 'Bad Request',
         json: async () => ({ error: 'missing region' }),
       });
-      await expect(baselineService.publish(mockTenant, 'GMS', 83, 1)).rejects.toThrow(
-        /missing region/,
-      );
+      await expect(
+        baselineService.publish({ region: 'GMS', majorVersion: 83, minorVersion: 1 }),
+      ).rejects.toThrow(/missing region/);
     });
 
     it('falls back to status when body is not JSON', async () => {
@@ -138,9 +142,9 @@ describe('baselineService', () => {
           throw new Error('not json');
         },
       });
-      await expect(baselineService.publish(mockTenant, 'GMS', 83, 1)).rejects.toThrow(
-        /publish failed: 503/,
-      );
+      await expect(
+        baselineService.publish({ region: 'GMS', majorVersion: 83, minorVersion: 1 }),
+      ).rejects.toThrow(/publish failed: 503/);
     });
   });
 

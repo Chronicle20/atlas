@@ -6921,7 +6921,7 @@
     {
       "kind": "op",
       "op": "GUILD_OPERATION",
-      "packet": "guild/clientbound/GuildBoardAuthKeyUpdate",
+      "packet": "guild/clientbound/GuildCapacityChange",
       "direction": "clientbound",
       "tier1": true,
       "fnames": [
@@ -6929,8 +6929,7 @@
       ],
       "cells": {
         "gms_v48": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
+          "state": "verified",
           "opcode": 53
         },
         "gms_v61": {

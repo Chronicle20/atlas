@@ -213,3 +213,16 @@ func AdvanceAuctionBid(db *gorm.DB, id string, priorBid uint32, priorBidder uint
 		})
 	return result.RowsAffected, result.Error
 }
+
+// BackdateEndsAt rewrites ends_at on an ACTIVE AUCTION listing only — the
+// test-route time-travel primitive (design-e2e-testing.md §4.2). The state and
+// sale-type guards live in the WHERE clause so the update is race-safe: a
+// listing settled between the caller's read and this write is left untouched
+// (0 rows affected), exactly like UpdateState. Everything downstream of the
+// rewritten timestamp (sweep discovery, settle/expire arms) is production code.
+func BackdateEndsAt(db *gorm.DB, id string, to time.Time) (int64, error) {
+	res := db.Model(&entity{}).
+		Where("id = ? AND state = ? AND sale_type = ?", parseId(id), string(StateActive), string(SaleTypeAuction)).
+		Update("ends_at", to)
+	return res.RowsAffected, res.Error
+}

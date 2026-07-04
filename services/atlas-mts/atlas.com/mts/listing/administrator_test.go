@@ -5,6 +5,7 @@ import (
 	"atlas-mts/test"
 	"context"
 	"testing"
+	"time"
 
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
@@ -313,3 +314,87 @@ func TestAdministratorIndexesExist(t *testing.T) {
 type listingIndexProbe struct{}
 
 func (listingIndexProbe) TableName() string { return "listings" }
+
+func TestBackdateEndsAt(t *testing.T) {
+	db := test.SetupTestDB(t, listing.Migration)
+	defer test.CleanupTestDB(t, db)
+
+	future := time.Now().Add(24 * time.Hour)
+	auction, err := listing.NewBuilder(test.TestTenantId, 0, 1001).
+		SetSellerName("Seller").
+		SetSaleType(listing.SaleTypeAuction).
+		SetState(listing.StateActive).
+		SetTemplateId(1302000).
+		SetQuantity(1).
+		SetListValue(1000).
+		SetCommissionRate(0.10).
+		SetCategory("3").
+		SetSubCategory("1").
+		SetEndsAt(&future).
+		Build()
+	if err != nil {
+		t.Fatalf("build auction: %v", err)
+	}
+	created, err := listing.CreateListing(db, auction)
+	if err != nil {
+		t.Fatalf("create auction: %v", err)
+	}
+
+	fixed, err := listing.NewBuilder(test.TestTenantId, 0, 1002).
+		SetSellerName("Seller").
+		SetSaleType(listing.SaleTypeFixed).
+		SetState(listing.StateActive).
+		SetTemplateId(1302000).
+		SetQuantity(1).
+		SetListValue(1000).
+		SetCommissionRate(0.10).
+		SetCategory("1").
+		SetSubCategory("1").
+		Build()
+	if err != nil {
+		t.Fatalf("build fixed: %v", err)
+	}
+	createdFixed, err := listing.CreateListing(db, fixed)
+	if err != nil {
+		t.Fatalf("create fixed: %v", err)
+	}
+
+	past := time.Now().Add(-time.Second)
+
+	// Active auction: backdates, 1 row.
+	rows, err := listing.BackdateEndsAt(db, created.Id().String(), past)
+	if err != nil {
+		t.Fatalf("backdate auction: %v", err)
+	}
+	if rows != 1 {
+		t.Fatalf("expected 1 row affected, got %d", rows)
+	}
+	got, err := listing.GetById(created.Id().String())(db)()
+	if err != nil {
+		t.Fatalf("reload auction: %v", err)
+	}
+	if got.EndsAt() == nil || !got.EndsAt().Before(time.Now()) {
+		t.Fatalf("expected backdated endsAt, got %v", got.EndsAt())
+	}
+
+	// Fixed-sale listing: refused, 0 rows.
+	rows, err = listing.BackdateEndsAt(db, createdFixed.Id().String(), past)
+	if err != nil {
+		t.Fatalf("backdate fixed: %v", err)
+	}
+	if rows != 0 {
+		t.Fatalf("expected 0 rows for fixed sale, got %d", rows)
+	}
+
+	// Non-active auction: refused, 0 rows.
+	if _, err := listing.UpdateState(db, created.Id().String(), listing.StateActive, listing.StateExpired); err != nil {
+		t.Fatalf("transition: %v", err)
+	}
+	rows, err = listing.BackdateEndsAt(db, created.Id().String(), past)
+	if err != nil {
+		t.Fatalf("backdate expired: %v", err)
+	}
+	if rows != 0 {
+		t.Fatalf("expected 0 rows for non-active listing, got %d", rows)
+	}
+}

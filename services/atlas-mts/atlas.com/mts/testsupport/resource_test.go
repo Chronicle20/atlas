@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
@@ -152,5 +153,118 @@ func TestSeedCap(t *testing.T) {
 	}
 	if res.StatusCode != http.StatusBadRequest {
 		t.Fatalf("expected 400, got %d", res.StatusCode)
+	}
+}
+
+// TestSeedCapBoundary asserts the cap is inclusive: exactly 200 succeeds,
+// 201 still fails. Uses a single entry with count 200 to keep it fast.
+func TestSeedCapBoundary(t *testing.T) {
+	db := test.SetupTestDB(t, listing.Migration)
+	defer test.CleanupTestDB(t, db)
+	ts := newTestServer(t, db)
+	defer ts.Close()
+
+	body := seedBody(t, map[string]any{
+		"worldId": 0,
+		"entries": []map[string]any{{"saleType": "fixed", "count": 200, "templateId": 1302000, "listValue": 100}},
+	})
+	res, err := ts.Client().Do(withTenant(t, http.MethodPost, ts.URL+"/test/listings/seed", body))
+	if err != nil {
+		t.Fatalf("seed request: %v", err)
+	}
+	if res.StatusCode != http.StatusCreated {
+		t.Fatalf("expected 201 for exactly-200, got %d", res.StatusCode)
+	}
+
+	var envelope struct {
+		Data []struct {
+			Id string `json:"id"`
+		} `json:"data"`
+	}
+	if err := json.NewDecoder(res.Body).Decode(&envelope); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if len(envelope.Data) != 200 {
+		t.Fatalf("expected 200 seeded listings, got %d", len(envelope.Data))
+	}
+}
+
+// TestSeedListingsDefaults asserts an entry supplying only saleType and
+// templateId lands with the documented defaults: sellerName "TestSeller",
+// sellerId 999000001, listValue 1000, quantity 1, endsAt ~= now+300s, and
+// creates exactly 1 listing.
+func TestSeedListingsDefaults(t *testing.T) {
+	db := test.SetupTestDB(t, listing.Migration)
+	defer test.CleanupTestDB(t, db)
+	ts := newTestServer(t, db)
+	defer ts.Close()
+
+	before := time.Now()
+	body := seedBody(t, map[string]any{
+		"worldId": 0,
+		"entries": []map[string]any{
+			{"saleType": "auction", "templateId": 1302000},
+		},
+	})
+	res, err := ts.Client().Do(withTenant(t, http.MethodPost, ts.URL+"/test/listings/seed", body))
+	if err != nil {
+		t.Fatalf("seed request: %v", err)
+	}
+	if res.StatusCode != http.StatusCreated {
+		t.Fatalf("expected 201, got %d", res.StatusCode)
+	}
+
+	var envelope struct {
+		Data []struct {
+			Id         string `json:"id"`
+			Attributes struct {
+				SellerId   uint32  `json:"sellerId"`
+				SellerName string  `json:"sellerName"`
+				ListValue  uint32  `json:"listValue"`
+				Quantity   uint32  `json:"quantity"`
+				EndsAt     *string `json:"endsAt"`
+			} `json:"attributes"`
+		} `json:"data"`
+	}
+	if err := json.NewDecoder(res.Body).Decode(&envelope); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if len(envelope.Data) != 1 {
+		t.Fatalf("expected exactly 1 seeded listing, got %d", len(envelope.Data))
+	}
+
+	a := envelope.Data[0].Attributes
+	if a.SellerId != 999000001 {
+		t.Fatalf("sellerId default = %d, want 999000001", a.SellerId)
+	}
+	if a.SellerName != "TestSeller" {
+		t.Fatalf("sellerName default = %q, want %q", a.SellerName, "TestSeller")
+	}
+	if a.ListValue != 1000 {
+		t.Fatalf("listValue default = %d, want 1000", a.ListValue)
+	}
+	if a.Quantity != 1 {
+		t.Fatalf("quantity default = %d, want 1", a.Quantity)
+	}
+	if a.EndsAt == nil {
+		t.Fatal("expected endsAt to be set for auction")
+	}
+	endsAt, err := time.Parse(time.RFC3339, *a.EndsAt)
+	if err != nil {
+		t.Fatalf("parse endsAt %q: %v", *a.EndsAt, err)
+	}
+	min := before.Add(4 * time.Minute)
+	max := before.Add(6 * time.Minute)
+	if endsAt.Before(min) || endsAt.After(max) {
+		t.Fatalf("endsAt = %v, want between %v and %v (now+300s default)", endsAt, min, max)
+	}
+
+	// Confirm exactly 1 row landed and the seller default persisted to the DB.
+	m, err := listing.GetById(envelope.Data[0].Id)(db)()
+	if err != nil {
+		t.Fatalf("GetById: %v", err)
+	}
+	if m.SellerId() != 999000001 {
+		t.Fatalf("stored sellerId = %d, want 999000001", m.SellerId())
 	}
 }

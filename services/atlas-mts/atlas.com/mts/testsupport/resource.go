@@ -63,22 +63,10 @@ func handleSeedListings(d *rest.HandlerDependency, c *rest.HandlerContext, rm Se
 	return func(w http.ResponseWriter, r *http.Request) {
 		t := tenant.MustFromContext(d.Context())
 
+		// First pass: validate every entry (saleType, templateId) and compute
+		// the total-vs-cap BEFORE creating anything, so any 400 happens with
+		// zero rows created — never a partial commit across entries.
 		total := 0
-		for _, e := range rm.Entries {
-			count := e.Count
-			if count <= 0 {
-				count = 1
-			}
-			total += count
-		}
-		if total == 0 || total > seedMaxListings {
-			d.Logger().Errorf("Seed request wants [%d] listings (allowed 1..%d).", total, seedMaxListings)
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		db := d.DB().WithContext(d.Context())
-		created := make([]listing.Model, 0, total)
 		for _, e := range rm.Entries {
 			st := listing.SaleType(e.SaleType)
 			if st != listing.SaleTypeFixed && st != listing.SaleTypeAuction {
@@ -96,71 +84,96 @@ func handleSeedListings(d *rest.HandlerDependency, c *rest.HandlerContext, rm Se
 			if count <= 0 {
 				count = 1
 			}
-			quantity := e.Quantity
-			if quantity == 0 {
-				quantity = 1
-			}
-			listValue := e.ListValue
-			if listValue == 0 {
-				listValue = defaultSeedListValue
-			}
-			sellerId := e.SellerId
-			if sellerId == 0 {
-				sellerId = defaultSeedSellerId
-			}
-			sellerName := e.SellerName
-			if sellerName == "" {
-				sellerName = defaultSeedSellerName
-			}
+			total += count
+		}
+		if total == 0 || total > seedMaxListings {
+			d.Logger().Errorf("Seed request wants [%d] listings (allowed 1..%d).", total, seedMaxListings)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
 
-			// Category mirrors the custody consumer's derivation: the section tab
-			// from the sale type ("1" For Sale, "3" Auction), the item sub-tab
-			// from the template id's inventory type.
-			category := "1"
-			if st == listing.SaleTypeAuction {
-				category = "3"
-			}
-			subCategory := ""
-			if it, ok := inventory.TypeFromItemId(item.Id(e.TemplateId)); ok {
-				subCategory = strconv.Itoa(int(it))
-			}
+		// Second pass: everything below is validated, so all remaining errors
+		// are unexpected (build/create) failures — create inside a single
+		// transaction so any of them rolls back the whole seed (500, zero rows).
+		db := d.DB().WithContext(d.Context())
+		created := make([]listing.Model, 0, total)
+		txErr := db.Transaction(func(tx *gorm.DB) error {
+			for _, e := range rm.Entries {
+				st := listing.SaleType(e.SaleType)
 
-			for i := 0; i < count; i++ {
-				b := listing.NewBuilder(t.Id(), world.Id(rm.WorldId), sellerId).
-					SetSellerAccountId(e.SellerAccountId).
-					SetSellerName(sellerName).
-					SetSaleType(st).
-					SetState(listing.StateActive).
-					SetTemplateId(e.TemplateId).
-					SetQuantity(quantity).
-					SetListValue(listValue).
-					SetBuyNowPrice(e.BuyNowPrice).
-					SetCommissionRate(0.10).
-					SetCategory(category).
-					SetSubCategory(subCategory).
-					SetMinIncrement(1)
+				count := e.Count
+				if count <= 0 {
+					count = 1
+				}
+				quantity := e.Quantity
+				if quantity == 0 {
+					quantity = 1
+				}
+				listValue := e.ListValue
+				if listValue == 0 {
+					listValue = defaultSeedListValue
+				}
+				sellerId := e.SellerId
+				if sellerId == 0 {
+					sellerId = defaultSeedSellerId
+				}
+				sellerName := e.SellerName
+				if sellerName == "" {
+					sellerName = defaultSeedSellerName
+				}
+
+				// Category mirrors the custody consumer's derivation: the section tab
+				// from the sale type ("1" For Sale, "3" Auction), the item sub-tab
+				// from the template id's inventory type.
+				category := "1"
 				if st == listing.SaleTypeAuction {
-					duration := defaultSeedDuration
-					if e.DurationSeconds > 0 {
-						duration = time.Duration(e.DurationSeconds) * time.Second
+					category = "3"
+				}
+				subCategory := ""
+				if it, ok := inventory.TypeFromItemId(item.Id(e.TemplateId)); ok {
+					subCategory = strconv.Itoa(int(it))
+				}
+
+				for i := 0; i < count; i++ {
+					b := listing.NewBuilder(t.Id(), world.Id(rm.WorldId), sellerId).
+						SetSellerAccountId(e.SellerAccountId).
+						SetSellerName(sellerName).
+						SetSaleType(st).
+						SetState(listing.StateActive).
+						SetTemplateId(e.TemplateId).
+						SetQuantity(quantity).
+						SetListValue(listValue).
+						SetBuyNowPrice(e.BuyNowPrice).
+						SetCommissionRate(0.10).
+						SetCategory(category).
+						SetSubCategory(subCategory).
+						SetMinIncrement(1)
+					if st == listing.SaleTypeAuction {
+						duration := defaultSeedDuration
+						if e.DurationSeconds > 0 {
+							duration = time.Duration(e.DurationSeconds) * time.Second
+						}
+						end := time.Now().Add(duration)
+						b = b.SetEndsAt(&end).SetCurrentBid(e.StartingBid)
 					}
-					end := time.Now().Add(duration)
-					b = b.SetEndsAt(&end).SetCurrentBid(e.StartingBid)
+					m, err := b.Build()
+					if err != nil {
+						d.Logger().WithError(err).Errorf("Building seed listing.")
+						return err
+					}
+					cm, err := listing.CreateListing(tx, m)
+					if err != nil {
+						d.Logger().WithError(err).Errorf("Creating seed listing.")
+						return err
+					}
+					created = append(created, cm)
 				}
-				m, err := b.Build()
-				if err != nil {
-					d.Logger().WithError(err).Errorf("Building seed listing.")
-					w.WriteHeader(http.StatusInternalServerError)
-					return
-				}
-				cm, err := listing.CreateListing(db, m)
-				if err != nil {
-					d.Logger().WithError(err).Errorf("Creating seed listing.")
-					w.WriteHeader(http.StatusInternalServerError)
-					return
-				}
-				created = append(created, cm)
 			}
+			return nil
+		})
+		if txErr != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
 		}
 
 		res, err := model.SliceMap(listing.Transform)(model.FixedProvider(created))(model.ParallelMap())()

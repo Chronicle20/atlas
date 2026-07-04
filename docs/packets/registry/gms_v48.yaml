@@ -1044,13 +1044,14 @@
 - op: MESSENGER
   direction: serverbound
   opcode: 92
-  fname: sub_4BCE54
+  fname: CFadeWnd::SendCloseMessage
   fname_alts:
+  - sub_4BCE54
   - CUIMessenger::SendPacket
   provenance: ida-discovered
   ida:
     address: 4967508
-  note: 'BODY-VERIFIED send-site 0x4bce54: invite-response dispatcher on this[47] — arm this[47]==0 sends COutPacket(92)+Encode1(5=mode)+EncodeStr(inviterName this+48)+EncodeStr(selfCharName)+Encode1(0); sibling arms route to party op95 (Enc1(0x15)) and guild op97 (Enc1(0x37)), and CMiniRoomBaseDlg::SendInviteResult. op92 + the 7 harvest callers in the 0x61A701-0x61E25E CUIMessenger UI region = MESSENGER (multi-person chat invite/enter). v61 has this as the messenger dispatcher family. Moderate confidence (messenger arm of a shared invite dispatcher).'
+  note: 'BODY-VERIFIED send-site 0x4bce54 (CFadeWnd::SendCloseMessage role, the canonical decline handler across v61-v83): invite-response dispatcher on this[47] — arm this[47]==0 sends COutPacket(92)+Encode1(5=mode)+EncodeStr(inviterName this+48)+EncodeStr(selfCharName)+Encode1(0); sibling arms route to party op95 (Enc1(0x15)) and guild op97 (Enc1(0x37)), and CMiniRoomBaseDlg::SendInviteResult. op92 + the CUIMessenger UI region 0x61A701-0x61E25E + the clientbound dispatcher sub_61D8B8 (CField case 238) = MESSENGER. Primary fname aligned to CFadeWnd::SendCloseMessage so the op-cell links the MessengerOperationDeclineInvite audit report; sub_4BCE54 retained as the concrete v48 alt.'
 - op: PARTY_OPERATION
   direction: serverbound
   opcode: 94

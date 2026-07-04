@@ -1340,13 +1340,25 @@
       ]
     },
     "CFadeWnd::SendCloseMessage": {
-      "address": "",
+      "address": "0x4bce54",
       "direction": "serverbound",
-      "unresolved": true,
+      "note": "mode=5 (DECLINE). BODY-VERIFIED v48 send sub_4BCE54 @0x4bce54 arm this[47]==0: COutPacket(92)+Encode1(5)+EncodeStr(fromName)+EncodeStr(myName)+Encode1(0). Atlas OperationDeclineInvite models the body after the dispatcher-consumed mode: fromName+myName+trailing byte.",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Encode1",
+          "comment": "op (5 = DECLINE)"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "fromName"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "myName"
+        },
+        {
+          "op": "Encode1",
+          "comment": "trailing (0)"
         }
       ]
     },

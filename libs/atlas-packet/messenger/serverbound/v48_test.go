@@ -67,3 +67,18 @@ func TestMessengerServerboundArmsV48(t *testing.T) {
 		t.Errorf("v48 OperationInvite round-trip: got %q want Bob", iv.TargetCharacter())
 	}
 }
+
+// TestMessengerDeclineInviteV48 pins the mode-5 DECLINE body (op 92). IDA-verified
+// send sub_4BCE54 @0x4bce54 (CFadeWnd::SendCloseMessage role) arm this[47]==0:
+// COutPacket(92)+Encode1(5)+EncodeStr(fromName)+EncodeStr(myName)+Encode1(0). The
+// atlas codec models the body after the dispatcher-consumed mode byte.
+//
+// packet-audit:verify packet=messenger/serverbound/MessengerOperationDeclineInvite version=gms_v48 ida=0x4bce54
+func TestMessengerDeclineInviteV48(t *testing.T) {
+	v48 := pt.CreateContext("GMS", 48, 1)
+	input := OperationDeclineInvite{fromName: "Bob", myName: "Me", alwaysZero: 0}
+	want := []byte{0x03, 0x00, 'B', 'o', 'b', 0x02, 0x00, 'M', 'e', 0x00}
+	if got := pt.Encode(t, v48, input.Encode, nil); !bytes.Equal(got, want) {
+		t.Errorf("v48 OperationDeclineInvite golden mismatch\n got: % x\nwant: % x", got, want)
+	}
+}

@@ -139,7 +139,7 @@ Tool: `b3219228b3ee416c6cbd11793fed7d0fe4c58a04`
 | MULTICHAT | CField::OnGroupMessage | field/clientbound/FieldMultiChat (T1) | 0x050 | ✅ | 0x064 | ✅ | 0x07A | ✅ | 0x07E | ✅ | 0x086 | ✅ | 0x089 | ✅ | 0x08E | ✅ | 0x096 | ✅ | 0x084 | ✅ |
 | HOUR_CHANGED | CWvsContext::OnHourChanged |  |  | ⬜ |  | ⬜ | 0x051 | ❌ | 0x052 | ❌ | 0x055 | ❌ | 0x057 | ❌ | 0x057 | ❌ | 0x058 | ❌ |  | ⬜ |
 | IDA_0X051 | sub_B1135F |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x051 | ❌ |
-| WHISPER | CField::OnWhisper | field/clientbound/FieldWhisperError (T1) | 0x051 | ❌ | 0x065 | ✅ | 0x07B | ✅ | 0x07F | ✅ | 0x087 | ✅ | 0x08A | ✅ | 0x08F | ✅ | 0x097 | ✅ | 0x085 | ✅ |
+| WHISPER | CField::OnWhisper | field/clientbound/FieldWhisperError (T1) | 0x051 | ✅ | 0x065 | ✅ | 0x07B | ✅ | 0x07F | ✅ | 0x087 | ✅ | 0x08A | ✅ | 0x08F | ✅ | 0x097 | ✅ | 0x085 | ✅ |
 | IDA_0X052 | sub_B113C8 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x052 | ❌ |
 | MINIMAP_ON_OFF | CWvsContext::OnMiniMapOnOff; sub_90CE83; sub_95E24B |  |  | ⬜ |  | ⬜ | 0x052 | ❌ | 0x053 | ❌ | 0x056 | ❌ | 0x058 | ❌ | 0x058 | ❌ | 0x059 | ❌ | 0x05D | ❌ |
 | SPOUSE_CHAT | CField::OnCoupleMessage | field/clientbound/FieldSpouseChat (T1) | 0x052 | ✅ | 0x066 | ✅ | 0x07C | ✅ | 0x080 | ✅ | 0x088 | ✅ | 0x08B | ✅ | 0x090 | ✅ | 0x098 | ✅ |  | ⬜ |
@@ -975,7 +975,7 @@ Tool: `b3219228b3ee416c6cbd11793fed7d0fe4c58a04`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v48 | 158 | 0 | 4 | 150 | 629 | 0 | 50.6% |
+| v48 | 159 | 0 | 4 | 149 | 629 | 0 | 51.0% |
 | v61 | 208 | 0 | 60 | 202 | 471 | 0 | 44.3% |
 | v72 | 216 | 0 | 73 | 220 | 432 | 0 | 42.4% |
 | v79 | 228 | 0 | 72 | 218 | 423 | 0 | 44.0% |

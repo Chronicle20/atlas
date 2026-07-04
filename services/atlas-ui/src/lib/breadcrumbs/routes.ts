@@ -195,7 +195,7 @@ export const ROUTE_CONFIGS: RouteConfig[] = [
   // Setup routes
   {
     pattern: '/setup',
-    label: 'Bootstrap',
+    label: 'Setup',
     parent: '/',
   },
 

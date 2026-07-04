@@ -74,9 +74,10 @@ only via a direct port-forward to the `atlas-mts` pod).
    # => {"data":{"type":"wallets","id":"...","attributes":{"accountId":...,"credit":<C>,"points":<P>,"prepaid":<X>}}}
 
    # 2) PATCH it, keeping credit/points as read and setting prepaid to 50000
-   #    (comfortably above the tenant's default 110 NX price floor and the
-   #    default 7%+500 NX commission markup — configuration/model.go:143-156
-   #    DefaultConfig; your tenant's configured values may differ).
+   #    (comfortably above the tenant's default 110 NX price floor plus the
+   #    commission markup — up to 10%+500 NX on seeded listings, tenant-config
+   #    rate (default 7%)+500 NX on client-listed ones; see the economics
+   #    cheat-sheet below and configuration/model.go:143-156 DefaultConfig).
    curl -s "${H[@]}" -X PATCH "$INGRESS/api/accounts/${ALT_ACCOUNT_ID}/wallet" \
      -d '{"data":{"type":"wallets","attributes":{"credit":<C>,"points":<P>,"prepaid":50000}}}'
    ```
@@ -100,15 +101,24 @@ override these):
 | Knob | Default | Meaning |
 |---|---|---|
 | `priceFloor` | 110 NX | minimum `listValue` for a listing |
-| `commissionRate` | 0.07 | buyer markup rate |
+| `commissionRate` | 0.07 | buyer markup rate (client-listed listings only — see below) |
 | `commissionBase` | 500 NX | flat NX added to the markup |
 | `maxActiveListings` | 10 | active listings per seller |
 | `auctionMinHours` / `auctionMaxHours` | 24 / 168 | allowed auction duration via the real client flow (`/test/listings/seed` bypasses this — see Scenario 1) |
 
-A buyer/bidder pays `ceil(priceBasis * 1.07) + 500`; the seller is credited
-exactly `priceBasis` (the fixed listValue, the buy-now price, or the winning
-bid); the difference is the sink and is never credited to anyone
+A buyer/bidder pays `ceil(priceBasis * (1 + rate)) + 500`; the seller is
+credited exactly `priceBasis` (the fixed listValue, the buy-now price, or the
+winning bid); the difference is the sink and is never credited to anyone
 (`listing/processor.go` `Buy`/`markedUp` doc comments).
+
+**Which rate applies:** `rate` is the listing ROW's captured
+`commissionRate`, not the tenant config at buy/bid time — `Buy` and
+`PlaceBid` both read `lm.CommissionRate()` from the row
+(`listing/processor.go:554,739,760`). **Seeded listings carry a hardcoded
+10% rate** (`testsupport/resource.go:272` `SetCommissionRate(0.10)`);
+listings created through the real client flow capture the tenant config
+rate (default 7%). Only `commissionBase` (500) comes from config at
+buy/bid time. So all arithmetic below against seeded listings uses 0.10.
 
 ---
 
@@ -201,7 +211,9 @@ Page pending-pickup list (a `holding` row — see Scenario 8 for take-home).
 
 **Expected REST observation:**
 - `curl -s "${H[@]}" "$MTS/accounts/${MY_ACCOUNT_ID}/mts/wallet"` — your
-  `prepaid` dropped by `ceil(listValue*1.07)+500` from step 1's baseline.
+  `prepaid` dropped by `ceil(listValue*1.10)+500` from step 1's baseline
+  (seeded listings carry the hardcoded 10% rate — e.g. for the Scenario-1
+  1500 NX sword: `1650+500 = 2150` NX).
 - `curl -s "${H[@]}" "$MTS/characters/${MY_CHARACTER_ID}/mts/holding"`
   (`holding/resource.go:18-38`) — one new row, `origin:"purchased"`.
 - The listing's detail GET (`"$MTS/worlds/${WORLD_ID}/listings/<listingId>"`,
@@ -306,7 +318,8 @@ releases the prior bidder's escrow").
    ```
 2. In the client, find the seeded auction ("TestSeller") and place a bid of
    1200 NX. Make sure `${MY_ACCOUNT_ID}` has enough prepaid first
-   (`ceil(1200*1.07)+500 = 1784` NX under the defaults) — read your wallet:
+   (`ceil(1200*1.10)+500 = 1820` NX — seeded listings carry the hardcoded
+   10% rate) — read your wallet:
    ```bash
    curl -s "${H[@]}" "$MTS/accounts/${MY_ACCOUNT_ID}/mts/wallet"
    ```
@@ -332,8 +345,8 @@ releases the prior bidder's escrow").
 **Expected response:** `202 Accepted`.
 
 **Expected client observation:** your wallet's NX Prepaid balance recovers
-by the amount that had been held for your 1200 bid (`ceil(1200*1.07)+500 =
-1784`); depending on client version/UI, an "outbid" notice may appear on
+by the amount that had been held for your 1200 bid (`ceil(1200*1.10)+500 =
+1820`); depending on client version/UI, an "outbid" notice may appear on
 your next panel refresh.
 
 **Expected REST observation:**
@@ -376,7 +389,9 @@ bid time — `listing/processor.go:780-830` `SettleAuction` doc comment).
    LISTING_ID=<id from the response>
    ```
 2. In the client, place ONE bid on it as Main (e.g. 600 NX — clears the
-   500 listValue floor for a first bid). Confirm you are the high bidder:
+   500 listValue floor for a first bid; the escrow held from your prepaid is
+   `ceil(600*1.10)+500 = 1160` NX, the seeded 10% rate). Confirm you are the
+   high bidder:
    ```bash
    curl -s "${H[@]}" "$MTS/worlds/${WORLD_ID}/listings/${LISTING_ID}" | jq .
    ```
@@ -412,13 +427,14 @@ MTS expiration sweep: settled auction [<LISTING_ID>] -> winner [<MY_CHARACTER_ID
 ```
 
 at Debug level (`task/periodic.go:149`) — requires the pod's log level at
-Debug to see it directly; the Info-level summary always appears:
+Debug to see it directly; at Info level, one of the two summary lines
+appears (`task/periodic.go:173-178` picks based on whether the 500-listing
+batch cap deferred any items — normally the second):
 
 ```
+MTS expiration sweep: expired/settled [<n>] listings this tick; [<m>] remain past the [500] batch cap and will be processed next tick.
 MTS expiration sweep: expired/settled [<n>] of [<n>] discovered listings.
 ```
-
-(`task/periodic.go:177`.)
 
 ---
 
@@ -471,7 +487,7 @@ your next panel refresh.
   one new row, `kind:"sale"`, `counterpartyId:${ALT_CHARACTER_ID}`.
 
 **Expected log lines:** same sweep lines as Scenario 5
-(`task/periodic.go:149,177`), plus the bid's `[TEST ROUTE] Emitted
+(`task/periodic.go:149,173-178`), plus the bid's `[TEST ROUTE] Emitted
 PLACE_BID ...` line (`testsupport/resource.go:173`) from step 3.
 
 ---
@@ -519,8 +535,8 @@ sale notice — nothing sold, no NX changed hands.
 MTS expiration sweep: expired listing [<LISTING_ID>] -> seller [<sellerId>] holding (tenant [<uuid>]).
 ```
 
-at Debug level (`task/periodic.go:166`), plus the Info-level summary line
-(`task/periodic.go:177`).
+at Debug level (`task/periodic.go:166`), plus one of the two Info-level
+summary lines (`task/periodic.go:173-178` — see Scenario 5).
 
 ---
 

@@ -5,6 +5,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { SidebarToggle } from "@/components/sidebar-toggle";
 import { BreadcrumbBar } from "@/components/features/navigation/BreadcrumbBar";
 import { Separator } from "@/components/ui/separator";
+import { DeploymentScopeBanner } from "@/components/common/deployment-scope-banner";
 
 export function AppShell() {
   return (
@@ -24,6 +25,7 @@ export function AppShell() {
             <ThemeToggle />
           </div>
         </header>
+        <DeploymentScopeBanner />
         <div className="flex flex-1 flex-col overflow-hidden gap-4 p-2 pt-0">
           <div className="flex flex-1 flex-col overflow-hidden rounded-xl bg-sidebar">
             <Outlet />

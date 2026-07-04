@@ -151,7 +151,7 @@ Tool: `8b766a86ca649b12aeb7e925dc5795e6a1a5424f`
 | IDA_0X054 | sub_AEC922 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x054 | ❌ |
 | BONUS_EXP_CHANGED | CWvsContext::OnBonusExpRateChanged |  |  | ⬜ |  | ⬜ | 0x055 | ❌ | 0x056 | ❌ | 0x05D | ❌ | 0x05F | ❌ | 0x05F | ❌ | 0x060 | ❌ | 0x064 | ❌ |
 | CLEAR_AVATAR_MEGAPHONE | CWvsContext::OnClearAvatarMegaphone |  |  | ⬜ | 0x055 | ❌ | 0x068 | ❌ | 0x06A | ❌ | 0x070 | ❌ | 0x073 | ❌ | 0x073 | ❌ | 0x074 | ❌ | 0x05B | ❌ |
-| FIELD_OBSTACLE_ONOFF_LIST | CField::OnFieldObstacleOnOffStatus; sub_4C930A | field/clientbound/FieldFieldObstacleOnOffList (T1) | 0x055 | ❌ | 0x069 | ❌ | 0x080 | 🟡 | 0x084 | 🟡 | 0x08C | ✅ | 0x08F | ✅ | 0x094 | ✅ | 0x09C | ✅ | 0x089 | ✅ |
+| FIELD_OBSTACLE_ONOFF_LIST | CField::OnFieldObstacleOnOffStatus; sub_4C930A | field/clientbound/FieldFieldObstacleOnOffList (T1) | 0x055 | ✅ | 0x069 | ❌ | 0x080 | 🟡 | 0x084 | 🟡 | 0x08C | ✅ | 0x08F | ✅ | 0x094 | ✅ | 0x09C | ✅ | 0x089 | ✅ |
 | BLOW_WEATHER | CField::OnBlowWeather; sub_4C95F2; sub_4ED39C; sub_5723E6 | field/clientbound/FieldEffectWeather (T1) | 0x056 | ✅ | 0x06A | ❌ | 0x082 | 🟡 | 0x086 | 🟡 | 0x08E | ✅ | 0x091 | ✅ | 0x096 | ✅ | 0x09E | ✅ | 0x08B | ✅ |
 | CANCEL_NAME_CHANGE_RESULT | CWvsContext::OnCancelNameChangeResult |  |  | ⬜ | 0x056 | ❌ | 0x069 | ❌ | 0x06B | ❌ | 0x071 | ❌ | 0x074 | ❌ | 0x074 | ❌ | 0x075 | ❌ |  | ⬜ |
 | POTION_DISCOUNT_RATE_CHANGED | CWvsContext::OnPotionDiscountRateChanged |  |  | ⬜ |  | ⬜ | 0x056 | ❌ | 0x057 | ❌ |  | ⬜ | 0x060 | ❌ | 0x060 | ❌ | 0x061 | ❌ |  | ⬜ |
@@ -981,7 +981,7 @@ Tool: `8b766a86ca649b12aeb7e925dc5795e6a1a5424f`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v48 | 135 | 0 | 4 | 179 | 629 | 0 | 42.5% |
+| v48 | 136 | 0 | 4 | 178 | 629 | 0 | 42.8% |
 | v61 | 208 | 0 | 60 | 208 | 471 | 0 | 43.7% |
 | v72 | 216 | 0 | 73 | 226 | 432 | 0 | 41.9% |
 | v79 | 228 | 0 | 72 | 224 | 423 | 0 | 43.5% |

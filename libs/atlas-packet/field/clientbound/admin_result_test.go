@@ -47,6 +47,40 @@ func TestAdminResultGolden(t *testing.T) {
 	}
 }
 
+// TestAdminResultByteOutputV48 pins the gms_v48 ADMIN_RESULT (op 0x57 = 87)
+// clientbound flat union. IDA: CField::OnAdminResult @0x4c96c4 (GMS_v48_1_DEVM.exe)
+// is a mode-switch (Decode1(mode) @0x4c96de into per-mode arms: mode 0..6 Decode1,
+// mode 9 DecodeStr[+DecodeStr,DecodeStr], mode 19 Decode1[+Decode1|+Decode4]+Decode1).
+// The export harvest flattens the guarded arms into the same post-mode order as v79
+// (b,b,b,i,b,b,s,s,s,b,b,b); the FieldAdminResult v48 report verdict-matches the
+// codec's GMS<83 branch, so the byte output is identical to the v79 golden.
+// packet-audit:verify packet=field/clientbound/FieldAdminResult version=gms_v48 ida=0x4c96c4
+func TestAdminResultByteOutputV48(t *testing.T) {
+	bs := []byte{0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88}
+	ss := []string{"a", "bb", "ccc"}
+	input := NewAdminResult(0x0B, bs, ss, 0x01020304)
+	ctx := test.CreateContext("GMS", 48, 1)
+	actual := test.Encode(t, ctx, input.Encode, nil)
+	want := []byte{
+		0x0B,                   // mode
+		0x11,                   // b[0]
+		0x22,                   // b[1]
+		0x33,                   // b[2]
+		0x04, 0x03, 0x02, 0x01, // mapId=0x01020304
+		0x44,                      // b[3]
+		0x55,                      // b[4]
+		0x01, 0x00, 'a',           // s[0]="a"
+		0x02, 0x00, 'b', 'b',      // s[1]="bb"
+		0x03, 0x00, 'c', 'c', 'c', // s[2]="ccc"
+		0x66, // b[5]
+		0x77, // b[6]
+		0x88, // b[7]
+	}
+	if !bytes.Equal(actual, want) {
+		t.Fatalf("v48 golden mismatch:\n got %v\nwant %v", actual, want)
+	}
+}
+
 // TestAdminResultByteOutputV79 pins the gms_v79 ADMIN_RESULT (op 0x88) clientbound
 // flat union. IDA: CField::OnAdminResult @0x52075c (GMS_v79_1_DEVM.exe). The export
 // harvest's flat post-mode order is b,b,b,i,b,b,s,s,s,b,b,b (3 strings, vs v83's 4)

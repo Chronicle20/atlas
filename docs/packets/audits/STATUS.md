@@ -155,7 +155,7 @@ Tool: `8b766a86ca649b12aeb7e925dc5795e6a1a5424f`
 | BLOW_WEATHER | CField::OnBlowWeather; sub_4C95F2; sub_4ED39C; sub_5723E6 | field/clientbound/FieldEffectWeather (T1) | 0x056 | ✅ | 0x06A | ❌ | 0x082 | 🟡 | 0x086 | 🟡 | 0x08E | ✅ | 0x091 | ✅ | 0x096 | ✅ | 0x09E | ✅ | 0x08B | ✅ |
 | CANCEL_NAME_CHANGE_RESULT | CWvsContext::OnCancelNameChangeResult |  |  | ⬜ | 0x056 | ❌ | 0x069 | ❌ | 0x06B | ❌ | 0x071 | ❌ | 0x074 | ❌ | 0x074 | ❌ | 0x075 | ❌ |  | ⬜ |
 | POTION_DISCOUNT_RATE_CHANGED | CWvsContext::OnPotionDiscountRateChanged |  |  | ⬜ |  | ⬜ | 0x056 | ❌ | 0x057 | ❌ |  | ⬜ | 0x060 | ❌ | 0x060 | ❌ | 0x061 | ❌ |  | ⬜ |
-| ADMIN_RESULT | CField::OnAdminResult; sub_57255F | field/clientbound/FieldAdminResult (T1) | 0x057 | 🟡 | 0x06B | 🟡 | 0x084 | 🟡 | 0x088 | ✅ | 0x090 | ✅ | 0x093 | ✅ | 0x098 | ✅ | 0x0A0 | ✅ | 0x08D | ✅ |
+| ADMIN_RESULT | CField::OnAdminResult; sub_57255F | field/clientbound/FieldAdminResult (T1) | 0x057 | ✅ | 0x06B | 🟡 | 0x084 | 🟡 | 0x088 | ✅ | 0x090 | ✅ | 0x093 | ✅ | 0x098 | ✅ | 0x0A0 | ✅ | 0x08D | ✅ |
 | CANCEL_TRANSFER_WORLD_RESULT | CWvsContext::OnCancelTransferWorldResult |  |  | ⬜ | 0x057 | ❌ | 0x06A | ❌ | 0x06C | ❌ | 0x072 | ❌ | 0x075 | ❌ | 0x075 | ❌ | 0x076 | ❌ |  | ⬜ |
 | CONSULT_AUTHKEY_UPDATE | CWvsContext::OnConsultAuthkeyUpdate |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x057 | ❌ | 0x059 | ❌ | 0x059 | ❌ | 0x05A | ❌ | 0x05E | ❌ |
 | FAMILY_CHART_RESULT | CWvsContext::OnFamilyChartResult |  |  | ⬜ |  | ⬜ | 0x057 | ❌ | 0x058 | ❌ | 0x05E | ❌ | 0x061 | ❌ | 0x061 | ❌ | 0x062 | ❌ | 0x065 | ❌ |
@@ -981,7 +981,7 @@ Tool: `8b766a86ca649b12aeb7e925dc5795e6a1a5424f`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v48 | 133 | 0 | 5 | 180 | 629 | 0 | 41.8% |
+| v48 | 134 | 0 | 4 | 180 | 629 | 0 | 42.1% |
 | v61 | 208 | 0 | 60 | 208 | 471 | 0 | 43.7% |
 | v72 | 216 | 0 | 73 | 226 | 432 | 0 | 41.9% |
 | v79 | 228 | 0 | 72 | 224 | 423 | 0 | 43.5% |

@@ -78,6 +78,10 @@
    "fname": "CScriptMan::OnAskSlideMenu",
    "packet": "npc/clientbound/NpcAskSlideMenuConversationDetail",
    "reason": "ASK_SLIDE_MENU is version-absent in gms_v48. Slide-menu is a v83+ feature (CScriptMan::OnAskSlideMenu, first present in gms_v83); it has no arm in the v48 dispatcher sub_5B0AE4@0x5b0ae4 (cases 0..9 only). Matches the v61/v72 anchors, which likewise leave AskSlideMenu incomplete (residual accepted, cap = anchor)."
+  },
+  {
+   "fname": "CWvsContext::SendAbilityUpRequest#AutoDistributeAp",
+   "reason": "AUTO_DISTRIBUTE_AP (auto-assign of ability points) is version-absent in gms_v48. The v48 ability-up sender CWvsContext::SendAbilityUpRequest = sub_71CD00 @0x71cd00 (GMS_v48_1_DEVM.exe, port 13337) builds only the single-stat request: guard _ZtlSecureFuse<short>(charStat+113,+117)>0 then COutPacket(67)+Encode4(updateTime)+Encode4(statFlag)+SetExclRequestSent. There is NO ZArray<StatPair> auto-distribute overload in this 2009-era client (the AutoDistributeAp demux arm modeled by newer clients, e.g. v95 CWvsContext::SendAbilityUpRequest(ZArray<StatPair>*)@0x9f63b0, does not exist). The export carried an unresolved stub (CWvsContext::SendAbilityUpRequest#AutoDistributeAp, address empty, 'function not found in IDB'); stripped here so the DISTRIBUTE_AP op's demux worst-of grades only the resolved single-stat DistributeAp arm. Mirrors v61, which has no AutoDistributeAp report."
   }
  ]
 }

@@ -10620,17 +10620,6 @@
         }
       ]
     },
-    "CWvsContext::SendAbilityUpRequest#AutoDistributeAp": {
-      "address": "",
-      "direction": "serverbound",
-      "unresolved": true,
-      "calls": [
-        {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
-        }
-      ]
-    },
     "CWvsContext::SendAbilityUpRequest#DistributeAp": {
       "address": "",
       "direction": "serverbound",

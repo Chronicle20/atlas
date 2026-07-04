@@ -934,9 +934,9 @@
 - op: DISTRIBUTE_AP
   direction: serverbound
   opcode: 67
-  fname: sub_71CD00
+  fname: CWvsContext::SendAbilityUpRequest
   fname_alts:
-  - CWvsContext::SendAbilityUpRequest
+  - sub_71CD00
   provenance: ida-discovered
   ida:
     address: 7458560

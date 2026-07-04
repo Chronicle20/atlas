@@ -21,9 +21,10 @@ func TestStartConversationRoundTrip(t *testing.T) {
 			if output.Oid() != input.Oid() {
 				t.Errorf("oid: got %v, want %v", output.Oid(), input.Oid())
 			}
-			// The user-position x/y shorts are only on the wire for GMS v79+ and
-			// JMS; legacy GMS (<79, e.g. v72 TalkToNpc sub_70DD49@0x70dd49) sends
-			// the npc oid only, so x/y stay zero after the round trip.
+			// Every IDA-verified GMS build (v48/v61/v72/v79/v83+) and JMS carries
+			// the user-position x/y shorts after the npc oid; only pre-v48 GMS with
+			// no IDB (e.g. the v28 variant below) is oid-only, so its x/y stay zero
+			// after the round trip. This test's variants are all v79+ or JMS or v28.
 			hasXY := (v.Region == "GMS" && v.MajorVersion >= 79) || v.Region == "JMS"
 			if hasXY {
 				if output.X() != input.X() {

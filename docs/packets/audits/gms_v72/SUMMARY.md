@@ -519,7 +519,7 @@
 | [CharacterMobBanishPlayer](CharacterMobBanishPlayer.md) | ✅ | `libs/atlas-packet/character/serverbound/mob_banish_player.go` |
 | [BuffCancelRequest](BuffCancelRequest.md) | ✅ | `libs/atlas-packet/character/serverbound/buff_cancel.go` |
 | [CharacterCover](CharacterCover.md) | ❌ | `libs/atlas-packet/character/serverbound/monsterbook/cover.go` |
-| [NpcStartConversation](NpcStartConversation.md) | ❌ | `libs/atlas-packet/npc/serverbound/start_conversation.go` |
+| [NpcStartConversation](NpcStartConversation.md) | ✅ | `libs/atlas-packet/npc/serverbound/start_conversation.go` |
 | [CharacterAttackTouchRequest](CharacterAttackTouchRequest.md) | 🔍 | `libs/atlas-packet/character/serverbound/attack_request.go` |
 | [CharacterAttackMagicRequest](CharacterAttackMagicRequest.md) | 🔍 | `libs/atlas-packet/character/serverbound/attack_request.go` |
 | [CharacterAttackMeleeRequest](CharacterAttackMeleeRequest.md) | ❌ | `libs/atlas-packet/character/serverbound/attack_request.go` |

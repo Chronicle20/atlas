@@ -25,20 +25,21 @@ const NPCStartConversationHandle = "NPCStartConversationHandle"
 // Encode2(userY @0x5692ca/0x5693b3). So v48 is oid+x+y, not oid-only.
 // task-113 v48 Stage E.
 //
-// v72 note: the shipped v72 fixture (TestStartConversationByteV72, marker
-// ida=0x70dd49) asserts oid-ONLY, but 0x70dd49 is a stale symbol that now
-// resolves to CUICharacterSaleDlg::OnCreate. The real v72 NPC_TALK sender is
-// sub_63FD91@0x640151 (COutPacket(57) + Encode4(oid) + Encode2(x) + Encode2(y))
-// — i.e. v72 ALSO includes x/y. Correcting v72 is out of scope for task-113's
-// v61 pass (it would change the v72 wire + its existing fixture), so this gate
-// deliberately leaves v72 at its current oid-only behavior and only adds v61.
-// Follow-up: re-baseline v72 NPC_TALK to sub_63FD91 and fold v72 into the >=79
-// (x/y-present) branch. Pre-v61 GMS (e.g. v28, no IDB) stays oid-only.
+// v72 (task-113 Phase 5, GMS_v72.1_U_DEVM.exe port 13339): the canonical v72
+// NPC_TALK serverbound sender is CUserLocal::TalkToNpc @ 0x63FD91 (registry
+// opcode 57, ida-discovered). Its three COutPacket(57) send-sites (0x63fe09,
+// 0x64066f, 0x640857) each build Encode4(npcOid) + Encode2(userX) +
+// Encode2(userY) — i.e. v72 ALSO carries x/y. The earlier "oid-only" fixture
+// cited 0x70dd49, which in v72 is CUICharacterSaleDlg::OnCreate (a stale symbol
+// copied from v48, where sub_70DD49 is the unrelated ItemCancel sender); the
+// v72 IDA export note attributing an "Encode4(oid) ONLY" TalkToNpc to 0x70dd49
+// was likewise mis-attributed. Verified false-pass — v72 now takes the
+// x/y-present branch. Pre-v48 GMS (no IDB) stays oid-only.
 func startConversationHasXY(t tenant.Model) bool {
 	if !t.IsRegion("GMS") {
 		return true // JMS and other regions carry x/y
 	}
-	return t.MajorAtLeast(79) || t.MajorVersion() == 61 || t.MajorVersion() == 48
+	return t.MajorAtLeast(72) || t.MajorVersion() == 61 || t.MajorVersion() == 48
 }
 
 // packet-audit:fname CUserLocal::TalkToNpc

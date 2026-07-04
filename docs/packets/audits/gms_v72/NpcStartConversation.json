@@ -1,9 +1,9 @@
 {
   "WriterName": "NpcStartConversation",
   "IDAName": "CUserLocal::TalkToNpc",
-  "Address": "0x70dd49",
+  "Address": "0x63fd91",
   "Variant": "GMS/v72",
-  "BranchDepth": 2,
+  "BranchDepth": 0,
   "AtlasFile": "libs/atlas-packet/npc/serverbound/start_conversation.go",
   "Rows": [
     {
@@ -19,21 +19,21 @@
       "Index": 1,
       "AtlasOp": 1,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "IDAOp": 1,
+      "IDAComment": "userX",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 2,
       "AtlasOp": 1,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "IDAOp": 1,
+      "IDAComment": "userY",
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 3,
-  "FlatInvalid": true
+  "Verdict": 0,
+  "FlatInvalid": false
 }

@@ -10016,13 +10016,21 @@
    "calls": null
   },
   "CUserLocal::TalkToNpc": {
-   "address": "0x70dd49",
+   "address": "0x63fd91",
    "direction": "serverbound",
-   "notes": "v72 TalkToNpc = sub_70DD49@0x70dd49 (the sole COutPacket(57) sender; called from the CUserLocal NPC-click path sub_69FE41 as sub_70DD49(-npcOid)): COutPacket(57) + Encode4(oid) ONLY. The user-position x/y shorts (present at v79 CUserLocal::TalkToNpc@0x8b7e10) were added after the legacy range. Matches Atlas StartConversation with the GMS<79 oid-only gate.",
+   "notes": "v72 NPC_TALK serverbound = CUserLocal::TalkToNpc @ 0x63FD91 (registry opcode 57, ida-discovered). Its three COutPacket(57) send-sites (0x63fe09, 0x64066f, 0x640857) each build Encode4(npcOid = this->obj) + Encode2(userX) + Encode2(userY), where x/y come from the position vtable call [dword_AA3AB8+4]->[16] returning {x@0, y@4}. i.e. v72 carries oid+x+y, same shape as v79 CUserLocal::TalkToNpc@0x8b7e10 and v48/v61. The earlier 0x70dd49 attribution was a stale v48-copied symbol (0x70dd49 in v72 is CUICharacterSaleDlg::OnCreate). task-113 Phase 5.",
    "calls": [
     {
      "op": "Encode4",
      "comment": "oid"
+    },
+    {
+     "op": "Encode2",
+     "comment": "userX"
+    },
+    {
+     "op": "Encode2",
+     "comment": "userY"
     }
    ]
   },

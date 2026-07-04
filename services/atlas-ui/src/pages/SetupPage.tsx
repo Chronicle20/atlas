@@ -45,21 +45,7 @@ import { SetupRow, formatCount, pluralize } from "@/components/features/setup/Se
 import { ScopeToggle, type Scope } from "@/components/features/setup/ScopeToggle";
 import { useRestoreBaseline, usePublishBaseline } from "@/lib/hooks/api/useBaseline";
 import { useTenant } from "@/context/tenant-context";
-
-function formatBytes(bytes: number): string {
-  if (!bytes) return "0 B";
-  const units = ["B", "KB", "MB", "GB", "TB"];
-  let value = bytes;
-  let unit = 0;
-  while (value >= 1024 && unit < units.length - 1) {
-    value /= 1024;
-    unit++;
-  }
-  const formatted = new Intl.NumberFormat(undefined, {
-    maximumFractionDigits: value >= 10 || unit === 0 ? 0 : 1,
-  }).format(value);
-  return `${formatted} ${units[unit]}`;
-}
+import { formatBytes } from "@/lib/format";
 
 export function SetupPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);

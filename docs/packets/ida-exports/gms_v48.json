@@ -6482,90 +6482,162 @@
       ]
     },
     "CUIMessenger::OnPacket#Add": {
-      "address": "",
+      "address": "0x61d8b8",
       "direction": "clientbound",
-      "unresolved": true,
+      "note": "mode=0 (OnEnter). v48 dispatcher sub_61D8B8 @0x61d8b8 case 0 -> sub_61B860 @0x61b860. channelId+pad present from v48. Avatar is the v48 single-pet look.",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "mode"
+        },
+        {
+          "op": "Decode1",
+          "comment": "position"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "AvatarLook::Decode (opaque block)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "name"
+        },
+        {
+          "op": "Decode1",
+          "comment": "channelId"
+        },
+        {
+          "op": "Decode1",
+          "comment": "pad"
         }
       ]
     },
     "CUIMessenger::OnPacket#Chat": {
-      "address": "",
+      "address": "0x61d8b8",
       "direction": "clientbound",
-      "unresolved": true,
+      "note": "mode=6 (OnChat). v48 case 6 -> sub_61DC8C @0x61dc8c.",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "mode"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "message"
         }
       ]
     },
     "CUIMessenger::OnPacket#InviteDeclined": {
-      "address": "",
+      "address": "0x61d8b8",
       "direction": "clientbound",
-      "unresolved": true,
+      "note": "mode=5 (OnBlocked). v48 case 5 -> sub_61DA3F @0x61da3f.",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "mode"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "message"
+        },
+        {
+          "op": "Decode1",
+          "comment": "declineMode"
         }
       ]
     },
     "CUIMessenger::OnPacket#InviteSent": {
-      "address": "",
+      "address": "0x61d8b8",
       "direction": "clientbound",
-      "unresolved": true,
+      "note": "mode=4 (OnInviteResult). v48 case 4 -> sub_61D94F @0x61d94f.",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "mode"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "message"
+        },
+        {
+          "op": "Decode1",
+          "comment": "success"
         }
       ]
     },
     "CUIMessenger::OnPacket#Join": {
-      "address": "",
+      "address": "0x61d8b8",
       "direction": "clientbound",
-      "unresolved": true,
+      "note": "mode=1 (OnSelfEnterResult). v48 case 1 -> sub_61BA71 @0x61ba71.",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "mode"
+        },
+        {
+          "op": "Decode1",
+          "comment": "position"
         }
       ]
     },
     "CUIMessenger::OnPacket#Remove": {
-      "address": "",
+      "address": "0x61d8b8",
       "direction": "clientbound",
-      "unresolved": true,
+      "note": "mode=2 (OnLeave). v48 case 2 -> sub_61BB63 @0x61bb63.",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "mode"
+        },
+        {
+          "op": "Decode1",
+          "comment": "position"
         }
       ]
     },
     "CUIMessenger::OnPacket#RequestInvite": {
-      "address": "",
+      "address": "0x61d8b8",
       "direction": "clientbound",
-      "unresolved": true,
+      "note": "mode=3 (OnInvite). v48 dispatcher special-case -> sub_61DB2C @0x61db2c.",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "mode"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "fromName"
+        },
+        {
+          "op": "Decode1",
+          "comment": "pad"
+        },
+        {
+          "op": "Decode4",
+          "comment": "messengerId"
+        },
+        {
+          "op": "Decode1",
+          "comment": "pad"
         }
       ]
     },
     "CUIMessenger::OnPacket#Update": {
-      "address": "",
+      "address": "0x61d8b8",
       "direction": "clientbound",
-      "unresolved": true,
+      "note": "mode=7 (OnAvatar). v48 case 7 -> sub_61DF11 @0x61df11.",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "mode"
+        },
+        {
+          "op": "Decode1",
+          "comment": "position"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "AvatarLook::Decode (opaque block)"
         }
       ]
     },

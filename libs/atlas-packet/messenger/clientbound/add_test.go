@@ -37,9 +37,10 @@ func TestMessengerAddRoundTrip(t *testing.T) {
 			if output.Name() != input.Name() {
 				t.Errorf("name: got %v, want %v", output.Name(), input.Name())
 			}
-			// channelId + pad are on the wire only for GMS>=72 (v72 OnEnter); the
-			// legacy range (GMS <72, e.g. v61) omits them — see legacyAdd() / v61_test.go.
-			legacy := v.Region == "GMS" && v.MajorVersion < 72
+			// channelId + pad are on the wire from GMS v48 onward (IDA-verified
+			// sub_61B860/sub_6D144E/0x777b25/0x8511fc); only the ancient GMS<=28
+			// wire omits them — see legacyAdd() / v61_test.go / v48_test.go.
+			legacy := v.Region == "GMS" && v.MajorVersion <= 28
 			if legacy {
 				if output.ChannelId() != 0 {
 					t.Errorf("legacy channelId must be absent (0); got %v", output.ChannelId())

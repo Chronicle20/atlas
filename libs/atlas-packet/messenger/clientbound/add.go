@@ -36,15 +36,21 @@ func (m Add) String() string {
 	return fmt.Sprintf("messenger add name [%s] position [%d]", m.name, m.position)
 }
 
-// legacyAdd reports whether this tenant uses the pre-v72 messenger Add wire.
-// v61 CUIMessenger::OnPacket#Add (sub_5BF5AE @0x5bf5ae, GMS_v61.1_U_DEVM.exe)
-// reads Decode1(position) + avatar + DecodeStr(name) ONLY — no channelId and no
-// trailing pad byte. The channelId + pad were added in GMS>=72 (v72 OnEnter),
-// so the legacy range (GMS <72) omits them. Avatar encoding is unchanged across
-// this boundary (model.Avatar gates only on GMS<=28 vs >28; v61 is >28 == v83).
+// legacyAdd reports whether this tenant uses the ancient (GMS<=28) messenger Add
+// wire, which omits the trailing channelId + pad byte.
+//
+// The channelId + pad ARE present from GMS v48 onward: IDA-verified
+// CUIMessenger::OnPacket#Add (case 0 = OnEnter) reads mode + position + avatar +
+// name + channelId + pad in gms_v48 (sub_61B860 @0x61b860), gms_v61 (sub_6D144E
+// @0x6d144e, the real dispatcher case-0), gms_v72 (0x777b25), gms_v79, and
+// gms_v83 (0x8511fc). A prior revision gated channelId+pad off for the whole
+// GMS<72 range based on sub_5BF5AE — but that is a CMiniRoomBaseDlg arm
+// (dispatched by sub_5BEC69), NOT the messenger dispatcher, so the "legacy" wire
+// it modelled never applied to v48/v61. Only GMS<=28 (no IDB available to verify)
+// retains the pre-existing channelId-less assumption.
 func legacyAdd(ctx context.Context) bool {
 	t := tenant.MustFromContext(ctx)
-	return t.IsRegion("GMS") && !t.MajorAtLeast(72)
+	return t.IsRegion("GMS") && t.MajorVersion() <= 28
 }
 
 func (m Add) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {

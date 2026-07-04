@@ -8056,20 +8056,29 @@
    ]
   },
   "CUIMessenger::OnPacket#Add": {
-   "address": "0x5bf5ae",
+   "address": "0x6d144e",
    "direction": "clientbound",
+   "note": "mode=0 (OnEnter). CORRECTED: real v61 messenger dispatcher CUIMessenger::OnPacket sub_6D34F1 @0x6d34f1 case 0 -> sub_6D144E @0x6d144e reads position+avatar+name+channelId+pad == v83. Prior 0x5bf5ae entry was a CMiniRoomBaseDlg arm (sub_5BEC69), not messenger.",
    "calls": [
     {
      "op": "Decode1",
-     "comment": "position (sub_5BF5AE @0x5bf5ae)"
+     "comment": "position"
     },
     {
      "op": "DecodeBuf",
-     "comment": "AvatarLook via sub_5BFB65 @0x5bfb65 (>28 path == v83)"
+     "comment": "AvatarLook::Decode (opaque block, >28 == v83)"
     },
     {
      "op": "DecodeStr",
      "comment": "name"
+    },
+    {
+     "op": "Decode1",
+     "comment": "channelId"
+    },
+    {
+     "op": "Decode1",
+     "comment": "pad"
     }
    ]
   },

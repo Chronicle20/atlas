@@ -1,0 +1,8 @@
+packet: field/serverbound/FieldCoupleMessage
+direction: serverbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: sub_65EA0D
+    address: "0x65ea0d"
+    decompile_sha256: 388e0c434419be26d8a2e853da6a22de1b85945fa845028fed7fdb57e885a8fc

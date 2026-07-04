@@ -580,9 +580,9 @@
 - op: FIELD_EFFECT
   direction: clientbound
   opcode: 84
-  fname: sub_4C7B59
+  fname: CField::OnFieldEffect
   fname_alts:
-  - CField::OnFieldEffect
+  - sub_4C7B59
   provenance: manual
   ida:
     address: 5012313
@@ -590,9 +590,9 @@
 - op: FIELD_OBSTACLE_ONOFF_LIST
   direction: clientbound
   opcode: 85
-  fname: sub_4C930A
+  fname: CField::OnFieldObstacleOnOffStatus
   fname_alts:
-  - CField::OnFieldObstacleOnOffStatus
+  - sub_4C930A
   provenance: manual
   ida:
     address: 5018378
@@ -600,9 +600,9 @@
 - op: BLOW_WEATHER
   direction: clientbound
   opcode: 86
-  fname: sub_4C95F2
+  fname: CField::OnBlowWeather
   fname_alts:
-  - CField::OnBlowWeather
+  - sub_4C95F2
   provenance: manual
   ida:
     address: 5019122
@@ -650,9 +650,9 @@
 - op: SET_QUEST_CLEAR
   direction: clientbound
   opcode: 94
-  fname: sub_4CBC9A
+  fname: CField::OnSetQuestClear
   fname_alts:
-  - CField::OnSetQuestClear
+  - sub_4CBC9A
   provenance: manual
   ida:
     address: 5029018
@@ -684,9 +684,9 @@
 - op: STOP_CLOCK
   direction: clientbound
   opcode: 98
-  fname: sub_4C6AEF
+  fname: CField::OnDestroyClock
   fname_alts:
-  - CField::OnDestroyClock
+  - sub_4C6AEF
   provenance: manual
   ida:
     address: 5008111
@@ -1010,9 +1010,9 @@
 - op: SPOUSE_CHAT
   direction: serverbound
   opcode: 91
-  fname: sub_65EA0D
+  fname: CUIStatusBar::SendCoupleMessage
   fname_alts:
-  - CUIStatusBar::SendCoupleMessage
+  - sub_65EA0D
   provenance: ida-discovered
   ida:
     address: 6679053
@@ -1182,9 +1182,9 @@
 - op: GENERAL_CHAT
   direction: serverbound
   opcode: 40
-  fname: sub_4C3DEF
+  fname: CField::SendChatMsg
   fname_alts:
-  - CField::SendChatMsg
+  - sub_4C3DEF
   provenance: ida-discovered
   ida:
     address: 4996591
@@ -1258,9 +1258,9 @@
 - op: USE_DOOR
   direction: serverbound
   opcode: 103
-  fname: sub_5E3082
+  fname: CField::TryEnterTownPortal
   fname_alts:
-  - CField::TryEnterTownPortal
+  - sub_5E3082
   - sub_4CB90A
   provenance: ida-discovered
   ida:

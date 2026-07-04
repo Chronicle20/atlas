@@ -61,6 +61,25 @@ func TestGeneralByteOutputV72(t *testing.T) {
 	}
 }
 
+// TestGeneralByteOutputV48 pins the gms_v48 GENERAL_CHAT (op 0x28 = 40)
+// serverbound wire. IDA: the CField chat send helper sub_4C3DEF @0x4c3def
+// (GMS_v48_1_DEVM.exe) else-branch builds COutPacket(40) @0x4c3e48 +
+// EncodeStr(msg) @0x4c3e67 + SendPacket @0x4c3e76 — NO trailing bOnlyBalloon byte
+// (the balloon flag is a >=61 addition; v48 GMS<61 omits it). No get_update_time
+// prefix (GMS<87). Body = EncodeStr(msg) only.
+// packet-audit:verify packet=field/serverbound/FieldGeneral version=gms_v48 ida=0x4c3def
+func TestGeneralByteOutputV48(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 48, 1)
+	input := General{msg: "hi", bOnlyBalloon: false}
+	expected := []byte{
+		0x02, 0x00, 0x68, 0x69, // EncodeStr("hi") @0x4c3e67 — no trailing balloon byte
+	}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v48 general golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
 // TestGeneralByteOutputV61 pins the gms_v61 GENERAL_CHAT (op 0x2E = 46)
 // serverbound wire. IDA: the CField chat-input parser sub_4E7469 @0x4e7469
 // (GMS_v61.1_U_DEVM.exe) builds the normal-chat fallthrough at COutPacket(46) +
@@ -90,8 +109,13 @@ func TestGeneralRoundTrip(t *testing.T) {
 			if output.Msg() != input.Msg() {
 				t.Errorf("msg: got %v, want %v", output.Msg(), input.Msg())
 			}
-			if output.BOnlyBalloon() != input.BOnlyBalloon() {
-				t.Errorf("bOnlyBalloon: got %v, want %v", output.BOnlyBalloon(), input.BOnlyBalloon())
+			// bOnlyBalloon is not on the wire for GMS<61 (v28/v48): the balloon
+			// flag is a >=61 addition (see general.go Encode gate), so it cannot
+			// round-trip on those clients.
+			if !(v.Region == "GMS" && v.MajorVersion < 61) {
+				if output.BOnlyBalloon() != input.BOnlyBalloon() {
+					t.Errorf("bOnlyBalloon: got %v, want %v", output.BOnlyBalloon(), input.BOnlyBalloon())
+				}
 			}
 		})
 	}

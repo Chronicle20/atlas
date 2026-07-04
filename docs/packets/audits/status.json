@@ -5509,8 +5509,7 @@
       ],
       "cells": {
         "gms_v48": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 40
         },
         "gms_v61": {
@@ -11843,8 +11842,7 @@
       ],
       "cells": {
         "gms_v48": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 84
         },
         "gms_v61": {
@@ -12157,7 +12155,7 @@
       "cells": {
         "gms_v48": {
           "state": "incomplete",
-          "note": "no audit report",
+          "note": "tier-1 without fixture; verdict ❌",
           "opcode": 85
         },
         "gms_v61": {
@@ -12267,8 +12265,7 @@
       ],
       "cells": {
         "gms_v48": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 86
         },
         "gms_v61": {
@@ -13696,8 +13693,7 @@
       ],
       "cells": {
         "gms_v48": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 91
         },
         "gms_v61": {
@@ -14504,8 +14500,7 @@
       ],
       "cells": {
         "gms_v48": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 94
         },
         "gms_v61": {
@@ -15433,8 +15428,7 @@
       ],
       "cells": {
         "gms_v48": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 98
         },
         "gms_v61": {
@@ -16006,8 +16000,7 @@
       ],
       "cells": {
         "gms_v48": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 103
         },
         "gms_v61": {
@@ -41980,374 +41973,17 @@
     },
     {
       "kind": "sub-struct",
-      "packet": "field/clientbound/FieldEffectBossHp",
-      "tier1": true,
-      "cells": {
-        "gms_v48": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "sub-struct",
-      "packet": "field/clientbound/FieldEffectString",
-      "tier1": true,
-      "cells": {
-        "gms_v48": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "sub-struct",
-      "packet": "field/clientbound/FieldEffectSummon",
-      "tier1": true,
-      "cells": {
-        "gms_v48": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "sub-struct",
-      "packet": "field/clientbound/FieldEffectTremble",
-      "tier1": true,
-      "cells": {
-        "gms_v48": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "sub-struct",
       "packet": "field/clientbound/FieldEffectWeather",
       "tier1": true,
       "cells": {
         "gms_v48": {
-          "state": "verified",
+          "state": "incomplete",
+          "note": "no audit report",
           "opcode": -1
         },
         "gms_v61": {
           "state": "incomplete",
           "note": "tier-1 without fixture; verdict 🔍",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "sub-struct",
-      "packet": "field/clientbound/FieldFieldObstacleOnOffList",
-      "tier1": true,
-      "cells": {
-        "gms_v48": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "sub-struct",
-      "packet": "field/clientbound/FieldSetQuestClear",
-      "tier1": true,
-      "cells": {
-        "gms_v48": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "sub-struct",
-      "packet": "field/clientbound/FieldStopClock",
-      "tier1": true,
-      "cells": {
-        "gms_v48": {
-          "state": "verified",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "incomplete",
-          "note": "no audit report",
           "opcode": -1
         },
         "gms_v72": {
@@ -42430,162 +42066,6 @@
         },
         "jms_v185": {
           "state": "verified",
-          "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "sub-struct",
-      "packet": "field/serverbound/FieldCoupleMessage",
-      "tier1": true,
-      "cells": {
-        "gms_v48": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "sub-struct",
-      "packet": "field/serverbound/FieldGeneral",
-      "tier1": true,
-      "cells": {
-        "gms_v48": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "sub-struct",
-      "packet": "field/serverbound/FieldUseDoor",
-      "tier1": true,
-      "cells": {
-        "gms_v48": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ⚠️",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
           "opcode": -1
         }
       }

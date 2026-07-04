@@ -52,6 +52,22 @@ func TestUseDoorByteOutputV72(t *testing.T) {
 	}
 }
 
+// TestUseDoorByteOutputV48 pins the gms_v48 USE_DOOR (op 0x67 = 103) serverbound
+// wire. IDA: CField::TryEnterTownPortal = sub_5E3082 @0x5e3082 (GMS_v48_1_DEVM.exe)
+// builds COutPacket(103) @0x5e3125 + Encode4(portalFieldId v17[2]) @0x5e3137 +
+// Encode1(0=flag) @0x5e3140. Body = portalFieldId(4 LE) + flag(1) — identical to the
+// v61 golden (op 121); only the opcode shifts.
+// packet-audit:verify packet=field/serverbound/FieldUseDoor version=gms_v48 ida=0x5e3082
+func TestUseDoorByteOutputV48(t *testing.T) {
+	input := NewUseDoor(0x01020304, 0x00)
+	ctx := pt.CreateContext("GMS", 48, 1)
+	expected := []byte{0x04, 0x03, 0x02, 0x01, 0x00}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v48 golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
 // TestUseDoorByteOutputV61 pins the gms_v61 USE_DOOR (op 0x79 = 121) serverbound
 // wire. IDA: CField::TryEnterTownPortal @0x4ef641 (GMS_v61.1_U_DEVM.exe) builds
 // COutPacket(121) + Encode4(portalFieldId) + Encode1(1) (both the party-portal and

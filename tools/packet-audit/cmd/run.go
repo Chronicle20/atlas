@@ -282,6 +282,14 @@ func candidatesFromFName(fname string) []candidate {
 	// --- Character domain ---
 	case "CUserPool::OnUserEnterField":
 		return []candidate{{name: "CharacterSpawn", dir: csvpkg.DirClientbound}}
+	case "sub_6B277B":
+		// v48 SPAWN_PLAYER (op 100) — the CUserPool range-router (sub_6B2710
+		// case a1==100) dispatches to sub_6B277B (OnUserEnterField), which reads
+		// Decode4(charId) then CUserRemote::Init sub_6BBC17. v48 is an unnamed sub
+		// (no rotated symbol); the spawn report keys off this decoder, the v48
+		// analogue of the named CUserPool::OnUserEnterField (matches the sub_5013ED
+		// CharacterList / sub_6E5BD6 MOVE_PET precedent).
+		return []candidate{{name: "CharacterSpawn", dir: csvpkg.DirClientbound}}
 	case "CUserRemote::OnAttack":
 		// The atlas struct is Attack (shared for all 4 attack types); analyse
 		// under CharacterAttackMelee so the report file has a descriptive name.

@@ -555,6 +555,26 @@ func (m *CharacterTemporaryStat) AddStat(l logrus.FieldLogger) func(t tenant.Mod
 	}
 }
 
+// legacyGmsMask reports the pre-v61 GMS clients whose CharacterTemporaryStat
+// (SecondaryStat) mask is a plain 64-bit little-endian value read via
+// CInPacket::DecodeBuffer(&v, 8) — NOT the 128-bit UINT128 (DecodeBuffer 16) the
+// v61+ anchor codec emits. IDA-verified on GMS_v48_1_DEVM.exe (port 13337):
+//   - local  CWvsContext::OnTemporaryStatSet   @0x71af4b → sub_5CA524 DecodeBuffer(8) @0x5ca539
+//   - reset  CWvsContext::OnTemporaryStatReset  @0x71b054 → DecodeBuffer(8) @0x71b06e
+//   - foreign CUserRemote::Init CTS decode       sub_5CBA1F  DecodeBuffer(8) @0x5cba33
+// All three test bits 0-46, and the foreign per-bit value shapes match this
+// registry's shift order stat-for-stat (bit7=Speed byte, bit21=Combo byte,
+// bit33=Morph short, bit17/19/20/22=int, bit10/16/26=flag), so bits 0-46 map
+// identically to the shared registry — only the mask WIDTH differs. The
+// two-state base stats sit at shifts 81-87 (mask.H), which pre-v61 clients do
+// not read; WriteLong(mask.L) drops them, matching an empty v48 mask of 8 zero
+// bytes. v61+ (v61/72/79/83/84/87/95/JMS anchors) are untouched. v28 (also < 61,
+// no IDB) inherits this path — round-trip-only, previously the equally-unverified
+// 128-bit path; an 8-byte mask is more plausible for a pre-v61 client.
+func legacyGmsMask(t tenant.Model) bool {
+	return t.Region() == "GMS" && t.MajorVersion() < 61
+}
+
 func (m *CharacterTemporaryStat) EncodeMask(l logrus.FieldLogger, t tenant.Model, options map[string]interface{}) func(w *response.Writer) {
 	return func(w *response.Writer) {
 		reg := buildCharacterTemporaryStatRegistry(t)
@@ -573,6 +593,15 @@ func (m *CharacterTemporaryStat) EncodeMask(l logrus.FieldLogger, t tenant.Model
 
 		for _, v := range m.stats {
 			mask = mask.Or(v.statType.mask)
+		}
+
+		if legacyGmsMask(t) {
+			// Pre-v61 GMS: 8-byte little-endian mask (DecodeBuffer 8). Bits 0-46
+			// live in mask.L; the two-state base bits (shifts 81-87) fall in
+			// mask.H and are intentionally dropped — the pre-v61 client never
+			// reads them (sub_5CBA1F / sub_5CA524 test only bits 0-46).
+			w.WriteLong(mask.L)
+			return
 		}
 
 		w.WriteInt(uint32(mask.H >> 32))
@@ -610,6 +639,18 @@ func (m *CharacterTemporaryStat) Encode(l logrus.FieldLogger, ctx context.Contex
 		}
 
 		for _, v := range sortedValues {
+			if legacyGmsMask(t) {
+				// Pre-v61 GMS local value block (sub_5CA524, per set bit):
+				// Decode2(value) + Decode4(reason) + Decode2(duration/500). No
+				// disease split (the helper reads Decode4 for every stat), no
+				// nDefenseAtt/nDefenseState bytes, no trailing base-stat blocks —
+				// OnTemporaryStatSet reads only the delay short + optional byte
+				// afterward (emitted by BuffGive).
+				w.WriteInt16(int16(v.Value()))
+				w.WriteInt32(v.SourceId())
+				w.WriteInt16(legacyDurationUnits(v.ExpiresAt()))
+				continue
+			}
 			w.WriteInt16(int16(v.Value()))
 			if v.statType.Disease() {
 				// Mob-applied disease: bytes 4-5 carry mobSkillLevel, not the
@@ -624,6 +665,10 @@ func (m *CharacterTemporaryStat) Encode(l logrus.FieldLogger, ctx context.Contex
 			w.WriteInt32(et)
 		}
 
+		if legacyGmsMask(t) {
+			return w.Bytes()
+		}
+
 		w.WriteByte(0) // nDefenseAtt
 		w.WriteByte(0) // nDefenseState
 
@@ -633,6 +678,17 @@ func (m *CharacterTemporaryStat) Encode(l logrus.FieldLogger, ctx context.Contex
 		}
 		return w.Bytes()
 	}
+}
+
+// legacyDurationUnits converts an absolute expiry into the pre-v61 wire duration
+// short: the v48 client reads Decode2 and multiplies by 500 (sub_5CA524 @0x5ca58d
+// `500 * Decode2`), so the wire carries remaining-ms / 500.
+func legacyDurationUnits(expiresAt time.Time) int16 {
+	ms := expiresAt.Sub(time.Now()).Milliseconds()
+	if ms <= 0 {
+		return 0
+	}
+	return int16(ms / 500)
 }
 
 func (m *CharacterTemporaryStat) EncodeForeign(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
@@ -660,6 +716,14 @@ func (m *CharacterTemporaryStat) EncodeForeign(l logrus.FieldLogger, ctx context
 
 		for _, v := range sortedValues {
 			v.Write(w)
+		}
+
+		if legacyGmsMask(t) {
+			// Pre-v61 foreign CTS (sub_5CBA1F) ends after the per-bit value
+			// blocks — no nDefenseAtt/nDefenseState bytes, no trailing base-stat
+			// blocks. SPAWN_PLAYER (sub_6BBC17 @0x6bbcde) and BuffGiveForeign
+			// both consume exactly this shape.
+			return w.Bytes()
 		}
 
 		w.WriteByte(0) // nDefenseAtt
@@ -730,7 +794,11 @@ func twoStateBaseStats(t tenant.Model) []twoStateStat {
 	)
 }
 
-func (m *CharacterTemporaryStat) DecodeMask(r *request.Reader) tool.Uint128 {
+func (m *CharacterTemporaryStat) DecodeMask(r *request.Reader, t tenant.Model) tool.Uint128 {
+	if legacyGmsMask(t) {
+		// Pre-v61 GMS: plain 8-byte little-endian mask (DecodeBuffer 8).
+		return tool.Uint128{L: r.ReadUint64()}
+	}
 	h1 := uint64(r.ReadUint32()) << 32
 	h2 := uint64(r.ReadUint32())
 	l1 := uint64(r.ReadUint32()) << 32
@@ -741,7 +809,7 @@ func (m *CharacterTemporaryStat) DecodeMask(r *request.Reader) tool.Uint128 {
 func (m *CharacterTemporaryStat) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
-		mask := m.DecodeMask(r)
+		mask := m.DecodeMask(r, t)
 		reg := buildCharacterTemporaryStatRegistry(t)
 
 		for _, st := range reg.inOrder {
@@ -751,6 +819,18 @@ func (m *CharacterTemporaryStat) Decode(l logrus.FieldLogger, ctx context.Contex
 			if baseStatNames[st.name] {
 				// Base/TwoState stats carry no per-stat block; they are read by
 				// decodeBaseTemporaryStats below. Skip regardless of version.
+				continue
+			}
+			if legacyGmsMask(t) {
+				// Pre-v61 local block: short value + int reason + short duration.
+				value := r.ReadInt16()
+				sourceId := r.ReadInt32()
+				_ = r.ReadInt16() // duration units
+				m.stats[st.name] = CharacterTemporaryStatValue{
+					statType: st,
+					sourceId: sourceId,
+					value:    int32(value),
+				}
 				continue
 			}
 			value := r.ReadInt16()
@@ -771,6 +851,13 @@ func (m *CharacterTemporaryStat) Decode(l logrus.FieldLogger, ctx context.Contex
 			}
 		}
 
+		if legacyGmsMask(t) {
+			// Pre-v61 local read stops after the value blocks (no defense bytes,
+			// no base-stat blocks). The delay short + optional byte are consumed
+			// by BuffGive.Decode.
+			return
+		}
+
 		_ = r.ReadByte() // nDefenseAtt
 		_ = r.ReadByte() // nDefenseState
 
@@ -781,7 +868,7 @@ func (m *CharacterTemporaryStat) Decode(l logrus.FieldLogger, ctx context.Contex
 func (m *CharacterTemporaryStat) DecodeForeign(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
-		mask := m.DecodeMask(r)
+		mask := m.DecodeMask(r, t)
 		reg := buildCharacterTemporaryStatRegistry(t)
 
 		for _, st := range reg.inOrder {
@@ -793,6 +880,11 @@ func (m *CharacterTemporaryStat) DecodeForeign(l logrus.FieldLogger, ctx context
 			}
 			v := st.foreignValueReader(r, st)
 			m.stats[st.name] = v
+		}
+
+		if legacyGmsMask(t) {
+			// Pre-v61 foreign read (sub_5CBA1F) stops after the value blocks.
+			return
 		}
 
 		_ = r.ReadByte() // nDefenseAtt

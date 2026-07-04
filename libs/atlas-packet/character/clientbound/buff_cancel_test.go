@@ -113,3 +113,21 @@ func TestBuffCancelV61ByteFixture(t *testing.T) {
 		t.Errorf("v61 BuffCancel trailer byte: got %02x want 00", got[16])
 	}
 }
+
+// TestBuffCancelV48ByteFixture pins the very-legacy GMS v48 empty-CTS reset wire.
+// Pre-v61 the SecondaryStat mask is a plain 8-byte little-endian value (NOT the
+// 128-bit UINT128), read by CWvsContext::OnTemporaryStatReset @0x71b054 via
+// CInPacket::DecodeBuffer(&v8, 8) @0x71b06e (GMS_v48_1_DEVM.exe, port 13337). The
+// two-state base bits (shifts 81-87) live in the mask's high word, which the pre-v61
+// client never reads, so an empty CTS is 8 zero bytes. The trailing tSwallowBuffTime
+// Decode1 is read only when the mask carries a movement stat (none here) — Atlas
+// emits it unconditionally (harmless last-field over-write). 9 bytes total.
+// packet-audit:verify packet=character/clientbound/BuffCancel version=gms_v48 ida=0x71b054
+func TestBuffCancelV48ByteFixture(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 48, 1)
+	got := NewBuffCancel(*model.NewCharacterTemporaryStat()).Encode(nil, ctx)(nil)
+	want := []byte{0, 0, 0, 0, 0, 0, 0, 0, 0} // 8-byte mask + 1 trailer
+	if !bytes.Equal(got, want) {
+		t.Errorf("v48 BuffCancel wire: got %x want %x", got, want)
+	}
+}

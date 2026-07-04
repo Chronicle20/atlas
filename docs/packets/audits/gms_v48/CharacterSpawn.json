@@ -1,7 +1,7 @@
 {
   "WriterName": "CharacterSpawn",
-  "IDAName": "CUserPool::OnUserEnterField",
-  "Address": "",
+  "IDAName": "sub_6B277B",
+  "Address": "0x6b277b",
   "Variant": "GMS/v48",
   "BranchDepth": 3,
   "AtlasFile": "libs/atlas-packet/character/clientbound/spawn.go",
@@ -11,9 +11,9 @@
       "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 4,
-      "Note": "IDA read-order unresolved: function not found in IDB"
+      "IDAComment": "CUserRemote::Init sub_6BBC17 (dispatched from sub_6B277B)",
+      "Verdict": 2,
+      "Note": "flat diff invalid for the branch-heavy legacy spawn; read order verified by byte-fixture (TestCharacterSpawnV48Golden, sub_6BBC17 @0x6bbc17)"
     },
     {
       "Index": 1,

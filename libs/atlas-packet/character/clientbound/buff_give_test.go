@@ -294,3 +294,54 @@ func TestBuffGiveForeignV61Mask(t *testing.T) {
 		t.Errorf("v61 BuffGiveForeign trailer: got %x want %x", got[len(got)-3:], wantTail)
 	}
 }
+
+// TestBuffGiveV48Mask pins the very-legacy GMS v48 empty-CTS local GIVE_BUFF wire.
+// Pre-v61 the SecondaryStat mask is a plain 8-byte little-endian value (NOT the
+// 128-bit UINT128): CWvsContext::OnTemporaryStatSet @0x71af4b → sub_5CA524, whose
+// first op is CInPacket::DecodeBuffer(&v150, 8) @0x5ca539 (GMS_v48_1_DEVM.exe). There
+// are no nDefenseAtt/nDefenseState bytes and no trailing base-stat blocks — the
+// handler reads only a Decode2 delay @0x71af82 then an optional Decode1. The two-state
+// base bits (shifts 81-87) fall in the mask high word the client never reads, so an
+// empty CTS is 8 zero bytes, then BuffGive's Short(0)+Byte(0) trailer → 11 bytes.
+// packet-audit:verify packet=character/clientbound/BuffGive version=gms_v48 ida=0x71af4b
+func TestBuffGiveV48Mask(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 48, 1)
+	got := NewBuffGive(*model.NewCharacterTemporaryStat()).Encode(nil, ctx)(nil)
+	want := []byte{0, 0, 0, 0, 0, 0, 0, 0, 0x00, 0x00, 0x00} // 8-byte mask + Short(0)+Byte(0)
+	if !bytes.Equal(got, want) {
+		t.Errorf("v48 BuffGive wire: got %x want %x", got, want)
+	}
+}
+
+// TestBuffGiveV48SingleStat pins the pre-v61 8-byte mask BIT ORDER and per-stat value
+// block. Combo is registry shift 21 (IDA-cross-checked: the v48 foreign decoder
+// sub_5CBA1F reads Decode1 for bit 21 = Combo's byte foreign shape), so its mask bit
+// lands in wire byte 2 bit 5 → 0x20. The local value block (sub_5CA524, per set bit)
+// is Decode2(value)+Decode4(reason)+Decode2(duration/500): short(3) + int(sourceId) +
+// short(duration). The duration short is wall-clock-relative so only the mask, value,
+// and reason are pinned deterministically.
+func TestBuffGiveV48SingleStat(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 48, 1)
+	tn, _ := tenant.Create([16]byte{}, "GMS", 48, 1)
+	cts := model.NewCharacterTemporaryStat()
+	cts.AddStat(nil)(tn)(string(character.TemporaryStatTypeCombo), 0x11223344, 3, 0, time.Now().Add(5*time.Minute))
+
+	got := NewBuffGive(*cts).Encode(nil, ctx)(nil)
+	if len(got) != 19 {
+		t.Fatalf("v48 BuffGive single-stat length: got %d want 19 (8 mask + 8 value + 3 trailer)", len(got))
+	}
+	wantMask := []byte{0x00, 0x00, 0x20, 0x00, 0x00, 0x00, 0x00, 0x00} // Combo = shift 21 → byte2 bit5
+	if !bytes.Equal(got[:8], wantMask) {
+		t.Errorf("v48 BuffGive Combo mask: got %x want %x", got[:8], wantMask)
+	}
+	if !bytes.Equal(got[8:10], []byte{0x03, 0x00}) {
+		t.Errorf("v48 BuffGive Combo value: got %x want 0300", got[8:10])
+	}
+	if !bytes.Equal(got[10:14], []byte{0x44, 0x33, 0x22, 0x11}) {
+		t.Errorf("v48 BuffGive Combo reason: got %x want 44332211", got[10:14])
+	}
+	// got[14:16] duration short is time-dependent; not pinned.
+	if !bytes.Equal(got[16:19], []byte{0x00, 0x00, 0x00}) {
+		t.Errorf("v48 BuffGive trailer: got %x want 000000", got[16:19])
+	}
+}

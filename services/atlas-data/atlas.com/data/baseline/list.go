@@ -9,13 +9,13 @@ import (
 // the exact shape DumpKey produces:
 // baseline/regions/<region>/versions/<major>.<minor>/documents.dump.
 // Keys that do not parse are the caller's cue to skip-and-warn, never fail.
-func parseDumpKey(key string) (string, int, int, bool) {
+func parseDumpKey(key string) (region string, major, minor int, ok bool) {
 	parts := strings.Split(key, "/")
 	if len(parts) != 6 || parts[0] != "baseline" || parts[1] != "regions" ||
 		parts[3] != "versions" || parts[5] != "documents.dump" {
 		return "", 0, 0, false
 	}
-	region := parts[2]
+	region = parts[2]
 	if region == "" {
 		return "", 0, 0, false
 	}
@@ -28,7 +28,7 @@ func parseDumpKey(key string) (string, int, int, bool) {
 	if err != nil || major < 0 {
 		return "", 0, 0, false
 	}
-	minor, err := strconv.Atoi(ver[dot+1:])
+	minor, err = strconv.Atoi(ver[dot+1:])
 	if err != nil || minor < 0 {
 		return "", 0, 0, false
 	}

@@ -1399,11 +1399,13 @@
 - op: VIEW_ALL_CHAR
   direction: serverbound
   opcode: 12
-  fname: sub_502293
+  fname: CLogin::SendViewAllCharPacket
+  fname_alts:
+  - sub_502293
   provenance: ida-discovered
   ida:
     address: 5251731
-  note: 'BODY-VERIFIED send-site 0x5022e1: sends bare COutPacket(11) (if this[72]!=1) then bare COutPacket(12), setting this[54]=1 (timer). EXACT twin of v61 VIEW_ALL_CHAR (sub_567117: bare op12 then bare op13, this[61]=1). The leading bare op11 = v61 bare op12 (unregistered migrate-to-charlist request, no Atlas handler). op12 = view-all-characters request. v61 VIEW_ALL_CHAR=13 (Delta-1). Atlas handler: CharacterViewAllHandle.'
+  note: 'BODY-VERIFIED send-site 0x5022e1: sends bare COutPacket(11) (if this[72]!=1) then bare COutPacket(12), setting this[54]=1 (timer). Unnamed sub; fname carries canonical CLogin::SendViewAllCharPacket for report linkage / candidatesFromFName, sub_502293 in fname_alts. EXACT twin of v61 VIEW_ALL_CHAR (sub_567117: bare op12 then bare op13, this[61]=1). The leading bare op11 = v61 bare op12 (unregistered migrate-to-charlist request, no Atlas handler). op12 = view-all-characters request. v61 VIEW_ALL_CHAR=13 (Delta-1). Atlas handler: CharacterViewAllHandle.'
 - op: PICK_ALL_CHAR
   direction: serverbound
   opcode: 13

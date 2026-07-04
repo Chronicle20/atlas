@@ -1,6 +1,6 @@
 # AllCharacterListRequest (← `CLogin::SendViewAllCharPacket`)
 
-- **IDA:** 
+- **IDA:** 0x502293
 - **Atlas file:** `libs/atlas-packet/login/serverbound/all_character_list_request.go`
 - **Variant:** GMS/v48
 - **Branch depth:** 2
@@ -11,7 +11,7 @@
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | byte | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
+| 0 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
 | 1 | string | byte `` | ❌ | atlas: extra — client never reads this field |
 | 2 | bytes | byte `` | ❌ | atlas: extra — client never reads this field |
 | 3 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |

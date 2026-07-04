@@ -4314,15 +4314,10 @@
       ]
     },
     "CLogin::SendViewAllCharPacket": {
-      "address": "",
+      "address": "0x502293",
       "direction": "serverbound",
-      "unresolved": true,
-      "calls": [
-        {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
-        }
-      ]
+      "notes": "v48 VIEW_ALL_CHAR (COutPacket op 12) send sub_502293 @0x502293: COutPacket(12)@0x5022e1 + SendPacket@0x5022f3 with no Encode -> empty body (first sends bare op 11 when this[72]!=1). Surgically spliced (live v48 IDB names it sub_502293); mirrors the v61/v79 empty-body entry.",
+      "calls": []
     },
     "CMapLoadable::OnSetBackEffect": {
       "address": "",

@@ -3,8 +3,6 @@ direction: serverbound
 version: gms_v48
 category: TIER1-FIXTURE
 ida:
-    function: sub_502293
+    function: CLogin::SendViewAllCharPacket
     address: "0x502293"
-    decompile_sha256: ce2be4d491caf5976c580537ab12cb17dce2be593432a49de8c6d4704cab10a2
-verifies:
-    - libs/atlas-packet/login/serverbound/v48_test.go#TestAllCharacterListRequestV48
+    decompile_sha256: 6157bf212bba4e72b01d2ba21f407891b09817e4f1bbecf0955c7c0652019bec

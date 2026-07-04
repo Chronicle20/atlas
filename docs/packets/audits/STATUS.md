@@ -5,7 +5,7 @@
 
 Tool: `b540a93541f914f527d55a52d83b17add8e2a3b0`
 
-- export gms_v48: `6672ebb5a2e3c5f75e83b8ba931a33d23e67afbba53d78c132e1bea5d61c2967`
+- export gms_v48: `17f1993bc70ef57e7f2b6c0f039ac8ad48a1a95a8aab1a60c29fa0d2efb7ccb5`
 - export gms_v61: `8023cfe3b5868d7a19f2067627f84e8da849588dfe87e86f48eb721225ac717b`
 - export gms_v72: `a0ac2be6578395455f491976bcb11aa27e2e57376b46ee8816b90324bad60c02`
 - export gms_v79: `370d6b720b633c12c71d40340f3952000705c4bddb98f87179e7193d112d210c`
@@ -518,7 +518,7 @@ Tool: `b540a93541f914f527d55a52d83b17add8e2a3b0`
 | REGISTER_PIN | CLogin::OnCheckPinCodeResult; sub_503956 | login/clientbound/PinOperation | 0x009 | ❌ | 0x00A | ✅ | 0x00A | ✅ | 0x00A | ✅ | 0x00A | ✅ | 0x00A | ✅ | 0x00A | ✅ | 0x00A | ✅ |  | ⬜ |
 | SERVERLIST_REQUEST | CLicenseDlg::OnButtonClicked; CLogin::OnCheckPasswordResult; CLogin::OnCheckPinCodeResult; sub_503956 | login/clientbound/PinOperation | 0x00A | ❌ | 0x00B | ✅ | 0x00B | ✅ | 0x00B | ✅ | 0x00B | ✅ | 0x00B | ✅ | 0x00B | ✅ | 0x00B | ✅ |  | ⬜ |
 | PLAYER_DC | CLogin::GotoWorldSelect; CLogin::SendViewAllCharPacket |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x00C | ❌ | 0x00C | ❌ | 0x00C | ❌ | 0x00C | ❌ |  | ⬜ |
-| VIEW_ALL_CHAR | CLogin::SendViewAllCharPacket; sub_502293 | login/serverbound/AllCharacterListRequest (T1) | 0x00C | ❌ | 0x00D | ✅ | 0x00D | ✅ | 0x00D | ✅ | 0x00D | ✅ | 0x00D | ✅ | 0x00D | ✅ | 0x00D | ✅ | 0x00A | ✅ |
+| VIEW_ALL_CHAR | CLogin::SendViewAllCharPacket; sub_502293 | login/serverbound/AllCharacterListRequest (T1) | 0x00C | ✅ | 0x00D | ✅ | 0x00D | ✅ | 0x00D | ✅ | 0x00D | ✅ | 0x00D | ✅ | 0x00D | ✅ | 0x00D | ✅ | 0x00A | ✅ |
 | PICK_ALL_CHAR | CLogin::SendSelectCharPacketByVAC; sub_500254 | login/serverbound/AllCharacterListSelect | 0x00D | ❌ | 0x00E | ✅ | 0x00E | ✅ | 0x00E | ✅ | 0x00E | ✅ | 0x00E | ✅ | 0x00E | ✅ | 0x00E | ✅ |  | ⬜ |
 | VAC | CLogin::MakeVACDlg; CLogin::ResetVAC; sub_50273F | login/serverbound/AllCharacterListPong | 0x00E | ❌ | 0x00F | 🟡 | 0x00F | 🟡 | 0x00F | 🟡 | 0x00F | ✅ | 0x00F | ✅ | 0x00F | ✅ | 0x00F | ✅ |  | ⬜ |
 | CHAR_SELECT | CLogin::SendSelectCharPacket; sub_500174 | login/serverbound/CharacterSelect | 0x00F | ❌ | 0x013 | ✅ | 0x013 | ✅ | 0x013 | ✅ | 0x013 | ✅ | 0x013 | ✅ | 0x013 | ✅ | 0x013 | ✅ | 0x006 | ✅ |
@@ -914,7 +914,6 @@ Tool: `b540a93541f914f527d55a52d83b17add8e2a3b0`
 | login/clientbound/SetAccountResult |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | login/serverbound/AfterLogin (T1) |  |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | login/serverbound/AllCharacterListPong |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| login/serverbound/AllCharacterListRequest (T1) |  |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | login/serverbound/ServerListRequest |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | login/serverbound/ServerStatusRequest |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | login/serverbound/WorldCharacterListRequest |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
@@ -981,15 +980,15 @@ Tool: `b540a93541f914f527d55a52d83b17add8e2a3b0`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v48 | 142 | 0 | 4 | 172 | 629 | 0 | 44.7% |
-| v61 | 208 | 0 | 60 | 208 | 471 | 0 | 43.7% |
-| v72 | 216 | 0 | 73 | 226 | 432 | 0 | 41.9% |
-| v79 | 228 | 0 | 72 | 224 | 423 | 0 | 43.5% |
-| v83 | 367 | 0 | 0 | 355 | 225 | 0 | 50.8% |
-| v84 | 345 | 0 | 0 | 356 | 246 | 0 | 49.2% |
-| v87 | 379 | 0 | 0 | 380 | 188 | 0 | 49.9% |
-| v95 | 399 | 0 | 0 | 444 | 104 | 0 | 47.3% |
-| JMS185 | 362 | 0 | 0 | 390 | 195 | 0 | 48.1% |
+| v48 | 142 | 0 | 4 | 171 | 629 | 0 | 44.8% |
+| v61 | 208 | 0 | 60 | 207 | 471 | 0 | 43.8% |
+| v72 | 216 | 0 | 73 | 225 | 432 | 0 | 42.0% |
+| v79 | 228 | 0 | 72 | 223 | 423 | 0 | 43.6% |
+| v83 | 367 | 0 | 0 | 354 | 225 | 0 | 50.9% |
+| v84 | 345 | 0 | 0 | 355 | 246 | 0 | 49.3% |
+| v87 | 379 | 0 | 0 | 379 | 188 | 0 | 50.0% |
+| v95 | 399 | 0 | 0 | 443 | 104 | 0 | 47.4% |
+| JMS185 | 362 | 0 | 0 | 389 | 195 | 0 | 48.2% |
 
 ## Conflicts
 

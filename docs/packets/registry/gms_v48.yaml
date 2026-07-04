@@ -69,11 +69,13 @@
 - op: VIEW_ALL_CHAR
   direction: clientbound
   opcode: 8
-  fname: sub_50232D
+  fname: CLogin::OnViewAllCharResult
+  fname_alts:
+  - sub_50232D
   provenance: ida-discovered
   ida:
     address: 5251885
-  note: 'Body = Decode1 sub-mode + per-char AvatarLook::Decode = OnViewAllCharResult (VIEW_ALL_CHAR); op 8 = v61.'
+  note: 'Body = Decode1 sub-mode + per-char AvatarLook::Decode = OnViewAllCharResult (VIEW_ALL_CHAR); op 8 = v61. Canonical fname CLogin::OnViewAllCharResult (unnamed sub_50232D in fname_alts) mirrors v61 cb + the v48 serverbound sibling, linking the op to the CharacterViewAll* audit reports.'
 - op: SELECT_CHARACTER_BY_VAC
   direction: clientbound
   opcode: 9

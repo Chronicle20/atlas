@@ -27,7 +27,7 @@ Tool: `b3219228b3ee416c6cbd11793fed7d0fe4c58a04`
 | CONFIRM_EULA_RESULT | CLogin::OnConfirmEULAResult; sub_5038F1 |  | 0x005 | ❌ | 0x005 | ❌ | 0x005 | ❌ | 0x005 | ❌ | 0x005 | ❌ | 0x005 | ❌ | 0x005 | ❌ | 0x005 | ❌ |  | ⬜ |
 | CHECK_PINCODE | CLogin::OnCheckPinCodeResult; sub_503956 | login/clientbound/PinOperation | 0x006 | ❌ | 0x006 | ✅ | 0x006 | ✅ | 0x006 | ✅ | 0x006 | ✅ | 0x006 | ✅ | 0x006 | ✅ | 0x006 | ✅ |  | ⬜ |
 | UPDATE_PINCODE | CLogin::OnUpdatePinCodeResult; sub_503C92 | login/clientbound/PinUpdate | 0x007 | ❌ | 0x007 | 🟡 | 0x007 | 🟡 | 0x007 | 🟡 | 0x007 | ✅ | 0x007 | ✅ | 0x007 | ✅ | 0x007 | ✅ |  | ⬜ |
-| VIEW_ALL_CHAR | CLogin::OnViewAllCharResult; sub_50232D | character/clientbound/CharacterViewAllCharacters (T1) | 0x008 | ❌ | 0x008 | ✅ | 0x008 | ✅ | 0x008 | ✅ | 0x008 | ✅ | 0x008 | ✅ | 0x008 | ✅ | 0x008 | ✅ | 0x014 | ✅ |
+| VIEW_ALL_CHAR | CLogin::OnViewAllCharResult; sub_50232D | character/clientbound/CharacterViewAllCharacters (T1) | 0x008 | ✅ | 0x008 | ✅ | 0x008 | ✅ | 0x008 | ✅ | 0x008 | ✅ | 0x008 | ✅ | 0x008 | ✅ | 0x008 | ✅ | 0x014 | ✅ |
 | SELECT_CHARACTER_BY_VAC | CLogin::OnSelectCharacterByVACResult; sub_5028A6 |  | 0x009 | ❌ | 0x009 | ❌ | 0x009 | ❌ | 0x009 | ❌ | 0x009 | ❌ | 0x009 | ❌ | 0x009 | ❌ | 0x009 | ❌ |  | ⬜ |
 | IDA_0X00A | CClientSocket::OnAuthenCodeChanged |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x00A | ❌ |
 | WORLD_INFORMATION | CLogin::OnWorldInformation; sub_50120A | login/clientbound/ServerListEnd | 0x00A | ❌ | 0x00A | ✅ | 0x00A | ✅ | 0x00A | ✅ | 0x00A | ✅ | 0x00A | ✅ | 0x00A | ✅ | 0x00A | ✅ | 0x002 | ✅ |
@@ -35,7 +35,7 @@ Tool: `b3219228b3ee416c6cbd11793fed7d0fe4c58a04`
 | IDA_0X00B | CClientSocket::OnAuthenMessage |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x00B | ❌ |
 | SERVER_IP | CLogin::OnSelectCharacterResult; sub_502B70 | login/clientbound/ServerIP | 0x00C | ❌ | 0x00C | 🟡 | 0x00C | 🟡 | 0x00C | 🟡 | 0x00C | ✅ | 0x00C | ✅ | 0x00C | ✅ | 0x00C | ✅ | 0x004 | ✅ |
 | CHAR_NAME_RESPONSE | CLogin::OnCheckDuplicatedIDResult; CLogin::OnCreateNewCharacterResult; sub_5016DB | character/clientbound/CharacterNameResponse (T1) | 0x00D | ✅ | 0x00D | ✅ | 0x00D | ✅ | 0x00D | ✅ | 0x00D | ✅ | 0x00D | ✅ | 0x00D | ✅ | 0x00D | ✅ | 0x005 | ✅ |
-| ADD_NEW_CHAR_ENTRY | CLogin::OnCreateNewCharacterResult; CLogin::OnDeleteCharacterResult; sub_501973 | character/clientbound/AddCharacterEntry (T1) | 0x00E | ❌ | 0x00E | ✅ | 0x00E | ✅ | 0x00E | ✅ | 0x00E | ✅ | 0x00E | ✅ | 0x00E | ✅ | 0x00E | ✅ | 0x006 | ✅ |
+| ADD_NEW_CHAR_ENTRY | CLogin::OnCreateNewCharacterResult; CLogin::OnDeleteCharacterResult; sub_501973 | character/clientbound/AddCharacterEntry (T1) | 0x00E | ✅ | 0x00E | ✅ | 0x00E | ✅ | 0x00E | ✅ | 0x00E | ✅ | 0x00E | ✅ | 0x00E | ✅ | 0x00E | ✅ | 0x006 | ✅ |
 | DELETE_CHAR_RESPONSE | CLogin::OnCheckDuplicatedIDResult; CLogin::OnDeleteCharacterResult; sub_5017B6 | character/clientbound/DeleteCharacterResponse (T1) | 0x00F | ✅ | 0x00F | ✅ | 0x00F | ✅ | 0x00F | ✅ | 0x00F | ✅ | 0x00F | ✅ | 0x00F | ✅ | 0x00F | ✅ | 0x007 | ✅ |
 | CHANGE_CHANNEL | CClientSocket::OnMigrateCommand | channel/clientbound/ChannelChannelChange | 0x010 | 🟡 | 0x010 | 🟡 | 0x010 | 🟡 | 0x010 | 🟡 | 0x010 | ✅ | 0x010 | ✅ | 0x010 | ✅ | 0x010 | ✅ | 0x008 | ✅ |
 | PING | CClientSocket::OnAliveReq | socket/clientbound/Ping | 0x011 | ❌ | 0x011 | ❌ | 0x011 | ❌ | 0x011 | ❌ | 0x011 | ✅ | 0x011 | ❌ | 0x011 | ✅ | 0x011 | ✅ | 0x009 | ✅ |
@@ -849,10 +849,6 @@ Tool: `b3219228b3ee416c6cbd11793fed7d0fe4c58a04`
 | cash/serverbound/CashShopOperationRebateLockerItem (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | cash/serverbound/CashShopOperationSetWishlist (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | channel/serverbound/ChannelChangeRequest |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| character/clientbound/CharacterViewAllCharacters (T1) |  |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| character/clientbound/CharacterViewAllCount (T1) |  |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| character/clientbound/CharacterViewAllError (T1) |  |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| character/clientbound/CharacterViewAllSearchFailed (T1) |  |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | character/serverbound/ChairPortable (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | character/serverbound/ChalkboardClose (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | character/serverbound/ExpressionRequest (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
@@ -979,15 +975,15 @@ Tool: `b3219228b3ee416c6cbd11793fed7d0fe4c58a04`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v48 | 159 | 0 | 4 | 153 | 629 | 0 | 50.3% |
-| v61 | 208 | 0 | 60 | 206 | 471 | 0 | 43.9% |
-| v72 | 216 | 0 | 73 | 224 | 432 | 0 | 42.1% |
-| v79 | 228 | 0 | 72 | 222 | 423 | 0 | 43.7% |
-| v83 | 367 | 0 | 0 | 353 | 225 | 0 | 51.0% |
-| v84 | 345 | 0 | 0 | 354 | 246 | 0 | 49.4% |
-| v87 | 379 | 0 | 0 | 378 | 188 | 0 | 50.1% |
-| v95 | 399 | 0 | 0 | 442 | 104 | 0 | 47.4% |
-| JMS185 | 362 | 0 | 0 | 388 | 195 | 0 | 48.3% |
+| v48 | 157 | 0 | 4 | 151 | 629 | 0 | 50.3% |
+| v61 | 208 | 0 | 60 | 202 | 471 | 0 | 44.3% |
+| v72 | 216 | 0 | 73 | 220 | 432 | 0 | 42.4% |
+| v79 | 228 | 0 | 72 | 218 | 423 | 0 | 44.0% |
+| v83 | 367 | 0 | 0 | 349 | 225 | 0 | 51.3% |
+| v84 | 345 | 0 | 0 | 350 | 246 | 0 | 49.6% |
+| v87 | 379 | 0 | 0 | 374 | 188 | 0 | 50.3% |
+| v95 | 399 | 0 | 0 | 438 | 104 | 0 | 47.7% |
+| JMS185 | 362 | 0 | 0 | 384 | 195 | 0 | 48.5% |
 
 ## Conflicts
 

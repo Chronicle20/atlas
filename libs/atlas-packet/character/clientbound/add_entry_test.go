@@ -157,3 +157,19 @@ func TestAddCharacterEntryJMSGolden(t *testing.T) {
 		t.Errorf("jms AddCharacterEntry wire (len got=%d want=%d):\n got %x\nwant %x", len(got), len(want), got, want)
 	}
 }
+
+// AddCharacterError v48 — ADD_NEW_CHAR_ENTRY error path (op 14). The v48 create
+// handler CLogin::OnCreateNewCharacterResult sub_501973 @0x501973 reads
+// Decode1(code) @0x50198e; a non-zero code (or no free slot) branches to an error
+// dialog sub_50FF3B(18) @0x501ad1 with NO stat/avatar body read from the wire.
+// AddCharacterError.Encode writes the single [code] byte. == v61.
+//
+// packet-audit:verify packet=character/clientbound/AddCharacterError version=gms_v48 ida=0x501973
+func TestAddCharacterErrorByteOutputV48(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 48, 1)
+	got := NewAddCharacterError(9).Encode(nil, ctx)(nil)
+	want := []byte{0x09} // code (Decode1) /*0x50198e*/
+	if !bytes.Equal(got, want) {
+		t.Errorf("v48 AddCharacterError wire: got %x want %x", got, want)
+	}
+}

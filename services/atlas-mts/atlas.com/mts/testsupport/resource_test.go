@@ -1,9 +1,12 @@
 package testsupport_test
 
 import (
+	"atlas-mts/bid"
+	"atlas-mts/holding"
 	"atlas-mts/listing"
 	"atlas-mts/test"
 	"atlas-mts/testsupport"
+	"atlas-mts/transaction"
 	"bytes"
 	"encoding/json"
 	"net/http"
@@ -266,5 +269,116 @@ func TestSeedListingsDefaults(t *testing.T) {
 	}
 	if m.SellerId() != 999000001 {
 		t.Fatalf("stored sellerId = %d, want 999000001", m.SellerId())
+	}
+}
+
+// TestExpireAndSweep drives the full test-route time-travel loop: seed a
+// 1-hour auction, backdate it via the expire route, run one sweep via the
+// sweep route, and assert the no-bids arm returned it to the seller
+// (state=expired).
+func TestExpireAndSweep(t *testing.T) {
+	db := test.SetupTestDB(t, listing.Migration, holding.Migration, bid.Migration, transaction.Migration)
+	defer test.CleanupTestDB(t, db)
+	ts := newTestServer(t, db)
+	defer ts.Close()
+
+	body := seedBody(t, map[string]any{
+		"worldId": 0,
+		"entries": []map[string]any{
+			{"saleType": "auction", "templateId": 1302000, "listValue": 1000, "durationSeconds": 3600},
+		},
+	})
+	res, err := ts.Client().Do(withTenant(t, http.MethodPost, ts.URL+"/test/listings/seed", body))
+	if err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+	var envelope struct {
+		Data []struct {
+			Id string `json:"id"`
+		} `json:"data"`
+	}
+	if err := json.NewDecoder(res.Body).Decode(&envelope); err != nil {
+		t.Fatalf("decode seed response: %v", err)
+	}
+	if len(envelope.Data) != 1 {
+		t.Fatalf("expected 1 seeded auction, got %d", len(envelope.Data))
+	}
+	id := envelope.Data[0].Id
+
+	// Not yet expired: a sweep finds nothing.
+	res, err = ts.Client().Do(withTenant(t, http.MethodPost, ts.URL+"/test/sweep", nil))
+	if err != nil {
+		t.Fatalf("sweep: %v", err)
+	}
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("sweep status = %d, want 200", res.StatusCode)
+	}
+
+	// Backdate.
+	res, err = ts.Client().Do(withTenant(t, http.MethodPost, ts.URL+"/test/listings/"+id+"/expire", nil))
+	if err != nil {
+		t.Fatalf("expire: %v", err)
+	}
+	if res.StatusCode != http.StatusNoContent {
+		t.Fatalf("expire status = %d, want 204", res.StatusCode)
+	}
+
+	// Second expire on the same (now-backdated but still active) listing is
+	// still a 204 (row still matches the guard); after settling it becomes 409.
+	res, err = ts.Client().Do(withTenant(t, http.MethodPost, ts.URL+"/test/sweep", nil))
+	if err != nil {
+		t.Fatalf("sweep 2: %v", err)
+	}
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("sweep 2 status = %d, want 200", res.StatusCode)
+	}
+
+	got, err := listing.GetById(id)(db)()
+	if err != nil {
+		t.Fatalf("reload: %v", err)
+	}
+	if got.State() != listing.StateExpired {
+		t.Fatalf("state = %s, want expired", got.State())
+	}
+
+	// Expire after settle: 409.
+	res, err = ts.Client().Do(withTenant(t, http.MethodPost, ts.URL+"/test/listings/"+id+"/expire", nil))
+	if err != nil {
+		t.Fatalf("expire 2: %v", err)
+	}
+	if res.StatusCode != http.StatusConflict {
+		t.Fatalf("expire-after-settle status = %d, want 409", res.StatusCode)
+	}
+}
+
+// TestExpireRejectsFixedSale asserts /expire 409s on a non-auction listing.
+func TestExpireRejectsFixedSale(t *testing.T) {
+	db := test.SetupTestDB(t, listing.Migration)
+	defer test.CleanupTestDB(t, db)
+	ts := newTestServer(t, db)
+	defer ts.Close()
+
+	body := seedBody(t, map[string]any{
+		"worldId": 0,
+		"entries": []map[string]any{{"saleType": "fixed", "templateId": 1302000, "listValue": 100}},
+	})
+	res, err := ts.Client().Do(withTenant(t, http.MethodPost, ts.URL+"/test/listings/seed", body))
+	if err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+	var envelope struct {
+		Data []struct {
+			Id string `json:"id"`
+		} `json:"data"`
+	}
+	if err := json.NewDecoder(res.Body).Decode(&envelope); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	res, err = ts.Client().Do(withTenant(t, http.MethodPost, ts.URL+"/test/listings/"+envelope.Data[0].Id+"/expire", nil))
+	if err != nil {
+		t.Fatalf("expire: %v", err)
+	}
+	if res.StatusCode != http.StatusConflict {
+		t.Fatalf("status = %d, want 409", res.StatusCode)
 	}
 }

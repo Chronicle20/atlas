@@ -33,3 +33,18 @@ func (r *SeedRestModel) SetID(idStr string) error {
 	r.Id = idStr
 	return nil
 }
+
+// SweepResultRestModel is the response envelope for POST /test/sweep.
+type SweepResultRestModel struct {
+	Id    string `json:"-"`
+	Swept int    `json:"swept"`
+}
+
+func (r SweepResultRestModel) GetName() string { return "test-sweeps" }
+
+func (r SweepResultRestModel) GetID() string { return r.Id }
+
+func (r *SweepResultRestModel) SetID(idStr string) error {
+	r.Id = idStr
+	return nil
+}

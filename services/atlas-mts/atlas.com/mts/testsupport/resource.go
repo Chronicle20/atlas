@@ -3,6 +3,8 @@ package testsupport
 import (
 	"atlas-mts/listing"
 	"atlas-mts/rest"
+	"atlas-mts/task"
+	"errors"
 	"net/http"
 	"strconv"
 	"time"
@@ -13,6 +15,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
@@ -47,6 +50,10 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 
 			r := router.PathPrefix("/test").Subrouter()
 			r.HandleFunc("/listings/seed", registerSeed("test_seed_listings", handleSeedListings)).Methods(http.MethodPost)
+
+			registerGet := rest.RegisterHandler(l)(db)(si)
+			r.HandleFunc("/listings/{listingId}/expire", registerGet("test_expire_listing", handleExpireListing)).Methods(http.MethodPost)
+			r.HandleFunc("/sweep", registerGet("test_run_sweep", handleRunSweep)).Methods(http.MethodPost)
 		}
 	}
 }
@@ -187,5 +194,58 @@ func handleSeedListings(d *rest.HandlerDependency, c *rest.HandlerContext, rm Se
 		queryParams := jsonapi.ParseQueryFields(&query)
 		w.WriteHeader(http.StatusCreated)
 		server.MarshalResponse[[]listing.RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+	}
+}
+
+// handleExpireListing backdates an ACTIVE AUCTION's ends_at to one second ago
+// so the next sweep settles it. 404 unknown listing, 409 when the row is not
+// an active auction (already settled / fixed sale), 204 on success. Only the
+// timestamp is synthetic — discovery and settlement stay production code.
+func handleExpireListing(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return rest.ParseListingId(d.Logger(), func(listingId string) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			p := listing.NewProcessor(d.Logger(), d.Context(), d.DB())
+			if _, err := p.GetById(listingId); err != nil {
+				if errors.Is(err, gorm.ErrRecordNotFound) {
+					w.WriteHeader(http.StatusNotFound)
+					return
+				}
+				d.Logger().WithError(err).Errorf("Retrieving listing [%s] for test expire.", listingId)
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			rows, err := listing.BackdateEndsAt(d.DB().WithContext(d.Context()), listingId, time.Now().Add(-time.Second))
+			if err != nil {
+				d.Logger().WithError(err).Errorf("Backdating listing [%s].", listingId)
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			if rows == 0 {
+				// Not an active auction (fixed sale, or already settled).
+				w.WriteHeader(http.StatusConflict)
+				return
+			}
+			d.Logger().Infof("[TEST ROUTE] Backdated ends_at on listing [%s].", listingId)
+			w.WriteHeader(http.StatusNoContent)
+		}
+	})
+}
+
+// handleRunSweep runs one production expiration sweep on demand — the same
+// task.Sweep the 60s ticker calls, cross-tenant like the ticker (the sweep
+// itself applies WithoutTenantFilter; the row's own tenant_id scopes each
+// settle). Returns the number of listings settled/expired this pass.
+func handleRunSweep(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		swept, err := task.Sweep(d.Logger(), d.Context(), d.DB())
+		if err != nil {
+			d.Logger().WithError(err).Errorf("Test-route sweep failed.")
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		d.Logger().Infof("[TEST ROUTE] Sweep settled/expired [%d] listings.", swept)
+		query := r.URL.Query()
+		queryParams := jsonapi.ParseQueryFields(&query)
+		server.MarshalResponse[SweepResultRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(SweepResultRestModel{Id: uuid.NewString(), Swept: swept})
 	}
 }

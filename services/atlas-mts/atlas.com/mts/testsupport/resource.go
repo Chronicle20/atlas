@@ -1,0 +1,178 @@
+package testsupport
+
+import (
+	"atlas-mts/listing"
+	"atlas-mts/rest"
+	"net/http"
+	"strconv"
+	"time"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
+	"github.com/gorilla/mux"
+	"github.com/jtumidanski/api2go/jsonapi"
+	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
+)
+
+// seedMaxListings caps one seed call; bigger requests are a client mistake,
+// not a load test (design-e2e-testing.md §4.5).
+const seedMaxListings = 200
+
+// Seed defaults — synthetic seller ids sit far above real character ids so
+// they are recognizable in DB rows and logs.
+const (
+	defaultSeedSellerId   = 999000001
+	defaultSeedSellerName = "TestSeller"
+	defaultSeedListValue  = 1000
+	defaultSeedDuration   = 300 * time.Second
+)
+
+// InitResource registers the env-gated MTS test routes (main.go only wires
+// this when MTS_TEST_ROUTES_ENABLED=true; there is deliberately no ingress
+// route — port-forward to the service to use these):
+//   - POST /test/listings/seed                — fabricate active listings (real serials)
+//   - POST /test/listings/{listingId}/expire  — backdate an active auction's ends_at
+//   - POST /test/sweep                        — run one expiration sweep now
+//   - POST /test/purchases                    — emit a channel-identical BUY command
+//   - POST /test/bids                         — emit a channel-identical PLACE_BID command
+func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteInitializer {
+	return func(db *gorm.DB) server.RouteInitializer {
+		return func(router *mux.Router, l logrus.FieldLogger) {
+			registerSeed := rest.RegisterInputHandler[SeedRestModel](l)(db)(si)
+
+			r := router.PathPrefix("/test").Subrouter()
+			r.HandleFunc("/listings/seed", registerSeed("test_seed_listings", handleSeedListings)).Methods(http.MethodPost)
+		}
+	}
+}
+
+// handleSeedListings fabricates active listings through the production
+// listing administrator: CreateListing assigns each row a real per-(tenant,
+// world) ITC serial, so the client renders and interacts with seeded rows
+// exactly like organic ones. Category/sub-category are derived the same way
+// the custody consumer derives them (section from sale type, item tab from
+// the template id) so seeded rows land under the right client tabs. The item
+// snapshot is synthetic — see design-e2e-testing.md §4.3 for the fidelity
+// ledger.
+func handleSeedListings(d *rest.HandlerDependency, c *rest.HandlerContext, rm SeedRestModel) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		t := tenant.MustFromContext(d.Context())
+
+		total := 0
+		for _, e := range rm.Entries {
+			count := e.Count
+			if count <= 0 {
+				count = 1
+			}
+			total += count
+		}
+		if total == 0 || total > seedMaxListings {
+			d.Logger().Errorf("Seed request wants [%d] listings (allowed 1..%d).", total, seedMaxListings)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		db := d.DB().WithContext(d.Context())
+		created := make([]listing.Model, 0, total)
+		for _, e := range rm.Entries {
+			st := listing.SaleType(e.SaleType)
+			if st != listing.SaleTypeFixed && st != listing.SaleTypeAuction {
+				d.Logger().Errorf("Seed entry has invalid saleType [%s].", e.SaleType)
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+			if e.TemplateId == 0 {
+				d.Logger().Errorf("Seed entry missing templateId.")
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+
+			count := e.Count
+			if count <= 0 {
+				count = 1
+			}
+			quantity := e.Quantity
+			if quantity == 0 {
+				quantity = 1
+			}
+			listValue := e.ListValue
+			if listValue == 0 {
+				listValue = defaultSeedListValue
+			}
+			sellerId := e.SellerId
+			if sellerId == 0 {
+				sellerId = defaultSeedSellerId
+			}
+			sellerName := e.SellerName
+			if sellerName == "" {
+				sellerName = defaultSeedSellerName
+			}
+
+			// Category mirrors the custody consumer's derivation: the section tab
+			// from the sale type ("1" For Sale, "3" Auction), the item sub-tab
+			// from the template id's inventory type.
+			category := "1"
+			if st == listing.SaleTypeAuction {
+				category = "3"
+			}
+			subCategory := ""
+			if it, ok := inventory.TypeFromItemId(item.Id(e.TemplateId)); ok {
+				subCategory = strconv.Itoa(int(it))
+			}
+
+			for i := 0; i < count; i++ {
+				b := listing.NewBuilder(t.Id(), world.Id(rm.WorldId), sellerId).
+					SetSellerAccountId(e.SellerAccountId).
+					SetSellerName(sellerName).
+					SetSaleType(st).
+					SetState(listing.StateActive).
+					SetTemplateId(e.TemplateId).
+					SetQuantity(quantity).
+					SetListValue(listValue).
+					SetBuyNowPrice(e.BuyNowPrice).
+					SetCommissionRate(0.10).
+					SetCategory(category).
+					SetSubCategory(subCategory).
+					SetMinIncrement(1)
+				if st == listing.SaleTypeAuction {
+					duration := defaultSeedDuration
+					if e.DurationSeconds > 0 {
+						duration = time.Duration(e.DurationSeconds) * time.Second
+					}
+					end := time.Now().Add(duration)
+					b = b.SetEndsAt(&end).SetCurrentBid(e.StartingBid)
+				}
+				m, err := b.Build()
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Building seed listing.")
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+				cm, err := listing.CreateListing(db, m)
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Creating seed listing.")
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+				created = append(created, cm)
+			}
+		}
+
+		res, err := model.SliceMap(listing.Transform)(model.FixedProvider(created))(model.ParallelMap())()
+		if err != nil {
+			d.Logger().WithError(err).Errorf("Creating REST model for seeded listings.")
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		d.Logger().Infof("[TEST ROUTE] Seeded [%d] listings in world [%d] for tenant [%s].", len(created), rm.WorldId, t.Id())
+		query := r.URL.Query()
+		queryParams := jsonapi.ParseQueryFields(&query)
+		w.WriteHeader(http.StatusCreated)
+		server.MarshalResponse[[]listing.RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+	}
+}

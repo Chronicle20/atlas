@@ -1,0 +1,8 @@
+packet: character/clientbound/StatusMessageSystemMessage
+direction: clientbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: sub_71B96B
+    address: "0x71b96b"
+    decompile_sha256: 27e0ebf424f5944d49374cb2f165b1c7f82c00450776ce15bd7d913899c805bb

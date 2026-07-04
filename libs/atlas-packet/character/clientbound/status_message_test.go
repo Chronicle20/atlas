@@ -15,6 +15,7 @@ import (
 // packet-audit:verify packet=character/clientbound/StatusMessageDropPickUpItemUnavailable version=gms_v79 ida=0x96aeec
 // packet-audit:verify packet=character/clientbound/StatusMessageDropPickUpItemUnavailable version=gms_v72 ida=0x9192d0
 // packet-audit:verify packet=character/clientbound/StatusMessageDropPickUpItemUnavailable version=gms_v61 ida=0x8438b5
+// packet-audit:verify packet=character/clientbound/StatusMessageDropPickUpItemUnavailable version=gms_v48 ida=0x71b265
 func TestStatusMessageDropPickUpItemUnavailable(t *testing.T) {
 	input := NewStatusMessageDropPickUpItemUnavailable(0)
 	for _, v := range test.Variants {
@@ -33,6 +34,7 @@ func TestStatusMessageDropPickUpItemUnavailable(t *testing.T) {
 // packet-audit:verify packet=character/clientbound/StatusMessageDropPickUpInventoryFull version=gms_v79 ida=0x96aeec
 // packet-audit:verify packet=character/clientbound/StatusMessageDropPickUpInventoryFull version=gms_v72 ida=0x9192d0
 // packet-audit:verify packet=character/clientbound/StatusMessageDropPickUpInventoryFull version=gms_v61 ida=0x8438b5
+// packet-audit:verify packet=character/clientbound/StatusMessageDropPickUpInventoryFull version=gms_v48 ida=0x71b265
 func TestStatusMessageDropPickUpInventoryFull(t *testing.T) {
 	input := NewStatusMessageDropPickUpInventoryFull(0)
 	for _, v := range test.Variants {
@@ -51,6 +53,7 @@ func TestStatusMessageDropPickUpInventoryFull(t *testing.T) {
 // packet-audit:verify packet=character/clientbound/StatusMessageDropPickUpGameFileDamaged version=gms_v79 ida=0x96aeec
 // packet-audit:verify packet=character/clientbound/StatusMessageDropPickUpGameFileDamaged version=gms_v72 ida=0x9192d0
 // packet-audit:verify packet=character/clientbound/StatusMessageDropPickUpGameFileDamaged version=gms_v61 ida=0x8438b5
+// packet-audit:verify packet=character/clientbound/StatusMessageDropPickUpGameFileDamaged version=gms_v48 ida=0x71b265
 func TestStatusMessageDropPickUpGameFileDamaged(t *testing.T) {
 	input := NewStatusMessageDropPickUpGameFileDamaged(0)
 	for _, v := range test.Variants {
@@ -69,6 +72,7 @@ func TestStatusMessageDropPickUpGameFileDamaged(t *testing.T) {
 // packet-audit:verify packet=character/clientbound/StatusMessageDropPickUpStackableItem version=gms_v79 ida=0x96aeec
 // packet-audit:verify packet=character/clientbound/StatusMessageDropPickUpStackableItem version=gms_v72 ida=0x9192d0
 // packet-audit:verify packet=character/clientbound/StatusMessageDropPickUpStackableItem version=gms_v61 ida=0x8438b5
+// packet-audit:verify packet=character/clientbound/StatusMessageDropPickUpStackableItem version=gms_v48 ida=0x71b265
 func TestStatusMessageDropPickUpStackableItem(t *testing.T) {
 	input := NewStatusMessageDropPickUpStackableItem(0, 2000000, 5)
 	for _, v := range test.Variants {
@@ -87,6 +91,7 @@ func TestStatusMessageDropPickUpStackableItem(t *testing.T) {
 // packet-audit:verify packet=character/clientbound/StatusMessageDropPickUpUnStackableItem version=gms_v79 ida=0x96aeec
 // packet-audit:verify packet=character/clientbound/StatusMessageDropPickUpUnStackableItem version=gms_v72 ida=0x9192d0
 // packet-audit:verify packet=character/clientbound/StatusMessageDropPickUpUnStackableItem version=gms_v61 ida=0x8438b5
+// packet-audit:verify packet=character/clientbound/StatusMessageDropPickUpUnStackableItem version=gms_v48 ida=0x71b265
 func TestStatusMessageDropPickUpUnStackableItem(t *testing.T) {
 	input := NewStatusMessageDropPickUpUnStackableItem(0, 1302000)
 	for _, v := range test.Variants {
@@ -105,6 +110,7 @@ func TestStatusMessageDropPickUpUnStackableItem(t *testing.T) {
 // packet-audit:verify packet=character/clientbound/StatusMessageDropLossStackableItem version=gms_v79 ida=0x96aeec
 // packet-audit:verify packet=character/clientbound/StatusMessageDropLossStackableItem version=gms_v72 ida=0x9192d0
 // packet-audit:verify packet=character/clientbound/StatusMessageDropLossStackableItem version=gms_v61 ida=0x8438b5
+// packet-audit:verify packet=character/clientbound/StatusMessageDropLossStackableItem version=gms_v48 ida=0x71b265
 func TestStatusMessageDropLossStackableItem(t *testing.T) {
 	input := NewStatusMessageDropLossStackableItem(0, 2000000, 5)
 	for _, v := range test.Variants {
@@ -123,6 +129,7 @@ func TestStatusMessageDropLossStackableItem(t *testing.T) {
 // packet-audit:verify packet=character/clientbound/StatusMessageDropLossUnStackableItem version=gms_v79 ida=0x96aeec
 // packet-audit:verify packet=character/clientbound/StatusMessageDropLossUnStackableItem version=gms_v72 ida=0x9192d0
 // packet-audit:verify packet=character/clientbound/StatusMessageDropLossUnStackableItem version=gms_v61 ida=0x8438b5
+// packet-audit:verify packet=character/clientbound/StatusMessageDropLossUnStackableItem version=gms_v48 ida=0x71b265
 func TestStatusMessageDropLossUnStackableItem(t *testing.T) {
 	input := NewStatusMessageDropLossUnStackableItem(0, 1302000)
 	for _, v := range test.Variants {
@@ -140,6 +147,7 @@ func TestStatusMessageDropLossUnStackableItem(t *testing.T) {
 // packet-audit:verify packet=character/clientbound/StatusMessageDropPickUpMeso version=jms_v185 ida=0xb07a01
 // packet-audit:verify packet=character/clientbound/StatusMessageDropPickUpMeso version=gms_v79 ida=0x96aeec
 // packet-audit:verify packet=character/clientbound/StatusMessageDropPickUpMeso version=gms_v61 ida=0x8438b5
+// packet-audit:verify packet=character/clientbound/StatusMessageDropPickUpMeso version=gms_v48 ida=0x71b265
 func TestStatusMessageDropPickUpMeso(t *testing.T) {
 	input := NewStatusMessageDropPickUpMeso(0, true, 1000, 0)
 	for _, v := range test.Variants {
@@ -158,6 +166,7 @@ func TestStatusMessageDropPickUpMeso(t *testing.T) {
 // packet-audit:verify packet=character/clientbound/StatusMessageForfeitQuestRecord version=gms_v79 ida=0x96b27e
 // packet-audit:verify packet=character/clientbound/StatusMessageForfeitQuestRecord version=gms_v72 ida=0x919604
 // packet-audit:verify packet=character/clientbound/StatusMessageForfeitQuestRecord version=gms_v61 ida=0x843bd8
+// packet-audit:verify packet=character/clientbound/StatusMessageForfeitQuestRecord version=gms_v48 ida=0x71b543
 func TestStatusMessageForfeitQuestRecord(t *testing.T) {
 	input := NewStatusMessageForfeitQuestRecord(1, 1000)
 	for _, v := range test.Variants {
@@ -176,6 +185,7 @@ func TestStatusMessageForfeitQuestRecord(t *testing.T) {
 // packet-audit:verify packet=character/clientbound/StatusMessageUpdateQuestRecord version=gms_v79 ida=0x96b27e
 // packet-audit:verify packet=character/clientbound/StatusMessageUpdateQuestRecord version=gms_v72 ida=0x919604
 // packet-audit:verify packet=character/clientbound/StatusMessageUpdateQuestRecord version=gms_v61 ida=0x843bd8
+// packet-audit:verify packet=character/clientbound/StatusMessageUpdateQuestRecord version=gms_v48 ida=0x71b543
 func TestStatusMessageUpdateQuestRecord(t *testing.T) {
 	input := NewStatusMessageUpdateQuestRecord(1, 1000, "001")
 	for _, v := range test.Variants {
@@ -194,6 +204,7 @@ func TestStatusMessageUpdateQuestRecord(t *testing.T) {
 // packet-audit:verify packet=character/clientbound/StatusMessageCompleteQuestRecord version=gms_v79 ida=0x96b27e
 // packet-audit:verify packet=character/clientbound/StatusMessageCompleteQuestRecord version=gms_v72 ida=0x919604
 // packet-audit:verify packet=character/clientbound/StatusMessageCompleteQuestRecord version=gms_v61 ida=0x843bd8
+// packet-audit:verify packet=character/clientbound/StatusMessageCompleteQuestRecord version=gms_v48 ida=0x71b543
 func TestStatusMessageCompleteQuestRecord(t *testing.T) {
 	input := NewStatusMessageCompleteQuestRecord(1, 1000, time.Date(2024, 1, 15, 10, 30, 0, 0, time.UTC))
 	for _, v := range test.Variants {
@@ -209,6 +220,7 @@ func TestStatusMessageCompleteQuestRecord(t *testing.T) {
 // packet-audit:verify packet=character/clientbound/StatusMessageCashItemExpire version=gms_v87 ida=0xab8d8e
 // packet-audit:verify packet=character/clientbound/StatusMessageCashItemExpire version=gms_v95 ida=0x9f8060
 // packet-audit:verify packet=character/clientbound/StatusMessageCashItemExpire version=jms_v185 ida=0xb085df
+// packet-audit:verify packet=character/clientbound/StatusMessageCashItemExpire version=gms_v48 ida=0x71b7d9
 func TestStatusMessageCashItemExpire(t *testing.T) {
 	input := NewStatusMessageCashItemExpire(2, 5000000)
 	for _, v := range test.Variants {
@@ -226,6 +238,7 @@ func TestStatusMessageCashItemExpire(t *testing.T) {
 // packet-audit:verify packet=character/clientbound/StatusMessageIncreaseExperience version=jms_v185 ida=0xb08a97
 // packet-audit:verify packet=character/clientbound/StatusMessageIncreaseExperience version=gms_v79 ida=0x96bd0d
 // packet-audit:verify packet=character/clientbound/StatusMessageIncreaseExperience version=gms_v61 ida=0x84418a
+// packet-audit:verify packet=character/clientbound/StatusMessageIncreaseExperience version=gms_v48 ida=0x71b9c0
 func TestStatusMessageIncreaseExperience(t *testing.T) {
 	input := NewStatusMessageIncreaseExperience(3, true, 500, true, 10, 5, 0, 0, 2, 3, 1, 0, 0, 50, 0, 0, 100, 200)
 	for _, v := range test.Variants {
@@ -258,6 +271,7 @@ func TestStatusMessageIncreaseSkillPoint(t *testing.T) {
 // packet-audit:verify packet=character/clientbound/StatusMessageIncreaseFame version=gms_v79 ida=0x96c2fe
 // packet-audit:verify packet=character/clientbound/StatusMessageIncreaseFame version=gms_v72 ida=0x91a45b
 // packet-audit:verify packet=character/clientbound/StatusMessageIncreaseFame version=gms_v61 ida=0x84471b
+// packet-audit:verify packet=character/clientbound/StatusMessageIncreaseFame version=gms_v48 ida=0x71bd0c
 func TestStatusMessageIncreaseFame(t *testing.T) {
 	input := NewStatusMessageIncreaseFame(5, 1)
 	for _, v := range test.Variants {
@@ -276,6 +290,7 @@ func TestStatusMessageIncreaseFame(t *testing.T) {
 // packet-audit:verify packet=character/clientbound/StatusMessageIncreaseMeso version=gms_v79 ida=0x96c3c4
 // packet-audit:verify packet=character/clientbound/StatusMessageIncreaseMeso version=gms_v72 ida=0x91a521
 // packet-audit:verify packet=character/clientbound/StatusMessageIncreaseMeso version=gms_v61 ida=0x8447dd
+// packet-audit:verify packet=character/clientbound/StatusMessageIncreaseMeso version=gms_v48 ida=0x71bdd8
 func TestStatusMessageIncreaseMeso(t *testing.T) {
 	input := NewStatusMessageIncreaseMeso(6, 5000)
 	for _, v := range test.Variants {
@@ -294,6 +309,7 @@ func TestStatusMessageIncreaseMeso(t *testing.T) {
 // packet-audit:verify packet=character/clientbound/StatusMessageIncreaseGuildPoint version=gms_v79 ida=0x96c49a
 // packet-audit:verify packet=character/clientbound/StatusMessageIncreaseGuildPoint version=gms_v72 ida=0x91a5f7
 // packet-audit:verify packet=character/clientbound/StatusMessageIncreaseGuildPoint version=gms_v61 ida=0x8448af
+// packet-audit:verify packet=character/clientbound/StatusMessageIncreaseGuildPoint version=gms_v48 ida=0x71bea4
 func TestStatusMessageIncreaseGuildPoint(t *testing.T) {
 	input := NewStatusMessageIncreaseGuildPoint(7, 100)
 	for _, v := range test.Variants {
@@ -312,6 +328,7 @@ func TestStatusMessageIncreaseGuildPoint(t *testing.T) {
 // packet-audit:verify packet=character/clientbound/StatusMessageGiveBuff version=gms_v79 ida=0x96c560
 // packet-audit:verify packet=character/clientbound/StatusMessageGiveBuff version=gms_v72 ida=0x91a6bd
 // packet-audit:verify packet=character/clientbound/StatusMessageGiveBuff version=gms_v61 ida=0x844971
+// packet-audit:verify packet=character/clientbound/StatusMessageGiveBuff version=gms_v48 ida=0x71bf70
 func TestStatusMessageGiveBuff(t *testing.T) {
 	input := NewStatusMessageGiveBuff(8, 2022003)
 	for _, v := range test.Variants {
@@ -330,6 +347,7 @@ func TestStatusMessageGiveBuff(t *testing.T) {
 // packet-audit:verify packet=character/clientbound/StatusMessageGeneralItemExpire version=gms_v79 ida=0x96b9ea
 // packet-audit:verify packet=character/clientbound/StatusMessageGeneralItemExpire version=gms_v72 ida=0x919bff
 // packet-audit:verify packet=character/clientbound/StatusMessageGeneralItemExpire version=gms_v61 ida=0x844063
+// packet-audit:verify packet=character/clientbound/StatusMessageGeneralItemExpire version=gms_v48 ida=0x71b887
 func TestStatusMessageGeneralItemExpire(t *testing.T) {
 	input := NewStatusMessageGeneralItemExpire(9, []uint32{2000000, 2000001})
 	for _, v := range test.Variants {
@@ -348,6 +366,7 @@ func TestStatusMessageGeneralItemExpire(t *testing.T) {
 // packet-audit:verify packet=character/clientbound/StatusMessageSystemMessage version=gms_v79 ida=0x96bcc0
 // packet-audit:verify packet=character/clientbound/StatusMessageSystemMessage version=gms_v72 ida=0x919db7
 // packet-audit:verify packet=character/clientbound/StatusMessageSystemMessage version=gms_v61 ida=0x84413d
+// packet-audit:verify packet=character/clientbound/StatusMessageSystemMessage version=gms_v48 ida=0x71b96b
 func TestStatusMessageSystemMessage(t *testing.T) {
 	input := NewStatusMessageSystemMessage(10, "Hello World")
 	for _, v := range test.Variants {

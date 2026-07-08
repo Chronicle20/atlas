@@ -27,7 +27,7 @@ import (
 func newResourceRouter(ladder game.Ladder) *mux.Router {
 	router := mux.NewRouter()
 	newProcessor := func(l logrus.FieldLogger, ctx context.Context) game.Processor {
-		return game.NewProcessorWithLadder(l, ctx, game.DefaultThrowSource, ladderProviderFor(ladder))
+		return game.NewProcessorWithLadder(l, ctx, game.DefaultThrowSource, ladderProviderFor(ladder), noopSagaSubmitter())
 	}
 	game.InitResource(rest.GetServer(), newProcessor)(router, testLogger())
 	return router

@@ -9,6 +9,7 @@ import (
 	rpsMsg "atlas-rps/kafka/message/rps"
 
 	kafkaProducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
@@ -115,13 +116,20 @@ func stubLadderProvider() game.LadderProvider {
 	}
 }
 
+// stubSagaSubmitter is a no-op game.SagaSubmitter for handler tests that
+// don't exercise the payout path (Collect); it must still be non-nil to
+// satisfy NewProcessorWithLadder.
+func stubSagaSubmitter() game.SagaSubmitter {
+	return func(sharedsaga.Saga) error { return nil }
+}
+
 // withStubProcessor overrides the package-level newProcessor seam for the
 // duration of the test, restoring the original on cleanup.
 func withStubProcessor(t *testing.T, throwSource game.ThrowSource) {
 	t.Helper()
 	orig := newProcessor
 	newProcessor = func(l logrus.FieldLogger, ctx context.Context) game.Processor {
-		return game.NewProcessorWithLadder(l, ctx, throwSource, stubLadderProvider())
+		return game.NewProcessorWithLadder(l, ctx, throwSource, stubLadderProvider(), stubSagaSubmitter())
 	}
 	t.Cleanup(func() { newProcessor = orig })
 }

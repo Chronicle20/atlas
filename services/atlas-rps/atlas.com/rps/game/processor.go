@@ -6,10 +6,13 @@ import (
 	"atlas-rps/kafka/producer"
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
 
@@ -26,6 +29,12 @@ var ErrInvalidStatus = errors.New("game: session is not in a valid status for th
 // LadderProvider doc for why this cannot simply be loaded automatically.
 var ErrLadderNotConfigured = errors.New("game: no LadderProvider configured; use NewProcessorWithLadder")
 
+// ErrSagaSubmitterNotConfigured is returned by the zero-value SagaSubmitter
+// installed by NewProcessor when no saga submission target has been wired
+// in. See the SagaSubmitter doc for why this cannot simply be called
+// directly against the local "atlas-rps/saga" package.
+var ErrSagaSubmitterNotConfigured = errors.New("game: no SagaSubmitter configured; use NewProcessorWithLadder")
+
 // LadderProvider resolves the reward ladder for the processor's tenant.
 //
 // It is injected rather than loaded via a direct call to the configuration
@@ -37,6 +46,20 @@ var ErrLadderNotConfigured = errors.New("game: no LadderProvider configured; use
 // configuration.NewProcessor(l, ctx).GetLadder(tenant.Id()). Tests supply a
 // fixed stub Ladder directly - no HTTP server required.
 type LadderProvider func() (Ladder, error)
+
+// SagaSubmitter submits a fully-built payout saga.Saga to
+// atlas-saga-orchestrator's command topic.
+//
+// It is injected for the same reason LadderProvider is: the local
+// "atlas-rps/saga" package wraps this package's Kafka producer composition
+// (topic + producer.ProviderImpl), and this package importing it back would
+// be unnecessary coupling - "atlas-rps/game" only needs to build a
+// libs/atlas-saga Saga value, which it may import directly since that
+// shared library has no dependency on atlas-rps. Production wiring
+// (main.go's REST factory, kafka/consumer/rps.SagaSubmitterFor) supplies a
+// closure backed by saga.NewProcessor(l, ctx).Create(s). Tests supply a
+// capturing stub - no live Kafka producer required.
+type SagaSubmitter func(s sharedsaga.Saga) error
 
 // ProcessorFactory builds a fully-wired Processor for a single
 // request/command, given the caller's logger and context. It exists so that
@@ -98,12 +121,14 @@ type ProcessorImpl struct {
 	t              tenant.Model
 	throwSource    ThrowSource
 	ladderProvider LadderProvider
+	sagaSubmitter  SagaSubmitter
 }
 
 // NewProcessor creates a new processor implementation using the
-// server-authoritative DefaultThrowSource. Its LadderProvider is
-// unconfigured (see ErrLadderNotConfigured) - production bootstrap code and
-// tests that need a working ladder should use NewProcessorWithLadder
+// server-authoritative DefaultThrowSource. Its LadderProvider and
+// SagaSubmitter are unconfigured (see ErrLadderNotConfigured /
+// ErrSagaSubmitterNotConfigured) - production bootstrap code and tests that
+// need a working ladder/saga submission should use NewProcessorWithLadder
 // instead.
 func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	t := tenant.MustFromContext(ctx)
@@ -115,15 +140,21 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 		ladderProvider: func() (Ladder, error) {
 			return Ladder{}, ErrLadderNotConfigured
 		},
+		sagaSubmitter: func(sharedsaga.Saga) error {
+			return ErrSagaSubmitterNotConfigured
+		},
 	}
 }
 
 // NewProcessorWithLadder creates a new processor implementation with an
-// explicit ThrowSource and LadderProvider. This is the constructor used by
-// tests (deterministic throw sequencing + a stub ladder, no HTTP server) and
-// by production bootstrap code that wires a LadderProvider backed by
-// configuration.NewProcessor(l, ctx).GetLadder(tenant.Id()).
-func NewProcessorWithLadder(l logrus.FieldLogger, ctx context.Context, throwSource ThrowSource, ladderProvider LadderProvider) Processor {
+// explicit ThrowSource, LadderProvider, and SagaSubmitter. This is the
+// constructor used by tests (deterministic throw sequencing + a stub ladder
+// + a capturing/no-op saga submitter, no HTTP server or Kafka broker) and by
+// production bootstrap code that wires a LadderProvider backed by
+// configuration.NewProcessor(l, ctx).GetLadder(tenant.Id()) and a
+// SagaSubmitter backed by saga.NewProcessor(l, ctx).Create(s) (see
+// kafka/consumer/rps.SagaSubmitterFor).
+func NewProcessorWithLadder(l logrus.FieldLogger, ctx context.Context, throwSource ThrowSource, ladderProvider LadderProvider, sagaSubmitter SagaSubmitter) Processor {
 	t := tenant.MustFromContext(ctx)
 	return &ProcessorImpl{
 		l:              l,
@@ -131,6 +162,7 @@ func NewProcessorWithLadder(l logrus.FieldLogger, ctx context.Context, throwSour
 		t:              t,
 		throwSource:    throwSource,
 		ladderProvider: ladderProvider,
+		sagaSubmitter:  sagaSubmitter,
 	}
 }
 
@@ -333,10 +365,11 @@ func (p *ProcessorImpl) ContinueAndEmit(characterId uint32) (Model, error) {
 	})(characterId)
 }
 
-// Collect resolves the prize at the session's current rung, removes the
-// session, and buffers a GameEnded{collected, prize} event. Note: the
-// payout saga submission (Task 12) is intentionally NOT part of this
-// method; that task modifies Collect to add it.
+// Collect resolves the prize at the session's current rung, submits the
+// payout saga for any non-zero prize components, removes the session, and
+// buffers a GameEnded{collected, prize} event. If saga submission fails, the
+// session is left in place (not removed, no event buffered) so a retried
+// Collect can attempt the payout again.
 func (p *ProcessorImpl) Collect(mb *message.Buffer, characterId uint32) (Model, error) {
 	m, ok := GetRegistry().Get(p.ctx, characterId)
 	if !ok {
@@ -352,18 +385,65 @@ func (p *ProcessorImpl) Collect(mb *message.Buffer, characterId uint32) (Model, 
 	}
 	prize, prizeOk := ladder.PrizeAt(m.Rung())
 
-	GetRegistry().Remove(p.ctx, characterId)
-
 	var grantedPrize *rps.Prize
 	if prizeOk {
 		grantedPrize = &rps.Prize{ItemId: prize.ItemId, Quantity: prize.Quantity, Meso: prize.Meso}
+		if s, hasSteps := buildPayoutSaga(m, prize); hasSteps {
+			if err := p.sagaSubmitter(s); err != nil {
+				return Model{}, err
+			}
+		}
 	}
+
+	GetRegistry().Remove(p.ctx, characterId)
 
 	if err := mb.Put(rps.EnvEventTopic, gameEndedEventProvider(characterId, m.WorldId(), m.ChannelId(), rps.ReasonCollected, grantedPrize)); err != nil {
 		return Model{}, err
 	}
 
 	return CloneModelBuilder(m).SetStatus(StatusEnded).Build()
+}
+
+// buildPayoutSaga constructs the payout saga for a resolved prize: an
+// AwardMesos step is included only when the prize grants a positive meso
+// amount, and an AwardAsset step only when it grants a positive item
+// quantity. hasSteps is false (and the returned Saga is the zero value) when
+// the prize grants neither - e.g. a rung configured with meso=0 and
+// itemId=0 - in which case no saga should be submitted.
+func buildPayoutSaga(m Model, prize Rung) (sharedsaga.Saga, bool) {
+	b := sharedsaga.NewBuilder().
+		SetTransactionId(uuid.New()).
+		SetSagaType(sharedsaga.InventoryTransaction).
+		SetInitiatedBy(fmt.Sprintf("NPC_%d_rps_payout", m.NpcId()))
+
+	steps := 0
+	if prize.Meso > 0 {
+		b.AddStep("award_mesos", sharedsaga.Pending, sharedsaga.AwardMesos, sharedsaga.AwardMesosPayload{
+			CharacterId: m.CharacterId(),
+			WorldId:     m.WorldId(),
+			ChannelId:   m.ChannelId(),
+			ActorId:     m.NpcId(),
+			ActorType:   "NPC",
+			Amount:      int32(prize.Meso),
+			ShowEffect:  true,
+		})
+		steps++
+	}
+	if prize.ItemId != 0 && prize.Quantity > 0 {
+		b.AddStep("award_asset", sharedsaga.Pending, sharedsaga.AwardAsset, sharedsaga.AwardItemActionPayload{
+			CharacterId: m.CharacterId(),
+			Item: sharedsaga.ItemPayload{
+				TemplateId: uint32(prize.ItemId),
+				Quantity:   prize.Quantity,
+			},
+			ShowEffect: true,
+		})
+		steps++
+	}
+	if steps == 0 {
+		return sharedsaga.Saga{}, false
+	}
+	return b.Build(), true
 }
 
 // CollectAndEmit resolves and banks the current prize, ending the session,

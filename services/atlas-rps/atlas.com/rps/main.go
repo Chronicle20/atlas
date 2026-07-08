@@ -5,8 +5,10 @@ import (
 	rpsConsumer "atlas-rps/kafka/consumer/rps"
 	"atlas-rps/logger"
 	"atlas-rps/rest"
+	"atlas-rps/tasks"
 	"context"
 	"os"
+	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
@@ -20,12 +22,16 @@ import (
 
 // newRpsProcessor is the REST bootstrap's game.ProcessorFactory: it wires a
 // real (non-shell) game.Processor per request, backed by the same
-// configuration-derived LadderProvider the kafka command consumer uses (see
-// rpsConsumer.LadderProviderFor). game/resource.go cannot build this itself
-// because "atlas-rps/configuration" imports "atlas-rps/game", so main.go -
-// which is free to import both - supplies it.
+// configuration-derived LadderProvider and saga-orchestrator-backed
+// SagaSubmitter the kafka command consumer uses (see
+// rpsConsumer.LadderProviderFor / rpsConsumer.SagaSubmitterFor).
+// game/resource.go cannot build this itself because "atlas-rps/configuration"
+// imports "atlas-rps/game", so main.go - which is free to import both -
+// supplies it. The REST factory never calls Collect (POST only starts a
+// session), but still needs a non-nil SagaSubmitter to satisfy the
+// constructor; the real one is harmless to supply here.
 func newRpsProcessor(l logrus.FieldLogger, ctx context.Context) game.Processor {
-	return game.NewProcessorWithLadder(l, ctx, game.DefaultThrowSource, rpsConsumer.LadderProviderFor(l, ctx))
+	return game.NewProcessorWithLadder(l, ctx, game.DefaultThrowSource, rpsConsumer.LadderProviderFor(l, ctx), rpsConsumer.SagaSubmitterFor(l, ctx))
 }
 
 const serviceName = "atlas-rps"
@@ -53,6 +59,8 @@ func main() {
 	}
 
 	tdm.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
+
+	go tasks.Register(l, tdm.Context())(game.NewSweepTask(l, time.Millisecond*50))
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))
 

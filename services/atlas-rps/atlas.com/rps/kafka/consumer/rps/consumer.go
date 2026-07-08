@@ -8,6 +8,7 @@ import (
 	"atlas-rps/game"
 	consumer2 "atlas-rps/kafka/consumer"
 	rpsMsg "atlas-rps/kafka/message/rps"
+	rpsSaga "atlas-rps/saga"
 	"context"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
@@ -15,6 +16,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
@@ -63,15 +65,29 @@ func LadderProviderFor(l logrus.FieldLogger, ctx context.Context) game.LadderPro
 	}
 }
 
+// SagaSubmitterFor builds a game.SagaSubmitter backed by the local
+// "atlas-rps/saga" package for the tenant/context of a single command or
+// request. Mirrors LadderProviderFor: game cannot import the local saga
+// package itself (see game.SagaSubmitter's doc), so this composition-root
+// layer - which is free to import both "atlas-rps/game" and
+// "atlas-rps/saga" - builds the closure that does. Exported so other
+// composition roots (e.g. the REST bootstrap in main.go) can reuse this
+// wiring instead of duplicating it.
+func SagaSubmitterFor(l logrus.FieldLogger, ctx context.Context) game.SagaSubmitter {
+	return func(s sharedsaga.Saga) error {
+		return rpsSaga.NewProcessor(l, ctx).Create(s)
+	}
+}
+
 // newProcessor builds the real RPS game processor for a single command,
-// wired with the server-authoritative DefaultThrowSource and a
-// configuration-backed LadderProvider. It is held as a package-level var
-// (rather than called directly) so handler-level tests can swap in a stub
-// ladder provider without standing up a real configuration REST server —
-// mirroring the seam pattern used by mount/consumer.go's
-// tamingMobInfoBroadcaster.
+// wired with the server-authoritative DefaultThrowSource, a
+// configuration-backed LadderProvider, and a saga-orchestrator-backed
+// SagaSubmitter. It is held as a package-level var (rather than called
+// directly) so handler-level tests can swap in a stub ladder provider
+// without standing up a real configuration REST server — mirroring the seam
+// pattern used by mount/consumer.go's tamingMobInfoBroadcaster.
 var newProcessor = func(l logrus.FieldLogger, ctx context.Context) game.Processor {
-	return game.NewProcessorWithLadder(l, ctx, game.DefaultThrowSource, LadderProviderFor(l, ctx))
+	return game.NewProcessorWithLadder(l, ctx, game.DefaultThrowSource, LadderProviderFor(l, ctx), SagaSubmitterFor(l, ctx))
 }
 
 func handleSelectCommand(l logrus.FieldLogger, ctx context.Context, c rpsMsg.Command[rpsMsg.SelectCommandBody]) {

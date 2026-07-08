@@ -11,6 +11,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -64,6 +65,22 @@ func ladderProviderFor(l game.Ladder) game.LadderProvider {
 	}
 }
 
+// noopSagaSubmitter is a game.SagaSubmitter stub for tests that don't
+// exercise the payout path (it must still be non-nil to satisfy
+// NewProcessorWithLadder).
+func noopSagaSubmitter() game.SagaSubmitter {
+	return func(sharedsaga.Saga) error { return nil }
+}
+
+// capturingSagaSubmitter is a game.SagaSubmitter stub that appends every
+// submitted Saga to *dst, for tests asserting on the payout saga's shape.
+func capturingSagaSubmitter(dst *[]sharedsaga.Saga) game.SagaSubmitter {
+	return func(s sharedsaga.Saga) error {
+		*dst = append(*dst, s)
+		return nil
+	}
+}
+
 type eventEnvelope struct {
 	Type string `json:"type"`
 }
@@ -114,7 +131,7 @@ func TestProcessor_FullHappyPath(t *testing.T) {
 
 	// Rock always beats Scissors (win) and ties Rock (tie).
 	throws := fixedThrows(game.ThrowScissors, game.ThrowRock, game.ThrowScissors)
-	p := game.NewProcessorWithLadder(testLogger(), ctx, throws, ladderProviderFor(twoRungLadder()))
+	p := game.NewProcessorWithLadder(testLogger(), ctx, throws, ladderProviderFor(twoRungLadder()), noopSagaSubmitter())
 
 	mb := message.NewBuffer()
 
@@ -196,7 +213,7 @@ func TestProcessor_Select_Loss(t *testing.T) {
 
 	// Paper beats Rock, so the player (throwing Rock) loses.
 	throws := fixedThrows(game.ThrowPaper)
-	p := game.NewProcessorWithLadder(testLogger(), ctx, throws, ladderProviderFor(twoRungLadder()))
+	p := game.NewProcessorWithLadder(testLogger(), ctx, throws, ladderProviderFor(twoRungLadder()), noopSagaSubmitter())
 
 	mb := message.NewBuffer()
 	_, err := p.Start(mb, characterId, testWorldId, testChannelId, testNpcId)
@@ -232,7 +249,7 @@ func TestProcessor_Continue_ForcesCollectAtMaxRung(t *testing.T) {
 	characterId := uint32(1003)
 
 	throws := fixedThrows(game.ThrowScissors) // win
-	p := game.NewProcessorWithLadder(testLogger(), ctx, throws, ladderProviderFor(oneRungLadder()))
+	p := game.NewProcessorWithLadder(testLogger(), ctx, throws, ladderProviderFor(oneRungLadder()), noopSagaSubmitter())
 
 	mb := message.NewBuffer()
 	_, err := p.Start(mb, characterId, testWorldId, testChannelId, testNpcId)
@@ -270,7 +287,7 @@ func TestProcessor_Quit_NoPayout(t *testing.T) {
 	characterId := uint32(1004)
 
 	throws := fixedThrows(game.ThrowScissors) // win
-	p := game.NewProcessorWithLadder(testLogger(), ctx, throws, ladderProviderFor(twoRungLadder()))
+	p := game.NewProcessorWithLadder(testLogger(), ctx, throws, ladderProviderFor(twoRungLadder()), noopSagaSubmitter())
 
 	mb := message.NewBuffer()
 	_, err := p.Start(mb, characterId, testWorldId, testChannelId, testNpcId)
@@ -303,7 +320,7 @@ func TestProcessor_Dispose_NoSessionIsNoop(t *testing.T) {
 	ctx := testCtx(ten)
 	characterId := uint32(1005)
 
-	p := game.NewProcessorWithLadder(testLogger(), ctx, fixedThrows(game.ThrowRock), ladderProviderFor(twoRungLadder()))
+	p := game.NewProcessorWithLadder(testLogger(), ctx, fixedThrows(game.ThrowRock), ladderProviderFor(twoRungLadder()), noopSagaSubmitter())
 
 	mb := message.NewBuffer()
 	m, err := p.Dispose(mb, characterId)
@@ -320,7 +337,7 @@ func TestProcessor_Dispose_EndsActiveSessionAsDisconnected(t *testing.T) {
 	ctx := testCtx(ten)
 	characterId := uint32(1006)
 
-	p := game.NewProcessorWithLadder(testLogger(), ctx, fixedThrows(game.ThrowRock), ladderProviderFor(twoRungLadder()))
+	p := game.NewProcessorWithLadder(testLogger(), ctx, fixedThrows(game.ThrowRock), ladderProviderFor(twoRungLadder()), noopSagaSubmitter())
 
 	mb := message.NewBuffer()
 	_, err := p.Start(mb, characterId, testWorldId, testChannelId, testNpcId)
@@ -348,7 +365,7 @@ func TestProcessor_Select_NoSessionReturnsError(t *testing.T) {
 	ctx := testCtx(ten)
 	characterId := uint32(1007)
 
-	p := game.NewProcessorWithLadder(testLogger(), ctx, fixedThrows(game.ThrowRock), ladderProviderFor(twoRungLadder()))
+	p := game.NewProcessorWithLadder(testLogger(), ctx, fixedThrows(game.ThrowRock), ladderProviderFor(twoRungLadder()), noopSagaSubmitter())
 
 	mb := message.NewBuffer()
 	_, err := p.Select(mb, characterId, game.ThrowRock)
@@ -364,7 +381,7 @@ func TestProcessor_Select_InvalidStatusReturnsError(t *testing.T) {
 	ctx := testCtx(ten)
 	characterId := uint32(1008)
 
-	p := game.NewProcessorWithLadder(testLogger(), ctx, fixedThrows(game.ThrowScissors), ladderProviderFor(twoRungLadder()))
+	p := game.NewProcessorWithLadder(testLogger(), ctx, fixedThrows(game.ThrowScissors), ladderProviderFor(twoRungLadder()), noopSagaSubmitter())
 
 	mb := message.NewBuffer()
 	_, err := p.Start(mb, characterId, testWorldId, testChannelId, testNpcId)
@@ -387,7 +404,7 @@ func TestProcessor_Continue_InvalidStatusReturnsError(t *testing.T) {
 	ctx := testCtx(ten)
 	characterId := uint32(1009)
 
-	p := game.NewProcessorWithLadder(testLogger(), ctx, fixedThrows(game.ThrowRock), ladderProviderFor(twoRungLadder()))
+	p := game.NewProcessorWithLadder(testLogger(), ctx, fixedThrows(game.ThrowRock), ladderProviderFor(twoRungLadder()), noopSagaSubmitter())
 
 	mb := message.NewBuffer()
 	_, err := p.Start(mb, characterId, testWorldId, testChannelId, testNpcId)
@@ -407,9 +424,167 @@ func TestProcessor_StartAndEmit_PropagatesBuildError(t *testing.T) {
 	ten := setupTestTenant(t)
 	ctx := testCtx(ten)
 
-	p := game.NewProcessorWithLadder(testLogger(), ctx, fixedThrows(game.ThrowRock), ladderProviderFor(twoRungLadder()))
+	p := game.NewProcessorWithLadder(testLogger(), ctx, fixedThrows(game.ThrowRock), ladderProviderFor(twoRungLadder()), noopSagaSubmitter())
 
 	// characterId 0 fails ModelBuilder.Build()'s required-field validation.
 	_, err := p.StartAndEmit(0, testWorldId, testChannelId, testNpcId)
 	assert.Error(t, err)
+}
+
+// winToRungOne drives a fresh session through Start -> Select(win) so it
+// lands on rung 1 in StatusAwaitingDecision, ready for a Collect test.
+// Scissors always loses to the player's Rock throw.
+func winToRungOne(t *testing.T, p game.Processor, mb *message.Buffer, characterId uint32) {
+	t.Helper()
+	_, err := p.Start(mb, characterId, testWorldId, testChannelId, testNpcId)
+	require.NoError(t, err)
+	m, err := p.Select(mb, characterId, game.ThrowRock)
+	require.NoError(t, err)
+	require.Equal(t, game.StatusAwaitingDecision, m.Status())
+	require.Equal(t, 1, m.Rung())
+}
+
+// TestProcessor_Collect_SubmitsPayoutSaga_MesoAndItem verifies Collect builds
+// and submits a two-step payout saga (AwardMesos then AwardAsset) when the
+// resolved rung grants both a meso amount and an item.
+func TestProcessor_Collect_SubmitsPayoutSaga_MesoAndItem(t *testing.T) {
+	setupRegistryTest(t)
+	ten := setupTestTenant(t)
+	ctx := testCtx(ten)
+	characterId := uint32(2101)
+
+	ladder := game.Ladder{
+		EntryCostMeso: 1000,
+		Rungs: []game.Rung{
+			{Rung: 1, ItemId: item.Id(4001000), Quantity: 3, Meso: 250},
+		},
+	}
+
+	var captured []sharedsaga.Saga
+	p := game.NewProcessorWithLadder(testLogger(), ctx, fixedThrows(game.ThrowScissors), ladderProviderFor(ladder), capturingSagaSubmitter(&captured))
+
+	mb := message.NewBuffer()
+	winToRungOne(t, p, mb, characterId)
+
+	m, err := p.Collect(mb, characterId)
+	require.NoError(t, err)
+	assert.Equal(t, game.StatusEnded, m.Status())
+
+	require.Len(t, captured, 1, "expected exactly one payout saga submitted")
+	s := captured[0]
+	require.Len(t, s.Steps, 2, "expected AwardMesos + AwardAsset steps")
+
+	assert.Equal(t, sharedsaga.AwardMesos, s.Steps[0].Action)
+	mesoPayload, ok := s.Steps[0].Payload.(sharedsaga.AwardMesosPayload)
+	require.True(t, ok, "expected AwardMesosPayload")
+	assert.Equal(t, characterId, mesoPayload.CharacterId)
+	assert.Equal(t, testWorldId, mesoPayload.WorldId)
+	assert.Equal(t, testChannelId, mesoPayload.ChannelId)
+	assert.Equal(t, int32(250), mesoPayload.Amount, "payout meso must be positive")
+
+	assert.Equal(t, sharedsaga.AwardAsset, s.Steps[1].Action)
+	itemPayload, ok := s.Steps[1].Payload.(sharedsaga.AwardItemActionPayload)
+	require.True(t, ok, "expected AwardItemActionPayload")
+	assert.Equal(t, characterId, itemPayload.CharacterId)
+	assert.Equal(t, uint32(4001000), itemPayload.Item.TemplateId)
+	assert.Equal(t, uint32(3), itemPayload.Item.Quantity)
+}
+
+// TestProcessor_Collect_SubmitsPayoutSaga_MesoOnly verifies Collect submits a
+// single-step payout saga when the resolved rung grants only mesos (no
+// item).
+func TestProcessor_Collect_SubmitsPayoutSaga_MesoOnly(t *testing.T) {
+	setupRegistryTest(t)
+	ten := setupTestTenant(t)
+	ctx := testCtx(ten)
+	characterId := uint32(2102)
+
+	ladder := game.Ladder{
+		EntryCostMeso: 1000,
+		Rungs: []game.Rung{
+			{Rung: 1, ItemId: 0, Quantity: 0, Meso: 300},
+		},
+	}
+
+	var captured []sharedsaga.Saga
+	p := game.NewProcessorWithLadder(testLogger(), ctx, fixedThrows(game.ThrowScissors), ladderProviderFor(ladder), capturingSagaSubmitter(&captured))
+
+	mb := message.NewBuffer()
+	winToRungOne(t, p, mb, characterId)
+
+	_, err := p.Collect(mb, characterId)
+	require.NoError(t, err)
+
+	require.Len(t, captured, 1)
+	s := captured[0]
+	require.Len(t, s.Steps, 1, "expected only an AwardMesos step")
+	assert.Equal(t, sharedsaga.AwardMesos, s.Steps[0].Action)
+	mesoPayload, ok := s.Steps[0].Payload.(sharedsaga.AwardMesosPayload)
+	require.True(t, ok)
+	assert.Equal(t, int32(300), mesoPayload.Amount)
+}
+
+// TestProcessor_Collect_SubmitsPayoutSaga_ItemOnly verifies Collect submits a
+// single-step payout saga when the resolved rung grants only an item (no
+// meso).
+func TestProcessor_Collect_SubmitsPayoutSaga_ItemOnly(t *testing.T) {
+	setupRegistryTest(t)
+	ten := setupTestTenant(t)
+	ctx := testCtx(ten)
+	characterId := uint32(2103)
+
+	ladder := game.Ladder{
+		EntryCostMeso: 1000,
+		Rungs: []game.Rung{
+			{Rung: 1, ItemId: item.Id(4002000), Quantity: 5, Meso: 0},
+		},
+	}
+
+	var captured []sharedsaga.Saga
+	p := game.NewProcessorWithLadder(testLogger(), ctx, fixedThrows(game.ThrowScissors), ladderProviderFor(ladder), capturingSagaSubmitter(&captured))
+
+	mb := message.NewBuffer()
+	winToRungOne(t, p, mb, characterId)
+
+	_, err := p.Collect(mb, characterId)
+	require.NoError(t, err)
+
+	require.Len(t, captured, 1)
+	s := captured[0]
+	require.Len(t, s.Steps, 1, "expected only an AwardAsset step")
+	assert.Equal(t, sharedsaga.AwardAsset, s.Steps[0].Action)
+	itemPayload, ok := s.Steps[0].Payload.(sharedsaga.AwardItemActionPayload)
+	require.True(t, ok)
+	assert.Equal(t, uint32(4002000), itemPayload.Item.TemplateId)
+	assert.Equal(t, uint32(5), itemPayload.Item.Quantity)
+}
+
+// TestProcessor_Collect_NoPrizeSubmitsNoSaga verifies Collect submits no
+// saga at all when the resolved rung has no configured prize.
+func TestProcessor_Collect_NoPrizeSubmitsNoSaga(t *testing.T) {
+	setupRegistryTest(t)
+	ten := setupTestTenant(t)
+	ctx := testCtx(ten)
+	characterId := uint32(2104)
+
+	// A rung-5 prize with nothing configured at rung 1 means PrizeAt(1)
+	// resolves ok=false, while MaxRung() is still 5 so Continue's
+	// forced-collect-at-max branch isn't triggered.
+	ladder := game.Ladder{
+		EntryCostMeso: 1000,
+		Rungs: []game.Rung{
+			{Rung: 5, ItemId: item.Id(4003000), Quantity: 1, Meso: 100},
+		},
+	}
+
+	var captured []sharedsaga.Saga
+	p := game.NewProcessorWithLadder(testLogger(), ctx, fixedThrows(game.ThrowScissors), ladderProviderFor(ladder), capturingSagaSubmitter(&captured))
+
+	mb := message.NewBuffer()
+	winToRungOne(t, p, mb, characterId)
+
+	_, err := p.Collect(mb, characterId)
+	require.NoError(t, err)
+
+	assert.Len(t, captured, 0, "no prize at this rung means no payout saga")
 }

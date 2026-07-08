@@ -521,6 +521,22 @@ func (p *ProcessorImpl) stepCompletedWithResultOnce(transactionId uuid.UUID, suc
 		return nil
 	}
 
+	// Commit-time terminal gate (design §3.3a): AcceptEvent's fast-path
+	// check can race the timeout transition. This guards the only function
+	// that performs the forward write; the TryTransition version bump
+	// (store.go) forces any concurrent optimistic writer back through here
+	// via VersionConflictError retry. Outcome comes from the caller's
+	// success flag — no kind table needed on this path.
+	if lc, ok := GetCache().GetLifecycle(p.ctx, transactionId); ok && lc != SagaLifecyclePending {
+		outcome := OutcomeFailure
+		if success {
+			outcome = OutcomeSuccess
+		}
+		step, stepOk := s.GetCurrentStep()
+		p.absorbLateTerminal(s, lc, "step_completed", outcome, step, stepOk)
+		return nil
+	}
+
 	// Idempotency guard: if there are no pending steps and the saga is not failing,
 	// this is a duplicate event — the saga already advanced past this point.
 	if !s.Failing() && s.FindEarliestPendingStepIndex() == -1 {

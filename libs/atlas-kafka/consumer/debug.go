@@ -65,6 +65,13 @@ type debugAttributes struct {
 	HandlerCount        int       `json:"handlerCount"`
 	LastTimeoutAt       time.Time `json:"lastTimeoutAt"`
 	ConsecutiveTimeouts int       `json:"consecutiveTimeouts"`
+
+	TimeToFirstFetchNs    time.Duration `json:"timeToFirstFetchNs"`
+	LastFetchDurationNs   time.Duration `json:"lastFetchDurationNs"`
+	MaxFetchDurationNs    time.Duration `json:"maxFetchDurationNs"`
+	LastHandlerDurationNs time.Duration `json:"lastHandlerDurationNs"`
+	MaxHandlerDurationNs  time.Duration `json:"maxHandlerDurationNs"`
+	TotalBackoffNs        time.Duration `json:"totalBackoffNs"`
 }
 
 func snapshotToAttributes(s Snapshot) debugAttributes {
@@ -81,5 +88,12 @@ func snapshotToAttributes(s Snapshot) debugAttributes {
 		HandlerCount:        s.HandlerCount,
 		LastTimeoutAt:       s.LastTimeoutAt,
 		ConsecutiveTimeouts: s.ConsecutiveTimeouts,
+
+		TimeToFirstFetchNs:    s.TimeToFirstFetch,
+		LastFetchDurationNs:   s.LastFetchDuration,
+		MaxFetchDurationNs:    s.MaxFetchDuration,
+		LastHandlerDurationNs: s.LastHandlerDuration,
+		MaxHandlerDurationNs:  s.MaxHandlerDuration,
+		TotalBackoffNs:        s.TotalBackoff,
 	}
 }

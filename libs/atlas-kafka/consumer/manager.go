@@ -213,6 +213,19 @@ type Consumer struct {
 	recreateCount       int
 	consecutiveTimeouts int
 	lastTimeoutAt       time.Time
+
+	// Phase-timing attribution — protected by mu. Durations are monotonic
+	// deltas around existing call sites; they exist so a dwell can be
+	// attributed to a phase (fetch wait, group join, recreate backoff,
+	// handler dispatch) via Snapshot without a profiler.
+	readerCreatedAt     time.Time
+	awaitingFirstFetch  bool
+	timeToFirstFetch    time.Duration
+	lastFetchDuration   time.Duration
+	maxFetchDuration    time.Duration
+	lastHandlerDuration time.Duration
+	maxHandlerDuration  time.Duration
+	totalBackoff        time.Duration
 }
 
 // Snapshot is a point-in-time view of a Consumer's observable state, suitable
@@ -230,6 +243,12 @@ type Snapshot struct {
 	HandlerCount        int
 	LastTimeoutAt       time.Time
 	ConsecutiveTimeouts int
+	TimeToFirstFetch    time.Duration
+	LastFetchDuration   time.Duration
+	MaxFetchDuration    time.Duration
+	LastHandlerDuration time.Duration
+	MaxHandlerDuration  time.Duration
+	TotalBackoff        time.Duration
 }
 
 // Snapshot returns a consistent snapshot of the consumer's observable state.
@@ -250,6 +269,12 @@ func (c *Consumer) Snapshot() Snapshot {
 		HandlerCount:        len(c.handlers),
 		LastTimeoutAt:       c.lastTimeoutAt,
 		ConsecutiveTimeouts: c.consecutiveTimeouts,
+		TimeToFirstFetch:    c.timeToFirstFetch,
+		LastFetchDuration:   c.lastFetchDuration,
+		MaxFetchDuration:    c.maxFetchDuration,
+		LastHandlerDuration: c.lastHandlerDuration,
+		MaxHandlerDuration:  c.maxHandlerDuration,
+		TotalBackoff:        c.totalBackoff,
 	}
 }
 
@@ -257,6 +282,8 @@ func (c *Consumer) onReaderCreated(attempt int) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.aliveSince = time.Now()
+	c.readerCreatedAt = time.Now()
+	c.awaitingFirstFetch = true
 	if attempt > 0 {
 		c.recreateCount++
 		c.lastError = ""
@@ -268,9 +295,14 @@ func (c *Consumer) onReaderCreated(attempt int) {
 func (c *Consumer) recordFetch() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.lastFetchAt = time.Now()
+	now := time.Now()
+	c.lastFetchAt = now
 	c.lastError = ""
 	c.consecutiveTimeouts = 0
+	if c.awaitingFirstFetch {
+		c.timeToFirstFetch = now.Sub(c.readerCreatedAt)
+		c.awaitingFirstFetch = false
+	}
 }
 
 // recordTimeout marks one deadline expiration; called per tick by runFetchLoop.
@@ -293,6 +325,30 @@ func (c *Consumer) recordError(err error) {
 	defer c.mu.Unlock()
 	c.lastErrorAt = time.Now()
 	c.lastError = err.Error()
+}
+
+func (c *Consumer) recordFetchDuration(d time.Duration) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.lastFetchDuration = d
+	if d > c.maxFetchDuration {
+		c.maxFetchDuration = d
+	}
+}
+
+func (c *Consumer) recordHandlerDuration(d time.Duration) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.lastHandlerDuration = d
+	if d > c.maxHandlerDuration {
+		c.maxHandlerDuration = d
+	}
+}
+
+func (c *Consumer) recordBackoff(d time.Duration) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.totalBackoff += d
 }
 
 // fetchBackoff models the outer reader-recreate backoff. Capped exponential
@@ -359,11 +415,13 @@ func (c *Consumer) start(l logrus.FieldLogger, ctx context.Context, wg *sync.Wai
 
 		c.recordError(err)
 		l.WithError(err).Errorf("Fetcher exited; recreating reader after backoff.")
+		wait := backoff.next()
 		select {
 		case <-ctx.Done():
 			l.Infof("Topic consumer stopped during backoff.")
 			return
-		case <-time.After(backoff.next()):
+		case <-time.After(wait):
+			c.recordBackoff(wait)
 		}
 	}
 }
@@ -394,8 +452,10 @@ func (c *Consumer) runFetchLoopSerial(l logrus.FieldLogger, ctx context.Context,
 		}
 
 		fetchCtx, cancelFetch := context.WithTimeout(ctx, c.fetchTimeout)
+		fetchStart := time.Now()
 		msg, err := reader.FetchMessage(fetchCtx)
 		cancelFetch()
+		c.recordFetchDuration(time.Since(fetchStart))
 
 		if err != nil {
 			if ctx.Err() != nil || errors.Is(err, context.Canceled) {
@@ -417,7 +477,10 @@ func (c *Consumer) runFetchLoopSerial(l logrus.FieldLogger, ctx context.Context,
 
 		c.recordFetch()
 		l.Debugf("Message received %s.", string(msg.Value))
-		if c.processMessage(l, ctx, msg) {
+		handlerStart := time.Now()
+		ok := c.processMessage(l, ctx, msg)
+		c.recordHandlerDuration(time.Since(handlerStart))
+		if ok {
 			if cerr := reader.CommitMessages(ctx, msg); cerr != nil {
 				l.WithError(cerr).Warnf("Could not commit message offset, it may be redelivered.")
 			}
@@ -488,8 +551,10 @@ func (c *Consumer) runFetchLoopParallel(l logrus.FieldLogger, ctx context.Contex
 		}
 
 		fetchCtx, cancelFetch := context.WithTimeout(ctx, c.fetchTimeout)
+		fetchStart := time.Now()
 		msg, err := reader.FetchMessage(fetchCtx)
 		cancelFetch()
+		c.recordFetchDuration(time.Since(fetchStart))
 
 		if err != nil {
 			if ctx.Err() != nil || errors.Is(err, context.Canceled) {
@@ -522,7 +587,9 @@ func (c *Consumer) runFetchLoopParallel(l logrus.FieldLogger, ctx context.Contex
 		sem <- struct{}{}
 		go func(p *pending) {
 			defer func() { <-sem }()
+			handlerStart := time.Now()
 			ok := c.processMessage(l, ctx, p.msg)
+			c.recordHandlerDuration(time.Since(handlerStart))
 			p.ok.Store(ok)
 			p.done.Store(true)
 			advanceCommit()

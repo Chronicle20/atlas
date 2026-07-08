@@ -2,6 +2,7 @@ package main
 
 import (
 	"atlas-mini-games/logger"
+	"atlas-mini-games/record"
 	"os"
 	"sync/atomic"
 
@@ -51,15 +52,14 @@ func main() {
 
 	// No Redis / registry for this service — the miniroom/game state lives in
 	// an in-memory registry added by a later plan task, not Redis.
-	//
-	// database.SetMigrations(record.Migration) will be added here once the
-	// record domain lands (plan task 10); no migrations are registered yet.
-	database.Connect(l)
+	database.Connect(l, database.SetMigrations(record.Migration))
 
-	// Domain consumer registrations (record: plan task 10; game: later tasks)
-	// land here via consumer.GetManager().AddConsumer(...) followed by each
-	// domain's InitConsumers/InitHandlers, mirroring atlas-buddies/main.go.
-	// Nothing to register yet, so only the debug endpoint is mounted below.
+	// Domain consumer registrations (game: later tasks) land here via
+	// consumer.GetManager().AddConsumer(...) followed by each domain's
+	// InitConsumers/InitHandlers, mirroring atlas-buddies/main.go. record has
+	// no Kafka consumers — it's a pure REST + persistence domain called
+	// directly by the game domain (plan tasks 11+). Nothing to register yet,
+	// so only the debug endpoint is mounted below.
 
 	tdm.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 
@@ -77,9 +77,9 @@ func main() {
 		WithWaitGroup(tdm.WaitGroup()).
 		SetBasePath(GetServer().GetPrefix()).
 		SetPort(os.Getenv("REST_PORT")).
-		// AddRouteInitializer(record.InitResource(GetServer())(db)) and
-		// AddRouteInitializer(game.InitResource(GetServer())(db)) are added
-		// here once those domains land (plan tasks 10+).
+		AddRouteInitializer(record.InitResource(GetServer())).
+		// AddRouteInitializer(game.InitResource(GetServer())) is added here
+		// once the game domain lands (plan tasks 11+).
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
 		AddRouteInitializer(server.MountReadiness("/readyz", ready)).
 		Run()

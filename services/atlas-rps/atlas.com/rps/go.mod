@@ -3,25 +3,25 @@ module atlas-rps
 go 1.25.5
 
 require (
+	github.com/Chronicle20/atlas/libs/atlas-constants v0.0.0
 	github.com/Chronicle20/atlas/libs/atlas-kafka v0.0.0
 	github.com/Chronicle20/atlas/libs/atlas-rest v0.0.0-00010101000000-000000000000
 	github.com/Chronicle20/atlas/libs/atlas-service v0.0.0-00010101000000-000000000000
+	github.com/Chronicle20/atlas/libs/atlas-tenant v0.0.0
+	github.com/google/uuid v1.6.0
 	github.com/sirupsen/logrus v1.9.4
 	go.elastic.co/ecslogrus v1.0.0
 )
 
-require (
-	github.com/Chronicle20/atlas/libs/atlas-saga v0.0.0
-	github.com/Chronicle20/atlas/libs/atlas-tracing v0.0.0
-)
+require github.com/Chronicle20/atlas/libs/atlas-tracing v0.0.0
 
 require (
+	github.com/Chronicle20/atlas/libs/atlas-model v0.0.0 // indirect
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/gedex/inflector v0.0.0-20170307190818-16278e9db813 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
-	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/mux v1.8.1 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.29.0 // indirect
 	github.com/jtumidanski/api2go v1.0.4 // indirect
@@ -38,6 +38,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.44.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.10.0 // indirect
 	golang.org/x/net v0.55.0 // indirect
+	golang.org/x/sync v0.21.0 // indirect
 	golang.org/x/sys v0.45.0 // indirect
 	golang.org/x/text v0.37.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260526163538-3dc84a4a5aaa // indirect
@@ -46,12 +47,20 @@ require (
 	google.golang.org/protobuf v1.36.11 // indirect
 )
 
+replace github.com/Chronicle20/atlas/libs/atlas-constants => ../../../../libs/atlas-constants
+
 replace github.com/Chronicle20/atlas/libs/atlas-kafka => ../../../../libs/atlas-kafka
 
+replace github.com/Chronicle20/atlas/libs/atlas-model => ../../../../libs/atlas-model
+
 replace github.com/Chronicle20/atlas/libs/atlas-rest => ../../../../libs/atlas-rest
+
+replace github.com/Chronicle20/atlas/libs/atlas-retry => ../../../../libs/atlas-retry
 
 replace github.com/Chronicle20/atlas/libs/atlas-saga => ../../../../libs/atlas-saga
 
 replace github.com/Chronicle20/atlas/libs/atlas-service => ../../../../libs/atlas-service
+
+replace github.com/Chronicle20/atlas/libs/atlas-tenant => ../../../../libs/atlas-tenant
 
 replace github.com/Chronicle20/atlas/libs/atlas-tracing => ../../../../libs/atlas-tracing

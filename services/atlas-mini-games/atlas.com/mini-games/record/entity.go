@@ -32,15 +32,13 @@ func (e Entity) TableName() string {
 	return "game_records"
 }
 
-// Make converts a persisted Entity into an immutable Model.
+// Make converts a persisted Entity into an immutable Model via the Builder,
+// which is the single construction path for Model.
 func Make(e Entity) (Model, error) {
-	return Model{
-		tenantId:    e.TenantId,
-		id:          e.Id,
-		characterId: e.CharacterId,
-		gameType:    GameType(e.GameType),
-		wins:        e.Wins,
-		ties:        e.Ties,
-		losses:      e.Losses,
-	}, nil
+	return NewBuilder(e.TenantId, e.CharacterId, GameType(e.GameType)).
+		SetId(e.Id).
+		SetWins(e.Wins).
+		SetTies(e.Ties).
+		SetLosses(e.Losses).
+		Build()
 }

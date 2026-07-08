@@ -6,10 +6,11 @@ import (
 	"github.com/google/uuid"
 )
 
-// Builder constructs an immutable Model. Used for zero-filled/absent-row
-// results (GetOrZero) rather than for persistence — persistence goes
-// through administrator.go's getOrCreate/ApplyResult, which build Entity
-// values directly.
+// Builder is the single construction path for an immutable Model: both the
+// zero-filled/absent-row result (provider.go GetOrZero) and the persisted-row
+// conversion (entity.go Make) build through it, so validation lives in one
+// place. Persistence itself still writes Entity values directly
+// (administrator.go getOrCreate/ApplyResult).
 type Builder struct {
 	tenantId    uuid.UUID
 	id          uuid.UUID

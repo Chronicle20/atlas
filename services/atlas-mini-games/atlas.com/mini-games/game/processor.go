@@ -121,6 +121,9 @@ type Processor interface {
 	Skip(txId uuid.UUID, f field.Model, characterId uint32) error
 	ExitAfterGame(txId uuid.UUID, f field.Model, characterId uint32) error
 	CancelExitAfterGame(txId uuid.UUID, f field.Model, characterId uint32) error
+	// RoomsInField returns every mini-game room registered in field f for the
+	// processor's tenant (the rooms-in-field REST read).
+	RoomsInField(f field.Model) []Room
 }
 
 type ProcessorImpl struct {
@@ -187,6 +190,13 @@ func stoneColor(slot byte, firstMover byte) byte {
 
 func (p *ProcessorImpl) emit(f func(mb *message.Buffer) error) error {
 	return message.Emit(kproducer.ProviderImpl(p.l)(p.ctx))(f)
+}
+
+// RoomsInField returns every mini-game room registered in field f for the
+// processor's tenant. Callers (the REST handler) go through the processor
+// rather than reaching into the registry directly (DOM-14).
+func (p *ProcessorImpl) RoomsInField(f field.Model) []Room {
+	return p.reg.GetInField(p.t, f)
 }
 
 // gameTypeOf maps a room type discriminator to its persisted record game type.

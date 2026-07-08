@@ -17,11 +17,8 @@ func GetOrZero(db *gorm.DB, tenantId uuid.UUID, characterId uint32, gameType Gam
 	err := db.Where("tenant_id = ? AND character_id = ? AND game_type = ?", tenantId, characterId, string(gameType)).First(&e).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return Model{
-				tenantId:    tenantId,
-				characterId: characterId,
-				gameType:    gameType,
-			}, nil
+			// Zero-filled absent-row Model (Id stays uuid.Nil = "never played").
+			return NewBuilder(tenantId, characterId, gameType).Build()
 		}
 		return Model{}, err
 	}

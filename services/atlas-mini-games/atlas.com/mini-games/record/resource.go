@@ -6,7 +6,6 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
@@ -34,9 +33,7 @@ func handleGetGameRecords(db *gorm.DB) rest.GetHandler {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				t := tenant.MustFromContext(d.Context())
-
-				ms, err := GetByCharacter(db.WithContext(d.Context()), t.Id(), characterId)
+				ms, err := NewProcessor(d.Logger(), d.Context(), db).GetByCharacter(characterId)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Unable to retrieve game records for character [%d].", characterId)
 					w.WriteHeader(http.StatusInternalServerError)

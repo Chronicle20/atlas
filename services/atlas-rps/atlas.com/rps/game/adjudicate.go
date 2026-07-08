@@ -2,7 +2,6 @@ package game
 
 import (
 	"math/rand"
-	"time"
 )
 
 // Outcome represents the result of an RPS round from the player's perspective.
@@ -39,11 +38,10 @@ func Adjudicate(playerThrow, opponentThrow Throw) Outcome {
 // deterministic testing.
 type ThrowSource func() Throw
 
-// rng is the package-level random source, seeded once at package init.
-var rng = rand.New(rand.NewSource(time.Now().UnixNano()))
-
-// DefaultThrowSource is the server-authoritative RNG opponent-throw source,
-// backed by math/rand seeded at package init.
+// DefaultThrowSource is the server-authoritative RNG opponent-throw source.
+// It uses the top-level math/rand source, which since Go 1.20 is auto-seeded
+// and safe for concurrent use by multiple goroutines (atlas-rps calls this
+// from concurrent Kafka-consumer goroutines).
 func DefaultThrowSource() Throw {
-	return Throw(rng.Intn(3))
+	return Throw(rand.Intn(3))
 }

@@ -1879,6 +1879,11 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "OperationMemoryGameMoveStone", dir: csvpkg.DirServerbound, pkg: "interaction"}}
 	case "COmokDlg::OnRetreatRequest":
 		return []candidate{{name: "OperationMemoryGameRetreatAnswer", dir: csvpkg.DirServerbound, pkg: "interaction"}}
+	// Miniroom balloon double-click join (task-133, ida-notes §G4). Mode 4
+	// ENTER/VISIT — shared by the game-room and shop-visit sends (same wire
+	// shape, gated by hasPassword rather than by destination type).
+	case "CUserLocal::HandleLButtonDblClk":
+		return []candidate{{name: "OperationVisitGame", dir: csvpkg.DirServerbound, pkg: "interaction"}}
 	// Entrusted-merchant sub-ops (share CPersonalShopDlg senders w/ different op-bytes).
 	case "CEntrustedShopDlg::AddBlackList":
 		return []candidate{{name: "OperationMerchantAddToBlackList", dir: csvpkg.DirServerbound, pkg: "interaction"}}

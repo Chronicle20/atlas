@@ -10,7 +10,7 @@ import (
 // 0x64db30 / 0x634020): modes verified byte-identical on both tenants — see
 // docs/tasks/task-133-miniroom-minigames/ida-notes.md §G5.
 // packet-audit:verify packet=interaction/clientbound/InteractionMiniGameReady version=gms_v83 ida=0x6e4608
-// packet-audit:verify packet=interaction/clientbound/InteractionMiniGameReady version=gms_v95 ida=0x6e4608
+// packet-audit:verify packet=interaction/clientbound/InteractionMiniGameReady version=gms_v95 ida=0x684930
 func TestInteractionMiniGameReadyRoundTrip(t *testing.T) {
 	input := NewInteractionMiniGameReady(58)
 	for _, v := range test.Variants {
@@ -22,7 +22,7 @@ func TestInteractionMiniGameReadyRoundTrip(t *testing.T) {
 }
 
 // packet-audit:verify packet=interaction/clientbound/InteractionMiniGameUnready version=gms_v83 ida=0x6e466e
-// packet-audit:verify packet=interaction/clientbound/InteractionMiniGameUnready version=gms_v95 ida=0x6e466e
+// packet-audit:verify packet=interaction/clientbound/InteractionMiniGameUnready version=gms_v95 ida=0x6849c0
 func TestInteractionMiniGameUnreadyRoundTrip(t *testing.T) {
 	input := NewInteractionMiniGameUnready(59)
 	for _, v := range test.Variants {
@@ -61,7 +61,7 @@ func TestInteractionMiniGameAnswerTieRoundTrip(t *testing.T) {
 // (v83 0x6e472e) stores `who` as the slot whose turn it now is (the next mover), not
 // the skipper — see ida-notes.md §G5 SKIP section.
 // packet-audit:verify packet=interaction/clientbound/InteractionMiniGameSkip version=gms_v83 ida=0x6e472e
-// packet-audit:verify packet=interaction/clientbound/InteractionMiniGameSkip version=gms_v95 ida=0x6e472e
+// packet-audit:verify packet=interaction/clientbound/InteractionMiniGameSkip version=gms_v95 ida=0x67fac0
 func TestInteractionMiniGameSkipRoundTrip(t *testing.T) {
 	for _, who := range []byte{0x01, 0x00} {
 		input := NewInteractionMiniGameSkip(63, who)

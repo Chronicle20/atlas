@@ -378,6 +378,13 @@ forfeit (`02 + winnerSlot + 2 records`). resultType is stored raw by the client;
 v3 = this[50];                              // my slot
 this[694] = (v3 == CInPacket::Decode1(a2)); // byte = slot whose turn it now becomes
 ```
+v95 confirms with typed names (`COmokDlg::OnTimeOver` @ 0x67fac0):
+```
+m_nMyPosition = this->m_nMyPosition;
+v4 = CInPacket::Decode1(iPacket);
+this->m_nTimeLeft = 30000;
+this->m_bCurTurn = m_nMyPosition == v4;     // same next-mover semantics
+```
 The single byte is the **slot whose turn it now is** (i.e. the non-skipper). The client sets
 my-turn = `(byte == mySlot)`. This reconciles with Cosmic's owner 0x01 / visitor 0x00
 (verified in the local checkout: `<cosmic>/src/main/java/tools/PacketCreator.java:4710-4714`
@@ -391,6 +398,9 @@ with Cosmic once read as "next mover", not "who skipped".
 ### READY / UNREADY (modes 58 / 59)
 Bodyless (mode only). `COmokDlg::OnUserReady` (v83 @ 0x6e4608) / `OnUserCancelReady`
 (@ 0x6e466e) read no packet fields — they just toggle the ready button UI.
+v95 confirms: `COmokDlg::OnUserReady` @ 0x684930 and `COmokDlg::OnUserCancelReady`
+@ 0x6849c0 likewise never read from `iPacket` — they only set `m_bReady`, toggle the
+owner's start button, and redraw (`DrawReadyOrNot`).
 
 ### Room-enter blob (`getMiniGame`) — IMPORTANT: differs from the current model
 The full room snapshot sent to a joiner (clientbound EnterResult success path, mode 5) is

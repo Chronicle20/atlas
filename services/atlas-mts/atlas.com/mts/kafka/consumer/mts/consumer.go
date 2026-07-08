@@ -82,18 +82,18 @@ type providerFn = func(ctx context.Context) func(token string) kprod.MessageProd
 // straight into the *Failed clientbound codec's Decode1 reason field).
 const mtsFailReasonGeneric byte = 0
 
-// failReasonFor maps a buy/bid rejection error to the client NoticeFailReason
-// code the channel should surface (see the NoticeFailReason* docs in the mts
-// message package). Unmapped errors stay generic (reason 0 -> the operation's
-// bare *Failed arm).
-func failReasonFor(err error) byte {
+// failReasonFor maps a buy/bid rejection error to the SEMANTIC failure key
+// the channel resolves against the tenant "noticeFailReasons" writer table
+// (see the FailReason* docs in the mts message package). Unmapped errors stay
+// generic (empty key -> the operation's bare *Failed arm).
+func failReasonFor(err error) string {
 	switch {
 	case errors.Is(err, listing.ErrInsufficientPrepaid):
-		return mts.NoticeFailReasonNotEnoughNX
+		return mts.FailReasonNotEnoughNX
 	case errors.Is(err, listing.ErrListingUnavailable), errors.Is(err, gorm.ErrRecordNotFound):
-		return mts.NoticeFailReasonAlreadySold
+		return mts.FailReasonItemSold
 	default:
-		return mtsFailReasonGeneric
+		return mts.FailReasonGeneric
 	}
 }
 
@@ -272,7 +272,7 @@ func handleBuy(pf providerFn) func(db *gorm.DB) message.Handler[mts.Command[mts.
 			b := c.Body
 			p := pf(ctx)
 
-			emitFail := func(reason byte) {
+			emitFail := func(reason string) {
 				_ = msg.Emit(p)(func(buf *msg.Buffer) error {
 					return buf.Put(mts.EnvStatusEventTopic, mtsproducer.BuyFailedStatusEventProvider(c.TransactionId, b.WorldId, b.Serial, b.BuyerId, reason))
 				})
@@ -325,7 +325,7 @@ func handlePlaceBid(pf providerFn) func(db *gorm.DB) message.Handler[mts.Command
 			b := c.Body
 			p := pf(ctx)
 
-			emitFail := func(reason byte) {
+			emitFail := func(reason string) {
 				_ = msg.Emit(p)(func(buf *msg.Buffer) error {
 					return buf.Put(mts.EnvStatusEventTopic, mtsproducer.BidFailedStatusEventProvider(c.TransactionId, b.WorldId, b.Serial, b.BidderId, reason))
 				})

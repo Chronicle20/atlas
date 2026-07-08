@@ -246,7 +246,7 @@ type StatusEventBuyFailedBody struct {
 	WorldId byte   `json:"worldId"`
 	Serial  uint32 `json:"serial"`
 	BuyerId uint32 `json:"buyerId"`
-	Reason  byte   `json:"reason"`
+	Reason  string `json:"reason,omitempty"`
 }
 
 // StatusEventBidFailedBody reports a rejected place-bid. BidderId is the target
@@ -256,7 +256,7 @@ type StatusEventBidFailedBody struct {
 	WorldId  byte   `json:"worldId"`
 	Serial   uint32 `json:"serial"`
 	BidderId uint32 `json:"bidderId"`
-	Reason   byte   `json:"reason"`
+	Reason   string `json:"reason,omitempty"`
 }
 
 // StatusEventWishAddedBody reports an added wish-list entry. CharacterId is the

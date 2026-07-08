@@ -326,19 +326,56 @@ func handleListingSold(sc server.Model, wp writer.Producer) message.Handler[mtsm
 	}
 }
 
-// failNoticeOr routes a non-zero NoticeFailReason code to the client's
-// reason-notice arm — GetSearchItcListFailed (mode 24), whose sub-handler is
-// Decode1(reason) -> CITC::NoticeFailReason -> latch clear, IDA-verified
-// uniform across gms v83 (0x5A49E3) / v84 (0x5B4ED3) / v87 / v95 — so the
-// player sees the specific message ("You do not have enough NX", "The item
-// has been sold", ...). Reason 0 keeps the operation's own bare *Failed arm
-// (BUY/BID have no reason field of their own — their client handlers show a
-// fixed generic string).
-func failNoticeOr(reason byte, bare func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
-	if reason != 0 {
-		return fieldpkt.MtsOperationGetSearchItcListFailedBody(reason)
+// failNoticeOr routes a SEMANTIC failure key (e.g. "NOT_ENOUGH_NX",
+// "ITEM_SOLD" — set by atlas-mts on the *_FAILED event) through the tenant
+// writer options table "noticeFailReasons" to the client's reason-notice arm —
+// GetSearchItcListFailed (mode 24), whose sub-handler is Decode1(reason) ->
+// CITC::NoticeFailReason -> latch clear, IDA-verified uniform across gms v83
+// (0x5A49E3) / v84 (0x5B4ED3) / v87 / v95. Both the reason CODE and the arm's
+// MODE byte are config-driven per version, like every other dispatcher value
+// (the task-103 uniformity ruling). An empty key, a tenant without the table,
+// or a key the table lacks all fall back to the operation's bare *Failed arm
+// (its fixed generic notice) — never a 99-crash resolve.
+func failNoticeOr(reasonKey string, bare func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	if reasonKey == "" {
+		return bare
 	}
-	return bare
+	return func(l logrus.FieldLogger, ctx context.Context) func(map[string]interface{}) []byte {
+		return func(options map[string]interface{}) []byte {
+			code, ok := noticeFailReasonCode(options, reasonKey)
+			if !ok {
+				l.Debugf("Tenant noticeFailReasons table lacks key [%s]; writing the bare failed arm.", reasonKey)
+				return bare(l, ctx)(options)
+			}
+			return fieldpkt.MtsOperationGetSearchItcListFailedBody(code)(l, ctx)(options)
+		}
+	}
+}
+
+// noticeFailReasonCode soft-resolves options["noticeFailReasons"][key] (JSON
+// numbers decode as float64, mirroring ResolveCode's accepted shapes) without
+// ResolveCode's 99-on-miss contract: a missing table or key reports !ok so the
+// caller can fall back instead of crashing the client.
+func noticeFailReasonCode(options map[string]interface{}, key string) (byte, bool) {
+	raw, ok := options["noticeFailReasons"]
+	if !ok {
+		return 0, false
+	}
+	table, ok := raw.(map[string]interface{})
+	if !ok {
+		return 0, false
+	}
+	v, ok := table[key]
+	if !ok {
+		return 0, false
+	}
+	switch n := v.(type) {
+	case float64:
+		return byte(n), true
+	case int:
+		return byte(n), true
+	}
+	return 0, false
 }
 
 // handleBuyFailed writes the BuyItemFailed result to the buyer when a buy / buy-now

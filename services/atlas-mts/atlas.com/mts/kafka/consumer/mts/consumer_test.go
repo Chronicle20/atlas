@@ -25,7 +25,7 @@ import (
 type recordedEvent struct {
 	transactionId uuid.UUID
 	eventType     string
-	reason        byte
+	reason        string
 }
 
 // recordingProducer is a test producer.Provider that decodes every emitted kafka
@@ -353,8 +353,8 @@ func TestBuy_SerialUnresolved_EmitsFailed(t *testing.T) {
 	if len(rp.events) != 1 || rp.events[0].eventType != mts.StatusEventTypeBuyFailed {
 		t.Fatalf("expected 1 BUY_FAILED for unresolved serial, got %v", rp.events)
 	}
-	if rp.events[0].reason != mts.NoticeFailReasonAlreadySold {
-		t.Fatalf("BUY_FAILED reason = %d, want NoticeFailReasonAlreadySold (81)", rp.events[0].reason)
+	if rp.events[0].reason != mts.FailReasonItemSold {
+		t.Fatalf("BUY_FAILED reason = %q, want FailReasonItemSold", rp.events[0].reason)
 	}
 }
 
@@ -379,8 +379,8 @@ func TestBuy_NonActiveListing_EmitsFailed(t *testing.T) {
 	if len(rp.events) != 1 || rp.events[0].eventType != mts.StatusEventTypeBuyFailed {
 		t.Fatalf("expected 1 BUY_FAILED for non-active listing, got %v", rp.events)
 	}
-	if rp.events[0].reason != mts.NoticeFailReasonAlreadySold {
-		t.Fatalf("BUY_FAILED reason = %d, want NoticeFailReasonAlreadySold (81)", rp.events[0].reason)
+	if rp.events[0].reason != mts.FailReasonItemSold {
+		t.Fatalf("BUY_FAILED reason = %q, want FailReasonItemSold", rp.events[0].reason)
 	}
 }
 
@@ -529,9 +529,9 @@ func TestRemoveWish_DeletesEntryAndAcks(t *testing.T) {
 // reasonFromBody extracts the optional "reason" byte from a raw status-event
 // body (zero when absent), so failure tests can assert the client
 // NoticeFailReason code without per-event typed decoding.
-func reasonFromBody(raw json.RawMessage) byte {
+func reasonFromBody(raw json.RawMessage) string {
 	var b struct {
-		Reason byte `json:"reason"`
+		Reason string `json:"reason"`
 	}
 	_ = json.Unmarshal(raw, &b)
 	return b.Reason
@@ -543,19 +543,19 @@ func TestFailReasonMapping(t *testing.T) {
 	cases := []struct {
 		name string
 		err  error
-		want byte
+		want string
 	}{
-		{"insufficient prepaid", listing.ErrInsufficientPrepaid, mts.NoticeFailReasonNotEnoughNX},
-		{"wrapped insufficient prepaid", fmt.Errorf("ctx: %w", listing.ErrInsufficientPrepaid), mts.NoticeFailReasonNotEnoughNX},
-		{"listing unavailable", listing.ErrListingUnavailable, mts.NoticeFailReasonAlreadySold},
-		{"wrapped unavailable", fmt.Errorf("ctx: %w", listing.ErrListingUnavailable), mts.NoticeFailReasonAlreadySold},
-		{"record not found", gorm.ErrRecordNotFound, mts.NoticeFailReasonAlreadySold},
-		{"anything else", errors.New("boom"), mtsFailReasonGeneric},
+		{"insufficient prepaid", listing.ErrInsufficientPrepaid, mts.FailReasonNotEnoughNX},
+		{"wrapped insufficient prepaid", fmt.Errorf("ctx: %w", listing.ErrInsufficientPrepaid), mts.FailReasonNotEnoughNX},
+		{"listing unavailable", listing.ErrListingUnavailable, mts.FailReasonItemSold},
+		{"wrapped unavailable", fmt.Errorf("ctx: %w", listing.ErrListingUnavailable), mts.FailReasonItemSold},
+		{"record not found", gorm.ErrRecordNotFound, mts.FailReasonItemSold},
+		{"anything else", errors.New("boom"), mts.FailReasonGeneric},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			if got := failReasonFor(c.err); got != c.want {
-				t.Fatalf("failReasonFor(%v) = %d, want %d", c.err, got, c.want)
+				t.Fatalf("failReasonFor(%v) = %q, want %q", c.err, got, c.want)
 			}
 		})
 	}

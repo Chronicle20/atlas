@@ -2860,6 +2860,18 @@
         "opCode": "0x15C",
         "writer": "MtsOperation",
         "options": {
+          "noticeFailReasons": {
+            "NOT_ENOUGH_NX": 66,
+            "NOT_ENOUGH_MESOS": 67,
+            "NX_ERROR": 68,
+            "INVENTORY_FULL": 71,
+            "LIST_LOAD_FAILED": 73,
+            "CANCEL_HAS_BID": 78,
+            "MAY_NOT_BE_SOLD": 79,
+            "ITEM_SOLD": 81,
+            "STARS_NOT_TRADABLE": 82,
+            "BELOW_MIN_LEVEL": 83
+          },
           "operations": {
             "GET_ITC_LIST_DONE": 21,
             "GET_ITC_LIST_FAILED": 22,

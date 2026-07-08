@@ -7,19 +7,8 @@ import (
 	"gorm.io/gorm"
 )
 
-// defaultDB holds the *gorm.DB assigned during Migration so the package-level
-// REST route initializer (InitResource, whose signature is fixed by plan
-// task 10 to take only jsonapi.ServerInformation) can query the game_records
-// table without a db handle being curried through route wiring. Every
-// persistence function in this package (GetOrZero/GetByCharacter/ApplyResult)
-// still takes an explicit *gorm.DB parameter; this var exists solely to give
-// the REST handler in resource.go something to call them with.
-var defaultDB *gorm.DB
-
-// Migration applies the game_records schema and records the *gorm.DB for use
-// by InitResource's handlers.
+// Migration applies the game_records schema.
 func Migration(db *gorm.DB) error {
-	defaultDB = db
 	return db.AutoMigrate(&Entity{})
 }
 

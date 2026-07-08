@@ -52,7 +52,7 @@ func main() {
 
 	// No Redis / registry for this service — the miniroom/game state lives in
 	// an in-memory registry added by a later plan task, not Redis.
-	database.Connect(l, database.SetMigrations(record.Migration))
+	db := database.Connect(l, database.SetMigrations(record.Migration))
 
 	// Domain consumer registrations (game: later tasks) land here via
 	// consumer.GetManager().AddConsumer(...) followed by each domain's
@@ -77,7 +77,7 @@ func main() {
 		WithWaitGroup(tdm.WaitGroup()).
 		SetBasePath(GetServer().GetPrefix()).
 		SetPort(os.Getenv("REST_PORT")).
-		AddRouteInitializer(record.InitResource(GetServer())).
+		AddRouteInitializer(record.InitResource(GetServer())(db)).
 		// AddRouteInitializer(game.InitResource(GetServer())) is added here
 		// once the game domain lands (plan tasks 11+).
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).

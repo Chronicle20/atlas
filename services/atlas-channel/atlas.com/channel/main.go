@@ -44,6 +44,7 @@ import (
 	"atlas-channel/kafka/consumer/quest"
 	"atlas-channel/kafka/consumer/reactor"
 	"atlas-channel/kafka/consumer/route"
+	rpsConsumer "atlas-channel/kafka/consumer/rps"
 	"atlas-channel/kafka/consumer/saga"
 	session2 "atlas-channel/kafka/consumer/session"
 	"atlas-channel/kafka/consumer/skill"
@@ -119,6 +120,7 @@ import (
 	questsb "github.com/Chronicle20/atlas/libs/atlas-packet/quest/serverbound"
 	reactorcb "github.com/Chronicle20/atlas/libs/atlas-packet/reactor/clientbound"
 	reactorsb "github.com/Chronicle20/atlas/libs/atlas-packet/reactor/serverbound"
+	rpscb "github.com/Chronicle20/atlas/libs/atlas-packet/rps/clientbound"
 	rpssb "github.com/Chronicle20/atlas/libs/atlas-packet/rps/serverbound"
 	socketcb "github.com/Chronicle20/atlas/libs/atlas-packet/socket/clientbound"
 	socketsb "github.com/Chronicle20/atlas/libs/atlas-packet/socket/serverbound"
@@ -210,6 +212,7 @@ func main() {
 	note3.InitConsumers(l)(cmf)(consumerGroupId)
 	quest.InitConsumers(l)(cmf)(consumerGroupId)
 	route.InitConsumers(l)(cmf)(consumerGroupId)
+	rpsConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	instance_transport.InitConsumers(l)(cmf)(consumerGroupId)
 	saga.InitConsumers(l)(cmf)(consumerGroupId)
 	storage3.InitConsumers(l)(cmf)(consumerGroupId)
@@ -534,6 +537,9 @@ func buildListener(
 		if err := register(route.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
 			return nil, err
 		}
+		if err := register(rpsConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
 		if err := register(instance_transport.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
 			return nil, err
 		}
@@ -790,6 +796,7 @@ func produceWriters() []string {
 		doorcb.SpawnPortalWriter,
 		doorcb.RemoveTownDoorWriter,
 		charcb.BridleMobCatchFailWriter,
+		rpscb.RPSGameWriter,
 	}
 }
 

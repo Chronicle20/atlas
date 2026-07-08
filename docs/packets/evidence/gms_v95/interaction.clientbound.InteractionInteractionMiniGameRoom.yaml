@@ -1,0 +1,10 @@
+packet: interaction/clientbound/InteractionInteractionMiniGameRoom
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CMiniRoomBaseDlg::OnPacketBase#EnterResultSuccessMiniGame
+    address: "0x638e30"
+    decompile_sha256: 29b84715add441223b2ef2cb4d08b271900e78b40f7c2cb1851a046d7260d6cb
+verifies:
+    - libs/atlas-packet/interaction/clientbound/interaction_minigame_room_test.go#TestInteractionMiniGameRoomBytes

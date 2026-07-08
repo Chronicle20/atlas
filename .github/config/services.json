@@ -270,6 +270,14 @@
       "docker_context": "."
     },
     {
+      "name": "atlas-mini-games",
+      "type": "go-service",
+      "path": "services/atlas-mini-games",
+      "module_path": "services/atlas-mini-games/atlas.com/mini-games",
+      "docker_image": "ghcr.io/chronicle20/atlas-mini-games/atlas-mini-games",
+      "docker_context": "."
+    },
+    {
       "name": "atlas-monster-book",
       "type": "go-service",
       "path": "services/atlas-monster-book",

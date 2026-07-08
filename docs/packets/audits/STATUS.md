@@ -5,11 +5,11 @@
 
 Tool: `4e903608344be05c6c8e6294707ee6da8feac202`
 
-- export gms_v83: `b38866c1e5ea14484410d77b4190c0617bb7c8d14bdd25e92cd34a5b2283552c`
-- export gms_v84: `f6a75063b0ab3cf7bd71895ff0e7f83a610836542e49a612c88c6fa8d3f2076f`
-- export gms_v87: `6d852b58274f1d53d3a6c9a1bd7809094a9a335905320ea14c010c8945bf3134`
-- export gms_v95: `8d11f4fa069c0df5471d2d379d1aae7e768eb68524b03e89b0f8d01ed05f4075`
-- export jms_v185: `9b09acfaaba12746516c9f9a28d9c7711e9ee171b6c634222ac5e2d9293d0e39`
+- export gms_v83: `8f857d462fc4c6ee42e213e14894f19daa223584b3359b720364f5b0bd26b3ab`
+- export gms_v84: `4b7e49ffc5470d83be2036d28b8a5cc16eae0c0848c9e01aafb97ae0a7209e50`
+- export gms_v87: `b6ab8b9edf9c4b77707f68dfb1257f6a5782764533fa6484edbf00eb24b56ed7`
+- export gms_v95: `41d82d5a07158f16591705e03d2f491b118de8d9feaa1a08d9a5a385595e3d33`
+- export jms_v185: `c09a12b307360560e10031b5269c0cd50f300a04c8fb1b941fb4a91c6ddd46e8`
 
 ## Clientbound
 
@@ -638,7 +638,7 @@ Tool: `4e903608344be05c6c8e6294707ee6da8feac202`
 | CHANGE_KEYMAP | CFuncKeyMappedMan::ChangePetConsumeItemID; CFuncKeyMappedMan::ChangePetConsumeMPItemID; CFuncKeyMappedMan::SaveFuncKeyMap | character/serverbound/KeyMapChange (T1) | 0x087 | ✅ | 0x08B | ✅ | 0x08F | ✅ | 0x09F | ✅ | 0x08A | ✅ |
 | UNNAMED_R190 |  |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x087 | ❌ |  | ⬜ |
 | PQ_SELECT_REWARD | CUIPQReward::SelectReward |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x088 | ❌ |  | ⬜ |
-| RPS_ACTION | CRPSGameDlg::OnBtContinue; CRPSGameDlg::OnBtExit; CRPSGameDlg::OnBtRetry; CRPSGameDlg::OnBtStart; CRPSGameDlg::SendSelection; CRPSGameDlg::Update |  | 0x088 | ❌ | 0x08C | ❌ | 0x090 | ❌ | 0x0A0 | ❌ | 0x08B | ❌ |
+| RPS_ACTION | CRPSGameDlg::OnBtContinue; CRPSGameDlg::OnBtExit; CRPSGameDlg::OnBtRetry; CRPSGameDlg::OnBtStart; CRPSGameDlg::SendSelection; CRPSGameDlg::Update | rps/serverbound/RpsOperation | 0x088 | ✅ | 0x08C | ✅ | 0x090 | ✅ | 0x0A0 | ✅ | 0x08B | ✅ |
 | PQ_REQUEST_REWARD | CUIPQReward::RequestReward |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x089 | ❌ |  | ⬜ |
 | RING_ACTION | CEngageDlg::SetRet; CWvsContext::OnMarriageRequest; CWvsContext::SendEngagementRequest; CWvsContext::SendInvitationQuery; CWvsContext::SendRingDropRequest; CWvsContext::SendSendInvitaionRequest; CWvsContext::SendWishListInput |  | 0x089 | ❌ | 0x08D | ❌ | 0x091 | ❌ | 0x0A1 | ❌ | 0x08C | ❌ |
 | FOLLOW_REQUEST_APPLY | CWvsContext::OnSetPassenserRequest; CWvsContext::SendFollowRequestApply |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x08A | ❌ | 0x076 | ❌ |
@@ -891,6 +891,7 @@ Tool: `4e903608344be05c6c8e6294707ee6da8feac202`
 | pet/clientbound/PetActivated (T1) |  |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |
 | portal/serverbound/PortalScript |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | quest/serverbound/Action |  |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
+| rps/serverbound/RpsOperationSelect |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | storage/serverbound/StorageOperationMeso (T1) |  |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
 | storage/serverbound/StorageOperationRetrieveAsset (T1) |  |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
 | storage/serverbound/StorageOperationStoreAsset (T1) |  |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
@@ -901,11 +902,11 @@ Tool: `4e903608344be05c6c8e6294707ee6da8feac202`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v83 | 368 | 0 | 0 | 303 | 200 | 0 | 54.8% |
-| v84 | 346 | 0 | 0 | 304 | 221 | 0 | 53.2% |
-| v87 | 380 | 0 | 0 | 328 | 163 | 0 | 53.7% |
-| v95 | 400 | 0 | 0 | 392 | 79 | 0 | 50.5% |
-| JMS185 | 362 | 0 | 0 | 339 | 170 | 0 | 51.6% |
+| v83 | 370 | 0 | 0 | 302 | 200 | 0 | 55.1% |
+| v84 | 348 | 0 | 0 | 303 | 221 | 0 | 53.5% |
+| v87 | 382 | 0 | 0 | 327 | 163 | 0 | 53.9% |
+| v95 | 402 | 0 | 0 | 391 | 79 | 0 | 50.7% |
+| JMS185 | 364 | 0 | 0 | 338 | 170 | 0 | 51.9% |
 
 ## Conflicts
 

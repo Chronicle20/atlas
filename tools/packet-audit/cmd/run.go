@@ -1813,6 +1813,31 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "Result", dir: csvpkg.DirClientbound, pkg: "rps"}}
 	case "CRPSGameDlg::OnPacket#END":
 		return []candidate{{name: "End", dir: csvpkg.DirClientbound, pkg: "rps"}}
+	// Serverbound RPS_ACTION senders (task-132, Task 17). Six real, distinct
+	// CRPSGameDlg sender functions share ONE opcode with a leading sub-op byte
+	// (docs/tasks/task-132-rps-npc-game/ida-rps-serverbound.md §0/§6): five are
+	// bodyless (the sub-op byte alone IS the wire content) and map to the
+	// generic Operation{mode} struct; only SendSelection (sub-op 1) carries a
+	// body (the throw byte) and maps to OperationSelect. Registry primary fname
+	// for RPS_ACTION is CRPSGameDlg::OnBtStart (gms_v83/v87/v95/jms_v185) or
+	// CRPSGameDlg::Update (gms_v84, task-100 cluster-H renumber) — both map to
+	// the SAME Operation struct so whichever is that version's primary resolves
+	// correctly; the other three bodyless senders (OnBtContinue/OnBtExit/
+	// OnBtRetry) are documented here too (registry fname_alts) even though no
+	// version's export needs them to independently claim the Operation report
+	// slot.
+	case "CRPSGameDlg::OnBtStart":
+		return []candidate{{name: "Operation", dir: csvpkg.DirServerbound, pkg: "rps"}}
+	case "CRPSGameDlg::Update":
+		return []candidate{{name: "Operation", dir: csvpkg.DirServerbound, pkg: "rps"}}
+	case "CRPSGameDlg::OnBtContinue":
+		return []candidate{{name: "Operation", dir: csvpkg.DirServerbound, pkg: "rps"}}
+	case "CRPSGameDlg::OnBtExit":
+		return []candidate{{name: "Operation", dir: csvpkg.DirServerbound, pkg: "rps"}}
+	case "CRPSGameDlg::OnBtRetry":
+		return []candidate{{name: "Operation", dir: csvpkg.DirServerbound, pkg: "rps"}}
+	case "CRPSGameDlg::SendSelection":
+		return []candidate{{name: "OperationSelect", dir: csvpkg.DirServerbound, pkg: "rps"}}
 	// Serverbound CTrunkDlg senders.
 	case "CTrunkDlg::SendGetItemRequest":
 		return []candidate{{name: "OperationRetrieveAsset", dir: csvpkg.DirServerbound, pkg: "storage"}}

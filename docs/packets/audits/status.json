@@ -1,11 +1,11 @@
 {
   "toolSha": "4e903608344be05c6c8e6294707ee6da8feac202",
   "exportHashes": {
-    "gms_v83": "b38866c1e5ea14484410d77b4190c0617bb7c8d14bdd25e92cd34a5b2283552c",
-    "gms_v84": "f6a75063b0ab3cf7bd71895ff0e7f83a610836542e49a612c88c6fa8d3f2076f",
-    "gms_v87": "6d852b58274f1d53d3a6c9a1bd7809094a9a335905320ea14c010c8945bf3134",
-    "gms_v95": "8d11f4fa069c0df5471d2d379d1aae7e768eb68524b03e89b0f8d01ed05f4075",
-    "jms_v185": "9b09acfaaba12746516c9f9a28d9c7711e9ee171b6c634222ac5e2d9293d0e39"
+    "gms_v83": "8f857d462fc4c6ee42e213e14894f19daa223584b3359b720364f5b0bd26b3ab",
+    "gms_v84": "4b7e49ffc5470d83be2036d28b8a5cc16eae0c0848c9e01aafb97ae0a7209e50",
+    "gms_v87": "b6ab8b9edf9c4b77707f68dfb1257f6a5782764533fa6484edbf00eb24b56ed7",
+    "gms_v95": "41d82d5a07158f16591705e03d2f491b118de8d9feaa1a08d9a5a385595e3d33",
+    "jms_v185": "c09a12b307360560e10031b5269c0cd50f300a04c8fb1b941fb4a91c6ddd46e8"
   },
   "rows": [
     {
@@ -11147,6 +11147,7 @@
     {
       "kind": "op",
       "op": "RPS_ACTION",
+      "packet": "rps/serverbound/RpsOperation",
       "direction": "serverbound",
       "tier1": false,
       "fnames": [
@@ -11159,28 +11160,23 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 136
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 140
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 144
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 160
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 139
         }
       }
@@ -28491,6 +28487,33 @@
         "gms_v84": {
           "state": "incomplete",
           "note": "verdict ❌",
+          "opcode": -1
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": -1
+        }
+      }
+    },
+    {
+      "kind": "sub-struct",
+      "packet": "rps/serverbound/RpsOperationSelect",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "gms_v84": {
+          "state": "verified",
           "opcode": -1
         },
         "gms_v87": {

@@ -119,6 +119,7 @@ import (
 	questsb "github.com/Chronicle20/atlas/libs/atlas-packet/quest/serverbound"
 	reactorcb "github.com/Chronicle20/atlas/libs/atlas-packet/reactor/clientbound"
 	reactorsb "github.com/Chronicle20/atlas/libs/atlas-packet/reactor/serverbound"
+	rpssb "github.com/Chronicle20/atlas/libs/atlas-packet/rps/serverbound"
 	socketcb "github.com/Chronicle20/atlas/libs/atlas-packet/socket/clientbound"
 	socketsb "github.com/Chronicle20/atlas/libs/atlas-packet/socket/serverbound"
 	stat2 "github.com/Chronicle20/atlas/libs/atlas-packet/stat/clientbound"
@@ -892,6 +893,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[notesb.NoteOperationHandle] = handler.NoteOperationHandleFunc
 	handlerMap[questsb.QuestActionHandle] = handler.QuestActionHandleFunc
 	handlerMap[storagesb.StorageOperationHandle] = handler.StorageOperationHandleFunc
+	handlerMap[rpssb.RPSActionHandle] = handler.RPSActionHandleFunc
 	handlerMap[reactorsb.ReactorHitHandle] = handler.ReactorHitHandleFunc
 	handlerMap[socketsb.PongHandle] = handler.PongHandleFunc
 	handlerMap[charsb.MonsterDamageFriendlyHandle] = handler.MonsterDamageFriendlyHandleFunc

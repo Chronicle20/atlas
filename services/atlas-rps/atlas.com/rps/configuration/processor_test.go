@@ -2,6 +2,7 @@ package configuration
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -11,25 +12,32 @@ import (
 )
 
 // rpsRewardsBody is a faithful JSON:API document for the atlas-tenants
-// rps-rewards configuration resource. It is served as a SINGLE record
-// (`"data": {...}`), not an array, per Task 21's contract. `ladder` is a
-// plain nested JSON array attribute (not a JSON:API relationship).
+// rps-rewards configuration resource. atlas-tenants serves configuration
+// resources uniformly as a COLLECTION (`"data": [{...}]`), so the fixture is
+// an array. `ladder` is a plain nested JSON array attribute (not a JSON:API
+// relationship).
 const rpsRewardsBody = `{
-  "data": {
-    "type": "rps-rewards",
-    "id": "rps-rewards",
-    "attributes": {
-      "entryCostMeso": 1000,
-      "ladder": [
-        {"rung": 1, "itemId": 0, "quantity": 0, "meso": 2000},
-        {"rung": 2, "itemId": 4000000, "quantity": 1, "meso": 0},
-        {"rung": 3, "itemId": 4000001, "quantity": 5, "meso": 5000}
-      ]
+  "data": [
+    {
+      "type": "rps-rewards",
+      "id": "rps-rewards",
+      "attributes": {
+        "entryCostMeso": 1000,
+        "ladder": [
+          {"rung": 1, "itemId": 0, "quantity": 0, "meso": 2000},
+          {"rung": 2, "itemId": 4000000, "quantity": 1, "meso": 0},
+          {"rung": 3, "itemId": 4000001, "quantity": 5, "meso": 5000}
+        ]
+      }
     }
-  }
+  ]
 }`
 
-func TestGetLadder_DecodesSingleRecordDocument(t *testing.T) {
+// rpsRewardsEmptyBody is the collection response for a tenant with no
+// rps-rewards configuration record.
+const rpsRewardsEmptyBody = `{"data": []}`
+
+func TestGetLadder_DecodesCollectionDocument(t *testing.T) {
 	var gotPath string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotPath = r.URL.Path
@@ -87,6 +95,24 @@ func TestGetLadder_DecodesSingleRecordDocument(t *testing.T) {
 	wantPath := "/tenants/" + tenantId.String() + "/configurations/rps-rewards"
 	if gotPath != wantPath {
 		t.Errorf("request path = %q, want %q", gotPath, wantPath)
+	}
+}
+
+func TestGetLadder_EmptyCollectionReturnsSentinel(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(rpsRewardsEmptyBody))
+	}))
+	defer srv.Close()
+
+	t.Setenv("TENANTS_SERVICE_URL", srv.URL+"/")
+
+	p := NewProcessor(logrus.New(), context.Background())
+
+	_, err := p.GetLadder(uuid.New())
+	if !errors.Is(err, ErrNoRewardConfig) {
+		t.Fatalf("GetLadder() error = %v, want ErrNoRewardConfig", err)
 	}
 }
 

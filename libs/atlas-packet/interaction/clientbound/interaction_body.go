@@ -46,6 +46,21 @@ const (
 	CharacterInteractionEnterErrorModeNotEnoughMesos            CharacterInteractionEnterErrorMode = "NOT_ENOUGH_MESOS"              // 21
 	CharacterInteractionEnterErrorModeIncorrectPassword         CharacterInteractionEnterErrorMode = "INCORRECT_PASSWORD"            // 22
 	CharacterInteractionEnterErrorModeItemExpired               CharacterInteractionEnterErrorMode = "ITEM_EXPIRED"                  // 24
+
+	// CharacterInteraction mini-game modes (CMiniRoomBaseDlg::OnPacketBase — Omok /
+	// Match Cards, one enum shared by serverbound and clientbound). Verified
+	// byte-identical on gms_v83 and gms_v95: docs/tasks/task-133-miniroom-minigames/ida-notes.md §G5.
+	CharacterInteractionModeMemoryGameAskTie        CharacterInteractionMode = "MEMORY_GAME_ASK_TIE"        // 50
+	CharacterInteractionModeMemoryGameTieAnswer     CharacterInteractionMode = "MEMORY_GAME_TIE_ANSWER"     // 51
+	CharacterInteractionModeMemoryGameAskRetreat    CharacterInteractionMode = "MEMORY_GAME_ASK_RETREAT"    // 54
+	CharacterInteractionModeMemoryGameRetreatAnswer CharacterInteractionMode = "MEMORY_GAME_RETREAT_ANSWER" // 55
+	CharacterInteractionModeMemoryGameReady         CharacterInteractionMode = "MEMORY_GAME_READY"          // 58
+	CharacterInteractionModeMemoryGameUnready       CharacterInteractionMode = "MEMORY_GAME_UNREADY"        // 59
+	CharacterInteractionModeMemoryGameStart         CharacterInteractionMode = "MEMORY_GAME_START"          // 61
+	CharacterInteractionModeMemoryGameResult        CharacterInteractionMode = "MEMORY_GAME_RESULT"         // 62
+	CharacterInteractionModeMemoryGameSkip          CharacterInteractionMode = "MEMORY_GAME_SKIP"           // 63
+	CharacterInteractionModeMemoryGameMoveStone     CharacterInteractionMode = "MEMORY_GAME_MOVE_STONE"     // 64
+	CharacterInteractionModeMemoryGameFlipCard      CharacterInteractionMode = "MEMORY_GAME_FIP_CARD"       // 68 (typo is load-bearing)
 )
 
 func CharacterInteractionInviteBody(roomType byte, name string, dwSN uint32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
@@ -105,5 +120,37 @@ func CharacterInteractionLeaveBody(slot byte, status byte) func(logrus.FieldLogg
 func CharacterInteractionUpdateMerchantBody(meso uint32, items []interaction.RoomShopItem) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", CharacterInteractionModeUpdateMerchant, func(mode byte) packet.Encoder {
 		return NewInteractionUpdateMerchant(mode, meso, items)
+	})
+}
+
+func CharacterInteractionMiniGameReadyBody() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", CharacterInteractionModeMemoryGameReady, func(mode byte) packet.Encoder {
+		return NewInteractionMiniGameReady(mode)
+	})
+}
+
+func CharacterInteractionMiniGameUnreadyBody() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", CharacterInteractionModeMemoryGameUnready, func(mode byte) packet.Encoder {
+		return NewInteractionMiniGameUnready(mode)
+	})
+}
+
+func CharacterInteractionMiniGameRequestTieBody() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", CharacterInteractionModeMemoryGameAskTie, func(mode byte) packet.Encoder {
+		return NewInteractionMiniGameRequestTie(mode)
+	})
+}
+
+// CharacterInteractionMiniGameAnswerTieBody covers the deny path only — the accept
+// path emits RESULT (mode 62) instead, per the brief and ida-notes.md §G5 RESULT.
+func CharacterInteractionMiniGameAnswerTieBody() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", CharacterInteractionModeMemoryGameTieAnswer, func(mode byte) packet.Encoder {
+		return NewInteractionMiniGameAnswerTie(mode)
+	})
+}
+
+func CharacterInteractionMiniGameSkipBody(who byte) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", CharacterInteractionModeMemoryGameSkip, func(mode byte) packet.Encoder {
+		return NewInteractionMiniGameSkip(mode, who)
 	})
 }

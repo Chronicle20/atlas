@@ -40,3 +40,27 @@ func TestResultDecoders_MissingAndNil(t *testing.T) {
 		t.Fatalf("resultUint32 of non-numeric = %d, want 0", got)
 	}
 }
+
+// TestMtsFailureArm_KnownKinds proves each MTS failure kind maps to a non-nil
+// clientbound *Failed body so handleFailedEvent unhangs the matching dialog.
+func TestMtsFailureArm_KnownKinds(t *testing.T) {
+	for _, kind := range []string{saga.MtsFailureKindBuy, saga.MtsFailureKindList, saga.MtsFailureKindTakeHome} {
+		body, ok := mtsFailureArm(kind)
+		if !ok {
+			t.Fatalf("mtsFailureArm(%q) ok = false, want true", kind)
+		}
+		if body == nil {
+			t.Fatalf("mtsFailureArm(%q) body = nil, want non-nil", kind)
+		}
+	}
+}
+
+// TestMtsFailureArm_UnknownKind proves an unknown/empty kind returns ok=false so
+// the handler skips notifying rather than sending the wrong dialog arm.
+func TestMtsFailureArm_UnknownKind(t *testing.T) {
+	for _, kind := range []string{"", "mts_bid", "garbage"} {
+		if _, ok := mtsFailureArm(kind); ok {
+			t.Fatalf("mtsFailureArm(%q) ok = true, want false", kind)
+		}
+	}
+}

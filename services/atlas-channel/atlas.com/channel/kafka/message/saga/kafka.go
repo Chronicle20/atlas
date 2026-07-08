@@ -30,6 +30,16 @@ const (
 // atlas-saga-orchestrator.
 const MtsTakeHomeResultKind = "mts_take_home"
 
+// MtsFailureKind* mirror the orchestrator's MtsFailureKind* (kafka/message/saga
+// in atlas-saga-orchestrator): they discriminate which MTS operation a failed
+// mts_operation saga was performing so handleFailedEvent can write the matching
+// clientbound *Failed arm to unhang the originating dialog.
+const (
+	MtsFailureKindBuy      = "mts_buy"
+	MtsFailureKindList     = "mts_list"
+	MtsFailureKindTakeHome = "mts_take_home"
+)
+
 type StatusEvent[T any] struct {
 	TransactionId uuid.UUID `json:"transactionId"`
 	Type          string    `json:"type"`
@@ -47,4 +57,6 @@ type StatusEventFailedBody struct {
 	CharacterId uint32 `json:"characterId"`
 	SagaType    string `json:"sagaType"`
 	ErrorCode   string `json:"errorCode"`
+	// MtsKind is set only for mts_operation sagas (one of MtsFailureKind*).
+	MtsKind string `json:"mtsKind,omitempty"`
 }

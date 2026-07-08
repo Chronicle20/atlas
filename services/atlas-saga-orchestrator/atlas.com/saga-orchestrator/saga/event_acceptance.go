@@ -52,6 +52,7 @@ const (
 
 	// Cash shop.
 	EventKindCashShopWalletUpdated       EventKind = "cashshop.wallet_updated"
+	EventKindCashShopWalletError         EventKind = "cashshop.wallet_error"
 	EventKindCashShopCompartmentAccepted EventKind = "cashshop.compartment_accepted"
 	EventKindCashShopCompartmentReleased EventKind = "cashshop.compartment_released"
 	EventKindCashShopCompartmentError    EventKind = "cashshop.compartment_error"
@@ -112,7 +113,7 @@ var acceptanceTable = map[sharedsaga.Action][]EventKind{
 	sharedsaga.AwardExperience:        {EventKindCharacterExperienceChanged},
 	sharedsaga.AwardLevel:             {EventKindCharacterLevelChanged},
 	sharedsaga.AwardMesos:             {EventKindCharacterMesoChanged, EventKindCharacterMesoError},
-	sharedsaga.AwardCurrency:          {EventKindCashShopWalletUpdated},
+	sharedsaga.AwardCurrency:          {EventKindCashShopWalletUpdated, EventKindCashShopWalletError},
 	sharedsaga.AwardFame:              {EventKindCharacterStatChanged},
 	sharedsaga.ChangeJob:              {EventKindCharacterJobChanged},
 	sharedsaga.ChangeHair:             {EventKindCharacterStatChanged},
@@ -166,7 +167,7 @@ var acceptanceTable = map[sharedsaga.Action][]EventKind{
 	sharedsaga.AcceptToMtsListing:      {EventKindMtsCustodyAccepted, EventKindMtsCustodyError},
 	sharedsaga.ReleaseFromMtsHolding:   {EventKindMtsCustodyReleased, EventKindMtsCustodyError},
 	sharedsaga.MtsMoveListingToHolding: {EventKindMtsCustodyMoved, EventKindMtsCustodyError},
-	sharedsaga.MtsBidEscrow:            {EventKindCashShopWalletUpdated}, // reuses the cash-shop wallet ack
+	sharedsaga.MtsBidEscrow:            {EventKindCashShopWalletUpdated, EventKindCashShopWalletError}, // reuses the cash-shop wallet ack
 
 	// Guild.
 	sharedsaga.RequestGuildName:             {EventKindGuildRequestAgreement, EventKindGuildCreated},
@@ -284,6 +285,7 @@ var outcomeTable = map[EventKind]EventOutcome{
 
 	// Cash shop.
 	EventKindCashShopWalletUpdated:       OutcomeSuccess,
+	EventKindCashShopWalletError:         OutcomeFailure,
 	EventKindCashShopCompartmentAccepted: OutcomeSuccess,
 	EventKindCashShopCompartmentReleased: OutcomeSuccess,
 	EventKindCashShopCompartmentError:    OutcomeFailure,

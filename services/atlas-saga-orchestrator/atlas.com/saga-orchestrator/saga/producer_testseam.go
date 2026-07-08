@@ -25,3 +25,12 @@ func SetEmitSagaFailedForTest(fn func(logrus.FieldLogger, context.Context, uuid.
 	emitSagaFailedByIdsFn = fn
 	return prev
 }
+
+// SetEmitMtsSagaFailedForTest swaps the underlying MTS Failed-emission function
+// (which carries characterId + MtsKind) and returns the previous one for
+// restoration. Compiled only with -tags=test.
+func SetEmitMtsSagaFailedForTest(fn func(logrus.FieldLogger, context.Context, uuid.UUID, string, uint32, string, string, string, string) error) func(logrus.FieldLogger, context.Context, uuid.UUID, string, uint32, string, string, string, string) error {
+	prev := emitMtsSagaFailedFn
+	emitMtsSagaFailedFn = fn
+	return prev
+}

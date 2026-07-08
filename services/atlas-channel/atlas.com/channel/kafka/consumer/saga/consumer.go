@@ -66,6 +66,16 @@ const (
 	mtsTakeHomeSelectedNo  uint32 = 0
 )
 
+// mtsSagaFailureReason / mtsSagaFailureSaleLimit are the generic shorts written on
+// an MTS *Failed arm when an mts_operation saga fails at the orchestration level
+// (timeout / compensation) rather than a domain rejection atlas-mts diagnosed.
+// The failure carries no player-facing reason, so 0 selects the operation's
+// default failure notice — enough to unhang the dialog.
+const (
+	mtsSagaFailureReason    byte   = 0
+	mtsSagaFailureSaleLimit uint16 = 0
+)
+
 // handleCompletedEvent handles saga completion events
 func handleCompletedEvent(sc server.Model, wp writer.Producer) message.Handler[saga.StatusEvent[saga.StatusEventCompletedBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, e saga.StatusEvent[saga.StatusEventCompletedBody]) {
@@ -147,6 +157,22 @@ func resultUint32(results map[string]any, key string) uint32 {
 	}
 }
 
+// mtsFailureArm maps an mts_operation failure kind to the clientbound MtsOperation
+// *Failed body that unhangs the corresponding dialog. ok is false for an unknown or
+// empty kind, so the caller skips notifying rather than guessing an arm.
+func mtsFailureArm(kind string) (func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte, bool) {
+	switch kind {
+	case saga.MtsFailureKindBuy:
+		return fieldpkt.MtsOperationBuyItemFailedBody(), true
+	case saga.MtsFailureKindList:
+		return fieldpkt.MtsOperationRegisterSaleEntryFailedBody(mtsSagaFailureReason, mtsSagaFailureSaleLimit), true
+	case saga.MtsFailureKindTakeHome:
+		return fieldpkt.MtsOperationMoveItcPurchaseItemLtoSFailedBody(mtsSagaFailureReason), true
+	default:
+		return nil, false
+	}
+}
+
 // handleFailedEvent handles saga failure events
 func handleFailedEvent(sc server.Model, wp writer.Producer) message.Handler[saga.StatusEvent[saga.StatusEventFailedBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, e saga.StatusEvent[saga.StatusEventFailedBody]) {
@@ -175,6 +201,35 @@ func handleFailedEvent(sc server.Model, wp writer.Producer) message.Handler[saga
 		}
 
 		if s.ChannelId() != sc.ChannelId() {
+			return
+		}
+
+		// Handle MTS operation failures. A domain rejection atlas-mts diagnosed
+		// (insufficient NX, listing gone) already reaches the client as a BUY_FAILED
+		// / BID_FAILED on EVENT_TOPIC_MTS_STATUS. This branch covers the
+		// orchestration-level failure — timeout or reverse-walk compensation — which
+		// dies inside the orchestrator before atlas-mts emits anything, so the
+		// generic saga FAILED here is the only signal. Without it the buy/list/
+		// take-home dialog hangs forever (task-102 live finding). MtsKind selects
+		// the matching clientbound *Failed arm.
+		if e.Body.SagaType == saga.SagaTypeMtsOperation {
+			body, ok := mtsFailureArm(e.Body.MtsKind)
+			if !ok {
+				l.WithFields(logrus.Fields{
+					"transaction_id": e.TransactionId.String(),
+					"mts_kind":       e.Body.MtsKind,
+				}).Warn("MTS saga failure has unknown/empty kind; cannot pick a dialog arm, skipping notification.")
+				return
+			}
+			if err := session.Announce(l)(ctx)(wp)(fieldcb.MtsOperationWriter)(body)(s); err != nil {
+				l.WithError(err).WithField("character_id", e.Body.CharacterId).Error("Failed to send MTS failure packet to client.")
+				return
+			}
+			l.WithFields(logrus.Fields{
+				"character_id": e.Body.CharacterId,
+				"mts_kind":     e.Body.MtsKind,
+				"error_code":   e.Body.ErrorCode,
+			}).Debug("Sent MTS operation failure packet to client.")
 			return
 		}
 

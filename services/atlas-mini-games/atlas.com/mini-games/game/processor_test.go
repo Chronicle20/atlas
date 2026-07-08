@@ -1312,3 +1312,43 @@ func TestEndGame_Idempotent(t *testing.T) {
 	require.NoError(t, h.p.endGame(buf, uuid.New(), owner, resultWin, 0))
 	assert.Empty(t, buf.GetAll(), "endGame is a no-op when the game is not in progress")
 }
+
+// TestEndGame_ApplyResultFailureLeavesRoomInProgress guards the durable-commit
+// ordering: record.ApplyResult must run BEFORE the registry swap, so a DB
+// failure leaves the room untouched (still InProgress — a retry/re-trigger can
+// still resolve the game), emits nothing, and surfaces the error. Swapping
+// first would strand a permanently-!InProgress room whose record was never
+// persisted, with the error swallowed by the fire-and-forget handler.
+// Failure is injected with the same sqlite-trigger trick the record package's
+// atomicity test uses: abort any INSERT into game_records.
+func TestEndGame_ApplyResultFailureLeavesRoomInProgress(t *testing.T) {
+	h := newHarness(t)
+	owner := uint32(10401)
+	visitor := uint32(10402)
+	seedRoom(t, h, runningOmokBuilder(h, owner, visitor, 1))
+
+	require.NoError(t, h.p.db.Exec(`
+		CREATE TRIGGER fail_record_insert BEFORE INSERT ON game_records
+		BEGIN SELECT RAISE(ABORT, 'forced failure for endGame ordering test'); END;
+	`).Error)
+
+	buf := message.NewBuffer()
+	err := h.p.endGame(buf, uuid.New(), owner, resultWin, 0)
+	require.Error(t, err, "the ApplyResult failure must surface, not be swallowed")
+
+	assert.Empty(t, buf.GetAll(), "no events may be emitted when the record commit fails")
+
+	r, ok := h.p.reg.Get(h.t, owner)
+	require.True(t, ok)
+	assert.True(t, r.InProgress(), "room must stay InProgress so a retry can resolve the game")
+	assert.Equal(t, int32(0), r.OwnerScore(), "session scores untouched on failure")
+	assert.Equal(t, byte(1), r.FirstMover(), "FirstMover untouched on failure")
+
+	// After the failure clears, the same game can still be resolved.
+	require.NoError(t, h.p.db.Exec(`DROP TRIGGER fail_record_insert`).Error)
+	buf2 := message.NewBuffer()
+	require.NoError(t, h.p.endGame(buf2, uuid.New(), owner, resultWin, 0))
+	ended := decodeEvents[minigame.GameEndedEventBody](t, buf2, minigame.EventTypeGameEnded)
+	require.Len(t, ended, 1)
+	assert.Equal(t, uint32(1), ended[0].Body.OwnerRecord.Wins)
+}

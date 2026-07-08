@@ -928,14 +928,19 @@ func (p *ProcessorImpl) setExitAfter(mb *message.Buffer, txId uuid.UUID, charact
 // (design §3.3). resultType is 0 win / 1 tie / 2 forfeit; winnerSlot is the
 // winning slot (ignored for a tie).
 //
-// Order: compute session scores + forfeit counters and reset the room for a
-// rematch (board/deck/pairs/firstSlot/deny bits/inProgress/currentTurn cleared;
-// session scores + FirstMover kept, FirstMover advanced to the winner on a
-// non-tie per Cosmic setPiece), swap it under the registry lock, then call
-// record.ApplyResult which COMMITS BEFORE any event is emitted (design §2). Then
-// emit GAME_ENDED (refreshed records + scores) and BALLOON_UPDATED{InProgress:
-// false}, and finally honor the exit-after flags by processing that side's leave
-// after the result.
+// Order: record.ApplyResult — the durable commit — runs FIRST, before the
+// registry swap and before any event is emitted (design §2). If it fails the
+// room is left untouched (still InProgress, so a retry/re-trigger can still
+// resolve the game), nothing is emitted, and the error is returned; swapping
+// first would strand a permanently-!InProgress room whose record was never
+// persisted, with the error swallowed by the fire-and-forget handler. After
+// the commit succeeds: compute session scores + forfeit counters and reset the
+// room for a rematch (board/deck/pairs/firstSlot/deny bits/inProgress/
+// currentTurn cleared; session scores + FirstMover kept, FirstMover advanced
+// to the winner on a non-tie per Cosmic setPiece), swap it under the registry
+// lock, emit GAME_ENDED (refreshed records + scores) and BALLOON_UPDATED{
+// InProgress:false}, and finally honor the exit-after flags by processing that
+// side's leave after the result.
 func (p *ProcessorImpl) endGame(mb *message.Buffer, txId uuid.UUID, roomId uint32, resultType byte, winnerSlot byte) error {
 	room, ok := p.reg.Get(p.t, roomId)
 	if !ok || !room.InProgress() {
@@ -949,15 +954,16 @@ func (p *ProcessorImpl) endGame(mb *message.Buffer, txId uuid.UUID, roomId uint3
 	tie := resultType == resultTie
 	now := p.clock()
 
+	// ApplyResult commits before the registry swap and before any event is
+	// emitted (design §2). On failure the room stays InProgress, untouched.
+	if err := record.ApplyResult(p.db, p.t.Id(), gameType, ownerId, visitorId, winnerSlot, tie); err != nil {
+		return err
+	}
+
 	updated, err := p.reg.Update(p.t, roomId, func(cur Room) (Room, error) {
 		return resolvedRoom(cur, resultType, winnerSlot, now), nil
 	})
 	if err != nil {
-		return err
-	}
-
-	// ApplyResult commits before any event is emitted (design §2).
-	if err := record.ApplyResult(p.db, p.t.Id(), gameType, ownerId, visitorId, winnerSlot, tie); err != nil {
 		return err
 	}
 	ownerRecord, err := record.GetOrZero(p.db, p.t.Id(), ownerId, gameType)

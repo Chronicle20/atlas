@@ -161,8 +161,10 @@ func (r Room) Deck() []uint32 {
 	return out
 }
 
-// FirstSlot is the slot (0 owner, 1 visitor) that flipped the pending
-// MatchCards first card; -1 means no pending flip.
+// FirstSlot is the deck index of the pending MatchCards first-flip card
+// (the "slot" in the mode-68 wire sense: a card position, not a player
+// slot); -1 means no pending flip. The second flip compares the card at
+// this index against the newly flipped one.
 func (r Room) FirstSlot() int16 {
 	return r.firstSlot
 }

@@ -153,6 +153,16 @@ location ~ ^/api/chalkboards(/.*)?$ {
   proxy_pass http://$u$request_uri;
 }
 
+location ~ ^/api/worlds/[^/]+/channels/[^/]+/maps/[^/]+/instances/[^/]+/games(/.*)?$ {
+  set $u "atlas-mini-games.${POD_NAMESPACE}.svc.cluster.local:8080";
+  proxy_pass http://$u$request_uri;
+}
+
+location ~ ^/api/characters/[^/]+/game-records(/.*)?$ {
+  set $u "atlas-mini-games.${POD_NAMESPACE}.svc.cluster.local:8080";
+  proxy_pass http://$u$request_uri;
+}
+
 location ~ ^/api/worlds/[^/]+/channels/[^/]+/maps/[^/]+/instances/[^/]+/chairs(/.*)?$ {
   set $u "atlas-chairs.${POD_NAMESPACE}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;

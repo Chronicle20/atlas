@@ -27,6 +27,7 @@ import (
 	"atlas-saga-orchestrator/rates"
 	"atlas-saga-orchestrator/reactor"
 	reactorDrop "atlas-saga-orchestrator/reactor/drop"
+	"atlas-saga-orchestrator/rps"
 	"atlas-saga-orchestrator/saved_location"
 	"atlas-saga-orchestrator/skill"
 	"atlas-saga-orchestrator/storage"
@@ -149,6 +150,7 @@ type Handler interface {
 	handleStageClearAttemptPq(s Saga, st Step[any]) error
 	handleEnterPartyQuestBonus(s Saga, st Step[any]) error
 	handleFieldEffectWeather(s Saga, st Step[any]) error
+	handleStartRPSGame(s Saga, st Step[any]) error
 }
 
 type HandlerImpl struct {
@@ -180,6 +182,7 @@ type HandlerImpl struct {
 	partyQuestP     party_quest.Processor
 	reactorP        reactor.Processor
 	mapCommandP     map_command.Processor
+	rpsP            rps.Processor
 }
 
 func NewHandler(l logrus.FieldLogger, ctx context.Context) Handler {
@@ -211,6 +214,7 @@ func NewHandler(l logrus.FieldLogger, ctx context.Context) Handler {
 		partyQuestP:     party_quest.NewProcessor(l, ctx),
 		reactorP:        reactor.NewProcessor(l, ctx),
 		mapCommandP:     map_command.NewProcessor(l, ctx),
+		rpsP:            rps.NewProcessor(l, ctx),
 	}
 }
 
@@ -859,6 +863,8 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleEnterPartyQuestBonus, true
 	case FieldEffectWeather:
 		return h.handleFieldEffectWeather, true
+	case StartRPSGame:
+		return h.handleStartRPSGame, true
 	}
 	return nil, false
 }
@@ -2885,5 +2891,33 @@ func (h *HandlerImpl) handleFieldEffectWeather(s Saga, st Step[any]) error {
 // This handler exists only to satisfy the dispatcher's unknown-action guard
 // at saga/processor.go:947.
 func (h *HandlerImpl) handleAwaitInventoryCreated(_ Saga, _ Step[any]) error {
+	return nil
+}
+
+// handleStartRPSGame handles the StartRPSGame action: it POSTs to atlas-rps's
+// synchronous POST /rps/games endpoint to open (or re-open) a rock-paper-
+// scissors session for a character at an NPC. Like handleSaveLocation and
+// handleStartInstanceTransport, this is a synchronous REST call - it
+// self-completes the step immediately rather than waiting on an async Kafka
+// event, and does not inject any follow-on step.
+func (h *HandlerImpl) handleStartRPSGame(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(StartRPSGamePayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	h.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"character_id":   payload.CharacterId,
+		"npc_id":         payload.NpcId,
+	}).Debug("Starting RPS game.")
+
+	_, err := h.rpsP.StartGame(payload.CharacterId, payload.WorldId, payload.ChannelId, payload.NpcId)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to start RPS game.")
+		return err
+	}
+
+	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
 	return nil
 }

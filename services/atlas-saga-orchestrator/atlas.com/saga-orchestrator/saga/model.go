@@ -152,6 +152,9 @@ const (
 	SelectGachaponReward = sharedsaga.SelectGachaponReward
 	EmitGachaponWin      = sharedsaga.EmitGachaponWin
 
+	// RPS (rock-paper-scissors NPC minigame) actions
+	StartRPSGame = sharedsaga.StartRPSGame
+
 	// Party quest actions
 	RegisterPartyQuest         = sharedsaga.RegisterPartyQuest
 	WarpPartyQuestMembersToMap = sharedsaga.WarpPartyQuestMembersToMap
@@ -244,6 +247,7 @@ type (
 	WarpToSavedLocationPayload          = sharedsaga.WarpToSavedLocationPayload
 	SelectGachaponRewardPayload         = sharedsaga.SelectGachaponRewardPayload
 	EmitGachaponWinPayload              = sharedsaga.EmitGachaponWinPayload
+	StartRPSGamePayload                 = sharedsaga.StartRPSGamePayload
 	RegisterPartyQuestPayload           = sharedsaga.RegisterPartyQuestPayload
 	WarpPartyQuestMembersToMapPayload   = sharedsaga.WarpPartyQuestMembersToMapPayload
 	LeavePartyQuestPayload              = sharedsaga.LeavePartyQuestPayload
@@ -1378,6 +1382,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.payload = any(payload).(T)
 	case RequestGuildCapacityIncrease:
 		var payload RequestGuildCapacityIncreasePayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case StartRPSGame:
+		var payload StartRPSGamePayload
 		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}

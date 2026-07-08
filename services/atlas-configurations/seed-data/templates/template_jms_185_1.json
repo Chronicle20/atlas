@@ -407,9 +407,27 @@
         "handler": "CharacterInteractionHandle",
         "options": {
           "operations": {
+            "CREATE": 0,
+            "VISIT": 4,
+            "CHAT": 6,
+            "EXIT": 10,
             "PERSONAL_STORE_BUY": 20,
+            "PERSONAL_STORE_SET_BLACK_LIST": 27,
             "MERCHANT_BUY": 31,
-            "PERSONAL_STORE_SET_BLACK_LIST": 27
+            "MEMORY_GAME_ASK_TIE": 47,
+            "MEMORY_GAME_TIE_ANSWER": 48,
+            "MEMORY_GAME_FORFEIT": 49,
+            "MEMORY_GAME_ASK_RETREAT": 51,
+            "MEMORY_GAME_RETREAT_ANSWER": 52,
+            "MEMORY_GAME_EXIT_AFTER_GAME": 53,
+            "MEMORY_GAME_CANCEL_EXIT_AFTER_GAME": 54,
+            "MEMORY_GAME_READY": 55,
+            "MEMORY_GAME_UNREADY": 56,
+            "MEMORY_GAME_EXPEL": 57,
+            "MEMORY_GAME_START": 58,
+            "MEMORY_GAME_SKIP": 60,
+            "MEMORY_GAME_MOVE_STONE": 61,
+            "MEMORY_GAME_FIP_CARD": 65
           }
         }
       },
@@ -2407,6 +2425,11 @@
         "writer": "SummonSkill"
       },
       {
+        "opCode": "0xA3",
+        "writer": "MiniRoom",
+        "options": {}
+      },
+      {
         "opCode": "0x153",
         "writer": "CharacterInteraction",
         "options": {
@@ -2416,7 +2439,18 @@
             "ENTER": 4,
             "ENTER_RESULT": 5,
             "LEAVE": 10,
-            "UPDATE_MERCHANT": 22
+            "UPDATE_MERCHANT": 22,
+            "MEMORY_GAME_ASK_TIE": 47,
+            "MEMORY_GAME_TIE_ANSWER": 48,
+            "MEMORY_GAME_ASK_RETREAT": 51,
+            "MEMORY_GAME_RETREAT_ANSWER": 52,
+            "MEMORY_GAME_READY": 55,
+            "MEMORY_GAME_UNREADY": 56,
+            "MEMORY_GAME_START": 58,
+            "MEMORY_GAME_RESULT": 59,
+            "MEMORY_GAME_SKIP": 60,
+            "MEMORY_GAME_MOVE_STONE": 61,
+            "MEMORY_GAME_FIP_CARD": 65
           }
         }
       },

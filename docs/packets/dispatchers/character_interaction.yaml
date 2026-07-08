@@ -35,3 +35,24 @@ operations:
   - { key: ENTER_RESULT,    modes: { gms_v83: 5,  gms_v84: 5,  gms_v87: 5,  gms_v95: 5,  jms_v185: 5  } }
   - { key: LEAVE,           modes: { gms_v83: 10, gms_v84: 10, gms_v87: 10, gms_v95: 10, jms_v185: 10 } }
   - { key: UPDATE_MERCHANT, modes: { gms_v83: 25, gms_v84: 25, gms_v87: 25, gms_v95: 25, jms_v185: 22 } }
+  # Match Cards / Omok mini-game clientbound arms (CharacterInteractionWriter).
+  # Mode enum IDA-verified byte-for-byte on the dialog OnPacket switches:
+  #   gms_v83  COmokDlg::OnPacket 0x6e37eb / CMemoryGameDlg::OnPacket 0x64db30 (ida-notes §G5)
+  #   gms_v84  COmokDlg::SendTurnUpCard 0x664afc (0x44) + OnRetreatRequest reply 0x6fb416 (0x37) + base 0x673db5 => = v83
+  #   gms_v87  COmokDlg::OnPacket 0x721300 / CMemoryGameDlg::OnPacket 0x687a37 => = v83
+  #   gms_v95  ida-notes §G5 => = v83
+  #   jms_v185 COmokDlg::OnPacket 0x72ad22 / CMemoryGameDlg::OnPacket 0x6c792b => uniform -3 shift
+  # (gms_v92 has no IDB and is outside matrix.VersionKeys; its writer rows are
+  # hand-set in template_gms_92_1.json from the v83 GMS values — see
+  # docs/tasks/task-133-miniroom-minigames/seed-unverified-notes.md.)
+  - { key: MEMORY_GAME_ASK_TIE,        modes: { gms_v83: 50, gms_v84: 50, gms_v87: 50, gms_v95: 50, jms_v185: 47 } }
+  - { key: MEMORY_GAME_TIE_ANSWER,     modes: { gms_v83: 51, gms_v84: 51, gms_v87: 51, gms_v95: 51, jms_v185: 48 } }
+  - { key: MEMORY_GAME_ASK_RETREAT,    modes: { gms_v83: 54, gms_v84: 54, gms_v87: 54, gms_v95: 54, jms_v185: 51 } }
+  - { key: MEMORY_GAME_RETREAT_ANSWER, modes: { gms_v83: 55, gms_v84: 55, gms_v87: 55, gms_v95: 55, jms_v185: 52 } }
+  - { key: MEMORY_GAME_READY,          modes: { gms_v83: 58, gms_v84: 58, gms_v87: 58, gms_v95: 58, jms_v185: 55 } }
+  - { key: MEMORY_GAME_UNREADY,        modes: { gms_v83: 59, gms_v84: 59, gms_v87: 59, gms_v95: 59, jms_v185: 56 } }
+  - { key: MEMORY_GAME_START,          modes: { gms_v83: 61, gms_v84: 61, gms_v87: 61, gms_v95: 61, jms_v185: 58 } }
+  - { key: MEMORY_GAME_RESULT,         modes: { gms_v83: 62, gms_v84: 62, gms_v87: 62, gms_v95: 62, jms_v185: 59 } }
+  - { key: MEMORY_GAME_SKIP,           modes: { gms_v83: 63, gms_v84: 63, gms_v87: 63, gms_v95: 63, jms_v185: 60 } }
+  - { key: MEMORY_GAME_MOVE_STONE,     modes: { gms_v83: 64, gms_v84: 64, gms_v87: 64, gms_v95: 64, jms_v185: 61 } }
+  - { key: MEMORY_GAME_FIP_CARD,       modes: { gms_v83: 68, gms_v84: 68, gms_v87: 68, gms_v95: 68, jms_v185: 65 } }

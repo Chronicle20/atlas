@@ -6,6 +6,33 @@
   "socket": {
     "handlers": [
       {
+        "opCode": "0x81",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterInteractionHandle",
+        "options": {
+          "operations": {
+            "CREATE": 0,
+            "VISIT": 4,
+            "CHAT": 6,
+            "EXIT": 10,
+            "MEMORY_GAME_ASK_TIE": 50,
+            "MEMORY_GAME_TIE_ANSWER": 51,
+            "MEMORY_GAME_FORFEIT": 52,
+            "MEMORY_GAME_ASK_RETREAT": 54,
+            "MEMORY_GAME_RETREAT_ANSWER": 55,
+            "MEMORY_GAME_EXIT_AFTER_GAME": 56,
+            "MEMORY_GAME_CANCEL_EXIT_AFTER_GAME": 57,
+            "MEMORY_GAME_READY": 58,
+            "MEMORY_GAME_UNREADY": 59,
+            "MEMORY_GAME_EXPEL": 60,
+            "MEMORY_GAME_START": 61,
+            "MEMORY_GAME_SKIP": 63,
+            "MEMORY_GAME_MOVE_STONE": 64,
+            "MEMORY_GAME_FIP_CARD": 68
+          }
+        }
+      },
+      {
         "opCode": "0x01",
         "validator": "NoOpValidator",
         "handler": "LoginHandle"
@@ -2353,6 +2380,11 @@
         "writer": "SummonSkill"
       },
       {
+        "opCode": "0xB0",
+        "writer": "MiniRoom",
+        "options": {}
+      },
+      {
         "opCode": "0x14B",
         "writer": "CharacterInteraction",
         "options": {
@@ -2362,7 +2394,18 @@
             "ENTER": 4,
             "ENTER_RESULT": 5,
             "LEAVE": 10,
-            "UPDATE_MERCHANT": 25
+            "UPDATE_MERCHANT": 25,
+            "MEMORY_GAME_ASK_TIE": 50,
+            "MEMORY_GAME_TIE_ANSWER": 51,
+            "MEMORY_GAME_ASK_RETREAT": 54,
+            "MEMORY_GAME_RETREAT_ANSWER": 55,
+            "MEMORY_GAME_READY": 58,
+            "MEMORY_GAME_UNREADY": 59,
+            "MEMORY_GAME_START": 61,
+            "MEMORY_GAME_RESULT": 62,
+            "MEMORY_GAME_SKIP": 63,
+            "MEMORY_GAME_MOVE_STONE": 64,
+            "MEMORY_GAME_FIP_CARD": 68
           }
         }
       },

@@ -6,11 +6,13 @@ import (
 	"atlas-saga-orchestrator/compartment"
 	"atlas-saga-orchestrator/guild"
 	"atlas-saga-orchestrator/invite"
+	character2 "atlas-saga-orchestrator/kafka/message/character"
 	sagaMsg "atlas-saga-orchestrator/kafka/message/saga"
 	"atlas-saga-orchestrator/kafka/producer"
 	"atlas-saga-orchestrator/skill"
 	"atlas-saga-orchestrator/validation"
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -18,6 +20,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
 
@@ -56,6 +59,18 @@ type Compensator interface {
 	// and the deducted mesos (AwardMesos → inverse credit). No lifecycle
 	// transitions, no Failed emission, no cache eviction — callers handle those.
 	DispatchPetEvolutionRollbacks(s Saga)
+
+	// CompensateLateStep dispatches the single-step inverse for a step whose
+	// success event arrived after the saga went terminal (PRD §4.3, design
+	// §3.4/§3.5). Pure dispatch — no lifecycle transitions, no Failed
+	// emission, no cache eviction. Claim-then-dispatch: the lateCompensated
+	// marker is persisted BEFORE the inverse goes out, giving at-most-once
+	// rollback, because the negation inverses (mesos/currency/exp/fame) are
+	// not idempotent downstream — at-least-once would double-refund. A crash
+	// between claim and dispatch loses the rollback but is auditable via the
+	// saga_terminal log + span emitted by the caller. Returns true only when
+	// an inverse command was dispatched by this call.
+	CompensateLateStep(s Saga, step Step[any]) (bool, error)
 }
 
 type CompensatorImpl struct {
@@ -1176,4 +1191,195 @@ func extractCharacterCreationWorldId(s Saga) world.Id {
 		}
 	}
 	return 0
+}
+
+// lateCompensableActions is the v1 compensable set (design §3.4): the full
+// value-transfer class that broke the task-102 invariant. Everything else is
+// absorb-only and logged as late_effect_unrecoverable when hit.
+// DestroyAssetFromSlot is deliberately absent: its payload carries no
+// TemplateId, so the destroyed item cannot be recreated from the step alone.
+var lateCompensableActions = map[Action]struct{}{
+	AwardAsset:            {},
+	CreateAndEquipAsset:   {},
+	CreateSkill:           {},
+	CreateCharacter:       {},
+	AwaitCharacterCreated: {},
+	DestroyAsset:          {},
+	AwardMesos:            {},
+	AwardCurrency:         {},
+	AwardExperience:       {},
+	DeductExperience:      {},
+	AwardFame:             {},
+	EquipAsset:            {},
+	UnequipAsset:          {},
+}
+
+func (c *CompensatorImpl) CompensateLateStep(s Saga, step Step[any]) (bool, error) {
+	fields := logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"saga_type":      s.SagaType(),
+		"step_id":        step.StepId(),
+		"step_action":    step.Action(),
+		"tenant_id":      c.t.Id().String(),
+	}
+
+	if _, ok := lateCompensableActions[step.Action()]; !ok {
+		fields["reason"] = "late_effect_unrecoverable"
+		c.l.WithFields(fields).Warn("Late-successful step has no registered inverse; its effect is orphaned.")
+		return false, nil
+	}
+
+	claimed, err := c.claimLateCompensation(s.TransactionId(), step.StepId())
+	if err != nil {
+		return false, err
+	}
+	if !claimed {
+		c.l.WithFields(fields).Debug("Late-success compensation already claimed; duplicate delivery ignored.")
+		return false, nil
+	}
+
+	if err := c.dispatchLateInverse(s, step); err != nil {
+		// The claim is already persisted: at-most-once means we do NOT retry
+		// dispatch on a later redelivery. Log loudly for the audit trail.
+		fields["reason"] = "late_effect_dispatch_failed"
+		c.l.WithFields(fields).WithError(err).Error("Late-success inverse dispatch failed after claim.")
+		return true, err
+	}
+
+	fields["reason"] = "late_effect_compensated"
+	c.l.WithFields(fields).Info("Late-successful step routed into compensation; effect rolled back.")
+	return true, nil
+}
+
+// claimLateCompensation atomically sets the step's lateCompensated marker.
+// Returns false when the marker was already set (duplicate delivery). Only
+// the goroutine whose Put wins the optimistic-version race proceeds to
+// dispatch; losers re-read and observe the marker.
+func (c *CompensatorImpl) claimLateCompensation(transactionId uuid.UUID, stepId string) (bool, error) {
+	for attempt := 1; attempt <= maxConflictRetries; attempt++ {
+		s, ok := GetCache().GetById(c.ctx, transactionId)
+		if !ok {
+			return false, errors.New("saga not found while claiming late compensation")
+		}
+		index := -1
+		for i, st := range s.Steps() {
+			if st.StepId() == stepId {
+				index = i
+				break
+			}
+		}
+		if index == -1 {
+			return false, fmt.Errorf("step [%s] not found while claiming late compensation", stepId)
+		}
+		st, _ := s.StepAt(index)
+		if st.LateCompensated() {
+			return false, nil
+		}
+		updated, err := s.WithStepLateCompensated(index)
+		if err != nil {
+			return false, err
+		}
+		err = GetCache().Put(c.ctx, updated)
+		if err == nil {
+			return true, nil
+		}
+		if !isVersionConflict(err) {
+			return false, err
+		}
+	}
+	return false, fmt.Errorf("max retries exceeded claiming late compensation for saga %s", transactionId.String())
+}
+
+// dispatchLateInverse fires the single-step inverse computed from the STEP
+// payload (never the event payload), reusing the reverse-walk idioms.
+func (c *CompensatorImpl) dispatchLateInverse(s Saga, step Step[any]) error {
+	switch step.Action() {
+	case AwardAsset:
+		payload, ok := step.Payload().(AwardItemActionPayload)
+		if !ok {
+			return fmt.Errorf("invalid payload for late AwardAsset compensation")
+		}
+		return c.compP.RequestDestroyItem(s.TransactionId(), payload.CharacterId, payload.Item.TemplateId, payload.Item.Quantity, false)
+	case CreateAndEquipAsset:
+		payload, ok := step.Payload().(CreateAndEquipAssetPayload)
+		if !ok {
+			return fmt.Errorf("invalid payload for late CreateAndEquipAsset compensation")
+		}
+		return c.compP.RequestDestroyItem(s.TransactionId(), payload.CharacterId, payload.Item.TemplateId, payload.Item.Quantity, false)
+	case CreateSkill:
+		payload, ok := step.Payload().(CreateSkillPayload)
+		if !ok {
+			return fmt.Errorf("invalid payload for late CreateSkill compensation")
+		}
+		return c.skillP.RequestDeleteSkill(s.TransactionId(), payload.WorldId, payload.CharacterId, payload.SkillId)
+	case CreateCharacter, AwaitCharacterCreated:
+		_, characterId := ExtractCharacterCreationIds(s)
+		worldId := extractCharacterCreationWorldId(s)
+		if characterId == 0 {
+			return fmt.Errorf("late character-creation compensation: character id unresolved")
+		}
+		return c.charP.RequestDeleteCharacter(s.TransactionId(), characterId, worldId)
+	case DestroyAsset:
+		payload, ok := step.Payload().(DestroyAssetPayload)
+		if !ok {
+			return fmt.Errorf("invalid payload for late DestroyAsset compensation")
+		}
+		qty := payload.Quantity
+		if qty == 0 {
+			qty = 1
+		}
+		return c.compP.RequestCreateItem(s.TransactionId(), payload.CharacterId, payload.TemplateId, qty, time.Time{})
+	case AwardMesos:
+		payload, ok := step.Payload().(AwardMesosPayload)
+		if !ok {
+			return fmt.Errorf("invalid payload for late AwardMesos compensation")
+		}
+		ch := channel.NewModel(payload.WorldId, payload.ChannelId)
+		return c.charP.AwardMesosAndEmit(s.TransactionId(), ch, payload.CharacterId, payload.CharacterId, "SYSTEM", -payload.Amount, false)
+	case AwardCurrency:
+		payload, ok := step.Payload().(AwardCurrencyPayload)
+		if !ok {
+			return fmt.Errorf("invalid payload for late AwardCurrency compensation")
+		}
+		return c.csP.AwardCurrencyAndEmit(s.TransactionId(), payload.AccountId, payload.CurrencyType, -payload.Amount)
+	case AwardExperience:
+		payload, ok := step.Payload().(AwardExperiencePayload)
+		if !ok {
+			return fmt.Errorf("invalid payload for late AwardExperience compensation")
+		}
+		var total uint32
+		for _, d := range payload.Distributions {
+			total += d.Amount
+		}
+		ch := channel.NewModel(payload.WorldId, payload.ChannelId)
+		return c.charP.DeductExperienceAndEmit(s.TransactionId(), ch, payload.CharacterId, total)
+	case DeductExperience:
+		payload, ok := step.Payload().(DeductExperiencePayload)
+		if !ok {
+			return fmt.Errorf("invalid payload for late DeductExperience compensation")
+		}
+		ch := channel.NewModel(payload.WorldId, payload.ChannelId)
+		return c.charP.AwardExperienceAndEmit(s.TransactionId(), ch, payload.CharacterId,
+			[]character2.ExperienceDistributions{{ExperienceType: "WHITE", Amount: payload.Amount}}, false)
+	case AwardFame:
+		payload, ok := step.Payload().(AwardFamePayload)
+		if !ok {
+			return fmt.Errorf("invalid payload for late AwardFame compensation")
+		}
+		ch := channel.NewModel(payload.WorldId, payload.ChannelId)
+		return c.charP.AwardFameAndEmit(s.TransactionId(), ch, payload.CharacterId, -payload.Amount)
+	case EquipAsset:
+		payload, ok := step.Payload().(EquipAssetPayload)
+		if !ok {
+			return fmt.Errorf("invalid payload for late EquipAsset compensation")
+		}
+		return c.compP.RequestUnequipAsset(s.TransactionId(), payload.CharacterId, byte(payload.InventoryType), payload.Destination, payload.Source)
+	case UnequipAsset:
+		payload, ok := step.Payload().(UnequipAssetPayload)
+		if !ok {
+			return fmt.Errorf("invalid payload for late UnequipAsset compensation")
+		}
+		return c.compP.RequestEquipAsset(s.TransactionId(), payload.CharacterId, byte(payload.InventoryType), payload.Destination, payload.Source)
+	}
+	return fmt.Errorf("no late inverse registered for action %s", step.Action())
 }

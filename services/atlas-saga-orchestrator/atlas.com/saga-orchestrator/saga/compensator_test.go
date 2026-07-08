@@ -1,6 +1,7 @@
 package saga
 
 import (
+	cashshopmock "atlas-saga-orchestrator/cashshop/mock"
 	charmock "atlas-saga-orchestrator/character/mock"
 	compmock "atlas-saga-orchestrator/compartment/mock"
 	"context"
@@ -16,6 +17,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestPetEvolutionCompensationRefundsResources verifies that when a PetEvolution
@@ -294,4 +296,122 @@ func TestCompensateCreateCharacter(t *testing.T) {
 			}
 		})
 	}
+}
+
+func lateStepTestCtx(t *testing.T) context.Context {
+	t.Helper()
+	tm, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	require.NoError(t, err)
+	return tenant.WithContext(context.Background(), tm)
+}
+
+// The task-102 shape: a late-successful AwardCurrency step dispatches exactly
+// one negated wallet credit, and a duplicate delivery dispatches nothing.
+func TestCompensateLateStep_AwardCurrency_NegatedOnceOnly(t *testing.T) {
+	ResetCache()
+	logger, _ := test.NewNullLogger()
+	ctx := lateStepTestCtx(t)
+
+	s, err := NewBuilder().
+		SetSagaType(InventoryTransaction).
+		SetInitiatedBy("test").
+		AddStep("award_currency_seller", Pending, AwardCurrency, AwardCurrencyPayload{CharacterId: 1, AccountId: 42, CurrencyType: 2, Amount: 100}).
+		Build()
+	require.NoError(t, err)
+	require.NoError(t, GetCache().Put(ctx, s))
+
+	var calls []int32
+	cs := &cashshopmock.ProcessorMock{
+		AwardCurrencyAndEmitFunc: func(txId uuid.UUID, accountId uint32, currencyType uint32, amount int32) error {
+			assert.Equal(t, s.TransactionId(), txId)
+			assert.Equal(t, uint32(42), accountId)
+			assert.Equal(t, uint32(2), currencyType)
+			calls = append(calls, amount)
+			return nil
+		},
+	}
+	c := NewCompensator(logger, ctx).WithCashshopProcessor(cs)
+
+	step, _ := s.GetCurrentStep()
+	compensated, err := c.CompensateLateStep(s, step)
+	require.NoError(t, err)
+	assert.True(t, compensated)
+	require.Len(t, calls, 1)
+	assert.Equal(t, int32(-100), calls[0], "inverse must negate the amount")
+
+	// Duplicate delivery: marker already claimed — no second dispatch.
+	fresh, ok := GetCache().GetById(ctx, s.TransactionId())
+	require.True(t, ok)
+	freshStep, _ := fresh.GetCurrentStep()
+	assert.True(t, freshStep.LateCompensated())
+	compensated, err = c.CompensateLateStep(fresh, freshStep)
+	require.NoError(t, err)
+	assert.False(t, compensated)
+	assert.Len(t, calls, 1)
+}
+
+func TestCompensateLateStep_AwardAsset_DestroysItem(t *testing.T) {
+	ResetCache()
+	logger, _ := test.NewNullLogger()
+	ctx := lateStepTestCtx(t)
+
+	s, err := NewBuilder().
+		SetSagaType(InventoryTransaction).
+		SetInitiatedBy("test").
+		AddStep("award_item", Pending, AwardAsset, AwardItemActionPayload{CharacterId: 7, Item: ItemPayload{TemplateId: 2000000, Quantity: 3}}).
+		Build()
+	require.NoError(t, err)
+	require.NoError(t, GetCache().Put(ctx, s))
+
+	destroyed := 0
+	cp := &compmock.ProcessorMock{
+		RequestDestroyItemFunc: func(txId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, removeAll bool) error {
+			destroyed++
+			assert.Equal(t, uint32(7), characterId)
+			assert.Equal(t, uint32(2000000), templateId)
+			assert.Equal(t, uint32(3), quantity)
+			return nil
+		},
+	}
+	c := NewCompensator(logger, ctx).WithCompartmentProcessor(cp)
+
+	step, _ := s.GetCurrentStep()
+	compensated, err := c.CompensateLateStep(s, step)
+	require.NoError(t, err)
+	assert.True(t, compensated)
+	assert.Equal(t, 1, destroyed)
+}
+
+// Non-compensable action: absorb-only with a late_effect_unrecoverable WARN.
+func TestCompensateLateStep_NonCompensable_WarnsNoDispatch(t *testing.T) {
+	ResetCache()
+	logger, hook := test.NewNullLogger()
+	ctx := lateStepTestCtx(t)
+
+	s, err := NewBuilder().
+		SetSagaType(InventoryTransaction).
+		SetInitiatedBy("test").
+		AddStep("change_hair", Pending, ChangeHair, ChangeHairPayload{CharacterId: 1}).
+		Build()
+	require.NoError(t, err)
+	require.NoError(t, GetCache().Put(ctx, s))
+
+	c := NewCompensator(logger, ctx)
+	step, _ := s.GetCurrentStep()
+	compensated, err := c.CompensateLateStep(s, step)
+	require.NoError(t, err)
+	assert.False(t, compensated)
+
+	var warned bool
+	for _, e := range hook.AllEntries() {
+		if e.Level == logrus.WarnLevel && e.Data["reason"] == "late_effect_unrecoverable" {
+			warned = true
+		}
+	}
+	assert.True(t, warned, "expected late_effect_unrecoverable WARN")
+
+	// Marker must NOT be claimed for a non-compensable step.
+	fresh, _ := GetCache().GetById(ctx, s.TransactionId())
+	freshStep, _ := fresh.GetCurrentStep()
+	assert.False(t, freshStep.LateCompensated())
 }

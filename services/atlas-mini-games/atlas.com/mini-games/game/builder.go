@@ -119,13 +119,29 @@ func (b *Builder) SetBoard(board [omok.Cells]byte) *Builder {
 	return b
 }
 
+// SetMoves stores a defensive copy of moves so a caller retaining the slice
+// cannot mutate the built Room (and, once registered, registry state)
+// through the shared backing array.
 func (b *Builder) SetMoves(moves []Move) *Builder {
-	b.room.moves = moves
+	if moves == nil {
+		b.room.moves = nil
+		return b
+	}
+	out := make([]Move, len(moves))
+	copy(out, moves)
+	b.room.moves = out
 	return b
 }
 
+// SetDeck stores a defensive copy of deck, for the same reason as SetMoves.
 func (b *Builder) SetDeck(deck []uint32) *Builder {
-	b.room.deck = deck
+	if deck == nil {
+		b.room.deck = nil
+		return b
+	}
+	out := make([]uint32, len(deck))
+	copy(out, deck)
+	b.room.deck = out
 	return b
 }
 

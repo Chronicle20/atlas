@@ -139,12 +139,26 @@ func (r Room) Board() [omok.Cells]byte {
 	return r.board
 }
 
+// Moves returns a defensive copy of the move history: Room values share the
+// slice's backing array when copied, so handing out the internal slice would
+// let a caller mutate registry state outside Registry.Update.
 func (r Room) Moves() []Move {
-	return r.moves
+	if r.moves == nil {
+		return nil
+	}
+	out := make([]Move, len(r.moves))
+	copy(out, r.moves)
+	return out
 }
 
+// Deck returns a defensive copy of the deck, for the same reason as Moves.
 func (r Room) Deck() []uint32 {
-	return r.deck
+	if r.deck == nil {
+		return nil
+	}
+	out := make([]uint32, len(r.deck))
+	copy(out, r.deck)
+	return out
 }
 
 // FirstSlot is the slot (0 owner, 1 visitor) that flipped the pending

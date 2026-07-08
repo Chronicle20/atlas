@@ -220,6 +220,36 @@ func TestRegistry_Update_SwapVisibleToNextGet(t *testing.T) {
 	}
 }
 
+func TestRegistry_Update_VisitorLeaves_ClearsVisitorIndexKeepsOwner(t *testing.T) {
+	reg := freshRegistry()
+	tn := testTenant(t)
+	r := NewBuilder(1, 1001, fieldAt(100000000)).SetVisitorId(2002).Build()
+	if err := reg.Create(tn, r); err != nil {
+		t.Fatalf("Create() error = %v", err)
+	}
+
+	_, err := reg.Update(tn, r.Id(), func(cur Room) (Room, error) {
+		return Clone(cur).SetVisitorId(0).Build(), nil
+	})
+	if err != nil {
+		t.Fatalf("Update() error = %v", err)
+	}
+
+	if _, ok := reg.GetByMember(tn, 2002); ok {
+		t.Errorf("GetByMember(departed visitor) ok = true, want false")
+	}
+	ownerRoom, ok := reg.GetByMember(tn, 1001)
+	if !ok || ownerRoom.Id() != r.Id() {
+		t.Errorf("GetByMember(owner) = (%v, %v), want room %d", ownerRoom, ok, r.Id())
+	}
+
+	// The departed visitor is free to open their own room.
+	r2 := NewBuilder(1, 2002, fieldAt(100000001)).Build()
+	if err := reg.Create(tn, r2); err != nil {
+		t.Errorf("Create() for departed visitor error = %v, want nil", err)
+	}
+}
+
 func TestRegistry_Update_ErrorLeavesRoomUntouched(t *testing.T) {
 	reg := freshRegistry()
 	tn := testTenant(t)

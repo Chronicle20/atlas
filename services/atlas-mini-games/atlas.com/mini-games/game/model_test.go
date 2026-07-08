@@ -192,6 +192,45 @@ func TestSlotOf_And_OpponentOf(t *testing.T) {
 	}
 }
 
+func TestMovesAndDeck_DefensiveCopies(t *testing.T) {
+	moves := []Move{{X: 1, Y: 2, Stone: 1}}
+	deck := []uint32{7, 7, 8, 8}
+
+	r := NewBuilder(2, 1001, testField()).
+		SetMoves(moves).
+		SetDeck(deck).
+		Build()
+
+	// Mutating the slices the caller passed in must not affect the room.
+	moves[0] = Move{X: 9, Y: 9, Stone: 9}
+	deck[0] = 999
+	if got := r.Moves()[0]; got != (Move{X: 1, Y: 2, Stone: 1}) {
+		t.Errorf("Room shares SetMoves input: Moves()[0] = %v", got)
+	}
+	if got := r.Deck()[0]; got != 7 {
+		t.Errorf("Room shares SetDeck input: Deck()[0] = %d", got)
+	}
+
+	// Mutating the slices returned by the getters must not affect the room.
+	r.Moves()[0] = Move{X: 8, Y: 8, Stone: 8}
+	r.Deck()[0] = 888
+	if got := r.Moves()[0]; got != (Move{X: 1, Y: 2, Stone: 1}) {
+		t.Errorf("Moves() shares internal slice: Moves()[0] = %v", got)
+	}
+	if got := r.Deck()[0]; got != 7 {
+		t.Errorf("Deck() shares internal slice: Deck()[0] = %d", got)
+	}
+
+	// Nil round-trips as nil.
+	empty := NewBuilder(2, 1002, testField()).SetMoves(nil).SetDeck(nil).Build()
+	if empty.Moves() != nil {
+		t.Errorf("Moves() = %v, want nil", empty.Moves())
+	}
+	if empty.Deck() != nil {
+		t.Errorf("Deck() = %v, want nil", empty.Deck())
+	}
+}
+
 func TestSlotOf_EmptyVisitor(t *testing.T) {
 	r := NewBuilder(1, 1001, testField()).Build()
 

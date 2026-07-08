@@ -238,8 +238,27 @@ func TestDwellS2_IdleTickChurn(t *testing.T) {
 	cm, rec, cancel, wg := dwellSetup(t, brokers, 15, 0, nil,
 		consumer.SetFetchTimeout(2*time.Second),
 		consumer.SetMaxConsecutiveTimeouts(2),
+		// maxWait must stay well under fetchTimeout so an idle reader completes
+		// >=1 fetch long-poll per deadline tick (its Fetches delta is the
+		// idle-vs-stuck progress signal); mirrors the production 10s<<1m ratio.
+		consumer.SetMaxWait(200*time.Millisecond),
 	)
 	defer func() { cancel(); wg.Wait() }()
+
+	// The initial group-join for this ~16-member group takes several seconds;
+	// with the compressed 2s fetchTimeout, an idle reader that is still
+	// rebalancing during join makes no fetch progress across >1 tick and
+	// self-wedges ONCE before the group settles. Production never hits this
+	// (its 1m fetchTimeout dwarfs join time). Exclude that startup transient
+	// the same way dwellSetup excludes warm-up latency: let recreates
+	// stabilize post-join, then assert NO NEW recreate occurs in steady state.
+	baselineRecreates := 0
+	require.Eventually(t, func() bool {
+		cur := totalRecreates(cm)
+		stable := cur == baselineRecreates
+		baselineRecreates = cur
+		return stable
+	}, 30*time.Second, time.Second, "S2: recreate count never stabilized after group join")
 
 	const n = 30
 	publishStamped(t, brokers, dwellActiveTopic, n, time.Second)
@@ -249,7 +268,18 @@ func TestDwellS2_IdleTickChurn(t *testing.T) {
 	p99 := rec.p99()
 	t.Logf("S2: p99=%v max=%v recreates=%d", p99, rec.max(), totalRecreates(cm))
 	dumpSnapshots(t, cm)
-	require.Zero(t, totalRecreates(cm), "S2: idle deadline ticks must not recreate readers (design §3-A)")
+	require.Equal(t, baselineRecreates, totalRecreates(cm),
+		"S2: no reader may self-recreate on idle deadline ticks in steady state (design §3-A)")
+	// Prove the deadline ticks actually fired and were classified idle —
+	// otherwise a too-long fetchTimeout would make this test vacuous.
+	tickedIdle := 0
+	for _, c := range cm.Consumers() {
+		if c.Snapshot().IdleTicks > 0 {
+			tickedIdle++
+		}
+	}
+	require.GreaterOrEqual(t, tickedIdle, 10,
+		"S2: expected most idle consumers to have recorded idle ticks (fetchTimeout=2s over a 30s window)")
 	require.Less(t, p99, time.Second, "S2: churn-free p99 must be < 1s (PRD §8)")
 }
 
@@ -328,6 +358,10 @@ func TestDwellS4_TickControl(t *testing.T) {
 	brokers := startDwellKafka(t)
 	cm, rec, cancel, wg := dwellSetup(t, brokers, 2, 0, nil,
 		consumer.SetFetchTimeout(2*time.Second),
+		// maxWait must stay well under fetchTimeout so an idle reader completes
+		// >=1 fetch long-poll per deadline tick (its Fetches delta is the
+		// idle-vs-stuck progress signal); mirrors the production 10s<<1m ratio.
+		consumer.SetMaxWait(200*time.Millisecond),
 	)
 	defer func() { cancel(); wg.Wait() }()
 

@@ -2,6 +2,7 @@ package listing_test
 
 import (
 	"atlas-mts/listing"
+	"errors"
 	"atlas-mts/saga"
 	"atlas-mts/test"
 	"testing"
@@ -297,5 +298,33 @@ func TestBuyRejectsNonActiveListing(t *testing.T) {
 	}
 	if emitter.called {
 		t.Error("saga emitted for a non-active listing; expected no emission")
+	}
+}
+
+// TestBuyFailureSentinels pins the typed failure sentinels the Kafka consumer
+// maps to client NoticeFailReason codes: insufficient prepaid and
+// non-active-listing rejections must be errors.Is-matchable.
+func TestBuyFailureSentinels(t *testing.T) {
+	br := &stubBalanceReader{prepaid: 0}
+	p, _, db, listingId, cleanup := newBuyProcessor(t, br)
+	defer cleanup()
+
+	if err := p.Buy(buyRequest(listingId)); !errors.Is(err, listing.ErrInsufficientPrepaid) {
+		t.Fatalf("low-prepaid buy error = %v, want errors.Is ErrInsufficientPrepaid", err)
+	}
+
+	// Non-active listing: transition it out of active first.
+	if _, err := listing.UpdateState(db, listingId.String(), listing.StateActive, listing.StateSold); err != nil {
+		t.Fatalf("transition: %v", err)
+	}
+	br.prepaid = 100000
+	if err := p.Buy(buyRequest(listingId)); !errors.Is(err, listing.ErrListingUnavailable) {
+		t.Fatalf("sold-listing buy error = %v, want errors.Is ErrListingUnavailable", err)
+	}
+
+	// Bid on a non-active listing maps the same way.
+	err := p.PlaceBid(listing.BidRequest{WorldId: 0, ListingId: listingId, BidderId: 3, BidderAccountId: 3, Amount: 5000})
+	if !errors.Is(err, listing.ErrListingUnavailable) {
+		t.Fatalf("sold-listing bid error = %v, want errors.Is ErrListingUnavailable", err)
 	}
 }

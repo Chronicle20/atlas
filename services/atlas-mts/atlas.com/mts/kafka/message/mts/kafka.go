@@ -4,6 +4,31 @@ import (
 	"github.com/google/uuid"
 )
 
+// NoticeFailReason* are the client-side CITC::NoticeFailReason codes carried
+// in the *_FAILED status events' Reason byte. The channel routes a non-zero
+// reason to the GetSearchItcListFailed arm (mode 24), whose sub-handler reads
+// one reason byte, clears the request latch, and shows the matching notice.
+// IDA-verified identical across gms v83 (0x5A4752), v84 (0x5B4C42),
+// v87 (CITC::NoticeFailReason), and v95 (0x575DD0):
+//   'B' 66 -> "You do not have enough NX"
+//   'C' 67 -> "You do not have enough mesos"
+//   'D' 68 -> "An error has occurred while using NX"
+//   'G' 71 -> "Your inventory is full"
+//   'I' 73 -> "Failed to load the list" (ALSO warps the client out of MTS)
+//   'N' 78 -> "Unable to pull out of the sale (at least 1 bid)"
+//   'O' 79 -> "This item may not be sold"
+//   'Q' 81 -> "The item has been sold / cannot cancel a purchased item"
+//   'R' 82 -> "Throwing stars are not tradable"
+//   'S' 83 -> "You must be over level 10 to sell on MTS"
+//   other  -> generic "Due to an unknown error, the request for MTS has failed"
+// Reason 0 keeps the legacy behavior: the channel writes the operation's own
+// bare *Failed arm (e.g. BuyItemFailed's fixed "Failed to purchase the item").
+const (
+	NoticeFailReasonGeneric     byte = 0
+	NoticeFailReasonNotEnoughNX byte = 'B'
+	NoticeFailReasonAlreadySold byte = 'Q'
+)
+
 const (
 	// EnvCommandTopic names the high-level MTS command topic. It carries BOTH
 	// atlas-mts-local operations (cancel, wish add/remove) AND saga/ticker-driven

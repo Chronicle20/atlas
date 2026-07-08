@@ -535,7 +535,7 @@ func (p *ProcessorImpl) Buy(req BuyRequest) error {
 		return fmt.Errorf("load listing %s: %w", req.ListingId, err)
 	}
 	if lm.State() != StateActive {
-		return fmt.Errorf("listing %s is not active (state=%s); cannot buy", req.ListingId, lm.State())
+		return fmt.Errorf("listing %s is not active (state=%s); cannot buy: %w", req.ListingId, lm.State(), ErrListingUnavailable)
 	}
 
 	// Price basis: a plain buy settles at the listing's listValue (the fixed-price
@@ -569,7 +569,7 @@ func (p *ProcessorImpl) Buy(req BuyRequest) error {
 		return fmt.Errorf("read buyer %d prepaid balance: %w", req.BuyerAccountId, err)
 	}
 	if prepaid < markedUp {
-		return fmt.Errorf("buyer %d prepaid %d is below the marked-up price %d", req.BuyerAccountId, prepaid, markedUp)
+		return fmt.Errorf("buyer %d prepaid %d is below the marked-up price %d: %w", req.BuyerAccountId, prepaid, markedUp, ErrInsufficientPrepaid)
 	}
 
 	transactionId := uuid.New()
@@ -652,7 +652,7 @@ func (p *ProcessorImpl) PlaceBid(req BidRequest) error {
 		return fmt.Errorf("load listing %s: %w", req.ListingId, err)
 	}
 	if lm.State() != StateActive {
-		return fmt.Errorf("listing %s is not active (state=%s); cannot bid", req.ListingId, lm.State())
+		return fmt.Errorf("listing %s is not active (state=%s); cannot bid: %w", req.ListingId, lm.State(), ErrListingUnavailable)
 	}
 	if lm.SaleType() != SaleTypeAuction {
 		return fmt.Errorf("listing %s is not an auction (saleType=%s); cannot bid", req.ListingId, lm.SaleType())

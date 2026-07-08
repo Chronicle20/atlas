@@ -326,6 +326,21 @@ func handleListingSold(sc server.Model, wp writer.Producer) message.Handler[mtsm
 	}
 }
 
+// failNoticeOr routes a non-zero NoticeFailReason code to the client's
+// reason-notice arm — GetSearchItcListFailed (mode 24), whose sub-handler is
+// Decode1(reason) -> CITC::NoticeFailReason -> latch clear, IDA-verified
+// uniform across gms v83 (0x5A49E3) / v84 (0x5B4ED3) / v87 / v95 — so the
+// player sees the specific message ("You do not have enough NX", "The item
+// has been sold", ...). Reason 0 keeps the operation's own bare *Failed arm
+// (BUY/BID have no reason field of their own — their client handlers show a
+// fixed generic string).
+func failNoticeOr(reason byte, bare func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	if reason != 0 {
+		return fieldpkt.MtsOperationGetSearchItcListFailedBody(reason)
+	}
+	return bare
+}
+
 // handleBuyFailed writes the BuyItemFailed result to the buyer when a buy / buy-now
 // is rejected (serial unresolved, listing not active, or insufficient prepaid).
 func handleBuyFailed(sc server.Model, wp writer.Producer) message.Handler[mtsmsg.StatusEvent[mtsmsg.StatusEventBuyFailedBody]] {
@@ -334,7 +349,7 @@ func handleBuyFailed(sc server.Model, wp writer.Producer) message.Handler[mtsmsg
 			return
 		}
 		l.Debugf("MTS buy failed for buyer [%d] serial [%d] (reason [%d]).", e.Body.BuyerId, e.Body.Serial, e.Body.Reason)
-		announceTo(l, ctx, sc, wp, e.Body.BuyerId, fieldpkt.MtsOperationBuyItemFailedBody())
+		announceTo(l, ctx, sc, wp, e.Body.BuyerId, failNoticeOr(e.Body.Reason, fieldpkt.MtsOperationBuyItemFailedBody()))
 	}
 }
 
@@ -346,7 +361,7 @@ func handleBidFailed(sc server.Model, wp writer.Producer) message.Handler[mtsmsg
 			return
 		}
 		l.Debugf("MTS bid failed for bidder [%d] serial [%d] (reason [%d]).", e.Body.BidderId, e.Body.Serial, e.Body.Reason)
-		announceTo(l, ctx, sc, wp, e.Body.BidderId, fieldpkt.MtsOperationBidAuctionFailedBody())
+		announceTo(l, ctx, sc, wp, e.Body.BidderId, failNoticeOr(e.Body.Reason, fieldpkt.MtsOperationBidAuctionFailedBody()))
 	}
 }
 

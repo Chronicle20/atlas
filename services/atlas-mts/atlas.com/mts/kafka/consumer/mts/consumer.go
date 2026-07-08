@@ -1,15 +1,16 @@
 package mts
 
 import (
+	"atlas-mts/holding"
 	consumer2 "atlas-mts/kafka/consumer"
 	msg "atlas-mts/kafka/message"
 	"atlas-mts/kafka/message/mts"
 	producer2 "atlas-mts/kafka/producer"
 	mtsproducer "atlas-mts/kafka/producer/mts"
-	"atlas-mts/holding"
 	"atlas-mts/listing"
 	"atlas-mts/wish"
 	"context"
+	"errors"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
@@ -80,6 +81,21 @@ type providerFn = func(ctx context.Context) func(token string) kprod.MessageProd
 // "operation failed" notice; 0 is the safe generic value (the channel passes it
 // straight into the *Failed clientbound codec's Decode1 reason field).
 const mtsFailReasonGeneric byte = 0
+
+// failReasonFor maps a buy/bid rejection error to the client NoticeFailReason
+// code the channel should surface (see the NoticeFailReason* docs in the mts
+// message package). Unmapped errors stay generic (reason 0 -> the operation's
+// bare *Failed arm).
+func failReasonFor(err error) byte {
+	switch {
+	case errors.Is(err, listing.ErrInsufficientPrepaid):
+		return mts.NoticeFailReasonNotEnoughNX
+	case errors.Is(err, listing.ErrListingUnavailable), errors.Is(err, gorm.ErrRecordNotFound):
+		return mts.NoticeFailReasonAlreadySold
+	default:
+		return mtsFailReasonGeneric
+	}
+}
 
 // handleCreateListing initiates a listing from the channel's register-sale /
 // register-auction / sale-current-item arm. It maps the command body to a
@@ -256,9 +272,9 @@ func handleBuy(pf providerFn) func(db *gorm.DB) message.Handler[mts.Command[mts.
 			b := c.Body
 			p := pf(ctx)
 
-			emitFail := func() {
+			emitFail := func(reason byte) {
 				_ = msg.Emit(p)(func(buf *msg.Buffer) error {
-					return buf.Put(mts.EnvStatusEventTopic, mtsproducer.BuyFailedStatusEventProvider(c.TransactionId, b.WorldId, b.Serial, b.BuyerId, mtsFailReasonGeneric))
+					return buf.Put(mts.EnvStatusEventTopic, mtsproducer.BuyFailedStatusEventProvider(c.TransactionId, b.WorldId, b.Serial, b.BuyerId, reason))
 				})
 			}
 
@@ -269,7 +285,7 @@ func handleBuy(pf providerFn) func(db *gorm.DB) message.Handler[mts.Command[mts.
 			lm, err := proc.GetBySerial(world.Id(b.WorldId), b.Serial)
 			if err != nil {
 				l.WithError(err).Errorf("Failed to resolve serial [%d] for buy in world [%d], transaction [%s].", b.Serial, b.WorldId, c.TransactionId.String())
-				emitFail()
+				emitFail(failReasonFor(err))
 				return
 			}
 
@@ -282,7 +298,7 @@ func handleBuy(pf providerFn) func(db *gorm.DB) message.Handler[mts.Command[mts.
 				BuyNow:          b.BuyNow,
 			}); err != nil {
 				l.WithError(err).Errorf("Failed to settle buy for listing [%s] (serial [%d]), buyer [%d], transaction [%s].", lm.Id().String(), b.Serial, b.BuyerId, c.TransactionId.String())
-				emitFail()
+				emitFail(failReasonFor(err))
 				return
 			}
 		}
@@ -309,9 +325,9 @@ func handlePlaceBid(pf providerFn) func(db *gorm.DB) message.Handler[mts.Command
 			b := c.Body
 			p := pf(ctx)
 
-			emitFail := func() {
+			emitFail := func(reason byte) {
 				_ = msg.Emit(p)(func(buf *msg.Buffer) error {
-					return buf.Put(mts.EnvStatusEventTopic, mtsproducer.BidFailedStatusEventProvider(c.TransactionId, b.WorldId, b.Serial, b.BidderId, mtsFailReasonGeneric))
+					return buf.Put(mts.EnvStatusEventTopic, mtsproducer.BidFailedStatusEventProvider(c.TransactionId, b.WorldId, b.Serial, b.BidderId, reason))
 				})
 			}
 
@@ -321,7 +337,7 @@ func handlePlaceBid(pf providerFn) func(db *gorm.DB) message.Handler[mts.Command
 			lm, err := proc.GetBySerial(world.Id(b.WorldId), b.Serial)
 			if err != nil {
 				l.WithError(err).Errorf("Failed to resolve serial [%d] for bid in world [%d], transaction [%s].", b.Serial, b.WorldId, c.TransactionId.String())
-				emitFail()
+				emitFail(failReasonFor(err))
 				return
 			}
 
@@ -333,7 +349,7 @@ func handlePlaceBid(pf providerFn) func(db *gorm.DB) message.Handler[mts.Command
 				Amount:          b.Amount,
 			}); err != nil {
 				l.WithError(err).Errorf("Failed to place bid for listing [%s] (serial [%d]), bidder [%d], transaction [%s].", lm.Id().String(), b.Serial, b.BidderId, c.TransactionId.String())
-				emitFail()
+				emitFail(failReasonFor(err))
 				return
 			}
 		}

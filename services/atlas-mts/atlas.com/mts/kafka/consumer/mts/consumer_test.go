@@ -8,6 +8,8 @@ import (
 	"atlas-mts/wish"
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"sync"
 	"testing"
 
@@ -23,6 +25,7 @@ import (
 type recordedEvent struct {
 	transactionId uuid.UUID
 	eventType     string
+	reason        byte
 }
 
 // recordingProducer is a test producer.Provider that decodes every emitted kafka
@@ -48,7 +51,7 @@ func (r *recordingProducer) provider() func(ctx context.Context) func(token stri
 					if err := json.Unmarshal(m.Value, &ev); err != nil {
 						return err
 					}
-					r.events = append(r.events, recordedEvent{transactionId: ev.TransactionId, eventType: ev.Type})
+					r.events = append(r.events, recordedEvent{transactionId: ev.TransactionId, eventType: ev.Type, reason: reasonFromBody(ev.Body)})
 				}
 				return nil
 			}
@@ -350,6 +353,9 @@ func TestBuy_SerialUnresolved_EmitsFailed(t *testing.T) {
 	if len(rp.events) != 1 || rp.events[0].eventType != mts.StatusEventTypeBuyFailed {
 		t.Fatalf("expected 1 BUY_FAILED for unresolved serial, got %v", rp.events)
 	}
+	if rp.events[0].reason != mts.NoticeFailReasonAlreadySold {
+		t.Fatalf("BUY_FAILED reason = %d, want NoticeFailReasonAlreadySold (81)", rp.events[0].reason)
+	}
 }
 
 // TestBuy_NonActiveListing_EmitsFailed asserts a buy against a non-active listing
@@ -372,6 +378,9 @@ func TestBuy_NonActiveListing_EmitsFailed(t *testing.T) {
 
 	if len(rp.events) != 1 || rp.events[0].eventType != mts.StatusEventTypeBuyFailed {
 		t.Fatalf("expected 1 BUY_FAILED for non-active listing, got %v", rp.events)
+	}
+	if rp.events[0].reason != mts.NoticeFailReasonAlreadySold {
+		t.Fatalf("BUY_FAILED reason = %d, want NoticeFailReasonAlreadySold (81)", rp.events[0].reason)
 	}
 }
 
@@ -514,5 +523,40 @@ func TestRemoveWish_DeletesEntryAndAcks(t *testing.T) {
 	}
 	if rp.events[0].transactionId != transactionId {
 		t.Fatalf("event transactionId mismatch: want %s got %s", transactionId, rp.events[0].transactionId)
+	}
+}
+
+// reasonFromBody extracts the optional "reason" byte from a raw status-event
+// body (zero when absent), so failure tests can assert the client
+// NoticeFailReason code without per-event typed decoding.
+func reasonFromBody(raw json.RawMessage) byte {
+	var b struct {
+		Reason byte `json:"reason"`
+	}
+	_ = json.Unmarshal(raw, &b)
+	return b.Reason
+}
+
+// TestFailReasonMapping pins the error -> client NoticeFailReason code mapping
+// (IDA-verified codes; see the NoticeFailReason* docs in the message package).
+func TestFailReasonMapping(t *testing.T) {
+	cases := []struct {
+		name string
+		err  error
+		want byte
+	}{
+		{"insufficient prepaid", listing.ErrInsufficientPrepaid, mts.NoticeFailReasonNotEnoughNX},
+		{"wrapped insufficient prepaid", fmt.Errorf("ctx: %w", listing.ErrInsufficientPrepaid), mts.NoticeFailReasonNotEnoughNX},
+		{"listing unavailable", listing.ErrListingUnavailable, mts.NoticeFailReasonAlreadySold},
+		{"wrapped unavailable", fmt.Errorf("ctx: %w", listing.ErrListingUnavailable), mts.NoticeFailReasonAlreadySold},
+		{"record not found", gorm.ErrRecordNotFound, mts.NoticeFailReasonAlreadySold},
+		{"anything else", errors.New("boom"), mtsFailReasonGeneric},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			if got := failReasonFor(c.err); got != c.want {
+				t.Fatalf("failReasonFor(%v) = %d, want %d", c.err, got, c.want)
+			}
+		})
 	}
 }

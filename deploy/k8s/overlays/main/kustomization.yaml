@@ -285,6 +285,8 @@ images:
     newTag: main-1944f2f
   - name: ghcr.io/chronicle20/atlas-renders/atlas-renders
     newTag: main-fb8ba56
+  - name: ghcr.io/chronicle20/atlas-rps/atlas-rps
+    newTag: latest
   - name: ghcr.io/chronicle20/atlas-saga-orchestrator/atlas-saga-orchestrator
     newTag: main-93f388d
   - name: ghcr.io/chronicle20/atlas-skills/atlas-skills

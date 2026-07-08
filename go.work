@@ -72,6 +72,7 @@ use (
 	./services/atlas-reactor-actions/atlas.com/reactor
 	./services/atlas-reactors/atlas.com/reactors
 	./services/atlas-renders/atlas.com/renders
+	./services/atlas-rps/atlas.com/rps
 	./services/atlas-saga-orchestrator/atlas.com/saga-orchestrator
 	./services/atlas-skills/atlas.com/skills
 	./services/atlas-storage/atlas.com/storage

@@ -84,6 +84,7 @@ go_services = [
   "atlas-reactor-actions",
   "atlas-reactors",
   "atlas-renders",
+  "atlas-rps",
   "atlas-saga-orchestrator",
   "atlas-skills",
   "atlas-storage",

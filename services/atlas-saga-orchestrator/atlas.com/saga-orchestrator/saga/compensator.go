@@ -1,6 +1,7 @@
 package saga
 
 import (
+	"atlas-saga-orchestrator/cashshop"
 	"atlas-saga-orchestrator/character"
 	"atlas-saga-orchestrator/compartment"
 	"atlas-saga-orchestrator/guild"
@@ -27,6 +28,7 @@ type Compensator interface {
 	WithValidationProcessor(validation.Processor) Compensator
 	WithGuildProcessor(guild.Processor) Compensator
 	WithInviteProcessor(invite.Processor) Compensator
+	WithCashshopProcessor(cashshop.Processor) Compensator
 
 	CompensateFailedStep(s Saga) error
 	compensateEquipAsset(s Saga, failedStep Step[any]) error
@@ -66,6 +68,7 @@ type CompensatorImpl struct {
 	validP  validation.Processor
 	guildP  guild.Processor
 	inviteP invite.Processor
+	csP     cashshop.Processor
 }
 
 func NewCompensator(l logrus.FieldLogger, ctx context.Context) Compensator {
@@ -79,6 +82,7 @@ func NewCompensator(l logrus.FieldLogger, ctx context.Context) Compensator {
 		validP:  validation.NewProcessor(l, ctx),
 		guildP:  guild.NewProcessor(l, ctx),
 		inviteP: invite.NewProcessor(l, ctx),
+		csP:     cashshop.NewProcessor(l, ctx),
 	}
 }
 
@@ -93,6 +97,7 @@ func (c *CompensatorImpl) WithCharacterProcessor(charP character.Processor) Comp
 		validP:  c.validP,
 		guildP:  c.guildP,
 		inviteP: c.inviteP,
+		csP:     c.csP,
 	}
 }
 
@@ -107,6 +112,7 @@ func (c *CompensatorImpl) WithCompartmentProcessor(compP compartment.Processor) 
 		validP:  c.validP,
 		guildP:  c.guildP,
 		inviteP: c.inviteP,
+		csP:     c.csP,
 	}
 }
 
@@ -121,6 +127,7 @@ func (c *CompensatorImpl) WithSkillProcessor(skillP skill.Processor) Compensator
 		validP:  c.validP,
 		guildP:  c.guildP,
 		inviteP: c.inviteP,
+		csP:     c.csP,
 	}
 }
 
@@ -135,6 +142,7 @@ func (c *CompensatorImpl) WithValidationProcessor(validP validation.Processor) C
 		validP:  validP,
 		guildP:  c.guildP,
 		inviteP: c.inviteP,
+		csP:     c.csP,
 	}
 }
 
@@ -149,6 +157,7 @@ func (c *CompensatorImpl) WithGuildProcessor(guildP guild.Processor) Compensator
 		validP:  c.validP,
 		guildP:  guildP,
 		inviteP: c.inviteP,
+		csP:     c.csP,
 	}
 }
 
@@ -163,6 +172,22 @@ func (c *CompensatorImpl) WithInviteProcessor(inviteP invite.Processor) Compensa
 		validP:  c.validP,
 		guildP:  c.guildP,
 		inviteP: inviteP,
+		csP:     c.csP,
+	}
+}
+
+func (c *CompensatorImpl) WithCashshopProcessor(csP cashshop.Processor) Compensator {
+	return &CompensatorImpl{
+		l:       c.l,
+		ctx:     c.ctx,
+		t:       c.t,
+		charP:   c.charP,
+		compP:   c.compP,
+		skillP:  c.skillP,
+		validP:  c.validP,
+		guildP:  c.guildP,
+		inviteP: c.inviteP,
+		csP:     csP,
 	}
 }
 

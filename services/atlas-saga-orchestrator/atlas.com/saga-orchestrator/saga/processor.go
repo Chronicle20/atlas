@@ -32,6 +32,7 @@ type Processor interface {
 	WithValidationProcessor(validation.Processor) Processor
 	WithGuildProcessor(guild.Processor) Processor
 	WithInviteProcessor(invite.Processor) Processor
+	WithCashshopProcessor(cashshop.Processor) Processor
 
 	GetAll() ([]Saga, error)
 	AllProvider() model.Provider[[]Saga]
@@ -76,6 +77,7 @@ type ProcessorImpl struct {
 	validP  validation.Processor
 	guildP  guild.Processor
 	inviteP invite.Processor
+	csP     cashshop.Processor
 }
 
 const maxConflictRetries = 3
@@ -112,6 +114,7 @@ func newProcessorImpl(logger logrus.FieldLogger, ctx context.Context) Processor 
 		validP:  validation.NewProcessor(logger, ctx),
 		guildP:  guild.NewProcessor(logger, ctx),
 		inviteP: invite.NewProcessor(logger, ctx),
+		csP:     cashshop.NewProcessor(logger, ctx),
 	}
 }
 
@@ -128,6 +131,7 @@ func (p *ProcessorImpl) WithCharacterProcessor(charP character.Processor) Proces
 		validP:  p.validP,
 		guildP:  p.guildP,
 		inviteP: p.inviteP,
+		csP:     p.csP,
 	}
 }
 
@@ -144,6 +148,7 @@ func (p *ProcessorImpl) WithCompartmentProcessor(compP compartment.Processor) Pr
 		validP:  p.validP,
 		guildP:  p.guildP,
 		inviteP: p.inviteP,
+		csP:     p.csP,
 	}
 }
 
@@ -160,6 +165,7 @@ func (p *ProcessorImpl) WithSkillProcessor(skillP skill.Processor) Processor {
 		validP:  p.validP,
 		guildP:  p.guildP,
 		inviteP: p.inviteP,
+		csP:     p.csP,
 	}
 }
 
@@ -176,6 +182,7 @@ func (p *ProcessorImpl) WithValidationProcessor(validP validation.Processor) Pro
 		validP:  validP,
 		guildP:  p.guildP,
 		inviteP: p.inviteP,
+		csP:     p.csP,
 	}
 }
 
@@ -192,6 +199,7 @@ func (p *ProcessorImpl) WithGuildProcessor(guildP guild.Processor) Processor {
 		validP:  p.validP,
 		guildP:  guildP,
 		inviteP: p.inviteP,
+		csP:     p.csP,
 	}
 }
 
@@ -208,6 +216,24 @@ func (p *ProcessorImpl) WithInviteProcessor(inviteP invite.Processor) Processor 
 		validP:  p.validP,
 		guildP:  p.guildP,
 		inviteP: inviteP,
+		csP:     p.csP,
+	}
+}
+
+func (p *ProcessorImpl) WithCashshopProcessor(csP cashshop.Processor) Processor {
+	return &ProcessorImpl{
+		l:       p.l,
+		ctx:     p.ctx,
+		t:       p.t,
+		comp:    p.comp.WithCashshopProcessor(csP),
+		handle:  p.handle.WithCashshopProcessor(csP),
+		charP:   p.charP,
+		compP:   p.compP,
+		skillP:  p.skillP,
+		validP:  p.validP,
+		guildP:  p.guildP,
+		inviteP: p.inviteP,
+		csP:     csP,
 	}
 }
 

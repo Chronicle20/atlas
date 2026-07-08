@@ -6,6 +6,8 @@ import (
 	"context"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
@@ -17,6 +19,18 @@ type Processor struct {
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
 	return &Processor{l: l, ctx: ctx}
+}
+
+// InFieldModelProvider retrieves every mini-game room currently registered
+// in field f from atlas-mini-games (task-16 endpoint), for map-entry balloon
+// spawn (task-19).
+func (p *Processor) InFieldModelProvider(f field.Model) model.Provider[[]Model] {
+	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestInField(f), Extract, model.Filters[Model]())
+}
+
+// ForEachInField applies o to every mini-game room in field f.
+func (p *Processor) ForEachInField(f field.Model, o model.Operator[Model]) error {
+	return model.ForEachSlice(p.InFieldModelProvider(f), o, model.ParallelExecute())
 }
 
 func (p *Processor) Create(f field.Model, characterId uint32, roomType byte, title string, private bool, password string, pieceType byte) error {

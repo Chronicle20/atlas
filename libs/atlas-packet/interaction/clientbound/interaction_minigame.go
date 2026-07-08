@@ -91,6 +91,78 @@ func (m *InteractionMiniGameAnswerTie) Decode(_ logrus.FieldLogger, _ context.Co
 	return func(r *request.Reader, options map[string]interface{}) { m.mode = r.ReadByte() }
 }
 
+// InteractionMiniGameRetreatRequest - a player asked to retreat (undo).
+// Bodyless — same shape as the serverbound send (ida-notes.md §G2,
+// COmokDlg::OnRetreatRequest v83 @ 0x6e416b). No Cosmic reference exists;
+// §G2 is the sole layout authority, verified on gms_v83 and gms_v95.
+// packet-audit:fname CMiniRoomBaseDlg::OnPacketBase#MemoryGameRetreatRequest
+type InteractionMiniGameRetreatRequest struct{ mode byte }
+
+func NewInteractionMiniGameRetreatRequest(mode byte) InteractionMiniGameRetreatRequest {
+	return InteractionMiniGameRetreatRequest{mode: mode}
+}
+func (m InteractionMiniGameRetreatRequest) Operation() string { return CharacterInteractionWriter }
+func (m InteractionMiniGameRetreatRequest) String() string    { return "minigame retreat request" }
+func (m InteractionMiniGameRetreatRequest) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
+		w.WriteByte(m.mode)
+		return w.Bytes()
+	}
+}
+func (m *InteractionMiniGameRetreatRequest) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) { m.mode = r.ReadByte() }
+}
+
+// InteractionMiniGameRetreatAnswer - retreat request answered. On accept the
+// client pops stoneCount stones from the tail of the move history and honors
+// turnSlot verbatim (my-turn = turnSlot == mySlot); on decline only the
+// accept discriminator is written. ida-notes.md §G2 is the sole layout
+// authority (no Cosmic reference), verified on gms_v83
+// (COmokDlg::OnRetreatResult @ 0x6e41f9) and gms_v95 (@ 0x684620). N and
+// turnSlot are server-chosen (Task 15); the wire supports any values.
+// packet-audit:fname CMiniRoomBaseDlg::OnPacketBase#MemoryGameRetreatAnswer
+type InteractionMiniGameRetreatAnswer struct {
+	mode       byte
+	accept     bool
+	stoneCount byte
+	turnSlot   byte
+}
+
+func NewInteractionMiniGameRetreatAnswer(mode byte, accept bool, stoneCount byte, turnSlot byte) InteractionMiniGameRetreatAnswer {
+	return InteractionMiniGameRetreatAnswer{mode: mode, accept: accept, stoneCount: stoneCount, turnSlot: turnSlot}
+}
+func (m InteractionMiniGameRetreatAnswer) Operation() string { return CharacterInteractionWriter }
+func (m InteractionMiniGameRetreatAnswer) String() string {
+	return fmt.Sprintf("minigame retreat answer accept [%t] stoneCount [%d] turnSlot [%d]", m.accept, m.stoneCount, m.turnSlot)
+}
+func (m InteractionMiniGameRetreatAnswer) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
+		w.WriteByte(m.mode)
+		accept := byte(0)
+		if m.accept {
+			accept = 1
+		}
+		w.WriteByte(accept)
+		if m.accept {
+			w.WriteByte(m.stoneCount)
+			w.WriteByte(m.turnSlot)
+		}
+		return w.Bytes()
+	}
+}
+func (m *InteractionMiniGameRetreatAnswer) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
+		m.mode = r.ReadByte()
+		m.accept = r.ReadByte() == 1
+		if m.accept {
+			m.stoneCount = r.ReadByte()
+			m.turnSlot = r.ReadByte()
+		}
+	}
+}
+
 // InteractionMiniGameSkip - a player's turn timed out / was skipped
 // packet-audit:fname CMiniRoomBaseDlg::OnPacketBase#MemoryGameSkip
 type InteractionMiniGameSkip struct {

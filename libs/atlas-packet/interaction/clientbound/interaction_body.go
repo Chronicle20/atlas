@@ -149,6 +149,25 @@ func CharacterInteractionMiniGameAnswerTieBody() func(logrus.FieldLogger, contex
 	})
 }
 
+// CharacterInteractionMiniGameRetreatRequestBody sends the bodyless
+// ASK_RETREAT mode — ida-notes.md §G2.
+func CharacterInteractionMiniGameRetreatRequestBody() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", CharacterInteractionModeMemoryGameAskRetreat, func(mode byte) packet.Encoder {
+		return NewInteractionMiniGameRetreatRequest(mode)
+	})
+}
+
+// CharacterInteractionMiniGameRetreatAnswerBody: accept selects the shape —
+// on decline (accept == false) stoneCount/turnSlot are ignored and not
+// serialized; on accept they are the N stones the client pops from the tail
+// of the move history and the slot whose turn follows, per ida-notes.md §G2
+// (no Cosmic reference; the sole layout authority, verified gms_v83/gms_v95).
+func CharacterInteractionMiniGameRetreatAnswerBody(accept bool, stoneCount byte, turnSlot byte) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", CharacterInteractionModeMemoryGameRetreatAnswer, func(mode byte) packet.Encoder {
+		return NewInteractionMiniGameRetreatAnswer(mode, accept, stoneCount, turnSlot)
+	})
+}
+
 func CharacterInteractionMiniGameSkipBody(who byte) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", CharacterInteractionModeMemoryGameSkip, func(mode byte) packet.Encoder {
 		return NewInteractionMiniGameSkip(mode, who)

@@ -58,6 +58,51 @@ func TestInteractionMiniGameAnswerTieRoundTrip(t *testing.T) {
 	}
 }
 
+// Retreat has no Cosmic reference — ida-notes.md §G2 is the sole layout
+// authority, verified on both gms_v83 and gms_v95. ASK_RETREAT (mode 54) is
+// bodyless (COmokDlg::OnRetreatRequest v83 @ 0x6e416b).
+// packet-audit:verify packet=interaction/clientbound/InteractionMiniGameRetreatRequest version=gms_v83 ida=0x6e416b
+// packet-audit:verify packet=interaction/clientbound/InteractionMiniGameRetreatRequest version=gms_v95 ida=0x684620
+func TestInteractionMiniGameRetreatRequestRoundTrip(t *testing.T) {
+	input := NewInteractionMiniGameRetreatRequest(54)
+	for _, v := range test.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			test.RoundTrip(t, ctx, input.Encode, (&InteractionMiniGameRetreatRequest{}).Decode, nil)
+		})
+	}
+}
+
+// RETREAT_ANSWER (mode 55) accept case: byte accept(1), byte N stones to pop,
+// byte turnSlot — COmokDlg::OnRetreatResult (v83 @ 0x6e41f9 / v95 @ 0x684620)
+// per ida-notes.md §G2.
+// packet-audit:verify packet=interaction/clientbound/InteractionMiniGameRetreatAnswer version=gms_v83 ida=0x6e41f9
+// packet-audit:verify packet=interaction/clientbound/InteractionMiniGameRetreatAnswer version=gms_v95 ida=0x684620
+func TestInteractionMiniGameRetreatAnswerAcceptRoundTrip(t *testing.T) {
+	input := NewInteractionMiniGameRetreatAnswer(55, true, 2, 1)
+	for _, v := range test.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			test.RoundTrip(t, ctx, input.Encode, (&InteractionMiniGameRetreatAnswer{}).Decode, nil)
+		})
+	}
+}
+
+// RETREAT_ANSWER decline case: byte accept(0) only — stoneCount/turnSlot are
+// not on the wire and must not be serialized (ida-notes.md §G2 "On decline
+// the body is just byte accept(0)").
+// packet-audit:verify packet=interaction/clientbound/InteractionMiniGameRetreatAnswer version=gms_v83 ida=0x6e41f9
+// packet-audit:verify packet=interaction/clientbound/InteractionMiniGameRetreatAnswer version=gms_v95 ida=0x684620
+func TestInteractionMiniGameRetreatAnswerDeclineRoundTrip(t *testing.T) {
+	input := NewInteractionMiniGameRetreatAnswer(55, false, 0, 0)
+	for _, v := range test.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			test.RoundTrip(t, ctx, input.Encode, (&InteractionMiniGameRetreatAnswer{}).Decode, nil)
+		})
+	}
+}
+
 // TestInteractionMiniGameSkipRoundTrip covers both `who` values: COmokDlg::OnTimeOver
 // (v83 0x6e472e) stores `who` as the slot whose turn it now is (the next mover), not
 // the skipper — see ida-notes.md §G5 SKIP section.

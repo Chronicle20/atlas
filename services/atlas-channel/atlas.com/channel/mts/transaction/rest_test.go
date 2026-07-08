@@ -65,6 +65,33 @@ func TestToMtsItem(t *testing.T) {
 	if item.ItcSn() != 0 {
 		t.Errorf("nITCSN = %d, want 0 (history rows are not addressable)", item.ItcSn())
 	}
+	// A sale renders as "Sold" (contract-history code 0).
+	if item.ProcessStatus() != 0 {
+		t.Errorf("sale nProcessStatus = %d, want 0 (Sold)", item.ProcessStatus())
+	}
+}
+
+// TestToMtsItemProcessStatus pins the buy/sell disposition code the v83 client
+// renders in the My Page -> History status column (CITCWnd_List::GetContractHistoryCode,
+// IDA-verified): a purchase is 1 ("Purchased"), a sale is 0 ("Sold").
+func TestToMtsItemProcessStatus(t *testing.T) {
+	created := time.Date(2026, 6, 17, 10, 30, 0, 0, time.UTC)
+
+	buy, err := Extract(RestModel{ItemId: 1302000, Quantity: 1, TotalPrice: 1500, Kind: "purchase", CreatedAt: created})
+	if err != nil {
+		t.Fatalf("extract purchase: %v", err)
+	}
+	if got := ToMtsItem(buy).ProcessStatus(); got != 1 {
+		t.Errorf("purchase nProcessStatus = %d, want 1 (Purchased)", got)
+	}
+
+	sale, err := Extract(RestModel{ItemId: 1302000, Quantity: 1, TotalPrice: 1500, Kind: "sale", CreatedAt: created})
+	if err != nil {
+		t.Fatalf("extract sale: %v", err)
+	}
+	if got := ToMtsItem(sale).ProcessStatus(); got != 0 {
+		t.Errorf("sale nProcessStatus = %d, want 0 (Sold)", got)
+	}
 }
 
 // TestResource asserts the read endpoint path template matches atlas-mts's

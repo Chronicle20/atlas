@@ -282,9 +282,19 @@ func handleItemTakenHome(sc server.Model, wp writer.Producer) message.Handler[mt
 			return
 		}
 		l.Debugf("MTS item taken home for character [%d] (item [%d]).", e.Body.CharacterId, e.Body.ItemId)
-		announceTo(l, ctx, sc, wp, e.Body.CharacterId, fieldpkt.MtsOperationMoveItcPurchaseItemLtoSDoneBody(mtsTakeHomePurchaseTab, mtsTakeHomeSelectedNo))
-		// Refresh the "Transfer Inventory" panel so the retrieved item drops off
-		// without re-entering MTS (the client does not re-query it itself).
+		// Do NOT write MoveItcPurchaseItemLtoSDone here. ITEM_TAKEN_HOME fires when
+		// atlas-mts soft-deletes the holding — BEFORE accept_to_character has granted
+		// the item to inventory — so a Done sent now confirms a take-home whose
+		// inventory grant has not landed (the client shows the confirmation but the
+		// item slot is still empty). The authoritative Done is written once, from the
+		// saga-COMPLETED path (saga/consumer.go announceMtsTakeHomeDone), which fires
+		// only after both release + accept_to_character succeed. Emitting from both
+		// paths double-confirmed the take-home (the first update no-op'd, the second
+		// stuck) — task-102 live finding.
+		//
+		// This handler still refreshes the "Transfer Inventory" panel: the holding is
+		// gone as of ITEM_TAKEN_HOME, so the retrieved item should drop off the panel
+		// now without waiting for (or re-entering) MTS.
 		announceUserPurchaseList(l, ctx, sc, wp, e.Body.CharacterId)
 	}
 }

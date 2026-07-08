@@ -119,9 +119,16 @@ type SettleResult struct {
 // Kafka, so the timeout budget must grow with the number of effective steps; a
 // flat timeout rolls back legitimate multi-step sagas (see the preset-creation
 // timeout bug, bug_preset_creation_saga_flat_timeout).
+//
+// The per-step budget must cover ONE full cross-service Kafka round-trip
+// (command -> owning service -> status event -> orchestrator), which under a
+// stressed broker is measured in seconds, not ms — an observed MTS buy had a
+// single wallet-credit step take ~11s, tripping the old 1s/step budget and
+// firing compensation while the step was still in flight (item delivered but
+// payment reverted). 15s/step covers the worst case seen with headroom.
 const (
 	listSagaBaseTimeout    = 10 * time.Second
-	listSagaPerStepTimeout = 1 * time.Second
+	listSagaPerStepTimeout = 15 * time.Second
 )
 
 
@@ -496,11 +503,13 @@ func (p *ProcessorImpl) List(req ListRequest) (uuid.UUID, error) {
 // step-count-scaled timeout. The MtsSettlePurchase composite expands to N=3
 // effective steps in the orchestrator (award_currency buyer, award_currency
 // seller, mts_move_listing_to_holding), so the budget must grow with that count;
-// a flat timeout rolls back a legitimate multi-step saga under a stressed broker
-// (see bug_preset_creation_saga_flat_timeout).
+// a flat (or too-tight) timeout rolls back a legitimate multi-step saga under a
+// stressed broker (see bug_preset_creation_saga_flat_timeout). The per-step
+// budget covers one full cross-service Kafka round-trip — seconds under load,
+// not ms; see the list-flow constants for the incident that set 15s.
 const (
 	buySagaBaseTimeout    = 10 * time.Second
-	buySagaPerStepTimeout = 1 * time.Second
+	buySagaPerStepTimeout = 15 * time.Second
 )
 
 // Buy settles a buy / buy-now against an active listing. The flow is:

@@ -1958,6 +1958,18 @@ func candidatesFromFName(fname string) []candidate {
 	// FULL RESOLUTION".
 	case "CMiniRoomBaseDlg::OnPacketBase#EnterResultSuccessMiniGame":
 		return []candidate{{name: "InteractionMiniGameRoom", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	// Game ENTER arm (task-133 / task-18b). The shared ENTER arm (mode 4) has a
+	// GAME shape distinct from the shop-room #Enter: where the shop enter stops
+	// after the visitor's name, the game dialogs read a trailing 20-byte
+	// win/tie/loss record. CMiniRoomBaseDlg::OnEnterBase (v83 0x65ed1c / v95
+	// 0x638f80: slot, DecodeAvatar, name, then v84+/JMS-only Decode2 jobCode)
+	// virtual-dispatches into COmokDlg::OnEnter (v83 sub_6E3BCC @0x6e3bcc / v95
+	// 0x6812e0) or CMemoryGameDlg::OnEnter (v95 0x628980), which read
+	// GW_MiniGameRecord::Decode (v95 0x4f2ad0 = DecodeBuffer(20) = 5×int32; v83
+	// sub_4E42FC). Sent to the room owner on ENTERED; the joining visitor gets
+	// the full InteractionMiniGameRoom snapshot instead. See ida-notes.md §G5.
+	case "CMiniRoomBaseDlg::OnPacketBase#EnterMiniGame":
+		return []candidate{{name: "InteractionMiniGameEnter", dir: csvpkg.DirClientbound, pkg: "interaction"}}
 	// UPDATE_CHAR_BOX mini-room balloon (task-133). Not a mode-prefix dispatcher:
 	// there is no mode byte. CUser::OnMiniRoomBalloon reads roomType then, when
 	// roomType != 0, the trailing balloon fields (ida-notes.md §G3, verified

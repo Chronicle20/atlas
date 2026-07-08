@@ -46,6 +46,8 @@ func miniGameEnterFixtureInput() InteractionMiniGameEnter {
 
 // TestInteractionMiniGameEnterBytes asserts the EXACT gms_v83 wire sequence
 // (no per-avatar jobCode on v83).
+//
+// packet-audit:verify packet=interaction/clientbound/InteractionInteractionMiniGameEnter version=gms_v83 ida=0x65ed1c
 func TestInteractionMiniGameEnterBytes(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	ctx := test.CreateContext("GMS", 83, 1)
@@ -62,6 +64,8 @@ func TestInteractionMiniGameEnterBytes(t *testing.T) {
 // TestInteractionMiniGameEnterBytesV95 asserts the EXACT gms_v95 wire
 // sequence: identical to v83 plus the trailing uint16 jobCode after the name
 // (v95 OnEnterBase @0x638f80: `m_anJobCode[v4] = Decode2()`).
+//
+// packet-audit:verify packet=interaction/clientbound/InteractionInteractionMiniGameEnter version=gms_v95 ida=0x638f80
 func TestInteractionMiniGameEnterBytesV95(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	ctx := test.CreateContext("GMS", 95, 1)

@@ -3,6 +3,48 @@
   "md5": "80ff438ced539b831f0d2ed95099275d",
   "generated_at": "2026-05-14T00:00:00Z",
   "functions": {
+    "CMiniRoomBaseDlg::OnPacketBase#EnterMiniGame": {
+      "address": "0x65ed1c",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (4; OnPacketBase dispatch byte)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "slot (m_apAvatar index; OnEnterBase @0x65ed1c)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "avatar look (DecodeAvatar AvatarLook blob)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "name (m_asUserID)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "record: Unknown (COmokDlg::OnEnter sub_6E3BCC @0x6e3bcc -> sub_4E42FC 20-byte = 5 x int32)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "record: Wins"
+        },
+        {
+          "op": "Decode4",
+          "comment": "record: Ties"
+        },
+        {
+          "op": "Decode4",
+          "comment": "record: Losses"
+        },
+        {
+          "op": "Decode4",
+          "comment": "record: Points"
+        }
+      ]
+    },
     "CMiniRoomBaseDlg::OnPacketBase#MemoryGameReady": {
       "address": "0x6e4608",
       "direction": "clientbound",

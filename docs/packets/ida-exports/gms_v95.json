@@ -3,6 +3,52 @@
   "md5": "3c71fd8872d5efbe16183ae8c51f887d",
   "generated_at": "2026-05-13T00:00:00Z",
   "functions": {
+    "CMiniRoomBaseDlg::OnPacketBase#EnterMiniGame": {
+      "address": "0x638f80",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (4; OnPacketBase dispatch byte)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "slot (m_apAvatar index; OnEnterBase @0x638f80)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "avatar look (DecodeAvatar AvatarLook blob)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "name (m_asUserID)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "jobCode (m_anJobCode[i]; v84+/JMS only - absent in v83; OnEnterBase @0x638f80)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "record: Unknown (COmokDlg::OnEnter @0x6812e0 -> GW_MiniGameRecord::Decode @0x4f2ad0 DecodeBuffer(20) = 5 x int32)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "record: Wins"
+        },
+        {
+          "op": "Decode4",
+          "comment": "record: Ties"
+        },
+        {
+          "op": "Decode4",
+          "comment": "record: Losses"
+        },
+        {
+          "op": "Decode4",
+          "comment": "record: Points"
+        }
+      ]
+    },
     "CMiniRoomBaseDlg::OnPacketBase#MemoryGameReady": {
       "address": "0x684930",
       "direction": "clientbound",

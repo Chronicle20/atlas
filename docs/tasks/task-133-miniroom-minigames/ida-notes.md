@@ -577,6 +577,38 @@ Addresses: v83 OnEnterResultStatic 0x65dff3, OnEnterResultBase 0x65ec3d, COmokDl
 
 ---
 
+### Game ENTER arm (mode 4 GAME shape) — packet-audit ceremony (task-18b)
+
+The shared ENTER arm (mode 4) has a GAME shape distinct from the shop-room
+`#Enter`: where the shop enter stops after the visitor name, the game dialogs
+read a trailing 20-byte win/tie/loss record. Confirmed by decompile this
+session (v95 @13341, v83-dump @13342):
+
+- **CMiniRoomBaseDlg::OnEnterBase** — v83 **0x65ed1c**, v95 **0x638f80**. Reads
+  `Decode1 slot`, `DecodeAvatar(slot)`, `DecodeStr name`, then on v95 (typed)
+  `this->m_anJobCode[v4] = Decode2()`; v83 @0x65ed1c has NO Decode2 (goes
+  straight from `operator=` on m_asUserID to the virtual `OnEnter` at vtable+68).
+  This is the SAME `enterHasJobCode` version gate as the room-enter avatar list
+  (§G5): v83 absent, v84+/JMS present. Then virtual-dispatches `OnEnter`.
+- **COmokDlg::OnEnter** — v83 `sub_6E3BCC` **0x6e3bcc**, v95 **0x6812e0**.
+  First call is the record read: v83 `sub_4E42FC(pkt)` (= DecodeBuffer 20, §G5
+  line ~386); v95 `GW_MiniGameRecord::Decode` **0x4f2ad0** which is literally
+  `CInPacket::DecodeBuffer(iPacket, this, 20u)` = 5 × int32 (Unknown, Wins,
+  Ties, Losses, Points). Followed by the "%s HAVE ENTERED" chat
+  (SP_437__S__HAVE_ENTERED) + `play_minigame_sound` — no further wire reads.
+- **CMemoryGameDlg::OnEnter** — v95 **0x628980**, byte-identical body to
+  COmokDlg::OnEnter (same GW_MiniGameRecord::Decode @0x4f2ad0 then chat/sound).
+
+Encoder `InteractionMiniGameEnter` (owner-notification on ENTERED) models this:
+mode, slot, avatar blob, name, [Decode2 jobCode iff enterHasJobCode], 5×int32
+record. v83 exact-byte fixture `TestInteractionMiniGameEnterBytes`; v95
+`…BytesV95`. The v83 audit report is 🔍/FlatInvalid (the flat differ cannot
+model the version-gated jobCode write in a non-loop context) — the byte fixture
+is the ground truth, per VERIFYING_A_PACKET §10 "confirm per-branch via
+byte-level tests"; v95 report is a clean ✅.
+
+---
+
 ## Coverage summary
 
 | Gate | v83 | v95 | Status |

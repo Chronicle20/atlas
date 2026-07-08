@@ -30,6 +30,8 @@ import (
 //
 // Sent to the room owner when ENTERED fires; the joining visitor gets the
 // full InteractionMiniGameRoom snapshot instead (design §5).
+//
+// packet-audit:fname CMiniRoomBaseDlg::OnPacketBase#EnterMiniGame
 type InteractionMiniGameEnter struct {
 	mode   byte
 	player MiniGameRoomPlayer

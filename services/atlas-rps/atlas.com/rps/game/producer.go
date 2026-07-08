@@ -11,8 +11,9 @@ import (
 )
 
 // gameOpenedEventProvider builds the GameOpened event emitted when a new RPS
-// session is opened for a character at an NPC.
-func gameOpenedEventProvider(characterId uint32, worldId world.Id, channelId channel.Id, npcId uint32) model.Provider[[]kafka.Message] {
+// session is opened for a character at an NPC. ante is the participation fee
+// / entry cost (in meso), sourced from the reward ladder's EntryCostMeso.
+func gameOpenedEventProvider(characterId uint32, worldId world.Id, channelId channel.Id, npcId uint32, ante uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &rps.Event[rps.GameOpenedEventBody]{
 		CharacterId: characterId,
@@ -21,6 +22,7 @@ func gameOpenedEventProvider(characterId uint32, worldId world.Id, channelId cha
 		Type:        rps.EventTypeGameOpened,
 		Body: rps.GameOpenedEventBody{
 			NpcId: npcId,
+			Ante:  ante,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

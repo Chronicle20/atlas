@@ -184,9 +184,18 @@ func (p *ProcessorImpl) Get(characterId uint32) (Model, Rung, bool, error) {
 }
 
 // Start disposes any stale session for the character, opens a new rung-0
-// StatusOpen session, and buffers a GameOpened event.
+// StatusOpen session, and buffers a GameOpened event. Start now resolves the
+// reward ladder to source the ante (entry cost) carried on GameOpened - a
+// ladder-provider failure is a real error (the config is unavailable), and
+// Start returns it so the entry saga can compensate/refund; it never opens a
+// session with a silently-wrong ante.
 func (p *ProcessorImpl) Start(mb *message.Buffer, characterId uint32, worldId world.Id, channelId channel.Id, npcId uint32) (Model, error) {
 	p.l.Debugf("Starting RPS session for character [%d] at npc [%d].", characterId, npcId)
+
+	ladder, err := p.ladderProvider()
+	if err != nil {
+		return Model{}, err
+	}
 
 	// Dispose of any stale session left behind by a prior game (e.g. an
 	// abandoned session the sweeper hasn't reclaimed yet). This is a silent,
@@ -208,7 +217,7 @@ func (p *ProcessorImpl) Start(mb *message.Buffer, characterId uint32, worldId wo
 
 	GetRegistry().Put(p.ctx, m)
 
-	if err := mb.Put(rps.EnvEventTopic, gameOpenedEventProvider(characterId, worldId, channelId, npcId)); err != nil {
+	if err := mb.Put(rps.EnvEventTopic, gameOpenedEventProvider(characterId, worldId, channelId, npcId, ladder.EntryCostMeso)); err != nil {
 		return Model{}, err
 	}
 

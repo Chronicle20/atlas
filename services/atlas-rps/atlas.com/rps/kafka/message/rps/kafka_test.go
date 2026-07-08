@@ -50,6 +50,7 @@ func TestEventGameOpenedRoundTrip(t *testing.T) {
 		Type:        EventTypeGameOpened,
 		Body: GameOpenedEventBody{
 			NpcId: 9010000,
+			Ante:  1000,
 		},
 	}
 
@@ -63,6 +64,7 @@ func TestEventGameOpenedRoundTrip(t *testing.T) {
 	assert.Equal(t, EventTypeGameOpened, out.Type)
 	assert.Equal(t, uint32(55), out.CharacterId)
 	assert.Equal(t, uint32(9010000), out.Body.NpcId)
+	assert.Equal(t, uint32(1000), out.Body.Ante)
 }
 
 func TestEventRoundResultRoundTrip(t *testing.T) {

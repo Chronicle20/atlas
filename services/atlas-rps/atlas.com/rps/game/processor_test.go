@@ -66,6 +66,15 @@ func ladderProviderFor(l game.Ladder) game.LadderProvider {
 	}
 }
 
+// erroringLadderProvider is a game.LadderProvider stub that always fails,
+// for tests asserting a caller correctly propagates a ladder-resolution
+// error rather than proceeding with a zero-value ladder.
+func erroringLadderProvider(err error) game.LadderProvider {
+	return func() (game.Ladder, error) {
+		return game.Ladder{}, err
+	}
+}
+
 // noopSagaSubmitter is a game.SagaSubmitter stub for tests that don't
 // exercise the payout path (it must still be non-nil to satisfy
 // NewProcessorWithLadder).
@@ -193,6 +202,7 @@ func TestProcessor_FullHappyPath(t *testing.T) {
 	assert.Equal(t, rps.EventTypeGameOpened, decodeEventType(t, msgs[0]))
 	opened := decodeGameOpened(t, msgs[0])
 	assert.Equal(t, testNpcId, opened.Body.NpcId)
+	assert.Equal(t, uint32(1000), opened.Body.Ante, "ante should be sourced from the ladder's EntryCostMeso")
 
 	assert.Equal(t, rps.EventTypeRoundResult, decodeEventType(t, msgs[1]))
 	round1 := decodeRoundResult(t, msgs[1])
@@ -432,6 +442,31 @@ func TestProcessor_Continue_InvalidStatusReturnsError(t *testing.T) {
 
 	_, err = p.Continue(mb, characterId)
 	assert.ErrorIs(t, err, game.ErrInvalidStatus)
+}
+
+// TestProcessor_Start_PropagatesLadderError verifies Start now resolves the
+// ladder to source the GameOpened ante, and fails loudly (no session opened,
+// no event buffered) rather than silently proceeding with a zero ante when
+// the ladder provider errors - a ladder-load failure is a real error the
+// entry saga must be able to compensate/refund against.
+func TestProcessor_Start_PropagatesLadderError(t *testing.T) {
+	setupRegistryTest(t)
+	ten := setupTestTenant(t)
+	ctx := testCtx(ten)
+	characterId := uint32(1099)
+
+	ladderErr := errors.New("boom: config unavailable")
+	p := game.NewProcessorWithLadder(testLogger(), ctx, fixedThrows(game.ThrowRock), erroringLadderProvider(ladderErr), noopSagaSubmitter())
+
+	mb := message.NewBuffer()
+	_, err := p.Start(mb, characterId, testWorldId, testChannelId, testNpcId)
+	require.ErrorIs(t, err, ladderErr)
+
+	_, found := game.GetRegistry().Get(ctx, characterId)
+	assert.False(t, found, "no session should be opened when the ladder cannot be resolved")
+
+	msgs := mb.GetAll()[rps.EnvEventTopic]
+	assert.Empty(t, msgs, "no GameOpened event should be buffered when the ladder cannot be resolved")
 }
 
 // TestProcessor_StartAndEmit_PropagatesBuildError verifies the *AndEmit

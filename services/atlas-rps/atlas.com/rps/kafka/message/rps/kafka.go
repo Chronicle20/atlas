@@ -73,9 +73,12 @@ type Event[E any] struct {
 }
 
 // GameOpenedEventBody signals a new RPS session has been opened for a
-// character at an NPC.
+// character at an NPC. Ante is the participation fee / entry cost (in meso)
+// charged to open the session, sourced from the reward ladder's
+// EntryCostMeso; the channel's clientbound OPEN frame displays it.
 type GameOpenedEventBody struct {
 	NpcId uint32 `json:"npcId"`
+	Ante  uint32 `json:"ante"`
 }
 
 // Prize describes a reward granted at a ladder rung.

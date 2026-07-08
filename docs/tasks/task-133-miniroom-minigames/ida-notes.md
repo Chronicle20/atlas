@@ -371,8 +371,15 @@ if turn == 0:
 (First flip is forwarded to the opponent only; second flip to both — design §3.2.)
 
 ### RESULT / GET_RESULT (mode 62) — three shapes
-`COmokDlg::OnGameResult` (v83 @ 0x6e4463) and `CMemoryGameDlg::OnGameResult`
-(v83 @ 0x64e423) are byte-identical in shape:
+`COmokDlg::OnGameResult` (v83 @ 0x6e4463, **v95 @ 0x680570**) and
+`CMemoryGameDlg::OnGameResult` (v83 @ 0x64e423, **v95 @ 0x627f60**) are
+byte-identical in shape, across both versions. The v95 handler bodies were
+decompiled directly (reached via the mode-62 case of `COmokDlg::OnPacket`
+@ 0x688b70 / `CMemoryGameDlg::OnPacket` @ 0x634020): each reads
+`Decode1` resultType, then (when resultType != 1) `Decode1` winnerSlot, then two
+`GW_MiniGameRecord::Decode` calls (v95 @ 0x4f2ad0, `DecodeBuffer(0x14)` = 20
+bytes = 5 × int32) — identical to the v83 `sub_4E42FC` record blob below. The
+tier-1 fixture is pinned for both versions (evidence gms_v83 + gms_v95):
 ```
 v3 = Decode1;                 // byte resultType
 if ( v3 == 1 ) {              // TIE  -> no winner byte

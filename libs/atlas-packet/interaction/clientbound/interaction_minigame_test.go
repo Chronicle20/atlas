@@ -191,12 +191,14 @@ func TestInteractionMiniGameCardSelectSecondRoundTrip(t *testing.T) {
 	}
 }
 
-// RESULT (mode 62) is byte-identical between COmokDlg::OnGameResult (v83 @
-// 0x6e4463) and CMemoryGameDlg::OnGameResult (v83 @ 0x64e423) per
-// ida-notes.md §G5 RESULT. No v95 address is recorded for either handler
-// body (only the mode-62 dispatch case, not the handler itself, is confirmed
-// present in the v95 switch) — do not fabricate one.
+// RESULT (mode 62) is byte-identical between COmokDlg::OnGameResult and
+// CMemoryGameDlg::OnGameResult on both versions per ida-notes.md §G5 RESULT:
+// v83 @ 0x6e4463 / 0x64e423, v95 @ 0x680570 (COmokDlg) / 0x627f60
+// (CMemoryGameDlg). Both v95 handler bodies were decompiled and confirmed to
+// read the same order (Decode1 resultType; if != 1 Decode1 winnerSlot; then
+// GW_MiniGameRecord::Decode ×2 @ 0x4f2ad0 = 20 bytes each).
 // packet-audit:verify packet=interaction/clientbound/InteractionInteractionMiniGameResult version=gms_v83 ida=0x6e4463
+// packet-audit:verify packet=interaction/clientbound/InteractionInteractionMiniGameResult version=gms_v95 ida=0x680570
 func TestInteractionMiniGameResultOwnerWinRoundTrip(t *testing.T) {
 	ownerRecord := interaction.GameRecord{Unknown: 1, Wins: 2, Ties: 3, Losses: 4, Points: 5}
 	visitorRecord := interaction.GameRecord{Unknown: 6, Wins: 7, Ties: 8, Losses: 9, Points: 10}

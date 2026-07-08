@@ -7995,6 +7995,64 @@
         }
       ]
     },
+    "CMiniRoomBaseDlg::OnPacketBase#MemoryGameResult": {
+      "address": "0x680570",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (62 RESULT; dispatch byte)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "resultType (1 = tie -> no winner byte; else win/forfeit; \u00a7G5 RESULT)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "winnerSlot (present for resultType != 1; win if == mySlot)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "owner record: Unknown (sub_4E42FC DecodeBuffer(0x14) = 5 x int32)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "owner record: Wins"
+        },
+        {
+          "op": "Decode4",
+          "comment": "owner record: Ties"
+        },
+        {
+          "op": "Decode4",
+          "comment": "owner record: Losses"
+        },
+        {
+          "op": "Decode4",
+          "comment": "owner record: Points"
+        },
+        {
+          "op": "Decode4",
+          "comment": "visitor record: Unknown (sub_4E42FC DecodeBuffer(0x14) = 5 x int32)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "visitor record: Wins"
+        },
+        {
+          "op": "Decode4",
+          "comment": "visitor record: Ties"
+        },
+        {
+          "op": "Decode4",
+          "comment": "visitor record: Losses"
+        },
+        {
+          "op": "Decode4",
+          "comment": "visitor record: Points"
+        }
+      ]
+    },
     "CMemoryGameDlg::OnTieRequest": {
       "address": "0x627e60",
       "direction": "serverbound",

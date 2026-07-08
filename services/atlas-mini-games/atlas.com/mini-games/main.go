@@ -1,6 +1,7 @@
 package main
 
 import (
+	minigameconsumer "atlas-mini-games/kafka/consumer/minigame"
 	"atlas-mini-games/logger"
 	"atlas-mini-games/record"
 	"os"
@@ -54,12 +55,15 @@ func main() {
 	// an in-memory registry added by a later plan task, not Redis.
 	db := database.Connect(l, database.SetMigrations(record.Migration))
 
-	// Domain consumer registrations (game: later tasks) land here via
-	// consumer.GetManager().AddConsumer(...) followed by each domain's
-	// InitConsumers/InitHandlers, mirroring atlas-buddies/main.go. record has
-	// no Kafka consumers — it's a pure REST + persistence domain called
-	// directly by the game domain (plan tasks 11+). Nothing to register yet,
-	// so only the debug endpoint is mounted below.
+	// Mini-game lifecycle command consumer (create/visit/leave/chat/expel).
+	// record has no Kafka consumers — it's a pure REST + persistence domain
+	// called directly by the game domain. Gameplay command handlers register
+	// alongside these once Task 15 lands.
+	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
+	minigameconsumer.InitConsumers(l)(cmf)(consumerGroupId)
+	if err := minigameconsumer.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
 
 	tdm.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 

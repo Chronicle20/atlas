@@ -17,26 +17,27 @@ require (
 )
 
 require (
+	github.com/Chronicle20/atlas/libs/atlas-model v0.0.0
 	github.com/Chronicle20/atlas/libs/atlas-redis v0.0.0-00010101000000-000000000000
 	github.com/Chronicle20/atlas/libs/atlas-tracing v0.0.0
+	github.com/gorilla/mux v1.8.1
+	github.com/jtumidanski/api2go v1.0.4
+	github.com/segmentio/kafka-go v0.4.51
 )
 
 require (
-	github.com/Chronicle20/atlas/libs/atlas-model v0.0.0 // indirect
+	github.com/Chronicle20/atlas/libs/atlas-retry v0.0.0 // indirect
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/gedex/inflector v0.0.0-20170307190818-16278e9db813 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
-	github.com/gorilla/mux v1.8.1 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.29.0 // indirect
-	github.com/jtumidanski/api2go v1.0.4 // indirect
 	github.com/klauspost/compress v1.18.5 // indirect
 	github.com/magefile/mage v1.9.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
-	github.com/segmentio/kafka-go v0.4.51 // indirect
 	github.com/yuin/gopher-lua v1.1.1 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/otel v1.44.0 // indirect

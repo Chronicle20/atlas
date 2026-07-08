@@ -12,6 +12,8 @@ import (
 // is used when set; otherwise the method returns a zero Model and a nil
 // error.
 type ProcessorMock struct {
+	GetFunc func(characterId uint32) (game.Model, game.Rung, bool, error)
+
 	StartFunc        func(mb *message.Buffer, characterId uint32, worldId world.Id, channelId channel.Id, npcId uint32) (game.Model, error)
 	StartAndEmitFunc func(characterId uint32, worldId world.Id, channelId channel.Id, npcId uint32) (game.Model, error)
 
@@ -32,6 +34,13 @@ type ProcessorMock struct {
 }
 
 var _ game.Processor = (*ProcessorMock)(nil)
+
+func (m *ProcessorMock) Get(characterId uint32) (game.Model, game.Rung, bool, error) {
+	if m.GetFunc != nil {
+		return m.GetFunc(characterId)
+	}
+	return game.Model{}, game.Rung{}, false, nil
+}
 
 func (m *ProcessorMock) Start(mb *message.Buffer, characterId uint32, worldId world.Id, channelId channel.Id, npcId uint32) (game.Model, error) {
 	if m.StartFunc != nil {

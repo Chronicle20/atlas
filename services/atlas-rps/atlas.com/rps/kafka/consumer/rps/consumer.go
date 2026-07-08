@@ -49,12 +49,14 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 	}
 }
 
-// ladderProviderFor builds a game.LadderProvider backed by the configuration
+// LadderProviderFor builds a game.LadderProvider backed by the configuration
 // service for the tenant carried on ctx. This is the real, non-shell wiring:
 // game cannot import configuration directly (configuration imports game for
-// the Ladder/Rung types), so the provider closure is constructed here, at the
-// one layer that is permitted to import both.
-func ladderProviderFor(l logrus.FieldLogger, ctx context.Context) game.LadderProvider {
+// the Ladder/Rung types), so the provider closure is constructed here, at a
+// layer that is permitted to import both. Exported so other composition
+// roots that also need a real (non-shell) game.Processor - e.g. the REST
+// bootstrap in main.go - can reuse this wiring instead of duplicating it.
+func LadderProviderFor(l logrus.FieldLogger, ctx context.Context) game.LadderProvider {
 	return func() (game.Ladder, error) {
 		t := tenant.MustFromContext(ctx)
 		return configuration.NewProcessor(l, ctx).GetLadder(t.Id())
@@ -69,7 +71,7 @@ func ladderProviderFor(l logrus.FieldLogger, ctx context.Context) game.LadderPro
 // mirroring the seam pattern used by mount/consumer.go's
 // tamingMobInfoBroadcaster.
 var newProcessor = func(l logrus.FieldLogger, ctx context.Context) game.Processor {
-	return game.NewProcessorWithLadder(l, ctx, game.DefaultThrowSource, ladderProviderFor(l, ctx))
+	return game.NewProcessorWithLadder(l, ctx, game.DefaultThrowSource, LadderProviderFor(l, ctx))
 }
 
 func handleSelectCommand(l logrus.FieldLogger, ctx context.Context, c rpsMsg.Command[rpsMsg.SelectCommandBody]) {

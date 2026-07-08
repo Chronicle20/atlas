@@ -4,6 +4,8 @@ import (
 	"atlas-rps/game"
 	rpsConsumer "atlas-rps/kafka/consumer/rps"
 	"atlas-rps/logger"
+	"atlas-rps/rest"
+	"context"
 	"os"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
@@ -13,7 +15,18 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
 	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
+	"github.com/sirupsen/logrus"
 )
+
+// newRpsProcessor is the REST bootstrap's game.ProcessorFactory: it wires a
+// real (non-shell) game.Processor per request, backed by the same
+// configuration-derived LadderProvider the kafka command consumer uses (see
+// rpsConsumer.LadderProviderFor). game/resource.go cannot build this itself
+// because "atlas-rps/configuration" imports "atlas-rps/game", so main.go -
+// which is free to import both - supplies it.
+func newRpsProcessor(l logrus.FieldLogger, ctx context.Context) game.Processor {
+	return game.NewProcessorWithLadder(l, ctx, game.DefaultThrowSource, rpsConsumer.LadderProviderFor(l, ctx))
+}
 
 const serviceName = "atlas-rps"
 
@@ -48,6 +61,7 @@ func main() {
 		WithWaitGroup(tdm.WaitGroup()).
 		SetBasePath("/api/").
 		SetPort(os.Getenv("REST_PORT")).
+		AddRouteInitializer(game.InitResource(rest.GetServer(), newRpsProcessor)).
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
 		Run()
 

@@ -38,12 +38,27 @@ var ErrLadderNotConfigured = errors.New("game: no LadderProvider configured; use
 // fixed stub Ladder directly - no HTTP server required.
 type LadderProvider func() (Ladder, error)
 
+// ProcessorFactory builds a fully-wired Processor for a single
+// request/command, given the caller's logger and context. It exists so that
+// composition roots which CAN import both "atlas-rps/game" and
+// "atlas-rps/configuration" (main.go, kafka/consumer/rps) can hand this
+// package a ready-made constructor - e.g. the REST resource in
+// game/resource.go - without game itself ever importing configuration (see
+// LadderProvider's doc for why that import is forbidden).
+type ProcessorFactory func(l logrus.FieldLogger, ctx context.Context) Processor
+
 // Processor defines the RPS game state-machine operations. Each buffered
 // Method(mb, ...) is a pure state transition that also buffers the events it
 // produces onto mb; the corresponding MethodAndEmit(...) wraps the buffered
 // method via message.EmitWithResult so the buffered events are emitted
 // atomically after a successful transition.
 type Processor interface {
+	// Get returns the active session for the given character, together with
+	// the prize currently resolved at its rung (ok=false if the session is
+	// fresh (rung 0) or no prize is configured at the current rung). Returns
+	// ErrSessionNotFound if no active session exists for the character.
+	Get(characterId uint32) (Model, Rung, bool, error)
+
 	// Start disposes any stale session for the character, opens a new
 	// rung-0 StatusOpen session, and buffers a GameOpened event.
 	Start(mb *message.Buffer, characterId uint32, worldId world.Id, channelId channel.Id, npcId uint32) (Model, error)
@@ -117,6 +132,23 @@ func NewProcessorWithLadder(l logrus.FieldLogger, ctx context.Context, throwSour
 		throwSource:    throwSource,
 		ladderProvider: ladderProvider,
 	}
+}
+
+// Get returns the active session for the given character, together with the
+// prize currently resolved at its rung.
+func (p *ProcessorImpl) Get(characterId uint32) (Model, Rung, bool, error) {
+	m, ok := GetRegistry().Get(p.ctx, characterId)
+	if !ok {
+		return Model{}, Rung{}, false, ErrSessionNotFound
+	}
+
+	ladder, err := p.ladderProvider()
+	if err != nil {
+		return Model{}, Rung{}, false, err
+	}
+	prize, prizeOk := ladder.PrizeAt(m.Rung())
+
+	return m, prize, prizeOk, nil
 }
 
 // Start disposes any stale session for the character, opens a new rung-0

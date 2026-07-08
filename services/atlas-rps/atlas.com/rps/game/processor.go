@@ -98,8 +98,12 @@ type Processor interface {
 	Continue(mb *message.Buffer, characterId uint32) (Model, error)
 	ContinueAndEmit(characterId uint32) (Model, error)
 
-	// Collect resolves the prize at the session's current rung, ends the
-	// session, and buffers a GameEnded(collected) event.
+	// Collect ends the session from any active status - the client's only
+	// "leave" action has no dedicated collect sub-op. From
+	// StatusAwaitingDecision it pays the resolved prize at the current rung
+	// and buffers GameEnded(collected); from any other active status
+	// (nothing won yet, or a rung still being risked) it forfeits with no
+	// payout and buffers GameEnded(quit).
 	Collect(mb *message.Buffer, characterId uint32) (Model, error)
 	CollectAndEmit(characterId uint32) (Model, error)
 
@@ -374,18 +378,37 @@ func (p *ProcessorImpl) ContinueAndEmit(characterId uint32) (Model, error) {
 	})(characterId)
 }
 
-// Collect resolves the prize at the session's current rung, submits the
-// payout saga for any non-zero prize components, removes the session, and
-// buffers a GameEnded{collected, prize} event. If saga submission fails, the
-// session is left in place (not removed, no event buffered) so a retried
-// Collect can attempt the payout again.
+// Collect ends the session for the given character from any active status.
+// The client's only "leave the game" action (Exit) has no dedicated
+// "collect" sub-op - it maps to Collect regardless of the session's current
+// status (IDA-verified: there is no separate collect sub-op). Behavior
+// depends on the status found:
+//
+//   - StatusAwaitingDecision (a win, not yet risked further): resolves the
+//     prize at the session's current rung, submits the payout saga for any
+//     non-zero prize components, removes the session, and buffers a
+//     GameEnded{collected, prize} event. If saga submission fails, the
+//     session is left in place (not removed, no event buffered) so a
+//     retried Collect can attempt the payout again.
+//   - StatusOpen or StatusAwaitingSelect (nothing won yet, or the current
+//     rung is still being risked mid-round): no payout - the session is
+//     removed and a GameEnded{quit} event is buffered. StatusEnded, which
+//     should never actually be found in the registry, is also treated as
+//     this forfeit branch defensively.
 func (p *ProcessorImpl) Collect(mb *message.Buffer, characterId uint32) (Model, error) {
 	m, ok := GetRegistry().Get(p.ctx, characterId)
 	if !ok {
 		return Model{}, ErrSessionNotFound
 	}
+
 	if m.Status() != StatusAwaitingDecision {
-		return Model{}, ErrInvalidStatus
+		GetRegistry().Remove(p.ctx, characterId)
+
+		if err := mb.Put(rps.EnvEventTopic, gameEndedEventProvider(characterId, m.WorldId(), m.ChannelId(), rps.ReasonQuit, nil)); err != nil {
+			return Model{}, err
+		}
+
+		return CloneModelBuilder(m).SetStatus(StatusEnded).Build()
 	}
 
 	ladder, err := p.ladderProvider()

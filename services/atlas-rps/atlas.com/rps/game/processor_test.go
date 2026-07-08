@@ -741,3 +741,80 @@ func TestProcessor_Collect_PrizePresentButGrantsNothing(t *testing.T) {
 		assert.Equal(t, uint32(0), ended.Body.GrantedPrize.Meso)
 	}
 }
+
+// TestProcessor_Collect_FromStatusOpenForfeits verifies that Collect, when
+// invoked against a freshly opened session (rung 0, nothing played yet), is
+// treated as the client's Exit action: the session is forfeited with no
+// payout rather than erroring. The client has no dedicated "collect" sub-op
+// - Exit(4) always maps to Collect - so this status must be handled rather
+// than rejected with ErrInvalidStatus.
+func TestProcessor_Collect_FromStatusOpenForfeits(t *testing.T) {
+	setupRegistryTest(t)
+	ten := setupTestTenant(t)
+	ctx := testCtx(ten)
+	characterId := uint32(2107)
+
+	calls := 0
+	p := game.NewProcessorWithLadder(testLogger(), ctx, fixedThrows(game.ThrowRock), ladderProviderFor(twoRungLadder()), countingSagaSubmitter(&calls))
+
+	mb := message.NewBuffer()
+	m, err := p.Start(mb, characterId, testWorldId, testChannelId, testNpcId)
+	require.NoError(t, err)
+	require.Equal(t, game.StatusOpen, m.Status())
+	require.Equal(t, 0, m.Rung())
+
+	collectBuf := message.NewBuffer()
+	m, err = p.Collect(collectBuf, characterId)
+	require.NoError(t, err, "Collect must not error from StatusOpen - it is the client's only leave action")
+	assert.Equal(t, game.StatusEnded, m.Status())
+
+	assert.Equal(t, 0, calls, "an unplayed rung must never submit a payout saga")
+
+	_, found := game.GetRegistry().Get(ctx, characterId)
+	assert.False(t, found, "the session must be removed on forfeit")
+
+	msgs := collectBuf.GetAll()[rps.EnvEventTopic]
+	require.Len(t, msgs, 1, "expected a single GameEnded event")
+	ended := decodeGameEnded(t, msgs[0])
+	assert.Equal(t, rps.ReasonQuit, ended.Body.Reason)
+	assert.Nil(t, ended.Body.GrantedPrize, "a forfeited collect grants no prize")
+}
+
+// TestProcessor_Collect_FromStatusAwaitingSelectForfeits verifies that
+// Collect, when invoked mid-round (after a Continue or a tie, before the
+// next Select is resolved), forfeits the ALREADY-WON rung N rather than
+// paying it out - the rung is being risked and is not yet banked, so exiting
+// mid-risk must not pay.
+func TestProcessor_Collect_FromStatusAwaitingSelectForfeits(t *testing.T) {
+	setupRegistryTest(t)
+	ten := setupTestTenant(t)
+	ctx := testCtx(ten)
+	characterId := uint32(2108)
+
+	calls := 0
+	p := game.NewProcessorWithLadder(testLogger(), ctx, fixedThrows(game.ThrowScissors), ladderProviderFor(twoRungLadder()), countingSagaSubmitter(&calls))
+
+	mb := message.NewBuffer()
+	winToRungOne(t, p, mb, characterId)
+
+	m, err := p.Continue(mb, characterId)
+	require.NoError(t, err)
+	require.Equal(t, game.StatusAwaitingSelect, m.Status())
+	require.Equal(t, 1, m.Rung(), "rung 1 was won but is now being risked, not yet collected")
+
+	collectBuf := message.NewBuffer()
+	m, err = p.Collect(collectBuf, characterId)
+	require.NoError(t, err, "Collect must not error from StatusAwaitingSelect - it is the client's only leave action")
+	assert.Equal(t, game.StatusEnded, m.Status())
+
+	assert.Equal(t, 0, calls, "the mid-risk rung must not be paid out on forfeit")
+
+	_, found := game.GetRegistry().Get(ctx, characterId)
+	assert.False(t, found, "the session must be removed on forfeit")
+
+	msgs := collectBuf.GetAll()[rps.EnvEventTopic]
+	require.Len(t, msgs, 1, "expected a single GameEnded event")
+	ended := decodeGameEnded(t, msgs[0])
+	assert.Equal(t, rps.ReasonQuit, ended.Body.Reason)
+	assert.Nil(t, ended.Body.GrantedPrize, "a forfeited collect grants no prize")
+}

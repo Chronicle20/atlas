@@ -7,6 +7,23 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
+// NewConfig builds a consumer Config with the library defaults.
+//
+// Default rationale (task-136 — see docs/tasks/task-136-consumer-fetch-wedge/findings.md):
+//
+//   - maxWait 10s: kafka-go's own default. With MinBytes=1 (the kafka-go
+//     default) the broker answers a fetch immediately when data exists;
+//     MaxWait only bounds how long the broker parks an EMPTY long-poll, so
+//     a large value costs zero delivery latency while cutting idle fetch
+//     traffic ~200× vs the previous 50ms.
+//   - fetchTimeout 1m: the per-call FetchMessage deadline is a liveness
+//     tick, not a recreate trigger. A deadline expiration on a reader that
+//     is still making fetch attempts is an idle tick (healthy); only ticks
+//     with zero reader progress count toward maxConsecutiveTimeouts.
+//   - maxConsecutiveTimeouts 3: consecutive NO-PROGRESS ticks before the
+//     reader is declared wedged and recreated (~3m to detection at the
+//     default tick interval).
+//
 //goland:noinspection GoUnusedExportedFunction
 func NewConfig(brokers []string, name string, topic string, groupId string) Config {
 	return Config{
@@ -14,9 +31,9 @@ func NewConfig(brokers []string, name string, topic string, groupId string) Conf
 		name:                   name,
 		topic:                  topic,
 		groupId:                groupId,
-		maxWait:                50 * time.Millisecond,
+		maxWait:                10 * time.Second,
 		startOffset:            kafka.FirstOffset,
-		fetchTimeout:           5 * time.Minute,
+		fetchTimeout:           time.Minute,
 		maxConsecutiveTimeouts: 3,
 	}
 }

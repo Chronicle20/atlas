@@ -5,6 +5,7 @@ import (
 	"atlas-channel/server"
 	"atlas-channel/socket/writer"
 	"context"
+	"math"
 	"testing"
 
 	channelconst "github.com/Chronicle20/atlas/libs/atlas-constants/channel"
@@ -173,6 +174,43 @@ func TestRoundResultEvent_Win(t *testing.T) {
 	}
 	if result.StraightVictoryCount() != 3 {
 		t.Fatalf("win: want straightVictoryCount=+3, got %d", result.StraightVictoryCount())
+	}
+}
+
+// TestRoundResultEvent_WinLargeRungClampsPositive is the regression guard for
+// the int8 sign-flip bug: a Win at a rung >= 128 must NOT overflow int8 into
+// a negative value (which the client would render as a LOSS). The count is
+// clamped to math.MaxInt8 (127) so the sign stays positive.
+func TestRoundResultEvent_WinLargeRungClampsPositive(t *testing.T) {
+	tm := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tm)
+	sc := newTestServer(t, tm)
+
+	restore, calls := withRecordingAnnouncer(t)
+	defer restore()
+
+	h := handleRoundResultEvent(sc, nil)
+	h(logrus.New(), ctx, rpsmsg.Event[rpsmsg.RoundResultEventBody]{
+		CharacterId: 2008,
+		WorldId:     sc.WorldId(),
+		ChannelId:   sc.Channel().Id(),
+		Type:        rpsmsg.EventTypeRoundResult,
+		Body: rpsmsg.RoundResultEventBody{
+			OpponentThrow: 2,
+			Outcome:       rpsmsg.OutcomeWin,
+			Rung:          130,
+		},
+	})
+
+	if len(*calls) != 1 {
+		t.Fatalf("want 1 announce call, got %d", len(*calls))
+	}
+	result := decodeResult(t, (*calls)[0].bytes)
+	if result.StraightVictoryCount() < 0 {
+		t.Fatalf("win at rung 130: straightVictoryCount must stay POSITIVE (no int8 sign flip), got %d", result.StraightVictoryCount())
+	}
+	if result.StraightVictoryCount() != int8(math.MaxInt8) {
+		t.Fatalf("win at rung 130: want clamped straightVictoryCount=127, got %d", result.StraightVictoryCount())
 	}
 }
 

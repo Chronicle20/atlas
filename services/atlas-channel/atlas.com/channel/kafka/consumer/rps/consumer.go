@@ -14,6 +14,7 @@ import (
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
+	"math"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
@@ -114,7 +115,7 @@ func handleRoundResultEvent(sc server.Model, wp writer.Producer) message.Handler
 		var straightVictoryCount int8
 		switch e.Body.Outcome {
 		case rpsmsg.OutcomeWin, rpsmsg.OutcomeTie:
-			straightVictoryCount = int8(e.Body.Rung)
+			straightVictoryCount = clampVictoryCount(e.Body.Rung)
 		default: // rpsmsg.OutcomeLose
 			straightVictoryCount = -1
 		}
@@ -124,6 +125,24 @@ func handleRoundResultEvent(sc server.Model, wp writer.Producer) message.Handler
 
 		rpsAnnouncer(l, ctx, wp, sc, e.CharacterId, rpspkt.RPSGameResultBody(e.Body.OpponentThrow, straightVictoryCount))
 	}
+}
+
+// clampVictoryCount converts a non-negative winning/tie rung into the signed
+// int8 straightVictoryCount the RESULT frame carries, clamping to
+// math.MaxInt8 (127) so a large tenant-configured ladder can never overflow
+// int8 and flip the SIGN negative - which the client reads as a LOSS (see
+// libs/atlas-packet/rps/clientbound/operation.go RESULT comment: the client
+// branches on `straightVictoryCount < 0`). Rung is always >= 0 on a
+// win/tie; the clamp only guards the upper bound. The magnitude is
+// display-only, so saturating at 127 is safe.
+func clampVictoryCount(rung int) int8 {
+	if rung > math.MaxInt8 {
+		return math.MaxInt8
+	}
+	if rung < 0 {
+		return 0
+	}
+	return int8(rung)
 }
 
 // handleGameEndedEvent translates a GAME_ENDED event into the bodyless END

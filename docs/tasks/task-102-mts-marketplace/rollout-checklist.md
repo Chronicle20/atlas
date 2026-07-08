@@ -39,6 +39,16 @@ The `MTS_OPERATION` / `MTS_OPERATION2` writers (task-096) must be present
 (gms_v83/84/87/95: opcodes 0x15C/0x15B family; jms clientbound MTS results are
 version-absent — see design.md §9.4). Confirm the writer entries exist.
 
+## 3b. `noticeFailReasons` writer table — descriptive failure notices
+The `MtsOperation` writer's options need the per-version `noticeFailReasons`
+table (semantic key -> client `CITC::NoticeFailReason` byte: `NOT_ENOUGH_NX:66`,
+`ITEM_SOLD:81`, ... — identical across gms v83/84/87/95, IDA-verified; see the
+seed templates for the full ten-key table). atlas-mts emits semantic keys on
+`BUY_FAILED`/`BID_FAILED`; the channel resolves them here into the mode-24
+reason-notice arm. A tenant WITHOUT the table degrades gracefully to the bare
+generic *Failed arm (no crash) — patch the live config to get the descriptive
+messages.
+
 ## 4. `mts-configs` tenant config resource (economic knobs)
 The `atlas-tenants` `mts-configs` resource provides per-tenant knobs (listing
 fee, commission, caps, level gate, auction window, fixed-sale term, price

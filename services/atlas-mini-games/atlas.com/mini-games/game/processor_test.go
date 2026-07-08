@@ -1192,6 +1192,56 @@ func TestMidGameExpel_VisitorForfeits(t *testing.T) {
 	assert.Equal(t, byte(5), left[0].Body.Status, "expelled")
 }
 
+// --- TeardownCharacter (session-destroy / map-leave / logout consumers) ------
+//
+// TeardownCharacter goes through the public p.emit path (unlike every other
+// test above, which calls the lowercase method directly with an explicit
+// buffer), so these exercise the real producer path via
+// producertest.InstallNoop (testmain_test.go) rather than decoding events off
+// a buffer.
+
+func TestTeardownCharacter_InGameVisitorForfeitsOwnerWinsRoomStays(t *testing.T) {
+	h := newHarness(t)
+	owner := uint32(11001)
+	visitor := uint32(11002)
+	seedRoom(t, h, runningOmokBuilder(h, owner, visitor, 1))
+
+	require.NoError(t, h.p.TeardownCharacter(visitor))
+
+	r, ok := h.p.reg.Get(h.t, owner)
+	require.True(t, ok, "room stays open after the visitor forfeits and leaves")
+	assert.Equal(t, uint32(0), r.VisitorId(), "visitor slot cleared")
+	assert.False(t, r.InProgress())
+	assert.Equal(t, scoreWin, r.OwnerScore(), "owner wins the forfeit")
+	assert.Equal(t, scoreLossForfeit, r.VisitorScore())
+}
+
+func TestTeardownCharacter_OwnerClosesRoom(t *testing.T) {
+	h := newHarness(t)
+	owner := uint32(11101)
+	visitor := uint32(11102)
+	seedRoom(t, h, runningOmokBuilder(h, owner, visitor, 1))
+
+	require.NoError(t, h.p.TeardownCharacter(owner))
+
+	_, ok := h.p.reg.Get(h.t, owner)
+	assert.False(t, ok, "owner's teardown closes the room")
+}
+
+func TestTeardownCharacter_NonMemberIsNoOp(t *testing.T) {
+	h := newHarness(t)
+	owner := uint32(11201)
+	visitor := uint32(11202)
+	seedRoom(t, h, runningOmokBuilder(h, owner, visitor, 1))
+
+	require.NoError(t, h.p.TeardownCharacter(424242))
+
+	r, ok := h.p.reg.Get(h.t, owner)
+	require.True(t, ok, "unrelated room is untouched")
+	assert.Equal(t, visitor, r.VisitorId())
+	assert.True(t, r.InProgress())
+}
+
 // --- EXIT_AFTER_GAME ---------------------------------------------------------
 
 func TestExitAfter_OwnerClosesRoomAfterResult(t *testing.T) {

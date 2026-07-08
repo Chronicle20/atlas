@@ -1,7 +1,10 @@
 package main
 
 import (
+	"atlas-mini-games/game"
+	characterconsumer "atlas-mini-games/kafka/consumer/character"
 	minigameconsumer "atlas-mini-games/kafka/consumer/minigame"
+	sessionconsumer "atlas-mini-games/kafka/consumer/session"
 	"atlas-mini-games/logger"
 	"atlas-mini-games/record"
 	"os"
@@ -51,8 +54,8 @@ func main() {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
 
-	// No Redis / registry for this service — the miniroom/game state lives in
-	// an in-memory registry added by a later plan task, not Redis.
+	// No Redis for this service — the miniroom/game state lives in the
+	// process-wide in-memory game.Registry, not Redis.
 	db := database.Connect(l, database.SetMigrations(record.Migration))
 
 	// Mini-game lifecycle + gameplay command consumer (create/visit/leave/chat/
@@ -62,6 +65,18 @@ func main() {
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	minigameconsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	if err := minigameconsumer.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+
+	// Teardown consumers: release a character's mini-game room membership on
+	// session destroy (disconnect/kick) or map-leave/logout, same forfeit-then-
+	// leave path as an explicit LEAVE command (game.Processor.TeardownCharacter).
+	sessionconsumer.InitConsumers(l)(cmf)(consumerGroupId)
+	if err := sessionconsumer.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	characterconsumer.InitConsumers(l)(cmf)(consumerGroupId)
+	if err := characterconsumer.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
 		l.WithError(err).Fatal("Unable to register kafka handlers.")
 	}
 
@@ -82,8 +97,7 @@ func main() {
 		SetBasePath(GetServer().GetPrefix()).
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(record.InitResource(GetServer())(db)).
-		// AddRouteInitializer(game.InitResource(GetServer())) is added here
-		// once the game domain lands (plan tasks 11+).
+		AddRouteInitializer(game.InitResource(GetServer())).
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
 		AddRouteInitializer(server.MountReadiness("/readyz", ready)).
 		Run()

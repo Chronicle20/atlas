@@ -6,34 +6,9 @@ import (
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
-func TestGameRoomRoundTrip(t *testing.T) {
-	for _, v := range pt.Variants {
-		t.Run(v.Name, func(t *testing.T) {
-			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
-			visitors := []Visitor{
-				NewGameVisitor(0, testAvatar(), "Player1", GameRecord{Wins: 5}),
-			}
-			input := NewGameRoom(OmokRoomType, 2, visitors, "OmokRoom", 0, false, 0)
-			output := Room{}
-			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
-			if output.RoomType() != OmokRoomType {
-				t.Errorf("roomType: got %v, want %v", output.RoomType(), OmokRoomType)
-			}
-			if output.Capacity() != 2 {
-				t.Errorf("capacity: got %v, want 2", output.Capacity())
-			}
-			if len(output.Visitors()) != 1 {
-				t.Fatalf("visitors: got %v, want 1", len(output.Visitors()))
-			}
-			if output.Visitors()[0].Name() != "Player1" {
-				t.Errorf("visitor name: got %q, want %q", output.Visitors()[0].Name(), "Player1")
-			}
-			if output.Title() != "OmokRoom" {
-				t.Errorf("title: got %q, want %q", output.Title(), "OmokRoom")
-			}
-		})
-	}
-}
+// Game rooms (Omok / Match Cards) are intentionally NOT modelled by Room —
+// the verified game room-enter blob is clientbound.InteractionMiniGameRoom
+// (see interaction/clientbound/interaction_minigame_room_test.go).
 
 func TestPersonalShopRoomRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {

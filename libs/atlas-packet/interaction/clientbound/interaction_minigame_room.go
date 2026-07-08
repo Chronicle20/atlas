@@ -8,18 +8,34 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
 // MiniGameRoomPlayer is one occupant of an Omok / Match Cards room as it
 // appears in the room-enter snapshot. Its avatar+name flow through the avatar
 // list; its 20-byte win/tie/loss/points record flows through the SEPARATE
-// record list (see InteractionMiniGameRoom for the two-list layout).
+// record list (see InteractionMiniGameRoom for the two-list layout). JobCode
+// is written only on versions whose client reads it (see enterHasJobCode).
 type MiniGameRoomPlayer struct {
-	Slot   byte
-	Avatar model.Avatar
-	Name   string
-	Record interaction.GameRecord
+	Slot    byte
+	Avatar  model.Avatar
+	Name    string
+	JobCode uint16
+	Record  interaction.GameRecord
+}
+
+// enterHasJobCode reports whether this version's OnEnterResultBase reads a
+// per-avatar Decode2 jobCode (`m_anJobCode[i]`) after the visitor name.
+// IDA-grounded on all five audited IDBs (ida-notes.md §G5 room-enter FULL
+// RESOLUTION): ABSENT in gms v83 (0x65ec3d, disasm-verified — the loop tail
+// has no Decode2); PRESENT in gms v84 (sub_674AA6 @0x674aa6), gms v87
+// (sub_698F32 @0x698f32), gms v95 (0x638e30, typed `m_anJobCode`) and
+// jms v185 (sub_6DABDB @0x6dabdb). NOTE: this is a field where v84 does NOT
+// follow v83 — the grounded gate is MajorAtLeast(84), not the usual >=87.
+func enterHasJobCode(ctx context.Context) bool {
+	t := tenant.MustFromContext(ctx)
+	return (t.IsRegion("GMS") && t.MajorAtLeast(84)) || t.IsRegion("JMS")
 }
 
 // InteractionMiniGameRoom is the EnterResultSuccess body for an Omok /
@@ -37,15 +53,17 @@ type MiniGameRoomPlayer struct {
 //     The vtable+92 `IsEntrusted()` predicate is 0 for both game dialogs
 //     (sub_48315F `return 0`), so the owner-slot-0 Decode4/RegisterEmployer
 //     int32 branch is DEAD for games: every occupant, owner included, is a
-//     full avatar. (v95 adds a per-avatar Decode2 jobCode here; v83 does not.)
+//     full avatar. v84+/JMS additionally read a per-avatar uint16 jobCode
+//     after each name (version-gated here via enterHasJobCode; v83 does not
+//     read it).
 //   - COmokDlg::OnEnterResult (v83 0x6e388e) / CMemoryGameDlg::OnEnterResult
 //     (v83 0x64db..): a SECOND 0xFF-terminated RECORD list — each entry
 //     {byte slot, 20-byte record = 5×int32 via sub_4E42FC} — then string
 //     title, byte gameKind, byte tournament, and (tournament only) byte round.
 //
-// Cross-checked against Cosmic getMiniGame (PacketCreator.java:4653-4688),
-// which addCharLook()s the owner (confirming no int32 branch) and writes the
-// two lists exactly this way.
+// Cross-checked against Cosmic getMiniGame (PacketCreator.java:4653-4688) and
+// getMatchCard (PacketCreator.java:4852-4890), which addCharLook() the owner
+// (confirming no int32 branch) and write the two lists exactly this way.
 //
 // packet-audit:fname CMiniRoomBaseDlg::OnPacketBase#EnterResultSuccessMiniGame
 type InteractionMiniGameRoom struct {
@@ -92,10 +110,14 @@ func (m InteractionMiniGameRoom) Encode(l logrus.FieldLogger, ctx context.Contex
 		w.WriteByte(m.capacity)
 		w.WriteByte(m.yourSlot)
 		// Avatar list (0xFF-terminated).
+		jobCode := enterHasJobCode(ctx)
 		for _, p := range m.players {
 			w.WriteByte(p.Slot)
 			w.WriteByteArray(p.Avatar.Encode(l, ctx)(options))
 			w.WriteAsciiString(p.Name)
+			if jobCode {
+				w.WriteShort(p.JobCode)
+			}
 		}
 		w.WriteByte(0xFF)
 		// Record list (0xFF-terminated), separate from the avatar list.
@@ -127,10 +149,12 @@ func (m *InteractionMiniGameRoom) Decode(l logrus.FieldLogger, ctx context.Conte
 
 		// Avatar list.
 		type avatarEntry struct {
-			slot   byte
-			avatar model.Avatar
-			name   string
+			slot    byte
+			avatar  model.Avatar
+			name    string
+			jobCode uint16
 		}
+		jobCode := enterHasJobCode(ctx)
 		var avatars []avatarEntry
 		for {
 			slot := r.ReadByte()
@@ -139,7 +163,11 @@ func (m *InteractionMiniGameRoom) Decode(l logrus.FieldLogger, ctx context.Conte
 			}
 			var a model.Avatar
 			a.Decode(l, ctx)(r, options)
-			avatars = append(avatars, avatarEntry{slot: slot, avatar: a, name: r.ReadAsciiString()})
+			e := avatarEntry{slot: slot, avatar: a, name: r.ReadAsciiString()}
+			if jobCode {
+				e.jobCode = r.ReadUint16()
+			}
+			avatars = append(avatars, e)
 		}
 
 		// Record list, keyed by slot back onto the avatar entries.
@@ -161,10 +189,11 @@ func (m *InteractionMiniGameRoom) Decode(l logrus.FieldLogger, ctx context.Conte
 		m.players = make([]MiniGameRoomPlayer, 0, len(avatars))
 		for _, a := range avatars {
 			m.players = append(m.players, MiniGameRoomPlayer{
-				Slot:   a.slot,
-				Avatar: a.avatar,
-				Name:   a.name,
-				Record: records[a.slot],
+				Slot:    a.slot,
+				Avatar:  a.avatar,
+				Name:    a.name,
+				JobCode: a.jobCode,
+				Record:  records[a.slot],
 			})
 		}
 

@@ -104,64 +104,11 @@ func (m *MiniRoomBase) Enter(_ uint32) packet.Encode {
 	}
 }
 
-type GameMiniRoom struct {
-	*MiniRoomBase
-	Tournament bool
-	Round      byte
-}
-
-func (m *GameMiniRoom) Spawn(_ uint32) packet.Encode {
-	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		return func(options map[string]interface{}) []byte {
-			return []byte{}
-		}
-	}
-}
-
-func (m *GameMiniRoom) Enter(_ uint32) packet.Encode {
-	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
-		return func(options map[string]interface{}) []byte {
-			w.WriteByte(byte(m.Type()))
-			w.WriteByte(m.Capacity())
-			for _, v := range m.Visitors() {
-				w.WriteByteArray(v.Enter()(l, ctx)(options))
-			}
-			w.WriteByte(0xFF)
-			w.WriteAsciiString(m.Title)
-			w.WriteByte(m.GameKind)
-			w.WriteBool(m.Tournament)
-			if m.Tournament {
-				w.WriteByte(m.Round)
-			}
-			return w.Bytes()
-		}
-	}
-}
-
-func NewOmokMiniRoom(owner MiniGameRoomVisitor) MiniRoom {
-	visitors := make([]MiniRoomVisitor, 0)
-	visitors = append(visitors, &owner)
-	return &GameMiniRoom{
-		MiniRoomBase: &MiniRoomBase{
-			MiniRoomTypeVal: OmokMiniRoomType,
-			CapacityVal:     2,
-			VisitorList:     visitors,
-		},
-	}
-}
-
-func NewMatchCardMiniRoom(owner MiniGameRoomVisitor) MiniRoom {
-	visitors := make([]MiniRoomVisitor, 0)
-	visitors = append(visitors, &owner)
-	return &GameMiniRoom{
-		MiniRoomBase: &MiniRoomBase{
-			MiniRoomTypeVal: MatchCardMiniRoomType,
-			CapacityVal:     2,
-			VisitorList:     visitors,
-		},
-	}
-}
+// NOTE: game mini rooms (Omok / Match Cards) are intentionally NOT modelled
+// here. The removed GameMiniRoom.Enter encode (interleaved avatar+record
+// list, no yourSlot byte) did not match the client read order; the verified
+// game room-enter blob lives in clientbound.InteractionMiniGameRoom
+// (ida-notes.md §G5 "Room-enter blob — FULL RESOLUTION").
 
 func NewTradeMiniRoom(owner MiniRoomVisitorBase) MiniRoom {
 	visitors := make([]MiniRoomVisitor, 0)
@@ -312,22 +259,6 @@ func (m *MiniRoomVisitorBase) Enter() packet.Encode {
 	}
 }
 
-type MiniGameRoomVisitor struct {
-	Mrb    MiniRoomVisitorBase
-	Record MiniGameRecord
-}
-
-func (m *MiniGameRoomVisitor) Enter() packet.Encode {
-	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
-		return func(options map[string]interface{}) []byte {
-			w.WriteByteArray(m.Mrb.Enter()(l, ctx)(options))
-			w.WriteByteArray(m.Record.Encode(l, ctx)(options))
-			return w.Bytes()
-		}
-	}
-}
-
 type MerchantOwnerVisitor struct {
 	ItemId       item.Id
 	MerchantName string
@@ -345,22 +276,3 @@ func (m *MerchantOwnerVisitor) Enter() packet.Encode {
 	}
 }
 
-type MiniGameRecord struct {
-	Unknown uint32
-	Wins    uint32
-	Ties    uint32
-	Losses  uint32
-	Points  uint32
-}
-
-func (m *MiniGameRecord) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
-	w := response.NewWriter(l)
-	return func(options map[string]interface{}) []byte {
-		w.WriteInt(m.Unknown)
-		w.WriteInt(m.Wins)
-		w.WriteInt(m.Ties)
-		w.WriteInt(m.Losses)
-		w.WriteInt(m.Points)
-		return w.Bytes()
-	}
-}

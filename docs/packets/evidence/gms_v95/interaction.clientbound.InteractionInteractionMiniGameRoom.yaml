@@ -5,6 +5,6 @@ category: TIER1-FIXTURE
 ida:
     function: CMiniRoomBaseDlg::OnPacketBase#EnterResultSuccessMiniGame
     address: "0x638e30"
-    decompile_sha256: 29b84715add441223b2ef2cb4d08b271900e78b40f7c2cb1851a046d7260d6cb
+    decompile_sha256: fc7cb9c1f0e0cc43f947f16edf9e2377e28b1889084ed6f7b887ac390f2dd0ae
 verifies:
-    - libs/atlas-packet/interaction/clientbound/interaction_minigame_room_test.go#TestInteractionMiniGameRoomBytes
+    - libs/atlas-packet/interaction/clientbound/interaction_minigame_room_test.go#TestInteractionMiniGameRoomBytesV95

@@ -71,10 +71,10 @@
     },
     {
       "Index": 7,
-      "AtlasOp": 0,
+      "AtlasOp": 1,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "avatar list terminator (0xFF)",
+      "IDAOp": 1,
+      "IDAComment": "jobCode (m_anJobCode[i]; v84+/JMS only — absent in v83)",
       "Verdict": 0,
       "Note": ""
     },
@@ -83,16 +83,16 @@
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "record slot (0xFF terminates record list; COmokDlg::OnEnterResult @0x680e70)",
+      "IDAComment": "avatar list terminator (0xFF)",
       "Verdict": 0,
       "Note": ""
     },
     {
       "Index": 9,
-      "AtlasOp": 2,
+      "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 2,
-      "IDAComment": "record: Unknown (sub_4E42FC 20-byte = 5 x int32)",
+      "IDAOp": 0,
+      "IDAComment": "record slot (0xFF terminates record list; COmokDlg::OnEnterResult @0x680e70)",
       "Verdict": 0,
       "Note": ""
     },
@@ -101,7 +101,7 @@
       "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
-      "IDAComment": "record: Wins",
+      "IDAComment": "record: Unknown (sub_4E42FC 20-byte = 5 x int32)",
       "Verdict": 0,
       "Note": ""
     },
@@ -110,7 +110,7 @@
       "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
-      "IDAComment": "record: Ties",
+      "IDAComment": "record: Wins",
       "Verdict": 0,
       "Note": ""
     },
@@ -119,7 +119,7 @@
       "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
-      "IDAComment": "record: Losses",
+      "IDAComment": "record: Ties",
       "Verdict": 0,
       "Note": ""
     },
@@ -128,12 +128,21 @@
       "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
-      "IDAComment": "record: Points",
+      "IDAComment": "record: Losses",
       "Verdict": 0,
       "Note": ""
     },
     {
       "Index": 14,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "record: Points",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 15,
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
@@ -142,7 +151,7 @@
       "Note": ""
     },
     {
-      "Index": 15,
+      "Index": 16,
       "AtlasOp": 4,
       "AtlasKind": 0,
       "IDAOp": 4,
@@ -151,7 +160,7 @@
       "Note": ""
     },
     {
-      "Index": 16,
+      "Index": 17,
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
@@ -160,7 +169,7 @@
       "Note": ""
     },
     {
-      "Index": 17,
+      "Index": 18,
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
@@ -169,7 +178,7 @@
       "Note": ""
     },
     {
-      "Index": 18,
+      "Index": 19,
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,

@@ -13785,6 +13785,10 @@
           "comment": "name (m_asUserID). IsEntrusted()=0 for games => avatar path, no int32 branch"
         },
         {
+          "op": "Decode2",
+          "comment": "jobCode (m_anJobCode[i]; v84+/JMS only — absent in v83)"
+        },
+        {
           "op": "Decode1",
           "comment": "avatar list terminator (0xFF)"
         },

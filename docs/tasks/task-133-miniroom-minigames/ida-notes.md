@@ -479,6 +479,41 @@ the COmokDlg primary vtable from its constructor.
 - v95 `CMiniRoomBaseDlg::OnEnterResultBase` @ **0x638e30** decompiles with typed names:
   the predicate is `this->IsEntrusted(this)` and the setter is `this->RegisterEmployer(this, Decode4())`.
 
+Decompile snippets. The v83 branch in `OnEnterResultBase` @ 0x65ec3d:
+```c
+if ( !(*(*this + 92))(this) || v4 )        /*0x65ec8c*/   // !IsEntrusted() || slot != 0
+    CMiniRoomBaseDlg::DecodeAvatar(this, v4, v2);          /*0x65ecac*/
+else {
+    v9 = *this;                                            /*0x65ec92*/
+    v5 = CInPacket::Decode4(v2);                           /*0x65ec95*/
+    (*(v9 + 96))(this, v5);                                /*0x65eca0*/  // RegisterEmployer(itemId)
+}
+```
+The vtable+92/+96 stubs shared by both game dialogs (also personal-shop / trade / cash-trade):
+```c
+int sub_48315F() { return 0; }             // 0x48315f  vtable+92 for COmokDlg (0xafcbec) & CMemoryGameDlg (0xaf8084)
+void __stdcall nullsub_96(int a1) { ; }    // 0x483162  vtable+96 no-op pair
+```
+The CEntrustedShopDlg override — the ONLY dialog where the int32 branch is live:
+```c
+int sub_517F68() { return 1; }             // 0x517f68  vtable+92 @ 0xaf3928+92
+```
+v95 typed decompile of the same loop (OnEnterResultBase @ 0x638e30), naming both virtuals:
+```c
+if ( !this->IsEntrusted(this) || i ) {
+    v6 = 0;
+    CMiniRoomBaseDlg::DecodeAvatar(this, i, iPacket);
+} else {
+    p_RegisterEmployer = &this->RegisterEmployer;
+    v5 = CInPacket::Decode4(iPacket);
+    (*p_RegisterEmployer)(this, v5);
+    v6 = 1;
+}
+...
+if ( !v6 )
+    this->m_anJobCode[i] = CInPacket::Decode2(iPacket);   // per-avatar jobCode (v84+; see below)
+```
+
 So the branch `if ( !(*(*this+92))(this) || slot )` in OnEnterResultBase (v83 @ 0x65ec3d,
 v95 @ 0x638e30) is: **"if this dialog is NOT an entrusted (hired-merchant) shop, OR
 slot != 0 → read a full avatar; else (entrusted AND slot 0) → read a Decode4 int32
@@ -487,16 +522,26 @@ slot != 0 → read a full avatar; else (entrusted AND slot 0) → read a Decode4
 **Conclusion for game rooms: `IsEntrusted()` returns 0 for both COmokDlg and
 CMemoryGameDlg, so the predicate is always false → the `Decode4` int32 branch is DEAD for
 Omok/MatchCards. Every visitor, including owner slot 0, is a full avatar.** This matches
-Cosmic `getMiniGame` (PacketCreator.java:4653-4688), which `addCharLook()`s the owner.
+Cosmic `getMiniGame` (PacketCreator.java:4653-4688) and `getMatchCard`
+(PacketCreator.java:4852-4890), both of which `addCharLook()` the owner and write the
+avatar list and record list as two separate 0xFF-terminated blocks.
 
-**v83 vs v95 field difference — per-avatar jobCode:** v95 OnEnterResultBase reads, after
-each visitor's name, `if (!isEntrusted) m_anJobCode[i] = Decode2();` (a 2-byte job code).
-**v83 does NOT** — verified at the disassembly level (v83 OnEnterResultBase loop tail
-0x65ecb7 DecodeStr → 0x65ecd9 `inc m_nCurUsers` → 0x65ecdf `jmp` back; no `Decode2`/
-`[eax+..h]` call between name and loop-back; the v83 refs list contains only Decode1,
-Decode4, DecodeStr, DecodeAvatar). Cosmic (v83-era) likewise writes no job code. The
-task-7b encoder targets **v83** and omits the jobCode; a v95 encoder would append a
-`WriteShort(jobCode)` after each avatar name.
+**Per-avatar jobCode — version-gated, grounded on ALL FIVE audited IDBs:** after each
+visitor's name the loop conditionally reads a 2-byte job code
+(`if (!isEntrusted) m_anJobCode[i] = Decode2();`):
+
+| Version | OnEnterResultBase | jobCode Decode2? |
+|---|---|---|
+| gms v83 (port 13342) | 0x65ec3d | **NO** — disasm-verified: loop tail 0x65ecb7 DecodeStr → 0x65ecd9 `inc m_nCurUsers` → 0x65ecdf `jmp` back; no Decode2; refs list has only Decode1/Decode4/DecodeStr/DecodeAvatar |
+| gms v84 (port 13345) | sub_674AA6 @ 0x674aa6 (reached from OnEnterResultStatic-equivalent 0x673e5c) | **YES** — `if (!v12) *((_WORD*)this + v4 + 158) = CInPacket::Decode2(v2);` |
+| gms v87 (port 13343) | sub_698F32 @ 0x698f32 (reached from OnEnterResultStatic 0x6982f8) | **YES** — `if (!v12) *(this + v4 + 166) = CInPacket::Decode2(v2);` |
+| gms v95 (port 13341) | 0x638e30 | **YES** — typed `m_anJobCode[i] = Decode2()` |
+| jms v185 (port 13344) | sub_6DABDB @ 0x6dabdb (reached from OnEnterResultStatic 0x6da234) | **YES** — `if (!v12) *(this + v4 + 166) = CInPacket::Decode2(v2);` |
+
+Cosmic (v83-era) writes no job code, consistent with the v83 client. **Encoder gate:
+`(GMS && MajorAtLeast(84)) || JMS`** — note this is a field where v84 does NOT follow v83
+(the usual `>=87` heuristic would be wrong here; grounded per-version instead).
+`clientbound.InteractionMiniGameRoom` implements the gate (`enterHasJobCode`).
 
 **DecodeAvatar reads the AvatarLook blob ONLY** (v95 `DecodeAvatar` @ 0x6389d0 →
 `AvatarLook::AvatarLook(&look, iPacket)`; v83 @ 0x65f2b1). slot / name / (v95 jobCode)
@@ -516,7 +561,7 @@ byte   roomType            # 1 = Omok, 2 = MatchCards
 byte   capacity            # m_nMaxUsers (2 for games)
 byte   yourSlot            # m_nMyPosition (recipient's slot: 0 owner / 1 visitor)
 # avatar list (0xFF-terminated) — OnEnterResultBase:
-repeat: byte slot (<0/0xFF terminates); <AvatarLook blob>; string name
+repeat: byte slot (<0/0xFF terminates); <AvatarLook blob>; string name; [uint16 jobCode v84+/JMS]
 0xFF
 # record list (0xFF-terminated) — dialog OnEnterResult:
 repeat: byte slot (0xFF terminates); <20-byte record = 5 x int32>

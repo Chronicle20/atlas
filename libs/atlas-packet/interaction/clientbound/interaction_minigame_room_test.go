@@ -41,10 +41,12 @@ func ascii(s string) []byte {
 
 // Game room-enter blob (task-7b). Verified byte-for-byte against the decompiled
 // client read order on gms_v83 (OnEnterResultBase 0x65ec3d + COmokDlg::OnEnterResult
-// 0x6e388e) and gms_v95 (OnEnterResultBase 0x638e30 + COmokDlg::OnEnterResult
-// 0x680e70). The vtable+92 IsEntrusted() predicate is 0 for both game dialogs
-// (sub_48315F `return 0`), so the owner-slot-0 int32 branch is dead — every
-// occupant is a full avatar (ida-notes.md §G5 "Room-enter blob — FULL RESOLUTION").
+// 0x6e388e; fixture TestInteractionMiniGameRoomBytes) and gms_v95
+// (OnEnterResultBase 0x638e30 + COmokDlg::OnEnterResult 0x680e70; fixture
+// TestInteractionMiniGameRoomBytesV95, which additionally asserts the v84+/JMS
+// per-avatar uint16 jobCode). The vtable+92 IsEntrusted() predicate is 0 for both
+// game dialogs (sub_48315F `return 0`), so the owner-slot-0 int32 branch is dead —
+// every occupant is a full avatar (ida-notes.md §G5 "Room-enter blob — FULL RESOLUTION").
 // packet-audit:verify packet=interaction/clientbound/InteractionInteractionMiniGameRoom version=gms_v83 ida=0x65ec3d
 // packet-audit:verify packet=interaction/clientbound/InteractionInteractionMiniGameRoom version=gms_v95 ida=0x638e30
 //
@@ -62,54 +64,83 @@ func ascii(s string) []byte {
 // and every occupant including owner slot 0 is a full avatar (the vtable+92
 // IsEntrusted() int32 branch is dead for games; §G5). This is the correction
 // the design (§6.1) called for over the interleaved single-list model.
-func TestInteractionMiniGameRoomBytes(t *testing.T) {
-	l, _ := testlog.NewNullLogger()
-	ctx := test.CreateContext("GMS", 83, 1)
-
-	avatar := singleEquipAvatar()
-	avatarBytes := avatar.Encode(l, ctx)(nil)
-
-	ownerRec := interaction.GameRecord{Unknown: 1, Wins: 10, Ties: 2, Losses: 3, Points: 500}
-	visitorRec := interaction.GameRecord{Unknown: 1, Wins: 4, Ties: 1, Losses: 6, Points: 250}
-
-	players := []MiniGameRoomPlayer{
-		{Slot: 0, Avatar: avatar, Name: "Owner", Record: ownerRec},
-		{Slot: 1, Avatar: avatar, Name: "Guest", Record: visitorRec},
-	}
-
-	input := NewInteractionMiniGameRoom(5, interaction.OmokRoomType, 2, 0, players, "FunRoom", 0, false, 0)
-	got := test.Encode(t, ctx, input.Encode, nil)
-
+//
+// The per-avatar uint16 jobCode after each name is version-gated: v83 does NOT
+// read it (0x65ec3d, disasm-verified); v84 (0x674aa6), v87 (0x698f32),
+// v95 (0x638e30 `m_anJobCode[i] = Decode2()`) and jms v185 (0x6dabdb) DO.
+func miniGameRoomWant(avatarBytes []byte, withJobCode bool) []byte {
 	var want []byte
-	want = append(want, 5)                 // mode (ROOM / EnterResult)
-	want = append(want, 1)                 // roomType = Omok
-	want = append(want, 2)                 // capacity (m_nMaxUsers)
-	want = append(want, 0)                 // yourSlot (m_nMyPosition)
+	want = append(want, 5) // mode (ROOM / EnterResult)
+	want = append(want, 1) // roomType = Omok
+	want = append(want, 2) // capacity (m_nMaxUsers)
+	want = append(want, 0) // yourSlot (m_nMyPosition)
 	// avatar list
 	want = append(want, 0)                 // slot 0
 	want = append(want, avatarBytes...)    // AvatarLook blob
 	want = append(want, ascii("Owner")...) // name
+	if withJobCode {
+		want = append(want, le16(412)...) // jobCode (m_anJobCode[0])
+	}
 	want = append(want, 1)                 // slot 1
 	want = append(want, avatarBytes...)    // AvatarLook blob
 	want = append(want, ascii("Guest")...) // name
-	want = append(want, 0xFF)              // end avatar list
+	if withJobCode {
+		want = append(want, le16(230)...) // jobCode (m_anJobCode[1])
+	}
+	want = append(want, 0xFF) // end avatar list
 	// record list (separate)
-	want = append(want, 0)                 // slot 0
-	want = append(want, le32(1)...)        // Unknown
-	want = append(want, le32(10)...)       // Wins
-	want = append(want, le32(2)...)        // Ties
-	want = append(want, le32(3)...)        // Losses
-	want = append(want, le32(500)...)      // Points
-	want = append(want, 1)                 // slot 1
-	want = append(want, le32(1)...)        // Unknown
-	want = append(want, le32(4)...)        // Wins
-	want = append(want, le32(1)...)        // Ties
-	want = append(want, le32(6)...)        // Losses
-	want = append(want, le32(250)...)      // Points
-	want = append(want, 0xFF)              // end record list
+	want = append(want, 0)            // slot 0
+	want = append(want, le32(1)...)   // Unknown
+	want = append(want, le32(10)...)  // Wins
+	want = append(want, le32(2)...)   // Ties
+	want = append(want, le32(3)...)   // Losses
+	want = append(want, le32(500)...) // Points
+	want = append(want, 1)            // slot 1
+	want = append(want, le32(1)...)   // Unknown
+	want = append(want, le32(4)...)   // Wins
+	want = append(want, le32(1)...)   // Ties
+	want = append(want, le32(6)...)   // Losses
+	want = append(want, le32(250)...) // Points
+	want = append(want, 0xFF)         // end record list
 	want = append(want, ascii("FunRoom")...) // title
-	want = append(want, 0)                 // gameKind
-	want = append(want, 0)                 // tournament = false
+	want = append(want, 0)                   // gameKind
+	want = append(want, 0)                   // tournament = false
+	return want
+}
+
+func miniGameRoomFixtureInput() InteractionMiniGameRoom {
+	avatar := singleEquipAvatar()
+	players := []MiniGameRoomPlayer{
+		{Slot: 0, Avatar: avatar, Name: "Owner", JobCode: 412, Record: interaction.GameRecord{Unknown: 1, Wins: 10, Ties: 2, Losses: 3, Points: 500}},
+		{Slot: 1, Avatar: avatar, Name: "Guest", JobCode: 230, Record: interaction.GameRecord{Unknown: 1, Wins: 4, Ties: 1, Losses: 6, Points: 250}},
+	}
+	return NewInteractionMiniGameRoom(5, interaction.OmokRoomType, 2, 0, players, "FunRoom", 0, false, 0)
+}
+
+func TestInteractionMiniGameRoomBytes(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	ctx := test.CreateContext("GMS", 83, 1)
+	avatarBytes := singleEquipAvatar().Encode(l, ctx)(nil)
+
+	got := test.Encode(t, ctx, miniGameRoomFixtureInput().Encode, nil)
+	want := miniGameRoomWant(avatarBytes, false) // v83: NO per-avatar jobCode
+
+	if !bytes.Equal(got, want) {
+		t.Fatalf("byte mismatch:\n got  %x\n want %x", got, want)
+	}
+}
+
+// TestInteractionMiniGameRoomBytesV95 asserts the EXACT gms_v95 wire sequence:
+// identical to v83 except each avatar-list entry carries a trailing uint16
+// jobCode (v95 OnEnterResultBase @0x638e30: `m_anJobCode[i] = Decode2()` after
+// the name when !IsEntrusted()).
+func TestInteractionMiniGameRoomBytesV95(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	ctx := test.CreateContext("GMS", 95, 1)
+	avatarBytes := singleEquipAvatar().Encode(l, ctx)(nil)
+
+	got := test.Encode(t, ctx, miniGameRoomFixtureInput().Encode, nil)
+	want := miniGameRoomWant(avatarBytes, true) // v95: per-avatar jobCode present
 
 	if !bytes.Equal(got, want) {
 		t.Fatalf("byte mismatch:\n got  %x\n want %x", got, want)

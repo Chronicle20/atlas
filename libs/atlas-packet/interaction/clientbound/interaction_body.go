@@ -154,3 +154,40 @@ func CharacterInteractionMiniGameSkipBody(who byte) func(logrus.FieldLogger, con
 		return NewInteractionMiniGameSkip(mode, who)
 	})
 }
+
+// CharacterInteractionMiniGameStartOmokBody and
+// CharacterInteractionMiniGameStartMatchCardsBody are the two discrete START
+// arms (mode 61, ida-notes.md §G1/§G5); both resolve the same mode key.
+func CharacterInteractionMiniGameStartOmokBody(firstMover byte) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", CharacterInteractionModeMemoryGameStart, func(mode byte) packet.Encoder {
+		return NewInteractionMiniGameStartOmok(mode, firstMover)
+	})
+}
+
+func CharacterInteractionMiniGameStartMatchCardsBody(firstMover byte, deck []uint32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", CharacterInteractionModeMemoryGameStart, func(mode byte) packet.Encoder {
+		return NewInteractionMiniGameStartMatchCards(mode, firstMover, deck)
+	})
+}
+
+func CharacterInteractionMiniGameMoveStoneBody(x uint32, y uint32, stoneType byte) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", CharacterInteractionModeMemoryGameMoveStone, func(mode byte) packet.Encoder {
+		return NewInteractionMiniGameMoveStone(mode, x, y, stoneType)
+	})
+}
+
+// CharacterInteractionMiniGameCardSelectFirstBody and
+// CharacterInteractionMiniGameCardSelectSecondBody are the two discrete
+// SELECT_CARD/FLIP_CARD arms (mode 68, ida-notes.md §G5); both resolve the
+// same mode key.
+func CharacterInteractionMiniGameCardSelectFirstBody(slot byte) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", CharacterInteractionModeMemoryGameFlipCard, func(mode byte) packet.Encoder {
+		return NewInteractionMiniGameCardSelectFirst(mode, slot)
+	})
+}
+
+func CharacterInteractionMiniGameCardSelectSecondBody(slot byte, firstSlot byte, resultType byte) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", CharacterInteractionModeMemoryGameFlipCard, func(mode byte) packet.Encoder {
+		return NewInteractionMiniGameCardSelectSecond(mode, slot, firstSlot, resultType)
+	})
+}

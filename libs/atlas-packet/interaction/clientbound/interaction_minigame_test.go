@@ -73,3 +73,71 @@ func TestInteractionMiniGameSkipRoundTrip(t *testing.T) {
 		}
 	}
 }
+
+// gms_v83/v95 (COmokDlg::OnUserStart 0x6e469c / 0x684a00): first-mover byte
+// semantics per ida-notes.md §G1 (first mover = slot != startByte).
+// packet-audit:verify packet=interaction/clientbound/InteractionMiniGameStartOmok version=gms_v83 ida=0x6e469c
+// packet-audit:verify packet=interaction/clientbound/InteractionMiniGameStartOmok version=gms_v95 ida=0x684a00
+func TestInteractionMiniGameStartOmokRoundTrip(t *testing.T) {
+	input := NewInteractionMiniGameStartOmok(61, 1)
+	for _, v := range test.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			test.RoundTrip(t, ctx, input.Encode, (&InteractionMiniGameStartOmok{}).Decode, nil)
+		})
+	}
+}
+
+// gms_v83 only (CMemoryGameDlg::OnUserStart 0x64e632) — ida-notes.md §G1/§G5
+// record no v95 address for this handler; do not fabricate one.
+// packet-audit:verify packet=interaction/clientbound/InteractionMiniGameStartMatchCards version=gms_v83 ida=0x64e632
+func TestInteractionMiniGameStartMatchCardsRoundTrip(t *testing.T) {
+	input := NewInteractionMiniGameStartMatchCards(61, 1, []uint32{0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5})
+	for _, v := range test.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			test.RoundTrip(t, ctx, input.Encode, (&InteractionMiniGameStartMatchCards{}).Decode, nil)
+		})
+	}
+}
+
+// gms_v83/v95 (COmokDlg::OnPutStoneChecker 0x6e3f5b / 0x6866a0).
+// packet-audit:verify packet=interaction/clientbound/InteractionMiniGameMoveStone version=gms_v83 ida=0x6e3f5b
+// packet-audit:verify packet=interaction/clientbound/InteractionMiniGameMoveStone version=gms_v95 ida=0x6866a0
+func TestInteractionMiniGameMoveStoneRoundTrip(t *testing.T) {
+	input := NewInteractionMiniGameMoveStone(64, 7, 8, 1)
+	for _, v := range test.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			test.RoundTrip(t, ctx, input.Encode, (&InteractionMiniGameMoveStone{}).Decode, nil)
+		})
+	}
+}
+
+// gms_v83/v95 (CMemoryGameDlg::OnTurnUpCard 0x64e1c1 / 0x62f060), turn byte == 1
+// (first flip; forwarded to the opponent only — ida-notes.md §G5 SELECT_CARD).
+// packet-audit:verify packet=interaction/clientbound/InteractionMiniGameCardSelectFirst version=gms_v83 ida=0x64e1c1
+// packet-audit:verify packet=interaction/clientbound/InteractionMiniGameCardSelectFirst version=gms_v95 ida=0x62f060
+func TestInteractionMiniGameCardSelectFirstRoundTrip(t *testing.T) {
+	input := NewInteractionMiniGameCardSelectFirst(68, 3)
+	for _, v := range test.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			test.RoundTrip(t, ctx, input.Encode, (&InteractionMiniGameCardSelectFirst{}).Decode, nil)
+		})
+	}
+}
+
+// gms_v83/v95 (CMemoryGameDlg::OnTurnUpCard 0x64e1c1 / 0x62f060), turn byte == 0
+// (second flip; forwarded to both players — ida-notes.md §G5 SELECT_CARD).
+// packet-audit:verify packet=interaction/clientbound/InteractionMiniGameCardSelectSecond version=gms_v83 ida=0x64e1c1
+// packet-audit:verify packet=interaction/clientbound/InteractionMiniGameCardSelectSecond version=gms_v95 ida=0x62f060
+func TestInteractionMiniGameCardSelectSecondRoundTrip(t *testing.T) {
+	input := NewInteractionMiniGameCardSelectSecond(68, 9, 3, 2)
+	for _, v := range test.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			test.RoundTrip(t, ctx, input.Encode, (&InteractionMiniGameCardSelectSecond{}).Decode, nil)
+		})
+	}
+}

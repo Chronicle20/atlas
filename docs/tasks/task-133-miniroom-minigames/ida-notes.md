@@ -459,6 +459,77 @@ packet task (2–8) MUST reconcile with a byte fixture:**
    pin down; flagged for tasks 2–8 rather than guessed here.
 This is the "fresh fixture against getMiniGame/getMatchCard" the design (§6.1) called for.
 
+### Room-enter blob — FULL RESOLUTION (task-7b, vtable+92 predicate + int32 branch)
+
+Resolved the three open items (yourSlot, two-list split, vtable+92 int32 branch) on
+**both** v83 (port 13342) and v95 (port 13341). The v95 build carries typed symbols that
+name the two virtuals directly, and the v83 disassembly confirms the same read order
+byte-for-byte (minus one v95-only field, below).
+
+**vtable+92 = `IsEntrusted()`; vtable+96 = `RegisterEmployer(int)`** — resolved by walking
+the COmokDlg primary vtable from its constructor.
+
+- v83 `COmokDlg::COmokDlg` @ 0x6e3124 sets the primary vtable `*this = &off_AFCB90`
+  (0xafcb90). `off_AFCB90[+92]` (0xafcbec) = **sub_48315F = `return 0;`**;
+  `off_AFCB90[+96]` (0xafcbf0) = **nullsub_96** (empty).
+- v83 `CMemoryGameDlg` primary vtable = 0xAF8028; `[+92]` = **sub_48315F (`return 0`)**,
+  `[+96]` = **nullsub_96** — identical to Omok.
+- Contrast `CEntrustedShopDlg` primary vtable 0xAF3928 `[+92]` = **sub_517F68 = `return 1;`**
+  (CPersonalShopDlg/CTradingRoomDlg/CCashTradingRoomDlg all inherit sub_48315F = 0).
+- v95 `CMiniRoomBaseDlg::OnEnterResultBase` @ **0x638e30** decompiles with typed names:
+  the predicate is `this->IsEntrusted(this)` and the setter is `this->RegisterEmployer(this, Decode4())`.
+
+So the branch `if ( !(*(*this+92))(this) || slot )` in OnEnterResultBase (v83 @ 0x65ec3d,
+v95 @ 0x638e30) is: **"if this dialog is NOT an entrusted (hired-merchant) shop, OR
+slot != 0 → read a full avatar; else (entrusted AND slot 0) → read a Decode4 int32
+(employer item id) via RegisterEmployer instead of an avatar."**
+
+**Conclusion for game rooms: `IsEntrusted()` returns 0 for both COmokDlg and
+CMemoryGameDlg, so the predicate is always false → the `Decode4` int32 branch is DEAD for
+Omok/MatchCards. Every visitor, including owner slot 0, is a full avatar.** This matches
+Cosmic `getMiniGame` (PacketCreator.java:4653-4688), which `addCharLook()`s the owner.
+
+**v83 vs v95 field difference — per-avatar jobCode:** v95 OnEnterResultBase reads, after
+each visitor's name, `if (!isEntrusted) m_anJobCode[i] = Decode2();` (a 2-byte job code).
+**v83 does NOT** — verified at the disassembly level (v83 OnEnterResultBase loop tail
+0x65ecb7 DecodeStr → 0x65ecd9 `inc m_nCurUsers` → 0x65ecdf `jmp` back; no `Decode2`/
+`[eax+..h]` call between name and loop-back; the v83 refs list contains only Decode1,
+Decode4, DecodeStr, DecodeAvatar). Cosmic (v83-era) likewise writes no job code. The
+task-7b encoder targets **v83** and omits the jobCode; a v95 encoder would append a
+`WriteShort(jobCode)` after each avatar name.
+
+**DecodeAvatar reads the AvatarLook blob ONLY** (v95 `DecodeAvatar` @ 0x6389d0 →
+`AvatarLook::AvatarLook(&look, iPacket)`; v83 @ 0x65f2b1). slot / name / (v95 jobCode)
+are read in the OnEnterResultBase loop, not inside DecodeAvatar.
+
+**Record list** (dialog `OnEnterResult`): v83 `COmokDlg::OnEnterResult` @ 0x6e388e loops
+`slot = Decode1(); if slot<0 break; sub_4E7FE9(per-slot init); sub_4E42FC(pkt) = 20-byte
+DecodeBuffer record`, then `title = DecodeStr()`, `gameKind = Decode1()`,
+`tournament = Decode1()`, `if tournament: round = Decode1()`. v95 `COmokDlg::OnEnterResult`
+@ 0x680e70, `CMemoryGameDlg::OnEnterResult` v95 @ 0x628610 / v83 @ 0x64db... (same shape).
+
+**Final v83 game room-enter body** (after the outer ROOM dispatcher mode byte; roomType is
+read by `OnEnterResultStatic` @ 0x65dff3, nonzero ⇒ success ⇒ `MiniRoomFactory` builds the
+dialog):
+```
+byte   roomType            # 1 = Omok, 2 = MatchCards
+byte   capacity            # m_nMaxUsers (2 for games)
+byte   yourSlot            # m_nMyPosition (recipient's slot: 0 owner / 1 visitor)
+# avatar list (0xFF-terminated) — OnEnterResultBase:
+repeat: byte slot (<0/0xFF terminates); <AvatarLook blob>; string name
+0xFF
+# record list (0xFF-terminated) — dialog OnEnterResult:
+repeat: byte slot (0xFF terminates); <20-byte record = 5 x int32>
+0xFF
+string title
+byte   gameKind            # piece/sub-type (Cosmic writes `piece`)
+byte   tournament          # bool
+if tournament: byte round
+```
+Addresses: v83 OnEnterResultStatic 0x65dff3, OnEnterResultBase 0x65ec3d, COmokDlg::OnEnterResult
+0x6e388e; v95 OnEnterResultStatic 0x639500, OnEnterResultBase 0x638e30, COmokDlg::OnEnterResult
+0x680e70, CMemoryGameDlg::OnEnterResult 0x628610.
+
 ---
 
 ## Coverage summary

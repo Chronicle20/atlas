@@ -1944,6 +1944,20 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "InteractionMiniGameCardSelectSecond", dir: csvpkg.DirClientbound, pkg: "interaction"}}
 	case "CMiniRoomBaseDlg::OnPacketBase#MemoryGameResult":
 		return []candidate{{name: "InteractionMiniGameResult", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	// Game room-enter snapshot (task-7b). The EnterResult SUCCESS body for an
+	// Omok / Match Cards room differs from the shop-room body: yourSlot after
+	// capacity, and avatars + 20-byte records in TWO separate 0xFF-terminated
+	// lists (not the interleaved single list the old model used). Assembled by
+	// OnEnterResultStatic (roomType) -> OnEnterResultBase (capacity, yourSlot,
+	// avatar list; v83 0x65ec3d / v95 0x638e30) -> COmokDlg::OnEnterResult
+	// (record list, title, gameKind, tournament; v83 0x6e388e / v95 0x680e70) /
+	// CMemoryGameDlg::OnEnterResult (v83 0x64db.. / v95 0x628610). The vtable+92
+	// IsEntrusted() predicate is 0 for both game dialogs (sub_48315F), so the
+	// owner-slot-0 Decode4/RegisterEmployer int32 branch is dead for games —
+	// every occupant is a full avatar. See ida-notes.md §G5 "Room-enter blob —
+	// FULL RESOLUTION".
+	case "CMiniRoomBaseDlg::OnPacketBase#EnterResultSuccessMiniGame":
+		return []candidate{{name: "InteractionMiniGameRoom", dir: csvpkg.DirClientbound, pkg: "interaction"}}
 	// UPDATE_CHAR_BOX mini-room balloon (task-133). Not a mode-prefix dispatcher:
 	// there is no mode byte. CUser::OnMiniRoomBalloon reads roomType then, when
 	// roomType != 0, the trailing balloon fields (ida-notes.md §G3, verified

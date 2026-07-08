@@ -67,7 +67,7 @@ Phase attribution (S2 snapshot dump, active-topic consumer `dwell-active`,
   to the multi-second `TimeToFirstFetch`/`MaxFetchDuration` figures above.
   Refuted: handler dispatch is not a contributor to the measured dwell.
 
-### Final verdicts (post-fix, commit d0e71ba1bd)
+### Final verdicts (post-fix run against d0e71ba1bd; committed in cb434b9b1e)
 
 - **H1 — Confirmed and fixed.** Pre-fix S2 measured `totalRecreates=75`
   driven purely by idle deadline ticks (design §3-A violation). Post-fix S2
@@ -75,7 +75,7 @@ Phase attribution (S2 snapshot dump, active-topic consumer `dwell-active`,
   group-join transient (each idle consumer at `RecreateCount:1`, zero
   recreates thereafter) — **0 NEW recreates in steady state**, verified by
   the committed baseline-delta assertion
-  (`dwell_integration_test.go:274-275`). The idle-vs-no-progress
+  (`dwell_integration_test.go:271-272`). The idle-vs-no-progress
   classification (Approach A) eliminates the churn mechanism at its source.
 - **H2 — Quantified, addressed by the `maxWait` default change.** S5
   measured 646 (50ms) vs 4 (10s) idle fetch attempts/reader/30s, a ~162×
@@ -111,7 +111,7 @@ had no reason to be slow. This confirms the dwell mechanism under
 investigation is a client-side reader-recreate defect, not a broker
 capacity/latency issue.
 
-## Post-fix results (commit d0e71ba1bd)
+## Post-fix results (post-fix run against d0e71ba1bd; committed in cb434b9b1e)
 
 Full suite green: `ok github.com/Chronicle20/atlas/libs/atlas-kafka/consumer 296.162s`,
 all five scenarios PASS.

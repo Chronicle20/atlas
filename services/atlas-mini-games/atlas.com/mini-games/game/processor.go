@@ -223,10 +223,19 @@ func (p *ProcessorImpl) Visit(txId uuid.UUID, f field.Model, characterId uint32,
 	})
 }
 
-// visit validates the VISIT ladder in order (absent → full → password → dead →
-// chalkboard), then seats the visitor and emits ENTERED + BALLOON_UPDATED. Scores
-// reset to 0 when a different visitor than last time joins.
+// visit validates the VISIT ladder in order (already-in-room → absent → full →
+// password → dead → chalkboard), then seats the visitor and emits ENTERED +
+// BALLOON_UPDATED. Scores reset to 0 when a different visitor than last time
+// joins. The already-in-room gate (design §3.4 UNABLE convention, same as
+// Create's) must run first: seating a character still indexed to another room
+// would have Registry.Update re-point members[t][characterId] at the new room
+// while the old room still lists them — leaking the old room if they owned it,
+// or leaving a phantom visitor in it.
 func (p *ProcessorImpl) visit(mb *message.Buffer, txId uuid.UUID, f field.Model, characterId uint32, roomId uint32, password string) error {
+	if _, ok := p.reg.GetByMember(p.t, characterId); ok {
+		return mb.Put(minigame.EnvEventTopicStatus, enterErrorProvider(txId, f, roomId, characterId, errUnable))
+	}
+
 	room, ok := p.reg.Get(p.t, roomId)
 	if !ok {
 		return mb.Put(minigame.EnvEventTopicStatus, enterErrorProvider(txId, f, roomId, characterId, errRoomClosed))

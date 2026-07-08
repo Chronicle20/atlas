@@ -432,6 +432,58 @@ func TestVisit_PasswordCases(t *testing.T) {
 	})
 }
 
+// TestVisit_AlreadySeatedRejected guards the member-index corruption defect:
+// letting a character seated in room A visit room B would have Registry.Update
+// re-point members[t][C] from A to B while rooms[t][A] still lists C — leaking
+// A permanently if C owned it, or leaving a phantom visitor if C visited it.
+func TestVisit_AlreadySeatedRejected(t *testing.T) {
+	ownerA := uint32(4201)
+	ownerB := uint32(4202)
+
+	t.Run("visitor of A visiting B", func(t *testing.T) {
+		h := newHarness(t)
+		seated := uint32(4203)
+		seedRoom(t, h, NewBuilder(RoomTypeOmok, ownerA, h.f).SetGameType("OMOK").SetVisitorId(seated).SetLastVisitorId(seated))
+		seedRoom(t, h, NewBuilder(RoomTypeOmok, ownerB, h.f).SetGameType("OMOK"))
+
+		buf := message.NewBuffer()
+		require.NoError(t, h.p.visit(buf, uuid.New(), h.f, seated, ownerB, ""))
+
+		requireOneError(t, buf, minigame.EventTypeEnterError, "UNABLE")
+		assert.Empty(t, decodeEvents[minigame.EnteredEventBody](t, buf, minigame.EventTypeEntered))
+
+		// A's membership index is intact: the character still resolves to A.
+		got, ok := h.p.reg.GetByMember(h.t, seated)
+		require.True(t, ok)
+		assert.Equal(t, ownerA, got.Id())
+		// B remains empty.
+		b, ok := h.p.reg.Get(h.t, ownerB)
+		require.True(t, ok)
+		assert.Equal(t, uint32(0), b.VisitorId())
+	})
+
+	t.Run("owner of A visiting B", func(t *testing.T) {
+		h := newHarness(t)
+		seedRoom(t, h, NewBuilder(RoomTypeOmok, ownerA, h.f).SetGameType("OMOK"))
+		seedRoom(t, h, NewBuilder(RoomTypeOmok, ownerB, h.f).SetGameType("OMOK"))
+
+		buf := message.NewBuffer()
+		require.NoError(t, h.p.visit(buf, uuid.New(), h.f, ownerA, ownerB, ""))
+
+		requireOneError(t, buf, minigame.EventTypeEnterError, "UNABLE")
+		assert.Empty(t, decodeEvents[minigame.EnteredEventBody](t, buf, minigame.EventTypeEntered))
+
+		// A is still reachable via its owner — no leak.
+		got, ok := h.p.reg.GetByMember(h.t, ownerA)
+		require.True(t, ok)
+		assert.Equal(t, ownerA, got.Id())
+		// B remains empty.
+		b, ok := h.p.reg.Get(h.t, ownerB)
+		require.True(t, ok)
+		assert.Equal(t, uint32(0), b.VisitorId())
+	})
+}
+
 // --- LEAVE / EXPEL -----------------------------------------------------------
 
 func TestLeave_Visitor(t *testing.T) {

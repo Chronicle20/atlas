@@ -1906,6 +1906,50 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "InteractionChat", dir: csvpkg.DirClientbound, pkg: "interaction"}}
 	case "CMiniRoomBaseDlg::OnPacketBase#Leave":
 		return []candidate{{name: "InteractionLeave", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	// Omok / Match Cards mini-game arms (task-133). Each mode of the shared
+	// PLAYER_INTERACTION enum routes to a discrete clientbound struct in
+	// interaction/clientbound/interaction_minigame.go; the synthetic #-suffix
+	// FNames disambiguate the per-mode wire shapes. Read orders + addresses are
+	// grounded in docs/tasks/task-133-miniroom-minigames/ida-notes.md §G1/§G2/§G5,
+	// verified byte-identical on gms_v83 and gms_v95 (StartMatchCards + Result are
+	// v83-only — no v95 handler-body address recorded; see ida-notes §G1/§G5).
+	case "CMiniRoomBaseDlg::OnPacketBase#MemoryGameReady":
+		return []candidate{{name: "InteractionMiniGameReady", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	case "CMiniRoomBaseDlg::OnPacketBase#MemoryGameUnready":
+		return []candidate{{name: "InteractionMiniGameUnready", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	case "CMiniRoomBaseDlg::OnPacketBase#MemoryGameRequestTie":
+		return []candidate{{name: "InteractionMiniGameRequestTie", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	case "CMiniRoomBaseDlg::OnPacketBase#MemoryGameAnswerTie":
+		return []candidate{{name: "InteractionMiniGameAnswerTie", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	case "CMiniRoomBaseDlg::OnPacketBase#MemoryGameRetreatRequest":
+		return []candidate{{name: "InteractionMiniGameRetreatRequest", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	case "CMiniRoomBaseDlg::OnPacketBase#MemoryGameRetreatAnswer":
+		return []candidate{{name: "InteractionMiniGameRetreatAnswer", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	case "CMiniRoomBaseDlg::OnPacketBase#MemoryGameSkip":
+		return []candidate{{name: "InteractionMiniGameSkip", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	case "CMiniRoomBaseDlg::OnPacketBase#MemoryGameStartOmok":
+		return []candidate{{name: "InteractionMiniGameStartOmok", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	case "CMiniRoomBaseDlg::OnPacketBase#MemoryGameStartMatchCards":
+		return []candidate{{name: "InteractionMiniGameStartMatchCards", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	case "CMiniRoomBaseDlg::OnPacketBase#MemoryGameMoveStone":
+		return []candidate{{name: "InteractionMiniGameMoveStone", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	case "CMiniRoomBaseDlg::OnPacketBase#MemoryGameCardSelectFirst":
+		return []candidate{{name: "InteractionMiniGameCardSelectFirst", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	case "CMiniRoomBaseDlg::OnPacketBase#MemoryGameCardSelectSecond":
+		return []candidate{{name: "InteractionMiniGameCardSelectSecond", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	case "CMiniRoomBaseDlg::OnPacketBase#MemoryGameResult":
+		return []candidate{{name: "InteractionMiniGameResult", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	// UPDATE_CHAR_BOX mini-room balloon (task-133). Not a mode-prefix dispatcher:
+	// there is no mode byte. CUser::OnMiniRoomBalloon reads roomType then, when
+	// roomType != 0, the trailing balloon fields (ida-notes.md §G3, verified
+	// byte-identical on gms_v83 @0x938ba5 / gms_v95 @0x8e8d30). The roomType==0
+	// "remove" shape is a distinct wire shape modelled via a #-suffixed synthetic
+	// entry so the pipeline produces a second report; the base (#-less) entry maps
+	// the full-field balloon, keeping this a single-arm (non-dispatcher) fname.
+	case "CUser::OnMiniRoomBalloon":
+		return []candidate{{name: "MiniRoomBalloon", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	case "CUser::OnMiniRoomBalloon#Remove":
+		return []candidate{{name: "MiniRoomBalloonRemove", dir: csvpkg.DirClientbound, pkg: "interaction"}}
 	case "CEntrustedShopDlg::OnRefresh#UpdateMerchant":
 		// UPDATE_MERCHANT (mode 25) is the hired-merchant shop refresh. The
 		// dispatcher's default case virtual-dispatches into the concrete dialog;

@@ -1,10 +1,10 @@
 {
-  "toolSha": "0d2a71691fac50edb0fa35903ca63f9f6fb3010d",
+  "toolSha": "ac7f54cd6f84bc9be3c5260ed0d5f6db97a34c0a",
   "exportHashes": {
-    "gms_v83": "711bddcc2e1bdd417a75954148d2b50c64e70855e84259c0b8e50e700e393c0d",
+    "gms_v83": "170a08d0c65776e4048efe1af978346841dd8fb4e0ecdaf970f5be29753c5e44",
     "gms_v84": "7eab9472e2afeda13faaf74273828d09d5f2481d67bec10235c3b2fd2f91e1eb",
     "gms_v87": "714817d376bb93732ef6b6fbe6b59f8c24515ff901801d213d676b501eae7f94",
-    "gms_v95": "d630364f4d84b433c62329d3756f4f97efdb9ce8056c62b60842bc9b91b24b97",
+    "gms_v95": "22d7f9c11f4bb1329e585dc076a1992842e69776e740da6300e98275ce94568e",
     "jms_v185": "3e0070b0e1faf703005f88595cee7ccb192add0d66ecbd5de436171fd52bd4d2"
   },
   "rows": [
@@ -13413,15 +13413,15 @@
     {
       "kind": "op",
       "op": "UPDATE_CHAR_BOX",
+      "packet": "interaction/clientbound/InteractionMiniRoomBalloon",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CUser::OnMiniRoomBalloon"
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 165
         },
         "gms_v84": {
@@ -13435,8 +13435,7 @@
           "opcode": 176
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 184
         },
         "jms_v185": {

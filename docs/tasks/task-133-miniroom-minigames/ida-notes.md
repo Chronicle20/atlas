@@ -81,6 +81,21 @@ this[463] = v3 != this[50];                  // same "!= mySlot" first-mover tes
 ```
 So Match Cards `START` = `byte firstMoverSlot, byte count, count × int32 cardId`.
 
+**v95 confirms** (`CMemoryGameDlg::OnUserStart` @ 0x62f220, resolved via IDA in the
+task-7 packet-audit evidence pass — the mangled symbol
+`?OnUserStart@CMemoryGameDlg@@IAEXAAVCInPacket@@@Z`; the demangled `Class::Method`
+form does not resolve, per the IDA-MCP naming note):
+```
+v4 = CInPacket::Decode1(iPacket);                     // byte: first-mover slot
+v5 = CInPacket::Decode1(v2); this->m_nCount = v5;     // byte: card count
+ZArray<long>::_Alloc(&this->m_anShuffle, v5, ...);
+CInPacket::DecodeBuffer(v2, this->m_anShuffle.a, 4 * this->m_nCount);  // count × int32 card id
+this->m_bCurTurn = v4 != this->m_nMyPosition;         // same "!= mySlot" first-mover test
+```
+Byte-identical read order to v83 (§G5 mode 61 START row for Match Cards is thus
+verified on both tenants). This closes the v95 gap the packet task flagged for
+`InteractionMiniGameStartMatchCards`.
+
 ---
 
 ## G2 retreat

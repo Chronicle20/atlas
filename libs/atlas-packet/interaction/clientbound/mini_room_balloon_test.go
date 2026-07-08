@@ -11,8 +11,8 @@ import (
 // (@ 0x8e8d30) per ida-notes.md §G3; the leading characterId is consumed by
 // the dispatcher CUserPool::OnUserCommonPacket (v83 @ 0x972401) before
 // routing to the handler, not by OnMiniRoomBalloon itself.
-// packet-audit:verify packet=interaction/clientbound/MiniRoomBalloon version=gms_v83 ida=0x938ba5
-// packet-audit:verify packet=interaction/clientbound/MiniRoomBalloon version=gms_v95 ida=0x8e8d30
+// packet-audit:verify packet=interaction/clientbound/InteractionMiniRoomBalloon version=gms_v83 ida=0x938ba5
+// packet-audit:verify packet=interaction/clientbound/InteractionMiniRoomBalloon version=gms_v95 ida=0x8e8d30
 func TestMiniRoomBalloonRoundTrip(t *testing.T) {
 	input := NewMiniRoomBalloon(1234, 1, 1234, "Omok Room", true, 1, 1, 2, false)
 	for _, v := range test.Variants {
@@ -27,8 +27,8 @@ func TestMiniRoomBalloonRoundTrip(t *testing.T) {
 // absent from the wire per ida-notes.md §G3 ("byte roomType # 0 = remove
 // balloon"; no trailing fields when roomType is 0). Same handler
 // (CUser::OnMiniRoomBalloon) as MiniRoomBalloon above.
-// packet-audit:verify packet=interaction/clientbound/MiniRoomBalloonRemove version=gms_v83 ida=0x938ba5
-// packet-audit:verify packet=interaction/clientbound/MiniRoomBalloonRemove version=gms_v95 ida=0x8e8d30
+// packet-audit:verify packet=interaction/clientbound/InteractionMiniRoomBalloonRemove version=gms_v83 ida=0x938ba5
+// packet-audit:verify packet=interaction/clientbound/InteractionMiniRoomBalloonRemove version=gms_v95 ida=0x8e8d30
 func TestMiniRoomBalloonRemoveRoundTrip(t *testing.T) {
 	input := NewMiniRoomBalloonRemove(1234)
 	for _, v := range test.Variants {

@@ -3,6 +3,250 @@
   "md5": "3c71fd8872d5efbe16183ae8c51f887d",
   "generated_at": "2026-05-13T00:00:00Z",
   "functions": {
+    "CMiniRoomBaseDlg::OnPacketBase#MemoryGameReady": {
+      "address": "0x684930",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (58 READY; dispatch byte; OnUserReady reads no body)"
+        }
+      ]
+    },
+    "CMiniRoomBaseDlg::OnPacketBase#MemoryGameUnready": {
+      "address": "0x6849c0",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (59 UNREADY; dispatch byte; OnUserCancelReady reads no body)"
+        }
+      ]
+    },
+    "CMiniRoomBaseDlg::OnPacketBase#MemoryGameRequestTie": {
+      "address": "0x688b70",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (50 ASK_TIE; dispatch byte; COmokDlg::OnPacket)"
+        }
+      ]
+    },
+    "CMiniRoomBaseDlg::OnPacketBase#MemoryGameAnswerTie": {
+      "address": "0x688b70",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (51 TIE_ANSWER deny; dispatch byte)"
+        }
+      ]
+    },
+    "CMiniRoomBaseDlg::OnPacketBase#MemoryGameRetreatRequest": {
+      "address": "0x6804b0",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (54 ASK_RETREAT; dispatch byte; COmokDlg::OnRetreatRequest bodyless \u00a7G2)"
+        }
+      ]
+    },
+    "CMiniRoomBaseDlg::OnPacketBase#MemoryGameRetreatAnswer": {
+      "address": "0x684620",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (55 RETREAT_ANSWER; OnPacketBase dispatch byte)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "accept (1 = accepted; COmokDlg::OnRetreatResult \u00a7G2)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "N stones to pop from move-history tail (accept only)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "turnSlot (slot whose turn follows; my-turn = turnSlot==mySlot)"
+        }
+      ]
+    },
+    "CMiniRoomBaseDlg::OnPacketBase#MemoryGameSkip": {
+      "address": "0x67fac0",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (63 SKIP; dispatch byte)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "who (next-mover slot; COmokDlg::OnTimeOver \u00a7G5)"
+        }
+      ]
+    },
+    "CMiniRoomBaseDlg::OnPacketBase#MemoryGameStartOmok": {
+      "address": "0x684a00",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (61 START; dispatch byte)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "firstMover slot (first mover = slot != this byte; COmokDlg::OnUserStart \u00a7G1)"
+        }
+      ]
+    },
+    "CMiniRoomBaseDlg::OnPacketBase#MemoryGameMoveStone": {
+      "address": "0x6866a0",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (64 MOVE_STONE; dispatch byte)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "x (int32; DecodeBuffer(8) first half; COmokDlg::OnPutStoneChecker \u00a7G5)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "y (int32; DecodeBuffer(8) second half)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "stoneType (placing player's color 1/2)"
+        }
+      ]
+    },
+    "CMiniRoomBaseDlg::OnPacketBase#MemoryGameCardSelectFirst": {
+      "address": "0x62f060",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (68 FLIP_CARD; dispatch byte)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "turn (1 = first flip; CMemoryGameDlg::OnTurnUpCard \u00a7G5)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "slot (index of the card turned up)"
+        }
+      ]
+    },
+    "CMiniRoomBaseDlg::OnPacketBase#MemoryGameCardSelectSecond": {
+      "address": "0x62f060",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (68 FLIP_CARD; dispatch byte)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "turn (0 = second flip; CMemoryGameDlg::OnTurnUpCard \u00a7G5)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "slot (index of the card turned up)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "firstSlot (first flip's slot; second flip only)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "type (0 owner-mismatch,1 visitor-mismatch,2 owner-match,3 visitor-match)"
+        }
+      ]
+    },
+    "CMiniRoomBaseDlg::OnPacketBase#MemoryGameStartMatchCards": {
+      "address": "0x62f220",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (61 START; dispatch byte)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "firstMover slot (first mover = slot != this byte; CMemoryGameDlg::OnUserStart \u00a7G1)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "count (card count; m_nCount)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "deck (count x int32 cardId; DecodeBuffer(4*count) \u00a7G1)"
+        }
+      ]
+    },
+    "CUser::OnMiniRoomBalloon": {
+      "address": "0x8e8d30",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "characterId (consumed by CUserPool::OnUserCommonPacket GetUser, not OnMiniRoomBalloon; \u00a7G3)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "roomType (0 = remove balloon)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "roomId (m_dwMiniRoomSN; roomType != 0)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "title (m_sMiniRoomTitle)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "hasPassword (m_bPrivate)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "pieceType (m_nGameKind)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "occupancy (m_nCurUsers)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "capacity (m_nMaxUsers)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "inProgress (m_bGameOn)"
+        }
+      ]
+    },
+    "CUser::OnMiniRoomBalloon#Remove": {
+      "address": "0x8e8d30",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "characterId (consumed by CUserPool::OnUserCommonPacket GetUser; \u00a7G3)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "roomType (0 -> CChatBalloon::DestroyMiniRoomBalloon; no trailing fields)"
+        }
+      ]
+    },
     "CWvsContext::OnGuildResult#RequestName": {
       "address": "0xa0d3b0",
       "direction": "clientbound",

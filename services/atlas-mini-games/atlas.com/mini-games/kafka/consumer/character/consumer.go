@@ -34,6 +34,9 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventMapChanged(db)))); err != nil {
 				return err
 			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventChannelChanged(db)))); err != nil {
+				return err
+			}
 			return nil
 		}
 	}
@@ -65,6 +68,26 @@ func handleStatusEventMapChanged(db *gorm.DB) message.Handler[characterKafka.Sta
 		l.Debugf("Character [%d] has changed maps. worldId [%d] channelId [%d] oldMapId [%d] newMapId [%d]. Tearing down mini-game membership.", e.CharacterId, e.WorldId, e.Body.ChannelId, e.Body.OldMapId, e.Body.TargetMapId)
 		if err := game.NewProcessor(l, ctx, db).TeardownCharacter(e.CharacterId); err != nil {
 			l.WithError(err).Errorf("Unable to tear down mini-game membership for character [%d] on map change.", e.CharacterId)
+		}
+	}
+}
+
+// handleStatusEventChannelChanged tears down whatever mini-game room the
+// character occupies when they switch channels (chalkboards precedent,
+// services/atlas-chalkboards/atlas.com/chalkboards/kafka/consumer/character/
+// consumer.go:75-83). A channel change emits neither LOGOUT nor MAP_CHANGED,
+// so without this the member index would keep the character bound to the
+// stale old-channel room — Create returns ErrOwnerHasRoom and Visit returns
+// UNABLE indefinitely, and leave/chat/ready commands from the new channel
+// would resolve against the stale room.
+func handleStatusEventChannelChanged(db *gorm.DB) message.Handler[characterKafka.StatusEvent[characterKafka.ChangeChannelEventLoginBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e characterKafka.StatusEvent[characterKafka.ChangeChannelEventLoginBody]) {
+		if e.Type != characterKafka.EventCharacterStatusTypeChannelChanged {
+			return
+		}
+		l.Debugf("Character [%d] has changed channels. worldId [%d] channelId [%d] oldChannelId [%d]. Tearing down mini-game membership.", e.CharacterId, e.WorldId, e.Body.ChannelId, e.Body.OldChannelId)
+		if err := game.NewProcessor(l, ctx, db).TeardownCharacter(e.CharacterId); err != nil {
+			l.WithError(err).Errorf("Unable to tear down mini-game membership for character [%d] on channel change.", e.CharacterId)
 		}
 	}
 }

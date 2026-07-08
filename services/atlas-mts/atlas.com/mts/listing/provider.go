@@ -111,15 +111,23 @@ func getBrowse(worldId world.Id, state State, f BrowseFilter) database.EntityPro
 			q = q.Where("seller_name = ?", f.SellerName)
 		}
 
-		pageSize := f.PageSize
-		if pageSize <= 0 {
-			pageSize = DefaultPageSize
+		// PageSize < 0 disables paging entirely and returns every filtered
+		// row: the channel derives the client's categoryItemCnt total from
+		// the full set (the v83 page selector is ceil(total/16) —
+		// CITCWnd_List::ChangeCategorySub, 0x5BDD12 — so the total must span
+		// all pages) and slices the 16-item page window itself.
+		// PageSize == 0 keeps the DefaultPageSize window.
+		if f.PageSize >= 0 {
+			pageSize := f.PageSize
+			if pageSize == 0 {
+				pageSize = DefaultPageSize
+			}
+			page := f.Page
+			if page < 0 {
+				page = 0
+			}
+			q = q.Limit(pageSize).Offset(page * pageSize)
 		}
-		page := f.Page
-		if page < 0 {
-			page = 0
-		}
-		q = q.Limit(pageSize).Offset(page * pageSize)
 
 		err := q.Find(&results).Error
 		if err != nil {

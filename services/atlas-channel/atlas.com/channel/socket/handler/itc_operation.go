@@ -710,7 +710,15 @@ func writeBrowsePage(l logrus.FieldLogger, ctx context.Context, wp writer.Produc
 		// (For Sale / Auction show others' items; your own appear under My Page /
 		// Not Yet Sold). Sections that hold no sale listings (wanted/my-page) return
 		// an empty page.
+		//
+		// The browse is UNPAGED (PageSize=-1): the client builds its page
+		// selector from categoryItemCnt as ceil(total/16)
+		// (CITCWnd_List::ChangeCategorySub, v83 0x5BDD12), so the total must
+		// count EVERY match, not one page's slice — the requested 16-item
+		// window is cut below, uniformly for every view.
 		f.ExcludeSellerId = s.CharacterId()
+		f.Page = 0
+		f.PageSize = -1
 		ms, err := mtslisting.NewProcessor(l, ctx).Browse(s.WorldId(), f)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to browse MTS listings for character [%d]; writing empty page.", s.CharacterId())
@@ -722,7 +730,11 @@ func writeBrowsePage(l logrus.FieldLogger, ctx context.Context, wp writer.Produc
 		}
 	}
 
-	body := fieldpkt.MtsOperationGetItcListDoneBody(uint32(len(items)), category, subCategory, page, sortType, sortColumn, items, requestSent)
+	// categoryItemCnt carries the TOTAL match count (drives the client's page
+	// selector); the packet's item list carries only the requested 16-item
+	// window. This also holds for the full-list arms above (cart/wanted/
+	// history/own-auction), which previously stuffed every row into one page.
+	body := fieldpkt.MtsOperationGetItcListDoneBody(uint32(len(items)), category, subCategory, page, sortType, sortColumn, mtsPageWindow(items, page), requestSent)
 	if err := session.Announce(l)(ctx)(wp)(fieldcb.MtsOperationWriter)(body)(s); err != nil {
 		l.WithError(err).Errorf("Unable to announce MTS browse page to character [%d].", s.CharacterId())
 	}

@@ -285,3 +285,36 @@ func TestProcessorTransitionState(t *testing.T) {
 		t.Error("second TransitionState returned true, want false")
 	}
 }
+
+// TestProcessorBrowseUnpaged pins the PageSize<0 contract: a negative page
+// size disables paging entirely and returns EVERY filtered row, while the
+// zero value keeps the DefaultPageSize (16) window. The channel relies on
+// the unpaged form to derive the client's categoryItemCnt total (the v83
+// page selector is ceil(total/16), so the total must span all pages).
+func TestProcessorBrowseUnpaged(t *testing.T) {
+	p, db, cleanup := test.CreateListingProcessor(t)
+	defer cleanup()
+	resetListings(t, db)
+
+	for i := 0; i < 20; i++ {
+		if _, err := p.Create(buildProcessorListingTemplate(t, 0, uint32(400+i), "1", 1302000)); err != nil {
+			t.Fatalf("Create %d: %v", i, err)
+		}
+	}
+
+	def, err := p.Browse(0, listing.StateActive, listing.BrowseFilter{})
+	if err != nil {
+		t.Fatalf("Browse default: %v", err)
+	}
+	if len(def) != listing.DefaultPageSize {
+		t.Fatalf("default browse returned %d rows, want DefaultPageSize %d", len(def), listing.DefaultPageSize)
+	}
+
+	all, err := p.Browse(0, listing.StateActive, listing.BrowseFilter{PageSize: -1})
+	if err != nil {
+		t.Fatalf("Browse unpaged: %v", err)
+	}
+	if len(all) != 20 {
+		t.Fatalf("unpaged browse returned %d rows, want 20", len(all))
+	}
+}

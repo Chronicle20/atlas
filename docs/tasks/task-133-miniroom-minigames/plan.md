@@ -226,9 +226,30 @@ plus StartOmok(61, 1), MoveStone(64, 7, 8, 1), CardSelectFirst(68, 3), CardSelec
 - Consumes: `interaction.GameRecord{Unknown, Wins, Ties, Losses, Points uint32}` (`libs/atlas-packet/interaction/visitor.go:20`) — reuse for the record refresh blocks.
 - Produces: `CharacterInteractionMiniGameResultBody(resultType byte, visitorWon bool, ownerRecord interaction.GameRecord, visitorRecord interaction.GameRecord)` — resultType 0 = normal win, 1 = tie, 2 = forfeit win.
 
-- [ ] **Step 1: Failing tests** — three cases: owner normal win, visitor forfeit win, tie.
-- [ ] **Step 2: Run → FAIL.**
-- [ ] **Step 3: Implement** `InteractionMiniGameResult` (`#MemoryGameResult`), Encode per Cosmic `getMiniGameResult` (`PacketCreator.java:4785-4830`) cross-checked against ida-notes §G5:
+- [x] **Step 1: Failing tests** — three cases: owner normal win, visitor forfeit win, tie.
+- [x] **Step 2: Run → FAIL.**
+- [x] **Step 3: Implement** `InteractionMiniGameResult` (`#MemoryGameResult`).
+
+**CORRECTED during implementation:** the draft Cosmic-derived table below (kept
+for history) is **contradicted by ida-notes.md §G5 RESULT**
+(`COmokDlg::OnGameResult` v83 @ 0x6e4463 / `CMemoryGameDlg::OnGameResult` v83 @
+0x64e423) — no `bool` written on the tie shape, no `int32`/`int16` padding
+blocks, and no trailing tie byte. Per the brief's override rule, the IDA read
+order wins. The actual implemented layout is:
+```
+byte mode                      // 62 @ v83
+byte resultType                // 0 win, 1 tie, 2 forfeit
+if resultType != 1: byte winnerSlot   // 0 = owner won, 1 = visitor won; OMITTED for tie (resultType == 1)
+<20-byte ownerRecord>           // 5 x int32: Unknown, Wins, Ties, Losses, Points
+<20-byte visitorRecord>         // 5 x int32: Unknown, Wins, Ties, Losses, Points
+```
+`visitorWon bool` in `CharacterInteractionMiniGameResultBody`'s signature maps
+1:1 onto `winnerSlot` (false→0, true→1) and is simply not serialized when
+`resultType == 1`.
+
+Superseded draft table (originally cross-checked against Cosmic
+`getMiniGameResult`, `PacketCreator.java:4785-4830` — do not implement this,
+see correction above):
 ```
 byte mode                      // 62 @ v83
 byte resultType                // 0 win, 1 tie, 2 forfeit
@@ -240,9 +261,8 @@ int32 0
 int32 visitorRecord marker, Wins, Ties, Losses, Points
 if resultType == 1: byte 0
 ```
-Implement Decode symmetrically (branch on resultType). If ida-notes §G5 contradicts this shape, the IDA read order wins — update this table in the plan file and note it in the commit body.
-- [ ] **Step 4: Run → PASS; vet clean.**
-- [ ] **Step 5: Commit** (`feat(task-133): clientbound minigame result arm`).
+- [x] **Step 4: Run → PASS; vet clean.**
+- [x] **Step 5: Commit** (`feat(task-133): clientbound minigame result arm`).
 
 ---
 

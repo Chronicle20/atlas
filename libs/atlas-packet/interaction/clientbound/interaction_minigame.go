@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/Chronicle20/atlas/libs/atlas-packet/interaction"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
 	"github.com/sirupsen/logrus"
@@ -301,5 +302,83 @@ func (m *InteractionMiniGameCardSelectSecond) Decode(_ logrus.FieldLogger, _ con
 		m.slot = r.ReadByte()
 		m.firstSlot = r.ReadByte()
 		m.resultType = r.ReadByte()
+	}
+}
+
+// InteractionMiniGameResult - game concluded. resultType selects the shape
+// (0 win, 1 tie, 2 forfeit-win); the winnerSlot byte (carried here as
+// visitorWon) is present for win/forfeit only and is OMITTED for a tie —
+// per ida-notes.md §G5 RESULT (COmokDlg::OnGameResult v83 @ 0x6e4463 /
+// CMemoryGameDlg::OnGameResult v83 @ 0x64e423, byte-identical shape):
+//
+//	byte resultType              # 1 = tie; else a winnerSlot byte follows
+//	if resultType != 1: byte winnerSlot
+//	<20-byte record>             # owner  (5 x int32: Unknown, Wins, Ties, Losses, Points)
+//	<20-byte record>             # visitor
+//
+// NOTE: this is a correction of the plan's Task 4 draft layout, which added
+// a bool written on every shape plus int32/int16 padding blocks and a
+// trailing tie byte not supported by the IDA read order — see plan.md
+// Task 4 and the task-4 commit body for the reconciliation.
+// packet-audit:fname CMiniRoomBaseDlg::OnPacketBase#MemoryGameResult
+type InteractionMiniGameResult struct {
+	mode          byte
+	resultType    byte
+	visitorWon    bool
+	ownerRecord   interaction.GameRecord
+	visitorRecord interaction.GameRecord
+}
+
+func NewInteractionMiniGameResult(mode byte, resultType byte, visitorWon bool, ownerRecord interaction.GameRecord, visitorRecord interaction.GameRecord) InteractionMiniGameResult {
+	return InteractionMiniGameResult{mode: mode, resultType: resultType, visitorWon: visitorWon, ownerRecord: ownerRecord, visitorRecord: visitorRecord}
+}
+func (m InteractionMiniGameResult) Operation() string { return CharacterInteractionWriter }
+func (m InteractionMiniGameResult) String() string {
+	return fmt.Sprintf("minigame result resultType [%d] visitorWon [%t]", m.resultType, m.visitorWon)
+}
+func (m InteractionMiniGameResult) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
+		w.WriteByte(m.mode)
+		w.WriteByte(m.resultType)
+		if m.resultType != 1 {
+			winnerSlot := byte(0)
+			if m.visitorWon {
+				winnerSlot = 1
+			}
+			w.WriteByte(winnerSlot)
+		}
+		writeMiniGameRecord(w, m.ownerRecord)
+		writeMiniGameRecord(w, m.visitorRecord)
+		return w.Bytes()
+	}
+}
+func (m *InteractionMiniGameResult) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
+		m.mode = r.ReadByte()
+		m.resultType = r.ReadByte()
+		if m.resultType != 1 {
+			m.visitorWon = r.ReadByte() == 1
+		}
+		m.ownerRecord = readMiniGameRecord(r)
+		m.visitorRecord = readMiniGameRecord(r)
+	}
+}
+
+func writeMiniGameRecord(w *response.Writer, rec interaction.GameRecord) {
+	w.WriteInt(rec.Unknown)
+	w.WriteInt(rec.Wins)
+	w.WriteInt(rec.Ties)
+	w.WriteInt(rec.Losses)
+	w.WriteInt(rec.Points)
+}
+
+func readMiniGameRecord(r *request.Reader) interaction.GameRecord {
+	return interaction.GameRecord{
+		Unknown: r.ReadUint32(),
+		Wins:    r.ReadUint32(),
+		Ties:    r.ReadUint32(),
+		Losses:  r.ReadUint32(),
+		Points:  r.ReadUint32(),
 	}
 }

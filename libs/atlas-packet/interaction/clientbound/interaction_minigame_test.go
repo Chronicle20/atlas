@@ -3,6 +3,7 @@ package clientbound
 import (
 	"testing"
 
+	"github.com/Chronicle20/atlas/libs/atlas-packet/interaction"
 	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
@@ -138,6 +139,53 @@ func TestInteractionMiniGameCardSelectSecondRoundTrip(t *testing.T) {
 		t.Run(v.Name, func(t *testing.T) {
 			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
 			test.RoundTrip(t, ctx, input.Encode, (&InteractionMiniGameCardSelectSecond{}).Decode, nil)
+		})
+	}
+}
+
+// RESULT (mode 62) is byte-identical between COmokDlg::OnGameResult (v83 @
+// 0x6e4463) and CMemoryGameDlg::OnGameResult (v83 @ 0x64e423) per
+// ida-notes.md §G5 RESULT. No v95 address is recorded for either handler
+// body (only the mode-62 dispatch case, not the handler itself, is confirmed
+// present in the v95 switch) — do not fabricate one.
+// packet-audit:verify packet=interaction/clientbound/InteractionMiniGameResult version=gms_v83 ida=0x6e4463
+func TestInteractionMiniGameResultOwnerWinRoundTrip(t *testing.T) {
+	ownerRecord := interaction.GameRecord{Unknown: 1, Wins: 2, Ties: 3, Losses: 4, Points: 5}
+	visitorRecord := interaction.GameRecord{Unknown: 6, Wins: 7, Ties: 8, Losses: 9, Points: 10}
+	input := NewInteractionMiniGameResult(62, 0, false, ownerRecord, visitorRecord)
+	for _, v := range test.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			test.RoundTrip(t, ctx, input.Encode, (&InteractionMiniGameResult{}).Decode, nil)
+		})
+	}
+}
+
+// packet-audit:verify packet=interaction/clientbound/InteractionMiniGameResult version=gms_v83 ida=0x6e4463
+func TestInteractionMiniGameResultVisitorForfeitRoundTrip(t *testing.T) {
+	ownerRecord := interaction.GameRecord{Unknown: 1, Wins: 2, Ties: 3, Losses: 4, Points: 5}
+	visitorRecord := interaction.GameRecord{Unknown: 6, Wins: 7, Ties: 8, Losses: 9, Points: 10}
+	input := NewInteractionMiniGameResult(62, 2, true, ownerRecord, visitorRecord)
+	for _, v := range test.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			test.RoundTrip(t, ctx, input.Encode, (&InteractionMiniGameResult{}).Decode, nil)
+		})
+	}
+}
+
+// Tie (resultType == 1) omits the winnerSlot byte entirely per ida-notes.md
+// §G5 RESULT ("resultType != 1: byte winnerSlot") — visitorWon is not
+// serialized for this shape.
+// packet-audit:verify packet=interaction/clientbound/InteractionMiniGameResult version=gms_v83 ida=0x6e4463
+func TestInteractionMiniGameResultTieRoundTrip(t *testing.T) {
+	ownerRecord := interaction.GameRecord{Unknown: 1, Wins: 2, Ties: 3, Losses: 4, Points: 5}
+	visitorRecord := interaction.GameRecord{Unknown: 6, Wins: 7, Ties: 8, Losses: 9, Points: 10}
+	input := NewInteractionMiniGameResult(62, 1, false, ownerRecord, visitorRecord)
+	for _, v := range test.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			test.RoundTrip(t, ctx, input.Encode, (&InteractionMiniGameResult{}).Decode, nil)
 		})
 	}
 }

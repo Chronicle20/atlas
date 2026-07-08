@@ -191,3 +191,12 @@ func CharacterInteractionMiniGameCardSelectSecondBody(slot byte, firstSlot byte,
 		return NewInteractionMiniGameCardSelectSecond(mode, slot, firstSlot, resultType)
 	})
 }
+
+// CharacterInteractionMiniGameResultBody: resultType 0 = normal win, 1 = tie,
+// 2 = forfeit win. visitorWon is only meaningful (and only serialized) for
+// resultType != 1 — see InteractionMiniGameResult / ida-notes.md §G5 RESULT.
+func CharacterInteractionMiniGameResultBody(resultType byte, visitorWon bool, ownerRecord interaction.GameRecord, visitorRecord interaction.GameRecord) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", CharacterInteractionModeMemoryGameResult, func(mode byte) packet.Encoder {
+		return NewInteractionMiniGameResult(mode, resultType, visitorWon, ownerRecord, visitorRecord)
+	})
+}

@@ -152,7 +152,16 @@ any values.)
 **Resolved layout — identical on v83 and v95**, and it exactly matches the existing
 `MiniRoomBase.Spawn` writer (`libs/atlas-packet/interaction/mini_room.go:69-85`). The
 handler `CUser::OnMiniRoomBalloon` reads the trailing fields; the leading `int32 characterId`
-is consumed by the packet router to locate the `CUser` (the writer emits it first). There is
+is consumed by the dispatcher `CUserPool::OnUserCommonPacket` (v83 @ 0x972401), which
+resolves the target `CUser` before routing opcode 165 (= 0xA5, the v83 UPDATE_CHAR_BOX
+registry opcode) to the balloon handler:
+```
+characterId = CInPacket::Decode4(a2);            // leading int32 characterId
+User = CUserPool::GetUser(this, characterId);
+...
+case 165: CUser::OnMiniRoomBalloon(v7, a2);      // 165 == 0xA5
+```
+(This dispatch also confirms the v83 balloon opcode 0xA5.) There is
 **no per-roomType (4/5 shop) branch** — the read order is uniform for all room types, so
 mapping the `MiniRoom` writer to this packet cannot crash merchant/personal-shop balloons.
 
@@ -191,7 +200,7 @@ the double-click enter path reads back — see G4 — confirming the mapping.)
 
 **Balloon wire layout (clientbound UPDATE_CHAR_BOX):**
 ```
-int32  characterId      # emitted by writer; consumed by router (not by OnMiniRoomBalloon)
+int32  characterId      # consumed by CUserPool::OnUserCommonPacket @ 0x972401 (GetUser lookup), not by OnMiniRoomBalloon
 byte   roomType         # 0 = remove balloon
 if roomType != 0:
     int32  roomId       # == owner character id (design D2)
@@ -252,9 +261,19 @@ a game-room VISIT decoder is required.
 
 For completeness, the **clientbound EnterResult** (mode 5, `getMiniRoomError`) read order is
 `byte roomType (0 = error); if 0: byte errorCode` (`CMiniRoomBaseDlg::OnEnterResultStatic`
-@ 0x65dff3). The error-code strings confirm design §3.4: 1 = room already closed,
-2 = full capacity, 4 = you're dead, 6 = character unable, 11 = can't start game here,
-13 = can't establish miniroom here, 22 = wrong password.
+@ 0x65dff3). The per-code StringPool lookups in that function's switch tie each code to its
+meaning, confirming design §3.4:
+```
+case 1:  SP_394_THE_ROOM_IS_ALREADY_CLOSED
+case 2:  SP_395_YOU_CANT_ENTER_THE_ROOM_DUE_TO_FULL_CAPACITY
+case 4:  SP_397_YOU_CANT_DO_IT_WHILE_YOURE_DEAD
+case 6:  SP_399_THIS_CHARACTER_IS_UNABLE_TO_DO_IT
+case 11: SP_434_YOU_CANT_START_THE_GAME_HERE
+case 13: SP_401_YOU_CANT_ESTABLISH_A_MINIROOM_RIGHT_HERE
+case 22: SP_5567_THE_PASSWORD_IS_INCORRECT
+```
+i.e. 1 = room already closed, 2 = full capacity, 4 = you're dead, 6 = character unable,
+11 = can't start game here, 13 = can't establish miniroom here, 22 = wrong password.
 
 ---
 
@@ -285,6 +304,11 @@ versions), and they agree with the seeded serverbound table `template_gms_83_1.j
 v83 Omok dispatch (`COmokDlg::OnPacket` @ 0x6e37eb) cases: 50,51,54,55,58,59,61,62,63,64,65.
 v83 MatchCards dispatch (`CMemoryGameDlg::OnPacket` @ 0x64db30) cases: 50,51,58,59,61,62,63,68.
 v95 identical (`COmokDlg::OnPacket` @ 0x688b70, `CMemoryGameDlg::OnPacket` @ 0x634020).
+
+> **Wire-key naming note:** the mode-68 operations-table key is spelled
+> **`MEMORY_GAME_FIP_CARD`** (typo, load-bearing — keep verbatim in configs and consts;
+> `template_gms_83_1.json:584`, design §7). This document uses FLIP_CARD only as the
+> human-readable label.
 
 ### START (Omok / Match Cards)
 See §G1: Omok = `byte firstMoverSlot`; Match Cards = `byte firstMoverSlot, byte count,
@@ -355,10 +379,14 @@ v3 = this[50];                              // my slot
 this[694] = (v3 == CInPacket::Decode1(a2)); // byte = slot whose turn it now becomes
 ```
 The single byte is the **slot whose turn it now is** (i.e. the non-skipper). The client sets
-my-turn = `(byte == mySlot)`. This reconciles with Cosmic's "owner 0x01 / visitor 0x00"
-(design §6.1): when the **owner (slot 0) skips**, the turn passes to the visitor, so the byte
-= `1`; when the **visitor (slot 1) skips**, the byte = `0`. **Wire: `byte turnSlot`** (the
-slot to move next). No contradiction with Cosmic once read as "next mover", not "who skipped".
+my-turn = `(byte == mySlot)`. This reconciles with Cosmic's owner 0x01 / visitor 0x00
+(verified in the local checkout: `<cosmic>/src/main/java/tools/PacketCreator.java:4710-4714`
+`getMiniGameSkipOwner` writes `p.writeByte(Action.SKIP.getCode()); p.writeByte(0x01);`, and
+`:4749-4752` `getMiniGameSkipVisitor` writes `p.writeShort(Action.SKIP.getCode());` — a
+little-endian short whose second byte is the `0x00` body byte): when the **owner (slot 0)
+skips**, the turn passes to the visitor, so the byte = `1`; when the **visitor (slot 1)
+skips**, the byte = `0`. **Wire: `byte turnSlot`** (the slot to move next). No contradiction
+with Cosmic once read as "next mover", not "who skipped".
 
 ### READY / UNREADY (modes 58 / 59)
 Bodyless (mode only). `COmokDlg::OnUserReady` (v83 @ 0x6e4608) / `OnUserCancelReady`

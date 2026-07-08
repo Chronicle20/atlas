@@ -215,6 +215,102 @@ func StepAcceptsEvent(action sharedsaga.Action, kind EventKind) bool {
 	return false
 }
 
+// EventOutcome classifies an EventKind as a success signal (the step's side
+// effect landed downstream) or a failure signal (it did not). Late-after-
+// terminal routing (design §3.2/§3.4) uses this to decide whether a rollback
+// must be dispatched for an absorbed event.
+type EventOutcome string
+
+const (
+	OutcomeSuccess EventOutcome = "success"
+	OutcomeFailure EventOutcome = "failure"
+)
+
+// outcomeTable classifies every declared EventKind. invite.rejected is a
+// failure deliberately: a rejected invite left no side effect to roll back.
+var outcomeTable = map[EventKind]EventOutcome{
+	// Character subsystem.
+	EventKindCharacterMapChanged:        OutcomeSuccess,
+	EventKindCharacterExperienceChanged: OutcomeSuccess,
+	EventKindCharacterLevelChanged:      OutcomeSuccess,
+	EventKindCharacterMesoChanged:       OutcomeSuccess,
+	EventKindCharacterJobChanged:        OutcomeSuccess,
+	EventKindCharacterCreated:           OutcomeSuccess,
+	EventKindCharacterCreationFailed:    OutcomeFailure,
+	EventKindCharacterStatChanged:       OutcomeSuccess,
+	EventKindCharacterMesoError:         OutcomeFailure,
+	EventKindCharacterDeleted:           OutcomeSuccess,
+
+	// Asset subsystem.
+	EventKindAssetCreated:         OutcomeSuccess,
+	EventKindAssetDeleted:         OutcomeSuccess,
+	EventKindAssetQuantityChanged: OutcomeSuccess,
+	EventKindAssetMoved:           OutcomeSuccess,
+
+	// Quest subsystem.
+	EventKindQuestStarted:   OutcomeSuccess,
+	EventKindQuestCompleted: OutcomeSuccess,
+	EventKindQuestForfeited: OutcomeSuccess,
+
+	// Skill subsystem.
+	EventKindSkillCreated: OutcomeSuccess,
+	EventKindSkillUpdated: OutcomeSuccess,
+	EventKindSkillDeleted: OutcomeSuccess,
+
+	// Buddy list.
+	EventKindBuddyCapacityChanged: OutcomeSuccess,
+
+	// Consumable.
+	EventKindConsumableEffectApplied: OutcomeSuccess,
+
+	// Pet.
+	EventKindPetClosenessChanged: OutcomeSuccess,
+	EventKindPetEvolved:          OutcomeSuccess,
+
+	// Cash shop.
+	EventKindCashShopWalletUpdated:       OutcomeSuccess,
+	EventKindCashShopCompartmentAccepted: OutcomeSuccess,
+	EventKindCashShopCompartmentReleased: OutcomeSuccess,
+	EventKindCashShopCompartmentError:    OutcomeFailure,
+
+	// Compartment (character inventory).
+	EventKindCompartmentCreated:        OutcomeSuccess,
+	EventKindCompartmentCreationFailed: OutcomeFailure,
+	EventKindCompartmentDeleted:        OutcomeSuccess,
+	EventKindCompartmentAccepted:       OutcomeSuccess,
+	EventKindCompartmentReleased:       OutcomeSuccess,
+	EventKindCompartmentError:          OutcomeFailure,
+
+	// Inventory.
+	EventKindInventoryCreated:        OutcomeSuccess,
+	EventKindInventoryCreationFailed: OutcomeFailure,
+
+	// Storage.
+	EventKindStorageMesosUpdated:        OutcomeSuccess,
+	EventKindStorageError:               OutcomeFailure,
+	EventKindStorageCompartmentAccepted: OutcomeSuccess,
+	EventKindStorageCompartmentReleased: OutcomeSuccess,
+	EventKindStorageCompartmentError:    OutcomeFailure,
+
+	// Guild.
+	EventKindGuildRequestAgreement: OutcomeSuccess,
+	EventKindGuildCreated:          OutcomeSuccess,
+	EventKindGuildDisbanded:        OutcomeSuccess,
+	EventKindGuildEmblemUpdated:    OutcomeSuccess,
+	EventKindGuildCapacityUpdated:  OutcomeSuccess,
+
+	// Invite.
+	EventKindInviteCreated:  OutcomeSuccess,
+	EventKindInviteAccepted: OutcomeSuccess,
+	EventKindInviteRejected: OutcomeFailure,
+}
+
+// EventOutcomeOf returns the outcome classification for kind.
+func EventOutcomeOf(kind EventKind) (EventOutcome, bool) {
+	o, ok := outcomeTable[kind]
+	return o, ok
+}
+
 // SkipReason* constants are the `reason` field values on structured debug
 // logs emitted when AcceptEvent (or a handler-level guard) refuses to
 // complete a step. Centralised so per-consumer drift is impossible.
@@ -225,6 +321,7 @@ const (
 	SkipReasonTemplateIdMismatch = "template_id_mismatch"
 	SkipReasonUnmatchedEvent     = "unmatched_event"
 	SkipReasonNilTransactionId   = "nil_transaction_id"
+	SkipReasonSagaTerminal       = "saga_terminal"
 )
 
 // LogSkip emits a debug-level structured log with a `reason` field.

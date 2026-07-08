@@ -22,6 +22,8 @@ import (
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 // Processor is the interface for saga processing
@@ -32,6 +34,7 @@ type Processor interface {
 	WithValidationProcessor(validation.Processor) Processor
 	WithGuildProcessor(guild.Processor) Processor
 	WithInviteProcessor(invite.Processor) Processor
+	WithCashshopProcessor(cashshop.Processor) Processor
 
 	GetAll() ([]Saga, error)
 	AllProvider() model.Provider[[]Saga]
@@ -76,6 +79,7 @@ type ProcessorImpl struct {
 	validP  validation.Processor
 	guildP  guild.Processor
 	inviteP invite.Processor
+	csP     cashshop.Processor
 }
 
 const maxConflictRetries = 3
@@ -112,6 +116,7 @@ func newProcessorImpl(logger logrus.FieldLogger, ctx context.Context) Processor 
 		validP:  validation.NewProcessor(logger, ctx),
 		guildP:  guild.NewProcessor(logger, ctx),
 		inviteP: invite.NewProcessor(logger, ctx),
+		csP:     cashshop.NewProcessor(logger, ctx),
 	}
 }
 
@@ -128,6 +133,7 @@ func (p *ProcessorImpl) WithCharacterProcessor(charP character.Processor) Proces
 		validP:  p.validP,
 		guildP:  p.guildP,
 		inviteP: p.inviteP,
+		csP:     p.csP,
 	}
 }
 
@@ -144,6 +150,7 @@ func (p *ProcessorImpl) WithCompartmentProcessor(compP compartment.Processor) Pr
 		validP:  p.validP,
 		guildP:  p.guildP,
 		inviteP: p.inviteP,
+		csP:     p.csP,
 	}
 }
 
@@ -160,6 +167,7 @@ func (p *ProcessorImpl) WithSkillProcessor(skillP skill.Processor) Processor {
 		validP:  p.validP,
 		guildP:  p.guildP,
 		inviteP: p.inviteP,
+		csP:     p.csP,
 	}
 }
 
@@ -176,6 +184,7 @@ func (p *ProcessorImpl) WithValidationProcessor(validP validation.Processor) Pro
 		validP:  validP,
 		guildP:  p.guildP,
 		inviteP: p.inviteP,
+		csP:     p.csP,
 	}
 }
 
@@ -192,6 +201,7 @@ func (p *ProcessorImpl) WithGuildProcessor(guildP guild.Processor) Processor {
 		validP:  p.validP,
 		guildP:  guildP,
 		inviteP: p.inviteP,
+		csP:     p.csP,
 	}
 }
 
@@ -208,6 +218,24 @@ func (p *ProcessorImpl) WithInviteProcessor(inviteP invite.Processor) Processor 
 		validP:  p.validP,
 		guildP:  p.guildP,
 		inviteP: inviteP,
+		csP:     p.csP,
+	}
+}
+
+func (p *ProcessorImpl) WithCashshopProcessor(csP cashshop.Processor) Processor {
+	return &ProcessorImpl{
+		l:       p.l,
+		ctx:     p.ctx,
+		t:       p.t,
+		comp:    p.comp.WithCashshopProcessor(csP),
+		handle:  p.handle.WithCashshopProcessor(csP),
+		charP:   p.charP,
+		compP:   p.compP,
+		skillP:  p.skillP,
+		validP:  p.validP,
+		guildP:  p.guildP,
+		inviteP: p.inviteP,
+		csP:     csP,
 	}
 }
 
@@ -374,6 +402,15 @@ func (p *ProcessorImpl) AcceptEvent(transactionId uuid.UUID, kind EventKind) (Ac
 		}, SkipReasonSagaNotFound)
 		return AcceptDecision{}, false
 	}
+	// Terminal lifecycle states are absorbing (PRD §4.1): a saga the timer
+	// or a failure path has already moved to compensating/failed/completed
+	// can never be advanced by a late step event. A cache miss on
+	// GetLifecycle (hard-deleted in-memory entry racing GetById) falls
+	// through to the existing checks.
+	if lc, ok := GetCache().GetLifecycle(p.ctx, transactionId); ok && lc != SagaLifecyclePending {
+		p.absorbLateTerminalEvent(s, lc, kind)
+		return AcceptDecision{}, false
+	}
 	step, ok := s.GetCurrentStep()
 	if !ok {
 		LogSkip(p.l, logrus.Fields{
@@ -421,9 +458,82 @@ func (p *ProcessorImpl) maybeWarnUnmatchedEvent(s Saga, kind EventKind) {
 	}).Warn("Saga event arrived but no pending step accepts it.")
 }
 
+// absorbLateTerminalEvent handles a step event that arrived after the saga's
+// lifecycle went terminal. The event never advances the saga; a success-
+// outcome event for a compensable in-flight step is routed into single-step
+// compensation so its real side effect is rolled back (PRD §4.2/§4.3).
+func (p *ProcessorImpl) absorbLateTerminalEvent(s Saga, lc SagaLifecycleState, kind EventKind) {
+	// Unknown kinds default to failure: never dispatch a rollback for an
+	// effect we cannot classify.
+	outcome := OutcomeFailure
+	if o, ok := EventOutcomeOf(kind); ok {
+		outcome = o
+	}
+	// Steps dispatch serially, so the earliest pending step IS the in-flight
+	// one; match it exactly as the happy path would (design §3.2).
+	step, stepOk := s.GetCurrentStep()
+	matched := stepOk && StepAcceptsEvent(step.Action(), kind)
+	p.absorbLateTerminal(s, lc, string(kind), outcome, step, matched)
+}
+
+// absorbLateTerminal is the shared core for the AcceptEvent fast-path gate
+// and the stepCompletedWithResultOnce commit-time gate.
+func (p *ProcessorImpl) absorbLateTerminal(s Saga, lc SagaLifecycleState, eventKind string, outcome EventOutcome, step Step[any], matched bool) {
+	fields := logrus.Fields{
+		"transaction_id":  s.TransactionId().String(),
+		"event_kind":      eventKind,
+		"lifecycle_state": string(lc),
+		"saga_type":       s.SagaType(),
+		"tenant_id":       p.t.Id().String(),
+	}
+	if matched {
+		fields["step_id"] = step.StepId()
+	}
+	LogSkip(p.l, fields, SkipReasonSagaTerminal)
+
+	compensated := false
+	if matched && outcome == OutcomeSuccess {
+		var err error
+		compensated, err = p.comp.CompensateLateStep(s, step)
+		if err != nil {
+			p.l.WithFields(fields).WithError(err).Error("Late-success compensation failed.")
+		}
+	}
+
+	// task-040 span-metrics pipeline: the counter is
+	// traces_spanmetrics_calls_total{span_name="saga.late_event_absorbed"}.
+	// transaction.id is on the forbidden-attribute list; it lives in the log
+	// line above instead.
+	_, span := otel.GetTracerProvider().Tracer("atlas-saga-orchestrator").Start(p.ctx, "saga.late_event_absorbed")
+	span.SetAttributes(
+		attribute.String("tenant.id", p.t.Id().String()),
+		attribute.String("saga.type", string(s.SagaType())),
+		attribute.String("saga.lifecycle_state", string(lc)),
+		attribute.String("late.outcome", string(outcome)),
+		attribute.Bool("late.compensated", compensated),
+	)
+	span.End()
+}
+
 func (p *ProcessorImpl) stepCompletedWithResultOnce(transactionId uuid.UUID, success bool, result map[string]any) error {
 	s, err := p.GetById(transactionId)
 	if err != nil {
+		return nil
+	}
+
+	// Commit-time terminal gate (design §3.3a): AcceptEvent's fast-path
+	// check can race the timeout transition. This guards the only function
+	// that performs the forward write; the TryTransition version bump
+	// (store.go) forces any concurrent optimistic writer back through here
+	// via VersionConflictError retry. Outcome comes from the caller's
+	// success flag — no kind table needed on this path.
+	if lc, ok := GetCache().GetLifecycle(p.ctx, transactionId); ok && lc != SagaLifecyclePending {
+		outcome := OutcomeFailure
+		if success {
+			outcome = OutcomeSuccess
+		}
+		step, stepOk := s.GetCurrentStep()
+		p.absorbLateTerminal(s, lc, "step_completed", outcome, step, stepOk)
 		return nil
 	}
 

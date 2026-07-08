@@ -60,9 +60,9 @@ func TestInteractionMiniGameAnswerTieRoundTrip(t *testing.T) {
 
 // Retreat has no Cosmic reference — ida-notes.md §G2 is the sole layout
 // authority, verified on both gms_v83 and gms_v95. ASK_RETREAT (mode 54) is
-// bodyless (COmokDlg::OnRetreatRequest v83 @ 0x6e416b).
+// bodyless (COmokDlg::OnRetreatRequest v83 @ 0x6e416b / v95 @ 0x6804b0).
 // packet-audit:verify packet=interaction/clientbound/InteractionMiniGameRetreatRequest version=gms_v83 ida=0x6e416b
-// packet-audit:verify packet=interaction/clientbound/InteractionMiniGameRetreatRequest version=gms_v95 ida=0x684620
+// packet-audit:verify packet=interaction/clientbound/InteractionMiniGameRetreatRequest version=gms_v95 ida=0x6804b0
 func TestInteractionMiniGameRetreatRequestRoundTrip(t *testing.T) {
 	input := NewInteractionMiniGameRetreatRequest(54)
 	for _, v := range test.Variants {

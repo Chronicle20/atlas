@@ -108,6 +108,15 @@ This matches the existing serverbound decoder
 `libs/atlas-packet/interaction/serverbound/operation_memory_game_retreat_answer.go`
 (reads one `bool`).
 
+v95 confirms (`COmokDlg::OnRetreatRequest` @ 0x6804b0) — reads nothing from `iPacket`,
+shows the SP_0x1DD YesNo prompt, replies serverbound:
+```
+COutPacket::COutPacket(&oPacket, 144);            // v95 MiniRoom serverbound opcode
+COutPacket::Encode1(&oPacket, 0x37u);             // reply mode 0x37 = 55 = RETREAT_ANSWER
+v5 = CUtilDlg::YesNo(v7, v8, p_m_pChildModal, v10, v11);
+COutPacket::Encode1(&oPacket, v5 == 6);           // serverbound body: byte accept
+```
+
 **Clientbound RETREAT_ANSWER (mode 55) — the load-bearing layout.**
 `COmokDlg::OnRetreatResult` (v83 @ 0x6e41f9):
 ```

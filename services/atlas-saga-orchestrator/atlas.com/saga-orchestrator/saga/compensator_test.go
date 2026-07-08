@@ -415,3 +415,61 @@ func TestCompensateLateStep_NonCompensable_WarnsNoDispatch(t *testing.T) {
 	freshStep, _ := fresh.GetCurrentStep()
 	assert.False(t, freshStep.LateCompensated())
 }
+
+// DestroyAsset with RemoveAll=true carries no recoverable quantity in its
+// step payload — the destroyed amount is not "whatever Quantity says" but
+// "everything the player had". Recreating a fabricated quantity would
+// silently under-refund, so this must absorb-only (like the non-compensable
+// case) rather than dispatch a bogus recreate.
+func TestCompensateLateStep_DestroyAssetRemoveAll_Unrecoverable(t *testing.T) {
+	ResetCache()
+	logger, hook := test.NewNullLogger()
+	ctx := lateStepTestCtx(t)
+
+	s, err := NewBuilder().
+		SetSagaType(InventoryTransaction).
+		SetInitiatedBy("test").
+		AddStep("destroy_item", Pending, DestroyAsset, DestroyAssetPayload{
+			CharacterId: 7,
+			TemplateId:  2000000,
+			Quantity:    0,
+			RemoveAll:   true,
+		}).
+		Build()
+	require.NoError(t, err)
+	require.NoError(t, GetCache().Put(ctx, s))
+
+	var createCalls, destroyCalls int
+	cp := &compmock.ProcessorMock{
+		RequestCreateItemFunc: func(_ uuid.UUID, _ uint32, _ uint32, _ uint32, _ time.Time) error {
+			createCalls++
+			return nil
+		},
+		RequestDestroyItemFunc: func(_ uuid.UUID, _ uint32, _ uint32, _ uint32, _ bool) error {
+			destroyCalls++
+			return nil
+		},
+	}
+	c := NewCompensator(logger, ctx).WithCompartmentProcessor(cp)
+
+	step, _ := s.GetCurrentStep()
+	compensated, err := c.CompensateLateStep(s, step)
+	require.NoError(t, err)
+	assert.False(t, compensated)
+	assert.Equal(t, 0, createCalls, "RemoveAll destroy must not dispatch a fabricated recreate")
+	assert.Equal(t, 0, destroyCalls)
+
+	var warned bool
+	for _, e := range hook.AllEntries() {
+		if e.Level == logrus.WarnLevel && e.Data["reason"] == "late_effect_unrecoverable" {
+			warned = true
+		}
+	}
+	assert.True(t, warned, "expected late_effect_unrecoverable WARN")
+
+	// Marker must NOT be claimed for an unrecoverable RemoveAll destroy.
+	fresh, ok := GetCache().GetById(ctx, s.TransactionId())
+	require.True(t, ok)
+	freshStep, _ := fresh.GetCurrentStep()
+	assert.False(t, freshStep.LateCompensated())
+}

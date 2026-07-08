@@ -1229,6 +1229,20 @@ func (c *CompensatorImpl) CompensateLateStep(s Saga, step Step[any]) (bool, erro
 		return false, nil
 	}
 
+	// DestroyAsset with RemoveAll=true is not recoverable from the step
+	// payload: Quantity is 0/unset because the destroy consumed "everything"
+	// rather than an explicit count. Recreating a fabricated quantity would
+	// silently under- (or over-) refund the player, so route this into the
+	// same absorb-only path as a non-compensable action. Explicit-quantity
+	// DestroyAsset steps (RemoveAll=false) still compensate normally.
+	if step.Action() == DestroyAsset {
+		if payload, ok := step.Payload().(DestroyAssetPayload); ok && payload.RemoveAll {
+			fields["reason"] = "late_effect_unrecoverable"
+			c.l.WithFields(fields).Warn("Late-successful DestroyAsset used RemoveAll; destroyed quantity is not recoverable from the step payload, its effect is orphaned.")
+			return false, nil
+		}
+	}
+
 	claimed, err := c.claimLateCompensation(s.TransactionId(), step.StepId())
 	if err != nil {
 		return false, err
@@ -1243,7 +1257,7 @@ func (c *CompensatorImpl) CompensateLateStep(s Saga, step Step[any]) (bool, erro
 		// dispatch on a later redelivery. Log loudly for the audit trail.
 		fields["reason"] = "late_effect_dispatch_failed"
 		c.l.WithFields(fields).WithError(err).Error("Late-success inverse dispatch failed after claim.")
-		return true, err
+		return false, err
 	}
 
 	fields["reason"] = "late_effect_compensated"
@@ -1320,15 +1334,14 @@ func (c *CompensatorImpl) dispatchLateInverse(s Saga, step Step[any]) error {
 		}
 		return c.charP.RequestDeleteCharacter(s.TransactionId(), characterId, worldId)
 	case DestroyAsset:
+		// RemoveAll=true is excluded upstream in CompensateLateStep (payload
+		// carries no recoverable quantity), so only explicit-quantity destroys
+		// reach here — recreate exactly what was destroyed.
 		payload, ok := step.Payload().(DestroyAssetPayload)
 		if !ok {
 			return fmt.Errorf("invalid payload for late DestroyAsset compensation")
 		}
-		qty := payload.Quantity
-		if qty == 0 {
-			qty = 1
-		}
-		return c.compP.RequestCreateItem(s.TransactionId(), payload.CharacterId, payload.TemplateId, qty, time.Time{})
+		return c.compP.RequestCreateItem(s.TransactionId(), payload.CharacterId, payload.TemplateId, payload.Quantity, time.Time{})
 	case AwardMesos:
 		payload, ok := step.Payload().(AwardMesosPayload)
 		if !ok {

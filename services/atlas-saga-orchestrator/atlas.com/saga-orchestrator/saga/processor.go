@@ -22,6 +22,8 @@ import (
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 // Processor is the interface for saga processing
@@ -400,6 +402,15 @@ func (p *ProcessorImpl) AcceptEvent(transactionId uuid.UUID, kind EventKind) (Ac
 		}, SkipReasonSagaNotFound)
 		return AcceptDecision{}, false
 	}
+	// Terminal lifecycle states are absorbing (PRD §4.1): a saga the timer
+	// or a failure path has already moved to compensating/failed/completed
+	// can never be advanced by a late step event. A cache miss on
+	// GetLifecycle (hard-deleted in-memory entry racing GetById) falls
+	// through to the existing checks.
+	if lc, ok := GetCache().GetLifecycle(p.ctx, transactionId); ok && lc != SagaLifecyclePending {
+		p.absorbLateTerminalEvent(s, lc, kind)
+		return AcceptDecision{}, false
+	}
 	step, ok := s.GetCurrentStep()
 	if !ok {
 		LogSkip(p.l, logrus.Fields{
@@ -445,6 +456,63 @@ func (p *ProcessorImpl) maybeWarnUnmatchedEvent(s Saga, kind EventKind) {
 		"event_kind":     kind,
 		"reason":         SkipReasonUnmatchedEvent,
 	}).Warn("Saga event arrived but no pending step accepts it.")
+}
+
+// absorbLateTerminalEvent handles a step event that arrived after the saga's
+// lifecycle went terminal. The event never advances the saga; a success-
+// outcome event for a compensable in-flight step is routed into single-step
+// compensation so its real side effect is rolled back (PRD §4.2/§4.3).
+func (p *ProcessorImpl) absorbLateTerminalEvent(s Saga, lc SagaLifecycleState, kind EventKind) {
+	// Unknown kinds default to failure: never dispatch a rollback for an
+	// effect we cannot classify.
+	outcome := OutcomeFailure
+	if o, ok := EventOutcomeOf(kind); ok {
+		outcome = o
+	}
+	// Steps dispatch serially, so the earliest pending step IS the in-flight
+	// one; match it exactly as the happy path would (design §3.2).
+	step, stepOk := s.GetCurrentStep()
+	matched := stepOk && StepAcceptsEvent(step.Action(), kind)
+	p.absorbLateTerminal(s, lc, string(kind), outcome, step, matched)
+}
+
+// absorbLateTerminal is the shared core for the AcceptEvent fast-path gate
+// and the stepCompletedWithResultOnce commit-time gate.
+func (p *ProcessorImpl) absorbLateTerminal(s Saga, lc SagaLifecycleState, eventKind string, outcome EventOutcome, step Step[any], matched bool) {
+	fields := logrus.Fields{
+		"transaction_id":  s.TransactionId().String(),
+		"event_kind":      eventKind,
+		"lifecycle_state": string(lc),
+		"saga_type":       s.SagaType(),
+		"tenant_id":       p.t.Id().String(),
+	}
+	if matched {
+		fields["step_id"] = step.StepId()
+	}
+	LogSkip(p.l, fields, SkipReasonSagaTerminal)
+
+	compensated := false
+	if matched && outcome == OutcomeSuccess {
+		var err error
+		compensated, err = p.comp.CompensateLateStep(s, step)
+		if err != nil {
+			p.l.WithFields(fields).WithError(err).Error("Late-success compensation failed.")
+		}
+	}
+
+	// task-040 span-metrics pipeline: the counter is
+	// traces_spanmetrics_calls_total{span_name="saga.late_event_absorbed"}.
+	// transaction.id is on the forbidden-attribute list; it lives in the log
+	// line above instead.
+	_, span := otel.GetTracerProvider().Tracer("atlas-saga-orchestrator").Start(p.ctx, "saga.late_event_absorbed")
+	span.SetAttributes(
+		attribute.String("tenant.id", p.t.Id().String()),
+		attribute.String("saga.type", string(s.SagaType())),
+		attribute.String("saga.lifecycle_state", string(lc)),
+		attribute.String("late.outcome", string(outcome)),
+		attribute.Bool("late.compensated", compensated),
+	)
+	span.End()
 }
 
 func (p *ProcessorImpl) stepCompletedWithResultOnce(transactionId uuid.UUID, success bool, result map[string]any) error {

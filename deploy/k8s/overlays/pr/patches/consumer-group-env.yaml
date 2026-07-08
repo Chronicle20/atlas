@@ -200,6 +200,21 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  name: atlas-doors
+spec:
+  template:
+    spec:
+      containers:
+        - name: doors
+          env:
+            - name: KAFKA_CONSUMER_GROUP
+              value: "Door Registry Service [PLACEHOLDER_ATLAS_ENV]"
+            - name: ATLAS_ENV
+              value: "PLACEHOLDER_ATLAS_ENV"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
   name: atlas-drops
 spec:
   template:
@@ -404,6 +419,21 @@ spec:
           env:
             - name: KAFKA_CONSUMER_GROUP
               value: "Messenger Service [PLACEHOLDER_ATLAS_ENV]"
+            - name: ATLAS_ENV
+              value: "PLACEHOLDER_ATLAS_ENV"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-mini-games
+spec:
+  template:
+    spec:
+      containers:
+        - name: mini-games
+          env:
+            - name: KAFKA_CONSUMER_GROUP
+              value: "Mini Game Service [PLACEHOLDER_ATLAS_ENV]"
             - name: ATLAS_ENV
               value: "PLACEHOLDER_ATLAS_ENV"
 ---

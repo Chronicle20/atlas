@@ -34,7 +34,7 @@ ATLAS_SERVICES=$(jq -r '.services[].name' "$SERVICES_JSON" | sort | paste -sd, -
 # configMapGenerator. It is NOT derivable from services.json today —
 # DB-name ownership lives on the kustomize side. Keep in sync by
 # review.
-ATLAS_DB_NAMES="atlas-accounts atlas-bans atlas-buddies atlas-cashshop atlas-characters atlas-configurations atlas-data atlas-drops atlas-fame atlas-gachapons atlas-guilds atlas-inventory atlas-keys atlas-map-actions atlas-maps atlas-merchant atlas-monster-book atlas-notes atlas-npc-conversations atlas-npc-shops atlas-party-quests atlas-pets atlas-portal-actions atlas-quest atlas-reactor-actions atlas-saga-orchestrator atlas-skills atlas-storage atlas-tenants"
+ATLAS_DB_NAMES="atlas-accounts atlas-bans atlas-buddies atlas-cashshop atlas-characters atlas-configurations atlas-data atlas-drops atlas-fame atlas-gachapons atlas-guilds atlas-inventory atlas-keys atlas-map-actions atlas-maps atlas-merchant atlas-mini-games atlas-monster-book atlas-notes atlas-npc-conversations atlas-npc-shops atlas-party-quests atlas-pets atlas-portal-actions atlas-quest atlas-reactor-actions atlas-saga-orchestrator atlas-skills atlas-storage atlas-tenants"
 
 cat > "$OUT" <<EOF
 # Not deployed from this repo. Mirror into cluster-infra (argocd

@@ -412,6 +412,13 @@ func (p *ProcessorImpl) List(req ListRequest) (uuid.UUID, error) {
 	// Auction duration: integer hours in [auctionMinHours, auctionMaxHours]. The
 	// 1-hour step is implicit — DurationHours is an int, so any whole-hour value
 	// in range is accepted and fractional durations are not representable.
+	//
+	// Fixed sales carry a sale term too (era-faithful: the original MTS
+	// expired fixed listings back to the seller after their term). The client
+	// sends no duration for REGISTER_SALE, so the term is the tenant's
+	// fixedSaleHours knob (default 168h). The sweep's no-bids arm returns the
+	// expired listing to the seller holding (origin=expired), same as an
+	// unsold auction.
 	var endsAt *time.Time
 	if req.SaleType == SaleTypeAuction {
 		if req.DurationHours < cfg.AuctionMinHours() || req.DurationHours > cfg.AuctionMaxHours() {
@@ -419,6 +426,9 @@ func (p *ProcessorImpl) List(req ListRequest) (uuid.UUID, error) {
 				req.DurationHours, cfg.AuctionMinHours(), cfg.AuctionMaxHours())
 		}
 		end := time.Now().Add(time.Duration(req.DurationHours) * time.Hour)
+		endsAt = &end
+	} else {
+		end := time.Now().Add(time.Duration(cfg.FixedSaleDurationHours()) * time.Hour)
 		endsAt = &end
 	}
 

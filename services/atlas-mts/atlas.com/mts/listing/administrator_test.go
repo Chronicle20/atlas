@@ -377,13 +377,42 @@ func TestBackdateEndsAt(t *testing.T) {
 		t.Fatalf("expected backdated endsAt, got %v", got.EndsAt())
 	}
 
-	// Fixed-sale listing: refused, 0 rows.
+	// Fixed-sale listing WITHOUT a term (legacy NULL ends_at): refused, 0 rows.
 	rows, err = listing.BackdateEndsAt(db, createdFixed.Id().String(), past)
 	if err != nil {
 		t.Fatalf("backdate fixed: %v", err)
 	}
 	if rows != 0 {
-		t.Fatalf("expected 0 rows for fixed sale, got %d", rows)
+		t.Fatalf("expected 0 rows for termless fixed sale, got %d", rows)
+	}
+
+	// Fixed-sale listing WITH a sale term (era-faithful expiry): backdates, 1 row.
+	term := time.Now().Add(168 * time.Hour)
+	fixedWithTerm, err := listing.NewBuilder(test.TestTenantId, 0, 1003).
+		SetSellerName("Seller").
+		SetSaleType(listing.SaleTypeFixed).
+		SetState(listing.StateActive).
+		SetTemplateId(1302000).
+		SetQuantity(1).
+		SetListValue(1000).
+		SetCommissionRate(0.10).
+		SetCategory("1").
+		SetSubCategory("1").
+		SetEndsAt(&term).
+		Build()
+	if err != nil {
+		t.Fatalf("build fixed-with-term: %v", err)
+	}
+	createdFixedTerm, err := listing.CreateListing(db, fixedWithTerm)
+	if err != nil {
+		t.Fatalf("create fixed-with-term: %v", err)
+	}
+	rows, err = listing.BackdateEndsAt(db, createdFixedTerm.Id().String(), past)
+	if err != nil {
+		t.Fatalf("backdate fixed-with-term: %v", err)
+	}
+	if rows != 1 {
+		t.Fatalf("expected 1 row for fixed sale with a term, got %d", rows)
 	}
 
 	// Non-active auction: refused, 0 rows.

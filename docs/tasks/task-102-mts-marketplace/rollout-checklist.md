@@ -41,9 +41,10 @@ version-absent — see design.md §9.4). Confirm the writer entries exist.
 
 ## 4. `mts-configs` tenant config resource (economic knobs)
 The `atlas-tenants` `mts-configs` resource provides per-tenant knobs (listing
-fee, commission, caps, level gate, auction window, price floor, page size, bid
-increment). On a miss, `atlas-mts` falls back to defaults
-(5000/0.10/10/10/24/168/110/16/1), so MTS works without it — but set it (via the
+fee, commission, caps, level gate, auction window, fixed-sale term, price
+floor, page size, bid increment). On a miss, `atlas-mts` falls back to
+defaults (5000/0.10/10/10/24/168/168/110/16/1), so MTS works without it — but
+set it (via the
 atlas-ui MTS config page) to customize. No seed file ships by default.
 
 ## 5. Service deploy

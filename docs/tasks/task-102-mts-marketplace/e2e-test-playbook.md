@@ -122,6 +122,14 @@ buy/bid time. So all arithmetic below against seeded listings uses 0.10.
 
 ---
 
+> **Fixed-sale terms (era-faithful):** every listing carries a sale term.
+> Natural fixed sales get `fixedSaleHours` (config, default 168h = 7 days);
+> seeded fixed sales default to the same 7 days, and `durationSeconds`
+> overrides the term for BOTH sale types. The client's "Sold until" column
+> shows the real end date; expired fixed listings return to the seller's
+> Transfer Inventory exactly like a no-bid auction (`origin=expired`), so
+> Scenario 7 works with a fixed listing too.
+
 ## Scenario 1 — Browse volume: seed 60 mixed listings, browse every tab/page
 
 **Purpose:** populate enough listings to exercise the client's pagination

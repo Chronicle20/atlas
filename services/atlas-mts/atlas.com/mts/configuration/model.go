@@ -11,6 +11,7 @@ type Model struct {
 	minLevel          int     // minimum character level required to use the MTS
 	auctionMinHours   int     // minimum auction duration in hours
 	auctionMaxHours   int     // maximum auction duration in hours
+	fixedSaleHours    int     // fixed-price sale term in hours (era-faithful: listings expire back to the seller)
 	priceFloor        uint32  // minimum NX price (IDA-verified floor)
 	pageSize          int     // results returned per browse page
 	minBidIncrement   uint32  // minimum increment over the current bid
@@ -38,6 +39,10 @@ func (m Model) MinLevel() int {
 
 func (m Model) AuctionMinHours() int {
 	return m.auctionMinHours
+}
+
+func (m Model) FixedSaleDurationHours() int {
+	return m.fixedSaleHours
 }
 
 func (m Model) AuctionMaxHours() int {
@@ -69,6 +74,7 @@ type RestModel struct {
 	MinLevel          int     `json:"minLevel"`
 	AuctionMinHours   int     `json:"auctionMinHours"`
 	AuctionMaxHours   int     `json:"auctionMaxHours"`
+	FixedSaleHours    int     `json:"fixedSaleHours"`
 	PriceFloor        uint32  `json:"priceFloor"`
 	PageSize          int     `json:"pageSize"`
 	MinBidIncrement   uint32  `json:"minBidIncrement"`
@@ -99,6 +105,7 @@ func Extract(r RestModel) Model {
 		minLevel:          r.MinLevel,
 		auctionMinHours:   r.AuctionMinHours,
 		auctionMaxHours:   r.AuctionMaxHours,
+		fixedSaleHours:    r.FixedSaleHours,
 		priceFloor:        r.PriceFloor,
 		pageSize:          r.PageSize,
 		minBidIncrement:   r.MinBidIncrement,
@@ -123,6 +130,9 @@ func Extract(r RestModel) Model {
 	}
 	if m.auctionMaxHours == 0 {
 		m.auctionMaxHours = d.auctionMaxHours
+	}
+	if m.fixedSaleHours == 0 {
+		m.fixedSaleHours = d.fixedSaleHours
 	}
 	if m.priceFloor == 0 {
 		m.priceFloor = d.priceFloor
@@ -149,6 +159,7 @@ func DefaultConfig() Model {
 		minLevel:          10,    //
 		auctionMinHours:   24,    // hours
 		auctionMaxHours:   168,   // hours (1-week cap, 1-hour step)
+		fixedSaleHours:    168,   // hours — era-faithful 7-day fixed-sale term (knob, no IDA reference)
 		priceFloor:        110,   // NX, IDA-verified
 		pageSize:          16,    //
 		minBidIncrement:   1,     // chosen default (no IDA reference)

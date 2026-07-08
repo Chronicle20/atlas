@@ -351,9 +351,13 @@ func TestExpireAndSweep(t *testing.T) {
 	}
 }
 
-// TestExpireRejectsFixedSale asserts /expire 409s on a non-auction listing.
-func TestExpireRejectsFixedSale(t *testing.T) {
-	db := test.SetupTestDB(t, listing.Migration)
+// TestExpireFixedSaleThroughSweep pins the era-faithful fixed-sale term:
+// seeded fixed listings carry an ends_at (default 7d / durationSeconds
+// override), so the expire route accepts them (204) and the production sweep
+// returns them to the seller holding as expired — same no-bids arm as an
+// unsold auction.
+func TestExpireFixedSaleThroughSweep(t *testing.T) {
+	db := test.SetupTestDB(t, listing.Migration, holding.Migration, bid.Migration, transaction.Migration)
 	defer test.CleanupTestDB(t, db)
 	ts := newTestServer(t, db)
 	defer ts.Close()
@@ -368,17 +372,40 @@ func TestExpireRejectsFixedSale(t *testing.T) {
 	}
 	var envelope struct {
 		Data []struct {
-			Id string `json:"id"`
+			Id         string `json:"id"`
+			Attributes struct {
+				EndsAt *string `json:"endsAt"`
+			} `json:"attributes"`
 		} `json:"data"`
 	}
 	if err := json.NewDecoder(res.Body).Decode(&envelope); err != nil {
 		t.Fatalf("decode: %v", err)
 	}
+	if envelope.Data[0].Attributes.EndsAt == nil {
+		t.Fatal("seeded fixed sale has no endsAt; want the 7-day default term")
+	}
+
 	res, err = ts.Client().Do(withTenant(t, http.MethodPost, ts.URL+"/test/listings/"+envelope.Data[0].Id+"/expire", nil))
 	if err != nil {
 		t.Fatalf("expire: %v", err)
 	}
-	if res.StatusCode != http.StatusConflict {
-		t.Fatalf("status = %d, want 409", res.StatusCode)
+	if res.StatusCode != http.StatusNoContent {
+		t.Fatalf("expire status = %d, want 204 (fixed sales now carry a term)", res.StatusCode)
+	}
+
+	res, err = ts.Client().Do(withTenant(t, http.MethodPost, ts.URL+"/test/sweep", nil))
+	if err != nil {
+		t.Fatalf("sweep: %v", err)
+	}
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("sweep status = %d, want 200", res.StatusCode)
+	}
+
+	got, err := listing.GetById(envelope.Data[0].Id)(db)()
+	if err != nil {
+		t.Fatalf("reload: %v", err)
+	}
+	if got.State() != listing.StateExpired {
+		t.Fatalf("state = %s, want expired", got.State())
 	}
 }

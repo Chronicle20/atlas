@@ -42,6 +42,9 @@ const (
 	defaultSeedSellerName = "TestSeller"
 	defaultSeedListValue  = 1000
 	defaultSeedDuration   = 300 * time.Second
+	// defaultSeedFixedTerm mirrors the production fixedSaleHours default (168h):
+	// seeded fixed sales carry the same era-faithful 7-day term natural ones get.
+	defaultSeedFixedTerm = 168 * time.Hour
 )
 
 // InitResource registers the env-gated MTS test routes (main.go only wires
@@ -273,13 +276,22 @@ func handleSeedListings(d *rest.HandlerDependency, c *rest.HandlerContext, rm Se
 						SetCategory(category).
 						SetSubCategory(subCategory).
 						SetMinIncrement(1)
+					// Every listing carries a sale term (era-faithful: fixed
+					// sales expire back to the seller too). durationSeconds
+					// overrides for both types; the defaults differ — a short
+					// window for auctions (they exist to be expired in tests)
+					// and the production 7-day term for fixed sales.
+					duration := defaultSeedDuration
+					if st == listing.SaleTypeFixed {
+						duration = defaultSeedFixedTerm
+					}
+					if e.DurationSeconds > 0 {
+						duration = time.Duration(e.DurationSeconds) * time.Second
+					}
+					end := time.Now().Add(duration)
+					b = b.SetEndsAt(&end)
 					if st == listing.SaleTypeAuction {
-						duration := defaultSeedDuration
-						if e.DurationSeconds > 0 {
-							duration = time.Duration(e.DurationSeconds) * time.Second
-						}
-						end := time.Now().Add(duration)
-						b = b.SetEndsAt(&end).SetCurrentBid(e.StartingBid)
+						b = b.SetCurrentBid(e.StartingBid)
 					}
 					m, err := b.Build()
 					if err != nil {

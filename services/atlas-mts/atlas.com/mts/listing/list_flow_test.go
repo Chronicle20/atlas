@@ -252,3 +252,29 @@ func TestValidFixedListBuildsSaga(t *testing.T) {
 		t.Error("a listing row was created by List; the row must only be created on AcceptToMtsListing")
 	}
 }
+
+// TestFixedListCarriesSaleTerm pins the era-faithful fixed-sale term: a
+// fixed-price listing expires like the original MTS did, with endsAt =
+// now + FixedSaleDurationHours (config default 168h / 7 days). The sweep's
+// no-bids arm then returns it to the seller's holding (origin=expired).
+func TestFixedListCarriesSaleTerm(t *testing.T) {
+	p, emitter, _, cleanup := newListProcessor(t)
+	defer cleanup()
+
+	before := time.Now()
+	if _, err := p.List(validFixedListRequest()); err != nil {
+		t.Fatalf("List: %v", err)
+	}
+	tp, ok := emitter.saga.Steps[1].Payload.(sharedsaga.TransferToMtsPayload)
+	if !ok {
+		t.Fatalf("step[1] payload type = %T, want TransferToMtsPayload", emitter.saga.Steps[1].Payload)
+	}
+	if tp.EndsAt == nil {
+		t.Fatal("fixed-sale TransferToMts payload has nil EndsAt; want now + 168h sale term")
+	}
+	lo := before.Add(168*time.Hour - time.Minute)
+	hi := time.Now().Add(168*time.Hour + time.Minute)
+	if tp.EndsAt.Before(lo) || tp.EndsAt.After(hi) {
+		t.Fatalf("fixed-sale EndsAt = %v, want between %v and %v", tp.EndsAt, lo, hi)
+	}
+}

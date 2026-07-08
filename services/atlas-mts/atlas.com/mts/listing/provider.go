@@ -160,9 +160,10 @@ func getActiveCountBySeller(sellerId uint32) func(db *gorm.DB) (int64, error) {
 	}
 }
 
-// getExpiredActive returns the active listings whose auction window has closed
-// (ends_at IS NOT NULL AND ends_at < now). Fixed-price listings (ends_at NULL)
-// are excluded — only auctions expire. The caller controls tenant scoping via the
+// getExpiredActive returns the active listings whose sale term has closed
+// (ends_at IS NOT NULL AND ends_at < now) — auctions AND fixed sales alike
+// (era-faithful fixed-sale expiry); only legacy NULL-ends_at rows never
+// expire. The caller controls tenant scoping via the
 // db's context: the periodic sweep passes a WithoutTenantFilter context plus an
 // explicit tenant_id so the discovery is cross-tenant, while a tenant-scoped
 // context narrows it to one tenant. An optional limit bounds the batch (0 = no

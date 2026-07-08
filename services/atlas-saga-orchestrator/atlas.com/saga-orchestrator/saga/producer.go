@@ -158,10 +158,18 @@ func EmitSagaFailed(l logrus.FieldLogger, ctx context.Context, s Saga, errorCode
 	return EmitSagaFailedByIds(l, ctx, s.TransactionId(), string(s.SagaType()), accountId, characterId, errorCode, reason, failedStep)
 }
 
+// emitSagaFailedByIdsFn is swappable in tests (SetEmitSagaFailedForTest) so
+// integration tests can count Failed emissions without Kafka.
+var emitSagaFailedByIdsFn = emitSagaFailedByIdsImpl
+
 // EmitSagaFailedByIds is the thin variant for paths where a full Saga struct is
 // not in hand (e.g., the saga consumer's Put() error path, where validation
 // rejected the incoming command before it was inserted).
 func EmitSagaFailedByIds(l logrus.FieldLogger, ctx context.Context, transactionId uuid.UUID, sagaType string, accountId, characterId uint32, errorCode, reason, failedStep string) error {
+	return emitSagaFailedByIdsFn(l, ctx, transactionId, sagaType, accountId, characterId, errorCode, reason, failedStep)
+}
+
+func emitSagaFailedByIdsImpl(l logrus.FieldLogger, ctx context.Context, transactionId uuid.UUID, sagaType string, accountId, characterId uint32, errorCode, reason, failedStep string) error {
 	return producer.ProviderImpl(l)(ctx)(saga.EnvStatusEventTopic)(
 		FailedStatusEventProvider(transactionId, accountId, characterId, sagaType, errorCode, reason, failedStep),
 	)

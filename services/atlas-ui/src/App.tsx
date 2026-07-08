@@ -17,6 +17,7 @@ const AccountsPage = lazy(() => import("@/pages/AccountsPage").then(m => ({ defa
 const AccountDetailPage = lazy(() => import("@/pages/AccountDetailPage").then(m => ({ default: m.AccountDetailPage })));
 const BansPage = lazy(() => import("@/pages/BansPage").then(m => ({ default: m.BansPage })));
 const BanDetailPage = lazy(() => import("@/pages/BanDetailPage").then(m => ({ default: m.BanDetailPage })));
+const BaselinesPage = lazy(() => import("@/pages/BaselinesPage").then(m => ({ default: m.BaselinesPage })));
 const CharactersPage = lazy(() => import("@/pages/CharactersPage").then(m => ({ default: m.CharactersPage })));
 const CharacterDetailPage = lazy(() => import("@/pages/CharacterDetailPage").then(m => ({ default: m.CharacterDetailPage })));
 const GachaponsPage = lazy(() => import("@/pages/GachaponsPage").then(m => ({ default: m.GachaponsPage })));
@@ -79,6 +80,7 @@ export function App() {
                     <Route path="/accounts/:id" element={<AccountDetailPage />} />
                     <Route path="/bans" element={<BansPage />} />
                     <Route path="/bans/:banId" element={<BanDetailPage />} />
+                    <Route path="/baselines" element={<BaselinesPage />} />
                     <Route path="/characters" element={<CharactersPage />} />
                     <Route path="/characters/:id" element={<CharacterDetailPage />} />
                     <Route path="/gachapons" element={<GachaponsPage />} />

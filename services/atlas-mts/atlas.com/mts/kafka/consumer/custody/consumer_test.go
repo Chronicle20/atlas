@@ -517,3 +517,78 @@ func TestRestoreMtsHolding_UndoesReleaseAndIsIdempotent(t *testing.T) {
 		}
 	}
 }
+
+// TestRestoreListingFromHolding_ReversesMove pins the late-comp inverse of a
+// settlement move: after a forward move (listing sold + buyer holding created),
+// RestoreListingFromHolding returns the listing to active and soft-deletes the
+// buyer holding, so a late buy delivers no free item.
+func TestRestoreListingFromHolding_ReversesMove(t *testing.T) {
+	db := test.SetupTestDB(t, listing.Migration, holding.Migration, transaction.Migration)
+	ctx := test.CreateTestContext()
+	l := logrus.New()
+
+	transactionId := uuid.New()
+	listingId := uuid.New()
+	const buyerId = uint32(7770101)
+	seedActiveListing(t, db, ctx, listingId)
+
+	rp := &recordingProducer{}
+	// Forward move: listing -> sold, buyer holding created.
+	handleMtsMoveListingToHolding(rp.provider())(db)(l, ctx, newMoveCommand(transactionId, listingId, buyerId))
+	if got := holdingsForBuyer(t, db, ctx, buyerId); len(got) != 1 {
+		t.Fatalf("precondition: expected 1 buyer holding after move, got %d", len(got))
+	}
+
+	// Reverse it.
+	handleRestoreListingFromHolding(rp.provider())(db)(l, ctx, custody.Command[custody.RestoreListingFromHoldingCommandBody]{
+		TransactionId: transactionId,
+		Type:          custody.CommandRestoreListingFromHolding,
+		Body:          custody.RestoreListingFromHoldingCommandBody{ListingId: listingId, BuyerId: buyerId},
+	})
+
+	stored, err := listing.GetById(listingId.String())(db.WithContext(ctx))()
+	if err != nil {
+		t.Fatalf("listing lookup: %v", err)
+	}
+	if stored.State() != listing.StateActive {
+		t.Fatalf("listing state = %s, want active (restored)", stored.State())
+	}
+	if got := holdingsForBuyer(t, db, ctx, buyerId); len(got) != 0 {
+		t.Fatalf("expected 0 live buyer holdings after reverse, got %d (free item not clawed back)", len(got))
+	}
+}
+
+// TestRemoveMtsListing_DeletesActiveOnly pins the late-comp inverse of a spurious
+// accept: an active listing is removed; a sold one is left untouched.
+func TestRemoveMtsListing_DeletesActiveOnly(t *testing.T) {
+	db := test.SetupTestDB(t, listing.Migration, holding.Migration, transaction.Migration)
+	ctx := test.CreateTestContext()
+	l := logrus.New()
+
+	activeId := uuid.New()
+	seedActiveListing(t, db, ctx, activeId)
+	rp := &recordingProducer{}
+	handleRemoveMtsListing(rp.provider())(db)(l, ctx, custody.Command[custody.RemoveMtsListingCommandBody]{
+		TransactionId: uuid.New(),
+		Type:          custody.CommandRemoveMtsListing,
+		Body:          custody.RemoveMtsListingCommandBody{ListingId: activeId},
+	})
+	if _, err := listing.GetById(activeId.String())(db.WithContext(ctx))(); err == nil {
+		t.Fatal("expected active listing removed")
+	}
+
+	// A sold listing is not removed (guard).
+	soldId := uuid.New()
+	seedActiveListing(t, db, ctx, soldId)
+	if _, err := listing.UpdateState(db.WithContext(ctx), soldId.String(), listing.StateActive, listing.StateSold); err != nil {
+		t.Fatalf("to sold: %v", err)
+	}
+	handleRemoveMtsListing(rp.provider())(db)(l, ctx, custody.Command[custody.RemoveMtsListingCommandBody]{
+		TransactionId: uuid.New(),
+		Type:          custody.CommandRemoveMtsListing,
+		Body:          custody.RemoveMtsListingCommandBody{ListingId: soldId},
+	})
+	if _, err := listing.GetById(soldId.String())(db.WithContext(ctx))(); err != nil {
+		t.Fatalf("sold listing must survive RemoveMtsListing: %v", err)
+	}
+}

@@ -104,3 +104,34 @@ func MoveListingToHoldingProvider(transactionId uuid.UUID, listingId uuid.UUID, 
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+// RemoveMtsListingProvider creates a REMOVE_MTS_LISTING command (the late-comp
+// inverse of ACCEPT_TO_MTS_LISTING). Keyed by the listing id so replays of the
+// same removal are ordered.
+func RemoveMtsListingProvider(transactionId uuid.UUID, listingId uuid.UUID) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(listingId.ID()))
+	value := &mtsCustody.Command[mtsCustody.RemoveMtsListingCommandBody]{
+		TransactionId: transactionId,
+		Type:          mtsCustody.CommandRemoveMtsListing,
+		Body: mtsCustody.RemoveMtsListingCommandBody{
+			ListingId: listingId,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+// RestoreListingFromHoldingProvider creates a RESTORE_LISTING_FROM_HOLDING
+// command (the late-comp inverse of MTS_MOVE_LISTING_TO_HOLDING). Keyed by the
+// buyer id, matching the forward move's key so the reverse is ordered with it.
+func RestoreListingFromHoldingProvider(transactionId uuid.UUID, listingId uuid.UUID, buyerId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(buyerId))
+	value := &mtsCustody.Command[mtsCustody.RestoreListingFromHoldingCommandBody]{
+		TransactionId: transactionId,
+		Type:          mtsCustody.CommandRestoreListingFromHolding,
+		Body: mtsCustody.RestoreListingFromHoldingCommandBody{
+			ListingId: listingId,
+			BuyerId:   buyerId,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

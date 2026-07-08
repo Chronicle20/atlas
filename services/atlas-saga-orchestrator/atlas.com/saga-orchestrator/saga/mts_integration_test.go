@@ -92,11 +92,16 @@ var _ cashshop.Processor = (*mtsTestCashshopMock)(nil)
 // mtsTestMtsMock captures custody dispatches so the test can assert NO un-move /
 // restore was dispatched for the (Failed) settlement move.
 type mtsTestMtsMock struct {
-	restoreCalls     int
-	restoreHoldingId uuid.UUID
-	moveCalls        int
-	acceptCalls      int
-	releaseCalls     int
+	restoreCalls          int
+	restoreHoldingId      uuid.UUID
+	moveCalls             int
+	acceptCalls           int
+	releaseCalls          int
+	removeListingCalls    int
+	removeListingId       uuid.UUID
+	restoreListingCalls   int
+	restoreListingId      uuid.UUID
+	restoreListingBuyerId uint32
 }
 
 func (m *mtsTestMtsMock) RestoreMtsHoldingAndEmit(_ uuid.UUID, holdingId uuid.UUID) error {
@@ -134,6 +139,27 @@ func (m *mtsTestMtsMock) RestoreMtsHolding(_ *message.Buffer) func(uuid.UUID, uu
 
 func (m *mtsTestMtsMock) MoveListingToHolding(_ *message.Buffer) func(uuid.UUID, uuid.UUID, uint32, byte) error {
 	return func(_ uuid.UUID, _ uuid.UUID, _ uint32, _ byte) error { return nil }
+}
+
+func (m *mtsTestMtsMock) RemoveMtsListingAndEmit(_ uuid.UUID, listingId uuid.UUID) error {
+	m.removeListingCalls++
+	m.removeListingId = listingId
+	return nil
+}
+
+func (m *mtsTestMtsMock) RemoveMtsListing(_ *message.Buffer) func(uuid.UUID, uuid.UUID) error {
+	return func(_ uuid.UUID, _ uuid.UUID) error { return nil }
+}
+
+func (m *mtsTestMtsMock) RestoreListingFromHoldingAndEmit(_ uuid.UUID, listingId uuid.UUID, buyerId uint32) error {
+	m.restoreListingCalls++
+	m.restoreListingId = listingId
+	m.restoreListingBuyerId = buyerId
+	return nil
+}
+
+func (m *mtsTestMtsMock) RestoreListingFromHolding(_ *message.Buffer) func(uuid.UUID, uuid.UUID, uint32) error {
+	return func(_ uuid.UUID, _ uuid.UUID, _ uint32) error { return nil }
 }
 
 // Ensure the mock satisfies mts.Processor at compile time.

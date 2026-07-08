@@ -27,6 +27,22 @@ const (
 	// item is not lost. Idempotent: clearing deleted_at on an already-live row
 	// affects 0 rows and is still success.
 	CommandRestoreMtsHolding = "RESTORE_MTS_HOLDING"
+	// CommandRemoveMtsListing hard-deletes a spurious ACTIVE listing row by id —
+	// the late-compensation inverse of AcceptToMtsListing. When a list saga times
+	// out after release_from_character (item left inventory) and its compensation
+	// re-grants the item to the seller, a late-successful accept still creates the
+	// listing, duplicating the item. Removing the (still-active) listing deletes
+	// the duplicate; the delete is guarded to state=active so a listing that was
+	// bought/cancelled in the interim is left untouched (0 rows = success).
+	CommandRemoveMtsListing = "REMOVE_MTS_LISTING"
+	// CommandRestoreListingFromHolding reverses a settlement move — the
+	// late-compensation inverse of MtsMoveListingToHolding. When a buy saga times
+	// out (the buyer's prepaid debit already compensated) but the move lands late,
+	// the item was delivered to the buyer's holding and the listing marked sold.
+	// This soft-deletes the deterministic buyer holding (moveHoldingId(listingId,
+	// buyerId)) and transitions the listing sold->active, in one tx, so the item
+	// returns to the marketplace and the buyer keeps nothing (no free item).
+	CommandRestoreListingFromHolding = "RESTORE_LISTING_FROM_HOLDING"
 )
 
 // Command is the generic custody command envelope. TransactionId keys the saga
@@ -107,6 +123,21 @@ type MtsMoveListingToHoldingCommandBody struct {
 	ListingId uuid.UUID `json:"listingId"`
 	BuyerId   uint32    `json:"buyerId"`
 	WorldId   byte      `json:"worldId"`
+}
+
+// RemoveMtsListingCommandBody hard-deletes a spurious active listing by id (the
+// late-compensation inverse of AcceptToMtsListing).
+type RemoveMtsListingCommandBody struct {
+	ListingId uuid.UUID `json:"listingId"`
+}
+
+// RestoreListingFromHoldingCommandBody reverses a settlement move: it identifies
+// the buyer holding to soft-delete via (listingId, buyerId) — the same
+// deterministic pair the forward move derived the holding id from — and the
+// listing to transition sold->active (the inverse of MtsMoveListingToHolding).
+type RestoreListingFromHoldingCommandBody struct {
+	ListingId uuid.UUID `json:"listingId"`
+	BuyerId   uint32    `json:"buyerId"`
 }
 
 const (

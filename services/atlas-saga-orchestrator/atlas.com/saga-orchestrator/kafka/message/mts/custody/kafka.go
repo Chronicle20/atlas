@@ -20,6 +20,13 @@ const (
 	CommandReleaseFromMtsHolding   = "RELEASE_FROM_MTS_HOLDING"
 	CommandMtsMoveListingToHolding = "MTS_MOVE_LISTING_TO_HOLDING"
 	CommandRestoreMtsHolding       = "RESTORE_MTS_HOLDING"
+	// CommandRemoveMtsListing hard-deletes a spurious active listing (the
+	// late-comp inverse of AcceptToMtsListing).
+	CommandRemoveMtsListing = "REMOVE_MTS_LISTING"
+	// CommandRestoreListingFromHolding reverses a settlement move: soft-delete the
+	// buyer holding and restore the listing to active (the late-comp inverse of
+	// MtsMoveListingToHolding).
+	CommandRestoreListingFromHolding = "RESTORE_LISTING_FROM_HOLDING"
 )
 
 // Command is the generic custody command envelope. TransactionId keys the saga
@@ -95,6 +102,19 @@ type MtsMoveListingToHoldingCommandBody struct {
 	ListingId uuid.UUID `json:"listingId"`
 	BuyerId   uint32    `json:"buyerId"`
 	WorldId   byte      `json:"worldId"`
+}
+
+// RemoveMtsListingCommandBody hard-deletes a spurious active listing by id.
+type RemoveMtsListingCommandBody struct {
+	ListingId uuid.UUID `json:"listingId"`
+}
+
+// RestoreListingFromHoldingCommandBody reverses a settlement move: (listingId,
+// buyerId) identify the deterministic buyer holding to soft-delete and the
+// listing to transition sold->active.
+type RestoreListingFromHoldingCommandBody struct {
+	ListingId uuid.UUID `json:"listingId"`
+	BuyerId   uint32    `json:"buyerId"`
 }
 
 const (

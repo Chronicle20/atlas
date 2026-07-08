@@ -513,3 +513,59 @@ func TestCompensateLateStep_ReleaseFromMtsHolding_RestoresHolding(t *testing.T) 
 	assert.False(t, compensated)
 	assert.Equal(t, 1, mtsMockP.restoreCalls)
 }
+
+// TestCompensateLateStep_AcceptToMtsListing_RemovesListing pins the late inverse
+// of a spurious list-accept: the duplicate listing is removed by RemoveMtsListing.
+func TestCompensateLateStep_AcceptToMtsListing_RemovesListing(t *testing.T) {
+	ResetCache()
+	logger, _ := test.NewNullLogger()
+	ctx := lateStepTestCtx(t)
+
+	listingId := uuid.New()
+	s, err := NewBuilder().
+		SetSagaType(MtsOperation).
+		SetInitiatedBy("test").
+		AddStep("accept_to_mts_listing", Pending, AcceptToMtsListing, AcceptToMtsListingPayload{ListingId: listingId}).
+		Build()
+	require.NoError(t, err)
+	require.NoError(t, GetCache().Put(ctx, s))
+
+	mtsMockP := &mtsTestMtsMock{}
+	c := NewCompensator(logger, ctx).WithMtsProcessor(mtsMockP)
+
+	step, _ := s.GetCurrentStep()
+	compensated, err := c.CompensateLateStep(s, step)
+	require.NoError(t, err)
+	assert.True(t, compensated)
+	assert.Equal(t, 1, mtsMockP.removeListingCalls)
+	assert.Equal(t, listingId, mtsMockP.removeListingId)
+}
+
+// TestCompensateLateStep_MtsMove_RestoresListing pins the late inverse of a buy
+// settlement-move: RestoreListingFromHolding is dispatched with (listingId,
+// buyerId) so the buyer holding is removed and the listing returns to active.
+func TestCompensateLateStep_MtsMove_RestoresListing(t *testing.T) {
+	ResetCache()
+	logger, _ := test.NewNullLogger()
+	ctx := lateStepTestCtx(t)
+
+	listingId := uuid.New()
+	s, err := NewBuilder().
+		SetSagaType(MtsOperation).
+		SetInitiatedBy("test").
+		AddStep("mts_move_listing_to_holding", Pending, MtsMoveListingToHolding, MtsMoveListingToHoldingPayload{ListingId: listingId, BuyerId: 4242}).
+		Build()
+	require.NoError(t, err)
+	require.NoError(t, GetCache().Put(ctx, s))
+
+	mtsMockP := &mtsTestMtsMock{}
+	c := NewCompensator(logger, ctx).WithMtsProcessor(mtsMockP)
+
+	step, _ := s.GetCurrentStep()
+	compensated, err := c.CompensateLateStep(s, step)
+	require.NoError(t, err)
+	assert.True(t, compensated)
+	assert.Equal(t, 1, mtsMockP.restoreListingCalls)
+	assert.Equal(t, listingId, mtsMockP.restoreListingId)
+	assert.Equal(t, uint32(4242), mtsMockP.restoreListingBuyerId)
+}

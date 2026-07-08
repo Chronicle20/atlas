@@ -427,3 +427,68 @@ func TestBackdateEndsAt(t *testing.T) {
 		t.Fatalf("expected 0 rows for non-active listing, got %d", rows)
 	}
 }
+
+// TestDeleteActive pins the late-compensation inverse of AcceptToMtsListing:
+// DeleteActive removes a listing ONLY while active (1 row), and leaves a
+// non-active listing untouched (0 rows) so a bought/cancelled/settled listing is
+// never destroyed.
+func TestDeleteActive(t *testing.T) {
+	db := test.SetupTestDB(t, listing.Migration)
+	defer test.CleanupTestDB(t, db)
+
+	mk := func(seller uint32) listing.Model {
+		m, err := listing.NewBuilder(test.TestTenantId, 0, seller).
+			SetSellerName("Seller").
+			SetSaleType(listing.SaleTypeFixed).
+			SetState(listing.StateActive).
+			SetTemplateId(1302000).
+			SetQuantity(1).
+			SetListValue(1000).
+			SetCommissionRate(0.10).
+			SetCategory("1").
+			SetSubCategory("1").
+			Build()
+		if err != nil {
+			t.Fatalf("build: %v", err)
+		}
+		created, err := listing.CreateListing(db, m)
+		if err != nil {
+			t.Fatalf("create: %v", err)
+		}
+		return created
+	}
+
+	// Active listing: deleted, 1 row, gone afterward.
+	active := mk(1001)
+	rows, err := listing.DeleteActive(db, active.Id().String())
+	if err != nil {
+		t.Fatalf("delete active: %v", err)
+	}
+	if rows != 1 {
+		t.Fatalf("delete active affected %d rows, want 1", rows)
+	}
+	if _, err := listing.GetById(active.Id().String())(db)(); err == nil {
+		t.Fatal("expected active listing to be gone after DeleteActive")
+	}
+
+	// Sold listing: guard refuses it (0 rows), row still present.
+	sold := mk(1002)
+	if _, err := listing.UpdateState(db, sold.Id().String(), listing.StateActive, listing.StateSold); err != nil {
+		t.Fatalf("transition to sold: %v", err)
+	}
+	rows, err = listing.DeleteActive(db, sold.Id().String())
+	if err != nil {
+		t.Fatalf("delete sold: %v", err)
+	}
+	if rows != 0 {
+		t.Fatalf("delete sold affected %d rows, want 0 (guard must refuse a non-active listing)", rows)
+	}
+	if _, err := listing.GetById(sold.Id().String())(db)(); err != nil {
+		t.Fatalf("sold listing must survive DeleteActive: %v", err)
+	}
+
+	// Garbage id: error, no tenant-wide wipe.
+	if _, err := listing.DeleteActive(db, "not-a-uuid"); err == nil {
+		t.Fatal("expected error for invalid listing id")
+	}
+}

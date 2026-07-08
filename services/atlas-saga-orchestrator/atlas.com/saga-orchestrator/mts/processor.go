@@ -75,6 +75,10 @@ type Processor interface {
 	RestoreMtsHolding(mb *message.Buffer) func(transactionId uuid.UUID, holdingId uuid.UUID) error
 	MoveListingToHoldingAndEmit(transactionId uuid.UUID, listingId uuid.UUID, buyerId uint32, worldId byte) error
 	MoveListingToHolding(mb *message.Buffer) func(transactionId uuid.UUID, listingId uuid.UUID, buyerId uint32, worldId byte) error
+	RemoveMtsListingAndEmit(transactionId uuid.UUID, listingId uuid.UUID) error
+	RemoveMtsListing(mb *message.Buffer) func(transactionId uuid.UUID, listingId uuid.UUID) error
+	RestoreListingFromHoldingAndEmit(transactionId uuid.UUID, listingId uuid.UUID, buyerId uint32) error
+	RestoreListingFromHolding(mb *message.Buffer) func(transactionId uuid.UUID, listingId uuid.UUID, buyerId uint32) error
 }
 
 type ProcessorImpl struct {
@@ -138,5 +142,29 @@ func (p *ProcessorImpl) MoveListingToHoldingAndEmit(transactionId uuid.UUID, lis
 func (p *ProcessorImpl) MoveListingToHolding(mb *message.Buffer) func(transactionId uuid.UUID, listingId uuid.UUID, buyerId uint32, worldId byte) error {
 	return func(transactionId uuid.UUID, listingId uuid.UUID, buyerId uint32, worldId byte) error {
 		return mb.Put(mtsCustody.EnvCommandTopic, MoveListingToHoldingProvider(transactionId, listingId, buyerId, worldId))
+	}
+}
+
+func (p *ProcessorImpl) RemoveMtsListingAndEmit(transactionId uuid.UUID, listingId uuid.UUID) error {
+	return message.Emit(p.p)(func(mb *message.Buffer) error {
+		return p.RemoveMtsListing(mb)(transactionId, listingId)
+	})
+}
+
+func (p *ProcessorImpl) RemoveMtsListing(mb *message.Buffer) func(transactionId uuid.UUID, listingId uuid.UUID) error {
+	return func(transactionId uuid.UUID, listingId uuid.UUID) error {
+		return mb.Put(mtsCustody.EnvCommandTopic, RemoveMtsListingProvider(transactionId, listingId))
+	}
+}
+
+func (p *ProcessorImpl) RestoreListingFromHoldingAndEmit(transactionId uuid.UUID, listingId uuid.UUID, buyerId uint32) error {
+	return message.Emit(p.p)(func(mb *message.Buffer) error {
+		return p.RestoreListingFromHolding(mb)(transactionId, listingId, buyerId)
+	})
+}
+
+func (p *ProcessorImpl) RestoreListingFromHolding(mb *message.Buffer) func(transactionId uuid.UUID, listingId uuid.UUID, buyerId uint32) error {
+	return func(transactionId uuid.UUID, listingId uuid.UUID, buyerId uint32) error {
+		return mb.Put(mtsCustody.EnvCommandTopic, RestoreListingFromHoldingProvider(transactionId, listingId, buyerId))
 	}
 }

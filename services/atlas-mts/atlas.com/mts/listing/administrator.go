@@ -166,6 +166,25 @@ func UpdateState(db *gorm.DB, id string, from State, to State) (int64, error) {
 	return result.RowsAffected, result.Error
 }
 
+// DeleteActive hard-deletes a listing row by id ONLY while it is still active,
+// returning rows affected (1 = deleted, 0 = not active / already gone). It is the
+// late-compensation inverse of a spurious AcceptToMtsListing: the list saga timed
+// out, its compensation re-granted the item to the seller, and this removes the
+// duplicate listing the late accept created. The state=active guard is the safety
+// key — a listing bought/cancelled/settled in the interim is left untouched
+// (0 rows, success), never destroying a legitimate sold/holding-backed row.
+func DeleteActive(db *gorm.DB, id string) (int64, error) {
+	lid := parseId(id)
+	if lid == uuid.Nil {
+		// Guard against the GORM zero-value struct-condition elision: a uuid.Nil
+		// Id condition would vanish, degrading the delete to a tenant-wide wipe of
+		// every active listing.
+		return 0, fmt.Errorf("invalid listing id %q", id)
+	}
+	result := db.Where(map[string]interface{}{"id": lid, "state": string(StateActive)}).Delete(&entity{})
+	return result.RowsAffected, result.Error
+}
+
 // UpdateAuction updates the live auction fields (current bid, high bidder, and
 // the optional end time) within a transaction. Used by the bid path.
 func UpdateAuction(db *gorm.DB, id string, currentBid uint32, highBidderId uint32, endsAt *time.Time) error {

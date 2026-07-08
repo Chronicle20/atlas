@@ -69,6 +69,12 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleMtsMoveListingToHolding(producer2.ProviderImpl(l))(db)))); err != nil {
 				return err
 			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleRemoveMtsListing(producer2.ProviderImpl(l))(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleRestoreListingFromHolding(producer2.ProviderImpl(l))(db)))); err != nil {
+				return err
+			}
 			return nil
 		}
 	}
@@ -471,6 +477,84 @@ func handleMtsMoveListingToHolding(pf providerFn) func(db *gorm.DB) message.Hand
 				}
 				return buf.Put(mtsmsg.EnvStatusEventTopic, mtsproducer.ListingSoldStatusEventProvider(c.TransactionId, b.WorldId, b.ListingId, sellerId, b.BuyerId, itemId))
 			})
+		}
+	}
+}
+
+// handleRemoveMtsListing hard-deletes a spurious ACTIVE listing by id — the
+// late-compensation inverse of AcceptToMtsListing (a list saga that timed out,
+// re-granted the item to the seller, then had its accept land late, duplicating
+// the item). listing.DeleteActive is guarded to state=active, so a listing
+// bought/cancelled/settled in the interim is left untouched (0 rows = success).
+// These late-inverse handlers emit only an ERROR ack on failure: no consumer
+// awaits a compensation success (dispatchLateInverse is fire-and-forget), and a
+// new success event kind would cascade the whole event pipeline for no reader.
+func handleRemoveMtsListing(pf providerFn) func(db *gorm.DB) message.Handler[custody.Command[custody.RemoveMtsListingCommandBody]] {
+	return func(db *gorm.DB) message.Handler[custody.Command[custody.RemoveMtsListingCommandBody]] {
+		return func(l logrus.FieldLogger, ctx context.Context, c custody.Command[custody.RemoveMtsListingCommandBody]) {
+			if c.Type != custody.CommandRemoveMtsListing {
+				return
+			}
+			tdb := db.WithContext(ctx)
+
+			var affected int64
+			err := database.ExecuteTransaction(tdb, func(tx *gorm.DB) error {
+				n, derr := listing.DeleteActive(tx, c.Body.ListingId.String())
+				affected = n
+				return derr
+			})
+			if err != nil {
+				l.WithError(err).Errorf("Failed to remove spurious listing [%s] for transaction [%s].", c.Body.ListingId.String(), c.TransactionId.String())
+				_ = msg.Emit(pf(ctx))(func(buf *msg.Buffer) error {
+					return buf.Put(custody.EnvStatusEventTopic, custodyproducer.ErrorStatusEventProvider(c.TransactionId, err.Error()))
+				})
+				return
+			}
+			if affected == 0 {
+				l.Infof("RemoveMtsListing: listing [%s] not active (already bought/cancelled/removed); nothing to remove, transaction [%s].", c.Body.ListingId.String(), c.TransactionId.String())
+				return
+			}
+			l.Infof("RemoveMtsListing: removed spurious active listing [%s], transaction [%s].", c.Body.ListingId.String(), c.TransactionId.String())
+		}
+	}
+}
+
+// handleRestoreListingFromHolding reverses a settlement move — the
+// late-compensation inverse of MtsMoveListingToHolding. In one tx it soft-deletes
+// the deterministic buyer holding (moveHoldingId(listingId, buyerId)) and
+// transitions the listing sold->active, so a buy that landed late after the buyer
+// was refunded returns the item to the marketplace and leaves the buyer nothing.
+// Both mutations are idempotent (0 rows on replay = success). See
+// handleRemoveMtsListing for the emit-on-error-only rationale.
+func handleRestoreListingFromHolding(pf providerFn) func(db *gorm.DB) message.Handler[custody.Command[custody.RestoreListingFromHoldingCommandBody]] {
+	return func(db *gorm.DB) message.Handler[custody.Command[custody.RestoreListingFromHoldingCommandBody]] {
+		return func(l logrus.FieldLogger, ctx context.Context, c custody.Command[custody.RestoreListingFromHoldingCommandBody]) {
+			if c.Type != custody.CommandRestoreListingFromHolding {
+				return
+			}
+			tdb := db.WithContext(ctx)
+			hid := moveHoldingId(c.Body.ListingId, c.Body.BuyerId)
+
+			err := database.ExecuteTransaction(tdb, func(tx *gorm.DB) error {
+				// Remove the buyer's purchased holding (the delivered item).
+				if _, herr := holding.SoftDelete(tx, hid.String()); herr != nil {
+					return herr
+				}
+				// Return the listing to the marketplace (sold -> active). 0 rows on a
+				// replay (already active) is success, not an error.
+				if _, uerr := listing.UpdateState(tx, c.Body.ListingId.String(), listing.StateSold, listing.StateActive); uerr != nil {
+					return uerr
+				}
+				return nil
+			})
+			if err != nil {
+				l.WithError(err).Errorf("Failed to reverse move for listing [%s] buyer [%d], transaction [%s].", c.Body.ListingId.String(), c.Body.BuyerId, c.TransactionId.String())
+				_ = msg.Emit(pf(ctx))(func(buf *msg.Buffer) error {
+					return buf.Put(custody.EnvStatusEventTopic, custodyproducer.ErrorStatusEventProvider(c.TransactionId, err.Error()))
+				})
+				return
+			}
+			l.Infof("RestoreListingFromHolding: reversed move for listing [%s] buyer [%d] (holding [%s] removed, listing restored to active), transaction [%s].", c.Body.ListingId.String(), c.Body.BuyerId, hid.String(), c.TransactionId.String())
 		}
 	}
 }

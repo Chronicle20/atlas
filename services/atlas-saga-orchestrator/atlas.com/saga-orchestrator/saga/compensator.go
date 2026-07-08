@@ -1342,31 +1342,35 @@ func extractCharacterCreationWorldId(s Saga) world.Id {
 // DestroyAssetFromSlot is deliberately absent: its payload carries no
 // TemplateId, so the destroyed item cannot be recreated from the step alone.
 //
-// MTS custody actions (task-102): only ReleaseFromMtsHolding is included — its
-// late success soft-deletes a holding, cleanly reversed by RestoreMtsHolding
-// (so a take-home that lands late after a timeout doesn't orphan the item as a
-// deleted-but-never-granted holding). AcceptToMtsListing and
-// MtsMoveListingToHolding are deliberately ABSENT: neither has a single inverse
-// command (undoing them means removing a just-created listing / buyer-holding
-// and restoring the source item / listing), so they need new atlas-mts commands
-// with item/currency-safety implications. They remain absorb-only
-// (late_effect_unrecoverable) until those inverses are designed. task-136
-// removed the timeout trigger, so a late MTS custody success is now rare.
+// MTS custody actions (task-102) all have late inverses:
+//   - ReleaseFromMtsHolding (take-home): RestoreMtsHolding un-soft-deletes the
+//     holding so a late release doesn't orphan the item.
+//   - AcceptToMtsListing (list): RemoveMtsListing hard-deletes the spurious
+//     still-active listing a late accept created after the list saga's
+//     compensation already re-granted the item to the seller (the guard is
+//     state=active, so a listing acted on in the interim is left alone).
+//   - MtsMoveListingToHolding (buy): RestoreListingFromHolding soft-deletes the
+//     deterministic buyer holding and returns the listing sold->active, so a buy
+//     that lands late after the buyer's prepaid was refunded delivers no free
+//     item. (The currency legs are AwardCurrency, already covered.)
+// task-136 removed the timeout trigger, so a late MTS custody success is now rare.
 var lateCompensableActions = map[Action]struct{}{
-	AwardAsset:            {},
-	CreateAndEquipAsset:   {},
-	CreateSkill:           {},
-	CreateCharacter:       {},
-	AwaitCharacterCreated: {},
-	DestroyAsset:          {},
-	AwardMesos:            {},
-	AwardCurrency:         {},
-	AwardExperience:       {},
-	DeductExperience:      {},
-	AwardFame:             {},
-	EquipAsset:            {},
-	UnequipAsset:          {},
-	ReleaseFromMtsHolding: {},
+	AwardAsset:              {},
+	CreateAndEquipAsset:     {},
+	CreateSkill:             {},
+	CreateCharacter:         {},
+	AwaitCharacterCreated:   {},
+	DestroyAsset:            {},
+	AwardMesos:              {},
+	AwardCurrency:           {},
+	AwardExperience:         {},
+	DeductExperience:        {},
+	AwardFame:               {},
+	EquipAsset:              {},
+	UnequipAsset:            {},
+	ReleaseFromMtsHolding:   {},
+	AcceptToMtsListing:      {},
+	MtsMoveListingToHolding: {},
 }
 
 func (c *CompensatorImpl) CompensateLateStep(s Saga, step Step[any]) (bool, error) {
@@ -1557,6 +1561,26 @@ func (c *CompensatorImpl) dispatchLateInverse(s Saga, step Step[any]) error {
 			return fmt.Errorf("invalid payload for late ReleaseFromMtsHolding compensation")
 		}
 		return c.mtsP.RestoreMtsHoldingAndEmit(s.TransactionId(), payload.HoldingId)
+	case AcceptToMtsListing:
+		// A late list-accept created the listing after the saga's compensation
+		// already re-granted the item to the seller (release_from_character always
+		// precedes accept, so its inverse ran): remove the now-duplicate listing.
+		// The atlas-mts guard deletes only a still-active listing.
+		payload, ok := step.Payload().(AcceptToMtsListingPayload)
+		if !ok {
+			return fmt.Errorf("invalid payload for late AcceptToMtsListing compensation")
+		}
+		return c.mtsP.RemoveMtsListingAndEmit(s.TransactionId(), payload.ListingId)
+	case MtsMoveListingToHolding:
+		// A late settlement-move delivered the item to the buyer's holding and
+		// marked the listing sold after the buyer's prepaid was already refunded:
+		// soft-delete the buyer holding and return the listing to active so the
+		// buyer keeps nothing and the item is re-listed.
+		payload, ok := step.Payload().(MtsMoveListingToHoldingPayload)
+		if !ok {
+			return fmt.Errorf("invalid payload for late MtsMoveListingToHolding compensation")
+		}
+		return c.mtsP.RestoreListingFromHoldingAndEmit(s.TransactionId(), payload.ListingId, payload.BuyerId)
 	}
 	return fmt.Errorf("no late inverse registered for action %s", step.Action())
 }

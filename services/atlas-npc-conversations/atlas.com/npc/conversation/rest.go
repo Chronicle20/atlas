@@ -17,6 +17,7 @@ type RestStateModel struct {
 	CraftAction     *RestCraftActionModel      `json:"craftAction,omitempty"`     // Craft action model (if type is craftAction)
 	TransportAction *RestTransportActionModel  `json:"transportAction,omitempty"` // Transport action model (if type is transportAction)
 	GachaponAction   *RestGachaponActionModel   `json:"gachaponAction,omitempty"`   // Gachapon action model (if type is gachaponAction)
+	RPSAction        *RestRPSActionModel        `json:"rpsAction,omitempty"`        // RPS action model (if type is rpsAction)
 	PartyQuestAction      *RestPartyQuestActionModel      `json:"partyQuestAction,omitempty"`      // Party quest action model (if type is partyQuestAction)
 	PartyQuestBonusAction *RestPartyQuestBonusActionModel `json:"partyQuestBonusAction,omitempty"` // Party quest bonus action model (if type is partyQuestBonusAction)
 	ListSelection         *RestListSelectionModel         `json:"listSelection,omitempty"`         // List selection model (if type is listSelection)
@@ -144,6 +145,13 @@ type RestGachaponActionModel struct {
 	GachaponId   string `json:"gachaponId"`   // Gachapon machine ID
 	TicketItemId uint32 `json:"ticketItemId"` // Ticket item ID to consume
 	FailureState string `json:"failureState"` // General failure state
+}
+
+// RestRPSActionModel represents the REST model for RPS action states
+type RestRPSActionModel struct {
+	NpcId         uint32 `json:"npcId"`         // Entry NPC template ID
+	EntryCostMeso uint32 `json:"entryCostMeso"` // Meso cost to enter the game
+	FailureState  string `json:"failureState"`  // General failure state
 }
 
 // RestPartyQuestActionModel represents the REST model for party quest action states
@@ -299,6 +307,12 @@ func TransformState(m StateModel) (RestStateModel, error) {
 		if gachaponAction != nil {
 			restGachaponAction := TransformGachaponAction(*gachaponAction)
 			restState.GachaponAction = &restGachaponAction
+		}
+	case RPSActionType:
+		rpsAction := m.RPSAction()
+		if rpsAction != nil {
+			restRPSAction := TransformRPSAction(*rpsAction)
+			restState.RPSAction = &restRPSAction
 		}
 	case PartyQuestActionType:
 		partyQuestAction := m.PartyQuestAction()
@@ -563,6 +577,15 @@ func ExtractState(r RestStateModel) (StateModel, error) {
 			return StateModel{}, err
 		}
 		stateBuilder.SetGachaponAction(gachaponAction)
+	case RPSActionType:
+		if r.RPSAction == nil {
+			return StateModel{}, fmt.Errorf("rpsAction is required for rpsAction state")
+		}
+		rpsAction, err := ExtractRPSAction(*r.RPSAction)
+		if err != nil {
+			return StateModel{}, err
+		}
+		stateBuilder.SetRPSAction(rpsAction)
 	case PartyQuestActionType:
 		if r.PartyQuestAction == nil {
 			return StateModel{}, fmt.Errorf("partyQuestAction is required for partyQuestAction state")
@@ -771,6 +794,22 @@ func ExtractGachaponAction(r RestGachaponActionModel) (*GachaponActionModel, err
 	return NewGachaponActionBuilder().
 		SetGachaponId(r.GachaponId).
 		SetTicketItemId(r.TicketItemId).
+		SetFailureState(r.FailureState).
+		Build()
+}
+
+func TransformRPSAction(m RPSActionModel) RestRPSActionModel {
+	return RestRPSActionModel{
+		NpcId:         m.NpcId(),
+		EntryCostMeso: m.EntryCostMeso(),
+		FailureState:  m.FailureState(),
+	}
+}
+
+func ExtractRPSAction(r RestRPSActionModel) (*RPSActionModel, error) {
+	return NewRPSActionBuilder().
+		SetNpcId(r.NpcId).
+		SetEntryCostMeso(r.EntryCostMeso).
 		SetFailureState(r.FailureState).
 		Build()
 }

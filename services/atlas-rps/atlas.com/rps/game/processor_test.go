@@ -2,6 +2,7 @@ package game_test
 
 import (
 	"encoding/json"
+	"errors"
 	"testing"
 
 	"atlas-rps/game"
@@ -77,6 +78,25 @@ func noopSagaSubmitter() game.SagaSubmitter {
 func capturingSagaSubmitter(dst *[]sharedsaga.Saga) game.SagaSubmitter {
 	return func(s sharedsaga.Saga) error {
 		*dst = append(*dst, s)
+		return nil
+	}
+}
+
+// erroringSagaSubmitter is a game.SagaSubmitter stub that always fails and
+// records how many times it was invoked, for the payout submit-failure
+// retry-safety test.
+func erroringSagaSubmitter(err error, calls *int) game.SagaSubmitter {
+	return func(sharedsaga.Saga) error {
+		*calls++
+		return err
+	}
+}
+
+// countingSagaSubmitter is a game.SagaSubmitter stub that only records how
+// many times it was invoked, for tests asserting a saga was NOT submitted.
+func countingSagaSubmitter(calls *int) game.SagaSubmitter {
+	return func(sharedsaga.Saga) error {
+		*calls++
 		return nil
 	}
 }
@@ -587,4 +607,102 @@ func TestProcessor_Collect_NoPrizeSubmitsNoSaga(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Len(t, captured, 0, "no prize at this rung means no payout saga")
+}
+
+// TestProcessor_Collect_SubmitFailureIsRetrySafe is the money-safety
+// regression: if the payout saga submission fails, Collect must (a) propagate
+// the error to the caller, (b) leave the session in the registry (NOT
+// removed), and (c) buffer NO GameEnded event. This proves a failed payout
+// leaves the game collectible again on retry rather than silently consuming
+// the session (and the prize) on a transient Kafka failure.
+func TestProcessor_Collect_SubmitFailureIsRetrySafe(t *testing.T) {
+	setupRegistryTest(t)
+	ten := setupTestTenant(t)
+	ctx := testCtx(ten)
+	characterId := uint32(2105)
+
+	ladder := game.Ladder{
+		EntryCostMeso: 1000,
+		Rungs: []game.Rung{
+			{Rung: 1, ItemId: item.Id(4004000), Quantity: 2, Meso: 400},
+		},
+	}
+
+	submitErr := errors.New("saga submission failed")
+	calls := 0
+	p := game.NewProcessorWithLadder(testLogger(), ctx, fixedThrows(game.ThrowScissors), ladderProviderFor(ladder), erroringSagaSubmitter(submitErr, &calls))
+
+	mb := message.NewBuffer()
+	winToRungOne(t, p, mb, characterId)
+
+	// Collect into a fresh buffer so any GameEnded it would buffer is
+	// isolated from winToRungOne's GameOpened/RoundResult events.
+	collectBuf := message.NewBuffer()
+	_, err := p.Collect(collectBuf, characterId)
+
+	// (a) the submission error is propagated to the caller.
+	require.Error(t, err)
+	assert.ErrorIs(t, err, submitErr)
+	assert.Equal(t, 1, calls, "the saga submitter should have been invoked exactly once")
+
+	// (b) the session is still present in the registry (NOT removed), and
+	// remains collectible (still AWAITING_DECISION at its rung).
+	m, found := game.GetRegistry().Get(ctx, characterId)
+	require.True(t, found, "a failed payout must leave the session in the registry for retry")
+	assert.Equal(t, game.StatusAwaitingDecision, m.Status())
+	assert.Equal(t, 1, m.Rung())
+
+	// (c) no GameEnded event was buffered.
+	assert.Len(t, collectBuf.GetAll()[rps.EnvEventTopic], 0, "a failed payout must buffer no GameEnded event")
+}
+
+// TestProcessor_Collect_PrizePresentButGrantsNothing exercises the steps==0
+// branch reached via prizeOk=true: the rung IS configured (PrizeAt returns
+// ok=true) but grants neither meso nor an item (ItemId=0 && Meso=0). Collect
+// must submit no saga, still remove the session, and still buffer a
+// GameEnded{collected} carrying a zero/empty prize. This is distinct from the
+// already-tested PrizeAt->ok=false path (TestProcessor_Collect_NoPrizeSubmitsNoSaga).
+func TestProcessor_Collect_PrizePresentButGrantsNothing(t *testing.T) {
+	setupRegistryTest(t)
+	ten := setupTestTenant(t)
+	ctx := testCtx(ten)
+	characterId := uint32(2106)
+
+	// Rung 1 is explicitly present (so PrizeAt(1) returns ok=true) but grants
+	// nothing.
+	ladder := game.Ladder{
+		EntryCostMeso: 1000,
+		Rungs: []game.Rung{
+			{Rung: 1, ItemId: 0, Quantity: 0, Meso: 0},
+		},
+	}
+
+	calls := 0
+	p := game.NewProcessorWithLadder(testLogger(), ctx, fixedThrows(game.ThrowScissors), ladderProviderFor(ladder), countingSagaSubmitter(&calls))
+
+	mb := message.NewBuffer()
+	winToRungOne(t, p, mb, characterId)
+
+	collectBuf := message.NewBuffer()
+	m, err := p.Collect(collectBuf, characterId)
+	require.NoError(t, err)
+	assert.Equal(t, game.StatusEnded, m.Status())
+
+	// No saga submitted (steps==0 branch), reached via prizeOk=true.
+	assert.Equal(t, 0, calls, "a present-but-empty prize must submit no payout saga")
+
+	// The session is removed.
+	_, found := game.GetRegistry().Get(ctx, characterId)
+	assert.False(t, found, "the session should be removed after a zero-prize collect")
+
+	// A GameEnded{collected} is still buffered, carrying an empty prize.
+	msgs := collectBuf.GetAll()[rps.EnvEventTopic]
+	require.Len(t, msgs, 1, "expected a single GameEnded event")
+	ended := decodeGameEnded(t, msgs[0])
+	assert.Equal(t, rps.ReasonCollected, ended.Body.Reason)
+	if assert.NotNil(t, ended.Body.GrantedPrize, "collected always carries a granted prize (even if empty)") {
+		assert.Equal(t, uint32(0), uint32(ended.Body.GrantedPrize.ItemId))
+		assert.Equal(t, uint32(0), ended.Body.GrantedPrize.Quantity)
+		assert.Equal(t, uint32(0), ended.Body.GrantedPrize.Meso)
+	}
 }

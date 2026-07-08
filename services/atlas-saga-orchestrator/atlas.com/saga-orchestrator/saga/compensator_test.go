@@ -473,3 +473,43 @@ func TestCompensateLateStep_DestroyAssetRemoveAll_Unrecoverable(t *testing.T) {
 	freshStep, _ := fresh.GetCurrentStep()
 	assert.False(t, freshStep.LateCompensated())
 }
+
+// TestCompensateLateStep_ReleaseFromMtsHolding_RestoresHolding pins the MTS
+// take-home late inverse (task-102): a ReleaseFromMtsHolding that soft-deleted
+// the holding but landed late after the saga terminated is rolled back by
+// RestoreMtsHolding on the same holding id, so the item stays in MTS custody
+// (recoverable) instead of being orphaned.
+func TestCompensateLateStep_ReleaseFromMtsHolding_RestoresHolding(t *testing.T) {
+	ResetCache()
+	logger, _ := test.NewNullLogger()
+	ctx := lateStepTestCtx(t)
+
+	holdingId := uuid.New()
+	s, err := NewBuilder().
+		SetSagaType(MtsOperation).
+		SetInitiatedBy("test").
+		AddStep("release_from_mts_holding", Pending, ReleaseFromMtsHolding, ReleaseFromMtsHoldingPayload{HoldingId: holdingId}).
+		Build()
+	require.NoError(t, err)
+	require.NoError(t, GetCache().Put(ctx, s))
+
+	mtsMockP := &mtsTestMtsMock{}
+	c := NewCompensator(logger, ctx).WithMtsProcessor(mtsMockP)
+
+	step, _ := s.GetCurrentStep()
+	compensated, err := c.CompensateLateStep(s, step)
+	require.NoError(t, err)
+	assert.True(t, compensated)
+	assert.Equal(t, 1, mtsMockP.restoreCalls, "late ReleaseFromMtsHolding must dispatch exactly one RestoreMtsHolding")
+	assert.Equal(t, holdingId, mtsMockP.restoreHoldingId, "restore must target the same holding")
+
+	// Duplicate delivery: marker claimed — no second restore.
+	fresh, ok := GetCache().GetById(ctx, s.TransactionId())
+	require.True(t, ok)
+	freshStep, _ := fresh.GetCurrentStep()
+	assert.True(t, freshStep.LateCompensated())
+	compensated, err = c.CompensateLateStep(fresh, freshStep)
+	require.NoError(t, err)
+	assert.False(t, compensated)
+	assert.Equal(t, 1, mtsMockP.restoreCalls)
+}

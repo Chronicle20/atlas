@@ -1341,6 +1341,17 @@ func extractCharacterCreationWorldId(s Saga) world.Id {
 // absorb-only and logged as late_effect_unrecoverable when hit.
 // DestroyAssetFromSlot is deliberately absent: its payload carries no
 // TemplateId, so the destroyed item cannot be recreated from the step alone.
+//
+// MTS custody actions (task-102): only ReleaseFromMtsHolding is included — its
+// late success soft-deletes a holding, cleanly reversed by RestoreMtsHolding
+// (so a take-home that lands late after a timeout doesn't orphan the item as a
+// deleted-but-never-granted holding). AcceptToMtsListing and
+// MtsMoveListingToHolding are deliberately ABSENT: neither has a single inverse
+// command (undoing them means removing a just-created listing / buyer-holding
+// and restoring the source item / listing), so they need new atlas-mts commands
+// with item/currency-safety implications. They remain absorb-only
+// (late_effect_unrecoverable) until those inverses are designed. task-136
+// removed the timeout trigger, so a late MTS custody success is now rare.
 var lateCompensableActions = map[Action]struct{}{
 	AwardAsset:            {},
 	CreateAndEquipAsset:   {},
@@ -1355,6 +1366,7 @@ var lateCompensableActions = map[Action]struct{}{
 	AwardFame:             {},
 	EquipAsset:            {},
 	UnequipAsset:          {},
+	ReleaseFromMtsHolding: {},
 }
 
 func (c *CompensatorImpl) CompensateLateStep(s Saga, step Step[any]) (bool, error) {
@@ -1536,6 +1548,15 @@ func (c *CompensatorImpl) dispatchLateInverse(s Saga, step Step[any]) error {
 			return fmt.Errorf("invalid payload for late UnequipAsset compensation")
 		}
 		return c.compP.RequestEquipAsset(s.TransactionId(), payload.CharacterId, byte(payload.InventoryType), payload.Destination, payload.Source)
+	case ReleaseFromMtsHolding:
+		// A take-home that soft-deleted the holding but landed late after the
+		// saga terminated: un-soft-delete the holding so the item stays in MTS
+		// (recoverable) rather than orphaned. Same inverse the reverse-walk uses.
+		payload, ok := step.Payload().(ReleaseFromMtsHoldingPayload)
+		if !ok {
+			return fmt.Errorf("invalid payload for late ReleaseFromMtsHolding compensation")
+		}
+		return c.mtsP.RestoreMtsHoldingAndEmit(s.TransactionId(), payload.HoldingId)
 	}
 	return fmt.Errorf("no late inverse registered for action %s", step.Action())
 }

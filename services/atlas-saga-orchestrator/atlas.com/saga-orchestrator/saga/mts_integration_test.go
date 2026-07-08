@@ -92,14 +92,16 @@ var _ cashshop.Processor = (*mtsTestCashshopMock)(nil)
 // mtsTestMtsMock captures custody dispatches so the test can assert NO un-move /
 // restore was dispatched for the (Failed) settlement move.
 type mtsTestMtsMock struct {
-	restoreCalls int
-	moveCalls    int
-	acceptCalls  int
-	releaseCalls int
+	restoreCalls     int
+	restoreHoldingId uuid.UUID
+	moveCalls        int
+	acceptCalls      int
+	releaseCalls     int
 }
 
-func (m *mtsTestMtsMock) RestoreMtsHoldingAndEmit(_ uuid.UUID, _ uuid.UUID) error {
+func (m *mtsTestMtsMock) RestoreMtsHoldingAndEmit(_ uuid.UUID, holdingId uuid.UUID) error {
 	m.restoreCalls++
+	m.restoreHoldingId = holdingId
 	return nil
 }
 

@@ -318,3 +318,44 @@ func TestProcessorBrowseUnpaged(t *testing.T) {
 		t.Fatalf("unpaged browse returned %d rows, want 20", len(all))
 	}
 }
+
+// TestProcessorCountBrowse pins that CountBrowse returns the TOTAL match count
+// regardless of paging — the value a client needs for a real total/last page,
+// which the page slice alone can't provide — and that it honors the same
+// filters as Browse.
+func TestProcessorCountBrowse(t *testing.T) {
+	p, db, cleanup := test.CreateListingProcessor(t)
+	defer cleanup()
+	resetListings(t, db)
+
+	for i := 0; i < 20; i++ {
+		if _, err := p.Create(buildProcessorListingTemplate(t, 0, uint32(500+i), "1", 1302000)); err != nil {
+			t.Fatalf("Create %d: %v", i, err)
+		}
+	}
+	// Two rows under a different category to prove the filter is applied.
+	if _, err := p.Create(buildProcessorListingTemplate(t, 0, 600, "3", 1302000)); err != nil {
+		t.Fatalf("Create cat3 a: %v", err)
+	}
+	if _, err := p.Create(buildProcessorListingTemplate(t, 0, 601, "3", 1302000)); err != nil {
+		t.Fatalf("Create cat3 b: %v", err)
+	}
+
+	// Total across all 22, independent of the page window.
+	total, err := p.CountBrowse(0, listing.StateActive, listing.BrowseFilter{PageSize: 16})
+	if err != nil {
+		t.Fatalf("CountBrowse: %v", err)
+	}
+	if total != 22 {
+		t.Fatalf("CountBrowse total = %d, want 22 (ignores paging)", total)
+	}
+
+	// Filtered count matches the filter, not the whole set.
+	cat3, err := p.CountBrowse(0, listing.StateActive, listing.BrowseFilter{Category: "3"})
+	if err != nil {
+		t.Fatalf("CountBrowse cat3: %v", err)
+	}
+	if cat3 != 2 {
+		t.Fatalf("CountBrowse category=3 = %d, want 2", cat3)
+	}
+}

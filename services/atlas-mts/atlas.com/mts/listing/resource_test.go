@@ -231,3 +231,53 @@ func TestListingDetail(t *testing.T) {
 	}
 	resp404.Body.Close()
 }
+
+// TestBrowseResponseCarriesTotal asserts the browse response includes the
+// JSON:API meta.total (the true match count) and meta.page.last, so a paging
+// client renders a real total/last page instead of inferring from the page
+// length. Seeds 20 rows, requests a 16-row page, and expects total=20, last=2.
+func TestBrowseResponseCarriesTotal(t *testing.T) {
+	p, db, cleanup := test.CreateListingProcessor(t)
+	defer cleanup()
+	if err := db.Exec("DELETE FROM listings").Error; err != nil {
+		t.Fatalf("reset: %v", err)
+	}
+	for i := 0; i < 20; i++ {
+		seedListing(t, p, 0, uint32(200+i), "1", listing.SaleTypeFixed)
+	}
+
+	srv := newListingServer(t, db)
+	defer srv.Close()
+
+	resp, err := (&http.Client{}).Do(withTenant(t, http.MethodGet, fmt.Sprintf("%s/worlds/0/listings?page=0&pageSize=16", srv.URL)))
+	if err != nil {
+		t.Fatalf("browse: %v", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("browse status = %d, want 200", resp.StatusCode)
+	}
+	var env struct {
+		Data []json.RawMessage `json:"data"`
+		Meta struct {
+			Total int `json:"total"`
+			Page  struct {
+				Number int `json:"number"`
+				Size   int `json:"size"`
+				Last   int `json:"last"`
+			} `json:"page"`
+		} `json:"meta"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&env); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if len(env.Data) != 16 {
+		t.Fatalf("page returned %d rows, want 16", len(env.Data))
+	}
+	if env.Meta.Total != 20 {
+		t.Fatalf("meta.total = %d, want 20 (the full match count, not the page length)", env.Meta.Total)
+	}
+	if env.Meta.Page.Last != 2 {
+		t.Fatalf("meta.page.last = %d, want 2 (ceil(20/16))", env.Meta.Page.Last)
+	}
+}

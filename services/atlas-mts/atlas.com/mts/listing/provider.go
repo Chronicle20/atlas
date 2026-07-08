@@ -75,41 +75,63 @@ const DefaultPageSize = 16
 // world.Id is a byte) and return cross-world rows. The conditional clauses below
 // likewise never use struct conditions, so a zero-valued optional filter is
 // simply omitted rather than matched against zero.
+// browseFilterQuery applies the world/state scope plus every optional browse
+// filter to db, returning the narrowed query WITHOUT paging. getBrowse (page
+// slice) and countBrowse (total match count) share it so the two can never
+// drift — a filter that narrows the page must narrow the count identically, or
+// the client's total/last-page would lie.
+func browseFilterQuery(db *gorm.DB, worldId world.Id, state State, f BrowseFilter) *gorm.DB {
+	q := db.Where(map[string]interface{}{
+		"world_id": byte(worldId),
+		"state":    string(state),
+	})
+	if f.Category != "" {
+		q = q.Where("category = ?", f.Category)
+	}
+	if f.SubCategory != "" {
+		q = q.Where("sub_category = ?", f.SubCategory)
+	}
+	if f.SaleType != "" {
+		q = q.Where("sale_type = ?", string(f.SaleType))
+	}
+	if f.ItemId != 0 {
+		q = q.Where("template_id = ?", f.ItemId)
+	}
+	if len(f.ItemIds) > 0 {
+		q = q.Where("template_id IN ?", f.ItemIds)
+	}
+	if f.Serial != 0 {
+		q = q.Where("serial = ?", f.Serial)
+	}
+	if f.SellerId != 0 {
+		q = q.Where("seller_id = ?", f.SellerId)
+	}
+	if f.ExcludeSellerId != 0 {
+		q = q.Where("seller_id <> ?", f.ExcludeSellerId)
+	}
+	if f.SellerName != "" {
+		q = q.Where("seller_name = ?", f.SellerName)
+	}
+	return q
+}
+
+// countBrowse returns the TOTAL number of listings matching the browse filters,
+// ignoring paging — the value the client needs to render a real total / last
+// page (getBrowse only returns one page slice). Shares browseFilterQuery with
+// getBrowse so the count and the page always agree.
+func countBrowse(worldId world.Id, state State, f BrowseFilter) func(db *gorm.DB) (int64, error) {
+	return func(db *gorm.DB) (int64, error) {
+		var total int64
+		err := browseFilterQuery(db, worldId, state, f).Model(&entity{}).Count(&total).Error
+		return total, err
+	}
+}
+
 func getBrowse(worldId world.Id, state State, f BrowseFilter) database.EntityProvider[[]entity] {
 	return func(db *gorm.DB) model.Provider[[]entity] {
 		var results []entity
 
-		q := db.Where(map[string]interface{}{
-			"world_id": byte(worldId),
-			"state":    string(state),
-		})
-		if f.Category != "" {
-			q = q.Where("category = ?", f.Category)
-		}
-		if f.SubCategory != "" {
-			q = q.Where("sub_category = ?", f.SubCategory)
-		}
-		if f.SaleType != "" {
-			q = q.Where("sale_type = ?", string(f.SaleType))
-		}
-		if f.ItemId != 0 {
-			q = q.Where("template_id = ?", f.ItemId)
-		}
-		if len(f.ItemIds) > 0 {
-			q = q.Where("template_id IN ?", f.ItemIds)
-		}
-		if f.Serial != 0 {
-			q = q.Where("serial = ?", f.Serial)
-		}
-		if f.SellerId != 0 {
-			q = q.Where("seller_id = ?", f.SellerId)
-		}
-		if f.ExcludeSellerId != 0 {
-			q = q.Where("seller_id <> ?", f.ExcludeSellerId)
-		}
-		if f.SellerName != "" {
-			q = q.Where("seller_name = ?", f.SellerName)
-		}
+		q := browseFilterQuery(db, worldId, state, f)
 
 		// PageSize < 0 disables paging entirely and returns every filtered
 		// row: the channel derives the client's categoryItemCnt total from

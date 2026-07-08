@@ -6,7 +6,7 @@ import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 import {
   mtsListingsService,
   type BrowseListingsFilter,
-  type MtsListing,
+  type MtsListingPage,
 } from "@/services/api/mts-listings.service";
 
 export const mtsListingsKeys = {
@@ -23,7 +23,7 @@ export function useMtsListings(
   worldId: number,
   filter: BrowseListingsFilter,
   enabled = true,
-): UseQueryResult<MtsListing[], Error> {
+): UseQueryResult<MtsListingPage, Error> {
   return useQuery({
     queryKey: mtsListingsKeys.browse(worldId, filter),
     queryFn: () => mtsListingsService.browse(worldId, filter),

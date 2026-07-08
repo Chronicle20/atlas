@@ -144,6 +144,7 @@ type Processor interface {
 	GetBySerial(worldId world.Id, sn uint32) (Model, error)
 	Create(m Model) (Model, error)
 	Browse(worldId world.Id, state State, f BrowseFilter) ([]Model, error)
+	CountBrowse(worldId world.Id, state State, f BrowseFilter) (int64, error)
 	TransitionState(id string, from State, to State) (bool, error)
 	UpdateAuction(id string, currentBid uint32, highBidderId uint32, endsAt *time.Time) error
 	// Cancel performs the seller's race-safe cancel in ONE local DB transaction:
@@ -254,6 +255,13 @@ func (p *ProcessorImpl) Create(m Model) (Model, error) {
 // pagination. The signature mirrors the getBrowse provider exactly.
 func (p *ProcessorImpl) Browse(worldId world.Id, state State, f BrowseFilter) ([]Model, error) {
 	return model.SliceMap(modelFromEntity)(getBrowse(worldId, state, f)(p.db.WithContext(p.ctx)))()()
+}
+
+// CountBrowse returns the TOTAL number of listings matching the same filters
+// Browse applies, ignoring paging — so a caller can report a real total and
+// last page rather than inferring them from one page's length.
+func (p *ProcessorImpl) CountBrowse(worldId world.Id, state State, f BrowseFilter) (int64, error) {
+	return countBrowse(worldId, state, f)(p.db.WithContext(p.ctx))
 }
 
 // TransitionState performs the race-safe conditional transition, returning true

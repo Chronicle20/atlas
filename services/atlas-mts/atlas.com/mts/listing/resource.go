@@ -10,6 +10,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
@@ -222,7 +223,8 @@ func handleBrowseListings(d *rest.HandlerDependency, c *rest.HandlerContext) htt
 
 			// Public browse only ever shows active listings; sold/cancelled/
 			// expired listings are never surfaced here.
-			ms, err := NewProcessor(d.Logger(), d.Context(), d.DB()).Browse(worldId, StateActive, f)
+			p := NewProcessor(d.Logger(), d.Context(), d.DB())
+			ms, err := p.Browse(worldId, StateActive, f)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Browsing listings for world [%d].", byte(worldId))
 				w.WriteHeader(http.StatusInternalServerError)
@@ -236,8 +238,25 @@ func handleBrowseListings(d *rest.HandlerDependency, c *rest.HandlerContext) htt
 				return
 			}
 
+			// Report the TOTAL matching count (not this page's length) so a paging
+			// client renders a real total and last page — the returned-length
+			// heuristic (a full page implies "maybe one more") can neither show the
+			// total nor find the true last page. The count applies the same filters
+			// as the page (shared browseFilterQuery), ignoring page/pageSize.
+			total, err := p.CountBrowse(worldId, StateActive, f)
+			if err != nil {
+				d.Logger().WithError(err).Errorf("Counting listings for world [%d].", byte(worldId))
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			pageSize := f.PageSize
+			if pageSize <= 0 {
+				pageSize = DefaultPageSize
+			}
+			env := paginate.Envelope{Total: int(total), PageNumber: f.Page, PageSize: pageSize}
+
 			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+			server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res, env, r)
 		}
 	})
 }

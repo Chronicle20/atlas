@@ -68,17 +68,20 @@ export function MarketplacePage() {
       saleType: applied.saleType || undefined,
       sellerName: applied.sellerName || undefined,
       itemId: applied.itemId || undefined,
-      page,
+      // The endpoint is zero-based (page=0 is the first page); the UI page state
+      // is 1-based for display, so convert on the wire.
+      page: page - 1,
       pageSize: LISTINGS_PAGE_SIZE,
     },
     !!activeTenant,
   );
 
-  const listings = listingsQuery.data ?? [];
+  const listings = listingsQuery.data?.listings ?? [];
   const loading = listingsQuery.isFetching;
-  // The browse endpoint returns no total; a full page implies there may be more.
-  const hasNextPage = listings.length === LISTINGS_PAGE_SIZE;
-  const lastPage = hasNextPage ? page + 1 : page;
+  // Total and last page come from the response meta — authoritative, not
+  // inferred from the returned length.
+  const total = listingsQuery.data?.total ?? 0;
+  const lastPage = listingsQuery.data?.lastPage ?? 1;
 
   const applyFilters = () => {
     if (!activeTenant) {
@@ -156,8 +159,8 @@ export function MarketplacePage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value={SALE_TYPE_ANY}>Any</SelectItem>
-                  <SelectItem value="BUY_NOW">Buy Now</SelectItem>
-                  <SelectItem value="AUCTION">Auction</SelectItem>
+                  <SelectItem value="fixed">Buy Now</SelectItem>
+                  <SelectItem value="auction">Auction</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -218,9 +221,9 @@ export function MarketplacePage() {
         <CardHeader className="shrink-0">
           <CardTitle>
             Listings
-            {listings.length > 0 && (
+            {total > 0 && (
               <span className="ml-2 text-muted-foreground font-normal">
-                ({listings.length} on this page)
+                ({total} total, {listings.length} on this page)
               </span>
             )}
           </CardTitle>
@@ -263,11 +266,11 @@ export function MarketplacePage() {
               </Table>
             </div>
           )}
-          {listings.length > 0 && (
+          {total > 0 && (
             <Pager
               page={page}
               lastPage={lastPage}
-              total={listings.length}
+              total={total}
               pageSize={LISTINGS_PAGE_SIZE}
               onPageChange={setPage}
             />

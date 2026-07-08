@@ -1,5 +1,6 @@
-import { api } from "@/lib/api/client";
+import { apiClient } from "@/lib/api/client";
 import type { ServiceOptions } from "@/lib/api/query-params";
+import type { ApiPagedResponse } from "@/types/api/responses";
 
 /**
  * Read-only browser for atlas-mts marketplace listings.
@@ -9,8 +10,13 @@ import type { ServiceOptions } from "@/lib/api/query-params";
  *     ?category=&subCategory=&saleType=&sellerName=&itemId=&page=&pageSize=
  *
  * The browse endpoint only ever surfaces active listings. The response is a
- * flat JSON:API list of `listings` resources (no total/lastPage metadata), so
- * pagination is driven client-side off the returned count.
+ * JSON:API list of `listings` resources with a pagination `meta` block
+ * (`meta.total` = full match count, `meta.page.last` = last page), so the total
+ * and last page are authoritative — never inferred from the returned length.
+ *
+ * Page numbering is ZERO-BASED on the wire (`page=0` is the first page: the
+ * endpoint offsets by `page * pageSize`). Callers that display 1-based page
+ * numbers MUST convert.
  */
 
 export interface MtsListingAttributes {
@@ -61,6 +67,15 @@ export interface MtsListing {
   attributes: MtsListingAttributes;
 }
 
+/** A page of listings plus the authoritative total/last-page from `meta`. */
+export interface MtsListingPage {
+  listings: MtsListing[];
+  /** Total number of listings matching the filter across all pages. */
+  total: number;
+  /** Last page number (1-based, for display), derived from meta.page.last. */
+  lastPage: number;
+}
+
 export interface BrowseListingsFilter {
   category?: string | undefined;
   subCategory?: string | undefined;
@@ -92,15 +107,22 @@ export function buildBrowseListingsQuery(filter: BrowseListingsFilter): string {
 
 export const mtsListingsService = {
   /**
-   * Browse active listings for a world. Returns the raw page of listings; the
-   * caller derives "has next page" from the returned length vs the page size.
+   * Browse active listings for a world. Returns the page of listings together
+   * with the authoritative `total` and `lastPage` from the response `meta`, so
+   * pagination is exact rather than inferred from the page length.
    */
   async browse(
     worldId: number,
     filter: BrowseListingsFilter,
     options?: ServiceOptions,
-  ): Promise<MtsListing[]> {
+  ): Promise<MtsListingPage> {
     const query = buildBrowseListingsQuery(filter);
-    return api.getList<MtsListing>(`/api/worlds/${worldId}/listings${query}`, options);
+    const resp = await apiClient.get<ApiPagedResponse<MtsListing>>(
+      `/api/worlds/${worldId}/listings${query}`,
+      options,
+    );
+    const total = resp.meta?.total ?? resp.data.length;
+    const lastPage = resp.meta?.page?.last ?? 1;
+    return { listings: resp.data, total, lastPage };
   },
 };

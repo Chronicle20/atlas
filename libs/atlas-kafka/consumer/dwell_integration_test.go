@@ -5,6 +5,7 @@ package consumer_test
 import (
 	"context"
 	"fmt"
+	"math"
 	"sort"
 	"strconv"
 	"sync"
@@ -107,7 +108,7 @@ func (r *latencyRecorder) p99() time.Duration {
 	if len(s) == 0 {
 		return 0
 	}
-	idx := int(float64(len(s))*0.99) - 1
+	idx := int(math.Ceil(float64(len(s))*0.99)) - 1
 	if idx < 0 {
 		idx = 0
 	}

@@ -97,7 +97,7 @@ func (m *MiniRoomBalloon) Decode(_ logrus.FieldLogger, _ context.Context) func(r
 // (CChatBalloon::DestroyMiniRoomBalloon) and reads no trailing fields for.
 // Same handler as MiniRoomBalloon; see ida-notes.md §G3 for the shared read
 // order.
-// packet-audit:fname CUser::OnMiniRoomBalloon
+// packet-audit:fname CUser::OnMiniRoomBalloon#Remove
 type MiniRoomBalloonRemove struct {
 	characterId uint32
 }

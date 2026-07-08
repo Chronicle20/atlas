@@ -123,6 +123,28 @@ func CharacterInteractionUpdateMerchantBody(meso uint32, items []interaction.Roo
 	})
 }
 
+// CharacterInteractionMiniGameRoomBody is the EnterResult SUCCESS body for an
+// Omok / Match Cards room (the game analogue of
+// CharacterInteractionEnterResultSuccessBody; same ENTER_RESULT mode key,
+// discrete game-shaped struct — see InteractionMiniGameRoom for the
+// IDA-derived two-list layout). yourSlot is the recipient's slot (0 owner /
+// 1 visitor); gameKind is the piece/sub-type byte (Cosmic `piece`).
+func CharacterInteractionMiniGameRoomBody(roomType interaction.RoomType, capacity byte, yourSlot byte, players []MiniGameRoomPlayer, title string, gameKind byte, tournament bool, round byte) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", CharacterInteractionModeEnterResult, func(mode byte) packet.Encoder {
+		return NewInteractionMiniGameRoom(mode, roomType, capacity, yourSlot, players, title, gameKind, tournament, round)
+	})
+}
+
+// CharacterInteractionMiniGameEnterBody notifies the room owner that a visitor
+// joined a game room (the game analogue of CharacterInteractionEnterBody; same
+// ENTER mode key, discrete game-shaped struct carrying the trailing 20-byte
+// record — see InteractionMiniGameEnter).
+func CharacterInteractionMiniGameEnterBody(player MiniGameRoomPlayer) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", CharacterInteractionModeEnter, func(mode byte) packet.Encoder {
+		return NewInteractionMiniGameEnter(mode, player)
+	})
+}
+
 func CharacterInteractionMiniGameReadyBody() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", CharacterInteractionModeMemoryGameReady, func(mode byte) packet.Encoder {
 		return NewInteractionMiniGameReady(mode)

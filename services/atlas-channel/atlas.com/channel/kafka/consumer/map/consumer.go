@@ -705,7 +705,7 @@ func spawnMiniGamesForSession(l logrus.FieldLogger) func(ctx context.Context) fu
 		return func(wp writer.Producer) func(s session.Model) model.Operator[minigame.Model] {
 			return func(s session.Model) model.Operator[minigame.Model] {
 				return func(m minigame.Model) error {
-					return session.Announce(l)(ctx)(wp)(interactionpkt.MiniRoomWriter)(interactioncb.MiniRoomBalloonBody(m.OwnerId(), m.RoomType(), m.Id(), m.Title(), m.Private(), m.PieceType(), m.Occupancy(), 2, m.InProgress()))(s)
+					return session.Announce(l)(ctx)(wp)(interactionpkt.MiniRoomWriter)(interactioncb.MiniRoomBalloonBody(m.OwnerId(), m.RoomType(), m.Id(), m.Title(), m.HasPassword(), m.PieceType(), m.Occupancy(), 2, m.InProgress()))(s)
 				}
 			}
 		}

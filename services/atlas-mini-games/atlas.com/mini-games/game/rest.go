@@ -6,14 +6,20 @@ import "strconv"
 // atlas-channel's rooms-in-field REST client (task-19). Id is the room id
 // (== OwnerId, design D2) rendered as a string per JSON:API convention.
 type RestModel struct {
-	Id         uint32 `json:"-"`
-	OwnerId    uint32 `json:"ownerId"`
-	RoomType   byte   `json:"roomType"`
-	Title      string `json:"title"`
-	Private    bool   `json:"private"`
-	PieceType  byte   `json:"pieceType"`
-	Occupancy  byte   `json:"occupancy"`
-	InProgress bool   `json:"inProgress"`
+	Id       uint32 `json:"-"`
+	OwnerId  uint32 `json:"ownerId"`
+	RoomType byte   `json:"roomType"`
+	Title    string `json:"title"`
+	Private  bool   `json:"private"`
+	// HasPassword is the balloon lock-icon predicate (Private && a non-empty
+	// password). It is computed here so the channel's map-entry balloon render
+	// matches the live BALLOON_UPDATED event path, which computes the same
+	// thing (game/producer.go balloonProvider). Raw Private alone would show a
+	// lock for a private-but-passwordless room the VISIT gate treats as unlocked.
+	HasPassword bool `json:"hasPassword"`
+	PieceType   byte `json:"pieceType"`
+	Occupancy   byte `json:"occupancy"`
+	InProgress  bool `json:"inProgress"`
 }
 
 func (r RestModel) GetName() string {
@@ -41,13 +47,14 @@ func Transform(r Room) (RestModel, error) {
 		occupancy = 2
 	}
 	return RestModel{
-		Id:         r.Id(),
-		OwnerId:    r.OwnerId(),
-		RoomType:   r.RoomType(),
-		Title:      r.Title(),
-		Private:    r.Private(),
-		PieceType:  r.PieceType(),
-		Occupancy:  occupancy,
-		InProgress: r.InProgress(),
+		Id:          r.Id(),
+		OwnerId:     r.OwnerId(),
+		RoomType:    r.RoomType(),
+		Title:       r.Title(),
+		Private:     r.Private(),
+		HasPassword: r.Private() && r.Password() != "",
+		PieceType:   r.PieceType(),
+		Occupancy:   occupancy,
+		InProgress:  r.InProgress(),
 	}, nil
 }

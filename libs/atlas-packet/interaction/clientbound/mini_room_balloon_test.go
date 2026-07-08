@@ -1,10 +1,39 @@
 package clientbound
 
 import (
+	"bytes"
 	"testing"
 
 	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
+
+// TestMiniRoomBalloonBytes asserts the EXACT UPDATE_CHAR_BOX balloon wire
+// sequence (full-field case, roomType != 0) against the documented
+// CUser::OnMiniRoomBalloon read order (ida-notes.md §G3), so a symmetric
+// field-order bug in the encoder+test-decoder pair (which a RoundTrip-only
+// test would miss) is caught. The encoder is version-uniform, so one GMS
+// context suffices.
+func TestMiniRoomBalloonBytes(t *testing.T) {
+	ctx := test.CreateContext("GMS", 83, 1)
+	input := NewMiniRoomBalloon(1234, 1, 1234, "Omok Room", true, 1, 1, 2, false)
+
+	got := test.Encode(t, ctx, input.Encode, nil)
+
+	var want []byte
+	want = append(want, le32(1234)...)         // characterId
+	want = append(want, 1)                     // roomType
+	want = append(want, le32(1234)...)         // roomId
+	want = append(want, ascii("Omok Room")...) // title
+	want = append(want, 1)                     // hasPassword (true)
+	want = append(want, 1)                     // pieceType
+	want = append(want, 1)                     // occupancy
+	want = append(want, 2)                     // capacity
+	want = append(want, 0)                     // inProgress (false)
+
+	if !bytes.Equal(got, want) {
+		t.Fatalf("byte mismatch:\n got  %x\n want %x", got, want)
+	}
+}
 
 // UPDATE_CHAR_BOX balloon, full-field case (roomType != 0). Verified
 // byte-identical on gms_v83 (CUser::OnMiniRoomBalloon @ 0x938ba5) and gms_v95

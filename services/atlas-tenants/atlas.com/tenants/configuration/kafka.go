@@ -18,6 +18,9 @@ const (
 	EventTypeInstanceRouteCreated      = "INSTANCE_ROUTE_CREATED"
 	EventTypeInstanceRouteUpdated      = "INSTANCE_ROUTE_UPDATED"
 	EventTypeInstanceRouteDeleted      = "INSTANCE_ROUTE_DELETED"
+	EventTypeRpsRewardCreated          = "RPS_REWARD_CREATED"
+	EventTypeRpsRewardUpdated          = "RPS_REWARD_UPDATED"
+	EventTypeRpsRewardDeleted          = "RPS_REWARD_DELETED"
 )
 
 // ConfigurationStatusEvent is a generic event for configuration status changes
@@ -60,6 +63,18 @@ func CreateInstanceRouteStatusEventProvider(tenantId uuid.UUID, eventType string
 		Type:         eventType,
 		ResourceType: "instance-route",
 		ResourceId:   instanceRouteId,
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+// CreateRpsRewardStatusEventProvider creates a provider for rps-reward status events
+func CreateRpsRewardStatusEventProvider(tenantId uuid.UUID, eventType string, rpsRewardId string) model.Provider[[]kafka.Message] {
+	key := []byte(tenantId.String())
+	value := ConfigurationStatusEvent{
+		TenantId:     tenantId,
+		Type:         eventType,
+		ResourceType: "rps-reward",
+		ResourceId:   rpsRewardId,
 	}
 	return producer.SingleMessageProvider(key, value)
 }

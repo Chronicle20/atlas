@@ -44,3 +44,7 @@ func ParseVesselId(l logrus.FieldLogger, next func(string) http.HandlerFunc) htt
 func ParseInstanceRouteId(l logrus.FieldLogger, next func(string) http.HandlerFunc) http.HandlerFunc {
 	return server.ParseStringId(l, "instanceRouteId", next)
 }
+
+func ParseRpsRewardId(l logrus.FieldLogger, next func(string) http.HandlerFunc) http.HandlerFunc {
+	return server.ParseStringId(l, "rpsRewardId", next)
+}

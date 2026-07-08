@@ -19,6 +19,11 @@ metadata:
   name: atlas-kafka-precreate
   annotations:
     argocd.argoproj.io/sync-wave: "0"
+    # Job pod templates are immutable: without Replace, any change to this
+    # script makes ArgoCD's apply fail ("Job.batch ... is invalid: spec.template:
+    # Invalid value") and, because this Job is wave 0, wedges the whole sync
+    # (2026-07-08, pr-822). Replace deletes+recreates the Job instead.
+    argocd.argoproj.io/sync-options: Force=true,Replace=true
 spec:
   backoffLimit: 3
   ttlSecondsAfterFinished: 600

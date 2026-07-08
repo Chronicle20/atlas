@@ -5,11 +5,11 @@
 
 Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 
-- export gms_v83: `711bddcc2e1bdd417a75954148d2b50c64e70855e84259c0b8e50e700e393c0d`
-- export gms_v84: `7eab9472e2afeda13faaf74273828d09d5f2481d67bec10235c3b2fd2f91e1eb`
-- export gms_v87: `714817d376bb93732ef6b6fbe6b59f8c24515ff901801d213d676b501eae7f94`
-- export gms_v95: `d630364f4d84b433c62329d3756f4f97efdb9ce8056c62b60842bc9b91b24b97`
-- export jms_v185: `3e0070b0e1faf703005f88595cee7ccb192add0d66ecbd5de436171fd52bd4d2`
+- export gms_v83: `b38866c1e5ea14484410d77b4190c0617bb7c8d14bdd25e92cd34a5b2283552c`
+- export gms_v84: `f6a75063b0ab3cf7bd71895ff0e7f83a610836542e49a612c88c6fa8d3f2076f`
+- export gms_v87: `6d852b58274f1d53d3a6c9a1bd7809094a9a335905320ea14c010c8945bf3134`
+- export gms_v95: `8d11f4fa069c0df5471d2d379d1aae7e768eb68524b03e89b0f8d01ed05f4075`
+- export jms_v185: `9b09acfaaba12746516c9f9a28d9c7711e9ee171b6c634222ac5e2d9293d0e39`
 
 ## Clientbound
 
@@ -415,7 +415,7 @@ Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 | STORAGE | CTrunkDlg::OnPacket | storage/clientbound/StorageErrorInventoryFull (T1) | 0x135 | ✅ | 0x13C | ✅ | 0x146 | ✅ | 0x170 | ✅ | 0x14E | ✅ |
 | FREDRICK_MESSAGE | CStoreBankDlg::OnPacket |  | 0x136 | ❌ | 0x13D | ❌ | 0x147 | ❌ | 0x171 | ❌ | 0x14F | ❌ |
 | FREDRICK | CStoreBankDlg::OnPacket |  | 0x137 | ❌ | 0x13E | ❌ | 0x148 | ❌ | 0x172 | ❌ | 0x150 | ❌ |
-| RPS_GAME | CRPSGameDlg::OnPacket |  | 0x138 | ❌ | 0x13F | ❌ | 0x149 | ❌ | 0x173 | ❌ | 0x151 | ❌ |
+| RPS_GAME | CRPSGameDlg::OnPacket | rps/clientbound/RpsEnd | 0x138 | ✅ | 0x13F | ✅ | 0x149 | ✅ | 0x173 | ✅ | 0x151 | ✅ |
 | MESSENGER | CUIMessenger::OnPacket | messenger/clientbound/MessengerAdd (T1) | 0x139 | ✅ | 0x140 | ✅ | 0x14A | ✅ | 0x174 | ✅ | 0x152 | ✅ |
 | PLAYER_INTERACTION | CMiniRoomBaseDlg::OnPacketBase | interaction/clientbound/InteractionInteractionEnter (T1) | 0x13A | ✅ | 0x141 | ✅ | 0x14B | ✅ | 0x175 | ✅ | 0x153 | ✅ |
 | TOURNAMENT | CField_Tournament::OnTournament | field/clientbound/FieldTournament (T1) | 0x13B | ✅ | 0x142 | ✅ | 0x14C | ✅ | 0x176 | ✅ | 0x154 | ✅ |
@@ -901,11 +901,11 @@ Tool: `0d2a71691fac50edb0fa35903ca63f9f6fb3010d`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v83 | 367 | 0 | 0 | 304 | 200 | 0 | 54.7% |
-| v84 | 345 | 0 | 0 | 305 | 221 | 0 | 53.1% |
-| v87 | 379 | 0 | 0 | 329 | 163 | 0 | 53.5% |
-| v95 | 399 | 0 | 0 | 393 | 79 | 0 | 50.4% |
-| JMS185 | 361 | 0 | 0 | 340 | 170 | 0 | 51.5% |
+| v83 | 368 | 0 | 0 | 303 | 200 | 0 | 54.8% |
+| v84 | 346 | 0 | 0 | 304 | 221 | 0 | 53.2% |
+| v87 | 380 | 0 | 0 | 328 | 163 | 0 | 53.7% |
+| v95 | 400 | 0 | 0 | 392 | 79 | 0 | 50.5% |
+| JMS185 | 362 | 0 | 0 | 339 | 170 | 0 | 51.6% |
 
 ## Conflicts
 

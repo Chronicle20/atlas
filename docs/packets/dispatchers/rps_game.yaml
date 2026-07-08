@@ -1,0 +1,39 @@
+# RPSGame — CRPSGameDlg::OnPacket per-version mode table.
+#
+# SOURCE OF TRUTH for the RPSGame writer. IDA-verified in
+# docs/tasks/task-132-rps-npc-game/ida-rps-clientbound.md (Task 14). Full
+# client-side dispatch = modes 6,7,8,9,10,11,12,13,14, all decompiled and
+# cited by decompile address per version (v83/v84/v87/v95/jms185).
+#
+# SCOPE: only the THREE modes atlas-rps (the feature service) ever emits are
+# implemented as Atlas structs/body-funcs — OPEN (8), RESULT (11), END (13).
+# Modes 6 (FAIL_NOT_ENOUGH_MESO), 7 (FAIL_NEED_FREE_SLOT), 9/12 (START_SELECT,
+# alias pair), 10 (SHOW_RESULT), and 14 (RESET) exist client-side (bodyless —
+# mode byte only, per the IDA note §0) but are NOT wired here: no atlas-rps
+# path emits them today. Adding writers for unemitted modes would be unwired
+# dead code (CLAUDE.md "no stubs"); a later milestone may add them if the
+# server needs to send them — do not invent modes 6/7/9/10/12/14 body-funcs
+# ahead of that need.
+#
+# UNIFORM MODE BYTES (unlike storage's jms -1 shift): the IDA note's §0
+# executive summary and §6 per-version table establish that the RPS_GAME
+# mode byte is IDENTICAL across all five versions — v83/v84/v87/v95/jms185
+# all read OPEN=8/RESULT=11/END=13 with byte-for-byte identical bodies. Only
+# the RPS_GAME *opcode* shifts per version (v83 0x138, v84 0x13F, v87 0x149,
+# v95 0x173, jms185 0x151 — ida-rps-clientbound.md §6), which is the seed
+# template's `opCode`, not this table.
+#
+# No `opcodes:` field: the RPSGame writer is not yet wired into any tenant
+# seed template. Template wiring (socket.writers entry + opcodes +
+# operations table) is Task 20 of the task-132 plan, a later milestone — see
+# docs/tasks/task-132-rps-npc-game/plan.md "Milestone D" vs "Task 20". Until
+# then `packet-audit operations --check` reports this writer as an
+# absent-writer NOTE (not a failure) per every version.
+writer: RPSGame
+fname: CRPSGameDlg::OnPacket
+op: RPS_GAME
+direction: clientbound
+operations:
+  - { key: OPEN,   modes: { gms_v83: 8,  gms_v84: 8,  gms_v87: 8,  gms_v95: 8,  jms_v185: 8  } }
+  - { key: RESULT, modes: { gms_v83: 11, gms_v84: 11, gms_v87: 11, gms_v95: 11, jms_v185: 11 } }
+  - { key: END,    modes: { gms_v83: 13, gms_v84: 13, gms_v87: 13, gms_v95: 13, jms_v185: 13 } }

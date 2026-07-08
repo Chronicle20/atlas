@@ -441,6 +441,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
 		}
 		s.Payload = any(payload).(T)
+	case StartRPSGame:
+		var payload StartRPSGamePayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
 	case RegisterPartyQuest:
 		var payload RegisterPartyQuestPayload
 		if err := json.Unmarshal(aux.Payload, &payload); err != nil {

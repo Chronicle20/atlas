@@ -303,3 +303,28 @@ func TestUnmarshalAwaitInventoryCreatedStep_ZeroCharacterId(t *testing.T) {
 		t.Errorf("expected sentinel characterId=0, got %d", p.CharacterId)
 	}
 }
+
+func TestUnmarshalStartRPSGameStep(t *testing.T) {
+	raw := `{
+		"stepId": "start_rps_game-1",
+		"status": "pending",
+		"action": "start_rps_game",
+		"payload": { "characterId": 100, "worldId": 0, "channelId": 1, "npcId": 9000019 },
+		"createdAt": "2026-07-04T00:00:00Z",
+		"updatedAt": "2026-07-04T00:00:00Z"
+	}`
+	var step Step[any]
+	if err := json.Unmarshal([]byte(raw), &step); err != nil {
+		t.Fatalf("unmarshal failed: %v", err)
+	}
+	if step.Action != StartRPSGame {
+		t.Fatalf("expected action StartRPSGame, got %s", step.Action)
+	}
+	p, ok := step.Payload.(StartRPSGamePayload)
+	if !ok {
+		t.Fatalf("expected StartRPSGamePayload, got %T", step.Payload)
+	}
+	if p.CharacterId != 100 || p.NpcId != 9000019 {
+		t.Errorf("payload mismatch: %+v", p)
+	}
+}

@@ -100,6 +100,96 @@ func chatProvider(transactionId uuid.UUID, r Room, slot byte, characterId uint32
 	})
 }
 
+// readyProvider announces a READY (ready) or UNREADY (!ready) event for the
+// room, keyed to the visitor toggling their ready button. Bodyless (§G5).
+func readyProvider(transactionId uuid.UUID, r Room, characterId uint32, ready bool) model.Provider[[]kafka.Message] {
+	eventType := minigame.EventTypeReady
+	if !ready {
+		eventType = minigame.EventTypeUnready
+	}
+	return statusEventProvider(transactionId, r.Field(), r.Id(), r.OwnerId(), r.VisitorId(), characterId, eventType, minigame.EmptyEventBody{})
+}
+
+// startedProvider announces a STARTED event. FirstMover is the START wire byte
+// (the second mover's slot per §G1); the client grants the first move to the
+// other slot. deck is the shuffled MatchCards deck (nil/empty for Omok).
+func startedProvider(transactionId uuid.UUID, r Room, deck []uint32) model.Provider[[]kafka.Message] {
+	return statusEventProvider(transactionId, r.Field(), r.Id(), r.OwnerId(), r.VisitorId(), r.OwnerId(), minigame.EventTypeStarted, minigame.StartedEventBody{
+		RoomType:   r.RoomType(),
+		FirstMover: r.FirstMover(),
+		Deck:       deck,
+	})
+}
+
+// stonePlacedProvider announces a STONE_PLACED event (Omok). characterId is the
+// placing player; StoneType is the placed stone's 1-based color.
+func stonePlacedProvider(transactionId uuid.UUID, r Room, x uint32, y uint32, stoneType byte, characterId uint32) model.Provider[[]kafka.Message] {
+	return statusEventProvider(transactionId, r.Field(), r.Id(), r.OwnerId(), r.VisitorId(), characterId, minigame.EventTypeStonePlaced, minigame.StonePlacedEventBody{
+		X:         x,
+		Y:         y,
+		StoneType: stoneType,
+	})
+}
+
+// cardFlippedProvider announces a CARD_FLIPPED event (MatchCards). For a first
+// flip (secondFlip=false) the channel forwards it to the opponent only; a second
+// flip is broadcast to both (design §3.2). Slot and FirstSlot are card indices;
+// ResultType is 0/1 mismatch owner/visitor, 2/3 match owner/visitor.
+func cardFlippedProvider(transactionId uuid.UUID, r Room, secondFlip bool, slot byte, firstSlot byte, resultType byte, characterId uint32) model.Provider[[]kafka.Message] {
+	return statusEventProvider(transactionId, r.Field(), r.Id(), r.OwnerId(), r.VisitorId(), characterId, minigame.EventTypeCardFlipped, minigame.CardFlippedEventBody{
+		SecondFlip: secondFlip,
+		Slot:       slot,
+		FirstSlot:  firstSlot,
+		ResultType: resultType,
+	})
+}
+
+// tieRequestedProvider announces a TIE_REQUESTED event; characterId is the
+// requester and the channel targets the opponent (design §3.3).
+func tieRequestedProvider(transactionId uuid.UUID, r Room, characterId uint32) model.Provider[[]kafka.Message] {
+	return statusEventProvider(transactionId, r.Field(), r.Id(), r.OwnerId(), r.VisitorId(), characterId, minigame.EventTypeTieRequested, minigame.EmptyEventBody{})
+}
+
+// tieAnsweredProvider announces a TIE_ANSWERED event (decline only — accept
+// resolves via GAME_ENDED); characterId is the answerer and the channel targets
+// the original requester.
+func tieAnsweredProvider(transactionId uuid.UUID, r Room, characterId uint32, accept bool) model.Provider[[]kafka.Message] {
+	return statusEventProvider(transactionId, r.Field(), r.Id(), r.OwnerId(), r.VisitorId(), characterId, minigame.EventTypeTieAnswered, minigame.AnswerEventBody{Accept: accept})
+}
+
+// retreatRequestedProvider announces a RETREAT_REQUESTED event; characterId is
+// the requester and the channel targets the opponent (§G2).
+func retreatRequestedProvider(transactionId uuid.UUID, r Room, characterId uint32) model.Provider[[]kafka.Message] {
+	return statusEventProvider(transactionId, r.Field(), r.Id(), r.OwnerId(), r.VisitorId(), characterId, minigame.EventTypeRetreatRequested, minigame.EmptyEventBody{})
+}
+
+// retreatAnsweredProvider announces a RETREAT_ANSWERED event; characterId is the
+// answerer. On accept the server already popped the stone (§G2).
+func retreatAnsweredProvider(transactionId uuid.UUID, r Room, characterId uint32, accept bool) model.Provider[[]kafka.Message] {
+	return statusEventProvider(transactionId, r.Field(), r.Id(), r.OwnerId(), r.VisitorId(), characterId, minigame.EventTypeRetreatAnswered, minigame.AnswerEventBody{Accept: accept})
+}
+
+// skippedProvider announces a SKIPPED event. Who is the NEXT-mover slot (== new
+// CurrentTurn): owner-skip emits 1, visitor-skip emits 0, matching Cosmic
+// getMiniGameSkipOwner(0x01)/getMiniGameSkipVisitor(0x00) read as next-mover per
+// ida-notes §G5. characterId is the skipper.
+func skippedProvider(transactionId uuid.UUID, r Room, who byte, characterId uint32) model.Provider[[]kafka.Message] {
+	return statusEventProvider(transactionId, r.Field(), r.Id(), r.OwnerId(), r.VisitorId(), characterId, minigame.EventTypeSkipped, minigame.SkippedEventBody{Who: who})
+}
+
+// gameEndedProvider announces a GAME_ENDED event carrying the resolved result,
+// both refreshed persistent records, and the post-game session scores.
+func gameEndedProvider(transactionId uuid.UUID, r Room, resultType byte, winnerSlot byte, ownerRecord record.Model, visitorRecord record.Model) model.Provider[[]kafka.Message] {
+	return statusEventProvider(transactionId, r.Field(), r.Id(), r.OwnerId(), r.VisitorId(), r.OwnerId(), minigame.EventTypeGameEnded, minigame.GameEndedEventBody{
+		ResultType:    resultType,
+		WinnerSlot:    winnerSlot,
+		OwnerRecord:   recordBody(ownerRecord),
+		VisitorRecord: recordBody(visitorRecord),
+		OwnerScore:    r.OwnerScore(),
+		VisitorScore:  r.VisitorScore(),
+	})
+}
+
 // balloonProvider announces a BALLOON_UPDATED event for the room's field. occupancy
 // is the current head-count (1 owner-only, 2 both); remove tears the balloon down.
 func balloonProvider(transactionId uuid.UUID, r Room, occupancy byte, remove bool) model.Provider[[]kafka.Message] {

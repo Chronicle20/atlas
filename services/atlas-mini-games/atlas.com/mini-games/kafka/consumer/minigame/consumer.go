@@ -44,8 +44,45 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleExpel(db)))); err != nil {
 				return err
 			}
-			// Gameplay command handlers (READY/UNREADY/START/MOVE_STONE/FLIP_CARD/
-			// tie/retreat/SKIP/EXIT_AFTER_GAME) are registered in Task 15.
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleReady(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleUnready(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleStart(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleMoveStone(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleFlipCard(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestTie(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleAnswerTie(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleGiveUp(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestRetreat(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleAnswerRetreat(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleSkip(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleExitAfterGame(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCancelExitAfterGame(db)))); err != nil {
+				return err
+			}
 			return nil
 		}
 	}
@@ -102,5 +139,135 @@ func handleExpel(db *gorm.DB) message.Handler[minigame.Command[minigame.EmptyCom
 		}
 		f := fieldFromCommand(c)
 		_ = game.NewProcessor(l, ctx, db).Expel(c.TransactionId, f, c.CharacterId)
+	}
+}
+
+func handleReady(db *gorm.DB) message.Handler[minigame.Command[minigame.EmptyCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c minigame.Command[minigame.EmptyCommandBody]) {
+		if c.Type != minigame.CommandTypeReady {
+			return
+		}
+		f := fieldFromCommand(c)
+		_ = game.NewProcessor(l, ctx, db).Ready(c.TransactionId, f, c.CharacterId)
+	}
+}
+
+func handleUnready(db *gorm.DB) message.Handler[minigame.Command[minigame.EmptyCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c minigame.Command[minigame.EmptyCommandBody]) {
+		if c.Type != minigame.CommandTypeUnready {
+			return
+		}
+		f := fieldFromCommand(c)
+		_ = game.NewProcessor(l, ctx, db).Unready(c.TransactionId, f, c.CharacterId)
+	}
+}
+
+func handleStart(db *gorm.DB) message.Handler[minigame.Command[minigame.EmptyCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c minigame.Command[minigame.EmptyCommandBody]) {
+		if c.Type != minigame.CommandTypeStart {
+			return
+		}
+		f := fieldFromCommand(c)
+		_ = game.NewProcessor(l, ctx, db).Start(c.TransactionId, f, c.CharacterId)
+	}
+}
+
+func handleMoveStone(db *gorm.DB) message.Handler[minigame.Command[minigame.MoveStoneCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c minigame.Command[minigame.MoveStoneCommandBody]) {
+		if c.Type != minigame.CommandTypeMoveStone {
+			return
+		}
+		f := fieldFromCommand(c)
+		_ = game.NewProcessor(l, ctx, db).MoveStone(c.TransactionId, f, c.CharacterId, c.Body.X, c.Body.Y, c.Body.StoneType)
+	}
+}
+
+func handleFlipCard(db *gorm.DB) message.Handler[minigame.Command[minigame.FlipCardCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c minigame.Command[minigame.FlipCardCommandBody]) {
+		if c.Type != minigame.CommandTypeFlipCard {
+			return
+		}
+		f := fieldFromCommand(c)
+		_ = game.NewProcessor(l, ctx, db).FlipCard(c.TransactionId, f, c.CharacterId, c.Body.First, c.Body.CardIndex)
+	}
+}
+
+func handleRequestTie(db *gorm.DB) message.Handler[minigame.Command[minigame.EmptyCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c minigame.Command[minigame.EmptyCommandBody]) {
+		if c.Type != minigame.CommandTypeRequestTie {
+			return
+		}
+		f := fieldFromCommand(c)
+		_ = game.NewProcessor(l, ctx, db).RequestTie(c.TransactionId, f, c.CharacterId)
+	}
+}
+
+func handleAnswerTie(db *gorm.DB) message.Handler[minigame.Command[minigame.AnswerCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c minigame.Command[minigame.AnswerCommandBody]) {
+		if c.Type != minigame.CommandTypeAnswerTie {
+			return
+		}
+		f := fieldFromCommand(c)
+		_ = game.NewProcessor(l, ctx, db).AnswerTie(c.TransactionId, f, c.CharacterId, c.Body.Accept)
+	}
+}
+
+func handleGiveUp(db *gorm.DB) message.Handler[minigame.Command[minigame.EmptyCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c minigame.Command[minigame.EmptyCommandBody]) {
+		if c.Type != minigame.CommandTypeGiveUp {
+			return
+		}
+		f := fieldFromCommand(c)
+		_ = game.NewProcessor(l, ctx, db).GiveUp(c.TransactionId, f, c.CharacterId)
+	}
+}
+
+func handleRequestRetreat(db *gorm.DB) message.Handler[minigame.Command[minigame.EmptyCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c minigame.Command[minigame.EmptyCommandBody]) {
+		if c.Type != minigame.CommandTypeRequestRetreat {
+			return
+		}
+		f := fieldFromCommand(c)
+		_ = game.NewProcessor(l, ctx, db).RequestRetreat(c.TransactionId, f, c.CharacterId)
+	}
+}
+
+func handleAnswerRetreat(db *gorm.DB) message.Handler[minigame.Command[minigame.AnswerCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c minigame.Command[minigame.AnswerCommandBody]) {
+		if c.Type != minigame.CommandTypeAnswerRetreat {
+			return
+		}
+		f := fieldFromCommand(c)
+		_ = game.NewProcessor(l, ctx, db).AnswerRetreat(c.TransactionId, f, c.CharacterId, c.Body.Accept)
+	}
+}
+
+func handleSkip(db *gorm.DB) message.Handler[minigame.Command[minigame.EmptyCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c minigame.Command[minigame.EmptyCommandBody]) {
+		if c.Type != minigame.CommandTypeSkip {
+			return
+		}
+		f := fieldFromCommand(c)
+		_ = game.NewProcessor(l, ctx, db).Skip(c.TransactionId, f, c.CharacterId)
+	}
+}
+
+func handleExitAfterGame(db *gorm.DB) message.Handler[minigame.Command[minigame.EmptyCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c minigame.Command[minigame.EmptyCommandBody]) {
+		if c.Type != minigame.CommandTypeExitAfterGame {
+			return
+		}
+		f := fieldFromCommand(c)
+		_ = game.NewProcessor(l, ctx, db).ExitAfterGame(c.TransactionId, f, c.CharacterId)
+	}
+}
+
+func handleCancelExitAfterGame(db *gorm.DB) message.Handler[minigame.Command[minigame.EmptyCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c minigame.Command[minigame.EmptyCommandBody]) {
+		if c.Type != minigame.CommandTypeCancelExitAfterGame {
+			return
+		}
+		f := fieldFromCommand(c)
+		_ = game.NewProcessor(l, ctx, db).CancelExitAfterGame(c.TransactionId, f, c.CharacterId)
 	}
 }

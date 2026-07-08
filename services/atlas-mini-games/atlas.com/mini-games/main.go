@@ -55,10 +55,10 @@ func main() {
 	// an in-memory registry added by a later plan task, not Redis.
 	db := database.Connect(l, database.SetMigrations(record.Migration))
 
-	// Mini-game lifecycle command consumer (create/visit/leave/chat/expel).
-	// record has no Kafka consumers — it's a pure REST + persistence domain
-	// called directly by the game domain. Gameplay command handlers register
-	// alongside these once Task 15 lands.
+	// Mini-game lifecycle + gameplay command consumer (create/visit/leave/chat/
+	// expel plus ready/start/move/flip/tie/retreat/skip/exit-after). record has
+	// no Kafka consumers — it's a pure REST + persistence domain called directly
+	// by the game domain.
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	minigameconsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	if err := minigameconsumer.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {

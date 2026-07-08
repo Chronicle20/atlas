@@ -30,6 +30,20 @@ func (r *RestModel) SetID(idStr string) error {
 	return nil
 }
 
+// SetToOneReferenceID / SetToManyReferenceIDs are required no-op stubs:
+// atlas-data's map resource ALWAYS emits a relationships block
+// (portals/reactors/npcs/monsters), and api2go's UnmarshalToManyRelations
+// fails to decode the document if the target model does not implement these.
+// The mini-game service only needs fieldLimit, so the relationships are
+// intentionally discarded (task-037 failure class, see libs/atlas-rest/CLAUDE.md).
+func (r *RestModel) SetToOneReferenceID(_ string, _ string) error {
+	return nil
+}
+
+func (r *RestModel) SetToManyReferenceIDs(_ string, _ []string) error {
+	return nil
+}
+
 func Extract(rm RestModel) (Model, error) {
 	return Model{
 		id:         rm.Id,

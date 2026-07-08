@@ -139,6 +139,21 @@ func (m *Manager) AddConsumer(cl logrus.FieldLogger, ctx context.Context, wg *sy
 			return
 		}
 
+		// Guard the idle-vs-stuck classification invariant (task-136 — see
+		// docs/tasks/task-136-consumer-fetch-wedge/findings.md): an idle
+		// reader's Stats().Fetches increments roughly once per maxWait
+		// interval, so handleFetchDeadline only sees progress if
+		// fetchTimeout is comfortably greater than maxWait. A misconfigured
+		// consumer (maxWait >= fetchTimeout) can complete zero fetches per
+		// liveness tick, get misclassified as no-progress, and be wrongly
+		// recreated. This is a one-time Warn at registration — never a
+		// clamp — so the misconfiguration is visible without changing
+		// behavior.
+		if c.maxWait >= c.fetchTimeout {
+			cl.Warnf("Consumer for topic [%s] (group [%s]) has maxWait (%v) >= fetchTimeout (%v); an idle reader may not complete a fetch per liveness tick and could be wrongly recreated. Set fetchTimeout comfortably above maxWait.",
+				c.topic, c.groupId, c.maxWait, c.fetchTimeout)
+		}
+
 		readerConfig := kafka.ReaderConfig{
 			Brokers:     c.brokers,
 			Topic:       c.topic,

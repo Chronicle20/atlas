@@ -59,6 +59,11 @@ func SetStartOffset(startOffset int64) model.Decorator[Config] {
 	}
 }
 
+// SetMaxWait should stay comfortably below fetchTimeout: an idle reader's
+// Stats().Fetches increments about once per maxWait interval, so
+// fetchTimeout needs at least one such interval to observe a fetch attempt
+// and classify the tick as idle rather than no-progress.
+//
 //goland:noinspection GoUnusedExportedFunction
 func SetMaxWait(duration time.Duration) model.Decorator[Config] {
 	return func(config Config) Config {
@@ -75,6 +80,12 @@ func SetHeaderParsers(parsers ...HeaderParser) model.Decorator[Config] {
 	}
 }
 
+// SetFetchTimeout should be set comfortably above maxWait: this is the
+// per-call FetchMessage liveness-tick deadline, and an idle reader only
+// completes a fetch attempt (registered via Stats().Fetches) about once per
+// maxWait, so fetchTimeout <= maxWait risks misclassifying a healthy idle
+// reader as no-progress and recreating it needlessly.
+//
 //goland:noinspection GoUnusedExportedFunction
 func SetFetchTimeout(d time.Duration) model.Decorator[Config] {
 	return func(config Config) Config {

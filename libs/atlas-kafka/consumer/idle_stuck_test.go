@@ -81,6 +81,13 @@ func TestIdleTickNeverWedges(t *testing.T) {
 	c := consumer.NewConfig([]string{""}, "idle-consumer", "idle-topic", "test-group")
 	cm.AddConsumer(l, ctx, wg)(
 		c,
+		// statsStubReader ignores readerConfig entirely (scripted Stats()
+		// deltas, not real broker long-polling), so maxWait has no effect on
+		// this test's exercised behavior — it only needs to stay below
+		// fetchTimeout so registration doesn't trip the maxWait>=fetchTimeout
+		// misconfiguration guard (which would otherwise fire here since the
+		// library default maxWait is 10s).
+		consumer.SetMaxWait(5*time.Millisecond),
 		consumer.SetFetchTimeout(30*time.Millisecond),
 		consumer.SetMaxConsecutiveTimeouts(3),
 	)

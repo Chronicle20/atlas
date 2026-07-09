@@ -6,6 +6,7 @@ import (
 	"atlas-channel/cashshop"
 	"atlas-channel/cashshop/wallet"
 	"atlas-channel/character"
+	mtsconfig "atlas-channel/mts/configuration"
 	mtsholding "atlas-channel/mts/holding"
 	mtslisting "atlas-channel/mts/listing"
 	"atlas-channel/session"
@@ -16,15 +17,9 @@ import (
 	fieldcb "github.com/Chronicle20/atlas/libs/atlas-packet/field/clientbound"
 	fieldsb "github.com/Chronicle20/atlas/libs/atlas-packet/field/serverbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
-
-// mtsMinLevel is the configurable-min-level gate for MTS entry (design §5.1
-// default 10). The client send (CWvsContext::SendMigrateToITCRequest) already
-// performs guest/lie-detector/map-flag guards; the server re-checks level as the
-// authoritative gate. When the per-world MTS config becomes reachable channel-
-// side this default is replaced by the configured floor.
-const mtsMinLevel = byte(10)
 
 // EnterMtsHandleFunc handles the bodiless ENTER_MTS
 // (CWvsContext::SendMigrateToITCRequest) — the MTS entry/migration request. It
@@ -59,11 +54,14 @@ func EnterMtsHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Pro
 			return
 		}
 
-		// Authoritative level gate (design §5.1, default 10). The cash-shop
-		// map/event eligibility is enforced upstream by the client send guards
-		// (guest/lie-detector/map-flag); the level floor is the server check.
-		if c.Level() < mtsMinLevel {
-			l.Debugf("Character [%d] level [%d] below MTS minimum [%d]; entry denied.", s.CharacterId(), c.Level(), mtsMinLevel)
+		// Authoritative level gate (design §5.1). The cash-shop map/event
+		// eligibility is enforced upstream by the client send guards
+		// (guest/lie-detector/map-flag); the level floor is the server check,
+		// read from the tenant mts-configs (default 10 on a fetch miss).
+		t := tenant.MustFromContext(ctx)
+		cfg := mtsconfig.GetRegistry().GetTenantConfig(l, ctx, t.Id())
+		if int(c.Level()) < cfg.MinLevel() {
+			l.Debugf("Character [%d] level [%d] below MTS minimum [%d]; entry denied.", s.CharacterId(), c.Level(), cfg.MinLevel())
 			return
 		}
 
@@ -71,9 +69,9 @@ func EnterMtsHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Pro
 		// client's CITC stage so the in-game MTS view opens. It mirrors
 		// CashShopEntryHandleFunc's CashShopOpen send: the same CharacterData
 		// migrate-in block (built from account + decorated character + buddylist)
-		// plus the account name and the ITC config values (interim fallback
-		// defaults 5000/7/500/24/168 until the per-tenant mts-configs resource is
-		// populated). Without this the client never enters the ITC scene, so the
+		// plus the account name and the ITC config values (read from the tenant's
+		// mts-configs configuration, falling back to defaults on a fetch miss).
+		// Without this the client never enters the ITC scene, so the
 		// wallet/browse/listing announces below have no scene to render in.
 		a, err := account.NewProcessor(l, ctx).GetById(s.AccountId())
 		if err != nil {

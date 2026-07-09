@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/miniroom"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -23,7 +24,7 @@ func channelChangedHarness(t *testing.T, owner, visitor uint32) (context.Context
 	require.NoError(t, err)
 	ctx := tenant.WithContext(context.Background(), ten)
 	f := field.NewBuilder(1, 1, 100000).Build()
-	r := game.NewBuilder(game.RoomTypeOmok, owner, f).
+	r := game.NewBuilder(miniroom.Omok, owner, f).
 		SetGameType("OMOK").
 		SetVisitorId(visitor).SetLastVisitorId(visitor).
 		Build()

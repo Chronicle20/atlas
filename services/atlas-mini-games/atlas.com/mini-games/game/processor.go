@@ -18,6 +18,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/miniroom"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -45,12 +46,6 @@ const (
 	resultWin     byte = 0
 	resultTie     byte = 1
 	resultForfeit byte = 2
-)
-
-// Room type discriminators carried by the CREATE command and every room event.
-const (
-	RoomTypeOmok       byte = 1
-	RoomTypeMatchCards byte = 2
 )
 
 // Creation item ids (NOT consumed): Omok pieces are 4080000+pieceType (piece
@@ -201,7 +196,7 @@ func (p *ProcessorImpl) RoomsInField(f field.Model) []Room {
 
 // gameTypeOf maps a room type discriminator to its persisted record game type.
 func gameTypeOf(roomType byte) record.GameType {
-	if roomType == RoomTypeMatchCards {
+	if roomType == miniroom.MatchCards {
 		return record.GameTypeMatchCards
 	}
 	return record.GameTypeOmok
@@ -209,7 +204,7 @@ func gameTypeOf(roomType byte) record.GameType {
 
 // clampPieceType bounds the piece/spec selector to its per-game valid range.
 func clampPieceType(roomType byte, pieceType byte) byte {
-	if roomType == RoomTypeMatchCards {
+	if roomType == miniroom.MatchCards {
 		if pieceType > matchCardsSpecMax {
 			return matchCardsSpecMax
 		}
@@ -224,10 +219,10 @@ func clampPieceType(roomType byte, pieceType byte) byte {
 // creationItemId is the item the character must possess to open the room. The
 // item is never consumed.
 func creationItemId(roomType byte, pieceType byte) uint32 {
-	if roomType == RoomTypeMatchCards {
+	if roomType == miniroom.MatchCards {
 		return matchCardsItemId
 	}
-	return omokItemBase + uint32(clampPieceType(RoomTypeOmok, pieceType))
+	return omokItemBase + uint32(clampPieceType(miniroom.Omok, pieceType))
 }
 
 func (p *ProcessorImpl) Create(txId uuid.UUID, f field.Model, characterId uint32, roomType byte, title string, private bool, password string, pieceType byte) error {
@@ -562,7 +557,7 @@ func (p *ProcessorImpl) start(mb *message.Buffer, txId uuid.UUID, characterId ui
 	}
 
 	var deck []uint32
-	if room.RoomType() == RoomTypeMatchCards {
+	if room.RoomType() == miniroom.MatchCards {
 		pairs, valid := matchcards.MatchesToWin(room.PieceType())
 		if !valid {
 			return nil
@@ -611,7 +606,7 @@ func (p *ProcessorImpl) moveStone(mb *message.Buffer, txId uuid.UUID, characterI
 	if !ok {
 		return nil
 	}
-	if !room.InProgress() || room.RoomType() != RoomTypeOmok {
+	if !room.InProgress() || room.RoomType() != miniroom.Omok {
 		return nil
 	}
 	slot, ok := room.SlotOf(characterId)
@@ -664,7 +659,7 @@ func (p *ProcessorImpl) flipCard(mb *message.Buffer, txId uuid.UUID, characterId
 	if !ok {
 		return nil
 	}
-	if !room.InProgress() || room.RoomType() != RoomTypeMatchCards {
+	if !room.InProgress() || room.RoomType() != miniroom.MatchCards {
 		return nil
 	}
 	slot, ok := room.SlotOf(characterId)
@@ -814,7 +809,7 @@ func (p *ProcessorImpl) RequestRetreat(txId uuid.UUID, f field.Model, characterI
 // (CharacterId == requester).
 func (p *ProcessorImpl) requestRetreat(mb *message.Buffer, txId uuid.UUID, characterId uint32) error {
 	room, ok := p.reg.GetByMember(p.t, characterId)
-	if !ok || !room.InProgress() || room.RoomType() != RoomTypeOmok {
+	if !ok || !room.InProgress() || room.RoomType() != miniroom.Omok {
 		return nil
 	}
 	slot, ok := room.SlotOf(characterId)
@@ -842,7 +837,7 @@ func (p *ProcessorImpl) AnswerRetreat(txId uuid.UUID, f field.Model, characterId
 // client honours verbatim). Decline forwards RETREAT_ANSWERED{Accept:false}.
 func (p *ProcessorImpl) answerRetreat(mb *message.Buffer, txId uuid.UUID, characterId uint32, accept bool) error {
 	room, ok := p.reg.GetByMember(p.t, characterId)
-	if !ok || !room.InProgress() || room.RoomType() != RoomTypeOmok {
+	if !ok || !room.InProgress() || room.RoomType() != miniroom.Omok {
 		return nil
 	}
 	slot, ok := room.SlotOf(characterId)

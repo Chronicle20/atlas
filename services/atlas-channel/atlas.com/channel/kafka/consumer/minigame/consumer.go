@@ -13,6 +13,7 @@ import (
 	"context"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/miniroom"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
@@ -136,13 +137,14 @@ func announceBalloon[E any](l logrus.FieldLogger, ctx context.Context, wp writer
 
 // gameTypeCode maps a record GameType string to the int the client's 20-byte
 // record leads with (Cosmic getMiniGame marker: 1 omok / 2 match cards —
-// design §6.1; matches interaction.RoomType).
+// design §6.1). The markers are the shared mini-room type bytes
+// (libs/atlas-constants/miniroom), the same values interaction.RoomType uses.
 func gameTypeCode(gameType string) uint32 {
 	switch gameType {
 	case "OMOK":
-		return 1
+		return uint32(miniroom.Omok)
 	case "MATCH_CARDS":
-		return 2
+		return uint32(miniroom.MatchCards)
 	default:
 		return 0
 	}

@@ -29,6 +29,7 @@ a service-local copy.
 | [`item`](./item) | `Id`, `Classification`, `WeaponType`, `GetClassification`, `GetWeaponType`, `Is*` predicates, named `Classification*` constants for hat/face/eye/earring/top/overall/bottom/shoes/gloves/shield/cape/ring/pendant/belt/medal/tamed-mob/saddle, all use+setup+etc+cash singletons | Anything that maps item id → category. **Use `item.GetClassification(id)` instead of `id / 10000`. Use the named `Classification*` constants instead of bare numeric literals.** |
 | [`job`](./job) | `Id`, `Type` | Job / class IDs and type-codes (Beginner / Warrior / Magician / …). |
 | [`map`](./map) | `Id` (`uint32`), field-limit constants | Map IDs in routing, drop tables, spawn rules. |
+| [`miniroom`](./miniroom) | Mini-room (`CMiniRoom`) type bytes: `Omok`=1, `MatchCards`=2, `Trade`=3, `PersonalShop`=4, `MerchantShop`=5, `CashTrade`=6 | The room-type discriminator on mini-room create/enter/balloon packets and mini-game room/record events. **Don't redeclare 1/2 as local omok/match-card consts.** |
 | [`monster`](./monster) | `Id`, monster status / skill constants | Monster IDs and per-monster status flags. |
 | [`point`](./point) | `X`, `Y` (`int16`) | Map coordinates — keep them typed, don't pass raw ints. |
 | [`skill`](./skill) | `Id`, summon-movement constants | Player and mob skill IDs. |

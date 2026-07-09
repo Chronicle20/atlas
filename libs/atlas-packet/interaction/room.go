@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/miniroom"
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
@@ -12,13 +13,17 @@ import (
 
 type RoomType byte
 
+// The room-type discriminator bytes are single-sourced in
+// libs/atlas-constants/miniroom; RoomType keeps its own packet-domain type but
+// derives its values from those shared constants (CLAUDE.md: straightforward
+// move over type-alias re-export).
 const (
-	OmokRoomType         RoomType = 1
-	MatchCardRoomType    RoomType = 2
-	TradeRoomType        RoomType = 3
-	PersonalShopRoomType RoomType = 4
-	MerchantShopRoomType RoomType = 5
-	CashTradeRoomType    RoomType = 6
+	OmokRoomType         RoomType = RoomType(miniroom.Omok)
+	MatchCardRoomType    RoomType = RoomType(miniroom.MatchCards)
+	TradeRoomType        RoomType = RoomType(miniroom.Trade)
+	PersonalShopRoomType RoomType = RoomType(miniroom.PersonalShop)
+	MerchantShopRoomType RoomType = RoomType(miniroom.MerchantShop)
+	CashTradeRoomType    RoomType = RoomType(miniroom.CashTrade)
 )
 
 type RoomMessage struct {

@@ -13,6 +13,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/miniroom"
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
@@ -173,22 +174,22 @@ func requireOneError(t *testing.T, buf *message.Buffer, eventType string, code s
 // --- helpers to derive the pure item-id logic --------------------------------
 
 func TestCreationItemId(t *testing.T) {
-	assert.Equal(t, uint32(4080000), creationItemId(RoomTypeOmok, 0))
-	assert.Equal(t, uint32(4080005), creationItemId(RoomTypeOmok, 5))
-	assert.Equal(t, uint32(4080011), creationItemId(RoomTypeOmok, 11))
+	assert.Equal(t, uint32(4080000), creationItemId(miniroom.Omok, 0))
+	assert.Equal(t, uint32(4080005), creationItemId(miniroom.Omok, 5))
+	assert.Equal(t, uint32(4080011), creationItemId(miniroom.Omok, 11))
 	// pieceType clamps to [0,11] for omok.
-	assert.Equal(t, uint32(4080011), creationItemId(RoomTypeOmok, 99))
+	assert.Equal(t, uint32(4080011), creationItemId(miniroom.Omok, 99))
 	// match cards always uses the single set id regardless of spec.
-	assert.Equal(t, uint32(4080100), creationItemId(RoomTypeMatchCards, 0))
-	assert.Equal(t, uint32(4080100), creationItemId(RoomTypeMatchCards, 2))
-	assert.Equal(t, uint32(4080100), creationItemId(RoomTypeMatchCards, 99))
+	assert.Equal(t, uint32(4080100), creationItemId(miniroom.MatchCards, 0))
+	assert.Equal(t, uint32(4080100), creationItemId(miniroom.MatchCards, 2))
+	assert.Equal(t, uint32(4080100), creationItemId(miniroom.MatchCards, 99))
 }
 
 func TestClampPieceType(t *testing.T) {
-	assert.Equal(t, byte(11), clampPieceType(RoomTypeOmok, 50))
-	assert.Equal(t, byte(7), clampPieceType(RoomTypeOmok, 7))
-	assert.Equal(t, byte(2), clampPieceType(RoomTypeMatchCards, 9))
-	assert.Equal(t, byte(1), clampPieceType(RoomTypeMatchCards, 1))
+	assert.Equal(t, byte(11), clampPieceType(miniroom.Omok, 50))
+	assert.Equal(t, byte(7), clampPieceType(miniroom.Omok, 7))
+	assert.Equal(t, byte(2), clampPieceType(miniroom.MatchCards, 9))
+	assert.Equal(t, byte(1), clampPieceType(miniroom.MatchCards, 1))
 }
 
 // --- CREATE ------------------------------------------------------------------
@@ -198,7 +199,7 @@ func TestCreate_HappyPath(t *testing.T) {
 	owner := uint32(1001)
 
 	buf := message.NewBuffer()
-	require.NoError(t, h.p.create(buf, uuid.New(), h.f, owner, RoomTypeOmok, "hi", false, "", 3))
+	require.NoError(t, h.p.create(buf, uuid.New(), h.f, owner, miniroom.Omok, "hi", false, "", 3))
 
 	// Room registered, keyed by owner id (D2).
 	r, ok := h.p.reg.Get(h.t, owner)
@@ -267,11 +268,11 @@ func TestCreate_ValidationLadder(t *testing.T) {
 			h.rebuild()
 
 			if tc.preSeed {
-				require.NoError(t, h.p.reg.Create(h.t, NewBuilder(RoomTypeOmok, owner, h.f).Build()))
+				require.NoError(t, h.p.reg.Create(h.t, NewBuilder(miniroom.Omok, owner, h.f).Build()))
 			}
 
 			buf := message.NewBuffer()
-			require.NoError(t, h.p.create(buf, uuid.New(), h.f, owner, RoomTypeOmok, "t", false, "", 0))
+			require.NoError(t, h.p.create(buf, uuid.New(), h.f, owner, miniroom.Omok, "t", false, "", 0))
 
 			requireOneError(t, buf, minigame.EventTypeCreateError, tc.code)
 			assert.Empty(t, decodeEvents[minigame.CreatedEventBody](t, buf, minigame.EventTypeCreated))
@@ -292,7 +293,7 @@ func TestVisit_HappyPath(t *testing.T) {
 	h := newHarness(t)
 	owner := uint32(3001)
 	visitor := uint32(3002)
-	seedRoom(t, h, NewBuilder(RoomTypeOmok, owner, h.f).SetTitle("room").SetGameType("OMOK"))
+	seedRoom(t, h, NewBuilder(miniroom.Omok, owner, h.f).SetTitle("room").SetGameType("OMOK"))
 
 	buf := message.NewBuffer()
 	require.NoError(t, h.p.visit(buf, uuid.New(), h.f, visitor, owner, ""))
@@ -320,7 +321,7 @@ func TestVisit_ScoreResetOnNewVisitor(t *testing.T) {
 	owner := uint32(3101)
 	visitor := uint32(3102)
 	// Previous visitor was someone else, with lingering scores.
-	seedRoom(t, h, NewBuilder(RoomTypeOmok, owner, h.f).
+	seedRoom(t, h, NewBuilder(miniroom.Omok, owner, h.f).
 		SetGameType("OMOK").
 		SetLastVisitorId(9999).
 		SetOwnerScore(50).
@@ -339,7 +340,7 @@ func TestVisit_ScoreRetainedOnSameVisitor(t *testing.T) {
 	h := newHarness(t)
 	owner := uint32(3201)
 	visitor := uint32(3202)
-	seedRoom(t, h, NewBuilder(RoomTypeOmok, owner, h.f).
+	seedRoom(t, h, NewBuilder(miniroom.Omok, owner, h.f).
 		SetGameType("OMOK").
 		SetLastVisitorId(visitor).
 		SetOwnerScore(50).
@@ -373,14 +374,14 @@ func TestVisit_ValidationLadder(t *testing.T) {
 		{
 			name: "room full",
 			seed: func(t *testing.T, h *harness) {
-				seedRoom(t, h, NewBuilder(RoomTypeOmok, owner, h.f).SetGameType("OMOK").SetVisitorId(7777))
+				seedRoom(t, h, NewBuilder(miniroom.Omok, owner, h.f).SetGameType("OMOK").SetVisitorId(7777))
 			},
 			code: "FULL",
 		},
 		{
 			name: "wrong password",
 			seed: func(t *testing.T, h *harness) {
-				seedRoom(t, h, NewBuilder(RoomTypeOmok, owner, h.f).SetGameType("OMOK").SetPrivate(true).SetPassword("secret"))
+				seedRoom(t, h, NewBuilder(miniroom.Omok, owner, h.f).SetGameType("OMOK").SetPrivate(true).SetPassword("secret"))
 			},
 			pass: "wrong",
 			code: "INCORRECT_PASSWORD",
@@ -388,7 +389,7 @@ func TestVisit_ValidationLadder(t *testing.T) {
 		{
 			name: "dead",
 			seed: func(t *testing.T, h *harness) {
-				seedRoom(t, h, NewBuilder(RoomTypeOmok, owner, h.f).SetGameType("OMOK"))
+				seedRoom(t, h, NewBuilder(miniroom.Omok, owner, h.f).SetGameType("OMOK"))
 			},
 			mutate: func(h *harness) { h.cp = fakeCharacter{hp: 0} },
 			code:   "NOT_WHEN_DEAD",
@@ -396,7 +397,7 @@ func TestVisit_ValidationLadder(t *testing.T) {
 		{
 			name: "chalkboard open",
 			seed: func(t *testing.T, h *harness) {
-				seedRoom(t, h, NewBuilder(RoomTypeOmok, owner, h.f).SetGameType("OMOK"))
+				seedRoom(t, h, NewBuilder(miniroom.Omok, owner, h.f).SetGameType("OMOK"))
 			},
 			mutate: func(h *harness) { h.chp = fakeChalkboard{open: true} },
 			code:   "CANNOT_OPEN_MINI_ROOM_HERE",
@@ -427,7 +428,7 @@ func TestVisit_PasswordCases(t *testing.T) {
 
 	t.Run("empty password always passes", func(t *testing.T) {
 		h := newHarness(t)
-		seedRoom(t, h, NewBuilder(RoomTypeOmok, owner, h.f).SetGameType("OMOK").SetPrivate(true).SetPassword(""))
+		seedRoom(t, h, NewBuilder(miniroom.Omok, owner, h.f).SetGameType("OMOK").SetPrivate(true).SetPassword(""))
 		buf := message.NewBuffer()
 		require.NoError(t, h.p.visit(buf, uuid.New(), h.f, visitor, owner, "anything"))
 		require.Len(t, decodeEvents[minigame.EnteredEventBody](t, buf, minigame.EventTypeEntered), 1)
@@ -435,7 +436,7 @@ func TestVisit_PasswordCases(t *testing.T) {
 
 	t.Run("case-insensitive match passes", func(t *testing.T) {
 		h := newHarness(t)
-		seedRoom(t, h, NewBuilder(RoomTypeOmok, owner, h.f).SetGameType("OMOK").SetPrivate(true).SetPassword("Secret"))
+		seedRoom(t, h, NewBuilder(miniroom.Omok, owner, h.f).SetGameType("OMOK").SetPrivate(true).SetPassword("Secret"))
 		buf := message.NewBuffer()
 		require.NoError(t, h.p.visit(buf, uuid.New(), h.f, visitor, owner, "sEcReT"))
 		require.Len(t, decodeEvents[minigame.EnteredEventBody](t, buf, minigame.EventTypeEntered), 1)
@@ -453,8 +454,8 @@ func TestVisit_AlreadySeatedRejected(t *testing.T) {
 	t.Run("visitor of A visiting B", func(t *testing.T) {
 		h := newHarness(t)
 		seated := uint32(4203)
-		seedRoom(t, h, NewBuilder(RoomTypeOmok, ownerA, h.f).SetGameType("OMOK").SetVisitorId(seated).SetLastVisitorId(seated))
-		seedRoom(t, h, NewBuilder(RoomTypeOmok, ownerB, h.f).SetGameType("OMOK"))
+		seedRoom(t, h, NewBuilder(miniroom.Omok, ownerA, h.f).SetGameType("OMOK").SetVisitorId(seated).SetLastVisitorId(seated))
+		seedRoom(t, h, NewBuilder(miniroom.Omok, ownerB, h.f).SetGameType("OMOK"))
 
 		buf := message.NewBuffer()
 		require.NoError(t, h.p.visit(buf, uuid.New(), h.f, seated, ownerB, ""))
@@ -474,8 +475,8 @@ func TestVisit_AlreadySeatedRejected(t *testing.T) {
 
 	t.Run("owner of A visiting B", func(t *testing.T) {
 		h := newHarness(t)
-		seedRoom(t, h, NewBuilder(RoomTypeOmok, ownerA, h.f).SetGameType("OMOK"))
-		seedRoom(t, h, NewBuilder(RoomTypeOmok, ownerB, h.f).SetGameType("OMOK"))
+		seedRoom(t, h, NewBuilder(miniroom.Omok, ownerA, h.f).SetGameType("OMOK"))
+		seedRoom(t, h, NewBuilder(miniroom.Omok, ownerB, h.f).SetGameType("OMOK"))
 
 		buf := message.NewBuffer()
 		require.NoError(t, h.p.visit(buf, uuid.New(), h.f, ownerA, ownerB, ""))
@@ -500,7 +501,7 @@ func TestLeave_Visitor(t *testing.T) {
 	h := newHarness(t)
 	owner := uint32(5001)
 	visitor := uint32(5002)
-	seedRoom(t, h, NewBuilder(RoomTypeOmok, owner, h.f).SetGameType("OMOK").SetVisitorId(visitor).SetLastVisitorId(visitor))
+	seedRoom(t, h, NewBuilder(miniroom.Omok, owner, h.f).SetGameType("OMOK").SetVisitorId(visitor).SetLastVisitorId(visitor))
 
 	buf := message.NewBuffer()
 	require.NoError(t, h.p.leave(buf, uuid.New(), visitor))
@@ -524,7 +525,7 @@ func TestExpel_PreGame(t *testing.T) {
 	h := newHarness(t)
 	owner := uint32(5101)
 	visitor := uint32(5102)
-	seedRoom(t, h, NewBuilder(RoomTypeOmok, owner, h.f).SetGameType("OMOK").SetVisitorId(visitor).SetLastVisitorId(visitor))
+	seedRoom(t, h, NewBuilder(miniroom.Omok, owner, h.f).SetGameType("OMOK").SetVisitorId(visitor).SetLastVisitorId(visitor))
 
 	buf := message.NewBuffer()
 	require.NoError(t, h.p.expel(buf, uuid.New(), owner))
@@ -543,7 +544,7 @@ func TestExpel_PreGame(t *testing.T) {
 func TestExpel_NoVisitorIsNoOp(t *testing.T) {
 	h := newHarness(t)
 	owner := uint32(5201)
-	seedRoom(t, h, NewBuilder(RoomTypeOmok, owner, h.f).SetGameType("OMOK"))
+	seedRoom(t, h, NewBuilder(miniroom.Omok, owner, h.f).SetGameType("OMOK"))
 
 	buf := message.NewBuffer()
 	require.NoError(t, h.p.expel(buf, uuid.New(), owner))
@@ -554,7 +555,7 @@ func TestLeave_OwnerClosesRoom(t *testing.T) {
 	h := newHarness(t)
 	owner := uint32(6001)
 	visitor := uint32(6002)
-	seedRoom(t, h, NewBuilder(RoomTypeOmok, owner, h.f).SetGameType("OMOK").SetVisitorId(visitor).SetLastVisitorId(visitor))
+	seedRoom(t, h, NewBuilder(miniroom.Omok, owner, h.f).SetGameType("OMOK").SetVisitorId(visitor).SetLastVisitorId(visitor))
 
 	buf := message.NewBuffer()
 	require.NoError(t, h.p.leave(buf, uuid.New(), owner))
@@ -585,7 +586,7 @@ func TestChat_Member(t *testing.T) {
 	h := newHarness(t)
 	owner := uint32(7001)
 	visitor := uint32(7002)
-	seedRoom(t, h, NewBuilder(RoomTypeOmok, owner, h.f).SetGameType("OMOK").SetVisitorId(visitor).SetLastVisitorId(visitor))
+	seedRoom(t, h, NewBuilder(miniroom.Omok, owner, h.f).SetGameType("OMOK").SetVisitorId(visitor).SetLastVisitorId(visitor))
 
 	buf := message.NewBuffer()
 	require.NoError(t, h.p.chat(buf, uuid.New(), visitor, "gg"))
@@ -600,7 +601,7 @@ func TestChat_Member(t *testing.T) {
 func TestChat_NonMemberDropped(t *testing.T) {
 	h := newHarness(t)
 	owner := uint32(7101)
-	seedRoom(t, h, NewBuilder(RoomTypeOmok, owner, h.f).SetGameType("OMOK"))
+	seedRoom(t, h, NewBuilder(miniroom.Omok, owner, h.f).SetGameType("OMOK"))
 
 	buf := message.NewBuffer()
 	require.NoError(t, h.p.chat(buf, uuid.New(), 999999, "spam"))
@@ -612,13 +613,13 @@ func TestChat_NonMemberDropped(t *testing.T) {
 // seedIdleOmok seeds an Omok room with a seated (but not-started) visitor.
 func seedIdleOmok(t *testing.T, h *harness, owner, visitor uint32) Room {
 	t.Helper()
-	return seedRoom(t, h, NewBuilder(RoomTypeOmok, owner, h.f).
+	return seedRoom(t, h, NewBuilder(miniroom.Omok, owner, h.f).
 		SetGameType("OMOK").
 		SetVisitorId(visitor).SetLastVisitorId(visitor))
 }
 
 func runningOmokBuilder(h *harness, owner, visitor uint32, firstMover byte) *Builder {
-	return NewBuilder(RoomTypeOmok, owner, h.f).
+	return NewBuilder(miniroom.Omok, owner, h.f).
 		SetGameType("OMOK").
 		SetVisitorId(visitor).SetLastVisitorId(visitor).
 		SetVisitorReady(true).
@@ -628,7 +629,7 @@ func runningOmokBuilder(h *harness, owner, visitor uint32, firstMover byte) *Bui
 }
 
 func runningMatchCardsBuilder(h *harness, owner, visitor uint32, pieceType byte, deck []uint32) *Builder {
-	return NewBuilder(RoomTypeMatchCards, owner, h.f).
+	return NewBuilder(miniroom.MatchCards, owner, h.f).
 		SetGameType("MATCH_CARDS").
 		SetPieceType(pieceType).
 		SetVisitorId(visitor).SetLastVisitorId(visitor).
@@ -682,7 +683,7 @@ func TestStart_Omok(t *testing.T) {
 	h := newHarness(t)
 	owner := uint32(8201)
 	visitor := uint32(8202)
-	seedRoom(t, h, NewBuilder(RoomTypeOmok, owner, h.f).
+	seedRoom(t, h, NewBuilder(miniroom.Omok, owner, h.f).
 		SetGameType("OMOK").
 		SetVisitorId(visitor).SetLastVisitorId(visitor).
 		SetVisitorReady(true).
@@ -713,7 +714,7 @@ func TestStart_MatchCards(t *testing.T) {
 	h := newHarness(t)
 	owner := uint32(8301)
 	visitor := uint32(8302)
-	seedRoom(t, h, NewBuilder(RoomTypeMatchCards, owner, h.f).
+	seedRoom(t, h, NewBuilder(miniroom.MatchCards, owner, h.f).
 		SetGameType("MATCH_CARDS").
 		SetPieceType(0). // MatchesToWin(0) == 6 pairs -> 12 cards
 		SetVisitorId(visitor).SetLastVisitorId(visitor).
@@ -755,14 +756,14 @@ func TestStart_Guards(t *testing.T) {
 		{
 			name: "visitor not ready",
 			build: func(h *harness) *Builder {
-				return NewBuilder(RoomTypeOmok, owner, h.f).SetGameType("OMOK").SetVisitorId(visitor).SetVisitorReady(false)
+				return NewBuilder(miniroom.Omok, owner, h.f).SetGameType("OMOK").SetVisitorId(visitor).SetVisitorReady(false)
 			},
 			by: func(o, v uint32) uint32 { return o },
 		},
 		{
 			name: "no visitor",
 			build: func(h *harness) *Builder {
-				return NewBuilder(RoomTypeOmok, owner, h.f).SetGameType("OMOK")
+				return NewBuilder(miniroom.Omok, owner, h.f).SetGameType("OMOK")
 			},
 			by: func(o, v uint32) uint32 { return o },
 		},
@@ -1298,7 +1299,7 @@ func TestExitAfter_Cancel(t *testing.T) {
 func TestResolvedRoom_Scoring(t *testing.T) {
 	now := time.Unix(1_600_000_000, 0).UTC()
 	base := func() Room {
-		return NewBuilder(RoomTypeOmok, 1, field.NewBuilder(1, 1, 100000).Build()).
+		return NewBuilder(miniroom.Omok, 1, field.NewBuilder(1, 1, 100000).Build()).
 			SetVisitorId(2).SetInProgress(true).Build()
 	}
 
@@ -1355,7 +1356,7 @@ func TestEndGame_Idempotent(t *testing.T) {
 	owner := uint32(10301)
 	visitor := uint32(10302)
 	// Room already resolved (not in progress).
-	seedRoom(t, h, NewBuilder(RoomTypeOmok, owner, h.f).SetGameType("OMOK").
+	seedRoom(t, h, NewBuilder(miniroom.Omok, owner, h.f).SetGameType("OMOK").
 		SetVisitorId(visitor).SetInProgress(false))
 
 	buf := message.NewBuffer()

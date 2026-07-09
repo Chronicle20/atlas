@@ -101,6 +101,9 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				if err := register(message.AdaptHandler(message.PersistentConfig(handleBuyFailed(sc, wp)))); err != nil {
 					return nil, err
 				}
+				if err := register(message.AdaptHandler(message.PersistentConfig(handleBidPlaced(sc, wp)))); err != nil {
+					return nil, err
+				}
 				if err := register(message.AdaptHandler(message.PersistentConfig(handleBidFailed(sc, wp)))); err != nil {
 					return nil, err
 				}
@@ -146,6 +149,41 @@ func announceUserSaleList(l logrus.FieldLogger, ctx context.Context, sc server.M
 		items = append(items, mtslisting.ToMtsItem(m))
 	}
 	announceTo(l, ctx, sc, wp, sellerId, fieldpkt.MtsOperationGetUserSaleItemDoneBody(items))
+}
+
+// mtsSectionAuction is the CITC top-tab category for auctions (3 = Auction,
+// 1 = For Sale). mtsBrowsePageSize is the client's 16-plates-per-page window,
+// mirrored from the socket handler's paging so an unsolicited browse refresh
+// windows to page 0 exactly as a client-requested browse does.
+const (
+	mtsSectionAuction uint32 = 3
+	mtsBrowsePageSize        = 16
+)
+
+// announceBidderAuctionBrowse re-pushes the auction browse page (GET_ITC_LIST_DONE,
+// category 3, page 0, the bidder's own listings excluded) to a bidder after their
+// bid lands, so the new high bid and incremented bid count show without re-entering
+// the MTS. The v83 bid dialog closes itself after sending and never re-requests the
+// list, so the server pushes the refreshed page. categoryItemCnt carries the TOTAL
+// match count (drives the client's page selector, ceil(total/16)); the packet's item
+// list carries page 0's 16-item window. requestSent=1 is harmless here — no client
+// request latch is set for a server-initiated push.
+func announceBidderAuctionBrowse(l logrus.FieldLogger, ctx context.Context, sc server.Model, wp writer.Producer, worldId byte, bidderId uint32) {
+	ms, err := mtslisting.NewProcessor(l, ctx).Browse(world.Id(worldId), mtslisting.BrowseFilter{Category: "3", ExcludeSellerId: bidderId, Page: 0, PageSize: -1})
+	if err != nil {
+		l.WithError(err).Errorf("Unable to refresh MTS auction list for bidder [%d]; leaving the browse view stale.", bidderId)
+		return
+	}
+	items := make([]fieldcb.MtsItem, 0, len(ms))
+	for _, m := range ms {
+		items = append(items, mtslisting.ToMtsItem(m))
+	}
+	window := items
+	if len(window) > mtsBrowsePageSize {
+		window = window[:mtsBrowsePageSize]
+	}
+	body := fieldpkt.MtsOperationGetItcListDoneBody(uint32(len(items)), mtsSectionAuction, 0, 0, 1, 1, window, 1)
+	announceTo(l, ctx, sc, wp, bidderId, body)
 }
 
 // announceUserPurchaseList re-pushes the character's "Transfer Inventory" panel
@@ -384,6 +422,21 @@ func handleBuyFailed(sc server.Model, wp writer.Producer) message.Handler[mtsmsg
 		}
 		l.Debugf("MTS buy failed for buyer [%d] serial [%d] (reasonKey [%s]).", e.Body.BuyerId, e.Body.Serial, e.Body.ReasonKey)
 		announceTo(l, ctx, sc, wp, e.Body.BuyerId, failNoticeOr(e.Body.ReasonKey, fieldpkt.MtsOperationBuyItemFailedBody()))
+	}
+}
+
+// handleBidPlaced re-pushes the bidder's auction browse page after a bid is
+// recorded (BID_PLACED), so the new high bid and incremented bid count appear
+// in place. The v83 bid dialog closes itself after sending and never re-requests
+// the list. The NX debit is refreshed separately by the wallet-status consumer
+// once the escrow actually lands.
+func handleBidPlaced(sc server.Model, wp writer.Producer) message.Handler[mtsmsg.StatusEvent[mtsmsg.StatusEventBidPlacedBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e mtsmsg.StatusEvent[mtsmsg.StatusEventBidPlacedBody]) {
+		if e.Type != mtsmsg.StatusEventTypeBidPlaced {
+			return
+		}
+		l.Debugf("MTS bid placed by bidder [%d] on listing [%s] (amount [%d]); refreshing auction browse.", e.Body.BidderId, e.Body.ListingId.String(), e.Body.Amount)
+		announceBidderAuctionBrowse(l, ctx, sc, wp, e.Body.WorldId, e.Body.BidderId)
 	}
 }
 

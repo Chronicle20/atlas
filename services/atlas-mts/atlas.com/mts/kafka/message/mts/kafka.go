@@ -16,6 +16,12 @@ const (
 	FailReasonGeneric     = ""
 	FailReasonNotEnoughNX = "NOT_ENOUGH_NX"
 	FailReasonItemSold    = "ITEM_SOLD"
+	// FailReasonRegisterFailed is the semantic key for a rejected listing
+	// registration (auction duration out of range, price below floor, too many
+	// active listings). The v83 client has no registration-specific string, so the
+	// tenant noticeFailReasons table maps it to the generic "the request for MTS
+	// has failed" notice (CITC::NoticeFailReason default, SP_4808).
+	FailReasonRegisterFailed = "REGISTER_FAILED"
 )
 
 const (
@@ -330,7 +336,10 @@ type StatusEventWishRemovedBody struct {
 type StatusEventListingCreateFailedBody struct {
 	WorldId  byte   `json:"worldId"`
 	SellerId uint32 `json:"sellerId"`
-	Reason   byte   `json:"reason"`
+	// ReasonKey is a SEMANTIC failure key the channel resolves through the tenant
+	// noticeFailReasons table (like buy/bid). JSON tag "reasonKey" (NOT "reason") so
+	// it does not collide with the numeric-reason events on the same topic.
+	ReasonKey string `json:"reasonKey,omitempty"`
 }
 
 // StatusEventListingCancelFailedBody reports a rejected cancel. SellerId is the

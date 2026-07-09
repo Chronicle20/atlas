@@ -18,9 +18,10 @@ import (
 // the numeric ones use "reason" — different JSON tags, so each ignores the other's
 // field instead of failing to unmarshal.
 func TestReasonFieldNoDecodeCollision(t *testing.T) {
-	// A numeric-reason event decoded by the string-reason (buy-failed) body: must
-	// not error, and ReasonKey stays empty (the numeric "reason" is ignored).
-	numericReason := []byte(`{"transactionId":"00000000-0000-0000-0000-000000000000","type":"LISTING_CREATE_FAILED","body":{"worldId":0,"sellerId":1,"reason":0}}`)
+	// A numeric-reason event (LISTING_CANCEL_FAILED) decoded by a string-reason
+	// (buy-failed) body: must not error, and ReasonKey stays empty (the numeric
+	// "reason" is ignored).
+	numericReason := []byte(`{"transactionId":"00000000-0000-0000-0000-000000000000","type":"LISTING_CANCEL_FAILED","body":{"worldId":0,"serial":5,"sellerId":1,"reason":0}}`)
 	var asBuy mtsmsg.StatusEvent[mtsmsg.StatusEventBuyFailedBody]
 	if err := json.Unmarshal(numericReason, &asBuy); err != nil {
 		t.Fatalf("numeric-reason event must not break the buy-failed decode: %v", err)
@@ -29,15 +30,16 @@ func TestReasonFieldNoDecodeCollision(t *testing.T) {
 		t.Fatalf("ReasonKey should be empty for a numeric-reason event, got %q", asBuy.Body.ReasonKey)
 	}
 
-	// A string-reasonKey event decoded by the numeric-reason (create-failed) body:
-	// must not error, and Reason stays 0 (the string "reasonKey" is ignored).
+	// A string-reasonKey event (BUY_FAILED) decoded by a numeric-reason
+	// (cancel-failed) body: must not error, and Reason stays 0 (the string
+	// "reasonKey" is ignored).
 	stringReason := []byte(`{"transactionId":"00000000-0000-0000-0000-000000000000","type":"BUY_FAILED","body":{"worldId":0,"serial":5,"buyerId":1,"reasonKey":"NOT_ENOUGH_NX"}}`)
-	var asCreate mtsmsg.StatusEvent[mtsmsg.StatusEventListingCreateFailedBody]
-	if err := json.Unmarshal(stringReason, &asCreate); err != nil {
-		t.Fatalf("string-reasonKey event must not break the create-failed decode: %v", err)
+	var asCancel mtsmsg.StatusEvent[mtsmsg.StatusEventListingCancelFailedBody]
+	if err := json.Unmarshal(stringReason, &asCancel); err != nil {
+		t.Fatalf("string-reasonKey event must not break the cancel-failed decode: %v", err)
 	}
-	if asCreate.Body.Reason != 0 {
-		t.Fatalf("Reason should be 0 for a string-reasonKey event, got %d", asCreate.Body.Reason)
+	if asCancel.Body.Reason != 0 {
+		t.Fatalf("Reason should be 0 for a string-reasonKey event, got %d", asCancel.Body.Reason)
 	}
 }
 

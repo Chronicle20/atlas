@@ -41,6 +41,11 @@ const (
 // generic-reason failures the command path emits.
 const mtsRegisterSaleNoSaleLimit uint16 = 0
 
+// mtsRegisterSaleGenericReason is the NoticeFailReason byte for the bare
+// RegisterSaleEntryFailed arm used when a create-failure's reasonKey does not
+// resolve in the tenant table (0 -> the client's generic MTS-failed notice).
+const mtsRegisterSaleGenericReason byte = 0
+
 // InitConsumers registers the EVENT_TOPIC_MTS_STATUS consumer (mirrors the
 // cash-shop compartment status-event consumer): tenant/span header parsers + start
 // at the latest offset (status events are live notifications, not replayed).
@@ -254,8 +259,8 @@ func handleListingCreateFailed(sc server.Model, wp writer.Producer) message.Hand
 		if e.Type != mtsmsg.StatusEventTypeListingCreateFailed {
 			return
 		}
-		l.Debugf("MTS listing create failed for seller [%d] (reason [%d]).", e.Body.SellerId, e.Body.Reason)
-		announceTo(l, ctx, sc, wp, e.Body.SellerId, fieldpkt.MtsOperationRegisterSaleEntryFailedBody(e.Body.Reason, mtsRegisterSaleNoSaleLimit))
+		l.Debugf("MTS listing create failed for seller [%d] (reasonKey [%s]).", e.Body.SellerId, e.Body.ReasonKey)
+		announceTo(l, ctx, sc, wp, e.Body.SellerId, failNoticeOr(e.Body.ReasonKey, fieldpkt.MtsOperationRegisterSaleEntryFailedBody(mtsRegisterSaleGenericReason, mtsRegisterSaleNoSaleLimit)))
 	}
 }
 

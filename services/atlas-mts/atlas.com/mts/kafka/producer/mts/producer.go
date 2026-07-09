@@ -156,14 +156,14 @@ func WishAddedStatusEventProvider(transactionId uuid.UUID, worldId byte, wishId 
 
 // ListingCreateFailedStatusEventProvider builds a LISTING_CREATE_FAILED event for
 // a rejected listing creation, carrying the originating sellerId + a fail reason.
-func ListingCreateFailedStatusEventProvider(transactionId uuid.UUID, worldId byte, sellerId uint32, reason byte) model.Provider[[]kafka.Message] {
+func ListingCreateFailedStatusEventProvider(transactionId uuid.UUID, worldId byte, sellerId uint32, reasonKey string) model.Provider[[]kafka.Message] {
 	value := &mts.StatusEvent[mts.StatusEventListingCreateFailedBody]{
 		TransactionId: transactionId,
 		Type:          mts.StatusEventTypeListingCreateFailed,
 		Body: mts.StatusEventListingCreateFailedBody{
-			WorldId:  worldId,
-			SellerId: sellerId,
-			Reason:   reason,
+			WorldId:   worldId,
+			SellerId:  sellerId,
+			ReasonKey: reasonKey,
 		},
 	}
 	return producer.SingleMessageProvider(keyFor(transactionId), value)

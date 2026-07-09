@@ -134,7 +134,12 @@ func handleCreateListing(pf providerFn) func(db *gorm.DB) message.Handler[mts.Co
 				l.WithError(err).Errorf("Failed to initiate listing for seller [%d], transaction [%s].", b.SellerId, c.TransactionId.String())
 				p := pf(ctx)
 				_ = msg.Emit(p)(func(buf *msg.Buffer) error {
-					return buf.Put(mts.EnvStatusEventTopic, mtsproducer.ListingCreateFailedStatusEventProvider(c.TransactionId, b.WorldId, b.SellerId, mtsFailReasonGeneric))
+					// The synchronous registration validations (auction duration out of
+					// range, price below floor, too many active listings) have no
+					// registration-specific v83 client string, so they all resolve to the
+					// generic "the request for MTS has failed" notice — but through the
+					// config-driven reasonKey path (like buy/bid), not a hardcoded byte.
+					return buf.Put(mts.EnvStatusEventTopic, mtsproducer.ListingCreateFailedStatusEventProvider(c.TransactionId, b.WorldId, b.SellerId, mts.FailReasonRegisterFailed))
 				})
 				return
 			}

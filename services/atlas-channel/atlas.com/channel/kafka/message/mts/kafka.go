@@ -203,12 +203,14 @@ type StatusEventItemTakenHomeBody struct {
 }
 
 // StatusEventListingCreateFailedBody reports a rejected listing creation. SellerId
-// is the target character for the RegisterSaleEntryFailed result; Reason is the
-// clientbound NoticeFailReason byte.
+// is the target character for the RegisterSaleEntryFailed result. ReasonKey is a
+// semantic failure key resolved via the tenant noticeFailReasons table (JSON tag
+// "reasonKey", not "reason" — see StatusEventBuyFailedBody for the collision
+// rationale).
 type StatusEventListingCreateFailedBody struct {
-	WorldId  byte   `json:"worldId"`
-	SellerId uint32 `json:"sellerId"`
-	Reason   byte   `json:"reason"`
+	WorldId   byte   `json:"worldId"`
+	SellerId  uint32 `json:"sellerId"`
+	ReasonKey string `json:"reasonKey,omitempty"`
 }
 
 // StatusEventListingCancelFailedBody reports a rejected cancel. SellerId is the

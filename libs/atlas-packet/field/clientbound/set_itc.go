@@ -13,8 +13,9 @@ import (
 // SetItcWriter is the registry writer name (Operation()) for the SET_ITC
 // clientbound packet — the MTS (ITC) scene-transition packet. CStage::OnSetITC
 // reads the full migrate-in CharacterData block, then the account name, then
-// five ITC config int32s, then an 8-byte FILETIME contract date, and pushes a
-// CITC stage so the in-game MTS view opens.
+// five ITC config int32s, then an 8-byte FILETIME that is the SERVER'S CURRENT
+// TIME (a clock-sync value, NOT an expiry date), and pushes a CITC stage so the
+// in-game MTS view opens.
 //
 // IDA-verified read order (identical in all five versions):
 //
@@ -34,13 +35,26 @@ import (
 //	Decode4    m_nCommissionBase     (commission base)
 //	Decode4    m_nAuctionDurationMin (auction min hours)
 //	Decode4    m_nAuctionDurationMax (auction max hours)
-//	DecodeBuffer(8)  ftITCDateExpired (FILETIME contract/expiry date)
+//	DecodeBuffer(8)  ftSvr (server-now FILETIME; used to set m_ftRel — see below)
 //
-// The named struct fields are from the v95 CITC::LoadData decompile (0x574a60),
-// which carries Hex-Rays member names; v83/v84/v87/jms read the same five
-// Decode4 + DecodeBuffer(8) in the same order (the per-version client-side
-// account-name display formatting around the single DecodeStr does NOT change
-// the wire read order — the five int32s + 8-byte buffer are unconditional).
+// CRITICAL — the trailing 8-byte FILETIME is the server clock, not a date.
+// The body reader (v83 sub_59EF9D 0x59ef9d) does, with the 8 bytes it reads:
+//
+//	GetLocalTime()                 -> ftLocal   (the client's wall clock)
+//	DecodeBuffer(8)                -> ftSvr     (this field)
+//	m_ftRel = ftSvr - ftLocal      (CITC+52/+56; sub_59FD49 subtract)
+//
+// and thereafter CITC::GetCorrectTime() returns ftLocal + m_ftRel == ftSvr, so
+// EVERY ITC countdown the client renders relative to "now" (the bid dialog's
+// TIME LEFT — CITCBidAuctionDlg::Draw v83 sub_5C309A / v95 0x58e050 — and the
+// item tooltip's remaining-time line) is computed as (ftITCDateExpired - ftSvr).
+// If ftSvr is stale, every countdown is off by (realNow - ftSvr): sending a
+// fixed ~2010 constant here (as Cosmic does) made a 24h auction render as
+// "143160 hr" (≈16.3 years). The absolute "Sold Until" DATE column is unaffected
+// because it prints ftITCDateExpired directly and never consults m_ftRel — which
+// is why the bug shows only in the countdowns. Send the real server time
+// (MsTimeBytes(time.Now())) so m_ftRel ≈ 0 and countdowns are correct regardless
+// of the client's local clock.
 //
 // This is an ENVELOPE writer: the inner CharacterData shape is the same block
 // already encoded by CashShopOpen (CStage::OnSetCashShop), reused verbatim via
@@ -63,16 +77,8 @@ const (
 	DefaultItcAuctionMaxHours uint32 = 168  // m_nAuctionDurationMax (0xA8)
 )
 
-// DefaultItcContractDate is the 8-byte FILETIME contract/expiry date the client
-// displays. CITC::LoadData reads it via DecodeBuffer(8) and adds it to the local
-// time (CITC::FileTimeAddition). Cosmic sends a fixed value; we mirror those
-// bytes as a documented constant (little-endian FILETIME on the wire).
-//
-//	Cosmic EnterMTSHandler: 70 AA A7 C5 4E C1 CA 01
-var DefaultItcContractDate = [8]byte{0x70, 0xAA, 0xA7, 0xC5, 0x4E, 0xC1, 0xCA, 0x01}
-
 // SetItc is the SET_ITC clientbound writer. Body = CharacterData block +
-// account name (ZXString) + 5×int32 ITC config + 8-byte FILETIME date.
+// account name (ZXString) + 5×int32 ITC config + 8-byte server-now FILETIME.
 type SetItc struct {
 	characterData   charpkt.CharacterData
 	accountName     string
@@ -81,13 +87,15 @@ type SetItc struct {
 	commissionBase  uint32
 	auctionMinHours uint32
 	auctionMaxHours uint32
-	contractDate    [8]byte
+	serverTime      [8]byte
 }
 
 // NewSetItc builds a SET_ITC packet with the Cosmic-faithful ITC config
-// defaults and contract date. Callers that have per-tenant MTS config can use
-// NewSetItcWithConfig instead.
-func NewSetItc(characterData charpkt.CharacterData, accountName string) SetItc {
+// defaults. serverTime is the server's current time as an 8-byte FILETIME
+// (MsTimeBytes(time.Now())) — it seeds the client's ITC clock so auction
+// countdowns are correct (see the SetItcWriter doc). Callers with per-tenant MTS
+// config can use NewSetItcWithConfig instead.
+func NewSetItc(characterData charpkt.CharacterData, accountName string, serverTime [8]byte) SetItc {
 	return SetItc{
 		characterData:   characterData,
 		accountName:     accountName,
@@ -96,13 +104,13 @@ func NewSetItc(characterData charpkt.CharacterData, accountName string) SetItc {
 		commissionBase:  DefaultItcCommissionBase,
 		auctionMinHours: DefaultItcAuctionMinHours,
 		auctionMaxHours: DefaultItcAuctionMaxHours,
-		contractDate:    DefaultItcContractDate,
+		serverTime:      serverTime,
 	}
 }
 
 // NewSetItcWithConfig builds a SET_ITC packet with explicit ITC config values
-// (e.g. from an MTS config resource) and contract date.
-func NewSetItcWithConfig(characterData charpkt.CharacterData, accountName string, listingFee, commissionRate, commissionBase, auctionMinHours, auctionMaxHours uint32, contractDate [8]byte) SetItc {
+// (e.g. from an MTS config resource) and the server-now FILETIME.
+func NewSetItcWithConfig(characterData charpkt.CharacterData, accountName string, listingFee, commissionRate, commissionBase, auctionMinHours, auctionMaxHours uint32, serverTime [8]byte) SetItc {
 	return SetItc{
 		characterData:   characterData,
 		accountName:     accountName,
@@ -111,7 +119,7 @@ func NewSetItcWithConfig(characterData charpkt.CharacterData, accountName string
 		commissionBase:  commissionBase,
 		auctionMinHours: auctionMinHours,
 		auctionMaxHours: auctionMaxHours,
-		contractDate:    contractDate,
+		serverTime:      serverTime,
 	}
 }
 
@@ -130,7 +138,7 @@ func (m SetItc) Encode(l logrus.FieldLogger, ctx context.Context) func(options m
 		w.WriteInt(m.commissionBase)                              // Decode4 m_nCommissionBase
 		w.WriteInt(m.auctionMinHours)                             // Decode4 m_nAuctionDurationMin
 		w.WriteInt(m.auctionMaxHours)                             // Decode4 m_nAuctionDurationMax
-		w.WriteByteArray(m.contractDate[:])                       // DecodeBuffer(8) ftITCDateExpired
+		w.WriteByteArray(m.serverTime[:])                         // DecodeBuffer(8) ftSvr (server-now)
 		return w.Bytes()
 	}
 }
@@ -144,7 +152,7 @@ func (m *SetItc) Decode(l logrus.FieldLogger, ctx context.Context) func(r *reque
 		m.commissionBase = r.ReadUint32()
 		m.auctionMinHours = r.ReadUint32()
 		m.auctionMaxHours = r.ReadUint32()
-		copy(m.contractDate[:], r.ReadBytes(8))
+		copy(m.serverTime[:], r.ReadBytes(8))
 	}
 }
 
@@ -155,4 +163,4 @@ func (m SetItc) CommissionRate() uint32               { return m.commissionRate 
 func (m SetItc) CommissionBase() uint32               { return m.commissionBase }
 func (m SetItc) AuctionMinHours() uint32              { return m.auctionMinHours }
 func (m SetItc) AuctionMaxHours() uint32              { return m.auctionMaxHours }
-func (m SetItc) ContractDate() [8]byte                { return m.contractDate }
+func (m SetItc) ServerTime() [8]byte                  { return m.serverTime }

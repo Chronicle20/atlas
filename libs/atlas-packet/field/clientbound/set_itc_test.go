@@ -12,7 +12,8 @@ import (
 // SET_ITC (CStage::OnSetITC) — the MTS/ITC scene-transition packet. The wire
 // body is the full migrate-in CharacterData block (the SAME block CashShopOpen /
 // CStage::OnSetCashShop encodes), then the account name (ZXString), then the
-// five ITC config int32s, then an 8-byte FILETIME contract date.
+// five ITC config int32s, then an 8-byte server-now FILETIME (the ITC clock
+// sync, not a date — see the SetItcWriter doc).
 //
 // IDA read order is byte-identical in all five versions (the body reader is
 // CITC::LoadData / sub_59EF9D / sub_5AF339; the per-version client-side account
@@ -54,24 +55,25 @@ func mtsTestCharacterData() charpkt.CharacterData {
 // TestSetItcDefaultsGolden asserts the trailing config block — the part this
 // writer owns beyond the reused CharacterData envelope. The CharacterData block
 // is variable-length, so we anchor the assertion at the END of the buffer:
-// the last 8 bytes are the FILETIME date, preceded by the five LE int32s,
+// the last 8 bytes are the server-now FILETIME, preceded by the five LE int32s,
 // preceded by the account-name ZXString. The Cosmic-faithful defaults are the
-// IDA-confirmed five Decode4 values (5000/7/500/24/168) and the fixed 8-byte
-// contract date.
+// IDA-confirmed five Decode4 values (5000/7/500/24/168); the 8-byte server-time
+// value is passed explicitly by the test.
 func TestSetItcDefaultsGolden(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	ctx := pt.CreateContext("GMS", 95, 0)
-	input := NewSetItc(mtsTestCharacterData(), "AC")
+	serverTime := [8]byte{0x70, 0xAA, 0xA7, 0xC5, 0x4E, 0xC1, 0xCA, 0x01}
+	input := NewSetItc(mtsTestCharacterData(), "AC", serverTime)
 	b := input.Encode(l, ctx)(nil)
 
-	// Trailing 28 bytes = accountName ZXString (2 len + "AC") + 5×int32 + 8-byte date.
+	// Trailing 28 bytes = accountName ZXString (2 len + "AC") + 5×int32 + 8-byte server-now FILETIME.
 	//   "AC": 02 00 41 43
 	//   listingFee 5000   = 0x1388 -> 88 13 00 00
 	//   commissionRate 7         -> 07 00 00 00
 	//   commissionBase 500 = 0x1F4 -> F4 01 00 00
 	//   auctionMin 24      = 0x18  -> 18 00 00 00
 	//   auctionMax 168     = 0xA8  -> A8 00 00 00
-	//   contractDate             -> 70 AA A7 C5 4E C1 CA 01
+	//   serverTime               -> 70 AA A7 C5 4E C1 CA 01 (the explicit arg above)
 	wantTail := []byte{
 		0x02, 0x00, 0x41, 0x43, // "AC"
 		0x88, 0x13, 0x00, 0x00, // listingFee 5000
@@ -79,7 +81,7 @@ func TestSetItcDefaultsGolden(t *testing.T) {
 		0xF4, 0x01, 0x00, 0x00, // commissionBase 500
 		0x18, 0x00, 0x00, 0x00, // auctionMin 24
 		0xA8, 0x00, 0x00, 0x00, // auctionMax 168
-		0x70, 0xAA, 0xA7, 0xC5, 0x4E, 0xC1, 0xCA, 0x01, // contract date FILETIME
+		0x70, 0xAA, 0xA7, 0xC5, 0x4E, 0xC1, 0xCA, 0x01, // server-now FILETIME
 	}
 	if len(b) < len(wantTail) {
 		t.Fatalf("buffer too short: %d bytes", len(b))
@@ -108,7 +110,7 @@ func TestSetItcExplicitConfigGolden(t *testing.T) {
 		0xCC, 0xBB, 0xAA, 0x99, // commissionBase 0x99AABBCC
 		0x10, 0x0F, 0x0E, 0x0D, // auctionMin 0x0D0E0F10
 		0x24, 0x23, 0x22, 0x21, // auctionMax 0x21222324
-		0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, // contract date
+		0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, // server-now FILETIME
 	}
 	tail := b[len(b)-len(wantTail):]
 	if !bytes.Equal(tail, wantTail) {
@@ -150,8 +152,8 @@ func TestSetItcRoundTrip(t *testing.T) {
 			if output.AuctionMaxHours() != input.AuctionMaxHours() {
 				t.Errorf("auctionMaxHours: got %v, want %v", output.AuctionMaxHours(), input.AuctionMaxHours())
 			}
-			if output.ContractDate() != input.ContractDate() {
-				t.Errorf("contractDate: got %v, want %v", output.ContractDate(), input.ContractDate())
+			if output.ServerTime() != input.ServerTime() {
+				t.Errorf("serverTime: got %v, want %v", output.ServerTime(), input.ServerTime())
 			}
 		})
 	}

@@ -162,15 +162,24 @@ func Transform(m Model) (RestModel, error) {
 	}, nil
 }
 
-// withContractFee stamps the buyer-visible fee (markedUp(base)-base) onto a REST
-// model. base is the current auction bid for auctions, else the list value — the
-// same base the client adds nContractFee onto (nBidPrice vs nPrice). commissionBase
-// is the tenant flat NX fee (the caller reads it once from tenant config).
+// withContractFee stamps the buyer-visible fee (markedUp(listValue)-listValue)
+// onto a FIXED-sale REST model, so the client's price column shows nPrice +
+// nContractFee = the true final cost. commissionBase is the tenant flat NX fee
+// (the caller reads it once from tenant config).
+//
+// Auctions carry NO contract fee (0). The v83 client already computes the
+// buyer's commission itself for the bid dialog's "Your Bid" line
+// (CITCBidAuctionDlg::GetPriceWithCommision = commissionBase +
+// (commissionRate+100)*bid/100, IDA-verified v95 0x58b5e0), so adding
+// nContractFee would double-count it onto the "Highest Bid" column — and on a
+// no-bid auction (nBidPrice = the opening price, the bid floor) it inflated the
+// displayed opening price (e.g. 1000 -> 1570). The fee is realised at settle via
+// markedUp on the escrow, not shown on the bid line.
 func withContractFee(rm RestModel, commissionBase uint32) RestModel {
-	base := rm.ListValue
 	if rm.SaleType == string(SaleTypeAuction) {
-		base = rm.CurrentBid
+		rm.ContractFee = 0
+		return rm
 	}
-	rm.ContractFee = markedUp(base, rm.CommissionRate, commissionBase) - base
+	rm.ContractFee = markedUp(rm.ListValue, rm.CommissionRate, commissionBase) - rm.ListValue
 	return rm
 }

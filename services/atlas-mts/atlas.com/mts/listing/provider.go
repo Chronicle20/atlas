@@ -266,6 +266,7 @@ func modelFromEntity(e entity) (Model, error) {
 		SetCurrentBid(e.CurrentBid).
 		SetHighBidderId(e.HighBidderId).
 		SetMinIncrement(e.MinIncrement).
+		SetBidCount(e.BidCount).
 		SetCreatedAt(e.CreatedAt).
 		SetUpdatedAt(e.UpdatedAt)
 	return b.Build()

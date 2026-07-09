@@ -49,6 +49,7 @@ type Model struct {
 	currentBid    uint32
 	highBidderId  uint32
 	minIncrement  uint32
+	bidCount      uint32
 	category      string
 	subCategory   string
 	endsAt        *time.Time
@@ -91,6 +92,7 @@ func (m Model) ContractFee() uint32   { return m.contractFee }
 func (m Model) CurrentBid() uint32    { return m.currentBid }
 func (m Model) HighBidderId() uint32  { return m.highBidderId }
 func (m Model) MinIncrement() uint32  { return m.minIncrement }
+func (m Model) BidCount() uint32      { return m.bidCount }
 func (m Model) Category() string      { return m.category }
 func (m Model) SubCategory() string   { return m.subCategory }
 func (m Model) EndsAt() *time.Time    { return m.endsAt }

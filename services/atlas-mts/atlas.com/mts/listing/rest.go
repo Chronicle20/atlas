@@ -59,6 +59,7 @@ type RestModel struct {
 	CurrentBid   uint32     `json:"currentBid"`
 	HighBidderId uint32     `json:"highBidderId"`
 	MinIncrement uint32     `json:"minIncrement"`
+	BidCount     uint32     `json:"bidCount"`
 
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
@@ -157,6 +158,7 @@ func Transform(m Model) (RestModel, error) {
 		CurrentBid:     m.CurrentBid(),
 		HighBidderId:   m.HighBidderId(),
 		MinIncrement:   m.MinIncrement(),
+		BidCount:       m.BidCount(),
 		CreatedAt:      m.CreatedAt(),
 		UpdatedAt:      m.UpdatedAt(),
 	}, nil

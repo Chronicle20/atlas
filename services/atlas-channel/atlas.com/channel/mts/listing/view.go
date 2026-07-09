@@ -62,7 +62,7 @@ func ToMtsItem(m Model) fieldcb.MtsItem {
 		"",               // sUserID
 		m.SellerName(),   // sGameID (seller display name)
 		"",               // sComment
-		0,                // nBidCount
+		m.BidCount(),     // nBidCount (total bids placed on this listing)
 		m.MinIncrement(), // nBidRange
 		m.CurrentBid(),   // nBidPrice
 		m.ListValue(),    // nMinPrice

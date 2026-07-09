@@ -58,6 +58,7 @@ type Builder struct {
 	currentBid   uint32
 	highBidderId uint32
 	minIncrement uint32
+	bidCount     uint32
 
 	createdAt time.Time
 	updatedAt time.Time
@@ -267,6 +268,11 @@ func (b *Builder) SetMinIncrement(v uint32) *Builder {
 	return b
 }
 
+func (b *Builder) SetBidCount(v uint32) *Builder {
+	b.bidCount = v
+	return b
+}
+
 func (b *Builder) SetCreatedAt(v time.Time) *Builder {
 	b.createdAt = v
 	return b
@@ -322,6 +328,7 @@ func (b *Builder) Build() (Model, error) {
 		subCategory:     b.subCategory,
 		endsAt:          b.endsAt,
 		currentBid:      b.currentBid,
+		bidCount:        b.bidCount,
 		highBidderId:    b.highBidderId,
 		minIncrement:    b.minIncrement,
 		createdAt:       b.createdAt,

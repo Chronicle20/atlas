@@ -228,6 +228,7 @@ func AdvanceAuctionBid(db *gorm.DB, id string, priorBid uint32, priorBidder uint
 		Updates(map[string]interface{}{
 			"current_bid":    newBid,
 			"high_bidder_id": newBidder,
+			"bid_count":      gorm.Expr("bid_count + 1"),
 			"updated_at":     time.Now(),
 		})
 	return result.RowsAffected, result.Error

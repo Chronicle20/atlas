@@ -86,6 +86,7 @@ type entity struct {
 	CurrentBid   uint32     `gorm:"column:current_bid;not null"`
 	HighBidderId uint32     `gorm:"column:high_bidder_id;not null"`
 	MinIncrement uint32     `gorm:"column:min_increment;not null"`
+	BidCount     uint32     `gorm:"column:bid_count;not null;default:0"`
 
 	CreatedAt time.Time `gorm:"column:created_at"`
 	UpdatedAt time.Time `gorm:"column:updated_at"`

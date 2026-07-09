@@ -89,6 +89,7 @@ type Model struct {
 	currentBid   uint32
 	highBidderId uint32
 	minIncrement uint32
+	bidCount     uint32
 
 	createdAt time.Time
 	updatedAt time.Time
@@ -138,6 +139,7 @@ func (m Model) EndsAt() *time.Time   { return m.endsAt }
 func (m Model) CurrentBid() uint32   { return m.currentBid }
 func (m Model) HighBidderId() uint32 { return m.highBidderId }
 func (m Model) MinIncrement() uint32 { return m.minIncrement }
+func (m Model) BidCount() uint32     { return m.bidCount }
 
 func (m Model) CreatedAt() time.Time { return m.createdAt }
 func (m Model) UpdatedAt() time.Time { return m.updatedAt }

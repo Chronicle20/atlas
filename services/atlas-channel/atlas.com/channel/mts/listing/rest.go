@@ -56,6 +56,7 @@ type RestModel struct {
 	CurrentBid   uint32 `json:"currentBid"`
 	HighBidderId uint32 `json:"highBidderId"`
 	MinIncrement uint32 `json:"minIncrement"`
+	BidCount     uint32 `json:"bidCount"`
 
 	EndsAt *time.Time `json:"endsAt,omitempty"`
 }
@@ -112,6 +113,7 @@ func Extract(r RestModel) (Model, error) {
 		currentBid:    r.CurrentBid,
 		highBidderId:  r.HighBidderId,
 		minIncrement:  r.MinIncrement,
+		bidCount:      r.BidCount,
 		category:      r.Category,
 		subCategory:   r.SubCategory,
 		endsAt:        r.EndsAt,

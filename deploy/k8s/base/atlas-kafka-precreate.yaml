@@ -38,19 +38,28 @@ spec:
               set -euo pipefail
               : "${BOOTSTRAP_SERVERS:?BOOTSTRAP_SERVERS not set in atlas-env}"
               echo "[$(date -u +%FT%TZ)] precreating topics on $BOOTSTRAP_SERVERS"
-              count=0
+
+              # Collect the distinct topic names from every COMMAND/EVENT_TOPIC_* env var.
+              topics="$(mktemp)"
               for var in $(compgen -e | grep -E '^(COMMAND|EVENT)_TOPIC_' || true); do
                   topic="${!var}"
-                  if [ -z "$topic" ]; then
-                      continue
-                  fi
+                  [ -n "$topic" ] && printf '%s\n' "$topic"
+              done | sort -u > "$topics"
+              count=$(wc -l < "$topics")
+
+              # Each kafka-topics.sh --create is a full JVM cold start (~1-1.5s) and only
+              # creates one topic per call, so a serial loop over ~140 topics takes minutes.
+              # Fan out with xargs -P so the JVM starts overlap; --if-not-exists keeps it
+              # idempotent and concurrent creates of distinct topics don't conflict. xargs
+              # exits non-zero if any child fails, which set -e turns into a Job retry.
+              echo "[$(date -u +%FT%TZ)] creating $count topics (concurrency 16)"
+              xargs -P 16 -I {} \
                   /opt/kafka/bin/kafka-topics.sh \
                       --bootstrap-server "$BOOTSTRAP_SERVERS" \
                       --create --if-not-exists \
-                      --topic "$topic" \
+                      --topic {} \
                       --partitions 1 \
                       --replication-factor 1 \
-                      >/dev/null
-                  count=$((count+1))
-              done
+                  < "$topics" >/dev/null
+
               echo "[$(date -u +%FT%TZ)] reconciled $count topics"

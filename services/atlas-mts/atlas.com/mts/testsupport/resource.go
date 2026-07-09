@@ -4,6 +4,7 @@ import (
 	"atlas-mts/listing"
 	"atlas-mts/rest"
 	"atlas-mts/task"
+	"atlas-mts/wallet"
 	"context"
 	"errors"
 	"net/http"
@@ -38,10 +39,15 @@ const seedMaxListings = 200
 // Seed defaults — synthetic seller ids sit far above real character ids so
 // they are recognizable in DB rows and logs.
 const (
-	defaultSeedSellerId   = 999000001
-	defaultSeedSellerName = "TestSeller"
-	defaultSeedListValue  = 1000
-	defaultSeedDuration   = 300 * time.Second
+	defaultSeedSellerId = 999000001
+	// defaultSeedSellerAccountId is the cash-shop account credited on a sale of a
+	// seeded listing. It must be non-zero and wallet-backed or the buy's
+	// seller-points credit fails (account 0 has no wallet) and no seeded listing
+	// can be bought — the seed flow ensures this account's wallet exists.
+	defaultSeedSellerAccountId = 999000001
+	defaultSeedSellerName      = "TestSeller"
+	defaultSeedListValue       = 1000
+	defaultSeedDuration        = 300 * time.Second
 	// defaultSeedFixedTerm mirrors the production fixedSaleHours default (168h):
 	// seeded fixed sales carry the same era-faithful 7-day term natural ones get.
 	defaultSeedFixedTerm = 168 * time.Hour
@@ -179,6 +185,17 @@ func handleSimulateBid(pf providerFn) func(d *rest.HandlerDependency, c *rest.Ha
 	}
 }
 
+// effectiveSellerAccountId resolves the cash-shop account a seeded listing's sale
+// credits: the entry's value, or the default synthetic test-seller account when
+// omitted (0). A zero account has no wallet, so the sale settle fails — hence the
+// default plus the wallet-ensure at seed time.
+func effectiveSellerAccountId(entryAccountId uint32) uint32 {
+	if entryAccountId == 0 {
+		return defaultSeedSellerAccountId
+	}
+	return entryAccountId
+}
+
 // handleSeedListings fabricates active listings through the production
 // listing administrator: CreateListing assigns each row a real per-(tenant,
 // world) ITC serial, so the client renders and interacts with seeded rows
@@ -193,8 +210,12 @@ func handleSeedListings(d *rest.HandlerDependency, c *rest.HandlerContext, rm Se
 
 		// First pass: validate every entry (saleType, templateId) and compute
 		// the total-vs-cap BEFORE creating anything, so any 400 happens with
-		// zero rows created — never a partial commit across entries.
+		// zero rows created — never a partial commit across entries. Also collect
+		// the distinct seller accounts so their cash-shop wallets can be ensured
+		// before seeding (else the buy's seller-points credit fails and no seeded
+		// listing is buyable).
 		total := 0
+		sellerAccounts := make(map[uint32]bool)
 		for _, e := range rm.Entries {
 			st := listing.SaleType(e.SaleType)
 			if st != listing.SaleTypeFixed && st != listing.SaleTypeAuction {
@@ -213,11 +234,26 @@ func handleSeedListings(d *rest.HandlerDependency, c *rest.HandlerContext, rm Se
 				count = 1
 			}
 			total += count
+			sellerAccounts[effectiveSellerAccountId(e.SellerAccountId)] = true
 		}
 		if total == 0 || total > seedMaxListings {
 			d.Logger().Errorf("Seed request wants [%d] listings (allowed 1..%d).", total, seedMaxListings)
 			w.WriteHeader(http.StatusBadRequest)
 			return
+		}
+
+		// Ensure each seller account has a cash-shop wallet BEFORE seeding, so
+		// every seeded listing is immediately buyable (the sale credits the
+		// seller's points; account 0 / a wallet-less account fails the settle).
+		// A wallet that already exists is left as-is. Failing here (rather than
+		// seeding un-buyable listings) keeps the endpoint honest.
+		walletP := wallet.NewProcessor(d.Logger(), d.Context())
+		for acct := range sellerAccounts {
+			if err := walletP.EnsureWallet(acct, 0, 0, 0); err != nil {
+				d.Logger().WithError(err).Errorf("Ensuring cash-shop wallet for seed seller account [%d]; seeded listings would not be buyable.", acct)
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
 		}
 
 		// Second pass: everything below is validated, so all remaining errors
@@ -245,6 +281,7 @@ func handleSeedListings(d *rest.HandlerDependency, c *rest.HandlerContext, rm Se
 				if sellerId == 0 {
 					sellerId = defaultSeedSellerId
 				}
+				sellerAccountId := effectiveSellerAccountId(e.SellerAccountId)
 				sellerName := e.SellerName
 				if sellerName == "" {
 					sellerName = defaultSeedSellerName
@@ -264,7 +301,7 @@ func handleSeedListings(d *rest.HandlerDependency, c *rest.HandlerContext, rm Se
 
 				for i := 0; i < count; i++ {
 					b := listing.NewBuilder(t.Id(), world.Id(rm.WorldId), sellerId).
-						SetSellerAccountId(e.SellerAccountId).
+						SetSellerAccountId(sellerAccountId).
 						SetSellerName(sellerName).
 						SetSaleType(st).
 						SetState(listing.StateActive).

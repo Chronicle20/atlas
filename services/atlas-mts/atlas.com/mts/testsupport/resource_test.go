@@ -26,6 +26,17 @@ func (t testServerInfo) GetPrefix() string  { return "/api" }
 
 func newTestServer(t *testing.T, db *gorm.DB) *httptest.Server {
 	t.Helper()
+	// Stub the cash-shop wallet endpoint: the seed handler now ensures each seed
+	// seller has a wallet (so seeded listings are buyable). GET 200 = "wallet
+	// exists" makes EnsureWallet a no-op, so seeding succeeds without a live
+	// cashshop.
+	cashshop := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"data":{"type":"wallets","id":"00000000-0000-0000-0000-000000000000","attributes":{"accountId":0}}}`))
+	}))
+	t.Cleanup(cashshop.Close)
+	t.Setenv("CASHSHOP_SERVICE_URL", cashshop.URL+"/")
+
 	l := logrus.New()
 	l.SetLevel(logrus.ErrorLevel)
 	router := mux.NewRouter()
@@ -269,6 +280,11 @@ func TestSeedListingsDefaults(t *testing.T) {
 	}
 	if m.SellerId() != 999000001 {
 		t.Fatalf("stored sellerId = %d, want 999000001", m.SellerId())
+	}
+	// The seller account now defaults to a real (wallet-ensured) synthetic account
+	// so the listing is buyable — never 0, which has no wallet and fails the settle.
+	if m.SellerAccountId() != 999000001 {
+		t.Fatalf("stored sellerAccountId default = %d, want 999000001 (buyable-by-default)", m.SellerAccountId())
 	}
 }
 

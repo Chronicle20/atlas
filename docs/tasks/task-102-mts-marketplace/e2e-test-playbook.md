@@ -202,6 +202,16 @@ simulate route) end-to-end: `CITC` buy packet → channel → atlas-mts
 to buyer holding `origin=purchased`) — `listing/processor.go:497-586` doc
 comment, `kafka/consumer/mts/consumer.go:250-290` `handleBuy`.
 
+> **Seeded listings are buyable by default.** The sale credits the seller's
+> cash-shop points, so the seller must have a wallet. `/test/listings/seed`
+> now defaults the seller to a real synthetic account (`999000001`) and
+> ensures its wallet exists (`testsupport/resource.go` → `wallet.EnsureWallet`
+> → cashshop `POST /accounts/{id}/wallet`, idempotent) before creating rows —
+> so no manual seller-wallet setup is needed. To seed under a different
+> seller, pass `sellerAccountId` in the entry; its wallet is ensured too. (A
+> seller account of `0` — the old default — has no wallet and makes the buy
+> fail the seller-credit leg; that is what this default prevents.)
+
 **Steps (client-driven, no curl for the buy itself):**
 1. Read your baseline wallet before buying:
    ```bash

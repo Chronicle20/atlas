@@ -12,6 +12,7 @@ package wallet
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
@@ -55,6 +56,14 @@ func requestByAccountId(accountId uint32) requests.Request[RestModel] {
 	return requests.GetRequest[RestModel](fmt.Sprintf(getBaseRequest()+Resource, accountId))
 }
 
+// createRequest POSTs a new cash-shop wallet for the account (JSON:API enveloped
+// by the requests layer). Matches cashshop's POST /accounts/{accountId}/wallet
+// (handleCreateWallet), which reads accountId from the path and credit/points/
+// prepaid from the body.
+func createRequest(accountId uint32, rm RestModel) requests.Request[RestModel] {
+	return requests.PostRequest[RestModel](fmt.Sprintf(getBaseRequest()+Resource, accountId), rm)
+}
+
 // Processor reads cash-shop wallet balances over REST.
 type Processor interface {
 	// PrepaidBalance reads the account's NX Prepaid balance from the cash-shop
@@ -66,6 +75,13 @@ type Processor interface {
 	// the channel-side MTS_OPERATION2 (CITC::OnQueryCashResult) two-bucket wallet
 	// announce. Credit (currencyType=1) is not an MTS bucket and is not surfaced.
 	Balance(accountId uint32) (prepaid uint32, points uint32, err error)
+	// EnsureWallet guarantees the account has a cash-shop wallet, creating one
+	// (with the given starting balances) only if none exists. It exists for the
+	// test-seed flow: a seeded listing's synthetic seller must have a wallet or the
+	// buy's seller-points credit fails. Idempotent — a wallet that already exists is
+	// left untouched (cashshop's create is a plain INSERT and would 500 on a
+	// duplicate). Real accounts get their wallet from the account-created event.
+	EnsureWallet(accountId uint32, credit uint32, points uint32, prepaid uint32) error
 }
 
 type ProcessorImpl struct {
@@ -91,4 +107,16 @@ func (p *ProcessorImpl) Balance(accountId uint32) (uint32, uint32, error) {
 		return 0, 0, err
 	}
 	return rm.Prepaid, rm.Points, nil
+}
+
+func (p *ProcessorImpl) EnsureWallet(accountId uint32, credit uint32, points uint32, prepaid uint32) error {
+	// A successful GET means the wallet already exists — leave it as-is.
+	if _, err := requestByAccountId(accountId)(p.l, p.ctx); err == nil {
+		return nil
+	} else if !errors.Is(err, requests.ErrNotFound) {
+		return err
+	}
+	rm := RestModel{AccountId: accountId, Credit: credit, Points: points, Prepaid: prepaid}
+	_, err := createRequest(accountId, rm)(p.l, p.ctx)
+	return err
 }

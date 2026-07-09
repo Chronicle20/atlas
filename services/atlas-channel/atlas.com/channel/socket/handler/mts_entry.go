@@ -30,7 +30,7 @@ const mtsMinLevel = byte(10)
 // (CWvsContext::SendMigrateToITCRequest) — the MTS entry/migration request. It
 // mirrors CashShopEntryHandleFunc: load the account + character, gate on the
 // configurable min level, then announce the initial MTS state. On entry the
-// channel announces, in order (mirroring Cosmic's EnterMTSHandler entry sequence):
+// channel announces, in order:
 //   - the wanted-listing-over summary (MTS_OPERATION mode 0x3D, (0,0));
 //   - the wallet (MTS_OPERATION2, prepaid + points; CITC::OnQueryCashResult);
 //   - the initial browse page (MTS_OPERATION GET_ITC_LIST_DONE) on tab/category 1
@@ -38,7 +38,7 @@ const mtsMinLevel = byte(10)
 //     canvas render), with sortType=1, sortColumn=1, trailing requestSent=1;
 //   - the character's take-home holdings (GET_USER_PURCHASE_ITEM_DONE); and
 //   - the character's own active listings (GET_USER_SALE_ITEM_DONE), filtered by
-//     sellerId. (Cosmic sends purchase before sale.)
+//     sellerId (the purchase list is announced before the sale list).
 //
 // The lists are produced from atlas-mts REST via the channel-side listing/holding
 // read clients; the clientbound MtsResult* codecs live in
@@ -71,10 +71,10 @@ func EnterMtsHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Pro
 		// client's CITC stage so the in-game MTS view opens. It mirrors
 		// CashShopEntryHandleFunc's CashShopOpen send: the same CharacterData
 		// migrate-in block (built from account + decorated character + buddylist)
-		// plus the account name and the ITC config (Cosmic-faithful defaults
-		// 5000/7/500/24/168; replaced by per-tenant MTS config when reachable
-		// channel-side). Without this the client never enters the ITC scene, so
-		// the wallet/browse/listing announces below have no scene to render in.
+		// plus the account name and the ITC config values (interim fallback
+		// defaults 5000/7/500/24/168 until the per-tenant mts-configs resource is
+		// populated). Without this the client never enters the ITC scene, so the
+		// wallet/browse/listing announces below have no scene to render in.
 		a, err := account.NewProcessor(l, ctx).GetById(s.AccountId())
 		if err != nil {
 			l.WithError(err).Errorf("Unable to locate account [%d] attempting to enter MTS.", s.AccountId())
@@ -105,7 +105,7 @@ func EnterMtsHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Pro
 		// v83 sub_5A523E): the "expired wanted listings" summary. The sub-handler
 		// reads two int32s (expired NX, expired item count) and shows a StringPool
 		// notice ONLY when both are > 0; with (0,0) it reads both ints cleanly and
-		// shows nothing. Cosmic's EnterMTSHandler sends this before the wallet on
+		// shows nothing. This is sent before the wallet on
 		// entry. Atlas's MtsOperationNotifyCancelWishResultBody is exactly this
 		// 2-int body resolved at mode 0x3D, so it is reused here (no new writer).
 		// IDA-verified (v83 0x5a523e): Decode4(nx), Decode4(items), gate nx>=0 && items>0.
@@ -132,9 +132,8 @@ func EnterMtsHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Pro
 		// first tab — category=1 (MTS tabs are 1-indexed; category 0 is not a valid
 		// tab and leaves CITCWnd_List selecting a non-existent category, which
 		// crashes on the next canvas render). sortType=1, sortColumn=1, and the
-		// trailing requestSent=1 mirror Cosmic's sendMTS(items, tab=1, type=0,
-		// page=0, ...) entry packet (which writes sortType/sortColumn bytes 1,1 and
-		// the trailing 1). Reuses the synchronous browse-page writer; an empty/failed
+		// trailing requestSent=1 match the entry packet's sortType/sortColumn bytes
+		// (1,1) and trailing 1. Reuses the synchronous browse-page writer; an empty/failed
 		// page degrades to an empty list rather than blocking entry. IDA-verified
 		// read order: CITC::OnGetITCListDone (v83 0x5a48af).
 		//
@@ -144,9 +143,8 @@ func EnterMtsHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Pro
 		// Sale until the user switches sub-tab (which re-queries with the filter).
 		writeBrowsePage(l, ctx, wp, s, 1, 0, 0, 1, 1, 1, mtslisting.BrowseFilter{Category: "1"})
 
-		// The character's take-home holdings (GET_USER_PURCHASE_ITEM_DONE). Cosmic's
-		// EnterMTSHandler sends transferInventory (purchase) BEFORE notYetSoldInv
-		// (sale), so the purchase list is announced first.
+		// The character's take-home holdings (GET_USER_PURCHASE_ITEM_DONE). The
+		// purchase (transfer) list is announced before the sale list.
 		announceUserPurchaseItems(l, ctx, wp, s)
 
 		// The character's own active listings (GET_USER_SALE_ITEM_DONE), filtered by

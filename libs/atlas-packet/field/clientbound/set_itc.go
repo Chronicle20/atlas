@@ -49,7 +49,7 @@ import (
 // TIME LEFT — CITCBidAuctionDlg::Draw v83 sub_5C309A / v95 0x58e050 — and the
 // item tooltip's remaining-time line) is computed as (ftITCDateExpired - ftSvr).
 // If ftSvr is stale, every countdown is off by (realNow - ftSvr): sending a
-// fixed ~2010 constant here (as Cosmic does) made a 24h auction render as
+// fixed ~2010 constant here made a 24h auction render as
 // "143160 hr" (≈16.3 years). The absolute "Sold Until" DATE column is unaffected
 // because it prints ftITCDateExpired directly and never consults m_ftRel — which
 // is why the bug shows only in the countdowns. Send the real server time
@@ -61,18 +61,17 @@ import (
 // the charpkt.CharacterData codec (audited under the character domain).
 const SetItcWriter = "SetItc"
 
-// ITC config defaults (Cosmic-faithful; the five Decode4 values the client
-// reads after the account name). Sourced from Cosmic's
-// MapleClient/PacketCreator.openCashShop(c, true) / EnterMTSHandler, which is
-// the only faithful MTS reference available. listingFee/auctionMin/auctionMax
-// map cleanly to MTS config concepts (registration fee, auction duration
-// floor/ceiling, in hours); commissionRate/commissionBase (7 / 500) are client
-// display constants with no clean config analogue and are sent as documented
-// constants. These are used when no per-tenant MTS config override is supplied.
+// Interim fallback values for the five ITC config int32s the client reads after
+// the account name. These are the last-resort defaults used only when the caller
+// supplies no per-tenant MTS configuration (NewSetItcWithConfig); the intended
+// source is the tenant mts-configs resource. listingFee/auctionMin/auctionMax map
+// to MTS config concepts (registration fee, auction duration floor/ceiling, in
+// hours); commissionRate/commissionBase are the client-side commission display
+// parameters (Your Bid = commissionBase + (commissionRate+100)*bid/100).
 const (
 	DefaultItcListingFee      uint32 = 5000 // m_nRegisterFeeMeso  (0x1388)
-	DefaultItcCommissionRate  uint32 = 7    // m_nCommissionRate   (client constant)
-	DefaultItcCommissionBase  uint32 = 500  // m_nCommissionBase   (client constant, 0x1F4)
+	DefaultItcCommissionRate  uint32 = 7    // m_nCommissionRate
+	DefaultItcCommissionBase  uint32 = 500  // m_nCommissionBase   (0x1F4)
 	DefaultItcAuctionMinHours uint32 = 24   // m_nAuctionDurationMin (0x18)
 	DefaultItcAuctionMaxHours uint32 = 168  // m_nAuctionDurationMax (0xA8)
 )
@@ -90,7 +89,7 @@ type SetItc struct {
 	serverTime      [8]byte
 }
 
-// NewSetItc builds a SET_ITC packet with the Cosmic-faithful ITC config
+// NewSetItc builds a SET_ITC packet with the interim ITC config fallback
 // defaults. serverTime is the server's current time as an 8-byte FILETIME
 // (MsTimeBytes(time.Now())) — it seeds the client's ITC clock so auction
 // countdowns are correct (see the SetItcWriter doc). Callers with per-tenant MTS

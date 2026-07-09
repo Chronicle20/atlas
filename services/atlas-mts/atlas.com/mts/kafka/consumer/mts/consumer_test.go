@@ -526,15 +526,15 @@ func TestRemoveWish_DeletesEntryAndAcks(t *testing.T) {
 	}
 }
 
-// reasonFromBody extracts the optional "reason" byte from a raw status-event
-// body (zero when absent), so failure tests can assert the client
-// NoticeFailReason code without per-event typed decoding.
+// reasonFromBody extracts the optional semantic "reasonKey" from a raw status-event
+// body (empty when absent), so failure tests can assert the resolved client
+// NoticeFailReason key without per-event typed decoding.
 func reasonFromBody(raw json.RawMessage) string {
 	var b struct {
-		Reason string `json:"reason"`
+		ReasonKey string `json:"reasonKey"`
 	}
 	_ = json.Unmarshal(raw, &b)
-	return b.Reason
+	return b.ReasonKey
 }
 
 // TestFailReasonMapping pins the error -> client NoticeFailReason code mapping

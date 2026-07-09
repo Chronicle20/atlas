@@ -2,11 +2,44 @@ package mts
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
+
+	mtsmsg "atlas-channel/kafka/message/mts"
 
 	fieldpkt "github.com/Chronicle20/atlas/libs/atlas-packet/field"
 	"github.com/sirupsen/logrus"
 )
+
+// TestReasonFieldNoDecodeCollision guards the fix for the EVENT_TOPIC_MTS_STATUS
+// reason-type collision (task-102): every handler decodes every message, so a
+// numeric-reason event (LISTING_CREATE_FAILED) must NOT break the string-reason
+// bodies (BUY_FAILED/BID_FAILED) and vice versa. The string keys use "reasonKey";
+// the numeric ones use "reason" — different JSON tags, so each ignores the other's
+// field instead of failing to unmarshal.
+func TestReasonFieldNoDecodeCollision(t *testing.T) {
+	// A numeric-reason event decoded by the string-reason (buy-failed) body: must
+	// not error, and ReasonKey stays empty (the numeric "reason" is ignored).
+	numericReason := []byte(`{"transactionId":"00000000-0000-0000-0000-000000000000","type":"LISTING_CREATE_FAILED","body":{"worldId":0,"sellerId":1,"reason":0}}`)
+	var asBuy mtsmsg.StatusEvent[mtsmsg.StatusEventBuyFailedBody]
+	if err := json.Unmarshal(numericReason, &asBuy); err != nil {
+		t.Fatalf("numeric-reason event must not break the buy-failed decode: %v", err)
+	}
+	if asBuy.Body.ReasonKey != "" {
+		t.Fatalf("ReasonKey should be empty for a numeric-reason event, got %q", asBuy.Body.ReasonKey)
+	}
+
+	// A string-reasonKey event decoded by the numeric-reason (create-failed) body:
+	// must not error, and Reason stays 0 (the string "reasonKey" is ignored).
+	stringReason := []byte(`{"transactionId":"00000000-0000-0000-0000-000000000000","type":"BUY_FAILED","body":{"worldId":0,"serial":5,"buyerId":1,"reasonKey":"NOT_ENOUGH_NX"}}`)
+	var asCreate mtsmsg.StatusEvent[mtsmsg.StatusEventListingCreateFailedBody]
+	if err := json.Unmarshal(stringReason, &asCreate); err != nil {
+		t.Fatalf("string-reasonKey event must not break the create-failed decode: %v", err)
+	}
+	if asCreate.Body.Reason != 0 {
+		t.Fatalf("Reason should be 0 for a string-reasonKey event, got %d", asCreate.Body.Reason)
+	}
+}
 
 // testOptions mirrors the tenant writer options shape ResolveCode consumes:
 // options["operations"][KEY] = mode (JSON numbers decode as float64). Modes are

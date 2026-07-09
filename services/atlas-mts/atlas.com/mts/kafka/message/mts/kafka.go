@@ -345,22 +345,28 @@ type StatusEventListingCancelFailedBody struct {
 
 // StatusEventBuyFailedBody reports a rejected buy / buy-now. BuyerId is the
 // originating character so the channel can target their session with a
-// BuyItemFailed; Reason is the clientbound NoticeFailReason byte.
+// BuyItemFailed. ReasonKey is a SEMANTIC failure key the channel resolves through
+// the tenant noticeFailReasons table — it uses the JSON tag "reasonKey" (NOT
+// "reason") deliberately: EVENT_TOPIC_MTS_STATUS also carries numeric-reason events
+// (LISTING_CREATE_FAILED etc.), and since every handler decodes every message, a
+// shared "reason" tag with mismatched types (string vs number) makes the other
+// handlers fail to unmarshal and drop the message (task-102 live finding).
 type StatusEventBuyFailedBody struct {
-	WorldId byte   `json:"worldId"`
-	Serial  uint32 `json:"serial"`
-	BuyerId uint32 `json:"buyerId"`
-	Reason  string `json:"reason,omitempty"`
+	WorldId   byte   `json:"worldId"`
+	Serial    uint32 `json:"serial"`
+	BuyerId   uint32 `json:"buyerId"`
+	ReasonKey string `json:"reasonKey,omitempty"`
 }
 
 // StatusEventBidFailedBody reports a rejected place-bid. BidderId is the
 // originating character so the channel can target their session with a
-// BidAuctionFailed; Reason is the clientbound NoticeFailReason byte.
+// BidAuctionFailed. ReasonKey is a semantic failure key (JSON tag "reasonKey", see
+// StatusEventBuyFailedBody for why it must not be "reason").
 type StatusEventBidFailedBody struct {
-	WorldId  byte   `json:"worldId"`
-	Serial   uint32 `json:"serial"`
-	BidderId uint32 `json:"bidderId"`
-	Reason   string `json:"reason,omitempty"`
+	WorldId   byte   `json:"worldId"`
+	Serial    uint32 `json:"serial"`
+	BidderId  uint32 `json:"bidderId"`
+	ReasonKey string `json:"reasonKey,omitempty"`
 }
 
 // StatusEventTakeHomeFailedBody reports a rejected take-home. CharacterId is the

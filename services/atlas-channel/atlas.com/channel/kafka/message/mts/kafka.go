@@ -161,6 +161,8 @@ const (
 	StatusEventTypeListingSold         = "LISTING_SOLD"
 	StatusEventTypeBuyFailed           = "BUY_FAILED"
 	StatusEventTypeBidFailed           = "BID_FAILED"
+	StatusEventTypeBidPlaced           = "BID_PLACED"
+	StatusEventTypeOutbid              = "OUTBID"
 	StatusEventTypeWishAdded           = "WISH_ADDED"
 	StatusEventTypeWishRemoved         = "WISH_REMOVED"
 )
@@ -229,6 +231,25 @@ type StatusEventTakeHomeFailedBody struct {
 	Reason      byte   `json:"reason"`
 }
 
+// StatusEventBidPlacedBody reports a bid placed on an auction. BidderId is the
+// character whose prepaid the escrow debit just left — the channel refreshes their
+// NX counter.
+type StatusEventBidPlacedBody struct {
+	WorldId   byte      `json:"worldId"`
+	ListingId uuid.UUID `json:"listingId"`
+	BidderId  uint32    `json:"bidderId"`
+	Amount    uint32    `json:"amount"`
+}
+
+// StatusEventOutbidBody reports a prior high bidder was outbid. PreviousBidderId is
+// the character whose escrow was released back to prepaid — the channel refreshes
+// their NX counter.
+type StatusEventOutbidBody struct {
+	WorldId          byte      `json:"worldId"`
+	ListingId        uuid.UUID `json:"listingId"`
+	PreviousBidderId uint32    `json:"previousBidderId"`
+}
+
 // StatusEventListingSoldBody reports a sold listing. BuyerId is the target
 // character for the BuyItemDone result.
 type StatusEventListingSoldBody struct {
@@ -240,23 +261,25 @@ type StatusEventListingSoldBody struct {
 }
 
 // StatusEventBuyFailedBody reports a rejected buy / buy-now. BuyerId is the target
-// character for the BuyItemFailed result; Reason is the clientbound NoticeFailReason
-// byte.
+// character for the BuyItemFailed result. ReasonKey is a semantic failure key
+// resolved via the tenant noticeFailReasons table; its JSON tag is "reasonKey" (NOT
+// "reason") to avoid a decode collision with the numeric-reason events on the same
+// topic (see the atlas-mts mirror for the full rationale).
 type StatusEventBuyFailedBody struct {
-	WorldId byte   `json:"worldId"`
-	Serial  uint32 `json:"serial"`
-	BuyerId uint32 `json:"buyerId"`
-	Reason  string `json:"reason,omitempty"`
+	WorldId   byte   `json:"worldId"`
+	Serial    uint32 `json:"serial"`
+	BuyerId   uint32 `json:"buyerId"`
+	ReasonKey string `json:"reasonKey,omitempty"`
 }
 
 // StatusEventBidFailedBody reports a rejected place-bid. BidderId is the target
-// character for the BidAuctionFailed result; Reason is the clientbound
-// NoticeFailReason byte.
+// character for the BidAuctionFailed result. ReasonKey is a semantic failure key
+// (JSON tag "reasonKey"; see StatusEventBuyFailedBody).
 type StatusEventBidFailedBody struct {
-	WorldId  byte   `json:"worldId"`
-	Serial   uint32 `json:"serial"`
-	BidderId uint32 `json:"bidderId"`
-	Reason   string `json:"reason,omitempty"`
+	WorldId   byte   `json:"worldId"`
+	Serial    uint32 `json:"serial"`
+	BidderId  uint32 `json:"bidderId"`
+	ReasonKey string `json:"reasonKey,omitempty"`
 }
 
 // StatusEventWishAddedBody reports an added wish-list entry. CharacterId is the

@@ -100,6 +100,12 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				if err := register(message.AdaptHandler(message.PersistentConfig(handleBidFailed(sc, wp)))); err != nil {
 					return nil, err
 				}
+				if err := register(message.AdaptHandler(message.PersistentConfig(handleBidPlaced(sc, wp)))); err != nil {
+					return nil, err
+				}
+				if err := register(message.AdaptHandler(message.PersistentConfig(handleOutbid(sc, wp)))); err != nil {
+					return nil, err
+				}
 				if err := register(message.AdaptHandler(message.PersistentConfig(handleWishAdded(sc, wp)))); err != nil {
 					return nil, err
 				}
@@ -395,8 +401,37 @@ func handleBuyFailed(sc server.Model, wp writer.Producer) message.Handler[mtsmsg
 		if e.Type != mtsmsg.StatusEventTypeBuyFailed {
 			return
 		}
-		l.Debugf("MTS buy failed for buyer [%d] serial [%d] (reason [%d]).", e.Body.BuyerId, e.Body.Serial, e.Body.Reason)
-		announceTo(l, ctx, sc, wp, e.Body.BuyerId, failNoticeOr(e.Body.Reason, fieldpkt.MtsOperationBuyItemFailedBody()))
+		l.Debugf("MTS buy failed for buyer [%d] serial [%d] (reasonKey [%s]).", e.Body.BuyerId, e.Body.Serial, e.Body.ReasonKey)
+		announceTo(l, ctx, sc, wp, e.Body.BuyerId, failNoticeOr(e.Body.ReasonKey, fieldpkt.MtsOperationBuyItemFailedBody()))
+	}
+}
+
+// handleBidPlaced refreshes the bidder's NX counter after a successful bid. Placing
+// a bid escrows (debits) the bidder's prepaid in atlas-mts; the v83 client only
+// reads the wallet at MTS entry, so without this push the on-screen NX stays stale
+// until re-entry (task-102 live finding). No BidAuctionDone is written here — the
+// bid's own client flow handles the dialog; this is purely the wallet refresh.
+func handleBidPlaced(sc server.Model, wp writer.Producer) message.Handler[mtsmsg.StatusEvent[mtsmsg.StatusEventBidPlacedBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e mtsmsg.StatusEvent[mtsmsg.StatusEventBidPlacedBody]) {
+		if e.Type != mtsmsg.StatusEventTypeBidPlaced {
+			return
+		}
+		l.Debugf("MTS bid placed by bidder [%d] on listing [%s] (amount [%d]); refreshing wallet.", e.Body.BidderId, e.Body.ListingId.String(), e.Body.Amount)
+		announceWalletRefresh(l, ctx, sc, wp, e.Body.BidderId)
+	}
+}
+
+// handleOutbid refreshes the outbid bidder's NX counter: being outbid releases their
+// escrow back to prepaid in atlas-mts, and the client won't reflect the refund until
+// re-entry without this push (task-102 live finding — the refund "definitely" didn't
+// show).
+func handleOutbid(sc server.Model, wp writer.Producer) message.Handler[mtsmsg.StatusEvent[mtsmsg.StatusEventOutbidBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e mtsmsg.StatusEvent[mtsmsg.StatusEventOutbidBody]) {
+		if e.Type != mtsmsg.StatusEventTypeOutbid {
+			return
+		}
+		l.Debugf("MTS previous bidder [%d] outbid on listing [%s]; refreshing wallet (escrow released).", e.Body.PreviousBidderId, e.Body.ListingId.String())
+		announceWalletRefresh(l, ctx, sc, wp, e.Body.PreviousBidderId)
 	}
 }
 
@@ -407,8 +442,8 @@ func handleBidFailed(sc server.Model, wp writer.Producer) message.Handler[mtsmsg
 		if e.Type != mtsmsg.StatusEventTypeBidFailed {
 			return
 		}
-		l.Debugf("MTS bid failed for bidder [%d] serial [%d] (reason [%d]).", e.Body.BidderId, e.Body.Serial, e.Body.Reason)
-		announceTo(l, ctx, sc, wp, e.Body.BidderId, failNoticeOr(e.Body.Reason, fieldpkt.MtsOperationBidAuctionFailedBody()))
+		l.Debugf("MTS bid failed for bidder [%d] serial [%d] (reasonKey [%s]).", e.Body.BidderId, e.Body.Serial, e.Body.ReasonKey)
+		announceTo(l, ctx, sc, wp, e.Body.BidderId, failNoticeOr(e.Body.ReasonKey, fieldpkt.MtsOperationBidAuctionFailedBody()))
 	}
 }
 

@@ -208,10 +208,10 @@ func BuyFailedStatusEventProvider(transactionId uuid.UUID, worldId byte, serial 
 		TransactionId: transactionId,
 		Type:          mts.StatusEventTypeBuyFailed,
 		Body: mts.StatusEventBuyFailedBody{
-			WorldId: worldId,
-			Serial:  serial,
-			BuyerId: buyerId,
-			Reason:  reason,
+			WorldId:   worldId,
+			Serial:    serial,
+			BuyerId:   buyerId,
+			ReasonKey: reason,
 		},
 	}
 	return producer.SingleMessageProvider(keyFor(transactionId), value)
@@ -224,10 +224,10 @@ func BidFailedStatusEventProvider(transactionId uuid.UUID, worldId byte, serial 
 		TransactionId: transactionId,
 		Type:          mts.StatusEventTypeBidFailed,
 		Body: mts.StatusEventBidFailedBody{
-			WorldId:  worldId,
-			Serial:   serial,
-			BidderId: bidderId,
-			Reason:   reason,
+			WorldId:   worldId,
+			Serial:    serial,
+			BidderId:  bidderId,
+			ReasonKey: reason,
 		},
 	}
 	return producer.SingleMessageProvider(keyFor(transactionId), value)

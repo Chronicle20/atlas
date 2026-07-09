@@ -47,8 +47,13 @@ type RestModel struct {
 	ListValue      uint32  `json:"listValue"`
 	BuyNowPrice    *uint32 `json:"buyNowPrice,omitempty"`
 	CommissionRate float64 `json:"commissionRate"`
-	Category       string  `json:"category"`
-	SubCategory    string  `json:"subCategory"`
+	// ContractFee is the buyer-visible fee on top of the current price
+	// (markedUp(base)-base, base = currentBid for auctions else listValue). The
+	// channel adds it into the client's price column. Populated by the browse/get
+	// handlers (they hold the tenant commissionBase); Transform alone leaves it 0.
+	ContractFee uint32 `json:"contractFee"`
+	Category    string `json:"category"`
+	SubCategory string `json:"subCategory"`
 
 	EndsAt       *time.Time `json:"endsAt,omitempty"`
 	CurrentBid   uint32     `json:"currentBid"`
@@ -155,4 +160,17 @@ func Transform(m Model) (RestModel, error) {
 		CreatedAt:      m.CreatedAt(),
 		UpdatedAt:      m.UpdatedAt(),
 	}, nil
+}
+
+// withContractFee stamps the buyer-visible fee (markedUp(base)-base) onto a REST
+// model. base is the current auction bid for auctions, else the list value — the
+// same base the client adds nContractFee onto (nBidPrice vs nPrice). commissionBase
+// is the tenant flat NX fee (the caller reads it once from tenant config).
+func withContractFee(rm RestModel, commissionBase uint32) RestModel {
+	base := rm.ListValue
+	if rm.SaleType == string(SaleTypeAuction) {
+		base = rm.CurrentBid
+	}
+	rm.ContractFee = markedUp(base, rm.CommissionRate, commissionBase) - base
+	return rm
 }

@@ -37,11 +37,25 @@ func ToMtsItem(m Model) fieldcb.MtsItem {
 		expiry = *m.EndsAt()
 	}
 	dateExpired := packetmodel.MsTimeBytes(expiry)
+
+	// The My Page -> Auction tab draws its Category column via
+	// CITCWnd_List::GetAuctionHistoryCode(nProcessStatus): 1 -> "Exhibit" (an
+	// auction I listed), 2 -> "Bid" (an auction I bid on), else empty. A seller's
+	// own active auction is an Exhibit; without this the column renders blank
+	// (task-102 live finding). Fixed sales don't use this column, so 0.
+	var processStatus uint16
+	if m.SaleType() == "auction" {
+		processStatus = 1
+	}
+
+	// The client draws the price column as nPrice+nContractFee (fixed) or
+	// nBidPrice+nContractFee (auction) — so nContractFee is the buyer-visible fee on
+	// top of the base. m.ContractFee() carries markedUp(base)-base from atlas-mts.
 	return fieldpkt.MtsOperationNewItem(
 		item,             // GW_ItemSlotBase blob
 		m.ItcSn(),        // nITCSN = the listing serial (addresses buy/cancel/bid)
 		m.ListValue(),    // nPrice
-		0,                // nContractFee
+		m.ContractFee(),  // nContractFee (buyer-visible fee; client adds it to the price)
 		"",               // sContractFeeTxId
 		"",               // sRollbackUsageID
 		dateExpired,      // ftITCDateExpired
@@ -54,6 +68,6 @@ func ToMtsItem(m Model) fieldcb.MtsItem {
 		m.ListValue(),    // nMinPrice
 		m.BuyNowPrice(),  // nMaxPrice
 		m.ListValue(),    // nUnitPrice
-		0,                // nProcessStatus
+		processStatus,    // nProcessStatus (auction Exhibit=1)
 	)
 }

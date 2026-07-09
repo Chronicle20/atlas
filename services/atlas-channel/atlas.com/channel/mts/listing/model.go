@@ -45,6 +45,7 @@ type Model struct {
 	flags         uint16
 	listValue     uint32
 	buyNowPrice   uint32
+	contractFee   uint32
 	currentBid    uint32
 	highBidderId  uint32
 	minIncrement  uint32
@@ -86,6 +87,7 @@ func (m Model) ViciousCount() uint32  { return m.viciousCount }
 func (m Model) Flags() uint16         { return m.flags }
 func (m Model) ListValue() uint32     { return m.listValue }
 func (m Model) BuyNowPrice() uint32   { return m.buyNowPrice }
+func (m Model) ContractFee() uint32   { return m.contractFee }
 func (m Model) CurrentBid() uint32    { return m.currentBid }
 func (m Model) HighBidderId() uint32  { return m.highBidderId }
 func (m Model) MinIncrement() uint32  { return m.minIncrement }

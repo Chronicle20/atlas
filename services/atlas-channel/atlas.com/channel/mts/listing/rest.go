@@ -52,6 +52,7 @@ type RestModel struct {
 	Category    string `json:"category"`
 	SubCategory string `json:"subCategory"`
 
+	ContractFee  uint32 `json:"contractFee"`
 	CurrentBid   uint32 `json:"currentBid"`
 	HighBidderId uint32 `json:"highBidderId"`
 	MinIncrement uint32 `json:"minIncrement"`
@@ -107,6 +108,7 @@ func Extract(r RestModel) (Model, error) {
 		flags:         r.Flags,
 		listValue:     r.ListValue,
 		buyNowPrice:   r.BuyNowPrice,
+		contractFee:   r.ContractFee,
 		currentBid:    r.CurrentBid,
 		highBidderId:  r.HighBidderId,
 		minIncrement:  r.MinIncrement,

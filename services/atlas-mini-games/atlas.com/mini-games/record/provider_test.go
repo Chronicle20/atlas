@@ -10,9 +10,9 @@ import (
 
 func TestGetOrZero_Absent(t *testing.T) {
 	db := setupTestDB(t)
-	tenantId := uuid.New()
+	_, ctx := setupTenantCtx(t)
 
-	m, err := GetOrZero(db, tenantId, 999, GameTypeMatchCards)
+	m, err := GetOrZero(ctx, db.WithContext(ctx), 999, GameTypeMatchCards)
 	require.NoError(t, err)
 	assert.Equal(t, uint32(999), m.CharacterId())
 	assert.Equal(t, GameTypeMatchCards, m.GameType())
@@ -24,12 +24,12 @@ func TestGetOrZero_Absent(t *testing.T) {
 
 func TestGetOrZero_Present(t *testing.T) {
 	db := setupTestDB(t)
-	tenantId := uuid.New()
+	_, ctx := setupTenantCtx(t)
 	characterId := uint32(42)
 
-	require.NoError(t, ApplyResult(db, tenantId, GameTypeOmok, characterId, 43, 0, false))
+	require.NoError(t, ApplyResult(db.WithContext(ctx), GameTypeOmok, characterId, 43, 0, false))
 
-	m, err := GetOrZero(db, tenantId, characterId, GameTypeOmok)
+	m, err := GetOrZero(ctx, db.WithContext(ctx), characterId, GameTypeOmok)
 	require.NoError(t, err)
 	assert.Equal(t, uint32(1), m.Wins())
 	assert.NotEqual(t, uuid.Nil, m.Id())
@@ -37,10 +37,10 @@ func TestGetOrZero_Present(t *testing.T) {
 
 func TestGetByCharacter_ZeroFilledForBothGameTypes(t *testing.T) {
 	db := setupTestDB(t)
-	tenantId := uuid.New()
+	_, ctx := setupTenantCtx(t)
 	characterId := uint32(7)
 
-	ms, err := GetByCharacter(db, tenantId, characterId)
+	ms, err := GetByCharacter(ctx, db.WithContext(ctx), characterId)
 	require.NoError(t, err)
 	require.Len(t, ms, 2, "must always return one row per game type, even with no persisted rows")
 
@@ -58,8 +58,8 @@ func TestGetByCharacter_ZeroFilledForBothGameTypes(t *testing.T) {
 
 	// Now record a win in one game type only and confirm the other stays
 	// zero-filled rather than disappearing from the result.
-	require.NoError(t, ApplyResult(db, tenantId, GameTypeOmok, characterId, 8, 0, false))
-	ms, err = GetByCharacter(db, tenantId, characterId)
+	require.NoError(t, ApplyResult(db.WithContext(ctx), GameTypeOmok, characterId, 8, 0, false))
+	ms, err = GetByCharacter(ctx, db.WithContext(ctx), characterId)
 	require.NoError(t, err)
 	require.Len(t, ms, 2)
 	for _, m := range ms {

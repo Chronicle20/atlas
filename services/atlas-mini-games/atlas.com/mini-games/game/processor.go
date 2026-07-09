@@ -290,7 +290,7 @@ func (p *ProcessorImpl) create(mb *message.Buffer, txId uuid.UUID, f field.Model
 		return mb.Put(minigame.EnvEventTopicStatus, createErrorProvider(txId, f, characterId, errUnable))
 	}
 
-	ownerRecord, err := record.GetOrZero(p.db, p.t.Id(), characterId, gameType)
+	ownerRecord, err := record.GetOrZero(p.ctx, p.db.WithContext(p.ctx), characterId, gameType)
 	if err != nil {
 		return err
 	}
@@ -361,11 +361,11 @@ func (p *ProcessorImpl) visit(mb *message.Buffer, txId uuid.UUID, f field.Model,
 		return err
 	}
 
-	ownerRecord, err := record.GetOrZero(p.db, p.t.Id(), updated.OwnerId(), updated.GameType())
+	ownerRecord, err := record.GetOrZero(p.ctx, p.db.WithContext(p.ctx), updated.OwnerId(), updated.GameType())
 	if err != nil {
 		return err
 	}
-	visitorRecord, err := record.GetOrZero(p.db, p.t.Id(), characterId, updated.GameType())
+	visitorRecord, err := record.GetOrZero(p.ctx, p.db.WithContext(p.ctx), characterId, updated.GameType())
 	if err != nil {
 		return err
 	}
@@ -966,7 +966,7 @@ func (p *ProcessorImpl) endGame(mb *message.Buffer, txId uuid.UUID, roomId uint3
 
 	// ApplyResult commits before the registry swap and before any event is
 	// emitted (design §2). On failure the room stays InProgress, untouched.
-	if err := record.ApplyResult(p.db, p.t.Id(), gameType, ownerId, visitorId, winnerSlot, tie); err != nil {
+	if err := record.ApplyResult(p.db.WithContext(p.ctx), gameType, ownerId, visitorId, winnerSlot, tie); err != nil {
 		return err
 	}
 
@@ -976,11 +976,11 @@ func (p *ProcessorImpl) endGame(mb *message.Buffer, txId uuid.UUID, roomId uint3
 	if err != nil {
 		return err
 	}
-	ownerRecord, err := record.GetOrZero(p.db, p.t.Id(), ownerId, gameType)
+	ownerRecord, err := record.GetOrZero(p.ctx, p.db.WithContext(p.ctx), ownerId, gameType)
 	if err != nil {
 		return err
 	}
-	visitorRecord, err := record.GetOrZero(p.db, p.t.Id(), visitorId, gameType)
+	visitorRecord, err := record.GetOrZero(p.ctx, p.db.WithContext(p.ctx), visitorId, gameType)
 	if err != nil {
 		return err
 	}

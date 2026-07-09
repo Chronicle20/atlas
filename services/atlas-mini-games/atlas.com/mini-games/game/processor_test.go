@@ -862,7 +862,7 @@ func TestMoveStone_WinningMoveEndsGame(t *testing.T) {
 	assert.Equal(t, byte(0), r.Board()[0], "board wiped")
 
 	// Record persisted to the DB (committed before emit).
-	rec, err := record.GetOrZero(h.p.db, h.t.Id(), owner, record.GameTypeOmok)
+	rec, err := record.GetOrZero(h.p.ctx, h.p.db.WithContext(h.p.ctx), owner, record.GameTypeOmok)
 	require.NoError(t, err)
 	assert.Equal(t, uint32(1), rec.Wins())
 }

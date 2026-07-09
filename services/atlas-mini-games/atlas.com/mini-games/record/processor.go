@@ -3,7 +3,6 @@ package record
 import (
 	"context"
 
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -22,7 +21,6 @@ type ProcessorImpl struct {
 	l   logrus.FieldLogger
 	ctx context.Context
 	db  *gorm.DB
-	t   tenant.Model
 }
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor {
@@ -30,10 +28,9 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 		l:   l,
 		ctx: ctx,
 		db:  db,
-		t:   tenant.MustFromContext(ctx),
 	}
 }
 
 func (p *ProcessorImpl) GetByCharacter(characterId uint32) ([]Model, error) {
-	return GetByCharacter(p.db.WithContext(p.ctx), p.t.Id(), characterId)
+	return GetByCharacter(p.ctx, p.db.WithContext(p.ctx), characterId)
 }

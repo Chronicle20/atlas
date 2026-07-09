@@ -1,10 +1,12 @@
 package record
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -47,22 +49,32 @@ func setupTestDB(t *testing.T) *gorm.DB {
 	return db
 }
 
+// setupTenantCtx builds a fresh tenant and a context carrying it, mirroring the
+// production consumer/REST path where the tenant lives in context and the
+// tenant callbacks scope every query from it (DOM-11 context-driven tenancy).
+func setupTenantCtx(t *testing.T) (tenant.Model, context.Context) {
+	t.Helper()
+	ten, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	require.NoError(t, err)
+	return ten, tenant.WithContext(context.Background(), ten)
+}
+
 func TestApplyResult_OwnerWin(t *testing.T) {
 	db := setupTestDB(t)
-	tenantId := uuid.New()
+	_, ctx := setupTenantCtx(t)
 	ownerId := uint32(100)
 	visitorId := uint32(200)
 
-	err := ApplyResult(db, tenantId, GameTypeOmok, ownerId, visitorId, 0, false)
+	err := ApplyResult(db.WithContext(ctx), GameTypeOmok, ownerId, visitorId, 0, false)
 	require.NoError(t, err)
 
-	owner, err := GetOrZero(db, tenantId, ownerId, GameTypeOmok)
+	owner, err := GetOrZero(ctx, db.WithContext(ctx), ownerId, GameTypeOmok)
 	require.NoError(t, err)
 	assert.Equal(t, uint32(1), owner.Wins())
 	assert.Equal(t, uint32(0), owner.Ties())
 	assert.Equal(t, uint32(0), owner.Losses())
 
-	visitor, err := GetOrZero(db, tenantId, visitorId, GameTypeOmok)
+	visitor, err := GetOrZero(ctx, db.WithContext(ctx), visitorId, GameTypeOmok)
 	require.NoError(t, err)
 	assert.Equal(t, uint32(0), visitor.Wins())
 	assert.Equal(t, uint32(0), visitor.Ties())
@@ -71,19 +83,19 @@ func TestApplyResult_OwnerWin(t *testing.T) {
 
 func TestApplyResult_VisitorWin(t *testing.T) {
 	db := setupTestDB(t)
-	tenantId := uuid.New()
+	_, ctx := setupTenantCtx(t)
 	ownerId := uint32(100)
 	visitorId := uint32(200)
 
-	err := ApplyResult(db, tenantId, GameTypeOmok, ownerId, visitorId, 1, false)
+	err := ApplyResult(db.WithContext(ctx), GameTypeOmok, ownerId, visitorId, 1, false)
 	require.NoError(t, err)
 
-	owner, err := GetOrZero(db, tenantId, ownerId, GameTypeOmok)
+	owner, err := GetOrZero(ctx, db.WithContext(ctx), ownerId, GameTypeOmok)
 	require.NoError(t, err)
 	assert.Equal(t, uint32(0), owner.Wins())
 	assert.Equal(t, uint32(1), owner.Losses())
 
-	visitor, err := GetOrZero(db, tenantId, visitorId, GameTypeOmok)
+	visitor, err := GetOrZero(ctx, db.WithContext(ctx), visitorId, GameTypeOmok)
 	require.NoError(t, err)
 	assert.Equal(t, uint32(1), visitor.Wins())
 	assert.Equal(t, uint32(0), visitor.Losses())
@@ -91,22 +103,22 @@ func TestApplyResult_VisitorWin(t *testing.T) {
 
 func TestApplyResult_Tie(t *testing.T) {
 	db := setupTestDB(t)
-	tenantId := uuid.New()
+	_, ctx := setupTenantCtx(t)
 	ownerId := uint32(100)
 	visitorId := uint32(200)
 
 	// winnerSlot is meaningless when tie is true; passing a non-zero value
 	// makes sure tie really does override it rather than being ignored.
-	err := ApplyResult(db, tenantId, GameTypeMatchCards, ownerId, visitorId, 1, true)
+	err := ApplyResult(db.WithContext(ctx), GameTypeMatchCards, ownerId, visitorId, 1, true)
 	require.NoError(t, err)
 
-	owner, err := GetOrZero(db, tenantId, ownerId, GameTypeMatchCards)
+	owner, err := GetOrZero(ctx, db.WithContext(ctx), ownerId, GameTypeMatchCards)
 	require.NoError(t, err)
 	assert.Equal(t, uint32(0), owner.Wins())
 	assert.Equal(t, uint32(1), owner.Ties())
 	assert.Equal(t, uint32(0), owner.Losses())
 
-	visitor, err := GetOrZero(db, tenantId, visitorId, GameTypeMatchCards)
+	visitor, err := GetOrZero(ctx, db.WithContext(ctx), visitorId, GameTypeMatchCards)
 	require.NoError(t, err)
 	assert.Equal(t, uint32(0), visitor.Wins())
 	assert.Equal(t, uint32(1), visitor.Ties())
@@ -115,20 +127,20 @@ func TestApplyResult_Tie(t *testing.T) {
 
 func TestApplyResult_CreatesMissingRows(t *testing.T) {
 	db := setupTestDB(t)
-	tenantId := uuid.New()
+	ten, ctx := setupTenantCtx(t)
 	ownerId := uint32(300)
 	visitorId := uint32(400)
 
 	var countBefore int64
-	require.NoError(t, db.Model(&Entity{}).Where("tenant_id = ?", tenantId).Count(&countBefore).Error)
+	require.NoError(t, db.Model(&Entity{}).Where("tenant_id = ?", ten.Id()).Count(&countBefore).Error)
 	require.Equal(t, int64(0), countBefore, "neither row should exist before the first game")
 
-	err := ApplyResult(db, tenantId, GameTypeOmok, ownerId, visitorId, 0, false)
+	err := ApplyResult(db.WithContext(ctx), GameTypeOmok, ownerId, visitorId, 0, false)
 	require.NoError(t, err)
 
 	var countAfter int64
-	require.NoError(t, db.Model(&Entity{}).Where("tenant_id = ?", tenantId).Count(&countAfter).Error)
-	assert.Equal(t, int64(2), countAfter, "ApplyResult must create both the owner's and visitor's row")
+	require.NoError(t, db.Model(&Entity{}).Where("tenant_id = ?", ten.Id()).Count(&countAfter).Error)
+	assert.Equal(t, int64(2), countAfter, "ApplyResult must create both the owner's and visitor's row with the context tenant injected")
 }
 
 // TestApplyResult_Atomic forces the visitor row's UPDATE to fail (a sqlite
@@ -141,7 +153,7 @@ func TestApplyResult_CreatesMissingRows(t *testing.T) {
 // even when the visitor's write fails.
 func TestApplyResult_Atomic(t *testing.T) {
 	db := setupTestDB(t)
-	tenantId := uuid.New()
+	ten, ctx := setupTenantCtx(t)
 	ownerId := uint32(500)
 	visitorId := uint32(600)
 
@@ -149,7 +161,7 @@ func TestApplyResult_Atomic(t *testing.T) {
 	// (getOrCreate would otherwise create it fresh at Wins=0 either way).
 	require.NoError(t, db.Create(&Entity{
 		Id:          uuid.New(),
-		TenantId:    tenantId,
+		TenantId:    ten.Id(),
 		CharacterId: ownerId,
 		GameType:    string(GameTypeOmok),
 	}).Error)
@@ -163,14 +175,14 @@ func TestApplyResult_Atomic(t *testing.T) {
 		BEGIN SELECT RAISE(ABORT, 'forced failure for atomicity test'); END;
 	`, visitorId)).Error)
 
-	err := ApplyResult(db, tenantId, GameTypeOmok, ownerId, visitorId, 0, false)
+	err := ApplyResult(db.WithContext(ctx), GameTypeOmok, ownerId, visitorId, 0, false)
 	require.Error(t, err)
 
-	owner, err := GetOrZero(db, tenantId, ownerId, GameTypeOmok)
+	owner, err := GetOrZero(ctx, db.WithContext(ctx), ownerId, GameTypeOmok)
 	require.NoError(t, err)
 	assert.Equal(t, uint32(0), owner.Wins(), "owner's increment must not persist when the transaction rolls back")
 
 	var visitorCount int64
-	require.NoError(t, db.Unscoped().Model(&Entity{}).Where("tenant_id = ? AND character_id = ?", tenantId, visitorId).Count(&visitorCount).Error)
+	require.NoError(t, db.Unscoped().Model(&Entity{}).Where("tenant_id = ? AND character_id = ?", ten.Id(), visitorId).Count(&visitorCount).Error)
 	assert.Equal(t, int64(0), visitorCount, "visitor row's insert must roll back along with the failed update")
 }

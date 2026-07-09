@@ -36,6 +36,7 @@ import (
 	mbconsumer "atlas-channel/kafka/consumer/monsterbook"
 	mountConsumer "atlas-channel/kafka/consumer/mount"
 	note3 "atlas-channel/kafka/consumer/note"
+	walletConsumer "atlas-channel/kafka/consumer/wallet"
 	"atlas-channel/kafka/consumer/npc/conversation"
 	"atlas-channel/kafka/consumer/npc/shop"
 	"atlas-channel/kafka/consumer/party"
@@ -208,6 +209,7 @@ func main() {
 	cashshop.InitConsumers(l)(cmf)(consumerGroupId)
 	cashshopCompartment.InitConsumers(l)(cmf)(consumerGroupId)
 	mtsConsumer.InitConsumers(l)(cmf)(consumerGroupId)
+	walletConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	note3.InitConsumers(l)(cmf)(consumerGroupId)
 	quest.InitConsumers(l)(cmf)(consumerGroupId)
 	route.InitConsumers(l)(cmf)(consumerGroupId)
@@ -527,6 +529,9 @@ func buildListener(
 			return nil, err
 		}
 		if err := register(mtsConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
+		if err := register(walletConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
 			return nil, err
 		}
 		if err := register(note3.InitHandlers(fl)(sc)(wp)(rh)); err != nil {

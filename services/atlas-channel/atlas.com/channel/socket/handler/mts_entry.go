@@ -100,6 +100,7 @@ func EnterMtsHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Pro
 		if err != nil {
 			l.WithError(err).Errorf("Unable to announce [%d] has entered the MTS (cash-shop stage).", s.CharacterId())
 		}
+		_ = session.NewProcessor(l, ctx).SetCashScene(s.SessionId(), session.CashSceneMts)
 
 		// MTSWantedListingOver (CITC::OnNormalItemResult case 61 / mode 0x3D,
 		// v83 sub_5A523E): the "expired wanted listings" summary. The sub-handler

@@ -4,7 +4,6 @@ import (
 	consumer2 "atlas-channel/kafka/consumer"
 	mtsmsg "atlas-channel/kafka/message/mts"
 	"atlas-channel/listener"
-	"atlas-channel/cashshop/wallet"
 	mtsholding "atlas-channel/mts/holding"
 	mtslisting "atlas-channel/mts/listing"
 	mtswish "atlas-channel/mts/wish"
@@ -105,12 +104,6 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				if err := register(message.AdaptHandler(message.PersistentConfig(handleBidFailed(sc, wp)))); err != nil {
 					return nil, err
 				}
-				if err := register(message.AdaptHandler(message.PersistentConfig(handleBidPlaced(sc, wp)))); err != nil {
-					return nil, err
-				}
-				if err := register(message.AdaptHandler(message.PersistentConfig(handleOutbid(sc, wp)))); err != nil {
-					return nil, err
-				}
 				if err := register(message.AdaptHandler(message.PersistentConfig(handleWishAdded(sc, wp)))); err != nil {
 					return nil, err
 				}
@@ -171,26 +164,6 @@ func announceUserPurchaseList(l logrus.FieldLogger, ctx context.Context, sc serv
 		items = append(items, mtsholding.ToMtsItem(h))
 	}
 	announceTo(l, ctx, sc, wp, characterId, fieldpkt.MtsOperationGetUserPurchaseItemDoneBody(items, 0, 0))
-}
-
-// announceWalletRefresh re-pushes the MTS wallet display (MTS_OPERATION2: prepaid
-// NX + maple points) to the character so the on-screen NX/points counter updates
-// after a money-moving operation (a buy debit / sale credit). The v83 client only
-// reads the wallet at entry, so without this the counter stays stale until
-// re-entry. Resolves the character's session for its accountId (the wallet key).
-func announceWalletRefresh(l logrus.FieldLogger, ctx context.Context, sc server.Model, wp writer.Producer, characterId uint32) {
-	t := tenant.MustFromContext(ctx)
-	if !t.Is(sc.Tenant()) {
-		return
-	}
-	_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(characterId, func(s session.Model) error {
-		w, err := wallet.NewProcessor(l, ctx).GetByAccountId(s.AccountId())
-		if err != nil {
-			l.WithError(err).Errorf("Unable to refresh MTS wallet for character [%d]; leaving the NX counter stale.", characterId)
-			return nil
-		}
-		return session.Announce(l)(ctx)(wp)(fieldcb.MtsOperation2Writer)(fieldcb.NewMtsOperation2(w.Prepaid(), w.Points()).Encode)(s)
-	})
 }
 
 // MTS browse sections (CITC category tab), mirrored from the socket handler's
@@ -336,18 +309,16 @@ func handleListingSold(sc server.Model, wp writer.Producer) message.Handler[mtsm
 		}
 		l.Debugf("MTS listing sold to buyer [%d] (item [%d]).", e.Body.BuyerId, e.Body.ItemId)
 		announceTo(l, ctx, sc, wp, e.Body.BuyerId, fieldpkt.MtsOperationBuyItemDoneBody())
-		// Refresh the buyer's view of the purchase: the NX/points counter (debited)
-		// and the Transfer Inventory (the bought item now sits in their holdings,
-		// ready to take home). Without these the client shows the buy succeeded but
-		// the counter and panel stay stale until re-entry.
-		announceWalletRefresh(l, ctx, sc, wp, e.Body.BuyerId)
+		// Refresh the buyer's Transfer Inventory panel (the bought item now sits in
+		// their holdings, ready to take home). The NX/points counter is refreshed
+		// separately by the wallet-status consumer once the debit actually lands
+		// (scene-gated), so it is not pushed here.
 		announceUserPurchaseList(l, ctx, sc, wp, e.Body.BuyerId)
-		// Refresh the seller's view: the sold item leaves "Not Yet Sold" and their
-		// wallet gains the sale credit (points). If the seller is offline/elsewhere
-		// these no-op; their panels also re-push on their next browse.
+		// Refresh the seller's "Not Yet Sold" panel (the sold item leaves it). Their
+		// wallet credit is handled by the wallet-status consumer. If the seller is
+		// offline/elsewhere these no-op; their panels also re-push on their next browse.
 		if e.Body.SellerId != 0 {
 			announceUserSaleList(l, ctx, sc, wp, e.Body.WorldId, e.Body.SellerId)
-			announceWalletRefresh(l, ctx, sc, wp, e.Body.SellerId)
 		}
 	}
 }
@@ -413,35 +384,6 @@ func handleBuyFailed(sc server.Model, wp writer.Producer) message.Handler[mtsmsg
 		}
 		l.Debugf("MTS buy failed for buyer [%d] serial [%d] (reasonKey [%s]).", e.Body.BuyerId, e.Body.Serial, e.Body.ReasonKey)
 		announceTo(l, ctx, sc, wp, e.Body.BuyerId, failNoticeOr(e.Body.ReasonKey, fieldpkt.MtsOperationBuyItemFailedBody()))
-	}
-}
-
-// handleBidPlaced refreshes the bidder's NX counter after a successful bid. Placing
-// a bid escrows (debits) the bidder's prepaid in atlas-mts; the v83 client only
-// reads the wallet at MTS entry, so without this push the on-screen NX stays stale
-// until re-entry (task-102 live finding). No BidAuctionDone is written here — the
-// bid's own client flow handles the dialog; this is purely the wallet refresh.
-func handleBidPlaced(sc server.Model, wp writer.Producer) message.Handler[mtsmsg.StatusEvent[mtsmsg.StatusEventBidPlacedBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e mtsmsg.StatusEvent[mtsmsg.StatusEventBidPlacedBody]) {
-		if e.Type != mtsmsg.StatusEventTypeBidPlaced {
-			return
-		}
-		l.Debugf("MTS bid placed by bidder [%d] on listing [%s] (amount [%d]); refreshing wallet.", e.Body.BidderId, e.Body.ListingId.String(), e.Body.Amount)
-		announceWalletRefresh(l, ctx, sc, wp, e.Body.BidderId)
-	}
-}
-
-// handleOutbid refreshes the outbid bidder's NX counter: being outbid releases their
-// escrow back to prepaid in atlas-mts, and the client won't reflect the refund until
-// re-entry without this push (task-102 live finding — the refund "definitely" didn't
-// show).
-func handleOutbid(sc server.Model, wp writer.Producer) message.Handler[mtsmsg.StatusEvent[mtsmsg.StatusEventOutbidBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e mtsmsg.StatusEvent[mtsmsg.StatusEventOutbidBody]) {
-		if e.Type != mtsmsg.StatusEventTypeOutbid {
-			return
-		}
-		l.Debugf("MTS previous bidder [%d] outbid on listing [%s]; refreshing wallet (escrow released).", e.Body.PreviousBidderId, e.Body.ListingId.String())
-		announceWalletRefresh(l, ctx, sc, wp, e.Body.PreviousBidderId)
 	}
 }
 

@@ -143,6 +143,7 @@ type CreateListingArgs struct {
 	ListValue           uint32
 	BuyNowPrice         *uint32
 	DurationHours       int
+	MinIncrement        uint32 // auction only; the seller's bid increment (0 => atlas-mts uses the tenant default)
 	Category            string
 	SubCategory         string
 }
@@ -210,7 +211,8 @@ func buildCreateListingFromRegisterAuction(p fieldsb.ItcOperationRegisterAuction
 		Quantity:        p.Quantity(),
 		ListValue:       startingBid,
 		BuyNowPrice:     &buyNow,
-		DurationHours:   int(p.DurationHrs()),
+		DurationHours:   int(p.DurationHrs()), // the Encode1 byte — the auction DURATION (task-102 field-label fix)
+		MinIncrement:    p.MinIncrement(),     // the trailing Encode4 — the seller's bid increment
 	}
 }
 
@@ -622,6 +624,7 @@ func emitCreateListing(l logrus.FieldLogger, ctx context.Context, s session.Mode
 		args.ListValue,
 		args.BuyNowPrice,
 		args.DurationHours,
+		args.MinIncrement,
 		args.Category,
 		args.SubCategory,
 	); err != nil {

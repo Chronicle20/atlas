@@ -166,6 +166,7 @@ type CreateListingCommandBody struct {
 	ListValue           uint32  `json:"listValue"`
 	BuyNowPrice         *uint32 `json:"buyNowPrice,omitempty"`
 	DurationHours       int     `json:"durationHours,omitempty"`
+	MinIncrement        uint32  `json:"minIncrement,omitempty"`
 	Category            string  `json:"category"`
 	SubCategory         string  `json:"subCategory"`
 }

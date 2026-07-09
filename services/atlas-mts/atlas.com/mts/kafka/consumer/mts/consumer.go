@@ -127,6 +127,7 @@ func handleCreateListing(pf providerFn) func(db *gorm.DB) message.Handler[mts.Co
 				ListValue:           b.ListValue,
 				BuyNowPrice:         b.BuyNowPrice,
 				DurationHours:       b.DurationHours,
+				MinIncrement:        b.MinIncrement,
 				Category:            b.Category,
 				SubCategory:         b.SubCategory,
 			})

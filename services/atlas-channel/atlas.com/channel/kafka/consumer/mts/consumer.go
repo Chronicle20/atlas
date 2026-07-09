@@ -260,7 +260,12 @@ func handleListingCreateFailed(sc server.Model, wp writer.Producer) message.Hand
 			return
 		}
 		l.Debugf("MTS listing create failed for seller [%d] (reasonKey [%s]).", e.Body.SellerId, e.Body.ReasonKey)
-		announceTo(l, ctx, sc, wp, e.Body.SellerId, failNoticeOr(e.Body.ReasonKey, fieldpkt.MtsOperationRegisterSaleEntryFailedBody(mtsRegisterSaleGenericReason, mtsRegisterSaleNoSaleLimit)))
+		// The register dialog listens ONLY for RegisterSaleEntryFailed — routing this
+		// through failNoticeOr -> GetSearchItcListFailed (the search-list notice arm,
+		// correct for buy/bid) leaves the register dialog stuck with no response
+		// (task-102 live finding). Always send the register dialog's own failed arm so
+		// it un-hangs; the client renders its own registration-failure message.
+		announceTo(l, ctx, sc, wp, e.Body.SellerId, fieldpkt.MtsOperationRegisterSaleEntryFailedBody(mtsRegisterSaleGenericReason, mtsRegisterSaleNoSaleLimit))
 	}
 }
 

@@ -177,69 +177,74 @@ func (m *ItcOperationRegisterSale) Decode(l logrus.FieldLogger, ctx context.Cont
 }
 
 // ItcOperationRegisterAuction — the mode 0x12 register-auction arm of
-// CITC::OnRegisterSaleEntry (@0x59ec36, arg0==1 branch). After the dispatcher
-// opcode COutPacket(0xFD) @0x59ec63, the arg0==1 branch (sub_5AD76B path)
-// encodes, in order (all cited to the decompile of CITC::OnRegisterSaleEntry):
+// CITC::OnRegisterSaleEntry (arg0==1 branch). After the dispatcher opcode
+// COutPacket(0xFD), the arg0==1 branch encodes, in order:
 //
-//	Encode1(0x12u)            @0x59ecc8  dispatcher mode byte (auction)
-//	sub_4E33D8(a5, &pkt)      @0x59ecd4  item-slot blob (Encode1 type + RawEncode)
-//	Encode4(a4)               @0x59ecdf  slotPos   (CharacterData::GetItem nPos)
-//	Encode4(v22)              @0x59ecea  quantity  (register-dialog count edit box)
-//	Encode4(arg0)             @0x59ecf5  arg0 (==1 here; the auction selector echo)
-//	Encode4(v20)              @0x59ed00  buyNowPrice
-//	Encode1(a2[0])            @0x59ed0b  type
-//	Encode1(v21[0])           @0x59ed16  flag
-//	Encode4(v19)              @0x59ed21  durationHrs
+//	Encode1(0x12u)            dispatcher mode byte (auction)
+//	item-slot blob            (Encode1 type + RawEncode)
+//	Encode4(slotPos)          inventory slot of the listed item
+//	Encode4(quantity)         seller-entered quantity to list
+//	Encode4(price1)           starting bid   (a "selector" int per version)
+//	Encode4(price2)           buy-now price
+//	Encode1(durationHrs)      auction duration HOURS — a BYTE
+//	Encode1(flag)             registration-fee option
+//	Encode4(minIncrement)     bid increment
 //
-// Same field-semantics correction as ItcOperationRegisterSale: a4 is the item's
-// inventory slot (OnRegisterSaleEntry nPos arg), v22 the seller-entered quantity
-// (sub_5AD76B dialog) — NOT quantity/commodityId. The 24..168-hr duration guard
-// gates a StringPool notice before this; it does not change the wire shape.
+// FIELD-LABEL CORRECTION (task-102, live finding): the Encode1 byte after the two
+// prices is the auction DURATION, not an item type — the client validates it
+// against its auction hour min/max ([24,168]) and pops SP_4769/"24-168 hrs" when
+// out of range (the client-side guard; nothing server-side). The trailing Encode4
+// is the bid INCREMENT (nBidRange), not the duration. The prior struct had these
+// two swapped, so a valid 24h auction arrived as durationHours=<increment> and was
+// rejected. Verified IDENTICAL across gms v83 (0x59ec36), v84 (0x5aefd2), v87
+// (0x5ce967), v95 (0x572e90 — named PDB build: pItem validated vs
+// m_nAuctionDurationMin/Max, trailing field literally "nBidRange") and jms v185
+// (0x604105). Duration is a byte; the increment is a 4-byte int.
 //
 // packet-audit:fname CITC::OnRegisterSaleEntry#RegisterAuction
 type ItcOperationRegisterAuction struct {
-	mode        byte
-	item        model.Asset // sub_4E33D8 GW_ItemSlotBase blob
-	slotPos     uint32      // Encode4 a4  (inventory slot of the listed item)
-	quantity    uint32      // Encode4 v22 (seller-entered quantity to list)
-	selector    uint32      // Encode4 arg0 (==1)
-	buyNowPrice uint32      // Encode4 v20
-	itemType    byte        // Encode1 a2[0]
-	flag        byte        // Encode1 v21[0]
-	durationHrs uint32      // Encode4 v19
+	mode         byte
+	item         model.Asset // GW_ItemSlotBase blob
+	slotPos      uint32      // Encode4 (inventory slot of the listed item)
+	quantity     uint32      // Encode4 (seller-entered quantity to list)
+	selector     uint32      // Encode4 starting bid ("selector" int)
+	buyNowPrice  uint32      // Encode4 buy-now price
+	durationHrs  byte        // Encode1 auction duration hours (validated 24..168 client-side)
+	flag         byte        // Encode1 registration-fee option
+	minIncrement uint32      // Encode4 bid increment (nBidRange)
 }
 
-func NewItcOperationRegisterAuction(mode byte, item model.Asset, slotPos uint32, quantity uint32, selector uint32, buyNowPrice uint32, itemType byte, flag byte, durationHrs uint32) ItcOperationRegisterAuction {
-	return ItcOperationRegisterAuction{mode: mode, item: item, slotPos: slotPos, quantity: quantity, selector: selector, buyNowPrice: buyNowPrice, itemType: itemType, flag: flag, durationHrs: durationHrs}
+func NewItcOperationRegisterAuction(mode byte, item model.Asset, slotPos uint32, quantity uint32, selector uint32, buyNowPrice uint32, durationHrs byte, flag byte, minIncrement uint32) ItcOperationRegisterAuction {
+	return ItcOperationRegisterAuction{mode: mode, item: item, slotPos: slotPos, quantity: quantity, selector: selector, buyNowPrice: buyNowPrice, durationHrs: durationHrs, flag: flag, minIncrement: minIncrement}
 }
 
-func (m ItcOperationRegisterAuction) Mode() byte          { return m.mode }
-func (m ItcOperationRegisterAuction) Item() model.Asset   { return m.item }
-func (m ItcOperationRegisterAuction) SlotPos() uint32     { return m.slotPos }
-func (m ItcOperationRegisterAuction) Quantity() uint32    { return m.quantity }
-func (m ItcOperationRegisterAuction) Selector() uint32    { return m.selector }
-func (m ItcOperationRegisterAuction) BuyNowPrice() uint32 { return m.buyNowPrice }
-func (m ItcOperationRegisterAuction) ItemType() byte      { return m.itemType }
-func (m ItcOperationRegisterAuction) Flag() byte          { return m.flag }
-func (m ItcOperationRegisterAuction) DurationHrs() uint32 { return m.durationHrs }
-func (m ItcOperationRegisterAuction) Operation() string   { return ItcOperationHandle }
+func (m ItcOperationRegisterAuction) Mode() byte           { return m.mode }
+func (m ItcOperationRegisterAuction) Item() model.Asset    { return m.item }
+func (m ItcOperationRegisterAuction) SlotPos() uint32      { return m.slotPos }
+func (m ItcOperationRegisterAuction) Quantity() uint32     { return m.quantity }
+func (m ItcOperationRegisterAuction) Selector() uint32     { return m.selector }
+func (m ItcOperationRegisterAuction) BuyNowPrice() uint32  { return m.buyNowPrice }
+func (m ItcOperationRegisterAuction) DurationHrs() byte    { return m.durationHrs }
+func (m ItcOperationRegisterAuction) Flag() byte           { return m.flag }
+func (m ItcOperationRegisterAuction) MinIncrement() uint32 { return m.minIncrement }
+func (m ItcOperationRegisterAuction) Operation() string    { return ItcOperationHandle }
 func (m ItcOperationRegisterAuction) String() string {
-	return fmt.Sprintf("itc register auction mode [%d] slot [%d] qty [%d] buyNow [%d] duration [%d]", m.mode, m.slotPos, m.quantity, m.buyNowPrice, m.durationHrs)
+	return fmt.Sprintf("itc register auction mode [%d] slot [%d] qty [%d] buyNow [%d] duration [%d] increment [%d]", m.mode, m.slotPos, m.quantity, m.buyNowPrice, m.durationHrs, m.minIncrement)
 }
 
 func (m ItcOperationRegisterAuction) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
 		itemCopy := m.item
-		w.WriteByte(m.mode)                                // Encode1(0x12u) @0x59ecc8 mode byte
-		w.WriteByteArray(itemCopy.Encode(l, ctx)(options)) // sub_4E33D8 item-slot blob @0x59ecd4
-		w.WriteInt(m.slotPos)                              // Encode4 @0x59ecdf slotPos
-		w.WriteInt(m.quantity)                             // Encode4 @0x59ecea quantity
-		w.WriteInt(m.selector)                             // Encode4 @0x59ecf5 arg0 (==1)
-		w.WriteInt(m.buyNowPrice)                          // Encode4 @0x59ed00 buyNowPrice
-		w.WriteByte(m.itemType)                            // Encode1 @0x59ed0b type
-		w.WriteByte(m.flag)                                // Encode1 @0x59ed16 flag
-		w.WriteInt(m.durationHrs)                          // Encode4 @0x59ed21 durationHrs
+		w.WriteByte(m.mode)                                // Encode1(0x12u) mode byte
+		w.WriteByteArray(itemCopy.Encode(l, ctx)(options)) // item-slot blob
+		w.WriteInt(m.slotPos)                              // Encode4 slotPos
+		w.WriteInt(m.quantity)                             // Encode4 quantity
+		w.WriteInt(m.selector)                             // Encode4 starting bid
+		w.WriteInt(m.buyNowPrice)                          // Encode4 buy-now price
+		w.WriteByte(m.durationHrs)                         // Encode1 duration hours (byte)
+		w.WriteByte(m.flag)                                // Encode1 fee option
+		w.WriteInt(m.minIncrement)                         // Encode4 bid increment
 		return w.Bytes()
 	}
 }
@@ -252,9 +257,9 @@ func (m *ItcOperationRegisterAuction) Decode(l logrus.FieldLogger, ctx context.C
 		m.quantity = r.ReadUint32()
 		m.selector = r.ReadUint32()
 		m.buyNowPrice = r.ReadUint32()
-		m.itemType = r.ReadByte()
+		m.durationHrs = r.ReadByte()
 		m.flag = r.ReadByte()
-		m.durationHrs = r.ReadUint32()
+		m.minIncrement = r.ReadUint32()
 	}
 }
 

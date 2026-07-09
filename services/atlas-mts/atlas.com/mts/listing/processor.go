@@ -52,7 +52,8 @@ type ListRequest struct {
 	Quantity            uint32
 	ListValue           uint32
 	BuyNowPrice         *uint32
-	DurationHours       int // auction only; hours from now until the auction ends
+	DurationHours       int    // auction only; hours from now until the auction ends
+	MinIncrement        uint32 // auction only; the seller's bid increment (0 => tenant default)
 	Category            string
 	SubCategory         string
 }
@@ -418,6 +419,16 @@ func (p *ProcessorImpl) transitionToSellerHolding(db *gorm.DB, id string, termin
 // release_from_character + accept_to_mts_listing). The listing row is created in
 // `active` only by the custody consumer's AcceptToMtsListing — never here, since
 // the item must leave inventory before the listing exists.
+// minIncrementOrDefault returns the seller-supplied bid increment when non-zero,
+// else the tenant default. The register-auction packet carries the seller's chosen
+// increment; a 0 (older channels / non-auction paths) falls back to config.
+func minIncrementOrDefault(supplied uint32, def uint32) uint32 {
+	if supplied != 0 {
+		return supplied
+	}
+	return def
+}
+
 func (p *ProcessorImpl) List(req ListRequest) (uuid.UUID, error) {
 	t, err := tenant.FromContext(p.ctx)()
 	if err != nil {
@@ -505,7 +516,7 @@ func (p *ProcessorImpl) List(req ListRequest) (uuid.UUID, error) {
 		Category:            req.Category,
 		SubCategory:         req.SubCategory,
 		EndsAt:              endsAt,
-		MinIncrement:        cfg.MinBidIncrement(),
+		MinIncrement:        minIncrementOrDefault(req.MinIncrement, cfg.MinBidIncrement()),
 	})
 
 	// Timeout MUST be set explicitly and scaled for the effective step count.

@@ -156,12 +156,13 @@ func TestBuildCreateListingFromRegisterSale(t *testing.T) {
 }
 
 func TestBuildCreateListingFromRegisterAuction(t *testing.T) {
-	// auction wire: slotPos 9 (a4), quantity 2 (v22), startingBid 1000 (selector),
-	// buyNow 5000, duration 48h. The two prices are the starting bid and the buy-now
-	// price (sub_5AD76B); the lower becomes the listValue / first-bid floor, the
-	// higher the buy-now ceiling.
+	// auction wire: slotPos 9, quantity 2, startingBid 1000 (selector), buyNow 5000,
+	// duration 48h (the Encode1 BYTE), bid increment 10 (the trailing Encode4). The
+	// two prices are the starting bid and the buy-now price; the lower becomes the
+	// listValue / first-bid floor, the higher the buy-now ceiling. Field order is
+	// (…, durationHrs byte, flag byte, minIncrement uint32) — the task-102 label fix.
 	item := packetmodel.NewAsset(false, 9, 1302000, time.Time{}).SetStackableInfo(2, 0, 0)
-	p := fieldsb.NewItcOperationRegisterAuction(0x12, item, 9, 2, 1000, 5000, 1, 0, 48)
+	p := fieldsb.NewItcOperationRegisterAuction(0x12, item, 9, 2, 1000, 5000, 48, 0, 10)
 
 	args := buildCreateListingFromRegisterAuction(p, testWorldId, testSellerId, testSellerAccountId, testSellerName)
 
@@ -172,10 +173,10 @@ func TestBuildCreateListingFromRegisterAuction(t *testing.T) {
 		t.Errorf("templateId: want 1302000 got %d", args.TemplateId)
 	}
 	if args.SlotPos != 9 {
-		t.Errorf("slotPos: want 9 (a4) got %d", args.SlotPos)
+		t.Errorf("slotPos: want 9 got %d", args.SlotPos)
 	}
 	if args.Quantity != 2 {
-		t.Errorf("quantity: want 2 (v22) got %d", args.Quantity)
+		t.Errorf("quantity: want 2 got %d", args.Quantity)
 	}
 	if args.BuyNowPrice == nil || *args.BuyNowPrice != 5000 {
 		t.Errorf("buyNowPrice: want 5000 (higher price), got %v", args.BuyNowPrice)
@@ -184,8 +185,13 @@ func TestBuildCreateListingFromRegisterAuction(t *testing.T) {
 	if args.ListValue != 1000 {
 		t.Errorf("listValue: want 1000 (starting bid), got %d", args.ListValue)
 	}
+	// the Encode1 byte is the DURATION (not itemType); the trailing Encode4 is the
+	// bid INCREMENT (not the duration).
 	if args.DurationHours != 48 {
-		t.Errorf("durationHours: want 48 got %d", args.DurationHours)
+		t.Errorf("durationHours: want 48 (the byte field) got %d", args.DurationHours)
+	}
+	if args.MinIncrement != 10 {
+		t.Errorf("minIncrement: want 10 (the trailing Encode4) got %d", args.MinIncrement)
 	}
 }
 
@@ -195,7 +201,7 @@ func TestBuildCreateListingFromRegisterAuctionPriceOrderIndependent(t *testing.T
 	// min/max recovers (startingBid, buyNow) regardless of which slot holds which.
 	item := packetmodel.NewAsset(false, 9, 1302000, time.Time{}).SetStackableInfo(2, 0, 0)
 	// selector (5000) > buyNowPrice (1000): still listValue=1000, buyNow=5000.
-	p := fieldsb.NewItcOperationRegisterAuction(0x12, item, 9, 2, 5000, 1000, 1, 0, 48)
+	p := fieldsb.NewItcOperationRegisterAuction(0x12, item, 9, 2, 5000, 1000, 48, 0, 10)
 
 	args := buildCreateListingFromRegisterAuction(p, testWorldId, testSellerId, testSellerAccountId, testSellerName)
 

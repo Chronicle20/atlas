@@ -126,6 +126,17 @@ func handleAcceptToMtsListing(pf providerFn) func(db *gorm.DB) message.Handler[c
 					subCategory = strconv.Itoa(int(it))
 				}
 
+				// Auctions display their price and compute the first-bid floor off the
+				// current bid; seed it to the starting bid (listValue) until a real bid
+				// arrives, matching the seed route's SetCurrentBid(startingBid). Without
+				// this the client shows price 0, suggests a sub-floor bid, and the bid is
+				// rejected as a "consecutive bid" (task-102 live finding). Fixed sales
+				// have no bid, so it stays 0.
+				var currentBid uint32
+				if b.SaleType == string(listing.SaleTypeAuction) {
+					currentBid = b.ListValue
+				}
+
 				m, berr := listing.NewBuilder(tid, world.Id(b.WorldId), b.SellerId).
 					SetId(b.ListingId).
 					SetSellerAccountId(b.SellerAccountId).
@@ -163,6 +174,7 @@ func handleAcceptToMtsListing(pf providerFn) func(db *gorm.DB) message.Handler[c
 					SetSubCategory(subCategory).
 					SetEndsAt(b.EndsAt).
 					SetMinIncrement(b.MinIncrement).
+					SetCurrentBid(currentBid).
 					Build()
 				if berr != nil {
 					return berr

@@ -323,7 +323,7 @@ func TestBuyFailureSentinels(t *testing.T) {
 	}
 
 	// Bid on a non-active listing maps the same way.
-	err := p.PlaceBid(listing.BidRequest{WorldId: 0, ListingId: listingId, BidderId: 3, BidderAccountId: 3, Amount: 5000})
+	_, err := p.PlaceBid(listing.BidRequest{WorldId: 0, ListingId: listingId, BidderId: 3, BidderAccountId: 3, Amount: 5000})
 	if !errors.Is(err, listing.ErrListingUnavailable) {
 		t.Fatalf("sold-listing bid error = %v, want errors.Is ErrListingUnavailable", err)
 	}

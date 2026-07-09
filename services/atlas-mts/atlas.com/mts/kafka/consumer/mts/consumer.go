@@ -8,6 +8,7 @@ import (
 	producer2 "atlas-mts/kafka/producer"
 	mtsproducer "atlas-mts/kafka/producer/mts"
 	"atlas-mts/listing"
+	"atlas-mts/transaction"
 	"atlas-mts/wish"
 	"context"
 	"errors"
@@ -21,6 +22,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -202,6 +204,23 @@ func handleCancelListing(pf providerFn) func(db *gorm.DB) message.Handler[mts.Co
 			_ = msg.Emit(p)(func(buf *msg.Buffer) error {
 				return buf.Put(mts.EnvStatusEventTopic, mtsproducer.ListingCancelledStatusEventProvider(c.TransactionId, b.WorldId, lm.Id(), res.HoldingId, res.SellerId, res.ItemId))
 			})
+
+			// Record the seller's cancelled-listing history row (nProcessStatus 3).
+			// Best-effort: a failure leaves history a row short but does not undo the
+			// (committed) cancel.
+			t := tenant.MustFromContext(ctx)
+			cancelTxn, berr := transaction.NewBuilder(t.Id(), world.Id(b.WorldId), res.SellerId).
+				SetId(uuid.New()).
+				SetItemId(res.ItemId).
+				SetQuantity(lm.Quantity()).
+				SetTotalPrice(lm.ListValue()).
+				SetKind(transaction.KindCancelled).
+				Build()
+			if berr != nil {
+				l.WithError(berr).Warnf("Failed to build cancelled history row for listing [%s].", lm.Id().String())
+			} else if _, terr := transaction.CreateTransaction(db.WithContext(ctx), cancelTxn); terr != nil {
+				l.WithError(terr).Warnf("Failed to record cancelled history row for listing [%s].", lm.Id().String())
+			}
 		}
 	}
 }
@@ -341,16 +360,50 @@ func handlePlaceBid(pf providerFn) func(db *gorm.DB) message.Handler[mts.Command
 				return
 			}
 
-			if err := proc.PlaceBid(listing.BidRequest{
+			res, err := proc.PlaceBid(listing.BidRequest{
 				WorldId:         world.Id(b.WorldId),
 				ListingId:       lm.Id(),
 				BidderId:        b.BidderId,
 				BidderAccountId: b.BidderAccountId,
 				Amount:          b.Amount,
-			}); err != nil {
+			})
+			if err != nil {
 				l.WithError(err).Errorf("Failed to place bid for listing [%s] (serial [%d]), bidder [%d], transaction [%s].", lm.Id().String(), b.Serial, b.BidderId, c.TransactionId.String())
 				emitFail(failReasonFor(err))
 				return
+			}
+
+			// Emit BID_PLACED so the channel refreshes the bidder's NX (the escrow
+			// debit just left their prepaid). On an outbid, also emit OUTBID so the
+			// displaced bidder's NX is refreshed (their escrow was released).
+			_ = msg.Emit(p)(func(buf *msg.Buffer) error {
+				if perr := buf.Put(mts.EnvStatusEventTopic, mtsproducer.BidPlacedStatusEventProvider(c.TransactionId, b.WorldId, lm.Id(), b.BidderId, b.Amount)); perr != nil {
+					return perr
+				}
+				if res.HadPrior {
+					return buf.Put(mts.EnvStatusEventTopic, mtsproducer.OutbidStatusEventProvider(c.TransactionId, b.WorldId, lm.Id(), res.PreviousBidderId))
+				}
+				return nil
+			})
+
+			// Record the outbid bidder's bid-lost history row (nProcessStatus 2). Each
+			// outbid is a distinct lost bid, so one row per outbid. Best-effort: a
+			// failure leaves history a row short but does not undo the (committed) bid.
+			if res.HadPrior {
+				t := tenant.MustFromContext(ctx)
+				lostTxn, berr := transaction.NewBuilder(t.Id(), world.Id(b.WorldId), res.PreviousBidderId).
+					SetId(uuid.New()).
+					SetCounterpartyId(res.SellerId).
+					SetItemId(res.ItemId).
+					SetQuantity(res.Quantity).
+					SetTotalPrice(res.PreviousBidAmount).
+					SetKind(transaction.KindBidLost).
+					Build()
+				if berr != nil {
+					l.WithError(berr).Warnf("Failed to build bid-lost history row for outbid bidder [%d] on listing [%s].", res.PreviousBidderId, lm.Id().String())
+				} else if _, terr := transaction.CreateTransaction(db.WithContext(ctx), lostTxn); terr != nil {
+					l.WithError(terr).Warnf("Failed to record bid-lost history row for outbid bidder [%d] on listing [%s].", res.PreviousBidderId, lm.Id().String())
+				}
 			}
 		}
 	}

@@ -7,11 +7,15 @@ import (
 	"github.com/google/uuid"
 )
 
-// Kind enumerates which side of a settled listing a transaction-history row
-// represents: a purchase row (the buyer's view) or a sale row (the seller's).
+// Kind enumerates what a transaction-history row represents. The channel maps
+// each to the client's CITCItem nProcessStatus (IDA-verified v83
+// CITCWnd_List::GetContractHistoryCode): purchase->1, sale->0, bid_lost->2,
+// cancelled->3.
 const (
-	KindPurchase = "purchase"
-	KindSale     = "sale"
+	KindPurchase  = "purchase"
+	KindSale      = "sale"
+	KindBidLost   = "bid_lost"  // an outbid bidder's lost-bid row (nProcessStatus 2)
+	KindCancelled = "cancelled" // a seller's cancelled-listing row (nProcessStatus 3)
 )
 
 // Model is the immutable MTS transaction-history record. A settle writes two:

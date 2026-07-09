@@ -107,7 +107,7 @@ func TestPlaceBidRejectsBelowFloor(t *testing.T) {
 	defer cleanup()
 
 	// First bid: floor is listValue (1000). 999 is below.
-	if err := p.PlaceBid(bidRequest(listingId, bidderForBid, bidderAcctForBid, 999)); err == nil {
+	if _, err := p.PlaceBid(bidRequest(listingId, bidderForBid, bidderAcctForBid, 999)); err == nil {
 		t.Fatal("expected first bid below the listValue floor to be rejected")
 	}
 	if emitter.called {
@@ -125,13 +125,13 @@ func TestPlaceBidRejectsBelowIncrement(t *testing.T) {
 	defer cleanup()
 
 	// First valid bid: 1000 (== floor). Records held + updates currentBid.
-	if err := p.PlaceBid(bidRequest(listingId, priorBidder, priorBidderAcct, 1000)); err != nil {
+	if _, err := p.PlaceBid(bidRequest(listingId, priorBidder, priorBidderAcct, 1000)); err != nil {
 		t.Fatalf("first bid: %v", err)
 	}
 	emitter.called = false
 
 	// Second bid must clear 1000 + 100 = 1100. 1099 is too low.
-	if err := p.PlaceBid(bidRequest(listingId, bidderForBid, bidderAcctForBid, 1099)); err == nil {
+	if _, err := p.PlaceBid(bidRequest(listingId, bidderForBid, bidderAcctForBid, 1099)); err == nil {
 		t.Fatal("expected a bid below currentBid+minIncrement to be rejected")
 	}
 	if emitter.called {
@@ -151,7 +151,7 @@ func TestPlaceBidEscrowsMarkedUp(t *testing.T) {
 	p, emitter, db, listingId, cleanup := newBidProcessor(t)
 	defer cleanup()
 
-	if err := p.PlaceBid(bidRequest(listingId, bidderForBid, bidderAcctForBid, 1000)); err != nil {
+	if _, err := p.PlaceBid(bidRequest(listingId, bidderForBid, bidderAcctForBid, 1000)); err != nil {
 		t.Fatalf("PlaceBid: %v", err)
 	}
 
@@ -219,14 +219,29 @@ func TestPlaceBidOutbidReleasesPrior(t *testing.T) {
 	defer cleanup()
 
 	// Prior high bid at 1000 (markedUp = ceil(1000*1.10)+500 = 1600).
-	if err := p.PlaceBid(bidRequest(listingId, priorBidder, priorBidderAcct, 1000)); err != nil {
+	if _, err := p.PlaceBid(bidRequest(listingId, priorBidder, priorBidderAcct, 1000)); err != nil {
 		t.Fatalf("prior bid: %v", err)
 	}
 	emitter.called = false
 
 	// Outbid at 1200 (>= 1000 + 100). markedUp = ceil(1200*1.10)+500 = 1820.
-	if err := p.PlaceBid(bidRequest(listingId, bidderForBid, bidderAcctForBid, 1200)); err != nil {
+	res, err := p.PlaceBid(bidRequest(listingId, bidderForBid, bidderAcctForBid, 1200))
+	if err != nil {
 		t.Fatalf("outbid: %v", err)
+	}
+	// The BidResult reports the displaced bidder so the consumer can emit OUTBID and
+	// record the outbid bidder's bid-lost history row (task-102 #1/#2).
+	if !res.HadPrior {
+		t.Error("outbid BidResult.HadPrior = false, want true")
+	}
+	if res.PreviousBidderId != priorBidder {
+		t.Errorf("outbid BidResult.PreviousBidderId = %d, want %d", res.PreviousBidderId, priorBidder)
+	}
+	if res.PreviousBidAmount != 1000 {
+		t.Errorf("outbid BidResult.PreviousBidAmount = %d, want 1000 (the prior raw bid)", res.PreviousBidAmount)
+	}
+	if res.ItemId == 0 || res.SellerId == 0 {
+		t.Errorf("outbid BidResult missing item/seller: itemId=%d sellerId=%d", res.ItemId, res.SellerId)
 	}
 
 	// Prior bid marked released; new bid held.
@@ -282,7 +297,7 @@ func TestSettleAuctionAtExpiryCreditsSellerNoDoubleDebit(t *testing.T) {
 	p, emitter, db, listingId, cleanup := newBidProcessor(t)
 	defer cleanup()
 
-	if err := p.PlaceBid(bidRequest(listingId, bidderForBid, bidderAcctForBid, 1000)); err != nil {
+	if _, err := p.PlaceBid(bidRequest(listingId, bidderForBid, bidderAcctForBid, 1000)); err != nil {
 		t.Fatalf("bid: %v", err)
 	}
 	emitter.reset()
@@ -358,7 +373,7 @@ func TestSettleAuctionTwiceCreditsSellerOnce(t *testing.T) {
 	p, emitter, db, listingId, cleanup := newBidProcessor(t)
 	defer cleanup()
 
-	if err := p.PlaceBid(bidRequest(listingId, bidderForBid, bidderAcctForBid, 1000)); err != nil {
+	if _, err := p.PlaceBid(bidRequest(listingId, bidderForBid, bidderAcctForBid, 1000)); err != nil {
 		t.Fatalf("bid: %v", err)
 	}
 	emitter.reset()

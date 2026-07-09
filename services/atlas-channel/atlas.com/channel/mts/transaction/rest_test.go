@@ -92,6 +92,24 @@ func TestToMtsItemProcessStatus(t *testing.T) {
 	if got := ToMtsItem(sale).ProcessStatus(); got != 0 {
 		t.Errorf("sale nProcessStatus = %d, want 0 (Sold)", got)
 	}
+
+	// bid_lost -> 2 (Bid Lost), cancelled -> 3 (Cancelled): the two dispositions
+	// added in task-102, IDA-verified via GetContractHistoryCode.
+	bidLost, err := Extract(RestModel{ItemId: 1302000, Quantity: 1, TotalPrice: 2000, Kind: "bid_lost", CreatedAt: created})
+	if err != nil {
+		t.Fatalf("extract bid_lost: %v", err)
+	}
+	if got := ToMtsItem(bidLost).ProcessStatus(); got != 2 {
+		t.Errorf("bid_lost nProcessStatus = %d, want 2 (Bid Lost)", got)
+	}
+
+	cancelled, err := Extract(RestModel{ItemId: 1302000, Quantity: 1, TotalPrice: 1500, Kind: "cancelled", CreatedAt: created})
+	if err != nil {
+		t.Fatalf("extract cancelled: %v", err)
+	}
+	if got := ToMtsItem(cancelled).ProcessStatus(); got != 3 {
+		t.Errorf("cancelled nProcessStatus = %d, want 3 (Cancelled)", got)
+	}
 }
 
 // TestResource asserts the read endpoint path template matches atlas-mts's

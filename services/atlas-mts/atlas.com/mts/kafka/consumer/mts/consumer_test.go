@@ -4,6 +4,7 @@ import (
 	"atlas-mts/holding"
 	"atlas-mts/kafka/message/mts"
 	"atlas-mts/listing"
+	"atlas-mts/transaction"
 	"atlas-mts/test"
 	"atlas-mts/wish"
 	"context"
@@ -122,7 +123,7 @@ func newCancelCommand(transactionId uuid.UUID, serial uint32, sellerId uint32) m
 }
 
 func TestCancelListing_MovesActiveToSellerHoldingAndAcks(t *testing.T) {
-	db := test.SetupTestDB(t, listing.Migration, holding.Migration, wish.Migration)
+	db := test.SetupTestDB(t, listing.Migration, holding.Migration, wish.Migration, transaction.Migration)
 	ctx := test.CreateTestContext()
 	l := logrus.New()
 
@@ -165,6 +166,17 @@ func TestCancelListing_MovesActiveToSellerHoldingAndAcks(t *testing.T) {
 	}
 	if rp.events[0].transactionId != transactionId {
 		t.Fatalf("event transactionId mismatch: want %s got %s", transactionId, rp.events[0].transactionId)
+	}
+
+	// exactly one cancelled history row for the seller (task-102 #4).
+	var cancelledRows int64
+	if err := db.WithContext(ctx).Table("mts_transactions").
+		Where("character_id = ? AND kind = ?", sellerId, transaction.KindCancelled).
+		Count(&cancelledRows).Error; err != nil {
+		t.Fatalf("count cancelled transactions: %v", err)
+	}
+	if cancelledRows != 1 {
+		t.Fatalf("expected exactly 1 cancelled history row for seller %d, got %d", sellerId, cancelledRows)
 	}
 }
 

@@ -21,22 +21,31 @@ import (
 //
 // IDA-verified against the v95 PDB build (CITCWnd_List::GetContractHistoryCode
 // 0x5875D0, same mapping). Sending 0 for every row made a bought item render
-// as "Sold" (task-102 live finding). atlas-mts records only purchase/sale, so
-// we map those two; bid-lost/cancelled are not produced as history rows today.
+// as "Sold" (task-102 live finding). atlas-mts now records purchase, sale,
+// bid_lost (an outbid bidder's lost bid), and cancelled (a seller's cancelled
+// listing), so all four dispositions are mapped.
 const (
 	nProcessStatusSold      uint16 = 0
 	nProcessStatusPurchased uint16 = 1
+	nProcessStatusBidLost   uint16 = 2
+	nProcessStatusCancelled uint16 = 3
 )
 
-// processStatusForKind maps the transaction kind (atlas-mts KindPurchase/KindSale)
-// to the client's contract-history disposition code. An unrecognized kind falls
-// back to "Sold" (0) — the prior behavior — rather than an out-of-range code the
-// client would render as an empty column.
+// processStatusForKind maps the transaction kind (atlas-mts Kind*) to the client's
+// contract-history disposition code. An unrecognized kind falls back to "Sold" (0)
+// — the prior behavior — rather than an out-of-range code the client would render
+// as an empty column.
 func processStatusForKind(kind string) uint16 {
-	if kind == "purchase" {
+	switch kind {
+	case "purchase":
 		return nProcessStatusPurchased
+	case "bid_lost":
+		return nProcessStatusBidLost
+	case "cancelled":
+		return nProcessStatusCancelled
+	default: // "sale" and any unknown kind
+		return nProcessStatusSold
 	}
-	return nProcessStatusSold
 }
 
 // ToMtsItem maps one channel-side transaction.Model to a clientbound MtsItem

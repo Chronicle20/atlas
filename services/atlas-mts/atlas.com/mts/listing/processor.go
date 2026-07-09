@@ -91,6 +91,19 @@ type BidRequest struct {
 	Amount          uint32
 }
 
+// BidResult reports the outcome of a successful PlaceBid so the caller can emit the
+// status events and record history. ItemId/Quantity/SellerId describe the listing;
+// HadPrior/PreviousBidderId/PreviousBidAmount describe the displaced high bidder (if
+// any) for the OUTBID event and the outbid bidder's bid-lost history row.
+type BidResult struct {
+	ItemId            uint32
+	Quantity          uint32
+	SellerId          uint32
+	HadPrior          bool
+	PreviousBidderId  uint32
+	PreviousBidAmount uint32
+}
+
 // SettleRequest carries the caller-supplied parameters for the auction
 // settle-at-expiry decision. The ticker supplies the winner (the listing's current
 // high bidder) plus the account ids needed for the seller credit and the winner's
@@ -182,7 +195,9 @@ type Processor interface {
 	// (bid * (1 + commissionRate)) by emitting an MtsBidEscrow{-markedUp} saga so the
 	// winner's settlement matches buy-now. On an outbid it RELEASES the prior high
 	// bidder's escrow (MtsBidEscrow{+markedUpPrior}) and marks their Bid released.
-	PlaceBid(req BidRequest) error
+	// It returns a BidResult so the caller can emit BID_PLACED (and, on an outbid,
+	// OUTBID) and record the outbid bidder's bid-lost history row.
+	PlaceBid(req BidRequest) (BidResult, error)
 	// SettleAuction settles an expired auction. With a high bidder it credits the
 	// seller's points (+listValue) and moves custody to the winner WITHOUT
 	// re-debiting the winner (the winner's prepaid was already escrowed at bid time;
@@ -663,16 +678,16 @@ func bidEscrowTimeout() time.Duration {
 // PlaceBid escrows the marked-up amount but records the raw bid on the Bid row
 // (the row tracks the auction bid; the marked-up figure is the wallet hold). The
 // escrow keys off the Bid's escrowTxnId so a release reverses the exact hold.
-func (p *ProcessorImpl) PlaceBid(req BidRequest) error {
+func (p *ProcessorImpl) PlaceBid(req BidRequest) (BidResult, error) {
 	lm, err := GetById(req.ListingId.String())(p.db.WithContext(p.ctx))()
 	if err != nil {
-		return fmt.Errorf("load listing %s: %w", req.ListingId, err)
+		return BidResult{}, fmt.Errorf("load listing %s: %w", req.ListingId, err)
 	}
 	if lm.State() != StateActive {
-		return fmt.Errorf("listing %s is not active (state=%s); cannot bid: %w", req.ListingId, lm.State(), ErrListingUnavailable)
+		return BidResult{}, fmt.Errorf("listing %s is not active (state=%s); cannot bid: %w", req.ListingId, lm.State(), ErrListingUnavailable)
 	}
 	if lm.SaleType() != SaleTypeAuction {
-		return fmt.Errorf("listing %s is not an auction (saleType=%s); cannot bid", req.ListingId, lm.SaleType())
+		return BidResult{}, fmt.Errorf("listing %s is not an auction (saleType=%s); cannot bid", req.ListingId, lm.SaleType())
 	}
 
 	priorBid := lm.CurrentBid()
@@ -687,7 +702,7 @@ func (p *ProcessorImpl) PlaceBid(req BidRequest) error {
 		floor = lm.ListValue()
 	}
 	if req.Amount < floor {
-		return fmt.Errorf("bid %d is below the floor %d for listing %s", req.Amount, floor, req.ListingId)
+		return BidResult{}, fmt.Errorf("bid %d is below the floor %d for listing %s", req.Amount, floor, req.ListingId)
 	}
 
 	escrowTxnId := uuid.New()
@@ -746,10 +761,10 @@ func (p *ProcessorImpl) PlaceBid(req BidRequest) error {
 		return nil
 	})
 	if terr != nil {
-		return terr
+		return BidResult{}, terr
 	}
 	if !won {
-		return fmt.Errorf("bid for listing %s lost the high-bid race (current bid advanced); rejected", req.ListingId)
+		return BidResult{}, fmt.Errorf("bid for listing %s lost the high-bid race (current bid advanced); rejected", req.ListingId)
 	}
 
 	// HOLD the new bidder's prepaid by the MARKED-UP amount (single-step saga, N=1).
@@ -767,7 +782,7 @@ func (p *ProcessorImpl) PlaceBid(req BidRequest) error {
 	})
 	holdBuilder.SetTimeout(bidEscrowTimeout())
 	if err := p.emitter.Create(holdBuilder.Build()); err != nil {
-		return err
+		return BidResult{}, err
 	}
 
 	// On an outbid, RELEASE the prior bidder's escrow by the SAME marked-up amount
@@ -788,11 +803,18 @@ func (p *ProcessorImpl) PlaceBid(req BidRequest) error {
 		})
 		releaseBuilder.SetTimeout(bidEscrowTimeout())
 		if err := p.emitter.Create(releaseBuilder.Build()); err != nil {
-			return err
+			return BidResult{}, err
 		}
 	}
 
-	return nil
+	return BidResult{
+		ItemId:            lm.TemplateId(),
+		Quantity:          lm.Quantity(),
+		SellerId:          lm.SellerId(),
+		HadPrior:          hasPrior,
+		PreviousBidderId:  priorBidder,
+		PreviousBidAmount: priorBid,
+	}, nil
 }
 
 // auctionSettleTimeout scales the auction-settle saga's timeout. The settle is a

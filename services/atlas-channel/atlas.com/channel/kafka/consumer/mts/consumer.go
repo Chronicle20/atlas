@@ -125,6 +125,9 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				if err := register(message.AdaptHandler(message.PersistentConfig(handleBidPlaced(sc, wp)))); err != nil {
 					return nil, err
 				}
+				if err := register(message.AdaptHandler(message.PersistentConfig(handleOutbid(sc, wp)))); err != nil {
+					return nil, err
+				}
 				if err := register(message.AdaptHandler(message.PersistentConfig(handleBidFailed(sc, wp)))); err != nil {
 					return nil, err
 				}
@@ -583,6 +586,22 @@ func handleBidPlaced(sc server.Model, wp writer.Producer) message.Handler[mtsmsg
 		}
 		l.Debugf("MTS bid placed by bidder [%d] on listing [%s] (amount [%d]); refreshing auction browse.", e.Body.BidderId, e.Body.ListingId.String(), e.Body.Amount)
 		announceBidderAuctionBrowse(l, ctx, sc, wp, e.Body.WorldId, e.Body.BidderId)
+	}
+}
+
+// handleOutbid refreshes a displaced high bidder after they were outbid. Their held
+// escrow was released back to prepaid server-side (the wallet-status consumer
+// refreshes their NX counter, scene-gated); this re-pushes their auction browse so
+// they see they are no longer the top bidder (the current high bid climbed). The
+// OUTBID event was previously emitted by atlas-mts but had no channel handler, so
+// the outbid bidder saw no update until they re-entered the tab.
+func handleOutbid(sc server.Model, wp writer.Producer) message.Handler[mtsmsg.StatusEvent[mtsmsg.StatusEventOutbidBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e mtsmsg.StatusEvent[mtsmsg.StatusEventOutbidBody]) {
+		if e.Type != mtsmsg.StatusEventTypeOutbid {
+			return
+		}
+		l.Debugf("MTS bidder [%d] outbid on listing [%s]; refreshing their auction browse.", e.Body.PreviousBidderId, e.Body.ListingId.String())
+		announceBidderAuctionBrowse(l, ctx, sc, wp, e.Body.WorldId, e.Body.PreviousBidderId)
 	}
 }
 

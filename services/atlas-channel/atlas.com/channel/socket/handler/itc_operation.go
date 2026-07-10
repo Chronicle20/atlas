@@ -440,7 +440,7 @@ func ItcOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer
 				// un-freeze it, and re-push the Wanted list so the dead want-ad drops off.
 				l.Infof("Character [%d] offered on unresolved want-ad serial [%d] (completed/expired); failing the offer and refreshing the Wanted list.", s.CharacterId(), body.WishSerial())
 				writeWishFailure(l, ctx, wp, s, fieldpkt.MtsOperationSaleCurrentItemToWishFailedBody(0))
-				writeBrowsePage(l, ctx, wp, s, itcSectionWanted, 0, 0, 1, 1, 1, mtslisting.BrowseFilter{})
+				writeBrowsePage(l, ctx, wp, s, itcSectionWanted, 0, 0, 1, 1, 1, false, mtslisting.BrowseFilter{})
 				return
 			}
 			emitCreateListing(l, ctx, s, buildCreateListingFromSaleCurrentItem(*body, s.WorldId(), s.CharacterId(), s.AccountId(), sellerName(l, ctx, s), ownerId, price, wantCount))
@@ -473,7 +473,7 @@ func ItcOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer
 			// CITC::OnGetITCListDone (v83 0x5a48af) clears the latch ONLY when its
 			// trailing Decode1 byte is nonzero (`result=Decode1; if(result) this[6]=0`).
 			// Sending 0 left the latch set, freezing the next tab — the reported bug.
-			writeBrowsePage(l, ctx, wp, s, body.Category(), body.CategorySub(), body.Page(), body.SortType(), body.SortColumn(), 1, browseFilterFromGetItcList(*body))
+			writeBrowsePage(l, ctx, wp, s, body.Category(), body.CategorySub(), body.Page(), body.SortType(), body.SortColumn(), 1, false, browseFilterFromGetItcList(*body))
 		case ItcOperationSearchItcList:
 			body := &fieldsb.ItcOperationTabSearch{}
 			body.Decode(l, ctx)(r, readerOptions)
@@ -484,13 +484,13 @@ func ItcOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer
 			// m_bITCRequestSent and the next tab/search is not blocked.
 			f, hasResults := browseFilterFromSearchItcList(l, ctx, *body)
 			if !hasResults {
-				// The term matched no items (or atlas-data failed). An empty
-				// TemplateIds would browse UNFILTERED (all listings), so write an
-				// empty page directly instead of running the browse.
-				writeEmptyBrowsePage(l, ctx, wp, s, body.Category(), body.CategorySub(), 0, 0, 0, 1)
+				// The term matched no items (or atlas-data failed): send the dedicated
+				// GetSearchItcListFailed arm (mode 24), not an empty list — an empty
+				// TemplateIds would browse UNFILTERED (all listings) anyway.
+				writeSearchListFailed(l, ctx, wp, s)
 				return
 			}
-			writeBrowsePage(l, ctx, wp, s, body.Category(), body.CategorySub(), 0, 0, 0, 1, f)
+			writeBrowsePage(l, ctx, wp, s, body.Category(), body.CategorySub(), 0, 0, 0, 1, true, f)
 		case ItcOperationBuy:
 			body := &fieldsb.ItcOperationBuy{}
 			body.Decode(l, ctx)(r, readerOptions)
@@ -714,7 +714,7 @@ func resolveSellerAssetId(l logrus.FieldLogger, ctx context.Context, characterId
 // EVERY GetItcListDone that answers a latching client request MUST pass 1 — a 0
 // leaves the latch set and freezes the next tab. The entry path also passes 1
 // (cosmetic there, since entry is server-initiated and never sets the latch).
-func writeBrowsePage(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, s session.Model, category uint32, subCategory uint32, page uint32, sortType byte, sortColumn byte, requestSent byte, f mtslisting.BrowseFilter) {
+func writeBrowsePage(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, s session.Model, category uint32, subCategory uint32, page uint32, sortType byte, sortColumn byte, requestSent byte, search bool, f mtslisting.BrowseFilter) {
 	var items []fieldcb.MtsItem
 	switch {
 	case category == itcSectionCart && subCategory == 0:
@@ -782,7 +782,16 @@ func writeBrowsePage(l logrus.FieldLogger, ctx context.Context, wp writer.Produc
 	// selector); the packet's item list carries only the requested 16-item
 	// window. This also holds for the full-list arms above (cart/wanted/
 	// history/own-auction), which previously stuffed every row into one page.
-	body := fieldpkt.MtsOperationGetItcListDoneBody(uint32(len(items)), category, subCategory, page, sortType, sortColumn, mtsPageWindow(items, page), requestSent)
+	//
+	// A SEARCH result uses the dedicated GetSearchItcListDone arm (mode 23) so the
+	// client follows OnGetSearchITCListDone (which clears the latch itself and has
+	// no sort/requestSent tail) rather than reusing the GetItcListDone arm.
+	var body func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte
+	if search {
+		body = fieldpkt.MtsOperationGetSearchItcListDoneBody(uint32(len(items)), category, subCategory, page, mtsPageWindow(items, page))
+	} else {
+		body = fieldpkt.MtsOperationGetItcListDoneBody(uint32(len(items)), category, subCategory, page, sortType, sortColumn, mtsPageWindow(items, page), requestSent)
+	}
 	if err := session.Announce(l)(ctx)(wp)(fieldcb.MtsOperationWriter)(body)(s); err != nil {
 		l.WithError(err).Errorf("Unable to announce MTS browse page to character [%d].", s.CharacterId())
 	}
@@ -796,18 +805,15 @@ func writeBrowsePage(l logrus.FieldLogger, ctx context.Context, wp writer.Produc
 	announceUserPurchaseItems(l, ctx, wp, s)
 }
 
-// writeEmptyBrowsePage writes a GetItcListDone result with zero items for the
-// given view, then re-pushes the seller's own panels (as writeBrowsePage does). It
-// is used by SEARCH_ITC_LIST when the search term matches no items: an empty
-// TemplateIds filter would browse unfiltered (all listings), so the empty result
-// must be written directly rather than via the browse path. The latch contract is
-// identical to writeBrowsePage — requestSent MUST be 1 so OnGetITCListDone clears
-// m_bITCRequestSent and the next request is not frozen.
-func writeEmptyBrowsePage(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, s session.Model, category uint32, subCategory uint32, page uint32, sortType byte, sortColumn byte, requestSent byte) {
-	items := make([]fieldcb.MtsItem, 0)
-	body := fieldpkt.MtsOperationGetItcListDoneBody(uint32(len(items)), category, subCategory, page, sortType, sortColumn, items, requestSent)
+// writeSearchListFailed writes the dedicated GetSearchItcListFailed arm (mode 24)
+// then re-pushes the seller's own panels. It is used by SEARCH_ITC_LIST when the
+// search term matches no items (or atlas-data failed): the proper client path is
+// OnGetSearchITCListFailed (it clears m_bITCRequestSent so the next request is not
+// frozen), rather than an empty GetItcListDone. reason 0 is the generic notice.
+func writeSearchListFailed(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, s session.Model) {
+	body := fieldpkt.MtsOperationGetSearchItcListFailedBody(0)
 	if err := session.Announce(l)(ctx)(wp)(fieldcb.MtsOperationWriter)(body)(s); err != nil {
-		l.WithError(err).Errorf("Unable to announce empty MTS search page to character [%d].", s.CharacterId())
+		l.WithError(err).Errorf("Unable to announce MTS search-failed to character [%d].", s.CharacterId())
 	}
 	announceUserSaleItems(l, ctx, wp, s)
 	announceUserPurchaseItems(l, ctx, wp, s)

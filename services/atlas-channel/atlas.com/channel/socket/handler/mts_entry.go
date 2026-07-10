@@ -140,7 +140,7 @@ func EnterMtsHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Pro
 		// (category "3") do not bleed into the first tab on initial load; without
 		// it the empty filter returns every listing and auctions render under For
 		// Sale until the user switches sub-tab (which re-queries with the filter).
-		writeBrowsePage(l, ctx, wp, s, 1, 0, 0, 1, 1, 1, mtslisting.BrowseFilter{Category: "1"})
+		writeBrowsePage(l, ctx, wp, s, 1, 0, 0, 1, 1, 1, false, mtslisting.BrowseFilter{Category: "1"})
 
 		// The character's take-home holdings (GET_USER_PURCHASE_ITEM_DONE). The
 		// purchase (transfer) list is announced before the sale list.

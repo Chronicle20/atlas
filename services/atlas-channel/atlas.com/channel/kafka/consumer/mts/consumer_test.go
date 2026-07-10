@@ -3,6 +3,7 @@ package mts
 import (
 	"context"
 	"encoding/json"
+	"strings"
 	"testing"
 
 	mtsmsg "atlas-channel/kafka/message/mts"
@@ -11,36 +12,45 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// TestReasonFieldNoDecodeCollision guards the fix for the EVENT_TOPIC_MTS_STATUS
-// reason-type collision (task-102): every handler decodes every message, so a
-// numeric-reason event (LISTING_CREATE_FAILED) must NOT break the string-reason
-// bodies (BUY_FAILED/BID_FAILED) and vice versa. The string keys use "reasonKey";
-// the numeric ones use "reason" — different JSON tags, so each ignores the other's
-// field instead of failing to unmarshal.
+// TestReasonFieldNoDecodeCollision guards the EVENT_TOPIC_MTS_STATUS reason-tag
+// discipline (task-102, DOM-25): every handler decodes every message, so ALL
+// failure events must carry their semantic key under the SAME JSON tag "reasonKey"
+// (string) — never a bare numeric "reason". An earlier design had cancel/take-home
+// on a numeric "reason" tag, which collided with buy/bid's string "reasonKey" on
+// the shared topic (a string-vs-number mismatch on one tag) and dropped messages.
 func TestReasonFieldNoDecodeCollision(t *testing.T) {
-	// A numeric-reason event (LISTING_CANCEL_FAILED) decoded by a string-reason
-	// (buy-failed) body: must not error, and ReasonKey stays empty (the numeric
-	// "reason" is ignored).
-	numericReason := []byte(`{"transactionId":"00000000-0000-0000-0000-000000000000","type":"LISTING_CANCEL_FAILED","body":{"worldId":0,"serial":5,"sellerId":1,"reason":0}}`)
-	var asBuy mtsmsg.StatusEvent[mtsmsg.StatusEventBuyFailedBody]
-	if err := json.Unmarshal(numericReason, &asBuy); err != nil {
-		t.Fatalf("numeric-reason event must not break the buy-failed decode: %v", err)
-	}
-	if asBuy.Body.ReasonKey != "" {
-		t.Fatalf("ReasonKey should be empty for a numeric-reason event, got %q", asBuy.Body.ReasonKey)
+	// Cancel/take-home failure bodies MUST serialize "reasonKey" (string), never a
+	// bare "reason" — this is the exact regression the DOM-25 migration fixed.
+	for _, b := range [][]byte{
+		mustMarshal(t, mtsmsg.StatusEventListingCancelFailedBody{ReasonKey: "ITEM_SOLD"}),
+		mustMarshal(t, mtsmsg.StatusEventTakeHomeFailedBody{ReasonKey: "ITEM_SOLD"}),
+	} {
+		if !strings.Contains(string(b), `"reasonKey":"ITEM_SOLD"`) {
+			t.Fatalf("failure body must serialize a string reasonKey, got %s", b)
+		}
+		if strings.Contains(string(b), `"reason":`) {
+			t.Fatalf("failure body must NOT carry a bare numeric reason tag, got %s", b)
+		}
 	}
 
-	// A string-reasonKey event (BUY_FAILED) decoded by a numeric-reason
-	// (cancel-failed) body: must not error, and Reason stays 0 (the string
-	// "reasonKey" is ignored).
-	stringReason := []byte(`{"transactionId":"00000000-0000-0000-0000-000000000000","type":"BUY_FAILED","body":{"worldId":0,"serial":5,"buyerId":1,"reasonKey":"NOT_ENOUGH_NX"}}`)
+	// Cross-decode safety: a BUY_FAILED event decoded by a cancel-failed body (every
+	// handler decodes every message) must not error — the shared "reasonKey" tag has
+	// one type across all events, and the handler's e.Type guard (not the decode) is
+	// what scopes it to its own event.
+	buyFailed := []byte(`{"transactionId":"00000000-0000-0000-0000-000000000000","type":"BUY_FAILED","body":{"worldId":0,"serial":5,"buyerId":1,"reasonKey":"NOT_ENOUGH_NX"}}`)
 	var asCancel mtsmsg.StatusEvent[mtsmsg.StatusEventListingCancelFailedBody]
-	if err := json.Unmarshal(stringReason, &asCancel); err != nil {
-		t.Fatalf("string-reasonKey event must not break the cancel-failed decode: %v", err)
+	if err := json.Unmarshal(buyFailed, &asCancel); err != nil {
+		t.Fatalf("cross-decode of a reasonKey event must not error: %v", err)
 	}
-	if asCancel.Body.Reason != 0 {
-		t.Fatalf("Reason should be 0 for a string-reasonKey event, got %d", asCancel.Body.Reason)
+}
+
+func mustMarshal(t *testing.T, v interface{}) []byte {
+	t.Helper()
+	b, err := json.Marshal(v)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
 	}
+	return b
 }
 
 // testOptions mirrors the tenant writer options shape ResolveCode consumes:

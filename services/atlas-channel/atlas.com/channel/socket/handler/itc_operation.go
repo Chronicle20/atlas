@@ -294,6 +294,12 @@ const (
 	itcSectionCart   uint32 = 4
 )
 
+// mtsSearchOptionSellerName is the SEARCH_ITC_LIST searchOption value for a
+// character/seller-name search (IDA v83 CITCWnd_Tab::OnButtonClicked 0x5b7106:
+// the searchOption==0 branch validates the input as a character name). A non-zero
+// searchOption is an item-name search.
+const mtsSearchOptionSellerName uint32 = 0
+
 // applyItcViewFilters maps the client's GET_ITC_LIST/SEARCH browse selectors onto
 // the REST listing filter. The wire carries two values that mirror the marketplace
 // data model (listings are stored with the same two fields at AcceptToMtsListing):
@@ -344,6 +350,20 @@ func browseFilterFromSearchItcList(l logrus.FieldLogger, ctx context.Context, p 
 	name := p.SearchName()
 	if name == "" {
 		// No search term: browse the view unfiltered.
+		return f, true
+	}
+
+	// searchOption selects the search TARGET, not just a flag to ignore (IDA v83
+	// CITCWnd_Tab::OnButtonClicked 0x5b7106): searchOption==0 is a CHARACTER/SELLER
+	// name search (the client validates the input with is_valid_character_name),
+	// searchOption!=0 is an ITEM name search. Treating every term as an item name
+	// made a seller-name search resolve to zero item ids and hard-fail (task-102
+	// live finding: "search by character name -> the request for mts has failed").
+	if p.SearchOption() == mtsSearchOptionSellerName {
+		// Seller search: exact seller_name match (atlas-mts filters seller_name = ?).
+		// hasResults=true so the browse runs and returns that seller's listings (an
+		// empty page if they have none) rather than the Failed arm.
+		f.SellerName = name
 		return f, true
 	}
 
@@ -543,7 +563,10 @@ func ItcOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer
 				writeWishFailure(l, ctx, wp, s, fieldpkt.MtsOperationSetZzimFailedBody())
 				return
 			}
-			if err := mtsproc.NewProcessor(l, ctx).RegisterWish(s.WorldId(), s.CharacterId(), lm.TemplateId(), lm.ListValue(), 0, mtsmsg.WishOriginSetZzim); err != nil {
+			// body.ItcSn() is the favorited listing's serial (SET_ZZIM resolves the
+			// listing by it above), stored on the cart wish so the Cart renders/settles
+			// exactly that listing.
+			if err := mtsproc.NewProcessor(l, ctx).RegisterWish(s.WorldId(), s.CharacterId(), lm.TemplateId(), body.ItcSn(), lm.ListValue(), 0, mtsmsg.WishOriginSetZzim); err != nil {
 				l.WithError(err).Errorf("Unable to emit SET_ZZIM RegisterWish for character [%d] item [%d].", s.CharacterId(), lm.TemplateId())
 				writeWishFailure(l, ctx, wp, s, fieldpkt.MtsOperationSetZzimFailedBody())
 			}
@@ -588,7 +611,7 @@ func ItcOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer
 			if body.Duration() != 0 || body.FeeOption() != 0 || body.Description() != "" {
 				l.Debugf("REGISTER_WISH_ENTRY for character [%d] item [%d] dropped unmodeled fields (duration [%d] fee [%d] desc [%q]).", s.CharacterId(), body.ItemId(), body.Duration(), body.FeeOption(), body.Description())
 			}
-			if err := mtsproc.NewProcessor(l, ctx).RegisterWish(s.WorldId(), s.CharacterId(), body.ItemId(), body.Price(), body.Count(), mtsmsg.WishOriginRegisterWish); err != nil {
+			if err := mtsproc.NewProcessor(l, ctx).RegisterWish(s.WorldId(), s.CharacterId(), body.ItemId(), 0, body.Price(), body.Count(), mtsmsg.WishOriginRegisterWish); err != nil {
 				l.WithError(err).Errorf("Unable to emit REGISTER_WISH_ENTRY RegisterWish for character [%d] item [%d].", s.CharacterId(), body.ItemId())
 				writeWishFailure(l, ctx, wp, s, fieldpkt.MtsOperationRegisterWishItemFailedBody())
 			}
@@ -724,10 +747,11 @@ func writeBrowsePage(l logrus.FieldLogger, ctx context.Context, wp writer.Produc
 	switch {
 	case category == itcSectionCart && subCategory == 0:
 		// My Page -> Cart (section 4 / sub 0): the viewer's added-to-cart entries
-		// (SET_ZZIM). Each cart entry is rendered as its favorited item's current
-		// best active LISTING (nITCSN = listing serial, all-in price via ToMtsItem's
-		// contract fee) so BUY_ZZIM / DELETE_ZZIM address a real listing and the
-		// price shows with fees — see mts/cart.Items.
+		// (SET_ZZIM). Each cart entry is rendered as the SPECIFIC listing it favorited
+		// — resolved by the stored listingSerial (nITCSN = that listing's serial,
+		// all-in price via ToMtsItem's contract fee) — so the row shows that listing's
+		// real price/sold-until and BUY_ZZIM / DELETE_ZZIM address exactly it. See
+		// mts/cart.Items.
 		items, loadErr = mtscart.Items(l, ctx, s.WorldId(), s.CharacterId())
 	case category == itcSectionCart && subCategory == 1:
 		// My Page -> Offers (section 4 / sub 1): the viewer's OWN want-ads
@@ -916,13 +940,10 @@ func writeWishFailure(l logrus.FieldLogger, ctx context.Context, wp writer.Produ
 func emitRemoveCartWishByListingSerial(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, s session.Model, serial uint32) {
 	failBody := fieldpkt.MtsOperationDeleteZzimFailedBody()
 
-	lm, err := mtslisting.NewProcessor(l, ctx).GetBySerial(s.WorldId(), serial)
-	if err != nil {
-		l.WithError(err).Errorf("Unable to resolve listing serial [%d] for DELETE_ZZIM, character [%d].", serial, s.CharacterId())
-		writeWishFailure(l, ctx, wp, s, failBody)
-		return
-	}
-
+	// The Cart renders each entry as its favorited LISTING (itcSn = that listing's
+	// serial, stored on the cart wish as ListingSerial), so DELETE_ZZIM's wire serial
+	// matches the cart wish DIRECTLY by ListingSerial — no listing lookup needed, and
+	// it still works when the favorited listing has since sold (its serial is gone).
 	ws, err := mtswish.NewProcessor(l, ctx).GetByCharacterAndType(s.CharacterId(), mtswish.TypeCart)
 	if err != nil {
 		l.WithError(err).Errorf("Unable to load cart entries for character [%d] to resolve DELETE_ZZIM (serial [%d]).", s.CharacterId(), serial)
@@ -933,14 +954,14 @@ func emitRemoveCartWishByListingSerial(l logrus.FieldLogger, ctx context.Context
 	var wm mtswish.Model
 	found := false
 	for _, w := range ws {
-		if w.ItemId() == lm.TemplateId() {
+		if w.ListingSerial() == serial {
 			wm = w
 			found = true
 			break
 		}
 	}
 	if !found {
-		l.Errorf("Character [%d] has no cart entry for item [%d] (listing serial [%d]) on DELETE_ZZIM.", s.CharacterId(), lm.TemplateId(), serial)
+		l.Errorf("Character [%d] has no cart entry for listing serial [%d] on DELETE_ZZIM.", s.CharacterId(), serial)
 		writeWishFailure(l, ctx, wp, s, failBody)
 		return
 	}

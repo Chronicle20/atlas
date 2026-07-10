@@ -2853,11 +2853,15 @@
         "writer": "RemoveTownDoor"
       },
       {
-        "opCode": "0x15B",
+        "opCode": "0x164",
+        "writer": "MtsChargeParamResult"
+      },
+      {
+        "opCode": "0x165",
         "writer": "MtsOperation2"
       },
       {
-        "opCode": "0x15C",
+        "opCode": "0x166",
         "writer": "MtsOperation",
         "options": {
           "noticeFailReasons": {

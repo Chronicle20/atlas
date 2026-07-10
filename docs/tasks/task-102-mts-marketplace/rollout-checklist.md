@@ -39,6 +39,27 @@ The `MTS_OPERATION` / `MTS_OPERATION2` writers (task-096) must be present
 (gms_v83/84/87/95: opcodes 0x15C/0x15B family; jms clientbound MTS results are
 version-absent — see design.md §9.4). Confirm the writer entries exist.
 
+**New writer (task-102 bug-fix round): `MtsChargeParamResult`.** The MTS "Charge"
+button (`ITC_STATUS_CHARGE`) now replies with this bodiless writer
+(`CITC::OnChargeParamResult`), which clears the client's request latch and opens
+the charge page. Add a `socket.writers[]` entry per version — opcode =
+`MtsOperation2 - 1`, IDA-verified from each client's `CITC::OnPacket`:
+| version | MtsChargeParamResult |
+|---------|----------------------|
+| gms_v83 | `0x15A` |
+| gms_v84 | `0x164` |
+| gms_v87 | `0x16F` |
+| gms_v95 | `0x19A` |
+Without this entry the writer name fails to resolve and the Charge button stays
+unresponsive ([[bug_new_opcodes_not_in_live_tenant_config]]).
+
+> **v84 correction (same round):** the seed had v84's `MtsOperation2`/`MtsOperation`
+> at the UNSHIFTED v83 opcodes `0x15B`/`0x15C`, but the v84 client dispatches them
+> at `0x165`/`0x166` (+10 clientbound shift). Any existing v84 tenant's live config
+> has the wrong values and MUST be re-patched: `MtsOperation2 -> 0x165`,
+> `MtsOperation -> 0x166`, plus `MtsChargeParamResult -> 0x164`. (v83/87/95 were
+> already correct.)
+
 ## 3b. `noticeFailReasons` writer table — descriptive failure notices
 The `MtsOperation` writer's options need the per-version `noticeFailReasons`
 table (semantic key -> client `CITC::NoticeFailReason` byte: `NOT_ENOUGH_NX:66`,

@@ -224,6 +224,24 @@ type Processor interface {
 	// is StateWon before the settle move runs) is a no-op — the winner's escrow is
 	// their payment, not a refund. Idempotent (the bid is marked released in-tx).
 	ReleaseHighBidEscrow(worldId world.Id, listingId uuid.UUID) error
+	// Accept CREATES the listing row in active state from the carried snapshot in
+	// ONE local DB transaction (idempotency, category/subCategory derivation, auction
+	// currentBid seeding, and the full builder assembly). It is the row-create
+	// business logic behind the custody AcceptToMtsListing command.
+	Accept(req AcceptRequest) error
+	// SettleMove settles a purchase in ONE local DB transaction: it loads the
+	// listing, conditionally marks it sold (active->sold, else settling->sold),
+	// enforces the single-custody race guard, creates the buyer holding
+	// (origin=purchased), and writes both parties' history rows. It returns what the
+	// consumer needs for the acks and the post-commit offer/escrow side-effects.
+	SettleMove(req SettleMoveRequest) (SettleMoveResult, error)
+	// RemoveSpuriousActive hard-deletes a spurious ACTIVE listing by id (the
+	// late-compensation inverse of Accept), returning the affected row count.
+	RemoveSpuriousActive(id string) (int64, error)
+	// RestoreFromHolding reverses a settlement move (the late-compensation inverse
+	// of SettleMove): it soft-deletes the deterministic buyer holding and transitions
+	// the listing sold->active in one tx.
+	RestoreFromHolding(listingId string, buyerId uint32) error
 }
 
 // ReleasedOffer describes one losing want-ad offer that ReleaseSiblingOffers

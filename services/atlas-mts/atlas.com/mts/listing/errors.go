@@ -22,4 +22,11 @@ var (
 	// so the channel writes the client's bare BidAuctionFailed arm ("you cannot make
 	// a consecutive bid").
 	ErrConsecutiveBid = errors.New("consecutive bid by the current high bidder")
+
+	// ErrMoveLostRace is returned by SettleMove when the listing was claimed by a
+	// concurrent cancel/expire (the active->sold transition affected 0 rows and
+	// there is no prior buyer holding). It forces an ERROR ack so the
+	// MtsSettlePurchase saga compensates the buyer's prepaid debit instead of
+	// silently completing a purchase the buyer never received.
+	ErrMoveLostRace = errors.New("mts: settle move lost the race to a concurrent cancel/expire; listing no longer active")
 )

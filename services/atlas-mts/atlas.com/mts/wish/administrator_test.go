@@ -36,6 +36,40 @@ func buildWish(t *testing.T, tenantId uuid.UUID, characterId uint32, itemId uint
 	return m
 }
 
+// TestAdministratorCreatePreservesListingSerial asserts a "cart" wish persists
+// the favorited listing's serial through CreateWish and getById, so the Cart can
+// resolve and render exactly that listing (bug 1: the cart must track the
+// favorited listing, not re-resolve the item template).
+func TestAdministratorCreatePreservesListingSerial(t *testing.T) {
+	tenantId := uuid.New()
+	ctx := tenantCtx(t, tenantId)
+	db := adminTestDB(t).WithContext(ctx)
+
+	const favoritedListingSerial = uint32(4242)
+	m, err := wish.NewBuilder(tenantId, 100, 1302000).
+		SetType(wish.TypeCart).
+		SetListingSerial(favoritedListingSerial).
+		Build()
+	if err != nil {
+		t.Fatalf("Build: %v", err)
+	}
+	created, err := wish.CreateWish(db, m)
+	if err != nil {
+		t.Fatalf("CreateWish: %v", err)
+	}
+	if created.ListingSerial() != favoritedListingSerial {
+		t.Errorf("created listingSerial = %d, want %d", created.ListingSerial(), favoritedListingSerial)
+	}
+
+	got, err := wish.GetById(created.Id().String())(db)()
+	if err != nil {
+		t.Fatalf("GetById: %v", err)
+	}
+	if got.ListingSerial() != favoritedListingSerial {
+		t.Errorf("persisted listingSerial = %d, want %d", got.ListingSerial(), favoritedListingSerial)
+	}
+}
+
 // TestAdministratorCreateGetById asserts a created wish entry round-trips
 // through getById and preserves its fields.
 func TestAdministratorCreateGetById(t *testing.T) {

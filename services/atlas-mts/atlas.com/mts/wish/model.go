@@ -29,15 +29,16 @@ const (
 type Model struct {
 	id          uuid.UUID
 	tenantId    uuid.UUID
-	worldId     world.Id
-	serial      uint32
-	characterId uint32
-	itemId      uint32
-	wishType    string
-	price       uint32
-	count       uint32
-	expiresAt   *time.Time
-	createdAt   time.Time
+	worldId       world.Id
+	serial        uint32
+	characterId   uint32
+	itemId        uint32
+	listingSerial uint32
+	wishType      string
+	price         uint32
+	count         uint32
+	expiresAt     *time.Time
+	createdAt     time.Time
 }
 
 func (m Model) Id() uuid.UUID         { return m.id }
@@ -46,6 +47,7 @@ func (m Model) WorldId() world.Id     { return m.worldId }
 func (m Model) Serial() uint32        { return m.serial }
 func (m Model) CharacterId() uint32   { return m.characterId }
 func (m Model) ItemId() uint32        { return m.itemId }
+func (m Model) ListingSerial() uint32 { return m.listingSerial }
 func (m Model) Type() string          { return m.wishType }
 func (m Model) Price() uint32         { return m.price }
 func (m Model) Count() uint32         { return m.count }

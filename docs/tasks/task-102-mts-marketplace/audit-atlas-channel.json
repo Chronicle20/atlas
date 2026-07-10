@@ -1,0 +1,85 @@
+{
+  "service": "atlas-channel",
+  "path": "services/atlas-channel/atlas.com/channel",
+  "scope": "MTS/ITC surface (task-102)",
+  "date": "2026-07-10",
+  "build": "pass",
+  "vet": "pass",
+  "testsPassed": 8,
+  "testsFailed": 0,
+  "overallStatus": "pass-with-findings",
+  "criticalCount": 0,
+  "importantCount": 2,
+  "minorCount": 5,
+  "findings": [
+    {
+      "id": "I-1",
+      "severity": "important",
+      "title": "cart.Items does one REST round-trip per cart entry (N+1)",
+      "evidence": "mts/cart/cart.go:39-47 -> mts/listing/processor.go:49-58 (GetBySerial is a full Browse HTTP GET); runs on every wish add/remove re-push (kafka/consumer/mts/consumer.go:267) and every purchase (removeCartWishForPurchase)",
+      "scenario": "A cart of N favorites triggers N sequential atlas-mts HTTP calls on unrelated ops (e.g. any purchase), serialized on the consumer goroutine.",
+      "blocking": false
+    },
+    {
+      "id": "I-2",
+      "severity": "important",
+      "title": "Wanted tab (section 2) ignores the categorySub inventory sub-tab filter",
+      "evidence": "socket/handler/itc_operation.go:775-779 calls mtswanted.WorldItems (mts/wanted/wanted.go:22) which takes no categorySub; sibling wishItems (itc_operation.go:876-892) and the public browse do filter.",
+      "scenario": "Player on the Wanted tab selects the Equip sub-tab and still sees use/setup/etc want-ads.",
+      "blocking": false
+    },
+    {
+      "id": "M-1",
+      "severity": "minor",
+      "title": "Register-wish re-push navigates poster to the cross-character Wanted tab",
+      "evidence": "kafka/consumer/mts/consumer.go:664-666 + wishSectionForOrigin:309-318 send a section-2 GetItcListDone for RegisterWish, unlike the CANCEL_WISH fix (:702-709) which uses announceOwnWantAds.",
+      "scenario": "After posting a want-ad the client is yanked to the Wanted tab, which excludes the poster's own new ad.",
+      "blocking": false
+    },
+    {
+      "id": "M-2",
+      "severity": "minor",
+      "title": "MTS config cache never invalidates (no TTL, restart required)",
+      "evidence": "mts/configuration/registry.go:61-83 caches per-tenant Model for process lifetime.",
+      "scenario": "Tenant edits MinLevel/fees in atlas-tenants; channel keeps old values until pod restart.",
+      "blocking": false
+    },
+    {
+      "id": "M-3",
+      "severity": "minor",
+      "title": "DOM-25 gray area: section/category tab numerals are literal wire values",
+      "evidence": "socket/handler/itc_operation.go:292-295, :301; literal Category \"1\"/\"3\" in mts_entry.go:143 and consumer.go:200. Dispatcher mode bytes ARE config-resolved (resolveItcOperationKey).",
+      "scenario": "Version-dependent tab numbering would require a code change rather than a tenant-table edit; likely acceptable (client-echoed, IDA-uniform).",
+      "blocking": false
+    },
+    {
+      "id": "M-4",
+      "severity": "minor",
+      "title": "emitRemoveCartWishByListingSerial header doc contradicts implementation",
+      "evidence": "socket/handler/itc_operation.go:931-938 (header claims listing->item lookup) vs :942-961 (matches cart wish directly by ListingSerial).",
+      "scenario": "Doc-only; implementation is the correct behavior.",
+      "blocking": false
+    },
+    {
+      "id": "M-5",
+      "severity": "minor",
+      "title": "Auction-settle contract date uses time.Now() not the listing EndsAt",
+      "evidence": "kafka/consumer/mts/consumer.go:466 stamps MsTimeBytes(time.Now()).",
+      "scenario": "Cosmetic: contract date shown to both parties is a few ms off the true settle instant.",
+      "blocking": false
+    }
+  ],
+  "checklistNotes": {
+    "DOM-01_02_03": "N/A - channel-side REST read-projection packages (RestModel+Extract, immutable Model); no GORM entity/write side.",
+    "DOM-11_EXT-01": "pass - lazy SliceProvider; JSON:API relationship stubs present (wish/rest.go:33-34, listing/rest.go:74-75).",
+    "DOM-12": "pass - no os.Getenv in MTS handlers.",
+    "DOM-14_15_16": "pass - zero db.Create/Save/Delete in handlers; writes via Kafka command processor.",
+    "DOM-24": "N/A - MTS tests exercise pure functions only; no emit path driven, no producertest needed.",
+    "DOM-25": "pass on dispatch axis (mode bytes + noticeFailReasons config-resolved); see M-3.",
+    "multitenancy": "pass - tenant.MustFromContext + t.Is(sc.Tenant()) gate in every consumer announce; ctx-scoped session/REST.",
+    "immutability": "pass - private fields + getters, no setters, constructed via Extract only.",
+    "mockParity": "N/A - mts Processor interfaces are not mocked anywhere; build/test green.",
+    "SEC": "N/A - not an auth/token surface."
+  },
+  "blocking": []
+}

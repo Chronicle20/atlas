@@ -118,6 +118,7 @@ func modelFromEntity(e entity) (Model, error) {
 		SetId(e.Id).
 		SetWorldId(world.Id(e.WorldId)).
 		SetSerial(e.Serial).
+		SetListingSerial(e.ListingSerial).
 		SetType(e.Type).
 		SetPrice(e.Price).
 		SetCount(e.Count).

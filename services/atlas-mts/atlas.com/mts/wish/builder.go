@@ -13,15 +13,16 @@ import (
 type Builder struct {
 	id          uuid.UUID
 	tenantId    uuid.UUID
-	worldId     world.Id
-	serial      uint32
-	characterId uint32
-	itemId      uint32
-	wishType    string
-	price       uint32
-	count       uint32
-	expiresAt   *time.Time
-	createdAt   time.Time
+	worldId       world.Id
+	serial        uint32
+	characterId   uint32
+	itemId        uint32
+	listingSerial uint32
+	wishType      string
+	price         uint32
+	count         uint32
+	expiresAt     *time.Time
+	createdAt     time.Time
 }
 
 func NewBuilder(tenantId uuid.UUID, characterId uint32, itemId uint32) *Builder {
@@ -50,6 +51,13 @@ func (b *Builder) SetCharacterId(characterId uint32) *Builder {
 
 func (b *Builder) SetItemId(itemId uint32) *Builder {
 	b.itemId = itemId
+	return b
+}
+
+// SetListingSerial records the favorited listing's ITC serial for a "cart"
+// entry (0 for "wanted" entries, which reference no listing).
+func (b *Builder) SetListingSerial(v uint32) *Builder {
+	b.listingSerial = v
 	return b
 }
 
@@ -85,16 +93,17 @@ func (b *Builder) Build() (Model, error) {
 		return Model{}, errors.New("tenantId cannot be nil")
 	}
 	return Model{
-		id:          b.id,
-		tenantId:    b.tenantId,
-		worldId:     b.worldId,
-		serial:      b.serial,
-		characterId: b.characterId,
-		itemId:      b.itemId,
-		wishType:    b.wishType,
-		price:       b.price,
-		count:       b.count,
-		expiresAt:   b.expiresAt,
-		createdAt:   b.createdAt,
+		id:            b.id,
+		tenantId:      b.tenantId,
+		worldId:       b.worldId,
+		serial:        b.serial,
+		characterId:   b.characterId,
+		itemId:        b.itemId,
+		listingSerial: b.listingSerial,
+		wishType:      b.wishType,
+		price:         b.price,
+		count:         b.count,
+		expiresAt:     b.expiresAt,
+		createdAt:     b.createdAt,
 	}, nil
 }

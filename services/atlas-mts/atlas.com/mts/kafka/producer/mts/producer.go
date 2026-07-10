@@ -175,15 +175,15 @@ func ListingCreateFailedStatusEventProvider(transactionId uuid.UUID, worldId byt
 
 // ListingCancelFailedStatusEventProvider builds a LISTING_CANCEL_FAILED event for
 // a rejected cancel, carrying the originating sellerId + serial + a fail reason.
-func ListingCancelFailedStatusEventProvider(transactionId uuid.UUID, worldId byte, serial uint32, sellerId uint32, reason byte) model.Provider[[]kafka.Message] {
+func ListingCancelFailedStatusEventProvider(transactionId uuid.UUID, worldId byte, serial uint32, sellerId uint32, reasonKey string) model.Provider[[]kafka.Message] {
 	value := &mts.StatusEvent[mts.StatusEventListingCancelFailedBody]{
 		TransactionId: transactionId,
 		Type:          mts.StatusEventTypeListingCancelFailed,
 		Body: mts.StatusEventListingCancelFailedBody{
-			WorldId:  worldId,
-			Serial:   serial,
-			SellerId: sellerId,
-			Reason:   reason,
+			WorldId:   worldId,
+			Serial:    serial,
+			SellerId:  sellerId,
+			ReasonKey: reasonKey,
 		},
 	}
 	return producer.SingleMessageProvider(keyFor(transactionId), value)
@@ -191,7 +191,7 @@ func ListingCancelFailedStatusEventProvider(transactionId uuid.UUID, worldId byt
 
 // TakeHomeFailedStatusEventProvider builds a TAKE_HOME_FAILED event for a rejected
 // take-home, carrying the originating characterId + serial + a fail reason.
-func TakeHomeFailedStatusEventProvider(transactionId uuid.UUID, worldId byte, serial uint32, characterId uint32, reason byte) model.Provider[[]kafka.Message] {
+func TakeHomeFailedStatusEventProvider(transactionId uuid.UUID, worldId byte, serial uint32, characterId uint32, reasonKey string) model.Provider[[]kafka.Message] {
 	value := &mts.StatusEvent[mts.StatusEventTakeHomeFailedBody]{
 		TransactionId: transactionId,
 		Type:          mts.StatusEventTypeTakeHomeFailed,
@@ -199,7 +199,7 @@ func TakeHomeFailedStatusEventProvider(transactionId uuid.UUID, worldId byte, se
 			WorldId:     worldId,
 			Serial:      serial,
 			CharacterId: characterId,
-			Reason:      reason,
+			ReasonKey:   reasonKey,
 		},
 	}
 	return producer.SingleMessageProvider(keyFor(transactionId), value)

@@ -122,9 +122,13 @@ type RegisterWishCommandBody struct {
 	WorldId     byte      `json:"worldId"`
 	CharacterId uint32    `json:"characterId"`
 	ItemId      uint32    `json:"itemId"`
-	Price       uint32    `json:"price"`
-	Count       uint32    `json:"count"`
-	Origin      string    `json:"origin"`
+	// ListingSerial is the favorited listing's ITC serial for a SET_ZZIM (cart)
+	// command, so the cart tracks that exact listing. 0 for a REGISTER_WISH_ENTRY
+	// (wanted) command, which references no listing.
+	ListingSerial uint32 `json:"listingSerial"`
+	Price         uint32 `json:"price"`
+	Count         uint32 `json:"count"`
+	Origin        string `json:"origin"`
 }
 
 // RemoveWishCommandBody identifies the wish-list entry to delete. Origin records
@@ -379,12 +383,16 @@ type StatusEventListingCreateFailedBody struct {
 
 // StatusEventListingCancelFailedBody reports a rejected cancel. SellerId is the
 // originating character so the channel can target the seller's session with a
-// CancelSaleItemFailed; Reason is the clientbound NoticeFailReason byte.
+// CancelSaleItemFailed. ReasonKey is a SEMANTIC failure key the channel resolves
+// through the tenant noticeFailReasons table (DOM-25) — atlas-mts never speaks the
+// client wire byte. JSON tag "reasonKey" (NOT "reason"), matching buy/bid, so the
+// shared MTS_STATUS topic carries no string-vs-number "reason" collision (see
+// StatusEventBuyFailedBody).
 type StatusEventListingCancelFailedBody struct {
-	WorldId  byte   `json:"worldId"`
-	Serial   uint32 `json:"serial"`
-	SellerId uint32 `json:"sellerId"`
-	Reason   byte   `json:"reason"`
+	WorldId   byte   `json:"worldId"`
+	Serial    uint32 `json:"serial"`
+	SellerId  uint32 `json:"sellerId"`
+	ReasonKey string `json:"reasonKey,omitempty"`
 }
 
 // StatusEventBuyFailedBody reports a rejected buy / buy-now. BuyerId is the
@@ -418,10 +426,13 @@ type StatusEventBidFailedBody struct {
 
 // StatusEventTakeHomeFailedBody reports a rejected take-home. CharacterId is the
 // originating character so the channel can target their session with a
-// MoveItcPurchaseItemLtoSFailed; Reason is the clientbound NoticeFailReason byte.
+// MoveItcPurchaseItemLtoSFailed. ReasonKey is a SEMANTIC failure key the channel
+// resolves through the tenant noticeFailReasons table (DOM-25) — atlas-mts never
+// speaks the client wire byte. JSON tag "reasonKey" (NOT "reason"), matching
+// buy/bid (see StatusEventBuyFailedBody).
 type StatusEventTakeHomeFailedBody struct {
 	WorldId     byte   `json:"worldId"`
 	Serial      uint32 `json:"serial"`
 	CharacterId uint32 `json:"characterId"`
-	Reason      byte   `json:"reason"`
+	ReasonKey   string `json:"reasonKey,omitempty"`
 }

@@ -374,8 +374,13 @@ func handleListingCancelFailed(sc server.Model, wp writer.Producer) message.Hand
 		if e.Type != mtsmsg.StatusEventTypeListingCancelFailed {
 			return
 		}
-		l.Debugf("MTS listing cancel failed for seller [%d] serial [%d] (reason [%d]).", e.Body.SellerId, e.Body.Serial, e.Body.Reason)
-		announceTo(l, ctx, sc, wp, e.Body.SellerId, fieldpkt.MtsOperationCancelSaleItemFailedBody(e.Body.Reason))
+		l.Debugf("MTS listing cancel failed for seller [%d] serial [%d] (reasonKey [%s]).", e.Body.SellerId, e.Body.Serial, e.Body.ReasonKey)
+		// Config-resolve the semantic ReasonKey through the tenant noticeFailReasons
+		// table (DOM-25), falling back to the bare CancelSaleItemFailed arm. Cancel
+		// failures are always generic (serial-not-resolved / owner-check / race-loser),
+		// so ReasonKey is empty and this returns the bare arm — the uniform path
+		// (task-103) rather than atlas-mts speaking a wire byte.
+		announceTo(l, ctx, sc, wp, e.Body.SellerId, failNoticeOr(e.Body.ReasonKey, fieldpkt.MtsOperationCancelSaleItemFailedBody(0)))
 	}
 }
 
@@ -407,8 +412,11 @@ func handleTakeHomeFailed(sc server.Model, wp writer.Producer) message.Handler[m
 		if e.Type != mtsmsg.StatusEventTypeTakeHomeFailed {
 			return
 		}
-		l.Debugf("MTS take-home failed for character [%d] serial [%d] (reason [%d]).", e.Body.CharacterId, e.Body.Serial, e.Body.Reason)
-		announceTo(l, ctx, sc, wp, e.Body.CharacterId, fieldpkt.MtsOperationMoveItcPurchaseItemLtoSFailedBody(e.Body.Reason))
+		l.Debugf("MTS take-home failed for character [%d] serial [%d] (reasonKey [%s]).", e.Body.CharacterId, e.Body.Serial, e.Body.ReasonKey)
+		// Config-resolve the semantic ReasonKey (DOM-25), falling back to the bare
+		// MoveItcPurchaseItemLtoSFailed arm. Take-home failures are always generic, so
+		// ReasonKey is empty and this returns the bare arm.
+		announceTo(l, ctx, sc, wp, e.Body.CharacterId, failNoticeOr(e.Body.ReasonKey, fieldpkt.MtsOperationMoveItcPurchaseItemLtoSFailedBody(0)))
 	}
 }
 
@@ -697,10 +705,22 @@ func handleWishRemoved(sc server.Model, wp writer.Producer) message.Handler[mtsm
 		default:
 			l.Warnf("MTS WISH_REMOVED for character [%d] has unknown origin [%s]; no result written.", e.Body.CharacterId, e.Body.Origin)
 		}
-		// Re-push the Cart/Wanted view so the removed wish disappears and — critically
-		// for DELETE_ZZIM — the trailing requestSent=1 clears the client's request
-		// latch (DeleteZzimDone never clears it itself), which otherwise freezes the
-		// client after a successful cart removal.
+		// Re-push the affected view so the removed wish disappears.
+		if e.Body.Origin == mtsmsg.WishOriginCancelWish {
+			// A CANCEL_WISH cancels the viewer's OWN want-ad, which lives under My Page
+			// -> Offers. Re-push THAT panel, not the Wanted browse: announceWishList's
+			// Wanted arm sends a section-2 GET_ITC_LIST_DONE, which makes the client
+			// navigate to the Wanted tab (task-102 live finding — the poster is yanked
+			// off Offers onto Wanted). No latch-clearing re-push is needed here either:
+			// OnCancelWishDone already clears the client's request latch itself (IDA v83
+			// 0x5a5071 sets this[6]=0), unlike DeleteZzimDone.
+			announceOwnWantAds(l, ctx, sc, wp, e.Body.WorldId, e.Body.CharacterId)
+			return
+		}
+		// DELETE_ZZIM (and the post-purchase cart prune) re-push the Cart view so the
+		// removed wish disappears and — critically for DELETE_ZZIM — the trailing
+		// requestSent=1 clears the client's request latch (DeleteZzimDone never clears
+		// it itself), which otherwise freezes the client after a successful cart removal.
 		if section, wishType, ok := wishSectionForOrigin(e.Body.Origin); ok {
 			announceWishList(l, ctx, sc, wp, e.Body.WorldId, e.Body.CharacterId, section, wishType)
 		}

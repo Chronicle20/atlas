@@ -52,8 +52,12 @@ type BrowseFilter struct {
 	// ItemIds restricts the browse to this set of template ids (template_id IN (?)).
 	// Used by the marketplace name search, which resolves a search term to its
 	// matching item template ids and filters the listings on them.
-	ItemIds         []uint32
-	Serial          uint32
+	ItemIds []uint32
+	Serial  uint32
+	// Serials restricts the browse to this set of ITC serials (serial IN (?)). Used
+	// by the Cart, which resolves its entries' favorited listing serials in ONE
+	// browse instead of a per-entry GetBySerial (avoids the N+1 on every re-push).
+	Serials         []uint32
 	SellerId        uint32
 	ExcludeSellerId uint32
 	SellerName      string
@@ -106,6 +110,9 @@ func browseFilterQuery(db *gorm.DB, worldId world.Id, state State, f BrowseFilte
 	}
 	if f.Serial != 0 {
 		q = q.Where("serial = ?", f.Serial)
+	}
+	if len(f.Serials) > 0 {
+		q = q.Where("serial IN ?", f.Serials)
 	}
 	if f.SellerId != 0 {
 		q = q.Where("seller_id = ?", f.SellerId)

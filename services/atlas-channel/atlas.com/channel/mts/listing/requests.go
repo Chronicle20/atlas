@@ -28,8 +28,13 @@ type BrowseFilter struct {
 	// the comma-joined `itemIds` param, which atlas-mts maps to `template_id IN (?)`.
 	// An empty (but non-nil) slice means "name search matched nothing" — the search
 	// arm short-circuits before browsing in that case, so it is never rendered here.
-	TemplateIds     []uint32
-	Serial          uint32
+	TemplateIds []uint32
+	Serial      uint32
+	// Serials restricts the browse to this set of ITC serials (rendered as the
+	// comma-joined `serials` param -> atlas-mts `serial IN (?)`). The Cart uses it to
+	// resolve all its favorited listings in ONE browse instead of a per-entry
+	// GetBySerial (avoids an N+1 on every cart re-push).
+	Serials         []uint32
 	SellerId        uint32
 	ExcludeSellerId uint32 // public-browse filter: omit this seller's own listings
 	SellerName      string
@@ -71,6 +76,13 @@ func (f BrowseFilter) query() string {
 	}
 	if f.Serial != 0 {
 		q.Set("serial", strconv.FormatUint(uint64(f.Serial), 10))
+	}
+	if len(f.Serials) > 0 {
+		parts := make([]string, 0, len(f.Serials))
+		for _, sn := range f.Serials {
+			parts = append(parts, strconv.FormatUint(uint64(sn), 10))
+		}
+		q.Set("serials", strings.Join(parts, ","))
 	}
 	if f.SellerId != 0 {
 		q.Set("sellerId", strconv.FormatUint(uint64(f.SellerId), 10))

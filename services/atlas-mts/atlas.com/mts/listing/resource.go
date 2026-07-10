@@ -202,6 +202,19 @@ func handleBrowseListings(d *rest.HandlerDependency, c *rest.HandlerContext) htt
 					f.Serial = uint32(serial)
 				}
 			}
+			if v := query.Get("serials"); v != "" {
+				// Comma-separated decimal ITC serials (the Cart's favorited listings).
+				// Skip empties / unparseable tokens gracefully.
+				for _, tok := range strings.Split(v, ",") {
+					tok = strings.TrimSpace(tok)
+					if tok == "" {
+						continue
+					}
+					if serial, err := strconv.ParseUint(tok, 10, 32); err == nil {
+						f.Serials = append(f.Serials, uint32(serial))
+					}
+				}
+			}
 			if v := query.Get("sellerId"); v != "" {
 				if sellerId, err := strconv.ParseUint(v, 10, 32); err == nil {
 					f.SellerId = uint32(sellerId)

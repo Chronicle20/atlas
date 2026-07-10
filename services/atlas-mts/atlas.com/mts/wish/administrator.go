@@ -96,13 +96,14 @@ func CreateWish(db *gorm.DB, m Model) (Model, error) {
 		TenantId:    m.TenantId(),
 		WorldId:     byte(m.WorldId()),
 		Serial:      sn,
-		CharacterId: m.CharacterId(),
-		ItemId:      m.ItemId(),
-		Type:        m.Type(),
-		Price:       m.Price(),
-		Count:       count,
-		ExpiresAt:   m.ExpiresAt(),
-		CreatedAt:   createdAt,
+		CharacterId:   m.CharacterId(),
+		ItemId:        m.ItemId(),
+		ListingSerial: m.ListingSerial(),
+		Type:          m.Type(),
+		Price:         m.Price(),
+		Count:         count,
+		ExpiresAt:     m.ExpiresAt(),
+		CreatedAt:     createdAt,
 	}
 	if err := db.Create(&e).Error; err != nil {
 		return Model{}, err

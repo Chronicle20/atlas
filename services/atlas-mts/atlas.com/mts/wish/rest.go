@@ -11,13 +11,14 @@ type RestModel struct {
 	Id          string     `json:"-"`
 	WorldId     byte       `json:"worldId"`
 	Serial      uint32     `json:"serial"`
-	CharacterId uint32     `json:"characterId"`
-	ItemId      uint32     `json:"itemId"`
-	Type        string     `json:"type"`
-	Price       uint32     `json:"price"`
-	Count       uint32     `json:"count"`
-	ExpiresAt   *time.Time `json:"expiresAt"`
-	CreatedAt   time.Time  `json:"createdAt"`
+	CharacterId   uint32     `json:"characterId"`
+	ItemId        uint32     `json:"itemId"`
+	ListingSerial uint32     `json:"listingSerial"`
+	Type          string     `json:"type"`
+	Price         uint32     `json:"price"`
+	Count         uint32     `json:"count"`
+	ExpiresAt     *time.Time `json:"expiresAt"`
+	CreatedAt     time.Time  `json:"createdAt"`
 }
 
 func (r RestModel) GetName() string {
@@ -38,12 +39,13 @@ func Transform(m Model) (RestModel, error) {
 		Id:          m.Id().String(),
 		WorldId:     byte(m.WorldId()),
 		Serial:      m.Serial(),
-		CharacterId: m.CharacterId(),
-		ItemId:      m.ItemId(),
-		Type:        m.Type(),
-		Price:       m.Price(),
-		Count:       m.Count(),
-		ExpiresAt:   m.ExpiresAt(),
-		CreatedAt:   m.CreatedAt(),
+		CharacterId:   m.CharacterId(),
+		ItemId:        m.ItemId(),
+		ListingSerial: m.ListingSerial(),
+		Type:          m.Type(),
+		Price:         m.Price(),
+		Count:         m.Count(),
+		ExpiresAt:     m.ExpiresAt(),
+		CreatedAt:     m.CreatedAt(),
 	}, nil
 }

@@ -53,6 +53,14 @@ type entity struct {
 	Serial      uint32    `gorm:"column:serial;not null;uniqueIndex:idx_wish_entries_world_serial,priority:3"`
 	CharacterId uint32    `gorm:"column:character_id;not null;index:idx_wish_entries_character,priority:2;uniqueIndex:idx_wish_entries_char_item,priority:3"`
 	ItemId      uint32    `gorm:"column:item_id;not null;uniqueIndex:idx_wish_entries_char_item,priority:4"`
+	// ListingSerial is the ITC serial of the specific LISTING a "cart" (SET_ZZIM)
+	// entry favorited. The Cart renders and settles THAT exact listing (GetBySerial)
+	// instead of re-resolving the item template to some other seller's cheapest
+	// listing — the old behavior showed a different listing's price and sold-until
+	// date and could not be bought (task-102 live finding). 0 for "wanted" entries,
+	// which reference no listing. A plain new defaulted column — AutoMigrate adds it
+	// with no index/key changes.
+	ListingSerial uint32 `gorm:"column:listing_serial;not null;default:0"`
 	// Type distinguishes a "cart" entry (added-to-cart, SET_ZZIM) from a "wanted"
 	// entry (a want-ad, REGISTER_WISH_ENTRY); part of the char_item unique index so
 	// the same item can be in both the cart and the wanted list.

@@ -1,0 +1,97 @@
+{
+  "service": "atlas-mts",
+  "path": "services/atlas-mts/atlas.com/mts",
+  "date": "2026-07-10",
+  "build": "pass",
+  "vet": "pass",
+  "testsPassed": 12,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "scopeFocus": [
+    "consumer->processor refactor",
+    "wish listing_serial column",
+    "multi-tenancy",
+    "money path (listing/bid/holding/wallet/transaction/saga)"
+  ],
+  "refactorVerification": {
+    "consumersThin": true,
+    "evidence": "kafka/consumer/mts/consumer.go and kafka/consumer/custody/consumer.go decode->processor->emit only; logic in listing/custody.go, holding/custody.go, wish/register.go",
+    "emissionStayedInConsumers": true,
+    "processorInterfaceImplPattern": true,
+    "idempotencyPreserved": true
+  },
+  "domains": [
+    {
+      "name": "wish",
+      "type": "domain",
+      "checks": [
+        { "id": "DOM-01", "name": "builder.go exists", "status": "pass", "evidence": "wish/builder.go:28,91" },
+        { "id": "DOM-02", "name": "ToEntity()", "status": "warn", "evidence": "no ToEntity(); inline entity in wish/administrator.go:94" },
+        { "id": "DOM-03", "name": "Make(Entity)", "status": "warn", "evidence": "modelFromEntity wish/provider.go:116" },
+        { "id": "DOM-04", "name": "Transform", "status": "pass", "evidence": "wish/rest.go:37" },
+        { "id": "DOM-05", "name": "TransformSlice", "status": "warn", "evidence": "inline model.SliceMap(Transform) wish/resource.go:62,89" },
+        { "id": "DOM-06", "name": "FieldLogger", "status": "pass", "evidence": "wish/processor.go:42" },
+        { "id": "DOM-07", "name": "d.Logger() passed", "status": "pass", "evidence": "wish/resource.go:46,82,116,154" },
+        { "id": "DOM-08", "name": "RegisterInputHandler POST", "status": "pass", "evidence": "wish/resource.go:34" },
+        { "id": "DOM-09", "name": "Transform errors handled", "status": "pass", "evidence": "wish/resource.go:63,90,123" },
+        { "id": "DOM-10", "name": "test tenant callbacks", "status": "pass", "evidence": "test/database.go:28" },
+        { "id": "DOM-11", "name": "lazy providers", "status": "pass", "evidence": "wish/provider.go:10-13" },
+        { "id": "DOM-12", "name": "no os.Getenv in handlers", "status": "pass", "evidence": "grep 0 matches" },
+        { "id": "DOM-15", "name": "no direct entity writes in resource.go", "status": "pass", "evidence": "grep 0 db.Create/Save/Delete" },
+        { "id": "DOM-16", "name": "administrator.go", "status": "pass", "evidence": "wish/administrator.go" },
+        { "id": "DOM-18", "name": "JSON:API interface", "status": "pass", "evidence": "wish/rest.go:24-35" },
+        { "id": "DOM-19", "name": "flat request model", "status": "pass", "evidence": "wish/rest.go:10-22" },
+        { "id": "DOM-20", "name": "table-driven tests", "status": "pass", "evidence": "wish pkg ok" },
+        { "id": "DOM-21", "name": "no atlas-constants dup", "status": "pass", "evidence": "world.Id; listing/custody.go:109 inventory.TypeFromItemId(item.Id)" },
+        { "id": "listing_serial", "name": "immutable-model column plumbing", "status": "pass", "evidence": "entity.go:63, model.go:36/50, builder.go:59, provider.go:121, administrator.go:101, rest.go:16/45" }
+      ]
+    },
+    {
+      "name": "listing",
+      "type": "domain",
+      "checks": [
+        { "id": "DOM-06", "name": "FieldLogger", "status": "pass", "evidence": "listing/processor.go:287" },
+        { "id": "DOM-08", "name": "input handler POST", "status": "pass", "evidence": "listing/resource.go:164" },
+        { "id": "DOM-11", "name": "lazy+world0-safe providers", "status": "pass", "evidence": "listing/provider.go:183" },
+        { "id": "DOM-16", "name": "administrator.go", "status": "pass", "evidence": "listing/administrator.go" },
+        { "id": "DOM-17", "name": "error->status mapping", "status": "pass", "evidence": "listing/resource.go:69,86,97,109,289" },
+        { "id": "DOM-20", "name": "table-driven tests", "status": "pass", "evidence": "listing pkg ok" },
+        { "id": "DOM-24", "name": "kafka producer stubbed in emitting tests", "status": "pass", "evidence": "recordingProducer DI consumer_test.go:35; WithSagaEmitter/WithBalanceReader processor.go:271,281" }
+      ]
+    },
+    {
+      "name": "serial",
+      "type": "support",
+      "checks": [
+        { "id": "TENANT", "name": "per-(tenant,world) counter scoping, world-0 safe", "status": "pass", "evidence": "serial/serial.go:72-103 explicit map WHERE, tenantId passed explicitly" }
+      ]
+    },
+    {
+      "name": "wallet",
+      "type": "external-client",
+      "checks": [
+        { "id": "EXT-01", "name": "JSON:API relationship stubs", "status": "warn", "evidence": "wallet/wallet.go:27-49 relationship-free, stubs absent" },
+        { "id": "EXT-02", "name": "httptest integration test", "status": "pass", "evidence": "wallet/wallet_test.go:16,40" },
+        { "id": "EXT-03", "name": "404 distinguished", "status": "pass", "evidence": "wallet/wallet.go:116 errors.Is(requests.ErrNotFound)" },
+        { "id": "EXT-04", "name": "RootUrl not hardcoded", "status": "pass", "evidence": "wallet/wallet.go:52 RootUrl(\"CASHSHOP\")" }
+      ]
+    }
+  ],
+  "multiTenancy": {
+    "status": "pass",
+    "evidence": "tenant.MustFromContext/FromContext at all write sites; db.WithContext(ctx) callback scoping; map-keyed WHERE guards world-0 elision (wish/provider.go, serial/serial.go); cross-tenant sweep passes tenantId explicitly + WithoutTenantFilter; holdings tenant-self-describing via lm.TenantId()"
+  },
+  "findings": {
+    "critical": [],
+    "important": [
+      "I-1 (DOM-25): cancel + take-home Failed events emit a hardcoded NoticeFailReason wire byte (mtsFailReasonGeneric=0, kafka/consumer/mts/consumer.go:84,173,253; StatusEventListingCancelFailedBody.Reason byte kafka/message/mts/kafka.go:391; StatusEventTakeHomeFailedBody.Reason byte :430) instead of a config-resolved semantic ReasonKey like the migrated create/buy/bid events (producer.go:163,210,227)"
+    ],
+    "minor": [
+      "M-1: consumer-layer direct administrator/provider writes bypass the processor (transaction.CreateTransaction consumer.go:228,412; wish.GetBySerial+DeleteWish custody consumer.go:290,292)",
+      "M-2 (DOM-05): no TransformSlice helper; inline model.SliceMap(Transform) used",
+      "M-3 (EXT-01): wallet RestModel omits no-op JSON:API relationship stubs",
+      "M-4 (DOM-02/03): modelFromEntity/inline-entity vs documented Make/ToEntity naming"
+    ]
+  },
+  "outOfScopeContext": "database.ExecuteTransaction no-op (bug_execute_transaction_noop / task-119) undermines the 'one local DB transaction' atomicity claims in listing/custody.go, holding/custody.go, wish/register.go, PlaceBid, Cancel; pre-existing platform bug, not introduced by this work, not re-litigated"
+}

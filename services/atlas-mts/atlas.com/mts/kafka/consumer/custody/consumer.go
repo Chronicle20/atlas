@@ -1,7 +1,6 @@
 package custody
 
 import (
-	"atlas-mts/configuration"
 	"atlas-mts/holding"
 	consumer2 "atlas-mts/kafka/consumer"
 	msg "atlas-mts/kafka/message"
@@ -11,35 +10,19 @@ import (
 	custodyproducer "atlas-mts/kafka/producer/custody"
 	mtsproducer "atlas-mts/kafka/producer/mts"
 	"atlas-mts/listing"
-	"atlas-mts/transaction"
 	"atlas-mts/wish"
 	"context"
-	"encoding/binary"
-	"errors"
-	"strconv"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
-	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	kprod "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
-
-// errMoveLostRace is returned by the settle move handler when the listing was
-// claimed by a concurrent cancel/expire (the active->sold transition affected 0
-// rows and there is no prior buyer holding). It forces an ERROR ack so the
-// MtsSettlePurchase saga compensates the buyer's prepaid debit instead of
-// silently completing a purchase the buyer never received.
-var errMoveLostRace = errors.New("mts: settle move lost the race to a concurrent cancel/expire; listing no longer active")
 
 // InitConsumers registers the MTS custody command consumer (the saga custody
 // channel), mirroring the cash-compartment consumer.
@@ -98,101 +81,51 @@ func handleAcceptToMtsListing(pf providerFn) func(db *gorm.DB) message.Handler[c
 				return
 			}
 			b := c.Body
-			tdb := db.WithContext(ctx)
 
-			err := database.ExecuteTransaction(tdb, func(tx *gorm.DB) error {
-				// Idempotency: if a row already exists for this listing id, the
-				// command has already been applied — no-op, do not create a
-				// duplicate.
-				if existing, gerr := listing.GetById(b.ListingId.String())(tx)(); gerr == nil && existing.Id() == b.ListingId {
-					return nil
-				}
-
-				t := tenant.MustFromContext(ctx)
-				tid := t.Id()
-
-				// The GET_ITC_LIST browse filters listings by (category, subCategory),
-				// which mirror the client's browse "tab" and "type":
-				//   category    = the marketplace SECTION / top tab: "1" For Sale
-				//                 (fixed-price), "3" Auction. (Sections 2/4/5 — wanted,
-				//                 my-page/cart — hold no sale listings.)
-				//   subCategory = the item's inventory category (1=equip 2=use 3=setup
-				//                 4=etc 5=cash), derived from the templateId.
-				// So a fixed USE listing surfaces only under For Sale -> Use.
-				category := "1"
-				if b.SaleType == string(listing.SaleTypeAuction) {
-					category = "3"
-				}
-				subCategory := b.SubCategory
-				if it, ok := inventory.TypeFromItemId(item.Id(b.TemplateId)); ok {
-					subCategory = strconv.Itoa(int(it))
-				}
-
-				// Auctions seed currentBid to (listValue - increment) so the client's
-				// first bid — always current_bid + increment — lands on the seller's
-				// starting price (listValue). Without this the first valid bid would be
-				// listValue+increment, one increment above the advertised opening price.
-				// A listValue not exceeding the increment seeds 0 (no headroom to
-				// subtract). Fixed sales have no bid, so it stays 0.
-				inc := b.MinIncrement
-				if inc == 0 {
-					inc = 1
-				}
-				var currentBid uint32
-				if b.SaleType == string(listing.SaleTypeAuction) {
-					if b.ListValue > inc {
-						currentBid = b.ListValue - inc
-					} else {
-						currentBid = 0
-					}
-				}
-
-				m, berr := listing.NewBuilder(tid, world.Id(b.WorldId), b.SellerId).
-					SetId(b.ListingId).
-					SetSellerAccountId(b.SellerAccountId).
-					SetSellerName(b.SellerName).
-					SetSaleType(listing.SaleType(b.SaleType)).
-					SetState(listing.StateActive).
-					SetTemplateId(b.TemplateId).
-					SetQuantity(b.Quantity).
-					SetStrength(b.Strength).
-					SetDexterity(b.Dexterity).
-					SetIntelligence(b.Intelligence).
-					SetLuck(b.Luck).
-					SetHP(b.HP).
-					SetMP(b.MP).
-					SetWeaponAttack(b.WeaponAttack).
-					SetMagicAttack(b.MagicAttack).
-					SetWeaponDefense(b.WeaponDefense).
-					SetMagicDefense(b.MagicDefense).
-					SetAccuracy(b.Accuracy).
-					SetAvoidability(b.Avoidability).
-					SetHands(b.Hands).
-					SetSpeed(b.Speed).
-					SetJump(b.Jump).
-					SetSlots(b.Slots).
-					SetLevel(b.Level).
-					SetItemLevel(b.ItemLevel).
-					SetItemExp(b.ItemExp).
-					SetRingId(b.RingId).
-					SetViciousCount(b.ViciousCount).
-					SetFlags(b.Flags).
-					SetListValue(b.ListValue).
-					SetBuyNowPrice(b.BuyNowPrice).
-					SetCommissionRate(b.CommissionRate).
-					SetCategory(category).
-					SetSubCategory(subCategory).
-					SetEndsAt(b.EndsAt).
-					SetMinIncrement(b.MinIncrement).
-					SetCurrentBid(currentBid).
-					SetOfferWishSerial(b.OfferWishSerial).
-					SetOfferWishOwnerId(b.OfferWishOwnerId).
-					Build()
-				if berr != nil {
-					return berr
-				}
-				_, cerr := listing.CreateListing(tx, m)
-				return cerr
+			// The row-create business logic (idempotency, category/subCategory
+			// derivation, auction currentBid seeding, builder assembly) lives in the
+			// listing processor; this handler maps the command body to the request and
+			// owns only the Kafka acks.
+			err := listing.NewProcessor(l, ctx, db).Accept(listing.AcceptRequest{
+				ListingId:        b.ListingId,
+				WorldId:          b.WorldId,
+				SellerId:         b.SellerId,
+				SellerAccountId:  b.SellerAccountId,
+				SellerName:       b.SellerName,
+				SaleType:         b.SaleType,
+				TemplateId:       b.TemplateId,
+				Quantity:         b.Quantity,
+				Strength:         b.Strength,
+				Dexterity:        b.Dexterity,
+				Intelligence:     b.Intelligence,
+				Luck:             b.Luck,
+				HP:               b.HP,
+				MP:               b.MP,
+				WeaponAttack:     b.WeaponAttack,
+				MagicAttack:      b.MagicAttack,
+				WeaponDefense:    b.WeaponDefense,
+				MagicDefense:     b.MagicDefense,
+				Accuracy:         b.Accuracy,
+				Avoidability:     b.Avoidability,
+				Hands:            b.Hands,
+				Speed:            b.Speed,
+				Jump:             b.Jump,
+				Slots:            b.Slots,
+				Level:            b.Level,
+				ItemLevel:        b.ItemLevel,
+				ItemExp:          b.ItemExp,
+				RingId:           b.RingId,
+				ViciousCount:     b.ViciousCount,
+				Flags:            b.Flags,
+				ListValue:        b.ListValue,
+				BuyNowPrice:      b.BuyNowPrice,
+				CommissionRate:   b.CommissionRate,
+				Category:         b.Category,
+				SubCategory:      b.SubCategory,
+				EndsAt:           b.EndsAt,
+				MinIncrement:     b.MinIncrement,
+				OfferWishSerial:  b.OfferWishSerial,
+				OfferWishOwnerId: b.OfferWishOwnerId,
 			})
 
 			p := pf(ctx)
@@ -230,25 +163,12 @@ func handleReleaseFromMtsHolding(pf providerFn) func(db *gorm.DB) message.Handle
 			if c.Type != custody.CommandReleaseFromMtsHolding {
 				return
 			}
-			tdb := db.WithContext(ctx)
-
-			// Capture the holding's owner/world/item BEFORE the soft-delete so the
-			// take-home ITEM_TAKEN_HOME event can address the owner's Transfer
-			// Inventory re-push. A miss means the row is already soft-deleted (a
-			// replay), so the event was emitted on the first delivery — skip the
-			// re-emit to keep release idempotent.
-			var taken holding.Model
-			var emitTakenHome bool
-			err := database.ExecuteTransaction(tdb, func(tx *gorm.DB) error {
-				if hm, gerr := holding.GetById(c.Body.HoldingId.String())(tx)(); gerr == nil {
-					taken = hm
-					emitTakenHome = true
-				}
-				// SoftDelete is idempotent: 0 rows affected on a replay (already
-				// released) is success, not an error.
-				_, derr := holding.SoftDelete(tx, c.Body.HoldingId.String())
-				return derr
-			})
+			// The capture-then-soft-delete tx lives in the holding processor; this
+			// handler owns only the Kafka acks. The captured holding + emit gate are
+			// returned so the ITEM_TAKEN_HOME emission stays here (it emits Kafka).
+			res, err := holding.NewProcessor(l, ctx, db).Release(c.Body.HoldingId.String())
+			taken := res.Taken
+			emitTakenHome := res.EmitTakenHome
 
 			p := pf(ctx)
 			if err != nil {
@@ -287,14 +207,9 @@ func handleRestoreMtsHolding(pf providerFn) func(db *gorm.DB) message.Handler[cu
 			if c.Type != custody.CommandRestoreMtsHolding {
 				return
 			}
-			tdb := db.WithContext(ctx)
-
-			err := database.ExecuteTransaction(tdb, func(tx *gorm.DB) error {
-				// Restore is idempotent: 0 rows affected on a replay (already
-				// live) is success, not an error.
-				_, rerr := holding.Restore(tx, c.Body.HoldingId.String())
-				return rerr
-			})
+			// The idempotent un-soft-delete tx lives in the holding processor; this
+			// handler owns only the Kafka acks.
+			err := holding.NewProcessor(l, ctx, db).RestoreHolding(c.Body.HoldingId.String())
 
 			p := pf(ctx)
 			if err != nil {
@@ -312,17 +227,6 @@ func handleRestoreMtsHolding(pf providerFn) func(db *gorm.DB) message.Handler[cu
 	}
 }
 
-// moveHoldingId derives a deterministic surrogate id for the buyer's holding from
-// the (listingId, buyerId) pair. A replayed settlement-move therefore targets the
-// same holding id, so the existence-check below short-circuits and no second
-// holding is created (mirrors the AcceptToMtsListing id-existence idempotency).
-func moveHoldingId(listingId uuid.UUID, buyerId uint32) uuid.UUID {
-	var buf [20]byte
-	copy(buf[:16], listingId[:])
-	binary.BigEndian.PutUint32(buf[16:], buyerId)
-	return uuid.NewSHA1(uuid.Nil, buf[:])
-}
-
 // handleMtsMoveListingToHolding settles a purchase: in ONE local DB transaction it
 // (a) loads the listing, (b) conditionally marks it sold via the listing
 // administrator's UpdateState(active→sold), and (c) creates the buyer's holding row
@@ -338,165 +242,24 @@ func handleMtsMoveListingToHolding(pf providerFn) func(db *gorm.DB) message.Hand
 				return
 			}
 			b := c.Body
-			tdb := db.WithContext(ctx)
-			hid := moveHoldingId(b.ListingId, b.BuyerId)
 
-			// itemId + sellerId are captured from the listing row inside the tx so the
-			// LISTING_SOLD notice emitted on success can carry the sold item id and
-			// the seller (so the channel can refresh the seller's panels/wallet).
-			// soldSaleType + soldOfferWishSerial drive the offer-purchase side-effects
-			// (want-ad consume + sibling-offer release) run after the tx commits.
-			var itemId uint32
-			var sellerId uint32
-			var soldSaleType string
-			var soldOfferWishSerial uint32
-
-			err := database.ExecuteTransaction(tdb, func(tx *gorm.DB) error {
-				lm, gerr := listing.GetById(b.ListingId.String())(tx)()
-				if gerr != nil {
-					return gerr
-				}
-				itemId = lm.TemplateId()
-				sellerId = lm.SellerId()
-				soldSaleType = string(lm.SaleType())
-				soldOfferWishSerial = lm.OfferWishSerial()
-
-				// Conditional ->sold transition. The rows affected is the race
-				// arbiter: 1 means this call won the transition; 0 means the listing
-				// was already out of its pre-sold state (either this same move already
-				// settled it — a replay — or a concurrent cancel/expire won the race).
-				//
-				// Two valid pre-sold source states feed this step:
-				//   - a fixed-price/buy-now Buy settles the listing straight from
-				//     `active` (MtsSettlePurchase never pre-transitions the row), so the
-				//     buy path is active->sold;
-				//   - an auction settle (SettleAuction) pre-transitions the listing
-				//     active->settling SYNCHRONOUSLY (the sweep re-discovery guard), so
-				//     the auction path is settling->sold.
-				// Try active->sold first (the buy path); if 0 rows, try settling->sold
-				// (the auction-settle path). Whichever affects 1 row is the winner.
-				affected, uerr := listing.UpdateState(tx, b.ListingId.String(), listing.StateActive, listing.StateSold)
-				if uerr != nil {
-					return uerr
-				}
-				if affected == 0 {
-					affected, uerr = listing.UpdateState(tx, b.ListingId.String(), listing.StateSettling, listing.StateSold)
-					if uerr != nil {
-						return uerr
-					}
-				}
-
-				// Idempotency: if the buyer holding already exists for this
-				// (listing, buyer), the move has been applied — do not create a
-				// second copy.
-				if existing, herr := holding.GetById(hid.String())(tx)(); herr == nil && existing.Id() == hid {
-					return nil
-				}
-
-				// Single-custody guard: when this call did NOT win the active->sold
-				// transition (affected==0) and there is no prior buyer holding to
-				// idempotently re-ack, the listing was claimed by a concurrent cancel
-				// or expire. Creating a buyer holding here would DOUBLE the item (a
-				// seller cancel/expire holding plus this purchased holding), so settle
-				// must lose the race and create nothing.
-				if affected == 0 {
-					// Lost the race to a concurrent cancel/expire (no prior holding =
-					// not a replay). Creating no holding avoids the double-custody dupe,
-					// but the settle MUST fail so the saga compensates the buyer's
-					// already-applied prepaid debit. Returning an error emits an ERROR
-					// ack -> the move step fails -> reverse-walk re-credits the buyer. A
-					// silent success here would charge the buyer for an item the seller
-					// reclaimed (currency desync).
-					l.Warnf("MtsMoveListingToHolding lost the race for listing [%s] (no active->sold transition, no prior holding); failing settle so the buyer debit is compensated. buyer [%d], transaction [%s].", b.ListingId.String(), b.BuyerId, c.TransactionId.String())
-					return errMoveLostRace
-				}
-
-				t := tenant.MustFromContext(ctx)
-				hm, berr := holding.NewBuilder(t.Id(), world.Id(b.WorldId), b.BuyerId).
-					SetId(hid).
-					SetOrigin(holding.OriginPurchased).
-					SetTemplateId(lm.TemplateId()).
-					SetQuantity(lm.Quantity()).
-					SetStrength(lm.Strength()).
-					SetDexterity(lm.Dexterity()).
-					SetIntelligence(lm.Intelligence()).
-					SetLuck(lm.Luck()).
-					SetHP(lm.HP()).
-					SetMP(lm.MP()).
-					SetWeaponAttack(lm.WeaponAttack()).
-					SetMagicAttack(lm.MagicAttack()).
-					SetWeaponDefense(lm.WeaponDefense()).
-					SetMagicDefense(lm.MagicDefense()).
-					SetAccuracy(lm.Accuracy()).
-					SetAvoidability(lm.Avoidability()).
-					SetHands(lm.Hands()).
-					SetSpeed(lm.Speed()).
-					SetJump(lm.Jump()).
-					SetSlots(lm.Slots()).
-					SetLevel(lm.Level()).
-					SetItemLevel(lm.ItemLevel()).
-					SetItemExp(lm.ItemExp()).
-					SetRingId(lm.RingId()).
-					SetViciousCount(lm.ViciousCount()).
-					SetFlags(lm.Flags()).
-					Build()
-				if berr != nil {
-					return berr
-				}
-				if _, cerr := holding.CreateHolding(tx, hm); cerr != nil {
-					return cerr
-				}
-
-				// Record the settle for BOTH parties' My Page -> History. This point
-				// is reached only on the winning first settle (the holding-exists
-				// guard above returns early on replay), so the two rows are written
-				// exactly once. salePrice is the seller's BASE price — the listing
-				// value for a fixed/buy-now sale, or the winning bid for an auction.
-				salePrice := lm.ListValue()
-				if lm.SaleType() == listing.SaleTypeAuction {
-					salePrice = lm.CurrentBid()
-				}
-
-				// Under the Option B pricing model the buyer pays the commission-
-				// inclusive markup while the seller nets the base: the History rows
-				// must reflect what each party actually transacted, so the buyer's
-				// purchase row records MarkedUp(salePrice) and the seller's sale row
-				// records the base salePrice. Recording base on the buyer row made My
-				// Page -> History under-report the purchase price (task-102 live finding).
-				cfg := configuration.GetRegistry().GetTenantConfig(l, ctx, t.Id())
-				buyerPaid := listing.MarkedUp(salePrice, lm.CommissionRate(), cfg.CommissionBase())
-
-				buyerTxn, berr := transaction.NewBuilder(t.Id(), world.Id(b.WorldId), b.BuyerId).
-					SetId(uuid.New()).
-					SetCounterpartyId(sellerId).
-					SetItemId(lm.TemplateId()).
-					SetQuantity(lm.Quantity()).
-					SetTotalPrice(buyerPaid).
-					SetKind(transaction.KindPurchase).
-					Build()
-				if berr != nil {
-					return berr
-				}
-				if _, terr := transaction.CreateTransaction(tx, buyerTxn); terr != nil {
-					return terr
-				}
-
-				sellerTxn, berr := transaction.NewBuilder(t.Id(), world.Id(b.WorldId), sellerId).
-					SetId(uuid.New()).
-					SetCounterpartyId(b.BuyerId).
-					SetItemId(lm.TemplateId()).
-					SetQuantity(lm.Quantity()).
-					SetTotalPrice(salePrice).
-					SetKind(transaction.KindSale).
-					Build()
-				if berr != nil {
-					return berr
-				}
-				if _, terr := transaction.CreateTransaction(tx, sellerTxn); terr != nil {
-					return terr
-				}
-				return nil
+			// The settle tx (load listing, conditional ->sold transition, single-custody
+			// race guard, buyer-holding create, both parties' history rows) lives in the
+			// listing processor; this handler owns only the Kafka acks and the
+			// post-commit offer/escrow side-effects (both emit Kafka). The result carries
+			// what those need: the buyer holding id (MOVED ack), the sold item id +
+			// seller (LISTING_SOLD), and the sale type + fulfilled want-ad serial (offer
+			// side-effects).
+			res, err := listing.NewProcessor(l, ctx, db).SettleMove(listing.SettleMoveRequest{
+				ListingId: b.ListingId,
+				BuyerId:   b.BuyerId,
+				WorldId:   b.WorldId,
 			})
+			hid := res.HoldingId
+			itemId := res.ItemId
+			sellerId := res.SellerId
+			soldSaleType := res.SoldSaleType
+			soldOfferWishSerial := res.SoldOfferWishSerial
 
 			p := pf(ctx)
 			if err != nil {
@@ -571,14 +334,9 @@ func handleRemoveMtsListing(pf providerFn) func(db *gorm.DB) message.Handler[cus
 			if c.Type != custody.CommandRemoveMtsListing {
 				return
 			}
-			tdb := db.WithContext(ctx)
-
-			var affected int64
-			err := database.ExecuteTransaction(tdb, func(tx *gorm.DB) error {
-				n, derr := listing.DeleteActive(tx, c.Body.ListingId.String())
-				affected = n
-				return derr
-			})
+			// The guarded active-only delete tx lives in the listing processor; this
+			// handler owns only the ERROR ack + the removed-vs-noop logging.
+			affected, err := listing.NewProcessor(l, ctx, db).RemoveSpuriousActive(c.Body.ListingId.String())
 			if err != nil {
 				l.WithError(err).Errorf("Failed to remove spurious listing [%s] for transaction [%s].", c.Body.ListingId.String(), c.TransactionId.String())
 				_ = msg.Emit(pf(ctx))(func(buf *msg.Buffer) error {
@@ -596,10 +354,11 @@ func handleRemoveMtsListing(pf providerFn) func(db *gorm.DB) message.Handler[cus
 }
 
 // handleRestoreListingFromHolding reverses a settlement move — the
-// late-compensation inverse of MtsMoveListingToHolding. In one tx it soft-deletes
-// the deterministic buyer holding (moveHoldingId(listingId, buyerId)) and
-// transitions the listing sold->active, so a buy that landed late after the buyer
-// was refunded returns the item to the marketplace and leaves the buyer nothing.
+// late-compensation inverse of MtsMoveListingToHolding. It delegates to the listing
+// processor's RestoreFromHolding, which in one tx soft-deletes the deterministic
+// buyer holding (listing.MoveHoldingId(listingId, buyerId)) and transitions the
+// listing sold->active, so a buy that landed late after the buyer was refunded
+// returns the item to the marketplace and leaves the buyer nothing.
 // Both mutations are idempotent (0 rows on replay = success). See
 // handleRemoveMtsListing for the emit-on-error-only rationale.
 func handleRestoreListingFromHolding(pf providerFn) func(db *gorm.DB) message.Handler[custody.Command[custody.RestoreListingFromHoldingCommandBody]] {
@@ -608,21 +367,11 @@ func handleRestoreListingFromHolding(pf providerFn) func(db *gorm.DB) message.Ha
 			if c.Type != custody.CommandRestoreListingFromHolding {
 				return
 			}
-			tdb := db.WithContext(ctx)
-			hid := moveHoldingId(c.Body.ListingId, c.Body.BuyerId)
+			hid := listing.MoveHoldingId(c.Body.ListingId, c.Body.BuyerId)
 
-			err := database.ExecuteTransaction(tdb, func(tx *gorm.DB) error {
-				// Remove the buyer's purchased holding (the delivered item).
-				if _, herr := holding.SoftDelete(tx, hid.String()); herr != nil {
-					return herr
-				}
-				// Return the listing to the marketplace (sold -> active). 0 rows on a
-				// replay (already active) is success, not an error.
-				if _, uerr := listing.UpdateState(tx, c.Body.ListingId.String(), listing.StateSold, listing.StateActive); uerr != nil {
-					return uerr
-				}
-				return nil
-			})
+			// The soft-delete-buyer-holding + listing sold->active tx lives in the
+			// listing processor; this handler owns only the ERROR ack + the logging.
+			err := listing.NewProcessor(l, ctx, db).RestoreFromHolding(c.Body.ListingId.String(), c.Body.BuyerId)
 			if err != nil {
 				l.WithError(err).Errorf("Failed to reverse move for listing [%s] buyer [%d], transaction [%s].", c.Body.ListingId.String(), c.Body.BuyerId, c.TransactionId.String())
 				_ = msg.Emit(pf(ctx))(func(buf *msg.Buffer) error {

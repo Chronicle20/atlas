@@ -101,9 +101,13 @@ type RegisterWishCommandBody struct {
 	WorldId     byte      `json:"worldId"`
 	CharacterId uint32    `json:"characterId"`
 	ItemId      uint32    `json:"itemId"`
-	Price       uint32    `json:"price"`
-	Count       uint32    `json:"count"`
-	Origin      string    `json:"origin"`
+	// ListingSerial is the favorited listing's ITC serial for a SET_ZZIM (cart)
+	// command, so the cart tracks that exact listing. 0 for a REGISTER_WISH_ENTRY
+	// (wanted) command, which references no listing.
+	ListingSerial uint32 `json:"listingSerial"`
+	Price         uint32 `json:"price"`
+	Count         uint32 `json:"count"`
+	Origin        string `json:"origin"`
 }
 
 // RemoveWishCommandBody identifies the wish-list entry to delete. Origin records
@@ -245,23 +249,25 @@ type StatusEventListingCreateFailedBody struct {
 }
 
 // StatusEventListingCancelFailedBody reports a rejected cancel. SellerId is the
-// target character for the CancelSaleItemFailed result; Reason is the clientbound
-// NoticeFailReason byte.
+// target character for the CancelSaleItemFailed result. ReasonKey is a SEMANTIC
+// failure key resolved through the tenant noticeFailReasons table (DOM-25); JSON
+// tag "reasonKey" (NOT "reason"), matching buy/bid — see StatusEventBuyFailedBody.
 type StatusEventListingCancelFailedBody struct {
-	WorldId  byte   `json:"worldId"`
-	Serial   uint32 `json:"serial"`
-	SellerId uint32 `json:"sellerId"`
-	Reason   byte   `json:"reason"`
+	WorldId   byte   `json:"worldId"`
+	Serial    uint32 `json:"serial"`
+	SellerId  uint32 `json:"sellerId"`
+	ReasonKey string `json:"reasonKey,omitempty"`
 }
 
 // StatusEventTakeHomeFailedBody reports a rejected take-home. CharacterId is the
-// target character for the MoveItcPurchaseItemLtoSFailed result; Reason is the
-// clientbound NoticeFailReason byte.
+// target character for the MoveItcPurchaseItemLtoSFailed result. ReasonKey is a
+// SEMANTIC failure key resolved through the tenant noticeFailReasons table
+// (DOM-25); JSON tag "reasonKey" (NOT "reason") — see StatusEventBuyFailedBody.
 type StatusEventTakeHomeFailedBody struct {
 	WorldId     byte   `json:"worldId"`
 	Serial      uint32 `json:"serial"`
 	CharacterId uint32 `json:"characterId"`
-	Reason      byte   `json:"reason"`
+	ReasonKey   string `json:"reasonKey,omitempty"`
 }
 
 // StatusEventBidPlacedBody reports a bid placed on an auction. BidderId is the

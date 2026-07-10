@@ -51,6 +51,13 @@ type Processor interface {
 	// saga's ReleaseFromMtsHolding custody command soft-deletes it (idempotently on
 	// replay) and AcceptToCharacter grants the item to inventory.
 	TakeHome(holdingId string, characterId uint32, worldId world.Id, inventoryType byte, slot int16) (uuid.UUID, error)
+	// Release soft-deletes the holding row by id in one local DB transaction
+	// (idempotent on replay), capturing the pre-delete snapshot so the consumer can
+	// gate the ITEM_TAKEN_HOME event. It is the custody ReleaseFromMtsHolding logic.
+	Release(holdingId string) (ReleaseResult, error)
+	// RestoreHolding un-soft-deletes the holding row by id (the compensating inverse
+	// of Release) in one local DB transaction, idempotent on replay.
+	RestoreHolding(holdingId string) error
 }
 
 type ProcessorImpl struct {

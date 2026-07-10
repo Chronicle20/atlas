@@ -293,16 +293,40 @@ func TestBrowseFilterFromSearchItcList_EmptyName(t *testing.T) {
 	}
 }
 
-// TestBrowseFilterFromSearchItcList_ResolveErrorShowsNoResults asserts that when
-// the search term cannot be resolved (here, atlas-data is unreachable because no
-// DATA_SERVICE_URL is configured in the test env), the helper reports hasResults
-// =false so the caller writes an empty page rather than leaking the whole
-// marketplace via an empty filter.
+// TestBrowseFilterFromSearchItcList_ResolveErrorShowsNoResults asserts that for an
+// ITEM-name search (searchOption != 0) when the search term cannot be resolved
+// (here, atlas-data is unreachable because no DATA_SERVICE_URL is configured in
+// the test env), the helper reports hasResults=false so the caller writes an empty
+// page rather than leaking the whole marketplace via an empty filter.
 func TestBrowseFilterFromSearchItcList_ResolveErrorShowsNoResults(t *testing.T) {
-	p := fieldsb.NewItcOperationTabSearch(6, 1, 0, 0, "Sword")
+	// searchOption 1 == item-name search (a non-zero option); the term is resolved
+	// against atlas-data's item-string index, which is unreachable here.
+	p := fieldsb.NewItcOperationTabSearch(6, 1, 0, 1, "Sword")
 	_, hasResults := browseFilterFromSearchItcList(logrus.New(), context.Background(), p)
 	if hasResults {
 		t.Errorf("a failed/empty resolve must report hasResults=false (no results), got true")
+	}
+}
+
+// TestBrowseFilterFromSearchItcList_SellerNameSearch asserts that a searchOption==0
+// search is a CHARACTER/SELLER-name search: the term becomes the BrowseFilter's
+// SellerName (an exact seller_name filter atlas-mts supports), hasResults is true
+// (the browse runs and returns that seller's listings, empty or not), and no item
+// resolution is attempted — so a character-name search no longer hard-fails as an
+// item lookup (task-102 live finding). IDA v83 CITCWnd_Tab::OnButtonClicked
+// 0x5b7106: the searchOption==0 branch validates the input as a character name.
+func TestBrowseFilterFromSearchItcList_SellerNameSearch(t *testing.T) {
+	// mode 6, category 1, sub 0, searchOption 0 (seller name), name "Bishop"
+	p := fieldsb.NewItcOperationTabSearch(6, 1, 0, 0, "Bishop")
+	f, hasResults := browseFilterFromSearchItcList(logrus.New(), context.Background(), p)
+	if !hasResults {
+		t.Errorf("a seller-name search must report hasResults=true, got false")
+	}
+	if f.SellerName != "Bishop" {
+		t.Errorf("sellerName: want %q, got %q", "Bishop", f.SellerName)
+	}
+	if len(f.TemplateIds) != 0 {
+		t.Errorf("templateIds: seller search must not resolve item ids, got %v", f.TemplateIds)
 	}
 }
 

@@ -1687,6 +1687,10 @@
         "writer": "RemoveTownDoor"
       },
       {
+        "opCode": "0x19A",
+        "writer": "MtsChargeParamResult"
+      },
+      {
         "opCode": "0x19B",
         "writer": "MtsOperation2"
       },

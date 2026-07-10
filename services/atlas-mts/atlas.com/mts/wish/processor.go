@@ -23,6 +23,14 @@ type Processor interface {
 	// the cross-character Wanted tab.
 	GetWantedByWorld(worldId world.Id) ([]Model, error)
 	Delete(id string) (bool, error)
+	// RegisterWish creates a wish-list entry in one local DB transaction, deriving
+	// the want-ad base price + fixed-sale expiry for a "wanted" entry. It is the
+	// row-create business logic behind the RegisterWish command.
+	RegisterWish(req RegisterWishRequest) error
+	// RemoveWish deletes a wish-list entry by id in one local DB transaction,
+	// returning the owning characterId (0 if the row was already gone) so the
+	// consumer can echo it onto the WISH_REMOVED event.
+	RemoveWish(id string) (uint32, error)
 }
 
 type ProcessorImpl struct {

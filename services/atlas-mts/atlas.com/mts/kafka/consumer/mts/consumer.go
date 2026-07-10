@@ -1,7 +1,6 @@
 package mts
 
 import (
-	"atlas-mts/configuration"
 	"atlas-mts/holding"
 	consumer2 "atlas-mts/kafka/consumer"
 	msg "atlas-mts/kafka/message"
@@ -13,10 +12,8 @@ import (
 	"atlas-mts/wish"
 	"context"
 	"errors"
-	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
@@ -79,12 +76,6 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 // producer2.ProviderImpl(l): func(ctx) func(token) MessageProducer.
 type providerFn = func(ctx context.Context) func(token string) kprod.MessageProducer
 
-// mtsFailReasonGeneric is the generic clientbound NoticeFailReason byte used for
-// command-side failures (serial-not-resolved, owner-check, race-loser). The
-// MapleStory CITC NoticeFailReason table maps unknown reasons to a generic
-// "operation failed" notice; 0 is the safe generic value (the channel passes it
-// straight into the *Failed clientbound codec's Decode1 reason field).
-const mtsFailReasonGeneric byte = 0
 
 // failReasonFor maps a buy/bid rejection error to the SEMANTIC failure key
 // the channel resolves against the tenant "noticeFailReasons" writer table
@@ -173,7 +164,7 @@ func handleCancelListing(pf providerFn) func(db *gorm.DB) message.Handler[mts.Co
 
 			emitFail := func() {
 				_ = msg.Emit(p)(func(buf *msg.Buffer) error {
-					return buf.Put(mts.EnvStatusEventTopic, mtsproducer.ListingCancelFailedStatusEventProvider(c.TransactionId, b.WorldId, b.Serial, b.SellerId, mtsFailReasonGeneric))
+					return buf.Put(mts.EnvStatusEventTopic, mtsproducer.ListingCancelFailedStatusEventProvider(c.TransactionId, b.WorldId, b.Serial, b.SellerId, mts.FailReasonGeneric))
 				})
 			}
 
@@ -253,7 +244,7 @@ func handleTakeHome(pf providerFn) func(db *gorm.DB) message.Handler[mts.Command
 
 			emitFail := func() {
 				_ = msg.Emit(p)(func(buf *msg.Buffer) error {
-					return buf.Put(mts.EnvStatusEventTopic, mtsproducer.TakeHomeFailedStatusEventProvider(c.TransactionId, b.WorldId, b.Serial, b.CharacterId, mtsFailReasonGeneric))
+					return buf.Put(mts.EnvStatusEventTopic, mtsproducer.TakeHomeFailedStatusEventProvider(c.TransactionId, b.WorldId, b.Serial, b.CharacterId, mts.FailReasonGeneric))
 				})
 			}
 
@@ -430,44 +421,26 @@ func handleRegisterWish(pf providerFn) func(db *gorm.DB) message.Handler[mts.Com
 				return
 			}
 			b := c.Body
-			tdb := db.WithContext(ctx)
 
-			err := database.ExecuteTransaction(tdb, func(tx *gorm.DB) error {
-				t := tenant.MustFromContext(ctx)
-				// Origin determines the wish kind: REGISTER_WISH_ENTRY posts a "wanted"
-				// item; SET_ZZIM (and the rest) are "cart" additions. Cart and wanted are
-				// disjoint stores so the Cart and Wanted views never bleed together.
-				wishType := wish.TypeCart
-				if b.Origin == mts.WishOriginRegisterWish {
-					wishType = wish.TypeWanted
-				}
-				wb := wish.NewBuilder(t.Id(), b.CharacterId, b.ItemId).
-					SetId(b.WishId).
-					SetWorldId(world.Id(b.WorldId)).
-					SetType(wishType).
-					SetCount(b.Count)
-				// A "wanted" want-ad's price is the poster's commission-INCLUSIVE total
-				// (the register dialog sends the raw typed amount — CRegisterWishEntryDlg::
-				// Confirm does no commission math). Store the BASE the offerer nets
-				// (UnMarkUp) so an offer credits base and the poster pays MarkedUp(base) ==
-				// the total; the commission is the platform's sink, like a normal buy. A
-				// "cart" entry's price is the favorited listing's list value (already base),
-				// stored as-is. A wanted entry also expires after the tenant fixed-sale term
-				// (the periodic sweep hard-deletes it); a cart entry never expires.
-				price := b.Price
-				if wishType == wish.TypeWanted {
-					cfg := configuration.GetRegistry().GetTenantConfig(l, ctx, t.Id())
-					price = listing.WantAdBaseFromTotal(b.Price, cfg.CommissionRate(), cfg.CommissionBase())
-					exp := time.Now().Add(time.Duration(cfg.FixedSaleDurationHours()) * time.Hour)
-					wb = wb.SetExpiresAt(&exp)
-				}
-				wb = wb.SetPrice(price)
-				wm, berr := wb.Build()
-				if berr != nil {
-					return berr
-				}
-				_, cerr := wish.CreateWish(tx, wm)
-				return cerr
+			// Origin determines the wish kind (a wire concern resolved here):
+			// REGISTER_WISH_ENTRY posts a "wanted" item; SET_ZZIM (and the rest) are
+			// "cart" additions. Cart and wanted are disjoint stores so the Cart and
+			// Wanted views never bleed together. The row-create tx (and the wanted
+			// price/expiry derivation) lives in the wish processor; this handler owns
+			// only the WISH_ADDED emission.
+			wishType := wish.TypeCart
+			if b.Origin == mts.WishOriginRegisterWish {
+				wishType = wish.TypeWanted
+			}
+			err := wish.NewProcessor(l, ctx, db).RegisterWish(wish.RegisterWishRequest{
+				WishId:        b.WishId,
+				WorldId:       world.Id(b.WorldId),
+				CharacterId:   b.CharacterId,
+				ItemId:        b.ItemId,
+				WishType:      wishType,
+				ListingSerial: b.ListingSerial,
+				Count:         b.Count,
+				Price:         b.Price,
 			})
 
 			p := pf(ctx)
@@ -493,20 +466,10 @@ func handleRemoveWish(pf providerFn) func(db *gorm.DB) message.Handler[mts.Comma
 				return
 			}
 			b := c.Body
-			tdb := db.WithContext(ctx)
 
-			var characterId uint32
-
-			err := database.ExecuteTransaction(tdb, func(tx *gorm.DB) error {
-				// Read the row first so the event can echo the owning characterId.
-				// A missing row (already removed) leaves characterId 0 and the
-				// delete affects 0 rows — both are success, not errors.
-				if wm, gerr := wish.GetById(b.WishId.String())(tx)(); gerr == nil {
-					characterId = wm.CharacterId()
-				}
-				_, derr := wish.DeleteWish(tx, b.WishId.String())
-				return derr
-			})
+			// The read-then-delete tx lives in the wish processor; this handler owns
+			// only the WISH_REMOVED emission (which echoes the owning characterId).
+			characterId, err := wish.NewProcessor(l, ctx, db).RemoveWish(b.WishId.String())
 
 			p := pf(ctx)
 			if err != nil {

@@ -4,6 +4,7 @@ import (
 	consumer2 "atlas-channel/kafka/consumer"
 	mtsmsg "atlas-channel/kafka/message/mts"
 	"atlas-channel/listener"
+	mtsproc "atlas-channel/mts"
 	mtscart "atlas-channel/mts/cart"
 	mtsholding "atlas-channel/mts/holding"
 	mtslisting "atlas-channel/mts/listing"
@@ -22,6 +23,7 @@ import (
 	fieldpkt "github.com/Chronicle20/atlas/libs/atlas-packet/field"
 	fieldcb "github.com/Chronicle20/atlas/libs/atlas-packet/field/clientbound"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
+	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 )
@@ -252,7 +254,7 @@ func announceWishList(l logrus.FieldLogger, ctx context.Context, sc server.Model
 // ok=false so the caller skips the re-push rather than guessing a section.
 func wishSectionForOrigin(origin string) (section uint32, wishType string, ok bool) {
 	switch origin {
-	case mtsmsg.WishOriginSetZzim, mtsmsg.WishOriginDeleteZzim:
+	case mtsmsg.WishOriginSetZzim, mtsmsg.WishOriginDeleteZzim, mtsmsg.WishOriginPurchased:
 		return mtsSectionCart, mtswish.TypeCart, true
 	case mtsmsg.WishOriginRegisterWish, mtsmsg.WishOriginCancelWish:
 		return mtsSectionWanted, mtswish.TypeWanted, true
@@ -363,12 +365,46 @@ func handleListingSold(sc server.Model, wp writer.Producer) message.Handler[mtsm
 		// separately by the wallet-status consumer once the debit actually lands
 		// (scene-gated), so it is not pushed here.
 		announceUserPurchaseList(l, ctx, sc, wp, e.Body.BuyerId)
+		// If the buyer had the purchased item in their Cart (SET_ZZIM favorite),
+		// remove that cart entry now that they own it — a bought item should leave
+		// the Cart. The removal round-trips through REMOVE_WISH(PURCHASED); the
+		// resulting WISH_REMOVED re-pushes the Cart view (and drops the row) without a
+		// client notice. A buy from the browse (no cart entry) is a no-op here.
+		removeCartWishForPurchase(l, ctx, e.Body.WorldId, e.Body.BuyerId, e.Body.ItemId)
 		// Refresh the seller's "Not Yet Sold" panel (the sold item leaves it). Their
 		// wallet credit is handled by the wallet-status consumer. If the seller is
 		// offline/elsewhere these no-op; their panels also re-push on their next browse.
 		if e.Body.SellerId != 0 {
 			announceUserSaleList(l, ctx, sc, wp, e.Body.WorldId, e.Body.SellerId)
 		}
+	}
+}
+
+// removeCartWishForPurchase removes the buyer's Cart (SET_ZZIM) entry for a
+// just-purchased item so the bought item leaves the Cart. It resolves the buyer's
+// cart wish for itemId and emits REMOVE_WISH tagged PURCHASED — a silent,
+// server-initiated removal: handleWishRemoved writes no client notice for that
+// origin but re-pushes the Cart view (dropping the row). A buy from the browse,
+// where the buyer has no cart entry for the item, is a no-op.
+func removeCartWishForPurchase(l logrus.FieldLogger, ctx context.Context, worldId byte, characterId uint32, itemId uint32) {
+	ws, err := mtswish.NewProcessor(l, ctx).GetByCharacterAndType(characterId, mtswish.TypeCart)
+	if err != nil {
+		l.WithError(err).Warnf("Unable to load cart entries for buyer [%d] to prune purchased item [%d]; leaving cart as-is.", characterId, itemId)
+		return
+	}
+	for _, w := range ws {
+		if w.ItemId() != itemId {
+			continue
+		}
+		wishId, perr := uuid.Parse(w.Id())
+		if perr != nil {
+			l.WithError(perr).Errorf("Cart wish id [%s] is not a valid uuid (buyer [%d]); cannot prune purchased item.", w.Id(), characterId)
+			return
+		}
+		if rerr := mtsproc.NewProcessor(l, ctx).RemoveWish(world.Id(worldId), wishId, characterId, mtsmsg.WishOriginPurchased); rerr != nil {
+			l.WithError(rerr).Errorf("Unable to emit PURCHASED RemoveWish [%s] for buyer [%d].", wishId.String(), characterId)
+		}
+		return
 	}
 }
 
@@ -515,6 +551,9 @@ func handleWishRemoved(sc server.Model, wp writer.Producer) message.Handler[mtsm
 			announceTo(l, ctx, sc, wp, e.Body.CharacterId, fieldpkt.MtsOperationDeleteZzimDoneBody())
 		case mtsmsg.WishOriginCancelWish:
 			announceTo(l, ctx, sc, wp, e.Body.CharacterId, fieldpkt.MtsOperationNotifyCancelWishResultBody(mtsNotifyCancelWishCountA, mtsNotifyCancelWishCountB))
+		case mtsmsg.WishOriginPurchased:
+			// Server-initiated cart prune after a purchase — no notice: BuyItemDone
+			// already confirmed the buy. The Cart re-push below drops the bought row.
 		default:
 			l.Warnf("MTS WISH_REMOVED for character [%d] has unknown origin [%s]; no result written.", e.Body.CharacterId, e.Body.Origin)
 		}

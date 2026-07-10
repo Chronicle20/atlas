@@ -106,6 +106,13 @@ const (
 	WishOriginRegisterWish = "REGISTER_WISH"
 	WishOriginDeleteZzim   = "DELETE_ZZIM"
 	WishOriginCancelWish   = "CANCEL_WISH"
+	// WishOriginPurchased tags the server-initiated removal of a cart entry when
+	// the buyer purchases the favorited item (from the Cart or the browse). It is
+	// NOT a client ITC arm: handleListingSold emits REMOVE_WISH with this origin so
+	// the bought item leaves the Cart, and handleWishRemoved writes NO client notice
+	// for it (BuyItemDone already confirmed the purchase). atlas-mts echoes the
+	// origin string verbatim, so no server-side constant is required.
+	WishOriginPurchased = "PURCHASED"
 )
 
 // CreateListingCommandBody initiates a listing. The item snapshot and price terms

@@ -828,6 +828,13 @@ func wantedWorldItems(l logrus.FieldLogger, ctx context.Context, s session.Model
 	}
 	items := make([]fieldcb.MtsItem, 0, len(ws))
 	for _, w := range ws {
+		// Exclude the viewer's OWN want-ads: the Wanted tab shows other players'
+		// buy-orders you can fulfill (the seller counterpart to the For Sale tab,
+		// which likewise excludes your own listings via ExcludeSellerId). Your own
+		// want-ads appear under My Page -> Offers.
+		if w.CharacterId() == s.CharacterId() {
+			continue
+		}
 		items = append(items, mtsWantedItem(l, ctx, w))
 	}
 	return items

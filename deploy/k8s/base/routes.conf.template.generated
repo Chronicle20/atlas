@@ -524,6 +524,11 @@ location ~ ^/api/worlds/[^/]+/listings(/.*)?$ {
   proxy_pass http://$u$request_uri;
 }
 
+location ~ ^/api/worlds/[^/]+/mts(/.*)?$ {
+  set $u "atlas-mts.${POD_NAMESPACE}.svc.cluster.local:8080";
+  proxy_pass http://$u$request_uri;
+}
+
 location ~ ^/api/worlds(/.*)?$ {
   set $u "atlas-world.${POD_NAMESPACE}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;

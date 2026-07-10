@@ -147,7 +147,6 @@ const (
 	listSagaPerStepTimeout = 15 * time.Second
 )
 
-
 // Processor exposes the REST-facing CRUD and state-transition operations over
 // marketplace listings plus the list-initiation flow (List).
 type Processor interface {
@@ -215,6 +214,12 @@ type Processor interface {
 	// (a per-sibling failure is logged and the rest proceed). It returns the set of
 	// offers it successfully released so the caller can push a per-offerer refresh.
 	ReleaseSiblingOffers(worldId world.Id, wishSerial uint32, exceptId uuid.UUID) []ReleasedOffer
+	// ReleaseHighBidEscrow refunds the outstanding high bidder's escrow when an
+	// auction is settled by a BUY-NOW rather than by their bid winning. It releases
+	// ONLY a bid still in StateHeld, so an auction settled to its winner (whose bid
+	// is StateWon before the settle move runs) is a no-op — the winner's escrow is
+	// their payment, not a refund. Idempotent (the bid is marked released in-tx).
+	ReleaseHighBidEscrow(worldId world.Id, listingId uuid.UUID) error
 }
 
 // ReleasedOffer describes one losing want-ad offer that ReleaseSiblingOffers
@@ -410,6 +415,68 @@ func (p *ProcessorImpl) ReleaseSiblingOffers(worldId world.Id, wishSerial uint32
 		}
 	}
 	return released
+}
+
+// ReleaseHighBidEscrow refunds the outstanding high bidder's escrow when an auction
+// is settled by a BUY-NOW rather than by their bid winning: the buy-now buyer takes
+// the item, so the high bidder never wins and their escrowed NX
+// (MarkedUp(currentBid)) must be returned. It is SELF-GUARDING by bid state — it
+// releases only a bid still in StateHeld. SettleAuction marks the WINNING bid
+// StateWon synchronously before the settle move runs, so an auction settled to its
+// winner finds no held bid here and no-ops (the winner's escrow is their payment,
+// never refunded). A non-auction, a bidless auction, and a replay (the bid is marked
+// released in-tx, the replay guard) are all no-ops. When the buy-now buyer IS the
+// high bidder, their own bid escrow is correctly refunded (they cancel their bid and
+// pay the buy-now price instead).
+func (p *ProcessorImpl) ReleaseHighBidEscrow(worldId world.Id, listingId uuid.UUID) error {
+	t := tenant.MustFromContext(p.ctx)
+	cfg := configuration.GetRegistry().GetTenantConfig(p.l, p.ctx, t.Id())
+
+	var bidderId, account, amount uint32
+	terr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		lm, gerr := GetById(listingId.String())(tx)()
+		if gerr != nil {
+			return gerr
+		}
+		if lm.SaleType() != SaleTypeAuction || lm.HighBidderId() == 0 {
+			return nil
+		}
+		heldId, acct, herr := heldBidFor(tx, listingId, lm.HighBidderId())
+		if herr != nil {
+			return herr
+		}
+		if heldId == uuid.Nil {
+			return nil // winner already StateWon, or already released (replay)
+		}
+		if _, uerr := bid.UpdateState(tx, heldId.String(), bid.StateHeld, bid.StateReleased); uerr != nil {
+			return uerr
+		}
+		bidderId = lm.HighBidderId()
+		account = acct
+		amount = MarkedUp(lm.CurrentBid(), lm.CommissionRate(), cfg.CommissionBase())
+		return nil
+	})
+	if terr != nil {
+		return terr
+	}
+	if bidderId == 0 {
+		return nil // nothing to release
+	}
+
+	releaseTxnId := uuid.New()
+	rb := saga.NewBuilder().
+		SetTransactionId(releaseTxnId).
+		SetSagaType(saga.MtsOperation).
+		SetInitiatedBy(fmt.Sprintf("character_%d", bidderId))
+	rb.AddStep("mts_bid_escrow_release", saga.Pending, saga.MtsBidEscrow, saga.MtsBidEscrowPayload{
+		TransactionId:   releaseTxnId,
+		ListingId:       listingId,
+		BidderId:        bidderId,
+		BidderAccountId: account,
+		Amount:          int32(amount),
+	})
+	rb.SetTimeout(bidEscrowTimeout())
+	return p.emitter.Create(rb.Build())
 }
 
 // Expire runs the SAME race-safe active->holding(seller) transition as Cancel but

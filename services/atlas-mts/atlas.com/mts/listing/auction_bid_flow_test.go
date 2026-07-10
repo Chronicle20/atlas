@@ -354,6 +354,56 @@ func TestCancelReleasesHeldBidEscrow(t *testing.T) {
 	}
 }
 
+// TestReleaseHighBidEscrowRefundsBuyNowLoser asserts that when an auction with a
+// live high bid is settled by a BUY-NOW (the buyer takes the item; the high bidder
+// never wins), ReleaseHighBidEscrow refunds the high bidder's escrow
+// (+MarkedUp(1000)=1600) and marks their bid released — so the bidder's NX is not
+// lost to the system. A second call is a no-op (the idempotent replay guard).
+func TestReleaseHighBidEscrowRefundsBuyNowLoser(t *testing.T) {
+	p, emitter, db, listingId, cleanup := newBidProcessor(t)
+	defer cleanup()
+
+	if _, err := p.PlaceBid(bidRequest(listingId, priorBidder, priorBidderAcct, 1000)); err != nil {
+		t.Fatalf("bid: %v", err)
+	}
+	emitter.called = false
+
+	if err := p.ReleaseHighBidEscrow(0, listingId); err != nil {
+		t.Fatalf("release: %v", err)
+	}
+	if released := findBids(t, db, listingId, bid.StateReleased); len(released) != 1 || released[0].BidderId() != priorBidder {
+		t.Errorf("released bids = %+v, want exactly the held bidder's", released)
+	}
+	if held := findBids(t, db, listingId, bid.StateHeld); len(held) != 0 {
+		t.Errorf("held bids = %+v, want none after buy-now release", held)
+	}
+	var sawRelease bool
+	for _, sg := range emitter.sagas() {
+		for _, st := range sg.Steps {
+			if st.Action != sharedsaga.MtsBidEscrow {
+				continue
+			}
+			ep := st.Payload.(sharedsaga.MtsBidEscrowPayload)
+			if ep.Amount == 1600 && ep.BidderId == priorBidder && ep.BidderAccountId == priorBidderAcct {
+				sawRelease = true
+			}
+		}
+	}
+	if !sawRelease {
+		t.Error("expected a +1600 escrow release for the high bidder on buy-now (MarkedUp(1000))")
+	}
+
+	// Idempotent: the bid is already released, so a replayed settle move does not
+	// double-refund.
+	emitter.called = false
+	if err := p.ReleaseHighBidEscrow(0, listingId); err != nil {
+		t.Fatalf("second release: %v", err)
+	}
+	if emitter.called {
+		t.Error("a second ReleaseHighBidEscrow must be a no-op (bid already released)")
+	}
+}
+
 // TestSettleAuctionAtExpiryCreditsSellerNoDoubleDebit asserts the settle-at-expiry
 // path for an auction WITH a high bidder credits the seller points
 // (+winningBid, the BASE amount — no UnMarkUp), moves custody to the winner, marks

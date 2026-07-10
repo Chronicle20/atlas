@@ -9,6 +9,8 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
@@ -57,13 +59,12 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 	}
 }
 
-// mtsTakeHomePurchaseTab / mtsTakeHomeSelectedNo mirror the values the MTS
-// status consumer's handleItemTakenHome passes to MoveItcPurchaseItemLtoSDone:
-// the purchase ("taken home") items live in the first MTS tab (tab=1 -> index 0
-// via SetTab(tab-1)); selectedNo 0 leaves the selection at the top of the list.
+// mtsTakeHomeSelectedNo is the selection index passed to MoveItcPurchaseItemLtoSDone
+// (client CITCWnd_Inventory::SetSelectedNo): 0 leaves the selection at the top of
+// the list. The tab is computed per-item from the taken-home item's inventory type
+// (see handleCompletedEvent) so the client opens the matching Equip/Use/... tab.
 const (
-	mtsTakeHomePurchaseTab uint32 = 1
-	mtsTakeHomeSelectedNo  uint32 = 0
+	mtsTakeHomeSelectedNo uint32 = 0
 )
 
 // mtsSagaFailureReason / mtsSagaFailureSaleLimit are the generic shorts written on
@@ -102,7 +103,17 @@ func handleCompletedEvent(sc server.Model, wp writer.Producer) message.Handler[s
 				l.WithField("transaction_id", e.TransactionId.String()).Warn("MTS take-home completion missing characterId; cannot notify session.")
 				return
 			}
-			announceMtsTakeHomeDone(l, ctx, sc, wp, characterId)
+			// Select the inventory tab matching the taken-home item's type so the
+			// client opens the right tab (Equip/Use/Setup/Etc/Cash) instead of always
+			// Equip. The client does SetTab(tab-1) and inventory.Type is Equip=1..Cash=5,
+			// so tab = the item's type. An unresolved template falls back to Equip.
+			tab := uint32(inventory.TypeValueEquip)
+			if templateId := resultUint32(e.Body.Results, "templateId"); templateId != 0 {
+				if it, ok := inventory.TypeFromItemId(item.Id(templateId)); ok {
+					tab = uint32(it)
+				}
+			}
+			announceMtsTakeHomeDone(l, ctx, sc, wp, characterId, tab)
 			return
 		}
 
@@ -114,7 +125,7 @@ func handleCompletedEvent(sc server.Model, wp writer.Producer) message.Handler[s
 // announceMtsTakeHomeDone resolves the character's session on this channel and
 // writes the MtsOperation MoveItcPurchaseItemLtoSDone result. A missing session
 // (character not on this channel) is a graceful no-op.
-func announceMtsTakeHomeDone(l logrus.FieldLogger, ctx context.Context, sc server.Model, wp writer.Producer, characterId uint32) {
+func announceMtsTakeHomeDone(l logrus.FieldLogger, ctx context.Context, sc server.Model, wp writer.Producer, characterId uint32, tab uint32) {
 	s, err := session.NewProcessor(l, ctx).GetByCharacterId(sc.Channel())(characterId)
 	if err != nil {
 		l.WithField("character_id", characterId).Debug("Character not connected, skipping MTS take-home notification.")
@@ -123,7 +134,7 @@ func announceMtsTakeHomeDone(l logrus.FieldLogger, ctx context.Context, sc serve
 	if s.ChannelId() != sc.ChannelId() {
 		return
 	}
-	if err := session.Announce(l)(ctx)(wp)(fieldcb.MtsOperationWriter)(fieldpkt.MtsOperationMoveItcPurchaseItemLtoSDoneBody(mtsTakeHomePurchaseTab, mtsTakeHomeSelectedNo))(s); err != nil {
+	if err := session.Announce(l)(ctx)(wp)(fieldcb.MtsOperationWriter)(fieldpkt.MtsOperationMoveItcPurchaseItemLtoSDoneBody(tab, mtsTakeHomeSelectedNo))(s); err != nil {
 		l.WithError(err).WithField("character_id", characterId).Error("Failed to send MTS take-home done packet to client.")
 	}
 }

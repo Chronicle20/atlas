@@ -541,6 +541,18 @@ func handleMtsMoveListingToHolding(pf providerFn) func(db *gorm.DB) message.Hand
 					})
 				}
 			}
+
+			// A BUY-NOW that settles an auction with an outstanding high bid must
+			// refund that bidder's escrow — they never won. ReleaseHighBidEscrow is
+			// self-guarding (releases only a still-Held bid), so a settle-to-WINNER
+			// (whose bid is StateWon before the move ran) no-ops here; only a buy-now
+			// releases. Best-effort post-commit + idempotent (the bid is marked
+			// released), so a replay of this move does not double-refund.
+			if soldSaleType == string(listing.SaleTypeAuction) {
+				if rerr := listing.NewProcessor(l, ctx, db).ReleaseHighBidEscrow(world.Id(b.WorldId), b.ListingId); rerr != nil {
+					l.WithError(rerr).Warnf("Unable to release high-bid escrow on settle for listing [%s].", b.ListingId.String())
+				}
+			}
 		}
 	}
 }

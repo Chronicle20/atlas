@@ -17,7 +17,7 @@ import (
 // cashshop command processors.
 type Processor interface {
 	CreateListing(transactionId uuid.UUID, worldId world.Id, sellerId uint32, sellerAccountId uint32, sellerName string, saleType string, sourceInventoryType byte, assetId uint32, quantity uint32, listValue uint32, buyNowPrice *uint32, durationHours int, minIncrement uint32, category string, subCategory string, offerWishSerial uint32, offerWishOwnerId uint32) error
-	Buy(transactionId uuid.UUID, worldId world.Id, serial uint32, buyerId uint32, buyerAccountId uint32, buyNow bool) error
+	Buy(transactionId uuid.UUID, worldId world.Id, serial uint32, buyerId uint32, buyerAccountId uint32, buyNow bool, resultKind string) error
 	PlaceBid(transactionId uuid.UUID, worldId world.Id, serial uint32, bidderId uint32, bidderAccountId uint32, amount uint32) error
 	CancelListing(transactionId uuid.UUID, worldId world.Id, serial uint32, sellerId uint32) error
 	TakeHome(transactionId uuid.UUID, worldId world.Id, serial uint32, characterId uint32, inventoryType byte, slot int16) error
@@ -39,9 +39,9 @@ func (p *ProcessorImpl) CreateListing(transactionId uuid.UUID, worldId world.Id,
 	return producer.ProviderImpl(p.l)(p.ctx)(mtsmsg.EnvCommandTopic)(CreateListingCommandProvider(transactionId, worldId, sellerId, sellerAccountId, sellerName, saleType, sourceInventoryType, assetId, quantity, listValue, buyNowPrice, durationHours, minIncrement, category, subCategory, offerWishSerial, offerWishOwnerId))
 }
 
-func (p *ProcessorImpl) Buy(transactionId uuid.UUID, worldId world.Id, serial uint32, buyerId uint32, buyerAccountId uint32, buyNow bool) error {
-	p.l.Debugf("Character [%d] buying MTS listing serial [%d] (buyNow [%t]).", buyerId, serial, buyNow)
-	return producer.ProviderImpl(p.l)(p.ctx)(mtsmsg.EnvCommandTopic)(BuyCommandProvider(transactionId, worldId, serial, buyerId, buyerAccountId, buyNow))
+func (p *ProcessorImpl) Buy(transactionId uuid.UUID, worldId world.Id, serial uint32, buyerId uint32, buyerAccountId uint32, buyNow bool, resultKind string) error {
+	p.l.Debugf("Character [%d] buying MTS listing serial [%d] (buyNow [%t], resultKind [%s]).", buyerId, serial, buyNow, resultKind)
+	return producer.ProviderImpl(p.l)(p.ctx)(mtsmsg.EnvCommandTopic)(BuyCommandProvider(transactionId, worldId, serial, buyerId, buyerAccountId, buyNow, resultKind))
 }
 
 func (p *ProcessorImpl) PlaceBid(transactionId uuid.UUID, worldId world.Id, serial uint32, bidderId uint32, bidderAccountId uint32, amount uint32) error {

@@ -93,15 +93,17 @@ func RestoreMtsHoldingProvider(transactionId uuid.UUID, holdingId uuid.UUID) mod
 
 // MoveListingToHoldingProvider creates an MTS_MOVE_LISTING_TO_HOLDING command.
 // Keyed by the buyer id so the buyer's custody moves are ordered.
-func MoveListingToHoldingProvider(transactionId uuid.UUID, listingId uuid.UUID, buyerId uint32, worldId byte) model.Provider[[]kafka.Message] {
+func MoveListingToHoldingProvider(transactionId uuid.UUID, listingId uuid.UUID, buyerId uint32, worldId byte, resultKind string, price uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(buyerId))
 	value := &mtsCustody.Command[mtsCustody.MtsMoveListingToHoldingCommandBody]{
 		TransactionId: transactionId,
 		Type:          mtsCustody.CommandMtsMoveListingToHolding,
 		Body: mtsCustody.MtsMoveListingToHoldingCommandBody{
-			ListingId: listingId,
-			BuyerId:   buyerId,
-			WorldId:   worldId,
+			ListingId:  listingId,
+			BuyerId:    buyerId,
+			WorldId:    worldId,
+			ResultKind: resultKind,
+			Price:      price,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

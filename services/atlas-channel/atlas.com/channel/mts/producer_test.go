@@ -13,7 +13,7 @@ import (
 // plain fixed-price buy.
 func TestBuyCommandProvider_FixedBuy(t *testing.T) {
 	tx := uuid.New()
-	prov := BuyCommandProvider(tx, 1, 4242, 8001, 9001, false)
+	prov := BuyCommandProvider(tx, 1, 4242, 8001, 9001, false, mtsmsg.ResultKindItem)
 	msgs, err := prov()
 	if err != nil {
 		t.Fatalf("provider: %v", err)
@@ -46,11 +46,14 @@ func TestBuyCommandProvider_FixedBuy(t *testing.T) {
 	if cmd.Body.BuyNow {
 		t.Errorf("buyNow: want false for a fixed-price buy, got true")
 	}
+	if cmd.Body.ResultKind != mtsmsg.ResultKindItem {
+		t.Errorf("resultKind: want %s got %s", mtsmsg.ResultKindItem, cmd.Body.ResultKind)
+	}
 }
 
 // TestBuyCommandProvider_BuyNow asserts BuyNow=true for the BUY_AUCTION_IMM arm.
 func TestBuyCommandProvider_BuyNow(t *testing.T) {
-	prov := BuyCommandProvider(uuid.New(), 1, 4243, 8001, 9001, true)
+	prov := BuyCommandProvider(uuid.New(), 1, 4243, 8001, 9001, true, mtsmsg.ResultKindItem)
 	msgs, err := prov()
 	if err != nil {
 		t.Fatalf("provider: %v", err)

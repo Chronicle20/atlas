@@ -80,6 +80,10 @@ type BuyRequest struct {
 	// listValue; the listing MUST be an auction carrying a buy-now price. When
 	// false the buy settles at listValue (the fixed-price path).
 	BuyNow bool
+	// ResultKind records which ITC buy arm the buyer used (item / zzim / wish) so it
+	// threads onto the settle saga's move step and the LISTING_SOLD event; the
+	// channel picks the matching client result arm.
+	ResultKind string
 }
 
 // BidRequest carries the caller-supplied parameters for an auction bid. The
@@ -839,6 +843,8 @@ func (p *ProcessorImpl) Buy(req BuyRequest) error {
 		SellerAccountId: req.SellerAccountId,
 		MarkedUpPrice:   int32(markedUp),
 		ListValue:       int32(priceBasis),
+		ResultKind:      req.ResultKind,
+		Price:           priceBasis,
 	})
 
 	// Timeout MUST be set explicitly and scaled for N=3: the MtsSettlePurchase
@@ -1201,6 +1207,11 @@ func (p *ProcessorImpl) SettleAuction(req SettleRequest) (SettleResult, error) {
 		ListingId:     req.ListingId,
 		BuyerId:       winner,
 		WorldId:       req.WorldId,
+		// An auction that settled at expiry to its winner: route the sold notice to
+		// the SuccessBidInfoResult arm (both parties) with the winning bid as Price.
+		// The literal must match mts.ResultKindAuctionSettle / the channel mirror.
+		ResultKind: "auction_settle",
+		Price:      sellerCredit,
 	})
 	builder.SetTimeout(auctionSettleTimeout())
 

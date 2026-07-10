@@ -303,7 +303,7 @@ func handleBuy(pf providerFn) func(db *gorm.DB) message.Handler[mts.Command[mts.
 
 			emitFail := func(reason string) {
 				_ = msg.Emit(p)(func(buf *msg.Buffer) error {
-					return buf.Put(mts.EnvStatusEventTopic, mtsproducer.BuyFailedStatusEventProvider(c.TransactionId, b.WorldId, b.Serial, b.BuyerId, reason))
+					return buf.Put(mts.EnvStatusEventTopic, mtsproducer.BuyFailedStatusEventProvider(c.TransactionId, b.WorldId, b.Serial, b.BuyerId, reason, b.ResultKind))
 				})
 			}
 
@@ -325,6 +325,7 @@ func handleBuy(pf providerFn) func(db *gorm.DB) message.Handler[mts.Command[mts.
 				BuyerAccountId:  b.BuyerAccountId,
 				SellerAccountId: lm.SellerAccountId(),
 				BuyNow:          b.BuyNow,
+				ResultKind:      b.ResultKind,
 			}); err != nil {
 				l.WithError(err).Errorf("Failed to settle buy for listing [%s] (serial [%d]), buyer [%d], transaction [%s].", lm.Id().String(), b.Serial, b.BuyerId, c.TransactionId.String())
 				emitFail(failReasonFor(err))

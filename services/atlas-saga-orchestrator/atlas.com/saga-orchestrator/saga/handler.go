@@ -2052,7 +2052,7 @@ func (h *HandlerImpl) handleMtsMoveListingToHolding(s Saga, st Step[any]) error 
 
 	h.l.Debugf("Moving MTS listing [%s] to holding for buyer [%d]", payload.ListingId, payload.BuyerId)
 
-	err := h.mtsP.MoveListingToHoldingAndEmit(payload.TransactionId, payload.ListingId, payload.BuyerId, byte(payload.WorldId))
+	err := h.mtsP.MoveListingToHoldingAndEmit(payload.TransactionId, payload.ListingId, payload.BuyerId, byte(payload.WorldId), payload.ResultKind, payload.Price)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to move MTS listing to holding.")
 		return err

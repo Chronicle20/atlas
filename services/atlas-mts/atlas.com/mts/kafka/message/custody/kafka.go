@@ -127,6 +127,10 @@ type MtsMoveListingToHoldingCommandBody struct {
 	ListingId uuid.UUID `json:"listingId"`
 	BuyerId   uint32    `json:"buyerId"`
 	WorldId   byte      `json:"worldId"`
+	// ResultKind + Price thread the client result mode and settled BASE price from
+	// the settle saga onto the LISTING_SOLD event emitted when the move commits.
+	ResultKind string `json:"resultKind"`
+	Price      uint32 `json:"price"`
 }
 
 // RemoveMtsListingCommandBody hard-deletes a spurious active listing by id (the

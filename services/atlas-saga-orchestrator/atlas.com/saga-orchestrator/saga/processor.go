@@ -1760,6 +1760,8 @@ func (p *ProcessorImpl) expandMtsSettlePurchase(st Step[any]) ([]Step[any], erro
 				ListingId:     payload.ListingId,
 				BuyerId:       payload.BuyerId,
 				WorldId:       payload.WorldId,
+				ResultKind:    payload.ResultKind,
+				Price:         payload.Price,
 			},
 		),
 	}

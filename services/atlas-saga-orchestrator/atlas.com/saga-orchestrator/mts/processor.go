@@ -76,8 +76,8 @@ type Processor interface {
 	ReleaseFromMtsHolding(mb *message.Buffer) func(transactionId uuid.UUID, holdingId uuid.UUID) error
 	RestoreMtsHoldingAndEmit(transactionId uuid.UUID, holdingId uuid.UUID) error
 	RestoreMtsHolding(mb *message.Buffer) func(transactionId uuid.UUID, holdingId uuid.UUID) error
-	MoveListingToHoldingAndEmit(transactionId uuid.UUID, listingId uuid.UUID, buyerId uint32, worldId byte) error
-	MoveListingToHolding(mb *message.Buffer) func(transactionId uuid.UUID, listingId uuid.UUID, buyerId uint32, worldId byte) error
+	MoveListingToHoldingAndEmit(transactionId uuid.UUID, listingId uuid.UUID, buyerId uint32, worldId byte, resultKind string, price uint32) error
+	MoveListingToHolding(mb *message.Buffer) func(transactionId uuid.UUID, listingId uuid.UUID, buyerId uint32, worldId byte, resultKind string, price uint32) error
 	RemoveMtsListingAndEmit(transactionId uuid.UUID, listingId uuid.UUID) error
 	RemoveMtsListing(mb *message.Buffer) func(transactionId uuid.UUID, listingId uuid.UUID) error
 	RestoreListingFromHoldingAndEmit(transactionId uuid.UUID, listingId uuid.UUID, buyerId uint32) error
@@ -136,15 +136,15 @@ func (p *ProcessorImpl) RestoreMtsHolding(mb *message.Buffer) func(transactionId
 	}
 }
 
-func (p *ProcessorImpl) MoveListingToHoldingAndEmit(transactionId uuid.UUID, listingId uuid.UUID, buyerId uint32, worldId byte) error {
+func (p *ProcessorImpl) MoveListingToHoldingAndEmit(transactionId uuid.UUID, listingId uuid.UUID, buyerId uint32, worldId byte, resultKind string, price uint32) error {
 	return message.Emit(p.p)(func(mb *message.Buffer) error {
-		return p.MoveListingToHolding(mb)(transactionId, listingId, buyerId, worldId)
+		return p.MoveListingToHolding(mb)(transactionId, listingId, buyerId, worldId, resultKind, price)
 	})
 }
 
-func (p *ProcessorImpl) MoveListingToHolding(mb *message.Buffer) func(transactionId uuid.UUID, listingId uuid.UUID, buyerId uint32, worldId byte) error {
-	return func(transactionId uuid.UUID, listingId uuid.UUID, buyerId uint32, worldId byte) error {
-		return mb.Put(mtsCustody.EnvCommandTopic, MoveListingToHoldingProvider(transactionId, listingId, buyerId, worldId))
+func (p *ProcessorImpl) MoveListingToHolding(mb *message.Buffer) func(transactionId uuid.UUID, listingId uuid.UUID, buyerId uint32, worldId byte, resultKind string, price uint32) error {
+	return func(transactionId uuid.UUID, listingId uuid.UUID, buyerId uint32, worldId byte, resultKind string, price uint32) error {
+		return mb.Put(mtsCustody.EnvCommandTopic, MoveListingToHoldingProvider(transactionId, listingId, buyerId, worldId, resultKind, price))
 	}
 }
 

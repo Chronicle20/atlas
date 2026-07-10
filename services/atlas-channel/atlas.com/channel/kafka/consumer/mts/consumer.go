@@ -14,6 +14,7 @@ import (
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
+	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
@@ -23,6 +24,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	fieldpkt "github.com/Chronicle20/atlas/libs/atlas-packet/field"
 	fieldcb "github.com/Chronicle20/atlas/libs/atlas-packet/field/clientbound"
+	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
@@ -54,6 +56,15 @@ const mtsRegisterSaleGenericReason byte = 0
 // routes to the want-ad clientbound results (SaleCurrentItemToWishDone / BuyWishDone)
 // instead of the normal register/buy results.
 const mtsSaleTypeOffer = "offer"
+
+// mtsSoldFlag* are the Decode1 soldFlag byte the SuccessBidInfoResult arm
+// (MtsResultSuccessBidInfo) writes: 0 = the recipient BOUGHT the item (the auction
+// winner), 1 = the recipient SOLD the item (the seller). An auction settle sends
+// the arm twice — once to each party — with the matching flag.
+const (
+	mtsSoldFlagBought byte = 0
+	mtsSoldFlagSold   byte = 1
+)
 
 // InitConsumers registers the EVENT_TOPIC_MTS_STATUS consumer (mirrors the
 // cash-shop compartment status-event consumer): tenant/span header parsers + start
@@ -382,17 +393,39 @@ func handleTakeHomeFailed(sc server.Model, wp writer.Producer) message.Handler[m
 	}
 }
 
-// handleListingSold writes the BuyItemDone result to the buyer when a listing
-// settles to a purchase (the buy / buy-now success notice). LISTING_SOLD is emitted
-// by atlas-mts's settle path (the saga move step / auction settle), carrying the
-// buyer (or auction winner) as BuyerId.
+// handleListingSold writes the buyer's success result when a listing settles to a
+// purchase. LISTING_SOLD is emitted by atlas-mts's settle path (the saga move step
+// / auction settle), carrying the buyer (or auction winner) as BuyerId. The
+// clientbound arm is chosen by ResultKind so client-side debugging follows the
+// expected CITC::OnNormalItemResult code path: item -> BuyItemDone, zzim ->
+// BuyZzimItemDone, wish -> BuyWishDone, auction_settle -> SuccessBidInfoResult
+// (sent to BOTH parties). An unknown ResultKind falls back to BuyItemDone.
 func handleListingSold(sc server.Model, wp writer.Producer) message.Handler[mtsmsg.StatusEvent[mtsmsg.StatusEventListingSoldBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, e mtsmsg.StatusEvent[mtsmsg.StatusEventListingSoldBody]) {
 		if e.Type != mtsmsg.StatusEventTypeListingSold {
 			return
 		}
-		l.Debugf("MTS listing sold to buyer [%d] (item [%d], saleType [%s]).", e.Body.BuyerId, e.Body.ItemId, e.Body.SaleType)
-		if e.Body.SaleType == mtsSaleTypeOffer {
+		l.Debugf("MTS listing sold to buyer [%d] (item [%d], saleType [%s], resultKind [%s], price [%d]).", e.Body.BuyerId, e.Body.ItemId, e.Body.SaleType, e.Body.ResultKind, e.Body.Price)
+
+		// normalBuy is the shared success path for a plain buy (item / zzim): confirm
+		// with the given Done arm, refresh the buyer's Transfer Inventory panel where
+		// the bought item now sits, prune the buyer's Cart favorite for the item (a
+		// bought item leaves the Cart; a browse buy has none = no-op), and refresh the
+		// seller's Not-Yet-Sold. The NX/points counters refresh separately via the
+		// wallet-status consumer once the debit/credit lands (scene-gated).
+		normalBuy := func(done func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte) {
+			announceTo(l, ctx, sc, wp, e.Body.BuyerId, done)
+			announceUserPurchaseList(l, ctx, sc, wp, e.Body.BuyerId)
+			removeCartWishForPurchase(l, ctx, e.Body.WorldId, e.Body.BuyerId, e.Body.ItemId)
+			if e.Body.SellerId != 0 {
+				announceUserSaleList(l, ctx, sc, wp, e.Body.WorldId, e.Body.SellerId)
+			}
+		}
+
+		switch e.Body.ResultKind {
+		case mtsmsg.ResultKindZzim:
+			normalBuy(fieldpkt.MtsOperationBuyZzimItemDoneBody())
+		case mtsmsg.ResultKindWish:
 			// A want-ad OFFER was accepted (BUY_WISH): the poster paid, the offered item
 			// is now in their Transfer Inventory. Confirm with BuyWishDone (not
 			// BuyItemDone) and refresh the buyer's purchase panel. The want-ad consume +
@@ -406,25 +439,29 @@ func handleListingSold(sc server.Model, wp writer.Producer) message.Handler[mtsm
 			// Refresh the POSTER's My Page -> Offers: the want-ad they posted was
 			// consumed by the accept, so it drops off that panel.
 			announceOwnWantAds(l, ctx, sc, wp, e.Body.WorldId, e.Body.BuyerId)
-			return
-		}
-		announceTo(l, ctx, sc, wp, e.Body.BuyerId, fieldpkt.MtsOperationBuyItemDoneBody())
-		// Refresh the buyer's Transfer Inventory panel (the bought item now sits in
-		// their holdings, ready to take home). The NX/points counter is refreshed
-		// separately by the wallet-status consumer once the debit actually lands
-		// (scene-gated), so it is not pushed here.
-		announceUserPurchaseList(l, ctx, sc, wp, e.Body.BuyerId)
-		// If the buyer had the purchased item in their Cart (SET_ZZIM favorite),
-		// remove that cart entry now that they own it — a bought item should leave
-		// the Cart. The removal round-trips through REMOVE_WISH(PURCHASED); the
-		// resulting WISH_REMOVED re-pushes the Cart view (and drops the row) without a
-		// client notice. A buy from the browse (no cart entry) is a no-op here.
-		removeCartWishForPurchase(l, ctx, e.Body.WorldId, e.Body.BuyerId, e.Body.ItemId)
-		// Refresh the seller's "Not Yet Sold" panel (the sold item leaves it). Their
-		// wallet credit is handled by the wallet-status consumer. If the seller is
-		// offline/elsewhere these no-op; their panels also re-push on their next browse.
-		if e.Body.SellerId != 0 {
-			announceUserSaleList(l, ctx, sc, wp, e.Body.WorldId, e.Body.SellerId)
+		case mtsmsg.ResultKindAuctionSettle:
+			// An auction settled at expiry to its winner. The SuccessBidInfoResult arm
+			// is sent to BOTH parties: the buyer (winner) with soldFlag=bought and the
+			// seller with soldFlag=sold, each carrying the sold item id, the winning
+			// price, and the contract timestamp.
+			contractDate := packetmodel.MsTimeBytes(time.Now())
+			announceTo(l, ctx, sc, wp, e.Body.BuyerId, fieldpkt.MtsOperationSuccessBidInfoResultBody(mtsSoldFlagBought, e.Body.ItemId, e.Body.Price, contractDate))
+			if e.Body.SellerId != 0 {
+				announceTo(l, ctx, sc, wp, e.Body.SellerId, fieldpkt.MtsOperationSuccessBidInfoResultBody(mtsSoldFlagSold, e.Body.ItemId, e.Body.Price, contractDate))
+			}
+			// Refresh the seller's Not-Yet-Sold (the sold auction leaves it) and the
+			// buyer's Transfer Inventory (the won item now sits there, ready to take home).
+			if e.Body.SellerId != 0 {
+				announceUserSaleList(l, ctx, sc, wp, e.Body.WorldId, e.Body.SellerId)
+			}
+			announceUserPurchaseList(l, ctx, sc, wp, e.Body.BuyerId)
+		case mtsmsg.ResultKindItem:
+			normalBuy(fieldpkt.MtsOperationBuyItemDoneBody())
+		default:
+			// Unknown/unset ResultKind: fall back to the plain BuyItemDone path so a buy
+			// still confirms rather than hanging the client.
+			l.Warnf("MTS LISTING_SOLD for buyer [%d] has unknown resultKind [%s]; falling back to BuyItemDone.", e.Body.BuyerId, e.Body.ResultKind)
+			normalBuy(fieldpkt.MtsOperationBuyItemDoneBody())
 		}
 	}
 }
@@ -516,8 +553,21 @@ func handleBuyFailed(sc server.Model, wp writer.Producer) message.Handler[mtsmsg
 		if e.Type != mtsmsg.StatusEventTypeBuyFailed {
 			return
 		}
-		l.Debugf("MTS buy failed for buyer [%d] serial [%d] (reasonKey [%s]).", e.Body.BuyerId, e.Body.Serial, e.Body.ReasonKey)
-		announceTo(l, ctx, sc, wp, e.Body.BuyerId, failNoticeOr(e.Body.ReasonKey, fieldpkt.MtsOperationBuyItemFailedBody()))
+		l.Debugf("MTS buy failed for buyer [%d] serial [%d] (reasonKey [%s], resultKind [%s]).", e.Body.BuyerId, e.Body.Serial, e.Body.ReasonKey, e.Body.ResultKind)
+		// Pick the bare failed arm by ResultKind so the client debugging follows the
+		// matching CITC::OnNormalItemResult path (item -> BuyItemFailed, zzim ->
+		// BuyZzimItemFailed, wish -> BuyWishFailed); an unknown kind falls back to
+		// BuyItemFailed. failNoticeOr still layers the noticeFailReasons wrapper on top.
+		var bare func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte
+		switch e.Body.ResultKind {
+		case mtsmsg.ResultKindZzim:
+			bare = fieldpkt.MtsOperationBuyZzimItemFailedBody()
+		case mtsmsg.ResultKindWish:
+			bare = fieldpkt.MtsOperationBuyWishFailedBody()
+		default:
+			bare = fieldpkt.MtsOperationBuyItemFailedBody()
+		}
+		announceTo(l, ctx, sc, wp, e.Body.BuyerId, failNoticeOr(e.Body.ReasonKey, bare))
 	}
 }
 

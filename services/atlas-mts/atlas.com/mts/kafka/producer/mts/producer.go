@@ -79,17 +79,19 @@ func OutbidStatusEventProvider(transactionId uuid.UUID, worldId byte, listingId 
 }
 
 // ListingSoldStatusEventProvider builds a LISTING_SOLD event.
-func ListingSoldStatusEventProvider(transactionId uuid.UUID, worldId byte, listingId uuid.UUID, sellerId uint32, buyerId uint32, itemId uint32, saleType string) model.Provider[[]kafka.Message] {
+func ListingSoldStatusEventProvider(transactionId uuid.UUID, worldId byte, listingId uuid.UUID, sellerId uint32, buyerId uint32, itemId uint32, saleType string, resultKind string, price uint32) model.Provider[[]kafka.Message] {
 	value := &mts.StatusEvent[mts.StatusEventListingSoldBody]{
 		TransactionId: transactionId,
 		Type:          mts.StatusEventTypeListingSold,
 		Body: mts.StatusEventListingSoldBody{
-			WorldId:   worldId,
-			ListingId: listingId,
-			SellerId:  sellerId,
-			BuyerId:   buyerId,
-			ItemId:    itemId,
-			SaleType:  saleType,
+			WorldId:    worldId,
+			ListingId:  listingId,
+			SellerId:   sellerId,
+			BuyerId:    buyerId,
+			ItemId:     itemId,
+			SaleType:   saleType,
+			ResultKind: resultKind,
+			Price:      price,
 		},
 	}
 	return producer.SingleMessageProvider(keyFor(transactionId), value)
@@ -205,15 +207,16 @@ func TakeHomeFailedStatusEventProvider(transactionId uuid.UUID, worldId byte, se
 
 // BuyFailedStatusEventProvider builds a BUY_FAILED event for a rejected buy /
 // buy-now, carrying the originating buyerId + serial + a fail reason.
-func BuyFailedStatusEventProvider(transactionId uuid.UUID, worldId byte, serial uint32, buyerId uint32, reason string) model.Provider[[]kafka.Message] {
+func BuyFailedStatusEventProvider(transactionId uuid.UUID, worldId byte, serial uint32, buyerId uint32, reason string, resultKind string) model.Provider[[]kafka.Message] {
 	value := &mts.StatusEvent[mts.StatusEventBuyFailedBody]{
 		TransactionId: transactionId,
 		Type:          mts.StatusEventTypeBuyFailed,
 		Body: mts.StatusEventBuyFailedBody{
-			WorldId:   worldId,
-			Serial:    serial,
-			BuyerId:   buyerId,
-			ReasonKey: reason,
+			WorldId:    worldId,
+			Serial:     serial,
+			BuyerId:    buyerId,
+			ReasonKey:  reason,
+			ResultKind: resultKind,
 		},
 	}
 	return producer.SingleMessageProvider(keyFor(transactionId), value)

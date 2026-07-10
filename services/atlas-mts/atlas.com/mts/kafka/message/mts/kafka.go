@@ -91,6 +91,10 @@ type BuyCommandBody struct {
 	BuyerId        uint32 `json:"buyerId"`
 	BuyerAccountId uint32 `json:"buyerAccountId"`
 	BuyNow         bool   `json:"buyNow"`
+	// ResultKind records which ITC buy arm initiated this buy (item / zzim / wish)
+	// so atlas-mts threads it through the settle chain onto the LISTING_SOLD /
+	// BUY_FAILED event; the channel picks the matching client result arm.
+	ResultKind string `json:"resultKind"`
 }
 
 // PlaceBidCommandBody identifies the auction listing being bid on by its
@@ -142,6 +146,18 @@ const (
 	WishOriginRegisterWish = "REGISTER_WISH"
 	WishOriginDeleteZzim   = "DELETE_ZZIM"
 	WishOriginCancelWish   = "CANCEL_WISH"
+)
+
+// ResultKind* discriminate which client result mode a buy/settle routes to on its
+// LISTING_SOLD / BUY_FAILED event. The channel sets item/zzim/wish from the ITC
+// buy arm; the auction ticker's settle sets auction_settle. They round-trip the
+// settle chain so the channel picks the matching CITC::OnNormalItemResult arm.
+// Must match the channel's ResultKind* byte-for-byte.
+const (
+	ResultKindItem          = "item"
+	ResultKindZzim          = "zzim"
+	ResultKindWish          = "wish"
+	ResultKindAuctionSettle = "auction_settle"
 )
 
 // CreateListingCommandBody initiates a listing (the channel ITC register-sale /
@@ -299,6 +315,11 @@ type StatusEventListingSoldBody struct {
 	// instead of BuyItemDone, and it triggers the seller-side want-ad consume +
 	// sibling-offer release.
 	SaleType string `json:"saleType"`
+	// ResultKind selects which client result arm the channel routes this sold notice
+	// to (item / zzim / wish / auction_settle). Price is the settled BASE price,
+	// carried for the auction-settle SuccessBidInfo arm.
+	ResultKind string `json:"resultKind"`
+	Price      uint32 `json:"price"`
 }
 
 // StatusEventListingExpiredBody reports an expired listing.
@@ -379,6 +400,9 @@ type StatusEventBuyFailedBody struct {
 	Serial    uint32 `json:"serial"`
 	BuyerId   uint32 `json:"buyerId"`
 	ReasonKey string `json:"reasonKey,omitempty"`
+	// ResultKind selects which bare failed arm the channel routes to (item ->
+	// BuyItemFailed, zzim -> BuyZzimItemFailed, wish -> BuyWishFailed).
+	ResultKind string `json:"resultKind"`
 }
 
 // StatusEventBidFailedBody reports a rejected place-bid. BidderId is the

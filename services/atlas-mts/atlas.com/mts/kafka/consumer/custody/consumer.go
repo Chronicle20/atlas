@@ -514,7 +514,7 @@ func handleMtsMoveListingToHolding(pf providerFn) func(db *gorm.DB) message.Hand
 				if perr := buf.Put(custody.EnvStatusEventTopic, custodyproducer.MovedStatusEventProvider(c.TransactionId, b.ListingId, hid)); perr != nil {
 					return perr
 				}
-				return buf.Put(mtsmsg.EnvStatusEventTopic, mtsproducer.ListingSoldStatusEventProvider(c.TransactionId, b.WorldId, b.ListingId, sellerId, b.BuyerId, itemId, soldSaleType))
+				return buf.Put(mtsmsg.EnvStatusEventTopic, mtsproducer.ListingSoldStatusEventProvider(c.TransactionId, b.WorldId, b.ListingId, sellerId, b.BuyerId, itemId, soldSaleType, b.ResultKind, b.Price))
 			})
 
 			// Offer purchase (BUY_WISH): the want-ad has been fulfilled. Consume it

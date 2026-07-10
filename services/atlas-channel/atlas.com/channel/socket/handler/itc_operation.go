@@ -496,7 +496,7 @@ func ItcOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer
 			body.Decode(l, ctx)(r, readerOptions)
 			// Plain fixed-price buy (mode 0x10): BuyNow=false. atlas-mts resolves the
 			// serial->listing and settles at the listing's listValue.
-			if err := mtsproc.NewProcessor(l, ctx).Buy(uuid.New(), s.WorldId(), body.ItcSn(), s.CharacterId(), s.AccountId(), false); err != nil {
+			if err := mtsproc.NewProcessor(l, ctx).Buy(uuid.New(), s.WorldId(), body.ItcSn(), s.CharacterId(), s.AccountId(), false, mtsmsg.ResultKindItem); err != nil {
 				l.WithError(err).Errorf("Unable to emit BUY for character [%d] serial [%d].", s.CharacterId(), body.ItcSn())
 			}
 		case ItcOperationBuyAuctionImm:
@@ -506,7 +506,7 @@ func ItcOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer
 			// shape to BUY (serial only), distinguished by BuyNow=true so atlas-mts
 			// settles at the listing's buyNowPrice (not its auction list/starting
 			// value) — grounded in listing.Processor.Buy's BuyNow price-basis branch.
-			if err := mtsproc.NewProcessor(l, ctx).Buy(uuid.New(), s.WorldId(), body.ItcSn(), s.CharacterId(), s.AccountId(), true); err != nil {
+			if err := mtsproc.NewProcessor(l, ctx).Buy(uuid.New(), s.WorldId(), body.ItcSn(), s.CharacterId(), s.AccountId(), true, mtsmsg.ResultKindItem); err != nil {
 				l.WithError(err).Errorf("Unable to emit BUY_AUCTION_IMM for character [%d] serial [%d].", s.CharacterId(), body.ItcSn())
 			}
 		case ItcOperationPlaceBid:
@@ -599,7 +599,7 @@ func ItcOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer
 			// as BUY, routed into the Buy flow (BuyNow=false). atlas-mts resolves the
 			// serial -> listing and settles at listValue. The success/failure result is
 			// the shared LISTING_SOLD/BUY_FAILED status path (BuyItemDone/Failed).
-			if err := mtsproc.NewProcessor(l, ctx).Buy(uuid.New(), s.WorldId(), body.ItcSn(), s.CharacterId(), s.AccountId(), false); err != nil {
+			if err := mtsproc.NewProcessor(l, ctx).Buy(uuid.New(), s.WorldId(), body.ItcSn(), s.CharacterId(), s.AccountId(), false, mtsmsg.ResultKindZzim); err != nil {
 				l.WithError(err).Errorf("Unable to emit BUY_ZZIM for character [%d] serial [%d].", s.CharacterId(), body.ItcSn())
 			}
 		case ItcOperationBuyWish:
@@ -615,7 +615,7 @@ func ItcOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer
 			// outcome: a wished item is not a listing you can buy from the wish view).
 			// Buying an actual listing of a wished item happens from the browse/favorites
 			// tabs (BUY / BUY_ZZIM), which carry real listing serials.
-			if err := mtsproc.NewProcessor(l, ctx).Buy(uuid.New(), s.WorldId(), body.ItcSn(), s.CharacterId(), s.AccountId(), false); err != nil {
+			if err := mtsproc.NewProcessor(l, ctx).Buy(uuid.New(), s.WorldId(), body.ItcSn(), s.CharacterId(), s.AccountId(), false, mtsmsg.ResultKindWish); err != nil {
 				l.WithError(err).Errorf("Unable to emit BUY_WISH for character [%d] serial [%d].", s.CharacterId(), body.ItcSn())
 			}
 		default:

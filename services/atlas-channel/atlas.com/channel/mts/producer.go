@@ -42,7 +42,7 @@ func CreateListingCommandProvider(transactionId uuid.UUID, worldId world.Id, sel
 	return producer.SingleMessageProvider(key, value)
 }
 
-func BuyCommandProvider(transactionId uuid.UUID, worldId world.Id, serial uint32, buyerId uint32, buyerAccountId uint32, buyNow bool) model.Provider[[]kafka.Message] {
+func BuyCommandProvider(transactionId uuid.UUID, worldId world.Id, serial uint32, buyerId uint32, buyerAccountId uint32, buyNow bool, resultKind string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(buyerId))
 	value := &mtsmsg.Command[mtsmsg.BuyCommandBody]{
 		TransactionId: transactionId,
@@ -53,6 +53,7 @@ func BuyCommandProvider(transactionId uuid.UUID, worldId world.Id, serial uint32
 			BuyerId:        buyerId,
 			BuyerAccountId: buyerAccountId,
 			BuyNow:         buyNow,
+			ResultKind:     resultKind,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

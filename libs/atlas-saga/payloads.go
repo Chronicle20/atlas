@@ -660,6 +660,14 @@ type MtsMoveListingToHoldingPayload struct {
 	ListingId     uuid.UUID `json:"listingId"`
 	BuyerId       uint32    `json:"buyerId"`
 	WorldId       world.Id  `json:"worldId"`
+	// ResultKind carries which client result mode the sold notice should route to
+	// (item / zzim / wish / auction_settle) so the channel picks the matching
+	// CITC::OnNormalItemResult arm. Threaded from the buy/settle chain onto the
+	// LISTING_SOLD event.
+	ResultKind string `json:"resultKind"`
+	// Price is the settled BASE price (list value / buy-now / winning bid) carried
+	// through to the LISTING_SOLD event for the auction-settle SuccessBidInfo arm.
+	Price uint32 `json:"price"`
 }
 
 // MtsSettlePurchasePayload (composite money-mover): debit buyer prepaid, credit seller points, move custody.
@@ -673,6 +681,12 @@ type MtsSettlePurchasePayload struct {
 	SellerAccountId uint32    `json:"sellerAccountId"`
 	MarkedUpPrice   int32     `json:"markedUpPrice"`
 	ListValue       int32     `json:"listValue"`
+	// ResultKind carries which client result mode the sold notice should route to
+	// (item / zzim / wish); threaded onto the expanded move step's payload and then
+	// the LISTING_SOLD event.
+	ResultKind string `json:"resultKind"`
+	// Price is the settled BASE price carried through to the LISTING_SOLD event.
+	Price uint32 `json:"price"`
 }
 
 // MtsBidEscrowPayload (single-step wallet hold).

@@ -110,7 +110,7 @@ func (m *mtsTestMtsMock) RestoreMtsHoldingAndEmit(_ uuid.UUID, holdingId uuid.UU
 	return nil
 }
 
-func (m *mtsTestMtsMock) MoveListingToHoldingAndEmit(_ uuid.UUID, _ uuid.UUID, _ uint32, _ byte) error {
+func (m *mtsTestMtsMock) MoveListingToHoldingAndEmit(_ uuid.UUID, _ uuid.UUID, _ uint32, _ byte, _ string, _ uint32) error {
 	m.moveCalls++
 	return nil
 }
@@ -137,8 +137,8 @@ func (m *mtsTestMtsMock) RestoreMtsHolding(_ *message.Buffer) func(uuid.UUID, uu
 	return func(_ uuid.UUID, _ uuid.UUID) error { return nil }
 }
 
-func (m *mtsTestMtsMock) MoveListingToHolding(_ *message.Buffer) func(uuid.UUID, uuid.UUID, uint32, byte) error {
-	return func(_ uuid.UUID, _ uuid.UUID, _ uint32, _ byte) error { return nil }
+func (m *mtsTestMtsMock) MoveListingToHolding(_ *message.Buffer) func(uuid.UUID, uuid.UUID, uint32, byte, string, uint32) error {
+	return func(_ uuid.UUID, _ uuid.UUID, _ uint32, _ byte, _ string, _ uint32) error { return nil }
 }
 
 func (m *mtsTestMtsMock) RemoveMtsListingAndEmit(_ uuid.UUID, listingId uuid.UUID) error {

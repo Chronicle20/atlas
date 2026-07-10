@@ -254,6 +254,11 @@ type StatusEventListingCreatedBody struct {
 	ListingId uuid.UUID `json:"listingId"`
 	SellerId  uint32    `json:"sellerId"`
 	ItemId    uint32    `json:"itemId"`
+	// SaleType distinguishes a normal listing-creation (fixed/auction) from an
+	// offer creation ("offer"): the channel routes an offer creation to
+	// SaleCurrentItemToWishDone (want-ad offer confirmed) instead of
+	// RegisterSaleEntryDone, and refreshes the offerer's Not-Yet-Sold panel.
+	SaleType string `json:"saleType"`
 }
 
 // StatusEventListingCancelledBody reports a cancelled listing whose item moved to

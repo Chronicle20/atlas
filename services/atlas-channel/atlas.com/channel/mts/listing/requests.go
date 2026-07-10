@@ -33,8 +33,14 @@ type BrowseFilter struct {
 	SellerId        uint32
 	ExcludeSellerId uint32 // public-browse filter: omit this seller's own listings
 	SellerName      string
-	Page            int
-	PageSize        int
+	// OfferWishSerial restricts the browse to `offer` listings made on a specific
+	// want-ad (VIEW_WISH shows a poster the offers on their ad).
+	OfferWishSerial uint32
+	// ExcludeOffers omits sale_type=offer rows from a public browse so escrowed
+	// offers never appear in the For-Sale / Auction tabs.
+	ExcludeOffers bool
+	Page          int
+	PageSize      int
 }
 
 func getBaseRequest() string {
@@ -71,6 +77,12 @@ func (f BrowseFilter) query() string {
 	}
 	if f.ExcludeSellerId != 0 {
 		q.Set("excludeSellerId", strconv.FormatUint(uint64(f.ExcludeSellerId), 10))
+	}
+	if f.OfferWishSerial != 0 {
+		q.Set("offerWishSerial", strconv.FormatUint(uint64(f.OfferWishSerial), 10))
+	}
+	if f.ExcludeOffers {
+		q.Set("excludeOffers", "true")
 	}
 	if f.SellerName != "" {
 		q.Set("sellerName", f.SellerName)

@@ -16,7 +16,7 @@ import (
 // REST surface for writes — it commands via Kafka, mirroring the messenger and
 // cashshop command processors.
 type Processor interface {
-	CreateListing(transactionId uuid.UUID, worldId world.Id, sellerId uint32, sellerAccountId uint32, sellerName string, saleType string, sourceInventoryType byte, assetId uint32, quantity uint32, listValue uint32, buyNowPrice *uint32, durationHours int, minIncrement uint32, category string, subCategory string) error
+	CreateListing(transactionId uuid.UUID, worldId world.Id, sellerId uint32, sellerAccountId uint32, sellerName string, saleType string, sourceInventoryType byte, assetId uint32, quantity uint32, listValue uint32, buyNowPrice *uint32, durationHours int, minIncrement uint32, category string, subCategory string, offerWishSerial uint32, offerWishOwnerId uint32) error
 	Buy(transactionId uuid.UUID, worldId world.Id, serial uint32, buyerId uint32, buyerAccountId uint32, buyNow bool) error
 	PlaceBid(transactionId uuid.UUID, worldId world.Id, serial uint32, bidderId uint32, bidderAccountId uint32, amount uint32) error
 	CancelListing(transactionId uuid.UUID, worldId world.Id, serial uint32, sellerId uint32) error
@@ -34,9 +34,9 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	return &ProcessorImpl{l: l, ctx: ctx}
 }
 
-func (p *ProcessorImpl) CreateListing(transactionId uuid.UUID, worldId world.Id, sellerId uint32, sellerAccountId uint32, sellerName string, saleType string, sourceInventoryType byte, assetId uint32, quantity uint32, listValue uint32, buyNowPrice *uint32, durationHours int, minIncrement uint32, category string, subCategory string) error {
+func (p *ProcessorImpl) CreateListing(transactionId uuid.UUID, worldId world.Id, sellerId uint32, sellerAccountId uint32, sellerName string, saleType string, sourceInventoryType byte, assetId uint32, quantity uint32, listValue uint32, buyNowPrice *uint32, durationHours int, minIncrement uint32, category string, subCategory string, offerWishSerial uint32, offerWishOwnerId uint32) error {
 	p.l.Debugf("Character [%d] creating MTS listing (saleType [%s], asset [%d]).", sellerId, saleType, assetId)
-	return producer.ProviderImpl(p.l)(p.ctx)(mtsmsg.EnvCommandTopic)(CreateListingCommandProvider(transactionId, worldId, sellerId, sellerAccountId, sellerName, saleType, sourceInventoryType, assetId, quantity, listValue, buyNowPrice, durationHours, minIncrement, category, subCategory))
+	return producer.ProviderImpl(p.l)(p.ctx)(mtsmsg.EnvCommandTopic)(CreateListingCommandProvider(transactionId, worldId, sellerId, sellerAccountId, sellerName, saleType, sourceInventoryType, assetId, quantity, listValue, buyNowPrice, durationHours, minIncrement, category, subCategory, offerWishSerial, offerWishOwnerId))
 }
 
 func (p *ProcessorImpl) Buy(transactionId uuid.UUID, worldId world.Id, serial uint32, buyerId uint32, buyerAccountId uint32, buyNow bool) error {

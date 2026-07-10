@@ -215,15 +215,16 @@ func TestBuildCreateListingFromRegisterAuctionPriceOrderIndependent(t *testing.T
 
 func TestBuildCreateListingFromSaleCurrentItem(t *testing.T) {
 	// want-ad offer: itemType 2, slotPos 7, item qty 3, target want-ad serial 4244.
-	// The listValue arg is the resolved want-ad asking price (3500) — the offered
-	// item is listed as a fixed sale at that price.
+	// The offered item is escrowed as an `offer` listing linked to want-ad 4244
+	// (owner 991) at the resolved want-ad asking price (3500).
 	item := packetmodel.NewAsset(false, 7, 2000000, time.Time{}).SetStackableInfo(3, 0, 0)
 	p := fieldsb.NewItcOperationSaleCurrentItem(3, 2, 7, item, 4244)
 
-	args := buildCreateListingFromSaleCurrentItem(p, testWorldId, testSellerId, testSellerAccountId, testSellerName, 3500)
+	const wantOwnerId uint32 = 991
+	args := buildCreateListingFromSaleCurrentItem(p, testWorldId, testSellerId, testSellerAccountId, testSellerName, wantOwnerId, 3500)
 
-	if args.SaleType != itcSaleTypeFixed {
-		t.Errorf("saleType: want %s got %s", itcSaleTypeFixed, args.SaleType)
+	if args.SaleType != itcSaleTypeOffer {
+		t.Errorf("saleType: want %s got %s", itcSaleTypeOffer, args.SaleType)
 	}
 	if args.TemplateId != 2000000 {
 		t.Errorf("templateId: want 2000000 got %d", args.TemplateId)
@@ -237,6 +238,13 @@ func TestBuildCreateListingFromSaleCurrentItem(t *testing.T) {
 	// listValue is the resolved want-ad asking price the offer fulfills
 	if args.ListValue != 3500 {
 		t.Errorf("listValue: want 3500 (want-ad price), got %d", args.ListValue)
+	}
+	// the offer must be linked back to the target want-ad (serial + poster)
+	if args.OfferWishSerial != 4244 {
+		t.Errorf("offerWishSerial: want 4244 got %d", args.OfferWishSerial)
+	}
+	if args.OfferWishOwnerId != wantOwnerId {
+		t.Errorf("offerWishOwnerId: want %d got %d", wantOwnerId, args.OfferWishOwnerId)
 	}
 }
 

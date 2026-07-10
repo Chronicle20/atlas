@@ -48,6 +48,12 @@ const mtsRegisterSaleNoSaleLimit uint16 = 0
 // resolve in the tenant table (0 -> the client's generic MTS-failed notice).
 const mtsRegisterSaleGenericReason byte = 0
 
+// mtsSaleTypeOffer is the sale-type wire string for a want-ad OFFER, mirroring
+// atlas-mts's listing.SaleTypeOffer. A LISTING_CREATED/LISTING_SOLD carrying it
+// routes to the want-ad clientbound results (SaleCurrentItemToWishDone / BuyWishDone)
+// instead of the normal register/buy results.
+const mtsSaleTypeOffer = "offer"
+
 // InitConsumers registers the EVENT_TOPIC_MTS_STATUS consumer (mirrors the
 // cash-shop compartment status-event consumer): tenant/span header parsers + start
 // at the latest offset (status events are live notifications, not replayed).
@@ -268,7 +274,16 @@ func handleListingCreated(sc server.Model, wp writer.Producer) message.Handler[m
 		if e.Type != mtsmsg.StatusEventTypeListingCreated {
 			return
 		}
-		l.Debugf("MTS listing created for seller [%d] (item [%d]).", e.Body.SellerId, e.Body.ItemId)
+		l.Debugf("MTS listing created for seller [%d] (item [%d], saleType [%s]).", e.Body.SellerId, e.Body.ItemId, e.Body.SaleType)
+		if e.Body.SaleType == mtsSaleTypeOffer {
+			// A want-ad OFFER was escrowed (SALE_CURRENT_ITEM): confirm it to the
+			// offerer with SaleCurrentItemToWishDone (the register dialog listens for a
+			// different result) and refresh their Not-Yet-Sold panel where the escrowed
+			// offer now sits.
+			announceTo(l, ctx, sc, wp, e.Body.SellerId, fieldpkt.MtsOperationSaleCurrentItemToWishDoneBody())
+			announceUserSaleList(l, ctx, sc, wp, e.Body.WorldId, e.Body.SellerId)
+			return
+		}
 		announceTo(l, ctx, sc, wp, e.Body.SellerId, fieldpkt.MtsOperationRegisterSaleEntryDoneBody())
 		// Refresh the seller's "Not Yet Sold" panel so the new listing appears
 		// without re-entering MTS (the client does not re-query it itself).
@@ -358,7 +373,17 @@ func handleListingSold(sc server.Model, wp writer.Producer) message.Handler[mtsm
 		if e.Type != mtsmsg.StatusEventTypeListingSold {
 			return
 		}
-		l.Debugf("MTS listing sold to buyer [%d] (item [%d]).", e.Body.BuyerId, e.Body.ItemId)
+		l.Debugf("MTS listing sold to buyer [%d] (item [%d], saleType [%s]).", e.Body.BuyerId, e.Body.ItemId, e.Body.SaleType)
+		if e.Body.SaleType == mtsSaleTypeOffer {
+			// A want-ad OFFER was accepted (BUY_WISH): the poster paid, the offered item
+			// is now in their Transfer Inventory. Confirm with BuyWishDone (not
+			// BuyItemDone) and refresh the buyer's purchase panel. The want-ad consume +
+			// sibling-offer release are handled server-side by atlas-mts; the offerer's
+			// panels re-push on their next browse (their offer listing is now sold).
+			announceTo(l, ctx, sc, wp, e.Body.BuyerId, fieldpkt.MtsOperationBuyWishDoneBody())
+			announceUserPurchaseList(l, ctx, sc, wp, e.Body.BuyerId)
+			return
+		}
 		announceTo(l, ctx, sc, wp, e.Body.BuyerId, fieldpkt.MtsOperationBuyItemDoneBody())
 		// Refresh the buyer's Transfer Inventory panel (the bought item now sits in
 		// their holdings, ready to take home). The NX/points counter is refreshed

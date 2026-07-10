@@ -17,7 +17,7 @@ func keyFor(id uuid.UUID) []byte {
 }
 
 // ListingCreatedStatusEventProvider builds a LISTING_CREATED event.
-func ListingCreatedStatusEventProvider(transactionId uuid.UUID, worldId byte, listingId uuid.UUID, sellerId uint32, itemId uint32) model.Provider[[]kafka.Message] {
+func ListingCreatedStatusEventProvider(transactionId uuid.UUID, worldId byte, listingId uuid.UUID, sellerId uint32, itemId uint32, saleType string) model.Provider[[]kafka.Message] {
 	value := &mts.StatusEvent[mts.StatusEventListingCreatedBody]{
 		TransactionId: transactionId,
 		Type:          mts.StatusEventTypeListingCreated,
@@ -26,6 +26,7 @@ func ListingCreatedStatusEventProvider(transactionId uuid.UUID, worldId byte, li
 			ListingId: listingId,
 			SellerId:  sellerId,
 			ItemId:    itemId,
+			SaleType:  saleType,
 		},
 	}
 	return producer.SingleMessageProvider(keyFor(transactionId), value)

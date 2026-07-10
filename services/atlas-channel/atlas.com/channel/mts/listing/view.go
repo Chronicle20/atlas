@@ -3,6 +3,8 @@ package listing
 import (
 	"time"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	fieldpkt "github.com/Chronicle20/atlas/libs/atlas-packet/field"
 	fieldcb "github.com/Chronicle20/atlas/libs/atlas-packet/field/clientbound"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
@@ -31,7 +33,32 @@ var mtsFixedExpiry = time.Date(2079, 1, 1, 0, 0, 0, 0, time.UTC)
 // seller's "Not Yet Sold" list (kafka/consumer/mts) so both produce identical
 // wire bytes.
 func ToMtsItem(m Model) fieldcb.MtsItem {
-	item := packetmodel.NewAsset(true, 0, m.TemplateId(), time.Time{}).SetStackableInfo(m.Quantity(), 0, 0)
+	asset := packetmodel.NewAsset(true, 0, m.TemplateId(), time.Time{}).SetStackableInfo(m.Quantity(), 0, 0)
+	return toMtsItem(m, asset)
+}
+
+// ToMtsItemDetailed is ToMtsItem except the ITCITEM's item-slot blob carries full
+// equipment stats when the listed item is an equip, so a want-ad poster viewing the
+// offers on their ad (VIEW_WISH) can compare each offered equip's real stats. For
+// non-equips it is byte-identical to ToMtsItem (the same stackable blob). Only the
+// item asset differs — every trailer field (itcSn, price, contract fee,
+// dateExpired, seller name, processStatus) is the same.
+func ToMtsItemDetailed(m Model) fieldcb.MtsItem {
+	var asset packetmodel.Asset
+	if it, ok := inventory.TypeFromItemId(item.Id(m.TemplateId())); ok && it == inventory.TypeValueEquip {
+		asset = packetmodel.NewAsset(true, 0, m.TemplateId(), time.Time{}).
+			SetEquipmentStats(m.Strength(), m.Dexterity(), m.Intelligence(), m.Luck(), m.HP(), m.MP(), m.WeaponAttack(), m.MagicAttack(), m.WeaponDefense(), m.MagicDefense(), m.Accuracy(), m.Avoidability(), m.Hands(), m.Speed(), m.Jump()).
+			SetEquipmentMeta(m.Slots(), 0, m.Level(), m.ItemExp(), 0, m.Flags())
+	} else {
+		asset = packetmodel.NewAsset(true, 0, m.TemplateId(), time.Time{}).SetStackableInfo(m.Quantity(), 0, 0)
+	}
+	return toMtsItem(m, asset)
+}
+
+// toMtsItem builds the ITCITEM from a listing and a pre-built item-slot asset. The
+// asset is the only thing that varies between the browse view (bare stackable blob)
+// and the offer-detail view (full equip stats); the MTS trailer is identical.
+func toMtsItem(m Model, asset packetmodel.Asset) fieldcb.MtsItem {
 	expiry := mtsFixedExpiry
 	if m.EndsAt() != nil {
 		expiry = *m.EndsAt()
@@ -52,7 +79,7 @@ func ToMtsItem(m Model) fieldcb.MtsItem {
 	// nBidPrice+nContractFee (auction) — so nContractFee is the buyer-visible fee on
 	// top of the base. m.ContractFee() carries markedUp(base)-base from atlas-mts.
 	return fieldpkt.MtsOperationNewItem(
-		item,             // GW_ItemSlotBase blob
+		asset,            // GW_ItemSlotBase blob
 		m.ItcSn(),        // nITCSN = the listing serial (addresses buy/cancel/bid)
 		m.ListValue(),    // nPrice
 		m.ContractFee(),  // nContractFee (buyer-visible fee; client adds it to the price)

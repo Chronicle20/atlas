@@ -86,6 +86,10 @@ var itcOperationKeys = []string{
 const (
 	itcSaleTypeFixed   = "fixed"
 	itcSaleTypeAuction = "auction"
+	// itcSaleTypeOffer is the want-ad OFFER sale type: a SALE_CURRENT_ITEM offer is
+	// escrowed as an `offer` listing linked to the target want-ad (via
+	// OfferWishSerial/OfferWishOwnerId) rather than a public fixed sale.
+	itcSaleTypeOffer = "offer"
 )
 
 // resolveItcOperationKey reverse-resolves a dispatcher mode byte to its
@@ -147,6 +151,11 @@ type CreateListingArgs struct {
 	MinIncrement        uint32 // auction only; the seller's bid increment (0 => atlas-mts uses the tenant default)
 	Category            string
 	SubCategory         string
+	// OfferWishSerial/OfferWishOwnerId link an `offer` listing (SALE_CURRENT_ITEM)
+	// to the want-ad it fulfills: the serial is the want-ad's nITCSN, the owner is
+	// the want-ad poster's characterId. Zero for normal fixed/auction listings.
+	OfferWishSerial  uint32
+	OfferWishOwnerId uint32
 }
 
 // buildCreateListingFromRegisterSale maps the verified ItcOperationRegisterSale
@@ -221,44 +230,48 @@ func buildCreateListingFromRegisterAuction(p fieldsb.ItcOperationRegisterAuction
 // ItcOperationSaleCurrentItem (mode 3, the want-ad OFFER) onto CreateListingArgs.
 // The item is identified by the blob's templateId/cashId and resolved against the
 // seller's live inventory in emitCreateListing (the wire's slotPos/itemType are
-// not an asset id / inventory type). listValue is the want-ad's asking price
-// (resolved from the offer's target wishSerial), so the offered item is listed as
-// a fixed sale at the price the want-ad poster offered to pay; the poster then
-// buys it through the normal browse/buy path.
-func buildCreateListingFromSaleCurrentItem(p fieldsb.ItcOperationSaleCurrentItem, worldId world.Id, sellerId uint32, sellerAccountId uint32, sellerName string, listValue uint32) CreateListingArgs {
+// not an asset id / inventory type). The offered item is escrowed as an `offer`
+// listing linked to the target want-ad (OfferWishSerial = p.WishSerial(),
+// OfferWishOwnerId = the resolved want-ad poster); listValue is the want-ad's
+// asking price. The poster then accepts the offer through the BUY_WISH path — the
+// offer never surfaces in the public For-Sale/Auction tabs.
+func buildCreateListingFromSaleCurrentItem(p fieldsb.ItcOperationSaleCurrentItem, worldId world.Id, sellerId uint32, sellerAccountId uint32, sellerName string, offerWishOwnerId uint32, listValue uint32) CreateListingArgs {
 	return CreateListingArgs{
-		WorldId:         worldId,
-		SellerId:        sellerId,
-		SellerAccountId: sellerAccountId,
-		SellerName:      sellerName,
-		SaleType:        itcSaleTypeFixed,
-		TemplateId:      p.Item().TemplateId(),
-		CashId:          p.Item().CashId(),
-		SlotPos:         p.SlotPos(),
-		Quantity:        p.Item().Quantity(),
-		ListValue:       listValue,
-		BuyNowPrice:     nil,
-		DurationHours:   0,
+		WorldId:          worldId,
+		SellerId:         sellerId,
+		SellerAccountId:  sellerAccountId,
+		SellerName:       sellerName,
+		SaleType:         itcSaleTypeOffer,
+		TemplateId:       p.Item().TemplateId(),
+		CashId:           p.Item().CashId(),
+		SlotPos:          p.SlotPos(),
+		Quantity:         p.Item().Quantity(),
+		ListValue:        listValue,
+		BuyNowPrice:      nil,
+		DurationHours:    0,
+		OfferWishSerial:  p.WishSerial(),
+		OfferWishOwnerId: offerWishOwnerId,
 	}
 }
 
-// resolveWantedPrice looks up the asking price of a want-ad by its per-(tenant,
-// world) ITC serial (the wishSerial a SALE_CURRENT_ITEM offer targets). It scans
-// the world's want-ads for the matching serial. Returns (0, false) when the serial
-// does not resolve (a stale/invalid offer target) so the caller skips the listing
-// rather than creating a free (price 0) sale.
-func resolveWantedPrice(l logrus.FieldLogger, ctx context.Context, worldId world.Id, wishSerial uint32) (uint32, bool) {
+// resolveWantedPrice looks up a want-ad by its per-(tenant, world) ITC serial (the
+// wishSerial a SALE_CURRENT_ITEM offer targets). It scans the world's want-ads for
+// the matching serial and returns the poster's characterId (the want-ad owner) and
+// asking price. Returns (0, 0, false) when the serial does not resolve (a
+// stale/invalid offer target) so the caller skips the listing rather than creating
+// an unlinked/free offer.
+func resolveWantedPrice(l logrus.FieldLogger, ctx context.Context, worldId world.Id, wishSerial uint32) (ownerId uint32, price uint32, ok bool) {
 	ws, err := mtswish.NewProcessor(l, ctx).GetWantedByWorld(byte(worldId))
 	if err != nil {
 		l.WithError(err).Errorf("Unable to load world want-ads to resolve offer target serial [%d].", wishSerial)
-		return 0, false
+		return 0, 0, false
 	}
 	for _, w := range ws {
 		if w.Serial() == wishSerial {
-			return w.Price(), true
+			return w.CharacterId(), w.Price(), true
 		}
 	}
-	return 0, false
+	return 0, 0, false
 }
 
 // Marketplace sections (client browse "tab"). Section 2 (Wanted) and the section
@@ -403,15 +416,16 @@ func ItcOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer
 			body.Decode(l, ctx)(r, readerOptions)
 			// SALE_CURRENT_ITEM (mode 3) is the want-ad OFFER (CITC picker "SEND ME
 			// AN OFFER"): the player offers one of their items to fulfill want-ad
-			// #WishSerial. Resolve the want-ad's asking price and list the offered
-			// item at that price as a fixed sale the poster can buy. A want-ad serial
-			// that does not resolve is logged and ignored (no free listing).
-			price, ok := resolveWantedPrice(l, ctx, s.WorldId(), body.WishSerial())
+			// #WishSerial. Resolve the want-ad's owner + asking price and escrow the
+			// offered item as an `offer` listing linked to that want-ad; the poster
+			// accepts it via BUY_WISH. A want-ad serial that does not resolve is logged
+			// and ignored (no unlinked/free offer).
+			ownerId, price, ok := resolveWantedPrice(l, ctx, s.WorldId(), body.WishSerial())
 			if !ok {
 				l.Errorf("Character [%d] sent a want-ad offer (SALE_CURRENT_ITEM) for unresolved want-ad serial [%d]; ignoring.", s.CharacterId(), body.WishSerial())
 				return
 			}
-			emitCreateListing(l, ctx, s, buildCreateListingFromSaleCurrentItem(*body, s.WorldId(), s.CharacterId(), s.AccountId(), sellerName(l, ctx, s), price))
+			emitCreateListing(l, ctx, s, buildCreateListingFromSaleCurrentItem(*body, s.WorldId(), s.CharacterId(), s.AccountId(), sellerName(l, ctx, s), ownerId, price))
 		case ItcOperationCancelSale:
 			body := &fieldsb.ItcOperationCancelSale{}
 			body.Decode(l, ctx)(r, readerOptions)
@@ -537,9 +551,12 @@ func ItcOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer
 		case ItcOperationViewWish:
 			body := &fieldsb.ItcOperationViewWish{}
 			body.Decode(l, ctx)(r, readerOptions)
-			// VIEW_WISH is a synchronous read: query the character's wishlist over REST
-			// and write LoadWishSaleListDone inline (no status event).
-			writeWishList(l, ctx, wp, s)
+			// VIEW_WISH is a synchronous read: the poster opens a want-ad to see the
+			// OFFERS made on it. body.ItcSn() is the want-ad's serial; browse the
+			// escrowed `offer` listings linked to it and write LoadWishSaleListDone with
+			// full item stats (ToMtsItemDetailed) so the poster can compare offered
+			// equips. A browse error writes an empty list rather than hanging the client.
+			writeWishOffers(l, ctx, wp, s, body.ItcSn())
 		case ItcOperationRegisterWishEntry:
 			body := &fieldsb.ItcOperationRegisterWishEntry{}
 			body.Decode(l, ctx)(r, readerOptions)
@@ -628,6 +645,8 @@ func emitCreateListing(l logrus.FieldLogger, ctx context.Context, s session.Mode
 		args.MinIncrement,
 		args.Category,
 		args.SubCategory,
+		args.OfferWishSerial,
+		args.OfferWishOwnerId,
 	); err != nil {
 		l.WithError(err).Errorf("Unable to emit CREATE_LISTING for character [%d].", s.CharacterId())
 	}
@@ -724,6 +743,9 @@ func writeBrowsePage(l logrus.FieldLogger, ctx context.Context, wp writer.Produc
 		// count EVERY match, not one page's slice — the requested 16-item
 		// window is cut below, uniformly for every view.
 		f.ExcludeSellerId = s.CharacterId()
+		// Escrowed want-ad offers (sale_type=offer) are private to the poster's
+		// VIEW_WISH view — never surface them in the public For-Sale / Auction tabs.
+		f.ExcludeOffers = true
 		f.Page = 0
 		f.PageSize = -1
 		ms, err := mtslisting.NewProcessor(l, ctx).Browse(s.WorldId(), f)
@@ -950,25 +972,27 @@ func emitRemoveWishByWishSerial(l logrus.FieldLogger, ctx context.Context, wp wr
 	}
 }
 
-// writeWishList queries the character's wishlist over REST and writes the
-// synchronous LoadWishSaleListDone result. Each wish entry renders as a minimal
-// ITCITEM carrying the wished item template plus its price. On a REST error an
-// empty list is written so the client UI is not left hanging.
-func writeWishList(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, s session.Model) {
-	ws, err := mtswish.NewProcessor(l, ctx).GetByCharacter(s.CharacterId())
+// writeWishOffers browses the escrowed `offer` listings made on the want-ad
+// addressed by serial and writes the synchronous LoadWishSaleListDone result to the
+// poster. Each offer renders as a detailed ITCITEM (ToMtsItemDetailed carries the
+// offered equip's full stats) so the poster can compare offers before accepting one
+// via BUY_WISH. On a browse error an empty list is written so the client UI is not
+// left hanging.
+func writeWishOffers(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, s session.Model, wishSerial uint32) {
+	ms, err := mtslisting.NewProcessor(l, ctx).Browse(s.WorldId(), mtslisting.BrowseFilter{OfferWishSerial: wishSerial})
 	if err != nil {
-		l.WithError(err).Errorf("Unable to load wishlist for character [%d]; writing empty list.", s.CharacterId())
-		ws = nil
+		l.WithError(err).Errorf("Unable to browse offers for want-ad serial [%d] (character [%d]); writing empty list.", wishSerial, s.CharacterId())
+		ms = nil
 	}
 
-	items := make([]fieldcb.MtsItem, 0, len(ws))
-	for _, w := range ws {
-		items = append(items, mtsItemFromWish(w))
+	items := make([]fieldcb.MtsItem, 0, len(ms))
+	for _, m := range ms {
+		items = append(items, mtslisting.ToMtsItemDetailed(m))
 	}
 
 	body := fieldpkt.MtsOperationLoadWishSaleListDoneBody(items)
 	if err := session.Announce(l)(ctx)(wp)(fieldcb.MtsOperationWriter)(body)(s); err != nil {
-		l.WithError(err).Errorf("Unable to announce MTS wish list to character [%d].", s.CharacterId())
+		l.WithError(err).Errorf("Unable to announce MTS want-ad offers to character [%d].", s.CharacterId())
 	}
 }
 

@@ -137,6 +137,8 @@ type CreateListingCommandBody struct {
 	MinIncrement        uint32  `json:"minIncrement,omitempty"`
 	Category            string  `json:"category"`
 	SubCategory         string  `json:"subCategory"`
+	OfferWishSerial     uint32  `json:"offerWishSerial,omitempty"`
+	OfferWishOwnerId    uint32  `json:"offerWishOwnerId,omitempty"`
 }
 
 // TakeHomeCommandBody identifies the holding the character is taking home into
@@ -183,12 +185,15 @@ type StatusEvent[E any] struct {
 }
 
 // StatusEventListingCreatedBody reports a created listing. SellerId is the target
-// character for the RegisterSaleEntryDone result.
+// character for the RegisterSaleEntryDone result. SaleType distinguishes a normal
+// listing-creation (fixed/auction) from an offer creation ("offer"), which routes
+// to SaleCurrentItemToWishDone instead. Mirrors atlas-mts's field-for-field.
 type StatusEventListingCreatedBody struct {
 	WorldId   byte      `json:"worldId"`
 	ListingId uuid.UUID `json:"listingId"`
 	SellerId  uint32    `json:"sellerId"`
 	ItemId    uint32    `json:"itemId"`
+	SaleType  string    `json:"saleType"`
 }
 
 // StatusEventListingCancelledBody reports a cancelled listing. SellerId is the
@@ -261,13 +266,16 @@ type StatusEventOutbidBody struct {
 }
 
 // StatusEventListingSoldBody reports a sold listing. BuyerId is the target
-// character for the BuyItemDone result.
+// character for the BuyItemDone result. SaleType distinguishes a normal buy
+// (fixed/auction) from an offer purchase ("offer"), which routes to BuyWishDone
+// (want-ad accept) instead. Mirrors atlas-mts's field-for-field.
 type StatusEventListingSoldBody struct {
 	WorldId   byte      `json:"worldId"`
 	ListingId uuid.UUID `json:"listingId"`
 	SellerId  uint32    `json:"sellerId"`
 	BuyerId   uint32    `json:"buyerId"`
 	ItemId    uint32    `json:"itemId"`
+	SaleType  string    `json:"saleType"`
 }
 
 // StatusEventBuyFailedBody reports a rejected buy / buy-now. BuyerId is the target

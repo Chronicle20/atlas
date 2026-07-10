@@ -215,7 +215,7 @@ func handleAcceptToMtsListing(pf providerFn) func(db *gorm.DB) message.Handler[c
 				if perr := buf.Put(custody.EnvStatusEventTopic, custodyproducer.AcceptedStatusEventProvider(c.TransactionId, b.ListingId)); perr != nil {
 					return perr
 				}
-				return buf.Put(mtsmsg.EnvStatusEventTopic, mtsproducer.ListingCreatedStatusEventProvider(c.TransactionId, b.WorldId, b.ListingId, b.SellerId, b.TemplateId))
+				return buf.Put(mtsmsg.EnvStatusEventTopic, mtsproducer.ListingCreatedStatusEventProvider(c.TransactionId, b.WorldId, b.ListingId, b.SellerId, b.TemplateId, b.SaleType))
 			})
 		}
 	}

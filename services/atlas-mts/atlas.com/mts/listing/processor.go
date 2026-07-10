@@ -212,8 +212,20 @@ type Processor interface {
 	// its offerer's Transfer Inventory (holding) — invoked when one offer on the
 	// want-ad is bought, so the losing offers are returned rather than left
 	// escrowed. Each release reuses the race-safe Cancel transition; best-effort
-	// (a per-sibling failure is logged and the rest proceed).
-	ReleaseSiblingOffers(worldId world.Id, wishSerial uint32, exceptId uuid.UUID)
+	// (a per-sibling failure is logged and the rest proceed). It returns the set of
+	// offers it successfully released so the caller can push a per-offerer refresh.
+	ReleaseSiblingOffers(worldId world.Id, wishSerial uint32, exceptId uuid.UUID) []ReleasedOffer
+}
+
+// ReleasedOffer describes one losing want-ad offer that ReleaseSiblingOffers
+// returned to its offerer's Transfer Inventory (holding). The caller emits a
+// LISTING_CANCELLED status event per ReleasedOffer so the channel refreshes the
+// losing offerer's Not-Yet-Sold + Transfer Inventory panels.
+type ReleasedOffer struct {
+	ListingId uuid.UUID
+	HoldingId uuid.UUID
+	SellerId  uint32
+	ItemId    uint32
 }
 
 type ProcessorImpl struct {
@@ -365,25 +377,39 @@ func (p *ProcessorImpl) Cancel(id string) (CancelResult, error) {
 // failure to load the set, or to release any one sibling, is logged and does not
 // abort the rest — the losing offer stays escrowed and is reclaimable by its
 // offerer (Not-Yet-Sold cancel) or via the fixed-term expiry sweep.
-func (p *ProcessorImpl) ReleaseSiblingOffers(worldId world.Id, wishSerial uint32, exceptId uuid.UUID) {
+func (p *ProcessorImpl) ReleaseSiblingOffers(worldId world.Id, wishSerial uint32, exceptId uuid.UUID) []ReleasedOffer {
 	if wishSerial == 0 {
-		return
+		return nil
 	}
 	// Only offer listings carry a non-zero offer_wish_serial, so filtering on it
 	// (active state) yields exactly the offers competing for this want-ad.
 	siblings, err := p.Browse(worldId, StateActive, BrowseFilter{OfferWishSerial: wishSerial})
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to load sibling offers for want-ad serial [%d]; leaving them escrowed.", wishSerial)
-		return
+		return nil
 	}
+	var released []ReleasedOffer
 	for _, s := range siblings {
 		if s.Id() == exceptId {
 			continue
 		}
-		if _, cerr := p.Cancel(s.Id().String()); cerr != nil {
+		res, cerr := p.Cancel(s.Id().String())
+		if cerr != nil {
 			p.l.WithError(cerr).Errorf("Unable to release sibling offer [%s] on want-ad serial [%d]; leaving it escrowed.", s.Id().String(), wishSerial)
+			continue
+		}
+		// Only a race-winning cancel created the offerer's holding (Won=true); a
+		// loser released nothing to refresh.
+		if res.Won {
+			released = append(released, ReleasedOffer{
+				ListingId: s.Id(),
+				HoldingId: res.HoldingId,
+				SellerId:  res.SellerId,
+				ItemId:    res.ItemId,
+			})
 		}
 	}
+	return released
 }
 
 // Expire runs the SAME race-safe active->holding(seller) transition as Cancel but

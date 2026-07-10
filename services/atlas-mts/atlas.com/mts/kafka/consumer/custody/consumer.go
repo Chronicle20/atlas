@@ -529,7 +529,17 @@ func handleMtsMoveListingToHolding(pf providerFn) func(db *gorm.DB) message.Hand
 				} else if _, derr := wish.DeleteWish(tdbctx, wm.Id().String()); derr != nil {
 					l.WithError(derr).Warnf("Unable to consume fulfilled want-ad [%s] (serial [%d]).", wm.Id().String(), soldOfferWishSerial)
 				}
-				listing.NewProcessor(l, ctx, db).ReleaseSiblingOffers(world.Id(b.WorldId), soldOfferWishSerial, b.ListingId)
+				released := listing.NewProcessor(l, ctx, db).ReleaseSiblingOffers(world.Id(b.WorldId), soldOfferWishSerial, b.ListingId)
+				if len(released) > 0 {
+					_ = msg.Emit(p)(func(buf *msg.Buffer) error {
+						for _, r := range released {
+							if perr := buf.Put(mtsmsg.EnvStatusEventTopic, mtsproducer.ListingCancelledStatusEventProvider(c.TransactionId, b.WorldId, r.ListingId, r.HoldingId, r.SellerId, r.ItemId)); perr != nil {
+								return perr
+							}
+						}
+						return nil
+					})
+				}
 			}
 		}
 	}

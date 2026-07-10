@@ -251,6 +251,27 @@ func announceWishList(l logrus.FieldLogger, ctx context.Context, sc server.Model
 	announceTo(l, ctx, sc, wp, characterId, body)
 }
 
+// announceOwnWantAds re-pushes the character's OWN want-ads (My Page -> Offers,
+// section 4 / sub 1) as a GetItcListDone so the panel reflects a just-consumed
+// want-ad without the poster re-entering MTS. Unlike announceWishList's Wanted arm
+// (the cross-character world list MINUS the viewer), this renders the character's
+// OWN wanted wishes (mtswish.TypeWanted via ToMtsItem). The trailing requestSent=1
+// clears the client's m_bITCRequestSent latch, mirroring the entry browse. On a
+// REST error the panel is left stale rather than pushing an empty list.
+func announceOwnWantAds(l logrus.FieldLogger, ctx context.Context, sc server.Model, wp writer.Producer, worldId byte, characterId uint32) {
+	ws, err := mtswish.NewProcessor(l, ctx).GetByCharacterAndType(characterId, mtswish.TypeWanted)
+	if err != nil {
+		l.WithError(err).Errorf("Unable to refresh MTS own want-ads for character [%d]; leaving the My-Page Offers panel stale.", characterId)
+		return
+	}
+	items := make([]fieldcb.MtsItem, 0, len(ws))
+	for _, w := range ws {
+		items = append(items, mtswish.ToMtsItem(w))
+	}
+	body := fieldpkt.MtsOperationGetItcListDoneBody(uint32(len(items)), mtsSectionCart, 1, 0, 1, 1, items, 1)
+	announceTo(l, ctx, sc, wp, characterId, body)
+}
+
 // wishSectionForOrigin maps a wish-mutation origin to the MTS section + wish type
 // whose view should be re-pushed: SET_ZZIM/DELETE_ZZIM act on the Cart, while
 // REGISTER_WISH/CANCEL_WISH act on the Wanted ads. An unknown origin returns
@@ -375,10 +396,16 @@ func handleListingSold(sc server.Model, wp writer.Producer) message.Handler[mtsm
 			// A want-ad OFFER was accepted (BUY_WISH): the poster paid, the offered item
 			// is now in their Transfer Inventory. Confirm with BuyWishDone (not
 			// BuyItemDone) and refresh the buyer's purchase panel. The want-ad consume +
-			// sibling-offer release are handled server-side by atlas-mts; the offerer's
-			// panels re-push on their next browse (their offer listing is now sold).
+			// sibling-offer release are handled server-side by atlas-mts (the losing
+			// offerers' panels are re-pushed by their per-offer LISTING_CANCELLED events).
 			announceTo(l, ctx, sc, wp, e.Body.BuyerId, fieldpkt.MtsOperationBuyWishDoneBody())
 			announceUserPurchaseList(l, ctx, sc, wp, e.Body.BuyerId)
+			// Refresh the accepted OFFERER's Not-Yet-Sold: their offer listing is now
+			// sold, so it drops off that panel.
+			announceUserSaleList(l, ctx, sc, wp, e.Body.WorldId, e.Body.SellerId)
+			// Refresh the POSTER's My Page -> Offers: the want-ad they posted was
+			// consumed by the accept, so it drops off that panel.
+			announceOwnWantAds(l, ctx, sc, wp, e.Body.WorldId, e.Body.BuyerId)
 			return
 		}
 		announceTo(l, ctx, sc, wp, e.Body.BuyerId, fieldpkt.MtsOperationBuyItemDoneBody())

@@ -59,6 +59,9 @@ type AcceptToMtsListingParams struct {
 	SubCategory    string
 	EndsAt         *time.Time
 	MinIncrement   uint32
+
+	OfferWishSerial  uint32
+	OfferWishOwnerId uint32
 }
 
 // Processor dispatches the atomic MTS custody commands (AcceptToMtsListing /

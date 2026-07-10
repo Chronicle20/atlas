@@ -169,6 +169,8 @@ type CreateListingCommandBody struct {
 	MinIncrement        uint32  `json:"minIncrement,omitempty"`
 	Category            string  `json:"category"`
 	SubCategory         string  `json:"subCategory"`
+	OfferWishSerial     uint32  `json:"offerWishSerial,omitempty"`
+	OfferWishOwnerId    uint32  `json:"offerWishOwnerId,omitempty"`
 }
 
 // TakeHomeCommandBody identifies the holding the character is taking home into

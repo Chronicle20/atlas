@@ -130,6 +130,8 @@ func handleCreateListing(pf providerFn) func(db *gorm.DB) message.Handler[mts.Co
 				MinIncrement:        b.MinIncrement,
 				Category:            b.Category,
 				SubCategory:         b.SubCategory,
+				OfferWishSerial:     b.OfferWishSerial,
+				OfferWishOwnerId:    b.OfferWishOwnerId,
 			})
 			if err != nil {
 				l.WithError(err).Errorf("Failed to initiate listing for seller [%d], transaction [%s].", b.SellerId, c.TransactionId.String())

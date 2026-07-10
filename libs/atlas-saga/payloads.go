@@ -578,6 +578,8 @@ type TransferToMtsPayload struct {
 	SubCategory         string     `json:"subCategory"`    // Listing sub-category
 	EndsAt              *time.Time `json:"endsAt"`         // Auction end time (nil = none)
 	MinIncrement        uint32     `json:"minIncrement"`   // Minimum bid increment for auctions
+	OfferWishSerial     uint32     `json:"offerWishSerial"`  // Want-ad serial an `offer` listing fulfills (0 for non-offers)
+	OfferWishOwnerId    uint32     `json:"offerWishOwnerId"` // Want-ad poster id an `offer` listing fulfills (0 for non-offers)
 }
 
 // WithdrawFromMtsPayload — expanded into release_from_mts_holding + accept_to_character.
@@ -637,6 +639,10 @@ type AcceptToMtsListingPayload struct {
 	SubCategory    string     `json:"subCategory"`
 	EndsAt         *time.Time `json:"endsAt"`
 	MinIncrement   uint32     `json:"minIncrement"`
+
+	// Offer link: which want-ad this `offer` listing fulfills (0 for non-offers).
+	OfferWishSerial  uint32 `json:"offerWishSerial"`
+	OfferWishOwnerId uint32 `json:"offerWishOwnerId"`
 }
 
 // ReleaseFromMtsHoldingPayload (atomic, dispatched to atlas-mts custody consumer).

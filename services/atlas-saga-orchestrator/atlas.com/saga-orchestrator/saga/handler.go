@@ -2010,6 +2010,8 @@ func (h *HandlerImpl) handleAcceptToMtsListing(s Saga, st Step[any]) error {
 		SubCategory:     payload.SubCategory,
 		EndsAt:          payload.EndsAt,
 		MinIncrement:    payload.MinIncrement,
+		OfferWishSerial:  payload.OfferWishSerial,
+		OfferWishOwnerId: payload.OfferWishOwnerId,
 	})
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to accept item to MTS listing.")

@@ -55,6 +55,8 @@ func AcceptToMtsListingProvider(transactionId uuid.UUID, params AcceptToMtsListi
 			SubCategory:     params.SubCategory,
 			EndsAt:          params.EndsAt,
 			MinIncrement:    params.MinIncrement,
+			OfferWishSerial:  params.OfferWishSerial,
+			OfferWishOwnerId: params.OfferWishOwnerId,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

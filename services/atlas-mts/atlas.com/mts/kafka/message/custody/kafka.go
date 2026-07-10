@@ -102,6 +102,10 @@ type AcceptToMtsListingCommandBody struct {
 	SubCategory    string     `json:"subCategory"`
 	EndsAt         *time.Time `json:"endsAt"`
 	MinIncrement   uint32     `json:"minIncrement"`
+
+	// offer link: the want-ad this `offer` listing fulfills (0 for non-offers).
+	OfferWishSerial  uint32 `json:"offerWishSerial"`
+	OfferWishOwnerId uint32 `json:"offerWishOwnerId"`
 }
 
 // ReleaseFromMtsHoldingCommandBody soft-deletes the take-home holding row.

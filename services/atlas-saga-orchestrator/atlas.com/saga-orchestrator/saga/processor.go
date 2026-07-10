@@ -1605,6 +1605,10 @@ func (p *ProcessorImpl) expandTransferToMts(st Step[any]) ([]Step[any], error) {
 				SubCategory:    payload.SubCategory,
 				EndsAt:         payload.EndsAt,
 				MinIncrement:   payload.MinIncrement,
+
+				// Offer link copied through so the created listing records its want-ad.
+				OfferWishSerial:  payload.OfferWishSerial,
+				OfferWishOwnerId: payload.OfferWishOwnerId,
 			},
 		),
 	}

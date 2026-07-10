@@ -56,6 +56,8 @@ type ListRequest struct {
 	MinIncrement        uint32 // auction only; the seller's bid increment (0 => tenant default)
 	Category            string
 	SubCategory         string
+	OfferWishSerial     uint32 // offer only; the want-ad serial this offer fulfills
+	OfferWishOwnerId    uint32 // offer only; the want-ad poster id this offer fulfills
 }
 
 // BuyRequest carries the caller-supplied parameters for a buy / buy-now
@@ -494,18 +496,26 @@ func (p *ProcessorImpl) List(req ListRequest) (uuid.UUID, error) {
 	}
 	cfg := configuration.GetRegistry().GetTenantConfig(p.l, p.ctx, t.Id())
 
+	// An offer is an item escrowed against a want-ad (sale_type=offer). Offering is
+	// not listing: it charges no seller listing fee and does not consume the seller's
+	// active-listing quota.
+	isOffer := req.SaleType == SaleTypeOffer
+
 	// Price floor: server-authoritative minimum NX price.
 	if req.ListValue < cfg.PriceFloor() {
 		return uuid.Nil, fmt.Errorf("list value %d is below the price floor %d", req.ListValue, cfg.PriceFloor())
 	}
 
 	// Active-listing cap: a seller may hold at most maxActiveListings active rows.
-	count, err := getActiveCountBySeller(req.SellerId)(p.db.WithContext(p.ctx))
-	if err != nil {
-		return uuid.Nil, err
-	}
-	if count >= int64(cfg.MaxActiveListings()) {
-		return uuid.Nil, fmt.Errorf("seller %d already has %d active listings (cap %d)", req.SellerId, count, cfg.MaxActiveListings())
+	// Offers are exempt — an offer must not consume the seller's listing quota.
+	if !isOffer {
+		count, err := getActiveCountBySeller(req.SellerId)(p.db.WithContext(p.ctx))
+		if err != nil {
+			return uuid.Nil, err
+		}
+		if count >= int64(cfg.MaxActiveListings()) {
+			return uuid.Nil, fmt.Errorf("seller %d already has %d active listings (cap %d)", req.SellerId, count, cfg.MaxActiveListings())
+		}
 	}
 
 	// Auction duration: integer hours in [auctionMinHours, auctionMaxHours]. The
@@ -545,14 +555,20 @@ func (p *ProcessorImpl) List(req ListRequest) (uuid.UUID, error) {
 	// flat meso fee charged to the seller to create a listing. (The 500 NX + 7%
 	// the in-game guide describes is the BUYER's commission at purchase, not this
 	// seller listing fee — see Buy's markedUp.)
-	builder.AddStep("award_mesos", saga.Pending, saga.AwardMesos, saga.AwardMesosPayload{
-		CharacterId: req.SellerId,
-		WorldId:     req.WorldId,
-		ActorId:     req.SellerId,
-		ActorType:   "SYSTEM",
-		Amount:      -int32(cfg.ListingFee()),
-		ShowEffect:  false,
-	})
+	//
+	// Offers skip the fee entirely: offering against a want-ad is not listing, so
+	// no seller listing fee is charged. Skipping the step (rather than a 0 debit)
+	// keeps the saga step count honest for the timeout budget below.
+	if !isOffer {
+		builder.AddStep("award_mesos", saga.Pending, saga.AwardMesos, saga.AwardMesosPayload{
+			CharacterId: req.SellerId,
+			WorldId:     req.WorldId,
+			ActorId:     req.SellerId,
+			ActorType:   "SYSTEM",
+			Amount:      -int32(cfg.ListingFee()),
+			ShowEffect:  false,
+		})
+	}
 
 	// Step 2: transfer the item into MTS custody. The orchestrator expands this
 	// composite into release_from_character + accept_to_mts_listing; the latter
@@ -575,14 +591,20 @@ func (p *ProcessorImpl) List(req ListRequest) (uuid.UUID, error) {
 		SubCategory:         req.SubCategory,
 		EndsAt:              endsAt,
 		MinIncrement:        minIncrementOrDefault(req.MinIncrement, cfg.MinBidIncrement()),
+		OfferWishSerial:     req.OfferWishSerial,
+		OfferWishOwnerId:    req.OfferWishOwnerId,
 	})
 
 	// Timeout MUST be set explicitly and scaled for the effective step count.
-	// N=2: the fee step counts as 1 and the TransferToMts composite expands to 2
-	// (release_from_character + accept_to_mts_listing). A flat timeout rolls back
-	// a legitimate multi-step saga under a stressed broker.
+	// The TransferToMts composite always expands to 2 (release_from_character +
+	// accept_to_mts_listing); a non-offer adds 1 leading fee step. An offer has no
+	// fee step. A flat timeout rolls back a legitimate multi-step saga under a
+	// stressed broker.
 	const transferToMtsExpandedSteps = 2 // release_from_character + accept_to_mts_listing
-	numSteps := 1 + transferToMtsExpandedSteps
+	numSteps := transferToMtsExpandedSteps
+	if !isOffer {
+		numSteps = 1 + transferToMtsExpandedSteps
+	}
 	builder.SetTimeout(listSagaBaseTimeout + time.Duration(numSteps)*listSagaPerStepTimeout)
 
 	if err := p.emitter.Create(builder.Build()); err != nil {

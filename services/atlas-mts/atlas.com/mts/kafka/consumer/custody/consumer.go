@@ -184,6 +184,8 @@ func handleAcceptToMtsListing(pf providerFn) func(db *gorm.DB) message.Handler[c
 					SetEndsAt(b.EndsAt).
 					SetMinIncrement(b.MinIncrement).
 					SetCurrentBid(currentBid).
+					SetOfferWishSerial(b.OfferWishSerial).
+					SetOfferWishOwnerId(b.OfferWishOwnerId).
 					Build()
 				if berr != nil {
 					return berr

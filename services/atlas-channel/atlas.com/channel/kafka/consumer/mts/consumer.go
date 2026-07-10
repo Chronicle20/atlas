@@ -165,7 +165,11 @@ func announceTo(l logrus.FieldLogger, ctx context.Context, sc server.Model, wp w
 func announceUserSaleList(l logrus.FieldLogger, ctx context.Context, sc server.Model, wp writer.Producer, worldId byte, sellerId uint32) {
 	ms, err := mtslisting.NewProcessor(l, ctx).Browse(world.Id(worldId), mtslisting.BrowseFilter{SellerId: sellerId})
 	if err != nil {
-		l.WithError(err).Errorf("Unable to refresh MTS sale list for seller [%d]; leaving the Not-Yet-Sold panel stale.", sellerId)
+		// The list genuinely failed to load: send the dedicated GetUserSaleItemFailed
+		// arm (client NoticeFailReason 'N' -> "failed to load the list") rather than
+		// leaving the panel silently stale.
+		l.WithError(err).Errorf("Unable to refresh MTS sale list for seller [%d]; writing the failed arm.", sellerId)
+		announceTo(l, ctx, sc, wp, sellerId, fieldpkt.MtsOperationGetUserSaleItemFailedBody(mtsFailReasonLoadFailed))
 		return
 	}
 	items := make([]fieldcb.MtsItem, 0, len(ms))
@@ -218,7 +222,10 @@ func announceBidderAuctionBrowse(l logrus.FieldLogger, ctx context.Context, sc s
 func announceUserPurchaseList(l logrus.FieldLogger, ctx context.Context, sc server.Model, wp writer.Producer, characterId uint32) {
 	hs, err := mtsholding.NewProcessor(l, ctx).GetByCharacter(characterId)
 	if err != nil {
-		l.WithError(err).Errorf("Unable to refresh MTS purchase list for character [%d]; leaving the Transfer-Inventory panel stale.", characterId)
+		// The list genuinely failed to load: send the dedicated GetUserPurchaseItemFailed
+		// arm ("failed to load the list") rather than leaving the panel silently stale.
+		l.WithError(err).Errorf("Unable to refresh MTS purchase list for character [%d]; writing the failed arm.", characterId)
+		announceTo(l, ctx, sc, wp, characterId, fieldpkt.MtsOperationGetUserPurchaseItemFailedBody(mtsFailReasonLoadFailed))
 		return
 	}
 	items := make([]fieldcb.MtsItem, 0, len(hs))
@@ -626,13 +633,11 @@ func handleBidFailed(sc server.Model, wp writer.Producer) message.Handler[mtsmsg
 	}
 }
 
-// mtsNotifyCancelWishCount is the count passed to NotifyCancelWishResult on a
-// successful CANCEL_WISH. The clientbound codec gates a StringPool notice on each
-// count being >0; 1 cancelled / 0 other shows the single "wish cancelled" notice.
-const (
-	mtsNotifyCancelWishCountA uint32 = 1
-	mtsNotifyCancelWishCountB uint32 = 0
-)
+// mtsFailReasonLoadFailed is the CITC::NoticeFailReason byte ('N' = 78) that maps
+// to StringPool 4785 "failed to load the list". It is the reason carried by the
+// GetUserSaleItemFailed / GetUserPurchaseItemFailed arms when a panel push fails to
+// load its data (IDA-verified NoticeFailReason switch, v95 0x575dd0).
+const mtsFailReasonLoadFailed byte = 'N'
 
 // handleWishAdded writes the wish-add result to the originating character. WISH_ADDED
 // is emitted by atlas-mts's handleRegisterWish; Origin discriminates which ITC arm
@@ -665,8 +670,16 @@ func handleWishAdded(sc server.Model, wp writer.Producer) message.Handler[mtsmsg
 // handleWishRemoved writes the wish-remove result to the originating character.
 // WISH_REMOVED is emitted by atlas-mts's handleRemoveWish; Origin discriminates which
 // ITC arm initiated the remove so the channel writes the matching clientbound result
-// (DELETE_ZZIM -> DeleteZzimDone, CANCEL_WISH -> NotifyCancelWishResult). An unknown
-// Origin is logged rather than guessing a mode.
+// (DELETE_ZZIM -> DeleteZzimDone, CANCEL_WISH -> CancelWishDone). An unknown Origin
+// is logged rather than guessing a mode.
+//
+// CANCEL_WISH is the USER-initiated want-ad cancel: it maps to the bare
+// CancelWishDone arm ("the request for purchase has been canceled", CITC
+// OnCancelWishDone). NotifyCancelWishResult (OnNotifyCancelWishResult) is a
+// SEPARATE, system-driven arm — the want-ad EXPIRY notice that reports how many
+// items + NX were returned, and the client only shows it when items > 0. Our
+// want-ads reserve no NX/items, so nothing is ever returned to the poster on
+// expiry and that arm is intentionally not sent (it would display nothing).
 func handleWishRemoved(sc server.Model, wp writer.Producer) message.Handler[mtsmsg.StatusEvent[mtsmsg.StatusEventWishRemovedBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, e mtsmsg.StatusEvent[mtsmsg.StatusEventWishRemovedBody]) {
 		if e.Type != mtsmsg.StatusEventTypeWishRemoved {
@@ -677,7 +690,7 @@ func handleWishRemoved(sc server.Model, wp writer.Producer) message.Handler[mtsm
 		case mtsmsg.WishOriginDeleteZzim:
 			announceTo(l, ctx, sc, wp, e.Body.CharacterId, fieldpkt.MtsOperationDeleteZzimDoneBody())
 		case mtsmsg.WishOriginCancelWish:
-			announceTo(l, ctx, sc, wp, e.Body.CharacterId, fieldpkt.MtsOperationNotifyCancelWishResultBody(mtsNotifyCancelWishCountA, mtsNotifyCancelWishCountB))
+			announceTo(l, ctx, sc, wp, e.Body.CharacterId, fieldpkt.MtsOperationCancelWishDoneBody())
 		case mtsmsg.WishOriginPurchased:
 			// Server-initiated cart prune after a purchase — no notice: BuyItemDone
 			// already confirmed the buy. The Cart re-push below drops the bought row.

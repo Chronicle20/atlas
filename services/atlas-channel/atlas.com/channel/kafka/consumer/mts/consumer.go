@@ -8,6 +8,7 @@ import (
 	mtscart "atlas-channel/mts/cart"
 	mtsholding "atlas-channel/mts/holding"
 	mtslisting "atlas-channel/mts/listing"
+	mtswanted "atlas-channel/mts/wanted"
 	mtswish "atlas-channel/mts/wish"
 	"atlas-channel/server"
 	"atlas-channel/session"
@@ -238,15 +239,11 @@ func announceWishList(l logrus.FieldLogger, ctx context.Context, sc server.Model
 		// see mts/cart.Items. The re-push must match the browse arm's rendering.
 		items = mtscart.Items(l, ctx, world.Id(worldId), characterId)
 	} else {
-		ws, err := mtswish.NewProcessor(l, ctx).GetByCharacterAndType(characterId, wishType)
-		if err != nil {
-			l.WithError(err).Errorf("Unable to refresh MTS %s list for character [%d]; leaving the view stale.", wishType, characterId)
-			return
-		}
-		items = make([]fieldcb.MtsItem, 0, len(ws))
-		for _, w := range ws {
-			items = append(items, mtswish.ToMtsItem(w))
-		}
+		// The Wanted view (section 2) is the cross-character list MINUS the viewer's
+		// own want-ads — identical to the browse arm. Rendering the viewer's OWN
+		// want-ads here (the old behavior) made a poster see their own ad in the
+		// Wanted tab after posting/cancelling (task-102 live finding).
+		items = mtswanted.WorldItems(l, ctx, world.Id(worldId), characterId)
 	}
 	// section as the browse category, sub 0 (all), page 0, sortType/sortColumn 1,
 	// requestSent 1 (mirrors the entry browse — and clears the latch, see above).

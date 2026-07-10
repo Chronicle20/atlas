@@ -8,6 +8,7 @@ import (
 	mtsproc "atlas-channel/mts"
 	mtscart "atlas-channel/mts/cart"
 	mtslisting "atlas-channel/mts/listing"
+	mtswanted "atlas-channel/mts/wanted"
 	mtstransaction "atlas-channel/mts/transaction"
 	mtswish "atlas-channel/mts/wish"
 	"atlas-channel/session"
@@ -726,10 +727,10 @@ func writeBrowsePage(l logrus.FieldLogger, ctx context.Context, wp writer.Produc
 		// My Page -> Auction (section 4 / sub 3): the viewer's OWN auction listings.
 		items = ownAuctionItems(l, ctx, s)
 	case category == itcSectionWanted:
-		// Wanted (section 2): ALL want-ads in the world, across every character
-		// (NOT just the viewer's own). Each MtsItem carries the wish serial as
-		// nITCSN, the wish price, and the owner's character name as the seller column.
-		items = wantedWorldItems(l, ctx, s)
+		// Wanted (section 2): every want-ad in the world EXCEPT the viewer's own,
+		// each carrying the wish serial as nITCSN, the wish price, and the owner's
+		// character name as the seller column. Shared with the post-mutation re-push.
+		items = mtswanted.WorldItems(l, ctx, s.WorldId(), s.CharacterId())
 	default:
 		// Public marketplace browse: listings filtered by (section=category,
 		// item-type=subCategory), excluding the requesting character's OWN listings
@@ -842,42 +843,6 @@ func ownAuctionItems(l logrus.FieldLogger, ctx context.Context, s session.Model)
 // ITCITEM that carries the wish serial as nITCSN, the wish price, and the want-ad
 // owner's character name as the seller column. A REST error yields an empty list
 // rather than blocking the page.
-func wantedWorldItems(l logrus.FieldLogger, ctx context.Context, s session.Model) []fieldcb.MtsItem {
-	ws, err := mtswish.NewProcessor(l, ctx).GetWantedByWorld(byte(s.WorldId()))
-	if err != nil {
-		l.WithError(err).Errorf("Unable to load world want-ads for world [%d]; writing empty page.", byte(s.WorldId()))
-		ws = nil
-	}
-	items := make([]fieldcb.MtsItem, 0, len(ws))
-	for _, w := range ws {
-		// Exclude the viewer's OWN want-ads: the Wanted tab shows other players'
-		// buy-orders you can fulfill (the seller counterpart to the For Sale tab,
-		// which likewise excludes your own listings via ExcludeSellerId). Your own
-		// want-ads appear under My Page -> Offers.
-		if w.CharacterId() == s.CharacterId() {
-			continue
-		}
-		items = append(items, mtsWantedItem(l, ctx, w))
-	}
-	return items
-}
-
-// mtsWantedItem maps one cross-character want-ad to an ITCITEM, resolving the
-// owner's display name into the seller (sGameID) column. The name lookup is
-// best-effort: a failure yields "" (a blank seller column) and the item is STILL
-// included — a want-ad must never be dropped because its owner's name could not
-// be resolved. Mirrors the sellerName helper's error tolerance.
-func mtsWantedItem(l logrus.FieldLogger, ctx context.Context, w mtswish.Model) fieldcb.MtsItem {
-	ownerName := ""
-	c, err := character.NewProcessor(l, ctx).GetById()(w.CharacterId())
-	if err != nil {
-		l.WithError(err).Warnf("Unable to resolve owner name for want-ad character [%d]; rendering with empty seller column.", w.CharacterId())
-	} else {
-		ownerName = c.Name()
-	}
-	return mtswish.ToMtsItemWithSeller(w, ownerName)
-}
-
 // writeWishFailure announces a wish/zzim *Failed clientbound result inline. The
 // command-driven wish arms (SET_ZZIM / REGISTER_WISH_ENTRY) rely on the status
 // consumer for their success/fail result; this writes the failure synchronously

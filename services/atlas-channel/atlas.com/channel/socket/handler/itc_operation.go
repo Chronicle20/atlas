@@ -8,8 +8,8 @@ import (
 	mtsproc "atlas-channel/mts"
 	mtscart "atlas-channel/mts/cart"
 	mtslisting "atlas-channel/mts/listing"
-	mtswanted "atlas-channel/mts/wanted"
 	mtstransaction "atlas-channel/mts/transaction"
+	mtswanted "atlas-channel/mts/wanted"
 	mtswish "atlas-channel/mts/wish"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
@@ -236,7 +236,18 @@ func buildCreateListingFromRegisterAuction(p fieldsb.ItcOperationRegisterAuction
 // OfferWishOwnerId = the resolved want-ad poster); listValue is the want-ad's
 // asking price. The poster then accepts the offer through the BUY_WISH path — the
 // offer never surfaces in the public For-Sale/Auction tabs.
-func buildCreateListingFromSaleCurrentItem(p fieldsb.ItcOperationSaleCurrentItem, worldId world.Id, sellerId uint32, sellerAccountId uint32, sellerName string, offerWishOwnerId uint32, listValue uint32) CreateListingArgs {
+//
+// Only the want-ad's requested quantity is escrowed: the offer's Quantity is
+// clamped to min(wantCount, the offerer's stack) and floored at 1, so an offerer
+// with a full stack does not lock up more units than the want-ad asked for.
+func buildCreateListingFromSaleCurrentItem(p fieldsb.ItcOperationSaleCurrentItem, worldId world.Id, sellerId uint32, sellerAccountId uint32, sellerName string, offerWishOwnerId uint32, listValue uint32, wantCount uint32) CreateListingArgs {
+	quantity := p.Item().Quantity()
+	if wantCount < quantity {
+		quantity = wantCount
+	}
+	if quantity == 0 {
+		quantity = 1
+	}
 	return CreateListingArgs{
 		WorldId:          worldId,
 		SellerId:         sellerId,
@@ -246,7 +257,7 @@ func buildCreateListingFromSaleCurrentItem(p fieldsb.ItcOperationSaleCurrentItem
 		TemplateId:       p.Item().TemplateId(),
 		CashId:           p.Item().CashId(),
 		SlotPos:          p.SlotPos(),
-		Quantity:         p.Item().Quantity(),
+		Quantity:         quantity,
 		ListValue:        listValue,
 		BuyNowPrice:      nil,
 		DurationHours:    0,
@@ -257,22 +268,22 @@ func buildCreateListingFromSaleCurrentItem(p fieldsb.ItcOperationSaleCurrentItem
 
 // resolveWantedPrice looks up a want-ad by its per-(tenant, world) ITC serial (the
 // wishSerial a SALE_CURRENT_ITEM offer targets). It scans the world's want-ads for
-// the matching serial and returns the poster's characterId (the want-ad owner) and
-// asking price. Returns (0, 0, false) when the serial does not resolve (a
-// stale/invalid offer target) so the caller skips the listing rather than creating
-// an unlinked/free offer.
-func resolveWantedPrice(l logrus.FieldLogger, ctx context.Context, worldId world.Id, wishSerial uint32) (ownerId uint32, price uint32, ok bool) {
+// the matching serial and returns the poster's characterId (the want-ad owner), the
+// asking price, and the wanted quantity (count). Returns (0, 0, 0, false) when the
+// serial does not resolve (a stale/invalid offer target) so the caller skips the
+// listing rather than creating an unlinked/free offer.
+func resolveWantedPrice(l logrus.FieldLogger, ctx context.Context, worldId world.Id, wishSerial uint32) (ownerId uint32, price uint32, count uint32, ok bool) {
 	ws, err := mtswish.NewProcessor(l, ctx).GetWantedByWorld(byte(worldId))
 	if err != nil {
 		l.WithError(err).Errorf("Unable to load world want-ads to resolve offer target serial [%d].", wishSerial)
-		return 0, 0, false
+		return 0, 0, 0, false
 	}
 	for _, w := range ws {
 		if w.Serial() == wishSerial {
-			return w.CharacterId(), w.Price(), true
+			return w.CharacterId(), w.Price(), w.Count(), true
 		}
 	}
-	return 0, 0, false
+	return 0, 0, 0, false
 }
 
 // Marketplace sections (client browse "tab"). Section 2 (Wanted) and the section
@@ -421,12 +432,12 @@ func ItcOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer
 			// offered item as an `offer` listing linked to that want-ad; the poster
 			// accepts it via BUY_WISH. A want-ad serial that does not resolve is logged
 			// and ignored (no unlinked/free offer).
-			ownerId, price, ok := resolveWantedPrice(l, ctx, s.WorldId(), body.WishSerial())
+			ownerId, price, wantCount, ok := resolveWantedPrice(l, ctx, s.WorldId(), body.WishSerial())
 			if !ok {
 				l.Errorf("Character [%d] sent a want-ad offer (SALE_CURRENT_ITEM) for unresolved want-ad serial [%d]; ignoring.", s.CharacterId(), body.WishSerial())
 				return
 			}
-			emitCreateListing(l, ctx, s, buildCreateListingFromSaleCurrentItem(*body, s.WorldId(), s.CharacterId(), s.AccountId(), sellerName(l, ctx, s), ownerId, price))
+			emitCreateListing(l, ctx, s, buildCreateListingFromSaleCurrentItem(*body, s.WorldId(), s.CharacterId(), s.AccountId(), sellerName(l, ctx, s), ownerId, price, wantCount))
 		case ItcOperationCancelSale:
 			body := &fieldsb.ItcOperationCancelSale{}
 			body.Decode(l, ctx)(r, readerOptions)
@@ -526,7 +537,7 @@ func ItcOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer
 				writeWishFailure(l, ctx, wp, s, fieldpkt.MtsOperationSetZzimFailedBody())
 				return
 			}
-			if err := mtsproc.NewProcessor(l, ctx).RegisterWish(s.WorldId(), s.CharacterId(), lm.TemplateId(), lm.ListValue(), mtsmsg.WishOriginSetZzim); err != nil {
+			if err := mtsproc.NewProcessor(l, ctx).RegisterWish(s.WorldId(), s.CharacterId(), lm.TemplateId(), lm.ListValue(), 0, mtsmsg.WishOriginSetZzim); err != nil {
 				l.WithError(err).Errorf("Unable to emit SET_ZZIM RegisterWish for character [%d] item [%d].", s.CharacterId(), lm.TemplateId())
 				writeWishFailure(l, ctx, wp, s, fieldpkt.MtsOperationSetZzimFailedBody())
 			}
@@ -562,15 +573,16 @@ func ItcOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer
 			body := &fieldsb.ItcOperationRegisterWishEntry{}
 			body.Decode(l, ctx)(r, readerOptions)
 			// REGISTER_WISH_ENTRY creates a wish request by criteria. The wish domain
-			// models (characterId, itemId, price); the wire price is persisted so the
-			// want-ad view shows the real price. The remaining count/duration/feeOption/
-			// desc fields are still unmodeled and intentionally NOT persisted. The
-			// RegisterWishItemDone/Failed result is written by the status consumer from
-			// the WISH_ADDED event (Origin REGISTER_WISH).
-			if body.Count() != 0 || body.Duration() != 0 || body.FeeOption() != 0 || body.Description() != "" {
-				l.Debugf("REGISTER_WISH_ENTRY for character [%d] item [%d] dropped unmodeled fields (count [%d] duration [%d] fee [%d] desc [%q]).", s.CharacterId(), body.ItemId(), body.Count(), body.Duration(), body.FeeOption(), body.Description())
+			// models (characterId, itemId, price, count); the wire price and count are
+			// persisted so the want-ad view shows the real ask and an offer escrows only
+			// the wanted quantity. The remaining duration/feeOption/desc fields are still
+			// unmodeled and intentionally NOT persisted. The RegisterWishItemDone/Failed
+			// result is written by the status consumer from the WISH_ADDED event (Origin
+			// REGISTER_WISH).
+			if body.Duration() != 0 || body.FeeOption() != 0 || body.Description() != "" {
+				l.Debugf("REGISTER_WISH_ENTRY for character [%d] item [%d] dropped unmodeled fields (duration [%d] fee [%d] desc [%q]).", s.CharacterId(), body.ItemId(), body.Duration(), body.FeeOption(), body.Description())
 			}
-			if err := mtsproc.NewProcessor(l, ctx).RegisterWish(s.WorldId(), s.CharacterId(), body.ItemId(), body.Price(), mtsmsg.WishOriginRegisterWish); err != nil {
+			if err := mtsproc.NewProcessor(l, ctx).RegisterWish(s.WorldId(), s.CharacterId(), body.ItemId(), body.Price(), body.Count(), mtsmsg.WishOriginRegisterWish); err != nil {
 				l.WithError(err).Errorf("Unable to emit REGISTER_WISH_ENTRY RegisterWish for character [%d] item [%d].", s.CharacterId(), body.ItemId())
 				writeWishFailure(l, ctx, wp, s, fieldpkt.MtsOperationRegisterWishItemFailedBody())
 			}

@@ -8,13 +8,15 @@ import "time"
 // unmarshal even though wish entries carry no relationships block (see
 // libs/atlas-rest/CLAUDE.md).
 type RestModel struct {
-	Id          string    `json:"-"`
-	WorldId     byte      `json:"worldId"`
-	Serial      uint32    `json:"serial"`
-	CharacterId uint32    `json:"characterId"`
-	ItemId      uint32    `json:"itemId"`
-	Price       uint32    `json:"price"`
-	CreatedAt   time.Time `json:"createdAt"`
+	Id          string     `json:"-"`
+	WorldId     byte       `json:"worldId"`
+	Serial      uint32     `json:"serial"`
+	CharacterId uint32     `json:"characterId"`
+	ItemId      uint32     `json:"itemId"`
+	Price       uint32     `json:"price"`
+	Count       uint32     `json:"count"`
+	ExpiresAt   *time.Time `json:"expiresAt"`
+	CreatedAt   time.Time  `json:"createdAt"`
 }
 
 func (r RestModel) GetName() string { return "wish-entries" }
@@ -38,5 +40,7 @@ func Extract(r RestModel) (Model, error) {
 		characterId: r.CharacterId,
 		itemId:      r.ItemId,
 		price:       r.Price,
+		count:       r.Count,
+		expiresAt:   r.ExpiresAt,
 	}, nil
 }

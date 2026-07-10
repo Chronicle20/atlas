@@ -63,6 +63,16 @@ type entity struct {
 	// the price the Cart / Wanted views render. A plain new defaulted column —
 	// AutoMigrate adds it with no index/key changes.
 	Price uint32 `gorm:"column:price;not null;default:0"`
+	// Count is the requested quantity for a "wanted" entry (REGISTER_WISH_ENTRY):
+	// how many of the item the want-ad is asking for. An offer against the want-ad
+	// escrows only this many units (not the offerer's full stack). Floored to 1 at
+	// create time. A plain new defaulted column — AutoMigrate adds it.
+	Count uint32 `gorm:"column:count;not null;default:1"`
+	// ExpiresAt is the "wanted" want-ad's expiry (created_at + the tenant fixed-sale
+	// term). NULL for "cart" entries, which never expire. Nullable so a cart entry
+	// carries no expiry and the sweep only ever deletes wanted rows with a set
+	// expiry that has passed.
+	ExpiresAt *time.Time `gorm:"column:expires_at"`
 
 	CreatedAt time.Time `gorm:"column:created_at"`
 }

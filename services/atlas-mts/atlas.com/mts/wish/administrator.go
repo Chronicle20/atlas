@@ -84,6 +84,13 @@ func CreateWish(db *gorm.DB, m Model) (Model, error) {
 		return Model{}, err
 	}
 
+	// A wish is for at least 1 unit: an unset (0) count floors to 1 so an offer
+	// against the want-ad always escrows a positive quantity.
+	count := m.Count()
+	if count == 0 {
+		count = 1
+	}
+
 	e := entity{
 		Id:          id,
 		TenantId:    m.TenantId(),
@@ -93,6 +100,8 @@ func CreateWish(db *gorm.DB, m Model) (Model, error) {
 		ItemId:      m.ItemId(),
 		Type:        m.Type(),
 		Price:       m.Price(),
+		Count:       count,
+		ExpiresAt:   m.ExpiresAt(),
 		CreatedAt:   createdAt,
 	}
 	if err := db.Create(&e).Error; err != nil {
@@ -116,5 +125,17 @@ func DeleteWish(db *gorm.DB, id string) (int64, error) {
 	// The map-keyed WHERE forces the id into the query: a struct condition would
 	// elide a zero-valued id (defense-in-depth alongside the guard above).
 	result := db.Where(map[string]interface{}{"id": wid}).Delete(&entity{})
+	return result.RowsAffected, result.Error
+}
+
+// DeleteExpiredWanted hard-deletes every "wanted" want-ad whose expiry has
+// passed (type = 'wanted' AND expires_at IS NOT NULL AND expires_at < now),
+// returning the number of rows removed. Cart entries (expires_at NULL) and
+// future-dated want-ads are left untouched. The periodic sweep calls this under
+// a WithoutTenantFilter handle so it removes expired want-ads across every
+// tenant. The WHERE is an explicit gorm builder (not a struct condition) so the
+// type/null/comparison predicates all reach the query.
+func DeleteExpiredWanted(db *gorm.DB, now time.Time) (int64, error) {
+	result := db.Where("type = ? AND expires_at IS NOT NULL AND expires_at < ?", TypeWanted, now).Delete(&entity{})
 	return result.RowsAffected, result.Error
 }

@@ -221,7 +221,9 @@ func TestBuildCreateListingFromSaleCurrentItem(t *testing.T) {
 	p := fieldsb.NewItcOperationSaleCurrentItem(3, 2, 7, item, 4244)
 
 	const wantOwnerId uint32 = 991
-	args := buildCreateListingFromSaleCurrentItem(p, testWorldId, testSellerId, testSellerAccountId, testSellerName, wantOwnerId, 3500)
+	// want-ad wants 5 units; the offerer has a stack of 3 -> escrow all 3 (the
+	// smaller of wanted vs stack).
+	args := buildCreateListingFromSaleCurrentItem(p, testWorldId, testSellerId, testSellerAccountId, testSellerName, wantOwnerId, 3500, 5)
 
 	if args.SaleType != itcSaleTypeOffer {
 		t.Errorf("saleType: want %s got %s", itcSaleTypeOffer, args.SaleType)
@@ -245,6 +247,12 @@ func TestBuildCreateListingFromSaleCurrentItem(t *testing.T) {
 	}
 	if args.OfferWishOwnerId != wantOwnerId {
 		t.Errorf("offerWishOwnerId: want %d got %d", wantOwnerId, args.OfferWishOwnerId)
+	}
+
+	// Clamp: a want-ad for 2 with the offerer's stack of 3 escrows only 2 units.
+	clamped := buildCreateListingFromSaleCurrentItem(p, testWorldId, testSellerId, testSellerAccountId, testSellerName, wantOwnerId, 3500, 2)
+	if clamped.Quantity != 2 {
+		t.Errorf("clamped quantity: want 2 (wanted<stack), got %d", clamped.Quantity)
 	}
 }
 

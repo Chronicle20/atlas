@@ -35,15 +35,19 @@ type Model struct {
 	itemId      uint32
 	wishType    string
 	price       uint32
+	count       uint32
+	expiresAt   *time.Time
 	createdAt   time.Time
 }
 
-func (m Model) Id() uuid.UUID        { return m.id }
-func (m Model) TenantId() uuid.UUID  { return m.tenantId }
-func (m Model) WorldId() world.Id    { return m.worldId }
-func (m Model) Serial() uint32       { return m.serial }
-func (m Model) CharacterId() uint32  { return m.characterId }
-func (m Model) ItemId() uint32       { return m.itemId }
-func (m Model) Type() string         { return m.wishType }
-func (m Model) Price() uint32        { return m.price }
-func (m Model) CreatedAt() time.Time { return m.createdAt }
+func (m Model) Id() uuid.UUID         { return m.id }
+func (m Model) TenantId() uuid.UUID   { return m.tenantId }
+func (m Model) WorldId() world.Id     { return m.worldId }
+func (m Model) Serial() uint32        { return m.serial }
+func (m Model) CharacterId() uint32   { return m.characterId }
+func (m Model) ItemId() uint32        { return m.itemId }
+func (m Model) Type() string          { return m.wishType }
+func (m Model) Price() uint32         { return m.price }
+func (m Model) Count() uint32         { return m.count }
+func (m Model) ExpiresAt() *time.Time { return m.expiresAt }
+func (m Model) CreatedAt() time.Time  { return m.createdAt }

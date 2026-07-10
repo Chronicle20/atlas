@@ -5,6 +5,7 @@ import (
 	"atlas-mts/wish"
 	"context"
 	"testing"
+	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
@@ -169,6 +170,64 @@ func TestAdministratorDeleteWishMalformedIdIsScoped(t *testing.T) {
 				t.Errorf("after DeleteWish(%q) tenant holds %d wishes, want 3 (all survive)", badId, len(all))
 			}
 		})
+	}
+}
+
+// TestAdministratorDeleteExpiredWanted asserts the want-ad sweep deletes ONLY
+// expired "wanted" entries: an expired wanted (expires_at < now) is removed,
+// while a future-dated wanted and a "cart" entry (no expiry) both survive.
+func TestAdministratorDeleteExpiredWanted(t *testing.T) {
+	tenantId := uuid.New()
+	ctx := tenantCtx(t, tenantId)
+	db := adminTestDB(t).WithContext(ctx)
+
+	now := time.Now()
+	past := now.Add(-time.Hour)
+	future := now.Add(time.Hour)
+
+	mkWish := func(characterId uint32, itemId uint32, wishType string, exp *time.Time) wish.Model {
+		b := wish.NewBuilder(tenantId, characterId, itemId).
+			SetWorldId(world.Id(0)).
+			SetType(wishType)
+		if exp != nil {
+			b = b.SetExpiresAt(exp)
+		}
+		m, err := b.Build()
+		if err != nil {
+			t.Fatalf("build wish: %v", err)
+		}
+		return m
+	}
+
+	expired, err := wish.CreateWish(db, mkWish(100, 1302000, wish.TypeWanted, &past))
+	if err != nil {
+		t.Fatalf("CreateWish expired wanted: %v", err)
+	}
+	futureWanted, err := wish.CreateWish(db, mkWish(101, 1302001, wish.TypeWanted, &future))
+	if err != nil {
+		t.Fatalf("CreateWish future wanted: %v", err)
+	}
+	cart, err := wish.CreateWish(db, mkWish(102, 1302002, wish.TypeCart, nil))
+	if err != nil {
+		t.Fatalf("CreateWish cart: %v", err)
+	}
+
+	deleted, err := wish.DeleteExpiredWanted(db, now)
+	if err != nil {
+		t.Fatalf("DeleteExpiredWanted: %v", err)
+	}
+	if deleted != 1 {
+		t.Fatalf("DeleteExpiredWanted removed %d rows, want 1 (only the expired wanted)", deleted)
+	}
+
+	if _, err := wish.GetById(expired.Id().String())(db)(); err == nil {
+		t.Error("expired wanted want-ad was not deleted")
+	}
+	if _, err := wish.GetById(futureWanted.Id().String())(db)(); err != nil {
+		t.Errorf("future-dated wanted was deleted: %v", err)
+	}
+	if _, err := wish.GetById(cart.Id().String())(db)(); err != nil {
+		t.Errorf("cart entry (no expiry) was deleted: %v", err)
 	}
 }
 

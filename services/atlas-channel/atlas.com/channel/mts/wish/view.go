@@ -49,7 +49,15 @@ func ToMtsItemWithSeller(m Model, sellerName string) fieldcb.MtsItem {
 // nPrice/nMinPrice/nUnitPrice = the wish price layout; only sGameID varies.
 func toMtsItem(m Model, sellerName string) fieldcb.MtsItem {
 	item := packetmodel.NewAsset(true, 0, m.ItemId(), time.Time{}).SetStackableInfo(1, 0, 0)
-	dateExpired := packetmodel.MsTimeBytes(mtsWishExpiry)
+	// A "wanted" want-ad carries a real expiry (created_at + the tenant fixed-sale
+	// term); render it as the "Sold Until" date so the client shows a genuine
+	// countdown. A "cart" entry has no expiry — keep the far-future 2079 sentinel
+	// so it renders as an effectively-permanent entry.
+	expiry := mtsWishExpiry
+	if m.ExpiresAt() != nil {
+		expiry = *m.ExpiresAt()
+	}
+	dateExpired := packetmodel.MsTimeBytes(expiry)
 	return fieldpkt.MtsOperationNewItem(
 		item,        // GW_ItemSlotBase blob
 		m.Serial(),  // nITCSN = the wish entry's per-(tenant, world) ITC serial

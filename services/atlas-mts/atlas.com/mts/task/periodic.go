@@ -7,6 +7,7 @@ import (
 
 	"atlas-mts/bid"
 	"atlas-mts/listing"
+	"atlas-mts/wish"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
@@ -175,6 +176,16 @@ func Sweep(l logrus.FieldLogger, ctx context.Context, db *gorm.DB, opts ...listi
 		l.Infof("MTS expiration sweep: expired/settled [%d] listings this tick; [%d] remain past the [%d] batch cap and will be processed next tick.", swept, deferred, sweepBatchLimit)
 	} else {
 		l.Infof("MTS expiration sweep: expired/settled [%d] of [%d] discovered listings.", swept, len(expired))
+	}
+
+	// Delete expired "wanted" want-ads across every tenant (cart entries carry no
+	// expiry and are never touched). This is a best-effort tail of the same sweep:
+	// a delete failure is logged and does NOT fail the listing sweep, which has
+	// already committed its transitions above.
+	if deleted, derr := wish.DeleteExpiredWanted(sdb, now); derr != nil {
+		l.WithError(derr).Warnf("MTS expiration sweep: failed to delete expired want-ads; will retry next tick.")
+	} else if deleted > 0 {
+		l.Infof("MTS expiration sweep: deleted [%d] expired want-ad(s).", deleted)
 	}
 
 	return swept, nil

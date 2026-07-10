@@ -1,6 +1,7 @@
 package mts
 
 import (
+	"atlas-mts/configuration"
 	"atlas-mts/holding"
 	consumer2 "atlas-mts/kafka/consumer"
 	msg "atlas-mts/kafka/message"
@@ -12,6 +13,7 @@ import (
 	"atlas-mts/wish"
 	"context"
 	"errors"
+	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
@@ -438,12 +440,21 @@ func handleRegisterWish(pf providerFn) func(db *gorm.DB) message.Handler[mts.Com
 				if b.Origin == mts.WishOriginRegisterWish {
 					wishType = wish.TypeWanted
 				}
-				wm, berr := wish.NewBuilder(t.Id(), b.CharacterId, b.ItemId).
+				wb := wish.NewBuilder(t.Id(), b.CharacterId, b.ItemId).
 					SetId(b.WishId).
 					SetWorldId(world.Id(b.WorldId)).
 					SetType(wishType).
 					SetPrice(b.Price).
-					Build()
+					SetCount(b.Count)
+				// A "wanted" want-ad expires after the tenant's fixed-sale term
+				// (FixedSaleDurationHours, default 168h); the periodic sweep hard-deletes
+				// it once expired. A "cart" entry never expires (ExpiresAt left nil).
+				if wishType == wish.TypeWanted {
+					cfg := configuration.GetRegistry().GetTenantConfig(l, ctx, t.Id())
+					exp := time.Now().Add(time.Duration(cfg.FixedSaleDurationHours()) * time.Hour)
+					wb = wb.SetExpiresAt(&exp)
+				}
+				wm, berr := wb.Build()
 				if berr != nil {
 					return berr
 				}

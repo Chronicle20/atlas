@@ -120,6 +120,8 @@ func modelFromEntity(e entity) (Model, error) {
 		SetSerial(e.Serial).
 		SetType(e.Type).
 		SetPrice(e.Price).
+		SetCount(e.Count).
+		SetExpiresAt(e.ExpiresAt).
 		SetCreatedAt(e.CreatedAt).
 		Build()
 }

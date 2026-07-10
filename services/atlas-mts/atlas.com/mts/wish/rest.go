@@ -8,14 +8,16 @@ import "time"
 // assigned. WorldId/Serial back the channel's CANCEL_WISH serial -> wish
 // resolution (the client echoes Serial as the ITCITEM's nITCSN).
 type RestModel struct {
-	Id          string    `json:"-"`
-	WorldId     byte      `json:"worldId"`
-	Serial      uint32    `json:"serial"`
-	CharacterId uint32    `json:"characterId"`
-	ItemId      uint32    `json:"itemId"`
-	Type        string    `json:"type"`
-	Price       uint32    `json:"price"`
-	CreatedAt   time.Time `json:"createdAt"`
+	Id          string     `json:"-"`
+	WorldId     byte       `json:"worldId"`
+	Serial      uint32     `json:"serial"`
+	CharacterId uint32     `json:"characterId"`
+	ItemId      uint32     `json:"itemId"`
+	Type        string     `json:"type"`
+	Price       uint32     `json:"price"`
+	Count       uint32     `json:"count"`
+	ExpiresAt   *time.Time `json:"expiresAt"`
+	CreatedAt   time.Time  `json:"createdAt"`
 }
 
 func (r RestModel) GetName() string {
@@ -40,6 +42,8 @@ func Transform(m Model) (RestModel, error) {
 		ItemId:      m.ItemId(),
 		Type:        m.Type(),
 		Price:       m.Price(),
+		Count:       m.Count(),
+		ExpiresAt:   m.ExpiresAt(),
 		CreatedAt:   m.CreatedAt(),
 	}, nil
 }

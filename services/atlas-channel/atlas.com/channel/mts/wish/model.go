@@ -1,5 +1,7 @@
 package wish
 
+import "time"
+
 // Model is the channel-side view of an atlas-mts wish-list entry, read over REST
 // for the VIEW_WISH / CANCEL_WISH ITC_OPERATION arms.
 //
@@ -26,11 +28,15 @@ type Model struct {
 	characterId uint32
 	itemId      uint32
 	price       uint32
+	count       uint32
+	expiresAt   *time.Time
 }
 
-func (m Model) Id() string          { return m.id }
-func (m Model) WorldId() byte        { return m.worldId }
-func (m Model) Serial() uint32       { return m.serial }
-func (m Model) CharacterId() uint32  { return m.characterId }
-func (m Model) ItemId() uint32       { return m.itemId }
-func (m Model) Price() uint32        { return m.price }
+func (m Model) Id() string            { return m.id }
+func (m Model) WorldId() byte         { return m.worldId }
+func (m Model) Serial() uint32        { return m.serial }
+func (m Model) CharacterId() uint32   { return m.characterId }
+func (m Model) ItemId() uint32        { return m.itemId }
+func (m Model) Price() uint32         { return m.price }
+func (m Model) Count() uint32         { return m.count }
+func (m Model) ExpiresAt() *time.Time { return m.expiresAt }

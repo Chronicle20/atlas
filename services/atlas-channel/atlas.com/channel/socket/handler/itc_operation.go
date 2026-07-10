@@ -6,6 +6,7 @@ import (
 	dataitem "atlas-channel/data/item"
 	mtsmsg "atlas-channel/kafka/message/mts"
 	mtsproc "atlas-channel/mts"
+	mtscart "atlas-channel/mts/cart"
 	mtslisting "atlas-channel/mts/listing"
 	mtstransaction "atlas-channel/mts/transaction"
 	mtswish "atlas-channel/mts/wish"
@@ -517,12 +518,12 @@ func ItcOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer
 		case ItcOperationDeleteZzim:
 			body := &fieldsb.ItcOperationDeleteZzim{}
 			body.Decode(l, ctx)(r, readerOptions)
-			// Remove-from-cart: the Cart is rendered from wish entries (itcSn = the
-			// wish's own serial via mtsItemFromWish), so the wire serial is a WISH
-			// serial, not a listing serial — resolve it by wish identity (as
-			// CANCEL_WISH does). Resolving it as a listing serial is why "failed to
-			// remove item from cart" was raised.
-			emitRemoveWishByWishSerial(l, ctx, wp, s, body.ItcSn(), mtsmsg.WishOriginDeleteZzim, fieldpkt.MtsOperationDeleteZzimFailedBody())
+			// Remove-from-cart: the Cart now renders each favorited item's live
+			// LISTING (itcSn = listing serial, see mts/cart.Items), so the wire serial
+			// is a LISTING serial — resolve it to the listing's item and remove the
+			// character's CART wish for that item (type-scoped so a wanted entry for
+			// the same item is never touched).
+			emitRemoveCartWishByListingSerial(l, ctx, wp, s, body.ItcSn())
 		case ItcOperationCancelWish:
 			body := &fieldsb.ItcOperationCancelWish{}
 			body.Decode(l, ctx)(r, readerOptions)
@@ -680,8 +681,11 @@ func writeBrowsePage(l logrus.FieldLogger, ctx context.Context, wp writer.Produc
 	switch {
 	case category == itcSectionCart && subCategory == 0:
 		// My Page -> Cart (section 4 / sub 0): the viewer's added-to-cart entries
-		// (SET_ZZIM -> wish type=cart), kept disjoint from their wanted ads.
-		items = wishItems(l, ctx, s.CharacterId(), mtswish.TypeCart, 0)
+		// (SET_ZZIM). Each cart entry is rendered as its favorited item's current
+		// best active LISTING (nITCSN = listing serial, all-in price via ToMtsItem's
+		// contract fee) so BUY_ZZIM / DELETE_ZZIM address a real listing and the
+		// price shows with fees — see mts/cart.Items.
+		items = mtscart.Items(l, ctx, s.WorldId(), s.CharacterId())
 	case category == itcSectionCart && subCategory == 1:
 		// My Page -> Offers (section 4 / sub 1): the viewer's OWN want-ads
 		// (REGISTER_WISH_ENTRY -> wish type=wanted).
@@ -856,36 +860,55 @@ func writeWishFailure(l logrus.FieldLogger, ctx context.Context, wp writer.Produ
 	}
 }
 
-// emitRemoveWishBySerial resolves a wire listing serial to the wish entry the
-// character has for that listing's item, then emits a REMOVE_WISH command tagged
-// with the originating arm (DELETE_ZZIM or CANCEL_WISH) so the status consumer
-// writes the matching result. The wire carries only the serial, never the wish
-// UUID, so the channel resolves serial -> listing.templateId -> the character's
-// wish entry for that item. A resolution failure writes the supplied *Failed body.
-func emitRemoveWishBySerial(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, s session.Model, serial uint32, origin string, failBody func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte) {
+// emitRemoveCartWishByListingSerial removes the character's CART wish for the item
+// of the listing addressed by serial. The Cart renders each favorited item's live
+// LISTING (nITCSN = listing serial, see mts/cart.Items), so DELETE_ZZIM carries a
+// LISTING serial: resolve it to the listing's item, find the character's CART entry
+// for that item (type-scoped so a wanted entry for the same item is never touched),
+// and emit REMOVE_WISH tagged DELETE_ZZIM. A serial that no longer resolves (the
+// favorited listing sold/expired) writes DeleteZzimFailed — the entry would already
+// have dropped off the Cart on its next render.
+func emitRemoveCartWishByListingSerial(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, s session.Model, serial uint32) {
+	failBody := fieldpkt.MtsOperationDeleteZzimFailedBody()
+
 	lm, err := mtslisting.NewProcessor(l, ctx).GetBySerial(s.WorldId(), serial)
 	if err != nil {
-		l.WithError(err).Errorf("Unable to resolve serial [%d] for wish-remove (origin [%s]), character [%d].", serial, origin, s.CharacterId())
+		l.WithError(err).Errorf("Unable to resolve listing serial [%d] for DELETE_ZZIM, character [%d].", serial, s.CharacterId())
 		writeWishFailure(l, ctx, wp, s, failBody)
 		return
 	}
 
-	wm, err := mtswish.NewProcessor(l, ctx).GetByCharacterItem(s.CharacterId(), lm.TemplateId())
+	ws, err := mtswish.NewProcessor(l, ctx).GetByCharacterAndType(s.CharacterId(), mtswish.TypeCart)
 	if err != nil {
-		l.WithError(err).Errorf("Character [%d] has no wish entry for item [%d] (serial [%d], origin [%s]).", s.CharacterId(), lm.TemplateId(), serial, origin)
+		l.WithError(err).Errorf("Unable to load cart entries for character [%d] to resolve DELETE_ZZIM (serial [%d]).", s.CharacterId(), serial)
+		writeWishFailure(l, ctx, wp, s, failBody)
+		return
+	}
+
+	var wm mtswish.Model
+	found := false
+	for _, w := range ws {
+		if w.ItemId() == lm.TemplateId() {
+			wm = w
+			found = true
+			break
+		}
+	}
+	if !found {
+		l.Errorf("Character [%d] has no cart entry for item [%d] (listing serial [%d]) on DELETE_ZZIM.", s.CharacterId(), lm.TemplateId(), serial)
 		writeWishFailure(l, ctx, wp, s, failBody)
 		return
 	}
 
 	wishId, err := uuid.Parse(wm.Id())
 	if err != nil {
-		l.WithError(err).Errorf("Wish entry id [%s] is not a valid uuid (character [%d], origin [%s]).", wm.Id(), s.CharacterId(), origin)
+		l.WithError(err).Errorf("Cart wish id [%s] is not a valid uuid (character [%d]).", wm.Id(), s.CharacterId())
 		writeWishFailure(l, ctx, wp, s, failBody)
 		return
 	}
 
-	if err := mtsproc.NewProcessor(l, ctx).RemoveWish(s.WorldId(), wishId, s.CharacterId(), origin); err != nil {
-		l.WithError(err).Errorf("Unable to emit RemoveWish [%s] for character [%d] (origin [%s]).", wishId.String(), s.CharacterId(), origin)
+	if err := mtsproc.NewProcessor(l, ctx).RemoveWish(s.WorldId(), wishId, s.CharacterId(), mtsmsg.WishOriginDeleteZzim); err != nil {
+		l.WithError(err).Errorf("Unable to emit DELETE_ZZIM RemoveWish [%s] for character [%d].", wishId.String(), s.CharacterId())
 		writeWishFailure(l, ctx, wp, s, failBody)
 	}
 }
@@ -893,8 +916,9 @@ func emitRemoveWishBySerial(l logrus.FieldLogger, ctx context.Context, wp writer
 // emitRemoveWishByWishSerial resolves a WISH serial (the nITCSN the client echoed
 // from the wish-tab ITCITEM that VIEW_WISH populated with the wish entry's own
 // serial) directly to the wish entry, then emits REMOVE_WISH tagged with the
-// origin (CANCEL_WISH). Unlike emitRemoveWishBySerial (DELETE_ZZIM), the wire
-// serial here is a wish serial, NOT a listing serial — a wish has no listing — so
+// origin (CANCEL_WISH). Unlike emitRemoveCartWishByListingSerial (DELETE_ZZIM),
+// the wire serial here is a wish serial, NOT a listing serial — a wish has no
+// listing — so
 // it resolves via the wishlist (GetByCharacterSerial) with no listing lookup. A
 // resolution failure (no wish for that serial, or the stale itcSn=0) writes the
 // supplied *Failed body.

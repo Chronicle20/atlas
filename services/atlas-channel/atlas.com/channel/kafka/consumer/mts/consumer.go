@@ -4,6 +4,7 @@ import (
 	consumer2 "atlas-channel/kafka/consumer"
 	mtsmsg "atlas-channel/kafka/message/mts"
 	"atlas-channel/listener"
+	mtscart "atlas-channel/mts/cart"
 	mtsholding "atlas-channel/mts/holding"
 	mtslisting "atlas-channel/mts/listing"
 	mtswish "atlas-channel/mts/wish"
@@ -221,15 +222,23 @@ const (
 // CITC::OnGetITCListDone v83 0x5a48af clears this[6] only when requestSent != 0).
 // The v83 client also never re-requests the wish list after a mutation, so the
 // re-push is the only way the Cart/Wanted view updates without re-entering MTS.
-func announceWishList(l logrus.FieldLogger, ctx context.Context, sc server.Model, wp writer.Producer, characterId uint32, section uint32, wishType string) {
-	ws, err := mtswish.NewProcessor(l, ctx).GetByCharacterAndType(characterId, wishType)
-	if err != nil {
-		l.WithError(err).Errorf("Unable to refresh MTS %s list for character [%d]; leaving the view stale.", wishType, characterId)
-		return
-	}
-	items := make([]fieldcb.MtsItem, 0, len(ws))
-	for _, w := range ws {
-		items = append(items, mtswish.ToMtsItem(w))
+func announceWishList(l logrus.FieldLogger, ctx context.Context, sc server.Model, wp writer.Producer, worldId byte, characterId uint32, section uint32, wishType string) {
+	var items []fieldcb.MtsItem
+	if wishType == mtswish.TypeCart {
+		// The Cart renders each favorited item's live LISTING (nITCSN = listing
+		// serial, all-in price) so BUY_ZZIM / DELETE_ZZIM address a real listing —
+		// see mts/cart.Items. The re-push must match the browse arm's rendering.
+		items = mtscart.Items(l, ctx, world.Id(worldId), characterId)
+	} else {
+		ws, err := mtswish.NewProcessor(l, ctx).GetByCharacterAndType(characterId, wishType)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to refresh MTS %s list for character [%d]; leaving the view stale.", wishType, characterId)
+			return
+		}
+		items = make([]fieldcb.MtsItem, 0, len(ws))
+		for _, w := range ws {
+			items = append(items, mtswish.ToMtsItem(w))
+		}
 	}
 	// section as the browse category, sub 0 (all), page 0, sortType/sortColumn 1,
 	// requestSent 1 (mirrors the entry browse — and clears the latch, see above).
@@ -485,7 +494,7 @@ func handleWishAdded(sc server.Model, wp writer.Producer) message.Handler[mtsmsg
 		// player re-entering MTS (the v83 client never re-requests the list after a
 		// SetZzimDone/RegisterWishItemDone notice).
 		if section, wishType, ok := wishSectionForOrigin(e.Body.Origin); ok {
-			announceWishList(l, ctx, sc, wp, e.Body.CharacterId, section, wishType)
+			announceWishList(l, ctx, sc, wp, e.Body.WorldId, e.Body.CharacterId, section, wishType)
 		}
 	}
 }
@@ -514,7 +523,7 @@ func handleWishRemoved(sc server.Model, wp writer.Producer) message.Handler[mtsm
 		// latch (DeleteZzimDone never clears it itself), which otherwise freezes the
 		// client after a successful cart removal.
 		if section, wishType, ok := wishSectionForOrigin(e.Body.Origin); ok {
-			announceWishList(l, ctx, sc, wp, e.Body.CharacterId, section, wishType)
+			announceWishList(l, ctx, sc, wp, e.Body.WorldId, e.Body.CharacterId, section, wishType)
 		}
 	}
 }

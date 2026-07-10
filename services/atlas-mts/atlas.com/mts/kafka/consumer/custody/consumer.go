@@ -1,6 +1,7 @@
 package custody
 
 import (
+	"atlas-mts/configuration"
 	"atlas-mts/holding"
 	consumer2 "atlas-mts/kafka/consumer"
 	msg "atlas-mts/kafka/message"
@@ -440,19 +441,28 @@ func handleMtsMoveListingToHolding(pf providerFn) func(db *gorm.DB) message.Hand
 				// Record the settle for BOTH parties' My Page -> History. This point
 				// is reached only on the winning first settle (the holding-exists
 				// guard above returns early on replay), so the two rows are written
-				// exactly once. salePrice is the listing value for a fixed/buy-now
-				// sale, or the winning bid for an auction.
+				// exactly once. salePrice is the seller's BASE price — the listing
+				// value for a fixed/buy-now sale, or the winning bid for an auction.
 				salePrice := lm.ListValue()
 				if lm.SaleType() == listing.SaleTypeAuction {
 					salePrice = lm.CurrentBid()
 				}
+
+				// Under the Option B pricing model the buyer pays the commission-
+				// inclusive markup while the seller nets the base: the History rows
+				// must reflect what each party actually transacted, so the buyer's
+				// purchase row records MarkedUp(salePrice) and the seller's sale row
+				// records the base salePrice. Recording base on the buyer row made My
+				// Page -> History under-report the purchase price (task-102 live finding).
+				cfg := configuration.GetRegistry().GetTenantConfig(l, ctx, t.Id())
+				buyerPaid := listing.MarkedUp(salePrice, lm.CommissionRate(), cfg.CommissionBase())
 
 				buyerTxn, berr := transaction.NewBuilder(t.Id(), world.Id(b.WorldId), b.BuyerId).
 					SetId(uuid.New()).
 					SetCounterpartyId(sellerId).
 					SetItemId(lm.TemplateId()).
 					SetQuantity(lm.Quantity()).
-					SetTotalPrice(salePrice).
+					SetTotalPrice(buyerPaid).
 					SetKind(transaction.KindPurchase).
 					Build()
 				if berr != nil {

@@ -432,8 +432,12 @@ func TestMtsMoveListingToHolding_MarksSoldCreatesHoldingAndAcks(t *testing.T) {
 	if bt.CounterpartyId() != sellerId {
 		t.Errorf("buyer row counterparty = %d, want seller %d", bt.CounterpartyId(), sellerId)
 	}
-	if bt.ItemId() != 1302000 || bt.Quantity() != 1 || bt.TotalPrice() != 1000 {
-		t.Errorf("buyer row snapshot mismatch: item=%d qty=%d price=%d", bt.ItemId(), bt.Quantity(), bt.TotalPrice())
+	// The buyer's purchase row records what the buyer actually PAID: the marked-up
+	// total, not the seller's base. MarkedUp(1000, rate=0.10, commissionBase=500) =
+	// ceil(1000*1.10) + 500 = 1100 + 500 = 1600 (config fetch fails in test → the
+	// DefaultConfig commissionBase of 500 is used).
+	if bt.ItemId() != 1302000 || bt.Quantity() != 1 || bt.TotalPrice() != 1600 {
+		t.Errorf("buyer row snapshot mismatch: item=%d qty=%d price=%d (want price 1600 marked-up)", bt.ItemId(), bt.Quantity(), bt.TotalPrice())
 	}
 
 	sellerTxns, err := tp.GetByCharacter(sellerId)
@@ -450,8 +454,10 @@ func TestMtsMoveListingToHolding_MarksSoldCreatesHoldingAndAcks(t *testing.T) {
 	if st.CounterpartyId() != buyerId {
 		t.Errorf("seller row counterparty = %d, want buyer %d", st.CounterpartyId(), buyerId)
 	}
+	// The seller's sale row records what the seller NETTED: the base price (1000),
+	// not the marked-up total the buyer paid — the commission is the sink.
 	if st.ItemId() != 1302000 || st.Quantity() != 1 || st.TotalPrice() != 1000 {
-		t.Errorf("seller row snapshot mismatch: item=%d qty=%d price=%d", st.ItemId(), st.Quantity(), st.TotalPrice())
+		t.Errorf("seller row snapshot mismatch: item=%d qty=%d price=%d (want price 1000 base)", st.ItemId(), st.Quantity(), st.TotalPrice())
 	}
 }
 

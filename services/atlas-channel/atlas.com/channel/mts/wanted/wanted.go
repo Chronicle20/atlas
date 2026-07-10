@@ -19,11 +19,11 @@ import (
 // (announceWishList) so the two never diverge — the re-push previously rendered the
 // viewer's OWN want-ads here, so a poster saw their own ad in the Wanted tab after
 // posting/cancelling (task-102 live finding).
-func WorldItems(l logrus.FieldLogger, ctx context.Context, worldId world.Id, viewerId uint32) []fieldcb.MtsItem {
+func WorldItems(l logrus.FieldLogger, ctx context.Context, worldId world.Id, viewerId uint32) ([]fieldcb.MtsItem, error) {
 	ws, err := mtswish.NewProcessor(l, ctx).GetWantedByWorld(byte(worldId))
 	if err != nil {
 		l.WithError(err).Errorf("Unable to load world want-ads for world [%d]; rendering empty Wanted list.", byte(worldId))
-		return []fieldcb.MtsItem{}
+		return nil, err
 	}
 	items := make([]fieldcb.MtsItem, 0, len(ws))
 	for _, w := range ws {
@@ -32,7 +32,7 @@ func WorldItems(l logrus.FieldLogger, ctx context.Context, worldId world.Id, vie
 		}
 		items = append(items, item(l, ctx, w))
 	}
-	return items
+	return items, nil
 }
 
 // item maps one cross-character want-ad to an ITCITEM, resolving the owner's

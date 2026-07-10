@@ -247,17 +247,26 @@ const (
 // re-push is the only way the Cart/Wanted view updates without re-entering MTS.
 func announceWishList(l logrus.FieldLogger, ctx context.Context, sc server.Model, wp writer.Producer, worldId byte, characterId uint32, section uint32, wishType string) {
 	var items []fieldcb.MtsItem
+	// This is a server-INITIATED re-push, not an answer to a client request, so a
+	// load error must NOT send a failure arm — keep the best-effort behavior: log
+	// and re-push whatever loaded (empty on error). The section renderers now
+	// surface their error for the client-request browse path (writeBrowsePage);
+	// here it is captured and intentionally ignored for the fail-arm purpose.
+	var loadErr error
 	if wishType == mtswish.TypeCart {
 		// The Cart renders each favorited item's live LISTING (nITCSN = listing
 		// serial, all-in price) so BUY_ZZIM / DELETE_ZZIM address a real listing —
 		// see mts/cart.Items. The re-push must match the browse arm's rendering.
-		items = mtscart.Items(l, ctx, world.Id(worldId), characterId)
+		items, loadErr = mtscart.Items(l, ctx, world.Id(worldId), characterId)
 	} else {
 		// The Wanted view (section 2) is the cross-character list MINUS the viewer's
 		// own want-ads — identical to the browse arm. Rendering the viewer's OWN
 		// want-ads here (the old behavior) made a poster see their own ad in the
 		// Wanted tab after posting/cancelling (task-102 live finding).
-		items = mtswanted.WorldItems(l, ctx, world.Id(worldId), characterId)
+		items, loadErr = mtswanted.WorldItems(l, ctx, world.Id(worldId), characterId)
+	}
+	if loadErr != nil {
+		l.WithError(loadErr).Warnf("Unable to load %s view for character [%d] re-push; re-pushing whatever loaded.", wishType, characterId)
 	}
 	// section as the browse category, sub 0 (all), page 0, sortType/sortColumn 1,
 	// requestSent 1 (mirrors the entry browse — and clears the latch, see above).

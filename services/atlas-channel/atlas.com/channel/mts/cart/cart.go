@@ -34,11 +34,11 @@ const itcSaleTypeFixed = "fixed"
 // A cart entry whose item has no active listing the viewer can buy (sold out, or
 // every listing is the viewer's own) is skipped: a favorited item that is no
 // longer for sale simply drops off the Cart until it is listed again.
-func Items(l logrus.FieldLogger, ctx context.Context, worldId world.Id, characterId uint32) []fieldcb.MtsItem {
+func Items(l logrus.FieldLogger, ctx context.Context, worldId world.Id, characterId uint32) ([]fieldcb.MtsItem, error) {
 	ws, err := mtswish.NewProcessor(l, ctx).GetByCharacterAndType(characterId, mtswish.TypeCart)
 	if err != nil {
 		l.WithError(err).Errorf("Unable to load cart entries for character [%d]; rendering empty cart.", characterId)
-		return []fieldcb.MtsItem{}
+		return nil, err
 	}
 	items := make([]fieldcb.MtsItem, 0, len(ws))
 	for _, w := range ws {
@@ -48,7 +48,7 @@ func Items(l logrus.FieldLogger, ctx context.Context, worldId world.Id, characte
 		}
 		items = append(items, mtslisting.ToMtsItem(lm))
 	}
-	return items
+	return items, nil
 }
 
 // BestActiveListing returns the cheapest active FIXED listing of itemId in the

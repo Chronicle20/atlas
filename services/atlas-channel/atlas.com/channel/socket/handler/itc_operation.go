@@ -716,6 +716,11 @@ func resolveSellerAssetId(l logrus.FieldLogger, ctx context.Context, characterId
 // (cosmetic there, since entry is server-initiated and never sets the latch).
 func writeBrowsePage(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, s session.Model, category uint32, subCategory uint32, page uint32, sortType byte, sortColumn byte, requestSent byte, search bool, f mtslisting.BrowseFilter) {
 	var items []fieldcb.MtsItem
+	// loadErr captures a GENUINE data-load failure for the section requested by this
+	// client browse. A non-nil loadErr routes to the dedicated Failed arm below
+	// (GetItcListFailed / GetSearchItcListFailed) so client-side debugging follows
+	// the CITC::OnNormalItemResult failure path, instead of an empty success list.
+	var loadErr error
 	switch {
 	case category == itcSectionCart && subCategory == 0:
 		// My Page -> Cart (section 4 / sub 0): the viewer's added-to-cart entries
@@ -723,19 +728,19 @@ func writeBrowsePage(l logrus.FieldLogger, ctx context.Context, wp writer.Produc
 		// best active LISTING (nITCSN = listing serial, all-in price via ToMtsItem's
 		// contract fee) so BUY_ZZIM / DELETE_ZZIM address a real listing and the
 		// price shows with fees — see mts/cart.Items.
-		items = mtscart.Items(l, ctx, s.WorldId(), s.CharacterId())
+		items, loadErr = mtscart.Items(l, ctx, s.WorldId(), s.CharacterId())
 	case category == itcSectionCart && subCategory == 1:
 		// My Page -> Offers (section 4 / sub 1): the viewer's OWN want-ads
 		// (REGISTER_WISH_ENTRY -> wish type=wanted).
-		items = wishItems(l, ctx, s.CharacterId(), mtswish.TypeWanted, 0)
+		items, loadErr = wishItems(l, ctx, s.CharacterId(), mtswish.TypeWanted, 0)
 	case category == itcSectionCart && subCategory == 2:
 		// My Page -> History (section 4 / sub 2): the viewer's settled
-		// purchase/sale log, read from atlas-mts. On a REST error write an empty
-		// page rather than blocking the client UI.
+		// purchase/sale log, read from atlas-mts. A REST error routes to the Failed
+		// arm below.
 		ts, err := mtstransaction.NewProcessor(l, ctx).GetByCharacter(s.CharacterId())
 		if err != nil {
-			l.WithError(err).Errorf("Unable to retrieve MTS transaction history for character [%d]; writing empty page.", s.CharacterId())
-			ts = nil
+			l.WithError(err).Errorf("Unable to retrieve MTS transaction history for character [%d]; writing failed arm.", s.CharacterId())
+			loadErr = err
 		}
 		items = make([]fieldcb.MtsItem, 0, len(ts))
 		for _, m := range ts {
@@ -743,12 +748,12 @@ func writeBrowsePage(l logrus.FieldLogger, ctx context.Context, wp writer.Produc
 		}
 	case category == itcSectionCart && subCategory == 3:
 		// My Page -> Auction (section 4 / sub 3): the viewer's OWN auction listings.
-		items = ownAuctionItems(l, ctx, s)
+		items, loadErr = ownAuctionItems(l, ctx, s)
 	case category == itcSectionWanted:
 		// Wanted (section 2): every want-ad in the world EXCEPT the viewer's own,
 		// each carrying the wish serial as nITCSN, the wish price, and the owner's
 		// character name as the seller column. Shared with the post-mutation re-push.
-		items = mtswanted.WorldItems(l, ctx, s.WorldId(), s.CharacterId())
+		items, loadErr = mtswanted.WorldItems(l, ctx, s.WorldId(), s.CharacterId())
 	default:
 		// Public marketplace browse: listings filtered by (section=category,
 		// item-type=subCategory), excluding the requesting character's OWN listings
@@ -769,13 +774,35 @@ func writeBrowsePage(l logrus.FieldLogger, ctx context.Context, wp writer.Produc
 		f.PageSize = -1
 		ms, err := mtslisting.NewProcessor(l, ctx).Browse(s.WorldId(), f)
 		if err != nil {
-			l.WithError(err).Errorf("Unable to browse MTS listings for character [%d]; writing empty page.", s.CharacterId())
+			l.WithError(err).Errorf("Unable to browse MTS listings for character [%d]; writing failed arm.", s.CharacterId())
+			loadErr = err
 			ms = nil
 		}
 		items = make([]fieldcb.MtsItem, 0, len(ms))
 		for _, m := range ms {
 			items = append(items, mtsItemFromListing(m))
 		}
+	}
+
+	// A genuine data-load failure for this client-requested browse routes to the
+	// dedicated Failed arm — GetSearchItcListFailed (mode 24) for a SEARCH, else
+	// GetItcListFailed (mode 22) — rather than an empty success list, so the client
+	// follows the CITC::OnNormalItemResult failure path. The seller's own panels are
+	// still re-pushed so they stay current. (Server-initiated re-pushes in the
+	// consumer keep their best-effort behavior and never reach this path.)
+	if loadErr != nil {
+		var failBody func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte
+		if search {
+			failBody = fieldpkt.MtsOperationGetSearchItcListFailedBody(0)
+		} else {
+			failBody = fieldpkt.MtsOperationGetItcListFailedBody(0)
+		}
+		if err := session.Announce(l)(ctx)(wp)(fieldcb.MtsOperationWriter)(failBody)(s); err != nil {
+			l.WithError(err).Errorf("Unable to announce MTS browse-failed to character [%d].", s.CharacterId())
+		}
+		announceUserSaleItems(l, ctx, wp, s)
+		announceUserPurchaseItems(l, ctx, wp, s)
+		return
 	}
 
 	// categoryItemCnt carries the TOTAL match count (drives the client's page
@@ -823,11 +850,11 @@ func writeSearchListFailed(l logrus.FieldLogger, ctx context.Context, wp writer.
 // them to ITCITEMs for the Cart / Wanted views. When categorySub is non-zero the
 // list is narrowed to that inventory category (derived from each wish's itemId),
 // so the Wanted sub-tabs (equip/use/...) filter like the public browse does.
-func wishItems(l logrus.FieldLogger, ctx context.Context, characterId uint32, wishType string, categorySub uint32) []fieldcb.MtsItem {
+func wishItems(l logrus.FieldLogger, ctx context.Context, characterId uint32, wishType string, categorySub uint32) ([]fieldcb.MtsItem, error) {
 	ws, err := mtswish.NewProcessor(l, ctx).GetByCharacterAndType(characterId, wishType)
 	if err != nil {
 		l.WithError(err).Errorf("Unable to load %s wishes for character [%d]; writing empty page.", wishType, characterId)
-		ws = nil
+		return nil, err
 	}
 	items := make([]fieldcb.MtsItem, 0, len(ws))
 	for _, w := range ws {
@@ -838,7 +865,7 @@ func wishItems(l logrus.FieldLogger, ctx context.Context, characterId uint32, wi
 		}
 		items = append(items, mtsItemFromWish(w))
 	}
-	return items
+	return items, nil
 }
 
 // ownAuctionItems loads the viewer's OWN active auction listings (My Page ->
@@ -846,20 +873,20 @@ func wishItems(l logrus.FieldLogger, ctx context.Context, characterId uint32, wi
 // Auction tab (section 3, which excludes the viewer's own listings), this view is
 // scoped to the viewer as the seller, so it browses with SellerId set and no
 // ExcludeSellerId. A REST error yields an empty list rather than blocking the page.
-func ownAuctionItems(l logrus.FieldLogger, ctx context.Context, s session.Model) []fieldcb.MtsItem {
+func ownAuctionItems(l logrus.FieldLogger, ctx context.Context, s session.Model) ([]fieldcb.MtsItem, error) {
 	ms, err := mtslisting.NewProcessor(l, ctx).Browse(s.WorldId(), mtslisting.BrowseFilter{
 		SellerId: s.CharacterId(),
 		SaleType: itcSaleTypeAuction,
 	})
 	if err != nil {
 		l.WithError(err).Errorf("Unable to browse own MTS auctions for character [%d]; writing empty page.", s.CharacterId())
-		ms = nil
+		return nil, err
 	}
 	items := make([]fieldcb.MtsItem, 0, len(ms))
 	for _, m := range ms {
 		items = append(items, mtsItemFromListing(m))
 	}
-	return items
+	return items, nil
 }
 
 // wantedWorldItems loads ALL want-ads in the viewer's world, across every
@@ -970,8 +997,15 @@ func emitRemoveWishByWishSerial(l logrus.FieldLogger, ctx context.Context, wp wr
 func writeWishOffers(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, s session.Model, wishSerial uint32) {
 	ms, err := mtslisting.NewProcessor(l, ctx).Browse(s.WorldId(), mtslisting.BrowseFilter{OfferWishSerial: wishSerial})
 	if err != nil {
-		l.WithError(err).Errorf("Unable to browse offers for want-ad serial [%d] (character [%d]); writing empty list.", wishSerial, s.CharacterId())
-		ms = nil
+		// A genuine browse failure answering this client VIEW_WISH request sends the
+		// dedicated LoadWishSaleListFailed arm (mode 46) — the CITC::OnNormalItemResult
+		// failure path — rather than an empty LoadWishSaleListDone.
+		l.WithError(err).Errorf("Unable to browse offers for want-ad serial [%d] (character [%d]); writing failed arm.", wishSerial, s.CharacterId())
+		failBody := fieldpkt.MtsOperationLoadWishSaleListFailedBody()
+		if aerr := session.Announce(l)(ctx)(wp)(fieldcb.MtsOperationWriter)(failBody)(s); aerr != nil {
+			l.WithError(aerr).Errorf("Unable to announce MTS want-ad offers-failed to character [%d].", s.CharacterId())
+		}
+		return
 	}
 
 	items := make([]fieldcb.MtsItem, 0, len(ms))

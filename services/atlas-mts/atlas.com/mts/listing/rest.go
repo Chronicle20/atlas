@@ -47,10 +47,10 @@ type RestModel struct {
 	ListValue      uint32  `json:"listValue"`
 	BuyNowPrice    *uint32 `json:"buyNowPrice,omitempty"`
 	CommissionRate float64 `json:"commissionRate"`
-	// ContractFee is the buyer-visible fee on top of the current price
-	// (markedUp(base)-base, base = currentBid for auctions else listValue). The
-	// channel adds it into the client's price column. Populated by the browse/get
-	// handlers (they hold the tenant commissionBase); Transform alone leaves it 0.
+	// ContractFee is obsolete under the commission-inclusive pricing model: prices
+	// are now all-in (the commission was baked in once at list time), so there is
+	// no separate buyer-visible fee to add on top. The field stays on the wire (the
+	// channel still reads it) but is always 0.
 	ContractFee uint32 `json:"contractFee"`
 	Category    string `json:"category"`
 	SubCategory string `json:"subCategory"`
@@ -162,26 +162,4 @@ func Transform(m Model) (RestModel, error) {
 		CreatedAt:      m.CreatedAt(),
 		UpdatedAt:      m.UpdatedAt(),
 	}, nil
-}
-
-// withContractFee stamps the buyer-visible fee (markedUp(listValue)-listValue)
-// onto a FIXED-sale REST model, so the client's price column shows nPrice +
-// nContractFee = the true final cost. commissionBase is the tenant flat NX fee
-// (the caller reads it once from tenant config).
-//
-// Auctions carry NO contract fee (0). The v83 client already computes the
-// buyer's commission itself for the bid dialog's "Your Bid" line
-// (CITCBidAuctionDlg::GetPriceWithCommision = commissionBase +
-// (commissionRate+100)*bid/100, IDA-verified v95 0x58b5e0), so adding
-// nContractFee would double-count it onto the "Highest Bid" column — and on a
-// no-bid auction (nBidPrice = the opening price, the bid floor) it inflated the
-// displayed opening price (e.g. 1000 -> 1570). The fee is realised at settle via
-// markedUp on the escrow, not shown on the bid line.
-func withContractFee(rm RestModel, commissionBase uint32) RestModel {
-	if rm.SaleType == string(SaleTypeAuction) {
-		rm.ContractFee = 0
-		return rm
-	}
-	rm.ContractFee = markedUp(rm.ListValue, rm.CommissionRate, commissionBase) - rm.ListValue
-	return rm
 }

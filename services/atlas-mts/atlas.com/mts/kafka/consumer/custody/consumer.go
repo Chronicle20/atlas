@@ -1,6 +1,7 @@
 package custody
 
 import (
+	"atlas-mts/configuration"
 	"atlas-mts/holding"
 	consumer2 "atlas-mts/kafka/consumer"
 	msg "atlas-mts/kafka/message"
@@ -108,6 +109,18 @@ func handleAcceptToMtsListing(pf providerFn) func(db *gorm.DB) message.Handler[c
 
 				t := tenant.MustFromContext(ctx)
 				tid := t.Id()
+				cfg := configuration.GetRegistry().GetTenantConfig(l, ctx, tid)
+
+				// Mark up the seller-supplied BASE prices ONCE here, at listing-creation
+				// time: the new commission-inclusive pricing model stores/transacts
+				// everything in MARKET units thereafter (browse/bid/buy see and pay the
+				// market price as-is, with no second markup down the line).
+				marketListValue := listing.MarkedUp(b.ListValue, b.CommissionRate, cfg.CommissionBase())
+				var marketBuyNowPrice *uint32
+				if b.BuyNowPrice != nil {
+					mv := listing.MarkedUp(*b.BuyNowPrice, b.CommissionRate, cfg.CommissionBase())
+					marketBuyNowPrice = &mv
+				}
 
 				// The GET_ITC_LIST browse filters listings by (category, subCategory),
 				// which mirror the client's browse "tab" and "type":
@@ -127,14 +140,14 @@ func handleAcceptToMtsListing(pf providerFn) func(db *gorm.DB) message.Handler[c
 				}
 
 				// Auctions display their price and compute the first-bid floor off the
-				// current bid; seed it to the starting bid (listValue) until a real bid
-				// arrives, matching the seed route's SetCurrentBid(startingBid). Without
-				// this the client shows price 0, suggests a sub-floor bid, and the bid is
-				// rejected as a "consecutive bid" (task-102 live finding). Fixed sales
-				// have no bid, so it stays 0.
+				// current bid; seed it to the market starting bid (marketListValue) until
+				// a real bid arrives, matching the seed route's
+				// SetCurrentBid(startingBid). Without this the client shows price 0,
+				// suggests a sub-floor bid, and the bid is rejected as a "consecutive
+				// bid" (task-102 live finding). Fixed sales have no bid, so it stays 0.
 				var currentBid uint32
 				if b.SaleType == string(listing.SaleTypeAuction) {
-					currentBid = b.ListValue
+					currentBid = marketListValue
 				}
 
 				m, berr := listing.NewBuilder(tid, world.Id(b.WorldId), b.SellerId).
@@ -167,8 +180,8 @@ func handleAcceptToMtsListing(pf providerFn) func(db *gorm.DB) message.Handler[c
 					SetRingId(b.RingId).
 					SetViciousCount(b.ViciousCount).
 					SetFlags(b.Flags).
-					SetListValue(b.ListValue).
-					SetBuyNowPrice(b.BuyNowPrice).
+					SetListValue(marketListValue).
+					SetBuyNowPrice(marketBuyNowPrice).
 					SetCommissionRate(b.CommissionRate).
 					SetCategory(category).
 					SetSubCategory(subCategory).

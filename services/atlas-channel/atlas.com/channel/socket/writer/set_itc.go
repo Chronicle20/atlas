@@ -20,11 +20,18 @@ import (
 // CashShopOpenBody: the same CharacterData migrate-in block (built from the
 // character + buddylist + resolved map id) plus the account name, followed by
 // the ITC config values and the current server time. CStage::OnSetITC reads this
-// block and pushes the CITC stage so the in-game MTS view opens. The ITC config
-// values (listing fee, commission rate/base, auction min/max hours) are read
-// from the tenant's mts-configs configuration, falling back to defaults on a
-// fetch miss. The trailing server-now FILETIME seeds the client's ITC clock
-// (m_ftRel) so auction countdowns are correct — see the SetItcWriter doc.
+// block and pushes the CITC stage so the in-game MTS view opens. The listing fee
+// and auction min/max hours are read from the tenant's mts-configs configuration
+// (defaults on a fetch miss). The trailing server-now FILETIME seeds the client's
+// ITC clock (m_ftRel) so auction countdowns are correct — see the SetItcWriter doc.
+//
+// The client's commission rate/base (m_nCommissionRate / m_nCommissionBase) are
+// sent as ZERO on purpose: commission is baked into the listing price at list time
+// (atlas-mts stores commission-inclusive "market" prices), so the client must NOT
+// re-apply it. With 0/0, CITCBidAuctionDlg::GetPriceWithCommision returns the bid
+// as-is, so "Your Bid" = highest bid + increment, and the buyer pays exactly the
+// shown price. The real commission is realised server-side (markedUp at list, the
+// seller nets UnMarkUp at settle).
 func SetItcBody(a account.Model, c character.Model, bl buddylist.Model) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 		return func(options map[string]interface{}) []byte {
@@ -33,8 +40,8 @@ func SetItcBody(a account.Model, c character.Model, bl buddylist.Model) packet.E
 			cfg := configuration.GetRegistry().GetTenantConfig(l, ctx, t.Id())
 			return fieldcb.NewSetItcWithConfig(cd, a.Name(),
 				cfg.ListingFee(),
-				uint32(cfg.CommissionRate()*100),
-				cfg.CommissionBase(),
+				0, // m_nCommissionRate: prices are already commission-inclusive; client must not re-apply
+				0, // m_nCommissionBase: same
 				uint32(cfg.AuctionMinHours()),
 				uint32(cfg.AuctionMaxHours()),
 				packetmodel.MsTimeBytes(time.Now()),

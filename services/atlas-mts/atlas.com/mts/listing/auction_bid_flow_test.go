@@ -25,8 +25,9 @@ const (
 )
 
 // newBidProcessor builds a listing processor wired to a capturing saga emitter and
-// seeds one active auction listing (listValue 1000, commissionRate 0.10 ->
-// markedUp factor 1.1, minIncrement 100, no bids yet) and returns its id.
+// seeds one active auction listing (listValue 1000 — a MARKET, commission-
+// inclusive price under the new pricing model — commissionRate 0.10,
+// minIncrement 100, no bids yet) and returns its id.
 func newBidProcessor(t *testing.T) (listing.Processor, *captureEmitter, *gorm.DB, uuid.UUID, func()) {
 	t.Helper()
 	logger := logrus.New()
@@ -146,7 +147,8 @@ func TestPlaceBidRejectsBelowIncrement(t *testing.T) {
 
 // TestPlaceBidEscrowsMarkedUp asserts a first valid bid records a held bid (with a
 // fresh escrowTxnId), updates the listing currentBid/highBidder, and emits a single
-// MtsBidEscrow step holding the MARKED-UP amount (negative).
+// MtsBidEscrow step holding the bid amount AS-IS (negative, no markup — the
+// listing's prices are already market/commission-inclusive under the new model).
 func TestPlaceBidEscrowsMarkedUp(t *testing.T) {
 	p, emitter, db, listingId, cleanup := newBidProcessor(t)
 	defer cleanup()
@@ -173,13 +175,14 @@ func TestPlaceBidEscrowsMarkedUp(t *testing.T) {
 		t.Fatalf("held bids = %d, want 1", len(held))
 	}
 	if held[0].Amount() != 1000 {
-		t.Errorf("held bid amount = %d, want 1000 (the bid, not the marked-up escrow)", held[0].Amount())
+		t.Errorf("held bid amount = %d, want 1000 (the bid, same figure as the escrow)", held[0].Amount())
 	}
 	if held[0].EscrowTxnId() == uuid.Nil {
 		t.Error("held bid escrowTxnId is nil; want a fresh uuid")
 	}
 
-	// Single MtsBidEscrow step holding the MARKED-UP amount (1000 * 1.10 = 1100), negative.
+	// Single MtsBidEscrow step holding the RAW bid amount (1000), negative — no
+	// markup under the new commission-inclusive pricing model.
 	if !emitter.called {
 		t.Fatal("expected an escrow saga to be emitted")
 	}
@@ -197,8 +200,8 @@ func TestPlaceBidEscrowsMarkedUp(t *testing.T) {
 	if !ok {
 		t.Fatalf("payload type = %T, want MtsBidEscrowPayload", sg.Steps[0].Payload)
 	}
-	if ep.Amount != -1600 {
-		t.Errorf("escrow amount = %d, want -1600 (marked-up hold: ceil(1000*1.10)+500 base)", ep.Amount)
+	if ep.Amount != -1000 {
+		t.Errorf("escrow amount = %d, want -1000 (raw hold, no markup: prices are already market)", ep.Amount)
 	}
 	if ep.BidderId != bidderForBid || ep.BidderAccountId != bidderAcctForBid {
 		t.Errorf("escrow bidder = (%d,%d), want (%d,%d)", ep.BidderId, ep.BidderAccountId, bidderForBid, bidderAcctForBid)
@@ -213,18 +216,19 @@ func TestPlaceBidEscrowsMarkedUp(t *testing.T) {
 }
 
 // TestPlaceBidOutbidReleasesPrior asserts an outbid emits a RELEASE escrow
-// (positive marked-up amount) for the prior bidder and marks their bid released.
+// (positive, raw amount — no markup) for the prior bidder and marks their bid
+// released.
 func TestPlaceBidOutbidReleasesPrior(t *testing.T) {
 	p, emitter, db, listingId, cleanup := newBidProcessor(t)
 	defer cleanup()
 
-	// Prior high bid at 1000 (markedUp = ceil(1000*1.10)+500 = 1600).
+	// Prior high bid at 1000 (raw hold: -1000).
 	if _, err := p.PlaceBid(bidRequest(listingId, priorBidder, priorBidderAcct, 1000)); err != nil {
 		t.Fatalf("prior bid: %v", err)
 	}
 	emitter.called = false
 
-	// Outbid at 1200 (>= 1000 + 100). markedUp = ceil(1200*1.10)+500 = 1820.
+	// Outbid at 1200 (>= 1000 + 100). Raw hold: -1200.
 	res, err := p.PlaceBid(bidRequest(listingId, bidderForBid, bidderAcctForBid, 1200))
 	if err != nil {
 		t.Fatalf("outbid: %v", err)
@@ -254,8 +258,9 @@ func TestPlaceBidOutbidReleasesPrior(t *testing.T) {
 		t.Errorf("held bids = %+v, want exactly the new bidder's", held)
 	}
 
-	// The emitted saga(s) must include: a hold for the new bidder (-1820) AND a
-	// release for the prior bidder (+1600). The release marks the prior escrow freed.
+	// The emitted saga(s) must include: a hold for the new bidder (-1200) AND a
+	// release for the prior bidder (+1000). The release marks the prior escrow
+	// freed. Both are raw bid amounts — no markup under the new pricing model.
 	if !emitter.called {
 		t.Fatal("expected an escrow saga on outbid")
 	}
@@ -267,18 +272,18 @@ func TestPlaceBidOutbidReleasesPrior(t *testing.T) {
 			}
 			ep := st.Payload.(sharedsaga.MtsBidEscrowPayload)
 			switch {
-			case ep.Amount == -1820 && ep.BidderId == bidderForBid:
+			case ep.Amount == -1200 && ep.BidderId == bidderForBid:
 				sawHold = true
-			case ep.Amount == 1600 && ep.BidderId == priorBidder:
+			case ep.Amount == 1000 && ep.BidderId == priorBidder:
 				sawRelease = true
 			}
 		}
 	}
 	if !sawHold {
-		t.Error("expected a -1820 hold for the new bidder")
+		t.Error("expected a -1200 hold for the new bidder")
 	}
 	if !sawRelease {
-		t.Error("expected a +1600 release for the prior bidder")
+		t.Error("expected a +1000 release for the prior bidder")
 	}
 
 	// Listing high bid advanced.
@@ -289,10 +294,13 @@ func TestPlaceBidOutbidReleasesPrior(t *testing.T) {
 }
 
 // TestSettleAuctionAtExpiryCreditsSellerNoDoubleDebit asserts the settle-at-expiry
-// path for an auction WITH a high bidder credits the seller points (+listValue),
-// moves custody to the winner, marks the winning bid won, and does NOT re-debit the
-// winner (the debit happened at bid time). The emitted saga MUST NOT contain any
-// negative AwardCurrency / MtsBidEscrow for the winner.
+// path for an auction WITH a high bidder credits the seller points
+// (+UnMarkUp(winningBid)), moves custody to the winner, marks the winning bid won,
+// and does NOT re-debit the winner (the debit happened at bid time). The emitted
+// saga MUST NOT contain any negative AwardCurrency / MtsBidEscrow for the winner.
+//
+// The winning bid is the market price 1000; the seller nets the base:
+// UnMarkUp(1000, rate=0.10, base=500) = uint32((1000-500)/1.10) = 454.
 func TestSettleAuctionAtExpiryCreditsSellerNoDoubleDebit(t *testing.T) {
 	p, emitter, db, listingId, cleanup := newBidProcessor(t)
 	defer cleanup()
@@ -322,7 +330,8 @@ func TestSettleAuctionAtExpiryCreditsSellerNoDoubleDebit(t *testing.T) {
 		t.Errorf("won bids = %+v, want the winner's", won)
 	}
 
-	// Saga: seller-credit (+listValue points) + move-to-winner-holding. NO buyer debit.
+	// Saga: seller-credit (+UnMarkUp(winningBid) points) + move-to-winner-holding.
+	// NO buyer debit.
 	if !emitter.called {
 		t.Fatal("expected a settle saga")
 	}
@@ -335,7 +344,7 @@ func TestSettleAuctionAtExpiryCreditsSellerNoDoubleDebit(t *testing.T) {
 			if ap.Amount < 0 {
 				t.Errorf("settle contains a NEGATIVE AwardCurrency (%+v) — winner double-debited", ap)
 			}
-			if ap.Amount == 1000 && ap.AccountId == sellerAcctForBid {
+			if ap.Amount == 454 && ap.AccountId == sellerAcctForBid {
 				sawSellerCredit = true
 			}
 		case sharedsaga.MtsBidEscrow:
@@ -351,7 +360,7 @@ func TestSettleAuctionAtExpiryCreditsSellerNoDoubleDebit(t *testing.T) {
 		}
 	}
 	if !sawSellerCredit {
-		t.Error("expected a +1000 points credit to the seller")
+		t.Error("expected a +454 points credit to the seller (UnMarkUp(1000))")
 	}
 	if !sawMove {
 		t.Error("expected a move-to-holding for the winner")
@@ -426,7 +435,7 @@ func TestSettleAuctionTwiceCreditsSellerOnce(t *testing.T) {
 		for _, st := range sg.Steps {
 			if st.Action == sharedsaga.AwardCurrency {
 				ap := st.Payload.(sharedsaga.AwardCurrencyPayload)
-				if ap.AccountId == sellerAcctForBid && ap.Amount == 1000 {
+				if ap.AccountId == sellerAcctForBid && ap.Amount == 454 {
 					sellerCredits++
 				}
 			}

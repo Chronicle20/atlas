@@ -552,22 +552,22 @@ const (
 //     rejected — the buy cannot proceed). The seller characterId, listValue, and
 //     commissionRate are taken from the row (server-authoritative, captured at
 //     list time), never from the caller.
-//  2. Compute the marked-up price markedUp = ceil(listValue * (1 + commissionRate)).
-//     Rounding is round-UP (ceil): a fractional NX is rounded toward the sink, so
-//     the buyer always pays at least the exact commission and the marketplace
-//     never under-charges. NX is integer, so a documented, consistent rule is
-//     required; ceil favors the sink (the un-credited commission).
-//  3. Pre-check the buyer's NX Prepaid balance >= markedUp. This is a best-effort
-//     gate that fails fast on an obviously under-funded buy; the saga's
-//     debit-first AwardCurrency step is the AUTHORITATIVE enforcement (if the
-//     balance changed between the read and the debit, the first saga step fails,
-//     the saga aborts, and nothing is granted or moved).
+//  2. The listing's listValue/buyNowPrice are ALREADY market (commission-
+//     inclusive) prices — the commission was baked in once at list time (see the
+//     custody consumer's AcceptToMtsListing). So priceBasis IS the price the buyer
+//     pays; there is no second markup here.
+//  3. Pre-check the buyer's NX Prepaid balance >= priceBasis. This is a
+//     best-effort gate that fails fast on an obviously under-funded buy; the
+//     saga's debit-first AwardCurrency step is the AUTHORITATIVE enforcement (if
+//     the balance changed between the read and the debit, the first saga step
+//     fails, the saga aborts, and nothing is granted or moved).
 //  4. Emit a single MtsSettlePurchase composite. The orchestrator expands it
-//     debit-first: award_currency(buyer prepaid, -markedUp) FIRST so a mid-saga
-//     failure grants nothing, then award_currency(seller points, +listValue),
-//     then mts_move_listing_to_holding(buyer). The item lands in the buyer's
-//     mts holding (origin=purchased), NEVER inventory. Commission =
-//     markedUp - listValue is never credited to anyone — it is the sink.
+//     debit-first: award_currency(buyer prepaid, -priceBasis) FIRST so a mid-saga
+//     failure grants nothing, then award_currency(seller points,
+//     +UnMarkUp(priceBasis)), then mts_move_listing_to_holding(buyer). The item
+//     lands in the buyer's mts holding (origin=purchased), NEVER inventory.
+//     Commission = priceBasis - UnMarkUp(priceBasis) is never credited to anyone
+//     — it is the sink.
 //
 // Buy does NOT mutate the listing row or create any holding directly; those
 // effects happen only via the orchestrator-driven move step (which marks the
@@ -584,8 +584,8 @@ func (p *ProcessorImpl) Buy(req BuyRequest) error {
 	// Price basis: a plain buy settles at the listing's listValue (the fixed-price
 	// value). A buy-now (BUY_AUCTION_IMM) settles at the listing's buyNowPrice — the
 	// immediate-buyout price — which is only meaningful on an auction that carries
-	// one. The basis becomes the seller credit (ListValue in the settle payload) and
-	// the marked-up figure the buyer pays; the commission stays the sink.
+	// one. Both are MARKET (commission-inclusive) prices, so priceBasis is exactly
+	// what the buyer pays; the seller credit is derived via UnMarkUp below.
 	priceBasis := lm.ListValue()
 	if req.BuyNow {
 		if lm.SaleType() != SaleTypeAuction || lm.BuyNowPrice() == nil {
@@ -593,26 +593,19 @@ func (p *ProcessorImpl) Buy(req BuyRequest) error {
 		}
 		priceBasis = *lm.BuyNowPrice()
 	}
-	listValue := priceBasis
-	// The buyer pays a marked-up price = ceil(priceBasis * (1 + commissionRate)) +
-	// commissionBase — i.e. the list price + 7% + a flat 500 NX (the in-game guide's
-	// "500 NX + 7% of list price"; client m_nCommissionBase/m_nCommissionRate). The
-	// seller still receives only listValue; the markup (base + rate%) is the sink.
-	// Ceil rounds the fractional NX toward the sink so the buyer never under-pays.
 	t, terr := tenant.FromContext(p.ctx)()
 	if terr != nil {
 		return terr
 	}
 	cfg := configuration.GetRegistry().GetTenantConfig(p.l, p.ctx, t.Id())
-	markedUp := uint32(math.Ceil(float64(priceBasis)*(1.0+lm.CommissionRate()))) + cfg.CommissionBase()
 
 	// Best-effort pre-check; the saga's first (debit) step is the authoritative gate.
 	prepaid, err := p.balance.PrepaidBalance(req.BuyerAccountId)
 	if err != nil {
 		return fmt.Errorf("read buyer %d prepaid balance: %w", req.BuyerAccountId, err)
 	}
-	if prepaid < markedUp {
-		return fmt.Errorf("buyer %d prepaid %d is below the marked-up price %d: %w", req.BuyerAccountId, prepaid, markedUp, ErrInsufficientPrepaid)
+	if prepaid < priceBasis {
+		return fmt.Errorf("buyer %d prepaid %d is below the market price %d: %w", req.BuyerAccountId, prepaid, priceBasis, ErrInsufficientPrepaid)
 	}
 
 	transactionId := uuid.New()
@@ -623,10 +616,10 @@ func (p *ProcessorImpl) Buy(req BuyRequest) error {
 		SetInitiatedBy(fmt.Sprintf("character_%d", req.BuyerId))
 
 	// One composite step: MtsSettlePurchase. The orchestrator owns the debit-first
-	// ordering of the expansion (buyer prepaid -markedUp, seller points +listValue,
-	// move-to-holding). Commission (markedUp - listValue) is never credited: the
-	// payload only ever carries listValue as the seller credit, so the difference is
-	// the sink.
+	// ordering of the expansion (buyer prepaid -priceBasis, seller points
+	// +UnMarkUp(priceBasis), move-to-holding). Commission is never credited: the
+	// payload only ever carries the un-marked-up base as the seller credit, so the
+	// difference stays the sink.
 	builder.AddStep("mts_settle_purchase", saga.Pending, saga.MtsSettlePurchase, saga.MtsSettlePurchasePayload{
 		TransactionId:   transactionId,
 		ListingId:       req.ListingId,
@@ -635,8 +628,8 @@ func (p *ProcessorImpl) Buy(req BuyRequest) error {
 		BuyerAccountId:  req.BuyerAccountId,
 		SellerId:        lm.SellerId(),
 		SellerAccountId: req.SellerAccountId,
-		MarkedUpPrice:   int32(markedUp),
-		ListValue:       int32(listValue),
+		MarkedUpPrice:   int32(priceBasis),
+		ListValue:       int32(UnMarkUp(priceBasis, lm.CommissionRate(), cfg.CommissionBase())),
 	})
 
 	// Timeout MUST be set explicitly and scaled for N=3: the MtsSettlePurchase
@@ -647,15 +640,27 @@ func (p *ProcessorImpl) Buy(req BuyRequest) error {
 	return p.emitter.Create(builder.Build())
 }
 
-// markedUp returns ceil(amount * (1 + commissionRate)) + commissionBase — the
-// price the buyer/bidder pays: the amount plus the rate% plus the flat NX base
-// (the in-game "500 NX + 7%"). It mirrors Buy's rounding rule: round UP so the
-// fractional NX falls toward the sink and the bidder/buyer never under-pays. Used
-// by both the bid escrow (marked-up hold at bid time) and the outbid release
-// (release the SAME marked-up amount that was held), so a release exactly
-// reverses its hold.
-func markedUp(amount uint32, commissionRate float64, commissionBase uint32) uint32 {
+// MarkedUp returns ceil(amount * (1 + commissionRate)) + commissionBase — the
+// market (commission-inclusive) price derived from a base amount. It mirrors the
+// list-time markup rule: round UP so the fractional NX falls toward the sink.
+// Exported so the custody consumer can mark up the seller-supplied base prices
+// ONCE at listing-creation time (the new commission-inclusive pricing model
+// stores/transacts everything in market units thereafter).
+func MarkedUp(amount uint32, commissionRate float64, commissionBase uint32) uint32 {
 	return uint32(math.Ceil(float64(amount)*(1.0+commissionRate))) + commissionBase
+}
+
+// UnMarkUp inverts MarkedUp: given a market (commission-inclusive) price, it
+// returns the base amount the seller nets (the platform keeps the difference as
+// commission). If market does not exceed the flat commissionBase there is no
+// base left for the seller (0). This is an approximate inverse of the ceil-based
+// MarkedUp (float division, truncated to uint32), used at settlement time to
+// compute the seller's credit from a stored market price.
+func UnMarkUp(market uint32, commissionRate float64, commissionBase uint32) uint32 {
+	if market <= commissionBase {
+		return 0
+	}
+	return uint32(float64(market-commissionBase) / (1.0 + commissionRate))
 }
 
 // bidEscrowTimeout scales the single-step escrow saga's timeout. MtsBidEscrow is a
@@ -682,13 +687,15 @@ func bidEscrowTimeout() time.Duration {
 //     concurrent bid won). On a win, a held Bid is recorded with a fresh escrow txn
 //     id, and — if there was a prior high bidder — that bidder's held Bid is marked
 //     released in the same tx.
-//  4. Emit MtsBidEscrow{-markedUp} to HOLD the new bidder's prepaid (the MARKED-UP
-//     amount, so the winner's settlement matches buy-now). On an outbid, emit a
-//     second MtsBidEscrow{+markedUpPrior} to RELEASE the prior bidder's escrow.
+//  4. Emit MtsBidEscrow{-req.Amount} to HOLD the new bidder's prepaid. req.Amount
+//     is already a MARKET (commission-inclusive) bid — the listing's listValue/
+//     currentBid are market prices too, so the hold is the bid AS-IS, no second
+//     markup. On an outbid, emit a second MtsBidEscrow{+priorBid} to RELEASE the
+//     prior bidder's escrow — the exact raw amount that was held for their bid.
 //
-// PlaceBid escrows the marked-up amount but records the raw bid on the Bid row
-// (the row tracks the auction bid; the marked-up figure is the wallet hold). The
-// escrow keys off the Bid's escrowTxnId so a release reverses the exact hold.
+// PlaceBid escrows the bid amount as-is and records it on the Bid row too (both
+// are the same market figure now). The escrow keys off the Bid's escrowTxnId so a
+// release reverses the exact hold.
 func (p *ProcessorImpl) PlaceBid(req BidRequest) (BidResult, error) {
 	lm, err := GetById(req.ListingId.String())(p.db.WithContext(p.ctx))()
 	if err != nil {
@@ -718,8 +725,6 @@ func (p *ProcessorImpl) PlaceBid(req BidRequest) (BidResult, error) {
 
 	escrowTxnId := uuid.New()
 	t := tenant.MustFromContext(p.ctx)
-	// commissionBase (flat NX added to the marked-up hold/release) from config.
-	commissionBase := configuration.GetRegistry().GetTenantConfig(p.l, p.ctx, t.Id()).CommissionBase()
 
 	// One local tx: the CAS advance (race arbiter) + record the held bid + mark the
 	// prior bid released. Composing them guarantees the bid can never half-commit
@@ -778,7 +783,8 @@ func (p *ProcessorImpl) PlaceBid(req BidRequest) (BidResult, error) {
 		return BidResult{}, fmt.Errorf("bid for listing %s lost the high-bid race (current bid advanced); rejected", req.ListingId)
 	}
 
-	// HOLD the new bidder's prepaid by the MARKED-UP amount (single-step saga, N=1).
+	// HOLD the new bidder's prepaid by the bid amount AS-IS (single-step saga, N=1).
+	// req.Amount is already a market (commission-inclusive) price — no second markup.
 	holdTxnId := escrowTxnId
 	holdBuilder := saga.NewBuilder().
 		SetTransactionId(holdTxnId).
@@ -789,16 +795,16 @@ func (p *ProcessorImpl) PlaceBid(req BidRequest) (BidResult, error) {
 		ListingId:       req.ListingId,
 		BidderId:        req.BidderId,
 		BidderAccountId: req.BidderAccountId,
-		Amount:          -int32(markedUp(req.Amount, lm.CommissionRate(), commissionBase)),
+		Amount:          -int32(req.Amount),
 	})
 	holdBuilder.SetTimeout(bidEscrowTimeout())
 	if err := p.emitter.Create(holdBuilder.Build()); err != nil {
 		return BidResult{}, err
 	}
 
-	// On an outbid, RELEASE the prior bidder's escrow by the SAME marked-up amount
-	// that was held for THEIR bid (priorBid * (1 + commissionRate)) — a separate
-	// single-step saga (N=1). The release exactly reverses the prior hold.
+	// On an outbid, RELEASE the prior bidder's escrow by the SAME raw amount that
+	// was held for THEIR bid — a separate single-step saga (N=1). The release
+	// exactly reverses the prior hold (no markup on either side now).
 	if hasPrior {
 		releaseTxnId := uuid.New()
 		releaseBuilder := saga.NewBuilder().
@@ -810,7 +816,7 @@ func (p *ProcessorImpl) PlaceBid(req BidRequest) (BidResult, error) {
 			ListingId:       req.ListingId,
 			BidderId:        priorBidder,
 			BidderAccountId: priorAccount,
-			Amount:          int32(markedUp(priorBid, lm.CommissionRate(), commissionBase)),
+			Amount:          int32(priorBid),
 		})
 		releaseBuilder.SetTimeout(bidEscrowTimeout())
 		if err := p.emitter.Create(releaseBuilder.Build()); err != nil {
@@ -841,17 +847,23 @@ func auctionSettleTimeout() time.Duration {
 // SettleAuction settles an expired auction. See the interface doc for semantics.
 //
 // Currency correctness (the crux): the winner's prepaid was ALREADY debited at bid
-// time (the MtsBidEscrow{-markedUp} hold). At settle the seller must be credited
-// +listValue (points) and the item moved to the winner — the winner is NOT
+// time (the MtsBidEscrow{-currentBid} hold, currentBid being a market price — no
+// markup). At settle the seller must be credited the WINNING bid's base
+// (UnMarkUp(currentBid)) and the item moved to the winner — the winner is NOT
 // re-debited. So the settle saga is exactly:
 //
-//  1. award_currency(seller account, currencyType=2 points, +listValue)
+//  1. award_currency(seller account, currencyType=2 points, +UnMarkUp(currentBid))
 //  2. mts_move_listing_to_holding(winner)  // marks listing sold + winner holding
 //
-// The commission (markedUp - listValue) stays as the sink: the winner's hold was
-// markedUp, only listValue flows to the seller, and the difference is never
-// credited to anyone. Reusing MtsSettlePurchase would inject a buyer-debit step
-// (prepaid -markedUp) and double-debit the winner — so it is deliberately NOT used.
+// The commission (currentBid - UnMarkUp(currentBid)) stays as the sink: the
+// winner's hold was the raw winning bid, only the un-marked-up base flows to the
+// seller, and the difference is never credited to anyone. Reusing
+// MtsSettlePurchase would inject a buyer-debit step (prepaid -currentBid) and
+// double-debit the winner — so it is deliberately NOT used.
+//
+// The seller credit is derived from the FINAL winning bid (lm.CurrentBid()), not
+// the starting listValue — the auction may have sold for more than its opening
+// price and the seller must be paid off the actual sale price.
 //
 // With NO high bidder the auction returns to the seller's holding via the local
 // Expire transition (origin=expired) and no money-mover is emitted.
@@ -871,7 +883,16 @@ func (p *ProcessorImpl) SettleAuction(req SettleRequest) (SettleResult, error) {
 	}
 
 	winner := lm.HighBidderId()
-	listValue := lm.ListValue()
+	winningBid := lm.CurrentBid()
+
+	// The tenant id is taken from the listing ROW (lm.TenantId()), not from
+	// tenant.FromContext(p.ctx): SettleAuction is invoked by the cross-tenant
+	// expiration sweep under database.WithoutTenantFilter, whose context carries
+	// no reconstructable tenant.Model (see the Sweep doc comment). Reading the
+	// commissionBase off the row's own tenant id keeps this call
+	// tenant-self-describing, mirroring transitionToSellerHolding.
+	cfg := configuration.GetRegistry().GetTenantConfig(p.l, p.ctx, lm.TenantId())
+	sellerCredit := UnMarkUp(winningBid, lm.CommissionRate(), cfg.CommissionBase())
 
 	// The seller-points credit is keyed by the seller's cash-shop account id. A
 	// zero account is the "not resolved" sentinel — crediting account 0 would be a
@@ -934,13 +955,14 @@ func (p *ProcessorImpl) SettleAuction(req SettleRequest) (SettleResult, error) {
 		SetSagaType(saga.MtsOperation).
 		SetInitiatedBy(fmt.Sprintf("character_%d", winner))
 
-	// Step 1: credit the seller's points by listValue (NO buyer debit — the winner
-	// was already debited at bid time).
+	// Step 1: credit the seller's points by UnMarkUp(winningBid) — the seller's base
+	// off the FINAL winning bid (NO buyer debit — the winner was already debited at
+	// bid time).
 	builder.AddStep("award_currency_seller", saga.Pending, saga.AwardCurrency, saga.AwardCurrencyPayload{
 		CharacterId:  lm.SellerId(),
 		AccountId:    req.SellerAccountId,
 		CurrencyType: saga.CurrencyTypePoints,
-		Amount:       int32(listValue),
+		Amount:       int32(sellerCredit),
 	})
 	// Step 2: move custody to the winner's holding (marks listing active->sold).
 	builder.AddStep("mts_move_listing_to_holding", saga.Pending, saga.MtsMoveListingToHolding, saga.MtsMoveListingToHoldingPayload{

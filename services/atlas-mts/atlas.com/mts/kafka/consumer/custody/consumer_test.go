@@ -126,7 +126,12 @@ func TestAcceptToMtsListing_CreatesListingAndAcks(t *testing.T) {
 	// Category is derived server-side from the templateId's inventory type
 	// (1302000 -> equip -> "1"), overriding the payload's "equip" string so the
 	// GET_ITC_LIST sub-tab filter (categorySub -> inventory type) matches.
-	if stored.ListValue() != 1000 || stored.CommissionRate() != 0.10 || stored.Category() != "1" {
+	//
+	// ListValue is now the MARKET (commission-inclusive) price, marked up ONCE at
+	// creation time: MarkedUp(1000, 0.10, commissionBase=500 default) =
+	// ceil(1000*1.10)+500 = 1600. CommissionRate is still carried as-is (needed to
+	// invert the markup at settle time via UnMarkUp).
+	if stored.ListValue() != 1600 || stored.CommissionRate() != 0.10 || stored.Category() != "1" {
 		t.Fatalf("sale params not persisted: lv=%d rate=%v cat=%s", stored.ListValue(), stored.CommissionRate(), stored.Category())
 	}
 

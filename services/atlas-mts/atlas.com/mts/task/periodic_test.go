@@ -180,10 +180,12 @@ func (e *captureEmitter) Create(s saga.Saga) error {
 
 // TestSweep_SettlesExpiredAuctionWithWinner asserts an expired auction WITH a high
 // bidder is settled to the winner: the winning held bid is marked won, and the
-// emitted saga credits the seller's points (+listValue) and moves custody to the
-// winner WITHOUT re-debiting the winner (no negative AwardCurrency / no
-// MtsBidEscrow / no MtsSettlePurchase). The seller account is read from the
+// emitted saga credits the seller's points (+UnMarkUp(winningBid)) and moves
+// custody to the winner WITHOUT re-debiting the winner (no negative AwardCurrency
+// / no MtsBidEscrow / no MtsSettlePurchase). The seller account is read from the
 // listing row (captured at list time); the winner account from the held bid row.
+// The winning bid (currentBid) is a MARKET price (1000); the seller nets the base
+// via UnMarkUp(1000, rate=0.10, base=500) = 454.
 func TestSweep_SettlesExpiredAuctionWithWinner(t *testing.T) {
 	db := test.SetupTestDB(t, listing.Migration, holding.Migration, bid.Migration)
 	defer test.CleanupTestDB(t, db)
@@ -203,6 +205,9 @@ func TestSweep_SettlesExpiredAuctionWithWinner(t *testing.T) {
 		winner        = uint32(8880002)
 		winnerAccount = uint32(88002)
 		listValue     = uint32(1000)
+		// sellerCredit is UnMarkUp(winningBid=1000, rate=0.10, base=500 default) =
+		// uint32((1000-500)/1.10) = 454 — the seller's base off the winning bid.
+		sellerCredit = uint32(454)
 	)
 	past := time.Now().Add(-time.Hour)
 
@@ -277,7 +282,7 @@ func TestSweep_SettlesExpiredAuctionWithWinner(t *testing.T) {
 			if ap.Amount < 0 {
 				t.Errorf("settle has a NEGATIVE AwardCurrency (%+v) — winner double-debited", ap)
 			}
-			if ap.Amount == int32(listValue) && ap.AccountId == sellerAccount {
+			if ap.Amount == int32(sellerCredit) && ap.AccountId == sellerAccount {
 				sawSellerCredit = true
 			}
 		case sharedsaga.MtsBidEscrow:
@@ -292,7 +297,7 @@ func TestSweep_SettlesExpiredAuctionWithWinner(t *testing.T) {
 		}
 	}
 	if !sawSellerCredit {
-		t.Errorf("expected a +%d points credit to the seller account %d", listValue, sellerAccount)
+		t.Errorf("expected a +%d points credit to the seller account %d", sellerCredit, sellerAccount)
 	}
 	if !sawMove {
 		t.Error("expected a move-to-holding for the winner")

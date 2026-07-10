@@ -444,16 +444,23 @@ func handleRegisterWish(pf providerFn) func(db *gorm.DB) message.Handler[mts.Com
 					SetId(b.WishId).
 					SetWorldId(world.Id(b.WorldId)).
 					SetType(wishType).
-					SetPrice(b.Price).
 					SetCount(b.Count)
-				// A "wanted" want-ad expires after the tenant's fixed-sale term
-				// (FixedSaleDurationHours, default 168h); the periodic sweep hard-deletes
-				// it once expired. A "cart" entry never expires (ExpiresAt left nil).
+				// A "wanted" want-ad's price is the poster's commission-INCLUSIVE total
+				// (the register dialog sends the raw typed amount — CRegisterWishEntryDlg::
+				// Confirm does no commission math). Store the BASE the offerer nets
+				// (UnMarkUp) so an offer credits base and the poster pays MarkedUp(base) ==
+				// the total; the commission is the platform's sink, like a normal buy. A
+				// "cart" entry's price is the favorited listing's list value (already base),
+				// stored as-is. A wanted entry also expires after the tenant fixed-sale term
+				// (the periodic sweep hard-deletes it); a cart entry never expires.
+				price := b.Price
 				if wishType == wish.TypeWanted {
 					cfg := configuration.GetRegistry().GetTenantConfig(l, ctx, t.Id())
+					price = listing.UnMarkUp(b.Price, cfg.CommissionRate(), cfg.CommissionBase())
 					exp := time.Now().Add(time.Duration(cfg.FixedSaleDurationHours()) * time.Hour)
 					wb = wb.SetExpiresAt(&exp)
 				}
+				wb = wb.SetPrice(price)
 				wm, berr := wb.Build()
 				if berr != nil {
 					return berr

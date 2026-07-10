@@ -768,6 +768,20 @@ func MarkedUp(amount uint32, commissionRate float64, commissionBase uint32) uint
 	return uint32(math.Ceil(float64(amount)*(1.0+commissionRate))) + commissionBase
 }
 
+// UnMarkUp is the inverse of MarkedUp: given a commission-INCLUSIVE total, it
+// returns the BASE the seller nets, so MarkedUp(UnMarkUp(total)) == total (modulo
+// rounding). base = floor((total - commissionBase) / (1 + commissionRate)),
+// floored at 0 when the total does not even cover the flat commission base. Used to
+// derive a want-ad's base offerer-payout from the poster's typed TOTAL price (the
+// register dialog sends the raw typed amount): the offerer nets base and the poster
+// pays MarkedUp(base) == the total, so the commission is the platform's sink.
+func UnMarkUp(total uint32, commissionRate float64, commissionBase uint32) uint32 {
+	if total <= commissionBase {
+		return 0
+	}
+	return uint32(math.Floor(float64(total-commissionBase) / (1.0 + commissionRate)))
+}
+
 // bidEscrowTimeout scales the single-step escrow saga's timeout. MtsBidEscrow is a
 // single-step wallet adjust (N=1): the orchestrator routes it straight to the
 // cash-shop wallet without expansion. A flat timeout is still wrong under a stressed

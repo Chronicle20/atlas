@@ -936,6 +936,14 @@ func (p *ProcessorImpl) PlaceBid(req BidRequest) (BidResult, error) {
 	priorBidder := lm.HighBidderId()
 	hasPrior := priorBidder != 0
 
+	// Reject a CONSECUTIVE bid: a player who is already the current high bidder may
+	// not bid again against themselves. Their escrow already covers the standing high
+	// bid, so a re-bid would only churn escrow. The channel maps this (generic reason)
+	// to the client's bare BidAuctionFailed arm — "you cannot make a consecutive bid".
+	if hasPrior && priorBidder == req.BidderId {
+		return BidResult{}, fmt.Errorf("bidder %d is already the high bidder on listing %s; %w", req.BidderId, req.ListingId, ErrConsecutiveBid)
+	}
+
 	// Floor: first bid clears listValue; subsequent clears currentBid + minIncrement.
 	var floor uint32
 	if hasPrior {

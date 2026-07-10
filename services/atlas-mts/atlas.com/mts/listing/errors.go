@@ -16,4 +16,10 @@ var (
 	// cancelled, expired, or lost a race) or is the wrong sale type for the
 	// attempted operation (client reason 'Q' = 81, "The item has been sold").
 	ErrListingUnavailable = errors.New("listing unavailable")
+
+	// ErrConsecutiveBid — the bidder is already the current high bidder, so bidding
+	// again against themselves is rejected. It maps to the generic bid-failure reason
+	// so the channel writes the client's bare BidAuctionFailed arm ("you cannot make
+	// a consecutive bid").
+	ErrConsecutiveBid = errors.New("consecutive bid by the current high bidder")
 )

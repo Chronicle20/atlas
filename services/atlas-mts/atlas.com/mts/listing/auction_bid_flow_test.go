@@ -6,6 +6,7 @@ import (
 	"atlas-mts/listing"
 	"atlas-mts/saga"
 	"atlas-mts/test"
+	"errors"
 	"testing"
 	"time"
 
@@ -144,6 +145,35 @@ func TestPlaceBidRejectsBelowIncrement(t *testing.T) {
 	held := findBids(t, db, listingId, bid.StateHeld)
 	if len(held) != 1 || held[0].BidderId() != priorBidder {
 		t.Errorf("held bids = %+v, want exactly the prior bidder's", held)
+	}
+}
+
+// TestPlaceBidRejectsConsecutiveBid asserts the current high bidder cannot bid again
+// against themselves — even above the floor — and gets ErrConsecutiveBid (which the
+// channel maps to the client's BidAuctionFailed "cannot make a consecutive bid" arm).
+func TestPlaceBidRejectsConsecutiveBid(t *testing.T) {
+	p, emitter, db, listingId, cleanup := newBidProcessor(t)
+	defer cleanup()
+
+	if _, err := p.PlaceBid(bidRequest(listingId, priorBidder, priorBidderAcct, 1000)); err != nil {
+		t.Fatalf("first bid: %v", err)
+	}
+	emitter.called = false
+
+	// Same bidder, comfortably above the floor (1100) — still rejected.
+	_, err := p.PlaceBid(bidRequest(listingId, priorBidder, priorBidderAcct, 1100))
+	if err == nil {
+		t.Fatal("expected a consecutive bid by the current high bidder to be rejected")
+	}
+	if !errors.Is(err, listing.ErrConsecutiveBid) {
+		t.Errorf("error = %v, want ErrConsecutiveBid", err)
+	}
+	if emitter.called {
+		t.Error("escrow saga emitted for a consecutive bid; expected none")
+	}
+	held := findBids(t, db, listingId, bid.StateHeld)
+	if len(held) != 1 || held[0].BidderId() != priorBidder {
+		t.Errorf("held bids = %+v, want exactly the first (unchanged) bid", held)
 	}
 }
 

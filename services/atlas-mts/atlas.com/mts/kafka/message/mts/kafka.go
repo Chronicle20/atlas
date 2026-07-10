@@ -288,6 +288,11 @@ type StatusEventListingSoldBody struct {
 	SellerId  uint32    `json:"sellerId"`
 	BuyerId   uint32    `json:"buyerId"`
 	ItemId    uint32    `json:"itemId"`
+	// SaleType distinguishes a normal buy (fixed/auction) from an offer purchase
+	// ("offer"): the channel routes an offer sale to BuyWishDone (want-ad accept)
+	// instead of BuyItemDone, and it triggers the seller-side want-ad consume +
+	// sibling-offer release.
+	SaleType string `json:"saleType"`
 }
 
 // StatusEventListingExpiredBody reports an expired listing.

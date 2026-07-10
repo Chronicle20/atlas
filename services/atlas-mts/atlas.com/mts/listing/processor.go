@@ -208,6 +208,12 @@ type Processor interface {
 	// With NO bids it returns the item to the seller's holding via the local Expire
 	// transition (origin=expired). The outcome is reported in SettleResult.
 	SettleAuction(req SettleRequest) (SettleResult, error)
+	// ReleaseSiblingOffers un-escrows every OTHER active offer on a want-ad back to
+	// its offerer's Transfer Inventory (holding) — invoked when one offer on the
+	// want-ad is bought, so the losing offers are returned rather than left
+	// escrowed. Each release reuses the race-safe Cancel transition; best-effort
+	// (a per-sibling failure is logged and the rest proceed).
+	ReleaseSiblingOffers(worldId world.Id, wishSerial uint32, exceptId uuid.UUID)
 }
 
 type ProcessorImpl struct {
@@ -350,6 +356,34 @@ func (p *ProcessorImpl) Cancel(id string) (CancelResult, error) {
 		}
 	}
 	return res, nil
+}
+
+// ReleaseSiblingOffers un-escrows every OTHER active offer on the want-ad
+// (offer_wish_serial == wishSerial) back to its offerer's holding by reusing the
+// race-safe Cancel transition. exceptId is the just-bought offer (already settling
+// to the buyer). A wishSerial of 0 (a non-offer sale) is a no-op. Best-effort: a
+// failure to load the set, or to release any one sibling, is logged and does not
+// abort the rest — the losing offer stays escrowed and is reclaimable by its
+// offerer (Not-Yet-Sold cancel) or via the fixed-term expiry sweep.
+func (p *ProcessorImpl) ReleaseSiblingOffers(worldId world.Id, wishSerial uint32, exceptId uuid.UUID) {
+	if wishSerial == 0 {
+		return
+	}
+	// Only offer listings carry a non-zero offer_wish_serial, so filtering on it
+	// (active state) yields exactly the offers competing for this want-ad.
+	siblings, err := p.Browse(worldId, StateActive, BrowseFilter{OfferWishSerial: wishSerial})
+	if err != nil {
+		p.l.WithError(err).Errorf("Unable to load sibling offers for want-ad serial [%d]; leaving them escrowed.", wishSerial)
+		return
+	}
+	for _, s := range siblings {
+		if s.Id() == exceptId {
+			continue
+		}
+		if _, cerr := p.Cancel(s.Id().String()); cerr != nil {
+			p.l.WithError(cerr).Errorf("Unable to release sibling offer [%s] on want-ad serial [%d]; leaving it escrowed.", s.Id().String(), wishSerial)
+		}
+	}
 }
 
 // Expire runs the SAME race-safe active->holding(seller) transition as Cancel but

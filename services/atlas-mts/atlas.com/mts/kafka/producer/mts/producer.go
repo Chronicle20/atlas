@@ -78,7 +78,7 @@ func OutbidStatusEventProvider(transactionId uuid.UUID, worldId byte, listingId 
 }
 
 // ListingSoldStatusEventProvider builds a LISTING_SOLD event.
-func ListingSoldStatusEventProvider(transactionId uuid.UUID, worldId byte, listingId uuid.UUID, sellerId uint32, buyerId uint32, itemId uint32) model.Provider[[]kafka.Message] {
+func ListingSoldStatusEventProvider(transactionId uuid.UUID, worldId byte, listingId uuid.UUID, sellerId uint32, buyerId uint32, itemId uint32, saleType string) model.Provider[[]kafka.Message] {
 	value := &mts.StatusEvent[mts.StatusEventListingSoldBody]{
 		TransactionId: transactionId,
 		Type:          mts.StatusEventTypeListingSold,
@@ -88,6 +88,7 @@ func ListingSoldStatusEventProvider(transactionId uuid.UUID, worldId byte, listi
 			SellerId:  sellerId,
 			BuyerId:   buyerId,
 			ItemId:    itemId,
+			SaleType:  saleType,
 		},
 	}
 	return producer.SingleMessageProvider(keyFor(transactionId), value)

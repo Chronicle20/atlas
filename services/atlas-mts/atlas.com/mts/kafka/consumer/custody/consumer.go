@@ -12,6 +12,7 @@ import (
 	mtsproducer "atlas-mts/kafka/producer/mts"
 	"atlas-mts/listing"
 	"atlas-mts/transaction"
+	"atlas-mts/wish"
 	"context"
 	"encoding/binary"
 	"errors"
@@ -343,8 +344,12 @@ func handleMtsMoveListingToHolding(pf providerFn) func(db *gorm.DB) message.Hand
 			// itemId + sellerId are captured from the listing row inside the tx so the
 			// LISTING_SOLD notice emitted on success can carry the sold item id and
 			// the seller (so the channel can refresh the seller's panels/wallet).
+			// soldSaleType + soldOfferWishSerial drive the offer-purchase side-effects
+			// (want-ad consume + sibling-offer release) run after the tx commits.
 			var itemId uint32
 			var sellerId uint32
+			var soldSaleType string
+			var soldOfferWishSerial uint32
 
 			err := database.ExecuteTransaction(tdb, func(tx *gorm.DB) error {
 				lm, gerr := listing.GetById(b.ListingId.String())(tx)()
@@ -353,6 +358,8 @@ func handleMtsMoveListingToHolding(pf providerFn) func(db *gorm.DB) message.Hand
 				}
 				itemId = lm.TemplateId()
 				sellerId = lm.SellerId()
+				soldSaleType = string(lm.SaleType())
+				soldOfferWishSerial = lm.OfferWishSerial()
 
 				// Conditional ->sold transition. The rows affected is the race
 				// arbiter: 1 means this call won the transition; 0 means the listing
@@ -507,8 +514,23 @@ func handleMtsMoveListingToHolding(pf providerFn) func(db *gorm.DB) message.Hand
 				if perr := buf.Put(custody.EnvStatusEventTopic, custodyproducer.MovedStatusEventProvider(c.TransactionId, b.ListingId, hid)); perr != nil {
 					return perr
 				}
-				return buf.Put(mtsmsg.EnvStatusEventTopic, mtsproducer.ListingSoldStatusEventProvider(c.TransactionId, b.WorldId, b.ListingId, sellerId, b.BuyerId, itemId))
+				return buf.Put(mtsmsg.EnvStatusEventTopic, mtsproducer.ListingSoldStatusEventProvider(c.TransactionId, b.WorldId, b.ListingId, sellerId, b.BuyerId, itemId, soldSaleType))
 			})
+
+			// Offer purchase (BUY_WISH): the want-ad has been fulfilled. Consume it
+			// and return every LOSING offer to its offerer's Transfer Inventory. Both
+			// are best-effort post-commit: the settle (money + item to the buyer) has
+			// already committed above, and an un-released sibling stays safely
+			// escrowed (reclaimable via Not-Yet-Sold cancel or the expiry sweep).
+			if soldSaleType == string(listing.SaleTypeOffer) && soldOfferWishSerial != 0 {
+				tdbctx := db.WithContext(ctx)
+				if wm, werr := wish.GetBySerial(world.Id(b.WorldId), soldOfferWishSerial)(tdbctx)(); werr != nil {
+					l.WithError(werr).Warnf("Unable to resolve fulfilled want-ad serial [%d] to consume it (buyer [%d]).", soldOfferWishSerial, b.BuyerId)
+				} else if _, derr := wish.DeleteWish(tdbctx, wm.Id().String()); derr != nil {
+					l.WithError(derr).Warnf("Unable to consume fulfilled want-ad [%s] (serial [%d]).", wm.Id().String(), soldOfferWishSerial)
+				}
+				listing.NewProcessor(l, ctx, db).ReleaseSiblingOffers(world.Id(b.WorldId), soldOfferWishSerial, b.ListingId)
+			}
 		}
 	}
 }

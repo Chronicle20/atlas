@@ -1,6 +1,7 @@
 package listing
 
 import (
+	"atlas-mts/configuration"
 	"atlas-mts/rest"
 	"errors"
 	"net/http"
@@ -11,6 +12,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
@@ -238,6 +240,15 @@ func handleBrowseListings(d *rest.HandlerDependency, c *rest.HandlerContext) htt
 				return
 			}
 
+			// Stamp the buyer-visible contract fee (MarkedUp(base)-base) so the client
+			// can show the all-in price. commissionBase (flat NX) is read once from
+			// tenant config.
+			t := tenant.MustFromContext(d.Context())
+			commissionBase := configuration.GetRegistry().GetTenantConfig(d.Logger(), d.Context(), t.Id()).CommissionBase()
+			for i := range res {
+				res[i] = withContractFee(res[i], commissionBase)
+			}
+
 			// Report the TOTAL matching count (not this page's length) so a paging
 			// client renders a real total and last page — the returned-length
 			// heuristic (a full page implies "maybe one more") can neither show the
@@ -281,6 +292,10 @@ func handleGetListing(d *rest.HandlerDependency, c *rest.HandlerContext) http.Ha
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
+			t := tenant.MustFromContext(d.Context())
+			commissionBase := configuration.GetRegistry().GetTenantConfig(d.Logger(), d.Context(), t.Id()).CommissionBase()
+			rm = withContractFee(rm, commissionBase)
+
 			query := r.URL.Query()
 			queryParams := jsonapi.ParseQueryFields(&query)
 			server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)

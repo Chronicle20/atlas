@@ -180,12 +180,13 @@ func (e *captureEmitter) Create(s saga.Saga) error {
 
 // TestSweep_SettlesExpiredAuctionWithWinner asserts an expired auction WITH a high
 // bidder is settled to the winner: the winning held bid is marked won, and the
-// emitted saga credits the seller's points (+UnMarkUp(winningBid)) and moves
-// custody to the winner WITHOUT re-debiting the winner (no negative AwardCurrency
-// / no MtsBidEscrow / no MtsSettlePurchase). The seller account is read from the
-// listing row (captured at list time); the winner account from the held bid row.
-// The winning bid (currentBid) is a MARKET price (1000); the seller nets the base
-// via UnMarkUp(1000, rate=0.10, base=500) = 454.
+// emitted saga credits the seller's points (+winningBid, the BASE amount) and
+// moves custody to the winner WITHOUT re-debiting the winner (no negative
+// AwardCurrency / no MtsBidEscrow / no MtsSettlePurchase). The seller account is
+// read from the listing row (captured at list time); the winner account from the
+// held bid row. The winning bid (currentBid) is a BASE price (1000) under the new
+// pricing model; the seller nets it AS-IS (no UnMarkUp) — the commission was
+// realised on the winner's escrow hold (MarkedUp(1000)=1600) at bid time.
 func TestSweep_SettlesExpiredAuctionWithWinner(t *testing.T) {
 	db := test.SetupTestDB(t, listing.Migration, holding.Migration, bid.Migration)
 	defer test.CleanupTestDB(t, db)
@@ -205,9 +206,9 @@ func TestSweep_SettlesExpiredAuctionWithWinner(t *testing.T) {
 		winner        = uint32(8880002)
 		winnerAccount = uint32(88002)
 		listValue     = uint32(1000)
-		// sellerCredit is UnMarkUp(winningBid=1000, rate=0.10, base=500 default) =
-		// uint32((1000-500)/1.10) = 454 — the seller's base off the winning bid.
-		sellerCredit = uint32(454)
+		// sellerCredit is the winning bid (1000) AS-IS — no UnMarkUp under the new
+		// base-price pricing model.
+		sellerCredit = uint32(1000)
 	)
 	past := time.Now().Add(-time.Hour)
 

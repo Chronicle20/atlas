@@ -47,10 +47,11 @@ type RestModel struct {
 	ListValue      uint32  `json:"listValue"`
 	BuyNowPrice    *uint32 `json:"buyNowPrice,omitempty"`
 	CommissionRate float64 `json:"commissionRate"`
-	// ContractFee is obsolete under the commission-inclusive pricing model: prices
-	// are now all-in (the commission was baked in once at list time), so there is
-	// no separate buyer-visible fee to add on top. The field stays on the wire (the
-	// channel still reads it) but is always 0.
+	// ContractFee is the buyer-visible fee on top of the current price
+	// (MarkedUp(base)-base, base = currentBid for auctions else listValue), stamped
+	// by the browse/get handlers via withContractFee (they hold the tenant
+	// commissionBase; Transform alone leaves it 0). Listings store the seller's
+	// BASE price; the client adds this fee to render the all-in price.
 	ContractFee uint32 `json:"contractFee"`
 	Category    string `json:"category"`
 	SubCategory string `json:"subCategory"`
@@ -162,4 +163,29 @@ func Transform(m Model) (RestModel, error) {
 		CreatedAt:      m.CreatedAt(),
 		UpdatedAt:      m.UpdatedAt(),
 	}, nil
+}
+
+// withContractFee stamps the buyer-visible contract fee onto a REST model so the
+// browse/detail response shows the all-in (commission-inclusive) price the client
+// renders as price + fee. Listings store the seller's BASE price; the client
+// applies commission everywhere, so the fee bridges the two: nBidPrice(=
+// CurrentBid) + nContractFee for auctions, nPrice(=ListValue) + nContractFee for
+// fixed sales, each summing to MarkedUp(effective base).
+//
+// For auctions with no real bid yet (HighBidderId==0), current_bid is seeded to
+// listValue-increment (see the custody consumer's AcceptToMtsListing), so the
+// effective base for the fee calc is the starting price (ListValue) rather than
+// the seeded currentBid — otherwise the displayed opening price would be short by
+// one increment's worth of fee.
+func withContractFee(rm RestModel, commissionBase uint32) RestModel {
+	if rm.SaleType == string(SaleTypeAuction) {
+		effective := rm.CurrentBid
+		if rm.HighBidderId == 0 {
+			effective = rm.ListValue
+		}
+		rm.ContractFee = MarkedUp(effective, rm.CommissionRate, commissionBase) - rm.CurrentBid
+		return rm
+	}
+	rm.ContractFee = MarkedUp(rm.ListValue, rm.CommissionRate, commissionBase) - rm.ListValue
+	return rm
 }

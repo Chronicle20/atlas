@@ -1,7 +1,6 @@
 package custody
 
 import (
-	"atlas-mts/configuration"
 	"atlas-mts/holding"
 	consumer2 "atlas-mts/kafka/consumer"
 	msg "atlas-mts/kafka/message"
@@ -109,18 +108,6 @@ func handleAcceptToMtsListing(pf providerFn) func(db *gorm.DB) message.Handler[c
 
 				t := tenant.MustFromContext(ctx)
 				tid := t.Id()
-				cfg := configuration.GetRegistry().GetTenantConfig(l, ctx, tid)
-
-				// Mark up the seller-supplied BASE prices ONCE here, at listing-creation
-				// time: the new commission-inclusive pricing model stores/transacts
-				// everything in MARKET units thereafter (browse/bid/buy see and pay the
-				// market price as-is, with no second markup down the line).
-				marketListValue := listing.MarkedUp(b.ListValue, b.CommissionRate, cfg.CommissionBase())
-				var marketBuyNowPrice *uint32
-				if b.BuyNowPrice != nil {
-					mv := listing.MarkedUp(*b.BuyNowPrice, b.CommissionRate, cfg.CommissionBase())
-					marketBuyNowPrice = &mv
-				}
 
 				// The GET_ITC_LIST browse filters listings by (category, subCategory),
 				// which mirror the client's browse "tab" and "type":
@@ -139,15 +126,23 @@ func handleAcceptToMtsListing(pf providerFn) func(db *gorm.DB) message.Handler[c
 					subCategory = strconv.Itoa(int(it))
 				}
 
-				// Auctions display their price and compute the first-bid floor off the
-				// current bid; seed it to the market starting bid (marketListValue) until
-				// a real bid arrives, matching the seed route's
-				// SetCurrentBid(startingBid). Without this the client shows price 0,
-				// suggests a sub-floor bid, and the bid is rejected as a "consecutive
-				// bid" (task-102 live finding). Fixed sales have no bid, so it stays 0.
+				// Auctions seed currentBid to (listValue - increment) so the client's
+				// first bid — always current_bid + increment — lands on the seller's
+				// starting price (listValue). Without this the first valid bid would be
+				// listValue+increment, one increment above the advertised opening price.
+				// A listValue not exceeding the increment seeds 0 (no headroom to
+				// subtract). Fixed sales have no bid, so it stays 0.
+				inc := b.MinIncrement
+				if inc == 0 {
+					inc = 1
+				}
 				var currentBid uint32
 				if b.SaleType == string(listing.SaleTypeAuction) {
-					currentBid = marketListValue
+					if b.ListValue > inc {
+						currentBid = b.ListValue - inc
+					} else {
+						currentBid = 0
+					}
 				}
 
 				m, berr := listing.NewBuilder(tid, world.Id(b.WorldId), b.SellerId).
@@ -180,8 +175,8 @@ func handleAcceptToMtsListing(pf providerFn) func(db *gorm.DB) message.Handler[c
 					SetRingId(b.RingId).
 					SetViciousCount(b.ViciousCount).
 					SetFlags(b.Flags).
-					SetListValue(marketListValue).
-					SetBuyNowPrice(marketBuyNowPrice).
+					SetListValue(b.ListValue).
+					SetBuyNowPrice(b.BuyNowPrice).
 					SetCommissionRate(b.CommissionRate).
 					SetCategory(category).
 					SetSubCategory(subCategory).

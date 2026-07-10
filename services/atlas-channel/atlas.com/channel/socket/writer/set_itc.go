@@ -26,12 +26,12 @@ import (
 // ITC clock (m_ftRel) so auction countdowns are correct — see the SetItcWriter doc.
 //
 // The client's commission rate/base (m_nCommissionRate / m_nCommissionBase) are
-// sent as ZERO on purpose: commission is baked into the listing price at list time
-// (atlas-mts stores commission-inclusive "market" prices), so the client must NOT
-// re-apply it. With 0/0, CITCBidAuctionDlg::GetPriceWithCommision returns the bid
-// as-is, so "Your Bid" = highest bid + increment, and the buyer pays exactly the
-// shown price. The real commission is realised server-side (markedUp at list, the
-// seller nets UnMarkUp at settle).
+// sent as the REAL tenant knobs: atlas-mts stores the seller's BASE price, and the
+// client applies commission itself — both for the register-dialog fee preview and
+// the bid dialog's "Your Bid" line (CITCBidAuctionDlg::GetPriceWithCommision =
+// commissionBase + (commissionRate+100)*bid/100, IDA-verified v95 0x58b5e0). The
+// browse/detail contract fee (atlas-mts's withContractFee) independently shows the
+// all-in price for listings the client did not just register/bid on.
 func SetItcBody(a account.Model, c character.Model, bl buddylist.Model) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 		return func(options map[string]interface{}) []byte {
@@ -40,8 +40,8 @@ func SetItcBody(a account.Model, c character.Model, bl buddylist.Model) packet.E
 			cfg := configuration.GetRegistry().GetTenantConfig(l, ctx, t.Id())
 			return fieldcb.NewSetItcWithConfig(cd, a.Name(),
 				cfg.ListingFee(),
-				0, // m_nCommissionRate: prices are already commission-inclusive; client must not re-apply
-				0, // m_nCommissionBase: same
+				uint32(cfg.CommissionRate()*100), // m_nCommissionRate: percent, client applies it itself
+				cfg.CommissionBase(),             // m_nCommissionBase: same
 				uint32(cfg.AuctionMinHours()),
 				uint32(cfg.AuctionMaxHours()),
 				packetmodel.MsTimeBytes(time.Now()),

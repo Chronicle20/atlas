@@ -127,11 +127,11 @@ func TestAcceptToMtsListing_CreatesListingAndAcks(t *testing.T) {
 	// (1302000 -> equip -> "1"), overriding the payload's "equip" string so the
 	// GET_ITC_LIST sub-tab filter (categorySub -> inventory type) matches.
 	//
-	// ListValue is now the MARKET (commission-inclusive) price, marked up ONCE at
-	// creation time: MarkedUp(1000, 0.10, commissionBase=500 default) =
-	// ceil(1000*1.10)+500 = 1600. CommissionRate is still carried as-is (needed to
-	// invert the markup at settle time via UnMarkUp).
-	if stored.ListValue() != 1600 || stored.CommissionRate() != 0.10 || stored.Category() != "1" {
+	// ListValue is stored as the seller-supplied BASE price (1000) AS-IS — the
+	// commission is no longer baked in at creation time; the client (and, for
+	// buy/bid, the server) applies commission on top of this base. CommissionRate
+	// is carried on the row for the buy/bid/settle markup calculations.
+	if stored.ListValue() != 1000 || stored.CommissionRate() != 0.10 || stored.Category() != "1" {
 		t.Fatalf("sale params not persisted: lv=%d rate=%v cat=%s", stored.ListValue(), stored.CommissionRate(), stored.Category())
 	}
 
@@ -198,6 +198,105 @@ func TestAcceptToMtsListing_ReplayIsNoOpAndReacks(t *testing.T) {
 		if ev.transactionId != transactionId {
 			t.Fatalf("event transactionId mismatch: want %s got %s", transactionId, ev.transactionId)
 		}
+	}
+}
+
+// newAuctionAcceptCommand builds an AcceptToMtsListing command for an AUCTION
+// listing with the given listValue/increment, for the currentBid-seeding tests.
+func newAuctionAcceptCommand(transactionId uuid.UUID, listingId uuid.UUID, listValue uint32, minIncrement uint32) custody.Command[custody.AcceptToMtsListingCommandBody] {
+	return custody.Command[custody.AcceptToMtsListingCommandBody]{
+		TransactionId: transactionId,
+		Type:          custody.CommandAcceptToMtsListing,
+		Body: custody.AcceptToMtsListingCommandBody{
+			ListingId:      listingId,
+			WorldId:        0,
+			SellerId:       42,
+			SellerName:     "Seller",
+			SaleType:       string(listing.SaleTypeAuction),
+			TemplateId:     1302000,
+			Quantity:       1,
+			ListValue:      listValue,
+			CommissionRate: 0.10,
+			Category:       "equip",
+			SubCategory:    "onehand",
+			MinIncrement:   minIncrement,
+		},
+	}
+}
+
+// TestAcceptToMtsListing_SeedsAuctionCurrentBidBelowListValueByIncrement asserts an
+// auction's currentBid is seeded to listValue-increment (NOT listValue itself), so
+// the client's first bid — always current_bid + increment — lands exactly on the
+// seller's advertised starting price (listValue), not one increment above it.
+func TestAcceptToMtsListing_SeedsAuctionCurrentBidBelowListValueByIncrement(t *testing.T) {
+	db := test.SetupTestDB(t, listing.Migration, holding.Migration)
+	ctx := test.CreateTestContext()
+	l := logrus.New()
+
+	rp := &recordingProducer{}
+	transactionId := uuid.New()
+	listingId := uuid.New()
+	cmd := newAuctionAcceptCommand(transactionId, listingId, 1000, 100)
+
+	handleAcceptToMtsListing(rp.provider())(db)(l, ctx, cmd)
+
+	stored, err := listing.GetById(listingId.String())(db.WithContext(ctx))()
+	if err != nil {
+		t.Fatalf("expected listing row created, got error: %v", err)
+	}
+	if stored.ListValue() != 1000 {
+		t.Fatalf("listValue = %d, want 1000 (base, unmarked-up)", stored.ListValue())
+	}
+	if stored.CurrentBid() != 900 {
+		t.Fatalf("currentBid = %d, want 900 (listValue 1000 - increment 100)", stored.CurrentBid())
+	}
+}
+
+// TestAcceptToMtsListing_SeedsAuctionCurrentBidZeroWhenListValueBelowIncrement
+// asserts the seed floors at 0 rather than underflowing when listValue does not
+// exceed the increment.
+func TestAcceptToMtsListing_SeedsAuctionCurrentBidZeroWhenListValueBelowIncrement(t *testing.T) {
+	db := test.SetupTestDB(t, listing.Migration, holding.Migration)
+	ctx := test.CreateTestContext()
+	l := logrus.New()
+
+	rp := &recordingProducer{}
+	transactionId := uuid.New()
+	listingId := uuid.New()
+	cmd := newAuctionAcceptCommand(transactionId, listingId, 100, 500)
+
+	handleAcceptToMtsListing(rp.provider())(db)(l, ctx, cmd)
+
+	stored, err := listing.GetById(listingId.String())(db.WithContext(ctx))()
+	if err != nil {
+		t.Fatalf("expected listing row created, got error: %v", err)
+	}
+	if stored.CurrentBid() != 0 {
+		t.Fatalf("currentBid = %d, want 0 (listValue 100 does not exceed increment 500)", stored.CurrentBid())
+	}
+}
+
+// TestAcceptToMtsListing_SeedsAuctionCurrentBidDefaultIncrementWhenZero asserts a
+// zero MinIncrement (older channels / unset) falls back to the default increment
+// of 1 for the currentBid seed.
+func TestAcceptToMtsListing_SeedsAuctionCurrentBidDefaultIncrementWhenZero(t *testing.T) {
+	db := test.SetupTestDB(t, listing.Migration, holding.Migration)
+	ctx := test.CreateTestContext()
+	l := logrus.New()
+
+	rp := &recordingProducer{}
+	transactionId := uuid.New()
+	listingId := uuid.New()
+	cmd := newAuctionAcceptCommand(transactionId, listingId, 1000, 0)
+
+	handleAcceptToMtsListing(rp.provider())(db)(l, ctx, cmd)
+
+	stored, err := listing.GetById(listingId.String())(db.WithContext(ctx))()
+	if err != nil {
+		t.Fatalf("expected listing row created, got error: %v", err)
+	}
+	if stored.CurrentBid() != 999 {
+		t.Fatalf("currentBid = %d, want 999 (listValue 1000 - default increment 1)", stored.CurrentBid())
 	}
 }
 

@@ -794,18 +794,29 @@ func MarkedUp(amount uint32, commissionRate float64, commissionBase uint32) uint
 	return uint32(math.Ceil(float64(amount)*(1.0+commissionRate))) + commissionBase
 }
 
-// UnMarkUp is the inverse of MarkedUp: given a commission-INCLUSIVE total, it
-// returns the BASE the seller nets, so MarkedUp(UnMarkUp(total)) == total (modulo
-// rounding). base = floor((total - commissionBase) / (1 + commissionRate)),
-// floored at 0 when the total does not even cover the flat commission base. Used to
-// derive a want-ad's base offerer-payout from the poster's typed TOTAL price (the
-// register dialog sends the raw typed amount): the offerer nets base and the poster
-// pays MarkedUp(base) == the total, so the commission is the platform's sink.
-func UnMarkUp(total uint32, commissionRate float64, commissionBase uint32) uint32 {
+// WantAdBaseFromTotal derives the BASE an offerer nets from the poster's typed
+// TOTAL want-ad price, matching the client's register-wish dialog EXACTLY
+// (CRegisterWishEntryDlg::OnKey, v95 0x57c660):
+//
+//	base = total - ratePct*(total - commissionBase)/100 - commissionBase
+//
+// with integer division and ratePct = the commission percent (commissionRate*100,
+// e.g. 7). Matching the client's integer formula keeps the base the offerer sees
+// (Wanted tab / My Page -> Offers) identical to the "listing price" the poster saw
+// while registering — a straight algebraic inverse of MarkedUp differs by a unit or
+// two (the 467-vs-465 mismatch). Floored at 0 when the fee + flat base meets or
+// exceeds the total. The register-wish price floor (client SP_4765, >=110) keeps
+// realistic totals well clear of 0.
+func WantAdBaseFromTotal(total uint32, commissionRate float64, commissionBase uint32) uint32 {
 	if total <= commissionBase {
 		return 0
 	}
-	return uint32(math.Floor(float64(total-commissionBase) / (1.0 + commissionRate)))
+	ratePct := uint32(math.Round(commissionRate * 100))
+	fee := ratePct * (total - commissionBase) / 100
+	if fee+commissionBase >= total {
+		return 0
+	}
+	return total - fee - commissionBase
 }
 
 // bidEscrowTimeout scales the single-step escrow saga's timeout. MtsBidEscrow is a

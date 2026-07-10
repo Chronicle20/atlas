@@ -434,7 +434,13 @@ func ItcOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer
 			// and ignored (no unlinked/free offer).
 			ownerId, price, wantCount, ok := resolveWantedPrice(l, ctx, s.WorldId(), body.WishSerial())
 			if !ok {
-				l.Errorf("Character [%d] sent a want-ad offer (SALE_CURRENT_ITEM) for unresolved want-ad serial [%d]; ignoring.", s.CharacterId(), body.WishSerial())
+				// The want-ad was completed (bought) or expired while this offerer's
+				// Wanted list was stale. Returning silently freezes the client (the
+				// request latch never clears). Send SaleCurrentItemToWishFailed to
+				// un-freeze it, and re-push the Wanted list so the dead want-ad drops off.
+				l.Infof("Character [%d] offered on unresolved want-ad serial [%d] (completed/expired); failing the offer and refreshing the Wanted list.", s.CharacterId(), body.WishSerial())
+				writeWishFailure(l, ctx, wp, s, fieldpkt.MtsOperationSaleCurrentItemToWishFailedBody(0))
+				writeBrowsePage(l, ctx, wp, s, itcSectionWanted, 0, 0, 1, 1, 1, mtslisting.BrowseFilter{})
 				return
 			}
 			emitCreateListing(l, ctx, s, buildCreateListingFromSaleCurrentItem(*body, s.WorldId(), s.CharacterId(), s.AccountId(), sellerName(l, ctx, s), ownerId, price, wantCount))

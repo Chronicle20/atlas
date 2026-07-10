@@ -456,7 +456,7 @@ func handleRegisterWish(pf providerFn) func(db *gorm.DB) message.Handler[mts.Com
 				price := b.Price
 				if wishType == wish.TypeWanted {
 					cfg := configuration.GetRegistry().GetTenantConfig(l, ctx, t.Id())
-					price = listing.UnMarkUp(b.Price, cfg.CommissionRate(), cfg.CommissionBase())
+					price = listing.WantAdBaseFromTotal(b.Price, cfg.CommissionRate(), cfg.CommissionBase())
 					exp := time.Now().Add(time.Duration(cfg.FixedSaleDurationHours()) * time.Hour)
 					wb = wb.SetExpiresAt(&exp)
 				}

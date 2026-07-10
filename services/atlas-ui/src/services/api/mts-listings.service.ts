@@ -79,7 +79,7 @@ export interface MtsListingPage {
 export interface BrowseListingsFilter {
   category?: string | undefined;
   subCategory?: string | undefined;
-  /** Maps to the backend `saleType` query param (BUY_NOW / AUCTION). */
+  /** Maps to the backend `saleType` query param ("fixed" / "auction"). */
   saleType?: string | undefined;
   sellerName?: string | undefined;
   itemId?: number | undefined;

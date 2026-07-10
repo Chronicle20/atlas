@@ -61,6 +61,7 @@ export function MarketplacePage() {
   }>({ category: "", subCategory: "", saleType: "", sellerName: "", itemId: 0 });
 
   const listingsQuery = useMtsListings(
+    activeTenant?.id ?? "",
     worldId,
     {
       category: applied.category || undefined,

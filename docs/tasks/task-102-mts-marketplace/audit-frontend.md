@@ -1,81 +1,95 @@
-# Frontend Audit — task-102-mts-marketplace (MTS marketplace UI)
+# Frontend Audit — task-102-mts-marketplace (whole branch)
 
-- **Audit Scope:** atlas-ui TypeScript/React changes on `task-102-mts-marketplace` (`main..HEAD`, BASE `eed47d480`, HEAD `87dfa758a`)
-- **Guidelines Source:** frontend-dev-guidelines skill (FE-*) + atlas-ui CLAUDE.md
-- **Date:** 2026-06-18
-- **Build:** PASS (`npm run build`, exit 0, `built in 1.25s`)
-- **Tests:** 813 passed, 1 failed (`Pager.test.tsx` timeout flake — passes 8/8 in isolation; NOT an MTS file, NOT a regression)
-- **Lint (MTS files only):** PASS — `eslint` exit 0, zero output across all 8 MTS files (no new lint errors)
-- **Overall:** PASS (no FE-* FAIL; one Minor data-contract observation)
+- **Audit Scope:** 13 changed TS/TSX files, `6c6f52ab..e3696ccf`, `services/atlas-ui/src`
+- **Guidelines Source:** frontend-dev-guidelines skill (FE-* checklist)
+- **Date:** 2026-07-10
+- **Build:** PASS (`tsc -b && vite build` — "✓ built")
+- **Tests:** 879 passed, 0 failed (102 files; MTS-specific: 12 passed)
+- **Overall:** NEEDS-WORK (build + tests green; 1 Critical + 2 Important FE violations)
 
-## Build & Test Results
-
-- `npm run build` → exit 0. `MarketplacePage-B5GlcUf3.js` chunk emitted; full `tsc -b` (which type-checks `.test.ts` too) clean.
-- `npm test` (vitest run) → `Test Files 1 failed | 93 passed (94)`, `Tests 1 failed | 813 passed (814)`. The single failure is `src/components/common/__tests__/Pager.test.tsx > disables First and Prev on page 1` — `Test timed out in 5000ms` under full-suite load. Re-run isolated: `Test Files 1 passed (1) / Tests 8 passed (8)`. Pre-existing flake (Pager is a reused component, untouched by this branch's diff), not an MTS regression. (Note: the task prompt named `TenantsPage.test.tsx` as the known flake; the observed flake this run was `Pager.test.tsx`. Both are load-dependent timeouts, neither is an MTS file.)
-- Lint: ran `./node_modules/.bin/eslint` on all 8 MTS source files — exit 0, no diagnostics. No new errors introduced.
+Note: the objective gate was run with the nvm Linux node (`v22.22.2`); the default `/mnt/c` Windows npm in this WSL env errors `ERR_INVALID_URL` and cannot run the scripts.
 
 ## File Inventory
 
-- `src/lib/schemas/mts-config.schema.ts` — Schema (Zod)
+- `src/App.tsx` — Other (route wiring: `/marketplace`, `/tenants/:id/mts-config`)
+- `src/components/app-sidebar.tsx` — Component (nav entry)
+- `src/components/features/tenants/TenantDetailLayout.tsx` — Component (nav item)
+- `src/lib/hooks/api/useMtsConfig.ts` — Hook
+- `src/lib/hooks/api/useMtsListings.ts` — Hook
+- `src/lib/schemas/mts-config.schema.ts` — Schema
+- `src/pages/MarketplacePage.tsx` — Page
+- `src/pages/TenantsMtsConfigPage.tsx` — Page (wrapper)
+- `src/pages/tenants-mts-config-form.tsx` — Page/Feature form
 - `src/services/api/mts-config.service.ts` — Service
 - `src/services/api/mts-listings.service.ts` — Service
 - `src/services/api/__tests__/mts-config.service.test.ts` — Test
 - `src/services/api/__tests__/mts-listings.service.test.ts` — Test
-- `src/lib/hooks/api/useMtsConfig.ts` — Hook (query + mutation)
-- `src/lib/hooks/api/useMtsListings.ts` — Hook (query)
-- `src/pages/MarketplacePage.tsx` — Page (read-only listings browser)
-- `src/pages/TenantsMtsConfigPage.tsx` — Page (wrapper)
-- `src/pages/tenants-mts-config-form.tsx` — Component (config form, colocated)
-- `src/App.tsx` — Other (route wiring; +2 lazy imports, +2 routes)
-- `src/components/app-sidebar.tsx` — Other (nav entry)
-- `src/components/features/tenants/TenantDetailLayout.tsx` — Other (tab entry)
+
+(This app is Vite + react-router-dom under `src/`, not Next.js `app/`; pages use named exports wired via `lazy()` in App.tsx. FE-08's Next.js `page.tsx` default-export exception does not apply — named exports are correct here.)
 
 ## Anti-Pattern Checklist
 
 | ID | Check | Status | Evidence |
 |----|-------|--------|----------|
-| FE-01 | No `any` type | PASS | Grep of all 8 MTS files for `: any`/`as any`/`null as any` → zero matches. Test casts use `ReturnType<typeof vi.fn>`, not `any` (mts-config.service.test.ts:33, mts-listings.service.test.ts:41). |
-| FE-02 | No manual class concat | PASS | All `className` are static string literals (e.g. MarketplacePage.tsx:114,242; tenants-mts-config-form.tsx:81). No `+`/template concatenation in `className`. |
-| FE-03 | No direct API client in components | PASS | Pages import hooks/services only — MarketplacePage.tsx:3-5 (`useTenantConfiguration`, `useMtsListings`), tenants-mts-config-form.tsx:8 (`useMtsConfig`). No `@/lib/api/client` import in any page/component. Client is imported only in the service layer (mts-config.service.ts:1, mts-listings.service.ts:1) — the documented pattern. |
-| FE-04 | No inline Zod in components | PASS | `z.object` lives only in lib/schemas/mts-config.schema.ts:26; form imports it (tenants-mts-config-form.tsx:9). No `z.` in any component. The `.refine()` cross-field rule is in the schema file (mts-config.schema.ts:65), the allowed location. |
-| FE-05 | No spinners for content loading | PASS w/ NOTE | Content loading uses text placeholders, not `animate-spin` (MarketplacePage.tsx:235-236). `animate-spin` appears only on the Search submit button (MarketplacePage.tsx:207) — allowed. NOTE: content loading states use plain text divs ("Loading listings...", tenants-mts-config-form.tsx:68) rather than `<Skeleton>`; guideline prefers skeletons but bans spinners — no spinner is used, so this passes the rule as written. |
-| FE-06 | No hardcoded colors | PASS | Grep for `bg-(white\|black\|gray-\|...)` / `text-(white\|black\|gray-)` in both pages → zero. Semantic tokens used: `text-muted-foreground` (MarketplacePage.tsx:222,230,236), `text-destructive` (232), `bg-background` (244). |
-| FE-07 | No state mutation | PASS | All `setState` use fresh objects/values — `setApplied({...})` (MarketplacePage.tsx:89,105), `setPage(1)` (96). Hook optimistic update spreads immutably (useMtsConfig.ts:60-63). Service merge spreads (mts-config.service.ts:62,67). No `.push/.splice/.sort` into setState. |
-| FE-08 | No default component exports | PASS | Named exports: `MarketplacePage` (MarketplacePage.tsx:40), `TenantsMtsConfigPage` (TenantsMtsConfigPage.tsx:4), `MtsConfigForm` (tenants-mts-config-form.tsx:36). Grep `export default` → zero in MTS files. (atlas-ui is Vite/React-Router, not Next; named exports are the convention.) |
-| FE-09 | Tenant guard in hooks | PASS | `useMtsConfig` takes explicit `tenantId` and gates `enabled: !!tenantId` (useMtsConfig.ts:39). `useMtsListings` takes an explicit `enabled` flag (useMtsListings.ts:24,30); MarketplacePage passes `!!activeTenant` (MarketplacePage.tsx:74). The listings hook is world-scoped, not tenant-scoped, and tenant context is supplied by `api.setTenant` headers + the `enabled` guard. |
-| FE-10 | Tenant ID in query keys | PASS | `mtsConfigKeys.detail(tenantId)` includes tenantId (useMtsConfig.ts:26) — `enabled` only fires with a truthy tenantId so a 'no-tenant' sentinel is unnecessary; this matches the existing `tenantKeys.configDetail(id)` precedent (useTenants.ts:176). `mtsListingsKeys.browse(worldId, filter)` keys on worldId + filter (useMtsListings.ts:14); listings are world-scoped (not tenant-scoped) and the React Query cache is fully cleared on tenant switch via `TenantProvider` (`queryClient.clear()` per atlas-ui CLAUDE.md), so cross-tenant cache bleed is prevented. |
-| FE-11 | Error handling | PASS w/ NOTE | Mutation surfaces errors via toast at the call site (tenants-mts-config-form.tsx:63 `toast.error`). Listings errors surfaced in UI via `listingsQuery.error.message` (MarketplacePage.tsx:231-233). NOTE: `useMtsConfig.ts:71` and the mutation logs via `console.error` in `onError` in addition to the toast — the guideline discourages `console.log`-for-errors, but here the user-facing path is the toast and the console line is diagnostic, mirroring the existing `useTenants.ts:147` pattern. No use of `createErrorFromUnknown()`, but no raw `.catch` swallowing either; React Query owns rejection handling. Acceptable. |
+| FE-01 | No `any` type | PASS | grep of all 13 files: zero `: any` / `as any` / `<any>` |
+| FE-02 | No manual class concat | PASS | No conditional classNames; no `+`/template concat in `className=` |
+| FE-03 | No direct API client in components | PASS | MarketplacePage/form import from `@/services/api/*` + hooks; only the two service files import `@/lib/api/client` |
+| FE-04 | No inline Zod in components | PASS | Schema lives in `lib/schemas/mts-config.schema.ts`; the form imports it |
+| FE-05 | No spinners for content loading | FAIL (Minor) | Content loading uses plain text, not Skeleton: MarketplacePage.tsx:238-239, tenants-mts-config-form.tsx:67-68. `animate-spin` (MarketplacePage.tsx:210) is on the Search submit button — allowed |
+| FE-06 | No hardcoded colors | PASS | Only semantic tokens (`bg-background`, `text-muted-foreground`, `text-destructive`); grep for `bg-white`/`gray-N`/etc. is empty |
+| FE-07 | No state mutation | PASS | Optimistic update spreads immutably (useMtsConfig.ts:60-64); MarketplacePage uses `setState` with fresh objects |
+| FE-08 | No default exports for components | PASS | All new pages/components use named exports; grep `export default` empty |
+| FE-09 | Tenant guard in hooks | PASS | useMtsConfig `enabled: !!tenantId` (useMtsConfig.ts:39); useMtsListings gated by caller `enabled=!!activeTenant` (MarketplacePage.tsx:77) |
+| FE-10 | Tenant ID in query keys | FAIL (Critical) | `mtsListingsKeys.browse` omits tenant id (useMtsListings.ts:12-16) — see Critical #1. `mtsConfigKeys.detail(tenantId)` includes it (useMtsConfig.ts:26) — PASS |
+| FE-11 | Error handling via `createErrorFromUnknown` | FAIL (Important) | Not used anywhere in the change; useMtsConfig.ts:71 uses `console.error`; form onError toasts a static string (tenants-mts-config-form.tsx:63) — see Important #2 |
 
 ## Architecture Checklist
 
 | ID | Check | Status | Evidence |
 |----|-------|--------|----------|
-| FE-12 | JSON:API model shape | PASS | `MtsConfig` = `{ id: string, attributes: MtsConfigAttributes }` (mts-config.service.ts:30-33); `MtsListing` = `{ id, attributes }` (mts-listings.service.ts:59-62). |
-| FE-13 | Service pattern | PASS | Both services use the documented thin-adapter-over-`api` pattern (mts-config.service.ts:48-49,66; mts-listings.service.ts:104) rather than `BaseService` — consistent with `tenants.service.ts`. Atlas-ui CLAUDE.md sanctions "thin adapters over lib/api/client". |
-| FE-14 | Query key factory `as const` | PASS | `mtsConfigKeys` all/details/detail use `as const` (useMtsConfig.ts:24-26); `mtsListingsKeys` all/browse use `as const` (useMtsListings.ts:13-15). |
-| FE-15 | Forms use RHF + zodResolver | PASS | `useForm({ resolver: zodResolver(mtsConfigSchema), ... })` (tenants-mts-config-form.tsx:45-48); fields via `<FormField control={form.control} ...>` (84-105); submit `form.handleSubmit(onSubmit)` (81). |
-| FE-16 | Schema + inferred type | PASS | `export type MtsConfigFormData = z.infer<typeof mtsConfigSchema>` paired with the schema (mts-config.schema.ts:74). |
+| FE-12 | JSON:API model shape | PASS | `MtsConfig`/`MtsListing` are `{id, attributes}` (mts-config.service.ts:30-33, mts-listings.service.ts:65-68). Types live in service files rather than `types/models/` — allowed under the per-service re-export convention (Minor) |
+| FE-13 | Service extends BaseService (when applicable) | PASS | Both use the documented direct-client pattern (plain singleton object over `api`/`apiClient`); no validation/transform needs. Stylistic note: other direct services use `class X {}` + `new X()`; these are object literals (Minor) |
+| FE-14 | Query key factory uses `as const` | PASS | mtsConfigKeys (useMtsConfig.ts:23-27) and mtsListingsKeys (useMtsListings.ts:12-16) both `as const` |
+| FE-15 | Forms use react-hook-form + zodResolver | PASS | tenants-mts-config-form.tsx:45-48 `useForm({ resolver: zodResolver(mtsConfigSchema) })` |
+| FE-16 | Schema in lib/schemas with inferred type | PASS | mts-config.schema.ts:74 `export type MtsConfigFormData = z.infer<typeof mtsConfigSchema>`; cross-field `.refine()` correctly co-located in schema |
 
 ## Testing Checklist
 
 | ID | Check | Status | Evidence |
 |----|-------|--------|----------|
-| FE-17 | Tests for changed code | PASS w/ NOTE | Both services tested: `mts-config.service.test.ts` (path, JSON:API envelope on PATCH, schema validity/refine/non-integer), `mts-listings.service.test.ts` (query-builder edge cases, endpoint, return passthrough). NOTE: no test for the hooks (`useMtsConfig`/`useMtsListings`) nor the `MarketplacePage`/`MtsConfigForm` components. Per atlas-ui CLAUDE.md component/hook test coverage is sparse repo-wide (Phase-5 backlog); the schema + service logic — the load-bearing, JSON:API-envelope-correctness surface — is covered. Recommend (non-blocking) adding a `MtsConfigForm` render+submit test and a `MarketplacePage` pager-boundary test. |
-| FE-18 | Mocks updated for service changes | PASS | New services mock `@/lib/api/client` inline per test (mts-config.service.test.ts:6-8, mts-listings.service.test.ts:5-7) matching the methods used (`getOne`/`patch`, `getList`). No shared `__mocks__` interface to drift. |
-
-## Verified PASS Highlights (load-bearing)
-
-- **JSON:API write envelope (the #1 risk flagged):** PATCH body is `{data:{id,type:"mts-configs",attributes}}` (mts-config.service.ts:63-66), asserted byte-for-byte in mts-config.service.test.ts:53-67. Bare-body 400 avoided.
-- **Listings browse query wiring:** flat (non-bracketed) params, `itemId` dropped when 0, omitted when undefined (mts-listings.service.ts:80-91); asserted in mts-listings.service.test.ts:9-35.
-- **Pager with no total metadata:** `hasNextPage = listings.length === LISTINGS_PAGE_SIZE`, `lastPage = hasNextPage ? page+1 : page` (MarketplacePage.tsx:80-81) — a correct next/prev pager given the backend returns no `lastPage`/total. Page reset to 1 on world change (133), filter apply (96), and clear (106).
-- **exactOptionalPropertyTypes:** OFF in this project (atlas-ui CLAUDE.md). The optional-undefined filter fields (`mts-listings.service.ts:65-72` use `string | undefined`) and MarketplacePage's `|| undefined` coercion (MarketplacePage.tsx:67-71) build clean under the actual tsconfig. No EOPT violation under the real config.
+| FE-17 | Tests exist for changed components | FAIL (Important) | Service + schema tests present (mts-config.service.test.ts, mts-listings.service.test.ts, 12 tests). NO component/page test for MarketplacePage.tsx or the MtsConfigForm — see Important #3. Repo convention has page tests (ItemsPage/TenantsPage/JobDetailPage.test.tsx) |
+| FE-18 | Mocks updated when services changed | PASS (N/A) | New services; tests mock `@/lib/api/client` directly (mts-config.service.test.ts:6-8, mts-listings.service.test.ts:5-8). No shared `__mocks__/` interface to update |
 
 ## Summary
 
-### Blocking (must fix)
-- None. Build PASS, lint clean on MTS files, all MTS-relevant tests pass; every FE-* check passes with file:line evidence.
+### Critical (must fix)
 
-### Non-Blocking (should fix)
-- **FE-17 — hook/component test gap:** no tests for `useMtsConfig`/`useMtsListings` hooks or the `MarketplacePage`/`MtsConfigForm` components. Add a form render+submit test and a pager-boundary test. Consistent with repo Phase-5 backlog, so not blocking.
-- **FE-05 / loading polish:** content-loading states are plain text divs (MarketplacePage.tsx:235-236, tenants-mts-config-form.tsx:68) rather than `<Skeleton>`. Rule (no spinners) is satisfied; skeletons would be the preferred polish.
-- **Data-contract observation (not an FE-* rule):** `MarketplacePage` derives `worldId` from the **array index** of `tenantConfig.attributes.worlds` (MarketplacePage.tsx:141 `value={String(index)}`) and sends it to `/api/worlds/{index}/listings`. The `worlds` config object has no explicit world-id field (tenants.service.ts:111-121), so this assumes the array position equals the atlas-mts world id. Verify that contract against atlas-mts; if worlds can be sparse/reordered, the browse will target the wrong world. Worth confirming before release.
+- **[FE-10] `mtsListingsKeys.browse` has no tenant id → cross-tenant cache exposure.**
+  `useMtsListings.ts:12-16` keys the query `["mts-listings","browse", worldId, filter]`. Listings are tenant-scoped only via the mutable `apiClient.tenant` header (set globally by tenant-context.tsx:48,52); the tenant is absent from both the URL (`/api/worlds/{worldId}/listings`) and the query key.
+  Failure scenario: an admin browses tenant A's world 0, then switches to tenant B. `MarketplacePage` stays mounted, so `worldId` and the applied filter persist and the query key is unchanged; the query sets no `staleTime`, so it inherits the 5-minute default. React Query serves tenant A's cached listings under tenant B for up to 5 minutes with **no refetch triggered by the switch** — one tenant's marketplace data shows under another. This is anti-patterns.md #3 verbatim. Fix: add `activeTenant?.id ?? 'no-tenant'` to the browse key (and thread tenant into the hook).
+
+### Important (should fix)
+
+- **[FE-11] No `createErrorFromUnknown`; mutation error goes to `console.error` + a static toast.**
+  `useMtsConfig.ts:71` does `console.error("Failed to update MTS configuration:", error)` (anti-patterns.md #10 — console for errors), and the form's `onError` (`tenants-mts-config-form.tsx:63`) toasts the fixed string `"Failed to update MTS configuration"`, discarding the real detail. Failure scenario: the backend rejects a save (e.g. 400/409 validation, stale id) and the admin sees a generic message with no actionable reason, while the real detail is buried in the console. Fix: surface `createErrorFromUnknown(err, ...).message` in the toast.
+
+- **[FE-17] No component/page tests for MarketplacePage or MtsConfigForm.**
+  Only service/schema tests exist. Both components are non-trivial: MarketplacePage owns a pending-vs-applied filter state machine, 1-based↔0-based page conversion (`page - 1`, MarketplacePage.tsx:73), world-index mapping and meta-driven pagination; MtsConfigForm owns `form.reset` on load and the empty-string number coercion. Failure scenario: a regression in the page-offset conversion or the filter-apply logic ships untested and silently returns the wrong page/rows. Repo convention (ItemsPage/TenantsPage/JobDetailPage tests) expects page coverage.
+
+### Non-Blocking (Minor)
+
+- **[FE-05]** Content loading uses text, not Skeleton: MarketplacePage.tsx:238-239, tenants-mts-config-form.tsx:67-68. The config form matches the sibling tenant-config forms (properties/writers/worlds/handlers all use text loading), so it is convention-consistent; the guideline still prefers Skeleton.
+- **Number input type smell:** tenants-mts-config-form.tsx:96-97 writes `""` (string) into a `number`-typed RHF field on clear. Works (Zod rejects on submit) but is loose under strict typing.
+- **Stale doc comment:** mts-listings.service.ts:82 says `saleType` maps to `BUY_NOW / AUCTION`; the backend enum and the UI values are lowercase `"fixed"`/`"auction"` (verified `services/atlas-mts/atlas.com/mts/listing/model.go:14-15`; MarketplacePage.tsx:162-164 emits `"fixed"`/`"auction"`). Values are correct — comment only is wrong.
+- **[FE-12]** JSON:API types live in the service files, not `types/models/` — permitted by the per-service re-export convention.
+- **Array index as worldId / React key:** MarketplacePage.tsx:143-144. The `worlds` config has no id field (tenants.service.ts:111-121), so index-as-worldId is the de-facto convention; acceptable.
+
+## Final resolution (post-review fixes)
+
+Applied on the whole-branch finalization pass:
+
+- **[FE-10] Critical — FIXED.** `mtsListingsKeys.browse` now takes `tenantId` as the first key segment and `useMtsListings(tenantId, worldId, filter, enabled)`; `MarketplacePage` passes `activeTenant?.id ?? ""`. Switching tenants now yields a distinct cache entry and refetch (mirrors the `guildKeys` tenant-first pattern). `useMtsListings.ts`, `MarketplacePage.tsx`.
+- **[FE-11] Important — FIXED.** The config-save `onError` now surfaces the real backend detail via `createErrorFromUnknown(error, "Failed to update MTS configuration").message` instead of a static string. `tenants-mts-config-form.tsx`.
+- **[FE-17] Important — FIXED.** Added `MarketplacePage.test.tsx` (4 tests: default browse, 1-based→0-based page conversion, tenant-gating empty state, filter apply + pager advance) and `tenants-mts-config-form.test.tsx` (3 tests: hydration, empty state, save-submits-tenant-id). 13/13 pass (incl. the pre-existing service test); `npm run build` clean.
+- **Stale doc comment — FIXED.** `mts-listings.service.ts` `saleType` comment now reads `"fixed" / "auction"`.
+- **FE-05 (text-not-Skeleton loading), number-input `""` coercion, FE-12 (types in service files), index-as-worldId — DEFERRED (Minor, convention-consistent).** Left as-is; they match sibling tenant-config forms and the per-service re-export convention.

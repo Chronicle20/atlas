@@ -1,134 +1,80 @@
-# Backend Audit — task-102 MTS Marketplace (Go)
+# Backend Audit — task-102-mts-marketplace (whole-branch, adversarial)
 
-- **Branch:** `task-102-mts-marketplace`
-- **Diff range:** `main..HEAD` (BASE `eed47d480`, HEAD `87dfa758a`)
-- **Guidelines source:** backend-dev-guidelines skill (DOM-* / SUB-* / SEC-*)
-- **Date:** 2026-06-18
-- **Overall:** **NEEDS-WORK** — build/vet/test all green, but 1 Critical tenant-safety bug + 3 convention FAILs (DOM-02/03/05) and several Minor items.
+- **Diff range:** `6c6f52abfcdb…e3696ccf22f3` (merge-base BASE..HEAD)
+- **Guidelines Source:** backend-dev-guidelines skill (DOM-*/SUB-*/SEC-*, anti-patterns, patterns-saga)
+- **Date:** 2026-07-10
+- **Build:** PASS — `go build ./...` clean in atlas-mts, atlas-saga-orchestrator, atlas-channel, atlas-cashshop, atlas-tenants; `go vet ./...` clean in atlas-mts.
+- **Tests:** author-verified `-race` clean (not re-run per audit instructions; targeted probe only).
+- **redis-key-guard:** PASS (exit 0 run correctly from repo root; the `GOWORK=off` FAIL is the documented false-positive).
+- **Overall:** NEEDS-WORK — build/tests pass; one Important correctness risk (pre-existing platform primitive) plus minor deviations. No money-loss defect that is definitively introduced by this branch.
 
-## Phase 1 — Build / Vet / Test gate (verified, not assumed)
+## Summary counts
 
-All commands run from each module's `atlas.com/<module>` dir on this branch:
+- Critical: 0
+- Important: 1
+- Minor: 4
 
-| Module | `go build ./...` | `go vet ./...` | `go test -race ./... -count=1` |
-|---|---|---|---|
-| `services/atlas-mts` | PASS | PASS | PASS (all pkgs `ok`, 1.0–2.0s each — no producer hangs) |
-| `services/atlas-saga-orchestrator` | PASS | PASS | PASS (`saga`, `saga/mock` ok; `mts` no test files) |
-| `services/atlas-channel` | PASS | PASS | PASS (`mts`, `mts/listing`, `mts/wish`, `socket/handler` ok) |
-| `services/atlas-tenants` | PASS | PASS | PASS (`configuration` ok) |
-| `libs/atlas-saga` | PASS | — | PASS |
-| `libs/atlas-packet` | PASS | — | PASS (`field/serverbound` ok) |
-
-Objective gate PASSES. The fast test times confirm emit paths are stubbed (see Kafka section).
+### Important (one-liners)
+- **I1** — Every "atomic" money/custody composition in atlas-mts is built on `database.ExecuteTransaction`, which is a **no-op** (verified empirically): a mid-`fn` DB error leaves earlier writes committed → possible item loss / stranded bid escrow / orphaned history rows.
 
 ---
 
-## CRITICAL
+## I1 (Important) — Money/custody "atomic" compositions are not atomic (`ExecuteTransaction` no-op)
 
-### C-1 — Malformed `wishId` path param triggers a tenant-wide DELETE of all wish entries
+**Evidence — the primitive:** `libs/atlas-database/transaction.go:9-18`.
+`isTransaction(db)` returns `true` whenever `db.Statement.ConnPool != nil`, which is the case for any root `*gorm.DB` after `db.WithContext(ctx)` (the ConnPool is the raw `*sql.DB`, i.e. autocommit — not a transaction). `ExecuteTransaction` therefore runs `fn(db)` directly and **never** calls `db.Transaction(fn)`.
 
-**Evidence:**
-- `services/atlas-mts/atlas.com/mts/wish/resource.go:95-100` — `handleDeleteWish` only checks `wishId != ""`; it never validates that the value parses as a UUID.
-- `services/atlas-mts/atlas.com/mts/wish/administrator.go:14-20` — `parseId` returns `uuid.Nil` (not an error) on a malformed id.
-- `services/atlas-mts/atlas.com/mts/wish/administrator.go:67` — `DeleteWish` runs `db.Where(&entity{Id: parseId(id)}).Delete(&entity{})`.
+**Empirically verified** in this worktree: a throwaway test using `atlas-mts`'s own sqlite harness created a row inside `ExecuteTransaction` and returned an error from `fn`; the row **survived** (`Statement!=nil:true ConnPool!=nil:true; NOT ATOMIC: row survived despite fn error (count=1)`). So the "compose N mutations in one tx, all-or-nothing" contract these handlers document does not hold.
 
-`uuid.UUID` is `[16]byte`; `uuid.Nil` is its Go zero value. GORM **silently elides zero-value fields in struct-condition `Where`** (the exact gotcha in `anti-patterns.md:24` and `patterns-multitenancy-context.md:95`). The atlas-database tenant callback still injects `WHERE tenant_id = ?`, which (a) satisfies GORM's `ErrMissingWhereClause` global-write guard so the delete is **not** blocked, and (b) scopes the blast radius to the whole tenant.
+**Where the branch relies on it (money path):**
+- `services/atlas-mts/atlas.com/mts/listing/processor.go:512` — `transitionToSellerHolding` (Cancel/Expire): `UpdateState(active→terminal)` + `holding.CreateHolding` + `bid.UpdateState(held→released)`.
+- `listing/processor.go:977` — `PlaceBid`: CAS advance + `bid.CreateBid` + prior-bid release-mark.
+- `listing/processor.go:1154` — `SettleAuction`: CAS `active→settling` + winning-bid `held→won`.
+- `listing/processor.go:440` — `ReleaseHighBidEscrow`: read + `bid.UpdateState(held→released)`.
+- `services/atlas-mts/atlas.com/mts/kafka/consumer/custody/consumer.go:354` — `handleMtsMoveListingToHolding`: `UpdateState(active/settling→sold)` + `holding.CreateHolding` + two `transaction.CreateTransaction` rows.
+- Also `custody/consumer.go:103, :242, :577, :614`.
 
-**Exploit:** `DELETE /characters/{characterId}/mts/wishlist/not-a-uuid` →
-`DELETE FROM wish_entries WHERE tenant_id = ?` → **every wish entry for the tenant is deleted.**
+**Concrete failure scenario:** In `transitionToSellerHolding` (seller Cancel of an auction with a live high bid): `UpdateState(active→cancelled)` autocommits, then `holding.CreateHolding` fails (constraint / connection blip). Because there is no real transaction, the listing is now `cancelled` with **no seller holding** and **no escrow release emitted** → the seller's item is gone and the high bidder's escrowed NX is stranded. The same class applies to `handleMtsMoveListingToHolding`: the listing can flip `sold` and then the holding/history insert fail, delivering nothing while the buyer's prepaid was already debited by the preceding saga step. The `errMoveLostRace` guard (`custody/consumer.go:402-412`) only covers the `affected==0` race arm — it does **not** cover a mid-`fn` insert error after a winning transition.
 
-The author was demonstrably aware of this hazard: `listing/administrator.go:178-201` (`AdvanceAuctionBid`) uses a map-keyed `Where(map[string]interface{}{...})` *specifically* "so a struct condition would [not] elide a zero-valued prior bid" — the safe pattern was known but not applied to the delete/update functions.
-
-**Fix:** reject an unparseable id at the handler (return 400/404 before the DB), OR use map-keyed `.Where(map[string]interface{}{"id": parseId(id)})` in `DeleteWish` so a `uuid.Nil` matches nothing.
-
----
-
-## IMPORTANT
-
-### I-1 — Same struct-condition elision in the holding/listing/bid write functions (latent, defense-in-depth)
-
-Same anti-pattern as C-1, in:
-- `services/atlas-mts/atlas.com/mts/holding/administrator.go:121` (`SoftDelete`)
-- `services/atlas-mts/atlas.com/mts/holding/administrator.go:131` (`Restore`)
-- `services/atlas-mts/atlas.com/mts/listing/administrator.go:151` (`UpdateState` — has a `State` predicate, so a `uuid.Nil` would mass-update only rows in `from` state)
-- `services/atlas-mts/atlas.com/mts/listing/administrator.go:164` (`UpdateAuction` — **no** state predicate; a `uuid.Nil` id would rewrite the auction fields of *every* listing in the tenant)
-
-**Why IMPORTANT not CRITICAL:** every caller of these functions passes a UUID obtained from a DB row or a Kafka saga payload via `.String()` (e.g. `kafka/consumer/custody/consumer.go:177,213,278`, `listing/processor.go:323,698,815`) — always well-formed, so the elision cannot trigger today. But these are one refactor away from being reachable with attacker-controlled input, and the fix is mechanical. Apply the map-keyed `Where` (as `AdvanceAuctionBid` already does) to all five write functions.
-
-### I-2 — DOM-02 `ToEntity()` missing in every domain
-
-`grep "func.*ToEntity"` over `listing`, `holding`, `wish`, `bid` returns nothing. Entity construction is inlined in each administrator's `Create*` (e.g. `wish/administrator.go:49-55`, `holding/administrator.go` `CreateHolding`, `listing/administrator.go` `CreateListing`). Functionally correct (tests pass), but violates the model→entity convention.
-
-### I-3 — DOM-03 `Make(Entity) (Model, error)` missing in every domain
-
-No `func Make(` anywhere. The role is filled by an unexported `modelFromEntity` living in `provider.go` (e.g. `wish/provider.go:40`, `holding/provider.go:82`, `listing/provider.go:182`, `bid/provider.go:41`) rather than the named `Make` in `entity.go`.
-
-### I-4 — DOM-05 `TransformSlice` missing in `listing`, `holding`, `wish`
-
-No domain `TransformSlice`; list handlers inline `model.SliceMap(Transform)(...)`:
-- `services/atlas-mts/atlas.com/mts/listing/resource.go:207`
-- `services/atlas-mts/atlas.com/mts/holding/resource.go:119`
-- `services/atlas-mts/atlas.com/mts/wish/resource.go:46`
+**Fairness caveat:** This is a **pre-existing, platform-wide** defect (`bug_execute_transaction_noop`; fix is task-119's `TxCommitter` check), not introduced by this branch, and it affects ~18 services. Its practical probability is low (requires a DB error between two writes inside one `fn`), and replay-idempotency guards + the saga compensator mask many partial-failure paths. But this is the money service, and the code's comments assert atomicity ("guarantees the cancel can never half-complete", "one local DB transaction") that is currently false. **Recommendation:** land task-119 before/with this branch, or add an explicit `db.Transaction(...)` wrapper at these call sites.
 
 ---
 
-## MINOR
+## Minor findings
 
-### M-1 — DOM-17: `listing.List` collapses DB errors to HTTP 400
-`listing/resource.go:139` maps every `List` error to 400, including a DB failure from the active-cap count (`processor.go:403`). A transport/DB error would be reported to the client as a bad request.
+### M1 (Minor, DOM-02/03 deviation) — no `Make(Entity)` / `Model.ToEntity()` in entity.go
+Domain packages `listing`, `bid`, `holding`, `wish`, `transaction` have no `Make()` or `ToEntity()` in `entity.go`. Entity↔model mapping is done via `modelFromEntity` in `provider.go` (e.g. `listing/provider.go`) and an inline builder inside `administrator.go`'s create. Functionally equivalent and consistent with the wider Atlas convention, but diverges from `file-responsibilities.md`. No functional defect.
 
-### M-2 — DOM-21: `SourceInventoryType`/`InventoryType` as raw `byte`
-`holding/rest.go`, `listing/rest.go:90`, `listing/processor.go:50`, `kafka/message/mts/kafka.go:142,161`. `libs/atlas-constants/inventory` defines the canonical compartment enum (`inventory.Type`, `int8`). **However**, the shared `libs/atlas-saga/payloads.go` itself uses raw `byte` for these fields (lines 104, 502, 514, 568), so atlas-mts is *matching the established cross-service saga wire contract*, not reinventing a type. This is a repo-wide convention gap, not a task-102 regression — downgraded to informational.
+### M2 (Minor, DOM-05 deviation) — no `TransformSlice()` in rest.go
+No `TransformSlice()` exists; the browse handler transforms via `model.SliceMap(Transform)(model.FixedProvider(ms))(model.ParallelMap())` (`listing/resource.go:244`). The rule's intent (no hand-rolled transform loops in resource.go) is satisfied; the literal helper is absent.
 
-### M-3 — Service-local REST wrapper
-`services/atlas-mts/atlas.com/mts/rest/handler.go` reimplements `RegisterHandler`/`RegisterInputHandler`/`ParseInput` instead of calling `server.*` directly (ai-guidance §"Manual HTTP Handler Registration"). It does delegate to `server.RetrieveSpan`/`server.ParseTenant`, so tenant/tracing propagation is preserved; this is extra boilerplate, not a correctness defect.
+### M3 (Minor, DOM-17) — create-listing error mapping collapses DB errors to 400
+`handleCreateListing` maps **every** `List()` error to `http.StatusBadRequest` (`listing/resource.go:141-145`), including an internal DB failure from `getActiveCountBySeller` (`listing/processor.go:643`). A transient DB error is reported to the client as a 400 validation failure rather than 500.
 
----
-
-## Confirmed CORRECT (notable PASSes, verified by reading source)
-
-### Tenant safety (key risk — the prior "slug-only PK collides" bug is absent)
-- Composite `(tenant_id, id)` unique indexes on all four entities: `wish/entity.go:26-27`, `listing/entity.go:42-43`, `holding/entity.go:42-43`, `bid/entity.go:27-28` (priority 1 = tenant_id, priority 2 = id — NOT tenant_id alone).
-- Per-world serial uniqueness is tenant-scoped: `uniqueIndex idx_listings_world_serial (tenant_id, world_id, serial)` `listing/entity.go:43-45`; same for holding `entity.go:43-45`.
-- **Read** providers consistently use explicit name-keyed-map `Where` for world-0 / zero-eligible filters, each with an explanatory comment: `listing/provider.go:33,76,128`, `holding/provider.go:32,53,72`, `wish/provider.go:30`, `bid/provider.go:31`.
-- `database.Connect` in `main.go`; `RegisterTenantCallbacks` only in `test/database.go:28` (not in main.go) — matches `anti-patterns.md:23`.
-
-### Settle-move race-loss acks ERROR (the headline correctness fix, commit `5cb1bb17a`)
-- `kafka/consumer/custody/consumer.go:294-306` — when the conditional `active→sold` transition affects 0 rows AND no prior buyer holding exists (concurrent cancel/expire won), the handler returns `errMoveLostRace` and creates no holding.
-- `consumer.go:345-350` — on any handler error it emits `ErrorStatusEventProvider` and returns; it does **not** emit the MOVED ack. So the saga compensates the buyer's prepaid debit (no currency desync).
-
-### Dupe-safety suite genuinely asserts invariants (not just "runs")
-- `kafka/consumer/custody/dupe_safety_test.go:172-189` (`CancelWins`) and `:230-242` (`SettleWins`) assert `countHoldingsForOwner == 1`/`0` (single-custody) **and** that the losing move acked `custody.StatusEventTypeError` (currency invariant). Take-home replay (`:260+`) asserts the second delivery affects 0 rows.
-
-### Saga timeouts explicitly set and step-scaled (heeds `bug_preset_creation_saga_flat_timeout`)
-- `listing/processor.go:467-473` (list), `:577-580` (buy, N=3), `:594-600` + `:725,746` (bid escrow), `:755-762` + `:841` (auction settle); `holding/processor.go:153-158` (take-home). All `base + numSteps*perStep`, none flat-default.
-
-### Kafka wire-shape consistency (channel ↔ atlas-mts ↔ orchestrator)
-- Command body JSON tags identical between `services/atlas-channel/.../kafka/message/mts/kafka.go` and `services/atlas-mts/.../kafka/message/mts/kafka.go` (verified field-by-field for RegisterSale, Buy, PlaceBid, RegisterWish, MoveLtoS, etc.).
-- Command `Type` strings and `COMMAND_TOPIC_MTS` env key match (channel produces, mts consumes).
-- Status-event `Type` strings and `EVENT_TOPIC_MTS_STATUS` env key match; channel consumes a subset (BID_PLACED / ITEM_MOVED_TO_HOLDING / LISTING_EXPIRED / OUTBID are internal/unwired-to-packet, not a mismatch).
-- All MTS saga actions have decode cases in `libs/atlas-saga/unmarshal.go:366-403`, covered by `unmarshal_test.go` (35 Mts references).
-
-### No hardcoded packet mode bytes (heeds the dispatcher-family bug-memory)
-- `services/atlas-channel/.../socket/handler/itc_operation.go:92-115` (`resolveItcOperationKey`) reverse-resolves the inbound dispatcher mode byte against the tenant `options["operations"]` config table; mode bytes appear only in doc comments. Mirrors `isMessengerShopOperation`.
-
-### Producer stubbing in tests (no 42s emit hangs)
-- Emit-path consumer tests inject a `recordingProducer` per handler (`kafka/consumer/custody/dupe_safety_test.go` passes `rp.provider()` into the handler) — Pattern B injection that also captures events for assertion.
-- Processor flow tests inject stubs via the Option pattern: `listing/processor.go:197 WithSagaEmitter`, `:209 WithBalanceReader`; the live `saga.NewProcessor`/`wallet.NewProcessor` defaults are overridden in tests, so no real Kafka writer is exercised.
-
-### Other
-- Immutable models (private fields + getters, no setters) across `listing`/`holding`/`wish`/`bid`; Builders with `Build()` validation (`builder.go` in each, e.g. `listing/builder.go:280` tenantId check).
-- Config registry is a `sync.Once` singleton (`configuration/registry.go:26,31`) — matches the cache-as-singleton rule.
-- No `*_testhelpers.go` files introduced. No `// TODO`/stub/501 introduced by this branch (the one TODO at `atlas-channel/main.go:269` predates the branch — commit `b3de17d5ed`, 2026-05-27 — and is out of scope).
+### M4 (Minor, cosmetic) — garbled comment
+`listing/processor.go:687-690` has a dangling/garbled sentence ("The client previews (and the flat meso fee charged to the seller to create a listing.").
 
 ---
 
-## Summary
+## Checks that PASS (with evidence)
 
-| Severity | Count | IDs |
-|---|---|---|
-| Critical | 1 | C-1 |
-| Important | 4 | I-1, I-2, I-3, I-4 |
-| Minor | 3 | M-1, M-2 (informational), M-3 |
+- **Server-authoritative pricing (no client-trusted money):** Buy/PlaceBid/Settle read `listValue`/`buyNowPrice`/`currentBid`/`commissionRate` from the listing row, never from the caller — `listing/processor.go:798-813, :941-962, :1132`.
+- **Debit-first settle & commission-as-sink:** `expandMtsSettlePurchase` orders buyer-prepaid debit (`-MarkedUpPrice`) first, then seller-points credit (`+ListValue`), then move; the delta stays the sink — `saga/processor.go` (expandMtsSettlePurchase), `listing/processor.go:836-856, :866`.
+- **Escrow self-guard by bid state:** `ReleaseHighBidEscrow` releases only a `StateHeld` bid (winner is `StateWon` before the move) — `listing/processor.go:435-484`; sibling-offer release best-effort and idempotent — `listing/processor.go:389-422`.
+- **Saga step completion / compensation coverage:** every MTS async action has a completion + reverse-walk inverse, plus a full late-compensation table (`lateCompensableActions`) with MTS custody inverses (`RestoreMtsHolding`, `RemoveMtsListing`, `RestoreListingFromHolding`) — `saga/compensator.go:1229-1294, :1357-1585`. Move-lost-race forces buyer-debit compensation — `custody/consumer.go:402-412`.
+- **DOM-25 (config-resolved wire values):** `failNoticeOr` soft-resolves the semantic reason key from the tenant `noticeFailReasons` table with a documented fallback — `services/atlas-channel/.../kafka/consumer/mts/consumer.go:516-560` (the reference implementation cited in anti-patterns.md).
+- **Multi-tenancy:** `tenant.MustFromContext` / `tenant.FromContext` used throughout; **no** manual `Where("tenant_id …")` in non-test code; holdings copy `tenant_id` from the listing row for the cross-tenant sweep — `listing/processor.go:529, :592`.
+- **DOM-06/07:** processors take `logrus.FieldLogger`; handlers pass `d.Logger()`; no `logrus.StandardLogger()` in non-test code.
+- **DOM-08/15/12/04(SUB):** all POST use `RegisterInputHandler[T]`; no `db.Create/Save/Delete` in any `resource.go`; no `os.Getenv` in handlers; no manual JSON decode.
+- **DOM-10:** test DB registers tenant callbacks — `services/atlas-mts/.../test/database.go:28`.
+- **DOM-11:** providers lazy (`database.Query`/`SliceQuery`, `model.SliceMap`).
+- **DOM-21:** reuses `inventory.TypeFromItemId`, `item.Id`, `world.Id` (custody/consumer.go:127-129) rather than reinventing classification/id types.
 
-**Recommended before merge:** fix C-1 (and ideally I-1 in the same pass — same one-line map-keyed-`Where` change applied to all five write functions). DOM-02/03/05 (I-2/3/4) are convention debt that does not affect correctness; land or follow-up per reviewer discretion.
+## Scope note
+This is a ~34k-line, multi-service branch. The audit concentrated (per instruction) on the money/correctness path in `atlas-mts` (listing/bid/holding/wish/transaction/wallet/saga + custody consumer), the orchestrator MTS expansion + compensator, and the channel DOM-25 surface, all read in full. The remaining channel ITC socket handlers, packet codecs (libs/atlas-packet), and configuration/mock parity were sampled, not exhaustively line-audited.
+
+## Final resolution (post-review fixes)
+
+- **I1 (Important) — DEFERRED to task-119 (merge-ordering decision, NOT fixed here).** `ExecuteTransaction` being a no-op is the pre-existing platform-wide bug (`bug_execute_transaction_noop`) affecting ~18 services; the fix is a shared `TxCommitter` primitive that must not be patched on a feature branch. atlas-mts's money compositions inherit the platform behavior. Recommendation carried to the PR: land task-119 with/before this branch, or merge with the non-atomicity documented as a known platform gap.
+- **M4 (Minor) — FIXED.** Rewrote the garbled listing-fee comment in `listing/processor.go` (Step 1 debit).
+- **M1 / M2 / M3 (Minor) — DEFERRED (convention-consistent / low-risk).** entity mapping via `modelFromEntity`, `model.SliceMap(Transform)`, and the `List()`→400 mapping are left as-is; noted for a future cleanup pass.

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useParams } from "react-router-dom";
 import { useMtsConfig, useUpdateMtsConfig } from "@/lib/hooks/api/useMtsConfig";
 import { mtsConfigSchema, type MtsConfigFormData } from "@/lib/schemas/mts-config.schema";
+import { createErrorFromUnknown } from "@/types/api/errors";
 import { toast } from "sonner";
 
 const FIELDS: { name: keyof MtsConfigFormData; label: string; description: string; step?: string }[] = [
@@ -59,7 +60,8 @@ export function MtsConfigForm() {
       { tenantId, config, updates: data },
       {
         onSuccess: () => toast.success("Successfully saved MTS configuration."),
-        onError: () => toast.error("Failed to update MTS configuration"),
+        onError: (error) =>
+          toast.error(createErrorFromUnknown(error, "Failed to update MTS configuration").message),
       },
     );
   };

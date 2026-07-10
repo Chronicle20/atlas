@@ -682,10 +682,10 @@ func (p *ProcessorImpl) List(req ListRequest) (uuid.UUID, error) {
 		SetSagaType(saga.MtsOperation).
 		SetInitiatedBy(fmt.Sprintf("character_%d", req.SellerId))
 
-	// Step 1: debit the registration fee in NX. The client previews (and the
-	// flat meso fee charged to the seller to create a listing. (The 500 NX + 7%
-	// the in-game guide describes is the BUYER's commission at purchase, not this
-	// seller listing fee — see Buy's markedUp.)
+	// Step 1: debit the listing fee in NX — the flat fee charged to the seller to
+	// create a listing. (The 500 NX + 7% the in-game guide describes is the
+	// BUYER's commission at purchase, not this seller listing fee — see Buy's
+	// markedUp.)
 	//
 	// Offers skip the fee entirely: offering against a want-ad is not listing, so
 	// no seller listing fee is charged. Skipping the step (rather than a 0 debit)

@@ -301,6 +301,57 @@ func TestPlaceBidOutbidReleasesPrior(t *testing.T) {
 //
 // The winning bid is the market price 1000; the seller nets the base:
 // UnMarkUp(1000, rate=0.10, base=500) = uint32((1000-500)/1.10) = 454.
+func TestCancelReleasesHeldBidEscrow(t *testing.T) {
+	p, emitter, db, listingId, cleanup := newBidProcessor(t)
+	defer cleanup()
+
+	// A live high bid at 1000 (raw hold -1000).
+	if _, err := p.PlaceBid(bidRequest(listingId, priorBidder, priorBidderAcct, 1000)); err != nil {
+		t.Fatalf("bid: %v", err)
+	}
+	emitter.called = false
+
+	// Cancelling the auction must release the held bidder's escrow (+1000) and mark
+	// their bid released — otherwise the bidder's NX stays held forever.
+	res, err := p.Cancel(listingId.String())
+	if err != nil {
+		t.Fatalf("cancel: %v", err)
+	}
+	if !res.Won {
+		t.Fatal("cancel did not win the active->holding transition")
+	}
+	if res.HeldBidderId != priorBidder || res.HeldBidAmount != 1000 || res.HeldBidderAccountId != priorBidderAcct {
+		t.Errorf("cancel held-bid = (bidder=%d acct=%d amt=%d), want (%d,%d,1000)",
+			res.HeldBidderId, res.HeldBidderAccountId, res.HeldBidAmount, priorBidder, priorBidderAcct)
+	}
+
+	if released := findBids(t, db, listingId, bid.StateReleased); len(released) != 1 || released[0].BidderId() != priorBidder {
+		t.Errorf("released bids = %+v, want exactly the held bidder's", released)
+	}
+	if held := findBids(t, db, listingId, bid.StateHeld); len(held) != 0 {
+		t.Errorf("held bids = %+v, want none after cancel", held)
+	}
+
+	if !emitter.called {
+		t.Fatal("expected an escrow-release saga on cancel")
+	}
+	var sawRelease bool
+	for _, sg := range emitter.sagas() {
+		for _, st := range sg.Steps {
+			if st.Action != sharedsaga.MtsBidEscrow {
+				continue
+			}
+			ep := st.Payload.(sharedsaga.MtsBidEscrowPayload)
+			if ep.Amount == 1000 && ep.BidderId == priorBidder && ep.BidderAccountId == priorBidderAcct {
+				sawRelease = true
+			}
+		}
+	}
+	if !sawRelease {
+		t.Error("expected a +1000 escrow release for the held bidder on cancel")
+	}
+}
+
 func TestSettleAuctionAtExpiryCreditsSellerNoDoubleDebit(t *testing.T) {
 	p, emitter, db, listingId, cleanup := newBidProcessor(t)
 	defer cleanup()

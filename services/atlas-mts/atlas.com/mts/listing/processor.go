@@ -307,15 +307,45 @@ type CancelResult struct {
 	HoldingId uuid.UUID
 	SellerId  uint32
 	ItemId    uint32
+	// Held bid escrow to release: set when a cancelled auction still had an open
+	// high bid at cancel time (only the current high bidder still holds escrow —
+	// outbid bidders were released as they were outbid). A zero HeldBidderId means
+	// there was nothing to release. The caller (Cancel) reverses the hold.
+	HeldBidderId        uint32
+	HeldBidderAccountId uint32
+	HeldBidAmount       uint32
 }
 
 // Cancel runs the race-safe active->holding(seller) transition in one transaction.
 // See the interface doc for semantics. The conditional UpdateState is the race
 // arbiter; composing it with the holding insert in the same ExecuteTransaction
 // guarantees the cancel can never half-complete (a cancelled row without its
-// seller holding, or vice versa).
+// seller holding, or vice versa). If the cancelled auction still had an open high
+// bid, its escrow is released (reversing the hold) via a single-step saga.
 func (p *ProcessorImpl) Cancel(id string) (CancelResult, error) {
-	return p.transitionToSellerHolding(p.db.WithContext(p.ctx), id, StateCancelled, holding.OriginCancelled)
+	res, err := p.transitionToSellerHolding(p.db.WithContext(p.ctx), id, StateCancelled, holding.OriginCancelled)
+	if err != nil {
+		return res, err
+	}
+	if res.HeldBidderId != 0 {
+		releaseTxnId := uuid.New()
+		rb := saga.NewBuilder().
+			SetTransactionId(releaseTxnId).
+			SetSagaType(saga.MtsOperation).
+			SetInitiatedBy(fmt.Sprintf("character_%d", res.HeldBidderId))
+		rb.AddStep("mts_bid_escrow_release", saga.Pending, saga.MtsBidEscrow, saga.MtsBidEscrowPayload{
+			TransactionId:   releaseTxnId,
+			ListingId:       uuid.MustParse(id),
+			BidderId:        res.HeldBidderId,
+			BidderAccountId: res.HeldBidderAccountId,
+			Amount:          int32(res.HeldBidAmount),
+		})
+		rb.SetTimeout(bidEscrowTimeout())
+		if eerr := p.emitter.Create(rb.Build()); eerr != nil {
+			return res, eerr
+		}
+	}
+	return res, nil
 }
 
 // Expire runs the SAME race-safe active->holding(seller) transition as Cancel but
@@ -401,6 +431,26 @@ func (p *ProcessorImpl) transitionToSellerHolding(db *gorm.DB, id string, termin
 			HoldingId: stored.Id(),
 			SellerId:  lm.SellerId(),
 			ItemId:    lm.TemplateId(),
+		}
+
+		// If the auction still had an open high bid, mark that held bid released in
+		// THIS tx and surface it so the caller reverses the escrow hold. Only the
+		// current high bidder still holds escrow (outbid bidders were released as
+		// they were outbid). Expire only runs on no-bid auctions, so this is a no-op
+		// there; it matters for Cancel of an auction with a live bid.
+		if lm.SaleType() == SaleTypeAuction && lm.HighBidderId() != 0 {
+			heldId, heldAccount, gerr := heldBidFor(tx, lm.Id(), lm.HighBidderId())
+			if gerr != nil {
+				return gerr
+			}
+			if heldId != uuid.Nil {
+				if _, uerr := bid.UpdateState(tx, heldId.String(), bid.StateHeld, bid.StateReleased); uerr != nil {
+					return uerr
+				}
+				res.HeldBidderId = lm.HighBidderId()
+				res.HeldBidderAccountId = heldAccount
+				res.HeldBidAmount = lm.CurrentBid()
+			}
 		}
 		return nil
 	})

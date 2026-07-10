@@ -288,8 +288,10 @@ func handleListingCancelled(sc server.Model, wp writer.Producer) message.Handler
 		l.Debugf("MTS listing cancelled for seller [%d] (item [%d] -> holding [%s]).", e.Body.SellerId, e.Body.ItemId, e.Body.HoldingId.String())
 		announceTo(l, ctx, sc, wp, e.Body.SellerId, fieldpkt.MtsOperationCancelSaleItemDoneBody())
 		// Refresh the seller's "Not Yet Sold" panel so the cancelled listing drops
-		// off without re-entering MTS.
+		// off, AND the "Transfer Inventory" panel where the cancelled item now sits
+		// (ready to take home) — both without re-entering MTS.
 		announceUserSaleList(l, ctx, sc, wp, e.Body.WorldId, e.Body.SellerId)
+		announceUserPurchaseList(l, ctx, sc, wp, e.Body.SellerId)
 	}
 }
 

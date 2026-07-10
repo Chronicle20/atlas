@@ -82,6 +82,12 @@ type entity struct {
 	Category       string  `gorm:"column:category;not null"`
 	SubCategory    string  `gorm:"column:sub_category;not null"`
 
+	// OfferWishSerial / OfferWishOwnerId link an `offer` listing to the want-ad
+	// it fulfills (serial + poster id); 0 for normal listings. AutoMigrate adds
+	// them (no index changes).
+	OfferWishSerial  uint32 `gorm:"column:offer_wish_serial;not null;default:0"`
+	OfferWishOwnerId uint32 `gorm:"column:offer_wish_owner_id;not null;default:0"`
+
 	EndsAt       *time.Time `gorm:"column:ends_at;index:idx_listings_world_ends_at,priority:3"`
 	CurrentBid   uint32     `gorm:"column:current_bid;not null"`
 	HighBidderId uint32     `gorm:"column:high_bidder_id;not null"`

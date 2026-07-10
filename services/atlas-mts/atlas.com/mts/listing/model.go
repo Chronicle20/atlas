@@ -13,6 +13,8 @@ type SaleType string
 const (
 	SaleTypeFixed   SaleType = "fixed"
 	SaleTypeAuction SaleType = "auction"
+	// SaleTypeOffer is an item escrowed against a want-ad, sold only to that want-ad's poster.
+	SaleTypeOffer SaleType = "offer"
 )
 
 // State enumerates the lifecycle state of a listing.
@@ -84,6 +86,11 @@ type Model struct {
 	category       string
 	subCategory    string
 
+	// offer linkage: an offer listing points at the want-ad it fulfills
+	// (serial + poster id); 0 for normal listings.
+	offerWishSerial  uint32
+	offerWishOwnerId uint32
+
 	// auction fields
 	endsAt       *time.Time
 	currentBid   uint32
@@ -134,6 +141,9 @@ func (m Model) BuyNowPrice() *uint32    { return m.buyNowPrice }
 func (m Model) CommissionRate() float64 { return m.commissionRate }
 func (m Model) Category() string        { return m.category }
 func (m Model) SubCategory() string     { return m.subCategory }
+
+func (m Model) OfferWishSerial() uint32  { return m.offerWishSerial }
+func (m Model) OfferWishOwnerId() uint32 { return m.offerWishOwnerId }
 
 func (m Model) EndsAt() *time.Time   { return m.endsAt }
 func (m Model) CurrentBid() uint32   { return m.currentBid }

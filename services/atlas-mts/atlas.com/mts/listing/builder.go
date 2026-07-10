@@ -54,6 +54,9 @@ type Builder struct {
 	category       string
 	subCategory    string
 
+	offerWishSerial  uint32
+	offerWishOwnerId uint32
+
 	endsAt       *time.Time
 	currentBid   uint32
 	highBidderId uint32
@@ -248,6 +251,16 @@ func (b *Builder) SetSubCategory(v string) *Builder {
 	return b
 }
 
+func (b *Builder) SetOfferWishSerial(v uint32) *Builder {
+	b.offerWishSerial = v
+	return b
+}
+
+func (b *Builder) SetOfferWishOwnerId(v uint32) *Builder {
+	b.offerWishOwnerId = v
+	return b
+}
+
 func (b *Builder) SetEndsAt(v *time.Time) *Builder {
 	b.endsAt = v
 	return b
@@ -288,50 +301,52 @@ func (b *Builder) Build() (Model, error) {
 		return Model{}, errors.New("tenantId cannot be nil")
 	}
 	return Model{
-		id:              b.id,
-		tenantId:        b.tenantId,
-		worldId:         b.worldId,
-		serial:          b.serial,
-		sellerId:        b.sellerId,
-		sellerAccountId: b.sellerAccountId,
-		sellerName:      b.sellerName,
-		saleType:        b.saleType,
-		state:           b.state,
-		templateId:      b.templateId,
-		quantity:        b.quantity,
-		strength:        b.strength,
-		dexterity:       b.dexterity,
-		intelligence:    b.intelligence,
-		luck:            b.luck,
-		hp:              b.hp,
-		mp:              b.mp,
-		weaponAttack:    b.weaponAttack,
-		magicAttack:     b.magicAttack,
-		weaponDefense:   b.weaponDefense,
-		magicDefense:    b.magicDefense,
-		accuracy:        b.accuracy,
-		avoidability:    b.avoidability,
-		hands:           b.hands,
-		speed:           b.speed,
-		jump:            b.jump,
-		slots:           b.slots,
-		level:           b.level,
-		itemLevel:       b.itemLevel,
-		itemExp:         b.itemExp,
-		ringId:          b.ringId,
-		viciousCount:    b.viciousCount,
-		flags:           b.flags,
-		listValue:       b.listValue,
-		buyNowPrice:     b.buyNowPrice,
-		commissionRate:  b.commissionRate,
-		category:        b.category,
-		subCategory:     b.subCategory,
-		endsAt:          b.endsAt,
-		currentBid:      b.currentBid,
-		bidCount:        b.bidCount,
-		highBidderId:    b.highBidderId,
-		minIncrement:    b.minIncrement,
-		createdAt:       b.createdAt,
-		updatedAt:       b.updatedAt,
+		id:               b.id,
+		tenantId:         b.tenantId,
+		worldId:          b.worldId,
+		serial:           b.serial,
+		sellerId:         b.sellerId,
+		sellerAccountId:  b.sellerAccountId,
+		sellerName:       b.sellerName,
+		saleType:         b.saleType,
+		state:            b.state,
+		templateId:       b.templateId,
+		quantity:         b.quantity,
+		strength:         b.strength,
+		dexterity:        b.dexterity,
+		intelligence:     b.intelligence,
+		luck:             b.luck,
+		hp:               b.hp,
+		mp:               b.mp,
+		weaponAttack:     b.weaponAttack,
+		magicAttack:      b.magicAttack,
+		weaponDefense:    b.weaponDefense,
+		magicDefense:     b.magicDefense,
+		accuracy:         b.accuracy,
+		avoidability:     b.avoidability,
+		hands:            b.hands,
+		speed:            b.speed,
+		jump:             b.jump,
+		slots:            b.slots,
+		level:            b.level,
+		itemLevel:        b.itemLevel,
+		itemExp:          b.itemExp,
+		ringId:           b.ringId,
+		viciousCount:     b.viciousCount,
+		flags:            b.flags,
+		listValue:        b.listValue,
+		buyNowPrice:      b.buyNowPrice,
+		commissionRate:   b.commissionRate,
+		category:         b.category,
+		subCategory:      b.subCategory,
+		offerWishSerial:  b.offerWishSerial,
+		offerWishOwnerId: b.offerWishOwnerId,
+		endsAt:           b.endsAt,
+		currentBid:       b.currentBid,
+		bidCount:         b.bidCount,
+		highBidderId:     b.highBidderId,
+		minIncrement:     b.minIncrement,
+		createdAt:        b.createdAt,
+		updatedAt:        b.updatedAt,
 	}, nil
 }

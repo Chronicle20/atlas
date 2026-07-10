@@ -212,6 +212,14 @@ func handleBrowseListings(d *rest.HandlerDependency, c *rest.HandlerContext) htt
 					f.ExcludeSellerId = uint32(excludeSellerId)
 				}
 			}
+			if v := query.Get("offerWishSerial"); v != "" {
+				if offerWishSerial, err := strconv.ParseUint(v, 10, 32); err == nil {
+					f.OfferWishSerial = uint32(offerWishSerial)
+				}
+			}
+			if query.Get("excludeOffers") == "true" {
+				f.ExcludeOffers = true
+			}
 			if v := query.Get("page"); v != "" {
 				if page, err := strconv.Atoi(v); err == nil {
 					f.Page = page

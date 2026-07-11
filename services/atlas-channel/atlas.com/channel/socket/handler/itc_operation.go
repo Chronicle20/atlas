@@ -777,7 +777,7 @@ func writeBrowsePage(l logrus.FieldLogger, ctx context.Context, wp writer.Produc
 		// Wanted (section 2): every want-ad in the world EXCEPT the viewer's own,
 		// each carrying the wish serial as nITCSN, the wish price, and the owner's
 		// character name as the seller column. Shared with the post-mutation re-push.
-		items, loadErr = mtswanted.WorldItems(l, ctx, s.WorldId(), s.CharacterId())
+		items, loadErr = mtswanted.WorldItems(l, ctx, s.WorldId(), s.CharacterId(), subCategory)
 	default:
 		// Public marketplace browse: listings filtered by (section=category,
 		// item-type=subCategory), excluding the requesting character's OWN listings

@@ -270,7 +270,9 @@ func announceWishList(l logrus.FieldLogger, ctx context.Context, sc server.Model
 		// own want-ads — identical to the browse arm. Rendering the viewer's OWN
 		// want-ads here (the old behavior) made a poster see their own ad in the
 		// Wanted tab after posting/cancelling (task-102 live finding).
-		items, loadErr = mtswanted.WorldItems(l, ctx, world.Id(worldId), characterId)
+		// Section-level re-push has no active sub-tab context, so render all types
+		// (categorySub 0); the client re-queries with the sub-tab filter on click.
+		items, loadErr = mtswanted.WorldItems(l, ctx, world.Id(worldId), characterId, 0)
 	}
 	if loadErr != nil {
 		l.WithError(loadErr).Warnf("Unable to load %s view for character [%d] re-push; re-pushing whatever loaded.", wishType, characterId)
@@ -666,9 +668,20 @@ func handleWishAdded(sc server.Model, wp writer.Producer) message.Handler[mtsmsg
 		default:
 			l.Warnf("MTS WISH_ADDED for character [%d] has unknown origin [%s]; no result written.", e.Body.CharacterId, e.Body.Origin)
 		}
-		// Re-push the Cart/Wanted view so the just-added wish appears without the
-		// player re-entering MTS (the v83 client never re-requests the list after a
+		// Re-push the affected view so the just-added wish appears without the player
+		// re-entering MTS (the v83 client never re-requests the list after a
 		// SetZzimDone/RegisterWishItemDone notice).
+		if e.Body.Origin == mtsmsg.WishOriginRegisterWish {
+			// A newly posted want-ad belongs to the poster's My Page -> Offers, not the
+			// cross-character Wanted tab. Re-push Offers so the poster lands there and
+			// sees their new ad — symmetric with the CANCEL_WISH fix; announceWishList's
+			// Wanted arm would instead navigate them onto the Wanted tab.
+			// announceOwnWantAds sends requestSent=1, which clears the client's request
+			// latch (as the Wanted re-push did).
+			announceOwnWantAds(l, ctx, sc, wp, e.Body.WorldId, e.Body.CharacterId)
+			return
+		}
+		// SET_ZZIM re-pushes the Cart view (which also clears the client's latch).
 		if section, wishType, ok := wishSectionForOrigin(e.Body.Origin); ok {
 			announceWishList(l, ctx, sc, wp, e.Body.WorldId, e.Body.CharacterId, section, wishType)
 		}

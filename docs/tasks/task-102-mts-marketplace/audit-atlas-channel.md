@@ -126,3 +126,15 @@ off the true settle instant); the settle event does not carry the end time so th
 - **I-1 (Important, cart N+1) — FIXED.** `mts/cart/cart.go` now resolves all favorited listings in ONE browse (`BrowseFilter.Serials` -> atlas-mts `serial IN (?)`) instead of a `GetBySerial` per entry, indexing results by `ItcSn()`. Added `Serials []uint32` to both the channel and atlas-mts `BrowseFilter` (mirrors the existing `itemIds`/`TemplateIds` pattern) + the `serials` query param. Removes the per-re-push fan-out.
 - **I-2 (Important, Wanted sub-tab not filtered) — DEFERRED (unverified client intent).** `mtswanted.WorldItems` ignores `categorySub`. The auditor could not confirm from IDA that the Wanted section even exposes the equip/use/etc sub-tab row, so filtering it could be wrong; left as-is pending IDA verification rather than guessed (verify-don't-invent). Pre-existing, not introduced by this work.
 - **Minors — DEFERRED/noted.** M-1 register-wish re-push navigates to the Wanted tab (asymmetric with the CANCEL_WISH->Offers fix, but posting vs cancelling may want different destinations — flagged for an owner decision, not guessed); M-2 config cache no hot-invalidation (restart, known pattern); M-3 literal section/category numerals (DOM-25 gray area, client-fixed tab ids); M-4 stale `emitRemoveCartWishByListingSerial` header doc; M-5 auction-settle contract `time.Now()`.
+
+## Update (owner-confirmed)
+
+- **I-2 (Wanted sub-tabs) — FIXED.** Owner confirmed the Wanted tab DOES expose
+  item-type sub-tabs. `mtswanted.WorldItems` now takes `categorySub` and filters
+  each want-ad by its item's inventory type (`inventory.TypeFromItemId`), mirroring
+  `wishItems`/the public browse. The synchronous Wanted browse passes the client's
+  sub-tab; the section-level re-push passes 0 (all).
+- **M-1 (register-wish navigation) — FIXED.** Owner confirmed posting a want-ad
+  should land on My Page -> Offers. `handleWishAdded` now re-pushes
+  `announceOwnWantAds` for the RegisterWish origin (requestSent=1 clears the latch),
+  symmetric with the CANCEL_WISH -> Offers fix.

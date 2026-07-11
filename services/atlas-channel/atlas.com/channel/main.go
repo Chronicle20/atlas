@@ -745,6 +745,7 @@ func produceWriters() []string {
 		fieldcb.SetItcWriter,
 		fieldcb.MtsOperation2Writer,
 		fieldcb.MtsOperationWriter,
+		fieldcb.MtsChargeParamResultWriter,
 		fieldcb.FootholdInfoWriter,
 		fieldcb.SnowballStateWriter,
 		fieldcb.SnowballHitWriter,

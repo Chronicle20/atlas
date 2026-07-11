@@ -13,56 +13,10 @@ package wallet
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
-	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
-
-// Resource is the cash-shop wallet GET path template (accountId-keyed). It matches
-// services/atlas-cashshop/.../wallet/resource.go's GET /accounts/{accountId}/wallet.
-const Resource = "accounts/%d/wallet"
-
-// RestModel is the cash-shop wallet payload. It is a flat (relationship-free)
-// JSON:API resource, so no Unmarshal*Relations stubs are required. CurrencyType
-// mapping (from the saga library): 1=credit, 2=points, 3=prepaid.
-type RestModel struct {
-	Id        uuid.UUID `json:"-"`
-	AccountId uint32    `json:"accountId"`
-	Credit    uint32    `json:"credit"`
-	Points    uint32    `json:"points"`
-	Prepaid   uint32    `json:"prepaid"`
-}
-
-func (r RestModel) GetName() string { return "wallets" }
-
-func (r RestModel) GetID() string { return r.Id.String() }
-
-func (r *RestModel) SetID(strId string) error {
-	id, err := uuid.Parse(strId)
-	if err != nil {
-		return err
-	}
-	r.Id = id
-	return nil
-}
-
-func getBaseRequest() string {
-	return requests.RootUrl("CASHSHOP")
-}
-
-func requestByAccountId(accountId uint32) requests.Request[RestModel] {
-	return requests.GetRequest[RestModel](fmt.Sprintf(getBaseRequest()+Resource, accountId))
-}
-
-// createRequest POSTs a new cash-shop wallet for the account (JSON:API enveloped
-// by the requests layer). Matches cashshop's POST /accounts/{accountId}/wallet
-// (handleCreateWallet), which reads accountId from the path and credit/points/
-// prepaid from the body.
-func createRequest(accountId uint32, rm RestModel) requests.Request[RestModel] {
-	return requests.PostRequest[RestModel](fmt.Sprintf(getBaseRequest()+Resource, accountId), rm)
-}
 
 // Processor reads cash-shop wallet balances over REST.
 type Processor interface {

@@ -119,3 +119,26 @@ None — build and tests are green with zero hard failures.
 - **Important #2 (take-home flat 1s/step saga timeout) — FIXED.** `holding/processor.go` `takeHomeSagaPerStepTimeout` raised 1s → 15s to match the list/buy flows (bug_preset_creation_saga_flat_timeout family); take-home no longer spuriously compensates under broker stress.
 - **Minors — DEFERRED (convention-consistent / low-risk / documented).** ToEntity/Make naming, no TransformSlice, saga type-alias re-exports, configuration cache TTL, two unreachable `uuid.MustParse` primitives, shallow builder invariants.
 - **ExecuteTransaction no-op (out of scope)** — pre-existing platform bug (task-119); the money-path atomicity guarantees depend on it landing.
+
+## Rating correction — file-organization is a real DOM finding, not Minor
+
+Owner correctly rejected rating File-Responsibilities-table deviations as
+"convention-consistent / Minor". The audit had waved these through; they are real
+DOM findings (each file type has ONE responsibility — model.go / entity.go /
+processor.go / rest.go / requests.go). Re-rated as **Important** and FIXED:
+
+- **wallet — FIXED.** `wallet.go` collapsed three responsibilities into one file:
+  the `Processor` interface+Impl, the `RestModel`, and the request client funcs.
+  Split into `processor.go` (Processor), `rest.go` (RestModel), `requests.go`
+  (Resource + requestByAccountId/createRequest); `wallet.go` deleted. Every other
+  domain (listing/holding/wish/transaction) already had this split.
+- **configuration — FIXED.** `RestModel` + `Extract` lived in `model.go`; moved to
+  a dedicated `rest.go`. `model.go` now holds only the domain `Model` + getters +
+  `DefaultConfig`; `registry.go` is the singleton (cache.go-equivalent) home.
+- **serial — FIXED.** `serial.go` collapsed the `entity`/`TableName`/`Migration`
+  with the `Next` counter logic. Split into `entity.go` (schema + Migration) and
+  `administrator.go` (the Next write) — no package-named catch-all file, matching
+  the domain packages.
+
+All three build/vet/test -race clean. Going forward, file-organization deviations
+are graded as findings against the File Responsibilities table, not dismissed.

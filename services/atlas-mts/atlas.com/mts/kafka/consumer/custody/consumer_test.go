@@ -461,6 +461,60 @@ func TestMtsMoveListingToHolding_MarksSoldCreatesHoldingAndAcks(t *testing.T) {
 	}
 }
 
+// TestMtsMoveListingToHolding_UsesSettlePriceNotListingRow pins the bug-1 fix: the
+// history rows record the settle payload's Price (e.g. a buy-now price), NOT the
+// listing row's list value / current bid. A buy-now of an auction previously
+// recorded the last BID here (task-102 live finding).
+func TestMtsMoveListingToHolding_UsesSettlePriceNotListingRow(t *testing.T) {
+	db := test.SetupTestDB(t, listing.Migration, holding.Migration, transaction.Migration)
+	ctx := test.CreateTestContext()
+	l := logrus.New()
+
+	transactionId := uuid.New()
+	listingId := uuid.New()
+	const buyerId = uint32(7770078)
+	seeded := seedActiveListing(t, db, ctx, listingId) // list value 1000
+	sellerId := seeded.SellerId()
+
+	// The settle payload carries Price 2000 (a buy-now price ≠ the 1000 list value);
+	// both history rows must reflect 2000, not 1000.
+	cmd := newMoveCommand(transactionId, listingId, buyerId)
+	cmd.Body.Price = 2000
+
+	rp := &recordingProducer{}
+	handleMtsMoveListingToHolding(rp.provider())(db)(l, ctx, cmd)
+
+	tp := transaction.NewProcessor(l, ctx, db)
+	buyerTxns, err := tp.GetByCharacter(buyerId)
+	if err != nil || len(buyerTxns) != 1 {
+		t.Fatalf("buyer rows: err=%v count=%d (want 1)", err, len(buyerTxns))
+	}
+	// buyer PAID MarkedUp(2000, 0.10, 500) = ceil(2000*1.10) + 500 = 2200 + 500 = 2700.
+	if got := buyerTxns[0].TotalPrice(); got != 2700 {
+		t.Errorf("buyer row price = %d, want 2700 (MarkedUp buy-now 2000, not row-derived)", got)
+	}
+	// seedActiveListing uses a fixed seller id, and the in-memory DB leaks rows across
+	// tests, so scope to THIS buyer's sale row (unique buyer => unique counterparty).
+	sellerTxns, err := tp.GetByCharacter(sellerId)
+	if err != nil {
+		t.Fatalf("seller rows: %v", err)
+	}
+	var sellerPrice uint32
+	found := false
+	for _, st := range sellerTxns {
+		if st.CounterpartyId() == buyerId {
+			sellerPrice, found = st.TotalPrice(), true
+		}
+	}
+	if !found {
+		t.Fatalf("no seller sale row with counterparty %d", buyerId)
+	}
+	// seller NETTED the base 2000 (not the 1000 list value).
+	if sellerPrice != 2000 {
+		t.Errorf("seller row price = %d, want 2000 (settle base, not row-derived)", sellerPrice)
+	}
+}
+
 func TestMtsMoveListingToHolding_ReplayCreatesNoSecondHoldingAndReacks(t *testing.T) {
 	db := test.SetupTestDB(t, listing.Migration, holding.Migration)
 	ctx := test.CreateTestContext()

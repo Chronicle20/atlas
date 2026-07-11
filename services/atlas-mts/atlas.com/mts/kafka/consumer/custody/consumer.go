@@ -254,6 +254,7 @@ func handleMtsMoveListingToHolding(pf providerFn) func(db *gorm.DB) message.Hand
 				ListingId: b.ListingId,
 				BuyerId:   b.BuyerId,
 				WorldId:   b.WorldId,
+				Price:     b.Price,
 			})
 			hid := res.HoldingId
 			itemId := res.ItemId

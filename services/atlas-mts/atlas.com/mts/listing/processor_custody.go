@@ -195,6 +195,12 @@ type SettleMoveRequest struct {
 	ListingId uuid.UUID
 	BuyerId   uint32
 	WorldId   byte
+	// Price is the seller's BASE sale price for THIS settlement, taken from the settle
+	// saga payload (the buy flow's price basis): the buy-now price for a buy-now, the
+	// list value for a fixed sale, the winning bid for an auction settle. It drives
+	// both parties' history rows — re-deriving it from the listing row recorded the
+	// last BID for a buy-now auction instead of the buy-now price (task-102 live find).
+	Price uint32
 }
 
 // SettleMoveResult reports what the consumer needs after the settle-move tx
@@ -336,9 +342,17 @@ func (p *ProcessorImpl) SettleMove(req SettleMoveRequest) (SettleMoveResult, err
 		// guard above returns early on replay), so the two rows are written
 		// exactly once. salePrice is the seller's BASE price — the listing
 		// value for a fixed/buy-now sale, or the winning bid for an auction.
-		salePrice := lm.ListValue()
-		if lm.SaleType() == SaleTypeAuction {
-			salePrice = lm.CurrentBid()
+		// salePrice is taken from the settle payload (buy-now price for a buy-now, list
+		// value for a fixed sale, winning bid for an auction settle). Re-deriving it
+		// from the listing row recorded the last BID for a buy-now auction instead of
+		// the buy-now price (task-102 live finding). A 0 (older in-flight message) falls
+		// back to the row-derived value.
+		salePrice := b.Price
+		if salePrice == 0 {
+			salePrice = lm.ListValue()
+			if lm.SaleType() == SaleTypeAuction {
+				salePrice = lm.CurrentBid()
+			}
 		}
 
 		// Under the Option B pricing model the buyer pays the commission-

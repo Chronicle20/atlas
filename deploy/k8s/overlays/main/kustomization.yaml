@@ -244,7 +244,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-merchant/atlas-merchant
     newTag: main-6c6f52a
   - name: ghcr.io/chronicle20/atlas-messages/atlas-messages
-    newTag: main-6c6f52a
+    newTag: main-0962203
   - name: ghcr.io/chronicle20/atlas-messengers/atlas-messengers
     newTag: main-6c6f52a
   - name: ghcr.io/chronicle20/atlas-monster-book/atlas-monster-book

@@ -75,6 +75,6 @@ func toMtsItem(m Model, sellerName string) fieldcb.MtsItem {
 		m.Price(),   // nMinPrice
 		0,           // nMaxPrice
 		m.Price(),   // nUnitPrice
-		0,           // nProcessStatus
+		fieldcb.MtsProcessStatusNone, // nProcessStatus (want-ads have no history/auction status)
 	)
 }

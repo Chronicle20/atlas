@@ -2850,6 +2850,14 @@
         "opCode": "0x15C",
         "writer": "MtsOperation",
         "options": {
+          "processStatusCodes": {
+            "HISTORY_SOLD": 0,
+            "HISTORY_PURCHASED": 1,
+            "HISTORY_BID_LOST": 2,
+            "HISTORY_CANCELLED": 3,
+            "AUCTION_EXHIBIT": 1,
+            "AUCTION_BID": 2
+          },
           "noticeFailReasons": {
             "NOT_ENOUGH_NX": 66,
             "REGISTER_FAILED": 0,

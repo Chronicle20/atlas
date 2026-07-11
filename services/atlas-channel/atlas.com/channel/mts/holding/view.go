@@ -46,6 +46,6 @@ func ToMtsItem(m Model) fieldcb.MtsItem {
 		0,           // nMinPrice
 		0,           // nMaxPrice
 		0,           // nUnitPrice
-		0,           // nProcessStatus
+		fieldcb.MtsProcessStatusNone, // nProcessStatus (holdings have no history/auction status)
 	)
 }

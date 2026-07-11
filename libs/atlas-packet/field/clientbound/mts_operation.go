@@ -218,28 +218,72 @@ type MtsItem struct {
 	minPrice      uint32      // Decode4 nMinPrice
 	maxPrice      uint32      // Decode4 nMaxPrice
 	unitPrice     uint32      // Decode4 nUnitPrice
-	processStatus uint16      // Decode2 nProcessStatus
+	processStatus uint16      // Decode2 nProcessStatus (raw wire value; the Decode target)
+	// processStatusKey is the SEMANTIC history/auction-status key that Encode resolves
+	// to the nProcessStatus wire code from the tenant `processStatusCodes` writer table
+	// (DOM-25), so the client-switch code (CITCWnd_List::GetContractHistoryCode /
+	// GetAuctionHistoryCode) is config-driven, not a Go literal. Empty key => code 0.
+	processStatusKey string
 }
 
-func NewMtsItem(item model.Asset, itcSn uint32, price uint32, contractFee uint32, contractFeeTx string, rollbackUsage string, dateExpired [8]byte, userId string, gameId string, comment string, bidCount uint32, bidRange uint32, bidPrice uint32, minPrice uint32, maxPrice uint32, unitPrice uint32, processStatus uint16) MtsItem {
+// MtsProcessStatus* are the SEMANTIC keys for the nProcessStatus column, resolved
+// per-tenant/version through the `processStatusCodes` writer-options table. The
+// History tab feeds the code to GetContractHistoryCode (0=Sold/1=Purchased/2=Bid
+// Lost/3=Cancelled) and the Auction tab to GetAuctionHistoryCode (1=Exhibit/2=Bid).
+const (
+	MtsProcessStatusNone             = ""                  // holdings/wishes: no status column => resolves to 0
+	MtsProcessStatusHistorySold      = "HISTORY_SOLD"      // GetContractHistoryCode 0
+	MtsProcessStatusHistoryPurchased = "HISTORY_PURCHASED" // GetContractHistoryCode 1
+	MtsProcessStatusHistoryBidLost   = "HISTORY_BID_LOST"  // GetContractHistoryCode 2
+	MtsProcessStatusHistoryCancelled = "HISTORY_CANCELLED" // GetContractHistoryCode 3
+	MtsProcessStatusAuctionExhibit   = "AUCTION_EXHIBIT"   // GetAuctionHistoryCode 1
+	MtsProcessStatusAuctionBid       = "AUCTION_BID"       // GetAuctionHistoryCode 2
+)
+
+// resolveProcessStatusCode soft-resolves options["processStatusCodes"][key] to the
+// nProcessStatus wire code. An empty key, a missing table, or a missing key all
+// yield 0 (the "Sold"/blank default) rather than a crash — a tenant without the
+// table degrades gracefully, like the noticeFailReasons soft resolver.
+func resolveProcessStatusCode(options map[string]interface{}, key string) uint16 {
+	if key == "" {
+		return 0
+	}
+	raw, ok := options["processStatusCodes"]
+	if !ok {
+		return 0
+	}
+	table, ok := raw.(map[string]interface{})
+	if !ok {
+		return 0
+	}
+	switch n := table[key].(type) {
+	case float64:
+		return uint16(n)
+	case int:
+		return uint16(n)
+	}
+	return 0
+}
+
+func NewMtsItem(item model.Asset, itcSn uint32, price uint32, contractFee uint32, contractFeeTx string, rollbackUsage string, dateExpired [8]byte, userId string, gameId string, comment string, bidCount uint32, bidRange uint32, bidPrice uint32, minPrice uint32, maxPrice uint32, unitPrice uint32, processStatusKey string) MtsItem {
 	return MtsItem{
-		item:          item,
-		itcSn:         itcSn,
-		price:         price,
-		contractFee:   contractFee,
-		contractFeeTx: contractFeeTx,
-		rollbackUsage: rollbackUsage,
-		dateExpired:   dateExpired,
-		userId:        userId,
-		gameId:        gameId,
-		comment:       comment,
-		bidCount:      bidCount,
-		bidRange:      bidRange,
-		bidPrice:      bidPrice,
-		minPrice:      minPrice,
-		maxPrice:      maxPrice,
-		unitPrice:     unitPrice,
-		processStatus: processStatus,
+		item:             item,
+		itcSn:            itcSn,
+		price:            price,
+		contractFee:      contractFee,
+		contractFeeTx:    contractFeeTx,
+		rollbackUsage:    rollbackUsage,
+		dateExpired:      dateExpired,
+		userId:           userId,
+		gameId:           gameId,
+		comment:          comment,
+		bidCount:         bidCount,
+		bidRange:         bidRange,
+		bidPrice:         bidPrice,
+		minPrice:         minPrice,
+		maxPrice:         maxPrice,
+		unitPrice:        unitPrice,
+		processStatusKey: processStatusKey,
 	}
 }
 
@@ -259,7 +303,8 @@ func (m MtsItem) BidPrice() uint32      { return m.bidPrice }
 func (m MtsItem) MinPrice() uint32      { return m.minPrice }
 func (m MtsItem) MaxPrice() uint32      { return m.maxPrice }
 func (m MtsItem) UnitPrice() uint32     { return m.unitPrice }
-func (m MtsItem) ProcessStatus() uint16 { return m.processStatus }
+func (m MtsItem) ProcessStatus() uint16    { return m.processStatus }
+func (m MtsItem) ProcessStatusKey() string { return m.processStatusKey }
 
 // Encode writes one ITCITEM. The leading GW_ItemSlotBase blob is encoded by the
 // shared model.Asset codec via WriteByteArray (the standard recurse pattern);
@@ -284,8 +329,8 @@ func (m MtsItem) Encode(l logrus.FieldLogger, ctx context.Context) func(options 
 		w.WriteInt(m.bidPrice)                             // Decode4 nBidPrice
 		w.WriteInt(m.minPrice)                             // Decode4 nMinPrice
 		w.WriteInt(m.maxPrice)                             // Decode4 nMaxPrice
-		w.WriteInt(m.unitPrice)                            // Decode4 nUnitPrice
-		w.WriteShort(m.processStatus)                      // Decode2 nProcessStatus
+		w.WriteInt(m.unitPrice)                                          // Decode4 nUnitPrice
+		w.WriteShort(resolveProcessStatusCode(options, m.processStatusKey)) // Decode2 nProcessStatus (config-resolved)
 		return w.Bytes()
 	}
 }

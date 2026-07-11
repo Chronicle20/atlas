@@ -8,43 +8,24 @@ import (
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 )
 
-// nProcessStatus* are the ITCITEM disposition codes the v83 client renders as
-// the My Page -> History status column. CITCWnd_List::Draw (v83 0x5BCCD3)
-// reads word `nProcessStatus` off the decoded item and, for the contract
-// history tab (category 4 / sub 2), feeds it to CITCWnd_List::GetContractHistoryCode
-// (0x5BDBBF), which selects the string:
-//
-//	0 -> "Sold"        (SP_4750)
-//	1 -> "Purchased"   (SP_4751)
-//	2 -> "Bid Lost"    (SP_4752)
-//	3 -> "Cancelled"   (SP_4753)
-//
-// IDA-verified against the v95 PDB build (CITCWnd_List::GetContractHistoryCode
-// 0x5875D0, same mapping). Sending 0 for every row made a bought item render
-// as "Sold" (task-102 live finding). atlas-mts now records purchase, sale,
-// bid_lost (an outbid bidder's lost bid), and cancelled (a seller's cancelled
-// listing), so all four dispositions are mapped.
-const (
-	nProcessStatusSold      uint16 = 0
-	nProcessStatusPurchased uint16 = 1
-	nProcessStatusBidLost   uint16 = 2
-	nProcessStatusCancelled uint16 = 3
-)
-
-// processStatusForKind maps the transaction kind (atlas-mts Kind*) to the client's
-// contract-history disposition code. An unrecognized kind falls back to "Sold" (0)
-// — the prior behavior — rather than an out-of-range code the client would render
-// as an empty column.
-func processStatusForKind(kind string) uint16 {
+// processStatusKeyForKind maps the transaction kind (atlas-mts Kind*) to the
+// SEMANTIC My Page -> History disposition key. The v83 client renders the
+// nProcessStatus column via CITCWnd_List::GetContractHistoryCode (v83 0x5BDBBF /
+// v95 0x5875D0, same mapping): Sold / Purchased / Bid Lost / Cancelled. The wire
+// codes (0..3) are config-resolved from the tenant processStatusCodes table at
+// encode time (DOM-25) — see fieldcb.MtsProcessStatus*. Sending "Sold" for every
+// row made a bought item render as "Sold" (task-102 live finding); all four
+// dispositions are now mapped. An unrecognized kind falls back to Sold.
+func processStatusKeyForKind(kind string) string {
 	switch kind {
 	case "purchase":
-		return nProcessStatusPurchased
+		return fieldcb.MtsProcessStatusHistoryPurchased
 	case "bid_lost":
-		return nProcessStatusBidLost
+		return fieldcb.MtsProcessStatusHistoryBidLost
 	case "cancelled":
-		return nProcessStatusCancelled
+		return fieldcb.MtsProcessStatusHistoryCancelled
 	default: // "sale" and any unknown kind
-		return nProcessStatusSold
+		return fieldcb.MtsProcessStatusHistorySold
 	}
 }
 
@@ -79,6 +60,6 @@ func ToMtsItem(m Model) fieldcb.MtsItem {
 		m.TotalPrice(),                  // nMinPrice
 		0,                               // nMaxPrice
 		m.TotalPrice(),                  // nUnitPrice
-		processStatusForKind(m.Kind()), // nProcessStatus (0=Sold, 1=Purchased)
+		processStatusKeyForKind(m.Kind()), // nProcessStatus (config-resolved disposition)
 	)
 }

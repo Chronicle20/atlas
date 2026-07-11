@@ -66,13 +66,14 @@ func toMtsItem(m Model, asset packetmodel.Asset) fieldcb.MtsItem {
 	dateExpired := packetmodel.MsTimeBytes(expiry)
 
 	// The My Page -> Auction tab draws its Category column via
-	// CITCWnd_List::GetAuctionHistoryCode(nProcessStatus): 1 -> "Exhibit" (an
-	// auction I listed), 2 -> "Bid" (an auction I bid on), else empty. A seller's
-	// own active auction is an Exhibit; without this the column renders blank
-	// (task-102 live finding). Fixed sales don't use this column, so 0.
-	var processStatus uint16
+	// CITCWnd_List::GetAuctionHistoryCode(nProcessStatus): "Exhibit" (an auction I
+	// listed) vs "Bid" (an auction I bid on), else empty. A seller's own active
+	// auction is an Exhibit; without this the column renders blank (task-102 live
+	// finding). Fixed sales don't use this column. The wire code is config-resolved
+	// from the tenant processStatusCodes table (DOM-25), not a Go literal.
+	processStatusKey := fieldcb.MtsProcessStatusNone
 	if m.SaleType() == "auction" {
-		processStatus = 1
+		processStatusKey = fieldcb.MtsProcessStatusAuctionExhibit
 	}
 
 	// The client draws the price column as nPrice+nContractFee (fixed) or
@@ -95,6 +96,6 @@ func toMtsItem(m Model, asset packetmodel.Asset) fieldcb.MtsItem {
 		m.ListValue(),    // nMinPrice
 		m.BuyNowPrice(),  // nMaxPrice
 		m.ListValue(),    // nUnitPrice
-		processStatus,    // nProcessStatus (auction Exhibit=1)
+		processStatusKey, // nProcessStatus (auction => Exhibit; config-resolved)
 	)
 }

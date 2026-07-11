@@ -3,6 +3,8 @@ package transaction
 import (
 	"testing"
 	"time"
+
+	fieldcb "github.com/Chronicle20/atlas/libs/atlas-packet/field/clientbound"
 )
 
 // TestExtract asserts the transaction RestModel -> Model extraction carries the
@@ -65,50 +67,37 @@ func TestToMtsItem(t *testing.T) {
 	if item.ItcSn() != 0 {
 		t.Errorf("nITCSN = %d, want 0 (history rows are not addressable)", item.ItcSn())
 	}
-	// A sale renders as "Sold" (contract-history code 0).
-	if item.ProcessStatus() != 0 {
-		t.Errorf("sale nProcessStatus = %d, want 0 (Sold)", item.ProcessStatus())
+	// A sale renders as "Sold" (the HISTORY_SOLD key, config-resolved at Encode).
+	if item.ProcessStatusKey() != fieldcb.MtsProcessStatusHistorySold {
+		t.Errorf("sale processStatusKey = %q, want %q (Sold)", item.ProcessStatusKey(), fieldcb.MtsProcessStatusHistorySold)
 	}
 }
 
-// TestToMtsItemProcessStatus pins the buy/sell disposition code the v83 client
-// renders in the My Page -> History status column (CITCWnd_List::GetContractHistoryCode,
-// IDA-verified): a purchase is 1 ("Purchased"), a sale is 0 ("Sold").
+// TestToMtsItemProcessStatus pins the buy/sell disposition SEMANTIC KEY the History
+// column resolves through the tenant processStatusCodes table (the wire code —
+// GetContractHistoryCode 0/1/2/3 — is applied at Encode, DOM-25): purchase ->
+// HISTORY_PURCHASED, sale -> HISTORY_SOLD, bid_lost -> HISTORY_BID_LOST, cancelled ->
+// HISTORY_CANCELLED.
 func TestToMtsItemProcessStatus(t *testing.T) {
 	created := time.Date(2026, 6, 17, 10, 30, 0, 0, time.UTC)
 
-	buy, err := Extract(RestModel{ItemId: 1302000, Quantity: 1, TotalPrice: 1500, Kind: "purchase", CreatedAt: created})
-	if err != nil {
-		t.Fatalf("extract purchase: %v", err)
+	cases := []struct {
+		kind string
+		want string
+	}{
+		{"purchase", fieldcb.MtsProcessStatusHistoryPurchased},
+		{"sale", fieldcb.MtsProcessStatusHistorySold},
+		{"bid_lost", fieldcb.MtsProcessStatusHistoryBidLost},
+		{"cancelled", fieldcb.MtsProcessStatusHistoryCancelled},
 	}
-	if got := ToMtsItem(buy).ProcessStatus(); got != 1 {
-		t.Errorf("purchase nProcessStatus = %d, want 1 (Purchased)", got)
-	}
-
-	sale, err := Extract(RestModel{ItemId: 1302000, Quantity: 1, TotalPrice: 1500, Kind: "sale", CreatedAt: created})
-	if err != nil {
-		t.Fatalf("extract sale: %v", err)
-	}
-	if got := ToMtsItem(sale).ProcessStatus(); got != 0 {
-		t.Errorf("sale nProcessStatus = %d, want 0 (Sold)", got)
-	}
-
-	// bid_lost -> 2 (Bid Lost), cancelled -> 3 (Cancelled): the two dispositions
-	// added in task-102, IDA-verified via GetContractHistoryCode.
-	bidLost, err := Extract(RestModel{ItemId: 1302000, Quantity: 1, TotalPrice: 2000, Kind: "bid_lost", CreatedAt: created})
-	if err != nil {
-		t.Fatalf("extract bid_lost: %v", err)
-	}
-	if got := ToMtsItem(bidLost).ProcessStatus(); got != 2 {
-		t.Errorf("bid_lost nProcessStatus = %d, want 2 (Bid Lost)", got)
-	}
-
-	cancelled, err := Extract(RestModel{ItemId: 1302000, Quantity: 1, TotalPrice: 1500, Kind: "cancelled", CreatedAt: created})
-	if err != nil {
-		t.Fatalf("extract cancelled: %v", err)
-	}
-	if got := ToMtsItem(cancelled).ProcessStatus(); got != 3 {
-		t.Errorf("cancelled nProcessStatus = %d, want 3 (Cancelled)", got)
+	for _, tc := range cases {
+		m, err := Extract(RestModel{ItemId: 1302000, Quantity: 1, TotalPrice: 1500, Kind: tc.kind, CreatedAt: created})
+		if err != nil {
+			t.Fatalf("extract %s: %v", tc.kind, err)
+		}
+		if got := ToMtsItem(m).ProcessStatusKey(); got != tc.want {
+			t.Errorf("%s processStatusKey = %q, want %q", tc.kind, got, tc.want)
+		}
 	}
 }
 

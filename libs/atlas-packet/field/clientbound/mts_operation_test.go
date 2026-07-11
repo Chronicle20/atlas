@@ -178,7 +178,7 @@ func mtsTestItem() MtsItem {
 		0x77777777, // nMinPrice
 		0x10101010, // nMaxPrice
 		0x20202020, // nUnitPrice
-		0x3030,     // nProcessStatus
+		MtsProcessStatusHistoryPurchased, // nProcessStatus (semantic key -> config-resolved at Encode)
 	)
 }
 
@@ -190,7 +190,10 @@ func TestMtsItemRoundTrip(t *testing.T) {
 		t.Run(v.Name, func(t *testing.T) {
 			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
 			var out MtsItem
-			test.RoundTrip(t, ctx, in.Encode, out.Decode, nil)
+			// nProcessStatus is config-resolved from the processStatusCodes writer table
+			// at Encode; supply it so HISTORY_PURCHASED resolves to its wire code (1).
+			opts := map[string]interface{}{"processStatusCodes": map[string]interface{}{"HISTORY_PURCHASED": float64(1)}}
+			test.RoundTrip(t, ctx, in.Encode, out.Decode, opts)
 			if out.ItcSn() != in.ItcSn() {
 				t.Errorf("itcSn: got %x want %x", out.ItcSn(), in.ItcSn())
 			}
@@ -203,8 +206,9 @@ func TestMtsItemRoundTrip(t *testing.T) {
 			if out.Comment() != in.Comment() {
 				t.Errorf("comment: got %q want %q", out.Comment(), in.Comment())
 			}
-			if out.ProcessStatus() != in.ProcessStatus() {
-				t.Errorf("processStatus: got %x want %x", out.ProcessStatus(), in.ProcessStatus())
+			// The key HISTORY_PURCHASED resolved through the table to wire code 1.
+			if out.ProcessStatus() != 1 {
+				t.Errorf("processStatus: got %x want 1 (HISTORY_PURCHASED resolved)", out.ProcessStatus())
 			}
 		})
 	}

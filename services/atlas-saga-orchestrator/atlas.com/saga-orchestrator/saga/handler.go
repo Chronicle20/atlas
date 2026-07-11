@@ -466,26 +466,15 @@ func (h *HandlerImpl) WithCashshopProcessor(cashshopP cashshop.Processor) Handle
 }
 
 func (h *HandlerImpl) WithMtsProcessor(mtsP mts.Processor) Handler {
-	return &HandlerImpl{
-		l:              h.l,
-		ctx:            h.ctx,
-		t:              h.t,
-		charP:          h.charP,
-		compP:          h.compP,
-		skillP:         h.skillP,
-		validP:         h.validP,
-		guildP:         h.guildP,
-		inviteP:        h.inviteP,
-		buddyListP:     h.buddyListP,
-		petP:           h.petP,
-		footholdP:      h.footholdP,
-		monsterP:       h.monsterP,
-		consumableP:    h.consumableP,
-		portalP:        h.portalP,
-		cashshopP:      h.cashshopP,
-		mtsP:           mtsP,
-		systemMessageP: h.systemMessageP,
-	}
+	// Clone ALL fields, then override mtsP. The explicit field-by-field form the
+	// sibling With* methods use silently drops any HandlerImpl field it forgets to
+	// list (it currently omits 11 of 29 — reactorDropP, portalBlockingP, questP,
+	// storageP, buffP, transportP, savedLocationP, gachaponP, partyQuestP, reactorP,
+	// mapCommandP), nil-ing them on the returned Handler. A shallow struct copy can
+	// never drop a field as HandlerImpl grows — the same pattern the compensator uses.
+	c := *h
+	c.mtsP = mtsP
+	return &c
 }
 
 func (h *HandlerImpl) WithSystemMessageProcessor(systemMessageP system_message.Processor) Handler {

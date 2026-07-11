@@ -1,85 +1,188 @@
 {
   "service": "atlas-channel",
   "path": "services/atlas-channel/atlas.com/channel",
-  "scope": "MTS/ITC surface (task-102)",
   "date": "2026-07-10",
+  "scope": "task-102 MTS marketplace changed packages (full per-package sweep; supersedes MTS-scoped pass)",
   "build": "pass",
   "vet": "pass",
-  "testsPassed": 8,
+  "testsPassed": 22,
   "testsFailed": 0,
-  "overallStatus": "pass-with-findings",
-  "criticalCount": 0,
-  "importantCount": 2,
-  "minorCount": 5,
-  "findings": [
+  "overallStatus": "needs-work",
+  "domains": [
     {
-      "id": "I-1",
-      "severity": "important",
-      "title": "cart.Items does one REST round-trip per cart entry (N+1)",
-      "evidence": "mts/cart/cart.go:39-47 -> mts/listing/processor.go:49-58 (GetBySerial is a full Browse HTTP GET); runs on every wish add/remove re-push (kafka/consumer/mts/consumer.go:267) and every purchase (removeCartWishForPurchase)",
-      "scenario": "A cart of N favorites triggers N sequential atlas-mts HTTP calls on unrelated ops (e.g. any purchase), serialized on the consumer goroutine.",
-      "blocking": false
+      "name": "mts",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01", "name": "Processor in processor.go", "status": "pass", "evidence": "mts/processor.go:18,28,33"},
+        {"id": "DOM-24", "name": "producer stubbed in emitting tests", "status": "pass", "evidence": "producer_test.go tests *CommandProvider builders only; no Emit"},
+        {"id": "DOM-25c", "name": "semantic keys not client bytes", "status": "pass", "evidence": "processor.go passes origin/resultKind strings"}
+      ]
     },
     {
-      "id": "I-2",
-      "severity": "important",
-      "title": "Wanted tab (section 2) ignores the categorySub inventory sub-tab filter",
-      "evidence": "socket/handler/itc_operation.go:775-779 calls mtswanted.WorldItems (mts/wanted/wanted.go:22) which takes no categorySub; sibling wishItems (itc_operation.go:876-892) and the public browse do filter.",
-      "scenario": "Player on the Wanted tab selects the Equip sub-tab and still sees use/setup/etc want-ads.",
-      "blocking": false
+      "name": "mts/cart",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-06", "name": "no catch-all", "status": "pass", "evidence": "cart/cart.go single-purpose view render (Items)"},
+        {"id": "NAMING", "name": "view file naming", "status": "warn", "evidence": "cart.go should be view.go for parity"}
+      ]
     },
     {
-      "id": "M-1",
-      "severity": "minor",
-      "title": "Register-wish re-push navigates poster to the cross-character Wanted tab",
-      "evidence": "kafka/consumer/mts/consumer.go:664-666 + wishSectionForOrigin:309-318 send a section-2 GetItcListDone for RegisterWish, unlike the CANCEL_WISH fix (:702-709) which uses announceOwnWantAds.",
-      "scenario": "After posting a want-ad the client is yanked to the Wanted tab, which excludes the poster's own new ad.",
-      "blocking": false
+      "name": "mts/wanted",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-06", "name": "no catch-all", "status": "pass", "evidence": "wanted/wanted.go single-purpose view render"},
+        {"id": "DOM-21", "name": "atlas-constants reuse", "status": "pass", "evidence": "wanted.go:41 inventory.TypeFromItemId/item.Id"},
+        {"id": "NAMING", "name": "view file naming", "status": "warn", "evidence": "wanted.go should be view.go"}
+      ]
     },
     {
-      "id": "M-2",
-      "severity": "minor",
-      "title": "MTS config cache never invalidates (no TTL, restart required)",
-      "evidence": "mts/configuration/registry.go:61-83 caches per-tenant Model for process lifetime.",
-      "scenario": "Tenant edits MinLevel/fees in atlas-tenants; channel keeps old values until pod restart.",
-      "blocking": false
+      "name": "mts/configuration",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-02", "name": "RestModel+Extract+JSONAPI in rest.go", "status": "fail", "evidence": "configuration/model.go:68-147 holds RestModel + GetName/GetID/SetID + Extract; no rest.go"},
+        {"id": "FILE-03", "name": "request funcs in requests.go", "status": "pass", "evidence": "configuration/requests.go:24"},
+        {"id": "EXT-02", "name": "httptest integration test", "status": "fail", "evidence": "calls atlas-tenants (requests.go:24); package has no test file"},
+        {"id": "CACHE", "name": "singleton cache", "status": "pass", "evidence": "registry.go:31 sync.Once"},
+        {"id": "TESTS", "name": "package tested", "status": "warn", "evidence": "no test file"}
+      ]
     },
     {
-      "id": "M-3",
-      "severity": "minor",
-      "title": "DOM-25 gray area: section/category tab numerals are literal wire values",
-      "evidence": "socket/handler/itc_operation.go:292-295, :301; literal Category \"1\"/\"3\" in mts_entry.go:143 and consumer.go:200. Dispatcher mode bytes ARE config-resolved (resolveItcOperationKey).",
-      "scenario": "Version-dependent tab numbering would require a code change rather than a tenant-table edit; likely acceptable (client-echoed, IDA-uniform).",
-      "blocking": false
+      "name": "mts/holding",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-split", "name": "file responsibilities", "status": "pass", "evidence": "processor/rest/requests/model/view split"},
+        {"id": "EXT-01", "name": "relationship stubs present", "status": "fail", "evidence": "holding/rest.go:19-25 omits SetToOneReferenceID/SetToManyReferenceIDs"},
+        {"id": "EXT-02", "name": "httptest integration test", "status": "fail", "evidence": "rest_test.go tests only Extract/Resource"},
+        {"id": "EXT-04", "name": "RootUrl(domain)", "status": "pass", "evidence": "requests.go:15 RootUrl(MTS)"}
+      ]
     },
     {
-      "id": "M-4",
-      "severity": "minor",
-      "title": "emitRemoveCartWishByListingSerial header doc contradicts implementation",
-      "evidence": "socket/handler/itc_operation.go:931-938 (header claims listing->item lookup) vs :942-961 (matches cart wish directly by ListingSerial).",
-      "scenario": "Doc-only; implementation is the correct behavior.",
-      "blocking": false
+      "name": "mts/listing",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-split", "name": "file responsibilities", "status": "pass", "evidence": "processor/rest/requests/view split"},
+        {"id": "EXT-01", "name": "relationship stubs present", "status": "pass", "evidence": "listing/rest.go:74-75"},
+        {"id": "EXT-02", "name": "httptest integration test", "status": "fail", "evidence": "requests_test.go tests only BrowseFilter.query()"},
+        {"id": "EXT-04", "name": "RootUrl(domain)", "status": "pass", "evidence": "requests.go:52"},
+        {"id": "DOM-25", "name": "client codes config-resolved", "status": "fail", "evidence": "listing/view.go:73-76 auction Exhibit processStatus=1 fed to client GetAuctionHistoryCode, hardcoded"},
+        {"id": "DOM-21", "name": "atlas-constants reuse", "status": "pass", "evidence": "view.go:48 inventory.TypeValueEquip"}
+      ]
     },
     {
-      "id": "M-5",
-      "severity": "minor",
-      "title": "Auction-settle contract date uses time.Now() not the listing EndsAt",
-      "evidence": "kafka/consumer/mts/consumer.go:466 stamps MsTimeBytes(time.Now()).",
-      "scenario": "Cosmetic: contract date shown to both parties is a few ms off the true settle instant.",
-      "blocking": false
+      "name": "mts/transaction",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-split", "name": "file responsibilities", "status": "pass", "evidence": "processor/rest/requests/view split"},
+        {"id": "EXT-01", "name": "relationship stubs present", "status": "fail", "evidence": "transaction/rest.go:21-27 omits relationship setters"},
+        {"id": "EXT-02", "name": "httptest integration test", "status": "fail", "evidence": "rest_test.go tests only Extract"},
+        {"id": "DOM-25", "name": "client codes config-resolved", "status": "fail", "evidence": "transaction/view.go:27-32 nProcessStatus 0..3 fed to client GetContractHistoryCode, hardcoded"},
+        {"id": "EXT-04", "name": "RootUrl(domain)", "status": "pass", "evidence": "requests.go:15"}
+      ]
+    },
+    {
+      "name": "mts/wish",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-split", "name": "file responsibilities", "status": "pass", "evidence": "processor/rest/requests/view/model split"},
+        {"id": "EXT-01", "name": "relationship stubs present", "status": "pass", "evidence": "wish/rest.go:33-34"},
+        {"id": "EXT-02", "name": "httptest integration test", "status": "fail", "evidence": "processor_test.go tests Extract/findBy*/ToMtsItem only"},
+        {"id": "EXT-04", "name": "RootUrl(domain)", "status": "pass", "evidence": "requests.go:20"},
+        {"id": "DOM-25c", "name": "semantic keys", "status": "pass", "evidence": "WishOrigin* strings"},
+        {"id": "FILE-05", "name": "enums placement", "status": "warn", "evidence": "model.go:19-22 TypeCart/TypeWanted (should be state.go)"}
+      ]
+    },
+    {
+      "name": "kafka/consumer/mts",
+      "type": "sub-domain",
+      "checks": [
+        {"id": "DOM-25-reasons", "name": "fail reasons config-resolved", "status": "pass", "evidence": "failNoticeOr/noticeFailReasonCode resolve from tenant table (consumer.go:526-576)"},
+        {"id": "DOM-25-loadfail", "name": "load-failed reason config-resolved", "status": "fail", "evidence": "mtsFailReasonLoadFailed byte='N' hardcoded (consumer.go:650), used :172,:228"},
+        {"id": "DOM-24", "name": "producer stubbed", "status": "pass", "evidence": "consumer_test.go exercises no emit path; 0.008s"},
+        {"id": "DOM-25c", "name": "inbound semantic keys", "status": "pass", "evidence": "consumes ReasonKey/Origin/ResultKind strings"}
+      ]
+    },
+    {
+      "name": "kafka/consumer/saga",
+      "type": "sub-domain",
+      "checks": [
+        {"id": "DOM-21", "name": "atlas-constants reuse", "status": "pass", "evidence": "consumer.go:110-114 inventory.TypeFromItemId"},
+        {"id": "DOM-25", "name": "generic reason literals", "status": "warn", "evidence": "mtsSagaFailureReason/SaleLimit=0 documented default fallbacks"},
+        {"id": "DOM-24", "name": "producer stubbed", "status": "pass", "evidence": "consumer_test.go 0.007s, no emit"}
+      ]
+    },
+    {
+      "name": "kafka/consumer/wallet",
+      "type": "sub-domain",
+      "checks": [
+        {"id": "STRUCTURE", "name": "scene-gated writer", "status": "pass", "evidence": "consumer.go:76-83 branch on session.CashScene()"},
+        {"id": "TESTS", "name": "package tested", "status": "warn", "evidence": "no test file"}
+      ]
+    },
+    {
+      "name": "kafka/message/mts+saga+wallet",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-23", "name": "topic naming convention", "status": "pass", "evidence": "COMMAND_TOPIC_MTS/EVENT_TOPIC_MTS_STATUS/EVENT_TOPIC_WALLET_STATUS in env-configmap KEY:KEY; no manifest override"},
+        {"id": "DOM-25c", "name": "domain emits semantic keys", "status": "pass", "evidence": "mts/kafka.go ReasonKey/Origin/ResultKind strings; saga/wallet string ErrorCode/kind; no byte client code"}
+      ]
+    },
+    {
+      "name": "data/item",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-split", "name": "file responsibilities", "status": "pass", "evidence": "processor/rest/requests/model split"},
+        {"id": "EXT-01", "name": "relationship stubs present", "status": "pass", "evidence": "rest.go:33-39"},
+        {"id": "EXT-02", "name": "httptest integration test", "status": "pass", "evidence": "processor_test.go:30 httptest.NewServer JSON:API fixture"},
+        {"id": "EXT-03", "name": "404 distinguished", "status": "warn", "evidence": "caller collapses all errors to empty results (logged)"},
+        {"id": "EXT-04", "name": "RootUrl(domain)", "status": "pass", "evidence": "requests.go:14 RootUrl(DATA)"}
+      ]
+    },
+    {
+      "name": "socket/handler (ITC/MTS)",
+      "type": "sub-domain",
+      "checks": [
+        {"id": "DOM-25-modes", "name": "dispatcher modes config-resolved", "status": "pass", "evidence": "resolveItcOperationKey reverse-resolves from options[operations] (itc_operation.go:102-125)"},
+        {"id": "SUB-04", "name": "no manual JSON parsing", "status": "pass", "evidence": "arms use fieldsb.*.Decode codecs"},
+        {"id": "DOM-21", "name": "atlas-constants reuse", "status": "pass", "evidence": "inventory.Type*/item.Id/world.Id used throughout"},
+        {"id": "DOM-25-section", "name": "echoed tab indices", "status": "warn", "evidence": "itcSectionWanted=2/itcSectionCart=4 are round-tripped client tab indices"}
+      ]
+    },
+    {
+      "name": "socket/writer (ITC/MTS)",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-25", "name": "config-resolved knobs", "status": "pass", "evidence": "set_itc.go:40-48 reads mts-configs via configuration.GetRegistry()"},
+        {"id": "FILE", "name": "thin body wrappers", "status": "pass", "evidence": "mts_operation2.go/set_itc.go delegate to libs/atlas-packet codecs"}
+      ]
+    },
+    {
+      "name": "configuration/projection",
+      "type": "support",
+      "checks": [
+        {"id": "STRUCTURE", "name": "pure diff/reconcile", "status": "pass", "evidence": "apply.go ComputeOps/flatten pure"},
+        {"id": "TESTS", "name": "package tested", "status": "pass", "evidence": "projection_test.go"}
+      ]
+    },
+    {
+      "name": "main.go",
+      "type": "support",
+      "checks": [
+        {"id": "SCAFFOLD-07", "name": "writers/handlers seeded", "status": "pass", "evidence": "SetItc/MtsOperation/MtsOperation2/MtsChargeParamResult writers + EnterMtsHandle/ItcOperationHandle/ItcQueryCashRequestHandle/ItcStatusChargeHandle handlers in template_gms_{83,84,87,95}_1.json"},
+        {"id": "REGISTRATION", "name": "consumers+handlers wired", "status": "pass", "evidence": "main.go:211-212,531-534,745-747,883-886"}
+      ]
     }
   ],
-  "checklistNotes": {
-    "DOM-01_02_03": "N/A - channel-side REST read-projection packages (RestModel+Extract, immutable Model); no GORM entity/write side.",
-    "DOM-11_EXT-01": "pass - lazy SliceProvider; JSON:API relationship stubs present (wish/rest.go:33-34, listing/rest.go:74-75).",
-    "DOM-12": "pass - no os.Getenv in MTS handlers.",
-    "DOM-14_15_16": "pass - zero db.Create/Save/Delete in handlers; writes via Kafka command processor.",
-    "DOM-24": "N/A - MTS tests exercise pure functions only; no emit path driven, no producertest needed.",
-    "DOM-25": "pass on dispatch axis (mode bytes + noticeFailReasons config-resolved); see M-3.",
-    "multitenancy": "pass - tenant.MustFromContext + t.Is(sc.Tenant()) gate in every consumer announce; ctx-scoped session/REST.",
-    "immutability": "pass - private fields + getters, no setters, constructed via Extract only.",
-    "mockParity": "N/A - mts Processor interfaces are not mocked anywhere; build/test green.",
-    "SEC": "N/A - not an auth/token surface."
-  },
-  "blocking": []
+  "blocking": [
+    "FILE-02: mts/configuration RestModel+GetName/GetID/SetID+Extract in model.go (no rest.go)",
+    "EXT-01: mts/holding/rest.go and mts/transaction/rest.go missing SetToOneReferenceID/SetToManyReferenceIDs",
+    "EXT-02: no httptest integration test for mts/holding, mts/listing, mts/transaction, mts/wish, mts/configuration",
+    "DOM-25: mtsFailReasonLoadFailed 'N' hardcoded (kafka/consumer/mts/consumer.go:650)",
+    "DOM-25: nProcessStatus 0..3 (mts/transaction/view.go:27-32) and auction Exhibit=1 (mts/listing/view.go:73-76) hardcoded client-switch codes"
+  ],
+  "nonBlocking": [
+    "cart/cart.go and wanted/wanted.go named <pkg>.go instead of view.go",
+    "mts/configuration and kafka/consumer/wallet have no test files",
+    "mts/wish TypeCart/TypeWanted enums in model.go (should be state.go)",
+    "data/item EXT-03: all errors collapsed to empty search results (no 404 distinction)"
+  ]
 }

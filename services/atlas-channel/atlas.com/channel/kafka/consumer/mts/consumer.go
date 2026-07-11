@@ -166,10 +166,10 @@ func announceUserSaleList(l logrus.FieldLogger, ctx context.Context, sc server.M
 	ms, err := mtslisting.NewProcessor(l, ctx).Browse(world.Id(worldId), mtslisting.BrowseFilter{SellerId: sellerId})
 	if err != nil {
 		// The list genuinely failed to load: send the dedicated GetUserSaleItemFailed
-		// arm (client NoticeFailReason 'N' -> "failed to load the list") rather than
-		// leaving the panel silently stale.
+		// arm with the config-resolved LOAD_FAILED reason ("failed to load the list")
+		// rather than leaving the panel silently stale.
 		l.WithError(err).Errorf("Unable to refresh MTS sale list for seller [%d]; writing the failed arm.", sellerId)
-		announceTo(l, ctx, sc, wp, sellerId, fieldpkt.MtsOperationGetUserSaleItemFailedBody(mtsFailReasonLoadFailed))
+		announceTo(l, ctx, sc, wp, sellerId, userListFailedBody(mtsReasonKeyLoadFailed, fieldpkt.MtsOperationGetUserSaleItemFailedBody))
 		return
 	}
 	items := make([]fieldcb.MtsItem, 0, len(ms))
@@ -225,7 +225,7 @@ func announceUserPurchaseList(l logrus.FieldLogger, ctx context.Context, sc serv
 		// The list genuinely failed to load: send the dedicated GetUserPurchaseItemFailed
 		// arm ("failed to load the list") rather than leaving the panel silently stale.
 		l.WithError(err).Errorf("Unable to refresh MTS purchase list for character [%d]; writing the failed arm.", characterId)
-		announceTo(l, ctx, sc, wp, characterId, fieldpkt.MtsOperationGetUserPurchaseItemFailedBody(mtsFailReasonLoadFailed))
+		announceTo(l, ctx, sc, wp, characterId, userListFailedBody(mtsReasonKeyLoadFailed, fieldpkt.MtsOperationGetUserPurchaseItemFailedBody))
 		return
 	}
 	items := make([]fieldcb.MtsItem, 0, len(hs))
@@ -643,11 +643,32 @@ func handleBidFailed(sc server.Model, wp writer.Producer) message.Handler[mtsmsg
 	}
 }
 
-// mtsFailReasonLoadFailed is the CITC::NoticeFailReason byte ('N' = 78) that maps
-// to StringPool 4785 "failed to load the list". It is the reason carried by the
-// GetUserSaleItemFailed / GetUserPurchaseItemFailed arms when a panel push fails to
-// load its data (IDA-verified NoticeFailReason switch, v95 0x575dd0).
-const mtsFailReasonLoadFailed byte = 'N'
+// mtsReasonKeyLoadFailed is the SEMANTIC failure key for a panel-load failure,
+// carried by the GetUserSaleItemFailed / GetUserPurchaseItemFailed arms when a panel
+// push fails to load its data. The channel resolves it through the tenant
+// noticeFailReasons table (DOM-25) to the client's CITC::NoticeFailReason byte —
+// LIST_LOAD_FAILED = 73 -> StringPool 4785 "failed to load the list" (IDA-verified,
+// v83 CITC::NoticeFailReason 0x5a4752 case 73). This uses the EXISTING seed key; the
+// prior hardcoded 'N' (78) was WRONG — 78 maps to SP_4768 "you have at least 1 bid on
+// the item" (CANCEL_HAS_BID), so the load-failure arms showed the wrong notice.
+const mtsReasonKeyLoadFailed = "LIST_LOAD_FAILED"
+
+// userListFailedBody config-resolves a semantic failure key through the tenant
+// noticeFailReasons table (DOM-25) and writes the given GetUser*ItemFailed arm with
+// the resolved NoticeFailReason code, falling back to 0 (the bare notice) on a table
+// miss. Unlike failNoticeOr it keeps the SAME arm the client's panel-load path expects
+// (GetUserSale/PurchaseItemFailed) rather than redirecting to the search-failed arm.
+func userListFailedBody(reasonKey string, arm func(byte) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return func(l logrus.FieldLogger, ctx context.Context) func(map[string]interface{}) []byte {
+		return func(options map[string]interface{}) []byte {
+			code := byte(0)
+			if c, ok := noticeFailReasonCode(options, reasonKey); ok {
+				code = c
+			}
+			return arm(code)(l, ctx)(options)
+		}
+	}
+}
 
 // handleWishAdded writes the wish-add result to the originating character. WISH_ADDED
 // is emitted by atlas-mts's handleRegisterWish; Origin discriminates which ITC arm

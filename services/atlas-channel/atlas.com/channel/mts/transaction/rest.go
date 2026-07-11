@@ -26,6 +26,13 @@ func (r *RestModel) SetID(idStr string) error {
 	return nil
 }
 
+// Required JSON:API relationship stubs: api2go errors out decoding ANY response
+// (even one with no relationships block) unless the target implements these — the
+// task-037 trap that surfaces as a misleading empty/"not found". Matches the
+// listing/wish siblings.
+func (r *RestModel) SetToOneReferenceID(_, _ string) error            { return nil }
+func (r *RestModel) SetToManyReferenceIDs(_ string, _ []string) error { return nil }
+
 func Extract(r RestModel) (Model, error) {
 	return Model{
 		id:         r.Id,

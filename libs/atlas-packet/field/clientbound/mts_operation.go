@@ -240,29 +240,40 @@ const (
 	MtsProcessStatusAuctionBid       = "AUCTION_BID"       // GetAuctionHistoryCode 2
 )
 
-// resolveProcessStatusCode soft-resolves options["processStatusCodes"][key] to the
-// nProcessStatus wire code. An empty key, a missing table, or a missing key all
-// yield 0 (the "Sold"/blank default) rather than a crash — a tenant without the
-// table degrades gracefully, like the noticeFailReasons soft resolver.
+// mtsProcessStatusDefaults are the IDA-verified, version-stable nProcessStatus wire
+// codes (identical across gms v83/84/87/95). They live inside the codec (which
+// DOM-25 permits for wire codes) as the fallback for a tenant whose
+// processStatusCodes writer table is absent or incomplete — so the History
+// disposition and Auction category columns render correctly BEFORE the config table
+// is patched, instead of collapsing every row to 0 ("Sold"). A tenant that DOES
+// provide the table overrides these (DOM-25: config is authoritative when present).
+var mtsProcessStatusDefaults = map[string]uint16{
+	MtsProcessStatusHistorySold:      0,
+	MtsProcessStatusHistoryPurchased: 1,
+	MtsProcessStatusHistoryBidLost:   2,
+	MtsProcessStatusHistoryCancelled: 3,
+	MtsProcessStatusAuctionExhibit:   1,
+	MtsProcessStatusAuctionBid:       2,
+}
+
+// resolveProcessStatusCode resolves options["processStatusCodes"][key] to the
+// nProcessStatus wire code, falling back to the built-in version-stable default when
+// the tenant table is absent or lacks the key (an empty key => 0). Never crashes.
 func resolveProcessStatusCode(options map[string]interface{}, key string) uint16 {
 	if key == "" {
 		return 0
 	}
-	raw, ok := options["processStatusCodes"]
-	if !ok {
-		return 0
+	if raw, ok := options["processStatusCodes"]; ok {
+		if table, ok := raw.(map[string]interface{}); ok {
+			switch n := table[key].(type) {
+			case float64:
+				return uint16(n)
+			case int:
+				return uint16(n)
+			}
+		}
 	}
-	table, ok := raw.(map[string]interface{})
-	if !ok {
-		return 0
-	}
-	switch n := table[key].(type) {
-	case float64:
-		return uint16(n)
-	case int:
-		return uint16(n)
-	}
-	return 0
+	return mtsProcessStatusDefaults[key]
 }
 
 func NewMtsItem(item model.Asset, itcSn uint32, price uint32, contractFee uint32, contractFeeTx string, rollbackUsage string, dateExpired [8]byte, userId string, gameId string, comment string, bidCount uint32, bidRange uint32, bidPrice uint32, minPrice uint32, maxPrice uint32, unitPrice uint32, processStatusKey string) MtsItem {

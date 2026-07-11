@@ -182,6 +182,34 @@ func mtsTestItem() MtsItem {
 	)
 }
 
+// TestResolveProcessStatusCode_DefaultsWhenTableAbsent proves the nProcessStatus
+// column renders the correct disposition even when the tenant processStatusCodes
+// table is absent (the live-config-stale case): each key resolves to its built-in
+// version-stable default rather than collapsing to 0 ("Sold"). A present table
+// overrides the default.
+func TestResolveProcessStatusCode_DefaultsWhenTableAbsent(t *testing.T) {
+	// nil options => built-in defaults.
+	cases := map[string]uint16{
+		MtsProcessStatusNone:             0,
+		MtsProcessStatusHistorySold:      0,
+		MtsProcessStatusHistoryPurchased: 1,
+		MtsProcessStatusHistoryBidLost:   2,
+		MtsProcessStatusHistoryCancelled: 3,
+		MtsProcessStatusAuctionExhibit:   1,
+		MtsProcessStatusAuctionBid:       2,
+	}
+	for key, want := range cases {
+		if got := resolveProcessStatusCode(nil, key); got != want {
+			t.Errorf("default resolveProcessStatusCode(%q) = %d, want %d", key, got, want)
+		}
+	}
+	// A present table overrides the default.
+	opts := map[string]interface{}{"processStatusCodes": map[string]interface{}{"HISTORY_CANCELLED": float64(9)}}
+	if got := resolveProcessStatusCode(opts, MtsProcessStatusHistoryCancelled); got != 9 {
+		t.Errorf("table override = %d, want 9", got)
+	}
+}
+
 // TestMtsItemRoundTrip proves the ITCITEM trailer + embedded GW_ItemSlotBase
 // blob round-trip byte-exactly across every variant.
 func TestMtsItemRoundTrip(t *testing.T) {

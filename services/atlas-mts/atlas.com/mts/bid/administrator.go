@@ -1,6 +1,7 @@
 package bid
 
 import (
+	"fmt"
 	"time"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
@@ -79,8 +80,18 @@ func CreateBid(db *gorm.DB, m Model) (Model, error) {
 // row out of `from`. The tenant callback scopes the write to the request's
 // tenant.
 func UpdateState(db *gorm.DB, id string, from State, to State) (int64, error) {
+	bid := parseId(id)
+	if bid == uuid.Nil {
+		// Guard against the GORM zero-value struct-condition elision: a uuid.Nil Id
+		// condition vanishes, degrading this to a tenant-wide transition of EVERY bid
+		// still in `from` (the escrow state machine) — see anti-patterns.md and the
+		// listing/holding/wish siblings, which all use this nil-guarded map WHERE.
+		return 0, fmt.Errorf("invalid bid id %q", id)
+	}
+	// The map-keyed WHERE forces the id into the query; the conditional state = from
+	// predicate is preserved for the race-safe transition.
 	result := db.Model(&entity{}).
-		Where(&entity{Id: parseId(id), State: string(from)}).
+		Where(map[string]interface{}{"id": bid, "state": string(from)}).
 		Updates(map[string]interface{}{
 			"state": string(to),
 		})

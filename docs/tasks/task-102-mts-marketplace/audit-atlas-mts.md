@@ -1,111 +1,121 @@
-# Backend Audit — atlas-mts
+# Backend Audit — atlas-mts (full-service)
 
 - **Service Path:** services/atlas-mts/atlas.com/mts
 - **Guidelines Source:** backend-dev-guidelines skill (DOM-*/SUB-*/EXT-*/SEC-*)
 - **Date:** 2026-07-10
-- **Scope focus:** consumer→processor refactor, wish `listing_serial` column, multi-tenancy, money path (listing/bid/holding/wallet/transaction/saga)
+- **Scope:** FULL SERVICE — every package audited, not just changed surface. Supersedes the earlier changed-surface pass.
 - **Build:** PASS (`go build ./...` exit 0)
 - **Vet:** PASS (`go vet ./...` exit 0)
-- **Tests:** PASS (`go test ./... -count=1` exit 0 — every package `ok`, no hangs; mts consumer pkg 0.075s)
-- **Overall:** NEEDS-WORK (build+tests green; 1 Important guideline violation)
+- **Tests:** PASS — all packages green, `go test ./... -count=1` exit 0 (no package exceeds 0.18s, so no unstubbed 42s Kafka-emit stalls)
+- **Overall:** NEEDS-WORK (build+tests green; 2 Important latent defects; several Minor deviations)
 
-## Build & Test Results
+## Build & Test Results (verbatim summary)
 
-`go build ./...`, `go vet ./...`, and `go test ./... -count=1` all exit 0. No package took longer than 0.178s (listing) — no evidence of an unstubbed Kafka producer hang (a ~42s/emit stall would be visible). Confirmed emit-heavy packages (`kafka/consumer/mts`, `kafka/consumer/custody`, `holding`, `listing`, `testsupport`) all complete sub-second.
+```
+ok  atlas-mts/bid 0.021s          ok  atlas-mts/listing 0.177s
+ok  atlas-mts/configuration 0.005s ok  atlas-mts/serial 0.033s
+ok  atlas-mts/holding 0.066s      ok  atlas-mts/task 0.027s
+ok  atlas-mts/kafka/consumer/custody 0.079s  ok atlas-mts/testsupport 0.115s
+ok  atlas-mts/kafka/consumer/mts 0.069s      ok atlas-mts/transaction 0.018s
+ok  atlas-mts/wallet 0.027s       ok  atlas-mts/wish 0.072s
+? (no test files): kafka/message/*, kafka/producer/*, kafka/consumer, logger, rest, saga, test, main
+```
 
-## Refactor Verification (consumer→processor extraction)
+---
 
-The extraction is faithful. Both `kafka/consumer/mts/consumer.go` and `kafka/consumer/custody/consumer.go` are now thin: decode command → single Processor method → Kafka emit. Business logic / DB-transaction orchestration moved to `listing/custody.go` (`Accept`, `SettleMove`, `RemoveSpuriousActive`, `RestoreFromHolding`), `holding/custody.go` (`Release`, `RestoreHolding`), and `wish/register.go` (`RegisterWish`, `RemoveWish`). Kafka emission and post-commit side-effects correctly stayed in the consumers. New methods follow the `Processor` interface + `ProcessorImpl` pattern (`listing/processor.go:156`, `wish/processor.go:15`, `holding/processor.go`). Idempotency semantics preserved (deterministic ids: `listing/custody.go:80-91` accept id-existence check, `MoveHoldingId` at `:185`, holding-exists guard `:276`; race arbiters via conditional `UpdateState`/`AdvanceAuctionBid`).
-
-## Domain Checklist Results
-
-### wish (domain; new `listing_serial` column)
-
-| ID | Check | Status | Evidence |
-|----|-------|--------|----------|
-| DOM-01 | builder.go exists | PASS | wish/builder.go:28 `NewBuilder`, fluent setters, `Build()` validates tenantId (:91) |
-| DOM-02 | ToEntity() | WARN | No `ToEntity()`; entity built inline in `CreateWish` (wish/administrator.go:94). Service-wide convention. |
-| DOM-03 | Make(Entity) | WARN | Uses `modelFromEntity` (wish/provider.go:116) instead of `Make`; functionally equivalent. |
-| DOM-04 | Transform | PASS | wish/rest.go:37 |
-| DOM-05 | TransformSlice | WARN | No `TransformSlice`; handlers use `model.SliceMap(Transform)` inline (wish/resource.go:62,89). Composition, not a raw loop. |
-| DOM-06 | Processor takes FieldLogger | PASS | wish/processor.go:42 `NewProcessor(l logrus.FieldLogger, ...)` |
-| DOM-07 | Handlers pass d.Logger() | PASS | wish/resource.go:46,82,116,154 |
-| DOM-08 | POST uses RegisterInputHandler | PASS | wish/resource.go:34 `registerInput("create_wish", ...)` via `rest.RegisterInputHandler[RestModel]` |
-| DOM-09 | Transform errors handled | PASS | wish/resource.go:63,90,123 all check err |
-| DOM-10 | Test DB tenant callbacks | PASS | test/database.go:28 `database.RegisterTenantCallbacks` |
-| DOM-11 | Providers lazy | PASS | wish/provider.go:10-13 `database.SliceQuery`; map-keyed `Where` elsewhere |
-| DOM-12 | No os.Getenv in handlers | PASS | grep: 0 matches in resource.go |
-| DOM-15 | No direct entity writes in resource.go | PASS | grep: 0 `db.Create/Save/Delete` in resource.go |
-| DOM-16 | administrator.go for writes | PASS | wish/administrator.go `CreateWish`/`DeleteWish`/`DeleteExpiredWanted` |
-| DOM-18 | JSON:API interface on REST model | PASS | wish/rest.go:24-35 `GetName`/`GetID`/`SetID` |
-| DOM-19 | Flat request model | PASS | wish/rest.go:10-22 flat, `Id json:"-"`, no nested Data/Type/Attributes |
-| DOM-20 | Table-driven tests | PASS | wish/processor_test.go, resource_test.go present, pkg `ok` |
-| DOM-21 | No atlas-constants duplication | PASS | uses `world.Id` (model.go:31); `listing/custody.go:109` uses `inventory.TypeFromItemId(item.Id(...))` |
-
-**listing_serial column:** entity `ListingSerial uint32 gorm:"...;not null;default:0"` (wish/entity.go:63, additive AutoMigrate, no index churn); private field + getter (model.go:36,50); builder setter (builder.go:59); provider round-trip (provider.go:121); administrator persist (administrator.go:101); rest field + Transform (rest.go:16,45). Immutable-model compliance is clean.
-
-### listing / holding / bid / transaction (money-path domains)
-
-| ID | Check | Status | Evidence |
-|----|-------|--------|----------|
-| DOM-06 | FieldLogger | PASS | listing/processor.go:287, holding/processor.go, bid, transaction |
-| DOM-08 | POST→RegisterInputHandler | PASS | listing/resource.go:164 list POST returns 202; DELETE cancel maps errors |
-| DOM-11 | Providers lazy + world-0-safe | PASS | listing/provider.go map-keyed `Where` (:183); serial/serial.go:83 explicit map WHERE (documents world-0 struct-elision hazard) |
-| DOM-16 | administrator.go | PASS | listing/administrator.go, holding/administrator.go, bid/administrator.go, transaction/administrator.go |
-| DOM-17 | Error→HTTP status mapping | PASS | listing/resource.go: 400/403/404/409/500/202/204 (lines 69,86,97,109,289) |
-| DOM-20 | Table-driven tests | PASS | administrator_test, processor_test, *_flow_test present; all `ok` |
-| DOM-24 | Kafka producer stubbed in emitting tests | PASS | Per-test DI of a `producer.Provider` (`recordingProducer`, kafka/consumer/mts/consumer_test.go:35) injected via the handler's `pf` param; processors stub emission via `WithSagaEmitter`/`WithBalanceReader` (listing/processor.go:271,281). No global-singleton emit path → no ~42s stall (runtimes confirm). |
-
-### Multi-tenancy
-
-PASS. `tenant.MustFromContext`/`tenant.FromContext` used at every write site (listing/custody.go:93,298; wish/register.go:41; consumer history rows). Every query runs through `db.WithContext(ctx)` for callback tenant-scoping. World-0 struct-condition elision is explicitly defended with map-keyed `Where` clauses (wish/provider.go:27-39,86-98; serial/serial.go:83-99). Cross-tenant sweep paths take `tenantId` explicitly + `WithoutTenantFilter` (listing/provider.go:198-203; serial.Next passes tenantId explicitly). Holdings are tenant-self-describing from the listing row (`lm.TenantId()`, listing/processor.go:547) so the cross-tenant ticker needs no tenant model.
-
-### External HTTP client — wallet
-
-| ID | Check | Status | Evidence |
-|----|-------|--------|----------|
-| EXT-01 | JSON:API relationship stubs | WARN | wallet/wallet.go RestModel omits `SetToOneReferenceID`/`SetToManyReferenceIDs`; documented as relationship-free (:27-29). Low risk (cashshop wallet payload has no relationships block) but stubs are the checklist default. |
-| EXT-02 | httptest integration test | PASS | wallet/wallet_test.go:16,40 `httptest.NewServer` serving wallet JSON; exercises real unmarshal via `requestByAccountId`. |
-| EXT-03 | 404 distinguished | PASS | wallet/wallet.go:116 `errors.Is(err, requests.ErrNotFound)`; `PrepaidBalance`/`Balance` bubble transport errors unchanged (no map-all-to-not-found). |
-| EXT-04 | RootUrl, not hardcoded | PASS | wallet/wallet.go:52 `requests.RootUrl("CASHSHOP")` |
-
-## Findings (ranked)
+## Findings by severity
 
 ### Critical
-None introduced by this work.
+None newly found in scope.
 
-Context (out of scope, do not re-litigate): the platform `database.ExecuteTransaction` no-op bug (bug_execute_transaction_noop / task-119) means the "one local DB transaction" atomicity claims throughout `listing/custody.go` (`Accept`, `SettleMove`), `holding/custody.go`, `wish/register.go`, and `PlaceBid`/`Cancel` do not actually hold — a mid-tx failure will not roll back prior mutations. This is a pre-existing platform defect, not caused by the refactor, and the refactor faithfully carried the (correct-once-the-platform-is-fixed) transaction structure forward.
+Out-of-scope caveat (explicitly excluded per audit brief — pre-existing platform bug, fixed elsewhere in task-119): the entire money path's "in ONE local DB transaction / can never half-complete" guarantees — `listing.transitionToSellerHolding` (Cancel/Expire), `listing.SettleMove`, `listing.PlaceBid`, `listing.Accept`, `holding.Release`/`RestoreHolding`, and the `serial.Next` co-commit — all wrap in `database.ExecuteTransaction`, which is the known no-op primitive (`bug_execute_transaction_noop`). Until task-119 lands, those atomicity protections are documented but not actually in force. Noted, not raised as a new Critical.
 
 ### Important
+1. **bid/administrator.go:83 — struct-based WHERE on the auction escrow state machine (documented anti-pattern).**
+   `UpdateState` builds its predicate as `Where(&entity{Id: parseId(id), State: string(from)})`. This is the exact anti-pattern the guidelines call out (anti-patterns.md:24 "Using struct-based WHERE after removing TenantId — GORM skips zero-value fields"). If `parseId(id)` returns `uuid.Nil` (malformed id), GORM elides the `Id` predicate and the UPDATE degrades to a tenant-wide `state=from → state=to` transition of **every** bid in that state — an escrow-state corruption on the money path. Every sibling administrator does this safely: `listing.UpdateState` (administrator.go:152-168), `holding.SoftDelete`/`Restore` (administrator.go:121-148), and `wish` all guard `uuid.Nil` explicitly and use a map-keyed WHERE. bid is the sole unguarded, struct-condition case. Current production callers (`heldBidFor` results in listing/processor.go, guarded by `!= uuid.Nil`) never pass a nil id, so it is **latent**, but it is a footgun on the auction bid/escrow state transitions. Fix: mirror `listing.UpdateState` (nil guard + `Where(map[string]interface{}{"id":..., "state":...})`).
 
-**I-1 — DOM-25: hardcoded clientbound NoticeFailReason byte on cancel + take-home Failed events.**
-`mtsFailReasonGeneric byte = 0` (kafka/consumer/mts/consumer.go:84) is passed as a literal wire byte to `ListingCancelFailedStatusEventProvider` (consumer.go:173) and `TakeHomeFailedStatusEventProvider` (consumer.go:253). The event bodies carry it as `Reason byte json:"reason"` (kafka/message/mts/kafka.go:391 `StatusEventListingCancelFailedBody`, :430 `StatusEventTakeHomeFailedBody`), and per the code's own comment (consumer.go:80-84) the channel "passes it straight into the *Failed clientbound codec's Decode1 reason field" — i.e. the domain service emits a client-interpreted wire byte instead of a semantic key resolved channel-side against the tenant `noticeFailReasons` writer table. The sibling failure events were already migrated to the config-driven `ReasonKey string` form: `ListingCreateFailedStatusEventProvider(...reasonKey string)` (producer.go:163), `BuyFailedStatusEventProvider(...reason string...)` (:210), `BidFailedStatusEventProvider(...reason string)` (:227), backed by the `FailReason*` semantic keys (kafka/message/mts/kafka.go:16-24). This is the exact anti-pattern enumerated in `anti-patterns.md` §"Hardcoding client-interpreted wire values" (reviewed as DOM-25), which even names "task-102 NoticeFailReason" as a prior instance; "the value is version-stable" is explicitly non-exempting (task-103 uniformity ruling).
-*Failure scenario:* a tenant on a client version whose `CITC::NoticeFailReason` table does not map byte 0 to the intended generic notice shows the wrong cancel/take-home failure text, and it cannot be re-tuned per-version from the seed template the way buy/bid/create can — it requires a code change. Runtime impact is limited today because both paths only ever produce a generic failure, but the two remaining `reason byte` events are the last hardcoded-wire-value holdouts in an otherwise-migrated event surface.
-*Fix:* give both events a `ReasonKey string json:"reasonKey,omitempty"` (mirroring create/buy/bid), emit a semantic key (e.g. `FailReasonGeneric`), and resolve it channel-side; delete `mtsFailReasonGeneric`.
+2. **holding/processor.go:33 — take-home saga per-step timeout (1s) contradicts the codebase's own documented incident.**
+   `takeHomeSagaPerStepTimeout = 1 * time.Second`. The sibling list/buy flows in listing/processor.go:143-151 document exactly why 1s/step is wrong: "an observed MTS buy had a single wallet-credit step take ~11s, tripping the old 1s/step budget and firing compensation while the step was still in flight" — and they moved to 15s/step. The WithdrawFromMts saga (2 expanded steps) here gets `base 10s + 2×1s = 12s` total; under the same stressed-broker condition a legitimate take-home can time out and be compensated (the released holding is re-created, the player's take-home spuriously "fails"). Not money-loss (compensation restores the holding), but a reliability regression of the exact `bug_preset_creation_saga_flat_timeout` family the rest of the service already fixed. Fix: scale the per-step budget to 15s (or justify the divergence in-code).
 
-### Minor
+### Minor / informational
+- **DOM-02 / DOM-03 deviation (all 5 domains):** no package defines `func (m Model) ToEntity()` or `func Make(Entity)`. Entity↔model mapping is centralized in the documented alternative `modelFromEntity(e entity) (Model, error)` (provider.go) plus explicit entity assembly in the `CreateXxx` administrators. file-responsibilities.md sanctions `modelFromEntity` in its provider.go section, so the mapping goal is met — but the DOM-02/03 named-convention is not followed. Consistent across bid/holding/listing/transaction/wish; non-blocking.
+- **DOM-05 deviation:** no `TransformSlice` function anywhere; list handlers use `model.SliceMap(Transform)(model.FixedProvider(ms))(model.ParallelMap())()` inline (listing/resource.go:257, wish/resource.go:62/89, transaction/resource.go:44). Functionally equivalent (no raw loop), but not the named function DOM-05 expects.
+- **saga/model.go:10-39 — type-alias re-exports** of atlas-saga types (`type Saga = sharedsaga.Saga`, etc.), which anti-patterns.md discourages ("Type aliases for library migrations"). This mirrors the accepted atlas-character-factory convention and is for local saga-construction ergonomics (not a migration leaving dead aliases), so low risk.
+- **configuration/registry.go — no TTL / invalidation on the per-tenant config cache** (loads once per tenant per process lifetime). A live MTS-config change requires a pod restart to take effect. cache.md recommends TTL-based expiration. Degrades gracefully to `DefaultConfig()` on a fetch miss, so not a correctness risk, only a staleness one.
+- **listing/processor.go:387 and listing/custody.go:419 — `uuid.MustParse(...)`** on the listing-id string (panics on malformed input). Unreachable in practice (a malformed id fails the earlier `GetById` lookup before reaching these lines, and REST/Kafka ids are validated upstream), but a raw panic primitive inside a processor/consumer path is a latent crash-on-bad-input; prefer `uuid.Parse` with an error return.
+- **Shallow builder invariants:** every `Build()` validates only `tenantId != uuid.Nil`; business invariants (non-empty saleType/state, positive prices) are enforced in the List/Buy/PlaceBid processor flows instead. Acceptable per the layering, but the builder's "invariant enforcement" is thin.
 
-**M-1 — Consumer layer writes through administrator/provider directly, bypassing the processor.** `transaction.CreateTransaction(...)` is called straight from the mts consumer for best-effort history rows (kafka/consumer/mts/consumer.go:228 cancel, :412 bid-lost), and the custody consumer resolves + consumes a fulfilled want-ad via `wish.GetBySerial(...)` + `wish.DeleteWish(...)` directly (kafka/consumer/custody/consumer.go:290,292). The rest of the refactor pushed logic into processor methods; these post-commit side-effects reach into the administrator/provider layer from the emission layer. `file-responsibilities.md` puts writes behind processor → administrator. Consider a `transaction` processor method and a `wish.Processor.ConsumeFulfilled(...)` for symmetry.
+---
 
-**M-2 — DOM-05: no `TransformSlice` in any package.** `grep 'func TransformSlice'` → 0 matches (listing/wish/holding/transaction rest.go). List handlers use `model.SliceMap(Transform)(...)` inline (wish/resource.go:62,89) — functional composition, not a raw for-loop, so no correctness issue, but it deviates from the documented DOM-05 `TransformSlice` helper.
+## Per-package coverage & DOM checklist
 
-**M-3 — EXT-01: wallet RestModel omits the no-op relationship stubs.** `SetToOneReferenceID`/`SetToManyReferenceIDs` absent (wallet/wallet.go:30-49). Documented as relationship-free; safe as long as the upstream cashshop wallet payload never grows a `relationships` block, but the checklist wants the stubs present as defense.
+### Domain packages (have `model.go`) — bid, holding, listing, transaction, wish
 
-**M-4 — DOM-02/03 naming convention.** Domain packages use `modelFromEntity` (provider.go) + inline `entity{...}` assembly in the administrator instead of the documented `Model.ToEntity()` / `Make(Entity)` in entity.go. Service-wide and functionally equivalent; noted for convention consistency only.
+| ID | Check | bid | holding | listing | transaction | wish |
+|----|-------|-----|---------|---------|-------------|------|
+| DOM-01 | builder.go + Build() validation | PASS builder.go:68 | PASS builder.go:200 | PASS builder.go:299 | PASS builder.go:75 | PASS builder.go:91 |
+| DOM-02 | `ToEntity()` | DEV (uses modelFromEntity) | DEV | DEV | DEV | DEV |
+| DOM-03 | `Make(Entity)` | DEV (modelFromEntity+CreateBid) | DEV | DEV | DEV | DEV |
+| DOM-04 | `Transform` in rest.go | N/A (no REST) | PASS rest.go:83 | PASS rest.go:123 | PASS rest.go:33 | PASS rest.go:37 |
+| DOM-05 | `TransformSlice` | N/A | DEV (SliceMap inline) | DEV | DEV | DEV |
+| DOM-06 | Processor takes FieldLogger | PASS processor.go:29 | PASS processor.go:81 | PASS processor.go:287 | PASS processor.go:26 | PASS |
+| DOM-07 | handlers pass d.Logger() | N/A | PASS | PASS | PASS | PASS |
+| DOM-08 | POST/PATCH RegisterInputHandler | N/A (no POST) | PASS resource.go:31/35 | PASS resource.go:34/38 | N/A (read-only) | PASS resource.go:30/34 |
+| DOM-09 | Transform errors handled | N/A | PASS | PASS (resource.go:257,310) | PASS | PASS |
+| DOM-10 | test DB tenant callbacks | PASS test/database.go:28 | PASS | PASS | PASS | PASS |
+| DOM-11 | providers lazy (Query/SliceQuery) | PASS provider.go | PASS | PASS provider.go:12-14 | PASS | PASS |
+| DOM-12 | no os.Getenv in handlers | PASS | PASS | PASS | PASS | PASS |
+| DOM-13 | no cross-domain logic in handlers | PASS | PASS | PASS | PASS | PASS |
+| DOM-14 | handlers call processors not providers | N/A | PASS | PASS | PASS | PASS |
+| DOM-15 | no db.Create/Save/Delete in resource.go | PASS | PASS | PASS | PASS | PASS |
+| DOM-16 | administrator.go for writes | PASS | PASS | PASS | PASS | PASS |
+| DOM-17 | domain error → HTTP status | N/A | PASS | PASS (400/403/404/409/500) | PASS | PASS (400/404/500) |
+| DOM-18 | JSON:API GetName/GetID/SetID | N/A | PASS | PASS rest.go:72-83 | PASS | PASS |
+| DOM-19 | flat request models | N/A | PASS (TakeHomeRestModel) | PASS (CreateListingRestModel) | N/A | PASS |
+| DOM-20 | table-driven tests | PASS | PASS | PASS | PASS | PASS |
+
+Service-wide DOM checks (apply across all packages):
+- **DOM-21 (atlas-constants reuse): PASS** — no locally-redefined id/type; uses `world.Id`, `inventory.TypeFromItemId`, `item.Id` (listing/custody.go:109, serial/serial.go, transaction, holding). No item-id classification or inventory-type enum reinvented.
+- **DOM-22 (Dockerfile lib blocks): PASS** — repo uses the shared root `Dockerfile` (ARG SERVICE) model, not a per-service Dockerfile. atlas-mts is enumerated in docker-bake.hcl:73 and .github/config/services.json:305; every direct-require lib (constants/database/kafka/model/rest/saga/service/tenant/tracing) is a pre-existing shared lib present in the root Dockerfile — atlas-saga confirmed at Dockerfile lines 44/73/93 and go.work:16.
+- **DOM-23 (Kafka topic naming/config): PASS** — topics `COMMAND_TOPIC_MTS`, `COMMAND_TOPIC_MTS_CUSTODY`, `EVENT_TOPIC_MTS_STATUS`, `EVENT_TOPIC_MTS_CUSTODY_STATUS`, `COMMAND_TOPIC_SAGA` all resolved via `topic.EnvProvider`, all present in deploy/k8s/base/env-configmap.yaml with `KEY:"KEY"` shape (lines 52,53,131,132,68), and deploy/k8s/base/atlas-mts.yaml consumes via `envFrom: configMapRef: atlas-env` with NO literal topic override. UPPER_SNAKE, no dotted-lowercase, no versioned suffixes.
+- **DOM-24 (Kafka producer stubbed in emit tests): PASS (substance)** — no test package stalls (all <0.18s), so no unstubbed 42s emit path. Emit paths are stubbed by injection rather than the shared `producertest` package: listing/holding processors expose `WithSagaEmitter(...)` and tests inject a capturing stub; consumer handlers take a `pf providerFn` parameter and tests pass a recording/no-op `producer.Provider` (kafka/consumer/custody/consumer_test.go `recordingProducer`). NOTE: the service does not use `producertest.InstallNoop()` — the shared-package purity DOM-24(d) prefers — but the acceptable "per-test injection of a no-op producer.Provider" arm is satisfied.
+
+### Sub-domain / support packages
+
+| Package | Purpose | Notes |
+|---------|---------|-------|
+| wallet/ | EXT cross-service client (reads atlas-cashshop wallet) + read-only REST passthrough | EXT-01 PASS (flat RestModel, no relationships block — comment wallet.go:27-28); EXT-02 PASS (httptest.NewServer in wallet_test.go:16,40); EXT-03 PASS (`errors.Is(err, requests.ErrNotFound)` wallet.go:116); EXT-04 PASS (`requests.RootUrl("CASHSHOP")` wallet.go:52). Resource GET uses `rest.RegisterHandler`; no direct entity writes. |
+| configuration/ | Per-tenant MTS config singleton registry + atlas-tenants REST fetch | Singleton via sync.Once (registry.go:31); EXT client `requests.RootUrl("TENANTS")` (requests.go:16); graceful DefaultConfig fallback. Minor: no cache TTL. |
+| saga/ | atlas-saga type re-exports + saga emitter Processor + command producer | Producer uses `producer.ProviderImpl(l)(ctx)` with span+tenant decorators (producer.go:14-15 via kafka/producer). Minor: type-alias re-exports. |
+| serial/ | Per-(tenant,world) monotonic ITC counter | Correct: seed-on-conflict + atomic `next_serial + 1` under row lock, all map-keyed WHERE (world 0 safe). Must run inside caller tx — documented. |
+| task/ | DB-driven auction-expiration sweep ticker | Cross-tenant via `database.WithoutTenantFilter`; tenant taken from each listing row; batch-capped (500) with deferred-tail logging; SettleAuction/Expire share the atomic transitions. Clean. |
+| kafka/message/{mts,custody,saga} | topic constants + command/event envelopes | Semantic `ReasonKey` failure keys (DOM-25 compliant — no client wire bytes emitted); distinct JSON tag `reasonKey` to avoid the shared-topic string/number unmarshal collision. |
+| kafka/producer/{,mts,custody} | context-decorated producers | `ProviderImpl` builds SpanHeaderDecorator + TenantHeaderDecorator per ctx (producer.go). |
+| kafka/consumer/{mts,custody} | command consumers, saga step acks, failure notices | Thin handlers delegate business logic to processors; own only acks/emits; atomic `msg.Emit(buf)`; ERROR ack on failure drives saga compensation; per-context producer for correct headers. Layer separation clean. |
+| rest/ | service-local RegisterHandler/RegisterInputHandler + path parsers | Wraps `server.ParseTenant` + `jsonapi.Unmarshal`; automatic tenant/span; no manual JSON envelope in domain resources. Equivalent to server.* helpers. |
+| testsupport/ | env-gated (`MTS_TEST_ROUTES_ENABLED`) e2e test routes | Never routed through ingress; mirrors real channel command providers. main.go:105 gates registration. |
+| logger/, test/, main.go | app wiring | main.go clean: `database.Connect(SetMigrations(...))` (no RegisterTenantCallbacks in main — correct), consumer registration, REST routes, teardown, sweep ticker. |
+
+### Security (SEC-*)
+atlas-mts is not an auth/token service (no JWT parsing, no OAuth callback/redirect). SEC-01/02/03 N/A. SEC-04 (no hardcoded secrets): PASS — DB creds via `db-credentials` secretKeyRef (atlas-mts.yaml:33-42); no keys/passwords in source. Input validation: REST handlers validate path/query params (ParseWorldId/CharacterId/AccountId/ListingId, explicit uuid.Parse guards on delete paths e.g. wish/resource.go:146), server-authoritative price-floor / active-cap / auction-duration / owner-checks enforced in the List/Cancel/Buy/Bid flows (never trusted from the wire body). No SQL injection surface (all queries parameterized via GORM `?`/map-keyed WHERE).
+
+---
 
 ## Summary
 
 ### Blocking (must fix)
-- **I-1 (DOM-25):** cancel + take-home Failed events emit a hardcoded NoticeFailReason wire byte instead of a config-resolved semantic key.
+None — build and tests are green with zero hard failures.
 
-### Non-Blocking (should fix)
-- **M-1:** consumer-layer direct administrator/provider writes bypass the processor (history rows, want-ad consume).
-- **M-2:** no `TransformSlice` helper (inline `model.SliceMap` used instead).
-- **M-3:** wallet RestModel missing no-op JSON:API relationship stubs (EXT-01).
-- **M-4:** `modelFromEntity`/inline-entity vs documented `Make`/`ToEntity` naming.
+### Should fix (Important)
+- bid/administrator.go:83 — replace struct-based `Where(&entity{...})` with a `uuid.Nil`-guarded map-keyed WHERE (mirror listing.UpdateState); the current form can degrade a bad id into a tenant-wide escrow-state rewrite.
+- holding/processor.go:33 — raise `takeHomeSagaPerStepTimeout` from 1s to 15s (or justify), matching the list/buy fix for the same documented broker-stress compensation-in-flight incident.
 
-## Final resolution (post-audit fixes)
+### Non-blocking (Minor)
+- DOM-02/03 (ToEntity/Make absent — modelFromEntity used instead), DOM-05 (TransformSlice absent — SliceMap inline), saga type-alias re-exports, configuration registry lacks TTL, `uuid.MustParse` panic primitives (listing/processor.go:387, listing/custody.go:419), shallow builder invariants.
 
-- **I-1 (Important, DOM-25) — FIXED.** `LISTING_CANCEL_FAILED` and `TAKE_HOME_FAILED` now carry a semantic `ReasonKey` (string, JSON tag `reasonKey`) instead of a raw `Reason` byte; atlas-mts emits `FailReasonGeneric` and the channel resolves it through the tenant `noticeFailReasons` table via `failNoticeOr` (uniform with buy/bid). Removed the `mtsFailReasonGeneric byte` const. `kafka/message/mts/kafka.go`, `kafka/producer/mts/producer.go`, `kafka/consumer/mts/consumer.go`; channel side `kafka/message/mts/kafka.go` + `kafka/consumer/mts/consumer.go`. The topic now carries no numeric `reason` tag at all (collision test rewritten).
-- **M-1..M-4 (Minor) — DEFERRED (convention-consistent / low-risk).** Direct administrator/provider calls for post-commit best-effort writes; no `TransformSlice` helper; wallet RestModel relationship stubs; `modelFromEntity` vs `Make`/`ToEntity` naming. All service-wide idioms, not new to this work.
-- **ExecuteTransaction no-op (out of scope)** — pre-existing platform bug `bug_execute_transaction_noop` (task-119); not introduced here.
+## Final resolution (full-service audit fixes)
+
+- **Important #1 (bid UpdateState struct-condition WHERE) — FIXED.** `bid/administrator.go` `UpdateState` now guards `uuid.Nil` and uses a map-keyed WHERE (`{"id": bid, "state": from}`), matching the listing/holding/wish siblings — a malformed id errors instead of degrading to a tenant-wide escrow-state rewrite. Locked by `TestAdministratorUpdateStateRejectsMalformedId` (asserts error + zero rows touched + both seeded bids stay Held).
+- **Important #2 (take-home flat 1s/step saga timeout) — FIXED.** `holding/processor.go` `takeHomeSagaPerStepTimeout` raised 1s → 15s to match the list/buy flows (bug_preset_creation_saga_flat_timeout family); take-home no longer spuriously compensates under broker stress.
+- **Minors — DEFERRED (convention-consistent / low-risk / documented).** ToEntity/Make naming, no TransformSlice, saga type-alias re-exports, configuration cache TTL, two unreachable `uuid.MustParse` primitives, shallow builder invariants.
+- **ExecuteTransaction no-op (out of scope)** — pre-existing platform bug (task-119); the money-path atomicity guarantees depend on it landing.

@@ -161,6 +161,44 @@ func TestAdministratorUpdateStateConditional(t *testing.T) {
 	}
 }
 
+// TestAdministratorUpdateStateRejectsMalformedId asserts the nil-id guard: a
+// malformed id must ERROR and transition NOTHING, never degrade to a tenant-wide
+// state rewrite of every bid in `from` (the GORM zero-value struct-condition
+// elision footgun — anti-patterns.md).
+func TestAdministratorUpdateStateRejectsMalformedId(t *testing.T) {
+	tenantId := uuid.New()
+	ctx := tenantCtx(t, tenantId)
+	db := adminTestDB(t).WithContext(ctx)
+
+	// Two held bids: a tenant-wide rewrite would flip BOTH.
+	a, err := bid.CreateBid(db, buildBid(t, tenantId, uuid.New(), 100))
+	if err != nil {
+		t.Fatalf("CreateBid a: %v", err)
+	}
+	b, err := bid.CreateBid(db, buildBid(t, tenantId, uuid.New(), 200))
+	if err != nil {
+		t.Fatalf("CreateBid b: %v", err)
+	}
+
+	affected, err := bid.UpdateState(db, "not-a-uuid", bid.StateHeld, bid.StateReleased)
+	if err == nil {
+		t.Fatalf("UpdateState with a malformed id must return an error")
+	}
+	if affected != 0 {
+		t.Errorf("malformed-id UpdateState affected %d rows, want 0", affected)
+	}
+
+	for _, id := range []string{a.Id().String(), b.Id().String()} {
+		got, gerr := bid.GetById(id)(db)()
+		if gerr != nil {
+			t.Fatalf("GetById %s: %v", id, gerr)
+		}
+		if got.State() != bid.StateHeld {
+			t.Errorf("bid %s state = %q, want held (must not have been rewritten)", id, got.State())
+		}
+	}
+}
+
 // TestAdministratorMultipleBidsPerTenant asserts a single tenant (and a single
 // auction) can accept many bids concurrently. Guards against a unique constraint
 // on tenant_id alone (which would cap an auction at one bid and break it). The

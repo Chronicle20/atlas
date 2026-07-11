@@ -28,9 +28,16 @@ type SagaEmitter interface {
 // must grow with the number of effective steps; a flat timeout rolls back
 // legitimate multi-step sagas (see the preset-creation timeout bug,
 // bug_preset_creation_saga_flat_timeout).
+//
+// The per-step budget must cover ONE full cross-service Kafka round-trip under a
+// stressed broker (seconds, not ms) — matching the list/buy flows, which moved to
+// 15s/step after an observed ~11s step tripped a 1s/step budget and fired
+// compensation while the step was still in flight (listing/processor.go). Take-home
+// (release + accept_to_character) is the same failure family, so it uses the same
+// per-step budget rather than the old flat 1s.
 const (
 	takeHomeSagaBaseTimeout    = 10 * time.Second
-	takeHomeSagaPerStepTimeout = 1 * time.Second
+	takeHomeSagaPerStepTimeout = 15 * time.Second
 )
 
 // Processor exposes the REST-facing operations over take-home holdings plus the

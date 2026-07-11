@@ -286,12 +286,35 @@ func resolveWantedPrice(l logrus.FieldLogger, ctx context.Context, worldId world
 	return 0, 0, 0, false
 }
 
-// Marketplace sections (client browse "tab"). Section 2 (Wanted) and the section
-// 4 / sub 0 Cart view are wish-backed (the character's own wanted/cart entries),
-// not public listings; the rest are listing browses.
+// Marketplace sections — the client browse "tab" (the ITC `category` value). A
+// finite, closed set: sections 1/3 are public listing browses; section 2 (Wanted)
+// and the section-4 My Page sub-tabs are wish/holding/transaction-backed.
 const (
-	itcSectionWanted uint32 = 2
-	itcSectionCart   uint32 = 4
+	itcSectionForSale uint32 = 1 // For Sale (fixed-price listings)
+	itcSectionWanted  uint32 = 2 // Wanted (cross-character want-ads)
+	itcSectionAuction uint32 = 3 // Auction
+	itcSectionCart    uint32 = 4 // My Page (Cart / Offers / History / Auction sub-tabs)
+)
+
+// My Page (section 4) sub-tabs — the `categorySub` value under section 4.
+const (
+	itcMyPageSubCart    uint32 = 0 // added-to-cart favorites
+	itcMyPageSubOffers  uint32 = 1 // the viewer's own want-ads
+	itcMyPageSubHistory uint32 = 2 // settled purchase/sale log
+	itcMyPageSubAuction uint32 = 3 // the viewer's own auction listings
+)
+
+// Browse-page render defaults for the server-initiated (entry / re-push) browses.
+// The client's entry packet carries sortType=sortColumn=1 and a trailing
+// requestSent=1 (which clears the client's request latch). A SEARCH result has no
+// sort/requestSent tail on the wire, so it passes the "none" values.
+const (
+	itcSubTabAll         uint32 = 0 // the "All" item-type sub-tab
+	itcBrowseFirstPage   uint32 = 0
+	itcSortTypeDefault   byte   = 1
+	itcSortColumnDefault byte   = 1
+	itcSortNone          byte   = 0
+	itcRequestSent       byte   = 1
 )
 
 // mtsSearchOptionSellerName is the SEARCH_ITC_LIST searchOption value for a
@@ -460,7 +483,7 @@ func ItcOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer
 				// un-freeze it, and re-push the Wanted list so the dead want-ad drops off.
 				l.Infof("Character [%d] offered on unresolved want-ad serial [%d] (completed/expired); failing the offer and refreshing the Wanted list.", s.CharacterId(), body.WishSerial())
 				writeWishFailure(l, ctx, wp, s, fieldpkt.MtsOperationSaleCurrentItemToWishFailedBody(0))
-				writeBrowsePage(l, ctx, wp, s, itcSectionWanted, 0, 0, 1, 1, 1, false, mtslisting.BrowseFilter{})
+				writeBrowsePage(l, ctx, wp, s, itcSectionWanted, itcSubTabAll, itcBrowseFirstPage, itcSortTypeDefault, itcSortColumnDefault, itcRequestSent, false, mtslisting.BrowseFilter{})
 				return
 			}
 			emitCreateListing(l, ctx, s, buildCreateListingFromSaleCurrentItem(*body, s.WorldId(), s.CharacterId(), s.AccountId(), sellerName(l, ctx, s), ownerId, price, wantCount))
@@ -493,7 +516,7 @@ func ItcOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer
 			// CITC::OnGetITCListDone (v83 0x5a48af) clears the latch ONLY when its
 			// trailing Decode1 byte is nonzero (`result=Decode1; if(result) this[6]=0`).
 			// Sending 0 left the latch set, freezing the next tab — the reported bug.
-			writeBrowsePage(l, ctx, wp, s, body.Category(), body.CategorySub(), body.Page(), body.SortType(), body.SortColumn(), 1, false, browseFilterFromGetItcList(*body))
+			writeBrowsePage(l, ctx, wp, s, body.Category(), body.CategorySub(), body.Page(), body.SortType(), body.SortColumn(), itcRequestSent, false, browseFilterFromGetItcList(*body))
 		case ItcOperationSearchItcList:
 			body := &fieldsb.ItcOperationTabSearch{}
 			body.Decode(l, ctx)(r, readerOptions)
@@ -510,7 +533,7 @@ func ItcOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer
 				writeSearchListFailed(l, ctx, wp, s)
 				return
 			}
-			writeBrowsePage(l, ctx, wp, s, body.Category(), body.CategorySub(), 0, 0, 0, 1, true, f)
+			writeBrowsePage(l, ctx, wp, s, body.Category(), body.CategorySub(), itcBrowseFirstPage, itcSortNone, itcSortNone, itcRequestSent, true, f)
 		case ItcOperationBuy:
 			body := &fieldsb.ItcOperationBuy{}
 			body.Decode(l, ctx)(r, readerOptions)
@@ -745,7 +768,7 @@ func writeBrowsePage(l logrus.FieldLogger, ctx context.Context, wp writer.Produc
 	// the CITC::OnNormalItemResult failure path, instead of an empty success list.
 	var loadErr error
 	switch {
-	case category == itcSectionCart && subCategory == 0:
+	case category == itcSectionCart && subCategory == itcMyPageSubCart:
 		// My Page -> Cart (section 4 / sub 0): the viewer's added-to-cart entries
 		// (SET_ZZIM). Each cart entry is rendered as the SPECIFIC listing it favorited
 		// — resolved by the stored listingSerial (nITCSN = that listing's serial,
@@ -753,11 +776,11 @@ func writeBrowsePage(l logrus.FieldLogger, ctx context.Context, wp writer.Produc
 		// real price/sold-until and BUY_ZZIM / DELETE_ZZIM address exactly it. See
 		// mts/cart.Items.
 		items, loadErr = mtscart.Items(l, ctx, s.WorldId(), s.CharacterId())
-	case category == itcSectionCart && subCategory == 1:
+	case category == itcSectionCart && subCategory == itcMyPageSubOffers:
 		// My Page -> Offers (section 4 / sub 1): the viewer's OWN want-ads
 		// (REGISTER_WISH_ENTRY -> wish type=wanted).
-		items, loadErr = wishItems(l, ctx, s.CharacterId(), mtswish.TypeWanted, 0)
-	case category == itcSectionCart && subCategory == 2:
+		items, loadErr = wishItems(l, ctx, s.CharacterId(), mtswish.TypeWanted, itcSubTabAll)
+	case category == itcSectionCart && subCategory == itcMyPageSubHistory:
 		// My Page -> History (section 4 / sub 2): the viewer's settled
 		// purchase/sale log, read from atlas-mts. A REST error routes to the Failed
 		// arm below.
@@ -770,7 +793,7 @@ func writeBrowsePage(l logrus.FieldLogger, ctx context.Context, wp writer.Produc
 		for _, m := range ts {
 			items = append(items, mtstransaction.ToMtsItem(m))
 		}
-	case category == itcSectionCart && subCategory == 3:
+	case category == itcSectionCart && subCategory == itcMyPageSubAuction:
 		// My Page -> Auction (section 4 / sub 3): the viewer's OWN auction listings.
 		items, loadErr = ownAuctionItems(l, ctx, s)
 	case category == itcSectionWanted:

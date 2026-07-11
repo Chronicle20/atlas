@@ -12,6 +12,7 @@ import (
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
+	"strconv"
 
 	fieldpkt "github.com/Chronicle20/atlas/libs/atlas-packet/field"
 	fieldcb "github.com/Chronicle20/atlas/libs/atlas-packet/field/clientbound"
@@ -140,7 +141,7 @@ func EnterMtsHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Pro
 		// (category "3") do not bleed into the first tab on initial load; without
 		// it the empty filter returns every listing and auctions render under For
 		// Sale until the user switches sub-tab (which re-queries with the filter).
-		writeBrowsePage(l, ctx, wp, s, 1, 0, 0, 1, 1, 1, false, mtslisting.BrowseFilter{Category: "1"})
+		writeBrowsePage(l, ctx, wp, s, itcSectionForSale, itcSubTabAll, itcBrowseFirstPage, itcSortTypeDefault, itcSortColumnDefault, itcRequestSent, false, mtslisting.BrowseFilter{Category: strconv.FormatUint(uint64(itcSectionForSale), 10)})
 
 		// The character's take-home holdings (GET_USER_PURCHASE_ITEM_DONE). The
 		// purchase (transfer) list is announced before the sale list.

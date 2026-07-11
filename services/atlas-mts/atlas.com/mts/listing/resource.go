@@ -77,31 +77,21 @@ func handleCancelListing(d *rest.HandlerDependency, c *rest.HandlerContext) http
 			}
 			characterId := uint32(characterId64)
 
-			p := NewProcessor(d.Logger(), d.Context(), d.DB())
-
-			// Load the listing for the seller-only owner check.
-			m, err := p.GetById(listingId)
+			// The seller-only owner-check + race-safe cancel + cancelled-history row
+			// all live in the processor (shared with the Kafka cancel consumer); the
+			// handler only maps the outcome to an HTTP status.
+			res, err := NewProcessor(d.Logger(), d.Context(), d.DB()).CancelForSeller(listingId, characterId)
 			if err != nil {
-				if errors.Is(err, gorm.ErrRecordNotFound) {
+				switch {
+				case errors.Is(err, gorm.ErrRecordNotFound):
 					w.WriteHeader(http.StatusNotFound)
-					return
+				case errors.Is(err, ErrNotOwner):
+					d.Logger().Errorf("Character [%d] attempted to cancel listing [%s] they do not own; forbidden.", characterId, listingId)
+					w.WriteHeader(http.StatusForbidden)
+				default:
+					d.Logger().WithError(err).Errorf("Cancelling listing [%s].", listingId)
+					w.WriteHeader(http.StatusInternalServerError)
 				}
-				d.Logger().WithError(err).Errorf("Retrieving listing [%s] for cancel.", listingId)
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-
-			// Seller-only: only the listing's seller may cancel it (prd §8.4).
-			if m.SellerId() != characterId {
-				d.Logger().Errorf("Character [%d] attempted to cancel listing [%s] owned by seller [%d]; forbidden.", characterId, listingId, m.SellerId())
-				w.WriteHeader(http.StatusForbidden)
-				return
-			}
-
-			res, err := p.Cancel(listingId)
-			if err != nil {
-				d.Logger().WithError(err).Errorf("Cancelling listing [%s].", listingId)
-				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
 			if !res.Won {

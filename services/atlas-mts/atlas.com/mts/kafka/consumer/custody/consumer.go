@@ -286,11 +286,8 @@ func handleMtsMoveListingToHolding(pf providerFn) func(db *gorm.DB) message.Hand
 			// already committed above, and an un-released sibling stays safely
 			// escrowed (reclaimable via Not-Yet-Sold cancel or the expiry sweep).
 			if soldSaleType == string(listing.SaleTypeOffer) && soldOfferWishSerial != 0 {
-				tdbctx := db.WithContext(ctx)
-				if wm, werr := wish.GetBySerial(world.Id(b.WorldId), soldOfferWishSerial)(tdbctx)(); werr != nil {
-					l.WithError(werr).Warnf("Unable to resolve fulfilled want-ad serial [%d] to consume it (buyer [%d]).", soldOfferWishSerial, b.BuyerId)
-				} else if _, derr := wish.DeleteWish(tdbctx, wm.Id().String()); derr != nil {
-					l.WithError(derr).Warnf("Unable to consume fulfilled want-ad [%s] (serial [%d]).", wm.Id().String(), soldOfferWishSerial)
+				if _, derr := wish.NewProcessor(l, ctx, db).DeleteBySerial(world.Id(b.WorldId), soldOfferWishSerial); derr != nil {
+					l.WithError(derr).Warnf("Unable to consume fulfilled want-ad (serial [%d]) for buyer [%d].", soldOfferWishSerial, b.BuyerId)
 				}
 				released := listing.NewProcessor(l, ctx, db).ReleaseSiblingOffers(world.Id(b.WorldId), soldOfferWishSerial, b.ListingId)
 				if len(released) > 0 {

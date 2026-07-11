@@ -168,60 +168,25 @@ func handleCancelListing(pf providerFn) func(db *gorm.DB) message.Handler[mts.Co
 				})
 			}
 
-			proc := listing.NewProcessor(l, ctx, db)
-
-			// Resolve the wire serial -> listing UUID.
-			lm, err := proc.GetBySerial(world.Id(b.WorldId), b.Serial)
+			// The serial owner-check, race-safe cancel, and cancelled-history row all
+			// live in the listing processor (shared with the REST DELETE); the consumer
+			// only maps the wire serial and emits the result.
+			res, err := listing.NewProcessor(l, ctx, db).CancelBySerial(world.Id(b.WorldId), b.Serial, b.SellerId)
 			if err != nil {
-				l.WithError(err).Errorf("Failed to resolve serial [%d] for cancel in world [%d], transaction [%s].", b.Serial, b.WorldId, c.TransactionId.String())
-				emitFail()
-				return
-			}
-
-			// Owner-check: only the listing's seller may cancel it.
-			if lm.SellerId() != b.SellerId {
-				l.Errorf("Character [%d] attempted to cancel listing [%s] (serial [%d]) owned by seller [%d]; forbidden.", b.SellerId, lm.Id().String(), b.Serial, lm.SellerId())
-				emitFail()
-				return
-			}
-
-			// The race-safe active->holding(seller) transition lives in the listing
-			// processor so it is shared verbatim with the REST DELETE; this handler
-			// adds the event emission.
-			res, err := proc.Cancel(lm.Id().String())
-			if err != nil {
-				l.WithError(err).Errorf("Failed to cancel listing [%s] for transaction [%s].", lm.Id().String(), c.TransactionId.String())
+				l.WithError(err).Errorf("Failed to cancel serial [%d] in world [%d], transaction [%s].", b.Serial, b.WorldId, c.TransactionId.String())
 				emitFail()
 				return
 			}
 			if !res.Won {
-				// Cancel-vs-buy loser: the buy path owns the holding outcome, but the
-				// seller still needs the cancel-failed notice.
-				l.Debugf("Cancel for listing [%s] lost the cancel-vs-buy race (already not active); no holding created.", lm.Id().String())
+				// Lost the cancel-vs-buy race: the buy path owns the holding; the seller
+				// still gets the cancel-failed notice.
+				l.Debugf("Cancel for serial [%d] lost the cancel-vs-buy race (already not active); no holding created.", b.Serial)
 				emitFail()
 				return
 			}
-
 			_ = msg.Emit(p)(func(buf *msg.Buffer) error {
-				return buf.Put(mts.EnvStatusEventTopic, mtsproducer.ListingCancelledStatusEventProvider(c.TransactionId, b.WorldId, lm.Id(), res.HoldingId, res.SellerId, res.ItemId))
+				return buf.Put(mts.EnvStatusEventTopic, mtsproducer.ListingCancelledStatusEventProvider(c.TransactionId, b.WorldId, res.ListingId, res.HoldingId, res.SellerId, res.ItemId))
 			})
-
-			// Record the seller's cancelled-listing history row (nProcessStatus 3).
-			// Best-effort: a failure leaves history a row short but does not undo the
-			// (committed) cancel.
-			t := tenant.MustFromContext(ctx)
-			cancelTxn, berr := transaction.NewBuilder(t.Id(), world.Id(b.WorldId), res.SellerId).
-				SetId(uuid.New()).
-				SetItemId(res.ItemId).
-				SetQuantity(lm.Quantity()).
-				SetTotalPrice(lm.ListValue()).
-				SetKind(transaction.KindCancelled).
-				Build()
-			if berr != nil {
-				l.WithError(berr).Warnf("Failed to build cancelled history row for listing [%s].", lm.Id().String())
-			} else if _, terr := transaction.CreateTransaction(db.WithContext(ctx), cancelTxn); terr != nil {
-				l.WithError(terr).Warnf("Failed to record cancelled history row for listing [%s].", lm.Id().String())
-			}
 		}
 	}
 }

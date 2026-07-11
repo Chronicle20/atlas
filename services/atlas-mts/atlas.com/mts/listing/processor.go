@@ -10,6 +10,7 @@ import (
 	"atlas-mts/configuration"
 	"atlas-mts/holding"
 	"atlas-mts/saga"
+	"atlas-mts/transaction"
 	"atlas-mts/wallet"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
@@ -175,6 +176,13 @@ type Processor interface {
 	// holding created). It is shared by the Kafka cancel handler and the REST
 	// DELETE so the tx logic exists once.
 	Cancel(id string) (CancelResult, error)
+	// CancelForSeller loads the listing, enforces the seller-only rule (ErrNotOwner
+	// on mismatch, gorm.ErrRecordNotFound when absent), runs Cancel, and — on a won
+	// cancel — records the seller's cancelled-history row. Shared by the REST DELETE
+	// and CancelBySerial so the owner-check + history live in the processor.
+	CancelForSeller(id string, sellerId uint32) (CancelResult, error)
+	// CancelBySerial resolves the ITC serial to the listing id, then CancelForSeller.
+	CancelBySerial(worldId world.Id, serial uint32, sellerId uint32) (CancelResult, error)
 	// Expire runs the same active->holding(seller) transition as Cancel but with
 	// the listing moving to expired and the holding recorded with origin=expired.
 	// It is the per-listing transition applied by the DB-driven expiration ticker.
@@ -350,10 +358,12 @@ func (p *ProcessorImpl) UpdateAuction(id string, currentBid uint32, highBidderId
 // the listing snapshot so the caller can emit a LISTING_CANCELLED event. On a
 // loss (Won=false) no holding was created and the other fields are zero values.
 type CancelResult struct {
-	Won       bool
-	HoldingId uuid.UUID
-	SellerId  uint32
-	ItemId    uint32
+	Won        bool
+	WorldId    world.Id
+	ListingId  uuid.UUID
+	HoldingId  uuid.UUID
+	SellerId   uint32
+	ItemId     uint32
 	// Held bid escrow to release: set when a cancelled auction still had an open
 	// high bid at cancel time (only the current high bidder still holds escrow —
 	// outbid bidders were released as they were outbid). A zero HeldBidderId means
@@ -395,6 +405,52 @@ func (p *ProcessorImpl) Cancel(id string) (CancelResult, error) {
 		}
 	}
 	return res, nil
+}
+
+// CancelForSeller enforces the seller-only rule and records the cancelled-history
+// row around the shared Cancel transition (see the interface doc).
+func (p *ProcessorImpl) CancelForSeller(id string, sellerId uint32) (CancelResult, error) {
+	m, err := p.GetById(id)
+	if err != nil {
+		return CancelResult{}, err
+	}
+	if m.SellerId() != sellerId {
+		return CancelResult{}, ErrNotOwner
+	}
+	res, err := p.Cancel(id)
+	if err != nil {
+		return CancelResult{}, err
+	}
+	res.WorldId = m.WorldId()
+	res.ListingId = m.Id()
+	if !res.Won {
+		return res, nil
+	}
+	// Cancelled-history row (best-effort): a failure leaves history a row short but
+	// never undoes the committed cancel.
+	t := tenant.MustFromContext(p.ctx)
+	txn, berr := transaction.NewBuilder(t.Id(), m.WorldId(), res.SellerId).
+		SetId(uuid.New()).
+		SetItemId(res.ItemId).
+		SetQuantity(m.Quantity()).
+		SetTotalPrice(m.ListValue()).
+		SetKind(transaction.KindCancelled).
+		Build()
+	if berr != nil {
+		p.l.WithError(berr).Warnf("Failed to build cancelled-history row for listing [%s].", id)
+	} else if _, terr := transaction.CreateTransaction(p.db.WithContext(p.ctx), txn); terr != nil {
+		p.l.WithError(terr).Warnf("Failed to record cancelled-history row for listing [%s].", id)
+	}
+	return res, nil
+}
+
+// CancelBySerial resolves the wire ITC serial to the listing id, then CancelForSeller.
+func (p *ProcessorImpl) CancelBySerial(worldId world.Id, serial uint32, sellerId uint32) (CancelResult, error) {
+	m, err := p.GetBySerial(worldId, serial)
+	if err != nil {
+		return CancelResult{}, err
+	}
+	return p.CancelForSeller(m.Id().String(), sellerId)
 }
 
 // ReleaseSiblingOffers un-escrows every OTHER active offer on the want-ad

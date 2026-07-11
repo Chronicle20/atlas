@@ -23,6 +23,11 @@ var (
 	// a consecutive bid").
 	ErrConsecutiveBid = errors.New("consecutive bid by the current high bidder")
 
+	// ErrNotOwner — a cancel was attempted by someone who is not the listing's
+	// seller. The REST handler maps it to 403; the Kafka cancel consumer to the
+	// generic cancel-failed notice.
+	ErrNotOwner = errors.New("listing not owned by the requesting seller")
+
 	// ErrMoveLostRace is returned by SettleMove when the listing was claimed by a
 	// concurrent cancel/expire (the active->sold transition affected 0 rows and
 	// there is no prior buyer holding). It forces an ERROR ack so the

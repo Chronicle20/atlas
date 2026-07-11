@@ -23,6 +23,9 @@ type Processor interface {
 	// the cross-character Wanted tab.
 	GetWantedByWorld(worldId world.Id) ([]Model, error)
 	Delete(id string) (bool, error)
+	// DeleteBySerial resolves a wish entry by its ITC serial and deletes it, returning
+	// true iff a row was removed. Consumes a fulfilled want-ad on an offer purchase.
+	DeleteBySerial(worldId world.Id, sn uint32) (bool, error)
 	// RegisterWish creates a wish-list entry in one local DB transaction, deriving
 	// the want-ad base price + fixed-sale expiry for a "wanted" entry. It is the
 	// row-create business logic behind the RegisterWish command.
@@ -82,6 +85,14 @@ func (p *ProcessorImpl) GetWantedByWorld(worldId world.Id) ([]Model, error) {
 
 // Delete hard-deletes the wish entry by id, returning true iff exactly one row
 // was deleted.
+func (p *ProcessorImpl) DeleteBySerial(worldId world.Id, sn uint32) (bool, error) {
+	m, err := p.GetBySerial(worldId, sn)
+	if err != nil {
+		return false, err
+	}
+	return p.Delete(m.Id().String())
+}
+
 func (p *ProcessorImpl) Delete(id string) (bool, error) {
 	affected, err := DeleteWish(p.db.WithContext(p.ctx), id)
 	if err != nil {

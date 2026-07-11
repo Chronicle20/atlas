@@ -15,6 +15,22 @@ This document tracks planned features and improvements for the Atlas MapleStory 
 - [ ] **TokenItem Purchasing** - Returns "not implemented" error in NPC shops
 - [ ] **Reactor Actions** - Boss weakening, environment manipulation, mass kill sagas
 
+## MTS backend-audit follow-up — pre-existing debt (from task-102)
+
+The task-102 full-service backend audits surfaced pre-existing DOM findings in
+code task-102 did NOT create (its own additions audited clean). Deferred to a
+dedicated follow-up rather than expanding task-102 into unrelated domains. See
+`docs/tasks/task-102-mts-marketplace/audit-atlas-cashshop.md` and
+`audit-atlas-tenants.md` for file:line detail.
+
+- [ ] **atlas-cashshop `wallet` domain (Important ×4):** no `builder.go` (Model
+  from raw struct literals, no validated `Build()`); no `Model.ToEntity()`; eager
+  provider (`db.First` wrapped in `FixedProvider` instead of lazy `database.Query`);
+  POST/PATCH handlers collapse every error to 500 (should be 400/404/409).
+- [ ] **atlas-tenants configuration resource (Important ×2):** no `TransformSlice`
+  (list handlers use inline loops); no `Model.ToEntity()`. Inherited by copy-paste
+  from the Route/Vessel resources (the `mts-configs` additions themselves are clean).
+
 ## Leader-election adoption (depends on task-064)
 
 Each entry below is a per-service follow-up task — adopt `libs/atlas-lock`

@@ -197,3 +197,19 @@ Fixed (task-102 code, contained):
 Deferred (larger — see the consolidated summary for the decision):
 - **DOM-25(b)** — `nProcessStatus 0..3` (mts/transaction/view.go) and auction `Exhibit=1` (mts/listing/view.go) feed the client GetContractHistoryCode/GetAuctionHistoryCode switches and are still hardcoded. Config-resolving these needs NEW tenant tables (contract-history / auction-category), seeded per version, plus a rollout note — a design decision, not a contained fix.
 - **EXT-02** — httptest-backed unmarshal tests for the 5 MTS REST read clients (holding/listing/transaction/wish/configuration). Real test-coverage gap; producible but 5 new fixtures.
+
+## Update — the two "deferred" Important items are now FIXED
+
+- **DOM-25(b) — FIXED.** MtsItem `nProcessStatus` (History disposition + Auction
+  category) is now a SEMANTIC key config-resolved from the tenant `processStatusCodes`
+  writer table at Encode (soft resolver, 0 on miss). Added `fieldcb.MtsProcessStatus*`
+  keys; transaction/listing/holding/wish views pass keys; seeded gms_83/84/87/95;
+  rollout-checklist §3c documents the live patch.
+- **EXT-02 — FIXED.** Added httptest-backed unmarshal tests for all 5 MTS REST
+  read-clients (holding/listing/transaction/wish/configuration) — each serves a real
+  JSON:API body and asserts the domain model is populated, exercising the api2go
+  unmarshal path + the EXT-01 relationship stubs (not a mock).
+
+All atlas-channel Important findings from this audit are now resolved. The Minor
+items (cart.go/wanted.go file naming, a couple untested consumers, data/item EXT-03)
+remain as low-risk notes.

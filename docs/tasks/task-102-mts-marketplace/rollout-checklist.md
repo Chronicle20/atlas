@@ -70,6 +70,17 @@ reason-notice arm. A tenant WITHOUT the table degrades gracefully to the bare
 generic *Failed arm (no crash) — patch the live config to get the descriptive
 messages.
 
+## 3c. `processStatusCodes` writer table — history/auction status column
+
+The `MtsOperation` writer's options also need a per-version `processStatusCodes`
+table (task-102 bug-fix round). It resolves the ITCITEM `nProcessStatus` semantic
+key to the client wire code for the My Page -> History disposition
+(`GetContractHistoryCode`) and the Auction category (`GetAuctionHistoryCode`):
+`HISTORY_SOLD:0, HISTORY_PURCHASED:1, HISTORY_BID_LOST:2, HISTORY_CANCELLED:3,
+AUCTION_EXHIBIT:1, AUCTION_BID:2` (IDA-verified identical across gms v83/84/87/95).
+A tenant WITHOUT the table degrades to 0 ("Sold"/blank) — patch the live config so
+the History status and Auction category columns render correctly.
+
 ## 4. `mts-configs` tenant config resource (economic knobs)
 The `atlas-tenants` `mts-configs` resource provides per-tenant knobs (listing
 fee, commission, caps, level gate, auction window, fixed-sale term, price

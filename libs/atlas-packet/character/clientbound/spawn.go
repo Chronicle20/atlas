@@ -41,15 +41,16 @@ type CharacterSpawn struct {
 	x             int16
 	y             int16
 	stance        byte
+	fh            int16
 }
 
 func NewCharacterSpawn(characterId uint32, level byte, name string, guild GuildEmblem,
 	cts *model.CharacterTemporaryStat, jobId uint16, avatar model.Avatar,
-	pets []SpawnPet, enteringField bool, x int16, y int16, stance byte) CharacterSpawn {
+	pets []SpawnPet, enteringField bool, x int16, y int16, stance byte, fh int16) CharacterSpawn {
 	return CharacterSpawn{
 		characterId: characterId, level: level, name: name, guild: guild,
 		cts: cts, jobId: jobId, avatar: avatar, pets: pets,
-		enteringField: enteringField, x: x, y: y, stance: stance,
+		enteringField: enteringField, x: x, y: y, stance: stance, fh: fh,
 	}
 }
 
@@ -98,7 +99,12 @@ func (m CharacterSpawn) Encode(l logrus.FieldLogger, ctx context.Context) func(o
 			w.WriteByte(m.stance)
 		}
 
-		w.WriteShort(0) // fh
+		if m.enteringField {
+			// jump-in spawn is intentionally airborne (y-42, stance 6): no anchor
+			w.WriteInt16(0) // fh
+		} else {
+			w.WriteInt16(m.fh)
+		}
 		// bShowAdminEffect: GMS CUserRemote::Init reads a byte here before the pet
 		// loop; the jms_v185 client (CUserRemote::Init @0xa52876) goes straight from
 		// the foothold short into the pet while-loop with NO admin byte. IDA-verified
@@ -169,6 +175,7 @@ func (m CharacterSpawn) Pets() []SpawnPet                 { return m.pets }
 func (m CharacterSpawn) X() int16                         { return m.x }
 func (m CharacterSpawn) Y() int16                         { return m.y }
 func (m CharacterSpawn) Stance() byte                     { return m.stance }
+func (m CharacterSpawn) Fh() int16                        { return m.fh }
 
 func (m *CharacterSpawn) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
@@ -206,7 +213,7 @@ func (m *CharacterSpawn) Decode(l logrus.FieldLogger, ctx context.Context) func(
 		m.y = r.ReadInt16()
 		m.stance = r.ReadByte()
 
-		_ = r.ReadUint16() // fh
+		m.fh = r.ReadInt16()
 		if t.Region() != "JMS" {
 			_ = r.ReadByte() // bShowAdminEffect (GMS-only; jms has no admin byte)
 		}

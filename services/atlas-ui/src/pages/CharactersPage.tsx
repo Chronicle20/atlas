@@ -1,9 +1,11 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { useTenant } from "@/context/tenant-context";
 import { DataTableWrapper } from "@/components/common/DataTableWrapper";
 import { getColumns, hiddenColumns } from "@/pages/characters-columns";
 import { useCharacters } from "@/lib/hooks/api/useCharacters";
 import { useAccounts } from "@/lib/hooks/api/useAccounts";
 import { useTenantConfiguration } from "@/lib/hooks/api/useTenants";
+import { characterLocationKeys } from "@/lib/hooks/api/useCharacterLocation";
 import { useGridRefresh } from "@/lib/hooks/useGridRefresh";
 import { CharacterPageSkeleton } from "@/components/common/skeletons/CharacterPageSkeleton";
 
@@ -12,11 +14,14 @@ export function CharactersPage() {
   const charactersQuery = useCharacters(activeTenant!);
   const accountsQuery = useAccounts(activeTenant!);
   const tenantConfigQuery = useTenantConfiguration(activeTenant?.id ?? "");
-  const { isRefreshing, onRefresh } = useGridRefresh([
-    charactersQuery,
-    accountsQuery,
-    tenantConfigQuery,
-  ]);
+  const queryClient = useQueryClient();
+  const { isRefreshing, onRefresh } = useGridRefresh(
+    [charactersQuery, accountsQuery, tenantConfigQuery],
+    {
+      alsoRefresh: () =>
+        queryClient.invalidateQueries({ queryKey: characterLocationKeys.all }),
+    },
+  );
 
   const characters = charactersQuery.data ?? [];
   const accounts = accountsQuery.data ?? [];

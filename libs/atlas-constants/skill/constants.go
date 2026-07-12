@@ -1452,6 +1452,10 @@ var GmHide = Skill{
 	buff: true,
 }
 
+var GmResurrection = Skill{
+	id: GmResurrectionId,
+}
+
 var SuperGmHealDispel = Skill{
 	id: SuperGmHealDispelId,
 }
@@ -2465,12 +2469,12 @@ var Skills = map[Id]Skill{
 	MagicianMagicArmorId:                        MagicianMagicArmor,
 	MagicianEnergyBoltId:                        MagicianEnergyBolt,
 	MagicianMagicClawId:                         MagicianMagicClaw,
-	FirePoisonWizardMpEaterId:                  FirePoisonWizardMpEater,
-	FirePoisonWizardMeditationId:               FirePoisonWizardMeditation,
-	FirePoisonWizardTeleportId:                 FirePoisonWizardTeleport,
-	FirePoisonWizardSlowId:                     FirePoisonWizardSlow,
-	FirePoisonWizardFireArrowId:                FirePoisonWizardFireArrow,
-	FirePoisonWizardPoisonBreathId:             FirePoisonWizardPoisonBreath,
+	FirePoisonWizardMpEaterId:                   FirePoisonWizardMpEater,
+	FirePoisonWizardMeditationId:                FirePoisonWizardMeditation,
+	FirePoisonWizardTeleportId:                  FirePoisonWizardTeleport,
+	FirePoisonWizardSlowId:                      FirePoisonWizardSlow,
+	FirePoisonWizardFireArrowId:                 FirePoisonWizardFireArrow,
+	FirePoisonWizardPoisonBreathId:              FirePoisonWizardPoisonBreath,
 	FirePoisonMagicianPartialResistanceId:       FirePoisonMagicianPartialResistance,
 	FirePoisonMagicianElementAmplificationId:    FirePoisonMagicianElementAmplification,
 	FirePoisonMagicianExplosionId:               FirePoisonMagicianExplosion,
@@ -2691,6 +2695,7 @@ var Skills = map[Id]Skill{
 	GmSuperDragonRoarId:                         GmSuperDragonRoar,
 	GmTeleportId:                                GmTeleport,
 	GmHideId:                                    GmHide,
+	GmResurrectionId:                            GmResurrection,
 	SuperGmHealDispelId:                         SuperGmHealDispel,
 	SuperGmHasteId:                              SuperGmHaste,
 	SuperGmHolySymbolId:                         SuperGmHolySymbol,
@@ -3014,12 +3019,12 @@ const (
 	MagicianMagicArmorId                        = Id(2001003)
 	MagicianEnergyBoltId                        = Id(2001004)
 	MagicianMagicClawId                         = Id(2001005)
-	FirePoisonWizardMpEaterId                  = Id(2100000)
-	FirePoisonWizardMeditationId               = Id(2101001)
-	FirePoisonWizardTeleportId                 = Id(2101002)
-	FirePoisonWizardSlowId                     = Id(2101003)
-	FirePoisonWizardFireArrowId                = Id(2101004)
-	FirePoisonWizardPoisonBreathId             = Id(2101005)
+	FirePoisonWizardMpEaterId                   = Id(2100000)
+	FirePoisonWizardMeditationId                = Id(2101001)
+	FirePoisonWizardTeleportId                  = Id(2101002)
+	FirePoisonWizardSlowId                      = Id(2101003)
+	FirePoisonWizardFireArrowId                 = Id(2101004)
+	FirePoisonWizardPoisonBreathId              = Id(2101005)
 	FirePoisonMagicianPartialResistanceId       = Id(2110000)
 	FirePoisonMagicianElementAmplificationId    = Id(2110001)
 	FirePoisonMagicianExplosionId               = Id(2111002)
@@ -3240,6 +3245,7 @@ const (
 	GmSuperDragonRoarId                         = Id(9001001)
 	GmTeleportId                                = Id(9001002)
 	GmHideId                                    = Id(9001004)
+	GmResurrectionId                            = Id(9001005)
 	SuperGmHealDispelId                         = Id(9101000)
 	SuperGmHasteId                              = Id(9101001)
 	SuperGmHolySymbolId                         = Id(9101002)

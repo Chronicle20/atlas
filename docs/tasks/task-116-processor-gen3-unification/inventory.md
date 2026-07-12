@@ -89,10 +89,10 @@ Notes on interpreting the output:
 | `services/atlas-inventory/atlas.com/inventory/data/setup/processor.go` | Gen2 | R2 | 18 | done |
 | `services/atlas-inventory/atlas.com/inventory/drop/processor.go` | Gen2 | R2 | 18 | done |
 | `services/atlas-inventory/atlas.com/inventory/pet/processor.go` | Gen2 | R2 | 18 | done |
-| `services/atlas-channel/atlas.com/channel/data/cash/processor.go` | Gen2 | R2 | 19 | pending |
-| `services/atlas-channel/atlas.com/channel/data/npc/processor.go` | Gen2 | R2 | 19 | pending |
-| `services/atlas-channel/atlas.com/channel/data/portal/processor.go` | CP-2 | R1 | 19 | pending |
-| `services/atlas-channel/atlas.com/channel/data/skill/processor.go` | CP-2 | R1 | 19 | pending |
+| `services/atlas-channel/atlas.com/channel/data/cash/processor.go` | Gen2 | R2 | 19 | done |
+| `services/atlas-channel/atlas.com/channel/data/npc/processor.go` | Gen2 | R2 | 19 | done |
+| `services/atlas-channel/atlas.com/channel/data/portal/processor.go` | CP-2 | R1 | 19 | done |
+| `services/atlas-channel/atlas.com/channel/data/skill/processor.go` | CP-2 | R1 | 19 | done |
 | `services/atlas-channel/atlas.com/channel/drop/processor.go` | Gen2 | R2 | 20 | pending |
 | `services/atlas-channel/atlas.com/channel/map/processor.go` | Gen2 | R2 | 20 | pending |
 | `services/atlas-channel/atlas.com/channel/monster/information/processor.go` | Gen2 | R2 | 20 | pending |

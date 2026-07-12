@@ -202,6 +202,27 @@ Re-ran the Task 1 classification scan (verbatim, from the worktree root) after T
 
 Zero non-conforming files remain, matching Task 36's acceptance-grep expectation exactly (CP-2 and Gen2 queries empty; Gen1/Gen2.5 queries empty since the 3 R6 files dropped out of `all.txt` on rename and the 2 R4 clients already carry `type Processor interface` + `NewProcessor(l) Processor`, so they were never present in any bucket at any scan — see the Phase B section above). All 48 files tracked as `pending` at the start of Phase C are now `done` in the table above (rows for tasks 25–35).
 
+## Phase D — final acceptance (Task 36)
+
+Acceptance evaluated against the final scan of the branch (all conversion tasks 1–35 landed).
+
+**Primary acceptance greps (both empty — the definitive gate):**
+
+```bash
+grep -rn "func NewProcessor(" services/ --include="*.go" | grep -v "_test.go" | grep -v "/mock/" | grep "\*ProcessorImpl"   # → no output
+grep -rln "type Processor struct" services/ --include="*.go" | grep -v mock                                                  # → no output
+```
+
+Every non-mock `processor.go` package declares `type Processor interface`, `NewProcessor(...)` returns `Processor` (never `*ProcessorImpl`), and no `type Processor struct` remains outside `mock/`. The only shape deviations are the 2 sanctioned R4 clients (below) and the 3 R6-renamed files (no longer named `processor.go`).
+
+**Universal conformance-assertion sweep (per the user's Task-36 decision):** the plan's Step-3 sweep initially flagged **244 pre-existing Gen3 packages** — already conforming (`interface` + `ProcessorImpl` + `NewProcessor(...) Processor`) but lacking the redundant `var _ Processor = (*ProcessorImpl)(nil)` compile assertion, which the plan author had assumed was already universal. On the user's decision, the assertion was added to **all 244** (241 `(*ProcessorImpl)`, 3 lowercase `(*processor)` in `atlas-npc-conversations`), across ~47 modules, one commit per service (`refactor(atlas-<svc>): add Processor conformance assertions to pre-existing Gen3 packages`). Every module stayed `go build`/`go vet`/`go test -race` clean — no impl failed its interface. Post-sweep, the assertion sweep reports **0 missing** across all 374 non-mock `processor.go` packages (the 3 `atlas-messages` cases keep their assertion in `_test.go` per Constraint 6 and are found there).
+
+**Conversion set:** all 128 non-conforming packages from the inventory table converted; each carries the impl assertion and a `mock/processor.go` with `var _ <pkg>.Processor = (*ProcessorMock)(nil)`.
+
+**Diff-scope:** `git diff --stat main...HEAD -- ':!services' ':!docs/tasks/task-116-processor-gen3-unification'` returns nothing — no changes outside `services/` and this task folder.
+
+**Verification:** per-module `go build`/`go vet`/`go test -race` clean throughout; `tools/redis-key-guard.sh` clean; `docker buildx bake all-go-services` run as the branch-end sweep (no `go.mod` touched anywhere in the task).
+
 ## Sanctioned shape deviations
 
 (Populated by Tasks 14 and 15 when the R4 conversions land — the two ctx-per-call REST clients keep `NewProcessor(l) Processor` without a `ctx` parameter, per design §4.2.)

@@ -36,9 +36,9 @@ Notes on interpreting the output:
 | `services/atlas-doors/atlas.com/doors/data/skill/processor.go` | CP-2 | R1 | 2 | done |
 | `services/atlas-doors/atlas.com/doors/door/processor.go` | CP-2 | R1 | 2 | done |
 | `services/atlas-doors/atlas.com/doors/party/processor.go` | CP-2 | R1 | 2 | done |
-| `services/atlas-summons/atlas.com/summons/data/skill/processor.go` | CP-2 | R1 | 3 | pending |
-| `services/atlas-summons/atlas.com/summons/effectivestats/processor.go` | CP-2 | R1 | 3 | pending |
-| `services/atlas-summons/atlas.com/summons/inventory/processor.go` | CP-2 | R1 | 3 | pending |
+| `services/atlas-summons/atlas.com/summons/data/skill/processor.go` | CP-2 | R1 | 3 | done |
+| `services/atlas-summons/atlas.com/summons/effectivestats/processor.go` | CP-2 | R1 | 3 | done |
+| `services/atlas-summons/atlas.com/summons/inventory/processor.go` | CP-2 | R1 | 3 | done |
 | `services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/validation/processor.go` | CP-2 | R1 | 4 | pending |
 | `services/atlas-pets/atlas.com/pets/pet/processor.go` | CP-2 | R1 | 5 | pending |
 | `services/atlas-npc-conversations/atlas.com/npc/validation/processor.go` | CP-2 | R1 | 6 | pending |

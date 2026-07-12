@@ -92,6 +92,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	return p
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 // ByIdProvider returns a provider for a monster by ID
 func (p *ProcessorImpl) ByIdProvider(monsterId uint32) model.Provider[Model] {
 	return func() (Model, error) {

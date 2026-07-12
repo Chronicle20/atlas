@@ -9,6 +9,7 @@ import (
 	asset2 "atlas-saga-orchestrator/kafka/message/asset"
 	"atlas-saga-orchestrator/kafka/message/saga"
 	"atlas-saga-orchestrator/kafka/producer"
+	"atlas-saga-orchestrator/mts"
 	"atlas-saga-orchestrator/skill"
 	"atlas-saga-orchestrator/storage"
 	"atlas-saga-orchestrator/validation"
@@ -18,6 +19,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
@@ -1026,8 +1029,7 @@ func (p *ProcessorImpl) Step(transactionId uuid.UUID) error {
 	}).Debugf("Progressing saga step [%s].", st.StepId())
 
 	// Check if this is a high-level action that needs expansion
-	if st.Action() == TransferToStorage || st.Action() == WithdrawFromStorage ||
-		st.Action() == TransferToCashShop || st.Action() == WithdrawFromCashShop {
+	if isExpandableAction(st.Action()) {
 		p.l.Debugf("Expanding high-level action [%s] into concrete steps", st.Action())
 		err := p.expandAndProcessStep(s, st)
 		if err != nil {
@@ -1115,6 +1117,25 @@ func (p *ProcessorImpl) emitFailedFromStepSyncError(s Saga, st Step[any], cause 
 	}
 }
 
+// isExpandableAction reports whether an action is a high-level composite that
+// must be routed to expandAndProcessStep rather than handled atomically via
+// GetHandler. This MUST stay in sync with the switch in expandAndProcessStep:
+// any action with an expand* case there must be listed here, or the step falls
+// through to GetHandler and fails with "unknown action type" at runtime (the
+// MTS composites hit exactly that gap — the expansion existed but this gate
+// didn't list them, and unit tests that called expand* directly never exercised
+// the gate). TestIsExpandableActionCoversExpansionSwitch pins the two in sync.
+func isExpandableAction(a Action) bool {
+	switch a {
+	case TransferToStorage, WithdrawFromStorage,
+		TransferToCashShop, WithdrawFromCashShop,
+		TransferToMts, WithdrawFromMts, MtsSettlePurchase:
+		return true
+	default:
+		return false
+	}
+}
+
 // expandAndProcessStep expands high-level actions into concrete steps and processes them
 func (p *ProcessorImpl) expandAndProcessStep(s Saga, st Step[any]) error {
 	// Find the index of the current step
@@ -1142,6 +1163,12 @@ func (p *ProcessorImpl) expandAndProcessStep(s Saga, st Step[any]) error {
 		newSteps, err = p.expandTransferToCashShop(st)
 	case WithdrawFromCashShop:
 		newSteps, err = p.expandWithdrawFromCashShop(st)
+	case TransferToMts:
+		newSteps, err = p.expandTransferToMts(st)
+	case WithdrawFromMts:
+		newSteps, err = p.expandWithdrawFromMts(st)
+	case MtsSettlePurchase:
+		newSteps, err = p.expandMtsSettlePurchase(st)
 	default:
 		return fmt.Errorf("unknown high-level action for expansion: %s", st.Action())
 	}
@@ -1476,6 +1503,265 @@ func (p *ProcessorImpl) expandWithdrawFromCashShop(st Step[any]) ([]Step[any], e
 				InventoryType: payload.InventoryType,
 				TemplateId:    foundAsset.TemplateId,
 				AssetData:     assetData,
+			},
+		),
+	}
+
+	return steps, nil
+}
+
+// expandTransferToMts expands TransferToMts into ReleaseFromCharacter + AcceptToMtsListing.
+// Mirrors expandTransferToCashShop: it looks up the source asset from the character's
+// inventory by AssetId, captures the full item snapshot, then builds a release step
+// (item leaves inventory FIRST) followed by an accept step that carries the snapshot
+// plus the seller's sale params (copied from the TransferToMtsPayload) so atlas-mts can
+// CREATE the listing row. N=2 steps (record for timeout scaling, design §4.3).
+func (p *ProcessorImpl) expandTransferToMts(st Step[any]) ([]Step[any], error) {
+	payload, ok := st.Payload().(TransferToMtsPayload)
+	if !ok {
+		return nil, fmt.Errorf("invalid payload type for TransferToMts")
+	}
+
+	p.l.Debugf("Looking up source asset for character [%d] inventory [%d] assetId [%d]",
+		payload.CharacterId, payload.SourceInventoryType, payload.AssetId)
+
+	comp, err := compartment.RequestCompartment(p.l, p.ctx)(payload.CharacterId, payload.SourceInventoryType)
+	if err != nil {
+		return nil, fmt.Errorf("unable to lookup character [%d] inventory compartment: %w", payload.CharacterId, err)
+	}
+
+	// Find the asset by id.
+	var foundAsset *compartment.AssetRestModel
+	for i := range comp.Assets {
+		var assetId uint32
+		fmt.Sscanf(comp.Assets[i].Id, "%d", &assetId)
+		if assetId == payload.AssetId {
+			foundAsset = &comp.Assets[i]
+			break
+		}
+	}
+
+	if foundAsset == nil {
+		return nil, fmt.Errorf("no asset found with id [%d] in character [%d] inventory [%d]",
+			payload.AssetId, payload.CharacterId, payload.SourceInventoryType)
+	}
+
+	p.l.Debugf("Found source asset template [%d] id [%s] for MTS listing", foundAsset.TemplateId, foundAsset.Id)
+
+	steps := []Step[any]{
+		NewStep[any](
+			"release_from_character",
+			Pending,
+			ReleaseFromCharacter,
+			ReleaseFromCharacterPayload{
+				TransactionId: payload.TransactionId,
+				CharacterId:   payload.CharacterId,
+				InventoryType: payload.SourceInventoryType,
+				AssetId:       payload.AssetId,
+				Quantity:      payload.Quantity,
+			},
+		),
+		NewStep[any](
+			"accept_to_mts_listing",
+			Pending,
+			AcceptToMtsListing,
+			AcceptToMtsListingPayload{
+				TransactionId:   payload.TransactionId,
+				ListingId:       payload.ListingId,
+				WorldId:         payload.WorldId,
+				SellerId:        payload.CharacterId,
+				SellerAccountId: payload.SellerAccountId,
+				SellerName:      payload.SellerName,
+				SaleType:        payload.SaleType,
+
+				// Item snapshot captured from inventory.
+				TemplateId:    foundAsset.TemplateId,
+				Quantity:      payload.Quantity,
+				Strength:      foundAsset.Strength,
+				Dexterity:     foundAsset.Dexterity,
+				Intelligence:  foundAsset.Intelligence,
+				Luck:          foundAsset.Luck,
+				HP:            foundAsset.Hp,
+				MP:            foundAsset.Mp,
+				WeaponAttack:  foundAsset.WeaponAttack,
+				MagicAttack:   foundAsset.MagicAttack,
+				WeaponDefense: foundAsset.WeaponDefense,
+				MagicDefense:  foundAsset.MagicDefense,
+				Accuracy:      foundAsset.Accuracy,
+				Avoidability:  foundAsset.Avoidability,
+				Hands:         foundAsset.Hands,
+				Speed:         foundAsset.Speed,
+				Jump:          foundAsset.Jump,
+				Slots:         foundAsset.Slots,
+				Level:         foundAsset.Level,
+				ItemExp:       foundAsset.Experience,
+				Flags:         foundAsset.Flag,
+
+				// Sale params copied from the seller's TransferToMts payload.
+				ListValue:      payload.ListValue,
+				BuyNowPrice:    payload.BuyNowPrice,
+				CommissionRate: payload.CommissionRate,
+				Category:       payload.Category,
+				SubCategory:    payload.SubCategory,
+				EndsAt:         payload.EndsAt,
+				MinIncrement:   payload.MinIncrement,
+
+				// Offer link copied through so the created listing records its want-ad.
+				OfferWishSerial:  payload.OfferWishSerial,
+				OfferWishOwnerId: payload.OfferWishOwnerId,
+			},
+		),
+	}
+
+	return steps, nil
+}
+
+// expandWithdrawFromMts expands WithdrawFromMts into ReleaseFromMtsHolding + AcceptToCharacter.
+// The item snapshot for the accept_to_character step is looked up from atlas-mts (the
+// holding row) by HoldingId, mirroring how expandWithdrawFromCashShop reads its source
+// snapshot from the cash-shop compartment. N=2 steps.
+func (p *ProcessorImpl) expandWithdrawFromMts(st Step[any]) ([]Step[any], error) {
+	payload, ok := st.Payload().(WithdrawFromMtsPayload)
+	if !ok {
+		return nil, fmt.Errorf("invalid payload type for WithdrawFromMts")
+	}
+
+	p.l.Debugf("Looking up MTS holding [%s] for character [%d] world [%d]",
+		payload.HoldingId, payload.CharacterId, payload.WorldId)
+
+	holdings, err := mts.RequestHoldings(p.l, p.ctx)(payload.CharacterId, byte(payload.WorldId))
+	if err != nil {
+		return nil, fmt.Errorf("unable to lookup MTS holdings for character [%d]: %w", payload.CharacterId, err)
+	}
+
+	var found *mts.HoldingRestModel
+	for i := range holdings {
+		if holdings[i].Id == payload.HoldingId.String() {
+			found = &holdings[i]
+			break
+		}
+	}
+
+	if found == nil {
+		return nil, fmt.Errorf("no holding found with id [%s] for character [%d]", payload.HoldingId, payload.CharacterId)
+	}
+
+	p.l.Debugf("Found MTS holding template [%d] quantity [%d] for take-home", found.TemplateId, found.Quantity)
+
+	// Derive the destination inventory type from the holding's item template. The
+	// channel passes InventoryType=0 as an advisory placeholder (the wire carries
+	// only nITCSN), and 0 matches no compartment (valid types are 1-5), so the
+	// accept_to_character step would error and roll the saga back, stranding the
+	// item in holding. Derive it here from the template the same way every other
+	// grant path does (cash-shop withdraw, RequestCreateItem, the asset consumer).
+	inventoryType, ok := inventory.TypeFromItemId(item.Id(found.TemplateId))
+	if !ok {
+		return nil, fmt.Errorf("unable to derive inventory type for holding template [%d] (character [%d])", found.TemplateId, payload.CharacterId)
+	}
+
+	assetData := asset2.AssetData{
+		Quantity:      found.Quantity,
+		Flag:          found.Flags,
+		Strength:      found.Strength,
+		Dexterity:     found.Dexterity,
+		Intelligence:  found.Intelligence,
+		Luck:          found.Luck,
+		Hp:            found.HP,
+		Mp:            found.MP,
+		WeaponAttack:  found.WeaponAttack,
+		MagicAttack:   found.MagicAttack,
+		WeaponDefense: found.WeaponDefense,
+		MagicDefense:  found.MagicDefense,
+		Accuracy:      found.Accuracy,
+		Avoidability:  found.Avoidability,
+		Hands:         found.Hands,
+		Speed:         found.Speed,
+		Jump:          found.Jump,
+		Slots:         found.Slots,
+		Level:         found.Level,
+		Experience:    found.ItemExp,
+	}
+
+	steps := []Step[any]{
+		NewStep[any](
+			"release_from_mts_holding",
+			Pending,
+			ReleaseFromMtsHolding,
+			ReleaseFromMtsHoldingPayload{
+				TransactionId: payload.TransactionId,
+				HoldingId:     payload.HoldingId,
+			},
+		),
+		NewStep[any](
+			"accept_to_character",
+			Pending,
+			AcceptToCharacter,
+			AcceptToCharacterPayload{
+				TransactionId: payload.TransactionId,
+				CharacterId:   payload.CharacterId,
+				InventoryType: byte(inventoryType),
+				TemplateId:    found.TemplateId,
+				AssetData:     assetData,
+			},
+		),
+	}
+
+	return steps, nil
+}
+
+// expandMtsSettlePurchase expands MtsSettlePurchase into the three ordered money-mover
+// steps: debit the buyer's prepaid wallet FIRST (so a mid-saga failure grants nothing),
+// credit the seller's points wallet, then move the listing custody to the buyer's
+// holding. Commission = markedUpPrice − listValue is never credited (the sink).
+// currencyType: 3=prepaid (buyer debit), 2=points (seller credit). N=3 steps.
+func (p *ProcessorImpl) expandMtsSettlePurchase(st Step[any]) ([]Step[any], error) {
+	payload, ok := st.Payload().(MtsSettlePurchasePayload)
+	if !ok {
+		return nil, fmt.Errorf("invalid payload type for MtsSettlePurchase")
+	}
+
+	const (
+		currencyTypePoints  = uint32(2)
+		currencyTypePrepaid = uint32(3)
+	)
+
+	steps := []Step[any]{
+		// 1. Debit buyer prepaid by the marked-up price (negative amount).
+		NewStep[any](
+			"award_currency_buyer",
+			Pending,
+			AwardCurrency,
+			AwardCurrencyPayload{
+				CharacterId:  payload.BuyerId,
+				AccountId:    payload.BuyerAccountId,
+				CurrencyType: currencyTypePrepaid,
+				Amount:       -payload.MarkedUpPrice,
+			},
+		),
+		// 2. Credit seller points by the list value (positive amount).
+		NewStep[any](
+			"award_currency_seller",
+			Pending,
+			AwardCurrency,
+			AwardCurrencyPayload{
+				CharacterId:  payload.SellerId,
+				AccountId:    payload.SellerAccountId,
+				CurrencyType: currencyTypePoints,
+				Amount:       payload.ListValue,
+			},
+		),
+		// 3. Move listing custody to the buyer's holding.
+		NewStep[any](
+			"mts_move_listing_to_holding",
+			Pending,
+			MtsMoveListingToHolding,
+			MtsMoveListingToHoldingPayload{
+				TransactionId: payload.TransactionId,
+				ListingId:     payload.ListingId,
+				BuyerId:       payload.BuyerId,
+				WorldId:       payload.WorldId,
+				ResultKind:    payload.ResultKind,
+				Price:         payload.Price,
 			},
 		),
 	}

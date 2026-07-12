@@ -26,6 +26,16 @@ func CompletedStatusEventProvider(s Saga) model.Provider[[]kafka.Message] {
 		body.Results = extractCharacterCreationResults(s)
 	}
 
+	// For a completed take-home (WithdrawFromMts) saga, include the take-home
+	// marker + characterId + templateId so the channel's saga-status COMPLETED
+	// handler can write MoveItcPurchaseItemLtoSDone to the originating session.
+	// This is the ONLY place that fires after the full saga (release + grant)
+	// completes; emitting earlier (e.g. from the release custody handler) would
+	// signal success before the item is granted and wrongly on a compensated saga.
+	if r := extractMtsTakeHomeResults(s); r != nil {
+		body.Results = r
+	}
+
 	value := &saga.StatusEvent[saga.StatusEventCompletedBody]{
 		TransactionId: s.TransactionId(),
 		Type:          saga.StatusEventTypeCompleted,
@@ -49,6 +59,50 @@ func extractCharacterCreationResults(s Saga) map[string]any {
 			}
 			break
 		}
+	}
+	return results
+}
+
+// MtsTakeHomeResultKind is the Results["kind"] marker the channel matches to
+// recognize a completed WithdrawFromMts (take-home) saga and write
+// MoveItcPurchaseItemLtoSDone. It distinguishes take-home from the other
+// MtsOperation sagas (list / buy / settle) that share the same saga type but do
+// NOT grant a holding back to a character's inventory.
+const MtsTakeHomeResultKind = "mts_take_home"
+
+// extractMtsTakeHomeResults returns the COMPLETED Results map for a take-home
+// (WithdrawFromMts) saga, or nil if this is not one. WithdrawFromMts expands to
+// release_from_mts_holding (ReleaseFromMtsHolding) + accept_to_character
+// (AcceptToCharacter); the ReleaseFromMtsHolding action is unique to take-home
+// among MtsOperation sagas, so its presence is the discriminator. The channel's
+// saga-status COMPLETED handler reads characterId off the result to target the
+// originating session. This fires from the single guarded terminal-completion
+// emit, so the notice is sent only after the item was actually granted.
+func extractMtsTakeHomeResults(s Saga) map[string]any {
+	if s.SagaType() != MtsOperation {
+		return nil
+	}
+	isTakeHome := false
+	for _, step := range s.Steps() {
+		if step.Action() == ReleaseFromMtsHolding {
+			isTakeHome = true
+			break
+		}
+	}
+	if !isTakeHome {
+		return nil
+	}
+
+	results := map[string]any{"kind": MtsTakeHomeResultKind}
+	for _, step := range s.Steps() {
+		if step.Action() != AcceptToCharacter {
+			continue
+		}
+		if p, ok := step.Payload().(AcceptToCharacterPayload); ok {
+			results["characterId"] = p.CharacterId
+			results["templateId"] = p.TemplateId
+		}
+		break
 	}
 	return results
 }
@@ -100,8 +154,102 @@ func FailedStatusEventProvider(transactionId uuid.UUID, accountId uint32, charac
 // Callers are expected to have already taken the terminal-state guard (see PRD §4.7).
 // Returns the producer error, if any.
 func EmitSagaFailed(l logrus.FieldLogger, ctx context.Context, s Saga, errorCode, reason, failedStep string) error {
+	// An mts_operation saga carries no CharacterCreation ids; extract the
+	// originating character (buyer/seller/take-home recipient) and operation kind
+	// so the channel can unhang the matching MTS dialog. Without this the FAILED
+	// event has characterId 0 and no kind, and the client hangs forever (task-102).
+	if s.SagaType() == MtsOperation {
+		characterId, kind := extractMtsFailureTarget(s)
+		return EmitMtsSagaFailed(l, ctx, s.TransactionId(), string(s.SagaType()), characterId, errorCode, reason, failedStep, kind)
+	}
 	accountId, characterId := ExtractCharacterCreationIds(s)
 	return EmitSagaFailedByIds(l, ctx, s.TransactionId(), string(s.SagaType()), accountId, characterId, errorCode, reason, failedStep)
+}
+
+// extractMtsFailureTarget determines, for an mts_operation saga, which character
+// to notify of the failure and which MTS operation was in flight, so the channel
+// can write the matching clientbound *Failed arm. It mirrors the step
+// discriminators used by extractMtsTakeHomeResults and the compensation
+// reverse-walk (compensator.go):
+//   - a ReleaseFromMtsHolding step => take-home (WithdrawFromMts); the character
+//     is the AcceptToCharacter recipient.
+//   - an MtsMoveListingToHolding step => buy/settle; the character is the buyer.
+//   - an AcceptToMtsListing step => list (TransferToMts); the character is the seller.
+//
+// Returns (0, "") if none match (kind unknown; the channel then skips notifying,
+// rather than guessing a dialog arm).
+func extractMtsFailureTarget(s Saga) (characterId uint32, kind string) {
+	steps := s.Steps()
+	// Take-home first: ReleaseFromMtsHolding is unique to it among MTS sagas.
+	for _, step := range steps {
+		if step.Action() == ReleaseFromMtsHolding {
+			for _, st := range steps {
+				if st.Action() == AcceptToCharacter {
+					if p, ok := st.Payload().(AcceptToCharacterPayload); ok {
+						return p.CharacterId, saga.MtsFailureKindTakeHome
+					}
+				}
+			}
+			return 0, saga.MtsFailureKindTakeHome
+		}
+	}
+	// Buy/settle: the move step carries the buyer id.
+	for _, step := range steps {
+		if step.Action() == MtsMoveListingToHolding {
+			if p, ok := step.Payload().(MtsMoveListingToHoldingPayload); ok {
+				return p.BuyerId, saga.MtsFailureKindBuy
+			}
+			return 0, saga.MtsFailureKindBuy
+		}
+	}
+	// List: the accept-to-listing step carries the seller id.
+	for _, step := range steps {
+		if step.Action() == AcceptToMtsListing {
+			if p, ok := step.Payload().(AcceptToMtsListingPayload); ok {
+				return p.SellerId, saga.MtsFailureKindList
+			}
+			return 0, saga.MtsFailureKindList
+		}
+	}
+	return 0, ""
+}
+
+// emitMtsSagaFailedFn is swappable in tests (SetEmitMtsSagaFailedForTest) so the
+// MTS integration tests can capture the emitted characterId + kind without Kafka.
+var emitMtsSagaFailedFn = emitMtsSagaFailedImpl
+
+// EmitMtsSagaFailed emits a StatusEventTypeFailed for an mts_operation saga,
+// carrying the originating characterId (accountId is unused — the channel resolves
+// MTS sessions by characterId) and the MtsKind so the channel writes the correct
+// *Failed dialog arm.
+func EmitMtsSagaFailed(l logrus.FieldLogger, ctx context.Context, transactionId uuid.UUID, sagaType string, characterId uint32, errorCode, reason, failedStep, mtsKind string) error {
+	return emitMtsSagaFailedFn(l, ctx, transactionId, sagaType, characterId, errorCode, reason, failedStep, mtsKind)
+}
+
+func emitMtsSagaFailedImpl(l logrus.FieldLogger, ctx context.Context, transactionId uuid.UUID, sagaType string, characterId uint32, errorCode, reason, failedStep, mtsKind string) error {
+	return producer.ProviderImpl(l)(ctx)(saga.EnvStatusEventTopic)(
+		MtsFailedStatusEventProvider(transactionId, characterId, sagaType, errorCode, reason, failedStep, mtsKind),
+	)
+}
+
+// MtsFailedStatusEventProvider builds a StatusEventTypeFailed provider for an MTS
+// saga failure, mirroring FailedStatusEventProvider but stamping MtsKind (and
+// leaving accountId 0). Kept separate so the generic Failed path stays untouched.
+func MtsFailedStatusEventProvider(transactionId uuid.UUID, characterId uint32, sagaType string, errorCode string, reason string, failedStep string, mtsKind string) model.Provider[[]kafka.Message] {
+	key := kproducer.CreateKey(int(transactionId.ID()))
+	value := &saga.StatusEvent[saga.StatusEventFailedBody]{
+		TransactionId: transactionId,
+		Type:          saga.StatusEventTypeFailed,
+		Body: saga.StatusEventFailedBody{
+			Reason:      reason,
+			FailedStep:  failedStep,
+			CharacterId: characterId,
+			SagaType:    sagaType,
+			ErrorCode:   errorCode,
+			MtsKind:     mtsKind,
+		},
+	}
+	return kproducer.SingleMessageProvider(key, value)
 }
 
 // emitSagaFailedByIdsFn is swappable in tests (SetEmitSagaFailedForTest) so

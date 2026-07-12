@@ -1,0 +1,10 @@
+packet: field/serverbound/FieldItcQueryCashRequest
+direction: serverbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CITC::TrySendQueryCashRequest
+    address: "0x5cec92"
+    decompile_sha256: 2683eb28dabce3779b578d2611cd1137f7347b9a29b4a8c0d134a7c4c0864d2f
+verifies:
+    - libs/atlas-packet/field/serverbound/itc_query_cash_request_test.go#TestItcQueryCashRequestByteOutput_v87

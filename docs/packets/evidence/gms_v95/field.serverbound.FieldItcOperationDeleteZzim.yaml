@@ -1,0 +1,10 @@
+packet: field/serverbound/FieldItcOperationDeleteZzim
+direction: serverbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CITC::OnDeleteZzim
+    address: "0x573520"
+    decompile_sha256: 896036ca5bdaafcfa86cfbee32f87eb616064beceb8aba17b3d91c38824ae2aa
+verifies:
+    - libs/atlas-packet/field/serverbound/itc_operation_test.go#TestItcOperationDeleteZzimByteOutput_v95

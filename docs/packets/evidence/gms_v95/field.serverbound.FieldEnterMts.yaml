@@ -1,0 +1,10 @@
+packet: field/serverbound/FieldEnterMts
+direction: serverbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::SendMigrateToITCRequest
+    address: "0x9def50"
+    decompile_sha256: 63cb46a0f98b67f2cb49a33b4c396a518ce81a0e2403d71e077386b96fd4b4bd
+verifies:
+    - libs/atlas-packet/field/serverbound/enter_mts_test.go#TestEnterMtsByteOutput_v95

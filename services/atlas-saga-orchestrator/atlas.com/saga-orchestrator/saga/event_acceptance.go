@@ -52,9 +52,16 @@ const (
 
 	// Cash shop.
 	EventKindCashShopWalletUpdated       EventKind = "cashshop.wallet_updated"
+	EventKindCashShopWalletError         EventKind = "cashshop.wallet_error"
 	EventKindCashShopCompartmentAccepted EventKind = "cashshop.compartment_accepted"
 	EventKindCashShopCompartmentReleased EventKind = "cashshop.compartment_released"
 	EventKindCashShopCompartmentError    EventKind = "cashshop.compartment_error"
+
+	// MTS custody (atlas-mts custody acks on EVENT_TOPIC_MTS_CUSTODY_STATUS).
+	EventKindMtsCustodyAccepted EventKind = "mts.custody_accepted"
+	EventKindMtsCustodyReleased EventKind = "mts.custody_released"
+	EventKindMtsCustodyMoved    EventKind = "mts.custody_moved"
+	EventKindMtsCustodyError    EventKind = "mts.custody_error"
 
 	// Compartment (character inventory).
 	EventKindCompartmentCreated        EventKind = "compartment.created"
@@ -106,7 +113,7 @@ var acceptanceTable = map[sharedsaga.Action][]EventKind{
 	sharedsaga.AwardExperience:        {EventKindCharacterExperienceChanged},
 	sharedsaga.AwardLevel:             {EventKindCharacterLevelChanged},
 	sharedsaga.AwardMesos:             {EventKindCharacterMesoChanged, EventKindCharacterMesoError},
-	sharedsaga.AwardCurrency:          {EventKindCashShopWalletUpdated},
+	sharedsaga.AwardCurrency:          {EventKindCashShopWalletUpdated, EventKindCashShopWalletError},
 	sharedsaga.AwardFame:              {EventKindCharacterStatChanged},
 	sharedsaga.ChangeJob:              {EventKindCharacterJobChanged},
 	sharedsaga.ChangeHair:             {EventKindCharacterStatChanged},
@@ -152,6 +159,15 @@ var acceptanceTable = map[sharedsaga.Action][]EventKind{
 	sharedsaga.WithdrawFromCashShop: {}, // composite
 	sharedsaga.AcceptToCashShop:     {EventKindCashShopCompartmentAccepted, EventKindCashShopCompartmentError},
 	sharedsaga.ReleaseFromCashShop:  {EventKindCashShopCompartmentReleased, EventKindCashShopCompartmentError},
+
+	// MTS.
+	sharedsaga.TransferToMts:           {}, // composite: expanded into release_from_character + accept_to_mts_listing
+	sharedsaga.WithdrawFromMts:         {}, // composite: expanded into release_from_mts_holding + accept_to_character
+	sharedsaga.MtsSettlePurchase:       {}, // composite: expanded into award_currency×2 + mts_move_listing_to_holding
+	sharedsaga.AcceptToMtsListing:      {EventKindMtsCustodyAccepted, EventKindMtsCustodyError},
+	sharedsaga.ReleaseFromMtsHolding:   {EventKindMtsCustodyReleased, EventKindMtsCustodyError},
+	sharedsaga.MtsMoveListingToHolding: {EventKindMtsCustodyMoved, EventKindMtsCustodyError},
+	sharedsaga.MtsBidEscrow:            {EventKindCashShopWalletUpdated, EventKindCashShopWalletError}, // reuses the cash-shop wallet ack
 
 	// Guild.
 	sharedsaga.RequestGuildName:             {EventKindGuildRequestAgreement, EventKindGuildCreated},
@@ -269,9 +285,19 @@ var outcomeTable = map[EventKind]EventOutcome{
 
 	// Cash shop.
 	EventKindCashShopWalletUpdated:       OutcomeSuccess,
+	EventKindCashShopWalletError:         OutcomeFailure,
 	EventKindCashShopCompartmentAccepted: OutcomeSuccess,
 	EventKindCashShopCompartmentReleased: OutcomeSuccess,
 	EventKindCashShopCompartmentError:    OutcomeFailure,
+
+	// MTS custody (atlas-mts custody acks). A late success after a timeout must
+	// be classified so the terminal-race late-compensation path can roll back
+	// the custody move/accept/release; the *_error ack is a failure (no effect
+	// landed, absorb only).
+	EventKindMtsCustodyAccepted: OutcomeSuccess,
+	EventKindMtsCustodyReleased: OutcomeSuccess,
+	EventKindMtsCustodyMoved:    OutcomeSuccess,
+	EventKindMtsCustodyError:    OutcomeFailure,
 
 	// Compartment (character inventory).
 	EventKindCompartmentCreated:        OutcomeSuccess,

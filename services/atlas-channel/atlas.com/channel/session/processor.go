@@ -246,6 +246,17 @@ func (p *Processor) SetField(id uuid.UUID, f field.Model) Model {
 	return s
 }
 
+func (p *Processor) SetCashScene(id uuid.UUID, scene byte) Model {
+	s := Model{}
+	var ok bool
+	if s, ok = getRegistry().Get(p.t.Id(), id); ok {
+		s = s.setCashScene(scene)
+		getRegistry().Update(p.t.Id(), s)
+		return s
+	}
+	return s
+}
+
 func (p *Processor) SetGm(id uuid.UUID, gm bool) Model {
 	s := Model{}
 	var ok bool

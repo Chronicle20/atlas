@@ -33,6 +33,7 @@ const MapsPage = lazy(() => import("@/pages/MapsPage").then(m => ({ default: m.M
 const MapDetailPage = lazy(() => import("@/pages/MapDetailPage").then(m => ({ default: m.MapDetailPage })));
 const PortalDetailPage = lazy(() => import("@/pages/PortalDetailPage").then(m => ({ default: m.PortalDetailPage })));
 const MerchantsPage = lazy(() => import("@/pages/MerchantsPage").then(m => ({ default: m.MerchantsPage })));
+const MarketplacePage = lazy(() => import("@/pages/MarketplacePage").then(m => ({ default: m.MarketplacePage })));
 const MerchantDetailPage = lazy(() => import("@/pages/MerchantDetailPage").then(m => ({ default: m.MerchantDetailPage })));
 const MonstersPage = lazy(() => import("@/pages/MonstersPage").then(m => ({ default: m.MonstersPage })));
 const MonsterDetailPage = lazy(() => import("@/pages/MonsterDetailPage").then(m => ({ default: m.MonsterDetailPage })));
@@ -61,6 +62,7 @@ const TenantsWritersPage = lazy(() => import("@/pages/TenantsWritersPage").then(
 const TenantsPropertiesPage = lazy(() => import("@/pages/TenantsPropertiesPage").then(m => ({ default: m.TenantsPropertiesPage })));
 const TenantsCharacterTemplatesPage = lazy(() => import("@/pages/TenantsCharacterTemplatesPage").then(m => ({ default: m.TenantsCharacterTemplatesPage })));
 const TenantsCharacterPresetsPage = lazy(() => import("@/pages/TenantsCharacterPresetsPage").then(m => ({ default: m.TenantsCharacterPresetsPage })));
+const TenantsMtsConfigPage = lazy(() => import("@/pages/TenantsMtsConfigPage").then(m => ({ default: m.TenantsMtsConfigPage })));
 
 export function App() {
   return (
@@ -95,6 +97,7 @@ export function App() {
                     <Route path="/maps/:id/portals/:portalId" element={<PortalDetailPage />} />
                     <Route path="/merchants" element={<MerchantsPage />} />
                     <Route path="/merchants/:id" element={<MerchantDetailPage />} />
+                    <Route path="/marketplace" element={<MarketplacePage />} />
                     <Route path="/monsters" element={<MonstersPage />} />
                     <Route path="/monsters/:id" element={<MonsterDetailPage />} />
                     <Route path="/npcs" element={<NpcsPage />} />
@@ -122,6 +125,7 @@ export function App() {
                     <Route path="/tenants/:id/properties" element={<TenantsPropertiesPage />} />
                     <Route path="/tenants/:id/character/templates" element={<TenantsCharacterTemplatesPage />} />
                     <Route path="/tenants/:id/character/presets" element={<TenantsCharacterPresetsPage />} />
+                    <Route path="/tenants/:id/mts-config" element={<TenantsMtsConfigPage />} />
                   </Route>
                   <Route path="*" element={<NotFoundPage />} />
                 </Routes>

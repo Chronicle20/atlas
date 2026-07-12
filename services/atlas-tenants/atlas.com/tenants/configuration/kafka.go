@@ -18,6 +18,9 @@ const (
 	EventTypeInstanceRouteCreated      = "INSTANCE_ROUTE_CREATED"
 	EventTypeInstanceRouteUpdated      = "INSTANCE_ROUTE_UPDATED"
 	EventTypeInstanceRouteDeleted      = "INSTANCE_ROUTE_DELETED"
+	EventTypeMtsConfigCreated          = "MTS_CONFIG_CREATED"
+	EventTypeMtsConfigUpdated          = "MTS_CONFIG_UPDATED"
+	EventTypeMtsConfigDeleted          = "MTS_CONFIG_DELETED"
 )
 
 // ConfigurationStatusEvent is a generic event for configuration status changes
@@ -48,6 +51,18 @@ func CreateVesselStatusEventProvider(tenantId uuid.UUID, eventType string, vesse
 		Type:         eventType,
 		ResourceType: "vessel",
 		ResourceId:   vesselId,
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+// CreateMtsConfigStatusEventProvider creates a provider for mts config status events
+func CreateMtsConfigStatusEventProvider(tenantId uuid.UUID, eventType string, configId string) model.Provider[[]kafka.Message] {
+	key := []byte(tenantId.String())
+	value := ConfigurationStatusEvent{
+		TenantId:     tenantId,
+		Type:         eventType,
+		ResourceType: "mts-config",
+		ResourceId:   configId,
 	}
 	return producer.SingleMessageProvider(key, value)
 }

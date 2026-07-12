@@ -31,6 +31,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) CreateDefaults(guildId uint32) ([]Model, error) {
 	var results []Model
 	var txErr error

@@ -29,6 +29,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) Add(threadId uint32, posterId uint32, message string) (Model, error) {
 	return create(p.db.WithContext(p.ctx), p.t.Id(), threadId, posterId, message)
 }

@@ -24,6 +24,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) Create(actorId uint32, worldId world.Id, referenceId uint32, targetId uint32) error {
 	p.l.Debugf("Creating guild [%d] invitation for [%d] from [%d].", referenceId, targetId, actorId)
 	return producer.ProviderImpl(p.l)(p.ctx)(EnvCommandTopic)(createInviteCommandProvider(actorId, referenceId, worldId, targetId))

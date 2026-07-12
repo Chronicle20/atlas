@@ -186,6 +186,22 @@ The 2 R4 clients (`atlas-configurations/data/processor.go`, `atlas-character-fac
 
 Phase C scope confirmed as exactly: atlas-account (`ban`, task 25), atlas-portals (`character`, `portal`, tasks 26), atlas-reactors (`reactor`, `reactor/data`, task 27), atlas-asset-expiration (`cashshop`, `character`, `data`, `inventory`, `storage`, tasks 28), atlas-monsters (`map`, `monster/drop`, `monster/information`, `monster/mobskill`, task 29), atlas-rates (`buffs`, `data/cash`, `data/equipment`, `inventory`, `session`, task 30), atlas-monster-death (`character`, `monster/drop/position`, `monster/drop`, `monster`, `party`, `data/equipment/statistics`, tasks 31), atlas-data (~28 files under `data/`, tasks 32–35) + the 3 R6-rename files (task 24: `atlas-gachapons/test/processor.go`, `atlas-messages/command/processor.go`, `atlas-npc-shops/test/processor.go`) + the 2 R4 clients (already converted, sanctioned, not pending).
 
+## Scan after Phase C
+
+Re-ran the Task 1 classification scan (verbatim, from the worktree root) after Task 35 (`data/data` orchestrator, the last Phase C task and the final task on the plan's conversion list) landed.
+
+**Before Phase C (start of phase, per "Scan after Phase B" above):** 48 non-conforming files (CP-2 0, Gen2 1, Gen2.5 0, Gen1 47).
+
+**After Phase C (this scan):** all four buckets empty —
+
+- `find services -name "processor.go" -not -path "*/mock/*" | sort | wc -l` → **374** non-mock `processor.go` files (377 plan-time minus the 3 Task-24 R6 renames, which are no longer named `processor.go`).
+- CP-2 (`func NewProcessor(` returning `*ProcessorImpl`): **0** files.
+- Gen2 (`type Processor struct`): **0** files.
+- Gen2.5 (`ProcessorImpl` with no interface in the package): **0** files.
+- Gen1 (no `Processor` type in the package at all): **0** files.
+
+Zero non-conforming files remain, matching Task 36's acceptance-grep expectation exactly (CP-2 and Gen2 queries empty; Gen1/Gen2.5 queries empty since the 3 R6 files dropped out of `all.txt` on rename and the 2 R4 clients already carry `type Processor interface` + `NewProcessor(l) Processor`, so they were never present in any bucket at any scan — see the Phase B section above). All 48 files tracked as `pending` at the start of Phase C are now `done` in the table above (rows for tasks 25–35).
+
 ## Sanctioned shape deviations
 
 (Populated by Tasks 14 and 15 when the R4 conversions land — the two ctx-per-call REST clients keep `NewProcessor(l) Processor` without a `ctx` parameter, per design §4.2.)

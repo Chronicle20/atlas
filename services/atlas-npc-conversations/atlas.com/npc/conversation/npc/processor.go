@@ -102,6 +102,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 // ByIdProvider returns a provider for retrieving an NPC conversation by ID
 func (p *ProcessorImpl) ByIdProvider(id uuid.UUID) model.Provider[Model] {
 	return model.Map[Entity, Model](Make)(getByIdProvider(id)(p.db.WithContext(p.ctx)))

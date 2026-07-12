@@ -61,6 +61,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) ByItemIdProvider(itemId uint32) model.Provider[[]Model] {
 	return model.SliceMap[Entity, Model](Make)(getByItemIdProvider(itemId)(p.db.WithContext(p.ctx)))(model.ParallelMap())
 }

@@ -28,6 +28,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
+var _ Processor = (*processor)(nil)
+
 // GetPets retrieves all pets for a character
 func (p *processor) GetPets(characterId uint32) model.Provider[[]Model] {
 	return func() ([]Model, error) {

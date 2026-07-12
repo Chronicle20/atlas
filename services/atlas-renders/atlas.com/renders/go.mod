@@ -15,10 +15,9 @@ require (
 
 require (
 	github.com/Chronicle20/atlas/libs/atlas-model v0.0.0 // indirect
+	github.com/Chronicle20/atlas/libs/atlas-routine v0.0.0-00010101000000-000000000000
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
-	github.com/go-ini/ini v1.67.0 // indirect
-	github.com/goccy/go-json v0.10.5 // indirect
 	github.com/klauspost/compress v1.18.6 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.11 // indirect
 	github.com/klauspost/crc32 v1.3.0 // indirect
@@ -44,3 +43,5 @@ replace github.com/Chronicle20/atlas/libs/atlas-model => ../../../../libs/atlas-
 replace github.com/Chronicle20/atlas/libs/atlas-tenant => ../../../../libs/atlas-tenant
 
 replace github.com/Chronicle20/atlas/libs/atlas-wz => ../../../../libs/atlas-wz
+
+replace github.com/Chronicle20/atlas/libs/atlas-routine => ../../../../libs/atlas-routine

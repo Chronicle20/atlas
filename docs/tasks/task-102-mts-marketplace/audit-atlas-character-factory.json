@@ -1,0 +1,38 @@
+{
+  "service": "atlas-character-factory",
+  "path": "services/atlas-character-factory/atlas.com/character-factory",
+  "scope": "task-102 modified packages: configuration/projection (subscriber.go)",
+  "date": "2026-07-10",
+  "build": "pass",
+  "vet": "pass",
+  "testsPassed": 9,
+  "testsFailed": 0,
+  "overallStatus": "pass",
+  "domains": [
+    {
+      "name": "configuration/projection",
+      "type": "support",
+      "note": "Consumer-side in-memory projection of atlas-configurations tenant config-status outbox. No model.go / no resource.go -> DOM/SUB checklists N/A; FILE checklist run in full.",
+      "checks": [
+        { "id": "FILE-01", "name": "Processor in processor.go", "status": "pass", "evidence": "No Processor/ProcessorImpl/NewProcessor in package; nothing to misplace." },
+        { "id": "FILE-02", "name": "RestModel/Transform/JSON:API in rest.go", "status": "pass", "evidence": "envelope.go:17 TenantEnvelope is a wire decoder, not a JSON:API DTO; consumed model is external tenant.RestModel (state.go:16)." },
+        { "id": "FILE-03", "name": "Cross-service request funcs in requests.go", "status": "pass", "evidence": "No requests.RootUrl/GetRequest/PostRequest/getBaseRequest; data arrives via Kafka." },
+        { "id": "FILE-04", "name": "Entity/Migration/TableName in entity.go", "status": "pass", "evidence": "In-memory only; no GORM entity/Migration/TableName (state.go:14)." },
+        { "id": "FILE-05", "name": "Builder/Model/administrator/provider/state placement", "status": "pass", "evidence": "No Builder/domain Model/DB writes/database.Query; state.go:14 holds in-memory State store, nothing misplaced." },
+        { "id": "FILE-06", "name": "No package-named catch-all bundling >=2 responsibilities", "status": "pass", "evidence": "No projection.go catch-all; caughtup.go/envelope.go/state.go/subscriber.go each single-purpose." },
+        { "id": "DOM-06", "name": "Logger type is logrus.FieldLogger", "status": "pass", "evidence": "subscriber.go:36,60,92 use logrus.FieldLogger." },
+        { "id": "DOM-24", "name": "Kafka producer stubbed in tests that emit", "status": "pass", "evidence": "No emit call sites in package or tests; consume-only handler." }
+      ]
+    }
+  ],
+  "changeUnderAudit": {
+    "file": "services/atlas-character-factory/atlas.com/character-factory/configuration/projection/subscriber.go",
+    "line": 93,
+    "change": "consumer.ReadEndOffsets -> consumer.ReadReplayableEndOffsets",
+    "verdict": "correct",
+    "rationale": "ReplayableEnd (libs/atlas-kafka/consumer/offsets.go:42) collapses retention-purged partitions to 0; caughtup.go:101 treats end==0 as trivially caught up, preventing the config-projection readiness wedge. No stale ReadEndOffsets callers remain."
+  },
+  "blocking": [],
+  "important": [],
+  "minor": []
+}

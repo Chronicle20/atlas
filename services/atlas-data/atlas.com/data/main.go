@@ -34,6 +34,7 @@ import (
 	"atlas-data/tenantpurge"
 	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"atlas-data/wzinput"
+	"context"
 	"os"
 	"time"
 
@@ -41,6 +42,7 @@ import (
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 )
 
 const serviceName = "atlas-data"
@@ -108,7 +110,9 @@ func main() {
 			// heartbeat, every Job's heartbeat went stale at creation+timeout
 			// regardless of actual progress (PR-544: Map worker killed at
 			// 30:28 mid-loop, ~80 maps left without layout.json/minimap.png).
-			go restruntime.Watchdog{L: l, JobCreator: jc, TimeoutSecs: 7200}.Run(tdm.Context())
+			routine.Go(l, tdm.Context(), func(_ context.Context) {
+				restruntime.Watchdog{L: l, JobCreator: jc, TimeoutSecs: 7200}.Run(tdm.Context())
+			})
 		}
 	}
 

@@ -1170,6 +1170,47 @@
         "opCode": "0xB4",
         "validator": "LoggedInValidator",
         "handler": "SummonDamageHandle"
+      },
+      {
+        "opCode": "0xA0",
+        "validator": "LoggedInValidator",
+        "handler": "EnterMtsHandle"
+      },
+      {
+        "opCode": "0x102",
+        "validator": "NoOpValidator",
+        "handler": "ItcStatusChargeHandle"
+      },
+      {
+        "opCode": "0x103",
+        "validator": "LoggedInValidator",
+        "handler": "ItcQueryCashRequestHandle"
+      },
+      {
+        "opCode": "0x104",
+        "validator": "LoggedInValidator",
+        "handler": "ItcOperationHandle",
+        "options": {
+          "operations": {
+            "REGISTER_SALE": 2,
+            "SALE_CURRENT_ITEM": 3,
+            "REGISTER_WISH_ENTRY": 4,
+            "GET_ITC_LIST": 5,
+            "SEARCH_ITC_LIST": 6,
+            "CANCEL_SALE": 7,
+            "TAKE_HOME": 8,
+            "SET_ZZIM": 9,
+            "DELETE_ZZIM": 10,
+            "VIEW_WISH": 11,
+            "BUY_WISH": 12,
+            "CANCEL_WISH": 13,
+            "BUY": 16,
+            "BUY_ZZIM": 17,
+            "REGISTER_AUCTION": 18,
+            "PLACE_BID": 19,
+            "BUY_AUCTION_IMM": 20
+          }
+        }
       }
     ],
     "writers": [
@@ -1708,6 +1749,10 @@
       {
         "opCode": "0x80",
         "writer": "SetField"
+      },
+      {
+        "opCode": "0x81",
+        "writer": "SetItc"
       },
       {
         "opCode": "0x82",
@@ -2808,13 +2853,38 @@
         "writer": "RemoveTownDoor"
       },
       {
-        "opCode": "0x15B",
+        "opCode": "0x164",
+        "writer": "MtsChargeParamResult"
+      },
+      {
+        "opCode": "0x165",
         "writer": "MtsOperation2"
       },
       {
-        "opCode": "0x15C",
+        "opCode": "0x166",
         "writer": "MtsOperation",
         "options": {
+          "processStatusCodes": {
+            "HISTORY_SOLD": 0,
+            "HISTORY_PURCHASED": 1,
+            "HISTORY_BID_LOST": 2,
+            "HISTORY_CANCELLED": 3,
+            "AUCTION_EXHIBIT": 1,
+            "AUCTION_BID": 2
+          },
+          "noticeFailReasons": {
+            "NOT_ENOUGH_NX": 66,
+            "REGISTER_FAILED": 0,
+            "NOT_ENOUGH_MESOS": 67,
+            "NX_ERROR": 68,
+            "INVENTORY_FULL": 71,
+            "LIST_LOAD_FAILED": 73,
+            "CANCEL_HAS_BID": 78,
+            "MAY_NOT_BE_SOLD": 79,
+            "ITEM_SOLD": 81,
+            "STARS_NOT_TRADABLE": 82,
+            "BELOW_MIN_LEVEL": 83
+          },
           "operations": {
             "GET_ITC_LIST_DONE": 21,
             "GET_ITC_LIST_FAILED": 22,

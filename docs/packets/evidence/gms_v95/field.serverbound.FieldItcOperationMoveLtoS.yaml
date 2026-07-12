@@ -1,0 +1,10 @@
+packet: field/serverbound/FieldItcOperationMoveLtoS
+direction: serverbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CITC::OnMoveITCPurchaseItemLtoS
+    address: "0x573880"
+    decompile_sha256: 4ab1744e1ef1466f361c45e138629a13ab02b26f6f82072e86caf1761ccffed2
+verifies:
+    - libs/atlas-packet/field/serverbound/itc_operation_test.go#TestItcOperationMoveLtoSByteOutput_v95

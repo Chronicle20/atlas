@@ -5,6 +5,8 @@ import (
 	note_consumer "atlas-notes/kafka/consumer/note"
 	"atlas-notes/logger"
 	"atlas-notes/note"
+	"context"
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
 	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
@@ -59,7 +61,9 @@ func main() {
 	// Leadership is gated by a postgres advisory lock — replicas are safe.
 	publisher := outboxlib.NewTopicWriterPool()
 	drainer := outboxlib.NewDrainer(l, db, publisher, outboxlib.WithDSN(database.DSN()))
-	go drainer.Run(tdm.Context())
+	routine.Go(l, tdm.Context(), func(_ context.Context) {
+		drainer.Run(tdm.Context())
+	})
 	tdm.TeardownFunc(func() {
 		drainer.Stop()
 		publisher.Close()

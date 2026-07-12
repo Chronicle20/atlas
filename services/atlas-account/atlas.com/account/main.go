@@ -1,12 +1,16 @@
 package main
 
 import (
+	"context"
+
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+
 	"atlas-account/account"
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	account2 "atlas-account/kafka/consumer/account"
 	"atlas-account/logger"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-account/tasks"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	"github.com/Chronicle20/atlas/libs/atlas-service"
 	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
 	"time"
@@ -75,7 +79,9 @@ func main() {
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
 		Run()
 
-	go tasks.Register(l, tdm.Context())(account.NewTransitionTimeout(l, db, time.Second*time.Duration(5)))
+	routine.Go(l, tdm.Context(), func(_ context.Context) {
+		tasks.Register(l, tdm.Context())(account.NewTransitionTimeout(l, db, time.Second*time.Duration(5)))
+	})
 
 	tdm.TeardownFunc(account.Teardown(l, db))
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))

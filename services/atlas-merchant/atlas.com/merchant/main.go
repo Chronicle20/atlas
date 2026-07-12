@@ -11,8 +11,10 @@ import (
 	"atlas-merchant/service"
 	"atlas-merchant/shop"
 	"atlas-merchant/tasks"
-	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"atlas-merchant/visitor"
+	"context"
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
@@ -69,7 +71,9 @@ func main() {
 	// Leadership is gated by a postgres advisory lock — replicas are safe.
 	publisher := outboxlib.NewTopicWriterPool()
 	drainer := outboxlib.NewDrainer(l, db, publisher, outboxlib.WithDSN(database.DSN()))
-	go drainer.Run(tdm.Context())
+	routine.Go(l, tdm.Context(), func(_ context.Context) {
+		drainer.Run(tdm.Context())
+	})
 	tdm.TeardownFunc(func() {
 		drainer.Stop()
 		publisher.Close()

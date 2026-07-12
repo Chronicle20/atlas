@@ -1,6 +1,7 @@
 package saga
 
 import (
+	cashshopmock "atlas-saga-orchestrator/cashshop/mock"
 	charmock "atlas-saga-orchestrator/character/mock"
 	compmock "atlas-saga-orchestrator/compartment/mock"
 	"context"
@@ -16,6 +17,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestPetEvolutionCompensationRefundsResources verifies that when a PetEvolution
@@ -294,4 +296,276 @@ func TestCompensateCreateCharacter(t *testing.T) {
 			}
 		})
 	}
+}
+
+func lateStepTestCtx(t *testing.T) context.Context {
+	t.Helper()
+	tm, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	require.NoError(t, err)
+	return tenant.WithContext(context.Background(), tm)
+}
+
+// The task-102 shape: a late-successful AwardCurrency step dispatches exactly
+// one negated wallet credit, and a duplicate delivery dispatches nothing.
+func TestCompensateLateStep_AwardCurrency_NegatedOnceOnly(t *testing.T) {
+	ResetCache()
+	logger, _ := test.NewNullLogger()
+	ctx := lateStepTestCtx(t)
+
+	s, err := NewBuilder().
+		SetSagaType(InventoryTransaction).
+		SetInitiatedBy("test").
+		AddStep("award_currency_seller", Pending, AwardCurrency, AwardCurrencyPayload{CharacterId: 1, AccountId: 42, CurrencyType: 2, Amount: 100}).
+		Build()
+	require.NoError(t, err)
+	require.NoError(t, GetCache().Put(ctx, s))
+
+	var calls []int32
+	cs := &cashshopmock.ProcessorMock{
+		AwardCurrencyAndEmitFunc: func(txId uuid.UUID, accountId uint32, currencyType uint32, amount int32) error {
+			assert.Equal(t, s.TransactionId(), txId)
+			assert.Equal(t, uint32(42), accountId)
+			assert.Equal(t, uint32(2), currencyType)
+			calls = append(calls, amount)
+			return nil
+		},
+	}
+	c := NewCompensator(logger, ctx).WithCashshopProcessor(cs)
+
+	step, _ := s.GetCurrentStep()
+	compensated, err := c.CompensateLateStep(s, step)
+	require.NoError(t, err)
+	assert.True(t, compensated)
+	require.Len(t, calls, 1)
+	assert.Equal(t, int32(-100), calls[0], "inverse must negate the amount")
+
+	// Duplicate delivery: marker already claimed — no second dispatch.
+	fresh, ok := GetCache().GetById(ctx, s.TransactionId())
+	require.True(t, ok)
+	freshStep, _ := fresh.GetCurrentStep()
+	assert.True(t, freshStep.LateCompensated())
+	compensated, err = c.CompensateLateStep(fresh, freshStep)
+	require.NoError(t, err)
+	assert.False(t, compensated)
+	assert.Len(t, calls, 1)
+}
+
+func TestCompensateLateStep_AwardAsset_DestroysItem(t *testing.T) {
+	ResetCache()
+	logger, _ := test.NewNullLogger()
+	ctx := lateStepTestCtx(t)
+
+	s, err := NewBuilder().
+		SetSagaType(InventoryTransaction).
+		SetInitiatedBy("test").
+		AddStep("award_item", Pending, AwardAsset, AwardItemActionPayload{CharacterId: 7, Item: ItemPayload{TemplateId: 2000000, Quantity: 3}}).
+		Build()
+	require.NoError(t, err)
+	require.NoError(t, GetCache().Put(ctx, s))
+
+	destroyed := 0
+	cp := &compmock.ProcessorMock{
+		RequestDestroyItemFunc: func(txId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, removeAll bool) error {
+			destroyed++
+			assert.Equal(t, uint32(7), characterId)
+			assert.Equal(t, uint32(2000000), templateId)
+			assert.Equal(t, uint32(3), quantity)
+			return nil
+		},
+	}
+	c := NewCompensator(logger, ctx).WithCompartmentProcessor(cp)
+
+	step, _ := s.GetCurrentStep()
+	compensated, err := c.CompensateLateStep(s, step)
+	require.NoError(t, err)
+	assert.True(t, compensated)
+	assert.Equal(t, 1, destroyed)
+}
+
+// Non-compensable action: absorb-only with a late_effect_unrecoverable WARN.
+func TestCompensateLateStep_NonCompensable_WarnsNoDispatch(t *testing.T) {
+	ResetCache()
+	logger, hook := test.NewNullLogger()
+	ctx := lateStepTestCtx(t)
+
+	s, err := NewBuilder().
+		SetSagaType(InventoryTransaction).
+		SetInitiatedBy("test").
+		AddStep("change_hair", Pending, ChangeHair, ChangeHairPayload{CharacterId: 1}).
+		Build()
+	require.NoError(t, err)
+	require.NoError(t, GetCache().Put(ctx, s))
+
+	c := NewCompensator(logger, ctx)
+	step, _ := s.GetCurrentStep()
+	compensated, err := c.CompensateLateStep(s, step)
+	require.NoError(t, err)
+	assert.False(t, compensated)
+
+	var warned bool
+	for _, e := range hook.AllEntries() {
+		if e.Level == logrus.WarnLevel && e.Data["reason"] == "late_effect_unrecoverable" {
+			warned = true
+		}
+	}
+	assert.True(t, warned, "expected late_effect_unrecoverable WARN")
+
+	// Marker must NOT be claimed for a non-compensable step.
+	fresh, _ := GetCache().GetById(ctx, s.TransactionId())
+	freshStep, _ := fresh.GetCurrentStep()
+	assert.False(t, freshStep.LateCompensated())
+}
+
+// DestroyAsset with RemoveAll=true carries no recoverable quantity in its
+// step payload — the destroyed amount is not "whatever Quantity says" but
+// "everything the player had". Recreating a fabricated quantity would
+// silently under-refund, so this must absorb-only (like the non-compensable
+// case) rather than dispatch a bogus recreate.
+func TestCompensateLateStep_DestroyAssetRemoveAll_Unrecoverable(t *testing.T) {
+	ResetCache()
+	logger, hook := test.NewNullLogger()
+	ctx := lateStepTestCtx(t)
+
+	s, err := NewBuilder().
+		SetSagaType(InventoryTransaction).
+		SetInitiatedBy("test").
+		AddStep("destroy_item", Pending, DestroyAsset, DestroyAssetPayload{
+			CharacterId: 7,
+			TemplateId:  2000000,
+			Quantity:    0,
+			RemoveAll:   true,
+		}).
+		Build()
+	require.NoError(t, err)
+	require.NoError(t, GetCache().Put(ctx, s))
+
+	var createCalls, destroyCalls int
+	cp := &compmock.ProcessorMock{
+		RequestCreateItemFunc: func(_ uuid.UUID, _ uint32, _ uint32, _ uint32, _ time.Time) error {
+			createCalls++
+			return nil
+		},
+		RequestDestroyItemFunc: func(_ uuid.UUID, _ uint32, _ uint32, _ uint32, _ bool) error {
+			destroyCalls++
+			return nil
+		},
+	}
+	c := NewCompensator(logger, ctx).WithCompartmentProcessor(cp)
+
+	step, _ := s.GetCurrentStep()
+	compensated, err := c.CompensateLateStep(s, step)
+	require.NoError(t, err)
+	assert.False(t, compensated)
+	assert.Equal(t, 0, createCalls, "RemoveAll destroy must not dispatch a fabricated recreate")
+	assert.Equal(t, 0, destroyCalls)
+
+	var warned bool
+	for _, e := range hook.AllEntries() {
+		if e.Level == logrus.WarnLevel && e.Data["reason"] == "late_effect_unrecoverable" {
+			warned = true
+		}
+	}
+	assert.True(t, warned, "expected late_effect_unrecoverable WARN")
+
+	// Marker must NOT be claimed for an unrecoverable RemoveAll destroy.
+	fresh, ok := GetCache().GetById(ctx, s.TransactionId())
+	require.True(t, ok)
+	freshStep, _ := fresh.GetCurrentStep()
+	assert.False(t, freshStep.LateCompensated())
+}
+
+// TestCompensateLateStep_ReleaseFromMtsHolding_RestoresHolding pins the MTS
+// take-home late inverse (task-102): a ReleaseFromMtsHolding that soft-deleted
+// the holding but landed late after the saga terminated is rolled back by
+// RestoreMtsHolding on the same holding id, so the item stays in MTS custody
+// (recoverable) instead of being orphaned.
+func TestCompensateLateStep_ReleaseFromMtsHolding_RestoresHolding(t *testing.T) {
+	ResetCache()
+	logger, _ := test.NewNullLogger()
+	ctx := lateStepTestCtx(t)
+
+	holdingId := uuid.New()
+	s, err := NewBuilder().
+		SetSagaType(MtsOperation).
+		SetInitiatedBy("test").
+		AddStep("release_from_mts_holding", Pending, ReleaseFromMtsHolding, ReleaseFromMtsHoldingPayload{HoldingId: holdingId}).
+		Build()
+	require.NoError(t, err)
+	require.NoError(t, GetCache().Put(ctx, s))
+
+	mtsMockP := &mtsTestMtsMock{}
+	c := NewCompensator(logger, ctx).WithMtsProcessor(mtsMockP)
+
+	step, _ := s.GetCurrentStep()
+	compensated, err := c.CompensateLateStep(s, step)
+	require.NoError(t, err)
+	assert.True(t, compensated)
+	assert.Equal(t, 1, mtsMockP.restoreCalls, "late ReleaseFromMtsHolding must dispatch exactly one RestoreMtsHolding")
+	assert.Equal(t, holdingId, mtsMockP.restoreHoldingId, "restore must target the same holding")
+
+	// Duplicate delivery: marker claimed — no second restore.
+	fresh, ok := GetCache().GetById(ctx, s.TransactionId())
+	require.True(t, ok)
+	freshStep, _ := fresh.GetCurrentStep()
+	assert.True(t, freshStep.LateCompensated())
+	compensated, err = c.CompensateLateStep(fresh, freshStep)
+	require.NoError(t, err)
+	assert.False(t, compensated)
+	assert.Equal(t, 1, mtsMockP.restoreCalls)
+}
+
+// TestCompensateLateStep_AcceptToMtsListing_RemovesListing pins the late inverse
+// of a spurious list-accept: the duplicate listing is removed by RemoveMtsListing.
+func TestCompensateLateStep_AcceptToMtsListing_RemovesListing(t *testing.T) {
+	ResetCache()
+	logger, _ := test.NewNullLogger()
+	ctx := lateStepTestCtx(t)
+
+	listingId := uuid.New()
+	s, err := NewBuilder().
+		SetSagaType(MtsOperation).
+		SetInitiatedBy("test").
+		AddStep("accept_to_mts_listing", Pending, AcceptToMtsListing, AcceptToMtsListingPayload{ListingId: listingId}).
+		Build()
+	require.NoError(t, err)
+	require.NoError(t, GetCache().Put(ctx, s))
+
+	mtsMockP := &mtsTestMtsMock{}
+	c := NewCompensator(logger, ctx).WithMtsProcessor(mtsMockP)
+
+	step, _ := s.GetCurrentStep()
+	compensated, err := c.CompensateLateStep(s, step)
+	require.NoError(t, err)
+	assert.True(t, compensated)
+	assert.Equal(t, 1, mtsMockP.removeListingCalls)
+	assert.Equal(t, listingId, mtsMockP.removeListingId)
+}
+
+// TestCompensateLateStep_MtsMove_RestoresListing pins the late inverse of a buy
+// settlement-move: RestoreListingFromHolding is dispatched with (listingId,
+// buyerId) so the buyer holding is removed and the listing returns to active.
+func TestCompensateLateStep_MtsMove_RestoresListing(t *testing.T) {
+	ResetCache()
+	logger, _ := test.NewNullLogger()
+	ctx := lateStepTestCtx(t)
+
+	listingId := uuid.New()
+	s, err := NewBuilder().
+		SetSagaType(MtsOperation).
+		SetInitiatedBy("test").
+		AddStep("mts_move_listing_to_holding", Pending, MtsMoveListingToHolding, MtsMoveListingToHoldingPayload{ListingId: listingId, BuyerId: 4242}).
+		Build()
+	require.NoError(t, err)
+	require.NoError(t, GetCache().Put(ctx, s))
+
+	mtsMockP := &mtsTestMtsMock{}
+	c := NewCompensator(logger, ctx).WithMtsProcessor(mtsMockP)
+
+	step, _ := s.GetCurrentStep()
+	compensated, err := c.CompensateLateStep(s, step)
+	require.NoError(t, err)
+	assert.True(t, compensated)
+	assert.Equal(t, 1, mtsMockP.restoreListingCalls)
+	assert.Equal(t, listingId, mtsMockP.restoreListingId)
+	assert.Equal(t, uint32(4242), mtsMockP.restoreListingBuyerId)
 }

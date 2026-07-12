@@ -31,10 +31,12 @@ import (
 	"atlas-channel/kafka/consumer/message"
 	"atlas-channel/kafka/consumer/messenger"
 	mistConsumer "atlas-channel/kafka/consumer/mist"
+	mtsConsumer "atlas-channel/kafka/consumer/mts"
 	"atlas-channel/kafka/consumer/monster"
 	mbconsumer "atlas-channel/kafka/consumer/monsterbook"
 	mountConsumer "atlas-channel/kafka/consumer/mount"
 	note3 "atlas-channel/kafka/consumer/note"
+	walletConsumer "atlas-channel/kafka/consumer/wallet"
 	"atlas-channel/kafka/consumer/npc/conversation"
 	"atlas-channel/kafka/consumer/npc/shop"
 	"atlas-channel/kafka/consumer/party"
@@ -53,6 +55,7 @@ import (
 	"atlas-channel/listener"
 	"atlas-channel/logger"
 	monsterDomain "atlas-channel/monster"
+	monsterinfo "atlas-channel/monster/information"
 	"atlas-channel/server"
 	"atlas-channel/session"
 	_ "atlas-channel/skill/handler/registrations"
@@ -67,6 +70,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 
 	buddy2 "github.com/Chronicle20/atlas/libs/atlas-packet/buddy"
@@ -139,6 +143,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
 )
 
@@ -206,6 +211,8 @@ func main() {
 	system_message.InitConsumers(l)(cmf)(consumerGroupId)
 	cashshop.InitConsumers(l)(cmf)(consumerGroupId)
 	cashshopCompartment.InitConsumers(l)(cmf)(consumerGroupId)
+	mtsConsumer.InitConsumers(l)(cmf)(consumerGroupId)
+	walletConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	note3.InitConsumers(l)(cmf)(consumerGroupId)
 	quest.InitConsumers(l)(cmf)(consumerGroupId)
 	route.InitConsumers(l)(cmf)(consumerGroupId)
@@ -288,6 +295,8 @@ func main() {
 		tid := t.Id()
 		account.GetRegistry().EvictTenant(tid)
 		monsterDomain.GetStatusMirror().EvictTenant(tid)
+		monsterDomain.GetLiveMirror().EvictTenant(tid)
+		monsterinfo.EvictTenant(tid)
 		if inbox := monsterDomain.GetNextSkillInbox(); inbox != nil {
 			inbox.EvictTenant(tid)
 		}
@@ -315,16 +324,20 @@ func main() {
 	})
 
 	build := buildListener(l, tdm, state, validatorMap, handlerMap, writerList)
-	go (&projection.ApplyLoop{
-		State:       state,
-		CaughtUp:    caughtUp,
-		Registry:    listenerRegistry,
-		AddBody:     build,
-		ServerModel: serverModelFn,
-		Interval:    250 * time.Millisecond,
-	}).Run(tdm.Context(), l)
+	routine.Go(l, tdm.Context(), func(_ context.Context) {
+		(&projection.ApplyLoop{
+			State:       state,
+			CaughtUp:    caughtUp,
+			Registry:    listenerRegistry,
+			AddBody:     build,
+			ServerModel: serverModelFn,
+			Interval:    250 * time.Millisecond,
+		}).Run(tdm.Context(), l)
+	})
 
-	go tasks.Register(l, tdm.Context())(channel3.NewHeartbeat(l, tdm.Context(), time.Second*10))
+	routine.Go(l, tdm.Context(), func(_ context.Context) {
+		tasks.Register(l, tdm.Context())(channel3.NewHeartbeat(l, tdm.Context(), time.Second*10))
+	})
 
 	tdm.TeardownFunc(session.Teardown(l))
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))
@@ -334,6 +347,7 @@ func main() {
 		WithWaitGroup(tdm.WaitGroup()).
 		SetBasePath("/api/").
 		SetPort(os.Getenv("REST_PORT")).
+		AddRouteInitializer(restserver.MountHandler("/metrics", promhttp.Handler())).
 		AddRouteInitializer(restserver.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
 		AddRouteInitializer(restserver.MountReadiness("/readyz", ready)).
 		Run()
@@ -522,6 +536,12 @@ func buildListener(
 			return nil, err
 		}
 		if err := register(cashshopCompartment.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
+		if err := register(mtsConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
+		if err := register(walletConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
 			return nil, err
 		}
 		if err := register(note3.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
@@ -732,8 +752,10 @@ func produceWriters() []string {
 		fieldcb.ZakumShrineWriter,
 		fieldcb.HorntailCaveWriter,
 		fieldcb.AriantResultWriter,
+		fieldcb.SetItcWriter,
 		fieldcb.MtsOperation2Writer,
 		fieldcb.MtsOperationWriter,
+		fieldcb.MtsChargeParamResultWriter,
 		fieldcb.FootholdInfoWriter,
 		fieldcb.SnowballStateWriter,
 		fieldcb.SnowballHitWriter,
@@ -869,6 +891,10 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[chatSB.CharacterChatWhisperHandle] = handler.CharacterChatWhisperHandleFunc
 	handlerMap[fieldsb.CharacterSpouseChatHandle] = handler.CharacterSpouseChatHandleFunc
 	handlerMap[messengersb.MessengerOperationHandle] = handler.MessengerOperationHandleFunc
+	handlerMap[fieldsb.EnterMtsHandle] = handler.EnterMtsHandleFunc
+	handlerMap[fieldsb.ItcStatusChargeHandle] = handler.ItcStatusChargeHandleFunc
+	handlerMap[fieldsb.ItcQueryCashRequestHandle] = handler.ItcQueryCashRequestHandleFunc
+	handlerMap[fieldsb.ItcOperationHandle] = handler.ItcOperationHandleFunc
 	handlerMap[petsb.PetMovementHandle] = handler.PetMovementHandleFunc
 	handlerMap[petsb.PetSpawnHandle] = handler.PetSpawnHandleFunc
 	handlerMap[petsb.PetCommandHandle] = handler.PetCommandHandleFunc

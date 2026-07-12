@@ -21,6 +21,7 @@ import (
 	charcb "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
 	droppkt "github.com/Chronicle20/atlas/libs/atlas-packet/drop/clientbound"
 	statpkt "github.com/Chronicle20/atlas/libs/atlas-packet/stat/clientbound"
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/segmentio/kafka-go"
@@ -160,7 +161,7 @@ func handleStatusEventPickedUp(sc server.Model, wp writer.Producer) message.Hand
 
 		l.Debugf("[%d] is picking up drop [%d].", e.Body.CharacterId, e.DropId)
 
-		go func() {
+		routine.Go(l, ctx, func(_ context.Context) {
 			session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.Body.CharacterId, func(s session.Model) error {
 				// A monster-book card is consumed on pickup and registered to the
 				// book; it never enters inventory. Skip the generic pickup status
@@ -190,9 +191,9 @@ func handleStatusEventPickedUp(sc server.Model, wp writer.Producer) message.Hand
 				}
 				return err
 			})
-		}()
+		})
 
-		go func() {
+		routine.Go(l, ctx, func(_ context.Context) {
 			dt := droppkt.DropDestroyTypePickUp
 			if e.Body.PetSlot >= 0 {
 				dt = droppkt.DropDestroyTypePetPickUp
@@ -202,6 +203,6 @@ func handleStatusEventPickedUp(sc server.Model, wp writer.Producer) message.Hand
 			if err != nil {
 				l.WithError(err).Errorf("Unable to pick up drop [%d] for characters in map [%d].", e.DropId, e.MapId)
 			}
-		}()
+		})
 	}
 }

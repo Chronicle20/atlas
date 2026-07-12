@@ -1,13 +1,17 @@
 package main
 
 import (
+	"context"
+
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+
 	"atlas-invites/character"
 	"atlas-invites/invite"
 	character2 "atlas-invites/kafka/consumer/character"
 	invite2 "atlas-invites/kafka/consumer/invite"
 	"atlas-invites/logger"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-invites/tasks"
+	"github.com/Chronicle20/atlas/libs/atlas-service"
 	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
 	"time"
@@ -79,7 +83,9 @@ func main() {
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
 		Run()
 
-	go tasks.Register(l, tdm.Context())(invite.NewInviteTimeout(l, time.Second*time.Duration(5)))
+	routine.Go(l, tdm.Context(), func(_ context.Context) {
+		tasks.Register(l, tdm.Context())(invite.NewInviteTimeout(l, time.Second*time.Duration(5)))
+	})
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))
 

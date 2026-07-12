@@ -1,6 +1,10 @@
 package main
 
 import (
+	"context"
+
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+
 	"atlas-character/character"
 	account2 "atlas-character/kafka/consumer/account"
 	character2 "atlas-character/kafka/consumer/character"
@@ -72,7 +76,9 @@ func main() {
 	// Leadership is gated by a postgres advisory lock — replicas are safe.
 	publisher := outboxlib.NewTopicWriterPool()
 	drainer := outboxlib.NewDrainer(l, db, publisher, outboxlib.WithDSN(database.DSN()))
-	go drainer.Run(tdm.Context())
+	routine.Go(l, tdm.Context(), func(_ context.Context) {
+		drainer.Run(tdm.Context())
+	})
 	tdm.TeardownFunc(func() {
 		drainer.Stop()
 		publisher.Close()
@@ -112,7 +118,9 @@ func main() {
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
 		Run()
 
-	go tasks.Register(l, tdm.Context())(session.NewTimeout(l, db, time.Millisecond*time.Duration(5000)))
+	routine.Go(l, tdm.Context(), func(_ context.Context) {
+		tasks.Register(l, tdm.Context())(session.NewTimeout(l, db, time.Millisecond*time.Duration(5000)))
+	})
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))
 

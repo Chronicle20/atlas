@@ -1,7 +1,6 @@
 package main
 
 import (
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	assetConsumer "atlas-quest/kafka/consumer/asset"
 	characterConsumer "atlas-quest/kafka/consumer/character"
 	monsterConsumer "atlas-quest/kafka/consumer/monster"
@@ -9,7 +8,10 @@ import (
 	"atlas-quest/logger"
 	"atlas-quest/quest"
 	"atlas-quest/quest/progress"
+	"context"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	outboxlib "github.com/Chronicle20/atlas/libs/atlas-outbox"
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
 	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
@@ -61,7 +63,9 @@ func main() {
 	// Leadership is gated by a postgres advisory lock — replicas are safe.
 	publisher := outboxlib.NewTopicWriterPool()
 	drainer := outboxlib.NewDrainer(l, db, publisher, outboxlib.WithDSN(database.DSN()))
-	go drainer.Run(tdm.Context())
+	routine.Go(l, tdm.Context(), func(_ context.Context) {
+		drainer.Run(tdm.Context())
+	})
 	tdm.TeardownFunc(func() {
 		drainer.Stop()
 		publisher.Close()

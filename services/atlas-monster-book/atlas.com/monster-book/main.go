@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	"os"
 
 	"atlas-monster-book/card"
@@ -59,7 +61,9 @@ func main() {
 	// Leadership is gated by a postgres advisory lock — replicas are safe.
 	publisher := outboxlib.NewTopicWriterPool()
 	drainer := outboxlib.NewDrainer(l, db, publisher, outboxlib.WithDSN(database.DSN()))
-	go drainer.Run(tdm.Context())
+	routine.Go(l, tdm.Context(), func(_ context.Context) {
+		drainer.Run(tdm.Context())
+	})
 	tdm.TeardownFunc(func() {
 		drainer.Stop()
 		publisher.Close()

@@ -100,7 +100,7 @@ type Processor interface {
 	DeductExperience(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, channel channel.Model, amount uint32) error
 	AwardLevelAndEmit(transactionId uuid.UUID, characterId uint32, channel channel.Model, level byte) error
 	AwardLevel(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, channel channel.Model, level byte) error
-	Move(characterId uint32, x int16, y int16, stance byte) error
+	Move(characterId uint32, x int16, y int16, fh int16, stance byte) error
 	RequestChangeMeso(transactionId uuid.UUID, characterId uint32, amount int32, actorId uint32, actorType string, showEffect bool) error
 	AttemptMesoPickUp(transactionId uuid.UUID, field field.Model, characterId uint32, dropId uint32, meso uint32) error
 	RequestDropMeso(transactionId uuid.UUID, field field.Model, characterId uint32, amount uint32) error
@@ -774,8 +774,8 @@ func (p *ProcessorImpl) AwardLevel(mb *message.Buffer) func(transactionId uuid.U
 	}
 }
 
-func (p *ProcessorImpl) Move(characterId uint32, x int16, y int16, stance byte) error {
-	GetTemporalRegistry().Update(p.ctx, tenant.MustFromContext(p.ctx), characterId, x, y, stance)
+func (p *ProcessorImpl) Move(characterId uint32, x int16, y int16, fh int16, stance byte) error {
+	GetTemporalRegistry().Update(p.ctx, tenant.MustFromContext(p.ctx), characterId, x, y, fh, stance)
 	return nil
 }
 
@@ -1846,20 +1846,19 @@ func (p *ProcessorImpl) Update(mb *message.Buffer) func(transactionId uuid.UUID,
 			}
 
 			// GM validation and update
-			// Only update GM if the input explicitly provides a different value
-			// We skip the update if input.Gm is 0 and current GM is non-zero, as this likely means
-			// the client didn't intend to change GM status (zero value in request)
-			if input.Gm != c.GM() && !(input.Gm == 0 && c.GM() != 0) {
-				if !p.isValidGm(input.Gm) {
+			// Gm is a pointer: nil = field absent (no change requested);
+			// non-nil = explicit set, including 0 (demotion).
+			if input.Gm != nil && *input.Gm != c.GM() {
+				newGmVal := *input.Gm
+				if !p.isValidGm(newGmVal) {
 					return errors.New("invalid GM value")
 				}
 				changes = append(changes, fieldChange{
-					updateFunc:  SetGm(input.Gm),
+					updateFunc:  SetGm(newGmVal),
 					shouldApply: true,
 					eventFunc: func() error {
-						// Convert int to bool for GM status
 						oldGm := c.GM() != 0
-						newGm := input.Gm != 0
+						newGm := newGmVal != 0
 						return mb.Put(character2.EnvEventTopicCharacterStatus, gmChangedEventProvider(transactionId, characterId, c.WorldId(), oldGm, newGm))
 					},
 				})

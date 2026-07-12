@@ -23,6 +23,7 @@ require (
 	github.com/Azure/go-ansiterm v0.0.0-20250102033503-faa5f7b0171c // indirect
 	github.com/Chronicle20/atlas/libs/atlas-model v0.0.0 // indirect
 	github.com/Chronicle20/atlas/libs/atlas-retry v0.0.0 // indirect
+	github.com/Chronicle20/atlas/libs/atlas-routine v0.0.0-00010101000000-000000000000
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
@@ -92,3 +93,5 @@ replace github.com/Chronicle20/atlas/libs/atlas-model => ../atlas-model
 replace github.com/Chronicle20/atlas/libs/atlas-retry => ../atlas-retry
 
 replace github.com/Chronicle20/atlas/libs/atlas-tenant => ../atlas-tenant
+
+replace github.com/Chronicle20/atlas/libs/atlas-routine => ../atlas-routine

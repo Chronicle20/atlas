@@ -3,6 +3,7 @@ package wallet
 import (
 	"atlas-cashshop/kafka/message"
 	"atlas-cashshop/kafka/message/wallet"
+	"atlas-cashshop/kafka/producer"
 	wallet2 "atlas-cashshop/kafka/producer/wallet"
 	"context"
 	"fmt"
@@ -30,6 +31,7 @@ type Processor interface {
 	AdjustCurrencyWithTransaction(transactionId uuid.UUID, accountId uint32, currencyType uint32, amount int32) (Model, error)
 	Delete(mb *message.Buffer) func(accountId uint32) error
 	DeleteAndEmit(accountId uint32) error
+	EmitAdjustFailure(transactionId uuid.UUID, accountId uint32, reason string) error
 }
 
 type ProcessorImpl struct {
@@ -224,5 +226,19 @@ func (p *ProcessorImpl) Delete(mb *message.Buffer) func(accountId uint32) error 
 func (p *ProcessorImpl) DeleteAndEmit(accountId uint32) error {
 	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(model.Flip(p.WithTransaction(tx).Delete)(accountId))
+	})
+}
+
+// EmitAdjustFailure emits a wallet ERROR status event so a saga waiting on this
+// account's ADJUST_CURRENCY command fails fast instead of timing out. Only called
+// for transactional adjusts (transactionId != uuid.Nil); non-saga adjusts have no
+// waiter to notify.
+//
+// This is a failure-path status event that reflects no committed state change (the
+// adjust already failed), so it stays on the direct producer path rather than the
+// transactional outbox — the error must publish regardless of any rollback.
+func (p *ProcessorImpl) EmitAdjustFailure(transactionId uuid.UUID, accountId uint32, reason string) error {
+	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(mb *message.Buffer) error {
+		return mb.Put(wallet.EnvEventTopicStatus, wallet2.ErrorStatusEventProvider(accountId, transactionId, reason))
 	})
 }

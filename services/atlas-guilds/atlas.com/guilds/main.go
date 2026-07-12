@@ -1,6 +1,10 @@
 package main
 
 import (
+	"context"
+
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+
 	"atlas-guilds/coordinator"
 	"atlas-guilds/guild"
 	"atlas-guilds/guild/character"
@@ -11,10 +15,10 @@ import (
 	"atlas-guilds/kafka/consumer/invite"
 	thread2 "atlas-guilds/kafka/consumer/thread"
 	"atlas-guilds/logger"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-guilds/tasks"
 	"atlas-guilds/thread"
 	"atlas-guilds/thread/reply"
+	"github.com/Chronicle20/atlas/libs/atlas-service"
 	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
 	"time"
@@ -72,7 +76,9 @@ func main() {
 	// Leadership is gated by a postgres advisory lock — replicas are safe.
 	publisher := outboxlib.NewTopicWriterPool()
 	drainer := outboxlib.NewDrainer(l, db, publisher, outboxlib.WithDSN(database.DSN()))
-	go drainer.Run(tdm.Context())
+	routine.Go(l, tdm.Context(), func(_ context.Context) {
+		drainer.Run(tdm.Context())
+	})
 	tdm.TeardownFunc(func() {
 		drainer.Stop()
 		publisher.Close()
@@ -109,7 +115,9 @@ func main() {
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
 		Run()
 
-	go tasks.Register(l, tdm.Context())(guild.NewTransitionTimeout(l, db, time.Second*time.Duration(35)))
+	routine.Go(l, tdm.Context(), func(_ context.Context) {
+		tasks.Register(l, tdm.Context())(guild.NewTransitionTimeout(l, db, time.Second*time.Duration(35)))
+	})
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))
 

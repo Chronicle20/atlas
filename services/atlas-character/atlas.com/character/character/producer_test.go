@@ -337,7 +337,7 @@ func TestGmChangedEventViaUpdate(t *testing.T) {
 
 	// Update the GM status and capture the message buffer
 	updateInput := character.RestModel{
-		Gm: 1,
+		Gm: gmPtr(1),
 	}
 
 	transactionId := uuid.New()
@@ -404,7 +404,7 @@ func TestMultipleFieldChangesProduceMultipleEvents(t *testing.T) {
 		Face:      20100,
 		Gender:    1,
 		SkinColor: 5,
-		Gm:        1,
+		Gm:        gmPtr(1),
 	}
 
 	transactionId := uuid.New()

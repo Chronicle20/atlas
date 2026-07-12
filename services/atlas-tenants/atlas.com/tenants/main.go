@@ -2,11 +2,13 @@ package main
 
 import (
 	"atlas-tenants/configuration"
+	"atlas-tenants/logger"
+	"atlas-tenants/tenant"
+	"context"
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	outboxlib "github.com/Chronicle20/atlas/libs/atlas-outbox"
-	"atlas-tenants/logger"
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
-	"atlas-tenants/tenant"
 	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
 
@@ -57,7 +59,9 @@ func main() {
 	// Leadership is gated by a postgres advisory lock — replicas are safe.
 	publisher := outboxlib.NewTopicWriterPool()
 	drainer := outboxlib.NewDrainer(l, db, publisher, outboxlib.WithDSN(database.DSN()))
-	go drainer.Run(tdm.Context())
+	routine.Go(l, tdm.Context(), func(_ context.Context) {
+		drainer.Run(tdm.Context())
+	})
 	tdm.TeardownFunc(func() {
 		drainer.Stop()
 		publisher.Close()

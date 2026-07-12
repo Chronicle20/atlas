@@ -83,6 +83,28 @@ type Processor interface {
 	// AllVesselsProvider returns a provider for all vessels for a tenant
 	AllVesselsProvider(tenantId uuid.UUID) model.Provider[[]map[string]interface{}]
 
+	// MTS config operations
+	// CreateMtsConfig creates a new mts config configuration
+	CreateMtsConfig(mb *message.Buffer) func(tenantId uuid.UUID) func(config map[string]interface{}) (Model, error)
+	// CreateMtsConfigAndEmit creates a new mts config configuration and emits events
+	CreateMtsConfigAndEmit(tenantId uuid.UUID, config map[string]interface{}) (Model, error)
+	// UpdateMtsConfig updates an existing mts config configuration
+	UpdateMtsConfig(mb *message.Buffer) func(tenantId uuid.UUID) func(configID string) func(config map[string]interface{}) (Model, error)
+	// UpdateMtsConfigAndEmit updates an existing mts config configuration and emits events
+	UpdateMtsConfigAndEmit(tenantId uuid.UUID, configID string, config map[string]interface{}) (Model, error)
+	// DeleteMtsConfig deletes an mts config configuration
+	DeleteMtsConfig(mb *message.Buffer) func(tenantId uuid.UUID) func(configID string) error
+	// DeleteMtsConfigAndEmit deletes an mts config configuration and emits events
+	DeleteMtsConfigAndEmit(tenantId uuid.UUID, configID string) error
+	// GetMtsConfigById gets an mts config by ID
+	GetMtsConfigById(tenantId uuid.UUID, configID string) (map[string]interface{}, error)
+	// GetAllMtsConfigs gets all mts configs for a tenant
+	GetAllMtsConfigs(tenantId uuid.UUID) ([]map[string]interface{}, error)
+	// MtsConfigByIdProvider returns a provider for an mts config by ID
+	MtsConfigByIdProvider(tenantId uuid.UUID, configID string) model.Provider[map[string]interface{}]
+	// AllMtsConfigsProvider returns a provider for all mts configs for a tenant
+	AllMtsConfigsProvider(tenantId uuid.UUID) model.Provider[[]map[string]interface{}]
+
 	// Seed operations
 	// SeedRoutes clears existing routes for a tenant and loads them from seed files
 	SeedRoutes(tenantId uuid.UUID) (SeedResult, error)
@@ -90,6 +112,8 @@ type Processor interface {
 	SeedInstanceRoutes(tenantId uuid.UUID) (SeedResult, error)
 	// SeedVessels clears existing vessels for a tenant and loads them from seed files
 	SeedVessels(tenantId uuid.UUID) (SeedResult, error)
+	// SeedMtsConfigs clears existing mts configs for a tenant and loads them from seed files
+	SeedMtsConfigs(tenantId uuid.UUID) (SeedResult, error)
 }
 
 // ProcessorImpl implements the Processor interface
@@ -600,6 +624,252 @@ func (p *ProcessorImpl) AllVesselsProvider(tenantId uuid.UUID) model.Provider[[]
 	return GetAllVesselsProvider(tenantId)(p.db)
 }
 
+// CreateMtsConfig creates a new mts config configuration
+func (p *ProcessorImpl) CreateMtsConfig(mb *message.Buffer) func(tenantId uuid.UUID) func(config map[string]interface{}) (Model, error) {
+	return func(tenantId uuid.UUID) func(config map[string]interface{}) (Model, error) {
+		return func(config map[string]interface{}) (Model, error) {
+			// Check if configuration already exists
+			existingProvider := GetByTenantIdAndResourceNameProvider(tenantId, "mts-configs")(p.db)
+			existing, err := existingProvider()
+
+			var resourceData json.RawMessage
+
+			if err == nil {
+				// Configuration exists, update it
+				var existingData map[string]interface{}
+				if err := json.Unmarshal(existing.ResourceData, &existingData); err != nil {
+					return Model{}, err
+				}
+
+				// Check if it's an array of resources
+				if resources, ok := existingData["data"].([]interface{}); ok {
+					// Add the new config to the array
+					resources = append(resources, config)
+					existingData["data"] = resources
+					resourceData, err = json.Marshal(existingData)
+					if err != nil {
+						return Model{}, err
+					}
+				} else {
+					// Create a new array with the existing resource and the new one
+					resourceData, err = CreateMtsConfigJsonData([]map[string]interface{}{config})
+					if err != nil {
+						return Model{}, err
+					}
+				}
+
+				existing.ResourceData = resourceData
+				if err := UpdateConfiguration(p.db, existing); err != nil {
+					return Model{}, err
+				}
+
+				m, err := Make(existing)
+				if err != nil {
+					return Model{}, err
+				}
+
+				// Add event to message buffer
+				configID := ""
+				if id, ok := config["id"].(string); ok {
+					configID = id
+				}
+				if err := mb.Put(EventTopicConfigurationStatus, CreateMtsConfigStatusEventProvider(tenantId, EventTypeMtsConfigCreated, configID)); err != nil {
+					return Model{}, err
+				}
+
+				return m, nil
+			} else if errors.Is(err, gorm.ErrRecordNotFound) {
+				// Configuration doesn't exist, create it
+				resourceData, err = CreateSingleMtsConfigJsonData(config)
+				if err != nil {
+					return Model{}, err
+				}
+
+				entity := Entity{
+					ID:           uuid.New(),
+					TenantId:     tenantId,
+					ResourceName: "mts-configs",
+					ResourceData: resourceData,
+				}
+
+				if err := CreateConfiguration(p.db, entity); err != nil {
+					return Model{}, err
+				}
+
+				m, err := Make(entity)
+				if err != nil {
+					return Model{}, err
+				}
+
+				// Add event to message buffer
+				configID := ""
+				if id, ok := config["id"].(string); ok {
+					configID = id
+				}
+				if err := mb.Put(EventTopicConfigurationStatus, CreateMtsConfigStatusEventProvider(tenantId, EventTypeMtsConfigCreated, configID)); err != nil {
+					return Model{}, err
+				}
+
+				return m, nil
+			} else {
+				// Other error
+				return Model{}, err
+			}
+		}
+	}
+}
+
+// CreateMtsConfigAndEmit creates a new mts config configuration and emits events
+func (p *ProcessorImpl) CreateMtsConfigAndEmit(tenantId uuid.UUID, config map[string]interface{}) (Model, error) {
+	var result Model
+	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		var err error
+		result, err = message.EmitWithResult[Model, uuid.UUID](outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) func(uuid.UUID) (Model, error) {
+			return func(tenantId uuid.UUID) (Model, error) {
+				return NewProcessor(p.l, p.ctx, tx).CreateMtsConfig(mb)(tenantId)(config)
+			}
+		})(tenantId)
+		return err
+	})
+	return result, txErr
+}
+
+// UpdateMtsConfig updates an existing mts config configuration
+func (p *ProcessorImpl) UpdateMtsConfig(mb *message.Buffer) func(tenantId uuid.UUID) func(configID string) func(config map[string]interface{}) (Model, error) {
+	return func(tenantId uuid.UUID) func(configID string) func(config map[string]interface{}) (Model, error) {
+		return func(configID string) func(config map[string]interface{}) (Model, error) {
+			return func(config map[string]interface{}) (Model, error) {
+				// Check if configuration exists
+				existingProvider := GetByTenantIdAndResourceNameProvider(tenantId, "mts-configs")(p.db)
+				existing, err := existingProvider()
+				if err != nil {
+					return Model{}, err
+				}
+
+				var existingData map[string]interface{}
+				if err := json.Unmarshal(existing.ResourceData, &existingData); err != nil {
+					return Model{}, err
+				}
+
+				// Ensure the config ID matches
+				config["id"] = configID
+
+				// Check if it's an array of resources
+				if resources, ok := existingData["data"].([]interface{}); ok {
+					found := false
+					for i, resource := range resources {
+						if resourceMap, ok := resource.(map[string]interface{}); ok {
+							if id, ok := resourceMap["id"].(string); ok && id == configID {
+								resources[i] = config
+								found = true
+								break
+							}
+						}
+					}
+
+					if !found {
+						return Model{}, errors.New("mts config not found")
+					}
+
+					existingData["data"] = resources
+				} else if data, ok := existingData["data"].(map[string]interface{}); ok {
+					if id, ok := data["id"].(string); ok && id == configID {
+						existingData["data"] = config
+					} else {
+						return Model{}, errors.New("mts config not found")
+					}
+				} else {
+					return Model{}, errors.New("invalid resource data format")
+				}
+
+				resourceData, err := json.Marshal(existingData)
+				if err != nil {
+					return Model{}, err
+				}
+
+				existing.ResourceData = resourceData
+				if err := UpdateConfiguration(p.db, existing); err != nil {
+					return Model{}, err
+				}
+
+				m, err := Make(existing)
+				if err != nil {
+					return Model{}, err
+				}
+
+				// Add event to message buffer
+				if err := mb.Put(EventTopicConfigurationStatus, CreateMtsConfigStatusEventProvider(tenantId, EventTypeMtsConfigUpdated, configID)); err != nil {
+					return Model{}, err
+				}
+
+				return m, nil
+			}
+		}
+	}
+}
+
+// UpdateMtsConfigAndEmit updates an existing mts config configuration and emits events
+func (p *ProcessorImpl) UpdateMtsConfigAndEmit(tenantId uuid.UUID, configID string, config map[string]interface{}) (Model, error) {
+	var result Model
+	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		var err error
+		result, err = message.EmitWithResult[Model, uuid.UUID](outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) func(uuid.UUID) (Model, error) {
+			return func(tenantId uuid.UUID) (Model, error) {
+				return NewProcessor(p.l, p.ctx, tx).UpdateMtsConfig(mb)(tenantId)(configID)(config)
+			}
+		})(tenantId)
+		return err
+	})
+	return result, txErr
+}
+
+// DeleteMtsConfig deletes an mts config configuration
+func (p *ProcessorImpl) DeleteMtsConfig(mb *message.Buffer) func(tenantId uuid.UUID) func(configID string) error {
+	return func(tenantId uuid.UUID) func(configID string) error {
+		return func(configID string) error {
+			if err := DeleteConfiguration(p.db, tenantId, "mts-configs", configID); err != nil {
+				return err
+			}
+
+			// Add event to message buffer
+			if err := mb.Put(EventTopicConfigurationStatus, CreateMtsConfigStatusEventProvider(tenantId, EventTypeMtsConfigDeleted, configID)); err != nil {
+				return err
+			}
+
+			return nil
+		}
+	}
+}
+
+// DeleteMtsConfigAndEmit deletes an mts config configuration and emits events
+func (p *ProcessorImpl) DeleteMtsConfigAndEmit(tenantId uuid.UUID, configID string) error {
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
+			return NewProcessor(p.l, p.ctx, tx).DeleteMtsConfig(mb)(tenantId)(configID)
+		})
+	})
+}
+
+// GetMtsConfigById gets an mts config by ID
+func (p *ProcessorImpl) GetMtsConfigById(tenantId uuid.UUID, configID string) (map[string]interface{}, error) {
+	return p.MtsConfigByIdProvider(tenantId, configID)()
+}
+
+// GetAllMtsConfigs gets all mts configs for a tenant
+func (p *ProcessorImpl) GetAllMtsConfigs(tenantId uuid.UUID) ([]map[string]interface{}, error) {
+	return p.AllMtsConfigsProvider(tenantId)()
+}
+
+// MtsConfigByIdProvider returns a provider for an mts config by ID
+func (p *ProcessorImpl) MtsConfigByIdProvider(tenantId uuid.UUID, configID string) model.Provider[map[string]interface{}] {
+	return GetMtsConfigByIdProvider(tenantId, configID)(p.db)
+}
+
+// AllMtsConfigsProvider returns a provider for all mts configs for a tenant
+func (p *ProcessorImpl) AllMtsConfigsProvider(tenantId uuid.UUID) model.Provider[[]map[string]interface{}] {
+	return GetAllMtsConfigsProvider(tenantId)(p.db)
+}
+
 // CreateInstanceRoute creates a new instance route configuration
 func (p *ProcessorImpl) CreateInstanceRoute(mb *message.Buffer) func(tenantId uuid.UUID) func(route map[string]interface{}) (Model, error) {
 	return func(tenantId uuid.UUID) func(route map[string]interface{}) (Model, error) {
@@ -941,6 +1211,44 @@ func (p *ProcessorImpl) SeedVessels(tenantId uuid.UUID) (SeedResult, error) {
 	}
 
 	p.l.Infof("Vessel seed complete for tenant [%s]: deleted=%d, created=%d, failed=%d",
+		tenantId, result.DeletedCount, result.CreatedCount, result.FailedCount)
+
+	return result, nil
+}
+
+// SeedMtsConfigs clears existing mts configs for a tenant and loads them from seed files
+func (p *ProcessorImpl) SeedMtsConfigs(tenantId uuid.UUID) (SeedResult, error) {
+	p.l.Infof("Seeding mts configs for tenant [%s]", tenantId)
+
+	result := SeedResult{}
+
+	// Delete all existing mts configs for this tenant
+	deletedCount, err := DeleteConfigurationByResourceName(p.db, tenantId, "mts-configs")
+	if err != nil {
+		return result, fmt.Errorf("failed to clear existing mts configs: %w", err)
+	}
+	result.DeletedCount = int(deletedCount)
+
+	// Load mts config files from the filesystem
+	configs, loadErrors := LoadMtsConfigFiles()
+	for _, err := range loadErrors {
+		result.Errors = append(result.Errors, err.Error())
+		result.FailedCount++
+	}
+
+	// Create each mts config
+	for _, config := range configs {
+		id, _ := config["id"].(string)
+		_, err := p.CreateMtsConfigAndEmit(tenantId, config)
+		if err != nil {
+			result.Errors = append(result.Errors, fmt.Sprintf("%s: failed to create: %v", id, err))
+			result.FailedCount++
+			continue
+		}
+		result.CreatedCount++
+	}
+
+	p.l.Infof("MTS config seed complete for tenant [%s]: deleted=%d, created=%d, failed=%d",
 		tenantId, result.DeletedCount, result.CreatedCount, result.FailedCount)
 
 	return result, nil

@@ -135,11 +135,11 @@ Notes on interpreting the output:
 | `services/atlas-monsters/atlas.com/monsters/monster/drop/processor.go` | Gen1 | R3 | 29 | done |
 | `services/atlas-monsters/atlas.com/monsters/monster/information/processor.go` | Gen1 | R3 | 29 | done |
 | `services/atlas-monsters/atlas.com/monsters/monster/mobskill/processor.go` | Gen1 | R3 | 29 | done |
-| `services/atlas-rates/atlas.com/rates/buffs/processor.go` | Gen1 | R3 | 30 | pending |
-| `services/atlas-rates/atlas.com/rates/data/cash/processor.go` | Gen1 | R3 | 30 | pending |
-| `services/atlas-rates/atlas.com/rates/data/equipment/processor.go` | Gen1 | R3 | 30 | pending |
-| `services/atlas-rates/atlas.com/rates/inventory/processor.go` | Gen1 | R3 | 30 | pending |
-| `services/atlas-rates/atlas.com/rates/session/processor.go` | Gen1 | R3 | 30 | pending |
+| `services/atlas-rates/atlas.com/rates/buffs/processor.go` | Gen1 | R3 | 30 | done |
+| `services/atlas-rates/atlas.com/rates/data/cash/processor.go` | Gen1 | R3 | 30 | done |
+| `services/atlas-rates/atlas.com/rates/data/equipment/processor.go` | Gen1 | R3 | 30 | done |
+| `services/atlas-rates/atlas.com/rates/inventory/processor.go` | Gen1 | R3 | 30 | done |
+| `services/atlas-rates/atlas.com/rates/session/processor.go` | Gen1 | R3 | 30 | done |
 | `services/atlas-monster-death/atlas.com/monster/character/processor.go` | Gen1 | R3 | 31 | pending |
 | `services/atlas-monster-death/atlas.com/monster/data/equipment/statistics/processor.go` | Gen2 | R2 | 31 | pending |
 | `services/atlas-monster-death/atlas.com/monster/monster/drop/position/processor.go` | Gen1 | R3 | 31 | pending |
@@ -206,6 +206,7 @@ Phase C scope confirmed as exactly: atlas-account (`ban`, task 25), atlas-portal
 - `services/atlas-login/atlas.com/login/socket/init.go:39` (task 16): pre-existing `go vet` finding `WaitGroup.Add called from inside new goroutine` (the `wg.Add(1)` call sits inside the `go func() { ... }()` closure it starts). Present on `main` before this task (confirmed unchanged since PR #738) and unrelated to `inventory`/`guild` — not touched, per Constraint 1.
 - `services/atlas-inventory/atlas.com/inventory/compartment/processor.go` (task 18): the pre-existing (unused, dead) `type Provider interface` was stale relative to the actual `Processor`-to-be method set — it was missing `DecorateAsset` entirely, and its `CreateAssetAndEmit`/`CreateAssetAndLock`/`CreateAsset` signatures were missing the `useAverageStats bool` parameter that the real methods (`processor.go:975,981,990`) already had. No caller in the module referenced `compartment.Provider` (`grep -rn "compartment\.Provider\b"` returns nothing), so it was silently drifting. Per R2 Step 2, the new `Processor` interface was generated fresh from the actual exported method set (53 methods, source order) rather than copied from the stale `Provider` block, which is deleted outright — not a behavior change since nothing referenced it.
 - `services/atlas-inventory/atlas.com/inventory/data/equipment/slot/processor.go` and `.../data/equipment/statistics/processor.go` (task 18): both packages populated an exported struct field (`GetById func(id uint32) (...)`, `GetById func(id uint32) ([]Model, error)`) at construction time via `p.GetById = model.CollapseProvider(p.ByIdModelProvider)`. Exported struct fields cannot appear in a `Processor` interface (interfaces have methods, not fields), and the field is used as `slotProcessor.GetById(itemId)`/`statProcessor.GetById(...)` from `data/equipment/processor.go`, which becomes an interface-typed collaborator. `GetById` was converted from a field into a real method — `func (p *ProcessorImpl) GetById(id uint32) (...) { return model.CollapseProvider(p.ByIdModelProvider)(id) }` — mirroring the identical pattern already used by `asset.Processor.GetById` (`asset/processor.go`) and `atlas-pets` `pet.ProcessorImpl.GetById`. Verified behavior-preserving: `model.CollapseProvider` (`libs/atlas-model/model/processor.go:81`) is a pure, stateless wrapper (`return func(a A) (T, error) { return f(a)() }`) with no memoization, so calling it per-invocation via a method is identical to calling a pre-built closure stored in a field.
+- `services/atlas-rates/atlas.com/rates/session/processor.go` (task 30): pre-existing orphaned doc comment `// ComputePlaytimeSince computes total playtime for a character since the given time` sits directly above the `ComputePlaytimeInRange` method with no corresponding function — `ComputePlaytimeSince` does not exist anywhere in the package (confirmed via `grep -rn "ComputePlaytimeSince" services/atlas-rates`). Left in place verbatim (Constraint 1: no logic/doc changes beyond the R3 declaration shape).
 
 ## R6 file renames
 

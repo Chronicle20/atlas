@@ -82,7 +82,7 @@ func computeSimple(l logrus.FieldLogger, ctx context.Context, characterId uint32
 
 // computeEquippedHours computes total equipped hours within a time range using session history
 func computeEquippedHours(l logrus.FieldLogger, ctx context.Context, characterId uint32, start, end time.Time) (int64, error) {
-	playtime, err := session.ComputePlaytimeInRange(l)(ctx)(characterId, start, end)
+	playtime, err := session.NewProcessor(l, ctx).ComputePlaytimeInRange(characterId, start, end)
 	if err != nil {
 		return 0, err
 	}

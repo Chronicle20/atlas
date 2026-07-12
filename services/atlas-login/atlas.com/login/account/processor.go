@@ -42,6 +42,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	return p
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) ForAccountByName(name string, operator model.Operator[Model]) {
 	_ = model.For[Model](p.ByNameModelProvider(name), operator)
 }

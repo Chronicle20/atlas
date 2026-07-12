@@ -59,6 +59,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	return p
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) WithContext(ctx context.Context) Processor {
 	return NewProcessor(p.l, ctx)
 }

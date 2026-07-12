@@ -1730,20 +1730,19 @@ func (p *ProcessorImpl) Update(mb *message.Buffer) func(transactionId uuid.UUID,
 			}
 
 			// GM validation and update
-			// Only update GM if the input explicitly provides a different value
-			// We skip the update if input.Gm is 0 and current GM is non-zero, as this likely means
-			// the client didn't intend to change GM status (zero value in request)
-			if input.Gm != c.GM() && !(input.Gm == 0 && c.GM() != 0) {
-				if !p.isValidGm(input.Gm) {
+			// Gm is a pointer: nil = field absent (no change requested);
+			// non-nil = explicit set, including 0 (demotion).
+			if input.Gm != nil && *input.Gm != c.GM() {
+				newGmVal := *input.Gm
+				if !p.isValidGm(newGmVal) {
 					return errors.New("invalid GM value")
 				}
 				changes = append(changes, fieldChange{
-					updateFunc:  SetGm(input.Gm),
+					updateFunc:  SetGm(newGmVal),
 					shouldApply: true,
 					eventFunc: func() error {
-						// Convert int to bool for GM status
 						oldGm := c.GM() != 0
-						newGm := input.Gm != 0
+						newGm := newGmVal != 0
 						return mb.Put(character2.EnvEventTopicCharacterStatus, gmChangedEventProvider(transactionId, characterId, c.WorldId(), oldGm, newGm))
 					},
 				})

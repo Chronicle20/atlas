@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -139,9 +140,9 @@ func (p *ProcessorImpl) SpawnMonsters(transactionId uuid.UUID, f field.Model) er
 		spawned++
 		p.l.Debugf("Spawning monster at spawn point [%d] with template [%d] at position (%d, %d)", sp.Id, sp.Template, sp.X, sp.Y)
 
-		go func(sp monster2.SpawnPoint) {
+		routine.Go(p.l, p.ctx, func(_ context.Context) {
 			p.mp.CreateMonster(transactionId, f, sp.Template, sp.X, sp.Y, sp.Fh, sp.Team)
-		}(sp)
+		})
 	}
 
 	// Batch update cooldowns in Redis

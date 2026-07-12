@@ -1,6 +1,8 @@
 package outbox
 
 import (
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+
 	"context"
 	"time"
 
@@ -145,7 +147,9 @@ func (d *Drainer) runLeader(ctx context.Context) {
 	// Sweeper runs only while leader; cancel on leader exit.
 	sweepCtx, cancelSweep := context.WithCancel(ctx)
 	defer cancelSweep()
-	go d.runSweeper(sweepCtx)
+	routine.Go(d.l, sweepCtx, func(_ context.Context) {
+		d.runSweeper(sweepCtx)
+	})
 
 	tk := time.NewTicker(d.cfg.pollInterval)
 	defer tk.Stop()

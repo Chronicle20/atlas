@@ -12,6 +12,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-pets/tasks"
 	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
+	"context"
 	"os"
 	"time"
 
@@ -20,6 +21,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 )
 
 const serviceName = "atlas-pets"
@@ -88,7 +90,9 @@ func main() {
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
 		Run()
 
-	go tasks.Register(l, tdm.Context())(pet.NewHungerTask(l, db, time.Minute*time.Duration(3)))
+	routine.Go(l, tdm.Context(), func(_ context.Context) {
+		tasks.Register(l, tdm.Context())(pet.NewHungerTask(l, db, time.Minute*time.Duration(3)))
+	})
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))
 

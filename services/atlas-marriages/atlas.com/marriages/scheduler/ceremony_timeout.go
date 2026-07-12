@@ -1,6 +1,8 @@
 package scheduler
 
 import (
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+
 	"context"
 	"time"
 
@@ -45,7 +47,9 @@ func (s *CeremonyTimeoutScheduler) WithInterval(interval time.Duration) *Ceremon
 func (s *CeremonyTimeoutScheduler) Start() {
 	s.log.WithField("interval", s.interval).Info("Starting ceremony timeout scheduler")
 
-	go s.run()
+	routine.Go(s.log, s.ctx, func(_ context.Context) {
+		s.run()
+	})
 }
 
 // Stop gracefully stops the scheduler

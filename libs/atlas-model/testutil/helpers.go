@@ -38,12 +38,12 @@ func (g *GoroutineLeakDetector) CheckWithRetries(retries int) {
 	for i := 0; i < retries; i++ {
 		runtime.GC()
 		time.Sleep(time.Millisecond * 10) // Give goroutines time to cleanup
-		
+
 		currentCount := runtime.NumGoroutine()
 		if currentCount <= g.initialCount {
 			return
 		}
-		
+
 		if i == retries-1 {
 			g.t.Errorf("Goroutine leak detected: started with %d goroutines, now have %d", g.initialCount, currentCount)
 		}
@@ -186,6 +186,7 @@ func (cr *ConcurrentRunner) Add(delta int) {
 
 // Go runs a function in a goroutine and tracks any errors
 func (cr *ConcurrentRunner) Go(fn func() error) {
+	//goroutine-guard:allow test-support: a swallowed panic here would convert a failing test into a silent pass; panic propagation is the desired behavior in test scaffolding
 	go func() {
 		defer cr.wg.Done()
 		if err := fn(); err != nil {
@@ -227,18 +228,18 @@ func MemoryPressureTest(t *testing.T, fn func() error) {
 	// Force garbage collection before test
 	runtime.GC()
 	runtime.GC() // Run twice to be thorough
-	
+
 	var m1, m2 runtime.MemStats
 	runtime.ReadMemStats(&m1)
-	
+
 	err := fn()
 	if err != nil {
 		t.Fatalf("Function failed under memory pressure: %v", err)
 	}
-	
+
 	runtime.GC()
 	runtime.ReadMemStats(&m2)
-	
+
 	// Check for excessive memory growth (more than 10MB)
 	if m2.Alloc > m1.Alloc+10*1024*1024 {
 		t.Errorf("Excessive memory growth detected: %d bytes -> %d bytes", m1.Alloc, m2.Alloc)

@@ -10,6 +10,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
@@ -183,7 +184,7 @@ func (m *Manager) AddConsumer(cl logrus.FieldLogger, ctx context.Context, wg *sy
 		m.consumers[c.topic] = con
 
 		l := cl.WithFields(logrus.Fields{"originator": c.topic, "type": "kafka_consumer"})
-		go con.start(l, ctx, wg)
+		routine.Go(l, ctx, func(_ context.Context) { con.start(l, ctx, wg) })
 	}
 }
 
@@ -663,7 +664,8 @@ func (c *Consumer) runFetchLoopParallel(l logrus.FieldLogger, ctx context.Contex
 		qmu.Unlock()
 
 		sem <- struct{}{}
-		go func(p *pending) {
+		p := pm
+		routine.Go(l, ctx, func(_ context.Context) {
 			defer func() { <-sem }()
 			handlerStart := time.Now()
 			ok := c.processMessage(l, ctx, p.msg)
@@ -671,7 +673,7 @@ func (c *Consumer) runFetchLoopParallel(l logrus.FieldLogger, ctx context.Contex
 			p.ok.Store(ok)
 			p.done.Store(true)
 			advanceCommit()
-		}(pm)
+		})
 	}
 }
 
@@ -700,7 +702,7 @@ func (c *Consumer) processMessage(l logrus.FieldLogger, ctx context.Context, msg
 		var handle = h
 		var handleId = id
 		handlerWg.Add(1)
-		go func() {
+		routine.Go(handlerLogger, wctx, func(_ context.Context) {
 			defer handlerWg.Done()
 			cont, handlerErr := c.safeHandle(handle, handlerLogger, wctx, msg)
 			if !cont {
@@ -712,7 +714,7 @@ func (c *Consumer) processMessage(l logrus.FieldLogger, ctx context.Context, msg
 				hadError.Store(true)
 				handlerLogger.WithError(handlerErr).Errorf("Handler [%s] failed.", handleId)
 			}
-		}()
+		})
 	}
 	handlerWg.Wait()
 	return !hadError.Load()

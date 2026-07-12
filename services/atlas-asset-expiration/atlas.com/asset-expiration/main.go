@@ -3,8 +3,8 @@ package main
 import (
 	session2 "atlas-asset-expiration/kafka/consumer/session"
 	"atlas-asset-expiration/logger"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-asset-expiration/task"
+	"github.com/Chronicle20/atlas/libs/atlas-service"
 	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
 	"strconv"
@@ -44,7 +44,7 @@ func main() {
 
 	// Start periodic expiration check task
 	interval := getExpirationInterval()
-	periodicTask := task.NewPeriodicTask(l, interval)
+	periodicTask := task.NewPeriodicTask(l, tdm.Context(), interval)
 	periodicTask.Start()
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))

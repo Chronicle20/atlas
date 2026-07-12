@@ -71,6 +71,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 
 	buddy2 "github.com/Chronicle20/atlas/libs/atlas-packet/buddy"
@@ -325,16 +326,20 @@ func main() {
 	})
 
 	build := buildListener(l, tdm, state, validatorMap, handlerMap, writerList)
-	go (&projection.ApplyLoop{
-		State:       state,
-		CaughtUp:    caughtUp,
-		Registry:    listenerRegistry,
-		AddBody:     build,
-		ServerModel: serverModelFn,
-		Interval:    250 * time.Millisecond,
-	}).Run(tdm.Context(), l)
+	routine.Go(l, tdm.Context(), func(_ context.Context) {
+		(&projection.ApplyLoop{
+			State:       state,
+			CaughtUp:    caughtUp,
+			Registry:    listenerRegistry,
+			AddBody:     build,
+			ServerModel: serverModelFn,
+			Interval:    250 * time.Millisecond,
+		}).Run(tdm.Context(), l)
+	})
 
-	go tasks.Register(l, tdm.Context())(channel3.NewHeartbeat(l, tdm.Context(), time.Second*10))
+	routine.Go(l, tdm.Context(), func(_ context.Context) {
+		tasks.Register(l, tdm.Context())(channel3.NewHeartbeat(l, tdm.Context(), time.Second*10))
+	})
 
 	tdm.TeardownFunc(session.Teardown(l))
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))

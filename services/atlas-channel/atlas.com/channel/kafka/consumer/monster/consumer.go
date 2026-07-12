@@ -26,6 +26,7 @@ import (
 	model2 "github.com/Chronicle20/atlas/libs/atlas-model/model"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	monsterpkt "github.com/Chronicle20/atlas/libs/atlas-packet/monster/clientbound"
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
@@ -222,7 +223,7 @@ func handleStatusEventDamaged(sc server.Model, wp writer.Producer) message.Handl
 
 		// Boss monsters: broadcast HP bar to all characters in the map
 		f := sc.Field(e.MapId, e.Instance)
-		go func() {
+		routine.Go(l, ctx, func(_ context.Context) {
 			if e.Body.Boss {
 				err = _map.NewProcessor(l, ctx).ForSessionsInMap(f, announcer)
 			} else {
@@ -241,19 +242,19 @@ func handleStatusEventDamaged(sc server.Model, wp writer.Producer) message.Handl
 			if err != nil {
 				l.WithError(err).Errorf("Unable to announce monster [%d] health.", e.UniqueId)
 			}
-		}()
+		})
 		// Only echo a MonsterDamage packet for damage sources that have no
 		// corresponding client-side attack broadcast. Player attacks are
 		// already rendered to observers by CharacterAttack*Writer in
 		// socket/handler/character_attack_common.go, so emitting here too
 		// would double-render the damage number.
 		if e.Body.DamageSource == monster2.DamageSourceMonsterAttack || e.Body.DamageSource == monster2.DamageSourceDamageOverTime {
-			go func() {
+			routine.Go(l, ctx, func(_ context.Context) {
 				err = _map.NewProcessor(l, ctx).ForSessionsInMap(f, func(s session.Model) error {
 					de := e.Body.DamageEntries[len(e.Body.DamageEntries)-1]
 					return session.Announce(l)(ctx)(wp)(monsterpkt.MonsterDamageWriter)(monsterpkt.NewMonsterDamage(m.UniqueId(), monsterpkt.MonsterDamageTypeUnk3, uint32(de.Damage), m.Hp(), m.MaxHp()).Encode)(s)
 				})
-			}()
+			})
 		}
 	}
 }

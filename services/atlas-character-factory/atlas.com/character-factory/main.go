@@ -1,6 +1,8 @@
 package main
 
 import (
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+
 	"atlas-character-factory/configuration"
 	"atlas-character-factory/configuration/projection"
 	"atlas-character-factory/factory"
@@ -108,7 +110,9 @@ func main() {
 	// Republish projection snapshots into the configuration package vars
 	// so GetTenantConfig callers (the seed saga, preset client) see live
 	// updates. onChange is nil — the factory has no per-change side effects.
-	go configuration.RunBridge(tdm.Context(), l, state.Snapshot, time.Second, nil)
+	routine.Go(l, tdm.Context(), func(_ context.Context) {
+		configuration.RunBridge(tdm.Context(), l, state.Snapshot, time.Second, nil)
+	})
 
 	server.New(l).
 		WithContext(tdm.Context()).

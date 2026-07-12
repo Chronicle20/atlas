@@ -13,6 +13,7 @@ use (
 	./libs/atlas-redis
 	./libs/atlas-rest
 	./libs/atlas-retry
+	./libs/atlas-routine
 	./libs/atlas-saga
 	./libs/atlas-script-core
 	./libs/atlas-seeder

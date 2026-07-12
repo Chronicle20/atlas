@@ -53,7 +53,13 @@ func (Item) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc *mini
 				}
 			}
 		}},
-		{"Etc", etc.RegisterEtc(db)},
+		{"Etc", func(l logrus.FieldLogger) func(ctx context.Context) func(path string) error {
+			return func(ctx context.Context) func(path string) error {
+				return func(path string) error {
+					return etc.NewProcessor(l, ctx, db).RegisterEtc(path)
+				}
+			}
+		}},
 		{"Install", setup.RegisterSetup(db)},
 		{"Pet", pet.RegisterPet(db)},
 	}

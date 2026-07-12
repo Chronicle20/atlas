@@ -176,7 +176,13 @@ func StartWorker(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.D
 						l.WithError(err).Errorf("Failed to initialize etc item string registry.")
 						return err
 					}
-					err = RegisterAllData(l)(ctx)(path, filepath.Join("Item.wz", "Etc"), etc.RegisterEtc(db))()
+					err = RegisterAllData(l)(ctx)(path, filepath.Join("Item.wz", "Etc"), func(l logrus.FieldLogger) func(ctx context.Context) func(filePath string) error {
+						return func(ctx context.Context) func(filePath string) error {
+							return func(filePath string) error {
+								return etc.NewProcessor(l, ctx, db).RegisterEtc(filePath)
+							}
+						}
+					})()
 				} else if name == WorkerSetup {
 					if err = item.InitStringFlat(db)(l)(ctx)(filepath.Join(path, "String.wz", "Ins.img.xml")); err != nil {
 						l.WithError(err).Errorf("Failed to initialize setup item string registry.")

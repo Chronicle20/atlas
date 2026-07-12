@@ -42,7 +42,7 @@ func getMarriageHandler(db *gorm.DB) rest.GetHandler {
 				processor := NewProcessor(d.Logger(), d.Context(), db)
 				marriage, err := processor.GetMarriageByCharacter(characterId)()
 				if err != nil {
-					writeErrorResponse(w, http.StatusInternalServerError, err.Error())
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -55,7 +55,7 @@ func getMarriageHandler(db *gorm.DB) rest.GetHandler {
 				// Transform to REST model with partner information
 				restMarriage, err := TransformMarriageWithPartner(*marriage, characterId)
 				if err != nil {
-					writeErrorResponse(w, http.StatusInternalServerError, "Failed to transform marriage data")
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -86,14 +86,14 @@ func getMarriageHistoryHandler(db *gorm.DB) rest.GetHandler {
 				processor := NewProcessor(d.Logger(), d.Context(), db)
 				marriages, err := processor.GetMarriageHistory(characterId)()
 				if err != nil {
-					writeErrorResponse(w, http.StatusInternalServerError, err.Error())
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
 				// Transform marriages to REST models
 				restMarriages, err := TransformMarriages(marriages)
 				if err != nil {
-					writeErrorResponse(w, http.StatusInternalServerError, "Failed to transform marriage data")
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -113,14 +113,14 @@ func getProposalsHandler(db *gorm.DB) rest.GetHandler {
 				processor := NewProcessor(d.Logger(), d.Context(), db)
 				proposals, err := processor.GetPendingProposalsByCharacter(characterId)()
 				if err != nil {
-					writeErrorResponse(w, http.StatusInternalServerError, err.Error())
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
 				// Transform proposals to REST models
 				restProposals, err := TransformProposals(proposals)
 				if err != nil {
-					writeErrorResponse(w, http.StatusInternalServerError, "Failed to transform proposal data")
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 

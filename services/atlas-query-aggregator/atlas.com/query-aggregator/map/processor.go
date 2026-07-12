@@ -25,6 +25,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 // GetPlayerCountInMap retrieves the player count for a single map
 // Returns 0 on error to allow graceful degradation
 func (p *ProcessorImpl) GetPlayerCountInMap(f field.Model) (int, error) {

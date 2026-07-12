@@ -159,7 +159,7 @@ Notes on interpreting the output:
 | `services/atlas-data/atlas.com/data/npc/processor.go` | Gen1 | R3 | 33 | done |
 | `services/atlas-data/atlas.com/data/quest/processor.go` | Gen1 | R3 | 33 | done |
 | `services/atlas-data/atlas.com/data/reactor/processor.go` | Gen1 | R3 | 33 | done |
-| `services/atlas-data/atlas.com/data/skill/processor.go` | Gen1 | R3 | 33 | pending |
+| `services/atlas-data/atlas.com/data/skill/processor.go` | Gen1 | R3 | 33 | done |
 | `services/atlas-data/atlas.com/data/characters/templates/processor.go` | Gen1 | R3 | 34 | pending |
 | `services/atlas-data/atlas.com/data/cosmetic/face/processor.go` | Gen1 | R3 | 34 | pending |
 | `services/atlas-data/atlas.com/data/cosmetic/hair/processor.go` | Gen1 | R3 | 34 | pending |

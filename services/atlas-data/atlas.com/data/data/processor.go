@@ -149,7 +149,13 @@ func StartWorker(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.D
 						l.WithError(err).Errorf("Failed to initialize skill string registry.")
 						return err
 					}
-					err = RegisterAllData(l)(ctx)(path, "Skill.wz", skill.RegisterSkill(db))()
+					err = RegisterAllData(l)(ctx)(path, "Skill.wz", func(l logrus.FieldLogger) func(ctx context.Context) func(filePath string) error {
+						return func(ctx context.Context) func(filePath string) error {
+							return func(filePath string) error {
+								return skill.NewProcessor(l, ctx, db).RegisterSkill(filePath)
+							}
+						}
+					})()
 					_ = skill.GetSkillStringRegistry().Clear(t)
 				} else if name == WorkerPet {
 					if err = item.InitStringFlat(db)(l)(ctx)(filepath.Join(path, "String.wz", "Pet.img.xml")); err != nil {

@@ -10,20 +10,26 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type Processor struct {
+type Processor interface {
+	ChangeStat(characterId uint32, transactionId uuid.UUID, a asset.Model, changes ...Change) error
+}
+
+type ProcessorImpl struct {
 	l   logrus.FieldLogger
 	ctx context.Context
 }
 
-func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
-	p := &Processor{
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
+	p := &ProcessorImpl{
 		l:   l,
 		ctx: ctx,
 	}
 	return p
 }
 
-func (p *Processor) ChangeStat(characterId uint32, transactionId uuid.UUID, a asset.Model, changes ...Change) error {
+var _ Processor = (*ProcessorImpl)(nil)
+
+func (p *ProcessorImpl) ChangeStat(characterId uint32, transactionId uuid.UUID, a asset.Model, changes ...Change) error {
 	b := asset.Clone(a)
 	for _, c := range changes {
 		c(b)

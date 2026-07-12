@@ -12,14 +12,22 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type Processor struct {
-	l   logrus.FieldLogger
-	ctx context.Context
-	ip  *inventory.Processor
+type Processor interface {
+	GetById(decorators ...model.Decorator[Model]) func(characterId uint32) (Model, error)
+	InventoryDecorator(m Model) Model
+	ChangeMap(f field.Model, characterId uint32, portalId uint32) error
+	ChangeHP(f field.Model, characterId uint32, amount int16) error
+	ChangeMP(f field.Model, characterId uint32, amount int16) error
 }
 
-func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
-	p := &Processor{
+type ProcessorImpl struct {
+	l   logrus.FieldLogger
+	ctx context.Context
+	ip  inventory.Processor
+}
+
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
+	p := &ProcessorImpl{
 		l:   l,
 		ctx: ctx,
 		ip:  inventory.NewProcessor(l, ctx),
@@ -27,14 +35,16 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
 	return p
 }
 
-func (p *Processor) GetById(decorators ...model.Decorator[Model]) func(characterId uint32) (Model, error) {
+var _ Processor = (*ProcessorImpl)(nil)
+
+func (p *ProcessorImpl) GetById(decorators ...model.Decorator[Model]) func(characterId uint32) (Model, error) {
 	return func(characterId uint32) (Model, error) {
 		cp := requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(characterId), Extract)
 		return model.Map(model.Decorate(decorators))(cp)()
 	}
 }
 
-func (p *Processor) InventoryDecorator(m Model) Model {
+func (p *ProcessorImpl) InventoryDecorator(m Model) Model {
 	i, err := p.ip.GetByCharacterId(m.Id())
 	if err != nil {
 		return m
@@ -42,14 +52,14 @@ func (p *Processor) InventoryDecorator(m Model) Model {
 	return m.SetInventory(i)
 }
 
-func (p *Processor) ChangeMap(f field.Model, characterId uint32, portalId uint32) error {
+func (p *ProcessorImpl) ChangeMap(f field.Model, characterId uint32, portalId uint32) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(changeMapProvider(f, characterId, portalId))
 }
 
-func (p *Processor) ChangeHP(f field.Model, characterId uint32, amount int16) error {
+func (p *ProcessorImpl) ChangeHP(f field.Model, characterId uint32, amount int16) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(changeHPCommandProvider(f, characterId, amount))
 }
 
-func (p *Processor) ChangeMP(f field.Model, characterId uint32, amount int16) error {
+func (p *ProcessorImpl) ChangeMP(f field.Model, characterId uint32, amount int16) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(changeMPCommandProvider(f, characterId, amount))
 }

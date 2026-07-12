@@ -20,6 +20,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	return &ProcessorImpl{l: l, ctx: ctx}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 // GetById fetches a consumable by item id. Tenant/region/version headers are
 // propagated automatically by requests.GetRequest (TenantHeaderDecorator), so
 // the lookup is correctly tenant- and version-scoped.

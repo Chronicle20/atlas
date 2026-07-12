@@ -226,7 +226,13 @@ func StartWorker(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.D
 					if err = mobskill.InitString(t, filepath.Join(path, "String.wz", "MobSkill.img.xml")); err != nil {
 						l.WithError(err).Warnf("Failed to initialize mob skill string registry; names will be empty.")
 					}
-					err = RegisterFileData(l)(ctx)(path, filepath.Join("Skill.wz", "MobSkill.img.xml"), mobskill.RegisterMobSkill(db))()
+					err = RegisterFileData(l)(ctx)(path, filepath.Join("Skill.wz", "MobSkill.img.xml"), func(l logrus.FieldLogger) func(ctx context.Context) func(filePath string) error {
+						return func(ctx context.Context) func(filePath string) error {
+							return func(filePath string) error {
+								return mobskill.NewProcessor(l, ctx, db).RegisterMobSkill(filePath)
+							}
+						}
+					})()
 					_ = mobskill.GetMobSkillStringRegistry().Clear(t)
 				}
 				if err != nil {

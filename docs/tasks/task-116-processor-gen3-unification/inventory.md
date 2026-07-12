@@ -154,7 +154,7 @@ Notes on interpreting the output:
 | `services/atlas-data/atlas.com/data/setup/processor.go` | Gen1 | R3 | 32 | done |
 | `services/atlas-data/atlas.com/data/job/processor.go` | Gen1 | R3 | 33 | done |
 | `services/atlas-data/atlas.com/data/map/processor.go` | Gen1 | R3 | 33 | done |
-| `services/atlas-data/atlas.com/data/mobskill/processor.go` | Gen1 | R3 | 33 | pending |
+| `services/atlas-data/atlas.com/data/mobskill/processor.go` | Gen1 | R3 | 33 | done |
 | `services/atlas-data/atlas.com/data/monster/processor.go` | Gen1 | R3 | 33 | pending |
 | `services/atlas-data/atlas.com/data/npc/processor.go` | Gen1 | R3 | 33 | pending |
 | `services/atlas-data/atlas.com/data/quest/processor.go` | Gen1 | R3 | 33 | pending |

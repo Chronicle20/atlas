@@ -22,14 +22,20 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
+func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 		p := cashsb.ItemUse{}
 		p.Decode(l, ctx)(r, readerOptions)
 		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
 
-		updateTimeFirst := t.Region() == "GMS" && t.MajorVersion() >= 95
+		// update_time is a leading header int32 (updateTimeFirst) from GMS v87
+		// onward and on JMS v185; only the two oldest GMS builds (v83/v84) carry
+		// it as a trailing int32 in the per-type sub-body. IDA-verified via
+		// CWvsContext::SendConsumeCashItemUseRequest: gms_v87 @0xa9fef9 and
+		// jms_v185 @0xaef2f5 both Encode4(update_time) in the header before the
+		// sub-body switch (task-126). Must match ItemUse's header gate.
+		updateTimeFirst := t.MajorVersion() >= 87
 		updateTime := p.UpdateTime()
 		source := slot.Position(p.Source())
 		itemId := item.Id(p.ItemId())
@@ -105,7 +111,12 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, _
 			return
 		}
 
-		// TODO for v83 there is a trailing updateTime.
+		if it == CashSlotItemTypePointResetTier1 || it == CashSlotItemTypePointResetShared {
+			sp := cashsb.NewItemUsePointReset(updateTimeFirst)
+			sp.Decode(l, ctx)(r, readerOptions)
+			handlePointResetItemUse(l, ctx, wp)(s, itemId, *sp)
+			return
+		}
 
 		l.Warnf("Character [%d] attempting to use cash item [%d] in slot [%d] of type [%d]. updateTime [%d].", s.CharacterId(), itemId, source, it, updateTime)
 	}
@@ -117,6 +128,14 @@ const (
 	CashSlotItemTypeFieldEffect   = CashSlotItemType(16)
 	CashSlotItemTypePetConsumable = CashSlotItemType(30)
 	CashSlotItemTypeChalkboard    = CashSlotItemType(32)
+	// GetCashSlotItemType's ClassificationPointReset branch (above) routes by
+	// itemId%10==1: AP Reset (5050000) and SP Reset tiers 2-4 (5050002-5050004)
+	// collapse onto type 23, while SP Reset tier 1 (5050001) alone lands on
+	// type 24. The type byte therefore CANNOT distinguish AP-vs-SP — the labels
+	// below name only which numeric bucket each is. The arm matches on either
+	// bucket and then dispatches by item id (design §2.4), never by this type.
+	CashSlotItemTypePointResetShared = CashSlotItemType(23) // AP Reset + SP Reset tiers 2-4
+	CashSlotItemTypePointResetTier1  = CashSlotItemType(24) // SP Reset tier 1 only
 )
 
 func GetCashSlotItemType(t tenant.Model) func(itemId item.Id) CashSlotItemType {

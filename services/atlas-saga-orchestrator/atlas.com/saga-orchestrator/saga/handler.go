@@ -142,6 +142,8 @@ type Handler interface {
 	handleCancelConsumableEffect(s Saga, st Step[any]) error
 	handleResetStats(s Saga, st Step[any]) error
 	handleRebalanceAP(s Saga, st Step[any]) error
+	handleTransferAP(s Saga, st Step[any]) error
+	handleTransferSP(s Saga, st Step[any]) error
 	handleStartInstanceTransport(s Saga, st Step[any]) error
 	handleSaveLocation(s Saga, st Step[any]) error
 	handleWarpToSavedLocation(s Saga, st Step[any]) error
@@ -863,6 +865,10 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleResetStats, true
 	case RebalanceAP:
 		return h.handleRebalanceAP, true
+	case TransferAP:
+		return h.handleTransferAP, true
+	case TransferSP:
+		return h.handleTransferSP, true
 	case StartInstanceTransport:
 		return h.handleStartInstanceTransport, true
 	case SaveLocation:
@@ -2407,6 +2413,43 @@ func (h *HandlerImpl) handleRebalanceAP(s Saga, st Step[any]) error {
 	err := h.charP.RebalanceAPAndEmit(s.TransactionId(), ch, payload.CharacterId, kafkaTargets)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to rebalance AP.")
+		return err
+	}
+	return nil
+}
+
+// handleTransferAP handles the TransferAP action (AP Reset item 5050000).
+// Moves one already-spent ability point From -> To; atlas-character performs
+// the authoritative validation and emits STAT_CHANGED on success or an ERROR
+// (StatusEventApTransferErrorBody) on rejection.
+func (h *HandlerImpl) handleTransferAP(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(TransferAPPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	ch := channel.NewModel(payload.WorldId, payload.ChannelId)
+	err := h.charP.TransferAPAndEmit(s.TransactionId(), ch, payload.CharacterId, payload.From, payload.To)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to transfer AP.")
+		return err
+	}
+	return nil
+}
+
+// handleTransferSP handles the TransferSP action (SP Reset items 5050001-5050004).
+// Moves one skill point FromSkillId -> ToSkillId; atlas-skills re-validates the
+// tier/job/level and emits SP_TRANSFERRED on success or an ERROR
+// (StatusEventErrorBody) on rejection.
+func (h *HandlerImpl) handleTransferSP(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(TransferSPPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := h.skillP.TransferSPAndEmit(s.TransactionId(), payload.WorldId, payload.CharacterId, payload.JobId, uint32(payload.FromSkillId), uint32(payload.ToSkillId), payload.ItemTier, payload.TargetMaxLevel)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to transfer SP.")
 		return err
 	}
 	return nil

@@ -119,6 +119,8 @@ type Processor interface {
 	ResetStats(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, channel channel.Model) error
 	RebalanceAPAndEmit(transactionId uuid.UUID, characterId uint32, channel channel.Model, targets []RebalanceTarget) error
 	RebalanceAP(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, channel channel.Model, targets []RebalanceTarget) error
+	TransferAPAndEmit(transactionId uuid.UUID, characterId uint32, channel channel.Model, from string, to string) error
+	TransferAP(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, channel channel.Model, from string, to string) error
 }
 
 type ProcessorImpl struct {
@@ -1915,6 +1917,240 @@ func (p *ProcessorImpl) RebalanceAP(mb *message.Buffer) func(transactionId uuid.
 			"luck":         result.Luk,
 		}
 		_ = mb.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []stat.Type{stat.TypeAvailableAP, stat.TypeStrength, stat.TypeDexterity, stat.TypeIntelligence, stat.TypeLuck}, values))
+		return nil
+	}
+}
+
+func (p *ProcessorImpl) TransferAPAndEmit(transactionId uuid.UUID, characterId uint32, channel channel.Model, from string, to string) error {
+	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
+		return p.TransferAP(buf)(transactionId, characterId, channel, from, to)
+	})
+}
+
+// transferApRejection is a non-nil sentinel carrying the machine-readable
+// error code + detail for a rejected transfer; it is emitted as an ERROR
+// status event, not returned as a Go error.
+type transferApRejection struct {
+	code   string
+	detail string
+}
+
+// TransferAP moves one already-spent AP From -> To (AP Reset item 5050000),
+// validating both ends of the swap against the point-reset policy tables
+// (point_reset.go). The source decrement is applied to a set of running
+// values first, then the target is validated/applied against that
+// post-source state — this handles From==To naturally (no leaked source
+// decrement on a target-side rejection) and keeps the whole operation a
+// single dynamicUpdate. Any rejection returns nil (not a Go error) with a
+// typed ERROR status event buffered instead of a STAT_CHANGED.
+func (p *ProcessorImpl) TransferAP(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, channel channel.Model, from string, to string) error {
+	return func(transactionId uuid.UUID, characterId uint32, channel channel.Model, from string, to string) error {
+		var rejection *transferApRejection
+		var stats []stat.Type
+		values := map[string]interface{}{}
+
+		// Magician MP-reset-out scales the MaxMP loss with EFFECTIVE INT (client
+		// parity; §4.3 deviation — see pointResetMagicianTakeMp). Fetch it up
+		// front, and only when the source is MP, to keep the REST call off the
+		// transaction path. A failed/zero fetch falls back to base INT below.
+		var effectiveInt uint16
+		if from == CommandDistributeApAbilityMp {
+			if es, err := effective_stats.RequestByCharacter(channel, characterId)(p.l, p.ctx); err == nil && es.Intelligence > 0 {
+				if es.Intelligence > math.MaxUint16 {
+					effectiveInt = math.MaxUint16
+				} else {
+					effectiveInt = uint16(es.Intelligence)
+				}
+			}
+		}
+
+		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+			c, err := p.WithTransaction(tx).GetById()(characterId)
+			if err != nil {
+				return err
+			}
+			policy := pointResetPolicyFor(c.JobId())
+
+			// Running values: source applied first, then target validated
+			// against the post-source state (handles From==To naturally).
+			newStr, newDex, newInt, newLuk := c.Strength(), c.Dexterity(), c.Intelligence(), c.Luck()
+			newMaxHp, newMaxMp := c.MaxHp(), c.MaxMp()
+			newHp, newMp := c.Hp(), c.Mp()
+			newHpMpUsed := c.HpMpUsed()
+
+			primary := func(ability string) *uint16 {
+				switch ability {
+				case CommandDistributeApAbilityStrength:
+					return &newStr
+				case CommandDistributeApAbilityDexterity:
+					return &newDex
+				case CommandDistributeApAbilityIntelligence:
+					return &newInt
+				case CommandDistributeApAbilityLuck:
+					return &newLuk
+				}
+				return nil
+			}
+
+			// Source arm.
+			switch from {
+			case CommandDistributeApAbilityStrength, CommandDistributeApAbilityDexterity,
+				CommandDistributeApAbilityIntelligence, CommandDistributeApAbilityLuck:
+				src := primary(from)
+				if *src < pointResetPrimaryFloor+1 {
+					rejection = &transferApRejection{code: character2.StatusEventErrorTypeStatAtMinimum, detail: from}
+					return nil
+				}
+				*src = *src - 1
+			case CommandDistributeApAbilityHp:
+				if newHpMpUsed < 1 {
+					rejection = &transferApRejection{code: character2.StatusEventErrorTypeInsufficientHpMpApUsed, detail: from}
+					return nil
+				}
+				if int(newMaxHp)-int(policy.takeHp) < pointResetMinHp(c.JobId(), c.Level()) {
+					rejection = &transferApRejection{code: character2.StatusEventErrorTypePoolBelowJobMinimum, detail: from}
+					return nil
+				}
+				newMaxHp -= policy.takeHp
+				if int(newHp)-int(policy.takeHp) < 1 {
+					newHp = 1
+				} else {
+					newHp -= policy.takeHp
+				}
+				newHpMpUsed--
+			case CommandDistributeApAbilityMp:
+				if newHpMpUsed < 1 {
+					rejection = &transferApRejection{code: character2.StatusEventErrorTypeInsufficientHpMpApUsed, detail: from}
+					return nil
+				}
+				// Magicians lose an INT-scaled amount of MaxMP (client parity);
+				// every other branch loses the fixed policy.takeMp.
+				takeMp := policy.takeMp
+				if isPointResetMagician(c.JobId()) {
+					ei := effectiveInt
+					if ei == 0 {
+						ei = c.Intelligence() // effective-stats unavailable: base INT
+					}
+					takeMp = pointResetMagicianTakeMp(ei)
+				}
+				if int(newMaxMp)-int(takeMp) < pointResetMinMp(c.JobId(), c.Level()) {
+					rejection = &transferApRejection{code: character2.StatusEventErrorTypePoolBelowJobMinimum, detail: from}
+					return nil
+				}
+				newMaxMp -= takeMp
+				if int(newMp)-int(takeMp) < 0 {
+					newMp = 0
+				} else {
+					newMp -= takeMp
+				}
+				newHpMpUsed--
+			default:
+				rejection = &transferApRejection{code: character2.StatusEventErrorTypeApTransferInvalidTarget, detail: from}
+				return nil
+			}
+
+			// Target arm (validated against post-source running values).
+			switch to {
+			case CommandDistributeApAbilityStrength, CommandDistributeApAbilityDexterity,
+				CommandDistributeApAbilityIntelligence, CommandDistributeApAbilityLuck:
+				dst := primary(to)
+				if *dst+1 > pointResetPrimaryCap {
+					rejection = &transferApRejection{code: character2.StatusEventErrorTypeStatAtMaximum, detail: to}
+					return nil
+				}
+				*dst = *dst + 1
+			case CommandDistributeApAbilityHp:
+				if newMaxHp >= pointResetPoolCap {
+					rejection = &transferApRejection{code: character2.StatusEventErrorTypeStatAtMaximum, detail: to}
+					return nil
+				}
+				newMaxHp += policy.gainHp
+				if newMaxHp > pointResetPoolCap {
+					newMaxHp = pointResetPoolCap
+				}
+				newHpMpUsed++
+			case CommandDistributeApAbilityMp:
+				if newMaxMp >= pointResetPoolCap {
+					rejection = &transferApRejection{code: character2.StatusEventErrorTypeStatAtMaximum, detail: to}
+					return nil
+				}
+				newMaxMp += policy.gainMp
+				if newMaxMp > pointResetPoolCap {
+					newMaxMp = pointResetPoolCap
+				}
+				newHpMpUsed++
+			default:
+				rejection = &transferApRejection{code: character2.StatusEventErrorTypeApTransferInvalidTarget, detail: to}
+				return nil
+			}
+
+			// Apply everything in one dynamicUpdate. remainingAp untouched (FR-11).
+			mods := make([]EntityUpdateFunction, 0, 8)
+			if newStr != c.Strength() {
+				mods = append(mods, SetStrength(newStr))
+				stats = append(stats, stat.TypeStrength)
+				values["strength"] = newStr
+			}
+			if newDex != c.Dexterity() {
+				mods = append(mods, SetDexterity(newDex))
+				stats = append(stats, stat.TypeDexterity)
+				values["dexterity"] = newDex
+			}
+			if newInt != c.Intelligence() {
+				mods = append(mods, SetIntelligence(newInt))
+				stats = append(stats, stat.TypeIntelligence)
+				values["intelligence"] = newInt
+			}
+			if newLuk != c.Luck() {
+				mods = append(mods, SetLuck(newLuk))
+				stats = append(stats, stat.TypeLuck)
+				values["luck"] = newLuk
+			}
+			if newMaxHp != c.MaxHp() {
+				mods = append(mods, SetMaxHp(newMaxHp))
+				stats = append(stats, stat.TypeMaxHp)
+				values["max_hp"] = newMaxHp
+			}
+			if newMaxMp != c.MaxMp() {
+				mods = append(mods, SetMaxMp(newMaxMp))
+				stats = append(stats, stat.TypeMaxMp)
+				values["max_mp"] = newMaxMp
+			}
+			if newHp != c.Hp() {
+				mods = append(mods, SetHealth(newHp))
+				stats = append(stats, stat.TypeHp)
+				values["hp"] = newHp
+			}
+			if newMp != c.Mp() {
+				mods = append(mods, SetMana(newMp))
+				stats = append(stats, stat.TypeMp)
+				values["mp"] = newMp
+			}
+			if newHpMpUsed != c.HpMpUsed() {
+				mods = append(mods, SetHpMpUsed(newHpMpUsed))
+			}
+			if len(mods) == 0 {
+				// From==To primary transfer nets to zero (e.g. STR->STR): no
+				// columns to persist, but the caller still gets a successful
+				// (empty) STAT_CHANGED below so the saga step completes and
+				// the client unlocks.
+				return nil
+			}
+			return dynamicUpdate(tx)(mods...)(c)
+		})
+		if txErr != nil {
+			p.l.WithError(txErr).Errorf("Could not transfer AP for character [%d].", characterId)
+			return txErr
+		}
+
+		if rejection != nil {
+			p.l.WithFields(logrus.Fields{"character_id": characterId, "from": from, "to": to}).
+				Warnf("Rejected AP transfer: [%s] detail [%s].", rejection.code, rejection.detail)
+			_ = mb.Put(character2.EnvEventTopicCharacterStatus, apTransferErrorStatusEventProvider(transactionId, characterId, channel.WorldId(), rejection.code, rejection.detail))
+			return nil
+		}
+
+		_ = mb.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, stats, values))
 		return nil
 	}
 }

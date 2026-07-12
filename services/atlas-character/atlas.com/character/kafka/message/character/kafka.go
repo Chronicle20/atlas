@@ -30,6 +30,7 @@ const (
 	CommandDeductExperience    = "DEDUCT_EXPERIENCE"
 	CommandResetStats          = "RESET_STATS"
 	CommandRebalanceAP         = "REBALANCE_AP"
+	CommandTransferAP          = "TRANSFER_AP"
 	CommandClampHP             = "CLAMP_HP"
 	CommandClampMP             = "CLAMP_MP"
 	CommandDeleteCharacter     = "DELETE_CHARACTER"
@@ -203,6 +204,14 @@ type RebalanceAPTarget struct {
 	Floor uint16 `json:"floor"`
 }
 
+// TransferAPCommandBody moves one already-spent AP From -> To (AP Reset item
+// 5050000). From/To are CommandDistributeApAbility* enum strings.
+type TransferAPCommandBody struct {
+	ChannelId channel.Id `json:"channelId"`
+	From      string     `json:"from"`
+	To        string     `json:"to"`
+}
+
 // DeleteCharacterCommandBody is the saga-correlated delete-character command.
 // All necessary identifiers (transactionId, characterId, worldId) live on the
 // Command[E] envelope; no body fields are needed. Idempotent on missing row —
@@ -235,6 +244,14 @@ const (
 
 	StatusEventTypeError              = "ERROR"
 	StatusEventErrorTypeNotEnoughMeso = "NOT_ENOUGH_MESO"
+
+	// StatusEventErrorType* point-reset (AP transfer) rejection codes. See
+	// StatusEventApTransferErrorBody / TRANSFER_AP (task-126).
+	StatusEventErrorTypeStatAtMinimum           = "STAT_AT_MINIMUM"
+	StatusEventErrorTypeStatAtMaximum           = "STAT_AT_MAXIMUM"
+	StatusEventErrorTypeInsufficientHpMpApUsed  = "INSUFFICIENT_HPMP_AP_USED"
+	StatusEventErrorTypePoolBelowJobMinimum     = "POOL_BELOW_JOB_MINIMUM"
+	StatusEventErrorTypeApTransferInvalidTarget = "INVALID_TARGET"
 
 	KillerTypeMonster     = "MONSTER"
 	KillerTypeCharacter   = "CHARACTER"
@@ -330,6 +347,14 @@ type NotEnoughMesoErrorStatusBodyBody struct {
 type StatusEventMesoErrorBody struct {
 	Error  string `json:"error"`
 	Amount int32  `json:"amount"`
+}
+
+// StatusEventApTransferErrorBody reports a rejected TRANSFER_AP. Error is one
+// of the StatusEventErrorType* point-reset constants; Detail names the
+// offending stat (STR/DEX/INT/LUK/HP/MP) where applicable.
+type StatusEventApTransferErrorBody struct {
+	Error  string `json:"error"`
+	Detail string `json:"detail"`
 }
 
 type FameChangedStatusEventBody struct {

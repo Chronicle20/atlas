@@ -36,6 +36,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 // GetRoutes returns all routes for a tenant
 func (p *ProcessorImpl) GetRoutes(tenantId string) ([]transport.Model, error) {
 	p.l.Debugf("Fetching routes for tenant [%s]", tenantId)

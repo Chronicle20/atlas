@@ -26,6 +26,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	return p
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) CharacterIdsInMapProvider(field field.Model) model.Provider[[]uint32] {
 	return requests.SliceProvider[RestModel, uint32](p.l, p.ctx)(requestCharactersInMap(field), Extract, model.Filters[uint32]())
 }

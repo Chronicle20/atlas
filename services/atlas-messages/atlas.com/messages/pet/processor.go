@@ -28,6 +28,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 // GetPets returns all pets owned by a character.
 func (p *ProcessorImpl) GetPets(characterId uint32) ([]Model, error) {
 	pets, err := requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByCharacterId(characterId), Extract, model.Filters[Model]())()

@@ -49,6 +49,7 @@ type Model struct {
 	gm                 int
 	x                  int16
 	y                  int16
+	fh                 int16
 	stance             byte
 	meso               uint32
 	pets               []pet.Model
@@ -246,6 +247,10 @@ func (m Model) Y() int16 {
 
 func (m Model) Stance() byte {
 	return m.stance
+}
+
+func (m Model) Fh() int16 {
+	return m.fh
 }
 
 func (m Model) WorldId() world.Id {

@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestSaga_Failing(t *testing.T) {
@@ -1115,4 +1117,50 @@ func TestSaga_WithStepPayload(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestStepLateCompensatedMarker_RoundTrip(t *testing.T) {
+	s, err := NewBuilder().
+		SetSagaType(InventoryTransaction).
+		SetInitiatedBy("test").
+		AddStep("s1", Pending, AwardCurrency, AwardCurrencyPayload{CharacterId: 1, AccountId: 2, CurrencyType: 2, Amount: 100}).
+		AddStep("s2", Pending, AwardAsset, AwardItemActionPayload{CharacterId: 1}).
+		Build()
+	require.NoError(t, err)
+
+	// Default false.
+	step, _ := s.StepAt(0)
+	assert.False(t, step.LateCompensated())
+
+	// Set on step 0 only.
+	s, err = s.WithStepLateCompensated(0)
+	require.NoError(t, err)
+	s0, _ := s.StepAt(0)
+	s1, _ := s.StepAt(1)
+	assert.True(t, s0.LateCompensated())
+	assert.False(t, s1.LateCompensated())
+
+	// Survives the JSONB persistence path (Marshal → Unmarshal).
+	data, err := json.Marshal(s)
+	require.NoError(t, err)
+	var restored Saga
+	require.NoError(t, json.Unmarshal(data, &restored))
+	r0, _ := restored.StepAt(0)
+	r1, _ := restored.StepAt(1)
+	assert.True(t, r0.LateCompensated())
+	assert.False(t, r1.LateCompensated())
+
+	// Preserved through WithStepStatus / WithStepResult copies.
+	s, err = s.WithStepStatus(0, Completed)
+	require.NoError(t, err)
+	s0, _ = s.StepAt(0)
+	assert.True(t, s0.LateCompensated())
+	s, err = s.WithStepResult(0, map[string]any{"k": "v"})
+	require.NoError(t, err)
+	s0, _ = s.StepAt(0)
+	assert.True(t, s0.LateCompensated())
+
+	// Out-of-range index errors.
+	_, err = s.WithStepLateCompensated(9)
+	assert.Error(t, err)
 }

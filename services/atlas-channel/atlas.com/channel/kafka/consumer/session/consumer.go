@@ -188,7 +188,7 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 						}
 						return sp.Destroy(s)
 					}
-					s = sp.SetMapId(s.SessionId(), f.MapId())
+					s = sp.SetField(s.SessionId(), f)
 
 					sp.SessionCreated(s)
 

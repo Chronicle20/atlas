@@ -1,8 +1,9 @@
 package saga
 
 import (
+	"atlas-saga-orchestrator/cashshop/mock"
 	"atlas-saga-orchestrator/character"
-	"atlas-saga-orchestrator/character/mock"
+	mock4 "atlas-saga-orchestrator/character/mock"
 	"atlas-saga-orchestrator/compartment"
 	mock2 "atlas-saga-orchestrator/compartment/mock"
 	"atlas-saga-orchestrator/validation"
@@ -11,6 +12,7 @@ import (
 	"errors"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
@@ -21,6 +23,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func setupContext() (tenant.Model, context.Context) {
@@ -70,7 +73,7 @@ func TestCharacterCreationSagaIntegration(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Setup
-			charP := &mock.ProcessorMock{}
+			charP := &mock4.ProcessorMock{}
 			compP := &mock2.ProcessorMock{}
 			validP := &mock3.ProcessorMock{}
 
@@ -178,7 +181,7 @@ func TestCharacterCreationEventCorrelation(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Setup
-			charP := &mock.ProcessorMock{}
+			charP := &mock4.ProcessorMock{}
 			compP := &mock2.ProcessorMock{}
 			validP := &mock3.ProcessorMock{}
 
@@ -266,7 +269,7 @@ func TestCharacterCreationSagaCompensation(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Setup
-			charP := &mock.ProcessorMock{}
+			charP := &mock4.ProcessorMock{}
 			compP := &mock2.ProcessorMock{}
 			validP := &mock3.ProcessorMock{}
 
@@ -586,4 +589,85 @@ func TestExtractUint32(t *testing.T) {
 			assert.Equal(t, tt.expected, result)
 		})
 	}
+}
+
+// TestStepCompleted_TerminalAfterAccept reproduces the TOCTOU interleave
+// (design §3.3a / walkthrough §4.4): the event passes AcceptEvent while the
+// saga is pending, the timeout commits terminal, and only then does the
+// handler call StepCompleted(true). The completion must absorb-and-route,
+// never advance the step walk.
+func TestStepCompleted_TerminalAfterAccept(t *testing.T) {
+	ResetCache()
+	logger, hook := test.NewNullLogger()
+	logger.SetLevel(logrus.DebugLevel)
+	tm, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	require.NoError(t, err)
+	ctx := tenant.WithContext(context.Background(), tm)
+
+	tx := uuid.New()
+	s, err := NewBuilder().
+		SetTransactionId(tx).
+		SetSagaType(InventoryTransaction).
+		SetInitiatedBy("test").
+		AddStep("award_currency_seller", Pending, AwardCurrency, AwardCurrencyPayload{CharacterId: 1, AccountId: 42, CurrencyType: 2, Amount: 100}).
+		AddStep("move_item", Pending, AwardAsset, AwardItemActionPayload{CharacterId: 1, Item: ItemPayload{TemplateId: 2000000, Quantity: 1}}).
+		Build()
+	require.NoError(t, err)
+	require.NoError(t, GetCache().Put(ctx, s))
+
+	refunds := 0
+	cs := &mock.ProcessorMock{
+		AwardCurrencyAndEmitFunc: func(txId uuid.UUID, accountId uint32, currencyType uint32, amount int32) error {
+			refunds++
+			assert.Equal(t, int32(-100), amount)
+			return nil
+		},
+	}
+	forward := 0
+	cp := &mock2.ProcessorMock{
+		RequestCreateItemFunc: func(uuid.UUID, uint32, uint32, uint32, time.Time) error {
+			forward++ // step-2 forward dispatch — must never fire
+			return nil
+		},
+		RequestCreateItemWithStatsFunc: func(uuid.UUID, uint32, uint32, uint32, time.Time, bool) error {
+			forward++ // step-2 forward dispatch — must never fire
+			return nil
+		},
+	}
+	p := NewProcessor(logger, ctx).WithCashshopProcessor(cs).WithCompartmentProcessor(cp)
+
+	// 1. Event accepted while pending.
+	_, ok := p.AcceptEvent(tx, EventKindCashShopWalletUpdated)
+	require.True(t, ok)
+
+	// 2. Timeout commits terminal between accept and completion.
+	require.True(t, GetCache().TryTransition(ctx, tx, SagaLifecyclePending, SagaLifecycleCompensating))
+	require.True(t, GetCache().TryTransition(ctx, tx, SagaLifecycleCompensating, SagaLifecycleFailed))
+
+	// 3. Handler-side completion arrives late.
+	require.NoError(t, p.StepCompleted(tx, true))
+
+	// No forward advance: step 1 still pending, step 2 never dispatched.
+	fresh, found := GetCache().GetById(ctx, tx)
+	require.True(t, found)
+	st, _ := fresh.StepAt(0)
+	assert.Equal(t, Pending, st.Status(), "forward write must not land")
+	assert.Equal(t, 0, forward, "next step must not dispatch")
+
+	// Late success routed into compensation exactly once.
+	assert.Equal(t, 1, refunds)
+
+	// Lifecycle untouched.
+	lc, found := GetCache().GetLifecycle(ctx, tx)
+	require.True(t, found)
+	assert.Equal(t, SagaLifecycleFailed, lc)
+
+	// Absorb was logged with the terminal skip reason.
+	var absorbed bool
+	for _, e := range hook.AllEntries() {
+		if e.Data["reason"] == SkipReasonSagaTerminal {
+			absorbed = true
+		}
+	}
+	assert.True(t, absorbed)
 }

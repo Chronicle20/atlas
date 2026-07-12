@@ -68,6 +68,10 @@ type emitter func(topic string, provider model.Provider[[]kafka.Message]) error
 // normally.
 var testInformationLookup func(monsterId uint32) (information.Model, error)
 
+// testMobSkillLookup is a test-only override for mobskill.GetByIdAndLevel.
+// When nil (production), UseSkill calls mobskill.GetByIdAndLevel normally.
+var testMobSkillLookup func(skillId uint16, level uint16) (mobskill.Model, error)
+
 // ProcessorImpl implements the Processor interface
 type ProcessorImpl struct {
 	l         logrus.FieldLogger
@@ -600,7 +604,12 @@ func (p *ProcessorImpl) UseSkill(uniqueId uint32, characterId uint32, skillId by
 	}
 
 	// Fetch skill definition from data service
-	sd, err := mobskill.GetByIdAndLevel(p.l)(p.ctx)(uint16(skillId), uint16(skillLevel))
+	var sd mobskill.Model
+	if testMobSkillLookup != nil {
+		sd, err = testMobSkillLookup(uint16(skillId), uint16(skillLevel))
+	} else {
+		sd, err = mobskill.GetByIdAndLevel(p.l)(p.ctx)(uint16(skillId), uint16(skillLevel))
+	}
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to retrieve mob skill [%d] level [%d].", skillId, skillLevel)
 		return
@@ -626,10 +635,15 @@ func (p *ProcessorImpl) UseSkill(uniqueId uint32, characterId uint32, skillId by
 
 	// Deduct MP
 	if sd.MpCon() > 0 {
-		_, err = GetMonsterRegistry().DeductMp(p.t, uniqueId, sd.MpCon())
-		if err != nil {
-			p.l.WithError(err).Errorf("Unable to deduct MP from monster [%d].", uniqueId)
+		post, derr := GetMonsterRegistry().DeductMp(p.t, uniqueId, sd.MpCon())
+		if derr != nil {
+			p.l.WithError(derr).Errorf("Unable to deduct MP from monster [%d].", uniqueId)
 			return
+		}
+		// The MP-sufficiency gate above guarantees no clamp, so the
+		// requested MpCon is the exact amount deducted.
+		if eerr := p.emit(EnvEventTopicMonsterStatus, mpChangedStatusEventProvider(post, 0, uint32(skillId), MpChangeReasonSkillCast, sd.MpCon())); eerr != nil {
+			p.l.WithError(eerr).Errorf("Unable to emit MP_CHANGED for monster [%d] skill cast.", uniqueId)
 		}
 	}
 
@@ -821,9 +835,15 @@ func (p *ProcessorImpl) UseBasicAttack(uniqueId uint32, attackPos uint8) {
 	}
 
 	if atk.ConMP > 0 {
-		if _, err := GetMonsterRegistry().DeductMp(p.t, uniqueId, uint32(atk.ConMP)); err != nil {
-			p.l.WithError(err).Errorf("UseBasicAttack: DeductMp failed for monster [%d].", uniqueId)
+		post, derr := GetMonsterRegistry().DeductMp(p.t, uniqueId, uint32(atk.ConMP))
+		if derr != nil {
+			p.l.WithError(derr).Errorf("UseBasicAttack: DeductMp failed for monster [%d].", uniqueId)
 			return
+		}
+		// The MP-sufficiency gate above guarantees no clamp, so ConMP is
+		// the exact amount deducted.
+		if eerr := p.emit(EnvEventTopicMonsterStatus, mpChangedStatusEventProvider(post, 0, 0, MpChangeReasonBasicAttack, uint32(atk.ConMP))); eerr != nil {
+			p.l.WithError(eerr).Errorf("UseBasicAttack: unable to emit MP_CHANGED for monster [%d].", uniqueId)
 		}
 	}
 

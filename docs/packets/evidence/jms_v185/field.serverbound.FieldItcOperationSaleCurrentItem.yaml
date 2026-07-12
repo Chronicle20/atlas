@@ -1,0 +1,10 @@
+packet: field/serverbound/FieldItcOperationSaleCurrentItem
+direction: serverbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CITC::OnSaleCurrentItem
+    address: "0x604330"
+    decompile_sha256: c98e6aa992dec0ca24bb8150f92a49de14b5c85c053e47d6f23e22329e648840
+verifies:
+    - libs/atlas-packet/field/serverbound/itc_operation_test.go#TestItcOperationSaleCurrentItemByteOutput_jms

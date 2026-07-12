@@ -36,6 +36,7 @@ func MapChangeHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Pro
 			if err != nil {
 				l.WithError(err).Errorf("Unable to announce [%d] has returned from cash shop.", s.CharacterId())
 			}
+			_ = session.NewProcessor(l, ctx).SetCashScene(s.SessionId(), session.CashSceneNone)
 
 			err = as.NewProcessor(l, ctx).UpdateState(s.SessionId(), s.AccountId(), 2, model.ChannelChange{IPAddress: c.IpAddress(), Port: uint16(c.Port())})
 			if err != nil {

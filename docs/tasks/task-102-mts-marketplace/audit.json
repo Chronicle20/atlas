@@ -1,0 +1,60 @@
+{
+  "service": "atlas-mts (+ atlas-saga-orchestrator, atlas-channel, atlas-cashshop, atlas-tenants)",
+  "path": "services/atlas-mts/atlas.com/mts",
+  "diffRange": "6c6f52abfcdb9915257c9dfd68a27ddaf99dfd06..e3696ccf22f37e33017309492ff2604fd5c5b2b5",
+  "date": "2026-07-10",
+  "build": "pass",
+  "testsPassed": 0,
+  "testsFailed": 0,
+  "testsNote": "author-verified -race clean; not re-run per audit instructions",
+  "redisKeyGuard": "pass",
+  "overallStatus": "needs-work",
+  "findings": [
+    {
+      "id": "I1",
+      "severity": "important",
+      "title": "ExecuteTransaction is a no-op; money/custody 'atomic' compositions are not atomic",
+      "evidence": "libs/atlas-database/transaction.go:9-18 (isTransaction true for db.WithContext -> runs fn without db.Transaction); empirically verified a write survives an fn error. Relied on at listing/processor.go:440,512,977,1154 and kafka/consumer/custody/consumer.go:103,242,354,577,614",
+      "scenario": "Cancel of an auction with a live bid: UpdateState(active->cancelled) autocommits, holding.CreateHolding fails -> listing cancelled, no seller holding, no escrow release -> item lost + bidder NX stranded. Same class in handleMtsMoveListingToHolding (sold flip then holding/txn insert fail).",
+      "preexisting": true,
+      "note": "bug_execute_transaction_noop / task-119 fix; platform-wide (~18 services), not introduced by this branch, but this is the money service and comments assert atomicity that does not hold."
+    },
+    {
+      "id": "M1",
+      "severity": "minor",
+      "checkId": "DOM-02/DOM-03",
+      "title": "No Make(Entity)/Model.ToEntity() in entity.go",
+      "evidence": "listing/entity.go, bid/entity.go, holding/entity.go, wish/entity.go, transaction/entity.go — mapping via modelFromEntity (provider.go) + inline builder (administrator.go); deviates from file-responsibilities.md but functionally equivalent and codebase-consistent"
+    },
+    {
+      "id": "M2",
+      "severity": "minor",
+      "checkId": "DOM-05",
+      "title": "No TransformSlice() in rest.go",
+      "evidence": "listing/resource.go:244 uses model.SliceMap(Transform); intent satisfied, literal helper absent"
+    },
+    {
+      "id": "M3",
+      "severity": "minor",
+      "checkId": "DOM-17",
+      "title": "create-listing maps all errors (incl. DB) to 400",
+      "evidence": "listing/resource.go:141-145; internal getActiveCountBySeller DB error (listing/processor.go:643) surfaces as 400 not 500"
+    },
+    {
+      "id": "M4",
+      "severity": "minor",
+      "checkId": "cosmetic",
+      "title": "Garbled dangling comment",
+      "evidence": "listing/processor.go:687-690"
+    }
+  ],
+  "passHighlights": [
+    "Server-authoritative pricing: price read from listing row not client (listing/processor.go:798-813,941-962,1132)",
+    "Debit-first settle + commission-as-sink (saga/processor.go expandMtsSettlePurchase; MarkedUp listing/processor.go:866)",
+    "Escrow self-guard by bid state (listing/processor.go:435-484); sibling-offer release idempotent (389-422)",
+    "Full saga completion + reverse-walk + late-compensation inverses (saga/compensator.go:1229-1294,1357-1585); move-lost-race compensates buyer (custody/consumer.go:402-412)",
+    "DOM-25 config-resolved wire values via failNoticeOr (channel mts consumer.go:516-560)",
+    "Multi-tenancy: tenant.MustFromContext, no manual tenant_id Where; holding tenant from listing row (listing/processor.go:529,592)",
+    "DOM-06/07/08/10/11/12/15/21 pass; redis-key-guard exit 0"
+  ]
+}

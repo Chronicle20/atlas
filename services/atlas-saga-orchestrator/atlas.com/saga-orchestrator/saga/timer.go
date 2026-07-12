@@ -114,6 +114,15 @@ func handleSagaTimeout(l logrus.FieldLogger, ctx context.Context, txId uuid.UUID
 		NewCompensator(l, ctx).DispatchCharacterCreationRollbacks(s)
 	}
 
+	// Dispatch the MTS reverse-walk for a wedged MTS saga so a timed-out
+	// TransferToMts / WithdrawFromMts / MtsSettlePurchase still undoes its
+	// completed steps (re-credit/debit currency, re-grant item, restore holding)
+	// — the dupe-safety core (task-102 §4.1). Fire-and-forget; custody/wallet
+	// inverses are idempotent.
+	if s.SagaType() == MtsOperation {
+		NewCompensator(l, ctx).DispatchMtsOperationRollbacks(s)
+	}
+
 	// Finalize the lifecycle. If someone else already took Compensating → Failed
 	// (unlikely — stepCompleted(false) would have cancelled this timer), skip the
 	// emit to avoid duplicates.

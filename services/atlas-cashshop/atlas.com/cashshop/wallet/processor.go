@@ -29,6 +29,7 @@ type Processor interface {
 	AdjustCurrencyWithTransaction(transactionId uuid.UUID, accountId uint32, currencyType uint32, amount int32) (Model, error)
 	Delete(mb *message.Buffer) func(accountId uint32) error
 	DeleteAndEmit(accountId uint32) error
+	EmitAdjustFailure(transactionId uuid.UUID, accountId uint32, reason string) error
 }
 
 type ProcessorImpl struct {
@@ -204,4 +205,14 @@ func (p *ProcessorImpl) Delete(mb *message.Buffer) func(accountId uint32) error 
 
 func (p *ProcessorImpl) DeleteAndEmit(accountId uint32) error {
 	return message.Emit(p.p)(model.Flip(p.Delete)(accountId))
+}
+
+// EmitAdjustFailure emits a wallet ERROR status event so a saga waiting on this
+// account's ADJUST_CURRENCY command fails fast instead of timing out. Only called
+// for transactional adjusts (transactionId != uuid.Nil); non-saga adjusts have no
+// waiter to notify.
+func (p *ProcessorImpl) EmitAdjustFailure(transactionId uuid.UUID, accountId uint32, reason string) error {
+	return message.Emit(p.p)(func(mb *message.Buffer) error {
+		return mb.Put(wallet.EnvEventTopicStatus, wallet2.ErrorStatusEventProvider(accountId, transactionId, reason))
+	})
 }

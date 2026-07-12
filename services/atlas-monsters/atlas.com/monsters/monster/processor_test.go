@@ -1508,7 +1508,7 @@ func TestUseBasicAttack_HappyPath_DeductsMpAndRegistersCooldown(t *testing.T) {
 	m := r.CreateMonster(ctx, ten, f, monsterId, 0, 0, 0, 5, 0, 3000, 100)
 	uniqueId := m.UniqueId()
 
-	p := &ProcessorImpl{l: logrus.New(), ctx: tenant.WithContext(ctx, ten), t: ten}
+	p := &ProcessorImpl{l: logrus.New(), ctx: tenant.WithContext(ctx, ten), t: ten, emit: func(string, model.Provider[[]kafka.Message]) error { return nil }}
 
 	// pos=2 corresponds to AttackInfo.Pos=1 internally? No — we normalize
 	// the wire/zero-indexed attackPos to the 1-indexed information.Pos by
@@ -1964,5 +1964,219 @@ func TestGetInFieldRect_NormalizesCornerOrder(t *testing.T) {
 	}
 	if len(got) != 1 {
 		t.Errorf("expected normalized rect to include (50,50); got %d", len(got))
+	}
+}
+
+// mpChangedRecorder returns an emitter that collects MP_CHANGED envelopes.
+func mpChangedRecorder(t *testing.T, out *[]statusEvent[statusEventMpChangedBody]) emitter {
+	t.Helper()
+	return func(topic string, provider model.Provider[[]kafka.Message]) error {
+		msgs, err := provider()
+		if err != nil {
+			return err
+		}
+		for _, msg := range msgs {
+			var env statusEvent[statusEventMpChangedBody]
+			if err := json.Unmarshal(msg.Value, &env); err != nil {
+				continue
+			}
+			if env.Type == EventMonsterStatusMpChanged {
+				*out = append(*out, env)
+			}
+		}
+		return nil
+	}
+}
+
+func TestUseBasicAttack_Deduct_EmitsMpChanged(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := context.Background()
+	r.Clear(ctx)
+
+	mr, err := miniredis.Run()
+	if err != nil {
+		t.Fatalf("miniredis: %v", err)
+	}
+	defer mr.Close()
+	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	prevAttackReg := attackCooldownReg
+	attackCooldownReg = &attackCooldownRegistry{reg: atlasredis.NewRegistry[string, int64](rc, "monster-attack-cooldown", func(s string) string { return s })}
+	defer func() { attackCooldownReg = prevAttackReg }()
+
+	prevHook := testInformationLookup
+	testInformationLookup = func(monsterId uint32) (information.Model, error) {
+		return information.NewModelBuilder().
+			SetAttacks([]information.AttackInfo{{Pos: 2, ConMP: 5, AttackAfter: 1500}}).
+			Build(), nil
+	}
+	defer func() { testInformationLookup = prevHook }()
+
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+	m := r.CreateMonster(ctx, ten, f, 5100004, 0, 0, 0, 5, 0, 3000, 100)
+
+	var emitted []statusEvent[statusEventMpChangedBody]
+	p := &ProcessorImpl{l: logrus.New(), ctx: tenant.WithContext(ctx, ten), t: ten, emit: mpChangedRecorder(t, &emitted)}
+
+	p.UseBasicAttack(m.UniqueId(), uint8(1)) // 0-indexed; matches Pos=2
+
+	if len(emitted) != 1 {
+		t.Fatalf("expected exactly 1 MP_CHANGED, got %d", len(emitted))
+	}
+	e := emitted[0]
+	if e.Body.Reason != MpChangeReasonBasicAttack {
+		t.Errorf("Reason = %q, want %q", e.Body.Reason, MpChangeReasonBasicAttack)
+	}
+	if e.Body.CharacterId != 0 || e.Body.SkillId != 0 {
+		t.Errorf("CharacterId/SkillId = %d/%d, want 0/0", e.Body.CharacterId, e.Body.SkillId)
+	}
+	if e.Body.Amount != 5 || e.Body.MonsterMpAfter != 95 {
+		t.Errorf("Amount/MonsterMpAfter = %d/%d, want 5/95", e.Body.Amount, e.Body.MonsterMpAfter)
+	}
+	if e.UniqueId != m.UniqueId() {
+		t.Errorf("UniqueId = %d, want %d", e.UniqueId, m.UniqueId())
+	}
+}
+
+func TestUseBasicAttack_NoDeduct_NoMpChanged(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := context.Background()
+	r.Clear(ctx)
+
+	mr, err := miniredis.Run()
+	if err != nil {
+		t.Fatalf("miniredis: %v", err)
+	}
+	defer mr.Close()
+	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	prevAttackReg := attackCooldownReg
+	attackCooldownReg = &attackCooldownRegistry{reg: atlasredis.NewRegistry[string, int64](rc, "monster-attack-cooldown", func(s string) string { return s })}
+	defer func() { attackCooldownReg = prevAttackReg }()
+
+	prevHook := testInformationLookup
+	testInformationLookup = func(monsterId uint32) (information.Model, error) {
+		return information.NewModelBuilder().
+			SetAttacks([]information.AttackInfo{{Pos: 2, ConMP: 0, AttackAfter: 0}}).
+			Build(), nil
+	}
+	defer func() { testInformationLookup = prevHook }()
+
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+	m := r.CreateMonster(ctx, ten, f, 5100004, 0, 0, 0, 5, 0, 3000, 100)
+
+	var emitted []statusEvent[statusEventMpChangedBody]
+	p := &ProcessorImpl{l: logrus.New(), ctx: tenant.WithContext(ctx, ten), t: ten, emit: mpChangedRecorder(t, &emitted)}
+
+	p.UseBasicAttack(m.UniqueId(), uint8(1))
+
+	if len(emitted) != 0 {
+		t.Fatalf("ConMP=0 must not emit MP_CHANGED, got %d", len(emitted))
+	}
+}
+
+func TestUseSkill_Deduct_EmitsMpChanged(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := context.Background()
+	r.Clear(ctx)
+
+	mr, err := miniredis.Run()
+	if err != nil {
+		t.Fatalf("miniredis: %v", err)
+	}
+	defer mr.Close()
+	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	prevCooldown := cooldownReg
+	cooldownReg = &cooldownRegistry{reg: atlasredis.NewRegistry[string, int64](rc, "monster-cooldown", func(s string) string { return s })}
+	defer func() { cooldownReg = prevCooldown }()
+
+	// Skill 126 (Slow) maps to SkillCategoryDebuff; with inFieldFn returning
+	// no targets the executor is a no-op, isolating the deduct+emit.
+	prevSkill := testMobSkillLookup
+	testMobSkillLookup = func(skillId uint16, level uint16) (mobskill.Model, error) {
+		return mobskill.NewModelBuilder().
+			SetSkillId(skillId).
+			SetLevel(level).
+			SetMpCon(10).
+			Build(), nil
+	}
+	defer func() { testMobSkillLookup = prevSkill }()
+
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+	m := r.CreateMonster(ctx, ten, f, 5100004, 0, 0, 0, 5, 0, 3000, 100)
+
+	var emitted []statusEvent[statusEventMpChangedBody]
+	p := &ProcessorImpl{
+		l:         logrus.New(),
+		ctx:       tenant.WithContext(ctx, ten),
+		t:         ten,
+		emit:      mpChangedRecorder(t, &emitted),
+		inFieldFn: func(_ field.Model) ([]uint32, error) { return nil, nil },
+	}
+
+	p.UseSkill(m.UniqueId(), 1, 126, 1)
+
+	if len(emitted) != 1 {
+		t.Fatalf("expected exactly 1 MP_CHANGED, got %d", len(emitted))
+	}
+	e := emitted[0]
+	if e.Body.Reason != MpChangeReasonSkillCast {
+		t.Errorf("Reason = %q, want %q", e.Body.Reason, MpChangeReasonSkillCast)
+	}
+	if e.Body.CharacterId != 0 {
+		t.Errorf("CharacterId = %d, want 0", e.Body.CharacterId)
+	}
+	if e.Body.SkillId != 126 {
+		t.Errorf("SkillId = %d, want the mob skill id 126", e.Body.SkillId)
+	}
+	if e.Body.Amount != 10 || e.Body.MonsterMpAfter != 90 {
+		t.Errorf("Amount/MonsterMpAfter = %d/%d, want 10/90", e.Body.Amount, e.Body.MonsterMpAfter)
+	}
+
+	got, _ := r.GetMonster(ten, m.UniqueId())
+	if got.Mp() != 90 {
+		t.Errorf("registry Mp = %d, want 90", got.Mp())
+	}
+}
+
+func TestUseSkill_ZeroMpCon_NoMpChanged(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := context.Background()
+	r.Clear(ctx)
+
+	mr, err := miniredis.Run()
+	if err != nil {
+		t.Fatalf("miniredis: %v", err)
+	}
+	defer mr.Close()
+	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	prevCooldown := cooldownReg
+	cooldownReg = &cooldownRegistry{reg: atlasredis.NewRegistry[string, int64](rc, "monster-cooldown", func(s string) string { return s })}
+	defer func() { cooldownReg = prevCooldown }()
+
+	prevSkill := testMobSkillLookup
+	testMobSkillLookup = func(skillId uint16, level uint16) (mobskill.Model, error) {
+		return mobskill.NewModelBuilder().SetSkillId(skillId).SetLevel(level).Build(), nil
+	}
+	defer func() { testMobSkillLookup = prevSkill }()
+
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+	m := r.CreateMonster(ctx, ten, f, 5100004, 0, 0, 0, 5, 0, 3000, 100)
+
+	var emitted []statusEvent[statusEventMpChangedBody]
+	p := &ProcessorImpl{
+		l:         logrus.New(),
+		ctx:       tenant.WithContext(ctx, ten),
+		t:         ten,
+		emit:      mpChangedRecorder(t, &emitted),
+		inFieldFn: func(_ field.Model) ([]uint32, error) { return nil, nil },
+	}
+
+	p.UseSkill(m.UniqueId(), 1, 126, 1)
+
+	if len(emitted) != 0 {
+		t.Fatalf("MpCon=0 must not emit MP_CHANGED, got %d", len(emitted))
 	}
 }

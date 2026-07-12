@@ -131,3 +131,34 @@ func handleGetAssetsRequest(db *gorm.DB) func(...) http.HandlerFunc {
 4. Never use this exception for write operations - those MUST go through processors
 
 ---
+
+## Anti-Pattern: Hardcoding client-interpreted wire values
+
+Any byte the game client feeds through one of its own lookup switches —
+dispatcher mode bytes, sub-operation codes, message types, notice/fail reason
+codes — must be resolved from a tenant writer-options table at encode time,
+never written as a Go literal. "The value is version-stable (IDA-verified
+identical across versions)" does NOT exempt it — the task-103 uniformity
+ruling; stability claims previously masked a missing per-version writer
+registration (GuildBBS) and hardcoded-vs-config drift (v83 msgType,
+task-102 NoticeFailReason).
+
+**Wrong:**
+```go
+announceTo(..., fieldpkt.SomeNoticeBody(66)) // 66 = client "not enough NX"
+```
+
+**Right:**
+- Domain service emits a SEMANTIC key on its event (`"NOT_ENOUGH_NX"`) — only
+  the channel speaks wire bytes (the WishOrigin / FailReason layering).
+- Channel resolves the key from a writer-options table
+  (`WithResolvedCode(...)` for mandatory tables; a soft resolver that falls
+  back to the legacy arm for optional ones — see `failNoticeOr` in
+  atlas-channel's mts consumer).
+- The table is added to EVERY supported version's seed template
+  (`services/atlas-configurations/seed-data/templates/`), and the feature's
+  rollout notes call out the live-tenant patch (seed templates never
+  retroactively apply to existing tenants).
+
+Reviewed as DOM-25; the dispatcher-family variant is documented in
+`docs/packets/DISPATCHER_FAMILY.md` ("Client-table values INSIDE bodies").

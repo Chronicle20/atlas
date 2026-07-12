@@ -44,6 +44,32 @@ type MessageCommitter interface {
 	CommitMessages(ctx context.Context, msgs ...kafka.Message) error
 }
 
+// StatsProvider is implemented by readers that can report kafka-go reader
+// statistics; *kafka.Reader satisfies it natively. The fetch loop uses
+// Stats() deltas to distinguish an idle reader (still issuing fetch
+// attempts against the broker) from a stuck one (no progress at all).
+//
+// OWNERSHIP: kafka-go's Stats() returns counter deltas since the previous
+// call. This lib owns the reader's stats stream exclusively — nothing else
+// may call Stats() on a lib-owned reader, or both callers see partial
+// deltas. External metrics/telemetry must read Consumer.Snapshot() instead.
+type StatsProvider interface {
+	Stats() kafka.ReaderStats
+}
+
+// readerMadeProgress reports whether the reader has done any work since the
+// previous deadline tick. Readers that don't expose Stats() (test mocks)
+// are conservatively treated as making no progress — legacy behavior, where
+// every deadline tick counts toward the wedge threshold.
+func readerMadeProgress(reader KafkaReader) bool {
+	sp, ok := reader.(StatsProvider)
+	if !ok {
+		return false
+	}
+	s := sp.Stats()
+	return s.Fetches > 0 || s.Dials > 0 || s.Messages > 0
+}
+
 type ReaderProducer func(config kafka.ReaderConfig) KafkaReader
 
 type ManagerConfig func(m *Manager)
@@ -112,6 +138,21 @@ func (m *Manager) AddConsumer(cl logrus.FieldLogger, ctx context.Context, wg *sy
 		if _, exists := m.consumers[c.topic]; exists {
 			cl.Infof("Consumer for topic [%s] is already registered.", c.topic)
 			return
+		}
+
+		// Guard the idle-vs-stuck classification invariant (task-136 — see
+		// docs/tasks/task-136-consumer-fetch-wedge/findings.md): an idle
+		// reader's Stats().Fetches increments roughly once per maxWait
+		// interval, so handleFetchDeadline only sees progress if
+		// fetchTimeout is comfortably greater than maxWait. A misconfigured
+		// consumer (maxWait >= fetchTimeout) can complete zero fetches per
+		// liveness tick, get misclassified as no-progress, and be wrongly
+		// recreated. This is a one-time Warn at registration — never a
+		// clamp — so the misconfiguration is visible without changing
+		// behavior.
+		if c.maxWait >= c.fetchTimeout {
+			cl.Warnf("Consumer for topic [%s] (group [%s]) has maxWait (%v) >= fetchTimeout (%v); an idle reader may not complete a fetch per liveness tick and could be wrongly recreated. Set fetchTimeout comfortably above maxWait.",
+				c.topic, c.groupId, c.maxWait, c.fetchTimeout)
 		}
 
 		readerConfig := kafka.ReaderConfig{
@@ -214,6 +255,23 @@ type Consumer struct {
 	recreateCount       int
 	consecutiveTimeouts int
 	lastTimeoutAt       time.Time
+	idleTicks           int
+	lastIdleTickAt      time.Time
+	noProgressTicks     int
+	lastNoProgressAt    time.Time
+
+	// Phase-timing attribution — protected by mu. Durations are monotonic
+	// deltas around existing call sites; they exist so a dwell can be
+	// attributed to a phase (fetch wait, group join, recreate backoff,
+	// handler dispatch) via Snapshot without a profiler.
+	readerCreatedAt     time.Time
+	awaitingFirstFetch  bool
+	timeToFirstFetch    time.Duration
+	lastFetchDuration   time.Duration
+	maxFetchDuration    time.Duration
+	lastHandlerDuration time.Duration
+	maxHandlerDuration  time.Duration
+	totalBackoff        time.Duration
 }
 
 // Snapshot is a point-in-time view of a Consumer's observable state, suitable
@@ -231,6 +289,16 @@ type Snapshot struct {
 	HandlerCount        int
 	LastTimeoutAt       time.Time
 	ConsecutiveTimeouts int
+	IdleTicks           int
+	LastIdleTickAt      time.Time
+	NoProgressTicks     int
+	LastNoProgressAt    time.Time
+	TimeToFirstFetch    time.Duration
+	LastFetchDuration   time.Duration
+	MaxFetchDuration    time.Duration
+	LastHandlerDuration time.Duration
+	MaxHandlerDuration  time.Duration
+	TotalBackoff        time.Duration
 }
 
 // Snapshot returns a consistent snapshot of the consumer's observable state.
@@ -251,6 +319,16 @@ func (c *Consumer) Snapshot() Snapshot {
 		HandlerCount:        len(c.handlers),
 		LastTimeoutAt:       c.lastTimeoutAt,
 		ConsecutiveTimeouts: c.consecutiveTimeouts,
+		IdleTicks:           c.idleTicks,
+		LastIdleTickAt:      c.lastIdleTickAt,
+		NoProgressTicks:     c.noProgressTicks,
+		LastNoProgressAt:    c.lastNoProgressAt,
+		TimeToFirstFetch:    c.timeToFirstFetch,
+		LastFetchDuration:   c.lastFetchDuration,
+		MaxFetchDuration:    c.maxFetchDuration,
+		LastHandlerDuration: c.lastHandlerDuration,
+		MaxHandlerDuration:  c.maxHandlerDuration,
+		TotalBackoff:        c.totalBackoff,
 	}
 }
 
@@ -258,6 +336,8 @@ func (c *Consumer) onReaderCreated(attempt int) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.aliveSince = time.Now()
+	c.readerCreatedAt = time.Now()
+	c.awaitingFirstFetch = true
 	if attempt > 0 {
 		c.recreateCount++
 		c.lastError = ""
@@ -269,19 +349,37 @@ func (c *Consumer) onReaderCreated(attempt int) {
 func (c *Consumer) recordFetch() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.lastFetchAt = time.Now()
+	now := time.Now()
+	c.lastFetchAt = now
 	c.lastError = ""
+	c.consecutiveTimeouts = 0
+	if c.awaitingFirstFetch {
+		c.timeToFirstFetch = now.Sub(c.readerCreatedAt)
+		c.awaitingFirstFetch = false
+	}
+}
+
+// recordIdleTick marks one deadline expiration on a reader that is still
+// making fetch attempts. Idle is healthy: it resets the no-progress
+// escalation counter and touches no error state.
+func (c *Consumer) recordIdleTick() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.idleTicks++
+	c.lastIdleTickAt = time.Now()
 	c.consecutiveTimeouts = 0
 }
 
-// recordTimeout marks one deadline expiration; called per tick by runFetchLoop.
-// Idle, not an error: lastError / lastErrorAt are untouched. Returns the new
-// consecutiveTimeouts value so callers can branch on the threshold without a
-// second mutex acquisition.
-func (c *Consumer) recordTimeout() int {
+// recordNoProgressTick marks one deadline expiration with zero reader
+// progress — a stall suspect. Returns the new consecutive count so callers
+// can branch on the threshold without a second mutex acquisition.
+func (c *Consumer) recordNoProgressTick() int {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.lastTimeoutAt = time.Now()
+	now := time.Now()
+	c.lastTimeoutAt = now
+	c.lastNoProgressAt = now
+	c.noProgressTicks++
 	c.consecutiveTimeouts++
 	return c.consecutiveTimeouts
 }
@@ -294,6 +392,51 @@ func (c *Consumer) recordError(err error) {
 	defer c.mu.Unlock()
 	c.lastErrorAt = time.Now()
 	c.lastError = err.Error()
+}
+
+func (c *Consumer) recordFetchDuration(d time.Duration) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.lastFetchDuration = d
+	if d > c.maxFetchDuration {
+		c.maxFetchDuration = d
+	}
+}
+
+func (c *Consumer) recordHandlerDuration(d time.Duration) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.lastHandlerDuration = d
+	if d > c.maxHandlerDuration {
+		c.maxHandlerDuration = d
+	}
+}
+
+func (c *Consumer) recordBackoff(d time.Duration) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.totalBackoff += d
+}
+
+// handleFetchDeadline classifies one expired fetch deadline: an idle tick
+// (reader made progress — normal on a no-traffic topic) or a no-progress
+// tick (stall suspect). Returns errFetchWedged once consecutive no-progress
+// ticks reach the threshold, nil otherwise.
+func (c *Consumer) handleFetchDeadline(l logrus.FieldLogger, reader KafkaReader) error {
+	if readerMadeProgress(reader) {
+		c.recordIdleTick()
+		l.Debugf("Fetch deadline expired on idle topic [%s]; reader healthy, continuing.", c.topic)
+		return nil
+	}
+	consecutive := c.recordNoProgressTick()
+	if consecutive >= c.maxConsecutiveTimeouts {
+		l.Warnf("FetchMessage wedged: %d consecutive no-progress ticks on topic [%s] (group [%s]); forcing reader recreate.",
+			consecutive, c.topic, c.groupId)
+		return errFetchWedged
+	}
+	l.Warnf("FetchMessage made no progress on topic [%s] (group [%s]) (consecutive=%d/%d); stall suspect.",
+		c.topic, c.groupId, consecutive, c.maxConsecutiveTimeouts)
+	return nil
 }
 
 // fetchBackoff models the outer reader-recreate backoff. Capped exponential
@@ -360,11 +503,13 @@ func (c *Consumer) start(l logrus.FieldLogger, ctx context.Context, wg *sync.Wai
 
 		c.recordError(err)
 		l.WithError(err).Errorf("Fetcher exited; recreating reader after backoff.")
+		wait := backoff.next()
 		select {
 		case <-ctx.Done():
 			l.Infof("Topic consumer stopped during backoff.")
 			return
-		case <-time.After(backoff.next()):
+		case <-time.After(wait):
+			c.recordBackoff(wait)
 		}
 	}
 }
@@ -382,12 +527,13 @@ func (c *Consumer) runFetchLoop(l logrus.FieldLogger, ctx context.Context, reade
 // runFetchLoopSerial is the original single-goroutine fetch loop. It blocks
 // until the reader errors or ctx is canceled.
 //
-// Each iteration runs FetchMessage under a per-call deadline (c.fetchTimeout).
-// A deadline expiration is treated as idle: the consumer ticks back to the top
-// of the loop with a fresh deadline. After c.maxConsecutiveTimeouts consecutive
-// deadline expirations the loop returns errFetchWedged so the outer start loop
-// closes the reader and recreates it. A successful fetch resets the counter via
-// recordFetch.
+// Each iteration runs FetchMessage under a per-call deadline
+// (c.fetchTimeout) that acts as a liveness tick. An expiration on a reader
+// that is still making fetch attempts (per Stats() deltas) is an idle
+// tick — healthy, never a recreate. Only ticks with zero reader progress
+// count toward c.maxConsecutiveTimeouts; at the threshold the loop returns
+// errFetchWedged so the outer start loop closes and recreates the reader.
+// A successful fetch resets the counter via recordFetch.
 func (c *Consumer) runFetchLoopSerial(l logrus.FieldLogger, ctx context.Context, reader KafkaReader) error {
 	for {
 		if ctx.Err() != nil {
@@ -395,22 +541,19 @@ func (c *Consumer) runFetchLoopSerial(l logrus.FieldLogger, ctx context.Context,
 		}
 
 		fetchCtx, cancelFetch := context.WithTimeout(ctx, c.fetchTimeout)
+		fetchStart := time.Now()
 		msg, err := reader.FetchMessage(fetchCtx)
 		cancelFetch()
+		c.recordFetchDuration(time.Since(fetchStart))
 
 		if err != nil {
 			if ctx.Err() != nil || errors.Is(err, context.Canceled) {
 				return err
 			}
 			if errors.Is(err, context.DeadlineExceeded) {
-				consecutive := c.recordTimeout()
-				if consecutive >= c.maxConsecutiveTimeouts {
-					l.Warnf("FetchMessage wedged: %d consecutive timeouts on topic [%s] (group [%s]); forcing reader recreate.",
-						consecutive, c.topic, c.groupId)
-					return errFetchWedged
+				if werr := c.handleFetchDeadline(l, reader); werr != nil {
+					return werr
 				}
-				l.Debugf("FetchMessage deadline expired (consecutive=%d/%d); ticking.",
-					consecutive, c.maxConsecutiveTimeouts)
 				continue
 			}
 			return err
@@ -418,7 +561,10 @@ func (c *Consumer) runFetchLoopSerial(l logrus.FieldLogger, ctx context.Context,
 
 		c.recordFetch()
 		l.Debugf("Message received %s.", string(msg.Value))
-		if c.processMessage(l, ctx, msg) {
+		handlerStart := time.Now()
+		ok := c.processMessage(l, ctx, msg)
+		c.recordHandlerDuration(time.Since(handlerStart))
+		if ok {
 			if cerr := reader.CommitMessages(ctx, msg); cerr != nil {
 				l.WithError(cerr).Warnf("Could not commit message offset, it may be redelivered.")
 			}
@@ -489,22 +635,19 @@ func (c *Consumer) runFetchLoopParallel(l logrus.FieldLogger, ctx context.Contex
 		}
 
 		fetchCtx, cancelFetch := context.WithTimeout(ctx, c.fetchTimeout)
+		fetchStart := time.Now()
 		msg, err := reader.FetchMessage(fetchCtx)
 		cancelFetch()
+		c.recordFetchDuration(time.Since(fetchStart))
 
 		if err != nil {
 			if ctx.Err() != nil || errors.Is(err, context.Canceled) {
 				return err
 			}
 			if errors.Is(err, context.DeadlineExceeded) {
-				consecutive := c.recordTimeout()
-				if consecutive >= c.maxConsecutiveTimeouts {
-					l.Warnf("FetchMessage wedged: %d consecutive timeouts on topic [%s] (group [%s]); forcing reader recreate.",
-						consecutive, c.topic, c.groupId)
-					return errFetchWedged
+				if werr := c.handleFetchDeadline(l, reader); werr != nil {
+					return werr
 				}
-				l.Debugf("FetchMessage deadline expired (consecutive=%d/%d); ticking.",
-					consecutive, c.maxConsecutiveTimeouts)
 				// In-flight goroutines may have completed; try to advance.
 				advanceCommit()
 				continue
@@ -524,7 +667,9 @@ func (c *Consumer) runFetchLoopParallel(l logrus.FieldLogger, ctx context.Contex
 		p := pm
 		routine.Go(l, ctx, func(_ context.Context) {
 			defer func() { <-sem }()
+			handlerStart := time.Now()
 			ok := c.processMessage(l, ctx, p.msg)
+			c.recordHandlerDuration(time.Since(handlerStart))
 			p.ok.Store(ok)
 			p.done.Store(true)
 			advanceCommit()

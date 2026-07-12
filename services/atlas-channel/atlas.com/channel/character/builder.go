@@ -47,6 +47,7 @@ type modelBuilder struct {
 	gm                 int
 	x                  int16
 	y                  int16
+	fh                 int16
 	stance             byte
 	meso               uint32
 	pets               []pet.Model
@@ -94,6 +95,7 @@ func CloneModel(m Model) *modelBuilder {
 		gm:                 m.gm,
 		x:                  m.x,
 		y:                  m.y,
+		fh:                 m.fh,
 		stance:             m.stance,
 		meso:               m.meso,
 		pets:               m.pets,
@@ -135,6 +137,8 @@ func (b *modelBuilder) SetGachaponExperience(v uint32) *modelBuilder {
 }
 func (b *modelBuilder) SetSpawnPoint(v uint32) *modelBuilder         { b.spawnPoint = v; return b }
 func (b *modelBuilder) SetGm(v int) *modelBuilder                    { b.gm = v; return b }
+func (b *modelBuilder) SetX(v int16) *modelBuilder                   { b.x = v; return b }
+func (b *modelBuilder) SetY(v int16) *modelBuilder                   { b.y = v; return b }
 func (b *modelBuilder) SetMeso(v uint32) *modelBuilder               { b.meso = v; return b }
 func (b *modelBuilder) SetPets(v []pet.Model) *modelBuilder          { b.pets = v; return b }
 func (b *modelBuilder) SetEquipment(v equipment.Model) *modelBuilder { b.equipment = v; return b }
@@ -181,6 +185,7 @@ func (b *modelBuilder) Build() (Model, error) {
 		gm:                 b.gm,
 		x:                  b.x,
 		y:                  b.y,
+		fh:                 b.fh,
 		stance:             b.stance,
 		meso:               b.meso,
 		pets:               b.pets,

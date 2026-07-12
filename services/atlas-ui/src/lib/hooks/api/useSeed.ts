@@ -5,6 +5,7 @@ import {
   type UseMutationResult,
   type UseQueryResult,
 } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import {
   seedService,
   type DataStatus,
@@ -18,8 +19,20 @@ import {
   type ReactorScriptsSeedStatus,
   type WzInputStatus,
 } from '@/services/api/seed.service';
-import type { Scope } from '@/components/features/setup/ScopeToggle';
 import { useTenant } from '@/context/tenant-context';
+
+// Shared WZ-upload error toast: one copy of the 409/400 wording for the
+// tenant (Setup) and canonical (Baselines) upload paths.
+export function showWzUploadErrorToast(error: Error): void {
+  const err = error as Error & { status?: number };
+  if (err.status === 409) {
+    toast.error('Another upload or processing job is in progress for this scope. Try again in a moment.');
+  } else if (err.status === 400) {
+    toast.error(`Upload rejected: ${err.message}`);
+  } else {
+    toast.error(`Upload failed: ${err.message}`);
+  }
+}
 
 const wzInputStatusKey = (tenantId: string) => ['wzInputStatus', tenantId] as const;
 export const dataStatusKey = (tenantId: string) => ['dataStatus', tenantId] as const;
@@ -130,27 +143,26 @@ export function useSeedMapActionScripts(): UseMutationResult<unknown, Error, voi
 
 export interface UploadWzFilesInput {
   file: File;
-  scope: Scope;
 }
 
 export function useUploadWzFiles(): UseMutationResult<void, Error, UploadWzFilesInput> {
   const { activeTenant } = useTenant();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ file, scope }: UploadWzFilesInput) =>
-      seedService.uploadWzFiles(activeTenant!, file, scope),
+    mutationFn: ({ file }: UploadWzFilesInput) => seedService.uploadWzFiles(activeTenant!, file),
     onSuccess: () => {
       if (!activeTenant) return;
       void queryClient.invalidateQueries({ queryKey: wzInputStatusKey(activeTenant.id) });
     },
+    onError: showWzUploadErrorToast,
   });
 }
 
-export function useRunDataProcessing(): UseMutationResult<void, Error, Scope> {
+export function useRunDataProcessing(): UseMutationResult<void, Error, void> {
   const { activeTenant } = useTenant();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (scope: Scope) => seedService.runDataProcessing(activeTenant!, scope),
+    mutationFn: () => seedService.runDataProcessing(activeTenant!),
     onSuccess: () => {
       if (!activeTenant) return;
       void queryClient.invalidateQueries({ queryKey: dataStatusKey(activeTenant.id) });
@@ -158,25 +170,22 @@ export function useRunDataProcessing(): UseMutationResult<void, Error, Scope> {
   });
 }
 
-// scope is appended as a third key segment so toggling tenant/shared
-// refetches under a distinct cache entry. The invalidation calls above
-// pass the 2-element prefix, which prefix-matches every scope.
-export function useWzInputStatus(scope: Scope = 'tenant'): UseQueryResult<WzInputStatus, Error> {
+export function useWzInputStatus(): UseQueryResult<WzInputStatus, Error> {
   const { activeTenant } = useTenant();
   return useQuery({
-    queryKey: activeTenant ? [...wzInputStatusKey(activeTenant.id), scope] : ['wzInputStatus', 'none', scope],
-    queryFn: () => seedService.getWzInputStatus(activeTenant!, scope),
+    queryKey: activeTenant ? wzInputStatusKey(activeTenant.id) : ['wzInputStatus', 'none'],
+    queryFn: () => seedService.getWzInputStatus(activeTenant!),
     enabled: !!activeTenant,
     staleTime: 0,
     refetchInterval: 5000,
   });
 }
 
-export function useDataStatus(scope: Scope = 'tenant'): UseQueryResult<DataStatus, Error> {
+export function useDataStatus(): UseQueryResult<DataStatus, Error> {
   const { activeTenant } = useTenant();
   return useQuery({
-    queryKey: activeTenant ? [...dataStatusKey(activeTenant.id), scope] : ['dataStatus', 'none', scope],
-    queryFn: () => seedService.getDataStatus(activeTenant!, scope),
+    queryKey: activeTenant ? dataStatusKey(activeTenant.id) : ['dataStatus', 'none'],
+    queryFn: () => seedService.getDataStatus(activeTenant!),
     enabled: !!activeTenant,
     staleTime: 0,
     refetchInterval: 5000,

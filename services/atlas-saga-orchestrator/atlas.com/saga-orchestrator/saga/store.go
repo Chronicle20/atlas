@@ -124,10 +124,13 @@ func (s *PostgresStore) Put(ctx context.Context, saga Saga) error {
 			Updates(map[string]interface{}{
 				"saga_type":    string(saga.SagaType()),
 				"initiated_by": saga.InitiatedBy(),
-				"status":       sagaStatus,
-				"saga_data":    data,
-				"version":      ver + 1,
-				"updated_at":   time.Now(),
+				// Terminal-preserving: failed/completed can never be
+				// overwritten by a recomputed active/compensating status;
+				// saga_data still updates (late-compensation marker).
+				"status":     gorm.Expr("CASE WHEN status IN ('failed','completed') THEN status ELSE ? END", sagaStatus),
+				"saga_data":  data,
+				"version":    ver + 1,
+				"updated_at": time.Now(),
 			})
 
 		if result.Error != nil {
@@ -172,8 +175,15 @@ func (s *PostgresStore) Put(ctx context.Context, saga Saga) error {
 		}
 
 		result := s.db.WithContext(ctx).Clauses(clause.OnConflict{
-			Columns:   []clause.Column{{Name: "transaction_id"}},
-			DoUpdates: clause.AssignmentColumns([]string{"saga_type", "initiated_by", "status", "saga_data", "version", "updated_at"}),
+			Columns: []clause.Column{{Name: "transaction_id"}},
+			DoUpdates: clause.Assignments(map[string]interface{}{
+				"saga_type":    string(saga.SagaType()),
+				"initiated_by": saga.InitiatedBy(),
+				"status":       gorm.Expr("CASE WHEN sagas.status IN ('failed','completed') THEN sagas.status ELSE excluded.status END"),
+				"saga_data":    data,
+				"version":      gorm.Expr("sagas.version + 1"),
+				"updated_at":   time.Now(),
+			}),
 		}).Create(&e)
 
 		if result.Error != nil {
@@ -194,7 +204,9 @@ func (s *PostgresStore) Remove(ctx context.Context, transactionId uuid.UUID) boo
 	result := s.db.WithContext(ctx).Model(&Entity{}).
 		Where("transaction_id = ?", transactionId).
 		Updates(map[string]interface{}{
-			"status":     "completed",
+			// failed is a terminal audit state; do not mask a timed-out saga
+			// as completed (design defect 3).
+			"status":     gorm.Expr("CASE WHEN status = 'failed' THEN status ELSE 'completed' END"),
 			"updated_at": time.Now(),
 		})
 
@@ -296,10 +308,17 @@ func (s *PostgresStore) TryTransition(ctx context.Context, transactionId uuid.UU
 	if fromStatus == "" || toStatus == "" {
 		return false
 	}
+	// The version bump deliberately does NOT touch s.ver: every optimistic
+	// Put built on a pre-transition read — on this instance or any other —
+	// must fail with VersionConflictError and re-read, at which point the
+	// stepCompletedWithResultOnce terminal gate absorbs (design §3.3b).
+	// Syncing or deleting the local entry here would let such a Put slip
+	// through the unguarded insert/OnConflict path.
 	result := s.db.WithContext(ctx).Model(&Entity{}).
 		Where("transaction_id = ? AND status = ?", transactionId, fromStatus).
 		Updates(map[string]interface{}{
 			"status":     toStatus,
+			"version":    gorm.Expr("version + 1"),
 			"updated_at": time.Now(),
 		})
 	if result.Error != nil {

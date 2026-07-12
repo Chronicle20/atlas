@@ -36,8 +36,8 @@ func CreateSocketService(l logrus.FieldLogger, ctx context.Context, wg *sync.Wai
 
 			l.Debugf("Service locale [%d].", locale)
 
+			wg.Add(1)
 			routine.Go(l, ctx, func(_ context.Context) {
-				wg.Add(1)
 				defer wg.Done()
 
 				sp := session.NewProcessor(l, ctx)

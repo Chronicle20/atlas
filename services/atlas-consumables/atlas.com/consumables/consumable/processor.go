@@ -336,11 +336,12 @@ func ConsumeStandard(transactionId uuid.UUID, characterId uint32, slot int16, it
 			p := NewProcessor(l, ctx)
 			cp := character.NewProcessor(l, ctx)
 			mp := character2.NewProcessor(l, ctx)
+			cdp := consumable3.NewProcessor(l, ctx)
 
 			pg, _ := model.NewGroup(ctx)
 			fc := model.Submit(pg, func() (character.Model, error) { return cp.GetById()(characterId) })
 			fm := model.Submit(pg, func() (field.Model, error) { return mp.GetMap(characterId) })
-			fi := model.Submit(pg, func() (consumable3.Model, error) { return consumable3.NewProcessor(l, ctx).GetById(uint32(itemId)) })
+			fi := model.Submit(pg, func() (consumable3.Model, error) { return cdp.GetById(uint32(itemId)) })
 			if err := pg.Wait(); err != nil {
 				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
 			}
@@ -363,10 +364,11 @@ func ConsumeTownScroll(transactionId uuid.UUID, characterId uint32, slot int16, 
 			p := NewProcessor(l, ctx)
 			cpp := compartment.NewProcessor(l, ctx)
 			mp := character2.NewProcessor(l, ctx)
+			cdp := consumable3.NewProcessor(l, ctx)
 
 			pg, _ := model.NewGroup(ctx)
 			fm := model.Submit(pg, func() (field.Model, error) { return mp.GetMap(characterId) })
-			fi := model.Submit(pg, func() (consumable3.Model, error) { return consumable3.NewProcessor(l, ctx).GetById(uint32(itemId)) })
+			fi := model.Submit(pg, func() (consumable3.Model, error) { return cdp.GetById(uint32(itemId)) })
 			if err := pg.Wait(); err != nil {
 				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
 			}
@@ -406,6 +408,7 @@ func ConsumePetFood(transactionId uuid.UUID, characterId uint32, slot int16, ite
 			p := NewProcessor(l, ctx)
 			pp := pet.NewProcessor(l, ctx)
 			cpp := compartment.NewProcessor(l, ctx)
+			cdp := consumable3.NewProcessor(l, ctx)
 
 			// Sequential reads: PRD §4.3 names ConsumeStandard / ConsumeTownScroll /
 			// ConsumeSummoningSack as the parallelisation targets. ConsumePetFood's two
@@ -416,7 +419,7 @@ func ConsumePetFood(transactionId uuid.UUID, characterId uint32, slot int16, ite
 				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
 			}
 
-			ci, err := consumable3.NewProcessor(l, ctx).GetById(uint32(itemId))
+			ci, err := cdp.GetById(uint32(itemId))
 			if err != nil {
 				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
 			}
@@ -483,10 +486,11 @@ func ConsumeSummoningSack(transactionId uuid.UUID, ch channel.Model, characterId
 		return func(ctx context.Context) error {
 			p := NewProcessor(l, ctx)
 			cp := character.NewProcessor(l, ctx)
+			cdp := consumable3.NewProcessor(l, ctx)
 
 			pg, _ := model.NewGroup(ctx)
 			fc := model.Submit(pg, func() (character.Model, error) { return cp.GetById()(characterId) })
-			fi := model.Submit(pg, func() (consumable3.Model, error) { return consumable3.NewProcessor(l, ctx).GetById(uint32(itemId)) })
+			fi := model.Submit(pg, func() (consumable3.Model, error) { return cdp.GetById(uint32(itemId)) })
 			if err := pg.Wait(); err != nil {
 				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
 			}
@@ -624,6 +628,7 @@ func ConsumeScroll(transactionId uuid.UUID, characterId uint32, scrollItem *asse
 			cp := character.NewProcessor(l, ctx)
 			ep := equipable.NewProcessor(l, ctx)
 			cpp := compartment.NewProcessor(l, ctx)
+			cdp := consumable3.NewProcessor(l, ctx)
 
 			whiteScroll := whiteScrollItem != nil
 
@@ -647,7 +652,7 @@ func ConsumeScroll(transactionId uuid.UUID, characterId uint32, scrollItem *asse
 				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, scrollItem.Slot(), errors.New("failed slot validation"))
 			}
 
-			ci, err := consumable3.NewProcessor(l, ctx).GetById(scrollItem.TemplateId())
+			ci, err := cdp.GetById(scrollItem.TemplateId())
 			if err != nil {
 				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, scrollItem.Slot(), err)
 			}

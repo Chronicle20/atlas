@@ -2069,21 +2069,6 @@ func (p *ProcessorImpl) TransferAP(mb *message.Buffer) func(transactionId uuid.U
 		var stats []stat.Type
 		values := map[string]interface{}{}
 
-		// Magician MP-reset-out scales the MaxMP loss with EFFECTIVE INT (client
-		// parity; §4.3 deviation — see pointResetMagicianTakeMp). Fetch it up
-		// front, and only when the source is MP, to keep the REST call off the
-		// transaction path. A failed/zero fetch falls back to base INT below.
-		var effectiveInt uint16
-		if from == CommandDistributeApAbilityMp {
-			if es, err := effective_stats.RequestByCharacter(channel, characterId)(p.l, p.ctx); err == nil && es.Intelligence > 0 {
-				if es.Intelligence > math.MaxUint16 {
-					effectiveInt = math.MaxUint16
-				} else {
-					effectiveInt = uint16(es.Intelligence)
-				}
-			}
-		}
-
 		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 			c, err := p.WithTransaction(tx).GetById()(characterId)
 			if err != nil {
@@ -2144,20 +2129,42 @@ func (p *ProcessorImpl) TransferAP(mb *message.Buffer) func(transactionId uuid.U
 					return nil
 				}
 				// Magicians lose an INT-scaled amount of MaxMP (client parity);
-				// every other branch loses the fixed policy.takeMp.
+				// every other branch loses the fixed policy.takeMp. Only
+				// magicians need the effective-INT fetch, so it is scoped to
+				// this branch (mirrors the effective-stats fetch in ChangeHP/
+				// ChangeMP, which likewise run inside the transaction).
 				takeMp := policy.takeMp
 				if isPointResetMagician(c.JobId()) {
-					ei := effectiveInt
-					if ei == 0 {
-						ei = c.Intelligence() // effective-stats unavailable: base INT
+					// Effective INT (base + equipment) drives the loss; on an
+					// effective-stats failure fall back to base INT, and log —
+					// a silent degradation would reintroduce the very desync
+					// this scaling fixes.
+					effectiveInt := c.Intelligence()
+					es, esErr := effective_stats.RequestByCharacter(channel, c.Id())(p.l, p.ctx)
+					if esErr != nil {
+						p.l.WithError(esErr).Warnf("Failed to fetch effective stats for character [%d]; magician MP-reset loss falls back to base INT [%d].", c.Id(), effectiveInt)
+					} else if es.Intelligence > 0 {
+						if es.Intelligence > math.MaxUint16 {
+							effectiveInt = math.MaxUint16
+						} else {
+							effectiveInt = uint16(es.Intelligence)
+						}
 					}
-					takeMp = pointResetMagicianTakeMp(ei)
+					takeMp = pointResetMagicianTakeMp(effectiveInt)
 				}
 				if int(newMaxMp)-int(takeMp) < pointResetMinMp(c.JobId(), c.Level()) {
 					rejection = &transferApRejection{code: character2.StatusEventErrorTypePoolBelowJobMinimum, detail: from}
 					return nil
 				}
-				newMaxMp -= takeMp
+				// MaxMp guard: pointResetMinMp can be negative at very low
+				// levels (pirate/bowman/thief lines have negative offsets), so
+				// the floor check above can pass with takeMp > newMaxMp. Clamp
+				// to 0 to keep the uint16 subtraction from underflowing.
+				if int(newMaxMp)-int(takeMp) < 0 {
+					newMaxMp = 0
+				} else {
+					newMaxMp -= takeMp
+				}
 				if int(newMp)-int(takeMp) < 0 {
 					newMp = 0
 				} else {

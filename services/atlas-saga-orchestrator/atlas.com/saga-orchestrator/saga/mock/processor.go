@@ -1,6 +1,7 @@
 package mock
 
 import (
+	"atlas-saga-orchestrator/cashshop"
 	"atlas-saga-orchestrator/character"
 	"atlas-saga-orchestrator/compartment"
 	"atlas-saga-orchestrator/guild"
@@ -21,6 +22,7 @@ type ProcessorMock struct {
 	WithValidationProcessorFunc  func(validation.Processor) saga.Processor
 	WithGuildProcessorFunc       func(guild.Processor) saga.Processor
 	WithInviteProcessorFunc      func(invite.Processor) saga.Processor
+	WithCashshopProcessorFunc    func(cashshop.Processor) saga.Processor
 
 	GetAllFunc      func() ([]saga.Saga, error)
 	AllProviderFunc func() model.Provider[[]saga.Saga]
@@ -83,6 +85,14 @@ func (m *ProcessorMock) WithGuildProcessor(p guild.Processor) saga.Processor {
 func (m *ProcessorMock) WithInviteProcessor(p invite.Processor) saga.Processor {
 	if m.WithInviteProcessorFunc != nil {
 		return m.WithInviteProcessorFunc(p)
+	}
+	return m
+}
+
+// WithCashshopProcessor is a mock implementation
+func (m *ProcessorMock) WithCashshopProcessor(p cashshop.Processor) saga.Processor {
+	if m.WithCashshopProcessorFunc != nil {
+		return m.WithCashshopProcessorFunc(p)
 	}
 	return m
 }

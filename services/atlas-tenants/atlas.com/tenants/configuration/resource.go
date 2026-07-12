@@ -634,6 +634,217 @@ func SeedVesselsHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Han
 	}
 }
 
+// GetMtsConfigHandler handles GET /tenants/{tenantId}/configurations/mts-configs
+// and returns the single per-tenant MTS configuration. atlas-mts decodes this
+// as a single JSON:API object (requests.GetRequest[RestModel]).
+func GetMtsConfigHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseTenantId(d.Logger(), func(tenantId uuid.UUID) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				processor := NewProcessor(d.Logger(), d.Context(), db)
+
+				configs, err := processor.GetAllMtsConfigs(tenantId)
+				if err != nil {
+					if errors.Is(err, gorm.ErrRecordNotFound) {
+						d.Logger().Info("No mts config found for tenant")
+						w.WriteHeader(http.StatusNotFound)
+						return
+					}
+					d.Logger().WithError(err).Error("Failed to get mts config")
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+
+				if len(configs) == 0 {
+					d.Logger().Info("No mts config found for tenant")
+					w.WriteHeader(http.StatusNotFound)
+					return
+				}
+
+				rm, err := TransformMtsConfig(configs[0])
+				if err != nil {
+					d.Logger().WithError(err).Error("Failed to transform mts config")
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				server.MarshalResponse[MtsConfigRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
+			}
+		})
+	}
+}
+
+// GetMtsConfigByIdHandler handles GET /tenants/{tenantId}/configurations/mts-configs/{mtsConfigId}
+func GetMtsConfigByIdHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseTenantId(d.Logger(), func(tenantId uuid.UUID) http.HandlerFunc {
+			return rest.ParseMtsConfigId(d.Logger(), func(mtsConfigId string) http.HandlerFunc {
+				return func(w http.ResponseWriter, r *http.Request) {
+					processor := NewProcessor(d.Logger(), d.Context(), db)
+
+					config, err := processor.GetMtsConfigById(tenantId, mtsConfigId)
+					if err != nil {
+						d.Logger().WithError(err).Error("Failed to get mts config")
+						w.WriteHeader(http.StatusNotFound)
+						return
+					}
+
+					rm, err := TransformMtsConfig(config)
+					if err != nil {
+						d.Logger().WithError(err).Error("Failed to transform mts config")
+						w.WriteHeader(http.StatusInternalServerError)
+						return
+					}
+
+					query := r.URL.Query()
+					queryParams := jsonapi.ParseQueryFields(&query)
+					server.MarshalResponse[MtsConfigRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
+				}
+			})
+		})
+	}
+}
+
+// CreateMtsConfigHandler handles POST /tenants/{tenantId}/configurations/mts-configs
+func CreateMtsConfigHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext, model MtsConfigRestModel) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext, model MtsConfigRestModel) http.HandlerFunc {
+		return rest.ParseTenantId(d.Logger(), func(tenantId uuid.UUID) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				config, err := ExtractMtsConfig(model)
+				if err != nil {
+					d.Logger().WithError(err).Error("Failed to extract mts config data")
+					w.WriteHeader(http.StatusBadRequest)
+					return
+				}
+
+				processor := NewProcessor(d.Logger(), d.Context(), db)
+				_, err = processor.CreateMtsConfigAndEmit(tenantId, config)
+				if err != nil {
+					d.Logger().WithError(err).Error("Failed to create mts config")
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+
+				// Get the config ID from the created config
+				configId := ""
+				if id, ok := config["id"].(string); ok {
+					configId = id
+				}
+
+				// Get the specific config that was just created
+				createdConfig, err := processor.GetMtsConfigById(tenantId, configId)
+				if err != nil {
+					d.Logger().WithError(err).Error("Failed to get created mts config")
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+
+				rm, err := TransformMtsConfig(createdConfig)
+				if err != nil {
+					d.Logger().WithError(err).Error("Failed to transform mts config")
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				w.WriteHeader(http.StatusCreated)
+				server.MarshalResponse[MtsConfigRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
+			}
+		})
+	}
+}
+
+// UpdateMtsConfigHandler handles PATCH /tenants/{tenantId}/configurations/mts-configs/{mtsConfigId}
+func UpdateMtsConfigHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext, model MtsConfigRestModel) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext, model MtsConfigRestModel) http.HandlerFunc {
+		return rest.ParseTenantId(d.Logger(), func(tenantId uuid.UUID) http.HandlerFunc {
+			return rest.ParseMtsConfigId(d.Logger(), func(mtsConfigId string) http.HandlerFunc {
+				return func(w http.ResponseWriter, r *http.Request) {
+					config, err := ExtractMtsConfig(model)
+					if err != nil {
+						d.Logger().WithError(err).Error("Failed to extract mts config data")
+						w.WriteHeader(http.StatusBadRequest)
+						return
+					}
+
+					processor := NewProcessor(d.Logger(), d.Context(), db)
+					_, err = processor.UpdateMtsConfigAndEmit(tenantId, mtsConfigId, config)
+					if err != nil {
+						d.Logger().WithError(err).Error("Failed to update mts config")
+						w.WriteHeader(http.StatusInternalServerError)
+						return
+					}
+
+					// Get the specific config that was just updated
+					updatedConfig, err := processor.GetMtsConfigById(tenantId, mtsConfigId)
+					if err != nil {
+						d.Logger().WithError(err).Error("Failed to get updated mts config")
+						w.WriteHeader(http.StatusInternalServerError)
+						return
+					}
+
+					rm, err := TransformMtsConfig(updatedConfig)
+					if err != nil {
+						d.Logger().WithError(err).Error("Failed to transform mts config")
+						w.WriteHeader(http.StatusInternalServerError)
+						return
+					}
+
+					query := r.URL.Query()
+					queryParams := jsonapi.ParseQueryFields(&query)
+					server.MarshalResponse[MtsConfigRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
+				}
+			})
+		})
+	}
+}
+
+// DeleteMtsConfigHandler handles DELETE /tenants/{tenantId}/configurations/mts-configs/{mtsConfigId}
+func DeleteMtsConfigHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseTenantId(d.Logger(), func(tenantId uuid.UUID) http.HandlerFunc {
+			return rest.ParseMtsConfigId(d.Logger(), func(mtsConfigId string) http.HandlerFunc {
+				return func(w http.ResponseWriter, r *http.Request) {
+					processor := NewProcessor(d.Logger(), d.Context(), db)
+					err := processor.DeleteMtsConfigAndEmit(tenantId, mtsConfigId)
+					if err != nil {
+						d.Logger().WithError(err).Error("Failed to delete mts config")
+						w.WriteHeader(http.StatusInternalServerError)
+						return
+					}
+
+					w.WriteHeader(http.StatusNoContent)
+				}
+			})
+		})
+	}
+}
+
+// SeedMtsConfigsHandler handles POST /tenants/{tenantId}/configurations/mts-configs/seed
+func SeedMtsConfigsHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseTenantId(d.Logger(), func(tenantId uuid.UUID) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				processor := NewProcessor(d.Logger(), d.Context(), db)
+				result, err := processor.SeedMtsConfigs(tenantId)
+				if err != nil {
+					d.Logger().WithError(err).Error("Failed to seed mts configs")
+					w.WriteHeader(http.StatusInternalServerError)
+					json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+					return
+				}
+
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusOK)
+				json.NewEncoder(w).Encode(result)
+			}
+		})
+	}
+}
+
 // RegisterRoutes registers the configuration routes
 func RegisterRoutes(db *gorm.DB) func(si jsonapi.ServerInformation) server.RouteInitializer {
 	return func(si jsonapi.ServerInformation) server.RouteInitializer {
@@ -642,6 +853,7 @@ func RegisterRoutes(db *gorm.DB) func(si jsonapi.ServerInformation) server.Route
 			registerRouteInputHandler := rest.RegisterInputHandler[RouteRestModel](l)(si)
 			registerVesselInputHandler := rest.RegisterInputHandler[VesselRestModel](l)(si)
 			registerInstanceRouteInputHandler := rest.RegisterInputHandler[InstanceRouteRestModel](l)(si)
+			registerMtsConfigInputHandler := rest.RegisterInputHandler[MtsConfigRestModel](l)(si)
 
 			// Route endpoints
 			r.HandleFunc("/tenants/{tenantId}/configurations/routes/seed", registerHandler("seed_routes", SeedRoutesHandler(db))).Methods(http.MethodPost)
@@ -666,6 +878,14 @@ func RegisterRoutes(db *gorm.DB) func(si jsonapi.ServerInformation) server.Route
 			r.HandleFunc("/tenants/{tenantId}/configurations/instance-routes", registerInstanceRouteInputHandler("create_instance_route", CreateInstanceRouteHandler(db))).Methods(http.MethodPost)
 			r.HandleFunc("/tenants/{tenantId}/configurations/instance-routes/{instanceRouteId}", registerInstanceRouteInputHandler("update_instance_route", UpdateInstanceRouteHandler(db))).Methods(http.MethodPatch)
 			r.HandleFunc("/tenants/{tenantId}/configurations/instance-routes/{instanceRouteId}", registerHandler("delete_instance_route", DeleteInstanceRouteHandler(db))).Methods(http.MethodDelete)
+
+			// MTS config endpoints
+			r.HandleFunc("/tenants/{tenantId}/configurations/mts-configs/seed", registerHandler("seed_mts_configs", SeedMtsConfigsHandler(db))).Methods(http.MethodPost)
+			r.HandleFunc("/tenants/{tenantId}/configurations/mts-configs", registerHandler("get_mts_config", GetMtsConfigHandler(db))).Methods(http.MethodGet)
+			r.HandleFunc("/tenants/{tenantId}/configurations/mts-configs/{mtsConfigId}", registerHandler("get_mts_config_by_id", GetMtsConfigByIdHandler(db))).Methods(http.MethodGet)
+			r.HandleFunc("/tenants/{tenantId}/configurations/mts-configs", registerMtsConfigInputHandler("create_mts_config", CreateMtsConfigHandler(db))).Methods(http.MethodPost)
+			r.HandleFunc("/tenants/{tenantId}/configurations/mts-configs/{mtsConfigId}", registerMtsConfigInputHandler("update_mts_config", UpdateMtsConfigHandler(db))).Methods(http.MethodPatch)
+			r.HandleFunc("/tenants/{tenantId}/configurations/mts-configs/{mtsConfigId}", registerHandler("delete_mts_config", DeleteMtsConfigHandler(db))).Methods(http.MethodDelete)
 		}
 	}
 }

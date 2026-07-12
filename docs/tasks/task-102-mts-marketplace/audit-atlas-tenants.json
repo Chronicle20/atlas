@@ -1,0 +1,80 @@
+{
+  "service": "atlas-tenants",
+  "path": "services/atlas-tenants/atlas.com/tenants",
+  "scope": ["configuration", "configuration/mock", "rest"],
+  "task": "task-102-mts-marketplace",
+  "date": "2026-07-10",
+  "build": "pass",
+  "vet": "pass",
+  "testsPassed": 2,
+  "testsFailed": 0,
+  "testNote": "2 packages with tests (configuration, tenant) pass; remaining packages have no test files; go test ./... -count=1 exit 0",
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "configuration",
+      "type": "domain",
+      "checks": [
+        {"id": "FILE-01", "name": "Processor in processor.go", "status": "pass", "evidence": "processor.go:18,119,127"},
+        {"id": "FILE-02", "name": "RestModel+Transform/Extract+JSON:API in rest.go", "status": "pass", "evidence": "rest.go:230,244,249,255,260,328 (MtsConfig) all in rest.go"},
+        {"id": "FILE-03", "name": "requests.go cross-service funcs", "status": "pass", "evidence": "N/A - no requests.RootUrl/GetRequest/PostRequest; config source-of-truth"},
+        {"id": "FILE-04", "name": "Entity+TableName+migration in entity.go", "status": "pass", "evidence": "entity.go:11,20,25"},
+        {"id": "FILE-05", "name": "Builder/Model/writes/providers placed per table", "status": "pass", "evidence": "builder.go:15; model.go:11; administrator.go:13,20,27; provider.go; nit: Make in model.go:44"},
+        {"id": "FILE-06", "name": "No package-named catch-all", "status": "pass", "evidence": "no configuration.go; files split by responsibility (commit 6f2ac59ae6)"},
+        {"id": "DOM-01", "name": "builder.go validating Build()", "status": "pass", "evidence": "builder.go:64"},
+        {"id": "DOM-02", "name": "ToEntity() on Model", "status": "fail", "evidence": "no ToEntity(); FromModel(m) used instead (entity_builder.go:56); pre-existing"},
+        {"id": "DOM-03", "name": "Make(Entity)(Model,error)", "status": "pass", "evidence": "model.go:44 (location nit: not in entity.go)"},
+        {"id": "DOM-04", "name": "Transform in rest.go", "status": "pass", "evidence": "per-resource TransformMtsConfig rest.go:260; generic-store adaptation"},
+        {"id": "DOM-05", "name": "TransformSlice + no inline loops", "status": "fail", "evidence": "no TransformSlice; inline loops resource.go:37-46,224-232,408-417; MTS adds none (single-object handler resource.go:664); pre-existing"},
+        {"id": "DOM-06", "name": "Processor takes FieldLogger", "status": "pass", "evidence": "processor.go:120,127"},
+        {"id": "DOM-07", "name": "Handlers pass d.Logger()", "status": "pass", "evidence": "resource.go:644,685,722,773,811,831"},
+        {"id": "DOM-08", "name": "POST/PATCH RegisterInputHandler", "status": "pass", "evidence": "resource.go:856,886,887"},
+        {"id": "DOM-09", "name": "Transform errors handled", "status": "pass", "evidence": "resource.go:664-668,694-698,744-748,789-793"},
+        {"id": "DOM-10", "name": "Test DB tenant callbacks", "status": "fail", "evidence": "test/database.go:23 AutoMigrate without RegisterTenantCallbacks; mitigated by explicit tenant_id filter provider.go:13-19; pre-existing"},
+        {"id": "DOM-11", "name": "Providers lazy", "status": "pass", "evidence": "provider.go:152-215 database.Query+model.Map curried"},
+        {"id": "DOM-12", "name": "No os.Getenv in handlers", "status": "pass", "evidence": "resource.go 0 matches"},
+        {"id": "DOM-13", "name": "No cross-domain logic in handlers", "status": "pass", "evidence": "MTS handlers call only configuration processor"},
+        {"id": "DOM-14", "name": "Handlers don't call providers directly", "status": "pass", "evidence": "handlers call processor methods only"},
+        {"id": "DOM-15", "name": "No direct entity writes in handlers", "status": "pass", "evidence": "no db.Create/Save/Delete in resource.go"},
+        {"id": "DOM-16", "name": "administrator.go for writes", "status": "pass", "evidence": "administrator.go:13,20,27; nit inline Entity{} in processor.go:661"},
+        {"id": "DOM-17", "name": "Error->HTTP status mapping", "status": "warn", "evidence": "GetMtsConfigHandler correct 404/500 resource.go:646-656; GetMtsConfigByIdHandler conflates all->404 resource.go:688-691; create/update/delete all->500"},
+        {"id": "DOM-18", "name": "JSON:API interface on REST models", "status": "pass", "evidence": "rest.go:244,249,255"},
+        {"id": "DOM-19", "name": "Request models flat", "status": "pass", "evidence": "rest.go:230 flat MtsConfigRestModel"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "fail", "evidence": "no tests:=[]struct / t.Run in processor_test.go; pre-existing style"},
+        {"id": "DOM-21", "name": "No atlas-constants duplication", "status": "pass", "evidence": "economic primitives only; no id/type redeclaration"},
+        {"id": "DOM-22", "name": "Dockerfile 4-block per lib", "status": "pass", "evidence": "N/A - go.mod/Dockerfile unchanged vs main"},
+        {"id": "DOM-23", "name": "Kafka topic naming", "status": "pass", "evidence": "reuses EVENT_TOPIC_CONFIGURATION_STATUS kafka.go:11; new event types only kafka.go:21-23"},
+        {"id": "DOM-24", "name": "Kafka producer stubbed in emitting tests", "status": "pass", "evidence": "testProcessor bypasses AndEmit; no message.Emit/producer.Produce in tests"},
+        {"id": "DOM-25", "name": "Client wire values config-resolved", "status": "pass", "evidence": "N/A - not channel/socket code"}
+      ]
+    },
+    {
+      "name": "configuration/mock",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-06", "name": "Single-purpose mock file", "status": "pass", "evidence": "mock/processor.go holds only ProcessorMock"},
+        {"id": "MOCK-PARITY", "name": "Mock implements Processor interface", "status": "pass", "evidence": "var _ configuration.Processor = (*ProcessorMock)(nil) mock/processor.go:12; 44/44 methods; all 10 MTS methods present"}
+      ]
+    },
+    {
+      "name": "rest",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-06", "name": "No catch-all collapse", "status": "pass", "evidence": "rest/handler.go: aliases + Register*/Parse* infra only"},
+        {"id": "PLACEMENT", "name": "ParseMtsConfigId correctly located", "status": "pass", "evidence": "rest/handler.go:48 alongside sibling Parse* helpers"}
+      ]
+    }
+  ],
+  "blocking": [],
+  "important": [
+    "DOM-05: configuration has no TransformSlice; list handlers use inline for-loops (resource.go:37-46,224-232,408-417). Pre-existing; MTS added no new slice loop.",
+    "DOM-02: no ToEntity() on Model; conversion via FromModel (entity_builder.go:56). Pre-existing."
+  ],
+  "nonBlocking": [
+    "DOM-17: GetMtsConfigByIdHandler conflates all errors to 404 (resource.go:688-691); create/update/delete map validation to 500 not 400/409.",
+    "DOM-10: test.SetupTestDB omits database.RegisterTenantCallbacks (test/database.go:23); mitigated by explicit tenant_id filtering.",
+    "DOM-20: MTS tests not table-driven (no t.Run); matches file's pre-existing style.",
+    "Observation: CreateMtsConfig single-resource merge drops existing object (processor.go:626-632); harmless for one-config-per-tenant MTS.",
+    "Observation: *AndEmit and array-merge paths untested (testProcessor bypasses them)."
+  ]
+}

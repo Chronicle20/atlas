@@ -152,7 +152,7 @@ func (s *Subscriber) handleTenant(l logrus.FieldLogger) handler.Handler {
 }
 
 func offsetsOrEmpty(ctx context.Context, brokers []string, topic string, l logrus.FieldLogger) (map[int]int64, error) {
-	off, err := consumer.ReadEndOffsets(ctx, brokers, topic)
+	off, err := consumer.ReadReplayableEndOffsets(ctx, brokers, topic)
 	if err != nil {
 		// A missing topic shouldn't kill startup; the gate will simply
 		// stay at "needs end offsets" and the operator can debug. Log

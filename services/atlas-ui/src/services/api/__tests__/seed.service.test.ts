@@ -230,7 +230,7 @@ describe('seedService status projections', () => {
   });
 });
 
-describe('seedService scope-aware data status reads', () => {
+describe('seedService tenant-scope data status reads', () => {
   let fetchMock: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
@@ -248,36 +248,142 @@ describe('seedService scope-aware data status reads', () => {
     };
   }
 
-  it('defaults getWzInputStatus to tenant scope without operator header', async () => {
+  it('requests getWzInputStatus at scope=tenant without the operator header', async () => {
     fetchMock.mockResolvedValue(jsonApi({ fileCount: 0, totalBytes: 0, updatedAt: null }));
     await seedService.getWzInputStatus(mockTenant);
     const call = fetchMock.mock.calls[0];
     if (!call) throw new Error('fetch was not called');
     expect(call[0]).toBe('/api/data/wz?scope=tenant');
-    const headers = (call[1] as RequestInit).headers as Headers;
+    // Tenant path is structurally incapable of shared scope.
+    expect(fetchMock.mock.calls[0]![0]).toContain('scope=tenant');
+    const headers = (fetchMock.mock.calls[0]![1] as RequestInit).headers as Headers;
     expect(headers.get('X-Atlas-Operator')).toBeNull();
   });
 
-  it('requests shared scope and sends the operator header for getWzInputStatus', async () => {
-    fetchMock.mockResolvedValue(jsonApi({ fileCount: 8, totalBytes: 100, updatedAt: null }));
-    const s = await seedService.getWzInputStatus(mockTenant, 'shared');
-    const call = fetchMock.mock.calls[0];
-    if (!call) throw new Error('fetch was not called');
-    expect(call[0]).toBe('/api/data/wz?scope=shared');
-    const headers = (call[1] as RequestInit).headers as Headers;
-    expect(headers.get('X-Atlas-Operator')).toBe('1');
-    expect(s.fileCount).toBe(8);
-  });
-
-  it('requests shared scope and sends the operator header for getDataStatus', async () => {
+  it('requests getDataStatus at scope=tenant without the operator header', async () => {
     fetchMock.mockResolvedValue(
       jsonApi({ documentCount: 5, updatedAt: null, baselineRestoredAt: null, baselineSha256: null }),
     );
-    await seedService.getDataStatus(mockTenant, 'shared');
-    const call = fetchMock.mock.calls[0];
-    if (!call) throw new Error('fetch was not called');
-    expect(call[0]).toBe('/api/data/status?scope=shared');
-    const headers = (call[1] as RequestInit).headers as Headers;
+    await seedService.getDataStatus(mockTenant);
+    // Tenant path is structurally incapable of shared scope.
+    expect(fetchMock.mock.calls[0]![0]).toContain('scope=tenant');
+    const headers = (fetchMock.mock.calls[0]![1] as RequestInit).headers as Headers;
+    expect(headers.get('X-Atlas-Operator')).toBeNull();
+  });
+
+  it('PATCHes uploadWzFiles at scope=tenant without the operator header', async () => {
+    fetchMock.mockResolvedValue({ ok: true, status: 202 });
+    const file = new File(['zipbytes'], 'Data.zip', { type: 'application/zip' });
+    await seedService.uploadWzFiles(mockTenant, file);
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/data/wz?scope=tenant',
+      expect.objectContaining({ method: 'PATCH' }),
+    );
+    // Tenant path is structurally incapable of shared scope.
+    expect(fetchMock.mock.calls[0]![0]).toContain('scope=tenant');
+    const headers = (fetchMock.mock.calls[0]![1] as RequestInit).headers as Headers;
+    expect(headers.get('X-Atlas-Operator')).toBeNull();
+  });
+
+  it('POSTs runDataProcessing at scope=tenant without the operator header', async () => {
+    fetchMock.mockResolvedValue({ ok: true, status: 202 });
+    await seedService.runDataProcessing(mockTenant);
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/data/process?scope=tenant',
+      expect.objectContaining({ method: 'POST' }),
+    );
+    // Tenant path is structurally incapable of shared scope.
+    expect(fetchMock.mock.calls[0]![0]).toContain('scope=tenant');
+    const headers = (fetchMock.mock.calls[0]![1] as RequestInit).headers as Headers;
+    expect(headers.get('X-Atlas-Operator')).toBeNull();
+  });
+});
+
+describe('canonical (shared-scope) functions', () => {
+  let fetchMock: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  const sel = { region: 'GMS', majorVersion: 83, minorVersion: 1 };
+  const NIL_UUID = '00000000-0000-0000-0000-000000000000';
+
+  it('uploadCanonicalWzFiles PATCHes scope=shared with synthetic canonical headers', async () => {
+    fetchMock.mockResolvedValue({ ok: true, status: 202 });
+    const file = new File(['zipbytes'], 'Data.zip', { type: 'application/zip' });
+    await seedService.uploadCanonicalWzFiles(sel, file);
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/data/wz?scope=shared',
+      expect.objectContaining({ method: 'PATCH' }),
+    );
+    const headers = (fetchMock.mock.calls[0]![1] as RequestInit).headers as Headers;
+    expect(headers.get('TENANT_ID')).toBe(NIL_UUID);
+    expect(headers.get('REGION')).toBe('GMS');
+    expect(headers.get('MAJOR_VERSION')).toBe('83');
+    expect(headers.get('MINOR_VERSION')).toBe('1');
     expect(headers.get('X-Atlas-Operator')).toBe('1');
+  });
+
+  it('uploadCanonicalWzFiles surfaces status on the thrown error', async () => {
+    fetchMock.mockResolvedValue({
+      ok: false,
+      status: 409,
+      statusText: 'Conflict',
+      json: async () => ({ error: 'busy' }),
+    });
+    const file = new File(['zipbytes'], 'Data.zip', { type: 'application/zip' });
+    await expect(seedService.uploadCanonicalWzFiles(sel, file)).rejects.toMatchObject({
+      message: 'busy',
+      status: 409,
+    });
+  });
+
+  it('runCanonicalDataProcessing POSTs scope=shared with canonical headers', async () => {
+    fetchMock.mockResolvedValue({ ok: true, status: 202 });
+    await seedService.runCanonicalDataProcessing(sel);
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/data/process?scope=shared',
+      expect.objectContaining({ method: 'POST' }),
+    );
+    const headers = (fetchMock.mock.calls[0]![1] as RequestInit).headers as Headers;
+    expect(headers.get('TENANT_ID')).toBe(NIL_UUID);
+    expect(headers.get('X-Atlas-Operator')).toBe('1');
+  });
+
+  it('getCanonicalWzInputStatus GETs scope=shared and unwraps attributes', async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        data: { type: 'wzInputStatus', id: 'current', attributes: { fileCount: 3, totalBytes: 999, updatedAt: null } },
+      }),
+    });
+    const status = await seedService.getCanonicalWzInputStatus(sel);
+    expect(fetchMock).toHaveBeenCalledWith('/api/data/wz?scope=shared', expect.objectContaining({ method: 'GET' }));
+    expect(status.fileCount).toBe(3);
+    const headers = (fetchMock.mock.calls[0]![1] as RequestInit).headers as Headers;
+    expect(headers.get('TENANT_ID')).toBe(NIL_UUID);
+  });
+
+  it('getCanonicalDataStatus GETs scope=shared and unwraps attributes', async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        data: {
+          type: 'dataStatus',
+          id: 'current',
+          attributes: { documentCount: 42, updatedAt: null, baselineRestoredAt: null, baselineSha256: null },
+        },
+      }),
+    });
+    const status = await seedService.getCanonicalDataStatus(sel);
+    expect(fetchMock).toHaveBeenCalledWith('/api/data/status?scope=shared', expect.objectContaining({ method: 'GET' }));
+    expect(status.documentCount).toBe(42);
   });
 });

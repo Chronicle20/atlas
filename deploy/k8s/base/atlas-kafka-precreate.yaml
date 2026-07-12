@@ -19,6 +19,11 @@ metadata:
   name: atlas-kafka-precreate
   annotations:
     argocd.argoproj.io/sync-wave: "0"
+    # Job pod templates are immutable: without Replace, any change to this
+    # script makes ArgoCD's apply fail ("Job.batch ... is invalid: spec.template:
+    # Invalid value") and, because this Job is wave 0, wedges the whole sync
+    # (2026-07-08, pr-822). Replace deletes+recreates the Job instead.
+    argocd.argoproj.io/sync-options: Force=true,Replace=true
 spec:
   backoffLimit: 3
   ttlSecondsAfterFinished: 600
@@ -44,13 +49,39 @@ spec:
                   if [ -z "$topic" ]; then
                       continue
                   fi
+                  # Config-projection topics MUST be compacted: their consumers
+                  # replay them from first-offset at every boot to rebuild
+                  # tenant/service config state, and the outbox never re-emits a
+                  # (topic, key) it already delivered. With the default DELETE
+                  # cleanup, retention empties the topic ~7 days after the last
+                  # config change and every later projection boot has nothing to
+                  # replay (2026-07-08 world/channel/character-factory loops).
+                  # Events are keyed (tenant:<uuid> / service:<uuid>), so
+                  # compaction retains the latest snapshot per key forever.
+                  extra_config=""
+                  case "$var" in
+                      EVENT_TOPIC_CONFIGURATION_TENANT_STATUS|EVENT_TOPIC_CONFIGURATION_SERVICE_STATUS)
+                          extra_config="--config cleanup.policy=compact"
+                          ;;
+                  esac
                   /opt/kafka/bin/kafka-topics.sh \
                       --bootstrap-server "$BOOTSTRAP_SERVERS" \
                       --create --if-not-exists \
                       --topic "$topic" \
                       --partitions 1 \
                       --replication-factor 1 \
+                      $extra_config \
                       >/dev/null
+                  if [ -n "$extra_config" ]; then
+                      # --create --if-not-exists skips existing topics, so also
+                      # alter (idempotent) to converge topics created before this
+                      # policy existed.
+                      /opt/kafka/bin/kafka-configs.sh \
+                          --bootstrap-server "$BOOTSTRAP_SERVERS" \
+                          --alter --entity-type topics --entity-name "$topic" \
+                          --add-config cleanup.policy=compact \
+                          >/dev/null
+                  fi
                   count=$((count+1))
               done
               echo "[$(date -u +%FT%TZ)] reconciled $count topics"

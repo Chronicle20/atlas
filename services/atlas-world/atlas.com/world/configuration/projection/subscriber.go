@@ -88,7 +88,7 @@ func (s *Subscriber) handleTenant(l logrus.FieldLogger) handler.Handler {
 }
 
 func offsetsOrEmpty(ctx context.Context, brokers []string, topic string, l logrus.FieldLogger) (map[int]int64, error) {
-	off, err := consumer.ReadEndOffsets(ctx, brokers, topic)
+	off, err := consumer.ReadReplayableEndOffsets(ctx, brokers, topic)
 	if err != nil {
 		l.WithError(err).WithField("topic", topic).Warn("projection.read_end_offsets_failed")
 		return map[int]int64{}, nil

@@ -1,0 +1,10 @@
+packet: field/serverbound/FieldItcOperationRegisterSale
+direction: serverbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CITC::OnRegisterSaleEntry
+    address: "0x5aefd2"
+    decompile_sha256: 207b8ec4fe32a22e80381b1154de424612c6bbe99a7f6a7fb2cfd5f4f3fd22d3
+verifies:
+    - libs/atlas-packet/field/serverbound/itc_operation_test.go#TestItcOperationRegisterSaleByteOutput_v84

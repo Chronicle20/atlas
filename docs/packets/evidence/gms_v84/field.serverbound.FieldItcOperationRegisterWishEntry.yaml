@@ -1,0 +1,10 @@
+packet: field/serverbound/FieldItcOperationRegisterWishEntry
+direction: serverbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CITC::OnRegisterWishEntry
+    address: "0x5af8a5"
+    decompile_sha256: 7605956bf5017da9e01453341a99f854e0ff96d9b279430d282cf47deb1875f9
+verifies:
+    - libs/atlas-packet/field/serverbound/itc_operation_test.go#TestItcOperationRegisterWishEntryByteOutput_v84

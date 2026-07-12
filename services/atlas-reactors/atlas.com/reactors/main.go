@@ -78,7 +78,7 @@ func main() {
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
 		Run()
 
-	tdm.TeardownFunc(reactor.Teardown(l))
+	tdm.TeardownFunc(reactor.NewProcessor(l, tdm.Context()).Teardown())
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))
 
 	tdm.Wait()

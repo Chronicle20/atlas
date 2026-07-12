@@ -8,18 +8,29 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func ByIdProvider(l logrus.FieldLogger) func(ctx context.Context) func(id uint32) model.Provider[Model] {
-	return func(ctx context.Context) func(id uint32) model.Provider[Model] {
-		return func(id uint32) model.Provider[Model] {
-			return requests.Provider[RestModel, Model](l, ctx)(requestById(id), Extract)
-		}
+type Processor interface {
+	ByIdProvider(id uint32) model.Provider[Model]
+	GetById(id uint32) (Model, error)
+}
+
+type ProcessorImpl struct {
+	l   logrus.FieldLogger
+	ctx context.Context
+}
+
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
+	return &ProcessorImpl{
+		l:   l,
+		ctx: ctx,
 	}
 }
 
-func GetById(l logrus.FieldLogger) func(ctx context.Context) func(id uint32) (Model, error) {
-	return func(ctx context.Context) func(id uint32) (Model, error) {
-		return func(id uint32) (Model, error) {
-			return ByIdProvider(l)(ctx)(id)()
-		}
-	}
+var _ Processor = (*ProcessorImpl)(nil)
+
+func (p *ProcessorImpl) ByIdProvider(id uint32) model.Provider[Model] {
+	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(id), Extract)
+}
+
+func (p *ProcessorImpl) GetById(id uint32) (Model, error) {
+	return p.ByIdProvider(id)()
 }

@@ -124,8 +124,8 @@ Notes on interpreting the output:
 | `services/atlas-account/atlas.com/account/ban/processor.go` | Gen1 | R3 | 25 | done |
 | `services/atlas-portals/atlas.com/portals/character/processor.go` | Gen1 | R3 | 26 | done |
 | `services/atlas-portals/atlas.com/portals/portal/processor.go` | Gen1 | R3 | 26 | done |
-| `services/atlas-reactors/atlas.com/reactors/reactor/data/processor.go` | Gen1 | R3 | 27 | pending |
-| `services/atlas-reactors/atlas.com/reactors/reactor/processor.go` | Gen1 | R3 | 27 | pending |
+| `services/atlas-reactors/atlas.com/reactors/reactor/data/processor.go` | Gen1 | R3 | 27 | done |
+| `services/atlas-reactors/atlas.com/reactors/reactor/processor.go` | Gen1 | R3 | 27 | done |
 | `services/atlas-asset-expiration/atlas.com/asset-expiration/cashshop/processor.go` | Gen1 | R3 | 28 | pending |
 | `services/atlas-asset-expiration/atlas.com/asset-expiration/character/processor.go` | Gen1 | R3 | 28 | pending |
 | `services/atlas-asset-expiration/atlas.com/asset-expiration/data/processor.go` | Gen1 | R3 | 28 | pending |

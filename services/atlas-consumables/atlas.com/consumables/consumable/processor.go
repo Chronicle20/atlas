@@ -486,11 +486,10 @@ func ConsumeSummoningSack(transactionId uuid.UUID, ch channel.Model, characterId
 		return func(ctx context.Context) error {
 			p := NewProcessor(l, ctx)
 			cp := character.NewProcessor(l, ctx)
-			cdp := consumable3.NewProcessor(l, ctx)
 
 			pg, _ := model.NewGroup(ctx)
 			fc := model.Submit(pg, func() (character.Model, error) { return cp.GetById()(characterId) })
-			fi := model.Submit(pg, func() (consumable3.Model, error) { return cdp.GetById(uint32(itemId)) })
+			fi := model.Submit(pg, func() (consumable3.Model, error) { return consumable3.NewProcessor(l, ctx).GetById(uint32(itemId)) })
 			if err := pg.Wait(); err != nil {
 				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
 			}

@@ -83,7 +83,7 @@ func (Character) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc 
 	// creation flow would have starter template data.
 	if _, err := fetchAndSerializeArchive(ctx, l, mc, p, "Etc.wz"); err == nil {
 		mkChar := filepath.Join(root, "Etc.wz", "MakeCharInfo.img.xml")
-		if err := templates.RegisterCharacterTemplate(db)(l)(ctx)(mkChar); err != nil {
+		if err := templates.NewProcessor(l, ctx, db).RegisterCharacterTemplate(mkChar); err != nil {
 			l.WithError(err).Warnf("templates.RegisterCharacterTemplate failed")
 		}
 	}

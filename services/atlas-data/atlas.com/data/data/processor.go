@@ -232,7 +232,13 @@ func StartWorker(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.D
 						}
 					})()
 				} else if name == WorkerCharacterCreation {
-					err = RegisterFileData(l)(ctx)(path, filepath.Join("Etc.wz", "MakeCharInfo.img.xml"), templates.RegisterCharacterTemplate(db))()
+					err = RegisterFileData(l)(ctx)(path, filepath.Join("Etc.wz", "MakeCharInfo.img.xml"), func(l logrus.FieldLogger) func(ctx context.Context) func(filePath string) error {
+						return func(ctx context.Context) func(filePath string) error {
+							return func(filePath string) error {
+								return templates.NewProcessor(l, ctx, db).RegisterCharacterTemplate(filePath)
+							}
+						}
+					})()
 				} else if name == WorkerQuest {
 					err = quest.NewProcessor(l, ctx, db).RegisterQuest(filepath.Join(path, "Quest.wz"))
 				} else if name == WorkerNPC {

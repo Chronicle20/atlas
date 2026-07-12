@@ -61,8 +61,8 @@ Notes on interpreting the output:
 | `services/atlas-configurations/atlas.com/configurations/templates/processor.go` | Gen2 | R2 | 14 | done |
 | `services/atlas-configurations/atlas.com/configurations/tenants/processor.go` | Gen2 | R2 | 14 | done |
 | `services/atlas-character-factory/atlas.com/character-factory/data/processor.go` | Gen1 | R4-client | 15 | done |
-| `services/atlas-login/atlas.com/login/guild/processor.go` | Gen2 | R2 | 16 | pending |
-| `services/atlas-login/atlas.com/login/inventory/processor.go` | CP-2 | R1 | 16 | pending |
+| `services/atlas-login/atlas.com/login/guild/processor.go` | Gen2 | R2 | 16 | done |
+| `services/atlas-login/atlas.com/login/inventory/processor.go` | CP-2 | R1 | 16 | done |
 | `services/atlas-consumables/atlas.com/consumables/cash/processor.go` | Gen2 | R2 | 17 | pending |
 | `services/atlas-consumables/atlas.com/consumables/character/buff/processor.go` | Gen2 | R2 | 17 | pending |
 | `services/atlas-consumables/atlas.com/consumables/character/processor.go` | Gen2 | R2 | 17 | pending |
@@ -184,6 +184,7 @@ Notes on interpreting the output:
 (Pre-existing bugs discovered during conversion are logged here, not fixed, per Global Constraint 1.)
 
 - `services/atlas-pets/atlas.com/pets/pet/processor.go` (`ProcessorImpl.Create`, task 5): pre-existing `// TODO this needs to generate a cashId if cashId == 0` comment left in the method body — not touched (Constraint 1: no logic changes; the R1 recipe only changes declaration types).
+- `services/atlas-login/atlas.com/login/socket/init.go:39` (task 16): pre-existing `go vet` finding `WaitGroup.Add called from inside new goroutine` (the `wg.Add(1)` call sits inside the `go func() { ... }()` closure it starts). Present on `main` before this task (confirmed unchanged since PR #738) and unrelated to `inventory`/`guild` — not touched, per Constraint 1.
 
 ## R6 file renames
 

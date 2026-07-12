@@ -54,7 +54,7 @@ func handleGetCompartments(db *gorm.DB) rest.GetHandler {
 					res, err := model.Map(Transform)(compartmentProvider)()
 					if err != nil {
 						d.Logger().WithError(err).Errorf("Creating REST model.")
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 
@@ -68,7 +68,7 @@ func handleGetCompartments(db *gorm.DB) rest.GetHandler {
 				res, err := model.SliceMap(Transform)(processor.AllByAccountIdProvider(accountId))(model.ParallelMap())()
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Creating REST model.")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 

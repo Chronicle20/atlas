@@ -37,14 +37,14 @@ func handleGetWishlist(db *gorm.DB) rest.GetHandler {
 					return
 				}
 				if err != nil {
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
 				res, err := model.SliceMap(Transform)(model.FixedProvider(ms))(model.ParallelMap())()
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Creating REST model.")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -62,14 +62,14 @@ func handleAddToWishlist(db *gorm.DB) rest.InputHandler[RestModel] {
 			return func(w http.ResponseWriter, r *http.Request) {
 				m, err := NewProcessor(d.Logger(), d.Context(), db).AddAndEmit(characterId, input.SerialNumber)
 				if err != nil {
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
 				res, err := model.Map(Transform)(model.FixedProvider(m))()
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Creating REST model.")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -87,7 +87,7 @@ func handleClearWishlist(db *gorm.DB) rest.GetHandler {
 			return func(w http.ResponseWriter, r *http.Request) {
 				err := NewProcessor(d.Logger(), d.Context(), db).DeleteAllAndEmit(characterId)
 				if err != nil {
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 				w.WriteHeader(http.StatusNoContent)
@@ -103,7 +103,7 @@ func handleRemoveFromWishlist(db *gorm.DB) rest.GetHandler {
 				return func(w http.ResponseWriter, r *http.Request) {
 					err := NewProcessor(d.Logger(), d.Context(), db).DeleteAndEmit(characterId, itemId)
 					if err != nil {
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 					w.WriteHeader(http.StatusNoContent)

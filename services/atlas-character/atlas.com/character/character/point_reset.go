@@ -26,6 +26,9 @@ var pointResetPolicyRows = []struct {
 	policy pointResetPolicy
 }{
 	{refs: []job.Id{job.Id(100), job.DawnWarriorStage1Id, job.AranStage1Id}, policy: pointResetPolicy{takeHp: 54, takeMp: 4, gainHp: 20, gainMp: 2}},
+	// Magician takeMp (31) is a fallback only: the client scales the magician
+	// MP-reset-out loss with effective INT (see pointResetMagicianTakeMp). All
+	// other magician values (takeHp, gainHp, gainMp) are fixed and match the client.
 	{refs: []job.Id{job.Id(200), job.BlazeWizardStage1Id}, policy: pointResetPolicy{takeHp: 10, takeMp: 31, gainHp: 6, gainMp: 18}},
 	{refs: []job.Id{job.Id(300), job.WindArcherStage1Id}, policy: pointResetPolicy{takeHp: 20, takeMp: 12, gainHp: 16, gainMp: 10}},
 	{refs: []job.Id{job.Id(400), job.NightWalkerStage1Id}, policy: pointResetPolicy{takeHp: 20, takeMp: 12, gainHp: 16, gainMp: 10}},
@@ -43,6 +46,30 @@ func pointResetPolicyFor(jobId job.Id) pointResetPolicy {
 		}
 	}
 	return pointResetDefaultPolicy
+}
+
+// isPointResetMagician reports whether jobId is on the magician branch — the
+// hundreds digit of job%1000 is 2 (Explorer 2xx or Cygnus Blaze Wizard 12xx).
+// This mirrors the client's branch classifier (sub_A0EC6B: job%1000/100).
+func isPointResetMagician(jobId job.Id) bool {
+	return int(jobId)%1000/100 == 2
+}
+
+// pointResetMagicianTakeMp is the MaxMP lost when a magician resets one point
+// OUT of MP. Unlike every other branch (a fixed takeMp), the client scales the
+// magician MP loss with EFFECTIVE INT (base + equipment):
+//
+//	takeMp = 3*effectiveInt/40 + 30   (integer division)
+//
+// Verified against the GMS v83 client: the reset-dialog MP-loss calc
+// (sub_8CE5BD @0x8ce5bd, branch-2 arm) reads the cached effective INT at
+// CWvsContext+0x20F8 and the reset-dialog button gate (sub_8CBDDB @0x8cbddb)
+// disables MP-as-source using this same value. PRD §4.3's flat 31 is only
+// correct at effectiveInt≈14 (3*14/40+30 == 31); a higher-INT mage would drop
+// more MaxMP client-side than the server applies, desyncing the pool until
+// relog. HP loss and all gain values stay constant (they match the client).
+func pointResetMagicianTakeMp(effectiveInt uint16) uint16 {
+	return uint16(3*int(effectiveInt)/40 + 30)
 }
 
 // Minimum pool after a reset-out: mult*level + off (PRD §4.3 min table).

@@ -1949,6 +1949,21 @@ func (p *ProcessorImpl) TransferAP(mb *message.Buffer) func(transactionId uuid.U
 		var stats []stat.Type
 		values := map[string]interface{}{}
 
+		// Magician MP-reset-out scales the MaxMP loss with EFFECTIVE INT (client
+		// parity; §4.3 deviation — see pointResetMagicianTakeMp). Fetch it up
+		// front, and only when the source is MP, to keep the REST call off the
+		// transaction path. A failed/zero fetch falls back to base INT below.
+		var effectiveInt uint16
+		if from == CommandDistributeApAbilityMp {
+			if es, err := effective_stats.RequestByCharacter(channel, characterId)(p.l, p.ctx); err == nil && es.Intelligence > 0 {
+				if es.Intelligence > math.MaxUint16 {
+					effectiveInt = math.MaxUint16
+				} else {
+					effectiveInt = uint16(es.Intelligence)
+				}
+			}
+		}
+
 		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 			c, err := p.WithTransaction(tx).GetById()(characterId)
 			if err != nil {
@@ -2008,15 +2023,25 @@ func (p *ProcessorImpl) TransferAP(mb *message.Buffer) func(transactionId uuid.U
 					rejection = &transferApRejection{code: character2.StatusEventErrorTypeInsufficientHpMpApUsed, detail: from}
 					return nil
 				}
-				if int(newMaxMp)-int(policy.takeMp) < pointResetMinMp(c.JobId(), c.Level()) {
+				// Magicians lose an INT-scaled amount of MaxMP (client parity);
+				// every other branch loses the fixed policy.takeMp.
+				takeMp := policy.takeMp
+				if isPointResetMagician(c.JobId()) {
+					ei := effectiveInt
+					if ei == 0 {
+						ei = c.Intelligence() // effective-stats unavailable: base INT
+					}
+					takeMp = pointResetMagicianTakeMp(ei)
+				}
+				if int(newMaxMp)-int(takeMp) < pointResetMinMp(c.JobId(), c.Level()) {
 					rejection = &transferApRejection{code: character2.StatusEventErrorTypePoolBelowJobMinimum, detail: from}
 					return nil
 				}
-				newMaxMp -= policy.takeMp
-				if int(newMp)-int(policy.takeMp) < 0 {
+				newMaxMp -= takeMp
+				if int(newMp)-int(takeMp) < 0 {
 					newMp = 0
 				} else {
-					newMp -= policy.takeMp
+					newMp -= takeMp
 				}
 				newHpMpUsed--
 			default:

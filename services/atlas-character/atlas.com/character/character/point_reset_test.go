@@ -79,3 +79,35 @@ func TestPointResetMinPools(t *testing.T) {
 		})
 	}
 }
+
+func TestIsPointResetMagician(t *testing.T) {
+	magicians := []job.Id{job.Id(200), job.Id(210), job.Id(212), job.Id(232), job.BlazeWizardStage1Id, job.BlazeWizardStage2Id}
+	nonMagicians := []job.Id{job.Id(0), job.Id(100), job.Id(112), job.Id(300), job.Id(412), job.Id(500), job.Id(532), job.BeginnerId}
+	for _, j := range magicians {
+		if !isPointResetMagician(j) {
+			t.Errorf("isPointResetMagician(%d) = false, want true", j)
+		}
+	}
+	for _, j := range nonMagicians {
+		if isPointResetMagician(j) {
+			t.Errorf("isPointResetMagician(%d) = true, want false", j)
+		}
+	}
+}
+
+// pointResetMagicianTakeMp mirrors the client's INT-scaled magician MP-reset-out
+// loss: 3*effectiveInt/40 + 30 (integer division). INT 14 reproduces §4.3's old
+// flat 31, confirming it was only ever the low-INT value.
+func TestPointResetMagicianTakeMp(t *testing.T) {
+	cases := []struct {
+		intVal uint16
+		want   uint16
+	}{
+		{0, 30}, {14, 31}, {40, 33}, {200, 45}, {999, 104},
+	}
+	for _, tc := range cases {
+		if got := pointResetMagicianTakeMp(tc.intVal); got != tc.want {
+			t.Errorf("pointResetMagicianTakeMp(%d) = %d, want %d", tc.intVal, got, tc.want)
+		}
+	}
+}

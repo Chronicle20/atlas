@@ -208,3 +208,40 @@ With the writer now wired on gms_95, AP reset and SP reset both complete correct
 client's macro list refreshes live on gms_95 (via the FR-18 `UPDATED` push and at login), in
 addition to the stat/skill/pink-text writers already confirmed present in
 `template_gms_95_1.json` (`StatChanged 0x1E`, `WorldMessage 0x47`, `CharacterSkillChange 0x23`).
+
+## 3. Post-ship corrections (client-verified via GMS v83 IDB)
+
+Two follow-ups after reversing the v83 client's AP-reset dialog
+(`CWvsContext::SendConsumeCashItemUseRequest` → `case 0x17` arm @`0xa0c427` →
+modal stat-reset dialog; button-enable gate `sub_8CBDDB` @`0x8cbddb`):
+
+### 3.1 Magician MP-reset-out loss is INT-scaled (bug fix)
+
+Every branch's HP/MP reset loss matched §4.3 **except magician MP loss**. §4.3
+hardcoded a flat `takeMp = 31`; the client (`sub_8CE5BD` @`0x8ce5bd`, branch-2
+arm) computes it as:
+
+```
+takeMp = 3 * effectiveInt / 40 + 30      (integer division)
+```
+
+where `effectiveInt` is the character's total INT (base + equipment), read from
+the cached secured field `CWvsContext+0x20F8` — confirmed by the equip-tooltip
+renderer `sub_8ED0D2` @`0x8ed0d2`, which reads the STR/DEX/INT/LUK effective-stat
+array at `szCookie[156/168/180/192]` (12-byte stride; `szCookie[180]` = `0x20F8`
+= INT). `31` is only correct at `effectiveInt ≈ 14`; a higher-INT mage desyncs
+MaxMP against the client. Fixed in `character/point_reset.go`
+(`pointResetMagicianTakeMp`, `isPointResetMagician`) + `character/processor.go`
+(`TransferAP` fetches effective INT via atlas-effective-stats, base-INT fallback).
+All gain values and HP loss stay constant (they match the client).
+
+### 3.2 Preset AP spread de-inflated (gms_83 / gms_84)
+
+The 4th-job presets set STR/DEX/INT/LUK = 999 each (sum 3996), which the client
+reads as ~4× the AP a level-200 character earns — so its AP-reset dialog disables
+HP/MP as a source (gate: `STR+DEX+INT+LUK+AP ≥ 5·level + 20 + v6`, where
+`v6 = 5·(job advancement digit)`; for L200 4th-jobs = **1030**). Rewrote each
+preset to a realistic spread summing to 1030: secondary stat = max requirement of
+the equipset (atlas-data `reqStr/reqDex/reqInt/reqLuk`), the two off-stats = base
+4, remainder → primary. HP/MP left unchanged. Only gms_83 and gms_84 carry
+presets; the other templates have none.

@@ -538,3 +538,42 @@ func TestTransferAP_Case12_CurrentHpFloor(t *testing.T) {
 		t.Fatalf("expected STAT_CHANGED event, got %q", evt.Type)
 	}
 }
+
+// Case 13: Magician MP->STR: MaxMp loss is INT-scaled (3*INT/40 + 30), not the
+// fixed 31 the other branches use. The effective-stats service is unreachable in
+// this unit test, so the handler falls back to base INT (200) -> takeMp = 45.
+// MaxMp 1000 -> 955, Mp 1000 -> 955, STR 4 -> 5, HpMpUsed 1 -> 0.
+func TestTransferAP_Case13_Magician_MPtoSTR_IntScaledLoss(t *testing.T) {
+	_, p, id := newTransferApFixture(t, entity{
+		AccountId: 1000, Name: "Case13", JobId: job.Id(200), Level: 20,
+		Strength: 4, Intelligence: 200, MaxMp: 1000, Mp: 1000, HpMpUsed: 1,
+	})
+
+	mb := message.NewBuffer()
+	err := p.TransferAP(mb)(uuid.New(), id, channel.NewModel(0, 1), CommandDistributeApAbilityMp, CommandDistributeApAbilityStrength)
+	if err != nil {
+		t.Fatalf("TransferAP returned error: %v", err)
+	}
+
+	c, err := p.GetById()(id)
+	if err != nil {
+		t.Fatalf("GetById failed: %v", err)
+	}
+	if c.MaxMp() != 955 {
+		t.Errorf("expected MaxMp 955 (1000 - (3*200/40+30=45)), got %d", c.MaxMp())
+	}
+	if c.Mp() != 955 {
+		t.Errorf("expected Mp 955, got %d", c.Mp())
+	}
+	if c.Strength() != 5 {
+		t.Errorf("expected Strength 5, got %d", c.Strength())
+	}
+	if c.HpMpUsed() != 0 {
+		t.Errorf("expected HpMpUsed 0, got %d", c.HpMpUsed())
+	}
+
+	evt := decodeStatusEvent[character2.StatusEventStatChangedBody](t, mb)
+	if evt.Type != character2.StatusEventTypeStatChanged {
+		t.Fatalf("expected STAT_CHANGED event, got %q", evt.Type)
+	}
+}

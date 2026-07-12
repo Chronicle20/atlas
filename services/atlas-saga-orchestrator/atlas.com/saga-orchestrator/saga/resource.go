@@ -29,12 +29,14 @@ func getAllSagasHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http.
 		if err != nil {
 			d.Logger().WithError(err).Error("Failed to retrieve sagas")
 			server.WriteErrorResponse(d.Logger())(w)(err)
+			return
 		}
 
 		rms, err := model.SliceMap(Transform)(model.FixedProvider(sms))(model.ParallelMap())()
 		if err != nil {
 			d.Logger().WithError(err).Error("Failed to retrieve sagas")
 			server.WriteErrorResponse(d.Logger())(w)(err)
+			return
 		}
 
 		// Marshal response
@@ -53,12 +55,14 @@ func getSagaByIdHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http.
 			if err != nil {
 				d.Logger().WithError(err).Error("Failed to retrieve sagas")
 				server.WriteErrorResponse(d.Logger())(w)(err)
+				return
 			}
 
 			rms, err := model.Map(Transform)(model.FixedProvider(saga))()
 			if err != nil {
 				d.Logger().WithError(err).Error("Failed to retrieve sagas")
 				server.WriteErrorResponse(d.Logger())(w)(err)
+				return
 			}
 
 			// Marshal response

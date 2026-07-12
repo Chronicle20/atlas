@@ -198,7 +198,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-chalkboards/atlas-chalkboards
     newTag: main-8fced8f
   - name: ghcr.io/chronicle20/atlas-channel/atlas-channel
-    newTag: main-738155c
+    newTag: main-c482e4d
   - name: ghcr.io/chronicle20/atlas-character/atlas-character
     newTag: main-8fced8f
   - name: ghcr.io/chronicle20/atlas-character-factory/atlas-character-factory
@@ -252,7 +252,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-monster-death/atlas-monster-death
     newTag: main-8fced8f
   - name: ghcr.io/chronicle20/atlas-monsters/atlas-monsters
-    newTag: main-8fced8f
+    newTag: main-c482e4d
   - name: ghcr.io/chronicle20/atlas-mounts/atlas-mounts
     newTag: main-8fced8f
   - name: ghcr.io/chronicle20/atlas-notes/atlas-notes

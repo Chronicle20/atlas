@@ -67,6 +67,14 @@ func main() {
 
 	db := database.Connect(l, database.SetMigrations(character.Migration, history.Migration, saved_location.Migration))
 
+	server.RegisterTransientErrorClassifier(func(err error) bool {
+		if database.IsTransientConnectionError(err) {
+			database.CountTransient(err)
+			return true
+		}
+		return false
+	})
+
 	if service.GetMode() == service.Mixed {
 		cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 		account2.InitConsumers(l)(cmf)(consumerGroupId)

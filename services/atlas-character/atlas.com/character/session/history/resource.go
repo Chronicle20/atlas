@@ -51,7 +51,7 @@ func handleGetSessions(d *rest.HandlerDependency, c *rest.HandlerContext) http.H
 			sessions, err := p.GetSessionsSince(characterId, since)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Failed to get sessions for character [%d].", characterId)
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -91,7 +91,7 @@ func handleGetPlaytime(d *rest.HandlerDependency, c *rest.HandlerContext) http.H
 			playtime, err := p.ComputePlaytimeSince(characterId, since)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Failed to compute playtime for character [%d].", characterId)
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 

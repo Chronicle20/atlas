@@ -196,7 +196,8 @@ Phase C scope confirmed as exactly: atlas-account (`ban`, task 25), atlas-portal
 
 ## Characterization tests
 
-(Populated by Task 31 — atlas-monster-death `monster` and `monster/drop` packages, per recipe R7.)
+- `services/atlas-monster-death/atlas.com/monster/monster/characterization_test.go` (Task 31, package `monster`, logic-bearing per R7): written and committed green *before* the R3 conversion of `monster/processor.go`. Targets the pure package functions `calculateExperienceStandardDeviationThreshold` (uniform and skewed ratio distributions), `isWhiteExperienceGain` (above/below threshold, absent character), and `getSuccessfulDrops` (deterministic 100%/0% chance edges over 100 iterations). All 5 pass unchanged against pre-conversion Gen1 code and again post-conversion, since these functions stay unexported package functions (no `l`/`ctx`) per R3 Step 3 and are never touched by the R3 conversion. Coexists with the pre-existing `monster/processor_test.go`, which already exercised overlapping logic under different test names (no collisions).
+- `services/atlas-monster-death/atlas.com/monster/monster/drop/characterization_test.go` (Task 31, package `drop`, logic-bearing per R7): written and committed green *before* the R3 conversion of `monster/drop/processor.go`. Targets the pure package functions `getRandomStat` (zero stays zero; result bounded within `[default-maxRange, default+maxRange]` over 1000 iterations) and `isEquipment` (item-id-range classification). Both stay unexported package functions (no `l`/`ctx`) per R3 Step 3, so the tests are untouched by the conversion.
 
 ## Deferred findings
 

@@ -49,6 +49,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 // GetRates retrieves computed rates and factors for a character
 // This includes time-based item factors calculated dynamically
 // If the character hasn't been initialized yet, this will lazily initialize them

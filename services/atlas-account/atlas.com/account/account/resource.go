@@ -57,7 +57,7 @@ func handleUpdateAccount(d *rest.HandlerDependency, c *rest.HandlerContext, inpu
 			res, err := model.Map(Transform)(model.FixedProvider(a))()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -110,14 +110,14 @@ func handleGetAccounts(d *rest.HandlerDependency, c *rest.HandlerContext) http.H
 		as, err := NewProcessor(d.Logger(), d.Context(), d.DB()).GetByTenant()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Unable to locate accounts.")
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteErrorResponse(d.Logger())(w)(err)
 			return
 		}
 
 		res, err := model.SliceMap(Transform)(model.FixedProvider(as))(model.ParallelMap())()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Creating REST model.")
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteErrorResponse(d.Logger())(w)(err)
 			return
 		}
 
@@ -158,7 +158,7 @@ func handleDeleteAccount(d *rest.HandlerDependency, _ *rest.HandlerContext) http
 					return
 				}
 				d.Logger().WithError(err).Errorf("Unable to delete account [%d].", accountId)
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 			w.WriteHeader(http.StatusNoContent)
@@ -172,7 +172,7 @@ func handleRecordPinAttempt(d *rest.HandlerDependency, c *rest.HandlerContext, i
 			attempts, limitReached, err := NewProcessor(d.Logger(), d.Context(), d.DB()).RecordPinAttemptAndEmit(accountId, input.Success, input.IpAddress, input.HWID)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Unable to record PIN attempt for account [%d].", accountId)
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -195,7 +195,7 @@ func handleRecordPicAttempt(d *rest.HandlerDependency, c *rest.HandlerContext, i
 			attempts, limitReached, err := NewProcessor(d.Logger(), d.Context(), d.DB()).RecordPicAttemptAndEmit(accountId, input.Success, input.IpAddress, input.HWID)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Unable to record PIC attempt for account [%d].", accountId)
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 

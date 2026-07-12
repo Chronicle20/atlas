@@ -7,11 +7,25 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// GetAssets retrieves all assets from storage
-func GetAssets(l logrus.FieldLogger) func(ctx context.Context) func(accountId uint32, worldId world.Id) ([]AssetRestModel, error) {
-	return func(ctx context.Context) func(accountId uint32, worldId world.Id) ([]AssetRestModel, error) {
-		return func(accountId uint32, worldId world.Id) ([]AssetRestModel, error) {
-			return requestAssets(accountId, worldId)(l, ctx)
-		}
+type Processor interface {
+	GetAssets(accountId uint32, worldId world.Id) ([]AssetRestModel, error)
+}
+
+type ProcessorImpl struct {
+	l   logrus.FieldLogger
+	ctx context.Context
+}
+
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
+	return &ProcessorImpl{
+		l:   l,
+		ctx: ctx,
 	}
+}
+
+var _ Processor = (*ProcessorImpl)(nil)
+
+// GetAssets retrieves all assets from storage
+func (p *ProcessorImpl) GetAssets(accountId uint32, worldId world.Id) ([]AssetRestModel, error) {
+	return requestAssets(accountId, worldId)(p.l, p.ctx)
 }

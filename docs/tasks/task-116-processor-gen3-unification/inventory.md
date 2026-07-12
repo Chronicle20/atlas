@@ -126,11 +126,11 @@ Notes on interpreting the output:
 | `services/atlas-portals/atlas.com/portals/portal/processor.go` | Gen1 | R3 | 26 | done |
 | `services/atlas-reactors/atlas.com/reactors/reactor/data/processor.go` | Gen1 | R3 | 27 | done |
 | `services/atlas-reactors/atlas.com/reactors/reactor/processor.go` | Gen1 | R3 | 27 | done |
-| `services/atlas-asset-expiration/atlas.com/asset-expiration/cashshop/processor.go` | Gen1 | R3 | 28 | pending |
-| `services/atlas-asset-expiration/atlas.com/asset-expiration/character/processor.go` | Gen1 | R3 | 28 | pending |
-| `services/atlas-asset-expiration/atlas.com/asset-expiration/data/processor.go` | Gen1 | R3 | 28 | pending |
-| `services/atlas-asset-expiration/atlas.com/asset-expiration/inventory/processor.go` | Gen1 | R3 | 28 | pending |
-| `services/atlas-asset-expiration/atlas.com/asset-expiration/storage/processor.go` | Gen1 | R3 | 28 | pending |
+| `services/atlas-asset-expiration/atlas.com/asset-expiration/cashshop/processor.go` | Gen1 | R3 | 28 | done |
+| `services/atlas-asset-expiration/atlas.com/asset-expiration/character/processor.go` | Gen1 | R3 | 28 | done |
+| `services/atlas-asset-expiration/atlas.com/asset-expiration/data/processor.go` | Gen1 | R3 | 28 | done |
+| `services/atlas-asset-expiration/atlas.com/asset-expiration/inventory/processor.go` | Gen1 | R3 | 28 | done |
+| `services/atlas-asset-expiration/atlas.com/asset-expiration/storage/processor.go` | Gen1 | R3 | 28 | done |
 | `services/atlas-monsters/atlas.com/monsters/map/processor.go` | Gen1 | R3 | 29 | pending |
 | `services/atlas-monsters/atlas.com/monsters/monster/drop/processor.go` | Gen1 | R3 | 29 | pending |
 | `services/atlas-monsters/atlas.com/monsters/monster/information/processor.go` | Gen1 | R3 | 29 | pending |

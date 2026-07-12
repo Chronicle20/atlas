@@ -84,6 +84,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 type IdOperator func(uint32) error
 
 func (p *ProcessorImpl) GetById(accountId uint32) (Model, error) {

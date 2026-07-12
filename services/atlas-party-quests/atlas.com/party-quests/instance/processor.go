@@ -119,6 +119,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) GetById(instanceId uuid.UUID) (Model, error) {
 	return GetRegistry().Get(p.t, instanceId)
 }

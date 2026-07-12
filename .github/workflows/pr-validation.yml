@@ -102,10 +102,13 @@ jobs:
   # Builds tools/outboxguard (go/analysis analyzer)
   # and runs it over every Go service module. Fails
   # if any service constructs producer.ProviderImpl
-  # inside a DB transaction closure — that call must
-  # route through the atlas-outbox lib instead so the
-  # Kafka enqueue is atomic with the domain write
-  # (task-114 outbox adoption).
+  # inside a DB transaction closure — directly, or
+  # transitively through a concrete (statically-
+  # resolvable) helper call (Facts-based). Interface-
+  # dispatched emits are the DI seam and out of scope.
+  # Such a call must route through the atlas-outbox lib
+  # so the Kafka enqueue is atomic with the domain
+  # write (task-114 outbox adoption).
   # ============================================
   outbox-guard:
     name: Outbox Guard

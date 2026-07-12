@@ -31,14 +31,14 @@ func handleGetAssets(db *gorm.DB) rest.GetHandler {
 				return func(w http.ResponseWriter, r *http.Request) {
 					ms, err := NewProcessor(d.Logger(), d.Context(), db).GetByCompartmentId(compartmentId)
 					if err != nil {
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 
 					rm, err := model.SliceMap(Transform)(model.FixedProvider(ms))(model.ParallelMap())()
 					if err != nil {
 						d.Logger().WithError(err).Errorf("Creating REST model.")
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 
@@ -60,7 +60,7 @@ func handleDeleteAsset(db *gorm.DB) rest.GetHandler {
 						err := NewProcessor(d.Logger(), d.Context(), db).DeleteAndEmit(uuid.New(), characterId, compartmentId, assetId)
 						if err != nil {
 							d.Logger().WithError(err).Errorf("Unable to delete asset [%d].", assetId)
-							w.WriteHeader(http.StatusInternalServerError)
+							server.WriteErrorResponse(d.Logger())(w)(err)
 							return
 						}
 						w.WriteHeader(http.StatusNoContent)

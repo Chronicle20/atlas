@@ -121,7 +121,13 @@ func StartWorker(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.D
 						l.WithError(err).Errorf("Failed to initialize monster gauge registry.")
 						return err
 					}
-					err = RegisterAllData(l)(ctx)(path, "Mob.wz", monster.RegisterMonster(db))()
+					err = RegisterAllData(l)(ctx)(path, "Mob.wz", func(l logrus.FieldLogger) func(ctx context.Context) func(filePath string) error {
+						return func(ctx context.Context) func(filePath string) error {
+							return func(filePath string) error {
+								return monster.NewProcessor(l, ctx, db).RegisterMonster(filePath)
+							}
+						}
+					})()
 					_ = monster.GetMonsterStringRegistry().Clear(t)
 					_ = monster.GetMonsterGaugeRegistry().Clear(t)
 				} else if name == WorkerCharacter {

@@ -30,6 +30,8 @@ func NewProcessor(db *gorm.DB) Processor {
 	return &ProcessorImpl{db: db}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) GetByShopId(shopId uuid.UUID) ([]Model, error) {
 	return model.SliceMap(Make)(getByShopId(shopId)(p.db))(model.ParallelMap())()
 }

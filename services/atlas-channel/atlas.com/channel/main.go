@@ -55,6 +55,7 @@ import (
 	"atlas-channel/listener"
 	"atlas-channel/logger"
 	monsterDomain "atlas-channel/monster"
+	monsterinfo "atlas-channel/monster/information"
 	"atlas-channel/server"
 	"atlas-channel/session"
 	_ "atlas-channel/skill/handler/registrations"
@@ -141,6 +142,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
 )
 
@@ -292,6 +294,8 @@ func main() {
 		tid := t.Id()
 		account.GetRegistry().EvictTenant(tid)
 		monsterDomain.GetStatusMirror().EvictTenant(tid)
+		monsterDomain.GetLiveMirror().EvictTenant(tid)
+		monsterinfo.EvictTenant(tid)
 		if inbox := monsterDomain.GetNextSkillInbox(); inbox != nil {
 			inbox.EvictTenant(tid)
 		}
@@ -338,6 +342,7 @@ func main() {
 		WithWaitGroup(tdm.WaitGroup()).
 		SetBasePath("/api/").
 		SetPort(os.Getenv("REST_PORT")).
+		AddRouteInitializer(restserver.MountHandler("/metrics", promhttp.Handler())).
 		AddRouteInitializer(restserver.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
 		AddRouteInitializer(restserver.MountReadiness("/readyz", ready)).
 		Run()

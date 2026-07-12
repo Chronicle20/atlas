@@ -127,11 +127,17 @@ func handleStatusEventCreated(sc server.Model, wp writer.Producer) message.Handl
 			return
 		}
 
-		m, err := monster.NewProcessor(l, ctx).GetById(e.UniqueId)
+		m, err := monsterGetByIdFn(l, ctx, e.UniqueId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to retrieve the monster [%d] being spawned.", e.UniqueId)
 			return
 		}
+
+		// Seed the live mirror from the model already fetched for the spawn
+		// packet (design §3 OQ1). An event landing between the REST read and
+		// this Put has a millisecond window at spawn time (MP at max) and
+		// self-corrects on the next MP/aggro event.
+		monster.GetLiveMirror().Put(tenant.MustFromContext(ctx), e.UniqueId, monster.LiveEntryFromModel(m))
 
 		err = _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(e.MapId, e.Instance), spawnForSession(l)(ctx)(wp)(m))
 		if err != nil {
@@ -182,6 +188,7 @@ func handleStatusEventDestroyed(sc server.Model, wp writer.Producer) message.Han
 		t := tenant.MustFromContext(ctx)
 		monster.GetNextSkillInbox().Evict(t, e.UniqueId)
 		monster.GetStatusMirror().OnMonsterGone(t, e.UniqueId)
+		monster.GetLiveMirror().Remove(t, e.UniqueId)
 	}
 }
 
@@ -266,6 +273,7 @@ func handleStatusEventKilled(sc server.Model, wp writer.Producer) message.Handle
 			l.WithError(err).Errorf("Unable to kill monster [%d] for characters in map [%d].", e.UniqueId, e.MapId)
 		}
 		monster.GetStatusMirror().OnMonsterGone(tenant.MustFromContext(ctx), e.UniqueId)
+		monster.GetLiveMirror().Remove(tenant.MustFromContext(ctx), e.UniqueId)
 	}
 }
 
@@ -288,6 +296,8 @@ func handleStatusEventStartControl(sc server.Model, wp writer.Producer) message.
 		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) {
 			return
 		}
+
+		monster.GetLiveMirror().UpdateAggro(tenant.MustFromContext(ctx), e.UniqueId, e.Body.ControllerHasAggro)
 
 		f := field.NewBuilder(e.WorldId, e.ChannelId, e.MapId).SetInstance(e.Instance).Build()
 		m := monster.NewModelBuilder(e.UniqueId, f, e.MonsterId).
@@ -315,6 +325,9 @@ func handleStatusEventStopControl(sc server.Model, wp writer.Producer) message.H
 			return
 		}
 
+		// No controller => no aggro (design §5.2).
+		monster.GetLiveMirror().UpdateAggro(tenant.MustFromContext(ctx), e.UniqueId, false)
+
 		f := field.NewBuilder(e.WorldId, e.ChannelId, e.MapId).SetInstance(e.Instance).Build()
 		m := monster.NewModelBuilder(e.UniqueId, f, e.MonsterId).
 			MustBuild()
@@ -335,6 +348,8 @@ func handleStatusEventAggroChanged(sc server.Model, wp writer.Producer) message.
 			return
 		}
 
+		monster.GetLiveMirror().UpdateAggro(tenant.MustFromContext(ctx), e.UniqueId, e.Body.ControllerHasAggro)
+
 		m, err := monster.NewProcessor(l, ctx).GetById(e.UniqueId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to retrieve monster [%d] for aggro change.", e.UniqueId)
@@ -352,6 +367,13 @@ func handleStatusEventAggroChanged(sc server.Model, wp writer.Producer) message.
 // the VENOM stat. Centralised here so the wire-collapse gate has a single
 // source of truth.
 const statusVenomKey = "VENOM"
+
+// monsterGetByIdFn is the REST-fetch seam for handleStatusEventCreated so
+// tests can seed the live mirror without an HTTP fake (same pattern as the
+// broadcaster spy vars below).
+var monsterGetByIdFn = func(l logrus.FieldLogger, ctx context.Context, uniqueId uint32) (monster.Model, error) {
+	return monster.NewProcessor(l, ctx).GetById(uniqueId)
+}
 
 // monsterStatBroadcaster is the channel-side broadcast seam. The handlers
 // below build a *MonsterTemporaryStat and ask the broadcaster to fan it
@@ -565,6 +587,12 @@ func handleStatusEventMpChanged(sc server.Model, wp writer.Producer) message.Han
 		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) {
 			return
 		}
+
+		// Mirror MP before any session gating or Reason dispatch so the live
+		// mirror tracks every MP mutation — including Reasons this handler
+		// doesn't otherwise act on and events whose character has no local
+		// session (design §5.2).
+		monster.GetLiveMirror().UpdateMp(tenant.MustFromContext(ctx), e.UniqueId, e.Body.MonsterMpAfter)
 
 		s, err := session.NewProcessor(l, ctx).GetByCharacterId(sc.Channel())(e.Body.CharacterId)
 		if err != nil {

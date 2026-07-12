@@ -108,26 +108,55 @@ func (p *Processor) ForPet(f field.Model, characterId uint32, petId uint32, move
 	return nil
 }
 
-func (p *Processor) ForMonster(f field.Model, characterId uint32, objectId uint32, moveId int16, skillPossible bool, skill int8, skillId int16, skillLevel int16, mt model.MultiTargetForBall, rt model.RandTimeForAreaAttack, movement model.Movement) error {
-	mo, err := monster.NewProcessor(p.l, p.ctx).GetById(objectId)
+// monsterByIdFn is the REST fallback seam for resolveLiveMonster. Package-
+// level var (precedent: the broadcaster spy vars in the monster consumer) so
+// tests can prove the warm path performs zero REST calls.
+var monsterByIdFn = func(l logrus.FieldLogger, ctx context.Context, objectId uint32) (monster.Model, error) {
+	return monster.NewProcessor(l, ctx).GetById(objectId)
+}
+
+// resolveLiveMonster resolves the monster's live state from the in-process
+// mirror, falling back to REST on a miss and backfilling the mirror so
+// subsequent moves for this monster are local (FR-2.1/FR-2.2).
+func (p *Processor) resolveLiveMonster(objectId uint32) (monster.LiveEntry, error) {
+	entry, ok := monster.GetLiveMirror().Lookup(p.t, objectId)
+	if ok {
+		return entry, nil
+	}
+	p.l.Debugf("Live mirror miss for monster [%d]; falling back to REST.", objectId)
+	mo, err := monsterByIdFn(p.l, p.ctx, objectId)
 	if err != nil {
+		monster.RecordMirrorFallback(p.t, false)
 		p.l.WithError(err).Errorf("Unable to locate monster [%d] moving.", objectId)
+		return monster.LiveEntry{}, err
+	}
+	monster.RecordMirrorFallback(p.t, true)
+	entry = monster.LiveEntryFromModel(mo)
+	monster.GetLiveMirror().Put(p.t, objectId, entry)
+	return entry, nil
+}
+
+func (p *Processor) ForMonster(f field.Model, characterId uint32, objectId uint32, moveId int16, skillPossible bool, skill int8, skillId int16, skillLevel int16, mt model.MultiTargetForBall, rt model.RandTimeForAreaAttack, movement model.Movement) error {
+	entry, err := p.resolveLiveMonster(objectId)
+	if err != nil {
 		return err
 	}
 
-	if f.WorldId() != mo.WorldId() || f.ChannelId() != mo.ChannelId() || f.MapId() != mo.MapId() {
+	if f.WorldId() != entry.Field.WorldId() || f.ChannelId() != entry.Field.ChannelId() || f.MapId() != entry.Field.MapId() {
 		p.l.Errorf("Monster [%d] movement issued by [%d] does not have consistent map data.", objectId, characterId)
-		return err
+		// Preserves pre-mirror behavior: the old code returned `err` here,
+		// which was always nil after a successful GetById.
+		return nil
 	}
 	// Forecast the post-decrement MP for basic attacks (Cosmic compat — the
 	// v83 client gates on the ack carrying decremented MP). For melee /
 	// non-basic-attack actions, ackMp passes through unchanged.
-	ackMp := uint16(mo.Mp())
+	ackMp := uint16(entry.Mp)
 	pos0, isBasicAttack := basicAttackPos(skill)
 	if isBasicAttack {
-		info, ierr := monsterinfo.NewProcessor(p.l, p.ctx).GetById(mo.MonsterId())
+		info, ierr := monsterinfo.NewProcessor(p.l, p.ctx).GetById(entry.MonsterId)
 		if ierr != nil {
-			p.l.WithError(ierr).Debugf("Unable to fetch attack info for monster template [%d]; ack uses unchanged MP.", mo.MonsterId())
+			p.l.WithError(ierr).Debugf("Unable to fetch attack info for monster template [%d]; ack uses unchanged MP.", entry.MonsterId)
 		} else {
 			ackMp = computeAckMp(ackMp, pos0, info.Attacks())
 		}
@@ -141,7 +170,7 @@ func (p *Processor) ForMonster(f field.Model, characterId uint32, objectId uint3
 		// or [42,59] (skill confirm), and our authoritative-side handlers
 		// never fire. Send aggro by default; OR-in the inbox prediction so a
 		// queued skill cast still propagates if aggro is somehow false.
-		useSkills := mo.ControllerHasAggro()
+		useSkills := entry.ControllerHasAggro
 		var skillIdByte, skillLevelByte byte
 		if d, hit := monster.GetNextSkillInbox().TakeAndClear(p.t, objectId); hit && !d.IsSentinel() {
 			useSkills = true

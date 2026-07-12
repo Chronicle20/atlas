@@ -5,13 +5,13 @@ import (
 	"atlas-inventory/data/equipment/statistics"
 	"atlas-inventory/data/etc"
 	"atlas-inventory/data/setup"
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"atlas-inventory/kafka/message"
 	"atlas-inventory/kafka/message/asset"
 	"atlas-inventory/kafka/producer"
 	"atlas-inventory/pet"
 	"context"
 	"errors"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"math"
 	"math/rand"
 	"time"
@@ -26,20 +26,46 @@ import (
 	"gorm.io/gorm"
 )
 
-type Processor struct {
+type Processor interface {
+	WithTransaction(tx *gorm.DB) Processor
+	ConsumableProcessor() consumable.Processor
+	WithConsumableProcessor(conp consumable.Processor) Processor
+	ByCompartmentIdProvider(compartmentId uuid.UUID) model.Provider[[]Model]
+	GetByCompartmentId(compartmentId uuid.UUID) ([]Model, error)
+	GetBySlot(compartmentId uuid.UUID, slot int16) (Model, error)
+	BySlotProvider(compartmentId uuid.UUID) func(slot int16) model.Provider[Model]
+	ByIdProvider(id uint32) model.Provider[Model]
+	GetById(id uint32) (Model, error)
+	GetSlotMax(templateId uint32) (uint32, error)
+	Delete(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID) func(a Model) error
+	Expire(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID, isCash bool, replaceItemId uint32, replaceMessage string) func(a Model) error
+	Drop(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID) func(a Model) error
+	UpdateSlot(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID, ap model.Provider[Model], sp model.Provider[int16]) error
+	UpdateQuantity(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID, a Model, quantity uint32) error
+	UpdateEquipmentStats(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, assetId uint32, stats Model) error
+	ChangeTemplateAndEmit(transactionId uuid.UUID, characterId uint32, assetId uint32, newTemplateId uint32) error
+	ChangeTemplate(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, assetId uint32, newTemplateId uint32) error
+	DeleteAndEmit(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID, assetId uint32) error
+	Create(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID, templateId uint32, slot int16, opts CreateOptions) (Model, error)
+	CreateFromModel(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, m Model) (Model, error)
+	Accept(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID, slot int16, m Model) (Model, error)
+	Release(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID) func(a Model) error
+}
+
+type ProcessorImpl struct {
 	l                   logrus.FieldLogger
 	ctx                 context.Context
 	db                  *gorm.DB
 	t                   tenant.Model
-	petProcessor        *pet.Processor
+	petProcessor        pet.Processor
 	consumableProcessor consumable.Processor
-	setupProcessor      *setup.Processor
-	etcProcessor        *etc.Processor
-	statProcessor       *statistics.Processor
+	setupProcessor      setup.Processor
+	etcProcessor        etc.Processor
+	statProcessor       statistics.Processor
 }
 
-func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) *Processor {
-	return &Processor{
+func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor {
+	return &ProcessorImpl{
 		l:                   l,
 		ctx:                 ctx,
 		db:                  db,
@@ -52,8 +78,10 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) *Proce
 	}
 }
 
-func (p *Processor) WithTransaction(tx *gorm.DB) *Processor {
-	return &Processor{
+var _ Processor = (*ProcessorImpl)(nil)
+
+func (p *ProcessorImpl) WithTransaction(tx *gorm.DB) Processor {
+	return &ProcessorImpl{
 		l:                   p.l,
 		ctx:                 p.ctx,
 		db:                  tx,
@@ -66,12 +94,12 @@ func (p *Processor) WithTransaction(tx *gorm.DB) *Processor {
 	}
 }
 
-func (p *Processor) ConsumableProcessor() consumable.Processor {
+func (p *ProcessorImpl) ConsumableProcessor() consumable.Processor {
 	return p.consumableProcessor
 }
 
-func (p *Processor) WithConsumableProcessor(conp consumable.Processor) *Processor {
-	return &Processor{
+func (p *ProcessorImpl) WithConsumableProcessor(conp consumable.Processor) Processor {
+	return &ProcessorImpl{
 		l:                   p.l,
 		ctx:                 p.ctx,
 		db:                  p.db,
@@ -84,34 +112,34 @@ func (p *Processor) WithConsumableProcessor(conp consumable.Processor) *Processo
 	}
 }
 
-func (p *Processor) ByCompartmentIdProvider(compartmentId uuid.UUID) model.Provider[[]Model] {
+func (p *ProcessorImpl) ByCompartmentIdProvider(compartmentId uuid.UUID) model.Provider[[]Model] {
 	return model.SliceMap(Make)(getByCompartmentId(compartmentId)(p.db.WithContext(p.ctx)))(model.ParallelMap())
 }
 
-func (p *Processor) GetByCompartmentId(compartmentId uuid.UUID) ([]Model, error) {
+func (p *ProcessorImpl) GetByCompartmentId(compartmentId uuid.UUID) ([]Model, error) {
 	return p.ByCompartmentIdProvider(compartmentId)()
 }
 
-func (p *Processor) GetBySlot(compartmentId uuid.UUID, slot int16) (Model, error) {
+func (p *ProcessorImpl) GetBySlot(compartmentId uuid.UUID, slot int16) (Model, error) {
 	return p.BySlotProvider(compartmentId)(slot)()
 }
 
-func (p *Processor) BySlotProvider(compartmentId uuid.UUID) func(slot int16) model.Provider[Model] {
+func (p *ProcessorImpl) BySlotProvider(compartmentId uuid.UUID) func(slot int16) model.Provider[Model] {
 	return func(slot int16) model.Provider[Model] {
 		return model.Map(Make)(getBySlot(compartmentId, slot)(p.db.WithContext(p.ctx)))
 	}
 }
 
-func (p *Processor) ByIdProvider(id uint32) model.Provider[Model] {
+func (p *ProcessorImpl) ByIdProvider(id uint32) model.Provider[Model] {
 	return model.Map(Make)(getById(id)(p.db.WithContext(p.ctx)))
 }
 
-func (p *Processor) GetById(id uint32) (Model, error) {
+func (p *ProcessorImpl) GetById(id uint32) (Model, error) {
 	return model.CollapseProvider(p.ByIdProvider)(id)
 }
 
 // GetSlotMax retrieves the maximum slot capacity for a given asset template.
-func (p *Processor) GetSlotMax(templateId uint32) (uint32, error) {
+func (p *ProcessorImpl) GetSlotMax(templateId uint32) (uint32, error) {
 	inventoryType, ok := inventory.TypeFromItemId(item.Id(templateId))
 	if !ok {
 		return 0, errors.New("unknown item type")
@@ -141,7 +169,7 @@ func (p *Processor) GetSlotMax(templateId uint32) (uint32, error) {
 	}
 }
 
-func (p *Processor) Delete(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID) func(a Model) error {
+func (p *ProcessorImpl) Delete(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID) func(a Model) error {
 	return func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID) func(a Model) error {
 		return func(a Model) error {
 			p.l.Debugf("Attempting to delete asset [%d] templateId [%d] slot [%d] from compartment [%s] for character [%d].", a.Id(), a.TemplateId(), a.Slot(), compartmentId, characterId)
@@ -156,7 +184,7 @@ func (p *Processor) Delete(mb *message.Buffer) func(transactionId uuid.UUID, cha
 	}
 }
 
-func (p *Processor) Expire(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID, isCash bool, replaceItemId uint32, replaceMessage string) func(a Model) error {
+func (p *ProcessorImpl) Expire(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID, isCash bool, replaceItemId uint32, replaceMessage string) func(a Model) error {
 	return func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID, isCash bool, replaceItemId uint32, replaceMessage string) func(a Model) error {
 		return func(a Model) error {
 			p.l.Debugf("Attempting to expire asset [%d].", a.Id())
@@ -171,7 +199,7 @@ func (p *Processor) Expire(mb *message.Buffer) func(transactionId uuid.UUID, cha
 	}
 }
 
-func (p *Processor) Drop(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID) func(a Model) error {
+func (p *ProcessorImpl) Drop(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID) func(a Model) error {
 	return func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID) func(a Model) error {
 		return func(a Model) error {
 			p.l.Debugf("Attempting to drop asset [%d].", a.Id())
@@ -186,7 +214,7 @@ func (p *Processor) Drop(mb *message.Buffer) func(transactionId uuid.UUID, chara
 	}
 }
 
-func (p *Processor) UpdateSlot(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID, ap model.Provider[Model], sp model.Provider[int16]) error {
+func (p *ProcessorImpl) UpdateSlot(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID, ap model.Provider[Model], sp model.Provider[int16]) error {
 	return func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID, ap model.Provider[Model], sp model.Provider[int16]) error {
 		a, err := ap()
 		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
@@ -211,7 +239,7 @@ func (p *Processor) UpdateSlot(mb *message.Buffer) func(transactionId uuid.UUID,
 	}
 }
 
-func (p *Processor) UpdateQuantity(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID, a Model, quantity uint32) error {
+func (p *ProcessorImpl) UpdateQuantity(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID, a Model, quantity uint32) error {
 	return func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID, a Model, quantity uint32) error {
 		if !a.HasQuantity() {
 			return errors.New("cannot update quantity of non-stackable")
@@ -224,7 +252,7 @@ func (p *Processor) UpdateQuantity(mb *message.Buffer) func(transactionId uuid.U
 	}
 }
 
-func (p *Processor) UpdateEquipmentStats(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, assetId uint32, stats Model) error {
+func (p *ProcessorImpl) UpdateEquipmentStats(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, assetId uint32, stats Model) error {
 	return func(transactionId uuid.UUID, characterId uint32, assetId uint32, stats Model) error {
 		a, err := p.GetById(assetId)
 		if err != nil {
@@ -265,7 +293,7 @@ func (p *Processor) UpdateEquipmentStats(mb *message.Buffer) func(transactionId 
 	}
 }
 
-func (p *Processor) ChangeTemplateAndEmit(transactionId uuid.UUID, characterId uint32, assetId uint32, newTemplateId uint32) error {
+func (p *ProcessorImpl) ChangeTemplateAndEmit(transactionId uuid.UUID, characterId uint32, assetId uint32, newTemplateId uint32) error {
 	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(mb *message.Buffer) error {
 		return p.ChangeTemplate(mb)(transactionId, characterId, assetId, newTemplateId)
 	})
@@ -274,7 +302,7 @@ func (p *Processor) ChangeTemplateAndEmit(transactionId uuid.UUID, characterId u
 // ChangeTemplate swaps only the templateId of a pet asset in place, preserving its
 // slot, compartment, cashId, petId, expiration, and quantity. It emits the existing
 // UPDATED status event (never DELETED), which is what keeps the pet alive downstream.
-func (p *Processor) ChangeTemplate(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, assetId uint32, newTemplateId uint32) error {
+func (p *ProcessorImpl) ChangeTemplate(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, assetId uint32, newTemplateId uint32) error {
 	return func(transactionId uuid.UUID, characterId uint32, assetId uint32, newTemplateId uint32) error {
 		a, err := p.GetById(assetId)
 		if err != nil {
@@ -292,7 +320,7 @@ func (p *Processor) ChangeTemplate(mb *message.Buffer) func(transactionId uuid.U
 	}
 }
 
-func (p *Processor) DeleteAndEmit(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID, assetId uint32) error {
+func (p *ProcessorImpl) DeleteAndEmit(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID, assetId uint32) error {
 	p.l.Debugf("Attempting to delete and emit asset [%d] for character [%d] in compartment [%s].", assetId, characterId, compartmentId.String())
 	a, err := p.GetById(assetId)
 	if err != nil {
@@ -315,7 +343,7 @@ type CreateOptions struct {
 	UseAverageStats bool
 }
 
-func (p *Processor) Create(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID, templateId uint32, slot int16, opts CreateOptions) (Model, error) {
+func (p *ProcessorImpl) Create(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID, templateId uint32, slot int16, opts CreateOptions) (Model, error) {
 	return func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID, templateId uint32, slot int16, opts CreateOptions) (Model, error) {
 		p.l.Debugf("Character [%d] attempting to create [%d] item(s) [%d] in slot [%d] of compartment [%s].", characterId, opts.Quantity, templateId, slot, compartmentId.String())
 		var a Model
@@ -381,7 +409,7 @@ func (p *Processor) Create(mb *message.Buffer) func(transactionId uuid.UUID, cha
 	}
 }
 
-func (p *Processor) CreateFromModel(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, m Model) (Model, error) {
+func (p *ProcessorImpl) CreateFromModel(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, m Model) (Model, error) {
 	return func(transactionId uuid.UUID, characterId uint32, m Model) (Model, error) {
 		p.l.Debugf("Character [%d] creating asset from model for template [%d] in compartment [%s].", characterId, m.TemplateId(), m.CompartmentId().String())
 		var a Model
@@ -400,7 +428,7 @@ func (p *Processor) CreateFromModel(mb *message.Buffer) func(transactionId uuid.
 	}
 }
 
-func (p *Processor) Accept(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID, slot int16, m Model) (Model, error) {
+func (p *ProcessorImpl) Accept(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID, slot int16, m Model) (Model, error) {
 	return func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID, slot int16, m Model) (Model, error) {
 		p.l.Debugf("Character [%d] attempting to accept asset template [%d] in slot [%d] of compartment [%s].", characterId, m.TemplateId(), slot, compartmentId.String())
 
@@ -435,7 +463,7 @@ func (p *Processor) Accept(mb *message.Buffer) func(transactionId uuid.UUID, cha
 	}
 }
 
-func (p *Processor) Release(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID) func(a Model) error {
+func (p *ProcessorImpl) Release(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID) func(a Model) error {
 	return func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID) func(a Model) error {
 		return func(a Model) error {
 			p.l.Debugf("Attempting to release asset [%d].", a.Id())

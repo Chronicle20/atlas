@@ -30,7 +30,7 @@ type ProcessorImpl struct {
 	l                    logrus.FieldLogger
 	ctx                  context.Context
 	db                   *gorm.DB
-	compartmentProcessor *compartment.Processor
+	compartmentProcessor compartment.Processor
 }
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor {

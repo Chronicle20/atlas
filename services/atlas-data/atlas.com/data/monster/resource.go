@@ -61,7 +61,7 @@ func handleGetMonstersRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *re
 			results, err := s.GetAll(d.Context())
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Unable to retrieve monsters.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -104,7 +104,7 @@ func handleSearchMonsters(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.H
 				tenantId, err := searchindex.ResolveTenantId(db, d.Context(), spec)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Monster tenant resolve failed.")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -113,7 +113,7 @@ func handleSearchMonsters(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.H
 				elapsedMs := time.Since(start).Milliseconds()
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Monster search failed.")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -185,7 +185,7 @@ func handleGetMonsterMapsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c 
 				t, terr := tenant.FromContext(d.Context())()
 				if terr != nil {
 					d.Logger().WithError(terr).Errorf("Unable to resolve tenant for monster-maps request.")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(terr)
 					return
 				}
 
@@ -195,7 +195,7 @@ func handleGetMonsterMapsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c 
 					Order("spawn_count DESC, name ASC").
 					Find(&rows).Error; err != nil {
 					d.Logger().WithError(err).Errorf("Unable to query monster spawn index for monster %d.", monsterId)
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 

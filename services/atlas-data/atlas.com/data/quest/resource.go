@@ -32,7 +32,7 @@ func handleGetQuests(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Handle
 			res, err := s.GetAll(d.Context())
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Unable to get quests.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 			query := r.URL.Query()
@@ -68,7 +68,7 @@ func handleGetAutoStartQuests(db *gorm.DB) func(d *rest.HandlerDependency, c *re
 			allQuests, err := s.GetAll(d.Context())
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Unable to get quests for auto-start filter.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 

@@ -32,7 +32,7 @@ func handleGetMobSkillsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *r
 			res, err := s.GetAll(d.Context())
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Unable to retrieve mob skills.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -51,7 +51,7 @@ func handleGetMobSkillsByTypeRequest(db *gorm.DB) func(d *rest.HandlerDependency
 				all, err := s.GetAll(d.Context())
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Unable to retrieve mob skills.")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 

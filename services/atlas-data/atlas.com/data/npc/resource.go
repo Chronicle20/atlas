@@ -68,7 +68,7 @@ func handleGetNpcsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.H
 			results, err := s.GetAll(d.Context())
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Unable to retrieve NPCs.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -116,7 +116,7 @@ func handleSearchNpcs(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Handl
 				tenantId, err := searchindex.ResolveTenantId(db, d.Context(), spec)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("NPC tenant resolve failed.")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -130,7 +130,7 @@ func handleSearchNpcs(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Handl
 				elapsedMs := time.Since(start).Milliseconds()
 				if err != nil {
 					d.Logger().WithError(err).Errorf("NPC search failed.")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -175,7 +175,7 @@ func handleGetNpcMapsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *res
 					Find(&rows).Error
 				if qerr != nil {
 					d.Logger().WithError(qerr).Errorf("Unable to retrieve NPC spawn maps for npcId=%d.", npcId)
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(qerr)
 					return
 				}
 
@@ -226,7 +226,7 @@ func handleGetNpcQuestsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *r
 				all, qerr := s.GetAll(d.Context())
 				if qerr != nil {
 					d.Logger().WithError(qerr).Errorf("Unable to retrieve quests for npcId=%d.", npcId)
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(qerr)
 					return
 				}
 

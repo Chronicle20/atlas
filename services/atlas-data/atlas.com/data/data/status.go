@@ -148,7 +148,7 @@ func handleGetStatus(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Handle
 			count, maxUpdated, err := queryStatus(ctx, db, tenantId)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Unable to read data status.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 

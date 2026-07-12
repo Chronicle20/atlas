@@ -34,7 +34,7 @@ func handleGetCommodityItemsRequest(db *gorm.DB) func(d *rest.HandlerDependency,
 			res, err := s.GetAll(d.Context())
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Unable to retrieve commodity items.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -53,7 +53,7 @@ func handleGetCommoditiesByItemRequest(db *gorm.DB) func(d *rest.HandlerDependen
 				all, err := s.GetAll(d.Context())
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Unable to retrieve commodities for itemId=%d.", itemId)
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 

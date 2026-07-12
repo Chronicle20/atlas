@@ -41,7 +41,7 @@ func handleSearchSkillsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *r
 			allSkills, err := s.GetAll(d.Context())
 			if err != nil {
 				d.Logger().WithError(err).Debugf("Unable to get all skills.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 

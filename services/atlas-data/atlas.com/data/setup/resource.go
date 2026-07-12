@@ -31,7 +31,7 @@ func handleGetSetupsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest
 			res, err := s.GetAll(d.Context())
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Unable to retrieve setups.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 

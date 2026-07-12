@@ -57,7 +57,7 @@ func handleGetMapsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.H
 			res, err := s.GetAll(d.Context())
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Unable to retrieve maps.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -98,7 +98,7 @@ func handleSearchMaps(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Handl
 				elapsedMs := time.Since(start).Milliseconds()
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Map search failed.")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -348,14 +348,14 @@ func handleGetMapFootholdBelowRequest(db *gorm.DB) func(d *rest.HandlerDependenc
 				m, err := s.GetById(d.Context())(strconv.Itoa(int(mapId)))
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Unable to retrieve map %d for foothold lookup.", mapId)
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 				p := point.RestModel{X: i.X, Y: i.Y}
 				fh := m.FootholdTree.findBelow(p)
 				if fh == nil {
 					d.Logger().Errorf("Unable to find foothold below position (%d, %d) in map %d.", i.X, i.Y, mapId)
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 

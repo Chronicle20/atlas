@@ -118,9 +118,9 @@ Notes on interpreting the output:
 | `services/atlas-channel/atlas.com/channel/merchant/processor.go` | Gen2 | R2 | 23 | done |
 | `services/atlas-channel/atlas.com/channel/party_quest/processor.go` | Gen2 | R2 | 23 | done |
 | `services/atlas-channel/atlas.com/channel/server/processor.go` | Gen1 | R3 | 23 | done |
-| `services/atlas-gachapons/atlas.com/gachapons/test/processor.go` | Gen1 | R6-rename | 24 | pending |
-| `services/atlas-messages/atlas.com/messages/command/processor.go` | Gen1 | R6-rename | 24 | pending |
-| `services/atlas-npc-shops/atlas.com/npc/test/processor.go` | Gen1 | R6-rename | 24 | pending |
+| `services/atlas-gachapons/atlas.com/gachapons/test/processor.go` → `test/fixtures.go` | Gen1 | R6-rename | 24 | done |
+| `services/atlas-messages/atlas.com/messages/command/processor.go` → `command/types.go` | Gen1 | R6-rename | 24 | done |
+| `services/atlas-npc-shops/atlas.com/npc/test/processor.go` → `test/fixtures.go` | Gen1 | R6-rename | 24 | done |
 | `services/atlas-account/atlas.com/account/ban/processor.go` | Gen1 | R3 | 25 | pending |
 | `services/atlas-portals/atlas.com/portals/character/processor.go` | Gen1 | R3 | 26 | pending |
 | `services/atlas-portals/atlas.com/portals/portal/processor.go` | Gen1 | R3 | 26 | pending |
@@ -209,4 +209,10 @@ Phase C scope confirmed as exactly: atlas-account (`ban`, task 25), atlas-portal
 
 ## R6 file renames
 
-(Populated by Task 24 with each rename's justification, per the R6 table in `plan.md`.)
+Three plan-time-scanned `processor.go` files were not the Processor idiom at all. Per design §7.5 ("an exemption leaves a permanent asterisk"), each was renamed via `git mv` (content byte-identical — `git diff --cached --numstat` reported `0 0` for all three) rather than exempted from the scan:
+
+- `services/atlas-messages/atlas.com/messages/command/processor.go` → `command/types.go`: holds two exported func-type decls (`Producer`, `Executor`), no functions — not a Processor at all.
+- `services/atlas-gachapons/atlas.com/gachapons/test/processor.go` → `test/fixtures.go`: test-fixture factories `CreateXxxProcessor(t *testing.T)` that construct and return *other* packages' Processors (e.g. `CreateCommoditiesProcessor`) — a fixture file, not a Processor package.
+- `services/atlas-npc-shops/atlas.com/npc/test/processor.go` → `test/fixtures.go`: same fixture-factory shape as the gachapons file.
+
+All three renames leave the file's package and content untouched; the `test/` fixture packages are pre-existing and were not converted or deleted (that would be a behavior/test-infra change, out of scope for R6).

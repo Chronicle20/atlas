@@ -353,7 +353,7 @@ func serverModelFn(key server.Key, cfg projection.ListenerConfig) server.Model {
 		// to a synthesized one so the listener can at least start.
 		t, _ = tenant.Create(key.TenantId, cfg.Region, cfg.MajorVersion, cfg.MinorVersion)
 	}
-	return server.Register(t, channel2.NewModel(key.WorldId, key.ChannelId), cfg.IPAddress, cfg.Port)
+	return server.NewProcessor(logrus.New(), context.Background()).Register(t, channel2.NewModel(key.WorldId, key.ChannelId), cfg.IPAddress, cfg.Port)
 }
 
 // buildListener returns the per-(t,w,c) AddBody the projection apply loop

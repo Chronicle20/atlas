@@ -59,7 +59,7 @@ func toPartyMembers(l logrus.FieldLogger, ctx context.Context, p party.Model, fo
 // party-member doors in town — a doorless member keeps the zero entry. The
 // portal carries the town (exit) map, the area (origin) map, and the AREA-side
 // door position (matching SPAWN_PORTAL / the v83 client partyPortal toPosition()).
-func applyMemberDoor(pm *partypkt.PartyMember, dp *door.Processor, memberId uint32) {
+func applyMemberDoor(pm *partypkt.PartyMember, dp door.Processor, memberId uint32) {
 	doors, err := dp.GetByOwner(memberId)
 	if err != nil || len(doors) == 0 {
 		return

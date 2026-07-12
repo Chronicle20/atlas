@@ -114,10 +114,10 @@ Notes on interpreting the output:
 | `services/atlas-channel/atlas.com/channel/pet/processor.go` | Gen2 | R2 | 22 | done |
 | `services/atlas-channel/atlas.com/channel/session/processor.go` | Gen2 | R2 | 22 | done |
 | `services/atlas-channel/atlas.com/channel/summon/processor.go` | Gen2 | R2 | 22 | done |
-| `services/atlas-channel/atlas.com/channel/door/processor.go` | Gen2 | R2 | 23 | pending |
-| `services/atlas-channel/atlas.com/channel/merchant/processor.go` | Gen2 | R2 | 23 | pending |
-| `services/atlas-channel/atlas.com/channel/party_quest/processor.go` | Gen2 | R2 | 23 | pending |
-| `services/atlas-channel/atlas.com/channel/server/processor.go` | Gen1 | R3 | 23 | pending |
+| `services/atlas-channel/atlas.com/channel/door/processor.go` | Gen2 | R2 | 23 | done |
+| `services/atlas-channel/atlas.com/channel/merchant/processor.go` | Gen2 | R2 | 23 | done |
+| `services/atlas-channel/atlas.com/channel/party_quest/processor.go` | Gen2 | R2 | 23 | done |
+| `services/atlas-channel/atlas.com/channel/server/processor.go` | Gen1 | R3 | 23 | done |
 | `services/atlas-gachapons/atlas.com/gachapons/test/processor.go` | Gen1 | R6-rename | 24 | pending |
 | `services/atlas-messages/atlas.com/messages/command/processor.go` | Gen1 | R6-rename | 24 | pending |
 | `services/atlas-npc-shops/atlas.com/npc/test/processor.go` | Gen1 | R6-rename | 24 | pending |

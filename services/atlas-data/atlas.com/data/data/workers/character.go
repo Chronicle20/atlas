@@ -67,7 +67,13 @@ func (Character) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc 
 	// equipment Read tolerates non-equipment .img.xml entries because Face/Hair
 	// dirs are already registered above and equipment.Read will fail benignly
 	// for them; the walker logs and continues.
-	if err := registerAllInDirectory(l, ctx, base, equipment.RegisterEquipment(db)); err != nil {
+	if err := registerAllInDirectory(l, ctx, base, func(l logrus.FieldLogger) func(ctx context.Context) func(path string) error {
+		return func(ctx context.Context) func(path string) error {
+			return func(path string) error {
+				return equipment.NewProcessor(l, ctx, db).RegisterEquipment(path)
+			}
+		}
+	}); err != nil {
 		return err
 	}
 

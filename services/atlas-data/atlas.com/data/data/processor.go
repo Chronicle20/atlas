@@ -135,7 +135,13 @@ func StartWorker(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.D
 						l.WithError(err).Errorf("Failed to initialize equipment item string registry.")
 						return err
 					}
-					err = RegisterAllData(l)(ctx)(path, "Character.wz", equipment.RegisterEquipment(db))()
+					err = RegisterAllData(l)(ctx)(path, "Character.wz", func(l logrus.FieldLogger) func(ctx context.Context) func(filePath string) error {
+						return func(ctx context.Context) func(filePath string) error {
+							return func(filePath string) error {
+								return equipment.NewProcessor(l, ctx, db).RegisterEquipment(filePath)
+							}
+						}
+					})()
 				} else if name == WorkerReactor {
 					err = RegisterAllData(l)(ctx)(path, "Reactor.wz", func(l logrus.FieldLogger) func(ctx context.Context) func(filePath string) error {
 						return func(ctx context.Context) func(filePath string) error {

@@ -163,7 +163,7 @@ Notes on interpreting the output:
 | `services/atlas-data/atlas.com/data/characters/templates/processor.go` | Gen1 | R3 | 34 | pending |
 | `services/atlas-data/atlas.com/data/cosmetic/face/processor.go` | Gen1 | R3 | 34 | pending |
 | `services/atlas-data/atlas.com/data/cosmetic/hair/processor.go` | Gen1 | R3 | 34 | pending |
-| `services/atlas-data/atlas.com/data/equipment/processor.go` | Gen1 | R3 | 34 | pending |
+| `services/atlas-data/atlas.com/data/equipment/processor.go` | Gen1 | R3 | 34 | done |
 | `services/atlas-data/atlas.com/data/data/processor.go` | Gen1 | R3 | 35 | pending |
 
 **Classification counts (this scan):** CP-2 20 (18 pure R1 + 2 Gen2.5-shaped), Gen2 58, Gen2.5 5 (3 pure + 2 also-CP-2), Gen1 50 (45 R3 + 2 R4-client + 3 R6-rename). Total 131 rows — matches plan-time exactly; zero drift.

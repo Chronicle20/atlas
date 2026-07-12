@@ -11,6 +11,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/degrade"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -245,14 +246,22 @@ func (p *ProcessorImpl) Delete(characterId uint32) error {
 
 // CooldownDecorator returns a decorator that adds cooldown information to a skill model
 func (p *ProcessorImpl) CooldownDecorator(characterId uint32) model.Decorator[Model] {
-	return func(m Model) Model {
-		ct, err := GetRegistry().Get(p.ctx, characterId, m.Id())
-		if err != nil {
-			return m
-		}
-		updated, _ := CloneModel(m).SetCooldownExpiresAt(ct).Build()
-		return updated
-	}
+	return model.ErrDecorator(
+		func(m Model) (Model, error) {
+			ct, err := GetRegistry().Get(p.ctx, characterId, m.Id())
+			if err != nil {
+				return m, err
+			}
+			updated, err := CloneModel(m).SetCooldownExpiresAt(ct).Build()
+			if err != nil {
+				return m, err
+			}
+			return updated, nil
+		},
+		func(m Model, err error) {
+			degrade.Observe(p.l, "skills.skill.cooldown", characterId, err)
+		},
+	)
 }
 
 // RequestCreate sends a command to create a skill

@@ -158,7 +158,13 @@ func StartWorker(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.D
 						}
 					})()
 				} else if name == WorkerCommodity {
-					err = RegisterFileData(l)(ctx)(path, filepath.Join("Etc.wz", "Commodity.img.xml"), commodity.RegisterCommodity(db))()
+					err = RegisterFileData(l)(ctx)(path, filepath.Join("Etc.wz", "Commodity.img.xml"), func(l logrus.FieldLogger) func(ctx context.Context) func(filePath string) error {
+						return func(ctx context.Context) func(filePath string) error {
+							return func(filePath string) error {
+								return commodity.NewProcessor(l, ctx, db).RegisterCommodity(filePath)
+							}
+						}
+					})()
 				} else if name == WorkerEtc {
 					if err = item.InitStringFlat(db)(l)(ctx)(filepath.Join(path, "String.wz", "Etc.img.xml")); err != nil {
 						l.WithError(err).Errorf("Failed to initialize etc item string registry.")

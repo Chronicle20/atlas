@@ -216,7 +216,7 @@ func StartWorker(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.D
 				} else if name == WorkerCharacterCreation {
 					err = RegisterFileData(l)(ctx)(path, filepath.Join("Etc.wz", "MakeCharInfo.img.xml"), templates.RegisterCharacterTemplate(db))()
 				} else if name == WorkerQuest {
-					err = quest.RegisterQuest(db)(l)(ctx)(filepath.Join(path, "Quest.wz"))
+					err = quest.NewProcessor(l, ctx, db).RegisterQuest(filepath.Join(path, "Quest.wz"))
 				} else if name == WorkerNPC {
 					if err = npc.InitString(t, filepath.Join(path, "String.wz", "Npc.img.xml")); err != nil {
 						l.WithError(err).Errorf("Failed to initialize NPC string registry for NPC worker.")

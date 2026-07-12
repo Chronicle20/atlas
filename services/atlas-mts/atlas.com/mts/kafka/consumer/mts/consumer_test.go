@@ -4,8 +4,8 @@ import (
 	"atlas-mts/holding"
 	"atlas-mts/kafka/message/mts"
 	"atlas-mts/listing"
-	"atlas-mts/transaction"
 	"atlas-mts/test"
+	"atlas-mts/transaction"
 	"atlas-mts/wish"
 	"context"
 	"encoding/json"
@@ -16,6 +16,7 @@ import (
 
 	kprod "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
@@ -123,7 +124,7 @@ func newCancelCommand(transactionId uuid.UUID, serial uint32, sellerId uint32) m
 }
 
 func TestCancelListing_MovesActiveToSellerHoldingAndAcks(t *testing.T) {
-	db := test.SetupTestDB(t, listing.Migration, holding.Migration, wish.Migration, transaction.Migration)
+	db := test.SetupTestDB(t, listing.Migration, holding.Migration, wish.Migration, transaction.Migration, outbox.Migration)
 	ctx := test.CreateTestContext()
 	l := logrus.New()
 
@@ -158,14 +159,15 @@ func TestCancelListing_MovesActiveToSellerHoldingAndAcks(t *testing.T) {
 	}
 
 	// exactly one LISTING_CANCELLED event carrying the transactionId
-	if len(rp.events) != 1 {
-		t.Fatalf("expected 1 event, got %d", len(rp.events))
+	evts := allEvents(t, db, rp, transactionId)
+	if len(evts) != 1 {
+		t.Fatalf("expected 1 event, got %d", len(evts))
 	}
-	if rp.events[0].eventType != mts.StatusEventTypeListingCancelled {
-		t.Fatalf("expected LISTING_CANCELLED, got %s", rp.events[0].eventType)
+	if evts[0].eventType != mts.StatusEventTypeListingCancelled {
+		t.Fatalf("expected LISTING_CANCELLED, got %s", evts[0].eventType)
 	}
-	if rp.events[0].transactionId != transactionId {
-		t.Fatalf("event transactionId mismatch: want %s got %s", transactionId, rp.events[0].transactionId)
+	if evts[0].transactionId != transactionId {
+		t.Fatalf("event transactionId mismatch: want %s got %s", transactionId, evts[0].transactionId)
 	}
 
 	// exactly one cancelled history row for the seller (task-102 #4).
@@ -185,7 +187,7 @@ func TestCancelListing_MovesActiveToSellerHoldingAndAcks(t *testing.T) {
 // creates no seller holding and emits LISTING_CANCEL_FAILED (so the channel writes
 // CancelSaleItemFailed to the seller) rather than LISTING_CANCELLED.
 func TestCancelListing_RaceLoserCreatesNoHoldingAndEmitsFailed(t *testing.T) {
-	db := test.SetupTestDB(t, listing.Migration, holding.Migration, wish.Migration)
+	db := test.SetupTestDB(t, listing.Migration, holding.Migration, wish.Migration, outbox.Migration)
 	ctx := test.CreateTestContext()
 	l := logrus.New()
 
@@ -229,7 +231,7 @@ func TestCancelListing_RaceLoserCreatesNoHoldingAndEmitsFailed(t *testing.T) {
 // not match the listing's seller is rejected with LISTING_CANCEL_FAILED and leaves
 // the listing active.
 func TestCancelListing_OwnerMismatch_EmitsFailed(t *testing.T) {
-	db := test.SetupTestDB(t, listing.Migration, holding.Migration, wish.Migration)
+	db := test.SetupTestDB(t, listing.Migration, holding.Migration, wish.Migration, outbox.Migration)
 	ctx := test.CreateTestContext()
 	l := logrus.New()
 
@@ -257,7 +259,7 @@ func TestCancelListing_OwnerMismatch_EmitsFailed(t *testing.T) {
 // TestCancelListing_SerialUnresolved_EmitsFailed asserts a cancel whose serial does
 // not resolve to any listing is rejected with LISTING_CANCEL_FAILED.
 func TestCancelListing_SerialUnresolved_EmitsFailed(t *testing.T) {
-	db := test.SetupTestDB(t, listing.Migration, holding.Migration, wish.Migration)
+	db := test.SetupTestDB(t, listing.Migration, holding.Migration, wish.Migration, outbox.Migration)
 	ctx := test.CreateTestContext()
 	l := logrus.New()
 
@@ -307,7 +309,7 @@ func seedHolding(t *testing.T, db *gorm.DB, ctx context.Context, holdingId uuid.
 // TestTakeHome_SerialUnresolved_EmitsFailed asserts a take-home whose serial does
 // not resolve to any holding is rejected with TAKE_HOME_FAILED.
 func TestTakeHome_SerialUnresolved_EmitsFailed(t *testing.T) {
-	db := test.SetupTestDB(t, listing.Migration, holding.Migration, wish.Migration)
+	db := test.SetupTestDB(t, listing.Migration, holding.Migration, wish.Migration, outbox.Migration)
 	ctx := test.CreateTestContext()
 	l := logrus.New()
 
@@ -322,7 +324,7 @@ func TestTakeHome_SerialUnresolved_EmitsFailed(t *testing.T) {
 // TestTakeHome_OwnerMismatch_EmitsFailed asserts a take-home whose CharacterId does
 // not match the holding's owner is rejected with TAKE_HOME_FAILED.
 func TestTakeHome_OwnerMismatch_EmitsFailed(t *testing.T) {
-	db := test.SetupTestDB(t, listing.Migration, holding.Migration, wish.Migration)
+	db := test.SetupTestDB(t, listing.Migration, holding.Migration, wish.Migration, outbox.Migration)
 	ctx := test.CreateTestContext()
 	l := logrus.New()
 
@@ -355,7 +357,7 @@ func newBuyCommand(transactionId uuid.UUID, serial uint32, buyerId uint32, buyNo
 // TestBuy_SerialUnresolved_EmitsFailed asserts a buy whose serial does not resolve
 // to any listing is rejected with BUY_FAILED (so the channel writes BuyItemFailed).
 func TestBuy_SerialUnresolved_EmitsFailed(t *testing.T) {
-	db := test.SetupTestDB(t, listing.Migration, holding.Migration, wish.Migration)
+	db := test.SetupTestDB(t, listing.Migration, holding.Migration, wish.Migration, outbox.Migration)
 	ctx := test.CreateTestContext()
 	l := logrus.New()
 
@@ -374,7 +376,7 @@ func TestBuy_SerialUnresolved_EmitsFailed(t *testing.T) {
 // (already sold) is rejected with BUY_FAILED. The serial resolves but the Buy
 // processor rejects the non-active state before any balance read.
 func TestBuy_NonActiveListing_EmitsFailed(t *testing.T) {
-	db := test.SetupTestDB(t, listing.Migration, holding.Migration, wish.Migration)
+	db := test.SetupTestDB(t, listing.Migration, holding.Migration, wish.Migration, outbox.Migration)
 	ctx := test.CreateTestContext()
 	l := logrus.New()
 
@@ -414,7 +416,7 @@ func newBidCommand(transactionId uuid.UUID, serial uint32, bidderId uint32, amou
 // resolve to any listing is rejected with BID_FAILED (so the channel writes
 // BidAuctionFailed).
 func TestPlaceBid_SerialUnresolved_EmitsFailed(t *testing.T) {
-	db := test.SetupTestDB(t, listing.Migration, holding.Migration, wish.Migration)
+	db := test.SetupTestDB(t, listing.Migration, holding.Migration, wish.Migration, outbox.Migration)
 	ctx := test.CreateTestContext()
 	l := logrus.New()
 
@@ -430,7 +432,7 @@ func TestPlaceBid_SerialUnresolved_EmitsFailed(t *testing.T) {
 // (non-auction) listing is rejected with BID_FAILED. The serial resolves but the
 // PlaceBid processor rejects the non-auction sale type.
 func TestPlaceBid_NonAuctionListing_EmitsFailed(t *testing.T) {
-	db := test.SetupTestDB(t, listing.Migration, holding.Migration, wish.Migration)
+	db := test.SetupTestDB(t, listing.Migration, holding.Migration, wish.Migration, outbox.Migration)
 	ctx := test.CreateTestContext()
 	l := logrus.New()
 
@@ -448,7 +450,7 @@ func TestPlaceBid_NonAuctionListing_EmitsFailed(t *testing.T) {
 }
 
 func TestRegisterWish_CreatesEntryAndAcks(t *testing.T) {
-	db := test.SetupTestDB(t, listing.Migration, holding.Migration, wish.Migration)
+	db := test.SetupTestDB(t, listing.Migration, holding.Migration, wish.Migration, outbox.Migration)
 	ctx := test.CreateTestContext()
 	l := logrus.New()
 
@@ -484,19 +486,20 @@ func TestRegisterWish_CreatesEntryAndAcks(t *testing.T) {
 		t.Fatalf("wish price not persisted: want %d got %d", price, stored.Price())
 	}
 
-	if len(rp.events) != 1 {
-		t.Fatalf("expected 1 event, got %d", len(rp.events))
+	evts := allEvents(t, db, rp, transactionId)
+	if len(evts) != 1 {
+		t.Fatalf("expected 1 event, got %d", len(evts))
 	}
-	if rp.events[0].eventType != mts.StatusEventTypeWishAdded {
-		t.Fatalf("expected WISH_ADDED, got %s", rp.events[0].eventType)
+	if evts[0].eventType != mts.StatusEventTypeWishAdded {
+		t.Fatalf("expected WISH_ADDED, got %s", evts[0].eventType)
 	}
-	if rp.events[0].transactionId != transactionId {
-		t.Fatalf("event transactionId mismatch: want %s got %s", transactionId, rp.events[0].transactionId)
+	if evts[0].transactionId != transactionId {
+		t.Fatalf("event transactionId mismatch: want %s got %s", transactionId, evts[0].transactionId)
 	}
 }
 
 func TestRemoveWish_DeletesEntryAndAcks(t *testing.T) {
-	db := test.SetupTestDB(t, listing.Migration, holding.Migration, wish.Migration)
+	db := test.SetupTestDB(t, listing.Migration, holding.Migration, wish.Migration, outbox.Migration)
 	ctx := test.CreateTestContext()
 	l := logrus.New()
 
@@ -527,15 +530,53 @@ func TestRemoveWish_DeletesEntryAndAcks(t *testing.T) {
 		t.Fatalf("expected wish deleted after remove")
 	}
 
-	if len(rp.events) != 1 {
-		t.Fatalf("expected 1 event, got %d", len(rp.events))
+	evts := allEvents(t, db, rp, transactionId)
+	if len(evts) != 1 {
+		t.Fatalf("expected 1 event, got %d", len(evts))
 	}
-	if rp.events[0].eventType != mts.StatusEventTypeWishRemoved {
-		t.Fatalf("expected WISH_REMOVED, got %s", rp.events[0].eventType)
+	if evts[0].eventType != mts.StatusEventTypeWishRemoved {
+		t.Fatalf("expected WISH_REMOVED, got %s", evts[0].eventType)
 	}
-	if rp.events[0].transactionId != transactionId {
-		t.Fatalf("event transactionId mismatch: want %s got %s", transactionId, rp.events[0].transactionId)
+	if evts[0].transactionId != transactionId {
+		t.Fatalf("event transactionId mismatch: want %s got %s", transactionId, evts[0].transactionId)
 	}
+}
+
+// allEvents merges the two sinks an MTS handler now emits to: the DIRECT
+// producer captured by rp (failure-path *_FAILED acks) and the transactional
+// outbox rows the migrated SUCCESS paths enqueue (task-114 — LISTING_CANCELLED,
+// WISH_ADDED, WISH_REMOVED, BID_PLACED, OUTBID). Both decode to the same status
+// envelope, so assertions cover the whole emit surface after the migration.
+//
+// Results are scoped to txId: the package's cache=shared in-memory DB leaks
+// outbox_entries rows across sibling tests (unlike the per-test recordingProducer),
+// so filtering on the test's transactionId isolates the assertion. Rows are read
+// in id order to mirror publish order.
+func allEvents(t *testing.T, db *gorm.DB, rp *recordingProducer, txId uuid.UUID) []recordedEvent {
+	t.Helper()
+	var out []recordedEvent
+	rp.mu.Lock()
+	for _, e := range rp.events {
+		if e.transactionId == txId {
+			out = append(out, e)
+		}
+	}
+	rp.mu.Unlock()
+	var rows []outbox.Entity
+	if err := db.Order("id ASC").Find(&rows).Error; err != nil {
+		t.Fatalf("read outbox rows: %v", err)
+	}
+	for _, r := range rows {
+		var ev mts.StatusEvent[json.RawMessage]
+		if err := json.Unmarshal(r.MessageValue, &ev); err != nil {
+			t.Fatalf("decode outbox row: %v", err)
+		}
+		if ev.TransactionId != txId {
+			continue
+		}
+		out = append(out, recordedEvent{transactionId: ev.TransactionId, eventType: ev.Type, reason: reasonFromBody(ev.Body)})
+	}
+	return out
 }
 
 // reasonFromBody extracts the optional semantic "reasonKey" from a raw status-event

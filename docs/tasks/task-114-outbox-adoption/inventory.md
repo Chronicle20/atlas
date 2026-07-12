@@ -2227,3 +2227,110 @@ because `tools/outboxguard` flagged an in-tx direct emit here.
 - `go test -race ./...`, `go vet ./...`, `go build ./...` all clean;
   `docker buildx bake atlas-monster-book` succeeded; `tools/outbox-guard.sh`
   exits 0 across the whole repo (including this module) after this change.
+
+## atlas-mts
+
+Module: `services/atlas-mts/atlas.com/mts`. Out of the original fleet scope —
+atlas-mts (task-102, the per-world player marketplace) did not exist when
+task-114 was specced. It was migrated when main was merged into the task branch
+(see `audit.md` "Post-Merge" sections): the post-merge plan-adherence pass found
+it emitting consumer-projected tx-coupled status events post-commit on the
+direct producer, the exact pattern task-114 eliminates. Rather than leave it as
+documented debt, it was brought onto the outbox here. Line numbers reflect
+`kafka/consumer/custody/consumer.go` and `kafka/consumer/mts/consumer.go` as of
+this change.
+
+MTS's consistency model is saga-orchestration: the channel/REST issue commands,
+a saga command drives cross-service effects, and the MTS command consumers are
+the saga step handlers. Each step handler does its DB write via a processor
+(each processor method wraps its own `ExecuteTransaction`) and then emits a
+custody ack (drives the saga) and/or a high-level MTS status event (drives the
+channel's client notice). Pre-migration those emits flushed a `message.Buffer`
+through the DIRECT producer AFTER the processor's tx had already committed — the
+post-commit crash window task-114 closes. Each migration wraps the processor
+call and its SUCCESS emits in one outer `database.ExecuteTransaction`, threading
+`tx` into `NewProcessor(l, ctx, tx)` (re-entrant, so the processor's inner
+`ExecuteTransaction` runs on the outer tx) and flushing the buffer through
+`outbox.EmitProvider(l, ctx, tx)`. Failure/error acks stay on the direct path.
+
+### Infrastructure
+
+- `go.mod` — added the `atlas-outbox` require + `../../../../libs/atlas-outbox`
+  replace (the lib's other deps — kafka/model/retry/tenant/routine — were
+  already present).
+- `main.go` — added `outboxlib.Migration` to `database.SetMigrations(...)` and
+  booted the drainer (`NewTopicWriterPool` + `NewDrainer(..., WithDSN(...))`,
+  run via `routine.Go` per task-115 RR-6, stopped in a `TeardownFunc`), matching
+  the 16 other drainer-booting services.
+
+### Migrated (success emits → outbox, atomic with the DB write)
+
+- `kafka/consumer/custody/consumer.go` `handleAcceptToMtsListing` — the listing
+  row create (`listing.Accept`) + `ACCEPTED` ack + `LISTING_CREATED` status
+  event now commit in one tx.
+- `handleReleaseFromMtsHolding` — the holding soft-delete (`holding.Release`) +
+  `RELEASED` ack + (conditional) `ITEM_TAKEN_HOME` status event in one tx.
+- `handleRestoreMtsHolding` — the un-soft-delete (`holding.RestoreHolding`) +
+  `RESTORED` ack in one tx.
+- `handleMtsMoveListingToHolding` — the settle (`listing.SettleMove`: listing
+  ->sold, buyer holding, both history rows) + `MOVED` ack + `LISTING_SOLD`
+  status event in one tx.
+- `kafka/consumer/mts/consumer.go` `handleCancelListing` — the race-safe cancel
+  (`listing.CancelBySerial`: active->cancelled + seller holding) + the
+  `LISTING_CANCELLED` status event in one tx (only on the race-winner; a lost
+  race writes nothing and emits `LISTING_CANCEL_FAILED` on the direct path).
+- `handlePlaceBid` — the bid (`listing.PlaceBid`: escrow hold, currentBid
+  advance, prior-escrow release) + `BID_PLACED` (+ optional `OUTBID`) status
+  events in one tx.
+- `handleRegisterWish` — the wish row create (`wish.RegisterWish`) + `WISH_ADDED`
+  in one tx.
+- `handleRemoveWish` — the read-then-delete (`wish.RemoveWish`) + `WISH_REMOVED`
+  (echoing the characterId read in-tx) in one tx.
+
+### Left direct
+
+- All failure/error acks — custody `ErrorStatusEventProvider` (accept/release/
+  restore/move error paths) and the high-level `*_FAILED` events
+  (`LISTING_CREATE_FAILED`, `LISTING_CANCEL_FAILED`, `TAKE_HOME_FAILED`,
+  `BUY_FAILED`, `BID_FAILED`). These reflect NO committed state (the operation
+  failed / lost its race), so per task-114 they must publish regardless of any
+  rollback and stay on `producer.ProviderImpl`. Emitted after the outer tx
+  returns a non-nil error (or on a lost-race no-op), exactly like the
+  atlas-cashshop wallet `EmitAdjustFailure` and the atlas-inventory D7 rejections.
+- `handleTakeHome` — its DB write (`holding.TakeHome`) has NO success status
+  event here; the `ITEM_TAKEN_HOME` success is emitted by the release step. Only
+  the `TAKE_HOME_FAILED` direct emit remains.
+- `handleBuy` — emits no tx-coupled status event; it pre-checks and emits an
+  `MtsSettlePurchase` saga COMMAND (the buy success is driven by the migrated
+  `LISTING_SOLD` at settle). Command emits stay direct.
+- `saga/processor.go:28` `MtsOperation` saga-command emit — a COMMAND to the
+  orchestrator, not a state-asserting event; direct per the command rule.
+- `handleMtsMoveListingToHolding` offer side-effect (`ReleaseSiblingOffers` →
+  `LISTING_CANCELLED` for each losing offer) — intentionally left direct
+  best-effort. `ReleaseSiblingOffers` fans out N independent per-sibling
+  `Cancel` transactions and deliberately swallows per-sibling failures; there is
+  no single transaction to bind the notices to, and wrapping all siblings in one
+  outer tx would change that isolation (a swallowed partial write could commit).
+  The losing offerer's item is already in their holding and the escrow is
+  sweep-recoverable, so a lost notice is a courtesy-notice gap, not a
+  money/item inconsistency — the same best-effort exclusion class already carved
+  out elsewhere.
+- `handlePlaceBid` outbid bid-lost history row — a best-effort `transaction`
+  insert with no emit ("a failure leaves history a row short but does not undo
+  the committed bid"); left after the bid tx, unchanged.
+
+### Notes
+
+- **Test rework.** The custody and mts consumer tests captured emitted events
+  via a per-test `recordingProducer` injected as the handler's producer factory.
+  Success emits now land in `outbox_entries` instead, so each test package gained
+  an `allEvents(t, db, rp, txId)` helper that merges the direct-captured rp
+  events (failure acks) with the outbox rows (success events), decoded to the
+  same envelope, and `outbox.Migration` was added to every `test.SetupTestDB`
+  call. Results are scoped to the test's `transactionId` because the package's
+  `cache=shared` in-memory DB leaks `outbox_entries` rows across sibling tests
+  (the same reason the existing tests scope holding counts by unique owner id).
+  Failure-path assertions were left on `rp.events` unchanged.
+- `go test -race ./...`, `go vet ./...`, `go build ./...` all clean;
+  `docker buildx bake atlas-mts` succeeded; `tools/outbox-guard.sh` and
+  `tools/goroutine-guard.sh` both exit 0 across the repo including this module.

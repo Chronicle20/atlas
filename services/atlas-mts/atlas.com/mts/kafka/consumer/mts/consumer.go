@@ -14,12 +14,14 @@ import (
 	"errors"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	kprod "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -75,7 +77,6 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 // providerFn is the shape of the per-context producer factory returned by
 // producer2.ProviderImpl(l): func(ctx) func(token) MessageProducer.
 type providerFn = func(ctx context.Context) func(token string) kprod.MessageProducer
-
 
 // failReasonFor maps a buy/bid rejection error to the SEMANTIC failure key
 // the channel resolves against the tenant "noticeFailReasons" writer table
@@ -194,22 +195,40 @@ func handleCancelListing(pf providerFn) func(db *gorm.DB) message.Handler[mts.Co
 			// The serial owner-check, race-safe cancel, and cancelled-history row all
 			// live in the listing processor (shared with the REST DELETE); the consumer
 			// only maps the wire serial and emits the result.
-			res, err := listing.NewProcessor(l, ctx, db).CancelBySerial(world.Id(b.WorldId), b.Serial, b.SellerId)
-			if err != nil {
-				l.WithError(err).Errorf("Failed to cancel serial [%d] in world [%d], transaction [%s].", b.Serial, b.WorldId, c.TransactionId.String())
+			// The owner-check, race-safe cancel, cancelled-history row, and the
+			// LISTING_CANCELLED status event commit in one transaction: the event is
+			// enqueued as an outbox row in the same tx as the active->cancelled
+			// transition + seller holding, so it publishes iff the cancel commits.
+			var res listing.CancelResult
+			won := false
+			terr := database.ExecuteTransaction(db, func(tx *gorm.DB) error {
+				r, cerr := listing.NewProcessor(l, ctx, tx).CancelBySerial(world.Id(b.WorldId), b.Serial, b.SellerId)
+				if cerr != nil {
+					return cerr
+				}
+				res = r
+				won = r.Won
+				if !r.Won {
+					// Lost the cancel-vs-buy race — no writes to commit and no success
+					// event; the cancel-failed notice is emitted on the direct path below.
+					return nil
+				}
+				return msg.Emit(outbox.EmitProvider(l, ctx, tx))(func(buf *msg.Buffer) error {
+					return buf.Put(mts.EnvStatusEventTopic, mtsproducer.ListingCancelledStatusEventProvider(c.TransactionId, b.WorldId, res.ListingId, res.HoldingId, res.SellerId, res.ItemId))
+				})
+			})
+			if terr != nil {
+				l.WithError(terr).Errorf("Failed to cancel serial [%d] in world [%d], transaction [%s].", b.Serial, b.WorldId, c.TransactionId.String())
 				emitFail()
 				return
 			}
-			if !res.Won {
+			if !won {
 				// Lost the cancel-vs-buy race: the buy path owns the holding; the seller
 				// still gets the cancel-failed notice.
 				l.Debugf("Cancel for serial [%d] lost the cancel-vs-buy race (already not active); no holding created.", b.Serial)
 				emitFail()
 				return
 			}
-			_ = msg.Emit(p)(func(buf *msg.Buffer) error {
-				return buf.Put(mts.EnvStatusEventTopic, mtsproducer.ListingCancelledStatusEventProvider(c.TransactionId, b.WorldId, res.ListingId, res.HoldingId, res.SellerId, res.ItemId))
-			})
 		}
 	}
 }
@@ -350,31 +369,41 @@ func handlePlaceBid(pf providerFn) func(db *gorm.DB) message.Handler[mts.Command
 				return
 			}
 
-			res, err := proc.PlaceBid(listing.BidRequest{
-				WorldId:         world.Id(b.WorldId),
-				ListingId:       lm.Id(),
-				BidderId:        b.BidderId,
-				BidderAccountId: b.BidderAccountId,
-				Amount:          b.Amount,
+			// The bid validation, race-safe escrow hold, currentBid/highBidder advance,
+			// prior-escrow release, and the BID_PLACED (+ optional OUTBID) status events
+			// commit in one transaction: the events are enqueued as outbox rows in the
+			// same tx as the bid, so they publish iff the bid commits.
+			var res listing.BidResult
+			terr := database.ExecuteTransaction(db, func(tx *gorm.DB) error {
+				r, berr := listing.NewProcessor(l, ctx, tx).PlaceBid(listing.BidRequest{
+					WorldId:         world.Id(b.WorldId),
+					ListingId:       lm.Id(),
+					BidderId:        b.BidderId,
+					BidderAccountId: b.BidderAccountId,
+					Amount:          b.Amount,
+				})
+				if berr != nil {
+					return berr
+				}
+				res = r
+				// Emit BID_PLACED so the channel refreshes the bidder's NX (the escrow
+				// debit just left their prepaid). On an outbid, also emit OUTBID so the
+				// displaced bidder's NX is refreshed (their escrow was released).
+				return msg.Emit(outbox.EmitProvider(l, ctx, tx))(func(buf *msg.Buffer) error {
+					if perr := buf.Put(mts.EnvStatusEventTopic, mtsproducer.BidPlacedStatusEventProvider(c.TransactionId, b.WorldId, lm.Id(), b.BidderId, b.Amount)); perr != nil {
+						return perr
+					}
+					if r.HadPrior {
+						return buf.Put(mts.EnvStatusEventTopic, mtsproducer.OutbidStatusEventProvider(c.TransactionId, b.WorldId, lm.Id(), res.PreviousBidderId))
+					}
+					return nil
+				})
 			})
-			if err != nil {
-				l.WithError(err).Errorf("Failed to place bid for listing [%s] (serial [%d]), bidder [%d], transaction [%s].", lm.Id().String(), b.Serial, b.BidderId, c.TransactionId.String())
-				emitFail(failReasonFor(err))
+			if terr != nil {
+				l.WithError(terr).Errorf("Failed to place bid for listing [%s] (serial [%d]), bidder [%d], transaction [%s].", lm.Id().String(), b.Serial, b.BidderId, c.TransactionId.String())
+				emitFail(failReasonFor(terr))
 				return
 			}
-
-			// Emit BID_PLACED so the channel refreshes the bidder's NX (the escrow
-			// debit just left their prepaid). On an outbid, also emit OUTBID so the
-			// displaced bidder's NX is refreshed (their escrow was released).
-			_ = msg.Emit(p)(func(buf *msg.Buffer) error {
-				if perr := buf.Put(mts.EnvStatusEventTopic, mtsproducer.BidPlacedStatusEventProvider(c.TransactionId, b.WorldId, lm.Id(), b.BidderId, b.Amount)); perr != nil {
-					return perr
-				}
-				if res.HadPrior {
-					return buf.Put(mts.EnvStatusEventTopic, mtsproducer.OutbidStatusEventProvider(c.TransactionId, b.WorldId, lm.Id(), res.PreviousBidderId))
-				}
-				return nil
-			})
 
 			// Record the outbid bidder's bid-lost history row (nProcessStatus 2). Each
 			// outbid is a distinct lost bid, so one row per outbid. Best-effort: a
@@ -420,26 +449,29 @@ func handleRegisterWish(pf providerFn) func(db *gorm.DB) message.Handler[mts.Com
 			if b.Origin == mts.WishOriginRegisterWish {
 				wishType = wish.TypeWanted
 			}
-			err := wish.NewProcessor(l, ctx, db).RegisterWish(wish.RegisterWishRequest{
-				WishId:        b.WishId,
-				WorldId:       world.Id(b.WorldId),
-				CharacterId:   b.CharacterId,
-				ItemId:        b.ItemId,
-				WishType:      wishType,
-				ListingSerial: b.ListingSerial,
-				Count:         b.Count,
-				Price:         b.Price,
+			// The wish row-create (and its wanted price/expiry derivation) and the
+			// WISH_ADDED status event commit in one transaction: the event is enqueued as
+			// an outbox row in the same tx as the wish row.
+			terr := database.ExecuteTransaction(db, func(tx *gorm.DB) error {
+				if err := wish.NewProcessor(l, ctx, tx).RegisterWish(wish.RegisterWishRequest{
+					WishId:        b.WishId,
+					WorldId:       world.Id(b.WorldId),
+					CharacterId:   b.CharacterId,
+					ItemId:        b.ItemId,
+					WishType:      wishType,
+					ListingSerial: b.ListingSerial,
+					Count:         b.Count,
+					Price:         b.Price,
+				}); err != nil {
+					return err
+				}
+				return msg.Emit(outbox.EmitProvider(l, ctx, tx))(func(buf *msg.Buffer) error {
+					return buf.Put(mts.EnvStatusEventTopic, mtsproducer.WishAddedStatusEventProvider(c.TransactionId, b.WorldId, b.WishId, b.CharacterId, b.ItemId, b.Origin))
+				})
 			})
-
-			p := pf(ctx)
-			if err != nil {
-				l.WithError(err).Errorf("Failed to register wish [%s] for character [%d], transaction [%s].", b.WishId.String(), b.CharacterId, c.TransactionId.String())
-				return
+			if terr != nil {
+				l.WithError(terr).Errorf("Failed to register wish [%s] for character [%d], transaction [%s].", b.WishId.String(), b.CharacterId, c.TransactionId.String())
 			}
-
-			_ = msg.Emit(p)(func(buf *msg.Buffer) error {
-				return buf.Put(mts.EnvStatusEventTopic, mtsproducer.WishAddedStatusEventProvider(c.TransactionId, b.WorldId, b.WishId, b.CharacterId, b.ItemId, b.Origin))
-			})
 		}
 	}
 }
@@ -457,17 +489,22 @@ func handleRemoveWish(pf providerFn) func(db *gorm.DB) message.Handler[mts.Comma
 
 			// The read-then-delete tx lives in the wish processor; this handler owns
 			// only the WISH_REMOVED emission (which echoes the owning characterId).
-			characterId, err := wish.NewProcessor(l, ctx, db).RemoveWish(b.WishId.String())
-
-			p := pf(ctx)
-			if err != nil {
-				l.WithError(err).Errorf("Failed to remove wish [%s] for transaction [%s].", b.WishId.String(), c.TransactionId.String())
-				return
-			}
-
-			_ = msg.Emit(p)(func(buf *msg.Buffer) error {
-				return buf.Put(mts.EnvStatusEventTopic, mtsproducer.WishRemovedStatusEventProvider(c.TransactionId, b.WorldId, b.WishId, characterId, b.Origin))
+			// The read-then-delete tx and the WISH_REMOVED status event commit in one
+			// transaction; the event echoes the owning characterId read inside the tx.
+			var characterId uint32
+			terr := database.ExecuteTransaction(db, func(tx *gorm.DB) error {
+				cid, err := wish.NewProcessor(l, ctx, tx).RemoveWish(b.WishId.String())
+				if err != nil {
+					return err
+				}
+				characterId = cid
+				return msg.Emit(outbox.EmitProvider(l, ctx, tx))(func(buf *msg.Buffer) error {
+					return buf.Put(mts.EnvStatusEventTopic, mtsproducer.WishRemovedStatusEventProvider(c.TransactionId, b.WorldId, b.WishId, characterId, b.Origin))
+				})
 			})
+			if terr != nil {
+				l.WithError(terr).Errorf("Failed to remove wish [%s] for transaction [%s].", b.WishId.String(), c.TransactionId.String())
+			}
 		}
 	}
 }

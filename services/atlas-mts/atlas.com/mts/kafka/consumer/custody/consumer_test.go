@@ -14,6 +14,7 @@ import (
 
 	kprod "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
@@ -73,6 +74,45 @@ func eventsOfType(events []recordedEvent, eventType string) []recordedEvent {
 	return out
 }
 
+// allEvents merges the two sinks a custody handler now emits to: the DIRECT
+// producer captured by rp (failure-path ERROR acks) and the transactional
+// outbox rows the migrated SUCCESS paths enqueue (task-114 — ACCEPTED,
+// LISTING_CREATED, MOVED, LISTING_SOLD, RELEASED, ITEM_TAKEN_HOME, RESTORED).
+// Both decode to the same {transactionId,type} envelope, so the existing
+// eventsOfType assertions cover the whole emit surface after the migration.
+//
+// Results are scoped to txId: the package uses a cache=shared in-memory DB, so
+// the outbox_entries table (unlike the per-test recordingProducer) leaks rows
+// across sibling tests — filtering on the test's transactionId isolates the
+// assertion exactly as the per-owner holding counts do. Outbox rows are read in
+// id order to mirror publish order.
+func allEvents(t *testing.T, db *gorm.DB, rp *recordingProducer, txId uuid.UUID) []recordedEvent {
+	t.Helper()
+	var out []recordedEvent
+	rp.mu.Lock()
+	for _, e := range rp.events {
+		if e.transactionId == txId {
+			out = append(out, e)
+		}
+	}
+	rp.mu.Unlock()
+	var rows []outbox.Entity
+	if err := db.Order("id ASC").Find(&rows).Error; err != nil {
+		t.Fatalf("read outbox rows: %v", err)
+	}
+	for _, r := range rows {
+		var ev custody.StatusEvent[json.RawMessage]
+		if err := json.Unmarshal(r.MessageValue, &ev); err != nil {
+			t.Fatalf("decode outbox row: %v", err)
+		}
+		if ev.TransactionId != txId {
+			continue
+		}
+		out = append(out, recordedEvent{transactionId: ev.TransactionId, eventType: ev.Type})
+	}
+	return out
+}
+
 func newAcceptCommand(transactionId uuid.UUID, listingId uuid.UUID) custody.Command[custody.AcceptToMtsListingCommandBody] {
 	return custody.Command[custody.AcceptToMtsListingCommandBody]{
 		TransactionId: transactionId,
@@ -98,7 +138,7 @@ func newAcceptCommand(transactionId uuid.UUID, listingId uuid.UUID) custody.Comm
 }
 
 func TestAcceptToMtsListing_CreatesListingAndAcks(t *testing.T) {
-	db := test.SetupTestDB(t, listing.Migration, holding.Migration)
+	db := test.SetupTestDB(t, listing.Migration, holding.Migration, outbox.Migration)
 	ctx := test.CreateTestContext()
 	l := logrus.New()
 
@@ -137,16 +177,16 @@ func TestAcceptToMtsListing_CreatesListingAndAcks(t *testing.T) {
 
 	// exactly one ACCEPTED ack (drives the saga) + one LISTING_CREATED (drives the
 	// channel's RegisterSaleEntryDone), both carrying the same transactionId.
-	accepted := eventsOfType(rp.events, custody.StatusEventTypeAccepted)
+	accepted := eventsOfType(allEvents(t, db, rp, transactionId), custody.StatusEventTypeAccepted)
 	if len(accepted) != 1 {
-		t.Fatalf("expected 1 ACCEPTED ack, got %d (all: %v)", len(accepted), rp.events)
+		t.Fatalf("expected 1 ACCEPTED ack, got %d (all: %v)", len(accepted), allEvents(t, db, rp, transactionId))
 	}
 	if accepted[0].transactionId != transactionId {
 		t.Fatalf("ACCEPTED ack transactionId mismatch: want %s got %s", transactionId, accepted[0].transactionId)
 	}
-	created := eventsOfType(rp.events, mtsmsg.StatusEventTypeListingCreated)
+	created := eventsOfType(allEvents(t, db, rp, transactionId), mtsmsg.StatusEventTypeListingCreated)
 	if len(created) != 1 {
-		t.Fatalf("expected 1 LISTING_CREATED event, got %d (all: %v)", len(created), rp.events)
+		t.Fatalf("expected 1 LISTING_CREATED event, got %d (all: %v)", len(created), allEvents(t, db, rp, transactionId))
 	}
 	if created[0].transactionId != transactionId {
 		t.Fatalf("LISTING_CREATED transactionId mismatch: want %s got %s", transactionId, created[0].transactionId)
@@ -154,7 +194,7 @@ func TestAcceptToMtsListing_CreatesListingAndAcks(t *testing.T) {
 }
 
 func TestAcceptToMtsListing_ReplayIsNoOpAndReacks(t *testing.T) {
-	db := test.SetupTestDB(t, listing.Migration, holding.Migration)
+	db := test.SetupTestDB(t, listing.Migration, holding.Migration, outbox.Migration)
 	ctx := test.CreateTestContext()
 	l := logrus.New()
 
@@ -186,13 +226,13 @@ func TestAcceptToMtsListing_ReplayIsNoOpAndReacks(t *testing.T) {
 	// both deliveries re-emitted the ACCEPTED ack + the LISTING_CREATED notice with
 	// the same transactionId (a replayed LISTING_CREATED is a harmless idempotent
 	// seller notice, mirroring the replayed LISTING_SOLD on the move handler).
-	accepted := eventsOfType(rp.events, custody.StatusEventTypeAccepted)
+	accepted := eventsOfType(allEvents(t, db, rp, transactionId), custody.StatusEventTypeAccepted)
 	if len(accepted) != 2 {
-		t.Fatalf("expected 2 ACCEPTED acks (original + replay), got %d (all: %v)", len(accepted), rp.events)
+		t.Fatalf("expected 2 ACCEPTED acks (original + replay), got %d (all: %v)", len(accepted), allEvents(t, db, rp, transactionId))
 	}
-	created := eventsOfType(rp.events, mtsmsg.StatusEventTypeListingCreated)
+	created := eventsOfType(allEvents(t, db, rp, transactionId), mtsmsg.StatusEventTypeListingCreated)
 	if len(created) != 2 {
-		t.Fatalf("expected 2 LISTING_CREATED events (original + replay), got %d (all: %v)", len(created), rp.events)
+		t.Fatalf("expected 2 LISTING_CREATED events (original + replay), got %d (all: %v)", len(created), allEvents(t, db, rp, transactionId))
 	}
 	for _, ev := range append(accepted, created...) {
 		if ev.transactionId != transactionId {
@@ -229,7 +269,7 @@ func newAuctionAcceptCommand(transactionId uuid.UUID, listingId uuid.UUID, listV
 // the client's first bid — always current_bid + increment — lands exactly on the
 // seller's advertised starting price (listValue), not one increment above it.
 func TestAcceptToMtsListing_SeedsAuctionCurrentBidBelowListValueByIncrement(t *testing.T) {
-	db := test.SetupTestDB(t, listing.Migration, holding.Migration)
+	db := test.SetupTestDB(t, listing.Migration, holding.Migration, outbox.Migration)
 	ctx := test.CreateTestContext()
 	l := logrus.New()
 
@@ -256,7 +296,7 @@ func TestAcceptToMtsListing_SeedsAuctionCurrentBidBelowListValueByIncrement(t *t
 // asserts the seed floors at 0 rather than underflowing when listValue does not
 // exceed the increment.
 func TestAcceptToMtsListing_SeedsAuctionCurrentBidZeroWhenListValueBelowIncrement(t *testing.T) {
-	db := test.SetupTestDB(t, listing.Migration, holding.Migration)
+	db := test.SetupTestDB(t, listing.Migration, holding.Migration, outbox.Migration)
 	ctx := test.CreateTestContext()
 	l := logrus.New()
 
@@ -280,7 +320,7 @@ func TestAcceptToMtsListing_SeedsAuctionCurrentBidZeroWhenListValueBelowIncremen
 // zero MinIncrement (older channels / unset) falls back to the default increment
 // of 1 for the currentBid seed.
 func TestAcceptToMtsListing_SeedsAuctionCurrentBidDefaultIncrementWhenZero(t *testing.T) {
-	db := test.SetupTestDB(t, listing.Migration, holding.Migration)
+	db := test.SetupTestDB(t, listing.Migration, holding.Migration, outbox.Migration)
 	ctx := test.CreateTestContext()
 	l := logrus.New()
 
@@ -360,7 +400,7 @@ func newMoveCommand(transactionId uuid.UUID, listingId uuid.UUID, buyerId uint32
 }
 
 func TestMtsMoveListingToHolding_MarksSoldCreatesHoldingAndAcks(t *testing.T) {
-	db := test.SetupTestDB(t, listing.Migration, holding.Migration, transaction.Migration)
+	db := test.SetupTestDB(t, listing.Migration, holding.Migration, transaction.Migration, outbox.Migration)
 	ctx := test.CreateTestContext()
 	l := logrus.New()
 
@@ -399,16 +439,16 @@ func TestMtsMoveListingToHolding_MarksSoldCreatesHoldingAndAcks(t *testing.T) {
 
 	// exactly one MOVED ack (drives the saga) + one LISTING_SOLD (drives the
 	// channel's BuyItemDone), both carrying the transactionId.
-	moved := eventsOfType(rp.events, custody.StatusEventTypeMoved)
+	moved := eventsOfType(allEvents(t, db, rp, transactionId), custody.StatusEventTypeMoved)
 	if len(moved) != 1 {
-		t.Fatalf("expected 1 MOVED ack, got %d (all: %v)", len(moved), rp.events)
+		t.Fatalf("expected 1 MOVED ack, got %d (all: %v)", len(moved), allEvents(t, db, rp, transactionId))
 	}
 	if moved[0].transactionId != transactionId {
 		t.Fatalf("ack transactionId mismatch: want %s got %s", transactionId, moved[0].transactionId)
 	}
-	sold := eventsOfType(rp.events, mtsmsg.StatusEventTypeListingSold)
+	sold := eventsOfType(allEvents(t, db, rp, transactionId), mtsmsg.StatusEventTypeListingSold)
 	if len(sold) != 1 {
-		t.Fatalf("expected 1 LISTING_SOLD event, got %d (all: %v)", len(sold), rp.events)
+		t.Fatalf("expected 1 LISTING_SOLD event, got %d (all: %v)", len(sold), allEvents(t, db, rp, transactionId))
 	}
 	if sold[0].transactionId != transactionId {
 		t.Fatalf("LISTING_SOLD transactionId mismatch: want %s got %s", transactionId, sold[0].transactionId)
@@ -466,7 +506,7 @@ func TestMtsMoveListingToHolding_MarksSoldCreatesHoldingAndAcks(t *testing.T) {
 // listing row's list value / current bid. A buy-now of an auction previously
 // recorded the last BID here (task-102 live finding).
 func TestMtsMoveListingToHolding_UsesSettlePriceNotListingRow(t *testing.T) {
-	db := test.SetupTestDB(t, listing.Migration, holding.Migration, transaction.Migration)
+	db := test.SetupTestDB(t, listing.Migration, holding.Migration, transaction.Migration, outbox.Migration)
 	ctx := test.CreateTestContext()
 	l := logrus.New()
 
@@ -516,7 +556,7 @@ func TestMtsMoveListingToHolding_UsesSettlePriceNotListingRow(t *testing.T) {
 }
 
 func TestMtsMoveListingToHolding_ReplayCreatesNoSecondHoldingAndReacks(t *testing.T) {
-	db := test.SetupTestDB(t, listing.Migration, holding.Migration)
+	db := test.SetupTestDB(t, listing.Migration, holding.Migration, outbox.Migration)
 	ctx := test.CreateTestContext()
 	l := logrus.New()
 
@@ -551,22 +591,22 @@ func TestMtsMoveListingToHolding_ReplayCreatesNoSecondHoldingAndReacks(t *testin
 
 	// both deliveries re-acked MOVED (and re-emitted LISTING_SOLD) with the same
 	// transactionId. A replayed LISTING_SOLD is a harmless idempotent buyer notice.
-	moved := eventsOfType(rp.events, custody.StatusEventTypeMoved)
+	moved := eventsOfType(allEvents(t, db, rp, transactionId), custody.StatusEventTypeMoved)
 	if len(moved) != 2 {
-		t.Fatalf("expected 2 MOVED acks (original + replay), got %d (all: %v)", len(moved), rp.events)
+		t.Fatalf("expected 2 MOVED acks (original + replay), got %d (all: %v)", len(moved), allEvents(t, db, rp, transactionId))
 	}
 	for i, ev := range moved {
 		if ev.transactionId != transactionId {
 			t.Fatalf("ack %d transactionId mismatch: %s", i, ev.transactionId)
 		}
 	}
-	if got := len(eventsOfType(rp.events, mtsmsg.StatusEventTypeListingSold)); got != 2 {
-		t.Fatalf("expected 2 LISTING_SOLD events (original + replay), got %d (all: %v)", got, rp.events)
+	if got := len(eventsOfType(allEvents(t, db, rp, transactionId), mtsmsg.StatusEventTypeListingSold)); got != 2 {
+		t.Fatalf("expected 2 LISTING_SOLD events (original + replay), got %d (all: %v)", got, allEvents(t, db, rp, transactionId))
 	}
 }
 
 func TestReleaseFromMtsHolding_SoftDeletesAndIsIdempotent(t *testing.T) {
-	db := test.SetupTestDB(t, listing.Migration, holding.Migration)
+	db := test.SetupTestDB(t, listing.Migration, holding.Migration, outbox.Migration)
 	ctx := test.CreateTestContext()
 	l := logrus.New()
 
@@ -603,7 +643,7 @@ func TestReleaseFromMtsHolding_SoftDeletesAndIsIdempotent(t *testing.T) {
 	handleReleaseFromMtsHolding(rp.provider())(db)(l, ctx, cmd)
 
 	// Both deliveries ack RELEASED (original + replay).
-	released := eventsOfType(rp.events, custody.StatusEventTypeReleased)
+	released := eventsOfType(allEvents(t, db, rp, transactionId), custody.StatusEventTypeReleased)
 	if len(released) != 2 {
 		t.Fatalf("expected 2 RELEASED acks (original + replay), got %d", len(released))
 	}
@@ -616,7 +656,7 @@ func TestReleaseFromMtsHolding_SoftDeletesAndIsIdempotent(t *testing.T) {
 	// Only the first delivery emits ITEM_TAKEN_HOME (which drives the channel's
 	// Transfer Inventory re-push); the replay finds the row already soft-deleted
 	// and skips the re-emit, keeping release idempotent.
-	takenHome := eventsOfType(rp.events, mtsmsg.StatusEventTypeItemTakenHome)
+	takenHome := eventsOfType(allEvents(t, db, rp, transactionId), mtsmsg.StatusEventTypeItemTakenHome)
 	if len(takenHome) != 1 {
 		t.Fatalf("expected exactly 1 ITEM_TAKEN_HOME event, got %d", len(takenHome))
 	}
@@ -630,7 +670,7 @@ func TestReleaseFromMtsHolding_SoftDeletesAndIsIdempotent(t *testing.T) {
 // and is idempotent: a replayed restore on an already-live row re-acks RESTORED
 // without error. This is the dupe-safety inverse of ReleaseFromMtsHolding.
 func TestRestoreMtsHolding_UndoesReleaseAndIsIdempotent(t *testing.T) {
-	db := test.SetupTestDB(t, listing.Migration, holding.Migration)
+	db := test.SetupTestDB(t, listing.Migration, holding.Migration, outbox.Migration)
 	ctx := test.CreateTestContext()
 	l := logrus.New()
 
@@ -669,10 +709,10 @@ func TestRestoreMtsHolding_UndoesReleaseAndIsIdempotent(t *testing.T) {
 	// replayed delivery: already live, re-acks without error
 	handleRestoreMtsHolding(rp.provider())(db)(l, ctx, cmd)
 
-	if len(rp.events) != 2 {
-		t.Fatalf("expected 2 RESTORED acks (original + replay), got %d", len(rp.events))
+	if len(allEvents(t, db, rp, transactionId)) != 2 {
+		t.Fatalf("expected 2 RESTORED acks (original + replay), got %d", len(allEvents(t, db, rp, transactionId)))
 	}
-	for i, ev := range rp.events {
+	for i, ev := range allEvents(t, db, rp, transactionId) {
 		if ev.eventType != custody.StatusEventTypeRestored {
 			t.Fatalf("ack %d not RESTORED: %s", i, ev.eventType)
 		}
@@ -687,7 +727,7 @@ func TestRestoreMtsHolding_UndoesReleaseAndIsIdempotent(t *testing.T) {
 // RestoreListingFromHolding returns the listing to active and soft-deletes the
 // buyer holding, so a late buy delivers no free item.
 func TestRestoreListingFromHolding_ReversesMove(t *testing.T) {
-	db := test.SetupTestDB(t, listing.Migration, holding.Migration, transaction.Migration)
+	db := test.SetupTestDB(t, listing.Migration, holding.Migration, transaction.Migration, outbox.Migration)
 	ctx := test.CreateTestContext()
 	l := logrus.New()
 
@@ -725,7 +765,7 @@ func TestRestoreListingFromHolding_ReversesMove(t *testing.T) {
 // TestRemoveMtsListing_DeletesActiveOnly pins the late-comp inverse of a spurious
 // accept: an active listing is removed; a sold one is left untouched.
 func TestRemoveMtsListing_DeletesActiveOnly(t *testing.T) {
-	db := test.SetupTestDB(t, listing.Migration, holding.Migration, transaction.Migration)
+	db := test.SetupTestDB(t, listing.Migration, holding.Migration, transaction.Migration, outbox.Migration)
 	ctx := test.CreateTestContext()
 	l := logrus.New()
 

@@ -14,12 +14,14 @@ import (
 	"context"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	kprod "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -82,74 +84,81 @@ func handleAcceptToMtsListing(pf providerFn) func(db *gorm.DB) message.Handler[c
 			}
 			b := c.Body
 
+			p := pf(ctx)
+
 			// The row-create business logic (idempotency, category/subCategory
 			// derivation, auction currentBid seeding, builder assembly) lives in the
 			// listing processor; this handler maps the command body to the request and
-			// owns only the Kafka acks.
-			err := listing.NewProcessor(l, ctx, db).Accept(listing.AcceptRequest{
-				ListingId:        b.ListingId,
-				WorldId:          b.WorldId,
-				SellerId:         b.SellerId,
-				SellerAccountId:  b.SellerAccountId,
-				SellerName:       b.SellerName,
-				SaleType:         b.SaleType,
-				TemplateId:       b.TemplateId,
-				Quantity:         b.Quantity,
-				Strength:         b.Strength,
-				Dexterity:        b.Dexterity,
-				Intelligence:     b.Intelligence,
-				Luck:             b.Luck,
-				HP:               b.HP,
-				MP:               b.MP,
-				WeaponAttack:     b.WeaponAttack,
-				MagicAttack:      b.MagicAttack,
-				WeaponDefense:    b.WeaponDefense,
-				MagicDefense:     b.MagicDefense,
-				Accuracy:         b.Accuracy,
-				Avoidability:     b.Avoidability,
-				Hands:            b.Hands,
-				Speed:            b.Speed,
-				Jump:             b.Jump,
-				Slots:            b.Slots,
-				Level:            b.Level,
-				ItemLevel:        b.ItemLevel,
-				ItemExp:          b.ItemExp,
-				RingId:           b.RingId,
-				ViciousCount:     b.ViciousCount,
-				Flags:            b.Flags,
-				ListValue:        b.ListValue,
-				BuyNowPrice:      b.BuyNowPrice,
-				CommissionRate:   b.CommissionRate,
-				Category:         b.Category,
-				SubCategory:      b.SubCategory,
-				EndsAt:           b.EndsAt,
-				MinIncrement:     b.MinIncrement,
-				OfferWishSerial:  b.OfferWishSerial,
-				OfferWishOwnerId: b.OfferWishOwnerId,
-			})
-
-			p := pf(ctx)
-			if err != nil {
-				l.WithError(err).Errorf("Failed to accept listing [%s] for transaction [%s].", b.ListingId.String(), c.TransactionId.String())
-				_ = msg.Emit(p)(func(buf *msg.Buffer) error {
-					return buf.Put(custody.EnvStatusEventTopic, custodyproducer.ErrorStatusEventProvider(c.TransactionId, err.Error()))
-				})
-				return
-			}
-
-			// On success emit BOTH the custody ACCEPTED ack (drives the saga forward —
-			// the orchestrator needs it to advance the listing-create saga) AND the
-			// high-level LISTING_CREATED MTS status event so the channel writes
-			// RegisterSaleEntryDone to the seller. This mirrors the MOVED+LISTING_SOLD
-			// dual-emit in handleMtsMoveListingToHolding: the custody ack is the saga
-			// machinery, the MTS status event is the player-facing notice. Without the
-			// LISTING_CREATED emit the seller's client hangs (no RegisterSaleEntryDone).
-			_ = msg.Emit(p)(func(buf *msg.Buffer) error {
-				if perr := buf.Put(custody.EnvStatusEventTopic, custodyproducer.AcceptedStatusEventProvider(c.TransactionId, b.ListingId)); perr != nil {
-					return perr
+			// owns only the Kafka acks. The create and its success acks commit in one
+			// transaction: the ACCEPTED + LISTING_CREATED events are enqueued as outbox
+			// rows in the same tx as the listing row, so a crash before commit emits
+			// nothing (task-114 atomicity).
+			terr := database.ExecuteTransaction(db, func(tx *gorm.DB) error {
+				if err := listing.NewProcessor(l, ctx, tx).Accept(listing.AcceptRequest{
+					ListingId:        b.ListingId,
+					WorldId:          b.WorldId,
+					SellerId:         b.SellerId,
+					SellerAccountId:  b.SellerAccountId,
+					SellerName:       b.SellerName,
+					SaleType:         b.SaleType,
+					TemplateId:       b.TemplateId,
+					Quantity:         b.Quantity,
+					Strength:         b.Strength,
+					Dexterity:        b.Dexterity,
+					Intelligence:     b.Intelligence,
+					Luck:             b.Luck,
+					HP:               b.HP,
+					MP:               b.MP,
+					WeaponAttack:     b.WeaponAttack,
+					MagicAttack:      b.MagicAttack,
+					WeaponDefense:    b.WeaponDefense,
+					MagicDefense:     b.MagicDefense,
+					Accuracy:         b.Accuracy,
+					Avoidability:     b.Avoidability,
+					Hands:            b.Hands,
+					Speed:            b.Speed,
+					Jump:             b.Jump,
+					Slots:            b.Slots,
+					Level:            b.Level,
+					ItemLevel:        b.ItemLevel,
+					ItemExp:          b.ItemExp,
+					RingId:           b.RingId,
+					ViciousCount:     b.ViciousCount,
+					Flags:            b.Flags,
+					ListValue:        b.ListValue,
+					BuyNowPrice:      b.BuyNowPrice,
+					CommissionRate:   b.CommissionRate,
+					Category:         b.Category,
+					SubCategory:      b.SubCategory,
+					EndsAt:           b.EndsAt,
+					MinIncrement:     b.MinIncrement,
+					OfferWishSerial:  b.OfferWishSerial,
+					OfferWishOwnerId: b.OfferWishOwnerId,
+				}); err != nil {
+					return err
 				}
-				return buf.Put(mtsmsg.EnvStatusEventTopic, mtsproducer.ListingCreatedStatusEventProvider(c.TransactionId, b.WorldId, b.ListingId, b.SellerId, b.TemplateId, b.SaleType))
+
+				// On success emit BOTH the custody ACCEPTED ack (drives the saga
+				// forward — the orchestrator needs it to advance the listing-create
+				// saga) AND the high-level LISTING_CREATED MTS status event so the
+				// channel writes RegisterSaleEntryDone to the seller. This mirrors the
+				// MOVED+LISTING_SOLD dual-emit in handleMtsMoveListingToHolding: the
+				// custody ack is the saga machinery, the MTS status event is the
+				// player-facing notice. Without the LISTING_CREATED emit the seller's
+				// client hangs (no RegisterSaleEntryDone).
+				return msg.Emit(outbox.EmitProvider(l, ctx, tx))(func(buf *msg.Buffer) error {
+					if perr := buf.Put(custody.EnvStatusEventTopic, custodyproducer.AcceptedStatusEventProvider(c.TransactionId, b.ListingId)); perr != nil {
+						return perr
+					}
+					return buf.Put(mtsmsg.EnvStatusEventTopic, mtsproducer.ListingCreatedStatusEventProvider(c.TransactionId, b.WorldId, b.ListingId, b.SellerId, b.TemplateId, b.SaleType))
+				})
 			})
+			if terr != nil {
+				l.WithError(terr).Errorf("Failed to accept listing [%s] for transaction [%s].", b.ListingId.String(), c.TransactionId.String())
+				_ = msg.Emit(p)(func(buf *msg.Buffer) error {
+					return buf.Put(custody.EnvStatusEventTopic, custodyproducer.ErrorStatusEventProvider(c.TransactionId, terr.Error()))
+				})
+			}
 		}
 	}
 }
@@ -163,35 +172,37 @@ func handleReleaseFromMtsHolding(pf providerFn) func(db *gorm.DB) message.Handle
 			if c.Type != custody.CommandReleaseFromMtsHolding {
 				return
 			}
-			// The capture-then-soft-delete tx lives in the holding processor; this
-			// handler owns only the Kafka acks. The captured holding + emit gate are
-			// returned so the ITEM_TAKEN_HOME emission stays here (it emits Kafka).
-			res, err := holding.NewProcessor(l, ctx, db).Release(c.Body.HoldingId.String())
-			taken := res.Taken
-			emitTakenHome := res.EmitTakenHome
-
 			p := pf(ctx)
-			if err != nil {
-				l.WithError(err).Errorf("Failed to release holding [%s] for transaction [%s].", c.Body.HoldingId.String(), c.TransactionId.String())
-				_ = msg.Emit(p)(func(buf *msg.Buffer) error {
-					return buf.Put(custody.EnvStatusEventTopic, custodyproducer.ErrorStatusEventProvider(c.TransactionId, err.Error()))
-				})
-				return
-			}
 
-			_ = msg.Emit(p)(func(buf *msg.Buffer) error {
-				if perr := buf.Put(custody.EnvStatusEventTopic, custodyproducer.ReleasedStatusEventProvider(c.TransactionId, c.Body.HoldingId)); perr != nil {
-					return perr
+			// The capture-then-soft-delete tx lives in the holding processor; this
+			// handler owns only the Kafka acks. Released + (optional) ITEM_TAKEN_HOME
+			// are enqueued as outbox rows in the same tx as the soft-delete, so they
+			// publish iff the release commits.
+			terr := database.ExecuteTransaction(db, func(tx *gorm.DB) error {
+				res, err := holding.NewProcessor(l, ctx, tx).Release(c.Body.HoldingId.String())
+				if err != nil {
+					return err
 				}
-				// ITEM_TAKEN_HOME drives the channel's re-push of the owner's
-				// "Transfer Inventory" panel so the just-withdrawn holding disappears
-				// without re-entering the MTS. Release is the take-home soft-delete
-				// boundary (WithdrawFromMts), so this is the natural emission point.
-				if emitTakenHome {
-					return buf.Put(mtsmsg.EnvStatusEventTopic, mtsproducer.ItemTakenHomeStatusEventProvider(c.TransactionId, byte(taken.WorldId()), taken.Id(), taken.OwnerId(), taken.TemplateId()))
-				}
-				return nil
+				return msg.Emit(outbox.EmitProvider(l, ctx, tx))(func(buf *msg.Buffer) error {
+					if perr := buf.Put(custody.EnvStatusEventTopic, custodyproducer.ReleasedStatusEventProvider(c.TransactionId, c.Body.HoldingId)); perr != nil {
+						return perr
+					}
+					// ITEM_TAKEN_HOME drives the channel's re-push of the owner's
+					// "Transfer Inventory" panel so the just-withdrawn holding disappears
+					// without re-entering the MTS. Release is the take-home soft-delete
+					// boundary (WithdrawFromMts), so this is the natural emission point.
+					if res.EmitTakenHome {
+						return buf.Put(mtsmsg.EnvStatusEventTopic, mtsproducer.ItemTakenHomeStatusEventProvider(c.TransactionId, byte(res.Taken.WorldId()), res.Taken.Id(), res.Taken.OwnerId(), res.Taken.TemplateId()))
+					}
+					return nil
+				})
 			})
+			if terr != nil {
+				l.WithError(terr).Errorf("Failed to release holding [%s] for transaction [%s].", c.Body.HoldingId.String(), c.TransactionId.String())
+				_ = msg.Emit(p)(func(buf *msg.Buffer) error {
+					return buf.Put(custody.EnvStatusEventTopic, custodyproducer.ErrorStatusEventProvider(c.TransactionId, terr.Error()))
+				})
+			}
 		}
 	}
 }
@@ -207,22 +218,25 @@ func handleRestoreMtsHolding(pf providerFn) func(db *gorm.DB) message.Handler[cu
 			if c.Type != custody.CommandRestoreMtsHolding {
 				return
 			}
-			// The idempotent un-soft-delete tx lives in the holding processor; this
-			// handler owns only the Kafka acks.
-			err := holding.NewProcessor(l, ctx, db).RestoreHolding(c.Body.HoldingId.String())
-
 			p := pf(ctx)
-			if err != nil {
-				l.WithError(err).Errorf("Failed to restore holding [%s] for transaction [%s].", c.Body.HoldingId.String(), c.TransactionId.String())
-				_ = msg.Emit(p)(func(buf *msg.Buffer) error {
-					return buf.Put(custody.EnvStatusEventTopic, custodyproducer.ErrorStatusEventProvider(c.TransactionId, err.Error()))
-				})
-				return
-			}
 
-			_ = msg.Emit(p)(func(buf *msg.Buffer) error {
-				return buf.Put(custody.EnvStatusEventTopic, custodyproducer.RestoredStatusEventProvider(c.TransactionId, c.Body.HoldingId))
+			// The idempotent un-soft-delete tx lives in the holding processor; this
+			// handler owns only the Kafka acks. RESTORED is enqueued as an outbox row
+			// in the same tx as the restore, so it publishes iff the restore commits.
+			terr := database.ExecuteTransaction(db, func(tx *gorm.DB) error {
+				if err := holding.NewProcessor(l, ctx, tx).RestoreHolding(c.Body.HoldingId.String()); err != nil {
+					return err
+				}
+				return msg.Emit(outbox.EmitProvider(l, ctx, tx))(func(buf *msg.Buffer) error {
+					return buf.Put(custody.EnvStatusEventTopic, custodyproducer.RestoredStatusEventProvider(c.TransactionId, c.Body.HoldingId))
+				})
 			})
+			if terr != nil {
+				l.WithError(terr).Errorf("Failed to restore holding [%s] for transaction [%s].", c.Body.HoldingId.String(), c.TransactionId.String())
+				_ = msg.Emit(p)(func(buf *msg.Buffer) error {
+					return buf.Put(custody.EnvStatusEventTopic, custodyproducer.ErrorStatusEventProvider(c.TransactionId, terr.Error()))
+				})
+			}
 		}
 	}
 }
@@ -250,42 +264,59 @@ func handleMtsMoveListingToHolding(pf providerFn) func(db *gorm.DB) message.Hand
 			// what those need: the buyer holding id (MOVED ack), the sold item id +
 			// seller (LISTING_SOLD), and the sale type + fulfilled want-ad serial (offer
 			// side-effects).
-			res, err := listing.NewProcessor(l, ctx, db).SettleMove(listing.SettleMoveRequest{
-				ListingId: b.ListingId,
-				BuyerId:   b.BuyerId,
-				WorldId:   b.WorldId,
-				Price:     b.Price,
-			})
-			hid := res.HoldingId
-			itemId := res.ItemId
-			sellerId := res.SellerId
-			soldSaleType := res.SoldSaleType
-			soldOfferWishSerial := res.SoldOfferWishSerial
-
 			p := pf(ctx)
-			if err != nil {
-				l.WithError(err).Errorf("Failed to move listing [%s] to holding for buyer [%d], transaction [%s].", b.ListingId.String(), b.BuyerId, c.TransactionId.String())
+
+			// The settle tx (load listing, conditional ->sold transition, single-custody
+			// race guard, buyer-holding create, both parties' history rows) lives in the
+			// listing processor; here it is wrapped so the MOVED ack + LISTING_SOLD
+			// status event enqueue as outbox rows in the same tx as the settle — they
+			// publish iff the sale commits. The result carries what the post-commit
+			// offer/escrow side-effects below need (sale type + fulfilled want-ad serial).
+			var res listing.SettleMoveResult
+			terr := database.ExecuteTransaction(db, func(tx *gorm.DB) error {
+				r, err := listing.NewProcessor(l, ctx, tx).SettleMove(listing.SettleMoveRequest{
+					ListingId: b.ListingId,
+					BuyerId:   b.BuyerId,
+					WorldId:   b.WorldId,
+					Price:     b.Price,
+				})
+				if err != nil {
+					return err
+				}
+				res = r
+				// On success emit BOTH the custody MOVED ack (drives the saga forward) AND
+				// the high-level LISTING_SOLD MTS status event so the channel writes
+				// BuyItemDone to the buyer. The buyer (or auction winner) is b.BuyerId.
+				return msg.Emit(outbox.EmitProvider(l, ctx, tx))(func(buf *msg.Buffer) error {
+					if perr := buf.Put(custody.EnvStatusEventTopic, custodyproducer.MovedStatusEventProvider(c.TransactionId, b.ListingId, r.HoldingId)); perr != nil {
+						return perr
+					}
+					return buf.Put(mtsmsg.EnvStatusEventTopic, mtsproducer.ListingSoldStatusEventProvider(c.TransactionId, b.WorldId, b.ListingId, r.SellerId, b.BuyerId, r.ItemId, r.SoldSaleType, b.ResultKind, b.Price))
+				})
+			})
+			if terr != nil {
+				l.WithError(terr).Errorf("Failed to move listing [%s] to holding for buyer [%d], transaction [%s].", b.ListingId.String(), b.BuyerId, c.TransactionId.String())
 				_ = msg.Emit(p)(func(buf *msg.Buffer) error {
-					return buf.Put(custody.EnvStatusEventTopic, custodyproducer.ErrorStatusEventProvider(c.TransactionId, err.Error()))
+					return buf.Put(custody.EnvStatusEventTopic, custodyproducer.ErrorStatusEventProvider(c.TransactionId, terr.Error()))
 				})
 				return
 			}
-
-			// On success emit BOTH the custody MOVED ack (drives the saga forward) AND
-			// the high-level LISTING_SOLD MTS status event so the channel writes
-			// BuyItemDone to the buyer. The buyer (or auction winner) is b.BuyerId.
-			_ = msg.Emit(p)(func(buf *msg.Buffer) error {
-				if perr := buf.Put(custody.EnvStatusEventTopic, custodyproducer.MovedStatusEventProvider(c.TransactionId, b.ListingId, hid)); perr != nil {
-					return perr
-				}
-				return buf.Put(mtsmsg.EnvStatusEventTopic, mtsproducer.ListingSoldStatusEventProvider(c.TransactionId, b.WorldId, b.ListingId, sellerId, b.BuyerId, itemId, soldSaleType, b.ResultKind, b.Price))
-			})
+			soldSaleType := res.SoldSaleType
+			soldOfferWishSerial := res.SoldOfferWishSerial
 
 			// Offer purchase (BUY_WISH): the want-ad has been fulfilled. Consume it
 			// and return every LOSING offer to its offerer's Transfer Inventory. Both
 			// are best-effort post-commit: the settle (money + item to the buyer) has
 			// already committed above, and an un-released sibling stays safely
 			// escrowed (reclaimable via Not-Yet-Sold cancel or the expiry sweep).
+			//
+			// The sibling LISTING_CANCELLED notices stay on the DIRECT producer (not
+			// the outbox): ReleaseSiblingOffers fans out N independent per-sibling
+			// Cancel transactions and deliberately swallows per-sibling failures, so
+			// there is no single transaction to bind these notices to. They are a
+			// best-effort courtesy notice — the offerer's item is already in their
+			// holding and the escrow is sweep-recoverable — the same best-effort
+			// exclusion class task-114 documents in inventory.md.
 			if soldSaleType == string(listing.SaleTypeOffer) && soldOfferWishSerial != 0 {
 				if _, derr := wish.NewProcessor(l, ctx, db).DeleteBySerial(world.Id(b.WorldId), soldOfferWishSerial); derr != nil {
 					l.WithError(derr).Warnf("Unable to consume fulfilled want-ad (serial [%d]) for buyer [%d].", soldOfferWishSerial, b.BuyerId)

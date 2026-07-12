@@ -1355,3 +1355,82 @@ func TestConsumer_MaxInFlight_BackPressure(t *testing.T) {
 	cancel()
 	wg.Wait()
 }
+
+// TestAddConsumerWarnsWhenMaxWaitGTEFetchTimeout guards the invariant
+// documented in docs/tasks/task-136-consumer-fetch-wedge/findings.md: an
+// idle reader's Fetches counter increments roughly once per maxWait
+// interval, so handleFetchDeadline's idle-vs-stuck classification only
+// works when fetchTimeout is comfortably greater than maxWait. If an
+// operator configures maxWait >= fetchTimeout, a healthy idle reader can
+// complete zero fetches per liveness tick and be misclassified as
+// no-progress, reintroducing the wedge/recreate churn this task removed.
+// AddConsumer must emit a one-time Warn at registration so the
+// misconfiguration is visible in logs at startup.
+func TestAddConsumerWarnsWhenMaxWaitGTEFetchTimeout(t *testing.T) {
+	consumer.ResetInstance()
+
+	l, hook := test.NewNullLogger()
+	wg := &sync.WaitGroup{}
+
+	rp := consumer.ConfigReaderProducer(func(config kafka.ReaderConfig) consumer.KafkaReader {
+		return &ChannelMockReader{msgCh: make(chan kafka.Message)}
+	})
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer func() {
+		cancel()
+		wg.Wait()
+	}()
+
+	cm := consumer.GetManager(rp)
+	c := consumer.NewConfig([]string{""}, "misconfigured-consumer", "misconfigured-topic", "test-group")
+	cm.AddConsumer(l, ctx, wg)(
+		c,
+		consumer.SetMaxWait(5*time.Second),
+		consumer.SetFetchTimeout(5*time.Second),
+	)
+
+	found := false
+	for _, e := range hook.AllEntries() {
+		if e.Level == logrus.WarnLevel &&
+			strings.Contains(e.Message, "maxWait") &&
+			strings.Contains(e.Message, ">= fetchTimeout") &&
+			strings.Contains(e.Message, "misconfigured-topic") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected a Warn log about maxWait >= fetchTimeout for topic [misconfigured-topic], got entries: %v", hook.AllEntries())
+	}
+}
+
+// TestAddConsumerNoWarnForHealthyDefaults confirms the guard is silent for
+// the library defaults (maxWait 10s < fetchTimeout 1m), so the warning
+// doesn't fire on every ordinary registration.
+func TestAddConsumerNoWarnForHealthyDefaults(t *testing.T) {
+	consumer.ResetInstance()
+
+	l, hook := test.NewNullLogger()
+	wg := &sync.WaitGroup{}
+
+	rp := consumer.ConfigReaderProducer(func(config kafka.ReaderConfig) consumer.KafkaReader {
+		return &ChannelMockReader{msgCh: make(chan kafka.Message)}
+	})
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer func() {
+		cancel()
+		wg.Wait()
+	}()
+
+	cm := consumer.GetManager(rp)
+	c := consumer.NewConfig([]string{""}, "healthy-consumer", "healthy-topic", "test-group")
+	cm.AddConsumer(l, ctx, wg)(c)
+
+	for _, e := range hook.AllEntries() {
+		if e.Level == logrus.WarnLevel && strings.Contains(e.Message, "maxWait") {
+			t.Fatalf("did not expect a maxWait warning for healthy default config, got: %s", e.Message)
+		}
+	}
+}

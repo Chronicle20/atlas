@@ -1,5 +1,5 @@
 import { api } from '@/lib/api/client';
-import { tenantHeaders } from '@/lib/headers';
+import { tenantHeaders, canonicalHeaders, type CanonicalSelection } from '@/lib/headers';
 import type { Tenant } from '@/types/models/tenant';
 
 export interface SeedResult {
@@ -94,25 +94,43 @@ interface JsonApiEnvelope<A> {
   };
 }
 
-async function fetchJsonApi<A>(
-  url: string,
-  tenant: Tenant,
-  scope?: 'tenant' | 'shared',
-): Promise<A> {
-  const headers = tenantHeaders(tenant);
+async function fetchJsonApi<A>(url: string, headers: Headers): Promise<A> {
   headers.set('Accept', 'application/vnd.api+json');
-  // The shared scope resolves to the canonical baseline prefix on the
-  // backend, which ResolveScope gates behind operator credentials — the
-  // same header the write path (uploadWzFiles/runDataProcessing) sends.
-  if (scope === 'shared') {
-    headers.set('X-Atlas-Operator', '1');
-  }
   const response = await fetch(url, { method: 'GET', headers });
   if (!response.ok) {
     throw new Error(`GET ${url} failed: ${response.status} ${response.statusText}`);
   }
   const body = (await response.json()) as JsonApiEnvelope<A>;
   return body.data.attributes;
+}
+
+async function patchWzZip(url: string, headers: Headers, file: File): Promise<void> {
+  const formData = new FormData();
+  formData.append('zip_file', file);
+
+  const response = await fetch(url, { method: 'PATCH', headers, body: formData });
+
+  if (!response.ok) {
+    let message = `Upload failed: ${response.status} ${response.statusText}`;
+    try {
+      const body = (await response.json()) as { error?: string };
+      if (body.error) {
+        message = body.error;
+      }
+    } catch {
+      // non-JSON error body; fall back to status text
+    }
+    const err = new Error(message) as Error & { status?: number };
+    err.status = response.status;
+    throw err;
+  }
+}
+
+async function postProcess(url: string, headers: Headers): Promise<void> {
+  const response = await fetch(url, { method: 'POST', headers });
+  if (!response.ok) {
+    throw new Error(`Data processing failed: ${response.status} ${response.statusText}`);
+  }
 }
 
 async function fetchSeedStatus(url: string, tenant: Tenant): Promise<SeedStatus> {
@@ -163,58 +181,39 @@ class SeedService {
     return api.post<SeedResult>('/api/maps/actions/seed', {});
   }
 
-  async uploadWzFiles(tenant: Tenant, file: File, scope: 'tenant' | 'shared' = 'tenant'): Promise<void> {
-    const formData = new FormData();
-    formData.append('zip_file', file);
-
-    const headers = tenantHeaders(tenant);
-    if (scope === 'shared') {
-      headers.set('X-Atlas-Operator', '1');
-    }
-
-    const response = await fetch(`/api/data/wz?scope=${scope}`, {
-      method: 'PATCH',
-      headers,
-      body: formData,
-    });
-
-    if (!response.ok) {
-      let message = `Upload failed: ${response.status} ${response.statusText}`;
-      try {
-        const body = (await response.json()) as { error?: string };
-        if (body.error) {
-          message = body.error;
-        }
-      } catch {
-        // non-JSON error body; fall back to status text
-      }
-      const err = new Error(message) as Error & { status?: number };
-      err.status = response.status;
-      throw err;
-    }
+  async uploadWzFiles(tenant: Tenant, file: File): Promise<void> {
+    return patchWzZip('/api/data/wz?scope=tenant', tenantHeaders(tenant), file);
   }
 
-  async runDataProcessing(tenant: Tenant, scope: 'tenant' | 'shared' = 'tenant'): Promise<void> {
-    const headers = tenantHeaders(tenant);
-    if (scope === 'shared') {
-      headers.set('X-Atlas-Operator', '1');
-    }
-    const response = await fetch(`/api/data/process?scope=${scope}`, { method: 'POST', headers });
-    if (!response.ok) {
-      throw new Error(`Data processing failed: ${response.status} ${response.statusText}`);
-    }
+  async runDataProcessing(tenant: Tenant): Promise<void> {
+    return postProcess('/api/data/process?scope=tenant', tenantHeaders(tenant));
   }
 
-  // scope must match the scope the WZ files were uploaded under
-  // (uploadWzFiles). The status handler is scope-aware; omitting the
-  // param made it always read the tenant prefix, so a shared/canonical
-  // upload reported "0 .wz files" and left Process Data disabled.
-  async getWzInputStatus(tenant: Tenant, scope: 'tenant' | 'shared' = 'tenant'): Promise<WzInputStatus> {
-    return fetchJsonApi<WzInputStatus>(`/api/data/wz?scope=${scope}`, tenant, scope);
+  async getWzInputStatus(tenant: Tenant): Promise<WzInputStatus> {
+    return fetchJsonApi<WzInputStatus>('/api/data/wz?scope=tenant', tenantHeaders(tenant));
   }
 
-  async getDataStatus(tenant: Tenant, scope: 'tenant' | 'shared' = 'tenant'): Promise<DataStatus> {
-    return fetchJsonApi<DataStatus>(`/api/data/status?scope=${scope}`, tenant, scope);
+  async getDataStatus(tenant: Tenant): Promise<DataStatus> {
+    return fetchJsonApi<DataStatus>('/api/data/status?scope=tenant', tenantHeaders(tenant));
+  }
+
+  // Canonical (deployment-wide) variants: no Tenant anywhere — headers are
+  // synthesized from the explicit region/version selection. This is what lets
+  // an operator publish canonical data for a version with no live tenant.
+  async uploadCanonicalWzFiles(sel: CanonicalSelection, file: File): Promise<void> {
+    return patchWzZip('/api/data/wz?scope=shared', canonicalHeaders(sel), file);
+  }
+
+  async runCanonicalDataProcessing(sel: CanonicalSelection): Promise<void> {
+    return postProcess('/api/data/process?scope=shared', canonicalHeaders(sel));
+  }
+
+  async getCanonicalWzInputStatus(sel: CanonicalSelection): Promise<WzInputStatus> {
+    return fetchJsonApi<WzInputStatus>('/api/data/wz?scope=shared', canonicalHeaders(sel));
+  }
+
+  async getCanonicalDataStatus(sel: CanonicalSelection): Promise<DataStatus> {
+    return fetchJsonApi<DataStatus>('/api/data/status?scope=shared', canonicalHeaders(sel));
   }
 
   async getDropsSeedStatus(tenant: Tenant): Promise<DropsSeedStatus> {

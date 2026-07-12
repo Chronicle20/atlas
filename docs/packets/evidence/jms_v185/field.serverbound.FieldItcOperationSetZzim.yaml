@@ -1,0 +1,10 @@
+packet: field/serverbound/FieldItcOperationSetZzim
+direction: serverbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CITC::OnSetZzim
+    address: "0x604dc4"
+    decompile_sha256: d18390f7b53e2b5759e3f8c47522b84e482c0b04b6d493bc53b7a7b9955a9e09
+verifies:
+    - libs/atlas-packet/field/serverbound/itc_operation_test.go#TestItcOperationSetZzimByteOutput_jms

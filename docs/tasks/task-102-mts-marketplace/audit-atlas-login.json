@@ -1,0 +1,45 @@
+{
+  "service": "atlas-login",
+  "path": "services/atlas-login/atlas.com/login",
+  "date": "2026-07-10",
+  "scope": "task-102 modified packages only: socket, configuration/projection",
+  "build": "pass",
+  "vet": "pass",
+  "testsPassed": 9,
+  "testsFailed": 0,
+  "overallStatus": "pass",
+  "domains": [
+    {
+      "name": "socket",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01", "name": "Processor only in processor.go", "status": "pass", "evidence": "No Processor defined; consumes session.NewProcessor at socket/init.go:42"},
+        {"id": "FILE-02", "name": "RestModel/Transform only in rest.go", "status": "pass", "evidence": "No RestModel/Transform defined in package"},
+        {"id": "FILE-03", "name": "Cross-service requests only in requests.go", "status": "pass", "evidence": "grep requests.RootUrl/GetRequest/PostRequest in socket/ = 0 matches"},
+        {"id": "FILE-04", "name": "Entity/Migration/TableName only in entity.go", "status": "pass", "evidence": "No GORM entity in package"},
+        {"id": "FILE-05", "name": "Builder/Model/administrator/provider placement", "status": "pass", "evidence": "N/A - bootstrap package, no such responsibilities"},
+        {"id": "FILE-06", "name": "No package-named catch-all", "status": "pass", "evidence": "Single file socket/init.go, one responsibility"},
+        {"id": "SEC-01..04", "name": "Security (auth) checks", "status": "pass", "evidence": "No JWT/token/redirect/secret handling in socket/init.go"}
+      ]
+    },
+    {
+      "name": "configuration/projection",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01", "name": "Processor only in processor.go", "status": "pass", "evidence": "No Processor/NewProcessor in package"},
+        {"id": "FILE-02", "name": "RestModel/Transform only in rest.go", "status": "pass", "evidence": "References configuration.RestModel/tenant.RestModel (state.go:82, apply.go:56) but defines none"},
+        {"id": "FILE-03", "name": "Cross-service requests only in requests.go", "status": "pass", "evidence": "Kafka consumer wiring at subscriber.go:70-86; no REST client"},
+        {"id": "FILE-04", "name": "Entity/Migration/TableName only in entity.go", "status": "pass", "evidence": "No GORM entity in package"},
+        {"id": "FILE-05", "name": "Builder/Model/administrator/provider/state placement", "status": "pass", "evidence": "Cohesive single-purpose files: envelope.go, caughtup.go, apply.go(OpKind+ComputeOps), state.go(State), loop.go, subscriber.go"},
+        {"id": "FILE-06", "name": "No package-named catch-all", "status": "pass", "evidence": "No projection.go; no file bundles >=2 responsibilities"},
+        {"id": "SUB-04", "name": "No manual JSON parsing (resource handlers)", "status": "pass", "evidence": "json.Unmarshal at state.go:32/59, envelope.go:46 decodes Kafka envelopes, not HTTP bodies; not a resource package"},
+        {"id": "SEC-01..04", "name": "Security (auth) checks", "status": "pass", "evidence": "No JWT/token/redirect/secret handling; no hardcoded secrets"}
+      ]
+    }
+  ],
+  "blocking": [],
+  "nonBlocking": [],
+  "observations": [
+    "socket/init.go:22 outer goroutine remains untracked by the WaitGroup (pre-existing, outside task-102 scope)"
+  ]
+}

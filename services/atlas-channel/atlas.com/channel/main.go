@@ -31,10 +31,12 @@ import (
 	"atlas-channel/kafka/consumer/message"
 	"atlas-channel/kafka/consumer/messenger"
 	mistConsumer "atlas-channel/kafka/consumer/mist"
+	mtsConsumer "atlas-channel/kafka/consumer/mts"
 	"atlas-channel/kafka/consumer/monster"
 	mbconsumer "atlas-channel/kafka/consumer/monsterbook"
 	mountConsumer "atlas-channel/kafka/consumer/mount"
 	note3 "atlas-channel/kafka/consumer/note"
+	walletConsumer "atlas-channel/kafka/consumer/wallet"
 	"atlas-channel/kafka/consumer/npc/conversation"
 	"atlas-channel/kafka/consumer/npc/shop"
 	"atlas-channel/kafka/consumer/party"
@@ -206,6 +208,8 @@ func main() {
 	system_message.InitConsumers(l)(cmf)(consumerGroupId)
 	cashshop.InitConsumers(l)(cmf)(consumerGroupId)
 	cashshopCompartment.InitConsumers(l)(cmf)(consumerGroupId)
+	mtsConsumer.InitConsumers(l)(cmf)(consumerGroupId)
+	walletConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	note3.InitConsumers(l)(cmf)(consumerGroupId)
 	quest.InitConsumers(l)(cmf)(consumerGroupId)
 	route.InitConsumers(l)(cmf)(consumerGroupId)
@@ -524,6 +528,12 @@ func buildListener(
 		if err := register(cashshopCompartment.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
 			return nil, err
 		}
+		if err := register(mtsConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
+		if err := register(walletConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
 		if err := register(note3.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
 			return nil, err
 		}
@@ -732,8 +742,10 @@ func produceWriters() []string {
 		fieldcb.ZakumShrineWriter,
 		fieldcb.HorntailCaveWriter,
 		fieldcb.AriantResultWriter,
+		fieldcb.SetItcWriter,
 		fieldcb.MtsOperation2Writer,
 		fieldcb.MtsOperationWriter,
+		fieldcb.MtsChargeParamResultWriter,
 		fieldcb.FootholdInfoWriter,
 		fieldcb.SnowballStateWriter,
 		fieldcb.SnowballHitWriter,
@@ -869,6 +881,10 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[chatSB.CharacterChatWhisperHandle] = handler.CharacterChatWhisperHandleFunc
 	handlerMap[fieldsb.CharacterSpouseChatHandle] = handler.CharacterSpouseChatHandleFunc
 	handlerMap[messengersb.MessengerOperationHandle] = handler.MessengerOperationHandleFunc
+	handlerMap[fieldsb.EnterMtsHandle] = handler.EnterMtsHandleFunc
+	handlerMap[fieldsb.ItcStatusChargeHandle] = handler.ItcStatusChargeHandleFunc
+	handlerMap[fieldsb.ItcQueryCashRequestHandle] = handler.ItcQueryCashRequestHandleFunc
+	handlerMap[fieldsb.ItcOperationHandle] = handler.ItcOperationHandleFunc
 	handlerMap[petsb.PetMovementHandle] = handler.PetMovementHandleFunc
 	handlerMap[petsb.PetSpawnHandle] = handler.PetSpawnHandleFunc
 	handlerMap[petsb.PetCommandHandle] = handler.PetCommandHandleFunc

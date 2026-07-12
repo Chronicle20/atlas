@@ -556,6 +556,148 @@ type ReleaseFromStoragePayload struct {
 	Quantity      uint32    `json:"quantity"`      // Quantity to release (0 = all)
 }
 
+// TransferToMtsPayload — expanded into release_from_character + accept_to_mts_listing.
+// The seller supplies the listing/sale parameters at list time; expansion copies them
+// into the accept step. The item snapshot itself is looked up from inventory during
+// expansion (NOT carried here).
+type TransferToMtsPayload struct {
+	TransactionId       uuid.UUID  `json:"transactionId"`
+	CharacterId         uint32     `json:"characterId"`
+	SellerAccountId     uint32     `json:"sellerAccountId"` // Seller's cash-shop account, captured onto the listing for the settle-at-expiry seller-points credit
+	WorldId             world.Id   `json:"worldId"`
+	SourceInventoryType byte       `json:"sourceInventoryType"`
+	AssetId             uint32     `json:"assetId"`
+	Quantity            uint32     `json:"quantity"`
+	ListingId           uuid.UUID  `json:"listingId"`
+	SellerName          string     `json:"sellerName"`     // Seller character name for the listing
+	SaleType            string     `json:"saleType"`       // Sale type (e.g. "buy_now", "auction")
+	ListValue           uint32     `json:"listValue"`      // Seller's asking/starting price in NX
+	BuyNowPrice         *uint32    `json:"buyNowPrice"`    // Optional buy-now price (nil = none)
+	CommissionRate      float64    `json:"commissionRate"` // Commission rate applied at settlement
+	Category            string     `json:"category"`       // Listing category
+	SubCategory         string     `json:"subCategory"`    // Listing sub-category
+	EndsAt              *time.Time `json:"endsAt"`         // Auction end time (nil = none)
+	MinIncrement        uint32     `json:"minIncrement"`   // Minimum bid increment for auctions
+	OfferWishSerial     uint32     `json:"offerWishSerial"`  // Want-ad serial an `offer` listing fulfills (0 for non-offers)
+	OfferWishOwnerId    uint32     `json:"offerWishOwnerId"` // Want-ad poster id an `offer` listing fulfills (0 for non-offers)
+}
+
+// WithdrawFromMtsPayload — expanded into release_from_mts_holding + accept_to_character.
+type WithdrawFromMtsPayload struct {
+	TransactionId uuid.UUID `json:"transactionId"`
+	CharacterId   uint32    `json:"characterId"`
+	WorldId       world.Id  `json:"worldId"`
+	HoldingId     uuid.UUID `json:"holdingId"`
+	InventoryType byte      `json:"inventoryType"`
+}
+
+// AcceptToMtsListingPayload (atomic, dispatched to atlas-mts custody consumer).
+// Carries everything atlas-mts needs to CREATE the listing row in `active` state:
+// world/seller identity, the full item snapshot (looked up from inventory during
+// expansion), and the seller's sale parameters. Mirrors AcceptToCashShopPayload
+// carrying its item snapshot.
+type AcceptToMtsListingPayload struct {
+	TransactionId   uuid.UUID `json:"transactionId"`
+	ListingId       uuid.UUID `json:"listingId"`
+	WorldId         world.Id  `json:"worldId"`
+	SellerId        uint32    `json:"sellerId"`
+	SellerAccountId uint32    `json:"sellerAccountId"`
+	SellerName      string    `json:"sellerName"`
+	SaleType        string    `json:"saleType"`
+
+	// Item snapshot
+	TemplateId    uint32 `json:"templateId"`
+	Quantity      uint32 `json:"quantity"`
+	Strength      uint16 `json:"strength"`
+	Dexterity     uint16 `json:"dexterity"`
+	Intelligence  uint16 `json:"intelligence"`
+	Luck          uint16 `json:"luck"`
+	HP            uint16 `json:"hp"`
+	MP            uint16 `json:"mp"`
+	WeaponAttack  uint16 `json:"weaponAttack"`
+	MagicAttack   uint16 `json:"magicAttack"`
+	WeaponDefense uint16 `json:"weaponDefense"`
+	MagicDefense  uint16 `json:"magicDefense"`
+	Accuracy      uint16 `json:"accuracy"`
+	Avoidability  uint16 `json:"avoidability"`
+	Hands         uint16 `json:"hands"`
+	Speed         uint16 `json:"speed"`
+	Jump          uint16 `json:"jump"`
+	Slots         uint16 `json:"slots"`
+	Level         byte   `json:"level"`
+	ItemLevel     byte   `json:"itemLevel"`
+	ItemExp       uint32 `json:"itemExp"`
+	RingId        uint32 `json:"ringId"`
+	ViciousCount  uint32 `json:"viciousCount"`
+	Flags         uint16 `json:"flags"`
+
+	// Sale params
+	ListValue      uint32     `json:"listValue"`
+	BuyNowPrice    *uint32    `json:"buyNowPrice"`
+	CommissionRate float64    `json:"commissionRate"`
+	Category       string     `json:"category"`
+	SubCategory    string     `json:"subCategory"`
+	EndsAt         *time.Time `json:"endsAt"`
+	MinIncrement   uint32     `json:"minIncrement"`
+
+	// Offer link: which want-ad this `offer` listing fulfills (0 for non-offers).
+	OfferWishSerial  uint32 `json:"offerWishSerial"`
+	OfferWishOwnerId uint32 `json:"offerWishOwnerId"`
+}
+
+// ReleaseFromMtsHoldingPayload (atomic, dispatched to atlas-mts custody consumer).
+type ReleaseFromMtsHoldingPayload struct {
+	TransactionId uuid.UUID `json:"transactionId"`
+	HoldingId     uuid.UUID `json:"holdingId"`
+}
+
+// MtsMoveListingToHoldingPayload (atomic custody step): moves a sold/settled
+// listing's custody to the buyer's holding. The item snapshot is read from the
+// listing row by atlas-mts (not carried here); the buyer/world identify the
+// holding row to create.
+type MtsMoveListingToHoldingPayload struct {
+	TransactionId uuid.UUID `json:"transactionId"`
+	ListingId     uuid.UUID `json:"listingId"`
+	BuyerId       uint32    `json:"buyerId"`
+	WorldId       world.Id  `json:"worldId"`
+	// ResultKind carries which client result mode the sold notice should route to
+	// (item / zzim / wish / auction_settle) so the channel picks the matching
+	// CITC::OnNormalItemResult arm. Threaded from the buy/settle chain onto the
+	// LISTING_SOLD event.
+	ResultKind string `json:"resultKind"`
+	// Price is the settled BASE price (list value / buy-now / winning bid) carried
+	// through to the LISTING_SOLD event for the auction-settle SuccessBidInfo arm.
+	Price uint32 `json:"price"`
+}
+
+// MtsSettlePurchasePayload (composite money-mover): debit buyer prepaid, credit seller points, move custody.
+type MtsSettlePurchasePayload struct {
+	TransactionId   uuid.UUID `json:"transactionId"`
+	ListingId       uuid.UUID `json:"listingId"`
+	WorldId         world.Id  `json:"worldId"` // World scoping for the buyer holding created on the final move step
+	BuyerId         uint32    `json:"buyerId"`
+	BuyerAccountId  uint32    `json:"buyerAccountId"`
+	SellerId        uint32    `json:"sellerId"`
+	SellerAccountId uint32    `json:"sellerAccountId"`
+	MarkedUpPrice   int32     `json:"markedUpPrice"`
+	ListValue       int32     `json:"listValue"`
+	// ResultKind carries which client result mode the sold notice should route to
+	// (item / zzim / wish); threaded onto the expanded move step's payload and then
+	// the LISTING_SOLD event.
+	ResultKind string `json:"resultKind"`
+	// Price is the settled BASE price carried through to the LISTING_SOLD event.
+	Price uint32 `json:"price"`
+}
+
+// MtsBidEscrowPayload (single-step wallet hold).
+type MtsBidEscrowPayload struct {
+	TransactionId   uuid.UUID `json:"transactionId"`
+	ListingId       uuid.UUID `json:"listingId"`
+	BidderId        uint32    `json:"bidderId"`
+	BidderAccountId uint32    `json:"bidderAccountId"`
+	Amount          int32     `json:"amount"` // negative to hold, positive to release
+}
+
 // RequestGuildNamePayload represents the payload required to request a guild name.
 type RequestGuildNamePayload struct {
 	CharacterId uint32     `json:"characterId"` // CharacterId associated with the action

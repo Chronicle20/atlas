@@ -200,7 +200,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-channel/atlas-channel
     newTag: main-d2e13ba
   - name: ghcr.io/chronicle20/atlas-character/atlas-character
-    newTag: main-d2e13ba
+    newTag: main-b3d6ce7
   - name: ghcr.io/chronicle20/atlas-character-factory/atlas-character-factory
     newTag: main-d2e13ba
   - name: ghcr.io/chronicle20/atlas-configurations/atlas-configurations

@@ -55,7 +55,13 @@ func (Character) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc 
 
 	// Face and Hair live under Character.wz/Face and Character.wz/Hair.
 	faceDir := filepath.Join(base, "Face")
-	if err := registerAllInDirectory(l, ctx, faceDir, face.RegisterFace(db)); err != nil {
+	if err := registerAllInDirectory(l, ctx, faceDir, func(l logrus.FieldLogger) func(ctx context.Context) func(path string) error {
+		return func(ctx context.Context) func(path string) error {
+			return func(path string) error {
+				return face.NewProcessor(l, ctx, db).RegisterFace(path)
+			}
+		}
+	}); err != nil {
 		l.WithError(err).Warnf("walk %s", faceDir)
 	}
 	hairDir := filepath.Join(base, "Hair")

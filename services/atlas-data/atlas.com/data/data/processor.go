@@ -255,7 +255,13 @@ func StartWorker(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.D
 					})()
 					// Note: Don't clear NPC registry - WorkerMap may run concurrently and needs it
 				} else if name == WorkerFace {
-					err = RegisterAllData(l)(ctx)(path, filepath.Join("Character.wz", "Face"), face.RegisterFace(db))()
+					err = RegisterAllData(l)(ctx)(path, filepath.Join("Character.wz", "Face"), func(l logrus.FieldLogger) func(ctx context.Context) func(filePath string) error {
+						return func(ctx context.Context) func(filePath string) error {
+							return func(filePath string) error {
+								return face.NewProcessor(l, ctx, db).RegisterFace(filePath)
+							}
+						}
+					})()
 				} else if name == WorkerHair {
 					err = RegisterAllData(l)(ctx)(path, filepath.Join("Character.wz", "Hair"), hair.RegisterHair(db))()
 				} else if name == WorkerMobSkill {

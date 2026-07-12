@@ -15,8 +15,8 @@ import (
 	"gorm.io/gorm"
 )
 
-// ScriptProcessor defines the interface for portal script processing
-type ScriptProcessor interface {
+// Processor defines the interface for portal script processing
+type Processor interface {
 	// CRUD operations
 	Create(model PortalScript) (PortalScript, error)
 	Update(id uuid.UUID, model PortalScript) (PortalScript, error)
@@ -35,7 +35,7 @@ type ScriptProcessor interface {
 	Process(f field.Model, characterId uint32, portalName string, portalId uint32) ProcessResult
 }
 
-// ProcessorImpl implements ScriptProcessor using database storage
+// ProcessorImpl implements Processor using database storage
 type ProcessorImpl struct {
 	l         logrus.FieldLogger
 	ctx       context.Context
@@ -46,7 +46,7 @@ type ProcessorImpl struct {
 }
 
 // NewProcessor creates a new script processor with context-driven evaluator/executor
-func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) ScriptProcessor {
+func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor {
 	t := tenant.MustFromContext(ctx)
 	evaluator := NewConditionEvaluator(l, ctx)
 	executor := NewOperationExecutor(l, ctx)
@@ -60,6 +60,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Script
 		executor:  executor,
 	}
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 // ByIdProvider returns a provider for retrieving a portal script by ID
 func (p *ProcessorImpl) ByIdProvider(id uuid.UUID) model.Provider[PortalScript] {

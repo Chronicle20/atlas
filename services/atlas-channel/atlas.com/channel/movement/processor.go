@@ -36,7 +36,7 @@ type ProcessorImpl struct {
 	ctx context.Context
 	wp  writer.Producer
 	t   tenant.Model
-	sp  *session.Processor
+	sp  session.Processor
 }
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) Processor {

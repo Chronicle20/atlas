@@ -1,0 +1,31 @@
+package mock
+
+import (
+	"atlas-channel/consumable"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
+)
+
+type ProcessorMock struct {
+	RequestItemConsumeFunc func(f field.Model, characterId character.Id, itemId item.Id, source slot.Position, updateTime uint32) error
+	RequestScrollUseFunc   func(f field.Model, characterId character.Id, scrollSlot slot.Position, equipSlot slot.Position, whiteScroll bool, legendarySpirit bool, updateTime uint32) error
+}
+
+var _ consumable.Processor = (*ProcessorMock)(nil)
+
+func (m *ProcessorMock) RequestItemConsume(f field.Model, characterId character.Id, itemId item.Id, source slot.Position, updateTime uint32) error {
+	if m.RequestItemConsumeFunc != nil {
+		return m.RequestItemConsumeFunc(f, characterId, itemId, source, updateTime)
+	}
+	return nil
+}
+
+func (m *ProcessorMock) RequestScrollUse(f field.Model, characterId character.Id, scrollSlot slot.Position, equipSlot slot.Position, whiteScroll bool, legendarySpirit bool, updateTime uint32) error {
+	if m.RequestScrollUseFunc != nil {
+		return m.RequestScrollUseFunc(f, characterId, scrollSlot, equipSlot, whiteScroll, legendarySpirit, updateTime)
+	}
+	return nil
+}

@@ -25,7 +25,36 @@ import (
 	"go.opentelemetry.io/otel/codes"
 )
 
-type Processor struct {
+type Processor interface {
+	WithContext(ctx context.Context) Processor
+	AllInTenantProvider() ([]Model, error)
+	AllInChannelProvider(worldId world.Id, channelId channel.Id) ([]Model, error)
+	ByIdModelProvider(sessionId uuid.UUID) model.Provider[Model]
+	IfPresentById(sessionId uuid.UUID, f model.Operator[Model])
+	IfPresentByIdInWorld(sessionId uuid.UUID, ch channel.Model, f model.Operator[Model])
+	ByCharacterIdModelProvider(ch channel.Model) func(characterId uint32) model.Provider[Model]
+	IfPresentByCharacterId(ch channel.Model) func(characterId uint32, f model.Operator[Model]) error
+	ByAccountIdModelProvider(ch channel.Model) func(accountId uint32) model.Provider[Model]
+	IfPresentByAccountId(ch channel.Model) func(accountId uint32, f model.Operator[Model]) error
+	GetByCharacterId(ch channel.Model) func(characterId uint32) (Model, error)
+	ForEachByCharacterId(ch channel.Model) func(provider model.Provider[[]uint32], f model.Operator[Model]) error
+	SetAccountId(id uuid.UUID, accountId uint32) Model
+	SetCharacterId(id uuid.UUID, characterId uint32) Model
+	SetMapId(id uuid.UUID, mapId _map.Id) Model
+	SetField(id uuid.UUID, f field.Model) Model
+	SetGm(id uuid.UUID, gm bool) Model
+	UpdateLastRequest(id uuid.UUID) Model
+	SessionCreated(s Model) error
+	Create(ch channel.Model, locale byte) func(sessionId uuid.UUID, conn net.Conn)
+	Decrypt(hasAes bool, hasMapleEncryption bool) func(sessionId uuid.UUID, input []byte) []byte
+	DestroyByIdWithSpan(sessionId uuid.UUID)
+	DestroyById(sessionId uuid.UUID)
+	Destroy(s Model) error
+	SetStorageNpcId(id uuid.UUID, npcId uint32) Model
+	ClearStorageNpcId(id uuid.UUID) Model
+}
+
+type ProcessorImpl struct {
 	l   logrus.FieldLogger
 	ctx context.Context
 	t   tenant.Model
@@ -33,8 +62,8 @@ type Processor struct {
 	sp  session.Processor
 }
 
-func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
-	p := &Processor{
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
+	p := &ProcessorImpl{
 		l:   l,
 		ctx: ctx,
 		t:   tenant.MustFromContext(ctx),
@@ -44,15 +73,17 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
 	return p
 }
 
-func (p *Processor) WithContext(ctx context.Context) *Processor {
+var _ Processor = (*ProcessorImpl)(nil)
+
+func (p *ProcessorImpl) WithContext(ctx context.Context) Processor {
 	return NewProcessor(p.l, ctx)
 }
 
-func (p *Processor) AllInTenantProvider() ([]Model, error) {
+func (p *ProcessorImpl) AllInTenantProvider() ([]Model, error) {
 	return getRegistry().GetInTenant(p.t.Id()), nil
 }
 
-func (p *Processor) AllInChannelProvider(worldId world.Id, channelId channel.Id) ([]Model, error) {
+func (p *ProcessorImpl) AllInChannelProvider(worldId world.Id, channelId channel.Id) ([]Model, error) {
 	all := getRegistry().GetInTenant(p.t.Id())
 	result := make([]Model, 0)
 	for _, s := range all {
@@ -63,7 +94,7 @@ func (p *Processor) AllInChannelProvider(worldId world.Id, channelId channel.Id)
 	return result, nil
 }
 
-func (p *Processor) ByIdModelProvider(sessionId uuid.UUID) model.Provider[Model] {
+func (p *ProcessorImpl) ByIdModelProvider(sessionId uuid.UUID) model.Provider[Model] {
 	t := tenant.MustFromContext(p.ctx)
 	return func() (Model, error) {
 		s, ok := getRegistry().Get(t.Id(), sessionId)
@@ -74,7 +105,7 @@ func (p *Processor) ByIdModelProvider(sessionId uuid.UUID) model.Provider[Model]
 	}
 }
 
-func (p *Processor) IfPresentById(sessionId uuid.UUID, f model.Operator[Model]) {
+func (p *ProcessorImpl) IfPresentById(sessionId uuid.UUID, f model.Operator[Model]) {
 	s, err := p.ByIdModelProvider(sessionId)()
 	if err != nil {
 		return
@@ -82,7 +113,7 @@ func (p *Processor) IfPresentById(sessionId uuid.UUID, f model.Operator[Model]) 
 	_ = f(s)
 }
 
-func (p *Processor) IfPresentByIdInWorld(sessionId uuid.UUID, ch channel.Model, f model.Operator[Model]) {
+func (p *ProcessorImpl) IfPresentByIdInWorld(sessionId uuid.UUID, ch channel.Model, f model.Operator[Model]) {
 	s, err := p.ByIdModelProvider(sessionId)()
 	if err != nil {
 		return
@@ -96,14 +127,14 @@ func (p *Processor) IfPresentByIdInWorld(sessionId uuid.UUID, ch channel.Model, 
 	_ = f(s)
 }
 
-func (p *Processor) ByCharacterIdModelProvider(ch channel.Model) func(characterId uint32) model.Provider[Model] {
+func (p *ProcessorImpl) ByCharacterIdModelProvider(ch channel.Model) func(characterId uint32) model.Provider[Model] {
 	return func(characterId uint32) model.Provider[Model] {
 		return model.FirstProvider[Model](p.AllInTenantProvider, model.Filters(CharacterIdFilter(characterId), WorldIdFilter(ch.WorldId()), ChannelIdFilter(ch.Id())))
 	}
 }
 
 // IfPresentByCharacterId executes an Operator if a session exists for the characterId
-func (p *Processor) IfPresentByCharacterId(ch channel.Model) func(characterId uint32, f model.Operator[Model]) error {
+func (p *ProcessorImpl) IfPresentByCharacterId(ch channel.Model) func(characterId uint32, f model.Operator[Model]) error {
 	return func(characterId uint32, f model.Operator[Model]) error {
 		s, err := p.ByCharacterIdModelProvider(ch)(characterId)()
 		if err != nil {
@@ -137,14 +168,14 @@ func ChannelIdFilter(channelId channel.Id) model.Filter[Model] {
 	}
 }
 
-func (p *Processor) ByAccountIdModelProvider(ch channel.Model) func(accountId uint32) model.Provider[Model] {
+func (p *ProcessorImpl) ByAccountIdModelProvider(ch channel.Model) func(accountId uint32) model.Provider[Model] {
 	return func(accountId uint32) model.Provider[Model] {
 		return model.FirstProvider[Model](p.AllInTenantProvider, model.Filters(AccountIdFilter(accountId), WorldIdFilter(ch.WorldId()), ChannelIdFilter(ch.Id())))
 	}
 }
 
 // IfPresentByAccountId executes an Operator if a session exists for the accountId
-func (p *Processor) IfPresentByAccountId(ch channel.Model) func(accountId uint32, f model.Operator[Model]) error {
+func (p *ProcessorImpl) IfPresentByAccountId(ch channel.Model) func(accountId uint32, f model.Operator[Model]) error {
 	return func(accountId uint32, f model.Operator[Model]) error {
 		s, err := p.ByAccountIdModelProvider(ch)(accountId)()
 		if err != nil {
@@ -155,13 +186,13 @@ func (p *Processor) IfPresentByAccountId(ch channel.Model) func(accountId uint32
 }
 
 // GetByCharacterId gets a session (if one exists) for the given characterId
-func (p *Processor) GetByCharacterId(ch channel.Model) func(characterId uint32) (Model, error) {
+func (p *ProcessorImpl) GetByCharacterId(ch channel.Model) func(characterId uint32) (Model, error) {
 	return func(characterId uint32) (Model, error) {
 		return p.ByCharacterIdModelProvider(ch)(characterId)()
 	}
 }
 
-func (p *Processor) ForEachByCharacterId(ch channel.Model) func(provider model.Provider[[]uint32], f model.Operator[Model]) error {
+func (p *ProcessorImpl) ForEachByCharacterId(ch channel.Model) func(provider model.Provider[[]uint32], f model.Operator[Model]) error {
 	return func(provider model.Provider[[]uint32], f model.Operator[Model]) error {
 		return model.ForEachSlice(model.SliceMap[uint32, Model](p.GetByCharacterId(ch))(provider)(), f, model.ParallelExecute())
 	}
@@ -201,7 +232,7 @@ func Announce(l logrus.FieldLogger) func(ctx context.Context) func(writerProduce
 	}
 }
 
-func (p *Processor) SetAccountId(id uuid.UUID, accountId uint32) Model {
+func (p *ProcessorImpl) SetAccountId(id uuid.UUID, accountId uint32) Model {
 	s := Model{}
 	var ok bool
 	if s, ok = getRegistry().Get(p.t.Id(), id); ok {
@@ -212,7 +243,7 @@ func (p *Processor) SetAccountId(id uuid.UUID, accountId uint32) Model {
 	return s
 }
 
-func (p *Processor) SetCharacterId(id uuid.UUID, characterId uint32) Model {
+func (p *ProcessorImpl) SetCharacterId(id uuid.UUID, characterId uint32) Model {
 	s := Model{}
 	var ok bool
 	if s, ok = getRegistry().Get(p.t.Id(), id); ok {
@@ -223,7 +254,7 @@ func (p *Processor) SetCharacterId(id uuid.UUID, characterId uint32) Model {
 	return s
 }
 
-func (p *Processor) SetMapId(id uuid.UUID, mapId _map.Id) Model {
+func (p *ProcessorImpl) SetMapId(id uuid.UUID, mapId _map.Id) Model {
 	s := Model{}
 	var ok bool
 	if s, ok = getRegistry().Get(p.t.Id(), id); ok {
@@ -234,7 +265,7 @@ func (p *Processor) SetMapId(id uuid.UUID, mapId _map.Id) Model {
 	return s
 }
 
-func (p *Processor) SetField(id uuid.UUID, f field.Model) Model {
+func (p *ProcessorImpl) SetField(id uuid.UUID, f field.Model) Model {
 	s := Model{}
 	var ok bool
 	if s, ok = getRegistry().Get(p.t.Id(), id); ok {
@@ -246,7 +277,7 @@ func (p *Processor) SetField(id uuid.UUID, f field.Model) Model {
 	return s
 }
 
-func (p *Processor) SetGm(id uuid.UUID, gm bool) Model {
+func (p *ProcessorImpl) SetGm(id uuid.UUID, gm bool) Model {
 	s := Model{}
 	var ok bool
 	if s, ok = getRegistry().Get(p.t.Id(), id); ok {
@@ -257,7 +288,7 @@ func (p *Processor) SetGm(id uuid.UUID, gm bool) Model {
 	return s
 }
 
-func (p *Processor) UpdateLastRequest(id uuid.UUID) Model {
+func (p *ProcessorImpl) UpdateLastRequest(id uuid.UUID) Model {
 	s := Model{}
 	var ok bool
 	if s, ok = getRegistry().Get(p.t.Id(), id); ok {
@@ -268,7 +299,7 @@ func (p *Processor) UpdateLastRequest(id uuid.UUID) Model {
 	return s
 }
 
-func (p *Processor) SessionCreated(s Model) error {
+func (p *ProcessorImpl) SessionCreated(s Model) error {
 	return p.kp(session2.EnvEventTopicSessionStatus)(CreatedStatusEventProvider(s.SessionId(), s.AccountId(), s.CharacterId(), s.Field().Channel()))
 }
 
@@ -284,7 +315,7 @@ func Teardown(l logrus.FieldLogger) func() {
 	}
 }
 
-func (p *Processor) Create(ch channel.Model, locale byte) func(sessionId uuid.UUID, conn net.Conn) {
+func (p *ProcessorImpl) Create(ch channel.Model, locale byte) func(sessionId uuid.UUID, conn net.Conn) {
 	return func(sessionId uuid.UUID, conn net.Conn) {
 		fl := p.l.WithField("session", sessionId)
 		fl.Debugf("Creating session.")
@@ -300,7 +331,7 @@ func (p *Processor) Create(ch channel.Model, locale byte) func(sessionId uuid.UU
 	}
 }
 
-func (p *Processor) Decrypt(hasAes bool, hasMapleEncryption bool) func(sessionId uuid.UUID, input []byte) []byte {
+func (p *ProcessorImpl) Decrypt(hasAes bool, hasMapleEncryption bool) func(sessionId uuid.UUID, input []byte) []byte {
 	return func(sessionId uuid.UUID, input []byte) []byte {
 		s, ok := getRegistry().Get(p.t.Id(), sessionId)
 		if !ok {
@@ -313,13 +344,13 @@ func (p *Processor) Decrypt(hasAes bool, hasMapleEncryption bool) func(sessionId
 	}
 }
 
-func (p *Processor) DestroyByIdWithSpan(sessionId uuid.UUID) {
+func (p *ProcessorImpl) DestroyByIdWithSpan(sessionId uuid.UUID) {
 	sctx, span := otel.GetTracerProvider().Tracer("atlas-channel").Start(p.ctx, "session-destroy")
 	defer span.End()
 	p.WithContext(sctx).DestroyById(sessionId)
 }
 
-func (p *Processor) DestroyById(sessionId uuid.UUID) {
+func (p *ProcessorImpl) DestroyById(sessionId uuid.UUID) {
 	s, ok := getRegistry().Get(p.t.Id(), sessionId)
 	if !ok {
 		return
@@ -327,7 +358,7 @@ func (p *Processor) DestroyById(sessionId uuid.UUID) {
 	_ = p.Destroy(s)
 }
 
-func (p *Processor) Destroy(s Model) error {
+func (p *ProcessorImpl) Destroy(s Model) error {
 	p.l.WithField("session", s.SessionId().String()).Debugf("Destroying session.")
 	getRegistry().Remove(p.t.Id(), s.SessionId())
 
@@ -347,7 +378,7 @@ func (p *Processor) Destroy(s Model) error {
 	return emitErr
 }
 
-func (p *Processor) SetStorageNpcId(id uuid.UUID, npcId uint32) Model {
+func (p *ProcessorImpl) SetStorageNpcId(id uuid.UUID, npcId uint32) Model {
 	s := Model{}
 	var ok bool
 	if s, ok = getRegistry().Get(p.t.Id(), id); ok {
@@ -358,7 +389,7 @@ func (p *Processor) SetStorageNpcId(id uuid.UUID, npcId uint32) Model {
 	return s
 }
 
-func (p *Processor) ClearStorageNpcId(id uuid.UUID) Model {
+func (p *ProcessorImpl) ClearStorageNpcId(id uuid.UUID) Model {
 	s := Model{}
 	var ok bool
 	if s, ok = getRegistry().Get(p.t.Id(), id); ok {

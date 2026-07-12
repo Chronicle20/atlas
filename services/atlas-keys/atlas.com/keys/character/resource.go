@@ -40,7 +40,7 @@ func handleSetKey(db *gorm.DB) rest.InputHandler[key.RestModel] {
 					processor := key.NewProcessor(d.Logger(), d.Context(), db)
 					err := processor.ChangeKey(uuid.New(), characterId, keyId, i.Type, i.Action)
 					if err != nil {
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 					w.WriteHeader(http.StatusOK)
@@ -57,7 +57,7 @@ func handleDeleteKeyMap(db *gorm.DB) rest.GetHandler {
 				processor := key.NewProcessor(d.Logger(), d.Context(), db)
 				err := processor.Reset(uuid.New(), characterId)
 				if err != nil {
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 				w.WriteHeader(http.StatusOK)
@@ -73,14 +73,14 @@ func handleGetKeyMap(db *gorm.DB) rest.GetHandler {
 				processor := key.NewProcessor(d.Logger(), d.Context(), db)
 				ks, err := processor.GetByCharacterId(characterId)
 				if err != nil {
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
 				res, err := model.SliceMap(key.Transform)(model.FixedProvider(ks))()()
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Creating REST model.")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 

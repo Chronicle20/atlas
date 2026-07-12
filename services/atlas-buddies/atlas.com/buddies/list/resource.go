@@ -46,14 +46,14 @@ func handleGetBuddyList(db *gorm.DB) rest.GetHandler {
 					return
 				}
 				if err != nil {
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
 				res, err := model.Map(Transform)(model.FixedProvider(bl))()
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Creating REST model.")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -68,7 +68,7 @@ func handleCreateBuddyList(d *rest.HandlerDependency, _ *rest.HandlerContext, i 
 		return func(w http.ResponseWriter, r *http.Request) {
 			err := producer.ProviderImpl(d.Logger())(d.Context())(list2.EnvCommandTopic)(list3.CreateCommandProvider(character.Id(characterId), i.Capacity))
 			if err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -87,13 +87,13 @@ func handleGetBuddiesInBuddyList(db *gorm.DB) rest.GetHandler {
 					return
 				}
 				if err != nil {
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 				res, err := model.SliceMap(buddy.Transform)(model.FixedProvider(bl.Buddies()))()()
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Creating REST model.")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 

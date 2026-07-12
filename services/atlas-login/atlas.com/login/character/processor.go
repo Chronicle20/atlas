@@ -8,6 +8,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/degrade"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 	"github.com/sirupsen/logrus"
 )
@@ -106,13 +107,18 @@ func (p *ProcessorImpl) GetById(decorators ...model.Decorator[Model]) func(id ui
 }
 
 func (p *ProcessorImpl) InventoryDecorator() model.Decorator[Model] {
-	return func(m Model) Model {
-		i, err := p.ip.GetByCharacterId(m.Id())
-		if err != nil {
-			return m
-		}
-		return m.SetInventory(i)
-	}
+	return model.ErrDecorator(
+		func(m Model) (Model, error) {
+			i, err := p.ip.GetByCharacterId(m.Id())
+			if err != nil {
+				return m, err
+			}
+			return m.SetInventory(i), nil
+		},
+		func(m Model, err error) {
+			degrade.Observe(p.l, "login.character.inventory", m.Id(), err)
+		},
+	)
 }
 
 func (p *ProcessorImpl) DeleteById(characterId uint32) error {

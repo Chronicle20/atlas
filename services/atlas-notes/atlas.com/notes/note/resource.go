@@ -64,7 +64,7 @@ func GetAllNotesHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http.
 		rm, err := model.SliceMap(Transform)(mp)(model.ParallelMap())()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Creating REST model.")
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteErrorResponse(d.Logger())(w)(err)
 			return
 		}
 
@@ -82,7 +82,7 @@ func GetCharacterNotesHandler(d *rest.HandlerDependency, c *rest.HandlerContext)
 			rm, err := model.SliceMap(Transform)(mp)(model.ParallelMap())()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -101,7 +101,7 @@ func GetNoteHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http.Hand
 			rm, err := model.Map(Transform)(mp)()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -125,13 +125,13 @@ func CreateNoteHandler(d *rest.HandlerDependency, c *rest.HandlerContext, i Rest
 		m, err := NewProcessor(d.Logger(), d.Context(), d.DB()).CreateAndEmit(im.CharacterId(), im.SenderId(), im.Message(), im.Flag())
 		if err != nil {
 			d.Logger().WithError(err).Errorln("Error creating note")
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteErrorResponse(d.Logger())(w)(err)
 			return
 		}
 		rm, err := model.Map(Transform)(model.FixedProvider(m))()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Creating REST model.")
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteErrorResponse(d.Logger())(w)(err)
 			return
 		}
 
@@ -161,13 +161,13 @@ func UpdateNoteHandler(d *rest.HandlerDependency, c *rest.HandlerContext, i Rest
 			m, err := NewProcessor(d.Logger(), d.Context(), d.DB()).UpdateAndEmit(im.Id(), im.CharacterId(), im.SenderId(), im.Message(), im.Flag())
 			if err != nil {
 				d.Logger().WithError(err).Errorln("Error updating note")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 			rm, err := model.Map(Transform)(model.FixedProvider(m))()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -185,7 +185,7 @@ func DeleteNoteHandler(d *rest.HandlerDependency, _ *rest.HandlerContext) http.H
 			err := NewProcessor(d.Logger(), d.Context(), d.DB()).DeleteAndEmit(noteId)
 			if err != nil {
 				d.Logger().WithError(err).Errorln("Error deleting note")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -201,7 +201,7 @@ func DeleteCharacterNotesHandler(d *rest.HandlerDependency, _ *rest.HandlerConte
 			err := NewProcessor(d.Logger(), d.Context(), d.DB()).DeleteAllAndEmit(characterId)
 			if err != nil {
 				d.Logger().WithError(err).Errorln("Error deleting character notes")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 

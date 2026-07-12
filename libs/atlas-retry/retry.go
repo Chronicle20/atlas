@@ -2,6 +2,7 @@ package retry
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
 	"math/rand/v2"
@@ -61,6 +62,13 @@ func Try(ctx context.Context, cfg Config, fn func(attempt int) (bool, error)) er
 		}
 
 		delay := jitteredDelay(cfg, attempt)
+		var hint *delayHintError
+		if errors.As(err, &hint) && hint.delay > delay {
+			delay = hint.delay
+			if delay > cfg.MaxDelay {
+				delay = cfg.MaxDelay
+			}
+		}
 		select {
 		case <-ctx.Done():
 			return fmt.Errorf("retry interrupted: %w", ctx.Err())
@@ -74,4 +82,19 @@ func jitteredDelay(cfg Config, attempt int) time.Duration {
 	calculated := float64(cfg.InitialDelay) * math.Pow(cfg.BackoffFactor, float64(attempt-1))
 	capped := math.Min(calculated, float64(cfg.MaxDelay))
 	return time.Duration(rand.Float64() * capped)
+}
+
+type delayHintError struct {
+	err   error
+	delay time.Duration
+}
+
+func (e *delayHintError) Error() string { return e.err.Error() }
+func (e *delayHintError) Unwrap() error { return e.err }
+
+// WithDelayHint wraps err so Try waits at least d (capped at cfg.MaxDelay)
+// before the next attempt, instead of the jittered backoff when that is
+// smaller. Use it to honor server-provided hints such as Retry-After.
+func WithDelayHint(err error, d time.Duration) error {
+	return &delayHintError{err: err, delay: d}
 }

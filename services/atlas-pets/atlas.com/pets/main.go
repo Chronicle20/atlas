@@ -63,6 +63,14 @@ func main() {
 
 	db := database.Connect(l, database.SetMigrations(pet.Migration, exclude.Migration))
 
+	server.RegisterTransientErrorClassifier(func(err error) bool {
+		if database.IsTransientConnectionError(err) {
+			database.CountTransient(err)
+			return true
+		}
+		return false
+	})
+
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	character.InitConsumers(l)(cmf)(consumerGroupId)
 	asset.InitConsumers(l)(cmf)(consumerGroupId)

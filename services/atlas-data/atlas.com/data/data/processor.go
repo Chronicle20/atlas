@@ -137,7 +137,13 @@ func StartWorker(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.D
 					}
 					err = RegisterAllData(l)(ctx)(path, "Character.wz", equipment.RegisterEquipment(db))()
 				} else if name == WorkerReactor {
-					err = RegisterAllData(l)(ctx)(path, "Reactor.wz", reactor.RegisterReactor(db))()
+					err = RegisterAllData(l)(ctx)(path, "Reactor.wz", func(l logrus.FieldLogger) func(ctx context.Context) func(filePath string) error {
+						return func(ctx context.Context) func(filePath string) error {
+							return func(filePath string) error {
+								return reactor.NewProcessor(l, ctx, db).RegisterReactor(filePath)
+							}
+						}
+					})()
 				} else if name == WorkerSkill {
 					if err = skill.InitString(t, filepath.Join(path, "String.wz", "Skill.img.xml")); err != nil {
 						l.WithError(err).Errorf("Failed to initialize skill string registry.")

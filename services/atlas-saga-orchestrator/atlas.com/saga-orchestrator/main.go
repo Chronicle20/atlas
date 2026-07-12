@@ -73,6 +73,14 @@ func main() {
 	db := database.Connect(l, database.SetMigrations(saga.Migration))
 	l.Infoln("Database connected and migrated.")
 
+	server.RegisterTransientErrorClassifier(func(err error) bool {
+		if database.IsTransientConnectionError(err) {
+			database.CountTransient(err)
+			return true
+		}
+		return false
+	})
+
 	// Initialize PostgreSQL-backed saga store
 	store := saga.NewPostgresStore(db, l)
 	saga.SetCache(store)

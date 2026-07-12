@@ -150,7 +150,13 @@ func StartWorker(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.D
 						l.WithError(err).Errorf("Failed to initialize cash item string registry.")
 						return err
 					}
-					err = RegisterAllData(l)(ctx)(path, filepath.Join("Item.wz", "Cash"), cash.RegisterCash(db))()
+					err = RegisterAllData(l)(ctx)(path, filepath.Join("Item.wz", "Cash"), func(l logrus.FieldLogger) func(ctx context.Context) func(filePath string) error {
+						return func(ctx context.Context) func(filePath string) error {
+							return func(filePath string) error {
+								return cash.NewProcessor(l, ctx, db).RegisterCash(filePath)
+							}
+						}
+					})()
 				} else if name == WorkerCommodity {
 					err = RegisterFileData(l)(ctx)(path, filepath.Join("Etc.wz", "Commodity.img.xml"), commodity.RegisterCommodity(db))()
 				} else if name == WorkerEtc {

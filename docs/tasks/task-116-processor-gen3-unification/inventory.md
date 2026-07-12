@@ -146,7 +146,7 @@ Notes on interpreting the output:
 | `services/atlas-monster-death/atlas.com/monster/monster/drop/processor.go` | Gen1 | R3 | 31 | done |
 | `services/atlas-monster-death/atlas.com/monster/monster/processor.go` | Gen1 | R3 | 31 | done |
 | `services/atlas-monster-death/atlas.com/monster/party/processor.go` | Gen1 | R3 | 31 | done |
-| `services/atlas-data/atlas.com/data/cash/processor.go` | Gen1 | R3 | 32 | pending |
+| `services/atlas-data/atlas.com/data/cash/processor.go` | Gen1 | R3 | 32 | done |
 | `services/atlas-data/atlas.com/data/commodity/processor.go` | Gen1 | R3 | 32 | pending |
 | `services/atlas-data/atlas.com/data/consumable/processor.go` | Gen1 | R3 | 32 | pending |
 | `services/atlas-data/atlas.com/data/etc/processor.go` | Gen1 | R3 | 32 | pending |

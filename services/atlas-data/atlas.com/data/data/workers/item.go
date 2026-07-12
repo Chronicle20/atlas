@@ -40,7 +40,13 @@ func (Item) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc *mini
 		rf     RegisterFunc
 	}{
 		{"Consume", consumable.RegisterConsumable(db)},
-		{"Cash", cash.RegisterCash(db)},
+		{"Cash", func(l logrus.FieldLogger) func(ctx context.Context) func(path string) error {
+			return func(ctx context.Context) func(path string) error {
+				return func(path string) error {
+					return cash.NewProcessor(l, ctx, db).RegisterCash(path)
+				}
+			}
+		}},
 		{"Etc", etc.RegisterEtc(db)},
 		{"Install", setup.RegisterSetup(db)},
 		{"Pet", pet.RegisterPet(db)},

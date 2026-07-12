@@ -48,7 +48,11 @@ and register the classifier once in main.go (services with a DB):
 
 Keep 404/400 branches as they are. Non-transient errors still map to 500
 (now with a JSON:API body). Reference implementation: atlas-inventory
-(main.go + inventory/compartment/asset resource.go).
+(main.go + inventory/compartment/asset resource.go). As of task-168 this is
+adopted by **every DB-backed service** — see
+`docs/tasks/task-168-db-connection-resilience/fleet-503-adoption.md` for the
+full list and the handful of non-mechanical sites. New DB-backed services MUST
+follow it (DOM-26).
 
 ## Client retry semantics (automatic, GET only)
 

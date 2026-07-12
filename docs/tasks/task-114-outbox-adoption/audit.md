@@ -325,3 +325,223 @@ guard silently.
    should roll back the quest, or document the best-effort carve-out.
 5. (Doc) M4 — soften the `outboxguard` doc comment; note the stored-provider
    blind spot.
+
+# Post-Merge Backend-Guidelines Audit (main → task-114) — 2026-07-12
+
+Scope: ONLY the hand-resolved Go files that differ from BOTH parents of merge
+commit `87241dc0e5` (conflict resolutions + intent-preservation fixes). Main's
+own code was reviewed when it landed and is out of scope.
+
+## Verdict
+
+PASS (guideline-clean). Build/vet/test/guards all green; the two behavioral
+resolutions (atlas-tenants MTS-config → outbox, atlas-cashshop wallet failure →
+direct producer) preserve the immutable-model / Processor Interface+Impl pattern
+and match the established sibling seams exactly.
+
+## Build / Vet / Test / Guard Table
+
+| Check | Scope | Result |
+|-------|-------|--------|
+| conflict markers | `git grep -nE '^(<<<<<<<\|=======\|>>>>>>>)' -- '*.go' '*.mod'` | PASS — none |
+| `go vet ./...` | atlas-tenants | PASS — clean |
+| `go vet ./...` | atlas-cashshop | PASS — clean |
+| `go test ./... -count=1` | atlas-tenants | PASS — configuration + tenant ok |
+| `go test ./... -count=1` | atlas-cashshop | PASS — wallet/wishlist/producer-wallet ok |
+| `go test ./... -count=1` | libs/atlas-outbox | PASS — ok 0.077s |
+| `go build ./...` | 15 converted services + atlas-mts | PASS — 16/16 BUILD OK |
+| `./tools/outbox-guard.sh` | all service modules | PASS — exit 0 |
+| `./tools/goroutine-guard.sh` | services + libs | PASS — exit 0 |
+
+## Per-Item Findings
+
+### Outbox seam correctness (atlas-tenants MTS config)
+
+- PASS — `CreateMtsConfigAndEmit` / `UpdateMtsConfigAndEmit` / `DeleteMtsConfigAndEmit`
+  (services/atlas-tenants/atlas.com/tenants/configuration/processor.go, the three
+  `*AndEmit` wrappers around lines 664/725/750) wrap the emit in
+  `database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx){...})` using
+  `outbox.EmitProvider(p.l, p.ctx, tx)` — byte-for-byte the pattern of the sibling
+  `CreateRouteAndEmit` (processor.go:231). Config write and status event are atomic.
+- PASS — inner processor rebinds db to tx. `NewProcessor(p.l, p.ctx, tx)`
+  (processor.go:127 signature `NewProcessor(l, ctx, db)`) sets `ProcessorImpl.db = tx`,
+  so `CreateMtsConfig`'s `CreateConfiguration(p.db, entity)` / `UpdateConfiguration(p.db,...)`
+  / `DeleteConfiguration(p.db,...)` all write on the transaction, NOT the base handle.
+- PASS — enqueue errors roll back. `outbox.EmitProvider` (libs/atlas-outbox/provider.go:20)
+  returns `EnqueueBuffer(l, ctx, tx, ...)`'s error; `message.EmitWithResult`/`message.Emit`
+  surface it; the tx closures `return err`, so a failed enqueue aborts the domain write.
+  No error is swallowed with `_`.
+
+### Direct-path classification (atlas-cashshop wallet)
+
+- PASS — `EmitAdjustFailure` (services/atlas-cashshop/atlas.com/cashshop/wallet/processor.go:239)
+  emits via `producer.ProviderImpl(p.l)(p.ctx)` on the direct path. Justified: it is a
+  failure-path status event reflecting NO committed state change (the adjust already
+  failed), so it must publish regardless of any rollback — consistent with task-114's
+  documented failure-path exclusion and confirmed guideline-clean by `outbox-guard`
+  exit 0 (the guard bans `producer.ProviderImpl` only inside a tx closure; this call
+  is outside any transaction).
+- PASS — the sibling committed-state writes in the same file remain on the outbox
+  (e.g. `DeleteAndEmit` processor.go:226 uses `outbox.EmitProvider(p.l, p.ctx, tx)`),
+  so the direct-path carve-out is narrowly the failure event only.
+
+### Goroutine-guard reconciliation (15 service main.go)
+
+- PASS — every drainer boot converted from `go drainer.Run(...)` to
+  `routine.Go(l, tdm.Context(), func(_ context.Context){ drainer.Run(tdm.Context()) })`
+  (e.g. atlas-buddies/main.go, atlas-tenants/main.go). `goroutine-guard` exit 0 confirms
+  no bare `go` statement survives outside libs/atlas-routine.
+
+### Import hygiene
+
+- PASS — no duplicate/unused imports. The two goimports risk spots called out in the
+  brief (atlas-skills, atlas-character main.go where an `atlas-service` /
+  outboxlib+database duplicate was possible) compile clean; all 16 `go build ./...`
+  succeed and `go vet` is silent on both audited modules.
+
+### DOM-21 (no reinvented shared types)
+
+- PASS — the resolved diff introduces zero `type`/`const` declarations
+  (grep of the combined diff: "NO NEW TYPE/CONST DECLARATIONS"). MTS methods reuse the
+  pre-existing `map[string]interface{}` config shape; nothing shadows libs/atlas-constants.
+
+### SEC (no hardcoded secrets)
+
+- PASS — no keys/passwords/tokens in the resolved code. New string literals are Kafka
+  env-topic constants (`wallet.EnvEventTopicStatus`, `EventTopicConfigurationStatus`)
+  and resource names (`"mts-configs"`); the wallet failure reason is a caller-supplied
+  `reason string` param.
+
+### go.mod / go.sum unions
+
+- PASS — `libs/atlas-outbox/go.mod`, `atlas-character/go.mod`, `atlas-guilds/go.mod`
+  union the task-114 (atlas-model/atlas-retry) and task-115 (atlas-routine) requires +
+  replaces without conflict markers; the 16-module build resolves them.
+
+## Blocking / Non-Blocking
+
+- Blocking (Critical/Important): NONE.
+- Non-Blocking: NONE from this merge resolution. (Pre-existing task-114 findings M1–M4
+  above in this file are unchanged by the merge.)
+
+# Post-Merge Plan-Adherence Review (main → task-114) — 2026-07-12
+
+**Merge commit:** `87241dc0e5` (parents `4fb618c316` branch-tip, `1788b37826` origin/main)
+**Merge base:** `38d4d0ba22`
+**Reviewer scope:** intent-preservation / conflict-resolution surface only (the pre-computed
+combined "evil-merge" diff), plus an adversarial sweep for new tx-coupled emits main added.
+
+## Verdict: PASS
+
+The task-114 outbox atomicity guarantee still holds across the merged tree for every service
+task-114 migrated. All three claimed intent-preservation fixes are correct and complete. Both
+CI guards and all targeted builds/tests are green. One noteworthy observation about the new
+`atlas-mts` service is recorded below — it is **outbox debt in a new, out-of-scope service, not
+a regression** of task-114, and does not block the merge.
+
+## Intent-preservation fixes — verification
+
+### 1. atlas-tenants MTS-config CRUD — VERIFIED
+
+`services/atlas-tenants/atlas.com/tenants/configuration/processor.go`:
+- `CreateMtsConfigAndEmit` (line 724), `UpdateMtsConfigAndEmit` (line 813),
+  `DeleteMtsConfigAndEmit` (line 845) are now byte-for-pattern identical to the sibling
+  `CreateRouteAndEmit` (231), `DeleteRouteAndEmit` (353) and the vessel/instance-route
+  siblings: `database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx){ ... outbox.EmitProvider(p.l, p.ctx, tx) ... NewProcessor(p.l, p.ctx, tx).CreateMtsConfig(mb)(...) })`.
+- The inner Mts methods write on `tx`, not `p.db`: `NewProcessor(l, ctx, db)` (line 127) binds
+  the passed `tx` into `p.db`, and `CreateMtsConfig`/`UpdateMtsConfig`/`DeleteMtsConfig` reference
+  only `p.db` internally (e.g. `CreateConfiguration(p.db, entity)` line 695,
+  `UpdateConfiguration(p.db, existing)` line 662, `DeleteConfiguration(p.db, ...)` line 830) —
+  identical to how `CreateRoute` (`p.db` at 170/203) resolves under `NewProcessor(p.l, p.ctx, tx)`.
+  Config write and status event now commit and enqueue atomically.
+- `grep producer.ProviderImpl services/atlas-tenants/...` → NONE. No post-commit direct status
+  emit anywhere in the tenants module.
+
+### 2. atlas-cashshop wallet `EmitAdjustFailure` — VERIFIED (direct path correct)
+
+`wallet/processor.go:240` routes `ErrorStatusEventProvider` through
+`message.Emit(producer.ProviderImpl(p.l)(p.ctx))`. Caller
+`kafka/consumer/wallet/consumer.go:56` invokes it **only after**
+`AdjustCurrencyWithTransaction` returned a non-nil error (line 49-50), i.e. after the wallet
+transaction already failed/rolled back — outside any DB transaction, reflecting no committed
+state. Classification per task-114's failure-path exclusion is correct. The success path is
+untouched and still atomic: `AdjustCurrencyWithTransaction` (line 170) delegates to
+`UpdateAndEmitWithTransaction` (line 157) which emits via `outbox.EmitProvider` inside its own
+`ExecuteTransaction`.
+
+### 3. Fifteen main.go drainer-goroutine conversions — VERIFIED (16 sites, all converted)
+
+- `grep "go drainer.Run" services/` → NONE. Zero bare `go` drainer spawns remain.
+- All 16 services that boot the outbox drainer now wrap it as
+  `routine.Go(l, tdm.Context(), func(_ context.Context){ drainer.Run(tdm.Context()) })`
+  (buddies, cashshop, character, configurations, fame, guilds, inventory, merchant,
+  monster-book, mounts, notes, npc-shops, pets, quest, skills, tenants). The brief said "15";
+  the true count is 16 because the pre-existing adopter `atlas-configurations` also boots the
+  drainer and is likewise converted.
+- Teardown semantics unchanged: each of the 16 retains exactly one `drainer.Stop()` and one
+  `publisher.Close()` in its `tdm.TeardownFunc`.
+- `tools/goroutine-guard.sh` exit 0 confirms no un-justified bare goroutine remains fleet-wide.
+
+## Adversarial sweep — new tx-coupled emits main added
+
+Services main modified in the migrated set (`git diff --stat 38d4d0ba22..1788b37826`): mostly
+task-115 `routine.Go` ticker conversions plus the two handled features above. Additional finding:
+
+- **atlas-character** `MovementCommand`/`Move` gained an `Fh` foothold field
+  (`kafka/message/character/kafka.go`, `kafka/consumer/character/consumer.go:366`). `Move` is an
+  in-process/temporal-data update with no DB-write status emit — no outbox concern.
+- No other new `*AndEmit` or tx-coupled status emit was introduced in any migrated service.
+  `outbox-guard.sh` (exit 0) confirms no `producer.ProviderImpl` is constructed lexically inside
+  a DB-transaction closure anywhere in the fleet, including all of main's new code.
+
+## Observation — atlas-mts (new service, out of scope, NOT a regression)
+
+The new `atlas-mts` service emits consumer-projected STATUS events that reflect committed DB
+writes, POST-commit on the DIRECT producer, e.g. `kafka/consumer/custody/consumer.go:151`
+`ListingCreatedStatusEventProvider` and `:281` `ListingSoldStatusEventProvider`, and
+`kafka/consumer/mts/consumer.go:370` `BidPlacedStatusEventProvider` / `:441`
+`WishAddedStatusEventProvider`. These are not purely saga commands: `LISTING_CREATED` is
+projected by atlas-channel into `RegisterSaleEntryDone` to the seller (per the handler's own
+comment). The DB write happens in the processor's `ExecuteTransaction` (e.g.
+`listing/processor.go:517`, `holding/processor_custody.go:32`) and the status event is emitted
+afterward via `msg.Emit(pf(ctx))` on the direct path — the exact tx-coupled post-commit pattern
+task-114 exists to eliminate.
+
+However: `atlas-mts` did not exist when task-114 was scoped, has no `atlas-outbox` dependency and
+boots no drainer, and is in the same category as the 34 services inventory.md already documents as
+out-of-scope. It relies on the saga orchestrator's at-least-once redelivery + compensation for
+consistency, not the outbox. This is **not a regression** of task-114 (which never covered it) and
+the merge correctly leaves it unmigrated. The merge-commit-message rationale that atlas-mts "needs
+no outbox" because its emits are "saga commands on the direct path" is an oversimplification — it
+also emits tx-coupled consumer-projected status events — but the conclusion (no merge action
+required) stands. Recommend a follow-up outbox-adoption task track atlas-mts as outbox debt.
+
+## Build / Test / Guard results
+
+| Item | Result | Notes |
+|------|--------|-------|
+| `tools/outbox-guard.sh` | PASS (exit 0) | no in-tx direct producer fleet-wide |
+| `tools/goroutine-guard.sh` | PASS (exit 0) | no un-justified bare `go` fleet-wide |
+| libs/atlas-outbox build+test | PASS | `ok  github.com/Chronicle20/atlas/libs/atlas-outbox` |
+| atlas-tenants build+test | PASS | `ok` configuration, tenant |
+| atlas-cashshop build+test | PASS | `ok` wallet, wishlist, producer/wallet |
+| atlas-buddies build | PASS | |
+| atlas-character build | PASS | |
+| atlas-fame build | PASS | |
+| atlas-guilds build | PASS | |
+| atlas-inventory build | PASS | |
+| atlas-merchant build | PASS | |
+| atlas-monster-book build | PASS | |
+| atlas-mounts build | PASS | |
+| atlas-notes build | PASS | |
+| atlas-npc-shops build | PASS | |
+| atlas-pets build | PASS | |
+| atlas-quest build | PASS | |
+| atlas-skills build | PASS | |
+| atlas-mts build | PASS | new service builds clean |
+
+## Recommendation: READY_TO_MERGE
+
+Merge is safe to keep. Task-114's outbox guarantee is intact for all migrated services, the three
+intent-preservation fixes are correct and complete, both guards and all targeted builds/tests are
+green. The atlas-mts observation is outbox debt for a future task, not a blocker.

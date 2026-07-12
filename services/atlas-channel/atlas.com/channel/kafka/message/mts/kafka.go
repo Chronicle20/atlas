@@ -161,6 +161,8 @@ type CreateListingCommandBody struct {
 	SubCategory         string  `json:"subCategory"`
 	OfferWishSerial     uint32  `json:"offerWishSerial,omitempty"`
 	OfferWishOwnerId    uint32  `json:"offerWishOwnerId,omitempty"`
+	ItemId              uint32  `json:"itemId,omitempty"`
+	SellerLevel         byte    `json:"sellerLevel,omitempty"`
 }
 
 // TakeHomeCommandBody identifies the holding the character is taking home into

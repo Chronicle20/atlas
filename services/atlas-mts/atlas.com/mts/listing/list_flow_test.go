@@ -4,6 +4,7 @@ import (
 	"atlas-mts/listing"
 	"atlas-mts/saga"
 	"atlas-mts/test"
+	"errors"
 	"testing"
 	"time"
 
@@ -65,6 +66,8 @@ func validFixedListRequest() listing.ListRequest {
 		WorldId:             0,
 		SellerId:            100,
 		SellerName:          "Seller",
+		SellerLevel:         30, // over the level-10 sell floor
+		ItemId:              1302000, // a sword — not a rechargeable
 		SaleType:            listing.SaleTypeFixed,
 		SourceInventoryType: 1,
 		AssetId:             5001,
@@ -162,6 +165,70 @@ func TestListRejectsAuctionDurationOutOfRange(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestListRejectsRechargeables asserts throwing stars and bullets cannot be listed
+// — each maps to its own sentinel and emits no saga (rejected before the fee).
+func TestListRejectsRechargeables(t *testing.T) {
+	cases := []struct {
+		name    string
+		itemId  uint32
+		wantErr error
+	}{
+		{"throwing star", 2070000, listing.ErrThrowingStarNotTradable},
+		{"bullet", 2330000, listing.ErrItemNotSellable},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			p, emitter, _, cleanup := newListProcessor(t)
+			defer cleanup()
+
+			req := validFixedListRequest()
+			req.ItemId = c.itemId
+
+			_, err := p.List(req)
+			if !errors.Is(err, c.wantErr) {
+				t.Fatalf("expected %v, got %v", c.wantErr, err)
+			}
+			if emitter.called {
+				t.Error("saga emitted for a non-tradable item; expected no emission")
+			}
+		})
+	}
+}
+
+// TestListSellLevelGate asserts the retail sell requirement "over level 10": level
+// 10 is rejected with ErrBelowSellLevel; level 11 clears the gate and builds a saga.
+func TestListSellLevelGate(t *testing.T) {
+	t.Run("at floor rejected", func(t *testing.T) {
+		p, emitter, _, cleanup := newListProcessor(t)
+		defer cleanup()
+
+		req := validFixedListRequest()
+		req.SellerLevel = 10 // must be OVER 10
+
+		_, err := p.List(req)
+		if !errors.Is(err, listing.ErrBelowSellLevel) {
+			t.Fatalf("expected ErrBelowSellLevel, got %v", err)
+		}
+		if emitter.called {
+			t.Error("saga emitted for a below-level seller; expected no emission")
+		}
+	})
+	t.Run("over floor passes", func(t *testing.T) {
+		p, emitter, _, cleanup := newListProcessor(t)
+		defer cleanup()
+
+		req := validFixedListRequest()
+		req.SellerLevel = 11
+
+		if _, err := p.List(req); err != nil {
+			t.Fatalf("level 11 should clear the sell gate, got %v", err)
+		}
+		if !emitter.called {
+			t.Error("expected saga emission for a valid over-level list")
+		}
+	})
 }
 
 // TestValidFixedListBuildsSaga asserts a valid fixed list pre-allocates a listing

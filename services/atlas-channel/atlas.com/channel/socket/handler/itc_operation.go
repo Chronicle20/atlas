@@ -133,6 +133,7 @@ type CreateListingArgs struct {
 	SellerId        uint32
 	SellerAccountId uint32
 	SellerName      string
+	SellerLevel     byte // resolved in emitCreateListing; atlas-mts enforces the sell-level gate
 	SaleType        string
 	// TemplateId/CashId identify the item the seller is listing. The register
 	// packet's GW_ItemSlotBase blob carries the templateId (and, for cash items,
@@ -675,6 +676,17 @@ func ItcOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer
 // RegisterSaleEntryFailed via the status consumer only when it actually processes
 // and rejects the command).
 func emitCreateListing(l logrus.FieldLogger, ctx context.Context, s session.Model, args CreateListingArgs) {
+	// Resolve the seller's level so atlas-mts can enforce the authoritative
+	// sell-level gate (retail: must be over level 10). The channel supplies it as
+	// seller metadata in the CREATE_LISTING command, alongside SellerName/Id — the
+	// rule itself lives in listing.List() with the price-floor/active-cap checks.
+	c, err := character.NewProcessor(l, ctx).GetById()(s.CharacterId())
+	if err != nil {
+		l.WithError(err).Errorf("Unable to load character [%d] for MTS listing; aborting list.", s.CharacterId())
+		return
+	}
+	args.SellerLevel = c.Level()
+
 	// Resolve the item to a concrete inventory type + asset id from the seller's
 	// live inventory. The register packet conveys only the item's templateId
 	// (and cashId for cash items) — never the inventory slot or the inventory
@@ -712,6 +724,8 @@ func emitCreateListing(l logrus.FieldLogger, ctx context.Context, s session.Mode
 		args.SubCategory,
 		args.OfferWishSerial,
 		args.OfferWishOwnerId,
+		args.TemplateId,
+		args.SellerLevel,
 	); err != nil {
 		l.WithError(err).Errorf("Unable to emit CREATE_LISTING for character [%d].", s.CharacterId())
 	}

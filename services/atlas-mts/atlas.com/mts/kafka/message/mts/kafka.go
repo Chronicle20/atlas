@@ -22,6 +22,15 @@ const (
 	// tenant noticeFailReasons table maps it to the generic "the request for MTS
 	// has failed" notice (CITC::NoticeFailReason default, SP_4808).
 	FailReasonRegisterFailed = "REGISTER_FAILED"
+
+	// FailReason* for the create-listing tradability/level guards (task-102). The
+	// channel resolves these through the tenant noticeFailReasons table to the
+	// CITC::NoticeFailReason code. The strings ARE the existing seeded
+	// noticeFailReasons keys (uniform across gms v83/84/87/95): STARS_NOT_TRADABLE
+	// => 82 ('R'), MAY_NOT_BE_SOLD => 79 ('O'), BELOW_MIN_LEVEL => 83 ('S').
+	FailReasonThrowingStarsNotTradable = "STARS_NOT_TRADABLE"
+	FailReasonItemNotSellable          = "MAY_NOT_BE_SOLD"
+	FailReasonBelowSellLevel           = "BELOW_MIN_LEVEL"
 )
 
 const (
@@ -192,6 +201,8 @@ type CreateListingCommandBody struct {
 	SubCategory         string  `json:"subCategory"`
 	OfferWishSerial     uint32  `json:"offerWishSerial,omitempty"`
 	OfferWishOwnerId    uint32  `json:"offerWishOwnerId,omitempty"`
+	ItemId              uint32  `json:"itemId,omitempty"`
+	SellerLevel         byte    `json:"sellerLevel,omitempty"`
 }
 
 // TakeHomeCommandBody identifies the holding the character is taking home into

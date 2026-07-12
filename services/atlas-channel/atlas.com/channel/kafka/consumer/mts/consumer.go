@@ -350,9 +350,29 @@ func handleListingCreateFailed(sc server.Model, wp writer.Producer) message.Hand
 		// The register dialog listens ONLY for RegisterSaleEntryFailed — routing this
 		// through failNoticeOr -> GetSearchItcListFailed (the search-list notice arm,
 		// correct for buy/bid) leaves the register dialog stuck with no response
-		// (task-102 live finding). Always send the register dialog's own failed arm so
-		// it un-hangs; the client renders its own registration-failure message.
-		announceTo(l, ctx, sc, wp, e.Body.SellerId, fieldpkt.MtsOperationRegisterSaleEntryFailedBody(mtsRegisterSaleGenericReason, mtsRegisterSaleNoSaleLimit))
+		// (task-102 live finding). Send the register dialog's own failed arm so it
+		// un-hangs, but resolve the seller's specific reason (throwing stars / not
+		// sellable / below sell level) into its NoticeFailReason code; a generic
+		// register rejection (empty/unknown key) falls back to the generic notice.
+		announceTo(l, ctx, sc, wp, e.Body.SellerId, registerSaleFailWithReason(e.Body.ReasonKey))
+	}
+}
+
+// registerSaleFailWithReason emits the RegisterSaleEntryFailed arm carrying the
+// CITC::NoticeFailReason code resolved from the tenant noticeFailReasons table for
+// reasonKey. Unlike failNoticeOr (which targets the search-list notice arm — wrong
+// for the register dialog), this keeps the register dialog's own arm so it un-hangs
+// AND renders the specific message. A missing table/key resolves to the generic
+// reason (0 -> the client's generic MTS-failed notice).
+func registerSaleFailWithReason(reasonKey string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return func(l logrus.FieldLogger, ctx context.Context) func(map[string]interface{}) []byte {
+		return func(options map[string]interface{}) []byte {
+			code := mtsRegisterSaleGenericReason
+			if c, ok := noticeFailReasonCode(options, reasonKey); ok {
+				code = c
+			}
+			return fieldpkt.MtsOperationRegisterSaleEntryFailedBody(code, mtsRegisterSaleNoSaleLimit)(l, ctx)(options)
+		}
 	}
 }
 

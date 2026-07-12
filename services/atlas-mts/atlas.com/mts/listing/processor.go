@@ -13,6 +13,7 @@ import (
 	"atlas-mts/transaction"
 	"atlas-mts/wallet"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
@@ -47,6 +48,8 @@ type ListRequest struct {
 	SellerId            uint32
 	SellerAccountId     uint32
 	SellerName          string
+	SellerLevel         byte   // seller's character level; enforces the sell-level gate
+	ItemId              uint32 // templateId of the listed item; enforces the not-tradable guard
 	SaleType            SaleType
 	SourceInventoryType byte
 	AssetId             uint32
@@ -695,11 +698,32 @@ func minIncrementOrDefault(supplied uint32, def uint32) uint32 {
 }
 
 func (p *ProcessorImpl) List(req ListRequest) (uuid.UUID, error) {
+	// Item-tradability guard: rechargeables (throwing stars, bullets) cannot be
+	// listed on the MTS — their stack/recharge semantics do not survive the custody
+	// transfer. Rejected up front, before any tenant/config work or listing fee, for
+	// every sale type (fixed, auction, want-ad offer). ItemId is the templateId the
+	// channel resolved from the seller's inventory.
+	if item.IsThrowingStar(item.Id(req.ItemId)) {
+		return uuid.Nil, ErrThrowingStarNotTradable
+	}
+	if item.IsBullet(item.Id(req.ItemId)) {
+		return uuid.Nil, ErrItemNotSellable
+	}
+
 	t, err := tenant.FromContext(p.ctx)()
 	if err != nil {
 		return uuid.Nil, err
 	}
 	cfg := configuration.GetRegistry().GetTenantConfig(p.l, p.ctx, t.Id())
+
+	// Sell-level gate (retail model): the seller must be OVER the configured minimum
+	// to sell — default 10, i.e. level 11+, matching the client's "You must be over
+	// level 10 to sell" notice. Browsing/buying is unrestricted (the channel no
+	// longer gates MTS entry on level); selling is gated here, authoritative for
+	// every caller (channel command + REST).
+	if int(req.SellerLevel) <= cfg.MinLevel() {
+		return uuid.Nil, ErrBelowSellLevel
+	}
 
 	// An offer is an item escrowed against a want-ad (sale_type=offer). Offering is
 	// not listing: it charges no seller listing fee and does not consume the seller's

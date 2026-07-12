@@ -96,6 +96,8 @@ type CreateListingRestModel struct {
 	SellerId            uint32  `json:"sellerId"`
 	SellerAccountId     uint32  `json:"sellerAccountId"`
 	SellerName          string  `json:"sellerName"`
+	SellerLevel         byte    `json:"sellerLevel"`
+	ItemId              uint32  `json:"itemId"`
 	SaleType            string  `json:"saleType"`
 	SourceInventoryType byte    `json:"sourceInventoryType"`
 	AssetId             uint32  `json:"assetId"`

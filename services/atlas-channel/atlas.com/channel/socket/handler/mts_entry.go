@@ -6,7 +6,6 @@ import (
 	"atlas-channel/cashshop"
 	"atlas-channel/cashshop/wallet"
 	"atlas-channel/character"
-	mtsconfig "atlas-channel/mts/configuration"
 	mtsholding "atlas-channel/mts/holding"
 	mtslisting "atlas-channel/mts/listing"
 	"atlas-channel/session"
@@ -18,7 +17,6 @@ import (
 	fieldcb "github.com/Chronicle20/atlas/libs/atlas-packet/field/clientbound"
 	fieldsb "github.com/Chronicle20/atlas/libs/atlas-packet/field/serverbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
@@ -55,16 +53,10 @@ func EnterMtsHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Pro
 			return
 		}
 
-		// Authoritative level gate (design §5.1). The cash-shop map/event
-		// eligibility is enforced upstream by the client send guards
-		// (guest/lie-detector/map-flag); the level floor is the server check,
-		// read from the tenant mts-configs (default 10 on a fetch miss).
-		t := tenant.MustFromContext(ctx)
-		cfg := mtsconfig.GetRegistry().GetTenantConfig(l, ctx, t.Id())
-		if int(c.Level()) < cfg.MinLevel() {
-			l.Debugf("Character [%d] level [%d] below MTS minimum [%d]; entry denied.", s.CharacterId(), c.Level(), cfg.MinLevel())
-			return
-		}
+		// Retail level model (task-102): entry and browsing/buying are unrestricted
+		// at any level; the level requirement is enforced only at SELL time (see
+		// emitCreateListing's sell-level gate, CITC::NoticeFailReason code 83). The
+		// former entry-level gate was removed so low-level players can browse and buy.
 
 		// SET_ITC scene transition (CStage::OnSetITC) FIRST — this pushes the
 		// client's CITC stage so the in-game MTS view opens. It mirrors

@@ -34,4 +34,20 @@ var (
 	// MtsSettlePurchase saga compensates the buyer's prepaid debit instead of
 	// silently completing a purchase the buyer never received.
 	ErrMoveLostRace = errors.New("mts: settle move lost the race to a concurrent cancel/expire; listing no longer active")
+
+	// ErrThrowingStarNotTradable — the seller tried to list a throwing star.
+	// Rechargeables cannot be sold on the MTS (client reason 'R' = 82, "Throwing
+	// Stars are not tradable"). The create-listing consumer maps it to
+	// FailReasonThrowingStarsNotTradable.
+	ErrThrowingStarNotTradable = errors.New("throwing stars are not tradable on the mts")
+
+	// ErrItemNotSellable — the seller tried to list an item that may not be sold
+	// (currently bullets/other rechargeables; client reason 'O' = 79, "This item
+	// may not be sold"). Maps to FailReasonItemNotSellable.
+	ErrItemNotSellable = errors.New("item may not be sold on the mts")
+
+	// ErrBelowSellLevel — the seller is not over the minimum level required to sell
+	// (client reason 'S' = 83, "You must be over level 10 to sell..."). Maps to
+	// FailReasonBelowSellLevel.
+	ErrBelowSellLevel = errors.New("seller is not over the minimum level to sell on the mts")
 )

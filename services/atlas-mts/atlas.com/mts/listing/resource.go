@@ -116,6 +116,8 @@ func handleCreateListing(d *rest.HandlerDependency, c *rest.HandlerContext, rm C
 				SellerId:            rm.SellerId,
 				SellerAccountId:     rm.SellerAccountId,
 				SellerName:          rm.SellerName,
+				SellerLevel:         rm.SellerLevel,
+				ItemId:              rm.ItemId,
 				SaleType:            SaleType(rm.SaleType),
 				SourceInventoryType: rm.SourceInventoryType,
 				AssetId:             rm.AssetId,

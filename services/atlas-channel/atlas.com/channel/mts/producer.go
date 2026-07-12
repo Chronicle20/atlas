@@ -15,7 +15,7 @@ import (
 // character so per-character ordering is preserved (the same keying the
 // messenger/cashshop command producers use).
 
-func CreateListingCommandProvider(transactionId uuid.UUID, worldId world.Id, sellerId uint32, sellerAccountId uint32, sellerName string, saleType string, sourceInventoryType byte, assetId uint32, quantity uint32, listValue uint32, buyNowPrice *uint32, durationHours int, minIncrement uint32, category string, subCategory string, offerWishSerial uint32, offerWishOwnerId uint32) model.Provider[[]kafka.Message] {
+func CreateListingCommandProvider(transactionId uuid.UUID, worldId world.Id, sellerId uint32, sellerAccountId uint32, sellerName string, saleType string, sourceInventoryType byte, assetId uint32, quantity uint32, listValue uint32, buyNowPrice *uint32, durationHours int, minIncrement uint32, category string, subCategory string, offerWishSerial uint32, offerWishOwnerId uint32, itemId uint32, sellerLevel byte) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(sellerId))
 	value := &mtsmsg.Command[mtsmsg.CreateListingCommandBody]{
 		TransactionId: transactionId,
@@ -37,6 +37,8 @@ func CreateListingCommandProvider(transactionId uuid.UUID, worldId world.Id, sel
 			SubCategory:         subCategory,
 			OfferWishSerial:     offerWishSerial,
 			OfferWishOwnerId:    offerWishOwnerId,
+			ItemId:              itemId,
+			SellerLevel:         sellerLevel,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

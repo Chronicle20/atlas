@@ -113,6 +113,8 @@ func handleCreateListing(pf providerFn) func(db *gorm.DB) message.Handler[mts.Co
 				SellerId:            b.SellerId,
 				SellerAccountId:     b.SellerAccountId,
 				SellerName:          b.SellerName,
+				SellerLevel:         b.SellerLevel,
+				ItemId:              b.ItemId,
 				SaleType:            listing.SaleType(b.SaleType),
 				SourceInventoryType: b.SourceInventoryType,
 				AssetId:             b.AssetId,
@@ -128,18 +130,39 @@ func handleCreateListing(pf providerFn) func(db *gorm.DB) message.Handler[mts.Co
 			})
 			if err != nil {
 				l.WithError(err).Errorf("Failed to initiate listing for seller [%d], transaction [%s].", b.SellerId, c.TransactionId.String())
+				reason := createListingFailReason(err)
 				p := pf(ctx)
 				_ = msg.Emit(p)(func(buf *msg.Buffer) error {
-					// The synchronous registration validations (auction duration out of
-					// range, price below floor, too many active listings) have no
-					// registration-specific v83 client string, so they all resolve to the
-					// generic "the request for MTS has failed" notice — but through the
-					// config-driven reasonKey path (like buy/bid), not a hardcoded byte.
-					return buf.Put(mts.EnvStatusEventTopic, mtsproducer.ListingCreateFailedStatusEventProvider(c.TransactionId, b.WorldId, b.SellerId, mts.FailReasonRegisterFailed))
+					// Map the guard sentinel to its semantic reasonKey so the channel
+					// resolves the specific CITC::NoticeFailReason (throwing stars / not
+					// sellable / below sell level). The generic registration validations
+					// (auction duration, price floor, active-cap) have no registration-
+					// specific v83 string and fall back to REGISTER_FAILED -> the generic
+					// "the request for MTS has failed" notice, still via the config-driven
+					// reasonKey path (like buy/bid), not a hardcoded byte.
+					return buf.Put(mts.EnvStatusEventTopic, mtsproducer.ListingCreateFailedStatusEventProvider(c.TransactionId, b.WorldId, b.SellerId, reason))
 				})
 				return
 			}
 		}
+	}
+}
+
+// createListingFailReason maps a List() rejection to the semantic reasonKey the
+// channel resolves through the tenant noticeFailReasons table. The guard sentinels
+// carry a specific CITC::NoticeFailReason (throwing stars / not sellable / below
+// sell level); every other rejection (price floor, active-cap, auction duration, or
+// an unexpected error) falls back to the generic REGISTER_FAILED notice.
+func createListingFailReason(err error) string {
+	switch {
+	case errors.Is(err, listing.ErrThrowingStarNotTradable):
+		return mts.FailReasonThrowingStarsNotTradable
+	case errors.Is(err, listing.ErrItemNotSellable):
+		return mts.FailReasonItemNotSellable
+	case errors.Is(err, listing.ErrBelowSellLevel):
+		return mts.FailReasonBelowSellLevel
+	default:
+		return mts.FailReasonRegisterFailed
 	}
 }
 

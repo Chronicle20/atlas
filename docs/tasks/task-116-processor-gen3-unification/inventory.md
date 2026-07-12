@@ -56,10 +56,10 @@ Notes on interpreting the output:
 | `services/atlas-messengers/atlas.com/messengers/character/processor.go` | Gen2.5 (also CP-2 shaped) | R2 | 13 | done |
 | `services/atlas-messengers/atlas.com/messengers/invite/processor.go` | Gen1 | R3 | 13 | done |
 | `services/atlas-messengers/atlas.com/messengers/messenger/processor.go` | Gen2.5 (also CP-2 shaped) | R2 | 13 | done |
-| `services/atlas-configurations/atlas.com/configurations/data/processor.go` | Gen1 | R4-client | 14 | pending |
-| `services/atlas-configurations/atlas.com/configurations/services/processor.go` | Gen2 | R2 | 14 | pending |
-| `services/atlas-configurations/atlas.com/configurations/templates/processor.go` | Gen2 | R2 | 14 | pending |
-| `services/atlas-configurations/atlas.com/configurations/tenants/processor.go` | Gen2 | R2 | 14 | pending |
+| `services/atlas-configurations/atlas.com/configurations/data/processor.go` | Gen1 | R4-client | 14 | done |
+| `services/atlas-configurations/atlas.com/configurations/services/processor.go` | Gen2 | R2 | 14 | done |
+| `services/atlas-configurations/atlas.com/configurations/templates/processor.go` | Gen2 | R2 | 14 | done |
+| `services/atlas-configurations/atlas.com/configurations/tenants/processor.go` | Gen2 | R2 | 14 | done |
 | `services/atlas-character-factory/atlas.com/character-factory/data/processor.go` | Gen1 | R4-client | 15 | pending |
 | `services/atlas-login/atlas.com/login/guild/processor.go` | Gen2 | R2 | 16 | pending |
 | `services/atlas-login/atlas.com/login/inventory/processor.go` | CP-2 | R1 | 16 | pending |
@@ -171,6 +171,8 @@ Notes on interpreting the output:
 ## Sanctioned shape deviations
 
 (Populated by Tasks 14 and 15 when the R4 conversions land — the two ctx-per-call REST clients keep `NewProcessor(l) Processor` without a `ctx` parameter, per design §4.2.)
+
+- `services/atlas-configurations/atlas.com/configurations/data/processor.go` (Task 14): long-lived, startup-wired REST client for atlas-data lookups (skills, items). Constructor is `NewProcessor(l logrus.FieldLogger) Processor` — no `ctx` parameter, unlike every other Gen3 processor in the codebase. Each method (`GetSkillsByIds`, `GetItemById`) takes its own `ctx context.Context` as the first parameter, since the client is constructed once (e.g. at `preset.NewValidator(data.NewProcessor(d.Logger()))` call sites in `templates/resource.go` and `tenants/resource.go`) and reused across requests with different contexts. Full Gen3 (capturing `ctx` at construction) would change failure/cancellation timing across unrelated requests, so this is a rename-only conversion (`Client`→`Processor`, `ClientImpl`→`ProcessorImpl`, `NewClient`→`NewProcessor`) per recipe R4 — method bodies are byte-identical. The existing map-based fake mock (`FakeClient`) was renamed to `ProcessorMock` and kept its stateful map design (not rewritten to func-field shape).
 
 ## Characterization tests
 

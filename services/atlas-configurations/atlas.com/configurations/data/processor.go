@@ -27,26 +27,28 @@ type ItemInfo struct {
 // ErrNotFound is returned when the requested resource does not exist in atlas-data.
 var ErrNotFound = errors.New("not found")
 
-// Client is the interface that atlas-data callers must satisfy.
+// Processor is the interface that atlas-data callers must satisfy.
 // A mock implementation lives in the mock sub-package.
-type Client interface {
+type Processor interface {
 	GetSkillsByIds(ctx context.Context, ids []uint32) ([]SkillInfo, error)
 	GetItemById(ctx context.Context, id uint32) (ItemInfo, error)
 }
 
-// ClientImpl is the real HTTP-backed implementation.
-type ClientImpl struct {
+// ProcessorImpl is the real HTTP-backed implementation.
+type ProcessorImpl struct {
 	l logrus.FieldLogger
 }
 
-// NewClient constructs a real Client backed by atlas-data REST calls.
-func NewClient(l logrus.FieldLogger) *ClientImpl {
-	return &ClientImpl{l: l}
+// NewProcessor constructs a real Processor backed by atlas-data REST calls.
+func NewProcessor(l logrus.FieldLogger) Processor {
+	return &ProcessorImpl{l: l}
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 // GetSkillsByIds fetches skill metadata for the given IDs in a single batched
 // request to GET /data/skills?ids=<csv>.
-func (c *ClientImpl) GetSkillsByIds(ctx context.Context, ids []uint32) ([]SkillInfo, error) {
+func (c *ProcessorImpl) GetSkillsByIds(ctx context.Context, ids []uint32) ([]SkillInfo, error) {
 	if len(ids) == 0 {
 		return nil, nil
 	}
@@ -66,7 +68,7 @@ func (c *ClientImpl) GetSkillsByIds(ctx context.Context, ids []uint32) ([]SkillI
 // is computed locally using inventory.TypeFromItemId so no second request is needed.
 //
 // If atlas-data returns 404, ErrNotFound is returned.
-func (c *ClientImpl) GetItemById(ctx context.Context, id uint32) (ItemInfo, error) {
+func (c *ProcessorImpl) GetItemById(ctx context.Context, id uint32) (ItemInfo, error) {
 	invType, ok := inventory.TypeFromItemId(item.Id(id))
 
 	// For non-equip items, inventory.TypeFromItemId tells us they're not equippable

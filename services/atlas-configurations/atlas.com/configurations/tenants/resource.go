@@ -84,7 +84,7 @@ func handleUpdateConfigurationTenant(db *gorm.DB) rest.InputHandler[RestModel] {
 					d.Logger().WithError(terr).Warn("Unable to construct tenant model from PATCH input; preset validation will skip atlas-data lookups.")
 				}
 				p := NewProcessor(d.Logger(), ctx, db).
-					WithValidator(preset.NewValidator(data.NewClient(d.Logger())))
+					WithValidator(preset.NewValidator(data.NewProcessor(d.Logger())))
 				err := p.UpdateById(tenantId, input)
 				if err != nil {
 					var ve *validationFailureError

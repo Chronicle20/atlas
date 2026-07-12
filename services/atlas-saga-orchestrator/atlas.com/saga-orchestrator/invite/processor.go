@@ -29,6 +29,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) Create(transactionId uuid.UUID, inviteType string, actorId uint32, worldId world.Id, referenceId uint32, targetId uint32) error {
 	p.l.WithFields(logrus.Fields{
 		"transaction_id": transactionId.String(),

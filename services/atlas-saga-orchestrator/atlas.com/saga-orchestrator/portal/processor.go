@@ -39,6 +39,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 // BlockAndEmit sends a Kafka command to atlas-portals to block a portal for a character
 func (p *ProcessorImpl) BlockAndEmit(characterId uint32, mapId _map.Id, portalId uint32) error {
 	return message.Emit(p.p)(func(mb *message.Buffer) error {

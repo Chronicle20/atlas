@@ -36,6 +36,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) AwardCurrencyAndEmit(transactionId uuid.UUID, accountId uint32, currencyType uint32, amount int32) error {
 	return message.Emit(p.p)(func(mb *message.Buffer) error {
 		return p.AwardCurrency(mb)(transactionId, accountId, currencyType, amount)

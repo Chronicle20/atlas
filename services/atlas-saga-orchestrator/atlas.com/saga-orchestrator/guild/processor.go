@@ -30,6 +30,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) RequestName(transactionId uuid.UUID, ch channel.Model, characterId uint32) error {
 	p.l.Debugf("Requesting character [%d] input guild name for creation.", characterId)
 	return producer.ProviderImpl(p.l)(p.ctx)(guild.EnvCommandTopic)(RequestNameProvider(transactionId, ch, characterId))

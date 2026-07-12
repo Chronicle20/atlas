@@ -26,6 +26,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) GetFootholdBelow(mapId _map.Id, x, y int16) (uint32, error) {
 	input := PositionInputRestModel{
 		X: x,

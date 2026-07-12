@@ -99,6 +99,8 @@ func NewProcessor(logger logrus.FieldLogger, ctx context.Context) Processor {
 	return newProcessorFn(logger, ctx)
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func newProcessorImpl(logger logrus.FieldLogger, ctx context.Context) Processor {
 	return &ProcessorImpl{
 		l:       logger,

@@ -56,6 +56,14 @@ func main() {
 
 	db := database.Connect(l, database.SetMigrations(ban.Migration, history.Migration))
 
+	server.RegisterTransientErrorClassifier(func(err error) bool {
+		if database.IsTransientConnectionError(err) {
+			database.CountTransient(err)
+			return true
+		}
+		return false
+	})
+
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	ban2.InitConsumers(l)(cmf)(consumerGroupId)
 	if err := ban2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {

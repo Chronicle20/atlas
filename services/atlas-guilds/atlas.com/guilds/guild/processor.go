@@ -19,6 +19,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -296,10 +297,12 @@ func (p *ProcessorImpl) Create(mb *message.Buffer) func(worldId world.Id) func(l
 
 func (p *ProcessorImpl) CreateAndEmit(worldId world.Id, leaderId uint32, name string) (Model, error) {
 	var m Model
-	err := message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(mb *message.Buffer) error {
-		var err error
-		m, err = p.Create(mb)(worldId)(leaderId)(name)
-		return err
+	err := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
+			var err error
+			m, err = p.WithTransaction(tx).Create(mb)(worldId)(leaderId)(name)
+			return err
+		})
 	})
 	return m, err
 }
@@ -356,8 +359,10 @@ func (p *ProcessorImpl) CreationAgreementResponse(mb *message.Buffer) func(chara
 }
 
 func (p *ProcessorImpl) CreationAgreementResponseAndEmit(characterId uint32, agreed bool, transactionId uuid.UUID) error {
-	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(mb *message.Buffer) error {
-		return p.CreationAgreementResponse(mb)(characterId)(agreed)(transactionId)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
+			return p.WithTransaction(tx).CreationAgreementResponse(mb)(characterId)(agreed)(transactionId)
+		})
 	})
 }
 
@@ -386,8 +391,10 @@ func (p *ProcessorImpl) ChangeEmblem(mb *message.Buffer) func(guildId uint32) fu
 }
 
 func (p *ProcessorImpl) ChangeEmblemAndEmit(guildId uint32, characterId uint32, logo uint16, logoColor byte, logoBackground uint16, logoBackgroundColor byte, transactionId uuid.UUID) error {
-	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(mb *message.Buffer) error {
-		return p.ChangeEmblem(mb)(guildId)(characterId)(logo)(logoColor)(logoBackground)(logoBackgroundColor)(transactionId)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
+			return p.WithTransaction(tx).ChangeEmblem(mb)(guildId)(characterId)(logo)(logoColor)(logoBackground)(logoBackgroundColor)(transactionId)
+		})
 	})
 }
 
@@ -414,8 +421,10 @@ func (p *ProcessorImpl) UpdateMemberOnline(mb *message.Buffer) func(characterId 
 }
 
 func (p *ProcessorImpl) UpdateMemberOnlineAndEmit(characterId uint32, online bool, transactionId uuid.UUID) error {
-	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(mb *message.Buffer) error {
-		return p.UpdateMemberOnline(mb)(characterId)(online)(transactionId)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
+			return p.WithTransaction(tx).UpdateMemberOnline(mb)(characterId)(online)(transactionId)
+		})
 	})
 }
 
@@ -438,8 +447,10 @@ func (p *ProcessorImpl) ChangeNotice(mb *message.Buffer) func(guildId uint32) fu
 }
 
 func (p *ProcessorImpl) ChangeNoticeAndEmit(guildId uint32, characterId uint32, notice string, transactionId uuid.UUID) error {
-	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(mb *message.Buffer) error {
-		return p.ChangeNotice(mb)(guildId)(characterId)(notice)(transactionId)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
+			return p.WithTransaction(tx).ChangeNotice(mb)(guildId)(characterId)(notice)(transactionId)
+		})
 	})
 }
 
@@ -468,8 +479,10 @@ func (p *ProcessorImpl) Leave(mb *message.Buffer) func(guildId uint32) func(char
 }
 
 func (p *ProcessorImpl) LeaveAndEmit(guildId uint32, characterId uint32, force bool, transactionId uuid.UUID) error {
-	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(mb *message.Buffer) error {
-		return p.Leave(mb)(guildId)(characterId)(force)(transactionId)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
+			return p.WithTransaction(tx).Leave(mb)(guildId)(characterId)(force)(transactionId)
+		})
 	})
 }
 
@@ -527,8 +540,10 @@ func (p *ProcessorImpl) Join(mb *message.Buffer) func(guildId uint32) func(chara
 }
 
 func (p *ProcessorImpl) JoinAndEmit(guildId uint32, characterId uint32, transactionId uuid.UUID) error {
-	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(mb *message.Buffer) error {
-		return p.Join(mb)(guildId)(characterId)(transactionId)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
+			return p.WithTransaction(tx).Join(mb)(guildId)(characterId)(transactionId)
+		})
 	})
 }
 
@@ -557,8 +572,10 @@ func (p *ProcessorImpl) ChangeTitles(mb *message.Buffer) func(guildId uint32) fu
 }
 
 func (p *ProcessorImpl) ChangeTitlesAndEmit(guildId uint32, characterId uint32, titles []string, transactionId uuid.UUID) error {
-	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(mb *message.Buffer) error {
-		return p.ChangeTitles(mb)(guildId)(characterId)(titles)(transactionId)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
+			return p.WithTransaction(tx).ChangeTitles(mb)(guildId)(characterId)(titles)(transactionId)
+		})
 	})
 }
 
@@ -590,8 +607,10 @@ func (p *ProcessorImpl) ChangeMemberTitle(mb *message.Buffer) func(guildId uint3
 }
 
 func (p *ProcessorImpl) ChangeMemberTitleAndEmit(guildId uint32, characterId uint32, targetId uint32, title byte, transactionId uuid.UUID) error {
-	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(mb *message.Buffer) error {
-		return p.ChangeMemberTitle(mb)(guildId)(characterId)(targetId)(title)(transactionId)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
+			return p.WithTransaction(tx).ChangeMemberTitle(mb)(guildId)(characterId)(targetId)(title)(transactionId)
+		})
 	})
 }
 
@@ -624,8 +643,10 @@ func (p *ProcessorImpl) RequestDisband(mb *message.Buffer) func(characterId uint
 }
 
 func (p *ProcessorImpl) RequestDisbandAndEmit(characterId uint32, transactionId uuid.UUID) error {
-	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(mb *message.Buffer) error {
-		return p.RequestDisband(mb)(characterId)(transactionId)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
+			return p.WithTransaction(tx).RequestDisband(mb)(characterId)(transactionId)
+		})
 	})
 }
 
@@ -652,7 +673,9 @@ func (p *ProcessorImpl) RequestCapacityIncrease(mb *message.Buffer) func(charact
 }
 
 func (p *ProcessorImpl) RequestCapacityIncreaseAndEmit(characterId uint32, transactionId uuid.UUID) error {
-	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(mb *message.Buffer) error {
-		return p.RequestCapacityIncrease(mb)(characterId)(transactionId)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
+			return p.WithTransaction(tx).RequestCapacityIncrease(mb)(characterId)(transactionId)
+		})
 	})
 }

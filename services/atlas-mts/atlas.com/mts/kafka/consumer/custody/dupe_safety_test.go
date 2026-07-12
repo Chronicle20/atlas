@@ -24,6 +24,7 @@ import (
 	"testing"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -76,7 +77,7 @@ func countListingRows(t *testing.T, db *gorm.DB, ctx context.Context, listingId 
 // AcceptToMtsListing custody-create command twice yields EXACTLY ONE listing row
 // (the item is custodied in one place, not duplicated by a redelivery).
 func TestDupeSafety_DoubleGrantReplay_AcceptListing(t *testing.T) {
-	db := test.SetupTestDB(t, listing.Migration, holding.Migration)
+	db := test.SetupTestDB(t, listing.Migration, holding.Migration, outbox.Migration)
 	ctx := test.CreateTestContext()
 	l := logrus.New()
 
@@ -100,7 +101,7 @@ func TestDupeSafety_DoubleGrantReplay_AcceptListing(t *testing.T) {
 // holding (the deterministic moveHoldingId idempotency guard prevents a second
 // copy), and the listing stays sold.
 func TestDupeSafety_DoubleGrantReplay_MoveToHolding(t *testing.T) {
-	db := test.SetupTestDB(t, listing.Migration, holding.Migration)
+	db := test.SetupTestDB(t, listing.Migration, holding.Migration, outbox.Migration)
 	ctx := test.CreateTestContext()
 	l := logrus.New()
 
@@ -146,7 +147,7 @@ func TestDupeSafety_DoubleGrantReplay_MoveToHolding(t *testing.T) {
 // on the now-non-active listing is the loser: it creates NO buyer holding. The
 // item exists in EXACTLY ONE holding (the seller's).
 func TestDupeSafety_CancelRacingPurchase_CancelWins(t *testing.T) {
-	db := test.SetupTestDB(t, listing.Migration, holding.Migration)
+	db := test.SetupTestDB(t, listing.Migration, holding.Migration, outbox.Migration)
 	ctx := test.CreateTestContext()
 	l := logrus.New()
 
@@ -203,7 +204,7 @@ func TestDupeSafety_CancelRacingPurchase_CancelWins(t *testing.T) {
 // Cancel on the now-non-active listing is the loser: it creates NO seller holding.
 // The item exists in EXACTLY ONE holding (the buyer's).
 func TestDupeSafety_CancelRacingPurchase_SettleWins(t *testing.T) {
-	db := test.SetupTestDB(t, listing.Migration, holding.Migration)
+	db := test.SetupTestDB(t, listing.Migration, holding.Migration, outbox.Migration)
 	ctx := test.CreateTestContext()
 	l := logrus.New()
 
@@ -258,7 +259,7 @@ func TestDupeSafety_CancelRacingPurchase_SettleWins(t *testing.T) {
 // the first delivery, and the second delivery affects ZERO rows — so the
 // downstream AcceptToCharacter grant fires exactly once (no item duplicated home).
 func TestDupeSafety_TakeHomeReplay(t *testing.T) {
-	db := test.SetupTestDB(t, listing.Migration, holding.Migration)
+	db := test.SetupTestDB(t, listing.Migration, holding.Migration, outbox.Migration)
 	ctx := test.CreateTestContext()
 	l := logrus.New()
 
@@ -326,7 +327,7 @@ func TestDupeSafety_TakeHomeReplay(t *testing.T) {
 // replay AND a subsequent genuine create gets the very next serial — not one
 // skipped past a serial burned by the replay.
 func TestDupeSafety_AcceptReplayDoesNotConsumeSerial(t *testing.T) {
-	db := test.SetupTestDB(t, listing.Migration, holding.Migration)
+	db := test.SetupTestDB(t, listing.Migration, holding.Migration, outbox.Migration)
 	l := logrus.New()
 	rp := &recordingProducer{}
 

@@ -2,6 +2,7 @@ package skill
 
 import (
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	"atlas-skills/kafka/message"
 	skill2 "atlas-skills/kafka/message/skill"
 	"atlas-skills/kafka/producer"
@@ -150,13 +151,17 @@ func (p *ProcessorImpl) Create(mb *message.Buffer) func(transactionId uuid.UUID,
 	}
 }
 
-// CreateAndEmit creates a new skill and emits a status event
+// CreateAndEmit creates a new skill and emits a status event. The create
+// write and the outbox enqueue share one transaction (Create's own
+// ExecuteTransaction is safely re-entrant inside this outer one).
 func (p *ProcessorImpl) CreateAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, id uint32, level byte, masterLevel byte, expiration time.Time) (Model, error) {
 	var s Model
-	err := message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
-		var err error
-		s, err = p.Create(buf)(transactionId, worldId, characterId, id, level, masterLevel, expiration)
-		return err
+	err := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			var err error
+			s, err = p.WithTransaction(tx).Create(buf)(transactionId, worldId, characterId, id, level, masterLevel, expiration)
+			return err
+		})
 	})
 	return s, err
 }
@@ -194,13 +199,17 @@ func (p *ProcessorImpl) Update(mb *message.Buffer) func(transactionId uuid.UUID,
 	}
 }
 
-// UpdateAndEmit updates an existing skill and emits a status event
+// UpdateAndEmit updates an existing skill and emits a status event. The
+// update write and the outbox enqueue share one transaction (Update's own
+// ExecuteTransaction is safely re-entrant inside this outer one).
 func (p *ProcessorImpl) UpdateAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, id uint32, level byte, masterLevel byte, expiration time.Time) (Model, error) {
 	var s Model
-	err := message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
-		var err error
-		s, err = p.Update(buf)(transactionId, worldId, characterId, id, level, masterLevel, expiration)
-		return err
+	err := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			var err error
+			s, err = p.WithTransaction(tx).Update(buf)(transactionId, worldId, characterId, id, level, masterLevel, expiration)
+			return err
+		})
 	})
 	return s, err
 }
@@ -302,11 +311,15 @@ func (p *ProcessorImpl) DeleteForSagaCompensation(mb *message.Buffer) func(trans
 	}
 }
 
-// DeleteForSagaCompensationAndEmit wraps DeleteForSagaCompensation with the
-// producer emit flow.
+// DeleteForSagaCompensationAndEmit wraps DeleteForSagaCompensation with an
+// explicit transaction (the underlying deleteSkill write was previously a
+// bare, un-transacted call) and the outbox emit flow, so the delete and the
+// status-event enqueue commit atomically.
 func (p *ProcessorImpl) DeleteForSagaCompensationAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, skillId uint32) error {
-	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
-		return p.DeleteForSagaCompensation(buf)(transactionId, worldId, characterId, skillId)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).DeleteForSagaCompensation(buf)(transactionId, worldId, characterId, skillId)
+		})
 	})
 }
 

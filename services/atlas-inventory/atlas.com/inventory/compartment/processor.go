@@ -24,6 +24,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
@@ -233,8 +234,10 @@ func temporarySlot() int16 {
 }
 
 func (p *Processor) EquipItemAndEmit(transactionId uuid.UUID, characterId uint32, source int16, destination int16) error {
-	return message.Emit(p.producer)(func(mb *message.Buffer) error {
-		return p.EquipItem(mb)(transactionId, characterId, source, destination)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
+			return p.WithTransaction(tx).EquipItem(mb)(transactionId, characterId, source, destination)
+		})
 	})
 }
 
@@ -345,8 +348,10 @@ func (p *Processor) EquipItem(mb *message.Buffer) func(transactionId uuid.UUID, 
 }
 
 func (p *Processor) RemoveEquipAndEmit(transactionId uuid.UUID, characterId uint32, source int16, destination int16) error {
-	return message.Emit(p.producer)(func(mb *message.Buffer) error {
-		return p.RemoveEquip(mb)(transactionId, characterId, source, destination)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
+			return p.WithTransaction(tx).RemoveEquip(mb)(transactionId, characterId, source, destination)
+		})
 	})
 }
 
@@ -401,8 +406,10 @@ func (p *Processor) RemoveEquip(mb *message.Buffer) func(transactionId uuid.UUID
 }
 
 func (p *Processor) MoveAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, source int16, destination int16) error {
-	return message.Emit(p.producer)(func(buf *message.Buffer) error {
-		return p.MoveAndLock(buf)(transactionId, characterId, inventoryType, source, destination)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).MoveAndLock(buf)(transactionId, characterId, inventoryType, source, destination)
+		})
 	})
 }
 
@@ -601,8 +608,10 @@ func (p *Processor) canMergeAssets(inventoryType inventory.Type, sourceAsset ass
 }
 
 func (p *Processor) IncreaseCapacityAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, amount uint32) error {
-	return message.Emit(p.producer)(func(buf *message.Buffer) error {
-		return p.IncreaseCapacity(buf)(transactionId, characterId, inventoryType, amount)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).IncreaseCapacity(buf)(transactionId, characterId, inventoryType, amount)
+		})
 	})
 }
 
@@ -636,8 +645,10 @@ func (p *Processor) IncreaseCapacity(mb *message.Buffer) func(transactionId uuid
 }
 
 func (p *Processor) DropAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, f field.Model, x int16, y int16, source int16, quantity int16) error {
-	return message.Emit(p.producer)(func(buf *message.Buffer) error {
-		return p.Drop(buf)(transactionId, characterId, inventoryType, f, x, y, source, quantity)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).Drop(buf)(transactionId, characterId, inventoryType, f, x, y, source, quantity)
+		})
 	})
 }
 
@@ -803,8 +814,10 @@ func (p *Processor) CancelReservation(mb *message.Buffer) func(transactionId uui
 }
 
 func (p *Processor) ConsumeAssetAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16) error {
-	return message.Emit(p.producer)(func(buf *message.Buffer) error {
-		return p.ConsumeAsset(buf)(transactionId, characterId, inventoryType, slot)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).ConsumeAsset(buf)(transactionId, characterId, inventoryType, slot)
+		})
 	})
 }
 
@@ -863,8 +876,10 @@ func (p *Processor) ConsumeAsset(mb *message.Buffer) func(transactionId uuid.UUI
 }
 
 func (p *Processor) DestroyAssetAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, quantity uint32) error {
-	return message.Emit(p.producer)(func(buf *message.Buffer) error {
-		return p.DestroyAsset(buf)(transactionId, characterId, inventoryType, slot, quantity)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).DestroyAsset(buf)(transactionId, characterId, inventoryType, slot, quantity)
+		})
 	})
 }
 
@@ -912,8 +927,10 @@ func (p *Processor) DestroyAsset(mb *message.Buffer) func(transactionId uuid.UUI
 }
 
 func (p *Processor) ExpireAssetAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, isCash bool, replaceItemId uint32, replaceMessage string) error {
-	return message.Emit(p.producer)(func(buf *message.Buffer) error {
-		return p.ExpireAsset(buf)(transactionId, characterId, inventoryType, slot, isCash, replaceItemId, replaceMessage)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).ExpireAsset(buf)(transactionId, characterId, inventoryType, slot, isCash, replaceItemId, replaceMessage)
+		})
 	})
 }
 
@@ -970,8 +987,10 @@ func (p *Processor) ExpireAsset(mb *message.Buffer) func(transactionId uuid.UUID
 }
 
 func (p *Processor) CreateAssetAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64, useAverageStats bool) error {
-	return message.Emit(p.producer)(func(buf *message.Buffer) error {
-		return p.CreateAssetAndLock(buf)(transactionId, characterId, inventoryType, templateId, quantity, expiration, ownerId, flag, rechargeable, useAverageStats)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).CreateAssetAndLock(buf)(transactionId, characterId, inventoryType, templateId, quantity, expiration, ownerId, flag, rechargeable, useAverageStats)
+		})
 	})
 }
 
@@ -1072,8 +1091,10 @@ func (p *Processor) CreateAsset(mb *message.Buffer) func(transactionId uuid.UUID
 }
 
 func (p *Processor) AttemptEquipmentPickUpAndEmit(transactionId uuid.UUID, f field.Model, characterId uint32, dropId uint32, templateId uint32, ed dropMsg.EquipmentData) error {
-	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
-		return p.AttemptEquipmentPickUp(buf)(transactionId, f, characterId, dropId, templateId, ed)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).AttemptEquipmentPickUp(buf)(transactionId, f, characterId, dropId, templateId, ed)
+		})
 	})
 }
 
@@ -1137,15 +1158,30 @@ func (p *Processor) AttemptEquipmentPickUp(mb *message.Buffer) func(transactionI
 			return nil
 		})
 		if txErr != nil {
-			return p.dropProcessor.CancelReservation(mb)(f, dropId, characterId)
+			// CancelReservation is a COMMAND to the separate atlas-drop
+			// service reflecting a failed (rolled-back) pickup attempt; per
+			// D7 it must not ride into the outbox-bound mb alongside a state
+			// change that never happened. Fire it on the DIRECT producer
+			// path with a fresh, throwaway buffer instead.
+			rejectEmit := func() error {
+				return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
+					return p.dropProcessor.CancelReservation(buf)(f, dropId, characterId)
+				})
+			}
+			if emitErr := rejectEmit(); emitErr != nil {
+				p.l.WithError(emitErr).Errorf("Unable to emit drop cancel-reservation for character [%d], drop [%d].", characterId, dropId)
+			}
+			return nil
 		}
 		return p.dropProcessor.RequestPickUp(mb)(f, dropId, characterId)
 	}
 }
 
 func (p *Processor) AttemptItemPickUpAndEmit(transactionId uuid.UUID, f field.Model, characterId uint32, dropId uint32, templateId uint32, quantity uint32) error {
-	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
-		return p.AttemptItemPickUp(buf)(transactionId, f, characterId, dropId, templateId, quantity)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).AttemptItemPickUp(buf)(transactionId, f, characterId, dropId, templateId, quantity)
+		})
 	})
 }
 
@@ -1173,6 +1209,13 @@ func (p *Processor) AttemptItemPickUp(mb *message.Buffer) func(transactionId uui
 		invLock.Lock()
 		defer invLock.Unlock()
 
+		// innerMb is a scratch buffer for this inner tx's writes. It is only
+		// merged into the caller-supplied (outbox-bound in production) mb on
+		// success. On failure the inner tx rolled back, so nothing written
+		// to innerMb (e.g. CreateAsset's own CreationFailedEventStatusProvider
+		// rejection) may ride into the outbox alongside a state change that
+		// never happened (D7) — see the failure branch below.
+		innerMb := message.NewBuffer()
 		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 			// Get the compartment for the character and inventory type
 			c, err := p.WithTransaction(tx).GetByCharacterAndType(characterId)(inventoryType)
@@ -1214,7 +1257,7 @@ func (p *Processor) AttemptItemPickUp(mb *message.Buffer) func(transactionId uui
 					remainingQuantity := newQuantity - slotMax
 
 					// Update the existing asset to max
-					err = p.assetProcessor.WithTransaction(tx).UpdateQuantity(mb)(transactionId, characterId, c.Id(), assetToUpdate, slotMax)
+					err = p.assetProcessor.WithTransaction(tx).UpdateQuantity(innerMb)(transactionId, characterId, c.Id(), assetToUpdate, slotMax)
 					if err != nil {
 						p.l.WithError(err).Errorf("Unable to update quantity of asset [%d] to [%d].", assetToUpdate.Id(), slotMax)
 						return err
@@ -1222,14 +1265,14 @@ func (p *Processor) AttemptItemPickUp(mb *message.Buffer) func(transactionId uui
 					p.l.Debugf("Character [%d] increased quantity of asset [%d] to max [%d].", characterId, assetToUpdate.Id(), slotMax)
 
 					// Create a new asset with the remaining quantity
-					err = p.CreateAsset(mb)(transactionId, characterId, inventoryType, templateId, remainingQuantity, time.Time{}, 0, 0, 0, false)
+					err = p.CreateAsset(innerMb)(transactionId, characterId, inventoryType, templateId, remainingQuantity, time.Time{}, 0, 0, 0, false)
 					if err != nil {
 						p.l.WithError(err).Errorf("Unable to create asset [%d] for character [%d] with remaining quantity [%d].", templateId, characterId, remainingQuantity)
 						return err
 					}
 				} else {
 					// Update the quantity of the existing asset
-					err = p.assetProcessor.WithTransaction(tx).UpdateQuantity(mb)(transactionId, characterId, c.Id(), assetToUpdate, newQuantity)
+					err = p.assetProcessor.WithTransaction(tx).UpdateQuantity(innerMb)(transactionId, characterId, c.Id(), assetToUpdate, newQuantity)
 					if err != nil {
 						p.l.WithError(err).Errorf("Unable to update quantity of asset [%d] to [%d].", assetToUpdate.Id(), newQuantity)
 						return err
@@ -1238,7 +1281,7 @@ func (p *Processor) AttemptItemPickUp(mb *message.Buffer) func(transactionId uui
 				}
 			} else {
 				// Create a new asset
-				err = p.CreateAsset(mb)(transactionId, characterId, inventoryType, templateId, quantity, time.Time{}, 0, 0, 0, false)
+				err = p.CreateAsset(innerMb)(transactionId, characterId, inventoryType, templateId, quantity, time.Time{}, 0, 0, 0, false)
 				if err != nil {
 					p.l.WithError(err).Errorf("Unable to create asset [%d] for character [%d].", templateId, characterId)
 					return err
@@ -1248,15 +1291,52 @@ func (p *Processor) AttemptItemPickUp(mb *message.Buffer) func(transactionId uui
 		})
 
 		if txErr != nil {
-			return p.dropProcessor.CancelReservation(mb)(f, dropId, characterId)
+			// The inner tx rolled back, so innerMb's contents reflect no
+			// committed state change. Discard it wholesale and forward only
+			// the CREATION_FAILED rejection: CreateAsset buffers that event
+			// (under the compartment status topic) into innerMb solely when
+			// the creation step itself is the one that failed, so filtering
+			// on that topic reproduces the pre-existing semantic exactly —
+			// e.g. in the split-overflow branch, UpdateQuantity's buffered
+			// success (QuantityChanged, on the asset topic) is dropped, not
+			// forwarded alongside the rejection, and failures upstream of
+			// CreateAsset (which never populate that topic) forward nothing
+			// but the cancel below (D7). CancelReservation is a COMMAND to
+			// the separate atlas-drop service reflecting the same failed/
+			// rolled-back pickup attempt; both are fired together on the
+			// DIRECT producer path via a fresh, throwaway buffer.
+			rejectEmit := func() error {
+				return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
+					if creationFailedMsgs, ok := innerMb.GetAll()[compartment.EnvEventTopicStatus]; ok {
+						if putErr := buf.Put(compartment.EnvEventTopicStatus, model.FixedProvider(creationFailedMsgs)); putErr != nil {
+							return putErr
+						}
+					}
+					return p.dropProcessor.CancelReservation(buf)(f, dropId, characterId)
+				})
+			}
+			if emitErr := rejectEmit(); emitErr != nil {
+				p.l.WithError(emitErr).Errorf("Unable to emit drop cancel-reservation for character [%d], drop [%d].", characterId, dropId)
+			}
+			return nil
+		}
+		// The inner tx committed: fold innerMb's writes into the
+		// caller-supplied (outbox-bound in production) mb alongside the
+		// RequestPickUp follow-on effect.
+		for t, ms := range innerMb.GetAll() {
+			if err := mb.Put(t, model.FixedProvider(ms)); err != nil {
+				return err
+			}
 		}
 		return p.dropProcessor.RequestPickUp(mb)(f, dropId, characterId)
 	}
 }
 
 func (p *Processor) RechargeAssetAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, quantity uint32) error {
-	return message.Emit(p.producer)(func(buf *message.Buffer) error {
-		return p.RechargeAsset(buf)(transactionId, characterId, inventoryType, slot, quantity)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).RechargeAsset(buf)(transactionId, characterId, inventoryType, slot, quantity)
+		})
 	})
 }
 
@@ -1311,14 +1391,18 @@ func (p *Processor) RechargeAsset(mb *message.Buffer) func(transactionId uuid.UU
 }
 
 func (p *Processor) MergeAndCompactAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type) error {
-	return message.Emit(p.producer)(func(buf *message.Buffer) error {
-		return p.MergeAndCompact(buf)(transactionId, characterId, inventoryType)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).MergeAndCompact(buf)(transactionId, characterId, inventoryType)
+		})
 	})
 }
 
 func (p *Processor) CompactAndSortAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type) error {
-	return message.Emit(p.producer)(func(buf *message.Buffer) error {
-		return p.CompactAndSort(buf)(transactionId, characterId, inventoryType)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).CompactAndSort(buf)(transactionId, characterId, inventoryType)
+		})
 	})
 }
 
@@ -1436,8 +1520,10 @@ func (p *Processor) MergeAndCompact(mb *message.Buffer) func(transactionId uuid.
 }
 
 func (p *Processor) AcceptAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, m asset.Model) error {
-	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(mb *message.Buffer) error {
-		return p.Accept(mb)(transactionId, characterId, inventoryType, m)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
+			return p.WithTransaction(tx).Accept(mb)(transactionId, characterId, inventoryType, m)
+		})
 	})
 }
 
@@ -1537,7 +1623,16 @@ func (p *Processor) Accept(mb *message.Buffer) func(transactionId uuid.UUID, cha
 
 		if txErr != nil {
 			p.l.WithError(txErr).Errorf("Character [%d] unable to accept item [%d] to inventory [%d].", characterId, m.TemplateId(), inventoryType)
-			_ = mb.Put(compartment.EnvEventTopicStatus, ErrorEventStatusProvider(transactionId, c.Id(), characterId, compartment.AcceptCommandFailed))
+			// AcceptCommandFailed reflects no committed state change (the inner
+			// tx rolled back), so per D7 it must not ride into the outbox-bound
+			// mb. Capture it as a rejectEmit closure and fire it on the DIRECT
+			// producer path, outside the outbox tx, then return nil as before.
+			rejectEmit := func() error {
+				return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvEventTopicStatus)(ErrorEventStatusProvider(transactionId, c.Id(), characterId, compartment.AcceptCommandFailed))
+			}
+			if emitErr := rejectEmit(); emitErr != nil {
+				p.l.WithError(emitErr).Errorf("Unable to emit accept command failed for character [%d].", characterId)
+			}
 			return nil
 		}
 
@@ -1547,8 +1642,10 @@ func (p *Processor) Accept(mb *message.Buffer) func(transactionId uuid.UUID, cha
 }
 
 func (p *Processor) ReleaseAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, assetId uint32, quantity uint32) error {
-	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(mb *message.Buffer) error {
-		return p.Release(mb)(transactionId, characterId, inventoryType, assetId, quantity)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
+			return p.WithTransaction(tx).Release(mb)(transactionId, characterId, inventoryType, assetId, quantity)
+		})
 	})
 }
 
@@ -1624,7 +1721,16 @@ func (p *Processor) Release(mb *message.Buffer) func(transactionId uuid.UUID, ch
 
 		if txErr != nil {
 			p.l.WithError(txErr).Errorf("Character [%d] unable to release asset [%d] from inventory [%d].", characterId, assetId, inventoryType)
-			_ = mb.Put(compartment.EnvEventTopicStatus, ErrorEventStatusProvider(transactionId, c.Id(), characterId, compartment.ReleaseCommandFailed))
+			// ReleaseCommandFailed reflects no committed state change (the inner
+			// tx rolled back), so per D7 it must not ride into the outbox-bound
+			// mb. Capture it as a rejectEmit closure and fire it on the DIRECT
+			// producer path, outside the outbox tx, then return nil as before.
+			rejectEmit := func() error {
+				return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvEventTopicStatus)(ErrorEventStatusProvider(transactionId, c.Id(), characterId, compartment.ReleaseCommandFailed))
+			}
+			if emitErr := rejectEmit(); emitErr != nil {
+				p.l.WithError(emitErr).Errorf("Unable to emit release command failed for character [%d].", characterId)
+			}
 			return nil
 		}
 
@@ -1747,8 +1853,10 @@ func (p *Processor) CompactAndSort(mb *message.Buffer) func(transactionId uuid.U
 }
 
 func (p *Processor) ModifyEquipmentAndEmit(transactionId uuid.UUID, characterId uint32, assetId uint32, stats asset.Model) error {
-	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(mb *message.Buffer) error {
-		return p.ModifyEquipment(mb)(transactionId, characterId, assetId, stats)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
+			return p.WithTransaction(tx).ModifyEquipment(mb)(transactionId, characterId, assetId, stats)
+		})
 	})
 }
 
@@ -1768,8 +1876,10 @@ func (p *Processor) ModifyEquipment(mb *message.Buffer) func(transactionId uuid.
 }
 
 func (p *Processor) ChangeTemplateAndEmit(transactionId uuid.UUID, characterId uint32, petId uint32, newTemplateId uint32) error {
-	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(mb *message.Buffer) error {
-		return p.ChangeTemplate(mb)(transactionId, characterId, petId, newTemplateId)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
+			return p.WithTransaction(tx).ChangeTemplate(mb)(transactionId, characterId, petId, newTemplateId)
+		})
 	})
 }
 

@@ -26,6 +26,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/stat"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -34,6 +35,13 @@ import (
 
 var blockedNameErr = errors.New("blocked name")
 var invalidLevelErr = errors.New("invalid level")
+
+// ErrNotEnoughMeso signals a rejected meso change: no state was written and
+// the rejection status event is emitted outside the transaction.
+var ErrNotEnoughMeso = errors.New("not enough meso")
+
+// ErrMesoOverflow rejects a change that would overflow the uint32 meso field.
+var ErrMesoOverflow = errors.New("meso overflow")
 
 type NameValidityResult struct {
 	Valid  bool
@@ -153,6 +161,7 @@ func (p *ProcessorImpl) WithTransaction(tx *gorm.DB) Processor {
 		t:   p.t,
 		pp:  p.pp,
 		sp:  p.sp,
+		sdp: p.sdp,
 	}
 }
 
@@ -246,16 +255,18 @@ func (p *ProcessorImpl) CheckNameValidity(name string, worldId world.Id) (NameVa
 
 func (p *ProcessorImpl) CreateAndEmit(transactionId uuid.UUID, input Model, mapId _map.Id) (Model, error) {
 	var output Model
-	err := message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
-		var err error
-		output, err = p.Create(buf)(transactionId, input, mapId)
-		if err != nil {
-			// Emit creation failed event on error
-			_ = buf.Put(character2.EnvEventTopicCharacterStatus, creationFailedEventProvider(transactionId, input.WorldId(), input.Name(), err.Error()))
-		}
-		return err
+	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			var err error
+			output, err = p.WithTransaction(tx).Create(buf)(transactionId, input, mapId)
+			if err != nil {
+				// Emit creation failed event on error
+				_ = buf.Put(character2.EnvEventTopicCharacterStatus, creationFailedEventProvider(transactionId, input.WorldId(), input.Name(), err.Error()))
+			}
+			return err
+		})
 	})
-	return output, err
+	return output, txErr
 }
 
 func (p *ProcessorImpl) Create(mb *message.Buffer) func(transactionId uuid.UUID, input Model, mapId _map.Id) (Model, error) {
@@ -298,8 +309,10 @@ func (p *ProcessorImpl) Create(mb *message.Buffer) func(transactionId uuid.UUID,
 }
 
 func (p *ProcessorImpl) DeleteAndEmit(transactionId uuid.UUID, characterId uint32) error {
-	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
-		return p.Delete(buf)(transactionId, characterId)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).Delete(buf)(transactionId, characterId)
+		})
 	})
 }
 
@@ -351,15 +364,37 @@ func (p *ProcessorImpl) DeleteForSagaCompensation(mb *message.Buffer) func(trans
 // producer emit flow. See DeleteForSagaCompensation for the idempotency
 // contract.
 func (p *ProcessorImpl) DeleteForSagaCompensationAndEmit(transactionId uuid.UUID, characterId uint32) error {
-	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
-		return p.DeleteForSagaCompensation(buf)(transactionId, characterId)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).DeleteForSagaCompensation(buf)(transactionId, characterId)
+		})
 	})
 }
 
+// DeleteByAccountIdAndEmit deletes every character for an account. Each
+// character's delete+emit is its own atomic unit via DeleteAndEmit (already
+// migrated to the outbox). This deliberately does NOT wrap the whole batch in
+// a single outer transaction: DeleteByAccountId's contract is best-effort
+// (log-and-continue on a single character's failure), and sharing one
+// Postgres transaction across the batch would let one character's failure
+// abort the transaction and cascade-fail every subsequent character in the
+// loop (an aborted tx rejects all further statements until rollback).
+// Per-character transactions preserve the existing independent-failure
+// semantics while still gaining mutation+enqueue atomicity per character.
 func (p *ProcessorImpl) DeleteByAccountIdAndEmit(accountId uint32) error {
-	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
-		return p.DeleteByAccountId(buf)(accountId)
-	})
+	cs, err := model.SliceMap(modelFromEntity)(getForAccount(accountId)(p.db.WithContext(p.ctx)))(model.ParallelMap())()
+	if err != nil {
+		p.l.WithError(err).Errorf("Unable to retrieve characters for account [%d].", accountId)
+		return err
+	}
+
+	p.l.Infof("Deleting [%d] characters for account [%d].", len(cs), accountId)
+	for _, c := range cs {
+		if err := p.DeleteAndEmit(uuid.Nil, c.Id()); err != nil {
+			p.l.WithError(err).Errorf("Unable to delete character [%d] for account [%d].", c.Id(), accountId)
+		}
+	}
+	return nil
 }
 
 func (p *ProcessorImpl) DeleteByAccountId(mb *message.Buffer) func(accountId uint32) error {
@@ -450,8 +485,10 @@ func (p *ProcessorImpl) Logout(mb *message.Buffer) func(transactionId uuid.UUID,
 }
 
 func (p *ProcessorImpl) ChangeJobAndEmit(transactionId uuid.UUID, characterId uint32, channel channel.Model, jobId job.Id) error {
-	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
-		return p.ChangeJob(buf)(transactionId, characterId, channel, jobId)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).ChangeJob(buf)(transactionId, characterId, channel, jobId)
+		})
 	})
 }
 
@@ -480,8 +517,10 @@ func (p *ProcessorImpl) ChangeJob(mb *message.Buffer) func(transactionId uuid.UU
 }
 
 func (p *ProcessorImpl) ChangeHairAndEmit(transactionId uuid.UUID, characterId uint32, channel channel.Model, styleId uint32) error {
-	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
-		return p.ChangeHair(buf)(transactionId, characterId, channel, styleId)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).ChangeHair(buf)(transactionId, characterId, channel, styleId)
+		})
 	})
 }
 
@@ -512,8 +551,10 @@ func (p *ProcessorImpl) ChangeHair(mb *message.Buffer) func(transactionId uuid.U
 }
 
 func (p *ProcessorImpl) ChangeFaceAndEmit(transactionId uuid.UUID, characterId uint32, channel channel.Model, styleId uint32) error {
-	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
-		return p.ChangeFace(buf)(transactionId, characterId, channel, styleId)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).ChangeFace(buf)(transactionId, characterId, channel, styleId)
+		})
 	})
 }
 
@@ -544,8 +585,10 @@ func (p *ProcessorImpl) ChangeFace(mb *message.Buffer) func(transactionId uuid.U
 }
 
 func (p *ProcessorImpl) ChangeSkinAndEmit(transactionId uuid.UUID, characterId uint32, channel channel.Model, styleId byte) error {
-	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
-		return p.ChangeSkin(buf)(transactionId, characterId, channel, styleId)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).ChangeSkin(buf)(transactionId, characterId, channel, styleId)
+		})
 	})
 }
 
@@ -586,8 +629,10 @@ func NewExperienceModel(experienceType string, amount uint32, attr1 uint32) Expe
 }
 
 func (p *ProcessorImpl) AwardExperienceAndEmit(transactionId uuid.UUID, characterId uint32, channel channel.Model, experience []ExperienceModel, showEffect bool) error {
-	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
-		return p.AwardExperience(buf)(transactionId, characterId, channel, experience, showEffect)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).AwardExperience(buf)(transactionId, characterId, channel, experience, showEffect)
+		})
 	})
 }
 
@@ -648,8 +693,10 @@ func (p *ProcessorImpl) AwardExperience(mb *message.Buffer) func(transactionId u
 }
 
 func (p *ProcessorImpl) DeductExperienceAndEmit(transactionId uuid.UUID, characterId uint32, channel channel.Model, amount uint32) error {
-	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
-		return p.DeductExperience(buf)(transactionId, characterId, channel, amount)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).DeductExperience(buf)(transactionId, characterId, channel, amount)
+		})
 	})
 }
 
@@ -689,8 +736,10 @@ func (p *ProcessorImpl) DeductExperience(mb *message.Buffer) func(transactionId 
 }
 
 func (p *ProcessorImpl) AwardLevelAndEmit(transactionId uuid.UUID, characterId uint32, channel channel.Model, amount byte) error {
-	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
-		return p.AwardLevel(buf)(transactionId, characterId, channel, amount)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).AwardLevel(buf)(transactionId, characterId, channel, amount)
+		})
 	})
 }
 
@@ -733,7 +782,8 @@ func (p *ProcessorImpl) Move(characterId uint32, x int16, y int16, fh int16, sta
 }
 
 func (p *ProcessorImpl) RequestChangeMeso(transactionId uuid.UUID, characterId uint32, amount int32, actorId uint32, actorType string, showEffect bool) error {
-	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+	var rejectEmit func() error
+	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 		c, err := p.WithTransaction(tx).GetById()(characterId)
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to retrieve character [%d] who is having their meso adjusted.", characterId)
@@ -741,17 +791,31 @@ func (p *ProcessorImpl) RequestChangeMeso(transactionId uuid.UUID, characterId u
 		}
 		if int64(c.Meso())+int64(amount) < 0 {
 			p.l.Debugf("Request for character [%d] would leave their meso negative. Amount [%d]. Existing [%d].", characterId, amount, c.Meso())
-			return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvEventTopicCharacterStatus)(notEnoughMesoErrorStatusEventProvider(transactionId, characterId, c.WorldId(), amount))
+			rejectEmit = func() error {
+				return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvEventTopicCharacterStatus)(notEnoughMesoErrorStatusEventProvider(transactionId, characterId, c.WorldId(), amount))
+			}
+			return ErrNotEnoughMeso
 		}
 		if amount > 0 && uint32(amount) > (math.MaxUint32-c.Meso()) {
 			p.l.Errorf("Transaction for character [%d] would result in a uint32 overflow. Rejecting transaction.", characterId)
-			return err
+			return ErrMesoOverflow
 		}
 
-		err = dynamicUpdate(tx)(SetMeso(uint32(int64(c.Meso()) + int64(amount))))(c)
-		_ = producer.ProviderImpl(p.l)(p.ctx)(character2.EnvEventTopicCharacterStatus)(mesoChangedStatusEventProvider(transactionId, characterId, c.WorldId(), amount, actorId, actorType, showEffect))
-		return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvEventTopicCharacterStatus)(statChangedProvider(transactionId, channel.NewModel(c.WorldId(), 0), characterId, []stat.Type{stat.TypeMeso}, nil))
+		if err = dynamicUpdate(tx)(SetMeso(uint32(int64(c.Meso()) + int64(amount))))(c); err != nil {
+			return err
+		}
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			if err := buf.Put(character2.EnvEventTopicCharacterStatus, mesoChangedStatusEventProvider(transactionId, characterId, c.WorldId(), amount, actorId, actorType, showEffect)); err != nil {
+				return err
+			}
+			return buf.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel.NewModel(c.WorldId(), 0), characterId, []stat.Type{stat.TypeMeso}, nil))
+		})
 	})
+	if errors.Is(txErr, ErrNotEnoughMeso) && rejectEmit != nil {
+		_ = rejectEmit()
+		return nil
+	}
+	return txErr
 }
 
 func (p *ProcessorImpl) AttemptMesoPickUp(transactionId uuid.UUID, field field.Model, characterId uint32, dropId uint32, meso uint32) error {
@@ -763,11 +827,15 @@ func (p *ProcessorImpl) AttemptMesoPickUp(transactionId uuid.UUID, field field.M
 		}
 		if meso > (math.MaxUint32 - c.Meso()) {
 			p.l.Errorf("Transaction for character [%d] would result in a uint32 overflow. Rejecting transaction.", characterId)
-			return err
+			return ErrMesoOverflow
 		}
 
-		err = dynamicUpdate(tx)(SetMeso(uint32(int64(c.Meso()) + int64(meso))))(c)
-		return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvEventTopicCharacterStatus)(statChangedProvider(transactionId, channel.NewModel(field.WorldId(), field.ChannelId()), characterId, []stat.Type{stat.TypeMeso}, nil))
+		if err = dynamicUpdate(tx)(SetMeso(uint32(int64(c.Meso()) + int64(meso))))(c); err != nil {
+			return err
+		}
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return buf.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel.NewModel(field.WorldId(), field.ChannelId()), characterId, []stat.Type{stat.TypeMeso}, nil))
+		})
 	})
 	if txErr != nil {
 		return txErr
@@ -776,6 +844,7 @@ func (p *ProcessorImpl) AttemptMesoPickUp(transactionId uuid.UUID, field field.M
 }
 
 func (p *ProcessorImpl) RequestDropMeso(transactionId uuid.UUID, field field.Model, characterId uint32, amount uint32) error {
+	var rejectEmit func() error
 	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 		c, err := p.WithTransaction(tx).GetById()(characterId)
 		if err != nil {
@@ -784,18 +853,28 @@ func (p *ProcessorImpl) RequestDropMeso(transactionId uuid.UUID, field field.Mod
 		}
 		if int64(c.Meso())-int64(amount) < 0 {
 			p.l.Debugf("Request for character [%d] would leave their meso negative. Amount [%d]. Existing [%d].", characterId, amount, c.Meso())
-			return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvEventTopicCharacterStatus)(notEnoughMesoErrorStatusEventProvider(transactionId, characterId, c.WorldId(), int32(amount)))
+			rejectEmit = func() error {
+				return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvEventTopicCharacterStatus)(notEnoughMesoErrorStatusEventProvider(transactionId, characterId, c.WorldId(), int32(amount)))
+			}
+			return ErrNotEnoughMeso
 		}
 
-		return dynamicUpdate(tx)(SetMeso(c.Meso() - amount))(c)
+		if err = dynamicUpdate(tx)(SetMeso(c.Meso() - amount))(c); err != nil {
+			return err
+		}
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return buf.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel.NewModel(field.WorldId(), field.ChannelId()), characterId, []stat.Type{stat.TypeMeso}, nil))
+		})
 	})
+	if errors.Is(txErr, ErrNotEnoughMeso) && rejectEmit != nil {
+		_ = rejectEmit()
+		return nil
+	}
 	if txErr != nil {
 		return txErr
 	}
 
 	tc := GetTemporalRegistry().GetById(p.ctx, tenant.MustFromContext(p.ctx), characterId)
-
-	_ = producer.ProviderImpl(p.l)(p.ctx)(character2.EnvEventTopicCharacterStatus)(statChangedProvider(transactionId, channel.NewModel(field.WorldId(), field.ChannelId()), characterId, []stat.Type{stat.TypeMeso}, nil))
 	// TODO determine appropriate drop type and mod
 	_ = drop.NewProcessor(p.l, p.ctx).CreateForMesos(field, amount, 2, tc.X(), tc.Y(), characterId)
 	return nil
@@ -810,9 +889,15 @@ func (p *ProcessorImpl) RequestChangeFame(transactionId uuid.UUID, characterId u
 		}
 
 		total := c.Fame() + int16(amount)
-		err = dynamicUpdate(tx)(SetFame(total))(c)
-		_ = producer.ProviderImpl(p.l)(p.ctx)(character2.EnvEventTopicCharacterStatus)(fameChangedStatusEventProvider(transactionId, characterId, c.WorldId(), amount, actorId, actorType))
-		return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvEventTopicCharacterStatus)(statChangedProvider(transactionId, channel.NewModel(c.WorldId(), 0), characterId, []stat.Type{stat.TypeFame}, nil))
+		if err = dynamicUpdate(tx)(SetFame(total))(c); err != nil {
+			return err
+		}
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			if err := buf.Put(character2.EnvEventTopicCharacterStatus, fameChangedStatusEventProvider(transactionId, characterId, c.WorldId(), amount, actorId, actorType)); err != nil {
+				return err
+			}
+			return buf.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel.NewModel(c.WorldId(), 0), characterId, []stat.Type{stat.TypeFame}, nil))
+		})
 	})
 }
 
@@ -822,14 +907,16 @@ type Distribution struct {
 }
 
 func (p *ProcessorImpl) RequestDistributeAp(transactionId uuid.UUID, characterId uint32, distributions []Distribution) error {
-	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+	var rejectEmit func() error
+	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 		c, err := p.WithTransaction(tx).GetById()(characterId)
 		if err != nil {
-			_ = producer.ProviderImpl(p.l)(p.ctx)(character2.EnvEventTopicCharacterStatus)(statChangedProvider(transactionId, channel.NewModel(c.WorldId(), 0), characterId, []stat.Type{}, nil))
 			return err
 		}
 		if c.AP() < uint16(len(distributions)) {
-			_ = producer.ProviderImpl(p.l)(p.ctx)(character2.EnvEventTopicCharacterStatus)(statChangedProvider(transactionId, channel.NewModel(c.WorldId(), 0), characterId, []stat.Type{}, nil))
+			rejectEmit = func() error {
+				return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvEventTopicCharacterStatus)(statChangedProvider(transactionId, channel.NewModel(c.WorldId(), 0), characterId, []stat.Type{}, nil))
+			}
 			return errors.New("not enough ap")
 		}
 
@@ -891,7 +978,9 @@ func (p *ProcessorImpl) RequestDistributeAp(transactionId uuid.UUID, characterId
 		}
 
 		if len(eufs) == 0 {
-			_ = producer.ProviderImpl(p.l)(p.ctx)(character2.EnvEventTopicCharacterStatus)(statChangedProvider(transactionId, channel.NewModel(c.WorldId(), 0), characterId, []stat.Type{}, nil))
+			rejectEmit = func() error {
+				return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvEventTopicCharacterStatus)(statChangedProvider(transactionId, channel.NewModel(c.WorldId(), 0), characterId, []stat.Type{}, nil))
+			}
 			return errors.New("invalid ability")
 		}
 
@@ -900,13 +989,20 @@ func (p *ProcessorImpl) RequestDistributeAp(transactionId uuid.UUID, characterId
 
 		err = dynamicUpdate(tx)(eufs...)(c)
 		if err != nil {
-			_ = producer.ProviderImpl(p.l)(p.ctx)(character2.EnvEventTopicCharacterStatus)(statChangedProvider(transactionId, channel.NewModel(c.WorldId(), 0), characterId, []stat.Type{stat.TypeAvailableAP}, nil))
+			rejectEmit = func() error {
+				return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvEventTopicCharacterStatus)(statChangedProvider(transactionId, channel.NewModel(c.WorldId(), 0), characterId, []stat.Type{stat.TypeAvailableAP}, nil))
+			}
 			return err
 		}
 
-		_ = producer.ProviderImpl(p.l)(p.ctx)(character2.EnvEventTopicCharacterStatus)(statChangedProvider(transactionId, channel.NewModel(c.WorldId(), 0), characterId, stats, values))
-		return nil
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return buf.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel.NewModel(c.WorldId(), 0), characterId, stats, values))
+		})
 	})
+	if txErr != nil && rejectEmit != nil {
+		_ = rejectEmit()
+	}
+	return txErr
 }
 
 func (p *ProcessorImpl) RequestDistributeSp(transactionId uuid.UUID, characterId uint32, skillId uint32, amount int8) error {
@@ -925,12 +1021,16 @@ func (p *ProcessorImpl) RequestDistributeSp(transactionId uuid.UUID, characterId
 		if c.SP(sb) < uint32(amount) {
 			return errors.New("not enough sp")
 		}
-		return dynamicUpdate(tx)(SetSP(c.SP(sb)-uint32(amount), uint32(sb)))(c)
+		if err = dynamicUpdate(tx)(SetSP(c.SP(sb)-uint32(amount), uint32(sb)))(c); err != nil {
+			return err
+		}
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return buf.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel.NewModel(c.WorldId(), 0), characterId, []stat.Type{stat.TypeAvailableSP}, nil))
+		})
 	})
 	if txErr != nil {
 		return txErr
 	}
-	_ = producer.ProviderImpl(p.l)(p.ctx)(character2.EnvEventTopicCharacterStatus)(statChangedProvider(transactionId, channel.NewModel(c.WorldId(), 0), characterId, []stat.Type{stat.TypeAvailableSP}, nil))
 
 	if val := c.GetSkill(skillId); val.Id() != skillId {
 		_ = skill2.NewProcessor(p.l, p.ctx).RequestCreate(characterId, skillId, byte(amount), 0, time.Time{})
@@ -1114,8 +1214,10 @@ func resolveEffectiveMax(l logrus.FieldLogger, base uint16, effective uint32, fe
 }
 
 func (p *ProcessorImpl) ChangeHPAndEmit(transactionId uuid.UUID, channel channel.Model, characterId uint32, amount int16) error {
-	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
-		return p.ChangeHP(buf)(transactionId, channel, characterId, amount)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).ChangeHP(buf)(transactionId, channel, characterId, amount)
+		})
 	})
 }
 
@@ -1160,8 +1262,10 @@ func (p *ProcessorImpl) ChangeHP(mb *message.Buffer) func(transactionId uuid.UUI
 }
 
 func (p *ProcessorImpl) SetHPAndEmit(transactionId uuid.UUID, channel channel.Model, characterId uint32, amount uint16) error {
-	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
-		return p.SetHP(buf)(transactionId, channel, characterId, amount)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).SetHP(buf)(transactionId, channel, characterId, amount)
+		})
 	})
 }
 
@@ -1210,8 +1314,10 @@ func (p *ProcessorImpl) SetHP(mb *message.Buffer) func(transactionId uuid.UUID, 
 }
 
 func (p *ProcessorImpl) ChangeMPAndEmit(transactionId uuid.UUID, channel channel.Model, characterId uint32, amount int16) error {
-	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
-		return p.ChangeMP(buf)(transactionId, channel, characterId, amount)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).ChangeMP(buf)(transactionId, channel, characterId, amount)
+		})
 	})
 }
 
@@ -1242,8 +1348,10 @@ func (p *ProcessorImpl) ChangeMP(mb *message.Buffer) func(transactionId uuid.UUI
 }
 
 func (p *ProcessorImpl) ClampHPAndEmit(transactionId uuid.UUID, channel channel.Model, characterId uint32, maxValue uint16) error {
-	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
-		return p.ClampHP(buf)(transactionId, channel, characterId, maxValue)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).ClampHP(buf)(transactionId, channel, characterId, maxValue)
+		})
 	})
 }
 
@@ -1276,8 +1384,10 @@ func (p *ProcessorImpl) ClampHP(mb *message.Buffer) func(transactionId uuid.UUID
 }
 
 func (p *ProcessorImpl) ClampMPAndEmit(transactionId uuid.UUID, channel channel.Model, characterId uint32, maxValue uint16) error {
-	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
-		return p.ClampMP(buf)(transactionId, channel, characterId, maxValue)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).ClampMP(buf)(transactionId, channel, characterId, maxValue)
+		})
 	})
 }
 
@@ -1310,8 +1420,10 @@ func (p *ProcessorImpl) ClampMP(mb *message.Buffer) func(transactionId uuid.UUID
 }
 
 func (p *ProcessorImpl) ProcessLevelChangeAndEmit(transactionId uuid.UUID, channel channel.Model, characterId uint32, amount byte) error {
-	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
-		return p.ProcessLevelChange(buf)(transactionId, channel, characterId, amount)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).ProcessLevelChange(buf)(transactionId, channel, characterId, amount)
+		})
 	})
 }
 
@@ -1542,8 +1654,10 @@ func rollHPMPGain(params hpMPGainParams) (uint16, uint16) {
 }
 
 func (p *ProcessorImpl) ProcessJobChangeAndEmit(transactionId uuid.UUID, channel channel.Model, characterId uint32, jobId job.Id) error {
-	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
-		return p.ProcessJobChange(buf)(transactionId, channel, characterId, jobId)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).ProcessJobChange(buf)(transactionId, channel, characterId, jobId)
+		})
 	})
 }
 
@@ -1635,8 +1749,10 @@ func getSkillBook(jobId job.Id) int {
 }
 
 func (p *ProcessorImpl) UpdateAndEmit(transactionId uuid.UUID, characterId uint32, input RestModel) error {
-	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
-		return p.Update(buf)(transactionId, characterId, input)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).Update(buf)(transactionId, characterId, input)
+		})
 	})
 }
 
@@ -1809,8 +1925,10 @@ func (p *ProcessorImpl) isValidGm(gm int) bool {
 }
 
 func (p *ProcessorImpl) ResetStatsAndEmit(transactionId uuid.UUID, characterId uint32, channel channel.Model) error {
-	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
-		return p.ResetStats(buf)(transactionId, characterId, channel)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).ResetStats(buf)(transactionId, characterId, channel)
+		})
 	})
 }
 
@@ -1871,8 +1989,10 @@ func (p *ProcessorImpl) ResetStats(mb *message.Buffer) func(transactionId uuid.U
 }
 
 func (p *ProcessorImpl) RebalanceAPAndEmit(transactionId uuid.UUID, characterId uint32, channel channel.Model, targets []RebalanceTarget) error {
-	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
-		return p.RebalanceAP(buf)(transactionId, characterId, channel, targets)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).RebalanceAP(buf)(transactionId, characterId, channel, targets)
+		})
 	})
 }
 

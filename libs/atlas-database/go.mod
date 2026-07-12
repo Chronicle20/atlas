@@ -4,6 +4,7 @@ go 1.25.0
 
 require (
 	github.com/Chronicle20/atlas/libs/atlas-model v0.0.0
+	github.com/Chronicle20/atlas/libs/atlas-retry v0.0.0
 	github.com/Chronicle20/atlas/libs/atlas-tenant v0.0.0
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.7.4
@@ -43,5 +44,7 @@ require (
 )
 
 replace github.com/Chronicle20/atlas/libs/atlas-model => ../atlas-model
+
+replace github.com/Chronicle20/atlas/libs/atlas-retry => ../atlas-retry
 
 replace github.com/Chronicle20/atlas/libs/atlas-tenant => ../atlas-tenant

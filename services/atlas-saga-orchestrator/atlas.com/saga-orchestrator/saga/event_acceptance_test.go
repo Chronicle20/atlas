@@ -42,6 +42,7 @@ var allActions = []sharedsaga.Action{
 	sharedsaga.RegisterPartyQuest, sharedsaga.WarpPartyQuestMembersToMap, sharedsaga.LeavePartyQuest,
 	sharedsaga.EnterPartyQuestBonus, sharedsaga.UpdatePqCustomData, sharedsaga.HitReactor,
 	sharedsaga.BroadcastPqMessage, sharedsaga.StageClearAttemptPq, sharedsaga.FieldEffectWeather,
+	sharedsaga.TransferAP, sharedsaga.TransferSP,
 }
 
 // TestAcceptanceTable_EveryActionRepresented asserts every Action constant

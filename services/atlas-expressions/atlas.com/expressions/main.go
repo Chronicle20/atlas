@@ -1,12 +1,16 @@
 package main
 
 import (
+	"context"
+
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+
 	"atlas-expressions/expression"
 	expression2 "atlas-expressions/kafka/consumer/expression"
 	_map "atlas-expressions/kafka/consumer/map"
 	"atlas-expressions/logger"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-expressions/tasks"
+	"github.com/Chronicle20/atlas/libs/atlas-service"
 	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
 	"time"
@@ -48,7 +52,9 @@ func main() {
 
 	tdm.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 
-	go tasks.Register(l, tdm.Context())(expression.NewRevertTask(l, time.Millisecond*50))
+	routine.Go(l, tdm.Context(), func(_ context.Context) {
+		tasks.Register(l, tdm.Context())(expression.NewRevertTask(l, time.Millisecond*50))
+	})
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))
 

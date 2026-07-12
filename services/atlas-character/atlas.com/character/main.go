@@ -1,8 +1,11 @@
 package main
 
 import (
+	"context"
+
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+
 	"atlas-character/character"
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	account2 "atlas-character/kafka/consumer/account"
 	character2 "atlas-character/kafka/consumer/character"
 	"atlas-character/kafka/consumer/drop"
@@ -11,9 +14,10 @@ import (
 	"atlas-character/saved_location"
 	"atlas-character/service"
 	"atlas-character/session"
-	lifecycle "github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-character/session/history"
 	"atlas-character/tasks"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	lifecycle "github.com/Chronicle20/atlas/libs/atlas-service"
 	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
 	"time"
@@ -86,7 +90,7 @@ func main() {
 			l.WithError(err).Fatal("Unable to register kafka handlers.")
 		}
 
-	tdm.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
+		tdm.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 
 	}
 
@@ -101,7 +105,9 @@ func main() {
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
 		Run()
 
-	go tasks.Register(l, tdm.Context())(session.NewTimeout(l, db, time.Millisecond*time.Duration(5000)))
+	routine.Go(l, tdm.Context(), func(_ context.Context) {
+		tasks.Register(l, tdm.Context())(session.NewTimeout(l, db, time.Millisecond*time.Duration(5000)))
+	})
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))
 

@@ -8,6 +8,7 @@ require (
 	github.com/Chronicle20/atlas/libs/atlas-kafka v0.0.0-00010101000000-000000000000
 	github.com/Chronicle20/atlas/libs/atlas-model v0.0.0
 	github.com/Chronicle20/atlas/libs/atlas-rest v0.0.0-00010101000000-000000000000
+	github.com/Chronicle20/atlas/libs/atlas-routine v0.0.0-00010101000000-000000000000
 	github.com/Chronicle20/atlas/libs/atlas-saga v0.0.0-00010101000000-000000000000
 	github.com/Chronicle20/atlas/libs/atlas-service v0.0.0-00010101000000-000000000000
 	github.com/Chronicle20/atlas/libs/atlas-tenant v0.0.0
@@ -19,7 +20,7 @@ require (
 	github.com/sirupsen/logrus v1.9.4
 	go.elastic.co/ecslogrus v1.0.0
 	gorm.io/driver/sqlite v1.6.0
-	gorm.io/gorm v1.31.1
+	gorm.io/gorm v1.31.2
 )
 
 require (
@@ -50,7 +51,7 @@ require (
 	go.opentelemetry.io/proto/otlp v1.10.0 // indirect
 	golang.org/x/crypto v0.52.0 // indirect
 	golang.org/x/net v0.55.0 // indirect
-	golang.org/x/sync v0.21.0 // indirect
+	golang.org/x/sync v0.22.0 // indirect
 	golang.org/x/sys v0.46.0 // indirect
 	golang.org/x/text v0.37.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260526163538-3dc84a4a5aaa // indirect
@@ -89,3 +90,5 @@ replace github.com/Chronicle20/atlas/libs/atlas-script-core => ../../../../libs/
 replace github.com/Chronicle20/atlas/libs/atlas-socket => ../../../../libs/atlas-socket
 
 replace github.com/Chronicle20/atlas/libs/atlas-tracing => ../../../../libs/atlas-tracing
+
+replace github.com/Chronicle20/atlas/libs/atlas-routine => ../../../../libs/atlas-routine

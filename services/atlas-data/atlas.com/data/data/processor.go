@@ -29,6 +29,7 @@ import (
 	"sync"
 	"time"
 
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
@@ -221,23 +222,23 @@ func RegisterAllData(l logrus.FieldLogger) func(ctx context.Context) func(rootDi
 				const workerCount = 10 // Adjust based on your workload and system resources
 				for i := 0; i < workerCount; i++ {
 					wg.Add(1)
-					go func() {
+					routine.Go(l, ctx, func(_ context.Context) {
 						for filePath := range fileChan {
 							if err := rf(l)(ctx)(filePath); err != nil {
 								errChan <- fmt.Errorf("error processing %s: %w", filePath, err)
 							}
 						}
 						wg.Done()
-					}()
+					})
 				}
 
 				// Start error collector
 				var errors []error
-				go func() {
+				routine.Go(l, ctx, func(_ context.Context) {
 					for err := range errChan {
 						errors = append(errors, err)
 					}
-				}()
+				})
 
 				// Walk directory and send files
 				err := filepath.WalkDir(baseDir, func(path string, d fs.DirEntry, err error) error {

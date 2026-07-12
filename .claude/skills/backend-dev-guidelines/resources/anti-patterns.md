@@ -33,6 +33,7 @@ description: Common pitfalls to avoid when implementing Golang microservices.
 
 | Type aliases for library migrations | Adds indirection; we control all services — update call sites directly |
 | Leaving dead code after refactoring | Unused constants/structs/functions clutter the codebase and cause confusion |
+| Bare `go` statements | An unrecovered panic in the goroutine crashes the whole pod — spawn via `routine.Go(l, ctx, fn)` from `libs/atlas-routine`; enforced by `tools/goroutine-guard.sh` (DOM-25). Test-scaffolding exceptions need a justified `//goroutine-guard:allow` marker. |
 
 **Always** prefer pure, context-aware, curried, and testable functions.
 

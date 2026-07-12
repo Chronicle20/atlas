@@ -17,6 +17,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	kafkaProducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
@@ -142,10 +143,10 @@ func (r *MistTick) runOnce(ctx context.Context) {
 	for _, t := range tenants {
 		t := t
 		wg.Add(1)
-		go func() {
+		routine.Go(r.l, ctx, func(_ context.Context) {
 			defer wg.Done()
 			r.processTenant(ctx, t)
-		}()
+		})
 	}
 	wg.Wait()
 }

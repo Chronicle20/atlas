@@ -1,15 +1,19 @@
 package main
 
 import (
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	"context"
+
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+
 	"atlas-skills/kafka/consumer/character"
 	macro2 "atlas-skills/kafka/consumer/macro"
 	skill2 "atlas-skills/kafka/consumer/skill"
 	"atlas-skills/logger"
 	"atlas-skills/macro"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-skills/skill"
 	"atlas-skills/tasks"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	"github.com/Chronicle20/atlas/libs/atlas-service"
 	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
 
@@ -76,7 +80,9 @@ func main() {
 
 	tdm.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 
-	go tasks.Register(tasks.NewExpirationTask(l, db, 1000))
+	routine.Go(l, tdm.Context(), func(_ context.Context) {
+		tasks.Register(l, tdm.Context())(tasks.NewExpirationTask(l, db, 1000))
+	})
 
 	server.New(l).
 		WithContext(tdm.Context()).

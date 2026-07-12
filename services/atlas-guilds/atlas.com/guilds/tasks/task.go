@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	"github.com/sirupsen/logrus"
 )
 
@@ -15,7 +16,7 @@ type Task interface {
 
 func Register(l logrus.FieldLogger, ctx context.Context) func(t Task) {
 	return func(t Task) {
-		go func(t Task) {
+		routine.Go(l, ctx, func(_ context.Context) {
 			for {
 				select {
 				case <-ctx.Done():
@@ -25,6 +26,6 @@ func Register(l logrus.FieldLogger, ctx context.Context) func(t Task) {
 					t.Run()
 				}
 			}
-		}(t)
+		})
 	}
 }

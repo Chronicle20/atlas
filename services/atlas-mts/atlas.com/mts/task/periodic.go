@@ -11,6 +11,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
@@ -58,7 +59,7 @@ func NewPeriodicTask(l logrus.FieldLogger, ctx context.Context, db *gorm.DB, int
 // Start launches the ticker loop.
 func (t *PeriodicTask) Start() {
 	t.wg.Add(1)
-	go t.run()
+	routine.Go(t.l, t.ctx, func(context.Context) { t.run() })
 	t.l.Infof("MTS expiration sweep started with interval [%v].", t.interval)
 }
 

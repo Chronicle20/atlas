@@ -1,6 +1,10 @@
 package main
 
 import (
+	"context"
+
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+
 	"atlas-saga-orchestrator/kafka/consumer/asset"
 	"atlas-saga-orchestrator/kafka/consumer/buddylist"
 	"atlas-saga-orchestrator/kafka/consumer/cashshop"
@@ -224,7 +228,7 @@ func startReaper(l logrus.FieldLogger, store *saga.PostgresStore, tdm *service.M
 	}
 
 	tdm.WaitGroup().Add(1)
-	go func() {
+	routine.Go(l, tdm.Context(), func(_ context.Context) {
 		defer tdm.WaitGroup().Done()
 		ticker := time.NewTicker(interval)
 		defer ticker.Stop()
@@ -240,7 +244,7 @@ func startReaper(l logrus.FieldLogger, store *saga.PostgresStore, tdm *service.M
 				reapTimedOutSagas(l, store, tdm)
 			}
 		}
-	}()
+	})
 }
 
 func reapTimedOutSagas(l logrus.FieldLogger, store *saga.PostgresStore, tdm *service.Manager) {

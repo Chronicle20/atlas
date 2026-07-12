@@ -15,7 +15,7 @@ import (
 	"gorm.io/gorm"
 )
 
-type ScriptProcessor interface {
+type Processor interface {
 	Create(model MapScript) (MapScript, error)
 	Update(id uuid.UUID, model MapScript) (MapScript, error)
 	Delete(id uuid.UUID) error
@@ -43,7 +43,7 @@ type ProcessorImpl struct {
 	executor  *OperationExecutor
 }
 
-func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) ScriptProcessor {
+func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor {
 	t := tenant.MustFromContext(ctx)
 	evaluator := NewConditionEvaluator(l, ctx)
 	executor := NewOperationExecutor(l, ctx)
@@ -57,6 +57,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Script
 		executor:  executor,
 	}
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) ByIdProvider(id uuid.UUID) model.Provider[MapScript] {
 	return model.Map[Entity, MapScript](Make)(getByIdProvider(id)(p.db.WithContext(p.ctx)))

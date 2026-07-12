@@ -48,8 +48,8 @@ Notes on interpreting the output:
 | `services/atlas-chairs/atlas.com/chairs/validation/processor.go` | Gen2 | R2 | 8 | done |
 | `services/atlas-storage/atlas.com/storage/asset/processor.go` | Gen2 | R2 | 9 | done |
 | `services/atlas-storage/atlas.com/storage/storage/processor.go` | Gen2 | R2 | 9 | done |
-| `services/atlas-map-actions/atlas.com/map-actions/script/processor.go` | Gen2.5 | R2 | 10 | pending |
-| `services/atlas-map-actions/atlas.com/map-actions/validation/processor.go` | CP-2 | R1 | 10 | pending |
+| `services/atlas-map-actions/atlas.com/map-actions/script/processor.go` | Gen2.5 | R2 | 10 | done |
+| `services/atlas-map-actions/atlas.com/map-actions/validation/processor.go` | CP-2 | R1 | 10 | done |
 | `services/atlas-portal-actions/atlas.com/portal/script/processor.go` | Gen2.5 | R2 | 11 | pending |
 | `services/atlas-portal-actions/atlas.com/portal/validation/processor.go` | CP-2 | R1 | 11 | pending |
 | `services/atlas-reactor-actions/atlas.com/reactor/script/processor.go` | Gen2.5 | R2 | 12 | pending |

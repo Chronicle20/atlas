@@ -34,7 +34,7 @@ func handleGetCharacterVisits(db *gorm.DB) rest.GetHandler {
 				rm, err := model.SliceMap(Transform)(p.ByCharacterIdProvider(characterId))(model.ParallelMap())()
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Creating REST model.")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -59,14 +59,14 @@ func handleGetCharacterVisit(db *gorm.DB) rest.GetHandler {
 					}
 					if err != nil {
 						d.Logger().WithError(err).Errorf("Retrieving visit.")
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 
 					rm, err := model.Map(Transform)(model.FixedProvider(v))()
 					if err != nil {
 						d.Logger().WithError(err).Errorf("Creating REST model.")
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 

@@ -124,6 +124,8 @@ func NewProcessor(log logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proc
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) WithProducer(producer producer.Provider) Processor {
 	return &ProcessorImpl{
 		log:                p.log,

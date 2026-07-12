@@ -36,6 +36,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, p producer.Provider
 	return NewProcessorWithRegistry(l, ctx, p, GetRegistry())
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func NewProcessorWithRegistry(l logrus.FieldLogger, ctx context.Context, p producer.Provider, r *Registry) Processor {
 	return &ProcessorImpl{
 		l:   l,

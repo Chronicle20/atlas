@@ -31,6 +31,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) RecordVisit(characterId uint32, mapId _map.Id) error {
 	t := tenant.MustFromContext(p.ctx)
 	return recordVisit(p.db.WithContext(p.ctx))(t.Id())(characterId)(mapId)

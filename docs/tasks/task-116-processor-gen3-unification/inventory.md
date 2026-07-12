@@ -150,7 +150,7 @@ Notes on interpreting the output:
 | `services/atlas-data/atlas.com/data/commodity/processor.go` | Gen1 | R3 | 32 | done |
 | `services/atlas-data/atlas.com/data/consumable/processor.go` | Gen1 | R3 | 32 | done |
 | `services/atlas-data/atlas.com/data/etc/processor.go` | Gen1 | R3 | 32 | done |
-| `services/atlas-data/atlas.com/data/pet/processor.go` | Gen1 | R3 | 32 | pending |
+| `services/atlas-data/atlas.com/data/pet/processor.go` | Gen1 | R3 | 32 | done |
 | `services/atlas-data/atlas.com/data/setup/processor.go` | Gen1 | R3 | 32 | done |
 | `services/atlas-data/atlas.com/data/job/processor.go` | Gen1 | R3 | 33 | pending |
 | `services/atlas-data/atlas.com/data/map/processor.go` | Gen1 | R3 | 33 | pending |

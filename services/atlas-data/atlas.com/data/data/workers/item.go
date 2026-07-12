@@ -67,7 +67,13 @@ func (Item) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc *mini
 				}
 			}
 		}},
-		{"Pet", pet.RegisterPet(db)},
+		{"Pet", func(l logrus.FieldLogger) func(ctx context.Context) func(path string) error {
+			return func(ctx context.Context) func(path string) error {
+				return func(path string) error {
+					return pet.NewProcessor(l, ctx, db).RegisterPet(path)
+				}
+			}
+		}},
 	}
 	for _, c := range categories {
 		dir := filepath.Join(base, c.subdir)

@@ -8,10 +8,25 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func AwardExperience(l logrus.FieldLogger) func(ctx context.Context) func(ch channel.Model, characterId uint32, white bool, amount uint32, party uint32) error {
-	return func(ctx context.Context) func(ch channel.Model, characterId uint32, white bool, amount uint32, party uint32) error {
-		return func(ch channel.Model, characterId uint32, white bool, amount uint32, party uint32) error {
-			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(awardExperienceCommandProvider(characterId, ch, white, amount, party))
-		}
+type Processor interface {
+	GetById(characterId uint32) (Model, error)
+	AwardExperience(ch channel.Model, characterId uint32, white bool, amount uint32, party uint32) error
+}
+
+type ProcessorImpl struct {
+	l   logrus.FieldLogger
+	ctx context.Context
+}
+
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
+	return &ProcessorImpl{
+		l:   l,
+		ctx: ctx,
 	}
+}
+
+var _ Processor = (*ProcessorImpl)(nil)
+
+func (p *ProcessorImpl) AwardExperience(ch channel.Model, characterId uint32, white bool, amount uint32, party uint32) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(EnvCommandTopic)(awardExperienceCommandProvider(characterId, ch, white, amount, party))
 }

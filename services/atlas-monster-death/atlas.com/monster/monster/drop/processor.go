@@ -13,74 +13,80 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func Create(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model, index int, monsterId uint32, x int16, y int16, killerId uint32, dropType byte, m Model, mesoRate float64, ownerPartyId uint32) error {
-	return func(ctx context.Context) func(f field.Model, index int, monsterId uint32, x int16, y int16, killerId uint32, dropType byte, m Model, mesoRate float64, ownerPartyId uint32) error {
-		return func(f field.Model, index int, monsterId uint32, x int16, y int16, killerId uint32, dropType byte, m Model, mesoRate float64, ownerPartyId uint32) error {
-			factor := 0
-			if dropType == 3 {
-				factor = 40
-			} else {
-				factor = 25
-			}
-			newX := x
-			if index%2 == 0 {
-				newX += int16(factor * ((index + 1) / 2))
-			} else {
-				newX += int16(-(factor * (index / 2)))
-			}
-			if m.ItemId() == 0 {
-				return SpawnMeso(l)(ctx)(f, monsterId, x, y, killerId, dropType, m, newX, y, mesoRate, ownerPartyId)
-			}
-			return SpawnItem(l)(ctx)(f, m.ItemId(), monsterId, x, y, killerId, dropType, m, newX, y, ownerPartyId)
-		}
+type Processor interface {
+	GetByMonsterId(monsterId uint32) ([]Model, error)
+	Create(f field.Model, index int, monsterId uint32, x int16, y int16, killerId uint32, dropType byte, m Model, mesoRate float64, ownerPartyId uint32) error
+	SpawnMeso(f field.Model, monsterId uint32, x int16, y int16, killerId uint32, dropType byte, m Model, posX int16, posY int16, mesoRate float64, ownerPartyId uint32) error
+	SpawnItem(f field.Model, itemId uint32, monsterId uint32, x int16, y int16, killerId uint32, dropType byte, m Model, posX int16, posY int16, ownerPartyId uint32) error
+	SpawnDrop(f field.Model, itemId uint32, quantity uint32, mesos uint32, posX int16, posY int16, monsterX int16, monsterY int16, monsterId uint32, killerId uint32, playerDrop bool, dropType byte, ed EquipmentData, ownerPartyId uint32) error
+}
+
+type ProcessorImpl struct {
+	l   logrus.FieldLogger
+	ctx context.Context
+}
+
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
+	return &ProcessorImpl{
+		l:   l,
+		ctx: ctx,
 	}
 }
 
-func SpawnMeso(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model, monsterId uint32, x int16, y int16, killerId uint32, dropType byte, m Model, posX int16, posY int16, mesoRate float64, ownerPartyId uint32) error {
-	return func(ctx context.Context) func(f field.Model, monsterId uint32, x int16, y int16, killerId uint32, dropType byte, m Model, posX int16, posY int16, mesoRate float64, ownerPartyId uint32) error {
-		return func(f field.Model, monsterId uint32, x int16, y int16, killerId uint32, dropType byte, m Model, posX int16, posY int16, mesoRate float64, ownerPartyId uint32) error {
-			baseMesos := uint32(rand.Int31n(int32(m.MaximumQuantity()-m.MinimumQuantity())+1)) + m.MinimumQuantity()
-			// Apply meso rate multiplier
-			mesos := uint32(float64(baseMesos) * mesoRate)
-			l.Debugf("Meso drop: base=%d, rate=%.2f, final=%d", baseMesos, mesoRate, mesos)
-			return SpawnDrop(l)(ctx)(f, 0, 0, mesos, posX, posY, x, y, monsterId, killerId, false, dropType, EquipmentData{}, ownerPartyId)
-		}
+var _ Processor = (*ProcessorImpl)(nil)
+
+func (p *ProcessorImpl) Create(f field.Model, index int, monsterId uint32, x int16, y int16, killerId uint32, dropType byte, m Model, mesoRate float64, ownerPartyId uint32) error {
+	factor := 0
+	if dropType == 3 {
+		factor = 40
+	} else {
+		factor = 25
 	}
+	newX := x
+	if index%2 == 0 {
+		newX += int16(factor * ((index + 1) / 2))
+	} else {
+		newX += int16(-(factor * (index / 2)))
+	}
+	if m.ItemId() == 0 {
+		return p.SpawnMeso(f, monsterId, x, y, killerId, dropType, m, newX, y, mesoRate, ownerPartyId)
+	}
+	return p.SpawnItem(f, m.ItemId(), monsterId, x, y, killerId, dropType, m, newX, y, ownerPartyId)
 }
 
-func SpawnItem(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model, itemId uint32, monsterId uint32, x int16, y int16, killerId uint32, dropType byte, m Model, posX int16, posY int16, ownerPartyId uint32) error {
-	return func(ctx context.Context) func(f field.Model, itemId uint32, monsterId uint32, x int16, y int16, killerId uint32, dropType byte, m Model, posX int16, posY int16, ownerPartyId uint32) error {
-		return func(f field.Model, itemId uint32, monsterId uint32, x int16, y int16, killerId uint32, dropType byte, m Model, posX int16, posY int16, ownerPartyId uint32) error {
-			quantity := uint32(1)
-			if m.MaximumQuantity() != 1 {
-				quantity = uint32(rand.Int31n(int32(m.MaximumQuantity()-m.MinimumQuantity())+1)) + m.MinimumQuantity()
-			}
-
-			var ed EquipmentData
-			if isEquipment(itemId) {
-				sp := statistics.NewProcessor(l, ctx)
-				s, err := sp.GetById(itemId)
-				if err != nil {
-					l.WithError(err).Errorf("Unable to get equipment statistics for item [%d], dropping without stats.", itemId)
-				} else {
-					ed = generateRandomEquipmentData(s)
-				}
-			}
-
-			return SpawnDrop(l)(ctx)(f, itemId, quantity, 0, posX, posY, x, y, monsterId, killerId, false, dropType, ed, ownerPartyId)
-		}
-	}
+func (p *ProcessorImpl) SpawnMeso(f field.Model, monsterId uint32, x int16, y int16, killerId uint32, dropType byte, m Model, posX int16, posY int16, mesoRate float64, ownerPartyId uint32) error {
+	baseMesos := uint32(rand.Int31n(int32(m.MaximumQuantity()-m.MinimumQuantity())+1)) + m.MinimumQuantity()
+	// Apply meso rate multiplier
+	mesos := uint32(float64(baseMesos) * mesoRate)
+	p.l.Debugf("Meso drop: base=%d, rate=%.2f, final=%d", baseMesos, mesoRate, mesos)
+	return p.SpawnDrop(f, 0, 0, mesos, posX, posY, x, y, monsterId, killerId, false, dropType, EquipmentData{}, ownerPartyId)
 }
 
-func SpawnDrop(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model, itemId uint32, quantity uint32, mesos uint32, posX int16, posY int16, monsterX int16, monsterY int16, monsterId uint32, killerId uint32, playerDrop bool, dropType byte, ed EquipmentData, ownerPartyId uint32) error {
-	return func(ctx context.Context) func(f field.Model, itemId uint32, quantity uint32, mesos uint32, posX int16, posY int16, monsterX int16, monsterY int16, monsterId uint32, killerId uint32, playerDrop bool, dropType byte, ed EquipmentData, ownerPartyId uint32) error {
-		return func(f field.Model, itemId uint32, quantity uint32, mesos uint32, posX int16, posY int16, monsterX int16, monsterY int16, monsterId uint32, killerId uint32, playerDrop bool, dropType byte, ed EquipmentData, ownerPartyId uint32) error {
-			tempX, tempY := calculateDropPosition(l)(ctx)(f.MapId(), posX, posY, monsterX, monsterY)
-			tempX, tempY = calculateDropPosition(l)(ctx)(f.MapId(), tempX, tempY, tempX, tempY)
-			cp := spawnDropCommandProvider(f, itemId, quantity, mesos, dropType, tempX, tempY, killerId, ownerPartyId, monsterId, monsterX, monsterY, playerDrop, byte(1), ed)
-			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(cp)
+func (p *ProcessorImpl) SpawnItem(f field.Model, itemId uint32, monsterId uint32, x int16, y int16, killerId uint32, dropType byte, m Model, posX int16, posY int16, ownerPartyId uint32) error {
+	quantity := uint32(1)
+	if m.MaximumQuantity() != 1 {
+		quantity = uint32(rand.Int31n(int32(m.MaximumQuantity()-m.MinimumQuantity())+1)) + m.MinimumQuantity()
+	}
+
+	var ed EquipmentData
+	if isEquipment(itemId) {
+		sp := statistics.NewProcessor(p.l, p.ctx)
+		s, err := sp.GetById(itemId)
+		if err != nil {
+			p.l.WithError(err).Errorf("Unable to get equipment statistics for item [%d], dropping without stats.", itemId)
+		} else {
+			ed = generateRandomEquipmentData(s)
 		}
 	}
+
+	return p.SpawnDrop(f, itemId, quantity, 0, posX, posY, x, y, monsterId, killerId, false, dropType, ed, ownerPartyId)
+}
+
+func (p *ProcessorImpl) SpawnDrop(f field.Model, itemId uint32, quantity uint32, mesos uint32, posX int16, posY int16, monsterX int16, monsterY int16, monsterId uint32, killerId uint32, playerDrop bool, dropType byte, ed EquipmentData, ownerPartyId uint32) error {
+	tempX, tempY := p.calculateDropPosition(f.MapId(), posX, posY, monsterX, monsterY)
+	tempX, tempY = p.calculateDropPosition(f.MapId(), tempX, tempY, tempX, tempY)
+	cp := spawnDropCommandProvider(f, itemId, quantity, mesos, dropType, tempX, tempY, killerId, ownerPartyId, monsterId, monsterX, monsterY, playerDrop, byte(1), ed)
+	return producer.ProviderImpl(p.l)(p.ctx)(EnvCommandTopic)(cp)
 }
 
 func isEquipment(itemId uint32) bool {
@@ -116,14 +122,10 @@ func getRandomStat(defaultValue uint16, max uint16) uint16 {
 	return uint16(float64(defaultValue)-maxRange) + uint16(math.Floor(rand.Float64()*(maxRange*2.0+1.0)))
 }
 
-func calculateDropPosition(l logrus.FieldLogger) func(ctx context.Context) func(mapId _map.Id, initialX int16, initialY int16, fallbackX int16, fallbackY int16) (int16, int16) {
-	return func(ctx context.Context) func(mapId _map.Id, initialX int16, initialY int16, fallbackX int16, fallbackY int16) (int16, int16) {
-		return func(mapId _map.Id, initialX int16, initialY int16, fallbackX int16, fallbackY int16) (int16, int16) {
-			r, err := position.GetInMap(l)(ctx)(mapId, initialX, initialY, fallbackX, fallbackY)()
-			if err != nil {
-				return fallbackX, fallbackY
-			}
-			return r.X(), r.Y()
-		}
+func (p *ProcessorImpl) calculateDropPosition(mapId _map.Id, initialX int16, initialY int16, fallbackX int16, fallbackY int16) (int16, int16) {
+	r, err := position.NewProcessor(p.l, p.ctx).GetInMap(mapId, initialX, initialY, fallbackX, fallbackY)()
+	if err != nil {
+		return fallbackX, fallbackY
 	}
+	return r.X(), r.Y()
 }

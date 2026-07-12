@@ -1,25 +1,14 @@
 package drop
 
 import (
-	"context"
-
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
-	"github.com/sirupsen/logrus"
 )
 
-func byMonsterIdProvider(l logrus.FieldLogger) func(ctx context.Context) func(monsterId uint32) model.Provider[[]Model] {
-	return func(ctx context.Context) func(monsterId uint32) model.Provider[[]Model] {
-		return func(monsterId uint32) model.Provider[[]Model] {
-			return requests.SliceProvider[RestModel, Model](l, ctx)(requestForMonster(monsterId), Extract, model.Filters[Model]())
-		}
-	}
+func (p *ProcessorImpl) byMonsterIdProvider(monsterId uint32) model.Provider[[]Model] {
+	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestForMonster(monsterId), Extract, model.Filters[Model]())
 }
 
-func GetByMonsterId(l logrus.FieldLogger) func(ctx context.Context) func(monsterId uint32) ([]Model, error) {
-	return func(ctx context.Context) func(monsterId uint32) ([]Model, error) {
-		return func(monsterId uint32) ([]Model, error) {
-			return byMonsterIdProvider(l)(ctx)(monsterId)()
-		}
-	}
+func (p *ProcessorImpl) GetByMonsterId(monsterId uint32) ([]Model, error) {
+	return p.byMonsterIdProvider(monsterId)()
 }

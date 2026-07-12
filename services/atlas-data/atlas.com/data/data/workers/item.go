@@ -39,7 +39,13 @@ func (Item) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc *mini
 		subdir string
 		rf     RegisterFunc
 	}{
-		{"Consume", consumable.RegisterConsumable(db)},
+		{"Consume", func(l logrus.FieldLogger) func(ctx context.Context) func(path string) error {
+			return func(ctx context.Context) func(path string) error {
+				return func(path string) error {
+					return consumable.NewProcessor(l, ctx, db).RegisterConsumable(path)
+				}
+			}
+		}},
 		{"Cash", func(l logrus.FieldLogger) func(ctx context.Context) func(path string) error {
 			return func(ctx context.Context) func(path string) error {
 				return func(path string) error {

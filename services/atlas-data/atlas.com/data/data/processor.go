@@ -144,7 +144,13 @@ func StartWorker(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.D
 						l.WithError(err).Errorf("Failed to initialize consumable item string registry.")
 						return err
 					}
-					err = RegisterAllData(l)(ctx)(path, filepath.Join("Item.wz", "Consume"), consumable.RegisterConsumable(db))()
+					err = RegisterAllData(l)(ctx)(path, filepath.Join("Item.wz", "Consume"), func(l logrus.FieldLogger) func(ctx context.Context) func(filePath string) error {
+						return func(ctx context.Context) func(filePath string) error {
+							return func(filePath string) error {
+								return consumable.NewProcessor(l, ctx, db).RegisterConsumable(filePath)
+							}
+						}
+					})()
 				} else if name == WorkerCash {
 					if err = item.InitStringFlat(db)(l)(ctx)(filepath.Join(path, "String.wz", "Cash.img.xml")); err != nil {
 						l.WithError(err).Errorf("Failed to initialize cash item string registry.")

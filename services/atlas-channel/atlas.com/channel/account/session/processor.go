@@ -31,6 +31,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	return p
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) Destroy(sessionId uuid.UUID, accountId uint32) {
 	p.l.Debugf("Destroying session for account [%d].", accountId)
 	_ = p.kp(session2.EnvCommandTopic)(LogoutCommandProvider(sessionId, accountId))

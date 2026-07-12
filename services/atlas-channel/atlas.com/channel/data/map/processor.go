@@ -28,6 +28,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	return p
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 // cacheKey scopes the per-map cache by tenant. atlas-data's reader pulls
 // tenant-scoped string registries (place/street name) and the libs/atlas-rest
 // pipeline auto-attaches a tenant header on the underlying GET, so the

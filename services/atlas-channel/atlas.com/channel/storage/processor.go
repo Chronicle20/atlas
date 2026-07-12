@@ -43,6 +43,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	return &ProcessorImpl{l: l, ctx: ctx}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 // StorageData holds all the data needed to display storage UI
 type StorageData struct {
 	Capacity byte

@@ -28,6 +28,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	return p
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) Change(characterId uint32, f field.Model, expression uint32) error {
 	p.l.Debugf("Changing character [%d] expression to [%d].", characterId, f.MapId())
 	return producer.ProviderImpl(p.l)(p.ctx)(expression2.EnvExpressionCommand)(SetCommandProvider(characterId, f, expression))

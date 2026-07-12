@@ -11,25 +11,33 @@ import (
 	"gorm.io/gorm"
 )
 
-type Processor struct {
+type Processor interface {
+	GetAssetById(assetId uint32) (Model, error)
+	GetAssetsByStorageId(storageId uuid.UUID) ([]Model, error)
+	GetOrCreateStorageId(worldId world.Id, accountId uint32) (uuid.UUID, error)
+}
+
+type ProcessorImpl struct {
 	l   logrus.FieldLogger
 	ctx context.Context
 	db  *gorm.DB
 }
 
-func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) *Processor {
-	return &Processor{
+func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor {
+	return &ProcessorImpl{
 		l:   l,
 		ctx: ctx,
 		db:  db,
 	}
 }
 
-func (p *Processor) GetAssetById(assetId uint32) (Model, error) {
+var _ Processor = (*ProcessorImpl)(nil)
+
+func (p *ProcessorImpl) GetAssetById(assetId uint32) (Model, error) {
 	return GetById(p.db.WithContext(p.ctx))(assetId)
 }
 
-func (p *Processor) GetAssetsByStorageId(storageId uuid.UUID) ([]Model, error) {
+func (p *ProcessorImpl) GetAssetsByStorageId(storageId uuid.UUID) ([]Model, error) {
 	return GetByStorageId(p.db.WithContext(p.ctx))(storageId)
 }
 
@@ -47,7 +55,7 @@ func (StorageEntity) TableName() string {
 	return "storages"
 }
 
-func (p *Processor) GetOrCreateStorageId(worldId world.Id, accountId uint32) (uuid.UUID, error) {
+func (p *ProcessorImpl) GetOrCreateStorageId(worldId world.Id, accountId uint32) (uuid.UUID, error) {
 	t := tenant.MustFromContext(p.ctx)
 
 	var storageEntity StorageEntity

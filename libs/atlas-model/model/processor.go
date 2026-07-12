@@ -100,6 +100,21 @@ func Decorators[M any](decorators ...Decorator[M]) []Decorator[M] {
 
 type Decorator[M any] func(M) M
 
+// ErrDecorator adapts a fallible enrichment into a Decorator. On error it
+// invokes onErr (must be non-nil) and returns m unchanged — degrade loudly,
+// never fail the flow. Pair with a logging/metrics observer such as
+// atlas-rest's degrade.Observe.
+func ErrDecorator[M any](f func(M) (M, error), onErr func(M, error)) Decorator[M] {
+	return func(m M) M {
+		r, err := f(m)
+		if err != nil {
+			onErr(m, err)
+			return m
+		}
+		return r
+	}
+}
+
 //goland:noinspection GoUnusedExportedFunction
 func Flip[A any, B any, C any](f func(A) func(B) C) func(B) func(A) C {
 	return func(b B) func(A) C {

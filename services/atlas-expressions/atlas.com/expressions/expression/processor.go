@@ -41,6 +41,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 // Change changes the expression for a character
 func (p *ProcessorImpl) Change(mb *message.Buffer, transactionId uuid.UUID, characterId uint32, field field.Model, expression uint32) (Model, error) {
 	p.l.Debugf("Changing expression to [%d] for character [%d] in field [%s].", expression, characterId, field.Id())

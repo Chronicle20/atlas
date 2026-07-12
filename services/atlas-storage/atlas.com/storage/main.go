@@ -71,6 +71,14 @@ func main() {
 
 	db := database.Connect(l, database.SetMigrations(Migrations))
 
+	server.RegisterTransientErrorClassifier(func(err error) bool {
+		if database.IsTransientConnectionError(err) {
+			database.CountTransient(err)
+			return true
+		}
+		return false
+	})
+
 	// Initialize Kafka consumers for command handling
 	if service.GetMode() == service.Mixed {
 		cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())

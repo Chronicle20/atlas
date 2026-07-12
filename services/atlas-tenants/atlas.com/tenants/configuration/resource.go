@@ -29,7 +29,7 @@ func GetAllRoutesHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Ha
 						routes = []map[string]interface{}{}
 					} else {
 						d.Logger().WithError(err).Error("Failed to get routes")
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 				}
@@ -39,7 +39,7 @@ func GetAllRoutesHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Ha
 					rm, err := TransformRoute(route)
 					if err != nil {
 						d.Logger().WithError(err).Error("Failed to transform route")
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 					restModels = append(restModels, rm)
@@ -71,7 +71,7 @@ func GetRouteByIdHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Ha
 					rm, err := TransformRoute(route)
 					if err != nil {
 						d.Logger().WithError(err).Error("Failed to transform route")
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 
@@ -100,7 +100,7 @@ func CreateRouteHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Han
 				_, err = processor.CreateRouteAndEmit(tenantId, route)
 				if err != nil {
 					d.Logger().WithError(err).Error("Failed to create route")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -114,14 +114,14 @@ func CreateRouteHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Han
 				createdRoute, err := processor.GetRouteById(tenantId, routeId)
 				if err != nil {
 					d.Logger().WithError(err).Error("Failed to get created route")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
 				rm, err := TransformRoute(createdRoute)
 				if err != nil {
 					d.Logger().WithError(err).Error("Failed to transform route")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -151,7 +151,7 @@ func UpdateRouteHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Han
 					_, err = processor.UpdateRouteAndEmit(tenantId, routeId, route)
 					if err != nil {
 						d.Logger().WithError(err).Error("Failed to update route")
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 
@@ -159,14 +159,14 @@ func UpdateRouteHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Han
 					updatedRoute, err := processor.GetRouteById(tenantId, routeId)
 					if err != nil {
 						d.Logger().WithError(err).Error("Failed to get updated route")
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 
 					rm, err := TransformRoute(updatedRoute)
 					if err != nil {
 						d.Logger().WithError(err).Error("Failed to transform route")
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 
@@ -189,7 +189,7 @@ func DeleteRouteHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Han
 					err := processor.DeleteRouteAndEmit(tenantId, routeId)
 					if err != nil {
 						d.Logger().WithError(err).Error("Failed to delete route")
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 
@@ -215,7 +215,7 @@ func GetAllVesselsHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.H
 						vessels = []map[string]interface{}{}
 					} else {
 						d.Logger().WithError(err).Error("Failed to get vessels")
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 				}
@@ -225,7 +225,7 @@ func GetAllVesselsHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.H
 					rm, err := TransformVessel(vessel)
 					if err != nil {
 						d.Logger().WithError(err).Error("Failed to transform vessel")
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 					restModels = append(restModels, rm)
@@ -257,7 +257,7 @@ func GetVesselByIdHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.H
 					rm, err := TransformVessel(vessel)
 					if err != nil {
 						d.Logger().WithError(err).Error("Failed to transform vessel")
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 
@@ -286,7 +286,7 @@ func CreateVesselHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Ha
 				_, err = processor.CreateVesselAndEmit(tenantId, vessel)
 				if err != nil {
 					d.Logger().WithError(err).Error("Failed to create vessel")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -300,14 +300,14 @@ func CreateVesselHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Ha
 				createdVessel, err := processor.GetVesselById(tenantId, vesselId)
 				if err != nil {
 					d.Logger().WithError(err).Error("Failed to get created vessel")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
 				rm, err := TransformVessel(createdVessel)
 				if err != nil {
 					d.Logger().WithError(err).Error("Failed to transform vessel")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -337,7 +337,7 @@ func UpdateVesselHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Ha
 					_, err = processor.UpdateVesselAndEmit(tenantId, vesselId, vessel)
 					if err != nil {
 						d.Logger().WithError(err).Error("Failed to update vessel")
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 
@@ -345,14 +345,14 @@ func UpdateVesselHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Ha
 					updatedVessel, err := processor.GetVesselById(tenantId, vesselId)
 					if err != nil {
 						d.Logger().WithError(err).Error("Failed to get updated vessel")
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 
 					rm, err := TransformVessel(updatedVessel)
 					if err != nil {
 						d.Logger().WithError(err).Error("Failed to transform vessel")
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 
@@ -375,7 +375,7 @@ func DeleteVesselHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Ha
 					err := processor.DeleteVesselAndEmit(tenantId, vesselId)
 					if err != nil {
 						d.Logger().WithError(err).Error("Failed to delete vessel")
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 
@@ -400,7 +400,7 @@ func GetAllInstanceRoutesHandler(db *gorm.DB) func(d *rest.HandlerDependency, c 
 						routes = []map[string]interface{}{}
 					} else {
 						d.Logger().WithError(err).Error("Failed to get instance routes")
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 				}
@@ -410,7 +410,7 @@ func GetAllInstanceRoutesHandler(db *gorm.DB) func(d *rest.HandlerDependency, c 
 					rm, err := TransformInstanceRoute(route)
 					if err != nil {
 						d.Logger().WithError(err).Error("Failed to transform instance route")
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 					restModels = append(restModels, rm)
@@ -442,7 +442,7 @@ func GetInstanceRouteByIdHandler(db *gorm.DB) func(d *rest.HandlerDependency, c 
 					rm, err := TransformInstanceRoute(route)
 					if err != nil {
 						d.Logger().WithError(err).Error("Failed to transform instance route")
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 
@@ -471,7 +471,7 @@ func CreateInstanceRouteHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *
 				_, err = processor.CreateInstanceRouteAndEmit(tenantId, route)
 				if err != nil {
 					d.Logger().WithError(err).Error("Failed to create instance route")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -483,14 +483,14 @@ func CreateInstanceRouteHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *
 				createdRoute, err := processor.GetInstanceRouteById(tenantId, routeId)
 				if err != nil {
 					d.Logger().WithError(err).Error("Failed to get created instance route")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
 				rm, err := TransformInstanceRoute(createdRoute)
 				if err != nil {
 					d.Logger().WithError(err).Error("Failed to transform instance route")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -520,21 +520,21 @@ func UpdateInstanceRouteHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *
 					_, err = processor.UpdateInstanceRouteAndEmit(tenantId, instanceRouteId, route)
 					if err != nil {
 						d.Logger().WithError(err).Error("Failed to update instance route")
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 
 					updatedRoute, err := processor.GetInstanceRouteById(tenantId, instanceRouteId)
 					if err != nil {
 						d.Logger().WithError(err).Error("Failed to get updated instance route")
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 
 					rm, err := TransformInstanceRoute(updatedRoute)
 					if err != nil {
 						d.Logger().WithError(err).Error("Failed to transform instance route")
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 
@@ -557,7 +557,7 @@ func DeleteInstanceRouteHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *
 					err := processor.DeleteInstanceRouteAndEmit(tenantId, instanceRouteId)
 					if err != nil {
 						d.Logger().WithError(err).Error("Failed to delete instance route")
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 
@@ -577,8 +577,7 @@ func SeedRoutesHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Hand
 				result, err := processor.SeedRoutes(tenantId)
 				if err != nil {
 					d.Logger().WithError(err).Error("Failed to seed routes")
-					w.WriteHeader(http.StatusInternalServerError)
-					json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -599,8 +598,7 @@ func SeedInstanceRoutesHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *r
 				result, err := processor.SeedInstanceRoutes(tenantId)
 				if err != nil {
 					d.Logger().WithError(err).Error("Failed to seed instance routes")
-					w.WriteHeader(http.StatusInternalServerError)
-					json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -621,8 +619,7 @@ func SeedVesselsHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Han
 				result, err := processor.SeedVessels(tenantId)
 				if err != nil {
 					d.Logger().WithError(err).Error("Failed to seed vessels")
-					w.WriteHeader(http.StatusInternalServerError)
-					json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -651,7 +648,7 @@ func GetMtsConfigHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Ha
 						return
 					}
 					d.Logger().WithError(err).Error("Failed to get mts config")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -664,7 +661,7 @@ func GetMtsConfigHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Ha
 				rm, err := TransformMtsConfig(configs[0])
 				if err != nil {
 					d.Logger().WithError(err).Error("Failed to transform mts config")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -694,7 +691,7 @@ func GetMtsConfigByIdHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *res
 					rm, err := TransformMtsConfig(config)
 					if err != nil {
 						d.Logger().WithError(err).Error("Failed to transform mts config")
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 
@@ -723,7 +720,7 @@ func CreateMtsConfigHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest
 				_, err = processor.CreateMtsConfigAndEmit(tenantId, config)
 				if err != nil {
 					d.Logger().WithError(err).Error("Failed to create mts config")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -737,14 +734,14 @@ func CreateMtsConfigHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest
 				createdConfig, err := processor.GetMtsConfigById(tenantId, configId)
 				if err != nil {
 					d.Logger().WithError(err).Error("Failed to get created mts config")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
 				rm, err := TransformMtsConfig(createdConfig)
 				if err != nil {
 					d.Logger().WithError(err).Error("Failed to transform mts config")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -774,7 +771,7 @@ func UpdateMtsConfigHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest
 					_, err = processor.UpdateMtsConfigAndEmit(tenantId, mtsConfigId, config)
 					if err != nil {
 						d.Logger().WithError(err).Error("Failed to update mts config")
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 
@@ -782,14 +779,14 @@ func UpdateMtsConfigHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest
 					updatedConfig, err := processor.GetMtsConfigById(tenantId, mtsConfigId)
 					if err != nil {
 						d.Logger().WithError(err).Error("Failed to get updated mts config")
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 
 					rm, err := TransformMtsConfig(updatedConfig)
 					if err != nil {
 						d.Logger().WithError(err).Error("Failed to transform mts config")
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 
@@ -812,7 +809,7 @@ func DeleteMtsConfigHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest
 					err := processor.DeleteMtsConfigAndEmit(tenantId, mtsConfigId)
 					if err != nil {
 						d.Logger().WithError(err).Error("Failed to delete mts config")
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 
@@ -832,8 +829,7 @@ func SeedMtsConfigsHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.
 				result, err := processor.SeedMtsConfigs(tenantId)
 				if err != nil {
 					d.Logger().WithError(err).Error("Failed to seed mts configs")
-					w.WriteHeader(http.StatusInternalServerError)
-					json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 

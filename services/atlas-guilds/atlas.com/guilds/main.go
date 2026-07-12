@@ -67,6 +67,14 @@ func main() {
 
 	db := database.Connect(l, database.SetMigrations(guild.Migration, title.Migration, member.Migration, character.Migration, thread.Migration, reply.Migration))
 
+	server.RegisterTransientErrorClassifier(func(err error) bool {
+		if database.IsTransientConnectionError(err) {
+			database.CountTransient(err)
+			return true
+		}
+		return false
+	})
+
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	guild2.InitConsumers(l)(cmf)(consumerGroupId)
 	character2.InitConsumers(l)(cmf)(consumerGroupId)

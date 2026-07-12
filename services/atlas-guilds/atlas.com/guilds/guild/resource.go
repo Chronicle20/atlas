@@ -40,14 +40,14 @@ func handleGetGuilds(db *gorm.DB) rest.GetHandler {
 
 			gs, err := NewProcessor(d.Logger(), d.Context(), db).GetSlice(filters...)
 			if err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
 			res, err := model.SliceMap(Transform)(model.FixedProvider(gs))(model.ParallelMap())()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -65,14 +65,14 @@ func handleGetGuild(db *gorm.DB) rest.GetHandler {
 			return func(w http.ResponseWriter, r *http.Request) {
 				g, err := NewProcessor(d.Logger(), d.Context(), db).GetById(guildId)
 				if err != nil {
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
 				res, err := model.Map(Transform)(model.FixedProvider(g))()
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Creating REST model.")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 

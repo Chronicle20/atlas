@@ -49,6 +49,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) StartSession(characterId uint32, ch channel.Model) (Model, error) {
 	// First, close any existing active session (safety check)
 	_ = closeSession(p.db.WithContext(p.ctx), characterId)

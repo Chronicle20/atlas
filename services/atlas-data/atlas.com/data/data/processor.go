@@ -188,7 +188,13 @@ func StartWorker(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.D
 						l.WithError(err).Errorf("Failed to initialize setup item string registry.")
 						return err
 					}
-					err = RegisterAllData(l)(ctx)(path, filepath.Join("Item.wz", "Install"), setup.RegisterSetup(db))()
+					err = RegisterAllData(l)(ctx)(path, filepath.Join("Item.wz", "Install"), func(l logrus.FieldLogger) func(ctx context.Context) func(filePath string) error {
+						return func(ctx context.Context) func(filePath string) error {
+							return func(filePath string) error {
+								return setup.NewProcessor(l, ctx, db).RegisterSetup(filePath)
+							}
+						}
+					})()
 				} else if name == WorkerCharacterCreation {
 					err = RegisterFileData(l)(ctx)(path, filepath.Join("Etc.wz", "MakeCharInfo.img.xml"), templates.RegisterCharacterTemplate(db))()
 				} else if name == WorkerQuest {

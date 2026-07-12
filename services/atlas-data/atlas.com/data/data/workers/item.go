@@ -60,7 +60,13 @@ func (Item) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc *mini
 				}
 			}
 		}},
-		{"Install", setup.RegisterSetup(db)},
+		{"Install", func(l logrus.FieldLogger) func(ctx context.Context) func(path string) error {
+			return func(ctx context.Context) func(path string) error {
+				return func(path string) error {
+					return setup.NewProcessor(l, ctx, db).RegisterSetup(path)
+				}
+			}
+		}},
 		{"Pet", pet.RegisterPet(db)},
 	}
 	for _, c := range categories {

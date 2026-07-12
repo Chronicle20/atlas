@@ -122,8 +122,8 @@ Notes on interpreting the output:
 | `services/atlas-messages/atlas.com/messages/command/processor.go` → `command/types.go` | Gen1 | R6-rename | 24 | done |
 | `services/atlas-npc-shops/atlas.com/npc/test/processor.go` → `test/fixtures.go` | Gen1 | R6-rename | 24 | done |
 | `services/atlas-account/atlas.com/account/ban/processor.go` | Gen1 | R3 | 25 | done |
-| `services/atlas-portals/atlas.com/portals/character/processor.go` | Gen1 | R3 | 26 | pending |
-| `services/atlas-portals/atlas.com/portals/portal/processor.go` | Gen1 | R3 | 26 | pending |
+| `services/atlas-portals/atlas.com/portals/character/processor.go` | Gen1 | R3 | 26 | done |
+| `services/atlas-portals/atlas.com/portals/portal/processor.go` | Gen1 | R3 | 26 | done |
 | `services/atlas-reactors/atlas.com/reactors/reactor/data/processor.go` | Gen1 | R3 | 27 | pending |
 | `services/atlas-reactors/atlas.com/reactors/reactor/processor.go` | Gen1 | R3 | 27 | pending |
 | `services/atlas-asset-expiration/atlas.com/asset-expiration/cashshop/processor.go` | Gen1 | R3 | 28 | pending |

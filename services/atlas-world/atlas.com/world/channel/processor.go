@@ -47,6 +47,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 // AllProvider returns all channel servers for the tenant
 func (p *ProcessorImpl) AllProvider() model.Provider[[]Model] {
 	return model.FixedProvider(GetChannelRegistry().ChannelServers(p.ctx))

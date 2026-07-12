@@ -31,6 +31,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) GetWorldRates(worldId world.Id) Model {
 	return GetRegistry().GetWorldRates(p.ctx, worldId)
 }

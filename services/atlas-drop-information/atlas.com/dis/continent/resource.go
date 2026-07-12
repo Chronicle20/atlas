@@ -27,13 +27,13 @@ func handleGetContinents(d *rest.HandlerDependency, c *rest.HandlerContext) http
 		ms, err := NewProcessor(d.Logger(), d.Context(), d.DB()).GetAll()()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Retrieving continent drops.")
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteErrorResponse(d.Logger())(w)(err)
 			return
 		}
 		res, err := model.SliceMap(Transform)(model.FixedProvider(ms))(model.ParallelMap())()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Creating REST model.")
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteErrorResponse(d.Logger())(w)(err)
 			return
 		}
 

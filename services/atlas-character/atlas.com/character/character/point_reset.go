@@ -48,11 +48,17 @@ func pointResetPolicyFor(jobId job.Id) pointResetPolicy {
 	return pointResetDefaultPolicy
 }
 
-// isPointResetMagician reports whether jobId is on the magician branch — the
-// hundreds digit of job%1000 is 2 (Explorer 2xx or Cygnus Blaze Wizard 12xx).
-// This mirrors the client's branch classifier (sub_A0EC6B: job%1000/100).
+// isPointResetMagician reports whether jobId is on the magician branch, using
+// the same branch-root refs as the magician pointResetPolicy row (job.Is on a
+// branch root also matches its sub-lines). Deliberately identical to that row
+// so a character receives the INT-scaled MP loss (pointResetMagicianTakeMp)
+// IFF it also receives the magician gain/HP/min policy — never a hybrid. The
+// client's raw branch classifier (sub_A0EC6B: job%1000/100==2) additionally
+// sweeps in Evan (22xx), but Evan is v84+ and its reset policy is unverified
+// against the client, so it is left on the default policy here consistently
+// rather than given magician MP loss with beginner HP/gain values.
 func isPointResetMagician(jobId job.Id) bool {
-	return int(jobId)%1000/100 == 2
+	return job.Is(jobId, job.Id(200)) || job.Is(jobId, job.BlazeWizardStage1Id)
 }
 
 // pointResetMagicianTakeMp is the MaxMP lost when a magician resets one point

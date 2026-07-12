@@ -4,6 +4,10 @@ import (
 	"atlas-character/kafka/message"
 	character2 "atlas-character/kafka/message/character"
 	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
@@ -575,5 +579,83 @@ func TestTransferAP_Case13_Magician_MPtoSTR_IntScaledLoss(t *testing.T) {
 	evt := decodeStatusEvent[character2.StatusEventStatChangedBody](t, mb)
 	if evt.Type != character2.StatusEventTypeStatChanged {
 		t.Fatalf("expected STAT_CHANGED event, got %q", evt.Type)
+	}
+}
+
+// Case 14: Magician MP->STR with atlas-effective-stats REACHABLE. The MaxMp loss
+// must use the EFFECTIVE INT (300, incl. equipment) returned by the service, not
+// the character's base INT (100): takeMp = 3*300/40 + 30 = 52, so MaxMp 2000 ->
+// 1948 (base INT would give 37 -> 1963). This exercises the fetch, the >0 gate,
+// the uint32->uint16 conversion, and the "effective INT flows into takeMp" wiring
+// that Case 13's fallback path deliberately skips.
+func TestTransferAP_Case14_Magician_MPtoSTR_EffectiveIntUsed(t *testing.T) {
+	_, p, id := newTransferApFixture(t, entity{
+		AccountId: 1000, Name: "Case14", JobId: job.Id(200), Level: 20,
+		Strength: 4, Intelligence: 100, MaxMp: 2000, Mp: 2000, HpMpUsed: 1,
+	})
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		require.True(t, strings.HasSuffix(r.URL.Path, "/characters/"+strconv.FormatUint(uint64(id), 10)+"/stats"), "path: %s", r.URL.Path)
+		w.Header().Set("Content-Type", "application/vnd.api+json")
+		_, _ = w.Write([]byte(`{"data":{"type":"effective-stats","id":"` + strconv.FormatUint(uint64(id), 10) + `","attributes":{"intelligence":300}}}`))
+	}))
+	defer srv.Close()
+	// effective_stats resolves its base via requests.RootUrl("EFFECTIVE_STATS")
+	// -> EFFECTIVE_STATS_SERVICE_URL (trailing slash: the resource path is
+	// appended directly).
+	t.Setenv("EFFECTIVE_STATS_SERVICE_URL", srv.URL+"/")
+
+	mb := message.NewBuffer()
+	err := p.TransferAP(mb)(uuid.New(), id, channel.NewModel(0, 1), CommandDistributeApAbilityMp, CommandDistributeApAbilityStrength)
+	if err != nil {
+		t.Fatalf("TransferAP returned error: %v", err)
+	}
+
+	c, err := p.GetById()(id)
+	if err != nil {
+		t.Fatalf("GetById failed: %v", err)
+	}
+	if c.MaxMp() != 1948 {
+		t.Errorf("expected MaxMp 1948 (2000 - (3*300/40+30=52) using EFFECTIVE INT), got %d", c.MaxMp())
+	}
+	if c.Mp() != 1948 {
+		t.Errorf("expected Mp 1948, got %d", c.Mp())
+	}
+	if c.Strength() != 5 {
+		t.Errorf("expected Strength 5, got %d", c.Strength())
+	}
+	if c.HpMpUsed() != 0 {
+		t.Errorf("expected HpMpUsed 0, got %d", c.HpMpUsed())
+	}
+}
+
+// Case 15 (guards F5): Low-level MP->STR where pointResetMinMp is negative
+// (pirate line: 18*L - 55 = -37 at level 1). The floor check passes even though
+// takeMp (16) exceeds MaxMp (10), so the MaxMp subtraction must clamp to 0
+// rather than underflow the uint16 to ~65530.
+func TestTransferAP_Case15_MPtoSTR_MaxMpUnderflowClampedToZero(t *testing.T) {
+	_, p, id := newTransferApFixture(t, entity{
+		AccountId: 1000, Name: "Case15", JobId: job.Id(500), Level: 1,
+		Strength: 4, MaxMp: 10, Mp: 10, HpMpUsed: 1,
+	})
+
+	mb := message.NewBuffer()
+	err := p.TransferAP(mb)(uuid.New(), id, channel.NewModel(0, 1), CommandDistributeApAbilityMp, CommandDistributeApAbilityStrength)
+	if err != nil {
+		t.Fatalf("TransferAP returned error: %v", err)
+	}
+
+	c, err := p.GetById()(id)
+	if err != nil {
+		t.Fatalf("GetById failed: %v", err)
+	}
+	if c.MaxMp() != 0 {
+		t.Errorf("expected MaxMp clamped to 0 (not underflowed), got %d", c.MaxMp())
+	}
+	if c.Mp() != 0 {
+		t.Errorf("expected Mp clamped to 0, got %d", c.Mp())
+	}
+	if c.Strength() != 5 {
+		t.Errorf("expected Strength 5, got %d", c.Strength())
 	}
 }

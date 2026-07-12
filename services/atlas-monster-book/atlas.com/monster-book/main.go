@@ -54,6 +54,14 @@ func main() {
 
 	db := database.Connect(l, database.SetMigrations(collection.Migration, card.Migration))
 
+	server.RegisterTransientErrorClassifier(func(err error) bool {
+		if database.IsTransientConnectionError(err) {
+			database.CountTransient(err)
+			return true
+		}
+		return false
+	})
+
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	character2.InitConsumers(l)(cmf)(consumerGroupId)
 	mbconsumer.InitConsumers(l)(cmf)(consumerGroupId)

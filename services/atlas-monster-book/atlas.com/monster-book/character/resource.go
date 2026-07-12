@@ -52,13 +52,13 @@ func handleGet(db *gorm.DB) rest.GetHandler {
 					// ErrRecordNotFound, so any error here is a real DB
 					// failure.
 					d.Logger().WithError(err).Errorf("Failed to load monster-book collection for character %d.", characterId)
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 				rm, err := collection.Transform(m)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Failed to transform collection model for character %d.", characterId)
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 				server.MarshalResponse[collection.RestModel](d.Logger())(w)(c.ServerInformation())(r.URL.Query())(rm)
@@ -80,19 +80,19 @@ func handlePatch(db *gorm.DB) rest.InputHandler[collection.PatchInput] {
 						return
 					}
 					d.Logger().WithError(err).Errorf("SetCover failed for character %d cover %d.", characterId, in.CoverCardId)
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 				m, err := p.GetByCharacterId(characterId)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Failed to reload collection after SetCover for character %d.", characterId)
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 				rm, err := collection.Transform(m)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Failed to transform collection model for character %d.", characterId)
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 				server.MarshalResponse[collection.RestModel](d.Logger())(w)(c.ServerInformation())(r.URL.Query())(rm)
@@ -110,7 +110,7 @@ func handleListCards(db *gorm.DB) rest.GetHandler {
 				ms, err := cp.GetByCharacterId(characterId)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Failed to list cards for character %d.", characterId)
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 				if v := r.URL.Query().Get("filter[isSpecial]"); v != "" {
@@ -142,7 +142,7 @@ func handleListCards(db *gorm.DB) rest.GetHandler {
 				res, err := model.SliceMap(card.Transform)(model.FixedProvider(ms))()()
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Failed to transform cards for character %d.", characterId)
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 				server.MarshalResponse[[]card.RestModel](d.Logger())(w)(c.ServerInformation())(r.URL.Query())(res)
@@ -166,13 +166,13 @@ func handleGetCard(db *gorm.DB) rest.GetHandler {
 							return
 						}
 						d.Logger().WithError(err).Errorf("Failed to load card %d for character %d.", cardId, characterId)
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 					rm, err := card.Transform(m)
 					if err != nil {
 						d.Logger().WithError(err).Errorf("Failed to transform card %d for character %d.", cardId, characterId)
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 					server.MarshalResponse[card.RestModel](d.Logger())(w)(c.ServerInformation())(r.URL.Query())(rm)

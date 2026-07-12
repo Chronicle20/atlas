@@ -64,6 +64,8 @@ func NewProcessor(l logrus.FieldLogger) Processor {
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 // NewProcessorWithClients is the test seam — allows injection of mocks.
 func NewProcessorWithClients(l logrus.FieldLogger, pc configuration.PresetClient, nc character.NameValidityClient, dc data.Processor) Processor {
 	return &ProcessorImpl{l: l, presetClient: pc, nameClient: nc, dataClient: dc}

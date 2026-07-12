@@ -677,3 +677,53 @@ Not run: `docker buildx bake atlas-mts` (read-only review; go.mod added `atlas-o
 ## Recommendation
 
 Safe to KEEP on this branch: nothing regresses today, all gates are green, and the status-event migration is correct. Before task-119 makes `ExecuteTransaction` a real transaction, resolve Finding 1 so the `PlaceBid`/`Cancel` escrow saga commands are either enqueued tx-bound via the outbox saga emitter (atlas-quest precedent) or emitted post-commit, and consider extending the outbox-guard to follow calls into local processor packages so a transitive direct-producer-in-tx emit is caught mechanically rather than by review.
+
+---
+
+# Post-Escrow-Saga-Fix Re-Review (plan-adherence) — 2026-07-12
+
+**Verdict: PASS.** The single Important latent finding from the prior review (Finding 1 — `PlaceBid`/`Cancel` escrow saga commands emitted on the DIRECT producer from inside the migrated outer tx) is resolved by commit `b7b6f3a59e`. Both money-critical handlers now route their escrow saga through a tx-bound outbox emitter, the drained message is byte-identical to the direct path, the fix does not over-reach into the post-commit saga methods, and the proving test is genuine. All builds/tests/guards are green.
+
+## Evidence
+
+**1. Escrow saga is transactional in BOTH affected handlers (same tx as the write + status event).**
+- `handleCancelListing`: `kafka/consumer/mts/consumer.go:205-206` — inside `database.ExecuteTransaction(db, func(tx *gorm.DB) error {` the processor is built as `listing.NewProcessor(l, ctx, tx, listing.WithSagaEmitter(sagaproc.NewOutboxEmitter(l, ctx, tx)))`. The emitter's `tx` is the closure parameter, not the outer `db`.
+- `handlePlaceBid`: `kafka/consumer/mts/consumer.go:378-379` — same construction inside its own `ExecuteTransaction` closure.
+- `NewProcessor` (`listing/processor.go:298-306`) assigns `p.db = tx` and `WithSagaEmitter` overrides `p.emitter`, so DB writes, the outbox status event, and the escrow saga all ride the identical `*gorm.DB` handle.
+- Reachability confirmed: `handleCancelListing → CancelBySerial (processor.go:451) → CancelForSeller (415) → Cancel (387)`, whose escrow-release emit is `p.emitter.Create(...)` at `processor.go:406`. `handlePlaceBid → PlaceBid (1027)`, whose escrow-hold emit is at `processor.go:1140` and prior-bidder release at `1161`. All three now go through the injected outbox emitter.
+
+**2. Outbox emitter is byte-correct.**
+- `saga/outbox_emitter.go:45-46`: `OutboxEmitter.Create` = `outbox.EmitProvider(e.l, e.ctx, e.tx)(msgsaga.EnvCommandTopic)(CreateCommandProvider(s))`.
+- Direct path `saga/processor.go:27-28`: `ProcessorImpl.Create` = `producer.ProviderImpl(p.l)(p.ctx)(saga.EnvCommandTopic)(CreateCommandProvider(s))`.
+- Same topic token (`EnvCommandTopic`, from the shared `atlas-mts/kafka/message/saga` package — `saga` and `msgsaga` are the same import) and the identical payload provider `CreateCommandProvider(s)`. The drainer publishes the same `kafka.Message` the orchestrator expects; only the write path (outbox row vs. direct Kafka) differs.
+
+**3. No over-reach / no regression.**
+- Only two consumer sites use the outbox saga emitter (`consumer.go:206` CancelBySerial, `consumer.go:379` PlaceBid). Every other saga-emitting method keeps the default direct emitter on the base `db` (post-commit):
+  - `List` — `consumer.go:113` `NewProcessor(l, ctx, db)`, emit at `processor.go:839`.
+  - `Buy` — `consumer.go:309/320` `NewProcessor(l, ctx, db)`, emit at `processor.go:953`.
+  - `ReleaseHighBidEscrow` — `consumer.go:337` (custody) `NewProcessor(l, ctx, db)`, emit at `processor.go:560`.
+  - `SettleAuction` — `task/periodic.go:126/138` `NewProcessor(l, sweepCtx, db, opts...)`; production `Sweep` passes no opts, so the default direct emitter is used (emit at `processor.go:1316`).
+- Move handler `handleMtsMoveListingToHolding` (custody `consumer.go`) correctly needs no fix: it calls `SettleMove` (`listing/processor_custody.go:227`), which contains no `emitter.Create` call (verified — the escrow emit call sites are all in `processor.go`), and its sibling-offer/high-bid-escrow releases run post-commit on the base `db` (`consumer.go:317`, `:337`). The only change to that file in this commit is comment cleanup.
+
+**4. The proving test is genuine.**
+- `kafka/consumer/mts/consumer_test.go` — `TestPlaceBid_Success_RoutesEscrowSagaAndBidPlacedThroughOutbox` seeds an active AUCTION via the Builder (`SetListValue(1000)`, `SetCurrentBid(900)`, `SetMinIncrement(100)`), then bids `1000`, which clears the floor and wins. It asserts: (a) `len(rp.events) == 0` on the direct producer; (b) exactly one `BID_PLACED` outbox event scoped to the bid's `transactionId`; (c) `outboxRowsOnTopic(db, msgsaga.EnvCommandTopic) == 1` — the escrow-hold saga command landed in the outbox on the saga command topic. First bid → only the hold emit (`processor.go:1140`) fires, no prior-release, so exactly 1 is the correct count. Non-vacuous. Observed PASS with the runtime log confirming the `COMMAND_TOPIC_SAGA` and `EVENT_TOPIC_MTS_STATUS` tokens are the stored row topics.
+
+## Test / Guard Results
+
+| Check | Command | Result |
+|-------|---------|--------|
+| Build | `go build ./...` (atlas-mts) | PASS (exit 0) |
+| Vet | `go vet ./...` (atlas-mts) | PASS (exit 0) |
+| Tests (race) | `go test -race ./... -count=1` (atlas-mts) | PASS (all packages ok) |
+| Proving test | `-run TestPlaceBid_Success_RoutesEscrowSagaAndBidPlacedThroughOutbox -v` | PASS |
+| outbox-guard | `./tools/outbox-guard.sh` (repo root) | PASS (exit 0) |
+| goroutine-guard | `./tools/goroutine-guard.sh` (repo root) | PASS (exit 0) |
+
+## Residual Notes
+
+- Not run (read-only review): `docker buildx bake atlas-mts`. No new shared lib COPY line is added by this commit (`atlas-outbox` was already a dependency of the migrated status-event path), so bake risk is unchanged from the prior review.
+- The prior review's suggestion to teach `outbox-guard` to follow calls transitively into local processor packages still stands as a hardening idea — the guard passes here because the fix is correct, not because the guard would have caught the original transitive leak. This is a tooling nicety, not a blocker.
+
+## Recommendation
+
+The whole atlas-mts outbox migration is now safe to keep. Finding 1 is fully resolved and armed correctly ahead of task-119 making `ExecuteTransaction` a real transaction. No NEEDS_REVIEW items remain from this branch.

@@ -168,6 +168,24 @@ Notes on interpreting the output:
 
 **Classification counts (this scan):** CP-2 20 (18 pure R1 + 2 Gen2.5-shaped), Gen2 58, Gen2.5 5 (3 pure + 2 also-CP-2), Gen1 50 (45 R3 + 2 R4-client + 3 R6-rename). Total 131 rows — matches plan-time exactly; zero drift.
 
+## Scan after Phase B
+
+Re-ran the Task 1 classification scan (verbatim, from the worktree root) after Task 23 (atlas-channel group 5, the last Phase B task) landed.
+
+**Before Phase B (plan-time, Task 1):** 131 non-Gen3-conforming rows (CP-2 20, Gen2 58, Gen2.5 5, Gen1 50 — see counts above).
+
+**After Phase B (this scan):** 48 non-Gen3-conforming files total —
+- CP-2 (`func NewProcessor(` returning `*ProcessorImpl`): 0 files.
+- Gen2 (`type Processor struct`): 1 file — `services/atlas-monster-death/atlas.com/monster/data/equipment/statistics/processor.go` (inventory row, task 31, Phase C).
+- Gen2.5 (`ProcessorImpl` with no interface in the package): 0 files.
+- Gen1 (no `Processor` type in the package at all): 47 files.
+
+All 48 files cross-checked 1:1 against `inventory.md`'s remaining `pending` rows (47 rows carry task numbers 24–35; the Gen2 `atlas-monster-death` statistics file is row task 31) — every non-conforming file found by the re-scan is already tracked to a Phase C task (25–35) or the Task 24 R6-rename group; zero drift, zero untracked files. Every Phase A (Tasks 2–7) and Phase B (Tasks 8–23) target file is confirmed Gen3-conforming (not present in any scan bucket).
+
+The 2 R4 clients (`atlas-configurations/data/processor.go`, `atlas-character-factory/data/processor.go`) do not appear in any bucket — they already carry `type Processor interface` + `NewProcessor(l) Processor`, the sanctioned R4 shape, so the scan correctly treats them as conforming.
+
+Phase C scope confirmed as exactly: atlas-account (`ban`, task 25), atlas-portals (`character`, `portal`, tasks 26), atlas-reactors (`reactor`, `reactor/data`, task 27), atlas-asset-expiration (`cashshop`, `character`, `data`, `inventory`, `storage`, tasks 28), atlas-monsters (`map`, `monster/drop`, `monster/information`, `monster/mobskill`, task 29), atlas-rates (`buffs`, `data/cash`, `data/equipment`, `inventory`, `session`, task 30), atlas-monster-death (`character`, `monster/drop/position`, `monster/drop`, `monster`, `party`, `data/equipment/statistics`, tasks 31), atlas-data (~28 files under `data/`, tasks 32–35) + the 3 R6-rename files (task 24: `atlas-gachapons/test/processor.go`, `atlas-messages/command/processor.go`, `atlas-npc-shops/test/processor.go`) + the 2 R4 clients (already converted, sanctioned, not pending).
+
 ## Sanctioned shape deviations
 
 (Populated by Tasks 14 and 15 when the R4 conversions land — the two ctx-per-call REST clients keep `NewProcessor(l) Processor` without a `ctx` parameter, per design §4.2.)

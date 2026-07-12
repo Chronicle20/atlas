@@ -92,7 +92,7 @@ type Processor interface {
 	DeductExperience(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, channel channel.Model, amount uint32) error
 	AwardLevelAndEmit(transactionId uuid.UUID, characterId uint32, channel channel.Model, level byte) error
 	AwardLevel(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, channel channel.Model, level byte) error
-	Move(characterId uint32, x int16, y int16, stance byte) error
+	Move(characterId uint32, x int16, y int16, fh int16, stance byte) error
 	RequestChangeMeso(transactionId uuid.UUID, characterId uint32, amount int32, actorId uint32, actorType string, showEffect bool) error
 	AttemptMesoPickUp(transactionId uuid.UUID, field field.Model, characterId uint32, dropId uint32, meso uint32) error
 	RequestDropMeso(transactionId uuid.UUID, field field.Model, characterId uint32, amount uint32) error
@@ -725,8 +725,8 @@ func (p *ProcessorImpl) AwardLevel(mb *message.Buffer) func(transactionId uuid.U
 	}
 }
 
-func (p *ProcessorImpl) Move(characterId uint32, x int16, y int16, stance byte) error {
-	GetTemporalRegistry().Update(p.ctx, tenant.MustFromContext(p.ctx), characterId, x, y, stance)
+func (p *ProcessorImpl) Move(characterId uint32, x int16, y int16, fh int16, stance byte) error {
+	GetTemporalRegistry().Update(p.ctx, tenant.MustFromContext(p.ctx), characterId, x, y, fh, stance)
 	return nil
 }
 

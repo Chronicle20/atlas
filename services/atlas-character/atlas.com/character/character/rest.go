@@ -46,6 +46,7 @@ type RestModel struct {
 	Gm     *int  `json:"gm"`
 	X      int16 `json:"x"`
 	Y      int16 `json:"y"`
+	Fh     int16 `json:"fh"`
 	Stance byte  `json:"stance"`
 }
 
@@ -113,6 +114,7 @@ func transformWithTemporal(m Model, td temporalData) RestModel {
 		Gm:                 &gm,
 		X:                  td.X(),
 		Y:                  td.Y(),
+		Fh:                 td.Fh(),
 		Stance:             td.Stance(),
 	}
 	return rm

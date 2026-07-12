@@ -63,6 +63,36 @@ func (p *Processor) AllInChannelProvider(worldId world.Id, channelId channel.Id)
 	return result, nil
 }
 
+// InFieldModelProvider returns local sessions whose field exactly matches f
+// (world, channel, map, instance) and which have an assigned character.
+func (p *Processor) InFieldModelProvider(f field.Model) model.Provider[[]Model] {
+	return func() ([]Model, error) {
+		all := getRegistry().GetInTenant(p.t.Id())
+		result := make([]Model, 0)
+		for _, s := range all {
+			if s.CharacterId() != 0 && s.Field().Equals(f) {
+				result = append(result, s)
+			}
+		}
+		return result, nil
+	}
+}
+
+// InMapAllInstancesModelProvider returns local sessions on the given
+// world/channel/map across all instances, with an assigned character.
+func (p *Processor) InMapAllInstancesModelProvider(worldId world.Id, channelId channel.Id, mapId _map.Id) model.Provider[[]Model] {
+	return func() ([]Model, error) {
+		all := getRegistry().GetInTenant(p.t.Id())
+		result := make([]Model, 0)
+		for _, s := range all {
+			if s.CharacterId() != 0 && s.WorldId() == worldId && s.ChannelId() == channelId && s.MapId() == mapId {
+				result = append(result, s)
+			}
+		}
+		return result, nil
+	}
+}
+
 func (p *Processor) ByIdModelProvider(sessionId uuid.UUID) model.Provider[Model] {
 	t := tenant.MustFromContext(p.ctx)
 	return func() (Model, error) {
@@ -217,17 +247,6 @@ func (p *Processor) SetCharacterId(id uuid.UUID, characterId uint32) Model {
 	var ok bool
 	if s, ok = getRegistry().Get(p.t.Id(), id); ok {
 		s = s.setCharacterId(characterId)
-		getRegistry().Update(p.t.Id(), s)
-		return s
-	}
-	return s
-}
-
-func (p *Processor) SetMapId(id uuid.UUID, mapId _map.Id) Model {
-	s := Model{}
-	var ok bool
-	if s, ok = getRegistry().Get(p.t.Id(), id); ok {
-		s = s.setMapId(mapId)
 		getRegistry().Update(p.t.Id(), s)
 		return s
 	}

@@ -32,7 +32,7 @@ func handleGetServiceConfigurations(db *gorm.DB) rest.GetHandler {
 			cts, err := NewProcessor(d.Logger(), d.Context(), db).GetAll()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Unable to get service configurations.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -50,7 +50,7 @@ func handleGetServiceConfiguration(db *gorm.DB) rest.GetHandler {
 				cts, err := NewProcessor(d.Logger(), d.Context(), db).GetById(serviceId)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Unable to get service configuration.")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -74,7 +74,7 @@ func handleCreateServiceConfiguration(db *gorm.DB) rest.InputHandler[service.Inp
 			serviceId, err := NewProcessor(d.Logger(), d.Context(), db).Create(input)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Unable to create service configuration.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -85,7 +85,7 @@ func handleCreateServiceConfiguration(db *gorm.DB) rest.InputHandler[service.Inp
 			svc, err := NewProcessor(d.Logger(), d.Context(), db).GetById(serviceId)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Unable to get created service configuration.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -110,7 +110,7 @@ func handleUpdateServiceConfiguration(db *gorm.DB) rest.InputHandler[service.Inp
 				err := NewProcessor(d.Logger(), d.Context(), db).UpdateById(serviceId, input)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Unable to update service configuration.")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -118,7 +118,7 @@ func handleUpdateServiceConfiguration(db *gorm.DB) rest.InputHandler[service.Inp
 				svc, err := NewProcessor(d.Logger(), d.Context(), db).GetById(serviceId)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Unable to get updated service configuration.")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -137,7 +137,7 @@ func handleDeleteServiceConfiguration(db *gorm.DB) rest.GetHandler {
 				err := NewProcessor(d.Logger(), d.Context(), db).DeleteById(serviceId)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Unable to delete service configuration.")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 				w.WriteHeader(http.StatusNoContent)

@@ -36,7 +36,7 @@ func handleCreateConfigurationTemplate(db *gorm.DB) rest.InputHandler[RestModel]
 			templateId, err := NewProcessor(d.Logger(), d.Context(), db).Create(input)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Unable to create configuration template.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -64,7 +64,7 @@ func handleGetConfigurationTemplate(db *gorm.DB) rest.GetHandler {
 						cts, err := NewProcessor(d.Logger(), d.Context(), db).GetByRegionAndVersion(region, majorVersion, minorVersion)
 						if err != nil {
 							d.Logger().WithError(err).Errorf("Unable to get configuration templates.")
-							w.WriteHeader(http.StatusInternalServerError)
+							server.WriteErrorResponse(d.Logger())(w)(err)
 							return
 						}
 
@@ -84,7 +84,7 @@ func handleGetConfigurationTemplates(db *gorm.DB) rest.GetHandler {
 			cts, err := NewProcessor(d.Logger(), d.Context(), db).GetAll()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Unable to get configuration templates.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -102,7 +102,7 @@ func handleGetConfigurationTemplateById(db *gorm.DB) rest.GetHandler {
 				cts, err := NewProcessor(d.Logger(), d.Context(), db).GetById(templateId)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Unable to get configuration templates.")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -130,7 +130,7 @@ func handleUpdateConfigurationTemplate(db *gorm.DB) rest.InputHandler[RestModel]
 						return
 					}
 					d.Logger().WithError(err).Errorf("Unable to update configuration template.")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 			}
@@ -145,7 +145,7 @@ func handleDeleteConfigurationTemplate(db *gorm.DB) rest.GetHandler {
 				err := NewProcessor(d.Logger(), d.Context(), db).DeleteById(templateId)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Unable to delete configuration template.")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 				}
 			}
 		})

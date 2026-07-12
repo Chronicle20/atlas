@@ -41,7 +41,7 @@ Notes on interpreting the output:
 | `services/atlas-summons/atlas.com/summons/inventory/processor.go` | CP-2 | R1 | 3 | done |
 | `services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/validation/processor.go` | CP-2 | R1 | 4 | done |
 | `services/atlas-pets/atlas.com/pets/pet/processor.go` | CP-2 | R1 | 5 | done |
-| `services/atlas-npc-conversations/atlas.com/npc/validation/processor.go` | CP-2 | R1 | 6 | pending |
+| `services/atlas-npc-conversations/atlas.com/npc/validation/processor.go` | CP-2 | R1 | 6 | done |
 | `services/atlas-mounts/atlas.com/mounts/mount/processor.go` | CP-2 | R1 | 7 | pending |
 | `services/atlas-chairs/atlas.com/chairs/validation/processor.go` | Gen2 | R2 | 8 | pending |
 | `services/atlas-storage/atlas.com/storage/asset/processor.go` | Gen2 | R2 | 9 | pending |

@@ -8,6 +8,7 @@ import (
 	producer2 "atlas-mts/kafka/producer"
 	mtsproducer "atlas-mts/kafka/producer/mts"
 	"atlas-mts/listing"
+	sagaproc "atlas-mts/saga"
 	"atlas-mts/transaction"
 	"atlas-mts/wish"
 	"context"
@@ -202,7 +203,7 @@ func handleCancelListing(pf providerFn) func(db *gorm.DB) message.Handler[mts.Co
 			var res listing.CancelResult
 			won := false
 			terr := database.ExecuteTransaction(db, func(tx *gorm.DB) error {
-				r, cerr := listing.NewProcessor(l, ctx, tx).CancelBySerial(world.Id(b.WorldId), b.Serial, b.SellerId)
+				r, cerr := listing.NewProcessor(l, ctx, tx, listing.WithSagaEmitter(sagaproc.NewOutboxEmitter(l, ctx, tx))).CancelBySerial(world.Id(b.WorldId), b.Serial, b.SellerId)
 				if cerr != nil {
 					return cerr
 				}
@@ -375,7 +376,7 @@ func handlePlaceBid(pf providerFn) func(db *gorm.DB) message.Handler[mts.Command
 			// same tx as the bid, so they publish iff the bid commits.
 			var res listing.BidResult
 			terr := database.ExecuteTransaction(db, func(tx *gorm.DB) error {
-				r, berr := listing.NewProcessor(l, ctx, tx).PlaceBid(listing.BidRequest{
+				r, berr := listing.NewProcessor(l, ctx, tx, listing.WithSagaEmitter(sagaproc.NewOutboxEmitter(l, ctx, tx))).PlaceBid(listing.BidRequest{
 					WorldId:         world.Id(b.WorldId),
 					ListingId:       lm.Id(),
 					BidderId:        b.BidderId,

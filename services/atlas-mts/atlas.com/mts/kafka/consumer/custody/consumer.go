@@ -257,13 +257,6 @@ func handleMtsMoveListingToHolding(pf providerFn) func(db *gorm.DB) message.Hand
 			}
 			b := c.Body
 
-			// The settle tx (load listing, conditional ->sold transition, single-custody
-			// race guard, buyer-holding create, both parties' history rows) lives in the
-			// listing processor; this handler owns only the Kafka acks and the
-			// post-commit offer/escrow side-effects (both emit Kafka). The result carries
-			// what those need: the buyer holding id (MOVED ack), the sold item id +
-			// seller (LISTING_SOLD), and the sale type + fulfilled want-ad serial (offer
-			// side-effects).
 			p := pf(ctx)
 
 			// The settle tx (load listing, conditional ->sold transition, single-custody

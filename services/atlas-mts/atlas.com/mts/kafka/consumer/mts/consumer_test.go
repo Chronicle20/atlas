@@ -1,8 +1,10 @@
 package mts
 
 import (
+	"atlas-mts/bid"
 	"atlas-mts/holding"
 	"atlas-mts/kafka/message/mts"
+	msgsaga "atlas-mts/kafka/message/saga"
 	"atlas-mts/listing"
 	"atlas-mts/test"
 	"atlas-mts/transaction"
@@ -409,6 +411,92 @@ func newBidCommand(transactionId uuid.UUID, serial uint32, bidderId uint32, amou
 			BidderAccountId: bidderId + 1000,
 			Amount:          amount,
 		},
+	}
+}
+
+// seedActiveAuction persists an active AUCTION listing with no prior bidder, so a
+// first bid at listValue clears the floor and wins.
+func seedActiveAuction(t *testing.T, db *gorm.DB, ctx context.Context, listingId uuid.UUID, sellerId uint32) listing.Model {
+	t.Helper()
+	m, err := listing.NewBuilder(test.TestTenantId, 0, sellerId).
+		SetId(listingId).
+		SetSellerName("Seller").
+		SetSaleType(listing.SaleTypeAuction).
+		SetState(listing.StateActive).
+		SetTemplateId(1302000).
+		SetQuantity(1).
+		SetWeaponAttack(17).
+		SetSlots(7).
+		SetLevel(1).
+		SetListValue(1000).
+		SetCurrentBid(900).
+		SetMinIncrement(100).
+		SetCommissionRate(0.10).
+		SetCategory("equip").
+		SetSubCategory("onehand").
+		Build()
+	if err != nil {
+		t.Fatalf("build auction: %v", err)
+	}
+	stored, err := listing.CreateListing(db.WithContext(ctx), m)
+	if err != nil {
+		t.Fatalf("seed auction: %v", err)
+	}
+	return stored
+}
+
+// outboxRowsOnTopic counts outbox rows enqueued for a given (env-token) topic.
+// The env vars are unset in tests, so outbox.EmitProvider stores the raw token
+// (e.g. "COMMAND_TOPIC_SAGA") as the row's topic.
+func outboxRowsOnTopic(t *testing.T, db *gorm.DB, topic string) int {
+	t.Helper()
+	var n int64
+	if err := db.Model(&outbox.Entity{}).Where("topic = ?", topic).Count(&n).Error; err != nil {
+		t.Fatalf("count outbox rows on %s: %v", topic, err)
+	}
+	return int(n)
+}
+
+// TestPlaceBid_Success_RoutesEscrowSagaAndBidPlacedThroughOutbox pins the
+// task-114 fix for the money-critical escrow path: a winning bid enqueues BOTH
+// its BID_PLACED status event AND its cross-service escrow-hold saga command as
+// outbox rows on the bid's transaction, and emits NOTHING on the direct producer.
+// Pre-fix, wrapping listing.PlaceBid in the handler's outer tx pulled its escrow
+// saga (which PlaceBid fires after its own write) onto the direct producer INSIDE
+// the tx — so a rolled-back bid would orphan an escrow move against it once
+// ExecuteTransaction is real (task-119). Routing the saga through the tx-bound
+// outbox keeps it in lockstep with the commit.
+func TestPlaceBid_Success_RoutesEscrowSagaAndBidPlacedThroughOutbox(t *testing.T) {
+	db := test.SetupTestDB(t, listing.Migration, holding.Migration, bid.Migration, wish.Migration, outbox.Migration)
+	ctx := test.CreateTestContext()
+	l := logrus.New()
+
+	listingId := uuid.New()
+	const sellerId = uint32(5551001)
+	const bidderId = uint32(5551002)
+	seeded := seedActiveAuction(t, db, ctx, listingId, sellerId)
+
+	transactionId := uuid.New()
+	rp := &recordingProducer{}
+	handlePlaceBid(rp.provider())(db)(l, ctx, newBidCommand(transactionId, seeded.Serial(), bidderId, 1000))
+
+	// Nothing on the DIRECT producer: a winning first bid has no failure ack, and
+	// both BID_PLACED and the escrow saga are now transactional (outbox).
+	if len(rp.events) != 0 {
+		t.Fatalf("expected no direct-producer emits on a winning bid, got %v", rp.events)
+	}
+
+	// BID_PLACED landed in the outbox (scoped to the bid's transactionId; the
+	// escrow saga carries its own escrowTxnId and is excluded here).
+	evts := allEvents(t, db, rp, transactionId)
+	if len(evts) != 1 || evts[0].eventType != mts.StatusEventTypeBidPlaced {
+		t.Fatalf("expected exactly 1 BID_PLACED outbox event, got %v", evts)
+	}
+
+	// The escrow-hold saga command ALSO landed in the outbox (command topic), so
+	// it publishes iff the bid commits — the money-critical fix.
+	if got := outboxRowsOnTopic(t, db, msgsaga.EnvCommandTopic); got != 1 {
+		t.Fatalf("expected exactly 1 escrow saga command in the outbox, got %d", got)
 	}
 }
 

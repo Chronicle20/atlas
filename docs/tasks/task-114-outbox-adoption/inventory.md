@@ -2282,6 +2282,24 @@ call and its SUCCESS emits in one outer `database.ExecuteTransaction`, threading
 - `handlePlaceBid` — the bid (`listing.PlaceBid`: escrow hold, currentBid
   advance, prior-escrow release) + `BID_PLACED` (+ optional `OUTBID`) status
   events in one tx.
+
+  **Escrow saga routing (post-review fix).** `listing.PlaceBid` and
+  `listing.Cancel` fire their cross-service escrow-hold/-release **saga
+  commands** (`MtsBidEscrow`) AFTER their own internal write. Pre-migration those
+  fired post-commit (safe). Once these methods run inside the handler's outer tx
+  (so the status event can be enqueued atomically), a direct saga emit would fire
+  BEFORE the outer commit — a rolled-back bid/cancel would then orphan an escrow
+  move against it (the money-losing direction), armed the moment task-119 makes
+  `ExecuteTransaction` real. Fixed by injecting a tx-bound outbox saga emitter
+  (`saga.NewOutboxEmitter(l, ctx, tx)`, new `saga/outbox_emitter.go`) via
+  `listing.WithSagaEmitter` when constructing the tx-scoped processor in both
+  handlers, so the escrow saga is enqueued as an outbox row and publishes iff the
+  tx commits — the atlas-quest `NewOutboxEventEmitter(tx).EmitSaga` pattern.
+  Guarded by `TestPlaceBid_Success_RoutesEscrowSagaAndBidPlacedThroughOutbox`
+  (asserts the escrow command lands on the outbox command topic and nothing on
+  the direct producer). The other saga-emitting processor methods (`List`, `Buy`,
+  `SettleAuction`, `ReleaseHighBidEscrow`) run OUTSIDE any migrated tx (post-commit
+  on the base `db`), so they keep the direct path unchanged.
 - `handleRegisterWish` — the wish row create (`wish.RegisterWish`) + `WISH_ADDED`
   in one tx.
 - `handleRemoveWish` — the read-then-delete (`wish.RemoveWish`) + `WISH_REMOVED`

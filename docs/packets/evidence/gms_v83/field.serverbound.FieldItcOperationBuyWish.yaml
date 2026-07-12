@@ -1,0 +1,10 @@
+packet: field/serverbound/FieldItcOperationBuyWish
+direction: serverbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CITC::OnBuyWish
+    address: "0x59fa94"
+    decompile_sha256: 24b39c784cfc4e4909dba0196924dd7d022a19451ddeb2027062d08396dfa2ae
+verifies:
+    - libs/atlas-packet/field/serverbound/itc_operation_test.go#TestItcOperationBuyWishByteOutput_v83

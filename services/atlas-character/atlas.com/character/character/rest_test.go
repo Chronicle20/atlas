@@ -115,7 +115,7 @@ func TestTransformExtractGmField(t *testing.T) {
 		t.Fatalf("Failed to transform model to rest model: %v", err)
 	}
 
-	if restModel.Gm != im.GM() {
+	if restModel.Gm == nil || *restModel.Gm != im.GM() {
 		t.Fatalf("Transform method failed to map gm field correctly. Expected: %v, Got: %v", im.GM(), restModel.Gm)
 	}
 

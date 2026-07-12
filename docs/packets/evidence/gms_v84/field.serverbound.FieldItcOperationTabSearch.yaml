@@ -1,0 +1,10 @@
+packet: field/serverbound/FieldItcOperationTabSearch
+direction: serverbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CITCWnd_Tab::OnButtonClicked
+    address: "0x5c77ca"
+    decompile_sha256: 92ea945d1f2e386dce62ac34d1776f4d0041968e60de440486ae0db57002dba1
+verifies:
+    - libs/atlas-packet/field/serverbound/itc_operation_test.go#TestItcOperationTabSearchByteOutput_v84

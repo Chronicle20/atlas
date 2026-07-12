@@ -74,6 +74,12 @@ var loadPartyMemberFunc = func(l logrus.FieldLogger, ctx context.Context, member
 	return character.NewProcessor(l, ctx).GetById()(memberId)
 }
 
+// loadMapPlayerFunc is the per-player character-load seam (GM-variant map-wide
+// selection) tests can replace.
+var loadMapPlayerFunc = func(l logrus.FieldLogger, ctx context.Context, characterId uint32) (character.Model, error) {
+	return character.NewProcessor(l, ctx).GetById()(characterId)
+}
+
 // SelectInRangePartyMembers returns party members other than the
 // caster that satisfy all of:
 //   - the bitmap bit for their party slot is set
@@ -101,7 +107,66 @@ func SelectInRangePartyMembers(
 		// Missing rectangle — caster-only fallback.
 		return nil
 	}
-	return selectPartyMembers(l, ctx, f, casterId, casterX, casterY, e, memberBitmap, true)
+	return selectPartyMembers(l, ctx, f, casterId, casterX, casterY, e, memberBitmap, true, false)
+}
+
+// SelectDeadInRangePartyMembers is the dead-only counterpart of
+// SelectInRangePartyMembers: same bitmap / same-channel-map / live-session /
+// LT-RB-rectangle filters, but keeps only members with Hp()==0. Used by Bishop
+// Resurrection. Missing rectangle returns nil (no one to revive in range).
+func SelectDeadInRangePartyMembers(
+	l logrus.FieldLogger, ctx context.Context,
+	f field.Model, casterId uint32, casterX, casterY int16,
+	e effect.Model, memberBitmap byte,
+) []PartyRecipient {
+	lt, rb := e.LT(), e.RB()
+	if lt.X() == 0 && lt.Y() == 0 && rb.X() == 0 && rb.Y() == 0 {
+		return nil
+	}
+	return selectPartyMembers(l, ctx, f, casterId, casterX, casterY, e, memberBitmap, true, true)
+}
+
+// SelectDeadInRangeMapPlayers returns every dead player (Hp()==0) other than the
+// caster who has a live session in the caster's field and whose position lies in
+// the caster-relative LT/RB rectangle — party-agnostic. Used by GM / SuperGM
+// Resurrection. Missing rectangle returns nil.
+func SelectDeadInRangeMapPlayers(
+	l logrus.FieldLogger, ctx context.Context,
+	f field.Model, casterId uint32, casterX, casterY int16,
+	e effect.Model,
+) []PartyRecipient {
+	lt, rb := e.LT(), e.RB()
+	if lt.X() == 0 && lt.Y() == 0 && rb.X() == 0 && rb.Y() == 0 {
+		return nil
+	}
+	inMap := inMapCharacterIdsFunc(l, ctx, f)
+	out := make([]PartyRecipient, 0, len(inMap))
+	for id := range inMap {
+		if id == casterId {
+			continue
+		}
+		mc, err := loadMapPlayerFunc(l, ctx, id)
+		if err != nil {
+			l.WithError(err).Debugf("Skipping map player [%d] from resurrection recipients: fetch failed.", id)
+			continue
+		}
+		if mc.Hp() != 0 {
+			continue
+		}
+		dx := mc.X() - casterX
+		dy := mc.Y() - casterY
+		if dx < int16(lt.X()) || dx > int16(rb.X()) || dy < int16(lt.Y()) || dy > int16(rb.Y()) {
+			continue
+		}
+		out = append(out, NewPartyRecipientBuilder().
+			SetId(mc.Id()).
+			SetX(mc.X()).
+			SetY(mc.Y()).
+			SetHp(mc.Hp()).
+			SetMaxHp(mc.MaxHp()).
+			Build())
+	}
+	return out
 }
 
 // SelectPartyMembersInMap returns bitmap-selected, same-map, living party
@@ -117,17 +182,18 @@ func SelectPartyMembersInMap(
 	l logrus.FieldLogger, ctx context.Context,
 	f field.Model, casterId uint32, memberBitmap byte,
 ) []PartyRecipient {
-	return selectPartyMembers(l, ctx, f, casterId, 0, 0, effect.Model{}, memberBitmap, false)
+	return selectPartyMembers(l, ctx, f, casterId, 0, 0, effect.Model{}, memberBitmap, false, false)
 }
 
 // selectPartyMembers is the shared enumeration backing both party-member
 // selectors. When requireRect is true the caster-relative LT/RB rectangle
 // from e is applied as a final filter; when false the rectangle is ignored
-// entirely (map-wide application).
+// entirely (map-wide application). When wantDead is true only members with
+// Hp()==0 are kept; when false (the normal case) only living members are kept.
 func selectPartyMembers(
 	l logrus.FieldLogger, ctx context.Context,
 	f field.Model, casterId uint32, casterX, casterY int16,
-	e effect.Model, memberBitmap byte, requireRect bool,
+	e effect.Model, memberBitmap byte, requireRect bool, wantDead bool,
 ) []PartyRecipient {
 	if memberBitmap == 0 || memberBitmap >= 128 {
 		return nil
@@ -171,8 +237,14 @@ func selectPartyMembers(
 			l.WithError(mErr).Debugf("Skipping party member [%d] from skill recipients: fetch failed.", m.Id())
 			continue
 		}
-		if mc.Hp() == 0 {
-			continue
+		if wantDead {
+			if mc.Hp() != 0 {
+				continue
+			}
+		} else {
+			if mc.Hp() == 0 {
+				continue
+			}
 		}
 		if requireRect {
 			lt, rb := e.LT(), e.RB()

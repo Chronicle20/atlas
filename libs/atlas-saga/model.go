@@ -19,6 +19,7 @@ const (
 	CashShopOperation    Type = "cash_shop_operation"
 	CharacterRespawn     Type = "character_respawn"
 	GachaponTransaction  Type = "gachapon_transaction"
+	MtsOperation         Type = "mts_operation"
 	FieldEffectUse       Type = "field_effect_use"
 	QuestStart           Type = "quest_start"
 	QuestComplete        Type = "quest_complete"
@@ -127,6 +128,15 @@ const (
 	WithdrawFromCashShop Action = "withdraw_from_cash_shop"
 	AcceptToCashShop     Action = "accept_to_cash_shop"
 	ReleaseFromCashShop  Action = "release_from_cash_shop"
+
+	// MTS marketplace
+	TransferToMts           Action = "transfer_to_mts"
+	WithdrawFromMts         Action = "withdraw_from_mts"
+	AcceptToMtsListing      Action = "accept_to_mts_listing"
+	ReleaseFromMtsHolding   Action = "release_from_mts_holding"
+	MtsSettlePurchase       Action = "mts_settle_purchase"
+	MtsMoveListingToHolding Action = "mts_move_listing_to_holding"
+	MtsBidEscrow            Action = "mts_bid_escrow"
 
 	// Guild actions
 	RequestGuildName             Action = "request_guild_name"

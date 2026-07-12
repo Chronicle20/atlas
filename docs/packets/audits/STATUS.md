@@ -5,11 +5,11 @@
 
 Tool: `4e3f97d89b60d7633f0d4ced5f2bdac0ecd1a81c`
 
-- export gms_v83: `32ea73867d2c5ee4ea2f7b587a3f96e9a597a2245c8befcae47b4ea7d0407da9`
-- export gms_v84: `7eab9472e2afeda13faaf74273828d09d5f2481d67bec10235c3b2fd2f91e1eb`
-- export gms_v87: `714817d376bb93732ef6b6fbe6b59f8c24515ff901801d213d676b501eae7f94`
-- export gms_v95: `d630364f4d84b433c62329d3756f4f97efdb9ce8056c62b60842bc9b91b24b97`
-- export jms_v185: `3e0070b0e1faf703005f88595cee7ccb192add0d66ecbd5de436171fd52bd4d2`
+- export gms_v83: `094a0ba39fc89ac21330c8fe7647d87e632ff352bd785a5a912abb86ebbe6be3`
+- export gms_v84: `f1cdd0165bc5d754a01a371c7ae26cdaa85e536dbebea9560d99c3b2bd09ebe8`
+- export gms_v87: `5df0f1af483b4012687c556ed5d5521c05d6e1d59895b137516b9826411ca7d3`
+- export gms_v95: `18d6bc3a43c9750a86e2195117db0d0c0551143e0d3032046309ec67a62836ad`
+- export jms_v185: `9b4c657920b770d75542de9fd918171712c2671a8fb9061e31c23bd13f9db893`
 
 ## Clientbound
 
@@ -660,7 +660,7 @@ Tool: `4e3f97d89b60d7633f0d4ced5f2bdac0ecd1a81c`
 | FAMILY_SUMMON_RESPONSE | CWvsContext::OnFamilySummonRequest |  | 0x099 | ❌ | 0x09D | ❌ | 0x0A1 | ❌ | 0x0B1 | ❌ | 0x09B | ❌ |
 | UNNAMED_R245 |  |  | 0x09A | ❌ |  | ⬜ | 0x0A2 | ❌ | 0x0B2 | ❌ |  | ⬜ |
 | BBS_OPERATION | CUIGuildBBS::OnComment; CUIGuildBBS::OnCommentDelete; CUIGuildBBS::OnDelete; CUIGuildBBS::OnRegister; CUIGuildBBS::SendLoadListRequest; CUIGuildBBS::SendViewEntryRequest | guild/serverbound/GuildBBSListThreads (T1) | 0x09B | ✅ | 0x09F | ✅ | 0x0A3 | ✅ | 0x0B3 | ✅ |  | ⬜ |
-| ENTER_MTS | CWvsContext::SendMigrateToITCRequest |  | 0x09C | ❌ | 0x0A0 | ❌ | 0x0A4 | ❌ | 0x0B4 | ❌ | 0x0A6 | ❌ |
+| ENTER_MTS | CWvsContext::SendMigrateToITCRequest | field/serverbound/FieldEnterMts (T1) | 0x09C | ✅ | 0x0A0 | ✅ | 0x0A4 | ✅ | 0x0B4 | ✅ | 0x0A6 | ✅ |
 | USE_SOLOMON_ITEM | CWvsContext::SendExpUpItemUseRequest |  | 0x09D | ❌ | 0x0A1 | ❌ | 0x0A5 | ❌ | 0x0B5 | ❌ | 0x071 | ❌ |
 | SLIDE_REQUEST | CField::SendChatMsgSlash | field/serverbound/FieldAdminChat (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x09E | ✅ | 0x089 | ✅ |
 | USE_GACHA_EXP | CWvsContext::SendTempExpUseRequest |  | 0x09E | ❌ | 0x0A2 | ❌ | 0x0A6 | ❌ | 0x0B6 | ❌ | 0x072 | ❌ |
@@ -772,9 +772,9 @@ Tool: `4e3f97d89b60d7633f0d4ced5f2bdac0ecd1a81c`
 | UNNAMED_R404 |  |  | 0x0F7 | ❌ | 0x0F7 | ❌ | 0x105 | ❌ | 0x126 | ❌ | 0x108 | ❌ |
 | UNNAMED_R405 |  |  | 0x0F8 | ❌ | 0x0F8 | ❌ | 0x106 | ❌ | 0x127 | ❌ | 0x109 | ❌ |
 | UNNAMED_R392 |  |  |  | ⬜ |  | ⬜ | 0x0F9 | ❌ | 0x11A | ❌ | 0x0FC | ❌ |
-| ITC_STATUS_CHARGE | CITC::OnStatusCharge |  | 0x0FB | ❌ | 0x0FB | ❌ | 0x109 | ❌ | 0x132 | ❌ | 0x10A | ❌ |
-| ITC_QUERY_CASH_REQUEST | CITC::TrySendQueryCashRequest |  | 0x0FC | ❌ | 0x0FC | ❌ | 0x10A | ❌ | 0x133 | ❌ | 0x10B | ❌ |
-| ITC_OPERATION | CITC::OnBuy; CITC::OnBuyAuctionImm; CITC::OnBuyWish; CITC::OnBuyZzim; CITC::OnCancelSaleItem; CITC::OnCancelWish; CITC::OnChangedCategory; CITC::OnChangedCategorySub; CITC::OnChangedPage; CITC::OnDeleteZzim; CITC::OnMoveITCPurchaseItemLtoS; CITC::OnRegisterSaleEntry; CITC::OnRegisterWishEntry; CITC::OnSaleCurrentItem; CITC::OnSetZzim; CITC::OnViewWish; CITCBidAuctionDlg::OnButtonClicked; CITCWnd_Tab::OnButtonClicked |  | 0x0FD | ❌ | 0x0FD | ❌ | 0x10B | ❌ | 0x134 | ❌ | 0x10C | ❌ |
+| ITC_STATUS_CHARGE | CITC::OnStatusCharge | field/serverbound/FieldItcStatusCharge (T1) | 0x0FB | ✅ | 0x102 | ✅ | 0x109 | ✅ | 0x132 | ✅ | 0x10A | ✅ |
+| ITC_QUERY_CASH_REQUEST | CITC::TrySendQueryCashRequest | field/serverbound/FieldItcQueryCashRequest (T1) | 0x0FC | ✅ | 0x103 | ✅ | 0x10A | ✅ | 0x133 | ✅ | 0x10B | ✅ |
+| ITC_OPERATION | CITC::OnBuy; CITC::OnBuyAuctionImm; CITC::OnBuyWish; CITC::OnBuyZzim; CITC::OnCancelSaleItem; CITC::OnCancelWish; CITC::OnChangedCategory; CITC::OnChangedCategorySub; CITC::OnChangedPage; CITC::OnDeleteZzim; CITC::OnMoveITCPurchaseItemLtoS; CITC::OnRegisterSaleEntry; CITC::OnRegisterWishEntry; CITC::OnSaleCurrentItem; CITC::OnSetZzim; CITC::OnViewWish; CITCBidAuctionDlg::OnButtonClicked; CITCWnd_Tab::OnButtonClicked | field/serverbound/FieldItcOperationRegisterAuction (T1) | 0x0FD | ✅ | 0x104 | ✅ | 0x10B | ✅ | 0x134 | ✅ | 0x10C | ✅ |
 | ITEM_UPGRADE_UPDATE | CUIItemUpgrade::Update |  | 0x104 | ❌ | 0x104 | ❌ | 0x112 | ❌ | 0x128 | ❌ | 0x114 | ❌ |
 | UNNAMED_R419 |  |  |  | ⬜ |  | ⬜ | 0x10C | ❌ | 0x135 | ❌ | 0x10D | ❌ |
 | UNNAMED_R420 |  |  |  | ⬜ |  | ⬜ | 0x10D | ❌ | 0x136 | ❌ | 0x10E | ❌ |
@@ -820,6 +820,23 @@ Tool: `4e3f97d89b60d7633f0d4ced5f2bdac0ecd1a81c`
 | character/serverbound/ExpressionRequest (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | character/serverbound/Move (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | field/serverbound/FieldChange (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
+| field/serverbound/FieldItcOperationBuy (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
+| field/serverbound/FieldItcOperationBuyAuctionImm (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
+| field/serverbound/FieldItcOperationBuyWish (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
+| field/serverbound/FieldItcOperationBuyZzim (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
+| field/serverbound/FieldItcOperationCancelSale (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
+| field/serverbound/FieldItcOperationCancelWish (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
+| field/serverbound/FieldItcOperationChangedCategory (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
+| field/serverbound/FieldItcOperationChangedCategorySub (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
+| field/serverbound/FieldItcOperationChangedPage (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
+| field/serverbound/FieldItcOperationDeleteZzim (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
+| field/serverbound/FieldItcOperationMoveLtoS (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
+| field/serverbound/FieldItcOperationPlaceBid (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
+| field/serverbound/FieldItcOperationRegisterWishEntry (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
+| field/serverbound/FieldItcOperationSaleCurrentItem (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
+| field/serverbound/FieldItcOperationSetZzim (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
+| field/serverbound/FieldItcOperationTabSearch (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
+| field/serverbound/FieldItcOperationViewWish (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | guild/serverbound/GuildAgreementResponse (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | guild/serverbound/GuildBBSCreateOrEditThread (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | guild/serverbound/GuildBBSDeleteReply (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
@@ -902,11 +919,11 @@ Tool: `4e3f97d89b60d7633f0d4ced5f2bdac0ecd1a81c`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v83 | 368 | 0 | 0 | 304 | 200 | 0 | 54.8% |
-| v84 | 345 | 0 | 0 | 306 | 221 | 0 | 53.0% |
-| v87 | 379 | 0 | 0 | 330 | 163 | 0 | 53.5% |
-| v95 | 399 | 0 | 0 | 394 | 79 | 0 | 50.3% |
-| JMS185 | 361 | 0 | 0 | 341 | 170 | 0 | 51.4% |
+| v83 | 389 | 0 | 0 | 300 | 200 | 0 | 56.5% |
+| v84 | 366 | 0 | 0 | 302 | 221 | 0 | 54.8% |
+| v87 | 400 | 0 | 0 | 326 | 163 | 0 | 55.1% |
+| v95 | 420 | 0 | 0 | 390 | 79 | 0 | 51.9% |
+| JMS185 | 382 | 0 | 0 | 337 | 170 | 0 | 53.1% |
 
 ## Conflicts
 

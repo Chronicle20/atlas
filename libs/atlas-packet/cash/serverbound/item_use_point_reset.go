@@ -14,6 +14,7 @@ import (
 // they are client stat flags; for SP resets they are skill ids. Layouts
 // without an updateTime-first prefix carry a trailing updateTime. Read order
 // is IDA-verified per version (see byte fixtures in the test file).
+// packet-audit:fname CWvsContext::SendConsumeCashItemUseRequest
 type ItemUsePointReset struct {
 	to              uint32
 	from            uint32

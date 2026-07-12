@@ -38,6 +38,7 @@ const (
 	GachaponTransaction  = sharedsaga.GachaponTransaction
 	PetEvolution         = sharedsaga.PetEvolution
 	PointReset           = sharedsaga.PointReset
+	MtsOperation         = sharedsaga.MtsOperation
 )
 
 // Status constants
@@ -135,6 +136,15 @@ const (
 	WithdrawFromCashShop = sharedsaga.WithdrawFromCashShop
 	AcceptToCashShop     = sharedsaga.AcceptToCashShop
 	ReleaseFromCashShop  = sharedsaga.ReleaseFromCashShop
+
+	// MTS actions
+	TransferToMts           = sharedsaga.TransferToMts
+	WithdrawFromMts         = sharedsaga.WithdrawFromMts
+	AcceptToMtsListing      = sharedsaga.AcceptToMtsListing
+	ReleaseFromMtsHolding   = sharedsaga.ReleaseFromMtsHolding
+	MtsSettlePurchase       = sharedsaga.MtsSettlePurchase
+	MtsMoveListingToHolding = sharedsaga.MtsMoveListingToHolding
+	MtsBidEscrow            = sharedsaga.MtsBidEscrow
 
 	// Guild actions
 	RequestGuildName             = sharedsaga.RequestGuildName
@@ -234,6 +244,13 @@ type (
 	WithdrawFromStoragePayload          = sharedsaga.WithdrawFromStoragePayload
 	TransferToCashShopPayload           = sharedsaga.TransferToCashShopPayload
 	WithdrawFromCashShopPayload         = sharedsaga.WithdrawFromCashShopPayload
+	TransferToMtsPayload                = sharedsaga.TransferToMtsPayload
+	WithdrawFromMtsPayload              = sharedsaga.WithdrawFromMtsPayload
+	AcceptToMtsListingPayload           = sharedsaga.AcceptToMtsListingPayload
+	ReleaseFromMtsHoldingPayload        = sharedsaga.ReleaseFromMtsHoldingPayload
+	MtsSettlePurchasePayload            = sharedsaga.MtsSettlePurchasePayload
+	MtsMoveListingToHoldingPayload      = sharedsaga.MtsMoveListingToHoldingPayload
+	MtsBidEscrowPayload                 = sharedsaga.MtsBidEscrowPayload
 	ReleaseFromCharacterPayload         = sharedsaga.ReleaseFromCharacterPayload
 	ReleaseFromStoragePayload           = sharedsaga.ReleaseFromStoragePayload
 	RequestGuildNamePayload             = sharedsaga.RequestGuildNamePayload
@@ -539,13 +556,14 @@ func (s Saga) WithStepStatus(index int, status Status) (Saga, error) {
 	copy(newSteps, s.steps)
 
 	newSteps[index] = Step[any]{
-		stepId:    s.steps[index].stepId,
-		status:    status,
-		action:    s.steps[index].action,
-		payload:   s.steps[index].payload,
-		createdAt: s.steps[index].createdAt,
-		updatedAt: time.Now(),
-		result:    s.steps[index].result,
+		stepId:          s.steps[index].stepId,
+		status:          status,
+		action:          s.steps[index].action,
+		payload:         s.steps[index].payload,
+		createdAt:       s.steps[index].createdAt,
+		updatedAt:       time.Now(),
+		result:          s.steps[index].result,
+		lateCompensated: s.steps[index].lateCompensated,
 	}
 
 	return Saga{
@@ -567,13 +585,44 @@ func (s Saga) WithStepResult(index int, result map[string]any) (Saga, error) {
 	copy(newSteps, s.steps)
 
 	newSteps[index] = Step[any]{
-		stepId:    s.steps[index].stepId,
-		status:    s.steps[index].status,
-		action:    s.steps[index].action,
-		payload:   s.steps[index].payload,
-		createdAt: s.steps[index].createdAt,
-		updatedAt: s.steps[index].updatedAt,
-		result:    result,
+		stepId:          s.steps[index].stepId,
+		status:          s.steps[index].status,
+		action:          s.steps[index].action,
+		payload:         s.steps[index].payload,
+		createdAt:       s.steps[index].createdAt,
+		updatedAt:       s.steps[index].updatedAt,
+		result:          result,
+		lateCompensated: s.steps[index].lateCompensated,
+	}
+
+	return Saga{
+		transactionId: s.transactionId,
+		sagaType:      s.sagaType,
+		initiatedBy:   s.initiatedBy,
+		timeout:       s.timeout,
+		steps:         newSteps,
+	}, nil
+}
+
+// WithStepLateCompensated returns a new Saga with the specified step's
+// lateCompensated marker set. Mirrors WithStepStatus/WithStepResult.
+func (s Saga) WithStepLateCompensated(index int) (Saga, error) {
+	if index < 0 || index >= len(s.steps) {
+		return Saga{}, fmt.Errorf("invalid step index: %d", index)
+	}
+
+	newSteps := make([]Step[any], len(s.steps))
+	copy(newSteps, s.steps)
+
+	newSteps[index] = Step[any]{
+		stepId:          s.steps[index].stepId,
+		status:          s.steps[index].status,
+		action:          s.steps[index].action,
+		payload:         s.steps[index].payload,
+		createdAt:       s.steps[index].createdAt,
+		updatedAt:       time.Now(),
+		result:          s.steps[index].result,
+		lateCompensated: true,
 	}
 
 	return Saga{
@@ -595,13 +644,14 @@ func (s Saga) WithStepPayload(index int, payload any) (Saga, error) {
 	copy(newSteps, s.steps)
 
 	newSteps[index] = Step[any]{
-		stepId:    s.steps[index].stepId,
-		status:    s.steps[index].status,
-		action:    s.steps[index].action,
-		payload:   payload,
-		createdAt: s.steps[index].createdAt,
-		updatedAt: s.steps[index].updatedAt,
-		result:    s.steps[index].result,
+		stepId:          s.steps[index].stepId,
+		status:          s.steps[index].status,
+		action:          s.steps[index].action,
+		payload:         payload,
+		createdAt:       s.steps[index].createdAt,
+		updatedAt:       s.steps[index].updatedAt,
+		result:          s.steps[index].result,
+		lateCompensated: s.steps[index].lateCompensated,
 	}
 
 	return Saga{
@@ -688,6 +738,10 @@ type Step[T any] struct {
 	createdAt time.Time
 	updatedAt time.Time
 	result    map[string]any
+	// lateCompensated records that a single-step rollback was dispatched for
+	// this step after the saga went terminal (design §3.5). Claim-then-
+	// dispatch idempotency: once set, duplicate late deliveries are no-ops.
+	lateCompensated bool
 }
 
 // StepId returns the step ID
@@ -711,25 +765,31 @@ func (s Step[T]) UpdatedAt() time.Time { return s.updatedAt }
 // Result returns the step result data (nil if unset)
 func (s Step[T]) Result() map[string]any { return s.result }
 
+// LateCompensated reports whether a late-success rollback was already
+// dispatched for this step (see Compensator.CompensateLateStep).
+func (s Step[T]) LateCompensated() bool { return s.lateCompensated }
+
 // MarshalJSON implements json.Marshaler for Step
 func (s Step[T]) MarshalJSON() ([]byte, error) {
 	type alias struct {
-		StepId    string         `json:"stepId"`
-		Status    Status         `json:"status"`
-		Action    Action         `json:"action"`
-		Payload   T              `json:"payload"`
-		CreatedAt time.Time      `json:"createdAt"`
-		UpdatedAt time.Time      `json:"updatedAt"`
-		Result    map[string]any `json:"result,omitempty"`
+		StepId          string         `json:"stepId"`
+		Status          Status         `json:"status"`
+		Action          Action         `json:"action"`
+		Payload         T              `json:"payload"`
+		CreatedAt       time.Time      `json:"createdAt"`
+		UpdatedAt       time.Time      `json:"updatedAt"`
+		Result          map[string]any `json:"result,omitempty"`
+		LateCompensated bool           `json:"lateCompensated,omitempty"`
 	}
 	return json.Marshal(alias{
-		StepId:    s.stepId,
-		Status:    s.status,
-		Action:    s.action,
-		Payload:   s.payload,
-		CreatedAt: s.createdAt,
-		UpdatedAt: s.updatedAt,
-		Result:    s.result,
+		StepId:          s.stepId,
+		Status:          s.status,
+		Action:          s.action,
+		Payload:         s.payload,
+		CreatedAt:       s.createdAt,
+		UpdatedAt:       s.updatedAt,
+		Result:          s.result,
+		LateCompensated: s.lateCompensated,
 	})
 }
 
@@ -867,13 +927,14 @@ type ReleaseFromCashShopPayload struct {
 func (s *Step[T]) UnmarshalJSON(data []byte) error {
 	// First unmarshal to get the action type
 	var actionOnly struct {
-		StepId    string          `json:"stepId"`
-		Status    Status          `json:"status"`
-		Action    Action          `json:"action"`
-		CreatedAt time.Time       `json:"createdAt"`
-		UpdatedAt time.Time       `json:"updatedAt"`
-		Payload   json.RawMessage `json:"payload"`
-		Result    map[string]any  `json:"result,omitempty"`
+		StepId          string          `json:"stepId"`
+		Status          Status          `json:"status"`
+		Action          Action          `json:"action"`
+		CreatedAt       time.Time       `json:"createdAt"`
+		UpdatedAt       time.Time       `json:"updatedAt"`
+		Payload         json.RawMessage `json:"payload"`
+		Result          map[string]any  `json:"result,omitempty"`
+		LateCompensated bool            `json:"lateCompensated,omitempty"`
 	}
 
 	if err := json.Unmarshal(data, &actionOnly); err != nil {
@@ -886,6 +947,7 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 	s.createdAt = actionOnly.CreatedAt
 	s.updatedAt = actionOnly.UpdatedAt
 	s.result = actionOnly.Result
+	s.lateCompensated = actionOnly.LateCompensated
 
 	// Now handle the Payload field based on the Action type
 	switch s.action {
@@ -1263,6 +1325,48 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.payload = any(payload).(T)
 	case ReleaseFromCashShop:
 		var payload ReleaseFromCashShopPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case TransferToMts:
+		var payload TransferToMtsPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case WithdrawFromMts:
+		var payload WithdrawFromMtsPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case AcceptToMtsListing:
+		var payload AcceptToMtsListingPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case ReleaseFromMtsHolding:
+		var payload ReleaseFromMtsHoldingPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case MtsSettlePurchase:
+		var payload MtsSettlePurchasePayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case MtsMoveListingToHolding:
+		var payload MtsMoveListingToHoldingPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case MtsBidEscrow:
+		var payload MtsBidEscrowPayload
 		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}

@@ -7,10 +7,13 @@ const (
 	CommandTypeAdjustCurrency = "ADJUST_CURRENCY"
 
 	// Wallet status event constants
-	EnvEventTopicWalletStatus  = "EVENT_TOPIC_WALLET_STATUS"
-	StatusEventTypeCreated     = "CREATED"
-	StatusEventTypeUpdated     = "UPDATED"
-	StatusEventTypeDeleted     = "DELETED"
+	EnvEventTopicWalletStatus = "EVENT_TOPIC_WALLET_STATUS"
+	StatusEventTypeCreated    = "CREATED"
+	StatusEventTypeUpdated    = "UPDATED"
+	StatusEventTypeDeleted    = "DELETED"
+	// StatusEventTypeError reports a failed transactional wallet adjust, so an
+	// AwardCurrency/MtsBidEscrow saga step fails fast instead of timing out.
+	StatusEventTypeError = "ERROR"
 )
 
 // AdjustCurrencyCommand represents a command to adjust currency in a wallet
@@ -35,4 +38,11 @@ type StatusEventUpdatedBody struct {
 	Points        uint32    `json:"points"`
 	Prepaid       uint32    `json:"prepaid"`
 	TransactionId uuid.UUID `json:"transactionId,omitempty"`
+}
+
+// StatusEventErrorBody represents the body of a failed transactional wallet
+// adjust; TransactionId echoes the command so the saga step can be failed.
+type StatusEventErrorBody struct {
+	TransactionId uuid.UUID `json:"transactionId"`
+	Reason        string    `json:"reason"`
 }

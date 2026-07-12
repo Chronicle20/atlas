@@ -366,7 +366,7 @@ func handleCreateCharacter(db *gorm.DB) message.Handler[character2.Command[chara
 
 func handleMovementEvent(db *gorm.DB) message.Handler[character2.MovementCommand] {
 	return func(l logrus.FieldLogger, ctx context.Context, c character2.MovementCommand) {
-		err := character.NewProcessor(l, ctx, db).Move(uint32(c.ObjectId), c.X, c.Y, c.Stance)
+		err := character.NewProcessor(l, ctx, db).Move(uint32(c.ObjectId), c.X, c.Y, c.Fh, c.Stance)
 		if err != nil {
 			l.WithError(err).Errorf("Error processing movement for character [%d].", c.ObjectId)
 		}

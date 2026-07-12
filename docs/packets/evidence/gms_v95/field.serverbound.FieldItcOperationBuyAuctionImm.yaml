@@ -1,0 +1,10 @@
+packet: field/serverbound/FieldItcOperationBuyAuctionImm
+direction: serverbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CITC::OnBuyAuctionImm
+    address: "0x573310"
+    decompile_sha256: a370b9043d783e1d451bd443cf249d0ef262664bbe1161d9ab8b01897d7a149e
+verifies:
+    - libs/atlas-packet/field/serverbound/itc_operation_test.go#TestItcOperationBuyAuctionImmByteOutput_v95

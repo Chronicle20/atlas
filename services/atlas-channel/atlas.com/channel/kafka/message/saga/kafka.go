@@ -22,6 +22,23 @@ const (
 const (
 	SagaTypeStorageOperation = "storage_operation"
 	SagaTypePointReset       = "point_reset"
+	SagaTypeMtsOperation     = "mts_operation"
+)
+
+// MtsTakeHomeResultKind is the Results["kind"] marker the orchestrator sets on a
+// completed WithdrawFromMts (take-home) saga so this service can recognize it and
+// write MoveItcPurchaseItemLtoSDone. Mirrors saga.MtsTakeHomeResultKind in
+// atlas-saga-orchestrator.
+const MtsTakeHomeResultKind = "mts_take_home"
+
+// MtsFailureKind* mirror the orchestrator's MtsFailureKind* (kafka/message/saga
+// in atlas-saga-orchestrator): they discriminate which MTS operation a failed
+// mts_operation saga was performing so handleFailedEvent can write the matching
+// clientbound *Failed arm to unhang the originating dialog.
+const (
+	MtsFailureKindBuy      = "mts_buy"
+	MtsFailureKindList     = "mts_list"
+	MtsFailureKindTakeHome = "mts_take_home"
 )
 
 type StatusEvent[T any] struct {
@@ -31,6 +48,8 @@ type StatusEvent[T any] struct {
 }
 
 type StatusEventCompletedBody struct {
+	SagaType string         `json:"sagaType,omitempty"`
+	Results  map[string]any `json:"results,omitempty"`
 }
 
 type StatusEventFailedBody struct {
@@ -39,4 +58,6 @@ type StatusEventFailedBody struct {
 	CharacterId uint32 `json:"characterId"`
 	SagaType    string `json:"sagaType"`
 	ErrorCode   string `json:"errorCode"`
+	// MtsKind is set only for mts_operation sagas (one of MtsFailureKind*).
+	MtsKind string `json:"mtsKind,omitempty"`
 }

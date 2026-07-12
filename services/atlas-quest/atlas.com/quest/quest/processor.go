@@ -100,6 +100,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 // NewProcessorWithDependencies creates a processor with custom dependencies (for testing)
 func NewProcessorWithDependencies(l logrus.FieldLogger, ctx context.Context, db *gorm.DB, dataProc dataquest.Processor, validationProc validation.Processor, eventEmitter EventEmitter) Processor {
 	return &ProcessorImpl{

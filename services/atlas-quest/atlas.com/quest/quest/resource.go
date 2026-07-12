@@ -58,14 +58,14 @@ func handleGetQuestsByCharacter(db *gorm.DB) rest.GetHandler {
 				quests, err := NewProcessor(d.Logger(), d.Context(), db).GetByCharacterId(characterId)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Unable to get quests for character [%d].", characterId)
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
 				res, err := model.SliceMap(Transform)(model.FixedProvider(quests))()()
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Creating REST model.")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -82,14 +82,14 @@ func handleGetQuestsByCharacterAndState(db *gorm.DB, state State) rest.GetHandle
 				quests, err := NewProcessor(d.Logger(), d.Context(), db).GetByCharacterIdAndState(characterId, state)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Unable to get quests for character [%d] with state [%d].", characterId, state)
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
 				res, err := model.SliceMap(Transform)(model.FixedProvider(quests))()()
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Creating REST model.")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -111,14 +111,14 @@ func handleGetQuestByCharacterAndId(db *gorm.DB) rest.GetHandler {
 					}
 					if err != nil {
 						d.Logger().WithError(err).Errorf("Unable to get quest [%d] for character [%d].", questId, characterId)
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 
 					res, err := model.Map(Transform)(model.FixedProvider(q))()
 					if err != nil {
 						d.Logger().WithError(err).Errorf("Creating REST model.")
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 
@@ -164,7 +164,7 @@ func handleStartQuest(d *rest.HandlerDependency, c *rest.HandlerContext, i Start
 				res, err := model.Map(Transform)(model.FixedProvider(q))()
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Creating REST model.")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -252,14 +252,14 @@ func handleGetQuestProgress(db *gorm.DB) rest.GetHandler {
 					}
 					if err != nil {
 						d.Logger().WithError(err).Errorf("Unable to get quest [%d] for character [%d].", questId, characterId)
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 
 					res, err := model.SliceMap(progress.Transform)(model.FixedProvider(q.Progress()))()()
 					if err != nil {
 						d.Logger().WithError(err).Errorf("Creating REST model.")
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 
@@ -314,7 +314,7 @@ func handleDeleteQuestsByCharacter(db *gorm.DB) rest.GetHandler {
 				err := NewProcessor(d.Logger(), d.Context(), db).DeleteByCharacterId(characterId)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Unable to delete quests for character [%d].", characterId)
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 

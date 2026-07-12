@@ -33,7 +33,7 @@ func GetAllInstancesHandler(d *rest.HandlerDependency, c *rest.HandlerContext) h
 		rm, err := model.SliceMap(Transform)(model.FixedProvider(instances))(model.ParallelMap())()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Creating REST model.")
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteErrorResponse(d.Logger())(w)(err)
 			return
 		}
 
@@ -55,7 +55,7 @@ func GetInstanceHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http.
 			rm, err := model.Map(Transform)(model.FixedProvider(m))()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -78,7 +78,7 @@ func GetInstanceByCharacterHandler(d *rest.HandlerDependency, c *rest.HandlerCon
 			rm, err := model.Map(Transform)(model.FixedProvider(m))()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -101,7 +101,7 @@ func GetInstanceByFieldHandler(d *rest.HandlerDependency, c *rest.HandlerContext
 			rm, err := model.Map(Transform)(model.FixedProvider(m))()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 

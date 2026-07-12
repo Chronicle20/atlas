@@ -62,6 +62,14 @@ func main() {
 		return db.AutoMigrate(&seeder.SeedState{})
 	}))
 
+	server.RegisterTransientErrorClassifier(func(err error) bool {
+		if database.IsTransientConnectionError(err) {
+			database.CountTransient(err)
+			return true
+		}
+		return false
+	})
+
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	pqConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	characterConsumer.InitConsumers(l)(cmf)(consumerGroupId)

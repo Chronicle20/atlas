@@ -42,14 +42,14 @@ func handleGetItems(d *rest.HandlerDependency, c *rest.HandlerContext) http.Hand
 			}
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Retrieving items for gachapon [%s].", gachaponId)
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
 			res, err := model.SliceMap(Transform)(model.FixedProvider(ms))(model.ParallelMap())()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -79,7 +79,7 @@ func handleCreateItem(d *rest.HandlerDependency, c *rest.HandlerContext, rm Rest
 			err = NewProcessor(d.Logger(), d.Context(), d.DB()).Create(m)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating gachapon item.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -95,7 +95,7 @@ func handleDeleteItem(d *rest.HandlerDependency, c *rest.HandlerContext) http.Ha
 				err := NewProcessor(d.Logger(), d.Context(), d.DB()).Delete(itemId)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Deleting gachapon item [%d].", itemId)
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 				w.WriteHeader(http.StatusNoContent)

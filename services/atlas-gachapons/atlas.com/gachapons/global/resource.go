@@ -42,14 +42,14 @@ func handleGetAllGlobalItems(d *rest.HandlerDependency, c *rest.HandlerContext) 
 		}
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Retrieving global items.")
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteErrorResponse(d.Logger())(w)(err)
 			return
 		}
 
 		res, err := model.SliceMap(Transform)(model.FixedProvider(ms))(model.ParallelMap())()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Creating REST model.")
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteErrorResponse(d.Logger())(w)(err)
 			return
 		}
 
@@ -76,7 +76,7 @@ func handleCreateGlobalItem(d *rest.HandlerDependency, c *rest.HandlerContext, r
 		err = NewProcessor(d.Logger(), d.Context(), d.DB()).Create(m)
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Creating global item.")
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteErrorResponse(d.Logger())(w)(err)
 			return
 		}
 
@@ -97,7 +97,7 @@ func handleDeleteGlobalItem(d *rest.HandlerDependency, c *rest.HandlerContext) h
 		err = NewProcessor(d.Logger(), d.Context(), d.DB()).Delete(uint32(itemId))
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Deleting global item [%d].", itemId)
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteErrorResponse(d.Logger())(w)(err)
 			return
 		}
 		w.WriteHeader(http.StatusNoContent)

@@ -30,14 +30,14 @@ func handleSelectReward(d *rest.HandlerDependency, c *rest.HandlerContext) http.
 			result, err := NewProcessor(d.Logger(), d.Context(), d.DB()).SelectReward(gachaponId)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Selecting reward for gachapon [%s].", gachaponId)
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
 			rm, err := Transform(result)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -56,14 +56,14 @@ func handleGetPrizePool(d *rest.HandlerDependency, c *rest.HandlerContext) http.
 			pool, err := NewProcessor(d.Logger(), d.Context(), d.DB()).GetPrizePool(gachaponId, tier)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Retrieving prize pool for gachapon [%s].", gachaponId)
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
 			res, err := model.SliceMap(Transform)(model.FixedProvider(pool))(model.ParallelMap())()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 

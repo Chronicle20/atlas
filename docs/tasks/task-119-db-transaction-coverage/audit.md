@@ -1,0 +1,450 @@
+# DB Transaction Coverage — Full Write-Path Audit (Task 3)
+
+Version: v1
+Status: Complete (DL-4 closure evidence)
+Design: docs/tasks/task-119-db-transaction-coverage/design.md (§3 survey, §5.2 taxonomy, §5.3 format)
+
+This is a full sweep — not a spot-check — of all DB write statements in the 14 services that
+had zero `database.ExecuteTransaction` call sites as of the PRD's grep premise. Every hit from
+
+```
+grep -rn "\.Create(\|\.Save(\|\.Update(\|\.Updates(\|\.Delete(\|\.Exec(" services/atlas-<svc> --include='*.go' | grep -v _test.go
+grep -rn "\.Transaction(\|\.Begin()\|\.Commit()\|\.Rollback()" services/atlas-<svc> --include='*.go' | grep -v _test.go
+```
+
+is either classified below (write inventory) or accounted for as a non-DB exclusion, so the
+sweep is checkable end-to-end.
+
+**Taxonomy** (design §5.2): **A** multi-table (≥2 writes, ≥2 tables) → wrap. **B** multi-statement
+single-table (≥2 write statements) → wrap. **C** single-statement → no change (RMW-with-one-write
+is class C + a mandatory race annotation, never class B). **D** intentionally non-atomic → written
+justification. Flags: **[T]** already-transactional via raw `db.Transaction`/manual `Begin` (needs
+conversion to `ExecuteTransaction`). **[E]** emit-inside-transaction (publish precedes commit).
+
+Remediation-commit placeholders are `_(commit: pending — Task N)_` per the brief; Tasks 5–13 fill
+these in after the task-114/task-116 rebase gate (Task 4).
+
+---
+
+## atlas-npc-conversations
+
+### Write inventory
+
+| file:line | Entry point | Writes | Class | Flags |
+|---|---|---|---|---|
+| `conversation/npc/processor.go:130` `createWithSkipTracking` | seed-time helper invoked from the reindex/seed loop | `conversations` + `recipes` | A | [T] |
+| `conversation/npc/processor.go:153` `Create` | REST `POST /npcs/conversations` (`conversation/npc/resource.go:98`) | `conversations` (`npc/administrator.go:21`) + `recipes` (`recipe/administrator.go:21` via `recipe/processor.go:141` `RebuildForConversation`) | A | [T] |
+| `conversation/npc/processor.go:177` `Update` | REST `PATCH /npcs/conversations/{id}` (`conversation/npc/resource.go:134`) | `conversations` (`npc/administrator.go:52`) + `recipes` (rebuild) | A | [T] |
+| `conversation/npc/processor.go:200` `Delete` | REST `DELETE /npcs/conversations/{id}` (`conversation/npc/resource.go:162`) | `conversations` (`npc/administrator.go:75`) + `recipes` (`recipe/administrator.go:33`) | A | [T] |
+| `conversation/npc/processor.go:219` `DeleteAllForTenant` | tenant-teardown/admin path (Processor interface method, not directly REST-routed) | `conversations` (`npc/administrator.go:82`) + `recipes` (`recipe/administrator.go:41`) | A | [T] |
+| `conversation/npc/processor.go:271` `ReindexAllRecipes` | REST `POST /npcs/conversations/reindex-recipes` (`conversation/npc/resource.go:253,263`) | `conversations` (read) + `recipes` (delete-all + bulk-insert loop) | A | [T] |
+| `conversation/quest/administrator.go:11,32,74,82` (`quest/processor.go:87,99,111,123`) | REST `POST/PATCH/DELETE /quests/conversations{,/id}` (`quest/resource.go:121,157,185`) | `quest_conversations` | C | no [T] needed — single write each |
+| `conversation/npc/subdomain.go:28` `DeleteAllForTenant` (seeder `Subdomain` impl) | `libs/atlas-seeder/seed.go:87` via `POST /npcs/conversations/seed` | `conversations` only | D (seeder cycle) | see completeness note below |
+| `conversation/npc/subdomain.go:67` `BulkCreate` (seeder `Subdomain` impl) | `libs/atlas-seeder/seed.go:112` | `conversations` only (single bulk INSERT) | D (seeder cycle) | see completeness note below |
+| `conversation/quest/subdomain.go:28,67` `DeleteAllForTenant`/`BulkCreate` | seeder cycle, same as above | `quest_conversations` | D (seeder cycle) | single table, no derived rows — benign |
+
+### Exclusions (non-DB write-verb hits)
+
+| file:line | Reason |
+|---|---|
+| `conversation/operation_executor.go:261,307` | `e.sagaP.Create(s)` — `saga.Processor.Create` (`npc/saga/processor.go:27`) is a Kafka publish to atlas-saga-orchestrator's command topic via `producer.ProviderImpl`, not a DB write. |
+| `conversation/processor.go:718,780,848,909,974` | `saga.NewProcessor(p.l,p.ctx).Create(s)` — same `atlas-npc-conversations/saga` package, same Kafka-publish mechanism. |
+| `conversation/quest/resource.go:121,157,185` | REST handler bodies delegating to `NewProcessor(...).Create/Update/Delete`; the write itself is at `quest/administrator.go`, listed once above, not duplicated here. |
+| `conversation/npc/resource.go:98,134,162` | Same pattern — REST delegator, not a separate write. |
+| `test/tenant.go:10` | `tenant.Create(uuid.New(), "GMS", 83, 1)` — test helper, builds an in-memory `tenant.Model`, no DB access. |
+
+### Verdicts
+
+- `Create`/`Update`/`Delete`/`DeleteAllForTenant`/`ReindexAllRecipes`/`createWithSkipTracking` (npc pkg, 6 sites): **A**, already wrapped via raw `db.Transaction` — confirmed emit-free (no `message.Emit`/producer call inside any of the six closures). Remediation: convert to `ExecuteTransaction`. `_(commit: pending — Task 7)_`
+- Quest-conversation CRUD (4 sites): **C** — no change; each administrator function is a single INSERT/UPDATE/DELETE. No transaction needed.
+- Seeder-cycle paths (npc + quest subdomains): **D** — justified per the shared `libs/atlas-seeder` semantics (continue-on-error, per-file accounting, per-`(tenant,group)` mutex, `libs/atlas-seeder/seed.go:22-39,85-120`); changing it is an out-of-scope `atlas-seeder` design change (candidate follow-up, not a task here). **Completeness note (not a transaction-coverage finding, flagged for awareness):** the npc seeder's `DeleteAllForTenant` (subdomain.go:28) does not clear `recipes`, and its `BulkCreate` (subdomain.go:67) does not derive recipe rows — only the manual `POST /npcs/conversations/reindex-recipes` endpoint (`processor.go:271`) rebuilds them, and no automatic call site invokes it after a seed. This is a data-completeness gap adjacent to, but distinct from, the transaction-coverage question audited here.
+
+---
+
+## atlas-keys
+
+### Write inventory
+
+| file:line | Entry point | Writes | Class | Flags |
+|---|---|---|---|---|
+| `key/processor.go:72` `Reset` | REST `DELETE /characters/{id}/keys` (`character/resource.go:58`) | `keys` — delete-all-for-character then a 40-entry create loop | B | [T] |
+| `key/processor.go:91` `CreateDefault` | Kafka consumer, character-created status event (`kafka/consumer/character/consumer.go:49`) | `keys` — 40-entry create loop | B | [T] |
+| `key/processor.go:105` `Delete` | Kafka consumer, character-deleted status event (`kafka/consumer/character/consumer.go:63`) | `keys` — single delete-by-character | C (wrapped anyway, harmless) | [T] |
+| `key/processor.go:117` `ChangeKey` | REST `PATCH /characters/{id}/keys/{keyId}` (`character/resource.go:41`) | `keys` — read-then-create-or-update (RMW) | B | [T] |
+
+`key/administrator.go:17` (create), `:25` (update), `:29` (delete) are the raw statement helpers invoked only via `tx` from inside the four transactions above.
+
+### Exclusions (non-DB write-verb hits)
+
+None — every write-verb hit in this service traces to a real `keys`-table write via the four `processor.go` transactions above.
+
+### Verdicts
+
+- `Reset`, `CreateDefault`: **B** — delete-all+create-loop / create-loop, single table (`keys`), already wrapped in raw `db.Transaction`. Convert to `ExecuteTransaction`. `_(commit: pending — Task 5)_`
+- `Delete`: **C** in substance (single statement) but already wrapped — harmless; convert wrapper for consistency as part of the same Task 5 commit.
+- `ChangeKey`: **B** (read-then-branch-to-create-or-update, single table `keys`) — already wrapped. `_(commit: pending — Task 5)_`. No emit calls found anywhere in `key/processor.go` (no Kafka producer import in the file), so no [E] flag applies.
+
+---
+
+## atlas-families
+
+### Write inventory
+
+| file:line | Entry point | Writes | Class | Flags |
+|---|---|---|---|---|
+| `family/processor.go:173` `AddJunior` | Kafka command `AddJuniorCommand` (`kafka/consumer/family/consumer.go:83`) + REST `POST /families/{id}/juniors` (`family/resource.go:48`) | `family_members` — senior row save + junior row save (2 writes, 1 table) | B | [T] |
+| `family/processor.go:245` `RemoveMember` | Kafka command `RemoveMemberCommand` (`consumer.go:111`) + character-deleted status event | `family_members` — senior save + N junior saves + target delete | B | [T] |
+| `family/processor.go:318` `BreakLink` | Kafka command `BreakLinkCommand` (`consumer.go:138`) + REST `DELETE /families/links/{id}` (`resource.go:93`) | `family_members` — senior save + self save + N junior saves | B | [T] |
+| `family/administrator.go:61` `BatchResetDailyRep` | Scheduler `ReputationResetJob.executeResetJob` (`scheduler/reputation_reset.go:134`) | `family_members` — single bulk `UPDATE ... WHERE daily_rep > 0` | C | no [T] needed |
+| `family/administrator.go:88` `SaveMember` (standalone use) | `AwardRep`/`DeductRep` (`processor.go:458,510`) ← Kafka commands (`consumer.go:166,194`) | `family_members` — single `db.Save` | C | no [T] needed (this function also runs inside the 3 TXs above via `tx`, where it is a sub-step, not a separate finding) |
+| `family/administrator.go:31` `CreateMember` (auto-provision branch) | `AddJunior` (`processor.go:106`), called with raw `p.db`, **not** `tx` — the surrounding branch always returns `ErrSeniorNotFound` | `family_members` — single insert | C | **flag**: runs outside the enclosing transaction, on a caller path that reports failure (see note below) |
+
+### Exclusions (non-DB write-verb hits)
+
+| file:line | Reason |
+|---|---|
+| `family/entity.go:42,58,63,74,88` | `db.Exec(...)` inside `Migration(db *gorm.DB) error` — one-time schema DDL (`CREATE INDEX`, `ALTER TABLE ... ADD CONSTRAINT`) run at service startup, not a request-time data write. |
+
+### Verdicts
+
+- `AddJunior`, `RemoveMember`, `BreakLink`: **B** (2+ writes, single table `family_members`), already wrapped via raw `db.Transaction`, buffered emits deferred until after the transaction returns (confirmed no `message.Emit` inside any of the three closures). Convert to `ExecuteTransaction`. `_(commit: pending — Task 6)_`
+- `BatchResetDailyRep`, standalone `SaveMember` calls: **C** — no change.
+- **Informational flag (not a transaction-coverage classification change):** `AddJunior`'s auto-provisioning of a missing senior (`family/administrator.go:31` via `processor.go:106`) executes against `p.db` directly, outside the subsequent transaction, on a branch that always returns `ErrSeniorNotFound` to the caller. A request reported as "failed" therefore has a persisted side effect — worth folding into the Task 6 remediation commit (move the auto-provision inside the transaction, or drop it) even though it doesn't change the class-B verdict above.
+
+---
+
+## atlas-marriages
+
+### Write inventory
+
+| file:line | Entry point | Writes | Class | Flags |
+|---|---|---|---|---|
+| `marriage/processor.go:266,273,292` (inside `AcceptProposal`, called from `AcceptProposalAndEmit` at `processor.go:314`) | Kafka command `MarriageAccept` — **the live, wired path** (`kafka/consumer/marriage/consumer.go:154` `handleAccept`) | `proposals` (`administrator.go:52` `UpdateProposal`) + `marriages` (`administrator.go:83` `CreateMarriage`, `administrator.go:99` `UpdateMarriage`) — 2 tables, 3 writes | **A — genuinely unwrapped** | **no [T]** — plain sequential `p.db.WithContext(p.ctx)` calls, no `Begin`/`Transaction` anywhere in this call chain |
+| `marriage/processor.go:1609,1616,1635` (inside `executeInTransaction`, reached only via `AcceptProposalWithTransactionAndEmit` at `processor.go:1581`) | **Dead code** — `grep -rn "AcceptProposalWithTransactionAndEmit" services/atlas-marriages` shows zero callers outside its own definition/interface declaration | `proposals` + `marriages` (identical writes to the live path above) | A | [T][E] — manual `Begin`(`:1690`)/`Rollback`(`:1708`)/`Commit`(`:1713`); `message.EmitWithResult` buffer built at `:1606`, `buf.Put` calls at `:1655,1670`, actual publish (`kafka/message/message.go:55` inside `EmitWithResult`) happens as part of `f(buf)(input)` returning at `processor.go:1682`, which completes **before** `tx.Commit()` at `:1713` — confirmed publish-before-commit |
+| `marriage/administrator.go:36` `CreateProposal` | `handlePropose` (`kafka/consumer/marriage/consumer.go:90`) → `ProposeAndEmit` | `proposals` | C | no [T] needed |
+| `marriage/administrator.go:140` `CreateCeremony` | `handleScheduleCeremony` (`consumer.go:280`) → `ScheduleCeremonyAndEmit` | `ceremonies` | C | no [T] needed |
+| `marriage/administrator.go:156` `UpdateCeremony` | Start/Complete/Cancel/Postpone/Reschedule/AddInvitee/RemoveInvitee/AdvanceState ceremony handlers | `ceremonies` | C | no [T] needed |
+| `marriage/administrator.go:52,99` (standalone uses outside the Accept flow — e.g. Divorce, Decline, Cancel, Expire, character-deletion cascade) | various Kafka consumers | `proposals` / `marriages` | C | no [T] needed |
+
+### Exclusions (non-DB write-verb hits)
+
+| file:line | Reason |
+|---|---|
+| `scheduler/proposal_expiry.go:126` | `tenant.Create(tenantId, "background-scheduler", 1, 0)` — builds an in-memory `tenant.Model` via `libs/atlas-tenant/processor.go:30` (`Creator(...)` + `model.FixedProvider`), no DB/network access. |
+| `scheduler/ceremony_timeout.go:126` | Same `tenant.Create` bootstrap pattern. |
+| `test/tenant.go:10` | Test helper, excluded. |
+
+### Verdicts
+
+- **`AcceptProposalAndEmit` (live path, `processor.go:314`, wired via `consumer.go:154`): class A, genuinely unwrapped.** This corrects the design-phase hypothesis, which characterized marriages as already-transactional via manual `Begin`/`Commit`. That manual-tx code (`executeInTransaction`/`AcceptProposalWithTransactionAndEmit`) exists but is **dead code — zero callers found anywhere in the service, including tests**. The actual production accept-flow performs the identical 2-table/3-write sequence (`UpdateProposal` → `CreateMarriage` → `UpdateMarriage`) with no transaction wrap at all: a crash between any two of the three writes leaves a proposal marked accepted with no (or a half-updated) marriage. Kafka emission in the live path (`message.Emit` at `processor.go:321`, after `AcceptProposal()` returns at `:315`) correctly happens after all writes complete, so there is no [E] defect on the live path — the defect is the missing transaction wrap itself. `_(commit: pending — Task 9)_` — remediation should wrap the live `AcceptProposal` writes in `ExecuteTransaction` and either delete the unreachable `executeInTransaction`/`AcceptProposalWithTransactionAndEmit` pair or retire it in favor of the now-correctly-wrapped live path (avoids two divergent implementations of the same operation).
+- Dead-code twin (`executeInTransaction`): structurally **A, [T][E]** (manual Begin/Commit, publish-before-commit) but unreachable in production. Recorded for completeness; remediation is to delete it as part of Task 9 rather than "fix" unreachable code.
+- All other single-table CRUD (`CreateProposal`, `CreateCeremony`, `UpdateCeremony`, standalone `UpdateProposal`/`UpdateMarriage`): **C** — no change.
+
+---
+
+## atlas-monster-book
+
+### Write inventory
+
+| file:line | Entry point | Writes | Class | Flags |
+|---|---|---|---|---|
+| `kafka/consumer/monsterbook/consumer.go:56` `handleCardPickedUp` | Kafka command, card picked up | `monster_book_cards` (`card/administrator.go:43,60-64,69-73` insert/update via `upsertCard`) + `monster_book_collections` (`collection/administrator.go:46` insert via `upsertStats`, called from `RecomputeAndEmit`) — 2 tables | A | [T][E] |
+| `kafka/consumer/character/consumer.go:49` `handleStatusEventDeletedFunc` | Kafka character-deleted status event | `monster_book_cards` (`card/administrator.go:78` `deleteByCharacter`) + `monster_book_collections` (`collection/administrator.go:91` `deleteByCharacter`) — 2 tables, delete-only cascade | B* (see note) | [T], no [E] |
+| `collection/administrator.go:59-63` `setCover` | `SetCoverAndEmit` (`collection/processor.go:236`) ← Kafka `handleSetCover` (`kafka/consumer/monsterbook/consumer.go:79-88`) **and** REST `PATCH /characters/{id}/monster-book` (`character/resource.go:76`) | `monster_book_collections` — single update | C | no [T] needed |
+
+*Note: `handleStatusEventDeletedFunc` writes 2 tables (`monster_book_cards`, `monster_book_collections`) via delete-only statements; taxonomy-wise this satisfies class A's "≥2 writes, ≥2 tables" definition. Recorded as A in the closing matrix; listed as B* here only to flag that both writes are the same verb (delete) with no cross-referential-integrity risk beyond "both must go together," a lighter-weight case than the create/create+update mix in `handleCardPickedUp`.
+
+### Exclusions (non-DB write-verb hits)
+
+None — every write-verb hit in this service is a genuine `monster_book_cards`/`monster_book_collections` write.
+
+### Verdicts
+
+- `handleCardPickedUp`: **A**, already wrapped in raw `db.Transaction` (`kafka/consumer/monsterbook/consumer.go:56`), both `card.Processor` and `collection.Processor` expose `WithTransaction` (`card/processor.go:45`, `collection/processor.go:89`, confirmed defined and used). **[E] confirmed**: `message.Emit(producer.ProviderImpl(l)(ctx))(...)` at `consumer.go:57` wraps the entire transaction body — the closure passed to `db.Transaction` at line 56 is itself the function passed to `message.Emit`, so the Kafka publish (`kafka/message/message.go:41`) fires after the inner DB-write closure returns but **before** GORM's `Transaction` wrapper issues `tx.Commit()` — classic publish-before-commit. Remediation: invert nesting per the canonical composition (design §6.1) and convert to `ExecuteTransaction`. `_(commit: pending — Task 8)_`
+- `handleStatusEventDeletedFunc`: **A** (2 tables, delete-only), already wrapped in raw `db.Transaction`, **no emit inside this handler at all** (no `message`/producer import used for publishing in this file beyond the kafka handler-adapter types) — this corrects the design-phase assumption that both monster-book consumer sites share the same `[E]` defect; this second site is clean. Convert wrapper only. `_(commit: pending — Task 8)_`
+- `setCover`: **C** — no change; correctly unwrapped single-statement update, reachable from both a Kafka command and a REST PATCH with no additional writes in either path.
+
+---
+
+## atlas-storage
+
+**No raw `db.Transaction`/`ExecuteTransaction`/`.Begin(`/`WithTransaction` hits anywhere in this service** — confirmed via `grep -rn "db.Transaction\|ExecuteTransaction\|\.Begin(\|WithTransaction" services/atlas-storage --include='*.go' | grep -v _test.go` (zero output). This is the substantive finding of the whole audit: every multi-write flow below runs fully unwrapped.
+
+Tables: `storages` (`storage/entity.go:18-20`), `storage_assets` (`asset/entity.go:55-57`).
+
+### Write inventory
+
+| file:line | Entry point | Writes | Class | Flags |
+|---|---|---|---|---|
+| `storage/processor.go:720-760` `ExpireAndEmit` | Item-expiry flow (NPC/UI-driven; not a per-packet hot path) | `storage_assets` — delete expiring asset (`:729`) → **emit** (`:735`, mid-flow, before the replacement branch) → conditionally create replacement asset (`:757`); same table twice, separated by an externally-visible Kafka publish | **A** (same-table-twice-with-intervening-externally-visible-emit is treated as A, not B, per the elevated risk: a crash after `:729` leaves the asset gone and an EXPIRED event already published/in-flight with no replacement created) | unwrapped — no [T] |
+| `storage/processor.go:483-570` `MergeAndSort` (+ `sortAssets` helper `:572-600`) | Storage-merge flow (NPC/UI-driven) | `storage_assets` — per stackable group: N `UpdateQuantity` (`:551`) + N `Delete` (`:560`) calls, then a second independent pass of `UpdateSlot` (`:591`) calls across all assets; single table, unbounded count of write statements, early-return-on-error leaves prior groups already committed and later groups untouched | **B** (multi-statement, single table, no atomicity — practical risk equals a class-A finding despite being one table) | unwrapped — no [T] |
+| `asset/processor.go:50-78` `GetOrCreateStorageId` | REST `GET /storage/accounts/{accountId}/assets` (`asset/resource.go:34`) | `storage_assets` — `First` (read) then exactly one `Create` (`:70`) if not found | **C + mandatory race annotation** | unwrapped |
+| `storage/processor.go:42-51` `GetOrCreateStorage` | `Deposit`, `Accept`, `ExpireAndEmit`'s replacement branch, REST `handleGetStorageRequest`/`handleCreateStorageRequest` | `storages` — `First` (read) then exactly one `Create` if not found | **C + mandatory race annotation** (same shape as above, different table/package) | unwrapped |
+| `storage/administrator.go:20` `Create` | `CreateStorage` (REST) | `storages` | C | — |
+| `storage/administrator.go:29-35` `UpdateMesos` | `UpdateMesosAndEmit` ← Kafka command (`kafka/consumer/storage/consumer.go:94`) | `storages` | C | — |
+| `storage/administrator.go:47-51` `Delete` | `DeleteByAccountId` ← Kafka character-deleted event (`account/consumer.go:46`), paired in the same handler with `asset.DeleteByStorageId` below | `storages` | part of the class-A pairing below | — |
+| `asset/administrator.go:61-65` `DeleteByStorageId` | Same `DeleteByAccountId` handler as above | `storage_assets` | **A** (2 tables, `storages`+`storage_assets`, one logical delete-by-account operation, unwrapped) | unwrapped — no [T] |
+| `asset/administrator.go:47` `Create` | `Deposit` (`storage/processor.go:109`) | `storage_assets` | C (sub-step; multi-write risk already captured under `ExpireAndEmit`/`MergeAndSort` where relevant) | — |
+| `asset/administrator.go:55-58` `Delete` | `Withdraw`/`Release`/`MergeAndSort` loop/`ExpireAndEmit` | `storage_assets` | C standalone; part of A/B above where applicable | — |
+| `asset/administrator.go:75-81` `UpdateQuantity` | `Withdraw` (partial), `Accept` (merge), `Release` (partial), `MergeAndSort` loop | `storage_assets` | C standalone; part of B (`MergeAndSort`) where applicable | — |
+| `asset/entity.go:61` raw `db.Exec` `UPDATE storage_assets SET flag = flag \| ...` | bitwise flag-update helper | `storage_assets` | C (single statement) | — |
+| `storage/administrator.go:38-44` `UpdateCapacity` | **no call site found** in any processor/consumer/resource file read | `storages` | N/A — dead/unreferenced code, not a live write path | — |
+
+### Exclusions (non-DB write-verb hits)
+
+| file:line | Reason |
+|---|---|
+| `kafka/consumer/storage/consumer.go:145,172` | `projection.GetManager().Create(...)`/`.Delete(...)` — `projection.Manager` (`projection/manager.go:21-30,52-73`) is backed by an `atlas-redis` `TenantRegistry`, a Redis-backed session cache, not `*gorm.DB`. |
+| `kafka/consumer/compartment/consumer.go:104,136` | `projection.GetManager().Update(...)` — same Redis-backed cache. |
+| `kafka/consumer/character/consumer.go:91` | `projection.GetManager().Delete(...)` — same Redis-backed cache. |
+| `kafka/consumer/storage/consumer.go:168`, `kafka/consumer/character/consumer.go:87` | `storage.GetNpcContextCache()...Remove(characterId)` — in-memory/legacy NPC-context cache by usage shape (not opened line-by-line; consistent with the projection cache pattern), not a DB write. |
+
+### Verdicts
+
+- `ExpireAndEmit`: **A**, unwrapped — genuine gap. Remediation: wrap delete+replacement-create in `ExecuteTransaction`; move `emitExpiredEvent` to a buffer published after commit (this changes the current Warn-and-keep-delete failure mode on a failed replacement-create into fatal-and-rollback — intentional, per design §context.md decision 6, this **is** the atomicity gap being closed). `_(commit: pending — Task 10)_`
+- `MergeAndSort`: **B**, unwrapped — genuine gap, same severity as class A in practice. Remediation: wrap the merge loop + sort pass in one `ExecuteTransaction`; hoist `getSlotMaxByTemplateId` (network call to atlas-data) out of the per-group loop before the transaction opens (no network I/O inside a tx). `_(commit: pending — Task 11)_`
+- `GetOrCreateStorageId` / `GetOrCreateStorage`: **C + mandatory race annotation** — not class B (exactly one write each). Race: `world_id`+`account_id`(+`tenant_id`) is a `uniqueIndex` on `storages` (`storage/entity.go:10-13`), but the SELECT-then-INSERT here has no row lock and no serializable transaction; two concurrent first-time accesses for the same key can both miss the `First` and both attempt `Create`, with the loser surfacing a raw unique-constraint-violation 500 rather than a graceful retry-as-lookup. Closing this needs a DB-level fix (unique constraint is already present; add conflict-safe upsert or retry-on-conflict logic), not a transaction wrap — documented, not fixed here per the refined taxonomy. `_(commit: pending — Task 12)_` — Task 12 documents the annotation formally alongside the storage/asset `WithTransaction` plumbing added for Tasks 10-11; no schema change is in scope.
+- `storage.Delete` + `asset.DeleteByStorageId` (account-deletion cascade): **A**, unwrapped — 2 tables (`storages`, `storage_assets`), one logical operation, no transaction. `_(commit: pending — Task 10)_` (same commit as `ExpireAndEmit`, since both touch `storage/processor.go`'s planned `WithTransaction` plumbing).
+- All other single-statement administrator functions: **C** — no change.
+- `UpdateCapacity`: unreferenced dead code — footnote only, not a transaction-coverage finding.
+
+---
+
+## atlas-account
+
+### Write inventory
+
+| file:line | Entry point | Writes | Class | Flags |
+|---|---|---|---|---|
+| `account/administrator.go:18` `create` | `GetOrCreate` (`processor.go:141-153`, RMW) ← `AttemptLogin` auto-register; also standalone `Create` (`processor.go:153`) ← REST create handler | `accounts` | **C + mandatory race annotation** | — |
+| `account/administrator.go:36` `update` | `Update` (`processor.go:189` — actually the RMW body reading `GetById` then diffing changed columns) ← REST `PATCH` (`resource.go:50`) | `accounts` | C (single statement; minor documented RMW note, not a required-fix race) | — |
+| `account/administrator.go:43` `deleteById` | `Delete` (`processor.go:238`) ← `DeleteAndEmit`, guarded by a login-state check via `GetById` | `accounts` | C (single statement; minor documented TOCTOU note) | — |
+
+`account/entity.go` confirms `Entity.Name string` has **no `unique`/`uniqueIndex` gorm tag** — the race below is real, not hypothetical.
+
+### Exclusions (non-DB write-verb hits)
+
+None — `processor.go:153,238` and `resource.go:50` are entry-point delegators into the three administrator writes above, not separate writes.
+
+### Verdicts
+
+- `GetOrCreate`→`Create`: **C + mandatory race annotation.** `GetByName(name)` is checked for `ErrRecordNotFound` before falling through to `Create`; two concurrent auto-register attempts for the same `name` can both observe "not found" and both `INSERT`, producing duplicate `accounts` rows with the same name. **This is not closeable by a transaction wrap alone** — a transaction does not prevent two concurrent transactions from both reading "no row" under normal isolation; the actual fix is a unique index on `accounts.name` (schema change, out of scope for this task, documented per design §5.2's refinement). `_(commit: pending — Task 13)_` (documents the annotation; no code change).
+- `Update`: **C** — single statement. Documented note: concurrent `Update` calls targeting the *same* field (e.g. two concurrent `pinAttempts` bumps) can lose an update under the current read-then-diff-then-write shape; not required to fix here (single write, no rollback test is definable), noted for awareness.
+- `Delete`: **C** — single statement. Documented note: the preceding login-state check (`GetById`) is not re-verified atomically against the delete (`DELETE ... WHERE id=?` has no state predicate); low blast radius (administrative/rare path), and closing it would require moving login-state out of the in-process registry and into the row itself — out of scope.
+
+---
+
+## atlas-ban
+
+### Write inventory
+
+| file:line | Entry point | Writes | Class | Flags |
+|---|---|---|---|---|
+| `ban/administrator.go:26` `create` | `CreateAndEmit`/`Create` (`ban/processor.go:63`) ← Kafka command `CommandTypeCreate` (`kafka/consumer/ban/consumer.go:44`) | `bans` | C | — |
+| `ban/administrator.go:37` `deleteById` | `Delete` (`ban/processor.go:86`) ← Kafka command `CommandTypeDelete` (`consumer.go:66`) | `bans` | C | — |
+| `ban/administrator.go` `updateExpiresAt` | `ExpireBanAndEmit` ← REST | `bans` | C (RMW: `GetById` + `Permanent()` guard, one write) | — |
+| `history/administrator.go:22` `create` | `Record` (`history/processor.go:38`) ← Kafka `account_session_status_event` (`kafka/consumer/account/consumer.go:41,53`) | `login_history` | C | — |
+| `ban/task.go:31` ticker delete | `ExpiredBanCleanup.Run()` (registered `main.go:78`, own goroutine per `tasks/task.go:16-27`) | `bans` | D | single-statement sweep, independent of history |
+| `history/task.go:33` ticker delete | `HistoryPurge.Run()` (registered `main.go:79`, own goroutine) | `login_history` | D | single-statement sweep, independent of bans |
+
+### Exclusions (non-DB write-verb hits)
+
+None — REST/resource files delegate to the same processor/administrator writes already inventoried above, not separate writes.
+
+### Verdicts
+
+- **`ban`↔`history` pairing: refuted.** Design survey flagged this as an open question ("possible ban↔history pairing to confirm"). Traced both call chains fully: `kafka/consumer/ban/consumer.go:42-61` (`handleCreateBanCommand`, triggered by the `ban_command` Kafka topic) calls `ban.Processor.CreateAndEmit`→`Create`→`create` (`ban/administrator.go:26`) with **no reference anywhere in `ban/processor.go` or `ban/administrator.go` to the `history` package** (confirmed via import block and `grep -rln "atlas-ban/ban" services/atlas-ban/atlas.com/ban/history/*.go` → no hits, and vice versa). History rows are written exclusively by `kafka/consumer/account/consumer.go:41,53` (`handleCreatedSessionEvent`/`handleErrorSessionEvent`), triggered by the **separate** `account_session_status_event` Kafka topic emitted by **atlas-account** on login attempts — an entirely independent trigger from ban creation/deletion. Registered as two independent consumers in `main.go` subscribing to different topics. **No entry point writes both a `bans` row and a `login_history` row.** Both remain class C, single-table, single-statement.
+- All ban/history CRUD: **C** — no change. `_(commit: pending — Task 13)_` documents this refutation formally; no code change needed since both are already correctly single-statement.
+- Delete-sweep tickers (`ban/task.go`, `history/task.go`): **D** — justified; single-statement, independently-scheduled background sweeps with no cross-table coupling.
+
+---
+
+## atlas-maps
+
+### Write inventory
+
+| file:line | Entry point | Writes | Class | Flags |
+|---|---|---|---|---|
+| `character/location/administrator.go:19` `upsertLocation` (`db.Save`) | 5 call sites in `kafka/consumer/character/consumer.go` (login/map-change/channel-change events) + `channel_change_request.go:27` + `character/warp/processor.go:57`, all via `location.Processor.Set()` | `character_locations` | C | — |
+| `kafka/consumer/character/consumer.go:195` `handleStatusEventDeletedFunc` → `location.NewProcessor(...).Delete(event.CharacterId)` | Kafka character-deleted status event | `character_locations` (`character/location/administrator.go:27-34` `deleteLocation`) | part of the class-A pairing below | — |
+| `kafka/consumer/character/consumer.go:186` (same `handleStatusEventDeletedFunc`) → `visit.NewProcessor(...).DeleteByCharacterId(...)` | Same Kafka character-deleted status event | `character_map_visits` (`visit/administrator.go:24-31` `deleteByCharacterId`) | **A** (2 tables, `character_locations` + `character_map_visits`, one logical character-deletion cascade, sequential unwrapped calls at `:186` and `:195`) | unwrapped — no [T] |
+| `kafka/consumer/mist/consumer.go:64` `processorFactory(...).Create(c.Body)` | Kafka mist-spawn event | *(see exclusions — not a DB write)* | — | — |
+| `visit/administrator.go:9-22` `recordVisit` (`FirstOrCreate`) | `map/processor.go:66` character map-entry flow | `character_map_visits` | C | backed by a genuine DB unique index `idx_visits_tenant_char_map` (`visit/entity.go:13-15`) on `(tenant_id, character_id, map_id)` — unlike account's `GetOrCreate`, concurrent racers get a constraint violation rather than silent duplication; **not** a race-annotation case |
+
+### Exclusions (non-DB write-verb hits)
+
+| file:line | Reason |
+|---|---|
+| `map/weather/registry.go:81` | `Registry.Delete(key)` — in-memory only: `sync.RWMutex` + `map[FieldKey]WeatherEntry` singleton (`registry.go:22-34`), no `gorm`/`db` import in the file. |
+| `kafka/consumer/mist/consumer.go:64` | `processorFactory(...).Create(c.Body)` — `mist/processor.go`/`mist/registry.go` have zero `gorm`/`db` references; `mist/registry.go` is a `sync.RWMutex`-protected `map[string]*tenantBucket` singleton, same in-memory pattern as `weather`. |
+
+### Verdicts
+
+- `character_locations` upsert (`upsertLocation`), `character_map_visits` `recordVisit`: **C** — no change; `recordVisit`'s FirstOrCreate is race-safe via a genuine unique DB index (positive contrast to atlas-account's unguarded `GetOrCreate`).
+- **`handleStatusEventDeletedFunc`'s dual delete (`consumer.go:186` visits, `:195` location): class A** — this is a real finding not in the design-phase survey (which characterized maps as purely class C). Both deletes target different tables in one logical "character removed, clean up map state" operation, executed sequentially with independent error handling and no transaction — one can succeed while the other fails, leaving `character_locations` and `character_map_visits` inconsistent for a deleted character. `_(commit: pending — Task 13)_`
+- In-memory registry hits (`weather`, `mist`): excluded, not DB writes.
+
+---
+
+## atlas-map-actions
+
+### Write inventory
+
+| file:line | Entry point | Writes | Class | Flags |
+|---|---|---|---|---|
+| `script/administrator.go:21` `createMapScript` | REST `POST /maps/actions` (`resource.go:109`) | `map_scripts` | C | live REST CRUD, independent of the seeder cycle below |
+| `script/administrator.go:48` `updateMapScript` | REST `PATCH /maps/actions/{scriptId}` (`resource.go:141`) | `map_scripts` | C | — |
+| `script/administrator.go:71` `deleteMapScript` | REST `DELETE /maps/actions/{scriptId}` (`resource.go:166`) | `map_scripts` | C | — |
+| `script/administrator.go:78,86-88` `deleteAllMapScripts`/`DeleteAllByType` | Seeder subdomains `OnUserEnterSubdomain`/`OnFirstUserEnterSubdomain` (`subdomain_on_user_enter.go:29`, `subdomain_on_first_user_enter.go:28`) ← `libs/atlas-seeder/seed.go:87` via `POST /maps/actions/seed` | `map_scripts` (scoped by `script_type`) | D | seeder cycle |
+| `script/administrator.go:105` `BulkCreate` | Same two seeder subdomains (`subdomain_on_user_enter.go:45-47`, `subdomain_on_first_user_enter.go:44-46`) ← `libs/atlas-seeder/seed.go:112` | `map_scripts` | D | seeder cycle |
+
+### Exclusions (non-DB write-verb hits)
+
+| file:line | Reason |
+|---|---|
+| `script/executor.go:88,116,190,211,245` | `e.sagaP.Create(s)` — `mapactionsaga.ProcessorImpl.Create` (`saga/processor.go:28-30`) is a **Kafka producer publish** to `EnvCommandTopic` (`producer.ProviderImpl(...)`), consumed asynchronously by atlas-saga-orchestrator. **Correction to the design-phase hypothesis**, which labeled this "REST to saga-orchestrator" — verified mechanism is Kafka, not HTTP; the exclusion classification (not a DB write) still holds. |
+| `script/resource.go:109,141,166` | REST handler delegators into `administrator.go` writes already inventoried above. |
+
+### Verdicts
+
+- Live REST single-script CRUD (`createMapScript`/`updateMapScript`/`deleteMapScript`): **C** — no change; reachable independently of seeding.
+- Seeder-cycle delete-all + bulk-create: **D** — justified per shared `libs/atlas-seeder` semantics (`seed.go:22-39,85-120`); out-of-scope follow-up candidate if `atlas-seeder` itself is ever revisited, not a task here.
+
+---
+
+## atlas-portal-actions
+
+### Write inventory
+
+| file:line | Entry point | Writes | Class | Flags |
+|---|---|---|---|---|
+| `script/administrator.go:21` `createPortalScript` | REST `POST /portals/scripts` (`resource.go:110-142`) | `portal_scripts` | C | live REST CRUD |
+| `script/administrator.go:52` `updatePortalScript` | REST `PATCH /portals/scripts/{scriptId}` (`resource.go:145-178`) | `portal_scripts` | C | — |
+| `script/administrator.go:76` `deletePortalScript` | REST `DELETE /portals/scripts/{scriptId}` (`resource.go:181-196`) | `portal_scripts` | C | — |
+| `script/subdomain.go:28` `PortalSubdomain.DeleteAllForTenant` | seeder cycle ← `libs/atlas-seeder/seed.go:87` via `POST /portals/scripts/seed` | `portal_scripts` | D | seeder cycle; `script/administrator.go:83` `deleteAllPortalScripts` is defined but **unreferenced** — the seeder uses its own inline delete in `subdomain.go`, not this function |
+| `script/subdomain.go:83` `PortalSubdomain.BulkCreate` | seeder cycle ← `seed.go:112` | `portal_scripts` | D | seeder cycle |
+
+### Exclusions (non-DB write-verb hits)
+
+| file:line | Reason |
+|---|---|
+| `script/executor.go:116,163,198,247,291,360,429,473,507,558,587,621,663` | `e.sagaP.Create(s)` — Kafka producer publish (`portalsaga.ProcessorImpl.Create`, `saga/processor.go:28-30`, `EnvCommandTopic`), not REST, not a DB write. Same correction as map-actions. |
+| `script/resource.go:121,157,185` | REST handler delegators, not separate writes. |
+
+### Verdicts
+
+- Live REST CRUD: **C** — no change.
+- Seeder cycle: **D** — justified, same shared-lib semantics. `script/administrator.go:83` (`deleteAllPortalScripts`) is dead code — flagged as an inconsistency vs. map-actions (which does route through `administrator.go`), not a transaction-coverage finding.
+
+---
+
+## atlas-reactor-actions
+
+### Write inventory
+
+| file:line | Entry point | Writes | Class | Flags |
+|---|---|---|---|---|
+| `script/administrator.go:21` `createReactorScript` | REST `POST /reactors/actions` (`resource.go:109-142`) | `reactor_scripts` | C | live REST CRUD |
+| `script/administrator.go:52` `updateReactorScript` | REST `PATCH /reactors/actions/{scriptId}` (`resource.go:145-178`) | `reactor_scripts` | C | — |
+| `script/administrator.go:75` `deleteReactorScript` | REST `DELETE /reactors/actions/{scriptId}` (`resource.go:181-196`) | `reactor_scripts` | C | — |
+| `script/subdomain.go:28` `ReactorSubdomain.DeleteAllForTenant` | seeder cycle ← `seed.go:87` via `POST /reactors/actions/seed` | `reactor_scripts` | D | seeder cycle; `script/administrator.go:82` `deleteAllReactorScripts` is defined but **unreferenced**, same pattern as portal-actions |
+| `script/subdomain.go:90` `ReactorSubdomain.BulkCreate` | seeder cycle ← `seed.go:112` | `reactor_scripts` | D | seeder cycle |
+
+### Exclusions (non-DB write-verb hits)
+
+| file:line | Reason |
+|---|---|
+| `script/executor.go:180,241,346,396,427,473,497` | `e.sagaP.Create(s)` — Kafka producer publish (`reactorsaga.ProcessorImpl.Create`, `saga/processor.go:28-30`), confirmed zero `db`/`gorm` usage anywhere in `executor.go`. Same correction as map-actions/portal-actions. |
+| `script/resource.go:121,157,185` | REST handler delegators, not separate writes. |
+
+### Verdicts
+
+- Live REST CRUD: **C** — no change.
+- Seeder cycle: **D** — justified, same shared-lib semantics.
+
+---
+
+## atlas-party-quests
+
+### Write inventory
+
+| file:line | Entry point | Writes | Class | Flags |
+|---|---|---|---|---|
+| `definition/administrator.go:20` `createDefinition` | REST `POST /party-quests/definitions` (`resource.go:114`) | `definitions` | C | live REST CRUD |
+| `definition/administrator.go:46` `updateDefinition` | REST `PATCH /party-quests/definitions/{id}` (`resource.go:145`) | `definitions` | C | — |
+| `definition/administrator.go:67` `deleteDefinition` | REST `DELETE /party-quests/definitions/{id}` (`resource.go:169`) | `definitions` | C | — |
+| `definition/administrator.go:73` `deleteAllDefinitions` | `definition/subdomain.go:59`-equivalent `DeleteAllForTenant` ← `libs/atlas-seeder/seed.go:87` via `POST /party-quests/definitions/seed` | `definitions` | D | seeder cycle |
+| `definition/subdomain.go:59` `BulkCreate` | seeder cycle ← `seed.go:112` | `definitions` | D | **per-model loop of individual `db.Create` calls, not one bulk-slice INSERT** — a mid-loop error leaves a partial subset of that file's definitions committed with no rollback within the loop itself, a slightly worse partial-write shape than the atomic-bulk-insert used by map/portal/reactor-actions, but still governed by the same `runSubdomain` per-file continue-on-error accounting (`seed.go:106-116`) — same class-D justification applies |
+
+### Exclusions (non-DB write-verb hits)
+
+| file:line | Reason |
+|---|---|
+| `instance/processor.go:271,321,355,454,526,670,735,757,802,846,883,945,987,1001,1122,1452,1499,1539` (and all other `GetRegistry()` call sites in the file, 43 total including reads) | **Entire `instance/processor.go` state machine is in-memory, not DB-backed.** `instance/registry.go:19-22` — `Registry{ lock sync.Mutex; tenants map[tenant.Model]*tenantData }`, singleton via `sync.Once`, no `gorm`/DB import. `instance/processor.go` does hold a `*gorm.DB` field, but every one of its 15 uses is a read-only quest-definition lookup (`definition.NewProcessor(...).ByIdProvider/ByQuestIdProvider`), never a write. |
+| `definition/resource.go:114,145,169` | REST handler delegators into `administrator.go` writes already inventoried above. |
+
+### Verdicts
+
+- Live REST CRUD on `definitions`: **C** — no change.
+- Seeder cycle (delete-all + per-file bulk-create): **D** — justified, shared-lib semantics; noted the per-model-loop-vs-bulk-insert variance as an informational difference from the sibling `-actions` services, not a separate remediation item.
+- `instance/*`: entirely in-memory — excluded from DB-transaction scope; no class applies.
+
+---
+
+## atlas-saga-orchestrator
+
+### Write inventory
+
+| file:line | Entry point | Writes | Class | Flags |
+|---|---|---|---|---|
+| `saga/store.go:122-131` `Put` (existing-saga branch) | REST `POST /sagas` (`saga/resource.go:88`) and Kafka `kafka/consumer/saga/consumer.go:63`, both → `Processor.Put` → `store.Put` | `sagas` — single conditional `Model(&Entity{}).Where("transaction_id = ? AND version = ?", txId, ver).Updates(...)` | D | optimistic-version guard (in-memory `s.ver` map) is the concurrency mechanism, not a transaction |
+| `saga/store.go:174-177` `Put` (new-saga branch) | Same entry points | `sagas` — single `Clauses(clause.OnConflict{...}).Create(&e)` (Postgres upsert) | D | DB-level `ON CONFLICT DO UPDATE` provides the atomicity a transaction would add; single statement |
+| `saga/store.go:194-199` `Remove` | Saga-completion path | `sagas` — single unconditional status-update | D | single statement, no invariant to protect |
+| `saga/store.go:240-246` `UpdateStatusFailed` | Saga-failure/compensation path | `sagas` — single unconditional status-update | D | single statement |
+| `saga/store.go:299-304` `TryTransition` | Saga state-machine transitions | `sagas` — single conditional `Where("transaction_id = ? AND status = ?", ...).Updates(...)` (explicit compare-and-swap, comment at `store.go:286-289`) | D | textbook single-statement CAS — the guard *is* the concurrency control |
+
+### Exclusions (non-DB write-verb hits)
+
+| file:line | Reason |
+|---|---|
+| `main.go:197,249` | `tenant.Create(...)` — builds an in-memory `tenant.Model` via `libs/atlas-tenant/processor.go:19-32`, no DB/network I/O. |
+| `saga/handler.go:1397` | `h.inviteP.Create(...)` — `invite.ProcessorImpl.Create` (`invite/processor.go:32-41`) is a Kafka command emission (`producer.ProviderImpl(...)(invite2.EnvCommandTopic)`), not a local DB write. |
+| `saga/handler.go:2373` | `h.savedLocationP.Delete(...)` — `saved_location.ProcessorImpl.Delete` (`saved_location/processor.go:44-50`) calls `requests.DeleteRequest(url)` — a genuine outbound REST HTTP call to another service, not a local DB write. |
+
+Full-service reconciliation: re-ran `grep -rn "\.Create(\|\.Save(\|\.Update(\|\.Updates(\|\.Delete(\|\.Exec(" services/atlas-saga-orchestrator --include='*.go' | grep -v _test.go` — exactly 5 hits (`handler.go:1397`, `handler.go:2373`, `store.go:177`, `main.go:197`, `main.go:249`), all accounted for above; the broader `.Updates(` pattern additionally surfaces `store.go:124,194,241,301` (also reconciled above). No other DB-write call sites exist in this service.
+
+### Verdicts
+
+- All `sagas`-table writes: **D** — intentionally non-atomic. The optimistic-version guard (`s.ver` in-memory map, compare-and-swap `WHERE version=?`/`WHERE status=?` clauses) is the concurrency mechanism; saga compensation (not a DB transaction) is how partial cross-service state is handled when a step fails. A transaction wrap adds nothing here (single statement per write, DB already guarantees per-row atomicity for the UPDATE/upsert). No remediation task — documented as-is.
+- Outbound calls (`inviteP.Create`, `savedLocationP.Delete`): excluded, not DB writes.
+
+---
+
+## Closing 14-service matrix
+
+| Service | Classes found | Action | Remediation task | Status |
+|---|---|---|---|---|
+| atlas-keys | B ×4, all [T] | Standardize (`db.Transaction` → `ExecuteTransaction`) | Task 5 | `_(commit: pending — Task 5)_` |
+| atlas-families | B ×3, all [T] | Standardize | Task 6 | `_(commit: pending — Task 6)_`; informational flag on `AddJunior`'s untransacted auto-provision side effect |
+| atlas-npc-conversations | A ×6 (npc pkg, [T]); C ×4 (quest pkg); D (seeder ×2) | Standardize the 6 [T] sites; no change for quest CRUD; seeder is out-of-scope follow-up candidate | Task 7 | `_(commit: pending — Task 7)_`; completeness note on seeder-path recipe orphaning (not a transaction-coverage defect) |
+| atlas-monster-book | A ×2 ([T], one [E], one clean) | Standardize both; fix [E] on `handleCardPickedUp` via canonical composition (design §6.1) | Task 8 | `_(commit: pending — Task 8)_` |
+| atlas-marriages | A (live path — genuinely unwrapped, corrects design hypothesis); A [T][E] (dead-code twin) | Wrap the live `AcceptProposalAndEmit` writes in `ExecuteTransaction`; delete or retire the unreachable manual-tx twin | Task 9 | `_(commit: pending — Task 9)_` |
+| atlas-storage | A ×2 (`ExpireAndEmit`, account-deletion cascade), B ×1 (`MergeAndSort`), C+race ×2 (`GetOrCreateStorageId`, `GetOrCreateStorage`) | Wrap the 3 genuine gaps; document the 2 race annotations (no schema change in scope) | Tasks 10–12 | `_(commit: pending — Task 10/11/12)_` |
+| atlas-account | C ×3, one with mandatory race annotation (`GetOrCreate`→`Create`, name-uniqueness) | No change; document race annotation | Task 13 | `_(commit: pending — Task 13)_` |
+| atlas-ban | C ×4 (CRUD) + D ×2 (tickers); ban↔history pairing **refuted** | No change; document the refutation | Task 13 | `_(commit: pending — Task 13)_` |
+| atlas-maps | C ×3; **A ×1 (new finding: `handleStatusEventDeletedFunc` dual delete, not in the design survey)** | No change to the C flows; wrap the character-deletion dual-delete | Task 13 | `_(commit: pending — Task 13)_` |
+| atlas-map-actions | C ×3 (live REST CRUD) + D ×2 (seeder) | No change; seeder is out-of-scope follow-up candidate | — (no task; already correct) | Confirmed, no remediation needed |
+| atlas-portal-actions | C ×3 (live REST CRUD) + D ×2 (seeder) | No change; seeder is out-of-scope follow-up candidate | — (no task; already correct) | Confirmed, no remediation needed |
+| atlas-reactor-actions | C ×3 (live REST CRUD) + D ×2 (seeder) | No change; seeder is out-of-scope follow-up candidate | — (no task; already correct) | Confirmed, no remediation needed |
+| atlas-party-quests | C ×3 (live REST CRUD, `definitions`) + D ×2 (seeder); `instance/*` entirely in-memory (excluded) | No change; seeder is out-of-scope follow-up candidate | — (no task; already correct) | Confirmed, no remediation needed |
+| atlas-saga-orchestrator | D ×5 (optimistic-version store) | No change — justified as-is | — (no task; already correct) | Confirmed, no remediation needed |
+
+**Follow-up candidate (out of scope for this task, not assigned a task number):** the shared `libs/atlas-seeder` delete-all+bulk-create cycle (`seed.go:85-120`) underlies every class-D verdict in atlas-map-actions, atlas-portal-actions, atlas-reactor-actions, and atlas-party-quests' `definition/*`. Wrapping it in a transaction would change semantics (continue-on-error per-file accounting, §5.2) for every consumer of the shared lib, including services outside this task's scope (e.g. atlas-npc-conversations' and atlas-npc-shops'-style seeders elsewhere in the monorepo, not audited here). Any such change belongs to a dedicated `libs/atlas-seeder` design task, not to task-119's remediation commits.
+
+**Corrections to the design-phase survey (§3) surfaced by this full sweep**, for the record:
+1. **atlas-marriages** is *not* already-transactional on its live path — the design's `[T][E]` finding describes dead code (`executeInTransaction`/`AcceptProposalWithTransactionAndEmit`, zero callers). The actual production accept-flow (`AcceptProposalAndEmit`) is a genuine unwrapped class-A gap.
+2. **ban↔history pairing** is refuted — the two are fully independent write paths, no entry point writes both.
+3. **atlas-maps** has one class-A finding (`handleStatusEventDeletedFunc`'s dual delete) that the design survey did not anticipate (it characterized maps as purely class C).
+4. **atlas-monster-book**'s second consumer site (`kafka/consumer/character/consumer.go`) has **no** emit inside it — the design implied both monster-book sites might share the `[E]` defect; only `handleCardPickedUp` does.
+5. **map/portal/reactor-actions' `sagaP.Create`** calls are Kafka producer publishes, not REST calls to atlas-saga-orchestrator as the design phrased it — exclusion classification is unaffected, transport label is corrected.
+6. **atlas-storage**'s account-deletion cascade (`storage.Delete` + `asset.DeleteByStorageId`, both invoked from the same Kafka handler) is an additional class-A finding beyond the three flows (`ExpireAndEmit`, `MergeAndSort`, `GetOrCreateStorageId`) the design survey named.

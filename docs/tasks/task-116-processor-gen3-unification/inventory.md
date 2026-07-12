@@ -45,7 +45,7 @@ Notes on interpreting the output:
 | `services/atlas-pets/atlas.com/pets/pet/processor.go` | CP-2 | R1 | 5 | done |
 | `services/atlas-npc-conversations/atlas.com/npc/validation/processor.go` | CP-2 | R1 | 6 | done |
 | `services/atlas-mounts/atlas.com/mounts/mount/processor.go` | CP-2 | R1 | 7 | done |
-| `services/atlas-chairs/atlas.com/chairs/validation/processor.go` | Gen2 | R2 | 8 | pending |
+| `services/atlas-chairs/atlas.com/chairs/validation/processor.go` | Gen2 | R2 | 8 | done |
 | `services/atlas-storage/atlas.com/storage/asset/processor.go` | Gen2 | R2 | 9 | pending |
 | `services/atlas-storage/atlas.com/storage/storage/processor.go` | Gen2 | R2 | 9 | pending |
 | `services/atlas-map-actions/atlas.com/map-actions/script/processor.go` | Gen2.5 | R2 | 10 | pending |

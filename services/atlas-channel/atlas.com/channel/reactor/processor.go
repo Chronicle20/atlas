@@ -11,28 +11,36 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type Processor struct {
+type Processor interface {
+	InMapModelProvider(f field.Model) model.Provider[[]Model]
+	ForEachInMap(f field.Model, o model.Operator[Model]) error
+	Hit(f field.Model, reactorId uint32, characterId uint32, stance uint16, skillId uint32) error
+}
+
+type ProcessorImpl struct {
 	l   logrus.FieldLogger
 	ctx context.Context
 }
 
-func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
-	p := &Processor{
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
+	p := &ProcessorImpl{
 		l:   l,
 		ctx: ctx,
 	}
 	return p
 }
 
-func (p *Processor) InMapModelProvider(f field.Model) model.Provider[[]Model] {
+var _ Processor = (*ProcessorImpl)(nil)
+
+func (p *ProcessorImpl) InMapModelProvider(f field.Model) model.Provider[[]Model] {
 	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestInMap(f), Extract, model.Filters[Model]())
 }
 
-func (p *Processor) ForEachInMap(f field.Model, o model.Operator[Model]) error {
+func (p *ProcessorImpl) ForEachInMap(f field.Model, o model.Operator[Model]) error {
 	return model.ForEachSlice(p.InMapModelProvider(f), o, model.ParallelExecute())
 }
 
-func (p *Processor) Hit(f field.Model, reactorId uint32, characterId uint32, stance uint16, skillId uint32) error {
+func (p *ProcessorImpl) Hit(f field.Model, reactorId uint32, characterId uint32, stance uint16, skillId uint32) error {
 	p.l.Debugf("Sending hit command for reactor [%d]. CharacterId [%d]. Stance [%d]. SkillId [%d].", reactorId, characterId, stance, skillId)
 	return producer.ProviderImpl(p.l)(p.ctx)(reactor2.EnvCommandTopic)(HitCommandProvider(f, reactorId, characterId, stance, skillId))
 }

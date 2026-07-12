@@ -68,7 +68,7 @@ func installFakes(t *testing.T, caster character.Model, casterErr error, mobs []
 		}
 		return caster, nil
 	}
-	rectQueryFunc = func(_ *monster.Processor, _ field.Model, _, _, _, _ int16, _ uint32) ([]monster.Model, error) {
+	rectQueryFunc = func(_ monster.Processor, _ field.Model, _, _, _, _ int16, _ uint32) ([]monster.Model, error) {
 		if rectErr != nil {
 			return nil, rectErr
 		}
@@ -81,11 +81,11 @@ func installFakes(t *testing.T, caster character.Model, casterErr error, mobs []
 		}
 		return monster.ReflectInfo{}, false
 	}
-	applyStatusFunc = func(_ *monster.Processor, _ field.Model, monsterId, _, skillId, _ uint32, statuses map[string]int32, duration uint32) error {
+	applyStatusFunc = func(_ monster.Processor, _ field.Model, monsterId, _, skillId, _ uint32, statuses map[string]int32, duration uint32) error {
 		f.applies = append(f.applies, applyCall{monsterId: monsterId, skillId: skillId, statuses: statuses, duration: duration})
 		return nil
 	}
-	cancelStatusFunc = func(_ *monster.Processor, _ field.Model, monsterId uint32, _ []string, _, skillId uint32, class string) error {
+	cancelStatusFunc = func(_ monster.Processor, _ field.Model, monsterId uint32, _ []string, _, skillId uint32, class string) error {
 		f.cancels = append(f.cancels, cancelCall{monsterId: monsterId, skillId: skillId, class: class})
 		return nil
 	}
@@ -216,7 +216,7 @@ func TestApplyToMobs_NoBbox_TrustsClient(t *testing.T) {
 	t.Cleanup(func() { rectQueryFunc = prevRect })
 
 	f := installFakes(t, mkCaster(1001), nil, nil, nil, nil, true)
-	rectQueryFunc = func(_ *monster.Processor, _ field.Model, _, _, _, _ int16, _ uint32) ([]monster.Model, error) {
+	rectQueryFunc = func(_ monster.Processor, _ field.Model, _, _, _, _ int16, _ uint32) ([]monster.Model, error) {
 		rectCalled = true
 		return nil, nil
 	}

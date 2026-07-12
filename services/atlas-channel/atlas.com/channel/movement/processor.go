@@ -24,7 +24,14 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type Processor struct {
+type Processor interface {
+	ForCharacter(f field.Model, characterId uint32, movement model.Movement) error
+	ForNPC(f field.Model, characterId uint32, objectId uint32, unk byte, unk2 byte, movement model.Movement) error
+	ForPet(f field.Model, characterId uint32, petId uint32, movement model.Movement) error
+	ForMonster(f field.Model, characterId uint32, objectId uint32, moveId int16, skillPossible bool, skill int8, skillId int16, skillLevel int16, mt model.MultiTargetForBall, rt model.RandTimeForAreaAttack, movement model.Movement) error
+}
+
+type ProcessorImpl struct {
 	l   logrus.FieldLogger
 	ctx context.Context
 	wp  writer.Producer
@@ -32,8 +39,8 @@ type Processor struct {
 	sp  *session.Processor
 }
 
-func NewProcessor(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) *Processor {
-	p := &Processor{
+func NewProcessor(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) Processor {
+	p := &ProcessorImpl{
 		l:   l,
 		ctx: ctx,
 		wp:  wp,
@@ -43,7 +50,9 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, wp writer.Producer)
 	return p
 }
 
-func (p *Processor) ForCharacter(f field.Model, characterId uint32, movement model.Movement) error {
+var _ Processor = (*ProcessorImpl)(nil)
+
+func (p *ProcessorImpl) ForCharacter(f field.Model, characterId uint32, movement model.Movement) error {
 	go func() {
 		op := session.Announce(p.l)(p.ctx)(p.wp)(charpkt.CharacterMovementWriter)(charpkt.NewCharacterMovement(characterId, movement).Encode)
 		err := _map2.NewProcessor(p.l, p.ctx).ForOtherSessionsInMap(f, characterId, op)
@@ -64,7 +73,7 @@ func (p *Processor) ForCharacter(f field.Model, characterId uint32, movement mod
 	return nil
 }
 
-func (p *Processor) ForNPC(f field.Model, characterId uint32, objectId uint32, unk byte, unk2 byte, movement model.Movement) error {
+func (p *ProcessorImpl) ForNPC(f field.Model, characterId uint32, objectId uint32, unk byte, unk2 byte, movement model.Movement) error {
 	go func() {
 		n, err := npc.NewProcessor(p.l, p.ctx).GetInMapByObjectId(f.MapId(), objectId)
 		if err != nil {
@@ -81,7 +90,7 @@ func (p *Processor) ForNPC(f field.Model, characterId uint32, objectId uint32, u
 	return nil
 }
 
-func (p *Processor) ForPet(f field.Model, characterId uint32, petId uint32, movement model.Movement) error {
+func (p *ProcessorImpl) ForPet(f field.Model, characterId uint32, petId uint32, movement model.Movement) error {
 	go func() {
 		// TODO look up pet.
 		pe := pet.NewModelBuilder(petId, 0, 0, "").
@@ -108,7 +117,7 @@ func (p *Processor) ForPet(f field.Model, characterId uint32, petId uint32, move
 	return nil
 }
 
-func (p *Processor) ForMonster(f field.Model, characterId uint32, objectId uint32, moveId int16, skillPossible bool, skill int8, skillId int16, skillLevel int16, mt model.MultiTargetForBall, rt model.RandTimeForAreaAttack, movement model.Movement) error {
+func (p *ProcessorImpl) ForMonster(f field.Model, characterId uint32, objectId uint32, moveId int16, skillPossible bool, skill int8, skillId int16, skillLevel int16, mt model.MultiTargetForBall, rt model.RandTimeForAreaAttack, movement model.Movement) error {
 	mo, err := monster.NewProcessor(p.l, p.ctx).GetById(objectId)
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to locate monster [%d] moving.", objectId)

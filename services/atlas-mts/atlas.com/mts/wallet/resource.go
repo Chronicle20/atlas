@@ -79,7 +79,7 @@ func handleGetWallet(rf ReaderFactory) rest.GetHandler {
 				prepaid, points, err := rf(d).Balance(accountId)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Retrieving MTS wallet for account [%d].", accountId)
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 

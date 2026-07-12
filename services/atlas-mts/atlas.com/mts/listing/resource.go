@@ -90,7 +90,7 @@ func handleCancelListing(d *rest.HandlerDependency, c *rest.HandlerContext) http
 					w.WriteHeader(http.StatusForbidden)
 				default:
 					d.Logger().WithError(err).Errorf("Cancelling listing [%s].", listingId)
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 				}
 				return
 			}
@@ -242,14 +242,14 @@ func handleBrowseListings(d *rest.HandlerDependency, c *rest.HandlerContext) htt
 			ms, err := p.Browse(worldId, StateActive, f)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Browsing listings for world [%d].", byte(worldId))
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
 			res, err := model.SliceMap(Transform)(model.FixedProvider(ms))(model.ParallelMap())()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -270,7 +270,7 @@ func handleBrowseListings(d *rest.HandlerDependency, c *rest.HandlerContext) htt
 			total, err := p.CountBrowse(worldId, StateActive, f)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Counting listings for world [%d].", byte(worldId))
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 			pageSize := f.PageSize
@@ -295,14 +295,14 @@ func handleGetListing(d *rest.HandlerDependency, c *rest.HandlerContext) http.Ha
 					return
 				}
 				d.Logger().WithError(err).Errorf("Retrieving listing [%s].", listingId)
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
 			rm, err := Transform(m)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 			t := tenant.MustFromContext(d.Context())

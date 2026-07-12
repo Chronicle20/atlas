@@ -68,6 +68,14 @@ func main() {
 		transaction.Migration,
 	))
 
+	server.RegisterTransientErrorClassifier(func(err error) bool {
+		if database.IsTransientConnectionError(err) {
+			database.CountTransient(err)
+			return true
+		}
+		return false
+	})
+
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	custodyConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	mtsConsumer.InitConsumers(l)(cmf)(consumerGroupId)

@@ -55,14 +55,14 @@ func handleGetCharacterWishlist(d *rest.HandlerDependency, c *rest.HandlerContex
 			}
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Retrieving wishlist for character [%d].", characterId)
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
 			res, err := model.SliceMap(Transform)(model.FixedProvider(ms))(model.ParallelMap())()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -82,14 +82,14 @@ func handleGetWorldWishlist(d *rest.HandlerDependency, c *rest.HandlerContext) h
 			ms, err := NewProcessor(d.Logger(), d.Context(), d.DB()).GetWantedByWorld(worldId)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Retrieving world wishlist for world [%d].", byte(worldId))
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
 			res, err := model.SliceMap(Transform)(model.FixedProvider(ms))(model.ParallelMap())()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -116,14 +116,14 @@ func handleCreateWish(d *rest.HandlerDependency, c *rest.HandlerContext, rm Rest
 			created, err := NewProcessor(d.Logger(), d.Context(), d.DB()).Create(m)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating wish entry.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
 			res, err := Transform(created)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -154,7 +154,7 @@ func handleDeleteWish(d *rest.HandlerDependency, c *rest.HandlerContext) http.Ha
 		ok, err := NewProcessor(d.Logger(), d.Context(), d.DB()).Delete(wishId)
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Deleting wish entry [%s].", wishId)
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteErrorResponse(d.Logger())(w)(err)
 			return
 		}
 		if !ok {

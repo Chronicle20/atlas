@@ -103,7 +103,13 @@ func StartWorker(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.D
 						l.WithError(err).Errorf("Failed to initialize NPC string registry for map worker.")
 						return err
 					}
-					err = RegisterAllData(l)(ctx)(path, filepath.Join("Map.wz", "Map"), _map.RegisterMap(db))()
+					err = RegisterAllData(l)(ctx)(path, filepath.Join("Map.wz", "Map"), func(l logrus.FieldLogger) func(ctx context.Context) func(filePath string) error {
+						return func(ctx context.Context) func(filePath string) error {
+							return func(filePath string) error {
+								return _map.NewProcessor(l, ctx, db).RegisterMap(filePath)
+							}
+						}
+					})()
 					_ = _map.GetMapStringRegistry().Clear(t)
 					// Note: Don't clear NPC registry here - WorkerNPC may run concurrently and needs it
 				} else if name == WorkerMonster {

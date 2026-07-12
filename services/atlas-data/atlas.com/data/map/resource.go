@@ -152,7 +152,7 @@ func handleGetMapPortalsByNameRequest(db *gorm.DB) func(d *rest.HandlerDependenc
 				portalName := vars["name"]
 
 				s := NewStorage(d.Logger(), db)
-				res, err := GetPortalsByName(s)(d.Context())(mapId, portalName)
+				res, err := NewProcessor(d.Logger(), d.Context(), db).GetPortalsByName(s, mapId, portalName)
 				if err != nil {
 					d.Logger().WithError(err).Debugf("Unable to locate map %d.", mapId)
 					w.WriteHeader(http.StatusNotFound)
@@ -172,7 +172,7 @@ func handleGetMapPortalsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *
 		return rest.ParseMapId(d.Logger(), func(mapId _map.Id) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
 				s := NewStorage(d.Logger(), db)
-				res, err := GetPortals(s)(d.Context())(mapId)
+				res, err := NewProcessor(d.Logger(), d.Context(), db).GetPortals(s, mapId)
 				if err != nil {
 					d.Logger().WithError(err).Debugf("Unable to locate map %d.", mapId)
 					w.WriteHeader(http.StatusNotFound)
@@ -193,7 +193,7 @@ func handleGetMapPortalRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *r
 			return rest.ParsePortalId(d.Logger(), func(portalId uint32) http.HandlerFunc {
 				return func(w http.ResponseWriter, r *http.Request) {
 					s := NewStorage(d.Logger(), db)
-					res, err := GetPortalById(s)(d.Context())(mapId, portalId)
+					res, err := NewProcessor(d.Logger(), d.Context(), db).GetPortalById(s, mapId, portalId)
 					if err != nil {
 						d.Logger().WithError(err).Debugf("Unable to locate map %d.", mapId)
 						w.WriteHeader(http.StatusNotFound)
@@ -214,7 +214,7 @@ func handleGetMapReactorsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c 
 		return rest.ParseMapId(d.Logger(), func(mapId _map.Id) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
 				s := NewStorage(d.Logger(), db)
-				res, err := GetReactors(s)(d.Context())(mapId)
+				res, err := NewProcessor(d.Logger(), d.Context(), db).GetReactors(s, mapId)
 				if err != nil {
 					d.Logger().WithError(err).Debugf("Unable to locate map %d.", mapId)
 					w.WriteHeader(http.StatusNotFound)
@@ -242,7 +242,7 @@ func handleGetMapNPCsByObjectIdRequest(db *gorm.DB) func(d *rest.HandlerDependen
 				}
 
 				s := NewStorage(d.Logger(), db)
-				res, err := GetNpcsByObjectId(s)(d.Context())(mapId, uint32(objectId))
+				res, err := NewProcessor(d.Logger(), d.Context(), db).GetNpcsByObjectId(s, mapId, uint32(objectId))
 				if err != nil {
 					d.Logger().WithError(err).Debugf("Unable to locate map %d object %d.", mapId, objectId)
 					w.WriteHeader(http.StatusNotFound)
@@ -262,7 +262,7 @@ func handleGetMapNPCsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *res
 		return rest.ParseMapId(d.Logger(), func(mapId _map.Id) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
 				s := NewStorage(d.Logger(), db)
-				res, err := GetNpcs(s)(d.Context())(mapId)
+				res, err := NewProcessor(d.Logger(), d.Context(), db).GetNpcs(s, mapId)
 				if err != nil {
 					d.Logger().WithError(err).Debugf("Unable to locate map %d.", mapId)
 					w.WriteHeader(http.StatusNotFound)
@@ -283,7 +283,7 @@ func handleGetMapNPCRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest
 			return rest.ParseNPC(d.Logger(), func(npcId uint32) http.HandlerFunc {
 				return func(w http.ResponseWriter, r *http.Request) {
 					s := NewStorage(d.Logger(), db)
-					res, err := GetNpc(s)(d.Context())(mapId, npcId)
+					res, err := NewProcessor(d.Logger(), d.Context(), db).GetNpc(s, mapId, npcId)
 					if err != nil {
 						d.Logger().WithError(err).Debugf("Unable to locate map %d.", mapId)
 						w.WriteHeader(http.StatusNotFound)
@@ -305,7 +305,7 @@ func handleGetMapMonstersRequest(db *gorm.DB) func(d *rest.HandlerDependency, c 
 			return func(w http.ResponseWriter, r *http.Request) {
 				s := NewStorage(d.Logger(), db)
 				ms := monstertpl.NewStorage(d.Logger(), db)
-				res, err := GetMonsters(s, ms)(d.Context())(mapId)
+				res, err := NewProcessor(d.Logger(), d.Context(), db).GetMonsters(s, ms, mapId)
 				if err != nil {
 					d.Logger().WithError(err).Debugf("Unable to locate map %d.", mapId)
 					w.WriteHeader(http.StatusNotFound)

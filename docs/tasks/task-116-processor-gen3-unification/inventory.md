@@ -53,9 +53,9 @@ Notes on interpreting the output:
 | `services/atlas-portal-actions/atlas.com/portal/script/processor.go` | Gen2.5 | R2 | 11 | done |
 | `services/atlas-portal-actions/atlas.com/portal/validation/processor.go` | CP-2 | R1 | 11 | done |
 | `services/atlas-reactor-actions/atlas.com/reactor/script/processor.go` | Gen2.5 | R2 | 12 | done |
-| `services/atlas-messengers/atlas.com/messengers/character/processor.go` | Gen2.5 (also CP-2 shaped) | R2 | 13 | pending |
-| `services/atlas-messengers/atlas.com/messengers/invite/processor.go` | Gen1 | R3 | 13 | pending |
-| `services/atlas-messengers/atlas.com/messengers/messenger/processor.go` | Gen2.5 (also CP-2 shaped) | R2 | 13 | pending |
+| `services/atlas-messengers/atlas.com/messengers/character/processor.go` | Gen2.5 (also CP-2 shaped) | R2 | 13 | done |
+| `services/atlas-messengers/atlas.com/messengers/invite/processor.go` | Gen1 | R3 | 13 | done |
+| `services/atlas-messengers/atlas.com/messengers/messenger/processor.go` | Gen2.5 (also CP-2 shaped) | R2 | 13 | done |
 | `services/atlas-configurations/atlas.com/configurations/data/processor.go` | Gen1 | R4-client | 14 | pending |
 | `services/atlas-configurations/atlas.com/configurations/services/processor.go` | Gen2 | R2 | 14 | pending |
 | `services/atlas-configurations/atlas.com/configurations/templates/processor.go` | Gen2 | R2 | 14 | pending |

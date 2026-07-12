@@ -263,7 +263,13 @@ func StartWorker(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.D
 						}
 					})()
 				} else if name == WorkerHair {
-					err = RegisterAllData(l)(ctx)(path, filepath.Join("Character.wz", "Hair"), hair.RegisterHair(db))()
+					err = RegisterAllData(l)(ctx)(path, filepath.Join("Character.wz", "Hair"), func(l logrus.FieldLogger) func(ctx context.Context) func(filePath string) error {
+						return func(ctx context.Context) func(filePath string) error {
+							return func(filePath string) error {
+								return hair.NewProcessor(l, ctx, db).RegisterHair(filePath)
+							}
+						}
+					})()
 				} else if name == WorkerMobSkill {
 					if err = mobskill.InitString(t, filepath.Join(path, "String.wz", "MobSkill.img.xml")); err != nil {
 						l.WithError(err).Warnf("Failed to initialize mob skill string registry; names will be empty.")

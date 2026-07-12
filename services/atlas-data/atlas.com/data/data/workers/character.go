@@ -65,7 +65,13 @@ func (Character) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc 
 		l.WithError(err).Warnf("walk %s", faceDir)
 	}
 	hairDir := filepath.Join(base, "Hair")
-	if err := registerAllInDirectory(l, ctx, hairDir, hair.RegisterHair(db)); err != nil {
+	if err := registerAllInDirectory(l, ctx, hairDir, func(l logrus.FieldLogger) func(ctx context.Context) func(path string) error {
+		return func(ctx context.Context) func(path string) error {
+			return func(path string) error {
+				return hair.NewProcessor(l, ctx, db).RegisterHair(path)
+			}
+		}
+	}); err != nil {
 		l.WithError(err).Warnf("walk %s", hairDir)
 	}
 

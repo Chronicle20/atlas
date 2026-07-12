@@ -98,6 +98,60 @@ jobs:
         run: ./tools/redis-key-guard.sh
 
   # ============================================
+  # Outbox Guard
+  # Builds tools/outboxguard (go/analysis analyzer)
+  # and runs it over every Go service module. Fails
+  # if any service constructs producer.ProviderImpl
+  # inside a DB transaction closure — directly, or
+  # transitively through a concrete (statically-
+  # resolvable) helper call (Facts-based). Interface-
+  # dispatched emits are the DI seam and out of scope.
+  # Such a call must route through the atlas-outbox lib
+  # so the Kafka enqueue is atomic with the domain
+  # write (task-114 outbox adoption).
+  # ============================================
+  outbox-guard:
+    name: Outbox Guard
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: outbox guard
+        run: ./tools/outbox-guard.sh
+
+  # ============================================
+  # Goroutine Guard
+  # Self-tests + builds the goroutineguard
+  # analyzer and runs it over every Go module
+  # under services/ and libs/. Fails on any bare
+  # go statement outside libs/atlas-routine or a
+  # justified //goroutine-guard:allow marker
+  # (RR-6, task-115).
+  # ============================================
+  goroutine-guard:
+    name: Goroutine Guard
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: goroutine guard
+        run: ./tools/goroutine-guard.sh
+
+  # ============================================
   # LB Port Drift Guard
   # Regenerates the per-version login/channel LB
   # socket port manifests from versions.json and
@@ -477,7 +531,7 @@ jobs:
   # ============================================
   pr-validation-complete:
     name: PR Validation Complete
-    needs: [detect-changes, test-go-libraries, test-go-services, test-ui, build-docker, update-pr-overlay, redis-key-guard, gen-lb-ports]
+    needs: [detect-changes, test-go-libraries, test-go-services, test-ui, build-docker, update-pr-overlay, redis-key-guard, outbox-guard, goroutine-guard, gen-lb-ports]
     if: always()
     runs-on: ubuntu-latest
 
@@ -494,6 +548,8 @@ jobs:
           DOCKER_RESULT="${{ needs.build-docker.result }}"
           OVERLAY_RESULT="${{ needs.update-pr-overlay.result }}"
           GUARD_RESULT="${{ needs.redis-key-guard.result }}"
+          OUTBOX_GUARD_RESULT="${{ needs.outbox-guard.result }}"
+          GOROUTINE_GUARD_RESULT="${{ needs.goroutine-guard.result }}"
           LBPORTS_RESULT="${{ needs.gen-lb-ports.result }}"
 
           echo "| Job | Result |" >> $GITHUB_STEP_SUMMARY
@@ -504,12 +560,14 @@ jobs:
           echo "| Docker Builds | $DOCKER_RESULT |" >> $GITHUB_STEP_SUMMARY
           echo "| Resolve PR overlay | $OVERLAY_RESULT |" >> $GITHUB_STEP_SUMMARY
           echo "| Redis Key Guard | $GUARD_RESULT |" >> $GITHUB_STEP_SUMMARY
+          echo "| Outbox Guard | $OUTBOX_GUARD_RESULT |" >> $GITHUB_STEP_SUMMARY
+          echo "| Goroutine Guard | $GOROUTINE_GUARD_RESULT |" >> $GITHUB_STEP_SUMMARY
           echo "| LB Port Drift Guard | $LBPORTS_RESULT |" >> $GITHUB_STEP_SUMMARY
 
           # Fail if any required job failed. update-pr-overlay is allowed
           # to be skipped (e.g., when the deploy-env label is absent) but
           # not to fail outright.
-          if [ "$LIBS_RESULT" == "failure" ] || [ "$SERVICES_RESULT" == "failure" ] || [ "$UI_RESULT" == "failure" ] || [ "$DOCKER_RESULT" == "failure" ] || [ "$OVERLAY_RESULT" == "failure" ] || [ "$GUARD_RESULT" == "failure" ] || [ "$LBPORTS_RESULT" == "failure" ]; then
+          if [ "$LIBS_RESULT" == "failure" ] || [ "$SERVICES_RESULT" == "failure" ] || [ "$UI_RESULT" == "failure" ] || [ "$DOCKER_RESULT" == "failure" ] || [ "$OVERLAY_RESULT" == "failure" ] || [ "$GUARD_RESULT" == "failure" ] || [ "$OUTBOX_GUARD_RESULT" == "failure" ] || [ "$GOROUTINE_GUARD_RESULT" == "failure" ] || [ "$LBPORTS_RESULT" == "failure" ]; then
             echo ""
             echo "One or more jobs failed!"
             exit 1

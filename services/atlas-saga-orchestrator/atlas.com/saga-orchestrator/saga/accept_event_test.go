@@ -1,9 +1,11 @@
 package saga
 
 import (
+	charactermock "atlas-saga-orchestrator/character/mock"
 	"context"
 	"testing"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -235,4 +237,114 @@ func TestAcceptEvent_NilTransactionId(t *testing.T) {
 	// meaningful UUID to log.
 	_, hasTxId := entry.Data["transaction_id"]
 	assert.False(t, hasTxId, "transaction_id should be omitted from nil-UUID skip logs")
+}
+
+// terminalLifecycle drives the saga to the requested terminal state via the
+// legal transition chain.
+func terminalLifecycle(t *testing.T, ctx context.Context, tx uuid.UUID, target SagaLifecycleState) {
+	t.Helper()
+	switch target {
+	case SagaLifecycleCompensating:
+		require.True(t, GetCache().TryTransition(ctx, tx, SagaLifecyclePending, SagaLifecycleCompensating))
+	case SagaLifecycleFailed:
+		require.True(t, GetCache().TryTransition(ctx, tx, SagaLifecyclePending, SagaLifecycleCompensating))
+		require.True(t, GetCache().TryTransition(ctx, tx, SagaLifecycleCompensating, SagaLifecycleFailed))
+	case SagaLifecycleCompleted:
+		require.True(t, GetCache().TryTransition(ctx, tx, SagaLifecyclePending, SagaLifecycleCompleted))
+	default:
+		t.Fatalf("not a terminal state: %s", target)
+	}
+}
+
+func TestAcceptEvent_TerminalLifecycleAbsorbs(t *testing.T) {
+	for _, terminal := range []SagaLifecycleState{SagaLifecycleCompensating, SagaLifecycleFailed, SagaLifecycleCompleted} {
+		t.Run(string(terminal), func(t *testing.T) {
+			ResetCache()
+			p, hook, ctx := newAcceptEventTestProcessor(t)
+			tx := uuid.New()
+			s, err := NewBuilder().
+				SetTransactionId(tx).
+				SetSagaType(InventoryTransaction).
+				SetInitiatedBy("test").
+				AddStep("award_currency_seller", Pending, AwardCurrency, AwardCurrencyPayload{CharacterId: 1, AccountId: 2, CurrencyType: 2, Amount: 100}).
+				Build()
+			require.NoError(t, err)
+			putAcceptEventSaga(t, ctx, s)
+			terminalLifecycle(t, ctx, tx, terminal)
+
+			// Pending, action-matching step present — pre-fix this advanced the saga.
+			_, ok := p.AcceptEvent(tx, EventKindCashShopWalletUpdated)
+			assert.False(t, ok, "terminal lifecycle must absorb the event")
+
+			var entry *logrus.Entry
+			for _, e := range hook.AllEntries() {
+				if e.Data["reason"] == SkipReasonSagaTerminal {
+					entry = e
+				}
+			}
+			require.NotNil(t, entry, "expected saga_terminal skip log")
+			assert.Equal(t, tx.String(), entry.Data["transaction_id"])
+			assert.Equal(t, string(EventKindCashShopWalletUpdated), entry.Data["event_kind"])
+			assert.Equal(t, string(terminal), entry.Data["lifecycle_state"])
+			assert.Equal(t, "award_currency_seller", entry.Data["step_id"])
+		})
+	}
+}
+
+func TestAcceptEvent_PendingLifecycleStillAccepts(t *testing.T) {
+	ResetCache()
+	p, _, ctx := newAcceptEventTestProcessor(t)
+	tx := uuid.New()
+	s, err := NewBuilder().
+		SetTransactionId(tx).
+		SetSagaType(InventoryTransaction).
+		SetInitiatedBy("test").
+		AddStep("award_currency_seller", Pending, AwardCurrency, AwardCurrencyPayload{CharacterId: 1, AccountId: 2, CurrencyType: 2, Amount: 100}).
+		Build()
+	require.NoError(t, err)
+	putAcceptEventSaga(t, ctx, s)
+
+	decision, ok := p.AcceptEvent(tx, EventKindCashShopWalletUpdated)
+	assert.True(t, ok, "pending lifecycle is unchanged happy path")
+	assert.Equal(t, "award_currency_seller", decision.Step.StepId())
+}
+
+// A late SUCCESS event for a compensable step routes into CompensateLateStep;
+// a late FAILURE event absorbs without compensation (PRD §4.3).
+func TestAcceptEvent_TerminalRoutesLateSuccessOnly(t *testing.T) {
+	ResetCache()
+	logger, _ := logtest.NewNullLogger()
+	logger.SetLevel(logrus.DebugLevel)
+	ctx := acceptEventTestCtx(t)
+
+	tx := uuid.New()
+	s, err := NewBuilder().
+		SetTransactionId(tx).
+		SetSagaType(InventoryTransaction).
+		SetInitiatedBy("test").
+		AddStep("award_mesos", Pending, AwardMesos, AwardMesosPayload{CharacterId: 1, Amount: 500}).
+		Build()
+	require.NoError(t, err)
+	require.NoError(t, GetCache().Put(ctx, s))
+	terminalLifecycle(t, ctx, tx, SagaLifecycleFailed)
+
+	refunds := 0
+	charMock := &charactermock.ProcessorMock{
+		AwardMesosAndEmitFunc: func(txId uuid.UUID, ch channel.Model, characterId uint32, actorId uint32, actorType string, amount int32, showEffect bool) error {
+			refunds++
+			assert.Equal(t, int32(-500), amount)
+			return nil
+		},
+	}
+	p := NewProcessor(logger, ctx).WithCharacterProcessor(charMock)
+
+	// Failure-outcome kind for the same action: absorb-only.
+	_, ok := p.AcceptEvent(tx, EventKindCharacterMesoError)
+	assert.False(t, ok)
+	assert.Equal(t, 0, refunds, "failure outcome must not compensate")
+
+	// Success-outcome kind: absorb + route into compensation.
+	_, ok = p.AcceptEvent(tx, EventKindCharacterMesoChanged)
+	assert.False(t, ok)
+	assert.Equal(t, 1, refunds, "success outcome must dispatch exactly one inverse")
 }

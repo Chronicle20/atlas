@@ -1,6 +1,6 @@
 module github.com/Chronicle20/atlas/libs/atlas-rest
 
-go 1.25.0
+go 1.25.5
 
 require (
 	github.com/google/uuid v1.6.0
@@ -13,13 +13,14 @@ require (
 )
 
 require (
-	golang.org/x/sync v0.20.0 // indirect
+	golang.org/x/sync v0.21.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 require (
 	github.com/Chronicle20/atlas/libs/atlas-model v0.0.0
 	github.com/Chronicle20/atlas/libs/atlas-retry v0.0.0
+	github.com/Chronicle20/atlas/libs/atlas-routine v0.0.0-00010101000000-000000000000
 	github.com/Chronicle20/atlas/libs/atlas-tenant v0.0.0
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
@@ -39,3 +40,5 @@ replace github.com/Chronicle20/atlas/libs/atlas-model => ../atlas-model
 replace github.com/Chronicle20/atlas/libs/atlas-retry => ../atlas-retry
 
 replace github.com/Chronicle20/atlas/libs/atlas-tenant => ../atlas-tenant
+
+replace github.com/Chronicle20/atlas/libs/atlas-routine => ../atlas-routine

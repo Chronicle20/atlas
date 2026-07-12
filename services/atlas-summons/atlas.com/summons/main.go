@@ -1,6 +1,8 @@
 package main
 
 import (
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+
 	characterevt "atlas-summons/kafka/consumer/character"
 	summoncmd "atlas-summons/kafka/consumer/summon"
 	"atlas-summons/logger"
@@ -106,7 +108,7 @@ func main() {
 		if err != nil {
 			l.WithError(err).Fatal("Unable to construct LeaderElection.")
 		}
-		go func() {
+		routine.Go(l, tdm.Context(), func(_ context.Context) {
 			err := le.Run(tdm.Context(), func(leaderCtx context.Context) {
 				registerSweepTasks(l, leaderCtx)
 				<-leaderCtx.Done()
@@ -114,7 +116,7 @@ func main() {
 			if err != nil {
 				l.WithError(err).Errorf("LeaderElection.Run exited with error.")
 			}
-		}()
+		})
 	} else {
 		l.Warnf("SUMMON_LEADER_ELECTION_ENABLED=false — sweep tasks run unconditionally on this pod.")
 		registerSweepTasks(l, tdm.Context())

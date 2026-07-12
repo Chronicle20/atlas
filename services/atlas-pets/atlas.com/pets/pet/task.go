@@ -5,6 +5,7 @@ import (
 	"context"
 	"time"
 
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
@@ -34,10 +35,10 @@ func (t *Timeout) Run() {
 		return
 	}
 	for cid, mk := range cids {
-		go func() {
+		routine.Go(t.l, sctx, func(_ context.Context) {
 			p := NewProcessor(t.l, tenant.WithContext(sctx, mk.Tenant), t.db)
 			_ = p.EvaluateHungerAndEmit(cid)
-		}()
+		})
 	}
 }
 

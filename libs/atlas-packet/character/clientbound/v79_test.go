@@ -387,7 +387,7 @@ func TestCharacterSpawnByteOutputV79(t *testing.T) {
 	ctx := pt.CreateContext("GMS", 79, 1)
 	guild := GuildEmblem{Name: "TestGuild", LogoBackground: 1, LogoBackgroundColor: 2, Logo: 3, LogoColor: 4}
 	cts := model.NewCharacterTemporaryStat()
-	in := NewCharacterSpawn(12345, 50, "TestChar", guild, cts, 100, model.Avatar{}, nil, false, 100, 200, 3)
+	in := NewCharacterSpawn(12345, 50, "TestChar", guild, cts, 100, model.Avatar{}, nil, false, 100, 200, 3, 0)
 	got := in.Encode(nil, ctx)(nil)
 
 	// Prefix through the guild emblem — proves NO level byte follows charId

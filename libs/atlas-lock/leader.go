@@ -8,6 +8,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	"github.com/bsm/redislock"
 	goredis "github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
@@ -152,19 +153,20 @@ func (le *LeaderElection) Run(ctx context.Context, fn func(context.Context)) err
 		var lostReason atomic.Value // string
 		setReason := func(r string) { lostReason.CompareAndSwap(nil, r) }
 
-		go func() {
+		routine.Go(le.cfg.log, leaderCtx, func(c context.Context) {
 			defer close(fnDone)
+			completed := false
 			defer func() {
-				if r := recover(); r != nil {
-					le.cfg.log.WithField("panic", r).Errorf("Leader fn panic for [%s].", le.name)
+				if !completed {
 					setReason("panic")
 					cancelLeader()
 				}
 			}()
-			fn(leaderCtx)
-		}()
+			fn(c)
+			completed = true
+		})
 
-		go func() {
+		routine.Go(le.cfg.log, leaderCtx, func(_ context.Context) {
 			defer close(renewerDone)
 			t := time.NewTicker(le.cfg.refreshInterval)
 			defer t.Stop()
@@ -187,7 +189,7 @@ func (le *LeaderElection) Run(ctx context.Context, fn func(context.Context)) err
 					le.cfg.log.WithError(rerr).Warnf("Renewal attempt failed for [%s] (transient).", le.name)
 				}
 			}
-		}()
+		})
 
 		select {
 		case <-ctx.Done():

@@ -67,6 +67,49 @@ func TestHandleWalletUpdatedEvent_CompletesAwardCurrencyStep(t *testing.T) {
 	assert.Equal(t, saga.Completed, got.Steps()[0].Status(), "AwardCurrency step must be completed by WALLET UPDATED")
 }
 
+// TestHandleWalletErrorEvent_FailsMtsAwardCurrencyStep verifies a wallet ERROR ack
+// fails an mts_operation AwardCurrency step fast: the saga is driven terminal
+// (removed from cache) instead of waiting out its timeout. This is the fast-fail
+// half of the client-unhang fix (task-102).
+func TestHandleWalletErrorEvent_FailsMtsAwardCurrencyStep(t *testing.T) {
+	logger, hook := logtest.NewNullLogger()
+	logger.SetLevel(logrus.DebugLevel)
+	ctx := mustTenantCtx(t)
+
+	tx := uuid.New()
+	s, err := saga.NewBuilder().
+		SetTransactionId(tx).
+		SetSagaType(saga.MtsOperation).
+		SetInitiatedBy("test").
+		AddStep("award_currency_seller", saga.Pending, saga.AwardCurrency, saga.AwardCurrencyPayload{CharacterId: 200, AccountId: 20, CurrencyType: 2, Amount: 1000}).
+		Build()
+	require.NoError(t, err)
+	putTestSaga(t, ctx, s)
+
+	handleWalletErrorEvent(logger, ctx, cashshop2.StatusEvent[cashshop2.StatusEventErrorBody]{
+		Type:      cashshop2.StatusEventTypeError,
+		AccountId: 20,
+		Body:      cashshop2.StatusEventErrorBody{TransactionId: tx, Reason: "record not found"},
+	})
+
+	_, err = saga.NewProcessor(logger, ctx).GetById(tx)
+	require.Error(t, err, "wallet error must drive the MTS saga terminal (removed from cache)")
+	assertDebugReason(t, hook, "record not found")
+}
+
+// TestHandleWalletErrorEvent_IgnoresNilTransaction proves a non-saga wallet error
+// (nil transaction id) is a clean no-op.
+func TestHandleWalletErrorEvent_IgnoresNilTransaction(t *testing.T) {
+	logger, _ := logtest.NewNullLogger()
+	ctx := mustTenantCtx(t)
+	// No panic, no saga interaction.
+	handleWalletErrorEvent(logger, ctx, cashshop2.StatusEvent[cashshop2.StatusEventErrorBody]{
+		Type:      cashshop2.StatusEventTypeError,
+		AccountId: 20,
+		Body:      cashshop2.StatusEventErrorBody{TransactionId: uuid.Nil, Reason: "x"},
+	})
+}
+
 // TestHandleWalletUpdatedEvent_DoesNotCompleteAwardAssetStep verifies anti-match:
 // a WALLET UPDATED event must NOT complete an AwardAsset step.
 func TestHandleWalletUpdatedEvent_DoesNotCompleteAwardAssetStep(t *testing.T) {

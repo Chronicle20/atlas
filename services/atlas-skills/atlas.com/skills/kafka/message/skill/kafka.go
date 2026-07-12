@@ -3,6 +3,7 @@ package skill
 import (
 	"time"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/google/uuid"
 )
@@ -13,6 +14,7 @@ const (
 	CommandTypeRequestUpdate = "REQUEST_UPDATE"
 	CommandTypeRequestDelete = "REQUEST_DELETE"
 	CommandTypeSetCooldown   = "SET_COOLDOWN"
+	CommandTypeTransferSp    = "TRANSFER_SP"
 )
 
 type Command[E any] struct {
@@ -49,6 +51,18 @@ type RequestDeleteBody struct {
 	SkillId uint32 `json:"skillId"`
 }
 
+// TransferSpBody moves one skill point FromSkillId -> ToSkillId (SP Reset
+// item 505000<ItemTier>). JobId and TargetMaxLevel are supplied by the
+// trusted server-side caller (atlas-channel) because atlas-skills stores
+// neither job nor game data; everything state-derived is re-validated here.
+type TransferSpBody struct {
+	JobId          job.Id `json:"jobId"`
+	FromSkillId    uint32 `json:"fromSkillId"`
+	ToSkillId      uint32 `json:"toSkillId"`
+	ItemTier       byte   `json:"itemTier"`
+	TargetMaxLevel byte   `json:"targetMaxLevel"`
+}
+
 const (
 	EnvStatusEventTopic            = "EVENT_TOPIC_SKILL_STATUS"
 	StatusEventTypeCreated         = "CREATED"
@@ -56,6 +70,13 @@ const (
 	StatusEventTypeDeleted         = "DELETED"
 	StatusEventTypeCooldownApplied = "COOLDOWN_APPLIED"
 	StatusEventTypeCooldownExpired = "COOLDOWN_EXPIRED"
+	StatusEventTypeSpTransferred   = "SP_TRANSFERRED"
+	StatusEventTypeError           = "ERROR"
+
+	StatusEventErrorTypeSkillAtZero   = "SKILL_AT_ZERO"
+	StatusEventErrorTypeSkillAtCap    = "SKILL_AT_CAP"
+	StatusEventErrorTypeWrongTier     = "WRONG_TIER"
+	StatusEventErrorTypeInvalidTarget = "INVALID_TARGET"
 )
 
 type StatusEvent[E any] struct {
@@ -88,3 +109,18 @@ type StatusEventCooldownExpiredBody struct {
 
 // StatusEventDeletedBody is the empty body emitted alongside StatusEventTypeDeleted.
 type StatusEventDeletedBody struct{}
+
+// StatusEventSpTransferredBody signals a completed SP transfer; the envelope
+// SkillId carries the target skill. This is the saga-completion event.
+type StatusEventSpTransferredBody struct {
+	FromSkillId uint32 `json:"fromSkillId"`
+	FromLevel   byte   `json:"fromLevel"`
+	ToLevel     byte   `json:"toLevel"`
+}
+
+// StatusEventErrorBody reports a rejected TRANSFER_SP; Error is one of the
+// StatusEventErrorType* constants, Detail names the offending skill id.
+type StatusEventErrorBody struct {
+	Error  string `json:"error"`
+	Detail string `json:"detail"`
+}

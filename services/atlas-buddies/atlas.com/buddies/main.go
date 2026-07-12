@@ -2,13 +2,16 @@ package main
 
 import (
 	"atlas-buddies/buddy"
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"atlas-buddies/kafka/consumer/cashshop"
 	"atlas-buddies/kafka/consumer/character"
 	invite2 "atlas-buddies/kafka/consumer/invite"
 	list2 "atlas-buddies/kafka/consumer/list"
 	"atlas-buddies/list"
 	"atlas-buddies/logger"
+	"context"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	outboxlib "github.com/Chronicle20/atlas/libs/atlas-outbox"
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
 	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
@@ -54,7 +57,19 @@ func main() {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
 
-	db := database.Connect(l, database.SetMigrations(list.Migration, buddy.Migration))
+	db := database.Connect(l, database.SetMigrations(list.Migration, buddy.Migration, outboxlib.Migration))
+
+	// Boot the outbox drainer: publishes the transactional outbox to Kafka.
+	// Leadership is gated by a postgres advisory lock — replicas are safe.
+	publisher := outboxlib.NewTopicWriterPool()
+	drainer := outboxlib.NewDrainer(l, db, publisher, outboxlib.WithDSN(database.DSN()))
+	routine.Go(l, tdm.Context(), func(_ context.Context) {
+		drainer.Run(tdm.Context())
+	})
+	tdm.TeardownFunc(func() {
+		drainer.Stop()
+		publisher.Close()
+	})
 
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	character.InitConsumers(l)(cmf)(consumerGroupId)

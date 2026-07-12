@@ -1,0 +1,38 @@
+{
+  "service": "atlas-world",
+  "path": "services/atlas-world/atlas.com/world",
+  "date": "2026-07-10",
+  "scope": "configuration/projection (subscriber.go, 1 line changed by task-102)",
+  "build": "pass",
+  "vet": "pass",
+  "testsPassed": -1,
+  "testsFailed": 0,
+  "testsNote": "all packages pass; configuration/projection ok 0.007s (go test does not report an assertion count)",
+  "overallStatus": "pass",
+  "domains": [
+    {
+      "name": "configuration/projection",
+      "type": "support",
+      "checks": [
+        { "id": "FILE-01", "name": "Processor in processor.go", "status": "pass", "evidence": "No Processor/ProcessorImpl/NewProcessor in package (grep NONE); nothing to misplace" },
+        { "id": "FILE-02", "name": "RestModel/Transform/Extract in rest.go", "status": "pass", "evidence": "No RestModel/Transform/Extract in package; reuses tenant.RestModel (state.go:16)" },
+        { "id": "FILE-03", "name": "Cross-service request funcs in requests.go", "status": "pass", "evidence": "No requests.RootUrl/GetRequest/PostRequest/getBaseRequest (grep NONE)" },
+        { "id": "FILE-04", "name": "Entity/Migration/TableName in entity.go", "status": "pass", "evidence": "No GORM entity; TenantEnvelope (envelope.go:17) is a Kafka wire DTO, correctly in envelope.go" },
+        { "id": "FILE-05", "name": "builder/model/administrator/provider/state placement", "status": "pass", "evidence": "No builder/domain Model/DB writes/providers; State (state.go:14) is in-memory snapshot, isolated in state.go" },
+        { "id": "FILE-06", "name": "No package-named catch-all file", "status": "pass", "evidence": "No projection.go; 4 single-responsibility files (subscriber/caughtup/state/envelope), none carries >=2 responsibilities" }
+      ]
+    }
+  ],
+  "notApplicable": {
+    "DOM-01..25": "no model.go (support package); DOM-06/DOM-23 spot-checked clean; DOM-24 N/A (consumer, no emit in tests)",
+    "SUB-01..04": "no resource.go / REST handlers",
+    "EXT-01..04": "no cross-service HTTP client",
+    "SCAFFOLD-01..08": "no new service dir / channel writer-handler",
+    "SEC-01..04": "not an auth/token service; changed code is a config-status consumer"
+  },
+  "blocking": [],
+  "nonBlocking": [
+    "Coverage (Minor): offsetsOrEmpty/Start/handleTenant (subscriber.go:35-97) are untested; the ReadEndOffsets->ReadReplayableEndOffsets swap is verified only by compilation + lib func existence (libs/atlas-kafka/consumer/offsets.go:35)",
+    "Convention (Minor, non-finding): package doc comment on envelope.go:1-7 rather than doc.go; guideline permits thin doc placement"
+  ]
+}

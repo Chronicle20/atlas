@@ -2,13 +2,18 @@ package skill
 
 import (
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	"atlas-skills/kafka/message"
 	skill2 "atlas-skills/kafka/message/skill"
 	"atlas-skills/kafka/producer"
+	"atlas-skills/macro"
 	"context"
 	"errors"
+	"strconv"
 	"time"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
+	constskill "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
@@ -63,6 +68,19 @@ type Processor interface {
 	// DeleteForSagaCompensation is the buffer-based inner form (tests use this to
 	// avoid Kafka dependency).
 	DeleteForSagaCompensation(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, skillId uint32) error
+
+	// WithTransaction returns a Processor that executes against the given transaction
+	WithTransaction(tx *gorm.DB) Processor
+
+	// TransferSp moves one skill point from fromSkillId to toSkillId (SP Reset
+	// item 505000<itemTier>), re-validating job tree, exclusion list, tier, and
+	// level/cap state authoritatively, and cleaning up macro references when the
+	// source drops to level 0. All mutation happens inside a single gorm
+	// transaction (see TransferSp's implementation) — see task-126 design §4.6.
+	TransferSp(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, jobId job.Id, fromSkillId uint32, toSkillId uint32, itemTier byte, targetMaxLevel byte) error
+
+	// TransferSpAndEmit wraps TransferSp with the producer emit flow.
+	TransferSpAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, jobId job.Id, fromSkillId uint32, toSkillId uint32, itemTier byte, targetMaxLevel byte) error
 }
 
 // ProcessorImpl implements the Processor interface
@@ -133,13 +151,17 @@ func (p *ProcessorImpl) Create(mb *message.Buffer) func(transactionId uuid.UUID,
 	}
 }
 
-// CreateAndEmit creates a new skill and emits a status event
+// CreateAndEmit creates a new skill and emits a status event. The create
+// write and the outbox enqueue share one transaction (Create's own
+// ExecuteTransaction is safely re-entrant inside this outer one).
 func (p *ProcessorImpl) CreateAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, id uint32, level byte, masterLevel byte, expiration time.Time) (Model, error) {
 	var s Model
-	err := message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
-		var err error
-		s, err = p.Create(buf)(transactionId, worldId, characterId, id, level, masterLevel, expiration)
-		return err
+	err := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			var err error
+			s, err = p.WithTransaction(tx).Create(buf)(transactionId, worldId, characterId, id, level, masterLevel, expiration)
+			return err
+		})
 	})
 	return s, err
 }
@@ -177,13 +199,17 @@ func (p *ProcessorImpl) Update(mb *message.Buffer) func(transactionId uuid.UUID,
 	}
 }
 
-// UpdateAndEmit updates an existing skill and emits a status event
+// UpdateAndEmit updates an existing skill and emits a status event. The
+// update write and the outbox enqueue share one transaction (Update's own
+// ExecuteTransaction is safely re-entrant inside this outer one).
 func (p *ProcessorImpl) UpdateAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, id uint32, level byte, masterLevel byte, expiration time.Time) (Model, error) {
 	var s Model
-	err := message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
-		var err error
-		s, err = p.Update(buf)(transactionId, worldId, characterId, id, level, masterLevel, expiration)
-		return err
+	err := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			var err error
+			s, err = p.WithTransaction(tx).Update(buf)(transactionId, worldId, characterId, id, level, masterLevel, expiration)
+			return err
+		})
 	})
 	return s, err
 }
@@ -285,10 +311,140 @@ func (p *ProcessorImpl) DeleteForSagaCompensation(mb *message.Buffer) func(trans
 	}
 }
 
-// DeleteForSagaCompensationAndEmit wraps DeleteForSagaCompensation with the
-// producer emit flow.
+// DeleteForSagaCompensationAndEmit wraps DeleteForSagaCompensation with an
+// explicit transaction (the underlying deleteSkill write was previously a
+// bare, un-transacted call) and the outbox emit flow, so the delete and the
+// status-event enqueue commit atomically.
 func (p *ProcessorImpl) DeleteForSagaCompensationAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, skillId uint32) error {
-	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
-		return p.DeleteForSagaCompensation(buf)(transactionId, worldId, characterId, skillId)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).DeleteForSagaCompensation(buf)(transactionId, worldId, characterId, skillId)
+		})
 	})
+}
+
+// TransferSpAndEmit wraps TransferSp with the producer emit flow.
+func (p *ProcessorImpl) TransferSpAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, jobId job.Id, fromSkillId uint32, toSkillId uint32, itemTier byte, targetMaxLevel byte) error {
+	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
+		return p.TransferSp(buf)(transactionId, worldId, characterId, jobId, fromSkillId, toSkillId, itemTier, targetMaxLevel)
+	})
+}
+
+// TransferSp moves one skill point FromSkillId -> ToSkillId. Structural
+// validation (job tree, exclusion list, tier vs. itemTier) happens first and
+// needs no DB access; all state-derived validation (source level, target cap)
+// and mutation (source -1, target +1, macro cleanup) happens inside ONE
+// gorm-native transaction (p.db.Transaction — NOT database.ExecuteTransaction,
+// which is a documented no-op) so the skill rows and any macro rows commit or
+// roll back together. See task-126 design §4.6.
+func (p *ProcessorImpl) TransferSp(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, jobId job.Id, fromSkillId uint32, toSkillId uint32, itemTier byte, targetMaxLevel byte) error {
+	return func(transactionId uuid.UUID, worldId world.Id, characterId uint32, jobId job.Id, fromSkillId uint32, toSkillId uint32, itemTier byte, targetMaxLevel byte) error {
+		reject := func(errType string, detailSkillId uint32) error {
+			p.l.WithFields(logrus.Fields{
+				"character_id": characterId,
+				"from":         fromSkillId,
+				"to":           toSkillId,
+				"tier":         itemTier,
+			}).Warnf("Rejected SP transfer: [%s].", errType)
+			_ = mb.Put(skill2.EnvStatusEventTopic, statusEventErrorProvider(transactionId, worldId, characterId, detailSkillId, errType, strconv.FormatUint(uint64(detailSkillId), 10)))
+			return nil
+		}
+
+		// Structural validation (no DB needed).
+		fromJob := job.IdFromSkillId(constskill.Id(fromSkillId))
+		toJob := job.IdFromSkillId(constskill.Id(toSkillId))
+		if !job.Is(jobId, fromJob) || !job.Is(jobId, toJob) {
+			return reject(skill2.StatusEventErrorTypeInvalidTarget, toSkillId)
+		}
+		if constskill.IsPointResetExcluded(constskill.Id(fromSkillId)) || constskill.IsPointResetExcluded(constskill.Id(toSkillId)) {
+			return reject(skill2.StatusEventErrorTypeInvalidTarget, toSkillId)
+		}
+		fromTier := job.Advancement(fromJob)
+		toTier := job.Advancement(toJob)
+		if toTier != int(itemTier) || fromTier < 1 || fromTier > int(itemTier) {
+			return reject(skill2.StatusEventErrorTypeWrongTier, toSkillId)
+		}
+
+		return p.db.Transaction(func(tx *gorm.DB) error {
+			sp := p.WithTransaction(tx)
+
+			from, err := sp.ByIdProvider(characterId, fromSkillId)()
+			if err != nil || from.Level() == 0 {
+				return reject(skill2.StatusEventErrorTypeSkillAtZero, fromSkillId)
+			}
+
+			// Target row may not exist yet: treat as level 0 / masterLevel 0.
+			var toLevel, toMaster byte
+			var toExists bool
+			var toExpiration time.Time
+			if to, err := sp.ByIdProvider(characterId, toSkillId)(); err == nil {
+				toLevel, toMaster, toExpiration, toExists = to.Level(), to.MasterLevel(), to.Expiration(), true
+			}
+
+			effectiveCap := targetMaxLevel
+			if job.IsFourthJob(toJob) {
+				effectiveCap = toMaster // 4th-job cap is the earned master level (design §9.2)
+			}
+			if toLevel >= effectiveCap {
+				return reject(skill2.StatusEventErrorTypeSkillAtCap, toSkillId)
+			}
+
+			newFromLevel := from.Level() - 1
+			newToLevel := toLevel + 1
+
+			// Apply: source -1, target +1 (master levels untouched, FR-15/16).
+			if _, err := sp.Update(mb)(transactionId, worldId, characterId, fromSkillId, newFromLevel, from.MasterLevel(), from.Expiration()); err != nil {
+				return err
+			}
+			if toExists {
+				if _, err := sp.Update(mb)(transactionId, worldId, characterId, toSkillId, newToLevel, toMaster, toExpiration); err != nil {
+					return err
+				}
+			} else {
+				if _, err := sp.Create(mb)(transactionId, worldId, characterId, toSkillId, newToLevel, 0, time.Time{}); err != nil {
+					return err
+				}
+			}
+
+			// Macro cleanup (FR-18) inside the same tx — only when the source
+			// skill drops to level 0.
+			if newFromLevel == 0 {
+				mp := macro.NewProcessor(p.l, p.ctx, tx)
+				macros, err := mp.ByCharacterIdProvider(characterId)()
+				if err != nil {
+					return err
+				}
+				changed := false
+				updated := make([]macro.Model, 0, len(macros))
+				for _, m := range macros {
+					b := macro.CloneModel(m)
+					if uint32(m.SkillId1()) == fromSkillId {
+						b = b.SetSkillId1(0)
+						changed = true
+					}
+					if uint32(m.SkillId2()) == fromSkillId {
+						b = b.SetSkillId2(0)
+						changed = true
+					}
+					if uint32(m.SkillId3()) == fromSkillId {
+						b = b.SetSkillId3(0)
+						changed = true
+					}
+					nm, err := b.Build()
+					if err != nil {
+						return err
+					}
+					updated = append(updated, nm)
+				}
+				if changed {
+					if _, err := mp.Update(mb)(transactionId, worldId, characterId, updated); err != nil {
+						return err
+					}
+				}
+			}
+
+			_ = mb.Put(skill2.EnvStatusEventTopic, statusEventSpTransferredProvider(transactionId, worldId, characterId, toSkillId, fromSkillId, newFromLevel, newToLevel))
+			return nil
+		})
+	}
 }

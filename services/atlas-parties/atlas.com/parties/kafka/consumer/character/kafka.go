@@ -131,6 +131,7 @@ const (
 	StatusEventTypeFameChanged       = "FAME_CHANGED"
 	StatusEventTypeStatChanged       = "STAT_CHANGED"
 	StatusEventTypeDeleted           = "DELETED"
+	StatusEventTypeGmChanged         = "GM_CHANGED"
 
 	StatusEventTypeError              = "ERROR"
 	StatusEventErrorTypeNotEnoughMeso = "NOT_ENOUGH_MESO"
@@ -179,6 +180,11 @@ type StatusEventMapChangedBody struct {
 type JobChangedStatusEventBody struct {
 	ChannelId channel.Id `json:"channelId"`
 	JobId     job.Id     `json:"jobId"`
+}
+
+type GmChangedStatusEventBody struct {
+	OldGm bool `json:"oldGm"`
+	NewGm bool `json:"newGm"`
 }
 
 type ExperienceChangedStatusEventBody struct {

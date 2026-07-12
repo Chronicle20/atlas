@@ -30,8 +30,17 @@ const (
 	CommandSetHP               = "SET_HP"
 	CommandResetStats          = "RESET_STATS"
 	CommandRebalanceAP         = "REBALANCE_AP"
+	CommandTransferAP          = "TRANSFER_AP"
 	CommandDeleteCharacter     = "DELETE_CHARACTER"
 )
+
+// TransferAPCommandBody moves one already-spent AP From -> To (AP Reset item
+// 5050000). From/To are CommandDistributeApAbility* enum strings.
+type TransferAPCommandBody struct {
+	ChannelId channel.Id `json:"channelId"`
+	From      string     `json:"from"`
+	To        string     `json:"to"`
+}
 
 // DeleteCharacterCommandBody is the saga-correlated delete-character command
 // used by the character-creation reverse-walk compensator (plan Phase 5 / 6).
@@ -213,7 +222,23 @@ const (
 
 	StatusEventTypeError              = "ERROR"
 	StatusEventErrorTypeNotEnoughMeso = "NOT_ENOUGH_MESO"
+
+	// StatusEventErrorType* point-reset (AP transfer) rejection codes. See
+	// StatusEventApTransferErrorBody / TRANSFER_AP (task-126).
+	StatusEventErrorTypeStatAtMinimum           = "STAT_AT_MINIMUM"
+	StatusEventErrorTypeStatAtMaximum           = "STAT_AT_MAXIMUM"
+	StatusEventErrorTypeInsufficientHpMpApUsed  = "INSUFFICIENT_HPMP_AP_USED"
+	StatusEventErrorTypePoolBelowJobMinimum     = "POOL_BELOW_JOB_MINIMUM"
+	StatusEventErrorTypeApTransferInvalidTarget = "INVALID_TARGET"
 )
+
+// StatusEventApTransferErrorBody reports a rejected TRANSFER_AP. Error is one
+// of the StatusEventErrorType* point-reset constants; Detail names the
+// offending stat (STR/DEX/INT/LUK/HP/MP) where applicable.
+type StatusEventApTransferErrorBody struct {
+	Error  string `json:"error"`
+	Detail string `json:"detail"`
+}
 
 type StatusEvent[E any] struct {
 	TransactionId uuid.UUID `json:"transactionId"`

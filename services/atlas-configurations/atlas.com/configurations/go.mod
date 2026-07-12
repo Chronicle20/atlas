@@ -39,6 +39,7 @@ require (
 
 require (
 	github.com/Chronicle20/atlas/libs/atlas-retry v0.0.0 // indirect
+	github.com/Chronicle20/atlas/libs/atlas-routine v0.0.0-00010101000000-000000000000
 	github.com/Chronicle20/atlas/libs/atlas-tenant v0.0.0
 	github.com/Chronicle20/atlas/libs/atlas-tracing v0.0.0
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
@@ -59,7 +60,6 @@ require (
 	go.opentelemetry.io/otel/metric v1.44.0 // indirect
 	go.opentelemetry.io/otel/trace v1.44.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.10.0 // indirect
-	golang.org/x/crypto v0.52.0 // indirect
 	golang.org/x/net v0.55.0 // indirect
 	golang.org/x/sync v0.21.0 // indirect
 	golang.org/x/sys v0.45.0 // indirect
@@ -102,3 +102,5 @@ replace github.com/Chronicle20/atlas/libs/atlas-socket => ../../../../libs/atlas
 replace github.com/Chronicle20/atlas/libs/atlas-tracing => ../../../../libs/atlas-tracing
 
 replace github.com/Chronicle20/atlas/libs/atlas-outbox => ../../../../libs/atlas-outbox
+
+replace github.com/Chronicle20/atlas/libs/atlas-routine => ../../../../libs/atlas-routine

@@ -4,16 +4,17 @@ import (
 	consumer2 "atlas-mounts/kafka/consumer"
 	mountmessage "atlas-mounts/kafka/message"
 	foodmsg "atlas-mounts/kafka/message/food"
-	"atlas-mounts/kafka/producer"
 	"atlas-mounts/mount"
 	"context"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -22,9 +23,11 @@ import (
 // status event through the buffer; tests override it with a fake to exercise the
 // handler's argument threading without Kafka or a database.
 var applyFeed = func(l logrus.FieldLogger, ctx context.Context, db *gorm.DB, worldId world.Id, characterId uint32, healMax int) error {
-	p := mount.NewProcessor(l, ctx, db)
-	return mountmessage.Emit(producer.ProviderImpl(l)(ctx))(func(mb *mountmessage.Buffer) error {
-		return p.ApplyFeedAndEmit(mb)(worldId, characterId, healMax)
+	return database.ExecuteTransaction(db.WithContext(ctx), func(tx *gorm.DB) error {
+		p := mount.NewProcessor(l, ctx, tx)
+		return mountmessage.Emit(outbox.EmitProvider(l, ctx, tx))(func(mb *mountmessage.Buffer) error {
+			return p.ApplyFeedAndEmit(mb)(worldId, characterId, healMax)
+		})
 	})
 }
 

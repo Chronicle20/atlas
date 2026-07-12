@@ -78,4 +78,18 @@ describe("useGridRefresh", () => {
     expect(toast.error).toHaveBeenCalledWith(boom, { context: { action: "refresh" } });
     expect(toast.success).not.toHaveBeenCalled();
   });
+
+  it("runs alsoRefresh alongside the refetches", async () => {
+    const q1 = makeQuery();
+    const alsoRefresh = vi.fn().mockResolvedValue(undefined);
+    const { result } = renderHook(() => useGridRefresh([q1], { alsoRefresh }));
+
+    await act(async () => {
+      await result.current.onRefresh();
+    });
+
+    expect(alsoRefresh).toHaveBeenCalledTimes(1);
+    expect(q1.refetch).toHaveBeenCalledTimes(1);
+    expect(toast.success).toHaveBeenCalledTimes(1);
+  });
 });

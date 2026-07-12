@@ -12,6 +12,7 @@ import (
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	redis "github.com/Chronicle20/atlas/libs/atlas-redis"
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	"github.com/sirupsen/logrus"
 )
 
@@ -39,7 +40,7 @@ func Run(ctx context.Context, l logrus.FieldLogger) error {
 	if suffix := ingestJobSuffixFromEnv(); suffix != "" {
 		rdb := redis.Connect(l)
 		reg := newIngestJobRegistry(rdb)
-		go runHeartbeat(ctx, l, reg, suffix)
+		routine.Go(l, ctx, func(_ context.Context) { runHeartbeat(ctx, l, reg, suffix) })
 	} else {
 		l.Info("ingest heartbeat skipped: SCOPE/REGION/MAJOR_VERSION/MINOR_VERSION env not set (compose / test path)")
 	}

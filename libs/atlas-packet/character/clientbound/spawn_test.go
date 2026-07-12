@@ -20,7 +20,7 @@ func TestCharacterSpawnEncode(t *testing.T) {
 	avatar := model.Avatar{}
 	cts := model.NewCharacterTemporaryStat()
 	guild := GuildEmblem{Name: "TestGuild"}
-	input := NewCharacterSpawn(12345, 50, "TestChar", guild, cts, 100, avatar, nil, true, 100, 200, 6)
+	input := NewCharacterSpawn(12345, 50, "TestChar", guild, cts, 100, avatar, nil, true, 100, 200, 6, 0)
 	l, _ := testlog.NewNullLogger()
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {
@@ -53,7 +53,7 @@ func TestCharacterSpawnJMSGolden(t *testing.T) {
 	v := pt.Variants[4] // JMS v185
 	ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
 	guild := GuildEmblem{Name: "TestGuild", LogoBackground: 1, LogoBackgroundColor: 2, Logo: 3, LogoColor: 4}
-	in := NewCharacterSpawn(12345, 50, "TestChar", guild, model.NewCharacterTemporaryStat(), 100, model.Avatar{}, nil, false, 100, 200, 3)
+	in := NewCharacterSpawn(12345, 50, "TestChar", guild, model.NewCharacterTemporaryStat(), 100, model.Avatar{}, nil, false, 100, 200, 3, 0)
 
 	got := in.Encode(nil, ctx)(nil)
 
@@ -94,7 +94,7 @@ func TestCharacterSpawnJMSGolden(t *testing.T) {
 func TestCharacterSpawnV48Golden(t *testing.T) {
 	ctx := pt.CreateContext("GMS", 48, 1)
 	guild := GuildEmblem{Name: "TestGuild", LogoBackground: 1, LogoBackgroundColor: 2, Logo: 3, LogoColor: 4}
-	in := NewCharacterSpawn(12345, 50, "TestChar", guild, model.NewCharacterTemporaryStat(), 100, model.Avatar{}, nil, false, 100, 200, 3)
+	in := NewCharacterSpawn(12345, 50, "TestChar", guild, model.NewCharacterTemporaryStat(), 100, model.Avatar{}, nil, false, 100, 200, 3, 0)
 	got := in.Encode(nil, ctx)(nil)
 
 	if len(got) != 99 {
@@ -138,7 +138,7 @@ func TestCharacterSpawnRoundTrip(t *testing.T) {
 			cts := model.NewCharacterTemporaryStat()
 			guild := GuildEmblem{Name: "TestGuild", LogoBackground: 1, LogoBackgroundColor: 2, Logo: 3, LogoColor: 4}
 			// enteringField=false for exact round-trip
-			input := NewCharacterSpawn(12345, 50, "TestChar", guild, cts, 312, avatar, nil, false, 100, 200, 3)
+			input := NewCharacterSpawn(12345, 50, "TestChar", guild, cts, 312, avatar, nil, false, 100, 200, 3, 37)
 			output := CharacterSpawn{}
 			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
 			if output.CharacterId() != input.CharacterId() {
@@ -173,6 +173,28 @@ func TestCharacterSpawnRoundTrip(t *testing.T) {
 			if output.Stance() != input.Stance() {
 				t.Errorf("stance: got %v, want %v", output.Stance(), input.Stance())
 			}
+			if output.Fh() != 37 {
+				t.Errorf("fh: got %v, want %v", output.Fh(), 37)
+			}
+		})
+	}
+}
+
+func TestCharacterSpawnEnteringFieldEncodesFhZero(t *testing.T) {
+	// entering-field spawns are intentionally airborne (y-42, stance 6):
+	// the wire fh must stay 0 even when the model carries a real foothold.
+	for _, v := range pt.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			avatar := testSpawnAvatar()
+			cts := model.NewCharacterTemporaryStat()
+			guild := GuildEmblem{Name: "TestGuild"}
+			input := NewCharacterSpawn(12345, 50, "TestChar", guild, cts, 312, avatar, nil, true, 100, 200, 6, 37)
+			output := CharacterSpawn{}
+			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
+			if output.Fh() != 0 {
+				t.Errorf("entering-field fh on the wire: got %v, want 0", output.Fh())
+			}
 		})
 	}
 }
@@ -188,7 +210,7 @@ func TestCharacterSpawnWithPetsRoundTrip(t *testing.T) {
 				{Slot: 0, Pet: model.Pet{TemplateId: 5000001, Name: "Dog", Id: 100, X: 10, Y: 20, Stance: 1, Foothold: 5}},
 				{Slot: 1, Pet: model.Pet{TemplateId: 5000002, Name: "Cat", Id: 200, X: 30, Y: 40, Stance: 2, Foothold: 6}},
 			}
-			input := NewCharacterSpawn(999, 80, "PetOwner", guild, cts, 100, avatar, pets, false, 50, 60, 4)
+			input := NewCharacterSpawn(999, 80, "PetOwner", guild, cts, 100, avatar, pets, false, 50, 60, 4, 0)
 			output := CharacterSpawn{}
 			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
 			// Pre-v61 GMS (v48) SPAWN_PLAYER carries a single-pet flag (sub_58C7CC),

@@ -1,0 +1,93 @@
+{
+  "WriterName": "FieldItcOperationRegisterAuction",
+  "IDAName": "CITC::OnRegisterSaleEntry#RegisterAuction",
+  "Address": "0x6041b9",
+  "Variant": "JMS/v185",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/field/serverbound/itc_operation.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode byte (0x12 register-auction) @0x6041b9",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 1,
+      "IDAOp": 5,
+      "IDAComment": "item-slot blob GW_ItemSlotBase::Encode @0x6041c4 (Encode1 type + RawEncode; model.Asset recurse)",
+      "Verdict": 3,
+      "Note": "sub-struct: itemCopy — see _substruct/"
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "quantity (nSlotNo) @0x6041cf",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "commodityId (v24) @0x6041da",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 4,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "selector (nRegType==1) @0x6041e5",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 5,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "buyNowPrice (v22) @0x6041f0",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 6,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "type (pItem) @0x6041fb",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 7,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "flag (n[0]) @0x604206",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 8,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "durationHrs (v21) @0x604211",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 3,
+  "FlatInvalid": false
+}

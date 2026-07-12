@@ -1988,6 +1988,8 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "ItemUse", dir: csvpkg.DirServerbound, pkg: "inventory"}}
 	case "CWvsContext::SendUpgradeItemUseRequest":
 		return []candidate{{name: "ScrollUse", dir: csvpkg.DirServerbound, pkg: "inventory"}}
+	case "CWvsContext::SendConsumeCashItemUseRequest", "CItemSpeakerDlg::_SendConsumeCashItemUseRequest":
+		return []candidate{{name: "ItemUsePointReset", dir: csvpkg.DirServerbound, pkg: "cash"}}
 	// --- interaction sub-domain (task-067) ---
 	// NOTE: the interaction serverbound dispatcher struct is also named `Operation`
 	// (collides with storage's CTrunkDlg `Operation` under the flat report layout;
@@ -2156,6 +2158,131 @@ func candidatesFromFName(fname string) []candidate {
 	// when s_bChase]. Matches atlas field/serverbound/change.go Change.Encode.
 	case "CField::SendTransferFieldRequest":
 		return []candidate{{name: "Change", pkg: "field", dir: csvpkg.DirServerbound}}
+
+	// ENTER_MTS (CSV opcode 0x9C/156 in GMS v83). The client migrate-to-MTS/ITC
+	// request built by CWvsContext::SendMigrateToITCRequest@0xa12522. Per IDA the
+	// send site at 0xa1263b constructs COutPacket(opcode 0x9C) and immediately
+	// SendPacket()s it with ZERO Encode calls in between — a bodiless (opcode-only)
+	// request. All preceding code (guest-ID guard, lie-detector guard, map-flag
+	// guard) emits local chat/dialog and returns early; none writes to the packet.
+	// Matches atlas field/serverbound/enter_mts.go EnterMts.Encode (empty body).
+	case "CWvsContext::SendMigrateToITCRequest":
+		return []candidate{{name: "EnterMts", pkg: "field", dir: csvpkg.DirServerbound}}
+
+	// ITC_STATUS_CHARGE. The client open-NX-recharge hook built by
+	// CITC::OnStatusCharge (gms_v83 @0x59ebda op 0xFB, gms_v84 @0x5aef76 op
+	// 0x102, gms_v87 @0x5ce90b op 0x109, gms_v95 @0x572a50 op 0x132, jms_v185
+	// @0x6040a9 op 0x10A). Uniform shape across all five builds: an
+	// m_bITCRequestSent latch guards a COutPacket(opcode) + immediate SendPacket
+	// with ZERO Encode calls in between — a bodiless (opcode-only) request.
+	// Matches atlas field/serverbound/itc_status_charge.go ItcStatusCharge.Encode
+	// (empty body).
+	case "CITC::OnStatusCharge":
+		return []candidate{{name: "ItcStatusCharge", pkg: "field", dir: csvpkg.DirServerbound}}
+
+	// ITC_QUERY_CASH_REQUEST. The wallet-balance query built by
+	// CITC::TrySendQueryCashRequest (gms_v83 @0x59eece op 0xFC, gms_v84
+	// @0x5af26a op 0x103, gms_v87 @0x5cec92 op 0x10A, gms_v95 @0x572ad0 op
+	// 0x133, jms_v185 @0x6043bf op 0x10B). Uniform shape across all five builds:
+	// an m_bITCRequestSent latch guards a COutPacket(opcode) + immediate
+	// SendPacket with ZERO Encode calls in between — a bodiless (opcode-only)
+	// request that elicits the clientbound MTS_OPERATION2 wallet reply. Matches
+	// atlas field/serverbound/itc_query_cash_request.go ItcQueryCashRequest.Encode
+	// (empty body).
+	case "CITC::TrySendQueryCashRequest":
+		return []candidate{{name: "ItcQueryCashRequest", pkg: "field", dir: csvpkg.DirServerbound}}
+
+	// ITC_OPERATION (serverbound mode-dispatcher, gms_v83 opcode 0xFD/253). One
+	// opcode + a leading Encode1(mode) byte selecting the marketplace operation,
+	// then that op's body. CORE-TRADE arms verified (gms_v83, IDA port 13342):
+	//
+	//   CITC::OnRegisterSaleEntry @0x59ec36 (COutPacket(0xFD) @0x59ec63) handles
+	//   BOTH register-fixed-price (mode 2, arg0==0 @0x59ed92) and register-auction
+	//   (mode 0x12, arg0==1 @0x59ecc8) by its arg0 selector — two arms, two
+	//   discrete body codecs. The bare primary fname maps the fixed-price arm
+	//   (ItcOperationRegisterSale); the "#RegisterAuction" synthetic export entry
+	//   maps the auction arm (ItcOperationRegisterAuction).
+	//   CITC::OnSaleCurrentItem @0x59ee3f (COutPacket(253) @0x59ee5d) is mode 3.
+	//
+	// The item-slot blob is sub_4E33D8 @0x4e33d8 (GW_ItemSlotBase: Encode1 type +
+	// virtual RawEncode), modeled by the shared model.Asset codec. The leading
+	// ItcOperation dispatcher struct is a production handler helper and carries no
+	// fname marker. Matches atlas field/serverbound/itc_operation.go.
+	case "CITC::OnRegisterSaleEntry":
+		return []candidate{{name: "ItcOperationRegisterSale", pkg: "field", dir: csvpkg.DirServerbound}}
+	case "CITC::OnRegisterSaleEntry#RegisterAuction":
+		return []candidate{{name: "ItcOperationRegisterAuction", pkg: "field", dir: csvpkg.DirServerbound}}
+	case "CITC::OnSaleCurrentItem":
+		return []candidate{{name: "ItcOperationSaleCurrentItem", pkg: "field", dir: csvpkg.DirServerbound}}
+	// BUY / BUY-NOW / CANCEL-SALE / TAKE-HOME / PLACE-BID arms of the same
+	// ITC_OPERATION dispatcher, verified on gms_v95 (the symbol-rich PDB build,
+	// IDA port 13340) which exposes them as named CITC::On* functions; the v83
+	// client inlines them with no standalone fname. opcode 308/0x134.
+	//   CITC::OnBuy @0x573270 (COutPacket(308) @0x5732a5) mode 0x10.
+	//   CITC::OnBuyAuctionImm @0x573310 (COutPacket(308) @0x573345) mode 0x14.
+	//   CITC::OnCancelSaleItem @0x5737a0 (COutPacket(308) @0x57381a) mode 0x07.
+	//   CITC::OnMoveITCPurchaseItemLtoS @0x573880 (COutPacket(308) @0x5738b5) mode 0x08.
+	//   CITCBidAuctionDlg::OnButtonClicked @0x58eb50 (COutPacket(308) @0x58eda1,
+	//     nId==1 confirm-bid branch) mode 0x13 — the place-bid send is inlined
+	//     into the auction-bid dialog's button handler (no CITC::OnBid fname).
+	// Each body references the listing by its ITC serial (nITCSN); place-bid
+	// additionally carries m_nMyBidPrice + m_nMyBidRange. No item-slot blob.
+	case "CITC::OnBuy":
+		return []candidate{{name: "ItcOperationBuy", pkg: "field", dir: csvpkg.DirServerbound}}
+	case "CITC::OnBuyAuctionImm":
+		return []candidate{{name: "ItcOperationBuyAuctionImm", pkg: "field", dir: csvpkg.DirServerbound}}
+	case "CITC::OnCancelSaleItem":
+		return []candidate{{name: "ItcOperationCancelSale", pkg: "field", dir: csvpkg.DirServerbound}}
+	case "CITC::OnMoveITCPurchaseItemLtoS":
+		return []candidate{{name: "ItcOperationMoveLtoS", pkg: "field", dir: csvpkg.DirServerbound}}
+	case "CITCBidAuctionDlg::OnButtonClicked":
+		return []candidate{{name: "ItcOperationPlaceBid", pkg: "field", dir: csvpkg.DirServerbound}}
+	// WISH-LIST / ZZIM (favorite) arms of the same ITC_OPERATION dispatcher,
+	// verified on gms_v95 (the symbol-rich PDB build, IDA port 13340) which
+	// exposes them as named CITC::On* functions. opcode 308/0x134. Six are
+	// serial-only (mode + Encode4(nITCSN)); OnRegisterWishEntry carries a full
+	// wish-entry body.
+	//   CITC::OnSetZzim @0x5733b0 (COutPacket(308) @0x5733e5) mode 0x09.
+	//   CITC::OnBuyZzim @0x573450 (COutPacket(308) @0x5734b7) mode 0x11.
+	//   CITC::OnDeleteZzim @0x573520 (COutPacket(308) @0x573555) mode 0x0A.
+	//   CITC::OnViewWish @0x5735c0 (COutPacket(308) @0x5735f5) mode 0x0B.
+	//   CITC::OnBuyWish @0x573660 (COutPacket(308) @0x573695) mode 0x0C.
+	//   CITC::OnCancelWish @0x573700 (COutPacket(308) @0x573735) mode 0x0D.
+	//   CITC::OnRegisterWishEntry @0x573c10 (COutPacket(308) @0x573ca5) mode 0x04;
+	//     body: Encode4 itemId/price/count, Encode1 duration/feeOption, EncodeStr desc.
+	case "CITC::OnSetZzim":
+		return []candidate{{name: "ItcOperationSetZzim", pkg: "field", dir: csvpkg.DirServerbound}}
+	case "CITC::OnBuyZzim":
+		return []candidate{{name: "ItcOperationBuyZzim", pkg: "field", dir: csvpkg.DirServerbound}}
+	case "CITC::OnDeleteZzim":
+		return []candidate{{name: "ItcOperationDeleteZzim", pkg: "field", dir: csvpkg.DirServerbound}}
+	case "CITC::OnViewWish":
+		return []candidate{{name: "ItcOperationViewWish", pkg: "field", dir: csvpkg.DirServerbound}}
+	case "CITC::OnBuyWish":
+		return []candidate{{name: "ItcOperationBuyWish", pkg: "field", dir: csvpkg.DirServerbound}}
+	case "CITC::OnCancelWish":
+		return []candidate{{name: "ItcOperationCancelWish", pkg: "field", dir: csvpkg.DirServerbound}}
+	case "CITC::OnRegisterWishEntry":
+		return []candidate{{name: "ItcOperationRegisterWishEntry", pkg: "field", dir: csvpkg.DirServerbound}}
+	// BROWSE-NAVIGATION arms of the same ITC_OPERATION dispatcher, verified on
+	// gms_v95 (the symbol-rich PDB build, IDA port 13340). opcode 308/0x134. The
+	// three CITC::OnChanged* senders all emit mode 0x05 (the GetItcList browse
+	// request, 8-field shape) but with different per-fname constant fills; the tab
+	// search button emits the distinct mode 0x06 (6-field shape, no sort bytes).
+	// Each is modeled by its own discrete struct + fixture.
+	//   CITC::OnChangedCategory @0x5744a0 (COutPacket(308) @0x57451a) mode 0x05.
+	//   CITC::OnChangedCategorySub @0x5739a0 (COutPacket(308) @0x5739da) mode 0x05.
+	//   CITC::OnChangedPage @0x573af0 (COutPacket(308) @0x573b29) mode 0x05.
+	//   CITCWnd_Tab::OnButtonClicked @0x584b10 (COutPacket(308) @0x584bc7/@0x584cc9)
+	//     mode 0x06 (search-by-name; send inlined in the nId==1004 button branch).
+	case "CITC::OnChangedCategory":
+		return []candidate{{name: "ItcOperationChangedCategory", pkg: "field", dir: csvpkg.DirServerbound}}
+	case "CITC::OnChangedCategorySub":
+		return []candidate{{name: "ItcOperationChangedCategorySub", pkg: "field", dir: csvpkg.DirServerbound}}
+	case "CITC::OnChangedPage":
+		return []candidate{{name: "ItcOperationChangedPage", pkg: "field", dir: csvpkg.DirServerbound}}
+	case "CITCWnd_Tab::OnButtonClicked":
+		return []candidate{{name: "ItcOperationTabSearch", pkg: "field", dir: csvpkg.DirServerbound}}
 
 	// --- World: field (clientbound) ---
 	// Affected-area (mist) + kite (the flying-kite field object, called

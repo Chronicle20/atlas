@@ -1,0 +1,10 @@
+packet: field/serverbound/FieldItcOperationChangedCategory
+direction: serverbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CITC::OnChangedCategory
+    address: "0x5af5fa"
+    decompile_sha256: 34c46116463a296b8c56e4f9e727a0b726d4fe9bb95af2fecf36b609db45ebf7
+verifies:
+    - libs/atlas-packet/field/serverbound/itc_operation_test.go#TestItcOperationChangedCategoryByteOutput_v84

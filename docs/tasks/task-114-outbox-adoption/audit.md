@@ -545,3 +545,135 @@ required) stands. Recommend a follow-up outbox-adoption task track atlas-mts as 
 Merge is safe to keep. Task-114's outbox guarantee is intact for all migrated services, the three
 intent-preservation fixes are correct and complete, both guards and all targeted builds/tests are
 green. The atlas-mts observation is outbox debt for a future task, not a blocker.
+
+# Post-MTS-Migration Backend-Guidelines Audit — 2026-07-12
+
+- **Service:** atlas-mts
+- **Commit under review:** `7735485fb6` (parent `a5556b3d56`) — "feat(mts): migrate tx-coupled status emits to the outbox (task-114)"
+- **Branch:** task-114-outbox-adoption (verified `git branch --show-current`)
+- **Scope:** the 8 changed Go/test files + inventory.md; the outbox seam correctness, not a fresh feature.
+- **Overall:** PASS (guideline-clean). Zero Critical/Important findings. Two Minor cosmetic notes.
+
+## Objective gate (build / vet / test / guards)
+
+| Gate | Command | Result |
+|------|---------|--------|
+| vet | `go vet ./...` (atlas-mts) | PASS (exit 0) |
+| build | `go build ./...` (atlas-mts) | PASS (exit 0) |
+| test -race | `go test -race ./... -count=1` (atlas-mts) | PASS (exit 0; custody + mts consumer + listing/wish/holding/transaction packages all `ok`) |
+| outbox-guard | `./tools/outbox-guard.sh` | PASS (OUTBOX_EXIT=0) |
+| goroutine-guard | `./tools/goroutine-guard.sh` | PASS (GR_EXIT=0) |
+| conflict markers | `git grep -nE '^(<<<<<<<\|=======\|>>>>>>>)' -- '*.go'` | PASS (no matches, grep exit 1) |
+
+## Seam correctness (transaction / outbox)
+
+| Item | Status | Evidence |
+|------|--------|----------|
+| `outbox.EmitProvider(l,ctx,tx)` returns the unnamed `func(token string) kprod.MessageProducer` that `msg.Emit(producer.Provider)` accepts | PASS | libs/atlas-outbox/provider.go:20-30; kafka/message/message.go:44 (`func Emit(p producer.Provider)`). Enqueue-shaped producer persists rows in `tx` (provider.go:27 `EnqueueBuffer(l,ctx,tx,...)`), not Kafka. |
+| Inner processor writes on `tx`, re-entrant via `NewProcessor(l,ctx,tx)` | PASS | libs/atlas-database/transaction.go:9-14 — `ExecuteTransaction` runs `fn(db)` directly when `isTransaction(db)`, so the processor's own inner `ExecuteTransaction(tx)` joins the outer tx. Call sites: custody consumer.go:97,182,227,277; mts consumer.go:205,378,456,496 all pass `tx`. |
+| Enqueue errors propagate to roll back (returned, not `_`-swallowed) | PASS | Every success emit is `return msg.Emit(outbox.EmitProvider(...))(...)` inside the tx closure (custody:149,186,230,290; mts:216,392,468,501). `buf.Put` perr returned (e.g. custody:150-152, mts:393-395). No `_ =` on the outbox path. |
+| Failure/no-committed-state emits stay on the direct producer | PASS | ERROR/FAILED acks emit on `p := pf(ctx)` outside the tx (custody:158,202,236,298; mts `emitFail`:190,253,303,357). |
+| Failure notification not lost when tx errors | PASS | custody:156-161 / mts:220-224 emit ERROR/`emitFail()` on `terr != nil`. RegisterWish/RemoveWish log-only on failure, matching pre-migration behavior (mts consumer.go:472-474, 505-507 — original also returned without emit). |
+| `handleCancelListing` won/terr control flow | PASS | mts consumer.go:202-231 — `won` captured inside tx (210); lost race returns `nil` (no writes, no outbox emit, 211-214); post-tx `terr` branch emits fail+return (220-224), then `!won` branch emits fail+return (225-231). No double-emit, no success emit on the lost path. |
+| `res` captured before post-tx best-effort side-effects (no use-before-assign) | PASS | move: `var res listing.SettleMoveResult` (custody:275), assigned inside tx (286), used only after `terr != nil` returns (custody:297-299 returns first). bid: `var res listing.BidResult` (mts:376), assigned (388), post-commit outbid history guarded by `terr` early return (mts:402-406) then `res.HadPrior` (411). |
+| Post-commit best-effort writes on base `db` (documented) | PASS | bid-lost history mts:423 (`db.WithContext(ctx)`); offer/escrow side-effects use `db` (diff §move) — explicitly documented best-effort, outside the atomic seam. |
+
+## DOM / structural checks
+
+| ID | Check | Status | Evidence |
+|----|-------|--------|----------|
+| DOM-06/07 | Handlers take `logrus.FieldLogger`, pass through | PASS | Handler signatures unchanged: `func(l logrus.FieldLogger, ctx context.Context, ...)`. |
+| DOM-15/16 | No `db.Create/Save/Delete` in handlers; writes via processor→administrator | PASS | No direct writes introduced; all writes go through `NewProcessor(...).X` inside the tx. Sole direct write is the pre-existing best-effort `transaction.CreateTransaction` (mts:423), unchanged in kind. |
+| DOM-21 | No reinvented shared types/consts | PASS | No new types/consts; reuses `world.Id`, `listing.CancelResult/BidResult/SettleMoveResult`. |
+| DOM-24 | Kafka producer stubbed in emitting tests | PASS | Tests inject a recording producer via `rp.provider()` for the direct path (never `producer2.ProviderImpl`); success emits go to outbox DB rows; drainer not booted in tests — no unstubbed Kafka hang path. `allEvents` reads `outbox.Entity` rows (`db.Order("id ASC").Find(&rows)`) and filters by `transactionId`, genuinely verifying outbox rows and correctly scoping the cache=shared in-memory DB (custody consumer_test.go:411-436; mts consumer_test.go:1150-1175). |
+| SEC-04 | No hardcoded secrets in drainer wiring | PASS | Drainer DSN from `outboxlib.WithDSN(database.DSN())` (main.go:78); grep for password/secret/token literals in the 3 changed source files: none. |
+| RR-6 | Goroutine via `routine.Go`, not bare `go` | PASS | main.go:74 `routine.Go(l, tdm.Context(), ...)`; teardown `drainer.Stop()`+`publisher.Close()` (main.go:81-84); goroutine-guard exit 0. |
+| Import hygiene | No unused/duplicate imports; gofmt ordering | PASS | vet exit 0. `pf` parameter intentionally unused in registerWish/removeWish (legal — parameter, not local); mts consumer_test.go import reorder (`test`/`transaction`) gofmt-clean. |
+
+## Minor (non-blocking, cosmetic)
+
+- custody consumer.go:260-266 and 269-274 — two overlapping "The settle tx ... lives in the listing processor" comment paragraphs in `handleMtsMoveListingToHolding`; the first is a leftover of the pre-migration comment. No behavioral impact.
+- `handleRegisterWish`/`handleRemoveWish` retain the now-unused `pf providerFn` parameter (documented in the task brief as unused-but-legal). Signature-symmetric with the other handlers; acceptable.
+
+## Verdict
+
+The migration is guideline-clean. The domain write + state-asserting emit are atomically bound in one `ExecuteTransaction`, the inner processor is correctly re-bound to `tx` via `NewProcessor(l,ctx,tx)`, enqueue errors roll the tx back, and failure acks remain on the direct producer so no failure notification is lost. Tests genuinely assert against `outbox_entries` scoped by transactionId. No Critical or Important findings.
+
+# Post-MTS-Migration Review (plan-adherence) — 2026-07-12
+
+**Commit:** `7735485fb6` ("feat(mts): migrate tx-coupled status emits to the outbox (task-114)"), parent `a5556b3d56`.
+**Branch:** task-114-outbox-adoption
+**Scope:** atlas-mts migration of tx-coupled STATUS emits onto the outbox.
+
+## Verdict: NEEDS_REVIEW
+
+The core migration is correct and faithful to the task-114 pattern — every named success emit is bound to the domain write via `database.ExecuteTransaction` + `outbox.EmitProvider(l, ctx, tx)`, the processor is re-bound to `tx`, failure/`*_FAILED` acks stay on the direct producer after the tx returns an error, and the reworked tests genuinely assert `outbox_entries` scoped by transactionId. Build, vet, `go test -race`, `outbox-guard`, and `goroutine-guard` are all green.
+
+One **Important** latent finding keeps this from a clean PASS: two migrated handlers (`handlePlaceBid`, `handleCancelListing`) wrap processor methods that transitively fire **cross-service escrow saga commands on the DIRECT producer from inside the outer transaction closure** — an ordering the outbox-guard cannot see (it is lexical, not a taint pass) and which the sibling atlas-quest migration deliberately avoided by routing accompanying saga commands through a tx-bound outbox emitter. It is benign on the current branch (where `database.ExecuteTransaction` is still the no-op version pending task-119) but arms into a money-direction consistency hole the moment task-114's real-transaction premise is realized.
+
+## Per-handler correctness
+
+| Handler | In outer tx | `tx` re-bound | Success→outbox | Failure→direct after tx err | Verdict |
+|---|---|---|---|---|---|
+| `handleAcceptToMtsListing` | yes | `NewProcessor(l,ctx,tx)` | ACCEPTED+LISTING_CREATED via `EmitProvider(tx)` | ERROR ack via `pf(ctx)` on `terr` | PASS (custody/consumer.go:109-179) |
+| `handleReleaseFromMtsHolding` | yes | yes | RELEASED (+cond ITEM_TAKEN_HOME); `res` read inside closure | ERROR on `terr` | PASS (custody/consumer.go:231-256) |
+| `handleRestoreMtsHolding` | yes | yes | RESTORED | ERROR on `terr` | PASS (custody/consumer.go:275-290) |
+| `handleMtsMoveListingToHolding` | yes | yes | MOVED+LISTING_SOLD; `var res` assigned in-closure, early `return` on `terr` before any post-tx read → no use-before-assign | ERROR on `terr` | PASS (custody/consumer.go:276-335) |
+| `handleCancelListing` | yes | yes | LISTING_CANCELLED, winner-only; `won`/`res` control flow correct; `!Won` returns nil (no writes) + `emitFail()` direct | LISTING_CANCEL_FAILED on `terr` and on `!won` | PASS for the status event; see Finding 1 for the escrow saga (mts/consumer.go:202-231) |
+| `handlePlaceBid` | yes | yes | BID_PLACED(+OUTBID); `res` captured in-closure, early `return` on `terr`; bid-lost history row correctly post-commit on base `db` | BID_FAILED via `emitFail(failReasonFor(terr))` | PASS for the status events; see Finding 1 for the escrow sagas (mts/consumer.go:376-426) |
+| `handleRegisterWish` | yes | yes | WISH_ADDED | logs `terr` (no failure event by design) | PASS (mts/consumer.go:455-474) |
+| `handleRemoveWish` | yes | yes | WISH_REMOVED; `characterId` read in-tx | logs `terr` | PASS (mts/consumer.go:495-507) |
+
+The lost-race and result-capture questions called out in the brief all verify PASS:
+- `handleCancelListing`: on `!r.Won`, `transitionToSellerHolding` (processor.go:597-604) makes zero writes when `UpdateState` affects ≠1 rows, so the lost race rolls nothing back; the closure returns `nil` and the direct `emitFail()` sends LISTING_CANCEL_FAILED. A real error rolls back and also `emitFail()`s.
+- `handleMtsMoveListingToHolding`: `res` is assigned inside the closure and only read after the `terr` early-return; the offer sibling-release and auction-escrow release run post-commit on base `db` (custody/consumer.go:320-347).
+- `handlePlaceBid`: `res` captured in-closure; the bid-lost history row is post-commit best-effort on base `db` (mts/consumer.go:411-426).
+
+## Finding 1 (Important) — direct escrow-saga commands now execute inside the outbox transaction
+
+`handlePlaceBid` wraps `listing.PlaceBid` and `handleCancelListing` wraps `listing.CancelBySerial` in the outer `database.ExecuteTransaction`. Both processor methods emit **cross-service escrow saga commands via the direct Kafka producer**, transitively, from within that closure:
+
+- `listing/processor.go:1140` (`mts_bid_escrow_hold`) and `:1161` (`mts_bid_escrow_release`) in `PlaceBid`, reached from the wrapped `handlePlaceBid`.
+- `listing/processor.go:406` (`mts_bid_escrow_release`) in `Cancel`, reached from the wrapped `handleCancelListing` → `CancelBySerial` → `CancelForSeller` → `Cancel`.
+
+`p.emitter.Create` resolves to `saga.ProcessorImpl.Create` → `producer.ProviderImpl(p.l)(p.ctx)(saga.EnvCommandTopic)(...)` (saga/processor.go:28) — the exact direct-producer construct the outbox-guard bans inside a tx closure. The guard does not flag it because it is a purely lexical tripwire (outboxguard/analyzer.go:19-22: "not a taint analysis"): it only scans `producer.ProviderImpl` selectors appearing syntactically inside the `ExecuteTransaction` func literal and does not follow the call into `listing.PlaceBid`/`Cancel` in another package.
+
+Why this matters: pre-migration, `PlaceBid`/`Cancel` ran their DB writes in their own inner `ExecuteTransaction`, which **committed**, and only then fired the escrow saga (commit-then-emit). Post-migration the inner `ExecuteTransaction` joins the outer tx (processor.go:589 → atlas-database `isTransaction` join-existing branch) and the saga command fires **before the outer commit**, on still-uncommitted bid/cancel writes. If the outer tx then fails to commit (an outbox insert error or a bare commit failure after the saga emit), the escrow-hold/-release saga is already published while the bid/cancel row is rolled back — NX escrow moved for a bid that does not exist, i.e. the money-losing direction. Pre-migration the same failure left the bid committed but escrow unheld (recoverable, non-money-losing).
+
+This directly contradicts the pattern the same task established in atlas-quest, where an accompanying saga command is made atomic with its domain write via a tx-bound outbox emitter — `NewProcessor`'s `txEmitter` defaults to `NewOutboxEventEmitter(l, ctx, tx)` and `processStartActions`/`processEndActions` call `p.txEmitter(tx).EmitSaga(s)` (inventory.md:2035-2045, 2074-2075). The MTS inventory (§atlas-mts "Left direct", line 2306-2307) justifies the saga emit as "a COMMAND … direct per the command rule" — which answers direct-vs-outbox but not the in-tx-ordering question this migration newly created for the two *wrapped* handlers.
+
+Severity is Important, not Critical, because:
+- It is inert on this branch: `database.ExecuteTransaction` is still the no-op version (isTransaction always true → runs `fn(db)` inline; no real tx, no rollback window) pending task-119. Runtime behavior is unchanged today.
+- All guards/tests/build are green; the failure window (commit fail after saga emit) is narrow.
+
+It should be resolved before task-114's atomicity is relied upon: route the `PlaceBid`/`Cancel` escrow saga commands through the tx-bound outbox saga emitter (atlas-quest pattern) so they are atomic with the bid/cancel, or return the saga intent from the processor and emit it post-commit like the bid-lost history row and `ReleaseSiblingOffers` notices already are.
+
+Only these two handlers are affected. The other saga-emitting processor methods are safe: `ReleaseHighBidEscrow` (processor.go:512/560) runs post-commit on base `db` from the move handler; `List` (839) and `Buy` (953) are reached from the *unwrapped* `handleCreateListing`/`handleBuy`; `SettleAuction` (1316) is ticker-driven and untouched. `processor_custody.go` (SettleMove) contains no saga emit.
+
+## ReleaseSiblingOffers "left direct" classification — DEFENSIBLE
+
+The commit leaves the `ReleaseSiblingOffers` → per-losing-offer LISTING_CANCELLED notices on the direct producer, post-commit. Reading `ReleaseSiblingOffers` (processor.go:466-499) and `Cancel` (387-411): each sibling is released through its own independent `Cancel` → `transitionToSellerHolding` transaction, per-sibling failures are swallowed (`continue`), and only race-winners (Won=true, item already committed to the offerer's holding) are returned for a notice. There is no single enclosing transaction to bind these notices to; wrapping all siblings in the outer settle tx would wrongly couple unrelated offerers to the buyer's settle and could commit swallowed partial writes. The offerer's item is already transactionally in their holding via the committed per-sibling `Cancel`, and the escrow is sweep-recoverable, so a lost notice is a UI-refresh gap, not a money/item inconsistency. The framing does not hide a consistency gap. PASS. (Note: offer listings are `SaleTypeOffer`, never auctions, so the `Cancel` escrow-saga branch of Finding 1 is not reached here — `HeldBidderId` is 0.)
+
+## Test integrity — GENUINE
+
+The `allEvents(t, db, rp, txId)` helper (custody/consumer_test.go:411-436, mts/consumer_test.go:1150-1175) reads `outbox.Entity` rows via `db.Order("id ASC").Find(&rows)`, JSON-decodes each `MessageValue` into the shared `{transactionId,type}` envelope, and filters by `txId`, merged with the direct-producer `rp.events` (also `txId`-scoped). It is not silently empty: the success-path tests assert exact counts (1 ACCEPTED + 1 LISTING_CREATED; 2-each on replay; 1 LISTING_CANCELLED / WISH_ADDED / WISH_REMOVED), which would read 0 and fail if the outbox rows were not written — confirmed against a fresh `-count=1 -race` run (custody 1.696s, mts 1.510s, listing 2.281s, all ok). The txId scoping is the documented workaround for the package's `cache=shared` in-memory DB leaking `outbox_entries` across sibling tests; failure-path assertions correctly remain on `rp.events`. No masking of a swallowed error (contrast the monster-book case noted in inventory).
+
+## No regression
+
+The diff touches only atlas-mts (`go.mod`, the two consumers, their tests, `dupe_safety_test.go`, `main.go`) plus `inventory.md`. No previously-migrated site in any other service is reverted. `main.go` boots the drainer via `routine.Go` (goroutine-guard clean) with an advisory-lock-gated `NewDrainer`, and adds `outboxlib.Migration` — consistent with the other drainer-booting services. No new *lexically* in-tx direct producer call (Finding 1 is transitive/latent, not guard-visible).
+
+## Build / test / guard results
+
+| Check | Command | Result |
+|---|---|---|
+| Build | `go build ./...` (atlas-mts) | PASS (exit 0) |
+| Vet | `go vet ./...` (atlas-mts) | PASS (exit 0) |
+| Tests | `go test -race ./...` (atlas-mts) | PASS (all packages ok; consumer+listing re-run fresh `-count=1`) |
+| outbox-guard | `./tools/outbox-guard.sh` | PASS (exit 0) — but lexical only; does not see Finding 1 |
+| goroutine-guard | `./tools/goroutine-guard.sh` | PASS (exit 0) |
+
+Not run: `docker buildx bake atlas-mts` (read-only review; go.mod added `atlas-outbox`, whose COPY lines the inventory records as already present — CI/bake should confirm).
+
+## Recommendation
+
+Safe to KEEP on this branch: nothing regresses today, all gates are green, and the status-event migration is correct. Before task-119 makes `ExecuteTransaction` a real transaction, resolve Finding 1 so the `PlaceBid`/`Cancel` escrow saga commands are either enqueued tx-bound via the outbox saga emitter (atlas-quest precedent) or emitted post-commit, and consider extending the outbox-guard to follow calls into local processor packages so a transitive direct-producer-in-tx emit is caught mechanically rather than by review.

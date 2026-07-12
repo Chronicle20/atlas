@@ -39,41 +39,11 @@ func (Item) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc *mini
 		subdir string
 		rf     RegisterFunc
 	}{
-		{"Consume", func(l logrus.FieldLogger) func(ctx context.Context) func(path string) error {
-			return func(ctx context.Context) func(path string) error {
-				return func(path string) error {
-					return consumable.NewProcessor(l, ctx, db).RegisterConsumable(path)
-				}
-			}
-		}},
-		{"Cash", func(l logrus.FieldLogger) func(ctx context.Context) func(path string) error {
-			return func(ctx context.Context) func(path string) error {
-				return func(path string) error {
-					return cash.NewProcessor(l, ctx, db).RegisterCash(path)
-				}
-			}
-		}},
-		{"Etc", func(l logrus.FieldLogger) func(ctx context.Context) func(path string) error {
-			return func(ctx context.Context) func(path string) error {
-				return func(path string) error {
-					return etc.NewProcessor(l, ctx, db).RegisterEtc(path)
-				}
-			}
-		}},
-		{"Install", func(l logrus.FieldLogger) func(ctx context.Context) func(path string) error {
-			return func(ctx context.Context) func(path string) error {
-				return func(path string) error {
-					return setup.NewProcessor(l, ctx, db).RegisterSetup(path)
-				}
-			}
-		}},
-		{"Pet", func(l logrus.FieldLogger) func(ctx context.Context) func(path string) error {
-			return func(ctx context.Context) func(path string) error {
-				return func(path string) error {
-					return pet.NewProcessor(l, ctx, db).RegisterPet(path)
-				}
-			}
-		}},
+		{"Consume", consumable.NewProcessor(l, ctx, db).RegisterConsumable},
+		{"Cash", cash.NewProcessor(l, ctx, db).RegisterCash},
+		{"Etc", etc.NewProcessor(l, ctx, db).RegisterEtc},
+		{"Install", setup.NewProcessor(l, ctx, db).RegisterSetup},
+		{"Pet", pet.NewProcessor(l, ctx, db).RegisterPet},
 	}
 	for _, c := range categories {
 		dir := filepath.Join(base, c.subdir)

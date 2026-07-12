@@ -28,13 +28,7 @@ func (Reactor) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc *m
 	if err != nil {
 		return fmt.Errorf("serialize Reactor.wz: %w", err)
 	}
-	if err := registerAllInDirectory(l, ctx, filepath.Join(root, "Reactor.wz"), func(l logrus.FieldLogger) func(ctx context.Context) func(path string) error {
-		return func(ctx context.Context) func(path string) error {
-			return func(path string) error {
-				return reactor.NewProcessor(l, ctx, db).RegisterReactor(path)
-			}
-		}
-	}); err != nil {
+	if err := registerAllInDirectory(l, ctx, filepath.Join(root, "Reactor.wz"), reactor.NewProcessor(l, ctx, db).RegisterReactor); err != nil {
 		return err
 	}
 	prefix := minioAssetPrefix(p)

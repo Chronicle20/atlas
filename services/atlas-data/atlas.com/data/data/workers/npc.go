@@ -36,13 +36,7 @@ func (Npc) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc *minio
 		}
 		// Note: leave NPC string registry populated; Map worker may need it.
 	}
-	if err := registerAllInDirectory(l, ctx, filepath.Join(root, "Npc.wz"), func(l logrus.FieldLogger) func(ctx context.Context) func(path string) error {
-		return func(ctx context.Context) func(path string) error {
-			return func(path string) error {
-				return npc.NewProcessor(l, ctx, db).RegisterNpc(path)
-			}
-		}
-	}); err != nil {
+	if err := registerAllInDirectory(l, ctx, filepath.Join(root, "Npc.wz"), npc.NewProcessor(l, ctx, db).RegisterNpc); err != nil {
 		return err
 	}
 	prefix := minioAssetPrefix(p)

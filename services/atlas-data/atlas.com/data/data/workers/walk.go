@@ -21,8 +21,11 @@ func findSub(props []property.Property, name string) *property.SubProperty {
 	return nil
 }
 
-// RegisterFunc mirrors atlas-data/data.RegisterFunc (curried path consumer).
-type RegisterFunc func(l logrus.FieldLogger) func(ctx context.Context) func(path string) error
+// RegisterFunc mirrors atlas-data/data.RegisterFunc (path consumer). Callers
+// pass a bound method value (e.g. npc.NewProcessor(l, ctx, db).RegisterNpc)
+// rather than a curried l/ctx/path closure — the leaf processors already
+// capture l/ctx/db at construction, so no further currying is needed here.
+type RegisterFunc func(path string) error
 
 // registerAllInDirectory walks dir and calls rf for every regular file. Errors
 // from individual files are logged and do not abort the walk; only the directory
@@ -38,7 +41,7 @@ func registerAllInDirectory(l logrus.FieldLogger, ctx context.Context, dir strin
 		if !strings.HasSuffix(path, ".img.xml") {
 			return nil
 		}
-		if err := rf(l)(ctx)(path); err != nil {
+		if err := rf(path); err != nil {
 			l.WithError(err).Warnf("register %s", filepath.Base(path))
 		}
 		return nil

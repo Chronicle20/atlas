@@ -45,13 +45,7 @@ func (Skill) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc *min
 		defer func() { _ = mobskill.GetMobSkillStringRegistry().Clear(t) }()
 	}
 	// Register skills (per-job images) and the single MobSkill.img.
-	if err := registerAllInDirectory(l, ctx, filepath.Join(root, "Skill.wz"), func(l logrus.FieldLogger) func(ctx context.Context) func(path string) error {
-		return func(ctx context.Context) func(path string) error {
-			return func(path string) error {
-				return skill.NewProcessor(l, ctx, db).RegisterSkill(path)
-			}
-		}
-	}); err != nil {
+	if err := registerAllInDirectory(l, ctx, filepath.Join(root, "Skill.wz"), skill.NewProcessor(l, ctx, db).RegisterSkill); err != nil {
 		return err
 	}
 	if err := mobskill.NewProcessor(l, ctx, db).RegisterMobSkill(filepath.Join(root, "Skill.wz", "MobSkill.img.xml")); err != nil {

@@ -55,23 +55,11 @@ func (Character) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc 
 
 	// Face and Hair live under Character.wz/Face and Character.wz/Hair.
 	faceDir := filepath.Join(base, "Face")
-	if err := registerAllInDirectory(l, ctx, faceDir, func(l logrus.FieldLogger) func(ctx context.Context) func(path string) error {
-		return func(ctx context.Context) func(path string) error {
-			return func(path string) error {
-				return face.NewProcessor(l, ctx, db).RegisterFace(path)
-			}
-		}
-	}); err != nil {
+	if err := registerAllInDirectory(l, ctx, faceDir, face.NewProcessor(l, ctx, db).RegisterFace); err != nil {
 		l.WithError(err).Warnf("walk %s", faceDir)
 	}
 	hairDir := filepath.Join(base, "Hair")
-	if err := registerAllInDirectory(l, ctx, hairDir, func(l logrus.FieldLogger) func(ctx context.Context) func(path string) error {
-		return func(ctx context.Context) func(path string) error {
-			return func(path string) error {
-				return hair.NewProcessor(l, ctx, db).RegisterHair(path)
-			}
-		}
-	}); err != nil {
+	if err := registerAllInDirectory(l, ctx, hairDir, hair.NewProcessor(l, ctx, db).RegisterHair); err != nil {
 		l.WithError(err).Warnf("walk %s", hairDir)
 	}
 
@@ -79,13 +67,7 @@ func (Character) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc 
 	// equipment Read tolerates non-equipment .img.xml entries because Face/Hair
 	// dirs are already registered above and equipment.Read will fail benignly
 	// for them; the walker logs and continues.
-	if err := registerAllInDirectory(l, ctx, base, func(l logrus.FieldLogger) func(ctx context.Context) func(path string) error {
-		return func(ctx context.Context) func(path string) error {
-			return func(path string) error {
-				return equipment.NewProcessor(l, ctx, db).RegisterEquipment(path)
-			}
-		}
-	}); err != nil {
+	if err := registerAllInDirectory(l, ctx, base, equipment.NewProcessor(l, ctx, db).RegisterEquipment); err != nil {
 		return err
 	}
 

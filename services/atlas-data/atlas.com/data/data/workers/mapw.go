@@ -46,13 +46,7 @@ func (Map) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc *minio
 
 	// Map registrations live under Map.wz/Map/Map<digit>/<id>.img.xml.
 	mapDir := filepath.Join(root, "Map.wz", "Map")
-	if err := registerAllInDirectory(l, ctx, mapDir, func(l logrus.FieldLogger) func(ctx context.Context) func(path string) error {
-		return func(ctx context.Context) func(path string) error {
-			return func(path string) error {
-				return _map.NewProcessor(l, ctx, db).RegisterMap(path)
-			}
-		}
-	}); err != nil {
+	if err := registerAllInDirectory(l, ctx, mapDir, _map.NewProcessor(l, ctx, db).RegisterMap); err != nil {
 		return err
 	}
 

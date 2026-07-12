@@ -94,6 +94,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 	return p
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) CommodityDecorator(m Model) Model {
 	cms, err := p.cp.GetByNpcId(m.NpcId())
 	if err != nil {

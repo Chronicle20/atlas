@@ -32,10 +32,10 @@ Notes on interpreting the output:
 
 | Path | Classification | Recipe | Task # | Status |
 |---|---|---|---|---|
-| `services/atlas-doors/atlas.com/doors/data/map/processor.go` | CP-2 | R1 | 2 | pending |
-| `services/atlas-doors/atlas.com/doors/data/skill/processor.go` | CP-2 | R1 | 2 | pending |
-| `services/atlas-doors/atlas.com/doors/door/processor.go` | CP-2 | R1 | 2 | pending |
-| `services/atlas-doors/atlas.com/doors/party/processor.go` | CP-2 | R1 | 2 | pending |
+| `services/atlas-doors/atlas.com/doors/data/map/processor.go` | CP-2 | R1 | 2 | done |
+| `services/atlas-doors/atlas.com/doors/data/skill/processor.go` | CP-2 | R1 | 2 | done |
+| `services/atlas-doors/atlas.com/doors/door/processor.go` | CP-2 | R1 | 2 | done |
+| `services/atlas-doors/atlas.com/doors/party/processor.go` | CP-2 | R1 | 2 | done |
 | `services/atlas-summons/atlas.com/summons/data/skill/processor.go` | CP-2 | R1 | 3 | pending |
 | `services/atlas-summons/atlas.com/summons/effectivestats/processor.go` | CP-2 | R1 | 3 | pending |
 | `services/atlas-summons/atlas.com/summons/inventory/processor.go` | CP-2 | R1 | 3 | pending |

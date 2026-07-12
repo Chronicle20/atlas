@@ -17,17 +17,18 @@ import (
 // destination when the door is entered. Without it, two party members' doors
 // keep their cast-time (slot 0) town position and both warp to portal index 0.
 // The area door is a plain map object and is unaffected.
-func ReslotParty(p *ProcessorImpl, partyId uint32, members []character.Id, leavers []character.Id, townPortalsByMap func(_map.Id) []TownPortal) error {
+func ReslotParty(p Processor, partyId uint32, members []character.Id, leavers []character.Id, townPortalsByMap func(_map.Id) []TownPortal) error {
+	impl := p.(*ProcessorImpl)
 	reslot := func(owner character.Id, slot byte) {
-		doors, err := GetRegistry().GetByOwner(p.ctx, p.t, owner)
+		doors, err := GetRegistry().GetByOwner(impl.ctx, impl.t, owner)
 		if err != nil {
-			p.l.WithError(err).Warnf("ReslotParty: GetByOwner %d", uint32(owner))
+			impl.l.WithError(err).Warnf("ReslotParty: GetByOwner %d", uint32(owner))
 			return
 		}
 		for _, d := range doors {
 			wireId, tx, ty, _ := ResolveTownPortal(townPortalsByMap(d.TownMapId()), slot, defaultTownX, defaultTownY)
 			if err := p.Reslot(d.AreaDoorId(), slot, wireId, tx, ty); err != nil {
-				p.l.WithError(err).Warnf("ReslotParty: reslot door %d", d.AreaDoorId())
+				impl.l.WithError(err).Warnf("ReslotParty: reslot door %d", d.AreaDoorId())
 			}
 		}
 	}

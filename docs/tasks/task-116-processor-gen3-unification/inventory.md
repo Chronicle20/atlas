@@ -131,10 +131,10 @@ Notes on interpreting the output:
 | `services/atlas-asset-expiration/atlas.com/asset-expiration/data/processor.go` | Gen1 | R3 | 28 | done |
 | `services/atlas-asset-expiration/atlas.com/asset-expiration/inventory/processor.go` | Gen1 | R3 | 28 | done |
 | `services/atlas-asset-expiration/atlas.com/asset-expiration/storage/processor.go` | Gen1 | R3 | 28 | done |
-| `services/atlas-monsters/atlas.com/monsters/map/processor.go` | Gen1 | R3 | 29 | pending |
-| `services/atlas-monsters/atlas.com/monsters/monster/drop/processor.go` | Gen1 | R3 | 29 | pending |
-| `services/atlas-monsters/atlas.com/monsters/monster/information/processor.go` | Gen1 | R3 | 29 | pending |
-| `services/atlas-monsters/atlas.com/monsters/monster/mobskill/processor.go` | Gen1 | R3 | 29 | pending |
+| `services/atlas-monsters/atlas.com/monsters/map/processor.go` | Gen1 | R3 | 29 | done |
+| `services/atlas-monsters/atlas.com/monsters/monster/drop/processor.go` | Gen1 | R3 | 29 | done |
+| `services/atlas-monsters/atlas.com/monsters/monster/information/processor.go` | Gen1 | R3 | 29 | done |
+| `services/atlas-monsters/atlas.com/monsters/monster/mobskill/processor.go` | Gen1 | R3 | 29 | done |
 | `services/atlas-rates/atlas.com/rates/buffs/processor.go` | Gen1 | R3 | 30 | pending |
 | `services/atlas-rates/atlas.com/rates/data/cash/processor.go` | Gen1 | R3 | 30 | pending |
 | `services/atlas-rates/atlas.com/rates/data/equipment/processor.go` | Gen1 | R3 | 30 | pending |

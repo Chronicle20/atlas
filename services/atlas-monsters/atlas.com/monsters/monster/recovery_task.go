@@ -54,7 +54,7 @@ func NewMonsterRecoveryTask(l logrus.FieldLogger, ctx context.Context, interval 
 	}
 	tk.infoFn = func(t tenant.Model, monsterId uint32) (information.Model, error) {
 		tctx := tenant.WithContext(tk.ctx, t)
-		return information.GetById(tk.l)(tctx)(monsterId)
+		return information.NewProcessor(tk.l, tctx).GetById(monsterId)
 	}
 	tk.applyFn = GetMonsterRegistry().ApplyRecovery
 	tk.emitFn = func(t tenant.Model, m Model) error {

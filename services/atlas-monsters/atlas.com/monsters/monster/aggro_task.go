@@ -41,7 +41,7 @@ func NewMonsterAggroDecayTask(l logrus.FieldLogger, ctx context.Context, interva
 	}
 	tk.bossLookupFn = func(t tenant.Model, monsterTemplateId uint32) bool {
 		tctx := tenant.WithContext(tk.ctx, t)
-		ma, err := information.GetById(tk.l)(tctx)(monsterTemplateId)
+		ma, err := information.NewProcessor(tk.l, tctx).GetById(monsterTemplateId)
 		if err != nil {
 			// Best-effort: treat as non-boss so decay proceeds.
 			return false

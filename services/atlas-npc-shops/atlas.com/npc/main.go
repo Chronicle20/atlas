@@ -66,6 +66,14 @@ func main() {
 		func(db *gorm.DB) error { return db.AutoMigrate(&seeder.SeedState{}) },
 	))
 
+	server.RegisterTransientErrorClassifier(func(err error) bool {
+		if database.IsTransientConnectionError(err) {
+			database.CountTransient(err)
+			return true
+		}
+		return false
+	})
+
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	character2.InitConsumers(l)(cmf)(consumerGroupId)
 	shops2.InitConsumers(l)(cmf)(consumerGroupId)

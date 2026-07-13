@@ -8,9 +8,9 @@ import (
 	compartment2 "atlas-consumables/kafka/message/compartment"
 	"atlas-consumables/kafka/message/consumable"
 	once "atlas-consumables/kafka/once/compartment"
-	"atlas-consumables/kafka/producer"
 	"context"
 	"errors"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	ts "github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	inventory2 "github.com/Chronicle20/atlas/libs/atlas-constants/inventory"

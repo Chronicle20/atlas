@@ -139,7 +139,7 @@ package clientbound
 
 const MobCrcKeyChangedWriter = "MobCrcKeyChanged"
 
-// Byte layout (IDA-verified, identical across all 5 versions — a single Decode4):
+// Byte layout (IDA-verified, identical across the versions cited below — a single Decode4):
 //   - crcKey : uint32 (CInPacket::Decode4 → this->m_dwMobCrcKey)
 // IDA basis: CMobPool::OnMobCrcKeyChanged — v83 @0x6797be, v87 @0x6b5399, v95 @0x657230.
 type MobCrcKeyChanged struct {

@@ -2,7 +2,7 @@ package account
 
 import (
 	account2 "atlas-account/kafka/message/account"
-	"atlas-account/kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"atlas-account/rest"
 	"errors"
 	"net/http"

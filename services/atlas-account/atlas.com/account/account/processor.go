@@ -6,7 +6,7 @@ import (
 	"atlas-account/kafka/message"
 	account2 "atlas-account/kafka/message/account"
 	ban2 "atlas-account/kafka/message/ban"
-	"atlas-account/kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"context"
 	"errors"
 	"fmt"

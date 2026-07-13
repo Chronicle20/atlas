@@ -1,7 +1,7 @@
 package reactor
 
 import (
-	"atlas-reactors/kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	dropMessage "atlas-reactors/kafka/message/drop"
 	"context"
 	"os"
@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
-	kafkaProducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/segmentio/kafka-go"
@@ -144,7 +143,7 @@ func emitConsumeDropCommand(l logrus.FieldLogger) func(ctx context.Context) func
 }
 
 func consumeDropCommandProvider(f field.Model, dropId uint32) model.Provider[[]kafka.Message] {
-	key := kafkaProducer.CreateKey(int(f.MapId()))
+	key := producer.CreateKey(int(f.MapId()))
 	value := &dropMessage.Command[dropMessage.CommandConsumeBody]{
 		WorldId:   f.WorldId(),
 		ChannelId: f.ChannelId(),
@@ -155,7 +154,7 @@ func consumeDropCommandProvider(f field.Model, dropId uint32) model.Provider[[]k
 			DropId: dropId,
 		},
 	}
-	return kafkaProducer.SingleMessageProvider(key, value)
+	return producer.SingleMessageProvider(key, value)
 }
 
 func CancelPendingActivation(reactorId uint32) {

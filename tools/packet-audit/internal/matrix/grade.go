@@ -72,6 +72,11 @@ type opEntryRef struct {
 	Dir    opregistry.Direction
 	Opcode int
 	FName  string
+	// Packet is the registry entry's optional atlas-struct path
+	// ("field/clientbound/SetItc"). When set and no audit report exists, grading
+	// uses it to find the packet's byte-fixture (marker + evidence) so a golden
+	// test can promote the cell without a report.
+	Packet string
 }
 
 // gradeArgs is the resolved, version-specific input to the core grading logic.
@@ -112,9 +117,16 @@ func gradeOpCell(in Inputs, ref opEntryRef, version string, routedElsewhere bool
 	var tier1 bool
 	if hasReport {
 		pkt = PacketID(rep)
+	} else if ref.Packet != "" {
+		// No report, but the registry declares this op's atlas struct. Use it to
+		// find the byte-fixture (marker + evidence) so a committed golden test can
+		// promote the cell without a report.
+		pkt = ref.Packet
+	}
+	if pkt != "" {
 		ev, hasEv = in.Evidence[EvKey{pkt, version}]
 		mk = in.Markers[EvKey{pkt, version}]
-		tier1 = in.Tier1[pkt] || rep.FlatInvalid
+		tier1 = in.Tier1[pkt] || (hasReport && rep.FlatInvalid)
 	}
 
 	// Determine whether the report's base FName is already claimed by a
@@ -174,6 +186,28 @@ func gradeCore(a gradeArgs) Cell {
 	// supported mode arm has an implemented, fixture-verified body.
 
 	if !a.hasReport {
+		// No IDA-export audit report for this op. A committed golden byte-test
+		// (packet-audit:verify marker) backed by fresh evidence still proves the
+		// exact wire — a stronger signal than the static report diff — so it
+		// promotes the cell on its own. This requires the registry entry to carry
+		// a `packet:` link (so we could find the fixture at all). Evidence
+		// freshness is still enforced: a stale fixture does NOT promote.
+		if a.marker.Found && a.hasEvidence && a.evidence.Fresh {
+			if a.family {
+				return Cell{State: StateFamily, Note: familyNote}
+			}
+			return Cell{State: StateVerified}
+		}
+		if a.marker.Found && a.hasEvidence && !a.evidence.Fresh {
+			note := a.evidence.Note
+			if note == "" {
+				note = "evidence stale (decompile hash drift)"
+			}
+			return Cell{State: StateIncomplete, Note: note}
+		}
+		if a.marker.Found {
+			return Cell{State: StateIncomplete, Note: "byte-test marker present but no fresh evidence record"}
+		}
 		return Cell{State: StateIncomplete, Note: "no audit report"}
 	}
 	// Atlas implements this op in this version (a report exists) but this

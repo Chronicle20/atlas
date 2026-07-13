@@ -3,7 +3,7 @@ package character
 import (
 	"atlas-effective-stats/external/data/equipment"
 	character2 "atlas-effective-stats/kafka/message/character"
-	"atlas-effective-stats/kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"atlas-effective-stats/stat"
 	"context"
 	"fmt"

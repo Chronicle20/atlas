@@ -726,6 +726,11 @@
             "BUY_AUCTION_IMM": 20
           }
         }
+      },
+      {
+        "opCode": "0xFA",
+        "validator": "LoggedInValidator",
+        "handler": "ItemUpgradeUpdateHandle"
       }
     ],
     "writers": [
@@ -1383,6 +1388,17 @@
       {
         "opCode": "0x9C",
         "writer": "CharacterItemUpgrade"
+      },
+      {
+        "opCode": "0x14A",
+        "writer": "ViciousHammer",
+        "options": {
+          "operations": {
+            "OPEN": 0,
+            "SUCCESS": 60,
+            "FAILURE": 61
+          }
+        }
       },
       {
         "opCode": "0x9D",

@@ -14,6 +14,20 @@
 # design OQ-1).
 # jms_v185 has no VICIOUS_HAMMER op (registry-absent) - omitted.
 # gms_v92 has no registry/IDB/template routing - omitted.
+# gms_v48 / gms_v61 / gms_v72 have NO CUIItemUpgrade class in the client
+# (live-IDB verified: ports 13337/13338/13339 - only the older
+# CUser::ShowItemUpgradeEffect scroll system exists). Vicious Hammer is
+# version-absent on these; not routed.
+# gms_v79 SUCCESS=60/FAILURE=61 IDA-VERIFIED (task-129 extension): decoder
+# CUIItemUpgrade::OnItemUpgradeResult 0x799d61 (mode==60 success shows
+# "2-hammerCount" remaining / mode==61 failure errorCode switch
+# 1=not-upgradable,2=cap,3=special), reached via CUIItemUpgrade::OnPacket
+# 0x799d4b gate (a2==330) from the forwarder sub_523171 (field[118], the hammer
+# dialog created in CWvsContext::SendConsumeCashItemUseRequest 0x9572da;
+# field[117]/sub_523157 is a different dialog). Serverbound sender
+# CUIItemUpgrade::Update 0x7998da COutPacket(250/0xFA). Clientbound
+# header = 0x14A (330) and serverbound = 0xFA (250); routed in
+# template_gms_79_1.
 # gms_v84 SUCCESS=61/FAILURE=62 IDA-VERIFIED (task-129): decoder
 # CUIItemUpgrade::OnItemUpgradeResult sub_85676C 0x85676c (mode==61 branch /
 # mode==62 switch, 2-count success str 5059 / horntail switch 5057/5058/5060),
@@ -28,6 +42,6 @@ fname: CField::OnItemUpgrade
 op: VICIOUS_HAMMER
 direction: clientbound
 operations:
-  - { key: OPEN,    modes: { gms_v83: 0,  gms_v84: 0,  gms_v87: 0,  gms_v95: 0 } }
-  - { key: SUCCESS, modes: { gms_v83: 61, gms_v84: 61, gms_v87: 63, gms_v95: 65 } }
-  - { key: FAILURE, modes: { gms_v83: 62, gms_v84: 62, gms_v87: 64, gms_v95: 66 } }
+  - { key: OPEN,    modes: { gms_v79: 0,  gms_v83: 0,  gms_v84: 0,  gms_v87: 0,  gms_v95: 0 } }
+  - { key: SUCCESS, modes: { gms_v79: 60, gms_v83: 61, gms_v84: 61, gms_v87: 63, gms_v95: 65 } }
+  - { key: FAILURE, modes: { gms_v79: 61, gms_v83: 62, gms_v84: 62, gms_v87: 64, gms_v95: 66 } }

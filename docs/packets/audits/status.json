@@ -34387,6 +34387,56 @@
     },
     {
       "kind": "op",
+      "op": "ITEM_UPGRADE_UPDATE",
+      "packet": "field/serverbound/FieldItemUpgradeUpdate",
+      "direction": "serverbound",
+      "tier1": true,
+      "fnames": [
+        "CUIItemUpgrade::Update"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v61": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v72": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v79": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 250
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 260
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 267
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 274
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 296
+        },
+        "jms_v185": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 276
+        }
+      }
+    },
+    {
+      "kind": "op",
       "op": "RPS_GAME",
       "direction": "clientbound",
       "tier1": false,
@@ -34897,55 +34947,6 @@
           "state": "incomplete",
           "note": "no audit report",
           "opcode": 363
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "ITEM_UPGRADE_UPDATE",
-      "packet": "field/serverbound/FieldItemUpgradeUpdate",
-      "direction": "serverbound",
-      "tier1": true,
-      "fnames": [
-        "CUIItemUpgrade::Update"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "verified",
-          "opcode": 260
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": 267
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": 274
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": 296
-        },
-        "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 276
         }
       }
     },
@@ -39031,6 +39032,55 @@
     },
     {
       "kind": "op",
+      "op": "VICIOUS_HAMMER",
+      "packet": "field/clientbound/FieldViciousHammer",
+      "direction": "clientbound",
+      "tier1": true,
+      "fnames": [
+        "CField::OnItemUpgrade"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v61": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v72": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v79": {
+          "state": "incomplete",
+          "note": "tier-1 without fixture; verdict ❌",
+          "opcode": 330
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 354
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 364
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 375
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 425
+        },
+        "jms_v185": {
+          "state": "n-a",
+          "opcode": -1
+        }
+      }
+    },
+    {
+      "kind": "op",
       "op": "OPEN_GATE_CREATED",
       "direction": "clientbound",
       "tier1": false,
@@ -39695,54 +39745,6 @@
           "state": "incomplete",
           "note": "no audit report",
           "opcode": 354
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "VICIOUS_HAMMER",
-      "packet": "field/clientbound/FieldViciousHammerFailure",
-      "direction": "clientbound",
-      "tier1": true,
-      "fnames": [
-        "CField::OnItemUpgrade"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "verified",
-          "opcode": 354
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": 364
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": 375
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": 425
-        },
-        "jms_v185": {
-          "state": "n-a",
-          "opcode": -1
         }
       }
     },

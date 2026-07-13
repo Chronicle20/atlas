@@ -1034,6 +1034,13 @@
   provenance: ida-discovered
   ida:
     address: 9211001
+- op: VICIOUS_HAMMER
+  direction: clientbound
+  opcode: 330
+  fname: CField::OnItemUpgrade
+  provenance: manual
+  ida:
+    address: 7970123
 - op: SPAWN_PET
   direction: clientbound
   opcode: 157
@@ -2905,3 +2912,11 @@
   ida:
     address: 5764567
   note: 'v79 CITC::OnPacket @0x57f39b case 0x142 -> CITC::OnChargeParamResult @0x57f3d7, bodiless (client reads nothing). v83 IDA_0X15A=0x15A=346 (d-24). task-113 v79 MTS port.'
+- op: ITEM_UPGRADE_UPDATE
+  direction: serverbound
+  opcode: 250
+  fname: CUIItemUpgrade::Update
+  provenance: manual
+  ida:
+    address: 7968986
+  note: 'v79 CUIItemUpgrade::Update @0x7998da COutPacket(250/0xFA), body Encode4(mode)+Encode4(token). v83 0x104=260 (d-10). Vicious Hammer gauge-confirm sender (task-129 extension, port 13340).'

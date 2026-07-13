@@ -32,12 +32,20 @@ this task's verification pass):
 
 | Version | serverbound `ITEM_UPGRADE_UPDATE` opcode (handler) | clientbound `VICIOUS_HAMMER` opcode (writer) | `operations` OPEN / SUCCESS / FAILURE |
 |---|---|---|---|
+| gms_v79 | `0xFA`  | `0x14A` | 0 / 60 / 61 |
 | gms_v83 | `0x104` | `0x162` | 0 / 61 / 62 |
 | gms_v84 | `0x10B` | `0x16C` | 0 / 61 / 62 |
 | gms_v87 | `0x112` | `0x177` | 0 / 63 / 64 |
 | gms_v95 | `0x128` | `0x1A9` | 0 / 65 / 66 |
 
-## Procedure — for EACH live GMS tenant (v83 / v84 / v87 / v95)
+> **gms_v79** (added as part of the GMS-legacy-version extension, PR #971) has
+> no pre-existing `ViciousHammer` writer entry in its seed template, so its
+> rollout **adds a new writer entry** at `0x14A` rather than extending an
+> existing one. All values IDA-verified against the live v79 IDB
+> (`CUIItemUpgrade::OnPacket` gate `a2==330`, `CUIItemUpgrade::Update`
+> `COutPacket(250)`, `OnItemUpgradeResult` mode 60=success/61=failure).
+
+## Procedure — for EACH live GMS tenant (v79 / v83 / v84 / v87 / v95)
 
 1. **PATCH the tenant's socket configuration** (via atlas-tenants / the config
    UI), using the row from the table above for that tenant's version:
@@ -102,6 +110,15 @@ this task's verification pass):
   matches the documented v92 gap for other cash-item features
   (`project_v92_mount_food_parked` in project memory): v92 stays parked until
   a v92 IDB/template exists to verify against.
+- **gms_v48 / gms_v61 / gms_v72 tenants**: not patched — **feature is
+  version-absent**. Live-IDB verification (ports 13337 / 13338 / 13339) shows
+  these client builds have **no `CUIItemUpgrade` class**: only the older
+  `CUser::ShowItemUpgradeEffect` scroll-effect system exists. There is no
+  gauge dialog, no `ITEM_UPGRADE_UPDATE` serverbound handler, and no
+  `VICIOUS_HAMMER` result path for the flow to complete on. `CUIItemUpgrade`
+  (and its `UI/UIWindow.img/ViciousHammer/GaugeBar` resources) first appears
+  at v79. No routing added to `template_gms_48/61/72_1.json`, and none should
+  be — the values would be invented for a non-existent flow.
 
 ## Provenance
 

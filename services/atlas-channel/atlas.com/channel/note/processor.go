@@ -36,6 +36,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	return p
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) ByCharacterProvider(characterId uint32) model.Provider[[]Model] {
 	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByCharacterId(characterId), Extract, model.Filters[Model]())
 }

@@ -58,6 +58,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 // SpawnMonsters implements the core spawn logic with cooldown enforcement.
 //
 // 1. Initialize spawn point registry for this map (lazy, from data provider)

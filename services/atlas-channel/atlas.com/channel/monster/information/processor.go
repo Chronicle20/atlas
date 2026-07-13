@@ -10,18 +10,24 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type Processor struct {
+type ProcessorImpl struct {
 	l   logrus.FieldLogger
 	ctx context.Context
 }
 
-func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
-	return &Processor{l: l, ctx: ctx}
+type Processor interface {
+	GetById(monsterId uint32) (Model, error)
 }
+
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
+	return &ProcessorImpl{l: l, ctx: ctx}
+}
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 // GetById returns the parsed template attack info for monsterId, served
 // from a tenant-scoped in-process read-through TTL cache when enabled.
-func (p *Processor) GetById(monsterId uint32) (Model, error) {
+func (p *ProcessorImpl) GetById(monsterId uint32) (Model, error) {
 	c := getInfoCache()
 	if !c.cfg.enabled {
 		return upstreamFn(p.l, p.ctx, monsterId)

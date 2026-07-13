@@ -81,6 +81,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 	return p
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) PurchaseAndEmit(characterId uint32, currency uint32, serialNumber uint32) error {
 	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {

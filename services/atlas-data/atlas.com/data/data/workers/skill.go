@@ -45,10 +45,10 @@ func (Skill) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc *min
 		defer func() { _ = mobskill.GetMobSkillStringRegistry().Clear(t) }()
 	}
 	// Register skills (per-job images) and the single MobSkill.img.
-	if err := registerAllInDirectory(l, ctx, filepath.Join(root, "Skill.wz"), skill.RegisterSkill(db)); err != nil {
+	if err := registerAllInDirectory(l, ctx, filepath.Join(root, "Skill.wz"), skill.NewProcessor(l, ctx, db).RegisterSkill); err != nil {
 		return err
 	}
-	if err := mobskill.RegisterMobSkill(db)(l)(ctx)(filepath.Join(root, "Skill.wz", "MobSkill.img.xml")); err != nil {
+	if err := mobskill.NewProcessor(l, ctx, db).RegisterMobSkill(filepath.Join(root, "Skill.wz", "MobSkill.img.xml")); err != nil {
 		l.WithError(err).Warnf("mobskill RegisterMobSkill failed")
 	}
 
@@ -95,4 +95,3 @@ func (Skill) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc *min
 	l.Infof("skill icons: scanned=%d extracted=%d uploaded=%d", scanned, extracted, uploaded)
 	return nil
 }
-

@@ -64,6 +64,8 @@ func (p *ProcessorImpl) WithTransaction(tx *gorm.DB) Processor {
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 // Create creates a new note
 func (p *ProcessorImpl) Create(mb *message.Buffer) func(characterId uint32) func(senderId uint32) func(msg string) func(flag byte) (Model, error) {
 	return func(characterId uint32) func(senderId uint32) func(msg string) func(flag byte) (Model, error) {

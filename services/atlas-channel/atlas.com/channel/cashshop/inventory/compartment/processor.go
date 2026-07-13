@@ -28,6 +28,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	return p
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 // ByAccountIdProvider returns a provider function that fetches all compartments for an account
 func (p *ProcessorImpl) ByAccountIdProvider(accountId uint32) model.Provider[[]Model] {
 	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByAccountId(accountId), Extract, model.Filters[Model]())

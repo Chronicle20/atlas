@@ -39,6 +39,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) RequestCreateAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, skillId uint32, level byte, masterLevel byte, expiration time.Time) error {
 	return message.Emit(p.p)(func(mb *message.Buffer) error {
 		return p.RequestCreate(mb)(transactionId, worldId, characterId, skillId, level, masterLevel, expiration)

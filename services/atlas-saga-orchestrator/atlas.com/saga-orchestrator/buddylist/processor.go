@@ -35,6 +35,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) IncreaseCapacityAndEmit(transactionId uuid.UUID, characterId uint32, worldId world.Id, newCapacity byte) error {
 	return message.Emit(p.p)(func(mb *message.Buffer) error {
 		return p.IncreaseCapacity(mb)(transactionId, characterId, worldId, newCapacity)

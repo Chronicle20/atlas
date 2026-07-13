@@ -38,7 +38,7 @@ func countTestTenant(t *testing.T) tenant.Model {
 	return te
 }
 
-func insertCountScript(t *testing.T, p ScriptProcessor, scriptName, scriptType string) {
+func insertCountScript(t *testing.T, p Processor, scriptName, scriptType string) {
 	t.Helper()
 	m := NewMapScriptBuilder().
 		SetScriptName(scriptName).

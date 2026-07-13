@@ -88,11 +88,11 @@ func newMovementTestTenant(t *testing.T) tenant.Model {
 	return tm
 }
 
-func newMovementTestProcessor(t *testing.T) (*Processor, tenant.Model) {
+func newMovementTestProcessor(t *testing.T) (*ProcessorImpl, tenant.Model) {
 	t.Helper()
 	tm := newMovementTestTenant(t)
 	ctx := tenant.WithContext(context.Background(), tm)
-	return NewProcessor(logrus.New(), ctx, nil), tm
+	return NewProcessor(logrus.New(), ctx, nil).(*ProcessorImpl), tm
 }
 
 func movementTestField() field.Model {

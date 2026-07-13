@@ -724,7 +724,7 @@ func TestAnnounce_StartsSpan(t *testing.T) {
 
 // addFieldSession registers a session in the default tenant's registry with the
 // given character id (0 = no character assigned) and field, using only public API.
-func addFieldSession(t *testing.T, p *session.Processor, characterId uint32, f field.Model) uuid.UUID {
+func addFieldSession(t *testing.T, p session.Processor, characterId uint32, f field.Model) uuid.UUID {
 	t.Helper()
 	sessionId := uuid.New()
 	ten := test.CreateDefaultMockTenant()

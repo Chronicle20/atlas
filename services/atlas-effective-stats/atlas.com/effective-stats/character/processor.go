@@ -48,6 +48,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 // GetEffectiveStats retrieves computed effective stats and bonuses for a character
 // If the character hasn't been initialized yet, this will lazily initialize them
 func (p *ProcessorImpl) GetEffectiveStats(ch channel.Model, characterId uint32) (stat.Computed, []stat.Bonus, error) {

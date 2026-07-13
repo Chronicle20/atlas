@@ -34,7 +34,7 @@ func (Commodity) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc 
 		return fmt.Errorf("serialize Etc.wz: %w", err)
 	}
 	commodityPath := filepath.Join(root, "Etc.wz", "Commodity.img.xml")
-	if err := commodity.RegisterCommodity(db)(l)(ctx)(commodityPath); err != nil {
+	if err := commodity.NewProcessor(l, ctx, db).RegisterCommodity(commodityPath); err != nil {
 		return fmt.Errorf("register commodities: %w", err)
 	}
 	return nil

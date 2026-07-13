@@ -25,6 +25,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) SpawnMonster(f field.Model, monsterId uint32, x, y, fh int16, team int8) error {
 	req := SpawnRequest{
 		WorldId:   f.WorldId(),

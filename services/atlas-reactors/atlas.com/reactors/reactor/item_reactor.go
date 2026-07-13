@@ -125,7 +125,7 @@ func scheduleItemReactorActivation(l logrus.FieldLogger, ctx context.Context) fu
 				return
 			}
 
-			err = Hit(l)(ctx)(reactorId, characterId, 0)
+			err = NewProcessor(l, ctx).Hit(reactorId, characterId, 0)
 			if err != nil {
 				l.WithError(err).Errorf("Failed to hit reactor [%d] after item-reactor activation.", reactorId)
 			}

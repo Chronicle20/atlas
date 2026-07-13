@@ -46,6 +46,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) Create(banType BanType, value string, reason string, reasonCode byte, permanent bool, expiresAt time.Time, issuedBy string) (Model, error) {
 	p.l.Debugf("Creating ban type [%d] value [%s] reason [%s].", banType, value, reason)
 	m, err := create(p.db.WithContext(p.ctx))(p.t.Id(), banType, value, reason, reasonCode, permanent, expiresAt, issuedBy)

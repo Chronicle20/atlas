@@ -840,7 +840,7 @@ func TestProcessor_EvaluateHungerDespawn(t *testing.T) {
 	dp.GetByIdFn = func(petId uint32) (data2.Model, error) {
 		return data2.NewModelBuilder().SetHunger(5).Build(), nil
 	}
-	p := pet.NewProcessor(testLogger(), testContext(), testDatabase(t)).With(pet.WithDataProcessor(dp))
+	p := pet.NewProcessor(testLogger(), testContext(), testDatabase(t)).With(pet.WithDataProcessor(dp)).(*pet.ProcessorImpl)
 
 	// test setup
 	p1, err := p.Create(message.NewBuffer())(mustBuild(t, pet.NewModelBuilder(0, 7000000, 5000017, "Mr. Roboto 1", 1).SetSlot(0).SetFullness(100)))

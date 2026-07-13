@@ -25,16 +25,23 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type Processor struct {
+type ProcessorImpl struct {
 	l   logrus.FieldLogger
 	ctx context.Context
 	wp  writer.Producer
 	t   tenant.Model
-	sp  *session.Processor
+	sp  session.Processor
 }
 
-func NewProcessor(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) *Processor {
-	p := &Processor{
+type Processor interface {
+	ForCharacter(f field.Model, characterId uint32, movement model.Movement) error
+	ForNPC(f field.Model, characterId uint32, objectId uint32, unk byte, unk2 byte, movement model.Movement) error
+	ForPet(f field.Model, characterId uint32, petId uint32, movement model.Movement) error
+	ForMonster(f field.Model, characterId uint32, objectId uint32, moveId int16, skillPossible bool, skill int8, skillId int16, skillLevel int16, mt model.MultiTargetForBall, rt model.RandTimeForAreaAttack, movement model.Movement) error
+}
+
+func NewProcessor(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) Processor {
+	p := &ProcessorImpl{
 		l:   l,
 		ctx: ctx,
 		wp:  wp,
@@ -44,7 +51,9 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, wp writer.Producer)
 	return p
 }
 
-func (p *Processor) ForCharacter(f field.Model, characterId uint32, movement model.Movement) error {
+var _ Processor = (*ProcessorImpl)(nil)
+
+func (p *ProcessorImpl) ForCharacter(f field.Model, characterId uint32, movement model.Movement) error {
 	routine.Go(p.l, p.ctx, func(_ context.Context) {
 		op := session.Announce(p.l)(p.ctx)(p.wp)(charpkt.CharacterMovementWriter)(charpkt.NewCharacterMovement(characterId, movement).Encode)
 		err := _map2.NewProcessor(p.l, p.ctx).ForOtherSessionsInMap(f, characterId, op)
@@ -65,7 +74,7 @@ func (p *Processor) ForCharacter(f field.Model, characterId uint32, movement mod
 	return nil
 }
 
-func (p *Processor) ForNPC(f field.Model, characterId uint32, objectId uint32, unk byte, unk2 byte, movement model.Movement) error {
+func (p *ProcessorImpl) ForNPC(f field.Model, characterId uint32, objectId uint32, unk byte, unk2 byte, movement model.Movement) error {
 	routine.Go(p.l, p.ctx, func(_ context.Context) {
 		n, err := npc.NewProcessor(p.l, p.ctx).GetInMapByObjectId(f.MapId(), objectId)
 		if err != nil {
@@ -82,7 +91,7 @@ func (p *Processor) ForNPC(f field.Model, characterId uint32, objectId uint32, u
 	return nil
 }
 
-func (p *Processor) ForPet(f field.Model, characterId uint32, petId uint32, movement model.Movement) error {
+func (p *ProcessorImpl) ForPet(f field.Model, characterId uint32, petId uint32, movement model.Movement) error {
 	routine.Go(p.l, p.ctx, func(_ context.Context) {
 		// TODO look up pet.
 		pe := pet.NewModelBuilder(petId, 0, 0, "").
@@ -119,7 +128,7 @@ var monsterByIdFn = func(l logrus.FieldLogger, ctx context.Context, objectId uin
 // resolveLiveMonster resolves the monster's live state from the in-process
 // mirror, falling back to REST on a miss and backfilling the mirror so
 // subsequent moves for this monster are local (FR-2.1/FR-2.2).
-func (p *Processor) resolveLiveMonster(objectId uint32) (monster.LiveEntry, error) {
+func (p *ProcessorImpl) resolveLiveMonster(objectId uint32) (monster.LiveEntry, error) {
 	entry, ok := monster.GetLiveMirror().Lookup(p.t, objectId)
 	if ok {
 		return entry, nil
@@ -137,7 +146,7 @@ func (p *Processor) resolveLiveMonster(objectId uint32) (monster.LiveEntry, erro
 	return entry, nil
 }
 
-func (p *Processor) ForMonster(f field.Model, characterId uint32, objectId uint32, moveId int16, skillPossible bool, skill int8, skillId int16, skillLevel int16, mt model.MultiTargetForBall, rt model.RandTimeForAreaAttack, movement model.Movement) error {
+func (p *ProcessorImpl) ForMonster(f field.Model, characterId uint32, objectId uint32, moveId int16, skillPossible bool, skill int8, skillId int16, skillLevel int16, mt model.MultiTargetForBall, rt model.RandTimeForAreaAttack, movement model.Movement) error {
 	entry, err := p.resolveLiveMonster(objectId)
 	if err != nil {
 		return err

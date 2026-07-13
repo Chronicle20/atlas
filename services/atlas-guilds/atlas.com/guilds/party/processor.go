@@ -27,6 +27,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) GetById(partyId uint32) (Model, error) {
 	return p.ByIdProvider(partyId)()
 }

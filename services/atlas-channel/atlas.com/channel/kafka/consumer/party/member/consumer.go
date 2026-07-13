@@ -56,7 +56,7 @@ func toPartyMembers(l logrus.FieldLogger, ctx context.Context, p party.Model, fo
 // Mystic Door (if any) — see the identical helper in the party-status consumer.
 // Without it the v83 client cannot render party-member doors in town (it reads
 // town doors solely from this array while in a party).
-func applyMemberDoor(pm *partypkt.PartyMember, dp *door.Processor, memberId uint32) {
+func applyMemberDoor(pm *partypkt.PartyMember, dp door.Processor, memberId uint32) {
 	doors, err := dp.GetByOwner(memberId)
 	if err != nil || len(doors) == 0 {
 		return

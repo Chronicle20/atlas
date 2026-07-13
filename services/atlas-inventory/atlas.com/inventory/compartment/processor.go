@@ -31,15 +31,16 @@ import (
 	"gorm.io/gorm"
 )
 
-type Provider interface {
-	WithTransaction(db *gorm.DB) *Processor
-	WithAssetProcessor(ap *asset.Processor) *Processor
+type Processor interface {
+	WithTransaction(db *gorm.DB) *ProcessorImpl
+	WithAssetProcessor(ap asset.Processor) *ProcessorImpl
 	ByIdProvider(id uuid.UUID) model.Provider[Model]
 	GetById(id uuid.UUID) (Model, error)
 	ByCharacterIdProvider(characterId uint32) model.Provider[[]Model]
 	GetByCharacterId(characterId uint32) ([]Model, error)
 	ByCharacterAndTypeProvider(characterId uint32) func(inventoryType inventory.Type) model.Provider[Model]
 	GetByCharacterAndType(characterId uint32) func(inventoryType inventory.Type) (Model, error)
+	DecorateAsset(m Model) (Model, error)
 	Create(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, capacity uint32) (Model, error)
 	DeleteByModel(mb *message.Buffer) func(transactionId uuid.UUID, c Model) error
 	EquipItemAndEmit(transactionId uuid.UUID, characterId uint32, source int16, destination int16) error
@@ -63,9 +64,9 @@ type Provider interface {
 	DestroyAsset(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, quantity uint32) error
 	ExpireAssetAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, isCash bool, replaceItemId uint32, replaceMessage string) error
 	ExpireAsset(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, isCash bool, replaceItemId uint32, replaceMessage string) error
-	CreateAssetAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64) error
-	CreateAssetAndLock(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64) error
-	CreateAsset(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64) error
+	CreateAssetAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64, useAverageStats bool) error
+	CreateAssetAndLock(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64, useAverageStats bool) error
+	CreateAsset(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64, useAverageStats bool) error
 	AttemptEquipmentPickUpAndEmit(transactionId uuid.UUID, f field.Model, characterId uint32, dropId uint32, templateId uint32, ed dropMsg.EquipmentData) error
 	AttemptEquipmentPickUp(mb *message.Buffer) func(transactionId uuid.UUID, f field.Model, characterId uint32, dropId uint32, templateId uint32, ed dropMsg.EquipmentData) error
 	AttemptItemPickUpAndEmit(transactionId uuid.UUID, f field.Model, characterId uint32, dropId uint32, templateId uint32, quantity uint32) error
@@ -86,19 +87,19 @@ type Provider interface {
 	ChangeTemplate(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, petId uint32, newTemplateId uint32) error
 }
 
-type Processor struct {
+type ProcessorImpl struct {
 	l                  logrus.FieldLogger
 	ctx                context.Context
 	db                 *gorm.DB
 	t                  tenant.Model
-	assetProcessor     *asset.Processor
-	dropProcessor      *drop.Processor
-	equipmentProcessor *equipment.Processor
+	assetProcessor     asset.Processor
+	dropProcessor      drop.Processor
+	equipmentProcessor equipment.Processor
 	producer           producer.Provider
 }
 
-func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) *Processor {
-	p := &Processor{
+func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor {
+	p := &ProcessorImpl{
 		l:                  l,
 		ctx:                ctx,
 		db:                 db,
@@ -111,8 +112,10 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) *Proce
 	return p
 }
 
-func (p *Processor) WithTransaction(db *gorm.DB) *Processor {
-	return &Processor{
+var _ Processor = (*ProcessorImpl)(nil)
+
+func (p *ProcessorImpl) WithTransaction(db *gorm.DB) *ProcessorImpl {
+	return &ProcessorImpl{
 		l:                  p.l,
 		ctx:                p.ctx,
 		db:                 db,
@@ -124,8 +127,8 @@ func (p *Processor) WithTransaction(db *gorm.DB) *Processor {
 	}
 }
 
-func (p *Processor) WithAssetProcessor(ap *asset.Processor) *Processor {
-	return &Processor{
+func (p *ProcessorImpl) WithAssetProcessor(ap asset.Processor) *ProcessorImpl {
+	return &ProcessorImpl{
 		l:                  p.l,
 		ctx:                p.ctx,
 		db:                 p.db,
@@ -137,7 +140,7 @@ func (p *Processor) WithAssetProcessor(ap *asset.Processor) *Processor {
 	}
 }
 
-func (p *Processor) ByIdProvider(id uuid.UUID) model.Provider[Model] {
+func (p *ProcessorImpl) ByIdProvider(id uuid.UUID) model.Provider[Model] {
 	cs, err := model.Map(Make)(getById(id)(p.db.WithContext(p.ctx)))()
 	if err != nil {
 		return model.ErrorProvider[Model](err)
@@ -145,11 +148,11 @@ func (p *Processor) ByIdProvider(id uuid.UUID) model.Provider[Model] {
 	return model.Map(p.DecorateAsset)(model.FixedProvider(cs))
 }
 
-func (p *Processor) GetById(id uuid.UUID) (Model, error) {
+func (p *ProcessorImpl) GetById(id uuid.UUID) (Model, error) {
 	return p.ByIdProvider(id)()
 }
 
-func (p *Processor) ByCharacterIdProvider(characterId uint32) model.Provider[[]Model] {
+func (p *ProcessorImpl) ByCharacterIdProvider(characterId uint32) model.Provider[[]Model] {
 	cs, err := model.SliceMap(Make)(getByCharacter(characterId)(p.db.WithContext(p.ctx)))(model.ParallelMap())()
 	if err != nil {
 		return model.ErrorProvider[[]Model](err)
@@ -157,11 +160,11 @@ func (p *Processor) ByCharacterIdProvider(characterId uint32) model.Provider[[]M
 	return model.SliceMap(p.DecorateAsset)(model.FixedProvider(cs))(model.ParallelMap())
 }
 
-func (p *Processor) GetByCharacterId(characterId uint32) ([]Model, error) {
+func (p *ProcessorImpl) GetByCharacterId(characterId uint32) ([]Model, error) {
 	return p.ByCharacterIdProvider(characterId)()
 }
 
-func (p *Processor) ByCharacterAndTypeProvider(characterId uint32) func(inventoryType inventory.Type) model.Provider[Model] {
+func (p *ProcessorImpl) ByCharacterAndTypeProvider(characterId uint32) func(inventoryType inventory.Type) model.Provider[Model] {
 	return func(inventoryType inventory.Type) model.Provider[Model] {
 		cs, err := model.Map(Make)(getByCharacterAndType(characterId, inventoryType)(p.db.WithContext(p.ctx)))()
 		if err != nil {
@@ -171,14 +174,14 @@ func (p *Processor) ByCharacterAndTypeProvider(characterId uint32) func(inventor
 	}
 }
 
-func (p *Processor) GetByCharacterAndType(characterId uint32) func(inventoryType inventory.Type) (Model, error) {
+func (p *ProcessorImpl) GetByCharacterAndType(characterId uint32) func(inventoryType inventory.Type) (Model, error) {
 	return func(inventoryType inventory.Type) (Model, error) {
 		return p.ByCharacterAndTypeProvider(characterId)(inventoryType)()
 	}
 
 }
 
-func (p *Processor) DecorateAsset(m Model) (Model, error) {
+func (p *ProcessorImpl) DecorateAsset(m Model) (Model, error) {
 	as, err := p.assetProcessor.GetByCompartmentId(m.Id())
 	if err != nil {
 		return Model{}, err
@@ -186,7 +189,7 @@ func (p *Processor) DecorateAsset(m Model) (Model, error) {
 	return Clone(m).SetAssets(as).Build(), nil
 }
 
-func (p *Processor) Create(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, capacity uint32) (Model, error) {
+func (p *ProcessorImpl) Create(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, capacity uint32) (Model, error) {
 	return func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, capacity uint32) (Model, error) {
 		p.l.Debugf("Attempting to create compartment of type [%d] for character [%d] with capacity [%d].", inventoryType, characterId, capacity)
 		var c Model
@@ -206,7 +209,7 @@ func (p *Processor) Create(mb *message.Buffer) func(transactionId uuid.UUID, cha
 	}
 }
 
-func (p *Processor) DeleteByModel(mb *message.Buffer) func(transactionId uuid.UUID, c Model) error {
+func (p *ProcessorImpl) DeleteByModel(mb *message.Buffer) func(transactionId uuid.UUID, c Model) error {
 	return func(transactionId uuid.UUID, c Model) error {
 		p.l.Debugf("Attempting to delete compartment [%s].", c.Id().String())
 		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
@@ -233,7 +236,7 @@ func temporarySlot() int16 {
 	return int16(math.MinInt16)
 }
 
-func (p *Processor) EquipItemAndEmit(transactionId uuid.UUID, characterId uint32, source int16, destination int16) error {
+func (p *ProcessorImpl) EquipItemAndEmit(transactionId uuid.UUID, characterId uint32, source int16, destination int16) error {
 	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
 			return p.WithTransaction(tx).EquipItem(mb)(transactionId, characterId, source, destination)
@@ -241,7 +244,7 @@ func (p *Processor) EquipItemAndEmit(transactionId uuid.UUID, characterId uint32
 	})
 }
 
-func (p *Processor) EquipItem(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, source int16, destination int16) error {
+func (p *ProcessorImpl) EquipItem(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, source int16, destination int16) error {
 	return func(transactionId uuid.UUID, characterId uint32, source int16, destination int16) error {
 		p.l.Debugf("Attempting to equip item in slot [%d] to [%d] for character [%d].", source, destination, characterId)
 		invLock := LockRegistry().Get(characterId, inventory.TypeValueEquip)
@@ -347,7 +350,7 @@ func (p *Processor) EquipItem(mb *message.Buffer) func(transactionId uuid.UUID, 
 	}
 }
 
-func (p *Processor) RemoveEquipAndEmit(transactionId uuid.UUID, characterId uint32, source int16, destination int16) error {
+func (p *ProcessorImpl) RemoveEquipAndEmit(transactionId uuid.UUID, characterId uint32, source int16, destination int16) error {
 	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
 			return p.WithTransaction(tx).RemoveEquip(mb)(transactionId, characterId, source, destination)
@@ -355,7 +358,7 @@ func (p *Processor) RemoveEquipAndEmit(transactionId uuid.UUID, characterId uint
 	})
 }
 
-func (p *Processor) RemoveEquip(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, source int16, destination int16) error {
+func (p *ProcessorImpl) RemoveEquip(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, source int16, destination int16) error {
 	return func(transactionId uuid.UUID, characterId uint32, source int16, destination int16) error {
 		p.l.Debugf("Attempting to remove equipment in slot [%d] to [%d] for character [%d].", source, destination, characterId)
 		invLock := LockRegistry().Get(characterId, inventory.TypeValueEquip)
@@ -405,7 +408,7 @@ func (p *Processor) RemoveEquip(mb *message.Buffer) func(transactionId uuid.UUID
 	}
 }
 
-func (p *Processor) MoveAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, source int16, destination int16) error {
+func (p *ProcessorImpl) MoveAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, source int16, destination int16) error {
 	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
 			return p.WithTransaction(tx).MoveAndLock(buf)(transactionId, characterId, inventoryType, source, destination)
@@ -413,7 +416,7 @@ func (p *Processor) MoveAndEmit(transactionId uuid.UUID, characterId uint32, inv
 	})
 }
 
-func (p *Processor) MoveAndLock(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, source int16, destination int16) error {
+func (p *ProcessorImpl) MoveAndLock(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, source int16, destination int16) error {
 	return func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, source int16, destination int16) error {
 		invLock := LockRegistry().Get(characterId, inventoryType)
 		invLock.Lock()
@@ -422,7 +425,7 @@ func (p *Processor) MoveAndLock(mb *message.Buffer) func(transactionId uuid.UUID
 	}
 }
 
-func (p *Processor) Move(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, source int16, destination int16) error {
+func (p *ProcessorImpl) Move(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, source int16, destination int16) error {
 	return func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, source int16, destination int16) error {
 		p.l.Debugf("Attempting to move asset in slot [%d] to [%d] for character [%d].", source, destination, characterId)
 
@@ -471,7 +474,7 @@ func (p *Processor) Move(mb *message.Buffer) func(transactionId uuid.UUID, chara
 }
 
 // swapAssets handles swapping two assets between slots
-func (p *Processor) swapAssets(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, c Model, assetProvider func(int16) model.Provider[asset.Model], a1 asset.Model, source int16, destination int16) error {
+func (p *ProcessorImpl) swapAssets(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, c Model, assetProvider func(int16) model.Provider[asset.Model], a1 asset.Model, source int16, destination int16) error {
 	return func(transactionId uuid.UUID, characterId uint32, c Model, assetProvider func(int16) model.Provider[asset.Model], a1 asset.Model, source int16, destination int16) error {
 		// Move destination asset to temporary slot
 		err := p.assetProcessor.WithTransaction(p.db).UpdateSlot(mb)(transactionId, characterId, c.Id(), assetProvider(destination), model.FixedProvider(temporarySlot()))
@@ -500,7 +503,7 @@ func (p *Processor) swapAssets(mb *message.Buffer) func(transactionId uuid.UUID,
 }
 
 // mergeAssets handles merging two assets with the same template ID
-func (p *Processor) mergeAssets(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, c Model, a1 asset.Model, a2 asset.Model, source int16, destination int16) error {
+func (p *ProcessorImpl) mergeAssets(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, c Model, a1 asset.Model, a2 asset.Model, source int16, destination int16) error {
 	return func(transactionId uuid.UUID, characterId uint32, c Model, a1 asset.Model, a2 asset.Model, source int16, destination int16) error {
 
 		// Get slot max for the item
@@ -555,7 +558,7 @@ func (p *Processor) mergeAssets(mb *message.Buffer) func(transactionId uuid.UUID
 }
 
 // canMergeAssets checks if two assets can be merged based on the specified rules
-func (p *Processor) canMergeAssets(inventoryType inventory.Type, sourceAsset asset.Model, destAsset asset.Model, characterId uint32) bool {
+func (p *ProcessorImpl) canMergeAssets(inventoryType inventory.Type, sourceAsset asset.Model, destAsset asset.Model, characterId uint32) bool {
 	// Rule 1: Inventories of type Equip cannot support merging
 	if inventoryType == inventory.TypeValueEquip {
 		return false
@@ -607,7 +610,7 @@ func (p *Processor) canMergeAssets(inventoryType inventory.Type, sourceAsset ass
 	return true
 }
 
-func (p *Processor) IncreaseCapacityAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, amount uint32) error {
+func (p *ProcessorImpl) IncreaseCapacityAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, amount uint32) error {
 	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
 			return p.WithTransaction(tx).IncreaseCapacity(buf)(transactionId, characterId, inventoryType, amount)
@@ -615,7 +618,7 @@ func (p *Processor) IncreaseCapacityAndEmit(transactionId uuid.UUID, characterId
 	})
 }
 
-func (p *Processor) IncreaseCapacity(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, amount uint32) error {
+func (p *ProcessorImpl) IncreaseCapacity(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, amount uint32) error {
 	return func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, amount uint32) error {
 		p.l.Debugf("Character [%d] attempting to change compartment capacity by [%d]. Type [%d].", characterId, amount, inventoryType)
 		invLock := LockRegistry().Get(characterId, inventoryType)
@@ -644,7 +647,7 @@ func (p *Processor) IncreaseCapacity(mb *message.Buffer) func(transactionId uuid
 	}
 }
 
-func (p *Processor) DropAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, f field.Model, x int16, y int16, source int16, quantity int16) error {
+func (p *ProcessorImpl) DropAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, f field.Model, x int16, y int16, source int16, quantity int16) error {
 	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
 			return p.WithTransaction(tx).Drop(buf)(transactionId, characterId, inventoryType, f, x, y, source, quantity)
@@ -652,7 +655,7 @@ func (p *Processor) DropAndEmit(transactionId uuid.UUID, characterId uint32, inv
 	})
 }
 
-func (p *Processor) Drop(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, f field.Model, x int16, y int16, source int16, quantity int16) error {
+func (p *ProcessorImpl) Drop(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, f field.Model, x int16, y int16, source int16, quantity int16) error {
 	return func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, f field.Model, x int16, y int16, source int16, quantity int16) error {
 		p.l.Debugf("Character [%d] attempting to drop [%d] asset from slot [%d].", characterId, quantity, source)
 		if quantity < 0 {
@@ -740,13 +743,13 @@ func (p *Processor) Drop(mb *message.Buffer) func(transactionId uuid.UUID, chara
 	}
 }
 
-func (p *Processor) RequestReserveAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, reservationRequests []ReservationRequest) error {
+func (p *ProcessorImpl) RequestReserveAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, reservationRequests []ReservationRequest) error {
 	return message.Emit(p.producer)(func(buf *message.Buffer) error {
 		return p.RequestReserve(buf)(transactionId, characterId, inventoryType, reservationRequests)
 	})
 }
 
-func (p *Processor) RequestReserve(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, reservationRequests []ReservationRequest) error {
+func (p *ProcessorImpl) RequestReserve(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, reservationRequests []ReservationRequest) error {
 	return func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, reservationRequests []ReservationRequest) error {
 		p.l.Debugf("Character [%d] attempting to reserve [%d] inventory [%d] reservation [%s].", characterId, len(reservationRequests), inventoryType, transactionId.String())
 		invLock := LockRegistry().Get(characterId, inventoryType)
@@ -787,13 +790,13 @@ func (p *Processor) RequestReserve(mb *message.Buffer) func(transactionId uuid.U
 	}
 }
 
-func (p *Processor) CancelReservationAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16) error {
+func (p *ProcessorImpl) CancelReservationAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16) error {
 	return message.Emit(p.producer)(func(buf *message.Buffer) error {
 		return p.CancelReservation(buf)(transactionId, characterId, inventoryType, slot)
 	})
 }
 
-func (p *Processor) CancelReservation(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16) error {
+func (p *ProcessorImpl) CancelReservation(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16) error {
 	return func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16) error {
 		p.l.Debugf("Character [%d] attempting to cancel inventory [%d] reservation [%s].", characterId, inventoryType, transactionId.String())
 		invLock := LockRegistry().Get(characterId, inventoryType)
@@ -813,7 +816,7 @@ func (p *Processor) CancelReservation(mb *message.Buffer) func(transactionId uui
 	}
 }
 
-func (p *Processor) ConsumeAssetAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16) error {
+func (p *ProcessorImpl) ConsumeAssetAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16) error {
 	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
 			return p.WithTransaction(tx).ConsumeAsset(buf)(transactionId, characterId, inventoryType, slot)
@@ -821,7 +824,7 @@ func (p *Processor) ConsumeAssetAndEmit(transactionId uuid.UUID, characterId uin
 	})
 }
 
-func (p *Processor) ConsumeAsset(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16) error {
+func (p *ProcessorImpl) ConsumeAsset(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16) error {
 	return func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16) error {
 		p.l.Debugf("Character [%d] attempting to consume asset in inventory [%d] slot [%d]. Transaction [%s].", characterId, inventoryType, slot, transactionId.String())
 		invLock := LockRegistry().Get(characterId, inventoryType)
@@ -875,7 +878,7 @@ func (p *Processor) ConsumeAsset(mb *message.Buffer) func(transactionId uuid.UUI
 	}
 }
 
-func (p *Processor) DestroyAssetAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, quantity uint32) error {
+func (p *ProcessorImpl) DestroyAssetAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, quantity uint32) error {
 	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
 			return p.WithTransaction(tx).DestroyAsset(buf)(transactionId, characterId, inventoryType, slot, quantity)
@@ -883,7 +886,7 @@ func (p *Processor) DestroyAssetAndEmit(transactionId uuid.UUID, characterId uin
 	})
 }
 
-func (p *Processor) DestroyAsset(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, quantity uint32) error {
+func (p *ProcessorImpl) DestroyAsset(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, quantity uint32) error {
 	return func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, quantity uint32) error {
 		p.l.Debugf("Character [%d] attempting to destroy [%d] asset in inventory [%d] slot [%d].", characterId, quantity, inventoryType, slot)
 		invLock := LockRegistry().Get(characterId, inventoryType)
@@ -926,7 +929,7 @@ func (p *Processor) DestroyAsset(mb *message.Buffer) func(transactionId uuid.UUI
 	}
 }
 
-func (p *Processor) ExpireAssetAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, isCash bool, replaceItemId uint32, replaceMessage string) error {
+func (p *ProcessorImpl) ExpireAssetAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, isCash bool, replaceItemId uint32, replaceMessage string) error {
 	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
 			return p.WithTransaction(tx).ExpireAsset(buf)(transactionId, characterId, inventoryType, slot, isCash, replaceItemId, replaceMessage)
@@ -934,7 +937,7 @@ func (p *Processor) ExpireAssetAndEmit(transactionId uuid.UUID, characterId uint
 	})
 }
 
-func (p *Processor) ExpireAsset(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, isCash bool, replaceItemId uint32, replaceMessage string) error {
+func (p *ProcessorImpl) ExpireAsset(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, isCash bool, replaceItemId uint32, replaceMessage string) error {
 	return func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, isCash bool, replaceItemId uint32, replaceMessage string) error {
 		p.l.Debugf("Character [%d] attempting to expire asset in inventory [%d] slot [%d].", characterId, inventoryType, slot)
 		invLock := LockRegistry().Get(characterId, inventoryType)
@@ -986,7 +989,7 @@ func (p *Processor) ExpireAsset(mb *message.Buffer) func(transactionId uuid.UUID
 	}
 }
 
-func (p *Processor) CreateAssetAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64, useAverageStats bool) error {
+func (p *ProcessorImpl) CreateAssetAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64, useAverageStats bool) error {
 	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
 			return p.WithTransaction(tx).CreateAssetAndLock(buf)(transactionId, characterId, inventoryType, templateId, quantity, expiration, ownerId, flag, rechargeable, useAverageStats)
@@ -994,7 +997,7 @@ func (p *Processor) CreateAssetAndEmit(transactionId uuid.UUID, characterId uint
 	})
 }
 
-func (p *Processor) CreateAssetAndLock(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64, useAverageStats bool) error {
+func (p *ProcessorImpl) CreateAssetAndLock(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64, useAverageStats bool) error {
 	return func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64, useAverageStats bool) error {
 		invLock := LockRegistry().Get(characterId, inventoryType)
 		invLock.Lock()
@@ -1003,7 +1006,7 @@ func (p *Processor) CreateAssetAndLock(mb *message.Buffer) func(transactionId uu
 	}
 }
 
-func (p *Processor) CreateAsset(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64, useAverageStats bool) error {
+func (p *ProcessorImpl) CreateAsset(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64, useAverageStats bool) error {
 	return func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64, useAverageStats bool) error {
 		p.l.Debugf("Character [%d] attempting to create asset in inventory [%d].", characterId, inventoryType)
 
@@ -1090,7 +1093,7 @@ func (p *Processor) CreateAsset(mb *message.Buffer) func(transactionId uuid.UUID
 	}
 }
 
-func (p *Processor) AttemptEquipmentPickUpAndEmit(transactionId uuid.UUID, f field.Model, characterId uint32, dropId uint32, templateId uint32, ed dropMsg.EquipmentData) error {
+func (p *ProcessorImpl) AttemptEquipmentPickUpAndEmit(transactionId uuid.UUID, f field.Model, characterId uint32, dropId uint32, templateId uint32, ed dropMsg.EquipmentData) error {
 	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
 			return p.WithTransaction(tx).AttemptEquipmentPickUp(buf)(transactionId, f, characterId, dropId, templateId, ed)
@@ -1098,7 +1101,7 @@ func (p *Processor) AttemptEquipmentPickUpAndEmit(transactionId uuid.UUID, f fie
 	})
 }
 
-func (p *Processor) AttemptEquipmentPickUp(mb *message.Buffer) func(transactionId uuid.UUID, f field.Model, characterId uint32, dropId uint32, templateId uint32, ed dropMsg.EquipmentData) error {
+func (p *ProcessorImpl) AttemptEquipmentPickUp(mb *message.Buffer) func(transactionId uuid.UUID, f field.Model, characterId uint32, dropId uint32, templateId uint32, ed dropMsg.EquipmentData) error {
 	return func(transactionId uuid.UUID, f field.Model, characterId uint32, dropId uint32, templateId uint32, ed dropMsg.EquipmentData) error {
 
 		inventoryType, ok := inventory.TypeFromItemId(item.Id(templateId))
@@ -1177,7 +1180,7 @@ func (p *Processor) AttemptEquipmentPickUp(mb *message.Buffer) func(transactionI
 	}
 }
 
-func (p *Processor) AttemptItemPickUpAndEmit(transactionId uuid.UUID, f field.Model, characterId uint32, dropId uint32, templateId uint32, quantity uint32) error {
+func (p *ProcessorImpl) AttemptItemPickUpAndEmit(transactionId uuid.UUID, f field.Model, characterId uint32, dropId uint32, templateId uint32, quantity uint32) error {
 	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
 			return p.WithTransaction(tx).AttemptItemPickUp(buf)(transactionId, f, characterId, dropId, templateId, quantity)
@@ -1185,7 +1188,7 @@ func (p *Processor) AttemptItemPickUpAndEmit(transactionId uuid.UUID, f field.Mo
 	})
 }
 
-func (p *Processor) AttemptItemPickUp(mb *message.Buffer) func(transactionId uuid.UUID, f field.Model, characterId uint32, dropId uint32, templateId uint32, quantity uint32) error {
+func (p *ProcessorImpl) AttemptItemPickUp(mb *message.Buffer) func(transactionId uuid.UUID, f field.Model, characterId uint32, dropId uint32, templateId uint32, quantity uint32) error {
 	return func(transactionId uuid.UUID, f field.Model, characterId uint32, dropId uint32, templateId uint32, quantity uint32) error {
 		inventoryType, ok := inventory.TypeFromItemId(item.Id(templateId))
 		if !ok {
@@ -1332,7 +1335,7 @@ func (p *Processor) AttemptItemPickUp(mb *message.Buffer) func(transactionId uui
 	}
 }
 
-func (p *Processor) RechargeAssetAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, quantity uint32) error {
+func (p *ProcessorImpl) RechargeAssetAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, quantity uint32) error {
 	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
 			return p.WithTransaction(tx).RechargeAsset(buf)(transactionId, characterId, inventoryType, slot, quantity)
@@ -1340,7 +1343,7 @@ func (p *Processor) RechargeAssetAndEmit(transactionId uuid.UUID, characterId ui
 	})
 }
 
-func (p *Processor) RechargeAsset(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, quantity uint32) error {
+func (p *ProcessorImpl) RechargeAsset(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, quantity uint32) error {
 	return func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, quantity uint32) error {
 		p.l.Debugf("Character [%d] attempting to recharge asset in inventory [%d] slot [%d] with quantity [%d].", characterId, inventoryType, slot, quantity)
 
@@ -1390,7 +1393,7 @@ func (p *Processor) RechargeAsset(mb *message.Buffer) func(transactionId uuid.UU
 	}
 }
 
-func (p *Processor) MergeAndCompactAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type) error {
+func (p *ProcessorImpl) MergeAndCompactAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type) error {
 	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
 			return p.WithTransaction(tx).MergeAndCompact(buf)(transactionId, characterId, inventoryType)
@@ -1398,7 +1401,7 @@ func (p *Processor) MergeAndCompactAndEmit(transactionId uuid.UUID, characterId 
 	})
 }
 
-func (p *Processor) CompactAndSortAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type) error {
+func (p *ProcessorImpl) CompactAndSortAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type) error {
 	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
 			return p.WithTransaction(tx).CompactAndSort(buf)(transactionId, characterId, inventoryType)
@@ -1406,7 +1409,7 @@ func (p *Processor) CompactAndSortAndEmit(transactionId uuid.UUID, characterId u
 	})
 }
 
-func (p *Processor) MergeAndCompact(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type) error {
+func (p *ProcessorImpl) MergeAndCompact(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type) error {
 	return func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type) error {
 		p.l.Debugf("Character [%d] attempting to merge and compact assets in inventory [%d].", characterId, inventoryType)
 
@@ -1519,7 +1522,7 @@ func (p *Processor) MergeAndCompact(mb *message.Buffer) func(transactionId uuid.
 	}
 }
 
-func (p *Processor) AcceptAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, m asset.Model) error {
+func (p *ProcessorImpl) AcceptAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, m asset.Model) error {
 	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
 			return p.WithTransaction(tx).Accept(mb)(transactionId, characterId, inventoryType, m)
@@ -1527,7 +1530,7 @@ func (p *Processor) AcceptAndEmit(transactionId uuid.UUID, characterId uint32, i
 	})
 }
 
-func (p *Processor) Accept(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, m asset.Model) error {
+func (p *ProcessorImpl) Accept(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, m asset.Model) error {
 	return func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, m asset.Model) error {
 		p.l.Debugf("Character [%d] attempting to accept asset template [%d] with quantity [%d] in inventory [%d].", characterId, m.TemplateId(), m.Quantity(), inventoryType)
 
@@ -1641,7 +1644,7 @@ func (p *Processor) Accept(mb *message.Buffer) func(transactionId uuid.UUID, cha
 	}
 }
 
-func (p *Processor) ReleaseAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, assetId uint32, quantity uint32) error {
+func (p *ProcessorImpl) ReleaseAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, assetId uint32, quantity uint32) error {
 	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
 			return p.WithTransaction(tx).Release(mb)(transactionId, characterId, inventoryType, assetId, quantity)
@@ -1649,7 +1652,7 @@ func (p *Processor) ReleaseAndEmit(transactionId uuid.UUID, characterId uint32, 
 	})
 }
 
-func (p *Processor) Release(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, assetId uint32, quantity uint32) error {
+func (p *ProcessorImpl) Release(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, assetId uint32, quantity uint32) error {
 	return func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, assetId uint32, quantity uint32) error {
 		p.l.Debugf("Character [%d] attempting to release [%d] of asset [%d] from inventory [%d].", characterId, quantity, assetId, inventoryType)
 
@@ -1739,7 +1742,7 @@ func (p *Processor) Release(mb *message.Buffer) func(transactionId uuid.UUID, ch
 	}
 }
 
-func (p *Processor) CompactAndSort(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type) error {
+func (p *ProcessorImpl) CompactAndSort(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type) error {
 	return func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type) error {
 		p.l.Debugf("Character [%d] attempting to compact and sort assets in inventory [%d].", characterId, inventoryType)
 
@@ -1852,7 +1855,7 @@ func (p *Processor) CompactAndSort(mb *message.Buffer) func(transactionId uuid.U
 	}
 }
 
-func (p *Processor) ModifyEquipmentAndEmit(transactionId uuid.UUID, characterId uint32, assetId uint32, stats asset.Model) error {
+func (p *ProcessorImpl) ModifyEquipmentAndEmit(transactionId uuid.UUID, characterId uint32, assetId uint32, stats asset.Model) error {
 	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
 			return p.WithTransaction(tx).ModifyEquipment(mb)(transactionId, characterId, assetId, stats)
@@ -1860,7 +1863,7 @@ func (p *Processor) ModifyEquipmentAndEmit(transactionId uuid.UUID, characterId 
 	})
 }
 
-func (p *Processor) ModifyEquipment(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, assetId uint32, stats asset.Model) error {
+func (p *ProcessorImpl) ModifyEquipment(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, assetId uint32, stats asset.Model) error {
 	return func(transactionId uuid.UUID, characterId uint32, assetId uint32, stats asset.Model) error {
 		p.l.Debugf("Character [%d] attempting to modify equipment stats for asset [%d].", characterId, assetId)
 
@@ -1875,7 +1878,7 @@ func (p *Processor) ModifyEquipment(mb *message.Buffer) func(transactionId uuid.
 	}
 }
 
-func (p *Processor) ChangeTemplateAndEmit(transactionId uuid.UUID, characterId uint32, petId uint32, newTemplateId uint32) error {
+func (p *ProcessorImpl) ChangeTemplateAndEmit(transactionId uuid.UUID, characterId uint32, petId uint32, newTemplateId uint32) error {
 	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
 			return p.WithTransaction(tx).ChangeTemplate(mb)(transactionId, characterId, petId, newTemplateId)
@@ -1887,7 +1890,7 @@ func (p *Processor) ChangeTemplateAndEmit(transactionId uuid.UUID, characterId u
 // only its templateId in place, preserving slot, cashId, expiration, and petId. It
 // emits the asset UPDATED status event (never DELETED), keeping the pet alive in
 // atlas-pets.
-func (p *Processor) ChangeTemplate(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, petId uint32, newTemplateId uint32) error {
+func (p *ProcessorImpl) ChangeTemplate(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, petId uint32, newTemplateId uint32) error {
 	return func(transactionId uuid.UUID, characterId uint32, petId uint32, newTemplateId uint32) error {
 		p.l.Debugf("Character [%d] changing template of pet [%d] asset to [%d].", characterId, petId, newTemplateId)
 		invLock := LockRegistry().Get(characterId, inventory.TypeValueCash)

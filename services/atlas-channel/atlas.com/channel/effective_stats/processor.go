@@ -23,6 +23,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	return &ProcessorImpl{l: l, ctx: ctx}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) GetByCharacterId(worldId world.Id, channelId channel.Id, characterId uint32) (RestModel, error) {
 	return requestByCharacter(worldId, channelId, characterId)(p.l, p.ctx)
 }

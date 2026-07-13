@@ -33,6 +33,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	return p
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) ByIdModelProvider(ch channel.Model) model.Provider[Model] {
 	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestChannel(ch), Extract)
 }

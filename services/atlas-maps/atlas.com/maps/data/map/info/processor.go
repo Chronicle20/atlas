@@ -24,6 +24,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	return &ProcessorImpl{l: l, ctx: ctx}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 type cacheKey struct {
 	tenantId uuid.UUID
 	mapId    _map.Id

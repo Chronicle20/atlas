@@ -37,6 +37,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 type StoredItem struct {
 	ItemId       uint32
 	ItemType     byte

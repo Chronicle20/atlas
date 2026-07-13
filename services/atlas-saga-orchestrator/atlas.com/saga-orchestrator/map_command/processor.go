@@ -26,6 +26,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) FieldEffectWeather(transactionId uuid.UUID, f field.Model, itemId uint32, message string, durationMs uint32) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(mapKafka.EnvCommandTopicMap)(WeatherStartCommandProvider(transactionId, f, itemId, message, durationMs))
 }

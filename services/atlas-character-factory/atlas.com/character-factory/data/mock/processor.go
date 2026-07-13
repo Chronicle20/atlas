@@ -5,13 +5,15 @@ import (
 	"context"
 )
 
-type FakeClient struct {
+type ProcessorMock struct {
 	Skills    map[uint32]data.SkillInfo
 	Items     map[uint32]data.ItemInfo
 	SkillsErr error
 }
 
-func (f *FakeClient) GetSkillsByIds(_ context.Context, ids []uint32) ([]data.SkillInfo, error) {
+var _ data.Processor = (*ProcessorMock)(nil)
+
+func (f *ProcessorMock) GetSkillsByIds(_ context.Context, ids []uint32) ([]data.SkillInfo, error) {
 	if f.SkillsErr != nil {
 		return nil, f.SkillsErr
 	}
@@ -24,7 +26,7 @@ func (f *FakeClient) GetSkillsByIds(_ context.Context, ids []uint32) ([]data.Ski
 	return out, nil
 }
 
-func (f *FakeClient) GetItemById(_ context.Context, id uint32) (data.ItemInfo, error) {
+func (f *ProcessorMock) GetItemById(_ context.Context, id uint32) (data.ItemInfo, error) {
 	if it, ok := f.Items[id]; ok {
 		return it, nil
 	}

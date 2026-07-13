@@ -62,6 +62,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 // Create creates a new tenant
 func (p *ProcessorImpl) Create(mb *message.Buffer) func(name string, region string, majorVersion uint16, minorVersion uint16) (Model, error) {
 	return func(name string, region string, majorVersion uint16, minorVersion uint16) (Model, error) {

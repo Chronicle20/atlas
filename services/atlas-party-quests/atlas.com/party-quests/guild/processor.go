@@ -22,6 +22,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	return &ProcessorImpl{l: l, ctx: ctx}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) GetByMemberId(memberId uint32) (Model, error) {
 	return model.First[Model](p.ByMemberIdProvider(memberId), model.Filters[Model]())
 }

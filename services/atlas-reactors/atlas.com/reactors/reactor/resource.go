@@ -33,7 +33,7 @@ func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
 func handleGetById(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseReactorId(d.Logger(), func(reactorId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			m, err := GetById(d.Logger())(d.Context())(reactorId)
+			m, err := NewProcessor(d.Logger(), d.Context()).GetById(reactorId)
 			if err != nil {
 				w.WriteHeader(http.StatusNotFound)
 				return
@@ -58,7 +58,7 @@ func handleGetByIdInMap(d *rest.HandlerDependency, c *rest.HandlerContext) http.
 				return rest.ParseInstanceId(d.Logger(), func(instanceId uuid.UUID) http.HandlerFunc {
 					return rest.ParseReactorId(d.Logger(), func(reactorId uint32) http.HandlerFunc {
 						return func(w http.ResponseWriter, r *http.Request) {
-							m, err := GetById(d.Logger())(d.Context())(reactorId)
+							m, err := NewProcessor(d.Logger(), d.Context()).GetById(reactorId)
 							if err != nil || m.WorldId() != worldId || m.ChannelId() != channelId || m.MapId() != mapId {
 								w.WriteHeader(http.StatusNotFound)
 								return
@@ -108,7 +108,7 @@ func handleGetInMap(d *rest.HandlerDependency, c *rest.HandlerContext) http.Hand
 				return rest.ParseInstanceId(d.Logger(), func(instanceId uuid.UUID) http.HandlerFunc {
 					return func(w http.ResponseWriter, r *http.Request) {
 						f := field.NewBuilder(worldId, channelId, mapId).SetInstance(instanceId).Build()
-						ms, err := GetInField(d.Logger())(d.Context())(f)
+						ms, err := NewProcessor(d.Logger(), d.Context()).GetInField(f)
 						if err != nil {
 							w.WriteHeader(http.StatusInternalServerError)
 							return

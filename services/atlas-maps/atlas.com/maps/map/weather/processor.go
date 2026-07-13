@@ -23,6 +23,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	return &ProcessorImpl{l: l, ctx: ctx}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) Start(f field.Model, itemId uint32, message string, duration time.Duration) {
 	t := tenant.MustFromContext(p.ctx)
 	key := FieldKey{Tenant: t, Field: f}

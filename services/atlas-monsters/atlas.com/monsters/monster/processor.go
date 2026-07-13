@@ -92,10 +92,12 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 		},
 	}
 	p.inFieldFn = func(f field.Model) ([]uint32, error) {
-		return _map.CharacterIdsInFieldProvider(p.l)(p.ctx)(f)()
+		return _map.NewProcessor(p.l, p.ctx).CharacterIdsInFieldProvider(f)()
 	}
 	return p
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 // ByIdProvider returns a provider for a monster by ID
 func (p *ProcessorImpl) ByIdProvider(monsterId uint32) model.Provider[Model] {
@@ -185,7 +187,7 @@ func (p *ProcessorImpl) GetInFieldRect(f field.Model, x1, y1, x2, y2 int16, limi
 // Create creates a new monster in a field
 func (p *ProcessorImpl) Create(f field.Model, input RestModel) (Model, error) {
 	p.l.Debugf("Attempting to create monster [%d] in field [%s].", input.MonsterId, f.Id())
-	ma, err := information.GetById(p.l)(p.ctx)(input.MonsterId)
+	ma, err := information.NewProcessor(p.l, p.ctx).GetById(input.MonsterId)
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to retrieve information necessary to create monster [%d].", input.MonsterId)
 		return Model{}, err
@@ -218,7 +220,7 @@ func (p *ProcessorImpl) Create(f field.Model, input RestModel) (Model, error) {
 	//
 	// StartControl as a public API is preserved for genuine control
 	// transfers (controller leaves, DPS-leader switch, FindNextController).
-	cid, err := p.getControllerCandidate(f, m.X(), m.Y(), _map.CharacterIdsInFieldProvider(p.l)(p.ctx)(f))
+	cid, err := p.getControllerCandidate(f, m.X(), m.Y(), _map.NewProcessor(p.l, p.ctx).CharacterIdsInFieldProvider(f))
 	if err == nil {
 		p.l.Debugf("Created monster [%d] with id [%d] will be controlled by [%d].", m.MonsterId(), m.UniqueId(), cid)
 		m, err = GetMonsterRegistry().ControlMonster(p.t, m.UniqueId(), cid)
@@ -383,7 +385,7 @@ func (p *ProcessorImpl) Damage(id uint32, characterId uint32, damages []uint32, 
 	// Fetch monster info for boss flag and revives
 	var isBoss bool
 	var revives []uint32
-	if ma, infoErr := information.GetById(p.l)(p.ctx)(m.MonsterId()); infoErr == nil {
+	if ma, infoErr := information.NewProcessor(p.l, p.ctx).GetById(m.MonsterId()); infoErr == nil {
 		isBoss = ma.Boss()
 		revives = ma.Revives()
 	}
@@ -518,7 +520,7 @@ func (p *ProcessorImpl) DamageFriendly(uniqueId uint32, attackerUniqueId uint32,
 		return
 	}
 
-	ma, err := information.GetById(p.l)(p.ctx)(attacker.MonsterId())
+	ma, err := information.NewProcessor(p.l, p.ctx).GetById(attacker.MonsterId())
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to get information for attacking monster [%d].", attacker.MonsterId())
 		return
@@ -608,7 +610,7 @@ func (p *ProcessorImpl) UseSkill(uniqueId uint32, characterId uint32, skillId by
 	if testMobSkillLookup != nil {
 		sd, err = testMobSkillLookup(uint16(skillId), uint16(skillLevel))
 	} else {
-		sd, err = mobskill.GetByIdAndLevel(p.l)(p.ctx)(uint16(skillId), uint16(skillLevel))
+		sd, err = mobskill.NewProcessor(p.l, p.ctx).GetByIdAndLevel(uint16(skillId), uint16(skillLevel))
 	}
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to retrieve mob skill [%d] level [%d].", skillId, skillLevel)
@@ -664,7 +666,7 @@ func (p *ProcessorImpl) UseSkill(uniqueId uint32, characterId uint32, skillId by
 
 	// Determine animation delay from monster data
 	var animDelay time.Duration
-	ma, err := information.GetById(p.l)(p.ctx)(m.MonsterId())
+	ma, err := information.NewProcessor(p.l, p.ctx).GetById(m.MonsterId())
 	if err == nil {
 		if d, ok := ma.AnimationTimes()["skill1"]; ok && d > 0 {
 			animDelay = time.Duration(d) * time.Millisecond
@@ -750,7 +752,7 @@ func (p *ProcessorImpl) UseSkillGM(uniqueId uint32, skillId byte, skillLevel byt
 		return
 	}
 
-	sd, err := mobskill.GetByIdAndLevel(p.l)(p.ctx)(uint16(skillId), uint16(skillLevel))
+	sd, err := mobskill.NewProcessor(p.l, p.ctx).GetByIdAndLevel(uint16(skillId), uint16(skillLevel))
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to retrieve mob skill [%d] level [%d] for GM command.", skillId, skillLevel)
 		return
@@ -800,7 +802,7 @@ func (p *ProcessorImpl) UseBasicAttack(uniqueId uint32, attackPos uint8) {
 	if testInformationLookup != nil {
 		info, err = testInformationLookup(m.MonsterId())
 	} else {
-		info, err = information.GetById(p.l)(p.ctx)(m.MonsterId())
+		info, err = information.NewProcessor(p.l, p.ctx).GetById(m.MonsterId())
 	}
 	if err != nil {
 		p.l.WithError(err).Debugf("UseBasicAttack: cannot fetch template for monster [%d].", uniqueId)
@@ -1057,7 +1059,7 @@ func (p *ProcessorImpl) executeDebuff(m Model, sd mobskill.Model, skillId byte, 
 
 // executeBanish warps target players to the monster's banish map
 func (p *ProcessorImpl) executeBanish(m Model, sd mobskill.Model) {
-	ma, err := information.GetById(p.l)(p.ctx)(m.MonsterId())
+	ma, err := information.NewProcessor(p.l, p.ctx).GetById(m.MonsterId())
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to get monster info for banish from monster [%d].", m.UniqueId())
 		return
@@ -1100,7 +1102,7 @@ func (p *ProcessorImpl) getDiseaseTargets(m Model, sd mobskill.Model) []uint32 {
 	}
 
 	// AoE: get all characters in the field
-	ids, err := _map.CharacterIdsInFieldProvider(p.l)(p.ctx)(m.Field())()
+	ids, err := _map.NewProcessor(p.l, p.ctx).CharacterIdsInFieldProvider(m.Field())()
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to get characters in field for monster [%d] disease targeting.", m.UniqueId())
 		return nil
@@ -1178,7 +1180,7 @@ func (p *ProcessorImpl) ApplyStatusEffect(uniqueId uint32, effect StatusEffect) 
 		if testInformationLookup != nil {
 			info, infoErr = testInformationLookup(m.MonsterId())
 		} else {
-			info, infoErr = information.GetById(p.l)(p.ctx)(m.MonsterId())
+			info, infoErr = information.NewProcessor(p.l, p.ctx).GetById(m.MonsterId())
 		}
 		if infoErr == nil {
 			// Elemental immunity check
@@ -1478,7 +1480,7 @@ func (p *ProcessorImpl) DrainMp(f field.Model, uniqueId uint32, characterId uint
 		if testInformationLookup != nil {
 			infoModel, infoErr = testInformationLookup(m.MonsterId())
 		} else {
-			infoModel, infoErr = information.GetById(p.l)(p.ctx)(m.MonsterId())
+			infoModel, infoErr = information.NewProcessor(p.l, p.ctx).GetById(m.MonsterId())
 		}
 		if infoErr == nil && infoModel.Boss() {
 			return nil

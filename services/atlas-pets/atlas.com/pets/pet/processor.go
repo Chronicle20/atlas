@@ -36,7 +36,7 @@ const (
 )
 
 type Processor interface {
-	With(opts ...ProcessorOption) *ProcessorImpl
+	With(opts ...ProcessorOption) Processor
 	ByIdProvider(petId uint32) model.Provider[Model]
 	GetById(petId uint32) (Model, error)
 	ByOwnerProvider(ownerId uint32) model.Provider[[]Model]
@@ -92,7 +92,7 @@ type ProcessorImpl struct {
 	rollEvolution func(weights []uint32) int
 }
 
-func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) *ProcessorImpl {
+func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor {
 	p := &ProcessorImpl{
 		l:   l,
 		ctx: ctx,
@@ -109,6 +109,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) *Proce
 	p.rollEvolution = weightedRoll
 	return p
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 // weightedRoll picks an index proportional to the given relative weights.
 // Weights are NOT assumed to sum to 100 (WZ uses arbitrary bases, e.g. 1000).
@@ -175,7 +177,7 @@ func WithRollEvolution(f func(weights []uint32) int) ProcessorOption {
 	}
 }
 
-func (p *ProcessorImpl) With(opts ...ProcessorOption) *ProcessorImpl {
+func (p *ProcessorImpl) With(opts ...ProcessorOption) Processor {
 	clone := *p
 	cp := &clone
 	for _, opt := range opts {

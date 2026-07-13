@@ -27,6 +27,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) GetInstanceRoutes(tenantId string) ([]instance.RouteModel, error) {
 	p.l.Debugf("Fetching instance routes for tenant [%s]", tenantId)
 	return requests.SliceProvider[InstanceRouteRestModel, instance.RouteModel](p.l, p.ctx)(requestInstanceRoutes(tenantId), ExtractRoute, model.Filters[instance.RouteModel]())()

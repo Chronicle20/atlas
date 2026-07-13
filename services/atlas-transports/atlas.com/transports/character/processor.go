@@ -38,6 +38,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) WarpRandom(mb *message.Buffer) func(characterId uint32) func(fieldId field.Id) error {
 	return func(characterId uint32) func(fieldId field.Id) error {
 		return func(fieldId field.Id) error {

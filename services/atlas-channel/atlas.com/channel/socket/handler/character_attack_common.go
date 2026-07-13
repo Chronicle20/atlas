@@ -206,7 +206,7 @@ func mpEaterAbsorbAmount(maxMp uint32, x int16) uint32 {
 func mpEaterTryProc(
 	l logrus.FieldLogger,
 	ctx context.Context,
-	mp *monster.Processor,
+	mp monster.Processor,
 	c character.Model,
 	monsterId uint32,
 	f field.Model,

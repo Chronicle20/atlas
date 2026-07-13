@@ -27,6 +27,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) CreateForMesos(field field.Model, mesos uint32, dropType byte, x int16, y int16, ownerId uint32) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(drop2.EnvCommandTopic)(dropMesoProvider(field, mesos, dropType, x, y, ownerId))
 }

@@ -34,6 +34,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	return p
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) Exists(mapId _map2.Id) bool {
 	_, err := p.dp.GetById(mapId)
 	if err != nil {

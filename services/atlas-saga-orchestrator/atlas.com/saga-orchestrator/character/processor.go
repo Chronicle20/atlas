@@ -71,6 +71,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) WarpRandomAndEmit(transactionId uuid.UUID, characterId uint32, field field.Model) error {
 	return message.Emit(p.p)(func(mb *message.Buffer) error {
 		return p.WarpRandom(mb)(transactionId, characterId, field)

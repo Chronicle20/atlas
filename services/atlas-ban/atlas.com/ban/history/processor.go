@@ -35,6 +35,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) Record(accountId uint32, accountName string, ipAddress string, hwid string, success bool, failureReason string) (Model, error) {
 	p.l.Debugf("Recording login attempt for account [%d] ip [%s] hwid [%s] success [%t].", accountId, ipAddress, hwid, success)
 	m, err := create(p.db.WithContext(p.ctx))(p.t.Id(), accountId, accountName, ipAddress, hwid, success, failureReason)

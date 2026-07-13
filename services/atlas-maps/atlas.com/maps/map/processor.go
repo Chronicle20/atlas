@@ -54,6 +54,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, p producer.Provider
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) Enter(mb *message.Buffer) func(transactionId uuid.UUID, f field.Model, characterId uint32) error {
 	return func(transactionId uuid.UUID, f field.Model, characterId uint32) error {
 		p.cp.Enter(transactionId, f, characterId)

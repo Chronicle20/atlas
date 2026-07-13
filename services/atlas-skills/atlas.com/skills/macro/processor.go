@@ -51,6 +51,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 // WithTransaction returns a Processor bound to the given transaction, used to
 // keep a migrated write and its outbox enqueue on the same tx.
 func (p *ProcessorImpl) WithTransaction(tx *gorm.DB) Processor {

@@ -24,7 +24,7 @@ func mapTestSetup() (*logrus.Logger, func()) {
 // addFieldSession registers a session in the default tenant's registry with the
 // given character id and field, using only public API. Mirrors the helper in
 // session/processor_test.go (test packages cannot share unexported helpers).
-func addFieldSession(t *testing.T, p *session.Processor, characterId uint32, f field.Model) uuid.UUID {
+func addFieldSession(t *testing.T, p session.Processor, characterId uint32, f field.Model) uuid.UUID {
 	t.Helper()
 	sessionId := uuid.New()
 	ten := test.CreateDefaultMockTenant()

@@ -27,6 +27,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 // GetPartyByCharacter returns the party for a character, or a zero-value model if the character has no party
 func (p *ProcessorImpl) GetPartyByCharacter(characterId uint32) model.Provider[Model] {
 	return func() (Model, error) {

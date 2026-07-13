@@ -119,7 +119,7 @@ func handleUpdateConfigurationTemplate(db *gorm.DB) rest.InputHandler[RestModel]
 		return rest.ParseTemplateId(d.Logger(), func(templateId uuid.UUID) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
 				p := NewProcessor(d.Logger(), d.Context(), db).
-					WithValidator(preset.NewValidator(data.NewClient(d.Logger())))
+					WithValidator(preset.NewValidator(data.NewProcessor(d.Logger())))
 				err := p.UpdateById(templateId, input)
 				if err != nil {
 					var ve *validationFailureError

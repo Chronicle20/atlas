@@ -19,9 +19,11 @@ type ProcessorImpl struct {
 	ctx context.Context
 }
 
-func NewProcessor(l logrus.FieldLogger, ctx context.Context) *ProcessorImpl {
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	return &ProcessorImpl{l: l, ctx: ctx}
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 // GetById fetches the map from atlas-data including its portals via the
 // ?include=portals query parameter, so a single round-trip populates both map

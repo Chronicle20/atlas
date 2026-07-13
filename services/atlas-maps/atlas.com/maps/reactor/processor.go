@@ -35,6 +35,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, p producer.Provider
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) InMapModelProvider(_ uuid.UUID, field field.Model) model.Provider[[]Model] {
 	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestInMap(field), Extract, model.Filters[Model]())
 }

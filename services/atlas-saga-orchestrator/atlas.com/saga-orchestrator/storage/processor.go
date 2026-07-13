@@ -48,6 +48,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) DepositAndEmit(transactionId uuid.UUID, worldId world.Id, accountId uint32, slot int16, templateId uint32, expiration time.Time, referenceId uint32, referenceType string, referenceData storage2.ReferenceData) error {
 	return message.Emit(p.p)(func(mb *message.Buffer) error {
 		return p.Deposit(mb)(transactionId, worldId, accountId, slot, templateId, expiration, referenceId, referenceType, referenceData)

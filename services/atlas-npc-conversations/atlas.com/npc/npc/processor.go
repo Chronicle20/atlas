@@ -52,6 +52,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) Dispose(ch channel.Model, characterId uint32) {
 	_ = producer.ProviderImpl(p.l)(p.ctx)(npc2.EnvEventTopicCharacterStatus)(enableActionsProvider(ch, characterId))
 }

@@ -70,14 +70,24 @@ func IsValidServiceType(t string) bool {
 	return validServiceTypes[ServiceType(t)]
 }
 
-type Processor struct {
+type Processor interface {
+	ByIdProvider(id uuid.UUID) model.Provider[interface{}]
+	AllProvider() model.Provider[[]interface{}]
+	GetAll() ([]interface{}, error)
+	GetById(id uuid.UUID) (interface{}, error)
+	Create(input service.InputRestModel) (uuid.UUID, error)
+	UpdateById(serviceId uuid.UUID, input service.InputRestModel) error
+	DeleteById(serviceId uuid.UUID) error
+}
+
+type ProcessorImpl struct {
 	l   logrus.FieldLogger
 	ctx context.Context
 	db  *gorm.DB
 }
 
-func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) *Processor {
-	p := &Processor{
+func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor {
+	p := &ProcessorImpl{
 		l:   l,
 		ctx: ctx,
 		db:  db,
@@ -85,11 +95,13 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) *Proce
 	return p
 }
 
-func (p *Processor) ByIdProvider(id uuid.UUID) model.Provider[interface{}] {
+var _ Processor = (*ProcessorImpl)(nil)
+
+func (p *ProcessorImpl) ByIdProvider(id uuid.UUID) model.Provider[interface{}] {
 	return model.Map(Make)(byIdEntityProvider(p.ctx)(id)(p.db))
 }
 
-func (p *Processor) AllProvider() model.Provider[[]interface{}] {
+func (p *ProcessorImpl) AllProvider() model.Provider[[]interface{}] {
 	return model.SliceMap(Make)(allEntityProvider(p.ctx)(p.db))()
 }
 
@@ -125,15 +137,15 @@ func Make(e Entity) (interface{}, error) {
 	return nil, errors.New("invalid service type")
 }
 
-func (p *Processor) GetAll() ([]interface{}, error) {
+func (p *ProcessorImpl) GetAll() ([]interface{}, error) {
 	return p.AllProvider()()
 }
 
-func (p *Processor) GetById(id uuid.UUID) (interface{}, error) {
+func (p *ProcessorImpl) GetById(id uuid.UUID) (interface{}, error) {
 	return p.ByIdProvider(id)()
 }
 
-func (p *Processor) Create(input service.InputRestModel) (uuid.UUID, error) {
+func (p *ProcessorImpl) Create(input service.InputRestModel) (uuid.UUID, error) {
 	serviceType := ServiceType(input.Type)
 	if !IsValidServiceType(input.Type) {
 		return uuid.Nil, errors.New("invalid service type")
@@ -178,7 +190,7 @@ func (p *Processor) Create(input service.InputRestModel) (uuid.UUID, error) {
 	return serviceId, nil
 }
 
-func (p *Processor) UpdateById(serviceId uuid.UUID, input service.InputRestModel) error {
+func (p *ProcessorImpl) UpdateById(serviceId uuid.UUID, input service.InputRestModel) error {
 	serviceType := ServiceType(input.Type)
 	if !IsValidServiceType(input.Type) {
 		return errors.New("invalid service type")
@@ -203,7 +215,7 @@ func (p *Processor) UpdateById(serviceId uuid.UUID, input service.InputRestModel
 	})
 }
 
-func (p *Processor) DeleteById(serviceId uuid.UUID) error {
+func (p *ProcessorImpl) DeleteById(serviceId uuid.UUID) error {
 	return database.ExecuteTransaction(p.db, func(db *gorm.DB) error {
 		if err := delete(p.ctx, serviceId)(db); err != nil {
 			return err

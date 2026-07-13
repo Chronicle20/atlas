@@ -30,6 +30,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 // GetSkillLevel returns the level of a skill for a character
 // Returns 0 if the skill is not found (character doesn't have the skill)
 func (p *ProcessorImpl) GetSkillLevel(characterId uint32, skillId uint32) model.Provider[byte] {

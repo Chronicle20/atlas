@@ -53,6 +53,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) LoginAndEmit(f field.Model, characterId uint32) error {
 	return message.Emit(p.p)(func(buf *message.Buffer) error {
 		return p.Login(buf)(f, characterId)

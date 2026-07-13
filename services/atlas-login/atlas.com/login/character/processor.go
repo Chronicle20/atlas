@@ -27,7 +27,7 @@ type Processor interface {
 type ProcessorImpl struct {
 	l   logrus.FieldLogger
 	ctx context.Context
-	ip  *inventory.ProcessorImpl
+	ip  inventory.Processor
 }
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
@@ -38,6 +38,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 	return p
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) IsValidName(name string) (bool, error) {
 	m, err := regexp.MatchString("^[A-Za-z0-9\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]{3,12}$", name)

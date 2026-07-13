@@ -45,6 +45,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 // ByIdProvider retrieves a route by ID
 func (p *ProcessorImpl) ByIdProvider(id string) model.Provider[Model] {
 	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(id), Extract)

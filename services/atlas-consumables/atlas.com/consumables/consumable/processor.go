@@ -12,12 +12,12 @@ import (
 	_map3 "atlas-consumables/data/map"
 	"atlas-consumables/equipable"
 	"atlas-consumables/inventory"
-	"atlas-consumables/location"
 	compartment2 "atlas-consumables/kafka/message/compartment"
 	"atlas-consumables/kafka/message/consumable"
 	foodmsg "atlas-consumables/kafka/message/food"
 	once "atlas-consumables/kafka/once/compartment"
 	"atlas-consumables/kafka/producer"
+	"atlas-consumables/location"
 	"atlas-consumables/map"
 	character2 "atlas-consumables/map/character"
 	"atlas-consumables/monster"
@@ -48,17 +48,29 @@ var ErrPetCannotConsume = errors.New("pet cannot consume")
 
 type ItemConsumer func(l logrus.FieldLogger) func(ctx context.Context) error
 
-type Processor struct {
-	l   logrus.FieldLogger
-	ctx context.Context
-	cp  *character.Processor
-	ip  *inventory.Processor
-	cpp *compartment.Processor
-	cdp *consumable3.Processor
+type Processor interface {
+	RequestItemConsume(c channel.Model, characterId uint32, slot int16, itemId item2.Id, quantity int16) error
+	RequestFeed(worldId world.Id, characterId uint32, slot int16, itemId item2.Id) error
+	ConsumeError(characterId uint32, transactionId uuid.UUID, inventoryType inventory2.Type, slot int16, err error) error
+	RequestScroll(characterId uint32, scrollSlot int16, equipSlot int16, whiteScroll bool, legendarySpirit bool) error
+	ValidateScrollUse(scrollItem asset.Model, equipItem asset.Model) bool
+	PassScroll(characterId uint32, legendarySpirit bool, whiteScroll bool) error
+	ApplyConsumableEffect(transactionId uuid.UUID, _ channel.Model, characterId uint32, itemId item2.Id) error
+	CancelConsumableEffect(_ uuid.UUID, characterId uint32, itemId item2.Id, f field.Model) error
+	FailScroll(characterId uint32, cursed bool, legendarySpirit bool, whiteScroll bool) error
 }
 
-func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
-	p := &Processor{
+type ProcessorImpl struct {
+	l   logrus.FieldLogger
+	ctx context.Context
+	cp  character.Processor
+	ip  inventory.Processor
+	cpp compartment.Processor
+	cdp consumable3.Processor
+}
+
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
+	p := &ProcessorImpl{
 		l:   l,
 		ctx: ctx,
 		cp:  character.NewProcessor(l, ctx),
@@ -68,6 +80,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
 	}
 	return p
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 // usesStandardConsumer reports whether an item routes through ConsumeStandard
 // (which invokes ApplyItemEffects for HP/MP recovery, status buffs, and status
@@ -181,7 +195,7 @@ func ApplyItemEffects(l logrus.FieldLogger, ctx context.Context, c character.Mod
 	}
 }
 
-func (p *Processor) RequestItemConsume(c channel.Model, characterId uint32, slot int16, itemId item2.Id, quantity int16) error {
+func (p *ProcessorImpl) RequestItemConsume(c channel.Model, characterId uint32, slot int16, itemId item2.Id, quantity int16) error {
 	transactionId := uuid.New()
 	p.l.Debugf("Creating OneTime topic consumer to await transaction [%s] completion or cancellation.", transactionId.String())
 	t, _ := topic.EnvProvider(p.l)(compartment2.EnvEventTopicStatus)()
@@ -230,7 +244,7 @@ func (p *Processor) RequestItemConsume(c channel.Model, characterId uint32, slot
 // successful consume emits the TamingMobFed event (Task 33) carrying the pinned
 // server tiredness heal. The heal -> exp -> level math lives in atlas-mounts;
 // consumables only validates, consumes, and emits the heal value.
-func (p *Processor) RequestFeed(worldId world.Id, characterId uint32, slot int16, itemId item2.Id) error {
+func (p *ProcessorImpl) RequestFeed(worldId world.Id, characterId uint32, slot int16, itemId item2.Id) error {
 	if item2.GetClassification(itemId) != item2.ClassificationRevitalizer {
 		p.l.Warnf("Character [%d] requested taming-mob feed with non-revitalizer item [%d] (classification [%d]). Rejecting.", characterId, itemId, item2.GetClassification(itemId))
 		return errors.New("item is not a revitalizer")
@@ -277,7 +291,7 @@ func ConsumeFeed(transactionId uuid.UUID, worldId world.Id, characterId uint32, 
 	}
 }
 
-func (p *Processor) ConsumeError(characterId uint32, transactionId uuid.UUID, inventoryType inventory2.Type, slot int16, err error) error {
+func (p *ProcessorImpl) ConsumeError(characterId uint32, transactionId uuid.UUID, inventoryType inventory2.Type, slot int16, err error) error {
 	p.l.Debugf("Character [%d] unable to consume item due to error: [%v]", characterId, err)
 	cErr := p.cpp.CancelItemReservation(characterId, inventoryType, transactionId, slot)
 	if cErr != nil {
@@ -322,11 +336,12 @@ func ConsumeStandard(transactionId uuid.UUID, characterId uint32, slot int16, it
 			p := NewProcessor(l, ctx)
 			cp := character.NewProcessor(l, ctx)
 			mp := character2.NewProcessor(l, ctx)
+			cdp := consumable3.NewProcessor(l, ctx)
 
 			pg, _ := model.NewGroup(ctx)
 			fc := model.Submit(pg, func() (character.Model, error) { return cp.GetById()(characterId) })
 			fm := model.Submit(pg, func() (field.Model, error) { return mp.GetMap(characterId) })
-			fi := model.Submit(pg, func() (consumable3.Model, error) { return p.cdp.GetById(uint32(itemId)) })
+			fi := model.Submit(pg, func() (consumable3.Model, error) { return cdp.GetById(uint32(itemId)) })
 			if err := pg.Wait(); err != nil {
 				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
 			}
@@ -349,10 +364,11 @@ func ConsumeTownScroll(transactionId uuid.UUID, characterId uint32, slot int16, 
 			p := NewProcessor(l, ctx)
 			cpp := compartment.NewProcessor(l, ctx)
 			mp := character2.NewProcessor(l, ctx)
+			cdp := consumable3.NewProcessor(l, ctx)
 
 			pg, _ := model.NewGroup(ctx)
 			fm := model.Submit(pg, func() (field.Model, error) { return mp.GetMap(characterId) })
-			fi := model.Submit(pg, func() (consumable3.Model, error) { return p.cdp.GetById(uint32(itemId)) })
+			fi := model.Submit(pg, func() (consumable3.Model, error) { return cdp.GetById(uint32(itemId)) })
 			if err := pg.Wait(); err != nil {
 				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
 			}
@@ -392,6 +408,7 @@ func ConsumePetFood(transactionId uuid.UUID, characterId uint32, slot int16, ite
 			p := NewProcessor(l, ctx)
 			pp := pet.NewProcessor(l, ctx)
 			cpp := compartment.NewProcessor(l, ctx)
+			cdp := consumable3.NewProcessor(l, ctx)
 
 			// Sequential reads: PRD §4.3 names ConsumeStandard / ConsumeTownScroll /
 			// ConsumeSummoningSack as the parallelisation targets. ConsumePetFood's two
@@ -402,7 +419,7 @@ func ConsumePetFood(transactionId uuid.UUID, characterId uint32, slot int16, ite
 				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
 			}
 
-			ci, err := p.cdp.GetById(uint32(itemId))
+			ci, err := cdp.GetById(uint32(itemId))
 			if err != nil {
 				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
 			}
@@ -512,7 +529,7 @@ func ConsumeSummoningSack(transactionId uuid.UUID, ch channel.Model, characterId
 	}
 }
 
-func (p *Processor) RequestScroll(characterId uint32, scrollSlot int16, equipSlot int16, whiteScroll bool, legendarySpirit bool) error {
+func (p *ProcessorImpl) RequestScroll(characterId uint32, scrollSlot int16, equipSlot int16, whiteScroll bool, legendarySpirit bool) error {
 	cp := character.NewProcessor(p.l, p.ctx)
 	cpp := compartment.NewProcessor(p.l, p.ctx)
 
@@ -578,7 +595,7 @@ func (p *Processor) RequestScroll(characterId uint32, scrollSlot int16, equipSlo
 	return nil
 }
 
-func (p *Processor) ValidateScrollUse(scrollItem asset.Model, equipItem asset.Model) bool {
+func (p *ProcessorImpl) ValidateScrollUse(scrollItem asset.Model, equipItem asset.Model) bool {
 	ep := equipable2.NewProcessor(p.l, p.ctx)
 	if item2.IsScrollCleanSlate(item2.Id(scrollItem.TemplateId())) {
 		// If the scroll is a clean slate scroll, make sure we're not attempting to add mores lots than originally available.
@@ -610,6 +627,7 @@ func ConsumeScroll(transactionId uuid.UUID, characterId uint32, scrollItem *asse
 			cp := character.NewProcessor(l, ctx)
 			ep := equipable.NewProcessor(l, ctx)
 			cpp := compartment.NewProcessor(l, ctx)
+			cdp := consumable3.NewProcessor(l, ctx)
 
 			whiteScroll := whiteScrollItem != nil
 
@@ -633,7 +651,7 @@ func ConsumeScroll(transactionId uuid.UUID, characterId uint32, scrollItem *asse
 				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, scrollItem.Slot(), errors.New("failed slot validation"))
 			}
 
-			ci, err := p.cdp.GetById(scrollItem.TemplateId())
+			ci, err := cdp.GetById(scrollItem.TemplateId())
 			if err != nil {
 				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, scrollItem.Slot(), err)
 			}
@@ -803,13 +821,13 @@ func rollStatAdjustment() int16 {
 	}
 }
 
-func (p *Processor) PassScroll(characterId uint32, legendarySpirit bool, whiteScroll bool) error {
+func (p *ProcessorImpl) PassScroll(characterId uint32, legendarySpirit bool, whiteScroll bool) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(consumable.EnvEventTopic)(ScrollEventProvider(ts.Id(characterId))(true, false, legendarySpirit, whiteScroll))
 }
 
 // ApplyConsumableEffect applies item effects to a character without consuming from inventory
 // This is used for NPC-initiated buffs (e.g., NPC blessings via cm.useItem())
-func (p *Processor) ApplyConsumableEffect(transactionId uuid.UUID, _ channel.Model, characterId uint32, itemId item2.Id) error {
+func (p *ProcessorImpl) ApplyConsumableEffect(transactionId uuid.UUID, _ channel.Model, characterId uint32, itemId item2.Id) error {
 	cp := character.NewProcessor(p.l, p.ctx)
 
 	c, err := cp.GetById()(characterId)
@@ -844,7 +862,7 @@ func (p *Processor) ApplyConsumableEffect(transactionId uuid.UUID, _ channel.Mod
 
 // CancelConsumableEffect cancels the buff effects of a consumable item on a character.
 // This sends a cancel command to the buff service using sourceId = -int32(itemId).
-func (p *Processor) CancelConsumableEffect(_ uuid.UUID, characterId uint32, itemId item2.Id, f field.Model) error {
+func (p *ProcessorImpl) CancelConsumableEffect(_ uuid.UUID, characterId uint32, itemId item2.Id, f field.Model) error {
 	bp := buff.NewProcessor(p.l, p.ctx)
 	sourceId := -int32(itemId)
 	err := bp.Cancel(f, characterId, sourceId)
@@ -856,6 +874,6 @@ func (p *Processor) CancelConsumableEffect(_ uuid.UUID, characterId uint32, item
 	return nil
 }
 
-func (p *Processor) FailScroll(characterId uint32, cursed bool, legendarySpirit bool, whiteScroll bool) error {
+func (p *ProcessorImpl) FailScroll(characterId uint32, cursed bool, legendarySpirit bool, whiteScroll bool) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(consumable.EnvEventTopic)(ScrollEventProvider(ts.Id(characterId))(false, cursed, legendarySpirit, whiteScroll))
 }

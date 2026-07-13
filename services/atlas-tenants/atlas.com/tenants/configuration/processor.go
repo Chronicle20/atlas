@@ -132,6 +132,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 // Create creates a new route configuration
 func (p *ProcessorImpl) CreateRoute(mb *message.Buffer) func(tenantId uuid.UUID) func(route map[string]interface{}) (Model, error) {
 	return func(tenantId uuid.UUID) func(route map[string]interface{}) (Model, error) {

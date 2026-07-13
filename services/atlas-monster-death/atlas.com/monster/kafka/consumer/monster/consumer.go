@@ -47,7 +47,7 @@ func handleKilledStatusEvent(l logrus.FieldLogger, ctx context.Context, e status
 
 	routine.Go(l, ctx, func(_ context.Context) {
 		defer wg.Done()
-		err := monster.CreateDrops(l)(ctx)(f, e.UniqueId, e.MonsterId, e.Body.X, e.Body.Y, e.Body.ActorId)
+		err := monster.NewProcessor(l, ctx).CreateDrops(f, e.UniqueId, e.MonsterId, e.Body.X, e.Body.Y, e.Body.ActorId)
 		if err != nil {
 			l.WithError(err).WithFields(logrus.Fields{
 				"worldId":   e.WorldId,
@@ -75,7 +75,7 @@ func handleKilledStatusEvent(l logrus.FieldLogger, ctx context.Context, e status
 			return
 		}
 
-		err = monster.DistributeExperience(l)(ctx)(f, e.MonsterId, dms)
+		err = monster.NewProcessor(l, ctx).DistributeExperience(f, e.MonsterId, dms)
 		if err != nil {
 			l.WithError(err).WithFields(logrus.Fields{
 				"worldId":   e.WorldId,

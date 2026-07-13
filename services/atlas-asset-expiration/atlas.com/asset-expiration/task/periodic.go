@@ -91,7 +91,7 @@ func (t *PeriodicTask) checkAllSessions() {
 		ctx := tenant.WithContext(context.Background(), tm)
 
 		pp := producer.ProviderImpl(t.l)(ctx)
-		character.CheckAndExpire(t.l)(pp)(ctx)(s.CharacterId, s.AccountId, s.Channel.WorldId())
+		character.NewProcessor(t.l, ctx).CheckAndExpire(pp)(s.CharacterId, s.AccountId, s.Channel.WorldId())
 	}
 
 	t.l.Infof("Completed periodic expiration check for [%d] sessions.", len(sessions))

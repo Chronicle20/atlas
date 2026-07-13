@@ -43,6 +43,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) ByIdProvider(characterId uint32) model.Provider[Model] {
 	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(characterId), Extract)
 }

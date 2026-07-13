@@ -74,7 +74,7 @@ func handleSessionCreated(l logrus.FieldLogger, ctx context.Context, e message.S
 
 	// Immediate expiration check on login
 	pp := producer.ProviderImpl(l)(ctx)
-	character.CheckAndExpire(l)(pp)(ctx)(e.CharacterId, e.AccountId, e.WorldId)
+	character.NewProcessor(l, ctx).CheckAndExpire(pp)(e.CharacterId, e.AccountId, e.WorldId)
 }
 
 func handleSessionDestroyed(l logrus.FieldLogger, _ context.Context, e message.StatusEvent) {

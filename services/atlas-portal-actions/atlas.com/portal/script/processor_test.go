@@ -38,7 +38,7 @@ func countTestTenant(t *testing.T) tenant.Model {
 	return te
 }
 
-func insertCountScript(t *testing.T, p ScriptProcessor, portalId string) {
+func insertCountScript(t *testing.T, p Processor, portalId string) {
 	t.Helper()
 	m := NewPortalScriptBuilder().
 		SetPortalId(portalId).

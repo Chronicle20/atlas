@@ -60,6 +60,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 // newProcessorWithDeps is the unit-test seam (mirrors location's
 // newProcessorWithInfo). It is not exported and not a *_testhelpers.go file.
 func newProcessorWithDeps(l logrus.FieldLogger, ctx context.Context, lp location.Processor, pp producer.Provider, mp mapTransitioner) *ProcessorImpl {

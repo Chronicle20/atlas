@@ -56,6 +56,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 // ByCharacterIdProvider returns a provider for keys by character ID
 func (p *ProcessorImpl) ByCharacterIdProvider(characterId uint32) model.Provider[[]Model] {
 	return entitySliceMapper(byCharacterIdEntityProvider(characterId)(p.db.WithContext(p.ctx)))()

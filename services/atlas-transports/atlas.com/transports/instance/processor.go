@@ -69,6 +69,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) AddTenant(routes []RouteModel) {
 	p.l.Debugf("Adding [%d] instance routes for tenant [%s].", len(routes), p.t.Id())
 	getRouteRegistry().AddTenant(p.ctx, routes)

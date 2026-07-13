@@ -84,6 +84,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 type IdOperator func(uint32) error
 
 func (p *ProcessorImpl) GetById(accountId uint32) (Model, error) {
@@ -375,7 +377,7 @@ func (p *ProcessorImpl) AttemptLogin(mb *message.Buffer) func(sessionId uuid.UUI
 			return mb.Put(account2.EnvEventSessionStatusTopic, errorStatusProvider(sessionId, 0, "", SystemError, ipAddress, hwid))
 		}
 
-		checkResult, err := ban.CheckBan(p.l, p.ctx, ipAddress, hwid, a.Id())
+		checkResult, err := ban.NewProcessor(p.l, p.ctx).CheckBan(ipAddress, hwid, a.Id())
 		if err != nil {
 			p.l.WithError(err).Warnf("Unable to check ban status for account [%d]. Proceeding with fail-open strategy.", a.Id())
 		} else if checkResult.Banned {

@@ -67,6 +67,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	return &ProcessorImpl{l: l, ctx: ctx, t: tenant.MustFromContext(ctx)}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 // RequestSetCover emits a SET_COVER command keyed on the character.
 func (p *ProcessorImpl) RequestSetCover(characterId character.Id, coverCardId item.Id) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(mbmsg.EnvCommandTopic)(SetCoverCommandProvider(p.t.Id(), characterId, coverCardId))

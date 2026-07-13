@@ -23,18 +23,20 @@ type ItemInfo struct {
 
 var ErrNotFound = errors.New("not found")
 
-type Client interface {
+type Processor interface {
 	GetSkillsByIds(ctx context.Context, ids []uint32) ([]SkillInfo, error)
 	GetItemById(ctx context.Context, id uint32) (ItemInfo, error)
 }
 
-type ClientImpl struct {
+type ProcessorImpl struct {
 	l logrus.FieldLogger
 }
 
-func NewClient(l logrus.FieldLogger) *ClientImpl { return &ClientImpl{l: l} }
+func NewProcessor(l logrus.FieldLogger) Processor { return &ProcessorImpl{l: l} }
 
-func (c *ClientImpl) GetSkillsByIds(ctx context.Context, ids []uint32) ([]SkillInfo, error) {
+var _ Processor = (*ProcessorImpl)(nil)
+
+func (c *ProcessorImpl) GetSkillsByIds(ctx context.Context, ids []uint32) ([]SkillInfo, error) {
 	if len(ids) == 0 {
 		return nil, nil
 	}
@@ -49,7 +51,7 @@ func (c *ClientImpl) GetSkillsByIds(ctx context.Context, ids []uint32) ([]SkillI
 	return out, nil
 }
 
-func (c *ClientImpl) GetItemById(ctx context.Context, id uint32) (ItemInfo, error) {
+func (c *ProcessorImpl) GetItemById(ctx context.Context, id uint32) (ItemInfo, error) {
 	invType, ok := inventory.TypeFromItemId(item.Id(id))
 	if !ok {
 		return ItemInfo{}, ErrNotFound

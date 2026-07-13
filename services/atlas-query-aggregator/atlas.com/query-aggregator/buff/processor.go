@@ -30,6 +30,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 // HasActiveBuff checks if a character has an active buff with the specified source ID
 // Returns false if the buff is not found or has expired
 func (p *ProcessorImpl) HasActiveBuff(characterId uint32, sourceId int32) model.Provider[bool] {

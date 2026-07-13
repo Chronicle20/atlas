@@ -11,51 +11,64 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type Processor struct {
+type Processor interface {
+	ByIdProvider(petId uint32) model.Provider[Model]
+	GetById(petId uint32) (Model, error)
+	ByOwnerProvider(ownerId uint32) model.Provider[[]Model]
+	GetByOwner(ownerId uint32) ([]Model, error)
+	Spawn(characterId uint32, petId uint32, lead bool) error
+	Despawn(characterId uint32, petId uint32) error
+	AttemptCommand(petId uint32, commandId byte, byName bool, characterId uint32) error
+	SetExcludeItems(characterId uint32, petId uint32, items []exclude.Model) error
+}
+
+type ProcessorImpl struct {
 	l   logrus.FieldLogger
 	ctx context.Context
 }
 
-func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
-	p := &Processor{
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
+	p := &ProcessorImpl{
 		l:   l,
 		ctx: ctx,
 	}
 	return p
 }
 
-func (p *Processor) ByIdProvider(petId uint32) model.Provider[Model] {
+var _ Processor = (*ProcessorImpl)(nil)
+
+func (p *ProcessorImpl) ByIdProvider(petId uint32) model.Provider[Model] {
 	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(petId), Extract)
 }
 
-func (p *Processor) GetById(petId uint32) (Model, error) {
+func (p *ProcessorImpl) GetById(petId uint32) (Model, error) {
 	return p.ByIdProvider(petId)()
 }
 
-func (p *Processor) ByOwnerProvider(ownerId uint32) model.Provider[[]Model] {
+func (p *ProcessorImpl) ByOwnerProvider(ownerId uint32) model.Provider[[]Model] {
 	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByOwnerId(ownerId), Extract, model.Filters[Model]())
 }
 
-func (p *Processor) GetByOwner(ownerId uint32) ([]Model, error) {
+func (p *ProcessorImpl) GetByOwner(ownerId uint32) ([]Model, error) {
 	return p.ByOwnerProvider(ownerId)()
 }
 
-func (p *Processor) Spawn(characterId uint32, petId uint32, lead bool) error {
+func (p *ProcessorImpl) Spawn(characterId uint32, petId uint32, lead bool) error {
 	p.l.Debugf("Character [%d] attempting to spawn pet [%d]", characterId, petId)
 	return producer.ProviderImpl(p.l)(p.ctx)(pet2.EnvCommandTopic)(SpawnProvider(characterId, petId, lead))
 }
 
-func (p *Processor) Despawn(characterId uint32, petId uint32) error {
+func (p *ProcessorImpl) Despawn(characterId uint32, petId uint32) error {
 	p.l.Debugf("Character [%d] attempting to despawn pet [%d].", characterId, petId)
 	return producer.ProviderImpl(p.l)(p.ctx)(pet2.EnvCommandTopic)(DespawnProvider(characterId, petId))
 }
 
-func (p *Processor) AttemptCommand(petId uint32, commandId byte, byName bool, characterId uint32) error {
+func (p *ProcessorImpl) AttemptCommand(petId uint32, commandId byte, byName bool, characterId uint32) error {
 	p.l.Debugf("Character [%d] triggered pet [%d] command. byName [%t], command [%d]", characterId, petId, byName, commandId)
 	return producer.ProviderImpl(p.l)(p.ctx)(pet2.EnvCommandTopic)(AttemptCommandProvider(petId, commandId, byName, characterId))
 }
 
-func (p *Processor) SetExcludeItems(characterId uint32, petId uint32, items []exclude.Model) error {
+func (p *ProcessorImpl) SetExcludeItems(characterId uint32, petId uint32, items []exclude.Model) error {
 	p.l.Debugf("Character [%d] setting exclude items for pet [%d]. count [%d].", characterId, petId, len(items))
 	itemIds := make([]uint32, len(items))
 	for i, item := range items {

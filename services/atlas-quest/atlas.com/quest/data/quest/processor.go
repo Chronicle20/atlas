@@ -28,6 +28,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) GetQuestDefinition(questId uint32) (RestModel, error) {
 	result, err := requestQuestById(questId)(p.l, p.ctx)
 	if err != nil {

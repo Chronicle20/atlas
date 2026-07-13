@@ -503,7 +503,7 @@ func TestUpdateById_AssignsMissingPresetId(t *testing.T) {
 		t.Fatalf("failed to create tenant: %v", err)
 	}
 
-	fake := &mock.FakeClient{Items: map[uint32]data.ItemInfo{}, Skills: map[uint32]data.SkillInfo{}}
+	fake := &mock.ProcessorMock{Items: map[uint32]data.ItemInfo{}, Skills: map[uint32]data.SkillInfo{}}
 	p := NewProcessor(l, ctx, db).WithValidator(preset.NewValidator(fake))
 
 	input := RestModel{
@@ -537,7 +537,7 @@ func TestUpdateById_ReturnsValidationErrorForInvalidPreset(t *testing.T) {
 	l := testLogger()
 	ctx := context.Background()
 
-	fake := &mock.FakeClient{Items: map[uint32]data.ItemInfo{}, Skills: map[uint32]data.SkillInfo{}}
+	fake := &mock.ProcessorMock{Items: map[uint32]data.ItemInfo{}, Skills: map[uint32]data.SkillInfo{}}
 	p := NewProcessor(l, ctx, db).WithValidator(preset.NewValidator(fake))
 
 	input := RestModel{

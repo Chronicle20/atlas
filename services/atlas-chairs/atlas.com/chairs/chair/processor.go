@@ -31,6 +31,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) GetById(characterId uint32) (Model, error) {
 	m, ok := GetRegistry().Get(p.ctx, characterId)
 	if !ok {

@@ -43,6 +43,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) GetByCharacterId(characterId uint32) ([]Model, error) {
 	return p.ByCharacterIdProvider(characterId)()
 }

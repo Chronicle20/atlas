@@ -28,6 +28,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	return p
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) StartConversation(f field.Model, npcId uint32, characterId uint32, accountId uint32) error {
 	p.l.Debugf("Starting NPC [%d] conversation for character [%d].", npcId, characterId)
 	return producer.ProviderImpl(p.l)(p.ctx)(npc.EnvCommandTopic)(StartConversationCommandProvider(f, npcId, characterId, accountId))

@@ -45,15 +45,28 @@ func enqueueTenantStatus(tx *gorm.DB, id uuid.UUID, config any) error {
 	})
 }
 
-type Processor struct {
+type Processor interface {
+	WithValidator(v *preset.Validator) Processor
+	ByIdProvider(id uuid.UUID) model.Provider[RestModel]
+	ByRegionAndVersionProvider(region string, majorVersion uint16, minorVersion uint16) model.Provider[RestModel]
+	AllProvider() model.Provider[[]RestModel]
+	GetAll() ([]RestModel, error)
+	GetById(id uuid.UUID) (RestModel, error)
+	GetByRegionAndVersion(region string, majorVersion uint16, minorVersion uint16) (RestModel, error)
+	UpdateById(tenantId uuid.UUID, input RestModel) error
+	DeleteById(tenantId uuid.UUID) error
+	Create(input RestModel) (uuid.UUID, error)
+}
+
+type ProcessorImpl struct {
 	l         logrus.FieldLogger
 	ctx       context.Context
 	db        *gorm.DB
 	validator *preset.Validator
 }
 
-func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) *Processor {
-	p := &Processor{
+func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor {
+	p := &ProcessorImpl{
 		l:   l,
 		ctx: ctx,
 		db:  db,
@@ -61,20 +74,22 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) *Proce
 	return p
 }
 
-func (p *Processor) WithValidator(v *preset.Validator) *Processor {
+var _ Processor = (*ProcessorImpl)(nil)
+
+func (p *ProcessorImpl) WithValidator(v *preset.Validator) Processor {
 	p.validator = v
 	return p
 }
 
-func (p *Processor) ByIdProvider(id uuid.UUID) model.Provider[RestModel] {
+func (p *ProcessorImpl) ByIdProvider(id uuid.UUID) model.Provider[RestModel] {
 	return model.Map(Make)(byIdEntityProvider(p.ctx)(id)(p.db))
 }
 
-func (p *Processor) ByRegionAndVersionProvider(region string, majorVersion uint16, minorVersion uint16) model.Provider[RestModel] {
+func (p *ProcessorImpl) ByRegionAndVersionProvider(region string, majorVersion uint16, minorVersion uint16) model.Provider[RestModel] {
 	return model.Map(Make)(byRegionVersionEntityProvider(p.ctx)(region, majorVersion, minorVersion)(p.db))
 }
 
-func (p *Processor) AllProvider() model.Provider[[]RestModel] {
+func (p *ProcessorImpl) AllProvider() model.Provider[[]RestModel] {
 	return func() ([]RestModel, error) {
 		return model.SliceMap(Make)(allEntityProvider(p.ctx)(p.db))()()
 	}
@@ -90,19 +105,19 @@ func Make(e Entity) (RestModel, error) {
 	return rm, nil
 }
 
-func (p *Processor) GetAll() ([]RestModel, error) {
+func (p *ProcessorImpl) GetAll() ([]RestModel, error) {
 	return p.AllProvider()()
 }
 
-func (p *Processor) GetById(id uuid.UUID) (RestModel, error) {
+func (p *ProcessorImpl) GetById(id uuid.UUID) (RestModel, error) {
 	return p.ByIdProvider(id)()
 }
 
-func (p *Processor) GetByRegionAndVersion(region string, majorVersion uint16, minorVersion uint16) (RestModel, error) {
+func (p *ProcessorImpl) GetByRegionAndVersion(region string, majorVersion uint16, minorVersion uint16) (RestModel, error) {
 	return p.ByRegionAndVersionProvider(region, majorVersion, minorVersion)()
 }
 
-func (p *Processor) UpdateById(tenantId uuid.UUID, input RestModel) error {
+func (p *ProcessorImpl) UpdateById(tenantId uuid.UUID, input RestModel) error {
 	if p.validator != nil {
 		assigned, errs := p.validator.Validate(p.ctx, input.Characters.Presets)
 		input.Characters.Presets = assigned
@@ -129,7 +144,7 @@ func (p *Processor) UpdateById(tenantId uuid.UUID, input RestModel) error {
 	})
 }
 
-func (p *Processor) DeleteById(tenantId uuid.UUID) error {
+func (p *ProcessorImpl) DeleteById(tenantId uuid.UUID) error {
 	return database.ExecuteTransaction(p.db, func(db *gorm.DB) error {
 		if err := delete(p.ctx, tenantId)(db); err != nil {
 			return err
@@ -138,7 +153,7 @@ func (p *Processor) DeleteById(tenantId uuid.UUID) error {
 	})
 }
 
-func (p *Processor) Create(input RestModel) (uuid.UUID, error) {
+func (p *ProcessorImpl) Create(input RestModel) (uuid.UUID, error) {
 	res, err := json.Marshal(input)
 	if err != nil {
 		return uuid.Nil, err

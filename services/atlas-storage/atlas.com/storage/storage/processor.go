@@ -836,19 +836,19 @@ func (p *ProcessorImpl) DeleteByAccountId(accountId uint32) error {
 
 	p.l.Infof("Deleting [%d] storage(s) for account [%d].", len(storages), accountId)
 
-	for _, s := range storages {
-		err = asset.DeleteByStorageId(p.l, p.db.WithContext(p.ctx))(s.Id())
-		if err != nil {
-			p.l.WithError(err).Warnf("Failed to delete assets for storage [%s].", s.Id())
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		for _, s := range storages {
+			if err := asset.DeleteByStorageId(p.l, tx)(s.Id()); err != nil {
+				p.l.WithError(err).Errorf("Failed to delete assets for storage [%s].", s.Id())
+				return err
+			}
+			if err := Delete(p.l, tx)(s.Id()); err != nil {
+				p.l.WithError(err).Errorf("Failed to delete storage [%s] for account [%d].", s.Id(), accountId)
+				return err
+			}
 		}
-
-		err = Delete(p.l, p.db.WithContext(p.ctx))(s.Id())
-		if err != nil {
-			p.l.WithError(err).Errorf("Failed to delete storage [%s] for account [%d].", s.Id(), accountId)
-		}
-	}
-
-	return nil
+		return nil
+	})
 }
 
 func (p *ProcessorImpl) EmitProjectionDestroyedEvent(characterId uint32, accountId uint32, worldId world.Id) error {

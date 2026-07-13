@@ -65,3 +65,29 @@ func TestMergeAndSort_RollsBackQuantityUpdatesWhenDeleteFails(t *testing.T) {
 	require.NoError(t, db.Table("storage_assets").Order("slot").Pluck("quantity", &quantities).Error)
 	require.Equal(t, []uint32{30, 30}, quantities, "quantity update must roll back with the failed delete")
 }
+
+// DeleteByAccountId deletes every storage's assets then the storage row for an
+// account (class A: storage_assets + storages). Failing the storage delete must
+// roll back the asset deletes that already ran in the same transaction.
+func TestDeleteByAccountId_RollsBackAssetDeletesWhenStorageDeleteFails(t *testing.T) {
+	db := databasetest.NewInMemoryTenantDB(t, Migration, asset.Migration)
+	tid := uuid.New()
+	ctx := databasetest.TenantContext(tid)
+	l, _ := test.NewNullLogger()
+
+	s, err := Create(l, db.WithContext(ctx), tid)(world.Id(0), 6001)
+	require.NoError(t, err)
+	_, err = asset.Create(l, db.WithContext(ctx), tid)(asset.NewBuilder(s.Id(), 2000000).SetSlot(0).SetQuantity(1).Build())
+	require.NoError(t, err)
+
+	databasetest.FailWritesOn(t, db, "storages", databasetest.WriteDelete)
+
+	p := NewProcessor(l, ctx, db)
+	require.Error(t, p.DeleteByAccountId(6001), "a failed storage delete must surface as an error")
+
+	var storages, assets int64
+	require.NoError(t, db.Table("storages").Count(&storages).Error)
+	require.NoError(t, db.Table("storage_assets").Count(&assets).Error)
+	require.EqualValues(t, 1, storages, "storage row must survive the rolled-back cascade")
+	require.EqualValues(t, 1, assets, "asset deletes must roll back with the failed storage delete")
+}

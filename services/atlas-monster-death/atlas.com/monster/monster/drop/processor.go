@@ -2,7 +2,7 @@ package drop
 
 import (
 	"atlas-monster-death/data/equipment/statistics"
-	"atlas-monster-death/kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"atlas-monster-death/monster/drop/position"
 	"context"
 	"math"

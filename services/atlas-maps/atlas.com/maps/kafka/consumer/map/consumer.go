@@ -3,7 +3,7 @@ package _map
 import (
 	consumer2 "atlas-maps/kafka/consumer"
 	mapKafka "atlas-maps/kafka/message/map"
-	"atlas-maps/kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"atlas-maps/map/weather"
 	"context"
 	"time"

@@ -5,7 +5,7 @@ import (
 	"atlas-maps/data/map/info"
 	consumer2 "atlas-maps/kafka/consumer"
 	characterKafka "atlas-maps/kafka/message/character"
-	"atlas-maps/kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	_map "atlas-maps/map"
 	mapcharacter "atlas-maps/map/character"
 	"atlas-maps/map/timer"

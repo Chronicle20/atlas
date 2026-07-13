@@ -12,13 +12,11 @@ import (
 	mistConsumer "atlas-maps/kafka/consumer/mist"
 	"atlas-maps/kafka/consumer/monster"
 	sessionConsumer "atlas-maps/kafka/consumer/session"
-	"atlas-maps/logger"
 	_map "atlas-maps/map"
 	spawnMonster "atlas-maps/map/monster"
 	"atlas-maps/map/weather"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-maps/tasks"
-	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"atlas-maps/visit"
 	"context"
 	"os"
@@ -60,18 +58,11 @@ func GetServer() Server {
 }
 
 func main() {
-	l := logger.CreateLogger(serviceName)
-	l.Infoln("Starting main service.")
+	rt := service.Bootstrap(serviceName)
+	l := rt.Logger()
 
 	rc := atlas.Connect(l)
 	spawnMonster.InitRegistry(rc)
-
-	tdm := service.GetTeardownManager()
-
-	tc, err := tracing.InitTracer(serviceName)
-	if err != nil {
-		l.WithError(err).Fatal("Unable to initialize tracer.")
-	}
 
 	db := database.Connect(l, database.SetMigrations(visit.MigrateTable, location.Migration))
 
@@ -83,7 +74,7 @@ func main() {
 		return false
 	})
 
-	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
+	cmf := consumer.GetManager().AddConsumer(l, rt.Context(), rt.WaitGroup())
 	character.InitConsumers(l)(cmf)(consumerGroupId)
 	cashshop.InitConsumers(l)(cmf)(consumerGroupId)
 	monster.InitConsumers(l)(cmf)(consumerGroupId)
@@ -113,7 +104,7 @@ func main() {
 		l.WithError(err).Fatal("Unable to register data-events kafka handlers.")
 	}
 
-	tdm.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
+	rt.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 
 	// posLookup resolves a character's world coordinates via the
 	// atlas-character REST client. The closure is recreated per-call so
@@ -122,19 +113,19 @@ func main() {
 		return characterClient.NewProcessor(l, ctx).Position(characterId)
 	}
 
-	routine.Go(l, tdm.Context(), func(_ context.Context) {
-		tasks.Register(l, tdm.Context())(tasks.NewRespawn(l, 10000))
+	routine.Go(l, rt.Context(), func(_ context.Context) {
+		tasks.Register(l, rt.Context())(tasks.NewRespawn(l, 10000))
 	})
-	routine.Go(l, tdm.Context(), func(_ context.Context) {
-		tasks.Register(l, tdm.Context())(tasks.NewWeather(l, time.Second))
+	routine.Go(l, rt.Context(), func(_ context.Context) {
+		tasks.Register(l, rt.Context())(tasks.NewWeather(l, time.Second))
 	})
-	routine.Go(l, tdm.Context(), func(_ context.Context) {
-		tasks.Register(l, tdm.Context())(tasks.NewMistTick(l, 1000, posLookup))
+	routine.Go(l, rt.Context(), func(_ context.Context) {
+		tasks.Register(l, rt.Context())(tasks.NewMistTick(l, 1000, posLookup))
 	})
 
 	server.New(l).
-		WithContext(tdm.Context()).
-		WithWaitGroup(tdm.WaitGroup()).
+		WithContext(rt.Context()).
+		WithWaitGroup(rt.WaitGroup()).
 		SetBasePath(GetServer().GetPrefix()).
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(_map.InitResource(GetServer())).
@@ -144,10 +135,8 @@ func main() {
 			return warp.NewProcessor(l, ctx, db)
 		})).
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
+		AddRouteInitializer(server.MountReadiness("/readyz", rt.Ready)).
 		Run()
 
-	tdm.TeardownFunc(tracing.Teardown(l)(tc))
-
-	tdm.Wait()
-	l.Infoln("Service shutdown.")
+	rt.Wait()
 }

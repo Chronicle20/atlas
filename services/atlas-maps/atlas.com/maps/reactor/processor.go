@@ -4,7 +4,7 @@ import (
 	reactor2 "atlas-maps/data/map/reactor"
 	"atlas-maps/kafka/message"
 	reactorKafka "atlas-maps/kafka/message/reactor"
-	"atlas-maps/kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"context"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"

@@ -7,7 +7,7 @@ import (
 
 	"atlas-maps/kafka/message"
 	mistKafka "atlas-maps/kafka/message/mist"
-	"atlas-maps/kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	mapchar "atlas-maps/map/character"
 	"atlas-maps/mist"
 

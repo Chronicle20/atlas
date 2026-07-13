@@ -1,7 +1,7 @@
 package mist
 
 import (
-	"atlas-maps/kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"context"
 	"encoding/json"
 	"sync"

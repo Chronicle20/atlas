@@ -5,7 +5,7 @@ import (
 	"atlas-maps/kafka/message"
 	mapKafka "atlas-maps/kafka/message/map"
 	"atlas-maps/kafka/message/mapactions"
-	"atlas-maps/kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"atlas-maps/map/character"
 	monster2 "atlas-maps/map/monster"
 	"atlas-maps/reactor"

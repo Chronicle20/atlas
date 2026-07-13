@@ -64,6 +64,14 @@ type Inputs struct {
 	// discriminator byte is a false pass (it proves nothing about the per-mode
 	// bodies). The per-mode body-coverage model is the path back to ✅.
 	Families map[string]bool
+	// Unimplemented records, per version, the set of sub-struct packet IDs that
+	// are deliberately not applicable to that version (version-absent features),
+	// derived from each version's _unimplemented.json (FR-4.1, task-169). A
+	// sub-struct cell whose (packetID, version) is in this set grades StateNA
+	// (n-a) rather than Incomplete, distinguishing a deliberate disposition from
+	// an un-audited gap. Empty map = no dispositions (every sub-struct grades as
+	// before).
+	Unimplemented map[string]map[string]bool
 }
 
 // opEntryRef carries the union-row identity being graded for one version.

@@ -60,6 +60,7 @@ var ciGateWorkflowSubstr = map[string]string{
 	"operations-check":    "operations --check",
 	"dispatcher-lint":     "dispatcher-lint",
 	"doc-freshness-check": "doc-freshness --check",
+	"gate-check":          "gate-check --check",
 	"matrix-check":        "matrix --check",
 }
 

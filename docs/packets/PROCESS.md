@@ -63,7 +63,10 @@ blocking (no `continue-on-error`):
    family-cap guard, task-169 FR-5.1).
 5. **doc-freshness check** — `packet-audit doc-freshness --check` (asserts this
    facts block still matches the tool's ground truth; task-169 FR-2.3).
-6. **Coverage matrix check** — `packet-audit matrix --check` (hard gate: ANY
+6. **gate-check** — `packet-audit gate-check --check` (asserts every version-gated
+   wire divergence in [`gates.yaml`](gates.yaml) has a verified byte-fixture on
+   BOTH adjacent straddling versions; task-169 FR-3.1b).
+7. **Coverage matrix check** — `packet-audit matrix --check` (hard gate: ANY
    non-zero exit fails CI — a `🟥` conflict, a stale committed
    STATUS.md/status.json, a fatal finding, or a runtime error). The
    registry-seed conflict backlog was burned to zero (task-085), so a clean
@@ -108,6 +111,7 @@ ci_gates:
   - operations-check            # packet-audit operations --check
   - dispatcher-lint             # packet-audit dispatcher-lint (incl. family-cap)
   - doc-freshness-check         # packet-audit doc-freshness --check
+  - gate-check                  # packet-audit gate-check --check (boundary-fixture pairs)
   - matrix-check                # packet-audit matrix --check (hard gate)
 matrix_check_hard_gate: true
 ```

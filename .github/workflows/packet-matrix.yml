@@ -68,6 +68,19 @@ jobs:
         # updating PROCESS.md (or the diverged source) so they agree. Read-only.
         run: go run ./tools/packet-audit doc-freshness --check
 
+      - name: gate-check
+        # The behavioral guard for the version-gate off-by-one class (task-169
+        # FR-3.1b). docs/packets/gates.yaml enumerates version-gated wire
+        # divergences (packet + boundary + the two adjacent straddling version
+        # keys); this asserts a VERIFIED byte-fixture pins the encoding on BOTH
+        # sides of every gate — a gate is only trustworthy if both straddling
+        # versions are proven, so a regression on the unpinned side can't slip
+        # through. Fails if any `full` gate is missing a verified side; add a
+        # gates.yaml row via its authoring contract, or mark a genuine coverage
+        # gap `expect: partial` with a reason (never fabricate a fixture).
+        # Read-only.
+        run: go run ./tools/packet-audit gate-check --check
+
       - name: Coverage matrix check
         # The conflict backlog was burned down to ZERO in task-085 (registry
         # re-derivation + template wiring across all five versions), so

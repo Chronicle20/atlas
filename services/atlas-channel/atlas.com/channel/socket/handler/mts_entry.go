@@ -150,16 +150,14 @@ func EnterMtsHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Pro
 // a REST error an empty list is announced so the client's "my sales" tab is not
 // left hanging.
 //
-// PageSize: -1 requests the complete set: atlas-mts's browse endpoint is now
-// paginated server-side (task-117, default window 16), but this "Not Yet Sold"
-// panel must show every active listing the seller holds — bounded only by the
-// tenant-configurable maxActiveListings cap, which is not guaranteed to fit one
-// default page. -1 is the endpoint's own get-all escape hatch (see
-// atlas-mts's listing.getBrowse); requests.DrainProvider is not usable here
-// because this endpoint's page params (page/pageSize) are not the repo-wide
-// page[number]/page[size] convention DrainProvider speaks.
+// atlas-mts's browse endpoint is paginated server-side (task-117, default
+// window 16), but this "Not Yet Sold" panel must show every active listing
+// the seller holds — bounded only by the tenant-configurable
+// maxActiveListings cap, which is not guaranteed to fit one default page —
+// so this drains every page via BrowseAll (requests.DrainProvider) rather
+// than fetching one.
 func announceUserSaleItems(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, s session.Model) {
-	ms, err := mtslisting.NewProcessor(l, ctx).Browse(s.WorldId(), mtslisting.BrowseFilter{SellerId: s.CharacterId(), PageSize: -1})
+	ms, err := mtslisting.NewProcessor(l, ctx).BrowseAll(s.WorldId(), mtslisting.BrowseFilter{SellerId: s.CharacterId()})
 	if err != nil {
 		l.WithError(err).Errorf("Unable to load active listings for seller [%d] on entry; announcing empty sale list.", s.CharacterId())
 		ms = nil

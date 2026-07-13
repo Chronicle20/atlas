@@ -68,10 +68,17 @@ connected IDA-MCP session with the matching binary loaded:
 `--descent-depth` (default 6), `--generated-at` (fixed provenance timestamp;
 default now / `$PACKET_AUDIT_GENERATED_AT`), `--prior-export` (default
 `docs/packets/ida-exports/<version>.json`; pass `""` for a targeted harvest),
-`--pending` (default `docs/packets/ida-exports/_pending.md`).
+`--pending` (default `docs/packets/ida-exports/_pending.md`), `--force`
+(overwrite an existing, differing `--output` — off by default), `--splice
+<FName>` (merge a single harvested entry into the existing `--output`).
 
 **The export is not idempotent — never overwrite a committed export wholesale.**
-Re-running drifts existing function keys (Hex-Rays variance). To add or fix one
-function, harvest a targeted roster (`--prior-export "" --pending <roster.md>`)
-to a temp file and surgically splice the needed entries in. See
-`docs/packets/audits/VERIFYING_A_PACKET.md` §10.
+Re-running drifts existing function keys (Hex-Rays variance). The tool enforces
+this (task-169 FR-3.2): by **default** `export` refuses to overwrite an existing
+`--output` when the fresh harvest differs — it writes `<output>.new` plus an
+added/removed/changed function-key summary to stderr and exits non-zero, leaving
+the committed file untouched. To add or fix one function, harvest a targeted
+roster (`--prior-export "" --pending <roster.md>`) and surgically merge exactly
+that entry with `--splice <FName>` (all other entries are preserved
+byte-for-byte). Pass `--force` only to deliberately regenerate the whole file.
+See `docs/packets/audits/VERIFYING_A_PACKET.md` §10.

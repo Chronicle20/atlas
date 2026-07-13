@@ -6,21 +6,25 @@ import (
 	"testing"
 )
 
-// A seeded raw boundary comparison (`MajorVersion() > 83`) is flagged; the
-// MajorAtLeast form is clean; a non-boundary constant (`> 12`) and an
-// allowlisted line are not flagged. (task-169 T4.1 / FR-3.1a — both directions.)
+// The off-by-one-prone strict `MajorVersion() > 83` is flagged; the MajorAtLeast
+// form is clean; a non-boundary constant (`> 12`) is not flagged; an allowlisted
+// line is suppressed; and — post-T4.1b narrowing — the CORRECT `>= N` idiom is
+// NOT flagged even without an allow annotation. (task-169 T4.1b / FR-3.1a — both
+// directions.)
 func TestGateLintFlagsBoundaryComparisons(t *testing.T) {
 	dir := t.TempDir()
 	src := `package p
 
 func f(t T) {
-	if t.MajorVersion() > 83 {          // FLAG: boundary off-by-one footgun
+	if t.MajorVersion() > 83 {          // FLAG: strict > at a boundary — the footgun
 	}
 	if t.MajorAtLeast(87) {             // clean: uses the helper
 	}
 	if t.MajorVersion() > 12 {          // clean: 12 is a base-version gate, not a boundary
 	}
-	if t.MajorVersion() >= 95 {         //gate-lint:allow verified byte-shift
+	if t.MajorVersion() >= 95 {         // clean (narrowed): >= is the correct idiom, not flagged
+	}
+	if t.MajorVersion() < 87 {          // clean (narrowed): < is the correct idiom, not flagged
 	}
 }
 `
@@ -35,24 +39,29 @@ func f(t T) {
 	if len(hits) != 1 {
 		t.Fatalf("want exactly 1 hit (the `> 83`), got %d: %+v", len(hits), hits)
 	}
-	if hits[0].boundary != 83 {
-		t.Errorf("hit boundary = %d, want 83", hits[0].boundary)
+	if hits[0].boundary != 83 || hits[0].op != ">" {
+		t.Errorf("hit = %s %d, want > 83", hits[0].op, hits[0].boundary)
 	}
 	if hits[0].line != 4 {
 		t.Errorf("hit line = %d, want 4", hits[0].line)
 	}
 }
 
-// The number-on-the-left form and <= / >= operators are also flagged when the
-// constant is a real boundary; _test.go files are skipped.
+// The narrowed detector flags the two footgun forms — right-form `<= N` and its
+// left-operand twin `N >= MajorVersion()` — but NOT the correct idioms `>= N` /
+// `< N` (right) or their twins `<= N` / `> N` (left). `_test.go` is skipped.
 func TestGateLintFormsAndTestSkip(t *testing.T) {
 	dir := t.TempDir()
 	src := `package p
 
 func g(t T) {
-	if 87 <= t.MajorVersion() {         // FLAG: number-on-left, boundary 87
+	if t.MajorVersion() <= 87 {         // FLAG: inclusive <= at a boundary — footgun
 	}
-	if t.MajorVersion() < 79 {          // FLAG: boundary 79
+	if 83 >= t.MajorVersion() {         // FLAG: left twin of <= 83 — footgun
+	}
+	if 87 <= t.MajorVersion() {         // clean: twin of >= 87 (correct idiom)
+	}
+	if t.MajorVersion() < 79 {          // clean: < is the correct idiom
 	}
 }
 `
@@ -68,6 +77,6 @@ func g(t T) {
 		t.Fatal(err)
 	}
 	if len(hits) != 2 {
-		t.Fatalf("want 2 hits (87-left, <79), got %d: %+v", len(hits), hits)
+		t.Fatalf("want 2 hits (<=87, 83>=), got %d: %+v", len(hits), hits)
 	}
 }

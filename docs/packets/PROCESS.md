@@ -70,10 +70,15 @@ blocking (no `continue-on-error`):
    tree exits 0; there is no grandfathering.
 
 The `gate-lint` idiom check (task-169 FR-3.1a) is intentionally **not** a
-blocking CI gate: the established `Region()=="GMS" && MajorVersion()>=N` idiom
-occurs at ~220 legitimate sites, so it runs report-only
-(`packet-audit gate-lint`). The export non-destructive-overwrite guard
-(task-169 FR-3.2) is a runtime behavior of `packet-audit export`, not a CI
+blocking CI gate. Task-169 T4.1b narrowed it to the genuinely off-by-one-prone
+forms only — strict `MajorVersion() > N` and inclusive `<= N` (and their
+left-operand twins) — dropping the ~185 correct `>= N` / `< N` idiom hits Phase
+4a flagged. The narrowed form still hits **35** sites, but every one is a
+task-113 code-gate-audit VERIFIED-CORRECT gate whose boundary sits between two
+adjacent version columns (e.g. `>87` == `>=95` today); going blocking would
+demand an allow-annotation on each of those 35 wire-source files, so it stays
+report-only (`packet-audit gate-lint`). The export non-destructive-overwrite
+guard (task-169 FR-3.2) is a runtime behavior of `packet-audit export`, not a CI
 check (CI never harvests).
 
 ## Machine-checkable facts

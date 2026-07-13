@@ -11,23 +11,35 @@ import (
 	"strings"
 )
 
-// gate-lint (task-169 FR-3.1a) flags RAW client-version boundary comparisons on
-// wire-encode paths in libs/atlas-packet — `MajorVersion() > N` / `>= N` / `< N`
-// / `<= N` (either operand order) where N is a known client-version boundary —
-// that should read through the `MajorAtLeast(N)` helper. It directly targets the
-// documented `>83` off-by-one footgun class (memory: bug_majorversion_gt83).
+// gate-lint (task-169 FR-3.1a / T4.1b) flags the genuinely OFF-BY-ONE-PRONE
+// client-version boundary comparisons on wire-encode paths in libs/atlas-packet
+// — the exact shape of the documented `>83` footgun class (memory:
+// bug_majorversion_gt83): a strict `MajorVersion() > N` (or its left-operand
+// twin `N < MajorVersion()`) and an inclusive `MajorVersion() <= N` (twin
+// `N >= MajorVersion()`). Those split the version axis at N/N+1, so the version
+// ADJACENT to the boundary is silently re-bucketed the day a new column lands
+// between the two straddling versions (exactly how `> 83` mis-grouped v84 with
+// v87 once v84 was added). The recommended form is `MajorAtLeast(N)` / a named
+// boundary helper.
 //
-// It is deliberately NARROW: only the boundary constants {61,72,79,83,84,87,95}
-// are flagged, so base-version gates (`> 12`, `> 28`), Region() checks, and
-// non-boundary constants are ignored. An inline `//gate-lint:allow <reason>`
-// comment on the line suppresses a hit.
+// NARROWED in task-169 T4.1b: the CORRECT idioms `>= N` and `< N` (right form)
+// and their twins `<= N` / `> N` (left form) are NOT flagged — they split at
+// N-1/N and do not re-bucket version N. Phase 4a flagged all four operators and
+// hit ~220 legitimate `>= N` sites (pure noise); the narrowed form drops those.
 //
-// REPORT-ONLY on the current tree: the established codebase idiom is
-// `t.Region() == "GMS" && t.MajorVersion() >= N`, used at ~150 legitimate
-// sites, so this check is NOT wired as a blocking CI gate (that would demand
-// ~150 allowlist annotations — pure churn). Default mode prints the inventory
-// and exits 0; `--check` exits non-zero when any hit is found, for targeted
-// manual use and the fires-on-violation test.
+// Only the boundary constants {61,72,79,83,84,87,95} are considered, so
+// base-version gates (`> 12`, `> 28`), Region() checks, and non-boundary
+// constants are ignored. An inline `//gate-lint:allow <reason>` comment on the
+// line suppresses a hit.
+//
+// REPORT-ONLY on the current tree: the ~35 narrowed hits are all task-113
+// code-gate-audit VERIFIED-CORRECT gates whose boundary happens to sit between
+// two adjacent version columns (e.g. `>87` == `>=95` today because no v88..v94
+// exists). Making the check blocking would require an allow-annotation on each
+// of those wire-source files — out of scope for a pure-tooling phase — so it
+// stays report-only. Default mode prints the inventory and exits 0; `--check`
+// exits non-zero when any hit is found, for targeted manual use and the
+// fires-on-violation test.
 
 // gateLintBoundaries are the client-version boundaries where MajorAtLeast(N) is
 // the idiomatic gate. NOT a base-version gate (12) or the ancient 28 boundary.
@@ -141,12 +153,12 @@ func collectGateLintHits(cfg gateLintConfig) ([]gateLintHit, error) {
 				continue
 			}
 			for _, m := range majorRightRe.FindAllStringSubmatch(ln, -1) {
-				if n, ok := boundaryFromMatch(m[2]); ok {
+				if n, ok := boundaryFromMatch(m[2]); ok && rightFormFootgun(m[1]) {
 					hits = append(hits, gateLintHit{file: filepath.ToSlash(path), line: i + 1, boundary: n, op: m[1], text: ln})
 				}
 			}
 			for _, m := range majorLeftRe.FindAllStringSubmatch(ln, -1) {
-				if n, ok := boundaryFromMatch(m[1]); ok {
+				if n, ok := boundaryFromMatch(m[1]); ok && leftFormFootgun(m[2]) {
 					hits = append(hits, gateLintHit{file: filepath.ToSlash(path), line: i + 1, boundary: n, op: m[2], text: ln})
 				}
 			}
@@ -163,6 +175,20 @@ func collectGateLintHits(cfg gateLintConfig) ([]gateLintHit, error) {
 		return hits[a].line < hits[b].line
 	})
 	return hits, nil
+}
+
+// rightFormFootgun reports whether `MajorVersion() OP N` is off-by-one-prone.
+// `> N` and `<= N` split at N/N+1 (re-bucket the version adjacent to the
+// boundary); `>= N` and `< N` split at N-1/N and are the correct idioms.
+func rightFormFootgun(op string) bool {
+	return op == ">" || op == "<="
+}
+
+// leftFormFootgun reports whether `N OP MajorVersion()` is off-by-one-prone.
+// `N < Major` ≡ `Major > N` and `N >= Major` ≡ `Major <= N` are the footguns;
+// `N <= Major` ≡ `Major >= N` and `N > Major` ≡ `Major < N` are correct.
+func leftFormFootgun(op string) bool {
+	return op == "<" || op == ">="
 }
 
 func boundaryFromMatch(s string) (int, bool) {

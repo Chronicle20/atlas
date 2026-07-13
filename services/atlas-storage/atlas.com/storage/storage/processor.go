@@ -17,6 +17,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	atlasProducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
@@ -750,45 +751,51 @@ func (p *ProcessorImpl) EmitProjectionCreatedEvent(characterId uint32, accountId
 func (p *ProcessorImpl) ExpireAndEmit(transactionId uuid.UUID, worldId world.Id, accountId uint32, assetId uint32, isCash bool, replaceItemId uint32, replaceMessage string) error {
 	t := tenant.MustFromContext(p.ctx)
 
-	a, err := asset.GetById(p.db.WithContext(p.ctx))(assetId)
+	err := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		a, err := asset.GetById(tx)(assetId)
+		if err != nil {
+			p.l.WithError(err).Errorf("Failed to find asset [%d] for expiration.", assetId)
+			return err
+		}
+
+		if err := asset.Delete(p.l, tx)(assetId); err != nil {
+			p.l.WithError(err).Errorf("Failed to delete expired asset [%d].", assetId)
+			return err
+		}
+
+		if replaceItemId > 0 {
+			p.l.Debugf("Creating replacement item [%d] for expired storage item [%d].", replaceItemId, a.TemplateId())
+
+			s, err := p.WithTransaction(tx).GetOrCreateStorage(worldId, accountId)
+			if err != nil {
+				p.l.WithError(err).Errorf("Failed to get storage for replacement item creation.")
+				return err
+			}
+
+			assets, err := asset.GetByStorageId(tx)(s.Id())
+			if err != nil {
+				p.l.WithError(err).Errorf("Failed to get assets for slot calculation.")
+				return err
+			}
+			nextSlot := int16(len(assets))
+
+			replacement := asset.NewBuilder(s.Id(), replaceItemId).
+				SetSlot(nextSlot).
+				Build()
+
+			if _, err := asset.Create(p.l, tx, t.Id())(replacement); err != nil {
+				p.l.WithError(err).Errorf("Failed to create replacement item [%d] for account [%d].", replaceItemId, accountId)
+				return err
+			}
+		}
+		return nil
+	})
 	if err != nil {
-		p.l.WithError(err).Errorf("Failed to find asset [%d] for expiration.", assetId)
 		return err
 	}
 
-	err = asset.Delete(p.l, p.db.WithContext(p.ctx))(assetId)
-	if err != nil {
-		p.l.WithError(err).Errorf("Failed to delete expired asset [%d].", assetId)
-		return err
-	}
-
+	// Publish only after the transaction commits: no event for a rolled-back expiry.
 	_ = p.emitExpiredEvent(transactionId, worldId, accountId, isCash, replaceItemId, replaceMessage)
-
-	if replaceItemId > 0 {
-		p.l.Debugf("Creating replacement item [%d] for expired storage item [%d].", replaceItemId, a.TemplateId())
-
-		s, err := p.GetOrCreateStorage(worldId, accountId)
-		if err != nil {
-			p.l.WithError(err).Warnf("Failed to get storage for replacement item creation.")
-			return nil
-		}
-
-		assets, err := asset.GetByStorageId(p.db.WithContext(p.ctx))(s.Id())
-		if err != nil {
-			p.l.WithError(err).Warnf("Failed to get assets for slot calculation.")
-			return nil
-		}
-		nextSlot := int16(len(assets))
-
-		replacement := asset.NewBuilder(s.Id(), replaceItemId).
-			SetSlot(nextSlot).
-			Build()
-
-		_, err = asset.Create(p.l, p.db.WithContext(p.ctx), t.Id())(replacement)
-		if err != nil {
-			p.l.WithError(err).Warnf("Failed to create replacement item [%d] for account [%d].", replaceItemId, accountId)
-		}
-	}
 
 	p.l.Debugf("Expired asset [%d] from storage for account [%d].", assetId, accountId)
 	return nil

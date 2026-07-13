@@ -147,3 +147,65 @@ func TestCashShopOpenLegacyGolden(t *testing.T) {
 		})
 	}
 }
+
+// TestCashShopOpenLegacyBodyV48V61 pins the LEGACY Cash Shop body for gms_v48 and
+// gms_v61. IDA-verified (task-113): both clients read a body that OMITS the modern
+// GMS DecodeZeroGoods (2 bytes) and the trailing Decode4 nHighest (4 bytes):
+//
+//	v48  CStage handler sub_5C4D9C 0x5c4d9c -> CCashShop ctor sub_447122 0x447122:
+//	     LoadData sub_44E1E5 0x44e1e5 reads Decode1 auth, DecodeStr account,
+//	     SetSaleInfo sub_71E3E4 (Decode4 nNotSaleCount + Decode2 special + Decode1
+//	     discounts), DecodeBuffer(0x438=1080) @0x44e993, then exactly TWO post-buffer
+//	     decoders — sub_44F10B DecodeStock @0x44e99d and sub_44F152 DecodeLimitGoods
+//	     @0x44e9a7 — and NO DecodeZeroGoods. The ctor then reads a SINGLE Decode1
+//	     bEventOn (this[316] @0x447249) — NO Decode4 nHighest.
+//	v61  CStage::OnSetCashShop 0x65a973 -> CCashShop::CCashShop 0x453549:
+//	     CCashShop::LoadData 0x45b539 reads Decode1 auth, DecodeStr account,
+//	     CWvsContext::SetSaleInfo 0x8474e6, DecodeBuffer(1080), then sub_45C497
+//	     DecodeStock and sub_45C4DE DecodeLimitGoods — NO DecodeZeroGoods. The ctor
+//	     reads a SINGLE Decode1 bEventOn (this[317] @0x4536d4) — NO Decode4 nHighest.
+//
+// The writer gates DecodeZeroGoods + nHighest on GMS MajorAtLeast(72), so the v48/v61
+// (major < 72) encode is the v83 modern encode with those 6 bytes removed. This test
+// asserts (a) the exact 17-byte legacy tail (ending at bEventOn — no ZeroGoods, no
+// nHighest), (b) the encode is 6 bytes shorter than v83, and (c) every byte through
+// DecodeLimitGoods is byte-identical to the modern v83 encode.
+//
+// packet-audit:verify packet=cash/clientbound/CashShopOpen version=gms_v48 ida=0x5c4d9c
+// packet-audit:verify packet=cash/clientbound/CashShopOpen version=gms_v61 ida=0x65a973
+func TestCashShopOpenLegacyBodyV48V61(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	// Legacy trailing 17 bytes: last Best triple (8,1,50000047), DecodeStock 0,
+	// DecodeLimitGoods 0, bEventOn false. NO DecodeZeroGoods, NO nHighest.
+	wantTail := []byte{
+		0x08, 0x00, 0x00, 0x00, // Best i=8
+		0x01, 0x00, 0x00, 0x00, // Best j=1
+		0xAF, 0xF0, 0xFA, 0x02, // Best sn 50000047
+		0x00, 0x00, // DecodeStock count 0
+		0x00, 0x00, // DecodeLimitGoods count 0
+		0x00, // bEventOn false
+	}
+	// Modern v83 reference (has ZeroGoods 2B + nHighest 4B the legacy body lacks).
+	ref := NewCashShopOpen(cashShopTestCharacterData(), "TestAccount").
+		Encode(l, pt.CreateContext("GMS", 83, 1))(nil)
+	for _, major := range []uint16{48, 61} {
+		t.Run(fmt.Sprintf("gms_v%d", major), func(t *testing.T) {
+			ctx := pt.CreateContext("GMS", major, 1)
+			b := NewCashShopOpen(cashShopTestCharacterData(), "TestAccount").Encode(l, ctx)(nil)
+			if len(b) < len(wantTail) {
+				t.Fatalf("buffer too short: %d bytes", len(b))
+			}
+			if tail := b[len(b)-len(wantTail):]; !bytes.Equal(tail, wantTail) {
+				t.Errorf("v%d legacy tail mismatch:\n got %v\nwant %v", major, tail, wantTail)
+			}
+			// Legacy body is exactly 6 bytes shorter than the modern v83 body.
+			if len(b) != len(ref)-6 {
+				t.Errorf("v%d length %d, want %d (v83 %d minus ZeroGoods 2B + nHighest 4B)", major, len(b), len(ref)-6, len(ref))
+			}
+			// Everything through DecodeLimitGoods must equal the modern v83 encode.
+			if !bytes.Equal(b[:len(b)-1], ref[:len(b)-1]) {
+				t.Errorf("v%d prefix through DecodeLimitGoods diverges from modern v83 body", major)
+			}
+		})
+	}
+}

@@ -932,6 +932,10 @@
         }
       },
       {
+        "opCode": "0x4A",
+        "writer": "CashShopOpen"
+      },
+      {
         "opCode": "0x4D",
         "writer": "BlockedMap"
       },

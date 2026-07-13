@@ -5,7 +5,7 @@
 
 Tool: `9eb19e8a4f36684cb89919c2b68f247713dde11a`
 
-- export gms_v48: `bb081154af4fcaca8d6b4077d339dc13f32959d3ac8612faff953f1c99537774`
+- export gms_v48: `054d404fcb6f0feed776b8c1453f2ab48a35f479463e82ea00d6d28ebca512dc`
 - export gms_v61: `3294c3796405376978b0d209e1451eee68ff11a0e57198da251c77f8e84b998b`
 - export gms_v72: `01e628692f47408c523f939acd8f6ae5defa4118536ff7334eeb10845abf114b`
 - export gms_v79: `9d338d86ee25e6483cd1018a25935a6f68e5f486c2d5ff0e718904914c39702b`
@@ -119,6 +119,7 @@ Tool: `9eb19e8a4f36684cb89919c2b68f247713dde11a`
 | WEDDING_GIFT_RESULT | CWvsContext::OnWeddingGiftResult |  |  | ⬜ | 0x047 | ❌ | 0x047 | ❌ | 0x047 | ❌ | 0x04A | ❌ | 0x04C | ❌ | 0x04C | ❌ | 0x04D | ❌ | 0x044 | ❌ |
 | NOTIFY_MARRIED_PARTNER_MAP_TRANSFER | CWvsContext::OnNotifyMarriedPartnerMapTransfer |  |  | ⬜ | 0x048 | ❌ | 0x048 | ❌ | 0x048 | ❌ | 0x04B | ❌ | 0x04D | ❌ | 0x04D | ❌ | 0x04E | ❌ | 0x045 | ❌ |
 | CASH_PET_FOOD_RESULT | CWvsContext::OnCashPetFoodResult | pet/clientbound/PetCashFoodResult (T1) |  | ⬜ | 0x049 | 🟡 | 0x049 | 🟡 | 0x049 | 🟡 | 0x04C | ✅ | 0x04E | ✅ | 0x04E | ✅ | 0x04F | ✅ | 0x046 | ✅ |
+| SET_CASH_SHOP | CStage::OnSetCashShop |  | 0x04A | ✅ | 0x05E | ✅ | 0x074 | ✅ | 0x078 | ✅ | 0x07F | ✅ | 0x082 | ✅ | 0x087 | ✅ | 0x08F | ✅ | 0x07D | ✅ |
 | SET_WEEK_EVENT_MESSAGE | CWvsContext::OnSetWeekEventMessage |  |  | ⬜ | 0x04A | ❌ | 0x04A | ❌ | 0x04A | ❌ | 0x04D | ❌ | 0x04F | ❌ | 0x04F | ❌ | 0x050 | ❌ | 0x047 | ❌ |
 | MINIGAME_PACHINKO_UPDATE_DAMA | sub_B06318 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x04B | ❌ |
 | SET_POTION_DISCOUNT_RATE | CWvsContext::OnSetPotionDiscountRate; sub_8422E3; sub_917AB7 |  |  | ⬜ | 0x04B | ❌ | 0x04B | ❌ | 0x04B | ❌ | 0x04E | ❌ | 0x050 | ❌ | 0x050 | ❌ | 0x051 | ❌ | 0x048 | ❌ |
@@ -180,7 +181,6 @@ Tool: `9eb19e8a4f36684cb89919c2b68f247713dde11a`
 | IDA_0X05D | sub_4CBB78 |  | 0x05D | ❌ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
 | SET_ITC | CStage::OnSetITC |  |  | ⬜ | 0x05D | ✅ | 0x073 | ✅ | 0x077 | ✅ | 0x07E | ✅ | 0x081 | ✅ | 0x086 | ✅ | 0x08E | ✅ | 0x07C | ✅ |
 | FAMILY_REP_GAIN | CWvsContext::OnFamilyFamousPointIncResult |  |  | ⬜ |  | ⬜ | 0x05E | ❌ | 0x05F | ❌ | 0x065 | ❌ | 0x068 | ❌ | 0x068 | ❌ | 0x069 | ❌ | 0x06C | ❌ |
-| SET_CASH_SHOP | CStage::OnSetCashShop |  |  | ⬜ | 0x05E | ❌ | 0x074 | ✅ | 0x078 | ✅ | 0x07F | ✅ | 0x082 | ✅ | 0x087 | ✅ | 0x08F | ✅ | 0x07D | ✅ |
 | SET_QUEST_CLEAR | CField::OnSetQuestClear; sub_4CBC9A | field/clientbound/FieldSetQuestClear (T1) | 0x05E | ✅ | 0x071 | 🟡 | 0x08A | 🟡 | 0x08E | 🟡 | 0x096 | ✅ | 0x099 | ✅ | 0x09E | ✅ | 0x0A6 | ✅ | 0x093 | ✅ |
 | FAMILY_NOTIFY_LOGIN_OR_LOGOUT | CWvsContext::OnFamilyNotifyLoginOrLogout |  |  | ⬜ |  | ⬜ | 0x05F | ❌ | 0x060 | ❌ | 0x066 | ❌ | 0x069 | ❌ | 0x069 | ❌ | 0x06A | ❌ | 0x06D | ❌ |
 | IDA_0X05F | sub_5A8316 |  |  | ⬜ | 0x05F | ❌ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
@@ -992,8 +992,8 @@ Tool: `9eb19e8a4f36684cb89919c2b68f247713dde11a`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v48 | 165 | 0 | 2 | 163 | 628 | 0 | 50.0% |
-| v61 | 231 | 0 | 60 | 202 | 465 | 0 | 46.9% |
+| v48 | 166 | 0 | 2 | 163 | 627 | 0 | 50.2% |
+| v61 | 232 | 0 | 60 | 201 | 465 | 0 | 47.1% |
 | v72 | 240 | 0 | 73 | 219 | 426 | 0 | 45.1% |
 | v79 | 252 | 0 | 72 | 217 | 417 | 0 | 46.6% |
 | v83 | 392 | 0 | 0 | 342 | 224 | 0 | 53.4% |

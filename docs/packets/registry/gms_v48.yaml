@@ -522,6 +522,17 @@
     address: 7476714
   note: 'unnamed CWvsContext sub (highest CWvsContext case); v61 op-identity body-map DEFERRED (see remaining).'
 
+# ---------------- clientbound: CStage scene-transition (sub_5C45ED dispatch 73/74) ----------------
+- op: SET_CASH_SHOP
+  direction: clientbound
+  opcode: 74
+  fname: CStage::OnSetCashShop
+  packet: cash/clientbound/CashShopOpen
+  provenance: ida-discovered
+  ida:
+    address: 6049180
+  note: 'sub_5C45ED routes opcode 74 -> sub_5C4D9C (0x5c4d9c) = CStage::OnSetCashShop; opcode 73 -> SET_ITC. LEGACY Cash Shop body: CCashShop::LoadData sub_44E1E5 has DecodeStock/LimitGoods but NO DecodeZeroGoods; ctor sub_447122 reads a single trailing Decode1 (bEventOn) with NO Decode4 nHighest. Writer gates ZeroGoods+nHighest on GMS MajorAtLeast(72). Delta-20 vs v61 SET_CASH_SHOP=94.'
+
 # ---------------- clientbound: CField::OnPacket @0x4c66f2 base char-region 'M'(77)-'b'(98), Delta~-20 ----------------
 - op: BLOCKED_MAP
   direction: clientbound

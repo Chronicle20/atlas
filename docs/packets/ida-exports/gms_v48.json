@@ -5843,13 +5843,20 @@
       ]
     },
     "CStage::OnSetCashShop": {
-      "address": "",
-      "direction": "",
-      "unresolved": true,
+      "address": "0x5c4d9c",
+      "direction": "clientbound",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "CharacterData::Decode",
+          "comment": "sub_49D320 migrate-in char block @0x5c4dc2"
+        },
+        {
+          "op": "CCashShop::LoadData",
+          "comment": "sub_447122 ctor @0x5c4e58 -> sub_44E1E5 @0x447239: Decode1 auth, DecodeStr account, SetSaleInfo sub_71E3E4, DecodeBuffer(1080) @0x44e993, sub_44F10B DecodeStock @0x44e99d, sub_44F152 DecodeLimitGoods @0x44e9a7 (LEGACY: no DecodeZeroGoods)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "ctor bEventOn this[316] @0x447249 (LEGACY: single trailing Decode1, no Decode4 nHighest)"
         }
       ]
     },

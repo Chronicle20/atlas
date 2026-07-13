@@ -9,11 +9,11 @@ Tool: `9eb19e8a4f36684cb89919c2b68f247713dde11a`
 - export gms_v61: `3294c3796405376978b0d209e1451eee68ff11a0e57198da251c77f8e84b998b`
 - export gms_v72: `01e628692f47408c523f939acd8f6ae5defa4118536ff7334eeb10845abf114b`
 - export gms_v79: `9d338d86ee25e6483cd1018a25935a6f68e5f486c2d5ff0e718904914c39702b`
-- export gms_v83: `79f00673b0ee49772cfbc4d6499974daa4c8f65b58395ad430688a0b0b04568a`
-- export gms_v84: `9b22223ed0a18fa50c340779c803f3d8370c1636c0c73140f1249a5981c3926a`
-- export gms_v87: `439d93abdadf6691b73829f390e66bec3e6911da57ba00fe48307eb682c83427`
-- export gms_v95: `13bd606ccb5ff5093ed0598adb44647b288279bc55a7e34a7d9a8b2e988aede5`
-- export jms_v185: `fafc2aa572aff3b2769c36da3305ad175d2410515f5bb182587b75967d0be1f7`
+- export gms_v83: `fa3c7b17d2007bb0e2ae620b85305202f6a20f3ed6e13f68f975f031d3c9697a`
+- export gms_v84: `703081652623b280e2c6697596321dc455ebbc7f88b03a22327662565a103c17`
+- export gms_v87: `c561e4674388fb4f6cc8f6102df6a0b905ea9ef540efc5d5c4f8aa27f06f1d64`
+- export gms_v95: `0dbb9f6f84dac7bfc1b5c37ae9fdd4ada69b1392b702eab3557f702a0101245e`
+- export jms_v185: `884635e9cff438e732a010c256a82819b61198775ba054cfd2e3b88442fe4a05`
 
 ## Clientbound
 
@@ -180,7 +180,7 @@ Tool: `9eb19e8a4f36684cb89919c2b68f247713dde11a`
 | IDA_0X05D | sub_4CBB78 |  | 0x05D | ❌ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
 | SET_ITC | CStage::OnSetITC |  |  | ⬜ | 0x05D | ✅ | 0x073 | ✅ | 0x077 | ✅ | 0x07E | ✅ | 0x081 | ✅ | 0x086 | ✅ | 0x08E | ✅ | 0x07C | ✅ |
 | FAMILY_REP_GAIN | CWvsContext::OnFamilyFamousPointIncResult |  |  | ⬜ |  | ⬜ | 0x05E | ❌ | 0x05F | ❌ | 0x065 | ❌ | 0x068 | ❌ | 0x068 | ❌ | 0x069 | ❌ | 0x06C | ❌ |
-| SET_CASH_SHOP | CStage::OnSetCashShop |  |  | ⬜ | 0x05E | ❌ | 0x074 | ❌ | 0x078 | ❌ | 0x07F | ❌ | 0x082 | ❌ | 0x087 | ❌ | 0x08F | ❌ | 0x07D | ❌ |
+| SET_CASH_SHOP | CStage::OnSetCashShop |  |  | ⬜ | 0x05E | ❌ | 0x074 | ✅ | 0x078 | ✅ | 0x07F | ✅ | 0x082 | ✅ | 0x087 | ✅ | 0x08F | ✅ | 0x07D | ✅ |
 | SET_QUEST_CLEAR | CField::OnSetQuestClear; sub_4CBC9A | field/clientbound/FieldSetQuestClear (T1) | 0x05E | ✅ | 0x071 | 🟡 | 0x08A | 🟡 | 0x08E | 🟡 | 0x096 | ✅ | 0x099 | ✅ | 0x09E | ✅ | 0x0A6 | ✅ | 0x093 | ✅ |
 | FAMILY_NOTIFY_LOGIN_OR_LOGOUT | CWvsContext::OnFamilyNotifyLoginOrLogout |  |  | ⬜ |  | ⬜ | 0x05F | ❌ | 0x060 | ❌ | 0x066 | ❌ | 0x069 | ❌ | 0x069 | ❌ | 0x06A | ❌ | 0x06D | ❌ |
 | IDA_0X05F | sub_5A8316 |  |  | ⬜ | 0x05F | ❌ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
@@ -994,13 +994,13 @@ Tool: `9eb19e8a4f36684cb89919c2b68f247713dde11a`
 |---------|----|----|----|----|----|----|-----------|
 | v48 | 165 | 0 | 2 | 163 | 628 | 0 | 50.0% |
 | v61 | 231 | 0 | 60 | 202 | 465 | 0 | 46.9% |
-| v72 | 239 | 0 | 73 | 220 | 426 | 0 | 44.9% |
-| v79 | 251 | 0 | 72 | 218 | 417 | 0 | 46.4% |
-| v83 | 391 | 0 | 0 | 343 | 224 | 0 | 53.3% |
-| v84 | 368 | 0 | 0 | 346 | 244 | 0 | 51.5% |
-| v87 | 402 | 0 | 0 | 369 | 187 | 0 | 52.1% |
-| v95 | 422 | 0 | 0 | 433 | 103 | 0 | 49.4% |
-| JMS185 | 384 | 0 | 0 | 380 | 194 | 0 | 50.3% |
+| v72 | 240 | 0 | 73 | 219 | 426 | 0 | 45.1% |
+| v79 | 252 | 0 | 72 | 217 | 417 | 0 | 46.6% |
+| v83 | 392 | 0 | 0 | 342 | 224 | 0 | 53.4% |
+| v84 | 369 | 0 | 0 | 345 | 244 | 0 | 51.7% |
+| v87 | 403 | 0 | 0 | 368 | 187 | 0 | 52.3% |
+| v95 | 423 | 0 | 0 | 432 | 103 | 0 | 49.5% |
+| JMS185 | 385 | 0 | 0 | 379 | 194 | 0 | 50.4% |
 
 ## Conflicts
 

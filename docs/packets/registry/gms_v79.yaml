@@ -792,6 +792,7 @@
   direction: clientbound
   opcode: 120
   fname: CStage::OnSetCashShop
+  packet: cash/clientbound/CashShopOpen
   provenance: manual
   ida:
     address: 7279048

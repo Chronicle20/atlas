@@ -704,6 +704,7 @@
   direction: clientbound
   opcode: 143
   fname: CStage::OnSetCashShop
+  packet: cash/clientbound/CashShopOpen
   provenance: csv-import
 - op: SET_BACK_EFFECT
   direction: clientbound

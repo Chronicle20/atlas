@@ -831,6 +831,7 @@
   direction: clientbound
   opcode: 130
   fname: CStage::OnSetCashShop
+  packet: cash/clientbound/CashShopOpen
   provenance: ida-discovered
   ida:
     address: 7965003

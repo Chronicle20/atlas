@@ -37,7 +37,7 @@ wrong). task-092 nearly shipped a duplicate `TOUCH_MONSTER_ATTACK` codec this wa
 2. **Model + codec** — write the immutable `libs/atlas-packet` struct with
    `Encode`/`Decode` that mirror the derived order.
 3. **Wire** — register the writer/handler in `atlas-channel` and route the
-   per-version opcode in all five seed templates.
+   per-version opcode in all nine seed templates.
 4. **Verify** — round-trip + golden-byte test, `// packet-audit:verify`
    markers, evidence pin, regenerate the matrix. (This step is
    `VERIFYING_A_PACKET.md` applied to the codec you just wrote.)
@@ -184,7 +184,7 @@ func (m MobCrcKeyChangedReply) String() string    { return "" }
 ## Step 3 — Wire into atlas-channel + the seed templates
 
 Three edits per op: register in `main.go`, add the channel-side
-writer/handler glue, and route the opcode in all five templates.
+writer/handler glue, and route the opcode in all nine templates.
 
 ### Clientbound
 
@@ -242,9 +242,9 @@ writer/handler glue, and route the opcode in all five templates.
    Gameplay behavior (acting on the decoded packet) is a separate later task;
    this batch lands decode-and-log only.
 
-### Route in all five seed templates
+### Route in all nine seed templates
 
-In each of `services/atlas-configurations/seed-data/templates/template_{gms_83,gms_84,gms_87,gms_95,jms_185}_1.json`,
+In each of `services/atlas-configurations/seed-data/templates/template_{gms_48,gms_61,gms_72,gms_79,gms_83,gms_84,gms_87,gms_95,jms_185}_1.json`,
 insert the route in sorted-opcode position, using the **per-version opcode**
 from `docs/packets/registry/<version>.yaml` (read it per file — opcodes shift
 between versions; see the v84 opcode-table shift below).

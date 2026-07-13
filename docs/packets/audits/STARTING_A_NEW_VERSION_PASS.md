@@ -10,6 +10,10 @@ Baseline versions (existing columns):
 
 | Version key | Region / major.minor | Template | IDA export |
 |---|---|---|---|
+| `gms_v48`  | GMS 48.1  | `services/atlas-configurations/seed-data/templates/template_gms_48_1.json`  | `docs/packets/ida-exports/gms_v48.json`  |
+| `gms_v61`  | GMS 61.1  | `services/atlas-configurations/seed-data/templates/template_gms_61_1.json`  | `docs/packets/ida-exports/gms_v61.json`  |
+| `gms_v72`  | GMS 72.1  | `services/atlas-configurations/seed-data/templates/template_gms_72_1.json`  | `docs/packets/ida-exports/gms_v72.json`  |
+| `gms_v79`  | GMS 79.1  | `services/atlas-configurations/seed-data/templates/template_gms_79_1.json`  | `docs/packets/ida-exports/gms_v79.json`  |
 | `gms_v83`  | GMS 83.1  | `services/atlas-configurations/seed-data/templates/template_gms_83_1.json`  | `docs/packets/ida-exports/gms_v83.json`  |
 | `gms_v84`  | GMS 84.1  | `services/atlas-configurations/seed-data/templates/template_gms_84_1.json`  | `docs/packets/ida-exports/gms_v84.json`  |
 | `gms_v87`  | GMS 87.1  | `services/atlas-configurations/seed-data/templates/template_gms_87_1.json`  | `docs/packets/ida-exports/gms_v87.json`  |
@@ -377,7 +381,7 @@ Flags:
   -tiers string
         tier-1 membership YAML (default "docs/packets/evidence/tiers.yaml")
   -versions string
-        comma-separated version keys (default "gms_v83,gms_v84,gms_v87,gms_v95,jms_v185")
+        comma-separated version keys (default "gms_v48,gms_v61,gms_v72,gms_v79,gms_v83,gms_v84,gms_v87,gms_v95,jms_v185")
 ```
 
 The new version column appears automatically, pre-filled from applicability: ⬜

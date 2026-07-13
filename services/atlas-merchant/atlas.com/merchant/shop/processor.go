@@ -2,18 +2,18 @@ package shop
 
 import (
 	"atlas-merchant/frederick"
+	message "atlas-merchant/kafka/message"
 	asset2 "atlas-merchant/kafka/message/asset"
 	character "atlas-merchant/kafka/message/character"
 	"atlas-merchant/kafka/message/compartment"
-	message "atlas-merchant/kafka/message"
 	merchant "atlas-merchant/kafka/message/merchant"
-	kafkaProducer "atlas-merchant/kafka/producer"
 	"atlas-merchant/listing"
 	msg "atlas-merchant/message"
 	"atlas-merchant/visitor"
 	"context"
 	"errors"
 	"fmt"
+	kafkaProducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"strconv"
 	"time"
 

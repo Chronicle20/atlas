@@ -50,6 +50,9 @@ func Run(args []string, stderr io.Writer) int {
 	if len(args) > 0 && args[0] == "doc-freshness" {
 		return runDocFreshness(args[1:], stderr)
 	}
+	if len(args) > 0 && args[0] == "gate-lint" {
+		return runGateLint(args[1:], stderr)
+	}
 	if len(args) > 0 && args[0] == "fname-doc" {
 		return runFnameDoc(args[1:], stderr)
 	}

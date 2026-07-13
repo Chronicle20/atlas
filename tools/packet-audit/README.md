@@ -42,6 +42,8 @@ the root pipeline above:
 | `registry` | `registry seed` — seed registry YAMLs from the ops CSVs. |
 | `matrix` | Build (and `--check`) the coverage matrix STATUS.md / status.json. |
 | `dispatcher-lint` | Enforce the dispatcher-family invariants INV-1..INV-5. |
+| `doc-freshness` | `doc-freshness --check` — assert PROCESS.md packet-process-facts match the tool's ground truth (CI-gated). |
+| `gate-lint` | Report raw `MajorVersion()` boundary comparisons that should use `MajorAtLeast(N)` (report-only; `--check` to fail). |
 | `fname-doc` | Check/regenerate `// packet-audit:fname` struct comments. |
 | `operations` | Check/regenerate per-tenant `operations` mode tables. |
 | `evidence` | Pin/manage evidence records (`evidence pin ...`). |

@@ -4,6 +4,7 @@ import (
 	"atlas-channel/merchant"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
 )
@@ -25,6 +26,9 @@ type ProcessorMock struct {
 	AddListingFunc           func(characterId uint32, shopId uuid.UUID, inventoryType byte, slot int16, quantity uint16, bundleSize uint16, pricePerBundle uint32) error
 	RemoveListingFunc        func(characterId uint32, shopId uuid.UUID, listingIndex uint16) error
 	PurchaseBundleFunc       func(characterId uint32, shopId uuid.UUID, listingIndex uint16, bundleCount uint16) error
+	SearchListingsFunc       func(worldId world.Id, itemId uint32, descending bool) ([]merchant.SearchListing, error)
+	GetTopSearchesFunc       func(worldId world.Id) ([]merchant.TopSearch, error)
+	RecordItemSearchFunc     func(f field.Model, characterId uint32, itemId uint32) error
 }
 
 var _ merchant.Processor = (*ProcessorMock)(nil)
@@ -137,6 +141,27 @@ func (m *ProcessorMock) RemoveListing(characterId uint32, shopId uuid.UUID, list
 func (m *ProcessorMock) PurchaseBundle(characterId uint32, shopId uuid.UUID, listingIndex uint16, bundleCount uint16) error {
 	if m.PurchaseBundleFunc != nil {
 		return m.PurchaseBundleFunc(characterId, shopId, listingIndex, bundleCount)
+	}
+	return nil
+}
+
+func (m *ProcessorMock) SearchListings(worldId world.Id, itemId uint32, descending bool) ([]merchant.SearchListing, error) {
+	if m.SearchListingsFunc != nil {
+		return m.SearchListingsFunc(worldId, itemId, descending)
+	}
+	return nil, nil
+}
+
+func (m *ProcessorMock) GetTopSearches(worldId world.Id) ([]merchant.TopSearch, error) {
+	if m.GetTopSearchesFunc != nil {
+		return m.GetTopSearchesFunc(worldId)
+	}
+	return nil, nil
+}
+
+func (m *ProcessorMock) RecordItemSearch(f field.Model, characterId uint32, itemId uint32) error {
+	if m.RecordItemSearchFunc != nil {
+		return m.RecordItemSearchFunc(f, characterId, itemId)
 	}
 	return nil
 }

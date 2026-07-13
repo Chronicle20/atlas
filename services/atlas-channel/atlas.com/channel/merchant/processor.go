@@ -32,6 +32,9 @@ type Processor interface {
 	AddListing(characterId uint32, shopId uuid.UUID, inventoryType byte, slot int16, quantity uint16, bundleSize uint16, pricePerBundle uint32) error
 	RemoveListing(characterId uint32, shopId uuid.UUID, listingIndex uint16) error
 	PurchaseBundle(characterId uint32, shopId uuid.UUID, listingIndex uint16, bundleCount uint16) error
+	SearchListings(worldId world.Id, itemId uint32, descending bool) ([]SearchListing, error)
+	GetTopSearches(worldId world.Id) ([]TopSearch, error)
+	RecordItemSearch(f field.Model, characterId uint32, itemId uint32) error
 }
 
 type ProcessorImpl struct {
@@ -114,14 +117,14 @@ func (p *ProcessorImpl) PurchaseBundle(characterId uint32, shopId uuid.UUID, lis
 	return producer.ProviderImpl(p.l)(p.ctx)(merchant2.EnvCommandTopic)(PurchaseBundleCommandProvider(characterId, shopId, listingIndex, bundleCount))
 }
 
-func (p *Processor) SearchListings(worldId world.Id, itemId uint32, descending bool) ([]SearchListing, error) {
+func (p *ProcessorImpl) SearchListings(worldId world.Id, itemId uint32, descending bool) ([]SearchListing, error) {
 	return requests.SliceProvider[ListingSearchRestModel, SearchListing](p.l, p.ctx)(requestSearchListings(itemId, worldId, descending), ExtractSearchListing, model.Filters[SearchListing]())()
 }
 
-func (p *Processor) GetTopSearches(worldId world.Id) ([]TopSearch, error) {
+func (p *ProcessorImpl) GetTopSearches(worldId world.Id) ([]TopSearch, error) {
 	return requests.SliceProvider[TopSearchRestModel, TopSearch](p.l, p.ctx)(requestTopSearches(worldId), ExtractTopSearch, model.Filters[TopSearch]())()
 }
 
-func (p *Processor) RecordItemSearch(f field.Model, characterId uint32, itemId uint32) error {
+func (p *ProcessorImpl) RecordItemSearch(f field.Model, characterId uint32, itemId uint32) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(merchant2.EnvCommandTopic)(RecordItemSearchCommandProvider(f, characterId, itemId))
 }

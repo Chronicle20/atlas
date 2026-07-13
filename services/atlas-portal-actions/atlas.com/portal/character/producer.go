@@ -3,11 +3,10 @@ package character
 import (
 	"context"
 
-	"atlas-portal-actions/kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	kfkProducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
@@ -29,7 +28,7 @@ type statChangedBody struct {
 
 // EnableActionsProvider creates a message provider for enabling character actions
 func EnableActionsProvider(ch channel.Model, characterId uint32) model.Provider[[]kafka.Message] {
-	key := kfkProducer.CreateKey(int(characterId))
+	key := producer.CreateKey(int(characterId))
 	value := &statusEvent[statChangedBody]{
 		CharacterId: characterId,
 		Type:        EventCharacterStatusTypeStatChanged,
@@ -39,7 +38,7 @@ func EnableActionsProvider(ch channel.Model, characterId uint32) model.Provider[
 			ExclRequestSent: true,
 		},
 	}
-	return kfkProducer.SingleMessageProvider(key, value)
+	return producer.SingleMessageProvider(key, value)
 }
 
 // EnableActions sends an event to enable character actions

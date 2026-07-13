@@ -2,7 +2,7 @@ package saga
 
 import (
 	"atlas-portal-actions/kafka/message/saga"
-	"atlas-portal-actions/kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"context"
 
 	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"

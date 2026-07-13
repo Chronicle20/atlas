@@ -13,7 +13,7 @@ import (
 	inventory2 "atlas-npc/inventory"
 	"atlas-npc/kafka/message"
 	"atlas-npc/kafka/message/shops"
-	"atlas-npc/kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"context"
 	"database/sql"
 	"errors"

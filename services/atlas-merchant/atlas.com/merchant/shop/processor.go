@@ -48,6 +48,7 @@ type Processor interface {
 	SearchListingsByItemId(criteria ListingSearchCriteria) ([]ListingSearchResult, error)
 	GetListings(shopId uuid.UUID) ([]listing.Model, error)
 	CreateShop(characterId uint32, shopType ShopType, title string, worldId world.Id, channelId channel.Id, mapId uint32, instanceId uuid.UUID, x int16, y int16, permitItemId uint32) (Model, error)
+	CreateShopAndEmit(characterId uint32, shopType ShopType, title string, worldId world.Id, channelId channel.Id, mapId uint32, instanceId uuid.UUID, x int16, y int16, permitItemId uint32) (Model, error)
 	OpenShop(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32) error
 	EnterMaintenance(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32) error
 	ExitMaintenance(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32) error
@@ -281,6 +282,49 @@ func (p *ProcessorImpl) CreateShop(characterId uint32, shopType ShopType, title 
 
 	p.l.Infof("Shop [%s] created for character [%d], type [%d].", id, characterId, shopType)
 	return m, nil
+}
+
+// CreateShopAndEmit places a shop and, on a player-facing validation failure,
+// emits a SHOP_CREATE_FAILED status event so the channel can tell the player why
+// nothing opened (Cosmic sends getMiniRoomError here). Placement failures
+// short-circuit before any DB write, so the feedback is emitted in its own
+// committed transaction rather than being rolled back with the (empty) failure.
+func (p *ProcessorImpl) CreateShopAndEmit(characterId uint32, shopType ShopType, title string, worldId world.Id, channelId channel.Id, mapId uint32, instanceId uuid.UUID, x int16, y int16, permitItemId uint32) (Model, error) {
+	m, err := p.CreateShop(characterId, shopType, title, worldId, channelId, mapId, instanceId, x, y, permitItemId)
+	if err == nil {
+		return m, nil
+	}
+
+	reason := shopCreateFailureReason(err)
+	if reason == "" {
+		return m, err
+	}
+
+	if emitErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return buf.Put(merchant.EnvStatusEventTopic, StatusEventShopCreateFailedProvider(characterId, worldId, channelId, reason))
+		})
+	}); emitErr != nil {
+		p.l.WithError(emitErr).Warnf("Unable to emit shop-create-failed feedback for character [%d].", characterId)
+	}
+	return m, err
+}
+
+// shopCreateFailureReason maps a CreateShop error to a player-facing feedback
+// reason, or "" for internal errors that warrant no client message.
+func shopCreateFailureReason(err error) string {
+	switch {
+	case errors.Is(err, ErrTooCloseToPortal):
+		return merchant.ShopCreateFailReasonTooCloseToPortal
+	case errors.Is(err, ErrTooCloseToShop):
+		return merchant.ShopCreateFailReasonTooCloseToShop
+	case errors.Is(err, ErrNotFreemarketRoom):
+		return merchant.ShopCreateFailReasonNotFreeMarket
+	case errors.Is(err, ErrShopLimitReached), errors.Is(err, ErrFrederickPending):
+		return merchant.ShopCreateFailReasonUnable
+	default:
+		return ""
+	}
 }
 
 func (p *ProcessorImpl) OpenShop(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32) error {

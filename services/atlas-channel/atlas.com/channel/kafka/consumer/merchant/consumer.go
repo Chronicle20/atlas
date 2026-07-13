@@ -70,6 +70,11 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 					return nil, err
 				}
 				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleShopCreateFailedEvent(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
 				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handlePurchaseFailedEvent(sc, wp))))
 				if err != nil {
 					return nil, err
@@ -307,6 +312,38 @@ func handleCapacityFullEvent(sc server.Model, wp writer.Producer) func(l logrus.
 		}
 
 		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, session.Announce(l)(ctx)(wp)(interactioncb.CharacterInteractionWriter)(interactioncb.CharacterInteractionEnterResultErrorBody(interactioncb.CharacterInteractionEnterErrorModeFull)))
+	}
+}
+
+func handleShopCreateFailedEvent(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger, ctx context.Context, event merchant2.StatusEvent[merchant2.StatusEventShopCreateFailedBody]) {
+	return func(l logrus.FieldLogger, ctx context.Context, e merchant2.StatusEvent[merchant2.StatusEventShopCreateFailedBody]) {
+		if e.Type != merchant2.StatusEventShopCreateFailed {
+			return
+		}
+
+		if !sc.Is(tenant.MustFromContext(ctx), e.Body.WorldId, e.Body.ChannelId) {
+			return
+		}
+
+		l.Debugf("Store placement failed for character [%d]. reason [%s].", e.CharacterId, e.Body.Reason)
+
+		mode := shopCreateFailureMode(e.Body.Reason)
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, session.Announce(l)(ctx)(wp)(interactioncb.CharacterInteractionWriter)(interactioncb.CharacterInteractionEnterResultErrorBody(mode)))
+	}
+}
+
+// shopCreateFailureMode maps a merchant create-failure reason to the client's
+// mini-room error mode (Cosmic getMiniRoomError parity).
+func shopCreateFailureMode(reason string) interactioncb.CharacterInteractionEnterErrorMode {
+	switch reason {
+	case merchant2.ShopCreateFailReasonTooCloseToPortal:
+		return interactioncb.CharacterInteractionEnterErrorModeCannotOpenStoreNearPortal
+	case merchant2.ShopCreateFailReasonTooCloseToShop:
+		return interactioncb.CharacterInteractionEnterErrorModeCannotOpenMiniRoomHere
+	case merchant2.ShopCreateFailReasonNotFreeMarket:
+		return interactioncb.CharacterInteractionEnterErrorModeMustBeInFreeMarket
+	default:
+		return interactioncb.CharacterInteractionEnterErrorModeUnable
 	}
 }
 

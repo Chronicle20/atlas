@@ -127,6 +127,16 @@ const (
 	StatusEventPurchaseFailed          = "PURCHASE_FAILED"
 	StatusEventFrederickNotification   = "FREDERICK_NOTIFICATION"
 	StatusEventMessageSent             = "MESSAGE_SENT"
+	StatusEventShopCreateFailed        = "SHOP_CREATE_FAILED"
+)
+
+// Reasons carried by StatusEventShopCreateFailedBody. The channel maps these to
+// the client's mini-room error modes for player feedback.
+const (
+	ShopCreateFailReasonTooCloseToPortal = "TOO_CLOSE_TO_PORTAL"
+	ShopCreateFailReasonTooCloseToShop   = "TOO_CLOSE_TO_SHOP"
+	ShopCreateFailReasonNotFreeMarket    = "NOT_FREE_MARKET"
+	ShopCreateFailReasonUnable           = "UNABLE"
 )
 
 type StatusEvent[E any] struct {
@@ -160,6 +170,12 @@ type StatusEventVisitorBody struct {
 
 type StatusEventCapacityFullBody struct {
 	ShopId string `json:"shopId"`
+}
+
+type StatusEventShopCreateFailedBody struct {
+	WorldId   world.Id   `json:"worldId"`
+	ChannelId channel.Id `json:"channelId"`
+	Reason    string     `json:"reason"`
 }
 
 type StatusEventPurchaseFailedBody struct {

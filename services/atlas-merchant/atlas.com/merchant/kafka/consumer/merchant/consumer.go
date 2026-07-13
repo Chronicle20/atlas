@@ -55,7 +55,7 @@ func handlePlaceShopCommand(db *gorm.DB) message.Handler[merchant2.Command[merch
 			return
 		}
 		p := shop.NewProcessor(l, ctx, db)
-		_, err := p.CreateShop(e.CharacterId, shop.ShopType(e.Body.ShopType), e.Body.Title, e.WorldId, e.ChannelId, e.Body.MapId, e.Body.InstanceId, e.Body.X, e.Body.Y, e.Body.PermitItemId)
+		_, err := p.CreateShopAndEmit(e.CharacterId, shop.ShopType(e.Body.ShopType), e.Body.Title, e.WorldId, e.ChannelId, e.Body.MapId, e.Body.InstanceId, e.Body.X, e.Body.Y, e.Body.PermitItemId)
 		if err != nil {
 			l.WithError(err).Errorf("Error creating shop for character [%d].", e.CharacterId)
 		}

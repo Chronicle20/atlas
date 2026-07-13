@@ -6,6 +6,7 @@ import (
 	"atlas-merchant/kafka/message/compartment"
 	merchant "atlas-merchant/kafka/message/merchant"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
@@ -121,6 +122,20 @@ func StatusEventCapacityFullProvider(characterId uint32, shopId uuid.UUID) model
 		Type:        merchant.StatusEventCapacityFull,
 		Body: merchant.StatusEventCapacityFullBody{
 			ShopId: shopId.String(),
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func StatusEventShopCreateFailedProvider(characterId uint32, worldId world.Id, channelId channel.Id, reason string) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &merchant.StatusEvent[merchant.StatusEventShopCreateFailedBody]{
+		CharacterId: characterId,
+		Type:        merchant.StatusEventShopCreateFailed,
+		Body: merchant.StatusEventShopCreateFailedBody{
+			WorldId:   worldId,
+			ChannelId: channelId,
+			Reason:    reason,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

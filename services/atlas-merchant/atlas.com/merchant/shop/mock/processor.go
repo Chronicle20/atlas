@@ -26,6 +26,7 @@ type ProcessorMock struct {
 	SearchListingsByItemIdFunc func(criteria shop.ListingSearchCriteria) ([]shop.ListingSearchResult, error)
 	GetListingsFunc            func(shopId uuid.UUID) ([]listing.Model, error)
 	CreateShopFunc             func(characterId uint32, shopType shop.ShopType, title string, worldId world.Id, channelId channel.Id, mapId uint32, instanceId uuid.UUID, x int16, y int16, permitItemId uint32) (shop.Model, error)
+	CreateShopAndEmitFunc      func(characterId uint32, shopType shop.ShopType, title string, worldId world.Id, channelId channel.Id, mapId uint32, instanceId uuid.UUID, x int16, y int16, permitItemId uint32) (shop.Model, error)
 	OpenShopFunc               func(shopId uuid.UUID, characterId uint32) error
 	EnterMaintenanceFunc       func(shopId uuid.UUID, characterId uint32) error
 	ExitMaintenanceFunc        func(shopId uuid.UUID, characterId uint32) error
@@ -123,6 +124,13 @@ func (m *ProcessorMock) GetListings(shopId uuid.UUID) ([]listing.Model, error) {
 func (m *ProcessorMock) CreateShop(characterId uint32, shopType shop.ShopType, title string, worldId world.Id, channelId channel.Id, mapId uint32, instanceId uuid.UUID, x int16, y int16, permitItemId uint32) (shop.Model, error) {
 	if m.CreateShopFunc != nil {
 		return m.CreateShopFunc(characterId, shopType, title, worldId, channelId, mapId, instanceId, x, y, permitItemId)
+	}
+	return shop.Model{}, nil
+}
+
+func (m *ProcessorMock) CreateShopAndEmit(characterId uint32, shopType shop.ShopType, title string, worldId world.Id, channelId channel.Id, mapId uint32, instanceId uuid.UUID, x int16, y int16, permitItemId uint32) (shop.Model, error) {
+	if m.CreateShopAndEmitFunc != nil {
+		return m.CreateShopAndEmitFunc(characterId, shopType, title, worldId, channelId, mapId, instanceId, x, y, permitItemId)
 	}
 	return shop.Model{}, nil
 }

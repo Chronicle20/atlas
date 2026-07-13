@@ -123,6 +123,13 @@ const (
 	StatusEventPurchaseFailed        = "PURCHASE_FAILED"
 	StatusEventFrederickNotification = "FREDERICK_NOTIFICATION"
 	StatusEventMessageSent           = "MESSAGE_SENT"
+	StatusEventShopCreateFailed      = "SHOP_CREATE_FAILED"
+
+	// Reasons carried by StatusEventShopCreateFailedBody (mirror of atlas-merchant).
+	ShopCreateFailReasonTooCloseToPortal = "TOO_CLOSE_TO_PORTAL"
+	ShopCreateFailReasonTooCloseToShop   = "TOO_CLOSE_TO_SHOP"
+	ShopCreateFailReasonNotFreeMarket    = "NOT_FREE_MARKET"
+	ShopCreateFailReasonUnable           = "UNABLE"
 
 	EnvListingEventTopic = "EVENT_TOPIC_MERCHANT_LISTING"
 
@@ -160,6 +167,12 @@ type StatusEventVisitorBody struct {
 
 type StatusEventCapacityFullBody struct {
 	ShopId string `json:"shopId"`
+}
+
+type StatusEventShopCreateFailedBody struct {
+	WorldId   world.Id   `json:"worldId"`
+	ChannelId channel.Id `json:"channelId"`
+	Reason    string     `json:"reason"`
 }
 
 type StatusEventPurchaseFailedBody struct {

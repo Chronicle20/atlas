@@ -2,7 +2,7 @@ package drop
 
 import (
 	drop2 "atlas-character/kafka/message/drop"
-	"atlas-character/kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"context"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"

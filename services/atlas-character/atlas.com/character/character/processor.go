@@ -8,7 +8,7 @@ import (
 	"atlas-character/external/effective_stats"
 	"atlas-character/kafka/message"
 	character2 "atlas-character/kafka/message/character"
-	"atlas-character/kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"atlas-character/location"
 	skill2 "atlas-character/skill"
 	"context"

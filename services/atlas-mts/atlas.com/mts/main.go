@@ -6,7 +6,6 @@ import (
 	custodyConsumer "atlas-mts/kafka/consumer/custody"
 	mtsConsumer "atlas-mts/kafka/consumer/mts"
 	"atlas-mts/listing"
-	"atlas-mts/logger"
 	"atlas-mts/task"
 	"atlas-mts/testsupport"
 	"atlas-mts/transaction"
@@ -25,7 +24,6 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	service "github.com/Chronicle20/atlas/libs/atlas-service"
-	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 )
 
 const serviceName = "atlas-mts"
@@ -53,15 +51,8 @@ func GetServer() Server {
 }
 
 func main() {
-	l := logger.CreateLogger(serviceName)
-	l.Infoln("Starting main service.")
-
-	tdm := service.GetTeardownManager()
-
-	tc, err := tracing.InitTracer(serviceName)
-	if err != nil {
-		l.WithError(err).Fatal("Unable to initialize tracer.")
-	}
+	rt := service.Bootstrap(serviceName)
+	l := rt.Logger()
 
 	db := database.Connect(l, database.SetMigrations(
 		listing.Migration,
@@ -76,10 +67,10 @@ func main() {
 	// Leadership is gated by a postgres advisory lock — replicas are safe.
 	publisher := outboxlib.NewTopicWriterPool()
 	drainer := outboxlib.NewDrainer(l, db, publisher, outboxlib.WithDSN(database.DSN()))
-	routine.Go(l, tdm.Context(), func(_ context.Context) {
-		drainer.Run(tdm.Context())
+	routine.Go(l, rt.Context(), func(_ context.Context) {
+		drainer.Run(rt.Context())
 	})
-	tdm.TeardownFunc(func() {
+	rt.TeardownFunc(func() {
 		drainer.Stop()
 		publisher.Close()
 	})
@@ -92,7 +83,7 @@ func main() {
 		return false
 	})
 
-	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
+	cmf := consumer.GetManager().AddConsumer(l, rt.Context(), rt.WaitGroup())
 	custodyConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	mtsConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	if err := custodyConsumer.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
@@ -102,17 +93,17 @@ func main() {
 		l.WithError(err).Fatal("Unable to register kafka handlers.")
 	}
 
-	tdm.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
+	rt.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 
 	// DB-driven auction-expiration sweep: each tick moves expired active auctions
 	// to their seller's holding (origin=expired) across every tenant.
-	expirationTask := task.NewPeriodicTask(l, tdm.Context(), db, getExpirationInterval())
+	expirationTask := task.NewPeriodicTask(l, rt.Context(), db, getExpirationInterval())
 	expirationTask.Start()
-	tdm.TeardownFunc(expirationTask.Stop)
+	rt.TeardownFunc(expirationTask.Stop)
 
 	srv := server.New(l).
-		WithContext(tdm.Context()).
-		WithWaitGroup(tdm.WaitGroup()).
+		WithContext(rt.Context()).
+		WithWaitGroup(rt.WaitGroup()).
 		SetBasePath(GetServer().GetPrefix()).
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(listing.InitResource(GetServer())(db)).
@@ -120,7 +111,8 @@ func main() {
 		AddRouteInitializer(wish.InitResource(GetServer())(db)).
 		AddRouteInitializer(transaction.InitResource(GetServer())(db)).
 		AddRouteInitializer(wallet.InitResource(GetServer())(db)).
-		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler()))
+		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
+		AddRouteInitializer(server.MountReadiness("/readyz", rt.Ready))
 
 	// E2E test routes (seed/expire/sweep/simulated purchase+bid) — env-gated,
 	// never routed through ingress, never enabled in any overlay. Enable ad hoc:
@@ -133,10 +125,7 @@ func main() {
 
 	srv.Run()
 
-	tdm.TeardownFunc(tracing.Teardown(l)(tc))
-
-	tdm.Wait()
-	l.Infoln("Service shutdown.")
+	rt.Wait()
 }
 
 // getExpirationInterval reads the sweep cadence from

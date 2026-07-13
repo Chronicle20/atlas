@@ -1,0 +1,8 @@
+packet: field/serverbound/FieldItcOperationBuyWish
+direction: serverbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: CITC::OnBuyWish
+    address: "0x529d6a"
+    decompile_sha256: fdd841dc6248631c8f53e7f6f2b8e3de509ea205c1b99e8f222c232a3e6f32ba

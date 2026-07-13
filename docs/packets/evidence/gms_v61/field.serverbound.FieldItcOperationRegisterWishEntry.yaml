@@ -1,0 +1,8 @@
+packet: field/serverbound/FieldItcOperationRegisterWishEntry
+direction: serverbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: CITC::OnRegisterWishEntry
+    address: "0x52980f"
+    decompile_sha256: 8a4479b1858264bfed7750d3dbb8136461d91617e5e286c8b43d9860b14049fc

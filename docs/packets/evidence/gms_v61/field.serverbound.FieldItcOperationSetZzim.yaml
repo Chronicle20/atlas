@@ -1,0 +1,8 @@
+packet: field/serverbound/FieldItcOperationSetZzim
+direction: serverbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: CITC::OnSetZzim
+    address: "0x529b6e"
+    decompile_sha256: caee13e636eeda4352e845157c74da7ed369c07fa06964ba84de2c7906dd83f0

@@ -69,3 +69,18 @@ cannot be used."
   cash-item-use path is inert on gms_v92 (design §2.6). No template entry was
   added; `template_gms_92_1.json` is untouched. CSV hint for a future IDB:
   `VEGA_SCROLL 0x1A0` (UNVERIFIED).
+- **gms_v48 / gms_v61 / gms_v72 / gms_v79** — NOT APPLICABLE (feature absent
+  from the client). These legacy versions were added to main by the "GMS Legacy
+  Versions" pass (task-113). Vega's Spell / the `CUIVega` dialog **does not exist
+  in any of these clients**, verified against the live symbol-bearing DEVM/U IDBs
+  (2026-07-13): a function query for `CUIVega|VegaResult|VegaScroll` returns
+  nothing in v48/v61/v72/v79, and a string scan for `vega` in v79 (the closest to
+  v83) returns zero hits — while the same IDBs carry full RTTI (`CCashShop::*`
+  mangled names with type info), so the absence is real, not a stripped binary.
+  The Vega's Spell dialog was introduced between v79 and v83. No writer/handler
+  entry was added to `template_gms_{48,61,72,79}_1.json`, and — because
+  `VEGA_SCROLL` is absent from these versions' packet registries — the
+  `cash/clientbound/CashVegaScroll` matrix cells grade **n-a (⬜)** automatically
+  (`grade.go` StateNA-on-registry-absent), which is the correct disposition.
+  Wiring a `VegaScroll` writer here would be dead config for a client feature
+  that does not exist.

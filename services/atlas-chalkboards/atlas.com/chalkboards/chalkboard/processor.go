@@ -2,7 +2,7 @@ package chalkboard
 
 import (
 	chalkboard2 "atlas-chalkboards/kafka/message/chalkboard"
-	"atlas-chalkboards/kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"context"
 	"errors"
 

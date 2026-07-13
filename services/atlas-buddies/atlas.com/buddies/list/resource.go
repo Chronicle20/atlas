@@ -3,7 +3,7 @@ package list
 import (
 	"atlas-buddies/buddy"
 	list2 "atlas-buddies/kafka/message/list"
-	"atlas-buddies/kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	list3 "atlas-buddies/kafka/producer/list"
 	"atlas-buddies/rest"
 	"errors"

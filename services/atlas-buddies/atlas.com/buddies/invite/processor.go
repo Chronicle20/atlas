@@ -2,7 +2,7 @@ package invite
 
 import (
 	invite2 "atlas-buddies/kafka/message/invite"
-	"atlas-buddies/kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"context"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"

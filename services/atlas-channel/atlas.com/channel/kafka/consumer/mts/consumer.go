@@ -162,8 +162,11 @@ func announceTo(l logrus.FieldLogger, ctx context.Context, sc server.Model, wp w
 // registration/cancellation (RegisterSaleEntryDone just shows a notice and
 // re-selects a tab — it does not re-query), so the server must push the fresh
 // list for the panel to reflect a just-created or just-cancelled listing.
+// PageSize: -1 requests the complete set (see the socket handler's
+// announceUserSaleItems): this re-push must show every active listing the
+// seller holds, bounded only by the tenant-configurable maxActiveListings cap.
 func announceUserSaleList(l logrus.FieldLogger, ctx context.Context, sc server.Model, wp writer.Producer, worldId byte, sellerId uint32) {
-	ms, err := mtslisting.NewProcessor(l, ctx).Browse(world.Id(worldId), mtslisting.BrowseFilter{SellerId: sellerId})
+	ms, err := mtslisting.NewProcessor(l, ctx).Browse(world.Id(worldId), mtslisting.BrowseFilter{SellerId: sellerId, PageSize: -1})
 	if err != nil {
 		// The list genuinely failed to load: send the dedicated GetUserSaleItemFailed
 		// arm with the config-resolved LOAD_FAILED reason ("failed to load the list")

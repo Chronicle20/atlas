@@ -934,10 +934,15 @@ func wishItems(l logrus.FieldLogger, ctx context.Context, characterId uint32, wi
 // Auction tab (section 3, which excludes the viewer's own listings), this view is
 // scoped to the viewer as the seller, so it browses with SellerId set and no
 // ExcludeSellerId. A REST error yields an empty list rather than blocking the page.
+// PageSize: -1 requests the complete set (see announceUserSaleItems): this
+// view's result is windowed by writeBrowsePage's own mtsPageWindow, which
+// requires the FULL matching set (categoryItemCnt = total), not a
+// server-truncated first page.
 func ownAuctionItems(l logrus.FieldLogger, ctx context.Context, s session.Model) ([]fieldcb.MtsItem, error) {
 	ms, err := mtslisting.NewProcessor(l, ctx).Browse(s.WorldId(), mtslisting.BrowseFilter{
 		SellerId: s.CharacterId(),
 		SaleType: itcSaleTypeAuction,
+		PageSize: -1,
 	})
 	if err != nil {
 		l.WithError(err).Errorf("Unable to browse own MTS auctions for character [%d]; writing empty page.", s.CharacterId())
@@ -1052,8 +1057,10 @@ func emitRemoveWishByWishSerial(l logrus.FieldLogger, ctx context.Context, wp wr
 // offered equip's full stats) so the poster can compare offers before accepting one
 // via BUY_WISH. On a browse error an empty list is written so the client UI is not
 // left hanging.
+// PageSize: -1 requests the complete set (see announceUserSaleItems): every
+// offer made on this want-ad must render, not just the first server page.
 func writeWishOffers(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, s session.Model, wishSerial uint32) {
-	ms, err := mtslisting.NewProcessor(l, ctx).Browse(s.WorldId(), mtslisting.BrowseFilter{OfferWishSerial: wishSerial})
+	ms, err := mtslisting.NewProcessor(l, ctx).Browse(s.WorldId(), mtslisting.BrowseFilter{OfferWishSerial: wishSerial, PageSize: -1})
 	if err != nil {
 		// A genuine browse failure answering this client VIEW_WISH request sends the
 		// dedicated LoadWishSaleListFailed arm (mode 46) — the CITC::OnNormalItemResult

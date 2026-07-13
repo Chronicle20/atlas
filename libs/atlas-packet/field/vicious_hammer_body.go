@@ -33,7 +33,8 @@ const (
 
 // ViciousHammerOpenBody arms the CUIItemUpgrade gauge. token is the
 // server-chosen round-trip value the client echoes in ITEM_UPGRADE_UPDATE;
-// hammerCount is the target equip's current hammersApplied.
+// hammerCount is the target equip's hammersApplied AFTER this use (the client
+// reuses it for the terminal "2 - count upgrades are left" success notice).
 func ViciousHammerOpenBody(token uint32, hammerCount uint32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", string(ViciousHammerModeOpen), func(mode byte) packet.Encoder {
 		return clientbound.NewViciousHammerOpen(mode, token, hammerCount)

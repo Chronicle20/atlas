@@ -30,8 +30,10 @@ const ViciousHammerWriter = "ViciousHammer"
 
 // ViciousHammerOpen — the non-terminal open/arm result. Body after the mode
 // byte (v83 sub_82B2C3 else-branch: Decode4 + Decode4): token (echoed back by
-// the client in ITEM_UPGRADE_UPDATE) and hammerCount (the target's current
-// hammersApplied; the client renders "N upgrades are left" as 2 - count).
+// the client in ITEM_UPGRADE_UPDATE) and hammerCount (the target's
+// hammersApplied AFTER this use — the client stores it and renders the terminal
+// success notice as "2 - count upgrades are left", which fires only once the
+// hammer has been applied, so the sender passes the post-apply count).
 // packet-audit:fname CField::OnItemUpgrade#Open
 type ViciousHammerOpen struct {
 	mode        byte

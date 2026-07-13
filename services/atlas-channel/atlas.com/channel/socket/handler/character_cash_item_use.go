@@ -568,6 +568,13 @@ func handleViciousHammerOpen(l logrus.FieldLogger, ctx context.Context, wp write
 		}
 
 		token := packViciousHammerToken(int16(hammerSlot), equipSlot)
-		announce(fieldpkt.ViciousHammerOpenBody(token, target.HammersApplied()))
+		// The client stores this open-arm count and renders the TERMINAL success
+		// notice as "2 - count upgrades are left" (CUIItemUpgrade::OnItemUpgradeResult
+		// success branch — the SUCCESS packet carries no count of its own). That
+		// notice fires AFTER the reservation callback applies +1 to hammersApplied,
+		// so we must send the post-apply count. HammersApplied() here is the
+		// pre-apply value and the arm is only reached when it is < 2 (cap check
+		// above), so +1 always yields the correct 1 or 2 (IDA-verified, task-129).
+		announce(fieldpkt.ViciousHammerOpenBody(token, target.HammersApplied()+1))
 	}
 }

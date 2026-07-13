@@ -33,6 +33,16 @@ type RoomShopItem struct {
 	Asset     model.Asset
 }
 
+// RoomSoldItem is one entry of the hired-merchant sale ledger the client reads in
+// the customer view (DecodeSoldItemList sub_518EFD @0x518efd): item id, quantity,
+// price, and the buyer's name.
+type RoomSoldItem struct {
+	ItemId    uint32
+	Quantity  uint16
+	Price     uint32
+	BuyerName string
+}
+
 type Room struct {
 	roomType     RoomType
 	capacity     byte
@@ -47,6 +57,8 @@ type Room struct {
 	messages     []RoomMessage
 	ownerName    string
 	meso         uint32
+	soldItems    []RoomSoldItem
+	soldTotal    uint32
 }
 
 func NewGameRoom(roomType RoomType, capacity byte, visitors []Visitor, title string, gameKind byte, tournament bool, round byte) Room {
@@ -80,8 +92,11 @@ func NewPersonalShopRoom(ownerView bool, visitors []Visitor, title string, maxIt
 
 // NewMerchantShopRoom builds a hired-merchant (roomType 5) enter-result room.
 // ownerView selects the same OnEnterResultBase header byte (offset 0xC8) that the
-// client branches on in CEntrustedShopDlg::OnEnterResult (v83 @0x518a7e).
-func NewMerchantShopRoom(ownerView bool, visitors []Visitor, messages []RoomMessage, ownerName string, maxItemCount byte, meso uint32, items []RoomShopItem) Room {
+// client branches on in CEntrustedShopDlg::OnEnterResult (v83 @0x518a7e): the owner
+// view skips the meso/flag/sale-ledger block, the customer view reads it. title is
+// the shop name the client reads at the common tail (DecodeStr this+105 @0x518c8f) —
+// distinct from ownerName (the merchant owner's character name, this+479 @0x518a54).
+func NewMerchantShopRoom(ownerView bool, visitors []Visitor, messages []RoomMessage, ownerName string, title string, maxItemCount byte, meso uint32, items []RoomShopItem) Room {
 	return Room{
 		roomType:     MerchantShopRoomType,
 		capacity:     4,
@@ -89,6 +104,7 @@ func NewMerchantShopRoom(ownerView bool, visitors []Visitor, messages []RoomMess
 		visitors:     visitors,
 		messages:     messages,
 		ownerName:    ownerName,
+		title:        title,
 		maxItemCount: maxItemCount,
 		meso:         meso,
 		items:        items,
@@ -117,6 +133,8 @@ func (r Room) Items() []RoomShopItem      { return r.items }
 func (r Room) Messages() []RoomMessage    { return r.messages }
 func (r Room) OwnerName() string          { return r.ownerName }
 func (r Room) Meso() uint32               { return r.meso }
+func (r Room) SoldItems() []RoomSoldItem  { return r.soldItems }
+func (r Room) SoldTotal() uint32          { return r.soldTotal }
 
 func (rm Room) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
@@ -152,13 +170,38 @@ func (rm Room) Encode(l logrus.FieldLogger, ctx context.Context) func(options ma
 				w.WriteByteArray(item.Asset.Encode(l, ctx)(options))
 			}
 		case MerchantShopRoomType:
+			// Hired-merchant (roomType 5) enter-result tail — CEntrustedShopDlg::OnEnterResult
+			// (v83 @0x518873). Owner announcements: Decode2 count; count x {DecodeStr, Decode1}.
 			w.WriteShort(uint16(len(rm.messages)))
 			for _, msg := range rm.messages {
 				w.WriteAsciiString(msg.Message)
 				w.WriteByte(msg.Slot)
 			}
+			// ownerName: DecodeStr -> this+479 (@0x518a54).
 			w.WriteAsciiString(rm.ownerName)
+			// Customer branch only (owner byte *(this+0xC8) == 0, @0x518a7e): the shop's
+			// meso, a sold-out flag, then the sale-transaction ledger (DecodeSoldItemList
+			// sub_518EFD @0x518efd). The owner view skips all of this.
+			if !rm.ownerView {
+				w.WriteInt(rm.meso)                  // Decode4 this[482] @0x518b04
+				w.WriteByte(0)                       // Decode1 flag @0x518b0a (0 = not sold out)
+				w.WriteByte(byte(len(rm.soldItems))) // Decode1 count @0x518f1c
+				for _, s := range rm.soldItems {
+					w.WriteInt(s.ItemId)            // Decode4 @0x518f4a
+					w.WriteShort(s.Quantity)        // Decode2 @0x518f69
+					w.WriteInt(s.Price)             // Decode4 @0x518f78
+					w.WriteAsciiString(s.BuyerName) // DecodeStr @0x518f7f
+				}
+				w.WriteInt(rm.soldTotal) // Decode4 total @0x518fbc
+			}
+			// Common tail: title (DecodeStr this+105 @0x518c8f), maxItem (Decode1
+			// this+109 @0x518d12).
+			w.WriteAsciiString(rm.title)
 			w.WriteByte(rm.maxItemCount)
+			// OnRefresh (vtable+112 = CEntrustedShopDlg::OnRefresh @0x518852, BOTH views):
+			// Decode4 withdrawable meso (this[481] @0x518864), then CPersonalShopDlg::OnRefresh
+			// (@0x6fcc4e): Decode1 count; count x {Decode2 perBundle, Decode2 qty, Decode4
+			// price, GW_ItemSlotBase}.
 			w.WriteInt(rm.meso)
 			w.WriteByte(byte(len(rm.items)))
 			for _, item := range rm.items {
@@ -215,7 +258,24 @@ func (rm *Room) Decode(l logrus.FieldLogger, ctx context.Context) func(r *reques
 				rm.messages[i].Slot = r.ReadByte()
 			}
 			rm.ownerName = r.ReadAsciiString()
+			// Customer branch (owner byte == 0): meso + sold-out flag + sale ledger.
+			if !rm.ownerView {
+				rm.meso = r.ReadUint32()
+				_ = r.ReadByte() // sold-out flag (@0x518b0a)
+				soldCount := r.ReadByte()
+				rm.soldItems = make([]RoomSoldItem, soldCount)
+				for i := byte(0); i < soldCount; i++ {
+					rm.soldItems[i].ItemId = r.ReadUint32()
+					rm.soldItems[i].Quantity = r.ReadUint16()
+					rm.soldItems[i].Price = r.ReadUint32()
+					rm.soldItems[i].BuyerName = r.ReadAsciiString()
+				}
+				rm.soldTotal = r.ReadUint32()
+			}
+			rm.title = r.ReadAsciiString()
 			rm.maxItemCount = r.ReadByte()
+			// OnRefresh withdrawable meso (this[481]); Atlas populates both meso slots
+			// from the single shop balance, so this overwrites with the same value.
 			rm.meso = r.ReadUint32()
 			itemCount := r.ReadByte()
 			rm.items = make([]RoomShopItem, itemCount)

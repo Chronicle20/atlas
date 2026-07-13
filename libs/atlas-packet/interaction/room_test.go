@@ -68,7 +68,7 @@ func TestMerchantShopRoomRoundTrip(t *testing.T) {
 			messages := []RoomMessage{
 				{Message: "Welcome!", Slot: 0},
 			}
-			input := NewMerchantShopRoom(false, visitors, messages, "Owner", 16, 50000, nil)
+			input := NewMerchantShopRoom(false, visitors, messages, "Owner", "MerchShop", 16, 50000, nil)
 			output := Room{}
 			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
 			if output.RoomType() != MerchantShopRoomType {
@@ -76,6 +76,9 @@ func TestMerchantShopRoomRoundTrip(t *testing.T) {
 			}
 			if output.OwnerName() != "Owner" {
 				t.Errorf("ownerName: got %q, want %q", output.OwnerName(), "Owner")
+			}
+			if output.Title() != "MerchShop" {
+				t.Errorf("title: got %q, want %q", output.Title(), "MerchShop")
 			}
 			if output.Meso() != 50000 {
 				t.Errorf("meso: got %v, want 50000", output.Meso())

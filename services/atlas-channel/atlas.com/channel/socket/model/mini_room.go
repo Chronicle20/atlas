@@ -287,7 +287,10 @@ func (m *MerchantShopMiniRoom) ToPacketRoom(l logrus.FieldLogger, ctx context.Co
 			Asset:     NewAsset(true, i.asset),
 		})
 	}
-	return interactionpkt.NewMerchantShopRoom(characterId == m.ownerId, visitors, messages, m.ownerName, m.maxItemCount, m.meso, items)
+	// This MerchantShopMiniRoom model carries no separate shop title; the live
+	// hired-merchant path builds the room in the merchant Kafka consumer (which
+	// passes shop.Title()). Pass empty here rather than mislabel it with ownerName.
+	return interactionpkt.NewMerchantShopRoom(characterId == m.ownerId, visitors, messages, m.ownerName, "", m.maxItemCount, m.meso, items)
 }
 
 func (m *MerchantShopMiniRoom) Enter(characterId uint32) packet.Encode {

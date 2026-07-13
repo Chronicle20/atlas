@@ -531,7 +531,7 @@ func buildMerchantShopRoom(l logrus.FieldLogger, ctx context.Context, cp charact
 	// ownerView drives the OnEnterResultBase header byte (offset 0xC8) — set when
 	// the recipient is the shop owner (CEntrustedShopDlg::OnEnterResult @0x518a7e).
 	ownerView := viewerCharacterId == shop.CharacterId()
-	return interactionpkt.NewMerchantShopRoom(ownerView, visitors, messages, ownerChar.Name(), 16, shop.MesoBalance(), items), nil
+	return interactionpkt.NewMerchantShopRoom(ownerView, visitors, messages, ownerChar.Name(), shop.Title(), 16, shop.MesoBalance(), items), nil
 }
 
 func buildPersonalShopRoom(l logrus.FieldLogger, ctx context.Context, cp character.Processor, shop merchant.Model, viewerCharacterId uint32, items []interactionpkt.RoomShopItem) (interactionpkt.Room, error) {

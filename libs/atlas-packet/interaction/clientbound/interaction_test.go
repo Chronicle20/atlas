@@ -199,27 +199,76 @@ func TestInteractionEnterResultSuccessBytes(t *testing.T) {
 	}
 }
 
-// TestInteractionEnterResultSuccessMerchantHeaderBytes pins ONLY the version-stable
-// header region of the hired-merchant (roomType 5) enter-result: the same
-// OnEnterResultBase capacity + ownerView-byte + visitor-terminator that the fix
-// restores. The tail (messages/ownerName/meso/items) is NOT asserted here because
-// Atlas's current merchant tail diverges from CEntrustedShopDlg::OnEnterResult
-// @0x518873 (owner vs customer read different fields — meso/sold-items/total via
-// DecodeSoldItemList @0x518efd only in the customer branch, plus a trailing title +
-// maxItem byte). That tail rework is tracked separately; see the task report.
-func TestInteractionEnterResultSuccessMerchantHeaderBytes(t *testing.T) {
-	// visitor (ownerView=false): roomType 5, capacity 4, header 0, then 0xFF.
-	room := interaction.NewMerchantShopRoom(false, nil, nil, "", 16, 0, nil)
-	input := NewInteractionEnterResultSuccess(5, room)
-	wantHeader := []byte{0x05, 0x05, 0x04, 0x00, 0xFF}
-	for _, v := range test.Variants {
-		t.Run(v.Name, func(t *testing.T) {
-			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
-			b := test.Encode(t, ctx, input.Encode, nil)
-			if len(b) < len(wantHeader) || !bytes.Equal(b[:len(wantHeader)], wantHeader) {
-				t.Fatalf("header bytes: got % x, want prefix % x", b, wantHeader)
-			}
-		})
+// TestInteractionEnterResultSuccessMerchantBytes is the byte-exact fixture for the
+// hired-merchant (roomType 5) enter-result — both owner and customer views — pinning
+// the FULL tail against CEntrustedShopDlg::OnEnterResult (v83 @0x518873).
+//
+// Read order (after the version-stable OnEnterResultBase header — roomType, capacity,
+// ownerView byte, visitor loop terminated by slot 0xFF):
+//
+//	Decode2 msgCount; msgCount x {DecodeStr msg, Decode1 slot}    (@0x518888..)
+//	DecodeStr ownerName                                           (this+479 @0x518a54)
+//	if !ownerView (customer, *(this+0xC8)==0, branch @0x518a7e):
+//	    Decode4 meso                                              (this[482] @0x518b04)
+//	    Decode1 flag                                              (@0x518b0a; 0 = not sold out)
+//	    Decode1 soldCount;                                        (DecodeSoldItemList
+//	    soldCount x {Decode4 id, Decode2 qty, Decode4 price,       sub_518EFD @0x518efd)
+//	        DecodeStr buyer}; Decode4 total
+//	DecodeStr title                                               (this+105 @0x518c8f)
+//	Decode1 maxItem                                               (this+109 @0x518d12)
+//	Decode4 withdrawable meso;                                    (CEntrustedShopDlg::OnRefresh
+//	Decode1 itemCount; itemCount x {Decode2 perBundle, Decode2     @0x518852 -> chains
+//	    qty, Decode4 price, GW_ItemSlotBase}                       CPersonalShopDlg::OnRefresh
+//	                                                               @0x6fcc4e)
+//
+// The trailing OnRefresh call at @0x518d27 is `call dword ptr [eax+70h]` (0x70 = 112) =
+// off_AF3928[112] = CEntrustedShopDlg::OnRefresh @0x518852 (confirmed from disassembly +
+// vtable bytes, not the decompiler's mislabelled "+28"). Atlas populates both the
+// customer meso (this[482]) and the OnRefresh withdrawable meso (this[481]) from the
+// single shop balance, so both slots carry 1000 below.
+func TestInteractionEnterResultSuccessMerchantBytes(t *testing.T) {
+	cases := []struct {
+		name      string
+		ownerView bool
+		want      []byte
+	}{
+		// owner view skips the meso/flag/sold-ledger block entirely.
+		{"owner", true, []byte{
+			0x05, 0x05, 0x04, 0x01, 0xFF, // mode 5, roomType 5, capacity 4, ownerView 1, no visitors
+			0x00, 0x00, // msgCount 0
+			0x02, 0x00, 0x41, 0x42, // ownerName "AB"
+			0x02, 0x00, 0x43, 0x44, // title "CD"
+			0x10,                   // maxItem 16
+			0xE8, 0x03, 0x00, 0x00, // OnRefresh withdrawable meso 1000
+			0x00, // itemCount 0
+		}},
+		// customer view reads meso(1000) + flag(0) + soldCount(0) + soldTotal(0) before title.
+		{"customer", false, []byte{
+			0x05, 0x05, 0x04, 0x00, 0xFF, // mode 5, roomType 5, capacity 4, ownerView 0, no visitors
+			0x00, 0x00, // msgCount 0
+			0x02, 0x00, 0x41, 0x42, // ownerName "AB"
+			0xE8, 0x03, 0x00, 0x00, // customer meso 1000
+			0x00,                   // sold-out flag 0
+			0x00,                   // soldCount 0
+			0x00, 0x00, 0x00, 0x00, // soldTotal 0
+			0x02, 0x00, 0x43, 0x44, // title "CD"
+			0x10,                   // maxItem 16
+			0xE8, 0x03, 0x00, 0x00, // OnRefresh withdrawable meso 1000
+			0x00, // itemCount 0
+		}},
+	}
+	for _, tc := range cases {
+		room := interaction.NewMerchantShopRoom(tc.ownerView, nil, nil, "AB", "CD", 16, 1000, nil)
+		input := NewInteractionEnterResultSuccess(5, room)
+		for _, v := range test.Variants {
+			t.Run(tc.name+"/"+v.Name, func(t *testing.T) {
+				ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+				b := test.Encode(t, ctx, input.Encode, nil)
+				if !bytes.Equal(b, tc.want) {
+					t.Fatalf("bytes: got % x, want % x", b, tc.want)
+				}
+			})
+		}
 	}
 }
 

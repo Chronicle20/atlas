@@ -120,7 +120,7 @@ func handleViciousHammerConsumableEvent(sc server.Model, wp writer.Producer) mes
 
 		body := fieldpkt.ViciousHammerSuccessBody()
 		if !e.Body.Success {
-			body = fieldpkt.ViciousHammerFailureBody(e.Body.ErrorCode)
+			body = fieldpkt.ViciousHammerFailureBody(fieldpkt.ViciousHammerFailureReason(e.Body.Reason))
 		}
 		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(uint32(e.CharacterId), session.Announce(l)(ctx)(wp)(fieldcb.ViciousHammerWriter)(body))
 		if err != nil {

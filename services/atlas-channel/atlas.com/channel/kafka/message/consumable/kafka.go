@@ -73,6 +73,6 @@ type ScrollBody struct {
 }
 
 type ViciousHammerBody struct {
-	Success   bool   `json:"success"`
-	ErrorCode uint32 `json:"errorCode"`
+	Success bool   `json:"success"`
+	Reason  string `json:"reason"`
 }

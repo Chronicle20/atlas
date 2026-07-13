@@ -559,11 +559,11 @@ func handleViciousHammerOpen(l logrus.FieldLogger, ctx context.Context, wp write
 		target, err := character2.NewProcessor(l, ctx).GetEquipableInSlot(s.CharacterId(), equipSlot)()
 		if err != nil {
 			l.Warnf("Character [%d] attempted vicious hammer on missing equip slot [%d].", s.CharacterId(), equipSlot)
-			announce(fieldpkt.ViciousHammerFailureBody(1)) // "The item is not upgradable"
+			announce(fieldpkt.ViciousHammerFailureBody(fieldpkt.ViciousHammerReasonNotUpgradable))
 			return
 		}
 		if target.HammersApplied() >= 2 {
-			announce(fieldpkt.ViciousHammerFailureBody(2)) // "2 upgrade increases have been used already"
+			announce(fieldpkt.ViciousHammerFailureBody(fieldpkt.ViciousHammerReasonCapReached))
 			return
 		}
 

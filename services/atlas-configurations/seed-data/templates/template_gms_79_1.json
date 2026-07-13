@@ -1397,6 +1397,12 @@
             "OPEN": 0,
             "SUCCESS": 60,
             "FAILURE": 61
+          },
+          "errorCodes": {
+            "UNKNOWN": 0,
+            "NOT_UPGRADABLE": 1,
+            "CAP_REACHED": 2,
+            "HORNTAIL": 3
           }
         }
       },

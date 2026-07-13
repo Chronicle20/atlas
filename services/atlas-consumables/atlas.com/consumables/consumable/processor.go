@@ -879,13 +879,18 @@ func (p *ProcessorImpl) FailScroll(characterId uint32, cursed bool, legendarySpi
 	return producer.ProviderImpl(p.l)(p.ctx)(consumable.EnvEventTopic)(ScrollEventProvider(ts.Id(characterId))(false, cursed, legendarySpirit, whiteScroll))
 }
 
-// Vicious Hammer (item classification 557, task-129). Client failure codes
-// (IDA v83 sub_82B2C3 / v95 CUIItemUpgrade::ShowResult 0x7bec20):
+// Vicious Hammer (item classification 557, task-129). ViciousHammerReason is
+// the SEMANTIC failure notice this service selects; the client-interpreted wire
+// byte is resolved per tenant in atlas-channel (DOM-25 — never a Go literal
+// here). "" = eligible / no error. Client notice mapping (IDA v83 sub_82B2C3 /
+// v95 CUIItemUpgrade::ShowResult 0x7bec20):
+type ViciousHammerReason string
+
 const (
-	ViciousHammerErrorUnknown       uint32 = 0 // client default arm: "Unknown error %d"
-	ViciousHammerErrorNotUpgradable uint32 = 1 // "The item is not upgradable"
-	ViciousHammerErrorCapReached    uint32 = 2 // "2 upgrade increases have been used already"
-	ViciousHammerErrorHorntail      uint32 = 3 // "You can't use Vicious Hammer on Horntail Necklace"
+	ViciousHammerReasonUnknown       ViciousHammerReason = "UNKNOWN"        // client default arm: "Unknown error %d"
+	ViciousHammerReasonNotUpgradable ViciousHammerReason = "NOT_UPGRADABLE" // "The item is not upgradable"
+	ViciousHammerReasonCapReached    ViciousHammerReason = "CAP_REACHED"    // "2 upgrade increases have been used already"
+	ViciousHammerReasonHorntail      ViciousHammerReason = "HORNTAIL"       // "You can't use Vicious Hammer on Horntail Necklace"
 )
 
 // maxHammersApplied is IDA-verified two ways: the error-2 notice and the
@@ -914,44 +919,44 @@ func resolveViciousHammerTarget(c character.Model, equipSlot int16) (*asset.Mode
 	return c.Inventory().Equipable().FindBySlot(equipSlot)
 }
 
-// viciousHammerErrorCode returns 0 when the target is hammer-eligible, else
-// the client notice code. dataSlots/dataCash come from the equip's WZ-derived
+// viciousHammerReason returns "" when the target is hammer-eligible, else the
+// semantic failure notice. dataSlots/dataCash come from the equip's WZ-derived
 // data (atlas-data equipment reader: tuc / cash).
-func viciousHammerErrorCode(target asset.Model, dataSlots uint16, dataCash bool) uint32 {
+func viciousHammerReason(target asset.Model, dataSlots uint16, dataCash bool) ViciousHammerReason {
 	if target.TemplateId() == horntailNecklaceItemId {
-		return ViciousHammerErrorHorntail
+		return ViciousHammerReasonHorntail
 	}
 	if dataSlots == 0 || dataCash {
-		return ViciousHammerErrorNotUpgradable
+		return ViciousHammerReasonNotUpgradable
 	}
 	if target.HammersApplied() >= maxHammersApplied {
-		return ViciousHammerErrorCapReached
+		return ViciousHammerReasonCapReached
 	}
-	return 0
+	return ""
 }
 
 // validateViciousHammerUse fetches the target's WZ-derived equip data and
-// applies viciousHammerErrorCode.
-func (p *ProcessorImpl) validateViciousHammerUse(target asset.Model) uint32 {
+// applies viciousHammerReason. Returns "" when the target is eligible.
+func (p *ProcessorImpl) validateViciousHammerUse(target asset.Model) ViciousHammerReason {
 	ed, err := equipable2.NewProcessor(p.l, p.ctx).GetById(target.TemplateId())
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to fetch equip data [%d] for hammer validation.", target.TemplateId())
-		return ViciousHammerErrorNotUpgradable // fail closed: an unverifiable equip is rejected, not approved
+		return ViciousHammerReasonNotUpgradable // fail closed: an unverifiable equip is rejected, not approved
 	}
-	return viciousHammerErrorCode(target, ed.Slots(), ed.Cash())
+	return viciousHammerReason(target, ed.Slots(), ed.Cash())
 }
 
 // ViciousHammerError cancels the (possible) hammer reservation and emits the
 // terminal failure event. Mirrors ConsumeError but on the VICIOUS_HAMMER
 // event type — the hammer dialog needs the mode-62 notice, not the generic
 // enable-actions ERROR event.
-func (p *ProcessorImpl) ViciousHammerError(characterId uint32, transactionId uuid.UUID, hammerSlot int16, errorCode uint32, err error) error {
-	p.l.WithError(err).Debugf("Character [%d] vicious hammer rejected with code [%d].", characterId, errorCode)
+func (p *ProcessorImpl) ViciousHammerError(characterId uint32, transactionId uuid.UUID, hammerSlot int16, reason ViciousHammerReason, err error) error {
+	p.l.WithError(err).Debugf("Character [%d] vicious hammer rejected with reason [%s].", characterId, reason)
 	cErr := p.cpp.CancelItemReservation(characterId, inventory2.TypeValueCash, transactionId, hammerSlot)
 	if cErr != nil {
 		p.l.WithError(cErr).Errorf("Unable to cancel hammer reservation in slot [%d] for character [%d] transaction [%s].", hammerSlot, characterId, transactionId)
 	}
-	cErr = producer.ProviderImpl(p.l)(p.ctx)(consumable.EnvEventTopic)(ViciousHammerEventProvider(ts.Id(characterId), false, errorCode))
+	cErr = producer.ProviderImpl(p.l)(p.ctx)(consumable.EnvEventTopic)(ViciousHammerEventProvider(ts.Id(characterId), false, reason))
 	if cErr != nil {
 		p.l.WithError(cErr).Errorf("Unable to issue vicious hammer failure event for character [%d]; dialog likely stuck.", characterId)
 	}
@@ -968,20 +973,20 @@ func (p *ProcessorImpl) RequestViciousHammer(characterId uint32, hammerSlot int1
 
 	c, err := cp.GetById(cp.InventoryDecorator)(characterId)
 	if err != nil {
-		return p.ViciousHammerError(characterId, transactionId, hammerSlot, ViciousHammerErrorUnknown, err)
+		return p.ViciousHammerError(characterId, transactionId, hammerSlot, ViciousHammerReasonUnknown, err)
 	}
 
 	hammer, ok := c.Inventory().Cash().FindBySlot(hammerSlot)
 	if !ok || item2.GetClassification(item2.Id(hammer.TemplateId())) != item2.ClassificationViciousHammer {
-		return p.ViciousHammerError(characterId, transactionId, hammerSlot, ViciousHammerErrorUnknown, errors.New("hammer not found at claimed slot"))
+		return p.ViciousHammerError(characterId, transactionId, hammerSlot, ViciousHammerReasonUnknown, errors.New("hammer not found at claimed slot"))
 	}
 
 	target, ok := resolveViciousHammerTarget(c, equipSlot)
 	if !ok {
-		return p.ViciousHammerError(characterId, transactionId, hammerSlot, ViciousHammerErrorNotUpgradable, errors.New("target equip not found"))
+		return p.ViciousHammerError(characterId, transactionId, hammerSlot, ViciousHammerReasonNotUpgradable, errors.New("target equip not found"))
 	}
-	if code := p.validateViciousHammerUse(*target); code != 0 {
-		return p.ViciousHammerError(characterId, transactionId, hammerSlot, code, errors.New("hammer validation failed"))
+	if reason := p.validateViciousHammerUse(*target); reason != "" {
+		return p.ViciousHammerError(characterId, transactionId, hammerSlot, reason, errors.New("hammer validation failed"))
 	}
 
 	p.l.Debugf("Creating OneTime topic consumer to await hammer transaction [%s] completion.", transactionId.String())
@@ -996,7 +1001,7 @@ func (p *ProcessorImpl) RequestViciousHammer(characterId uint32, hammerSlot int1
 		Quantity: 1,
 	}})
 	if err != nil {
-		return p.ViciousHammerError(characterId, transactionId, hammerSlot, ViciousHammerErrorUnknown, err)
+		return p.ViciousHammerError(characterId, transactionId, hammerSlot, ViciousHammerReasonUnknown, err)
 	}
 	return nil
 }
@@ -1015,19 +1020,19 @@ func ConsumeViciousHammer(transactionId uuid.UUID, characterId uint32, hammerIte
 
 			c, err := cp.GetById(cp.InventoryDecorator)(characterId)
 			if err != nil {
-				return p.ViciousHammerError(characterId, transactionId, hammerItem.Slot(), ViciousHammerErrorUnknown, err)
+				return p.ViciousHammerError(characterId, transactionId, hammerItem.Slot(), ViciousHammerReasonUnknown, err)
 			}
 			target, ok := resolveViciousHammerTarget(c, equipSlot)
 			if !ok {
-				return p.ViciousHammerError(characterId, transactionId, hammerItem.Slot(), ViciousHammerErrorNotUpgradable, errors.New("target equip not found"))
+				return p.ViciousHammerError(characterId, transactionId, hammerItem.Slot(), ViciousHammerReasonNotUpgradable, errors.New("target equip not found"))
 			}
-			if code := p.validateViciousHammerUse(*target); code != 0 {
-				return p.ViciousHammerError(characterId, transactionId, hammerItem.Slot(), code, errors.New("hammer validation failed at execution time"))
+			if reason := p.validateViciousHammerUse(*target); reason != "" {
+				return p.ViciousHammerError(characterId, transactionId, hammerItem.Slot(), reason, errors.New("hammer validation failed at execution time"))
 			}
 
 			err = ep.ChangeStat(characterId, transactionId, *target, equipable.AddSlots(1), equipable.AddHammersApplied(1))
 			if err != nil {
-				return p.ViciousHammerError(characterId, transactionId, hammerItem.Slot(), ViciousHammerErrorUnknown, err)
+				return p.ViciousHammerError(characterId, transactionId, hammerItem.Slot(), ViciousHammerReasonUnknown, err)
 			}
 
 			err = cpp.ConsumeItem(characterId, inventory2.TypeValueCash, transactionId, hammerItem.Slot())
@@ -1035,7 +1040,7 @@ func ConsumeViciousHammer(transactionId uuid.UUID, characterId uint32, hammerIte
 				l.WithError(err).Errorf("Unable to consume hammer [%d] for character [%d]; equip already mutated.", hammerItem.TemplateId(), characterId)
 			}
 
-			err = producer.ProviderImpl(l)(ctx)(consumable.EnvEventTopic)(ViciousHammerEventProvider(ts.Id(characterId), true, 0))
+			err = producer.ProviderImpl(l)(ctx)(consumable.EnvEventTopic)(ViciousHammerEventProvider(ts.Id(characterId), true, ""))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to issue vicious hammer success event for character [%d]; dialog likely stuck.", characterId)
 			}

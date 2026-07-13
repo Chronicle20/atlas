@@ -86,3 +86,57 @@ Backend-guidelines findings are in `audit-backend.md`. Both reviews returned **n
 5. **Emit paths untested (only pure helpers)** — left: the plan's chosen TDD scope; testing emit paths would require Kafka/producer mocks the project's DOM-24 says to avoid.
 
 Verdict: **merge-ready.** All 16 plan tasks implemented and verified; per-version opcode/mode divergence (v84 0x10B/0x16C, v87 63/64, v95 65/66) IDA-verified and corrected during execution.
+
+---
+
+## Post-rebase + v79 extension adherence (2026-07-13)
+
+**Branch:** task-129-vicious-hammer-use @ 3e33ab4c8 (merge of origin/main @ 01512ea4c)
+**Scope of this pass:** (1) confirm the rebase onto main — which adapted the two service processors to the Gen3 Interface+Impl idiom — did not drop/regress any planned behavior; (2) verify the v79 legacy-version extension (PR #971 base) is correct.
+
+### 1. Original plan adherence after the Gen3 rebase — FULL
+
+The rebase converted both service processors to the Gen3 `Interface + ProcessorImpl + mock` triple without losing any hammer behavior. Verified intact:
+
+- **atlas-consumables** — `RequestViciousHammer` is now an interface method (`consumable/processor.go:61`) with the impl + helpers (`ViciousHammerError:944`, `viciousHammerErrorCode`, `resolveViciousHammerTarget`, `validateViciousHammerUse`) and the four IDA error constants (`:885-888`). The reservation callback `ConsumeViciousHammer` (`:1008`, registered at `:990`) and the command handler `handleRequestViciousHammer` (`kafka/consumer/consumable/consumer.go:71`, registered `:37`) both survive.
+- **atlas-channel** — `RequestViciousHammerUse` is on the `Processor` interface (`consumable/processor.go:18`), `ProcessorImpl` (`:46`), and the mock (`consumable/mock/processor.go:34`). The full two-phase wiring is intact: Packet-A arm in `character_cash_item_use.go:123-126` → `handleViciousHammerOpen:549`; Packet-B handler registered `main.go:893` (`fieldsb.ItemUpgradeUpdateHandle`); result consumer `handleViciousHammerConsumableEvent` (`kafka/consumer/consumable/consumer.go:110`, registered `:53`). The stale `// TODO for v83 there is a trailing updateTime` is confirmed removed (grep clean).
+- **Builds/tests (this pass, `-count=1`):** atlas-constants, atlas-packet (field + cash), atlas-consumables (consumable/equipable/data), atlas-channel (socket/handler + consumable + kafka) all build, `go vet`, and test **PASS** with zero FAILs.
+
+### 2. v79 extension correctness — FULLY ADHERENT
+
+| Item | Status | Evidence |
+|---|---|---|
+| v79 serverbound handler `ItemUpgradeUpdateHandle` @ `0xFA`, validator `LoggedInValidator` | PASS | `template_gms_79_1.json:731-734` |
+| v79 clientbound `ViciousHammer` writer @ `0x14A`, ops OPEN=0/SUCCESS=60/FAILURE=61 | PASS | `template_gms_79_1.json:1393-1401` |
+| Registry agrees with template opcodes | PASS | `registry/gms_v79.yaml`: VICIOUS_HAMMER clientbound 330/`0x14A` `CField::OnItemUpgrade` (:1037-1043); ITEM_UPGRADE_UPDATE serverbound 250/`0xFA` `CUIItemUpgrade::Update` (:2915-2923) |
+| Dispatcher yaml agrees (v79 modes 0/60/61) | PASS | `dispatchers/vicious_hammer.yaml:45-47` + provenance note :21-30 (decoder `0x799d61`, gate `a2==330`, sender `0x7998da COutPacket(250)`) |
+| Four v79 matrix cells ✅ | PASS | `STATUS.md:477` VICIOUS_HAMMER v79 `0x14A` ✅; `STATUS.md:807` ITEM_UPGRADE_UPDATE v79 `0x0FA` ✅ (op-rows aggregate the 3 arms; per-arm evidence below) |
+| Evidence records (TIER1-FIXTURE, decompile_sha256, verifies:) | PASS | `evidence/gms_v79/`: FieldViciousHammer{Open,Success,Failure} @`0x799d61`, FieldItemUpgradeUpdate @`0x7998da` — all 4 present, each back-refs a real test |
+| `packet-audit:verify version=gms_v79` markers | PASS | `vicious_hammer_test.go:55-57` (clientbound, ida=`0x799d61`); `item_upgrade_update_test.go:21` (serverbound, ida=`0x7998da`) |
+| v48/v61/v72 = no routing (deliberate) | PASS | Templates exist; `grep` for `ViciousHammer`/`ItemUpgradeUpdate` = **0 matches** in each. Documented version-absent with live-IDB provenance in `rollout.md:113-121` and `vicious_hammer.yaml:17-20` (no `CUIItemUpgrade` class on those builds; only `CUser::ShowItemUpgradeEffect`) |
+
+**Mode-literal note (not a defect):** the clientbound byte-fixture tests assert literal mode 61/62 across all `pt.Variants`, including v79. This is the established dispatcher-family convention — the fixtures verify the wire *shape* (mode-byte + payload), while the per-version mode *values* (v79 = 60/61) are validated by `operations --check` (template ops table vs yaml). v79 is handled identically to the already-verified v83/v84/v87/v95 cells; the test header (`vicious_hammer_test.go:44-54`) documents the v79 mode truth explicitly.
+
+### 3. Gate results (this pass, tool rebuilt from HEAD source)
+
+| Gate | Exit | Notes |
+|---|---|---|
+| `dispatcher-lint` | **0** | clean |
+| `operations --check` | **0** | OK, 0 absent-writer notes — confirms v79 template ops (0/60/61) match yaml |
+| `fname-doc --check` | **0** | OK |
+| `matrix --check` | **1** | **STALE** — see finding below |
+
+### Finding — `matrix --check` fails on stale `toolSha` provenance (minor, real)
+
+`matrix --check` exits **1**: `STATUS.md`/`status.json` are stale. Regenerating (`./pa-check matrix`) produces a **single-line diff** — only the `toolSha` provenance field (`750c2d56…` → `ece54efd…`); **no coverage cell, glyph, or opcode changes**, and the diff mentions no vicious/upgrade packet. Root cause: the final merge commit `3e33ab4c8` pulled origin/main's task-169 work, which **added `.go` files under `tools/packet-audit/`** (doclint.go, gatecheck.go, etc.), changing the tool-tree Go-blob hash that `toolTreeSHA()` derives from `git ls-tree -r HEAD tools/packet-audit` (`cmd/matrix.go:462`). The matrix was regenerated in the pre-merge v79 commit (`cb916c016`) but not re-run after the merge resolved the STATUS.md conflict. This is a required gate (plan Global Constraints line 27; Task 16 Step 3) and CI's `matrix --check` would fail it.
+
+- **Impact:** provenance-only; the coverage data is correct. No behavior or verification claim is affected.
+- **Fix (one command, then commit):** from the worktree root run `go run ./tools/packet-audit matrix` and commit the refreshed `docs/packets/audits/STATUS.md` + `status.json` (toolSha line only).
+
+### Overall
+
+- **Plan Adherence (post-rebase):** FULL — Gen3 conversion preserved every planned behavior; all four modules build/vet/test clean.
+- **v79 extension:** FULLY ADHERENT — routing, registry, dispatcher yaml, evidence, markers, and matrix cells all agree; v48/v61/v72 absence is deliberate and documented.
+- **Recommendation:** NEEDS_FIXES (one trivial provenance refresh) → then READY_TO_MERGE.
+
+**Action item:** Regenerate + commit the packet-audit matrix so `matrix --check` returns exit 0 (stale `toolSha` after the origin/main merge).

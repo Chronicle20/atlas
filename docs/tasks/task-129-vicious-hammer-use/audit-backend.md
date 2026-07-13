@@ -158,3 +158,73 @@ the highest-value server logic is unverified by tests.
 - Minor #3: pre-existing discarded `RegisterHandler` error (mirrors RequestScroll).
 - Minor #4: pre-existing consume-after-mutate ordering (mirrors ConsumeScroll).
 - Minor #5: add coverage for the reserve/consume/re-validation flow.
+
+---
+
+# Post-rebase + v79 re-audit
+
+- **Date:** 2026-07-13
+- **Branch:** `task-129-vicious-hammer-use`
+- **Base:** `origin/main` (three-dot Go diff)
+- **Build:** PASS — `go build ./...` clean in `atlas-consumables` and `atlas-channel`
+- **Vet:** PASS — `go vet ./...` clean in both services
+- **Tests:** PASS — `consumable`, `equipable`, `data/equipable`, `socket/handler` packages green (`-count=1`)
+- **Overall:** NEEDS-WORK — one **Important** DOM-25 finding (previously under-classified as "Minor #2 magic numbers"). Everything else re-confirms PASS or the prior Minor advisories.
+
+## Verified since the pre-rebase pass
+
+- **Gen3 interface/impl/mock consistency — PASS.** `RequestViciousHammer` is on the consumables `Processor` interface (`consumable/processor.go:61`), impl (`processor.go:925`), and mock (`mock/processor.go:92`); `var _ Processor = (*ProcessorImpl)(nil)` at `processor.go:85`, `var _ consumable.Processor = (*ProcessorMock)(nil)` at `mock/processor.go:28`. Channel side identical: `RequestViciousHammerUse` on interface (`consumable/processor.go:18`), impl (`:46`), mock (`mock/processor.go:36`), assertions at `processor.go:34` / `mock/processor.go:18`.
+- **`NewProcessor(l, ctx).(*ProcessorImpl)` type assertion (`consumable/processor.go:1011`) — PASS (safe, advisory only).** `NewProcessor` (`processor.go:73`) has exactly one implementation (`*ProcessorImpl`), so the unchecked assertion cannot panic. It exists because `ConsumeViciousHammer` (a standalone `ItemConsumer` factory) needs the impl-only helpers `ViciousHammerError` + `validateViciousHammerUse`, which depend on `p.cpp`/`p.l`/`p.ctx`. It is the ONLY `.(*ProcessorImpl)` site in the file — sibling `Consume*` factories (`ConsumeScroll` `:627`, `ConsumeStandard` `:337`, etc.) use `p := NewProcessor(l, ctx)` because they only need interface methods (`ConsumeError`, `FailScroll`). No guideline forbids the assertion; the cleaner-but-not-required alternative is to promote `ViciousHammerError` to the interface. Advisory, not a finding.
+- **Dropped `RegisterHandler` error (`processor.go:991`→`993`) — PASS (mirrors sibling).** `_, err = ...RegisterHandler(...)` then `err = p.cpp.RequestReserve(...)` overwrites the first `err`. This is byte-for-byte the established `RequestScroll` idiom (`processor.go:590`→`592`) and the base reserve flow (`:234`→`:236`). Pre-existing convention, not a rebase regression.
+- **DOM-21 — PASS.** `ClassificationViciousHammer = Classification(557)` was added to the shared lib (`libs/atlas-constants/item/constants.go:106`) and consumed via `item.GetClassification(...) != item.ClassificationViciousHammer` (`processor.go:958`). No service-local redeclaration. (The bare `if category == 557` at `character_cash_item_use.go:511` is an unchanged pre-existing line — reaffirms prior Minor #1; could now use the named constant.)
+- **DOM-24 — PASS by avoidance.** The three changed/new test files (`consumable/vicious_hammer_test.go`, `equipable/processor_test.go`, `socket/handler/vicious_hammer_token_test.go`) contain no direct or transitive emit call sites; no `producertest` stub required.
+- **Mode byte config-resolution — PASS.** The version-variable dispatcher mode (v83 61/62 vs v95 65/66) is resolved via `atlas_packet.WithResolvedCode("operations", ...)` in `libs/atlas-packet/field/vicious_hammer_body.go:24,33,42`. Correctly NOT hard-coded.
+
+## FAIL — DOM-25: client notice/fail-reason code threaded raw from a domain service
+
+**Status: FAIL (Important).** The dispatcher *mode* byte is config-resolved (good), but the *failure notice selector* (`errorCode` 1/2/3 — the value the client's `CUIItemUpgrade::ShowResult` switch maps to a message string: 1 = "not upgradable", 2 = "cap reached", 3 = "Horntail Necklace") is a client wire code that is (a) written as Go literals in channel handler code and (b) emitted raw by a domain service in a Kafka event. Both are exactly what DOM-25(a) and DOM-25(c) prohibit.
+
+Evidence:
+- **DOM-25(c) — domain service emits a client byte, not a semantic key.** `ViciousHammerBody.ErrorCode uint32` (`services/atlas-consumables/.../kafka/message/consumable/kafka.go:98`) is populated with the raw client selector by `ViciousHammerEventProvider(..., errorCode uint32)` (`consumable/producer.go:45,52`) and the `ViciousHammerError*` constants at `consumable/processor.go:885-889`. atlas-consumables is a domain service; per DOM-25(c) it must emit a SEMANTIC key (the WishOrigin/FailReason pattern), e.g. `"NOT_UPGRADABLE"`/`"CAP_REACHED"`/`"HORNTAIL"`, and let the channel resolve to the wire code. The sibling `ScrollBody` (`kafka.go:88-93` in the same file family) carries only semantic booleans — the hammer path diverges by shipping a client code.
+- **DOM-25(a) — client wire codes as Go literals outside packet codec internals.** `character_cash_item_use.go:530` `announce(fieldpkt.ViciousHammerFailureBody(1))` and `:534` `announce(fieldpkt.ViciousHammerFailureBody(2))` pass bare notice selectors into a `*Body(...)` arg from a channel socket handler.
+- **Channel consumer forwards the raw code unresolved.** `kafka/consumer/consumable/consumer.go:127` `fieldpkt.ViciousHammerFailureBody(e.Body.ErrorCode)` threads the domain-emitted byte straight into the packet with no `WithResolvedCode`/soft-resolver step.
+
+Why this is the DOM-25 class and not a cosmetic "magic number":
+- DOM-25 names "notice/fail reason code — any byte the client feeds through a lookup switch" as in-scope, and part (c) explicitly calls a "client code in a Kafka event produced by a domain service" a finding. The rule cites the **task-102 NoticeFailReason** precedent — the same shape (a notice selector resolved via a soft resolver + tenant writer-options table), which is the documented fix pattern (`failNoticeOr`/`noticeFailReasons`).
+- The code comment justifies the literals as version-stable (1/2/3 identical in v83/v95). DOM-25's stated ruling is that "'version-stable (IDA-verified identical)' does NOT exempt it." So stability is not a defense here.
+
+Practical-risk note (for the fix-prioritization, not an exemption): the mode byte — the genuinely version-divergent value — IS resolved, and jms is version-absent, so the immediate wire-break risk is low. But the rule as written fails on the raw notice codes, and the prior pass mis-filed this as advisory "Minor #2." Recommended fix: define semantic `EventTypeViciousHammer` fail-reason keys (string constants) in atlas-consumables, emit those, and resolve them to the client selector on the channel (soft resolver with a bare-arm `default` → unknown), matching the WishOrigin/FailReason precedent.
+
+## Summary of FAILs
+
+- **DOM-25 (Important):** Vicious-hammer failure notice selector (1/2/3) is a client wire code emitted raw by the domain service (`atlas-consumables kafka/message/consumable/kafka.go:98`, `producer.go:45`) and passed as Go literals in the channel handler (`character_cash_item_use.go:530,534`) / forwarded unresolved by the consumer (`consumer.go:127`). Domain services must emit semantic fail-reason keys and let the channel resolve them (WishOrigin/FailReason pattern; task-102 NoticeFailReason precedent). Stability of the codes does not exempt.
+
+No other new findings. Prior Minor advisories (#1 bare 557, #2 magic numbers — now elevated to the DOM-25 FAIL above, #3 discarded RegisterHandler err, #4 consume-after-mutate ordering, #5 emit paths untested) stand as previously recorded.
+
+### Resolution — DOM-25 errorCode (2026-07-13)
+
+FIXED. The failure notice selector is now config-resolved end-to-end, no client
+wire byte survives as a Go literal:
+
+- `atlas-consumables` emits a SEMANTIC reason (`ViciousHammerReason`:
+  `NOT_UPGRADABLE` / `CAP_REACHED` / `HORNTAIL` / `UNKNOWN`, `""` = eligible) in
+  the Kafka event `ViciousHammerBody.Reason` — the `ErrorCode uint32` field is
+  gone (`consumable/processor.go`, `producer.go`,
+  `kafka/message/consumable/kafka.go`).
+- `libs/atlas-packet/field/vicious_hammer_body.go` `ViciousHammerFailureBody`
+  now takes a `ViciousHammerFailureReason` and resolves BOTH the dispatcher mode
+  (`operations`/FAILURE) AND the notice byte (`errorCodes`/<reason>) from the
+  tenant writer config via `ResolveCode`. New test
+  `vicious_hammer_body_test.go` covers the resolution + the unconfigured-reason
+  99 degrade.
+- `atlas-channel` no longer hardcodes literals: the pre-check arm passes
+  `fieldpkt.ViciousHammerReasonNotUpgradable` / `...CapReached`, and the result
+  consumer forwards `e.Body.Reason`.
+- All 5 GMS templates (v79/83/84/87/95) carry an `errorCodes` table on the
+  `ViciousHammer` writer (`UNKNOWN`0 / `NOT_UPGRADABLE`1 / `CAP_REACHED`2 /
+  `HORNTAIL`3). Values are version-stable but now tenant-config-resolved
+  (DOM-25 — "version-stable never exempts").
+
+Verified: `go build`/`vet`/`test -race` clean in atlas-packet, atlas-consumables,
+atlas-channel; `matrix --check`, `dispatcher-lint`, `operations --check`,
+redis-key-guard, goroutine-guard all clean.

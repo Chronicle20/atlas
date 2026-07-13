@@ -17,6 +17,20 @@ const (
 	ViciousHammerModeFailure ViciousHammerMode = "FAILURE"
 )
 
+// ViciousHammerFailureReason is the SEMANTIC notice a domain service selects
+// for a failed hammer use. The concrete client-interpreted wire byte (1 = not
+// upgradable, 2 = cap reached, 3 = Horntail, 0 = unknown on stock GMS) is
+// config-resolved per tenant from the writer's "errorCodes" table — the wire
+// value is never a Go literal (DOM-25).
+type ViciousHammerFailureReason string
+
+const (
+	ViciousHammerReasonUnknown       ViciousHammerFailureReason = "UNKNOWN"
+	ViciousHammerReasonNotUpgradable ViciousHammerFailureReason = "NOT_UPGRADABLE"
+	ViciousHammerReasonCapReached    ViciousHammerFailureReason = "CAP_REACHED"
+	ViciousHammerReasonHorntail      ViciousHammerFailureReason = "HORNTAIL"
+)
+
 // ViciousHammerOpenBody arms the CUIItemUpgrade gauge. token is the
 // server-chosen round-trip value the client echoes in ITEM_UPGRADE_UPDATE;
 // hammerCount is the target equip's current hammersApplied.
@@ -36,10 +50,16 @@ func ViciousHammerSuccessBody() func(logrus.FieldLogger, context.Context) func(m
 }
 
 // ViciousHammerFailureBody closes the dialog with the notice selected by
-// errorCode (1 = not upgradable, 2 = cap reached, 3 = Horntail Necklace,
-// other = unknown error).
-func ViciousHammerFailureBody(errorCode uint32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
-	return atlas_packet.WithResolvedCode("operations", string(ViciousHammerModeFailure), func(mode byte) packet.Encoder {
-		return clientbound.NewViciousHammerFailure(mode, errorCode)
-	})
+// reason. BOTH the dispatcher mode byte ("operations"/FAILURE) and the notice
+// selector ("errorCodes"/<reason>) are resolved from the tenant writer config
+// — neither is hard-coded (DOM-25). An unconfigured reason resolves to 99,
+// which the client renders as a generic "Unknown error" notice.
+func ViciousHammerFailureBody(reason ViciousHammerFailureReason) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return func(l logrus.FieldLogger, ctx context.Context) func(map[string]interface{}) []byte {
+		return func(options map[string]interface{}) []byte {
+			mode := atlas_packet.ResolveCode(l, options, "operations", string(ViciousHammerModeFailure))
+			code := atlas_packet.ResolveCode(l, options, "errorCodes", string(reason))
+			return clientbound.NewViciousHammerFailure(mode, uint32(code)).Encode(l, ctx)(options)
+		}
+	}
 }

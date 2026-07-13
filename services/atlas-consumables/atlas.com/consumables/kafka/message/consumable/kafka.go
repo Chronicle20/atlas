@@ -91,12 +91,13 @@ type ScrollBody struct {
 	WhiteScroll     bool `json:"whiteScroll"`
 }
 
-// ViciousHammerBody reports the terminal result of a hammer use. ErrorCode is
-// the client notice selector (1 = not upgradable, 2 = cap reached,
-// 3 = Horntail Necklace, 0 = unknown/internal); meaningful when !Success.
+// ViciousHammerBody reports the terminal result of a hammer use. Reason is the
+// SEMANTIC failure notice (NOT_UPGRADABLE / CAP_REACHED / HORNTAIL / UNKNOWN);
+// atlas-channel resolves it to the client wire byte per tenant (DOM-25).
+// Meaningful when !Success.
 type ViciousHammerBody struct {
-	Success   bool   `json:"success"`
-	ErrorCode uint32 `json:"errorCode"`
+	Success bool   `json:"success"`
+	Reason  string `json:"reason"`
 }
 
 type EffectAppliedBody struct {

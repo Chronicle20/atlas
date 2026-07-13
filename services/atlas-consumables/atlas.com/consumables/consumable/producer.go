@@ -42,14 +42,14 @@ func ScrollEventProvider(characterId character.Id) func(success bool, cursed boo
 	}
 }
 
-func ViciousHammerEventProvider(characterId character.Id, success bool, errorCode uint32) model.Provider[[]kafka.Message] {
+func ViciousHammerEventProvider(characterId character.Id, success bool, reason ViciousHammerReason) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &consumable.Event[consumable.ViciousHammerBody]{
 		CharacterId: characterId,
 		Type:        consumable.EventTypeViciousHammer,
 		Body: consumable.ViciousHammerBody{
-			Success:   success,
-			ErrorCode: errorCode,
+			Success: success,
+			Reason:  string(reason),
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

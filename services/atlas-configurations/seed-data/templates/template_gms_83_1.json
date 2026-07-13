@@ -2798,6 +2798,12 @@
             "OPEN": 0,
             "SUCCESS": 61,
             "FAILURE": 62
+          },
+          "errorCodes": {
+            "UNKNOWN": 0,
+            "NOT_UPGRADABLE": 1,
+            "CAP_REACHED": 2,
+            "HORNTAIL": 3
           }
         }
       },

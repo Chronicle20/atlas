@@ -55,6 +55,11 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 					return nil, err
 				}
 				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleShopSetupEvent(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
 				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleShopClosedEvent(sc, wp))))
 				if err != nil {
 					return nil, err
@@ -145,6 +150,31 @@ func handleShopOpenedEvent(sc server.Model, wp writer.Producer) func(l logrus.Fi
 		room, err := buildShopRoom(l, ctx, e.Body.ShopId, e.CharacterId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to build room for shop [%s].", e.Body.ShopId)
+			return
+		}
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, session.Announce(l)(ctx)(wp)(interactioncb.CharacterInteractionWriter)(interactioncb.CharacterInteractionEnterResultSuccessBody(room)))
+	}
+}
+
+// handleShopSetupEvent drops the owner of a freshly-created (Draft) shop into
+// the shop UI so they can stock it before the formal open. Unlike SHOP_OPENED it
+// does NOT spawn the mini-room box on the map — that happens at go-live
+// (SHOP_OPENED), avoiding a double spawn.
+func handleShopSetupEvent(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger, ctx context.Context, event merchant2.StatusEvent[merchant2.StatusEventShopOpenedBody]) {
+	return func(l logrus.FieldLogger, ctx context.Context, e merchant2.StatusEvent[merchant2.StatusEventShopOpenedBody]) {
+		if e.Type != merchant2.StatusEventShopSetup {
+			return
+		}
+
+		if !sc.Is(tenant.MustFromContext(ctx), e.Body.WorldId, e.Body.ChannelId) {
+			return
+		}
+
+		l.Debugf("Shop [%s] created by character [%d] entering setup in map [%d] instance [%s].", e.Body.ShopId, e.CharacterId, e.Body.MapId, e.Body.InstanceId)
+
+		room, err := buildShopRoom(l, ctx, e.Body.ShopId, e.CharacterId)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to build setup room for shop [%s].", e.Body.ShopId)
 			return
 		}
 		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, session.Announce(l)(ctx)(wp)(interactioncb.CharacterInteractionWriter)(interactioncb.CharacterInteractionEnterResultSuccessBody(room)))

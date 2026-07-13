@@ -292,6 +292,16 @@ func (p *ProcessorImpl) CreateShop(characterId uint32, shopType ShopType, title 
 func (p *ProcessorImpl) CreateShopAndEmit(characterId uint32, shopType ShopType, title string, worldId world.Id, channelId channel.Id, mapId uint32, instanceId uuid.UUID, x int16, y int16, permitItemId uint32) (Model, error) {
 	m, err := p.CreateShop(characterId, shopType, title, worldId, channelId, mapId, instanceId, x, y, permitItemId)
 	if err == nil {
+		// Success: the shop is Draft. Drop the owner into the shop UI so they can
+		// stock it before the formal open (Cosmic sends the shop/merchant view on
+		// create). Emitted in its own tx after the create commit.
+		if emitErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+			return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+				return buf.Put(merchant.EnvStatusEventTopic, StatusEventShopSetupProvider(characterId, m.Id(), m))
+			})
+		}); emitErr != nil {
+			p.l.WithError(emitErr).Warnf("Unable to emit shop-setup for character [%d].", characterId)
+		}
 		return m, nil
 	}
 

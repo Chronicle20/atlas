@@ -113,6 +113,7 @@ const (
 	EnvStatusEventTopic = "EVENT_TOPIC_MERCHANT_STATUS"
 
 	StatusEventShopOpened         = "SHOP_OPENED"
+	StatusEventShopSetup          = "SHOP_SETUP"
 	StatusEventShopClosed         = "SHOP_CLOSED"
 	StatusEventMaintenanceEntered = "MAINTENANCE_ENTERED"
 	StatusEventMaintenanceExited  = "MAINTENANCE_EXITED"

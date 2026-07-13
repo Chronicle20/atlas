@@ -34,6 +34,29 @@ func StatusEventShopOpenedProvider(characterId uint32, shopId uuid.UUID, m Model
 	return producer.SingleMessageProvider(key, value)
 }
 
+// StatusEventShopSetupProvider signals that a newly-created shop is in its setup
+// (Draft) phase: the owner should be dropped into the shop UI to add items
+// before formally opening it. Reuses the shop-opened body shape.
+func StatusEventShopSetupProvider(characterId uint32, shopId uuid.UUID, m Model) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &merchant.StatusEvent[merchant.StatusEventShopOpenedBody]{
+		CharacterId: characterId,
+		Type:        merchant.StatusEventShopSetup,
+		Body: merchant.StatusEventShopOpenedBody{
+			ShopId:     shopId.String(),
+			ShopType:   byte(m.ShopType()),
+			WorldId:    m.WorldId(),
+			ChannelId:  m.ChannelId(),
+			MapId:      m.MapId(),
+			InstanceId: m.InstanceId(),
+			Title:      m.Title(),
+			X:          m.X(),
+			Y:          m.Y(),
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 func StatusEventShopClosedProvider(characterId uint32, shopId uuid.UUID, reason CloseReason) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &merchant.StatusEvent[merchant.StatusEventShopClosedBody]{

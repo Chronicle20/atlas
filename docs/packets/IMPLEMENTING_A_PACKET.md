@@ -360,28 +360,14 @@ This is `VERIFYING_A_PACKET.md` applied to the codec you just wrote. Briefly:
    packet and does not increase the conflict count. Commit the test, the
    evidence YAMLs, and the regenerated `STATUS.md`/`status.json` together.
 
-### Serverbound: cross-check the opcode with `verify-serverbound`
+### Serverbound: confirm the opcode cross-check before pinning
 
-Before you pin a serverbound cell, confirm the registry opcode you routed is the
-one the *client* actually sends. `verify-serverbound` decompiles each serverbound
-send function (address sourced from this version's committed audit reports) and
-checks that the registry opcode matches the literal passed to
-`COutPacket::COutPacket` — the exact "distrust the IDB symbol, trust the
-COutPacket opcode" check `VERIFYING_A_PACKET.md` §10 warns about:
-
-```bash
-go run ./tools/packet-audit verify-serverbound --version <version-key> --ida-port <port>
-```
-
-Key flags (defaults shown): `--registry-dir docs/packets/registry`,
-`--audits-dir docs/packets/audits`, `--ida-port 0` (active instance), `--out`
-(default `docs/packets/registry/verify_serverbound_<version>.md`). It writes a
-worklist bucketed into **Confirmed** / **Mismatch — REVIEW** / **Unresolved**.
-Your new op landing in **Confirmed** is the green light to proceed to the §9
-three-artifact verification (marker + evidence + report). A **Mismatch** row
-means a wrong `fname` or a wrong opcode in the registry — fix that before pinning,
-never around it. **Unresolved** means no report address for the fname yet (you may
-need the §9 report-gen step first) — it is not a pass.
+Before you pin a serverbound cell, the op must land in the **Confirmed** bucket of
+the `verify-serverbound` worklist (the opcode↔fname cross-check from
+[the Step-1 guards](#guards-before-you-write-any-go) above): that is the green
+light to proceed to the §9 three-artifact verification. A **Mismatch** or
+**Unresolved** row is a blocker — resolve it against the IDB (fix the registry
+fname/opcode, or complete the §9 report-gen) before pinning, never around it.
 
 ---
 

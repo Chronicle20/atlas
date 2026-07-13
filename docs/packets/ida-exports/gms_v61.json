@@ -13436,87 +13436,6 @@
    "direction": "",
    "calls": null
   },
-  "CWvsContext::OnShopScannerResult": {
-   "address": "0x849800",
-   "direction": "",
-   "calls": [
-    {
-     "op": "Decode1",
-     "comment": ""
-    },
-    {
-     "op": "Decode1",
-     "comment": "",
-     "guard": "v3 && !result"
-    },
-    {
-     "op": "Decode4",
-     "comment": "",
-     "guard": "v3 && !result && v5"
-    },
-    {
-     "op": "Decode4",
-     "comment": "",
-     "guard": "<default>"
-    },
-    {
-     "op": "Decode4",
-     "comment": "",
-     "guard": "<default>"
-    },
-    {
-     "op": "DecodeStr",
-     "comment": "",
-     "guard": "<default> && (int)v9 > 0"
-    },
-    {
-     "op": "Decode4",
-     "comment": "",
-     "guard": "<default> && (int)v9 > 0"
-    },
-    {
-     "op": "DecodeStr",
-     "comment": "",
-     "guard": "<default> && (int)v9 > 0"
-    },
-    {
-     "op": "Decode4",
-     "comment": "",
-     "guard": "<default> && (int)v9 > 0"
-    },
-    {
-     "op": "Decode4",
-     "comment": "",
-     "guard": "<default> && (int)v9 > 0"
-    },
-    {
-     "op": "Decode4",
-     "comment": "",
-     "guard": "<default> && (int)v9 > 0"
-    },
-    {
-     "op": "Decode4",
-     "comment": "",
-     "guard": "<default> && (int)v9 > 0"
-    },
-    {
-     "op": "Decode1",
-     "comment": "",
-     "guard": "<default> && (int)v9 > 0"
-    },
-    {
-     "op": "Decode1",
-     "comment": "",
-     "guard": "<default> && (int)v9 > 0"
-    },
-    {
-     "op": "Delegate",
-     "comment": "",
-     "guard": "<default> && (int)v9 > 0 && v42",
-     "ref": "GW_ItemSlotBase::Decode"
-    }
-   ]
-  },
   "CWvsContext::OnSkillUseResult": {
    "address": "0x8437cd",
    "direction": "",
@@ -17833,6 +17752,107 @@
     {
      "op": "EncodeStr",
      "comment": "searchName @0x5b71f2"
+    }
+   ]
+  },
+  "CUIShopScanResult::OnButtonClicked": {
+   "address": "0x718c84",
+   "direction": "serverbound",
+   "calls": [
+    {
+     "op": "Encode4",
+     "comment": "ownerId (dwMiniRoomSN; ITEMDATA+16) - owl-warp button send, COutPacket owl-warp opcode"
+    },
+    {
+     "op": "Encode4",
+     "comment": "mapId (dwFieldID; ITEMDATA+20)"
+    }
+   ]
+  },
+  "CWvsContext::OnShopScannerResult#Result": {
+   "address": "0x849800",
+   "direction": "clientbound",
+   "calls": [
+    {
+     "op": "Decode1",
+     "comment": "mode (=6; #Result). switch(Decode1()-6)"
+    },
+    {
+     "op": "Decode4",
+     "comment": "itemId (nItemID)"
+    },
+    {
+     "op": "Decode4",
+     "comment": "nCount (result record count)"
+    },
+    {
+     "op": "DecodeStr",
+     "comment": "ownerName (sCharacterName)",
+     "guard": "loop nCount"
+    },
+    {
+     "op": "Decode4",
+     "comment": "mapId (dwFieldID)",
+     "guard": "loop nCount"
+    },
+    {
+     "op": "DecodeStr",
+     "comment": "title (sTitle)",
+     "guard": "loop nCount"
+    },
+    {
+     "op": "Decode4",
+     "comment": "bundles (nNumber)",
+     "guard": "loop nCount"
+    },
+    {
+     "op": "Decode4",
+     "comment": "bundleSize (nSet)",
+     "guard": "loop nCount"
+    },
+    {
+     "op": "Decode4",
+     "comment": "price (nPrice)",
+     "guard": "loop nCount"
+    },
+    {
+     "op": "Decode4",
+     "comment": "ownerId (dwMiniRoomSN)",
+     "guard": "loop nCount"
+    },
+    {
+     "op": "Decode1",
+     "comment": "channelId (nChannelID)",
+     "guard": "loop nCount"
+    },
+    {
+     "op": "Decode1",
+     "comment": "inventoryType (nTI)",
+     "guard": "loop nCount"
+    },
+    {
+     "op": "DecodeBuffer",
+     "comment": "GW_ItemSlotBase::Decode(&pItem) = model.Asset; only when nTI==1",
+     "guard": "loop nCount; if nTI==1"
+    }
+   ]
+  },
+  "CWvsContext::OnShopScannerResult#HotList": {
+   "address": "0x849800",
+   "direction": "clientbound",
+   "calls": [
+    {
+     "op": "Decode1",
+     "comment": "mode (=7; #HotList). switch(Decode1()-6)==1"
+    },
+    {
+     "op": "Decode1",
+     "comment": "count (byte; hot-list length)"
+    },
+    {
+     "op": "Decode4",
+     "comment": "itemId (m_anHotList entry)",
+     "guard": "loop count"
     }
    ]
   }

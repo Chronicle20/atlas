@@ -9,9 +9,9 @@ import (
 
 // packet-audit:verify packet=merchant/clientbound/ShopLinkResult version=gms_v83 ida=0x8a4e7a
 // packet-audit:verify packet=merchant/clientbound/ShopLinkResult version=gms_v95 ida=0x847d60
-// packet-audit:verify packet=merchant/clientbound/ShopLinkResult version=gms_v79 ida=0x80d8fa
-// packet-audit:verify packet=merchant/clientbound/ShopLinkResult version=gms_v72 ida=0x7c6314
-// packet-audit:verify packet=merchant/clientbound/ShopLinkResult version=gms_v61 ida=0x71969f
+// packet-audit:verify packet=merchant/clientbound/ShopLinkResult version=gms_v79 ida=0x973035
+// packet-audit:verify packet=merchant/clientbound/ShopLinkResult version=gms_v72 ida=0x921189
+// packet-audit:verify packet=merchant/clientbound/ShopLinkResult version=gms_v61 ida=0x849af0
 func TestShopLinkResultRoundTrip(t *testing.T) {
 	input := NewShopLinkResult(18)
 	for _, v := range pt.Variants {

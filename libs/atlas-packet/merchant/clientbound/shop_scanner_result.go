@@ -6,8 +6,19 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
+	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
+
+// scannerResultHasNpcShopPrice reports whether the RESULT-mode frame carries the
+// leading nNpcShopPrice int. The pre-v72 GMS clients (verified v61
+// CWvsContext::OnShopScannerResult @0x849800) read a 2-int header
+// [int nItemID][int nCount] with no synthetic-NPC price field; v72 onward
+// (verified v72 @0x920d9f, matches v83) read the 3-int
+// [int nNpcShopPrice][int nItemID][int nCount] header.
+func scannerResultHasNpcShopPrice(t tenant.Model) bool {
+	return !(t.Region() == "GMS" && t.MajorVersion() < 72)
+}
 
 const ShopScannerResultWriter = "ShopScannerResult"
 
@@ -82,9 +93,12 @@ func (m ShopScannerResult) Operation() string {
 
 func (m ShopScannerResult) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
+	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
 		w.WriteByte(m.mode)
-		w.WriteInt(m.npcShopPrice)
+		if scannerResultHasNpcShopPrice(t) {
+			w.WriteInt(m.npcShopPrice)
+		}
 		w.WriteInt(m.itemId)
 		w.WriteInt(uint32(len(m.records)))
 		for _, rec := range m.records {
@@ -106,9 +120,12 @@ func (m ShopScannerResult) Encode(l logrus.FieldLogger, ctx context.Context) fun
 }
 
 func (m *ShopScannerResult) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.mode = r.ReadByte()
-		m.npcShopPrice = r.ReadUint32()
+		if scannerResultHasNpcShopPrice(t) {
+			m.npcShopPrice = r.ReadUint32()
+		}
 		m.itemId = r.ReadUint32()
 		count := r.ReadUint32()
 		m.records = make([]ShopScannerRecord, 0, count)

@@ -10,6 +10,9 @@ import (
 
 // packet-audit:verify packet=merchant/serverbound/OwlWarp version=gms_v83 ida=0x8a4423
 // packet-audit:verify packet=merchant/serverbound/OwlWarp version=gms_v95 ida=0x848e80
+// packet-audit:verify packet=merchant/serverbound/OwlWarp version=gms_v79 ida=0x80ce8a
+// packet-audit:verify packet=merchant/serverbound/OwlWarp version=gms_v72 ida=0x7c58df
+// packet-audit:verify packet=merchant/serverbound/OwlWarp version=gms_v61 ida=0x718c84
 func TestOwlWarpRoundTrip(t *testing.T) {
 	input := NewOwlWarp(30001, 910000005)
 	for _, v := range pt.Variants {

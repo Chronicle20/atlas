@@ -7,13 +7,20 @@ import (
 
 	pktmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
+	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
 // packet-audit:verify packet=merchant/clientbound/ShopScannerResult version=gms_v83 ida=0xa28c29
 // packet-audit:verify packet=merchant/clientbound/ShopScannerResult version=gms_v95 ida=0xa076c0
+// packet-audit:verify packet=merchant/clientbound/ShopScannerResult version=gms_v79 ida=0x972c4b
+// packet-audit:verify packet=merchant/clientbound/ShopScannerResult version=gms_v72 ida=0x920d9f
+// packet-audit:verify packet=merchant/clientbound/ShopScannerResult version=gms_v61 ida=0x849800
 // packet-audit:verify packet=merchant/clientbound/ShopScannerHotList version=gms_v83 ida=0xa28c29
 // packet-audit:verify packet=merchant/clientbound/ShopScannerHotList version=gms_v95 ida=0xa076c0
+// packet-audit:verify packet=merchant/clientbound/ShopScannerHotList version=gms_v79 ida=0x972c4b
+// packet-audit:verify packet=merchant/clientbound/ShopScannerHotList version=gms_v72 ida=0x920d9f
+// packet-audit:verify packet=merchant/clientbound/ShopScannerHotList version=gms_v61 ida=0x849800
 func TestShopScannerResultRoundTrip(t *testing.T) {
 	records := []ShopScannerRecord{
 		NewShopScannerRecord("OwnerA", 910000004, "cheap stuff", 3, 100, 5000, 30001, 0, 2, nil),
@@ -52,22 +59,36 @@ func TestShopScannerResultEmpty(t *testing.T) {
 	in := NewShopScannerResult(6, 2060000, nil)
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {
-			b := in.Encode(l, pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion))(nil)
-			// [byte mode][int npcShopPrice][int itemId][int count] = 13 bytes
-			if len(b) != 13 {
-				t.Fatalf("wire size = %d bytes, want 13: % x", len(b), b)
-			}
+			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			b := in.Encode(l, ctx)(nil)
 			if b[0] != 0x06 {
 				t.Errorf("mode = 0x%02x, want 0x06", b[0])
 			}
-			if binary.LittleEndian.Uint32(b[1:5]) != 0 {
-				t.Errorf("nNpcShopPrice = %d, want 0", binary.LittleEndian.Uint32(b[1:5]))
+			if scannerResultHasNpcShopPrice(tenant.MustFromContext(ctx)) {
+				// [byte mode][int npcShopPrice][int itemId][int count] = 13 bytes
+				if len(b) != 13 {
+					t.Fatalf("wire size = %d bytes, want 13: % x", len(b), b)
+				}
+				if binary.LittleEndian.Uint32(b[1:5]) != 0 {
+					t.Errorf("nNpcShopPrice = %d, want 0", binary.LittleEndian.Uint32(b[1:5]))
+				}
+				if binary.LittleEndian.Uint32(b[5:9]) != 2060000 {
+					t.Errorf("nItemID = %d, want 2060000", binary.LittleEndian.Uint32(b[5:9]))
+				}
+				if binary.LittleEndian.Uint32(b[9:13]) != 0 {
+					t.Errorf("nCount = %d, want 0", binary.LittleEndian.Uint32(b[9:13]))
+				}
+				return
 			}
-			if binary.LittleEndian.Uint32(b[5:9]) != 2060000 {
-				t.Errorf("nItemID = %d, want 2060000", binary.LittleEndian.Uint32(b[5:9]))
+			// pre-v72 GMS: [byte mode][int itemId][int count] = 9 bytes (no nNpcShopPrice)
+			if len(b) != 9 {
+				t.Fatalf("legacy wire size = %d bytes, want 9: % x", len(b), b)
 			}
-			if binary.LittleEndian.Uint32(b[9:13]) != 0 {
-				t.Errorf("nCount = %d, want 0", binary.LittleEndian.Uint32(b[9:13]))
+			if binary.LittleEndian.Uint32(b[1:5]) != 2060000 {
+				t.Errorf("nItemID = %d, want 2060000", binary.LittleEndian.Uint32(b[1:5]))
+			}
+			if binary.LittleEndian.Uint32(b[5:9]) != 0 {
+				t.Errorf("nCount = %d, want 0", binary.LittleEndian.Uint32(b[5:9]))
 			}
 		})
 	}

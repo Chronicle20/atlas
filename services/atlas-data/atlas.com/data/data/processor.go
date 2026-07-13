@@ -21,6 +21,7 @@ import (
 	"atlas-data/setup"
 	"atlas-data/skill"
 	"context"
+	"errors"
 	"fmt"
 	"io/fs"
 	"os"
@@ -242,15 +243,18 @@ func (p *ProcessorImpl) RegisterAllData(rootDir string, wzFileName string, rf Re
 		}
 
 		// Start error collector
-		var errors []error
+		var collectWg sync.WaitGroup
+		var collected []error
+		collectWg.Add(1)
 		go func() {
+			defer collectWg.Done()
 			for err := range errChan {
-				errors = append(errors, err)
+				collected = append(collected, err)
 			}
 		}()
 
 		// Walk directory and send files
-		err := filepath.WalkDir(baseDir, func(path string, d fs.DirEntry, err error) error {
+		walkErr := filepath.WalkDir(baseDir, func(path string, d fs.DirEntry, err error) error {
 			if err != nil {
 				return fmt.Errorf("error accessing path %s: %w", path, err)
 			}
@@ -263,15 +267,23 @@ func (p *ProcessorImpl) RegisterAllData(rootDir string, wzFileName string, rf Re
 			return nil
 		})
 
-		// Close the file channel after walking the directory
-		if err != nil {
-			fmt.Printf("Error walking directory: %v\n", err)
-		}
+		// No more files to enqueue; let workers drain and exit.
 		close(fileChan)
-
-		// Wait for all workers to finish
 		wg.Wait()
 
+		// All producers are done: close the error channel so the collector
+		// finishes, then it is safe to read the collected slice.
+		close(errChan)
+		collectWg.Wait()
+
+		if walkErr != nil {
+			collected = append(collected, fmt.Errorf("error walking directory %s: %w", baseDir, walkErr))
+		}
+		if len(collected) > 0 {
+			err := errors.Join(collected...)
+			p.l.WithError(err).Errorf("Registration under [%s] completed with %d error(s).", baseDir, len(collected))
+			return err
+		}
 		return nil
 
 	}

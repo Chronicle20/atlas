@@ -6,7 +6,7 @@ import (
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"atlas-cashshop/kafka/message"
 	"atlas-cashshop/kafka/message/item"
-	"atlas-cashshop/kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	itemProducer "atlas-cashshop/kafka/producer/item"
 	"context"
 

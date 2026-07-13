@@ -3,7 +3,7 @@ package wallet
 import (
 	"atlas-cashshop/kafka/message"
 	"atlas-cashshop/kafka/message/wallet"
-	"atlas-cashshop/kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	wallet2 "atlas-cashshop/kafka/producer/wallet"
 	"context"
 	"fmt"

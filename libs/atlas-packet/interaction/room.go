@@ -36,6 +36,7 @@ type RoomShopItem struct {
 type Room struct {
 	roomType     RoomType
 	capacity     byte
+	ownerView    bool
 	visitors     []Visitor
 	title        string
 	gameKind     byte
@@ -60,10 +61,16 @@ func NewGameRoom(roomType RoomType, capacity byte, visitors []Visitor, title str
 	}
 }
 
-func NewPersonalShopRoom(visitors []Visitor, title string, maxItemCount byte, items []RoomShopItem) Room {
+// NewPersonalShopRoom builds a personal-store (roomType 4) enter-result room.
+// ownerView selects the CMiniRoomBaseDlg::OnEnterResultBase second header byte
+// (real offset 0xC8): the client branches on it in CPersonalShopDlg::OnEnterResult
+// (v83 @0x6fc528 `if(*(this+50))`) — nonzero opens the owner's add-item management
+// UI, zero the visitor buy UI. Pass true when the recipient is the shop owner.
+func NewPersonalShopRoom(ownerView bool, visitors []Visitor, title string, maxItemCount byte, items []RoomShopItem) Room {
 	return Room{
 		roomType:     PersonalShopRoomType,
 		capacity:     4,
+		ownerView:    ownerView,
 		visitors:     visitors,
 		title:        title,
 		maxItemCount: maxItemCount,
@@ -71,10 +78,14 @@ func NewPersonalShopRoom(visitors []Visitor, title string, maxItemCount byte, it
 	}
 }
 
-func NewMerchantShopRoom(visitors []Visitor, messages []RoomMessage, ownerName string, maxItemCount byte, meso uint32, items []RoomShopItem) Room {
+// NewMerchantShopRoom builds a hired-merchant (roomType 5) enter-result room.
+// ownerView selects the same OnEnterResultBase header byte (offset 0xC8) that the
+// client branches on in CEntrustedShopDlg::OnEnterResult (v83 @0x518a7e).
+func NewMerchantShopRoom(ownerView bool, visitors []Visitor, messages []RoomMessage, ownerName string, maxItemCount byte, meso uint32, items []RoomShopItem) Room {
 	return Room{
 		roomType:     MerchantShopRoomType,
 		capacity:     4,
+		ownerView:    ownerView,
 		visitors:     visitors,
 		messages:     messages,
 		ownerName:    ownerName,
@@ -86,7 +97,17 @@ func NewMerchantShopRoom(visitors []Visitor, messages []RoomMessage, ownerName s
 
 func (r Room) RoomType() RoomType         { return r.roomType }
 func (r Room) Capacity() byte             { return r.capacity }
+func (r Room) OwnerView() bool            { return r.ownerView }
 func (r Room) Visitors() []Visitor        { return r.visitors }
+
+// ownerViewByte encodes the OnEnterResultBase second header byte (offset 0xC8):
+// 1 = owner view, 0 = visitor view.
+func (r Room) ownerViewByte() byte {
+	if r.ownerView {
+		return 1
+	}
+	return 0
+}
 func (r Room) Title() string              { return r.title }
 func (r Room) GameKind() byte             { return r.gameKind }
 func (r Room) Tournament() bool           { return r.tournament }
@@ -102,6 +123,11 @@ func (rm Room) Encode(l logrus.FieldLogger, ctx context.Context) func(options ma
 	return func(options map[string]interface{}) []byte {
 		w.WriteByte(byte(rm.roomType))
 		w.WriteByte(rm.capacity)
+		// CMiniRoomBaseDlg::OnEnterResultBase reads a SECOND header byte here
+		// (Decode1 -> *(this+0xC8), v83 @0x65ec6b) for EVERY room type, before the
+		// visitor loop. Omitting it shifts the whole visitor list and over-reads the
+		// tail -> live "error 38". The client branches on it (owner vs visitor view).
+		w.WriteByte(rm.ownerViewByte())
 		for _, v := range rm.visitors {
 			w.WriteByteArray(v.Encode(l, ctx)(options))
 		}
@@ -150,6 +176,7 @@ func (rm *Room) Decode(l logrus.FieldLogger, ctx context.Context) func(r *reques
 	return func(r *request.Reader, options map[string]interface{}) {
 		rm.roomType = RoomType(r.ReadByte())
 		rm.capacity = r.ReadByte()
+		rm.ownerView = r.ReadByte() != 0
 
 		rm.visitors = nil
 		for {

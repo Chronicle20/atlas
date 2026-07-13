@@ -42,7 +42,7 @@ func TestPersonalShopRoomRoundTrip(t *testing.T) {
 			visitors := []Visitor{
 				NewBaseVisitor(0, testAvatar(), "ShopOwner"),
 			}
-			input := NewPersonalShopRoom(visitors, "CoolShop", 16, nil)
+			input := NewPersonalShopRoom(true, visitors, "CoolShop", 16, nil)
 			output := Room{}
 			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
 			if output.RoomType() != PersonalShopRoomType {
@@ -68,7 +68,7 @@ func TestMerchantShopRoomRoundTrip(t *testing.T) {
 			messages := []RoomMessage{
 				{Message: "Welcome!", Slot: 0},
 			}
-			input := NewMerchantShopRoom(visitors, messages, "Owner", 16, 50000, nil)
+			input := NewMerchantShopRoom(false, visitors, messages, "Owner", 16, 50000, nil)
 			output := Room{}
 			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
 			if output.RoomType() != MerchantShopRoomType {

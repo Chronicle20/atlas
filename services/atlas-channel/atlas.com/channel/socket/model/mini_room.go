@@ -192,7 +192,7 @@ type PersonalShopMiniRoom struct {
 	items        []ShopItem
 }
 
-func (m *PersonalShopMiniRoom) ToPacketRoom(l logrus.FieldLogger, ctx context.Context, options map[string]interface{}, _ uint32) interactionpkt.Room {
+func (m *PersonalShopMiniRoom) ToPacketRoom(l logrus.FieldLogger, ctx context.Context, options map[string]interface{}, characterId uint32) interactionpkt.Room {
 	visitors := make([]interactionpkt.Visitor, 0, len(m.Visitors()))
 	for _, v := range m.Visitors() {
 		visitors = append(visitors, v.ToPacketVisitor(l, ctx, options))
@@ -206,7 +206,7 @@ func (m *PersonalShopMiniRoom) ToPacketRoom(l logrus.FieldLogger, ctx context.Co
 			Asset:     NewAsset(true, i.asset),
 		})
 	}
-	return interactionpkt.NewPersonalShopRoom(visitors, m.title, m.maxItemCount, items)
+	return interactionpkt.NewPersonalShopRoom(characterId == m.ownerId, visitors, m.title, m.maxItemCount, items)
 }
 
 func (m *PersonalShopMiniRoom) Enter(_ uint32) packet.Encode {
@@ -287,7 +287,7 @@ func (m *MerchantShopMiniRoom) ToPacketRoom(l logrus.FieldLogger, ctx context.Co
 			Asset:     NewAsset(true, i.asset),
 		})
 	}
-	return interactionpkt.NewMerchantShopRoom(visitors, messages, m.ownerName, m.maxItemCount, m.meso, items)
+	return interactionpkt.NewMerchantShopRoom(characterId == m.ownerId, visitors, messages, m.ownerName, m.maxItemCount, m.meso, items)
 }
 
 func (m *MerchantShopMiniRoom) Enter(characterId uint32) packet.Encode {

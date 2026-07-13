@@ -1,6 +1,7 @@
 package clientbound
 
 import (
+	"bytes"
 	"testing"
 	"time"
 
@@ -142,12 +143,82 @@ func TestInteractionEnterRoundTrip(t *testing.T) {
 // maxUsers + per-slot avatar loop terminated by slot 0xFF).
 func TestInteractionEnterResultSuccessRoundTrip(t *testing.T) {
 	visitors := []interaction.Visitor{interaction.NewBaseVisitor(0, testAvatar(), "ShopOwner")}
-	room := interaction.NewPersonalShopRoom(visitors, "CoolShop", 16, []interaction.RoomShopItem{testShopItem()})
+	room := interaction.NewPersonalShopRoom(true, visitors, "CoolShop", 16, []interaction.RoomShopItem{testShopItem()})
 	input := NewInteractionEnterResultSuccess(5, room)
 	for _, v := range test.Variants {
 		t.Run(v.Name, func(t *testing.T) {
 			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
 			test.RoundTrip(t, ctx, input.Encode, (&InteractionEnterResultSuccess{}).Decode, nil)
+		})
+	}
+}
+
+// TestInteractionEnterResultSuccessBytes is the byte-exact fixture that pins the
+// EnterResultSuccess (mode 5) header — including the second header byte the encoder
+// previously omitted, which shifted the visitor list and caused the live v83
+// "error 38" over-read on personal-store setup.
+//
+// Read order (all versions read it identically — CMiniRoomBaseDlg::OnEnterResultBase
+// is version-stable: v83 @0x65ec3d, v87 sub_698F32 @0x698f32, v95 @0x638e30,
+// jms sub_6DABDB @0x6dabdb — each: Decode1 capacity, Decode1 header, visitor loop):
+//
+//	mode                 = 5     (ENTER_RESULT; passed to NewInteractionEnterResultSuccess)
+//	roomType             = 4     (PersonalShop; Room.Encode, OnEnterResultStatic Decode1 @0x65e02b)
+//	capacity             = 4     (OnEnterResultBase Decode1 -> *(this+0xCC) @0x65ec5d)
+//	ownerView byte       = 1/0   (OnEnterResultBase Decode1 -> *(this+0xC8) @0x65ec6b; the fix)
+//	0xFF                 =       (empty visitor list; slot<0 breaks loop @0x65ec7d)
+//	title "AB"           = 02 00 41 42   (CPersonalShopDlg::OnEnterResult DecodeStr @0x6fc62a)
+//	maxItemCount = 16    = 10    (Decode1 -> *(this+109) @0x6fc683)
+//	itemCount = 0        = 00    (CPersonalShopDlg::OnRefresh Decode1 @0x6fcc64; vtable+112 @0xAFD498)
+//
+// The client branches on the ownerView byte in CPersonalShopDlg::OnEnterResult
+// @0x6fc528 (`if(*(this+50))`): 1 = owner add-item management UI, 0 = visitor buy UI.
+// (The EnterResultSuccess packet-audit:verify markers for every version live in the
+// block above TestInteractionInviteRoundTrip; this fixture backs the gms_v83 one.)
+func TestInteractionEnterResultSuccessBytes(t *testing.T) {
+	cases := []struct {
+		name      string
+		ownerView bool
+		want      []byte
+	}{
+		{"owner", true, []byte{0x05, 0x04, 0x04, 0x01, 0xFF, 0x02, 0x00, 0x41, 0x42, 0x10, 0x00}},
+		{"visitor", false, []byte{0x05, 0x04, 0x04, 0x00, 0xFF, 0x02, 0x00, 0x41, 0x42, 0x10, 0x00}},
+	}
+	for _, tc := range cases {
+		room := interaction.NewPersonalShopRoom(tc.ownerView, nil, "AB", 16, nil)
+		input := NewInteractionEnterResultSuccess(5, room)
+		for _, v := range test.Variants {
+			t.Run(tc.name+"/"+v.Name, func(t *testing.T) {
+				ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+				b := test.Encode(t, ctx, input.Encode, nil)
+				if !bytes.Equal(b, tc.want) {
+					t.Fatalf("bytes: got % x, want % x", b, tc.want)
+				}
+			})
+		}
+	}
+}
+
+// TestInteractionEnterResultSuccessMerchantHeaderBytes pins ONLY the version-stable
+// header region of the hired-merchant (roomType 5) enter-result: the same
+// OnEnterResultBase capacity + ownerView-byte + visitor-terminator that the fix
+// restores. The tail (messages/ownerName/meso/items) is NOT asserted here because
+// Atlas's current merchant tail diverges from CEntrustedShopDlg::OnEnterResult
+// @0x518873 (owner vs customer read different fields — meso/sold-items/total via
+// DecodeSoldItemList @0x518efd only in the customer branch, plus a trailing title +
+// maxItem byte). That tail rework is tracked separately; see the task report.
+func TestInteractionEnterResultSuccessMerchantHeaderBytes(t *testing.T) {
+	// visitor (ownerView=false): roomType 5, capacity 4, header 0, then 0xFF.
+	room := interaction.NewMerchantShopRoom(false, nil, nil, "", 16, 0, nil)
+	input := NewInteractionEnterResultSuccess(5, room)
+	wantHeader := []byte{0x05, 0x05, 0x04, 0x00, 0xFF}
+	for _, v := range test.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			b := test.Encode(t, ctx, input.Encode, nil)
+			if len(b) < len(wantHeader) || !bytes.Equal(b[:len(wantHeader)], wantHeader) {
+				t.Fatalf("header bytes: got % x, want prefix % x", b, wantHeader)
+			}
 		})
 	}
 }

@@ -499,7 +499,7 @@ func buildShopRoom(l logrus.FieldLogger, ctx context.Context, shopId string, vie
 	if shop.ShopType() == 2 {
 		return buildMerchantShopRoom(l, ctx, cp, shop, viewerCharacterId, items)
 	}
-	return buildPersonalShopRoom(l, ctx, cp, shop, items)
+	return buildPersonalShopRoom(l, ctx, cp, shop, viewerCharacterId, items)
 }
 
 func buildMerchantShopRoom(l logrus.FieldLogger, ctx context.Context, cp character.Processor, shop merchant.Model, viewerCharacterId uint32, items []interactionpkt.RoomShopItem) (interactionpkt.Room, error) {
@@ -528,10 +528,13 @@ func buildMerchantShopRoom(l logrus.FieldLogger, ctx context.Context, cp charact
 		return interactionpkt.Room{}, fmt.Errorf("unable to resolve owner [%d]: %w", shop.CharacterId(), err)
 	}
 
-	return interactionpkt.NewMerchantShopRoom(visitors, messages, ownerChar.Name(), 16, shop.MesoBalance(), items), nil
+	// ownerView drives the OnEnterResultBase header byte (offset 0xC8) — set when
+	// the recipient is the shop owner (CEntrustedShopDlg::OnEnterResult @0x518a7e).
+	ownerView := viewerCharacterId == shop.CharacterId()
+	return interactionpkt.NewMerchantShopRoom(ownerView, visitors, messages, ownerChar.Name(), 16, shop.MesoBalance(), items), nil
 }
 
-func buildPersonalShopRoom(l logrus.FieldLogger, ctx context.Context, cp character.Processor, shop merchant.Model, items []interactionpkt.RoomShopItem) (interactionpkt.Room, error) {
+func buildPersonalShopRoom(l logrus.FieldLogger, ctx context.Context, cp character.Processor, shop merchant.Model, viewerCharacterId uint32, items []interactionpkt.RoomShopItem) (interactionpkt.Room, error) {
 	// Owner is slot 0 as a regular visitor with avatar.
 	ownerChar, err := cp.GetById(cp.InventoryDecorator)(shop.CharacterId())
 	if err != nil {
@@ -550,7 +553,11 @@ func buildPersonalShopRoom(l logrus.FieldLogger, ctx context.Context, cp charact
 		visitors = append(visitors, interactionpkt.NewBaseVisitor(byte(i+1), avatar, c.Name()))
 	}
 
-	return interactionpkt.NewPersonalShopRoom(visitors, shop.Title(), 16, items), nil
+	// ownerView drives the OnEnterResultBase header byte (offset 0xC8): the owner
+	// (CPersonalShopDlg::OnEnterResult @0x6fc528 `if(*(this+50))`) gets the add-item
+	// management UI, a visitor the buy UI.
+	ownerView := viewerCharacterId == shop.CharacterId()
+	return interactionpkt.NewPersonalShopRoom(ownerView, visitors, shop.Title(), 16, items), nil
 }
 
 // buildShopItems converts listing models to packet RoomShopItems.

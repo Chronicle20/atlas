@@ -58,6 +58,7 @@ type Processor interface {
 	ApplyConsumableEffect(transactionId uuid.UUID, _ channel.Model, characterId uint32, itemId item2.Id) error
 	CancelConsumableEffect(_ uuid.UUID, characterId uint32, itemId item2.Id, f field.Model) error
 	FailScroll(characterId uint32, cursed bool, legendarySpirit bool, whiteScroll bool) error
+	RequestViciousHammer(characterId uint32, hammerSlot int16, equipSlot int16) error
 }
 
 type ProcessorImpl struct {
@@ -931,7 +932,7 @@ func viciousHammerErrorCode(target asset.Model, dataSlots uint16, dataCash bool)
 
 // validateViciousHammerUse fetches the target's WZ-derived equip data and
 // applies viciousHammerErrorCode.
-func (p *Processor) validateViciousHammerUse(target asset.Model) uint32 {
+func (p *ProcessorImpl) validateViciousHammerUse(target asset.Model) uint32 {
 	ed, err := equipable2.NewProcessor(p.l, p.ctx).GetById(target.TemplateId())
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to fetch equip data [%d] for hammer validation.", target.TemplateId())
@@ -944,7 +945,7 @@ func (p *Processor) validateViciousHammerUse(target asset.Model) uint32 {
 // terminal failure event. Mirrors ConsumeError but on the VICIOUS_HAMMER
 // event type — the hammer dialog needs the mode-62 notice, not the generic
 // enable-actions ERROR event.
-func (p *Processor) ViciousHammerError(characterId uint32, transactionId uuid.UUID, hammerSlot int16, errorCode uint32, err error) error {
+func (p *ProcessorImpl) ViciousHammerError(characterId uint32, transactionId uuid.UUID, hammerSlot int16, errorCode uint32, err error) error {
 	p.l.WithError(err).Debugf("Character [%d] vicious hammer rejected with code [%d].", characterId, errorCode)
 	cErr := p.cpp.CancelItemReservation(characterId, inventory2.TypeValueCash, transactionId, hammerSlot)
 	if cErr != nil {
@@ -961,7 +962,7 @@ func (p *Processor) ViciousHammerError(characterId uint32, transactionId uuid.UU
 // reservation callback (ConsumeViciousHammer) performs the atomic
 // consume + mutate. Packet A performed only a cheap pre-check in the channel —
 // this is the authoritative validation (design §4.1).
-func (p *Processor) RequestViciousHammer(characterId uint32, hammerSlot int16, equipSlot int16) error {
+func (p *ProcessorImpl) RequestViciousHammer(characterId uint32, hammerSlot int16, equipSlot int16) error {
 	cp := character.NewProcessor(p.l, p.ctx)
 	transactionId := uuid.New()
 
@@ -1007,7 +1008,7 @@ func (p *Processor) RequestViciousHammer(characterId uint32, hammerSlot int16, e
 func ConsumeViciousHammer(transactionId uuid.UUID, characterId uint32, hammerItem *asset.Model, equipSlot int16) ItemConsumer {
 	return func(l logrus.FieldLogger) func(ctx context.Context) error {
 		return func(ctx context.Context) error {
-			p := NewProcessor(l, ctx)
+			p := NewProcessor(l, ctx).(*ProcessorImpl)
 			cp := character.NewProcessor(l, ctx)
 			ep := equipable.NewProcessor(l, ctx)
 			cpp := compartment.NewProcessor(l, ctx)

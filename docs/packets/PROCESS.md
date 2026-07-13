@@ -11,15 +11,13 @@ Do not restate these facts in prose elsewhere and let them drift — link here.
 ## Task type → entry point → canonical playbook
 
 Each task type has ONE canonical playbook (the procedure) and an executable
-entry point (a slash command / agent that drives it). Entry points marked
-**planned** are being added by task-169 (P3); until then, follow the playbook
-by hand or via the existing entry point noted.
+entry point (a slash command / agent that drives it).
 
 | Task type | Entry point | Canonical playbook |
 |---|---|---|
-| Implement a new feature codec (clientbound or serverbound) | `/implement-packet` + `packet-implementer` agent — **planned (task-169 P3)**; today follow the playbook by hand | [`IMPLEMENTING_A_PACKET.md`](IMPLEMENTING_A_PACKET.md) |
-| Bring up a new client-version column | `/bringup-version` command — **planned (task-169 P3)**; today follow the playbook by hand | [`audits/STARTING_A_NEW_VERSION_PASS.md`](audits/STARTING_A_NEW_VERSION_PASS.md) |
-| Audit / implement a mode-prefix dispatcher family | `family-auditor` agent (read-only audit) — **planned (task-169 P3)**; `dispatcher-family-implementer` agent (do-mode) — **exists** | [`DISPATCHER_FAMILY.md`](DISPATCHER_FAMILY.md) |
+| Implement a new feature codec (clientbound or serverbound) | `/implement-packet` command + `packet-implementer` agent — **exists** | [`IMPLEMENTING_A_PACKET.md`](IMPLEMENTING_A_PACKET.md) |
+| Bring up a new client-version column | `/bringup-version` command — **exists** | [`audits/STARTING_A_NEW_VERSION_PASS.md`](audits/STARTING_A_NEW_VERSION_PASS.md) |
+| Audit / implement a mode-prefix dispatcher family | `family-auditor` agent (read-only audit) — **exists** · `dispatcher-family-implementer` agent (do-mode) — **exists** | [`DISPATCHER_FAMILY.md`](DISPATCHER_FAMILY.md) |
 
 Every task type's leaf step — promoting one packet × version matrix cell to
 `✅` — is the single-cell verify procedure, shared by all of the above:

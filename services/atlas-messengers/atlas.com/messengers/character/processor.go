@@ -2,7 +2,7 @@ package character
 
 import (
 	"atlas-messengers/kafka/message/character"
-	"atlas-messengers/kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"context"
 	"errors"
 

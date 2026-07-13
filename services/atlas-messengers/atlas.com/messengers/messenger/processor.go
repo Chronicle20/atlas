@@ -5,7 +5,7 @@ import (
 	"atlas-messengers/invite"
 	"atlas-messengers/kafka/message"
 	"atlas-messengers/kafka/message/messenger"
-	"atlas-messengers/kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"context"
 	"errors"
 	"fmt"

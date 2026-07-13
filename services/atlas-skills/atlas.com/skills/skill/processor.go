@@ -5,7 +5,7 @@ import (
 	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	"atlas-skills/kafka/message"
 	skill2 "atlas-skills/kafka/message/skill"
-	"atlas-skills/kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"atlas-skills/macro"
 	"context"
 	"errors"

@@ -7,7 +7,7 @@ import (
 	"atlas-storage/data/setup"
 	"atlas-storage/kafka/message"
 	"atlas-storage/kafka/message/compartment"
-	"atlas-storage/kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"context"
 	"errors"
 	"sort"
@@ -18,7 +18,6 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
-	atlasProducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
@@ -447,8 +446,8 @@ func (p *ProcessorImpl) emitCompartmentErrorEvent(worldId world.Id, accountId ui
 }
 
 func createCompartmentMessageProvider[E any](accountId uint32, event *compartment.StatusEvent[E]) func() ([]kafka.Message, error) {
-	key := atlasProducer.CreateKey(int(accountId))
-	return atlasProducer.SingleMessageProvider(key, event)
+	key := producer.CreateKey(int(accountId))
+	return producer.SingleMessageProvider(key, event)
 }
 
 func (p *ProcessorImpl) emitDepositedEvent(transactionId uuid.UUID, worldId world.Id, accountId uint32, assetId uint32, body message.DepositBody) error {
@@ -500,8 +499,8 @@ func (p *ProcessorImpl) emitMesosUpdatedEvent(transactionId uuid.UUID, worldId w
 }
 
 func createMessageProvider[E any](accountId uint32, event *message.StatusEvent[E]) func() ([]kafka.Message, error) {
-	key := atlasProducer.CreateKey(int(accountId))
-	return atlasProducer.SingleMessageProvider(key, event)
+	key := producer.CreateKey(int(accountId))
+	return producer.SingleMessageProvider(key, event)
 }
 
 // mergeKey is used to group stackable assets for merging

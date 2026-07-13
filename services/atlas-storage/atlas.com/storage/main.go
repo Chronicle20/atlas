@@ -7,12 +7,10 @@ import (
 	"atlas-storage/kafka/consumer/character"
 	"atlas-storage/kafka/consumer/compartment"
 	storage2 "atlas-storage/kafka/consumer/storage"
-	"atlas-storage/logger"
 	"atlas-storage/projection"
 	"atlas-storage/service"
 	"atlas-storage/storage"
 	lifecycle "github.com/Chronicle20/atlas/libs/atlas-service"
-	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
@@ -55,19 +53,12 @@ func Migrations(db *gorm.DB) error {
 }
 
 func main() {
-	l := logger.CreateLogger(serviceName)
-	l.Infoln("Starting main service.")
-
-	tdm := lifecycle.GetTeardownManager()
+	rt := lifecycle.Bootstrap(serviceName)
+	l := rt.Logger()
 
 	rc := atlas.Connect(l)
 	storage.InitNpcContextCache(rc)
 	projection.InitManager(rc)
-
-	tc, err := tracing.InitTracer(serviceName)
-	if err != nil {
-		l.WithError(err).Fatal("Unable to initialize tracer.")
-	}
 
 	db := database.Connect(l, database.SetMigrations(Migrations))
 
@@ -81,7 +72,7 @@ func main() {
 
 	// Initialize Kafka consumers for command handling
 	if service.GetMode() == service.Mixed {
-		cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
+		cmf := consumer.GetManager().AddConsumer(l, rt.Context(), rt.WaitGroup())
 		account2.InitConsumers(l)(cmf)(consumerGroupId)
 		storage2.InitConsumers(l)(cmf)(consumerGroupId)
 		compartment.InitConsumers(l)(cmf)(consumerGroupId)
@@ -99,23 +90,21 @@ func main() {
 			l.WithError(err).Fatal("Unable to register kafka handlers.")
 		}
 
-	tdm.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
+	rt.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 
 	}
 
 	server.New(l).
-		WithContext(tdm.Context()).
-		WithWaitGroup(tdm.WaitGroup()).
+		WithContext(rt.Context()).
+		WithWaitGroup(rt.WaitGroup()).
 		SetBasePath(GetServer().GetPrefix()).
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(storage.InitResource(GetServer())(db)).
 		AddRouteInitializer(asset.InitResource(GetServer())(db)).
 		AddRouteInitializer(projection.InitResource(GetServer())).
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
+		AddRouteInitializer(server.MountReadiness("/readyz", rt.Ready)).
 		Run()
 
-	tdm.TeardownFunc(tracing.Teardown(l)(tc))
-
-	tdm.Wait()
-	l.Infoln("Service shutdown.")
+	rt.Wait()
 }

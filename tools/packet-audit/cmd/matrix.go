@@ -242,6 +242,21 @@ func matrixRun(o matrixOpts, stdout, stderr io.Writer) int {
 		}
 	}
 
+	// Resolve per-version sub-struct dispositions from each version's
+	// _unimplemented.json (FR-4.1, task-169). A ref names a sub-struct by an
+	// explicit `packet` path or a suffix-qualified fname; bare-base-fname
+	// dispatcher-arm dispositions are not sub-struct rows and are skipped.
+	idaIndex := matrix.BuildIDANameIndex(in.Reports)
+	in.Unimplemented = map[string]map[string]bool{}
+	for _, vk := range o.Versions {
+		refs, uerr := matrix.LoadUnimplemented(filepath.Join(o.AuditsDir, vk, "_unimplemented.json"))
+		if uerr != nil {
+			fmt.Fprintf(stderr, "packet-audit matrix: error loading _unimplemented.json for %s: %v\n", vk, uerr)
+			return exitRuntime
+		}
+		in.Unimplemented[vk] = matrix.ResolveUnimplemented(refs, idaIndex)
+	}
+
 	m := matrix.Build(in, o.Versions)
 	m.ExportHashes = hashes
 	m.ToolSHA = toolTreeSHA()

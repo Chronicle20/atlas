@@ -1,15 +1,19 @@
 package main
 
 import (
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	"context"
+
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+
 	"atlas-party-quests/definition"
 	"atlas-party-quests/instance"
 	characterConsumer "atlas-party-quests/kafka/consumer/character"
 	monsterConsumer "atlas-party-quests/kafka/consumer/monster"
 	pqConsumer "atlas-party-quests/kafka/consumer/party_quest"
 	"atlas-party-quests/logger"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
 	tenant2 "atlas-party-quests/tenant"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	"github.com/Chronicle20/atlas/libs/atlas-service"
 	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
 	"time"
@@ -92,7 +96,7 @@ func main() {
 	}
 
 	// Start background ticker for PQ timers
-	go func() {
+	routine.Go(l, tdm.Context(), func(_ context.Context) {
 		ticker := time.NewTicker(1 * time.Second)
 		defer ticker.Stop()
 
@@ -122,7 +126,7 @@ func main() {
 				}
 			}
 		}
-	}()
+	})
 
 	server.New(l).
 		WithContext(tdm.Context()).

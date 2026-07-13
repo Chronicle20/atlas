@@ -2,15 +2,17 @@ package main
 
 import (
 	charReg "atlas-pets/character"
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"atlas-pets/kafka/consumer/asset"
 	"atlas-pets/kafka/consumer/character"
 	pet2 "atlas-pets/kafka/consumer/pet"
 	"atlas-pets/logger"
 	"atlas-pets/pet"
 	"atlas-pets/pet/exclude"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-pets/tasks"
+	"context"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	outboxlib "github.com/Chronicle20/atlas/libs/atlas-outbox"
+	"github.com/Chronicle20/atlas/libs/atlas-service"
 	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
 	"time"
@@ -20,6 +22,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 )
 
 const serviceName = "atlas-pets"
@@ -61,7 +64,19 @@ func main() {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
 
-	db := database.Connect(l, database.SetMigrations(pet.Migration, exclude.Migration))
+	db := database.Connect(l, database.SetMigrations(pet.Migration, exclude.Migration, outboxlib.Migration))
+
+	// Boot the outbox drainer: publishes the transactional outbox to Kafka.
+	// Leadership is gated by a postgres advisory lock — replicas are safe.
+	publisher := outboxlib.NewTopicWriterPool()
+	drainer := outboxlib.NewDrainer(l, db, publisher, outboxlib.WithDSN(database.DSN()))
+	routine.Go(l, tdm.Context(), func(_ context.Context) {
+		drainer.Run(tdm.Context())
+	})
+	tdm.TeardownFunc(func() {
+		drainer.Stop()
+		publisher.Close()
+	})
 
 	server.RegisterTransientErrorClassifier(func(err error) bool {
 		if database.IsTransientConnectionError(err) {
@@ -96,7 +111,9 @@ func main() {
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
 		Run()
 
-	go tasks.Register(l, tdm.Context())(pet.NewHungerTask(l, db, time.Minute*time.Duration(3)))
+	routine.Go(l, tdm.Context(), func(_ context.Context) {
+		tasks.Register(l, tdm.Context())(pet.NewHungerTask(l, db, time.Minute*time.Duration(3)))
+	})
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))
 

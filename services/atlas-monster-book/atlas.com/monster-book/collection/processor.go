@@ -8,13 +8,14 @@ import (
 	"atlas-monster-book/data/consumable"
 	"atlas-monster-book/kafka/message"
 	"atlas-monster-book/kafka/message/monsterbook"
-	"atlas-monster-book/kafka/producer"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/monster"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	kafkaProducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -252,24 +253,26 @@ func (p *ProcessorImpl) SetCoverAndEmit(eventId uuid.UUID, characterId character
 	}
 
 	coverMobId := p.resolveCoverMobId(characterId, cardId)
-	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(mb *message.Buffer) error {
-		changed, err := setCover(p.db.WithContext(p.ctx), p.t.Id(), characterId, cardId, coverMobId, eventId)
-		if err != nil {
-			return err
-		}
-		if !changed {
-			return nil
-		}
-		ev := monsterbook.StatusEvent[monsterbook.CoverChangedBody]{
-			TenantId:    p.t.Id(),
-			CharacterId: uint32(characterId),
-			EventId:     eventId,
-			Type:        monsterbook.StatusEventTypeCoverChanged,
-			Body: monsterbook.CoverChangedBody{
-				CoverCardId: uint32(cardId),
-			},
-		}
-		key := kafkaProducer.CreateKey(int(characterId))
-		return mb.Put(monsterbook.EnvEventTopicStatus, kafkaProducer.SingleMessageProvider(key, &ev))
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
+			changed, err := setCover(tx, p.t.Id(), characterId, cardId, coverMobId, eventId)
+			if err != nil {
+				return err
+			}
+			if !changed {
+				return nil
+			}
+			ev := monsterbook.StatusEvent[monsterbook.CoverChangedBody]{
+				TenantId:    p.t.Id(),
+				CharacterId: uint32(characterId),
+				EventId:     eventId,
+				Type:        monsterbook.StatusEventTypeCoverChanged,
+				Body: monsterbook.CoverChangedBody{
+					CoverCardId: uint32(cardId),
+				},
+			}
+			key := kafkaProducer.CreateKey(int(characterId))
+			return mb.Put(monsterbook.EnvEventTopicStatus, kafkaProducer.SingleMessageProvider(key, &ev))
+		})
 	})
 }

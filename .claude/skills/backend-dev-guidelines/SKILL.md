@@ -36,6 +36,7 @@ Activate when working on:
 - [ ] **Requests** + **rest.go** for cross-service REST calls (if needed)
 - [ ] Context-based multi-tenancy (`tenant.MustFromContext`)
 - [ ] Table-driven **tests** for all logic layers
+- [ ] Background goroutines spawned via `routine.Go(l, ctx, fn)` from `libs/atlas-routine` — never a bare `go` statement (DOM-25; enforced by `tools/goroutine-guard.sh`)
 
 **For Saga Actions (if implementing distributed transactions):**
 - [ ] **Saga handler** registered in orchestrator `handler.go`

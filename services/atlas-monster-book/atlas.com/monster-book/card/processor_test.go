@@ -6,6 +6,7 @@ import (
 
 	"atlas-monster-book/kafka/message"
 
+	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -32,6 +33,35 @@ func TestProcessorAddInsertsAtLevel1(t *testing.T) {
 	}
 	if !res.Inserted || res.NewLevel != 1 || res.Duplicate {
 		t.Fatalf("got %+v", res)
+	}
+}
+
+// TestProcessorAddAndEmitEnqueuesOutboxRow proves the migrated AndEmit
+// method enqueues the CARD_ADDED status event as an outbox row (inside the
+// same transaction as the domain write) instead of publishing it directly.
+func TestProcessorAddAndEmitEnqueuesOutboxRow(t *testing.T) {
+	db := newDB(t)
+	if err := outbox.Migration(db); err != nil {
+		t.Fatalf("outbox migrate: %v", err)
+	}
+	tid := uuid.New()
+	ctx := tenantCtx(t, tid)
+	p := NewProcessor(logrus.New(), ctx, db)
+
+	res, err := p.AddAndEmit(uuid.New(), 1, 2380000)
+	if err != nil {
+		t.Fatalf("AddAndEmit: %v", err)
+	}
+	if !res.Inserted || res.NewLevel != 1 {
+		t.Fatalf("got %+v", res)
+	}
+
+	var count int64
+	if err := db.Model(&outbox.Entity{}).Count(&count).Error; err != nil {
+		t.Fatalf("count outbox rows: %v", err)
+	}
+	if count != 1 {
+		t.Fatalf("expected 1 outbox row (CARD_ADDED), got %d", count)
 	}
 }
 

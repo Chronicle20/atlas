@@ -14,6 +14,7 @@ import (
 
 	minio "atlas-data/storage/minio"
 
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/sirupsen/logrus"
@@ -39,7 +40,7 @@ type Restorer struct {
 // to restoreOneTable. Pulled out of Restore so the marker UPSERT can be
 // deferred until every entry succeeds. columns is the header's per-table
 // column list (the order the dump's COPY stream was produced with).
-func runRestoreTables(ctx context.Context, db *gorm.DB, tr *tar.Reader, target uuid.UUID, columns map[string][]string) error {
+func runRestoreTables(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, tr *tar.Reader, target uuid.UUID, columns map[string][]string) error {
 	for {
 		e, err := tr.Next()
 		if err == io.EOF {
@@ -56,13 +57,13 @@ func runRestoreTables(ctx context.Context, db *gorm.DB, tr *tar.Reader, target u
 		if len(cols) == 0 {
 			return fmt.Errorf("restore table %s: header has no column list (re-publish with schema %s)", table, SchemaVersion)
 		}
-		if err := restoreOneTable(ctx, db, table, cols, tr, target); err != nil {
+		if err := restoreOneTable(ctx, l, db, table, cols, tr, target); err != nil {
 			return fmt.Errorf("restore table %s: %w", table, err)
 		}
 	}
 }
 
-func restoreOneTable(ctx context.Context, db *gorm.DB, table string, cols []string, r io.Reader, target uuid.UUID) error {
+func restoreOneTable(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, table string, cols []string, r io.Reader, target uuid.UUID) error {
 	tenantIdx := columnIndex(cols, "tenant_id")
 	if tenantIdx < 0 {
 		return fmt.Errorf("column list has no tenant_id")
@@ -75,7 +76,7 @@ func restoreOneTable(ctx context.Context, db *gorm.DB, table string, cols []stri
 		// Pipe rw.Stream() into COPY <table> (cols) FROM STDIN BINARY through
 		// the raw connection. The explicit column list maps stream fields to
 		// columns by NAME, so the target's physical column order is irrelevant.
-		return copyInBinary(ctx, tx, table, cols, r, rw)
+		return copyInBinary(ctx, l, tx, table, cols, r, rw)
 	})
 }
 
@@ -153,7 +154,7 @@ func (r Restorer) Restore(ctx context.Context, region string, major, minor int, 
 	//    succeeds. A mid-restore failure triggers cleanupAfterFailure to
 	//    DELETE every DumpTables row for `target` so subsequent reads see
 	//    "never restored" rather than half-restored. See task-076 F5.
-	if err := runRestoreTables(ctx, r.DB, tr, target, hdr.Columns); err != nil {
+	if err := runRestoreTables(ctx, r.L, r.DB, tr, target, hdr.Columns); err != nil {
 		r.L.WithError(err).Warnf("restore: table loop failed for target=%s region=%s ver=%d.%d; cleaning partial state", target, region, major, minor)
 		cleanupAfterFailure(ctx, r.L, r.DB, target)
 		return err
@@ -214,7 +215,7 @@ func readMinioObject(ctx context.Context, mc *minio.Client, bucket, key string) 
 // connection borrowed from the gorm transaction. The explicit column list
 // mirrors the publish-time projection so Postgres maps stream fields to columns
 // by name, not by the target table's physical order.
-func copyInBinary(ctx context.Context, tx *gorm.DB, table string, cols []string, in io.Reader, rw Rewriter) error {
+func copyInBinary(ctx context.Context, l logrus.FieldLogger, tx *gorm.DB, table string, cols []string, in io.Reader, rw Rewriter) error {
 	sqlDB, err := tx.DB()
 	if err != nil {
 		return err
@@ -231,10 +232,10 @@ func copyInBinary(ctx context.Context, tx *gorm.DB, table string, cols []string,
 		}
 		pr, pw := io.Pipe()
 		errc := make(chan error, 1)
-		go func() {
+		routine.Go(l, ctx, func(_ context.Context) {
 			defer pw.Close()
 			errc <- rw.Stream(in, pw)
-		}()
+		})
 		sql := fmt.Sprintf(`COPY %s (%s) FROM STDIN (FORMAT binary)`, table, quoteCols(cols))
 		if _, err := pgxConn.Conn().PgConn().CopyFrom(ctx, pr, sql); err != nil {
 			// Drain the rewriter goroutine so it doesn't deadlock writing to pw.

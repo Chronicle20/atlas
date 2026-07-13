@@ -16,6 +16,7 @@ import (
 	map2 "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	monster2 "github.com/Chronicle20/atlas/libs/atlas-constants/monster"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
@@ -711,10 +712,10 @@ func (p *ProcessorImpl) UseSkill(uniqueId uint32, characterId uint32, skillId by
 	}
 
 	if animDelay > 0 {
-		go func() {
+		routine.Go(p.l, p.ctx, func(_ context.Context) {
 			time.Sleep(animDelay)
 			p.applyAnimationDelayedEffect(uniqueId, executeEffect, postExecute)
-		}()
+		})
 	} else {
 		executeEffect()
 		postExecute()

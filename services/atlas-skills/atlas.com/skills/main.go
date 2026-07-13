@@ -1,15 +1,20 @@
 package main
 
 import (
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	"context"
+
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+
 	"atlas-skills/kafka/consumer/character"
 	macro2 "atlas-skills/kafka/consumer/macro"
 	skill2 "atlas-skills/kafka/consumer/skill"
 	"atlas-skills/logger"
 	"atlas-skills/macro"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-skills/skill"
 	"atlas-skills/tasks"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	outboxlib "github.com/Chronicle20/atlas/libs/atlas-outbox"
+	"github.com/Chronicle20/atlas/libs/atlas-service"
 	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
 
@@ -58,7 +63,19 @@ func main() {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
 
-	db := database.Connect(l, database.SetMigrations(skill.Migration, macro.Migration))
+	db := database.Connect(l, database.SetMigrations(skill.Migration, macro.Migration, outboxlib.Migration))
+
+	// Boot the outbox drainer: publishes the transactional outbox to Kafka.
+	// Leadership is gated by a postgres advisory lock — replicas are safe.
+	publisher := outboxlib.NewTopicWriterPool()
+	drainer := outboxlib.NewDrainer(l, db, publisher, outboxlib.WithDSN(database.DSN()))
+	routine.Go(l, tdm.Context(), func(_ context.Context) {
+		drainer.Run(tdm.Context())
+	})
+	tdm.TeardownFunc(func() {
+		drainer.Stop()
+		publisher.Close()
+	})
 
 	server.RegisterTransientErrorClassifier(func(err error) bool {
 		if database.IsTransientConnectionError(err) {
@@ -84,7 +101,9 @@ func main() {
 
 	tdm.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 
-	go tasks.Register(tasks.NewExpirationTask(l, db, 1000))
+	routine.Go(l, tdm.Context(), func(_ context.Context) {
+		tasks.Register(l, tdm.Context())(tasks.NewExpirationTask(l, db, 1000))
+	})
 
 	server.New(l).
 		WithContext(tdm.Context()).

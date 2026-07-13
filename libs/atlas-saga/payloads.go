@@ -7,6 +7,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/google/uuid"
 )
@@ -220,6 +221,33 @@ type RebalanceAPPayload struct {
 	WorldId     world.Id          `json:"worldId"`     // WorldId associated with the action
 	ChannelId   channel.Id        `json:"channelId"`   // ChannelId associated with the action
 	Targets     []RebalanceTarget `json:"targets"`     // Target stats and floors to apply
+}
+
+// TransferAPPayload represents the payload for transfer_ap (AP Reset,
+// item 5050000): move one already-spent ability point From -> To. From/To
+// are validated ability enums (STRENGTH/DEXTERITY/INTELLIGENCE/LUCK/HP/MP),
+// never raw client stat flags.
+type TransferAPPayload struct {
+	CharacterId uint32     `json:"characterId"`
+	WorldId     world.Id   `json:"worldId"`
+	ChannelId   channel.Id `json:"channelId"`
+	From        string     `json:"from"`
+	To          string     `json:"to"`
+}
+
+// TransferSPPayload represents the payload for transfer_sp (SP Reset,
+// items 5050001-5050004): move one skill point FromSkillId -> ToSkillId.
+// JobId, ItemTier, and TargetMaxLevel ride along for authoritative
+// re-validation in atlas-skills (trusted server-side caller — atlas-channel).
+type TransferSPPayload struct {
+	CharacterId    uint32     `json:"characterId"`
+	WorldId        world.Id   `json:"worldId"`
+	ChannelId      channel.Id `json:"channelId"`
+	JobId          job.Id     `json:"jobId"`
+	FromSkillId    skill.Id   `json:"fromSkillId"`
+	ToSkillId      skill.Id   `json:"toSkillId"`
+	ItemTier       byte       `json:"itemTier"`
+	TargetMaxLevel byte       `json:"targetMaxLevel"`
 }
 
 // CreateSkillPayload represents the payload required to create a skill for a character.

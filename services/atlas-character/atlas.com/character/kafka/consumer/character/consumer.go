@@ -86,6 +86,9 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleRebalanceAP(db)))); err != nil {
 				return err
 			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleTransferAP(db)))); err != nil {
+				return err
+			}
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleClampHP(db)))); err != nil {
 				return err
 			}
@@ -397,6 +400,19 @@ func handleRebalanceAP(db *gorm.DB) message.Handler[character2.Command[character
 		}
 		if err := character.NewProcessor(l, ctx, db).RebalanceAPAndEmit(c.TransactionId, c.CharacterId, cha, targets); err != nil {
 			l.WithError(err).Errorf("Unable to rebalance AP for character [%d].", c.CharacterId)
+		}
+	}
+}
+
+func handleTransferAP(db *gorm.DB) message.Handler[character2.Command[character2.TransferAPCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c character2.Command[character2.TransferAPCommandBody]) {
+		if c.Type != character2.CommandTransferAP {
+			return
+		}
+
+		cha := channel.NewModel(c.WorldId, c.Body.ChannelId)
+		if err := character.NewProcessor(l, ctx, db).TransferAPAndEmit(c.TransactionId, c.CharacterId, cha, c.Body.From, c.Body.To); err != nil {
+			l.WithError(err).Errorf("Unable to transfer AP for character [%d].", c.CharacterId)
 		}
 	}
 }

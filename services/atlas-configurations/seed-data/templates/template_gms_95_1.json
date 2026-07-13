@@ -240,6 +240,11 @@
         "handler": "MountFoodHandle"
       },
       {
+        "opCode": "0x55",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterCashItemUseHandle"
+      },
+      {
         "opCode": "0x5D",
         "handler": "CharacterItemUseScrollHandle"
       },
@@ -994,6 +999,10 @@
       {
         "opCode": "0x7F",
         "writer": "ScriptProgress"
+      },
+      {
+        "opCode": "0x8C",
+        "writer": "CharacterSkillMacro"
       },
       {
         "opCode": "0x8D",

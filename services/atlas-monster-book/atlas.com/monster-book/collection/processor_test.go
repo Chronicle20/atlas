@@ -11,6 +11,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/monster"
+	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -116,6 +117,51 @@ func TestSetCoverRejectsUnownedCardBeforeProducerCall(t *testing.T) {
 	// Non-card itemId → must error out of validation with the typed sentinel.
 	if err := p.SetCoverAndEmit(uuid.New(), 1, 1234); !errors.Is(err, ErrCardIdOutOfRange) {
 		t.Fatalf("expected ErrCardIdOutOfRange for non-card itemId, got %v", err)
+	}
+}
+
+// TestSetCoverAndEmitEnqueuesOutboxRow proves the migrated AndEmit method
+// enqueues the COVER_CHANGED status event as an outbox row (inside the same
+// transaction as the domain write) instead of publishing it directly.
+func TestSetCoverAndEmitEnqueuesOutboxRow(t *testing.T) {
+	db := newDB(t)
+	if err := card.Migration(db); err != nil {
+		t.Fatal(err)
+	}
+	if err := outbox.Migration(db); err != nil {
+		t.Fatalf("outbox migrate: %v", err)
+	}
+	tid := uuid.New()
+	ctx := tenantCtx(t, tid)
+	mb := message.NewBuffer()
+	cp := card.NewProcessor(logrus.New(), ctx, db)
+	if _, err := cp.Add(mb)(uuid.New(), 1, 2380000); err != nil {
+		t.Fatal(err)
+	}
+	// setCover updates an existing monster_book_collections row; seed one
+	// first (mirrors TestSetCoverIdempotent in administrator_test.go).
+	if _, err := upsertStats(db, tid, 1, statsUpdate{NormalCount: 1, SpecialCount: 0, BookLevel: 1, ExpBonusPercent: 1}); err != nil {
+		t.Fatalf("seed collection row: %v", err)
+	}
+	p := NewProcessor(logrus.New(), ctx, db)
+	if err := p.SetCoverAndEmit(uuid.New(), 1, 2380000); err != nil {
+		t.Fatalf("SetCoverAndEmit: %v", err)
+	}
+
+	got, err := p.GetByCharacterId(1)
+	if err != nil {
+		t.Fatalf("get: %v", err)
+	}
+	if got.CoverCardId() != 2380000 {
+		t.Fatalf("expected cover 2380000, got %d", got.CoverCardId())
+	}
+
+	var count int64
+	if err := db.Model(&outbox.Entity{}).Count(&count).Error; err != nil {
+		t.Fatalf("count outbox rows: %v", err)
+	}
+	if count != 1 {
+		t.Fatalf("expected 1 outbox row (COVER_CHANGED), got %d", count)
 	}
 }
 

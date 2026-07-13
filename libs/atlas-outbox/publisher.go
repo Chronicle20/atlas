@@ -10,12 +10,10 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
-// TopicWriterPool implements outboxlib.Publisher by maintaining one
-// long-lived kafka.Writer per topic. The drainer only ever publishes a
-// handful of topics from atlas-configurations (service + tenant config
-// status), so the pool stays small and is keyed by the message's Topic
-// field rather than the producer.Manager's env-var-token convention
-// (which would require an inverse lookup from topic name to env var).
+// TopicWriterPool implements Publisher by maintaining one long-lived
+// kafka.Writer per topic, keyed by the message's Topic field (outbox rows
+// store real topic names, not env-var tokens). Per-service topic counts
+// stay small fleet-wide, so the pool stays small.
 type TopicWriterPool struct {
 	mu      sync.Mutex
 	writers map[string]*kafka.Writer

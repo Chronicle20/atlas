@@ -26,6 +26,7 @@ import (
 	"atlas-channel/kafka/consumer/guild/thread"
 	"atlas-channel/kafka/consumer/instance_transport"
 	"atlas-channel/kafka/consumer/invite"
+	"atlas-channel/kafka/consumer/macro"
 	"atlas-channel/kafka/consumer/map"
 	merchantConsumer "atlas-channel/kafka/consumer/merchant"
 	"atlas-channel/kafka/consumer/message"
@@ -70,6 +71,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 
 	buddy2 "github.com/Chronicle20/atlas/libs/atlas-packet/buddy"
@@ -200,6 +202,7 @@ func main() {
 	drop.InitConsumers(l)(cmf)(consumerGroupId)
 	reactor.InitConsumers(l)(cmf)(consumerGroupId)
 	skill.InitConsumers(l)(cmf)(consumerGroupId)
+	macro.InitConsumers(l)(cmf)(consumerGroupId)
 	buff.InitConsumers(l)(cmf)(consumerGroupId)
 	chalkboard.InitConsumers(l)(cmf)(consumerGroupId)
 	messenger.InitConsumers(l)(cmf)(consumerGroupId)
@@ -322,16 +325,20 @@ func main() {
 	})
 
 	build := buildListener(l, tdm, state, validatorMap, handlerMap, writerList)
-	go (&projection.ApplyLoop{
-		State:       state,
-		CaughtUp:    caughtUp,
-		Registry:    listenerRegistry,
-		AddBody:     build,
-		ServerModel: serverModelFn,
-		Interval:    250 * time.Millisecond,
-	}).Run(tdm.Context(), l)
+	routine.Go(l, tdm.Context(), func(_ context.Context) {
+		(&projection.ApplyLoop{
+			State:       state,
+			CaughtUp:    caughtUp,
+			Registry:    listenerRegistry,
+			AddBody:     build,
+			ServerModel: serverModelFn,
+			Interval:    250 * time.Millisecond,
+		}).Run(tdm.Context(), l)
+	})
 
-	go tasks.Register(l, tdm.Context())(channel3.NewHeartbeat(l, tdm.Context(), time.Second*10))
+	routine.Go(l, tdm.Context(), func(_ context.Context) {
+		tasks.Register(l, tdm.Context())(channel3.NewHeartbeat(l, tdm.Context(), time.Second*10))
+	})
 
 	tdm.TeardownFunc(session.Teardown(l))
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))
@@ -502,6 +509,9 @@ func buildListener(
 			return nil, err
 		}
 		if err := register(skill.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
+		if err := register(macro.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
 			return nil, err
 		}
 		if err := register(buff.InitHandlers(fl)(sc)(wp)(rh)); err != nil {

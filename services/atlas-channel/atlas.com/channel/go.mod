@@ -27,6 +27,7 @@ require (
 
 require (
 	github.com/Chronicle20/atlas/libs/atlas-retry v0.0.0 // indirect
+	github.com/Chronicle20/atlas/libs/atlas-routine v0.0.0-00010101000000-000000000000
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
@@ -91,3 +92,5 @@ replace github.com/Chronicle20/atlas/libs/atlas-redis => ../../../../libs/atlas-
 replace github.com/Chronicle20/atlas/libs/atlas-retry => ../../../../libs/atlas-retry
 
 replace github.com/Chronicle20/atlas/libs/atlas-script-core => ../../../../libs/atlas-script-core
+
+replace github.com/Chronicle20/atlas/libs/atlas-routine => ../../../../libs/atlas-routine

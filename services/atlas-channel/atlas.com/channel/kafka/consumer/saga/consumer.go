@@ -4,6 +4,7 @@ import (
 	consumer2 "atlas-channel/kafka/consumer"
 	"atlas-channel/kafka/message/saga"
 	"atlas-channel/listener"
+	"atlas-channel/pointreset"
 	"atlas-channel/server"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
@@ -16,8 +17,10 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	chatpkt "github.com/Chronicle20/atlas/libs/atlas-packet/chat/clientbound"
 	fieldpkt "github.com/Chronicle20/atlas/libs/atlas-packet/field"
 	fieldcb "github.com/Chronicle20/atlas/libs/atlas-packet/field/clientbound"
+	statpkt "github.com/Chronicle20/atlas/libs/atlas-packet/stat/clientbound"
 	storagepkt "github.com/Chronicle20/atlas/libs/atlas-packet/storage"
 	storagecb "github.com/Chronicle20/atlas/libs/atlas-packet/storage/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
@@ -264,6 +267,22 @@ func handleFailedEvent(sc server.Model, wp writer.Producer) message.Handler[saga
 				"character_id": e.Body.CharacterId,
 				"error_code":   e.Body.ErrorCode,
 			}).Debug("Sent storage operation error packet to client.")
+		}
+
+		// Point-reset failures: specific pink text where the service supplied
+		// a machine-readable code (threaded through the compensator; Reason
+		// carries the stat detail), then re-enable client actions.
+		if e.Body.SagaType == saga.SagaTypePointReset {
+			msg := pointreset.ErrorMessage(e.Body.ErrorCode, e.Body.Reason)
+			err = session.Announce(l)(ctx)(wp)(chatpkt.WorldMessageWriter)(writer.WorldMessagePinkTextBody("", "", msg))(s)
+			if err != nil {
+				l.WithError(err).WithField("character_id", e.Body.CharacterId).Error("Failed to send point-reset pink text.")
+			}
+			err = session.Announce(l)(ctx)(wp)(statpkt.StatChangedWriter)(statpkt.NewStatChanged(make([]statpkt.Update, 0), true).Encode)(s)
+			if err != nil {
+				l.WithError(err).WithField("character_id", e.Body.CharacterId).Error("Failed to send enable-actions after point-reset failure.")
+			}
+			return
 		}
 	}
 }

@@ -199,6 +199,24 @@ func ResetStatsProvider(transactionId uuid.UUID, ch channel.Model, characterId u
 	return producer.SingleMessageProvider(key, value)
 }
 
+// TransferAPProvider emits the saga-correlated TRANSFER_AP command consumed by
+// atlas-character (AP Reset item 5050000, task-126).
+func TransferAPProvider(transactionId uuid.UUID, ch channel.Model, characterId uint32, from string, to string) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &character2.Command[character2.TransferAPCommandBody]{
+		TransactionId: transactionId,
+		WorldId:       ch.WorldId(),
+		CharacterId:   characterId,
+		Type:          character2.CommandTransferAP,
+		Body: character2.TransferAPCommandBody{
+			ChannelId: ch.Id(),
+			From:      from,
+			To:        to,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 func RebalanceAPProvider(transactionId uuid.UUID, ch channel.Model, characterId uint32, targets []character2.RebalanceAPTarget) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &character2.Command[character2.RebalanceAPCommandBody]{

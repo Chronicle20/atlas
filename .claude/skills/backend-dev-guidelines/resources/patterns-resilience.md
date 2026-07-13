@@ -1,7 +1,7 @@
 # DB & Downstream Resilience Patterns
 
 Source task: task-168 (atlas-pr-901 naked-character incident). These patterns
-are mandatory for new code and enforced by DOM-26/DOM-27.
+are mandatory for new code and enforced by DOM-27/DOM-28.
 
 ## Transient DB error classification
 
@@ -52,7 +52,7 @@ Keep 404/400 branches as they are. Non-transient errors still map to 500
 adopted by **every DB-backed service** — see
 `docs/tasks/task-168-db-connection-resilience/fleet-503-adoption.md` for the
 full list and the handful of non-mechanical sites. New DB-backed services MUST
-follow it (DOM-26).
+follow it (DOM-27).
 
 ## Client retry semantics (automatic, GET only)
 

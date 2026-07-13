@@ -1,6 +1,6 @@
 module github.com/Chronicle20/atlas/libs/atlas-seeder
 
-go 1.25.0
+go 1.25.5
 
 replace github.com/Chronicle20/atlas/libs/atlas-model => ../atlas-model
 
@@ -12,6 +12,7 @@ replace github.com/Chronicle20/atlas/libs/atlas-tenant => ../atlas-tenant
 
 require (
 	github.com/Chronicle20/atlas/libs/atlas-rest v0.0.0-00010101000000-000000000000
+	github.com/Chronicle20/atlas/libs/atlas-routine v0.0.0-00010101000000-000000000000
 	github.com/Chronicle20/atlas/libs/atlas-tenant v0.0.0
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/mux v1.8.1
@@ -51,3 +52,5 @@ require (
 	google.golang.org/protobuf v1.36.8 // indirect
 	gorm.io/driver/mysql v1.5.6 // indirect
 )
+
+replace github.com/Chronicle20/atlas/libs/atlas-routine => ../atlas-routine

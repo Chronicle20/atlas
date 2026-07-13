@@ -3,6 +3,7 @@ module github.com/Chronicle20/atlas/libs/atlas-lock
 go 1.25.5
 
 require (
+	github.com/Chronicle20/atlas/libs/atlas-routine v0.0.0-00010101000000-000000000000
 	github.com/alicebob/miniredis/v2 v2.38.0
 	github.com/bsm/redislock v0.10.0
 	github.com/prometheus/client_golang v1.23.2
@@ -31,3 +32,5 @@ require (
 	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+replace github.com/Chronicle20/atlas/libs/atlas-routine => ../atlas-routine

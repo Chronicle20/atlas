@@ -20,6 +20,7 @@ import (
 	monsterpkt "github.com/Chronicle20/atlas/libs/atlas-packet/monster/clientbound"
 	npcpkt "github.com/Chronicle20/atlas/libs/atlas-packet/npc/clientbound"
 	petpkt "github.com/Chronicle20/atlas/libs/atlas-packet/pet/clientbound"
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
@@ -44,14 +45,14 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, wp writer.Producer)
 }
 
 func (p *Processor) ForCharacter(f field.Model, characterId uint32, movement model.Movement) error {
-	go func() {
+	routine.Go(p.l, p.ctx, func(_ context.Context) {
 		op := session.Announce(p.l)(p.ctx)(p.wp)(charpkt.CharacterMovementWriter)(charpkt.NewCharacterMovement(characterId, movement).Encode)
 		err := _map2.NewProcessor(p.l, p.ctx).ForOtherSessionsInMap(f, characterId, op)
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to move character [%d] for characters in map [%d].", characterId, f.MapId())
 		}
-	}()
-	go func() {
+	})
+	routine.Go(p.l, p.ctx, func(_ context.Context) {
 		ms, err := model2.Fold(model2.FixedProvider(movement.Elements), summaryProvider(movement.StartX, movement.StartY, 0), folder)()
 		if err != nil {
 			return
@@ -60,12 +61,12 @@ func (p *Processor) ForCharacter(f field.Model, characterId uint32, movement mod
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to issue movement command [%d].", characterId)
 		}
-	}()
+	})
 	return nil
 }
 
 func (p *Processor) ForNPC(f field.Model, characterId uint32, objectId uint32, unk byte, unk2 byte, movement model.Movement) error {
-	go func() {
+	routine.Go(p.l, p.ctx, func(_ context.Context) {
 		n, err := npc.NewProcessor(p.l, p.ctx).GetInMapByObjectId(f.MapId(), objectId)
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to retrieve npc moving.")
@@ -77,12 +78,12 @@ func (p *Processor) ForNPC(f field.Model, characterId uint32, objectId uint32, u
 			p.l.WithError(err).Errorf("Unable to move npc [%d] for character [%d].", n.Template(), characterId)
 		}
 		return
-	}()
+	})
 	return nil
 }
 
 func (p *Processor) ForPet(f field.Model, characterId uint32, petId uint32, movement model.Movement) error {
-	go func() {
+	routine.Go(p.l, p.ctx, func(_ context.Context) {
 		// TODO look up pet.
 		pe := pet.NewModelBuilder(petId, 0, 0, "").
 			SetOwnerID(characterId).
@@ -94,8 +95,8 @@ func (p *Processor) ForPet(f field.Model, characterId uint32, petId uint32, move
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to move pet [%d] for characters in map [%d].", characterId, f.MapId())
 		}
-	}()
-	go func() {
+	})
+	routine.Go(p.l, p.ctx, func(_ context.Context) {
 		ms, err := model2.Fold(model2.FixedProvider(movement.Elements), summaryProvider(movement.StartX, movement.StartY, 0), folder)()
 		if err != nil {
 			return
@@ -104,7 +105,7 @@ func (p *Processor) ForPet(f field.Model, characterId uint32, petId uint32, move
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to issue movement command [%d].", characterId)
 		}
-	}()
+	})
 	return nil
 }
 
@@ -161,7 +162,7 @@ func (p *Processor) ForMonster(f field.Model, characterId uint32, objectId uint3
 			ackMp = computeAckMp(ackMp, pos0, info.Attacks())
 		}
 	}
-	go func() {
+	routine.Go(p.l, p.ctx, func(_ context.Context) {
 		// v83 protocol compat (per Cosmic MoveLifeHandler:144 +
 		// PacketCreator.moveMonsterResponse): the wire-level "useSkills" bool
 		// is actually the controller's aggro flag. The client uses it to
@@ -183,15 +184,15 @@ func (p *Processor) ForMonster(f field.Model, characterId uint32, objectId uint3
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to ack monster [%d] movement for character [%d].", objectId, characterId)
 		}
-	}()
-	go func() {
+	})
+	routine.Go(p.l, p.ctx, func(_ context.Context) {
 		op := session.Announce(p.l)(p.ctx)(p.wp)(monsterpkt.MonsterMovementWriter)(monsterpkt.NewMonsterMovement(objectId, false, skillPossible, false, skill, skillId, skillLevel, mt, rt, movement).Encode)
 		err = _map2.NewProcessor(p.l, p.ctx).ForOtherSessionsInMap(f, characterId, op)
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to move monster [%d] for characters in map [%d].", objectId, f.MapId())
 		}
-	}()
-	go func() {
+	})
+	routine.Go(p.l, p.ctx, func(_ context.Context) {
 		var ms summary
 		ms, err = model2.Fold(model2.FixedProvider(movement.Elements), summaryProvider(movement.StartX, movement.StartY, 0), folder)()
 		if err != nil {
@@ -216,26 +217,26 @@ func (p *Processor) ForMonster(f field.Model, characterId uint32, objectId uint3
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to issue movement command [%d].", characterId)
 		}
-	}()
+	})
 	if skillId > 0 {
 		id, lvl, ok := narrowSkillBytes(skillId, skillLevel)
 		if !ok {
 			p.l.Warnf("Monster [%d] inbound skill out of range (id=%d level=%d); dropping.", objectId, skillId, skillLevel)
 		} else {
-			go func() {
+			routine.Go(p.l, p.ctx, func(_ context.Context) {
 				err := monster.NewProcessor(p.l, p.ctx).UseSkill(f, objectId, characterId, id, lvl)
 				if err != nil {
 					p.l.WithError(err).Errorf("Unable to issue use skill command for monster [%d].", objectId)
 				}
-			}()
+			})
 		}
 	}
 	if isBasicAttack {
-		go func() {
+		routine.Go(p.l, p.ctx, func(_ context.Context) {
 			if err := monster.NewProcessor(p.l, p.ctx).UseBasicAttack(f, objectId, pos0); err != nil {
 				p.l.WithError(err).Errorf("Unable to issue basic-attack command for monster [%d].", objectId)
 			}
-		}()
+		})
 	}
 	return nil
 }
@@ -304,7 +305,6 @@ func narrowSkillBytes(skillId int16, skillLevel int16) (byte, byte, bool) {
 	}
 	return byte(skillId), byte(skillLevel), true
 }
-
 
 // computeAckMp returns the MP value to advertise in MoveMonsterAck for a
 // basic-attack action. It looks up the attack-position's conMP in atks

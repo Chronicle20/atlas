@@ -176,6 +176,15 @@ type MockEventEmitter struct {
 	ForfeitedEvents []QuestEvent
 	ProgressEvents  []ProgressEvent
 	SagaEvents      []saga.Saga
+
+	// Err*, when non-nil, is returned by the corresponding Emit* method
+	// instead of recording the event. Used to simulate an outbox-enqueue
+	// failure so callers can assert that the failure propagates out of the
+	// enclosing transaction instead of being swallowed.
+	StartedErr   error
+	CompletedErr error
+	ForfeitedErr error
+	ProgressErr  error
 }
 
 // QuestEvent represents a quest event for testing
@@ -207,21 +216,33 @@ func NewMockEventEmitter() *MockEventEmitter {
 }
 
 func (m *MockEventEmitter) EmitQuestStarted(_ uuid.UUID, characterId uint32, worldId world.Id, questId uint32, _ string, items []questmessage.ItemReward) error {
+	if m.StartedErr != nil {
+		return m.StartedErr
+	}
 	m.StartedEvents = append(m.StartedEvents, QuestEvent{CharacterId: characterId, WorldId: worldId, QuestId: questId, Items: items})
 	return nil
 }
 
 func (m *MockEventEmitter) EmitQuestCompleted(_ uuid.UUID, characterId uint32, worldId world.Id, questId uint32, _ time.Time, items []questmessage.ItemReward) error {
+	if m.CompletedErr != nil {
+		return m.CompletedErr
+	}
 	m.CompletedEvents = append(m.CompletedEvents, QuestEvent{CharacterId: characterId, WorldId: worldId, QuestId: questId, Items: items})
 	return nil
 }
 
 func (m *MockEventEmitter) EmitQuestForfeited(_ uuid.UUID, characterId uint32, worldId world.Id, questId uint32) error {
+	if m.ForfeitedErr != nil {
+		return m.ForfeitedErr
+	}
 	m.ForfeitedEvents = append(m.ForfeitedEvents, QuestEvent{CharacterId: characterId, WorldId: worldId, QuestId: questId})
 	return nil
 }
 
 func (m *MockEventEmitter) EmitProgressUpdated(_ uuid.UUID, characterId uint32, worldId world.Id, questId uint32, infoNumber uint32, progress string) error {
+	if m.ProgressErr != nil {
+		return m.ProgressErr
+	}
 	m.ProgressEvents = append(m.ProgressEvents, ProgressEvent{CharacterId: characterId, WorldId: worldId, QuestId: questId, InfoNumber: infoNumber, Progress: progress})
 	return nil
 }

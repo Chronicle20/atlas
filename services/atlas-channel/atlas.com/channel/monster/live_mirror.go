@@ -49,6 +49,7 @@ var (
 func GetLiveMirror() *LiveMirror {
 	liveMirrorOnce.Do(func() {
 		liveMirror = &LiveMirror{perTenant: map[uuid.UUID]map[uint32]LiveEntry{}}
+		//goroutine-guard:allow process-lifetime staleness sweeper on a sync.Once singleton with no logger/ctx in scope (GetLiveMirror is no-arg, called from ~30 sites incl. tests); sweepLoop only does map eviction under its own lock and cannot panic on caller input.
 		go liveMirror.sweepLoop()
 	})
 	return liveMirror

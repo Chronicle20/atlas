@@ -280,6 +280,94 @@ func TestUnmarshalEvolvePetStep(t *testing.T) {
 	}
 }
 
+func TestUnmarshalTransferAPStep(t *testing.T) {
+	raw := `{
+		"stepId": "transfer_ap-1",
+		"status": "pending",
+		"action": "transfer_ap",
+		"payload": {
+			"characterId": 100,
+			"worldId": 0,
+			"channelId": 1,
+			"from": "STRENGTH",
+			"to": "DEXTERITY"
+		},
+		"createdAt": "2026-07-02T00:00:00Z",
+		"updatedAt": "2026-07-02T00:00:00Z"
+	}`
+
+	var step Step[any]
+	if err := json.Unmarshal([]byte(raw), &step); err != nil {
+		t.Fatalf("unmarshal failed: %v", err)
+	}
+	if step.Action != TransferAP {
+		t.Fatalf("expected action TransferAP, got %q", step.Action)
+	}
+	p, ok := step.Payload.(TransferAPPayload)
+	if !ok {
+		t.Fatalf("expected TransferAPPayload, got %T", step.Payload)
+	}
+	if p.CharacterId != 100 {
+		t.Errorf("characterId: expected 100, got %d", p.CharacterId)
+	}
+	if p.From != "STRENGTH" {
+		t.Errorf("from: expected STRENGTH, got %q", p.From)
+	}
+	if p.To != "DEXTERITY" {
+		t.Errorf("to: expected DEXTERITY, got %q", p.To)
+	}
+}
+
+func TestUnmarshalTransferSPStep(t *testing.T) {
+	raw := `{
+		"stepId": "transfer_sp-1",
+		"status": "pending",
+		"action": "transfer_sp",
+		"payload": {
+			"characterId": 100,
+			"worldId": 0,
+			"channelId": 1,
+			"jobId": 200,
+			"fromSkillId": 2001002,
+			"toSkillId": 2001003,
+			"itemTier": 1,
+			"targetMaxLevel": 20
+		},
+		"createdAt": "2026-07-02T00:00:00Z",
+		"updatedAt": "2026-07-02T00:00:00Z"
+	}`
+
+	var step Step[any]
+	if err := json.Unmarshal([]byte(raw), &step); err != nil {
+		t.Fatalf("unmarshal failed: %v", err)
+	}
+	if step.Action != TransferSP {
+		t.Fatalf("expected action TransferSP, got %q", step.Action)
+	}
+	p, ok := step.Payload.(TransferSPPayload)
+	if !ok {
+		t.Fatalf("expected TransferSPPayload, got %T", step.Payload)
+	}
+	if p.CharacterId != 100 {
+		t.Errorf("characterId: expected 100, got %d", p.CharacterId)
+	}
+	if p.JobId != 200 {
+		t.Errorf("jobId: expected 200, got %d", p.JobId)
+	}
+	if p.FromSkillId != 2001002 {
+		t.Errorf("fromSkillId: expected 2001002, got %d", p.FromSkillId)
+	}
+	if p.ToSkillId != 2001003 {
+		t.Errorf("toSkillId: expected 2001003, got %d", p.ToSkillId)
+	}
+	if p.ItemTier != 1 {
+		t.Errorf("itemTier: expected 1, got %d", p.ItemTier)
+	}
+	if p.TargetMaxLevel != 20 {
+		t.Errorf("targetMaxLevel: expected 20, got %d", p.TargetMaxLevel)
+	}
+}
+
 func TestUnmarshalTransferToMtsStep(t *testing.T) {
 	raw := `{
 		"stepId": "transfer_to_mts-1",

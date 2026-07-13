@@ -1,15 +1,17 @@
 package main
 
 import (
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+
 	"atlas-drops/configuration"
 	"atlas-drops/drop"
 	drop2 "atlas-drops/kafka/consumer/drop"
 	"atlas-drops/logger"
 	_map "atlas-drops/map"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-drops/tasks"
-	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-service"
+	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
 	"time"
 
@@ -91,7 +93,9 @@ func main() {
 	if err != nil {
 		l.WithError(err).Fatalf("Unable to find task [%s].", drop.ExpirationTaskName)
 	}
-	go tasks.Register(l, tdm.Context())(drop.NewExpirationTask(l, time.Millisecond*time.Duration(tt.Interval)))
+	routine.Go(l, tdm.Context(), func(_ context.Context) {
+		tasks.Register(l, tdm.Context())(drop.NewExpirationTask(l, time.Millisecond*time.Duration(tt.Interval)))
+	})
 
 	tdm.TeardownFunc(func() {
 		sctx, span := otel.GetTracerProvider().Tracer("atlas-drops").Start(context.Background(), "teardown")

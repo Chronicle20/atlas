@@ -231,9 +231,12 @@ func TestProcessorImpl_Discard(t *testing.T) {
 	// Discard notes 1 and 2
 	mb2 := message.NewBuffer()
 	ch := channel.NewModel(0, 0)
-	err = np.Discard(mb2)(ch)(characterId)([]uint32{n1.Id(), n2.Id()})
+	pending, err := np.Discard(mb2)(ch)(characterId)([]uint32{n1.Id(), n2.Id()})
 	if err != nil {
 		t.Fatalf("Failed to discard notes: %v", err)
+	}
+	if len(pending) != 2 {
+		t.Fatalf("Expected 2 pending fame-award sagas (both notes have a distinct sender), got %d", len(pending))
 	}
 
 	// Verify notes 1 and 2 are deleted
@@ -276,9 +279,12 @@ func TestProcessorImpl_Discard_SkipsOtherCharacterNotes(t *testing.T) {
 	// Try to discard both notes as character 1 (should skip other's note)
 	mb2 := message.NewBuffer()
 	ch := channel.NewModel(0, 0)
-	err = np.Discard(mb2)(ch)(characterId)([]uint32{n1.Id(), n2.Id()})
+	pending, err := np.Discard(mb2)(ch)(characterId)([]uint32{n1.Id(), n2.Id()})
 	if err != nil {
 		t.Fatalf("Failed to discard notes: %v", err)
+	}
+	if len(pending) != 1 {
+		t.Fatalf("Expected 1 pending fame-award saga (only n1 belongs to characterId), got %d", len(pending))
 	}
 
 	// Verify character 1's note is deleted

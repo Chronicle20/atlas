@@ -1,6 +1,8 @@
 package outbox
 
 import (
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+
 	"context"
 	"time"
 
@@ -145,7 +147,9 @@ func (d *Drainer) runLeader(ctx context.Context) {
 	// Sweeper runs only while leader; cancel on leader exit.
 	sweepCtx, cancelSweep := context.WithCancel(ctx)
 	defer cancelSweep()
-	go d.runSweeper(sweepCtx)
+	routine.Go(d.l, sweepCtx, func(_ context.Context) {
+		d.runSweeper(sweepCtx)
+	})
 
 	tk := time.NewTicker(d.cfg.pollInterval)
 	defer tk.Stop()
@@ -217,11 +221,11 @@ func (d *Drainer) publishBatch(ctx context.Context) error {
 		var rows []Entity
 		if isPostgres(d.db) {
 			q := tx.WithContext(ctx).Clauses(clause.Locking{Strength: "UPDATE", Options: "SKIP LOCKED"})
-			if err := q.Where("sent_at IS NULL").Order("enqueued_at ASC").Limit(d.cfg.batchSize).Find(&rows).Error; err != nil {
+			if err := q.Where("sent_at IS NULL").Order("id ASC").Limit(d.cfg.batchSize).Find(&rows).Error; err != nil {
 				return err
 			}
 		} else {
-			if err := tx.WithContext(ctx).Where("sent_at IS NULL").Order("enqueued_at ASC").Limit(d.cfg.batchSize).Find(&rows).Error; err != nil {
+			if err := tx.WithContext(ctx).Where("sent_at IS NULL").Order("id ASC").Limit(d.cfg.batchSize).Find(&rows).Error; err != nil {
 				return err
 			}
 		}
@@ -231,10 +235,15 @@ func (d *Drainer) publishBatch(ctx context.Context) error {
 
 		msgs := make([]kafka.Message, 0, len(rows))
 		for _, r := range rows {
+			hs, err := decodeHeaders(r.Headers)
+			if err != nil {
+				return err
+			}
 			msgs = append(msgs, kafka.Message{
-				Topic: r.Topic,
-				Key:   r.MessageKey,
-				Value: r.MessageValue,
+				Topic:   r.Topic,
+				Key:     r.MessageKey,
+				Value:   r.MessageValue,
+				Headers: hs,
 			})
 		}
 		if err := d.pub.WriteMessages(ctx, msgs...); err != nil {

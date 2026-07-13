@@ -4,7 +4,7 @@ Follow-on to the atlas-inventory reference implementation (Task 11): **every
 DB-backed service now maps transient DB connection errors to `503 Service
 Unavailable` + `Retry-After: 1`** instead of a bare `500`, per the pattern in
 `.claude/skills/backend-dev-guidelines/resources/patterns-resilience.md` and
-enforced by DOM-26.
+enforced by DOM-27 (503) and DOM-28 (no silent degradation).
 
 ## What each service got
 

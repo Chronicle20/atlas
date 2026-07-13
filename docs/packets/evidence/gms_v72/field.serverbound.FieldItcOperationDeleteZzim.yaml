@@ -1,0 +1,8 @@
+packet: field/serverbound/FieldItcOperationDeleteZzim
+direction: serverbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CITC::OnDeleteZzim
+    address: "0x562320"
+    decompile_sha256: 6c20aa319b0f7b38c25856b1ffce48155303a9984ff56b4d7295c66e64046ddf

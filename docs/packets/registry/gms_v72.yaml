@@ -2873,3 +2873,19 @@
   ida:
     address: 5661032
   note: 'v72 CITC OnPacket @0x56672C dispatch (mov eax,[esp+4]; sub eax,0x135) case 0x135 -> OnChargeParamResult (renamed from sub_566768, opens charge web-site), bodiless. v83 IDA_0X15A=0x15A=346, v79 0x142=322. task-113 v72 MTS port.'
+- op: OWL_WARP
+  direction: serverbound
+  opcode: 66
+  fname: CUIShopScanResult::OnButtonClicked
+  provenance: ida-discovered
+  ida:
+    address: 8149215
+  note: task-127 - legacy owl warp sender; body [int ownerId][int mapId]
+- op: USE_SHOP_SCANNER_ITEM
+  direction: serverbound
+  opcode: 102
+  fname: CWvsContext::SendShopScannerItemUseRequest
+  provenance: ida-discovered
+  ida:
+    address: 9561179
+  note: task-127 - legacy frame [str serial][short pos][int itemId] (pre-v83)

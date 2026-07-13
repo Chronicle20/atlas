@@ -2640,3 +2640,11 @@
   ida:
     address: 5428881
   note: 'v61 CITC OnPacket @0x52D655 dispatch (mov eax,[esp+4]; sub eax,0x111) case 0x111 -> OnChargeParamResult (renamed from sub_52D691, opens charge web-site), bodiless. v83 IDA_0X15A=0x15A=346, v72 0x135=309, v79 0x142=322. task-113 v61 MTS port.'
+- op: OWL_WARP
+  direction: serverbound
+  opcode: 63
+  fname: CUIShopScanResult::OnButtonClicked
+  provenance: ida-discovered
+  ida:
+    address: 7441540
+  note: task-127 - legacy owl warp sender; body [int ownerId][int mapId]. USE_SHOP_SCANNER_ITEM and OWL_ACTION have no client sender in v61 (verified absent)

@@ -26,6 +26,13 @@ Every task type's leaf step — promoting one packet × version matrix cell to
 |---|---|---|
 | Verify one packet × version cell | `/verify-packet` command + `packet-verifier` agent — **exists** | [`audits/VERIFYING_A_PACKET.md`](audits/VERIFYING_A_PACKET.md) |
 
+**Maintenance** (a column already exists and something drifted) uses a separate
+playbook — it re-checks a standing column instead of standing one up:
+
+| Maintenance task | Trigger | Canonical playbook |
+|---|---|---|
+| Re-audit an existing version column | family-audit bug · export re-harvest · degraded matrix cell (hash drift) | [`RE_AUDITING_A_COLUMN.md`](RE_AUDITING_A_COLUMN.md) |
+
 ## Version set
 
 The coverage matrix tracks **9** client versions, in this column order (source:

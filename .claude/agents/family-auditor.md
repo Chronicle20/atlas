@@ -89,7 +89,12 @@ Write `docs/tasks/<task>/family-audit-<name>.md` with:
 - **Recommendations** (do NOT act on them) — the ordered list of follow-up cells
   to verify (which `packet-verifier` invocations), arms that need a discrete
   struct, and any operations-table fix — each as a concrete next-step, not a prose
-  gesture.
+  gesture. Point the maintainer at the fix playbook:
+  [`docs/packets/RE_AUDITING_A_COLUMN.md`](../../docs/packets/RE_AUDITING_A_COLUMN.md)
+  (trigger 1, "a family-audit bug") — it walks confirming your reported gap against
+  the live IDB (`validate` / `infer`) before any codec change, then hands off to a
+  `dispatcher-family-implementer` (arm bodies) or `packet-verifier` (unverified
+  arms) pass.
 
 ## Guardrails
 

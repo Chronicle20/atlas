@@ -1120,7 +1120,7 @@ func (p *ProcessorImpl) AttemptEquipmentPickUp(mb *message.Buffer) func(transact
 		defer invLock.Unlock()
 
 		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
-			c, err := p.GetByCharacterAndType(characterId)(inventoryType)
+			c, err := p.WithTransaction(tx).GetByCharacterAndType(characterId)(inventoryType)
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to locate inventory [%d] for character [%d].", inventoryType, characterId)
 				return err

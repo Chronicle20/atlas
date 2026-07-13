@@ -86,6 +86,14 @@ type ProcessorImpl struct {
 	dp        data2.Processor
 	sp        skill.Processor
 	ip        inv.Processor
+	// Despawner is an optional test-mock override for Despawn, left nil in
+	// production (see NewProcessor). It must NOT be bound at construction
+	// time: With(...) shallow-copies the struct without rebinding method
+	// values, so a field set once at NewProcessor time would keep
+	// dispatching to the ORIGINAL (non-tx) receiver even from a
+	// With(WithTransaction(tx)) clone, silently escaping the caller's
+	// transaction. Despawn() falls through to the receiver's own
+	// defaultDespawn when this is nil, which is tx-correct on a clone.
 	Despawner func(mb *message.Buffer) func(petId uint32) func(actorId uint32) func(reason string) error
 	// rollEvolution picks an index into the weighted candidate list. Injectable
 	// for deterministic tests; defaults to a weighted-random pick.
@@ -105,7 +113,6 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 		sp:  skill.NewProcessor(l, ctx),
 		ip:  inv.NewProcessor(l, ctx),
 	}
-	p.Despawner = p.defaultDespawn
 	p.rollEvolution = weightedRoll
 	return p
 }

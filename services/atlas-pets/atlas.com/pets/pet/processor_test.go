@@ -29,7 +29,9 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	"github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	outboxlib "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
@@ -77,7 +79,7 @@ func testDatabase(t *testing.T) *gorm.DB {
 	database.RegisterTenantCallbacks(l, db)
 
 	var migrators []func(db *gorm.DB) error
-	migrators = append(migrators, pet.Migration, exclude.Migration)
+	migrators = append(migrators, pet.Migration, exclude.Migration, outboxlib.Migration)
 
 	for _, migrator := range migrators {
 		if err = migrator(db); err != nil {
@@ -1597,5 +1599,49 @@ func TestEvolveSummonedRefreshesAppearance(t *testing.T) {
 	}
 	if !sawSpawned {
 		t.Fatalf("Expected a SPAWNED event from appearance refresh")
+	}
+}
+
+// TestProcessor_DespawnAndEmit_RidesOuterTransaction is a regression test for
+// the Despawner method-value capture bug (task-119): NewProcessor bound
+// Despawner to defaultDespawn on the ORIGINAL processor at construction time,
+// so p.With(WithTransaction(tx)).Despawn(...) always dispatched through that
+// stale closure instead of the tx-bound clone, silently opening a second,
+// separate transaction on the root pool for the pet-slot writes.
+//
+// This test exercises the REAL despawn path (no Despawner mock, unlike
+// TestProcessor_EvaluateHungerDespawn above) via DespawnAndEmit, forces the
+// OUTER transaction's own write (the outbox insert performed after Despawn
+// returns) to fail, and asserts the despawn's pet-slot write rolled back
+// with it. Before the fix, the despawn commits in its own escaped
+// transaction and survives the outer rollback; after the fix, it rides the
+// outer transaction and rolls back too.
+func TestProcessor_DespawnAndEmit_RidesOuterTransaction(t *testing.T) {
+	db := testDatabase(t)
+	p := pet.NewProcessor(testLogger(), testContext(), db)
+
+	// seed a spawned pet (slot 0)
+	created, err := p.Create(message.NewBuffer())(mustBuild(t, pet.NewModelBuilder(0, 7000000, 5000017, "Rex", 1).SetSlot(0).SetFullness(100)))
+	if err != nil {
+		t.Fatalf("Failed to create pet: %v", err)
+	}
+
+	// Force the SECOND write of the outer transaction to fail: the outbox
+	// row insert performed by DespawnAndEmit's message.Emit wrapper AFTER
+	// Despawn returns. This deliberately does NOT touch the "pets" table, so
+	// it cannot mask (or be confused with) the despawn's own slot write.
+	databasetest.FailWritesOn(t, db, "outbox_entries")
+
+	err = p.DespawnAndEmit(created.Id(), created.OwnerId(), pet2.DespawnReasonNormal)
+	if err == nil {
+		t.Fatalf("Expected DespawnAndEmit to fail via the injected outbox write failure")
+	}
+
+	after, err := p.GetById(created.Id())
+	if err != nil {
+		t.Fatalf("Failed to retrieve pet after rollback: %v", err)
+	}
+	if after.Slot() != 0 {
+		t.Fatalf("Despawn's pet-slot write escaped the outer transaction and survived its rollback: expected slot 0 (unchanged), got %d", after.Slot())
 	}
 }

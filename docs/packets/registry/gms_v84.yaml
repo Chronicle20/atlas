@@ -2309,10 +2309,12 @@
   note: 'task-129 IDA v84 (CORRECTS task-096): the Vicious Hammer decoder is CUIItemUpgrade::OnItemUpgradeResult (sub_85676C 0x85676c) — verified by content (mode==61 success 2-count str 5059 / mode==62 failure horntail switch 5057/5058/5060 / else open echo token+count), the exact v83 sub_82B2C3 clone. It is reached via CUIItemUpgrade::OnPacket (sub_856756) gate header==364 (0x16C) from the CField forwarder at 0x5443af (this[135]; IDB symbol CField::OnCharacterSale, but functionally the hammer forwarder — CField::OnPacket routes headers 363-366 there). The prior task-096 value 361/0x169 was a WRONG inference: 361 falls in the 359-362 range routed to sub_544395/this[134], whose gate (sub_7FD845) only handles 359 (name-change) and 360 (world-transfer) — 361 is a DEAD opcode there. Matches the +10 v84 clientbound shift (v83 0x162 -> v84 0x16C).'
 - op: VEGA_SCROLL
   direction: clientbound
-  opcode: 358
+  opcode: 368
   fname: CUIVega::OnVegaResult
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 0x858d7e
+  note: 'task-130 Task 4b: IDA-verified against the now-live GMS_v84.1_U_DEVM IDB. CField::OnPacket (0x53d5a7) routes clientbound 367-370 -> CField::OnVega (0x5443c9) -> CUIVega::OnPacket (sub_858D68) case 368 -> CUIVega::OnVegaResult (sub_858D7E, 0x858d7e). Opcode 0x170/368 confirmed; the prior 0x166/358 csv-import carryover was WRONG (below the v84 range, would misroute). Single Decode1 mode byte; START in {0x40,0x45}, RESULT in {0x41,0x43}, else -> "cannot be used" notice (string 5734). START byte carries outcome (Draw sub_857734: this[34]==0x40 -> sub_858F20 type 1 SUCCESS, 0x45 -> type 2 FAIL).'
 - op: LOGIN_PASSWORD
   direction: serverbound
   opcode: 1

@@ -18,6 +18,7 @@ import (
 	cashsb "github.com/Chronicle20/atlas/libs/atlas-packet/cash/serverbound"
 	fieldpkt "github.com/Chronicle20/atlas/libs/atlas-packet/field"
 	fieldcb "github.com/Chronicle20/atlas/libs/atlas-packet/field/clientbound"
+	statpkt "github.com/Chronicle20/atlas/libs/atlas-packet/stat/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
@@ -112,6 +113,26 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			})
 			return
 		}
+		if it == CashSlotItemTypeVegasSpellPre95 || it == CashSlotItemTypeVegasSpell95 {
+			sp := cashsb.ItemUseVegaScroll{}
+			sp.Decode(l, ctx)(r, readerOptions)
+			l.Debugf("[%s] read vega sub-body [%s]", p.Operation(), sp.String())
+			enableActions := func() {
+				_ = session.Announce(l)(ctx)(wp)(statpkt.StatChangedWriter)(statpkt.NewStatChanged(make([]statpkt.Update, 0), true).Encode)(s)
+			}
+			if !item.IsVegasSpell(itemId) {
+				l.Warnf("Character [%d] attempted vega scroll with non-vega category-561 item [%d]. Rejecting.", s.CharacterId(), itemId)
+				enableActions()
+				return
+			}
+			if sp.EquipTab() != 1 || sp.ScrollTab() != 2 {
+				l.Warnf("Character [%d] vega scroll with unexpected tab markers equip [%d] scroll [%d]. Impossible from a legit client. Rejecting.", s.CharacterId(), sp.EquipTab(), sp.ScrollTab())
+				enableActions()
+				return
+			}
+			_ = consumable.NewProcessor(l, ctx).RequestVegaScrollUse(s.Field(), character.Id(s.CharacterId()), itemId, source, slot.Position(sp.ScrollSlot()), slot.Position(sp.EquipSlot()))
+			return
+		}
 
 		if it == CashSlotItemTypePointResetTier1 || it == CashSlotItemTypePointResetShared {
 			sp := cashsb.NewItemUsePointReset(updateTimeFirst)
@@ -145,6 +166,8 @@ const (
 	// bucket and then dispatches by item id (design §2.4), never by this type.
 	CashSlotItemTypePointResetShared = CashSlotItemType(23) // AP Reset + SP Reset tiers 2-4
 	CashSlotItemTypePointResetTier1  = CashSlotItemType(24) // SP Reset tier 1 only
+	CashSlotItemTypeVegasSpellPre95  = CashSlotItemType(68)
+	CashSlotItemTypeVegasSpell95     = CashSlotItemType(71)
 	CashSlotItemTypeViciousHammer    = CashSlotItemType(66) // GMS < 95
 	CashSlotItemTypeViciousHammerV95 = CashSlotItemType(67) // GMS >= 95
 )
@@ -514,12 +537,11 @@ func GetCashSlotItemType(t tenant.Model) func(itemId item.Id) CashSlotItemType {
 				return CashSlotItemTypeViciousHammer
 			}
 		}
-		if category == 561 {
+		if category == item.ClassificationVegasSpell {
 			if t.Region() == "GMS" && t.MajorVersion() >= 95 {
-				return CashSlotItemType(71)
-			} else {
-				return CashSlotItemType(68)
+				return CashSlotItemTypeVegasSpell95
 			}
+			return CashSlotItemTypeVegasSpellPre95
 		}
 		if category == 562 {
 			if t.Region() == "GMS" && t.MajorVersion() >= 95 {

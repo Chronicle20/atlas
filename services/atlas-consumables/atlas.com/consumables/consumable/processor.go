@@ -53,6 +53,8 @@ type Processor interface {
 	RequestFeed(worldId world.Id, characterId uint32, slot int16, itemId item2.Id) error
 	ConsumeError(characterId uint32, transactionId uuid.UUID, inventoryType inventory2.Type, slot int16, err error) error
 	RequestScroll(characterId uint32, scrollSlot int16, equipSlot int16, whiteScroll bool, legendarySpirit bool) error
+	RequestVegaScroll(characterId uint32, vegaSlot int16, vegaItemId item2.Id, scrollSlot int16, equipSlot int16) error
+	VegaScrollError(characterId uint32, transactionId uuid.UUID, reservations []VegaReservation, err error) error
 	ValidateScrollUse(scrollItem asset.Model, equipItem asset.Model) bool
 	PassScroll(characterId uint32, legendarySpirit bool, whiteScroll bool) error
 	ApplyConsumableEffect(transactionId uuid.UUID, _ channel.Model, characterId uint32, itemId item2.Id) error
@@ -621,12 +623,104 @@ func IsNotSlotConsumingScroll(id item2.Id) bool {
 	return item2.IsScrollSpikes(id) || item2.IsScrollColdProtection(id)
 }
 
+type scrollOutcome struct {
+	success bool
+	cursed  bool
+}
+
+// buildScrollChanges assembles the equip change-set for a scroll application
+// outcome. Extracted verbatim from ConsumeScroll (task-130) so the vega path
+// shares it; behavior is locked by the TestBuildScrollChanges_* table.
+func buildScrollChanges(ci consumable3.Model, equip asset.Model, scrollId item2.Id, isSuccess bool, whiteScroll bool) ([]equipable.Change, error) {
+	changes := make([]equipable.Change, 0)
+	if isSuccess {
+		if item2.IsScrollSpikes(scrollId) {
+			changes = append(changes, equipable.SetSpike())
+		} else if item2.IsScrollColdProtection(scrollId) {
+			changes = append(changes, equipable.SetCold())
+		} else if item2.IsScrollCleanSlate(scrollId) {
+			changes = append(changes, equipable.AddSlots(1))
+		} else if item2.IsChaosScroll(scrollId) {
+			ccs, err := applyChaos(equip)
+			if err != nil {
+				return nil, err
+			}
+			changes = append(changes, ccs...)
+			changes = append(changes,
+				equipable.AddSlots(-1),
+				equipable.AddLevel(1))
+		} else {
+			changes = append(changes,
+				equipable.AddStrength(int16(ci.StrengthIncrease())),
+				equipable.AddDexterity(int16(ci.DexterityIncrease())),
+				equipable.AddIntelligence(int16(ci.IntelligenceIncrease())),
+				equipable.AddLuck(int16(ci.LuckIncrease())),
+				equipable.AddHp(int16(ci.MaxHPIncrease())),
+				equipable.AddMp(int16(ci.MaxMPIncrease())),
+				equipable.AddWeaponAttack(int16(ci.WeaponAttackIncrease())),
+				equipable.AddMagicAttack(int16(ci.MagicAttackIncrease())),
+				equipable.AddWeaponDefense(int16(ci.WeaponDefenseIncrease())),
+				equipable.AddMagicDefense(int16(ci.MagicDefenseIncrease())),
+				equipable.AddAccuracy(int16(ci.AccuracyIncrease())),
+				equipable.AddAvoidability(int16(ci.AvoidabilityIncrease())),
+				equipable.AddHands(int16(ci.HandsIncrease())),
+				equipable.AddSpeed(int16(ci.SpeedIncrease())),
+				equipable.AddJump(int16(ci.JumpIncrease())),
+				equipable.AddSlots(-1),
+				equipable.AddLevel(1))
+		}
+	} else {
+		if !item2.IsScrollSpikes(scrollId) && !item2.IsScrollColdProtection(scrollId) && !item2.IsScrollCleanSlate(scrollId) && !whiteScroll {
+			changes = append(changes, equipable.AddSlots(-1))
+		}
+	}
+	return changes, nil
+}
+
+// applyScrollCore is the shared middle of ConsumeScroll and ConsumeVegaScroll:
+// the success roll at successProb, change-set assembly, the curse roll, and
+// ChangeStat. Reservation commits, curse destruction, and result emission stay
+// with the caller (they differ between the normal and vega paths). successProb
+// is the roll threshold — the scroll's natural rate on the normal path, the
+// vega-boosted rate on the vega path. The pre-existing `roll <= prob`
+// comparator is deliberately inherited (PRD non-goal: no scroll-math changes).
+func applyScrollCore(l logrus.FieldLogger, ctx context.Context, transactionId uuid.UUID, characterId uint32, ci consumable3.Model, scrollItem *asset.Model, equip *asset.Model, successProb uint32, whiteScroll bool) (scrollOutcome, error) {
+	ep := equipable.NewProcessor(l, ctx)
+
+	successRoll := rand.Int31n(100)
+	isSuccess := successRoll <= int32(successProb)
+
+	passFail := "failed"
+	if isSuccess {
+		passFail = "passed"
+	}
+	l.Debugf("Character [%d] has [%s] scroll [%d]. Rolled [%d]. Needed [%d].", characterId, passFail, scrollItem.TemplateId(), successRoll, successProb)
+
+	changes, err := buildScrollChanges(ci, *equip, item2.Id(scrollItem.TemplateId()), isSuccess, whiteScroll)
+	if err != nil {
+		return scrollOutcome{}, err
+	}
+
+	isCursed := false
+	if !isSuccess && rand.Int31n(100) <= int32(ci.CursedRate()) {
+		l.Debugf("Character [%d] item has been cursed.", characterId)
+		isCursed = true
+	}
+
+	if len(changes) > 0 {
+		l.Debugf("Applying [%d] changes to character [%d] item [%d].", len(changes), characterId, equip.TemplateId())
+		if err := ep.ChangeStat(characterId, transactionId, *equip, changes...); err != nil {
+			return scrollOutcome{}, err
+		}
+	}
+	return scrollOutcome{success: isSuccess, cursed: isCursed}, nil
+}
+
 func ConsumeScroll(transactionId uuid.UUID, characterId uint32, scrollItem *asset.Model, equipSlot int16, whiteScrollItem *asset.Model, legendarySpirit bool) ItemConsumer {
 	return func(l logrus.FieldLogger) func(ctx context.Context) error {
 		return func(ctx context.Context) error {
 			p := NewProcessor(l, ctx)
 			cp := character.NewProcessor(l, ctx)
-			ep := equipable.NewProcessor(l, ctx)
 			cpp := compartment.NewProcessor(l, ctx)
 			cdp := consumable3.NewProcessor(l, ctx)
 
@@ -657,75 +751,9 @@ func ConsumeScroll(transactionId uuid.UUID, characterId uint32, scrollItem *asse
 				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, scrollItem.Slot(), err)
 			}
 
-			// TODO consume vega scroll
-			successProb := ci.SuccessRate()
-
-			successRoll := rand.Int31n(100)
-			isSuccess := successRoll <= int32(successProb)
-
-			isCursed := false
-			passFail := ""
-			if isSuccess {
-				passFail = "passed"
-			} else {
-				passFail = "failed"
-			}
-			l.Debugf("Character [%d] has [%s] scroll [%d]. Rolled [%d]. Needed [%d].", characterId, passFail, scrollItem.TemplateId(), successRoll, successProb)
-			changes := make([]equipable.Change, 0)
-			if isSuccess {
-				if item2.IsScrollSpikes(item2.Id(scrollItem.TemplateId())) {
-					changes = append(changes, equipable.SetSpike())
-				} else if item2.IsScrollColdProtection(item2.Id(scrollItem.TemplateId())) {
-					changes = append(changes, equipable.SetCold())
-				} else if item2.IsScrollCleanSlate(item2.Id(scrollItem.TemplateId())) {
-					changes = append(changes, equipable.AddSlots(1))
-				} else if item2.IsChaosScroll(item2.Id(scrollItem.TemplateId())) {
-					ccs, err := applyChaos(*sm.Equipable)
-					if err != nil {
-						return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, scrollItem.Slot(), err)
-					}
-					changes = append(changes, ccs...)
-					changes = append(changes,
-						equipable.AddSlots(-1),
-						equipable.AddLevel(1))
-				} else {
-					changes = append(changes,
-						equipable.AddStrength(int16(ci.StrengthIncrease())),
-						equipable.AddDexterity(int16(ci.DexterityIncrease())),
-						equipable.AddIntelligence(int16(ci.IntelligenceIncrease())),
-						equipable.AddLuck(int16(ci.LuckIncrease())),
-						equipable.AddHp(int16(ci.MaxHPIncrease())),
-						equipable.AddMp(int16(ci.MaxMPIncrease())),
-						equipable.AddWeaponAttack(int16(ci.WeaponAttackIncrease())),
-						equipable.AddMagicAttack(int16(ci.MagicAttackIncrease())),
-						equipable.AddWeaponDefense(int16(ci.WeaponDefenseIncrease())),
-						equipable.AddMagicDefense(int16(ci.MagicDefenseIncrease())),
-						equipable.AddAccuracy(int16(ci.AccuracyIncrease())),
-						equipable.AddAvoidability(int16(ci.AvoidabilityIncrease())),
-						equipable.AddHands(int16(ci.HandsIncrease())),
-						equipable.AddSpeed(int16(ci.SpeedIncrease())),
-						equipable.AddJump(int16(ci.JumpIncrease())),
-						equipable.AddSlots(-1),
-						equipable.AddLevel(1))
-				}
-			} else {
-				if !item2.IsScrollSpikes(item2.Id(scrollItem.TemplateId())) && !item2.IsScrollColdProtection(item2.Id(scrollItem.TemplateId())) && !item2.IsScrollCleanSlate(item2.Id(scrollItem.TemplateId())) && !whiteScroll {
-					changes = append(changes, equipable.AddSlots(-1))
-
-				}
-				if rand.Int31n(100) <= int32(ci.CursedRate()) {
-					l.Debugf("Character [%d] item has been cursed.", characterId)
-					isCursed = true
-				}
-			}
-
-			if len(changes) > 0 {
-				l.Debugf("Applying [%d] changes to character [%d] item [%d].", len(changes), characterId, sm.Equipable.TemplateId())
-
-				err = ep.ChangeStat(characterId, transactionId, *sm.Equipable, changes...)
-				if err != nil {
-					return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, scrollItem.Slot(), err)
-				}
+			outcome, err := applyScrollCore(l, ctx, transactionId, characterId, ci, scrollItem, sm.Equipable, ci.SuccessRate(), whiteScroll)
+			if err != nil {
+				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, scrollItem.Slot(), err)
 			}
 
 			err = cpp.ConsumeItem(characterId, inventory2.TypeValueUse, transactionId, scrollItem.Slot())
@@ -739,17 +767,17 @@ func ConsumeScroll(transactionId uuid.UUID, characterId uint32, scrollItem *asse
 				}
 			}
 
-			if isCursed {
+			if outcome.cursed {
 				err = cpp.DestroyItem(characterId, inventory2.TypeValueEquip, equipSlot)
 				if err != nil {
 					l.WithError(err).Errorf("Unable to destroy item in slot [%d] for character [%d] during scrolling.", equipSlot, characterId)
 				}
 			}
 
-			if isSuccess {
+			if outcome.success {
 				_ = p.PassScroll(characterId, legendarySpirit, whiteScroll)
 			} else {
-				_ = p.FailScroll(characterId, isCursed, legendarySpirit, whiteScroll)
+				_ = p.FailScroll(characterId, outcome.cursed, legendarySpirit, whiteScroll)
 			}
 			return nil
 		}

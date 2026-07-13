@@ -3,6 +3,16 @@
   "md5": "af6652ff9b7c549341f35e3569d7564a",
   "generated_at": "2026-05-14T00:00:00Z",
   "functions": {
+    "CUIVega::OnVegaResult": {
+      "address": "0x8b89ad",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "vega result mode byte; single Decode1 routed to START/RESULT/notice arms (jms_v185 CUIVega::OnPacket(0x183), task-130 Task 4 IDA-verified 0x8b89ad)"
+        }
+      ]
+    },
     "CStage::OnSetCashShop": {
       "address": "0x7ef5f2",
       "direction": "clientbound",

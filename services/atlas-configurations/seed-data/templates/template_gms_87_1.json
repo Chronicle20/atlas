@@ -2473,6 +2473,19 @@
             "BBS_ENTRY_NOT_FOUND": 8
           }
         }
+      },
+      {
+        "opCode": "0x17B",
+        "writer": "VegaScroll",
+        "options": {
+          "operations": {
+            "START_SUCCESS": 66,
+            "START_FAILURE": 71,
+            "RESULT_SUCCESS": 67,
+            "RESULT_FAILURE": 69,
+            "INVALID": 68
+          }
+        }
       }
     ]
   },

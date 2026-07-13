@@ -1917,7 +1917,10 @@
   direction: clientbound
   opcode: 387
   fname: CUIVega::OnVegaResult
-  provenance: csv-import
+  provenance: ida-discovered
+  ida:
+    address: 0x8b89ad
+  note: 'task-130 Task 4: IDA jms_v185 CUIVega::OnPacket (0x8b8997) arg0==0x183 -> OnVegaResult (0x8b89ad). Opcode 0x183/387 confirmed. Single Decode1 mode byte; START in {0x3B,0x40}, RESULT in {0x3C,0x3E}, else -> notice. START carries outcome (Draw sub_8B7378 + popup sub_8B8B45: 0x3B->type1 success).'
 - op: CONFIRM_LOGOUT_GIFT
   direction: clientbound
   opcode: 390

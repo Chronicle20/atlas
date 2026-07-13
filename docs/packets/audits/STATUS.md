@@ -4,17 +4,17 @@
 > ✅ verified · 🧩 family (mode-prefix dispatcher; sub-arms unverified) · 🟡 partial · ❌ incomplete · ⬜ n-a · 🟥 conflict
 > Partial (🟡) sub-glyphs: 🟡ᶠ tier-1 needs byte-fixture · 🟡ᵈ tool-pass diff-only (no byte-test) · 🟡ᵖ evidence-pinned deferral
 
-Tool: `ece54efdf7361edc79a5368e20a112895eafecf50ac8274bf31805e2b350aac8`
+Tool: `fe01fbd20caf3b0bd0fd65aec9cf9ede74a68be798188431980435054d65c01e`
 
 - export gms_v48: `054d404fcb6f0feed776b8c1453f2ab48a35f479463e82ea00d6d28ebca512dc`
 - export gms_v61: `3294c3796405376978b0d209e1451eee68ff11a0e57198da251c77f8e84b998b`
 - export gms_v72: `01e628692f47408c523f939acd8f6ae5defa4118536ff7334eeb10845abf114b`
 - export gms_v79: `d0b58f14aff371d5a105acd9b1ef12e0f9ed6f4d8216df0853fea713534dfe4e`
-- export gms_v83: `593acd1b954d46215afed342f2f809b8dfdaf26dda73acac5f90aa1c8bbd8fae`
-- export gms_v84: `b6e4b290ae43502324d21e94c9c4fd2fc2e90cb186ebbc031a46ec1311233d1f`
-- export gms_v87: `db2801fecee67081bb792877473ce2b5176d053dfe9b777679f8783b31364c58`
-- export gms_v95: `c415427d2ff0b732b5b802965ef5d9b9ffc343ba42d25f0e1a9ddb3c05a842a2`
-- export jms_v185: `884635e9cff438e732a010c256a82819b61198775ba054cfd2e3b88442fe4a05`
+- export gms_v83: `646a13c162ebf46d01ca00e9637596bfda96a56dcbddc4d5ccd31630c4fa995f`
+- export gms_v84: `b448ffdc189ad808506bfa3a11c51db026b142bc316912c9f5c29e85f2338ff9`
+- export gms_v87: `f3f1711d6e8abf59cadfd904141dbc93191c0816ef065384bd561ebaee582b94`
+- export gms_v95: `edc11b647710af9e224c573e38a5ace16d76991a6a8102c32d241e2c0b74f852`
+- export jms_v185: `cba49b2a0159e787b80c6860bc6ce05f57bcb7776fddafbf67fe53ba601a29b0`
 
 ## Clientbound
 
@@ -490,7 +490,7 @@ Tool: `ece54efdf7361edc79a5368e20a112895eafecf50ac8274bf31805e2b350aac8`
 | ONE_A_DAY | CCashShop::OnOneADay |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x161 | ❌ | 0x18B | ❌ |  | ⬜ |
 | IDA_0X162 | CCashShop::OnNoticeFreeCashItem |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x162 | ❌ |
 | ARIANT_SCORE | CField_Witchtower::OnPacket; CField_Witchtower::OnScoreUpdate | field/clientbound/FieldAriantScore (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x166 | ✅ |  | ⬜ |
-| VEGA_SCROLL | CUIVega::OnVegaResult |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x166 | ❌ | 0x166 | ❌ | 0x17B | ❌ | 0x1AD | ❌ | 0x183 | ❌ |
+| VEGA_SCROLL | CUIVega::OnVegaResult | cash/clientbound/CashVegaScroll (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x166 | ✅ | 0x170 | ✅ | 0x17B | ✅ | 0x1AD | ✅ | 0x183 | ✅ |
 | HONTALE_TIMER | CField::OnHontaleTimer |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x167 | ❌ |  | ⬜ |
 | IDA_0X167 | sub_48F8E3 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x167 | ❌ |
 | IDA_0X168 | sub_48F4E7 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x168 | ❌ |
@@ -997,11 +997,11 @@ Tool: `ece54efdf7361edc79a5368e20a112895eafecf50ac8274bf31805e2b350aac8`
 | v61 | 232 | 0 | 60 | 201 | 465 | 0 | 47.1% |
 | v72 | 240 | 0 | 73 | 219 | 426 | 0 | 45.1% |
 | v79 | 254 | 0 | 72 | 215 | 417 | 0 | 47.0% |
-| v83 | 393 | 0 | 0 | 341 | 224 | 0 | 53.5% |
-| v84 | 370 | 0 | 0 | 344 | 244 | 0 | 51.8% |
-| v87 | 404 | 0 | 0 | 367 | 187 | 0 | 52.4% |
-| v95 | 424 | 0 | 0 | 431 | 103 | 0 | 49.6% |
-| JMS185 | 385 | 0 | 0 | 379 | 194 | 0 | 50.4% |
+| v83 | 394 | 0 | 0 | 340 | 224 | 0 | 53.7% |
+| v84 | 371 | 0 | 0 | 343 | 244 | 0 | 52.0% |
+| v87 | 405 | 0 | 0 | 366 | 187 | 0 | 52.5% |
+| v95 | 425 | 0 | 0 | 430 | 103 | 0 | 49.7% |
+| JMS185 | 386 | 0 | 0 | 378 | 194 | 0 | 50.5% |
 
 ## Conflicts
 

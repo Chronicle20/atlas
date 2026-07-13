@@ -348,3 +348,104 @@ func TestUsesStandardConsumer(t *testing.T) {
 		})
 	}
 }
+
+func makeScrollModel(t *testing.T, success uint32, cursed uint32, incSTR uint32) consumable3.Model {
+	t.Helper()
+	rm := consumable3.RestModel{Success: success, Cursed: cursed, IncreaseSTR: incSTR}
+	m, err := consumable3.Extract(rm)
+	if err != nil {
+		t.Fatalf("extract failed: %v", err)
+	}
+	return m
+}
+
+func TestBuildScrollChanges_RegularSuccess(t *testing.T) {
+	ci := makeScrollModel(t, 60, 0, 5)
+	equip := createTestEquipableAsset(1302000, 7, 0)
+	changes, err := buildScrollChanges(ci, equip, item.Id(2043001), true, false)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	// 15 stat adds + AddSlots(-1) + AddLevel(1) = 17 changes.
+	if len(changes) != 17 {
+		t.Errorf("expected 17 changes for regular success, got %d", len(changes))
+	}
+}
+
+func TestBuildScrollChanges_RegularFailureConsumesSlot(t *testing.T) {
+	ci := makeScrollModel(t, 60, 0, 5)
+	equip := createTestEquipableAsset(1302000, 7, 0)
+	changes, err := buildScrollChanges(ci, equip, item.Id(2043001), false, false)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(changes) != 1 {
+		t.Errorf("expected 1 change (slot decrement) on plain failure, got %d", len(changes))
+	}
+}
+
+func TestBuildScrollChanges_FailureWithWhiteScrollPreservesSlot(t *testing.T) {
+	ci := makeScrollModel(t, 60, 0, 5)
+	equip := createTestEquipableAsset(1302000, 7, 0)
+	changes, err := buildScrollChanges(ci, equip, item.Id(2043001), false, true)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(changes) != 0 {
+		t.Errorf("expected 0 changes on white-scroll failure, got %d", len(changes))
+	}
+}
+
+func TestBuildScrollChanges_SpikeSuccess(t *testing.T) {
+	ci := makeScrollModel(t, 10, 0, 0)
+	equip := createTestEquipableAsset(1072000, 5, 0)
+	changes, err := buildScrollChanges(ci, equip, item.ScrollForSpikesOnShoesTenPercent, true, false)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(changes) != 1 {
+		t.Errorf("expected 1 change (SetSpike) for spike success, got %d", len(changes))
+	}
+}
+
+func TestBuildScrollChanges_SpikeFailureNoSlotLoss(t *testing.T) {
+	ci := makeScrollModel(t, 10, 0, 0)
+	equip := createTestEquipableAsset(1072000, 5, 0)
+	changes, err := buildScrollChanges(ci, equip, item.ScrollForSpikesOnShoesTenPercent, false, false)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(changes) != 0 {
+		t.Errorf("expected 0 changes for spike failure, got %d", len(changes))
+	}
+}
+
+func TestBuildScrollChanges_CleanSlateSuccessAddsSlot(t *testing.T) {
+	ci := makeScrollModel(t, 1, 0, 0)
+	equip := createTestEquipableAsset(1302000, 0, 2)
+	changes, err := buildScrollChanges(ci, equip, item.CleanSlateOnePercent, true, false)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(changes) != 1 {
+		t.Errorf("expected 1 change (AddSlots) for clean slate success, got %d", len(changes))
+	}
+}
+
+func TestBuildScrollChanges_ChaosSuccess(t *testing.T) {
+	ci := makeScrollModel(t, 60, 0, 0)
+	equip := asset.NewBuilder(uuid.New(), 1302000).
+		SetId(1).
+		SetSlots(7).
+		SetStrength(10).
+		SetDexterity(10).
+		Build()
+	changes, err := buildScrollChanges(ci, equip, item.ChaosScrollSixtyPercent, true, false)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	// 2 chaos stat changes + AddSlots(-1) + AddLevel(1) = 4.
+	if len(changes) != 4 {
+		t.Errorf("expected 4 changes for chaos success on 2 non-zero stats, got %d", len(changes))
+	}
+}

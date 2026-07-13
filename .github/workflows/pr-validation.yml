@@ -169,6 +169,9 @@ jobs:
       - name: LB port manifests match versions.json
         run: ./tools/gen-lb-ports.sh --check
 
+      - name: Version coverage matches templates
+        run: ./tools/check-version-coverage.sh
+
   # ============================================
   # Test Go Libraries
   # ============================================

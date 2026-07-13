@@ -1822,7 +1822,10 @@
   direction: clientbound
   opcode: 379
   fname: CUIVega::OnVegaResult
-  provenance: csv-import
+  provenance: ida-discovered
+  ida:
+    address: 0x8919b6
+  note: 'task-130 Task 4: IDA v87 CUIVega::OnPacket (0x8919a0) case 379 -> OnVegaResult (0x8919b6). Opcode 0x17B/379 confirmed. Single Decode1 mode byte; START in {0x42,0x47}, RESULT in {0x43,0x45}, else -> notice (=v83+2 shift). START carries outcome (Draw sub_890325 + popup sub_891B4E: 0x42->type1 success).'
 - op: IDA_0X17E
   direction: clientbound
   opcode: 382

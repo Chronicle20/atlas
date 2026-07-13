@@ -15,6 +15,7 @@ const (
 
 	CommandRequestItemConsume     = "REQUEST_ITEM_CONSUME"
 	CommandRequestScroll          = "REQUEST_SCROLL"
+	CommandRequestVegaScroll      = "REQUEST_VEGA_SCROLL"
 	CommandApplyConsumableEffect  = "APPLY_CONSUMABLE_EFFECT"
 	CommandCancelConsumableEffect = "CANCEL_CONSUMABLE_EFFECT"
 	CommandRequestViciousHammer   = "REQUEST_VICIOUS_HAMMER"
@@ -44,6 +45,17 @@ type RequestScrollBody struct {
 	LegendarySpirit bool          `json:"legendarySpirit"`
 }
 
+// RequestVegaScrollBody asks the service to apply the scroll at ScrollSlot to
+// the equip at EquipSlot at the vega-boosted rate, consuming the vega cash
+// item at VegaSlot together with the scroll. EquipSlot sign convention:
+// positive = equip inventory (the vega dialog's targets), negative = equipped.
+type RequestVegaScrollBody struct {
+	VegaSlot   slot.Position `json:"vegaSlot"`   // cash compartment
+	VegaItemId item.Id       `json:"vegaItemId"` // re-validated against slot contents
+	ScrollSlot slot.Position `json:"scrollSlot"` // use compartment
+	EquipSlot  slot.Position `json:"equipSlot"`
+}
+
 // RequestViciousHammerBody carries the two slots the CUIItemUpgrade dialog
 // round-trip token packs: the hammer's cash-compartment slot and the target
 // equip slot (negative = equipped, positive = equip inventory).
@@ -68,10 +80,12 @@ const (
 	EnvEventTopic          = "EVENT_TOPIC_CONSUMABLE_STATUS"
 	EventTypeError         = "ERROR"
 	EventTypeScroll        = "SCROLL"
+	EventTypeVegaScroll    = "VEGA_SCROLL"
 	EventTypeEffectApplied = "EFFECT_APPLIED"
 	EventTypeViciousHammer = "VICIOUS_HAMMER"
 
 	ErrorTypePetCannotConsume = "PET_CANNOT_CONSUME"
+	ErrorTypeVegaInvalid      = "VEGA_INVALID"
 )
 
 type Event[E any] struct {
@@ -89,6 +103,15 @@ type ScrollBody struct {
 	Cursed          bool `json:"cursed"`
 	LegendarySpirit bool `json:"legendarySpirit"`
 	WhiteScroll     bool `json:"whiteScroll"`
+}
+
+// VegaScrollBody carries the resolved vega scroll outcome. Distinct from
+// ScrollBody so the channel can emit the CUIVega dialog packets instead of
+// the plain map broadcast; whiteScroll/legendarySpirit are always false on
+// the vega path and therefore not carried.
+type VegaScrollBody struct {
+	Success bool `json:"success"`
+	Cursed  bool `json:"cursed"`
 }
 
 // ViciousHammerBody reports the terminal result of a hammer use. Reason is the

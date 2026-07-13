@@ -4,7 +4,7 @@ import (
 	"atlas-messages/character"
 	"atlas-messages/command"
 	message2 "atlas-messages/kafka/message/message"
-	"atlas-messages/kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"context"
 	"errors"
 

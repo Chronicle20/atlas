@@ -3,7 +3,7 @@ package buff
 import (
 	"atlas-messages/data/skill"
 	"atlas-messages/kafka/message/buff"
-	"atlas-messages/kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"context"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"

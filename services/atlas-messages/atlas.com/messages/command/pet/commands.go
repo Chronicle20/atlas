@@ -4,7 +4,7 @@ import (
 	"atlas-messages/character"
 	"atlas-messages/command"
 	"atlas-messages/kafka/message/pet"
-	"atlas-messages/kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	petlookup "atlas-messages/pet"
 	"context"
 	"regexp"

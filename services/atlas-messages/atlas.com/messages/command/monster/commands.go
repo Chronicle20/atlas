@@ -6,7 +6,7 @@ import (
 	"atlas-messages/data/foothold"
 	monsterdata "atlas-messages/data/monster"
 	"atlas-messages/kafka/message/monster"
-	"atlas-messages/kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"atlas-messages/message"
 	"context"
 	"errors"

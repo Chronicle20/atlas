@@ -4,7 +4,7 @@ import (
 	"atlas-messages/character"
 	"atlas-messages/command"
 	"atlas-messages/kafka/message/buff"
-	"atlas-messages/kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	_map "atlas-messages/map"
 	"atlas-messages/message"
 	"context"

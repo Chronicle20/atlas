@@ -4,7 +4,7 @@ import (
 	"atlas-messages/character"
 	"atlas-messages/command"
 	pq "atlas-messages/kafka/message/party_quest"
-	"atlas-messages/kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"atlas-messages/message"
 	party_quest "atlas-messages/party_quest"
 	"context"

@@ -8,7 +8,9 @@ import (
 	"context"
 	"fmt"
 
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -29,6 +31,7 @@ type Processor interface {
 	AdjustCurrencyWithTransaction(transactionId uuid.UUID, accountId uint32, currencyType uint32, amount int32) (Model, error)
 	Delete(mb *message.Buffer) func(accountId uint32) error
 	DeleteAndEmit(accountId uint32) error
+	EmitAdjustFailure(transactionId uuid.UUID, accountId uint32, reason string) error
 }
 
 type ProcessorImpl struct {
@@ -36,7 +39,6 @@ type ProcessorImpl struct {
 	ctx context.Context
 	db  *gorm.DB
 	t   tenant.Model
-	p   producer.Provider
 }
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor {
@@ -45,7 +47,6 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 		ctx: ctx,
 		db:  db,
 		t:   tenant.MustFromContext(ctx),
-		p:   producer.ProviderImpl(l)(ctx),
 	}
 	return p
 }
@@ -58,7 +59,6 @@ func (p *ProcessorImpl) WithTransaction(tx *gorm.DB) Processor {
 		ctx: p.ctx,
 		db:  tx,
 		t:   p.t,
-		p:   p.p,
 	}
 }
 
@@ -91,7 +91,14 @@ func (p *ProcessorImpl) Create(mb *message.Buffer) func(accountId uint32) func(c
 }
 
 func (p *ProcessorImpl) CreateAndEmit(accountId uint32, credit uint32, points uint32, prepaid uint32) (Model, error) {
-	return message.EmitWithResult[Model, uint32](p.p)(model.Flip(model.Flip(model.Flip(p.Create)(accountId))(credit))(points))(prepaid)
+	var result Model
+	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		var err error
+		wp := p.WithTransaction(tx)
+		result, err = message.EmitWithResult[Model, uint32](outbox.EmitProvider(p.l, p.ctx, tx))(model.Flip(model.Flip(model.Flip(wp.Create)(accountId))(credit))(points))(prepaid)
+		return err
+	})
+	return result, txErr
 }
 
 func (p *ProcessorImpl) Update(mb *message.Buffer) func(accountId uint32) func(credit uint32) func(points uint32) func(prepaid uint32) (Model, error) {
@@ -115,7 +122,14 @@ func (p *ProcessorImpl) Update(mb *message.Buffer) func(accountId uint32) func(c
 }
 
 func (p *ProcessorImpl) UpdateAndEmit(accountId uint32, credit uint32, points uint32, prepaid uint32) (Model, error) {
-	return message.EmitWithResult[Model, uint32](p.p)(model.Flip(model.Flip(model.Flip(p.Update)(accountId))(credit))(points))(prepaid)
+	var result Model
+	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		var err error
+		wp := p.WithTransaction(tx)
+		result, err = message.EmitWithResult[Model, uint32](outbox.EmitProvider(p.l, p.ctx, tx))(model.Flip(model.Flip(model.Flip(wp.Update)(accountId))(credit))(points))(prepaid)
+		return err
+	})
+	return result, txErr
 }
 
 func (p *ProcessorImpl) UpdateWithTransaction(mb *message.Buffer) func(transactionId uuid.UUID) func(accountId uint32) func(credit uint32) func(points uint32) func(prepaid uint32) (Model, error) {
@@ -141,7 +155,14 @@ func (p *ProcessorImpl) UpdateWithTransaction(mb *message.Buffer) func(transacti
 }
 
 func (p *ProcessorImpl) UpdateAndEmitWithTransaction(transactionId uuid.UUID, accountId uint32, credit uint32, points uint32, prepaid uint32) (Model, error) {
-	return message.EmitWithResult[Model, uint32](p.p)(model.Flip(model.Flip(model.Flip(model.Flip(p.UpdateWithTransaction)(transactionId))(accountId))(credit))(points))(prepaid)
+	var result Model
+	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		var err error
+		wp := p.WithTransaction(tx)
+		result, err = message.EmitWithResult[Model, uint32](outbox.EmitProvider(p.l, p.ctx, tx))(model.Flip(model.Flip(model.Flip(model.Flip(wp.UpdateWithTransaction)(transactionId))(accountId))(credit))(points))(prepaid)
+		return err
+	})
+	return result, txErr
 }
 
 func (p *ProcessorImpl) AdjustCurrency(accountId uint32, currencyType uint32, amount int32) (Model, error) {
@@ -205,5 +226,21 @@ func (p *ProcessorImpl) Delete(mb *message.Buffer) func(accountId uint32) error 
 }
 
 func (p *ProcessorImpl) DeleteAndEmit(accountId uint32) error {
-	return message.Emit(p.p)(model.Flip(p.Delete)(accountId))
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(model.Flip(p.WithTransaction(tx).Delete)(accountId))
+	})
+}
+
+// EmitAdjustFailure emits a wallet ERROR status event so a saga waiting on this
+// account's ADJUST_CURRENCY command fails fast instead of timing out. Only called
+// for transactional adjusts (transactionId != uuid.Nil); non-saga adjusts have no
+// waiter to notify.
+//
+// This is a failure-path status event that reflects no committed state change (the
+// adjust already failed), so it stays on the direct producer path rather than the
+// transactional outbox — the error must publish regardless of any rollback.
+func (p *ProcessorImpl) EmitAdjustFailure(transactionId uuid.UUID, accountId uint32, reason string) error {
+	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(mb *message.Buffer) error {
+		return mb.Put(wallet.EnvEventTopicStatus, wallet2.ErrorStatusEventProvider(accountId, transactionId, reason))
+	})
 }

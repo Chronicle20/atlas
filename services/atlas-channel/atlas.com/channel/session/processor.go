@@ -25,10 +25,20 @@ import (
 	"go.opentelemetry.io/otel/codes"
 )
 
+type ProcessorImpl struct {
+	l   logrus.FieldLogger
+	ctx context.Context
+	t   tenant.Model
+	kp  producer.Provider
+	sp  session.Processor
+}
+
 type Processor interface {
 	WithContext(ctx context.Context) Processor
 	AllInTenantProvider() ([]Model, error)
 	AllInChannelProvider(worldId world.Id, channelId channel.Id) ([]Model, error)
+	InFieldModelProvider(f field.Model) model.Provider[[]Model]
+	InMapAllInstancesModelProvider(worldId world.Id, channelId channel.Id, mapId _map.Id) model.Provider[[]Model]
 	ByIdModelProvider(sessionId uuid.UUID) model.Provider[Model]
 	IfPresentById(sessionId uuid.UUID, f model.Operator[Model])
 	IfPresentByIdInWorld(sessionId uuid.UUID, ch channel.Model, f model.Operator[Model])
@@ -40,8 +50,8 @@ type Processor interface {
 	ForEachByCharacterId(ch channel.Model) func(provider model.Provider[[]uint32], f model.Operator[Model]) error
 	SetAccountId(id uuid.UUID, accountId uint32) Model
 	SetCharacterId(id uuid.UUID, characterId uint32) Model
-	SetMapId(id uuid.UUID, mapId _map.Id) Model
 	SetField(id uuid.UUID, f field.Model) Model
+	SetCashScene(id uuid.UUID, scene byte) Model
 	SetGm(id uuid.UUID, gm bool) Model
 	UpdateLastRequest(id uuid.UUID) Model
 	SessionCreated(s Model) error
@@ -52,14 +62,6 @@ type Processor interface {
 	Destroy(s Model) error
 	SetStorageNpcId(id uuid.UUID, npcId uint32) Model
 	ClearStorageNpcId(id uuid.UUID) Model
-}
-
-type ProcessorImpl struct {
-	l   logrus.FieldLogger
-	ctx context.Context
-	t   tenant.Model
-	kp  producer.Provider
-	sp  session.Processor
 }
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
@@ -92,6 +94,36 @@ func (p *ProcessorImpl) AllInChannelProvider(worldId world.Id, channelId channel
 		}
 	}
 	return result, nil
+}
+
+// InFieldModelProvider returns local sessions whose field exactly matches f
+// (world, channel, map, instance) and which have an assigned character.
+func (p *ProcessorImpl) InFieldModelProvider(f field.Model) model.Provider[[]Model] {
+	return func() ([]Model, error) {
+		all := getRegistry().GetInTenant(p.t.Id())
+		result := make([]Model, 0)
+		for _, s := range all {
+			if s.CharacterId() != 0 && s.Field().Equals(f) {
+				result = append(result, s)
+			}
+		}
+		return result, nil
+	}
+}
+
+// InMapAllInstancesModelProvider returns local sessions on the given
+// world/channel/map across all instances, with an assigned character.
+func (p *ProcessorImpl) InMapAllInstancesModelProvider(worldId world.Id, channelId channel.Id, mapId _map.Id) model.Provider[[]Model] {
+	return func() ([]Model, error) {
+		all := getRegistry().GetInTenant(p.t.Id())
+		result := make([]Model, 0)
+		for _, s := range all {
+			if s.CharacterId() != 0 && s.WorldId() == worldId && s.ChannelId() == channelId && s.MapId() == mapId {
+				result = append(result, s)
+			}
+		}
+		return result, nil
+	}
 }
 
 func (p *ProcessorImpl) ByIdModelProvider(sessionId uuid.UUID) model.Provider[Model] {
@@ -254,23 +286,23 @@ func (p *ProcessorImpl) SetCharacterId(id uuid.UUID, characterId uint32) Model {
 	return s
 }
 
-func (p *ProcessorImpl) SetMapId(id uuid.UUID, mapId _map.Id) Model {
-	s := Model{}
-	var ok bool
-	if s, ok = getRegistry().Get(p.t.Id(), id); ok {
-		s = s.setMapId(mapId)
-		getRegistry().Update(p.t.Id(), s)
-		return s
-	}
-	return s
-}
-
 func (p *ProcessorImpl) SetField(id uuid.UUID, f field.Model) Model {
 	s := Model{}
 	var ok bool
 	if s, ok = getRegistry().Get(p.t.Id(), id); ok {
 		s = s.setMapId(f.MapId())
 		s = s.setInstance(f.Instance())
+		getRegistry().Update(p.t.Id(), s)
+		return s
+	}
+	return s
+}
+
+func (p *ProcessorImpl) SetCashScene(id uuid.UUID, scene byte) Model {
+	s := Model{}
+	var ok bool
+	if s, ok = getRegistry().Get(p.t.Id(), id); ok {
+		s = s.setCashScene(scene)
 		getRegistry().Update(p.t.Id(), s)
 		return s
 	}

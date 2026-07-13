@@ -5,13 +5,12 @@ import (
 	"atlas-inventory/data/equipment/statistics"
 	"atlas-inventory/data/etc"
 	"atlas-inventory/data/setup"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"atlas-inventory/kafka/message"
 	"atlas-inventory/kafka/message/asset"
-	"atlas-inventory/kafka/producer"
 	"atlas-inventory/pet"
 	"context"
 	"errors"
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"math"
 	"math/rand"
 	"time"
@@ -19,6 +18,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
@@ -294,8 +294,10 @@ func (p *ProcessorImpl) UpdateEquipmentStats(mb *message.Buffer) func(transactio
 }
 
 func (p *ProcessorImpl) ChangeTemplateAndEmit(transactionId uuid.UUID, characterId uint32, assetId uint32, newTemplateId uint32) error {
-	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(mb *message.Buffer) error {
-		return p.ChangeTemplate(mb)(transactionId, characterId, assetId, newTemplateId)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
+			return p.WithTransaction(tx).ChangeTemplate(mb)(transactionId, characterId, assetId, newTemplateId)
+		})
 	})
 }
 
@@ -327,8 +329,10 @@ func (p *ProcessorImpl) DeleteAndEmit(transactionId uuid.UUID, characterId uint3
 		p.l.WithError(err).Errorf("Unable to find asset [%d] for deletion.", assetId)
 		return err
 	}
-	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
-		return p.Delete(buf)(transactionId, characterId, compartmentId)(a)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).Delete(buf)(transactionId, characterId, compartmentId)(a)
+		})
 	})
 }
 

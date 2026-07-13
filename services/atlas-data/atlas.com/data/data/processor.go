@@ -30,6 +30,7 @@ import (
 	"sync"
 	"time"
 
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
@@ -232,26 +233,26 @@ func (p *ProcessorImpl) RegisterAllData(rootDir string, wzFileName string, rf Re
 		const workerCount = 10 // Adjust based on your workload and system resources
 		for i := 0; i < workerCount; i++ {
 			wg.Add(1)
-			go func() {
+			routine.Go(p.l, p.ctx, func(_ context.Context) {
+				defer wg.Done()
 				for filePath := range fileChan {
 					if err := rf(filePath); err != nil {
 						errChan <- fmt.Errorf("error processing %s: %w", filePath, err)
 					}
 				}
-				wg.Done()
-			}()
+			})
 		}
 
 		// Start error collector
 		var collectWg sync.WaitGroup
 		var collected []error
 		collectWg.Add(1)
-		go func() {
+		routine.Go(p.l, p.ctx, func(_ context.Context) {
 			defer collectWg.Done()
 			for err := range errChan {
 				collected = append(collected, err)
 			}
-		}()
+		})
 
 		// Walk directory and send files
 		walkErr := filepath.WalkDir(baseDir, func(path string, d fs.DirEntry, err error) error {

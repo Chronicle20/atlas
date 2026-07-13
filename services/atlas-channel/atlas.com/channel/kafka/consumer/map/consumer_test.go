@@ -32,8 +32,31 @@ func newTestCtx(t *testing.T) context.Context {
 	return tenant.WithContext(context.Background(), tn)
 }
 
+// newTestField uses world/channel 0 to match the zero-value world/channel a
+// session carries when constructed via session.NewSession directly in tests
+// (world/channel are otherwise only set by session.Processor.Create, which
+// requires a live socket handshake) — see session/processor_test.go and
+// map/processor_test.go for the same pattern.
 func newTestField() field.Model {
-	return field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).SetInstance(uuid.Nil).Build()
+	return field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(100000000)).SetInstance(uuid.Nil).Build()
+}
+
+// addFieldSession registers a session in ctx's tenant registry with the given
+// character id and field, using only public API. Recipient resolution
+// (map.Processor.GetCharacterIdsInMap) now filters the local session registry
+// rather than calling atlas-maps (task-121), so tests exercising
+// fetchOtherCharactersInMap must populate the registry instead of mocking the
+// atlas-maps HTTP endpoint.
+func addFieldSession(t *testing.T, ctx context.Context, l logrus.FieldLogger, characterId uint32, f field.Model) uuid.UUID {
+	t.Helper()
+	ten := tenant.MustFromContext(ctx)
+	sessionId := uuid.New()
+	s := session.NewSession(sessionId, ten, 0, nil)
+	session.AddSessionToRegistry(ten.Id(), s)
+	sp := session.NewProcessor(l, ctx)
+	sp.SetCharacterId(sessionId, characterId)
+	sp.SetField(sessionId, f)
+	return sessionId
 }
 
 // characterJSON returns a minimal JSON:API character response for the given ID.
@@ -78,34 +101,28 @@ func characterJSON(id uint32) string {
 	}`, id, id)
 }
 
-// mapCharactersJSON returns a JSON:API list response for the given character IDs.
-func mapCharactersJSON(ids ...uint32) string {
-	items := make([]string, len(ids))
-	for i, id := range ids {
-		items[i] = fmt.Sprintf(`{"type":"characters","id":"%d","attributes":{}}`, id)
-	}
-	return `{"data":[` + strings.Join(items, ",") + `]}`
-}
-
 // TestFetchOtherCharactersInMap_SkipsNotFound verifies that a 404 for one
 // character is skipped (Warn logged) but the rest are returned successfully.
 func TestFetchOtherCharactersInMap_SkipsNotFound(t *testing.T) {
 	logger, hook := test.NewNullLogger()
 	ctx := newTestCtx(t)
 	f := newTestField()
+	ten := tenant.MustFromContext(ctx)
+	defer session.ClearRegistryForTenant(ten.Id())
 
 	const selfId uint32 = 1
 	const missingId uint32 = 2
 	const presentId uint32 = 3
 
-	// Create a single httptest server that handles both MAPS and CHARACTERS URLs.
+	// Recipient ids now come from the local session registry (task-121), not
+	// atlas-maps; only the atlas-character lookups remain over HTTP.
+	addFieldSession(t, ctx, logger, selfId, f)
+	addFieldSession(t, ctx, logger, missingId, f)
+	addFieldSession(t, ctx, logger, presentId, f)
+
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/vnd.api+json")
 		switch {
-		case strings.Contains(r.URL.Path, "/instances/") && strings.HasSuffix(r.URL.Path, "/characters/"):
-			// atlas-maps GET /worlds/{w}/channels/{c}/maps/{m}/instances/{i}/characters/
-			w.WriteHeader(http.StatusOK)
-			_, _ = fmt.Fprint(w, mapCharactersJSON(selfId, missingId, presentId))
 		case strings.Contains(r.URL.Path, fmt.Sprintf("/characters/%d", missingId)):
 			// atlas-character GET for missingId returns 404
 			w.WriteHeader(http.StatusNotFound)
@@ -120,7 +137,6 @@ func TestFetchOtherCharactersInMap_SkipsNotFound(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	t.Setenv("MAPS_SERVICE_URL", srv.URL+"/")
 	t.Setenv("CHARACTERS_SERVICE_URL", srv.URL+"/")
 
 	cms, err := fetchOtherCharactersInMap(logger, ctx, f, selfId)
@@ -162,24 +178,23 @@ func TestFetchOtherCharactersInMap_InfraErrorIsHardFailure(t *testing.T) {
 	logger, _ := test.NewNullLogger()
 	ctx := newTestCtx(t)
 	f := newTestField()
+	ten := tenant.MustFromContext(ctx)
+	defer session.ClearRegistryForTenant(ten.Id())
 
 	const selfId uint32 = 1
 	const badId uint32 = 2
 
+	// Recipient ids now come from the local session registry (task-121).
+	addFieldSession(t, ctx, logger, selfId, f)
+	addFieldSession(t, ctx, logger, badId, f)
+
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/vnd.api+json")
-		switch {
-		case strings.Contains(r.URL.Path, "/instances/") && strings.HasSuffix(r.URL.Path, "/characters/"):
-			w.WriteHeader(http.StatusOK)
-			_, _ = fmt.Fprint(w, mapCharactersJSON(selfId, badId))
-		default:
-			// Return a 500 for all character fetches
-			w.WriteHeader(http.StatusInternalServerError)
-		}
+		// Return a 500 for all character fetches
+		w.WriteHeader(http.StatusInternalServerError)
 	}))
 	defer srv.Close()
 
-	t.Setenv("MAPS_SERVICE_URL", srv.URL+"/")
 	t.Setenv("CHARACTERS_SERVICE_URL", srv.URL+"/")
 
 	_, err := fetchOtherCharactersInMap(logger, ctx, f, selfId)

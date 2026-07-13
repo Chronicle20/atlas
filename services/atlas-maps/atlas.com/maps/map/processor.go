@@ -17,6 +17,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
@@ -83,12 +84,12 @@ func (p *ProcessorImpl) Enter(mb *message.Buffer) func(transactionId uuid.UUID, 
 			}
 		}
 
-		go func() {
+		routine.Go(p.l, p.ctx, func(_ context.Context) {
 			_ = monster2.NewProcessor(p.l, p.ctx).SpawnMonsters(transactionId, f)
-		}()
-		go func() {
+		})
+		routine.Go(p.l, p.ctx, func(_ context.Context) {
 			_ = reactor.NewProcessor(p.l, p.ctx, p.p).SpawnAndEmit(transactionId, f)
-		}()
+		})
 		return mb.Put(mapKafka.EnvEventTopicMapStatus, enterMapProvider(transactionId, f, characterId))
 	}
 }

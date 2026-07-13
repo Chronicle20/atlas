@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+	"github.com/sirupsen/logrus"
 )
 
 var ErrAwaitTimeout = errors.New("timeout")
@@ -69,9 +71,9 @@ func AwaitSlice[M any](provider model.Provider[[]Provider[M]], configurators ...
 
 		for _, provider := range providers {
 			p := provider
-			go func() {
+			routine.Go(logrus.StandardLogger(), ctx, func(_ context.Context) {
 				p(ctx, resultChannels, errChannels)
-			}()
+			})
 		}
 
 		var results = make([]M, 0)

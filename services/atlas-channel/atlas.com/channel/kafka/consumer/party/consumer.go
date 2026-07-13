@@ -23,6 +23,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	partypkt "github.com/Chronicle20/atlas/libs/atlas-packet/party"
 	partycb "github.com/Chronicle20/atlas/libs/atlas-packet/party/clientbound"
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
@@ -205,20 +206,20 @@ func handleLeft(sc server.Model, wp writer.Producer) message.Handler[party2.Stat
 		}
 
 		// For remaining party members.
-		go func() {
+		routine.Go(l, ctx, func(_ context.Context) {
 			for _, m := range p.Members() {
 				err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(m.Id(), partyLeft(l)(ctx)(wp)(p, tc, sc.ChannelId()))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to announce character [%d] has left party [%d].", tc.Id(), p.Id())
 				}
 			}
-		}()
-		go func() {
+		})
+		routine.Go(l, ctx, func(_ context.Context) {
 			err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.ActorId, partyLeft(l)(ctx)(wp)(p, tc, sc.ChannelId()))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to announce character [%d] has left party [%d].", tc.Id(), p.Id())
 			}
-		}()
+		})
 
 	}
 }
@@ -256,20 +257,20 @@ func handleExpel(sc server.Model, wp writer.Producer) message.Handler[party2.Sta
 		}
 
 		// For remaining party members.
-		go func() {
+		routine.Go(l, ctx, func(_ context.Context) {
 			for _, m := range p.Members() {
 				err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(m.Id(), partyExpel(l)(ctx)(wp)(p, tc, sc.ChannelId()))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to announce character [%d] was expelled from party [%d].", tc.Id(), p.Id())
 				}
 			}
-		}()
-		go func() {
+		})
+		routine.Go(l, ctx, func(_ context.Context) {
 			err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.Body.CharacterId, partyExpel(l)(ctx)(wp)(p, tc, sc.ChannelId()))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to announce character [%d] was expelled from party [%d].", tc.Id(), p.Id())
 			}
-		}()
+		})
 
 	}
 }
@@ -301,20 +302,20 @@ func handleDisband(sc server.Model, wp writer.Producer) message.Handler[party2.S
 		}
 
 		// For remaining party members.
-		go func() {
+		routine.Go(l, ctx, func(_ context.Context) {
 			for _, m := range e.Body.Members {
 				err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(m, partyDisband(l)(ctx)(wp)(e.PartyId, tc, sc.ChannelId()))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to announce character [%d] the party [%d] was disbanded.", m, e.PartyId)
 				}
 			}
-		}()
-		go func() {
+		})
+		routine.Go(l, ctx, func(_ context.Context) {
 			err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.ActorId, partyDisband(l)(ctx)(wp)(e.PartyId, tc, sc.ChannelId()))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to announce character [%d] the party [%d] was disbanded.", e.ActorId, e.PartyId)
 			}
-		}()
+		})
 
 	}
 }
@@ -403,20 +404,20 @@ func handleChangeLeader(sc server.Model, wp writer.Producer) message.Handler[par
 		}
 
 		// For remaining party members.
-		go func() {
+		routine.Go(l, ctx, func(_ context.Context) {
 			for _, m := range p.Members() {
 				err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(m.Id(), partyChangeLeader(l)(ctx)(wp)(e.PartyId, e.Body.CharacterId, e.Body.Disconnected))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to announce change party [%d] leadership to [%d].", e.PartyId, e.Body.CharacterId)
 				}
 			}
-		}()
-		go func() {
+		})
+		routine.Go(l, ctx, func(_ context.Context) {
 			err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.Body.CharacterId, partyChangeLeader(l)(ctx)(wp)(e.PartyId, e.Body.CharacterId, e.Body.Disconnected))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to announce change party [%d] leadership to [%d].", e.PartyId, e.Body.CharacterId)
 			}
-		}()
+		})
 
 	}
 }

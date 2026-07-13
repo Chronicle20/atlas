@@ -1,6 +1,10 @@
 package main
 
 import (
+	"context"
+
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+
 	"atlas-saga-orchestrator/kafka/consumer/asset"
 	"atlas-saga-orchestrator/kafka/consumer/buddylist"
 	"atlas-saga-orchestrator/kafka/consumer/cashshop"
@@ -10,6 +14,7 @@ import (
 	"atlas-saga-orchestrator/kafka/consumer/consumable"
 	"atlas-saga-orchestrator/kafka/consumer/guild"
 	inventoryConsumer "atlas-saga-orchestrator/kafka/consumer/inventory"
+	mtsCustody "atlas-saga-orchestrator/kafka/consumer/mts/custody"
 	"atlas-saga-orchestrator/kafka/consumer/pet"
 	"atlas-saga-orchestrator/kafka/consumer/quest"
 	saga2 "atlas-saga-orchestrator/kafka/consumer/saga"
@@ -91,6 +96,7 @@ func main() {
 	buddylist.InitConsumers(l)(cmf)(consumerGroupId)
 	cashshop.InitConsumers(l)(cmf)(consumerGroupId)
 	cashshopCompartment.InitConsumers(l)(cmf)(consumerGroupId)
+	mtsCustody.InitConsumers(l)(cmf)(consumerGroupId)
 	character.InitConsumers(l)(cmf)(consumerGroupId)
 	compartment.InitConsumers(l)(cmf)(consumerGroupId)
 	consumable.InitConsumers(l)(cmf)(consumerGroupId)
@@ -110,6 +116,9 @@ func main() {
 	}
 	if err := cashshop.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
 		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	if err := mtsCustody.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Failed to register MTS custody status handlers.")
 	}
 	if err := cashshopCompartment.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
 		l.WithError(err).Fatal("Unable to register kafka handlers.")
@@ -219,7 +228,7 @@ func startReaper(l logrus.FieldLogger, store *saga.PostgresStore, tdm *service.M
 	}
 
 	tdm.WaitGroup().Add(1)
-	go func() {
+	routine.Go(l, tdm.Context(), func(_ context.Context) {
 		defer tdm.WaitGroup().Done()
 		ticker := time.NewTicker(interval)
 		defer ticker.Stop()
@@ -235,7 +244,7 @@ func startReaper(l logrus.FieldLogger, store *saga.PostgresStore, tdm *service.M
 				reapTimedOutSagas(l, store, tdm)
 			}
 		}
-	}()
+	})
 }
 
 func reapTimedOutSagas(l logrus.FieldLogger, store *saga.PostgresStore, tdm *service.Manager) {

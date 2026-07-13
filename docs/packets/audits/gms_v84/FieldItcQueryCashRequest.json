@@ -1,0 +1,11 @@
+{
+  "WriterName": "FieldItcQueryCashRequest",
+  "IDAName": "CITC::TrySendQueryCashRequest",
+  "Address": "0x5af26a",
+  "Variant": "GMS/v84",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/field/serverbound/itc_query_cash_request.go",
+  "Rows": null,
+  "Verdict": 0,
+  "FlatInvalid": false
+}

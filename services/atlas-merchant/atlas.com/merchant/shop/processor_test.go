@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	outboxlib "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus/hooks/test"
@@ -633,6 +634,85 @@ func TestCloseShop_FromDraft(t *testing.T) {
 	closed, err := p.GetById(m.Id())
 	require.NoError(t, err)
 	assert.Equal(t, Closed, closed.State())
+}
+
+// TestRetrieveFrederick_ClearFailure_SkipsOutbox asserts that when a
+// Frederick-storage clear fails (ClearNotifications, the third and last of
+// the three clear calls), RetrieveFrederick returns the error instead of
+// swallowing it, and no outbox row gets enqueued for the asset/meso grant
+// commands already buffered — i.e. a failed clear does not let the retrieve
+// silently "succeed" and double-grant on a later retry.
+//
+// This uses table-drop as the failure-injection seam (frederick.Processor
+// has no mock/fake in this module and shop.ProcessorImpl constructs it
+// directly via frederick.NewProcessor(p.l, p.ctx, p.db), so there is no
+// injectable interface at the shop-processor level). Note: because of the
+// separately-tracked ExecuteTransaction-is-a-no-op bug (see
+// bug_execute_transaction_noop in project memory / task-119), the ClearItems
+// delete that already ran before ClearNotifications fails is NOT rolled
+// back at the SQL level today — this test does not assert DB-row rollback,
+// only the two things this fix pass actually delivers: error propagation
+// and outbox-enqueue suppression.
+func TestRetrieveFrederick_ClearFailure_SkipsOutbox(t *testing.T) {
+	db := setupTestDB(t)
+	require.NoError(t, outboxlib.Migration(db))
+	ctx, _ := setupTestContext(t)
+	l, _ := test.NewNullLogger()
+
+	fp := frederick.NewProcessor(l, ctx, db)
+	require.NoError(t, fp.StoreItems(1000, []frederick.StoredItem{
+		{ItemId: 2000000, ItemType: 0, Quantity: 5, ItemSnapshot: asset2.AssetData{}},
+	}))
+
+	// Force the third clear call (ClearNotifications) to fail.
+	require.NoError(t, db.Migrator().DropTable("frederick_notifications"))
+
+	p := NewProcessor(l, ctx, db)
+	err := p.RetrieveFrederickAndEmit(1000, 0)
+	require.Error(t, err)
+
+	var outboxCount int64
+	require.NoError(t, db.Model(&outboxlib.Entity{}).Count(&outboxCount).Error)
+	assert.Equal(t, int64(0), outboxCount, "no outbox row should be enqueued when a Frederick clear fails")
+}
+
+// TestCloseShop_FrederickStoreFailure_SkipsOutbox asserts that when storing
+// unsold listings to Frederick fails on shop close (storeToFrederick's
+// StoreItems call), CloseShop returns the error instead of swallowing it,
+// and no shop-closed outbox row gets enqueued — i.e. a failed store does not
+// let the close silently "succeed" while the items vanish.
+//
+// Same table-drop injection seam and same task-119 caveat as above: the
+// state-transition write inside CloseShop's own nested ExecuteTransaction
+// call already committed (autocommit, no real tx) before storeToFrederick
+// fails, so this test does not assert the shop stays Open — only error
+// propagation and outbox-enqueue suppression.
+func TestCloseShop_FrederickStoreFailure_SkipsOutbox(t *testing.T) {
+	db := setupTestDB(t)
+	require.NoError(t, outboxlib.Migration(db))
+	ctx, _ := setupTestContext(t)
+	l, _ := test.NewNullLogger()
+	p := NewProcessor(l, ctx, db)
+	mb := testBuffer()
+
+	m, err := p.CreateShop(1000, HiredMerchant, "Hired Shop", 0, 0, 910000001, uuid.Nil, 0, 0, 0)
+	require.NoError(t, err)
+
+	snapshot := asset2.AssetData{}
+	_, err = p.AddListing(mb)(m.Id(), 1000, 2000000, 0, 1, 10, 1000, snapshot, 0, 0)
+	require.NoError(t, err)
+
+	require.NoError(t, p.OpenShop(mb)(m.Id(), 1000))
+
+	// Force Frederick item storage to fail.
+	require.NoError(t, db.Migrator().DropTable("frederick_items"))
+
+	err = p.CloseShopAndEmit(m.Id(), 1000, CloseReasonManualClose)
+	require.Error(t, err)
+
+	var outboxCount int64
+	require.NoError(t, db.Model(&outboxlib.Entity{}).Count(&outboxCount).Error)
+	assert.Equal(t, int64(0), outboxCount, "no outbox row should be enqueued when Frederick storage fails")
 }
 
 func TestCloseShop_FromMaintenance(t *testing.T) {

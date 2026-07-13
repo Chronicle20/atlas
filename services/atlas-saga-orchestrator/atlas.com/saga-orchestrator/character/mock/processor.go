@@ -44,6 +44,7 @@ type ProcessorMock struct {
 	ResetStatsAndEmitFunc       func(transactionId uuid.UUID, ch channel.Model, characterId uint32) error
 	ResetStatsFunc              func(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32) error
 	RebalanceAPAndEmitFunc      func(transactionId uuid.UUID, ch channel.Model, characterId uint32, targets []character2.RebalanceAPTarget) error
+	TransferAPAndEmitFunc       func(transactionId uuid.UUID, ch channel.Model, characterId uint32, from string, to string) error
 }
 
 // WarpRandomAndEmit is a mock implementation of the character.Processor.WarpRandomAndEmit method
@@ -307,5 +308,19 @@ func (m *ProcessorMock) RebalanceAPAndEmit(transactionId uuid.UUID, ch channel.M
 func (m *ProcessorMock) RebalanceAP(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32, targets []character2.RebalanceAPTarget) error {
 	return func(transactionId uuid.UUID, ch channel.Model, characterId uint32, targets []character2.RebalanceAPTarget) error {
 		return m.RebalanceAPAndEmit(transactionId, ch, characterId, targets)
+	}
+}
+
+// TransferAPAndEmit is a mock implementation of Processor.TransferAPAndEmit.
+func (m *ProcessorMock) TransferAPAndEmit(transactionId uuid.UUID, ch channel.Model, characterId uint32, from string, to string) error {
+	if m.TransferAPAndEmitFunc != nil {
+		return m.TransferAPAndEmitFunc(transactionId, ch, characterId, from, to)
+	}
+	return nil
+}
+
+func (m *ProcessorMock) TransferAP(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32, from string, to string) error {
+	return func(transactionId uuid.UUID, ch channel.Model, characterId uint32, from string, to string) error {
+		return m.TransferAPAndEmit(transactionId, ch, characterId, from, to)
 	}
 }

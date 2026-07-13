@@ -1,6 +1,8 @@
 package _map
 
 import (
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+
 	"context"
 	"sync"
 
@@ -55,14 +57,15 @@ func (p *ProcessorImpl) GetPlayerCountsInMaps(ch channel.Model, mapIds []_map.Id
 
 	for _, mapId := range mapIds {
 		wg.Add(1)
-		go func(id _map.Id) {
+		id := mapId
+		routine.Go(p.l, p.ctx, func(_ context.Context) {
 			defer wg.Done()
 			f := field.NewBuilder(ch.WorldId(), ch.Id(), id).Build()
 			count, _ := p.GetPlayerCountInField(f)
 			mu.Lock()
 			counts[id] = count
 			mu.Unlock()
-		}(mapId)
+		})
 	}
 	wg.Wait()
 

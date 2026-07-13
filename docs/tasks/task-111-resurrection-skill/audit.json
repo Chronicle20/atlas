@@ -1,0 +1,52 @@
+{
+  "service": "atlas-channel",
+  "path": "services/atlas-channel/atlas.com/channel",
+  "auditor": "backend-guidelines-reviewer",
+  "date": "2026-06-25",
+  "scope": "git diff 334af4a9b..HEAD (5083d0e6a..e9435e55a)",
+  "build": "pass",
+  "tests": "pass",
+  "testsPassed": 5,
+  "testsFailed": 0,
+  "vet": "pass",
+  "race": "pass",
+  "overallStatus": "pass",
+  "scopeNote": "Active-skill handler + SET_HP channel command + dead-target selectors. No REST/GORM domain package added; DOM-01..05, DOM-11, DOM-16..19, EXT-*, SCAFFOLD-*, SUB-* are N/A by design.",
+  "domains": [
+    {
+      "name": "skill/handler/resurrection",
+      "type": "skill-handler (channel plugin)",
+      "checks": [
+        {"id": "DOM-06", "name": "FieldLogger param", "status": "pass", "evidence": "resurrection.go:30,40,49,55,72"},
+        {"id": "DOM-07", "name": "no StandardLogger", "status": "pass", "evidence": "dispatch-supplied logger; zero StandardLogger matches"},
+        {"id": "DOM-09", "name": "errors handled", "status": "pass", "evidence": "resurrection.go:84-100"},
+        {"id": "DOM-12", "name": "no os.Getenv", "status": "pass", "evidence": "topic via character.EnvCommandTopic processor.go:276"},
+        {"id": "DOM-13", "name": "no inline cross-domain logic", "status": "pass", "evidence": "delegates to NewProcessor seams"},
+        {"id": "DOM-14", "name": "calls processors not providers", "status": "pass", "evidence": "resurrection.go:41,50"},
+        {"id": "DOM-15", "name": "no direct db writes", "status": "pass", "evidence": "zero db.Create/Save/Delete in diff"},
+        {"id": "DOM-20", "name": "table/case tests", "status": "pass", "evidence": "resurrection_test.go, recipients_test.go"},
+        {"id": "DOM-24", "name": "emit paths stubbed in tests", "status": "pass", "evidence": "resurrection_test.go:58-74 no-op seams; ~1s/pkg, no emit stall"}
+      ]
+    },
+    {
+      "name": "libs/atlas-constants/skill",
+      "type": "shared-constants",
+      "checks": [
+        {"id": "DOM-21", "name": "reuse atlas-constants, no redeclaration", "status": "pass", "evidence": "GmResurrectionId=9001005 added to shared lib (constants.go:3248); Bishop/SuperGm pre-existed; no service-local redeclaration"}
+      ]
+    },
+    {
+      "name": "character (channel)",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-23", "name": "no new kafka topic (command type only)", "status": "pass", "evidence": "kafka.go:18 CommandSetHP; reuses EnvCommandTopic"},
+        {"id": "MOCK-SYNC", "name": "interface change mock updated", "status": "pass", "evidence": "processor.go:42,276 + mock/processor.go:123"},
+        {"id": "BUILDER", "name": "new fields via validated builder", "status": "pass", "evidence": "builder.go:138-139,184-185"}
+      ]
+    }
+  ],
+  "blocking": [],
+  "nonBlocking": [
+    "OQ-1 revive-animation behavior is an unverified live gate, documented honestly in resurrection.go:44-48 rather than asserted."
+  ]
+}

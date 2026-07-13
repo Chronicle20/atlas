@@ -48,6 +48,24 @@ func createTestRoute(id, name string) map[string]interface{} {
 	}
 }
 
+func createTestMtsConfig(id string) map[string]interface{} {
+	return map[string]interface{}{
+		"type": "mts-configs",
+		"id":   id,
+		"attributes": map[string]interface{}{
+			"listingFee":        float64(5000),
+			"commissionRate":    float64(0.10),
+			"maxActiveListings": float64(10),
+			"minLevel":          float64(10),
+			"auctionMinHours":   float64(24),
+			"auctionMaxHours":   float64(168),
+			"priceFloor":        float64(110),
+			"pageSize":          float64(16),
+			"minBidIncrement":   float64(1),
+		},
+	}
+}
+
 func createTestVessel(id, name, routeAID, routeBID string) map[string]interface{} {
 	return map[string]interface{}{
 		"type": "vessels",
@@ -115,6 +133,34 @@ func (p *testProcessor) getAllVessels(tenantId uuid.UUID) ([]map[string]interfac
 
 func (p *testProcessor) getVesselById(tenantId uuid.UUID, vesselID string) (map[string]interface{}, error) {
 	return configuration.GetVesselByIdProvider(tenantId, vesselID)(p.db)()
+}
+
+func (p *testProcessor) createMtsConfig(tenantId uuid.UUID, cfg map[string]interface{}) (configuration.Model, error) {
+	resourceData, err := configuration.CreateSingleMtsConfigJsonData(cfg)
+	if err != nil {
+		return configuration.Model{}, err
+	}
+
+	entity := configuration.NewEntityBuilder().
+		SetID(uuid.New()).
+		SetTenantId(tenantId).
+		SetResourceName("mts-configs").
+		SetResourceData(resourceData).
+		Build()
+
+	if err := configuration.CreateConfiguration(p.db, entity); err != nil {
+		return configuration.Model{}, err
+	}
+
+	return configuration.Make(entity)
+}
+
+func (p *testProcessor) getAllMtsConfigs(tenantId uuid.UUID) ([]map[string]interface{}, error) {
+	return configuration.GetAllMtsConfigsProvider(tenantId)(p.db)()
+}
+
+func (p *testProcessor) getMtsConfigById(tenantId uuid.UUID, configID string) (map[string]interface{}, error) {
+	return configuration.GetMtsConfigByIdProvider(tenantId, configID)(p.db)()
 }
 
 // Route Tests
@@ -653,5 +699,177 @@ func TestVesselRestModel_GetName(t *testing.T) {
 	v := configuration.VesselRestModel{}
 	if v.GetName() != "vessels" {
 		t.Errorf("GetName() = %s, want 'vessels'", v.GetName())
+	}
+}
+
+// MTS Config Tests
+
+func TestCreateMtsConfig_Success(t *testing.T) {
+	processor, cleanup := setupTestProcessor(t)
+	defer cleanup()
+
+	tenantId := uuid.New()
+	cfg := createTestMtsConfig("mts-config-1")
+
+	m, err := processor.createMtsConfig(tenantId, cfg)
+	if err != nil {
+		t.Fatalf("createMtsConfig() unexpected error: %v", err)
+	}
+	if m.TenantId() != tenantId {
+		t.Errorf("m.TenantId() = %v, want %v", m.TenantId(), tenantId)
+	}
+	if m.ResourceName() != "mts-configs" {
+		t.Errorf("m.ResourceName() = %s, want 'mts-configs'", m.ResourceName())
+	}
+}
+
+func TestGetAllMtsConfigs_Empty(t *testing.T) {
+	processor, cleanup := setupTestProcessor(t)
+	defer cleanup()
+
+	tenantId := uuid.New()
+	_, err := processor.getAllMtsConfigs(tenantId)
+	if err == nil {
+		t.Error("getAllMtsConfigs() expected error for non-existent configuration")
+	}
+}
+
+func TestGetMtsConfigById_Found(t *testing.T) {
+	processor, cleanup := setupTestProcessor(t)
+	defer cleanup()
+
+	tenantId := uuid.New()
+	cfg := createTestMtsConfig("mts-config-1")
+
+	_, err := processor.createMtsConfig(tenantId, cfg)
+	if err != nil {
+		t.Fatalf("createMtsConfig() unexpected error: %v", err)
+	}
+
+	found, err := processor.getMtsConfigById(tenantId, "mts-config-1")
+	if err != nil {
+		t.Fatalf("getMtsConfigById() unexpected error: %v", err)
+	}
+	if found["id"] != "mts-config-1" {
+		t.Errorf("found[id] = %v, want 'mts-config-1'", found["id"])
+	}
+}
+
+func TestGetMtsConfigById_NotFound(t *testing.T) {
+	processor, cleanup := setupTestProcessor(t)
+	defer cleanup()
+
+	tenantId := uuid.New()
+	cfg := createTestMtsConfig("mts-config-1")
+
+	_, err := processor.createMtsConfig(tenantId, cfg)
+	if err != nil {
+		t.Fatalf("createMtsConfig() unexpected error: %v", err)
+	}
+
+	_, err = processor.getMtsConfigById(tenantId, "non-existent")
+	if err == nil {
+		t.Error("getMtsConfigById() expected error for non-existent config")
+	}
+}
+
+func TestTransformMtsConfig(t *testing.T) {
+	cfg := createTestMtsConfig("mts-config-1")
+
+	restModel, err := configuration.TransformMtsConfig(cfg)
+	if err != nil {
+		t.Fatalf("TransformMtsConfig() unexpected error: %v", err)
+	}
+	if restModel.Id != "mts-config-1" {
+		t.Errorf("restModel.Id = %s, want 'mts-config-1'", restModel.Id)
+	}
+	if restModel.ListingFee != 5000 {
+		t.Errorf("restModel.ListingFee = %d, want 5000", restModel.ListingFee)
+	}
+	if restModel.CommissionRate != 0.10 {
+		t.Errorf("restModel.CommissionRate = %v, want 0.10", restModel.CommissionRate)
+	}
+	if restModel.MaxActiveListings != 10 {
+		t.Errorf("restModel.MaxActiveListings = %d, want 10", restModel.MaxActiveListings)
+	}
+	if restModel.MinLevel != 10 {
+		t.Errorf("restModel.MinLevel = %d, want 10", restModel.MinLevel)
+	}
+	if restModel.AuctionMinHours != 24 {
+		t.Errorf("restModel.AuctionMinHours = %d, want 24", restModel.AuctionMinHours)
+	}
+	if restModel.AuctionMaxHours != 168 {
+		t.Errorf("restModel.AuctionMaxHours = %d, want 168", restModel.AuctionMaxHours)
+	}
+	if restModel.PriceFloor != 110 {
+		t.Errorf("restModel.PriceFloor = %d, want 110", restModel.PriceFloor)
+	}
+	if restModel.PageSize != 16 {
+		t.Errorf("restModel.PageSize = %d, want 16", restModel.PageSize)
+	}
+	if restModel.MinBidIncrement != 1 {
+		t.Errorf("restModel.MinBidIncrement = %d, want 1", restModel.MinBidIncrement)
+	}
+}
+
+func TestExtractMtsConfig(t *testing.T) {
+	restModel := configuration.MtsConfigRestModel{
+		Id:                "mts-config-1",
+		ListingFee:        5000,
+		CommissionRate:    0.10,
+		MaxActiveListings: 10,
+		MinLevel:          10,
+		AuctionMinHours:   24,
+		AuctionMaxHours:   168,
+		PriceFloor:        110,
+		PageSize:          16,
+		MinBidIncrement:   1,
+	}
+
+	cfg, err := configuration.ExtractMtsConfig(restModel)
+	if err != nil {
+		t.Fatalf("ExtractMtsConfig() unexpected error: %v", err)
+	}
+	if cfg["id"] != "mts-config-1" {
+		t.Errorf("cfg[id] = %v, want 'mts-config-1'", cfg["id"])
+	}
+	if cfg["type"] != "mts-configs" {
+		t.Errorf("cfg[type] = %v, want 'mts-configs'", cfg["type"])
+	}
+}
+
+func TestMtsConfigRestModel_GetName(t *testing.T) {
+	m := configuration.MtsConfigRestModel{}
+	if m.GetName() != "mts-configs" {
+		t.Errorf("GetName() = %s, want 'mts-configs'", m.GetName())
+	}
+}
+
+func TestMtsConfigRoundTrip(t *testing.T) {
+	processor, cleanup := setupTestProcessor(t)
+	defer cleanup()
+
+	tenantId := uuid.New()
+	cfg := createTestMtsConfig("mts-config-1")
+
+	_, err := processor.createMtsConfig(tenantId, cfg)
+	if err != nil {
+		t.Fatalf("createMtsConfig() unexpected error: %v", err)
+	}
+
+	found, err := processor.getMtsConfigById(tenantId, "mts-config-1")
+	if err != nil {
+		t.Fatalf("getMtsConfigById() unexpected error: %v", err)
+	}
+
+	rm, err := configuration.TransformMtsConfig(found)
+	if err != nil {
+		t.Fatalf("TransformMtsConfig() unexpected error: %v", err)
+	}
+	if rm.ListingFee != 5000 {
+		t.Errorf("round-trip ListingFee = %d, want 5000", rm.ListingFee)
+	}
+	if rm.PriceFloor != 110 {
+		t.Errorf("round-trip PriceFloor = %d, want 110", rm.PriceFloor)
 	}
 }

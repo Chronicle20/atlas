@@ -4,12 +4,13 @@ import (
 	"atlas-cashshop/cashshop/inventory/asset"
 	"atlas-cashshop/kafka/message"
 	"atlas-cashshop/kafka/message/cashshop/compartment"
-	"atlas-cashshop/kafka/producer"
 	compartmentProducer "atlas-cashshop/kafka/producer/cashshop/inventory/compartment"
 	"context"
 	"errors"
 
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -45,7 +46,6 @@ type ProcessorImpl struct {
 	ctx  context.Context
 	db   *gorm.DB
 	t    tenant.Model
-	p    producer.Provider
 	astP asset.Processor
 }
 
@@ -55,7 +55,6 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 		ctx:  ctx,
 		db:   db,
 		t:    tenant.MustFromContext(ctx),
-		p:    producer.ProviderImpl(l)(ctx),
 		astP: asset.NewProcessor(l, ctx, db),
 	}
 }
@@ -68,8 +67,7 @@ func (p *ProcessorImpl) WithTransaction(tx *gorm.DB) Processor {
 		ctx:  p.ctx,
 		db:   tx,
 		t:    p.t,
-		p:    p.p,
-		astP: p.astP,
+		astP: asset.NewProcessor(p.l, p.ctx, tx),
 	}
 }
 
@@ -129,19 +127,15 @@ func (p *ProcessorImpl) Create(mb *message.Buffer) func(accountId uint32) func(t
 }
 
 func (p *ProcessorImpl) CreateAndEmit(accountId uint32, type_ CompartmentType, capacity uint32) (Model, error) {
-	mb := message.NewBuffer()
-	m, err := p.Create(mb)(accountId)(type_)(capacity)
-	if err != nil {
-		return Model{}, err
-	}
-
-	for t, ms := range mb.GetAll() {
-		if err = p.p(t)(model.FixedProvider(ms)); err != nil {
-			return Model{}, err
-		}
-	}
-
-	return m, nil
+	var result Model
+	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			var err error
+			result, err = p.WithTransaction(tx).Create(buf)(accountId)(type_)(capacity)
+			return err
+		})
+	})
+	return result, txErr
 }
 
 func (p *ProcessorImpl) UpdateCapacity(mb *message.Buffer) func(id uuid.UUID) func(capacity uint32) (Model, error) {
@@ -163,19 +157,15 @@ func (p *ProcessorImpl) UpdateCapacity(mb *message.Buffer) func(id uuid.UUID) fu
 }
 
 func (p *ProcessorImpl) UpdateCapacityAndEmit(id uuid.UUID, capacity uint32) (Model, error) {
-	mb := message.NewBuffer()
-	m, err := p.UpdateCapacity(mb)(id)(capacity)
-	if err != nil {
-		return Model{}, err
-	}
-
-	for t, ms := range mb.GetAll() {
-		if err = p.p(t)(model.FixedProvider(ms)); err != nil {
-			return Model{}, err
-		}
-	}
-
-	return m, nil
+	var result Model
+	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			var err error
+			result, err = p.WithTransaction(tx).UpdateCapacity(buf)(id)(capacity)
+			return err
+		})
+	})
+	return result, txErr
 }
 
 func (p *ProcessorImpl) Delete(mb *message.Buffer) func(id uuid.UUID) error {
@@ -200,32 +190,24 @@ func (p *ProcessorImpl) Delete(mb *message.Buffer) func(id uuid.UUID) error {
 }
 
 func (p *ProcessorImpl) DeleteAndEmit(id uuid.UUID) error {
-	mb := message.NewBuffer()
-	err := p.Delete(mb)(id)
-	if err != nil {
-		return err
-	}
-
-	for t, ms := range mb.GetAll() {
-		if err = p.p(t)(model.FixedProvider(ms)); err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).Delete(buf)(id)
+		})
+	})
 }
 
 func (p *ProcessorImpl) DeleteAllByAccountId(mb *message.Buffer) func(accountId uint32) error {
 	return func(accountId uint32) error {
 		p.l.Debugf("Deleting all compartments for account [%d].", accountId)
-		txErr := p.db.WithContext(p.ctx).Transaction(func(tx *gorm.DB) error {
+		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 			cscm, err := p.GetByAccountId(accountId)
 			if err != nil {
 				p.l.WithError(err).Errorf("Could not get compartments for account [%d].", accountId)
 				return err
 			}
 			for _, ccm := range cscm {
-				err = deleteEntity(p.db.WithContext(p.ctx), ccm.Id())
+				err = deleteEntity(tx.WithContext(p.ctx), ccm.Id())
 				if err != nil {
 					p.l.WithError(err).Errorf("Could not delete compartment [%s].", ccm.Id())
 					return err
@@ -244,24 +226,18 @@ func (p *ProcessorImpl) DeleteAllByAccountId(mb *message.Buffer) func(accountId 
 }
 
 func (p *ProcessorImpl) DeleteAllByAccountIdAndEmit(accountId uint32) error {
-	mb := message.NewBuffer()
-	err := p.DeleteAllByAccountId(mb)(accountId)
-	if err != nil {
-		return err
-	}
-
-	for t, ms := range mb.GetAll() {
-		if err = p.p(t)(model.FixedProvider(ms)); err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).DeleteAllByAccountId(buf)(accountId)
+		})
+	})
 }
 
 func (p *ProcessorImpl) AcceptAndEmit(accountId uint32, characterId uint32, id uuid.UUID, type_ CompartmentType, cashId int64, templateId uint32, quantity uint32, commodityId uint32, purchasedBy uint32, flag uint16, transactionId uuid.UUID) error {
-	return message.Emit(p.p)(func(buf *message.Buffer) error {
-		return p.Accept(buf)(accountId, characterId, id, type_, cashId, templateId, quantity, commodityId, purchasedBy, flag, transactionId)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).Accept(buf)(accountId, characterId, id, type_, cashId, templateId, quantity, commodityId, purchasedBy, flag, transactionId)
+		})
 	})
 }
 
@@ -298,8 +274,10 @@ func (p *ProcessorImpl) Accept(mb *message.Buffer) func(accountId uint32, charac
 }
 
 func (p *ProcessorImpl) ReleaseAndEmit(accountId uint32, characterId uint32, id uuid.UUID, type_ CompartmentType, assetId uint32, transactionId uuid.UUID, cashId int64, templateId uint32) error {
-	return message.Emit(p.p)(func(buf *message.Buffer) error {
-		return p.Release(buf)(accountId, characterId, id, type_, assetId, transactionId, cashId, templateId)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).Release(buf)(accountId, characterId, id, type_, assetId, transactionId, cashId, templateId)
+		})
 	})
 }
 

@@ -10,6 +10,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
@@ -151,12 +152,12 @@ func ExpireBuffs(l logrus.FieldLogger, ctx context.Context) error {
 	}
 
 	for _, t := range ts {
-		go func() {
+		routine.Go(l, ctx, func(_ context.Context) {
 			tctx := tenant.WithContext(ctx, t)
 			if err := NewProcessor(l, tctx).ExpireBuffs(); err != nil {
 				l.WithError(err).Error("Failed to expire buffs for tenant.")
 			}
-		}()
+		})
 	}
 	return nil
 }
@@ -196,12 +197,12 @@ func ProcessPoisonTicks(l logrus.FieldLogger, ctx context.Context) error {
 	}
 
 	for _, t := range ts {
-		go func() {
+		routine.Go(l, ctx, func(_ context.Context) {
 			tctx := tenant.WithContext(ctx, t)
 			if err := NewProcessor(l, tctx).ProcessPoisonTicks(); err != nil {
 				l.WithError(err).Error("Failed to process poison ticks for tenant.")
 			}
-		}()
+		})
 	}
 	return nil
 }

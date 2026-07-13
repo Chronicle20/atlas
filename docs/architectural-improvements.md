@@ -209,6 +209,38 @@ Silent data loss on consumer crashes. State mutations that should have occurred 
 
 ---
 
+## High: Non-Atomic DB Write + Kafka Publish (CD-2)
+
+### Status: RESOLVED (task-114)
+
+All transactional services now publish tx-coupled events through `libs/atlas-outbox` instead of the direct `message.Buffer` + `message.Emit(producer)` pattern. An event is enqueued as an outbox row inside the *same* database transaction as the domain mutation it reports on, then drained asynchronously to Kafka by a leader-elected drainer process. "DB commit happened but the event was lost" and "event was published but the transaction rolled back" are both now structurally prevented for every migrated flow — once the caveat below is also resolved.
+
+**⚠️ Latent until task-119 lands.** `database.ExecuteTransaction` (`libs/atlas-database/transaction.go`) is currently a verified no-op: its `isTransaction(db)` check is true for essentially every `*gorm.DB` handle (confirmed empirically — even a freshly-`gorm.Open`'d handle satisfies it, because `gorm.Open` itself populates `Statement.ConnPool`), so `ExecuteTransaction` calls the wrapped function directly instead of `db.Transaction(fn)`. **No real `BEGIN`/`COMMIT`/`ROLLBACK` wraps the enqueue+write today**, in production (Postgres) or in any migrated service's own tests (sqlite). Every migration in this task uses the *correct seam* — the outbox enqueue and the domain write are issued inside the same `ExecuteTransaction` closure — so they become genuinely atomic the moment task-119's `TxCommitter` fix lands in `libs/atlas-database`, with **zero further code changes** in any of the services below. Until then, a crash between the enqueue and the write (or vice versa) is not actually prevented. See `docs/tasks/task-119-*` and project memory `bug_execute_transaction_noop.md`.
+
+**Migrated (task-114), 15 services:** atlas-character, atlas-inventory, atlas-cashshop, atlas-fame, atlas-buddies, atlas-guilds, atlas-notes, atlas-pets, atlas-skills, atlas-merchant, atlas-npc-shops, atlas-tenants, atlas-mounts, atlas-quest, and **atlas-monster-book** — the last was outside the plan's original §7 service list but was surfaced and pulled in mid-task by `tools/outboxguard`, a new static analyzer (`tools/outboxguard`, wired into `tools/outbox-guard.sh`) that bans `producer.ProviderImpl`/direct-producer calls lexically inside an open DB transaction, fleet-wide. `tools/outbox-guard.sh` runs clean (exit 0) across every `services/*/go.mod` module as of this closeout.
+
+**Already on the outbox before this task:** atlas-configurations — the origin of `libs/atlas-outbox` itself (enqueue-in-tx, drainer with Postgres advisory-lock leadership, NOTIFY wakeup, retention sweeper, backfill). Task-114 promoted its last service-local piece (`TopicWriterPool`) into the shared library so every other service could reuse it; atlas-configurations' own call sites (`outboxlib.Enqueue(tx, ...)`) were already correct and needed no migration.
+
+**Verified zero tx-coupled sites (no code change needed):** atlas-gachapons, atlas-drop-information (no Kafka producer usage at all) and atlas-data (its 2 `producer.ProviderImpl` sites — a command dispatch and a post-worker-run aggregate event — are both genuinely non-transactional; documented in `docs/tasks/task-114-outbox-adoption/inventory.md`).
+
+**Left-direct sites, deliberately not migrated:** command/relay emits to another service, rejection/error events reflecting no committed state change, and Redis-only/no-DB-write flows all remain on the direct producer path per the task's classification rule — migrating them would be incorrect, not incomplete. Every remaining `producer.ProviderImpl` call site fleet-wide was swept and classified in `docs/tasks/task-114-outbox-adoption/inventory.md`.
+
+**Delivery guarantee for migrated services' documented Kafka behavior:** for the 14 migrated services that carry their own `docs/kafka.md` (`atlas-character`, `atlas-inventory`, `atlas-cashshop`, `atlas-fame`, `atlas-buddies`, `atlas-guilds`, `atlas-notes`, `atlas-pets`, `atlas-skills`, `atlas-merchant`, `atlas-npc-shops`, `atlas-tenants`, `atlas-mounts`, `atlas-quest`), the tx-coupled events described in each doc's "Transaction Semantics" section are now delivered **at-least-once** via the outbox drainer rather than best-effort-once via the direct producer — consumers of those topics must tolerate redelivery (see CD-1 below). `atlas-monster-book` has no `docs/` directory and is skipped per the same rule applied to every other service without one.
+
+**Remaining (tracked as CD-1, non-goal of task-114):** consumer-side idempotency / inbox-dedup on `TransactionId`. Outbox delivery is at-least-once by design (drainer redelivers on ambiguous publish outcomes); a consumer that isn't idempotent on `TransactionId` can double-apply a redelivered event. This is tracked as its own follow-up task, not addressed here.
+
+**Verification evidence (2026-07-03 closeout sweep):** `tools/outbox-guard.sh` exit 0; `go test -race ./...`, `go vet ./...`, `go build ./...` clean in all 18 changed modules (`libs/atlas-outbox`, `tools/outboxguard`, and the 16 service modules above including atlas-configurations); `docker buildx bake all-go-services` exit 0 (every service image builds, confirming `libs/atlas-outbox`'s `COPY` lines in the shared root `Dockerfile` are correct); `tools/redis-key-guard.sh` exit 0 repo-wide.
+
+### Original Problem
+
+`libs/atlas-outbox` was a complete transactional outbox implementation adopted by exactly one service (atlas-configurations). Every other service used a service-local `message.Buffer` + `message.Emit(producer)` pattern — batching, not atomicity. Verified hot paths were worse than the general gap: `services/atlas-character/atlas.com/character/character/processor.go` emitted `MESO_CHANGED`/`STAT_CHANGED` **inside** `database.ExecuteTransaction` before commit, so a rollback after emit produced phantom downstream events; the same blocks left `dynamicUpdate`'s error unchecked, so a failed write still announced success.
+
+### Original Impact
+
+A crash (or any error) between a domain write's commit and its `Emit` call silently lost the event with no replay mechanism — downstream projections (channel, UI, saga orchestrator) could silently drift out of sync with the source-of-truth database, with no operational signal that it had happened. Conversely, an in-transaction emit followed by a rollback could publish an event for a state change that never actually persisted.
+
+---
+
 ## High: No Authentication
 
 ### Problem

@@ -23,6 +23,8 @@ import (
 
 	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+
 	"github.com/Chronicle20/atlas/libs/atlas-opcodes"
 	account3 "github.com/Chronicle20/atlas/libs/atlas-packet/account/serverbound"
 	charcb "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
@@ -162,20 +164,22 @@ func main() {
 	})
 
 	build := buildListener(l, tdm, state, validatorMap, handlerMap, writerList)
-	go (&projection.ApplyLoop{
-		State:       state,
-		CaughtUp:    caughtUp,
-		Registry:    listenerRegistry,
-		AddBody:     build,
-		ServerModel: serverModelFn,
-		Interval:    250 * time.Millisecond,
-	}).Run(tdm.Context(), l)
+	routine.Go(l, tdm.Context(), func(_ context.Context) {
+		(&projection.ApplyLoop{
+			State:       state,
+			CaughtUp:    caughtUp,
+			Registry:    listenerRegistry,
+			AddBody:     build,
+			ServerModel: serverModelFn,
+			Interval:    250 * time.Millisecond,
+		}).Run(tdm.Context(), l)
+	})
 
 	// Republish the legacy configuration vars on a slow ticker so
 	// operator-driven config changes flow to the handlers that still read
 	// from the package-level cache. Cheap: it's a value-copy of a small
 	// map. Stops when the teardown ctx cancels.
-	go func() {
+	routine.Go(l, tdm.Context(), func(_ context.Context) {
 		t := time.NewTicker(time.Second)
 		defer t.Stop()
 		for {
@@ -186,7 +190,7 @@ func main() {
 				publishSnapshot()
 			}
 		}
-	}()
+	})
 
 	tt, err := func() (time.Duration, error) {
 		c, err := configuration.GetServiceConfig()
@@ -202,7 +206,9 @@ func main() {
 	if err != nil {
 		l.WithError(err).Fatalf("Unable to find task [%s].", session.TimeoutTask)
 	}
-	go tasks.Register(l, tdm.Context())(session.NewTimeout(l, tt))
+	routine.Go(l, tdm.Context(), func(_ context.Context) {
+		tasks.Register(l, tdm.Context())(session.NewTimeout(l, tt))
+	})
 
 	tdm.TeardownFunc(session.Teardown(l))
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))

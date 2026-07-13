@@ -9,6 +9,7 @@ import (
 	asset2 "atlas-saga-orchestrator/kafka/message/asset"
 	"atlas-saga-orchestrator/kafka/message/saga"
 	"atlas-saga-orchestrator/kafka/producer"
+	"atlas-saga-orchestrator/mts"
 	"atlas-saga-orchestrator/skill"
 	"atlas-saga-orchestrator/storage"
 	"atlas-saga-orchestrator/validation"
@@ -18,10 +19,14 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 // Processor is the interface for saga processing
@@ -32,6 +37,7 @@ type Processor interface {
 	WithValidationProcessor(validation.Processor) Processor
 	WithGuildProcessor(guild.Processor) Processor
 	WithInviteProcessor(invite.Processor) Processor
+	WithCashshopProcessor(cashshop.Processor) Processor
 
 	GetAll() ([]Saga, error)
 	AllProvider() model.Provider[[]Saga]
@@ -76,6 +82,7 @@ type ProcessorImpl struct {
 	validP  validation.Processor
 	guildP  guild.Processor
 	inviteP invite.Processor
+	csP     cashshop.Processor
 }
 
 const maxConflictRetries = 3
@@ -114,6 +121,7 @@ func newProcessorImpl(logger logrus.FieldLogger, ctx context.Context) Processor 
 		validP:  validation.NewProcessor(logger, ctx),
 		guildP:  guild.NewProcessor(logger, ctx),
 		inviteP: invite.NewProcessor(logger, ctx),
+		csP:     cashshop.NewProcessor(logger, ctx),
 	}
 }
 
@@ -130,6 +138,7 @@ func (p *ProcessorImpl) WithCharacterProcessor(charP character.Processor) Proces
 		validP:  p.validP,
 		guildP:  p.guildP,
 		inviteP: p.inviteP,
+		csP:     p.csP,
 	}
 }
 
@@ -146,6 +155,7 @@ func (p *ProcessorImpl) WithCompartmentProcessor(compP compartment.Processor) Pr
 		validP:  p.validP,
 		guildP:  p.guildP,
 		inviteP: p.inviteP,
+		csP:     p.csP,
 	}
 }
 
@@ -162,6 +172,7 @@ func (p *ProcessorImpl) WithSkillProcessor(skillP skill.Processor) Processor {
 		validP:  p.validP,
 		guildP:  p.guildP,
 		inviteP: p.inviteP,
+		csP:     p.csP,
 	}
 }
 
@@ -178,6 +189,7 @@ func (p *ProcessorImpl) WithValidationProcessor(validP validation.Processor) Pro
 		validP:  validP,
 		guildP:  p.guildP,
 		inviteP: p.inviteP,
+		csP:     p.csP,
 	}
 }
 
@@ -194,6 +206,7 @@ func (p *ProcessorImpl) WithGuildProcessor(guildP guild.Processor) Processor {
 		validP:  p.validP,
 		guildP:  guildP,
 		inviteP: p.inviteP,
+		csP:     p.csP,
 	}
 }
 
@@ -210,6 +223,24 @@ func (p *ProcessorImpl) WithInviteProcessor(inviteP invite.Processor) Processor 
 		validP:  p.validP,
 		guildP:  p.guildP,
 		inviteP: inviteP,
+		csP:     p.csP,
+	}
+}
+
+func (p *ProcessorImpl) WithCashshopProcessor(csP cashshop.Processor) Processor {
+	return &ProcessorImpl{
+		l:       p.l,
+		ctx:     p.ctx,
+		t:       p.t,
+		comp:    p.comp.WithCashshopProcessor(csP),
+		handle:  p.handle.WithCashshopProcessor(csP),
+		charP:   p.charP,
+		compP:   p.compP,
+		skillP:  p.skillP,
+		validP:  p.validP,
+		guildP:  p.guildP,
+		inviteP: p.inviteP,
+		csP:     csP,
 	}
 }
 
@@ -376,6 +407,15 @@ func (p *ProcessorImpl) AcceptEvent(transactionId uuid.UUID, kind EventKind) (Ac
 		}, SkipReasonSagaNotFound)
 		return AcceptDecision{}, false
 	}
+	// Terminal lifecycle states are absorbing (PRD §4.1): a saga the timer
+	// or a failure path has already moved to compensating/failed/completed
+	// can never be advanced by a late step event. A cache miss on
+	// GetLifecycle (hard-deleted in-memory entry racing GetById) falls
+	// through to the existing checks.
+	if lc, ok := GetCache().GetLifecycle(p.ctx, transactionId); ok && lc != SagaLifecyclePending {
+		p.absorbLateTerminalEvent(s, lc, kind)
+		return AcceptDecision{}, false
+	}
 	step, ok := s.GetCurrentStep()
 	if !ok {
 		LogSkip(p.l, logrus.Fields{
@@ -423,9 +463,82 @@ func (p *ProcessorImpl) maybeWarnUnmatchedEvent(s Saga, kind EventKind) {
 	}).Warn("Saga event arrived but no pending step accepts it.")
 }
 
+// absorbLateTerminalEvent handles a step event that arrived after the saga's
+// lifecycle went terminal. The event never advances the saga; a success-
+// outcome event for a compensable in-flight step is routed into single-step
+// compensation so its real side effect is rolled back (PRD §4.2/§4.3).
+func (p *ProcessorImpl) absorbLateTerminalEvent(s Saga, lc SagaLifecycleState, kind EventKind) {
+	// Unknown kinds default to failure: never dispatch a rollback for an
+	// effect we cannot classify.
+	outcome := OutcomeFailure
+	if o, ok := EventOutcomeOf(kind); ok {
+		outcome = o
+	}
+	// Steps dispatch serially, so the earliest pending step IS the in-flight
+	// one; match it exactly as the happy path would (design §3.2).
+	step, stepOk := s.GetCurrentStep()
+	matched := stepOk && StepAcceptsEvent(step.Action(), kind)
+	p.absorbLateTerminal(s, lc, string(kind), outcome, step, matched)
+}
+
+// absorbLateTerminal is the shared core for the AcceptEvent fast-path gate
+// and the stepCompletedWithResultOnce commit-time gate.
+func (p *ProcessorImpl) absorbLateTerminal(s Saga, lc SagaLifecycleState, eventKind string, outcome EventOutcome, step Step[any], matched bool) {
+	fields := logrus.Fields{
+		"transaction_id":  s.TransactionId().String(),
+		"event_kind":      eventKind,
+		"lifecycle_state": string(lc),
+		"saga_type":       s.SagaType(),
+		"tenant_id":       p.t.Id().String(),
+	}
+	if matched {
+		fields["step_id"] = step.StepId()
+	}
+	LogSkip(p.l, fields, SkipReasonSagaTerminal)
+
+	compensated := false
+	if matched && outcome == OutcomeSuccess {
+		var err error
+		compensated, err = p.comp.CompensateLateStep(s, step)
+		if err != nil {
+			p.l.WithFields(fields).WithError(err).Error("Late-success compensation failed.")
+		}
+	}
+
+	// task-040 span-metrics pipeline: the counter is
+	// traces_spanmetrics_calls_total{span_name="saga.late_event_absorbed"}.
+	// transaction.id is on the forbidden-attribute list; it lives in the log
+	// line above instead.
+	_, span := otel.GetTracerProvider().Tracer("atlas-saga-orchestrator").Start(p.ctx, "saga.late_event_absorbed")
+	span.SetAttributes(
+		attribute.String("tenant.id", p.t.Id().String()),
+		attribute.String("saga.type", string(s.SagaType())),
+		attribute.String("saga.lifecycle_state", string(lc)),
+		attribute.String("late.outcome", string(outcome)),
+		attribute.Bool("late.compensated", compensated),
+	)
+	span.End()
+}
+
 func (p *ProcessorImpl) stepCompletedWithResultOnce(transactionId uuid.UUID, success bool, result map[string]any) error {
 	s, err := p.GetById(transactionId)
 	if err != nil {
+		return nil
+	}
+
+	// Commit-time terminal gate (design §3.3a): AcceptEvent's fast-path
+	// check can race the timeout transition. This guards the only function
+	// that performs the forward write; the TryTransition version bump
+	// (store.go) forces any concurrent optimistic writer back through here
+	// via VersionConflictError retry. Outcome comes from the caller's
+	// success flag — no kind table needed on this path.
+	if lc, ok := GetCache().GetLifecycle(p.ctx, transactionId); ok && lc != SagaLifecyclePending {
+		outcome := OutcomeFailure
+		if success {
+			outcome = OutcomeSuccess
+		}
+		step, stepOk := s.GetCurrentStep()
+		p.absorbLateTerminal(s, lc, "step_completed", outcome, step, stepOk)
 		return nil
 	}
 
@@ -918,8 +1031,7 @@ func (p *ProcessorImpl) Step(transactionId uuid.UUID) error {
 	}).Debugf("Progressing saga step [%s].", st.StepId())
 
 	// Check if this is a high-level action that needs expansion
-	if st.Action() == TransferToStorage || st.Action() == WithdrawFromStorage ||
-		st.Action() == TransferToCashShop || st.Action() == WithdrawFromCashShop {
+	if isExpandableAction(st.Action()) {
 		p.l.Debugf("Expanding high-level action [%s] into concrete steps", st.Action())
 		err := p.expandAndProcessStep(s, st)
 		if err != nil {
@@ -1007,6 +1119,25 @@ func (p *ProcessorImpl) emitFailedFromStepSyncError(s Saga, st Step[any], cause 
 	}
 }
 
+// isExpandableAction reports whether an action is a high-level composite that
+// must be routed to expandAndProcessStep rather than handled atomically via
+// GetHandler. This MUST stay in sync with the switch in expandAndProcessStep:
+// any action with an expand* case there must be listed here, or the step falls
+// through to GetHandler and fails with "unknown action type" at runtime (the
+// MTS composites hit exactly that gap — the expansion existed but this gate
+// didn't list them, and unit tests that called expand* directly never exercised
+// the gate). TestIsExpandableActionCoversExpansionSwitch pins the two in sync.
+func isExpandableAction(a Action) bool {
+	switch a {
+	case TransferToStorage, WithdrawFromStorage,
+		TransferToCashShop, WithdrawFromCashShop,
+		TransferToMts, WithdrawFromMts, MtsSettlePurchase:
+		return true
+	default:
+		return false
+	}
+}
+
 // expandAndProcessStep expands high-level actions into concrete steps and processes them
 func (p *ProcessorImpl) expandAndProcessStep(s Saga, st Step[any]) error {
 	// Find the index of the current step
@@ -1034,6 +1165,12 @@ func (p *ProcessorImpl) expandAndProcessStep(s Saga, st Step[any]) error {
 		newSteps, err = p.expandTransferToCashShop(st)
 	case WithdrawFromCashShop:
 		newSteps, err = p.expandWithdrawFromCashShop(st)
+	case TransferToMts:
+		newSteps, err = p.expandTransferToMts(st)
+	case WithdrawFromMts:
+		newSteps, err = p.expandWithdrawFromMts(st)
+	case MtsSettlePurchase:
+		newSteps, err = p.expandMtsSettlePurchase(st)
 	default:
 		return fmt.Errorf("unknown high-level action for expansion: %s", st.Action())
 	}
@@ -1368,6 +1505,265 @@ func (p *ProcessorImpl) expandWithdrawFromCashShop(st Step[any]) ([]Step[any], e
 				InventoryType: payload.InventoryType,
 				TemplateId:    foundAsset.TemplateId,
 				AssetData:     assetData,
+			},
+		),
+	}
+
+	return steps, nil
+}
+
+// expandTransferToMts expands TransferToMts into ReleaseFromCharacter + AcceptToMtsListing.
+// Mirrors expandTransferToCashShop: it looks up the source asset from the character's
+// inventory by AssetId, captures the full item snapshot, then builds a release step
+// (item leaves inventory FIRST) followed by an accept step that carries the snapshot
+// plus the seller's sale params (copied from the TransferToMtsPayload) so atlas-mts can
+// CREATE the listing row. N=2 steps (record for timeout scaling, design §4.3).
+func (p *ProcessorImpl) expandTransferToMts(st Step[any]) ([]Step[any], error) {
+	payload, ok := st.Payload().(TransferToMtsPayload)
+	if !ok {
+		return nil, fmt.Errorf("invalid payload type for TransferToMts")
+	}
+
+	p.l.Debugf("Looking up source asset for character [%d] inventory [%d] assetId [%d]",
+		payload.CharacterId, payload.SourceInventoryType, payload.AssetId)
+
+	comp, err := compartment.RequestCompartment(p.l, p.ctx)(payload.CharacterId, payload.SourceInventoryType)
+	if err != nil {
+		return nil, fmt.Errorf("unable to lookup character [%d] inventory compartment: %w", payload.CharacterId, err)
+	}
+
+	// Find the asset by id.
+	var foundAsset *compartment.AssetRestModel
+	for i := range comp.Assets {
+		var assetId uint32
+		fmt.Sscanf(comp.Assets[i].Id, "%d", &assetId)
+		if assetId == payload.AssetId {
+			foundAsset = &comp.Assets[i]
+			break
+		}
+	}
+
+	if foundAsset == nil {
+		return nil, fmt.Errorf("no asset found with id [%d] in character [%d] inventory [%d]",
+			payload.AssetId, payload.CharacterId, payload.SourceInventoryType)
+	}
+
+	p.l.Debugf("Found source asset template [%d] id [%s] for MTS listing", foundAsset.TemplateId, foundAsset.Id)
+
+	steps := []Step[any]{
+		NewStep[any](
+			"release_from_character",
+			Pending,
+			ReleaseFromCharacter,
+			ReleaseFromCharacterPayload{
+				TransactionId: payload.TransactionId,
+				CharacterId:   payload.CharacterId,
+				InventoryType: payload.SourceInventoryType,
+				AssetId:       payload.AssetId,
+				Quantity:      payload.Quantity,
+			},
+		),
+		NewStep[any](
+			"accept_to_mts_listing",
+			Pending,
+			AcceptToMtsListing,
+			AcceptToMtsListingPayload{
+				TransactionId:   payload.TransactionId,
+				ListingId:       payload.ListingId,
+				WorldId:         payload.WorldId,
+				SellerId:        payload.CharacterId,
+				SellerAccountId: payload.SellerAccountId,
+				SellerName:      payload.SellerName,
+				SaleType:        payload.SaleType,
+
+				// Item snapshot captured from inventory.
+				TemplateId:    foundAsset.TemplateId,
+				Quantity:      payload.Quantity,
+				Strength:      foundAsset.Strength,
+				Dexterity:     foundAsset.Dexterity,
+				Intelligence:  foundAsset.Intelligence,
+				Luck:          foundAsset.Luck,
+				HP:            foundAsset.Hp,
+				MP:            foundAsset.Mp,
+				WeaponAttack:  foundAsset.WeaponAttack,
+				MagicAttack:   foundAsset.MagicAttack,
+				WeaponDefense: foundAsset.WeaponDefense,
+				MagicDefense:  foundAsset.MagicDefense,
+				Accuracy:      foundAsset.Accuracy,
+				Avoidability:  foundAsset.Avoidability,
+				Hands:         foundAsset.Hands,
+				Speed:         foundAsset.Speed,
+				Jump:          foundAsset.Jump,
+				Slots:         foundAsset.Slots,
+				Level:         foundAsset.Level,
+				ItemExp:       foundAsset.Experience,
+				Flags:         foundAsset.Flag,
+
+				// Sale params copied from the seller's TransferToMts payload.
+				ListValue:      payload.ListValue,
+				BuyNowPrice:    payload.BuyNowPrice,
+				CommissionRate: payload.CommissionRate,
+				Category:       payload.Category,
+				SubCategory:    payload.SubCategory,
+				EndsAt:         payload.EndsAt,
+				MinIncrement:   payload.MinIncrement,
+
+				// Offer link copied through so the created listing records its want-ad.
+				OfferWishSerial:  payload.OfferWishSerial,
+				OfferWishOwnerId: payload.OfferWishOwnerId,
+			},
+		),
+	}
+
+	return steps, nil
+}
+
+// expandWithdrawFromMts expands WithdrawFromMts into ReleaseFromMtsHolding + AcceptToCharacter.
+// The item snapshot for the accept_to_character step is looked up from atlas-mts (the
+// holding row) by HoldingId, mirroring how expandWithdrawFromCashShop reads its source
+// snapshot from the cash-shop compartment. N=2 steps.
+func (p *ProcessorImpl) expandWithdrawFromMts(st Step[any]) ([]Step[any], error) {
+	payload, ok := st.Payload().(WithdrawFromMtsPayload)
+	if !ok {
+		return nil, fmt.Errorf("invalid payload type for WithdrawFromMts")
+	}
+
+	p.l.Debugf("Looking up MTS holding [%s] for character [%d] world [%d]",
+		payload.HoldingId, payload.CharacterId, payload.WorldId)
+
+	holdings, err := mts.RequestHoldings(p.l, p.ctx)(payload.CharacterId, byte(payload.WorldId))
+	if err != nil {
+		return nil, fmt.Errorf("unable to lookup MTS holdings for character [%d]: %w", payload.CharacterId, err)
+	}
+
+	var found *mts.HoldingRestModel
+	for i := range holdings {
+		if holdings[i].Id == payload.HoldingId.String() {
+			found = &holdings[i]
+			break
+		}
+	}
+
+	if found == nil {
+		return nil, fmt.Errorf("no holding found with id [%s] for character [%d]", payload.HoldingId, payload.CharacterId)
+	}
+
+	p.l.Debugf("Found MTS holding template [%d] quantity [%d] for take-home", found.TemplateId, found.Quantity)
+
+	// Derive the destination inventory type from the holding's item template. The
+	// channel passes InventoryType=0 as an advisory placeholder (the wire carries
+	// only nITCSN), and 0 matches no compartment (valid types are 1-5), so the
+	// accept_to_character step would error and roll the saga back, stranding the
+	// item in holding. Derive it here from the template the same way every other
+	// grant path does (cash-shop withdraw, RequestCreateItem, the asset consumer).
+	inventoryType, ok := inventory.TypeFromItemId(item.Id(found.TemplateId))
+	if !ok {
+		return nil, fmt.Errorf("unable to derive inventory type for holding template [%d] (character [%d])", found.TemplateId, payload.CharacterId)
+	}
+
+	assetData := asset2.AssetData{
+		Quantity:      found.Quantity,
+		Flag:          found.Flags,
+		Strength:      found.Strength,
+		Dexterity:     found.Dexterity,
+		Intelligence:  found.Intelligence,
+		Luck:          found.Luck,
+		Hp:            found.HP,
+		Mp:            found.MP,
+		WeaponAttack:  found.WeaponAttack,
+		MagicAttack:   found.MagicAttack,
+		WeaponDefense: found.WeaponDefense,
+		MagicDefense:  found.MagicDefense,
+		Accuracy:      found.Accuracy,
+		Avoidability:  found.Avoidability,
+		Hands:         found.Hands,
+		Speed:         found.Speed,
+		Jump:          found.Jump,
+		Slots:         found.Slots,
+		Level:         found.Level,
+		Experience:    found.ItemExp,
+	}
+
+	steps := []Step[any]{
+		NewStep[any](
+			"release_from_mts_holding",
+			Pending,
+			ReleaseFromMtsHolding,
+			ReleaseFromMtsHoldingPayload{
+				TransactionId: payload.TransactionId,
+				HoldingId:     payload.HoldingId,
+			},
+		),
+		NewStep[any](
+			"accept_to_character",
+			Pending,
+			AcceptToCharacter,
+			AcceptToCharacterPayload{
+				TransactionId: payload.TransactionId,
+				CharacterId:   payload.CharacterId,
+				InventoryType: byte(inventoryType),
+				TemplateId:    found.TemplateId,
+				AssetData:     assetData,
+			},
+		),
+	}
+
+	return steps, nil
+}
+
+// expandMtsSettlePurchase expands MtsSettlePurchase into the three ordered money-mover
+// steps: debit the buyer's prepaid wallet FIRST (so a mid-saga failure grants nothing),
+// credit the seller's points wallet, then move the listing custody to the buyer's
+// holding. Commission = markedUpPrice − listValue is never credited (the sink).
+// currencyType: 3=prepaid (buyer debit), 2=points (seller credit). N=3 steps.
+func (p *ProcessorImpl) expandMtsSettlePurchase(st Step[any]) ([]Step[any], error) {
+	payload, ok := st.Payload().(MtsSettlePurchasePayload)
+	if !ok {
+		return nil, fmt.Errorf("invalid payload type for MtsSettlePurchase")
+	}
+
+	const (
+		currencyTypePoints  = uint32(2)
+		currencyTypePrepaid = uint32(3)
+	)
+
+	steps := []Step[any]{
+		// 1. Debit buyer prepaid by the marked-up price (negative amount).
+		NewStep[any](
+			"award_currency_buyer",
+			Pending,
+			AwardCurrency,
+			AwardCurrencyPayload{
+				CharacterId:  payload.BuyerId,
+				AccountId:    payload.BuyerAccountId,
+				CurrencyType: currencyTypePrepaid,
+				Amount:       -payload.MarkedUpPrice,
+			},
+		),
+		// 2. Credit seller points by the list value (positive amount).
+		NewStep[any](
+			"award_currency_seller",
+			Pending,
+			AwardCurrency,
+			AwardCurrencyPayload{
+				CharacterId:  payload.SellerId,
+				AccountId:    payload.SellerAccountId,
+				CurrencyType: currencyTypePoints,
+				Amount:       payload.ListValue,
+			},
+		),
+		// 3. Move listing custody to the buyer's holding.
+		NewStep[any](
+			"mts_move_listing_to_holding",
+			Pending,
+			MtsMoveListingToHolding,
+			MtsMoveListingToHoldingPayload{
+				TransactionId: payload.TransactionId,
+				ListingId:     payload.ListingId,
+				BuyerId:       payload.BuyerId,
+				WorldId:       payload.WorldId,
+				ResultKind:    payload.ResultKind,
+				Price:         payload.Price,
 			},
 		),
 	}

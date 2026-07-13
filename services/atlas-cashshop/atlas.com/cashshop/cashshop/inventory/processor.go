@@ -4,11 +4,12 @@ import (
 	"atlas-cashshop/cashshop/inventory/compartment"
 	"atlas-cashshop/kafka/message"
 	inventoryMsg "atlas-cashshop/kafka/message/cashshop/inventory"
-	"atlas-cashshop/kafka/producer"
 	inventory2 "atlas-cashshop/kafka/producer/cashshop/inventory"
 	"context"
 
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
@@ -31,7 +32,6 @@ type ProcessorImpl struct {
 	ctx context.Context
 	db  *gorm.DB
 	t   tenant.Model
-	p   producer.Provider
 	ccp compartment.Processor
 }
 
@@ -42,7 +42,6 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 		ctx: ctx,
 		db:  db,
 		t:   tenant.MustFromContext(ctx),
-		p:   producer.ProviderImpl(l)(ctx),
 		ccp: compartment.NewProcessor(l, ctx, db),
 	}
 	return p
@@ -57,7 +56,6 @@ func (p *ProcessorImpl) WithTransaction(tx *gorm.DB) Processor {
 		ctx: p.ctx,
 		db:  tx,
 		t:   p.t,
-		p:   p.p,
 		ccp: p.ccp,
 	}
 }
@@ -89,29 +87,31 @@ func (p *ProcessorImpl) GetByAccountId(accountId uint32) (Model, error) {
 	return p.ByAccountIdProvider(accountId)()
 }
 
-// createDefaultCompartments creates the default compartments for an account
-func (p *ProcessorImpl) createDefaultCompartments(accountId uint32) (Model, error) {
+// createDefaultCompartments creates the default compartments for an account,
+// buffering their status events into mb so they enqueue atomically with the
+// rest of the caller's transaction.
+func (p *ProcessorImpl) createDefaultCompartments(mb *message.Buffer, accountId uint32) (Model, error) {
 	p.l.Debugf("Creating default compartments for account [%d] with capacity [%d].", accountId, compartment.DefaultCapacity)
 
-	// Create a compartment processor
+	// Create a compartment processor bound to the same db/tx as p
 	compartmentProcessor := compartment.NewProcessor(p.l, p.ctx, p.db)
 
 	// Create Explorer compartment
-	explorerCompartment, err := compartmentProcessor.CreateAndEmit(accountId, compartment.TypeExplorer, compartment.DefaultCapacity)
+	explorerCompartment, err := compartmentProcessor.Create(mb)(accountId)(compartment.TypeExplorer)(compartment.DefaultCapacity)
 	if err != nil {
 		p.l.WithError(err).Errorf("Could not create Explorer compartment for account [%d].", accountId)
 		return Model{}, err
 	}
 
 	// Create Cygnus compartment
-	cygnusCompartment, err := compartmentProcessor.CreateAndEmit(accountId, compartment.TypeCygnus, compartment.DefaultCapacity)
+	cygnusCompartment, err := compartmentProcessor.Create(mb)(accountId)(compartment.TypeCygnus)(compartment.DefaultCapacity)
 	if err != nil {
 		p.l.WithError(err).Errorf("Could not create Cygnus compartment for account [%d].", accountId)
 		return Model{}, err
 	}
 
 	// Create Legend compartment
-	legendCompartment, err := compartmentProcessor.CreateAndEmit(accountId, compartment.TypeLegend, compartment.DefaultCapacity)
+	legendCompartment, err := compartmentProcessor.Create(mb)(accountId)(compartment.TypeLegend)(compartment.DefaultCapacity)
 	if err != nil {
 		p.l.WithError(err).Errorf("Could not create Legend compartment for account [%d].", accountId)
 		return Model{}, err
@@ -132,7 +132,7 @@ func (p *ProcessorImpl) Create(mb *message.Buffer) func(accountId uint32) (Model
 		p.l.Debugf("Initializing cash shop inventory for account [%d] with capacity [%d].", accountId, compartment.DefaultCapacity)
 
 		// Create default compartments
-		inventory, err := p.createDefaultCompartments(accountId)
+		inventory, err := p.createDefaultCompartments(mb, accountId)
 		if err != nil {
 			return Model{}, err
 		}
@@ -146,19 +146,15 @@ func (p *ProcessorImpl) Create(mb *message.Buffer) func(accountId uint32) (Model
 
 // CreateAndEmit creates a new inventory and emits an event
 func (p *ProcessorImpl) CreateAndEmit(accountId uint32) (Model, error) {
-	mb := message.NewBuffer()
-	m, err := p.Create(mb)(accountId)
-	if err != nil {
-		return Model{}, err
-	}
-
-	for t, ms := range mb.GetAll() {
-		if err = p.p(t)(model.FixedProvider(ms)); err != nil {
-			return Model{}, err
-		}
-	}
-
-	return m, nil
+	var result Model
+	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			var err error
+			result, err = p.WithTransaction(tx).Create(buf)(accountId)
+			return err
+		})
+	})
+	return result, txErr
 }
 
 // Delete deletes an inventory and all its compartments and assets
@@ -166,11 +162,11 @@ func (p *ProcessorImpl) Delete(mb *message.Buffer) func(accountId uint32) error 
 	return func(accountId uint32) error {
 		p.l.Debugf("Account [%d] was deleted. Cleaning up cash shop inventory...", accountId)
 
-		// Create a compartment processor
+		// Create a compartment processor bound to the same db/tx as p
 		compartmentProcessor := compartment.NewProcessor(p.l, p.ctx, p.db)
 
-		// Delete all compartments for the account
-		err := compartmentProcessor.DeleteAllByAccountIdAndEmit(accountId)
+		// Delete all compartments for the account, buffering their events into mb
+		err := compartmentProcessor.DeleteAllByAccountId(mb)(accountId)
 		if err != nil {
 			return err
 		}
@@ -183,17 +179,9 @@ func (p *ProcessorImpl) Delete(mb *message.Buffer) func(accountId uint32) error 
 
 // DeleteAndEmit deletes an inventory and emits an event
 func (p *ProcessorImpl) DeleteAndEmit(accountId uint32) error {
-	mb := message.NewBuffer()
-	err := p.Delete(mb)(accountId)
-	if err != nil {
-		return err
-	}
-
-	for t, ms := range mb.GetAll() {
-		if err = p.p(t)(model.FixedProvider(ms)); err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).Delete(buf)(accountId)
+		})
+	})
 }

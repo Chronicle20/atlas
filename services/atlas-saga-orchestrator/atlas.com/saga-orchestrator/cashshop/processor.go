@@ -2,6 +2,7 @@ package cashshop
 
 import (
 	"atlas-saga-orchestrator/kafka/message"
+	"atlas-saga-orchestrator/kafka/message/cashshop"
 	cashshopCompartment "atlas-saga-orchestrator/kafka/message/cashshop/compartment"
 	"atlas-saga-orchestrator/kafka/producer"
 	"context"
@@ -46,7 +47,12 @@ func (p *ProcessorImpl) AwardCurrencyAndEmit(transactionId uuid.UUID, accountId 
 
 func (p *ProcessorImpl) AwardCurrency(mb *message.Buffer) func(transactionId uuid.UUID, accountId uint32, currencyType uint32, amount int32) error {
 	return func(transactionId uuid.UUID, accountId uint32, currencyType uint32, amount int32) error {
-		return mb.Put(cashshopCompartment.EnvCommandTopic, AdjustCurrencyProvider(transactionId, accountId, currencyType, amount))
+		// Wallet AdjustCurrency goes to COMMAND_TOPIC_WALLET — the topic the cashshop
+		// wallet handler subscribes to. (Accept/Release below are cash-COMPARTMENT
+		// ops and correctly use the compartment topic.) Publishing to the compartment
+		// topic instead left the command on a consumer that ignores it, so every NX
+		// debit (MTS buy/bid/settle) timed out with no wallet-updated event.
+		return mb.Put(cashshop.EnvCommandTopicWallet, AdjustCurrencyProvider(transactionId, accountId, currencyType, amount))
 	}
 }
 

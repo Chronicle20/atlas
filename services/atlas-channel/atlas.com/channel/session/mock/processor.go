@@ -14,32 +14,35 @@ import (
 )
 
 type ProcessorMock struct {
-	WithContextFunc                func(ctx context.Context) session.Processor
-	AllInTenantProviderFunc        func() ([]session.Model, error)
-	AllInChannelProviderFunc       func(worldId world.Id, channelId channel.Id) ([]session.Model, error)
-	ByIdModelProviderFunc          func(sessionId uuid.UUID) model.Provider[session.Model]
-	IfPresentByIdFunc              func(sessionId uuid.UUID, f model.Operator[session.Model])
-	IfPresentByIdInWorldFunc       func(sessionId uuid.UUID, ch channel.Model, f model.Operator[session.Model])
-	ByCharacterIdModelProviderFunc func(ch channel.Model) func(characterId uint32) model.Provider[session.Model]
-	IfPresentByCharacterIdFunc     func(ch channel.Model) func(characterId uint32, f model.Operator[session.Model]) error
-	ByAccountIdModelProviderFunc   func(ch channel.Model) func(accountId uint32) model.Provider[session.Model]
-	IfPresentByAccountIdFunc       func(ch channel.Model) func(accountId uint32, f model.Operator[session.Model]) error
-	GetByCharacterIdFunc           func(ch channel.Model) func(characterId uint32) (session.Model, error)
-	ForEachByCharacterIdFunc       func(ch channel.Model) func(provider model.Provider[[]uint32], f model.Operator[session.Model]) error
-	SetAccountIdFunc               func(id uuid.UUID, accountId uint32) session.Model
-	SetCharacterIdFunc             func(id uuid.UUID, characterId uint32) session.Model
-	SetMapIdFunc                   func(id uuid.UUID, mapId _map.Id) session.Model
-	SetFieldFunc                   func(id uuid.UUID, f field.Model) session.Model
-	SetGmFunc                      func(id uuid.UUID, gm bool) session.Model
-	UpdateLastRequestFunc          func(id uuid.UUID) session.Model
-	SessionCreatedFunc             func(s session.Model) error
-	CreateFunc                     func(ch channel.Model, locale byte) func(sessionId uuid.UUID, conn net.Conn)
-	DecryptFunc                    func(hasAes bool, hasMapleEncryption bool) func(sessionId uuid.UUID, input []byte) []byte
-	DestroyByIdWithSpanFunc        func(sessionId uuid.UUID)
-	DestroyByIdFunc                func(sessionId uuid.UUID)
-	DestroyFunc                    func(s session.Model) error
-	SetStorageNpcIdFunc            func(id uuid.UUID, npcId uint32) session.Model
-	ClearStorageNpcIdFunc          func(id uuid.UUID) session.Model
+	WithContextFunc                    func(ctx context.Context) session.Processor
+	AllInTenantProviderFunc            func() ([]session.Model, error)
+	AllInChannelProviderFunc           func(worldId world.Id, channelId channel.Id) ([]session.Model, error)
+	InFieldModelProviderFunc           func(f field.Model) model.Provider[[]session.Model]
+	InMapAllInstancesModelProviderFunc func(worldId world.Id, channelId channel.Id, mapId _map.Id) model.Provider[[]session.Model]
+	ByIdModelProviderFunc              func(sessionId uuid.UUID) model.Provider[session.Model]
+	IfPresentByIdFunc                  func(sessionId uuid.UUID, f model.Operator[session.Model])
+	IfPresentByIdInWorldFunc           func(sessionId uuid.UUID, ch channel.Model, f model.Operator[session.Model])
+	ByCharacterIdModelProviderFunc     func(ch channel.Model) func(characterId uint32) model.Provider[session.Model]
+	IfPresentByCharacterIdFunc         func(ch channel.Model) func(characterId uint32, f model.Operator[session.Model]) error
+	ByAccountIdModelProviderFunc       func(ch channel.Model) func(accountId uint32) model.Provider[session.Model]
+	IfPresentByAccountIdFunc           func(ch channel.Model) func(accountId uint32, f model.Operator[session.Model]) error
+	GetByCharacterIdFunc               func(ch channel.Model) func(characterId uint32) (session.Model, error)
+	ForEachByCharacterIdFunc           func(ch channel.Model) func(provider model.Provider[[]uint32], f model.Operator[session.Model]) error
+	SetAccountIdFunc                   func(id uuid.UUID, accountId uint32) session.Model
+	SetCharacterIdFunc                 func(id uuid.UUID, characterId uint32) session.Model
+	SetMapIdFunc                       func(id uuid.UUID, mapId _map.Id) session.Model
+	SetFieldFunc                       func(id uuid.UUID, f field.Model) session.Model
+	SetCashSceneFunc                   func(id uuid.UUID, scene byte) session.Model
+	SetGmFunc                          func(id uuid.UUID, gm bool) session.Model
+	UpdateLastRequestFunc              func(id uuid.UUID) session.Model
+	SessionCreatedFunc                 func(s session.Model) error
+	CreateFunc                         func(ch channel.Model, locale byte) func(sessionId uuid.UUID, conn net.Conn)
+	DecryptFunc                        func(hasAes bool, hasMapleEncryption bool) func(sessionId uuid.UUID, input []byte) []byte
+	DestroyByIdWithSpanFunc            func(sessionId uuid.UUID)
+	DestroyByIdFunc                    func(sessionId uuid.UUID)
+	DestroyFunc                        func(s session.Model) error
+	SetStorageNpcIdFunc                func(id uuid.UUID, npcId uint32) session.Model
+	ClearStorageNpcIdFunc              func(id uuid.UUID) session.Model
 }
 
 var _ session.Processor = (*ProcessorMock)(nil)
@@ -63,6 +66,20 @@ func (m *ProcessorMock) AllInChannelProvider(worldId world.Id, channelId channel
 		return m.AllInChannelProviderFunc(worldId, channelId)
 	}
 	return nil, nil
+}
+
+func (m *ProcessorMock) InFieldModelProvider(f field.Model) model.Provider[[]session.Model] {
+	if m.InFieldModelProviderFunc != nil {
+		return m.InFieldModelProviderFunc(f)
+	}
+	return model.FixedProvider[[]session.Model](nil)
+}
+
+func (m *ProcessorMock) InMapAllInstancesModelProvider(worldId world.Id, channelId channel.Id, mapId _map.Id) model.Provider[[]session.Model] {
+	if m.InMapAllInstancesModelProviderFunc != nil {
+		return m.InMapAllInstancesModelProviderFunc(worldId, channelId, mapId)
+	}
+	return model.FixedProvider[[]session.Model](nil)
 }
 
 func (m *ProcessorMock) ByIdModelProvider(sessionId uuid.UUID) model.Provider[session.Model] {
@@ -162,6 +179,13 @@ func (m *ProcessorMock) SetMapId(id uuid.UUID, mapId _map.Id) session.Model {
 func (m *ProcessorMock) SetField(id uuid.UUID, f field.Model) session.Model {
 	if m.SetFieldFunc != nil {
 		return m.SetFieldFunc(id, f)
+	}
+	return session.Model{}
+}
+
+func (m *ProcessorMock) SetCashScene(id uuid.UUID, scene byte) session.Model {
+	if m.SetCashSceneFunc != nil {
+		return m.SetCashSceneFunc(id, scene)
 	}
 	return session.Model{}
 }

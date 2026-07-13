@@ -9,9 +9,14 @@ import (
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 	"github.com/sirupsen/logrus"
 )
+
+type ProcessorImpl struct {
+	l   logrus.FieldLogger
+	ctx context.Context
+	sp  session.Processor
+}
 
 type Processor interface {
 	CharacterIdsInMapModelProvider(f field.Model) model.Provider[[]uint32]
@@ -22,12 +27,6 @@ type Processor interface {
 	ForSessionsInMapAllInstances(worldId world.Id, channelId channel.Id, mapId _map.Id, o model.Operator[session.Model]) error
 	OtherCharacterIdsInMapModelProvider(f field.Model, referenceCharacterId uint32) model.Provider[[]uint32]
 	ForOtherSessionsInMap(f field.Model, referenceCharacterId uint32, o model.Operator[session.Model]) error
-}
-
-type ProcessorImpl struct {
-	l   logrus.FieldLogger
-	ctx context.Context
-	sp  session.Processor
 }
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
@@ -42,7 +41,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) CharacterIdsInMapModelProvider(f field.Model) model.Provider[[]uint32] {
-	return requests.SliceProvider[RestModel, uint32](p.l, p.ctx)(requestCharactersInMap(f), Extract, model.Filters[uint32]())
+	return characterIds(p.sp.InFieldModelProvider(f))
 }
 
 func (p *ProcessorImpl) GetCharacterIdsInMap(f field.Model) ([]uint32, error) {
@@ -60,7 +59,30 @@ func (p *ProcessorImpl) ForSessionsInMap(f field.Model, o model.Operator[session
 }
 
 func (p *ProcessorImpl) CharacterIdsInMapAllInstancesModelProvider(worldId world.Id, channelId channel.Id, mapId _map.Id) model.Provider[[]uint32] {
-	return requests.SliceProvider[RestModel, uint32](p.l, p.ctx)(requestCharactersInMapAllInstances(worldId, channelId, mapId), Extract, model.Filters[uint32]())
+	return characterIds(p.sp.InMapAllInstancesModelProvider(worldId, channelId, mapId))
+}
+
+// characterIds maps sessions to their character ids, deduplicated — the
+// registry can transiently hold two sessions for one character (stale socket
+// plus reconnect) and each character must be delivered to at most once.
+func characterIds(sp model.Provider[[]session.Model]) model.Provider[[]uint32] {
+	return func() ([]uint32, error) {
+		ss, err := sp()
+		if err != nil {
+			return nil, err
+		}
+		seen := make(map[uint32]struct{}, len(ss))
+		ids := make([]uint32, 0, len(ss))
+		for _, s := range ss {
+			id := s.CharacterId()
+			if _, ok := seen[id]; ok {
+				continue
+			}
+			seen[id] = struct{}{}
+			ids = append(ids, id)
+		}
+		return ids, nil
+	}
 }
 
 func (p *ProcessorImpl) ForSessionsInMapAllInstances(worldId world.Id, channelId channel.Id, mapId _map.Id, o model.Operator[session.Model]) error {

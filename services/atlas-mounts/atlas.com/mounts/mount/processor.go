@@ -3,7 +3,6 @@ package mount
 import (
 	"atlas-mounts/kafka/message"
 	mountmsg "atlas-mounts/kafka/message/mount"
-	"atlas-mounts/kafka/producer"
 	"context"
 	"time"
 
@@ -33,7 +32,6 @@ type ProcessorImpl struct {
 	ctx context.Context
 	db  *gorm.DB
 	t   tenant.Model
-	kp  producer.Provider
 }
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor {
@@ -42,7 +40,6 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 		ctx: ctx,
 		db:  db,
 		t:   tenant.MustFromContext(ctx),
-		kp:  producer.ProviderImpl(l)(ctx),
 	}
 }
 

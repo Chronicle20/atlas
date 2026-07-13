@@ -13,13 +13,14 @@ import (
 	"context"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
-	partypkt "github.com/Chronicle20/atlas/libs/atlas-packet/party"
-	partycb "github.com/Chronicle20/atlas/libs/atlas-packet/party/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	partypkt "github.com/Chronicle20/atlas/libs/atlas-packet/party"
+	partycb "github.com/Chronicle20/atlas/libs/atlas-packet/party/clientbound"
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
@@ -121,14 +122,14 @@ func handleLoginEvent(sc server.Model, wp writer.Producer) message.Handler[membe
 			return
 		}
 
-		go func() {
+		routine.Go(l, ctx, func(_ context.Context) {
 			for _, m := range p.Members() {
 				err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(m.Id(), partyUpdate(l)(ctx)(wp)(p, tc, sc.ChannelId()))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to announce character [%d] triggered party [%d] update.", m.Id(), p.Id())
 				}
 			}
-		}()
+		})
 	}
 }
 
@@ -154,14 +155,14 @@ func handleLogoutEvent(sc server.Model, wp writer.Producer) message.Handler[memb
 			return
 		}
 
-		go func() {
+		routine.Go(l, ctx, func(_ context.Context) {
 			for _, m := range p.Members() {
 				err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(m.Id(), partyUpdate(l)(ctx)(wp)(p, tc, sc.ChannelId()))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to announce character [%d] triggered party [%d] update.", m.Id(), p.Id())
 				}
 			}
-		}()
+		})
 	}
 }
 

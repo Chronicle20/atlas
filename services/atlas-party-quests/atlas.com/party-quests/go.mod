@@ -41,6 +41,7 @@ require (
 
 require (
 	github.com/Chronicle20/atlas/libs/atlas-retry v0.0.0 // indirect
+	github.com/Chronicle20/atlas/libs/atlas-routine v0.0.0-00010101000000-000000000000
 	github.com/Chronicle20/atlas/libs/atlas-seeder v0.0.0
 	github.com/Chronicle20/atlas/libs/atlas-tracing v0.0.0
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
@@ -109,3 +110,5 @@ replace github.com/Chronicle20/atlas/libs/atlas-socket => ../../../../libs/atlas
 replace github.com/Chronicle20/atlas/libs/atlas-tracing => ../../../../libs/atlas-tracing
 
 replace github.com/Chronicle20/atlas/libs/atlas-seeder => ../../../../libs/atlas-seeder
+
+replace github.com/Chronicle20/atlas/libs/atlas-routine => ../../../../libs/atlas-routine

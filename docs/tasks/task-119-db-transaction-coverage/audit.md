@@ -80,9 +80,9 @@ None — every write-verb hit in this service traces to a real `keys`-table writ
 
 ### Verdicts
 
-- `Reset`, `CreateDefault`: **B** — delete-all+create-loop / create-loop, single table (`keys`), already wrapped in raw `db.Transaction`. Convert to `ExecuteTransaction`. `_(commit: pending — Task 5)_`
+- `Reset`, `CreateDefault`: **B** — delete-all+create-loop / create-loop, single table (`keys`), already wrapped in raw `db.Transaction`. Convert to `ExecuteTransaction`. `_(commit: "refactor(atlas-keys): standardize raw db.Transaction onto database.ExecuteTransaction" — Task 5, done)_`
 - `Delete`: **C** in substance (single statement) but already wrapped — harmless; convert wrapper for consistency as part of the same Task 5 commit.
-- `ChangeKey`: **B** (read-then-branch-to-create-or-update, single table `keys`) — already wrapped. `_(commit: pending — Task 5)_`. No emit calls found anywhere in `key/processor.go` (no Kafka producer import in the file), so no [E] flag applies.
+- `ChangeKey`: **B** (read-then-branch-to-create-or-update, single table `keys`) — already wrapped. `_(commit: "refactor(atlas-keys): standardize raw db.Transaction onto database.ExecuteTransaction" — Task 5, done)_`. No emit calls found anywhere in `key/processor.go` (no Kafka producer import in the file), so no [E] flag applies.
 
 ---
 
@@ -424,7 +424,7 @@ Full-service reconciliation: re-ran `grep -rn "\.Create(\|\.Save(\|\.Update(\|\.
 
 | Service | Classes found | Action | Remediation task | Status |
 |---|---|---|---|---|
-| atlas-keys | B ×4, all [T] | Standardize (`db.Transaction` → `ExecuteTransaction`) | Task 5 | `_(commit: pending — Task 5)_` |
+| atlas-keys | B ×4, all [T] | Standardize (`db.Transaction` → `ExecuteTransaction`) | Task 5 | `_(commit: "refactor(atlas-keys): standardize raw db.Transaction onto database.ExecuteTransaction" — Task 5, done)_` |
 | atlas-families | B ×3, all [T] | Standardize | Task 6 | `_(commit: pending — Task 6)_`; informational flag on `AddJunior`'s untransacted auto-provision side effect |
 | atlas-npc-conversations | A ×6 (npc pkg, [T]); C ×4 (quest pkg); D (seeder ×2) | Standardize the 6 [T] sites; no change for quest CRUD; seeder is out-of-scope follow-up candidate | Task 7 | `_(commit: pending — Task 7)_`; completeness note on seeder-path recipe orphaning (not a transaction-coverage defect) |
 | atlas-monster-book | A ×2 ([T], one [E], one clean) | Standardize both; fix [E] on `handleCardPickedUp` via canonical composition (design §6.1) | Task 8 | `_(commit: pending — Task 8)_` |

@@ -9,6 +9,7 @@ import (
 	"atlas-family/kafka/producer"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
@@ -172,7 +173,7 @@ func (p *ProcessorImpl) AddJunior(buf *message.Buffer) func(worldId world.Id, se
 
 			// Begin transaction
 			var result FamilyMember
-			err = p.db.WithContext(p.ctx).Transaction(func(tx *gorm.DB) error {
+			err = database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 				// Update senior - add junior
 				updatedSenior, err := seniorModel.Builder().
 					AddJunior(juniorId).
@@ -244,7 +245,7 @@ func (p *ProcessorImpl) RemoveMember(_ *message.Buffer) func(characterId uint32,
 			}
 
 			var updatedMembers []FamilyMember
-			err = p.db.WithContext(p.ctx).Transaction(func(tx *gorm.DB) error {
+			err = database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 				// If member has a senior, remove from senior's junior list
 				if memberModel.HasSenior() {
 					if seniorModel, err := p.GetByCharacterId(*memberModel.SeniorId()); err == nil {
@@ -317,7 +318,7 @@ func (p *ProcessorImpl) BreakLink(buf *message.Buffer) func(characterId uint32, 
 			}
 
 			var updatedMembers []FamilyMember
-			err = p.db.WithContext(p.ctx).Transaction(func(tx *gorm.DB) error {
+			err = database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 				// If member has a senior, remove from senior's junior list
 				if memberModel.HasSenior() {
 					if seniorModel, err := p.WithTransaction(tx).GetByCharacterId(*memberModel.SeniorId()); err == nil {

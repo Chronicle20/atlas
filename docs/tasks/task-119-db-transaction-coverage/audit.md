@@ -107,9 +107,9 @@ None — every write-verb hit in this service traces to a real `keys`-table writ
 
 ### Verdicts
 
-- `AddJunior`, `RemoveMember`, `BreakLink`: **B** (2+ writes, single table `family_members`), already wrapped via raw `db.Transaction`, buffered emits deferred until after the transaction returns (confirmed no `message.Emit` inside any of the three closures). Convert to `ExecuteTransaction`. `_(commit: pending — Task 6)_`
+- `AddJunior`, `RemoveMember`, `BreakLink`: **B** (2+ writes, single table `family_members`), already wrapped via raw `db.Transaction`, buffered emits deferred until after the transaction returns (confirmed no `message.Emit` inside any of the three closures). Convert to `ExecuteTransaction`. `_(commit: "refactor(atlas-families): standardize raw db.Transaction onto database.ExecuteTransaction" — Task 6, done)_` — the three sites were converted 1:1 (same boundaries, writes, order); a rollback regression test (`TestAddJunior_RollsBackSeniorSaveWhenJuniorSaveFails`, `family/processor_rollback_test.go`) was added and confirmed PASS both before and after the conversion, characterizing `AddJunior`'s two-write senior/junior save as atomic.
 - `BatchResetDailyRep`, standalone `SaveMember` calls: **C** — no change.
-- **Informational flag (not a transaction-coverage classification change):** `AddJunior`'s auto-provisioning of a missing senior (`family/administrator.go:31` via `processor.go:106`) executes against `p.db` directly, outside the subsequent transaction, on a branch that always returns `ErrSeniorNotFound` to the caller. A request reported as "failed" therefore has a persisted side effect — worth folding into the Task 6 remediation commit (move the auto-provision inside the transaction, or drop it) even though it doesn't change the class-B verdict above.
+- **Informational flag (not a transaction-coverage classification change, not remediated by Task 6):** `AddJunior`'s auto-provisioning of a missing senior (`family/administrator.go:31` via `processor.go:106`) executes against `p.db` directly, outside the subsequent transaction, on a branch that always returns `ErrSeniorNotFound` to the caller. A request reported as "failed" therefore has a persisted side effect. Task 6's scope was conversion-only (no behavior change), so this was left as-is; still worth a follow-up (move the auto-provision inside the transaction, or drop it) even though it doesn't change the class-B verdict above.
 
 ---
 
@@ -425,7 +425,7 @@ Full-service reconciliation: re-ran `grep -rn "\.Create(\|\.Save(\|\.Update(\|\.
 | Service | Classes found | Action | Remediation task | Status |
 |---|---|---|---|---|
 | atlas-keys | B ×4, all [T] | Standardize (`db.Transaction` → `ExecuteTransaction`) | Task 5 | `_(commit: "refactor(atlas-keys): standardize raw db.Transaction onto database.ExecuteTransaction" — Task 5, done)_` |
-| atlas-families | B ×3, all [T] | Standardize | Task 6 | `_(commit: pending — Task 6)_`; informational flag on `AddJunior`'s untransacted auto-provision side effect |
+| atlas-families | B ×3, all [T] | Standardize | Task 6 | `_(commit: "refactor(atlas-families): standardize raw db.Transaction onto database.ExecuteTransaction" — Task 6, done)_`; informational flag on `AddJunior`'s untransacted auto-provision side effect (not remediated — no schema/behavior change was in scope for this task) |
 | atlas-npc-conversations | A ×6 (npc pkg, [T]); C ×4 (quest pkg); D (seeder ×2) | Standardize the 6 [T] sites; no change for quest CRUD; seeder is out-of-scope follow-up candidate | Task 7 | `_(commit: pending — Task 7)_`; completeness note on seeder-path recipe orphaning (not a transaction-coverage defect) |
 | atlas-monster-book | A ×2 ([T], one [E], one clean) | Standardize both; fix [E] on `handleCardPickedUp` via canonical composition (design §6.1) | Task 8 | `_(commit: pending — Task 8)_` |
 | atlas-marriages | A (live path — genuinely unwrapped, corrects design hypothesis); A [T][E] (dead-code twin) | Wrap the live `AcceptProposalAndEmit` writes in `ExecuteTransaction`; delete or retire the unreachable manual-tx twin | Task 9 | `_(commit: pending — Task 9)_` |

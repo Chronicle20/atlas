@@ -783,6 +783,7 @@
   direction: clientbound
   opcode: 119
   fname: CStage::OnSetITC
+  packet: field/clientbound/SetItc
   provenance: manual
   ida:
     address: 7281738

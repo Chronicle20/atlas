@@ -616,6 +616,7 @@
   direction: clientbound
   opcode: 93
   fname: CStage::OnSetITC
+  packet: field/clientbound/SetItc
   provenance: manual
   ida:
     address: 6665140

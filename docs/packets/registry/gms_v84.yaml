@@ -822,6 +822,7 @@
   direction: clientbound
   opcode: 129
   fname: CStage::OnSetITC
+  packet: field/clientbound/SetItc
   provenance: ida-discovered
   ida:
     address: 7965003

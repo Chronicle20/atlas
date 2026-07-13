@@ -3,6 +3,11 @@
   "md5": "2e692f3ab5078e04138d264f8ea1e668",
   "generated_at": "2026-05-14T00:00:00Z",
   "functions": {
+    "CStage::OnSetITC": {
+      "address": "0x7c57d0",
+      "direction": "clientbound",
+      "calls": null
+    },
     "CWvsContext::SendMigrateToITCRequest": {
       "address": "0xaa7f49",
       "direction": "serverbound",

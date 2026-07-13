@@ -9,11 +9,11 @@ Tool: `6a4db515f3ad851ad2e07a3fc2615db54ae8ceb8`
 - export gms_v61: `ff72dbfc0de1843019f459861178b5864f0b95769e9b7e1284b9708cdd9d1a99`
 - export gms_v72: `02026b5728bf2660f55952744cd9e074182cf5b118c1110879ebce9cbaf38823`
 - export gms_v79: `49c1be30a77727795b211de124897a6c112926724bec6c5e50f8a96a55705ef3`
-- export gms_v83: `094a0ba39fc89ac21330c8fe7647d87e632ff352bd785a5a912abb86ebbe6be3`
-- export gms_v84: `f1cdd0165bc5d754a01a371c7ae26cdaa85e536dbebea9560d99c3b2bd09ebe8`
-- export gms_v87: `5df0f1af483b4012687c556ed5d5521c05d6e1d59895b137516b9826411ca7d3`
-- export gms_v95: `18d6bc3a43c9750a86e2195117db0d0c0551143e0d3032046309ec67a62836ad`
-- export jms_v185: `9b4c657920b770d75542de9fd918171712c2671a8fb9061e31c23bd13f9db893`
+- export gms_v83: `48e4a128bc84590b1a9dd45269344a950c52d6c03a234a24d5e40a8bd475998a`
+- export gms_v84: `38d565a101e36d68c65f447414bd3a28e0f1a424255990d819b7a12eae3e5b65`
+- export gms_v87: `6f81ca36ee0299e4bd37541f84ceae54f81f5b6551bb3247beda46785311bfef`
+- export gms_v95: `2ab5dade813f118e027a310143d2663f6b4904c2b855fa11b04b0a90199e1e0b`
+- export jms_v185: `fafc2aa572aff3b2769c36da3305ad175d2410515f5bb182587b75967d0be1f7`
 
 ## Clientbound
 
@@ -178,7 +178,7 @@ Tool: `6a4db515f3ad851ad2e07a3fc2615db54ae8ceb8`
 | SET_FIELD | CStage::OnSetField | field/clientbound/FieldSetField (T1) |  | ⬜ | 0x05C | ✅ | 0x072 | ✅ | 0x076 | ✅ | 0x07D | ✅ | 0x080 | ✅ | 0x085 | ✅ | 0x08D | ✅ | 0x07B | ✅ |
 | FAMILY_PRIVILEGE_LIST | CWvsContext::OnFamilyPrivilegeList |  |  | ⬜ |  | ⬜ | 0x05D | ❌ | 0x05E | ❌ | 0x064 | ❌ | 0x067 | ❌ | 0x067 | ❌ | 0x068 | ❌ | 0x06B | ❌ |
 | IDA_0X05D | sub_4CBB78 |  | 0x05D | ❌ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
-| SET_ITC | CStage::OnSetITC |  |  | ⬜ | 0x05D | ❌ | 0x073 | ❌ | 0x077 | ❌ | 0x07E | ❌ | 0x081 | ❌ | 0x086 | ❌ | 0x08E | ❌ | 0x07C | ❌ |
+| SET_ITC | CStage::OnSetITC |  |  | ⬜ | 0x05D | ✅ | 0x073 | ✅ | 0x077 | ✅ | 0x07E | ✅ | 0x081 | ✅ | 0x086 | ✅ | 0x08E | ✅ | 0x07C | ✅ |
 | FAMILY_REP_GAIN | CWvsContext::OnFamilyFamousPointIncResult |  |  | ⬜ |  | ⬜ | 0x05E | ❌ | 0x05F | ❌ | 0x065 | ❌ | 0x068 | ❌ | 0x068 | ❌ | 0x069 | ❌ | 0x06C | ❌ |
 | SET_CASH_SHOP | CStage::OnSetCashShop |  |  | ⬜ | 0x05E | ❌ | 0x074 | ❌ | 0x078 | ❌ | 0x07F | ❌ | 0x082 | ❌ | 0x087 | ❌ | 0x08F | ❌ | 0x07D | ❌ |
 | SET_QUEST_CLEAR | CField::OnSetQuestClear; sub_4CBC9A | field/clientbound/FieldSetQuestClear (T1) | 0x05E | ✅ | 0x071 | 🟡 | 0x08A | 🟡 | 0x08E | 🟡 | 0x096 | ✅ | 0x099 | ✅ | 0x09E | ✅ | 0x0A6 | ✅ | 0x093 | ✅ |
@@ -995,14 +995,14 @@ Tool: `6a4db515f3ad851ad2e07a3fc2615db54ae8ceb8`
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
 | v48 | 165 | 0 | 2 | 163 | 630 | 0 | 50.0% |
-| v61 | 229 | 0 | 60 | 204 | 467 | 0 | 46.5% |
-| v72 | 237 | 0 | 73 | 222 | 428 | 0 | 44.5% |
-| v79 | 249 | 0 | 72 | 220 | 419 | 0 | 46.0% |
-| v83 | 389 | 0 | 0 | 345 | 226 | 0 | 53.0% |
-| v84 | 366 | 0 | 0 | 347 | 247 | 0 | 51.3% |
-| v87 | 400 | 0 | 0 | 371 | 189 | 0 | 51.9% |
-| v95 | 420 | 0 | 0 | 435 | 105 | 0 | 49.1% |
-| JMS185 | 383 | 0 | 0 | 381 | 196 | 0 | 50.1% |
+| v61 | 230 | 0 | 60 | 203 | 467 | 0 | 46.7% |
+| v72 | 238 | 0 | 73 | 221 | 428 | 0 | 44.7% |
+| v79 | 250 | 0 | 72 | 219 | 419 | 0 | 46.2% |
+| v83 | 390 | 0 | 0 | 344 | 226 | 0 | 53.1% |
+| v84 | 367 | 0 | 0 | 346 | 247 | 0 | 51.5% |
+| v87 | 401 | 0 | 0 | 370 | 189 | 0 | 52.0% |
+| v95 | 421 | 0 | 0 | 434 | 105 | 0 | 49.2% |
+| JMS185 | 384 | 0 | 0 | 380 | 196 | 0 | 50.3% |
 
 ## Conflicts
 

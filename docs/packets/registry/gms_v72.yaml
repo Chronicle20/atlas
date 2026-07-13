@@ -767,6 +767,7 @@
   direction: clientbound
   opcode: 115
   fname: CStage::OnSetITC
+  packet: field/clientbound/SetItc
   provenance: manual
   ida:
     address: 7086405

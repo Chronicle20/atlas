@@ -612,6 +612,7 @@
   direction: clientbound
   opcode: 124
   fname: CStage::OnSetITC
+  packet: field/clientbound/SetItc
   provenance: csv-import
 - op: SET_CASH_SHOP
   direction: clientbound

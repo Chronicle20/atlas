@@ -116,6 +116,42 @@ ci_gates:
 matrix_check_hard_gate: true
 ```
 
+## Coverage manifest (packet tasks)
+
+A packet task (new codec, version bring-up, dispatcher family) declares its
+intended scope UP FRONT in `docs/tasks/<task>/coverage-manifest.yaml`. The
+`packet-completeness-critic` agent (run in the pre-PR review step) diffs this
+manifest against the branch's actual git + matrix delta and flags the two
+failure modes of the class-8 "semantic scope hole":
+
+- **CHANGED-BUT-UNCLAIMED** — a codec struct or version gate moved in the diff
+  but the packet isn't in `ops` (and isn't in `out_of_scope`). This is the scope
+  hole: work landed that the task never declared and no one verified.
+- **CLAIMED-BUT-UNVERIFIED** — a manifest `op × version` has no `verified` cell
+  in the final `status.json`. The task promised coverage it didn't deliver.
+
+Schema (`docs/tasks/<task>/coverage-manifest.yaml`):
+
+```yaml
+# coverage-manifest
+ops:                 # packets this task adds/changes coverage for.
+  - CHARACTER_SPAWN                        # an op name (status.json `op`), OR
+  - character/clientbound/CharacterSpawn   # a packet path (status.json `packet`)
+versions:            # version keys the task targets (subset of the 9).
+  - gms_v83
+  - gms_v84
+fields:              # OPTIONAL free-text notes of the specific gated fields touched.
+  - "character/clientbound/CharacterSpawn: v84 DR-block"
+out_of_scope:        # packets the diff may touch that are DELIBERATELY not this
+  - model/asset      # task's coverage (incidental edit, shared-struct churn).
+                     # Listed here so the critic won't flag them CHANGED-BUT-UNCLAIMED.
+```
+
+`ops` entries accept either the status.json `op` name or the `packet` path; the
+critic resolves both. Keep the manifest honest — an `out_of_scope` entry is a
+claim that the touch is intentional and needs no verification, not a way to
+silence the critic.
+
 ## Matrix cell states
 
 `✅` verified · `🧩` family (mode-prefix dispatcher; sub-arms unverified) ·

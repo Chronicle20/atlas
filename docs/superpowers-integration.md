@@ -47,6 +47,8 @@ Packet-audit work has ONE canonical playbook per task type and an executable ent
 
 The leaf step shared by all of the above — promoting one packet × version matrix cell to `✅` — is `/verify-packet` + the `packet-verifier` agent, driving [`VERIFYING_A_PACKET.md`](packets/audits/VERIFYING_A_PACKET.md). Each entry point cites its playbook rather than restating the procedure; keep it that way.
 
+**Before opening a packet-task PR**, run the `packet-completeness-critic` agent alongside the guideline reviewers. It is the packet-specific review companion: it diffs the task's `docs/tasks/<task>/coverage-manifest.yaml` (schema in [`PROCESS.md`](packets/PROCESS.md)) against the branch's git + matrix delta and flags **CHANGED-BUT-UNCLAIMED** (a codec/gate moved but the task never declared it — the class-8 scope hole) and **CLAIMED-BUT-UNVERIFIED** (a manifest op×version with no verified cell). Read-only; writes `completeness-critic.md`.
+
 ## Domain Skills
 
 These activate via the project hook (`skill-activation-prompt.py`) when you mention relevant keywords or work on relevant files:

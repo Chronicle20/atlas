@@ -349,6 +349,59 @@ Flags:
 
 Review the worklist for low-confidence picks before committing the mutated baseline.
 
+### 1.5 Serverbound opcode verification — `verify-serverbound`
+
+The serverbound half of the registry gets its own bulk verification pass:
+for every serverbound registry entry, decompile the client **send function**
+(the address comes from the committed audit reports under
+`docs/packets/audits/<version>/`, keyed by the entry's `fname`) and check that
+the registry opcode appears among the literals passed to
+`COutPacket::COutPacket`. Run it once the registry (§1.1) and the static audit
+pass (§1.4) exist — the audit reports are where it finds the send-site
+addresses — with the version's IDB open:
+
+```bash
+go run ./tools/packet-audit verify-serverbound \
+  --version  <version-key> \
+  --ida-port <port>
+```
+
+Flags:
+
+```
+  -audits-dir string
+        parent directory containing per-version audit report dirs (default "docs/packets/audits")
+  -ida-port int
+        IDA-MCP instance port to select (0 = default active instance)
+  -ida-url string
+        IDA-MCP HTTP endpoint (default "http://192.168.20.3:13337/mcp")
+  -out string
+        worklist markdown output path (default: docs/packets/registry/verify_serverbound_<version>.md)
+  -registry-dir string
+        directory containing <version>.yaml registry files (default "docs/packets/registry")
+  -version string
+        target version key, e.g. gms_v83 (required)
+```
+
+Output is a committed worklist
+(`docs/packets/registry/verify_serverbound_<version>.md` — see the
+`gms_v87` / `gms_v95` / `jms_v185` ones for completed examples) with three
+buckets. The command exits 0 regardless of bucket counts — it is a worklist
+generator, not a CI gate; the worklist is what you burn down:
+
+- **Confirmed** — registry opcode found in the send function's `COutPacket`
+  constructor call set. No action.
+- **Mismatch — REVIEW** — the registry opcode is NOT in the decompiled send
+  function's opcode set (the found set is listed). Either the `fname` is wrong
+  (opcode-cluster off-by-one — the registry-fname mislabel trap in
+  `IMPLEMENTING_A_PACKET.md` Step 1) or the opcode assignment is wrong.
+  Arbitrate against the IDB and fix the registry row in the same change
+  (`provenance: manual`, IDA citation in `note`).
+- **Unresolved** — could not verify, with the reason per row: no `fname` in the
+  registry (derive the send-site and populate it, `provenance: ida-discovered`),
+  no audit-report address for the fname (complete the §1.4 audit pass first),
+  decompile error, or a send site with no opcode literal (dynamic opcodes).
+
 ---
 
 ## 2. Regenerate the matrix
@@ -429,6 +482,31 @@ cell family. Each agent invocation follows the `VERIFYING_A_PACKET.md` steps
 §0–10; the results are committed as test + evidence + STATUS.md in that agent's
 sub-task. Coordinate via a per-version worklist (the `discover-ops` worklist
 markdown is a convenient starting point).
+
+**Serverbound worklist — `verify-serverbound`.** For the serverbound half of the
+scope, generate the send-site worklist first — it is the serverbound analogue of
+the `discover-ops` clientbound worklist and the entry point into the §9
+three-artifact verification:
+
+```bash
+go run ./tools/packet-audit verify-serverbound --version <version-key> --ida-port <port>
+```
+
+Flags (defaults shown): `--registry-dir docs/packets/registry`, `--audits-dir
+docs/packets/audits`, `--ida-port 0` (active instance), `--out` (default
+`docs/packets/registry/verify_serverbound_<version>.md`). It decompiles each
+serverbound send function (address sourced from this version's committed audit
+reports) and checks the registry opcode against the `COutPacket::COutPacket`
+literal, bucketing every op into **Confirmed** / **Mismatch — REVIEW** /
+**Unresolved**:
+
+- **Confirmed** rows are ready for `VERIFYING_A_PACKET.md` §9 (marker + evidence +
+  report) → hand them to `packet-verifier`.
+- **Mismatch** rows are a wrong registry `fname` or opcode — fix the registry
+  (§5.1 leg 1) before verifying.
+- **Unresolved** rows have no audit-report address for the fname yet — generate
+  the §9 report first (or add the primary fname as a `candidatesFromFName` case),
+  then re-run. Unresolved is never a pass.
 
 After each batch of verifications, regenerate:
 
@@ -525,8 +603,8 @@ Three degradation paths, each with its own remediation:
 **3. Tool verdict flip** (tier-0 cells after an analyzer or exporter change):
 - Delta triage: diff before/after `grep -rE '\| (❌|🔍) \|' docs/packets/audits/*/SUMMARY.md`.
 - Hand-confirm against the IDB which side is right (the IDA trace always wins
-  over the analyzer verdict — use `triage` / `decompose` from §1.4 above to
-  re-run the live decompile and compare against the committed baseline).
+  over the analyzer verdict — run the §6 re-audit sequence to re-derive the
+  live read orders and compare against the committed baseline).
 - Outcome is either an Atlas wire fix or a tool/export correction — never a
   silent re-accept of the old verdict.
 
@@ -536,3 +614,72 @@ patch **and** a channel restart. Template-only or code-only fixes silently do
 nothing for tenants that were already provisioned. After the patch + restart,
 confirm the previously-"unhandled op" log lines are gone before declaring the
 conflict resolved.
+
+---
+
+## 6. Maintenance: re-audit an existing column after export drift
+
+The §1 toolkit is not just for bring-up. Run this sequence over an **existing**
+version column whenever its committed baseline may no longer match the client:
+
+- a re-export changed `docs/packets/ida-exports/<version>.json` (evidence hash
+  drift — `matrix --check` starts emitting drift/stale lines, §5.2 path 1);
+- an analyzer/exporter change flipped tool verdicts (§5.2 path 3);
+- an IDB was re-analyzed or renamed at scale (e.g. a naming pass) and you need
+  to prove the read orders are unchanged before re-pinning.
+
+Every step below is **read-only** with respect to the committed baseline except
+`decompose` (which writes a *separate* extended-baseline JSON you review before
+committing). All need the version's IDB open (`list_instances` → `--ida-port`);
+all default `--baseline` to `docs/packets/ida-exports/<version>.json`. The JMS
+quirk from §1.4 applies throughout: for `--version gms_jms_185` pass
+`--audit-dir docs/packets/audits/jms_v185` explicitly where the command takes
+an `--audit-dir`.
+
+**Step 1 — scope the drift.** `git diff` the export JSON and capture the
+`matrix --check` output. Cosmetic churn (Hex-Rays variable/label renames, no
+read-order change) and material change (the read order actually differs) take
+different exits at Step 6 — the point of Steps 2–5 is to sort every entry into
+one of those two buckets with evidence.
+
+**Step 2 — `validate`: bucket the whole column.** Cross-checks every committed
+baseline entry against the live IDB (§1.4 command + flags). The report buckets
+each entry: `verified` / `divergent` / `missing-mode` / `extra-mode` /
+`unverifiable` / `allowlisted`. A clean maintenance pass is all-`verified` (plus
+allowlisted); anything `divergent` proceeds to Step 3.
+
+**Step 3 — `diff-shape`: classify each divergence.** For every DIVERGENT
+baseline entry, emits a side-by-side hand-vs-live read list with the divergence
+position classified (prefix/suffix match lengths, length delta). Pure
+diagnostic — never mutates the baseline or a verdict.
+
+```bash
+go run ./tools/packet-audit diff-shape \
+  --version  <version-key> \
+  --ida-port <port> \
+  --report   /tmp/<version>_diffshape.md
+```
+
+(Flags mirror `validate`: `--baseline`, `--descent-depth`, `--ida-url`,
+`--ida-timeout`.)
+
+**Step 4 — `decompose`: re-derive faithful read orders.** Re-reads every
+exported entry live and writes an extended baseline (`--out`) plus a per-fname
+classification report (`--report`): `upgraded` (hand order was a truncation;
+replaced with the faithful order) / `unchanged` / `divergence` (mid-stream
+mismatch — candidate real bug, entry left untouched) / `needs-dispatch` /
+`error` / `missing`. §1.4 has the command + flags. Review the report before
+committing the extended baseline — `divergence` entries are findings, not
+auto-fixes.
+
+**Step 5 — `triage` + `verify-serverbound`: produce the hand-work worklists.**
+`triage` (§1.4) turns the divergent set into a deterministic markdown worklist;
+`verify-serverbound` (§1.5) re-checks the serverbound half's opcode↔send-site
+agreement. Burn both worklists down against the IDB.
+
+**Step 6 — remediate and re-grade.** Per §5.2: cosmetic-only drift → re-pin via
+`evidence pin` after confirming the read order is unchanged (Steps 2–4 are that
+confirmation); material read-order change → full `VERIFYING_A_PACKET.md`
+re-verification of the affected cells; registry/template legs → §5.1. Then
+`matrix` + `matrix --check`, and commit the export, evidence records, worklists,
+and regenerated STATUS.md/status.json together.

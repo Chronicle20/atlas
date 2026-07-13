@@ -73,6 +73,25 @@ build site, not a read helper.
 - **Missing fname.** If a registry row has no `fname` (common for serverbound
   send-sites), derive the send-site from the IDB and populate it
   (`provenance: ida-discovered`, address in `ida.address`).
+- **Serverbound opcode↔fname cross-check — `verify-serverbound`.** Both guards
+  above have a bulk checker for the serverbound direction:
+
+  ```bash
+  go run ./tools/packet-audit verify-serverbound --version <key> --ida-port <port>
+  ```
+
+  For every serverbound registry entry it decompiles the client send function
+  (address sourced from the committed audit reports under
+  `docs/packets/audits/<version>/`) and checks the registry opcode appears
+  among the literals passed to `COutPacket::COutPacket`. It writes a
+  Confirmed / Mismatch / Unresolved worklist to
+  `docs/packets/registry/verify_serverbound_<version>.md` and exits 0 either
+  way — it is a worklist generator, not a gate. A **Mismatch** row is exactly
+  the mislabel trap above (wrong fname or wrong opcode assignment): resolve it
+  against the IDB and fix the registry row before deriving. An **Unresolved**
+  row names why (no fname in registry, no audit-report address, decompile
+  error, or dynamic-opcode send site). Full flags in
+  [`audits/STARTING_A_NEW_VERSION_PASS.md`](audits/STARTING_A_NEW_VERSION_PASS.md) §1.5.
 - **Export-resolvability is a precondition for `evidence pin`.** Before you
   rely on being able to pin (Step 4), confirm the op's `fname` resolves as a
   key in `docs/packets/ida-exports/<version>…json`'s `functions` map. If it is
@@ -340,6 +359,29 @@ This is `VERIFYING_A_PACKET.md` applied to the codec you just wrote. Briefly:
    run introduces **no new** orphan/dangling/stale/drift lines mentioning your
    packet and does not increase the conflict count. Commit the test, the
    evidence YAMLs, and the regenerated `STATUS.md`/`status.json` together.
+
+### Serverbound: cross-check the opcode with `verify-serverbound`
+
+Before you pin a serverbound cell, confirm the registry opcode you routed is the
+one the *client* actually sends. `verify-serverbound` decompiles each serverbound
+send function (address sourced from this version's committed audit reports) and
+checks that the registry opcode matches the literal passed to
+`COutPacket::COutPacket` — the exact "distrust the IDB symbol, trust the
+COutPacket opcode" check `VERIFYING_A_PACKET.md` §10 warns about:
+
+```bash
+go run ./tools/packet-audit verify-serverbound --version <version-key> --ida-port <port>
+```
+
+Key flags (defaults shown): `--registry-dir docs/packets/registry`,
+`--audits-dir docs/packets/audits`, `--ida-port 0` (active instance), `--out`
+(default `docs/packets/registry/verify_serverbound_<version>.md`). It writes a
+worklist bucketed into **Confirmed** / **Mismatch — REVIEW** / **Unresolved**.
+Your new op landing in **Confirmed** is the green light to proceed to the §9
+three-artifact verification (marker + evidence + report). A **Mismatch** row
+means a wrong `fname` or a wrong opcode in the registry — fix that before pinning,
+never around it. **Unresolved** means no report address for the fname yet (you may
+need the §9 report-gen step first) — it is not a pass.
 
 ---
 

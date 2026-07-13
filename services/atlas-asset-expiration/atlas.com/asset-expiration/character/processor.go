@@ -6,7 +6,7 @@ import (
 	"atlas-asset-expiration/expiration"
 	"atlas-asset-expiration/inventory"
 	"atlas-asset-expiration/kafka/message/asset"
-	"atlas-asset-expiration/kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"atlas-asset-expiration/storage"
 	"context"
 	"strconv"

@@ -8038,70 +8038,70 @@
    ]
   },
   "CShopDlg::SendBuyRequest": {
-    "address": "0x6d68a3",
-    "direction": "serverbound",
-    "notes": "v79 CShopDlg::SendBuyRequest@0x6d68a3 (renamed from sub_6D68A3) builds COutPacket(59) NPC_SHOP op0 (BUY): Encode1 op=0@0x6d6a58, Encode2 slot@0x6d6a76, Encode4 itemId@0x6d6a86, Encode2 quantity@0x6d6a91, Encode4 discountPrice@0x6d6a9c. Matches Atlas ShopBuy (Short slot+Int itemId+Short qty+Int price). task-113 stage E close.",
-    "calls": [
-     {
-      "op": "Encode1",
-      "comment": "op=0 BUY"
-     },
-     {
-      "op": "Encode2",
-      "comment": "slot"
-     },
-     {
-      "op": "Encode4",
-      "comment": "itemId"
-     },
-     {
-      "op": "Encode2",
-      "comment": "quantity"
-     },
-     {
-      "op": "Encode4",
-      "comment": "discountPrice"
-     }
-    ]
-   },
+   "address": "0x6d68a3",
+   "direction": "serverbound",
+   "notes": "v79 CShopDlg::SendBuyRequest@0x6d68a3 (renamed from sub_6D68A3) builds COutPacket(59) NPC_SHOP op0 (BUY): Encode1 op=0@0x6d6a58, Encode2 slot@0x6d6a76, Encode4 itemId@0x6d6a86, Encode2 quantity@0x6d6a91, Encode4 discountPrice@0x6d6a9c. Matches Atlas ShopBuy (Short slot+Int itemId+Short qty+Int price). task-113 stage E close.",
+   "calls": [
+    {
+     "op": "Encode1",
+     "comment": "op=0 BUY"
+    },
+    {
+     "op": "Encode2",
+     "comment": "slot"
+    },
+    {
+     "op": "Encode4",
+     "comment": "itemId"
+    },
+    {
+     "op": "Encode2",
+     "comment": "quantity"
+    },
+    {
+     "op": "Encode4",
+     "comment": "discountPrice"
+    }
+   ]
+  },
   "CShopDlg::SendRechargeRequest": {
-    "address": "0x6d6d40",
-    "direction": "serverbound",
-    "notes": "v79 CShopDlg::SendRechargeRequest@0x6d6d40 (renamed from sub_6D6D40) builds COutPacket(59) NPC_SHOP op2 (RECHARGE): Encode1 op=2@0x6d6e63, Encode2 slot@0x6d6e6c. Matches Atlas ShopRecharge (Short slot). task-113 stage E close.",
-    "calls": [
-     {
-      "op": "Encode1",
-      "comment": "op=2 RECHARGE"
-     },
-     {
-      "op": "Encode2",
-      "comment": "slot"
-     }
-    ]
-   },
+   "address": "0x6d6d40",
+   "direction": "serverbound",
+   "notes": "v79 CShopDlg::SendRechargeRequest@0x6d6d40 (renamed from sub_6D6D40) builds COutPacket(59) NPC_SHOP op2 (RECHARGE): Encode1 op=2@0x6d6e63, Encode2 slot@0x6d6e6c. Matches Atlas ShopRecharge (Short slot). task-113 stage E close.",
+   "calls": [
+    {
+     "op": "Encode1",
+     "comment": "op=2 RECHARGE"
+    },
+    {
+     "op": "Encode2",
+     "comment": "slot"
+    }
+   ]
+  },
   "CShopDlg::SendSellRequest": {
-    "address": "0x6d6b1d",
-    "direction": "serverbound",
-    "notes": "v79 CShopDlg::SendSellRequest@0x6d6b1d (renamed from sub_6D6B1D) builds COutPacket(59) NPC_SHOP op1 (SELL): Encode1 op=1@0x6d6cd9, Encode2 slot@0x6d6ce4, Encode4 itemId@0x6d6cef, Encode2 quantity@0x6d6cfa. Matches Atlas ShopSell (Int16 slot+Int itemId+Short qty). task-113 stage E close.",
-    "calls": [
-     {
-      "op": "Encode1",
-      "comment": "op=1 SELL"
-     },
-     {
-      "op": "Encode2",
-      "comment": "slot"
-     },
-     {
-      "op": "Encode4",
-      "comment": "itemId"
-     },
-     {
-      "op": "Encode2",
-      "comment": "quantity"
-     }
-    ]
-   },
+   "address": "0x6d6b1d",
+   "direction": "serverbound",
+   "notes": "v79 CShopDlg::SendSellRequest@0x6d6b1d (renamed from sub_6D6B1D) builds COutPacket(59) NPC_SHOP op1 (SELL): Encode1 op=1@0x6d6cd9, Encode2 slot@0x6d6ce4, Encode4 itemId@0x6d6cef, Encode2 quantity@0x6d6cfa. Matches Atlas ShopSell (Int16 slot+Int itemId+Short qty). task-113 stage E close.",
+   "calls": [
+    {
+     "op": "Encode1",
+     "comment": "op=1 SELL"
+    },
+    {
+     "op": "Encode2",
+     "comment": "slot"
+    },
+    {
+     "op": "Encode4",
+     "comment": "itemId"
+    },
+    {
+     "op": "Encode2",
+     "comment": "quantity"
+    }
+   ]
+  },
   "CShopDlg::SetShopDlg": {
    "address": "0x6d3459",
    "direction": "clientbound",
@@ -8365,84 +8365,84 @@
    ]
   },
   "CSummoned::TryDoingAttackManual": {
-    "address": "0x71b522",
-    "direction": "serverbound",
-    "notes": "v79 CSummoned::TryDoingAttackManual@0x71b522 (renamed from sub_71B522) send block COutPacket(172)@0x71bfe1: legacy-lean SUMMON_ATTACK. Encode4 summonId@0x71bff6, Encode4 updateTime@0x71c004, Encode1 action|left@0x71c019, Encode1 count@0x71c025, per-target{Encode4 mobOID@0x71c051 (sub_4DC1C0(mob+380), NO templateId), Encode1 hitAction@0x71c05f, Encode1 foreAction|left@0x71c07a, Encode1 frameIdx@0x71c088, Encode1 calcDmgStatIdx@0x71c098, Encode2 curX/curY/hitX/hitY@0x71c0ae..0x71c0f2, Encode2 tDelay@0x71c101, Encode4 damage@0x71c10c}, Encode2 summonX@0x71c130, Encode2 summonY@0x71c144, Encode4 skillCRC@0x71c15d. No anti-hack envelope, no leading position block (v83 has 4 pos shorts + per-target templateId). task-113 stage E close.",
-    "calls": [
-     {
-      "op": "Encode4",
-      "comment": "summonId"
-     },
-     {
-      "op": "Encode4",
-      "comment": "updateTime"
-     },
-     {
-      "op": "Encode1",
-      "comment": "action|left"
-     },
-     {
-      "op": "Encode1",
-      "comment": "count"
-     },
-     {
-      "op": "Encode4",
-      "comment": "per-target mobOID"
-     },
-     {
-      "op": "Encode1",
-      "comment": "hitAction"
-     },
-     {
-      "op": "Encode1",
-      "comment": "foreAction|left"
-     },
-     {
-      "op": "Encode1",
-      "comment": "frameIdx"
-     },
-     {
-      "op": "Encode1",
-      "comment": "calcDamageStatIndex"
-     },
-     {
-      "op": "Encode2",
-      "comment": "curX"
-     },
-     {
-      "op": "Encode2",
-      "comment": "curY"
-     },
-     {
-      "op": "Encode2",
-      "comment": "hitX"
-     },
-     {
-      "op": "Encode2",
-      "comment": "hitY"
-     },
-     {
-      "op": "Encode2",
-      "comment": "tDelay"
-     },
-     {
-      "op": "Encode4",
-      "comment": "damage"
-     },
-     {
-      "op": "Encode2",
-      "comment": "summonX"
-     },
-     {
-      "op": "Encode2",
-      "comment": "summonY"
-     },
-     {
-      "op": "Encode4",
-      "comment": "skillCRC"
-     }
-    ]
-   },
+   "address": "0x71b522",
+   "direction": "serverbound",
+   "notes": "v79 CSummoned::TryDoingAttackManual@0x71b522 (renamed from sub_71B522) send block COutPacket(172)@0x71bfe1: legacy-lean SUMMON_ATTACK. Encode4 summonId@0x71bff6, Encode4 updateTime@0x71c004, Encode1 action|left@0x71c019, Encode1 count@0x71c025, per-target{Encode4 mobOID@0x71c051 (sub_4DC1C0(mob+380), NO templateId), Encode1 hitAction@0x71c05f, Encode1 foreAction|left@0x71c07a, Encode1 frameIdx@0x71c088, Encode1 calcDmgStatIdx@0x71c098, Encode2 curX/curY/hitX/hitY@0x71c0ae..0x71c0f2, Encode2 tDelay@0x71c101, Encode4 damage@0x71c10c}, Encode2 summonX@0x71c130, Encode2 summonY@0x71c144, Encode4 skillCRC@0x71c15d. No anti-hack envelope, no leading position block (v83 has 4 pos shorts + per-target templateId). task-113 stage E close.",
+   "calls": [
+    {
+     "op": "Encode4",
+     "comment": "summonId"
+    },
+    {
+     "op": "Encode4",
+     "comment": "updateTime"
+    },
+    {
+     "op": "Encode1",
+     "comment": "action|left"
+    },
+    {
+     "op": "Encode1",
+     "comment": "count"
+    },
+    {
+     "op": "Encode4",
+     "comment": "per-target mobOID"
+    },
+    {
+     "op": "Encode1",
+     "comment": "hitAction"
+    },
+    {
+     "op": "Encode1",
+     "comment": "foreAction|left"
+    },
+    {
+     "op": "Encode1",
+     "comment": "frameIdx"
+    },
+    {
+     "op": "Encode1",
+     "comment": "calcDamageStatIndex"
+    },
+    {
+     "op": "Encode2",
+     "comment": "curX"
+    },
+    {
+     "op": "Encode2",
+     "comment": "curY"
+    },
+    {
+     "op": "Encode2",
+     "comment": "hitX"
+    },
+    {
+     "op": "Encode2",
+     "comment": "hitY"
+    },
+    {
+     "op": "Encode2",
+     "comment": "tDelay"
+    },
+    {
+     "op": "Encode4",
+     "comment": "damage"
+    },
+    {
+     "op": "Encode2",
+     "comment": "summonX"
+    },
+    {
+     "op": "Encode2",
+     "comment": "summonY"
+    },
+    {
+     "op": "Encode4",
+     "comment": "skillCRC"
+    }
+   ]
+  },
   "CSummonedPool::OnAttack": {
    "address": "0x71cfe9",
    "direction": "clientbound",
@@ -11583,20 +11583,20 @@
    ]
   },
   "CVecCtrlUser::EndUpdateActive": {
-    "address": "0x91b6e6",
-    "direction": "serverbound",
-    "notes": "v79 CVecCtrlUser::EndUpdateActive@0x91b6e6 (renamed from sub_91B6E6; one xrefs hop from CMovePath::Flush@0x657924) sends COutPacket(39): Encode1 fieldKey (*(get_field()+276))@0x91b89f, Encode4 crc (*(get_field()+483))@0x91b8b2, then CMovePath::Flush opaque movement blob. v79<84 so no dr0/dr1/dr2/dr3/dwKey/crc32 header (matches Atlas Move v83 lean layout). task-113 stage E close.",
-    "calls": [
-     {
-      "op": "Encode1",
-      "comment": "fieldKey"
-     },
-     {
-      "op": "Encode4",
-      "comment": "crc"
-     }
-    ]
-   },
+   "address": "0x91b6e6",
+   "direction": "serverbound",
+   "notes": "v79 CVecCtrlUser::EndUpdateActive@0x91b6e6 (renamed from sub_91B6E6; one xrefs hop from CMovePath::Flush@0x657924) sends COutPacket(39): Encode1 fieldKey (*(get_field()+276))@0x91b89f, Encode4 crc (*(get_field()+483))@0x91b8b2, then CMovePath::Flush opaque movement blob. v79<84 so no dr0/dr1/dr2/dr3/dwKey/crc32 header (matches Atlas Move v83 lean layout). task-113 stage E close.",
+   "calls": [
+    {
+     "op": "Encode1",
+     "comment": "fieldKey"
+    },
+    {
+     "op": "Encode4",
+     "comment": "crc"
+    }
+   ]
+  },
   "CWvsContext::GetCharacterData": {
    "address": "0x423135",
    "direction": "",
@@ -19344,6 +19344,507 @@
      "op": "Decode1",
      "comment": "",
      "guard": "!result"
+    }
+   ]
+  },
+  "CWvsContext::SendMigrateToITCRequest": {
+   "address": "0x95dd85",
+   "direction": "serverbound",
+   "region": "GMS",
+   "notes": "gms_v79 (GMS_v79_1_DEVM.exe, IDA port 13340). CWvsContext::SendMigrateToITCRequest @0x95dd85. bodiless; opcode 153/0x99; send @0x95de9e. Wire shape byte-identical to gms_v83; the v79 send-site was decompiled and each mode byte + body re-verified (task-113 v79 MTS port).",
+   "calls": []
+  },
+  "CITC::OnStatusCharge": {
+   "address": "0x57a1b0",
+   "direction": "serverbound",
+   "region": "GMS",
+   "notes": "gms_v79 (GMS_v79_1_DEVM.exe, IDA port 13340). CITC::OnStatusCharge @0x57a1b0. bodiless; opcode 241/0xF1; send @0x57a1d2. Wire shape byte-identical to gms_v83; the v79 send-site was decompiled and each mode byte + body re-verified (task-113 v79 MTS port).",
+   "calls": []
+  },
+  "CITC::TrySendQueryCashRequest": {
+   "address": "0x57a4a4",
+   "direction": "serverbound",
+   "region": "GMS",
+   "notes": "gms_v79 (GMS_v79_1_DEVM.exe, IDA port 13340). CITC::TrySendQueryCashRequest @0x57a4a4. bodiless; opcode 242/0xF2; send @0x57a4c6. Wire shape byte-identical to gms_v83; the v79 send-site was decompiled and each mode byte + body re-verified (task-113 v79 MTS port).",
+   "calls": []
+  },
+  "CITC::OnRegisterSaleEntry": {
+   "address": "0x57a20c",
+   "direction": "serverbound",
+   "region": "GMS",
+   "notes": "gms_v79 (GMS_v79_1_DEVM.exe, IDA port 13340). CITC::OnRegisterSaleEntry @0x57a20c. ITC_OPERATION 0xF3/243 mode 2 (arg0==0 fixed-sale). Wire shape byte-identical to gms_v83; the v79 send-site was decompiled and each mode byte + body re-verified (task-113 v79 MTS port).",
+   "calls": [
+    {
+     "op": "Encode1",
+     "comment": "mode byte (2 register-fixed-price) @0x59ed92"
+    },
+    {
+     "op": "EncodeBuf",
+     "comment": "item-slot blob sub_4E33D8 @0x59ed9e (GW_ItemSlotBase Encode1 type + RawEncode; model.Asset recurse)"
+    },
+    {
+     "op": "Encode4",
+     "comment": "quantity @0x59eda9"
+    },
+    {
+     "op": "Encode4",
+     "comment": "commodityId @0x59edb4"
+    },
+    {
+     "op": "Encode4",
+     "comment": "price @0x59edbf"
+    },
+    {
+     "op": "Encode1",
+     "comment": "type @0x59edca"
+    },
+    {
+     "op": "Encode1",
+     "comment": "flag @0x59edd5"
+    }
+   ]
+  },
+  "CITC::OnRegisterSaleEntry#RegisterAuction": {
+   "address": "0x57a20c",
+   "direction": "serverbound",
+   "region": "GMS",
+   "notes": "gms_v79 (GMS_v79_1_DEVM.exe, IDA port 13340). CITC::OnRegisterSaleEntry @0x57a20c. ITC_OPERATION 0xF3/243 mode 0x12 (arg0==1 auction). Wire shape byte-identical to gms_v83; the v79 send-site was decompiled and each mode byte + body re-verified (task-113 v79 MTS port).",
+   "calls": [
+    {
+     "op": "Encode1",
+     "comment": "mode byte (0x12 register-auction) @0x59ecc8"
+    },
+    {
+     "op": "EncodeBuf",
+     "comment": "item-slot blob sub_4E33D8 @0x59ecd4 (GW_ItemSlotBase Encode1 type + RawEncode; model.Asset recurse)"
+    },
+    {
+     "op": "Encode4",
+     "comment": "quantity @0x59ecdf"
+    },
+    {
+     "op": "Encode4",
+     "comment": "commodityId @0x59ecea"
+    },
+    {
+     "op": "Encode4",
+     "comment": "arg0 selector (==1) @0x59ecf5"
+    },
+    {
+     "op": "Encode4",
+     "comment": "buyNowPrice @0x59ed00"
+    },
+    {
+     "op": "Encode1",
+     "comment": "type @0x59ed0b"
+    },
+    {
+     "op": "Encode1",
+     "comment": "flag @0x59ed16"
+    },
+    {
+     "op": "Encode4",
+     "comment": "durationHrs @0x59ed21"
+    }
+   ]
+  },
+  "CITC::OnSaleCurrentItem": {
+   "address": "0x57a415",
+   "direction": "serverbound",
+   "region": "GMS",
+   "notes": "gms_v79 (GMS_v79_1_DEVM.exe, IDA port 13340). CITC::OnSaleCurrentItem @0x57a415. ITC_OPERATION 0xF3/243 mode 3. Wire shape byte-identical to gms_v83; the v79 send-site was decompiled and each mode byte + body re-verified (task-113 v79 MTS port).",
+   "calls": [
+    {
+     "op": "Encode1",
+     "comment": "mode byte (3) @0x59ee6b"
+    },
+    {
+     "op": "Encode1",
+     "comment": "type @0x59ee76"
+    },
+    {
+     "op": "Encode4",
+     "comment": "slotPos @0x59ee81"
+    },
+    {
+     "op": "EncodeBuf",
+     "comment": "item-slot blob sub_4E33D8 @0x59ee8d (GW_ItemSlotBase Encode1 type + RawEncode; model.Asset recurse)"
+    },
+    {
+     "op": "Encode4",
+     "comment": "commodityId @0x59ee98"
+    }
+   ]
+  },
+  "CITC::OnRegisterWishEntry": {
+   "address": "0x57aadf",
+   "direction": "serverbound",
+   "region": "GMS",
+   "notes": "gms_v79 (GMS_v79_1_DEVM.exe, IDA port 13340). CITC::OnRegisterWishEntry @0x57aadf. ITC_OPERATION 0xF3/243 mode 4. Wire shape byte-identical to gms_v83; the v79 send-site was decompiled and each mode byte + body re-verified (task-113 v79 MTS port).",
+   "calls": [
+    {
+     "op": "Encode1",
+     "comment": "mode byte (4) @0x59f5cc"
+    },
+    {
+     "op": "Encode4",
+     "comment": "itemId @0x59f5da"
+    },
+    {
+     "op": "Encode4",
+     "comment": "price @0x59f5e8"
+    },
+    {
+     "op": "Encode4",
+     "comment": "count @0x59f5f6"
+    },
+    {
+     "op": "Encode1",
+     "comment": "duration @0x59f607"
+    },
+    {
+     "op": "Encode1",
+     "comment": "feeOption @0x59f618"
+    },
+    {
+     "op": "EncodeStr",
+     "comment": "description @0x59f62f"
+    }
+   ]
+  },
+  "CITC::OnChangedCategory": {
+   "address": "0x57a834",
+   "direction": "serverbound",
+   "region": "GMS",
+   "notes": "gms_v79 (GMS_v79_1_DEVM.exe, IDA port 13340). CITC::OnChangedCategory @0x57a834. ITC_OPERATION 0xF3/243 mode 5. Wire shape byte-identical to gms_v83; the v79 send-site was decompiled and each mode byte + body re-verified (task-113 v79 MTS port).",
+   "calls": [
+    {
+     "op": "Encode1",
+     "comment": "mode byte (5) @0x59f2ec"
+    },
+    {
+     "op": "Encode4",
+     "comment": "category @0x59f2f7"
+    },
+    {
+     "op": "Encode4",
+     "comment": "categorySub (const 0) @0x59f300"
+    },
+    {
+     "op": "Encode4",
+     "comment": "page (const 0) @0x59f309"
+    },
+    {
+     "op": "Encode1",
+     "comment": "sortType (const 1) @0x59f315"
+    },
+    {
+     "op": "Encode1",
+     "comment": "sortColumn (const 1) @0x59f31e"
+    },
+    {
+     "op": "Encode4",
+     "comment": "searchOption (const 1) @0x59f327"
+    },
+    {
+     "op": "EncodeStr",
+     "comment": "searchCondition (const empty) @0x59f33f"
+    }
+   ]
+  },
+  "CITC::OnChangedCategorySub": {
+   "address": "0x57a913",
+   "direction": "serverbound",
+   "region": "GMS",
+   "notes": "gms_v79 (GMS_v79_1_DEVM.exe, IDA port 13340). CITC::OnChangedCategorySub @0x57a913. ITC_OPERATION 0xF3/243 mode 5. Wire shape byte-identical to gms_v83; the v79 send-site was decompiled and each mode byte + body re-verified (task-113 v79 MTS port).",
+   "calls": [
+    {
+     "op": "Encode1",
+     "comment": "mode byte (5) @0x59f3a8"
+    },
+    {
+     "op": "Encode4",
+     "comment": "category @0x59f3b3"
+    },
+    {
+     "op": "Encode4",
+     "comment": "categorySub @0x59f3bf"
+    },
+    {
+     "op": "Encode4",
+     "comment": "page (const 0) @0x59f3c8"
+    },
+    {
+     "op": "Encode1",
+     "comment": "sortType @0x59f3d3"
+    },
+    {
+     "op": "Encode1",
+     "comment": "sortColumn @0x59f3de"
+    },
+    {
+     "op": "Encode4",
+     "comment": "searchOption @0x59f3ed/@0x59f411"
+    },
+    {
+     "op": "EncodeStr",
+     "comment": "searchCondition @0x59f42d"
+    }
+   ]
+  },
+  "CITC::OnChangedPage": {
+   "address": "0x57aa02",
+   "direction": "serverbound",
+   "region": "GMS",
+   "notes": "gms_v79 (GMS_v79_1_DEVM.exe, IDA port 13340). CITC::OnChangedPage @0x57aa02. ITC_OPERATION 0xF3/243 mode 5. Wire shape byte-identical to gms_v83; the v79 send-site was decompiled and each mode byte + body re-verified (task-113 v79 MTS port).",
+   "calls": [
+    {
+     "op": "Encode1",
+     "comment": "mode byte (5) @0x59f495"
+    },
+    {
+     "op": "Encode4",
+     "comment": "category @0x59f4a0"
+    },
+    {
+     "op": "Encode4",
+     "comment": "categorySub @0x59f4ab"
+    },
+    {
+     "op": "Encode4",
+     "comment": "page @0x59f4b6"
+    },
+    {
+     "op": "Encode1",
+     "comment": "sortType @0x59f4c4"
+    },
+    {
+     "op": "Encode1",
+     "comment": "sortColumn @0x59f4d2"
+    },
+    {
+     "op": "Encode4",
+     "comment": "searchOption @0x59f4e0"
+    },
+    {
+     "op": "EncodeStr",
+     "comment": "searchCondition @0x59f4fd"
+    }
+   ]
+  },
+  "CITCWnd_Tab::OnButtonClicked": {
+   "address": "0x5919d4",
+   "direction": "serverbound",
+   "region": "GMS",
+   "notes": "gms_v79 (GMS_v79_1_DEVM.exe, IDA port 13340). CITCWnd_Tab::OnButtonClicked @0x5919d4. ITC_OPERATION 0xF3/243 mode 6. Wire shape byte-identical to gms_v83; the v79 send-site was decompiled and each mode byte + body re-verified (task-113 v79 MTS port).",
+   "calls": [
+    {
+     "op": "Encode1",
+     "comment": "mode byte (6) @0x5b71b3"
+    },
+    {
+     "op": "Encode4",
+     "comment": "category (m_nSelect+1) @0x5b71bc"
+    },
+    {
+     "op": "Encode4",
+     "comment": "categorySub @0x5b71c7"
+    },
+    {
+     "op": "Encode4",
+     "comment": "page (const 0) @0x5b71d0"
+    },
+    {
+     "op": "Encode4",
+     "comment": "searchOption @0x5b71d9"
+    },
+    {
+     "op": "EncodeStr",
+     "comment": "searchName @0x5b71f2"
+    }
+   ]
+  },
+  "CITC::OnCancelSaleItem": {
+   "address": "0x57b117",
+   "direction": "serverbound",
+   "region": "GMS",
+   "notes": "gms_v79 (GMS_v79_1_DEVM.exe, IDA port 13340). CITC::OnCancelSaleItem @0x57b117. ITC_OPERATION 0xF3/243 mode 7. Wire shape byte-identical to gms_v83; the v79 send-site was decompiled and each mode byte + body re-verified (task-113 v79 MTS port).",
+   "calls": [
+    {
+     "op": "Encode1",
+     "comment": "mode byte (7) @0x59fbdd"
+    },
+    {
+     "op": "Encode4",
+     "comment": "nITCSN @0x59fbeb"
+    }
+   ]
+  },
+  "CITC::OnMoveITCPurchaseItemLtoS": {
+   "address": "0x57b1c0",
+   "direction": "serverbound",
+   "region": "GMS",
+   "notes": "gms_v79 (GMS_v79_1_DEVM.exe, IDA port 13340). CITC::OnMoveITCPurchaseItemLtoS @0x57b1c0. ITC_OPERATION 0xF3/243 mode 8. Wire shape byte-identical to gms_v83; the v79 send-site was decompiled and each mode byte + body re-verified (task-113 v79 MTS port).",
+   "calls": [
+    {
+     "op": "Encode1",
+     "comment": "mode byte (8) @0x59fc4f"
+    },
+    {
+     "op": "Encode4",
+     "comment": "nITCSN @0x59fc60"
+    }
+   ]
+  },
+  "CITC::OnSetZzim": {
+   "address": "0x57ae3a",
+   "direction": "serverbound",
+   "region": "GMS",
+   "notes": "gms_v79 (GMS_v79_1_DEVM.exe, IDA port 13340). CITC::OnSetZzim @0x57ae3a. ITC_OPERATION 0xF3/243 mode 9. Wire shape byte-identical to gms_v83; the v79 send-site was decompiled and each mode byte + body re-verified (task-113 v79 MTS port).",
+   "calls": [
+    {
+     "op": "Encode1",
+     "comment": "mode byte (9) @0x59f8c9"
+    },
+    {
+     "op": "Encode4",
+     "comment": "nITCSN @0x59f8da"
+    }
+   ]
+  },
+  "CITC::OnDeleteZzim": {
+   "address": "0x57af4b",
+   "direction": "serverbound",
+   "region": "GMS",
+   "notes": "gms_v79 (GMS_v79_1_DEVM.exe, IDA port 13340). CITC::OnDeleteZzim @0x57af4b. ITC_OPERATION 0xF3/243 mode 0xA. Wire shape byte-identical to gms_v83; the v79 send-site was decompiled and each mode byte + body re-verified (task-113 v79 MTS port).",
+   "calls": [
+    {
+     "op": "Encode1",
+     "comment": "mode byte (0xA) @0x59f9da"
+    },
+    {
+     "op": "Encode4",
+     "comment": "nITCSN @0x59f9eb"
+    }
+   ]
+  },
+  "CITC::OnViewWish": {
+   "address": "0x57afbe",
+   "direction": "serverbound",
+   "region": "GMS",
+   "notes": "gms_v79 (GMS_v79_1_DEVM.exe, IDA port 13340). CITC::OnViewWish @0x57afbe. ITC_OPERATION 0xF3/243 mode 0xB. Wire shape byte-identical to gms_v83; the v79 send-site was decompiled and each mode byte + body re-verified (task-113 v79 MTS port).",
+   "calls": [
+    {
+     "op": "Encode1",
+     "comment": "mode byte (0xB) @0x59fa4d"
+    },
+    {
+     "op": "Encode4",
+     "comment": "nITCSN @0x59fa5e"
+    }
+   ]
+  },
+  "CITC::OnBuyWish": {
+   "address": "0x57b031",
+   "direction": "serverbound",
+   "region": "GMS",
+   "notes": "gms_v79 (GMS_v79_1_DEVM.exe, IDA port 13340). CITC::OnBuyWish @0x57b031. ITC_OPERATION 0xF3/243 mode 0xC. Wire shape byte-identical to gms_v83; the v79 send-site was decompiled and each mode byte + body re-verified (task-113 v79 MTS port).",
+   "calls": [
+    {
+     "op": "Encode1",
+     "comment": "mode byte (0xC) @0x59fac0"
+    },
+    {
+     "op": "Encode4",
+     "comment": "nITCSN @0x59fad1"
+    }
+   ]
+  },
+  "CITC::OnCancelWish": {
+   "address": "0x57b0a4",
+   "direction": "serverbound",
+   "region": "GMS",
+   "notes": "gms_v79 (GMS_v79_1_DEVM.exe, IDA port 13340). CITC::OnCancelWish @0x57b0a4. ITC_OPERATION 0xF3/243 mode 0xD. Wire shape byte-identical to gms_v83; the v79 send-site was decompiled and each mode byte + body re-verified (task-113 v79 MTS port).",
+   "calls": [
+    {
+     "op": "Encode1",
+     "comment": "mode byte (0xD) @0x59fb33"
+    },
+    {
+     "op": "Encode4",
+     "comment": "nITCSN @0x59fb44"
+    }
+   ]
+  },
+  "CITC::OnBuy": {
+   "address": "0x57ac34",
+   "direction": "serverbound",
+   "region": "GMS",
+   "notes": "gms_v79 (GMS_v79_1_DEVM.exe, IDA port 13340). CITC::OnBuy @0x57ac34. ITC_OPERATION 0xF3/243 mode 0x10. Wire shape byte-identical to gms_v83; the v79 send-site was decompiled and each mode byte + body re-verified (task-113 v79 MTS port).",
+   "calls": [
+    {
+     "op": "Encode1",
+     "comment": "mode byte (0x10) @0x59f6c3"
+    },
+    {
+     "op": "Encode4",
+     "comment": "nITCSN @0x59f6d4"
+    }
+   ]
+  },
+  "CITC::OnBuyZzim": {
+   "address": "0x57aead",
+   "direction": "serverbound",
+   "region": "GMS",
+   "notes": "gms_v79 (GMS_v79_1_DEVM.exe, IDA port 13340). CITC::OnBuyZzim @0x57aead. ITC_OPERATION 0xF3/243 mode 0x11. Wire shape byte-identical to gms_v83; the v79 send-site was decompiled and each mode byte + body re-verified (task-113 v79 MTS port).",
+   "calls": [
+    {
+     "op": "Encode1",
+     "comment": "mode byte (0x11) @0x59f966"
+    },
+    {
+     "op": "Encode4",
+     "comment": "nITCSN @0x59f977"
+    }
+   ]
+  },
+  "CITCBidAuctionDlg::OnButtonClicked": {
+   "address": "0x59da55",
+   "direction": "serverbound",
+   "region": "GMS",
+   "notes": "gms_v79 (GMS_v79_1_DEVM.exe, IDA port 13340). CITCBidAuctionDlg::OnButtonClicked @0x59da55. ITC_OPERATION 0xF3/243 mode 0x13. Wire shape byte-identical to gms_v83; the v79 send-site was decompiled and each mode byte + body re-verified (task-113 v79 MTS port).",
+   "calls": [
+    {
+     "op": "Encode1",
+     "comment": "mode byte (0x13) @0x5c38ec"
+    },
+    {
+     "op": "Encode4",
+     "comment": "nITCSN @0x5c38fd"
+    },
+    {
+     "op": "Encode4",
+     "comment": "bidPrice @0x5c390b"
+    },
+    {
+     "op": "Encode4",
+     "comment": "bidRange @0x5c3919"
+    }
+   ]
+  },
+  "CITC::OnBuyAuctionImm": {
+   "address": "0x57aca7",
+   "direction": "serverbound",
+   "region": "GMS",
+   "notes": "gms_v79 (GMS_v79_1_DEVM.exe, IDA port 13340). CITC::OnBuyAuctionImm @0x57aca7. ITC_OPERATION 0xF3/243 mode 0x14. Wire shape byte-identical to gms_v83; the v79 send-site was decompiled and each mode byte + body re-verified (task-113 v79 MTS port).",
+   "calls": [
+    {
+     "op": "Encode1",
+     "comment": "mode byte (0x14) @0x59f736"
+    },
+    {
+     "op": "Encode4",
+     "comment": "nITCSN @0x59f747"
     }
    ]
   }

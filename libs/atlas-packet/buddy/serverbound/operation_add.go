@@ -18,6 +18,7 @@ import (
 // and GMS v61 (@0x4e9c03) send ONLY the buddy name; GMS v72 (@0x515575),
 // v79 (@0x51c614) and v87 (CField::SendSetFriendMsg @0x558844) append the
 // group name. So the group field is gated on MajorVersion() > 61.
+// packet-audit:fname CField::SendSetFriendMsg
 type OperationAdd struct {
 	name  string
 	group string

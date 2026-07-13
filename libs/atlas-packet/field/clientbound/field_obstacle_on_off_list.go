@@ -33,6 +33,7 @@ func (o ObstacleState) State() uint32 { return o.state }
 // (the GetItemInfo block) and flag==0 — DecodeStr(name) @0x4c9558. The legacy
 // single-obstacle shape is carried in the legacyFlag/legacyItemId/legacyName
 // fields under a GMS<61 gate; the v61+ list path is unchanged.
+// packet-audit:fname CField::OnFieldObstacleOnOffStatus
 type FieldObstacleOnOffList struct {
 	obstacles []ObstacleState
 	// Legacy (GMS<61 / v48) single-obstacle fields — see type doc.
@@ -89,7 +90,7 @@ func (m *FieldObstacleOnOffList) Decode(_ logrus.FieldLogger, ctx context.Contex
 	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
 		if t.Region() == "GMS" && t.MajorVersion() < 61 {
-			m.legacyFlag = r.ReadByte()    // Decode1 @0x4c9328
+			m.legacyFlag = r.ReadByte()     // Decode1 @0x4c9328
 			m.legacyItemId = r.ReadUint32() // Decode4 @0x4c932e
 			if m.legacyItemId != 0 && m.legacyFlag == 0 {
 				m.legacyName = r.ReadAsciiString() // DecodeStr @0x4c9558

@@ -7,6 +7,12 @@ import (
 	"gorm.io/gorm"
 )
 
+// getAll resolves every wish entry visible to the request's tenant. It backs
+// ONLY the administrator.GetAll() test-verification wrapper (full-table DB
+// assertions in test code) — the REST-facing GetAll() was removed from
+// Processor in favor of the paged ByCharacterPagedProvider /
+// ByCharacterAndTypePagedProvider / WantedByWorldPagedProvider (task-117); this
+// unfiltered provider is never reachable from a handler.
 func getAll() database.EntityProvider[[]entity] {
 	return func(db *gorm.DB) model.Provider[[]entity] {
 		return database.SliceQuery[entity](db, &entity{})
@@ -110,6 +116,38 @@ func getByCharacterAndType(characterId uint32, wishType string) database.EntityP
 			return model.ErrorProvider[[]entity](err)
 		}
 		return model.FixedProvider(results)
+	}
+}
+
+// getByCharacterPaged backs the REST list handler's unfiltered branch (GET
+// /characters/{characterId}/mts/wishlist, task-117), mirroring getByCharacter.
+func getByCharacterPaged(characterId uint32, page model.Page) database.EntityProvider[model.Paged[entity]] {
+	return func(db *gorm.DB) model.Provider[model.Paged[entity]] {
+		return database.PagedQuery[entity](db.Where(map[string]interface{}{
+			"character_id": characterId,
+		}), page)
+	}
+}
+
+// getByCharacterAndTypePaged backs the REST list handler's ?type= branch,
+// mirroring getByCharacterAndType.
+func getByCharacterAndTypePaged(characterId uint32, wishType string, page model.Page) database.EntityProvider[model.Paged[entity]] {
+	return func(db *gorm.DB) model.Provider[model.Paged[entity]] {
+		return database.PagedQuery[entity](db.Where(map[string]interface{}{
+			"character_id": characterId,
+			"type":         wishType,
+		}), page)
+	}
+}
+
+// getWantedByWorldPaged backs the cross-character world wishlist REST handler
+// (GET /worlds/{worldId}/mts/wishlist, task-117), mirroring getWantedByWorld.
+func getWantedByWorldPaged(worldId world.Id, page model.Page) database.EntityProvider[model.Paged[entity]] {
+	return func(db *gorm.DB) model.Provider[model.Paged[entity]] {
+		return database.PagedQuery[entity](db.Where(map[string]interface{}{
+			"world_id": byte(worldId),
+			"type":     TypeWanted,
+		}), page)
 	}
 }
 

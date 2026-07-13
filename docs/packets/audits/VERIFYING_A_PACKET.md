@@ -5,8 +5,12 @@ The canonical procedure for promoting a coverage-matrix cell
 Hard rule (CLAUDE.md "Verification Over Memory"): every byte in a fixture must
 trace to a decompile line — never to MapleStory knowledge from memory.
 
+Cell states: `✅` verified · `🧩` family (mode-prefix dispatcher; sub-arms
+unverified) · `🟡` partial · `❌` incomplete · `⬜` n-a · `🟥` conflict.
+
 ## 0. Prerequisites
-- The five registry files in `docs/packets/registry/`.
+- The nine registry files in `docs/packets/registry/` (one per version key:
+  gms_v48/v61/v72/v79/v83/v84/v87/v95, jms_v185).
 - The version's IDA export in `docs/packets/ida-exports/` (jms_v185 uses
   `gms_jms_185.json`).
 - For fresh decompiles: a live ida-pro-mcp instance with the version's IDB.
@@ -92,12 +96,12 @@ automatically.
 The cell must now be ✅. Commit test + evidence + STATUS.md/status.json
 together.
 
-Note on `--check` exit codes: until the registry-seed conflict backlog is
-burned down (task-085 Phase 5), `matrix --check` exits 1 from pre-existing 🟥
-conflicts unrelated to your cell. Your bar is: the run must introduce **no
-new problems** — zero orphan/dangling/stale/drift lines mentioning your
-packet, and the conflict count must not increase. Once conflicts reach zero,
-the bar becomes a clean exit 0.
+`matrix --check` is a **hard, blocking CI gate** (`.github/workflows/packet-matrix.yml`):
+the registry-seed conflict backlog was burned to zero (task-085), so a clean tree
+exits 0 — there is no grandfathering or `continue-on-error`. Your bar is a clean
+**exit 0**: any 🟥 conflict, any orphan/dangling/stale/drift finding, or a stale
+committed STATUS.md/status.json fails the gate. Regenerate and commit
+STATUS.md/status.json in the same PR.
 
 ## 9. Serverbound & shared-codec packets (task-092)
 

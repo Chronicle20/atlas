@@ -398,10 +398,12 @@ grep -c '' /tmp/matrix_check.txt   # total findings
 grep -ciE 'orphan|dangling|stale|drift|unresolv|malformed' /tmp/matrix_check.txt
 ```
 
-The second grep must be 0 before committing. Pre-existing 🟥 conflicts (from the
-registry-seed backlog) cause a non-zero exit that is grandfathered via
-`continue-on-error` in CI; new conflicts you introduced must be resolved before
-landing.
+The second grep must be 0 before committing. `matrix --check` is a hard,
+blocking CI gate (`.github/workflows/packet-matrix.yml`) with no
+`continue-on-error`: the registry-seed conflict backlog was burned to zero
+(task-085), so any 🟥 conflict, fatal finding, or stale committed
+STATUS.md/status.json fails CI. Resolve every conflict the pass introduces (or
+own it via §5.1) and commit a fresh STATUS.md/status.json before landing.
 
 Commit registry + template + export + audit output + STATUS.md/status.json in a
 single PR. The PR description should call out any conflict cells the pass
@@ -416,10 +418,15 @@ The pass's job is turning ❌ cells into ✅ or 🟡. Apply
 first (tier-1 packets in `docs/packets/evidence/tiers.yaml` require a byte-fixture
 test; tier-0 cells can reach 🟡 from a tool ✅ alone).
 
+Cell states: `✅` verified · `🧩` family (mode-prefix dispatcher; sub-arms
+unverified — capped for ops whose registry fname is listed in
+`docs/packets/evidence/families.yaml`, currently empty so no op caps) ·
+`🟡` partial · `❌` incomplete · `⬜` n-a · `🟥` conflict.
+
 **Fan-out with the packet-verifier agent**: for campaign-scale verification
 (verifying a whole version's scope), dispatch the `packet-verifier` agent per
 cell family. Each agent invocation follows the `VERIFYING_A_PACKET.md` steps
-1–8; the results are committed as test + evidence + STATUS.md in that agent's
+§0–10; the results are committed as test + evidence + STATUS.md in that agent's
 sub-task. Coordinate via a per-version worklist (the `discover-ops` worklist
 markdown is a convenient starting point).
 

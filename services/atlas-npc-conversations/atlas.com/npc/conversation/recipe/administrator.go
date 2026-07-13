@@ -6,8 +6,9 @@ import (
 )
 
 // createRecipe inserts a single recipe row. Tenant-scoping is enforced via the
-// entity's tenant_id column; pass a tx (e.g. obtained from db.Transaction) so
-// the insert participates in the parent NPC-conversation write.
+// entity's tenant_id column; pass a tx (e.g. obtained from
+// database.ExecuteTransaction) so the insert participates in the parent
+// NPC-conversation write.
 func createRecipe(db *gorm.DB) func(tenantId uuid.UUID) func(m Model) (Model, error) {
 	return func(tenantId uuid.UUID) func(m Model) (Model, error) {
 		return func(m Model) (Model, error) {

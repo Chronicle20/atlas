@@ -4,6 +4,7 @@ import (
 	"atlas-consumables/asset"
 	"atlas-consumables/character"
 	"atlas-consumables/compartment"
+	consumable3 "atlas-consumables/data/consumable"
 	compartment2 "atlas-consumables/kafka/message/compartment"
 	"atlas-consumables/kafka/message/consumable"
 	once "atlas-consumables/kafka/once/compartment"
@@ -36,9 +37,9 @@ func vegaRates(id item2.Id) (required uint32, boosted uint32, ok bool) {
 	return 0, 0, false
 }
 
-// vegaReservation identifies one reservation the vega chain may need to roll
+// VegaReservation identifies one reservation the vega chain may need to roll
 // back: compartment type + slot.
-type vegaReservation struct {
+type VegaReservation struct {
 	inventoryType inventory2.Type
 	slot          int16
 }
@@ -48,7 +49,7 @@ type vegaReservation struct {
 // INVALID packet + enable-actions; the client shows its own "This item cannot
 // be used." notice and closes the dialog (required — after sending, the
 // client is excl-request-blocked and a silent rejection would wedge it).
-func (p *Processor) VegaScrollError(characterId uint32, transactionId uuid.UUID, reservations []vegaReservation, err error) error {
+func (p *ProcessorImpl) VegaScrollError(characterId uint32, transactionId uuid.UUID, reservations []VegaReservation, err error) error {
 	p.l.Debugf("Character [%d] unable to vega scroll due to error: [%v]", characterId, err)
 	for _, r := range reservations {
 		if cErr := p.cpp.CancelItemReservation(characterId, r.inventoryType, transactionId, r.slot); cErr != nil {
@@ -91,7 +92,7 @@ func resolveVegaEquip(c character.Model, equipSlot int16) (*asset.Model, error) 
 // scroll reservation; the scroll's confirmation triggers ConsumeVegaScroll.
 // NEVER batch the two reserves — the inventory-side batch path only processes
 // the first entry (design §2.8).
-func (p *Processor) RequestVegaScroll(characterId uint32, vegaSlot int16, vegaItemId item2.Id, scrollSlot int16, equipSlot int16) error {
+func (p *ProcessorImpl) RequestVegaScroll(characterId uint32, vegaSlot int16, vegaItemId item2.Id, scrollSlot int16, equipSlot int16) error {
 	cp := character.NewProcessor(p.l, p.ctx)
 	cpp := compartment.NewProcessor(p.l, p.ctx)
 	transactionId := uuid.New()
@@ -176,7 +177,7 @@ func ReserveVegaScrollStage(transactionId uuid.UUID, characterId uint32, vegaIte
 				Quantity: 1,
 			}})
 			if err != nil {
-				return p.VegaScrollError(characterId, transactionId, []vegaReservation{{inventory2.TypeValueCash, vegaItem.Slot()}}, err)
+				return p.VegaScrollError(characterId, transactionId, []VegaReservation{{inventory2.TypeValueCash, vegaItem.Slot()}}, err)
 			}
 			return nil
 		}
@@ -193,7 +194,8 @@ func ConsumeVegaScroll(transactionId uuid.UUID, characterId uint32, vegaItem *as
 			p := NewProcessor(l, ctx)
 			cp := character.NewProcessor(l, ctx)
 			cpp := compartment.NewProcessor(l, ctx)
-			both := []vegaReservation{
+			cdp := consumable3.NewProcessor(l, ctx)
+			both := []VegaReservation{
 				{inventory2.TypeValueUse, scrollItem.Slot()},
 				{inventory2.TypeValueCash, vegaItem.Slot()},
 			}
@@ -205,7 +207,7 @@ func ConsumeVegaScroll(transactionId uuid.UUID, characterId uint32, vegaItem *as
 			}
 
 			required, _, _ := vegaRates(item2.Id(vegaItem.TemplateId()))
-			ci, err := p.cdp.GetById(scrollItem.TemplateId())
+			ci, err := cdp.GetById(scrollItem.TemplateId())
 			if err != nil {
 				return p.VegaScrollError(characterId, transactionId, both, err)
 			}

@@ -53,6 +53,8 @@ type Processor interface {
 	RequestFeed(worldId world.Id, characterId uint32, slot int16, itemId item2.Id) error
 	ConsumeError(characterId uint32, transactionId uuid.UUID, inventoryType inventory2.Type, slot int16, err error) error
 	RequestScroll(characterId uint32, scrollSlot int16, equipSlot int16, whiteScroll bool, legendarySpirit bool) error
+	RequestVegaScroll(characterId uint32, vegaSlot int16, vegaItemId item2.Id, scrollSlot int16, equipSlot int16) error
+	VegaScrollError(characterId uint32, transactionId uuid.UUID, reservations []VegaReservation, err error) error
 	ValidateScrollUse(scrollItem asset.Model, equipItem asset.Model) bool
 	PassScroll(characterId uint32, legendarySpirit bool, whiteScroll bool) error
 	ApplyConsumableEffect(transactionId uuid.UUID, _ channel.Model, characterId uint32, itemId item2.Id) error

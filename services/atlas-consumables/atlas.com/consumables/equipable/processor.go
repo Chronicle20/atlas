@@ -3,7 +3,7 @@ package equipable
 import (
 	"atlas-consumables/asset"
 	"atlas-consumables/kafka/message/compartment"
-	"atlas-consumables/kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"context"
 
 	"github.com/google/uuid"

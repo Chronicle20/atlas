@@ -2,7 +2,7 @@ package pet
 
 import (
 	pet2 "atlas-consumables/kafka/message/pet"
-	"atlas-consumables/kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"context"
 	"errors"
 	"sort"

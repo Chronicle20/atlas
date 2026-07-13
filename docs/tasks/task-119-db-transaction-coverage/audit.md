@@ -474,3 +474,63 @@ Full-service reconciliation: re-ran `grep -rn "\.Create(\|\.Save(\|\.Update(\|\.
 - **Emit-convention decision per service (design §6.5 re-check):** grep for `outbox` across the 6 touched services shows **only atlas-monster-book was migrated to the outbox by task-114** (`card/processor.go`, `collection/processor.go`, `main.go`, `kafka/consumer/monsterbook/consumer.go`). The established shape is `message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(...)` inside the tx (`card/processor.go:104`).
   - **atlas-monster-book (Task 8):** use the outbox `EmitProvider(l, ctx, tx)` enqueue-in-tx wrapper — a provider swap per design §6.1, not buffer+publish-after-commit. This also subsumes the `[E]` fix (events enqueue in the same tx, so a rollback drops them).
   - **atlas-keys, atlas-families, atlas-npc-conversations, atlas-marriages, atlas-storage (Tasks 5–7, 9–13):** not migrated — use buffer + publish-after-commit exactly as the plan's diffs specify.
+
+---
+
+## D0 blast-radius: fleet-wide `ExecuteTransaction`-callers audit (task-119, 2026-07-13)
+
+The D0 fix (Task 1) made `database.ExecuteTransaction` actually open transactions
+fleet-wide. Because the helper was previously a verified no-op, every service that
+already used it ran its "transactions" as plain root-handle calls — which masked
+two classes of latent problem that only surface once real transactions open:
+
+1. **Test-harness fragility.** A sqlite `:memory:` database is *per-connection*. A
+   read/write issued on the root `p.db` handle *inside* a real transaction lands on
+   a second pooled connection whose in-memory schema is empty → `no such table`.
+2. **Latent atomicity bugs.** A processor method that itself opens
+   `ExecuteTransaction`, called on the root `p` (not `p.WithTransaction(tx)`) from
+   inside another transaction closure, opens a *separate* transaction on a different
+   connection — its writes commit independently and survive an outer rollback.
+
+### Scope and method
+
+Every one of the **26 services** that call `database.ExecuteTransaction` was audited
+(19 non-task-119 callers via per-service read-only audit agents; the 7 task-119
+remediation services carry rollback tests that already prove their wrapped flows are
+atomic). For each service, every `ExecuteTransaction`/`db.Transaction` closure was
+traced: every DB-touching call inside must ride the closure's `tx` (via
+`WithTransaction(tx)`, a `tx` handle passed to a package-level administrator/provider,
+or a helper that receives only `tx`). Per-service reports live in
+`docs/tasks/task-119-db-transaction-coverage/` scratch during the audit; the outcomes:
+
+### Findings and remediation
+
+| Service | Verdict | Action |
+|---|---|---|
+| **atlas-inventory** | **5 CRITICAL nested-tx** | Fixed. `AttemptItemPickUp` called `p.CreateAsset` un-bound (2 sites); `MergeAndCompact`/`CompactAndSort` called `p.Move` un-bound (4 sites) — each opens its own `ExecuteTransaction`, so the picked-up asset / slot moves committed outside the enclosing tx. Bound all via `p.WithTransaction(tx)`; also bound the compaction-loop compartment re-fetches to `tx` (correctness — they must observe the in-tx slot moves) and fixed `inventory.WithTransaction` to rebind its compartment sub-processor. Compaction + pickup tests green. |
+| **atlas-pets** | **1 CRITICAL nested-tx** | Fixed. `Despawner` was a Go method value bound to the original processor at `NewProcessor` time; `With(WithTransaction(tx))`'s shallow copy never rebound it, so `Despawn` (in `DespawnAndEmit` and `EvaluateHunger`) always opened a separate transaction on the root pool. Removed the construction-time binding so `Despawn` dispatches to the receiver's own `defaultDespawn` (tx-bound on clones); the field remains an optional test-mock override. Added a rollback regression test (RED→GREEN). |
+| **atlas-quest** | 3 MINOR (benign) | No fix. `completeCore`/`startCore`/`startChainedCore` read via root `p.db` inside a tx closure — reads return committed data; harmless in Postgres. Test harness switched to shared-cache in-memory sqlite so the reads see the schema under real transactions. |
+| **atlas-character** | 1 MINOR (benign) | No fix. `Delete`'s pre-read uses root `p.GetById` (feeds only the emitted event's `WorldId`, not the delete). Test harness switched to shared-cache in-memory sqlite. |
+| 15 others | CLEAN | atlas-buddies, atlas-cashshop, atlas-configurations, atlas-data, atlas-drop-information, atlas-fame, atlas-gachapons, atlas-guilds, atlas-merchant, atlas-mounts, atlas-mts, atlas-notes, atlas-npc-shops, atlas-skills, atlas-tenants — every in-closure DB op rides the tx (via `WithTransaction(tx)` or a `tx`-seeded constructor; GORM correctly downgrades genuinely-nested `db.Transaction` to a SAVEPOINT). |
+| 7 task-119 svcs | CLEAN | keys, families, npc-conversations, monster-book, marriages, storage, maps — rollback-test-proven atomic. |
+
+**Test-harness fix (no production impact):** atlas-quest, atlas-character, and
+atlas-inventory built a bare sqlite `:memory:` test DB. Switched each to a
+uniquely-named shared-cache in-memory DB (`file:<uuid>?mode=memory&cache=shared`,
+one idle connection pinned open) so every pooled connection shares one schema under
+real transactions. `SetMaxOpenConns(1)` was rejected — it deadlocks when a flow
+legitimately uses two connections (tx + a root read).
+
+**Production safety of D0:** the fix is *not* a regression. Before it, no service's
+transactions were real, so the fleet had zero atomicity everywhere; after it,
+correctly-written flows become atomic and the two nested-tx outliers (inventory,
+pets) are fixed. In Postgres the benign MINOR root-reads return committed data and
+never error.
+
+**Adjacent follow-up candidates (out of scope — a different class, pre-existing, not
+D0-exposed):** several services have multi-write methods with *no* transaction
+wrapping at all (`atlas-npc-shops` `CreateShop`, `atlas-merchant` `CreateShop`,
+`atlas-tenants` `Seed*`, `atlas-mts` dead-code `UpdateAuction`). These are genuine
+atomicity gaps of the same shape task-119 remediated in its 14 services, but in
+services outside this task's scope; they belong to a dedicated follow-up, not this
+branch.

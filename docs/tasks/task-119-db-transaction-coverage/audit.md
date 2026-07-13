@@ -448,3 +448,23 @@ Full-service reconciliation: re-ran `grep -rn "\.Create(\|\.Save(\|\.Update(\|\.
 4. **atlas-monster-book**'s second consumer site (`kafka/consumer/character/consumer.go`) has **no** emit inside it — the design implied both monster-book sites might share the `[E]` defect; only `handleCardPickedUp` does.
 5. **map/portal/reactor-actions' `sagaP.Create`** calls are Kafka producer publishes, not REST calls to atlas-saga-orchestrator as the design phrased it — exclusion classification is unaffected, transport label is corrected.
 6. **atlas-storage**'s account-deletion cascade (`storage.Delete` + `asset.DeleteByStorageId`, both invoked from the same Kafka handler) is an additional class-A finding beyond the three flows (`ExpireAndEmit`, `MergeAndSort`, `GetOrCreateStorageId`) the design survey named.
+
+---
+
+## Rebase gate (Task 4) — 2026-07-12
+
+- **Rebased onto** `origin/main` @ `e15b343b1` (clean; all 7 branch commits replayed, no conflicts — main did not touch `libs/atlas-database/`).
+- **Dependency merge commits confirmed in main:**
+  - task-114 (fleet-wide transactional outbox): `d2e13ba3d` (#903)
+  - task-116 (Gen3 processor unification): `e15b343b1` (#967)
+- **CRITICAL — main's `isTransaction` is still the buggy `ConnPool != nil` form.** task-114 did *not* rebase onto this branch's Task 1 fix (the design §2.4 standalone-PR recommendation was not acted on before task-114 merged). Consequence: task-114's fleet-wide outbox `Emit` currently runs on a no-op `ExecuteTransaction` in main — enqueue-in-tx is presently **non-atomic in production** until this branch's Task 1 fix (`b3c85d638`) lands. The remediation tasks below only become effective once that fix merges. No conflict to reconcile; the two just never met.
+- **Remediation targets re-verified post task-116 rewrites** — all present, shapes intact:
+  - npc-conversations `conversation/npc/processor.go` — 6 `db...Transaction` sites (132/155/179/202/221/273).
+  - keys `key/processor.go` — 4 sites (74/93/107/119).
+  - families `family/processor.go` — 3 sites (175/247/320).
+  - marriages `marriage/processor.go:1692` — manual `Begin()` (the dead-code twin; live `AcceptProposalAndEmit` still unwrapped per §3 correction #1).
+  - monster-book `kafka/consumer/character/consumer.go:49` — raw `Transaction`.
+  - storage `storage/processor.go` — `MergeAndSort` (508), `ExpireAndEmit` (745); `asset/processor.go` — `GetOrCreateStorageId` (58).
+- **Emit-convention decision per service (design §6.5 re-check):** grep for `outbox` across the 6 touched services shows **only atlas-monster-book was migrated to the outbox by task-114** (`card/processor.go`, `collection/processor.go`, `main.go`, `kafka/consumer/monsterbook/consumer.go`). The established shape is `message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(...)` inside the tx (`card/processor.go:104`).
+  - **atlas-monster-book (Task 8):** use the outbox `EmitProvider(l, ctx, tx)` enqueue-in-tx wrapper — a provider swap per design §6.1, not buffer+publish-after-commit. This also subsumes the `[E]` fix (events enqueue in the same tx, so a rollback drops them).
+  - **atlas-keys, atlas-families, atlas-npc-conversations, atlas-marriages, atlas-storage (Tasks 5–7, 9–13):** not migrated — use buffer + publish-after-commit exactly as the plan's diffs specify.

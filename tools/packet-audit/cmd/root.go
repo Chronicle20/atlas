@@ -68,6 +68,12 @@ func Run(args []string, stderr io.Writer) int {
 	if len(args) > 0 && args[0] == "verify-serverbound" {
 		return runVerifyServerbound(args[1:], stderr)
 	}
+	if len(args) > 0 && args[0] == "support-summary" {
+		return runSupportSummary(args[1:], stderr)
+	}
+	if len(args) > 0 && args[0] == "status" {
+		return runStatus(args[1:], os.Stdout, stderr)
+	}
 	fs := flag.NewFlagSet("packet-audit", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	opts := Options{}

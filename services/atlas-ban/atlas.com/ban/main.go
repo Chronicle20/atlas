@@ -9,11 +9,9 @@ import (
 	"atlas-ban/history"
 	account2 "atlas-ban/kafka/consumer/account"
 	ban2 "atlas-ban/kafka/consumer/ban"
-	"atlas-ban/logger"
 	"atlas-ban/tasks"
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
-	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
 	"time"
 
@@ -48,15 +46,8 @@ func GetServer() Server {
 }
 
 func main() {
-	l := logger.CreateLogger(serviceName)
-	l.Infoln("Starting main service.")
-
-	tdm := service.GetTeardownManager()
-
-	tc, err := tracing.InitTracer(serviceName)
-	if err != nil {
-		l.WithError(err).Fatal("Unable to initialize tracer.")
-	}
+	rt := service.Bootstrap(serviceName)
+	l := rt.Logger()
 
 	db := database.Connect(l, database.SetMigrations(ban.Migration, history.Migration))
 
@@ -68,7 +59,7 @@ func main() {
 		return false
 	})
 
-	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
+	cmf := consumer.GetManager().AddConsumer(l, rt.Context(), rt.WaitGroup())
 	ban2.InitConsumers(l)(cmf)(consumerGroupId)
 	if err := ban2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
 		l.WithError(err).Fatal("Unable to register kafka handlers.")
@@ -78,29 +69,27 @@ func main() {
 		l.WithError(err).Fatal("Unable to register kafka handlers.")
 	}
 
-	tdm.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
+	rt.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 
 	server.New(l).
-		WithContext(tdm.Context()).
-		WithWaitGroup(tdm.WaitGroup()).
+		WithContext(rt.Context()).
+		WithWaitGroup(rt.WaitGroup()).
 		SetBasePath(GetServer().GetPrefix()).
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(ban.InitResource(GetServer())(db)).
 		AddRouteInitializer(history.InitResource(GetServer())(db)).
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
+		AddRouteInitializer(server.MountReadiness("/readyz", rt.Ready)).
 		Run()
 
-	routine.Go(l, tdm.Context(), func(_ context.Context) {
-		tasks.Register(l, tdm.Context())(ban.NewExpiredBanCleanup(l, tdm.Context(), db, time.Minute*time.Duration(5)))
+	routine.Go(l, rt.Context(), func(_ context.Context) {
+		tasks.Register(l, rt.Context())(ban.NewExpiredBanCleanup(l, rt.Context(), db, time.Minute*time.Duration(5)))
 	})
-	routine.Go(l, tdm.Context(), func(_ context.Context) {
-		tasks.Register(l, tdm.Context())(history.NewHistoryPurge(l, tdm.Context(), db, time.Hour*time.Duration(24)))
+	routine.Go(l, rt.Context(), func(_ context.Context) {
+		tasks.Register(l, rt.Context())(history.NewHistoryPurge(l, rt.Context(), db, time.Hour*time.Duration(24)))
 	})
 
-	tdm.TeardownFunc(database.Teardown(l, db))
-	tdm.TeardownFunc(tracing.Teardown(l)(tc))
+	rt.TeardownFunc(database.Teardown(l, db))
 
-	tdm.Wait()
-
-	l.Infoln("Service shutdown.")
+	rt.Wait()
 }

@@ -31,8 +31,6 @@ func (p *ProcessorImpl) GetSessionsSince(characterId uint32, since time.Time) ([
 	return RequestSessionsSince(characterId, since.Unix())(p.l, p.ctx)
 }
 
-// ComputePlaytimeSince computes total playtime for a character since the given time
-
 // ComputePlaytimeInRange computes total playtime within a specific time range
 func (p *ProcessorImpl) ComputePlaytimeInRange(characterId uint32, start, end time.Time) (time.Duration, error) {
 	sessions, err := p.GetSessionsSince(characterId, start)

@@ -4,7 +4,7 @@
     "gms_v48": "054d404fcb6f0feed776b8c1453f2ab48a35f479463e82ea00d6d28ebca512dc",
     "gms_v61": "3294c3796405376978b0d209e1451eee68ff11a0e57198da251c77f8e84b998b",
     "gms_v72": "01e628692f47408c523f939acd8f6ae5defa4118536ff7334eeb10845abf114b",
-    "gms_v79": "9d338d86ee25e6483cd1018a25935a6f68e5f486c2d5ff0e718904914c39702b",
+    "gms_v79": "d0b58f14aff371d5a105acd9b1ef12e0f9ed6f4d8216df0853fea713534dfe4e",
     "gms_v83": "593acd1b954d46215afed342f2f809b8dfdaf26dda73acac5f90aa1c8bbd8fae",
     "gms_v84": "b6e4b290ae43502324d21e94c9c4fd2fc2e90cb186ebbc031a46ec1311233d1f",
     "gms_v87": "db2801fecee67081bb792877473ce2b5176d053dfe9b777679f8783b31364c58",
@@ -34408,8 +34408,7 @@
           "opcode": -1
         },
         "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 250
         },
         "gms_v83": {
@@ -39033,7 +39032,7 @@
     {
       "kind": "op",
       "op": "VICIOUS_HAMMER",
-      "packet": "field/clientbound/FieldViciousHammer",
+      "packet": "field/clientbound/FieldViciousHammerFailure",
       "direction": "clientbound",
       "tier1": true,
       "fnames": [
@@ -39053,8 +39052,7 @@
           "opcode": -1
         },
         "gms_v79": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
+          "state": "verified",
           "opcode": 330
         },
         "gms_v83": {

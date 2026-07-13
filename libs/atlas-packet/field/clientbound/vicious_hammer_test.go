@@ -40,6 +40,21 @@ import (
 // prior template value 0x169 (361) was a DEAD opcode (it routes to the
 // name/world-transfer dialog whose gate only handles 359/360); corrected to
 // 0x16C in task-129.
+//
+// NOTE (task-129 gms_v79 extension): v79 SUCCESS=60 / FAILURE=61 IDA-verified
+// live (port 13340) in CUIItemUpgrade::OnItemUpgradeResult 0x799d61
+// (Decode1(mode); mode==60 success branch reads Decode4(flag), mode==61 failure
+// branch reads Decode4(errorCode) switch 1=str5014 / 2=str5015 / 3=str5017 /
+// default str5343, else OPEN reads Decode4(token)+Decode4(hammerCount)), reached
+// via CUIItemUpgrade::OnPacket 0x799d4b (a2==330 / 0x14A). The byte SHAPE is
+// version-invariant (the fixtures' literal 61/62 mode bytes are test-only — the
+// mode field is a generic byte param, config-resolved in production); v79's
+// SUCCESS=60 / FAILURE=61 literals live in docs/packets/dispatchers/
+// vicious_hammer.yaml. Serverbound sender CUIItemUpgrade::Update 0x7998da
+// COutPacket(250/0xFA).
+// packet-audit:verify packet=field/clientbound/FieldViciousHammerOpen version=gms_v79 ida=0x799d61
+// packet-audit:verify packet=field/clientbound/FieldViciousHammerSuccess version=gms_v79 ida=0x799d61
+// packet-audit:verify packet=field/clientbound/FieldViciousHammerFailure version=gms_v79 ida=0x799d61
 // packet-audit:verify packet=field/clientbound/FieldViciousHammerOpen version=gms_v83 ida=0x537f8c
 // packet-audit:verify packet=field/clientbound/FieldViciousHammerSuccess version=gms_v83 ida=0x537f8c
 // packet-audit:verify packet=field/clientbound/FieldViciousHammerFailure version=gms_v83 ida=0x537f8c

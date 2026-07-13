@@ -2023,13 +2023,83 @@
    ]
   },
   "CField::OnItemUpgrade": {
-   "address": "",
+   "address": "0x799d4b",
+   "direction": "",
+   "calls": null
+  },
+  "CField::OnItemUpgrade#Open": {
+   "address": "0x799d61",
    "direction": "clientbound",
-   "unresolved": true,
+   "notes": "inferred-high-confidence @0x799d61 (CUIItemUpgrade::OnItemUpgradeResult else-branch)",
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": "mode (this[32]=v6; open/arm result - any byte not 60 or 61) - CUIItemUpgrade::OnItemUpgradeResult 0x799d61, reached via CUIItemUpgrade::OnPacket 0x799d4b (a2==330)"
+    },
+    {
+     "op": "Decode4",
+     "comment": "token (this[33]=m_nResult; echoed back verbatim by CUIItemUpgrade::Update in ITEM_UPGRADE_UPDATE)"
+    },
+    {
+     "op": "Decode4",
+     "comment": "hammerCount (this[34]=v16; current hammersApplied) - this[31]=m_nResultState=1; sub_79A282 fires if this[30]==2"
+    }
+   ]
+  },
+  "CField::OnItemUpgrade#Success": {
+   "address": "0x799d61",
+   "direction": "clientbound",
+   "dispatch": [
+    {
+     "discriminator": "switch",
+     "case": 60
+    }
+   ],
+   "notes": "inferred-high-confidence @0x799d61 (mode==60 branch)",
+   "calls": [
+    {
+     "op": "Decode1",
+     "comment": "mode (= 60; success) - this[32]=v6 read by CUIItemUpgrade::OnItemUpgradeResult 0x799d61, reached via CUIItemUpgrade::OnPacket 0x799d4b (a2==330)"
+    },
+    {
+     "op": "Decode4",
+     "comment": "flag (0 = success -> str 5016 'Increased available upgrade by 1. N upgrades are left' where N = 2-this[34]; non-0 -> str 5343 unknown-error using this[33])"
+    }
+   ]
+  },
+  "CField::OnItemUpgrade#Failure": {
+   "address": "0x799d61",
+   "direction": "clientbound",
+   "dispatch": [
+    {
+     "discriminator": "switch",
+     "case": 61
+    }
+   ],
+   "notes": "inferred-high-confidence @0x799d61 (mode==61 branch)",
+   "calls": [
+    {
+     "op": "Decode1",
+     "comment": "mode (= 61; failure) - this[32]=v6 read by CUIItemUpgrade::OnItemUpgradeResult 0x799d61, reached via CUIItemUpgrade::OnPacket 0x799d4b (a2==330)"
+    },
+    {
+     "op": "Decode4",
+     "comment": "errorCode (v12; switch 1=not-upgradable str5014, 2=cap-reached str5015, 3=horntail-necklace str5017, default=unknown-error str5343 using this[33])"
+    }
+   ]
+  },
+  "CUIItemUpgrade::Update": {
+   "address": "0x7998da",
+   "direction": "serverbound",
+   "notes": "CUIItemUpgrade::Update - gauge-confirm send, fires once this[30]==2 (m_nState) && this[31]==1 (m_nResultState) && get_update_time() > this[47] (m_tEnd). COutPacket::COutPacket(&v4, 250) - ctor opcode matches registry serverbound opcode 250/0xFA.",
+   "calls": [
+    {
+     "op": "Encode4",
+     "comment": "m_nReturnResult (v3=this[32]; open-arm mode byte, set by OnItemUpgradeResult's Decode1, widened to int32)"
+    },
+    {
+     "op": "Encode4",
+     "comment": "m_nResult (this[33]; server-chosen round-trip token, set by OnItemUpgradeResult's open-arm Decode4)"
     }
    ]
   },

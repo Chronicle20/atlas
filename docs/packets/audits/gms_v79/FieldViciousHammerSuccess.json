@@ -1,0 +1,30 @@
+{
+  "WriterName": "FieldViciousHammerSuccess",
+  "IDAName": "CField::OnItemUpgrade#Success",
+  "Address": "0x799d61",
+  "Variant": "GMS/v79",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/field/clientbound/vicious_hammer.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode (= 60; success) - this[32]=v6 read by CUIItemUpgrade::OnItemUpgradeResult 0x799d61, reached via CUIItemUpgrade::OnPacket 0x799d4b (a2==330)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "flag (0 = success -\u003e str 5016 'Increased available upgrade by 1. N upgrades are left' where N = 2-this[34]; non-0 -\u003e str 5343 unknown-error using this[33])",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

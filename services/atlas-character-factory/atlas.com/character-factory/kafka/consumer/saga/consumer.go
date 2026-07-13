@@ -4,7 +4,7 @@ import (
 	consumer2 "atlas-character-factory/kafka/consumer"
 	"atlas-character-factory/kafka/message/saga"
 	seedMessage "atlas-character-factory/kafka/message/seed"
-	"atlas-character-factory/kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"atlas-character-factory/kafka/producer/seed"
 	"context"
 

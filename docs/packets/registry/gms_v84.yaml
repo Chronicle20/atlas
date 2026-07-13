@@ -2265,6 +2265,15 @@
   ida:
     address: 6605770
   note: 'task-100 v84 IDB (cascade): CMapleTVMan dispatcher sub_64C7A4 case 353 -> sub_64C9CA @0x64C9CA (decodes result code -> StringPool result message = CMapleTVMan::OnSendMessageResult); v95 CMapleTVMan::OnPacket case 0x197 -> OnSendMessageResult. Prior csv-import 343 was the stale v83 copy.'
+- op: MTS_CHARGE_PARAM_RESULT
+  direction: clientbound
+  opcode: 356
+  fname: CITC::OnChargeParamResult
+  packet: field/clientbound/MtsChargeParamResult
+  provenance: ida-discovered
+  ida:
+    address: 5981944
+  note: 'v84 CITC sub-dispatcher sub_5B46BC (@0x5b46bc): sub eax,164h; jz -> sub_5B46F8 = CITC::OnChargeParamResult, handler entry 0x5b46f8 (bodiless: this[6]=0; billing StringPool idx5; sub_9C7FE8=open_web_site — reads nothing from CInPacket). Opcode 0x164 matches the tenant template writer route. task-113 v84 MTS charge-param verification.'
 - op: MTS_OPERATION2
   direction: clientbound
   opcode: 347

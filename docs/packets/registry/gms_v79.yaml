@@ -2899,6 +2899,7 @@
   direction: clientbound
   opcode: 322
   fname: CITC::OnChargeParamResult
+  packet: field/clientbound/MtsChargeParamResult
   provenance: ida-discovered
   ida:
     address: 5764567

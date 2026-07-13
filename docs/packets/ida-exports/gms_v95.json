@@ -3,6 +3,11 @@
   "md5": "3c71fd8872d5efbe16183ae8c51f887d",
   "generated_at": "2026-05-13T00:00:00Z",
   "functions": {
+    "CITC::OnChargeParamResult": {
+      "address": "0x575bc0",
+      "direction": "clientbound",
+      "calls": null
+    },
     "CStage::OnSetITC": {
       "address": "0x71af60",
       "direction": "clientbound",

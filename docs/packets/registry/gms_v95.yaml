@@ -1980,13 +1980,15 @@
   opcode: 407
   fname: CMapleTVMan::OnSendMessageResult
   provenance: csv-import
-- op: IDA_0X19A
+- op: MTS_CHARGE_PARAM_RESULT
   direction: clientbound
   opcode: 410
   fname: CITC::OnChargeParamResult
+  packet: field/clientbound/MtsChargeParamResult
   provenance: ida-discovered
   ida:
     address: 5731440
+  note: 'v95 CITC::OnPacket case 0x19A -> CITC::OnChargeParamResult, handler entry 0x575bc0 (bodiless: m_bITCRequestSent=0; billing StringPool; open_web_site — reads nothing from CInPacket). task-113 MTS charge-param verification (renamed from placeholder IDA_0X19A).'
 - op: MTS_OPERATION2
   direction: clientbound
   opcode: 411

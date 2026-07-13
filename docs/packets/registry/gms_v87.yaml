@@ -1781,13 +1781,15 @@
   opcode: 364
   fname: CMapleTVMan::OnSendMessageResult
   provenance: csv-import
-- op: IDA_0X16F
+- op: MTS_CHARGE_PARAM_RESULT
   direction: clientbound
   opcode: 367
   fname: CITC::OnChargeParamResult
+  packet: field/clientbound/MtsChargeParamResult
   provenance: ida-discovered
   ida:
     address: 6111940
+  note: 'v87 CITC::OnPacket case 0x16F -> CITC::OnChargeParamResult, handler entry 0x5d4300 (bodiless: this[6]=0; billing StringPool; open_web_site — reads nothing from CInPacket). task-113 MTS charge-param verification (renamed from placeholder IDA_0X16F).'
 - op: MTS_OPERATION2
   direction: clientbound
   opcode: 368

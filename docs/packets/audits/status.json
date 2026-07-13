@@ -1,14 +1,14 @@
 {
-  "toolSha": "6a4db515f3ad851ad2e07a3fc2615db54ae8ceb8",
+  "toolSha": "9eb19e8a4f36684cb89919c2b68f247713dde11a",
   "exportHashes": {
     "gms_v48": "bb081154af4fcaca8d6b4077d339dc13f32959d3ac8612faff953f1c99537774",
-    "gms_v61": "ff72dbfc0de1843019f459861178b5864f0b95769e9b7e1284b9708cdd9d1a99",
-    "gms_v72": "02026b5728bf2660f55952744cd9e074182cf5b118c1110879ebce9cbaf38823",
-    "gms_v79": "49c1be30a77727795b211de124897a6c112926724bec6c5e50f8a96a55705ef3",
-    "gms_v83": "48e4a128bc84590b1a9dd45269344a950c52d6c03a234a24d5e40a8bd475998a",
-    "gms_v84": "38d565a101e36d68c65f447414bd3a28e0f1a424255990d819b7a12eae3e5b65",
-    "gms_v87": "6f81ca36ee0299e4bd37541f84ceae54f81f5b6551bb3247beda46785311bfef",
-    "gms_v95": "2ab5dade813f118e027a310143d2663f6b4904c2b855fa11b04b0a90199e1e0b",
+    "gms_v61": "3294c3796405376978b0d209e1451eee68ff11a0e57198da251c77f8e84b998b",
+    "gms_v72": "01e628692f47408c523f939acd8f6ae5defa4118536ff7334eeb10845abf114b",
+    "gms_v79": "9d338d86ee25e6483cd1018a25935a6f68e5f486c2d5ff0e718904914c39702b",
+    "gms_v83": "79f00673b0ee49772cfbc4d6499974daa4c8f65b58395ad430688a0b0b04568a",
+    "gms_v84": "9b22223ed0a18fa50c340779c803f3d8370c1636c0c73140f1249a5981c3926a",
+    "gms_v87": "439d93abdadf6691b73829f390e66bec3e6911da57ba00fe48307eb682c83427",
+    "gms_v95": "13bd606ccb5ff5093ed0598adb44647b288279bc55a7e34a7d9a8b2e988aede5",
     "jms_v185": "fafc2aa572aff3b2769c36da3305ad175d2410515f5bb182587b75967d0be1f7"
   },
   "rows": [
@@ -36169,35 +36169,32 @@
           "opcode": -1
         },
         "gms_v61": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 273
         },
         "gms_v72": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 309
         },
         "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 322
         },
         "gms_v83": {
-          "state": "n-a",
-          "opcode": -1
+          "state": "verified",
+          "opcode": 346
         },
         "gms_v84": {
-          "state": "n-a",
-          "opcode": -1
+          "state": "verified",
+          "opcode": 356
         },
         "gms_v87": {
-          "state": "n-a",
-          "opcode": -1
+          "state": "verified",
+          "opcode": 367
         },
         "gms_v95": {
-          "state": "n-a",
-          "opcode": -1
+          "state": "verified",
+          "opcode": 410
         },
         "jms_v185": {
           "state": "n-a",
@@ -39192,54 +39189,6 @@
     },
     {
       "kind": "op",
-      "op": "IDA_0X15A",
-      "direction": "clientbound",
-      "tier1": false,
-      "fnames": [
-        "CITC::OnChargeParamResult"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 346
-        },
-        "gms_v84": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v87": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v95": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "jms_v185": {
-          "state": "n-a",
-          "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "op",
       "op": "MTS_OPERATION2",
       "packet": "field/clientbound/FieldMtsOperation2",
       "direction": "clientbound",
@@ -40155,7 +40104,6 @@
       "direction": "clientbound",
       "tier1": false,
       "fnames": [
-        "CITC::OnChargeParamResult",
         "sub_48F168"
       ],
       "cells": {
@@ -40184,9 +40132,8 @@
           "opcode": -1
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 367
+          "state": "n-a",
+          "opcode": -1
         },
         "gms_v95": {
           "state": "n-a",
@@ -40336,54 +40283,6 @@
           "state": "incomplete",
           "note": "no audit report",
           "opcode": 396
-        },
-        "jms_v185": {
-          "state": "n-a",
-          "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "IDA_0X19A",
-      "direction": "clientbound",
-      "tier1": false,
-      "fnames": [
-        "CITC::OnChargeParamResult"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v84": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v87": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 410
         },
         "jms_v185": {
           "state": "n-a",

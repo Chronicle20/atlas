@@ -2867,6 +2867,7 @@
   direction: clientbound
   opcode: 309
   fname: CITC::OnChargeParamResult
+  packet: field/clientbound/MtsChargeParamResult
   provenance: ida-discovered
   ida:
     address: 5661032

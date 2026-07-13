@@ -3,6 +3,11 @@
  "md5": "",
  "generated_at": "2026-06-30T15:47:21Z",
  "functions": {
+  "CITC::OnChargeParamResult": {
+   "address": "0x57f3d7",
+   "direction": "clientbound",
+   "calls": null
+  },
   "AvatarLook::Decode": {
    "address": "0x4db6dd",
    "direction": "",

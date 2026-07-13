@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -33,6 +34,11 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 
 var _ Processor = (*ProcessorImpl)(nil)
 
+// WithTransaction returns a clone of the processor bound to the transaction handle.
+func (p *ProcessorImpl) WithTransaction(tx *gorm.DB) *ProcessorImpl {
+	return &ProcessorImpl{l: p.l, ctx: p.ctx, db: tx}
+}
+
 func (p *ProcessorImpl) GetAssetById(assetId uint32) (Model, error) {
 	return GetById(p.db.WithContext(p.ctx))(assetId)
 }
@@ -58,31 +64,36 @@ func (StorageEntity) TableName() string {
 func (p *ProcessorImpl) GetOrCreateStorageId(worldId world.Id, accountId uint32) (uuid.UUID, error) {
 	t := tenant.MustFromContext(p.ctx)
 
-	var storageEntity StorageEntity
-	err := p.db.WithContext(p.ctx).Where("world_id = ? AND account_id = ?", byte(worldId), accountId).
-		First(&storageEntity).Error
-
-	if err == nil {
-		return storageEntity.Id, nil
-	}
-
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		storageEntity = StorageEntity{
-			TenantId:  t.Id(),
-			Id:        uuid.New(),
-			WorldId:   byte(worldId),
-			AccountId: accountId,
-			Capacity:  4,
-			Mesos:     0,
+	var id uuid.UUID
+	err := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		var storageEntity StorageEntity
+		err := tx.Where("world_id = ? AND account_id = ?", byte(worldId), accountId).
+			First(&storageEntity).Error
+		if err == nil {
+			id = storageEntity.Id
+			return nil
 		}
-		createErr := p.db.WithContext(p.ctx).Create(&storageEntity).Error
-		if createErr != nil {
-			return uuid.Nil, createErr
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			storageEntity = StorageEntity{
+				TenantId:  t.Id(),
+				Id:        uuid.New(),
+				WorldId:   byte(worldId),
+				AccountId: accountId,
+				Capacity:  4,
+				Mesos:     0,
+			}
+			if createErr := tx.Create(&storageEntity).Error; createErr != nil {
+				return createErr
+			}
+			id = storageEntity.Id
+			return nil
 		}
-		return storageEntity.Id, nil
+		return err
+	})
+	if err != nil {
+		return uuid.Nil, err
 	}
-
-	return uuid.Nil, err
+	return id, nil
 }
 
 func Transform(m Model) (RestModel, error) {

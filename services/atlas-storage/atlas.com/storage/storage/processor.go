@@ -64,6 +64,11 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 
 var _ Processor = (*ProcessorImpl)(nil)
 
+// WithTransaction returns a clone of the processor bound to the transaction handle.
+func (p *ProcessorImpl) WithTransaction(tx *gorm.DB) *ProcessorImpl {
+	return &ProcessorImpl{l: p.l, ctx: p.ctx, db: tx}
+}
+
 func (p *ProcessorImpl) GetOrCreateStorage(worldId world.Id, accountId uint32) (Model, error) {
 	t := tenant.MustFromContext(p.ctx)
 

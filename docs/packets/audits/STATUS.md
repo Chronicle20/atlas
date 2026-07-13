@@ -4,16 +4,16 @@
 > ✅ verified · 🧩 family (mode-prefix dispatcher; sub-arms unverified) · 🟡 partial · ❌ incomplete · ⬜ n-a · 🟥 conflict
 > Partial (🟡) sub-glyphs: 🟡ᶠ tier-1 needs byte-fixture · 🟡ᵈ tool-pass diff-only (no byte-test) · 🟡ᵖ evidence-pinned deferral
 
-Tool: `339e6bfda5a2e69636135a4989c3fe2ed262c0835e6eade0c1a9208ea6b4902e`
+Tool: `d6bfdda5b75aa683b94d7002b348b58c7baa38e7392e1c5b41728442132bfb8c`
 
 - export gms_v48: `054d404fcb6f0feed776b8c1453f2ab48a35f479463e82ea00d6d28ebca512dc`
 - export gms_v61: `b1111abee79b6b10cf1a05305e3c4a7707819f6862a80314c0b2ebce424852f7`
 - export gms_v72: `a21ceb077a00723549680327194e70c712b962f92dfd26c011bc0af8134f06e5`
-- export gms_v79: `d15e646fd932f669288f43451ceaf0a4df44cb795ac75d858d98b31eca9276c9`
-- export gms_v83: `2e59975cded8c97003b8952fbcb0c907996dfa874903e2097fa9462e3cd14759`
-- export gms_v84: `703081652623b280e2c6697596321dc455ebbc7f88b03a22327662565a103c17`
-- export gms_v87: `c561e4674388fb4f6cc8f6102df6a0b905ea9ef540efc5d5c4f8aa27f06f1d64`
-- export gms_v95: `ad2c882a7798bc7bb4c3a4b5808f7f52fa1ac34192a142e215252462af6e612a`
+- export gms_v79: `aad866f3c3feebf4ce08f3f37b6fc45738cbc5cd68b2e90efd39b86ad4b3a7f6`
+- export gms_v83: `e98c3574fe9a200ecb94994f3601788bb37acd32a733a1052fac8f59774c09f8`
+- export gms_v84: `b6e4b290ae43502324d21e94c9c4fd2fc2e90cb186ebbc031a46ec1311233d1f`
+- export gms_v87: `db2801fecee67081bb792877473ce2b5176d053dfe9b777679f8783b31364c58`
+- export gms_v95: `c624c6a6a62e510722d39f760552216947e7ecb517ddfe0676c2b2ba1359f487`
 - export jms_v185: `884635e9cff438e732a010c256a82819b61198775ba054cfd2e3b88442fe4a05`
 
 ## Clientbound
@@ -474,6 +474,7 @@ Tool: `339e6bfda5a2e69636135a4989c3fe2ed262c0835e6eade0c1a9208ea6b4902e`
 | WEDDING_CEREMONY_END | CField_Wedding::OnWeddingCeremonyEnd | field/clientbound/FieldWeddingCeremonyEnd (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x141 | ✅ | 0x148 | ✅ | 0x152 | ✅ | 0x17C | ✅ | 0x15A | ✅ |
 | CASHSHOP_GIFT_INFO_RESULT | CCashShop::OnGiftMateInfoResult |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x147 | ❌ | 0x14E | ❌ | 0x158 | ❌ | 0x182 | ❌ | 0x166 | ❌ |
 | CASHSHOP_REGISTER_NEW_CHARACTER_RESULT |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x14A | ❌ | 0x151 | ❌ | 0x15B | ❌ | 0x185 | ❌ |  | ⬜ |
+| VICIOUS_HAMMER | CField::OnItemUpgrade | field/clientbound/FieldViciousHammerFailure (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x14A | ✅ | 0x162 | ✅ | 0x16C | ✅ | 0x177 | ✅ | 0x1A9 | ✅ |  | ⬜ |
 | OPEN_GATE_CREATED | COpenGatePool::OnOpenGateCreated |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x14C | ❌ |  | ⬜ |
 | OPEN_GATE_REMOVED | COpenGatePool::OnOpenGateRemoved |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x14D | ❌ |  | ⬜ |
 | CASHSHOP_CASH_GACHAPON_OPEN_RESULT | CCashShop::OnCashItemGachaponResult |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x14E | ❌ | 0x155 | ❌ | 0x15F | ❌ | 0x189 | ❌ |  | ⬜ |
@@ -488,7 +489,6 @@ Tool: `339e6bfda5a2e69636135a4989c3fe2ed262c0835e6eade0c1a9208ea6b4902e`
 | UPDATE_BEANS |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x15F | ❌ |
 | ONE_A_DAY | CCashShop::OnOneADay |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x161 | ❌ | 0x18B | ❌ |  | ⬜ |
 | IDA_0X162 | CCashShop::OnNoticeFreeCashItem |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x162 | ❌ |
-| VICIOUS_HAMMER | CField::OnItemUpgrade | field/clientbound/FieldViciousHammer (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x162 | ✅ | 0x169 | ✅ | 0x177 | ✅ | 0x1A9 | ✅ |  | ⬜ |
 | ARIANT_SCORE | CField_Witchtower::OnPacket; CField_Witchtower::OnScoreUpdate | field/clientbound/FieldAriantScore (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x166 | ✅ |  | ⬜ |
 | VEGA_SCROLL | CUIVega::OnVegaResult |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x166 | ❌ | 0x166 | ❌ | 0x17B | ❌ | 0x1AD | ❌ | 0x183 | ❌ |
 | HONTALE_TIMER | CField::OnHontaleTimer |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x167 | ❌ |  | ⬜ |
@@ -804,7 +804,7 @@ Tool: `339e6bfda5a2e69636135a4989c3fe2ed262c0835e6eade0c1a9208ea6b4902e`
 | UNNAMED_R404 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0F7 | ❌ | 0x0F7 | ❌ | 0x105 | ❌ | 0x126 | ❌ | 0x108 | ❌ |
 | UNNAMED_R405 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0F8 | ❌ | 0x0F8 | ❌ | 0x106 | ❌ | 0x127 | ❌ | 0x109 | ❌ |
 | UNNAMED_R392 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0F9 | ❌ | 0x11A | ❌ | 0x0FC | ❌ |
-| ITEM_UPGRADE_UPDATE | CUIItemUpgrade::Update |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x104 | ❌ | 0x104 | ❌ | 0x112 | ❌ | 0x128 | ❌ | 0x114 | ❌ |
+| ITEM_UPGRADE_UPDATE | CUIItemUpgrade::Update | field/serverbound/FieldItemUpgradeUpdate (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x0FA | ✅ | 0x104 | ✅ | 0x10B | ✅ | 0x112 | ✅ | 0x128 | ✅ | 0x114 | ❌ |
 | UNNAMED_R419 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x10C | ❌ | 0x135 | ❌ | 0x10D | ❌ |
 | UNNAMED_R420 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x10D | ❌ | 0x136 | ❌ | 0x10E | ❌ |
 | FOOTHOLD_INFO | CField::OnRequestFootHoldInfo | field/serverbound/FieldRequestFootholdInfo (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x10E | ✅ | 0x0ED | ✅ |
@@ -996,11 +996,11 @@ Tool: `339e6bfda5a2e69636135a4989c3fe2ed262c0835e6eade0c1a9208ea6b4902e`
 | v48 | 166 | 0 | 2 | 156 | 634 | 0 | 51.2% |
 | v61 | 235 | 0 | 60 | 199 | 464 | 0 | 47.6% |
 | v72 | 244 | 0 | 73 | 217 | 424 | 0 | 45.7% |
-| v79 | 256 | 0 | 72 | 213 | 417 | 0 | 47.3% |
-| v83 | 397 | 0 | 0 | 337 | 224 | 0 | 54.1% |
-| v84 | 369 | 0 | 0 | 345 | 244 | 0 | 51.7% |
-| v87 | 403 | 0 | 0 | 368 | 187 | 0 | 52.3% |
-| v95 | 428 | 0 | 0 | 427 | 103 | 0 | 50.1% |
+| v79 | 258 | 0 | 72 | 213 | 415 | 0 | 47.5% |
+| v83 | 398 | 0 | 0 | 336 | 224 | 0 | 54.2% |
+| v84 | 370 | 0 | 0 | 344 | 244 | 0 | 51.8% |
+| v87 | 404 | 0 | 0 | 367 | 187 | 0 | 52.4% |
+| v95 | 429 | 0 | 0 | 426 | 103 | 0 | 50.2% |
 | JMS185 | 385 | 0 | 0 | 379 | 194 | 0 | 50.4% |
 
 ## Conflicts

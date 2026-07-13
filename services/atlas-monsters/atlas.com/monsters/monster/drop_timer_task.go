@@ -1,7 +1,7 @@
 package monster
 
 import (
-	"atlas-monsters/kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"atlas-monsters/monster/drop"
 	"context"
 	"math/rand"

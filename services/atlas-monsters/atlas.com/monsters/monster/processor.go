@@ -2,7 +2,7 @@ package monster
 
 import (
 	mistKafka "atlas-monsters/kafka/message/mist"
-	"atlas-monsters/kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	_map "atlas-monsters/map"
 	"atlas-monsters/monster/information"
 	"atlas-monsters/monster/mobskill"

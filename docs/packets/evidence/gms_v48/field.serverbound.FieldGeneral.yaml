@@ -1,0 +1,8 @@
+packet: field/serverbound/FieldGeneral
+direction: serverbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: sub_4C3DEF
+    address: "0x4c3def"
+    decompile_sha256: df713faca08eafd25c525229468b375d0563447fd8be8ff96b75177183a29286

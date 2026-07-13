@@ -282,6 +282,14 @@ func candidatesFromFName(fname string) []candidate {
 	// --- Character domain ---
 	case "CUserPool::OnUserEnterField":
 		return []candidate{{name: "CharacterSpawn", dir: csvpkg.DirClientbound}}
+	case "sub_6B277B":
+		// v48 SPAWN_PLAYER (op 100) — the CUserPool range-router (sub_6B2710
+		// case a1==100) dispatches to sub_6B277B (OnUserEnterField), which reads
+		// Decode4(charId) then CUserRemote::Init sub_6BBC17. v48 is an unnamed sub
+		// (no rotated symbol); the spawn report keys off this decoder, the v48
+		// analogue of the named CUserPool::OnUserEnterField (matches the sub_5013ED
+		// CharacterList / sub_6E5BD6 MOVE_PET precedent).
+		return []candidate{{name: "CharacterSpawn", dir: csvpkg.DirClientbound}}
 	case "CUserRemote::OnAttack":
 		// The atlas struct is Attack (shared for all 4 attack types); analyse
 		// under CharacterAttackMelee so the report file has a descriptive name.
@@ -513,6 +521,23 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "AuthSuccess", dir: csvpkg.DirClientbound}}
 	case "CLogin::OnSelectWorldResult":
 		return []candidate{{name: "CharacterList", dir: csvpkg.DirClientbound}}
+	case "sub_5B3646":
+		// v72 CHARLIST (op 11) — the standalone character-list decoder distinct
+		// from OnSelectWorldResult (op 22, RELOG). Registry gms_v72 CHARLIST fname
+		// is sub_5B3646; this mirrors v79's sub_5CE522 char-list decoder. The v72
+		// export omits OnSelectWorldResult so this is the sole CharacterList report.
+		return []candidate{{name: "CharacterList", dir: csvpkg.DirClientbound}}
+	case "sub_56688D":
+		// v61 CHARLIST (op 11) — the standalone character-list decoder, the v61
+		// analogue of v72's sub_5B3646. In v61 OnSelectWorldResult (op 22) is a
+		// distinct RELOG_RESPONSE handler, so the char-list report must key off
+		// this decoder, not the shared OnSelectWorldResult mapping.
+		return []candidate{{name: "CharacterList", dir: csvpkg.DirClientbound}}
+	case "sub_5013ED":
+		// v48 CHARLIST (op 11) — the standalone character-list decoder, the v48
+		// analogue of v61's sub_56688D / v72's sub_5B3646. v48 is an unnamed sub
+		// (no rotated symbol); the char-list report keys off this decoder.
+		return []candidate{{name: "CharacterList", dir: csvpkg.DirClientbound}}
 	case "CLogin::OnWorldInformation":
 		return []candidate{{name: "ServerListEntry", dir: csvpkg.DirClientbound}}
 	case "CLogin::OnSelectCharacterResult":
@@ -691,6 +716,35 @@ func candidatesFromFName(fname string) []candidate {
 	case "CUserLocal::TryDoingBodyAttack":
 		// TOUCH_MONSTER_ATTACK (0x2F v83). AttackTypeEnergy variant.
 		return []candidate{{name: "AttackTouchRequest", pkg: "character", dir: csvpkg.DirServerbound}}
+	case "sub_6A0528":
+		// CLOSE_RANGE_ATTACK (serverbound) in gms_v48: the basic-melee sender is
+		// UNNAMED — sub_6A0528 @0x6a0528, COutPacket(36) + no head skill-data CRC
+		// (v48<72) + per-mob DamageInfo with NO trailing mob CRC (v48<61). The v48
+		// registry primary fname is sub_6A0528, so it keys to the same shared
+		// model.AttackInfo(AttackTypeMelee) wrapper as the named TryDoingNormalAttack.
+		return []candidate{{name: "AttackMeleeRequest", pkg: "character", dir: csvpkg.DirServerbound}}
+	case "sub_6A228C":
+		// RANGED_ATTACK (serverbound) in gms_v48: TryDoingShootAttack is UNNAMED —
+		// sub_6A228C @0x6a228c, COutPacket(37); trailer is characterX/Y only (NO
+		// bulletX/Y on v48). Keys to the same AttackRangedRequest wrapper.
+		return []candidate{{name: "AttackRangedRequest", pkg: "character", dir: csvpkg.DirServerbound}}
+	case "sub_6A3AC7":
+		// MAGIC_ATTACK (serverbound) in gms_v48: TryDoingMagicAttack is UNNAMED —
+		// sub_6A3AC7 @0x6a3ac7, COutPacket(38); no per-mob CRC (v48<61), no dragon
+		// (Evan is v84+). Keys to the same AttackMagicRequest wrapper.
+		return []candidate{{name: "AttackMagicRequest", pkg: "character", dir: csvpkg.DirServerbound}}
+	case "sub_6ADD4C":
+		// SKILL_EFFECT (serverbound) in gms_v48: DoActiveSkill_Prepare is UNNAMED —
+		// sub_6ADD4C @0x6add4c, COutPacket(72) @0x6ae20e + Encode4(skillId) +
+		// Encode1(level) + Encode1(action|bLeft, 1 byte <79) + Encode1(actionSpeed).
+		// Keys to the same character.SkillPrepare wrapper as DoActiveSkill_Prepare.
+		return []candidate{{name: "SkillPrepare", pkg: "character", dir: csvpkg.DirServerbound}}
+	case "sub_6E9923":
+		// MOVE_PLAYER (serverbound) in gms_v48: CVecCtrlUser::EndUpdateActive is
+		// UNNAMED — sub_6E9923 @0x6e9923, COutPacket(33) @0x6e9ac1 + Encode1(fieldKey)
+		// + CMovePath::Flush, NO crc (v48<72), NO dr-block (v48<84). Keys to the same
+		// character.Move codec as the named CVecCtrlUser::EndUpdateActive.
+		return []candidate{{name: "Move", dir: csvpkg.DirServerbound}}
 	case "CWvsContext::SendStatChangeRequest":
 		// Struct is HealOverTime; handler constant = "CharacterHealOverTimeHandle".
 		// Client sends opcode 0x64 (100) with Encode4(updateTime)+Encode4(val)+
@@ -999,10 +1053,34 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "Attack", pkg: "summon", dir: csvpkg.DirServerbound, reportName: "SummonAttackHandle"}}
 	case "CSummoned::SetDamaged":
 		return []candidate{{name: "Damage", pkg: "summon", dir: csvpkg.DirServerbound, reportName: "SummonDamageHandle"}}
+	case "sub_5D9424":
+		// SUMMON_ATTACK (serverbound) in gms_v48: CSummoned::TryDoingAttackManual
+		// is UNNAMED in the v48 IDB — sub_5D9424 @0x5d9424, the summon manual-attack
+		// send-site (COutPacket(121) + Encode4 summonSkillId + Encode1 action|left +
+		// Encode1 count + per-target(mobId-only) + Encode2 summonX/Y; NO updateTime,
+		// NO skillCRC — pre-61). The v48 registry primary fname is sub_5D9424, so it
+		// keys to the same summon.Attack codec as the named CSummoned::TryDoingAttackManual twin.
+		return []candidate{{name: "Attack", pkg: "summon", dir: csvpkg.DirServerbound, reportName: "SummonAttackHandle"}}
+	case "sub_5DA381":
+		// DAMAGE_SUMMON (serverbound) in gms_v48: CSummoned::SetDamaged is UNNAMED in
+		// the v48 IDB — sub_5DA381 @0x5da381, the summon-damage send-site (COutPacket
+		// (122) + Encode4 summonId + mob/no-mob branch; == v61 body). The v48 registry
+		// primary fname is sub_5DA381, so it keys to the same summon.Damage codec as
+		// the named CSummoned::SetDamaged twin.
+		return []candidate{{name: "Damage", pkg: "summon", dir: csvpkg.DirServerbound, reportName: "SummonDamageHandle"}}
 
 	// --- Combat: monster (serverbound) ---
 	case "CMob::GenerateMovePath":
 		// CSV: MOVE_LIFE — atlas MovementRequest (handle = "MonsterMovementHandle").
+		return []candidate{{name: "MovementRequest", pkg: "monster", dir: csvpkg.DirServerbound}}
+	case "sub_550383":
+		// MOVE_LIFE (serverbound) in gms_v48: the CMob move/action send-site is
+		// UNNAMED in the IDB — sub_550383 @0x550383, structurally the
+		// CMob::GenerateMovePath twin (COutPacket(129) + Encode4(mobId) + Encode2
+		// (moveSN) + Encode1(flags) + Encode1(action) + Encode4(skillData) +
+		// Encode1(moveFlags) + CMovePath::Flush; NO hackedCode, pre-61). The v48
+		// registry primary fname is sub_550383, so it keys to the same monster
+		// MovementRequest codec as the named twin above.
 		return []candidate{{name: "MovementRequest", pkg: "monster", dir: csvpkg.DirServerbound}}
 	case "CMob::SendDropPickUpRequest":
 		// task-092 Cluster-D: MOB_DROP_PICKUP_REQUEST — atlas MobDropPickupRequest
@@ -1044,6 +1122,22 @@ func candidatesFromFName(fname string) []candidate {
 	case "CWvsContext::SendDropPickUpRequest":
 		// CSV: ITEM_PICKUP — atlas PickUp (handle = "DropPickUpHandle").
 		return []candidate{{name: "PickUp", pkg: "drop", dir: csvpkg.DirServerbound}}
+	case "sub_8316B8":
+		// ITEM_PICKUP (serverbound) in gms_v61: the send-site is UNNAMED in the
+		// IDB — sub_8316B8 @0x8316b8, structurally the CWvsContext::SendDropPickUpRequest
+		// twin (COutPacket(169) + Encode1(fieldKey) + Encode4(updateTime) +
+		// Encode2(x) + Encode2(y) + Encode4(dropId); no trailing crc, pre-83). The
+		// v61 registry primary fname is sub_8316B8, so it keys to the same drop.PickUp
+		// codec as the named twin above.
+		return []candidate{{name: "PickUp", pkg: "drop", dir: csvpkg.DirServerbound}}
+	case "sub_70D987":
+		// ITEM_PICKUP (serverbound) in gms_v48: the send-site is UNNAMED in the
+		// IDB — sub_70D987 @0x70d987, structurally the CWvsContext::SendDropPickUpRequest
+		// twin (COutPacket(142) + Encode1(fieldKey) + Encode4(exclReqTime) +
+		// Encode2(x) + Encode2(y) + Encode4(dropId); no trailing crc, pre-83). The
+		// v48 registry primary fname is sub_70D987, so it keys to the same drop.PickUp
+		// codec as the named twins above.
+		return []candidate{{name: "PickUp", pkg: "drop", dir: csvpkg.DirServerbound}}
 
 	// --- Combat: reactor (serverbound) ---
 	case "CReactorPool::FindHitReactor":
@@ -1074,6 +1168,24 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "ItemUse", pkg: "pet", dir: csvpkg.DirServerbound}}
 	case "CPet::SendDropPickUpRequest":
 		// CSV: PET_LOOT — atlas DropPickUp.
+		return []candidate{{name: "DropPickUp", pkg: "pet", dir: csvpkg.DirServerbound}}
+	case "sub_6E5BD6":
+		// MOVE_PET (serverbound) in gms_v48: CVecCtrlPet::EndUpdateActive is UNNAMED
+		// — sub_6E5BD6 @0x6e5bd6, COutPacket(113)+CMovePath::Flush (no leading petId,
+		// single-pet). The v48 registry primary fname is sub_6E5BD6, so it keys to
+		// the same pet.MovementRequest codec as the named CVecCtrlPet::EndUpdateActive.
+		return []candidate{{name: "MovementRequest", pkg: "pet", dir: csvpkg.DirServerbound}}
+	case "sub_58DF8A":
+		// PET_COMMAND (serverbound) in gms_v48: CPet::ParseCommand is UNNAMED —
+		// sub_58DF8A @0x58df8a, COutPacket(115)+Encode1(byName)+Encode1(command) (no
+		// leading petId). The v48 registry primary fname is sub_58DF8A, so it keys to
+		// the same pet.Command codec as the named CPet::ParseCommand.
+		return []candidate{{name: "Command", pkg: "pet", dir: csvpkg.DirServerbound}}
+	case "sub_58ED98":
+		// PET_LOOT (serverbound) in gms_v48: CPet::SendDropPickUpRequest is UNNAMED —
+		// sub_58ED98 @0x58ed98, COutPacket(116)+fieldKey/time/x/y/dropId+3 pet-flag
+		// bytes (no leading petId, no crc). The v48 registry primary fname is
+		// sub_58ED98, so it keys to the same pet.DropPickUp codec as the named twin.
 		return []candidate{{name: "DropPickUp", pkg: "pet", dir: csvpkg.DirServerbound}}
 
 	// --- Social: note ---
@@ -1349,6 +1461,15 @@ func candidatesFromFName(fname string) []candidate {
 		// CSV: MULTI_CHAT — atlas Multi (serverbound chat/multi.go).
 		return []candidate{{name: "Multi", pkg: "chat", dir: csvpkg.DirServerbound}}
 
+	// MULTI_CHAT (serverbound) in gms_v48: the send-site is UNNAMED in the IDB —
+	// sub_65EB4F @0x65eb4f, structurally the CUIStatusBar::SendGroupMessage twin
+	// (type demux 0/1/2 then COutPacket(89) + Encode1(chatType) + Encode1(count) +
+	// loop Encode4(targetCharId[i]) + EncodeStr(msg); no updateTime prefix, pre-95).
+	// The v48 registry primary fname is sub_65EB4F, so it keys to the same chat.Multi
+	// codec as the named twin above.
+	case "sub_65EB4F":
+		return []candidate{{name: "Multi", pkg: "chat", dir: csvpkg.DirServerbound}}
+
 	// CSV: WHISPER (0xDE / 222) → CField::SendChatMsgWhisper (and SendLocationWhisper for find queries).
 	// Wire for chat path (LABEL_79): Encode1(mode=6) + Encode4(updateTime) + EncodeStr(targetName) + EncodeStr(msg).
 	// Atlas Whisper writes: WriteByte(mode) + WriteInt(updateTime, GMS>=95) + WriteAsciiString(targetName) +
@@ -1364,6 +1485,22 @@ func candidatesFromFName(fname string) []candidate {
 	// both. Per-version wire (IDA): mode byte + Encode4(get_update_time) [v87+/jms]
 	// + EncodeStr(target) + optional EncodeStr(msg for mode==Chat).
 	case "CField::SendLocationWhisper":
+		return []candidate{{name: "Whisper", pkg: "chat", dir: csvpkg.DirServerbound}}
+
+	// WHISPER (serverbound) in gms_v61: the send-site is UNNAMED in the IDB —
+	// sub_4E8635 @0x4e8635, structurally the CField::SendChatMsgWhisper twin
+	// (COutPacket(108) + Encode1(mode=(!msgEmpty+1)|4) + EncodeStr(target) +
+	// optional EncodeStr(msg)). The v61 registry primary fname is sub_4E8635, so
+	// it must key to the same chat.Whisper codec as the named twins above.
+	case "sub_4E8635":
+		return []candidate{{name: "Whisper", pkg: "chat", dir: csvpkg.DirServerbound}}
+
+	// WHISPER (serverbound) in gms_v48: the send-site is UNNAMED in the IDB —
+	// sub_4C4F3B @0x4c4f3b, structurally the CField::SendChatMsgWhisper twin
+	// (COutPacket(90) + Encode1(mode=(found?2:1)|4) + EncodeStr(target) + optional
+	// EncodeStr(msg); no updateTime prefix, pre-87). The v48 registry primary fname
+	// is sub_4C4F3B, so it keys to the same chat.Whisper codec as the named twins above.
+	case "sub_4C4F3B":
 		return []candidate{{name: "Whisper", pkg: "chat", dir: csvpkg.DirServerbound}}
 
 	// CSV: SPOUSE_CHAT (serverbound) → CUIStatusBar::SendCoupleMessage. The client
@@ -1831,6 +1968,18 @@ func candidatesFromFName(fname string) []candidate {
 	// Serverbound CWvsContext senders.
 	case "CWvsContext::SendChangeSlotPositionRequest":
 		return []candidate{{name: "Move", dir: csvpkg.DirServerbound, pkg: "inventory"}}
+	case "sub_70D8DE":
+		// ITEM_MOVE (serverbound) in gms_v48: CWvsContext::SendChangeSlotPositionRequest
+		// is UNNAMED — sub_70D8DE @0x70d8de, COutPacket(55)+Encode4(updateTime)+Encode1
+		// (inventoryType)+Encode2(src)+Encode2(dst)+Encode2(count). The v48 registry
+		// primary fname is sub_70D8DE, so it keys to the same inventory.Move codec.
+		return []candidate{{name: "Move", dir: csvpkg.DirServerbound, pkg: "inventory"}}
+	case "sub_719DD9":
+		// USE_ITEM (serverbound) in gms_v48: CWvsContext::SendStatChangeItemUseRequest
+		// is UNNAMED — sub_719DD9 @0x719dd9, COutPacket(65)+Encode4(updateTime)+Encode2
+		// (slot)+Encode4(itemId). The v48 registry primary fname is sub_719DD9, so it
+		// keys to the same inventory.ItemUse codec.
+		return []candidate{{name: "ItemUse", dir: csvpkg.DirServerbound, pkg: "inventory"}}
 	case "CWvsContext::SendGatherItemRequest":
 		return []candidate{{name: "CompartmentMergeRequest", dir: csvpkg.DirServerbound, pkg: "inventory"}}
 	case "CWvsContext::SendSortItemRequest":

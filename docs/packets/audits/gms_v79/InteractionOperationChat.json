@@ -1,0 +1,30 @@
+{
+  "WriterName": "InteractionOperationChat",
+  "IDAName": "CMiniRoomBaseDlg::CheckAndSendChat",
+  "Address": "0x62e124",
+  "Variant": "GMS/v79",
+  "BranchDepth": 1,
+  "AtlasFile": "libs/atlas-packet/interaction/serverbound/operation_chat.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    }
+  ],
+  "Verdict": 3,
+  "FlatInvalid": true
+}

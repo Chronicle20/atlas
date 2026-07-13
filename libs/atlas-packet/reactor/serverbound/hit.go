@@ -6,6 +6,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
@@ -35,28 +36,38 @@ func (m HitRequest) String() string {
 	return fmt.Sprintf("oid [%d], isSkill [%t], dwHitOption [%d], delay [%d], skillId [%d]", m.oid, m.isSkill, m.dwHitOption, m.delay, m.skillId)
 }
 
-func (m HitRequest) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+func (m HitRequest) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
+	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
 		w.WriteInt(m.oid)
-		if m.isSkill {
-			w.WriteInt(1)
-		} else {
-			w.WriteInt(0)
+		if (t.IsRegion("GMS") && t.MajorAtLeast(72)) || t.Region() == "JMS" { // isSkill added between v61 and v72: v48 CReactorPool::FindHitReactor @0x5a5d1a and v61 @0x633ac7 go oid->dwHitOption directly; v72 @0x6928bc inserts Encode4(0). Legacy (<72) omits.
+			if m.isSkill {
+				w.WriteInt(1)
+			} else {
+				w.WriteInt(0)
+			}
 		}
 		w.WriteInt(m.dwHitOption)
 		w.WriteShort(m.delay)
-		w.WriteInt(m.skillId)
+		if (t.IsRegion("GMS") && t.MajorAtLeast(79)) || t.Region() == "JMS" { // trailing skillId added between v72 and v79: v48/v61/v72 omit it; v79 @0x6b8077 and v83 @0x7356c7 append Encode4(0). Legacy (<79) omits.
+			w.WriteInt(m.skillId)
+		}
 		return w.Bytes()
 	}
 }
 
-func (m *HitRequest) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *HitRequest) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.oid = r.ReadUint32()
-		m.isSkill = r.ReadUint32() == 1
+		if (t.IsRegion("GMS") && t.MajorAtLeast(72)) || t.Region() == "JMS" { // mirror of Encode: isSkill added between v61 and v72
+			m.isSkill = r.ReadUint32() == 1
+		}
 		m.dwHitOption = r.ReadUint32()
 		m.delay = r.ReadUint16()
-		m.skillId = r.ReadUint32()
+		if (t.IsRegion("GMS") && t.MajorAtLeast(79)) || t.Region() == "JMS" { // mirror of Encode: skillId added between v72 and v79
+			m.skillId = r.ReadUint32()
+		}
 	}
 }

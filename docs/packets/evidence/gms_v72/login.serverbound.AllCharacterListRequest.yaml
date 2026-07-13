@@ -1,0 +1,10 @@
+packet: login/serverbound/AllCharacterListRequest
+direction: serverbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CLogin::SendViewAllCharPacket
+    address: "0x5b3ee7"
+    decompile_sha256: 0d76ab385bad9441cade888faa9feed70964c40fde7d541c42c59aa0321c2f36
+verifies:
+  - libs/atlas-packet/login/serverbound/all_character_list_request_test.go#TestAllCharacterListRequestV72

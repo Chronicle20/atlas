@@ -3,6 +3,16 @@
   "md5": "af6652ff9b7c549341f35e3569d7564a",
   "generated_at": "2026-05-14T00:00:00Z",
   "functions": {
+    "CStage::OnSetCashShop": {
+      "address": "0x7ef5f2",
+      "direction": "clientbound",
+      "calls": null
+    },
+    "CStage::OnSetITC": {
+      "address": "0x7ef6fa",
+      "direction": "clientbound",
+      "calls": null
+    },
     "CITC::OnRegisterSaleEntry": {
       "address": "0x604105",
       "direction": "serverbound",

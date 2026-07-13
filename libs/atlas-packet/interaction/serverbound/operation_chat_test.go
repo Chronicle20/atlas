@@ -8,6 +8,7 @@ import (
 	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
+// packet-audit:verify packet=interaction/serverbound/InteractionOperationChat version=gms_v79 ida=0x62e124
 // packet-audit:verify packet=interaction/serverbound/InteractionOperationChat version=gms_v95 ida=0x6382a0
 // packet-audit:verify packet=interaction/serverbound/InteractionOperationChat version=gms_v84 ida=0x6752d8
 func TestOperationChatRoundTrip(t *testing.T) {
@@ -65,5 +66,17 @@ func TestOperationChatBytes(t *testing.T) {
 	gotJMS := hex.EncodeToString(input.Encode(l, pt.CreateContext("JMS", 185, 1))(nil))
 	if gotJMS != "4433221102006869" {
 		t.Errorf("JMS v185 bytes: got %s, want 4433221102006869", gotJMS)
+	}
+}
+
+// TestOperationChatV72Bytes pins the GMS v72 legacy body (mode byte is
+// dispatcher-framed, not part of this sub-struct). IDA v72 CMiniRoomBaseDlg::CheckAndSendChat@0x60f318 (sub_60F318): COutPacket(121) Encode1(6)=mode @0x60f34f then EncodeStr(message) @0x60f369. No leading updateTime (that is v87+, chatHasUpdateTime gate). Body == v79.
+// packet-audit:verify packet=interaction/serverbound/InteractionOperationChat version=gms_v72 ida=0x60f318
+func TestOperationChatV72Bytes(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	input := OperationChat{message: "hi"}
+	got := hex.EncodeToString(input.Encode(l, pt.CreateContext("GMS", 72, 1))(nil))
+	if got != "02006869" {
+		t.Errorf("v72 bytes: got %s, want 02006869", got)
 	}
 }

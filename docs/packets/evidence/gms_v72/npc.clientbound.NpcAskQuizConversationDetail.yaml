@@ -1,0 +1,10 @@
+packet: npc/clientbound/NpcAskQuizConversationDetail
+direction: clientbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: sub_91EC5F
+    address: "0x91ec5f"
+    decompile_sha256: dff201ff14420ce33c0a8a02288c504edd3704ae7c9a1dd70b0e2583a0d4d833
+verifies:
+  - libs/atlas-packet/npc/clientbound/conversation_v72_details_test.go#TestNpcConversationAskQuizV72

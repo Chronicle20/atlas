@@ -147,8 +147,11 @@ func matrixRun(o matrixOpts, stdout, stderr io.Writer) int {
 	}
 	in.Evidence = evStatus
 	// Design §13: an evidence record for a (packet, version) with no audit
-	// report is dangling — a --check failure. Iterate sorted so stderr output
-	// is deterministic across runs.
+	// report is dangling — a --check failure. EXCEPTION (commit 6c202cb7): when
+	// the version's registry declares the packet via an op's `packet:` field, the
+	// evidence record backs the no-report byte-fixture promotion path (grading
+	// promotes such a cell on a fresh marker + evidence, no report needed), so it
+	// is not dangling. Iterate sorted so stderr output is deterministic.
 	evKeys := make([]matrix.EvKey, 0, len(evStatus))
 	for k := range evStatus {
 		evKeys = append(evKeys, k)
@@ -160,10 +163,14 @@ func matrixRun(o matrixOpts, stdout, stderr io.Writer) int {
 		return evKeys[i].Version < evKeys[j].Version
 	})
 	for _, k := range evKeys {
-		if _, ok := reportForPacket(in.Reports[k.Version], k.Packet); !ok {
-			evProblems = append(evProblems,
-				fmt.Sprintf("dangling evidence: %s × %s has no audit report", k.Packet, k.Version))
+		if _, ok := reportForPacket(in.Reports[k.Version], k.Packet); ok {
+			continue
 		}
+		if registryDeclaresPacket(in.Registry, k.Version, k.Packet) {
+			continue
+		}
+		evProblems = append(evProblems,
+			fmt.Sprintf("dangling evidence: %s × %s has no audit report", k.Packet, k.Version))
 	}
 
 	tiers, err := matrix.LoadTiers(o.TiersFile)
@@ -332,6 +339,23 @@ func reportForPacket(reps map[string]matrix.LoadedReport, pkt string) (matrix.Lo
 		}
 	}
 	return matrix.LoadedReport{}, false
+}
+
+// registryDeclaresPacket reports whether the given version's registry has any op
+// whose `packet:` field equals pkt. Such an op is the no-report byte-fixture
+// promotion path (commit 6c202cb7): its evidence record is intentionally
+// report-less and must not be flagged as dangling by --check.
+func registryDeclaresPacket(reg opregistry.Registry, version, pkt string) bool {
+	vf, ok := reg.Versions[version]
+	if !ok || vf == nil {
+		return false
+	}
+	for _, e := range vf.Entries {
+		if e.Packet == pkt {
+			return true
+		}
+	}
+	return false
 }
 
 // transitiveRecurseTypes returns the set of qualified type names reachable via

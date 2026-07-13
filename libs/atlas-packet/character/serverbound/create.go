@@ -130,7 +130,12 @@ func (m CreateCharacter) Encode(l logrus.FieldLogger, ctx context.Context) func(
 		if (t.Region() == "GMS" && t.MajorVersion() > 28) && t.Region() != "JMS" {
 			w.WriteByte(m.Gender())
 		}
-		if t.Region() == "GMS" && t.MajorVersion() <= 28 {
+		// Legacy GMS (<=61) send the four manually-rolled base stats
+		// (str/dex/int/luk low bytes) trailing the packet; v72+ auto-assign
+		// 13/4/4/4 server-side and send nothing. IDA: v61 CLogin::SendNewCharPacket
+		// sub_5653E9 @0x5653e9 do{Encode1(a3[i*4])}x4 @0x565495 (after gender
+		// Encode1 @0x565482); v72 sub_5B219A ends at gender. task-113.
+		if t.Region() == "GMS" && t.MajorVersion() <= 61 {
 			w.WriteByte(m.Strength())
 			w.WriteByte(m.Dexterity())
 			w.WriteByte(m.Intelligence())
@@ -180,7 +185,9 @@ func (m *CreateCharacter) Decode(_ logrus.FieldLogger, ctx context.Context) func
 			m.gender = r.ReadByte()
 		}
 
-		if t.Region() == "GMS" && t.MajorVersion() <= 28 {
+		// Paired with the encode gate: legacy GMS (<=61) carry the four base
+		// stats on the wire; v72+ default to 13/4/4/4. task-113.
+		if t.Region() == "GMS" && t.MajorVersion() <= 61 {
 			m.strength = r.ReadByte()
 			m.dexterity = r.ReadByte()
 			m.intelligence = r.ReadByte()

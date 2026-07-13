@@ -1,0 +1,10 @@
+packet: character/serverbound/monsterbook/CharacterCover
+direction: serverbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CUserLocal::SetMonsterBookCover
+    address: "0x86c0aa"
+    decompile_sha256: d063d2eee64126c6dfc72541f3bb8f581764bc788d52d1a4a6949e035aa65f37
+verifies:
+  - libs/atlas-packet/character/serverbound/monsterbook/cover_test.go#TestCoverEncode

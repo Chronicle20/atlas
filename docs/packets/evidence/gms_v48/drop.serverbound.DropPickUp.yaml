@@ -1,0 +1,10 @@
+packet: drop/serverbound/DropPickUp
+direction: serverbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: sub_70D987
+    address: "0x70d987"
+    decompile_sha256: 7e29c4c4b8a24a52647ba8e7767902ac01f8f3786c9443ba5ed5615930653579
+verifies:
+    - libs/atlas-packet/drop/serverbound/pick_up_test.go#TestPickUpByteOutputV48

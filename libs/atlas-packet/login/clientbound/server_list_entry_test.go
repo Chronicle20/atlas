@@ -1,6 +1,7 @@
 package clientbound
 
 import (
+	"bytes"
 	"testing"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
@@ -11,11 +12,45 @@ import (
 	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
+// gms_v61: WORLD_INFORMATION world-record decoder sub_56663F @0x56663f
+// (GMS_v61.1_U_DEVM.exe, port 13338): Decode1(worldId)@0x566660, DecodeStr(name)
+// @0x5666c4, Decode1(state)@0x5666f8, DecodeStr(eventDesc)@0x566701, Decode2(exp)
+// @0x566737, Decode2(drop)@0x566744, Decode1(blockCharCreation)@0x566751,
+// Decode1(channelCount)@0x566754, per-channel loop, Decode2(balloonCount)
+// @0x5667ea, per-balloon loop — structure identical to the verified v79 cell,
+// matching atlas ServerListEntry.Encode (GMS>12 path).
+//
+// packet-audit:verify packet=login/clientbound/ServerListEntry version=gms_v61 ida=0x56663f
+func TestServerListEntryV61Body(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 61, 1)
+	// Minimal entry (no channels, no balloons) → deterministic wire:
+	//   worldId(1) + name "W"(2+1) + state(1) + eventMsg ""(2) + exp 100(2) +
+	//   drop 100(2) + blockCreation(1) + channelCount 0(1) + balloonCount 0(2).
+	input := ServerListEntry{worldId: world.Id(1), worldName: "W"}
+	want := []byte{
+		0x01, 0x01, 0x00, 'W', // worldId, name len+bytes
+		0x00, 0x00, 0x00, // state, eventMessage (len 0)
+		0x64, 0x00, 0x64, 0x00, // exp 100, drop 100
+		0x00,       // block char creation
+		0x00,       // channel count
+		0x00, 0x00, // balloon count
+	}
+	if got := pt.Encode(t, ctx, input.Encode, nil); !bytes.Equal(got, want) {
+		t.Errorf("v61 ServerListEntry body: got % x, want % x", got, want)
+	}
+}
+
+// gms_v72: WORLD_INFORMATION (op 10) world-list entries are decoded by
+// CLogin::OnWorldInformation = sub_5B33F8 @0x5b33f8 (GMS_v72.1_U_DEVM.exe, port
+// 13339); the per-world entry fields (worldId, name, channel loop, balloons) are
+// version-stable and round-trip below. Marker-only (tier-0).
+// packet-audit:verify packet=login/clientbound/ServerListEntry version=gms_v72 ida=0x5b33f8
 // packet-audit:verify packet=login/clientbound/ServerListEntry version=gms_v83 ida=0x5f95b7
 // packet-audit:verify packet=login/clientbound/ServerListEntry version=gms_v87 ida=0x630e7c
 // packet-audit:verify packet=login/clientbound/ServerListEntry version=gms_v95 ida=0x5da7f0
 // packet-audit:verify packet=login/clientbound/ServerListEntry version=gms_v84 ida=0x60e5b3
 // packet-audit:verify packet=login/clientbound/ServerListEntry version=jms_v185 ida=0x66f107
+// packet-audit:verify packet=login/clientbound/ServerListEntry version=gms_v79 ida=0x5ce248
 func TestServerListEntryWorldIdInChannels(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

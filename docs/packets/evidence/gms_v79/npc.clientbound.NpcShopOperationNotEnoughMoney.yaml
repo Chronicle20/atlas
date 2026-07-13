@@ -1,0 +1,10 @@
+packet: npc/clientbound/NpcShopOperationNotEnoughMoney
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CShopDlg::OnPacket#NotEnoughMoney
+    address: "0x6d6eb9"
+    decompile_sha256: ead84c728aa648917e0593091d24b1dd0ac90c059d35f672e97fd7f3bab81780
+verifies:
+  - libs/atlas-packet/npc/clientbound/shop_operation_v79_test.go#TestShopOperationArmsV79

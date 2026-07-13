@@ -106,7 +106,12 @@ func (m WarpToMap) Encode(l logrus.FieldLogger, ctx context.Context) func(option
 		w.WriteByte(0) // bCharacterData
 		if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
 			w.WriteShort(0) // nNotifierCheck
-			w.WriteByte(0)  // revive
+			// revive byte: present from GMS v83 (and JMS), absent in legacy GMS
+			// < v83. v79 CStage::OnSetField else-branch (@0x6f07d9) reads mapId
+			// (Decode4 @0x6f0997) immediately after nNotifierCheck — no revive.
+			if (t.Region() == "GMS" && t.MajorVersion() >= 83) || t.Region() == "JMS" {
+				w.WriteByte(0) // revive
+			}
 		}
 		w.WriteInt(uint32(m.mapId))
 		w.WriteByte(m.portalId)
@@ -152,7 +157,10 @@ func (m *WarpToMap) Decode(l logrus.FieldLogger, ctx context.Context) func(r *re
 		_ = r.ReadByte() // bCharacterData
 		if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
 			_ = r.ReadUint16() // nNotifierCheck
-			_ = r.ReadByte()   // revive
+			// revive byte present from GMS v83 (and JMS); absent in legacy GMS < v83.
+			if (t.Region() == "GMS" && t.MajorVersion() >= 83) || t.Region() == "JMS" {
+				_ = r.ReadByte() // revive
+			}
 		}
 		m.mapId = _map.Id(r.ReadUint32())
 		m.portalId = r.ReadByte()

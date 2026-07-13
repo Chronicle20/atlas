@@ -1,6 +1,7 @@
 package serverbound
 
 import (
+	"bytes"
 	"testing"
 
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
@@ -22,5 +23,23 @@ func TestBuffCancelRequestRoundTrip(t *testing.T) {
 				t.Errorf("skillId: got %v, want %v", output.SkillId(), input.SkillId())
 			}
 		})
+	}
+}
+
+// TestBuffCancelRequestBytesV48 pins the very-legacy GMS v48 CANCEL_BUFF (op 71)
+// serverbound wire: a single Int32 skillId, version-independent. Body-verified:
+// CUserLocal::SendSkillCancelRequest @0x6afcba (GMS_v48_1_DEVM.exe, port 13337) builds
+// COutPacket(71) @0x6afcf0 then Encode4(skillId) @0x6afcfd — nothing else. Opcode 71
+// confirmed at the send-site (distrust symbols).
+// packet-audit:verify packet=character/serverbound/BuffCancelRequest version=gms_v48 ida=0x6afcba
+func TestBuffCancelRequestBytesV48(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 48, 1)
+	input := BuffCancelRequest{skillId: 1001003}
+	got := input.Encode(nil, ctx)(nil)
+	want := []byte{
+		0x2B, 0x46, 0x0F, 0x00, // skillId=1001003 LE  @0x6afcfd
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatalf("v48 BuffCancelRequest bytes:\n got=% X\nwant=% X", got, want)
 	}
 }

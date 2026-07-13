@@ -57,9 +57,29 @@ func (m ShopList) Encode(l logrus.FieldLogger, ctx context.Context) func(options
 			if t.Region() == "GMS" && t.MajorVersion() >= 95 {
 				w.WriteInt(c.TokenTemplateId)
 			}
-			w.WriteInt(c.TokenPrice)
-			w.WriteInt(c.Period)
-			w.WriteInt(c.LevelLimit)
+			// GMS v79 CShopDlg::SetShopDlg@0x6d3459 reads only itemId, mesoPrice,
+			// then the quantity/unitPrice branch and maxPerSlot short — the
+			// tokenPrice/period/levelLimit ints were added after v79. delta §3.2
+			if !(t.Region() == "GMS" && t.MajorVersion() < 83) {
+				w.WriteInt(c.TokenPrice)
+				w.WriteInt(c.Period)
+				w.WriteInt(c.LevelLimit)
+			}
+			// v48 (pre-v61) CShopDlg::SetShopDlg sub_5B430A@0x5b430a
+			// (GMS_v48_1_DEVM.exe port 13337) reads per item Decode4 itemId,
+			// Decode4 mesoPrice, then — only for rechargeable/ammo
+			// (itemId/10000==207) — DecodeBuffer(8) unitPrice, and ALWAYS Decode2
+			// quantity; there is NO trailing maxPerSlot short (added between v48
+			// and v61: v61 SetShopDlg@0x6437e3 / v79 @0x6d3459 both read it). So
+			// v48 emits [unitPrice(8) if ammo] + quantity(2), no slotMax.
+			// task-113 v48 Stage E.
+			if t.Region() == "GMS" && t.MajorVersion() < 61 {
+				if c.IsAmmo {
+					w.WriteLong(math.Float64bits(c.UnitPrice))
+				}
+				w.WriteShort(c.Quantity)
+				continue
+			}
 			if !c.IsAmmo {
 				w.WriteShort(c.Quantity)
 			} else {
@@ -86,9 +106,20 @@ func (m *ShopList) Decode(l logrus.FieldLogger, ctx context.Context) func(r *req
 			if t.Region() == "GMS" && t.MajorVersion() >= 95 {
 				m.commodities[i].TokenTemplateId = r.ReadUint32()
 			}
-			m.commodities[i].TokenPrice = r.ReadUint32()
-			m.commodities[i].Period = r.ReadUint32()
-			m.commodities[i].LevelLimit = r.ReadUint32()
+			// GMS v79 omits tokenPrice/period/levelLimit (SetShopDlg@0x6d3459).
+			if !(t.Region() == "GMS" && t.MajorVersion() < 83) {
+				m.commodities[i].TokenPrice = r.ReadUint32()
+				m.commodities[i].Period = r.ReadUint32()
+				m.commodities[i].LevelLimit = r.ReadUint32()
+			}
+			if t.Region() == "GMS" && t.MajorVersion() < 61 {
+				// v48: [unitPrice(8) if ammo] + quantity(2), no slotMax.
+				if m.commodities[i].IsAmmo {
+					m.commodities[i].UnitPrice = math.Float64frombits(r.ReadUint64())
+				}
+				m.commodities[i].Quantity = r.ReadUint16()
+				continue
+			}
 			if !m.commodities[i].IsAmmo {
 				m.commodities[i].Quantity = r.ReadUint16()
 			} else {

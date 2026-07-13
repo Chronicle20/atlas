@@ -1,0 +1,30 @@
+{
+  "WriterName": "StatusMessageDropPickUpGameFileDamaged",
+  "IDAName": "CWvsContext::OnMessage#DropPickUpGameFileDamaged",
+  "Address": "0x8438b5",
+  "Variant": "GMS/v61",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/character/clientbound/status_message.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "drop type -3 (game file damaged, no further read) @0x9192f4",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 1,
+      "Note": "atlas: trailing padding byte — client stops reading (harmless over-write)"
+    }
+  ],
+  "Verdict": 1,
+  "FlatInvalid": false
+}

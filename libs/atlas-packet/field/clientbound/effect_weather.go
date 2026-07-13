@@ -40,10 +40,25 @@ func (m EffectWeather) Encode(l logrus.FieldLogger, ctx context.Context) func(op
 	return func(options map[string]interface{}) []byte {
 		if t.Region() == "JMS" {
 			m.encodeJMS(w)
+		} else if t.MajorVersion() < 61 {
+			m.encodeGMSLegacy(w)
 		} else {
 			m.encodeGMS(w)
 		}
 		return w.Bytes()
+	}
+}
+
+// encodeGMSLegacy is the pre-v61 GMS BLOW_WEATHER wire. IDA: v48 CField::OnBlowWeather
+// = sub_4C95F2 @0x4c95f2 reads Decode4(itemId) @0x4c9604 then — for a weather-type
+// item (sub_47742E==18 && itemId>=0) — DecodeStr(message) @0x4c9669, with NO leading
+// bool byte (the leading `!active` bool is a v83+ addition; v61's sub_4ED39C reads the
+// same itemId-first shape). An active start populates itemId+message; an end sends
+// itemId only. Gated < 61 so v61+ stay on encodeGMS unchanged.
+func (m EffectWeather) encodeGMSLegacy(w *response.Writer) {
+	w.WriteInt(m.itemId)
+	if m.active {
+		w.WriteAsciiString(m.message)
 	}
 }
 
@@ -70,9 +85,23 @@ func (m *EffectWeather) Decode(_ logrus.FieldLogger, ctx context.Context) func(r
 	return func(r *request.Reader, options map[string]interface{}) {
 		if t.Region() == "JMS" {
 			m.decodeJMS(r)
+		} else if t.MajorVersion() < 61 {
+			m.decodeGMSLegacy(r)
 		} else {
 			m.decodeGMS(r)
 		}
+	}
+}
+
+func (m *EffectWeather) decodeGMSLegacy(r *request.Reader) {
+	m.itemId = r.ReadUint32()
+	// Legacy has no leading active/end bool; the v48 client gates the message read
+	// on the item being a weather-type item. An active start carries a trailing
+	// message, an end carries none — mirror encodeGMSLegacy by keying on remaining
+	// bytes so the round-trip is symmetric.
+	m.active = r.Available() > 0
+	if m.active {
+		m.message = r.ReadAsciiString()
 	}
 }
 

@@ -1,0 +1,10 @@
+packet: character/clientbound/CharacterList
+direction: clientbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: sub_5B3646
+    address: "0x5b3646"
+    decompile_sha256: e1400b16745b3b9fbb4875115a98a11cd442e1b3ff0b6d640dba6a751c2a1f56
+verifies:
+  - libs/atlas-packet/character/clientbound/v72_test.go#TestCharacterListByteOutputV72

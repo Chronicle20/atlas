@@ -1,0 +1,8 @@
+packet: field/serverbound/FieldItcStatusCharge
+direction: serverbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: CITC::OnStatusCharge
+    address: "0x528ed7"
+    decompile_sha256: 01ca88ae5666727a1c13867301fd18d019890447935d2632277f17b4a41850d3

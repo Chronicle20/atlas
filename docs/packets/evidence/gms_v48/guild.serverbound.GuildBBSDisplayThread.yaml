@@ -1,0 +1,8 @@
+packet: guild/serverbound/GuildBBSDisplayThread
+direction: serverbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: CUIGuildBBS::SendViewEntryRequest
+    address: "0x609211"
+    decompile_sha256: 9f0797991e4c354c7893e18f057a5ac228fcca817950acdbd96cdcc2f415f8f9

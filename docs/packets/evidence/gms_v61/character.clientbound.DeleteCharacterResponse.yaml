@@ -1,0 +1,10 @@
+packet: character/clientbound/DeleteCharacterResponse
+direction: clientbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: CLogin::OnCheckDuplicatedIDResult
+    address: "0x566c86"
+    decompile_sha256: 5d7a85b6e67167119757a872bbd021afca4440b5bc4388db7d24cc40eb95860f
+verifies:
+    - libs/atlas-packet/character/clientbound/v61_test.go#TestDeleteCharacterResponseByteOutputV61

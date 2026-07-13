@@ -105,9 +105,9 @@ func Build(in Inputs, versionKeys []string) Matrix {
 			// Prefer this version's registry entry; fall back to any version so
 			// absent ops still get an opcode for routing-conflict checks.
 			if e, ok := lookupVersion(in.Registry, od.Op, od.Dir, vk); ok {
-				ref.Opcode, ref.FName = e.Opcode, e.FName
+				ref.Opcode, ref.FName, ref.Packet = e.Opcode, e.FName, e.Packet
 			} else if e, ok := lookupAnyVersion(in.Registry, od.Op, od.Dir); ok {
-				ref.Opcode, ref.FName = e.Opcode, e.FName
+				ref.Opcode, ref.FName, ref.Packet = e.Opcode, e.FName, e.Packet
 			}
 			// routedElsewhere: the op is routed in at least one OTHER version's
 			// template by that version's own opcode.

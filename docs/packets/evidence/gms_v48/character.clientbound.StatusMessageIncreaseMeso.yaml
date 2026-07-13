@@ -1,0 +1,8 @@
+packet: character/clientbound/StatusMessageIncreaseMeso
+direction: clientbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: sub_71BDD8
+    address: "0x71bdd8"
+    decompile_sha256: fd60a26fbc506753738171f3ec00a6067e9e81dc3a48115afb1c9722b4f9acc7

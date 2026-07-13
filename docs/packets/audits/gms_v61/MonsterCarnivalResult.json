@@ -1,0 +1,21 @@
+{
+  "WriterName": "MonsterCarnivalResult",
+  "IDAName": "CField_MonsterCarnival::OnShowGameResult",
+  "Address": "",
+  "Variant": "GMS/v61",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/monster/carnival/clientbound/monster_carnival_result.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 6,
+      "IDAComment": "function not found in IDB",
+      "Verdict": 4,
+      "Note": "IDA read-order unresolved: function not found in IDB"
+    }
+  ],
+  "Verdict": 4,
+  "FlatInvalid": false
+}

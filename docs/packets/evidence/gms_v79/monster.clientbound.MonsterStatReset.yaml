@@ -1,0 +1,10 @@
+packet: monster/clientbound/MonsterStatReset
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CMob::OnStatReset
+    address: "0x63b3b2"
+    decompile_sha256: c3453bbee3af0ac9490541fcd5e5802e47b93c3a8976cdde0a434ed4f58f8817
+verifies:
+  - libs/atlas-packet/monster/clientbound/stat_test.go#TestMonsterStatResetByteOutputV79

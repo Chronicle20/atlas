@@ -12,6 +12,7 @@ import (
 const WorldMessageWriter = "WorldMessage"
 
 // WorldMessageSimple covers Notice(0), PopUp(1), Megaphone(2), PinkText(5)
+// packet-audit:fname CWvsContext::OnBroadcastMsg
 type WorldMessageSimple struct {
 	mode    byte
 	message string
@@ -91,10 +92,10 @@ func NewWorldMessageSuperMegaphone(mode byte, message string, channelId byte, wh
 	return WorldMessageSuperMegaphone{mode: mode, message: message, channelId: channelId, whispersOn: whispersOn}
 }
 
-func (m WorldMessageSuperMegaphone) Mode() byte        { return m.mode }
-func (m WorldMessageSuperMegaphone) Message() string   { return m.message }
-func (m WorldMessageSuperMegaphone) ChannelId() byte   { return m.channelId }
-func (m WorldMessageSuperMegaphone) WhispersOn() bool  { return m.whispersOn }
+func (m WorldMessageSuperMegaphone) Mode() byte       { return m.mode }
+func (m WorldMessageSuperMegaphone) Message() string  { return m.message }
+func (m WorldMessageSuperMegaphone) ChannelId() byte  { return m.channelId }
+func (m WorldMessageSuperMegaphone) WhispersOn() bool { return m.whispersOn }
 
 func (m WorldMessageSuperMegaphone) Operation() string { return WorldMessageWriter }
 func (m WorldMessageSuperMegaphone) String() string    { return "world message super megaphone" }
@@ -168,11 +169,11 @@ func NewWorldMessageItemMegaphone(mode byte, message string, channelId byte, whi
 	return WorldMessageItemMegaphone{mode: mode, message: message, channelId: channelId, whispersOn: whispersOn, slot: slot}
 }
 
-func (m WorldMessageItemMegaphone) Mode() byte        { return m.mode }
-func (m WorldMessageItemMegaphone) Message() string   { return m.message }
-func (m WorldMessageItemMegaphone) ChannelId() byte   { return m.channelId }
-func (m WorldMessageItemMegaphone) WhispersOn() bool  { return m.whispersOn }
-func (m WorldMessageItemMegaphone) Slot() int32       { return m.slot }
+func (m WorldMessageItemMegaphone) Mode() byte       { return m.mode }
+func (m WorldMessageItemMegaphone) Message() string  { return m.message }
+func (m WorldMessageItemMegaphone) ChannelId() byte  { return m.channelId }
+func (m WorldMessageItemMegaphone) WhispersOn() bool { return m.whispersOn }
+func (m WorldMessageItemMegaphone) Slot() int32      { return m.slot }
 
 func (m WorldMessageItemMegaphone) Operation() string { return WorldMessageWriter }
 func (m WorldMessageItemMegaphone) String() string    { return "world message item megaphone" }

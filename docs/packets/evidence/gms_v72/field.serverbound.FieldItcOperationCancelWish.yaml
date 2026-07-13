@@ -1,0 +1,8 @@
+packet: field/serverbound/FieldItcOperationCancelWish
+direction: serverbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CITC::OnCancelWish
+    address: "0x562479"
+    decompile_sha256: 936f403398762f85a0452ff7bf0da33ee46bd69f50ce840078f1fcb860be2151

@@ -1,0 +1,10 @@
+packet: field/clientbound/SetItc
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CStage::OnSetITC
+    address: "0x6f1c4a"
+    decompile_sha256: ae9eedce4c110291e4d1c1730739e70ed5572257e03a787521d66a59bcf80f1d
+verifies:
+    - libs/atlas-packet/field/clientbound/set_itc_test.go#TestSetItcLegacyGolden

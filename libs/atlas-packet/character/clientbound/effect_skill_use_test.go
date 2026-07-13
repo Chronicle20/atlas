@@ -27,6 +27,8 @@ import (
 // packet-audit:verify packet=character/clientbound/EffectSkillUse version=gms_v87 ida=0x9b1ef0
 // packet-audit:verify packet=character/clientbound/EffectSkillUse version=gms_v95 ida=0x8f9a70
 // packet-audit:verify packet=character/clientbound/EffectSkillUse version=jms_v185 ida=0x9f6395
+// packet-audit:verify packet=character/clientbound/EffectSkillUse version=gms_v79 ida=0x89112c
+// packet-audit:verify packet=character/clientbound/EffectSkillUse version=gms_v72 ida=0x846e1e
 func TestEffectSkillUseByteOutput(t *testing.T) {
 	v83 := pt.Variants[1] // GMS v83
 	ctx := pt.CreateContext(v83.Region, v83.MajorVersion, v83.MinorVersion)
@@ -75,6 +77,135 @@ func TestEffectSkillUseByteOutput(t *testing.T) {
 		}
 		if !bytes.Equal(got, want) {
 			t.Errorf("foreign bytes:\n got %x\nwant %x", got, want)
+		}
+	})
+}
+
+// EffectSkillUse v79 byte-fixture — CUser::OnEffect (v79 @0x89112c) case 1
+// (skill-use). VERSION DELTA: v79 does NOT carry the characterLevel byte that
+// v83+ added. IDA-verified read order:
+//
+//	mode    = Decode1            // outer switch discriminator (== 1)   /*0x89113f*/
+//	skillId = Decode4            //                                     /*0x891225*/
+//	skillLvl= Decode1 (Value)    // fed to SKILLENTRY::IsActionAppointed /*0x89122f*/
+//	// NO characterLevel byte (v83 reads an extra Decode1 here @0x9378d4)
+//	// then, conditional on skillId, a trailing flag byte:
+//	//   berserk (1121001/1221001/1321001)  -> Decode1                   /*0x891477*/
+//	//   monster-magnet (1320006)           -> Decode1                   /*0x8912d9*/
+//
+// EffectSkillUse shares the CUser::OnEffect demux with EffectSimple/EffectQuest;
+// the SHOW_FOREIGN_EFFECT/SHOW_ITEM_GAIN_INCHAT op-cells grade worst-of all three,
+// so this sibling carries its own v79 marker+fixture+evidence to let the demux
+// promote. The codec version-gates characterLevel (effect_skill_use.go).
+func TestEffectSkillUseByteOutputV79(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 79, 1)
+
+	t.Run("plain/GMS v79", func(t *testing.T) {
+		// mode=1, skillId=0x010203, characterLevel=0x1E (OMITTED on v79 wire), skillLevel=0x0A
+		input := NewEffectSkillUse(1, 0x010203, 0x1E, 0x0A, false, false, false, false, false, false)
+		got := input.Encode(nil, ctx)(nil)
+		want := []byte{
+			0x01,                   // mode (Decode1)               /*0x89113f*/
+			0x03, 0x02, 0x01, 0x00, // skillId = 0x010203 (Decode4) /*0x891225*/
+			0x0a,                   // skillLevel (Decode1)         /*0x89122f*/  (no characterLevel)
+		}
+		if !bytes.Equal(got, want) {
+			t.Errorf("plain v79 bytes:\n got %x\nwant %x", got, want)
+		}
+	})
+
+	t.Run("berserk/GMS v79", func(t *testing.T) {
+		// berserk skill 1121001 -> trailing darkForce flag byte; still no characterLevel
+		input := NewEffectSkillUse(1, 1121001, 0x1E, 0x0A, true, true, false, false, false, false)
+		got := input.Encode(nil, ctx)(nil)
+		want := []byte{
+			0x01,                   // mode                          /*0x89113f*/
+			0xe9, 0x1a, 0x11, 0x00, // skillId = 1121001 = 0x111AE9 (Decode4) /*0x891225*/
+			0x0a,                   // skillLevel                    /*0x89122f*/
+			0x01,                   // berserk darkForce (Decode1)   /*0x891477*/
+		}
+		if !bytes.Equal(got, want) {
+			t.Errorf("berserk v79 bytes:\n got %x\nwant %x", got, want)
+		}
+	})
+
+	t.Run("foreign/GMS v79", func(t *testing.T) {
+		// characterId prefix (read by CUserPool::OnUserRemotePacket) + skill-use body (no characterLevel)
+		input := NewEffectSkillUseForeign(0x12345678, 1, 0x010203, 0x1E, 0x0A, false, false, false, false, false, false)
+		got := input.Encode(nil, ctx)(nil)
+		want := []byte{
+			0x78, 0x56, 0x34, 0x12, // characterId (foreign prefix)
+			0x01,                   // mode
+			0x03, 0x02, 0x01, 0x00, // skillId
+			0x0a,                   // skillLevel (no characterLevel)
+		}
+		if !bytes.Equal(got, want) {
+			t.Errorf("foreign v79 bytes:\n got %x\nwant %x", got, want)
+		}
+	})
+}
+
+// EffectSkillUse v72 byte-fixture — CUser::OnEffect (v72 @0x846e1e) case 1
+// (skill-use). VERSION DELTA: v72 (GMS < 83) does NOT carry the characterLevel
+// byte that v83+ added. IDA-verified read order (v72 IDB GMS_v72.1_U_DEVM.exe):
+//
+//	mode    = Decode1            // outer switch discriminator (== 1)   /*0x846e31*/
+//	skillId = Decode4            // AdditionalLayer = Decode4(v2)        /*0x846f1c*/
+//	skillLvl= Decode1 (Value)    // fed to SKILLENTRY::IsActionAppointed /*0x846f30*/
+//	// NO characterLevel byte (v83 reads an extra Decode1 here @0x9378d4)
+//	// then, conditional on skillId, a trailing flag byte:
+//	//   monster-magnet (1320006)           -> Decode1                   /*0x846fc6*/
+//	//   berserk (1121001/1221001/1321001)  -> Decode1                   /*0x847167*/
+//
+// EffectSkillUse shares the CUser::OnEffect demux with EffectSimple/EffectQuest;
+// the SHOW_FOREIGN_EFFECT/SHOW_ITEM_GAIN_INCHAT op-cells grade worst-of all three,
+// so this sibling carries its own v72 marker+fixture+evidence to let the demux
+// promote. The codec version-gates characterLevel (effect_skill_use.go); byte-
+// identical to the v79 fixture.
+func TestEffectSkillUseByteOutputV72(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 72, 1)
+
+	t.Run("plain/GMS v72", func(t *testing.T) {
+		// mode=1, skillId=0x010203, characterLevel=0x1E (OMITTED on v72 wire), skillLevel=0x0A
+		input := NewEffectSkillUse(1, 0x010203, 0x1E, 0x0A, false, false, false, false, false, false)
+		got := input.Encode(nil, ctx)(nil)
+		want := []byte{
+			0x01,                   // mode (Decode1)               /*0x846e31*/
+			0x03, 0x02, 0x01, 0x00, // skillId = 0x010203 (Decode4) /*0x846f1c*/
+			0x0a,                   // skillLevel (Decode1)         /*0x846f30*/  (no characterLevel)
+		}
+		if !bytes.Equal(got, want) {
+			t.Errorf("plain v72 bytes:\n got %x\nwant %x", got, want)
+		}
+	})
+
+	t.Run("berserk/GMS v72", func(t *testing.T) {
+		// berserk skill 1121001 -> trailing darkForce flag byte; still no characterLevel
+		input := NewEffectSkillUse(1, 1121001, 0x1E, 0x0A, true, true, false, false, false, false)
+		got := input.Encode(nil, ctx)(nil)
+		want := []byte{
+			0x01,                   // mode                          /*0x846e31*/
+			0xe9, 0x1a, 0x11, 0x00, // skillId = 1121001 = 0x111AE9 (Decode4) /*0x846f1c*/
+			0x0a,                   // skillLevel                    /*0x846f30*/
+			0x01,                   // berserk darkForce (Decode1)   /*0x847167*/
+		}
+		if !bytes.Equal(got, want) {
+			t.Errorf("berserk v72 bytes:\n got %x\nwant %x", got, want)
+		}
+	})
+
+	t.Run("foreign/GMS v72", func(t *testing.T) {
+		// characterId prefix (read by CUserPool::OnUserRemotePacket @0x87c050) + skill-use body (no characterLevel)
+		input := NewEffectSkillUseForeign(0x12345678, 1, 0x010203, 0x1E, 0x0A, false, false, false, false, false, false)
+		got := input.Encode(nil, ctx)(nil)
+		want := []byte{
+			0x78, 0x56, 0x34, 0x12, // characterId (foreign prefix)
+			0x01,                   // mode
+			0x03, 0x02, 0x01, 0x00, // skillId
+			0x0a,                   // skillLevel (no characterLevel)
+		}
+		if !bytes.Equal(got, want) {
+			t.Errorf("foreign v72 bytes:\n got %x\nwant %x", got, want)
 		}
 	})
 }

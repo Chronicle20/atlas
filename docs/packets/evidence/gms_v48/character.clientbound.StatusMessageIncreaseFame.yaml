@@ -1,0 +1,8 @@
+packet: character/clientbound/StatusMessageIncreaseFame
+direction: clientbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: sub_71BD0C
+    address: "0x71bd0c"
+    decompile_sha256: 399bdc5b7714d1c81d69222b11d954f93f1f38494fb6d3fe4e867915a02644f7

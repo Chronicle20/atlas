@@ -1,0 +1,191 @@
+{
+ "entries": [
+  {
+   "fname": "CWvsContext::SendGatherItemRequest",
+   "reason": "ITEM_SORT (inventory gather/organize request) is version-absent in gms_v48. The v61 gather sender CWvsContext::SendGatherItemRequest sub_8314D0 @0x8314d0 (GMS_v61.1_U_DEVM.exe, port 13338) has a distinctive shape: if(compartment in [1,5]){ throttle; COutPacket(64)+Encode4(updateTime)+Encode1(compartment) } — and lives in the 0x831xxx secondary CWvsContext send region alongside the sort twin sub_831564. gms_v48 (GMS_v48_1_DEVM.exe, port 13337) has NO 0x831xxx region; every inventory send-helper lives in the 0x70dxxx-0x71xxxx cluster that opens the 500ms exclusive-request throttle sub_4A2518 @0x4a2518. A complete enumeration of that throttle's callers (xrefs_to sub_4A2518, 72 refs, no truncation) yields the inventory senders sub_70D8DE(op55 ITEM_MOVE), sub_70D987(drop), sub_70DA60(op66), sub_70DC8D(op117), sub_70DF2F(op60), sub_70E00B(op61), sub_719DD9(op65 USE_ITEM) — NONE carries the [1,5]-compartment-guarded Encode4+Encode1 gather/sort body. The feature's request senders are therefore not implemented in the v48 client. Stage B carried this as flagged-blocked; resolved n-a here with the complete-enumeration decompile evidence. The matching clientbound results (GATHER_ITEM_RESULT/SORT_ITEM_RESULT) are likewise version-absent (no request path to answer)."
+  },
+  {
+   "fname": "CWvsContext::SendSortItemRequest",
+   "reason": "ITEM_SORT2 (inventory sort request) is version-absent in gms_v48. The v61 sort sender CWvsContext::SendSortItemRequest sub_831564 @0x831564 (GMS_v61.1_U_DEVM.exe, port 13338) is the [1,5]-guarded COutPacket(65)+Encode4(updateTime)+Encode1(compartment) twin of the gather sender in the 0x831xxx region. gms_v48 has no such sender: the complete xrefs_to sub_4A2518 (500ms exclusive-request throttle) enumeration of the 0x70dxxx-0x71xxxx inventory send cluster contains no compartment-guarded Encode4+Encode1 body, and v48 has no 0x831xxx send region. Note the v48 opcode space cannot host the v61 numbering here anyway: v48 op65 is USE_ITEM (sub_719DD9 @0x719dd9, body-verified), not the v61 ITEM_SORT2 slot. Resolved n-a with complete-enumeration decompile evidence (Stage B flag cleared)."
+  },
+  {
+   "fname": "CCashShop::SendBuyNameChangeItemPacket",
+   "reason": "CASHSHOP_OPERATION name-change buy arm is version-absent in gms_v48. A func_query name_regex 'NameChange|CheckDuplicate' over GMS_v48_1_DEVM.exe (port 13337) returns no CCashShop name-change send function (only CUISendGifts ctor matches the broader cash-UI regex). The complete list of CCashShop send functions that build COutPacket(160) (the v48 cash-operation dispatcher opcode) is OnBuy@0x44b0cf, OnBuyCouple@0x44b4c1, OnBuyPackage@0x44b837, OnGift@0x44ba5d, OnBuyFriendship@0x44c879, OnBuyNormal@0x44cbb2, OnSetWish@0x44ce9b — none is a name-change buy. The character name-change cash item does not exist in this 2009-era client. The export carried an unresolved stub (address empty, 'function not found in IDB'); stripped here so matrix grading excludes the arm."
+  },
+  {
+   "fname": "CCashShop::SendBuyTransferWorldItemPacket",
+   "reason": "CASHSHOP_OPERATION world-transfer buy arm is version-absent from the v48 cash-operation dispatcher. The v48 world-transfer flow is CCashShop::OnBuyTransferWorldItem@0x44c707, which delegates to sub_44FB95@0x44fb95 — and that helper builds COutPacket(20) (a SEPARATE opcode), not COutPacket(160): Encode4+Encode4 on op 20. World transfer is therefore NOT a mode arm of the cash-operation dispatcher in v48; the modeled CashShopOperationBuyWorldTransfer sub-op does not exist under op 160. func_query 'NameChange|...|CheckDuplicate' confirms no SendBuyTransferWorldItemPacket send function exists. The export carried an unresolved stub; stripped here."
+  },
+  {
+   "fname": "CCashShop::OnEnableEquipSlotExt",
+   "reason": "CASHSHOP_OPERATION enable-equip-slot arm is version-absent in gms_v48. func_query name_regex 'EnableEquipSlot' over GMS_v48_1_DEVM.exe (port 13337) returns no match. The equip-slot-extension purchase in v48 is folded into the friendship-ring buy CCashShop::OnBuyFriendship@0x44c879 (item class 911xxxx / 9110xxx, GetSlotIncDelta, 48-slot cap; send @0x44cadb mode (serial/1000==9110)+5, body pointType(1)+flag(1)+serial(4)) — there is no dedicated OnEnableEquipSlotExt op with the modern pointType+currency+flag+serial shape. The export carried an unresolved stub; stripped here."
+  },
+  {
+   "fname": "CCashShop::OnIncCharacterSlotCount",
+   "reason": "CASHSHOP_OPERATION increase-character-slot arm is version-absent in gms_v48. func_query name_regex 'IncCharacterSlot' over GMS_v48_1_DEVM.exe (port 13337) returns no match, and the fname is absent from the v48 export entirely (no stub). The complete set of COutPacket(160) send functions in v48 (OnBuy/OnBuyCouple/OnBuyPackage/OnGift/OnBuyFriendship/OnBuyNormal/OnSetWish) contains no character-slot-increase op; the feature does not exist in this client."
+  },
+  {
+   "fname": "CCashShop::OnBuySlotInc",
+   "reason": "CASHSHOP_OPERATION increase-inventory (slot-inc) arm is version-absent in gms_v48. func_query name_regex 'BuySlotInc' over GMS_v48_1_DEVM.exe (port 13337) returns no match. None of the v48 COutPacket(160) send functions (OnBuy/OnBuyCouple/OnBuyPackage/OnGift/OnBuyFriendship/OnBuyNormal/OnSetWish) implements the isPoints+currency+item+inventoryType inventory-slot buy. The export carried an unresolved stub; stripped here."
+  },
+  {
+   "fname": "CCashShop::OnIncTrunkCount",
+   "reason": "CASHSHOP_OPERATION increase-storage (trunk-inc) arm is version-absent in gms_v48. func_query name_regex 'IncTrunk' over GMS_v48_1_DEVM.exe (port 13337) returns no match. No v48 COutPacket(160) send function implements the isPoints+currency+item storage-slot buy. The export carried an unresolved stub; stripped here."
+  },
+  {
+   "fname": "CCashShop::OnMoveCashItemLtoS",
+   "reason": "CASHSHOP_OPERATION move-from-cash-inventory (locker-to-slot) arm is version-absent in gms_v48. func_query name_regex 'MoveCashItem' over GMS_v48_1_DEVM.exe (port 13337) returns no match. The v48 cash shop has no cash-inventory transfer ops; none of its COutPacket(160) senders moves a cash item L-to-S (serial(8)+inventoryType(1)+slot(2)). The export carried an unresolved stub; stripped here."
+  },
+  {
+   "fname": "CCashShop::OnMoveCashItemStoL",
+   "reason": "CASHSHOP_OPERATION move-to-cash-inventory (slot-to-locker) arm is version-absent in gms_v48. func_query name_regex 'MoveCashItem' over GMS_v48_1_DEVM.exe (port 13337) returns no match (twin of OnMoveCashItemLtoS). The v48 cash shop has no cash-inventory transfer ops. The export carried an unresolved stub; stripped here."
+  },
+  {
+   "fname": "CCashShop::OnRebateLockerItem",
+   "reason": "CASHSHOP_OPERATION rebate-locker-item arm is version-absent in gms_v48. func_query name_regex 'RebateLocker' over GMS_v48_1_DEVM.exe (port 13337) returns no match. None of the v48 COutPacket(160) send functions implements a locker rebate (ask_SPW + 8-byte locker serial). The export carried an unresolved stub; stripped here."
+  },
+  {
+   "fname": "CEntrustedShopDlg::AddBlackList",
+   "reason": "PLAYER_INTERACTION hired/entrusted-merchant add-to-blacklist arm (OperationMerchantAddToBlackList, modeled body EncodeStr(name) only) is version-absent in gms_v48. A complete enumeration of the v48 opcode-93 (PLAYER_INTERACTION) send-sites (find_bytes '6A 5D' -> 69 push-93 sites, GMS_v48_1_DEVM.exe port 13337) yields only these blacklist senders: CPersonalShopDlg::OnClickBanButton sub_588DFC @0x588ea4 (mode 0x19: Encode1(slot)+EncodeStr(name)), the CPersonalShopDlg auto-reban sub_588F0F @0x588f56 (mode 0x1A: Encode1(slot)+EncodeStr(name)), CPersonalShopDlg::DeliverBlackList sub_588D46 @0x588d77 (mode 0x1B: Encode2(count)+loop EncodeStr), and the CField list-blacklist add/remove sub_4CBD0E/sub_4CBD88 @0x4cbd34/0x4cbdae (modes 0x1C/0x1D: EncodeStr(name)) which are the distinct FieldAddToBlackList/FieldRemoveFromBlackList arms. There is NO CEntrustedShopDlg (hired-merchant) name-only add-to-blacklist send: the entrusted-shop feature that carries this by-name blacklist op does not exist in this 2009-era client. The fname is absent from the v48 export (no stub). Matches the v61 anchor, where this arm is likewise absent (incomplete); v83+ is where the entrusted shop appears.",
+   "packet": "interaction/serverbound/InteractionOperationMerchantAddToBlackList"
+  },
+  {
+   "fname": "CEntrustedShopDlg::DeleteBlackList",
+   "reason": "PLAYER_INTERACTION hired/entrusted-merchant remove-from-blacklist arm (OperationMerchantRemoveFromBlackList, modeled body EncodeStr(name) only) is version-absent in gms_v48. Same complete opcode-93 send-site enumeration as its AddBlackList twin: the only v48 blacklist senders are CPersonalShopDlg (slot+name / count+names) and CField (name-only, = the Field*BlackList arms); no CEntrustedShopDlg name-only delete-from-blacklist send exists. The fname is absent from the v48 export (no stub). Matches the v61 anchor (incomplete); the entrusted shop first appears at v83+.",
+   "packet": "interaction/serverbound/InteractionOperationMerchantRemoveFromBlackList"
+  },
+  {
+   "fname": "CScriptMan::OnSayImage",
+   "packet": "npc/clientbound/NpcSayImageConversationDetail",
+   "reason": "SAY_IMAGE is version-absent in gms_v48. The v48 NPC conversation dispatcher sub_5B0AE4@0x5b0ae4 (GMS_v48_1_DEVM.exe port 13337) switches msgType over ONLY cases 0..9 (default = no-op): 0 Say, 1/2 yes/no (dialog type 1), 3 AskText (GetText), 4 AskNumber (GetNumber), 5 AskMenu (menu #L), 6 AskAvatar, 7 membershop-avatar, 8 AskPet, 9 AskPetAll. None of the arms loads/displays an image path — every arm builds a CUtilDlgEx text dialog. The image-message arm (v61 msgType 1 CScriptMan::OnSayImage@0x63fc8f) does not exist in the v48 switch. No fixture; residual incomplete accepted (cap = anchor: v61 SayImage exists, v48 does not)."
+  },
+  {
+   "fname": "CScriptMan::OnAskQuiz",
+   "packet": "npc/clientbound/NpcAskQuizConversationDetail",
+   "reason": "ASK_QUIZ is version-absent in gms_v48. The dispatcher sub_5B0AE4@0x5b0ae4 has no quiz arm (cases 0..9 mapped to Say/yes-no/AskText/AskNumber/AskMenu/AskAvatar/membershop/AskPet/AskPetAll; the v61 quiz arm is case 5 sub_84816E@0x84816e, absent here — v48 case 5 is AskMenu). The Decode1(fail)+DecodeStr×3+Decode4×3 quiz body has no reader in the v48 client. Residual incomplete accepted (cap = anchor)."
+  },
+  {
+   "fname": "CScriptMan::OnAskSpeedQuiz",
+   "packet": "npc/clientbound/NpcAskSpeedQuizConversationDetail",
+   "reason": "ASK_SPEED_QUIZ is version-absent in gms_v48. sub_5B0AE4@0x5b0ae4 has no speed-quiz arm (v61's is case 6 sub_8482CB@0x8482cb; v48 case 6 is AskAvatar). The Decode1(fail)+Decode4×5 body has no reader in v48. Residual incomplete accepted (cap = anchor)."
+  },
+  {
+   "fname": "CScriptMan::OnAskBoxText",
+   "packet": "npc/clientbound/NpcAskBoxTextConversationDetail",
+   "reason": "ASK_BOX_TEXT is version-absent in gms_v48. The v48 switch has a single GetText dialog (case 3 sub_5B0E90@0x5b0e90, dialog type 3 = single-line AskText: DecodeStr,DecodeStr,Decode2,Decode2); there is NO separate multi-line box-text dialog (the box-text col/line variant was added after v48). The str,str,short,short body is byte-identical to AskText and is claimed by the AskText arm (case 3); box-text as a distinct feature does not exist. Residual incomplete accepted (cap = anchor)."
+  },
+  {
+   "fname": "CScriptMan::OnAskSlideMenu",
+   "packet": "npc/clientbound/NpcAskSlideMenuConversationDetail",
+   "reason": "ASK_SLIDE_MENU is version-absent in gms_v48. Slide-menu is a v83+ feature (CScriptMan::OnAskSlideMenu, first present in gms_v83); it has no arm in the v48 dispatcher sub_5B0AE4@0x5b0ae4 (cases 0..9 only). Matches the v61/v72 anchors, which likewise leave AskSlideMenu incomplete (residual accepted, cap = anchor)."
+  },
+  {
+   "fname": "CWvsContext::SendAbilityUpRequest#AutoDistributeAp",
+   "reason": "AUTO_DISTRIBUTE_AP (auto-assign of ability points) is version-absent in gms_v48. The v48 ability-up sender CWvsContext::SendAbilityUpRequest = sub_71CD00 @0x71cd00 (GMS_v48_1_DEVM.exe, port 13337) builds only the single-stat request: guard _ZtlSecureFuse<short>(charStat+113,+117)>0 then COutPacket(67)+Encode4(updateTime)+Encode4(statFlag)+SetExclRequestSent. There is NO ZArray<StatPair> auto-distribute overload in this 2009-era client (the AutoDistributeAp demux arm modeled by newer clients, e.g. v95 CWvsContext::SendAbilityUpRequest(ZArray<StatPair>*)@0x9f63b0, does not exist). The export carried an unresolved stub (CWvsContext::SendAbilityUpRequest#AutoDistributeAp, address empty, 'function not found in IDB'); stripped here so the DISTRIBUTE_AP op's demux worst-of grades only the resolved single-stat DistributeAp arm. Mirrors v61, which has no AutoDistributeAp report."
+  },
+  {
+   "fname": "CField::SendChangePartyBossMsg",
+   "reason": "PARTY_OPERATION change-leader (party-boss handover) send is version-absent in gms_v48. func_query name_regex 'PartyBoss|ChangeParty|PartyLeader|ChangeBoss' over GMS_v48_1_DEVM.exe (port 13337) returns no match; the complete set of *Party* functions is PARTYDATA::Decode@0x49c925, CField::SendJoinPartyMsg@0x4c54dd, CField::SendKickPartyMsg@0x4c55f3, CField::OnTownPortalChanged@0x4ca8d7, CWvsContext::OnPartyResult@0x729935, CWvsContext::GetPartyTownPortal@0x72ac8d — no change-boss/leader send. Among CField helpers the v48 party serverbound dispatcher opcode 94 carries only the invite (subop 4, SendJoinPartyMsg = COutPacket(94)+Encode1(4)+EncodeStr name @0x4c54dd) and kick (subop 5, SendKickPartyMsg = COutPacket(94)+Encode1(5)+Encode4 charId @0x4c55f3) mode sends; party-leadership handover post-dates this 2009-era client (v83 has the discrete CField::SendChangePartyBossMsg). The export carried an unresolved stub (address empty, 'function not found in IDB'); stripped here so matrix grading excludes the arm."
+  },
+  {
+   "fname": "CWvsContext::SendMigrateToITCRequest",
+   "reason": "ENTER_MTS request (field/serverbound/FieldEnterMts) — the migrate-to-ITC send that opens the trading center is version-absent in gms_v48. MTS/ITC (Cash Item Trading Center) protocol is version-absent in gms_v48: MTS was added in GMS v53 and v48 (<53) has only the CITCWnd UI shell, not the CITC packet class. IDA evidence (GMS_v48_1_DEVM.exe, port 13337): func_query name_regex 'CITC::|MigrateToITC|OnRegisterSaleEntry|OnGetITCList|TrySendQueryCash' returns EMPTY (no CITC:: packet class, no SendMigrateToITCRequest COutPacket send-site); the broad sweep 'ITC|Mts|Auction|Zzim|WishList' returns ONLY four UI shells — CITCWnd_Inventory::OnCreate @0x43c290, CITCWnd_Inventory::Draw @0x43c98c, CRegisterAuctionEntryDlg::Draw @0x448cad, CCashShop::FindWishList @0x44f059. No CITC dispatch/send functions exist."
+  },
+  {
+   "fname": "CStage::OnSetITC",
+   "reason": "SET_ITC (field/clientbound/SetItc) — the ITC-open stage notification is version-absent in gms_v48. MTS/ITC (Cash Item Trading Center) protocol is version-absent in gms_v48: MTS was added in GMS v53 and v48 (<53) has only the CITCWnd UI shell, not the CITC packet class. IDA evidence (GMS_v48_1_DEVM.exe, port 13337): func_query name_regex 'CITC::|MigrateToITC|OnRegisterSaleEntry|OnGetITCList|TrySendQueryCash' returns EMPTY (no CITC:: packet class, no SendMigrateToITCRequest COutPacket send-site); the broad sweep 'ITC|Mts|Auction|Zzim|WishList' returns ONLY four UI shells — CITCWnd_Inventory::OnCreate @0x43c290, CITCWnd_Inventory::Draw @0x43c98c, CRegisterAuctionEntryDlg::Draw @0x448cad, CCashShop::FindWishList @0x44f059. No CITC dispatch/send functions exist."
+  },
+  {
+   "fname": "CITC::OnStatusCharge",
+   "reason": "ITC_STATUS_CHARGE request (field/serverbound/FieldItcStatusCharge) is version-absent in gms_v48. MTS/ITC (Cash Item Trading Center) protocol is version-absent in gms_v48: MTS was added in GMS v53 and v48 (<53) has only the CITCWnd UI shell, not the CITC packet class. IDA evidence (GMS_v48_1_DEVM.exe, port 13337): func_query name_regex 'CITC::|MigrateToITC|OnRegisterSaleEntry|OnGetITCList|TrySendQueryCash' returns EMPTY (no CITC:: packet class, no SendMigrateToITCRequest COutPacket send-site); the broad sweep 'ITC|Mts|Auction|Zzim|WishList' returns ONLY four UI shells — CITCWnd_Inventory::OnCreate @0x43c290, CITCWnd_Inventory::Draw @0x43c98c, CRegisterAuctionEntryDlg::Draw @0x448cad, CCashShop::FindWishList @0x44f059. No CITC dispatch/send functions exist."
+  },
+  {
+   "fname": "CITC::TrySendQueryCashRequest",
+   "reason": "ITC_QUERY_CASH_REQUEST (field/serverbound/FieldItcQueryCashRequest) is version-absent in gms_v48. MTS/ITC (Cash Item Trading Center) protocol is version-absent in gms_v48: MTS was added in GMS v53 and v48 (<53) has only the CITCWnd UI shell, not the CITC packet class. IDA evidence (GMS_v48_1_DEVM.exe, port 13337): func_query name_regex 'CITC::|MigrateToITC|OnRegisterSaleEntry|OnGetITCList|TrySendQueryCash' returns EMPTY (no CITC:: packet class, no SendMigrateToITCRequest COutPacket send-site); the broad sweep 'ITC|Mts|Auction|Zzim|WishList' returns ONLY four UI shells — CITCWnd_Inventory::OnCreate @0x43c290, CITCWnd_Inventory::Draw @0x43c98c, CRegisterAuctionEntryDlg::Draw @0x448cad, CCashShop::FindWishList @0x44f059. No CITC dispatch/send functions exist."
+  },
+  {
+   "fname": "CITC::OnChargeParamResult",
+   "reason": "MTS_CHARGE_PARAM_RESULT (field/clientbound/MtsChargeParamResult) is version-absent in gms_v48. MTS/ITC (Cash Item Trading Center) protocol is version-absent in gms_v48: MTS was added in GMS v53 and v48 (<53) has only the CITCWnd UI shell, not the CITC packet class. IDA evidence (GMS_v48_1_DEVM.exe, port 13337): func_query name_regex 'CITC::|MigrateToITC|OnRegisterSaleEntry|OnGetITCList|TrySendQueryCash' returns EMPTY (no CITC:: packet class, no SendMigrateToITCRequest COutPacket send-site); the broad sweep 'ITC|Mts|Auction|Zzim|WishList' returns ONLY four UI shells — CITCWnd_Inventory::OnCreate @0x43c290, CITCWnd_Inventory::Draw @0x43c98c, CRegisterAuctionEntryDlg::Draw @0x448cad, CCashShop::FindWishList @0x44f059. No CITC dispatch/send functions exist."
+  },
+  {
+   "fname": "CITC::OnQueryCashResult",
+   "reason": "MTS_OPERATION2 (field/clientbound/FieldMtsOperation2) — the CITC query-cash result. Its unresolved 'function not found in IDB' export stub was stripped from the gms_v48 export so grading excludes the arm is version-absent in gms_v48. MTS/ITC (Cash Item Trading Center) protocol is version-absent in gms_v48: MTS was added in GMS v53 and v48 (<53) has only the CITCWnd UI shell, not the CITC packet class. IDA evidence (GMS_v48_1_DEVM.exe, port 13337): func_query name_regex 'CITC::|MigrateToITC|OnRegisterSaleEntry|OnGetITCList|TrySendQueryCash' returns EMPTY (no CITC:: packet class, no SendMigrateToITCRequest COutPacket send-site); the broad sweep 'ITC|Mts|Auction|Zzim|WishList' returns ONLY four UI shells — CITCWnd_Inventory::OnCreate @0x43c290, CITCWnd_Inventory::Draw @0x43c98c, CRegisterAuctionEntryDlg::Draw @0x448cad, CCashShop::FindWishList @0x44f059. No CITC dispatch/send functions exist."
+  },
+  {
+   "fname": "CITC::OnNormalItemResult",
+   "reason": "MTS_OPERATION (field/clientbound/FieldMtsResult* dispatcher) — the CITC normal-item result whose 34 mode arms (RegisterSaleEntry/BuyItem/BuyWish/BuyZzim/CancelSale/CancelWish/DeleteZzim/GetItcList/GetSearchItcList/GetUserPurchaseItem/GetUserSaleItem/LoadWishSaleList/MoveItcPurchaseItemLtoS/NotifyCancelWish/RegisterWishItem/SaleCurrentItemToWish/SetZzim/SuccessBidInfo/BidAuctionFailed and Done/Failed twins) all shared the CITC::OnNormalItemResult dispatcher. All 34 unresolved 'function not found in IDB' export stubs were stripped from the gms_v48 export so grading excludes every arm is version-absent in gms_v48. MTS/ITC (Cash Item Trading Center) protocol is version-absent in gms_v48: MTS was added in GMS v53 and v48 (<53) has only the CITCWnd UI shell, not the CITC packet class. IDA evidence (GMS_v48_1_DEVM.exe, port 13337): func_query name_regex 'CITC::|MigrateToITC|OnRegisterSaleEntry|OnGetITCList|TrySendQueryCash' returns EMPTY (no CITC:: packet class, no SendMigrateToITCRequest COutPacket send-site); the broad sweep 'ITC|Mts|Auction|Zzim|WishList' returns ONLY four UI shells — CITCWnd_Inventory::OnCreate @0x43c290, CITCWnd_Inventory::Draw @0x43c98c, CRegisterAuctionEntryDlg::Draw @0x448cad, CCashShop::FindWishList @0x44f059. No CITC dispatch/send functions exist."
+  },
+  {
+   "fname": "CITC::OnBuy",
+   "reason": "ITC_OPERATION arm Buy (field/serverbound/FieldItcOperation*) is version-absent in gms_v48. MTS/ITC (Cash Item Trading Center) protocol is version-absent in gms_v48: MTS was added in GMS v53 and v48 (<53) has only the CITCWnd UI shell, not the CITC packet class. IDA evidence (GMS_v48_1_DEVM.exe, port 13337): func_query name_regex 'CITC::|MigrateToITC|OnRegisterSaleEntry|OnGetITCList|TrySendQueryCash' returns EMPTY (no CITC:: packet class, no SendMigrateToITCRequest COutPacket send-site); the broad sweep 'ITC|Mts|Auction|Zzim|WishList' returns ONLY four UI shells — CITCWnd_Inventory::OnCreate @0x43c290, CITCWnd_Inventory::Draw @0x43c98c, CRegisterAuctionEntryDlg::Draw @0x448cad, CCashShop::FindWishList @0x44f059. No CITC dispatch/send functions exist."
+  },
+  {
+   "fname": "CITC::OnBuyAuctionImm",
+   "reason": "ITC_OPERATION arm BuyAuctionImm (field/serverbound/FieldItcOperation*) is version-absent in gms_v48. MTS/ITC (Cash Item Trading Center) protocol is version-absent in gms_v48: MTS was added in GMS v53 and v48 (<53) has only the CITCWnd UI shell, not the CITC packet class. IDA evidence (GMS_v48_1_DEVM.exe, port 13337): func_query name_regex 'CITC::|MigrateToITC|OnRegisterSaleEntry|OnGetITCList|TrySendQueryCash' returns EMPTY (no CITC:: packet class, no SendMigrateToITCRequest COutPacket send-site); the broad sweep 'ITC|Mts|Auction|Zzim|WishList' returns ONLY four UI shells — CITCWnd_Inventory::OnCreate @0x43c290, CITCWnd_Inventory::Draw @0x43c98c, CRegisterAuctionEntryDlg::Draw @0x448cad, CCashShop::FindWishList @0x44f059. No CITC dispatch/send functions exist."
+  },
+  {
+   "fname": "CITC::OnBuyWish",
+   "reason": "ITC_OPERATION arm BuyWish (field/serverbound/FieldItcOperation*) is version-absent in gms_v48. MTS/ITC (Cash Item Trading Center) protocol is version-absent in gms_v48: MTS was added in GMS v53 and v48 (<53) has only the CITCWnd UI shell, not the CITC packet class. IDA evidence (GMS_v48_1_DEVM.exe, port 13337): func_query name_regex 'CITC::|MigrateToITC|OnRegisterSaleEntry|OnGetITCList|TrySendQueryCash' returns EMPTY (no CITC:: packet class, no SendMigrateToITCRequest COutPacket send-site); the broad sweep 'ITC|Mts|Auction|Zzim|WishList' returns ONLY four UI shells — CITCWnd_Inventory::OnCreate @0x43c290, CITCWnd_Inventory::Draw @0x43c98c, CRegisterAuctionEntryDlg::Draw @0x448cad, CCashShop::FindWishList @0x44f059. No CITC dispatch/send functions exist."
+  },
+  {
+   "fname": "CITC::OnBuyZzim",
+   "reason": "ITC_OPERATION arm BuyZzim (field/serverbound/FieldItcOperation*) is version-absent in gms_v48. MTS/ITC (Cash Item Trading Center) protocol is version-absent in gms_v48: MTS was added in GMS v53 and v48 (<53) has only the CITCWnd UI shell, not the CITC packet class. IDA evidence (GMS_v48_1_DEVM.exe, port 13337): func_query name_regex 'CITC::|MigrateToITC|OnRegisterSaleEntry|OnGetITCList|TrySendQueryCash' returns EMPTY (no CITC:: packet class, no SendMigrateToITCRequest COutPacket send-site); the broad sweep 'ITC|Mts|Auction|Zzim|WishList' returns ONLY four UI shells — CITCWnd_Inventory::OnCreate @0x43c290, CITCWnd_Inventory::Draw @0x43c98c, CRegisterAuctionEntryDlg::Draw @0x448cad, CCashShop::FindWishList @0x44f059. No CITC dispatch/send functions exist."
+  },
+  {
+   "fname": "CITC::OnCancelSaleItem",
+   "reason": "ITC_OPERATION arm CancelSaleItem (field/serverbound/FieldItcOperation*) is version-absent in gms_v48. MTS/ITC (Cash Item Trading Center) protocol is version-absent in gms_v48: MTS was added in GMS v53 and v48 (<53) has only the CITCWnd UI shell, not the CITC packet class. IDA evidence (GMS_v48_1_DEVM.exe, port 13337): func_query name_regex 'CITC::|MigrateToITC|OnRegisterSaleEntry|OnGetITCList|TrySendQueryCash' returns EMPTY (no CITC:: packet class, no SendMigrateToITCRequest COutPacket send-site); the broad sweep 'ITC|Mts|Auction|Zzim|WishList' returns ONLY four UI shells — CITCWnd_Inventory::OnCreate @0x43c290, CITCWnd_Inventory::Draw @0x43c98c, CRegisterAuctionEntryDlg::Draw @0x448cad, CCashShop::FindWishList @0x44f059. No CITC dispatch/send functions exist."
+  },
+  {
+   "fname": "CITC::OnCancelWish",
+   "reason": "ITC_OPERATION arm CancelWish (field/serverbound/FieldItcOperation*) is version-absent in gms_v48. MTS/ITC (Cash Item Trading Center) protocol is version-absent in gms_v48: MTS was added in GMS v53 and v48 (<53) has only the CITCWnd UI shell, not the CITC packet class. IDA evidence (GMS_v48_1_DEVM.exe, port 13337): func_query name_regex 'CITC::|MigrateToITC|OnRegisterSaleEntry|OnGetITCList|TrySendQueryCash' returns EMPTY (no CITC:: packet class, no SendMigrateToITCRequest COutPacket send-site); the broad sweep 'ITC|Mts|Auction|Zzim|WishList' returns ONLY four UI shells — CITCWnd_Inventory::OnCreate @0x43c290, CITCWnd_Inventory::Draw @0x43c98c, CRegisterAuctionEntryDlg::Draw @0x448cad, CCashShop::FindWishList @0x44f059. No CITC dispatch/send functions exist."
+  },
+  {
+   "fname": "CITC::OnChangedCategory",
+   "reason": "ITC_OPERATION arm ChangedCategory (field/serverbound/FieldItcOperation*) is version-absent in gms_v48. MTS/ITC (Cash Item Trading Center) protocol is version-absent in gms_v48: MTS was added in GMS v53 and v48 (<53) has only the CITCWnd UI shell, not the CITC packet class. IDA evidence (GMS_v48_1_DEVM.exe, port 13337): func_query name_regex 'CITC::|MigrateToITC|OnRegisterSaleEntry|OnGetITCList|TrySendQueryCash' returns EMPTY (no CITC:: packet class, no SendMigrateToITCRequest COutPacket send-site); the broad sweep 'ITC|Mts|Auction|Zzim|WishList' returns ONLY four UI shells — CITCWnd_Inventory::OnCreate @0x43c290, CITCWnd_Inventory::Draw @0x43c98c, CRegisterAuctionEntryDlg::Draw @0x448cad, CCashShop::FindWishList @0x44f059. No CITC dispatch/send functions exist."
+  },
+  {
+   "fname": "CITC::OnChangedCategorySub",
+   "reason": "ITC_OPERATION arm ChangedCategorySub (field/serverbound/FieldItcOperation*) is version-absent in gms_v48. MTS/ITC (Cash Item Trading Center) protocol is version-absent in gms_v48: MTS was added in GMS v53 and v48 (<53) has only the CITCWnd UI shell, not the CITC packet class. IDA evidence (GMS_v48_1_DEVM.exe, port 13337): func_query name_regex 'CITC::|MigrateToITC|OnRegisterSaleEntry|OnGetITCList|TrySendQueryCash' returns EMPTY (no CITC:: packet class, no SendMigrateToITCRequest COutPacket send-site); the broad sweep 'ITC|Mts|Auction|Zzim|WishList' returns ONLY four UI shells — CITCWnd_Inventory::OnCreate @0x43c290, CITCWnd_Inventory::Draw @0x43c98c, CRegisterAuctionEntryDlg::Draw @0x448cad, CCashShop::FindWishList @0x44f059. No CITC dispatch/send functions exist."
+  },
+  {
+   "fname": "CITC::OnChangedPage",
+   "reason": "ITC_OPERATION arm ChangedPage (field/serverbound/FieldItcOperation*) is version-absent in gms_v48. MTS/ITC (Cash Item Trading Center) protocol is version-absent in gms_v48: MTS was added in GMS v53 and v48 (<53) has only the CITCWnd UI shell, not the CITC packet class. IDA evidence (GMS_v48_1_DEVM.exe, port 13337): func_query name_regex 'CITC::|MigrateToITC|OnRegisterSaleEntry|OnGetITCList|TrySendQueryCash' returns EMPTY (no CITC:: packet class, no SendMigrateToITCRequest COutPacket send-site); the broad sweep 'ITC|Mts|Auction|Zzim|WishList' returns ONLY four UI shells — CITCWnd_Inventory::OnCreate @0x43c290, CITCWnd_Inventory::Draw @0x43c98c, CRegisterAuctionEntryDlg::Draw @0x448cad, CCashShop::FindWishList @0x44f059. No CITC dispatch/send functions exist."
+  },
+  {
+   "fname": "CITC::OnDeleteZzim",
+   "reason": "ITC_OPERATION arm DeleteZzim (field/serverbound/FieldItcOperation*) is version-absent in gms_v48. MTS/ITC (Cash Item Trading Center) protocol is version-absent in gms_v48: MTS was added in GMS v53 and v48 (<53) has only the CITCWnd UI shell, not the CITC packet class. IDA evidence (GMS_v48_1_DEVM.exe, port 13337): func_query name_regex 'CITC::|MigrateToITC|OnRegisterSaleEntry|OnGetITCList|TrySendQueryCash' returns EMPTY (no CITC:: packet class, no SendMigrateToITCRequest COutPacket send-site); the broad sweep 'ITC|Mts|Auction|Zzim|WishList' returns ONLY four UI shells — CITCWnd_Inventory::OnCreate @0x43c290, CITCWnd_Inventory::Draw @0x43c98c, CRegisterAuctionEntryDlg::Draw @0x448cad, CCashShop::FindWishList @0x44f059. No CITC dispatch/send functions exist."
+  },
+  {
+   "fname": "CITC::OnMoveITCPurchaseItemLtoS",
+   "reason": "ITC_OPERATION arm MoveITCPurchaseItemLtoS (field/serverbound/FieldItcOperation*) is version-absent in gms_v48. MTS/ITC (Cash Item Trading Center) protocol is version-absent in gms_v48: MTS was added in GMS v53 and v48 (<53) has only the CITCWnd UI shell, not the CITC packet class. IDA evidence (GMS_v48_1_DEVM.exe, port 13337): func_query name_regex 'CITC::|MigrateToITC|OnRegisterSaleEntry|OnGetITCList|TrySendQueryCash' returns EMPTY (no CITC:: packet class, no SendMigrateToITCRequest COutPacket send-site); the broad sweep 'ITC|Mts|Auction|Zzim|WishList' returns ONLY four UI shells — CITCWnd_Inventory::OnCreate @0x43c290, CITCWnd_Inventory::Draw @0x43c98c, CRegisterAuctionEntryDlg::Draw @0x448cad, CCashShop::FindWishList @0x44f059. No CITC dispatch/send functions exist."
+  },
+  {
+   "fname": "CITC::OnRegisterSaleEntry",
+   "reason": "ITC_OPERATION arm RegisterSaleEntry (field/serverbound/FieldItcOperation*) is version-absent in gms_v48. MTS/ITC (Cash Item Trading Center) protocol is version-absent in gms_v48: MTS was added in GMS v53 and v48 (<53) has only the CITCWnd UI shell, not the CITC packet class. IDA evidence (GMS_v48_1_DEVM.exe, port 13337): func_query name_regex 'CITC::|MigrateToITC|OnRegisterSaleEntry|OnGetITCList|TrySendQueryCash' returns EMPTY (no CITC:: packet class, no SendMigrateToITCRequest COutPacket send-site); the broad sweep 'ITC|Mts|Auction|Zzim|WishList' returns ONLY four UI shells — CITCWnd_Inventory::OnCreate @0x43c290, CITCWnd_Inventory::Draw @0x43c98c, CRegisterAuctionEntryDlg::Draw @0x448cad, CCashShop::FindWishList @0x44f059. No CITC dispatch/send functions exist."
+  },
+  {
+   "fname": "CITC::OnRegisterWishEntry",
+   "reason": "ITC_OPERATION arm RegisterWishEntry (field/serverbound/FieldItcOperation*) is version-absent in gms_v48. MTS/ITC (Cash Item Trading Center) protocol is version-absent in gms_v48: MTS was added in GMS v53 and v48 (<53) has only the CITCWnd UI shell, not the CITC packet class. IDA evidence (GMS_v48_1_DEVM.exe, port 13337): func_query name_regex 'CITC::|MigrateToITC|OnRegisterSaleEntry|OnGetITCList|TrySendQueryCash' returns EMPTY (no CITC:: packet class, no SendMigrateToITCRequest COutPacket send-site); the broad sweep 'ITC|Mts|Auction|Zzim|WishList' returns ONLY four UI shells — CITCWnd_Inventory::OnCreate @0x43c290, CITCWnd_Inventory::Draw @0x43c98c, CRegisterAuctionEntryDlg::Draw @0x448cad, CCashShop::FindWishList @0x44f059. No CITC dispatch/send functions exist."
+  },
+  {
+   "fname": "CITC::OnSaleCurrentItem",
+   "reason": "ITC_OPERATION arm SaleCurrentItem (field/serverbound/FieldItcOperation*) is version-absent in gms_v48. MTS/ITC (Cash Item Trading Center) protocol is version-absent in gms_v48: MTS was added in GMS v53 and v48 (<53) has only the CITCWnd UI shell, not the CITC packet class. IDA evidence (GMS_v48_1_DEVM.exe, port 13337): func_query name_regex 'CITC::|MigrateToITC|OnRegisterSaleEntry|OnGetITCList|TrySendQueryCash' returns EMPTY (no CITC:: packet class, no SendMigrateToITCRequest COutPacket send-site); the broad sweep 'ITC|Mts|Auction|Zzim|WishList' returns ONLY four UI shells — CITCWnd_Inventory::OnCreate @0x43c290, CITCWnd_Inventory::Draw @0x43c98c, CRegisterAuctionEntryDlg::Draw @0x448cad, CCashShop::FindWishList @0x44f059. No CITC dispatch/send functions exist."
+  },
+  {
+   "fname": "CITC::OnSetZzim",
+   "reason": "ITC_OPERATION arm SetZzim (field/serverbound/FieldItcOperation*) is version-absent in gms_v48. MTS/ITC (Cash Item Trading Center) protocol is version-absent in gms_v48: MTS was added in GMS v53 and v48 (<53) has only the CITCWnd UI shell, not the CITC packet class. IDA evidence (GMS_v48_1_DEVM.exe, port 13337): func_query name_regex 'CITC::|MigrateToITC|OnRegisterSaleEntry|OnGetITCList|TrySendQueryCash' returns EMPTY (no CITC:: packet class, no SendMigrateToITCRequest COutPacket send-site); the broad sweep 'ITC|Mts|Auction|Zzim|WishList' returns ONLY four UI shells — CITCWnd_Inventory::OnCreate @0x43c290, CITCWnd_Inventory::Draw @0x43c98c, CRegisterAuctionEntryDlg::Draw @0x448cad, CCashShop::FindWishList @0x44f059. No CITC dispatch/send functions exist."
+  },
+  {
+   "fname": "CITC::OnViewWish",
+   "reason": "ITC_OPERATION arm ViewWish (field/serverbound/FieldItcOperation*) is version-absent in gms_v48. MTS/ITC (Cash Item Trading Center) protocol is version-absent in gms_v48: MTS was added in GMS v53 and v48 (<53) has only the CITCWnd UI shell, not the CITC packet class. IDA evidence (GMS_v48_1_DEVM.exe, port 13337): func_query name_regex 'CITC::|MigrateToITC|OnRegisterSaleEntry|OnGetITCList|TrySendQueryCash' returns EMPTY (no CITC:: packet class, no SendMigrateToITCRequest COutPacket send-site); the broad sweep 'ITC|Mts|Auction|Zzim|WishList' returns ONLY four UI shells — CITCWnd_Inventory::OnCreate @0x43c290, CITCWnd_Inventory::Draw @0x43c98c, CRegisterAuctionEntryDlg::Draw @0x448cad, CCashShop::FindWishList @0x44f059. No CITC dispatch/send functions exist."
+  },
+  {
+   "fname": "CITCBidAuctionDlg::OnButtonClicked",
+   "reason": "ITC_OPERATION arm PlaceBid (CITCBidAuctionDlg) (field/serverbound/FieldItcOperation*) is version-absent in gms_v48. MTS/ITC (Cash Item Trading Center) protocol is version-absent in gms_v48: MTS was added in GMS v53 and v48 (<53) has only the CITCWnd UI shell, not the CITC packet class. IDA evidence (GMS_v48_1_DEVM.exe, port 13337): func_query name_regex 'CITC::|MigrateToITC|OnRegisterSaleEntry|OnGetITCList|TrySendQueryCash' returns EMPTY (no CITC:: packet class, no SendMigrateToITCRequest COutPacket send-site); the broad sweep 'ITC|Mts|Auction|Zzim|WishList' returns ONLY four UI shells — CITCWnd_Inventory::OnCreate @0x43c290, CITCWnd_Inventory::Draw @0x43c98c, CRegisterAuctionEntryDlg::Draw @0x448cad, CCashShop::FindWishList @0x44f059. No CITC dispatch/send functions exist."
+  },
+  {
+   "fname": "CITCWnd_Tab::OnButtonClicked",
+   "reason": "ITC_OPERATION arm TabSearch (CITCWnd_Tab) (field/serverbound/FieldItcOperation*) is version-absent in gms_v48. MTS/ITC (Cash Item Trading Center) protocol is version-absent in gms_v48: MTS was added in GMS v53 and v48 (<53) has only the CITCWnd UI shell, not the CITC packet class. IDA evidence (GMS_v48_1_DEVM.exe, port 13337): func_query name_regex 'CITC::|MigrateToITC|OnRegisterSaleEntry|OnGetITCList|TrySendQueryCash' returns EMPTY (no CITC:: packet class, no SendMigrateToITCRequest COutPacket send-site); the broad sweep 'ITC|Mts|Auction|Zzim|WishList' returns ONLY four UI shells — CITCWnd_Inventory::OnCreate @0x43c290, CITCWnd_Inventory::Draw @0x43c98c, CRegisterAuctionEntryDlg::Draw @0x448cad, CCashShop::FindWishList @0x44f059. No CITC dispatch/send functions exist."
+  }
+ ]
+}

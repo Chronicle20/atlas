@@ -1,10 +1,13 @@
 package clientbound
 
 import (
+	"bytes"
+	"context"
 	"testing"
 
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // --- Attack round-trip tests ---
@@ -32,7 +35,7 @@ func TestAttackMeleeNoSkillRoundTrip(t *testing.T) {
 			output := NewAttackForDecode(CharacterAttackMeleeWriter, 0, false, false, false)
 			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
 
-			assertAttack(t, input, output)
+			assertAttack(t, ctx, input, output)
 		})
 	}
 }
@@ -52,7 +55,7 @@ func TestAttackMeleeWithSkillRoundTrip(t *testing.T) {
 			output := NewAttackForDecode(CharacterAttackMeleeWriter, 1001004, false, false, false)
 			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
 
-			assertAttack(t, input, output)
+			assertAttack(t, ctx, input, output)
 		})
 	}
 }
@@ -73,7 +76,7 @@ func TestAttackRangedWithSkillRoundTrip(t *testing.T) {
 			output := NewAttackForDecode(CharacterAttackRangedWriter, 3001004, false, false, false)
 			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
 
-			assertAttack(t, input, output)
+			assertAttack(t, ctx, input, output)
 			assertBulletPosition(t, input, output)
 		})
 	}
@@ -98,7 +101,7 @@ func TestAttackMeleeWithMesoExplosionRoundTrip(t *testing.T) {
 			output := NewAttackForDecode(CharacterAttackMeleeWriter, 4211006, false, true, false)
 			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
 
-			assertAttack(t, input, output)
+			assertAttack(t, ctx, input, output)
 			// Verify damage counts per target are correct with meso explosion.
 			outAI := output.AttackInfo()
 			inAI := input.AttackInfo()
@@ -129,7 +132,7 @@ func TestAttackMeleeWithKeydownRoundTrip(t *testing.T) {
 			output := NewAttackForDecode(CharacterAttackMeleeWriter, 5001002, false, false, true)
 			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
 
-			assertAttack(t, input, output)
+			assertAttack(t, ctx, input, output)
 			assertKeydown(t, input, output)
 		})
 	}
@@ -150,7 +153,7 @@ func TestAttackRangedStrafeGMS95RoundTrip(t *testing.T) {
 	output := NewAttackForDecode(CharacterAttackRangedWriter, 3111006, true, false, false)
 	pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
 
-	assertAttack(t, input, output)
+	assertAttack(t, ctx, input, output)
 }
 
 func TestAttackMeleeNoTargetsRoundTrip(t *testing.T) {
@@ -166,17 +169,215 @@ func TestAttackMeleeNoTargetsRoundTrip(t *testing.T) {
 			output := NewAttackForDecode(CharacterAttackMeleeWriter, 0, false, false, false)
 			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
 
-			assertAttack(t, input, output)
+			assertAttack(t, ctx, input, output)
 		})
 	}
 }
 
-func assertAttack(t *testing.T, input Attack, output Attack) {
+// attackV79MeleeBody pins the GMS v79 CLOSE_RANGE_ATTACK (172) wire byte-for-byte
+// against the live client reader CUserRemote::OnAttack@0x8d66a1 (GMS_v79_1_DEVM.exe,
+// port 13340). The four attack ops (CLOSE_RANGE 172 / RANGED 173 / MAGIC 174 /
+// ENERGY 175) all funnel through this one reader, so this fixture covers the shared
+// character/clientbound/Attack struct for all four cells.
+//
+// Read order (each byte traced to a Decode call in OnAttack):
+//
+//	Decode1 @0x8d66bd  packed = (nMob<<4)|nDamagePerMob      -> 0x23  (damage 2, hits 3)
+//	Decode1 @0x8d66d2  skillLevel byte (gates skillId)       -> 0x00  (no skill; no Decode4)
+//	  --- NO character-level byte here on v79 (v83+ inserts *(this+10976)=Decode1) ---
+//	Decode1 @0x8d6733  mask1/option (client keeps &0x20)      -> 0x10
+//	Decode2 @0x8d67a4  mask2 = (bLeft<<15)|nAction            -> 0x8005 (left, action 5)
+//	Decode1 @0x8d67cb  nActionSpeed                           -> 0x04
+//	Decode1 @0x8d67d8  nMastery                               -> 0x0F
+//	Decode4 @0x8d67e0  nBulletItemID                          -> 2070000
+//	per target (loop nMob=2, @0x8d680c):
+//	  Decode4 @0x8d6811 monsterOid; if !=0:
+//	    Decode1 @0x8d6822 hitAction; (non-meso) loop nDamagePerMob(3) Decode4 @0x8d68f7 damages
+//	a2==173? (RANGED only) -> no bulletX/Y for melee
+//	keydown skill? skillId 0 -> none
+// packet-audit:verify packet=character/clientbound/Attack version=gms_v79 ida=0x8d66a1
+var attackV79MeleeBody = []byte{
+	0x39, 0x30, 0x00, 0x00, // characterId 12345
+	0x23,                   // packed (nMob 2 << 4) | hits 3
+	0x00,                   // skillLevel byte = 0 (no skill) -- NO level byte on v79
+	0x10,                   // mask1/option
+	0x05, 0x80,             // mask2 = (1<<15)|0x05
+	0x04,                   // actionSpeed
+	0x0F,                   // mastery
+	0xF0, 0x95, 0x1F, 0x00, // bulletItemId 2070000 (=0x1F95F0)
+	0x29, 0x23, 0x00, 0x00, // target0 monsterId 9001
+	0x07,                   // target0 hitAction
+	0xE8, 0x03, 0x00, 0x00, // 1000
+	0xD0, 0x07, 0x00, 0x00, // 2000
+	0xB8, 0x0B, 0x00, 0x00, // 3000
+	0x2A, 0x23, 0x00, 0x00, // target1 monsterId 9002
+	0x08,                   // target1 hitAction
+	0xA0, 0x0F, 0x00, 0x00, // 4000
+	0x88, 0x13, 0x00, 0x00, // 5000
+	0x70, 0x17, 0x00, 0x00, // 6000
+}
+
+func TestAttackBytesV79(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 79, 1)
+
+	ai := model.NewAttackInfo(model.AttackTypeMelee)
+	ai.SetDamage(2).SetHits(3).SetOption(0x10).SetLeft(true).SetAttackAction(0x05).SetActionSpeed(4)
+	di := model.NewDamageInfo(3)
+	di.SetMonsterId(9001).SetHitAction(0x07).SetDamages([]uint32{1000, 2000, 3000})
+	ai.AddDamageInfo(*di)
+	di2 := model.NewDamageInfo(3)
+	di2.SetMonsterId(9002).SetHitAction(0x08).SetDamages([]uint32{4000, 5000, 6000})
+	ai.AddDamageInfo(*di2)
+
+	// level=50 is supplied but MUST NOT appear on the v79 wire (gated >=83).
+	in := NewAttackMelee(12345, 50, 0, 15, 2070000, false, false, *ai)
+	got := pt.Encode(t, ctx, in.Encode, nil)
+	if !bytes.Equal(got, attackV79MeleeBody) {
+		t.Fatalf("v79 bytes = % X, want % X", got, attackV79MeleeBody)
+	}
+}
+
+// attackV72MeleeBody pins the GMS v72 CLOSE_RANGE_ATTACK (168) wire byte-for-byte
+// against the live client reader CUserRemote::OnAttack@0x889828 (GMS_v72.1_U_DEVM.exe,
+// port 13339). The four attack ops (CLOSE_RANGE 168 / RANGED 169 / MAGIC 170 /
+// ENERGY 171) all funnel through this one reader (CUserPool::OnUserRemotePacket
+// @0x87c046 cases 168-171), so this fixture covers the shared
+// character/clientbound/Attack struct for all four cells.
+//
+// Read order (each byte traced to a Decode call in OnAttack; only divergence from
+// v79 is the 1-byte action field):
+//
+//	Decode1 @0x889844  packed = (nMob<<4)|nDamagePerMob   -> 0x23  (damage 2, hits 3)
+//	Decode1 @0x889859  skillLevel byte (gates skillId)    -> 0x00  (no skill; no Decode4)
+//	  --- NO character-level byte on v72 (v83+ inserts Decode1 here) ---
+//	Decode1 @0x8898ba  option (client keeps &0x20)         -> 0x10
+//	Decode1 @0x889928  action byte = (bLeft<<7)|(nAction&0x7F) -> 0x85 (left, action 5)
+//	                    *** v72 DIVERGENCE: 1 byte (v79 @0x8d67a4 uses Decode2) ***
+//	Decode1 @0x88994d  nActionSpeed                        -> 0x04
+//	Decode1 @0x88995a  nMastery                            -> 0x0F
+//	Decode4 @0x889962  nBulletItemID                       -> 2070000
+//	per target (loop nMob=2, @0x889993):
+//	  Decode4 monsterOid; if !=0: Decode1 hitAction; loop nDamagePerMob(3) Decode4 damages
+//	a2==169? (RANGED only) -> no bulletX/Y for melee
+//	keydown skill? skillId 0 -> none
+// packet-audit:verify packet=character/clientbound/Attack version=gms_v72 ida=0x889828
+var attackV72MeleeBody = []byte{
+	0x39, 0x30, 0x00, 0x00, // characterId 12345
+	0x23,                   // packed (nMob 2 << 4) | hits 3
+	0x00,                   // skillLevel byte = 0 (no skill) -- NO level byte on v72
+	0x10,                   // option
+	0x85,                   // action byte = (1<<7)|0x05  -- 1 BYTE on v72
+	0x04,                   // actionSpeed
+	0x0F,                   // mastery
+	0xF0, 0x95, 0x1F, 0x00, // bulletItemId 2070000 (=0x1F95F0)
+	0x29, 0x23, 0x00, 0x00, // target0 monsterId 9001
+	0x07,                   // target0 hitAction
+	0xE8, 0x03, 0x00, 0x00, // 1000
+	0xD0, 0x07, 0x00, 0x00, // 2000
+	0xB8, 0x0B, 0x00, 0x00, // 3000
+	0x2A, 0x23, 0x00, 0x00, // target1 monsterId 9002
+	0x08,                   // target1 hitAction
+	0xA0, 0x0F, 0x00, 0x00, // 4000
+	0x88, 0x13, 0x00, 0x00, // 5000
+	0x70, 0x17, 0x00, 0x00, // 6000
+}
+
+func TestAttackBytesV72(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 72, 1)
+
+	ai := model.NewAttackInfo(model.AttackTypeMelee)
+	ai.SetDamage(2).SetHits(3).SetOption(0x10).SetLeft(true).SetAttackAction(0x05).SetActionSpeed(4)
+	di := model.NewDamageInfo(3)
+	di.SetMonsterId(9001).SetHitAction(0x07).SetDamages([]uint32{1000, 2000, 3000})
+	ai.AddDamageInfo(*di)
+	di2 := model.NewDamageInfo(3)
+	di2.SetMonsterId(9002).SetHitAction(0x08).SetDamages([]uint32{4000, 5000, 6000})
+	ai.AddDamageInfo(*di2)
+
+	// level=50 is supplied but MUST NOT appear on the v72 wire (gated >=83).
+	in := NewAttackMelee(12345, 50, 0, 15, 2070000, false, false, *ai)
+	got := pt.Encode(t, ctx, in.Encode, nil)
+	if !bytes.Equal(got, attackV72MeleeBody) {
+		t.Fatalf("v72 bytes = % X, want % X", got, attackV72MeleeBody)
+	}
+}
+
+// attackV61MeleeBody pins the GMS v61 CLOSE_RANGE_ATTACK (142) wire byte-for-byte
+// against the live client reader CUserRemote::OnAttack@0x7c9403 (GMS_v61.1_U_DEVM.exe,
+// port 13338). The four attack ops (CLOSE_RANGE 142 / RANGED 143 / MAGIC 144 /
+// ENERGY 145) all funnel through this one reader (CUserPool::OnUserRemotePacket
+// @0x7bdbda 1st switch cases 142-145), so this fixture covers the shared
+// character/clientbound/Attack struct for all four cells.
+//
+// Read order (each byte traced to a Decode call in OnAttack; v61 is < 79 so it is
+// byte-identical to the v72 melee body — no character-level byte, 1-byte action):
+//
+//	Decode1 @0x7c941f  packed = (nMob<<4)|nDamagePerMob   -> 0x23  (damage 2, hits 3)
+//	Decode1 @0x7c9434  skillLevel byte (gates skillId)    -> 0x00  (no skill; no Decode4)
+//	  --- NO character-level byte on v61 (v83+ inserts Decode1 here) ---
+//	Decode1 @0x7c94a2  option (client keeps &0x20)         -> 0x10
+//	Decode1 @0x7c94fc  action byte = (bLeft<<7)|(nAction&0x7F) -> 0x85 (left, action 5)
+//	                    *** 1 byte on v61 (v79+ @Decode2 widens to a short) ***
+//	Decode1 @0x7c9521  nActionSpeed                        -> 0x04
+//	Decode1 @0x7c952e  nMastery                            -> 0x0F
+//	Decode4 @0x7c9536  nBulletItemID                       -> 2070000
+//	per target (loop nMob=2, @0x7c9562):
+//	  Decode4 @0x7c9567 monsterOid; if !=0: Decode1 @0x7c9578 hitAction; loop
+//	    nDamagePerMob(3) Decode4 @0x7c964c damages
+//	a2==143? (RANGED only) -> no bulletX/Y for melee
+//	keydown skill? skillId 0 -> none
+// packet-audit:verify packet=character/clientbound/Attack version=gms_v61 ida=0x7c9403
+var attackV61MeleeBody = []byte{
+	0x39, 0x30, 0x00, 0x00, // characterId 12345
+	0x23,                   // packed (nMob 2 << 4) | hits 3
+	0x00,                   // skillLevel byte = 0 (no skill) -- NO level byte on v61
+	0x10,                   // option
+	0x85,                   // action byte = (1<<7)|0x05  -- 1 BYTE on v61
+	0x04,                   // actionSpeed
+	0x0F,                   // mastery
+	0xF0, 0x95, 0x1F, 0x00, // bulletItemId 2070000 (=0x1F95F0)
+	0x29, 0x23, 0x00, 0x00, // target0 monsterId 9001
+	0x07,                   // target0 hitAction
+	0xE8, 0x03, 0x00, 0x00, // 1000
+	0xD0, 0x07, 0x00, 0x00, // 2000
+	0xB8, 0x0B, 0x00, 0x00, // 3000
+	0x2A, 0x23, 0x00, 0x00, // target1 monsterId 9002
+	0x08,                   // target1 hitAction
+	0xA0, 0x0F, 0x00, 0x00, // 4000
+	0x88, 0x13, 0x00, 0x00, // 5000
+	0x70, 0x17, 0x00, 0x00, // 6000
+}
+
+func TestAttackBytesV61(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 61, 1)
+
+	ai := model.NewAttackInfo(model.AttackTypeMelee)
+	ai.SetDamage(2).SetHits(3).SetOption(0x10).SetLeft(true).SetAttackAction(0x05).SetActionSpeed(4)
+	di := model.NewDamageInfo(3)
+	di.SetMonsterId(9001).SetHitAction(0x07).SetDamages([]uint32{1000, 2000, 3000})
+	ai.AddDamageInfo(*di)
+	di2 := model.NewDamageInfo(3)
+	di2.SetMonsterId(9002).SetHitAction(0x08).SetDamages([]uint32{4000, 5000, 6000})
+	ai.AddDamageInfo(*di2)
+
+	// level=50 is supplied but MUST NOT appear on the v61 wire (gated >=83).
+	in := NewAttackMelee(12345, 50, 0, 15, 2070000, false, false, *ai)
+	got := pt.Encode(t, ctx, in.Encode, nil)
+	if !bytes.Equal(got, attackV61MeleeBody) {
+		t.Fatalf("v61 bytes = % X, want % X", got, attackV61MeleeBody)
+	}
+}
+
+func assertAttack(t *testing.T, ctx context.Context, input Attack, output Attack) {
 	t.Helper()
 	if output.CharacterId() != input.CharacterId() {
 		t.Errorf("characterId: got %v, want %v", output.CharacterId(), input.CharacterId())
 	}
-	if output.Level() != input.Level() {
+	// The character-level byte only rides the wire on GMS v83+ / JMS (see
+	// Attack.Encode). On the legacy pre-83 client it is absent, so it does not
+	// round-trip and must not be asserted there.
+	te := tenant.MustFromContext(ctx)
+	if te.MajorVersion() >= 83 && output.Level() != input.Level() {
 		t.Errorf("level: got %v, want %v", output.Level(), input.Level())
 	}
 	if output.SkillLevel() != input.SkillLevel() {
@@ -264,7 +465,7 @@ func TestEffectSkillUseNoFlagsRoundTrip(t *testing.T) {
 			input := NewEffectSkillUse(1, 1001004, 50, 10, false, false, false, false, false, false)
 			output := NewEffectSkillUseForDecode(false, false, false)
 			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
-			assertEffectSkillUse(t, input, output)
+			assertEffectSkillUse(t, input, output, v.Region != "GMS" || v.MajorVersion >= 83)
 		})
 	}
 }
@@ -276,7 +477,7 @@ func TestEffectSkillUseBerserkRoundTrip(t *testing.T) {
 			input := NewEffectSkillUse(1, 1320006, 120, 30, true, true, false, false, false, false)
 			output := NewEffectSkillUseForDecode(true, false, false)
 			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
-			assertEffectSkillUse(t, input, output)
+			assertEffectSkillUse(t, input, output, v.Region != "GMS" || v.MajorVersion >= 83)
 			if output.BerserkDarkForce() != input.BerserkDarkForce() {
 				t.Errorf("berserkDarkForce: got %v, want %v", output.BerserkDarkForce(), input.BerserkDarkForce())
 			}
@@ -291,7 +492,7 @@ func TestEffectSkillUseAllFlagsRoundTrip(t *testing.T) {
 			input := NewEffectSkillUse(1, 2221006, 200, 20, true, true, true, true, true, true)
 			output := NewEffectSkillUseForDecode(true, true, true)
 			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
-			assertEffectSkillUse(t, input, output)
+			assertEffectSkillUse(t, input, output, v.Region != "GMS" || v.MajorVersion >= 83)
 			if output.BerserkDarkForce() != input.BerserkDarkForce() {
 				t.Errorf("berserkDarkForce: got %v, want %v", output.BerserkDarkForce(), input.BerserkDarkForce())
 			}
@@ -305,7 +506,7 @@ func TestEffectSkillUseAllFlagsRoundTrip(t *testing.T) {
 	}
 }
 
-func assertEffectSkillUse(t *testing.T, input EffectSkillUse, output EffectSkillUse) {
+func assertEffectSkillUse(t *testing.T, input EffectSkillUse, output EffectSkillUse, includeCharLevel bool) {
 	t.Helper()
 	if output.Mode() != input.Mode() {
 		t.Errorf("mode: got %v, want %v", output.Mode(), input.Mode())
@@ -313,7 +514,10 @@ func assertEffectSkillUse(t *testing.T, input EffectSkillUse, output EffectSkill
 	if output.SkillId() != input.SkillId() {
 		t.Errorf("skillId: got %v, want %v", output.SkillId(), input.SkillId())
 	}
-	if output.CharacterLevel() != input.CharacterLevel() {
+	// characterLevel is only on the wire for GMS >= v83 (added at v83; v72/v79
+	// omit it — IDA-verified, see effect_skill_use.go). Legacy variants carry no
+	// byte for it, so the decoded field stays at its zero default.
+	if includeCharLevel && output.CharacterLevel() != input.CharacterLevel() {
 		t.Errorf("characterLevel: got %v, want %v", output.CharacterLevel(), input.CharacterLevel())
 	}
 	if output.SkillLevel() != input.SkillLevel() {
@@ -330,7 +534,7 @@ func TestEffectSkillUseForeignNoFlagsRoundTrip(t *testing.T) {
 			input := NewEffectSkillUseForeign(12345, 1, 1001004, 50, 10, false, false, false, false, false, false)
 			output := NewEffectSkillUseForeignForDecode(false, false, false)
 			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
-			assertEffectSkillUseForeign(t, input, output)
+			assertEffectSkillUseForeign(t, input, output, v.Region != "GMS" || v.MajorVersion >= 83)
 		})
 	}
 }
@@ -342,7 +546,7 @@ func TestEffectSkillUseForeignAllFlagsRoundTrip(t *testing.T) {
 			input := NewEffectSkillUseForeign(67890, 1, 2221006, 200, 20, true, false, true, true, true, true)
 			output := NewEffectSkillUseForeignForDecode(true, true, true)
 			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
-			assertEffectSkillUseForeign(t, input, output)
+			assertEffectSkillUseForeign(t, input, output, v.Region != "GMS" || v.MajorVersion >= 83)
 			if output.BerserkDarkForce() != input.BerserkDarkForce() {
 				t.Errorf("berserkDarkForce: got %v, want %v", output.BerserkDarkForce(), input.BerserkDarkForce())
 			}
@@ -356,7 +560,7 @@ func TestEffectSkillUseForeignAllFlagsRoundTrip(t *testing.T) {
 	}
 }
 
-func assertEffectSkillUseForeign(t *testing.T, input EffectSkillUseForeign, output EffectSkillUseForeign) {
+func assertEffectSkillUseForeign(t *testing.T, input EffectSkillUseForeign, output EffectSkillUseForeign, includeCharLevel bool) {
 	t.Helper()
 	if output.CharacterId() != input.CharacterId() {
 		t.Errorf("characterId: got %v, want %v", output.CharacterId(), input.CharacterId())
@@ -367,7 +571,8 @@ func assertEffectSkillUseForeign(t *testing.T, input EffectSkillUseForeign, outp
 	if output.SkillId() != input.SkillId() {
 		t.Errorf("skillId: got %v, want %v", output.SkillId(), input.SkillId())
 	}
-	if output.CharacterLevel() != input.CharacterLevel() {
+	// characterLevel is only on the wire for GMS >= v83 (see assertEffectSkillUse).
+	if includeCharLevel && output.CharacterLevel() != input.CharacterLevel() {
 		t.Errorf("characterLevel: got %v, want %v", output.CharacterLevel(), input.CharacterLevel())
 	}
 	if output.SkillLevel() != input.SkillLevel() {

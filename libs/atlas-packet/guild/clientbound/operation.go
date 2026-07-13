@@ -718,7 +718,11 @@ func (m MemberJoined) Encode(l logrus.FieldLogger, ctx context.Context) func(opt
 	}
 }
 
-func (m *MemberJoined) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *MemberJoined) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+	t := tenant.MustFromContext(ctx)
+	// GMS legacy (< v61) GUILDMEMBER omits the trailing AllianceTitle int (33B vs
+	// 37B; see model.GuildMember). task-113 v48 close-I.
+	legacyNoAlliance := t.IsRegion("GMS") && t.MajorVersion() < 61
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.mode = r.ReadByte()
 		m.guildId = r.ReadUint32()
@@ -731,7 +735,9 @@ func (m *MemberJoined) Decode(_ logrus.FieldLogger, _ context.Context) func(r *r
 		onlineVal = r.ReadUint32()
 		m.online = onlineVal == 1
 		_ = r.ReadUint32() // signature
-		m.allianceTitle = byte(r.ReadUint32())
+		if !legacyNoAlliance {
+			m.allianceTitle = byte(r.ReadUint32())
+		}
 	}
 }
 

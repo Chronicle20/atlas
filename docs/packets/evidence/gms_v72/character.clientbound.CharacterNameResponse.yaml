@@ -1,0 +1,10 @@
+packet: character/clientbound/CharacterNameResponse
+direction: clientbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CLogin::OnCheckDuplicatedIDResult
+    address: "0x5b3983"
+    decompile_sha256: f853aa2b67c4547e98bc2a8cbee7e98905af4392ed499855b7f05da458f105e8
+verifies:
+  - libs/atlas-packet/character/clientbound/v72_test.go#TestCharacterNameResponseByteOutputV72

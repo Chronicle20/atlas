@@ -40,6 +40,14 @@ type Entry struct {
 	Provenance string    `yaml:"provenance"` // csv-import | ida-discovered | manual
 	IDA        *IDARef   `yaml:"ida,omitempty"`
 	Note       string    `yaml:"note,omitempty"`
+	// Packet is the atlas-packet struct path this op maps to
+	// ("field/clientbound/SetItc"). Optional. It gives the matrix an explicit
+	// op→struct link so a byte-fixture (packet-audit:verify marker + fresh
+	// evidence) can promote the cell to ✅ even when the IDA-export pipeline
+	// produced no audit report for the packet — the report normally supplies this
+	// link via WriterName. A committed golden byte-test is stronger proof than the
+	// static report diff, so it should count on its own.
+	Packet string `yaml:"packet,omitempty"`
 }
 
 type VersionFile struct {

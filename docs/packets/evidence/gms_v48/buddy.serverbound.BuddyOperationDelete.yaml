@@ -1,0 +1,10 @@
+packet: buddy/serverbound/BuddyOperationDelete
+direction: serverbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: CField::SendDeleteFriendMsg
+    address: "0x4c659b"
+    decompile_sha256: 9b031ad859d88a0830e74e262f06d5764f75632d4bf64f52696e11fed06fab16
+verifies:
+    - libs/atlas-packet/buddy/serverbound/v48_test.go#TestOperationDeleteV48Body

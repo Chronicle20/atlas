@@ -1,0 +1,10 @@
+packet: interaction/serverbound/InteractionOperationPersonalStorePutItem
+direction: serverbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: sub_58883F
+    address: "0x58883f"
+    decompile_sha256: b748ccc734b2071189b4e8719a2b7f4a16a2d8aea40d7843fae6073c64e7be46
+verifies:
+    - libs/atlas-packet/interaction/serverbound/v48_test.go#TestOperationPersonalStorePutItemV48Bytes

@@ -1,0 +1,10 @@
+packet: character/clientbound/CharacterInfo
+direction: clientbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnCharacterInfo
+    address: "0x8455ed"
+    decompile_sha256: 6c7860467ea9d1014e240d0edbed2466aa149d6010717c741c1a774b8c20fbe7
+verifies:
+    - libs/atlas-packet/character/clientbound/v61_test.go#TestCharacterInfoByteOutputV61

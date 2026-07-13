@@ -1,0 +1,10 @@
+packet: character/clientbound/AddCharacterError
+direction: clientbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: CLogin::OnDeleteCharacterResult
+    address: "0x566eab"
+    decompile_sha256: 644208e73eb514029fa68bab90150927580f2a002caba35d23a3e02d0f514ca7
+verifies:
+    - libs/atlas-packet/character/clientbound/v61_test.go#TestAddCharacterErrorByteOutputV61

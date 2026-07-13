@@ -665,6 +665,121 @@ func TestCharacterListByteOutputJMS(t *testing.T) {
 	}
 }
 
+// CharacterList v48 byte-fixture (GMS_v48_1_DEVM.exe, port 13337).
+//
+// Client read order — legacy char-list decoder sub_5013ED @0x5013ed, the
+// world-select-success path (!v4 || v4==12 || v4==23, LABEL_29 @0x501558):
+//
+//	status = Decode1                       // result/status byte (earlier @0x501424)
+//	count  = Decode1 (v12)                 // number of avatar entries         /*0x50158a*/
+//	for each of 3 fixed slots (v16<48):    // loop @0x501626; entries<count decoded
+//	    GW_CharacterStat::Decode(a2,0)     // statistics block  sub_49B627     /*0x5015b0*/
+//	    AvatarLook::Decode                 // avatar/look block sub_49E1E0     /*0x5015be*/
+//	    rankEnabled = Decode1              // 0 => memset 16; else DecodeBuffer(16) /*0x5015c6*/
+//	// loop ENDS and returns — v48 reads NO family byte, NO hasPic, NO trailing
+//	// slot-count Decode4 (the slot count entered the char-list at v61,
+//	// sub_56688D @0x566b02).
+//
+// GW_CharacterStat::Decode (v48 sub_49B627 @0x49b627, list path a3=0): id=Decode4
+// /*0x49b64a*/, name=DecodeBuffer(13) /*0x49b65b*/, gender=Decode1 /*0x49b672*/,
+// skin=Decode1 /*0x49b687*/, face=Decode4 /*0x49b69c*/, hair=Decode4 /*0x49b6b1*/,
+// petLockerSN=DecodeBuffer(8) — a SINGLE 8-byte pet, NOT 3 longs /*0x49b6bc*/,
+// level=Decode1 /*0x49b6cb*/, 11x Decode2 (job,str,dex,int,luk,hp,maxHp,mp,maxMp,
+// ap,sp) /*0x49b6d7..0x49b7b0*/, exp=Decode4 /*0x49b7b3*/, fame=Decode2 /*0x49b7cd*/,
+// mapId=Decode4 /*0x49b7e7*/, spawnPoint=Decode1 /*0x49b801*/. NO gachaExp, NO
+// trailing int, NO nSubJob.
+//
+// AvatarLook::Decode (v48 sub_49E1E0 @0x49e1e0): gender=Decode1 /*0x49e1f3*/,
+// skin=Decode1 /*0x49e1ff*/, face=Decode4 /*0x49e20f*/, !mega=Decode1 /*0x49e22c*/,
+// hair=Decode4 /*0x49e238*/, equip loop (0xFF term) /*0x49e241*/, masked loop
+// (0xFF term) /*0x49e278*/, cashWeapon=Decode4 /*0x49e2b6*/, pet=Decode4 — a
+// SINGLE 4-byte pet int, NOT DecodeBuffer(12) /*0x49e2b9*/.
+//
+// packet-audit:verify packet=character/clientbound/CharacterList version=gms_v48 ida=0x5013ed
+func TestCharacterListByteOutputV48(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 48, 1)
+
+	stats := model.NewCharacterStatistics(
+		0x01020304,         // id
+		"Hero",             // name (padded to 13)
+		0,                  // gender
+		0,                  // skinColor
+		0x4D2,              // face
+		0x7B,               // hair
+		[3]uint64{0, 0, 0}, // petIds
+		0x0A,               // level
+		0x64,               // jobId
+		4, 5, 6, 7,         // str, dex, int, luck
+		0x64, 0x64, 0x32, 0x32, // hp, maxHp, mp, maxMp
+		3,      // ap
+		false,  // hasSPTable (write sp short)
+		2,      // sp
+		0,      // experience
+		8,      // fame
+		0,      // gachaponExperience
+		0x0BB8, // mapId
+		0,      // spawnPoint
+	)
+	avatar := model.NewAvatar(0, 0, 0x4D2, false, 0x7B, nil, nil, nil)
+	entry := model.NewCharacterListEntry(stats, avatar, false /*viewAll*/, false /*gm*/, 1, 2, 3, 4)
+
+	input := NewCharacterList(0 /*status*/, []model.CharacterListEntry{entry}, false /*hasPic*/, 8 /*slots*/)
+	got := input.Encode(nil, ctx)(nil)
+
+	want := []byte{
+		0x00, // status (Decode1)                                  /*0x501424*/
+		0x01, // count = 1 (Decode1)                               /*0x50158a*/
+
+		// --- GW_CharacterStat block (entry 0) --- sub_49B627 @0x49b627
+		0x04, 0x03, 0x02, 0x01, // id = 0x01020304 (Decode4)       /*0x49b64a*/
+		0x48, 0x65, 0x72, 0x6f, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // "Hero"+pad to 13 /*0x49b65b*/
+		0x00,                   // gender (Decode1)                /*0x49b672*/
+		0x00,                   // skin (Decode1)                  /*0x49b687*/
+		0xd2, 0x04, 0x00, 0x00, // face (Decode4)                  /*0x49b69c*/
+		0x7b, 0x00, 0x00, 0x00, // hair (Decode4)                  /*0x49b6b1*/
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // SINGLE pet long (DecodeBuffer 8) /*0x49b6bc*/
+		0x0a,       // level (Decode1)                 /*0x49b6cb*/
+		0x64, 0x00, // jobId (Decode2)                 /*0x49b6d7*/
+		0x04, 0x00, // str (Decode2)                   /*0x49b6eb*/
+		0x05, 0x00, // dex                             /*0x49b6ff*/
+		0x06, 0x00, // int                             /*0x49b713*/
+		0x07, 0x00, // luck                            /*0x49b727*/
+		0x64, 0x00, // hp                              /*0x49b73b*/
+		0x64, 0x00, // maxHp                           /*0x49b74f*/
+		0x32, 0x00, // mp                              /*0x49b763*/
+		0x32, 0x00, // maxMp                           /*0x49b777*/
+		0x03, 0x00, // ap (Decode2)                    /*0x49b78b*/
+		0x02, 0x00, // sp (Decode2, !hasSPTable)       /*0x49b79f*/
+		0x00, 0x00, 0x00, 0x00, // experience (Decode4)            /*0x49b7b3*/
+		0x08, 0x00,             // fame (Decode2)                  /*0x49b7cd*/
+		0xb8, 0x0b, 0x00, 0x00, // mapId (Decode4)                 /*0x49b7e7*/
+		0x00,                   // spawnPoint (Decode1)            /*0x49b801*/
+
+		// --- AvatarLook block (entry 0) --- sub_49E1E0 @0x49e1e0
+		0x00,                   // gender                          /*0x49e1f3*/
+		0x00,                   // skin                            /*0x49e1ff*/
+		0xd2, 0x04, 0x00, 0x00, // face                            /*0x49e20f*/
+		0x01,                   // !mega -> WriteBool(true)        /*0x49e22c*/
+		0x7b, 0x00, 0x00, 0x00, // hair                            /*0x49e238*/
+		0xff,                   // equip terminator                /*0x49e241*/
+		0xff,                   // masked terminator               /*0x49e278*/
+		0x00, 0x00, 0x00, 0x00, // cash weapon                     /*0x49e2b6*/
+		0x00, 0x00, 0x00, 0x00, // SINGLE pet int (Decode4)        /*0x49e2b9*/
+
+		// --- entry trailer (no family byte: v48<73) ---
+		0x01,                   // rankEnabled = !gm (Decode1)     /*0x5015c6*/
+		0x01, 0x00, 0x00, 0x00, // rank (Decode4)                  /*0x5015e1 DecodeBuffer 16*/
+		0x02, 0x00, 0x00, 0x00, // rankMove
+		0x03, 0x00, 0x00, 0x00, // jobRank
+		0x04, 0x00, 0x00, 0x00, // jobRankMove
+
+		// --- NO list trailer: v48 reads no hasPic (<83), no slot count (<61) ---
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("character-list v48 bytes:\n got %x\nwant %x", got, want)
+	}
+}
+
 func TestCharacterListRoundTrip(t *testing.T) {
 	v83 := pt.Variants[1]
 	ctx := pt.CreateContext(v83.Region, v83.MajorVersion, v83.MinorVersion)

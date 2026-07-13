@@ -1,0 +1,10 @@
+packet: pet/serverbound/PetMovementRequest
+direction: serverbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CVecCtrlPet::EndUpdateActive
+    address: "0x9150a1"
+    decompile_sha256: 284b254d8707ff09b044160c8b0e17bdd9963c85be4e9f0c21dd07ec51fbf43e
+verifies:
+  - libs/atlas-packet/pet/serverbound/movement_test.go#TestPetMovementBytesV79

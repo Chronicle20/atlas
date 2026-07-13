@@ -1,0 +1,10 @@
+packet: npc/clientbound/NpcShopOperationOutOfStock
+direction: clientbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CShopDlg::OnPacket#OutOfStock
+    address: "0x6a912b"
+    decompile_sha256: 2779328e6c0f84d6741526573c33f0eeebcb0b8ced1c4129b6d787accb9a53f7
+verifies:
+  - libs/atlas-packet/npc/clientbound/shop_operation_v72_test.go#TestShopOperationArmsV72

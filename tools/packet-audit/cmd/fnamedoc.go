@@ -215,11 +215,16 @@ func codecStructs(src string) []string {
 	return out
 }
 
+// fnamedocOrder is the priority order for resolving WriterName->IDAName: the
+// first version that supplies a report wins. v95 is first (PDB-named,
+// authoritative). The gms_jms_185 alias is kept for historical audit-dir compat.
+var fnamedocOrder = []string{"gms_v95", "gms_v83", "gms_v84", "gms_v87", "gms_v79", "gms_v72", "gms_v61", "gms_v48", "jms_v185", "gms_jms_185"}
+
 // loadReportFNames builds WriterName -> IDAName across all version audit dirs,
 // preferring the v95 report (PDB-named, authoritative) when a writer appears in
 // several versions.
 func loadReportFNames(auditsDir string) (map[string]string, error) {
-	order := []string{"gms_v95", "gms_v83", "gms_v84", "gms_v87", "jms_v185", "gms_jms_185"}
+	order := fnamedocOrder
 	out := map[string]string{}
 	for _, v := range order {
 		matches, _ := filepath.Glob(filepath.Join(auditsDir, v, "*.json"))

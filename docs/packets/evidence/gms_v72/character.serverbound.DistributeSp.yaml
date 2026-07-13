@@ -1,0 +1,10 @@
+packet: character/serverbound/DistributeSp
+direction: serverbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::SendSkillUpRequest
+    address: "0x91bead"
+    decompile_sha256: f9becb7b213eb1d62edbc3ff6290fdaba1d7e3c98c3f4c36fc0e29f141a36f12
+verifies:
+  - libs/atlas-packet/character/serverbound/v72_test.go#TestDistributeSpByteOutputV72

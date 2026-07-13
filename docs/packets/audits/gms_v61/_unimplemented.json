@@ -1,0 +1,48 @@
+{
+ "entries": [
+  {
+   "fname": "CTrunkDlg::OnPacket#ErrorInventoryFull",
+   "reason": "StorageErrorInventoryFull (a discrete inventory-full mode) is version-absent in gms_v61: the v61 storage dispatcher CTrunkDlg::OnPacket @0x63bf0e + sub_63C166 @0x63c166 (GMS_v61.1_U_DEVM.exe, port 13338) has NO per-error-type mode. Decode1(mode): mode<6 return; mode 6 -> sub_63C166 CUtilDlg::Notice(StringPool 3602) @0x63c2..; mode 7 -> sub_63C166 CUtilDlg::Notice(StringPool 3601); mode 8 -> Decode4(meso)+dialog StringPool 3593; modes 9/10/11/12/14 -> dialog-state only (no notice); mode 13 -> close. v72's four distinct storage error strings (SP854 InventoryFull, SP5092 NotEnoughMesos, SP867 OneOfAKind, SP866 Unknown) collapse to exactly TWO generic error notices (modes 6/7, SP3602/SP3601) in v61. Deciding which of {6,7} is 'inventory full' vs 'not enough mesos' requires resolving StringPool 3601/3602 text, which is loaded from String.wz at runtime (GetString(id)) and is NOT stored in the binary. String.wz is WZ data not available this session (same deferral class as the runtime WZ stages). Guessing the mode byte is disallowed (CLAUDE.md no-inventing). Report + unresolved export stub removed so the STORAGE worst-of-siblings grade excludes this arm. (task-113 stage E)"
+  },
+  {
+   "fname": "CCashShop::RequestCashPurchaseRecord",
+   "reason": "CashShopOperationGetPurchaseRecord (the 'request cash purchase record' send) is version-absent in gms_v61. The v72 anchor sends it via CCashShop::RequestCashPurchaseRecord @0x4659b4 as COutPacket(219)+Encode1(0x27 mode)+Encode4(serialNumber) with NO other fields. An exhaustive sweep of every CCashShop COutPacket(196) send site in GMS_v61.1_U_DEVM.exe @port 13338 (~20 sites incl. OnBuy/OnBuyCouple/OnBuyFriendship/OnBuyPackage/OnBuyNormal/OnGift/OnGiftPackage/SendGiftsPacket/OnEnableEquipSlotExt/OnSetWish/OnRemoveWish/OnIncCharacterSlotCount/OnBuySlotInc/move L<->S/SendBuyAvatarPacket) found NO mode + single-Encode4(serialNumber)-only sender. v61 sub-op mode 0x27 (sub_45CDD9, callers sub_6A2881/sub_6A2AE1) is a NAME-ENTRY dialog (name string 4-12 chars + curse-filter -> Encode4(serial)+EncodeStr+EncodeStr), i.e. the name-change buy, NOT a purchase-record query. The 'view cash purchase record' feature was added after v61; no v61 client sender exists to byte-verify. Report + unresolved RequestCashPurchaseRecord export stub removed so the CASHSHOP_OPERATION serverbound grade excludes this arm. (task-113 stage E)"
+  },
+  {
+   "fname": "CField::SendChatMsgSlash#AdminChat",
+   "reason": "ADMIN_CHAT (admin type+flag+message chat) is version-absent in gms_v61: the v61 /-command send parser CField::SendChatMsgSlash (sub_4E7469 @0x4e7469, GMS_v61.1_U_DEVM.exe port 13338) builds only the general-chat (COutPacket 46), whisper, party/guild and ADMIN_COMMAND (sub_80C896 COutPacket 126) sends plus SUE_CHARACTER (sub_849F27 COutPacket 104); it has NO type+flag+message admin-chat / admin-log / match-table send-site. The exporter's harvest could not locate the function in the v61 IDB (entry was 'function not found in IDB'), and the v61 registry carries no op for it. Report + unresolved export stub removed so the SendChatMsgSlash worst-of-siblings grade (shared by SUE_CHARACTER/ADMIN_COMMAND) excludes this arm. (task-113 stage E)"
+  },
+  {
+   "fname": "CField::SendChatMsgSlash#AdminLog",
+   "reason": "ADMIN_LOG (admin action log) is version-absent in gms_v61: the v61 /-command send parser CField::SendChatMsgSlash (sub_4E7469 @0x4e7469, GMS_v61.1_U_DEVM.exe port 13338) builds only the general-chat (COutPacket 46), whisper, party/guild and ADMIN_COMMAND (sub_80C896 COutPacket 126) sends plus SUE_CHARACTER (sub_849F27 COutPacket 104); it has NO type+flag+message admin-chat / admin-log / match-table send-site. The exporter's harvest could not locate the function in the v61 IDB (entry was 'function not found in IDB'), and the v61 registry carries no op for it. Report + unresolved export stub removed so the SendChatMsgSlash worst-of-siblings grade (shared by SUE_CHARACTER/ADMIN_COMMAND) excludes this arm. (task-113 stage E)"
+  },
+  {
+   "fname": "CField::SendChatMsgSlash#MatchTable",
+   "reason": "MATCH_TABLE (tournament match-table request) is version-absent in gms_v61: the v61 /-command send parser CField::SendChatMsgSlash (sub_4E7469 @0x4e7469, GMS_v61.1_U_DEVM.exe port 13338) builds only the general-chat (COutPacket 46), whisper, party/guild and ADMIN_COMMAND (sub_80C896 COutPacket 126) sends plus SUE_CHARACTER (sub_849F27 COutPacket 104); it has NO type+flag+message admin-chat / admin-log / match-table send-site. The exporter's harvest could not locate the function in the v61 IDB (entry was 'function not found in IDB'), and the v61 registry carries no op for it. Report + unresolved export stub removed so the SendChatMsgSlash worst-of-siblings grade (shared by SUE_CHARACTER/ADMIN_COMMAND) excludes this arm. (task-113 stage E)"
+  },
+  {
+   "fname": "CField::SendChatMsgSlash#SlideRequest",
+   "reason": "SLIDE_REQUEST is a v95+-only send (n-a in the v72 anchor as well); absent in gms_v61. Unresolved export stub removed so the SendChatMsgSlash worst-of-siblings grade excludes this arm. (task-113 stage E)"
+  },
+  {
+   "fname": "CField::OnFieldEffect#RewardRullet",
+   "reason": "FieldEffectRewardRullet (reward-roulette / gachapon field effect, mode 7) is version-absent in gms_v61: the v61 CField::OnFieldEffect switch (sub_4EB523 @0x4eb523, GMS_v61.1_U_DEVM.exe port 13338) dispatches Decode1(mode) over modes 0 (Summon), 1 (Tremble), 2/3 (screen/quest string), 4 (field sound), 5 (BossHp, sub_4EBAE0), 6 (BGM, PlayBGM) and returns for anything else \u2014 there is NO mode-7 reward-roulette arm (added after v61; present from the v72 anchor onward at @0x5177d4). Report + unresolved export stub removed so the FIELD_EFFECT worst-of-siblings grade excludes this arm. (task-113 stage E)"
+  },
+  {
+   "fname": "CField::OnWhisper#Weather",
+   "reason": "FieldWhisperWeather (GM weather-notification whisper, mode 146) is version-absent in gms_v61: the v61 CField::OnWhisper dispatcher (@0x4eabd7, GMS_v61.1_U_DEVM.exe port 13338) computes Decode1(mode)-9 and handles ONLY modes 9 (FindResult family), 10 (SendResult), 18 (Receive) and 34 (Error); the else-branch (if v7!=16) returns without a read, so mode 146 (Weather) is not handled. The v72 anchor adds the case-146 Weather arm at @0x516729 (DecodeStr(from)+Decode1(flag)+DecodeStr(msg)). Report + unresolved export stub removed so the WHISPER worst-of-siblings grade excludes this arm. (task-113 stage E)"
+  },
+  {
+   "fname": "CShopDlg::OnPacket#OverLevelRequirement",
+   "reason": "OVER/UNDER_LEVEL_REQUIREMENT are version-absent in gms_v61: the shop transaction dispatcher CShopDlg::OnPacket @0x64723c (GMS_v61.1_U_DEVM.exe, port 13338) reads Decode1(mode) and has NO Decode4 branch anywhere \u2014 every mode maps to a StringPool notice, except mode 14 which reads Decode1(flag)+optional DecodeStr (GENERIC_ERROR / GENERIC_ERROR_WITH_REASON). The level-requirement int32 payload (v83+ CShopDlg::OnPacket cases 14/15) does not exist in the legacy range; same disposition as gms_v72."
+  },
+  {
+   "fname": "CShopDlg::OnPacket#UnderLevelRequirement",
+   "reason": "OVER/UNDER_LEVEL_REQUIREMENT are version-absent in gms_v61: the shop transaction dispatcher CShopDlg::OnPacket @0x64723c (GMS_v61.1_U_DEVM.exe, port 13338) reads Decode1(mode) and has NO Decode4 branch anywhere \u2014 every mode maps to a StringPool notice, except mode 14 which reads Decode1(flag)+optional DecodeStr (GENERIC_ERROR / GENERIC_ERROR_WITH_REASON). The level-requirement int32 payload (v83+ CShopDlg::OnPacket cases 14/15) does not exist in the legacy range; same disposition as gms_v72."
+  },
+  {
+   "fname": "CWvsContext::SendAbilityUpRequest#AutoDistributeAp",
+   "reason": "AutoDistributeAp (the auto-assign-all-AP send) is version-absent in gms_v61: an exhaustive scan of every COutPacket send site in GMS_v61.1_U_DEVM.exe (port 13338; 391 ctor xrefs) found NO array/loop-Encode4 sender matching the v72 anchor CWvsContext::SendAbilityUpRequest(ZArray<StatPair>*) sub_91BCE8 (Encode4 update_time + Encode4 count + [Encode4 flag + Encode4 value]*count). The v61 CUIStatDlg button handler sub_72DFBB @0x72dfbb has ONLY the six single-stat +buttons (STR 0x40/DEX 0x80/INT 0x100/LUK 0x200/HP 0x800/MP 0x2000), each calling the single-stat DISTRIBUTE_AP sender sub_8457EE (op 80) \u2014 there is no auto-assign button and no batch array send. The auto-distribute feature was added after v61. Report + (absent) export stub removed so the DISTRIBUTE_AP (SendAbilityUpRequest) worst-of-siblings grade excludes this arm. (task-113)"
+  }
+ ]
+}

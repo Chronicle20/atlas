@@ -3,6 +3,21 @@
   "md5": "80ff438ced539b831f0d2ed95099275d",
   "generated_at": "2026-05-14T00:00:00Z",
   "functions": {
+    "CStage::OnSetCashShop": {
+      "address": "0x776a4f",
+      "direction": "clientbound",
+      "calls": null
+    },
+    "CITC::OnChargeParamResult": {
+      "address": "0x5a4241",
+      "direction": "clientbound",
+      "calls": null
+    },
+    "CStage::OnSetITC": {
+      "address": "0x7774d1",
+      "direction": "clientbound",
+      "calls": null
+    },
     "CAffectedAreaPool::OnAffectedAreaCreated": {
       "address": "0x431a63",
       "direction": "clientbound",

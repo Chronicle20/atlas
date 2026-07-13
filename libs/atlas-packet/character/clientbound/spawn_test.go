@@ -79,6 +79,50 @@ func TestCharacterSpawnJMSGolden(t *testing.T) {
 	}
 }
 
+// TestCharacterSpawnV48Golden pins the very-legacy GMS v48 SPAWN_PLAYER wire against
+// CUserRemote::Init sub_6BBC17 @0x6bbc17 (GMS_v48_1_DEVM.exe, port 13337). The v48 read
+// order diverges from the v79 legacy path in four IDA-verified ways:
+//   1. CTS-foreign (sub_5CBA1F @0x6bbcde) is an 8-byte mask; empty CTS = 8 zero bytes,
+//      no base-stat blocks.
+//   2. NO Decode2(jobId) — the CTS foreign goes straight to AvatarLook::Decode @0x6bbcea.
+//   3. Single-pet flag (Decode1 → sub_58C7CC @0x6bbe5e), not the 3-slot bool loop.
+//   4. Six tail flags (miniroom @0x6bbed5 / adboard @0x6bc045 / couple @0x6bc174 /
+//      friend @0x6bc1bf / marriage @0x6bc20a / final-effect @0x6bc25c) — NO new-year-card
+//      byte, NO trailing team byte.
+// Empty CTS + empty avatar make the whole wire deterministic (no base-stat time block).
+// packet-audit:verify packet=character/clientbound/CharacterSpawn version=gms_v48 ida=0x6bbc17
+func TestCharacterSpawnV48Golden(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 48, 1)
+	guild := GuildEmblem{Name: "TestGuild", LogoBackground: 1, LogoBackgroundColor: 2, Logo: 3, LogoColor: 4}
+	in := NewCharacterSpawn(12345, 50, "TestChar", guild, model.NewCharacterTemporaryStat(), 100, model.Avatar{}, nil, false, 100, 200, 3, 0)
+	got := in.Encode(nil, ctx)(nil)
+
+	if len(got) != 99 {
+		t.Fatalf("v48 CharacterSpawn length: got %d want 99 (no level, no jobId, 8-byte mask, single-pet flag, 6 tail flags)", len(got))
+	}
+	// Header through the 8-byte CTS-foreign mask: charId, name("TestChar"), guildName
+	// ("TestGuild"), logo(2/1/2/1), empty 8-byte mask. No level byte (legacy), and the
+	// mask is immediately followed by the avatar (no jobId).
+	wantHeader, _ := hex.DecodeString("393000000800546573744368617209005465737447756" +
+		"9" + "6c64010002030004" + "0000000000000000")
+	if !bytes.Equal(got[:39], wantHeader) {
+		t.Errorf("v48 CharacterSpawn header+mask: got %x want %x", got[:39], wantHeader)
+	}
+	// Bytes 39..60 are the empty avatar (proves avatar directly follows the mask — no
+	// jobId short was inserted). Compare against the standalone avatar encoding.
+	avatarBytes := model.Avatar{}.Encode(nil, ctx)(nil)
+	if !bytes.Equal(got[39:39+len(avatarBytes)], avatarBytes) {
+		t.Errorf("v48 CharacterSpawn avatar: got %x want %x", got[39:39+len(avatarBytes)], avatarBytes)
+	}
+	// Tail: choco+itemEffect+chair (3 ints) + x(100)+y(200)+stance(3) + fh(0) + admin(0)
+	// + pet-flag(0) + mount(1,0,0) + 6 ring/effect flags. No new-year-card, no team.
+	wantTail, _ := hex.DecodeString("000000000000000000000000" + "6400c80003" + "0000" +
+		"00" + "00" + "010000000000000000000000" + "000000000000")
+	if !bytes.Equal(got[60:], wantTail) {
+		t.Errorf("v48 CharacterSpawn tail:\n got %x\nwant %x", got[60:], wantTail)
+	}
+}
+
 func testSpawnAvatar() model.Avatar {
 	equip := map[slot.Position]uint32{5: 1040002, 6: 1060002, 7: 1072001}
 	masked := map[slot.Position]uint32{}
@@ -100,7 +144,11 @@ func TestCharacterSpawnRoundTrip(t *testing.T) {
 			if output.CharacterId() != input.CharacterId() {
 				t.Errorf("characterId: got %v, want %v", output.CharacterId(), input.CharacterId())
 			}
-			if output.Level() != input.Level() {
+			// Legacy GMS (< v83) SPAWN_PLAYER carries no level byte on the wire
+			// (v79 CUserRemote::Init @0x8d589e reads name first), so level is not
+			// round-trippable for those variants. v83+ and JMS transmit it.
+			legacy := v.Region == "GMS" && v.MajorVersion < 83
+			if !legacy && output.Level() != input.Level() {
 				t.Errorf("level: got %v, want %v", output.Level(), input.Level())
 			}
 			if output.Name() != input.Name() {
@@ -109,7 +157,11 @@ func TestCharacterSpawnRoundTrip(t *testing.T) {
 			if output.Guild().Name != input.Guild().Name {
 				t.Errorf("guildName: got %v, want %v", output.Guild().Name, input.Guild().Name)
 			}
-			if output.JobId() != input.JobId() {
+			// Pre-v61 GMS (v48) SPAWN_PLAYER carries no jobId short on the wire
+			// (CUserRemote::Init sub_6BBC17 reads CTS-foreign then AvatarLook with
+			// no Decode2 between), so jobId is not round-trippable for those variants.
+			legacyV48 := v.Region == "GMS" && v.MajorVersion < 61
+			if !legacyV48 && output.JobId() != input.JobId() {
 				t.Errorf("jobId: got %v, want %v", output.JobId(), input.JobId())
 			}
 			if output.X() != input.X() {
@@ -161,8 +213,15 @@ func TestCharacterSpawnWithPetsRoundTrip(t *testing.T) {
 			input := NewCharacterSpawn(999, 80, "PetOwner", guild, cts, 100, avatar, pets, false, 50, 60, 4, 0)
 			output := CharacterSpawn{}
 			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
-			if len(output.Pets()) != len(input.Pets()) {
-				t.Errorf("pets count: got %v, want %v", len(output.Pets()), len(input.Pets()))
+			// Pre-v61 GMS (v48) SPAWN_PLAYER carries a single-pet flag (sub_58C7CC),
+			// not the 3-slot bool loop — only the first pet survives the round-trip.
+			legacyV48 := v.Region == "GMS" && v.MajorVersion < 61
+			wantCount := len(input.Pets())
+			if legacyV48 && wantCount > 1 {
+				wantCount = 1
+			}
+			if len(output.Pets()) != wantCount {
+				t.Errorf("pets count: got %v, want %v", len(output.Pets()), wantCount)
 			} else {
 				for i, p := range output.Pets() {
 					if p.Pet.TemplateId != pets[i].Pet.TemplateId {

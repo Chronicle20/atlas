@@ -3,6 +3,21 @@
   "md5": "",
   "generated_at": "2026-06-13T12:51:12Z",
   "functions": {
+    "CStage::OnSetCashShop": {
+      "address": "0x7993b6",
+      "direction": "clientbound",
+      "calls": null
+    },
+    "CITC::OnChargeParamResult": {
+      "address": "0x5b46f8",
+      "direction": "clientbound",
+      "calls": null
+    },
+    "CStage::OnSetITC": {
+      "address": "0x799e7a",
+      "direction": "clientbound",
+      "calls": null
+    },
     "CWvsContext::SendMigrateToITCRequest": {
       "address": "0xa5c95f",
       "direction": "serverbound",

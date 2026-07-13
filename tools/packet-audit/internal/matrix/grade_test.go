@@ -597,3 +597,93 @@ func vfWith(t *testing.T, entries ...opregistry.Entry) *opregistry.VersionFile {
 	t.Helper()
 	return opregistry.NewVersionFile(entries)
 }
+
+// --- byte-fixture-without-report promotion (registry `packet:` link) -----------
+//
+// A packet with a committed golden byte-test (packet-audit:verify marker) + fresh
+// evidence, but NO IDA-export audit report, must still promote to ✅ when the
+// registry entry carries a `packet:` link. The report is confirmation, not a
+// prerequisite: a golden byte-test is stronger proof than the static report diff.
+
+// setItcRef mirrors the SET_ITC op (present, report-less clientbound writer).
+func setItcRef() opEntryRef {
+	return opEntryRef{Op: "SET_ITC", Dir: opregistry.DirClientbound, Opcode: 0x07E,
+		FName: "CStage::OnSetITC", Packet: "field/clientbound/SetItc"}
+}
+
+func setItcInputs(t *testing.T) Inputs {
+	in := baseInputs()
+	in.Registry.Versions["gms_v83"] = vfWith(t, opregistry.Entry{
+		Op: "SET_ITC", Direction: opregistry.DirClientbound, Opcode: 0x07E,
+		FName: "CStage::OnSetITC", Packet: "field/clientbound/SetItc", Provenance: "manual",
+	})
+	// Routed in the template so no wiring concern.
+	in.Routed["gms_v83"] = map[RouteKey]bool{{0x07E, opregistry.DirClientbound}: true}
+	return in
+}
+
+func TestGradeByteFixtureNoReportPromotes(t *testing.T) {
+	in := setItcInputs(t)
+	pk := EvKey{Packet: "field/clientbound/SetItc", Version: "gms_v83"}
+	in.Evidence[pk] = EvidenceStatus{Exists: true, Fresh: true, Address: "0x7774d1"}
+	in.Markers[pk] = MarkerStatus{Found: true, Address: "0x7774d1"}
+	c := gradeOpCell(in, setItcRef(), "gms_v83", false, map[string]bool{})
+	if c.State != StateVerified {
+		t.Fatalf("byte-fixture (marker+fresh evidence, no report) must be ✅; got %v (%s)", c.State.Name(), c.Note)
+	}
+}
+
+func TestGradeByteFixtureNoReportStaleEvidenceIncomplete(t *testing.T) {
+	in := setItcInputs(t)
+	pk := EvKey{Packet: "field/clientbound/SetItc", Version: "gms_v83"}
+	in.Evidence[pk] = EvidenceStatus{Exists: true, Fresh: false, Address: "0x7774d1", Note: "hash drift"}
+	in.Markers[pk] = MarkerStatus{Found: true, Address: "0x7774d1"}
+	c := gradeOpCell(in, setItcRef(), "gms_v83", false, map[string]bool{})
+	if c.State != StateIncomplete {
+		t.Fatalf("stale evidence must NOT promote; got %v (%s)", c.State.Name(), c.Note)
+	}
+}
+
+func TestGradeByteFixtureNoReportNoMarkerIncomplete(t *testing.T) {
+	in := setItcInputs(t)
+	// Fresh evidence but no marker → not byte-verified.
+	pk := EvKey{Packet: "field/clientbound/SetItc", Version: "gms_v83"}
+	in.Evidence[pk] = EvidenceStatus{Exists: true, Fresh: true, Address: "0x7774d1"}
+	c := gradeOpCell(in, setItcRef(), "gms_v83", false, map[string]bool{})
+	if c.State != StateIncomplete {
+		t.Fatalf("no marker must stay incomplete; got %v (%s)", c.State.Name(), c.Note)
+	}
+}
+
+func TestGradeNoReportNoPacketLinkStaysIncomplete(t *testing.T) {
+	// Regression guard: an op with NO report and NO `packet:` link grades exactly
+	// as before — Incomplete "no audit report" — even if some evidence/marker
+	// exists under a different key. This is the zero-blast-radius guarantee.
+	in := baseInputs()
+	in.Registry.Versions["gms_v83"] = vfWith(t, opregistry.Entry{
+		Op: "SET_ITC", Direction: opregistry.DirClientbound, Opcode: 0x07E,
+		FName: "CStage::OnSetITC", Provenance: "manual", // NO Packet field
+	})
+	in.Routed["gms_v83"] = map[RouteKey]bool{{0x07E, opregistry.DirClientbound}: true}
+	in.Evidence[EvKey{"field/clientbound/SetItc", "gms_v83"}] = EvidenceStatus{Exists: true, Fresh: true}
+	in.Markers[EvKey{"field/clientbound/SetItc", "gms_v83"}] = MarkerStatus{Found: true}
+	ref := opEntryRef{Op: "SET_ITC", Dir: opregistry.DirClientbound, Opcode: 0x07E, FName: "CStage::OnSetITC"} // no Packet
+	c := gradeOpCell(in, ref, "gms_v83", false, map[string]bool{})
+	if c.State != StateIncomplete || c.Note != "no audit report" {
+		t.Fatalf("no packet link must stay Incomplete/no audit report; got %v (%s)", c.State.Name(), c.Note)
+	}
+}
+
+func TestGradeByteFixtureNoReportFamilyCapped(t *testing.T) {
+	// A dispatcher family (capped) with a byte-fixture + fresh evidence but no
+	// report caps at 🧩, never ✅ (single sub-handler proves only one arm).
+	in := setItcInputs(t)
+	in.Families = map[string]bool{"CStage::OnSetITC": true}
+	pk := EvKey{Packet: "field/clientbound/SetItc", Version: "gms_v83"}
+	in.Evidence[pk] = EvidenceStatus{Exists: true, Fresh: true}
+	in.Markers[pk] = MarkerStatus{Found: true}
+	c := gradeOpCell(in, setItcRef(), "gms_v83", false, map[string]bool{})
+	if c.State != StateFamily {
+		t.Fatalf("capped dispatcher must stay 🧩 even byte-fixtured; got %v (%s)", c.State.Name(), c.Note)
+	}
+}

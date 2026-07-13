@@ -606,11 +606,13 @@
   direction: clientbound
   opcode: 126
   fname: CStage::OnSetITC
+  packet: field/clientbound/SetItc
   provenance: csv-import
 - op: SET_CASH_SHOP
   direction: clientbound
   opcode: 127
   fname: CStage::OnSetCashShop
+  packet: cash/clientbound/CashShopOpen
   provenance: csv-import
 - op: SET_BACK_EFFECT
   direction: clientbound
@@ -1670,13 +1672,15 @@
   opcode: 343
   fname: CMapleTVMan::OnSendMessageResult
   provenance: csv-import
-- op: IDA_0X15A
+- op: MTS_CHARGE_PARAM_RESULT
   direction: clientbound
   opcode: 346
   fname: CITC::OnChargeParamResult
+  packet: field/clientbound/MtsChargeParamResult
   provenance: ida-discovered
   ida:
     address: 5915141
+  note: 'v83 CITC::OnPacket case 0x15A -> CITC::OnChargeParamResult, handler entry 0x5a4241 (bodiless: this[6]=0; billing StringPool; open_web_site — reads nothing from CInPacket). task-113 MTS charge-param verification (renamed from placeholder IDA_0X15A).'
 - op: MTS_OPERATION2
   direction: clientbound
   opcode: 347

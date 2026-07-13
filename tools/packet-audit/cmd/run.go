@@ -2680,13 +2680,13 @@ func candidatesFromFName(fname string) []candidate {
 	case "CField_Wedding::OnWeddingProgress#Talk":
 		return []candidate{{name: "WeddingTalk", pkg: "field", dir: csvpkg.DirServerbound}}
 
-	// CField witch-tower / item-upgrade clientbound family (task-096). The
-	// OnScoreUpdate handler is shared by two ops that differ by version: it backs
+	// CField witch-tower clientbound family (task-096). The OnScoreUpdate
+	// handler is shared by two ops that differ by version: it backs
 	// WITCH_TOWER_SCORE_UPDATE on v83/v84/v87/jms and ARIANT_SCORE on v95 (where
 	// v95 routes WITCH_TOWER_SCORE_UPDATE to OnChaosZakumTimer instead). Both
 	// clientbound candidates are returned; the matrix resolves them per op-identity
-	// via the registry op->fname mapping. OnItemUpgrade is an empty-body vtable
-	// forwarder backing VICIOUS_HAMMER (absent from the jms registry).
+	// via the registry op->fname mapping. (See OnItemUpgrade / VICIOUS_HAMMER
+	// below for the unrelated item-upgrade dispatcher family, task-129.)
 	case "CField_Witchtower::OnScoreUpdate":
 		return []candidate{
 			{name: "WitchTowerScoreUpdate", pkg: "field", dir: csvpkg.DirClientbound},
@@ -2694,8 +2694,28 @@ func candidatesFromFName(fname string) []candidate {
 		}
 	case "CField::OnChaosZakumTimer":
 		return []candidate{{name: "WitchTowerScoreUpdate", pkg: "field", dir: csvpkg.DirClientbound}}
-	case "CField::OnItemUpgrade":
-		return []candidate{{name: "ViciousHammer", pkg: "field", dir: csvpkg.DirClientbound}}
+	// VICIOUS_HAMMER (task-129, OP-MODE-PREFIX). CField::OnItemUpgrade is a
+	// vtable forwarder into CUIItemUpgrade::OnPacket (v83 sub_82B2C3 via
+	// sub_82B2AD; v95 CUIItemUpgrade::ShowResult 0x7bec20), which reads
+	// Decode1(mode) and branches: 61 success, 62 failure, any other byte the
+	// non-terminal open/arm result. One discrete struct per arm (the
+	// FIELD_EFFECT model); the retired empty-body ViciousHammer stub was a
+	// false pass once the dialog body was decompiled. jms VERSION-ABSENT.
+	case "CField::OnItemUpgrade#Open":
+		// else-branch: Decode1(mode) + Decode4(token) + Decode4(hammerCount).
+		return []candidate{{name: "ViciousHammerOpen", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField::OnItemUpgrade#Success":
+		// case 61: Decode1(mode) + Decode4(flag).
+		return []candidate{{name: "ViciousHammerSuccess", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField::OnItemUpgrade#Failure":
+		// case 62: Decode1(mode) + Decode4(errorCode).
+		return []candidate{{name: "ViciousHammerFailure", pkg: "field", dir: csvpkg.DirClientbound}}
+
+	// ITEM_UPGRADE_UPDATE (task-129). The CUIItemUpgrade gauge-confirm sender:
+	// Encode4(m_nReturnResult) + Encode4(m_nResult) (v83 0x82ae28 /
+	// v95 0x7bef50).
+	case "CUIItemUpgrade::Update":
+		return []candidate{{name: "ItemUpgradeUpdate", pkg: "field", dir: csvpkg.DirServerbound}}
 
 	// CField clientbound cluster 2, remaining 9 ops (task-096). Version-invariant
 	// layouts derived from IDA (addresses pinned per version in the test markers).

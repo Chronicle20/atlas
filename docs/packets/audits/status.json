@@ -1,14 +1,14 @@
 {
-  "toolSha": "0466b3d20adcf41dfa845e91851eaabdcd30971677ea9f054c4c141cb1783393",
+  "toolSha": "ece54efdf7361edc79a5368e20a112895eafecf50ac8274bf31805e2b350aac8",
   "exportHashes": {
     "gms_v48": "054d404fcb6f0feed776b8c1453f2ab48a35f479463e82ea00d6d28ebca512dc",
     "gms_v61": "3294c3796405376978b0d209e1451eee68ff11a0e57198da251c77f8e84b998b",
     "gms_v72": "01e628692f47408c523f939acd8f6ae5defa4118536ff7334eeb10845abf114b",
-    "gms_v79": "9d338d86ee25e6483cd1018a25935a6f68e5f486c2d5ff0e718904914c39702b",
-    "gms_v83": "fa3c7b17d2007bb0e2ae620b85305202f6a20f3ed6e13f68f975f031d3c9697a",
-    "gms_v84": "703081652623b280e2c6697596321dc455ebbc7f88b03a22327662565a103c17",
-    "gms_v87": "c561e4674388fb4f6cc8f6102df6a0b905ea9ef540efc5d5c4f8aa27f06f1d64",
-    "gms_v95": "0dbb9f6f84dac7bfc1b5c37ae9fdd4ada69b1392b702eab3557f702a0101245e",
+    "gms_v79": "d0b58f14aff371d5a105acd9b1ef12e0f9ed6f4d8216df0853fea713534dfe4e",
+    "gms_v83": "593acd1b954d46215afed342f2f809b8dfdaf26dda73acac5f90aa1c8bbd8fae",
+    "gms_v84": "b6e4b290ae43502324d21e94c9c4fd2fc2e90cb186ebbc031a46ec1311233d1f",
+    "gms_v87": "db2801fecee67081bb792877473ce2b5176d053dfe9b777679f8783b31364c58",
+    "gms_v95": "c415427d2ff0b732b5b802965ef5d9b9ffc343ba42d25f0e1a9ddb3c05a842a2",
     "jms_v185": "884635e9cff438e732a010c256a82819b61198775ba054cfd2e3b88442fe4a05"
   },
   "rows": [
@@ -34387,6 +34387,55 @@
     },
     {
       "kind": "op",
+      "op": "ITEM_UPGRADE_UPDATE",
+      "packet": "field/serverbound/FieldItemUpgradeUpdate",
+      "direction": "serverbound",
+      "tier1": true,
+      "fnames": [
+        "CUIItemUpgrade::Update"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v61": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v72": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": 250
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 260
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 267
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 274
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 296
+        },
+        "jms_v185": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 276
+        }
+      }
+    },
+    {
+      "kind": "op",
       "op": "RPS_GAME",
       "direction": "clientbound",
       "tier1": false,
@@ -34897,58 +34946,6 @@
           "state": "incomplete",
           "note": "no audit report",
           "opcode": 363
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "ITEM_UPGRADE_UPDATE",
-      "direction": "serverbound",
-      "tier1": false,
-      "fnames": [
-        "CUIItemUpgrade::Update"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 260
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 260
-        },
-        "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 274
-        },
-        "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 296
-        },
-        "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 276
         }
       }
     },
@@ -39034,6 +39031,54 @@
     },
     {
       "kind": "op",
+      "op": "VICIOUS_HAMMER",
+      "packet": "field/clientbound/FieldViciousHammerFailure",
+      "direction": "clientbound",
+      "tier1": true,
+      "fnames": [
+        "CField::OnItemUpgrade"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v61": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v72": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": 330
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 354
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 364
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 375
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 425
+        },
+        "jms_v185": {
+          "state": "n-a",
+          "opcode": -1
+        }
+      }
+    },
+    {
+      "kind": "op",
       "op": "OPEN_GATE_CREATED",
       "direction": "clientbound",
       "tier1": false,
@@ -39698,54 +39743,6 @@
           "state": "incomplete",
           "note": "no audit report",
           "opcode": 354
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "VICIOUS_HAMMER",
-      "packet": "field/clientbound/FieldViciousHammer",
-      "direction": "clientbound",
-      "tier1": true,
-      "fnames": [
-        "CField::OnItemUpgrade"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "verified",
-          "opcode": 354
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": 361
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": 375
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": 425
-        },
-        "jms_v185": {
-          "state": "n-a",
-          "opcode": -1
         }
       }
     },

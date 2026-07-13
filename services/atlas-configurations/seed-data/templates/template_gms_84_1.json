@@ -1211,6 +1211,11 @@
             "BUY_AUCTION_IMM": 20
           }
         }
+      },
+      {
+        "opCode": "0x10B",
+        "validator": "LoggedInValidator",
+        "handler": "ItemUpgradeUpdateHandle"
       }
     ],
     "writers": [
@@ -2800,8 +2805,21 @@
         "writer": "WitchTowerScoreUpdate"
       },
       {
-        "opCode": "0x169",
-        "writer": "ViciousHammer"
+        "opCode": "0x16C",
+        "writer": "ViciousHammer",
+        "options": {
+          "operations": {
+            "OPEN": 0,
+            "SUCCESS": 61,
+            "FAILURE": 62
+          },
+          "errorCodes": {
+            "UNKNOWN": 0,
+            "NOT_UPGRADABLE": 1,
+            "CAP_REACHED": 2,
+            "HORNTAIL": 3
+          }
+        }
       },
       {
         "opCode": "0x14B",

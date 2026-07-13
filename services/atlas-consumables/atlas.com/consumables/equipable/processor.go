@@ -139,6 +139,12 @@ func AddLevel(amount int8) Change {
 	}
 }
 
+func AddHammersApplied(amount int32) Change {
+	return func(m *asset.ModelBuilder) {
+		m.AddHammersApplied(amount)
+	}
+}
+
 func SetSpike() Change {
 	return func(m *asset.ModelBuilder) {
 		m.SetSpikes(true)

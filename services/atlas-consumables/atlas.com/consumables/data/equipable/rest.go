@@ -146,5 +146,6 @@ func Extract(m RestModel) (Model, error) {
 		speed:         m.Speed,
 		jump:          m.Jump,
 		slots:         m.Slots,
+		cash:          m.Cash,
 	}, nil
 }

@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldViciousHammerOpen
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnItemUpgrade#Open
+    address: "0x799d61"
+    decompile_sha256: aa6680443c7ad0f719ac9525d10ad49f6225aef0cc93a3437948190682981882
+verifies:
+  - libs/atlas-packet/field/clientbound/vicious_hammer_test.go#TestViciousHammerOpenByteOutput

@@ -36,3 +36,32 @@ func TestExpireAndEmit_RollsBackDeleteWhenReplacementCreateFails(t *testing.T) {
 	require.NoError(t, db.Table("storage_assets").Count(&assets).Error)
 	require.EqualValues(t, 1, assets, "the expired asset's delete must roll back")
 }
+
+// MergeAndSort is a loop of quantity-updates + deletes + re-slotting
+// (class B). Failing a later delete must roll back the earlier quantity
+// updates, restoring the pre-merge stacks.
+func TestMergeAndSort_RollsBackQuantityUpdatesWhenDeleteFails(t *testing.T) {
+	db := databasetest.NewInMemoryTenantDB(t, Migration, asset.Migration)
+	tid := uuid.New()
+	ctx := databasetest.TenantContext(tid)
+	l, _ := test.NewNullLogger()
+
+	s, err := Create(l, db.WithContext(ctx), tid)(world.Id(0), 5002)
+	require.NoError(t, err)
+	// Two mergeable stacks of the same consumable: 30 + 30 with slotMax 100
+	// (the atlas-data lookup fails in tests, falling back to 100) merge into
+	// one stack of 60, deleting the second row.
+	_, err = asset.Create(l, db.WithContext(ctx), tid)(asset.NewBuilder(s.Id(), 2000000).SetSlot(0).SetQuantity(30).Build())
+	require.NoError(t, err)
+	_, err = asset.Create(l, db.WithContext(ctx), tid)(asset.NewBuilder(s.Id(), 2000000).SetSlot(1).SetQuantity(30).Build())
+	require.NoError(t, err)
+
+	databasetest.FailWritesOn(t, db, "storage_assets", databasetest.WriteDelete)
+
+	p := NewProcessor(l, ctx, db)
+	require.Error(t, p.MergeAndSort(world.Id(0), 5002))
+
+	var quantities []uint32
+	require.NoError(t, db.Table("storage_assets").Order("slot").Pluck("quantity", &quantities).Error)
+	require.Equal(t, []uint32{30, 30}, quantities, "quantity update must roll back with the failed delete")
+}

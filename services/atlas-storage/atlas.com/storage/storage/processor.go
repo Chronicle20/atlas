@@ -545,62 +545,73 @@ func (p *ProcessorImpl) MergeAndSort(worldId world.Id, accountId uint32) error {
 		stackableGroups[key] = append(stackableGroups[key], a)
 	}
 
-	if len(stackableGroups) == 0 {
-		return p.sortAssets(assets)
-	}
-
-	var mergedAssets []asset.Model
-
-	for key, group := range stackableGroups {
+	// Prefetch slot maxima before opening the transaction — these are
+	// atlas-data lookups (network I/O) and must not run inside the tx.
+	slotMaxByTemplate := make(map[uint32]uint32, len(stackableGroups))
+	for key := range stackableGroups {
+		if _, seen := slotMaxByTemplate[key.templateId]; seen {
+			continue
+		}
 		slotMax, err := p.getSlotMaxByTemplateId(key.templateId)
 		if err != nil || slotMax == 0 {
 			slotMax = 100
 		}
-
-		var totalQuantity uint32
-		for _, a := range group {
-			totalQuantity += a.Quantity()
-		}
-
-		numStacks := (totalQuantity + slotMax - 1) / slotMax
-		if numStacks == 0 {
-			numStacks = 1
-		}
-
-		assetsToKeep := min(uint32(len(group)), numStacks)
-
-		sort.Slice(group, func(i, j int) bool {
-			return group[i].Slot() < group[j].Slot()
-		})
-
-		remainingQuantity := totalQuantity
-		for i := uint32(0); i < assetsToKeep; i++ {
-			a := group[i]
-			newQuantity := min(remainingQuantity, slotMax)
-			remainingQuantity -= newQuantity
-
-			err := asset.UpdateQuantity(p.l, p.db.WithContext(p.ctx))(a.Id(), newQuantity)
-			if err != nil {
-				return err
-			}
-
-			mergedAssets = append(mergedAssets, a)
-		}
-
-		for i := int(assetsToKeep); i < len(group); i++ {
-			err := asset.Delete(p.l, p.db.WithContext(p.ctx))(group[i].Id())
-			if err != nil {
-				return err
-			}
-		}
+		slotMaxByTemplate[key.templateId] = slotMax
 	}
 
-	allAssets := append(nonStackables, mergedAssets...)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		if len(stackableGroups) == 0 {
+			return p.sortAssets(tx, assets)
+		}
 
-	return p.sortAssets(allAssets)
+		var mergedAssets []asset.Model
+
+		for key, group := range stackableGroups {
+			slotMax := slotMaxByTemplate[key.templateId]
+
+			var totalQuantity uint32
+			for _, a := range group {
+				totalQuantity += a.Quantity()
+			}
+
+			numStacks := (totalQuantity + slotMax - 1) / slotMax
+			if numStacks == 0 {
+				numStacks = 1
+			}
+
+			assetsToKeep := min(uint32(len(group)), numStacks)
+
+			sort.Slice(group, func(i, j int) bool {
+				return group[i].Slot() < group[j].Slot()
+			})
+
+			remainingQuantity := totalQuantity
+			for i := uint32(0); i < assetsToKeep; i++ {
+				a := group[i]
+				newQuantity := min(remainingQuantity, slotMax)
+				remainingQuantity -= newQuantity
+
+				if err := asset.UpdateQuantity(p.l, tx)(a.Id(), newQuantity); err != nil {
+					return err
+				}
+
+				mergedAssets = append(mergedAssets, a)
+			}
+
+			for i := int(assetsToKeep); i < len(group); i++ {
+				if err := asset.Delete(p.l, tx)(group[i].Id()); err != nil {
+					return err
+				}
+			}
+		}
+
+		allAssets := append(nonStackables, mergedAssets...)
+
+		return p.sortAssets(tx, allAssets)
+	})
 }
 
-func (p *ProcessorImpl) sortAssets(assets []asset.Model) error {
+func (p *ProcessorImpl) sortAssets(db *gorm.DB, assets []asset.Model) error {
 	byInventoryType := make(map[byte][]asset.Model)
 	for _, a := range assets {
 		invType := inventoryTypeFromTemplateId(a.TemplateId())
@@ -619,8 +630,7 @@ func (p *ProcessorImpl) sortAssets(assets []asset.Model) error {
 		for i, a := range group {
 			newSlot := int16(i)
 			if a.Slot() != newSlot {
-				err := asset.UpdateSlot(p.l, p.db.WithContext(p.ctx))(a.Id(), newSlot)
-				if err != nil {
+				if err := asset.UpdateSlot(p.l, db)(a.Id(), newSlot); err != nil {
 					return err
 				}
 			}

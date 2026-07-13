@@ -105,4 +105,43 @@ Bans bare `go` statements outside `libs/atlas-routine` + justified `//goroutine-
 
 ## Acceptance evidence
 
-(Filled in by Task 14 at execution time.)
+Executed 2026-07-13. All 59 services migrated onto `service.Bootstrap`; five library tasks landed first. Every migration reviewed clean per-batch (spec + quality).
+
+### Step 1 — Acceptance greps (PRD §10), all matching expected values
+```
+find services -path '*/kafka/producer/producer.go' | wc -l                     → 0
+find services -path '*/atlas.com/*/logger/init.go' -o -path '*/atlas.com/*/logger/logger.go' | wc -l → 0
+grep -rl parseProjectionCatchupTimeout services | wc -l                         → 0
+grep -l "tracing.InitTracer" services/*/atlas.com/*/main.go | wc -l             → 0
+grep -rn "logger.CreateLogger" services --include='*.go' | wc -l                → 0
+grep -L "MountReadiness" services/*/atlas.com/*/main.go                         → services/atlas-renders/... (exactly 1, root-mounts /readyz by hand)
+grep -l "service.Bootstrap\|lifecycle.Bootstrap" services/*/atlas.com/*/main.go | wc -l → 59
+grep -rn "shuttingDown" services/*/atlas.com/*/main.go | wc -l                  → 0
+```
+
+### Step 2 — Per-module build/vet/test sweep
+- `go build ./...` + `go vet ./...`: **61/61 modules clean** (libs/atlas-kafka, libs/atlas-service, 59 services).
+- `go test -race ./...`: **61/61 modules clean, 0 failures.**
+
+### Step 3 — Guards + full bake
+- `tools/redis-key-guard.sh` → PASS
+- `tools/goroutine-guard.sh` → PASS (renders listener + all outbox drainers use `routine.Go`)
+- `docker buildx bake all-go-services` → **exit 0** (all service images built against the shared Dockerfile; the two go.mod-changed services — merchant, renders — bake clean).
+
+### Step 4 — Runtime verification (atlas-query-aggregator local smoke)
+`REST_PORT=18099 go run .`, then:
+- `curl /api/readyz` → **HTTP 200** (effective `/api/readyz` under `/api/` base path).
+- SIGTERM → stdout shows, in order: `"Starting main service."`, `"Flipped /readyz to not-ready for graceful shutdown."`, `"Service shutdown."` — all ECS-JSON with a `service.name` field (ecslogrus + Bootstrap readiness controller + graceful shutdown all confirmed live). snake_case normalization is unit-verified in libs/atlas-service (Task 2/3).
+
+### Notable execution deviations from the plan (all correct, documented above under Post-rebase measurements + here)
+- **atlas-mts** added to the sweep (new service, drift #1).
+- **17 DB services** retained the task-114 outbox drainer block (drift #2); R2 substitution preserved it.
+- **atlas-character-factory** gate kept BEFORE `Run()` (drift #3; plan had said "after").
+- **atlas-renders** listener uses `routine.Go` not bare `go` (drift #4 / goroutine-guard).
+- **atlas-data** MODE=ingest now initializes a tracer it previously skipped — benign (InitTracer uses a lazy gRPC dial, cannot Fatal on unreachable/unset TRACE_ENDPOINT; no rt.Wait in ingest so its spans are dropped). Natural consequence of design D4 (Bootstrap owns tracer init).
+- **atlas-marriages / atlas-reactors** producer_test.go removed (internal `package producer` tests of the deleted local `ProviderImpl`; uncompilable after deletion, redundant with libs/atlas-kafka/producer/provider_test.go).
+- **atlas-character / atlas-storage** alias the lib import as `lifecycle` (local `service` package name collision).
+- **atlas-merchant** deleted its private teardown-manager copy and gained the lib atlas-service require (allowed go.mod change, like renders); bake clean.
+- **atlas-maps** kept its local `kafka/producer` package (domain producer `character.go`) alongside the lib, via a `mapsproducer` alias.
+- **Task 13**: DUP-1/2/3, CP-9, OPS-2/3 do NOT exist in docs/architectural-improvements.md (only CD-2 does) — those IDs live only in task-118's own prd/design/plan. The snake_case convention was documented in docs/observability.md; nothing to mark resolved in architectural-improvements.md.
+- **style commit**: the R1 producer-import sed left import blocks unsorted in 158 Cohort A/D files; a consolidated `gofmt` commit normalized them (no behavior change).

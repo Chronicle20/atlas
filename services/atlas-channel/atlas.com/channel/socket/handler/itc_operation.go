@@ -822,18 +822,17 @@ func writeBrowsePage(l logrus.FieldLogger, ctx context.Context, wp writer.Produc
 		// Not Yet Sold). Sections that hold no sale listings (wanted/my-page) return
 		// an empty page.
 		//
-		// The browse is UNPAGED (PageSize=-1): the client builds its page
+		// The browse DRAINS every match (BrowseAll): the client builds its page
 		// selector from categoryItemCnt as ceil(total/16)
 		// (CITCWnd_List::ChangeCategorySub, v83 0x5BDD12), so the total must
 		// count EVERY match, not one page's slice — the requested 16-item
-		// window is cut below, uniformly for every view.
+		// window is cut below, uniformly for every view. (task-117: replaces the
+		// removed atlas-mts PageSize=-1 "unpaged" hatch with a page-through drain.)
 		f.ExcludeSellerId = s.CharacterId()
 		// Escrowed want-ad offers (sale_type=offer) are private to the poster's
 		// VIEW_WISH view — never surface them in the public For-Sale / Auction tabs.
 		f.ExcludeOffers = true
-		f.Page = 0
-		f.PageSize = -1
-		ms, err := mtslisting.NewProcessor(l, ctx).Browse(s.WorldId(), f)
+		ms, err := mtslisting.NewProcessor(l, ctx).BrowseAll(s.WorldId(), f)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to browse MTS listings for character [%d]; writing failed arm.", s.CharacterId())
 			loadErr = err

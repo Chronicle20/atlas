@@ -42,6 +42,21 @@ func ScrollEventProvider(characterId character.Id) func(success bool, cursed boo
 	}
 }
 
+func VegaScrollEventProvider(characterId character.Id) func(success bool, cursed bool) model.Provider[[]kafka.Message] {
+	return func(success bool, cursed bool) model.Provider[[]kafka.Message] {
+		key := producer.CreateKey(int(characterId))
+		value := &consumable.Event[consumable.VegaScrollBody]{
+			CharacterId: characterId,
+			Type:        consumable.EventTypeVegaScroll,
+			Body: consumable.VegaScrollBody{
+				Success: success,
+				Cursed:  cursed,
+			},
+		}
+		return producer.SingleMessageProvider(key, value)
+	}
+}
+
 func ViciousHammerEventProvider(characterId character.Id, success bool, reason ViciousHammerReason) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &consumable.Event[consumable.ViciousHammerBody]{

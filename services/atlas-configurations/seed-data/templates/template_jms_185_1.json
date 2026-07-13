@@ -2514,6 +2514,19 @@
             "JMS_COUNTER_NOTICE": 15
           }
         }
+      },
+      {
+        "opCode": "0x183",
+        "writer": "VegaScroll",
+        "options": {
+          "operations": {
+            "START_SUCCESS": 59,
+            "START_FAILURE": 64,
+            "RESULT_SUCCESS": 60,
+            "RESULT_FAILURE": 62,
+            "INVALID": 61
+          }
+        }
       }
     ]
   },

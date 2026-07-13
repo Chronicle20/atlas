@@ -1875,6 +1875,19 @@
             "BBS_ENTRY_NOT_FOUND": 8
           }
         }
+      },
+      {
+        "opCode": "0x1AD",
+        "writer": "VegaScroll",
+        "options": {
+          "operations": {
+            "START_SUCCESS": 68,
+            "START_FAILURE": 73,
+            "RESULT_SUCCESS": 69,
+            "RESULT_FAILURE": 71,
+            "INVALID": 66
+          }
+        }
       }
     ]
   },

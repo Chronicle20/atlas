@@ -122,9 +122,18 @@ Pattern (see atlas-channel `kafka/consumer/mts/consumer.go` `failNoticeOr` +
   feature's rollout notes call out the live-tenant patch (seed templates
   never retroactively apply — bug_new_opcodes_not_in_live_tenant_config).
 
-The **baseline** lists families not yet migrated (currently `party`, `guild`,
-`buddy`). The linter fails on any violation **outside** the baseline. Migrating a
-family = removing its baseline entry; the baseline only shrinks.
+The **baseline** (`docs/packets/dispatcher-lint-baseline.yaml`) lists families
+not yet migrated. It is now **empty** (`exempt_families: []`) — guild (task-103),
+message (task-104), party, and buddy (task-105) all graduated to discrete-per-mode.
+The linter fails on any violation **outside** the baseline (i.e. any violation at
+all now). Migrating a family = removing its baseline entry; the baseline only
+shrinks and has reached empty — new families must be authored discrete-per-mode
+from the start.
+
+Separately, `docs/packets/evidence/families.yaml` (the mode-prefix membership list
+that caps an op at the `🧩` `family` state) is also empty — every dispatcher arm
+graduated (task-096) — so `🧩` currently caps **no** op. A newly-added family that
+should cap needs an explicit `families.yaml` entry.
 
 ### Known limitations (the linter's blind spots)
 

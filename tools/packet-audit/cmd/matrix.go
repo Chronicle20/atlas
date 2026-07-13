@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"flag"
 	"fmt"
@@ -241,6 +242,21 @@ func matrixRun(o matrixOpts, stdout, stderr io.Writer) int {
 		}
 	}
 
+	// Resolve per-version sub-struct dispositions from each version's
+	// _unimplemented.json (FR-4.1, task-169). A ref names a sub-struct by an
+	// explicit `packet` path or a suffix-qualified fname; bare-base-fname
+	// dispatcher-arm dispositions are not sub-struct rows and are skipped.
+	idaIndex := matrix.BuildIDANameIndex(in.Reports)
+	in.Unimplemented = map[string]map[string]bool{}
+	for _, vk := range o.Versions {
+		refs, uerr := matrix.LoadUnimplemented(filepath.Join(o.AuditsDir, vk, "_unimplemented.json"))
+		if uerr != nil {
+			fmt.Fprintf(stderr, "packet-audit matrix: error loading _unimplemented.json for %s: %v\n", vk, uerr)
+			return exitRuntime
+		}
+		in.Unimplemented[vk] = matrix.ResolveUnimplemented(refs, idaIndex)
+	}
+
 	m := matrix.Build(in, o.Versions)
 	m.ExportHashes = hashes
 	m.ToolSHA = toolTreeSHA()
@@ -440,12 +456,60 @@ func exportPathIn(dir, vk string) string {
 	return filepath.Join(dir, filepath.Base(matrix.ExportPath(vk)))
 }
 
-// toolTreeSHA returns `git rev-parse HEAD:tools/packet-audit` (the tree SHA of
-// the tool itself), or "unknown" outside a git checkout.
+// toolTreeSHA returns a deterministic SHA over the tool's committed Go sources
+// only (excluding README/docs/testdata), or "unknown" outside a git checkout.
+// Hashing only .go blobs means editing the tool's docs never invalidates the
+// matrix (task-169 T2.0 — closes the README churn trap).
 func toolTreeSHA() string {
-	out, err := exec.Command("git", "rev-parse", "HEAD:tools/packet-audit").Output()
+	out, err := exec.Command("git", "ls-tree", "-r", "HEAD", "tools/packet-audit").Output()
 	if err != nil {
 		return "unknown"
 	}
-	return strings.TrimSpace(string(out))
+	return hashGoTreeEntries(string(out))
+}
+
+// isToolTestdataPath reports whether a repo-relative path lies under a
+// `testdata` directory (whose .go fixtures are excluded from the ToolSHA).
+func isToolTestdataPath(p string) bool {
+	for _, seg := range strings.Split(p, "/") {
+		if seg == "testdata" {
+			return true
+		}
+	}
+	return false
+}
+
+// hashGoTreeEntries parses `git ls-tree -r` output and returns a sha256 over
+// only the tool's Go source blobs — non-.go files (README, docs) and testdata
+// fixtures are excluded. Entries are sorted by path so the result is
+// order-stable and deterministic regardless of git's line order.
+func hashGoTreeEntries(lsTree string) string {
+	type ent struct{ path, blob string }
+	var ents []ent
+	for _, line := range strings.Split(lsTree, "\n") {
+		line = strings.TrimRight(line, "\r")
+		if strings.TrimSpace(line) == "" {
+			continue
+		}
+		// Format: "<mode> <type> <objectsha>\t<path>"
+		tab := strings.IndexByte(line, '\t')
+		if tab < 0 {
+			continue
+		}
+		meta, path := line[:tab], line[tab+1:]
+		fields := strings.Fields(meta)
+		if len(fields) != 3 {
+			continue
+		}
+		if !strings.HasSuffix(path, ".go") || isToolTestdataPath(path) {
+			continue
+		}
+		ents = append(ents, ent{path: path, blob: fields[2]})
+	}
+	sort.Slice(ents, func(i, j int) bool { return ents[i].path < ents[j].path })
+	h := sha256.New()
+	for _, e := range ents {
+		fmt.Fprintf(h, "%s %s\n", e.path, e.blob)
+	}
+	return hex.EncodeToString(h.Sum(nil))
 }

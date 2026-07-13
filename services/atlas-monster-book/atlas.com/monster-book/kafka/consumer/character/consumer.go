@@ -9,6 +9,7 @@ import (
 	characterMsg "atlas-monster-book/kafka/message/character"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
@@ -46,7 +47,7 @@ func handleStatusEventDeleted(db *gorm.DB) message.Handler[characterMsg.StatusEv
 			return
 		}
 		characterId := character.Id(e.CharacterId)
-		if err := db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := database.ExecuteTransaction(db.WithContext(ctx), func(tx *gorm.DB) error {
 			cp := card.NewProcessor(l, ctx, tx)
 			colp := collection.NewProcessor(l, ctx, tx)
 			if err := cp.DeleteByCharacterId(characterId); err != nil {

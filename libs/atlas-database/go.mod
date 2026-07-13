@@ -1,13 +1,13 @@
 module github.com/Chronicle20/atlas/libs/atlas-database
 
-go 1.25.0
+go 1.25.5
 
 require (
 	github.com/Chronicle20/atlas/libs/atlas-model v0.0.0
 	github.com/Chronicle20/atlas/libs/atlas-retry v0.0.0
 	github.com/Chronicle20/atlas/libs/atlas-tenant v0.0.0
 	github.com/google/uuid v1.6.0
-	github.com/jackc/pgx/v5 v5.7.4
+	github.com/jackc/pgx/v5 v5.10.0
 	github.com/prometheus/client_golang v1.23.2
 	github.com/sirupsen/logrus v1.9.4
 	github.com/stretchr/testify v1.11.1

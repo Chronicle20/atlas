@@ -28,20 +28,16 @@ model: inherit
 You verify exactly one (packet, version) cell. You are working in the task
 worktree given in your prompt — `cd` there first and verify the branch.
 
-Procedure: follow `docs/packets/audits/VERIFYING_A_PACKET.md` literally,
-steps 1–8. Constraints, in priority order:
+**Procedure: follow `docs/packets/audits/VERIFYING_A_PACKET.md` §0–10 verbatim.**
+Read it FIRST, in full, and execute it — do not paraphrase or work from a
+remembered version. That playbook owns every rule this agent used to restate:
+Verification-Over-Memory (no fabricated bytes/opcodes/read orders — every byte
+cites a decompile line or export entry), IDA-instance resolution by loaded IDB
+(list_instances/select_instance; STOP and report blocked if the right IDB and
+export entry are both absent), wire divergence as its own commit before the
+verification commit, the single commit grouping test+evidence+STATUS.md, and the
+`matrix --check` hard gate (must exit 0 — no new orphan/dangling/stale/drift, no
+conflict-count increase).
 
-1. NEVER fabricate bytes, opcodes, or read orders from MapleStory knowledge.
-   Every fixture byte traces to a decompile line or export entry you cite
-   (function + address) in the test comment.
-2. Resolve IDA instances by loaded IDB via list_instances/select_instance.
-   If no instance has the right IDB and the export lacks the function, STOP
-   and report blocked.
-3. Wire divergences (step 4) are a separate commit before the verification
-   commit, with a byte-test proving the fix.
-4. Final commit contains: the test (+marker), the evidence YAML, regenerated
-   STATUS.md + status.json, and `packet-audit matrix --check` introduces no
-   new problems (no orphan/dangling/stale/drift lines for your packet, no
-   conflict-count increase; exit 0 once the seed-conflict backlog is zero).
-5. Report format: `<packet> × <version>: <old state> → <new state>, commit
-   <sha>` or `BLOCKED at step <n>: <reason>`.
+Report format: `<packet> × <version>: <old state> → <new state>, commit <sha>`
+or `BLOCKED at §<n>: <reason>`.

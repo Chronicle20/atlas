@@ -4,6 +4,7 @@ import (
 	"atlas-character/character"
 	"atlas-character/kafka/message"
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
@@ -19,9 +20,21 @@ import (
 
 func testDatabase(t *testing.T) *gorm.DB {
 	l, _ := test.NewNullLogger()
-	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	// Uniquely-named shared-cache in-memory database. A bare ":memory:" DB is
+	// private to one connection, so once database.ExecuteTransaction opens a
+	// real transaction (task-119 fixed it from a no-op) a query on the root
+	// handle inside that transaction lands on a second connection with an empty
+	// schema ("no such table"). Shared-cache is visible to every pooled
+	// connection; the unique name keeps each test isolated.
+	dsn := fmt.Sprintf("file:%s?mode=memory&cache=shared", uuid.NewString())
+	db, err := gorm.Open(sqlite.Open(dsn), &gorm.Config{})
 	if err != nil {
 		t.Fatalf("Failed to connect to database: %v", err)
+	}
+	if sqlDB, dbErr := db.DB(); dbErr == nil {
+		sqlDB.SetMaxIdleConns(1)
+		sqlDB.SetConnMaxLifetime(0)
+		sqlDB.SetConnMaxIdleTime(0)
 	}
 
 	database.RegisterTenantCallbacks(l, db)

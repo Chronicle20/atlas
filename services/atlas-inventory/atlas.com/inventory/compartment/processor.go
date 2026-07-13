@@ -627,7 +627,7 @@ func (p *ProcessorImpl) IncreaseCapacity(mb *message.Buffer) func(transactionId 
 
 		var capacity uint32
 		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
-			c, err := p.GetByCharacterAndType(characterId)(inventoryType)
+			c, err := p.WithTransaction(tx).GetByCharacterAndType(characterId)(inventoryType)
 			if err != nil {
 				return err
 			}
@@ -672,7 +672,7 @@ func (p *ProcessorImpl) Drop(mb *message.Buffer) func(transactionId uuid.UUID, c
 		var a asset.Model
 		var rechargeableDrop bool
 		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
-			c, err := p.GetByCharacterAndType(characterId)(inventoryType)
+			c, err := p.WithTransaction(tx).GetByCharacterAndType(characterId)(inventoryType)
 			if err != nil {
 				return err
 			}
@@ -1120,7 +1120,7 @@ func (p *ProcessorImpl) AttemptEquipmentPickUp(mb *message.Buffer) func(transact
 		defer invLock.Unlock()
 
 		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
-			c, err := p.GetByCharacterAndType(characterId)(inventoryType)
+			c, err := p.WithTransaction(tx).GetByCharacterAndType(characterId)(inventoryType)
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to locate inventory [%d] for character [%d].", inventoryType, characterId)
 				return err
@@ -1268,7 +1268,7 @@ func (p *ProcessorImpl) AttemptItemPickUp(mb *message.Buffer) func(transactionId
 					p.l.Debugf("Character [%d] increased quantity of asset [%d] to max [%d].", characterId, assetToUpdate.Id(), slotMax)
 
 					// Create a new asset with the remaining quantity
-					err = p.CreateAsset(innerMb)(transactionId, characterId, inventoryType, templateId, remainingQuantity, time.Time{}, 0, 0, 0, false)
+					err = p.WithTransaction(tx).CreateAsset(innerMb)(transactionId, characterId, inventoryType, templateId, remainingQuantity, time.Time{}, 0, 0, 0, false)
 					if err != nil {
 						p.l.WithError(err).Errorf("Unable to create asset [%d] for character [%d] with remaining quantity [%d].", templateId, characterId, remainingQuantity)
 						return err
@@ -1284,7 +1284,7 @@ func (p *ProcessorImpl) AttemptItemPickUp(mb *message.Buffer) func(transactionId
 				}
 			} else {
 				// Create a new asset
-				err = p.CreateAsset(innerMb)(transactionId, characterId, inventoryType, templateId, quantity, time.Time{}, 0, 0, 0, false)
+				err = p.WithTransaction(tx).CreateAsset(innerMb)(transactionId, characterId, inventoryType, templateId, quantity, time.Time{}, 0, 0, 0, false)
 				if err != nil {
 					p.l.WithError(err).Errorf("Unable to create asset [%d] for character [%d].", templateId, characterId)
 					return err
@@ -1419,7 +1419,7 @@ func (p *ProcessorImpl) MergeAndCompact(mb *message.Buffer) func(transactionId u
 
 		var compartmentId uuid.UUID
 		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
-			c, err := p.GetByCharacterAndType(characterId)(inventoryType)
+			c, err := p.WithTransaction(tx).GetByCharacterAndType(characterId)(inventoryType)
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to get compartment by type [%d] for character [%d].", inventoryType, characterId)
 				return err
@@ -1442,12 +1442,12 @@ func (p *ProcessorImpl) MergeAndCompact(mb *message.Buffer) func(transactionId u
 			for i := 0; i < len(positiveSlotAssets); i++ {
 				for j := i + 1; j < len(positiveSlotAssets); j++ {
 					if p.canMergeAssets(c.Type(), positiveSlotAssets[j], positiveSlotAssets[i], characterId) {
-						err = p.Move(mb)(transactionId, characterId, inventoryType, positiveSlotAssets[j].Slot(), positiveSlotAssets[i].Slot())
+						err = p.WithTransaction(tx).Move(mb)(transactionId, characterId, inventoryType, positiveSlotAssets[j].Slot(), positiveSlotAssets[i].Slot())
 						if err != nil {
 							p.l.WithError(err).Errorf("Unable to move assets [%d] and [%d] in compartment [%s].", positiveSlotAssets[i].Id(), positiveSlotAssets[j].Id(), c.Id())
 							return err
 						}
-						c, err = p.GetByCharacterAndType(characterId)(inventoryType)
+						c, err = p.WithTransaction(tx).GetByCharacterAndType(characterId)(inventoryType)
 						if err != nil {
 							p.l.WithError(err).Errorf("Unable to get compartment by type [%d] for character [%d].", inventoryType, characterId)
 						}
@@ -1477,12 +1477,12 @@ func (p *ProcessorImpl) MergeAndCompact(mb *message.Buffer) func(transactionId u
 					continue
 				}
 				if positiveSlotAssets[i].Slot() >= nextFree {
-					err = p.Move(mb)(transactionId, characterId, inventoryType, positiveSlotAssets[i].Slot(), nextFree)
+					err = p.WithTransaction(tx).Move(mb)(transactionId, characterId, inventoryType, positiveSlotAssets[i].Slot(), nextFree)
 					if err != nil {
 						p.l.WithError(err).Errorf("Unable to move assets [%d] in compartment [%s].", positiveSlotAssets[i].Id(), c.Id())
 						return err
 					}
-					c, err = p.GetByCharacterAndType(characterId)(inventoryType)
+					c, err = p.WithTransaction(tx).GetByCharacterAndType(characterId)(inventoryType)
 					if err != nil {
 						p.l.WithError(err).Errorf("Unable to get compartment by type [%d] for character [%d].", inventoryType, characterId)
 					}
@@ -1752,7 +1752,7 @@ func (p *ProcessorImpl) CompactAndSort(mb *message.Buffer) func(transactionId uu
 
 		var compartmentId uuid.UUID
 		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
-			c, err := p.GetByCharacterAndType(characterId)(inventoryType)
+			c, err := p.WithTransaction(tx).GetByCharacterAndType(characterId)(inventoryType)
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to get compartment by type [%d] for character [%d].", inventoryType, characterId)
 				return err
@@ -1776,12 +1776,12 @@ func (p *ProcessorImpl) CompactAndSort(mb *message.Buffer) func(transactionId uu
 					continue
 				}
 				if positiveSlotAssets[i].Slot() >= nextFree {
-					err = p.Move(mb)(transactionId, characterId, inventoryType, positiveSlotAssets[i].Slot(), nextFree)
+					err = p.WithTransaction(tx).Move(mb)(transactionId, characterId, inventoryType, positiveSlotAssets[i].Slot(), nextFree)
 					if err != nil {
 						p.l.WithError(err).Errorf("Unable to move assets [%d] in compartment [%s].", positiveSlotAssets[i].Id(), c.Id())
 						return err
 					}
-					c, err = p.GetByCharacterAndType(characterId)(inventoryType)
+					c, err = p.WithTransaction(tx).GetByCharacterAndType(characterId)(inventoryType)
 					if err != nil {
 						p.l.WithError(err).Errorf("Unable to get compartment by type [%d] for character [%d].", inventoryType, characterId)
 					}
@@ -1810,12 +1810,12 @@ func (p *ProcessorImpl) CompactAndSort(mb *message.Buffer) func(transactionId uu
 					}
 				}
 				if minIdx != i {
-					err = p.Move(mb)(transactionId, characterId, inventoryType, positiveSlotAssets[minIdx].Slot(), positiveSlotAssets[i].Slot())
+					err = p.WithTransaction(tx).Move(mb)(transactionId, characterId, inventoryType, positiveSlotAssets[minIdx].Slot(), positiveSlotAssets[i].Slot())
 					if err != nil {
 						p.l.WithError(err).Errorf("Unable to move assets [%d] and [%d] in compartment [%s].", positiveSlotAssets[i].Id(), positiveSlotAssets[minIdx].Id(), c.Id())
 						return err
 					}
-					c, err = p.GetByCharacterAndType(characterId)(inventoryType)
+					c, err = p.WithTransaction(tx).GetByCharacterAndType(characterId)(inventoryType)
 					if err != nil {
 						p.l.WithError(err).Errorf("Unable to get compartment by type [%d] for character [%d].", inventoryType, characterId)
 					}

@@ -51,7 +51,7 @@ func (p *ProcessorImpl) WithTransaction(db *gorm.DB) Processor {
 		l:                    p.l,
 		ctx:                  p.ctx,
 		db:                   db,
-		compartmentProcessor: p.compartmentProcessor,
+		compartmentProcessor: p.compartmentProcessor.WithTransaction(db),
 	}
 }
 

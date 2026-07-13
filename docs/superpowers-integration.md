@@ -35,6 +35,20 @@ For ad-hoc one-off checks, invoke any agent directly by name without the orchest
 | `/convert-quest` | Convert quest conversation JavaScript script to JSON state machine format | (direct command) |
 | `/convert-reactor` | Convert reactor JavaScript script to JSON rules format | (direct command) |
 
+## Packet Work
+
+Packet-audit work has ONE canonical playbook per task type and an executable entry point that drives it. Start at [`docs/packets/PROCESS.md`](packets/PROCESS.md) — the source of truth for the version set, baseline status, and CI gates — then pick your entry point:
+
+| Task type | Entry point | Canonical playbook |
+|---|---|---|
+| Implement a new feature codec (clientbound or serverbound) | `/implement-packet` command + `packet-implementer` agent | [`IMPLEMENTING_A_PACKET.md`](packets/IMPLEMENTING_A_PACKET.md) |
+| Bring up a new client-version column | `/bringup-version` command | [`STARTING_A_NEW_VERSION_PASS.md`](packets/audits/STARTING_A_NEW_VERSION_PASS.md) |
+| Audit / implement a mode-prefix dispatcher family | `family-auditor` agent (read-only triage) · `dispatcher-family-implementer` agent (do-mode) | [`DISPATCHER_FAMILY.md`](packets/DISPATCHER_FAMILY.md) |
+
+The leaf step shared by all of the above — promoting one packet × version matrix cell to `✅` — is `/verify-packet` + the `packet-verifier` agent, driving [`VERIFYING_A_PACKET.md`](packets/audits/VERIFYING_A_PACKET.md). Each entry point cites its playbook rather than restating the procedure; keep it that way.
+
+**Before opening a packet-task PR**, run the `packet-completeness-critic` agent alongside the guideline reviewers. It is the packet-specific review companion: it diffs the task's `docs/tasks/<task>/coverage-manifest.yaml` (schema in [`PROCESS.md`](packets/PROCESS.md)) against the branch's git + matrix delta and flags **CHANGED-BUT-UNCLAIMED** (a codec/gate moved but the task never declared it — the class-8 scope hole) and **CLAIMED-BUT-UNVERIFIED** (a manifest op×version with no verified cell). Read-only; writes `completeness-critic.md`.
+
 ## Domain Skills
 
 These activate via the project hook (`skill-activation-prompt.py`) when you mention relevant keywords or work on relevant files:

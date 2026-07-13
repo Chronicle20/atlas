@@ -12,6 +12,7 @@ import (
 	pickupMsg "atlas-inventory/kafka/message/pickup"
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"sync"
 	"testing"
@@ -92,9 +93,22 @@ func TestMain(m *testing.M) {
 }
 
 func testDatabase(t *testing.T, l logrus.FieldLogger) *gorm.DB {
-	db, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
+	// Uniquely-named shared-cache in-memory database. The previous bare
+	// "file::memory:?cache=shared" (no name) is shared across the whole test
+	// binary, so tests could contaminate one another; a unique name isolates
+	// each test while still letting every pooled connection see the schema —
+	// required now that database.ExecuteTransaction opens real transactions
+	// (task-119) and code inside a closure may read the root handle on a
+	// second connection.
+	dsn := fmt.Sprintf("file:%s?mode=memory&cache=shared", uuid.NewString())
+	db, err := gorm.Open(sqlite.Open(dsn), &gorm.Config{})
 	if err != nil {
 		t.Fatalf("Failed to connect to database: %v", err)
+	}
+	if sqlDB, dbErr := db.DB(); dbErr == nil {
+		sqlDB.SetMaxIdleConns(1)
+		sqlDB.SetConnMaxLifetime(0)
+		sqlDB.SetConnMaxIdleTime(0)
 	}
 
 	database.RegisterTenantCallbacks(l, db)

@@ -2,7 +2,7 @@ package monsterbook
 
 import (
 	mbmsg "atlas-channel/kafka/message/monsterbook"
-	"atlas-channel/kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"context"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"

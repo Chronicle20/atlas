@@ -2,7 +2,7 @@ package note
 
 import (
 	note2 "atlas-channel/kafka/message/note"
-	"atlas-channel/kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"context"
 	"errors"
 

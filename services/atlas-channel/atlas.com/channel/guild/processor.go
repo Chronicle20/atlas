@@ -3,7 +3,7 @@ package guild
 import (
 	"atlas-channel/guild/member"
 	guild2 "atlas-channel/kafka/message/guild"
-	"atlas-channel/kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"context"
 	"strings"
 

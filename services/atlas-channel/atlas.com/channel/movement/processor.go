@@ -4,7 +4,7 @@ import (
 	dmap "atlas-channel/data/map"
 	"atlas-channel/data/npc"
 	movement2 "atlas-channel/kafka/message/movement"
-	"atlas-channel/kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	_map2 "atlas-channel/map"
 	"atlas-channel/monster"
 	monsterinfo "atlas-channel/monster/information"

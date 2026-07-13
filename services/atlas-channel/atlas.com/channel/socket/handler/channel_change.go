@@ -5,7 +5,7 @@ import (
 	"atlas-channel/channel"
 	"atlas-channel/character"
 	characterMsg "atlas-channel/kafka/message/character"
-	producer2 "atlas-channel/kafka/producer"
+	producer2 "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"atlas-channel/session"
 	"atlas-channel/socket/model"
 	"atlas-channel/socket/writer"

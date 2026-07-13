@@ -2,7 +2,7 @@ package chair
 
 import (
 	chair2 "atlas-channel/kafka/message/chair"
-	"atlas-channel/kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"context"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"

@@ -2,7 +2,7 @@ package thread
 
 import (
 	thread2 "atlas-channel/kafka/message/guild/thread"
-	"atlas-channel/kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"context"
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"

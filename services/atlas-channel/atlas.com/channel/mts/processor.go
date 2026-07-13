@@ -2,7 +2,7 @@ package mts
 
 import (
 	mtsmsg "atlas-channel/kafka/message/mts"
-	"atlas-channel/kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"context"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"

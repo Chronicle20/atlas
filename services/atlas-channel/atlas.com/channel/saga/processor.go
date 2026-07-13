@@ -2,7 +2,7 @@ package saga
 
 import (
 	"atlas-channel/kafka/message/saga"
-	"atlas-channel/kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"context"
 
 	"github.com/sirupsen/logrus"

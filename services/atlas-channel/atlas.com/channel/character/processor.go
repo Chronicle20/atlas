@@ -6,7 +6,7 @@ import (
 	"atlas-channel/compartment"
 	"atlas-channel/inventory"
 	character2 "atlas-channel/kafka/message/character"
-	"atlas-channel/kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"atlas-channel/monsterbook"
 	"atlas-channel/party"
 	"atlas-channel/pet"

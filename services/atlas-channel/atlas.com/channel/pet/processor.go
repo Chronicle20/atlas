@@ -2,7 +2,7 @@ package pet
 
 import (
 	pet2 "atlas-channel/kafka/message/pet"
-	"atlas-channel/kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"atlas-channel/pet/exclude"
 	"context"
 

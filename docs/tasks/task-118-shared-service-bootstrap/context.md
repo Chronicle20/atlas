@@ -64,7 +64,44 @@ Companion to `plan.md`. Key files, locked decisions, dependencies, and the gotch
 
 ## Post-rebase measurements
 
-(Filled in by Task 0 at execution time.)
+Rebased onto `origin/main` (2026-07-13) — both gate commits present:
+`d2e13ba3d feat(outbox): fleet-wide transactional outbox adoption (task-114) (#903)`
+and `e15b343b1 refactor(task-116): converge all processors onto the Gen3 idiom (#967)`.
+Clean rebase (doc-only branch). Census after rebase:
+
+| Metric | 2026-07-02 snapshot | Post-rebase (2026-07-13) |
+|---|---|---|
+| `main.go` | 58 | **59** |
+| logger files (`init.go`/`logger.go`) | 57 | **58** |
+| producer wrappers | 52 | **53** |
+| producer wrapper hash census | 51× common + quest | **52× common (`c983cb70`) + quest (`353904e2`)** |
+| projection helpers (`parseProjectionCatchupTimeout`) | 4 | 4 (unchanged) |
+
+### Drift #1 — new service `atlas-mts` (the MTS feature landed)
+Standard Cohort A shape: producer wrapper md5 = common `c983cb70`, logger md5 = common `473b31e2…`. It also carries the task-114 outbox block. **Added to Task 7 (Cohort A now 45 services; fleet total 59).**
+
+### Drift #2 — task-114 outbox drainer block now in 17 DB-service `main.go`s
+`buddies, cashshop, character, configurations, fame, guilds, inventory, merchant, monster-book, mounts, mts, notes, npc-shops, pets, quest, skills, tenants` each gained, right after `database.Connect(... , outboxlib.Migration)`:
+```go
+publisher := outboxlib.NewTopicWriterPool()
+drainer := outboxlib.NewDrainer(l, db, publisher, outboxlib.WithDSN(database.DSN()))
+routine.Go(l, tdm.Context(), func(_ context.Context) { drainer.Run(tdm.Context()) })
+tdm.TeardownFunc(func() { drainer.Stop(); publisher.Close() })
+```
+plus imports `context`, `routine "…/atlas-routine"`, `outboxlib "…/atlas-outbox"`.
+Recipe R2's substitution rules (tdm.→rt.; delete only logger+tracing lines) **preserve this block correctly** — it is retained service-specific code. The plan's Task 6 *full-verbatim* fame `main.go` omitted it and has been **re-derived** to include it. R2 step 7 clarified to keep the outbox imports. (Note `atlas-configurations` is Cohort B — no producer wrapper — yet has the outbox block; R2 still applies.)
+
+### Drift #3 — plan error: character-factory catch-up gate is BEFORE `Run()`
+The plan's Task 10 Step 4 claimed atlas-character-factory gates catch-up "after `Run()`, like world." The actual current file gates it **before `Run()`** (the `ctxCaught` block sits above `server.New()`). world gates **after** `Run()`; character-factory gates **before**. Task 10 corrected so each service's `rt.AwaitProjectionCatchUp()` keeps its true position.
+
+### Drift #4 — new build gate `tools/goroutine-guard.sh` (task-115, RR-6)
+Bans bare `go` statements outside `libs/atlas-routine` + justified `//goroutine-guard:allow` sites. The outbox block already uses `routine.Go` (compliant). **The plan's Task 12 (atlas-renders) used a bare `go func(){…}()` for its listener — re-derived to `routine.Go(l, rt.Context(), …)`.** goroutine-guard added to Global Constraints + Task 14 verification.
+
+### Unchanged (verified against plan verbatim)
+- Producer wrapper body (Task 1 lib target) — identical.
+- Canonical logger body (Task 3 target) — fame `logger/init.go` md5 `473b31e2…` matches the pinned snapshot; body structure matches Task 3.
+- login/channel projection blocks — catch-up gate still before listener registry; `Subscriber` literal fields (`State, CaughtUp, ServiceTopic, TenantTopic, ServiceId`) unchanged (channel literal at main.go:242-248).
+- No outbox block in world/character-factory/login/channel (non-DB or Redis-only).
 
 ## Acceptance evidence
 

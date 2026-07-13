@@ -17,7 +17,7 @@
 - **Exact log messages preserved** (grep-verifiable): `"Starting main service."`, `"Service shutdown."`, `"Unable to initialize tracer."`, `"Unable to start configuration projection subscriber."`, `"Configuration projection failed to catch up."`, `"Flipped /readyz to not-ready for graceful shutdown."`, the projection warn line (world/character-factory spelling: `"projection: EVENT_TOPIC_CONFIGURATION_TENANT_STATUS is not set; tenant config updates will not propagate live"`).
 - **Service `go.mod`/`go.sum` files are NOT touched** in the sweep (no `go mod tidy` per service). Unused requires (e.g. `atlas-tracing`, `ecslogrus` after main.go stops importing them directly) are harmless and keep the module graph + replace directives valid — `replace` directives are only honored from the main module, so every service MUST keep its `atlas-tracing` require+replace because `libs/atlas-service` now depends on it. Exception: atlas-renders (Task 12) genuinely gains new deps and runs `GOWORK=off go mod tidy` after adding the required `replace` lines.
 - **Commit discipline:** lib commits first (Tasks 1–5), then exactly one commit per service (Tasks 6–12), then docs (Task 13). All on branch `task-118-shared-service-bootstrap`; verify `git branch --show-current` after each commit.
-- **Verification (CLAUDE.md, all mandatory before "done"):** `go test -race ./...`, `go vet ./...`, `go build ./...` clean in every changed module; `docker buildx bake all-go-services` from the worktree root; `tools/redis-key-guard.sh` clean.
+- **Verification (CLAUDE.md, all mandatory before "done"):** `go test -race ./...`, `go vet ./...`, `go build ./...` clean in every changed module; `docker buildx bake all-go-services` from the worktree root; `tools/redis-key-guard.sh` clean; `tools/goroutine-guard.sh` clean (task-115/RR-6 — bans bare `go` outside `libs/atlas-routine`; every new goroutine uses `routine.Go`).
 - No `// TODO`, stubs, or 501s in any commit. No absolute home paths written into files.
 
 ## Plan-time corrections to design §2 (measured 2026-07-02)
@@ -82,7 +82,7 @@ Apply these exact edits to `services/atlas-<svc>/atlas.com/<svc>/main.go`:
    ```go
    rt.Wait()
    ```
-7. Remove now-unused imports: `"atlas-<svc>/logger"` and `tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"`. Keep `"github.com/Chronicle20/atlas/libs/atlas-service"` (now used for `service.Bootstrap`).
+7. Remove now-unused imports: `"atlas-<svc>/logger"` and `tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"`. Keep `"github.com/Chronicle20/atlas/libs/atlas-service"` (now used for `service.Bootstrap`). **Do NOT remove imports still used by retained service code** — in particular the 17 DB services carry a task-114 outbox drainer block right after `database.Connect(…, outboxlib.Migration)` (`outboxlib.NewTopicWriterPool()`, `NewDrainer`, a `routine.Go(l, rt.Context(), …)` drainer loop, and a `drainer.Stop()/publisher.Close()` teardown); keep its `context`, `routine "…/atlas-routine"`, and `outboxlib "…/atlas-outbox"` imports and apply only the `tdm.`→`rt.` substitution to the block. (Post-rebase drift #2; see context.md.)
 8. Delete the local logger package: `git rm -r services/atlas-<svc>/atlas.com/<svc>/logger`.
 
 ### Recipe R3 — per-service verify + commit
@@ -1257,7 +1257,7 @@ Follow Recipe R1 with `<svc>` = `fame`. Expected: `kafka/producer/producer.go` d
 
 - [ ] **Step 2: Apply Recipe R2 (main.go rewrite)**
 
-The full target `services/atlas-fame/atlas.com/fame/main.go` (assuming the pre-rebase shape; re-derive retained lines from the post-rebase file per Task 0):
+The full target `services/atlas-fame/atlas.com/fame/main.go` — **re-derived post-rebase (Task 0 drift #2)**: fame carries the task-114 outbox drainer block, which R2 preserves with only `tdm.`→`rt.` substitution. Verify the retained lines against the actual post-rebase file:
 
 ```go
 package main
@@ -1266,13 +1266,16 @@ import (
 	"atlas-fame/fame"
 	"atlas-fame/kafka/consumer/character"
 	fame2 "atlas-fame/kafka/consumer/fame"
+	"context"
 	"os"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	outboxlib "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
 )
 
@@ -1284,7 +1287,20 @@ func main() {
 	rt := service.Bootstrap(serviceName)
 	l := rt.Logger()
 
-	db := database.Connect(l, database.SetMigrations(fame.Migration))
+	db := database.Connect(l, database.SetMigrations(fame.Migration, outboxlib.Migration))
+
+	// Boot the outbox drainer: publishes the transactional outbox to Kafka.
+	// Leadership is gated by a postgres advisory lock — replicas are safe.
+	// (Retained task-114 block; only tdm.→rt. substitution applied.)
+	publisher := outboxlib.NewTopicWriterPool()
+	drainer := outboxlib.NewDrainer(l, db, publisher, outboxlib.WithDSN(database.DSN()))
+	routine.Go(l, rt.Context(), func(_ context.Context) {
+		drainer.Run(rt.Context())
+	})
+	rt.TeardownFunc(func() {
+		drainer.Stop()
+		publisher.Close()
+	})
 
 	cmf := consumer.GetManager().AddConsumer(l, rt.Context(), rt.WaitGroup())
 	fame2.InitConsumers(l)(cmf)(consumerGroupId)
@@ -1333,7 +1349,9 @@ Expected: clean build. This validates the Dockerfile COPY set against the new li
 
 ---
 
-### Task 7: Cohort A sweep — 44 standard services
+### Task 7: Cohort A sweep — 45 standard services
+
+> Post-rebase (Task 0 drift #1): **atlas-mts** was added below — the MTS feature landed with a standard Cohort A shape (common producer wrapper + logger, plus a task-114 outbox block handled by the R2 note). Cohort A is now 45 services; fleet total 59.
 
 **Files:** per service `atlas-<svc>`: `main.go`, `logger/` (delete), `kafka/producer/producer.go` (delete), import-site rewrites.
 
@@ -1369,6 +1387,7 @@ Apply R1 → R2 → R3 to each service, one commit per service, in this order:
 - [ ] atlas-messengers
 - [ ] atlas-monster-book — local logger file is `logger/logger.go` (NOT `init.go`); delete the `logger/` dir all the same.
 - [ ] atlas-monster-death
+- [ ] atlas-mts — new service (Task 0 drift #1); standard shape + task-114 outbox block (R2 note applies).
 - [ ] atlas-monsters
 - [ ] atlas-mounts
 - [ ] atlas-notes
@@ -1499,7 +1518,7 @@ Commit message: `refactor(world): migrate to service.Bootstrap with projection o
 
 - [ ] **Step 4: atlas-character-factory — same transformation**
 
-Identical pattern to Step 1 with two differences, matching its current `main.go`: the readiness gate is `service.WithReadinessGate(caughtUp.CaughtUpNow)`, and its retained body (no Redis, its own consumers/resources) stays verbatim. Its `Subscriber` literal is also `{State: state, CaughtUp: caughtUp, TenantTopic: t.TenantStatus}`. Catch-up gate position: keep exactly where its current `ctxCaught` block sits relative to the REST server (per the current file: after `Run()`, like world).
+Identical pattern to Step 1 with two differences, matching its current `main.go`: the readiness gate is `service.WithReadinessGate(caughtUp.CaughtUpNow)`, and its retained body (no Redis, its own consumers/resources) stays verbatim. Its `Subscriber` literal is also `{State: state, CaughtUp: caughtUp, TenantTopic: t.TenantStatus}`. **Catch-up gate position (Task 0 drift #3 — CORRECTION):** character-factory gates catch-up **BEFORE** `server.New()…Run()` — its current `ctxCaught` block sits above the REST builder, unlike world (which gates after `Run()`). Place `rt.AwaitProjectionCatchUp()` at that same before-`Run()` position; do NOT move it after `Run()`. (Verify against the current file: the `ctxCaught`/`WaitCaughtUp` block precedes `server.New`.)
 
 - [ ] **Step 5: atlas-character-factory — behavior diff + Recipe R3**
 
@@ -1611,9 +1630,12 @@ Append to `services/atlas-renders/atlas.com/renders/go.mod` (replace paths relat
 replace github.com/Chronicle20/atlas/libs/atlas-service => ../../../../libs/atlas-service
 
 replace github.com/Chronicle20/atlas/libs/atlas-tracing => ../../../../libs/atlas-tracing
+
+replace github.com/Chronicle20/atlas/libs/atlas-routine => ../../../../libs/atlas-routine
 ```
+(The `atlas-routine` replace is a Task 0 drift #4 addition — the new `main.go` calls `routine.Go` for the listener goroutine. Verify the relative depth matches this service's existing `replace` lines.)
 Then: `cd services/atlas-renders/atlas.com/renders && go get github.com/Chronicle20/atlas/libs/atlas-service@v0.0.0 || true` and `GOWORK=off go mod tidy`.
-Expected: go.mod gains `atlas-service` (direct) and `atlas-tracing` (indirect) requires; go.sum gains ecslogrus/uuid/otel entries.
+Expected: go.mod gains `atlas-service` and `atlas-routine` (direct) and `atlas-tracing` (indirect) requires; go.sum gains ecslogrus/uuid/otel entries.
 
 - [ ] **Step 2: Rewrite main.go**
 
@@ -1658,12 +1680,14 @@ func main() {
 		defer cancel()
 		_ = srv.Shutdown(ctx)
 	})
-	go func() {
+	// Task 0 drift #4: bare `go func()` is banned by tools/goroutine-guard.sh
+	// (task-115/RR-6). Spawn the listener via routine.Go instead.
+	routine.Go(l, rt.Context(), func(_ context.Context) {
 		l.Infof("atlas-renders listening on :%s", port)
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			l.WithError(err).Fatal("server exited")
 		}
-	}()
+	})
 	rt.Wait()
 }
 ```
@@ -1677,7 +1701,7 @@ if r.URL.Path == "/healthz" || r.URL.Path == "/readyz" {
 }
 ```
 
-Add imports `context`, `errors`, `time`, `"github.com/Chronicle20/atlas/libs/atlas-service"`; delete `logger.go` (`git rm`).
+Add imports `context`, `errors`, `time`, `routine "github.com/Chronicle20/atlas/libs/atlas-routine"`, `"github.com/Chronicle20/atlas/libs/atlas-service"`; delete `logger.go` (`git rm`). atlas-renders' `go.mod` (Step 1) must also gain a `replace github.com/Chronicle20/atlas/libs/atlas-routine => ../../../../libs/atlas-routine` line so `routine.Go` resolves (add it alongside the atlas-service/atlas-tracing replaces, then `GOWORK=off go mod tidy`).
 `/healthz` is untouched — the live manifest (`deploy/k8s/base/atlas-renders.yaml`) probes it (FR-5.3). `/readyz` is root-mounted (this service has no `/api` base router) and SIGTERM-aware via the shared controller; graceful shutdown replaces the bare `ListenAndServe` exit.
 
 - [ ] **Step 3: Verify + commit**
@@ -1744,7 +1768,7 @@ grep -rl parseProjectionCatchupTimeout services | wc -l                         
 grep -l "tracing.InitTracer" services/*/atlas.com/*/main.go | wc -l              # 0
 grep -rn "logger.CreateLogger" services --include='*.go' | wc -l                 # 0
 grep -L "MountReadiness" services/*/atlas.com/*/main.go                          # exactly one line: atlas-renders (root-mounts /readyz by hand)
-grep -l "service.Bootstrap" services/*/atlas.com/*/main.go | wc -l               # 58
+grep -l "service.Bootstrap" services/*/atlas.com/*/main.go | wc -l               # 59 (Task 0 drift #1: atlas-mts added)
 grep -rn "shuttingDown" services/*/atlas.com/*/main.go | wc -l                   # 0
 ```
 
@@ -1758,10 +1782,11 @@ done
 ```
 Expected: every module clean. Fix failures in the owning service's follow-up commit (`fix(<svc>): ...`) before proceeding.
 
-- [ ] **Step 3: Redis key guard + full bake**
+- [ ] **Step 3: Redis key guard + goroutine guard + full bake**
 
 ```bash
 tools/redis-key-guard.sh
+tools/goroutine-guard.sh   # Task 0 drift #4: renders now uses routine.Go; must be clean
 docker buildx bake all-go-services
 ```
 Expected: both clean. The bake is mandatory (every service's source is touched); expect it to take a while. A missing-COPY failure is impossible here (no new lib module was created — `libs/atlas-service` and `libs/atlas-kafka` are already in both Dockerfile COPY blocks), but the bake also validates each service's `go.sum` against the libs' new requires; if a service fails hash verification, run `GOWORK=off go mod tidy` in THAT module only and amend its commit.

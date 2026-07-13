@@ -882,6 +882,11 @@
             "BUY_AUCTION_IMM": 20
           }
         }
+      },
+      {
+        "opCode": "0x112",
+        "validator": "LoggedInValidator",
+        "handler": "ItemUpgradeUpdateHandle"
       }
     ],
     "writers": [
@@ -2228,7 +2233,20 @@
       },
       {
         "opCode": "0x177",
-        "writer": "ViciousHammer"
+        "writer": "ViciousHammer",
+        "options": {
+          "operations": {
+            "OPEN": 0,
+            "SUCCESS": 63,
+            "FAILURE": 64
+          },
+          "errorCodes": {
+            "UNKNOWN": 0,
+            "NOT_UPGRADABLE": 1,
+            "CAP_REACHED": 2,
+            "HORNTAIL": 3
+          }
+        }
       },
       {
         "opCode": "0x155",

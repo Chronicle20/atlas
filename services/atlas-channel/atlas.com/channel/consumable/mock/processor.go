@@ -10,9 +10,10 @@ import (
 )
 
 type ProcessorMock struct {
-	RequestItemConsumeFunc   func(f field.Model, characterId character.Id, itemId item.Id, source slot.Position, updateTime uint32) error
-	RequestScrollUseFunc     func(f field.Model, characterId character.Id, scrollSlot slot.Position, equipSlot slot.Position, whiteScroll bool, legendarySpirit bool, updateTime uint32) error
-	RequestVegaScrollUseFunc func(f field.Model, characterId character.Id, vegaItemId item.Id, vegaSlot slot.Position, scrollSlot slot.Position, equipSlot slot.Position) error
+	RequestItemConsumeFunc      func(f field.Model, characterId character.Id, itemId item.Id, source slot.Position, updateTime uint32) error
+	RequestScrollUseFunc        func(f field.Model, characterId character.Id, scrollSlot slot.Position, equipSlot slot.Position, whiteScroll bool, legendarySpirit bool, updateTime uint32) error
+	RequestVegaScrollUseFunc    func(f field.Model, characterId character.Id, vegaItemId item.Id, vegaSlot slot.Position, scrollSlot slot.Position, equipSlot slot.Position) error
+	RequestViciousHammerUseFunc func(f field.Model, characterId character.Id, hammerSlot slot.Position, equipSlot slot.Position) error
 }
 
 var _ consumable.Processor = (*ProcessorMock)(nil)
@@ -34,6 +35,13 @@ func (m *ProcessorMock) RequestScrollUse(f field.Model, characterId character.Id
 func (m *ProcessorMock) RequestVegaScrollUse(f field.Model, characterId character.Id, vegaItemId item.Id, vegaSlot slot.Position, scrollSlot slot.Position, equipSlot slot.Position) error {
 	if m.RequestVegaScrollUseFunc != nil {
 		return m.RequestVegaScrollUseFunc(f, characterId, vegaItemId, vegaSlot, scrollSlot, equipSlot)
+	}
+	return nil
+}
+
+func (m *ProcessorMock) RequestViciousHammerUse(f field.Model, characterId character.Id, hammerSlot slot.Position, equipSlot slot.Position) error {
+	if m.RequestViciousHammerUseFunc != nil {
+		return m.RequestViciousHammerUseFunc(f, characterId, hammerSlot, equipSlot)
 	}
 	return nil
 }

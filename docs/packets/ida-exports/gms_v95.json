@@ -14168,6 +14168,82 @@
           "comment": "ownerId (door owner character id; registry lookup key)"
         }
       ]
+    },
+    "CField::OnItemUpgrade#Failure": {
+      "address": "0x52a430",
+      "direction": "clientbound",
+      "dispatch": [
+        {
+          "discriminator": "switch",
+          "case": 66
+        }
+      ],
+      "notes": "inferred-high-confidence (1.00) @0x52a430. CField::OnItemUpgrade forwards (this->m_pItemUpgrade->OnPacket) to CUIItemUpgrade::OnPacket 0x7c2e10 (gates nType==425) -> CUIItemUpgrade::OnItemUpgradeResult 0x7c0fd0. gms_v95 FAILURE=66 (v83 uses 62), IDA-verified CUIItemUpgrade::OnItemUpgradeResult 0x7c0fd0; corrected in task-129.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (= 66; failure) — v5 stored to this->m_nReturnResult, then `if (v5==66)` in OnItemUpgradeResult"
+        },
+        {
+          "op": "Decode4",
+          "comment": "errorCode (v13; switch 1=not-upgradable, 2=cap-reached, 3=horntail-necklace, default=unknown-error using this->m_nResult)"
+        }
+      ]
+    },
+    "CField::OnItemUpgrade#Open": {
+      "address": "0x52a430",
+      "direction": "clientbound",
+      "notes": "inferred-high-confidence (1.00) @0x52a430. Reached via CUIItemUpgrade::OnPacket 0x7c2e10 (nType==425) -> CUIItemUpgrade::OnItemUpgradeResult 0x7c0fd0, else-branch (mode not in {65,66}).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (this->m_nReturnResult; open/arm token — any value not 65 or 66)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "token (this->m_nResult; echoed back verbatim by CUIItemUpgrade::Update in ITEM_UPGRADE_UPDATE)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "hammerCount (v23 -> this->m_nIUC) — this->m_nResultState=1; CUIItemUpgrade::ShowResult 0x7bec20 fires if this->m_nState==2"
+        }
+      ]
+    },
+    "CField::OnItemUpgrade#Success": {
+      "address": "0x52a430",
+      "direction": "clientbound",
+      "dispatch": [
+        {
+          "discriminator": "switch",
+          "case": 65
+        }
+      ],
+      "notes": "inferred-high-confidence (1.00) @0x52a430. CField::OnItemUpgrade forwards (this->m_pItemUpgrade->OnPacket) to CUIItemUpgrade::OnPacket 0x7c2e10 (gates nType==425) -> CUIItemUpgrade::OnItemUpgradeResult 0x7c0fd0. gms_v95 SUCCESS=65 (v83 uses 61), IDA-verified CUIItemUpgrade::OnItemUpgradeResult 0x7c0fd0; corrected in task-129.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (= 65; success) — v5 stored to this->m_nReturnResult, then `if (v5==65)` in OnItemUpgradeResult"
+        },
+        {
+          "op": "Decode4",
+          "comment": "flag (v8; 0 = success -> \"N upgrades left\" message; non-0 -> \"Unknown error %d\" using this->m_nResult)"
+        }
+      ]
+    },
+    "CUIItemUpgrade::Update": {
+      "address": "0x7bef50",
+      "direction": "serverbound",
+      "notes": "CUIItemUpgrade::Update — gauge-confirm send, fires once this->m_nState==2 && this->m_nResultState==1 && get_update_time()>this->m_tEnd. COutPacket::COutPacket(&oResultPacket, 296) — ctor opcode matches registry serverbound opcode 296.",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "m_nReturnResult (open-arm mode byte, set by OnItemUpgradeResult's Decode1, widened to int32)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "m_nResult (server-chosen round-trip token, set by OnItemUpgradeResult's open-arm Decode4)"
+        }
+      ]
     }
   }
 }

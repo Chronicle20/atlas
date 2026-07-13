@@ -13,9 +13,10 @@ import (
 const (
 	EnvCommandTopic = "COMMAND_TOPIC_CONSUMABLE"
 
-	CommandRequestItemConsume = "REQUEST_ITEM_CONSUME"
-	CommandRequestScroll      = "REQUEST_SCROLL"
-	CommandRequestVegaScroll  = "REQUEST_VEGA_SCROLL"
+	CommandRequestItemConsume   = "REQUEST_ITEM_CONSUME"
+	CommandRequestScroll        = "REQUEST_SCROLL"
+	CommandRequestVegaScroll    = "REQUEST_VEGA_SCROLL"
+	CommandRequestViciousHammer = "REQUEST_VICIOUS_HAMMER"
 )
 
 type Command[E any] struct {
@@ -48,11 +49,17 @@ type RequestVegaScrollBody struct {
 	EquipSlot  slot.Position `json:"equipSlot"`
 }
 
+type RequestViciousHammerBody struct {
+	HammerSlot slot.Position `json:"hammerSlot"`
+	EquipSlot  slot.Position `json:"equipSlot"`
+}
+
 const (
-	EnvEventTopic       = "EVENT_TOPIC_CONSUMABLE_STATUS"
-	EventTypeError      = "ERROR"
-	EventTypeScroll     = "SCROLL"
-	EventTypeVegaScroll = "VEGA_SCROLL"
+	EnvEventTopic          = "EVENT_TOPIC_CONSUMABLE_STATUS"
+	EventTypeError         = "ERROR"
+	EventTypeScroll        = "SCROLL"
+	EventTypeVegaScroll    = "VEGA_SCROLL"
+	EventTypeViciousHammer = "VICIOUS_HAMMER"
 
 	ErrorTypePetCannotConsume = "PET_CANNOT_CONSUME"
 	ErrorTypeVegaInvalid      = "VEGA_INVALID"
@@ -78,4 +85,9 @@ type ScrollBody struct {
 type VegaScrollBody struct {
 	Success bool `json:"success"`
 	Cursed  bool `json:"cursed"`
+}
+
+type ViciousHammerBody struct {
+	Success bool   `json:"success"`
+	Reason  string `json:"reason"`
 }

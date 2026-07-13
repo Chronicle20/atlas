@@ -37,6 +37,9 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestVegaScroll))); err != nil {
 			return err
 		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestViciousHammer))); err != nil {
+			return err
+		}
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleApplyConsumableEffect))); err != nil {
 			return err
 		}
@@ -75,6 +78,16 @@ func handleRequestVegaScroll(l logrus.FieldLogger, ctx context.Context, c consum
 	err := consumable.NewProcessor(l, ctx).RequestVegaScroll(uint32(c.CharacterId), int16(c.Body.VegaSlot), c.Body.VegaItemId, int16(c.Body.ScrollSlot), int16(c.Body.EquipSlot))
 	if err != nil {
 		l.WithError(err).Errorf("Character [%d] unable to vega scroll with item in slot [%d] as expected.", c.CharacterId, c.Body.VegaSlot)
+	}
+}
+
+func handleRequestViciousHammer(l logrus.FieldLogger, ctx context.Context, c consumable2.Command[consumable2.RequestViciousHammerBody]) {
+	if c.Type != consumable2.CommandRequestViciousHammer {
+		return
+	}
+	err := consumable.NewProcessor(l, ctx).RequestViciousHammer(uint32(c.CharacterId), int16(c.Body.HammerSlot), int16(c.Body.EquipSlot))
+	if err != nil {
+		l.WithError(err).Errorf("Character [%d] unable to use vicious hammer in slot [%d] as expected.", c.CharacterId, c.Body.HammerSlot)
 	}
 }
 

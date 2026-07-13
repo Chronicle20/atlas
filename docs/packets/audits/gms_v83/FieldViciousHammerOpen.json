@@ -1,0 +1,39 @@
+{
+  "WriterName": "FieldViciousHammerOpen",
+  "IDAName": "CField::OnItemUpgrade#Open",
+  "Address": "0x537f8c",
+  "Variant": "GMS/v83",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/field/clientbound/vicious_hammer.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode (this[34]=v5; open/arm token — any value not 61 or 62) — sub_82B2C3 via sub_82B2AD (nType==354)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "token (this[35]=m_nResult; echoed back verbatim by CUIItemUpgrade::Update in ITEM_UPGRADE_UPDATE)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "hammerCount (this[36]=v19; current hammersApplied) — this[33]=m_nResultState=1; sub_82B7F6 fires if this[32]==2",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

@@ -16,6 +16,8 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	cashsb "github.com/Chronicle20/atlas/libs/atlas-packet/cash/serverbound"
+	fieldpkt "github.com/Chronicle20/atlas/libs/atlas-packet/field"
+	fieldcb "github.com/Chronicle20/atlas/libs/atlas-packet/field/clientbound"
 	statpkt "github.com/Chronicle20/atlas/libs/atlas-packet/stat/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
@@ -139,6 +141,13 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			return
 		}
 
+		if it == viciousHammerCashSlotItemType(t) {
+			sp := cashsb.NewItemUseViciousHammer()
+			sp.Decode(l, ctx)(r, readerOptions)
+			handleViciousHammerOpen(l, ctx, wp)(s, source, *sp)
+			return
+		}
+
 		l.Warnf("Character [%d] attempting to use cash item [%d] in slot [%d] of type [%d]. updateTime [%d].", s.CharacterId(), itemId, source, it, updateTime)
 	}
 }
@@ -159,7 +168,20 @@ const (
 	CashSlotItemTypePointResetTier1  = CashSlotItemType(24) // SP Reset tier 1 only
 	CashSlotItemTypeVegasSpellPre95  = CashSlotItemType(68)
 	CashSlotItemTypeVegasSpell95     = CashSlotItemType(71)
+	CashSlotItemTypeViciousHammer    = CashSlotItemType(66) // GMS < 95
+	CashSlotItemTypeViciousHammerV95 = CashSlotItemType(67) // GMS >= 95
 )
+
+// viciousHammerCashSlotItemType returns the version-scoped CashSlotItemType
+// for the Vicious Hammer item. Plain 66 also denotes CharacterCreation on
+// GMS >= 95 (see the category == item.ClassificationCharacterCreation
+// branch below), so this check must remain version-scoped.
+func viciousHammerCashSlotItemType(t tenant.Model) CashSlotItemType {
+	if t.Region() == "GMS" && t.MajorVersion() >= 95 {
+		return CashSlotItemTypeViciousHammerV95
+	}
+	return CashSlotItemTypeViciousHammer
+}
 
 func GetCashSlotItemType(t tenant.Model) func(itemId item.Id) CashSlotItemType {
 	return func(itemId item.Id) CashSlotItemType {
@@ -510,9 +532,9 @@ func GetCashSlotItemType(t tenant.Model) func(itemId item.Id) CashSlotItemType {
 		}
 		if category == 557 {
 			if t.Region() == "GMS" && t.MajorVersion() >= 95 {
-				return CashSlotItemType(67)
+				return CashSlotItemTypeViciousHammerV95
 			} else {
-				return CashSlotItemType(66)
+				return CashSlotItemTypeViciousHammer
 			}
 		}
 		if category == item.ClassificationVegasSpell {
@@ -537,5 +559,44 @@ func GetCashSlotItemType(t tenant.Model) func(itemId item.Id) CashSlotItemType {
 			}
 		}
 		return CashSlotItemType(0)
+	}
+}
+
+// handleViciousHammerOpen performs the cheap pre-check (existence + cap) for
+// the CUIItemUpgrade open-arm gauge. It never mutates state: it either arms
+// the client gauge (mode OPEN) or rejects immediately (mode FAILURE, code 1
+// or 2). WZ eligibility (codes 1/3 from equip data) is left to the
+// authoritative re-validation in atlas-consumables on Packet B (design §4.1)
+// — a gauge that later fails with mode 62 there is correct UX.
+func handleViciousHammerOpen(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, hammerSlot slot.Position, sp cashsb.ItemUseViciousHammer) {
+	return func(s session.Model, hammerSlot slot.Position, sp cashsb.ItemUseViciousHammer) {
+		announce := func(body func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte) {
+			err := session.Announce(l)(ctx)(wp)(fieldcb.ViciousHammerWriter)(body)(s)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to write vicious hammer response to character [%d].", s.CharacterId())
+			}
+		}
+
+		equipSlot := int16(sp.SlotPosition())
+		target, err := character2.NewProcessor(l, ctx).GetEquipableInSlot(s.CharacterId(), equipSlot)()
+		if err != nil {
+			l.Warnf("Character [%d] attempted vicious hammer on missing equip slot [%d].", s.CharacterId(), equipSlot)
+			announce(fieldpkt.ViciousHammerFailureBody(fieldpkt.ViciousHammerReasonNotUpgradable))
+			return
+		}
+		if target.HammersApplied() >= 2 {
+			announce(fieldpkt.ViciousHammerFailureBody(fieldpkt.ViciousHammerReasonCapReached))
+			return
+		}
+
+		token := packViciousHammerToken(int16(hammerSlot), equipSlot)
+		// The client stores this open-arm count and renders the TERMINAL success
+		// notice as "2 - count upgrades are left" (CUIItemUpgrade::OnItemUpgradeResult
+		// success branch — the SUCCESS packet carries no count of its own). That
+		// notice fires AFTER the reservation callback applies +1 to hammersApplied,
+		// so we must send the post-apply count. HammersApplied() here is the
+		// pre-apply value and the arm is only reached when it is < 2 (cap check
+		// above), so +1 always yields the correct 1 or 2 (IDA-verified, task-129).
+		announce(fieldpkt.ViciousHammerOpenBody(token, target.HammersApplied()+1))
 	}
 }

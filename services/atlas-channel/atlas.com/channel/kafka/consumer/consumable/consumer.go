@@ -15,13 +15,15 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	cashpkt "github.com/Chronicle20/atlas/libs/atlas-packet/cash/clientbound"
+	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
+	fieldpkt "github.com/Chronicle20/atlas/libs/atlas-packet/field"
+	fieldcb "github.com/Chronicle20/atlas/libs/atlas-packet/field/clientbound"
+	petpkt "github.com/Chronicle20/atlas/libs/atlas-packet/pet/clientbound"
+	statpkt "github.com/Chronicle20/atlas/libs/atlas-packet/stat/clientbound"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
-	cashpkt "github.com/Chronicle20/atlas/libs/atlas-packet/cash/clientbound"
-	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
-	petpkt "github.com/Chronicle20/atlas/libs/atlas-packet/pet/clientbound"
-	statpkt "github.com/Chronicle20/atlas/libs/atlas-packet/stat/clientbound"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -50,6 +52,11 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				}
 				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
 				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleVegaScrollConsumableEvent(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleViciousHammerConsumableEvent(sc, wp))))
 				if err != nil {
 					return nil, err
 				}
@@ -151,6 +158,28 @@ func handleVegaScrollConsumableEvent(sc server.Model, wp writer.Producer) messag
 		})
 		if err != nil {
 			l.WithError(err).Errorf("Unable to process vega scroll event for character [%d].", e.CharacterId)
+		}
+	}
+}
+
+func handleViciousHammerConsumableEvent(sc server.Model, wp writer.Producer) message.Handler[consumable2.Event[consumable2.ViciousHammerBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e consumable2.Event[consumable2.ViciousHammerBody]) {
+		if e.Type != consumable2.EventTypeViciousHammer {
+			return
+		}
+
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+
+		body := fieldpkt.ViciousHammerSuccessBody()
+		if !e.Body.Success {
+			body = fieldpkt.ViciousHammerFailureBody(fieldpkt.ViciousHammerFailureReason(e.Body.Reason))
+		}
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(uint32(e.CharacterId), session.Announce(l)(ctx)(wp)(fieldcb.ViciousHammerWriter)(body))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to process vicious hammer event for character [%d].", e.CharacterId)
 		}
 	}
 }

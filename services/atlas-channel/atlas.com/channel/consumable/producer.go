@@ -67,3 +67,20 @@ func RequestVegaScrollCommandProvider(f field.Model, characterId character.Id, v
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func RequestViciousHammerCommandProvider(f field.Model, characterId character.Id, hammerSlot slot.Position, equipSlot slot.Position) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &consumable.Command[consumable.RequestViciousHammerBody]{
+		WorldId:     f.WorldId(),
+		ChannelId:   f.ChannelId(),
+		MapId:       f.MapId(),
+		Instance:    f.Instance(),
+		CharacterId: characterId,
+		Type:        consumable.CommandRequestViciousHammer,
+		Body: consumable.RequestViciousHammerBody{
+			HammerSlot: hammerSlot,
+			EquipSlot:  equipSlot,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

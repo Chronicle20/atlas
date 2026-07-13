@@ -13718,6 +13718,82 @@
           "comment": "index (nIdx; op 0x26 entrusted)"
         }
       ]
+    },
+    "CField::OnItemUpgrade#Open": {
+      "address": "0x55fa12",
+      "direction": "clientbound",
+      "notes": "inferred-high-confidence (1.00) @0x55fa12",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (this[38]=v5; open/arm token — any value not 63 or 64) — sub_88F332 (a2==375) -> sub_88F348, reached via the CField::OnItemUpgrade vtable forwarder (this[135], vtable 0xbe109c slot 15 / offset 0x3C)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "token (this[39]=m_nResult; echoed back verbatim by CUIItemUpgrade::Update in ITEM_UPGRADE_UPDATE)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "hammerCount (this[40]=v15; current hammersApplied) — this[37]=m_nResultState=1; sub_88F87B fires if this[36]==2"
+        }
+      ]
+    },
+    "CField::OnItemUpgrade#Success": {
+      "address": "0x55fa12",
+      "direction": "clientbound",
+      "dispatch": [
+        {
+          "discriminator": "switch",
+          "case": 63
+        }
+      ],
+      "notes": "inferred-high-confidence (1.00) @0x55fa12",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (= 63; success) — read in sub_88F348 (this[38]=v5), reached via sub_88F332 (gates a2==375) from the CField::OnItemUpgrade vtable forwarder"
+        },
+        {
+          "op": "Decode4",
+          "comment": "flag (0 = success -> \"Increased available upgrade by 1. N upgrades are left\" where N = 2-this[40]; non-0 -> \"Unknown error %d\" using this[39])"
+        }
+      ]
+    },
+    "CField::OnItemUpgrade#Failure": {
+      "address": "0x55fa12",
+      "direction": "clientbound",
+      "dispatch": [
+        {
+          "discriminator": "switch",
+          "case": 64
+        }
+      ],
+      "notes": "inferred-high-confidence (1.00) @0x55fa12",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (= 64; failure) — read in sub_88F348 (this[38]=v5), reached via sub_88F332 (gates a2==375) from the CField::OnItemUpgrade vtable forwarder"
+        },
+        {
+          "op": "Decode4",
+          "comment": "errorCode (v11; switch 1/2/3 -> StringPool 5063/5064/5066 specific messages, default -> StringPool 5910 unknown-error using this[39])"
+        }
+      ]
+    },
+    "CUIItemUpgrade::Update": {
+      "address": "0x88eea2",
+      "direction": "serverbound",
+      "notes": "CUIItemUpgrade::Update — gauge-confirm send, fires once this[36]==2 (m_nState) && this[37]==1 (m_nResultState) && get_update_time()>this[53] (m_tEnd). COutPacket::COutPacket(&a3, 0x112) — ctor opcode matches registry serverbound opcode 274/0x112.",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "m_nReturnResult (this[38]; open-arm mode byte, set by sub_88F348's Decode1, widened to int32)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "m_nResult (this[39]; server-chosen round-trip token, set by sub_88F348's open-arm Decode4)"
+        }
+      ]
     }
   }
 }

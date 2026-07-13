@@ -13427,6 +13427,82 @@
           "guard": "CWvsContext::CanSendExclRequest(this, 500, 0)"
         }
       ]
+    },
+    "CField::OnItemUpgrade#Failure": {
+      "address": "0x537f8c",
+      "direction": "clientbound",
+      "dispatch": [
+        {
+          "discriminator": "switch",
+          "case": 62
+        }
+      ],
+      "notes": "inferred-high-confidence (1.00) @0x537f8c",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (= 62; failure) — read in sub_82B2C3 (this[34]=v5), reached via sub_82B2AD (gates nType==354) from the CField::OnItemUpgrade vtable forwarder"
+        },
+        {
+          "op": "Decode4",
+          "comment": "errorCode (v13; switch 1=not-upgradable, 2=cap-reached, 3=horntail-necklace, default=unknown-error using this[35])"
+        }
+      ]
+    },
+    "CField::OnItemUpgrade#Open": {
+      "address": "0x537f8c",
+      "direction": "clientbound",
+      "notes": "inferred-high-confidence (1.00) @0x537f8c",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (this[34]=v5; open/arm token — any value not 61 or 62) — sub_82B2C3 via sub_82B2AD (nType==354)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "token (this[35]=m_nResult; echoed back verbatim by CUIItemUpgrade::Update in ITEM_UPGRADE_UPDATE)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "hammerCount (this[36]=v19; current hammersApplied) — this[33]=m_nResultState=1; sub_82B7F6 fires if this[32]==2"
+        }
+      ]
+    },
+    "CField::OnItemUpgrade#Success": {
+      "address": "0x537f8c",
+      "direction": "clientbound",
+      "dispatch": [
+        {
+          "discriminator": "switch",
+          "case": 61
+        }
+      ],
+      "notes": "inferred-high-confidence (1.00) @0x537f8c",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (= 61; success) — read in sub_82B2C3 (this[34]=v5), reached via sub_82B2AD (gates nType==354) from the CField::OnItemUpgrade vtable forwarder"
+        },
+        {
+          "op": "Decode4",
+          "comment": "flag (0 = success -> \"Increased available upgrade by 1. N upgrades are left\" where N = 2-this[36]; non-0 -> \"Unknown error %d\" using this[35])"
+        }
+      ]
+    },
+    "CUIItemUpgrade::Update": {
+      "address": "0x82ae28",
+      "direction": "serverbound",
+      "notes": "CUIItemUpgrade::Update — gauge-confirm send, fires once this[32]==2 (m_nState) && this[33]==1 (m_nResultState) && get_update_time()>this[49] (m_tEnd). COutPacket::COutPacket(&v4, 0x104) — ctor opcode matches registry serverbound opcode 260/0x104.",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "m_nReturnResult (v3=this[34]; open-arm mode byte, set by sub_82B2C3's Decode1, widened to int32)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "m_nResult (this[35]; server-chosen round-trip token, set by sub_82B2C3's open-arm Decode4)"
+        }
+      ]
     }
   }
 }

@@ -320,7 +320,10 @@
 | [FieldForcedMapEquip](FieldForcedMapEquip.md) | ✅ | `libs/atlas-packet/field/clientbound/forced_map_equip.go` |
 | [FieldMultiChat](FieldMultiChat.md) | ❌ | `libs/atlas-packet/field/clientbound/multi.go` |
 | [FieldHorntailCave](FieldHorntailCave.md) | ✅ | `libs/atlas-packet/field/clientbound/horntail_cave.go` |
-| [FieldViciousHammer](FieldViciousHammer.md) | ❌ | `libs/atlas-packet/field/clientbound/vicious_hammer.go` |
+| [FieldViciousHammerOpen](FieldViciousHammerOpen.md) | ✅ | `libs/atlas-packet/field/clientbound/vicious_hammer.go` |
+| [FieldViciousHammerSuccess](FieldViciousHammerSuccess.md) | ✅ | `libs/atlas-packet/field/clientbound/vicious_hammer.go` |
+| [FieldViciousHammerFailure](FieldViciousHammerFailure.md) | ✅ | `libs/atlas-packet/field/clientbound/vicious_hammer.go` |
+| [FieldItemUpgradeUpdate](FieldItemUpgradeUpdate.md) | ✅ | `libs/atlas-packet/field/serverbound/item_upgrade_update.go` |
 | [FieldPlayJukebox](FieldPlayJukebox.md) | ✅ | `libs/atlas-packet/field/clientbound/play_jukebox.go` |
 | [FieldOxQuiz](FieldOxQuiz.md) | ✅ | `libs/atlas-packet/field/clientbound/ox_quiz.go` |
 | [FieldSetObjectState](FieldSetObjectState.md) | ✅ | `libs/atlas-packet/field/clientbound/set_object_state.go` |

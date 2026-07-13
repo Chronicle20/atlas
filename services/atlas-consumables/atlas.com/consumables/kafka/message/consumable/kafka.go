@@ -18,6 +18,7 @@ const (
 	CommandRequestVegaScroll      = "REQUEST_VEGA_SCROLL"
 	CommandApplyConsumableEffect  = "APPLY_CONSUMABLE_EFFECT"
 	CommandCancelConsumableEffect = "CANCEL_CONSUMABLE_EFFECT"
+	CommandRequestViciousHammer   = "REQUEST_VICIOUS_HAMMER"
 )
 
 type Command[E any] struct {
@@ -55,6 +56,14 @@ type RequestVegaScrollBody struct {
 	EquipSlot  slot.Position `json:"equipSlot"`
 }
 
+// RequestViciousHammerBody carries the two slots the CUIItemUpgrade dialog
+// round-trip token packs: the hammer's cash-compartment slot and the target
+// equip slot (negative = equipped, positive = equip inventory).
+type RequestViciousHammerBody struct {
+	HammerSlot slot.Position `json:"hammerSlot"`
+	EquipSlot  slot.Position `json:"equipSlot"`
+}
+
 // ApplyConsumableEffectBody is the body for applying consumable effects without consuming from inventory
 // Used for NPC-initiated buffs (e.g., NPC blessings)
 type ApplyConsumableEffectBody struct {
@@ -73,6 +82,7 @@ const (
 	EventTypeScroll        = "SCROLL"
 	EventTypeVegaScroll    = "VEGA_SCROLL"
 	EventTypeEffectApplied = "EFFECT_APPLIED"
+	EventTypeViciousHammer = "VICIOUS_HAMMER"
 
 	ErrorTypePetCannotConsume = "PET_CANNOT_CONSUME"
 	ErrorTypeVegaInvalid      = "VEGA_INVALID"
@@ -102,6 +112,15 @@ type ScrollBody struct {
 type VegaScrollBody struct {
 	Success bool `json:"success"`
 	Cursed  bool `json:"cursed"`
+}
+
+// ViciousHammerBody reports the terminal result of a hammer use. Reason is the
+// SEMANTIC failure notice (NOT_UPGRADABLE / CAP_REACHED / HORNTAIL / UNKNOWN);
+// atlas-channel resolves it to the client wire byte per tenant (DOM-25).
+// Meaningful when !Success.
+type ViciousHammerBody struct {
+	Success bool   `json:"success"`
+	Reason  string `json:"reason"`
 }
 
 type EffectAppliedBody struct {

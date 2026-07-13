@@ -16,6 +16,7 @@ type Processor interface {
 	RequestItemConsume(f field.Model, characterId character.Id, itemId item.Id, source slot.Position, updateTime uint32) error
 	RequestScrollUse(f field.Model, characterId character.Id, scrollSlot slot.Position, equipSlot slot.Position, whiteScroll bool, legendarySpirit bool, updateTime uint32) error
 	RequestVegaScrollUse(f field.Model, characterId character.Id, vegaItemId item.Id, vegaSlot slot.Position, scrollSlot slot.Position, equipSlot slot.Position) error
+	RequestViciousHammerUse(f field.Model, characterId character.Id, hammerSlot slot.Position, equipSlot slot.Position) error
 }
 
 type ProcessorImpl struct {
@@ -46,4 +47,9 @@ func (p *ProcessorImpl) RequestScrollUse(f field.Model, characterId character.Id
 func (p *ProcessorImpl) RequestVegaScrollUse(f field.Model, characterId character.Id, vegaItemId item.Id, vegaSlot slot.Position, scrollSlot slot.Position, equipSlot slot.Position) error {
 	p.l.Debugf("Character [%d] attempting vega scroll [%d] from cash slot [%d]: scroll slot [%d] onto equip slot [%d].", characterId, vegaItemId, vegaSlot, scrollSlot, equipSlot)
 	return producer.ProviderImpl(p.l)(p.ctx)(consumable2.EnvCommandTopic)(RequestVegaScrollCommandProvider(f, characterId, vegaSlot, vegaItemId, scrollSlot, equipSlot))
+}
+
+func (p *ProcessorImpl) RequestViciousHammerUse(f field.Model, characterId character.Id, hammerSlot slot.Position, equipSlot slot.Position) error {
+	p.l.Debugf("Character [%d] attempting to use vicious hammer in slot [%d] on equip slot [%d].", characterId, hammerSlot, equipSlot)
+	return producer.ProviderImpl(p.l)(p.ctx)(consumable2.EnvCommandTopic)(RequestViciousHammerCommandProvider(f, characterId, hammerSlot, equipSlot))
 }

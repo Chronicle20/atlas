@@ -17,7 +17,6 @@ import (
 	questmessage "atlas-saga-orchestrator/kafka/message/quest"
 	saga2 "atlas-saga-orchestrator/kafka/message/saga"
 	storage2 "atlas-saga-orchestrator/kafka/message/storage"
-	"atlas-saga-orchestrator/kafka/producer"
 	"atlas-saga-orchestrator/map_command"
 	"atlas-saga-orchestrator/monster"
 	"atlas-saga-orchestrator/mts"
@@ -37,6 +36,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/asset"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
@@ -1968,43 +1968,43 @@ func (h *HandlerImpl) handleAcceptToMtsListing(s Saga, st Step[any]) error {
 		payload.TemplateId, payload.ListingId, payload.SellerId)
 
 	err := h.mtsP.AcceptToMtsListingAndEmit(payload.TransactionId, mts.AcceptToMtsListingParams{
-		ListingId:       payload.ListingId,
-		WorldId:         byte(payload.WorldId),
-		SellerId:        payload.SellerId,
-		SellerAccountId: payload.SellerAccountId,
-		SellerName:      payload.SellerName,
-		SaleType:        payload.SaleType,
-		TemplateId:      payload.TemplateId,
-		Quantity:        payload.Quantity,
-		Strength:        payload.Strength,
-		Dexterity:       payload.Dexterity,
-		Intelligence:    payload.Intelligence,
-		Luck:            payload.Luck,
-		HP:              payload.HP,
-		MP:              payload.MP,
-		WeaponAttack:    payload.WeaponAttack,
-		MagicAttack:     payload.MagicAttack,
-		WeaponDefense:   payload.WeaponDefense,
-		MagicDefense:    payload.MagicDefense,
-		Accuracy:        payload.Accuracy,
-		Avoidability:    payload.Avoidability,
-		Hands:           payload.Hands,
-		Speed:           payload.Speed,
-		Jump:            payload.Jump,
-		Slots:           payload.Slots,
-		Level:           payload.Level,
-		ItemLevel:       payload.ItemLevel,
-		ItemExp:         payload.ItemExp,
-		RingId:          payload.RingId,
-		ViciousCount:    payload.ViciousCount,
-		Flags:           payload.Flags,
-		ListValue:       payload.ListValue,
-		BuyNowPrice:     payload.BuyNowPrice,
-		CommissionRate:  payload.CommissionRate,
-		Category:        payload.Category,
-		SubCategory:     payload.SubCategory,
-		EndsAt:          payload.EndsAt,
-		MinIncrement:    payload.MinIncrement,
+		ListingId:        payload.ListingId,
+		WorldId:          byte(payload.WorldId),
+		SellerId:         payload.SellerId,
+		SellerAccountId:  payload.SellerAccountId,
+		SellerName:       payload.SellerName,
+		SaleType:         payload.SaleType,
+		TemplateId:       payload.TemplateId,
+		Quantity:         payload.Quantity,
+		Strength:         payload.Strength,
+		Dexterity:        payload.Dexterity,
+		Intelligence:     payload.Intelligence,
+		Luck:             payload.Luck,
+		HP:               payload.HP,
+		MP:               payload.MP,
+		WeaponAttack:     payload.WeaponAttack,
+		MagicAttack:      payload.MagicAttack,
+		WeaponDefense:    payload.WeaponDefense,
+		MagicDefense:     payload.MagicDefense,
+		Accuracy:         payload.Accuracy,
+		Avoidability:     payload.Avoidability,
+		Hands:            payload.Hands,
+		Speed:            payload.Speed,
+		Jump:             payload.Jump,
+		Slots:            payload.Slots,
+		Level:            payload.Level,
+		ItemLevel:        payload.ItemLevel,
+		ItemExp:          payload.ItemExp,
+		RingId:           payload.RingId,
+		ViciousCount:     payload.ViciousCount,
+		Flags:            payload.Flags,
+		ListValue:        payload.ListValue,
+		BuyNowPrice:      payload.BuyNowPrice,
+		CommissionRate:   payload.CommissionRate,
+		Category:         payload.Category,
+		SubCategory:      payload.SubCategory,
+		EndsAt:           payload.EndsAt,
+		MinIncrement:     payload.MinIncrement,
 		OfferWishSerial:  payload.OfferWishSerial,
 		OfferWishOwnerId: payload.OfferWishOwnerId,
 	})

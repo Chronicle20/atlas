@@ -4,7 +4,7 @@ import (
 	"context"
 
 	invite2 "atlas-saga-orchestrator/kafka/message/invite"
-	"atlas-saga-orchestrator/kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/google/uuid"

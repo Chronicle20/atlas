@@ -5,7 +5,7 @@ import (
 
 	"atlas-saga-orchestrator/kafka/message"
 	buddylist2 "atlas-saga-orchestrator/kafka/message/buddylist"
-	"atlas-saga-orchestrator/kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"

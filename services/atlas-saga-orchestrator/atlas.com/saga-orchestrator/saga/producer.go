@@ -4,10 +4,9 @@ import (
 	"atlas-saga-orchestrator/kafka/message/conversation_reward_notice"
 	"atlas-saga-orchestrator/kafka/message/gachapon"
 	"atlas-saga-orchestrator/kafka/message/saga"
-	"atlas-saga-orchestrator/kafka/producer"
 	"context"
 
-	kproducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
@@ -15,7 +14,7 @@ import (
 )
 
 func CompletedStatusEventProvider(s Saga) model.Provider[[]kafka.Message] {
-	key := kproducer.CreateKey(int(s.TransactionId().ID()))
+	key := producer.CreateKey(int(s.TransactionId().ID()))
 
 	body := saga.StatusEventCompletedBody{
 		SagaType: string(s.SagaType()),
@@ -41,7 +40,7 @@ func CompletedStatusEventProvider(s Saga) model.Provider[[]kafka.Message] {
 		Type:          saga.StatusEventTypeCompleted,
 		Body:          body,
 	}
-	return kproducer.SingleMessageProvider(key, value)
+	return producer.SingleMessageProvider(key, value)
 }
 
 // extractCharacterCreationResults extracts accountId and characterId from a CharacterCreation saga's steps
@@ -133,7 +132,7 @@ func ExtractCharacterCreationIds(s Saga) (accountId uint32, characterId uint32) 
 // accountId, so only character-creation failures need a nonzero value — see
 // PRD §4.5 / plan Phase 1.1).
 func FailedStatusEventProvider(transactionId uuid.UUID, accountId uint32, characterId uint32, sagaType string, errorCode string, reason string, failedStep string) model.Provider[[]kafka.Message] {
-	key := kproducer.CreateKey(int(transactionId.ID()))
+	key := producer.CreateKey(int(transactionId.ID()))
 	value := &saga.StatusEvent[saga.StatusEventFailedBody]{
 		TransactionId: transactionId,
 		Type:          saga.StatusEventTypeFailed,
@@ -146,7 +145,7 @@ func FailedStatusEventProvider(transactionId uuid.UUID, accountId uint32, charac
 			ErrorCode:   errorCode,
 		},
 	}
-	return kproducer.SingleMessageProvider(key, value)
+	return producer.SingleMessageProvider(key, value)
 }
 
 // EmitSagaFailed emits exactly one StatusEventTypeFailed for the given saga,
@@ -236,7 +235,7 @@ func emitMtsSagaFailedImpl(l logrus.FieldLogger, ctx context.Context, transactio
 // saga failure, mirroring FailedStatusEventProvider but stamping MtsKind (and
 // leaving accountId 0). Kept separate so the generic Failed path stays untouched.
 func MtsFailedStatusEventProvider(transactionId uuid.UUID, characterId uint32, sagaType string, errorCode string, reason string, failedStep string, mtsKind string) model.Provider[[]kafka.Message] {
-	key := kproducer.CreateKey(int(transactionId.ID()))
+	key := producer.CreateKey(int(transactionId.ID()))
 	value := &saga.StatusEvent[saga.StatusEventFailedBody]{
 		TransactionId: transactionId,
 		Type:          saga.StatusEventTypeFailed,
@@ -249,7 +248,7 @@ func MtsFailedStatusEventProvider(transactionId uuid.UUID, characterId uint32, s
 			MtsKind:     mtsKind,
 		},
 	}
-	return kproducer.SingleMessageProvider(key, value)
+	return producer.SingleMessageProvider(key, value)
 }
 
 // emitSagaFailedByIdsFn is swappable in tests (SetEmitSagaFailedForTest) so
@@ -274,14 +273,14 @@ func emitSagaFailedByIdsImpl(l logrus.FieldLogger, ctx context.Context, transact
 // item-loss chat line on the client when a conversation-sourced AwardAsset /
 // DestroyAsset / DestroyAssetFromSlot step completes with ShowEffect=true.
 func ConversationRewardNoticeProvider(characterId uint32, kind string, itemId uint32, quantity uint32) model.Provider[[]kafka.Message] {
-	key := kproducer.CreateKey(int(characterId))
+	key := producer.CreateKey(int(characterId))
 	value := &conversation_reward_notice.EventBody{
 		CharacterId: characterId,
 		Kind:        kind,
 		ItemId:      itemId,
 		Quantity:    quantity,
 	}
-	return kproducer.SingleMessageProvider(key, value)
+	return producer.SingleMessageProvider(key, value)
 }
 
 // EmitConversationRewardNotice produces the message immediately on the
@@ -302,7 +301,7 @@ func emitConversationRewardNoticeImpl(l logrus.FieldLogger, ctx context.Context,
 }
 
 func GachaponRewardWonEventProvider(payload EmitGachaponWinPayload, assetId uint32) model.Provider[[]kafka.Message] {
-	key := kproducer.CreateKey(int(payload.CharacterId))
+	key := producer.CreateKey(int(payload.CharacterId))
 	value := &gachapon.RewardWonEvent{
 		CharacterId:  payload.CharacterId,
 		WorldId:      byte(payload.WorldId),
@@ -313,5 +312,5 @@ func GachaponRewardWonEventProvider(payload EmitGachaponWinPayload, assetId uint
 		GachaponName: payload.GachaponName,
 		AssetId:      assetId,
 	}
-	return kproducer.SingleMessageProvider(key, value)
+	return producer.SingleMessageProvider(key, value)
 }

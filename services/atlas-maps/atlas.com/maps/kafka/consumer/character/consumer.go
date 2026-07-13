@@ -12,6 +12,8 @@ import (
 	"atlas-maps/visit"
 	"context"
 
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
@@ -184,18 +186,20 @@ func handleStatusEventDeletedFunc(l logrus.FieldLogger, db *gorm.DB) func(logrus
 		if event.Type == characterKafka.EventCharacterStatusTypeDeleted {
 			fl.Debugf("Character [%d] has been deleted.", event.CharacterId)
 			if db != nil {
-				vp := visit.NewProcessor(fl, ctx, db)
-				count, err := vp.DeleteByCharacterId(event.CharacterId)
-				if err != nil {
-					fl.WithError(err).Errorf("Failed to delete visits for character [%d].", event.CharacterId)
-				} else {
+				if err := database.ExecuteTransaction(db.WithContext(ctx), func(tx *gorm.DB) error {
+					count, err := visit.NewProcessor(fl, ctx, tx).DeleteByCharacterId(event.CharacterId)
+					if err != nil {
+						return err
+					}
 					fl.Debugf("Deleted [%d] visit records for character [%d].", count, event.CharacterId)
-				}
 
-				if err := location.NewProcessor(fl, ctx, db).Delete(event.CharacterId); err != nil {
-					fl.WithError(err).Errorf("Failed to delete character_locations for character [%d].", event.CharacterId)
-				} else {
+					if err := location.NewProcessor(fl, ctx, tx).Delete(event.CharacterId); err != nil {
+						return err
+					}
 					fl.Debugf("Deleted character_locations for character [%d].", event.CharacterId)
+					return nil
+				}); err != nil {
+					fl.WithError(err).Errorf("Failed to delete map data for character [%d].", event.CharacterId)
 				}
 			}
 

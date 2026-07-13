@@ -10,7 +10,7 @@ import (
 	pq "atlas-party-quests/kafka/message/party_quest"
 	reactorMessage "atlas-party-quests/kafka/message/reactor"
 	systemMessage "atlas-party-quests/kafka/message/system_message"
-	"atlas-party-quests/kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"atlas-party-quests/monster"
 	"atlas-party-quests/party"
 	"atlas-party-quests/reward"

@@ -128,7 +128,7 @@ func handleSimulatePurchase(pf providerFn) func(d *rest.HandlerDependency, c *re
 					return
 				}
 				d.Logger().WithError(err).Errorf("Retrieving listing [%s] for simulated purchase.", rm.ListingId)
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 			if m.State() != listing.StateActive {
@@ -139,7 +139,7 @@ func handleSimulatePurchase(pf providerFn) func(d *rest.HandlerDependency, c *re
 			txn := uuid.New()
 			if err := pf(d.Context())(mtsmsg.EnvCommandTopic)(BuyCommandProvider(txn, m.WorldId(), m.Serial(), rm.BuyerId, rm.BuyerAccountId, rm.BuyNow)); err != nil {
 				d.Logger().WithError(err).Errorf("Emitting simulated BUY for listing [%s].", rm.ListingId)
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 			d.Logger().Infof("[TEST ROUTE] Emitted BUY txn [%s] — buyer [%d] listing [%s] serial [%d] buyNow [%t].", txn, rm.BuyerId, rm.ListingId, m.Serial(), rm.BuyNow)
@@ -165,7 +165,7 @@ func handleSimulateBid(pf providerFn) func(d *rest.HandlerDependency, c *rest.Ha
 					return
 				}
 				d.Logger().WithError(err).Errorf("Retrieving listing [%s] for simulated bid.", rm.ListingId)
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 			if m.SaleType() != listing.SaleTypeAuction || m.State() != listing.StateActive {
@@ -176,7 +176,7 @@ func handleSimulateBid(pf providerFn) func(d *rest.HandlerDependency, c *rest.Ha
 			txn := uuid.New()
 			if err := pf(d.Context())(mtsmsg.EnvCommandTopic)(PlaceBidCommandProvider(txn, m.WorldId(), m.Serial(), rm.BidderId, rm.BidderAccountId, rm.Amount)); err != nil {
 				d.Logger().WithError(err).Errorf("Emitting simulated PLACE_BID for listing [%s].", rm.ListingId)
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 			d.Logger().Infof("[TEST ROUTE] Emitted PLACE_BID txn [%s] — bidder [%d] listing [%s] serial [%d] amount [%d].", txn, rm.BidderId, rm.ListingId, m.Serial(), rm.Amount)
@@ -251,7 +251,7 @@ func handleSeedListings(d *rest.HandlerDependency, c *rest.HandlerContext, rm Se
 		for acct := range sellerAccounts {
 			if err := walletP.EnsureWallet(acct, 0, 0, 0); err != nil {
 				d.Logger().WithError(err).Errorf("Ensuring cash-shop wallet for seed seller account [%d]; seeded listings would not be buyable.", acct)
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 		}
@@ -346,14 +346,14 @@ func handleSeedListings(d *rest.HandlerDependency, c *rest.HandlerContext, rm Se
 			return nil
 		})
 		if txErr != nil {
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteErrorResponse(d.Logger())(w)(txErr)
 			return
 		}
 
 		res, err := model.SliceMap(listing.Transform)(model.FixedProvider(created))(model.ParallelMap())()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Creating REST model for seeded listings.")
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteErrorResponse(d.Logger())(w)(err)
 			return
 		}
 		d.Logger().Infof("[TEST ROUTE] Seeded [%d] listings in world [%d] for tenant [%s].", len(created), rm.WorldId, t.Id())
@@ -378,13 +378,13 @@ func handleExpireListing(d *rest.HandlerDependency, c *rest.HandlerContext) http
 					return
 				}
 				d.Logger().WithError(err).Errorf("Retrieving listing [%s] for test expire.", listingId)
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 			rows, err := listing.BackdateEndsAt(d.DB().WithContext(d.Context()), listingId, time.Now().Add(-time.Second))
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Backdating listing [%s].", listingId)
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 			if rows == 0 {
@@ -407,7 +407,7 @@ func handleRunSweep(d *rest.HandlerDependency, c *rest.HandlerContext) http.Hand
 		swept, err := task.Sweep(d.Logger(), d.Context(), d.DB())
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Test-route sweep failed.")
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteErrorResponse(d.Logger())(w)(err)
 			return
 		}
 		d.Logger().Infof("[TEST ROUTE] Sweep settled/expired [%d] listings.", swept)

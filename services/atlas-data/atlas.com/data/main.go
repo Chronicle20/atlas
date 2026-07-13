@@ -140,6 +140,14 @@ func main() {
 		baseline.Migration,
 	))
 
+	server.RegisterTransientErrorClassifier(func(err error) bool {
+		if database.IsTransientConnectionError(err) {
+			database.CountTransient(err)
+			return true
+		}
+		return false
+	})
+
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	data2.InitConsumers(l)(cmf)(consumerGroupId)
 	if err := data2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {

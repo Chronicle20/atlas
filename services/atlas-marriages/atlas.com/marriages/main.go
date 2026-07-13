@@ -54,6 +54,14 @@ func main() {
 
 	db := database.Connect(l, database.SetMigrations(marriageService.Migration))
 
+	server.RegisterTransientErrorClassifier(func(err error) bool {
+		if database.IsTransientConnectionError(err) {
+			database.CountTransient(err)
+			return true
+		}
+		return false
+	})
+
 	// Initialize proposal expiry scheduler
 	proposalExpiryScheduler := scheduler.NewProposalExpiryScheduler(l, tdm.Context(), db)
 	proposalExpiryScheduler.Start()

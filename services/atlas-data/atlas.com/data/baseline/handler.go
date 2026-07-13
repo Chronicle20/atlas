@@ -2,7 +2,6 @@ package baseline
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 
 	"atlas-data/rest"
@@ -44,7 +43,7 @@ func publishInner(db *gorm.DB, mc *minio.Client, _ logrus.FieldLogger) func(d *r
 			sum, err := (Publisher{DB: db, MC: mc, L: d.Logger()}).Publish(r.Context(), input.Region, input.MajorVersion, input.MinorVersion)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("baseline publish failed")
-				http.Error(w, fmt.Sprintf("publish failed: %s", err.Error()), http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 			out := PublishOutputModel{
@@ -79,7 +78,7 @@ func listInner(mc *minio.Client) func(d *rest.HandlerDependency, c *rest.Handler
 			items, err := (Lister{MC: mc, Bucket: mc.Cfg().BucketCanonical, L: d.Logger()}).List(r.Context())
 			if err != nil {
 				d.Logger().WithError(err).Errorf("baseline list failed")
-				http.Error(w, fmt.Sprintf("list failed: %s", err.Error()), http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 			query := r.URL.Query()
@@ -102,11 +101,11 @@ func restoreInner(db *gorm.DB, mc *minio.Client, _ logrus.FieldLogger) func(d *r
 				return
 			}
 			if err := (Restorer{DB: db, MC: mc, L: d.Logger()}).Restore(req.Context(), input.Region, input.MajorVersion, input.MinorVersion, input.TenantID); err != nil {
-				code := http.StatusInternalServerError
 				if errors.Is(err, ErrSchemaMismatch) || errors.Is(err, ErrShaMismatch) {
-					code = http.StatusUnprocessableEntity
+					http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+					return
 				}
-				http.Error(w, err.Error(), code)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 			w.WriteHeader(http.StatusAccepted)

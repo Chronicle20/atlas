@@ -28,7 +28,7 @@ func handleGetCharacterTemplatesRequest(db *gorm.DB) func(d *rest.HandlerDepende
 			s := NewStorage(d.Logger(), db)
 			res, err := s.GetAll(d.Context())
 			if err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 

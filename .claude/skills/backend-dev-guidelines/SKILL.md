@@ -160,6 +160,7 @@ See [Testing Conventions](resources/testing-guide.md) for comprehensive testing 
 | Kafka Integration | [resources/patterns-kafka.md](resources/patterns-kafka.md) |
 | **Saga Patterns & Step Completion** | **[resources/patterns-saga.md](resources/patterns-saga.md)** |
 | REST JSON:API | [resources/patterns-rest-jsonapi.md](resources/patterns-rest-jsonapi.md) |
+| **DB & Downstream Resilience** | **[resources/patterns-resilience.md](resources/patterns-resilience.md)** |
 | **Ingress & Documentation** | **[resources/patterns-ingress-documentation.md](resources/patterns-ingress-documentation.md)** |
 | Multi-Tenancy Context | [resources/patterns-multitenancy-context.md](resources/patterns-multitenancy-context.md) |
 | Testing Conventions | [resources/testing-guide.md](resources/testing-guide.md) |

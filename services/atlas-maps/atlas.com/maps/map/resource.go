@@ -40,13 +40,13 @@ func handleGetCharactersInMap(d *rest.HandlerDependency, c *rest.HandlerContext)
 						mp := NewProcessor(d.Logger(), d.Context(), nil, nil)
 						ids, err := mp.GetCharactersInMap(transactionId, f)
 						if err != nil {
-							w.WriteHeader(http.StatusInternalServerError)
+							server.WriteErrorResponse(d.Logger())(w)(err)
 							return
 						}
 						res, err := model.SliceMap(Transform)(model.FixedProvider(ids))(model.ParallelMap())()
 						if err != nil {
 							d.Logger().WithError(err).Errorf("Creating REST model.")
-							w.WriteHeader(http.StatusInternalServerError)
+							server.WriteErrorResponse(d.Logger())(w)(err)
 							return
 						}
 
@@ -67,13 +67,13 @@ func handleGetCharactersInMapAllInstances(d *rest.HandlerDependency, c *rest.Han
 					mp := NewProcessor(d.Logger(), d.Context(), nil, nil)
 					ids, err := mp.GetCharactersInMapAllInstances(transactionId, worldId, channelId, mapId)
 					if err != nil {
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 					res, err := model.SliceMap(Transform)(model.FixedProvider(ids))(model.ParallelMap())()
 					if err != nil {
 						d.Logger().WithError(err).Errorf("Creating REST model.")
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 

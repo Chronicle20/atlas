@@ -36,7 +36,7 @@ func handleGetConfigurationTenants(db *gorm.DB) rest.GetHandler {
 			cts, err := NewProcessor(d.Logger(), d.Context(), db).GetAll()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Unable to get configuration tenants.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -54,7 +54,7 @@ func handleGetConfigurationTenant(db *gorm.DB) rest.GetHandler {
 				cts, err := NewProcessor(d.Logger(), d.Context(), db).GetById(tenantId)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Unable to get configuration tenants.")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -95,7 +95,7 @@ func handleUpdateConfigurationTenant(db *gorm.DB) rest.InputHandler[RestModel] {
 						return
 					}
 					d.Logger().WithError(err).Errorf("Unable to update configuration tenant.")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 			}
@@ -109,7 +109,7 @@ func handleCreateConfigurationTenant(db *gorm.DB) rest.InputHandler[RestModel] {
 			tenantId, err := NewProcessor(d.Logger(), d.Context(), db).Create(input)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Unable to create configuration tenant.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -135,7 +135,7 @@ func handleDeleteConfigurationTenant(db *gorm.DB) rest.GetHandler {
 				err := NewProcessor(d.Logger(), d.Context(), db).DeleteById(tenantId)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Unable to delete configuration tenant.")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 				}
 			}
 		})

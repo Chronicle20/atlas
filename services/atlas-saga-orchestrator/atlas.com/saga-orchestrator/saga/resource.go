@@ -28,13 +28,15 @@ func getAllSagasHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http.
 		sms, err := NewProcessor(d.Logger(), d.Context()).GetAll()
 		if err != nil {
 			d.Logger().WithError(err).Error("Failed to retrieve sagas")
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteErrorResponse(d.Logger())(w)(err)
+			return
 		}
 
 		rms, err := model.SliceMap(Transform)(model.FixedProvider(sms))(model.ParallelMap())()
 		if err != nil {
 			d.Logger().WithError(err).Error("Failed to retrieve sagas")
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteErrorResponse(d.Logger())(w)(err)
+			return
 		}
 
 		// Marshal response
@@ -52,13 +54,15 @@ func getSagaByIdHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http.
 			saga, err := NewProcessor(d.Logger(), d.Context()).GetById(transactionId)
 			if err != nil {
 				d.Logger().WithError(err).Error("Failed to retrieve sagas")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
+				return
 			}
 
 			rms, err := model.Map(Transform)(model.FixedProvider(saga))()
 			if err != nil {
 				d.Logger().WithError(err).Error("Failed to retrieve sagas")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
+				return
 			}
 
 			// Marshal response
@@ -89,7 +93,7 @@ func createSagaHandler(d *rest.HandlerDependency, c *rest.HandlerContext, im Res
 		err = NewProcessor(d.Logger(), d.Context()).Put(saga)
 		if err != nil {
 			d.Logger().WithError(err).Error("Failed to create saga")
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteErrorResponse(d.Logger())(w)(err)
 			return
 		}
 
@@ -97,7 +101,7 @@ func createSagaHandler(d *rest.HandlerDependency, c *rest.HandlerContext, im Res
 		s, err := NewProcessor(d.Logger(), d.Context()).GetById(saga.TransactionId())
 		if err != nil {
 			d.Logger().WithError(err).Error("Failed to retrieve created saga")
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteErrorResponse(d.Logger())(w)(err)
 			return
 		}
 
@@ -105,7 +109,7 @@ func createSagaHandler(d *rest.HandlerDependency, c *rest.HandlerContext, im Res
 		rm, err := model.Map(Transform)(model.FixedProvider(s))()
 		if err != nil {
 			d.Logger().WithError(err).Error("Failed to transform saga")
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteErrorResponse(d.Logger())(w)(err)
 			return
 		}
 

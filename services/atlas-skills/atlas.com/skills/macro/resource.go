@@ -29,7 +29,7 @@ func handleGetSkillMacros(db *gorm.DB) rest.GetHandler {
 				res, err := model.SliceMap(Transform)(mp)(model.ParallelMap())()
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Creating REST model.")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 

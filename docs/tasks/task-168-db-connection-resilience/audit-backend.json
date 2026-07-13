@@ -1,0 +1,28 @@
+{
+  "service": "task-168-db-connection-resilience",
+  "path": ".worktrees/task-168-db-connection-resilience",
+  "date": "2026-07-12",
+  "build": "pass",
+  "testsPassed": 1,
+  "testsFailed": 0,
+  "overallStatus": "pass",
+  "domains": [
+    {
+      "name": "task-168-changed-packages",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-21", "name": "Reuse atlas-constants; no new domain types", "status": "pass", "evidence": "Only lib-level utilities added (libs/atlas-database/transient.go:28,53; libs/atlas-model/model/processor.go:107; libs/atlas-rest/degrade/degrade.go:25). No new domain/id/classification type."},
+        {"id": "DOM-22", "name": "Dockerfile mentions per new direct lib require", "status": "pass", "evidence": "Shared root Dockerfile wires atlas-retry (Dockerfile:43,72,93) + atlas-database (:33,62,92); pgx is third-party via go.sum (libs/atlas-database/go.mod:10); no service gained a new direct atlas-lib require."},
+        {"id": "DOM-24", "name": "Kafka producer stubbed in emitting tests", "status": "pass", "evidence": "New httptest tests exercise read-only paths: inventory/resource_test.go:79,101 (GET); login/character/processor_test.go:55,96 (REST read). No emit calls in any changed test."},
+        {"id": "DOM-26", "name": "Transient DB errors map to 503 not bare 500", "status": "pass", "evidence": "atlas-inventory/main.go:64-70 registers classifier; changed handlers use server.WriteErrorResponse (inventory/resource.go:45,53,72,79,98; asset/resource.go:34,41,63; compartment/resource.go:41,48,87,94). error.go:48-66 maps transient->503+Retry-After:1."},
+        {"id": "DOM-27", "name": "No silent degradation in decorators/enrichment", "status": "pass", "evidence": "InventoryDecorator login/character/processor.go:109-122 and CooldownDecorator skills/skill/processor.go:248-265 use model.ErrDecorator+degrade.Observe; 3 login GetRandomInWorld sites are loud aborts (Errorf+return)."}
+      ]
+    }
+  ],
+  "blocking": [],
+  "nonBlocking": [
+    "atlas-skills is DB-backed (main.go:61) but its REST handlers write bare 500 (skill/resource.go:37,55,73,93; macro/resource.go:32) with no classifier registered — out of DOM-26 literal scope (resource.go unchanged) but a fleet-completeness inconsistency.",
+    "// TODO issue error markers added in login char-select handlers (character_view_all_selected.go:61; ..._pic.go:95; ..._pic_register.go:69) — pre-existing idiom, loud-abort behavior complete, not a silent stub.",
+    "Pre-existing go vet warning at libs/atlas-rest/server/server.go:187-188 (WaitGroup.Add inside goroutine) — not introduced by task-168."
+  ]
+}

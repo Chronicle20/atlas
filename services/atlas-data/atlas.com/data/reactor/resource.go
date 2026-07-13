@@ -59,7 +59,7 @@ func handleGetReactorsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *re
 			results, err := s.GetAll(d.Context())
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Unable to retrieve reactors.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -102,7 +102,7 @@ func handleSearchReactors(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.H
 				tenantId, err := searchindex.ResolveTenantId(db, d.Context(), spec)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Reactor tenant resolve failed.")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -111,7 +111,7 @@ func handleSearchReactors(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.H
 				elapsedMs := time.Since(start).Milliseconds()
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Reactor search failed.")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 

@@ -71,7 +71,7 @@ func statusHandler(mc *minio.Client) func(d *rest.HandlerDependency, c *rest.Han
 			prefix := fmt.Sprintf("%s/regions/%s/versions/%d.%d/", scope.Key, t.Region(), t.MajorVersion(), t.MinorVersion())
 			s, err := mc.PrefixStats(r.Context(), mc.Cfg().BucketWZ, prefix)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 			query := r.URL.Query()

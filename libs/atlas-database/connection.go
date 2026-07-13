@@ -1,11 +1,14 @@
 package database
 
 import (
+	"database/sql"
 	"fmt"
 	"os"
 	"strconv"
 	"time"
 
+	pgx "github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/sirupsen/logrus"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -104,31 +107,35 @@ func Connect(l logrus.FieldLogger, configurators ...Configurator) *gorm.DB {
 		configurator(c)
 	}
 
-	var db *gorm.DB
-	tryToConnect := func(attempt int) (bool, error) {
-		var err error
-		db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
-		if err != nil {
-			return true, err
-		}
-		sqlDB, err := db.DB()
-		if err != nil {
-			return true, err
-		}
+	pgxCfg, err := pgx.ParseConfig(dsn)
+	if err != nil {
+		l.WithError(err).Fatalf("Failed to parse database DSN.")
+	}
 
+	var db *gorm.DB
+	var sqlDB *sql.DB
+	tryToConnect := func(attempt int) (bool, error) {
+		sqlDB = sql.OpenDB(newRetryConnector(l, stdlib.GetConnector(*pgxCfg)))
 		sqlDB.SetMaxOpenConns(getIntEnv("DB_MAX_OPEN_CONNS", 10))
 		sqlDB.SetMaxIdleConns(getIntEnv("DB_MAX_IDLE_CONNS", 5))
 		sqlDB.SetConnMaxLifetime(getDurationEnv("DB_CONN_MAX_LIFETIME", 5*time.Minute))
 		sqlDB.SetConnMaxIdleTime(getDurationEnv("DB_CONN_MAX_IDLE_TIME", 3*time.Minute))
 
+		var errOpen error
+		db, errOpen = gorm.Open(postgres.New(postgres.Config{Conn: sqlDB}), &gorm.Config{})
+		if errOpen != nil {
+			_ = sqlDB.Close()
+			return true, errOpen
+		}
 		return false, nil
 	}
 
-	err := try(tryToConnect, 10)
+	err = try(tryToConnect, 10)
 	if err != nil {
 		l.WithError(err).Fatalf("Failed to connect to database.")
 	}
 
+	registerDBStats(l, sqlDB, os.Getenv("DB_NAME"))
 	registerTenantCallbacks(l, db)
 
 	for _, m := range c.migrations {

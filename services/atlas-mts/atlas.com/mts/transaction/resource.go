@@ -37,14 +37,14 @@ func handleGetCharacterTransactions(d *rest.HandlerDependency, c *rest.HandlerCo
 			ms, err := p.GetByCharacter(characterId)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Retrieving transactions for character [%d].", characterId)
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
 			res, err := model.SliceMap(Transform)(model.FixedProvider(ms))(model.ParallelMap())()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 

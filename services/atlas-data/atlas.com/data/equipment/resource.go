@@ -38,7 +38,7 @@ func handleGetEquipmentStatistics(db *gorm.DB) func(d *rest.HandlerDependency, c
 						return
 					}
 					d.Logger().WithError(err).Errorf("Unable to get equipment [%d].", equipmentId)
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 				query := r.URL.Query()
@@ -62,7 +62,7 @@ func handleGetEquipmentSlots(db *gorm.DB) func(d *rest.HandlerDependency, c *res
 						return
 					}
 					d.Logger().WithError(err).Errorf("Unable to get equipment [%d].", equipmentId)
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 

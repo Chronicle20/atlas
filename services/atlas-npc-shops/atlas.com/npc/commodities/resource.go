@@ -37,7 +37,7 @@ func handleGetCommoditiesByItem(d *rest.HandlerDependency, c *rest.HandlerContex
 			Where("template_id = ?", uint32(itemId)).
 			Find(&entities).Error; err != nil {
 			d.Logger().WithError(err).Errorf("Unable to retrieve commodities for itemId=%d.", itemId)
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteErrorResponse(d.Logger())(w)(err)
 			return
 		}
 

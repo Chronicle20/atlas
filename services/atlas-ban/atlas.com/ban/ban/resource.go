@@ -44,14 +44,14 @@ func handleCreateBan(d *rest.HandlerDependency, c *rest.HandlerContext, input Re
 		)
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Unable to create ban.")
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteErrorResponse(d.Logger())(w)(err)
 			return
 		}
 
 		res, err := Transform(m)
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Creating REST model.")
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteErrorResponse(d.Logger())(w)(err)
 			return
 		}
 
@@ -82,14 +82,14 @@ func handleGetBans(d *rest.HandlerDependency, c *rest.HandlerContext) http.Handl
 
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Unable to locate bans.")
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteErrorResponse(d.Logger())(w)(err)
 			return
 		}
 
 		res, err := model.SliceMap(Transform)(model.FixedProvider(bans))(model.ParallelMap())()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Creating REST model.")
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteErrorResponse(d.Logger())(w)(err)
 			return
 		}
 
@@ -112,7 +112,7 @@ func handleGetBanById(d *rest.HandlerDependency, c *rest.HandlerContext) http.Ha
 			res, err := Transform(m)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -129,7 +129,7 @@ func handleDeleteBan(d *rest.HandlerDependency, _ *rest.HandlerContext) http.Han
 			err := NewProcessor(d.Logger(), d.Context(), d.DB()).DeleteAndEmit(banId)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Unable to delete ban [%d].", banId)
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 			w.WriteHeader(http.StatusNoContent)
@@ -147,7 +147,7 @@ func handleExpireBan(d *rest.HandlerDependency, _ *rest.HandlerContext) http.Han
 					w.WriteHeader(http.StatusBadRequest)
 					return
 				}
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 			w.WriteHeader(http.StatusNoContent)
@@ -174,7 +174,7 @@ func handleCheckBan(d *rest.HandlerDependency, c *rest.HandlerContext) http.Hand
 		m, err := NewProcessor(d.Logger(), d.Context(), d.DB()).CheckBan(ip, hwid, accountId)
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Unable to check ban for ip [%s] hwid [%s] account [%d].", ip, hwid, accountId)
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteErrorResponse(d.Logger())(w)(err)
 			return
 		}
 

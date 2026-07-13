@@ -34,21 +34,21 @@ func handleGetAssetsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest
 					storageId, err := processor.GetOrCreateStorageId(worldId, accountId)
 					if err != nil {
 						d.Logger().WithError(err).Errorf("Unable to get or create storage for world %d account %d.", worldId, accountId)
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 
 					assets, err := processor.GetAssetsByStorageId(storageId)
 					if err != nil {
 						d.Logger().WithError(err).Errorf("Unable to get assets for storage %s.", storageId)
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 
 					restModels, err := TransformAll(assets)
 					if err != nil {
 						d.Logger().WithError(err).Errorf("Unable to transform assets for storage %s.", storageId)
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 
@@ -79,7 +79,7 @@ func handleGetAssetRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.
 						restModel, err := Transform(assetModel)
 						if err != nil {
 							d.Logger().WithError(err).Errorf("Unable to transform asset %d.", assetId)
-							w.WriteHeader(http.StatusInternalServerError)
+							server.WriteErrorResponse(d.Logger())(w)(err)
 							return
 						}
 

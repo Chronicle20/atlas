@@ -50,7 +50,7 @@ func handleGetShop(d *rest.HandlerDependency, c *rest.HandlerContext) http.Handl
 				}
 
 				d.Logger().WithError(err).Errorf("Retrieving shop model.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -58,7 +58,7 @@ func handleGetShop(d *rest.HandlerDependency, c *rest.HandlerContext) http.Handl
 			res, err := Transform(shopModel)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -93,14 +93,14 @@ func handleAddCommodity(d *rest.HandlerDependency, c *rest.HandlerContext, i com
 			commodity, err := p.AddCommodity(npcId, i.TemplateId, i.MesoPrice, discountRate, tokenTemplateId, tokenPrice, period, levelLimited)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Adding commodity.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
 			res, err := commodities.Transform(commodity)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -126,14 +126,14 @@ func handleUpdateCommodity(d *rest.HandlerDependency, c *rest.HandlerContext, i 
 				commodity, err := p.UpdateCommodity(commodityId, i.TemplateId, i.MesoPrice, discountRate, tokenTemplateId, tokenPrice, period, levelLimited)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Updating commodity.")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
 				res, err := commodities.Transform(commodity)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Creating REST model.")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -154,7 +154,7 @@ func handleRemoveCommodity(d *rest.HandlerDependency, _ *rest.HandlerContext) ht
 				err := p.RemoveCommodity(commodityId)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Removing commodity.")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -171,7 +171,7 @@ func handleDeleteAllCommodities(d *rest.HandlerDependency, _ *rest.HandlerContex
 			err := p.DeleteAllCommoditiesByNpcId(npcId)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Deleting all commodities for NPC %d.", npcId)
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -186,7 +186,7 @@ func handleDeleteAllShops(d *rest.HandlerDependency, _ *rest.HandlerContext) htt
 		err := p.DeleteAllShops()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Deleting all shops.")
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteErrorResponse(d.Logger())(w)(err)
 			return
 		}
 
@@ -203,7 +203,7 @@ func handleGetShopCharacters(d *rest.HandlerDependency, c *rest.HandlerContext) 
 			res, err := model.SliceMap(TransformCharacterList)(model.FixedProvider(characterIds))(model.ParallelMap())()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -222,7 +222,7 @@ func handleGetAllShops(d *rest.HandlerDependency, c *rest.HandlerContext) http.H
 		shops, err := p.GetAllShops(decoratorsFromInclude(d.Logger(), d.Context(), d.DB(), r)...)
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Getting all shops.")
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteErrorResponse(d.Logger())(w)(err)
 			return
 		}
 
@@ -230,7 +230,7 @@ func handleGetAllShops(d *rest.HandlerDependency, c *rest.HandlerContext) http.H
 		restShops, err := model.SliceMap(Transform)(model.FixedProvider(shops))(model.ParallelMap())()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Creating REST models.")
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteErrorResponse(d.Logger())(w)(err)
 			return
 		}
 
@@ -262,7 +262,7 @@ func handleCreateShop(d *rest.HandlerDependency, c *rest.HandlerContext, i RestM
 			shop, err := p.CreateShop(npcId, i.Recharger, commodityModels)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating shop.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -270,7 +270,7 @@ func handleCreateShop(d *rest.HandlerDependency, c *rest.HandlerContext, i RestM
 			restShop, err := Transform(shop)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -304,7 +304,7 @@ func handleUpdateShop(d *rest.HandlerDependency, c *rest.HandlerContext, i RestM
 			shop, err := p.UpdateShop(npcId, i.Recharger, commodityModels)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Updating shop.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -312,7 +312,7 @@ func handleUpdateShop(d *rest.HandlerDependency, c *rest.HandlerContext, i RestM
 			restShop, err := Transform(shop)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 

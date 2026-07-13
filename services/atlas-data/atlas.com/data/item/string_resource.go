@@ -92,7 +92,7 @@ func handleGetItemStringsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c 
 			tenantId, err := searchindex.ResolveTenantId(db, d.Context(), spec)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Item-string tenant resolve failed.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -115,7 +115,7 @@ func handleGetItemStringsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c 
 			elapsedMs := time.Since(start).Milliseconds()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Item-string search failed.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 

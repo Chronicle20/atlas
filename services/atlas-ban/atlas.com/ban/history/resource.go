@@ -42,14 +42,14 @@ func handleGetHistory(d *rest.HandlerDependency, c *rest.HandlerContext) http.Ha
 
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Unable to locate login history.")
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteErrorResponse(d.Logger())(w)(err)
 			return
 		}
 
 		res, err := model.SliceMap(Transform)(model.FixedProvider(entries))(model.ParallelMap())()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Creating REST model.")
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteErrorResponse(d.Logger())(w)(err)
 			return
 		}
 
@@ -65,14 +65,14 @@ func handleGetHistoryByAccountId(d *rest.HandlerDependency, c *rest.HandlerConte
 			entries, err := NewProcessor(d.Logger(), d.Context(), d.DB()).GetByAccountId(accountId)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Unable to locate login history for account [%d].", accountId)
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
 			res, err := model.SliceMap(Transform)(model.FixedProvider(entries))(model.ParallelMap())()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 

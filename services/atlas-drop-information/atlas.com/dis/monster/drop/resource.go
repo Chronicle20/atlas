@@ -37,14 +37,14 @@ func handleGetAllDrops(d *rest.HandlerDependency, c *rest.HandlerContext) http.H
 					return
 				}
 				d.Logger().WithError(err).Errorf("Retrieving drops for monster [%d].", monsterId)
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
 			res, err := model.SliceMap(Transform)(model.FixedProvider(ms))(model.ParallelMap())()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -65,14 +65,14 @@ func handleGetItemDrops(d *rest.HandlerDependency, c *rest.HandlerContext) http.
 					return
 				}
 				d.Logger().WithError(err).Errorf("Retrieving drops for item [%d].", itemId)
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
 			res, err := model.SliceMap(Transform)(model.FixedProvider(ms))(model.ParallelMap())()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 

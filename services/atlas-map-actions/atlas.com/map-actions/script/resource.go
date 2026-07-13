@@ -38,7 +38,7 @@ func GetAllScriptsHandler(d *rest.HandlerDependency, c *rest.HandlerContext) htt
 		rm, err := model.SliceMap(Transform)(mp)(model.ParallelMap())()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Creating REST model.")
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteErrorResponse(d.Logger())(w)(err)
 			return
 		}
 
@@ -60,13 +60,13 @@ func GetScriptHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http.Ha
 			}
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Retrieving script.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 			rm, err := model.Map(Transform)(model.FixedProvider(m))()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -85,7 +85,7 @@ func GetScriptsByNameHandler(d *rest.HandlerDependency, c *rest.HandlerContext) 
 			rm, err := model.SliceMap(Transform)(mp)(model.ParallelMap())()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Retrieving scripts for [%s].", scriptName)
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -109,14 +109,14 @@ func CreateScriptHandler(d *rest.HandlerDependency, c *rest.HandlerContext, rm R
 		createdModel, err := NewProcessor(d.Logger(), d.Context(), d.DB()).Create(m)
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Creating script.")
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteErrorResponse(d.Logger())(w)(err)
 			return
 		}
 
 		createdRm, err := Transform(createdModel)
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Transforming domain model to REST model.")
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteErrorResponse(d.Logger())(w)(err)
 			return
 		}
 
@@ -141,14 +141,14 @@ func UpdateScriptHandler(d *rest.HandlerDependency, c *rest.HandlerContext, rm R
 			updatedModel, err := NewProcessor(d.Logger(), d.Context(), d.DB()).Update(scriptId, m)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Updating script.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
 			updatedRm, err := Transform(updatedModel)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Transforming domain model to REST model.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -166,7 +166,7 @@ func DeleteScriptHandler(d *rest.HandlerDependency, _ *rest.HandlerContext) http
 			err := NewProcessor(d.Logger(), d.Context(), d.DB()).Delete(scriptId)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Deleting script.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 

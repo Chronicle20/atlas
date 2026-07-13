@@ -34,7 +34,7 @@ func handleGetSkills(db *gorm.DB) rest.GetHandler {
 				res, err := model.SliceMap(Transform)(mp)(model.ParallelMap())()
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Creating REST model.")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -52,7 +52,7 @@ func handleRequestCreateSkill(db *gorm.DB) rest.InputHandler[RestModel] {
 			return func(w http.ResponseWriter, r *http.Request) {
 				err := NewProcessor(d.Logger(), d.Context(), db).RequestCreate(uuid.New(), world.Id(0), characterId, i.Id, i.Level, i.MasterLevel, i.Expiration)
 				if err != nil {
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 				w.WriteHeader(http.StatusAccepted)
@@ -70,7 +70,7 @@ func handleGetSkill(db *gorm.DB) rest.GetHandler {
 					res, err := model.Map(Transform)(mp)()
 					if err != nil {
 						d.Logger().WithError(err).Errorf("Creating REST model.")
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 
@@ -90,7 +90,7 @@ func handleRequestUpdateSkill(db *gorm.DB) rest.InputHandler[RestModel] {
 				return func(w http.ResponseWriter, r *http.Request) {
 					err := NewProcessor(d.Logger(), d.Context(), db).RequestUpdate(uuid.New(), world.Id(0), characterId, skillId, i.Level, i.MasterLevel, i.Expiration)
 					if err != nil {
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 					w.WriteHeader(http.StatusAccepted)

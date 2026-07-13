@@ -38,7 +38,7 @@ func GetAllConversationsHandler(d *rest.HandlerDependency, c *rest.HandlerContex
 		rm, err := model.SliceMap(Transform)(mp)(model.ParallelMap())()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Creating REST model.")
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteErrorResponse(d.Logger())(w)(err)
 			return
 		}
 
@@ -60,13 +60,13 @@ func GetConversationHandler(d *rest.HandlerDependency, c *rest.HandlerContext) h
 			}
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Retrieving quest conversation.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 			rm, err := model.Map(Transform)(model.FixedProvider(m))()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -89,13 +89,13 @@ func GetConversationByQuestHandler(d *rest.HandlerDependency, c *rest.HandlerCon
 			}
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Retrieving quest conversation.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 			rm, err := model.Map(Transform)(model.FixedProvider(m))()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -121,7 +121,7 @@ func CreateConversationHandler(d *rest.HandlerDependency, c *rest.HandlerContext
 		createdModel, err := NewProcessor(d.Logger(), d.Context(), d.DB()).Create(m)
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Creating quest conversation.")
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteErrorResponse(d.Logger())(w)(err)
 			return
 		}
 
@@ -129,7 +129,7 @@ func CreateConversationHandler(d *rest.HandlerDependency, c *rest.HandlerContext
 		createdRm, err := Transform(createdModel)
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Transforming domain model to REST model.")
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteErrorResponse(d.Logger())(w)(err)
 			return
 		}
 
@@ -157,7 +157,7 @@ func UpdateConversationHandler(d *rest.HandlerDependency, c *rest.HandlerContext
 			updatedModel, err := NewProcessor(d.Logger(), d.Context(), d.DB()).Update(conversationId, m)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Updating quest conversation.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -165,7 +165,7 @@ func UpdateConversationHandler(d *rest.HandlerDependency, c *rest.HandlerContext
 			updatedRm, err := Transform(updatedModel)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Transforming domain model to REST model.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -185,7 +185,7 @@ func DeleteConversationHandler(d *rest.HandlerDependency, _ *rest.HandlerContext
 			err := NewProcessor(d.Logger(), d.Context(), d.DB()).Delete(conversationId)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Deleting quest conversation.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 

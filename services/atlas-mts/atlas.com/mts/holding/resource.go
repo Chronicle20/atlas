@@ -59,7 +59,7 @@ func handleTakeHome(d *rest.HandlerDependency, c *rest.HandlerContext, rm TakeHo
 						return
 					}
 					d.Logger().WithError(err).Errorf("Retrieving holding [%s] for take-home.", holdingId)
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -73,7 +73,7 @@ func handleTakeHome(d *rest.HandlerDependency, c *rest.HandlerContext, rm TakeHo
 				txnId, err := p.TakeHome(holdingId, characterId, m.WorldId(), rm.InventoryType, rm.Slot)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Initiating take-home of holding [%s] for character [%d].", holdingId, characterId)
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -112,14 +112,14 @@ func handleGetCharacterHoldings(d *rest.HandlerDependency, c *rest.HandlerContex
 			}
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Retrieving holdings for character [%d].", characterId)
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
 			res, err := model.SliceMap(Transform)(model.FixedProvider(ms))(model.ParallelMap())()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 

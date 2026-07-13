@@ -53,14 +53,14 @@ func handleGetMerchant(db *gorm.DB) rest.GetHandler {
 						return
 					}
 					d.Logger().WithError(err).Errorf("Retrieving merchant.")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
 				listings, err := p.GetListings(shopId)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Retrieving listings.")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -73,7 +73,7 @@ func handleGetMerchant(db *gorm.DB) rest.GetHandler {
 				res, err := TransformWithListingsAndVisitors(listings, visitors)(m)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Creating REST model.")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -94,14 +94,14 @@ func handleGetMerchantListings(db *gorm.DB) rest.GetHandler {
 				listings, err := p.GetListings(shopId)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Retrieving listings.")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
 				res, err := model.SliceMap(listing.Transform)(model.FixedProvider(listings))(model.ParallelMap())()
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Creating REST models.")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -121,7 +121,7 @@ func handleGetMerchants(db *gorm.DB) rest.GetHandler {
 			shops, err := p.GetAllOpen()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Retrieving merchants.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -133,14 +133,14 @@ func handleGetMerchants(db *gorm.DB) rest.GetHandler {
 			counts, err := p.GetListingCounts(shopIds)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Retrieving listing counts.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
 			res, err := model.SliceMap(TransformWithListingCount(counts))(model.FixedProvider(shops))(model.ParallelMap())()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST models.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -170,14 +170,14 @@ func handleSearchListings(db *gorm.DB) rest.GetHandler {
 			results, err := p.SearchListingsByItemId(uint32(v))
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Searching listings by item.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
 			res, err := model.SliceMap(TransformSearchResult)(model.FixedProvider(results))(model.ParallelMap())()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST models.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -196,14 +196,14 @@ func handleGetCharacterMerchants(db *gorm.DB) rest.GetHandler {
 				shops, err := p.GetByCharacterId(characterId)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Retrieving merchants for character.")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
 				res, err := model.SliceMap(Transform)(model.FixedProvider(shops))(model.ParallelMap())()
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Creating REST models.")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -233,14 +233,14 @@ func handleGetCharacterVisiting(db *gorm.DB) rest.GetHandler {
 						return
 					}
 					d.Logger().WithError(err).Errorf("Retrieving merchant.")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
 				res, err := Transform(m)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Creating REST model.")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -264,7 +264,7 @@ func handleGetFieldMerchants(db *gorm.DB) rest.GetHandler {
 							shops, err := p.GetByField(worldId, channelId, mapId, instanceId)
 							if err != nil {
 								d.Logger().WithError(err).Errorf("Retrieving field merchants.")
-								w.WriteHeader(http.StatusInternalServerError)
+								server.WriteErrorResponse(d.Logger())(w)(err)
 								return
 							}
 
@@ -276,14 +276,14 @@ func handleGetFieldMerchants(db *gorm.DB) rest.GetHandler {
 							counts, err := p.GetListingCounts(shopIds)
 							if err != nil {
 								d.Logger().WithError(err).Errorf("Retrieving listing counts.")
-								w.WriteHeader(http.StatusInternalServerError)
+								server.WriteErrorResponse(d.Logger())(w)(err)
 								return
 							}
 
 							res, err := model.SliceMap(TransformWithListingCount(counts))(model.FixedProvider(shops))(model.ParallelMap())()
 							if err != nil {
 								d.Logger().WithError(err).Errorf("Creating REST models.")
-								w.WriteHeader(http.StatusInternalServerError)
+								server.WriteErrorResponse(d.Logger())(w)(err)
 								return
 							}
 

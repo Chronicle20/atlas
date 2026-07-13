@@ -34,7 +34,7 @@ func handleGetPet(d *rest.HandlerDependency, c *rest.HandlerContext) http.Handle
 			res, err := model.Map(Transform(d.Context()))(p.ByIdProvider(petId))()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -52,7 +52,7 @@ func handleGetPetsForCharacter(d *rest.HandlerDependency, c *rest.HandlerContext
 			res, err := model.SliceMap(Transform(d.Context()))(p.ByOwnerProvider(characterId))(model.ParallelMap())()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -117,13 +117,13 @@ func handleCreate(d *rest.HandlerDependency, c *rest.HandlerContext, i RestModel
 		pm, err := p.CreateAndEmit(ip)
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Unable to create model.")
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteErrorResponse(d.Logger())(w)(err)
 			return
 		}
 		res, err := model.Map(Transform(d.Context()))(model.FixedProvider(pm))()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Creating REST model.")
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteErrorResponse(d.Logger())(w)(err)
 			return
 		}
 

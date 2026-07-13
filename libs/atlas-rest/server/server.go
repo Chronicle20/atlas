@@ -13,6 +13,7 @@ import (
 
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	"github.com/gorilla/mux"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
 )
 
@@ -104,7 +105,7 @@ func New(l *logrus.Logger) *Builder {
 	sb.host = ""
 	sb.port = "8080"
 	sb.basePath = "/"
-	sb.routeInitializers = make([]RouteInitializer, 0)
+	sb.routeInitializers = []RouteInitializer{MountHandler("/metrics", promhttp.Handler())}
 	sb.routerProducer = func(l logrus.FieldLogger) http.Handler {
 		return produceRoutes(sb.basePath, sb.routeInitializers...)(l)
 	}

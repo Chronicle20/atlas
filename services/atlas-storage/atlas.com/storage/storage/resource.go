@@ -35,7 +35,7 @@ func handleGetStorageRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *res
 					s, err := NewProcessor(d.Logger(), d.Context(), db).GetOrCreateStorage(worldId, accountId)
 					if err != nil {
 						d.Logger().WithError(err).Errorf("Unable to get or create storage for world %d account %d.", worldId, accountId)
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 
@@ -43,7 +43,7 @@ func handleGetStorageRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *res
 					restModel, err := Transform(s)
 					if err != nil {
 						d.Logger().WithError(err).Errorf("Unable to transform storage for world %d account %d.", worldId, accountId)
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 
@@ -70,7 +70,7 @@ func handleCreateStorageRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *
 							return
 						}
 						d.Logger().WithError(err).Errorf("Unable to create storage for world %d account %d.", worldId, accountId)
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 
@@ -78,7 +78,7 @@ func handleCreateStorageRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *
 					restModel, err := Transform(s)
 					if err != nil {
 						d.Logger().WithError(err).Errorf("Unable to transform storage for world %d account %d.", worldId, accountId)
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 

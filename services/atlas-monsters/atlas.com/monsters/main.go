@@ -22,7 +22,6 @@ import (
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
 	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
 )
 
@@ -94,7 +93,6 @@ func main() {
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(monster.InitResource(GetServer())).
 		AddRouteInitializer(world.InitResource(GetServer())).
-		AddRouteInitializer(server.MountHandler("/metrics", promhttp.Handler())).
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
 		Run()
 

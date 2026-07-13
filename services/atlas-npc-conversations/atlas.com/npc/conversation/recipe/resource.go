@@ -29,7 +29,7 @@ func GetByItemHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http.Ha
 			rms, err := model.SliceMap(transformProvider)(mp)(model.ParallelMap())()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Listing recipes by itemId=%d", itemId)
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 			query := r.URL.Query()
@@ -46,7 +46,7 @@ func GetByNpcHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http.Han
 			rms, err := model.SliceMap(transformProvider)(mp)(model.ParallelMap())()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Listing recipes by npcId=%d", npcId)
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 			query := r.URL.Query()

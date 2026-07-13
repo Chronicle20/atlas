@@ -11,6 +11,7 @@ import (
 	"atlas-data/rest"
 	minio "atlas-data/storage/minio"
 
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
@@ -104,7 +105,7 @@ func uploadHandler(mc *minio.Client) func(d *rest.HandlerDependency, c *rest.Han
 				}
 				rc, err := entry.Open()
 				if err != nil {
-					http.Error(w, err.Error(), http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 				key := fmt.Sprintf("%s/regions/%s/versions/%d.%d/%s",
@@ -112,7 +113,7 @@ func uploadHandler(mc *minio.Client) func(d *rest.HandlerDependency, c *rest.Han
 				putErr := mc.Put(r.Context(), mc.Cfg().BucketWZ, key, rc, int64(entry.UncompressedSize64), "application/octet-stream")
 				_ = rc.Close()
 				if putErr != nil {
-					http.Error(w, putErr.Error(), http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(putErr)
 					return
 				}
 			}

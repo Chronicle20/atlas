@@ -59,7 +59,7 @@ func processCreate(jc *JobCreator) func(d *rest.HandlerDependency, c *rest.Handl
 				r.Header.Get("traceparent"),
 			)
 			if err != nil {
-				http.Error(w, fmt.Sprintf("create job: %v", err), http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 			w.Header().Set("Content-Type", "application/json")
@@ -98,7 +98,7 @@ func processStatus(jc *JobCreator) func(d *rest.HandlerDependency, c *rest.Handl
 				LabelSelector: labelIngest + "=true",
 			})
 			if err != nil {
-				http.Error(w, fmt.Sprintf("list jobs: %v", err), http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 			out := make([]processStatusJob, 0, len(list.Items))

@@ -54,6 +54,14 @@ func main() {
 
 	db := database.Connect(l, database.SetMigrations(templates.Migration, tenants.Migration, services.Migration, outboxlib.Migration))
 
+	server.RegisterTransientErrorClassifier(func(err error) bool {
+		if database.IsTransientConnectionError(err) {
+			database.CountTransient(err)
+			return true
+		}
+		return false
+	})
+
 	// Boot the outbox drainer: publishes the transactional outbox to Kafka.
 	// Uses pq.Listener (via WithDSN) for sub-100ms wake-up on Enqueue, with
 	// the poll interval as the fallback. Leadership is gated by a postgres

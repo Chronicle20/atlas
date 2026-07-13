@@ -58,7 +58,7 @@ func addJuniorHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Handl
 					case errors.Is(err, ErrSelfReference):
 						writeErrorResponse(w, http.StatusBadRequest, err.Error())
 					default:
-						writeErrorResponse(w, http.StatusInternalServerError, "Internal server error")
+						server.WriteErrorResponse(d.Logger())(w)(err)
 					}
 					return
 				}
@@ -67,7 +67,7 @@ func addJuniorHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Handl
 				restModel, err := Transform(result)
 				if err != nil {
 					d.Logger().WithError(err).Error("Failed to transform family member to REST model")
-					writeErrorResponse(w, http.StatusInternalServerError, "Internal server error")
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -99,7 +99,7 @@ func breakLinkHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Handl
 					case errors.Is(err, ErrNoLinkToBreak):
 						writeErrorResponse(w, http.StatusConflict, err.Error())
 					default:
-						writeErrorResponse(w, http.StatusInternalServerError, "Internal server error")
+						server.WriteErrorResponse(d.Logger())(w)(err)
 					}
 					return
 				}
@@ -108,7 +108,7 @@ func breakLinkHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Handl
 				rms, err := model.SliceMap(Transform)(model.FixedProvider(updatedMembers))(model.ParallelMap())()
 				if err != nil {
 					d.Logger().WithError(err).Error("Failed to transform family member to REST model")
-					writeErrorResponse(w, http.StatusInternalServerError, "Internal server error")
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -132,7 +132,7 @@ func getFamilyTreeHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.H
 					if errors.Is(err, ErrMemberNotFound) {
 						writeErrorResponse(w, http.StatusNotFound, err.Error())
 					} else {
-						writeErrorResponse(w, http.StatusInternalServerError, "Internal server error")
+						server.WriteErrorResponse(d.Logger())(w)(err)
 					}
 					return
 				}
@@ -141,7 +141,7 @@ func getFamilyTreeHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.H
 				restTree, err := TransformFamilyTree(familyTree)
 				if err != nil {
 					d.Logger().WithError(err).Error("Failed to transform family tree to REST model")
-					writeErrorResponse(w, http.StatusInternalServerError, "Internal server error")
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 

@@ -3,7 +3,7 @@ package drop
 import (
 	"atlas-drops/kafka/message"
 	"atlas-drops/kafka/message/drop"
-	"atlas-drops/kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"context"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"

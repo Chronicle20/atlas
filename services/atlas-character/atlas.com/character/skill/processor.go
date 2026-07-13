@@ -2,8 +2,8 @@ package skill
 
 import (
 	skill2 "atlas-character/kafka/message/skill"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"

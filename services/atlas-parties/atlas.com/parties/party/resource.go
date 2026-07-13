@@ -1,8 +1,8 @@
 package party
 
 import (
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"atlas-parties/rest"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"net/http"
 	"strconv"
 

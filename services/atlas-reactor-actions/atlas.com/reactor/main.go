@@ -3,8 +3,8 @@ package main
 import (
 	"os"
 
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"atlas-reactor-actions/script"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	seeder "github.com/Chronicle20/atlas/libs/atlas-seeder"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
 

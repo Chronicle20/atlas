@@ -1,8 +1,8 @@
 package reactor
 
 import (
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"atlas-reactors/rest"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"net/http"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"

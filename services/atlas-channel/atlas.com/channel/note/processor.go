@@ -2,9 +2,9 @@ package note
 
 import (
 	note2 "atlas-channel/kafka/message/note"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"context"
 	"errors"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"

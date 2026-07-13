@@ -4,9 +4,9 @@ import (
 	"atlas-parties/character"
 	"atlas-parties/invite"
 	"atlas-parties/kafka/message"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"context"
 	"errors"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"

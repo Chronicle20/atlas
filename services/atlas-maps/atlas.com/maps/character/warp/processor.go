@@ -7,8 +7,8 @@ import (
 	"atlas-maps/kafka/message"
 	characterKafka "atlas-maps/kafka/message/character"
 	mapsproducer "atlas-maps/kafka/producer"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	_map "atlas-maps/map"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"

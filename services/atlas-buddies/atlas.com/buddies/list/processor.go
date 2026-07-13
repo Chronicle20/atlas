@@ -3,14 +3,14 @@ package list
 import (
 	"atlas-buddies/buddy"
 	"atlas-buddies/character"
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"atlas-buddies/invite"
 	"atlas-buddies/kafka/message"
 	list2 "atlas-buddies/kafka/message/list"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	list3 "atlas-buddies/kafka/producer/list"
 	"context"
 	"errors"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	character2 "github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
@@ -21,7 +21,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
-
 
 type Processor interface {
 	WithTransaction(*gorm.DB) Processor

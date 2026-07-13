@@ -2,10 +2,10 @@ package character
 
 import (
 	"atlas-parties/kafka/message"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"atlas-parties/location"
 	"context"
 	"errors"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"

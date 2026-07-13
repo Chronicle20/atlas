@@ -3,8 +3,8 @@ package scheduler
 import (
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"os"
 	"strconv"
 	"time"

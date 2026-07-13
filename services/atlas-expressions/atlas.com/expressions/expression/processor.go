@@ -3,8 +3,8 @@ package expression
 import (
 	"atlas-expressions/kafka/message"
 	expression2 "atlas-expressions/kafka/message/expression"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"

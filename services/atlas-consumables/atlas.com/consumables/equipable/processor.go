@@ -3,8 +3,8 @@ package equipable
 import (
 	"atlas-consumables/asset"
 	"atlas-consumables/kafka/message/compartment"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"

@@ -3,8 +3,8 @@ package ban
 import (
 	"atlas-ban/kafka/message"
 	ban2 "atlas-ban/kafka/message/ban"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"strconv"
 	"time"
 

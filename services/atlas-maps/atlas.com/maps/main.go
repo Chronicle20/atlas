@@ -1,7 +1,6 @@
 package main
 
 import (
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	characterClient "atlas-maps/character"
 	"atlas-maps/character/location"
 	"atlas-maps/character/warp"
@@ -15,10 +14,11 @@ import (
 	_map "atlas-maps/map"
 	spawnMonster "atlas-maps/map/monster"
 	"atlas-maps/map/weather"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-maps/tasks"
 	"atlas-maps/visit"
 	"context"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"os"
 	"time"
 

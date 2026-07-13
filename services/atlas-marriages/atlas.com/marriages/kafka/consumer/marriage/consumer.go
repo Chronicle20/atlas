@@ -6,8 +6,8 @@ import (
 	localConsumer "atlas-marriages/kafka/consumer"
 	"atlas-marriages/kafka/message"
 	marriageMsg "atlas-marriages/kafka/message/marriage"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	marriageService "atlas-marriages/marriage"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"

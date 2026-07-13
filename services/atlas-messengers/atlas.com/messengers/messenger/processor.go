@@ -5,10 +5,10 @@ import (
 	"atlas-messengers/invite"
 	"atlas-messengers/kafka/message"
 	"atlas-messengers/kafka/message/messenger"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"context"
 	"errors"
 	"fmt"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"

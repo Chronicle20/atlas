@@ -4,9 +4,9 @@ import (
 	"atlas-transports/data/portal"
 	"atlas-transports/kafka/message"
 	character2 "atlas-transports/kafka/message/character"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"context"
 	"errors"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"

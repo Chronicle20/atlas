@@ -1,14 +1,14 @@
 package skill
 
 import (
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
-	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	"atlas-skills/kafka/message"
 	skill2 "atlas-skills/kafka/message/skill"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"atlas-skills/macro"
 	"context"
 	"errors"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	"strconv"
 	"time"
 

@@ -3,8 +3,8 @@ package skill
 import (
 	skill3 "atlas-channel/data/skill"
 	skill2 "atlas-channel/kafka/message/skill"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"

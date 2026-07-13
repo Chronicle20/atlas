@@ -3,10 +3,10 @@ package party
 import (
 	"atlas-parties/character"
 	"atlas-parties/kafka/message"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"testing"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"

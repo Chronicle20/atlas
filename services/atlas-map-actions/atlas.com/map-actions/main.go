@@ -3,9 +3,9 @@ package main
 import (
 	"os"
 
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	saga "atlas-map-actions/kafka/consumer/saga"
 	"atlas-map-actions/script"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	seeder "github.com/Chronicle20/atlas/libs/atlas-seeder"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
 

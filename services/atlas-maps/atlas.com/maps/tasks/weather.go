@@ -2,9 +2,9 @@ package tasks
 
 import (
 	mapKafka "atlas-maps/kafka/message/map"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"atlas-maps/map/weather"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"

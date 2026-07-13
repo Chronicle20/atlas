@@ -2,9 +2,9 @@ package main
 
 import (
 	"atlas-keys/character"
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	character2 "atlas-keys/kafka/consumer/character"
 	keymap "atlas-keys/key"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"os"
 

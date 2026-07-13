@@ -8,8 +8,8 @@ import (
 	"time"
 
 	mistKafka "atlas-maps/kafka/message/mist"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"atlas-maps/mist"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	kafkaProducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"

@@ -4,9 +4,9 @@ import (
 	"atlas-messages/character"
 	"atlas-messages/command"
 	message2 "atlas-messages/kafka/message/message"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"context"
 	"errors"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/sirupsen/logrus"

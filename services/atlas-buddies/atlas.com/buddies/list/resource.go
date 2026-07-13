@@ -3,10 +3,10 @@ package list
 import (
 	"atlas-buddies/buddy"
 	list2 "atlas-buddies/kafka/message/list"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	list3 "atlas-buddies/kafka/producer/list"
 	"atlas-buddies/rest"
 	"errors"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"net/http"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"

@@ -1,8 +1,8 @@
 package monster
 
 import (
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"time"
 
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"

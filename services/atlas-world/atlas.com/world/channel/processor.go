@@ -4,9 +4,9 @@ import (
 	tenant2 "atlas-world/configuration/tenant"
 	"atlas-world/kafka/message"
 	channel2 "atlas-world/kafka/message/channel"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	channel3 "atlas-world/kafka/producer/channel"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"

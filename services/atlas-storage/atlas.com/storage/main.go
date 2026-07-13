@@ -2,7 +2,6 @@ package main
 
 import (
 	"atlas-storage/asset"
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	account2 "atlas-storage/kafka/consumer/account"
 	"atlas-storage/kafka/consumer/character"
 	"atlas-storage/kafka/consumer/compartment"
@@ -10,6 +9,7 @@ import (
 	"atlas-storage/projection"
 	"atlas-storage/service"
 	"atlas-storage/storage"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	lifecycle "github.com/Chronicle20/atlas/libs/atlas-service"
 	"os"
 
@@ -90,7 +90,7 @@ func main() {
 			l.WithError(err).Fatal("Unable to register kafka handlers.")
 		}
 
-	rt.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
+		rt.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 
 	}
 

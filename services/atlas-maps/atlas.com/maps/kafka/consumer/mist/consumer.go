@@ -3,9 +3,9 @@ package mist
 import (
 	consumer2 "atlas-maps/kafka/consumer"
 	mistKafka "atlas-maps/kafka/message/mist"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	mistDomain "atlas-maps/mist"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"

@@ -2,9 +2,9 @@ package task
 
 import (
 	"atlas-asset-expiration/character"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"atlas-asset-expiration/session"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"sync"
 	"time"
 

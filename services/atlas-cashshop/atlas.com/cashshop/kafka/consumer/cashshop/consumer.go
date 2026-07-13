@@ -5,9 +5,9 @@ import (
 	"atlas-cashshop/cashshop/inventory/asset"
 	consumer2 "atlas-cashshop/kafka/consumer"
 	"atlas-cashshop/kafka/message/cashshop"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	cashshop2 "atlas-cashshop/kafka/producer/cashshop"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"

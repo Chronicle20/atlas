@@ -7,9 +7,9 @@ import (
 
 	"atlas-maps/kafka/message"
 	mistKafka "atlas-maps/kafka/message/mist"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	mapchar "atlas-maps/map/character"
 	"atlas-maps/mist"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
@@ -198,4 +198,3 @@ func (r *MistTick) processTenant(ctx context.Context, t tenant.Model) {
 func (r *MistTick) SleepTime() time.Duration {
 	return time.Millisecond * time.Duration(r.interval)
 }
-

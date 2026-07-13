@@ -2,9 +2,9 @@ package session
 
 import (
 	session3 "atlas-login/kafka/message/account/session"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	session2 "atlas-login/kafka/producer/account/session"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"

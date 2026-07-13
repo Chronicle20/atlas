@@ -2,9 +2,9 @@ package chalkboard
 
 import (
 	chalkboard2 "atlas-chalkboards/kafka/message/chalkboard"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"context"
 	"errors"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"

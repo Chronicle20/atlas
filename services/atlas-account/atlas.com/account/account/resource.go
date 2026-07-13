@@ -2,9 +2,9 @@ package account
 
 import (
 	account2 "atlas-account/kafka/message/account"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"atlas-account/rest"
 	"errors"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"net/http"
 	"strconv"
 
@@ -22,7 +22,7 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 			register := rest.RegisterHandler(l)(db)(si)
 			registerInput := rest.RegisterInputHandler[RestModel](l)(db)(si)
 			registerPinAttemptInput := rest.RegisterInputHandler[PinAttemptInputRestModel](l)(db)(si)
-		registerPicAttemptInput := rest.RegisterInputHandler[PicAttemptInputRestModel](l)(db)(si)
+			registerPicAttemptInput := rest.RegisterInputHandler[PicAttemptInputRestModel](l)(db)(si)
 
 			r := router.PathPrefix("/accounts").Subrouter()
 			r.HandleFunc("/", registerInput("create_account", handleCreateAccount)).Methods(http.MethodPost)

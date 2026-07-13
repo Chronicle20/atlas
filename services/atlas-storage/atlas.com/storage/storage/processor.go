@@ -7,9 +7,9 @@ import (
 	"atlas-storage/data/setup"
 	"atlas-storage/kafka/message"
 	"atlas-storage/kafka/message/compartment"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"context"
 	"errors"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"sort"
 
 	assetConstants "github.com/Chronicle20/atlas/libs/atlas-constants/asset"

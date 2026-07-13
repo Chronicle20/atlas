@@ -5,10 +5,10 @@ import (
 	"atlas-transports/character"
 	"atlas-transports/kafka/message"
 	"atlas-transports/kafka/message/transport"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	_map "atlas-transports/map"
 	"context"
 	"errors"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"time"
 
 	channel2 "github.com/Chronicle20/atlas/libs/atlas-constants/channel"

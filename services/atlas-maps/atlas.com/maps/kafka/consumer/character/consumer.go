@@ -5,12 +5,12 @@ import (
 	"atlas-maps/data/map/info"
 	consumer2 "atlas-maps/kafka/consumer"
 	characterKafka "atlas-maps/kafka/message/character"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	_map "atlas-maps/map"
 	mapcharacter "atlas-maps/map/character"
 	"atlas-maps/map/timer"
 	"atlas-maps/visit"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 

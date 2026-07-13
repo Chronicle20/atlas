@@ -3,8 +3,8 @@ package summon
 import (
 	buffmsg "atlas-summons/buff"
 	charmsg "atlas-summons/character"
-	producer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"context"
+	producer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"math/rand"
 	"time"
 

@@ -1,11 +1,11 @@
 package main
 
 import (
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"atlas-marriages/kafka/consumer/character"
 	"atlas-marriages/kafka/consumer/marriage"
 	marriageService "atlas-marriages/marriage"
 	"atlas-marriages/scheduler"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"os"
 

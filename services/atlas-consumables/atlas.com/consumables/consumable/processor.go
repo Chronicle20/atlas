@@ -16,7 +16,6 @@ import (
 	"atlas-consumables/kafka/message/consumable"
 	foodmsg "atlas-consumables/kafka/message/food"
 	once "atlas-consumables/kafka/once/compartment"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"atlas-consumables/location"
 	"atlas-consumables/map"
 	character2 "atlas-consumables/map/character"
@@ -25,6 +24,7 @@ import (
 	"atlas-consumables/pet"
 	"context"
 	"errors"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"math"
 	"math/rand"
 

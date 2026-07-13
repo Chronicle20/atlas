@@ -1,9 +1,9 @@
 package reactor
 
 import (
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	dropMessage "atlas-reactors/kafka/message/drop"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"os"
 	"strconv"
 	"sync"
@@ -17,9 +17,9 @@ import (
 )
 
 const (
-	itemReactorStateType               = int32(100)
-	defaultItemReactorActivationDelay  = 5000
-	envItemReactorActivationDelayMs    = "ITEM_REACTOR_ACTIVATION_DELAY_MS"
+	itemReactorStateType              = int32(100)
+	defaultItemReactorActivationDelay = 5000
+	envItemReactorActivationDelayMs   = "ITEM_REACTOR_ACTIVATION_DELAY_MS"
 )
 
 var (

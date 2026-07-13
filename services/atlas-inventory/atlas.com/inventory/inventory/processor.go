@@ -4,7 +4,7 @@ import (
 	"atlas-inventory/compartment"
 	"atlas-inventory/kafka/message"
 	inventory2 "atlas-inventory/kafka/message/inventory"
-	"atlas-inventory/kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"context"
 	"errors"
 	database "github.com/Chronicle20/atlas/libs/atlas-database"

@@ -9,7 +9,7 @@ import (
 	"atlas-inventory/kafka/message/compartment"
 	dropMsg "atlas-inventory/kafka/message/drop"
 	pickupMsg "atlas-inventory/kafka/message/pickup"
-	"atlas-inventory/kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"context"
 	"errors"
 	"fmt"

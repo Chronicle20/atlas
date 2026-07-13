@@ -55,11 +55,12 @@ type processFacts struct {
 // appear in the workflow's run commands. Kept in sync with PROCESS.md's
 // ci_gates list and the workflow steps — both directions are asserted.
 var ciGateWorkflowSubstr = map[string]string{
-	"packet-audit-tests": "go test ./...",
-	"fname-doc-check":    "fname-doc --check",
-	"operations-check":   "operations --check",
-	"dispatcher-lint":    "dispatcher-lint",
-	"matrix-check":       "matrix --check",
+	"packet-audit-tests":  "go test ./...",
+	"fname-doc-check":     "fname-doc --check",
+	"operations-check":    "operations --check",
+	"dispatcher-lint":     "dispatcher-lint",
+	"doc-freshness-check": "doc-freshness --check",
+	"matrix-check":        "matrix --check",
 }
 
 func runDocFreshness(args []string, stderr io.Writer) int {

@@ -59,12 +59,22 @@ blocking (no `continue-on-error`):
 1. **Packet-audit tests** — `cd tools/packet-audit && go test ./...`
 2. **fname-doc check** — `packet-audit fname-doc --check`
 3. **operations table check** — `packet-audit operations --check`
-4. **dispatcher lint** — `packet-audit dispatcher-lint`
-5. **Coverage matrix check** — `packet-audit matrix --check` (hard gate: ANY
+4. **dispatcher lint** — `packet-audit dispatcher-lint` (also enforces the
+   family-cap guard, task-169 FR-5.1).
+5. **doc-freshness check** — `packet-audit doc-freshness --check` (asserts this
+   facts block still matches the tool's ground truth; task-169 FR-2.3).
+6. **Coverage matrix check** — `packet-audit matrix --check` (hard gate: ANY
    non-zero exit fails CI — a `🟥` conflict, a stale committed
    STATUS.md/status.json, a fatal finding, or a runtime error). The
    registry-seed conflict backlog was burned to zero (task-085), so a clean
    tree exits 0; there is no grandfathering.
+
+The `gate-lint` idiom check (task-169 FR-3.1a) is intentionally **not** a
+blocking CI gate: the established `Region()=="GMS" && MajorVersion()>=N` idiom
+occurs at ~220 legitimate sites, so it runs report-only
+(`packet-audit gate-lint`). The export non-destructive-overwrite guard
+(task-169 FR-3.2) is a runtime behavior of `packet-audit export`, not a CI
+check (CI never harvests).
 
 ## Machine-checkable facts
 
@@ -91,7 +101,8 @@ ci_gates:
   - packet-audit-tests          # cd tools/packet-audit && go test ./...
   - fname-doc-check             # packet-audit fname-doc --check
   - operations-check            # packet-audit operations --check
-  - dispatcher-lint             # packet-audit dispatcher-lint
+  - dispatcher-lint             # packet-audit dispatcher-lint (incl. family-cap)
+  - doc-freshness-check         # packet-audit doc-freshness --check
   - matrix-check                # packet-audit matrix --check (hard gate)
 matrix_check_hard_gate: true
 ```

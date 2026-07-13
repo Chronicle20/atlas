@@ -51,8 +51,22 @@ jobs:
         # #-candidate or phantom audit report, and no orphaned codec. Families
         # not yet migrated are listed in docs/packets/dispatcher-lint-baseline.yaml
         # and skipped (one note line each); THAT BASELINE ONLY SHRINKS — a fresh
-        # violation outside it fails CI. Read-only.
+        # violation outside it fails CI. Also enforces the family-cap guard
+        # (task-169 FR-5.1): every docs/packets/dispatchers/*.yaml family must be
+        # discrete-implemented or families.yaml/baseline-listed, so a new
+        # unimplemented+unlisted family can't escape mode-prefix capping.
+        # Read-only.
         run: go run ./tools/packet-audit dispatcher-lint
+
+      - name: doc-freshness check
+        # The packet-process-facts block in docs/packets/PROCESS.md is the single
+        # source of truth every playbook links to (version set, dispatcher
+        # baselines, CI gates). This check asserts each fact still matches the
+        # tool's ground truth (matrix.VersionKeys, dispatcher-lint-baseline.yaml,
+        # evidence/families.yaml, and this workflow's gate steps) so doc drift
+        # (task-169 RC-B) can't silently reopen. Fails on any divergence; fix by
+        # updating PROCESS.md (or the diverged source) so they agree. Read-only.
+        run: go run ./tools/packet-audit doc-freshness --check
 
       - name: Coverage matrix check
         # The conflict backlog was burned down to ZERO in task-085 (registry

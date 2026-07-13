@@ -10,7 +10,7 @@ import (
 	"atlas-data/equipment"
 	"atlas-data/etc"
 	"atlas-data/item"
-	"atlas-data/kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	_map "atlas-data/map"
 	"atlas-data/mobskill"
 	"atlas-data/monster"

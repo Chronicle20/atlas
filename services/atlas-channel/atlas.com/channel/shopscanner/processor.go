@@ -40,6 +40,17 @@ func (p *Processor) Search(wp writer.Producer) func(s session.Model, searchItemI
 			return nil
 		}
 
+		if searchItemId == 0 {
+			// The pre-v83 owl-use frame carries no search target (the item is
+			// used straight from the inventory with no CUIShopScanner input
+			// dialog), so searchItemId decodes as 0. There is nothing to search
+			// — drop rather than poison the hot list with item 0 or emit an
+			// empty result (task-127 legacy v61/72/79). The modern cash/dedicated
+			// routes always carry a real item id.
+			p.l.Debugf("Character [%d] owl use with no search target (legacy frame); nothing to search.", s.CharacterId())
+			return nil
+		}
+
 		mp := merchant.NewProcessor(p.l, p.ctx)
 
 		// Count increment is result-independent (Cosmic parity) and must never

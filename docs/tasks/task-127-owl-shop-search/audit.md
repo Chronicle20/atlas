@@ -320,3 +320,82 @@ Net: one genuine blocker fixed (DOM-21b); two findings not applicable
 (EXT-01, EXT-02 in this relationship-free context); two non-blocking design
 nits (DOM-01/02, DOM-13) surfaced to the caller. Gate suite re-run green
 after the fix.
+
+---
+
+## Backend audit — legacy owl versions (session)
+
+- **Scope:** `git diff 93be19d70..HEAD -- '*.go'` (legacy GMS v48/61/72/79 owl extension + Gen3 rebase adaptation).
+- **Date:** 2026-07-13
+- **Build:** PASS — `libs/atlas-packet` and `atlas-channel` `go build ./...` clean.
+- **Vet:** PASS — `go vet ./merchant/...` clean in both modules.
+- **Tests:** PASS — `merchant/clientbound` + `merchant/serverbound` green (`-run ShopScanner`).
+- **Overall:** PASS (no blocking findings); 3 non-blocking notes + 1 correctness concern to verify.
+
+### Version-gating correctness — PASS
+
+| Item | Verdict | Evidence |
+|---|---|---|
+| `scannerResultHasNpcShopPrice` threshold | PASS | shop_scanner_result.go:19-21 — `!(GMS && Major<72)`. v61→legacy 2-int, v72/79/83/95→3-int, JMS→3-int. Matches documented IDA (`@0x849800` v61, `@0x920d9f` v72). |
+| `itemUseLegacyFrame` threshold | PASS | shop_scanner_item_use.go:46-48 — `GMS && Major<83`. v72/79→legacy, v83+→new, JMS→new. |
+| v84 byte-identity handled | PASS | v84 is `>=83` → new frame (correct; v84≡v83), avoiding the `>83` off-by-one bug pattern. shop_scanner_item_use.go:47. |
+| JMS handled on both gates | PASS | JMS `Region()!="GMS"` → modern branch on both helpers (result: has npcShopPrice; item-use: new frame). |
+| `<N` idiom is codebase-consistent | PASS | Same idiom in cash/serverbound/shop_operation_buy.go:79,88 (`<61`,`<72`) and party/clientbound/disband.go:42 (`<61`). `MajorAtLeast` exists but negated `<N` is idiomatic here — not a finding. |
+| Legacy branch actually exercised | PASS | `pt.Variants` includes GMS v28 (context.go:19), which is `<72` and `<83` → drives the legacy arm of both codecs; v83/87/95/JMS drive the modern arm. Both sides covered. |
+
+### DOM checklist (applicable subset)
+
+| ID | Verdict | Evidence |
+|---|---|---|
+| DOM-21 (no shared-type duplication) | PASS | No new numeric type/const introduced. Gates use literal `"GMS"`/`72`/`83` — the established version-threshold idiom; no atlas-constants equivalent exists. Handler reuses `item.GetClassification`/`item.ClassificationConsumableStoreSearch` (shop_scanner_item_use.go handler:30, pre-existing). |
+| Immutable codec structs | PASS | `ShopScannerItemUse.serial` is a private field with getter `Serial()` (shop_scanner_item_use.go:30,50-52); `ShopScannerResult` unchanged, still private+getters. No exported mutable fields. |
+| Gen3 interface/impl/mock consistency | PASS | Interface declares the 3 methods (processor.go:35-37); `*ProcessorImpl` implements them (processor.go:120,124,128); `var _ Processor = (*ProcessorImpl)(nil)` (processor.go:49); mock implements all 3 with matching signatures and `var _ merchant.Processor = (*ProcessorMock)(nil)` (mock/processor.go:33-49,148-167). The pre-fix `*Processor`-receiver methods (illegal on an interface type) are corrected to `*ProcessorImpl`. |
+
+### SEC checklist — N/A / PASS
+
+Not an auth/token service. SEC-04: no hardcoded secrets. The new `serial` is a client-supplied wire string read via the standard `ReadAsciiString` (shop_scanner_item_use.go:105) — same trust boundary as every other packet string, no new attack surface.
+
+### Non-blocking notes
+
+1. **[Minor] `NewShopScannerItemUse` does not set `serial`.** shop_scanner_item_use.go:38-40 still takes the original 5 args and leaves `serial=""`. Harmless because this is a serverbound (decode-only) packet — the constructor is unused in production (only defined, no non-test caller) and the legacy `Encode` path is exercised solely by round-trip tests that build the struct literal. Immutability contract intact.
+
+2. **[Minor] verify markers cite versions absent from `pt.Variants`.** The added `packet-audit:verify … version=gms_v61/v72/v79` markers (shop_scanner_result_test.go:15-19, shop_scanner_item_use_test.go:12-13, shop_link_result_test.go:12-14, owl_warp_test.go:13-15) name versions not instantiated by `pt.Variants` (v28/v83/v87/v95/JMS only). Because every gate here is a pure major-version threshold, v28 and v83 are byte-representative of the same-side versions, so the code paths are covered — but the fixtures never bind `MajorVersion=61/72/79` literally. Acceptable for threshold gates; noted for completeness.
+
+3. **[Minor] `t.Region()=="GMS"` vs the `IsRegion("GMS")` helper.** Both new helpers use `t.Region() == "GMS"` (shop_scanner_result.go:20, shop_scanner_item_use.go:47); party/guild prefer `t.IsRegion("GMS")`. Both idioms coexist in the tree (cash uses the former). Cosmetic.
+
+### Correctness concern to verify (medium confidence — downstream of non-Go routing)
+
+**Legacy owl item-use produces a permanently-empty search and records item id 0.** On GMS<83 the legacy frame decodes `searchItemId=0` by design (shop_scanner_item_use.go:104-108; documented at :21-28). The unchanged handler unconditionally forwards `p.SearchItemId()` (== 0) into `shopscanner.Processor.Search` (socket/handler/shop_scanner_item_use.go:41), whose body unconditionally calls `RecordItemSearch(…, searchItemId=0)` and `SearchListings(…, 0)` (shopscanner/processor.go:47,51). Net effect on the now-routed v72/v79 clients (routed by commit ef064d6bf, templates — outside this Go diff): every owl use records a bogus "item 0" into the top-searches hot list and returns an empty result. This is a provable data-integrity effect, not a guideline failure. Confirm against the legacy client flow whether v72/v79 owl is meant to search at all; if not, either don't route it or guard `Search`/`RecordItemSearch` on `searchItemId != 0`. (This lives in pre-existing handler/processor code, not in the audited Go diff — flagged because the diff's decode change is what makes `searchItemId` reach that path as 0.)
+
+---
+
+## Plan-adherence — legacy owl versions (session)
+
+**Auditor:** plan-adherence-reviewer
+**Audit date:** 2026-07-13
+**Branch:** task-127-owl-shop-search
+**Scope (session diff):** `93be19d70..HEAD` — commits 680977a28, f5a2a3bd5, ef064d6bf, a93f3374c, 2edae9acc
+**Requirement:** update task-127 to main; add owl-of-minerva to the new GMS v48/61/72/79 clients; version-gate existing codecs (not new codecs); cover all four; IDA-verify feature presence rather than fabricate.
+
+### Verdict: FULL adherence. Recommendation: READY_TO_MERGE (one producible follow-up noted).
+
+| # | Requirement | Status | Evidence |
+|---|---|---|---|
+| 1 | Rebased onto current main; no conflict markers; builds | PASS | merge-base HEAD↔origin/main = `0978645ed` (task-169, contains task-116 Gen3 `e15b343b1` + task-168 `bbc999fbe`); `git grep` for conflict markers = none; 4 newer main commits are only dep/image bumps (#968/#959/#975/#976). Commit 680977a28 genuinely re-seats owl methods onto `*ProcessorImpl` (Gen3) — processor.go:120/124/128 + mock +25 lines. |
+| 2 | Legacy opcodes IDA-verified, not guessed; gates match wire deltas | PASS | Registry entries carry real IDA addrs matching evidence records (decimal↔hex verified): OWL_WARP v61 `7441540`=0x718c84, v72 `8149215`=0x7c58df, v79 `8441482`=0x80ce8a; USE_SHOP_SCANNER_ITEM v72 `9561179`=0x91e45b, v79 `9896867`=0x9703a3. Evidence records (`docs/packets/evidence/gms_v{61,72,79}/`) TIER1-FIXTURE with function/address/decompile_sha256. Gates: `scannerResultHasNpcShopPrice` (GMS<72 → 2-int header, shop_scanner_result.go:20) and `itemUseLegacyFrame` (GMS<83 → `[str serial][short pos][int itemId]`, shop_scanner_item_use.go:47). Byte-fixture tests assert both frames (9-byte v61 header; 12-byte legacy USE frame) and pin `packet-audit:verify` markers for v61/72/79. `gate-check --check` = exit 0 (all 19 gates have fixtures on both straddling versions). |
+| 3 | Seed templates route owl for v61/72/79; v48 intentionally NOT wired + documented | PASS | template_gms_61: OwlWarpHandle 0x3F, writers ShopScannerResult 0x43 + ShopLinkResult 0x44 (no ItemUse — v61 has no sender). template_gms_72: OwlWarp 0x42, ItemUse 0x66, +writers. template_gms_79: OwlWarp 0x41, ItemUse 0x65, +writers (v79 code enum DENIED:17/MAINTENANCE:18/FM_ONLY:23 vs 15/16/21 on v61/72). Opcodes agree with registry. `grep` of template_gms_48 = no owl refs; documented in deployment.md "v48 is NOT supported" + registry v61 note "verified absent". |
+| 4 | OWL_ACTION intentionally not routed on legacy (documented, not dropped) | PASS | STATUS.md line 589 OWL_ACTION v48/v61/v72/v79 = ⬜ (unrouted); deployment.md "OWL_ACTION is intentionally NOT routed on any legacy client — no CUIShopScanner input dialog before v83". |
+| 5 | Coverage matrix promotes legacy owl cells; `matrix --check` clean | PASS | STATUS.md: SHOP_SCANNER_RESULT v61/72/79 = ✅ (line 99); SHOP_LINK_RESULT ✅ (114); OWL_WARP ✅ (583); USE_SHOP_SCANNER_ITEM v72/79 ✅, v61 ⬜-absent (637). `go run ./tools/packet-audit matrix --check` = exit 0. `fname-doc --check`, `operations --check` also exit 0. |
+| 6 | No TODOs/stubs/501s; no fabricated opcodes/sha256; deployment.md documents findings + honest search caveat | PASS (with note) | No TODO/FIXME/panic-stub in the code diff (grep hits are hex/decimal substrings in STATUS/status.json). deployment.md §"Legacy GMS versions" documents per-version routing, the code-enum divergence (DOM-25), v48 absence, and the honest "Legacy search-trigger caveat (needs live verification)". sha256 values are internally consistent with their addresses and pass matrix/gate checks; independent re-derivation would require an IDA re-decompile (not performed in this read-only audit). |
+
+### Build & test
+
+| Module | Build | Tests |
+|---|---|---|
+| libs/atlas-packet | PASS | `merchant/...` ok (clientbound + serverbound) |
+| services/atlas-channel | PASS | `merchant/...` ok |
+| services/atlas-merchant | PASS | all packages ok (shop, listing, searchcount, visitor, message) |
+
+### Producible follow-up (not a merge blocker, but flagged per no-deferring policy)
+
+The legacy USE frame decodes `searchItemId=0` by design. deployment.md's caveat honestly notes the search "returns nothing," but the routed v72/v79 owl-use path still forwards `searchItemId=0` into `RecordItemSearch`, polluting the top-searches hot list with item id 0 (already flagged in this file's backend-guidelines section, socket/handler + shopscanner/processor). Guarding `Search`/`RecordItemSearch` on `searchItemId != 0` is a producible one-line fix that prevents hot-list corruption independent of the genuinely-open "does legacy owl search at all" question. Recommend applying the guard on this branch rather than deferring.

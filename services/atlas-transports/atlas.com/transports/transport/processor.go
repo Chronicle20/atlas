@@ -5,7 +5,7 @@ import (
 	"atlas-transports/character"
 	"atlas-transports/kafka/message"
 	"atlas-transports/kafka/message/transport"
-	"atlas-transports/kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	_map "atlas-transports/map"
 	"context"
 	"errors"

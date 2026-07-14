@@ -48,6 +48,7 @@ func (m Model) Listings() []ListingModel  { return m.listings }
 
 // Shop states mirroring atlas-merchant shop/state.go (byte on the wire).
 const (
+	StateDraft       byte = 1
 	StateOpen        byte = 2
 	StateMaintenance byte = 3
 )

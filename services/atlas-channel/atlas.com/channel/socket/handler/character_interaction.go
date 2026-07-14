@@ -149,7 +149,15 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, _
 				return
 			}
 			if visiting.CharacterId() == s.CharacterId() {
-				_ = mp.CloseShop(s.CharacterId(), visiting.Id())
+				// Owner closing the window: a hired merchant in Maintenance goes back
+				// to running (ExitMaintenance auto-closes it when empty — Cosmic
+				// keeps a stocked merchant alive on owner EXIT, tears down an empty
+				// one). A personal shop, or a merchant still in Draft setup, closes.
+				if visiting.ShopType() == merchant.HiredMerchantShopType && visiting.State() == merchant.StateMaintenance {
+					_ = mp.ExitMaintenance(s.CharacterId(), visiting.Id())
+				} else {
+					_ = mp.CloseShop(s.CharacterId(), visiting.Id())
+				}
 			} else {
 				_ = mp.ExitShop(s.CharacterId(), visiting.Id())
 			}
@@ -357,7 +365,14 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, _
 				l.WithError(err).Errorf("Unable to get visiting shop for character [%d].", s.CharacterId())
 				return
 			}
-			_ = mp.ExitShop(s.CharacterId(), visiting.Id())
+			// MERCHANT_EXIT is Cosmic's CLOSE_MERCHANT: the owner's explicit
+			// "close store" action fully closes the shop (items back / Fredrick);
+			// from anyone else it is a plain visitor exit.
+			if visiting.CharacterId() == s.CharacterId() {
+				_ = mp.CloseShop(s.CharacterId(), visiting.Id())
+			} else {
+				_ = mp.ExitShop(s.CharacterId(), visiting.Id())
+			}
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeMerchantWithdrawMeso) {

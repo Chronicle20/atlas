@@ -934,12 +934,42 @@ func (p *ProcessorImpl) GetVisitors(shopId uuid.UUID) ([]uint32, error) {
 	return vr.GetVisitors(p.ctx, p.t, shopId)
 }
 
+// GetShopForCharacter resolves the shop the character is currently occupying.
+// Visitor registry first (a character inside someone else's shop), then owner
+// occupancy: a character occupies their OWN shop while it is owner-attached —
+// a personal shop in any non-Closed state, or a hired merchant in Draft
+// (setup) or Maintenance (management). An Open hired merchant runs
+// owner-detached and does not count. Without owner occupancy, every
+// owner-side op the channel routes through /characters/{id}/visiting (OPEN,
+// PUT_ITEM, EXIT, CHAT) 404s on a freshly created Draft shop.
 func (p *ProcessorImpl) GetShopForCharacter(characterId uint32) (uuid.UUID, error) {
 	vr := visitor.GetRegistry()
 	if vr == nil {
 		return uuid.Nil, errors.New("visitor registry not initialized")
 	}
-	return vr.GetShopForCharacter(p.ctx, p.t, characterId)
+	if shopId, err := vr.GetShopForCharacter(p.ctx, p.t, characterId); err == nil {
+		return shopId, nil
+	}
+
+	r := GetRegistry()
+	if r == nil {
+		return uuid.Nil, errors.New("shop registry not initialized")
+	}
+	entry, err := r.activeShops.Get(p.ctx, p.t, characterId)
+	if err != nil {
+		return uuid.Nil, err
+	}
+	if entry.ShopType == CharacterShop {
+		return entry.ShopId, nil
+	}
+	m, err := p.GetById(entry.ShopId)
+	if err != nil {
+		return uuid.Nil, err
+	}
+	if m.State() == Draft || m.State() == Maintenance {
+		return entry.ShopId, nil
+	}
+	return uuid.Nil, fmt.Errorf("character [%d] is not occupying a shop", characterId)
 }
 
 // visitorSlot returns the 1-indexed slot for a visitor in the ordered visitor list.

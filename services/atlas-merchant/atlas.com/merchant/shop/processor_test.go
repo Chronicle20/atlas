@@ -5,6 +5,7 @@ import (
 	message "atlas-merchant/kafka/message"
 	asset2 "atlas-merchant/kafka/message/asset"
 	"atlas-merchant/listing"
+	"atlas-merchant/visitor"
 	"context"
 	"testing"
 
@@ -12,6 +13,8 @@ import (
 	outboxlib "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
+	"github.com/alicebob/miniredis/v2"
+	goredis "github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -738,4 +741,94 @@ func TestCloseShop_FromMaintenance(t *testing.T) {
 	closed, err := p.GetById(m.Id())
 	require.NoError(t, err)
 	assert.Equal(t, Closed, closed.State())
+}
+
+// setupTestRegistries wires both the shop activeShops registry and the visitor
+// registry to a per-test miniredis so occupancy resolution can be exercised.
+func setupTestRegistries(t *testing.T) {
+	t.Helper()
+	mr := miniredis.RunT(t)
+	client := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	InitRegistry(client)
+	visitor.InitRegistry(client)
+}
+
+// GetShopForCharacter must resolve the OWNER of an owner-attached shop —
+// otherwise every owner-side op (OPEN, PUT_ITEM, EXIT, CHAT) that the channel
+// routes through /characters/{id}/visiting 404s on a freshly created Draft
+// shop, the owner can neither stock nor open nor close it, and the stranded
+// Draft blocks re-creation.
+func TestGetShopForCharacter_OwnerOfDraftPersonalShop(t *testing.T) {
+	db := setupTestDB(t)
+	ctx, _ := setupTestContext(t)
+	l, _ := test.NewNullLogger()
+	setupTestRegistries(t)
+	p := NewProcessor(l, ctx, db)
+
+	m, err := p.CreateShop(2000, CharacterShop, "Owner Shop", 0, 0, 910000001, uuid.Nil, 0, 0, 5140000)
+	require.NoError(t, err)
+
+	got, err := p.GetShopForCharacter(2000)
+	require.NoError(t, err)
+	assert.Equal(t, m.Id(), got)
+}
+
+func TestGetShopForCharacter_OwnerOfDraftHiredMerchant(t *testing.T) {
+	db := setupTestDB(t)
+	ctx, _ := setupTestContext(t)
+	l, _ := test.NewNullLogger()
+	setupTestRegistries(t)
+	p := NewProcessor(l, ctx, db)
+
+	m, err := p.CreateShop(2001, HiredMerchant, "Merch Shop", 0, 0, 910000001, uuid.Nil, 0, 0, 5030000)
+	require.NoError(t, err)
+
+	got, err := p.GetShopForCharacter(2001)
+	require.NoError(t, err)
+	assert.Equal(t, m.Id(), got)
+}
+
+// A hired merchant running Open is owner-detached: the owner is NOT occupying
+// it (they may be wandering, or visiting another shop — the visitor registry
+// takes precedence then).
+func TestGetShopForCharacter_OpenHiredMerchantOwnerDetached(t *testing.T) {
+	db := setupTestDB(t)
+	ctx, _ := setupTestContext(t)
+	l, _ := test.NewNullLogger()
+	setupTestRegistries(t)
+	p := NewProcessor(l, ctx, db)
+
+	m, err := p.CreateShop(2002, HiredMerchant, "Merch Shop", 0, 0, 910000001, uuid.Nil, 0, 0, 5030000)
+	require.NoError(t, err)
+
+	// Force the shop to Open (bypassing the listing requirement).
+	require.NoError(t, db.WithContext(ctx).Model(&Entity{}).Where("id = ?", m.Id()).Update("state", byte(Open)).Error)
+
+	_, err = p.GetShopForCharacter(2002)
+	assert.Error(t, err, "owner of an Open hired merchant is not occupying it")
+
+	// But while visiting someone else's shop, the visitor registry resolves.
+	other, err := p.CreateShop(2003, CharacterShop, "Other Shop", 0, 0, 910000001, uuid.Nil, 500, 0, 5140000)
+	require.NoError(t, err)
+	require.NoError(t, visitor.GetRegistry().AddVisitor(ctx, tenant.MustFromContext(ctx), other.Id(), 2002))
+	got, err := p.GetShopForCharacter(2002)
+	require.NoError(t, err)
+	assert.Equal(t, other.Id(), got)
+}
+
+// A hired merchant in Maintenance is owner-attached again (management view).
+func TestGetShopForCharacter_MaintenanceHiredMerchantOwnerAttached(t *testing.T) {
+	db := setupTestDB(t)
+	ctx, _ := setupTestContext(t)
+	l, _ := test.NewNullLogger()
+	setupTestRegistries(t)
+	p := NewProcessor(l, ctx, db)
+
+	m, err := p.CreateShop(2004, HiredMerchant, "Merch Shop", 0, 0, 910000001, uuid.Nil, 0, 0, 5030000)
+	require.NoError(t, err)
+	require.NoError(t, db.WithContext(ctx).Model(&Entity{}).Where("id = ?", m.Id()).Update("state", byte(Maintenance)).Error)
+
+	got, err := p.GetShopForCharacter(2004)
+	require.NoError(t, err)
+	assert.Equal(t, m.Id(), got)
 }

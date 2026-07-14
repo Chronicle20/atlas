@@ -27,8 +27,9 @@ func getBaseRequest() string {
 func requestShop(shopId string) requests.Request[RestModel] {
 	// include=listings is load-bearing: atlas-merchant gates the shop's listing
 	// data behind the JSON:API include, and GetShop feeds every shop-view
-	// refresh (buildShopItems(shop.Listings()) -> UPDATE_MERCHANT). Without it
-	// the store renders empty even when listings exist (task-127).
+	// refresh (buildShopItems(shop.Listings()) -> UPDATE_MERCHANT) plus the
+	// enter/maintenance views. Without it the store renders empty even when
+	// listings exist (task-127).
 	return requests.GetRequest[RestModel](fmt.Sprintf(getBaseRequest()+ShopResource+"?include=listings", shopId))
 }
 

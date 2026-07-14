@@ -50,6 +50,13 @@ listed so nothing reads as silently done:
      stub: the handlers remain decode-and-log until the packets are derived.
    - INVITE/INVITE_RESULT interaction modes are trade-invite surface (trades
      are unimplemented in atlas-channel), out of merchant scope.
+   - PRE-EXISTING VERSION GAP (not this task): v87/v92/v95 do not route the
+     `CharacterInteractionHandle` serverbound handler at all, so the ENTIRE
+     player-shop/hired-merchant in-shop interaction surface (put/buy/exit,
+     and hence the newly-wired withdraw/organize) is absent on those
+     versions. This is the known v87-template incompleteness — a
+     version-column bring-up, separate from the lifecycle remediation. The
+     new ops are live on the versions that route interaction (v83/v84).
 3. **jms185 free-form notice**: the client has no case 18 — the Fredrick
    reminder notice is a benign silent drop on jms until given another vehicle.
 4. **v48 template inconsistency** (review W3) — RESOLVED: v48 predates the

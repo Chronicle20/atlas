@@ -53,6 +53,32 @@ func getActiveByCharacterIdAndType(characterId uint32, shopType ShopType) databa
 	}
 }
 
+// getOwnerOccupiedShop resolves, authoritatively from the DB, the shop a
+// character owns and is currently occupying: a personal shop in any non-Closed
+// state, or a hired merchant in Draft/Maintenance (setup/management). An Open
+// hired merchant is owner-detached and is deliberately NOT returned — the owner
+// must re-enter maintenance to manage it. This backs GetShopForCharacter's
+// fallback when the Redis occupancy cache is missing or stale, so an owner is
+// never stranded from acting on their own shop.
+func getOwnerOccupiedShop(characterId uint32) database.EntityProvider[Entity] {
+	return func(db *gorm.DB) model.Provider[Entity] {
+		var result Entity
+		err := db.Where(
+			"character_id = ? AND ((shop_type = ? AND state != ?) OR (shop_type = ? AND state IN (?, ?)))",
+			characterId,
+			byte(CharacterShop), byte(Closed),
+			byte(HiredMerchant), byte(Draft), byte(Maintenance),
+		).Order("created_at DESC").First(&result).Error
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return model.ErrorProvider[Entity](ErrNotFound)
+			}
+			return model.ErrorProvider[Entity](err)
+		}
+		return model.FixedProvider(result)
+	}
+}
+
 func getByField(worldId world.Id, channelId channel.Id, mapId uint32, instanceId uuid.UUID) database.EntityProvider[[]Entity] {
 	return func(db *gorm.DB) model.Provider[[]Entity] {
 		var results []Entity

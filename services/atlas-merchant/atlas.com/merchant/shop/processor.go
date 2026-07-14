@@ -686,6 +686,12 @@ func (p *ProcessorImpl) AddListing(mb *message.Buffer) func(shopId uuid.UUID, ch
 			return result, err
 		}
 
+		// Refresh the owner's store view (UPDATE_MERCHANT); without this the
+		// client that dropped an item into a slot never gets a reply and freezes.
+		if err := mb.Put(merchant.EnvStatusEventTopic, StatusEventShopUpdatedProvider(characterId, shopId)); err != nil {
+			return result, err
+		}
+
 		return result, nil
 	}
 }
@@ -730,6 +736,11 @@ func (p *ProcessorImpl) RemoveListing(mb *message.Buffer) func(shopId uuid.UUID,
 			Quantity:     result.Quantity(),
 			ItemSnapshot: result.ItemSnapshot(),
 		})
+
+		// Refresh the owner's store view after pulling the item back.
+		if err := mb.Put(merchant.EnvStatusEventTopic, StatusEventShopUpdatedProvider(characterId, shopId)); err != nil {
+			return result, err
+		}
 
 		return result, nil
 	}
@@ -1119,25 +1130,66 @@ func (p *ProcessorImpl) GetShopForCharacter(characterId uint32) (uuid.UUID, erro
 		return uuid.Nil, err
 	}
 
+	// Owner occupancy. The Redis activeShops entry is a fast-path cache, but the
+	// DB is authoritative: a missing entry (eviction, an uncommitted CreateShop
+	// Put, a close-desync) or a stale entry (pointing at a shop the owner no
+	// longer occupies) must NOT strand the owner — every owner-side op routes
+	// through here, and a false miss 404s /characters/{id}/visiting, freezing
+	// the client (task-127). Trust the cache only when it still resolves to an
+	// owner-occupied shop; otherwise fall back to the DB and re-seed.
+	if r := GetRegistry(); r != nil {
+		entry, err := r.activeShops.Get(p.ctx, p.t, characterId)
+		if err == nil {
+			if m, gerr := p.GetById(entry.ShopId); gerr == nil && isOwnerOccupied(m) {
+				return entry.ShopId, nil
+			}
+			// Stale/closed cache entry — fall through to the DB.
+		} else if !errors.Is(err, atlasredis.ErrNotFound) {
+			return uuid.Nil, err
+		}
+	}
+
+	m, err := model.Map(Make)(getOwnerOccupiedShop(characterId)(p.db.WithContext(p.ctx)))()
+	if err != nil {
+		if errors.Is(err, ErrNotFound) {
+			return uuid.Nil, fmt.Errorf("character [%d] is not occupying a shop", characterId)
+		}
+		return uuid.Nil, err
+	}
+	p.seedOccupancy(characterId, m)
+	return m.Id(), nil
+}
+
+// isOwnerOccupied reports whether an owner is currently occupying (and may act
+// on) their own shop: a personal shop in any non-Closed state, or a hired
+// merchant only in Draft/Maintenance (an Open hired merchant is owner-detached).
+func isOwnerOccupied(m Model) bool {
+	switch m.ShopType() {
+	case CharacterShop:
+		return m.State() != Closed
+	case HiredMerchant:
+		return m.State() == Draft || m.State() == Maintenance
+	default:
+		return false
+	}
+}
+
+// seedOccupancy repopulates the activeShops fast-path cache from an
+// authoritative model, best-effort (a cache write failure is non-fatal — the DB
+// fallback covers the next lookup).
+func (p *ProcessorImpl) seedOccupancy(characterId uint32, m Model) {
 	r := GetRegistry()
 	if r == nil {
-		return uuid.Nil, errors.New("shop registry not initialized")
+		return
 	}
-	entry, err := r.activeShops.Get(p.ctx, p.t, characterId)
-	if err != nil {
-		return uuid.Nil, err
-	}
-	if entry.ShopType == CharacterShop {
-		return entry.ShopId, nil
-	}
-	m, err := p.GetById(entry.ShopId)
-	if err != nil {
-		return uuid.Nil, err
-	}
-	if m.State() == Draft || m.State() == Maintenance {
-		return entry.ShopId, nil
-	}
-	return uuid.Nil, fmt.Errorf("character [%d] is not occupying a shop", characterId)
+	_ = r.activeShops.Put(p.ctx, p.t, characterId, ActiveShopEntry{
+		ShopId:     m.Id(),
+		ShopType:   m.ShopType(),
+		WorldId:    m.WorldId(),
+		ChannelId:  m.ChannelId(),
+		MapId:      m.MapId(),
+		InstanceId: m.InstanceId(),
+	})
 }
 
 // visitorSlot returns the 1-indexed slot for a visitor in the ordered visitor list.

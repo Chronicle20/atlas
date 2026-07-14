@@ -197,9 +197,11 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 				// view, while ExitMaintenance auto-closes an empty one. A personal
 				// shop, or a merchant still in Draft setup, closes.
 				if visiting.ShopType() == merchant.HiredMerchantShopType && visiting.State() == merchant.StateMaintenance {
-					_ = mp.ExitMaintenance(s.CharacterId(), visiting.Id())
-				} else {
-					_ = mp.CloseShop(s.CharacterId(), visiting.Id())
+					if err := mp.ExitMaintenance(s.CharacterId(), visiting.Id()); err != nil {
+						l.WithError(err).Errorf("Character [%d] failed to exit maintenance on shop [%s].", s.CharacterId(), visiting.Id())
+					}
+				} else if err := mp.CloseShop(s.CharacterId(), visiting.Id()); err != nil {
+					l.WithError(err).Errorf("Character [%d] failed to close shop [%s]; it may block re-creation until logout.", s.CharacterId(), visiting.Id())
 				}
 			} else {
 				_ = mp.ExitShop(s.CharacterId(), visiting.Id())
@@ -294,7 +296,9 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 				l.WithError(err).Errorf("Unable to get visiting shop for character [%d].", s.CharacterId())
 				return
 			}
-			_ = mp.AddListing(s.CharacterId(), visiting.Id(), sp.InventoryType(), sp.Slot(), sp.Quantity(), sp.Set(), sp.Price())
+			if err := mp.AddListing(s.CharacterId(), visiting.Id(), sp.InventoryType(), sp.Slot(), sp.Quantity(), sp.Set(), sp.Price()); err != nil {
+				l.WithError(err).Errorf("Character [%d] failed to add item to store [%s].", s.CharacterId(), visiting.Id())
+			}
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModePersonalStoreBuy) {
@@ -363,7 +367,9 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 				l.WithError(err).Errorf("Unable to get visiting shop for character [%d].", s.CharacterId())
 				return
 			}
-			_ = mp.AddListing(s.CharacterId(), visiting.Id(), sp.InventoryType(), sp.Slot(), sp.Quantity(), sp.Set(), sp.Price())
+			if err := mp.AddListing(s.CharacterId(), visiting.Id(), sp.InventoryType(), sp.Slot(), sp.Quantity(), sp.Set(), sp.Price()); err != nil {
+				l.WithError(err).Errorf("Character [%d] failed to add item to merchant [%s].", s.CharacterId(), visiting.Id())
+			}
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeMerchantBuy) {

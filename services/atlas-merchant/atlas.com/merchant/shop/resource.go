@@ -247,6 +247,7 @@ func handleGetCharacterVisiting(db *gorm.DB) rest.GetHandler {
 				p := NewProcessor(d.Logger(), d.Context(), db)
 				shopId, err := p.GetShopForCharacter(characterId)
 				if err != nil {
+					d.Logger().WithError(err).Debugf("Character [%d] is not occupying a shop.", characterId)
 					w.WriteHeader(http.StatusNotFound)
 					return
 				}
@@ -254,6 +255,7 @@ func handleGetCharacterVisiting(db *gorm.DB) rest.GetHandler {
 				m, err := p.GetById(shopId)
 				if err != nil {
 					if errors.Is(err, ErrNotFound) {
+						d.Logger().WithError(err).Warnf("Occupancy for character [%d] resolved shop [%s] but it no longer loads.", characterId, shopId)
 						w.WriteHeader(http.StatusNotFound)
 						return
 					}

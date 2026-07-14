@@ -1609,6 +1609,7 @@
   direction: clientbound
   opcode: 243
   fname: CEmployeePool::OnEmployeeEnterField
+  packet: merchant/clientbound/EmployeeSpawn
   provenance: ida-discovered
   ida:
     address: 5232256
@@ -1616,6 +1617,7 @@
   direction: clientbound
   opcode: 244
   fname: CEmployeePool::OnEmployeeLeaveField
+  packet: merchant/clientbound/EmployeeDestroy
   provenance: ida-discovered
   ida:
     address: 5232256
@@ -1623,6 +1625,7 @@
   direction: clientbound
   opcode: 245
   fname: CEmployeePool::OnEmployeeMiniRoomBalloon
+  packet: merchant/clientbound/EmployeeUpdate
   provenance: ida-discovered
   ida:
     address: 5232256

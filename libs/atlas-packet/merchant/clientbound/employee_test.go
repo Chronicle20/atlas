@@ -5,11 +5,30 @@ import (
 	"testing"
 
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
-	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
 func testBalloon() Balloon {
 	return NewBalloon(5, 42, "CD", 1, 4, 0)
+}
+
+// employeeVersions enumerates the eight client versions that carry the
+// hired-merchant feature. The wire layout is byte-identical across all of them
+// (IDA-confirmed CEmployeePool::OnEmployeeEnterField/LeaveField/MiniRoomBalloon
+// -> CEmployee::Init/SetBalloon on every IDB), so each golden test encodes under
+// every version's tenant context and asserts the SAME bytes. gms_v48 has no
+// hired-merchant feature (packet never routed there) and is excluded.
+var employeeVersions = []struct {
+	region string
+	major  uint16
+}{
+	{"GMS", 61},
+	{"GMS", 72},
+	{"GMS", 79},
+	{"GMS", 83},
+	{"GMS", 84},
+	{"GMS", 87},
+	{"GMS", 95},
+	{"JMS", 185},
 }
 
 func TestEmployeeSpawnRoundTrip(t *testing.T) {
@@ -80,22 +99,26 @@ func TestEmployeeUpdateRoundTrip(t *testing.T) {
 }
 
 // TestEmployeeSpawnBytes pins the SPAWN_HIRED_MERCHANT wire layout byte-for-byte,
-// each byte tracing to the v83 read order:
+// each byte tracing to the client read order:
 //
-//	CEmployeePool::OnEmployeeEnterField (v83 @0x510e83): Decode4 employeeId, Decode4
-//	templateId, then CEmployee::Init (@0x50d56c: Decode2 x, Decode2 y, Decode2 fh,
-//	DecodeStr ownerName), then CEmployee::SetBalloon (@0x50d897: Decode1 type; if
-//	type!=0: Decode4 sn, DecodeStr title, Decode1, Decode1, Decode1).
+//	CEmployeePool::OnEmployeeEnterField: Decode4 employeeId, Decode4 templateId,
+//	then CEmployee::Init (Decode2 x, Decode2 y, Decode2 fh, DecodeStr ownerName),
+//	then CEmployee::SetBalloon (Decode1 type; if type!=0: Decode4 sn, DecodeStr
+//	title, Decode1, Decode1, Decode1).
 //
-// The layout is byte-identical on gms v61/72/79/83/84/87/95 and jms v185; gms v48
-// has no hired-merchant feature (packet never routed there).
+// The layout is byte-identical on gms v61/72/79/83/84/87/95 and jms v185 (each
+// address IDA-verified); gms v48 has no hired-merchant feature.
 //
-// v83 read fn CEmployeePool::OnEmployeeEnterField @0x510e83 (formal matrix promotion pending: evidence pin + per-version cells)
+// packet-audit:verify packet=merchant/clientbound/EmployeeSpawn version=gms_v61 ida=0x4d3483
+// packet-audit:verify packet=merchant/clientbound/EmployeeSpawn version=gms_v72 ida=0x4f4995
+// packet-audit:verify packet=merchant/clientbound/EmployeeSpawn version=gms_v79 ida=0x4fd6b3
+// packet-audit:verify packet=merchant/clientbound/EmployeeSpawn version=gms_v83 ida=0x510e83
+// packet-audit:verify packet=merchant/clientbound/EmployeeSpawn version=gms_v84 ida=0x519e04
+// packet-audit:verify packet=merchant/clientbound/EmployeeSpawn version=gms_v87 ida=0x533528
+// packet-audit:verify packet=merchant/clientbound/EmployeeSpawn version=gms_v95 ida=0x518f70
+// packet-audit:verify packet=merchant/clientbound/EmployeeSpawn version=jms_v185 ida=0x542a71
 func TestEmployeeSpawnBytes(t *testing.T) {
-	l, _ := testlog.NewNullLogger()
 	input := NewEmployeeSpawn(1000, 9000000, 100, -50, 7, "AB", NewBalloon(5, 42, "CD", 1, 4, 0))
-	ctx := pt.CreateContext("GMS", 83, 1)
-	b := input.Encode(l, ctx)(nil)
 	want := []byte{
 		0xE8, 0x03, 0x00, 0x00, // employeeId 1000
 		0x40, 0x54, 0x89, 0x00, // templateId 9000000
@@ -108,29 +131,51 @@ func TestEmployeeSpawnBytes(t *testing.T) {
 		0x02, 0x00, 0x43, 0x44, // title "CD"
 		0x01, 0x04, 0x00, // curVisitors 1, maxVisitors 4, spec 0
 	}
-	if !bytes.Equal(b, want) {
-		t.Fatalf("bytes: got % x, want % x", b, want)
+	for _, v := range employeeVersions {
+		ctx := pt.CreateContext(v.region, v.major, 1)
+		b := pt.Encode(t, ctx, input.Encode, nil)
+		if !bytes.Equal(b, want) {
+			t.Fatalf("%s v%d bytes: got % x, want % x", v.region, v.major, b, want)
+		}
 	}
 }
 
-// v83 read fn CEmployeePool::OnEmployeeLeaveField @0x510f20 (formal matrix promotion pending)
+// TestEmployeeDestroyBytes pins DESTROY_HIRED_MERCHANT: a single u32 employeeId
+// (CEmployeePool::OnEmployeeLeaveField reads Decode4 and nothing else).
+//
+// packet-audit:verify packet=merchant/clientbound/EmployeeDestroy version=gms_v61 ida=0x4d3520
+// packet-audit:verify packet=merchant/clientbound/EmployeeDestroy version=gms_v72 ida=0x4f4a32
+// packet-audit:verify packet=merchant/clientbound/EmployeeDestroy version=gms_v79 ida=0x4fd750
+// packet-audit:verify packet=merchant/clientbound/EmployeeDestroy version=gms_v83 ida=0x510f20
+// packet-audit:verify packet=merchant/clientbound/EmployeeDestroy version=gms_v84 ida=0x519ea1
+// packet-audit:verify packet=merchant/clientbound/EmployeeDestroy version=gms_v87 ida=0x5335c5
+// packet-audit:verify packet=merchant/clientbound/EmployeeDestroy version=gms_v95 ida=0x518d10
+// packet-audit:verify packet=merchant/clientbound/EmployeeDestroy version=jms_v185 ida=0x542b0e
 func TestEmployeeDestroyBytes(t *testing.T) {
-	l, _ := testlog.NewNullLogger()
 	input := NewEmployeeDestroy(1000)
-	ctx := pt.CreateContext("GMS", 83, 1)
-	b := input.Encode(l, ctx)(nil)
 	want := []byte{0xE8, 0x03, 0x00, 0x00} // employeeId 1000, and nothing else
-	if !bytes.Equal(b, want) {
-		t.Fatalf("bytes: got % x, want % x", b, want)
+	for _, v := range employeeVersions {
+		ctx := pt.CreateContext(v.region, v.major, 1)
+		b := pt.Encode(t, ctx, input.Encode, nil)
+		if !bytes.Equal(b, want) {
+			t.Fatalf("%s v%d bytes: got % x, want % x", v.region, v.major, b, want)
+		}
 	}
 }
 
-// v83 read fn CEmployeePool::OnEmployeeMiniRoomBalloon @0x510f7e (formal matrix promotion pending)
+// TestEmployeeUpdateBytes pins UPDATE_HIRED_MERCHANT: a u32 employeeId followed
+// by the CEmployee::SetBalloon block (CEmployeePool::OnEmployeeMiniRoomBalloon).
+//
+// packet-audit:verify packet=merchant/clientbound/EmployeeUpdate version=gms_v61 ida=0x4d357e
+// packet-audit:verify packet=merchant/clientbound/EmployeeUpdate version=gms_v72 ida=0x4f4a90
+// packet-audit:verify packet=merchant/clientbound/EmployeeUpdate version=gms_v79 ida=0x4fd7ae
+// packet-audit:verify packet=merchant/clientbound/EmployeeUpdate version=gms_v83 ida=0x510f7e
+// packet-audit:verify packet=merchant/clientbound/EmployeeUpdate version=gms_v84 ida=0x519eff
+// packet-audit:verify packet=merchant/clientbound/EmployeeUpdate version=gms_v87 ida=0x533623
+// packet-audit:verify packet=merchant/clientbound/EmployeeUpdate version=gms_v95 ida=0x5187d0
+// packet-audit:verify packet=merchant/clientbound/EmployeeUpdate version=jms_v185 ida=0x542b6c
 func TestEmployeeUpdateBytes(t *testing.T) {
-	l, _ := testlog.NewNullLogger()
 	input := NewEmployeeUpdate(1000, NewBalloon(5, 42, "CD", 1, 4, 0))
-	ctx := pt.CreateContext("GMS", 83, 1)
-	b := input.Encode(l, ctx)(nil)
 	want := []byte{
 		0xE8, 0x03, 0x00, 0x00, // employeeId 1000
 		0x05,                   // balloon miniRoomType 5
@@ -138,7 +183,11 @@ func TestEmployeeUpdateBytes(t *testing.T) {
 		0x02, 0x00, 0x43, 0x44, // title "CD"
 		0x01, 0x04, 0x00, // cur, max, spec
 	}
-	if !bytes.Equal(b, want) {
-		t.Fatalf("bytes: got % x, want % x", b, want)
+	for _, v := range employeeVersions {
+		ctx := pt.CreateContext(v.region, v.major, 1)
+		b := pt.Encode(t, ctx, input.Encode, nil)
+		if !bytes.Equal(b, want) {
+			t.Fatalf("%s v%d bytes: got % x, want % x", v.region, v.major, b, want)
+		}
 	}
 }

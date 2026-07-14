@@ -10,11 +10,11 @@ Tool: `adad34a088b1623ab6ca87b5b6c65b285c1f73c35f1bde0038bfb601f2003fa5`
 - export gms_v61: `b1111abee79b6b10cf1a05305e3c4a7707819f6862a80314c0b2ebce424852f7`
 - export gms_v72: `a21ceb077a00723549680327194e70c712b962f92dfd26c011bc0af8134f06e5`
 - export gms_v79: `aad866f3c3feebf4ce08f3f37b6fc45738cbc5cd68b2e90efd39b86ad4b3a7f6`
-- export gms_v83: `b7ec3361f3366b4a685a8ce290e8e2e766fbc5f783ffcb67e04931f2999966a8`
-- export gms_v84: `b448ffdc189ad808506bfa3a11c51db026b142bc316912c9f5c29e85f2338ff9`
-- export gms_v87: `f3f1711d6e8abf59cadfd904141dbc93191c0816ef065384bd561ebaee582b94`
-- export gms_v95: `feda71f4d500046c6fa43e80169c4dd21cbec8f2f94006fcb688e1bf8cf07913`
-- export jms_v185: `cba49b2a0159e787b80c6860bc6ce05f57bcb7776fddafbf67fe53ba601a29b0`
+- export gms_v83: `4125d6fe8ae0e9b6dd666a8e84ed55ec4a229b353a30f11592993bf2cbe5c344`
+- export gms_v84: `85703918ea0625309b1a2adfe3770809bdb33caa1334c9cc08074aae8345345d`
+- export gms_v87: `46f326937e63ad90ce0ec685eb1772749d33f3bb4dffa08828498211801c6b7d`
+- export gms_v95: `5486381fc4c567a16ecf3184f7afd2fe081bb38ca110304ba02a8bae6d11baa9`
+- export jms_v185: `1a9603937db514d74c577ec61e56e9a6820b6a8dcde57c97cc62b69718a57067`
 
 ## Clientbound
 
@@ -331,11 +331,11 @@ Tool: `adad34a088b1623ab6ca87b5b6c65b285c1f73c35f1bde0038bfb601f2003fa5`
 | SET_NPC_SCRIPTABLE | CNpcPool::OnSetNpcScript; CNpcTemplate::OnSetNpcScript; sub_5EFDA2; sub_645E9C; sub_668A2D |  |  | ⬜ | 0x0C8 | ❌ | 0x0E9 | ❌ | 0x0F1 | ❌ | 0x107 | ❌ | 0x107 | ❌ | 0x118 | ❌ | 0x13D | ❌ | 0x11C | ❌ |
 | KOREAN_EVENT | CUserLocal::OnOpenClassCompetitionPage |  |  | ⬜ |  | ⬜ | 0x0C9 | ❌ | 0x0CD | ❌ | 0x0DB | ❌ | 0x0DF | ❌ | 0x0E8 | ❌ | 0x0FA | ❌ | 0x0E3 | ❌ |
 | LOCK_UI | CUserLocal::OnSetDirectionMode; CUserLocal::SetDirectionMode; sub_A2CD83 | ui/clientbound/Lock |  | ⬜ |  | ⬜ | 0x0CA | ❌ | 0x0CE | ❌ | 0x0DD | ❌ | 0x0E2 | ❌ | 0x0EB | ❌ | 0x0FD | ✅ | 0x0E7 | ❌ |
-| SPAWN_HIRED_MERCHANT | CEmployeePool::OnEmployeeEnterField |  |  | ⬜ | 0x0CA | ❌ | 0x0EB | ❌ | 0x0F3 | ❌ | 0x109 | ❌ | 0x110 | ❌ | 0x11A | ❌ | 0x13F | ❌ | 0x11E | ❌ |
-| DESTROY_HIRED_MERCHANT | CEmployeePool::OnEmployeeLeaveField |  |  | ⬜ | 0x0CB | ❌ | 0x0EC | ❌ | 0x0F4 | ❌ | 0x10A | ❌ | 0x111 | ❌ | 0x11B | ❌ | 0x140 | ❌ | 0x11F | ❌ |
+| SPAWN_HIRED_MERCHANT | CEmployeePool::OnEmployeeEnterField |  |  | ⬜ | 0x0CA | ✅ | 0x0EB | ✅ | 0x0F3 | ✅ | 0x109 | ✅ | 0x110 | ✅ | 0x11A | ✅ | 0x13F | ✅ | 0x11E | ✅ |
+| DESTROY_HIRED_MERCHANT | CEmployeePool::OnEmployeeLeaveField |  |  | ⬜ | 0x0CB | ✅ | 0x0EC | ✅ | 0x0F4 | ✅ | 0x10A | ✅ | 0x111 | ✅ | 0x11B | ✅ | 0x140 | ✅ | 0x11F | ✅ |
 | DISABLE_UI | CUserLocal::OnSetStandAloneMode; sub_86C50E | ui/clientbound/Disable |  | ⬜ |  | ⬜ | 0x0CB | ❌ | 0x0CF | 🟡ᵈ | 0x0DE | ✅ | 0x0E3 | ✅ | 0x0EC | ✅ | 0x0FE | ✅ | 0x0E8 | ✅ |
 | SPAWN_GUIDE | CUserLocal::OnHireTutor; sub_86C65C |  |  | ⬜ |  | ⬜ | 0x0CC | ❌ | 0x0D0 | ❌ | 0x0DF | ❌ | 0x0E4 | ❌ | 0x0ED | ❌ | 0x0FF | ❌ | 0x0E9 | ❌ |
-| UPDATE_HIRED_MERCHANT | CEmployeePool::OnEmployeeMiniRoomBalloon |  |  | ⬜ | 0x0CC | ❌ | 0x0ED | ❌ | 0x0F5 | ❌ | 0x10B | ❌ | 0x112 | ❌ | 0x11C | ❌ | 0x141 | ❌ | 0x120 | ❌ |
+| UPDATE_HIRED_MERCHANT | CEmployeePool::OnEmployeeMiniRoomBalloon |  |  | ⬜ | 0x0CC | ✅ | 0x0ED | ✅ | 0x0F5 | ✅ | 0x10B | ✅ | 0x112 | ✅ | 0x11C | ✅ | 0x141 | ✅ | 0x120 | ✅ |
 | DROP_ITEM_FROM_MAPOBJECT | CDropPool::OnDropEnterField | drop/clientbound/DropSpawn |  | ⬜ | 0x0CD | 🟡ᵈ | 0x0EE | 🟡ᵈ | 0x0F6 | 🟡ᵈ | 0x10C | ✅ | 0x113 | ✅ | 0x11D | ✅ | 0x142 | ✅ | 0x121 | ✅ |
 | REMOVE_ITEM_FROM_MAP | CDropPool::OnDropLeaveField | drop/clientbound/DropDestroy (T1) |  | ⬜ | 0x0CE | ✅ | 0x0EF | ✅ | 0x0F7 | ✅ | 0x10D | ✅ | 0x114 | ✅ | 0x11E | ✅ | 0x144 | ✅ | 0x122 | ✅ |
 | CANNOT_SPAWN_KITE | CMessageBoxPool::OnCreateFailed | field/clientbound/FieldKiteError (T1) |  | ⬜ | 0x0CF | 🟡ᶠ | 0x0F0 | 🟡ᶠ | 0x0F8 | 🟡ᶠ | 0x10E | ✅ | 0x10E | ✅ | 0x11F | ✅ | 0x145 | ✅ | 0x123 | ✅ |
@@ -994,14 +994,14 @@ Tool: `adad34a088b1623ab6ca87b5b6c65b285c1f73c35f1bde0038bfb601f2003fa5`
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
 | v48 | 166 | 0 | 2 | 156 | 634 | 0 | 51.2% |
-| v61 | 235 | 0 | 60 | 199 | 464 | 0 | 47.6% |
-| v72 | 244 | 0 | 73 | 217 | 424 | 0 | 45.7% |
-| v79 | 258 | 0 | 72 | 213 | 415 | 0 | 47.5% |
-| v83 | 399 | 0 | 0 | 335 | 224 | 0 | 54.4% |
-| v84 | 371 | 0 | 0 | 343 | 244 | 0 | 52.0% |
-| v87 | 405 | 0 | 0 | 366 | 187 | 0 | 52.5% |
-| v95 | 430 | 0 | 0 | 425 | 103 | 0 | 50.3% |
-| JMS185 | 386 | 0 | 0 | 378 | 194 | 0 | 50.5% |
+| v61 | 238 | 0 | 60 | 196 | 464 | 0 | 48.2% |
+| v72 | 247 | 0 | 73 | 214 | 424 | 0 | 46.3% |
+| v79 | 261 | 0 | 72 | 210 | 415 | 0 | 48.1% |
+| v83 | 402 | 0 | 0 | 332 | 224 | 0 | 54.8% |
+| v84 | 374 | 0 | 0 | 340 | 244 | 0 | 52.4% |
+| v87 | 408 | 0 | 0 | 363 | 187 | 0 | 52.9% |
+| v95 | 433 | 0 | 0 | 422 | 103 | 0 | 50.6% |
+| JMS185 | 389 | 0 | 0 | 375 | 194 | 0 | 50.9% |
 
 ## Conflicts
 

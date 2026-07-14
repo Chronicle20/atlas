@@ -43,7 +43,6 @@ const (
 	CharacterInteractionModeMerchantOrganize              CharacterInteractionMode = "MERCHANT_ORGANIZE"                  // 40 - 28
 	CharacterInteractionModeMerchantExit                  CharacterInteractionMode = "MERCHANT_EXIT"                      // 41 - 29
 	CharacterInteractionModeMerchantWithdrawMeso          CharacterInteractionMode = "MERCHANT_WITHDRAW_MESO"             // 43 - 2B
-	CharacterInteractionModeMerchantNameChange            CharacterInteractionMode = "MERCHANT_NAME_CHANGE"               // 45 - 2D
 	CharacterInteractionModeMerchantViewVisitList         CharacterInteractionMode = "MERCHANT_VIEW_VISIT_LIST"           // 46 - 2E
 	CharacterInteractionModeMerchantViewBlackList         CharacterInteractionMode = "MERCHANT_VIEW_BLACK_LIST"           // 47 - 2F
 	CharacterInteractionModeMerchantAddToBlackList        CharacterInteractionMode = "MERCHANT_ADD_TO_BLACK_LIST"         // 48 - 30
@@ -363,12 +362,6 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, _
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeMerchantWithdrawMeso) {
 			l.Debugf("Character [%d] has withdrew merchant meso.", s.CharacterId())
-			return
-		}
-		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeMerchantNameChange) {
-			sp := &interaction2.OperationMerchantNameChange{}
-			sp.Decode(l, ctx)(r, readerOptions)
-			l.Debugf("Character [%d] wants to change their merchant shop name. unk1 [%d].", s.CharacterId(), sp.Unk1())
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeMerchantViewVisitList) {

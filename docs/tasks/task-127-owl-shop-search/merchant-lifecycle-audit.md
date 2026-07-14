@@ -1,7 +1,29 @@
 # Merchant Shop Lifecycle Audit — task-127 addendum
 
-Status: Findings verified; remediation in progress (all phases approved 2026-07-14)
+Status: Remediation IMPLEMENTED (Phases A–C, 2026-07-14) — awaiting live verification
 Created: 2026-07-14
+
+## 0. Implementation status & live-verification checklist
+
+All three phases landed on this branch (commits `08e01ec74`…): A1 position-byte
+fix + merchant owner-block re-derivation, A2 owner-occupancy resolution +
+owner EXIT semantics, A3 Draft reaping (logout policy + expiry), B1
+entrusted-shop check replies + filtered precheck + `/characters/{id}/frederick`,
+B2 resolved by IDA verification (open op is `OPEN` 0x0B — was already wired,
+see F5), B3 permit validation at CREATE, C1 state-aware VISIT/maintenance
+resolution, C2 no owner room re-send at open. Gates: `go test -race` / `go
+vet` / builds clean in atlas-packet, atlas-channel, atlas-merchant;
+redis-key-guard, goroutine-guard, `packet-audit matrix --check` clean.
+
+Live verification checklist (v83 tenant):
+- [ ] 514 create → owner lands in the MANAGEMENT view (add-item UI), not the buy view; no map box yet.
+- [ ] Stock an item, press Open (second-password prompt) → box appears map-wide; second character can enter (visitor sees the BUY view) and purchase.
+- [ ] Abandon during setup (close window) → shop closes; immediate re-create succeeds.
+- [ ] 503 permit use → check-result opens the create dialog; setup → open → employee NPC spawns; owner's trailing dialog-close EXIT does not kill the shop; owner logout leaves it selling.
+- [ ] Merchant maintenance re-entry (double-click own NPC path / mode-17 confirm), MAINTENANCE_OFF resumes selling; EXIT from maintenance returns it to Open (or closes when empty).
+- [ ] Visitor slots 2–3 render correctly (true-slot position bytes, Q4).
+- [ ] Owl search → warp → auto-enter now shows the visitor buy view (task-127 unblocked).
+- [ ] ERROR_UNKNOWN notice channel display (mapId%100 FM room + channel name) reads correctly — the channel byte's 0- vs 1-based display is unverified (`hired_merchant_operation.go`).
 Scope: player shops (514-family permit) and hired merchants (503-family permit) — the substrate task-127's owl search/warp needs operational to be testable.
 
 ---

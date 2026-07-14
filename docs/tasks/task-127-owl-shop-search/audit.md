@@ -399,3 +399,65 @@ Not an auth/token service. SEC-04: no hardcoded secrets. The new `serial` is a c
 ### Producible follow-up (not a merge blocker, but flagged per no-deferring policy)
 
 The legacy USE frame decodes `searchItemId=0` by design. deployment.md's caveat honestly notes the search "returns nothing," but the routed v72/v79 owl-use path still forwards `searchItemId=0` into `RecordItemSearch`, polluting the top-searches hot list with item id 0 (already flagged in this file's backend-guidelines section, socket/handler + shopscanner/processor). Guarding `Search`/`RecordItemSearch` on `searchItemId != 0` is a producible one-line fix that prevents hot-list corruption independent of the genuinely-open "does legacy owl search at all" question. Recommend applying the guard on this branch rather than deferring.
+
+---
+
+# Backend Audit — hired-merchant field-NPC feature (backend-guidelines-reviewer pass)
+
+- **Reviewer:** backend-guidelines-reviewer (adversarial; DOM-*/SUB-*/SEC-*)
+- **Diff range:** `8a2423233..30f23621d` (feat(channel): hired-merchant visitor entry + live balloon refresh — interaction enter-result header fix, phantom MerchantNameChange removal, new `merchant/clientbound/employee_*` codecs, channel wiring, 8 seed templates)
+- **Date:** 2026-07-13
+- **Snapshot note:** the task worktree HEAD (`4f341bea`) has diverged past and **reverts** this feature (the `employee_*` codecs and the reworked `room.go` are deleted at HEAD). The audit was therefore run against a throwaway detached `git worktree` checked out at `30f23621d`, then removed. All citations are `30f23621d:<path>:<line>`.
+- **Build:** PASS — `libs/atlas-packet` and `services/atlas-channel/atlas.com/channel` `go build ./...` clean at snapshot.
+- **Tests:** PASS — interaction, merchant/clientbound, channel merchant, kafka consumer/{merchant,map}, socket/{handler,model,writer} all `ok` with `-count=1`; consumer packages finish <1s (no unstubbed-producer 42s hang → DOM-24 clean).
+- **Overall:** NEEDS-WORK — 2 Minor findings, no blocking guideline violations.
+
+## Checklist Results
+
+| Area | ID / Concern | Status | Evidence |
+|------|--------------|--------|----------|
+| Immutable models | private-field/getter/`New*` idiom | PASS | `EmployeeSpawn` (`merchant/clientbound/employee_spawn.go:19-52`), `EmployeeUpdate` (`employee_update.go:19-33`), `EmployeeDestroy` (`employee_destroy.go:18-32`), `Balloon` (`employee_balloon.go:16-38`) — all private fields + getters + `New*` constructors; `Room` gained private `ownerView` + getter/helper (`interaction/room.go:47,116,120-127`). Matches existing codec convention (no Builder — siblings `Room`/`MiniRoomBase` don't use one either). |
+| Processor idiom | Interface+Impl, `NewProcessor(l,ctx)`, mock drift | PASS | `merchant.Processor` interface UNCHANGED by this diff; `GetShop`/`GetById` pre-existed (`merchant/processor.go:23,64`). New projections `ToEmployeeSpawn`/`ToEmployeeUpdate` are free funcs (`merchant/employee.go:23,45`), not interface methods, so `merchant/mock/processor.go` (`var _ merchant.Processor`) needs no update and still compiles. No mock drift. |
+| DOM-25 | client-interpreted wire values config-resolved | PASS | The three client-dispatched **opcodes** are config-resolved via writer names registered in **all 8** feature-bearing seed templates (`SpawnHiredMerchant`/`DestroyHiredMerchant`/`UpdateHiredMerchant`, 3 refs each in gms 61/72/79/83/84/87/95 + jms_185; gms_48 correctly omitted — it has no hired-merchant feature). Balloon `MiniRoomType` passes the **named** codec constant `interactionpkt.MerchantShopMiniRoomType` (`merchant/employee.go:20,44`), not a bare literal — inside the `libs/atlas-packet` codec-internal exemption, and the same constant the pre-existing `MiniRoomBase` spawn path uses. `templateId` = `m.PermitItemId()` (sourced, not hardcoded). |
+| goroutine-guard | no bare `go` | PASS | grep `^\s*go (func\|ident)` over both changed consumer files → NONE. Fan-out uses `_map…ForSessionsInMap` / `session.Announce`. |
+| DOM-24 | producer stubbed in emitting tests | PASS (inferred) | changed consumer test packages complete in <1s (map 0.658s); an unstubbed emit adds ~42s. No hang. |
+| Tests | table-driven + byte fixtures | PASS | `merchant/clientbound/employee_test.go` round-trips all 3 codecs across `pt.Variants` + pins wire bytes (`TestEmployeeSpawnBytes`/`…DestroyBytes`/`…UpdateBytes`), incl. the `MiniRoomType==0` teardown branch. Interaction fixtures updated for the new `ownerView` header byte (`interaction/room_test.go`, `clientbound/interaction_test.go`, v48/61/72/79). |
+| Dead-code removal | phantom `MerchantNameChange` excised | PASS | serverbound codec + test deleted; handler branch removed (`socket/handler/character_interaction.go`); template rows removed from gms_83/84 (only templates that carried it). Clean per anti-patterns "leaving dead code". |
+| File responsibilities | `employee.go` placement | PASS | Genuine single-purpose feature file (packet projections + the `HiredMerchantShopType` constant) in the channel `merchant` support package. FILE-06 explicitly permits single-purpose utility files; the constant's home in the `merchant` package is correct (no `state.go` exists to prefer). |
+| Ingress/README | new REST call added? | PASS (N/A) | No new `requests.go`/endpoint — reuses pre-existing `merchant.GetShop` + `character.GetById`. No ingress/README change required. |
+| SEC-* | — | N/A | Not an auth service. |
+
+## Findings
+
+### Minor 1 — `merchant.HiredMerchantShopType` introduced but not applied consistently
+The feature added `const HiredMerchantShopType byte = 2` (`merchant/employee.go:11`)
+and adopts it in four sites (`kafka/consumer/merchant/consumer.go:130,215,527`;
+`kafka/consumer/map/consumer.go:673`). Two literal `== 2` comparisons remain
+un-migrated:
+- `kafka/consumer/merchant/consumer.go:331` — `if shop.ShopType() == 2 {`
+- `kafka/consumer/merchant/consumer.go:550` — `if shop.ShopType() == 2 {` inside `buildShopRoom`, a function **this diff modified** (the sibling `buildPersonalShopRoom` call one line below was changed in the same hunk).
+
+Naming the magic number is the whole point of the constant; leaving two bare `2`s
+in the same file (one in a touched hunk) is the "used consistently" gap flagged in
+scope. Not a hard guideline FAIL (no shared atlas-constants equivalent — this is
+atlas-merchant's own `ShopType` enum, so NOT DOM-21), but it should be reconciled.
+
+### Minor 2 — silent error swallowing on cross-service fetches in per-event hot paths
+Two new hired-merchant paths drop fetch errors with no diagnostic, inconsistent
+with the sibling `resolveOwnerName` (which logs `Warn`):
+- `kafka/consumer/map/consumer.go:677` — `if c, err := character.NewProcessor(l, ctx).GetById()(m.CharacterId()); err == nil { ownerName = c.Name() }` swallows the `GetById` error silently. `resolveOwnerName` (`kafka/consumer/merchant/consumer.go:512`) performs the identical lookup but logs a Warn on failure — the two should behave the same.
+- `broadcastEmployeeBalloonUpdate` (`kafka/consumer/merchant/consumer.go:527`) — `if err != nil || shop.ShopType() != merchant.HiredMerchantShopType { return }` conflates a transient `GetShop` failure with the legitimate "not a hired merchant" no-op, so a failed fetch produces no log. This runs on every visitor enter/exit/eject; a flapping `GetShop` would silently stop balloon refreshes with zero signal.
+
+Both degrade gracefully by design (empty nametag / skipped refresh), so severity is
+Minor, but the swallowed `GetShop` in a per-event hot path and the divergence from
+`resolveOwnerName` warrant at least a `Debug`/`Warn`.
+
+## Observations (not violations)
+- **Hardcoded `foothold = 0`** in `ToEmployeeSpawn` (`merchant/employee.go:38`): NOT DOM-25 — a spawn coordinate, not a client lookup-switch value. Justified in-comment (client guards id 0; x/y drive placement). Completeness note only: the employee won't snap to the real map foothold. Acceptable for this feature.
+
+## Summary
+### Blocking (must fix)
+- None.
+### Non-Blocking (should fix)
+- Minor 1: migrate `kafka/consumer/merchant/consumer.go:331,550` `== 2` literals to `merchant.HiredMerchantShopType`.
+- Minor 2: log the swallowed `GetById` error in `spawnMerchantsForSession` (`map/consumer.go:677`) and the swallowed `GetShop` error in `broadcastEmployeeBalloonUpdate` (`merchant/consumer.go:527`), matching `resolveOwnerName`.

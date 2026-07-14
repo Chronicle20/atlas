@@ -328,7 +328,7 @@ func handleMaintenanceEvent(sc server.Model, wp writer.Producer) func(l logrus.F
 			}
 
 			sp := session.NewProcessor(l, ctx)
-			if shop.ShopType() == 2 {
+			if shop.ShopType() == merchant.HiredMerchantShopType {
 				// Hired merchant: close management UI, shop continues autonomously.
 				_ = sp.IfPresentByCharacterId(sc.Channel())(e.Body.CharacterId, session.Announce(l)(ctx)(wp)(interactioncb.CharacterInteractionWriter)(interactioncb.CharacterInteractionLeaveBody(0, 0)))
 			} else {
@@ -524,7 +524,11 @@ func resolveOwnerName(l logrus.FieldLogger, ctx context.Context, characterId uin
 // No-op for personal stores (which have no employee balloon).
 func broadcastEmployeeBalloonUpdate(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, shopId string) {
 	shop, err := merchant.NewProcessor(l, ctx).GetShop(shopId)
-	if err != nil || shop.ShopType() != merchant.HiredMerchantShopType {
+	if err != nil {
+		l.WithError(err).Warnf("Unable to load shop [%s] for employee balloon refresh.", shopId)
+		return
+	}
+	if shop.ShopType() != merchant.HiredMerchantShopType {
 		return
 	}
 	f := field.NewBuilder(shop.WorldId(), shop.ChannelId(), mapId.Id(shop.MapId())).SetInstance(shop.InstanceId()).Build()
@@ -547,7 +551,7 @@ func buildShopRoom(l logrus.FieldLogger, ctx context.Context, shopId string, vie
 	items := buildShopItems(l, shop.Listings())
 
 	// CharacterShop (1) = PersonalShop, HiredMerchant (2) = MerchantShop.
-	if shop.ShopType() == 2 {
+	if shop.ShopType() == merchant.HiredMerchantShopType {
 		return buildMerchantShopRoom(l, ctx, cp, shop, viewerCharacterId, items)
 	}
 	return buildPersonalShopRoom(l, ctx, cp, shop, viewerCharacterId, items)

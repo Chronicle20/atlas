@@ -674,7 +674,9 @@ func spawnMerchantsForSession(l logrus.FieldLogger) func(ctx context.Context) fu
 						// Hired merchant renders as a standalone employee NPC (D1); spawn
 						// it to the entering player.
 						ownerName := ""
-						if c, err := character.NewProcessor(l, ctx).GetById()(m.CharacterId()); err == nil {
+						if c, err := character.NewProcessor(l, ctx).GetById()(m.CharacterId()); err != nil {
+							l.WithError(err).Warnf("Unable to resolve hired-merchant owner [%d] name for field spawn.", m.CharacterId())
+						} else {
 							ownerName = c.Name()
 						}
 						spawn := merchant.ToEmployeeSpawn(m, ownerName)

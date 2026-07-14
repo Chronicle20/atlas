@@ -5,6 +5,7 @@ import (
 
 	"atlas-merchant/kafka/message/asset"
 	"atlas-merchant/listing"
+	msg "atlas-merchant/message"
 
 	"github.com/google/uuid"
 	"github.com/jtumidanski/api2go/jsonapi"
@@ -28,7 +29,17 @@ type RestModel struct {
 	CreatedAt    time.Time           `json:"createdAt"`
 	ListingCount int64               `json:"listingCount"`
 	Visitors     []uint32            `json:"visitors,omitempty"`
+	Messages     []MessageRestModel  `json:"messages,omitempty"`
 	Listings     []listing.RestModel `json:"-"`
+}
+
+// MessageRestModel is one persisted shop message carried in the shop detail
+// attributes so the channel can replay the chat log into the owner's
+// management view (merchant-lifecycle-audit F10).
+type MessageRestModel struct {
+	CharacterId uint32    `json:"characterId"`
+	Content     string    `json:"content"`
+	SentAt      time.Time `json:"sentAt"`
 }
 
 func (r RestModel) GetID() string {
@@ -121,6 +132,30 @@ func TransformWithListings(listings []listing.Model) func(m Model) (RestModel, e
 		rm.Listings = listingRest
 		return rm, nil
 	}
+}
+
+// TransformWithMessages appends the persisted shop messages to the payload.
+func TransformWithMessages(messages []msg.Model) func(m Model) (RestModel, error) {
+	return func(m Model) (RestModel, error) {
+		rm, err := Transform(m)
+		if err != nil {
+			return RestModel{}, err
+		}
+		rm.Messages = transformMessages(messages)
+		return rm, nil
+	}
+}
+
+func transformMessages(messages []msg.Model) []MessageRestModel {
+	out := make([]MessageRestModel, 0, len(messages))
+	for _, mm := range messages {
+		out = append(out, MessageRestModel{
+			CharacterId: mm.CharacterId(),
+			Content:     mm.Content(),
+			SentAt:      mm.SentAt(),
+		})
+	}
+	return out
 }
 
 func TransformWithListingsAndVisitors(listings []listing.Model, visitors []uint32) func(m Model) (RestModel, error) {

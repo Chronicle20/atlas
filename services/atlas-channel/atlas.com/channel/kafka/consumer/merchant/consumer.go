@@ -599,11 +599,29 @@ func buildMerchantShopRoom(l logrus.FieldLogger, ctx context.Context, cp charact
 		visitors = append(visitors, interactionpkt.NewBaseVisitor(byte(i+1), avatar, c.Name()))
 	}
 
-	// Owner-only message list (position 0): persisted by the merchant service
-	// but not yet exposed through the shop REST payload, so the owner's
-	// management view shows none of the messages visitors left — known gap,
-	// merchant-lifecycle-audit F10.
+	// Owner-only message list (position 0): replay the persisted chat log.
+	// Sender names are embedded ("Name : text") because the live room's slot
+	// assignments say nothing about who sent a message while the merchant ran
+	// unattended. The trailing byte is the message type; 0 renders as a
+	// normal chat line.
 	var messages []interactionpkt.RoomMessage
+	if position == 0 {
+		names := map[uint32]string{}
+		for _, mm := range shop.Messages() {
+			name, ok := names[mm.CharacterId()]
+			if !ok {
+				if c, err := cp.GetById()(mm.CharacterId()); err == nil {
+					name = c.Name()
+				}
+				names[mm.CharacterId()] = name
+			}
+			content := mm.Content()
+			if name != "" {
+				content = name + " : " + content
+			}
+			messages = append(messages, interactionpkt.RoomMessage{Message: content, Slot: 0})
+		}
+	}
 
 	ownerChar, err := cp.GetById()(shop.CharacterId())
 	if err != nil {

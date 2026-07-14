@@ -26,8 +26,20 @@ type Model struct {
 	createdAt    time.Time
 	listingCount int64
 	visitors     []uint32
+	messages     []MessageModel
 	listings     []ListingModel
 }
+
+// MessageModel is one persisted shop message (owner management-view replay).
+type MessageModel struct {
+	characterId uint32
+	content     string
+	sentAt      time.Time
+}
+
+func (m MessageModel) CharacterId() uint32 { return m.characterId }
+func (m MessageModel) Content() string     { return m.content }
+func (m MessageModel) SentAt() time.Time   { return m.sentAt }
 
 func (m Model) Id() uuid.UUID            { return m.id }
 func (m Model) CharacterId() uint32       { return m.characterId }
@@ -45,6 +57,7 @@ func (m Model) MesoBalance() uint32       { return m.mesoBalance }
 func (m Model) CreatedAt() time.Time      { return m.createdAt }
 func (m Model) ListingCount() int64       { return m.listingCount }
 func (m Model) Visitors() []uint32        { return m.visitors }
+func (m Model) Messages() []MessageModel   { return m.messages }
 func (m Model) Listings() []ListingModel  { return m.listings }
 
 // Shop states derived from the shared atlas-constants enum (the same source

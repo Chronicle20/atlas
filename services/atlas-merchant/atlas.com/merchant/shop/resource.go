@@ -2,6 +2,7 @@ package shop
 
 import (
 	"atlas-merchant/listing"
+	msg "atlas-merchant/message"
 	"atlas-merchant/rest"
 	"atlas-merchant/searchcount"
 	"errors"
@@ -77,6 +78,14 @@ func handleGetMerchant(db *gorm.DB) rest.GetHandler {
 					d.Logger().WithError(err).Errorf("Creating REST model.")
 					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
+				}
+
+				// Persisted shop messages ride along so the channel can replay
+				// the chat log into the owner's management view (audit F10).
+				if messages, err := msg.NewProcessor(d.Logger(), d.Context(), db).GetMessages(shopId); err != nil {
+					d.Logger().WithError(err).Warnf("Retrieving messages for shop [%s].", shopId)
+				} else {
+					res.Messages = transformMessages(messages)
 				}
 
 				query := r.URL.Query()

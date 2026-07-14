@@ -27,7 +27,16 @@ type RestModel struct {
 	CreatedAt    time.Time          `json:"createdAt"`
 	ListingCount int64              `json:"listingCount"`
 	Visitors     []uint32           `json:"visitors,omitempty"`
+	Messages     []MessageRestModel `json:"messages,omitempty"`
 	Listings     []ListingRestModel `json:"-"`
+}
+
+// MessageRestModel mirrors atlas-merchant's shop.MessageRestModel: one
+// persisted shop message, replayed into the owner's management view.
+type MessageRestModel struct {
+	CharacterId uint32    `json:"characterId"`
+	Content     string    `json:"content"`
+	SentAt      time.Time `json:"sentAt"`
 }
 
 func (r RestModel) GetName() string {
@@ -133,8 +142,21 @@ func Extract(rm RestModel) (Model, error) {
 		createdAt:    rm.CreatedAt,
 		listingCount: rm.ListingCount,
 		visitors:     rm.Visitors,
+		messages:     extractMessages(rm.Messages),
 		listings:     ls,
 	}, nil
+}
+
+func extractMessages(rms []MessageRestModel) []MessageModel {
+	out := make([]MessageModel, 0, len(rms))
+	for _, rm := range rms {
+		out = append(out, MessageModel{
+			characterId: rm.CharacterId,
+			content:     rm.Content,
+			sentAt:      rm.SentAt,
+		})
+	}
+	return out
 }
 
 // FrederickStatusRestModel mirrors atlas-merchant's frederick.StatusRestModel:

@@ -31,6 +31,8 @@ func InitializeRoutes(si jsonapi.ServerInformation) func(db *gorm.DB) server.Rou
 			r := router.PathPrefix("/merchants/{shopId}").Subrouter()
 			r.HandleFunc("", registerHandler("get_merchant", handleGetMerchant(db))).Methods(http.MethodGet)
 			r.HandleFunc("/relationships/listings", registerHandler("get_merchant_listings", handleGetMerchantListings(db))).Methods(http.MethodGet)
+			r.HandleFunc("/blacklist", registerHandler("get_merchant_blacklist", handleGetMerchantBlacklist(db))).Methods(http.MethodGet)
+			r.HandleFunc("/visits", registerHandler("get_merchant_visits", handleGetMerchantVisits(db))).Methods(http.MethodGet)
 
 			cr := router.PathPrefix("/characters/{characterId}").Subrouter()
 			cr.HandleFunc("/merchants", registerHandler("get_character_merchants", handleGetCharacterMerchants(db))).Methods(http.MethodGet)
@@ -270,6 +272,65 @@ func handleGetCharacterVisiting(db *gorm.DB) rest.GetHandler {
 				query := r.URL.Query()
 				queryParams := jsonapi.ParseQueryFields(&query)
 				server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+			}
+		})
+	}
+}
+
+type BlacklistRestModel struct {
+	Id   string `json:"-"`
+	Name string `json:"name"`
+}
+
+func (r BlacklistRestModel) GetName() string        { return "merchant-blacklist" }
+func (r BlacklistRestModel) GetID() string          { return r.Id }
+func (r *BlacklistRestModel) SetID(id string) error { r.Id = id; return nil }
+
+type VisitRestModel struct {
+	Id    string `json:"-"`
+	Name  string `json:"name"`
+	Count uint32 `json:"count"`
+}
+
+func (r VisitRestModel) GetName() string        { return "merchant-visits" }
+func (r VisitRestModel) GetID() string          { return r.Id }
+func (r *VisitRestModel) SetID(id string) error { r.Id = id; return nil }
+
+func handleGetMerchantBlacklist(db *gorm.DB) rest.GetHandler {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseShopId(d.Logger(), func(shopId uuid.UUID) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				names, err := NewProcessor(d.Logger(), d.Context(), db).GetBlacklist(shopId)
+				if err != nil {
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+				res := make([]BlacklistRestModel, 0, len(names))
+				for _, n := range names {
+					res = append(res, BlacklistRestModel{Id: n, Name: n})
+				}
+				query := r.URL.Query()
+				server.MarshalResponse[[]BlacklistRestModel](d.Logger())(w)(c.ServerInformation())(jsonapi.ParseQueryFields(&query))(res)
+			}
+		})
+	}
+}
+
+func handleGetMerchantVisits(db *gorm.DB) rest.GetHandler {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseShopId(d.Logger(), func(shopId uuid.UUID) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				visits, err := NewProcessor(d.Logger(), d.Context(), db).GetVisits(shopId)
+				if err != nil {
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+				res := make([]VisitRestModel, 0, len(visits))
+				for _, v := range visits {
+					res = append(res, VisitRestModel{Id: v.Name(), Name: v.Name(), Count: v.Count()})
+				}
+				query := r.URL.Query()
+				server.MarshalResponse[[]VisitRestModel](d.Logger())(w)(c.ServerInformation())(jsonapi.ParseQueryFields(&query))(res)
 			}
 		})
 	}

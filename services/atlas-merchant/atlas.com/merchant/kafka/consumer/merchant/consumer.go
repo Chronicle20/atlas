@@ -47,6 +47,8 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleRecordItemSearchCommand(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleWithdrawMesoCommand(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleOrganizeListingsCommand(db))))
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAddBlacklistCommand(db))))
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleRemoveBlacklistCommand(db))))
 		}
 	}
 }
@@ -200,6 +202,38 @@ func handleOrganizeListingsCommand(db *gorm.DB) message.Handler[merchant2.Comman
 	}
 }
 
+func handleAddBlacklistCommand(db *gorm.DB) message.Handler[merchant2.Command[merchant2.CommandBlacklistBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e merchant2.Command[merchant2.CommandBlacklistBody]) {
+		if e.Type != merchant2.CommandAddBlacklist {
+			return
+		}
+		shopId, err := uuid.Parse(e.Body.ShopId)
+		if err != nil {
+			l.WithError(err).Errorf("Error parsing shopId [%s].", e.Body.ShopId)
+			return
+		}
+		if err := shop.NewProcessor(l, ctx, db).AddToBlacklistAndEmit(shopId, e.CharacterId, e.Body.Name); err != nil {
+			l.WithError(err).Errorf("Error adding [%s] to blacklist for shop [%s].", e.Body.Name, shopId)
+		}
+	}
+}
+
+func handleRemoveBlacklistCommand(db *gorm.DB) message.Handler[merchant2.Command[merchant2.CommandBlacklistBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e merchant2.Command[merchant2.CommandBlacklistBody]) {
+		if e.Type != merchant2.CommandRemoveBlacklist {
+			return
+		}
+		shopId, err := uuid.Parse(e.Body.ShopId)
+		if err != nil {
+			l.WithError(err).Errorf("Error parsing shopId [%s].", e.Body.ShopId)
+			return
+		}
+		if err := shop.NewProcessor(l, ctx, db).RemoveFromBlacklistAndEmit(shopId, e.CharacterId, e.Body.Name); err != nil {
+			l.WithError(err).Errorf("Error removing [%s] from blacklist for shop [%s].", e.Body.Name, shopId)
+		}
+	}
+}
+
 func handleUpdateListingCommand(db *gorm.DB) message.Handler[merchant2.Command[merchant2.CommandUpdateListingBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, e merchant2.Command[merchant2.CommandUpdateListingBody]) {
 		if e.Type != merchant2.CommandUpdateListing {
@@ -254,7 +288,7 @@ func handleEnterShopCommand(db *gorm.DB) message.Handler[merchant2.Command[merch
 			return
 		}
 
-		if err := shop.NewProcessor(l, ctx, db).EnterShopAndEmit(e.CharacterId, shopId); err != nil {
+		if err := shop.NewProcessor(l, ctx, db).EnterShopAndEmit(e.CharacterId, shopId, e.Body.VisitorName); err != nil {
 			l.WithError(err).Errorf("Error entering shop [%s].", shopId)
 		}
 	}

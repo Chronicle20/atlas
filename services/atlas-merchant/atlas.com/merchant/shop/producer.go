@@ -279,3 +279,13 @@ func StatusEventEnterFailedProvider(characterId uint32, shopId uuid.UUID, reason
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func StatusEventBlacklistUpdatedProvider(characterId uint32, shopId uuid.UUID) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &merchant.StatusEvent[merchant.StatusEventBlacklistUpdatedBody]{
+		CharacterId: characterId,
+		Type:        merchant.StatusEventBlacklistUpdated,
+		Body:        merchant.StatusEventBlacklistUpdatedBody{ShopId: shopId.String()},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

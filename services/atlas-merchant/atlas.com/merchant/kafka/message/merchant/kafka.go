@@ -27,6 +27,8 @@ const (
 	CommandRecordItemSearch = "RECORD_ITEM_SEARCH"
 	CommandWithdrawMeso     = "WITHDRAW_MESO"
 	CommandOrganizeListings = "ORGANIZE_LISTINGS"
+	CommandAddBlacklist     = "ADD_BLACKLIST"
+	CommandRemoveBlacklist  = "REMOVE_BLACKLIST"
 )
 
 type Command[E any] struct {
@@ -96,6 +98,7 @@ type CommandPurchaseBundleBody struct {
 }
 
 type CommandEnterShopBody struct {
+	VisitorName string `json:"visitorName"`
 	ShopId string `json:"shopId"`
 }
 
@@ -123,6 +126,11 @@ type CommandOrganizeListingsBody struct {
 	ShopId string `json:"shopId"`
 }
 
+type CommandBlacklistBody struct {
+	ShopId string `json:"shopId"`
+	Name   string `json:"name"`
+}
+
 const (
 	EnvStatusEventTopic = "EVENT_TOPIC_MERCHANT_STATUS"
 
@@ -141,12 +149,14 @@ const (
 	StatusEventShopCreateFailed        = "SHOP_CREATE_FAILED"
 	StatusEventShopUpdated             = "SHOP_UPDATED"
 	StatusEventEnterFailed             = "ENTER_FAILED"
+	StatusEventBlacklistUpdated        = "BLACKLIST_UPDATED"
 )
 
 // Reasons carried by StatusEventEnterFailedBody -> mapped to enter-error modes.
 const (
 	EnterFailReasonUndergoingMaintenance = "UNDERGOING_MAINTENANCE"
 	EnterFailReasonRoomClosed            = "ROOM_CLOSED"
+	EnterFailReasonBlacklisted           = "BLACKLISTED"
 )
 
 // Reasons carried by StatusEventShopCreateFailedBody. The channel maps these to
@@ -220,6 +230,10 @@ type StatusEventShopUpdatedBody struct {
 type StatusEventEnterFailedBody struct {
 	ShopId string `json:"shopId"`
 	Reason string `json:"reason"`
+}
+
+type StatusEventBlacklistUpdatedBody struct {
+	ShopId string `json:"shopId"`
 }
 
 const (

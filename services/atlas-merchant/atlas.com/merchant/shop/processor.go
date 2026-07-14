@@ -8,8 +8,10 @@ import (
 	"atlas-merchant/kafka/message/compartment"
 	merchant "atlas-merchant/kafka/message/merchant"
 	kafkaProducer "atlas-merchant/kafka/producer"
+	"atlas-merchant/blacklist"
 	"atlas-merchant/listing"
 	msg "atlas-merchant/message"
+	"atlas-merchant/visit"
 	"atlas-merchant/visitor"
 	"context"
 	"errors"
@@ -62,7 +64,11 @@ type Processor interface {
 	OrganizeListings(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32) error
 	WithdrawMesoAndEmit(shopId uuid.UUID, characterId uint32) error
 	OrganizeListingsAndEmit(shopId uuid.UUID, characterId uint32) error
-	EnterShop(mb *message.Buffer) func(characterId uint32, shopId uuid.UUID) error
+	EnterShop(mb *message.Buffer) func(characterId uint32, shopId uuid.UUID, visitorName string) error
+	AddToBlacklist(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32, name string) error
+	RemoveFromBlacklist(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32, name string) error
+	GetBlacklist(shopId uuid.UUID) ([]string, error)
+	GetVisits(shopId uuid.UUID) ([]visit.Model, error)
 	ExitShop(mb *message.Buffer) func(characterId uint32, shopId uuid.UUID) error
 	EjectAllVisitors(shopId uuid.UUID) ([]uint32, error)
 	GetVisitors(shopId uuid.UUID) ([]uint32, error)
@@ -74,7 +80,9 @@ type Processor interface {
 	CloseShopAndEmit(shopId uuid.UUID, characterId uint32, reason CloseReason) error
 	EnterMaintenanceAndEmit(shopId uuid.UUID, characterId uint32) error
 	ExitMaintenanceAndEmit(shopId uuid.UUID, characterId uint32) error
-	EnterShopAndEmit(characterId uint32, shopId uuid.UUID) error
+	EnterShopAndEmit(characterId uint32, shopId uuid.UUID, visitorName string) error
+	AddToBlacklistAndEmit(shopId uuid.UUID, characterId uint32, name string) error
+	RemoveFromBlacklistAndEmit(shopId uuid.UUID, characterId uint32, name string) error
 	ExitShopAndEmit(characterId uint32, shopId uuid.UUID) error
 	AddListingAndEmit(shopId uuid.UUID, characterId uint32, itemId uint32, itemType byte, bundleSize uint16, bundleCount uint16, pricePerBundle uint32, itemSnapshot asset2.AssetData, inventoryType byte, assetId uint32) (listing.Model, error)
 	RemoveListingAndEmit(shopId uuid.UUID, characterId uint32, listingIndex uint16) (listing.Model, error)
@@ -989,8 +997,8 @@ func (p *ProcessorImpl) PurchaseBundle(mb *message.Buffer) func(buyerCharacterId
 	}
 }
 
-func (p *ProcessorImpl) EnterShop(mb *message.Buffer) func(characterId uint32, shopId uuid.UUID) error {
-	return func(characterId uint32, shopId uuid.UUID) error {
+func (p *ProcessorImpl) EnterShop(mb *message.Buffer) func(characterId uint32, shopId uuid.UUID, visitorName string) error {
+	return func(characterId uint32, shopId uuid.UUID, visitorName string) error {
 		e, err := getById(shopId)(p.db.WithContext(p.ctx))()
 		if err != nil {
 			return err
@@ -1005,6 +1013,17 @@ func (p *ProcessorImpl) EnterShop(mb *message.Buffer) func(characterId uint32, s
 				reason = merchant.EnterFailReasonUndergoingMaintenance
 			}
 			return mb.Put(merchant.EnvStatusEventTopic, StatusEventEnterFailedProvider(characterId, shopId, reason))
+		}
+
+		// Blacklist enforcement (by name, Cosmic-faithful): a banned visitor
+		// gets the "cannot enter" error rather than being admitted.
+		if visitorName != "" {
+			banned, err := blacklist.NewProcessor(p.l, p.ctx, p.db).IsBlacklisted(shopId, visitorName)
+			if err != nil {
+				p.l.WithError(err).Warnf("Unable to check blacklist for shop [%s] visitor [%s].", shopId, visitorName)
+			} else if banned {
+				return mb.Put(merchant.EnvStatusEventTopic, StatusEventEnterFailedProvider(characterId, shopId, merchant.EnterFailReasonBlacklisted))
+			}
 		}
 
 		vr := visitor.GetRegistry()
@@ -1023,6 +1042,11 @@ func (p *ProcessorImpl) EnterShop(mb *message.Buffer) func(characterId uint32, s
 
 		if err = vr.AddVisitor(p.ctx, p.t, shopId, characterId); err != nil {
 			return err
+		}
+
+		// Record the visit for the owner's visit-list (best-effort).
+		if err := visit.NewProcessor(p.l, p.ctx, p.db).Record(shopId, visitorName); err != nil {
+			p.l.WithError(err).Warnf("Unable to record visit for shop [%s] visitor [%s].", shopId, visitorName)
 		}
 
 		// Compute slot based on insertion-ordered visitor list.
@@ -1311,9 +1335,68 @@ func (p *ProcessorImpl) ExitMaintenanceAndEmit(shopId uuid.UUID, characterId uin
 // EnterShopAndEmit stays on the direct producer path: EnterShop only mutates
 // the Redis visitor registry (no Postgres write), so there is no DB state
 // change to couple the emit to.
-func (p *ProcessorImpl) EnterShopAndEmit(characterId uint32, shopId uuid.UUID) error {
+func (p *ProcessorImpl) EnterShopAndEmit(characterId uint32, shopId uuid.UUID, visitorName string) error {
 	return message.Emit(p.producer)(func(buf *message.Buffer) error {
-		return p.EnterShop(buf)(characterId, shopId)
+		return p.EnterShop(buf)(characterId, shopId, visitorName)
+	})
+}
+
+// AddToBlacklist / RemoveFromBlacklist are owner-only. A banned name cannot
+// enter the shop (EnterShop enforcement). Both emit SHOP_UPDATED-style refresh
+// via the blacklist-view request path; here they only mutate + confirm.
+func (p *ProcessorImpl) AddToBlacklist(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32, name string) error {
+	return func(shopId uuid.UUID, characterId uint32, name string) error {
+		e, err := getById(shopId)(p.db.WithContext(p.ctx))()
+		if err != nil {
+			return err
+		}
+		if err := requireOwner(e, characterId); err != nil {
+			return err
+		}
+		if err := blacklist.NewProcessor(p.l, p.ctx, p.db).Add(shopId, name); err != nil {
+			return err
+		}
+		return mb.Put(merchant.EnvStatusEventTopic, StatusEventBlacklistUpdatedProvider(characterId, shopId))
+	}
+}
+
+func (p *ProcessorImpl) RemoveFromBlacklist(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32, name string) error {
+	return func(shopId uuid.UUID, characterId uint32, name string) error {
+		e, err := getById(shopId)(p.db.WithContext(p.ctx))()
+		if err != nil {
+			return err
+		}
+		if err := requireOwner(e, characterId); err != nil {
+			return err
+		}
+		if err := blacklist.NewProcessor(p.l, p.ctx, p.db).Remove(shopId, name); err != nil {
+			return err
+		}
+		return mb.Put(merchant.EnvStatusEventTopic, StatusEventBlacklistUpdatedProvider(characterId, shopId))
+	}
+}
+
+func (p *ProcessorImpl) GetBlacklist(shopId uuid.UUID) ([]string, error) {
+	return blacklist.NewProcessor(p.l, p.ctx, p.db).Names(shopId)
+}
+
+func (p *ProcessorImpl) GetVisits(shopId uuid.UUID) ([]visit.Model, error) {
+	return visit.NewProcessor(p.l, p.ctx, p.db).List(shopId)
+}
+
+func (p *ProcessorImpl) AddToBlacklistAndEmit(shopId uuid.UUID, characterId uint32, name string) error {
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).AddToBlacklist(buf)(shopId, characterId, name)
+		})
+	})
+}
+
+func (p *ProcessorImpl) RemoveFromBlacklistAndEmit(shopId uuid.UUID, characterId uint32, name string) error {
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).RemoveFromBlacklist(buf)(shopId, characterId, name)
+		})
 	})
 }
 

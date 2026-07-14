@@ -4,6 +4,7 @@ import (
 	message "atlas-merchant/kafka/message"
 	"atlas-merchant/kafka/message/asset"
 	"atlas-merchant/listing"
+	"atlas-merchant/visit"
 	"atlas-merchant/shop"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
@@ -39,7 +40,7 @@ type ProcessorMock struct {
 	OrganizeListingsFunc       func(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32) error
 	WithdrawMesoAndEmitFunc    func(shopId uuid.UUID, characterId uint32) error
 	OrganizeListingsAndEmitFunc func(shopId uuid.UUID, characterId uint32) error
-	EnterShopFunc              func(characterId uint32, shopId uuid.UUID) error
+	EnterShopFunc              func(characterId uint32, shopId uuid.UUID, visitorName string) error
 	ExitShopFunc               func(characterId uint32, shopId uuid.UUID) error
 	EjectAllVisitorsFunc       func(shopId uuid.UUID) ([]uint32, error)
 	GetVisitorsFunc            func(shopId uuid.UUID) ([]uint32, error)
@@ -51,7 +52,13 @@ type ProcessorMock struct {
 	CloseShopAndEmitFunc       func(shopId uuid.UUID, characterId uint32, reason shop.CloseReason) error
 	EnterMaintenanceAndEmitFunc func(shopId uuid.UUID, characterId uint32) error
 	ExitMaintenanceAndEmitFunc  func(shopId uuid.UUID, characterId uint32) error
-	EnterShopAndEmitFunc       func(characterId uint32, shopId uuid.UUID) error
+	EnterShopAndEmitFunc       func(characterId uint32, shopId uuid.UUID, visitorName string) error
+	AddToBlacklistFunc         func(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32, name string) error
+	RemoveFromBlacklistFunc    func(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32, name string) error
+	GetBlacklistFunc           func(shopId uuid.UUID) ([]string, error)
+	GetVisitsFunc              func(shopId uuid.UUID) ([]visit.Model, error)
+	AddToBlacklistAndEmitFunc  func(shopId uuid.UUID, characterId uint32, name string) error
+	RemoveFromBlacklistAndEmitFunc func(shopId uuid.UUID, characterId uint32, name string) error
 	ExitShopAndEmitFunc        func(characterId uint32, shopId uuid.UUID) error
 	AddListingAndEmitFunc      func(shopId uuid.UUID, characterId uint32, itemId uint32, itemType byte, bundleSize uint16, bundleCount uint16, pricePerBundle uint32, itemSnapshot asset.AssetData, inventoryType byte, assetId uint32) (listing.Model, error)
 	RemoveListingAndEmitFunc   func(shopId uuid.UUID, characterId uint32, listingIndex uint16) (listing.Model, error)
@@ -235,10 +242,10 @@ func (m *ProcessorMock) OrganizeListingsAndEmit(shopId uuid.UUID, characterId ui
 	return nil
 }
 
-func (m *ProcessorMock) EnterShop(_ *message.Buffer) func(characterId uint32, shopId uuid.UUID) error {
-	return func(characterId uint32, shopId uuid.UUID) error {
+func (m *ProcessorMock) EnterShop(_ *message.Buffer) func(characterId uint32, shopId uuid.UUID, visitorName string) error {
+	return func(characterId uint32, shopId uuid.UUID, visitorName string) error {
 		if m.EnterShopFunc != nil {
-			return m.EnterShopFunc(characterId, shopId)
+			return m.EnterShopFunc(characterId, shopId, visitorName)
 		}
 		return nil
 	}
@@ -329,9 +336,51 @@ func (m *ProcessorMock) ExitMaintenanceAndEmit(shopId uuid.UUID, characterId uin
 	return nil
 }
 
-func (m *ProcessorMock) EnterShopAndEmit(characterId uint32, shopId uuid.UUID) error {
+func (m *ProcessorMock) EnterShopAndEmit(characterId uint32, shopId uuid.UUID, visitorName string) error {
 	if m.EnterShopAndEmitFunc != nil {
-		return m.EnterShopAndEmitFunc(characterId, shopId)
+		return m.EnterShopAndEmitFunc(characterId, shopId, visitorName)
+	}
+	return nil
+}
+
+func (m *ProcessorMock) AddToBlacklist(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32, name string) error {
+	if m.AddToBlacklistFunc != nil {
+		return m.AddToBlacklistFunc(mb)
+	}
+	return func(uuid.UUID, uint32, string) error { return nil }
+}
+
+func (m *ProcessorMock) RemoveFromBlacklist(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32, name string) error {
+	if m.RemoveFromBlacklistFunc != nil {
+		return m.RemoveFromBlacklistFunc(mb)
+	}
+	return func(uuid.UUID, uint32, string) error { return nil }
+}
+
+func (m *ProcessorMock) GetBlacklist(shopId uuid.UUID) ([]string, error) {
+	if m.GetBlacklistFunc != nil {
+		return m.GetBlacklistFunc(shopId)
+	}
+	return nil, nil
+}
+
+func (m *ProcessorMock) GetVisits(shopId uuid.UUID) ([]visit.Model, error) {
+	if m.GetVisitsFunc != nil {
+		return m.GetVisitsFunc(shopId)
+	}
+	return nil, nil
+}
+
+func (m *ProcessorMock) AddToBlacklistAndEmit(shopId uuid.UUID, characterId uint32, name string) error {
+	if m.AddToBlacklistAndEmitFunc != nil {
+		return m.AddToBlacklistAndEmitFunc(shopId, characterId, name)
+	}
+	return nil
+}
+
+func (m *ProcessorMock) RemoveFromBlacklistAndEmit(shopId uuid.UUID, characterId uint32, name string) error {
+	if m.RemoveFromBlacklistAndEmitFunc != nil {
+		return m.RemoveFromBlacklistAndEmitFunc(shopId, characterId, name)
 	}
 	return nil
 }

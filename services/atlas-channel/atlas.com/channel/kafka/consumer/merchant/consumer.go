@@ -156,13 +156,10 @@ func handleShopOpenedEvent(sc server.Model, wp writer.Producer) func(l logrus.Fi
 			}
 		}
 
-		// Send room enter packet to the owner so they enter the shop editing interface.
-		room, err := buildShopRoom(l, ctx, e.Body.ShopId, e.CharacterId)
-		if err != nil {
-			l.WithError(err).Errorf("Unable to build room for shop [%s].", e.Body.ShopId)
-			return
-		}
-		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, session.Announce(l)(ctx)(wp)(interactioncb.CharacterInteractionWriter)(interactioncb.CharacterInteractionEnterResultSuccessBody(room)))
+		// No room re-send to the owner here: the owner has held the shop dialog
+		// since SHOP_SETUP (create), and Cosmic's OPEN broadcasts only the map
+		// box/employee spawn. Re-sending ENTER_RESULT would re-create the
+		// owner's dialog at go-live.
 	}
 }
 

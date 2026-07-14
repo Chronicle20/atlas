@@ -152,7 +152,18 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 				l.WithError(err).Errorf("Unable to find shop for owner [%d].", ownerCharacterId)
 				return
 			}
-			_ = mp.EnterShop(s.CharacterId(), shops[0].Id())
+			// The owner may have historical Closed rows (and up to one shop of
+			// each type); visit the one that is actually enterable. Maintenance
+			// is forwarded so the server replies with the faithful rejection.
+			target, ok := pickShopByState(shops, merchant.StateOpen)
+			if !ok {
+				target, ok = pickShopByState(shops, merchant.StateMaintenance)
+			}
+			if !ok {
+				l.Debugf("Character [%d] attempted to visit owner [%d] with no enterable shop.", s.CharacterId(), ownerCharacterId)
+				return
+			}
+			_ = mp.EnterShop(s.CharacterId(), target.Id())
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeChat) {
@@ -225,7 +236,14 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 					l.WithError(err).Errorf("Unable to find shop for character [%d].", s.CharacterId())
 					return
 				}
-				_ = mp.EnterMaintenance(s.CharacterId(), shops[0].Id())
+				// Maintenance entry only applies to the character's RUNNING hired
+				// merchant — not a Closed history row or their personal shop.
+				target, ok := pickMerchantByState(shops, merchant.StateOpen)
+				if !ok {
+					l.Debugf("Character [%d] requested merchant maintenance with no open hired merchant.", s.CharacterId())
+					return
+				}
+				_ = mp.EnterMaintenance(s.CharacterId(), target.Id())
 				return
 			}
 			if nProc == 11 && (roomType == model.PersonalShopMiniRoomType || roomType == model.MerchantShopMiniRoomType) {
@@ -493,6 +511,26 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 		}
 		l.Warnf("Character [%d] issued a unhandled character interaction [%d].", s.CharacterId(), mode)
 	}
+}
+
+// pickShopByState returns the first shop in the given state.
+func pickShopByState(shops []merchant.Model, state byte) (merchant.Model, bool) {
+	for _, sh := range shops {
+		if sh.State() == state {
+			return sh, true
+		}
+	}
+	return merchant.Model{}, false
+}
+
+// pickMerchantByState returns the first hired-merchant shop in the given state.
+func pickMerchantByState(shops []merchant.Model, state byte) (merchant.Model, bool) {
+	for _, sh := range shops {
+		if sh.ShopType() == merchant.HiredMerchantShopType && sh.State() == state {
+			return sh, true
+		}
+	}
+	return merchant.Model{}, false
 }
 
 func isCharacterInteraction(l logrus.FieldLogger) func(options map[string]interface{}, op byte, key CharacterInteractionMode) bool {

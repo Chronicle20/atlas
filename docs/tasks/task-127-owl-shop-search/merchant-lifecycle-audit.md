@@ -3,17 +3,60 @@
 Status: Remediation IMPLEMENTED (Phases A–C, 2026-07-14) — awaiting live verification
 Created: 2026-07-14
 
-## 0. Implementation status & live-verification checklist
+## 0. Disposition — what is FIXED vs what REMAINS
 
-All three phases landed on this branch (commits `08e01ec74`…): A1 position-byte
-fix + merchant owner-block re-derivation, A2 owner-occupancy resolution +
-owner EXIT semantics, A3 Draft reaping (logout policy + expiry), B1
-entrusted-shop check replies + filtered precheck + `/characters/{id}/frederick`,
-B2 resolved by IDA verification (open op is `OPEN` 0x0B — was already wired,
-see F5), B3 permit validation at CREATE, C1 state-aware VISIT/maintenance
-resolution, C2 no owner room re-send at open. Gates: `go test -race` / `go
-vet` / builds clean in atlas-packet, atlas-channel, atlas-merchant;
-redis-key-guard, goroutine-guard, `packet-audit matrix --check` clean.
+### Fixed on this branch (all gates green; pending live verification below)
+
+| Finding | Symptom it caused | Fix | Commit |
+|---|---|---|---|
+| F1 inverted position byte | Owner saw the visitor "open shop listing" view of their own shop; visitors would have seen the owner management UI | Position-byte semantics corrected (0 = owner, 1–3 = true visitor slot); merchant owner-block moved to the owner view with re-derived fields; fixtures + semantic assertions | `08e01ec74` |
+| F2 owner never resolvable | Owner could not stock, open, close, or chat in a freshly created shop — dead Draft record | Owner-occupancy resolution (own active shop when owner-attached) behind `/characters/{id}/visiting`; owner EXIT semantics per shop type/state | `0a1c5cbb2`, hardened `f60f5b47e` |
+| F3 stranded Drafts block re-create | "Cannot open another shop until relog" (personal) / forever (merchant) | EXIT-in-Draft closes (via F2); logout closes Draft shops of both types; expiry reaper includes Draft | `0a1c5cbb2`, `4c14d19a7` |
+| F4 503 permit check dead-ends + poisoned precheck | Hired-merchant permit was a silent no-op; any historical shop row refused the check forever | Check replies wired (modes 7/8/9/11, IDA-verified on all 8 feature IDBs); precheck filtered to non-Closed merchants; Fredrick standing exposed via `GET /characters/{id}/frederick` | `6432c9203`, `f60f5b47e` |
+| F5 "no merchant open path" | (Suspected blocker) | **Non-issue by verification**: both dialogs go live via `OPEN` 0x0B, already wired — it only failed because of F2 | doc-only, `c4aca9b50` |
+| F6 unfiltered `shops[0]` resolution | VISIT/maintenance could act on a Closed or wrong-type shop row | State(+type)-aware selection for VISIT and maintenance entry | `9a5abb75f` |
+| F7 permit never validated | Any client could place shops with no permit / arbitrary permit id | Family + cash-inventory validation at CREATE (reject = mini-room error 6). Consumption intentionally none (owner decision Q1) | `c4aca9b50` |
+| F8 owner room re-sent at open | Owner dialog re-created at go-live | SHOP_OPENED no longer re-sends ENTER_RESULT to the owner | `9a5abb75f` |
+
+Gates on the final tree: `go test -race` / `go vet` / builds clean in
+atlas-packet, atlas-channel, atlas-merchant; redis-key-guard,
+goroutine-guard, `packet-audit matrix --check`, and `docker buildx bake`
+for both services all clean. Both reviewer reports and their fixes are in
+this folder (`merchant-remediation-review.md`, `merchant-remediation-adherence.md`).
+
+### Remaining — known, documented, NOT fixed on this branch
+
+None of these block the shop lifecycle or task-127's owl testing; they are
+listed so nothing reads as silently done:
+
+1. **F10 — owner messages not surfaced** (below): merchant service persists
+   visitor messages; the shop REST payload and room builder never deliver
+   them to the owner's management view. Needs REST enrichment + builder wiring.
+2. **F9 — unwired merchant ops**: MERCHANT_ORGANIZE, MERCHANT_WITHDRAW_MESO,
+   VIEW_VISIT_LIST, VIEW_BLACK_LIST, blacklist add/remove are decode-and-log
+   only; most enter-error sub-codes and the INVITE/INVITE_RESULT interaction
+   modes remain unmapped.
+3. **jms185 free-form notice**: the client has no case 18 — the Fredrick
+   reminder notice is a benign silent drop on jms until given another vehicle.
+4. **v48 template inconsistency** (review W3): routes the CREATE handler but
+   has no CharacterInteraction writer/enterError table, so the new
+   permit-reject reply is dropped on v48 (v48 has no shop feature; reconcile
+   by removing the handler op or completing the surface).
+5. **Channel-side state-byte mirror** (review W4): `StateDraft/StateClosed`
+   hand-mirror atlas-merchant's states with no compile-time link; candidate
+   for promotion to atlas-constants.
+6. **Pre-existing frederick-package debt** (review): no `builder.go`, entity
+   mapping placement — predates this branch, out of its blast radius.
+7. **`legacy-merchant-audit-remediation` doc**: 0/58 items executed
+   (provider/write-op layering, Kafka event-correctness items). One of its
+   findings — logout never emitting SHOP_CLOSED — is now moot (the logout
+   reaper emits via CloseShopAndEmit); the rest are unassessed debt.
+8. **CloseShop has no server-side ownership check**: the Kafka command
+   surface trusts the caller (commands originate only from atlas-channel,
+   which does check); noted for the eventual hardening pass.
+9. **Reference-citation sweep**: ~80 legacy "Cosmic" comments in unrelated
+   features (summons, mounts, monsters, point-reset, packet lib) await a
+   dedicated scrub with re-verified provenance; this branch's files are clean.
 
 Live verification checklist (v83 tenant):
 - [ ] 514 create → owner lands in the MANAGEMENT view (add-item UI), not the buy view; no map box yet.

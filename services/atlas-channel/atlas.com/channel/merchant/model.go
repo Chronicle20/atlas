@@ -51,6 +51,7 @@ const (
 	StateDraft       byte = 1
 	StateOpen        byte = 2
 	StateMaintenance byte = 3
+	StateClosed      byte = 4
 )
 
 type SearchListing struct {

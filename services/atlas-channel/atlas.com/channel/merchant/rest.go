@@ -137,6 +137,27 @@ func Extract(rm RestModel) (Model, error) {
 	}, nil
 }
 
+// FrederickStatusRestModel mirrors atlas-merchant's frederick.StatusRestModel:
+// whether the character has unclaimed items/mesos waiting at Fredrick. The
+// entrusted-shop permit check consults it before allowing a new hired merchant.
+type FrederickStatusRestModel struct {
+	Id         string `json:"-"`
+	HasPending bool   `json:"hasPending"`
+}
+
+func (r FrederickStatusRestModel) GetName() string {
+	return "frederick-status"
+}
+
+func (r FrederickStatusRestModel) GetID() string {
+	return r.Id
+}
+
+func (r *FrederickStatusRestModel) SetID(id string) error {
+	r.Id = id
+	return nil
+}
+
 // SnapshotRestModel mirrors atlas-merchant's asset.AssetData JSON shape —
 // the listing's point-in-sale item snapshot, needed to encode the
 // GW_ItemSlotBase block for equip rows in the shop-scanner result.

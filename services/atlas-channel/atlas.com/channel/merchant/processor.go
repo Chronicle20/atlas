@@ -21,6 +21,7 @@ type Processor interface {
 	GetVisitingShop(characterId uint32) (Model, error)
 	GetShop(shopId string) (Model, error)
 	GetByCharacterId(characterId uint32) ([]Model, error)
+	HasFrederickPending(characterId uint32) (bool, error)
 	PlaceShop(f field.Model, characterId uint32, shopType byte, title string, permitItemId uint32, x int16, y int16) error
 	OpenShop(characterId uint32, shopId uuid.UUID) error
 	CloseShop(characterId uint32, shopId uuid.UUID) error
@@ -66,6 +67,14 @@ func (p *ProcessorImpl) GetShop(shopId string) (Model, error) {
 
 func (p *ProcessorImpl) GetByCharacterId(characterId uint32) ([]Model, error) {
 	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByCharacterId(characterId), Extract, model.Filters[Model]())()
+}
+
+func (p *ProcessorImpl) HasFrederickPending(characterId uint32) (bool, error) {
+	rm, err := requestFrederickStatus(characterId)(p.l, p.ctx)
+	if err != nil {
+		return false, err
+	}
+	return rm.HasPending, nil
 }
 
 func (p *ProcessorImpl) PlaceShop(f field.Model, characterId uint32, shopType byte, title string, permitItemId uint32, x int16, y int16) error {

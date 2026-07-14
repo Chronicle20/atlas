@@ -15,6 +15,7 @@ type ProcessorMock struct {
 	GetVisitingShopFunc      func(characterId uint32) (merchant.Model, error)
 	GetShopFunc              func(shopId string) (merchant.Model, error)
 	GetByCharacterIdFunc     func(characterId uint32) ([]merchant.Model, error)
+	HasFrederickPendingFunc  func(characterId uint32) (bool, error)
 	PlaceShopFunc            func(f field.Model, characterId uint32, shopType byte, title string, permitItemId uint32, x int16, y int16) error
 	OpenShopFunc             func(characterId uint32, shopId uuid.UUID) error
 	CloseShopFunc            func(characterId uint32, shopId uuid.UUID) error
@@ -59,6 +60,13 @@ func (m *ProcessorMock) GetShop(shopId string) (merchant.Model, error) {
 		return m.GetShopFunc(shopId)
 	}
 	return merchant.Model{}, nil
+}
+
+func (m *ProcessorMock) HasFrederickPending(characterId uint32) (bool, error) {
+	if m.HasFrederickPendingFunc != nil {
+		return m.HasFrederickPendingFunc(characterId)
+	}
+	return false, nil
 }
 
 func (m *ProcessorMock) GetByCharacterId(characterId uint32) ([]merchant.Model, error) {

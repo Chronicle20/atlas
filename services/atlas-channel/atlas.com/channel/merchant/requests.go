@@ -15,6 +15,7 @@ const (
 	VisitingResource       = "characters/%d/visiting"
 	SearchListingsResource = "merchants/search/listings?itemId=%d&worldId=%d&order=%s"
 	TopSearchesResource    = "worlds/%d/shop-searches/top"
+	FrederickResource      = "characters/%d/frederick"
 )
 
 func getBaseRequest() string {
@@ -47,4 +48,8 @@ func requestSearchListings(itemId uint32, worldId world.Id, descending bool) req
 
 func requestTopSearches(worldId world.Id) requests.Request[[]TopSearchRestModel] {
 	return requests.GetRequest[[]TopSearchRestModel](fmt.Sprintf(getBaseRequest()+TopSearchesResource, worldId))
+}
+
+func requestFrederickStatus(characterId uint32) requests.Request[FrederickStatusRestModel] {
+	return requests.GetRequest[FrederickStatusRestModel](fmt.Sprintf(getBaseRequest()+FrederickResource, characterId))
 }

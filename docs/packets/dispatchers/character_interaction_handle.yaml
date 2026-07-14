@@ -1,0 +1,68 @@
+# CharacterInteractionHandle - serverbound PLAYER_INTERACTION action dispatcher.
+#
+# SOURCE OF TRUTH for the serverbound handler's per-version mode->byte table
+# (the client sends [recvOp][mode]; atlas-channel dispatches on mode). Modes are
+# IDA-verified per version; a byte absent from a version's map is either n-a
+# (the feature's client dialog does not exist there) or not-yet-derived, and is
+# intentionally omitted rather than guessed. See
+# docs/tasks/task-127-owl-shop-search/interaction-legacy-audit.md for the derivation.
+#
+# gms_v83 is the 45-mode reference; v84/v87/v95 inherit it byte-identically.
+# gms_v61/v72 share a byte-identical 17-mode enum (shifted below v83) + OPEN/EXIT;
+# the hired-merchant MANAGEMENT block (organize/withdraw/off/exit/view/blacklist)
+# is a v83+ dialog (CEntrustedShopDlg) - VERSION-ABSENT on v61/v72, so those keys
+# omit v61/v72. jms_v185 shifts the store/merchant block down by 3 (v83-3, IDA-
+# verified); its trade/mini-game/field-blacklist modes are not yet derived and are
+# omitted. gms_v79's table is not yet derived (empty template - separate pass).
+
+handler: CharacterInteractionHandle
+fname: CMiniRoomBaseDlg::OnPacketBase
+op: PLAYER_INTERACTION
+direction: serverbound
+opcodes: { gms_v61: "0x6F", gms_v72: "0x79", gms_v83: "0x7B", gms_v84: "0x7D", gms_v87: "0x81", gms_v95: "0x90", jms_v185: "0x7C" }
+operations:
+  - { key: CREATE,                             modes: { gms_v61: 0, gms_v72: 0, gms_v83: 0, gms_v84: 0, gms_v87: 0, gms_v95: 0, jms_v185: 0 } }
+  - { key: INVITE,                             modes: { gms_v61: 2, gms_v72: 2, gms_v83: 2, gms_v84: 2, gms_v87: 2, gms_v95: 2, jms_v185: 2 } }
+  - { key: INVITE_DECLINE,                     modes: { gms_v83: 3, gms_v84: 3, gms_v87: 3, gms_v95: 3 } }
+  - { key: VISIT,                              modes: { gms_v61: 4, gms_v72: 4, gms_v83: 4, gms_v84: 4, gms_v87: 4, gms_v95: 4, jms_v185: 4 } }
+  - { key: CHAT,                               modes: { gms_v61: 6, gms_v72: 6, gms_v83: 6, gms_v84: 6, gms_v87: 6, gms_v95: 6, jms_v185: 6 } }
+  - { key: EXIT,                               modes: { gms_v61: 10, gms_v72: 10, gms_v83: 10, gms_v84: 10, gms_v87: 10, gms_v95: 10, jms_v185: 10 } }
+  - { key: OPEN,                               modes: { gms_v61: 11, gms_v72: 11, gms_v83: 11, gms_v84: 11, gms_v87: 11, gms_v95: 11, jms_v185: 11 } }
+  - { key: CASH_TRADE_OPEN,                    modes: { gms_v83: 14, gms_v84: 14, gms_v87: 14, gms_v95: 14 } }
+  - { key: TRADE_PUT_ITEM,                     modes: { gms_v61: 14, gms_v72: 14, gms_v83: 15, gms_v84: 15, gms_v87: 15, gms_v95: 15 } }
+  - { key: TRADE_ADD_MESO,                     modes: { gms_v61: 15, gms_v72: 15, gms_v83: 16, gms_v84: 16, gms_v87: 16, gms_v95: 16 } }
+  - { key: TRADE_CONFIRM,                      modes: { gms_v61: 16, gms_v72: 16, gms_v83: 17, gms_v84: 17, gms_v87: 17, gms_v95: 17 } }
+  - { key: TRANSACTION,                        modes: { gms_v83: 20, gms_v84: 20, gms_v87: 20, gms_v95: 20 } }
+  - { key: PERSONAL_STORE_PUT_ITEM,            modes: { gms_v61: 20, gms_v72: 20, gms_v83: 22, gms_v84: 22, gms_v87: 22, gms_v95: 22, jms_v185: 19 } }
+  - { key: PERSONAL_STORE_BUY,                 modes: { gms_v61: 21, gms_v72: 21, gms_v83: 23, gms_v84: 23, gms_v87: 23, gms_v95: 23, jms_v185: 20 } }
+  - { key: PERSONAL_STORE_REMOVE_ITEM,         modes: { gms_v61: 25, gms_v72: 25, gms_v83: 27, gms_v84: 27, gms_v87: 27, gms_v95: 27, jms_v185: 24 } }
+  - { key: PERSONAL_STORE_ADD_TO_BLACKLIST,    modes: { gms_v61: 26, gms_v72: 26, gms_v83: 28, gms_v84: 28, gms_v87: 28, gms_v95: 28, jms_v185: 25 } }
+  - { key: PERSONAL_STORE_SET_VISITOR,         modes: { gms_v83: 29, gms_v84: 29, gms_v87: 29, gms_v95: 29 } }
+  - { key: PERSONAL_STORE_SET_BLACK_LIST,      modes: { gms_v61: 28, gms_v72: 28, gms_v83: 30, gms_v84: 30, gms_v87: 30, gms_v95: 30, jms_v185: 27 } }
+  - { key: FIELD_ADD_TO_BLACK_LIST,            modes: { gms_v61: 29, gms_v72: 29, gms_v83: 31, gms_v84: 31, gms_v87: 31, gms_v95: 31 } }
+  - { key: FIELD_REMOVE_FROM_BLACK_LIST,       modes: { gms_v61: 30, gms_v72: 30, gms_v83: 32, gms_v84: 32, gms_v87: 32, gms_v95: 32 } }
+  - { key: MERCHANT_PUT_ITEM,                  modes: { gms_v61: 31, gms_v72: 31, gms_v83: 33, gms_v84: 33, gms_v87: 33, gms_v95: 33, jms_v185: 30 } }
+  - { key: MERCHANT_BUY,                       modes: { gms_v61: 32, gms_v72: 32, gms_v83: 34, gms_v84: 34, gms_v87: 34, gms_v95: 34, jms_v185: 31 } }
+  - { key: MERCHANT_REMOVE_ITEM,               modes: { gms_v61: 36, gms_v72: 36, gms_v83: 38, gms_v84: 38, gms_v87: 38, gms_v95: 38, jms_v185: 35 } }
+  - { key: MERCHANT_MERCHANT_OFF,              modes: { gms_v83: 39, gms_v84: 39, gms_v87: 39, gms_v95: 39, jms_v185: 36 } }
+  - { key: MERCHANT_ORGANIZE,                  modes: { gms_v83: 40, gms_v84: 40, gms_v87: 40, gms_v95: 40, jms_v185: 37 } }
+  - { key: MERCHANT_EXIT,                      modes: { gms_v83: 41, gms_v84: 41, gms_v87: 41, gms_v95: 41, jms_v185: 38 } }
+  - { key: MERCHANT_WITHDRAW_MESO,             modes: { gms_v83: 43, gms_v84: 43, gms_v87: 43, gms_v95: 43, jms_v185: 40 } }
+  - { key: MERCHANT_VIEW_VISIT_LIST,           modes: { gms_v83: 46, gms_v84: 46, gms_v87: 46, gms_v95: 46, jms_v185: 43 } }
+  - { key: MERCHANT_VIEW_BLACK_LIST,           modes: { gms_v83: 47, gms_v84: 47, gms_v87: 47, gms_v95: 47, jms_v185: 44 } }
+  - { key: MERCHANT_ADD_TO_BLACK_LIST,         modes: { gms_v83: 48, gms_v84: 48, gms_v87: 48, gms_v95: 48, jms_v185: 45 } }
+  - { key: MERCHANT_REMOVE_FROM_BLACK_LIST,    modes: { gms_v83: 49, gms_v84: 49, gms_v87: 49, gms_v95: 49, jms_v185: 46 } }
+  - { key: MEMORY_GAME_ASK_TIE,                modes: { gms_v83: 50, gms_v84: 50, gms_v87: 50, gms_v95: 50 } }
+  - { key: MEMORY_GAME_TIE_ANSWER,             modes: { gms_v83: 51, gms_v84: 51, gms_v87: 51, gms_v95: 51 } }
+  - { key: MEMORY_GAME_FORFEIT,                modes: { gms_v83: 52, gms_v84: 52, gms_v87: 52, gms_v95: 52 } }
+  - { key: MEMORY_GAME_ASK_RETREAT,            modes: { gms_v83: 54, gms_v84: 54, gms_v87: 54, gms_v95: 54 } }
+  - { key: MEMORY_GAME_RETREAT_ANSWER,         modes: { gms_v83: 55, gms_v84: 55, gms_v87: 55, gms_v95: 55 } }
+  - { key: MEMORY_GAME_EXIT_AFTER_GAME,        modes: { gms_v83: 56, gms_v84: 56, gms_v87: 56, gms_v95: 56 } }
+  - { key: MEMORY_GAME_CANCEL_EXIT_AFTER_GAME, modes: { gms_v83: 57, gms_v84: 57, gms_v87: 57, gms_v95: 57 } }
+  - { key: MEMORY_GAME_READY,                  modes: { gms_v83: 58, gms_v84: 58, gms_v87: 58, gms_v95: 58 } }
+  - { key: MEMORY_GAME_UNREADY,                modes: { gms_v83: 59, gms_v84: 59, gms_v87: 59, gms_v95: 59 } }
+  - { key: MEMORY_GAME_EXPEL,                  modes: { gms_v83: 60, gms_v84: 60, gms_v87: 60, gms_v95: 60 } }
+  - { key: MEMORY_GAME_START,                  modes: { gms_v83: 61, gms_v84: 61, gms_v87: 61, gms_v95: 61 } }
+  - { key: MEMORY_GAME_SKIP,                   modes: { gms_v83: 63, gms_v84: 63, gms_v87: 63, gms_v95: 63 } }
+  - { key: MEMORY_GAME_MOVE_STONE,             modes: { gms_v83: 64, gms_v84: 64, gms_v87: 64, gms_v95: 64 } }
+  - { key: MEMORY_GAME_FIP_CARD,               modes: { gms_v83: 68, gms_v84: 68, gms_v87: 68, gms_v95: 68 } }

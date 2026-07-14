@@ -412,9 +412,28 @@
         "handler": "CharacterInteractionHandle",
         "options": {
           "operations": {
+            "CREATE": 0,
+            "INVITE": 2,
+            "VISIT": 4,
+            "CHAT": 6,
+            "EXIT": 10,
+            "OPEN": 11,
+            "PERSONAL_STORE_PUT_ITEM": 19,
             "PERSONAL_STORE_BUY": 20,
+            "PERSONAL_STORE_REMOVE_ITEM": 24,
+            "PERSONAL_STORE_ADD_TO_BLACKLIST": 25,
+            "PERSONAL_STORE_SET_BLACK_LIST": 27,
+            "MERCHANT_PUT_ITEM": 30,
             "MERCHANT_BUY": 31,
-            "PERSONAL_STORE_SET_BLACK_LIST": 27
+            "MERCHANT_REMOVE_ITEM": 35,
+            "MERCHANT_MERCHANT_OFF": 36,
+            "MERCHANT_ORGANIZE": 37,
+            "MERCHANT_EXIT": 38,
+            "MERCHANT_WITHDRAW_MESO": 40,
+            "MERCHANT_VIEW_VISIT_LIST": 43,
+            "MERCHANT_VIEW_BLACK_LIST": 44,
+            "MERCHANT_ADD_TO_BLACK_LIST": 45,
+            "MERCHANT_REMOVE_FROM_BLACK_LIST": 46
           }
         }
       },

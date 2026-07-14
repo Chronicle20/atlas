@@ -581,6 +581,8 @@
             "INVITE": 2,
             "VISIT": 4,
             "CHAT": 6,
+            "EXIT": 10,
+            "OPEN": 11,
             "TRADE_PUT_ITEM": 14,
             "TRADE_ADD_MESO": 15,
             "TRADE_CONFIRM": 16,

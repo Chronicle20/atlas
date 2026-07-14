@@ -487,3 +487,120 @@ transcription error — read twice.
   the field blacklist (FIELD_ADD=30 in v79). Likely a shared/personal-store
   blacklist dialog. Classifying + routing it is out of scope here (Atlas does
   not consume it today); noted so it is not silently lost.
+
+## §3d-extended — jms_v185 remaining modes (IDA-derived)
+
+Derived 2026-07-14 from `MapleStory_dump_SCY.exe` (port 13344). Every sender
+below constructs `COutPacket(124)` = `0x7C` (matches the jms template `opCode`)
+and the mode byte is the first `Encode1` after construction — each was read
+directly from the decompiled/disassembled sender at the cited address. The
+named class methods (`CMemoryGameDlg`/`COmokDlg`/`CTradingRoomDlg`/
+`CMiniRoomBaseDlg`/`CField`/`CPersonalShopDlg`) carry intact symbols in this IDB,
+so the mode→name mapping is unambiguous.
+
+**Headline: the jms shift is NOT uniform.** Three distinct regions:
+- **Base / lifecycle (Δ0):** CREATE=0, INVITE=2, **INVITE_DECLINE=3**, VISIT=4,
+  CHAT=6, EXIT=10, OPEN=11 — identical to v83.
+- **Trade block (Δ−2):** TRADE_PUT_ITEM=13, TRADE_ADD_MESO=14, TRADE_CONFIRM=15.
+- **Everything from personal-store through merchant and the entire mini-game
+  block (Δ−3):** PERSONAL_STORE_* / FIELD_* / MERCHANT_* / MEMORY_GAME_*.
+
+The two step-downs are caused by two **version-absent** v83 modes that jms never
+sends (see UNRESOLVED): `CASH_TRADE_OPEN` (v83 14, drops trade to Δ−2) and
+`TRANSACTION` (v83 20, drops the store/merchant/mini-game region to Δ−3). This is
+exactly the audit's "3 modes dropped between CHAT and PERSONAL_STORE_PUT" — now
+resolved: it is the trade-block −2 plus the additional −1 at TRANSACTION.
+
+### Verified mode → byte table
+
+| mode key | jms byte | sender fname@addr — `Encode1` read | v83 | Δ |
+|---|---|---|---|---|
+| INVITE_DECLINE | **3** (0x03) | `CMiniRoomBaseDlg::SendInviteResult`@0x6da8e6 (nErrCode branch) `Encode1(3)`+`Encode4(sn)`+`Encode1(err)`; same in `SendCashInviteResult`@0x6da99e | 3 | 0 |
+| TRADE_PUT_ITEM | **13** (0x0D) | `CTradingRoomDlg::PutItem`@0x847f51 `Encode1(0xD)`+type+2×Encode2+count | 15 | **−2** |
+| TRADE_ADD_MESO | **14** (0x0E) | `CTradingRoomDlg::PutMoney`@0x84817c `Encode1(0xE)`+`Encode4(meso)` | 16 | **−2** |
+| TRADE_CONFIRM | **15** (0x0F) | `CTradingRoomDlg::Trade`@0x84830a `Encode1(0xF)`+count+CRC entries | 17 | **−2** |
+| PERSONAL_STORE_SET_VISITOR | **26** (0x1A) | `CPersonalShopDlg::Update`@0x763240 `Encode1(0x1A)`+slot+`EncodeStr` (idle-visitor auto-reban, 1h = 0x36EE80 ms) | 29 | −3 |
+| FIELD_ADD_TO_BLACK_LIST | **28** (0x1C) | `CField::AddBlackList`@0x574b82 `Encode1(0x1C)`+`EncodeStr(name)` | 31 | −3 |
+| FIELD_REMOVE_FROM_BLACK_LIST | **29** (0x1D) | `CField::DeleteBlackList`@0x574bdf `Encode1(0x1D)`+`EncodeStr(name)` | 32 | −3 |
+| MEMORY_GAME_ASK_TIE | **47** (0x2F) | `CMemoryGameDlg::SendTieRequest`@0x6cd455 `Encode1(0x2F)` (no body) | 50 | −3 |
+| MEMORY_GAME_TIE_ANSWER | **48** (0x30) | `CMemoryGameDlg::OnTieRequest`@0x6c815e `Encode1(0x30)`+`Encode1(bool)` | 51 | −3 |
+| MEMORY_GAME_FORFEIT | **49** (0x31) | `CMemoryGameDlg::SendClaimGiveUp`@0x6cd3c1 `Encode1(0x31)`; `COmokDlg::SendClaimGiveUp`@0x72ff50 identical | 52 | −3 |
+| MEMORY_GAME_ASK_RETREAT | **51** (0x33) | `COmokDlg::SendRetreatRequest`@0x73008e `Encode1(0x33)` (no body) | 54 | −3 |
+| MEMORY_GAME_RETREAT_ANSWER | **52** (0x34) | `COmokDlg::OnRetreatRequest`@0x72b69c `Encode1(0x34)`+`Encode1(bool)` | 55 | −3 |
+| MEMORY_GAME_EXIT_AFTER_GAME | **53** (0x35) | `CMemoryGameDlg::OnClickEndButton`@0x6cd683 (722==1 && 723==0) `Encode1(0x35)` | 56 | −3 |
+| MEMORY_GAME_CANCEL_EXIT_AFTER_GAME | **54** (0x36) | `CMemoryGameDlg::OnClickEndButton`@0x6cd683 (else) `Encode1(0x36)` | 57 | −3 |
+| MEMORY_GAME_READY | **55** (0x37) | `CMemoryGameDlg::OnClickReadyButton`@0x6cd54b (not-ready branch) `Encode1(0x37)` | 58 | −3 |
+| MEMORY_GAME_UNREADY | **56** (0x38) | `CMemoryGameDlg::OnClickReadyButton`@0x6cd54b (ready branch, *(this+724)) `Encode1(0x38)` | 59 | −3 |
+| MEMORY_GAME_EXPEL | **57** (0x39) | `CMemoryGameDlg::OnClickBanButton`@0x6cd605 `Encode1(0x39)` | 60 | −3 |
+| MEMORY_GAME_START | **58** (0x3A) | `CMemoryGameDlg::OnClickStartButton`@0x6cd4f6 `Encode1(0x3A)` | 61 | −3 |
+| MEMORY_GAME_SKIP | **60** (0x3C) | `CMemoryGameDlg::Update`@0x6c8d3e `Encode1(0x3C)` (turn-timer expiry auto-skip; v83 gap at 62, jms gap at 59) | 63 | −3 |
+| MEMORY_GAME_MOVE_STONE | **61** (0x3D) | `COmokDlg::PutStoneChecker`@0x72fedf `Encode1(0x3D)`+`EncodeBuffer(8)`+byte | 64 | −3 |
+| MEMORY_GAME_FIP_CARD | **65** (0x41) | `CMemoryGameDlg::SendTurnUpCard`@0x6c8b94 `Encode1(0x41)`+bFirstCard+nIdx | 68 | −3 |
+
+Notes:
+- jms has BOTH `CMemoryGameDlg` and `COmokDlg`; the two classes send the SAME
+  action bytes (the serverbound dispatcher routes by the active mini-room type,
+  not the mode), so any mode derivable from either is authoritative. Where only
+  one class carries a given method (e.g. retreat lives on `COmokDlg`), that one
+  is cited.
+- Store/merchant block (PERSONAL_STORE put/buy/remove/add-blacklist/set-blacklist,
+  MERCHANT_*) was already IDA-verified `v83−3` in §3d/§2 and is unchanged; the two
+  rows above (SET_VISITOR, FIELD_*) close the remaining store-region gaps at the
+  same −3 and were read from their own senders (not interpolated).
+- The tie-body inversion flagged for gms_v79 does **not** apply to jms: here
+  `OnTieRequest`(TIE_ANSWER=48) carries the 1-byte bool and `SendTieRequest`
+  (ASK_TIE=47) has no body — matching v83.
+
+### Ready-to-paste `{ jms_v185: N }` per mode key
+
+```
+"INVITE_DECLINE":                  { "jms_v185": 3  }
+"TRADE_PUT_ITEM":                  { "jms_v185": 13 }
+"TRADE_ADD_MESO":                  { "jms_v185": 14 }
+"TRADE_CONFIRM":                   { "jms_v185": 15 }
+"PERSONAL_STORE_SET_VISITOR":      { "jms_v185": 26 }
+"FIELD_ADD_TO_BLACK_LIST":         { "jms_v185": 28 }
+"FIELD_REMOVE_FROM_BLACK_LIST":    { "jms_v185": 29 }
+"MEMORY_GAME_ASK_TIE":             { "jms_v185": 47 }
+"MEMORY_GAME_TIE_ANSWER":          { "jms_v185": 48 }
+"MEMORY_GAME_FORFEIT":             { "jms_v185": 49 }
+"MEMORY_GAME_ASK_RETREAT":         { "jms_v185": 51 }
+"MEMORY_GAME_RETREAT_ANSWER":      { "jms_v185": 52 }
+"MEMORY_GAME_EXIT_AFTER_GAME":     { "jms_v185": 53 }
+"MEMORY_GAME_CANCEL_EXIT_AFTER_GAME": { "jms_v185": 54 }
+"MEMORY_GAME_READY":               { "jms_v185": 55 }
+"MEMORY_GAME_UNREADY":             { "jms_v185": 56 }
+"MEMORY_GAME_EXPEL":               { "jms_v185": 57 }
+"MEMORY_GAME_START":               { "jms_v185": 58 }
+"MEMORY_GAME_SKIP":                { "jms_v185": 60 }
+"MEMORY_GAME_MOVE_STONE":          { "jms_v185": 61 }
+"MEMORY_GAME_FIP_CARD":            { "jms_v185": 65 }
+```
+
+### UNRESOLVED — no distinct jms client send site (do NOT template a byte)
+
+- **`CASH_TRADE_OPEN`** (v83 14). **No jms sender emits a distinct mode for it.**
+  Every create / re-open / cash-entry path folds into an already-present mode:
+  - cash-trade *create* → `CField::SendInviteTradingRoomMsg`@0x56c859 sends
+    **CREATE=0** (room-type byte 6);
+  - shop / hired-merchant *open* and merchant-maintenance *re-entry* →
+    `CWvsContext::SendOpenShopRequest`@0xb04926 sends **CREATE=0**
+    (`Encode1(0)`+`Encode1((bEntrusted!=0)+4)`), reached for re-entry via
+    `CWvsContext::OnEntrustedShopCheckResult`@0xb0ee59 **case 7**;
+  - cash-item *entry into* a room → `OnEntrustedShopCheckResult` **case 0x11**
+    sends **VISIT=4** (`Encode1(4)`+sn+…+`EncodeBuffer(8)` cash SN);
+  - birthday-gated open → `CEntrustedShopDlg::OnCorrectSSN2`@0x54acd3 (nProc==11)
+    sends **OPEN=11** (`Encode1(0xB)`+`Encode1(1)`).
+
+  Cross-checked on the v83 IDB (port 13342): even there
+  `CWvsContext::SendOpenShopRequest`@0xa1dd99 sends `COutPacket(0x7B)`
+  `Encode1(0)` = **CREATE**, not mode 14 — so the "CASH_TRADE_OPEN=14" template
+  entry present only in the gms_83/84 templates is NOT emitted by
+  `SendOpenShopRequest` on any version examined, and jms has **no** distinct
+  sender for it. Escalate before adding a jms `CASH_TRADE_OPEN` byte — a guessed
+  value (positionally 12 under the trade-block Δ−2) would be a fabricated byte.
+
+- **`TRANSACTION`** (v83 20). No client `Encode1` send site on jms (nor on v83/
+  v79 — the trade commit is `CTradingRoomDlg::Trade`→**TRADE_CONFIRM=15**, not a
+  separate transaction mode). Server-driven / not client-sent in this family.
+  Do NOT template a jms byte. Same disposition as the gms_v79 pass (§3c).

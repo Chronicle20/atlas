@@ -329,6 +329,26 @@ location ~ ^/api/characters/[^/]+/mts(/.*)?$ {
   proxy_pass http://$u$request_uri;
 }
 
+# atlas-merchant owns three character-namespaced routes (owner-occupancy lookup,
+# the character's shops, and Frederick status). These MUST precede the
+# atlas-character catch-all below, or player/hired shops break: the channel's
+# GetVisitingShop 404s and every owner-side op (add-item, open, close,
+# maintenance) silently no-ops (task-127).
+location ~ ^/api/characters/[^/]+/visiting(/.*)?$ {
+  set $u "atlas-merchant.${POD_NAMESPACE}.svc.cluster.local:8080";
+  proxy_pass http://$u$request_uri;
+}
+
+location ~ ^/api/characters/[^/]+/merchants(/.*)?$ {
+  set $u "atlas-merchant.${POD_NAMESPACE}.svc.cluster.local:8080";
+  proxy_pass http://$u$request_uri;
+}
+
+location ~ ^/api/characters/[^/]+/frederick(/.*)?$ {
+  set $u "atlas-merchant.${POD_NAMESPACE}.svc.cluster.local:8080";
+  proxy_pass http://$u$request_uri;
+}
+
 location ~ ^/api/characters(/.*)?$ {
   set $u "atlas-character.${POD_NAMESPACE}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;

@@ -4,6 +4,7 @@ import (
 	"atlas-merchant/frederick"
 	message "atlas-merchant/kafka/message"
 	asset2 "atlas-merchant/kafka/message/asset"
+	compartment "atlas-merchant/kafka/message/compartment"
 	merchantmsg "atlas-merchant/kafka/message/merchant"
 	"atlas-merchant/listing"
 	"atlas-merchant/visitor"
@@ -151,6 +152,33 @@ func TestCloseShop(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, Closed, closed.State())
 	assert.Equal(t, CloseReasonManualClose, closed.CloseReason())
+}
+
+// A personal shop closed by DISCONNECT (logout) must still return unsold items
+// to the owner's inventory — the same AcceptAsset the manual close emits.
+// Skipping it orphans the items on the closed shop (task-127 live bug: player
+// logs out and their listed items never come back; personal shops have no
+// Fredrick fallback).
+func TestCloseShop_Disconnect_ReturnsPersonalShopItems(t *testing.T) {
+	db := setupTestDB(t)
+	ctx, _ := setupTestContext(t)
+	l, _ := test.NewNullLogger()
+	p := NewProcessor(l, ctx, db)
+	mb := testBuffer()
+
+	m, err := p.CreateShop(1000, CharacterShop, "Test Shop", 0, 0, 910000001, uuid.Nil, 0, 0, 5140000)
+	require.NoError(t, err)
+	// itemId 2000004 = Elixir (a USE consumable) — mirrors the live case.
+	_, err = p.AddListing(mb)(m.Id(), 1000, 2000004, 2, 1, 100, 1000, asset2.AssetData{}, 2, 0)
+	require.NoError(t, err)
+	require.NoError(t, p.OpenShop(mb)(m.Id(), 1000))
+
+	// Fresh buffer so we only observe the close's emissions.
+	cmb := testBuffer()
+	require.NoError(t, p.CloseShop(cmb)(m.Id(), 1000, CloseReasonDisconnect))
+
+	assert.NotEmpty(t, cmb.GetAll()[compartment.EnvCommandTopic],
+		"disconnect close of a personal shop must return unsold items to the owner")
 }
 
 func TestCloseShop_InvalidState(t *testing.T) {

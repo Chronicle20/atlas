@@ -509,9 +509,14 @@ func (p *ProcessorImpl) CloseShop(mb *message.Buffer) func(shopId uuid.UUID, cha
 			return err
 		}
 
-		// For character shops (non-disconnect), snapshot listings for item return.
+		// Character shops return unsold items directly to the owner's inventory on
+		// EVERY close, including disconnect/logout. The AcceptAsset command updates
+		// the compartment store regardless of the owner's session, so an offline
+		// owner still gets them back; excluding disconnect orphaned the items on
+		// the closed shop with no Fredrick fallback (task-127). Hired merchants
+		// deposit with Fredrick instead (storeToFrederick, below).
 		var listings []listingSnapshot
-		if m.ShopType() == CharacterShop && reason != CloseReasonDisconnect {
+		if m.ShopType() == CharacterShop {
 			ls, _ := p.GetListings(shopId)
 			for _, l := range ls {
 				listings = append(listings, listingSnapshot{

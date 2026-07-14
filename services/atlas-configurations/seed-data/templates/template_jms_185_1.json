@@ -969,6 +969,11 @@
         "opCode": "0x3B",
         "validator": "LoggedInValidator",
         "handler": "OwlWarpHandle"
+      },
+      {
+        "opCode": "0x37",
+        "validator": "LoggedInValidator",
+        "handler": "HiredMerchantOperationHandle"
       }
     ],
     "writers": [

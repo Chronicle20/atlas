@@ -1,6 +1,8 @@
 package shop
 
 import (
+	"time"
+
 	"atlas-merchant/listing"
 	"errors"
 
@@ -73,10 +75,14 @@ func getAllOpen() database.EntityProvider[[]Entity] {
 	}
 }
 
+// getExpired matches shops past their expires_at in every live state —
+// including Draft, so a hired merchant abandoned during setup (never opened)
+// is still reaped instead of blocking the character's shop slot forever.
+// The cutoff is bound Go-side (portable across postgres/sqlite).
 func getExpired() database.EntityProvider[[]Entity] {
 	return func(db *gorm.DB) model.Provider[[]Entity] {
 		var results []Entity
-		err := db.Where("expires_at IS NOT NULL AND expires_at < NOW() AND state IN (?, ?)", byte(Open), byte(Maintenance)).Find(&results).Error
+		err := db.Where("expires_at IS NOT NULL AND expires_at < ? AND state IN (?, ?, ?)", time.Now(), byte(Draft), byte(Open), byte(Maintenance)).Find(&results).Error
 		if err != nil {
 			return model.ErrorProvider[[]Entity](err)
 		}

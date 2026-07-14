@@ -8,6 +8,7 @@ import (
 	"atlas-merchant/visitor"
 	"context"
 	"testing"
+	"time"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	outboxlib "github.com/Chronicle20/atlas/libs/atlas-outbox"
@@ -831,4 +832,29 @@ func TestGetShopForCharacter_MaintenanceHiredMerchantOwnerAttached(t *testing.T)
 	got, err := p.GetShopForCharacter(2004)
 	require.NoError(t, err)
 	assert.Equal(t, m.Id(), got)
+}
+
+// A hired merchant abandoned in Draft (owner created the shop, closed the
+// window, never opened) must still be reaped by the expiry task — otherwise
+// it never leaves Draft and permanently blocks the character from creating
+// another shop of that type.
+func TestGetExpired_IncludesDraftHiredMerchant(t *testing.T) {
+	db := setupTestDB(t)
+	ctx, _ := setupTestContext(t)
+	l, _ := test.NewNullLogger()
+	setupTestRegistries(t)
+	p := NewProcessor(l, ctx, db)
+
+	m, err := p.CreateShop(3000, HiredMerchant, "Stale Draft", 0, 0, 910000001, uuid.Nil, 0, 0, 5030000)
+	require.NoError(t, err)
+
+	// Age the shop past its 24h expiry.
+	past := time.Now().Add(-25 * time.Hour)
+	require.NoError(t, db.WithContext(ctx).Model(&Entity{}).Where("id = ?", m.Id()).Update("expires_at", past).Error)
+
+	expired, err := p.GetExpired()
+	require.NoError(t, err)
+	require.Len(t, expired, 1)
+	assert.Equal(t, m.Id(), expired[0].Id())
+	assert.Equal(t, Draft, expired[0].State())
 }

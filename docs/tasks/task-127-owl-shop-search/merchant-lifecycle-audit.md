@@ -38,10 +38,16 @@ listed so nothing reads as silently done:
    modes remain unmapped.
 3. **jms185 free-form notice**: the client has no case 18 — the Fredrick
    reminder notice is a benign silent drop on jms until given another vehicle.
-4. **v48 template inconsistency** (review W3): routes the CREATE handler but
-   has no CharacterInteraction writer/enterError table, so the new
-   permit-reject reply is dropped on v48 (v48 has no shop feature; reconcile
-   by removing the handler op or completing the surface).
+4. **v48 template inconsistency** (review W3) — RESOLVED: v48 predates the
+   player/hired-shop feature (verified: the v48 `PLAYER_INTERACTION`
+   dispatcher `sub_5459C4` @0x5459c4 has only base mini-room + trade +
+   messaging arms, no shop room type; zero shop strings in the IDB; v48 is
+   the sole legacy version lacking a `CharacterInteraction` clientbound
+   writer). The unreachable shop sub-modes (`PERSONAL_STORE_*`, `MERCHANT_*`,
+   `FIELD_*_BLACK_LIST`) were removed from the v48 handler operations table —
+   they could only misfire (a v48 client byte misread as a shop op). v48
+   keeps CREATE/INVITE/VISIT/CHAT/TRADE_* and gets no shop writer (no feature
+   to serve). v61/v72/v79 have the writer + shop support (they carry owl).
 5. **Channel-side state-byte mirror** (review W4): `StateDraft/StateClosed`
    hand-mirror atlas-merchant's states with no compile-time link; candidate
    for promotion to atlas-constants.

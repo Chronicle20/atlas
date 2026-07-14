@@ -181,8 +181,9 @@ func (rm Room) Encode(l logrus.FieldLogger, ctx context.Context) func(options ma
 			w.WriteByte(rm.maxItemCount)
 			w.WriteByte(byte(len(rm.items)))
 			for _, item := range rm.items {
-				w.WriteShort(item.PerBundle)
+				// nNumber (quantity) then nSet (perBundle) — see OnRefresh note below.
 				w.WriteShort(item.Quantity)
+				w.WriteShort(item.PerBundle)
 				w.WriteInt(item.Price)
 				w.WriteByteArray(item.Asset.Encode(l, ctx)(options))
 			}
@@ -222,13 +223,14 @@ func (rm Room) Encode(l logrus.FieldLogger, ctx context.Context) func(options ma
 			w.WriteByte(rm.maxItemCount)
 			// OnRefresh (vtable+112 = CEntrustedShopDlg::OnRefresh @0x518852, BOTH views):
 			// Decode4 withdrawable meso (this[481] @0x518864), then CPersonalShopDlg::OnRefresh
-			// (@0x6fcc4e): Decode1 count; count x {Decode2 perBundle, Decode2 qty, Decode4
-			// price, GW_ItemSlotBase}.
+			// (@0x6fcc4e): Decode1 count; count x {Decode2 nNumber, Decode2 nSet, Decode4
+			// price, GW_ItemSlotBase}. v95 PDB names offset0=nNumber (quantity),
+			// offset4=nSet (per-bundle) — so quantity is written first (task-127).
 			w.WriteInt(rm.meso)
 			w.WriteByte(byte(len(rm.items)))
 			for _, item := range rm.items {
-				w.WriteShort(item.PerBundle)
 				w.WriteShort(item.Quantity)
+				w.WriteShort(item.PerBundle)
 				w.WriteInt(item.Price)
 				w.WriteByteArray(item.Asset.Encode(l, ctx)(options))
 			}
@@ -266,8 +268,8 @@ func (rm *Room) Decode(l logrus.FieldLogger, ctx context.Context) func(r *reques
 			itemCount := r.ReadByte()
 			rm.items = make([]RoomShopItem, itemCount)
 			for i := byte(0); i < itemCount; i++ {
-				rm.items[i].PerBundle = r.ReadUint16()
 				rm.items[i].Quantity = r.ReadUint16()
+				rm.items[i].PerBundle = r.ReadUint16()
 				rm.items[i].Price = r.ReadUint32()
 				rm.items[i].Asset = model.NewAsset(true, 0, 0, time.Time{})
 				rm.items[i].Asset.Decode(l, ctx)(r, options)
@@ -304,8 +306,8 @@ func (rm *Room) Decode(l logrus.FieldLogger, ctx context.Context) func(r *reques
 			itemCount := r.ReadByte()
 			rm.items = make([]RoomShopItem, itemCount)
 			for i := byte(0); i < itemCount; i++ {
-				rm.items[i].PerBundle = r.ReadUint16()
 				rm.items[i].Quantity = r.ReadUint16()
+				rm.items[i].PerBundle = r.ReadUint16()
 				rm.items[i].Price = r.ReadUint32()
 				rm.items[i].Asset = model.NewAsset(true, 0, 0, time.Time{})
 				rm.items[i].Asset.Decode(l, ctx)(r, options)

@@ -196,8 +196,9 @@ func (m *PersonalShopMiniRoom) Enter(_ uint32) packet.Encode {
 			w.WriteByte(m.maxItemCount)
 			w.WriteByte(byte(len(m.items)))
 			for _, i := range m.items {
-				w.WriteShort(i.perBundle)
+				// nNumber (quantity) then nSet (perBundle) — OnRefresh @0x698050.
 				w.WriteShort(i.quantity)
+				w.WriteShort(i.perBundle)
 				w.WriteInt(i.price)
 				_ = NewAssetWriter(l, ctx, options, w)(true)(i.asset)
 			}
@@ -265,8 +266,9 @@ func (m *MerchantShopMiniRoom) Enter(characterId uint32) packet.Encode {
 			w.WriteInt(m.meso)
 			w.WriteByte(byte(len(m.items)))
 			for _, i := range m.items {
-				w.WriteShort(i.perBundle)
+				// nNumber (quantity) then nSet (perBundle) — OnRefresh @0x698050.
 				w.WriteShort(i.quantity)
+				w.WriteShort(i.perBundle)
 				w.WriteInt(i.price)
 				_ = NewAssetWriter(l, ctx, options, w)(true)(i.asset)
 			}

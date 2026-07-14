@@ -294,8 +294,12 @@ func (m InteractionUpdateMerchant) Encode(l logrus.FieldLogger, ctx context.Cont
 		}
 		w.WriteByte(byte(len(m.items)))
 		for _, item := range m.items {
-			w.WriteShort(item.PerBundle)
+			// nNumber (total quantity) then nSet (per-bundle): v95 PDB
+			// CPersonalShopDlg::OnRefresh @0x698050 reads v5->nNumber first,
+			// v5->nSet second. Emitting PerBundle first renders individual
+			// items as a bundle (task-127).
 			w.WriteShort(item.Quantity)
+			w.WriteShort(item.PerBundle)
 			w.WriteInt(item.Price)
 			w.WriteByteArray(item.Asset.Encode(l, ctx)(options))
 		}
@@ -313,8 +317,8 @@ func (m *InteractionUpdateMerchant) Decode(l logrus.FieldLogger, ctx context.Con
 		m.items = make([]interaction.RoomShopItem, 0, count)
 		for i := 0; i < count; i++ {
 			var item interaction.RoomShopItem
-			item.PerBundle = r.ReadUint16()
 			item.Quantity = r.ReadUint16()
+			item.PerBundle = r.ReadUint16()
 			item.Price = r.ReadUint32()
 			item.Asset.Decode(l, ctx)(r, options)
 			m.items = append(m.items, item)

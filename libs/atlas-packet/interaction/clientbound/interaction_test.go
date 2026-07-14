@@ -284,7 +284,12 @@ func TestInteractionEnterResultSuccessMerchantBytes(t *testing.T) {
 // TestInteractionUpdateMerchantBytes is an encode-only byte fixture for the
 // UPDATE_MERCHANT mode. The hired-merchant refresh leaf CEntrustedShopDlg::OnRefresh
 // reads Decode4(meso) then chains CPersonalShopDlg::OnRefresh: Decode1(count) +
-// count x {Decode2 perBundle, Decode2 quantity, Decode4 price, GW_ItemSlotBase}.
+// count x {Decode2 nNumber, Decode2 nSet, Decode4 price, GW_ItemSlotBase}
+// (v95 PDB CPersonalShopDlg::OnRefresh @0x698050: v5->nNumber = Decode2 FIRST
+// = total quantity available; v5->nSet = Decode2 SECOND = units per bundle).
+// So the wire order is Quantity (nNumber) then PerBundle (nSet); emitting
+// PerBundle first makes a 50-count individual item render as a bundle of 50
+// (task-127 "shows as a bundle" bug).
 // Each asserted byte traces to that read order. The leading mode byte is
 // version-dependent: 25 in gms_v83/v84/v87/v95 (IDA: v83 0x6fc42d / v95 0x69c820
 // switch case 25 -> OnRefresh), 22 in jms_v185 (IDA: CPersonalShopDlg::OnPacket
@@ -302,7 +307,7 @@ func TestInteractionUpdateMerchantBytes(t *testing.T) {
 			input := NewInteractionUpdateMerchant(wantMode, 50000, items)
 			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
 			b := test.Encode(t, ctx, input.Encode, nil)
-			// mode + meso(50000 LE) + count(1) + item{perBundle,quantity,price} + asset(...)
+			// mode + meso(50000 LE) + count(1) + item{nNumber,nSet,price} + asset(...)
 			// mode
 			if b[0] != wantMode {
 				t.Fatalf("mode: got %d, want %d", b[0], wantMode)
@@ -315,13 +320,13 @@ func TestInteractionUpdateMerchantBytes(t *testing.T) {
 			if b[5] != 1 {
 				t.Fatalf("count: got %d, want 1", b[5])
 			}
-			// perBundle (short LE) = 1
-			if b[6] != 0x01 || b[7] != 0x00 {
-				t.Fatalf("perBundle bytes: got % x, want 01 00", b[6:8])
+			// nNumber (short LE) = Quantity = 100 = 0x0064 — the FIRST short.
+			if b[6] != 0x64 || b[7] != 0x00 {
+				t.Fatalf("nNumber (quantity) bytes: got % x, want 64 00", b[6:8])
 			}
-			// quantity (short LE) = 100 = 0x0064
-			if b[8] != 0x64 || b[9] != 0x00 {
-				t.Fatalf("quantity bytes: got % x, want 64 00", b[8:10])
+			// nSet (short LE) = PerBundle = 1 — the SECOND short.
+			if b[8] != 0x01 || b[9] != 0x00 {
+				t.Fatalf("nSet (perBundle) bytes: got % x, want 01 00", b[8:10])
 			}
 			// price (int LE) = 5000 = 0x00001388
 			if b[10] != 0x88 || b[11] != 0x13 || b[12] != 0x00 || b[13] != 0x00 {
@@ -358,9 +363,10 @@ func TestInteractionUpdatePersonalShopBytes(t *testing.T) {
 			if b[1] != 1 {
 				t.Fatalf("count: got %d, want 1 (meso must be omitted for personal shops)", b[1])
 			}
-			// perBundle (short LE) = 1 follows the count directly.
-			if b[2] != 0x01 || b[3] != 0x00 {
-				t.Fatalf("perBundle bytes: got % x, want 01 00", b[2:4])
+			// nNumber (short LE) = Quantity = 100 = 0x0064 follows the count
+			// directly (the FIRST short; nSet/perBundle is second).
+			if b[2] != 0x64 || b[3] != 0x00 {
+				t.Fatalf("nNumber (quantity) bytes: got % x, want 64 00", b[2:4])
 			}
 		})
 	}

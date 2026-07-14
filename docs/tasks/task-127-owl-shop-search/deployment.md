@@ -92,3 +92,35 @@ search-input dialog), so the decoded request has no server-side search target on
 that path — `searchItemId` stays 0 and the search returns nothing. The clientbound
 result rendering + warp are fully faithful; how a legacy client actually seeds a
 search term should be confirmed against a live v72/v79 tenant.
+
+## Hired-merchant field-NPC — live-config test patch
+
+The three field-NPC clientbound opcodes (`SpawnHiredMerchant`,
+`DestroyHiredMerchant`, `UpdateHiredMerchant`) are added to the seed templates
+(all 8 feature-bearing versions), which apply only at tenant **creation**. A
+tenant created before this change has no writer entry for them, so atlas-channel
+silently drops the spawn/despawn/update packets — the merchant won't render.
+
+To test on a pre-existing tenant (e.g. the pr-env), patch the live
+atlas-configurations socket config with
+`patch-hired-merchant-writers.sh` (in this folder). It GETs the tenant's config,
+auto-detects region/version, injects the correct per-version opcodes into
+`socket.writers` (idempotent, full-document PATCH), and enqueues a config-status
+event so the fleet reloads.
+
+```bash
+# list tenants to find the id
+curl -fsS "$CONFIG_BASE/tenants" | jq -r '.data[] | "\(.id)  \(.attributes.region) v\(.attributes.majorVersion)"'
+
+# apply (CONFIG_BASE = the pr-env ingress /api/configurations, or a port-forward)
+CONFIG_BASE=https://<pr-env-host>/api/configurations TENANT_ID=<uuid> \
+  ./patch-hired-merchant-writers.sh
+
+# revert
+REMOVE=1 CONFIG_BASE=... TENANT_ID=<uuid> ./patch-hired-merchant-writers.sh
+```
+
+If atlas-channel does not pick up the new writers live, restart it:
+`kubectl -n <ns> rollout restart deploy/atlas-channel`. Opcodes by version:
+v61 CA/CB/CC, v72 EB/EC/ED, v79 F3/F4/F5, v83 109/10A/10B, v84 110/111/112,
+v87 11A/11B/11C, v95 13F/140/141, jms185 11E/11F/120 (v48 has no feature).

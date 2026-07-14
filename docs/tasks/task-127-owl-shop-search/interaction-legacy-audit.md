@@ -466,27 +466,36 @@ transcription error — read twice.
 
 ## §6-resolution — matrix/disposition fixes (task-127, do-mode)
 
-- **v61/v79 dispositions added.** `CEntrustedShopDlg::AddBlackList` and
-  `::DeleteBlackList` are now dispositioned version-absent in
-  `docs/packets/audits/gms_v61/_unimplemented.json` and `.../gms_v79/...`,
-  matching the pre-existing v72 disposition (all three binaries have only
-  `CWvsContext::OnEntrustedShopCheckResult`, no `CEntrustedShopDlg`).
-- **False v79 "verified" evidence removed.** The
-  `InteractionOperationMerchantAddToBlackList`/`RemoveFromBlackList` × gms_v79
-  cells were pinned to `CEntrustedShopDlg::AddBlackList @0x50588d` — but
-  0x50588d is `sub_50588D`, a generic blacklist-name-entry dialog send
-  (mode 0x2F, EncodeStr name; caller sub_505DEF, a CUtilDlgEx name prompt with
-  a 20-entry cap), NOT the (non-existent) hired-merchant dialog. The byte
-  layout coincidentally matched (both a bare name string), so the cell passed
-  fixture while attributing a version-absent feature. Removed the two v79
-  verify markers + audit reports + pinned evidence yamls; the disposition now
-  makes the cells correctly n-a. matrix --check clean.
-- **OPEN FINDING (separate, unrouted):** v79 mode `0x2F` (47) is a real
-  client blacklist-by-name send (sub_50588D) that Atlas does NOT route — it is
-  absent from the v79 CharacterInteractionHandle operations table and is not
-  the field blacklist (FIELD_ADD=30 in v79). Likely a shared/personal-store
-  blacklist dialog. Classifying + routing it is out of scope here (Atlas does
-  not consume it today); noted so it is not silently lost.
+> **⚠️ SUPERSEDED (2026-07-14) — the v79 conclusions in this section were WRONG.
+> See §7 and §7.1 for the corrected, IDA-verified finding.** The premise "v79 has
+> no `CEntrustedShopDlg`, so its hired-merchant blacklist is version-absent" was a
+> **missing-symbol artifact, not a missing feature**: the v79 binary's
+> `CEntrustedShopDlg` is symbol-stripped. `sub_50588D` @0x50588d **is**
+> `CEntrustedShopDlg::AddBlackList` (proven: byte-identical twin of v83
+> `sub_519BAC`, same 20-cap + `is_valid_character_name` + StringPool IDs
+> 725/726/727/728; v83 twin calls the symbolized `CEntrustedShopDlg::AddBlackList`).
+> The whole v79 hired-merchant management cluster is present at **v83 − 1**
+> (§7.1 table). The corrections actually applied:
+> - **Removed** the two false version-absent dispositions from
+>   `gms_v79/_unimplemented.json` (Add/DeleteBlackList).
+> - **Re-verified** `MerchantAddToBlackList` × gms_v79 at **mode 47** (`sub_50588D`)
+>   and `MerchantRemoveFromBlackList` × gms_v79 at **mode 48** (`sub_505911`):
+>   restored verify markers, re-pinned evidence, regenerated audit reports → cells
+>   promote ✅.
+> - **Filled the v79 column** for all eight `MERCHANT_*` management modes in
+>   `character_interaction_handle.yaml` (38/39/40/42/45/46/47/48).
+> - The `gms_v61` disposition is **correct** (v61/v72 genuinely lack the dialog —
+>   only permit-receive exists); only the v79 disposition was the error.
+>
+> _Original (incorrect) text retained below for provenance:_
+>
+> - ~~**v61/v79 dispositions added.** `CEntrustedShopDlg::AddBlackList` /
+>   `::DeleteBlackList` dispositioned version-absent in both v61 and v79.~~
+> - ~~**False v79 "verified" evidence removed** — 0x50588d is a "generic
+>   blacklist-name dialog", byte layout coincidentally matched, cells now n-a.~~
+> - ~~**OPEN FINDING:** v79 mode 0x2F is an unrouted shared/personal-store
+>   blacklist send, not the hired-merchant blacklist.~~ (All three struck: 0x2F IS
+>   the hired-merchant `AddBlackList`; now routed + verified.)
 
 ## §3d-extended — jms_v185 remaining modes (IDA-derived)
 
@@ -604,3 +613,168 @@ Notes:
   v79 — the trade commit is `CTradingRoomDlg::Trade`→**TRADE_CONFIRM=15**, not a
   separate transaction mode). Server-driven / not client-sent in this family.
   Do NOT template a jms byte. Same disposition as the gms_v79 pass (§3c).
+
+## §7 — cross-version blacklist-send identity (task follow-up)
+
+Read-only IDA investigation, 2026-07-14. Goal: identify what the gms_v79
+`PLAYER_INTERACTION` mode-`0x2F` send (`sub_50588D`, a bare `EncodeStr(name)`
+from the 20-cap `CUtilDlgEx` dialog `sub_505DEF`) actually is, and whether the
+same feature exists in gms_v48/v61/v72. No codec/template/evidence mutated.
+
+### (a) What the gms_v79 mode-0x2F send is
+
+**It is `MERCHANT_ADD_TO_BLACK_LIST` — the hired-merchant (entrusted-shop)
+per-shop ban-by-name.** Proof (IDA, ports 13340 v79 / 13342 v83):
+
+- v79 `sub_505DEF` @`0x505def` (dialog handler, button cmd `3000` via
+  `sub_505DB1` @`0x505db1`, vtable @`0xa2da08`) is **byte-for-byte structurally
+  identical** to v83 `sub_519BAC` @`0x519bac` (both size `0x28e`): same 20-entry
+  cap (`count < 0x14`), same `is_valid_character_name(name, 1)`, same self-name
+  compare, same dup-check loop, and — decisively — the **same StringPool IDs
+  725/726/727/728** (725 = "please enter the name of the character you'd like to
+  add to the blacklist", 726 = "you may not enter yourself in the blacklist",
+  727 = "this character name does not exist", 728 = "this name has already been
+  registered"). v83 `sub_519BAC` calls the **symbolized**
+  `CEntrustedShopDlg::AddBlackList` @`0x519611` (which emits `Encode1(0x30=48)` =
+  `MERCHANT_ADD_TO_BLACK_LIST`). v79 `sub_505DEF` calls its twin `sub_50588D`
+  @`0x50588d` (`COutPacket(120).Encode1(0x2F=47).EncodeStr(name)`).
+- The same v79 dialog carries the paired **remove**: button cmd `3001` →
+  `sub_5060A1` @`0x5060a1` → `sub_505911` @`0x505911`
+  (`COutPacket(120).Encode1(0x30=48).EncodeStr(name)`) = the twin of v83
+  `CEntrustedShopDlg::DeleteBlackList` @`0x519695` (mode `0x31=49`).
+- v79 modes 47/48 = v83 modes 48/49 **minus 1** — exactly the Δ−1
+  store/merchant shift already established for v79 in §3c. This *resolves* the
+  §3c gap at v79 bytes 47/48 (they were blank in the §3c table).
+
+**Reconciliation with "no CEntrustedShopDlg" (§3c headline).** The v79 IDB's
+`func_query *EntrustedShop*` recovers only `CWvsContext::OnEntrustedShopCheckResult`
+because the **class symbol** `CEntrustedShopDlg` was not recovered in that
+export — but the class's **code is present** (the add/remove blacklist dialog
+above is CEntrustedShopDlg's `OnAddBlackList`/`AddBlackList`/`OnDeleteBlackList`/
+`DeleteBlackList`, unsymbolized). "No CEntrustedShopDlg" was a **missing-symbol
+artifact, not a missing feature.** The hired-merchant blacklist add/remove-by-name
+pair **exists on v79** at modes 47/48.
+
+### (b) Per-version equivalent-send table
+
+| version | recvOp | present? | ADD mode | REMOVE mode | ADD sender addr | REMOVE sender addr | owning class |
+|---|---|---|---|---|---|---|---|
+| gms_v48 (13337) | 0x5D | **ABSENT** | — | — | — | — | no CEntrustedShopDlg; no `OnEntrustedShopCheckResult`; `is_valid_character_name`@`0x6d8f87` has ONE caller (`CField::InputGuildName`@`0x4c5965`) |
+| gms_v61 (13338) | 0x6F | **ABSENT** | — | — | — | — | no CEntrustedShopDlg dialog (permit-recv `OnEntrustedShopCheckResult`@`0x848c1c` only); no 20-cap self-compare blacklist dialog among the 16 `is_valid_character_name`@`0x7cef76` callers |
+| gms_v72 (13339) | 0x79 | **ABSENT** | — | — | — | — | no CEntrustedShopDlg dialog (permit-recv `OnEntrustedShopCheckResult`@`0x91ff18` only); no 20-cap blacklist dialog among the 17 `is_valid_character_name`@`0x6e3833` callers |
+| **gms_v79 (13340)** | 0x78 | **PRESENT** | **0x2F (47)** | **0x30 (48)** | `sub_50588D`@`0x50588d` | `sub_505911`@`0x505911` | unsymbolized **CEntrustedShopDlg** (dialog `sub_505DEF`@`0x505def`, btn-handler `sub_505DB1`@`0x505db1`) |
+| gms_v83 (13342, ref) | 0x7B | PRESENT | 0x30 (48) | 0x31 (49) | `CEntrustedShopDlg::AddBlackList`@`0x519611` | `CEntrustedShopDlg::DeleteBlackList`@`0x519695` | **CEntrustedShopDlg** (dialog `sub_519BAC`@`0x519bac`) |
+
+**Absence method (v48/v61/v72):** the v79/v83 blacklist dialog is the *only*
+20-entry-cap `CUtilDlgEx` that (i) calls `is_valid_character_name(name, 1)`,
+(ii) compares the input to the player's own name, (iii) dup-checks against a
+client-side list, and (iv) sends `Encode1(mode)+EncodeStr(name)` from add/remove
+buttons. Enumerating every `is_valid_character_name` caller in each IDB, **no
+such dialog exists** in v48/v61/v72 — their callers are guild-name entry,
+whisper/add-buddy name entry, personal-shop item-put (`CItemInfo::GetMapString`),
+messenger/party invite-by-name, and ITC/login. The name-based interaction sends
+that *do* exist in v61/v72 are the **personal-store** blacklist ones
+(`PERSONAL_STORE_ADD_TO_BLACKLIST` / `SET_BLACK_LIST`, §3a) and the account
+**field** blacklist — never the hired-merchant one. Conclusion: the hired-merchant
+blacklist management dialog was **introduced in the v73–v79 window** (present by
+v79, absent v72 and earlier).
+
+### (c) False-verified merchant-blacklist cells among v48/v61/v72
+
+**None.** No additional cell needs the v79 fix:
+
+- **gms_v48** — `MerchantAddToBlackList`/`RemoveFromBlackList` = `n-a`
+  (dispositioned version-absent in `_unimplemented.json`). **Correct** — the
+  feature is genuinely absent (verified above).
+- **gms_v61** — both cells = `incomplete` ("no audit report"), **not** verified;
+  no `interaction.serverbound.InteractionOperationMerchant{Add,Remove}*.yaml`
+  evidence record exists under `docs/packets/evidence/gms_v61/`. No false-verified
+  cell. Correct end-state = `n-a` (feature absent).
+- **gms_v72** — same as v61: `incomplete`, no evidence yaml, no false-verified
+  cell. Correct end-state = `n-a`.
+
+The verify markers for `InteractionOperationMerchant{Add,Remove}*` cover only
+`gms_v83/v84/v87/v95/jms_v185` (confirmed in the two `*_test.go` files); the
+single false v79 marker was already removed (§6-resolution). No v48/v61/v72
+marker or evidence record was ever pinned to a non-CEntrustedShopDlg address.
+
+### ⚠ Correction to §3c/§6-resolution (gms_v79 — NOT version-absent)
+
+This investigation **contradicts** the §6-resolution disposition that marked
+gms_v79 `MerchantAddToBlackList`/`RemoveFromBlackList` version-absent. `sub_50588D`
+is **not** a "generic blacklist-name-entry dialog that coincidentally matched" —
+it **is** the hired-merchant `CEntrustedShopDlg::AddBlackList` send (functionally
+proven by the v83 byte-twin `sub_519BAC` + StringPool 725–728 + the paired
+remove `sub_505911`=mode 48). Therefore, for gms_v79:
+
+- The feature is **present** at modes **47 (add) / 48 (remove)** — the cells
+  should be `verified` at those v79 mode bytes (pinned to `sub_50588D` /
+  `sub_505911`), **not** `n-a`, and **not** at the gms template mode 48/49.
+- The removed v79 evidence record pointed at the **correct function**
+  (`0x50588d`); if it was removed only because the byte layout "coincidentally
+  matched," that reasoning was mistaken — though its **mode byte** would have
+  been wrong if it used the gms value 48 instead of the v79 value 47 (the deleted
+  record's contents are unavailable to confirm which).
+- **Escalation / recommended re-check (out of scope here, do NOT act):** because
+  CEntrustedShopDlg's code *is* present in v79, the OTHER seven merchant-management
+  modes the audit called absent on v79 (organize / withdraw-meso / merchant-off /
+  merchant-exit / view-visit-list / view-black-list) may also exist in the same
+  unsymbolized cluster and should be re-derived before the v79 `n-a` dispositions
+  for those are trusted. This §7 verified only the blacklist add/remove pair.
+
+## §7.1 — v79 CEntrustedShopDlg management cluster (full re-derivation)
+
+Read-only IDA derivation (gms_v79 = port 13340, gms_v83 ref = port 13342).
+Resolves the six previously-blank v79 hired-merchant management sends. The §7
+escalation is now discharged: CEntrustedShopDlg's code IS present in v79
+(symbol-stripped), and **all six** modes exist at the uniform **v83 − 1** offset.
+
+**Proof of twin identity (definitive).** The v79 `CEntrustedShopDlg::OnButtonClicked`
+twin is `sub_50429B`@`0x50429b`; its button switch routes exactly as v83's
+`OnButtonClicked`@`0x51804c`: `1010→sub_50548A`, `1015→sub_505510`,
+`1016→sub_50558B`, `1017→sub_5055FE`, `1018→sub_50572B` — the same five button
+ids mapping to the same five senders (v83: `1010→OnGoOut`, `1015→OnArrange`,
+`1016→OnWithdrawMoney`, `1017→OnBlackList`, `1018→OnVisitList`). The EXIT send
+lives in the `SetRet` twin `sub_5042EC`@`0x5042ec` (size `0xd6`, byte-for-byte
+the size of v83 `SetRet`@`0x51809d`), structurally identical: same
+`a2==2 && !this[97] → 8` remap, same `v2==2 → OnGoOut` early-return, same
+`CUtilDlg::YesNo(SP_…)` confirm gate, same `this[98]||this[479]` send guard.
+
+**Body signature.** Every one of the six is **bodyless** — the wire payload is
+exactly `COutPacket(120).Encode1(mode)` with **no** Encode/EncodeStr/EncodeBuffer
+after the mode byte (confirmed in both versions; v83 uses `COutPacket(123)`).
+ORGANIZE and EXIT display a client-side `CUtilDlg::Notice`/`YesNo` dialog and
+OFF/EXIT make a vtable/`RemoveAll` cleanup call, but none of that adds bytes to
+the packet. v79 `OnGoOut` (`sub_50548A`) carries an extra `else`-branch config
+gate `sub_6895B2(&v,38)` (accounts for its `0x86` size vs v83's `0x59`) — off the
+send path, wire-irrelevant.
+
+| key | v83 mode | v83 sender (fname@addr) | body signature | v79 mode | v79 sender (addr) | present? | offset holds? |
+|---|---|---|---|---|---|---|---|
+| MERCHANT_MERCHANT_OFF    | 39 (0x27) | `CEntrustedShopDlg::OnGoOut`@`0x51923b`            | `Op(123).Encode1(mode)` — bodyless | **38 (0x26)** | `sub_50548A`@`0x50548a` (send `0x5054da`) | **yes** | **yes (−1)** |
+| MERCHANT_ORGANIZE        | 40 (0x28) | `CEntrustedShopDlg::OnArrange`@`0x519294`          | `Op(123).Encode1(mode)` — bodyless (client Notice only) | **39 (0x27)** | `sub_505510`@`0x505510` (send `0x50555e`) | **yes** | **yes (−1)** |
+| MERCHANT_EXIT            | 41 (0x29) | `CEntrustedShopDlg::SetRet`@`0x51809d` (send `0x518138`) | `Op(123).Encode1(mode)` — bodyless (client YesNo only) | **40 (0x28)** | `sub_5042EC`@`0x5042ec` (send `0x504387`) | **yes** | **yes (−1)** |
+| MERCHANT_WITHDRAW_MESO   | 43 (0x2B) | `CEntrustedShopDlg::OnWithdrawMoney`@`0x51930f`    | `Op(123).Encode1(mode)` — bodyless | **42 (0x2A)** | `sub_50558B`@`0x50558b` (send `0x5055b7`) | **yes** | **yes (−1)** |
+| MERCHANT_VIEW_VISIT_LIST | 46 (0x2E) | `CEntrustedShopDlg::OnVisitList`@`0x5194af`        | `Op(123).Encode1(mode)` — bodyless | **45 (0x2D)** | `sub_50572B`@`0x50572b` (send `0x505755`) | **yes** | **yes (−1)** |
+| MERCHANT_VIEW_BLACK_LIST | 47 (0x2F) | `CEntrustedShopDlg::OnBlackList`@`0x519382`        | `Op(123).Encode1(mode)` — bodyless | **46 (0x2E)** | `sub_5055FE`@`0x5055fe` (send `0x505628`) | **yes** | **yes (−1)** |
+
+All six v79 senders construct `COutPacket(120=0x78)` (v79 PLAYER_INTERACTION),
+confirming they sit in the same serverbound family as the already-derived
+blacklist add/remove pair (`sub_50588D`=47 / `sub_505911`=48). No mode deviates
+from the v83 − 1 rule.
+
+**Sanity-check of the already-filled v79 region (offset consistency).** The three
+pre-filled item-management cells are internally consistent with the −1 offset and
+need **no** correction:
+
+| key | v83 mode | v79 mode (yaml) | Δ | consistent? |
+|---|---|---|---|---|
+| MERCHANT_PUT_ITEM    | 33 | 32 | −1 | ✅ |
+| MERCHANT_BUY         | 34 | 33 | −1 | ✅ |
+| MERCHANT_REMOVE_ITEM | 38 | 37 | −1 | ✅ |
+
+Combined with the six re-derived here (38/39/40/42/45/46) and the blacklist pair
+(47/48), the entire v79 CEntrustedShopDlg management sub-mode region holds a
+single uniform **v79 = v83 − 1** offset with **zero** exceptions. No anomalies.
+(Note: v79 ORGANIZE mode 39 numerically equals v83 MERCHANT_OFF mode 39 — this is
+a cross-version coincidence, not a collision; within v79 all modes are distinct.)

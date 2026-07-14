@@ -74,14 +74,6 @@
    "fname": "CScriptMan::OnAskPet#AskPetConversationDetail",
    "case": 0,
    "reason": "v79-absent (single-pet clientbound detail): npc/clientbound/NpcAskPetConversationDetail has no distinct v79 read path. The sole v79 ASK_PET client decoder is CScriptMan::OnAskPet@0x6c8e82, which ALWAYS reads the AskPetAll format (DecodeStr message@0x6c8e9c + Decode1 count@0x6c8eb3 + Decode1 exceptionExists@0x6c8ec2 + count x (DecodeBuffer(8)@0x6c8f09 + Decode1@0x6c8f11)) \u2014 verified separately as npc/clientbound/NpcAskPetAllConversationDetail (v79 evidence pinned). There is NO pre-exceptionByte single-pet AskPetConversationDetail read; ASK_PET (msgType 10) routes unconditionally to the unified all-pets handler. The single-pet detail packet postdates v79 (task-113 stage E close final)."
-  },
-  {
-   "fname": "CEntrustedShopDlg::AddBlackList",
-   "reason": "Entrusted-shop (hired merchant) blacklist ADD send is version-absent in gms_v79: the v79 binary has NO CEntrustedShopDlg (func_query *EntrustedShop* yields only CWvsContext::OnEntrustedShopCheckResult @0x971dd8). The CEntrustedShopDlg management dialog is post-v79; Field + PersonalStore blacklist sends DO exist and are verified. (interaction-legacy-audit family pass, task-127)"
-  },
-  {
-   "fname": "CEntrustedShopDlg::DeleteBlackList",
-   "reason": "Entrusted-shop (hired merchant) blacklist DELETE send is version-absent in gms_v79: no CEntrustedShopDlg::DeleteBlackList in the v79 binary (only CWvsContext::OnEntrustedShopCheckResult @0x971dd8). Post-v79 feature. (interaction-legacy-audit family pass, task-127)"
   }
  ]
 }

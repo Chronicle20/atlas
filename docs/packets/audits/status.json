@@ -43534,8 +43534,7 @@
           "opcode": -1
         },
         "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v83": {
@@ -43667,8 +43666,7 @@
           "opcode": -1
         },
         "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v83": {

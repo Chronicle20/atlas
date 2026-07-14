@@ -12,7 +12,10 @@
 #   gms_v61 (=v72): 17-mode shifted enum + OPEN/EXIT; hired-merchant MANAGEMENT
 #     block (CEntrustedShopDlg) is version-ABSENT, keys omit v61/v72.
 #   gms_v79: base/trade/tie = v83; store/merchant/field + mini-game from
-#     ASK_RETREAT up = v83-1 (FORFEIT outlier=49); merchant-management n-a.
+#     ASK_RETREAT up = v83-1 (FORFEIT outlier=49); hired-merchant MANAGEMENT
+#     (CEntrustedShopDlg) IS present at v83-1 - the v79 binary's CEntrustedShopDlg
+#     is symbol-stripped, not absent (twin-proof + button-id map, see
+#     interaction-legacy-audit.md §7/§7.1).
 #   jms_v185: NON-uniform shift - INVITE_DECLINE d0, trade block d-2,
 #     store/merchant/mini-game d-3. CASH_TRADE_OPEN (folds into CREATE/VISIT/OPEN)
 #     and TRANSACTION (server-driven, no client send) are n-a on jms - both omitted.
@@ -46,14 +49,14 @@ operations:
   - { key: MERCHANT_PUT_ITEM,                  modes: { gms_v61: 31, gms_v72: 31, gms_v79: 32, gms_v83: 33, gms_v84: 33, gms_v87: 33, gms_v95: 33, jms_v185: 30 } }
   - { key: MERCHANT_BUY,                       modes: { gms_v61: 32, gms_v72: 32, gms_v79: 33, gms_v83: 34, gms_v84: 34, gms_v87: 34, gms_v95: 34, jms_v185: 31 } }
   - { key: MERCHANT_REMOVE_ITEM,               modes: { gms_v61: 36, gms_v72: 36, gms_v79: 37, gms_v83: 38, gms_v84: 38, gms_v87: 38, gms_v95: 38, jms_v185: 35 } }
-  - { key: MERCHANT_MERCHANT_OFF,              modes: { gms_v83: 39, gms_v84: 39, gms_v87: 39, gms_v95: 39, jms_v185: 36 } }
-  - { key: MERCHANT_ORGANIZE,                  modes: { gms_v83: 40, gms_v84: 40, gms_v87: 40, gms_v95: 40, jms_v185: 37 } }
-  - { key: MERCHANT_EXIT,                      modes: { gms_v83: 41, gms_v84: 41, gms_v87: 41, gms_v95: 41, jms_v185: 38 } }
-  - { key: MERCHANT_WITHDRAW_MESO,             modes: { gms_v83: 43, gms_v84: 43, gms_v87: 43, gms_v95: 43, jms_v185: 40 } }
-  - { key: MERCHANT_VIEW_VISIT_LIST,           modes: { gms_v83: 46, gms_v84: 46, gms_v87: 46, gms_v95: 46, jms_v185: 43 } }
-  - { key: MERCHANT_VIEW_BLACK_LIST,           modes: { gms_v83: 47, gms_v84: 47, gms_v87: 47, gms_v95: 47, jms_v185: 44 } }
-  - { key: MERCHANT_ADD_TO_BLACK_LIST,         modes: { gms_v83: 48, gms_v84: 48, gms_v87: 48, gms_v95: 48, jms_v185: 45 } }
-  - { key: MERCHANT_REMOVE_FROM_BLACK_LIST,    modes: { gms_v83: 49, gms_v84: 49, gms_v87: 49, gms_v95: 49, jms_v185: 46 } }
+  - { key: MERCHANT_MERCHANT_OFF,              modes: { gms_v79: 38, gms_v83: 39, gms_v84: 39, gms_v87: 39, gms_v95: 39, jms_v185: 36 } }
+  - { key: MERCHANT_ORGANIZE,                  modes: { gms_v79: 39, gms_v83: 40, gms_v84: 40, gms_v87: 40, gms_v95: 40, jms_v185: 37 } }
+  - { key: MERCHANT_EXIT,                      modes: { gms_v79: 40, gms_v83: 41, gms_v84: 41, gms_v87: 41, gms_v95: 41, jms_v185: 38 } }
+  - { key: MERCHANT_WITHDRAW_MESO,             modes: { gms_v79: 42, gms_v83: 43, gms_v84: 43, gms_v87: 43, gms_v95: 43, jms_v185: 40 } }
+  - { key: MERCHANT_VIEW_VISIT_LIST,           modes: { gms_v79: 45, gms_v83: 46, gms_v84: 46, gms_v87: 46, gms_v95: 46, jms_v185: 43 } }
+  - { key: MERCHANT_VIEW_BLACK_LIST,           modes: { gms_v79: 46, gms_v83: 47, gms_v84: 47, gms_v87: 47, gms_v95: 47, jms_v185: 44 } }
+  - { key: MERCHANT_ADD_TO_BLACK_LIST,         modes: { gms_v79: 47, gms_v83: 48, gms_v84: 48, gms_v87: 48, gms_v95: 48, jms_v185: 45 } }
+  - { key: MERCHANT_REMOVE_FROM_BLACK_LIST,    modes: { gms_v79: 48, gms_v83: 49, gms_v84: 49, gms_v87: 49, gms_v95: 49, jms_v185: 46 } }
   - { key: MEMORY_GAME_ASK_TIE,                modes: { gms_v79: 50, gms_v83: 50, gms_v84: 50, gms_v87: 50, gms_v95: 50, jms_v185: 47 } }
   - { key: MEMORY_GAME_TIE_ANSWER,             modes: { gms_v79: 51, gms_v83: 51, gms_v84: 51, gms_v87: 51, gms_v95: 51, jms_v185: 48 } }
   - { key: MEMORY_GAME_FORFEIT,                modes: { gms_v79: 49, gms_v83: 52, gms_v84: 52, gms_v87: 52, gms_v95: 52, jms_v185: 49 } }

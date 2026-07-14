@@ -8,6 +8,8 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
+	interactioncb "github.com/Chronicle20/atlas/libs/atlas-packet/interaction/clientbound"
 	interaction2 "github.com/Chronicle20/atlas/libs/atlas-packet/interaction/serverbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/sirupsen/logrus"
@@ -63,7 +65,7 @@ const (
 	CharacterInteractionModeMemoryGameFlipCard            CharacterInteractionMode = "MEMORY_GAME_FIP_CARD"               // 68 - 44
 )
 
-func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
+func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 		p := interaction2.Operation{}
 		p.Decode(l, ctx)(r, readerOptions)
@@ -83,11 +85,37 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, _
 			}
 			if roomType == model.PersonalShopMiniRoomType || roomType == model.MerchantShopMiniRoomType {
 				l.Debugf("Character [%d] has created a store. roomType [%d], title [%s], private [%t], position [%d], itemId [%d].", s.CharacterId(), roomType, sp.Title(), sp.Private(), sp.Slot(), sp.ItemId())
-				c, err := character.NewProcessor(l, ctx).GetById()(s.CharacterId())
+				rejectCreate := func(reason string) {
+					l.Warnf("Character [%d] store create rejected: %s. roomType [%d], itemId [%d].", s.CharacterId(), reason, roomType, sp.ItemId())
+					_ = session.Announce(l)(ctx)(wp)(interactioncb.CharacterInteractionWriter)(interactioncb.CharacterInteractionEnterResultErrorBody(interactioncb.CharacterInteractionEnterErrorModeUnable))(s)
+				}
+
+				// Permit validation: the claimed permit must be the right family for
+				// the requested store kind (514 <-> personal store, 503 <-> hired
+				// merchant) and actually present in the character's CASH inventory
+				// (Cosmic: countById >= 1, getMiniRoomError(6) otherwise). Permits
+				// are durable — never consumed (owner decision, lifecycle audit Q1).
+				permitClass := item.GetClassification(item.Id(sp.ItemId()))
+				if roomType == model.PersonalShopMiniRoomType && permitClass != item.ClassificationStorePermit {
+					rejectCreate("permit item is not a store permit (514 family)")
+					return
+				}
+				if roomType == model.MerchantShopMiniRoomType && permitClass != item.ClassificationHiredMerchant {
+					rejectCreate("permit item is not a hired-merchant permit (503 family)")
+					return
+				}
+
+				cp := character.NewProcessor(l, ctx)
+				c, err := cp.GetById(cp.InventoryDecorator)(s.CharacterId())
 				if err != nil {
 					l.WithError(err).Errorf("Unable to get character [%d] for shop placement.", s.CharacterId())
 					return
 				}
+				if _, ok := c.Inventory().Cash().FindFirstByItemId(sp.ItemId()); !ok {
+					rejectCreate("permit item not present in cash inventory")
+					return
+				}
+
 				mp := merchant.NewProcessor(l, ctx)
 				shopType := byte(1) // CharacterShop
 				if roomType == model.MerchantShopMiniRoomType {

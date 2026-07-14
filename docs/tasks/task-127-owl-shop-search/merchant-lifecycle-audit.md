@@ -93,9 +93,9 @@ Additionally the precheck's "already has a shop" test uses `GetByCharacterId`, w
 
 Fix: filter to non-Closed + `HiredMerchant` type (plus the Fredrick-pending check the merchant service already implements at create), and wire the pass/fail replies.
 
-### F5 🔴 No serverbound path ever opens a hired merchant
+### F5 🔴→✅ RESOLVED BY VERIFICATION: the hired-merchant open op is `OPEN` (0x0B), already wired
 
-The merchant open request (Cosmic `OPEN_CASH` = mode 0x0E with birthday) lands in the `CASH_TRADE_OPEN` arm as `nProc == 11 && roomType ∈ {4,5}` and is a **logged no-op** (`character_interaction.go:195-198`). The generic `OPEN` (0x0B) arm exists but its Cosmic analog is the player-shop open; whether the v83 `CEntrustedShopDlg` emits 0x0B or 0x0E must be IDA-verified (open question Q2) — either way, today the 0x0E path cannot transition a merchant `Draft → Open`, so a hired merchant can never go live through the client.
+IDA (v83): both dialogs send the identical go-live packet after the second-password prompt — `CPersonalShopDlg::OnCorrectSSN2(11)` and `CEntrustedShopDlg::OnCorrectSSN2(11)` each emit `[0x7B][0x0B][0x01]` (@0x6fcbac / @0x5187db). The merchant's later re-open from maintenance is `MAINTENANCE_OFF` 0x27 (`OnGoOut` @0x51925e, SPW-gated variant @0x5187a2), also already wired to `ExitMaintenance`. So the open path never needed new wiring — it only dead-ended because of F2 (owner resolution), fixed in Phase A. The `CASH_TRADE_OPEN` `nProc == 11` birthday arm is NOT the shop-open path and legitimately remains a logged no-op (its sender is elsewhere; unidentified, non-blocking).
 
 ### F6 🟡 `GetByCharacterId(...)[0]` used without state/type filtering in live paths
 

@@ -502,11 +502,7 @@ func handleShopUpdatedEvent(sc server.Model, wp writer.Producer) func(l logrus.F
 		sp := session.NewProcessor(l, ctx)
 		characterIds := append([]uint32{shop.CharacterId()}, shop.Visitors()...)
 		for _, cid := range characterIds {
-			meso := uint32(0)
-			if cid == shop.CharacterId() {
-				meso = shop.MesoBalance()
-			}
-			_ = sp.IfPresentByCharacterId(sc.Channel())(cid, session.Announce(l)(ctx)(wp)(interactioncb.CharacterInteractionWriter)(interactioncb.CharacterInteractionUpdateMerchantBody(meso, items)))
+			_ = sp.IfPresentByCharacterId(sc.Channel())(cid, session.Announce(l)(ctx)(wp)(interactioncb.CharacterInteractionWriter)(shopRefreshBody(shop, cid, items)))
 		}
 	}
 }
@@ -560,11 +556,7 @@ func handleListingPurchasedEvent(sc server.Model, wp writer.Producer) func(l log
 		characterIds := []uint32{shop.CharacterId()}
 		characterIds = append(characterIds, shop.Visitors()...)
 		for _, cid := range characterIds {
-			meso := uint32(0)
-			if cid == shop.CharacterId() {
-				meso = shop.MesoBalance()
-			}
-			_ = sp.IfPresentByCharacterId(sc.Channel())(cid, session.Announce(l)(ctx)(wp)(interactioncb.CharacterInteractionWriter)(interactioncb.CharacterInteractionUpdateMerchantBody(meso, items)))
+			_ = sp.IfPresentByCharacterId(sc.Channel())(cid, session.Announce(l)(ctx)(wp)(interactioncb.CharacterInteractionWriter)(shopRefreshBody(shop, cid, items)))
 		}
 	}
 }
@@ -770,6 +762,22 @@ func buildShopItems(l logrus.FieldLogger, listings []merchant.ListingModel) []in
 		})
 	}
 	return items
+}
+
+// shopRefreshBody picks the correct mode-25 UPDATE refresh for the shop type: a
+// hired merchant (CEntrustedShopDlg::OnRefresh) leads with the owner's meso
+// balance, a personal shop (CPersonalShopDlg::OnRefresh) does not. Sending meso
+// to a personal shop makes the client read its first byte as the item count
+// (→ 0 items rendered), so personal shops omit it (task-127).
+func shopRefreshBody(shop merchant.Model, cid uint32, items []interactionpkt.RoomShopItem) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	if shop.ShopType() == merchant.HiredMerchantShopType {
+		meso := uint32(0)
+		if cid == shop.CharacterId() {
+			meso = shop.MesoBalance()
+		}
+		return interactioncb.CharacterInteractionUpdateMerchantBody(meso, items)
+	}
+	return interactioncb.CharacterInteractionUpdatePersonalShopBody(items)
 }
 
 // assetFromSnapshot converts a typed AssetData into a packet model Asset.

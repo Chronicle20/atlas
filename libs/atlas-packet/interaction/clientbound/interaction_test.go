@@ -335,6 +335,37 @@ func TestInteractionUpdateMerchantBytes(t *testing.T) {
 	}
 }
 
+// TestInteractionUpdatePersonalShopBytes pins the personal-shop (item 514)
+// mode-25 refresh: CPersonalShopDlg::OnRefresh reads the item loop directly with
+// NO leading meso (only the hired-merchant override reads m_nMoney). The count
+// byte must sit immediately after the mode; a stray meso would be read as the
+// count (→ 0 items rendered, the task-127 "added item doesn't show" bug).
+func TestInteractionUpdatePersonalShopBytes(t *testing.T) {
+	items := []interaction.RoomShopItem{testShopItem()}
+	for _, v := range test.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			wantMode := byte(25)
+			if v.Region == "JMS" {
+				wantMode = 22
+			}
+			input := NewInteractionUpdatePersonalShop(wantMode, items)
+			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			b := test.Encode(t, ctx, input.Encode, nil)
+			if b[0] != wantMode {
+				t.Fatalf("mode: got %d, want %d", b[0], wantMode)
+			}
+			// count immediately after mode — NO 4-byte meso.
+			if b[1] != 1 {
+				t.Fatalf("count: got %d, want 1 (meso must be omitted for personal shops)", b[1])
+			}
+			// perBundle (short LE) = 1 follows the count directly.
+			if b[2] != 0x01 || b[3] != 0x00 {
+				t.Fatalf("perBundle bytes: got % x, want 01 00", b[2:4])
+			}
+		})
+	}
+}
+
 // TestInteractionVisitListBytes pins the hired-merchant visit-list response
 // (CEntrustedShopDlg sub_519505 @0x519505, mode 0x2E): Decode2 count, then per
 // entry DecodeStr name + Decode4 count.

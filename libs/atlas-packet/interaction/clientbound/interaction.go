@@ -261,13 +261,23 @@ func (m *InteractionLeave) Decode(_ logrus.FieldLogger, _ context.Context) func(
 // the meso (m_nMoney) then chains CPersonalShopDlg::OnRefresh for the item loop.
 // packet-audit:fname CEntrustedShopDlg::OnRefresh#UpdateMerchant
 type InteractionUpdateMerchant struct {
-	mode  byte
-	meso  uint32
-	items []interaction.RoomShopItem
+	mode     byte
+	meso     uint32
+	omitMeso bool
+	items    []interaction.RoomShopItem
 }
 
 func NewInteractionUpdateMerchant(mode byte, meso uint32, items []interaction.RoomShopItem) InteractionUpdateMerchant {
 	return InteractionUpdateMerchant{mode: mode, meso: meso, items: items}
+}
+
+// NewInteractionUpdatePersonalShop builds the mode-25 refresh for a personal
+// shop (item 514). CPersonalShopDlg::OnRefresh reads the item loop directly —
+// only the hired-merchant override CEntrustedShopDlg::OnRefresh prefixes the
+// Decode4 meso (m_nMoney). Sending the meso to a personal shop makes the client
+// read its first byte as the item count (→ 0 items shown), so it is omitted.
+func NewInteractionUpdatePersonalShop(mode byte, items []interaction.RoomShopItem) InteractionUpdateMerchant {
+	return InteractionUpdateMerchant{mode: mode, omitMeso: true, items: items}
 }
 
 func (m InteractionUpdateMerchant) Operation() string { return CharacterInteractionWriter }
@@ -279,7 +289,9 @@ func (m InteractionUpdateMerchant) Encode(l logrus.FieldLogger, ctx context.Cont
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
 		w.WriteByte(m.mode)
-		w.WriteInt(m.meso)
+		if !m.omitMeso {
+			w.WriteInt(m.meso)
+		}
 		w.WriteByte(byte(len(m.items)))
 		for _, item := range m.items {
 			w.WriteShort(item.PerBundle)
@@ -294,7 +306,9 @@ func (m InteractionUpdateMerchant) Encode(l logrus.FieldLogger, ctx context.Cont
 func (m *InteractionUpdateMerchant) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.mode = r.ReadByte()
-		m.meso = r.ReadUint32()
+		if !m.omitMeso {
+			m.meso = r.ReadUint32()
+		}
 		count := int(r.ReadByte())
 		m.items = make([]interaction.RoomShopItem, 0, count)
 		for i := 0; i < count; i++ {

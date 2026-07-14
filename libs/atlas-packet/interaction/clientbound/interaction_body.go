@@ -113,6 +113,15 @@ func CharacterInteractionUpdateMerchantBody(meso uint32, items []interaction.Roo
 	})
 }
 
+// CharacterInteractionUpdatePersonalShopBody is the mode-25 refresh for a
+// personal shop (item 514): same shape as the merchant refresh but WITHOUT the
+// leading meso field, which only the hired-merchant client reads.
+func CharacterInteractionUpdatePersonalShopBody(items []interaction.RoomShopItem) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", CharacterInteractionModeUpdateMerchant, func(mode byte) packet.Encoder {
+		return NewInteractionUpdatePersonalShop(mode, items)
+	})
+}
+
 func CharacterInteractionVisitListBody(entries []InteractionVisitListEntry) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", CharacterInteractionModeMerchantViewVisitList, func(mode byte) packet.Encoder {
 		conv := make([]VisitListEntry, 0, len(entries))

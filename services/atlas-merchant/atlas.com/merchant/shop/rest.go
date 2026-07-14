@@ -1,6 +1,8 @@
 package shop
 
 import (
+	"time"
+
 	"atlas-merchant/kafka/message/asset"
 	"atlas-merchant/listing"
 
@@ -23,6 +25,7 @@ type RestModel struct {
 	PermitItemId uint32              `json:"permitItemId"`
 	CloseReason  byte                `json:"closeReason"`
 	MesoBalance  uint32              `json:"mesoBalance"`
+	CreatedAt    time.Time           `json:"createdAt"`
 	ListingCount int64               `json:"listingCount"`
 	Visitors     []uint32            `json:"visitors,omitempty"`
 	Listings     []listing.RestModel `json:"-"`
@@ -86,6 +89,7 @@ func Transform(m Model) (RestModel, error) {
 		PermitItemId: m.PermitItemId(),
 		CloseReason:  byte(m.CloseReason()),
 		MesoBalance:  m.MesoBalance(),
+		CreatedAt:    m.CreatedAt(),
 	}, nil
 }
 

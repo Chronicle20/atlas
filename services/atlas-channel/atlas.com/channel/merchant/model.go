@@ -1,6 +1,8 @@
 package merchant
 
 import (
+	"time"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/google/uuid"
@@ -20,6 +22,7 @@ type Model struct {
 	y            int16
 	permitItemId uint32
 	mesoBalance  uint32
+	createdAt    time.Time
 	listingCount int64
 	visitors     []uint32
 	listings     []ListingModel
@@ -38,6 +41,7 @@ func (m Model) X() int16                  { return m.x }
 func (m Model) Y() int16                  { return m.y }
 func (m Model) PermitItemId() uint32      { return m.permitItemId }
 func (m Model) MesoBalance() uint32       { return m.mesoBalance }
+func (m Model) CreatedAt() time.Time      { return m.createdAt }
 func (m Model) ListingCount() int64       { return m.listingCount }
 func (m Model) Visitors() []uint32        { return m.visitors }
 func (m Model) Listings() []ListingModel  { return m.listings }

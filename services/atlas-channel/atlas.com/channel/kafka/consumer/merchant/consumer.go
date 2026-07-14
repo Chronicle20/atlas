@@ -14,6 +14,7 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
@@ -181,7 +182,7 @@ func handleShopSetupEvent(sc server.Model, wp writer.Producer) func(l logrus.Fie
 
 		l.Debugf("Shop [%s] created by character [%d] entering setup in map [%d] instance [%s].", e.Body.ShopId, e.CharacterId, e.Body.MapId, e.Body.InstanceId)
 
-		room, err := buildShopRoom(l, ctx, e.Body.ShopId, e.CharacterId)
+		room, err := buildShopRoomFirstTime(l, ctx, e.Body.ShopId, e.CharacterId, true)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to build setup room for shop [%s].", e.Body.ShopId)
 			return
@@ -540,6 +541,14 @@ func broadcastEmployeeBalloonUpdate(l logrus.FieldLogger, ctx context.Context, w
 
 // buildShopRoom fetches shop data and resolves character info to build the appropriate room packet.
 func buildShopRoom(l logrus.FieldLogger, ctx context.Context, shopId string, viewerCharacterId uint32) (interactionpkt.Room, error) {
+	return buildShopRoomFirstTime(l, ctx, shopId, viewerCharacterId, false)
+}
+
+// buildShopRoomFirstTime builds the enter-result room for viewerCharacterId.
+// firstTime marks the hired-merchant owner's creation-time view (the client's
+// Decode1 @0x518b0a branches the owner UI on it); pass true only from the
+// SHOP_SETUP handler.
+func buildShopRoomFirstTime(l logrus.FieldLogger, ctx context.Context, shopId string, viewerCharacterId uint32, firstTime bool) (interactionpkt.Room, error) {
 	mp := merchant.NewProcessor(l, ctx)
 	shop, err := mp.GetShop(shopId)
 	if err != nil {
@@ -550,14 +559,35 @@ func buildShopRoom(l logrus.FieldLogger, ctx context.Context, shopId string, vie
 
 	items := buildShopItems(l, shop.Listings())
 
+	position, err := viewerPosition(shop, viewerCharacterId)
+	if err != nil {
+		return interactionpkt.Room{}, err
+	}
+
 	// CharacterShop (1) = PersonalShop, HiredMerchant (2) = MerchantShop.
 	if shop.ShopType() == merchant.HiredMerchantShopType {
-		return buildMerchantShopRoom(l, ctx, cp, shop, viewerCharacterId, items)
+		return buildMerchantShopRoom(l, ctx, cp, shop, position, firstTime, items)
 	}
-	return buildPersonalShopRoom(l, ctx, cp, shop, viewerCharacterId, items)
+	return buildPersonalShopRoom(l, ctx, cp, shop, position, items)
 }
 
-func buildMerchantShopRoom(l logrus.FieldLogger, ctx context.Context, cp character.Processor, shop merchant.Model, viewerCharacterId uint32, items []interactionpkt.RoomShopItem) (interactionpkt.Room, error) {
+// viewerPosition resolves the recipient's position in the room: 0 for the
+// owner, the 1-indexed visitor slot otherwise (shop.Visitors() is the
+// insertion-ordered visitor registry — the same ordering the merchant service
+// uses for VISITOR_* event slots).
+func viewerPosition(shop merchant.Model, viewerCharacterId uint32) (byte, error) {
+	if viewerCharacterId == shop.CharacterId() {
+		return 0, nil
+	}
+	for i, visitorId := range shop.Visitors() {
+		if visitorId == viewerCharacterId {
+			return byte(i + 1), nil
+		}
+	}
+	return 0, fmt.Errorf("character [%d] is neither owner nor visitor of shop [%s]", viewerCharacterId, shop.Id())
+}
+
+func buildMerchantShopRoom(l logrus.FieldLogger, ctx context.Context, cp character.Processor, shop merchant.Model, position byte, firstTime bool, items []interactionpkt.RoomShopItem) (interactionpkt.Room, error) {
 	// Owner is represented as MerchantVisitor (NPC sprite with item ID).
 	ownerVisitor := interactionpkt.NewMerchantVisitor(shop.PermitItemId(), shop.Title())
 
@@ -572,10 +602,11 @@ func buildMerchantShopRoom(l logrus.FieldLogger, ctx context.Context, cp charact
 		visitors = append(visitors, interactionpkt.NewBaseVisitor(byte(i+1), avatar, c.Name()))
 	}
 
-	// Messages are only visible to the owner.
+	// Messages are only visible to the owner (position 0).
 	var messages []interactionpkt.RoomMessage
-	if viewerCharacterId == shop.CharacterId() {
-		// No stored messages currently; placeholder for future implementation.
+	if position == 0 {
+		// No stored messages currently; the merchant service tracks them but the
+		// channel-side room builder does not surface them yet.
 	}
 
 	ownerChar, err := cp.GetById()(shop.CharacterId())
@@ -583,13 +614,35 @@ func buildMerchantShopRoom(l logrus.FieldLogger, ctx context.Context, cp charact
 		return interactionpkt.Room{}, fmt.Errorf("unable to resolve owner [%d]: %w", shop.CharacterId(), err)
 	}
 
-	// ownerView drives the OnEnterResultBase header byte (offset 0xC8) — set when
-	// the recipient is the shop owner (CEntrustedShopDlg::OnEnterResult @0x518a7e).
-	ownerView := viewerCharacterId == shop.CharacterId()
-	return interactionpkt.NewMerchantShopRoom(ownerView, visitors, messages, ownerChar.Name(), shop.Title(), 16, shop.MesoBalance(), items), nil
+	// position 0 (owner) additionally carries the open-time/first-time/ledger
+	// block (CEntrustedShopDlg::OnEnterResult zero-branch @0x518a7e). Open time
+	// is approximated as minutes since creation (retail counts from OPEN; the
+	// Draft window is normally minutes). No per-sale ledger is tracked
+	// server-side, so the ledger is empty with the accrued balance as total.
+	room := interactionpkt.NewMerchantShopRoom(position, visitors, messages, ownerChar.Name(), shop.Title(), 16, shop.MesoBalance(), items)
+	if position == 0 {
+		room = room.SetOwnerLedger(minutesSince(shop.CreatedAt()), firstTime, nil, shop.MesoBalance())
+	}
+	return room, nil
 }
 
-func buildPersonalShopRoom(l logrus.FieldLogger, ctx context.Context, cp character.Processor, shop merchant.Model, viewerCharacterId uint32, items []interactionpkt.RoomShopItem) (interactionpkt.Room, error) {
+// minutesSince converts elapsed wall time to the uint16 minute count the
+// merchant owner view displays, saturating instead of wrapping.
+func minutesSince(t time.Time) uint16 {
+	if t.IsZero() {
+		return 0
+	}
+	m := int64(time.Since(t) / time.Minute)
+	if m < 0 {
+		return 0
+	}
+	if m > 65535 {
+		return 65535
+	}
+	return uint16(m)
+}
+
+func buildPersonalShopRoom(l logrus.FieldLogger, ctx context.Context, cp character.Processor, shop merchant.Model, position byte, items []interactionpkt.RoomShopItem) (interactionpkt.Room, error) {
 	// Owner is slot 0 as a regular visitor with avatar.
 	ownerChar, err := cp.GetById(cp.InventoryDecorator)(shop.CharacterId())
 	if err != nil {
@@ -608,11 +661,10 @@ func buildPersonalShopRoom(l logrus.FieldLogger, ctx context.Context, cp charact
 		visitors = append(visitors, interactionpkt.NewBaseVisitor(byte(i+1), avatar, c.Name()))
 	}
 
-	// ownerView drives the OnEnterResultBase header byte (offset 0xC8): the owner
-	// (CPersonalShopDlg::OnEnterResult @0x6fc528 `if(*(this+50))`) gets the add-item
-	// management UI, a visitor the buy UI.
-	ownerView := viewerCharacterId == shop.CharacterId()
-	return interactionpkt.NewPersonalShopRoom(ownerView, visitors, shop.Title(), 16, items), nil
+	// position is the recipient's slot in the room (0 = owner): the client
+	// branches owner/visitor view on it (CPersonalShopDlg::OnEnterResult
+	// @0x6fc528 — ZERO = owner add-item management UI).
+	return interactionpkt.NewPersonalShopRoom(position, visitors, shop.Title(), 16, items), nil
 }
 
 // buildShopItems converts listing models to packet RoomShopItems.

@@ -31,7 +31,6 @@ type MiniRoom interface {
 	Spawn(characterId uint32) packet.Encode
 	Despawn(characterId uint32) packet.Encode
 	Enter(characterId uint32) packet.Encode
-	ToPacketRoom(l logrus.FieldLogger, ctx context.Context, options map[string]interface{}, characterId uint32) interactionpkt.Room
 }
 
 type MiniRoomVisitor interface {
@@ -105,9 +104,6 @@ func (m *MiniRoomBase) Enter(_ uint32) packet.Encode {
 	}
 }
 
-func (m *MiniRoomBase) ToPacketRoom(_ logrus.FieldLogger, _ context.Context, _ map[string]interface{}, _ uint32) interactionpkt.Room {
-	panic("concrete ToPacketRoom implementation needed")
-}
 
 type GameMiniRoom struct {
 	*MiniRoomBase
@@ -123,13 +119,6 @@ func (m *GameMiniRoom) Spawn(_ uint32) packet.Encode {
 	}
 }
 
-func (m *GameMiniRoom) ToPacketRoom(l logrus.FieldLogger, ctx context.Context, options map[string]interface{}, _ uint32) interactionpkt.Room {
-	visitors := make([]interactionpkt.Visitor, 0, len(m.Visitors()))
-	for _, v := range m.Visitors() {
-		visitors = append(visitors, v.ToPacketVisitor(l, ctx, options))
-	}
-	return interactionpkt.NewGameRoom(interactionpkt.RoomType(m.Type()), m.Capacity(), visitors, m.title, m.gameKind, m.tournament, m.round)
-}
 
 func (m *GameMiniRoom) Enter(_ uint32) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
@@ -192,22 +181,6 @@ type PersonalShopMiniRoom struct {
 	items        []ShopItem
 }
 
-func (m *PersonalShopMiniRoom) ToPacketRoom(l logrus.FieldLogger, ctx context.Context, options map[string]interface{}, characterId uint32) interactionpkt.Room {
-	visitors := make([]interactionpkt.Visitor, 0, len(m.Visitors()))
-	for _, v := range m.Visitors() {
-		visitors = append(visitors, v.ToPacketVisitor(l, ctx, options))
-	}
-	items := make([]interactionpkt.RoomShopItem, 0, len(m.items))
-	for _, i := range m.items {
-		items = append(items, interactionpkt.RoomShopItem{
-			PerBundle: i.perBundle,
-			Quantity:  i.quantity,
-			Price:     i.price,
-			Asset:     NewAsset(true, i.asset),
-		})
-	}
-	return interactionpkt.NewPersonalShopRoom(characterId == m.ownerId, visitors, m.title, m.maxItemCount, items)
-}
 
 func (m *PersonalShopMiniRoom) Enter(_ uint32) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
@@ -267,31 +240,6 @@ type MerchantShopMiniRoom struct {
 	items        []ShopItem
 }
 
-func (m *MerchantShopMiniRoom) ToPacketRoom(l logrus.FieldLogger, ctx context.Context, options map[string]interface{}, characterId uint32) interactionpkt.Room {
-	visitors := make([]interactionpkt.Visitor, 0, len(m.Visitors()))
-	for _, v := range m.Visitors() {
-		visitors = append(visitors, v.ToPacketVisitor(l, ctx, options))
-	}
-	var messages []interactionpkt.RoomMessage
-	if characterId == m.ownerId {
-		for _, msg := range m.messages {
-			messages = append(messages, interactionpkt.RoomMessage{Message: msg.message, Slot: msg.slot})
-		}
-	}
-	items := make([]interactionpkt.RoomShopItem, 0, len(m.items))
-	for _, i := range m.items {
-		items = append(items, interactionpkt.RoomShopItem{
-			PerBundle: i.perBundle,
-			Quantity:  i.quantity,
-			Price:     i.price,
-			Asset:     NewAsset(true, i.asset),
-		})
-	}
-	// This MerchantShopMiniRoom model carries no separate shop title; the live
-	// hired-merchant path builds the room in the merchant Kafka consumer (which
-	// passes shop.Title()). Pass empty here rather than mislabel it with ownerName.
-	return interactionpkt.NewMerchantShopRoom(characterId == m.ownerId, visitors, messages, m.ownerName, "", m.maxItemCount, m.meso, items)
-}
 
 func (m *MerchantShopMiniRoom) Enter(characterId uint32) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {

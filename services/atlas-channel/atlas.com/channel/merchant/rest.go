@@ -24,6 +24,7 @@ type RestModel struct {
 	Y            int16              `json:"y"`
 	PermitItemId uint32             `json:"permitItemId"`
 	MesoBalance  uint32             `json:"mesoBalance"`
+	CreatedAt    time.Time          `json:"createdAt"`
 	ListingCount int64              `json:"listingCount"`
 	Visitors     []uint32           `json:"visitors,omitempty"`
 	Listings     []ListingRestModel `json:"-"`
@@ -129,6 +130,7 @@ func Extract(rm RestModel) (Model, error) {
 		y:            rm.Y,
 		permitItemId: rm.PermitItemId,
 		mesoBalance:  rm.MesoBalance,
+		createdAt:    rm.CreatedAt,
 		listingCount: rm.ListingCount,
 		visitors:     rm.Visitors,
 		listings:     ls,

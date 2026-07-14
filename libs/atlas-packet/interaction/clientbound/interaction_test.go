@@ -143,7 +143,7 @@ func TestInteractionEnterRoundTrip(t *testing.T) {
 // maxUsers + per-slot avatar loop terminated by slot 0xFF).
 func TestInteractionEnterResultSuccessRoundTrip(t *testing.T) {
 	visitors := []interaction.Visitor{interaction.NewBaseVisitor(0, testAvatar(), "ShopOwner")}
-	room := interaction.NewPersonalShopRoom(true, visitors, "CoolShop", 16, []interaction.RoomShopItem{testShopItem()})
+	room := interaction.NewPersonalShopRoom(0, visitors, "CoolShop", 16, []interaction.RoomShopItem{testShopItem()})
 	input := NewInteractionEnterResultSuccess(5, room)
 	for _, v := range test.Variants {
 		t.Run(v.Name, func(t *testing.T) {
@@ -165,27 +165,31 @@ func TestInteractionEnterResultSuccessRoundTrip(t *testing.T) {
 //	mode                 = 5     (ENTER_RESULT; passed to NewInteractionEnterResultSuccess)
 //	roomType             = 4     (PersonalShop; Room.Encode, OnEnterResultStatic Decode1 @0x65e02b)
 //	capacity             = 4     (OnEnterResultBase Decode1 -> *(this+0xCC) @0x65ec5d)
-//	ownerView byte       = 1/0   (OnEnterResultBase Decode1 -> *(this+0xC8) @0x65ec6b; the fix)
+//	position byte        = 0/n   (OnEnterResultBase Decode1 -> *(this+0xC8) @0x65ec6b; the fix)
 //	0xFF                 =       (empty visitor list; slot<0 breaks loop @0x65ec7d)
 //	title "AB"           = 02 00 41 42   (CPersonalShopDlg::OnEnterResult DecodeStr @0x6fc62a)
 //	maxItemCount = 16    = 10    (Decode1 -> *(this+109) @0x6fc683)
 //	itemCount = 0        = 00    (CPersonalShopDlg::OnRefresh Decode1 @0x6fcc64; vtable+112 @0xAFD498)
 //
-// The client branches on the ownerView byte in CPersonalShopDlg::OnEnterResult
-// @0x6fc528 (`if(*(this+50))`): 1 = owner add-item management UI, 0 = visitor buy UI.
+// The position byte is the recipient's position in the room: 0 = owner,
+// 1..3 = visitor slot. CPersonalShopDlg::OnEnterResult branches on it
+// @0x6fc528 (`if(*(this+50))`): ZERO = owner add-item management UI, nonzero
+// = visitor buy UI. Cross-checked against Cosmic PacketCreator.getPlayerShop
+// (writes owner?0:1) — a v83-proven reference; the previous inverted reading
+// (1 = owner) put live shop owners into the visitor buy view.
 // (The EnterResultSuccess packet-audit:verify markers for every version live in the
 // block above TestInteractionInviteRoundTrip; this fixture backs the gms_v83 one.)
 func TestInteractionEnterResultSuccessBytes(t *testing.T) {
 	cases := []struct {
-		name      string
-		ownerView bool
-		want      []byte
+		name     string
+		position byte
+		want     []byte
 	}{
-		{"owner", true, []byte{0x05, 0x04, 0x04, 0x01, 0xFF, 0x02, 0x00, 0x41, 0x42, 0x10, 0x00}},
-		{"visitor", false, []byte{0x05, 0x04, 0x04, 0x00, 0xFF, 0x02, 0x00, 0x41, 0x42, 0x10, 0x00}},
+		{"owner", 0, []byte{0x05, 0x04, 0x04, 0x00, 0xFF, 0x02, 0x00, 0x41, 0x42, 0x10, 0x00}},
+		{"visitor_slot2", 2, []byte{0x05, 0x04, 0x04, 0x02, 0xFF, 0x02, 0x00, 0x41, 0x42, 0x10, 0x00}},
 	}
 	for _, tc := range cases {
-		room := interaction.NewPersonalShopRoom(tc.ownerView, nil, "AB", 16, nil)
+		room := interaction.NewPersonalShopRoom(tc.position, nil, "AB", 16, nil)
 		input := NewInteractionEnterResultSuccess(5, room)
 		for _, v := range test.Variants {
 			t.Run(tc.name+"/"+v.Name, func(t *testing.T) {
@@ -204,16 +208,17 @@ func TestInteractionEnterResultSuccessBytes(t *testing.T) {
 // the FULL tail against CEntrustedShopDlg::OnEnterResult (v83 @0x518873).
 //
 // Read order (after the version-stable OnEnterResultBase header — roomType, capacity,
-// ownerView byte, visitor loop terminated by slot 0xFF):
+// position byte, visitor loop terminated by slot 0xFF):
 //
 //	Decode2 msgCount; msgCount x {DecodeStr msg, Decode1 slot}    (@0x518888..)
 //	DecodeStr ownerName                                           (this+479 @0x518a54)
-//	if !ownerView (customer, *(this+0xC8)==0, branch @0x518a7e):
-//	    Decode4 meso                                              (this[482] @0x518b04)
-//	    Decode1 flag                                              (@0x518b0a; 0 = not sold out)
+//	if position == 0 (OWNER, *(this+0xC8)==0, branch @0x518a7e):
+//	    Decode4 packed open-time                                  (this[482] @0x518b04;
+//	                                                               short 0 + short minutes)
+//	    Decode1 firstTime                                         (@0x518b0a; branches owner UI)
 //	    Decode1 soldCount;                                        (DecodeSoldItemList
 //	    soldCount x {Decode4 id, Decode2 qty, Decode4 price,       sub_518EFD @0x518efd)
-//	        DecodeStr buyer}; Decode4 total
+//	        DecodeStr buyer}; Decode4 accrued meso total
 //	DecodeStr title                                               (this+105 @0x518c8f)
 //	Decode1 maxItem                                               (this+109 @0x518d12)
 //	Decode4 withdrawable meso;                                    (CEntrustedShopDlg::OnRefresh
@@ -221,36 +226,41 @@ func TestInteractionEnterResultSuccessBytes(t *testing.T) {
 //	    qty, Decode4 price, GW_ItemSlotBase}                       CPersonalShopDlg::OnRefresh
 //	                                                               @0x6fcc4e)
 //
-// The trailing OnRefresh call at @0x518d27 is `call dword ptr [eax+70h]` (0x70 = 112) =
-// off_AF3928[112] = CEntrustedShopDlg::OnRefresh @0x518852 (confirmed from disassembly +
-// vtable bytes, not the decompiler's mislabelled "+28"). Atlas populates both the
-// customer meso (this[482]) and the OnRefresh withdrawable meso (this[481]) from the
-// single shop balance, so both slots carry 1000 below.
+// Position semantics cross-checked against Cosmic PacketCreator.getHiredMerchant:
+// Cosmic sends the extra block (short 0, short timeOpen, byte firstTime, sold list,
+// int merchantMeso) iff the recipient is the OWNER, and the client decodes it in
+// the position==0 branch — so 0 = owner. The owner-only management UI open
+// (CWvsContext::UI_Open) is gated on !position @0x518d3d. The trailing OnRefresh
+// call at @0x518d27 is `call dword ptr [eax+70h]` (0x70 = 112) = off_AF3928[112] =
+// CEntrustedShopDlg::OnRefresh @0x518852 (confirmed from disassembly + vtable
+// bytes, not the decompiler's mislabelled "+28").
 func TestInteractionEnterResultSuccessMerchantBytes(t *testing.T) {
 	cases := []struct {
-		name      string
-		ownerView bool
-		want      []byte
+		name string
+		room interaction.Room
+		want []byte
 	}{
-		// owner view skips the meso/flag/sold-ledger block entirely.
-		{"owner", true, []byte{
-			0x05, 0x05, 0x04, 0x01, 0xFF, // mode 5, roomType 5, capacity 4, ownerView 1, no visitors
+		// OWNER view (position 0) carries the open-time/firstTime/ledger block.
+		{"owner", interaction.NewMerchantShopRoom(0, nil, nil, "AB", "CD", 16, 1000, nil).
+			SetOwnerLedger(42, true, nil, 1000), []byte{
+			0x05, 0x05, 0x04, 0x00, 0xFF, // mode 5, roomType 5, capacity 4, position 0 (owner), no visitors
 			0x00, 0x00, // msgCount 0
 			0x02, 0x00, 0x41, 0x42, // ownerName "AB"
+			0x00, 0x00, // packed open-time low short (always 0)
+			0x2A, 0x00, // open-time 42 minutes
+			0x01,                   // firstTime 1 (creation-time view)
+			0x00,                   // soldCount 0
+			0xE8, 0x03, 0x00, 0x00, // accrued meso total 1000
 			0x02, 0x00, 0x43, 0x44, // title "CD"
 			0x10,                   // maxItem 16
 			0xE8, 0x03, 0x00, 0x00, // OnRefresh withdrawable meso 1000
 			0x00, // itemCount 0
 		}},
-		// customer view reads meso(1000) + flag(0) + soldCount(0) + soldTotal(0) before title.
-		{"customer", false, []byte{
-			0x05, 0x05, 0x04, 0x00, 0xFF, // mode 5, roomType 5, capacity 4, ownerView 0, no visitors
+		// visitor view (position = slot) goes straight from ownerName to title.
+		{"visitor_slot1", interaction.NewMerchantShopRoom(1, nil, nil, "AB", "CD", 16, 1000, nil), []byte{
+			0x05, 0x05, 0x04, 0x01, 0xFF, // mode 5, roomType 5, capacity 4, position 1 (visitor slot 1), no visitors
 			0x00, 0x00, // msgCount 0
 			0x02, 0x00, 0x41, 0x42, // ownerName "AB"
-			0xE8, 0x03, 0x00, 0x00, // customer meso 1000
-			0x00,                   // sold-out flag 0
-			0x00,                   // soldCount 0
-			0x00, 0x00, 0x00, 0x00, // soldTotal 0
 			0x02, 0x00, 0x43, 0x44, // title "CD"
 			0x10,                   // maxItem 16
 			0xE8, 0x03, 0x00, 0x00, // OnRefresh withdrawable meso 1000
@@ -258,8 +268,7 @@ func TestInteractionEnterResultSuccessMerchantBytes(t *testing.T) {
 		}},
 	}
 	for _, tc := range cases {
-		room := interaction.NewMerchantShopRoom(tc.ownerView, nil, nil, "AB", "CD", 16, 1000, nil)
-		input := NewInteractionEnterResultSuccess(5, room)
+		input := NewInteractionEnterResultSuccess(5, tc.room)
 		for _, v := range test.Variants {
 			t.Run(tc.name+"/"+v.Name, func(t *testing.T) {
 				ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)

@@ -1,6 +1,6 @@
 # Merchant Shop Lifecycle Audit — task-127 addendum
 
-Status: Findings verified; remediation not yet started
+Status: Findings verified; remediation in progress (all phases approved 2026-07-14)
 Created: 2026-07-14
 Scope: player shops (514-family permit) and hired merchants (503-family permit) — the substrate task-127's owl search/warp needs operational to be testable.
 
@@ -145,7 +145,7 @@ Exit criteria: the Player-shop narrative steps 1–5 pass live on a v83 tenant; 
 ### Phase B — hired-merchant bring-up + permit semantics
 - **B1 (F4):** wire ENTRUSTED_SHOP_CHECK_RESULT replies (proceed / Fredrick-required / error) with per-version mode bytes IDA-verified (Q3); fix the precheck query filter (non-Closed + type + Fredrick-pending).
 - **B2 (F5):** IDA-verify which serverbound op the v83 merchant dialog sends to open (Q2); wire it to `OpenShop`; keep `OPEN` (0x0B) for personal shops.
-- **B3 (F7):** validate permit presence at CREATE (inventory check by item id family 503/514 matching roomType — reject mismatches); implement consumption per Q1's answer via the standard saga/compartment flow so a failed open never consumes.
+- **B3 (F7):** validate permit presence at CREATE (inventory check by item id family 503/514 matching roomType — reject mismatches). Per Q1: permits are **never consumed** — validation only, no consumption flow.
 
 Exit criteria: hired-merchant narrative steps 1–3 pass live; employee NPC spawn/despawn already covered by the field-spawn design in this worktree.
 
@@ -156,10 +156,10 @@ Exit criteria: hired-merchant narrative steps 1–3 pass live; employee NPC spaw
 
 Standard gates per phase: `go test -race`, `go vet`, `go build`, `docker buildx bake` for atlas-merchant/atlas-channel/atlas-packet-touching services, redis-key-guard, goroutine-guard, packet fixtures + matrix `--check` where codecs changed, code review before PR.
 
-## 5. Open questions (verify before/during implementation)
+## 5. Open questions — RESOLVED (owner decisions, 2026-07-14)
 
-- **Q1 — permit consumption rule.** Cosmic consumes the player-shop permit at OPEN only behind `USE_ERASE_PERMIT_ON_OPENSHOP`, and does not appear to consume the merchant permit at open at all. What is faithful v83 GMS behavior, and do we want it config-driven per tenant? (Blocks B3; default proposal: consume at first successful OPEN, both types, tenant-configurable.)
-- **Q2 — merchant open op.** Does v83 `CEntrustedShopDlg` send `OPEN` (0x0B) or `CASH_TRADE_OPEN` (0x0E, nProc 11 with birthday) to go live? IDA-verify the dialog's send path. (Blocks B2.)
-- **Q3 — ENTRUSTED_SHOP_CHECK_RESULT mode bytes per version.** Cosmic uses 0x07 (proceed) / 0x09 (Fredrick) on v83; per-version values must come from each IDB's `OnEntrustedShopCheckResult` switch, config-resolved per the operations-table pattern. (Blocks B1.)
-- **Q4 — visitor position bytes 2–3.** Confirm the client renders slots 2–3 correctly when the position byte is the true slot (Cosmic always sends 1; the true-slot encoding is believed correct from `OnEnterResultBase`'s slot-indexed avatar storage @0x65ecac but is unverified live).
-- **Q5 — Draft-merchant logout policy.** Proposal: logout closes `Draft` merchants (setup is owner-attached), `Open` merchants persist (current, faithful). Confirm owner intent.
+- **Q1 — permit consumption rule: NEVER CONSUME.** Permits are durable items; opening a shop consumes nothing (matches Cosmic's default with `USE_ERASE_PERMIT_ON_OPENSHOP` off). B3 shrinks to permit-ownership *validation* only — no consumption saga, no refund concerns. Create-then-abandon trivially costs nothing.
+- **Q2 — merchant open op.** IDA-verify during B2 which serverbound op v83 `CEntrustedShopDlg` sends to go live (`OPEN` 0x0B vs `CASH_TRADE_OPEN` 0x0E nProc 11); wire the verified path.
+- **Q3 — ENTRUSTED_SHOP_CHECK_RESULT mode bytes per version.** IDA-derive per version from each IDB's `OnEntrustedShopCheckResult` switch during B1; config-resolved via the operations-table pattern (never hard-coded).
+- **Q4 — visitor position bytes: TRUE SLOT (1–3).** Encode the visitor's actual slot from the visitor registry (client stores avatars slot-indexed, `OnEnterResultBase` @0x65ecac). Verify slots 2–3 render correctly during Phase A live testing.
+- **Q5 — Draft-merchant logout policy: CLOSE ON LOGOUT.** A `Draft` is an owner-attached setup session; logout closes Draft shops of both types (staged stock follows the existing CloseShop return paths). `Open` hired merchants keep their survive-logout semantics unchanged.

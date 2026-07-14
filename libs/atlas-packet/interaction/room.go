@@ -46,7 +46,7 @@ type RoomSoldItem struct {
 type Room struct {
 	roomType     RoomType
 	capacity     byte
-	ownerView    bool
+	position     byte
 	visitors     []Visitor
 	title        string
 	gameKind     byte
@@ -57,6 +57,8 @@ type Room struct {
 	messages     []RoomMessage
 	ownerName    string
 	meso         uint32
+	openTime     uint16
+	firstTime    bool
 	soldItems    []RoomSoldItem
 	soldTotal    uint32
 }
@@ -74,15 +76,17 @@ func NewGameRoom(roomType RoomType, capacity byte, visitors []Visitor, title str
 }
 
 // NewPersonalShopRoom builds a personal-store (roomType 4) enter-result room.
-// ownerView selects the CMiniRoomBaseDlg::OnEnterResultBase second header byte
-// (real offset 0xC8): the client branches on it in CPersonalShopDlg::OnEnterResult
-// (v83 @0x6fc528 `if(*(this+50))`) — nonzero opens the owner's add-item management
-// UI, zero the visitor buy UI. Pass true when the recipient is the shop owner.
-func NewPersonalShopRoom(ownerView bool, visitors []Visitor, title string, maxItemCount byte, items []RoomShopItem) Room {
+// position is the recipient's position in the room — 0 = owner, 1..3 = the
+// visitor's slot. It lands in the CMiniRoomBaseDlg::OnEnterResultBase second
+// header byte (v83 @0x65ec6b -> *(this+0xC8)); CPersonalShopDlg::OnEnterResult
+// branches on it (v83 @0x6fc528 `if(*(this+50))`): ZERO opens the owner's
+// add-item management UI, nonzero the visitor buy UI. (Cosmic writes
+// owner?0:1 in PacketCreator.getPlayerShop.)
+func NewPersonalShopRoom(position byte, visitors []Visitor, title string, maxItemCount byte, items []RoomShopItem) Room {
 	return Room{
 		roomType:     PersonalShopRoomType,
 		capacity:     4,
-		ownerView:    ownerView,
+		position:     position,
 		visitors:     visitors,
 		title:        title,
 		maxItemCount: maxItemCount,
@@ -91,16 +95,21 @@ func NewPersonalShopRoom(ownerView bool, visitors []Visitor, title string, maxIt
 }
 
 // NewMerchantShopRoom builds a hired-merchant (roomType 5) enter-result room.
-// ownerView selects the same OnEnterResultBase header byte (offset 0xC8) that the
-// client branches on in CEntrustedShopDlg::OnEnterResult (v83 @0x518a7e): the owner
-// view skips the meso/flag/sale-ledger block, the customer view reads it. title is
-// the shop name the client reads at the common tail (DecodeStr this+105 @0x518c8f) —
-// distinct from ownerName (the merchant owner's character name, this+479 @0x518a54).
-func NewMerchantShopRoom(ownerView bool, visitors []Visitor, messages []RoomMessage, ownerName string, title string, maxItemCount byte, meso uint32, items []RoomShopItem) Room {
+// position is the recipient's position in the room — 0 = owner, 1..3 = the
+// visitor's slot (same OnEnterResultBase header byte, offset 0xC8).
+// CEntrustedShopDlg::OnEnterResult branches on it (v83 @0x518a7e): the
+// position==0 (owner) view decodes the extra open-time/first-time/sale-ledger
+// block and opens the owner management UI (CWvsContext::UI_Open gated on
+// `!this[50]` @0x518d3d); a visitor view skips that block. Owner rooms must
+// also call SetOwnerLedger to populate the owner-only block. title is the shop
+// name the client reads at the common tail (DecodeStr this+105 @0x518c8f) —
+// distinct from ownerName (the merchant owner's character name, this+479
+// @0x518a54).
+func NewMerchantShopRoom(position byte, visitors []Visitor, messages []RoomMessage, ownerName string, title string, maxItemCount byte, meso uint32, items []RoomShopItem) Room {
 	return Room{
 		roomType:     MerchantShopRoomType,
 		capacity:     4,
-		ownerView:    ownerView,
+		position:     position,
 		visitors:     visitors,
 		messages:     messages,
 		ownerName:    ownerName,
@@ -111,19 +120,26 @@ func NewMerchantShopRoom(ownerView bool, visitors []Visitor, messages []RoomMess
 	}
 }
 
+// SetOwnerLedger populates the owner-only (position 0) block of a
+// hired-merchant room: minutes the shop has been open (Decode4 low short is
+// always 0 — Cosmic writes short 0 + short timeOpen), whether this is the
+// first (creation-time) view of the shop, the sale-transaction ledger, and
+// the merchant's accrued meso total that terminates the ledger
+// (sub_518EFD @0x518fbc).
+func (r Room) SetOwnerLedger(openTime uint16, firstTime bool, soldItems []RoomSoldItem, ledgerTotal uint32) Room {
+	r.openTime = openTime
+	r.firstTime = firstTime
+	r.soldItems = soldItems
+	r.soldTotal = ledgerTotal
+	return r
+}
+
 func (r Room) RoomType() RoomType         { return r.roomType }
 func (r Room) Capacity() byte             { return r.capacity }
-func (r Room) OwnerView() bool            { return r.ownerView }
+func (r Room) Position() byte             { return r.position }
+func (r Room) OpenTime() uint16           { return r.openTime }
+func (r Room) FirstTime() bool            { return r.firstTime }
 func (r Room) Visitors() []Visitor        { return r.visitors }
-
-// ownerViewByte encodes the OnEnterResultBase second header byte (offset 0xC8):
-// 1 = owner view, 0 = visitor view.
-func (r Room) ownerViewByte() byte {
-	if r.ownerView {
-		return 1
-	}
-	return 0
-}
 func (r Room) Title() string              { return r.title }
 func (r Room) GameKind() byte             { return r.gameKind }
 func (r Room) Tournament() bool           { return r.tournament }
@@ -144,8 +160,10 @@ func (rm Room) Encode(l logrus.FieldLogger, ctx context.Context) func(options ma
 		// CMiniRoomBaseDlg::OnEnterResultBase reads a SECOND header byte here
 		// (Decode1 -> *(this+0xC8), v83 @0x65ec6b) for EVERY room type, before the
 		// visitor loop. Omitting it shifts the whole visitor list and over-reads the
-		// tail -> live "error 38". The client branches on it (owner vs visitor view).
-		w.WriteByte(rm.ownerViewByte())
+		// tail -> live "error 38". It is the recipient's position in the room:
+		// 0 = owner, 1..3 = visitor slot; the shop dialogs branch owner/visitor
+		// view on it (personal @0x6fc528, entrusted @0x518a7e).
+		w.WriteByte(rm.position)
 		for _, v := range rm.visitors {
 			w.WriteByteArray(v.Encode(l, ctx)(options))
 		}
@@ -179,12 +197,16 @@ func (rm Room) Encode(l logrus.FieldLogger, ctx context.Context) func(options ma
 			}
 			// ownerName: DecodeStr -> this+479 (@0x518a54).
 			w.WriteAsciiString(rm.ownerName)
-			// Customer branch only (owner byte *(this+0xC8) == 0, @0x518a7e): the shop's
-			// meso, a sold-out flag, then the sale-transaction ledger (DecodeSoldItemList
-			// sub_518EFD @0x518efd). The owner view skips all of this.
-			if !rm.ownerView {
-				w.WriteInt(rm.meso)                  // Decode4 this[482] @0x518b04
-				w.WriteByte(0)                       // Decode1 flag @0x518b0a (0 = not sold out)
+			// OWNER branch only (position byte *(this+0xC8) == 0, @0x518a7e): packed
+			// open-time (Decode4 this[482] @0x518b04 — Cosmic writes short 0 + short
+			// timeOpen), first-time flag (Decode1 @0x518b0a — branches the owner UI),
+			// then the sale-transaction ledger (DecodeSoldItemList sub_518EFD
+			// @0x518efd) terminated by the accrued meso total. Visitor views skip
+			// all of this. (Cosmic getHiredMerchant sends this block iff owner.)
+			if rm.position == 0 {
+				w.WriteShort(0)                      // Decode4 low short @0x518b04 (always 0)
+				w.WriteShort(rm.openTime)            // Decode4 high short (minutes open)
+				w.WriteBool(rm.firstTime)            // Decode1 @0x518b0a
 				w.WriteByte(byte(len(rm.soldItems))) // Decode1 count @0x518f1c
 				for _, s := range rm.soldItems {
 					w.WriteInt(s.ItemId)            // Decode4 @0x518f4a
@@ -192,7 +214,7 @@ func (rm Room) Encode(l logrus.FieldLogger, ctx context.Context) func(options ma
 					w.WriteInt(s.Price)             // Decode4 @0x518f78
 					w.WriteAsciiString(s.BuyerName) // DecodeStr @0x518f7f
 				}
-				w.WriteInt(rm.soldTotal) // Decode4 total @0x518fbc
+				w.WriteInt(rm.soldTotal) // Decode4 accrued meso total @0x518fbc
 			}
 			// Common tail: title (DecodeStr this+105 @0x518c8f), maxItem (Decode1
 			// this+109 @0x518d12).
@@ -219,7 +241,7 @@ func (rm *Room) Decode(l logrus.FieldLogger, ctx context.Context) func(r *reques
 	return func(r *request.Reader, options map[string]interface{}) {
 		rm.roomType = RoomType(r.ReadByte())
 		rm.capacity = r.ReadByte()
-		rm.ownerView = r.ReadByte() != 0
+		rm.position = r.ReadByte()
 
 		rm.visitors = nil
 		for {
@@ -258,10 +280,12 @@ func (rm *Room) Decode(l logrus.FieldLogger, ctx context.Context) func(r *reques
 				rm.messages[i].Slot = r.ReadByte()
 			}
 			rm.ownerName = r.ReadAsciiString()
-			// Customer branch (owner byte == 0): meso + sold-out flag + sale ledger.
-			if !rm.ownerView {
-				rm.meso = r.ReadUint32()
-				_ = r.ReadByte() // sold-out flag (@0x518b0a)
+			// Owner branch (position byte == 0): packed open-time + first-time flag
+			// + sale ledger terminated by the accrued meso total.
+			if rm.position == 0 {
+				_ = r.ReadUint16() // Decode4 low short (always 0)
+				rm.openTime = r.ReadUint16()
+				rm.firstTime = r.ReadByte() != 0
 				soldCount := r.ReadByte()
 				rm.soldItems = make([]RoomSoldItem, soldCount)
 				for i := byte(0); i < soldCount; i++ {

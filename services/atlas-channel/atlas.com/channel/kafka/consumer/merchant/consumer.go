@@ -25,6 +25,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	atlasmodel "github.com/Chronicle20/atlas/libs/atlas-model/model"
+	chatpkt "github.com/Chronicle20/atlas/libs/atlas-packet/chat/clientbound"
 	interactionpkt "github.com/Chronicle20/atlas/libs/atlas-packet/interaction"
 	interactioncb "github.com/Chronicle20/atlas/libs/atlas-packet/interaction/clientbound"
 	merchantpkt "github.com/Chronicle20/atlas/libs/atlas-packet/merchant"
@@ -431,7 +432,18 @@ func handleFrederickNotificationEvent(sc server.Model, wp writer.Producer) func(
 		l.Debugf("Frederick notification for character [%d]. daysSinceStorage [%d].", e.CharacterId, e.Body.DaysSinceStorage)
 
 		msg := fmt.Sprintf("Your hired merchant items have been stored for %d day(s). Please retrieve them from Fredrick.", e.Body.DaysSinceStorage)
-		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, session.Announce(l)(ctx)(wp)(merchantcb.HiredMerchantOperationWriter)(merchantpkt.HiredMerchantOperationFreeFormNoticeBody(msg)))
+
+		// JMS185's OnEntrustedShopCheckResult has no free-form-notice arm
+		// (@0xb0ee59 — switch ends at CONFIRM_MANAGE 17; the mode-18 arm exists
+		// only on GMS clients), so a FreeFormNotice send is a silent client
+		// drop there. Deliver the reminder as a plain server notice instead.
+		body := merchantpkt.HiredMerchantOperationFreeFormNoticeBody(msg)
+		writerName := merchantcb.HiredMerchantOperationWriter
+		if t.Region() == "JMS" {
+			body = writer.WorldMessageNoticeBody(msg)
+			writerName = chatpkt.WorldMessageWriter
+		}
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, session.Announce(l)(ctx)(wp)(writerName)(body))
 	}
 }
 

@@ -1199,8 +1199,7 @@
             "SHOP_RENAME": 14,
             "ERROR_RETRIEVE_FROM_FREDRICK_2": 15,
             "REMOTE_SHOP_WARP": 16,
-            "CONFIRM_MANAGE": 17,
-            "FREE_FORM_NOTICE": 18
+            "CONFIRM_MANAGE": 17
           }
         }
       },

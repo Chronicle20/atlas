@@ -102,6 +102,16 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 					return nil, err
 				}
 				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleShopUpdatedEvent(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleEnterFailedEvent(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
 
 				t, _ = topic.EnvProvider(l)(merchant2.EnvListingEventTopic)()
 				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleListingPurchasedEvent(sc, wp))))
@@ -467,6 +477,57 @@ func handleMessageSentEvent(sc server.Model, wp writer.Producer) func(l logrus.F
 				_ = sp.IfPresentByCharacterId(sc.Channel())(cid, announce)
 			}
 		})
+	}
+}
+
+// handleShopUpdatedEvent refreshes the merchant view (items + owner meso)
+// after a withdraw or organize — same UPDATE_MERCHANT the purchase path sends.
+func handleShopUpdatedEvent(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger, ctx context.Context, event merchant2.StatusEvent[merchant2.StatusEventShopUpdatedBody]) {
+	return func(l logrus.FieldLogger, ctx context.Context, e merchant2.StatusEvent[merchant2.StatusEventShopUpdatedBody]) {
+		if e.Type != merchant2.StatusEventShopUpdated {
+			return
+		}
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+
+		mp := merchant.NewProcessor(l, ctx)
+		shop, err := mp.GetShop(e.Body.ShopId)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to get shop [%s] for update refresh.", e.Body.ShopId)
+			return
+		}
+		items := buildShopItems(l, shop.Listings())
+		sp := session.NewProcessor(l, ctx)
+		characterIds := append([]uint32{shop.CharacterId()}, shop.Visitors()...)
+		for _, cid := range characterIds {
+			meso := uint32(0)
+			if cid == shop.CharacterId() {
+				meso = shop.MesoBalance()
+			}
+			_ = sp.IfPresentByCharacterId(sc.Channel())(cid, session.Announce(l)(ctx)(wp)(interactioncb.CharacterInteractionWriter)(interactioncb.CharacterInteractionUpdateMerchantBody(meso, items)))
+		}
+	}
+}
+
+// handleEnterFailedEvent sends the faithful enter-error to a visitor whose
+// entry was rejected (shop under maintenance or closed) instead of a silent drop.
+func handleEnterFailedEvent(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger, ctx context.Context, event merchant2.StatusEvent[merchant2.StatusEventEnterFailedBody]) {
+	return func(l logrus.FieldLogger, ctx context.Context, e merchant2.StatusEvent[merchant2.StatusEventEnterFailedBody]) {
+		if e.Type != merchant2.StatusEventEnterFailed {
+			return
+		}
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+
+		mode := interactioncb.CharacterInteractionEnterErrorModeRoomClosed
+		if e.Body.Reason == merchant2.EnterFailReasonUndergoingMaintenance {
+			mode = interactioncb.CharacterInteractionEnterErrorModeUndergoingMaintenance
+		}
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, session.Announce(l)(ctx)(wp)(interactioncb.CharacterInteractionWriter)(interactioncb.CharacterInteractionEnterResultErrorBody(mode)))
 	}
 }
 

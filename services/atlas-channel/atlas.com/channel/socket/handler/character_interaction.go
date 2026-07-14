@@ -401,6 +401,13 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeMerchantOrganize) {
 			l.Debugf("Character [%d] has organized merchant inventory.", s.CharacterId())
+			mp := merchant.NewProcessor(l, ctx)
+			visiting, err := mp.GetVisitingShop(s.CharacterId())
+			if err != nil {
+				l.WithError(err).Errorf("Unable to get visiting shop for character [%d].", s.CharacterId())
+				return
+			}
+			_ = mp.OrganizeListings(s.CharacterId(), visiting.Id())
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeMerchantExit) {
@@ -423,6 +430,13 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeMerchantWithdrawMeso) {
 			l.Debugf("Character [%d] has withdrew merchant meso.", s.CharacterId())
+			mp := merchant.NewProcessor(l, ctx)
+			visiting, err := mp.GetVisitingShop(s.CharacterId())
+			if err != nil {
+				l.WithError(err).Errorf("Unable to get visiting shop for character [%d].", s.CharacterId())
+				return
+			}
+			_ = mp.WithdrawMeso(s.CharacterId(), visiting.Id())
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeMerchantViewVisitList) {

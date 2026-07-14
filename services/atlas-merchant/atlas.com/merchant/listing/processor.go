@@ -19,6 +19,7 @@ type Processor interface {
 	DeleteByShopId(shopId uuid.UUID) error
 	UpdateBundles(id uuid.UUID, bundlesRemaining uint16, quantity uint16, expectedVersion uint32) (int64, error)
 	DecrementDisplayOrderAfter(shopId uuid.UUID, afterOrder uint16) error
+	SetDisplayOrder(id uuid.UUID, displayOrder uint16) error
 	UpdateFields(id uuid.UUID, pricePerBundle uint32, bundleSize uint16, bundleCount uint16) error
 }
 
@@ -92,6 +93,11 @@ func (p *ProcessorImpl) UpdateBundles(id uuid.UUID, bundlesRemaining uint16, qua
 
 func (p *ProcessorImpl) DecrementDisplayOrderAfter(shopId uuid.UUID, afterOrder uint16) error {
 	_, err := decrementDisplayOrderAfter(shopId, afterOrder)(p.db)()
+	return err
+}
+
+func (p *ProcessorImpl) SetDisplayOrder(id uuid.UUID, displayOrder uint16) error {
+	_, err := updateDisplayOrder(id, displayOrder)(p.db)()
 	return err
 }
 

@@ -24,6 +24,8 @@ const (
 	CommandUpdateListing    = "UPDATE_LISTING"
 	CommandPurchaseBundle   = "PURCHASE_BUNDLE"
 	CommandRecordItemSearch = "RECORD_ITEM_SEARCH"
+	CommandWithdrawMeso     = "WITHDRAW_MESO"
+	CommandOrganizeListings = "ORGANIZE_LISTINGS"
 )
 
 type Command[E any] struct {
@@ -105,6 +107,14 @@ type CommandPurchaseBundleBody struct {
 	BundleCount  uint16 `json:"bundleCount"`
 }
 
+type CommandWithdrawMesoBody struct {
+	ShopId string `json:"shopId"`
+}
+
+type CommandOrganizeListingsBody struct {
+	ShopId string `json:"shopId"`
+}
+
 type CommandRecordItemSearchBody struct {
 	ItemId uint32 `json:"itemId"`
 }
@@ -125,6 +135,11 @@ const (
 	StatusEventFrederickNotification = "FREDERICK_NOTIFICATION"
 	StatusEventMessageSent           = "MESSAGE_SENT"
 	StatusEventShopCreateFailed      = "SHOP_CREATE_FAILED"
+	StatusEventShopUpdated           = "SHOP_UPDATED"
+	StatusEventEnterFailed           = "ENTER_FAILED"
+
+	EnterFailReasonUndergoingMaintenance = "UNDERGOING_MAINTENANCE"
+	EnterFailReasonRoomClosed            = "ROOM_CLOSED"
 
 	// Reasons carried by StatusEventShopCreateFailedBody (mirror of atlas-merchant).
 	ShopCreateFailReasonTooCloseToPortal = "TOO_CLOSE_TO_PORTAL"
@@ -190,6 +205,15 @@ type StatusEventMessageSentBody struct {
 	CharacterId uint32 `json:"characterId"`
 	Slot        byte   `json:"slot"`
 	Content     string `json:"content"`
+}
+
+type StatusEventShopUpdatedBody struct {
+	ShopId string `json:"shopId"`
+}
+
+type StatusEventEnterFailedBody struct {
+	ShopId string `json:"shopId"`
+	Reason string `json:"reason"`
 }
 
 type ListingEvent[E any] struct {

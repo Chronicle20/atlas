@@ -25,6 +25,8 @@ const (
 	CommandSendMessage      = "SEND_MESSAGE"
 	CommandRetrieveFrederick = "RETRIEVE_FREDERICK"
 	CommandRecordItemSearch = "RECORD_ITEM_SEARCH"
+	CommandWithdrawMeso     = "WITHDRAW_MESO"
+	CommandOrganizeListings = "ORGANIZE_LISTINGS"
 )
 
 type Command[E any] struct {
@@ -113,6 +115,14 @@ type CommandRecordItemSearchBody struct {
 	ItemId uint32 `json:"itemId"`
 }
 
+type CommandWithdrawMesoBody struct {
+	ShopId string `json:"shopId"`
+}
+
+type CommandOrganizeListingsBody struct {
+	ShopId string `json:"shopId"`
+}
+
 const (
 	EnvStatusEventTopic = "EVENT_TOPIC_MERCHANT_STATUS"
 
@@ -129,6 +139,14 @@ const (
 	StatusEventFrederickNotification   = "FREDERICK_NOTIFICATION"
 	StatusEventMessageSent             = "MESSAGE_SENT"
 	StatusEventShopCreateFailed        = "SHOP_CREATE_FAILED"
+	StatusEventShopUpdated             = "SHOP_UPDATED"
+	StatusEventEnterFailed             = "ENTER_FAILED"
+)
+
+// Reasons carried by StatusEventEnterFailedBody -> mapped to enter-error modes.
+const (
+	EnterFailReasonUndergoingMaintenance = "UNDERGOING_MAINTENANCE"
+	EnterFailReasonRoomClosed            = "ROOM_CLOSED"
 )
 
 // Reasons carried by StatusEventShopCreateFailedBody. The channel maps these to
@@ -193,6 +211,15 @@ type StatusEventMessageSentBody struct {
 	CharacterId uint32 `json:"characterId"`
 	Slot        byte   `json:"slot"`
 	Content     string `json:"content"`
+}
+
+type StatusEventShopUpdatedBody struct {
+	ShopId string `json:"shopId"`
+}
+
+type StatusEventEnterFailedBody struct {
+	ShopId string `json:"shopId"`
+	Reason string `json:"reason"`
 }
 
 const (

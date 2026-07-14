@@ -45,6 +45,8 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleSendMessageCommand(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleRetrieveFrederickCommand(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleRecordItemSearchCommand(db))))
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleWithdrawMesoCommand(db))))
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleOrganizeListingsCommand(db))))
 		}
 	}
 }
@@ -162,6 +164,38 @@ func handleRemoveListingCommand(db *gorm.DB) message.Handler[merchant2.Command[m
 
 		if _, err := shop.NewProcessor(l, ctx, db).RemoveListingAndEmit(shopId, e.CharacterId, e.Body.ListingIndex); err != nil {
 			l.WithError(err).Errorf("Error removing listing from shop [%s].", shopId)
+		}
+	}
+}
+
+func handleWithdrawMesoCommand(db *gorm.DB) message.Handler[merchant2.Command[merchant2.CommandWithdrawMesoBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e merchant2.Command[merchant2.CommandWithdrawMesoBody]) {
+		if e.Type != merchant2.CommandWithdrawMeso {
+			return
+		}
+		shopId, err := uuid.Parse(e.Body.ShopId)
+		if err != nil {
+			l.WithError(err).Errorf("Error parsing shopId [%s].", e.Body.ShopId)
+			return
+		}
+		if err := shop.NewProcessor(l, ctx, db).WithdrawMesoAndEmit(shopId, e.CharacterId); err != nil {
+			l.WithError(err).Errorf("Error withdrawing meso for shop [%s].", shopId)
+		}
+	}
+}
+
+func handleOrganizeListingsCommand(db *gorm.DB) message.Handler[merchant2.Command[merchant2.CommandOrganizeListingsBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e merchant2.Command[merchant2.CommandOrganizeListingsBody]) {
+		if e.Type != merchant2.CommandOrganizeListings {
+			return
+		}
+		shopId, err := uuid.Parse(e.Body.ShopId)
+		if err != nil {
+			l.WithError(err).Errorf("Error parsing shopId [%s].", e.Body.ShopId)
+			return
+		}
+		if err := shop.NewProcessor(l, ctx, db).OrganizeListingsAndEmit(shopId, e.CharacterId); err != nil {
+			l.WithError(err).Errorf("Error organizing listings for shop [%s].", shopId)
 		}
 	}
 }

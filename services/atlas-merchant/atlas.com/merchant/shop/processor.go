@@ -58,6 +58,10 @@ type Processor interface {
 	AddListing(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32, itemId uint32, itemType byte, bundleSize uint16, bundleCount uint16, pricePerBundle uint32, itemSnapshot asset2.AssetData, inventoryType byte, assetId uint32) (listing.Model, error)
 	RemoveListing(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32, listingIndex uint16) (listing.Model, error)
 	UpdateListing(shopId uuid.UUID, listingIndex uint16, pricePerBundle uint32, bundleSize uint16, bundleCount uint16) error
+	WithdrawMeso(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32) error
+	OrganizeListings(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32) error
+	WithdrawMesoAndEmit(shopId uuid.UUID, characterId uint32) error
+	OrganizeListingsAndEmit(shopId uuid.UUID, characterId uint32) error
 	EnterShop(mb *message.Buffer) func(characterId uint32, shopId uuid.UUID) error
 	ExitShop(mb *message.Buffer) func(characterId uint32, shopId uuid.UUID) error
 	EjectAllVisitors(shopId uuid.UUID) ([]uint32, error)
@@ -754,6 +758,99 @@ func (p *ProcessorImpl) UpdateListing(shopId uuid.UUID, listingIndex uint16, pri
 	})
 }
 
+// WithdrawMeso credits the hired merchant's accrued sale balance to the owner
+// and zeroes it (MERCHANT_WITHDRAW_MESO). Owner-only; only hired merchants
+// accrue a balance (personal shops pay the owner per sale). Emits SHOP_UPDATED
+// so the owner's management view refreshes to meso 0.
+func (p *ProcessorImpl) WithdrawMeso(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32) error {
+	return func(shopId uuid.UUID, characterId uint32) error {
+		var amount uint32
+		var worldId world.Id
+		err := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+			e, err := getById(shopId)(tx)()
+			if err != nil {
+				return err
+			}
+			if err = requireOwner(e, characterId); err != nil {
+				return err
+			}
+			if ShopType(e.ShopType) != HiredMerchant {
+				return fmt.Errorf("%w: only hired merchants accrue meso", ErrInvalidTransition)
+			}
+			amount = e.MesoBalance
+			worldId = e.WorldId
+			if amount == 0 {
+				return nil
+			}
+			e.MesoBalance = 0
+			_, err = update(&e)(tx)()
+			return err
+		})
+		if err != nil {
+			return err
+		}
+
+		if amount > 0 {
+			transactionId := uuid.New()
+			if err := mb.Put(character.EnvCommandTopic, ChangeMesoCommandProvider(transactionId, worldId, characterId, 0, "MERCHANT", int32(amount))); err != nil {
+				return err
+			}
+		}
+		return mb.Put(merchant.EnvStatusEventTopic, StatusEventShopUpdatedProvider(characterId, shopId))
+	}
+}
+
+// OrganizeListings compacts the shop's listing display: sold-out rows
+// (0 bundles remaining) are dropped and the survivors are renumbered from 0
+// (MERCHANT_ORGANIZE). Owner-only. An empty result closes the shop
+// (CloseReasonEmpty); otherwise SHOP_UPDATED refreshes the view.
+func (p *ProcessorImpl) OrganizeListings(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32) error {
+	return func(shopId uuid.UUID, characterId uint32) error {
+		var remaining int
+		err := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+			e, err := getById(shopId)(tx)()
+			if err != nil {
+				return err
+			}
+			if err = requireOwner(e, characterId); err != nil {
+				return err
+			}
+
+			lp := listing.NewProcessor(tx)
+			listings, err := lp.GetByShopId(shopId)
+			if err != nil {
+				return err
+			}
+
+			order := uint16(0)
+			for _, li := range listings {
+				if li.BundlesRemaining() == 0 {
+					if err := lp.Delete(li.Id()); err != nil {
+						return err
+					}
+					continue
+				}
+				if li.DisplayOrder() != order {
+					if err := lp.SetDisplayOrder(li.Id(), order); err != nil {
+						return err
+					}
+				}
+				order++
+			}
+			remaining = int(order)
+			return nil
+		})
+		if err != nil {
+			return err
+		}
+
+		if remaining == 0 {
+			return p.CloseShop(mb)(shopId, characterId, CloseReasonEmpty)
+		}
+		return mb.Put(merchant.EnvStatusEventTopic, StatusEventShopUpdatedProvider(characterId, shopId))
+	}
+}
+
 func (p *ProcessorImpl) PurchaseBundle(mb *message.Buffer) func(buyerCharacterId uint32, shopId uuid.UUID, listingIndex uint16, bundleCount uint16, worldId world.Id) (PurchaseResult, error) {
 	return func(buyerCharacterId uint32, shopId uuid.UUID, listingIndex uint16, bundleCount uint16, worldId world.Id) (PurchaseResult, error) {
 		if bundleCount == 0 {
@@ -900,7 +997,14 @@ func (p *ProcessorImpl) EnterShop(mb *message.Buffer) func(characterId uint32, s
 		}
 
 		if State(e.State) != Open {
-			return fmt.Errorf("%w: shop not open", ErrInvalidTransition)
+			// Surface the faithful client error rather than a silent drop:
+			// a shop being managed reads as under maintenance, anything else
+			// (Draft/Closed) as room-closed.
+			reason := merchant.EnterFailReasonRoomClosed
+			if State(e.State) == Maintenance {
+				reason = merchant.EnterFailReasonUndergoingMaintenance
+			}
+			return mb.Put(merchant.EnvStatusEventTopic, StatusEventEnterFailedProvider(characterId, shopId, reason))
 		}
 
 		vr := visitor.GetRegistry()
@@ -1160,6 +1264,22 @@ func (p *ProcessorImpl) OpenShopAndEmit(shopId uuid.UUID, characterId uint32) er
 	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
 			return p.WithTransaction(tx).OpenShop(buf)(shopId, characterId)
+		})
+	})
+}
+
+func (p *ProcessorImpl) WithdrawMesoAndEmit(shopId uuid.UUID, characterId uint32) error {
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).WithdrawMeso(buf)(shopId, characterId)
+		})
+	})
+}
+
+func (p *ProcessorImpl) OrganizeListingsAndEmit(shopId uuid.UUID, characterId uint32) error {
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).OrganizeListings(buf)(shopId, characterId)
 		})
 	})
 }

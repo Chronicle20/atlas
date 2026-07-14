@@ -30,6 +30,8 @@ type Processor interface {
 	SendMessage(characterId uint32, shopId uuid.UUID, content string) error
 	EnterMaintenance(characterId uint32, shopId uuid.UUID) error
 	ExitMaintenance(characterId uint32, shopId uuid.UUID) error
+	WithdrawMeso(characterId uint32, shopId uuid.UUID) error
+	OrganizeListings(characterId uint32, shopId uuid.UUID) error
 	AddListing(characterId uint32, shopId uuid.UUID, inventoryType byte, slot int16, quantity uint16, bundleSize uint16, pricePerBundle uint32) error
 	RemoveListing(characterId uint32, shopId uuid.UUID, listingIndex uint16) error
 	PurchaseBundle(characterId uint32, shopId uuid.UUID, listingIndex uint16, bundleCount uint16) error
@@ -107,6 +109,14 @@ func (p *ProcessorImpl) EnterMaintenance(characterId uint32, shopId uuid.UUID) e
 
 func (p *ProcessorImpl) ExitMaintenance(characterId uint32, shopId uuid.UUID) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(merchant2.EnvCommandTopic)(ExitMaintenanceCommandProvider(characterId, shopId))
+}
+
+func (p *ProcessorImpl) WithdrawMeso(characterId uint32, shopId uuid.UUID) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(merchant2.EnvCommandTopic)(WithdrawMesoCommandProvider(characterId, shopId))
+}
+
+func (p *ProcessorImpl) OrganizeListings(characterId uint32, shopId uuid.UUID) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(merchant2.EnvCommandTopic)(OrganizeListingsCommandProvider(characterId, shopId))
 }
 
 func (p *ProcessorImpl) AddListing(characterId uint32, shopId uuid.UUID, inventoryType byte, slot int16, quantity uint16, bundleSize uint16, pricePerBundle uint32) error {

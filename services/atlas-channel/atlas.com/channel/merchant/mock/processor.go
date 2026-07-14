@@ -24,6 +24,8 @@ type ProcessorMock struct {
 	SendMessageFunc          func(characterId uint32, shopId uuid.UUID, content string) error
 	EnterMaintenanceFunc     func(characterId uint32, shopId uuid.UUID) error
 	ExitMaintenanceFunc      func(characterId uint32, shopId uuid.UUID) error
+	WithdrawMesoFunc         func(characterId uint32, shopId uuid.UUID) error
+	OrganizeListingsFunc     func(characterId uint32, shopId uuid.UUID) error
 	AddListingFunc           func(characterId uint32, shopId uuid.UUID, inventoryType byte, slot int16, quantity uint16, bundleSize uint16, pricePerBundle uint32) error
 	RemoveListingFunc        func(characterId uint32, shopId uuid.UUID, listingIndex uint16) error
 	PurchaseBundleFunc       func(characterId uint32, shopId uuid.UUID, listingIndex uint16, bundleCount uint16) error
@@ -128,6 +130,20 @@ func (m *ProcessorMock) EnterMaintenance(characterId uint32, shopId uuid.UUID) e
 func (m *ProcessorMock) ExitMaintenance(characterId uint32, shopId uuid.UUID) error {
 	if m.ExitMaintenanceFunc != nil {
 		return m.ExitMaintenanceFunc(characterId, shopId)
+	}
+	return nil
+}
+
+func (m *ProcessorMock) WithdrawMeso(characterId uint32, shopId uuid.UUID) error {
+	if m.WithdrawMesoFunc != nil {
+		return m.WithdrawMesoFunc(characterId, shopId)
+	}
+	return nil
+}
+
+func (m *ProcessorMock) OrganizeListings(characterId uint32, shopId uuid.UUID) error {
+	if m.OrganizeListingsFunc != nil {
+		return m.OrganizeListingsFunc(characterId, shopId)
 	}
 	return nil
 }

@@ -237,3 +237,23 @@ func RecordItemSearchCommandProvider(f field.Model, characterId uint32, itemId u
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func WithdrawMesoCommandProvider(characterId uint32, shopId uuid.UUID) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &merchant2.Command[merchant2.CommandWithdrawMesoBody]{
+		CharacterId: characterId,
+		Type:        merchant2.CommandWithdrawMeso,
+		Body:        merchant2.CommandWithdrawMesoBody{ShopId: shopId.String()},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func OrganizeListingsCommandProvider(characterId uint32, shopId uuid.UUID) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &merchant2.Command[merchant2.CommandOrganizeListingsBody]{
+		CharacterId: characterId,
+		Type:        merchant2.CommandOrganizeListings,
+		Body:        merchant2.CommandOrganizeListingsBody{ShopId: shopId.String()},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

@@ -35,6 +35,10 @@ type ProcessorMock struct {
 	AddListingFunc             func(shopId uuid.UUID, characterId uint32, itemId uint32, itemType byte, bundleSize uint16, bundleCount uint16, pricePerBundle uint32, itemSnapshot asset.AssetData, inventoryType byte, assetId uint32) (listing.Model, error)
 	RemoveListingFunc          func(shopId uuid.UUID, characterId uint32, listingIndex uint16) (listing.Model, error)
 	UpdateListingFunc          func(shopId uuid.UUID, listingIndex uint16, pricePerBundle uint32, bundleSize uint16, bundleCount uint16) error
+	WithdrawMesoFunc           func(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32) error
+	OrganizeListingsFunc       func(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32) error
+	WithdrawMesoAndEmitFunc    func(shopId uuid.UUID, characterId uint32) error
+	OrganizeListingsAndEmitFunc func(shopId uuid.UUID, characterId uint32) error
 	EnterShopFunc              func(characterId uint32, shopId uuid.UUID) error
 	ExitShopFunc               func(characterId uint32, shopId uuid.UUID) error
 	EjectAllVisitorsFunc       func(shopId uuid.UUID) ([]uint32, error)
@@ -199,6 +203,34 @@ func (m *ProcessorMock) RemoveListing(_ *message.Buffer) func(shopId uuid.UUID, 
 func (m *ProcessorMock) UpdateListing(shopId uuid.UUID, listingIndex uint16, pricePerBundle uint32, bundleSize uint16, bundleCount uint16) error {
 	if m.UpdateListingFunc != nil {
 		return m.UpdateListingFunc(shopId, listingIndex, pricePerBundle, bundleSize, bundleCount)
+	}
+	return nil
+}
+
+func (m *ProcessorMock) WithdrawMeso(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32) error {
+	if m.WithdrawMesoFunc != nil {
+		return m.WithdrawMesoFunc(mb)
+	}
+	return func(uuid.UUID, uint32) error { return nil }
+}
+
+func (m *ProcessorMock) OrganizeListings(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32) error {
+	if m.OrganizeListingsFunc != nil {
+		return m.OrganizeListingsFunc(mb)
+	}
+	return func(uuid.UUID, uint32) error { return nil }
+}
+
+func (m *ProcessorMock) WithdrawMesoAndEmit(shopId uuid.UUID, characterId uint32) error {
+	if m.WithdrawMesoAndEmitFunc != nil {
+		return m.WithdrawMesoAndEmitFunc(shopId, characterId)
+	}
+	return nil
+}
+
+func (m *ProcessorMock) OrganizeListingsAndEmit(shopId uuid.UUID, characterId uint32) error {
+	if m.OrganizeListingsAndEmitFunc != nil {
+		return m.OrganizeListingsAndEmitFunc(shopId, characterId)
 	}
 	return nil
 }

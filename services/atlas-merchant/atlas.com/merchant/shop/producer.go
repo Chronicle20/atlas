@@ -254,3 +254,28 @@ func ChangeMesoCommandProvider(transactionId uuid.UUID, worldId world.Id, charac
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func StatusEventShopUpdatedProvider(characterId uint32, shopId uuid.UUID) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &merchant.StatusEvent[merchant.StatusEventShopUpdatedBody]{
+		CharacterId: characterId,
+		Type:        merchant.StatusEventShopUpdated,
+		Body: merchant.StatusEventShopUpdatedBody{
+			ShopId: shopId.String(),
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func StatusEventEnterFailedProvider(characterId uint32, shopId uuid.UUID, reason string) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &merchant.StatusEvent[merchant.StatusEventEnterFailedBody]{
+		CharacterId: characterId,
+		Type:        merchant.StatusEventEnterFailed,
+		Body: merchant.StatusEventEnterFailedBody{
+			ShopId: shopId.String(),
+			Reason: reason,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

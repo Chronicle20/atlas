@@ -32,10 +32,24 @@ listed so nothing reads as silently done:
 1. **F10 — owner messages not surfaced** (below): merchant service persists
    visitor messages; the shop REST payload and room builder never deliver
    them to the owner's management view. Needs REST enrichment + builder wiring.
-2. **F9 — unwired merchant ops**: MERCHANT_ORGANIZE, MERCHANT_WITHDRAW_MESO,
-   VIEW_VISIT_LIST, VIEW_BLACK_LIST, blacklist add/remove are decode-and-log
-   only; most enter-error sub-codes and the INVITE/INVITE_RESULT interaction
-   modes remain unmapped.
+2. **F9 — unwired merchant ops**: PARTIALLY RESOLVED (2026-07-14).
+   - DONE: **MERCHANT_WITHDRAW_MESO** (credits the hired merchant's accrued
+     balance to the owner + zeroes it + refresh) and **MERCHANT_ORGANIZE**
+     (drops sold-out rows, compacts display order, closes when empty) are now
+     full-stack — command → owner-guarded processor → SHOP_UPDATED refresh.
+     The **maintenance/closed enter-error** is now surfaced (ENTER_FAILED →
+     UNDERGOING_MAINTENANCE / ROOM_CLOSED) instead of a silent drop.
+   - REMAINING (genuine new features, escalated — not wiring): blacklist
+     (add/remove/**view**) and the **visit list** need a new per-shop
+     persistence table AND, for the two *view* ops, an IDA-derived
+     list-display packet layout that has not been resolved
+     (`CEntrustedShopDlg::OnBlackList` @0x519382 / `OnVisitList` @0x5194af
+     senders are known, but the clientbound list bodies are not fixtured).
+     Blacklist *enforcement* also needs a name→characterId lookup
+     (atlas-merchant → atlas-character). These are a scoped follow-up, not a
+     stub: the handlers remain decode-and-log until the packets are derived.
+   - INVITE/INVITE_RESULT interaction modes are trade-invite surface (trades
+     are unimplemented in atlas-channel), out of merchant scope.
 3. **jms185 free-form notice**: the client has no case 18 — the Fredrick
    reminder notice is a benign silent drop on jms until given another vehicle.
 4. **v48 template inconsistency** (review W3) — RESOLVED: v48 predates the

@@ -127,23 +127,32 @@ func handleShopOpenedEvent(sc server.Model, wp writer.Producer) func(l logrus.Fi
 
 		f := field.NewBuilder(e.Body.WorldId, e.Body.ChannelId, mapId.Id(e.Body.MapId)).SetInstance(e.Body.InstanceId).Build()
 
-		miniRoomType := interactionpkt.MerchantShopMiniRoomType
-		if e.Body.ShopType == 1 {
-			miniRoomType = interactionpkt.PersonalShopMiniRoomType
-		}
-
-		mr := &interactionpkt.MiniRoomBase{
-			MiniRoomTypeVal: miniRoomType,
-			Title:           e.Body.Title,
-			CapacityVal:     4,
-			OwnerId:         e.CharacterId,
-			VisitorCount:    0,
-			VisitorList:     []interactionpkt.MiniRoomVisitor{},
-		}
-
-		err := _map.NewProcessor(l, ctx).ForSessionsInMap(f, session.Announce(l)(ctx)(wp)(interactionpkt.MiniRoomWriter)(mr.Spawn(e.CharacterId)))
-		if err != nil {
-			l.WithError(err).Errorf("Unable to spawn merchant shop [%s] for characters in map [%d] instance [%s].", e.Body.ShopId, e.Body.MapId, e.Body.InstanceId)
+		if e.Body.ShopType == merchant.HiredMerchantShopType {
+			// Hired merchant renders as a standalone CEmployeePool NPC that persists
+			// independent of the owner avatar (D1), so broadcast the employee spawn
+			// to everyone in the map rather than a box on the owner.
+			shop, err := merchant.NewProcessor(l, ctx).GetShop(e.Body.ShopId)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to load hired-merchant shop [%s] for spawn.", e.Body.ShopId)
+			} else {
+				spawn := merchant.ToEmployeeSpawn(shop, resolveOwnerName(l, ctx, shop.CharacterId()))
+				if err := _map.NewProcessor(l, ctx).ForSessionsInMap(f, session.Announce(l)(ctx)(wp)(merchantcb.MerchantEmployeeSpawnWriter)(spawn.Encode)); err != nil {
+					l.WithError(err).Errorf("Unable to spawn hired merchant [%s] in map [%d] instance [%s].", e.Body.ShopId, e.Body.MapId, e.Body.InstanceId)
+				}
+			}
+		} else {
+			// Personal store: the box attaches to the owner's own avatar.
+			mr := &interactionpkt.MiniRoomBase{
+				MiniRoomTypeVal: interactionpkt.PersonalShopMiniRoomType,
+				Title:           e.Body.Title,
+				CapacityVal:     4,
+				OwnerId:         e.CharacterId,
+				VisitorCount:    0,
+				VisitorList:     []interactionpkt.MiniRoomVisitor{},
+			}
+			if err := _map.NewProcessor(l, ctx).ForSessionsInMap(f, session.Announce(l)(ctx)(wp)(interactionpkt.MiniRoomWriter)(mr.Spawn(e.CharacterId))); err != nil {
+				l.WithError(err).Errorf("Unable to spawn personal store [%s] for characters in map [%d] instance [%s].", e.Body.ShopId, e.Body.MapId, e.Body.InstanceId)
+			}
 		}
 
 		// Send room enter packet to the owner so they enter the shop editing interface.
@@ -203,9 +212,16 @@ func handleShopClosedEvent(sc server.Model, wp writer.Producer) func(l logrus.Fi
 		}
 
 		f := field.NewBuilder(shop.WorldId(), shop.ChannelId(), mapId.Id(shop.MapId())).SetInstance(shop.InstanceId()).Build()
-		mr := &interactionpkt.MiniRoomBase{}
-		if err := _map.NewProcessor(l, ctx).ForSessionsInMap(f, session.Announce(l)(ctx)(wp)(interactionpkt.MiniRoomWriter)(mr.Despawn(e.CharacterId))); err != nil {
-			l.WithError(err).Errorf("Unable to broadcast despawn for shop [%s].", e.Body.ShopId)
+		if shop.ShopType() == merchant.HiredMerchantShopType {
+			destroy := merchantcb.NewEmployeeDestroy(e.CharacterId)
+			if err := _map.NewProcessor(l, ctx).ForSessionsInMap(f, session.Announce(l)(ctx)(wp)(merchantcb.MerchantEmployeeDestroyWriter)(destroy.Encode)); err != nil {
+				l.WithError(err).Errorf("Unable to broadcast employee despawn for shop [%s].", e.Body.ShopId)
+			}
+		} else {
+			mr := &interactionpkt.MiniRoomBase{}
+			if err := _map.NewProcessor(l, ctx).ForSessionsInMap(f, session.Announce(l)(ctx)(wp)(interactionpkt.MiniRoomWriter)(mr.Despawn(e.CharacterId))); err != nil {
+				l.WithError(err).Errorf("Unable to broadcast despawn for shop [%s].", e.Body.ShopId)
+			}
 		}
 	}
 }
@@ -481,6 +497,17 @@ func broadcastToShopViewers(l logrus.FieldLogger, ctx context.Context, sc server
 	characterIds := []uint32{shop.CharacterId()}
 	characterIds = append(characterIds, shop.Visitors()...)
 	fn(characterIds)
+}
+
+// resolveOwnerName looks up a character's name for the hired-merchant employee
+// nametag, returning "" (a valid empty nametag) if the lookup fails.
+func resolveOwnerName(l logrus.FieldLogger, ctx context.Context, characterId uint32) string {
+	c, err := character.NewProcessor(l, ctx).GetById()(characterId)
+	if err != nil {
+		l.WithError(err).Warnf("Unable to resolve owner name for character [%d].", characterId)
+		return ""
+	}
+	return c.Name()
 }
 
 // buildShopRoom fetches shop data and resolves character info to build the appropriate room packet.

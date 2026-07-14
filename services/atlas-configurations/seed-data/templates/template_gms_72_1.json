@@ -1810,6 +1810,18 @@
         "writer": "SpawnMonster"
       },
       {
+        "opCode": "0xEB",
+        "writer": "SpawnHiredMerchant"
+      },
+      {
+        "opCode": "0xEC",
+        "writer": "DestroyHiredMerchant"
+      },
+      {
+        "opCode": "0xED",
+        "writer": "UpdateHiredMerchant"
+      },
+      {
         "opCode": "0xD1",
         "writer": "DestroyMonster"
       },

@@ -44,6 +44,7 @@ import (
 	fieldpkt "github.com/Chronicle20/atlas/libs/atlas-packet/field"
 	fieldcb "github.com/Chronicle20/atlas/libs/atlas-packet/field/clientbound"
 	interactionpkt "github.com/Chronicle20/atlas/libs/atlas-packet/interaction"
+	merchantcb "github.com/Chronicle20/atlas/libs/atlas-packet/merchant/clientbound"
 	monsterpkt "github.com/Chronicle20/atlas/libs/atlas-packet/monster/clientbound"
 	npcpkt "github.com/Chronicle20/atlas/libs/atlas-packet/npc/clientbound"
 	petpkt "github.com/Chronicle20/atlas/libs/atlas-packet/pet/clientbound"
@@ -669,12 +670,19 @@ func spawnMerchantsForSession(l logrus.FieldLogger) func(ctx context.Context) fu
 		return func(wp writer.Producer) func(s session.Model) model.Operator[merchant.Model] {
 			return func(s session.Model) model.Operator[merchant.Model] {
 				return func(m merchant.Model) error {
-					miniRoomType := interactionpkt.MerchantShopMiniRoomType
-					if m.ShopType() == 1 {
-						miniRoomType = interactionpkt.PersonalShopMiniRoomType
+					if m.ShopType() == merchant.HiredMerchantShopType {
+						// Hired merchant renders as a standalone employee NPC (D1); spawn
+						// it to the entering player.
+						ownerName := ""
+						if c, err := character.NewProcessor(l, ctx).GetById()(m.CharacterId()); err == nil {
+							ownerName = c.Name()
+						}
+						spawn := merchant.ToEmployeeSpawn(m, ownerName)
+						return session.Announce(l)(ctx)(wp)(merchantcb.MerchantEmployeeSpawnWriter)(spawn.Encode)(s)
 					}
+					// Personal store: box on the owner's avatar.
 					mr := &interactionpkt.MiniRoomBase{
-						MiniRoomTypeVal: miniRoomType,
+						MiniRoomTypeVal: interactionpkt.PersonalShopMiniRoomType,
 						Title:           m.Title(),
 						CapacityVal:     4,
 						OwnerId:         m.CharacterId(),

@@ -1735,6 +1735,18 @@
         "writer": "SpawnMonster"
       },
       {
+        "opCode": "0xCA",
+        "writer": "SpawnHiredMerchant"
+      },
+      {
+        "opCode": "0xCB",
+        "writer": "DestroyHiredMerchant"
+      },
+      {
+        "opCode": "0xCC",
+        "writer": "UpdateHiredMerchant"
+      },
+      {
         "opCode": "0xB0",
         "writer": "DestroyMonster"
       },

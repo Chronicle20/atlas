@@ -463,3 +463,27 @@ body when wiring v79 (the retreat pair does NOT have this inversion:
 value). v79 simply places give-up at 49 (a slot free on v79 because 49 is a
 `CEntrustedShopDlg` merchant-blacklist mode on v83, absent here). Not a
 transcription error — read twice.
+
+## §6-resolution — matrix/disposition fixes (task-127, do-mode)
+
+- **v61/v79 dispositions added.** `CEntrustedShopDlg::AddBlackList` and
+  `::DeleteBlackList` are now dispositioned version-absent in
+  `docs/packets/audits/gms_v61/_unimplemented.json` and `.../gms_v79/...`,
+  matching the pre-existing v72 disposition (all three binaries have only
+  `CWvsContext::OnEntrustedShopCheckResult`, no `CEntrustedShopDlg`).
+- **False v79 "verified" evidence removed.** The
+  `InteractionOperationMerchantAddToBlackList`/`RemoveFromBlackList` × gms_v79
+  cells were pinned to `CEntrustedShopDlg::AddBlackList @0x50588d` — but
+  0x50588d is `sub_50588D`, a generic blacklist-name-entry dialog send
+  (mode 0x2F, EncodeStr name; caller sub_505DEF, a CUtilDlgEx name prompt with
+  a 20-entry cap), NOT the (non-existent) hired-merchant dialog. The byte
+  layout coincidentally matched (both a bare name string), so the cell passed
+  fixture while attributing a version-absent feature. Removed the two v79
+  verify markers + audit reports + pinned evidence yamls; the disposition now
+  makes the cells correctly n-a. matrix --check clean.
+- **OPEN FINDING (separate, unrouted):** v79 mode `0x2F` (47) is a real
+  client blacklist-by-name send (sub_50588D) that Atlas does NOT route — it is
+  absent from the v79 CharacterInteractionHandle operations table and is not
+  the field blacklist (FIELD_ADD=30 in v79). Likely a shared/personal-store
+  blacklist dialog. Classifying + routing it is out of scope here (Atlas does
+  not consume it today); noted so it is not silently lost.

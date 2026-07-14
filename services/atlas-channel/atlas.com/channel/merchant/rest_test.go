@@ -1,9 +1,14 @@
 package merchant
 
 import (
+	"context"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
+	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
 )
 
@@ -45,4 +50,29 @@ func TestExtractTopSearch(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, uint32(2060000), m.ItemId())
 	require.Equal(t, uint64(42), m.Count())
+}
+
+// TestHasFrederickPending exercises the real cross-service path — URL
+// construction, JSON:API unmarshal of atlas-merchant's frederick-status
+// resource — against an httptest server (the mock-based tests bypass both).
+func TestHasFrederickPending(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/characters/1000/frederick" {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"data":{"type":"frederick-status","id":"1000","attributes":{"hasPending":true}}}`))
+	}))
+	defer srv.Close()
+	t.Setenv("MERCHANT_SERVICE_URL", srv.URL+"/")
+
+	ten, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	require.NoError(t, err)
+	ctx := tenant.WithContext(context.Background(), ten)
+	l, _ := test.NewNullLogger()
+
+	got, err := NewProcessor(l, ctx).HasFrederickPending(1000)
+	require.NoError(t, err)
+	require.True(t, got)
 }

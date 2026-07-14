@@ -2,10 +2,10 @@ package shop
 
 import (
 	"atlas-merchant/frederick"
+	message "atlas-merchant/kafka/message"
 	asset2 "atlas-merchant/kafka/message/asset"
 	character "atlas-merchant/kafka/message/character"
 	"atlas-merchant/kafka/message/compartment"
-	message "atlas-merchant/kafka/message"
 	merchant "atlas-merchant/kafka/message/merchant"
 	kafkaProducer "atlas-merchant/kafka/producer"
 	"atlas-merchant/listing"
@@ -24,6 +24,7 @@ import (
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
+	atlasredis "github.com/Chronicle20/atlas/libs/atlas-redis"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -949,6 +950,10 @@ func (p *ProcessorImpl) GetShopForCharacter(characterId uint32) (uuid.UUID, erro
 	}
 	if shopId, err := vr.GetShopForCharacter(p.ctx, p.t, characterId); err == nil {
 		return shopId, nil
+	} else if !errors.Is(err, atlasredis.ErrNotFound) {
+		// Only a genuine miss falls through to owner occupancy — a transient
+		// Redis failure must surface, not masquerade as "not visiting".
+		return uuid.Nil, err
 	}
 
 	r := GetRegistry()

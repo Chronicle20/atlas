@@ -1,7 +1,6 @@
 package shop
 
 import (
-	"atlas-merchant/frederick"
 	"atlas-merchant/listing"
 	"atlas-merchant/rest"
 	"atlas-merchant/searchcount"
@@ -35,7 +34,6 @@ func InitializeRoutes(si jsonapi.ServerInformation) func(db *gorm.DB) server.Rou
 			cr := router.PathPrefix("/characters/{characterId}").Subrouter()
 			cr.HandleFunc("/merchants", registerHandler("get_character_merchants", handleGetCharacterMerchants(db))).Methods(http.MethodGet)
 			cr.HandleFunc("/visiting", registerHandler("get_character_visiting", handleGetCharacterVisiting(db))).Methods(http.MethodGet)
-			cr.HandleFunc("/frederick", registerHandler("get_character_frederick", handleGetCharacterFrederick(db))).Methods(http.MethodGet)
 
 			wr := router.PathPrefix("/worlds/{worldId}").Subrouter()
 			wr.HandleFunc("/channels/{channelId}/maps/{mapId}/instances/{instanceId}/merchants", registerHandler("get_field_merchants", handleGetFieldMerchants(db))).Methods(http.MethodGet)
@@ -263,30 +261,6 @@ func handleGetCharacterVisiting(db *gorm.DB) rest.GetHandler {
 				query := r.URL.Query()
 				queryParams := jsonapi.ParseQueryFields(&query)
 				server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
-			}
-		})
-	}
-}
-
-func handleGetCharacterFrederick(db *gorm.DB) rest.GetHandler {
-	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
-			return func(w http.ResponseWriter, r *http.Request) {
-				hasPending, err := frederick.HasItemsOrMesos(characterId)(db.WithContext(d.Context()))()
-				if err != nil {
-					d.Logger().WithError(err).Errorf("Retrieving frederick status for character [%d].", characterId)
-					server.WriteErrorResponse(d.Logger())(w)(err)
-					return
-				}
-
-				res := frederick.StatusRestModel{
-					Id:         strconv.FormatUint(uint64(characterId), 10),
-					HasPending: hasPending,
-				}
-
-				query := r.URL.Query()
-				queryParams := jsonapi.ParseQueryFields(&query)
-				server.MarshalResponse[frederick.StatusRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
 			}
 		})
 	}

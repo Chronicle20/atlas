@@ -158,6 +158,14 @@ func (r *FrederickStatusRestModel) SetID(id string) error {
 	return nil
 }
 
+func (r *FrederickStatusRestModel) SetToOneReferenceID(_, _ string) error {
+	return nil
+}
+
+func (r *FrederickStatusRestModel) SetToManyReferenceIDs(_ string, _ []string) error {
+	return nil
+}
+
 // SnapshotRestModel mirrors atlas-merchant's asset.AssetData JSON shape —
 // the listing's point-in-sale item snapshot, needed to encode the
 // GW_ItemSlotBase block for equip rows in the shop-scanner result.

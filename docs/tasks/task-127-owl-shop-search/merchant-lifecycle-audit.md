@@ -175,6 +175,7 @@ Exit criteria: hired-merchant narrative steps 1–3 pass live; employee NPC spaw
 - **C1 (F6):** state/type-filtered shop resolution for VISIT and maintenance re-entry.
 - **C2 (F8):** drop the owner ENTER_RESULT re-send from SHOP_OPENED after live verification.
 - **C3 (F9):** map remaining verified enter-error codes; leave ORGANIZE/WITHDRAW_MESO/blacklist ops and the 0/58 remediation doc as explicitly-listed backlog (not silently dropped).
+  - Disposition (2026-07-14): no additional error codes were verified beyond those already mapped (create-failure reasons → portal/proximity/free-market/unable; enter → FULL/UNABLE), so no new mappings landed; F9's backlog list stands as the explicit record of the unwired surface.
 
 Standard gates per phase: `go test -race`, `go vet`, `go build`, `docker buildx bake` for atlas-merchant/atlas-channel/atlas-packet-touching services, redis-key-guard, goroutine-guard, packet fixtures + matrix `--check` where codecs changed, code review before PR.
 
@@ -182,6 +183,6 @@ Standard gates per phase: `go test -race`, `go vet`, `go build`, `docker buildx 
 
 - **Q1 — permit consumption rule: NEVER CONSUME.** Permits are durable items; opening a shop consumes nothing (matches Cosmic's default with `USE_ERASE_PERMIT_ON_OPENSHOP` off). B3 shrinks to permit-ownership *validation* only — no consumption saga, no refund concerns. Create-then-abandon trivially costs nothing.
 - **Q2 — merchant open op.** IDA-verify during B2 which serverbound op v83 `CEntrustedShopDlg` sends to go live (`OPEN` 0x0B vs `CASH_TRADE_OPEN` 0x0E nProc 11); wire the verified path.
-- **Q3 — ENTRUSTED_SHOP_CHECK_RESULT mode bytes per version.** IDA-derive per version from each IDB's `OnEntrustedShopCheckResult` switch during B1; config-resolved via the operations-table pattern (never hard-coded).
+- **Q3 — ENTRUSTED_SHOP_CHECK_RESULT mode bytes per version: VERIFIED on all eight feature IDBs.** `OnEntrustedShopCheckResult` switch cases are 7,8,9,10,11,13,14,15,16,17,18 on v61 @0x848c1c, v72 @0x91ff18, v79 @0x971dd8, v83 @0xa27d75, v84 @0xa73538, v87 @0xabf9ea, v95 @0x9ffcb0 — matching the seed-template operations tables unchanged. **jms185 @0xb0ee59 has NO case 18**: a FREE_FORM_NOTICE send on jms is silently ignored by the client (default arm returns) — benign drop; the Fredrick reminder needs a different vehicle on jms if ever required there. All modes B1 emits (7/8/9/11) exist on every version.
 - **Q4 — visitor position bytes: TRUE SLOT (1–3).** Encode the visitor's actual slot from the visitor registry (client stores avatars slot-indexed, `OnEnterResultBase` @0x65ecac). Verify slots 2–3 render correctly during Phase A live testing.
 - **Q5 — Draft-merchant logout policy: CLOSE ON LOGOUT.** A `Draft` is an owner-attached setup session; logout closes Draft shops of both types (staged stock follows the existing CloseShop return paths). `Open` hired merchants keep their survive-logout semantics unchanged.

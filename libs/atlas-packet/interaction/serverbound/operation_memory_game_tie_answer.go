@@ -9,8 +9,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// packet-audit:fname CMemoryGameDlg::OnTieRequest
-//
 // VERSION QUIRK (gms_v79): the tie pair's bodies are inverted vs v83 — on v79
 // ASK_TIE (mode 50) carries the response bool and TIE_ANSWER (mode 51) carries
 // none (the reverse of v83; IDA-verified, see interaction-legacy-audit.md).
@@ -19,6 +17,8 @@ import (
 // ASK_TIE/TIE_ANSWER handlers only log), and the reader is bounds-safe, so the
 // v79 over-read yields a discarded `false`. If mini-games are ever implemented
 // on v79, version-gate this pair (swap which mode reads the bool).
+//
+// packet-audit:fname CMemoryGameDlg::OnTieRequest
 type OperationMemoryGameTieAnswer struct {
 	response bool
 }

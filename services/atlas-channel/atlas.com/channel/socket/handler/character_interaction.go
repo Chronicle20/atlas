@@ -163,7 +163,11 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 				l.Debugf("Character [%d] attempted to visit owner [%d] with no enterable shop.", s.CharacterId(), ownerCharacterId)
 				return
 			}
-			_ = mp.EnterShop(s.CharacterId(), target.Id())
+			visitorName := ""
+			if vc, verr := character.NewProcessor(l, ctx).GetById()(s.CharacterId()); verr == nil {
+				visitorName = vc.Name()
+			}
+			_ = mp.EnterShop(s.CharacterId(), target.Id(), visitorName)
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeChat) {
@@ -441,22 +445,64 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeMerchantViewVisitList) {
 			l.Debugf("Character [%d] has viewed merchant visit list.", s.CharacterId())
+			mp := merchant.NewProcessor(l, ctx)
+			visiting, err := mp.GetVisitingShop(s.CharacterId())
+			if err != nil {
+				l.WithError(err).Errorf("Unable to get visiting shop for character [%d].", s.CharacterId())
+				return
+			}
+			visits, err := mp.GetVisits(visiting.Id().String())
+			if err != nil {
+				l.WithError(err).Errorf("Unable to get visits for shop [%s].", visiting.Id())
+				return
+			}
+			entries := make([]interactioncb.InteractionVisitListEntry, 0, len(visits))
+			for _, v := range visits {
+				entries = append(entries, interactioncb.InteractionVisitListEntry{Name: v.Name, Count: v.Count})
+			}
+			_ = session.Announce(l)(ctx)(wp)(interactioncb.CharacterInteractionWriter)(interactioncb.CharacterInteractionVisitListBody(entries))(s)
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeMerchantViewBlackList) {
 			l.Debugf("Character [%d] has viewed merchant black list.", s.CharacterId())
+			mp := merchant.NewProcessor(l, ctx)
+			visiting, err := mp.GetVisitingShop(s.CharacterId())
+			if err != nil {
+				l.WithError(err).Errorf("Unable to get visiting shop for character [%d].", s.CharacterId())
+				return
+			}
+			names, err := mp.GetBlacklist(visiting.Id().String())
+			if err != nil {
+				l.WithError(err).Errorf("Unable to get blacklist for shop [%s].", visiting.Id())
+				return
+			}
+			_ = session.Announce(l)(ctx)(wp)(interactioncb.CharacterInteractionWriter)(interactioncb.CharacterInteractionBlackListBody(names))(s)
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeMerchantAddToBlackList) {
 			sp := &interaction2.OperationMerchantAddToBlackList{}
 			sp.Decode(l, ctx)(r, readerOptions)
 			l.Debugf("Character [%d] is adding [%s] to merchant black list.", s.CharacterId(), sp.Name())
+			mp := merchant.NewProcessor(l, ctx)
+			visiting, err := mp.GetVisitingShop(s.CharacterId())
+			if err != nil {
+				l.WithError(err).Errorf("Unable to get visiting shop for character [%d].", s.CharacterId())
+				return
+			}
+			_ = mp.AddBlacklist(s.CharacterId(), visiting.Id(), sp.Name())
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeMerchantRemoveFromBlackList) {
 			sp := &interaction2.OperationMerchantRemoveFromBlackList{}
 			sp.Decode(l, ctx)(r, readerOptions)
 			l.Debugf("Character [%d] is removing [%s] from merchant black list.", s.CharacterId(), sp.Name())
+			mp := merchant.NewProcessor(l, ctx)
+			visiting, err := mp.GetVisitingShop(s.CharacterId())
+			if err != nil {
+				l.WithError(err).Errorf("Unable to get visiting shop for character [%d].", s.CharacterId())
+				return
+			}
+			_ = mp.RemoveBlacklist(s.CharacterId(), visiting.Id(), sp.Name())
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeMemoryGameAskTie) {

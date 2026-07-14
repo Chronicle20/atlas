@@ -273,7 +273,11 @@ func warpCharacter(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 					reg := shopscanner.GetRegistry()
 					if pe, ok := reg.GetPending(tenant.MustFromContext(ctx), s.CharacterId()); ok {
 						if pe.MapId == event.Body.TargetMapId {
-							if err := merchant.NewProcessor(l, ctx).EnterShop(s.CharacterId(), pe.ShopId); err != nil {
+							warpVisitorName := ""
+							if wc, werr := character.NewProcessor(l, ctx).GetById()(s.CharacterId()); werr == nil {
+								warpVisitorName = wc.Name()
+							}
+							if err := merchant.NewProcessor(l, ctx).EnterShop(s.CharacterId(), pe.ShopId, warpVisitorName); err != nil {
 								l.WithError(err).Errorf("Unable to auto-enter shop [%s] for character [%d] after owl warp.", pe.ShopId, s.CharacterId())
 								reg.RemovePending(tenant.MustFromContext(ctx), s.CharacterId())
 							}

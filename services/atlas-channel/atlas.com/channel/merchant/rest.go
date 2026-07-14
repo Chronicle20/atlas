@@ -275,3 +275,30 @@ func (r *TopSearchRestModel) SetID(id string) error {
 func (r TopSearchRestModel) GetName() string {
 	return "shop-search-counts"
 }
+
+// BlacklistRestModel / VisitRestModel mirror atlas-merchant's blacklist and
+// visit view resources.
+type BlacklistRestModel struct {
+	Id   string `json:"-"`
+	Name string `json:"name"`
+}
+
+func (r BlacklistRestModel) GetName() string        { return "merchant-blacklist" }
+func (r BlacklistRestModel) GetID() string          { return r.Id }
+func (r *BlacklistRestModel) SetID(id string) error { r.Id = id; return nil }
+
+type VisitRestModel struct {
+	Id    string `json:"-"`
+	Name  string `json:"name"`
+	Count uint32 `json:"count"`
+}
+
+func (r VisitRestModel) GetName() string        { return "merchant-visits" }
+func (r VisitRestModel) GetID() string          { return r.Id }
+func (r *VisitRestModel) SetID(id string) error { r.Id = id; return nil }
+
+// VisitEntry is the processor-facing visit-list row.
+type VisitEntry struct {
+	Name  string
+	Count uint32
+}

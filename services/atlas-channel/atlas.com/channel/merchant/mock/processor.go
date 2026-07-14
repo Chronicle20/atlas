@@ -19,7 +19,11 @@ type ProcessorMock struct {
 	PlaceShopFunc            func(f field.Model, characterId uint32, shopType byte, title string, permitItemId uint32, x int16, y int16) error
 	OpenShopFunc             func(characterId uint32, shopId uuid.UUID) error
 	CloseShopFunc            func(characterId uint32, shopId uuid.UUID) error
-	EnterShopFunc            func(characterId uint32, shopId uuid.UUID) error
+	EnterShopFunc            func(characterId uint32, shopId uuid.UUID, visitorName string) error
+	AddBlacklistFunc         func(characterId uint32, shopId uuid.UUID, name string) error
+	RemoveBlacklistFunc      func(characterId uint32, shopId uuid.UUID, name string) error
+	GetBlacklistFunc         func(shopId string) ([]string, error)
+	GetVisitsFunc            func(shopId string) ([]merchant.VisitEntry, error)
 	ExitShopFunc             func(characterId uint32, shopId uuid.UUID) error
 	SendMessageFunc          func(characterId uint32, shopId uuid.UUID, content string) error
 	EnterMaintenanceFunc     func(characterId uint32, shopId uuid.UUID) error
@@ -99,11 +103,39 @@ func (m *ProcessorMock) CloseShop(characterId uint32, shopId uuid.UUID) error {
 	return nil
 }
 
-func (m *ProcessorMock) EnterShop(characterId uint32, shopId uuid.UUID) error {
+func (m *ProcessorMock) EnterShop(characterId uint32, shopId uuid.UUID, visitorName string) error {
 	if m.EnterShopFunc != nil {
-		return m.EnterShopFunc(characterId, shopId)
+		return m.EnterShopFunc(characterId, shopId, visitorName)
 	}
 	return nil
+}
+
+func (m *ProcessorMock) AddBlacklist(characterId uint32, shopId uuid.UUID, name string) error {
+	if m.AddBlacklistFunc != nil {
+		return m.AddBlacklistFunc(characterId, shopId, name)
+	}
+	return nil
+}
+
+func (m *ProcessorMock) RemoveBlacklist(characterId uint32, shopId uuid.UUID, name string) error {
+	if m.RemoveBlacklistFunc != nil {
+		return m.RemoveBlacklistFunc(characterId, shopId, name)
+	}
+	return nil
+}
+
+func (m *ProcessorMock) GetBlacklist(shopId string) ([]string, error) {
+	if m.GetBlacklistFunc != nil {
+		return m.GetBlacklistFunc(shopId)
+	}
+	return nil, nil
+}
+
+func (m *ProcessorMock) GetVisits(shopId string) ([]merchant.VisitEntry, error) {
+	if m.GetVisitsFunc != nil {
+		return m.GetVisitsFunc(shopId)
+	}
+	return nil, nil
 }
 
 func (m *ProcessorMock) ExitShop(characterId uint32, shopId uuid.UUID) error {

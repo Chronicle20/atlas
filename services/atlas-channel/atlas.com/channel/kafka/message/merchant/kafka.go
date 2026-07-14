@@ -26,6 +26,8 @@ const (
 	CommandRecordItemSearch = "RECORD_ITEM_SEARCH"
 	CommandWithdrawMeso     = "WITHDRAW_MESO"
 	CommandOrganizeListings = "ORGANIZE_LISTINGS"
+	CommandAddBlacklist     = "ADD_BLACKLIST"
+	CommandRemoveBlacklist  = "REMOVE_BLACKLIST"
 )
 
 type Command[E any] struct {
@@ -54,7 +56,13 @@ type CommandCloseShopBody struct {
 	ShopId string `json:"shopId"`
 }
 
+type CommandBlacklistBody struct {
+	ShopId string `json:"shopId"`
+	Name   string `json:"name"`
+}
+
 type CommandEnterShopBody struct {
+	VisitorName string `json:"visitorName"`
 	ShopId string `json:"shopId"`
 }
 
@@ -137,9 +145,11 @@ const (
 	StatusEventShopCreateFailed      = "SHOP_CREATE_FAILED"
 	StatusEventShopUpdated           = "SHOP_UPDATED"
 	StatusEventEnterFailed           = "ENTER_FAILED"
+	StatusEventBlacklistUpdated      = "BLACKLIST_UPDATED"
 
 	EnterFailReasonUndergoingMaintenance = "UNDERGOING_MAINTENANCE"
 	EnterFailReasonRoomClosed            = "ROOM_CLOSED"
+	EnterFailReasonBlacklisted           = "BLACKLISTED"
 
 	// Reasons carried by StatusEventShopCreateFailedBody (mirror of atlas-merchant).
 	ShopCreateFailReasonTooCloseToPortal = "TOO_CLOSE_TO_PORTAL"
@@ -208,6 +218,10 @@ type StatusEventMessageSentBody struct {
 }
 
 type StatusEventShopUpdatedBody struct {
+	ShopId string `json:"shopId"`
+}
+
+type StatusEventBlacklistUpdatedBody struct {
 	ShopId string `json:"shopId"`
 }
 

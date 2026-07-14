@@ -524,8 +524,11 @@ func handleEnterFailedEvent(sc server.Model, wp writer.Producer) func(l logrus.F
 		}
 
 		mode := interactioncb.CharacterInteractionEnterErrorModeRoomClosed
-		if e.Body.Reason == merchant2.EnterFailReasonUndergoingMaintenance {
+		switch e.Body.Reason {
+		case merchant2.EnterFailReasonUndergoingMaintenance:
 			mode = interactioncb.CharacterInteractionEnterErrorModeUndergoingMaintenance
+		case merchant2.EnterFailReasonBlacklisted:
+			mode = interactioncb.CharacterInteractionEnterErrorModeCannotEnterStore
 		}
 		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, session.Announce(l)(ctx)(wp)(interactioncb.CharacterInteractionWriter)(interactioncb.CharacterInteractionEnterResultErrorBody(mode)))
 	}

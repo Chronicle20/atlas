@@ -16,6 +16,8 @@ const (
 	SearchListingsResource = "merchants/search/listings?itemId=%d&worldId=%d&order=%s"
 	TopSearchesResource    = "worlds/%d/shop-searches/top"
 	FrederickResource      = "characters/%d/frederick"
+	BlacklistResource      = "merchants/%s/blacklist"
+	VisitsResource         = "merchants/%s/visits"
 )
 
 func getBaseRequest() string {
@@ -52,4 +54,12 @@ func requestTopSearches(worldId world.Id) requests.Request[[]TopSearchRestModel]
 
 func requestFrederickStatus(characterId uint32) requests.Request[FrederickStatusRestModel] {
 	return requests.GetRequest[FrederickStatusRestModel](fmt.Sprintf(getBaseRequest()+FrederickResource, characterId))
+}
+
+func requestBlacklist(shopId string) requests.Request[[]BlacklistRestModel] {
+	return requests.GetRequest[[]BlacklistRestModel](fmt.Sprintf(getBaseRequest()+BlacklistResource, shopId))
+}
+
+func requestVisits(shopId string) requests.Request[[]VisitRestModel] {
+	return requests.GetRequest[[]VisitRestModel](fmt.Sprintf(getBaseRequest()+VisitsResource, shopId))
 }

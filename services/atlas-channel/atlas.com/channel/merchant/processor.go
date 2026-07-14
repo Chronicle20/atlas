@@ -25,7 +25,11 @@ type Processor interface {
 	PlaceShop(f field.Model, characterId uint32, shopType byte, title string, permitItemId uint32, x int16, y int16) error
 	OpenShop(characterId uint32, shopId uuid.UUID) error
 	CloseShop(characterId uint32, shopId uuid.UUID) error
-	EnterShop(characterId uint32, shopId uuid.UUID) error
+	EnterShop(characterId uint32, shopId uuid.UUID, visitorName string) error
+	AddBlacklist(characterId uint32, shopId uuid.UUID, name string) error
+	RemoveBlacklist(characterId uint32, shopId uuid.UUID, name string) error
+	GetBlacklist(shopId string) ([]string, error)
+	GetVisits(shopId string) ([]VisitEntry, error)
 	ExitShop(characterId uint32, shopId uuid.UUID) error
 	SendMessage(characterId uint32, shopId uuid.UUID, content string) error
 	EnterMaintenance(characterId uint32, shopId uuid.UUID) error
@@ -91,8 +95,40 @@ func (p *ProcessorImpl) CloseShop(characterId uint32, shopId uuid.UUID) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(merchant2.EnvCommandTopic)(CloseShopCommandProvider(characterId, shopId))
 }
 
-func (p *ProcessorImpl) EnterShop(characterId uint32, shopId uuid.UUID) error {
-	return producer.ProviderImpl(p.l)(p.ctx)(merchant2.EnvCommandTopic)(EnterShopCommandProvider(characterId, shopId))
+func (p *ProcessorImpl) EnterShop(characterId uint32, shopId uuid.UUID, visitorName string) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(merchant2.EnvCommandTopic)(EnterShopCommandProvider(characterId, shopId, visitorName))
+}
+
+func (p *ProcessorImpl) AddBlacklist(characterId uint32, shopId uuid.UUID, name string) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(merchant2.EnvCommandTopic)(AddBlacklistCommandProvider(characterId, shopId, name))
+}
+
+func (p *ProcessorImpl) RemoveBlacklist(characterId uint32, shopId uuid.UUID, name string) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(merchant2.EnvCommandTopic)(RemoveBlacklistCommandProvider(characterId, shopId, name))
+}
+
+func (p *ProcessorImpl) GetBlacklist(shopId string) ([]string, error) {
+	rms, err := requestBlacklist(shopId)(p.l, p.ctx)
+	if err != nil {
+		return nil, err
+	}
+	names := make([]string, 0, len(rms))
+	for _, rm := range rms {
+		names = append(names, rm.Name)
+	}
+	return names, nil
+}
+
+func (p *ProcessorImpl) GetVisits(shopId string) ([]VisitEntry, error) {
+	rms, err := requestVisits(shopId)(p.l, p.ctx)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]VisitEntry, 0, len(rms))
+	for _, rm := range rms {
+		out = append(out, VisitEntry{Name: rm.Name, Count: rm.Count})
+	}
+	return out, nil
 }
 
 func (p *ProcessorImpl) ExitShop(characterId uint32, shopId uuid.UUID) error {

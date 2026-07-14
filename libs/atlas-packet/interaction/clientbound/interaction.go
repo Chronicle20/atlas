@@ -307,3 +307,90 @@ func (m *InteractionUpdateMerchant) Decode(l logrus.FieldLogger, ctx context.Con
 		}
 	}
 }
+
+// InteractionVisitList is the hired-merchant visit-list response
+// (CEntrustedShopDlg sub_519505, v83 @0x519505, mode 0x2E): Decode2 count,
+// then per entry DecodeStr name + Decode4 value (the visit count the client
+// shows next to each name).
+type InteractionVisitList struct {
+	mode    byte
+	entries []VisitListEntry
+}
+
+type VisitListEntry struct {
+	Name  string
+	Count uint32
+}
+
+func NewInteractionVisitList(mode byte, entries []VisitListEntry) InteractionVisitList {
+	return InteractionVisitList{mode: mode, entries: entries}
+}
+
+func (m InteractionVisitList) Operation() string { return CharacterInteractionWriter }
+func (m InteractionVisitList) String() string {
+	return fmt.Sprintf("visit list entries [%d]", len(m.entries))
+}
+
+func (m InteractionVisitList) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
+		w.WriteByte(m.mode)
+		w.WriteShort(uint16(len(m.entries)))
+		for _, e := range m.entries {
+			w.WriteAsciiString(e.Name)
+			w.WriteInt(e.Count)
+		}
+		return w.Bytes()
+	}
+}
+
+func (m *InteractionVisitList) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
+		m.mode = r.ReadByte()
+		count := int(r.ReadUint16())
+		m.entries = make([]VisitListEntry, 0, count)
+		for i := 0; i < count; i++ {
+			m.entries = append(m.entries, VisitListEntry{Name: r.ReadAsciiString(), Count: r.ReadUint32()})
+		}
+	}
+}
+
+// InteractionBlackList is the hired-merchant blacklist-view response
+// (CEntrustedShopDlg sub_5193D8, v83 @0x5193d8, mode 0x2F): Decode2 count,
+// then per entry DecodeStr name.
+type InteractionBlackList struct {
+	mode  byte
+	names []string
+}
+
+func NewInteractionBlackList(mode byte, names []string) InteractionBlackList {
+	return InteractionBlackList{mode: mode, names: names}
+}
+
+func (m InteractionBlackList) Operation() string { return CharacterInteractionWriter }
+func (m InteractionBlackList) String() string {
+	return fmt.Sprintf("black list entries [%d]", len(m.names))
+}
+
+func (m InteractionBlackList) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
+		w.WriteByte(m.mode)
+		w.WriteShort(uint16(len(m.names)))
+		for _, n := range m.names {
+			w.WriteAsciiString(n)
+		}
+		return w.Bytes()
+	}
+}
+
+func (m *InteractionBlackList) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
+		m.mode = r.ReadByte()
+		count := int(r.ReadUint16())
+		m.names = make([]string, 0, count)
+		for i := 0; i < count; i++ {
+			m.names = append(m.names, r.ReadAsciiString())
+		}
+	}
+}

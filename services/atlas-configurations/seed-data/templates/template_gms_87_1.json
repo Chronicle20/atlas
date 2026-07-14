@@ -2545,8 +2545,10 @@
             "ENTER": 4,
             "ENTER_RESULT": 5,
             "LEAVE": 10,
-            "UPDATE_MERCHANT": 25
-          }
+            "UPDATE_MERCHANT": 25,
+            "MERCHANT_VIEW_VISIT_LIST": 46,
+            "MERCHANT_VIEW_BLACK_LIST": 47
+           }
         }
       },
       {

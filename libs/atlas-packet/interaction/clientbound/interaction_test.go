@@ -334,3 +334,57 @@ func TestInteractionUpdateMerchantBytes(t *testing.T) {
 		})
 	}
 }
+
+// TestInteractionVisitListBytes pins the hired-merchant visit-list response
+// (CEntrustedShopDlg sub_519505 @0x519505, mode 0x2E): Decode2 count, then per
+// entry DecodeStr name + Decode4 count.
+func TestInteractionVisitListBytes(t *testing.T) {
+	input := NewInteractionVisitList(46, []VisitListEntry{{Name: "AB", Count: 3}})
+	want := []byte{46, 0x01, 0x00, 0x02, 0x00, 0x41, 0x42, 0x03, 0x00, 0x00, 0x00}
+	for _, v := range test.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			b := test.Encode(t, ctx, input.Encode, nil)
+			if !bytes.Equal(b, want) {
+				t.Fatalf("bytes: got % x, want % x", b, want)
+			}
+		})
+	}
+}
+
+// TestInteractionBlackListBytes pins the blacklist-view response
+// (CEntrustedShopDlg sub_5193D8 @0x5193d8, mode 0x2F): Decode2 count, then per
+// entry DecodeStr name.
+func TestInteractionBlackListBytes(t *testing.T) {
+	input := NewInteractionBlackList(47, []string{"AB", "CD"})
+	want := []byte{47, 0x02, 0x00, 0x02, 0x00, 0x41, 0x42, 0x02, 0x00, 0x43, 0x44}
+	for _, v := range test.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			b := test.Encode(t, ctx, input.Encode, nil)
+			if !bytes.Equal(b, want) {
+				t.Fatalf("bytes: got % x, want % x", b, want)
+			}
+		})
+	}
+}
+
+func TestInteractionVisitListRoundTrip(t *testing.T) {
+	input := NewInteractionVisitList(46, []VisitListEntry{{Name: "Visitor1", Count: 5}, {Name: "Visitor2", Count: 1}})
+	for _, v := range test.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			test.RoundTrip(t, ctx, input.Encode, (&InteractionVisitList{}).Decode, nil)
+		})
+	}
+}
+
+func TestInteractionBlackListRoundTrip(t *testing.T) {
+	input := NewInteractionBlackList(47, []string{"Banned1", "Banned2"})
+	for _, v := range test.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			test.RoundTrip(t, ctx, input.Encode, (&InteractionBlackList{}).Decode, nil)
+		})
+	}
+}

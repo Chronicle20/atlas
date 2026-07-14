@@ -23,6 +23,11 @@ const (
 	CharacterInteractionModeChatThing      CharacterInteractionMode = "CHAT_THING"      // 8
 	CharacterInteractionModeLeave          CharacterInteractionMode = "LEAVE"           // 10
 	CharacterInteractionModeUpdateMerchant CharacterInteractionMode = "UPDATE_MERCHANT" // 25
+	// The hired-merchant view responses echo the request mode byte: the client
+	// decodes them under the same operation constants it sends
+	// (CEntrustedShopDlg::OnPacket sub_51870D cases 0x2E/0x2F).
+	CharacterInteractionModeMerchantViewVisitList CharacterInteractionMode = "MERCHANT_VIEW_VISIT_LIST" // 46
+	CharacterInteractionModeMerchantViewBlackList CharacterInteractionMode = "MERCHANT_VIEW_BLACK_LIST" // 47
 
 	CharacterInteractionEnterErrorModeRoomClosed                CharacterInteractionEnterErrorMode = "ROOM_CLOSED"                   // 1
 	CharacterInteractionEnterErrorModeFull                      CharacterInteractionEnterErrorMode = "FULL"                          // 2
@@ -105,5 +110,28 @@ func CharacterInteractionLeaveBody(slot byte, status byte) func(logrus.FieldLogg
 func CharacterInteractionUpdateMerchantBody(meso uint32, items []interaction.RoomShopItem) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", CharacterInteractionModeUpdateMerchant, func(mode byte) packet.Encoder {
 		return NewInteractionUpdateMerchant(mode, meso, items)
+	})
+}
+
+func CharacterInteractionVisitListBody(entries []InteractionVisitListEntry) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", CharacterInteractionModeMerchantViewVisitList, func(mode byte) packet.Encoder {
+		conv := make([]VisitListEntry, 0, len(entries))
+		for _, e := range entries {
+			conv = append(conv, VisitListEntry{Name: e.Name, Count: e.Count})
+		}
+		return NewInteractionVisitList(mode, conv)
+	})
+}
+
+// InteractionVisitListEntry is the caller-facing entry shape (avoids exporting
+// the codec's internal type through the body signature).
+type InteractionVisitListEntry struct {
+	Name  string
+	Count uint32
+}
+
+func CharacterInteractionBlackListBody(names []string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", CharacterInteractionModeMerchantViewBlackList, func(mode byte) packet.Encoder {
+		return NewInteractionBlackList(mode, names)
 	})
 }

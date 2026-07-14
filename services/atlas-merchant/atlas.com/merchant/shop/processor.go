@@ -124,6 +124,7 @@ var ErrVersionConflict = errors.New("version conflict")
 var ErrNoListings = errors.New("shop has no listings")
 var ErrShopFull = errors.New("shop is full")
 var ErrFrederickPending = errors.New("items or mesos pending at Frederick")
+var ErrNotOwner = errors.New("character does not own shop")
 
 type ProcessorImpl struct {
 	l        logrus.FieldLogger
@@ -338,12 +339,26 @@ func shopCreateFailureReason(err error) string {
 	}
 }
 
+// requireOwner rejects an owner-only mutation issued by anyone but the
+// shop's owner. Commands arrive over Kafka, which trusts the producer's
+// characterId — this is the server-side backstop behind the channel's gating.
+func requireOwner(e Entity, characterId uint32) error {
+	if e.CharacterId != characterId {
+		return fmt.Errorf("%w: shop [%s] belongs to [%d], actor [%d]", ErrNotOwner, e.Id, e.CharacterId, characterId)
+	}
+	return nil
+}
+
 func (p *ProcessorImpl) OpenShop(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32) error {
 	return func(shopId uuid.UUID, characterId uint32) error {
 		var mapId uint32
 		err := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 			e, err := getById(shopId)(tx)()
 			if err != nil {
+				return err
+			}
+
+			if err = requireOwner(e, characterId); err != nil {
 				return err
 			}
 
@@ -392,6 +407,10 @@ func (p *ProcessorImpl) EnterMaintenance(mb *message.Buffer) func(shopId uuid.UU
 				return err
 			}
 
+			if err = requireOwner(e, characterId); err != nil {
+				return err
+			}
+
 			if State(e.State) != Open {
 				return fmt.Errorf("%w: cannot enter maintenance in state %d", ErrInvalidTransition, e.State)
 			}
@@ -423,6 +442,10 @@ func (p *ProcessorImpl) ExitMaintenance(mb *message.Buffer) func(shopId uuid.UUI
 		err := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 			e, err := getById(shopId)(tx)()
 			if err != nil {
+				return err
+			}
+
+			if err = requireOwner(e, characterId); err != nil {
 				return err
 			}
 
@@ -494,6 +517,10 @@ func (p *ProcessorImpl) CloseShop(mb *message.Buffer) func(shopId uuid.UUID, cha
 		err = database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 			e, err := getById(shopId)(tx)()
 			if err != nil {
+				return err
+			}
+
+			if err = requireOwner(e, characterId); err != nil {
 				return err
 			}
 
@@ -617,6 +644,10 @@ func (p *ProcessorImpl) AddListing(mb *message.Buffer) func(shopId uuid.UUID, ch
 				return err
 			}
 
+			if err = requireOwner(e, characterId); err != nil {
+				return err
+			}
+
 			if State(e.State) != Draft && State(e.State) != Maintenance {
 				return fmt.Errorf("%w: cannot add listing in state %d", ErrInvalidTransition, e.State)
 			}
@@ -653,6 +684,10 @@ func (p *ProcessorImpl) RemoveListing(mb *message.Buffer) func(shopId uuid.UUID,
 		err := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 			e, err := getById(shopId)(tx)()
 			if err != nil {
+				return err
+			}
+
+			if err = requireOwner(e, characterId); err != nil {
 				return err
 			}
 

@@ -331,7 +331,10 @@ jobs:
           platform: linux/amd64
           registry-username: ${{ github.actor }}
           registry-password: ${{ secrets.GHCR_TOKEN }}
-          cache-scope: atlas-bake-amd64-shard${{ matrix.shard }}
+          # v2: rotated 2026-07-14 to purge a poisoned type=gha layer that kept
+          # restoring a stale atlas-channel compile (correct source, stale binary
+          # — the include=listings fix never reached the built image; task-127).
+          cache-scope: atlas-bake-amd64-v2-shard${{ matrix.shard }}
 
   # ============================================
   # PR-env resolved overlay (bot branch)

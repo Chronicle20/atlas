@@ -30,3 +30,19 @@ func ToEmployeeSpawn(m Model, ownerName string) merchantcb.EmployeeSpawn {
 	)
 	return merchantcb.NewEmployeeSpawn(m.CharacterId(), m.PermitItemId(), m.X(), m.Y(), 0, ownerName, balloon)
 }
+
+// ToEmployeeUpdate projects the current balloon state of a hired-merchant shop
+// into the UPDATE packet (CEmployeePool::OnEmployeeMiniRoomBalloon), refreshing the
+// field balloon — e.g. the visitor count — for players already in the map. It
+// reuses the same balloon block as the spawn, keyed by the owner characterId.
+func ToEmployeeUpdate(m Model) merchantcb.EmployeeUpdate {
+	balloon := merchantcb.NewBalloon(
+		byte(interactionpkt.MerchantShopMiniRoomType),
+		m.CharacterId(),
+		m.Title(),
+		byte(len(m.Visitors())),
+		4,
+		0,
+	)
+	return merchantcb.NewEmployeeUpdate(m.CharacterId(), balloon)
+}

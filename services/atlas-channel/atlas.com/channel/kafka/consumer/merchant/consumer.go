@@ -244,6 +244,9 @@ func handleVisitorEvent(sc server.Model, wp writer.Producer) func(l logrus.Field
 			// A completed visit consumes any pending owl-warp entry (task-127).
 			shopscanner.GetRegistry().RemovePending(t, e.Body.CharacterId)
 
+			// Refresh the field balloon's visitor count for onlookers in the map.
+			broadcastEmployeeBalloonUpdate(l, ctx, wp, e.Body.ShopId)
+
 			// Send full shop interior to the entering visitor.
 			room, err := buildShopRoom(l, ctx, e.Body.ShopId, e.Body.CharacterId)
 			if err != nil {
@@ -272,6 +275,9 @@ func handleVisitorEvent(sc server.Model, wp writer.Producer) func(l logrus.Field
 		case merchant2.StatusEventVisitorExited:
 			l.Debugf("Visitor [%d] exited shop [%s] from slot [%d].", e.Body.CharacterId, e.Body.ShopId, e.Body.Slot)
 
+			// Refresh the field balloon's visitor count for onlookers in the map.
+			broadcastEmployeeBalloonUpdate(l, ctx, wp, e.Body.ShopId)
+
 			// Send LEAVE to the exiting visitor (closes their room UI).
 			_ = sp.IfPresentByCharacterId(sc.Channel())(e.Body.CharacterId, announce(interactioncb.CharacterInteractionLeaveBody(e.Body.Slot, 0)))
 
@@ -283,6 +289,9 @@ func handleVisitorEvent(sc server.Model, wp writer.Producer) func(l logrus.Field
 			})
 		case merchant2.StatusEventVisitorEjected:
 			l.Debugf("Visitor [%d] ejected from shop [%s] from slot [%d].", e.Body.CharacterId, e.Body.ShopId, e.Body.Slot)
+
+			// Refresh the field balloon's visitor count for onlookers in the map.
+			broadcastEmployeeBalloonUpdate(l, ctx, wp, e.Body.ShopId)
 
 			// Send LEAVE to the ejected visitor (closes their room UI).
 			_ = sp.IfPresentByCharacterId(sc.Channel())(e.Body.CharacterId, announce(interactioncb.CharacterInteractionLeaveBody(e.Body.Slot, 0)))
@@ -508,6 +517,21 @@ func resolveOwnerName(l logrus.FieldLogger, ctx context.Context, characterId uin
 		return ""
 	}
 	return c.Name()
+}
+
+// broadcastEmployeeBalloonUpdate refreshes a hired merchant's field balloon (e.g.
+// its visitor count) for everyone in the map via CEmployeePool::OnEmployeeMiniRoomBalloon.
+// No-op for personal stores (which have no employee balloon).
+func broadcastEmployeeBalloonUpdate(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, shopId string) {
+	shop, err := merchant.NewProcessor(l, ctx).GetShop(shopId)
+	if err != nil || shop.ShopType() != merchant.HiredMerchantShopType {
+		return
+	}
+	f := field.NewBuilder(shop.WorldId(), shop.ChannelId(), mapId.Id(shop.MapId())).SetInstance(shop.InstanceId()).Build()
+	update := merchant.ToEmployeeUpdate(shop)
+	if err := _map.NewProcessor(l, ctx).ForSessionsInMap(f, session.Announce(l)(ctx)(wp)(merchantcb.MerchantEmployeeUpdateWriter)(update.Encode)); err != nil {
+		l.WithError(err).Warnf("Unable to broadcast employee balloon update for shop [%s].", shopId)
+	}
 }
 
 // buildShopRoom fetches shop data and resolves character info to build the appropriate room packet.

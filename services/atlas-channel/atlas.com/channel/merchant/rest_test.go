@@ -76,3 +76,29 @@ func TestHasFrederickPending(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, got)
 }
+
+// GetShop MUST request the listings include. Without it atlas-merchant returns
+// the shop with an empty listings relationship (the data is include-gated), so
+// every shop-view refresh (buildShopItems(shop.Listings()) -> UPDATE_MERCHANT)
+// renders an empty store even though the listing exists — the item is taken but
+// never shows (task-127 live bug).
+func TestGetShop_RequestsListingsInclude(t *testing.T) {
+	var gotQuery string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotQuery = r.URL.RawQuery
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"data":{"type":"merchants","id":"11111111-1111-1111-1111-111111111111","attributes":{"characterId":1,"shopType":1,"state":1,"listingCount":1},"relationships":{"listings":{"data":[{"type":"listings","id":"22222222-2222-2222-2222-222222222222"}]}}},"included":[{"type":"listings","id":"22222222-2222-2222-2222-222222222222","attributes":{"shopId":"11111111-1111-1111-1111-111111111111","itemId":2000004,"itemType":2,"quantity":100,"bundleSize":1,"bundlesRemaining":100,"pricePerBundle":1000,"itemSnapshot":{"quantity":100}}}]}`))
+	}))
+	defer srv.Close()
+	t.Setenv("MERCHANT_SERVICE_URL", srv.URL+"/")
+
+	ten, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	require.NoError(t, err)
+	ctx := tenant.WithContext(context.Background(), ten)
+	l, _ := test.NewNullLogger()
+
+	shop, err := NewProcessor(l, ctx).GetShop("11111111-1111-1111-1111-111111111111")
+	require.NoError(t, err)
+	require.Contains(t, gotQuery, "include=listings", "GetShop must request ?include=listings")
+	require.Len(t, shop.Listings(), 1, "the fetched shop must carry its listings for the view refresh")
+}

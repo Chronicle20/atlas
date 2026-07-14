@@ -2792,6 +2792,10 @@
         }
       },
       {
+        "opCode": "0x0A5",
+        "writer": "MiniRoom"
+      },
+      {
         "opCode": "0x13B",
         "writer": "Tournament"
       },

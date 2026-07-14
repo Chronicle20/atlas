@@ -2548,6 +2548,10 @@
         }
       },
       {
+        "opCode": "0x0A3",
+        "writer": "MiniRoom"
+      },
+      {
         "opCode": "0x14E",
         "writer": "StorageOperation",
         "options": {

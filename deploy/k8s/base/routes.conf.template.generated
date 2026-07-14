@@ -549,6 +549,22 @@ location ~ ^/api/worlds/[^/]+/mts(/.*)?$ {
   proxy_pass http://$u$request_uri;
 }
 
+# atlas-merchant owns two world-namespaced routes: the per-field merchant list
+# (get_field_merchants — the channel's SpawnForSelf/ForEachInField call on map
+# entry) and the top shop-searches. These MUST precede the atlas-world
+# catch-all below, or they 404 against atlas-world: an entering player never
+# receives the store balloon for an already-open shop and cannot enter it, and
+# owl top-searches fail (task-127).
+location ~ ^/api/worlds/[^/]+/channels/[^/]+/maps/[^/]+/instances/[^/]+/merchants(/.*)?$ {
+  set $u "atlas-merchant.${POD_NAMESPACE}.svc.cluster.local:8080";
+  proxy_pass http://$u$request_uri;
+}
+
+location ~ ^/api/worlds/[^/]+/shop-searches(/.*)?$ {
+  set $u "atlas-merchant.${POD_NAMESPACE}.svc.cluster.local:8080";
+  proxy_pass http://$u$request_uri;
+}
+
 location ~ ^/api/worlds(/.*)?$ {
   set $u "atlas-world.${POD_NAMESPACE}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;

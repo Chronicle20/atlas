@@ -124,3 +124,21 @@ If atlas-channel does not pick up the new writers live, restart it:
 `kubectl -n <ns> rollout restart deploy/atlas-channel`. Opcodes by version:
 v61 CA/CB/CC, v72 EB/EC/ED, v79 F3/F4/F5, v83 109/10A/10B, v84 110/111/112,
 v87 11A/11B/11C, v95 13F/140/141, jms185 11E/11F/120 (v48 has no feature).
+
+## Merchant version bring-up + blacklist/visit-list (2026-07-14)
+
+Seed templates apply only at tenant **creation**. Existing tenants need live
+config patches + `atlas-channel` restart for the new handlers/writers to route:
+
+- **v87 / v95**: new serverbound handlers `CharacterInteractionHandle`
+  (recv `0x81` / `0x90`) and `HiredMerchantOperationHandle` (recv `0x42` /
+  `0x44`), plus the `enterError` table on the CharacterInteraction writer.
+- **jms_185**: new `HiredMerchantOperationHandle` (recv `0x37`).
+- **v83 / v84 / v87 / v95**: two new CharacterInteraction **writer**
+  operations (`MERCHANT_VIEW_VISIT_LIST` 46, `MERCHANT_VIEW_BLACK_LIST` 47)
+  for the visit-list / blacklist-view responses.
+- **atlas-merchant**: two new tables (`merchant_blacklists`,
+  `merchant_visits`) — auto-migrated on deploy.
+
+Without the live-config patch the new merchant ops (withdraw, organize,
+blacklist add/remove/view, visit-list) silently drop on the affected tenant.

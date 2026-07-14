@@ -39,24 +39,29 @@ listed so nothing reads as silently done:
      full-stack — command → owner-guarded processor → SHOP_UPDATED refresh.
      The **maintenance/closed enter-error** is now surfaced (ENTER_FAILED →
      UNDERGOING_MAINTENANCE / ROOM_CLOSED) instead of a silent drop.
-   - REMAINING (genuine new features, escalated — not wiring): blacklist
-     (add/remove/**view**) and the **visit list** need a new per-shop
-     persistence table AND, for the two *view* ops, an IDA-derived
-     list-display packet layout that has not been resolved
-     (`CEntrustedShopDlg::OnBlackList` @0x519382 / `OnVisitList` @0x5194af
-     senders are known, but the clientbound list bodies are not fixtured).
-     Blacklist *enforcement* also needs a name→characterId lookup
-     (atlas-merchant → atlas-character). These are a scoped follow-up, not a
-     stub: the handlers remain decode-and-log until the packets are derived.
+   - DONE (2026-07-14, tasks V4): **blacklist** (add/remove/view + entry
+     enforcement) and **visit list** (view) are now full-stack. The two
+     clientbound response layouts were IDA-derived from the v83 dispatcher
+     (`CEntrustedShopDlg::OnPacket` sub_51870D → visit-list sub_519505 mode
+     0x2E, blacklist-view sub_5193D8 mode 0x2F) and implemented as byte-fixtured
+     codecs. New atlas-merchant `blacklist` + `visit` packages persist by
+     character name (Cosmic-faithful; no characterId lookup needed); a banned
+     name is refused entry (ENTER_FAILED → CANNOT_ENTER_STORE); every entry
+     increments a visit tally. Owner-guarded add/remove; REST views; channel
+     handlers + response packets wired. jms merchant view modes shift by 3
+     (0x2B/0x2C, IDA-verified) and are pending jms's fuller interaction bring-up.
    - INVITE/INVITE_RESULT interaction modes are trade-invite surface (trades
      are unimplemented in atlas-channel), out of merchant scope.
-   - PRE-EXISTING VERSION GAP (not this task): v87/v92/v95 do not route the
-     `CharacterInteractionHandle` serverbound handler at all, so the ENTIRE
-     player-shop/hired-merchant in-shop interaction surface (put/buy/exit,
-     and hence the newly-wired withdraw/organize) is absent on those
-     versions. This is the known v87-template incompleteness — a
-     version-column bring-up, separate from the lifecycle remediation. The
-     new ops are live on the versions that route interaction (v83/v84).
+   - VERSION GAP CLOSED (2026-07-14, tasks V1–V3): v87/v95 now route both
+     `CharacterInteractionHandle` (recv 0x81/0x90, IDA-derived from
+     OnVisitList/SendOpenShopRequest COutPacket opcodes) and
+     `HiredMerchantOperationHandle` (recv 0x42/0x44); jms185 gained the
+     entrusted-shop handler (recv 0x37). The v87/v95 sub-mode operations
+     table is v83's (verified stable). v92/v12 are not in the coverage matrix
+     (9-version set) — out of scope. jms's interaction handler is still a
+     3-mode stub (a separate fuller bring-up); v61/72/79 also lack the view
+     modes. The new withdraw/organize/blacklist/visit ops are live on every
+     version whose interaction handler routes them (v83/84/87/95).
 3. **jms185 free-form notice**: the client has no case 18 — the Fredrick
    reminder notice is a benign silent drop on jms until given another vehicle.
 4. **v48 template inconsistency** (review W3) — RESOLVED: v48 predates the

@@ -92,9 +92,9 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 
 				// Permit validation: the claimed permit must be the right family for
 				// the requested store kind (514 <-> personal store, 503 <-> hired
-				// merchant) and actually present in the character's CASH inventory
-				// (Cosmic: countById >= 1, getMiniRoomError(6) otherwise). Permits
-				// are durable — never consumed (owner decision, lifecycle audit Q1).
+				// merchant) and actually present in the character's CASH inventory;
+				// reject with mini-room error 6 otherwise. Permits are durable —
+				// never consumed (owner decision, lifecycle audit Q1).
 				permitClass := item.GetClassification(item.Id(sp.ItemId()))
 				if roomType == model.PersonalShopMiniRoomType && permitClass != item.ClassificationStorePermit {
 					rejectCreate("permit item is not a store permit (514 family)")
@@ -189,9 +189,9 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			}
 			if visiting.CharacterId() == s.CharacterId() {
 				// Owner closing the window: a hired merchant in Maintenance goes back
-				// to running (ExitMaintenance auto-closes it when empty — Cosmic
-				// keeps a stocked merchant alive on owner EXIT, tears down an empty
-				// one). A personal shop, or a merchant still in Draft setup, closes.
+				// to running — a stocked merchant outlives the owner's management
+				// view, while ExitMaintenance auto-closes an empty one. A personal
+				// shop, or a merchant still in Draft setup, closes.
 				if visiting.ShopType() == merchant.HiredMerchantShopType && visiting.State() == merchant.StateMaintenance {
 					_ = mp.ExitMaintenance(s.CharacterId(), visiting.Id())
 				} else {
@@ -411,9 +411,9 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 				l.WithError(err).Errorf("Unable to get visiting shop for character [%d].", s.CharacterId())
 				return
 			}
-			// MERCHANT_EXIT is Cosmic's CLOSE_MERCHANT: the owner's explicit
-			// "close store" action fully closes the shop (items back / Fredrick);
-			// from anyone else it is a plain visitor exit.
+			// MERCHANT_EXIT (0x29) is the owner's explicit "close store" action:
+			// it fully closes the shop (items back / Fredrick); from anyone else
+			// it is a plain visitor exit.
 			if visiting.CharacterId() == s.CharacterId() {
 				_ = mp.CloseShop(s.CharacterId(), visiting.Id())
 			} else {

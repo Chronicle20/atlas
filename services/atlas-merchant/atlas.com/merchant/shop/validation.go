@@ -24,14 +24,14 @@ var (
 
 const (
 	// portalProximityThreshold is the euclidean radius within which a teleport
-	// portal blocks store placement. Matches Cosmic canPlaceStore
-	// (PlayerInteractionHandler.java: portal.distance(cpos) < 120.0).
+	// portal blocks store placement (within 120px of the closest teleport
+	// portal the client-era rule rejects placement).
 	portalProximityThreshold = 120
 	shopProximityThreshold   = 100
 
-	// teleportPortalType and portalTargetNone mirror Cosmic
-	// findClosestTeleportPortal (MapleMap.java): only TELEPORT_PORTAL (WZ type 1)
-	// portals with a real target map block store placement. Spawn points ("sp",
+	// teleportPortalType and portalTargetNone identify store-blocking portals
+	// in map data: only TELEPORT portals (WZ type 1)
+	// with a real target map block store placement. Spawn points ("sp",
 	// type 0 — where players land entering the Free Market) and dead-end portals
 	// are ignored, so a store can be opened where the player stands.
 	teleportPortalType = 1
@@ -80,7 +80,7 @@ func IsNearPortal(l logrus.FieldLogger, ctx context.Context, mapId uint32, x int
 
 // nearBlockingPortal reports whether (x,y) is within portalProximityThreshold of
 // a store-blocking portal. Only teleport portals with a real target block
-// placement (Cosmic parity) — spawn points, where players stand on entering the
+// placement — spawn points, where players stand on entering the
 // Free Market, are ignored, so a store can be opened there.
 func nearBlockingPortal(x int16, y int16, portals []portal.Model) bool {
 	limitSq := portalProximityThreshold * portalProximityThreshold

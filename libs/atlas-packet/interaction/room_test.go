@@ -153,10 +153,10 @@ func TestMerchantShopRoomOwnerLedgerRoundTrip(t *testing.T) {
 
 // TestRoomPositionByteSemantics pins the OnEnterResultBase second header byte
 // (v83 @0x65ec6b -> *(this+0xC8)) to the CLIENT's semantics: it is the
-// recipient's position in the room — 0 = owner, 1..3 = visitor slot. Cosmic
-// writes owner?0:1 (PacketCreator.getPlayerShop), and CEntrustedShopDlg's
-// position==0 branch (@0x518a7e) is the one that decodes the owner-only
-// ledger block that Cosmic sends only to owners.
+// recipient's position in the room — 0 = owner, 1..3 = visitor slot.
+// CEntrustedShopDlg's position==0 branch (@0x518a7e) decodes the owner-only
+// ledger block and opens the owner management UI (UI_Open gated on
+// !position @0x518d3d), so 0 = owner.
 func TestRoomPositionByteSemantics(t *testing.T) {
 	v := pt.Variants[0]
 	ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)

@@ -53,8 +53,8 @@ func (p *Processor) Search(wp writer.Producer) func(s session.Model, searchItemI
 
 		mp := merchant.NewProcessor(p.l, p.ctx)
 
-		// Count increment is result-independent (Cosmic parity) and must never
-		// block or fail the search.
+		// Count increment is result-independent (every executed search counts)
+		// and must never block or fail the search.
 		if err := mp.RecordItemSearch(s.Field(), s.CharacterId(), searchItemId); err != nil {
 			p.l.WithError(err).Warnf("Unable to record item search for character [%d], item [%d].", s.CharacterId(), searchItemId)
 		}

@@ -12,8 +12,8 @@ import (
 //   - an Open hired merchant survives logout (runs owner-detached until
 //     expiry/explicit close).
 //   - a hired merchant caught in Maintenance reverts to running via
-//     exit-maintenance (Cosmic closeHiredMerchant(false) sets it back open;
-//     leaving it in Maintenance would strand it unenterable forever).
+//     exit-maintenance (leaving it in Maintenance would strand it
+//     unenterable forever).
 func TestLogoutAction(t *testing.T) {
 	cases := []struct {
 		name     string

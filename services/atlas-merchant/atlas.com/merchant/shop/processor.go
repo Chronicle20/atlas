@@ -286,16 +286,16 @@ func (p *ProcessorImpl) CreateShop(characterId uint32, shopType ShopType, title 
 }
 
 // CreateShopAndEmit places a shop and, on a player-facing validation failure,
-// emits a SHOP_CREATE_FAILED status event so the channel can tell the player why
-// nothing opened (Cosmic sends getMiniRoomError here). Placement failures
+// emits a SHOP_CREATE_FAILED status event so the channel can tell the player
+// why nothing opened (a mini-room error notice). Placement failures
 // short-circuit before any DB write, so the feedback is emitted in its own
 // committed transaction rather than being rolled back with the (empty) failure.
 func (p *ProcessorImpl) CreateShopAndEmit(characterId uint32, shopType ShopType, title string, worldId world.Id, channelId channel.Id, mapId uint32, instanceId uuid.UUID, x int16, y int16, permitItemId uint32) (Model, error) {
 	m, err := p.CreateShop(characterId, shopType, title, worldId, channelId, mapId, instanceId, x, y, permitItemId)
 	if err == nil {
-		// Success: the shop is Draft. Drop the owner into the shop UI so they can
-		// stock it before the formal open (Cosmic sends the shop/merchant view on
-		// create). Emitted in its own tx after the create commit.
+		// Success: the shop is Draft. Drop the owner into the shop UI so they
+		// can stock it before the formal open. Emitted in its own tx after the
+		// create commit.
 		if emitErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 			return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
 				return buf.Put(merchant.EnvStatusEventTopic, StatusEventShopSetupProvider(characterId, m.Id(), m))

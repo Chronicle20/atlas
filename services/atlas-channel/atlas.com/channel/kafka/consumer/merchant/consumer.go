@@ -157,7 +157,7 @@ func handleShopOpenedEvent(sc server.Model, wp writer.Producer) func(l logrus.Fi
 		}
 
 		// No room re-send to the owner here: the owner has held the shop dialog
-		// since SHOP_SETUP (create), and Cosmic's OPEN broadcasts only the map
+		// since SHOP_SETUP (create); going live only broadcasts the map
 		// box/employee spawn. Re-sending ENTER_RESULT would re-create the
 		// owner's dialog at go-live.
 	}
@@ -386,7 +386,7 @@ func handleShopCreateFailedEvent(sc server.Model, wp writer.Producer) func(l log
 }
 
 // shopCreateFailureMode maps a merchant create-failure reason to the client's
-// mini-room error mode (Cosmic getMiniRoomError parity).
+// mini-room error mode.
 func shopCreateFailureMode(reason string) interactioncb.CharacterInteractionEnterErrorMode {
 	switch reason {
 	case merchant2.ShopCreateFailReasonTooCloseToPortal:
@@ -599,12 +599,11 @@ func buildMerchantShopRoom(l logrus.FieldLogger, ctx context.Context, cp charact
 		visitors = append(visitors, interactionpkt.NewBaseVisitor(byte(i+1), avatar, c.Name()))
 	}
 
-	// Messages are only visible to the owner (position 0).
+	// Owner-only message list (position 0): persisted by the merchant service
+	// but not yet exposed through the shop REST payload, so the owner's
+	// management view shows none of the messages visitors left — known gap,
+	// merchant-lifecycle-audit F10.
 	var messages []interactionpkt.RoomMessage
-	if position == 0 {
-		// No stored messages currently; the merchant service tracks them but the
-		// channel-side room builder does not surface them yet.
-	}
 
 	ownerChar, err := cp.GetById()(shop.CharacterId())
 	if err != nil {

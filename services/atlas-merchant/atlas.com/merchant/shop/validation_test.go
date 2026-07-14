@@ -15,7 +15,7 @@ func mkPortal(name string, ptype uint8, x, y int16, target uint32) portal.Model 
 
 func TestNearBlockingPortal_SpawnPointExcluded(t *testing.T) {
 	// The exact Free Market failure: character stands on the spawn point ("sp",
-	// type 0, no target). Cosmic ignores spawn points, so placement is allowed.
+	// type 0, no target). Spawn points do not block placement.
 	portals := []portal.Model{mkPortal("sp", 0, 828, -210, 999999999)}
 	assert.False(t, nearBlockingPortal(828, -146, portals))
 }

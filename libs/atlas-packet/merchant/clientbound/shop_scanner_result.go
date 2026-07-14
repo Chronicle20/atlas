@@ -24,7 +24,7 @@ const ShopScannerResultWriter = "ShopScannerResult"
 
 // ShopScannerRecord is one row of the shop-scanner result list
 // (CWvsContext::OnShopScannerResult mode 6, ITEMDATA in the v95 typed struct).
-// dwMiniRoomSN carries the shop-owner characterId (Cosmic parity, task-127
+// dwMiniRoomSN carries the shop-owner characterId (task-127
 // design §4.4); channelId is 0-based on the wire; asset must be a
 // zeroPosition (slotless) model.Asset and is encoded only when
 // inventoryType == 1 (equip).

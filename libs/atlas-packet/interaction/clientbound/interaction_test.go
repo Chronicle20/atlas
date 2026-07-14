@@ -174,8 +174,8 @@ func TestInteractionEnterResultSuccessRoundTrip(t *testing.T) {
 // The position byte is the recipient's position in the room: 0 = owner,
 // 1..3 = visitor slot. CPersonalShopDlg::OnEnterResult branches on it
 // @0x6fc528 (`if(*(this+50))`): ZERO = owner add-item management UI, nonzero
-// = visitor buy UI. Cross-checked against Cosmic PacketCreator.getPlayerShop
-// (writes owner?0:1) — a v83-proven reference; the previous inverted reading
+// = visitor buy UI (owner polarity pinned by the entrusted dialog's
+// owner-only decode branch @0x518a7e); the previous inverted reading
 // (1 = owner) put live shop owners into the visitor buy view.
 // (The EnterResultSuccess packet-audit:verify markers for every version live in the
 // block above TestInteractionInviteRoundTrip; this fixture backs the gms_v83 one.)
@@ -226,11 +226,11 @@ func TestInteractionEnterResultSuccessBytes(t *testing.T) {
 //	    qty, Decode4 price, GW_ItemSlotBase}                       CPersonalShopDlg::OnRefresh
 //	                                                               @0x6fcc4e)
 //
-// Position semantics cross-checked against Cosmic PacketCreator.getHiredMerchant:
-// Cosmic sends the extra block (short 0, short timeOpen, byte firstTime, sold list,
-// int merchantMeso) iff the recipient is the OWNER, and the client decodes it in
-// the position==0 branch — so 0 = owner. The owner-only management UI open
-// (CWvsContext::UI_Open) is gated on !position @0x518d3d. The trailing OnRefresh
+// Position semantics: the client decodes the extra block (short 0, short
+// timeOpen, byte firstTime, sold list, int merchantMeso) ONLY in the
+// position==0 branch, and that branch is the owner's — the owner-only
+// management UI open (CWvsContext::UI_Open) is gated on !position
+// @0x518d3d. So 0 = owner. The trailing OnRefresh
 // call at @0x518d27 is `call dword ptr [eax+70h]` (0x70 = 112) = off_AF3928[112] =
 // CEntrustedShopDlg::OnRefresh @0x518852 (confirmed from disassembly + vtable
 // bytes, not the decompiler's mislabelled "+28").

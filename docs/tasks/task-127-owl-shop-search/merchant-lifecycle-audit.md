@@ -132,6 +132,10 @@ VISIT resolves the target shop as `shops[0]` of the unfiltered-by-state list (`c
 
 `handleShopOpenedEvent` both spawns the map object **and** re-sends `ENTER_RESULT` to the owner (`consumer.go:158-164`). In Cosmic, OPEN does not re-send the room — the owner's dialog simply persists; the only new packet is the map-box broadcast. Once F1/F2 make the setup dialog real, this second ENTER_RESULT likely re-creates/resets the owner's dialog at open time. Verify live after F1/F2 land; expected fix is to drop the owner re-send from the opened handler (keep it for maintenance-exit refresh of personal shops, where the legacy notification-gaps task deliberately added it).
 
+### F10 🟡 Hired-merchant owner messages persisted but never surfaced (added 2026-07-14 — should have been a numbered finding in the original audit)
+
+The merchant service persists visitor messages (`messages` table, `SEND_MESSAGE` command / `MESSAGE_SENT` event, `SendMessage` in the shop processor), but the shop REST payload does not include them and the channel room builder always passes an empty message list (`buildMerchantShopRoom`, `services/atlas-channel/atlas.com/channel/kafka/consumer/merchant/consumer.go`) — so the owner's management view never shows the messages visitors left while the merchant ran unattended. The wire slot exists (owner-view message list, Decode2 count @0x518888) and encodes correctly; only the data path is missing (REST enrichment of the owner-view shop fetch + builder wiring). Surfaced during A1 implementation as a code comment; promoted here to the findings list where it belonged. Backlog alongside F9 — does not block the shop lifecycle or task-127.
+
 ### F9 ⚪ Enumerated-but-unwired surface (backlog, not blocking)
 
 - Enter-error sub-codes defined but never emitted except `FULL` and `UNABLE`; create-failure feedback now exists on this branch (`SHOP_CREATE_FAILED` → miniroom error mapping, `consumer.go:373-400`) — extend as codes get verified.

@@ -46,9 +46,8 @@ const (
 // LogoutAction implements the logout policy (merchant-lifecycle-audit Q5):
 // Draft shops of either type are owner-attached setup sessions and close;
 // personal shops close in every live state; an Open hired merchant survives;
-// one caught in Maintenance reverts to running via exit-maintenance (Cosmic
-// closeHiredMerchant(false) sets it back open — leaving it in Maintenance
-// would strand it unenterable forever).
+// one caught in Maintenance reverts to running via exit-maintenance —
+// leaving it in Maintenance would strand it unenterable forever.
 func LogoutAction(shopType ShopType, state State) LogoutOutcome {
 	if state == Closed {
 		return LogoutNone

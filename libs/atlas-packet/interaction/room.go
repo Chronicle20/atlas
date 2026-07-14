@@ -80,8 +80,7 @@ func NewGameRoom(roomType RoomType, capacity byte, visitors []Visitor, title str
 // visitor's slot. It lands in the CMiniRoomBaseDlg::OnEnterResultBase second
 // header byte (v83 @0x65ec6b -> *(this+0xC8)); CPersonalShopDlg::OnEnterResult
 // branches on it (v83 @0x6fc528 `if(*(this+50))`): ZERO opens the owner's
-// add-item management UI, nonzero the visitor buy UI. (Cosmic writes
-// owner?0:1 in PacketCreator.getPlayerShop.)
+// add-item management UI, nonzero the visitor buy UI.
 func NewPersonalShopRoom(position byte, visitors []Visitor, title string, maxItemCount byte, items []RoomShopItem) Room {
 	return Room{
 		roomType:     PersonalShopRoomType,
@@ -121,11 +120,11 @@ func NewMerchantShopRoom(position byte, visitors []Visitor, messages []RoomMessa
 }
 
 // SetOwnerLedger populates the owner-only (position 0) block of a
-// hired-merchant room: minutes the shop has been open (Decode4 low short is
-// always 0 — Cosmic writes short 0 + short timeOpen), whether this is the
-// first (creation-time) view of the shop, the sale-transaction ledger, and
-// the merchant's accrued meso total that terminates the ledger
-// (sub_518EFD @0x518fbc).
+// hired-merchant room: minutes the shop has been open (the client's Decode4
+// @0x518b04 reads a packed int — low short always 0, high short the
+// minutes), whether this is the first (creation-time) view of the shop, the
+// sale-transaction ledger, and the merchant's accrued meso total that
+// terminates the ledger (sub_518EFD @0x518fbc).
 func (r Room) SetOwnerLedger(openTime uint16, firstTime bool, soldItems []RoomSoldItem, ledgerTotal uint32) Room {
 	r.openTime = openTime
 	r.firstTime = firstTime
@@ -198,11 +197,12 @@ func (rm Room) Encode(l logrus.FieldLogger, ctx context.Context) func(options ma
 			// ownerName: DecodeStr -> this+479 (@0x518a54).
 			w.WriteAsciiString(rm.ownerName)
 			// OWNER branch only (position byte *(this+0xC8) == 0, @0x518a7e): packed
-			// open-time (Decode4 this[482] @0x518b04 — Cosmic writes short 0 + short
-			// timeOpen), first-time flag (Decode1 @0x518b0a — branches the owner UI),
-			// then the sale-transaction ledger (DecodeSoldItemList sub_518EFD
-			// @0x518efd) terminated by the accrued meso total. Visitor views skip
-			// all of this. (Cosmic getHiredMerchant sends this block iff owner.)
+			// open-time (Decode4 this[482] @0x518b04 — low short always 0, high
+			// short the minutes), first-time flag (Decode1 @0x518b0a — branches the
+			// owner UI), then the sale-transaction ledger (DecodeSoldItemList
+			// sub_518EFD @0x518efd) terminated by the accrued meso total. Visitor
+			// views skip all of this — the client decodes it only in the
+			// position==0 branch.
 			if rm.position == 0 {
 				w.WriteShort(0)                      // Decode4 low short @0x518b04 (always 0)
 				w.WriteShort(rm.openTime)            // Decode4 high short (minutes open)

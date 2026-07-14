@@ -156,6 +156,13 @@ func handleShopOpenedEvent(sc server.Model, wp writer.Producer) func(l logrus.Fi
 			// Personal store: the box attaches to the owner's own avatar.
 			mr := &interactionpkt.MiniRoomBase{
 				MiniRoomTypeVal: interactionpkt.PersonalShopMiniRoomType,
+				// Id is the balloon's dwMiniRoomSN (CUser::OnMiniRoomBalloon
+				// @0x8e8d7b reads it as Decode4). The client echoes it back as the
+				// visit request's serialNumber, and the server resolves the shop via
+				// GetByCharacterId(serialNumber) — so the SN must be the owner's
+				// character id, else the visit lookup hits characters/0/merchants
+				// and no one can enter the store (task-127).
+				Id:              e.CharacterId,
 				Title:           e.Body.Title,
 				CapacityVal:     4,
 				OwnerId:         e.CharacterId,

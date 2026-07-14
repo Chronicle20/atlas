@@ -685,6 +685,11 @@ func spawnMerchantsForSession(l logrus.FieldLogger) func(ctx context.Context) fu
 					// Personal store: box on the owner's avatar.
 					mr := &interactionpkt.MiniRoomBase{
 						MiniRoomTypeVal: interactionpkt.PersonalShopMiniRoomType,
+						// Id = dwMiniRoomSN: the client echoes it as the visit
+						// serialNumber and the server resolves via
+						// GetByCharacterId(serialNumber), so it must be the owner's
+						// character id (task-127; see merchant consumer note).
+						Id:              m.CharacterId(),
 						Title:           m.Title(),
 						CapacityVal:     4,
 						OwnerId:         m.CharacterId(),

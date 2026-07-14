@@ -154,10 +154,10 @@ a field presence.
 
 ## 7. Open decisions (need answers before/while implementing)
 
-- **D1 — box anchor while owner present:** always anchor the box to the employee
-  sprite (uniform, simplest), or keep it on the owner avatar until they leave then
-  swap? Uniform-employee is cleaner and matches "it's an NPC," but changes how a
-  present owner sees their own shop.
+- **D1 — box anchor while owner present:** **RESOLVED — always anchor to the
+  employee sprite.** A hired merchant is an employee NPC that stands on its own;
+  the owner is never tied to it (they can walk away / log off while it sells).
+  Uniform single code path, box always on `employeeId`.
 - **D2 — templateId source:** the fixed hired-merchant employee sprite id — pull
   from data or is it a known constant? (Flag: unverified.)
 - **D3 — employeeId allocation:** new `shops` column vs. derived id; must be stable

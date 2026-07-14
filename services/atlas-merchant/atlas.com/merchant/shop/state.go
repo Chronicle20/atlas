@@ -1,19 +1,24 @@
 package shop
 
-type ShopType byte
+import merchantconst "github.com/Chronicle20/atlas/libs/atlas-constants/merchant"
+
+// ShopType and State alias the shared atlas-constants enums so every consumer
+// of the REST/Kafka contract (atlas-channel in particular) derives the same
+// byte values at compile time instead of hand-mirroring them.
+type ShopType = merchantconst.ShopType
 
 const (
-	CharacterShop ShopType = 1
-	HiredMerchant ShopType = 2
+	CharacterShop = merchantconst.ShopTypeCharacter
+	HiredMerchant = merchantconst.ShopTypeHiredMerchant
 )
 
-type State byte
+type State = merchantconst.ShopState
 
 const (
-	Draft       State = 1
-	Open        State = 2
-	Maintenance State = 3
-	Closed      State = 4
+	Draft       = merchantconst.ShopStateDraft
+	Open        = merchantconst.ShopStateOpen
+	Maintenance = merchantconst.ShopStateMaintenance
+	Closed      = merchantconst.ShopStateClosed
 )
 
 type CloseReason byte

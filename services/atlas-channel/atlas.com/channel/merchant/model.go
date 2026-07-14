@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	merchantconst "github.com/Chronicle20/atlas/libs/atlas-constants/merchant"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/google/uuid"
 )
@@ -46,12 +47,13 @@ func (m Model) ListingCount() int64       { return m.listingCount }
 func (m Model) Visitors() []uint32        { return m.visitors }
 func (m Model) Listings() []ListingModel  { return m.listings }
 
-// Shop states mirroring atlas-merchant shop/state.go (byte on the wire).
+// Shop states derived from the shared atlas-constants enum (the same source
+// atlas-merchant persists), exposed as byte to match the wire model.
 const (
-	StateDraft       byte = 1
-	StateOpen        byte = 2
-	StateMaintenance byte = 3
-	StateClosed      byte = 4
+	StateDraft       = byte(merchantconst.ShopStateDraft)
+	StateOpen        = byte(merchantconst.ShopStateOpen)
+	StateMaintenance = byte(merchantconst.ShopStateMaintenance)
+	StateClosed      = byte(merchantconst.ShopStateClosed)
 )
 
 type SearchListing struct {

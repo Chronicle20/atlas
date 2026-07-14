@@ -1,14 +1,16 @@
 package merchant
 
 import (
+	merchantconst "github.com/Chronicle20/atlas/libs/atlas-constants/merchant"
 	interactionpkt "github.com/Chronicle20/atlas/libs/atlas-packet/interaction"
 	merchantcb "github.com/Chronicle20/atlas/libs/atlas-packet/merchant/clientbound"
 )
 
-// HiredMerchantShopType is the atlas-merchant ShopType for a hired merchant
-// (CharacterShop=1, HiredMerchant=2). Personal stores render as a box on the
-// owner's avatar; hired merchants render as a standalone CEmployeePool NPC.
-const HiredMerchantShopType byte = 2
+// HiredMerchantShopType is the shared atlas-constants ShopType for a hired
+// merchant, exposed as byte to match the wire model. Personal stores render
+// as a box on the owner's avatar; hired merchants render as a standalone
+// CEmployeePool NPC.
+const HiredMerchantShopType = byte(merchantconst.ShopTypeHiredMerchant)
 
 // ToEmployeeSpawn projects a hired-merchant shop into its CEmployeePool field
 // spawn packet (SPAWN_HIRED_MERCHANT). The employeeId and the balloon serial are

@@ -41,7 +41,7 @@ func TestSummonSpawn(t *testing.T) {
 // summonSpawnV83Body is the classic (pre-95) layout. It carries the oid: the
 // ACTIVE v83 spawn dispatch (field path → OnCreated @0x95ADEC) has the dispatcher
 // pre-read cid, so OnCreated reads oid, skillId, charLevel, SLV — i.e. the wire is
-// cid, oid, skillId (matches Cosmic spawnSummon). Live x32dbg confirmed: at
+// cid, oid, skillId. Live x32dbg confirmed: at
 // OnCreated's first Decode4 the read offset is already past cid, and omitting the
 // oid makes the client read skillId into the cid slot and close at the foothold
 // Decode2. (The earlier "no oid" reading analyzed the INACTIVE OnCreated @0x938F61,
@@ -71,8 +71,8 @@ var summonSpawnV83Body = []byte{
 // dispatcher pre-reads cid (so OnCreated reads oid, then skillId) — confirmed live
 // in x32dbg (the prior markers below analyzed the INACTIVE OnCreated @0x938F61,
 // whose dispatcher does NOT pre-read cid, hence the wrong "no oid" reading).
-// NOTE: v84/v87/jms inherit this correction by the same dispatcher logic + Cosmic
-// (spawnSummon always writes ownerId, objectId, skillId), but have NOT been
+// NOTE: v84/v87/jms inherit this correction by the same dispatcher logic (the
+// wire is always ownerId, objectId, skillId), but have NOT been
 // re-confirmed live — their coverage-matrix cells need re-verification against the
 // cid-pre-reading dispatcher (the old ida= markers below point at the wrong path).
 //

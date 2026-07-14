@@ -46,8 +46,8 @@ func TestItemUsePointResetRoundTrip(t *testing.T) {
 //
 //	Encode4(to) + Encode4(from) + Encode4(update_time)   [updateTime TRAILING]
 //
-// => updateTimeFirst == false for v83. The Cosmic hypothesis (To-then-From,
-// trailing updateTime) is CONFIRMED.
+// => updateTimeFirst == false for v83: To-then-From with trailing updateTime,
+// CONFIRMED by the IDA decompile above.
 // packet-audit:verify packet=cash/serverbound/CashItemUsePointReset version=gms_v83 ida=0xa0a63f
 func TestItemUsePointResetBytesV83(t *testing.T) {
 	l, _ := testlog.NewNullLogger()

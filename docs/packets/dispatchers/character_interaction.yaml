@@ -35,3 +35,9 @@ operations:
   - { key: ENTER_RESULT,    modes: { gms_v83: 5,  gms_v84: 5,  gms_v87: 5,  gms_v95: 5,  jms_v185: 5  } }
   - { key: LEAVE,           modes: { gms_v83: 10, gms_v84: 10, gms_v87: 10, gms_v95: 10, jms_v185: 10 } }
   - { key: UPDATE_MERCHANT, modes: { gms_v83: 25, gms_v84: 25, gms_v87: 25, gms_v95: 25, jms_v185: 22 } }
+  # Hired-merchant view responses echo the request mode byte (CEntrustedShopDlg::OnPacket
+  # sub_51870D: visit-list sub_519505 @0x2E, blacklist-view sub_5193D8 @0x2F on gms_v83).
+  # jms shifts the merchant sub-modes down by 3 (OnVisitList sends 0x2B, OnBlackList 0x2C
+  # — IDA-verified jms @0x54ba0c / @0x54b8df).
+  - { key: MERCHANT_VIEW_VISIT_LIST, modes: { gms_v83: 46, gms_v84: 46, gms_v87: 46, gms_v95: 46, jms_v185: 43 } }
+  - { key: MERCHANT_VIEW_BLACK_LIST, modes: { gms_v83: 47, gms_v84: 47, gms_v87: 47, gms_v95: 47, jms_v185: 44 } }

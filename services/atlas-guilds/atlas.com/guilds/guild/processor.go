@@ -36,10 +36,11 @@ const (
 
 type Processor interface {
 	WithTransaction(tx *gorm.DB) Processor
-	AllProvider() model.Provider[[]Model]
+	AllProvider(page model.Page) model.Provider[model.Paged[Model]]
+	ByNameLikeProvider(name string, page model.Page) model.Provider[model.Paged[Model]]
+	ByMemberIdProvider(memberId uint32, page model.Page) model.Provider[model.Paged[Model]]
 	ByIdProvider(guildId uint32) model.Provider[Model]
 	ByNameProvider(worldId world.Id, name string) model.Provider[Model]
-	GetSlice(filters ...model.Filter[Model]) ([]Model, error)
 	GetById(guildId uint32) (Model, error)
 	GetByName(worldId world.Id, name string) (Model, error)
 	GetByMemberId(memberId uint32) (Model, error)
@@ -99,23 +100,47 @@ func (p *ProcessorImpl) WithTransaction(tx *gorm.DB) Processor {
 	}
 }
 
-func (p *ProcessorImpl) AllProvider() model.Provider[[]Model] {
-	return model.SliceMap(Make)(getAll()(p.db.WithContext(p.ctx)))()
+func (p *ProcessorImpl) AllProvider(page model.Page) model.Provider[model.Paged[Model]] {
+	ep := getAll(page)(p.db.WithContext(p.ctx))
+	return model.MapPaged(Make)(ep)(model.ParallelMap())
 }
 
-func MemberFilter(memberId uint32) model.Filter[Model] {
-	return func(m Model) bool {
-		for _, mm := range m.members {
-			if mm.CharacterId() == memberId {
-				return true
-			}
-		}
-		return false
+func (p *ProcessorImpl) ByNameLikeProvider(name string, page model.Page) model.Provider[model.Paged[Model]] {
+	ep := getByNameLike(name, page)(p.db.WithContext(p.ctx))
+	return model.MapPaged(Make)(ep)(model.ParallelMap())
+}
+
+// singleModelPage wraps a single already-resolved Model as a one-item paged
+// collection, matching PagedQuery's page-slicing semantics (any page number
+// other than 1 sees an empty Items but the same Total). Used by
+// ByMemberIdProvider, which is bounded to 0-or-1 results by construction (a
+// character belongs to at most one guild) so a DB-level LIMIT/OFFSET query
+// is unnecessary.
+func singleModelPage(m Model, page model.Page) model.Paged[Model] {
+	if page.Number != 1 {
+		return model.Paged[Model]{Items: []Model{}, Total: 1, Page: page}
 	}
+	return model.Paged[Model]{Items: []Model{m}, Total: 1, Page: page}
 }
 
-func (p *ProcessorImpl) GetSlice(filters ...model.Filter[Model]) ([]Model, error) {
-	return model.FilteredProvider(p.AllProvider(), model.Filters[Model](filters...))()
+// ByMemberIdProvider resolves the guild (if any) a member belongs to and
+// wraps it as a page. Reuses GetByMemberId (character->guild lookup, kept in
+// lockstep with guild membership by member.AddMember/RemoveMember running in
+// the same transaction as the character-cache update), so this shares the
+// exact same tenant-scoped, always-consistent data source that
+// GetByMemberId's other callers rely on rather than re-deriving guild
+// membership from a second, independently-scanned source.
+func (p *ProcessorImpl) ByMemberIdProvider(memberId uint32, page model.Page) model.Provider[model.Paged[Model]] {
+	return func() (model.Paged[Model], error) {
+		g, err := p.GetByMemberId(memberId)
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return model.Paged[Model]{Items: []Model{}, Total: 0, Page: page}, nil
+			}
+			return model.Paged[Model]{}, err
+		}
+		return singleModelPage(g, page), nil
+	}
 }
 
 func (p *ProcessorImpl) ByIdProvider(guildId uint32) model.Provider[Model] {

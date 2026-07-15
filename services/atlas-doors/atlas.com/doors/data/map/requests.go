@@ -26,10 +26,12 @@ func requestMap(mapId _map.Id) requests.Request[RestModel] {
 	return requests.GetRequest[RestModel](url)
 }
 
-// requestPortals fetches all portals for a map via the /portals sub-resource.
-func requestPortals(mapId _map.Id) requests.Request[[]PortalRestModel] {
-	url := fmt.Sprintf(getBaseRequest()+getMapPortals, mapId)
-	return requests.GetRequest[[]PortalRestModel](url)
+// portalsUrl is a bare URL (not a requests.Request) for the /portals
+// sub-resource: the list is now paginated server-side (task-117) and
+// consumed via requests.DrainProvider, which appends its own
+// page[number]/page[size] query params per request.
+func portalsUrl(mapId _map.Id) string {
+	return fmt.Sprintf(getBaseRequest()+getMapPortals, mapId)
 }
 
 // SetBaseURLForTest swaps the base URL for httptest-backed tests. Only call

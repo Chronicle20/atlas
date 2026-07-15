@@ -2,8 +2,7 @@ package skill
 
 // IsPointResetExcluded reports whether skillId may not participate in an SP
 // Reset transfer (as source or target): Aran hidden combo skills, GM skills,
-// and PQ-granted skills, whose points are not pool-backed. Set per Cosmic's
-// AssignSPProcessor.canSPAssign / GameConstants.isPqSkill / isGMSkills gates
+// and PQ-granted skills, whose points are not pool-backed
 // (see docs/tasks/task-126-ap-sp-reset-items/design.md §4.1).
 func IsPointResetExcluded(skillId Id) bool {
 	switch skillId {

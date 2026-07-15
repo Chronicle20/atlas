@@ -151,6 +151,35 @@
 - Type Discriminators: `CHARACTER_ENTER`, `CHARACTER_EXIT`, `WEATHER_START`, `WEATHER_END`, `MAP_TIMER_STARTED`
 - Purpose: Receives character map entry/exit, weather start/end, and map timer started events. MAP_TIMER_STARTED body contains CharacterId (uint32) and Seconds (uint32); the handler targets the single character via `IfPresentByCharacterId` and sends a `ClockWriter` packet built from `NewTimerClock(seconds)`.
 
+### EVENT_TOPIC_MERCHANT_STATUS
+- Direction: Event
+- Message Type: `StatusEvent[StatusEventShopOpenedBody]`, `StatusEvent[StatusEventShopClosedBody]`, `StatusEvent[StatusEventVisitorBody]`, `StatusEvent[StatusEventCapacityFullBody]`, `StatusEvent[StatusEventShopCreateFailedBody]`, `StatusEvent[StatusEventPurchaseFailedBody]`, `StatusEvent[StatusEventFrederickNotificationBody]`, `StatusEvent[StatusEventMessageSentBody]`, `StatusEvent[StatusEventShopUpdatedBody]`, `StatusEvent[StatusEventEnterFailedBody]`
+- Envelope: `StatusEvent[E]` with fields: CharacterId (uint32), Type (string), Body (E)
+- Type Discriminators (with registered handlers): `SHOP_OPENED`, `SHOP_SETUP`, `SHOP_CLOSED`, `MAINTENANCE_ENTERED`, `MAINTENANCE_EXITED`, `VISITOR_ENTERED`, `VISITOR_EXITED`, `VISITOR_EJECTED`, `CAPACITY_FULL`, `SHOP_CREATE_FAILED`, `PURCHASE_FAILED`, `FREDERICK_NOTIFICATION`, `MESSAGE_SENT`, `SHOP_UPDATED`, `ENTER_FAILED`
+- Purpose: Receives personal shop / hired merchant status events. SHOP_SETUP sends the freshly created (Draft) shop's editing room to the owner without spawning the map object. SHOP_OPENED spawns the map object at go-live (personal shop: a mini-room box on the owner's avatar with a permit-derived sign skin; hired merchant: a standalone employee NPC). SHOP_CLOSED despawns the map object. VISITOR_ENTERED sends the shop interior to the entering visitor and broadcasts an ENTER avatar to existing viewers. VISITOR_EXITED sends LEAVE to the exiting visitor and the remaining viewers. VISITOR_EJECTED sends LEAVE (with the `leaveReason` table key when present) to the ejected visitor. MAINTENANCE_ENTERED sends the shop interior to the owner; MAINTENANCE_EXITED closes the management UI for a hired merchant or refreshes the room for a personal shop. CAPACITY_FULL sends the enter error (mode full), or a SHOP_LINK "full" result when the arrival is a pending owl warp. SHOP_CREATE_FAILED maps a placement reason to a mini-room error mode. PURCHASE_FAILED sends the enter error (mode unable). FREDERICK_NOTIFICATION sends a hired-merchant free-form notice (a world-message notice on JMS). MESSAGE_SENT broadcasts chat to shop viewers. SHOP_UPDATED refreshes the shop view after withdraw/organize. ENTER_FAILED sends the faithful enter error for a rejected visitor (undergoing maintenance, room closed, or blacklisted).
+- MAINTENANCE_ENTERED/MAINTENANCE_EXITED and VISITOR_ENTERED/VISITOR_EXITED/VISITOR_EJECTED share the `StatusEventVisitorBody` body (fields: shopId, characterId, slot, leaveReason). SHOP_SETUP shares the `StatusEventShopOpenedBody` body with SHOP_OPENED.
+- StatusEventShopOpenedBody fields: shopId, shopType (byte), worldId, channelId, mapId, instanceId, title, x, y
+- StatusEventShopClosedBody fields: shopId, closeReason (byte)
+- StatusEventShopCreateFailedBody fields: worldId, channelId, reason (string; `TOO_CLOSE_TO_PORTAL`, `TOO_CLOSE_TO_SHOP`, `NOT_FREE_MARKET`, `UNABLE`)
+- StatusEventPurchaseFailedBody fields: shopId, reason (string)
+- StatusEventFrederickNotificationBody fields: daysSinceStorage (uint16)
+- StatusEventMessageSentBody fields: shopId, characterId, slot (byte), content (string)
+- StatusEventShopUpdatedBody fields: shopId
+- StatusEventEnterFailedBody fields: shopId, reason (string; `UNDERGOING_MAINTENANCE`, `ROOM_CLOSED`, `BLACKLISTED`)
+- Note: `BLACKLIST_UPDATED` (`StatusEventBlacklistUpdatedBody`) is defined on the topic but has no registered handler in the channel service.
+- Header Parsers: span, tenant
+- Start Offset: last
+
+### EVENT_TOPIC_MERCHANT_LISTING
+- Direction: Event
+- Message Type: `ListingEvent[ListingEventPurchasedBody]`
+- Envelope: `ListingEvent[E]` with fields: ShopId (string), Type (string), Body (E)
+- Type Discriminators: `LISTING_PURCHASED`
+- Body Fields (ListingEventPurchasedBody): listingIndex (uint16), buyerCharacterId (uint32), bundleCount (uint16), bundlesRemaining (uint16)
+- Purpose: Receives merchant listing purchase events. LISTING_PURCHASED re-fetches the shop and sends the shop-view refresh to the owner and all visitors; for a personal shop it also notifies the owner of the sold item (per-session sold-item ledger).
+- Header Parsers: span, tenant
+- Start Offset: last
+
 ### EVENT_TOPIC_MESSENGER_STATUS
 - Direction: Event
 - Message Type: Messenger status events
@@ -376,6 +405,14 @@
 - Message Type: `Command[AcceptBody]`, `Command[RejectBody]`
 - Purpose: Issues invite accept/reject commands. ACCEPT carries ReferenceId and TargetId. REJECT carries OriginatorId and TargetId. Commands are world-scoped (WorldId and InviteType at envelope level).
 
+### COMMAND_TOPIC_MERCHANT
+- Direction: Command
+- Message Type: `Command[CommandPlaceShopBody]`, `Command[CommandOpenShopBody]`, `Command[CommandCloseShopBody]`, `Command[CommandEnterShopBody]`, `Command[CommandExitShopBody]`, `Command[CommandSendMessageBody]`, `Command[CommandEnterMaintenanceBody]`, `Command[CommandExitMaintenanceBody]`, `Command[CommandAddListingBody]`, `Command[CommandRemoveListingBody]`, `Command[CommandPurchaseBundleBody]`, `Command[CommandRecordItemSearchBody]`, `Command[CommandWithdrawMesoBody]`, `Command[CommandOrganizeListingsBody]`, `Command[CommandBlacklistBody]`
+- Envelope: `Command[E]` with fields: WorldId (world.Id), ChannelId (channel.Id), CharacterId (uint32), Type (string), Body (E)
+- Type Discriminators: `PLACE_SHOP`, `OPEN_SHOP`, `CLOSE_SHOP`, `ENTER_SHOP`, `EXIT_SHOP`, `SEND_MESSAGE`, `ENTER_MAINTENANCE`, `EXIT_MAINTENANCE`, `ADD_LISTING`, `REMOVE_LISTING`, `PURCHASE_BUNDLE`, `RECORD_ITEM_SEARCH`, `WITHDRAW_MESO`, `ORGANIZE_LISTINGS`, `ADD_BLACKLIST`, `REMOVE_BLACKLIST`
+- Purpose: Issues personal shop / hired merchant commands. PLACE_SHOP registers a new shop (shopType, title, mapId, instanceId, x, y, permitItemId). OPEN_SHOP / CLOSE_SHOP toggle shop lifecycle. ENTER_SHOP (carries visitorName) / EXIT_SHOP track visitor presence. SEND_MESSAGE relays shop chat (content). ENTER_MAINTENANCE / EXIT_MAINTENANCE toggle owner management mode. ADD_LISTING adds an item to the shop (resolved itemId, itemType, assetId, and a full item snapshot, plus inventoryType, slot, bundleCount, bundleSize, pricePerBundle). REMOVE_LISTING removes a listing by index. PURCHASE_BUNDLE buys a listing (listingIndex, bundleCount). RECORD_ITEM_SEARCH increments the owl item-search count (itemId). WITHDRAW_MESO withdraws the shop's accrued meso. ORGANIZE_LISTINGS compacts the listing order. ADD_BLACKLIST / REMOVE_BLACKLIST maintain the shop blacklist (name; ADD may carry a bannedCharacterId to eject a current visitor).
+- Note: The `merchant2.Command` type also defines `UPDATE_LISTING` (`CommandUpdateListingBody`); the channel service defines no producer for it.
+
 ### COMMAND_TOPIC_MESSENGER
 - Direction: Command
 - Message Type: `Command[CreateBody]`, `Command[LeaveBody]`, `Command[RequestInviteBody]`
@@ -494,6 +531,9 @@ Flat event (not envelope-wrapped) for gachapon reward notifications, containing 
 
 ### QuestCommand
 Quest-specific command envelope used for quest operations (start, complete, forfeit, restore item).
+
+### ListingEvent
+Merchant listing event envelope with ShopId, Type discriminator, and typed body. Used for the merchant listing topic.
 
 ---
 

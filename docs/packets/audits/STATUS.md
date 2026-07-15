@@ -4,17 +4,17 @@
 > ✅ verified · 🧩 family (mode-prefix dispatcher; sub-arms unverified) · 🟡 partial · ❌ incomplete · ⬜ n-a · 🟥 conflict
 > Partial (🟡) sub-glyphs: 🟡ᶠ tier-1 needs byte-fixture · 🟡ᵈ tool-pass diff-only (no byte-test) · 🟡ᵖ evidence-pinned deferral
 
-Tool: `fe01fbd20caf3b0bd0fd65aec9cf9ede74a68be798188431980435054d65c01e`
+Tool: `c38f24fb99fac4f9a1bb6091b1d82a40a3f05e3fd165473a7ac6220dc31693d2`
 
 - export gms_v48: `054d404fcb6f0feed776b8c1453f2ab48a35f479463e82ea00d6d28ebca512dc`
-- export gms_v61: `3294c3796405376978b0d209e1451eee68ff11a0e57198da251c77f8e84b998b`
-- export gms_v72: `01e628692f47408c523f939acd8f6ae5defa4118536ff7334eeb10845abf114b`
-- export gms_v79: `d0b58f14aff371d5a105acd9b1ef12e0f9ed6f4d8216df0853fea713534dfe4e`
-- export gms_v83: `646a13c162ebf46d01ca00e9637596bfda96a56dcbddc4d5ccd31630c4fa995f`
-- export gms_v84: `b448ffdc189ad808506bfa3a11c51db026b142bc316912c9f5c29e85f2338ff9`
-- export gms_v87: `f3f1711d6e8abf59cadfd904141dbc93191c0816ef065384bd561ebaee582b94`
-- export gms_v95: `edc11b647710af9e224c573e38a5ace16d76991a6a8102c32d241e2c0b74f852`
-- export jms_v185: `cba49b2a0159e787b80c6860bc6ce05f57bcb7776fddafbf67fe53ba601a29b0`
+- export gms_v61: `b1111abee79b6b10cf1a05305e3c4a7707819f6862a80314c0b2ebce424852f7`
+- export gms_v72: `a21ceb077a00723549680327194e70c712b962f92dfd26c011bc0af8134f06e5`
+- export gms_v79: `aad866f3c3feebf4ce08f3f37b6fc45738cbc5cd68b2e90efd39b86ad4b3a7f6`
+- export gms_v83: `4125d6fe8ae0e9b6dd666a8e84ed55ec4a229b353a30f11592993bf2cbe5c344`
+- export gms_v84: `85703918ea0625309b1a2adfe3770809bdb33caa1334c9cc08074aae8345345d`
+- export gms_v87: `46f326937e63ad90ce0ec685eb1772749d33f3bb4dffa08828498211801c6b7d`
+- export gms_v95: `5486381fc4c567a16ecf3184f7afd2fe081bb38ca110304ba02a8bae6d11baa9`
+- export jms_v185: `1a9603937db514d74c577ec61e56e9a6820b6a8dcde57c97cc62b69718a57067`
 
 ## Clientbound
 
@@ -96,7 +96,7 @@ Tool: `fe01fbd20caf3b0bd0fd65aec9cf9ede74a68be798188431980435054d65c01e`
 | SET_GENDER | CWvsContext::OnSetGender |  |  | ⬜ | 0x037 | ❌ | 0x037 | ❌ | 0x037 | ❌ | 0x03A | ❌ | 0x03A | ❌ | 0x03A | ❌ | 0x03A | ❌ |  | ⬜ |
 | GUILD_BBS_PACKET | CUIGuildBBS::OnGuildBBSPacket | guild/clientbound/GuildBBSEntryNotFound (T1) |  | ⬜ | 0x038 | ✅ | 0x038 | ✅ | 0x038 | ✅ | 0x03B | ✅ | 0x03B | ✅ | 0x03B | ✅ | 0x03B | ✅ |  | ⬜ |
 | IDA_0X038 | CWvsContext::OnExpedtionResult |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x038 | ❌ |
-| SHOP_SCANNER_RESULT | CWvsContext::OnShopScannerResult |  | 0x038 | ❌ | 0x043 | ❌ | 0x043 | ❌ | 0x043 | ❌ | 0x046 | ❌ | 0x048 | ❌ | 0x048 | ❌ | 0x049 | ❌ | 0x040 | ❌ |
+| SHOP_SCANNER_RESULT | CWvsContext::OnShopScannerResult | merchant/clientbound/ShopScannerHotList (T1) | 0x038 | ❌ | 0x043 | ✅ | 0x043 | ✅ | 0x043 | ✅ | 0x046 | ✅ | 0x048 | ❌ | 0x048 | ❌ | 0x049 | ✅ | 0x040 | ❌ |
 | IDA_0X039 | sub_71FF8E |  | 0x039 | ❌ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
 | IDA_0X03A | sub_72025D |  | 0x03A | ❌ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
 | IDA_0X03B | sub_720928 |  | 0x03B | ❌ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
@@ -111,7 +111,7 @@ Tool: `fe01fbd20caf3b0bd0fd65aec9cf9ede74a68be798188431980435054d65c01e`
 | SET_AVATAR_MEGAPHONE | CWvsContext::OnSetAvatarMegaphone |  | 0x042 | ❌ | 0x054 | ❌ | 0x067 | ❌ | 0x069 | ❌ | 0x06F | ❌ | 0x072 | ❌ | 0x072 | ❌ | 0x073 | ❌ | 0x05A | ❌ |
 | IDA_0X043 | sub_721465 |  | 0x043 | ❌ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
 | IDA_0X044 | sub_721481 |  | 0x044 | ❌ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
-| SHOP_LINK_RESULT | CWvsContext::OnShopLinkResult |  |  | ⬜ | 0x044 | ❌ | 0x044 | ❌ | 0x044 | ❌ | 0x047 | ❌ | 0x049 | ❌ | 0x049 | ❌ | 0x04A | ❌ | 0x041 | ❌ |
+| SHOP_LINK_RESULT | CWvsContext::OnShopLinkResult | merchant/clientbound/ShopLinkResult (T1) |  | ⬜ | 0x044 | ✅ | 0x044 | ✅ | 0x044 | ✅ | 0x047 | ✅ | 0x049 | ❌ | 0x049 | ❌ | 0x04A | ✅ | 0x041 | ❌ |
 | DESTROY_SHOP_RESULT | CWvsContext::OnDestroyShopResult |  | 0x045 | ❌ | 0x058 | ❌ | 0x06B | ❌ | 0x06D | ❌ | 0x073 | ❌ | 0x076 | ❌ | 0x076 | ❌ | 0x077 | ❌ |  | ⬜ |
 | MARRIAGE_REQUEST | CWvsContext::OnMarriageRequest |  |  | ⬜ | 0x045 | ❌ | 0x045 | ❌ | 0x045 | ❌ | 0x048 | ❌ | 0x04A | ❌ | 0x04A | ❌ | 0x04B | ❌ | 0x042 | ❌ |
 | IDA_0X046 | sub_7215EA |  | 0x046 | ❌ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
@@ -331,11 +331,11 @@ Tool: `fe01fbd20caf3b0bd0fd65aec9cf9ede74a68be798188431980435054d65c01e`
 | SET_NPC_SCRIPTABLE | CNpcPool::OnSetNpcScript; CNpcTemplate::OnSetNpcScript; sub_5EFDA2; sub_645E9C; sub_668A2D |  |  | ⬜ | 0x0C8 | ❌ | 0x0E9 | ❌ | 0x0F1 | ❌ | 0x107 | ❌ | 0x107 | ❌ | 0x118 | ❌ | 0x13D | ❌ | 0x11C | ❌ |
 | KOREAN_EVENT | CUserLocal::OnOpenClassCompetitionPage |  |  | ⬜ |  | ⬜ | 0x0C9 | ❌ | 0x0CD | ❌ | 0x0DB | ❌ | 0x0DF | ❌ | 0x0E8 | ❌ | 0x0FA | ❌ | 0x0E3 | ❌ |
 | LOCK_UI | CUserLocal::OnSetDirectionMode; CUserLocal::SetDirectionMode; sub_A2CD83 | ui/clientbound/Lock |  | ⬜ |  | ⬜ | 0x0CA | ❌ | 0x0CE | ❌ | 0x0DD | ❌ | 0x0E2 | ❌ | 0x0EB | ❌ | 0x0FD | ✅ | 0x0E7 | ❌ |
-| SPAWN_HIRED_MERCHANT | CEmployeePool::OnEmployeeEnterField |  |  | ⬜ | 0x0CA | ❌ | 0x0EB | ❌ | 0x0F3 | ❌ | 0x109 | ❌ | 0x110 | ❌ | 0x11A | ❌ | 0x13F | ❌ | 0x11E | ❌ |
-| DESTROY_HIRED_MERCHANT | CEmployeePool::OnEmployeeLeaveField |  |  | ⬜ | 0x0CB | ❌ | 0x0EC | ❌ | 0x0F4 | ❌ | 0x10A | ❌ | 0x111 | ❌ | 0x11B | ❌ | 0x140 | ❌ | 0x11F | ❌ |
+| SPAWN_HIRED_MERCHANT | CEmployeePool::OnEmployeeEnterField |  |  | ⬜ | 0x0CA | ✅ | 0x0EB | ✅ | 0x0F3 | ✅ | 0x109 | ✅ | 0x110 | ✅ | 0x11A | ✅ | 0x13F | ✅ | 0x11E | ✅ |
+| DESTROY_HIRED_MERCHANT | CEmployeePool::OnEmployeeLeaveField |  |  | ⬜ | 0x0CB | ✅ | 0x0EC | ✅ | 0x0F4 | ✅ | 0x10A | ✅ | 0x111 | ✅ | 0x11B | ✅ | 0x140 | ✅ | 0x11F | ✅ |
 | DISABLE_UI | CUserLocal::OnSetStandAloneMode; sub_86C50E | ui/clientbound/Disable |  | ⬜ |  | ⬜ | 0x0CB | ❌ | 0x0CF | 🟡ᵈ | 0x0DE | ✅ | 0x0E3 | ✅ | 0x0EC | ✅ | 0x0FE | ✅ | 0x0E8 | ✅ |
 | SPAWN_GUIDE | CUserLocal::OnHireTutor; sub_86C65C |  |  | ⬜ |  | ⬜ | 0x0CC | ❌ | 0x0D0 | ❌ | 0x0DF | ❌ | 0x0E4 | ❌ | 0x0ED | ❌ | 0x0FF | ❌ | 0x0E9 | ❌ |
-| UPDATE_HIRED_MERCHANT | CEmployeePool::OnEmployeeMiniRoomBalloon |  |  | ⬜ | 0x0CC | ❌ | 0x0ED | ❌ | 0x0F5 | ❌ | 0x10B | ❌ | 0x112 | ❌ | 0x11C | ❌ | 0x141 | ❌ | 0x120 | ❌ |
+| UPDATE_HIRED_MERCHANT | CEmployeePool::OnEmployeeMiniRoomBalloon |  |  | ⬜ | 0x0CC | ✅ | 0x0ED | ✅ | 0x0F5 | ✅ | 0x10B | ✅ | 0x112 | ✅ | 0x11C | ✅ | 0x141 | ✅ | 0x120 | ✅ |
 | DROP_ITEM_FROM_MAPOBJECT | CDropPool::OnDropEnterField | drop/clientbound/DropSpawn |  | ⬜ | 0x0CD | 🟡ᵈ | 0x0EE | 🟡ᵈ | 0x0F6 | 🟡ᵈ | 0x10C | ✅ | 0x113 | ✅ | 0x11D | ✅ | 0x142 | ✅ | 0x121 | ✅ |
 | REMOVE_ITEM_FROM_MAP | CDropPool::OnDropLeaveField | drop/clientbound/DropDestroy (T1) |  | ⬜ | 0x0CE | ✅ | 0x0EF | ✅ | 0x0F7 | ✅ | 0x10D | ✅ | 0x114 | ✅ | 0x11E | ✅ | 0x144 | ✅ | 0x122 | ✅ |
 | CANNOT_SPAWN_KITE | CMessageBoxPool::OnCreateFailed | field/clientbound/FieldKiteError (T1) |  | ⬜ | 0x0CF | 🟡ᶠ | 0x0F0 | 🟡ᶠ | 0x0F8 | 🟡ᶠ | 0x10E | ✅ | 0x10E | ✅ | 0x11F | ✅ | 0x145 | ✅ | 0x123 | ✅ |
@@ -580,14 +580,14 @@ Tool: `fe01fbd20caf3b0bd0fd65aec9cf9ede74a68be798188431980435054d65c01e`
 | REMOTE_STORE | CWvsContext::SendRemoteShopOpenRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x03B | ❌ | 0x03B | ❌ | 0x03E | ❌ | 0x040 | ❌ | 0x033 | ❌ |
 | HIRED_MERCHANT_REQUEST | CWvsContext::SendEntrustedShopCheckRequest; sub_715A7B; sub_971BE0 |  |  | ⬜ | 0x03E | ❌ | 0x03E | ❌ | 0x03D | ❌ | 0x03F | ❌ | 0x03F | ❌ | 0x042 | ❌ | 0x044 | ❌ | 0x037 | ❌ |
 | USE_CASH_ITEM | CItemSpeakerDlg::_SendConsumeCashItemUseRequest; CUICharacterSaleDlg::SendCreateNewCharacter; CUIIncubator::OnButtonClicked; CUIKarmaDlg::_SendConsumeCashItemUseRequest; CUIUnreleaseDlg::UnreleaseEquipItem; CWvsContext::SendConsumeCashItemUseRequest |  | 0x03E | ❌ | 0x049 | ❌ | 0x04E | ❌ | 0x04D | ❌ | 0x04F | ❌ | 0x04F | ❌ | 0x052 | ❌ | 0x055 | ❌ | 0x047 | ❌ |
+| OWL_WARP | CUIShopScanResult::OnButtonClicked | merchant/serverbound/OwlWarp (T1) |  | ⬜ | 0x03F | ✅ | 0x042 | ✅ | 0x041 | ✅ | 0x043 | ✅ | 0x043 | ❌ | 0x046 | ❌ | 0x049 | ✅ | 0x03B | ❌ |
 | FREDRICK_ACTION | CStoreBankDlg::SendCalculateFeeRequest; CStoreBankDlg::SendGetAllRequest; CStoreBankDlg::SetRet |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x040 | ❌ | 0x040 | ❌ | 0x043 | ❌ | 0x045 | ❌ | 0x038 | ❌ |
 | ITEM_SORT | CWvsContext::SendGatherItemRequest; sub_954C6B | inventory/serverbound/InventoryCompartmentMergeRequest (T1) |  | ⬜ | 0x040 | ✅ | 0x044 | ✅ | 0x043 | ✅ | 0x045 | ✅ | 0x045 | ✅ | 0x048 | ✅ | 0x04B | ✅ | 0x03D | ✅ |
 | DUEY_ACTION | CParcelDlg::CloseParcelDlg; CTabQuickSend::SendQuickDelivery; CTabReceive::DiscardParcel; CTabReceive::ReceiveParcel; CTabSend::SendParcel; CUIFadeYesNo::OnButtonClicked |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x041 | ❌ | 0x041 | ❌ | 0x044 | ❌ | 0x046 | ❌ | 0x039 | ❌ |
 | ITEM_SORT2 | CWvsContext::SendSortItemRequest; sub_954CFD | inventory/serverbound/InventoryCompartmentSortRequest (T1) |  | ⬜ | 0x041 | ✅ | 0x045 | ✅ | 0x044 | ✅ | 0x046 | ❌ | 0x046 | ❌ | 0x049 | ✅ | 0x04C | ✅ | 0x03E | ✅ |
 | USE_ITEM | CWvsContext::SendStatChangeItemUseRequest; sub_719DD9; sub_831DE9 | inventory/serverbound/InventoryItemUse (T1) | 0x041 | ✅ | 0x047 | ❌ | 0x047 | 🟡ᶠ | 0x046 | 🟡ᶠ | 0x048 | ✅ | 0x048 | ✅ | 0x04B | ✅ | 0x04E | ✅ | 0x040 | ✅ |
-| OWL_ACTION | CUIShopScanner::OnCreate |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x042 | ❌ | 0x042 | ❌ | 0x045 | ❌ | 0x048 | ❌ | 0x03A | ❌ |
+| OWL_ACTION | CUIShopScanner::OnCreate | merchant/serverbound/OwlAction (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x042 | ✅ | 0x042 | ❌ | 0x045 | ❌ | 0x048 | ✅ | 0x03A | ❌ |
 | DISTRIBUTE_AP | CWvsContext::SendAbilityUpRequest; sub_71CD00; sub_8457EE | character/serverbound/DistributeAp (T1) | 0x043 | ✅ | 0x050 | ✅ | 0x056 | ✅ | 0x055 | ✅ | 0x057 | ✅ | 0x057 | ✅ | 0x05B | ✅ | 0x062 | ✅ | 0x052 | ✅ |
-| OWL_WARP | CUIShopScanResult::OnButtonClicked |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x043 | ❌ | 0x043 | ❌ | 0x046 | ❌ | 0x049 | ❌ | 0x03B | ❌ |
 | ADMIN_SHOP | CAdminShopDlg::OnPacket; CAdminShopDlg::SendTradeRequest; CAdminShopDlg::SetRet; CUIAdminShopWishList::SendRegisterPacket |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x044 | ❌ | 0x044 | ❌ | 0x047 | ❌ | 0x04A | ❌ | 0x03C | ❌ |
 | HEAL_OVER_TIME | CWvsContext::SendStatChangeRequest | character/serverbound/HealOverTime (T1) | 0x044 | ✅ | 0x051 | ✅ | 0x058 | ✅ | 0x057 | ✅ | 0x059 | ✅ | 0x059 | ✅ | 0x05C | ✅ | 0x064 | ✅ | 0x054 | ✅ |
 | CANCEL_BUFF | CUserLocal::SendSkillCancelRequest | character/serverbound/BuffCancelRequest (T1) | 0x047 | ✅ | 0x054 | 🟡ᶠ | 0x05B | 🟡ᶠ | 0x05A | 🟡ᶠ | 0x05C | ✅ | 0x05C | ✅ | 0x05F | ✅ | 0x068 | ✅ | 0x057 | ✅ |
@@ -607,14 +607,13 @@ Tool: `fe01fbd20caf3b0bd0fd65aec9cf9ede74a68be798188431980435054d65c01e`
 | USE_CATCH_ITEM | CWvsContext::SendBridleItemUseRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x051 | ❌ | 0x051 | ❌ | 0x054 | ❌ | 0x057 | ❌ | 0x049 | ❌ |
 | USE_SKILL_BOOK | CWvsContext::SendSkillLearnItemUseRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x052 | ❌ | 0x052 | ❌ | 0x055 | ❌ | 0x058 | ❌ | 0x04A | ❌ |
 | ANTI_MACRO_RESULT | CUIAdminAntiMacro::SetRet; CUIAntiMacro::SetRet; sub_5F9718; sub_69C480 |  | 0x053 | ❌ | 0x060 | ❌ |  | ⬜ |  | ⬜ | 0x069 | ❌ | 0x069 | ❌ | 0x06C | ❌ | 0x075 | ❌ | 0x064 | ❌ |
-| USE_SKILL_RESET_BOOK | CWvsContext::SendSkillResetItemUseRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x053 | ❌ | 0x053 | ❌ | 0x056 | ❌ | 0x059 | ❌ | 0x04B | ❌ |
 | USE_TELEPORT_ROCK | CWvsContext::SendMapTransferItemUseRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x054 | ❌ | 0x054 | ❌ | 0x057 | ❌ | 0x05B | ❌ | 0x04C | ❌ |
 | QUEST_ACTION | CQuest::OnCompleteQuestFailed; CQuest::StartQuest; CWvsContext::ResignQuest; sub_5997EF | quest/serverbound/ActionScriptEnd | 0x055 | ❌ | 0x062 | ❌ | 0x06A | ❌ | 0x069 | ❌ | 0x06B | ✅ | 0x06B | ❌ | 0x06E | ✅ | 0x077 | ✅ | 0x066 | ✅ |
 | MESO_DROP | CWvsContext::SendDropMoneyRequest; sub_8459DD | character/serverbound/DropMeso (T1) |  | ⬜ | 0x056 | ✅ | 0x05D | ✅ | 0x05C | ✅ | 0x05E | ✅ | 0x05E | ✅ | 0x061 | ✅ | 0x06A | ✅ | 0x059 | ✅ |
+| USE_SKILL_RESET_BOOK | CWvsContext::SendSkillResetItemUseRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x056 | ❌ | 0x059 | ❌ | 0x04B | ❌ |
 | AUTO_DISTRIBUTE_AP | CWvsContext::SendAbilityUpRequest | character/serverbound/AutoDistributeAp (T1) |  | ⬜ |  | ⬜ | 0x057 | ✅ | 0x056 | ✅ | 0x058 | ✅ | 0x058 | ✅ | 0x05B | ✅ | 0x062 | ✅ | 0x052 | ✅ |
 | MULTI_CHAT | CUIStatusBar::SendGroupMessage; sub_65EB4F | chat/serverbound/ChatMulti (T1) | 0x059 | ✅ | 0x06B | ✅ | 0x075 | ✅ | 0x074 | ✅ | 0x077 | ❌ | 0x079 | ❌ | 0x07D | ❌ | 0x08C | ❌ | 0x079 | ❌ |
 | SPECIAL_MOVE | CGrenade::SendTimeBombInfo; CUserLocal::DoActiveSkill_DamageMeter; CUserLocal::DoActiveSkill_Flying; CUserLocal::DoActiveSkill_Heal; CUserLocal::DoActiveSkill_MobCapture; CUserLocal::DoActiveSkill_OpenGate; CUserLocal::DoActiveSkill_RecoveryAura; CUserLocal::DoActiveSkill_SmokeShell; CUserLocal::DoActiveSkill_StatChangeAdmin; CUserLocal::DoActiveSkill_Summon; CUserLocal::DoActiveSkill_SummonMonster; CUserLocal::DoActiveSkill_TownPortal; CUserLocal::SendSkillUseRequest; CUserLocal::TryDoingMonsterMagnet; CUserLocal::TryDoingSwallowAbsorb; sub_845C36; sub_8C0CBE |  |  | ⬜ | 0x05A | ❌ | 0x05A | ❌ | 0x059 | ❌ | 0x05B | ❌ | 0x05B | ❌ | 0x05E | ❌ | 0x067 | ❌ | 0x056 | ❌ |
-| USE_SHOP_SCANNER_ITEM | CWvsContext::SendShopScannerItemUseRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x05A | ❌ |  | ⬜ |
 | WHISPER | CField::SendChatMsgWhisper; CField::SendLocationWhisper; sub_4C4F3B; sub_4E8635 | chat/serverbound/ChatWhisper (T1) | 0x05A | ✅ | 0x06C | ✅ | 0x076 | ✅ | 0x075 | ✅ | 0x078 | ✅ | 0x07A | ✅ | 0x07E | ✅ | 0x08D | ✅ | 0x07A | ✅ |
 | SPOUSE_CHAT | CUIStatusBar::SendCoupleMessage; sub_65EA0D; sub_744528 | field/serverbound/FieldCoupleMessage (T1) | 0x05B | ✅ | 0x06D | ✅ | 0x077 | ✅ | 0x076 | ✅ | 0x079 | ✅ | 0x07B | ✅ | 0x07F | ✅ | 0x08E | ✅ |  | ⬜ |
 | CHANGE_MAP_SPECIAL | CUserLocal::CheckPortal_Collision; CUserLocal::HandleUpKeyDown | portal/serverbound/PortalScript |  | ⬜ | 0x05C | 🟡ᵈ | 0x063 | ❌ | 0x062 | ❌ | 0x064 | ❌ | 0x064 | ❌ | 0x067 | ❌ | 0x070 | ❌ | 0x05F | ❌ |
@@ -635,6 +634,7 @@ Tool: `fe01fbd20caf3b0bd0fd65aec9cf9ede74a68be798188431980435054d65c01e`
 | NOTE_ACTION | CCashShop::OnCashItemResLoadGiftDone; CMemoListDlg::SetRet; CWvsContext::OnMemoNotify_Receive | note/serverbound/NoteOperationDiscard (T1) | 0x065 | ✅ | 0x077 | ✅ | 0x081 | ✅ | 0x080 | ✅ | 0x083 | ✅ | 0x087 | ✅ | 0x08B | ✅ | 0x09A | ✅ | 0x086 | ✅ |
 | USER_CHANGE_STAT_REQUEST_BY_ITEM | CWvsContext::SendStatChangeRequestByItemOption |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x065 | ❌ |  | ⬜ |
 | USE_INNER_PORTAL | CUserLocal::TryRegisterTeleport |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x065 | ❌ | 0x065 | ❌ | 0x068 | ❌ | 0x071 | ❌ | 0x060 | ❌ |
+| USE_SHOP_SCANNER_ITEM | CWvsContext::SendShopScannerItemUseRequest | merchant/serverbound/ShopScannerItemUse (T1) |  | ⬜ |  | ⬜ | 0x066 | ✅ | 0x065 | ✅ | 0x053 | ✅ | 0x053 | ❌ |  | ⬜ | 0x05A | ✅ |  | ⬜ |
 | ANTI_MACRO_ITEM_USE | CWvsContext::SendAntiMacroItemUseRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x067 | ❌ | 0x067 | ❌ | 0x06A | ❌ | 0x073 | ❌ | 0x062 | ❌ |
 | USE_DOOR | CField::TryEnterTownPortal; CTownPortalPool::TryEnterTownPortal; sub_4CB90A; sub_5E3082 | field/serverbound/FieldUseDoor (T1) | 0x067 | ✅ | 0x079 | ✅ | 0x083 | ✅ | 0x082 | ✅ | 0x085 | ✅ | 0x089 | ✅ | 0x08D | ✅ | 0x09C | ✅ | 0x088 | ✅ |
 | ANTI_MACRO_TARGET | CUserLocal::DoAntiMacroSkill |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x068 | ❌ | 0x068 | ❌ | 0x06B | ❌ | 0x074 | ❌ | 0x063 | ❌ |
@@ -994,14 +994,14 @@ Tool: `fe01fbd20caf3b0bd0fd65aec9cf9ede74a68be798188431980435054d65c01e`
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
 | v48 | 166 | 0 | 2 | 156 | 634 | 0 | 51.2% |
-| v61 | 232 | 0 | 60 | 201 | 465 | 0 | 47.1% |
-| v72 | 240 | 0 | 73 | 219 | 426 | 0 | 45.1% |
-| v79 | 254 | 0 | 72 | 215 | 417 | 0 | 47.0% |
-| v83 | 394 | 0 | 0 | 340 | 224 | 0 | 53.7% |
-| v84 | 371 | 0 | 0 | 343 | 244 | 0 | 52.0% |
-| v87 | 405 | 0 | 0 | 366 | 187 | 0 | 52.5% |
-| v95 | 425 | 0 | 0 | 430 | 103 | 0 | 49.7% |
-| JMS185 | 386 | 0 | 0 | 378 | 194 | 0 | 50.5% |
+| v61 | 238 | 0 | 60 | 196 | 464 | 0 | 48.2% |
+| v72 | 247 | 0 | 73 | 214 | 424 | 0 | 46.3% |
+| v79 | 261 | 0 | 72 | 210 | 415 | 0 | 48.1% |
+| v83 | 402 | 0 | 0 | 332 | 224 | 0 | 54.8% |
+| v84 | 374 | 0 | 0 | 340 | 244 | 0 | 52.4% |
+| v87 | 408 | 0 | 0 | 363 | 187 | 0 | 52.9% |
+| v95 | 433 | 0 | 0 | 422 | 103 | 0 | 50.6% |
+| JMS185 | 389 | 0 | 0 | 375 | 194 | 0 | 50.9% |
 
 ## Conflicts
 

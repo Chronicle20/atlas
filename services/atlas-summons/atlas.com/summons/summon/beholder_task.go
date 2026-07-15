@@ -134,8 +134,8 @@ func (t *BeholderTask) sweepBuff(ctx context.Context, ten tenant.Model, m Model,
 		return
 	}
 	// Emit the SKILL status event so the channel rebroadcasts the SummonSkill
-	// buff-pulse visual map-wide. Cosmic (Character.java:4487) plays the HEX buff
-	// pulse at stance (random*3)+6, i.e. 6-8; the sweep fires once per due tick on
+	// buff-pulse visual map-wide. The HEX buff
+	// pulse plays at stance (random*3)+6, i.e. 6-8; the sweep fires once per due tick on
 	// the leader pod and can't replicate per-tick client-side randomization, so it
 	// uses the lowest valid buff-pulse stance (6) deterministically. A failure here
 	// is non-fatal: the buff already applied, so the timer must still advance.

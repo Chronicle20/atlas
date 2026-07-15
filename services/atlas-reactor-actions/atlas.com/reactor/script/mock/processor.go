@@ -12,7 +12,7 @@ import (
 type ProcessorMock struct {
 	ByIdProviderFunc        func(id uuid.UUID) model.Provider[script.ReactorScript]
 	ByReactorIdProviderFunc func(reactorId string) model.Provider[script.ReactorScript]
-	AllProviderFunc         func() model.Provider[[]script.ReactorScript]
+	AllProviderFunc         func(page model.Page) model.Provider[model.Paged[script.ReactorScript]]
 	CreateFunc              func(m script.ReactorScript) (script.ReactorScript, error)
 	UpdateFunc              func(id uuid.UUID, m script.ReactorScript) (script.ReactorScript, error)
 	DeleteFunc              func(id uuid.UUID) error
@@ -37,11 +37,11 @@ func (m *ProcessorMock) ByReactorIdProvider(reactorId string) model.Provider[scr
 	return model.FixedProvider(script.ReactorScript{})
 }
 
-func (m *ProcessorMock) AllProvider() model.Provider[[]script.ReactorScript] {
+func (m *ProcessorMock) AllProvider(page model.Page) model.Provider[model.Paged[script.ReactorScript]] {
 	if m.AllProviderFunc != nil {
-		return m.AllProviderFunc()
+		return m.AllProviderFunc(page)
 	}
-	return model.FixedProvider([]script.ReactorScript{})
+	return model.FixedProvider(model.Paged[script.ReactorScript]{})
 }
 
 func (m *ProcessorMock) Create(ms script.ReactorScript) (script.ReactorScript, error) {

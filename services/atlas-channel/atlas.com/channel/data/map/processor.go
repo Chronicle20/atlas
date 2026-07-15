@@ -80,8 +80,8 @@ func (p *ProcessorImpl) GetById(mapId _map.Id) (Model, error) {
 //
 // The v83 client validates positions in spawn packets against the foothold
 // surface and treats at-or-below positions as embedded-in-terrain, dropping
-// the mob through the floor. Mirrors Cosmic's MapleMap.addMonsterSpawn
-// `newpos.y -= 1` invariant — every mob's y stays 1 px above its foothold.
+// the mob through the floor. Invariant: every mob's y stays 1 px above its
+// foothold (spawn positions are adjusted `y -= 1` off the surface).
 //
 // Pass-through (no clamp) cases:
 //   - fh == 0 (mid-air, fall sequence): leaving y untouched is correct because

@@ -3,6 +3,7 @@ package _map
 import (
 	"atlas-maps/rest"
 	"net/http"
+	"sort"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
@@ -10,6 +11,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
@@ -35,6 +37,12 @@ func handleGetCharactersInMap(d *rest.HandlerDependency, c *rest.HandlerContext)
 			return rest.ParseMapId(d.Logger(), func(mapId _map.Id) http.HandlerFunc {
 				return rest.ParseInstanceId(d.Logger(), func(instanceId uuid.UUID) http.HandlerFunc {
 					return func(w http.ResponseWriter, r *http.Request) {
+						page, err := paginate.ParseParams(r.URL.Query(), paginate.MaxPageSize, paginate.MaxPageSize)
+						if err != nil {
+							server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+							return
+						}
+
 						transactionId := uuid.New()
 						f := field.NewBuilder(worldId, channelId, mapId).SetInstance(instanceId).Build()
 						mp := NewProcessor(d.Logger(), d.Context(), nil, nil)
@@ -43,14 +51,20 @@ func handleGetCharactersInMap(d *rest.HandlerDependency, c *rest.HandlerContext)
 							server.WriteErrorResponse(d.Logger())(w)(err)
 							return
 						}
-						res, err := model.SliceMap(Transform)(model.FixedProvider(ids))(model.ParallelMap())()
+
+						sorted := make([]uint32, len(ids))
+						copy(sorted, ids)
+						sort.Slice(sorted, func(i, j int) bool { return sorted[i] < sorted[j] })
+						paged := paginate.Slice(sorted, page)
+
+						res, err := model.SliceMap(Transform)(model.FixedProvider(paged.Items))(model.ParallelMap())()
 						if err != nil {
 							d.Logger().WithError(err).Errorf("Creating REST model.")
 							server.WriteErrorResponse(d.Logger())(w)(err)
 							return
 						}
 
-						server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(r.URL.Query())(res)
+						server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(r.URL.Query())(res, paginate.EnvelopeFor(paged), r)
 					}
 				})
 			})
@@ -63,6 +77,12 @@ func handleGetCharactersInMapAllInstances(d *rest.HandlerDependency, c *rest.Han
 		return rest.ParseChannelId(d.Logger(), func(channelId channel.Id) http.HandlerFunc {
 			return rest.ParseMapId(d.Logger(), func(mapId _map.Id) http.HandlerFunc {
 				return func(w http.ResponseWriter, r *http.Request) {
+					page, err := paginate.ParseParams(r.URL.Query(), paginate.MaxPageSize, paginate.MaxPageSize)
+					if err != nil {
+						server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+						return
+					}
+
 					transactionId := uuid.New()
 					mp := NewProcessor(d.Logger(), d.Context(), nil, nil)
 					ids, err := mp.GetCharactersInMapAllInstances(transactionId, worldId, channelId, mapId)
@@ -70,14 +90,20 @@ func handleGetCharactersInMapAllInstances(d *rest.HandlerDependency, c *rest.Han
 						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
-					res, err := model.SliceMap(Transform)(model.FixedProvider(ids))(model.ParallelMap())()
+
+					sorted := make([]uint32, len(ids))
+					copy(sorted, ids)
+					sort.Slice(sorted, func(i, j int) bool { return sorted[i] < sorted[j] })
+					paged := paginate.Slice(sorted, page)
+
+					res, err := model.SliceMap(Transform)(model.FixedProvider(paged.Items))(model.ParallelMap())()
 					if err != nil {
 						d.Logger().WithError(err).Errorf("Creating REST model.")
 						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 
-					server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(r.URL.Query())(res)
+					server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(r.URL.Query())(res, paginate.EnvelopeFor(paged), r)
 				}
 			})
 		})

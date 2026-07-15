@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"sort"
 
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
@@ -19,6 +21,12 @@ func GetAllRoutesHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Ha
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return rest.ParseTenantId(d.Logger(), func(tenantId uuid.UUID) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
+				page, err := paginate.ParseParams(r.URL.Query(), paginate.DefaultPageSize, paginate.MaxPageSize)
+				if err != nil {
+					server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+					return
+				}
+
 				processor := NewProcessor(d.Logger(), d.Context(), db)
 
 				routes, err := processor.GetAllRoutes(tenantId)
@@ -45,9 +53,17 @@ func GetAllRoutesHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Ha
 					restModels = append(restModels, rm)
 				}
 
+				// The route list materializes from one JSONB blob's "data"
+				// array; sort by the unique id before paging so the response
+				// order does not depend on how the blob happens to store them.
+				sort.Slice(restModels, func(i, j int) bool {
+					return restModels[i].Id < restModels[j].Id
+				})
+				paged := paginate.Slice(restModels, page)
+
 				query := r.URL.Query()
 				queryParams := jsonapi.ParseQueryFields(&query)
-				server.MarshalResponse[[]RouteRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(restModels)
+				server.MarshalPaginatedResponse[[]RouteRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(paged.Items, paginate.EnvelopeFor(paged), r)
 			}
 		})
 	}
@@ -205,6 +221,12 @@ func GetAllVesselsHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.H
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return rest.ParseTenantId(d.Logger(), func(tenantId uuid.UUID) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
+				page, err := paginate.ParseParams(r.URL.Query(), paginate.DefaultPageSize, paginate.MaxPageSize)
+				if err != nil {
+					server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+					return
+				}
+
 				processor := NewProcessor(d.Logger(), d.Context(), db)
 
 				vessels, err := processor.GetAllVessels(tenantId)
@@ -231,9 +253,17 @@ func GetAllVesselsHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.H
 					restModels = append(restModels, rm)
 				}
 
+				// The vessel list materializes from one JSONB blob's "data"
+				// array; sort by the unique id before paging so the response
+				// order does not depend on how the blob happens to store them.
+				sort.Slice(restModels, func(i, j int) bool {
+					return restModels[i].Id < restModels[j].Id
+				})
+				paged := paginate.Slice(restModels, page)
+
 				query := r.URL.Query()
 				queryParams := jsonapi.ParseQueryFields(&query)
-				server.MarshalResponse[[]VesselRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(restModels)
+				server.MarshalPaginatedResponse[[]VesselRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(paged.Items, paginate.EnvelopeFor(paged), r)
 			}
 		})
 	}
@@ -391,6 +421,12 @@ func GetAllInstanceRoutesHandler(db *gorm.DB) func(d *rest.HandlerDependency, c 
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return rest.ParseTenantId(d.Logger(), func(tenantId uuid.UUID) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
+				page, err := paginate.ParseParams(r.URL.Query(), paginate.DefaultPageSize, paginate.MaxPageSize)
+				if err != nil {
+					server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+					return
+				}
+
 				processor := NewProcessor(d.Logger(), d.Context(), db)
 
 				routes, err := processor.GetAllInstanceRoutes(tenantId)
@@ -416,9 +452,18 @@ func GetAllInstanceRoutesHandler(db *gorm.DB) func(d *rest.HandlerDependency, c 
 					restModels = append(restModels, rm)
 				}
 
+				// The instance-route list materializes from one JSONB blob's
+				// "data" array; sort by the unique id before paging so the
+				// response order does not depend on how the blob happens to
+				// store them.
+				sort.Slice(restModels, func(i, j int) bool {
+					return restModels[i].Id < restModels[j].Id
+				})
+				paged := paginate.Slice(restModels, page)
+
 				query := r.URL.Query()
 				queryParams := jsonapi.ParseQueryFields(&query)
-				server.MarshalResponse[[]InstanceRouteRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(restModels)
+				server.MarshalPaginatedResponse[[]InstanceRouteRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(paged.Items, paginate.EnvelopeFor(paged), r)
 			}
 		})
 	}

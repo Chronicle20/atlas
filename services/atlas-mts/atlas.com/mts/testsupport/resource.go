@@ -19,6 +19,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
@@ -205,6 +206,17 @@ func effectiveSellerAccountId(entryAccountId uint32) uint32 {
 // ledger.
 func handleSeedListings(d *rest.HandlerDependency, c *rest.HandlerContext, rm SeedRestModel) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		// The response echoes the just-created batch (never more than
+		// seedMaxListings=200 rows), so a single page.PageSize=paginate.MaxPageSize
+		// (250) page always holds every row; this satisfies the repo-wide
+		// pagination convention (task-117) without pretending a one-shot creation
+		// result is a queryable, growing collection.
+		page, perr := paginate.ParseParams(r.URL.Query(), paginate.MaxPageSize, paginate.MaxPageSize)
+		if perr != nil {
+			server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+			return
+		}
+
 		t := tenant.MustFromContext(d.Context())
 
 		// First pass: validate every entry (saleType, templateId) and compute
@@ -356,10 +368,11 @@ func handleSeedListings(d *rest.HandlerDependency, c *rest.HandlerContext, rm Se
 			return
 		}
 		d.Logger().Infof("[TEST ROUTE] Seeded [%d] listings in world [%d] for tenant [%s].", len(created), rm.WorldId, t.Id())
+		paged := paginate.Slice(res, page)
 		query := r.URL.Query()
 		queryParams := jsonapi.ParseQueryFields(&query)
 		w.WriteHeader(http.StatusCreated)
-		server.MarshalResponse[[]listing.RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+		server.MarshalPaginatedResponse[[]listing.RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(paged.Items, paginate.EnvelopeFor(paged), r)
 	}
 }
 

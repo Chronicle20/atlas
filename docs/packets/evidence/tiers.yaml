@@ -69,3 +69,17 @@ packets:
   # never via the advisory diff. v83 + v95 carry fixtures+evidence; v84/v87/jms
   # remain fixture-pending (unchanged from before).
   - summon/clientbound/SummonSpawn
+  # Owl of Minerva / shop-scanner packets (task-127). Design §5 mandates full
+  # tier-1 treatment on gms_v83/gms_v95: IDA-derived read orders pinned as
+  # evidence, promoted only via linked byte-fixtures. ShopScannerResult carries a
+  # conditional (nTI==1) opaque model.Asset row + count loop so its flat diff is
+  # advisory; the flat siblings are pinned as tier-1 for uniform evidence-backed
+  # grading (explicit packet ids, NOT a merchant/ prefix that would degrade the
+  # existing tier-0 merchant cells). v83+v95 verified this task; v84/v87/v92/jms
+  # remain seed-routed-but-unverified (design §5 accepted state).
+  - merchant/serverbound/OwlAction
+  - merchant/serverbound/OwlWarp
+  - merchant/serverbound/ShopScannerItemUse
+  - merchant/clientbound/ShopScannerResult
+  - merchant/clientbound/ShopScannerHotList
+  - merchant/clientbound/ShopLinkResult

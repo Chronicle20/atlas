@@ -8,6 +8,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
@@ -139,11 +140,11 @@ func TestDiscardAndEmit_FameAwardFiresAfterSuccess(t *testing.T) {
 		t.Fatalf("Expected 2 fame-award saga commands to be fired after a successful discard, got %d", len(fakeSaga.calls))
 	}
 
-	notes, err := p.ByCharacterProvider(characterId)()
+	notes, err := p.ByCharacterProvider(characterId, model.Page{Number: 1, Size: 250})()
 	if err != nil {
 		t.Fatalf("Failed to get notes: %v", err)
 	}
-	if len(notes) != 0 {
-		t.Fatalf("Expected 0 notes remaining, got %d", len(notes))
+	if notes.Total != 0 {
+		t.Fatalf("Expected 0 notes remaining, got %d", notes.Total)
 	}
 }

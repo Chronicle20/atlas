@@ -261,13 +261,23 @@ func (m *InteractionLeave) Decode(_ logrus.FieldLogger, _ context.Context) func(
 // the meso (m_nMoney) then chains CPersonalShopDlg::OnRefresh for the item loop.
 // packet-audit:fname CEntrustedShopDlg::OnRefresh#UpdateMerchant
 type InteractionUpdateMerchant struct {
-	mode  byte
-	meso  uint32
-	items []interaction.RoomShopItem
+	mode     byte
+	meso     uint32
+	omitMeso bool
+	items    []interaction.RoomShopItem
 }
 
 func NewInteractionUpdateMerchant(mode byte, meso uint32, items []interaction.RoomShopItem) InteractionUpdateMerchant {
 	return InteractionUpdateMerchant{mode: mode, meso: meso, items: items}
+}
+
+// NewInteractionUpdatePersonalShop builds the mode-25 refresh for a personal
+// shop (item 514). CPersonalShopDlg::OnRefresh reads the item loop directly —
+// only the hired-merchant override CEntrustedShopDlg::OnRefresh prefixes the
+// Decode4 meso (m_nMoney). Sending the meso to a personal shop makes the client
+// read its first byte as the item count (→ 0 items shown), so it is omitted.
+func NewInteractionUpdatePersonalShop(mode byte, items []interaction.RoomShopItem) InteractionUpdateMerchant {
+	return InteractionUpdateMerchant{mode: mode, omitMeso: true, items: items}
 }
 
 func (m InteractionUpdateMerchant) Operation() string { return CharacterInteractionWriter }
@@ -279,11 +289,17 @@ func (m InteractionUpdateMerchant) Encode(l logrus.FieldLogger, ctx context.Cont
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
 		w.WriteByte(m.mode)
-		w.WriteInt(m.meso)
+		if !m.omitMeso {
+			w.WriteInt(m.meso)
+		}
 		w.WriteByte(byte(len(m.items)))
 		for _, item := range m.items {
-			w.WriteShort(item.PerBundle)
+			// nNumber (total quantity) then nSet (per-bundle): v95 PDB
+			// CPersonalShopDlg::OnRefresh @0x698050 reads v5->nNumber first,
+			// v5->nSet second. Emitting PerBundle first renders individual
+			// items as a bundle (task-127).
 			w.WriteShort(item.Quantity)
+			w.WriteShort(item.PerBundle)
 			w.WriteInt(item.Price)
 			w.WriteByteArray(item.Asset.Encode(l, ctx)(options))
 		}
@@ -294,16 +310,136 @@ func (m InteractionUpdateMerchant) Encode(l logrus.FieldLogger, ctx context.Cont
 func (m *InteractionUpdateMerchant) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.mode = r.ReadByte()
-		m.meso = r.ReadUint32()
+		if !m.omitMeso {
+			m.meso = r.ReadUint32()
+		}
 		count := int(r.ReadByte())
 		m.items = make([]interaction.RoomShopItem, 0, count)
 		for i := 0; i < count; i++ {
 			var item interaction.RoomShopItem
-			item.PerBundle = r.ReadUint16()
 			item.Quantity = r.ReadUint16()
+			item.PerBundle = r.ReadUint16()
 			item.Price = r.ReadUint32()
 			item.Asset.Decode(l, ctx)(r, options)
 			m.items = append(m.items, item)
+		}
+	}
+}
+
+// InteractionPersonalShopItemSold notifies the owner that one of their
+// listings sold, so the client appends a row to the sold-item ledger and
+// updates the running totals (m_nTotSold / m_nTotReceived — the "items sold /
+// meso received" the owner sees). CPersonalShopDlg::OnSoldItemResult (v95 PDB
+// @0x69a670) reads Decode1(itemIndex) + Decode2(bundleCount) + DecodeStr(buyer);
+// the client derives units and meso from the item's own stored nSet/nPrice, so
+// only the index, bundle count, and buyer name are on the wire.
+type InteractionPersonalShopItemSold struct {
+	mode        byte
+	itemIndex   byte
+	bundleCount uint16
+	buyerName   string
+}
+
+func NewInteractionPersonalShopItemSold(mode byte, itemIndex byte, bundleCount uint16, buyerName string) InteractionPersonalShopItemSold {
+	return InteractionPersonalShopItemSold{mode: mode, itemIndex: itemIndex, bundleCount: bundleCount, buyerName: buyerName}
+}
+
+func (m InteractionPersonalShopItemSold) Operation() string { return CharacterInteractionWriter }
+
+func (m InteractionPersonalShopItemSold) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
+		w.WriteByte(m.mode)
+		w.WriteByte(m.itemIndex)
+		w.WriteShort(m.bundleCount)
+		w.WriteAsciiString(m.buyerName)
+		return w.Bytes()
+	}
+}
+
+// InteractionVisitList is the hired-merchant visit-list response
+// (CEntrustedShopDlg sub_519505, v83 @0x519505, mode 0x2E): Decode2 count,
+// then per entry DecodeStr name + Decode4 value (the visit count the client
+// shows next to each name).
+type InteractionVisitList struct {
+	mode    byte
+	entries []VisitListEntry
+}
+
+type VisitListEntry struct {
+	Name  string
+	Count uint32
+}
+
+func NewInteractionVisitList(mode byte, entries []VisitListEntry) InteractionVisitList {
+	return InteractionVisitList{mode: mode, entries: entries}
+}
+
+func (m InteractionVisitList) Operation() string { return CharacterInteractionWriter }
+func (m InteractionVisitList) String() string {
+	return fmt.Sprintf("visit list entries [%d]", len(m.entries))
+}
+
+func (m InteractionVisitList) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
+		w.WriteByte(m.mode)
+		w.WriteShort(uint16(len(m.entries)))
+		for _, e := range m.entries {
+			w.WriteAsciiString(e.Name)
+			w.WriteInt(e.Count)
+		}
+		return w.Bytes()
+	}
+}
+
+func (m *InteractionVisitList) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
+		m.mode = r.ReadByte()
+		count := int(r.ReadUint16())
+		m.entries = make([]VisitListEntry, 0, count)
+		for i := 0; i < count; i++ {
+			m.entries = append(m.entries, VisitListEntry{Name: r.ReadAsciiString(), Count: r.ReadUint32()})
+		}
+	}
+}
+
+// InteractionBlackList is the hired-merchant blacklist-view response
+// (CEntrustedShopDlg sub_5193D8, v83 @0x5193d8, mode 0x2F): Decode2 count,
+// then per entry DecodeStr name.
+type InteractionBlackList struct {
+	mode  byte
+	names []string
+}
+
+func NewInteractionBlackList(mode byte, names []string) InteractionBlackList {
+	return InteractionBlackList{mode: mode, names: names}
+}
+
+func (m InteractionBlackList) Operation() string { return CharacterInteractionWriter }
+func (m InteractionBlackList) String() string {
+	return fmt.Sprintf("black list entries [%d]", len(m.names))
+}
+
+func (m InteractionBlackList) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
+		w.WriteByte(m.mode)
+		w.WriteShort(uint16(len(m.names)))
+		for _, n := range m.names {
+			w.WriteAsciiString(n)
+		}
+		return w.Bytes()
+	}
+}
+
+func (m *InteractionBlackList) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
+		m.mode = r.ReadByte()
+		count := int(r.ReadUint16())
+		m.names = make([]string, 0, count)
+		for i := 0; i < count; i++ {
+			m.names = append(m.names, r.ReadAsciiString())
 		}
 	}
 }

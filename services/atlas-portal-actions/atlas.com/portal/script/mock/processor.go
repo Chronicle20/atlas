@@ -16,7 +16,7 @@ type ProcessorMock struct {
 	DeleteFunc             func(id uuid.UUID) error
 	ByIdProviderFunc       func(id uuid.UUID) model.Provider[script.PortalScript]
 	ByPortalIdProviderFunc func(portalId string) model.Provider[script.PortalScript]
-	AllProviderFunc        func() model.Provider[[]script.PortalScript]
+	AllProviderFunc        func(page model.Page) model.Provider[model.Paged[script.PortalScript]]
 	CountFunc              func() (int64, *time.Time, error)
 	ProcessFunc            func(f field.Model, characterId uint32, portalName string, portalId uint32) script.ProcessResult
 }
@@ -58,11 +58,11 @@ func (m *ProcessorMock) ByPortalIdProvider(portalId string) model.Provider[scrip
 	return model.FixedProvider(script.PortalScript{})
 }
 
-func (m *ProcessorMock) AllProvider() model.Provider[[]script.PortalScript] {
+func (m *ProcessorMock) AllProvider(page model.Page) model.Provider[model.Paged[script.PortalScript]] {
 	if m.AllProviderFunc != nil {
-		return m.AllProviderFunc()
+		return m.AllProviderFunc(page)
 	}
-	return model.FixedProvider([]script.PortalScript{})
+	return model.FixedProvider(model.Paged[script.PortalScript]{})
 }
 
 func (m *ProcessorMock) Count() (int64, *time.Time, error) {

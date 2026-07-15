@@ -8,6 +8,7 @@ import {
   type BatchResult,
   type ValidationError,
 } from "@/lib/api/query-params";
+import { fetchAll } from "@/services/api/pagination";
 import type {
   Conversation,
   ConversationAttributes,
@@ -95,8 +96,13 @@ function wrapConversation(attributes: ConversationAttributes, id?: string): Conv
 }
 
 export const conversationsService = {
+  /**
+   * Get every conversation, draining all pages (task-117). Used by
+   * npcsService's NPC status join and by the search/export/by-npc helpers
+   * below, all of which genuinely need the whole collection.
+   */
   async getAll(options?: QueryOptions): Promise<Conversation[]> {
-    return api.getList<Conversation>(`${BASE_PATH}${buildQueryString(options)}`, options);
+    return fetchAll<Conversation>(`${BASE_PATH}${buildQueryString(options)}`, undefined, options);
   },
 
   async getById(id: string, options?: ServiceOptions): Promise<Conversation> {

@@ -1718,8 +1718,8 @@ func applyDoomEffectFromPlayer(durationMs int) StatusEffect {
 }
 
 // TestApplyStatusEffect_Doom_BypassesElementalImmunity verifies that DOOM is
-// applied to a monster with full elemental resistance (the case Cosmic
-// source treats as the skill's intended counter-niche). Pins the explicit
+// applied to a monster with full elemental resistance — the skill's intended
+// counter-niche. Pins the explicit
 // short-circuit at the top of isElementallyImmune.
 func TestApplyStatusEffect_Doom_BypassesElementalImmunity(t *testing.T) {
 	r := GetMonsterRegistry()

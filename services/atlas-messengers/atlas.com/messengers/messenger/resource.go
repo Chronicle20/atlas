@@ -5,10 +5,12 @@ import (
 	"atlas-messengers/rest"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"net/http"
+	"sort"
 	"strconv"
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
@@ -32,6 +34,12 @@ func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
 
 func handleGetMessengers(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		page, err := paginate.ParseParams(r.URL.Query(), paginate.DefaultPageSize, paginate.MaxPageSize)
+		if err != nil {
+			server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+			return
+		}
+
 		var filters = make([]model.Filter[Model], 0)
 		if memberFilter, ok := mux.Vars(r)["memberId"]; ok {
 			memberId, err := strconv.Atoi(memberFilter)
@@ -49,14 +57,19 @@ func handleGetMessengers(d *rest.HandlerDependency, c *rest.HandlerContext) http
 			return
 		}
 
-		res, err := model.SliceMap(Transform(d.Logger())(d.Context()))(model.FixedProvider(ps))()()
+		sorted := make([]Model, len(ps))
+		copy(sorted, ps)
+		sort.Slice(sorted, func(i, j int) bool { return sorted[i].Id() < sorted[j].Id() })
+		paged := paginate.Slice(sorted, page)
+
+		res, err := model.SliceMap(Transform(d.Logger())(d.Context()))(model.FixedProvider(paged.Items))()()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Creating REST model.")
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
-		server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(r.URL.Query())(res)
+		server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(r.URL.Query())(res, paginate.EnvelopeFor(paged), r)
 	}
 }
 
@@ -85,6 +98,12 @@ func handleGetMessenger(d *rest.HandlerDependency, c *rest.HandlerContext) http.
 func handleGetMessengerMembers(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseMessengerId(d.Logger(), func(messengerId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
+			page, err := paginate.ParseParams(r.URL.Query(), paginate.MaxPageSize, paginate.MaxPageSize)
+			if err != nil {
+				server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+				return
+			}
+
 			proc := NewProcessor(d.Logger(), d.Context())
 			p, err := proc.GetById(messengerId)
 			if err != nil {
@@ -99,7 +118,12 @@ func handleGetMessengerMembers(d *rest.HandlerDependency, c *rest.HandlerContext
 				return
 			}
 
-			server.MarshalResponse[[]MemberRestModel](d.Logger())(w)(c.ServerInformation())(r.URL.Query())(res.Members)
+			sortedMembers := make([]MemberRestModel, len(res.Members))
+			copy(sortedMembers, res.Members)
+			sort.Slice(sortedMembers, func(i, j int) bool { return sortedMembers[i].Id < sortedMembers[j].Id })
+			paged := paginate.Slice(sortedMembers, page)
+
+			server.MarshalPaginatedResponse[[]MemberRestModel](d.Logger())(w)(c.ServerInformation())(r.URL.Query())(paged.Items, paginate.EnvelopeFor(paged), r)
 		}
 	})
 }

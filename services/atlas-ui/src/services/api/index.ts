@@ -171,3 +171,7 @@ export type { Ban, BanAttributes, CreateBanRequest, CheckBanResult, BanQueryOpti
 export { monsterBookService } from './monster-book.service';
 export type { ListCardsOptions } from './monster-book.service';
 export type { MonsterBookCard, MonsterBookCollection } from '@/types/monster-book';
+
+// Shared pagination utility (task-117)
+export { fetchPaged, fetchAll } from './pagination';
+export type { PageMeta, PagedResult } from './pagination';

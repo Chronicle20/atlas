@@ -158,8 +158,8 @@ func (p *ProcessorImpl) ForMonster(f field.Model, characterId uint32, objectId u
 		// which was always nil after a successful GetById.
 		return nil
 	}
-	// Forecast the post-decrement MP for basic attacks (Cosmic compat — the
-	// v83 client gates on the ack carrying decremented MP). For melee /
+	// Forecast the post-decrement MP for basic attacks — the
+	// v83 client gates on the ack carrying decremented MP. For melee /
 	// non-basic-attack actions, ackMp passes through unchanged.
 	ackMp := uint16(entry.Mp)
 	pos0, isBasicAttack := basicAttackPos(skill)
@@ -172,8 +172,7 @@ func (p *ProcessorImpl) ForMonster(f field.Model, characterId uint32, objectId u
 		}
 	}
 	routine.Go(p.l, p.ctx, func(_ context.Context) {
-		// v83 protocol compat (per Cosmic MoveLifeHandler:144 +
-		// PacketCreator.moveMonsterResponse): the wire-level "useSkills" bool
+		// v83 protocol: the wire-level "useSkills" bool in MoveMonsterAck
 		// is actually the controller's aggro flag. The client uses it to
 		// decide whether mob AI is active — without it, the client renders
 		// the mob as idle, never sends rawActivity ∈ [24,41] (basic attack)

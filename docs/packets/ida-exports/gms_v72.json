@@ -14579,92 +14579,6 @@
    "direction": "",
    "calls": null
   },
-  "CWvsContext::OnShopScannerResult": {
-   "address": "0x920d9f",
-   "direction": "",
-   "calls": [
-    {
-     "op": "Decode1",
-     "comment": ""
-    },
-    {
-     "op": "Decode4",
-     "comment": "",
-     "guard": "!v3"
-    },
-    {
-     "op": "Decode4",
-     "comment": "",
-     "guard": "!v3"
-    },
-    {
-     "op": "Decode4",
-     "comment": "",
-     "guard": "!v3"
-    },
-    {
-     "op": "DecodeStr",
-     "comment": "",
-     "guard": "!v3 && v50 > 0"
-    },
-    {
-     "op": "Decode4",
-     "comment": "",
-     "guard": "!v3 && v50 > 0"
-    },
-    {
-     "op": "DecodeStr",
-     "comment": "",
-     "guard": "!v3 && v50 > 0"
-    },
-    {
-     "op": "Decode4",
-     "comment": "",
-     "guard": "!v3 && v50 > 0"
-    },
-    {
-     "op": "Decode4",
-     "comment": "",
-     "guard": "!v3 && v50 > 0"
-    },
-    {
-     "op": "Decode4",
-     "comment": "",
-     "guard": "!v3 && v50 > 0"
-    },
-    {
-     "op": "Decode4",
-     "comment": "",
-     "guard": "!v3 && v50 > 0"
-    },
-    {
-     "op": "Decode1",
-     "comment": "",
-     "guard": "!v3 && v50 > 0"
-    },
-    {
-     "op": "Decode1",
-     "comment": "",
-     "guard": "!v3 && v50 > 0"
-    },
-    {
-     "op": "Delegate",
-     "comment": "",
-     "guard": "!v3 && v50 > 0 && v46",
-     "ref": "GW_ItemSlotBase::Decode"
-    },
-    {
-     "op": "Decode1",
-     "comment": "",
-     "guard": "!result"
-    },
-    {
-     "op": "Decode4",
-     "comment": "",
-     "guard": "!result && v5"
-    }
-   ]
-  },
   "CWvsContext::OnSkillUseResult": {
    "address": "0x9191cc",
    "direction": "",
@@ -18913,6 +18827,129 @@
     {
      "op": "EncodeStr",
      "comment": "searchName @0x5b71f2"
+    }
+   ]
+  },
+  "CUIShopScanResult::OnButtonClicked": {
+   "address": "0x7c58df",
+   "direction": "serverbound",
+   "calls": [
+    {
+     "op": "Encode4",
+     "comment": "ownerId (dwMiniRoomSN; ITEMDATA+16) - owl-warp button send, COutPacket owl-warp opcode"
+    },
+    {
+     "op": "Encode4",
+     "comment": "mapId (dwFieldID; ITEMDATA+20)"
+    }
+   ]
+  },
+  "CWvsContext::SendShopScannerItemUseRequest": {
+   "address": "0x91e45b",
+   "direction": "serverbound",
+   "calls": [
+    {
+     "op": "EncodeStr",
+     "comment": "serial (cash-commodity serial string; legacy pre-v83 CDraggableItem::OnDoubleClicked frame)"
+    },
+    {
+     "op": "Encode2",
+     "comment": "source (nPOS inventory slot)"
+    },
+    {
+     "op": "Encode4",
+     "comment": "itemId (nItemID)"
+    }
+   ]
+  },
+  "CWvsContext::OnShopScannerResult#Result": {
+   "address": "0x920d9f",
+   "direction": "clientbound",
+   "calls": [
+    {
+     "op": "Decode1",
+     "comment": "mode (=6; #Result). switch(Decode1()-6)"
+    },
+    {
+     "op": "Decode4",
+     "comment": "nNpcShopPrice (>0 inserts synthetic npc-shop row; Atlas always 0)"
+    },
+    {
+     "op": "Decode4",
+     "comment": "itemId (nItemID)"
+    },
+    {
+     "op": "Decode4",
+     "comment": "nCount (result record count)"
+    },
+    {
+     "op": "DecodeStr",
+     "comment": "ownerName (sCharacterName)",
+     "guard": "loop nCount"
+    },
+    {
+     "op": "Decode4",
+     "comment": "mapId (dwFieldID)",
+     "guard": "loop nCount"
+    },
+    {
+     "op": "DecodeStr",
+     "comment": "title (sTitle)",
+     "guard": "loop nCount"
+    },
+    {
+     "op": "Decode4",
+     "comment": "bundles (nNumber)",
+     "guard": "loop nCount"
+    },
+    {
+     "op": "Decode4",
+     "comment": "bundleSize (nSet)",
+     "guard": "loop nCount"
+    },
+    {
+     "op": "Decode4",
+     "comment": "price (nPrice)",
+     "guard": "loop nCount"
+    },
+    {
+     "op": "Decode4",
+     "comment": "ownerId (dwMiniRoomSN)",
+     "guard": "loop nCount"
+    },
+    {
+     "op": "Decode1",
+     "comment": "channelId (nChannelID)",
+     "guard": "loop nCount"
+    },
+    {
+     "op": "Decode1",
+     "comment": "inventoryType (nTI)",
+     "guard": "loop nCount"
+    },
+    {
+     "op": "DecodeBuffer",
+     "comment": "GW_ItemSlotBase::Decode(&pItem) = model.Asset; only when nTI==1",
+     "guard": "loop nCount; if nTI==1"
+    }
+   ]
+  },
+  "CWvsContext::OnShopScannerResult#HotList": {
+   "address": "0x920d9f",
+   "direction": "clientbound",
+   "calls": [
+    {
+     "op": "Decode1",
+     "comment": "mode (=7; #HotList). switch(Decode1()-6)==1"
+    },
+    {
+     "op": "Decode1",
+     "comment": "count (byte; hot-list length)"
+    },
+    {
+     "op": "Decode4",
+     "comment": "itemId (m_anHotList entry)",
+     "guard": "loop count"
     }
    ]
   }

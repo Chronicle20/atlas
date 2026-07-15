@@ -1,6 +1,7 @@
 package script
 
 import (
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -28,11 +29,10 @@ func getByPortalIdProvider(portalId string) func(db *gorm.DB) model.Provider[Ent
 	}
 }
 
-// getAllProvider returns a provider for retrieving all portal scripts for a tenant
-func getAllProvider(db *gorm.DB) model.Provider[[]Entity] {
-	return func() ([]Entity, error) {
-		var entities []Entity
-		result := db.Find(&entities)
-		return entities, result.Error
+// getAllPagedProvider returns a provider for retrieving one page of portal
+// scripts for a tenant
+func getAllPagedProvider(page model.Page) database.EntityProvider[model.Paged[Entity]] {
+	return func(db *gorm.DB) model.Provider[model.Paged[Entity]] {
+		return database.PagedQuery[Entity](db, page)
 	}
 }

@@ -40,8 +40,19 @@ func (p *ProcessorImpl) GetById(guildId uint32, threadId uint32) (Model, error) 
 	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(guildId, threadId), Extract)()
 }
 
+// AllModelProvider fetches every thread for a guild. The guild BBS thread
+// list display (socket/handler/guild_bbs.go's GuildBBSOperationListThreads)
+// is a hot per-character-request path over the whole thread log; the
+// upstream atlas-guilds list is now paginated (task-117), so this drains
+// every page rather than fetching just the first -- a truncated drain here
+// would silently hide older threads (and, worse, could drop the pinned
+// notice thread if it fell past page 1).
+func (p *ProcessorImpl) AllModelProvider(guildId uint32) model.Provider[[]Model] {
+	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(allUrl(guildId), 250, Extract, model.Filters[Model]())
+}
+
 func (p *ProcessorImpl) GetAll(guildId uint32) ([]Model, error) {
-	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestAll(guildId), Extract, model.Filters[Model]())()
+	return p.AllModelProvider(guildId)()
 }
 
 func (p *ProcessorImpl) ModifyThread(guildId uint32, characterId uint32, threadId uint32, notice bool, title string, message string, emoticonId uint32) error {

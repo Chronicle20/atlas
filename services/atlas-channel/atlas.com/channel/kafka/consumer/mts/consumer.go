@@ -162,8 +162,11 @@ func announceTo(l logrus.FieldLogger, ctx context.Context, sc server.Model, wp w
 // registration/cancellation (RegisterSaleEntryDone just shows a notice and
 // re-selects a tab — it does not re-query), so the server must push the fresh
 // list for the panel to reflect a just-created or just-cancelled listing.
+// This re-push must show every active listing the seller holds, bounded
+// only by the tenant-configurable maxActiveListings cap, so it drains every
+// page via BrowseAll (see the socket handler's announceUserSaleItems).
 func announceUserSaleList(l logrus.FieldLogger, ctx context.Context, sc server.Model, wp writer.Producer, worldId byte, sellerId uint32) {
-	ms, err := mtslisting.NewProcessor(l, ctx).Browse(world.Id(worldId), mtslisting.BrowseFilter{SellerId: sellerId})
+	ms, err := mtslisting.NewProcessor(l, ctx).BrowseAll(world.Id(worldId), mtslisting.BrowseFilter{SellerId: sellerId})
 	if err != nil {
 		// The list genuinely failed to load: send the dedicated GetUserSaleItemFailed
 		// arm with the config-resolved LOAD_FAILED reason ("failed to load the list")
@@ -197,7 +200,7 @@ const (
 // list carries page 0's 16-item window. requestSent=1 is harmless here — no client
 // request latch is set for a server-initiated push.
 func announceBidderAuctionBrowse(l logrus.FieldLogger, ctx context.Context, sc server.Model, wp writer.Producer, worldId byte, bidderId uint32) {
-	ms, err := mtslisting.NewProcessor(l, ctx).Browse(world.Id(worldId), mtslisting.BrowseFilter{Category: "3", ExcludeSellerId: bidderId, Page: 0, PageSize: -1})
+	ms, err := mtslisting.NewProcessor(l, ctx).BrowseAll(world.Id(worldId), mtslisting.BrowseFilter{Category: "3", ExcludeSellerId: bidderId})
 	if err != nil {
 		l.WithError(err).Errorf("Unable to refresh MTS auction list for bidder [%d]; leaving the browse view stale.", bidderId)
 		return

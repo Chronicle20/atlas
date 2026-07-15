@@ -516,7 +516,7 @@ func NewCharacterTemporaryStat() *CharacterTemporaryStat {
 
 // HasDisease reports whether any stat held by this CTS is a mob-applied
 // disease. Used by BuffGive to pick the correct trailer bytes — diseases
-// require Cosmic's giveDebuff trailer (Short delay=900, Byte apply=1) for
+// require the debuff trailer (Short delay=900, Byte apply=1) for
 // the v83 client to actually render the debuff icon and apply
 // flag-gated effects (e.g. WEAKEN's jump-block).
 func (m *CharacterTemporaryStat) HasDisease() bool {

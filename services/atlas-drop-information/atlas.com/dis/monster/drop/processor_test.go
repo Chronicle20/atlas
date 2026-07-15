@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus/hooks/test"
@@ -126,10 +127,11 @@ func TestProcessorImpl_GetForMonster_Success(t *testing.T) {
 
 	p := drop.NewProcessor(l, ctx, db)
 
-	results, err := p.GetForMonster(targetMonsterId)()
+	paged, err := p.GetForMonster(targetMonsterId, model.Page{Number: 1, Size: 50})()
 	if err != nil {
 		t.Fatalf("GetForMonster() returned error: %v", err)
 	}
+	results := paged.Items
 
 	if len(results) != 3 {
 		t.Errorf("Expected 3 drops for monster %d, got %d", targetMonsterId, len(results))
@@ -155,13 +157,13 @@ func TestProcessorImpl_GetForMonster_Empty(t *testing.T) {
 	p := drop.NewProcessor(l, ctx, db)
 
 	// Query for non-existent monster
-	results, err := p.GetForMonster(999999)()
+	paged, err := p.GetForMonster(999999, model.Page{Number: 1, Size: 50})()
 	if err != nil {
 		t.Fatalf("GetForMonster() returned error: %v", err)
 	}
 
-	if len(results) != 0 {
-		t.Errorf("Expected 0 drops for non-existent monster, got %d", len(results))
+	if len(paged.Items) != 0 {
+		t.Errorf("Expected 0 drops for non-existent monster, got %d", len(paged.Items))
 	}
 }
 
@@ -180,14 +182,14 @@ func TestProcessorImpl_GetForMonster_TenantIsolation(t *testing.T) {
 
 	p := drop.NewProcessor(l, ctx1, db)
 
-	results, err := p.GetForMonster(monsterId)()
+	paged, err := p.GetForMonster(monsterId, model.Page{Number: 1, Size: 50})()
 	if err != nil {
 		t.Fatalf("GetForMonster() returned error: %v", err)
 	}
 
 	// Should only return tenant 1's data
-	if len(results) != 2 {
-		t.Errorf("Expected 2 drops for tenant 1, got %d", len(results))
+	if len(paged.Items) != 2 {
+		t.Errorf("Expected 2 drops for tenant 1, got %d", len(paged.Items))
 	}
 }
 
@@ -211,10 +213,11 @@ func TestProcessorImpl_GetForMonster_VerifyFields(t *testing.T) {
 
 	p := drop.NewProcessor(l, ctx, db)
 
-	results, err := p.GetForMonster(monsterId)()
+	paged, err := p.GetForMonster(monsterId, model.Page{Number: 1, Size: 50})()
 	if err != nil {
 		t.Fatalf("GetForMonster() returned error: %v", err)
 	}
+	results := paged.Items
 
 	if len(results) != 1 {
 		t.Fatalf("Expected 1 drop, got %d", len(results))

@@ -2,13 +2,12 @@ package character
 
 import "github.com/Chronicle20/atlas/libs/atlas-constants/job"
 
-// AP Reset (item 5050000) server policy. Values verbatim from PRD §4.3
-// (Cosmic AssignAPProcessor under default config). Fixed reference-config
-// parity — not tenant-configurable (design §10).
+// AP Reset (item 5050000) server policy. Values verbatim from PRD §4.3.
+// Fixed values — not tenant-configurable (design §10).
 const (
 	pointResetPrimaryFloor = uint16(4)     // post-swap floor; source must be >= 5
-	pointResetPrimaryCap   = uint16(32767) // Cosmic MAX_AP
-	pointResetPoolCap      = uint16(30000) // Cosmic assignHP/assignMP reject bound
+	pointResetPrimaryCap   = uint16(32767) // AP hard cap
+	pointResetPoolCap      = uint16(30000) // HP/MP pool reject bound
 )
 
 type pointResetPolicy struct {

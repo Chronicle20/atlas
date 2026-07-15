@@ -40,6 +40,7 @@ const (
 	ClassificationRevitalizer              = Classification(226)
 	ClassificationConsumableSkillBook      = Classification(228)
 	ClassificationConsumableMasteryBook    = Classification(229)
+	ClassificationConsumableStoreSearch    = Classification(231)
 	ClassificationBullet                   = Classification(233)
 	ClassificationConsumableMonsterCard    = Classification(238)
 

@@ -20,6 +20,12 @@ type Processor interface {
 	// ByCharacterIdProvider returns a provider for all macros for a character
 	ByCharacterIdProvider(characterId uint32) model.Provider[[]Model]
 
+	// ByCharacterIdPagedProvider returns a provider for one page of macros for
+	// a character. Used only by the REST list handler; internal callers that
+	// need every macro (Update's re-read for the status event) continue to
+	// use the unpaged ByCharacterIdProvider above.
+	ByCharacterIdPagedProvider(characterId uint32, page model.Page) model.Provider[model.Paged[Model]]
+
 	// Update updates all macros for a character with message buffer for events
 	Update(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, macros []Model) ([]Model, error)
 
@@ -67,6 +73,12 @@ func (p *ProcessorImpl) WithTransaction(tx *gorm.DB) Processor {
 // ByCharacterIdProvider returns a provider for all macros for a character
 func (p *ProcessorImpl) ByCharacterIdProvider(characterId uint32) model.Provider[[]Model] {
 	return model.SliceMap(Make)(getByCharacterId(characterId)(p.db.WithContext(p.ctx)))(model.ParallelMap())
+}
+
+// ByCharacterIdPagedProvider returns a provider for one page of macros for a
+// character, used only by the REST list handler.
+func (p *ProcessorImpl) ByCharacterIdPagedProvider(characterId uint32, page model.Page) model.Provider[model.Paged[Model]] {
+	return model.MapPaged(Make)(getByCharacterIdPaged(characterId, page)(p.db.WithContext(p.ctx)))(model.ParallelMap())
 }
 
 // Update updates all macros for a character with message buffer for events

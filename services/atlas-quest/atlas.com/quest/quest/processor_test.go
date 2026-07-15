@@ -10,6 +10,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	logtest "github.com/sirupsen/logrus/hooks/test"
@@ -36,6 +37,20 @@ func setupProcessor(t *testing.T) (quest.Processor, *test.MockDataProcessor, *te
 
 func createTestField() field.Model {
 	return field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
+}
+
+// allQuestsForCharacter fetches a single page of every quest for a
+// character. GetByCharacterId was removed when the REST list handler was
+// paginated (task-117, ByCharacterIdPagedProvider); tests that previously
+// called the unpaged getter use this in-test helper instead, mirroring the
+// atlas-account task-9 precedent for a deleted unfiltered getter.
+func allQuestsForCharacter(t *testing.T, processor quest.Processor, characterId uint32) []quest.Model {
+	t.Helper()
+	paged, err := processor.ByCharacterIdPagedProvider(characterId, model.Page{Number: 1, Size: 250})()
+	if err != nil {
+		t.Fatalf("ByCharacterIdPagedProvider() unexpected error: %v", err)
+	}
+	return paged.Items
 }
 
 // TestNewProcessor tests processor initialization
@@ -481,10 +496,7 @@ func TestGetByCharacterId_ReturnsAllQuests(t *testing.T) {
 		_, _, _ = processor.Start(uuid.Nil, characterId, qid, createTestField(), false, nil)
 	}
 
-	quests, err := processor.GetByCharacterId(characterId)
-	if err != nil {
-		t.Fatalf("GetByCharacterId() unexpected error: %v", err)
-	}
+	quests := allQuestsForCharacter(t, processor, characterId)
 	if len(quests) != len(questIds) {
 		t.Errorf("len(quests) = %d, want %d", len(quests), len(questIds))
 	}
@@ -667,7 +679,7 @@ func TestDeleteByCharacterId(t *testing.T) {
 		t.Fatalf("DeleteByCharacterId() error: %v", err)
 	}
 
-	quests, _ := processor.GetByCharacterId(characterId)
+	quests := allQuestsForCharacter(t, processor, characterId)
 	if len(quests) != 0 {
 		t.Errorf("len(quests) = %d, want 0 after deletion", len(quests))
 	}

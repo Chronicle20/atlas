@@ -1,0 +1,780 @@
+# CharacterInteraction — serverbound `CharacterInteractionHandle` legacy coverage audit
+
+Read-only family audit (family-auditor). Diagnostic only — no codec, template,
+yaml, registry, or evidence record was mutated. Produced 2026-07-14 on branch
+`task-127-owl-shop-search`.
+
+## Family header
+
+| field | value |
+|---|---|
+| Family | CharacterInteraction (mini-room / trade / personal shop / hired merchant / mini-game) |
+| Clientbound writer | `CharacterInteraction` / fname `CMiniRoomBaseDlg::OnPacketBase` / op `PLAYER_INTERACTION` (dispatcher yaml: `docs/packets/dispatchers/character_interaction.yaml`) |
+| **Serverbound handler (this audit)** | `CharacterInteractionHandle` — the client→server action dispatcher, keyed by `options.operations` in each seed template. **No dispatcher yaml governs it** (see §6). |
+| Direction audited | serverbound (client sends `[recvOp][mode]…`) |
+| Arm count (v83 reference) | 45 modes |
+| IDBs read | gms_v61 (13338), gms_v72 (13339, via task-113 disposition), gms_v79 (13340), gms_v83 (13342, reference), jms_v185 (13344) |
+
+**Headline finding (changes the task premise):** the rich hired-merchant
+**management** dialog (`CEntrustedShopDlg`: organize / withdraw-meso /
+merchant-off / merchant-exit / view-visit-list / view-black-list /
+add-/remove-black-list-by-name) **is a v83+ feature.** In gms_v61 / v72 / v79 the
+client binary has **only** `CWvsContext::OnEntrustedShopCheckResult` (the permit
+check recv) and a shared `CPersonalShopDlg` that carries hired-merchant
+put/buy/remove via a subclass flag — there is **no** `CEntrustedShopDlg`
+management dialog, so those eight management modes **do not exist** on
+v61/v72/v79 and cannot be "completed" in those templates. jms_v185 is the
+opposite case: it has the full feature but its template is a 3-mode stub.
+
+---
+
+## §1. Current serverbound tables + recv opcode (all 9 versions)
+
+Extracted from `services/atlas-configurations/seed-data/templates/template_<ver>_1.json`,
+`handler == "CharacterInteractionHandle"`. `recvOp` = the `opCode` the handler is
+bound to (= the client's PLAYER_INTERACTION send opcode).
+
+| version | recvOp | #modes | state |
+|---|---|---|---|
+| gms_v48 | 0x5D | 7 | CREATE/INVITE/VISIT/CHAT + TRADE put/meso/confirm only (no store/merchant) |
+| gms_v61 | 0x6F | 17 | personal-store + basic merchant (put/buy/remove); **no OPEN/EXIT**, no merchant-mgmt |
+| gms_v72 | 0x79 | 17 | byte-identical map to v61 |
+| gms_v79 | 0x78 | **0** | **EMPTY — handler bound but dispatches nothing (see §3c)** |
+| gms_v83 | 0x7B | 45 | full reference (IDA-cross-checked, §2) |
+| gms_v84 | 0x7D | 45 | identical to v83 |
+| gms_v87 | 0x81 | 45 | identical to v83 |
+| gms_v95 | 0x90 | 45 | identical to v83 |
+| jms_v185 | 0x7C | **3** | **STUB — PERSONAL_STORE_BUY=20, MERCHANT_BUY=31, PERSONAL_STORE_SET_BLACK_LIST=27 (see §3d)** |
+
+recvOp confirmed against the task brief (v61=0x6F, v72=0x79, v79=0x78) and, for
+jms, **derived from IDA**: every jms send site constructs `COutPacket(124)` =
+`0x7C` = the jms template `opCode`.
+
+---
+
+## §2. gms_v83 reference — every serverbound mode IDA-cross-checked
+
+All `CEntrustedShopDlg` / `CPersonalShopDlg` senders in the v83 IDB
+(`MapleStory_dump.exe`, port 13342) construct `COutPacket(123)` = `0x7B`
+(matches template). Merchant-management block (the arms the task targets):
+
+| sender (fname@addr) | Encode1 mode | = template key |
+|---|---|---|
+| `CEntrustedShopDlg::OnGoOut` @0x51923b | 0x27 (39) | MERCHANT_MERCHANT_OFF=39 ✓ |
+| `CEntrustedShopDlg::OnArrange` @0x519294 | 0x28 (40) | MERCHANT_ORGANIZE=40 ✓ |
+| `CEntrustedShopDlg::SetRet` @0x51809d (nRet==8) | 0x29 (41) | MERCHANT_EXIT=41 ✓ |
+| `CEntrustedShopDlg::OnWithdrawMoney` @0x51930f | 0x2B (43) | MERCHANT_WITHDRAW_MESO=43 ✓ |
+| `CEntrustedShopDlg::OnVisitList` @0x5194af | 0x2E (46) | MERCHANT_VIEW_VISIT_LIST=46 ✓ |
+| `CEntrustedShopDlg::OnBlackList` @0x519382 | 0x2F (47) | MERCHANT_VIEW_BLACK_LIST=47 ✓ |
+| `CEntrustedShopDlg::AddBlackList` @0x519611 | 0x30 (48) | MERCHANT_ADD_TO_BLACK_LIST=48 ✓ |
+| `CEntrustedShopDlg::DeleteBlackList` @0x519695 | 0x31 (49) | MERCHANT_REMOVE_FROM_BLACK_LIST=49 ✓ |
+
+The v83 template is authoritative; v84/v87/v95 inherit it byte-identically.
+
+---
+
+## §3. IDA-derived actual client mode bytes — legacy versions
+
+### §3a. gms_v61 (opcode 0x6F=111) — `GMS_v61.1_U_DEVM.exe`, port 13338
+
+Send sites located by clustering `push 6Fh` (`6A 6F`) into `COutPacket::COutPacket`
+(@0x5ffc4f). The `CPersonalShopDlg` + mini-room base block is 0x60c250–0x60e31d;
+the merchant/personal split is a virtual (`(*(this+92))(this)` → merchant flag).
+
+**VERIFIED present, values match template:**
+
+| sender@addr | Encode1 | mode key(s) | template? |
+|---|---|---|---|
+| sub_60D2E9 | 0x0B(11)+Encode1(1) | **OPEN**=11 | **MISSING from template** |
+| sub_60C250 / sub_68B29B (SetRet nRet==2) | 0x0A(10) | **EXIT**=10 | **MISSING from template** |
+| sub_68CBE3 | 0x10(16) | TRADE_CONFIRM=16 | ✓ present |
+| sub_60DBE2 | `flag?31:20` | MERCHANT_PUT_ITEM=31 / PERSONAL_STORE_PUT_ITEM=20 | ✓ present |
+| sub_60D81E | `flag?32:21` | MERCHANT_BUY=32 / PERSONAL_STORE_BUY=21 | ✓ present |
+| sub_60DF59 | `flag?36:25` | MERCHANT_REMOVE_ITEM=36 / PERSONAL_STORE_REMOVE_ITEM=25 | ✓ present |
+| sub_60E20A | 0x1A(26)+slot+str | PERSONAL_STORE_ADD_TO_BLACKLIST=26 | ✓ present |
+| sub_60E154 | 0x1C(28)+count+strs | PERSONAL_STORE_SET_BLACK_LIST=28 | ✓ present |
+| sub_60E31D | 0x1B(27)+slot+str | *(personal-store auto-reban of idle visitor; 1h timeout)* | **not in template** — a real mode present in the binary, unnamed in template; likely the `PERSONAL_STORE_SET_VISITOR` analog |
+
+**VERSION-ABSENT (n-a) on v61 — no `CEntrustedShopDlg`:** MERCHANT_ORGANIZE,
+MERCHANT_WITHDRAW_MESO, MERCHANT_MERCHANT_OFF, MERCHANT_EXIT,
+MERCHANT_VIEW_VISIT_LIST, MERCHANT_VIEW_BLACK_LIST, MERCHANT_ADD_TO_BLACK_LIST,
+MERCHANT_REMOVE_FROM_BLACK_LIST. `func_query *EntrustedShop*` yields only
+`CWvsContext::OnEntrustedShopCheckResult` @0x848c1c. The bytes gms uses for these
+(0x2C–0x31) are occupied in v61 by the **mini-game dialogs** (blocks 0x5b5953…,
+0x5fc4d7… — confirmed by `play_minigame_sound` and 8-byte move buffers), so the
+gms values are not even re-usable. Do **not** add these to the v61 template.
+
+**Net v61 gap = OPEN(11) + EXIT(10) only.** The 17 present modes are all
+correct; the table is *incomplete* (missing the two base lifecycle modes the
+personal-shop go-live/close needs), not *wrong*.
+
+### §3b. gms_v72 (opcode 0x79=121) — `GMS_v72.1_U_DEVM.exe`, port 13339
+
+Template is a byte-identical map of v61 (same 17 modes/values). Task-113 already
+IDA-dispositioned the merchant-management arms here: `docs/packets/audits/gms_v72/_unimplemented.json`
+records `CEntrustedShopDlg::AddBlackList` / `DeleteBlackList` as **version-absent**
+("`*EntrustedShop*` yields only `CWvsContext::OnEntrustedShopCheckResult`
+@0x91ff18 … the CEntrustedShopDlg blacklist feature is post-v72"). Same shape as
+v61: personal-store + basic merchant present; merchant-management n-a. Net gap =
+OPEN(11) + EXIT(10) (values pending a v72-IDB confirm; expected identical to v61).
+
+### §3c. gms_v79 (opcode 0x78=120) — `GMS_v79_1_DEVM.exe`, port 13340 — CRITICAL
+
+`func_query *EntrustedShop*|*PersonalShopDlg*` → **only**
+`CWvsContext::OnEntrustedShopCheckResult` @0x971dd8. Structurally identical to
+v61/v72: no `CEntrustedShopDlg` (merchant-management n-a), but the personal-store
+/ trade / mini-game senders exist (unnamed). **Yet the v79 template's
+`operations` map is EMPTY (0 modes).** The handler is bound to 0x78 but can
+resolve **no** action — the entire interaction feature (trade, personal shop,
+basic merchant, mini-games) is **dead on v79**. This is the single most severe
+finding. v79 needs its full personal-store/trade/base/mini-game table populated
+from the v79 IDB (values expected ≈ v61/v72). Merchant-management stays n-a.
+
+### §3d. jms_v185 (opcode 0x7C=124) — `MapleStory_dump_SCY.exe`, port 13344
+
+Full feature present; `CEntrustedShopDlg` symbols intact. All senders construct
+`COutPacket(124)`=0x7C. **Every store/merchant mode is exactly `gms_v83 − 3`**
+(the yaml's documented jms shift, confirmed end-to-end):
+
+| sender (fname@addr) | Encode1 | mode key | = v83 − 3 |
+|---|---|---|---|
+| `CPersonalShopDlg::PutItem` @0x762a9e | `flag?30:19` | MERCHANT_PUT_ITEM=30 / PERSONAL_STORE_PUT_ITEM=19 | 33/22 − 3 ✓ |
+| `CPersonalShopDlg::MoveItemToInventory` @0x762e26 | `flag?35:24` | MERCHANT_REMOVE_ITEM=35 / PERSONAL_STORE_REMOVE_ITEM=24 | 38/27 − 3 ✓ |
+| `CPersonalShopDlg::OnClickBanButton` @0x7630d5 | 0x19(25)+slot+str | PERSONAL_STORE_ADD_TO_BLACKLIST=25 | 28 − 3 ✓ |
+| `CEntrustedShopDlg::OnGoOut` @0x54b798 | 0x24(36) | MERCHANT_MERCHANT_OFF=36 | 39 − 3 ✓ |
+| `CEntrustedShopDlg::OnArrange` @0x54b7f1 | 0x25(37) | MERCHANT_ORGANIZE=37 | 40 − 3 ✓ |
+| `CEntrustedShopDlg::SetRet` @0x54a623 (nRet==8) | 0x26(38) | MERCHANT_EXIT=38 | 41 − 3 ✓ |
+| `CEntrustedShopDlg::OnWithdrawMoney` @0x54b86c | 0x28(40) | MERCHANT_WITHDRAW_MESO=40 | 43 − 3 ✓ |
+| `CEntrustedShopDlg::OnVisitList` @0x54ba0c | 0x2B(43) | MERCHANT_VIEW_VISIT_LIST=43 | 46 − 3 ✓ (yaml-verified) |
+| `CEntrustedShopDlg::OnBlackList` @0x54b8df | 0x2C(44) | MERCHANT_VIEW_BLACK_LIST=44 | 47 − 3 ✓ (yaml-verified) |
+| `CEntrustedShopDlg::AddBlackList` @0x54bb75 | 0x2D(45) | MERCHANT_ADD_TO_BLACK_LIST=45 | 48 − 3 ✓ |
+| `CEntrustedShopDlg::DeleteBlackList` @0x54bbf9 | 0x2E(46) | MERCHANT_REMOVE_FROM_BLACK_LIST=46 | 49 − 3 ✓ |
+
+The existing 3-mode stub (PERSONAL_STORE_BUY=20, MERCHANT_BUY=31,
+PERSONAL_STORE_SET_BLACK_LIST=27) is likewise `gms_v83 − 3` (23/34/30 − 3) and
+therefore **correct** — jms just needs the remaining ~25 modes filled in.
+
+---
+
+## §4. Ready-to-apply serverbound tables (per version) + unresolved flags
+
+### gms_v61 / gms_v72 — ADD these two rows to the existing 17 (nothing else)
+
+```
+"OPEN": 11,     // sub_60D2E9  (personal-shop go-live) — IDA-verified v61
+"EXIT": 10      // sub_60C250 / SetRet nRet==2         — IDA-verified v61
+```
+
+- **v72**: confirm 11/10 on the v72 IDB (port 13339) before applying — expected
+  identical to v61 (templates are otherwise byte-identical).
+- Merchant-management modes: **n-a on v61/v72** — do not add.
+
+### gms_v79 — POPULATE the empty table (full derivation required)
+
+The whole `operations` map is empty. Derive every present mode from the v79 IDB
+(port 13340). Expected value set = v61/v72 (same era, same recv-op family). At
+minimum the personal-store + trade + base (OPEN/EXIT/CREATE/INVITE/VISIT/CHAT) +
+mini-game modes. Merchant-management: n-a. **Every v79 byte is UNRESOLVED until
+derived — do not copy v61 blind; verify.**
+
+### jms_v185 — extend the 3-mode stub
+
+**IDA-VERIFIED, apply directly** (all `gms_v83 − 3`):
+
+```
+"PERSONAL_STORE_PUT_ITEM": 19,   "PERSONAL_STORE_REMOVE_ITEM": 24,
+"PERSONAL_STORE_ADD_TO_BLACKLIST": 25,
+"MERCHANT_PUT_ITEM": 30,         "MERCHANT_REMOVE_ITEM": 35,
+"MERCHANT_MERCHANT_OFF": 36,     "MERCHANT_ORGANIZE": 37,
+"MERCHANT_EXIT": 38,             "MERCHANT_WITHDRAW_MESO": 40,
+"MERCHANT_VIEW_VISIT_LIST": 43,  "MERCHANT_VIEW_BLACK_LIST": 44,
+"MERCHANT_ADD_TO_BLACK_LIST": 45,"MERCHANT_REMOVE_FROM_BLACK_LIST": 46
+// (stub, already correct): PERSONAL_STORE_BUY=20, MERCHANT_BUY=31, PERSONAL_STORE_SET_BLACK_LIST=27
+```
+
+**UNRESOLVED for jms — DO NOT guess; IDA-derive before templating.** The base
+mini-room modes are documented version-stable (CREATE=0, INVITE=2, VISIT=4,
+CHAT=6, EXIT=10, OPEN=11), but the uniform −3 store shift implies **3 modes were
+dropped between CHAT(6) and PERSONAL_STORE_PUT(19)**, and I did not verify which.
+Flag every one of these jms bytes as stop-and-ask:
+`INVITE_DECLINE`, `CASH_TRADE_OPEN`, `TRADE_PUT_ITEM`, `TRADE_ADD_MESO`,
+`TRADE_CONFIRM`, `TRANSACTION`, `PERSONAL_STORE_SET_VISITOR`,
+`FIELD_ADD_TO_BLACK_LIST`, `FIELD_REMOVE_FROM_BLACK_LIST`, and the whole
+`MEMORY_GAME_*` block. (Confirm by decompiling the jms trade / mini-game senders,
+`COutPacket(124)` sites near the personal-shop block at 0x762–0x763.)
+
+---
+
+## §5. Per-arm × per-version coverage matrix (status.json)
+
+`docs/packets/audits/status.json` grades the serverbound **codec structs** (byte
+layouts) under `interaction/serverbound/*`, not the mode-byte *tables*. Quoted
+states (V=verified, X=incomplete "no audit report", –=n-a):
+
+| arm (interaction/serverbound/…) | v48 | v61 | v72 | v79 | v83 | v84 | v87 | v95 | jms |
+|---|---|---|---|---|---|---|---|---|---|
+| Chat, Invite, Transaction, Trade{PutItem,AddMeso,Confirm} | V | V | V | V | V | V | V | V | V |
+| PersonalStore{PutItem,Buy,RemoveItem,AddToBlackList,SetBlackList} | V | V | V | V | V | V | V | V | V |
+| Field{AddToBlackList,RemoveFromBlackList} | V | V | V | V | V | V | V | V | V |
+| Merchant{Buy,PutItem,RemoveItem} | V | V | V | V | V | V | V | V | V |
+| MemoryGame{FlipCard,MoveStone,RetreatAnswer,TieAnswer} | V | V | V | V | V | V | V | V | V |
+| **MerchantAddToBlackList** | – | **X** | **X** | **V** | V | V | V | V | V |
+| **MerchantRemoveFromBlackList** | – | **X** | **X** | **V** | V | V | V | V | V |
+
+Two coverage inconsistencies surfaced (both real findings, not passes):
+
+1. **v72 disposition ↔ matrix mismatch.** `gms_v72/_unimplemented.json` marks
+   `CEntrustedShopDlg::AddBlackList`/`DeleteBlackList` **version-absent**, yet the
+   `MerchantAddToBlackList`/`RemoveFromBlackList` v72 cells read `incomplete`, not
+   `n-a`. The disposition and the matrix cell disagree.
+2. **v79 "verified" is suspect.** The v79 IDB has **no `CEntrustedShopDlg`**
+   (§3c), so the by-name merchant-blacklist arms are version-absent there just
+   like v61/v72 — but the matrix marks v79 `MerchantAddToBlackList`/`Remove…` =
+   `verified` (a shared-codec byte-layout mark, no v79 evidence record). Combined
+   with the **empty v79 template**, this "verified" is misleading: nothing routes
+   these on v79. Reconcile to `n-a` (feature absent) after the §3c v79 derivation.
+
+Note: no discrete struct exists for MERCHANT_ORGANIZE / WITHDRAW_MESO /
+MERCHANT_OFF / MERCHANT_EXIT / VIEW_VISIT_LIST / VIEW_BLACK_LIST / OPEN / EXIT /
+CASH_TRADE_OPEN — those modes carry **no body** (mode byte only) so they need no
+codec, only a template entry. They are therefore invisible to the matrix; the
+seed template is their *only* coverage surface. This is exactly the "sub-arm gaps
+hidden behind the op-row aggregate" case the auditor exists to surface.
+
+---
+
+## §6. Operations-table cross-check & generator ownership (task item #4)
+
+- **No serverbound dispatcher yaml exists.** `grep "direction: serverbound"
+  docs/packets/dispatchers/*.yaml` → none. No yaml references
+  `CharacterInteractionHandle`.
+- The only interaction yaml — `docs/packets/dispatchers/character_interaction.yaml`
+  — is **clientbound** (`writer: CharacterInteraction`, `direction: clientbound`)
+  and covers the `PLAYER_INTERACTION` *writer* plus two clientbound-echo view
+  keys (`MERCHANT_VIEW_VISIT_LIST`, `MERCHANT_VIEW_BLACK_LIST`).
+- Therefore `packet-audit operations [--check]` does **not** generate or validate
+  the serverbound `CharacterInteractionHandle` table. **It is hand-maintained**
+  in the 9 seed templates.
+- Cross-check against the clientbound yaml (which echoes request modes): yaml
+  `jms_v185` `MERCHANT_VIEW_VISIT_LIST=43` / `MERCHANT_VIEW_BLACK_LIST=44` — my
+  serverbound IDA read matches exactly (client echoes the request byte). No
+  yaml/IDA conflict. The yaml carries **no** entries for the other legacy
+  serverbound modes, so it provides no guard for this task's edits.
+
+---
+
+## §7. Divergence notes
+
+- **Enum is version-shifted, not merely truncated.** v61/v72 personal-store modes
+  sit two below v83 (v83 PUT=22 → v61 20) because v83 inserted `INVITE_DECLINE`,
+  `EXIT`, `OPEN`, `CASH_TRADE_OPEN`, `TRANSACTION` above them. jms is a clean
+  `gms_v83 − 3` across the whole store/merchant region.
+- **Merchant-management is a v83+ dialog** (`CEntrustedShopDlg`). v48/v61/v72/v79
+  have only the shared `CPersonalShopDlg` (+ the permit-check recv). The current
+  implementation *honors* this for v48 (n-a) but **not** for v61/v72 (cells left
+  `incomplete`) or v79 (cells wrongly `verified` + empty template).
+- **v61 mode 0x1B(27)** (`sub_60E31D`, auto-reban idle visitor by name) is a real
+  present mode with no template key — worth naming (`PERSONAL_STORE_SET_VISITOR`
+  candidate) during the v61 pass.
+- **jms −3 boundary is unverified** for the trade/transaction/mini-game region
+  (§4). The shift is proven for the store/merchant block only.
+
+---
+
+## §8. Recommendations (do NOT act here — hand to implementer/verifier)
+
+Ordered. Follow the fix playbook trigger 1 ("a family-audit bug") in
+[`docs/packets/RE_AUDITING_A_COLUMN.md`](../../docs/packets/RE_AUDITING_A_COLUMN.md):
+confirm each reported gap against the live IDB (`validate`/`infer`) before any
+template change, then hand to a `dispatcher-family-implementer` (whole legacy
+column) or `packet-verifier` (single unverified arm).
+
+1. **jms_v185 — apply the §4 verified block now** (13 IDA-verified merchant +
+   personal-store modes, all `gms_v83 − 3`). Highest value: the feature exists
+   and only the stub blocks it. Then IDA-derive the §4 UNRESOLVED jms bytes
+   (trade/transaction/mini-game) before adding those rows — stop-and-ask, no
+   guessing.
+2. **gms_v79 — populate the empty template** (`dispatcher-family-implementer`
+   pass over the v79 IDB, port 13340). This is the most severe gap (feature
+   entirely undispatched). Merchant-management stays n-a.
+3. **gms_v61 / gms_v72 — add `OPEN`=11 and `EXIT`=10** (confirm on the v72 IDB).
+   These are the only genuine gaps; the other 17 modes are IDA-correct.
+4. **Reconcile the matrix** (§5): flip v61/v72/v79 `MerchantAddToBlackList` /
+   `MerchantRemoveFromBlackList` cells to **n-a** (version-absent) and add the
+   missing `gms_v79/_unimplemented.json` disposition for `CEntrustedShopDlg::*`,
+   matching the existing v72/v48 records. Do **not** leave v79 reading `verified`
+   over an empty template.
+5. **Do NOT** attempt to add merchant-management modes to v48/v61/v72/v79
+   templates — they are version-absent (`CEntrustedShopDlg` is v83+). Any such
+   entry would be a fabricated byte.
+
+### Stop-and-ask (unresolved, must not be guessed)
+
+- Every gms_v79 serverbound byte (whole table empty; derive from IDB).
+- jms_v185: `INVITE_DECLINE`, `CASH_TRADE_OPEN`, `TRADE_PUT_ITEM`,
+  `TRADE_ADD_MESO`, `TRADE_CONFIRM`, `TRANSACTION`, `PERSONAL_STORE_SET_VISITOR`,
+  `FIELD_ADD_TO_BLACK_LIST`, `FIELD_REMOVE_FROM_BLACK_LIST`, all `MEMORY_GAME_*`.
+- gms_v72: OPEN/EXIT values (confirm on port 13339; expected 11/10).
+
+---
+
+## §3c-derived — gms_v79 verified table (`GMS_v79_1_DEVM.exe`, port 13340, send opcode 0x78=120)
+
+Derived 2026-07-14 by decompiling every `COutPacket(120)` send site in the v79
+IDB (clustered from `6A 78` = `push 78h`) and cross-referencing each mode name
+against the **named** v83 senders in `MapleStory_dump.exe` (port 13342), whose
+class/method symbols (`CMemoryGameDlg`, `COmokDlg`, `CTradingRoomDlg`,
+`CField`, `CMiniRoomBaseDlg`, `CEntrustedShopDlg`) and `StringPool` string
+constants make the mode→name mapping unambiguous.
+
+**Headline: v79 uses a THIRD, distinct enum — not v61/v72's `-2` shift and not
+v83's reference.** Base/lifecycle + trade + cash-trade + the two tie modes match
+v83 **exactly (Δ0)**; the entire personal-store / merchant / field-blacklist
+block and the mini-game block from `ASK_RETREAT` upward are uniformly **v83 − 1
+(Δ−1)**. `FORFEIT` is an outlier at **49** (see note). Every byte below is read
+directly from an `Encode1` at the cited sender, except `TRANSACTION` (unresolved).
+
+### Verified mode → byte table
+
+| mode key | v79 byte | sender fname@addr — `Encode1` read | v83 | Δ |
+|---|---|---|---|---|
+| CREATE | **0** | `CField::SendInviteTradingRoomMsg`@0x51b10b (else-branch) `Encode1(0)` | 0 | 0 |
+| INVITE | **2** | `CField::SendInviteTradingRoomMsg`@0x51b10b `Init`+`Encode1(2)`; `CMiniRoomBaseDlg::OnEnterResultStatic`@0x62d8fa | 2 | 0 |
+| INVITE_DECLINE | **3** | `CMiniRoomBaseDlg::SendInviteResult`@0x62d482 `Encode1(3)`; `SendCashInviteResult`@0x62d59a | 3 | 0 |
+| VISIT | **4** | `CMiniRoomBaseDlg::SendInviteResult`@0x62d432 `Encode1(4)` | 4 | 0 |
+| CHAT | **6** | `CMiniRoomBaseDlg::CheckAndSendChat` sub_62E124@0x62e15b `Encode1(6)` | 6 | 0 |
+| EXIT | **10** | sub_688441@0x68846a `Encode1(0xA)`; trade `SetRet` sub_7356DD@0x735703; minigame `OnClickEndButton` sub_6773E6@0x677517 | 10 | 0 |
+| OPEN | **11** | sub_6896A0@0x6896ca `Encode1(0xB)`; sub_671E4B@0x671ea0 | 11 | 0 |
+| CASH_TRADE_OPEN | **14** | sub_6895B2@0x689648 `Encode1(0xE)`; `CField::SendInviteTradingRoomMsg`@0x51b10b (if-branch); `SendCashInviteResult`@0x62d541 | 14 | 0 |
+| TRADE_PUT_ITEM | **15** | `CTradingRoomDlg::PutItem` sub_736C99@0x736e20 `Encode1(0xF)` (SP887 "how many will you trade") | 15 | 0 |
+| TRADE_ADD_MESO | **16** | `CTradingRoomDlg::PutMoney` sub_736EC4@0x737028 `Encode1(0x10)` (SP414 "how much money…") | 16 | 0 |
+| TRADE_CONFIRM | **17** | `CTradingRoomDlg::Trade` sub_73709A@0x737150 `Encode1(0x11)` (SP415 "are you sure you want to trade") | 17 | 0 |
+| PERSONAL_STORE_PUT_ITEM | **21** | sub_68A3E3@0x68a673 `Encode1(flag?32:21)` | 22 | −1 |
+| PERSONAL_STORE_BUY | **22** | sub_689CE7@0x68a38f `Encode1(flag?33:22)` | 23 | −1 |
+| PERSONAL_STORE_REMOVE_ITEM | **26** | sub_68A756@0x68a83d `Encode1(flag?37:26)` | 27 | −1 |
+| PERSONAL_STORE_ADD_TO_BLACKLIST | **27** | sub_68AA05@0x68aaae `Encode1(0x1B)` (click-ban a visitor, `EncodeStr` name) | 28 | −1 |
+| PERSONAL_STORE_SET_VISITOR | **28** | sub_68AB52@0x68aba6 `Encode1(0x1C)` (idle-visitor auto-reban, 1h timeout) | 29 | −1 |
+| PERSONAL_STORE_SET_BLACK_LIST | **29** | sub_68A951@0x68a980 `Encode1(0x1D)` (deliver full config blacklist) | 30 | −1 |
+| FIELD_ADD_TO_BLACK_LIST | **30** | `CField::AddBlackList` sub_522C87@0x522ca2 `Encode1(0x1E)`+`EncodeStr` | 31 | −1 |
+| FIELD_REMOVE_FROM_BLACK_LIST | **31** | `CField::DeleteBlackList` sub_522CFF@0x522d10 `Encode1(0x1F)`+`EncodeStr` | 32 | −1 |
+| MERCHANT_PUT_ITEM | **32** | sub_68A3E3@0x68a673 `Encode1(flag?32:21)` | 33 | −1 |
+| MERCHANT_BUY | **33** | sub_689CE7@0x68a38f `Encode1(flag?33:22)` | 34 | −1 |
+| MERCHANT_REMOVE_ITEM | **37** | sub_68A756@0x68a83d `Encode1(flag?37:26)` | 38 | −1 |
+| MEMORY_GAME_ASK_TIE | **50** | sub_672668@0x67268d `Encode1(0x32)`; sub_61D6A6@0x61d6cb | 50 | 0 |
+| MEMORY_GAME_TIE_ANSWER | **51** | sub_677047@0x6770a9 `Encode1(0x33)`; sub_62298D@0x6229e6 | 51 | 0 |
+| MEMORY_GAME_FORFEIT | **49** | sub_6770E1@0x677142 `Encode1(0x31)` (SP461 give-up confirm; ≙ v83 `CMemoryGameDlg::SendClaimGiveUp`@0x65364a `Encode1(0x34=52)`) | 52 | **−3** |
+| MEMORY_GAME_ASK_RETREAT | **53** | sub_67717F@0x6771f8 `Encode1(0x35)` (≙ v83 `COmokDlg::SendRetreatRequest`@0x6e8c3b `Encode1(54)`) | 54 | −1 |
+| MEMORY_GAME_RETREAT_ANSWER | **54** | sub_672728@0x67274d `Encode1(0x36)`+bool (≙ v83 `COmokDlg::OnRetreatRequest`@0x6e416b `Encode1(55)`) | 55 | −1 |
+| MEMORY_GAME_EXIT_AFTER_GAME | **55** | sub_6773E6@0x677453 / sub_622C46@0x622cb3 `Encode1(0x37)` (≙ v83 `OnClickEndButton`@0x653970 `Encode1(56)`) | 56 | −1 |
+| MEMORY_GAME_CANCEL_EXIT_AFTER_GAME | **56** | sub_6773E6@0x6774b1 / sub_622C46@0x622d11 `Encode1(0x38)` (≙ v83 `Encode1(57)`) | 57 | −1 |
+| MEMORY_GAME_READY | **57** | sub_6772B1@0x6772da `Encode1(0x39)` (not-ready branch; ≙ v83 `CMemoryGameDlg::OnClickReadyButton`@0x6537ce `Encode1(58)`) | 58 | −1 |
+| MEMORY_GAME_UNREADY | **58** | sub_6772B1@0x67730b `Encode1(0x3A)` (ready branch; ≙ v83 `Encode1(59)`) | 59 | −1 |
+| MEMORY_GAME_EXPEL | **59** | sub_622BCB@0x622c1a `Encode1(0x3B)` (SP459 expel; ≙ v83 `CMemoryGameDlg::OnClickBanButton`@0x653888 `Encode1(0x3C=60)`) | 60 | −1 |
+| MEMORY_GAME_START | **60** | sub_67725C@0x677285 `Encode1(0x3C)` (this[50]>=1; ≙ v83 `CMemoryGameDlg::OnClickStartButton`@0x653779 `Encode1(0x3D=61)`) | 61 | −1 |
+| MEMORY_GAME_SKIP | **62** | sub_673525@0x67364b `Encode1(0x3E)` (turn-timer expiry auto-skip; v83 SKIP=63, gap at 62 in v83) | 63 | −1 |
+| MEMORY_GAME_MOVE_STONE | **63** | sub_676FD6@0x676ff9 `Encode1(0x3F)`+`EncodeBuffer(8)`+byte (≙ v83 `COmokDlg::PutStoneChecker`@0x6e8a19 `Encode1(64)`) | 64 | −1 |
+| MEMORY_GAME_FIP_CARD | **67** | sub_61E16E@0x61e18e `Encode1(0x43)`+card+card (≙ v83 `CMemoryGameDlg::SendTurnUpCard`@0x64ee2b `Encode1(68)`) | 68 | −1 |
+
+### Version-absent (n-a) on gms_v79 — do NOT template
+
+`func_query name_regex "EntrustedShop"` on the v79 IDB yields **only**
+`CWvsContext::OnEntrustedShopCheckResult` @0x971dd8 — there is **no
+`CEntrustedShopDlg`**. The eight hired-merchant **management** modes are a v83+
+feature (v83 `CEntrustedShopDlg::*`) and have no v79 sender:
+`MERCHANT_MERCHANT_OFF`, `MERCHANT_ORGANIZE`, `MERCHANT_EXIT`,
+`MERCHANT_WITHDRAW_MESO`, `MERCHANT_VIEW_VISIT_LIST`, `MERCHANT_VIEW_BLACK_LIST`,
+`MERCHANT_ADD_TO_BLACK_LIST`, `MERCHANT_REMOVE_FROM_BLACK_LIST`. (Note: the
+`FIELD_ADD/REMOVE_FROM_BLACK_LIST` modes above are **present** — they are
+`CField::` methods, NOT `CEntrustedShopDlg`, and exist on v79.)
+
+### UNRESOLVED (do NOT guess)
+
+- **`TRANSACTION`** — v83 byte 20. **No client `Encode1(20)` send site found in
+  either the v79 or the v83 IDB** (both `CTradingRoomDlg::Trade` and
+  `CCashTradingRoomDlg::Trade` send `TRADE_CONFIRM=17`, not 20). Mode 20 appears
+  to be server-driven / not client-sent in this era. If Atlas never *decodes* a
+  serverbound `TRANSACTION` on v79 it needs no template entry; if it must, the
+  byte is unconfirmed (positionally either 19 if it follows the Δ−1 store block,
+  or 20 if it follows the Δ0 trade block — **not verified, do not template a
+  guessed value**). Escalate.
+
+### Codec-correctness flag (not a byte issue — a BODY issue)
+
+The tie pair's **bodies are swapped between v79 and v83**, even though the bytes
+(50/51) match:
+- **v83**: `ASK_TIE`(50) = no body (`SendTieRequest`); `TIE_ANSWER`(51) = 1 bool
+  body (`OnTieRequest`).
+- **v79**: `ASK_TIE`(50) sub_672668 sends `Encode1(50)`+**`Encode1(bool)`** (1-byte
+  body); `TIE_ANSWER`(51) sub_677047 sends `Encode1(51)` with **no body**.
+
+If the v79 `MemoryGameTieAnswer` / `AskTie` codecs are ported byte-identically
+from v83 they will mis-decode on v79. The implementer must verify the per-mode
+body when wiring v79 (the retreat pair does NOT have this inversion:
+`RETREAT_ANSWER`=54 carries the bool on both versions).
+
+### Ready-to-paste `operations` additions (populate the empty gms_v79 table)
+
+```
+"CREATE": 0,
+"INVITE": 2,
+"INVITE_DECLINE": 3,
+"VISIT": 4,
+"CHAT": 6,
+"EXIT": 10,
+"OPEN": 11,
+"CASH_TRADE_OPEN": 14,
+"TRADE_PUT_ITEM": 15,
+"TRADE_ADD_MESO": 16,
+"TRADE_CONFIRM": 17,
+"PERSONAL_STORE_PUT_ITEM": 21,
+"PERSONAL_STORE_BUY": 22,
+"PERSONAL_STORE_REMOVE_ITEM": 26,
+"PERSONAL_STORE_ADD_TO_BLACKLIST": 27,
+"PERSONAL_STORE_SET_VISITOR": 28,
+"PERSONAL_STORE_SET_BLACK_LIST": 29,
+"FIELD_ADD_TO_BLACK_LIST": 30,
+"FIELD_REMOVE_FROM_BLACK_LIST": 31,
+"MERCHANT_PUT_ITEM": 32,
+"MERCHANT_BUY": 33,
+"MERCHANT_REMOVE_ITEM": 37,
+"MEMORY_GAME_ASK_TIE": 50,
+"MEMORY_GAME_TIE_ANSWER": 51,
+"MEMORY_GAME_FORFEIT": 49,
+"MEMORY_GAME_ASK_RETREAT": 53,
+"MEMORY_GAME_RETREAT_ANSWER": 54,
+"MEMORY_GAME_EXIT_AFTER_GAME": 55,
+"MEMORY_GAME_CANCEL_EXIT_AFTER_GAME": 56,
+"MEMORY_GAME_READY": 57,
+"MEMORY_GAME_UNREADY": 58,
+"MEMORY_GAME_EXPEL": 59,
+"MEMORY_GAME_START": 60,
+"MEMORY_GAME_SKIP": 62,
+"MEMORY_GAME_MOVE_STONE": 63,
+"MEMORY_GAME_FIP_CARD": 67
+// TRANSACTION: UNRESOLVED — omit until a client sender is confirmed (see above)
+// MERCHANT_MERCHANT_OFF / ORGANIZE / EXIT / WITHDRAW_MESO / VIEW_VISIT_LIST /
+// VIEW_BLACK_LIST / ADD_TO_BLACK_LIST / REMOVE_FROM_BLACK_LIST: n-a (v83+ CEntrustedShopDlg)
+```
+
+**FORFEIT=49 note.** `MEMORY_GAME_FORFEIT` is the one mode that breaks the tidy
+Δ pattern (Δ−3, not Δ0/−1). It is derived directly (sub_6770E1@0x677142 sends
+`Encode1(0x31=49)`, guarded by a one-shot give-up confirm that matches v83
+`CMemoryGameDlg::SendClaimGiveUp`'s behavior byte-for-byte except the mode
+value). v79 simply places give-up at 49 (a slot free on v79 because 49 is a
+`CEntrustedShopDlg` merchant-blacklist mode on v83, absent here). Not a
+transcription error — read twice.
+
+## §6-resolution — matrix/disposition fixes (task-127, do-mode)
+
+> **⚠️ SUPERSEDED (2026-07-14) — the v79 conclusions in this section were WRONG.
+> See §7 and §7.1 for the corrected, IDA-verified finding.** The premise "v79 has
+> no `CEntrustedShopDlg`, so its hired-merchant blacklist is version-absent" was a
+> **missing-symbol artifact, not a missing feature**: the v79 binary's
+> `CEntrustedShopDlg` is symbol-stripped. `sub_50588D` @0x50588d **is**
+> `CEntrustedShopDlg::AddBlackList` (proven: byte-identical twin of v83
+> `sub_519BAC`, same 20-cap + `is_valid_character_name` + StringPool IDs
+> 725/726/727/728; v83 twin calls the symbolized `CEntrustedShopDlg::AddBlackList`).
+> The whole v79 hired-merchant management cluster is present at **v83 − 1**
+> (§7.1 table). The corrections actually applied:
+> - **Removed** the two false version-absent dispositions from
+>   `gms_v79/_unimplemented.json` (Add/DeleteBlackList).
+> - **Re-verified** `MerchantAddToBlackList` × gms_v79 at **mode 47** (`sub_50588D`)
+>   and `MerchantRemoveFromBlackList` × gms_v79 at **mode 48** (`sub_505911`):
+>   restored verify markers, re-pinned evidence, regenerated audit reports → cells
+>   promote ✅.
+> - **Filled the v79 column** for all eight `MERCHANT_*` management modes in
+>   `character_interaction_handle.yaml` (38/39/40/42/45/46/47/48).
+> - The `gms_v61` disposition is **correct** (v61/v72 genuinely lack the dialog —
+>   only permit-receive exists); only the v79 disposition was the error.
+>
+> _Original (incorrect) text retained below for provenance:_
+>
+> - ~~**v61/v79 dispositions added.** `CEntrustedShopDlg::AddBlackList` /
+>   `::DeleteBlackList` dispositioned version-absent in both v61 and v79.~~
+> - ~~**False v79 "verified" evidence removed** — 0x50588d is a "generic
+>   blacklist-name dialog", byte layout coincidentally matched, cells now n-a.~~
+> - ~~**OPEN FINDING:** v79 mode 0x2F is an unrouted shared/personal-store
+>   blacklist send, not the hired-merchant blacklist.~~ (All three struck: 0x2F IS
+>   the hired-merchant `AddBlackList`; now routed + verified.)
+
+## §3d-extended — jms_v185 remaining modes (IDA-derived)
+
+Derived 2026-07-14 from `MapleStory_dump_SCY.exe` (port 13344). Every sender
+below constructs `COutPacket(124)` = `0x7C` (matches the jms template `opCode`)
+and the mode byte is the first `Encode1` after construction — each was read
+directly from the decompiled/disassembled sender at the cited address. The
+named class methods (`CMemoryGameDlg`/`COmokDlg`/`CTradingRoomDlg`/
+`CMiniRoomBaseDlg`/`CField`/`CPersonalShopDlg`) carry intact symbols in this IDB,
+so the mode→name mapping is unambiguous.
+
+**Headline: the jms shift is NOT uniform.** Three distinct regions:
+- **Base / lifecycle (Δ0):** CREATE=0, INVITE=2, **INVITE_DECLINE=3**, VISIT=4,
+  CHAT=6, EXIT=10, OPEN=11 — identical to v83.
+- **Trade block (Δ−2):** TRADE_PUT_ITEM=13, TRADE_ADD_MESO=14, TRADE_CONFIRM=15.
+- **Everything from personal-store through merchant and the entire mini-game
+  block (Δ−3):** PERSONAL_STORE_* / FIELD_* / MERCHANT_* / MEMORY_GAME_*.
+
+The two step-downs are caused by two **version-absent** v83 modes that jms never
+sends (see UNRESOLVED): `CASH_TRADE_OPEN` (v83 14, drops trade to Δ−2) and
+`TRANSACTION` (v83 20, drops the store/merchant/mini-game region to Δ−3). This is
+exactly the audit's "3 modes dropped between CHAT and PERSONAL_STORE_PUT" — now
+resolved: it is the trade-block −2 plus the additional −1 at TRANSACTION.
+
+### Verified mode → byte table
+
+| mode key | jms byte | sender fname@addr — `Encode1` read | v83 | Δ |
+|---|---|---|---|---|
+| INVITE_DECLINE | **3** (0x03) | `CMiniRoomBaseDlg::SendInviteResult`@0x6da8e6 (nErrCode branch) `Encode1(3)`+`Encode4(sn)`+`Encode1(err)`; same in `SendCashInviteResult`@0x6da99e | 3 | 0 |
+| TRADE_PUT_ITEM | **13** (0x0D) | `CTradingRoomDlg::PutItem`@0x847f51 `Encode1(0xD)`+type+2×Encode2+count | 15 | **−2** |
+| TRADE_ADD_MESO | **14** (0x0E) | `CTradingRoomDlg::PutMoney`@0x84817c `Encode1(0xE)`+`Encode4(meso)` | 16 | **−2** |
+| TRADE_CONFIRM | **15** (0x0F) | `CTradingRoomDlg::Trade`@0x84830a `Encode1(0xF)`+count+CRC entries | 17 | **−2** |
+| PERSONAL_STORE_SET_VISITOR | **26** (0x1A) | `CPersonalShopDlg::Update`@0x763240 `Encode1(0x1A)`+slot+`EncodeStr` (idle-visitor auto-reban, 1h = 0x36EE80 ms) | 29 | −3 |
+| FIELD_ADD_TO_BLACK_LIST | **28** (0x1C) | `CField::AddBlackList`@0x574b82 `Encode1(0x1C)`+`EncodeStr(name)` | 31 | −3 |
+| FIELD_REMOVE_FROM_BLACK_LIST | **29** (0x1D) | `CField::DeleteBlackList`@0x574bdf `Encode1(0x1D)`+`EncodeStr(name)` | 32 | −3 |
+| MEMORY_GAME_ASK_TIE | **47** (0x2F) | `CMemoryGameDlg::SendTieRequest`@0x6cd455 `Encode1(0x2F)` (no body) | 50 | −3 |
+| MEMORY_GAME_TIE_ANSWER | **48** (0x30) | `CMemoryGameDlg::OnTieRequest`@0x6c815e `Encode1(0x30)`+`Encode1(bool)` | 51 | −3 |
+| MEMORY_GAME_FORFEIT | **49** (0x31) | `CMemoryGameDlg::SendClaimGiveUp`@0x6cd3c1 `Encode1(0x31)`; `COmokDlg::SendClaimGiveUp`@0x72ff50 identical | 52 | −3 |
+| MEMORY_GAME_ASK_RETREAT | **51** (0x33) | `COmokDlg::SendRetreatRequest`@0x73008e `Encode1(0x33)` (no body) | 54 | −3 |
+| MEMORY_GAME_RETREAT_ANSWER | **52** (0x34) | `COmokDlg::OnRetreatRequest`@0x72b69c `Encode1(0x34)`+`Encode1(bool)` | 55 | −3 |
+| MEMORY_GAME_EXIT_AFTER_GAME | **53** (0x35) | `CMemoryGameDlg::OnClickEndButton`@0x6cd683 (722==1 && 723==0) `Encode1(0x35)` | 56 | −3 |
+| MEMORY_GAME_CANCEL_EXIT_AFTER_GAME | **54** (0x36) | `CMemoryGameDlg::OnClickEndButton`@0x6cd683 (else) `Encode1(0x36)` | 57 | −3 |
+| MEMORY_GAME_READY | **55** (0x37) | `CMemoryGameDlg::OnClickReadyButton`@0x6cd54b (not-ready branch) `Encode1(0x37)` | 58 | −3 |
+| MEMORY_GAME_UNREADY | **56** (0x38) | `CMemoryGameDlg::OnClickReadyButton`@0x6cd54b (ready branch, *(this+724)) `Encode1(0x38)` | 59 | −3 |
+| MEMORY_GAME_EXPEL | **57** (0x39) | `CMemoryGameDlg::OnClickBanButton`@0x6cd605 `Encode1(0x39)` | 60 | −3 |
+| MEMORY_GAME_START | **58** (0x3A) | `CMemoryGameDlg::OnClickStartButton`@0x6cd4f6 `Encode1(0x3A)` | 61 | −3 |
+| MEMORY_GAME_SKIP | **60** (0x3C) | `CMemoryGameDlg::Update`@0x6c8d3e `Encode1(0x3C)` (turn-timer expiry auto-skip; v83 gap at 62, jms gap at 59) | 63 | −3 |
+| MEMORY_GAME_MOVE_STONE | **61** (0x3D) | `COmokDlg::PutStoneChecker`@0x72fedf `Encode1(0x3D)`+`EncodeBuffer(8)`+byte | 64 | −3 |
+| MEMORY_GAME_FIP_CARD | **65** (0x41) | `CMemoryGameDlg::SendTurnUpCard`@0x6c8b94 `Encode1(0x41)`+bFirstCard+nIdx | 68 | −3 |
+
+Notes:
+- jms has BOTH `CMemoryGameDlg` and `COmokDlg`; the two classes send the SAME
+  action bytes (the serverbound dispatcher routes by the active mini-room type,
+  not the mode), so any mode derivable from either is authoritative. Where only
+  one class carries a given method (e.g. retreat lives on `COmokDlg`), that one
+  is cited.
+- Store/merchant block (PERSONAL_STORE put/buy/remove/add-blacklist/set-blacklist,
+  MERCHANT_*) was already IDA-verified `v83−3` in §3d/§2 and is unchanged; the two
+  rows above (SET_VISITOR, FIELD_*) close the remaining store-region gaps at the
+  same −3 and were read from their own senders (not interpolated).
+- The tie-body inversion flagged for gms_v79 does **not** apply to jms: here
+  `OnTieRequest`(TIE_ANSWER=48) carries the 1-byte bool and `SendTieRequest`
+  (ASK_TIE=47) has no body — matching v83.
+
+### Ready-to-paste `{ jms_v185: N }` per mode key
+
+```
+"INVITE_DECLINE":                  { "jms_v185": 3  }
+"TRADE_PUT_ITEM":                  { "jms_v185": 13 }
+"TRADE_ADD_MESO":                  { "jms_v185": 14 }
+"TRADE_CONFIRM":                   { "jms_v185": 15 }
+"PERSONAL_STORE_SET_VISITOR":      { "jms_v185": 26 }
+"FIELD_ADD_TO_BLACK_LIST":         { "jms_v185": 28 }
+"FIELD_REMOVE_FROM_BLACK_LIST":    { "jms_v185": 29 }
+"MEMORY_GAME_ASK_TIE":             { "jms_v185": 47 }
+"MEMORY_GAME_TIE_ANSWER":          { "jms_v185": 48 }
+"MEMORY_GAME_FORFEIT":             { "jms_v185": 49 }
+"MEMORY_GAME_ASK_RETREAT":         { "jms_v185": 51 }
+"MEMORY_GAME_RETREAT_ANSWER":      { "jms_v185": 52 }
+"MEMORY_GAME_EXIT_AFTER_GAME":     { "jms_v185": 53 }
+"MEMORY_GAME_CANCEL_EXIT_AFTER_GAME": { "jms_v185": 54 }
+"MEMORY_GAME_READY":               { "jms_v185": 55 }
+"MEMORY_GAME_UNREADY":             { "jms_v185": 56 }
+"MEMORY_GAME_EXPEL":               { "jms_v185": 57 }
+"MEMORY_GAME_START":               { "jms_v185": 58 }
+"MEMORY_GAME_SKIP":                { "jms_v185": 60 }
+"MEMORY_GAME_MOVE_STONE":          { "jms_v185": 61 }
+"MEMORY_GAME_FIP_CARD":            { "jms_v185": 65 }
+```
+
+### UNRESOLVED — no distinct jms client send site (do NOT template a byte)
+
+- **`CASH_TRADE_OPEN`** (v83 14). **No jms sender emits a distinct mode for it.**
+  Every create / re-open / cash-entry path folds into an already-present mode:
+  - cash-trade *create* → `CField::SendInviteTradingRoomMsg`@0x56c859 sends
+    **CREATE=0** (room-type byte 6);
+  - shop / hired-merchant *open* and merchant-maintenance *re-entry* →
+    `CWvsContext::SendOpenShopRequest`@0xb04926 sends **CREATE=0**
+    (`Encode1(0)`+`Encode1((bEntrusted!=0)+4)`), reached for re-entry via
+    `CWvsContext::OnEntrustedShopCheckResult`@0xb0ee59 **case 7**;
+  - cash-item *entry into* a room → `OnEntrustedShopCheckResult` **case 0x11**
+    sends **VISIT=4** (`Encode1(4)`+sn+…+`EncodeBuffer(8)` cash SN);
+  - birthday-gated open → `CEntrustedShopDlg::OnCorrectSSN2`@0x54acd3 (nProc==11)
+    sends **OPEN=11** (`Encode1(0xB)`+`Encode1(1)`).
+
+  Cross-checked on the v83 IDB (port 13342): even there
+  `CWvsContext::SendOpenShopRequest`@0xa1dd99 sends `COutPacket(0x7B)`
+  `Encode1(0)` = **CREATE**, not mode 14 — so the "CASH_TRADE_OPEN=14" template
+  entry present only in the gms_83/84 templates is NOT emitted by
+  `SendOpenShopRequest` on any version examined, and jms has **no** distinct
+  sender for it. Escalate before adding a jms `CASH_TRADE_OPEN` byte — a guessed
+  value (positionally 12 under the trade-block Δ−2) would be a fabricated byte.
+
+- **`TRANSACTION`** (v83 20). No client `Encode1` send site on jms (nor on v83/
+  v79 — the trade commit is `CTradingRoomDlg::Trade`→**TRADE_CONFIRM=15**, not a
+  separate transaction mode). Server-driven / not client-sent in this family.
+  Do NOT template a jms byte. Same disposition as the gms_v79 pass (§3c).
+
+## §7 — cross-version blacklist-send identity (task follow-up)
+
+Read-only IDA investigation, 2026-07-14. Goal: identify what the gms_v79
+`PLAYER_INTERACTION` mode-`0x2F` send (`sub_50588D`, a bare `EncodeStr(name)`
+from the 20-cap `CUtilDlgEx` dialog `sub_505DEF`) actually is, and whether the
+same feature exists in gms_v48/v61/v72. No codec/template/evidence mutated.
+
+### (a) What the gms_v79 mode-0x2F send is
+
+**It is `MERCHANT_ADD_TO_BLACK_LIST` — the hired-merchant (entrusted-shop)
+per-shop ban-by-name.** Proof (IDA, ports 13340 v79 / 13342 v83):
+
+- v79 `sub_505DEF` @`0x505def` (dialog handler, button cmd `3000` via
+  `sub_505DB1` @`0x505db1`, vtable @`0xa2da08`) is **byte-for-byte structurally
+  identical** to v83 `sub_519BAC` @`0x519bac` (both size `0x28e`): same 20-entry
+  cap (`count < 0x14`), same `is_valid_character_name(name, 1)`, same self-name
+  compare, same dup-check loop, and — decisively — the **same StringPool IDs
+  725/726/727/728** (725 = "please enter the name of the character you'd like to
+  add to the blacklist", 726 = "you may not enter yourself in the blacklist",
+  727 = "this character name does not exist", 728 = "this name has already been
+  registered"). v83 `sub_519BAC` calls the **symbolized**
+  `CEntrustedShopDlg::AddBlackList` @`0x519611` (which emits `Encode1(0x30=48)` =
+  `MERCHANT_ADD_TO_BLACK_LIST`). v79 `sub_505DEF` calls its twin `sub_50588D`
+  @`0x50588d` (`COutPacket(120).Encode1(0x2F=47).EncodeStr(name)`).
+- The same v79 dialog carries the paired **remove**: button cmd `3001` →
+  `sub_5060A1` @`0x5060a1` → `sub_505911` @`0x505911`
+  (`COutPacket(120).Encode1(0x30=48).EncodeStr(name)`) = the twin of v83
+  `CEntrustedShopDlg::DeleteBlackList` @`0x519695` (mode `0x31=49`).
+- v79 modes 47/48 = v83 modes 48/49 **minus 1** — exactly the Δ−1
+  store/merchant shift already established for v79 in §3c. This *resolves* the
+  §3c gap at v79 bytes 47/48 (they were blank in the §3c table).
+
+**Reconciliation with "no CEntrustedShopDlg" (§3c headline).** The v79 IDB's
+`func_query *EntrustedShop*` recovers only `CWvsContext::OnEntrustedShopCheckResult`
+because the **class symbol** `CEntrustedShopDlg` was not recovered in that
+export — but the class's **code is present** (the add/remove blacklist dialog
+above is CEntrustedShopDlg's `OnAddBlackList`/`AddBlackList`/`OnDeleteBlackList`/
+`DeleteBlackList`, unsymbolized). "No CEntrustedShopDlg" was a **missing-symbol
+artifact, not a missing feature.** The hired-merchant blacklist add/remove-by-name
+pair **exists on v79** at modes 47/48.
+
+### (b) Per-version equivalent-send table
+
+| version | recvOp | present? | ADD mode | REMOVE mode | ADD sender addr | REMOVE sender addr | owning class |
+|---|---|---|---|---|---|---|---|
+| gms_v48 (13337) | 0x5D | **ABSENT** | — | — | — | — | no CEntrustedShopDlg; no `OnEntrustedShopCheckResult`; `is_valid_character_name`@`0x6d8f87` has ONE caller (`CField::InputGuildName`@`0x4c5965`) |
+| gms_v61 (13338) | 0x6F | **ABSENT** | — | — | — | — | no CEntrustedShopDlg dialog (permit-recv `OnEntrustedShopCheckResult`@`0x848c1c` only); no 20-cap self-compare blacklist dialog among the 16 `is_valid_character_name`@`0x7cef76` callers |
+| gms_v72 (13339) | 0x79 | **ABSENT** | — | — | — | — | no CEntrustedShopDlg dialog (permit-recv `OnEntrustedShopCheckResult`@`0x91ff18` only); no 20-cap blacklist dialog among the 17 `is_valid_character_name`@`0x6e3833` callers |
+| **gms_v79 (13340)** | 0x78 | **PRESENT** | **0x2F (47)** | **0x30 (48)** | `sub_50588D`@`0x50588d` | `sub_505911`@`0x505911` | unsymbolized **CEntrustedShopDlg** (dialog `sub_505DEF`@`0x505def`, btn-handler `sub_505DB1`@`0x505db1`) |
+| gms_v83 (13342, ref) | 0x7B | PRESENT | 0x30 (48) | 0x31 (49) | `CEntrustedShopDlg::AddBlackList`@`0x519611` | `CEntrustedShopDlg::DeleteBlackList`@`0x519695` | **CEntrustedShopDlg** (dialog `sub_519BAC`@`0x519bac`) |
+
+**Absence method (v48/v61/v72):** the v79/v83 blacklist dialog is the *only*
+20-entry-cap `CUtilDlgEx` that (i) calls `is_valid_character_name(name, 1)`,
+(ii) compares the input to the player's own name, (iii) dup-checks against a
+client-side list, and (iv) sends `Encode1(mode)+EncodeStr(name)` from add/remove
+buttons. Enumerating every `is_valid_character_name` caller in each IDB, **no
+such dialog exists** in v48/v61/v72 — their callers are guild-name entry,
+whisper/add-buddy name entry, personal-shop item-put (`CItemInfo::GetMapString`),
+messenger/party invite-by-name, and ITC/login. The name-based interaction sends
+that *do* exist in v61/v72 are the **personal-store** blacklist ones
+(`PERSONAL_STORE_ADD_TO_BLACKLIST` / `SET_BLACK_LIST`, §3a) and the account
+**field** blacklist — never the hired-merchant one. Conclusion: the hired-merchant
+blacklist management dialog was **introduced in the v73–v79 window** (present by
+v79, absent v72 and earlier).
+
+### (c) False-verified merchant-blacklist cells among v48/v61/v72
+
+**None.** No additional cell needs the v79 fix:
+
+- **gms_v48** — `MerchantAddToBlackList`/`RemoveFromBlackList` = `n-a`
+  (dispositioned version-absent in `_unimplemented.json`). **Correct** — the
+  feature is genuinely absent (verified above).
+- **gms_v61** — both cells = `incomplete` ("no audit report"), **not** verified;
+  no `interaction.serverbound.InteractionOperationMerchant{Add,Remove}*.yaml`
+  evidence record exists under `docs/packets/evidence/gms_v61/`. No false-verified
+  cell. Correct end-state = `n-a` (feature absent).
+- **gms_v72** — same as v61: `incomplete`, no evidence yaml, no false-verified
+  cell. Correct end-state = `n-a`.
+
+The verify markers for `InteractionOperationMerchant{Add,Remove}*` cover only
+`gms_v83/v84/v87/v95/jms_v185` (confirmed in the two `*_test.go` files); the
+single false v79 marker was already removed (§6-resolution). No v48/v61/v72
+marker or evidence record was ever pinned to a non-CEntrustedShopDlg address.
+
+### ⚠ Correction to §3c/§6-resolution (gms_v79 — NOT version-absent)
+
+This investigation **contradicts** the §6-resolution disposition that marked
+gms_v79 `MerchantAddToBlackList`/`RemoveFromBlackList` version-absent. `sub_50588D`
+is **not** a "generic blacklist-name-entry dialog that coincidentally matched" —
+it **is** the hired-merchant `CEntrustedShopDlg::AddBlackList` send (functionally
+proven by the v83 byte-twin `sub_519BAC` + StringPool 725–728 + the paired
+remove `sub_505911`=mode 48). Therefore, for gms_v79:
+
+- The feature is **present** at modes **47 (add) / 48 (remove)** — the cells
+  should be `verified` at those v79 mode bytes (pinned to `sub_50588D` /
+  `sub_505911`), **not** `n-a`, and **not** at the gms template mode 48/49.
+- The removed v79 evidence record pointed at the **correct function**
+  (`0x50588d`); if it was removed only because the byte layout "coincidentally
+  matched," that reasoning was mistaken — though its **mode byte** would have
+  been wrong if it used the gms value 48 instead of the v79 value 47 (the deleted
+  record's contents are unavailable to confirm which).
+- **Escalation / recommended re-check (out of scope here, do NOT act):** because
+  CEntrustedShopDlg's code *is* present in v79, the OTHER seven merchant-management
+  modes the audit called absent on v79 (organize / withdraw-meso / merchant-off /
+  merchant-exit / view-visit-list / view-black-list) may also exist in the same
+  unsymbolized cluster and should be re-derived before the v79 `n-a` dispositions
+  for those are trusted. This §7 verified only the blacklist add/remove pair.
+
+## §7.1 — v79 CEntrustedShopDlg management cluster (full re-derivation)
+
+Read-only IDA derivation (gms_v79 = port 13340, gms_v83 ref = port 13342).
+Resolves the six previously-blank v79 hired-merchant management sends. The §7
+escalation is now discharged: CEntrustedShopDlg's code IS present in v79
+(symbol-stripped), and **all six** modes exist at the uniform **v83 − 1** offset.
+
+**Proof of twin identity (definitive).** The v79 `CEntrustedShopDlg::OnButtonClicked`
+twin is `sub_50429B`@`0x50429b`; its button switch routes exactly as v83's
+`OnButtonClicked`@`0x51804c`: `1010→sub_50548A`, `1015→sub_505510`,
+`1016→sub_50558B`, `1017→sub_5055FE`, `1018→sub_50572B` — the same five button
+ids mapping to the same five senders (v83: `1010→OnGoOut`, `1015→OnArrange`,
+`1016→OnWithdrawMoney`, `1017→OnBlackList`, `1018→OnVisitList`). The EXIT send
+lives in the `SetRet` twin `sub_5042EC`@`0x5042ec` (size `0xd6`, byte-for-byte
+the size of v83 `SetRet`@`0x51809d`), structurally identical: same
+`a2==2 && !this[97] → 8` remap, same `v2==2 → OnGoOut` early-return, same
+`CUtilDlg::YesNo(SP_…)` confirm gate, same `this[98]||this[479]` send guard.
+
+**Body signature.** Every one of the six is **bodyless** — the wire payload is
+exactly `COutPacket(120).Encode1(mode)` with **no** Encode/EncodeStr/EncodeBuffer
+after the mode byte (confirmed in both versions; v83 uses `COutPacket(123)`).
+ORGANIZE and EXIT display a client-side `CUtilDlg::Notice`/`YesNo` dialog and
+OFF/EXIT make a vtable/`RemoveAll` cleanup call, but none of that adds bytes to
+the packet. v79 `OnGoOut` (`sub_50548A`) carries an extra `else`-branch config
+gate `sub_6895B2(&v,38)` (accounts for its `0x86` size vs v83's `0x59`) — off the
+send path, wire-irrelevant.
+
+| key | v83 mode | v83 sender (fname@addr) | body signature | v79 mode | v79 sender (addr) | present? | offset holds? |
+|---|---|---|---|---|---|---|---|
+| MERCHANT_MERCHANT_OFF    | 39 (0x27) | `CEntrustedShopDlg::OnGoOut`@`0x51923b`            | `Op(123).Encode1(mode)` — bodyless | **38 (0x26)** | `sub_50548A`@`0x50548a` (send `0x5054da`) | **yes** | **yes (−1)** |
+| MERCHANT_ORGANIZE        | 40 (0x28) | `CEntrustedShopDlg::OnArrange`@`0x519294`          | `Op(123).Encode1(mode)` — bodyless (client Notice only) | **39 (0x27)** | `sub_505510`@`0x505510` (send `0x50555e`) | **yes** | **yes (−1)** |
+| MERCHANT_EXIT            | 41 (0x29) | `CEntrustedShopDlg::SetRet`@`0x51809d` (send `0x518138`) | `Op(123).Encode1(mode)` — bodyless (client YesNo only) | **40 (0x28)** | `sub_5042EC`@`0x5042ec` (send `0x504387`) | **yes** | **yes (−1)** |
+| MERCHANT_WITHDRAW_MESO   | 43 (0x2B) | `CEntrustedShopDlg::OnWithdrawMoney`@`0x51930f`    | `Op(123).Encode1(mode)` — bodyless | **42 (0x2A)** | `sub_50558B`@`0x50558b` (send `0x5055b7`) | **yes** | **yes (−1)** |
+| MERCHANT_VIEW_VISIT_LIST | 46 (0x2E) | `CEntrustedShopDlg::OnVisitList`@`0x5194af`        | `Op(123).Encode1(mode)` — bodyless | **45 (0x2D)** | `sub_50572B`@`0x50572b` (send `0x505755`) | **yes** | **yes (−1)** |
+| MERCHANT_VIEW_BLACK_LIST | 47 (0x2F) | `CEntrustedShopDlg::OnBlackList`@`0x519382`        | `Op(123).Encode1(mode)` — bodyless | **46 (0x2E)** | `sub_5055FE`@`0x5055fe` (send `0x505628`) | **yes** | **yes (−1)** |
+
+All six v79 senders construct `COutPacket(120=0x78)` (v79 PLAYER_INTERACTION),
+confirming they sit in the same serverbound family as the already-derived
+blacklist add/remove pair (`sub_50588D`=47 / `sub_505911`=48). No mode deviates
+from the v83 − 1 rule.
+
+**Sanity-check of the already-filled v79 region (offset consistency).** The three
+pre-filled item-management cells are internally consistent with the −1 offset and
+need **no** correction:
+
+| key | v83 mode | v79 mode (yaml) | Δ | consistent? |
+|---|---|---|---|---|
+| MERCHANT_PUT_ITEM    | 33 | 32 | −1 | ✅ |
+| MERCHANT_BUY         | 34 | 33 | −1 | ✅ |
+| MERCHANT_REMOVE_ITEM | 38 | 37 | −1 | ✅ |
+
+Combined with the six re-derived here (38/39/40/42/45/46) and the blacklist pair
+(47/48), the entire v79 CEntrustedShopDlg management sub-mode region holds a
+single uniform **v79 = v83 − 1** offset with **zero** exceptions. No anomalies.
+(Note: v79 ORGANIZE mode 39 numerically equals v83 MERCHANT_OFF mode 39 — this is
+a cross-version coincidence, not a collision; within v79 all modes are distinct.)

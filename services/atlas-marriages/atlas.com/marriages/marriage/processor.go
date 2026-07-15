@@ -54,7 +54,7 @@ type Processor interface {
 
 	// Proposal queries
 	GetActiveProposal(proposerId, targetId uint32) model.Provider[*Proposal]
-	GetPendingProposalsByCharacter(characterId uint32) model.Provider[[]Proposal]
+	GetPendingProposalsByCharacter(characterId uint32, page model.Page) model.Provider[model.Paged[Proposal]]
 	GetProposalHistory(proposerId, targetId uint32) model.Provider[[]Proposal]
 
 	// Ceremony operations
@@ -83,7 +83,7 @@ type Processor interface {
 
 	// Marriage queries
 	GetMarriageByCharacter(characterId uint32) model.Provider[*Marriage]
-	GetMarriageHistory(characterId uint32) model.Provider[[]Marriage]
+	GetMarriageHistory(characterId uint32, page model.Page) model.Provider[model.Paged[Marriage]]
 
 	// Ceremony queries
 	GetCeremonyById(ceremonyId uint32) model.Provider[*Ceremony]
@@ -614,12 +614,10 @@ func (p *ProcessorImpl) GetActiveProposal(proposerId, targetId uint32) model.Pro
 	}
 }
 
-// GetPendingProposalsByCharacter retrieves all pending proposals for a character (sent or received)
-func (p *ProcessorImpl) GetPendingProposalsByCharacter(characterId uint32) model.Provider[[]Proposal] {
-	return func() ([]Proposal, error) {
-		proposalsProvider := GetPendingProposalsByCharacterProvider(p.db.WithContext(p.ctx), p.log)(characterId)
-		return proposalsProvider()
-	}
+// GetPendingProposalsByCharacter retrieves one page of pending proposals for a character (sent or received)
+func (p *ProcessorImpl) GetPendingProposalsByCharacter(characterId uint32, page model.Page) model.Provider[model.Paged[Proposal]] {
+	ep := GetPendingProposalsByCharacterPagedProvider(p.db.WithContext(p.ctx), p.log)(characterId, page)
+	return model.MapPaged(MakeProposal)(ep)(model.ParallelMap())
 }
 
 // GetProposalHistory retrieves the history of proposals between two characters
@@ -1592,12 +1590,10 @@ func (p *ProcessorImpl) GetMarriageByCharacter(characterId uint32) model.Provide
 	}
 }
 
-// GetMarriageHistory retrieves marriage history for a character
-func (p *ProcessorImpl) GetMarriageHistory(characterId uint32) model.Provider[[]Marriage] {
-	return func() ([]Marriage, error) {
-		historyProvider := GetMarriageHistoryByCharacterProvider(p.db.WithContext(p.ctx), p.log)(characterId)
-		return historyProvider()
-	}
+// GetMarriageHistory retrieves one page of marriage history for a character
+func (p *ProcessorImpl) GetMarriageHistory(characterId uint32, page model.Page) model.Provider[model.Paged[Marriage]] {
+	ep := GetMarriageHistoryByCharacterPagedProvider(p.db.WithContext(p.ctx), p.log)(characterId, page)
+	return model.MapPaged(Make)(ep)(model.ParallelMap())
 }
 
 // ExpireProposal marks a proposal as expired

@@ -4,8 +4,17 @@ import (
 	"context"
 	"time"
 
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 	"github.com/sirupsen/logrus"
 )
+
+// sessionDrainPageSize is the page size used to drain the full since-filtered
+// sessions collection from atlas-character. Playtime computation is
+// semantically an "all rows" consumer: a single-page fetch would silently
+// truncate to the oldest N sessions (the endpoint paginates ordered by
+// login_time ASC) and undercount equipped playtime.
+const sessionDrainPageSize = 250
 
 type Processor interface {
 	GetSessionsSince(characterId uint32, since time.Time) ([]SessionRestModel, error)
@@ -28,7 +37,7 @@ var _ Processor = (*ProcessorImpl)(nil)
 
 // GetSessionsSince retrieves all sessions for a character since the given time
 func (p *ProcessorImpl) GetSessionsSince(characterId uint32, since time.Time) ([]SessionRestModel, error) {
-	return RequestSessionsSince(characterId, since.Unix())(p.l, p.ctx)
+	return requests.DrainProvider[SessionRestModel, SessionRestModel](p.l, p.ctx)(SessionsSinceUrl(characterId, since.Unix()), sessionDrainPageSize, Extract, model.Filters[SessionRestModel]())()
 }
 
 // ComputePlaytimeInRange computes total playtime within a specific time range

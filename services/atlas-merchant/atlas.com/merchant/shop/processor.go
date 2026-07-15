@@ -1,6 +1,7 @@
 package shop
 
 import (
+	"atlas-merchant/blacklist"
 	"atlas-merchant/frederick"
 	message "atlas-merchant/kafka/message"
 	asset2 "atlas-merchant/kafka/message/asset"
@@ -9,6 +10,7 @@ import (
 	merchant "atlas-merchant/kafka/message/merchant"
 	"atlas-merchant/listing"
 	msg "atlas-merchant/message"
+	"atlas-merchant/visit"
 	"atlas-merchant/visitor"
 	"context"
 	"errors"
@@ -24,6 +26,7 @@ import (
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
+	atlasredis "github.com/Chronicle20/atlas/libs/atlas-redis"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -33,17 +36,25 @@ import (
 const MaxListings = 16
 const MaxVisitors = 3
 
+// MaxSearchResults caps the shop-scanner search (client renders at most
+// 200 rows — SP_3630/3631, task-127 design §1.4).
+const MaxSearchResults = 200
+
 type Processor interface {
 	WithTransaction(tx *gorm.DB) Processor
 	GetById(id uuid.UUID) (Model, error)
 	ByIdProvider(id uuid.UUID) model.Provider[Model]
 	GetByCharacterId(characterId uint32) ([]Model, error)
+	GetByCharacterIdPaged(characterId uint32, page model.Page) (model.Paged[Model], error)
 	GetByField(worldId world.Id, channelId channel.Id, mapId uint32, instanceId uuid.UUID) ([]Model, error)
-	GetAllOpen() ([]Model, error)
+	GetByFieldPaged(worldId world.Id, channelId channel.Id, mapId uint32, instanceId uuid.UUID, page model.Page) (model.Paged[Model], error)
+	GetAllOpenPaged(page model.Page) (model.Paged[Model], error)
 	GetListingCounts(shopIds []uuid.UUID) (map[uuid.UUID]int64, error)
-	SearchListingsByItemId(itemId uint32) ([]ListingSearchResult, error)
+	SearchListingsByItemIdPaged(criteria ListingSearchCriteria, page model.Page) (model.Paged[ListingSearchResult], error)
 	GetListings(shopId uuid.UUID) ([]listing.Model, error)
+	GetListingsPaged(shopId uuid.UUID, page model.Page) (model.Paged[listing.Model], error)
 	CreateShop(characterId uint32, shopType ShopType, title string, worldId world.Id, channelId channel.Id, mapId uint32, instanceId uuid.UUID, x int16, y int16, permitItemId uint32) (Model, error)
+	CreateShopAndEmit(characterId uint32, shopType ShopType, title string, worldId world.Id, channelId channel.Id, mapId uint32, instanceId uuid.UUID, x int16, y int16, permitItemId uint32) (Model, error)
 	OpenShop(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32) error
 	EnterMaintenance(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32) error
 	ExitMaintenance(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32) error
@@ -52,7 +63,15 @@ type Processor interface {
 	AddListing(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32, itemId uint32, itemType byte, bundleSize uint16, bundleCount uint16, pricePerBundle uint32, itemSnapshot asset2.AssetData, inventoryType byte, assetId uint32) (listing.Model, error)
 	RemoveListing(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32, listingIndex uint16) (listing.Model, error)
 	UpdateListing(shopId uuid.UUID, listingIndex uint16, pricePerBundle uint32, bundleSize uint16, bundleCount uint16) error
-	EnterShop(mb *message.Buffer) func(characterId uint32, shopId uuid.UUID) error
+	WithdrawMeso(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32) error
+	OrganizeListings(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32) error
+	WithdrawMesoAndEmit(shopId uuid.UUID, characterId uint32) error
+	OrganizeListingsAndEmit(shopId uuid.UUID, characterId uint32) error
+	EnterShop(mb *message.Buffer) func(characterId uint32, shopId uuid.UUID, visitorName string) error
+	AddToBlacklist(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32, name string, bannedCharacterId uint32) error
+	RemoveFromBlacklist(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32, name string) error
+	GetBlacklistPaged(shopId uuid.UUID, page model.Page) (model.Paged[string], error)
+	GetVisitsPaged(shopId uuid.UUID, page model.Page) (model.Paged[visit.Model], error)
 	ExitShop(mb *message.Buffer) func(characterId uint32, shopId uuid.UUID) error
 	EjectAllVisitors(shopId uuid.UUID) ([]uint32, error)
 	GetVisitors(shopId uuid.UUID) ([]uint32, error)
@@ -64,7 +83,9 @@ type Processor interface {
 	CloseShopAndEmit(shopId uuid.UUID, characterId uint32, reason CloseReason) error
 	EnterMaintenanceAndEmit(shopId uuid.UUID, characterId uint32) error
 	ExitMaintenanceAndEmit(shopId uuid.UUID, characterId uint32) error
-	EnterShopAndEmit(characterId uint32, shopId uuid.UUID) error
+	EnterShopAndEmit(characterId uint32, shopId uuid.UUID, visitorName string) error
+	AddToBlacklistAndEmit(shopId uuid.UUID, characterId uint32, name string, bannedCharacterId uint32) error
+	RemoveFromBlacklistAndEmit(shopId uuid.UUID, characterId uint32, name string) error
 	ExitShopAndEmit(characterId uint32, shopId uuid.UUID) error
 	AddListingAndEmit(shopId uuid.UUID, characterId uint32, itemId uint32, itemType byte, bundleSize uint16, bundleCount uint16, pricePerBundle uint32, itemSnapshot asset2.AssetData, inventoryType byte, assetId uint32) (listing.Model, error)
 	RemoveListingAndEmit(shopId uuid.UUID, characterId uint32, listingIndex uint16) (listing.Model, error)
@@ -89,13 +110,24 @@ type PurchaseResult struct {
 	ShopClosed       bool
 }
 
+// ListingSearchCriteria narrows a listing search. WorldId nil means
+// tenant-wide (pre-task-127 behavior); the owl path always sets it.
+type ListingSearchCriteria struct {
+	ItemId     uint32
+	WorldId    *world.Id
+	Descending bool
+}
+
 type ListingSearchResult struct {
-	Listing   listing.Model
-	ShopId    uuid.UUID
-	Title     string
-	WorldId   world.Id
-	ChannelId channel.Id
-	MapId     uint32
+	Listing     listing.Model
+	ShopId      uuid.UUID
+	Title       string
+	WorldId     world.Id
+	ChannelId   channel.Id
+	MapId       uint32
+	ShopOwnerId uint32
+	ShopType    ShopType
+	State       State
 }
 
 var ErrNotFound = errors.New("not found")
@@ -107,6 +139,7 @@ var ErrVersionConflict = errors.New("version conflict")
 var ErrNoListings = errors.New("shop has no listings")
 var ErrShopFull = errors.New("shop is full")
 var ErrFrederickPending = errors.New("items or mesos pending at Frederick")
+var ErrNotOwner = errors.New("character does not own shop")
 
 type ProcessorImpl struct {
 	l        logrus.FieldLogger
@@ -150,24 +183,52 @@ func (p *ProcessorImpl) GetByCharacterId(characterId uint32) ([]Model, error) {
 	return model.SliceMap(Make)(getByCharacterId(characterId)(p.db.WithContext(p.ctx)))(model.ParallelMap())()
 }
 
+// GetByCharacterIdPaged is the paged sibling of GetByCharacterId, backing
+// the GET /characters/{characterId}/merchants list route (task-117).
+func (p *ProcessorImpl) GetByCharacterIdPaged(characterId uint32, page model.Page) (model.Paged[Model], error) {
+	ep := getByCharacterIdPaged(characterId, page)(p.db.WithContext(p.ctx))
+	return model.MapPaged(Make)(ep)(model.ParallelMap())()
+}
+
 func (p *ProcessorImpl) GetByField(worldId world.Id, channelId channel.Id, mapId uint32, instanceId uuid.UUID) ([]Model, error) {
 	return model.SliceMap(Make)(getByField(worldId, channelId, mapId, instanceId)(p.db.WithContext(p.ctx)))(model.ParallelMap())()
 }
 
-func (p *ProcessorImpl) GetAllOpen() ([]Model, error) {
-	return model.SliceMap(Make)(getAllOpen()(p.db.WithContext(p.ctx)))(model.ParallelMap())()
+// GetByFieldPaged is the paged sibling of GetByField, backing the
+// GET /worlds/{worldId}/channels/{channelId}/maps/{mapId}/instances/{instanceId}/merchants
+// list route (task-117).
+func (p *ProcessorImpl) GetByFieldPaged(worldId world.Id, channelId channel.Id, mapId uint32, instanceId uuid.UUID, page model.Page) (model.Paged[Model], error) {
+	ep := getByFieldPaged(worldId, channelId, mapId, instanceId, page)(p.db.WithContext(p.ctx))
+	return model.MapPaged(Make)(ep)(model.ParallelMap())()
+}
+
+// GetAllOpenPaged backs the bare GET /merchants list route (task-117). The
+// prior unpaged GetAllOpen had no internal caller, so it is deleted rather
+// than kept alongside this paged form.
+func (p *ProcessorImpl) GetAllOpenPaged(page model.Page) (model.Paged[Model], error) {
+	ep := getAllOpenPaged(page)(p.db.WithContext(p.ctx))
+	return model.MapPaged(Make)(ep)(model.ParallelMap())()
 }
 
 func (p *ProcessorImpl) GetListingCounts(shopIds []uuid.UUID) (map[uuid.UUID]int64, error) {
 	return listing.NewProcessor(p.db.WithContext(p.ctx)).CountByShopIds(shopIds)
 }
 
-func (p *ProcessorImpl) SearchListingsByItemId(itemId uint32) ([]ListingSearchResult, error) {
-	return searchListingsByItemId(itemId)(p.db.WithContext(p.ctx))()
+// SearchListingsByItemIdPaged backs the GET /merchants/search/listings list
+// route (task-117). The prior unpaged SearchListingsByItemId had no internal
+// caller, so it is deleted rather than kept alongside this paged form.
+func (p *ProcessorImpl) SearchListingsByItemIdPaged(criteria ListingSearchCriteria, page model.Page) (model.Paged[ListingSearchResult], error) {
+	return searchListingsByItemIdPaged(p.t.Id(), criteria, page)(p.db.WithContext(p.ctx))()
 }
 
 func (p *ProcessorImpl) GetListings(shopId uuid.UUID) ([]listing.Model, error) {
 	return listing.NewProcessor(p.db.WithContext(p.ctx)).GetByShopId(shopId)
+}
+
+// GetListingsPaged is the paged sibling of GetListings, backing the
+// GET /merchants/{shopId}/relationships/listings list route (task-117).
+func (p *ProcessorImpl) GetListingsPaged(shopId uuid.UUID, page model.Page) (model.Paged[listing.Model], error) {
+	return listing.NewProcessor(p.db.WithContext(p.ctx)).GetByShopIdPaged(shopId, page)
 }
 
 func (p *ProcessorImpl) GetExpired() ([]Model, error) {
@@ -268,12 +329,79 @@ func (p *ProcessorImpl) CreateShop(characterId uint32, shopType ShopType, title 
 	return m, nil
 }
 
+// CreateShopAndEmit places a shop and, on a player-facing validation failure,
+// emits a SHOP_CREATE_FAILED status event so the channel can tell the player
+// why nothing opened (a mini-room error notice). Placement failures
+// short-circuit before any DB write, so the feedback is emitted in its own
+// committed transaction rather than being rolled back with the (empty) failure.
+func (p *ProcessorImpl) CreateShopAndEmit(characterId uint32, shopType ShopType, title string, worldId world.Id, channelId channel.Id, mapId uint32, instanceId uuid.UUID, x int16, y int16, permitItemId uint32) (Model, error) {
+	m, err := p.CreateShop(characterId, shopType, title, worldId, channelId, mapId, instanceId, x, y, permitItemId)
+	if err == nil {
+		// Success: the shop is Draft. Drop the owner into the shop UI so they
+		// can stock it before the formal open. Emitted in its own tx after the
+		// create commit.
+		if emitErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+			return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+				return buf.Put(merchant.EnvStatusEventTopic, StatusEventShopSetupProvider(characterId, m.Id(), m))
+			})
+		}); emitErr != nil {
+			p.l.WithError(emitErr).Warnf("Unable to emit shop-setup for character [%d].", characterId)
+		}
+		return m, nil
+	}
+
+	reason := shopCreateFailureReason(err)
+	if reason == "" {
+		return m, err
+	}
+
+	if emitErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return buf.Put(merchant.EnvStatusEventTopic, StatusEventShopCreateFailedProvider(characterId, worldId, channelId, reason))
+		})
+	}); emitErr != nil {
+		p.l.WithError(emitErr).Warnf("Unable to emit shop-create-failed feedback for character [%d].", characterId)
+	}
+	return m, err
+}
+
+// shopCreateFailureReason maps a CreateShop error to a player-facing feedback
+// reason, or "" for internal errors that warrant no client message.
+func shopCreateFailureReason(err error) string {
+	switch {
+	case errors.Is(err, ErrTooCloseToPortal):
+		return merchant.ShopCreateFailReasonTooCloseToPortal
+	case errors.Is(err, ErrTooCloseToShop):
+		return merchant.ShopCreateFailReasonTooCloseToShop
+	case errors.Is(err, ErrNotFreemarketRoom):
+		return merchant.ShopCreateFailReasonNotFreeMarket
+	case errors.Is(err, ErrShopLimitReached), errors.Is(err, ErrFrederickPending):
+		return merchant.ShopCreateFailReasonUnable
+	default:
+		return ""
+	}
+}
+
+// requireOwner rejects an owner-only mutation issued by anyone but the
+// shop's owner. Commands arrive over Kafka, which trusts the producer's
+// characterId — this is the server-side backstop behind the channel's gating.
+func requireOwner(e Entity, characterId uint32) error {
+	if e.CharacterId != characterId {
+		return fmt.Errorf("%w: shop [%s] belongs to [%d], actor [%d]", ErrNotOwner, e.Id, e.CharacterId, characterId)
+	}
+	return nil
+}
+
 func (p *ProcessorImpl) OpenShop(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32) error {
 	return func(shopId uuid.UUID, characterId uint32) error {
 		var mapId uint32
 		err := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 			e, err := getById(shopId)(tx)()
 			if err != nil {
+				return err
+			}
+
+			if err = requireOwner(e, characterId); err != nil {
 				return err
 			}
 
@@ -322,6 +450,10 @@ func (p *ProcessorImpl) EnterMaintenance(mb *message.Buffer) func(shopId uuid.UU
 				return err
 			}
 
+			if err = requireOwner(e, characterId); err != nil {
+				return err
+			}
+
 			if State(e.State) != Open {
 				return fmt.Errorf("%w: cannot enter maintenance in state %d", ErrInvalidTransition, e.State)
 			}
@@ -337,7 +469,9 @@ func (p *ProcessorImpl) EnterMaintenance(mb *message.Buffer) func(shopId uuid.UU
 		// Get visitor list with slots before ejection, then emit events.
 		visitors, _ := p.GetVisitors(shopId)
 		ejected, _ := p.EjectAllVisitors(shopId)
-		emitEjectionEvents(mb, visitors, shopId)
+		// Owner opened the management/maintenance view: kick visitors with the
+		// "shop is closed" message (no dedicated maintenance message exists).
+		emitEjectionEvents(mb, visitors, shopId, merchant.LeaveReasonShopClosed)
 		if len(ejected) > 0 {
 			p.l.Infof("Shop [%s] entered maintenance, ejected %d visitors.", shopId, len(ejected))
 		}
@@ -353,6 +487,10 @@ func (p *ProcessorImpl) ExitMaintenance(mb *message.Buffer) func(shopId uuid.UUI
 		err := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 			e, err := getById(shopId)(tx)()
 			if err != nil {
+				return err
+			}
+
+			if err = requireOwner(e, characterId); err != nil {
 				return err
 			}
 
@@ -404,9 +542,14 @@ func (p *ProcessorImpl) CloseShop(mb *message.Buffer) func(shopId uuid.UUID, cha
 			return err
 		}
 
-		// For character shops (non-disconnect), snapshot listings for item return.
+		// Character shops return unsold items directly to the owner's inventory on
+		// EVERY close, including disconnect/logout. The AcceptAsset command updates
+		// the compartment store regardless of the owner's session, so an offline
+		// owner still gets them back; excluding disconnect orphaned the items on
+		// the closed shop with no Fredrick fallback (task-127). Hired merchants
+		// deposit with Fredrick instead (storeToFrederick, below).
 		var listings []listingSnapshot
-		if m.ShopType() == CharacterShop && reason != CloseReasonDisconnect {
+		if m.ShopType() == CharacterShop {
 			ls, _ := p.GetListings(shopId)
 			for _, l := range ls {
 				listings = append(listings, listingSnapshot{
@@ -424,6 +567,10 @@ func (p *ProcessorImpl) CloseShop(mb *message.Buffer) func(shopId uuid.UUID, cha
 		err = database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 			e, err := getById(shopId)(tx)()
 			if err != nil {
+				return err
+			}
+
+			if err = requireOwner(e, characterId); err != nil {
 				return err
 			}
 
@@ -456,7 +603,13 @@ func (p *ProcessorImpl) CloseShop(mb *message.Buffer) func(shopId uuid.UUID, cha
 		// Get visitor list with slots before ejection, then emit events.
 		visitors, _ := p.GetVisitors(shopId)
 		p.EjectAllVisitors(shopId)
-		emitEjectionEvents(mb, visitors, shopId)
+		// A sold-out close reports out-of-stock; every other close (manual,
+		// disconnect, expired, empty) reports the shop is closed.
+		leaveReason := merchant.LeaveReasonShopClosed
+		if reason == CloseReasonSoldOut {
+			leaveReason = merchant.LeaveReasonOutOfStock
+		}
+		emitEjectionEvents(mb, visitors, shopId, leaveReason)
 
 		if shopType == HiredMerchant {
 			if err := p.storeToFrederick(shopId, characterId, mesoBalance); err != nil {
@@ -547,6 +700,10 @@ func (p *ProcessorImpl) AddListing(mb *message.Buffer) func(shopId uuid.UUID, ch
 				return err
 			}
 
+			if err = requireOwner(e, characterId); err != nil {
+				return err
+			}
+
 			if State(e.State) != Draft && State(e.State) != Maintenance {
 				return fmt.Errorf("%w: cannot add listing in state %d", ErrInvalidTransition, e.State)
 			}
@@ -573,6 +730,12 @@ func (p *ProcessorImpl) AddListing(mb *message.Buffer) func(shopId uuid.UUID, ch
 			return result, err
 		}
 
+		// Refresh the owner's store view (UPDATE_MERCHANT); without this the
+		// client that dropped an item into a slot never gets a reply and freezes.
+		if err := mb.Put(merchant.EnvStatusEventTopic, StatusEventShopUpdatedProvider(characterId, shopId)); err != nil {
+			return result, err
+		}
+
 		return result, nil
 	}
 }
@@ -583,6 +746,10 @@ func (p *ProcessorImpl) RemoveListing(mb *message.Buffer) func(shopId uuid.UUID,
 		err := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 			e, err := getById(shopId)(tx)()
 			if err != nil {
+				return err
+			}
+
+			if err = requireOwner(e, characterId); err != nil {
 				return err
 			}
 
@@ -613,6 +780,11 @@ func (p *ProcessorImpl) RemoveListing(mb *message.Buffer) func(shopId uuid.UUID,
 			Quantity:     result.Quantity(),
 			ItemSnapshot: result.ItemSnapshot(),
 		})
+
+		// Refresh the owner's store view after pulling the item back.
+		if err := mb.Put(merchant.EnvStatusEventTopic, StatusEventShopUpdatedProvider(characterId, shopId)); err != nil {
+			return result, err
+		}
 
 		return result, nil
 	}
@@ -647,6 +819,99 @@ func (p *ProcessorImpl) UpdateListing(shopId uuid.UUID, listingIndex uint16, pri
 
 		return lp.UpdateFields(li.Id(), pricePerBundle, bundleSize, bundleCount)
 	})
+}
+
+// WithdrawMeso credits the hired merchant's accrued sale balance to the owner
+// and zeroes it (MERCHANT_WITHDRAW_MESO). Owner-only; only hired merchants
+// accrue a balance (personal shops pay the owner per sale). Emits SHOP_UPDATED
+// so the owner's management view refreshes to meso 0.
+func (p *ProcessorImpl) WithdrawMeso(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32) error {
+	return func(shopId uuid.UUID, characterId uint32) error {
+		var amount uint32
+		var worldId world.Id
+		err := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+			e, err := getById(shopId)(tx)()
+			if err != nil {
+				return err
+			}
+			if err = requireOwner(e, characterId); err != nil {
+				return err
+			}
+			if ShopType(e.ShopType) != HiredMerchant {
+				return fmt.Errorf("%w: only hired merchants accrue meso", ErrInvalidTransition)
+			}
+			amount = e.MesoBalance
+			worldId = e.WorldId
+			if amount == 0 {
+				return nil
+			}
+			e.MesoBalance = 0
+			_, err = update(&e)(tx)()
+			return err
+		})
+		if err != nil {
+			return err
+		}
+
+		if amount > 0 {
+			transactionId := uuid.New()
+			if err := mb.Put(character.EnvCommandTopic, ChangeMesoCommandProvider(transactionId, worldId, characterId, 0, "MERCHANT", int32(amount))); err != nil {
+				return err
+			}
+		}
+		return mb.Put(merchant.EnvStatusEventTopic, StatusEventShopUpdatedProvider(characterId, shopId))
+	}
+}
+
+// OrganizeListings compacts the shop's listing display: sold-out rows
+// (0 bundles remaining) are dropped and the survivors are renumbered from 0
+// (MERCHANT_ORGANIZE). Owner-only. An empty result closes the shop
+// (CloseReasonEmpty); otherwise SHOP_UPDATED refreshes the view.
+func (p *ProcessorImpl) OrganizeListings(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32) error {
+	return func(shopId uuid.UUID, characterId uint32) error {
+		var remaining int
+		err := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+			e, err := getById(shopId)(tx)()
+			if err != nil {
+				return err
+			}
+			if err = requireOwner(e, characterId); err != nil {
+				return err
+			}
+
+			lp := listing.NewProcessor(tx)
+			listings, err := lp.GetByShopId(shopId)
+			if err != nil {
+				return err
+			}
+
+			order := uint16(0)
+			for _, li := range listings {
+				if li.BundlesRemaining() == 0 {
+					if err := lp.Delete(li.Id()); err != nil {
+						return err
+					}
+					continue
+				}
+				if li.DisplayOrder() != order {
+					if err := lp.SetDisplayOrder(li.Id(), order); err != nil {
+						return err
+					}
+				}
+				order++
+			}
+			remaining = int(order)
+			return nil
+		})
+		if err != nil {
+			return err
+		}
+
+		if remaining == 0 {
+			return p.CloseShop(mb)(shopId, characterId, CloseReasonEmpty)
+		}
+		return mb.Put(merchant.EnvStatusEventTopic, StatusEventShopUpdatedProvider(characterId, shopId))
+	}
 }
 
 func (p *ProcessorImpl) PurchaseBundle(mb *message.Buffer) func(buyerCharacterId uint32, shopId uuid.UUID, listingIndex uint16, bundleCount uint16, worldId world.Id) (PurchaseResult, error) {
@@ -753,7 +1018,7 @@ func (p *ProcessorImpl) PurchaseBundle(mb *message.Buffer) func(buyerCharacterId
 			// Get visitor list with slots before ejection, then emit events.
 			soldOutVisitors, _ := p.GetVisitors(shopId)
 			p.EjectAllVisitors(shopId)
-			emitEjectionEvents(mb, soldOutVisitors, shopId)
+			emitEjectionEvents(mb, soldOutVisitors, shopId, merchant.LeaveReasonOutOfStock)
 			p.l.Infof("Shop [%s] sold out and closed.", shopId)
 		}
 
@@ -787,15 +1052,33 @@ func (p *ProcessorImpl) PurchaseBundle(mb *message.Buffer) func(buyerCharacterId
 	}
 }
 
-func (p *ProcessorImpl) EnterShop(mb *message.Buffer) func(characterId uint32, shopId uuid.UUID) error {
-	return func(characterId uint32, shopId uuid.UUID) error {
+func (p *ProcessorImpl) EnterShop(mb *message.Buffer) func(characterId uint32, shopId uuid.UUID, visitorName string) error {
+	return func(characterId uint32, shopId uuid.UUID, visitorName string) error {
 		e, err := getById(shopId)(p.db.WithContext(p.ctx))()
 		if err != nil {
 			return err
 		}
 
 		if State(e.State) != Open {
-			return fmt.Errorf("%w: shop not open", ErrInvalidTransition)
+			// Surface the faithful client error rather than a silent drop:
+			// a shop being managed reads as under maintenance, anything else
+			// (Draft/Closed) as room-closed.
+			reason := merchant.EnterFailReasonRoomClosed
+			if State(e.State) == Maintenance {
+				reason = merchant.EnterFailReasonUndergoingMaintenance
+			}
+			return mb.Put(merchant.EnvStatusEventTopic, StatusEventEnterFailedProvider(characterId, shopId, reason))
+		}
+
+		// Blacklist enforcement (by name, Cosmic-faithful): a banned visitor
+		// gets the "cannot enter" error rather than being admitted.
+		if visitorName != "" {
+			banned, err := blacklist.NewProcessor(p.l, p.ctx, p.db).IsBlacklisted(shopId, visitorName)
+			if err != nil {
+				p.l.WithError(err).Warnf("Unable to check blacklist for shop [%s] visitor [%s].", shopId, visitorName)
+			} else if banned {
+				return mb.Put(merchant.EnvStatusEventTopic, StatusEventEnterFailedProvider(characterId, shopId, merchant.EnterFailReasonBlacklisted))
+			}
 		}
 
 		vr := visitor.GetRegistry()
@@ -814,6 +1097,11 @@ func (p *ProcessorImpl) EnterShop(mb *message.Buffer) func(characterId uint32, s
 
 		if err = vr.AddVisitor(p.ctx, p.t, shopId, characterId); err != nil {
 			return err
+		}
+
+		// Record the visit for the owner's visit-list (best-effort).
+		if err := visit.NewProcessor(p.l, p.ctx, p.db).Record(shopId, visitorName); err != nil {
+			p.l.WithError(err).Warnf("Unable to record visit for shop [%s] visitor [%s].", shopId, visitorName)
 		}
 
 		// Compute slot based on insertion-ordered visitor list.
@@ -865,12 +1153,87 @@ func (p *ProcessorImpl) GetVisitors(shopId uuid.UUID) ([]uint32, error) {
 	return vr.GetVisitors(p.ctx, p.t, shopId)
 }
 
+// GetShopForCharacter resolves the shop the character is currently occupying.
+// Visitor registry first (a character inside someone else's shop), then owner
+// occupancy: a character occupies their OWN shop while it is owner-attached —
+// a personal shop in any non-Closed state, or a hired merchant in Draft
+// (setup) or Maintenance (management). An Open hired merchant runs
+// owner-detached and does not count. Without owner occupancy, every
+// owner-side op the channel routes through /characters/{id}/visiting (OPEN,
+// PUT_ITEM, EXIT, CHAT) 404s on a freshly created Draft shop.
 func (p *ProcessorImpl) GetShopForCharacter(characterId uint32) (uuid.UUID, error) {
 	vr := visitor.GetRegistry()
 	if vr == nil {
 		return uuid.Nil, errors.New("visitor registry not initialized")
 	}
-	return vr.GetShopForCharacter(p.ctx, p.t, characterId)
+	if shopId, err := vr.GetShopForCharacter(p.ctx, p.t, characterId); err == nil {
+		return shopId, nil
+	} else if !errors.Is(err, atlasredis.ErrNotFound) {
+		// Only a genuine miss falls through to owner occupancy — a transient
+		// Redis failure must surface, not masquerade as "not visiting".
+		return uuid.Nil, err
+	}
+
+	// Owner occupancy. The Redis activeShops entry is a fast-path cache, but the
+	// DB is authoritative: a missing entry (eviction, an uncommitted CreateShop
+	// Put, a close-desync) or a stale entry (pointing at a shop the owner no
+	// longer occupies) must NOT strand the owner — every owner-side op routes
+	// through here, and a false miss 404s /characters/{id}/visiting, freezing
+	// the client (task-127). Trust the cache only when it still resolves to an
+	// owner-occupied shop; otherwise fall back to the DB and re-seed.
+	if r := GetRegistry(); r != nil {
+		entry, err := r.activeShops.Get(p.ctx, p.t, characterId)
+		if err == nil {
+			if m, gerr := p.GetById(entry.ShopId); gerr == nil && isOwnerOccupied(m) {
+				return entry.ShopId, nil
+			}
+			// Stale/closed cache entry — fall through to the DB.
+		} else if !errors.Is(err, atlasredis.ErrNotFound) {
+			return uuid.Nil, err
+		}
+	}
+
+	m, err := model.Map(Make)(getOwnerOccupiedShop(characterId)(p.db.WithContext(p.ctx)))()
+	if err != nil {
+		if errors.Is(err, ErrNotFound) {
+			return uuid.Nil, fmt.Errorf("character [%d] is not occupying a shop", characterId)
+		}
+		return uuid.Nil, err
+	}
+	p.seedOccupancy(characterId, m)
+	return m.Id(), nil
+}
+
+// isOwnerOccupied reports whether an owner is currently occupying (and may act
+// on) their own shop: a personal shop in any non-Closed state, or a hired
+// merchant only in Draft/Maintenance (an Open hired merchant is owner-detached).
+func isOwnerOccupied(m Model) bool {
+	switch m.ShopType() {
+	case CharacterShop:
+		return m.State() != Closed
+	case HiredMerchant:
+		return m.State() == Draft || m.State() == Maintenance
+	default:
+		return false
+	}
+}
+
+// seedOccupancy repopulates the activeShops fast-path cache from an
+// authoritative model, best-effort (a cache write failure is non-fatal — the DB
+// fallback covers the next lookup).
+func (p *ProcessorImpl) seedOccupancy(characterId uint32, m Model) {
+	r := GetRegistry()
+	if r == nil {
+		return
+	}
+	_ = r.activeShops.Put(p.ctx, p.t, characterId, ActiveShopEntry{
+		ShopId:     m.Id(),
+		ShopType:   m.ShopType(),
+		WorldId:    m.WorldId(),
+		ChannelId:  m.ChannelId(),
+		MapId:      m.MapId(),
+		InstanceId: m.InstanceId(),
+	})
 }
 
 // visitorSlot returns the 1-indexed slot for a visitor in the ordered visitor list.
@@ -884,11 +1247,14 @@ func visitorSlot(visitors []uint32, characterId uint32) byte {
 	return 0
 }
 
-// emitEjectionEvents emits a VISITOR_EJECTED event for each visitor in the ordered list.
-func emitEjectionEvents(mb *message.Buffer, visitors []uint32, shopId uuid.UUID) {
+// emitEjectionEvents emits a VISITOR_EJECTED event for each visitor in the
+// ordered list. leaveReason is the client leaveReason table key sent to each
+// ejected visitor so their room UI shows the correct message (SHOP_CLOSED,
+// OUT_OF_STOCK, USER_BANNED) rather than an empty dialog.
+func emitEjectionEvents(mb *message.Buffer, visitors []uint32, shopId uuid.UUID, leaveReason string) {
 	for i, cid := range visitors {
 		slot := byte(i + 1)
-		_ = mb.Put(merchant.EnvStatusEventTopic, StatusEventVisitorEjectedProvider(cid, shopId, slot))
+		_ = mb.Put(merchant.EnvStatusEventTopic, StatusEventVisitorEjectedProvider(cid, shopId, slot, leaveReason))
 	}
 }
 
@@ -1025,6 +1391,22 @@ func (p *ProcessorImpl) OpenShopAndEmit(shopId uuid.UUID, characterId uint32) er
 	})
 }
 
+func (p *ProcessorImpl) WithdrawMesoAndEmit(shopId uuid.UUID, characterId uint32) error {
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).WithdrawMeso(buf)(shopId, characterId)
+		})
+	})
+}
+
+func (p *ProcessorImpl) OrganizeListingsAndEmit(shopId uuid.UUID, characterId uint32) error {
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).OrganizeListings(buf)(shopId, characterId)
+		})
+	})
+}
+
 func (p *ProcessorImpl) CloseShopAndEmit(shopId uuid.UUID, characterId uint32, reason CloseReason) error {
 	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
@@ -1052,9 +1434,93 @@ func (p *ProcessorImpl) ExitMaintenanceAndEmit(shopId uuid.UUID, characterId uin
 // EnterShopAndEmit stays on the direct producer path: EnterShop only mutates
 // the Redis visitor registry (no Postgres write), so there is no DB state
 // change to couple the emit to.
-func (p *ProcessorImpl) EnterShopAndEmit(characterId uint32, shopId uuid.UUID) error {
+func (p *ProcessorImpl) EnterShopAndEmit(characterId uint32, shopId uuid.UUID, visitorName string) error {
 	return message.Emit(p.producer)(func(buf *message.Buffer) error {
-		return p.EnterShop(buf)(characterId, shopId)
+		return p.EnterShop(buf)(characterId, shopId, visitorName)
+	})
+}
+
+// AddToBlacklist / RemoveFromBlacklist are owner-only. A banned name cannot
+// enter the shop (EnterShop enforcement). Both emit SHOP_UPDATED-style refresh
+// via the blacklist-view request path; here they only mutate + confirm.
+func (p *ProcessorImpl) AddToBlacklist(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32, name string, bannedCharacterId uint32) error {
+	return func(shopId uuid.UUID, characterId uint32, name string, bannedCharacterId uint32) error {
+		e, err := getById(shopId)(p.db.WithContext(p.ctx))()
+		if err != nil {
+			return err
+		}
+		if err := requireOwner(e, characterId); err != nil {
+			return err
+		}
+		if err := blacklist.NewProcessor(p.l, p.ctx, p.db).Add(shopId, name); err != nil {
+			return err
+		}
+		// If the banned player is currently in the shop, eject them with the
+		// USER_BANNED leave reason (the ban button kicks them out, not just a
+		// name-only blacklist add). Re-entry is already blocked by the EnterShop
+		// blacklist check.
+		if bannedCharacterId != 0 {
+			if vr := visitor.GetRegistry(); vr != nil {
+				visitors, verr := vr.GetVisitors(p.ctx, p.t, shopId)
+				if verr == nil {
+					slot := visitorSlot(visitors, bannedCharacterId)
+					if slot != 0 {
+						if rerr := vr.RemoveVisitor(p.ctx, p.t, shopId, bannedCharacterId); rerr != nil {
+							p.l.WithError(rerr).Warnf("Unable to eject banned visitor [%d] from shop [%s].", bannedCharacterId, shopId)
+						} else if perr := mb.Put(merchant.EnvStatusEventTopic, StatusEventVisitorEjectedProvider(bannedCharacterId, shopId, slot, merchant.LeaveReasonUserBanned)); perr != nil {
+							return perr
+						}
+					}
+				}
+			}
+		}
+		return mb.Put(merchant.EnvStatusEventTopic, StatusEventBlacklistUpdatedProvider(characterId, shopId))
+	}
+}
+
+func (p *ProcessorImpl) RemoveFromBlacklist(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32, name string) error {
+	return func(shopId uuid.UUID, characterId uint32, name string) error {
+		e, err := getById(shopId)(p.db.WithContext(p.ctx))()
+		if err != nil {
+			return err
+		}
+		if err := requireOwner(e, characterId); err != nil {
+			return err
+		}
+		if err := blacklist.NewProcessor(p.l, p.ctx, p.db).Remove(shopId, name); err != nil {
+			return err
+		}
+		return mb.Put(merchant.EnvStatusEventTopic, StatusEventBlacklistUpdatedProvider(characterId, shopId))
+	}
+}
+
+// GetBlacklistPaged backs the GET /merchants/{shopId}/blacklist list route
+// (task-117). The prior unpaged GetBlacklist had no internal caller (ban
+// checks use blacklist.IsBlacklisted), so it is deleted rather than kept
+// alongside this paged form.
+func (p *ProcessorImpl) GetBlacklistPaged(shopId uuid.UUID, page model.Page) (model.Paged[string], error) {
+	return blacklist.NewProcessor(p.l, p.ctx, p.db).NamesPaged(shopId, page)
+}
+
+// GetVisitsPaged backs the GET /merchants/{shopId}/visits list route
+// (task-117); same delete-don't-shadow treatment as GetBlacklistPaged.
+func (p *ProcessorImpl) GetVisitsPaged(shopId uuid.UUID, page model.Page) (model.Paged[visit.Model], error) {
+	return visit.NewProcessor(p.l, p.ctx, p.db).ListPaged(shopId, page)
+}
+
+func (p *ProcessorImpl) AddToBlacklistAndEmit(shopId uuid.UUID, characterId uint32, name string, bannedCharacterId uint32) error {
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).AddToBlacklist(buf)(shopId, characterId, name, bannedCharacterId)
+		})
+	})
+}
+
+func (p *ProcessorImpl) RemoveFromBlacklistAndEmit(shopId uuid.UUID, characterId uint32, name string) error {
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).RemoveFromBlacklist(buf)(shopId, characterId, name)
+		})
 	})
 }
 

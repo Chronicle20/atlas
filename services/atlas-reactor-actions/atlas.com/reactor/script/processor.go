@@ -18,7 +18,7 @@ import (
 type Processor interface {
 	ByIdProvider(id uuid.UUID) model.Provider[ReactorScript]
 	ByReactorIdProvider(reactorId string) model.Provider[ReactorScript]
-	AllProvider() model.Provider[[]ReactorScript]
+	AllProvider(page model.Page) model.Provider[model.Paged[ReactorScript]]
 
 	Create(m ReactorScript) (ReactorScript, error)
 	Update(id uuid.UUID, m ReactorScript) (ReactorScript, error)
@@ -64,9 +64,10 @@ func (p *ProcessorImpl) ByReactorIdProvider(reactorId string) model.Provider[Rea
 	return model.Map[Entity, ReactorScript](Make)(getByReactorIdProvider(reactorId)(p.db.WithContext(p.ctx)))
 }
 
-// AllProvider returns a provider for retrieving all reactor scripts
-func (p *ProcessorImpl) AllProvider() model.Provider[[]ReactorScript] {
-	return model.SliceMap[Entity, ReactorScript](Make)(getAllProvider(p.db.WithContext(p.ctx)))(model.ParallelMap())
+// AllProvider returns a provider for retrieving one page of reactor scripts
+func (p *ProcessorImpl) AllProvider(page model.Page) model.Provider[model.Paged[ReactorScript]] {
+	ep := getAllPagedProvider(page)(p.db.WithContext(p.ctx))
+	return model.MapPaged(Make)(ep)(model.ParallelMap())
 }
 
 // Create creates a new reactor script

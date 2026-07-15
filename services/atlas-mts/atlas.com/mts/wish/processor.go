@@ -13,7 +13,6 @@ import (
 // emission (the MethodAndEmit convention) lands in a later phase; for now these
 // are REST-only reads/writes.
 type Processor interface {
-	GetAll() model.Provider[[]Model]
 	GetById(id string) (Model, error)
 	GetBySerial(worldId world.Id, sn uint32) (Model, error)
 	Create(m Model) (Model, error)
@@ -22,6 +21,15 @@ type Processor interface {
 	// GetWantedByWorld returns every want-ad in a world, across all characters —
 	// the cross-character Wanted tab.
 	GetWantedByWorld(worldId world.Id) ([]Model, error)
+	// ByCharacterPagedProvider returns one page of a character's wishlist (the
+	// REST list handler's unfiltered branch, task-117).
+	ByCharacterPagedProvider(characterId uint32, page model.Page) model.Provider[model.Paged[Model]]
+	// ByCharacterAndTypePagedProvider returns one page of a character's wishes of
+	// one kind (the REST list handler's ?type= branch, task-117).
+	ByCharacterAndTypePagedProvider(characterId uint32, wishType string, page model.Page) model.Provider[model.Paged[Model]]
+	// WantedByWorldPagedProvider returns one page of every want-ad in a world,
+	// across all characters (task-117).
+	WantedByWorldPagedProvider(worldId world.Id, page model.Page) model.Provider[model.Paged[Model]]
 	Delete(id string) (bool, error)
 	// DeleteBySerial resolves a wish entry by its ITC serial and deletes it, returning
 	// true iff a row was removed. Consumes a fulfilled want-ad on an offer purchase.
@@ -44,10 +52,6 @@ type ProcessorImpl struct {
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor {
 	return &ProcessorImpl{l: l, ctx: ctx, db: db}
-}
-
-func (p *ProcessorImpl) GetAll() model.Provider[[]Model] {
-	return model.SliceMap(modelFromEntity)(getAll()(p.db.WithContext(p.ctx)))()
 }
 
 func (p *ProcessorImpl) GetById(id string) (Model, error) {
@@ -81,6 +85,21 @@ func (p *ProcessorImpl) GetByCharacterAndType(characterId uint32, wishType strin
 // signature mirrors the getWantedByWorld provider exactly.
 func (p *ProcessorImpl) GetWantedByWorld(worldId world.Id) ([]Model, error) {
 	return model.SliceMap(modelFromEntity)(getWantedByWorld(worldId)(p.db.WithContext(p.ctx)))()()
+}
+
+// ByCharacterPagedProvider returns one page of a character's wishlist.
+func (p *ProcessorImpl) ByCharacterPagedProvider(characterId uint32, page model.Page) model.Provider[model.Paged[Model]] {
+	return model.MapPaged(modelFromEntity)(getByCharacterPaged(characterId, page)(p.db.WithContext(p.ctx)))(model.ParallelMap())
+}
+
+// ByCharacterAndTypePagedProvider returns one page of a character's wishes of one kind.
+func (p *ProcessorImpl) ByCharacterAndTypePagedProvider(characterId uint32, wishType string, page model.Page) model.Provider[model.Paged[Model]] {
+	return model.MapPaged(modelFromEntity)(getByCharacterAndTypePaged(characterId, wishType, page)(p.db.WithContext(p.ctx)))(model.ParallelMap())
+}
+
+// WantedByWorldPagedProvider returns one page of every want-ad in a world, across all characters.
+func (p *ProcessorImpl) WantedByWorldPagedProvider(worldId world.Id, page model.Page) model.Provider[model.Paged[Model]] {
+	return model.MapPaged(modelFromEntity)(getWantedByWorldPaged(worldId, page)(p.db.WithContext(p.ctx)))(model.ParallelMap())
 }
 
 // Delete hard-deletes the wish entry by id, returning true iff exactly one row

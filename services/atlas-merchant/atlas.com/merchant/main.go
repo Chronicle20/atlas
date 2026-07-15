@@ -1,14 +1,17 @@
 package main
 
 import (
+	"atlas-merchant/blacklist"
 	"atlas-merchant/frederick"
 	character "atlas-merchant/kafka/consumer/character"
 	compartment2 "atlas-merchant/kafka/consumer/compartment"
 	merchant2 "atlas-merchant/kafka/consumer/merchant"
 	"atlas-merchant/listing"
 	"atlas-merchant/message"
+	"atlas-merchant/searchcount"
 	"atlas-merchant/shop"
 	"atlas-merchant/tasks"
+	"atlas-merchant/visit"
 	"atlas-merchant/visitor"
 	"context"
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
@@ -56,7 +59,7 @@ func main() {
 	shop.InitRegistry(rc)
 	visitor.InitRegistry(rc)
 
-	db := database.Connect(l, database.SetMigrations(shop.Migration, listing.Migration, message.Migration, frederick.Migration, outboxlib.Migration))
+	db := database.Connect(l, database.SetMigrations(shop.Migration, listing.Migration, message.Migration, frederick.Migration, searchcount.Migration, blacklist.Migration, visit.Migration, outboxlib.Migration))
 
 	// Boot the outbox drainer: publishes the transactional outbox to Kafka.
 	// Leadership is gated by a postgres advisory lock — replicas are safe.
@@ -102,6 +105,7 @@ func main() {
 		SetBasePath(GetServer().GetPrefix()).
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(shop.InitializeRoutes(GetServer())(db)).
+		AddRouteInitializer(frederick.InitializeRoutes(GetServer())(db)).
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
 		AddRouteInitializer(server.MountReadiness("/readyz", rt.Ready)).
 		Run()

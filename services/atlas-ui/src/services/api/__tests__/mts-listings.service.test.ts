@@ -12,7 +12,10 @@ describe("buildBrowseListingsQuery", () => {
     expect(buildBrowseListingsQuery({})).toBe("");
   });
 
-  it("emits flat (non-bracketed) query params for each provided filter", () => {
+  it("emits flat filter params plus standard page[number]/page[size] paging params", () => {
+    // filter.page is this module's zero-based caller convention (page=1 is the
+    // SECOND page); it must render onto the wire's one-based page[number] as
+    // page+1 (task-117's off-by-one).
     expect(
       buildBrowseListingsQuery({
         category: "equip",
@@ -24,14 +27,20 @@ describe("buildBrowseListingsQuery", () => {
         pageSize: 16,
       }),
     ).toBe(
-      "?category=equip&subCategory=weapon&saleType=auction&sellerName=Alice&itemId=1302000&page=1&pageSize=16",
+      "?category=equip&subCategory=weapon&saleType=auction&sellerName=Alice&itemId=1302000&page%5Bnumber%5D=2&page%5Bsize%5D=16",
     );
   });
 
-  it("omits itemId when it is zero", () => {
+  it("omits itemId when it is zero, and renders page=0 as page[number]=1", () => {
     expect(buildBrowseListingsQuery({ itemId: 0, page: 0, pageSize: 16 })).toBe(
-      "?page=0&pageSize=16",
+      "?page%5Bnumber%5D=1&page%5Bsize%5D=16",
     );
+  });
+
+  it("never emits the legacy bare page/pageSize params", () => {
+    const got = buildBrowseListingsQuery({ page: 2, pageSize: 16 });
+    expect(got).not.toMatch(/[?&]page=/);
+    expect(got).not.toMatch(/[?&]pageSize=/);
   });
 });
 
@@ -42,7 +51,7 @@ describe("mtsListingsService.browse", () => {
     (apiClient.get as ReturnType<typeof vi.fn>).mockResolvedValue({ data: [], meta: { total: 0, page: { last: 1 } } });
     await mtsListingsService.browse(0, { saleType: "auction", page: 0, pageSize: 16 });
     expect(apiClient.get).toHaveBeenCalledWith(
-      "/api/worlds/0/listings?saleType=auction&page=0&pageSize=16",
+      "/api/worlds/0/listings?saleType=auction&page%5Bnumber%5D=1&page%5Bsize%5D=16",
       undefined,
     );
   });

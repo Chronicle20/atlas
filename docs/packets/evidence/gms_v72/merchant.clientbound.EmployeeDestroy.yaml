@@ -1,0 +1,10 @@
+packet: merchant/clientbound/EmployeeDestroy
+direction: clientbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CEmployeePool::OnEmployeeLeaveField
+    address: "0x4f4a32"
+    decompile_sha256: c9488b87dd3b1478a098c85cec8d87b4975e61d0dd348f0cd2a9cbdf1261f8aa
+verifies:
+  - libs/atlas-packet/merchant/clientbound/employee_test.go#TestEmployeeDestroyBytes

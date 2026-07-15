@@ -3,6 +3,113 @@
   "md5": "80ff438ced539b831f0d2ed95099275d",
   "generated_at": "2026-05-14T00:00:00Z",
   "functions": {
+    "CEmployeePool::OnEmployeeEnterField": {
+      "address": "0x510e83",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "employeeId"
+        },
+        {
+          "op": "Decode4",
+          "comment": "templateId (else-branch, employee not already in pool)"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "ref": "CEmployee::Init"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "ref": "CEmployee::SetBalloon"
+        }
+      ]
+    },
+    "CEmployeePool::OnEmployeeLeaveField": {
+      "address": "0x510f20",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "employeeId"
+        }
+      ]
+    },
+    "CEmployeePool::OnEmployeeMiniRoomBalloon": {
+      "address": "0x510f7e",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "employeeId"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "employee found in pool (GetAt && value)",
+          "ref": "CEmployee::SetBalloon"
+        }
+      ]
+    },
+    "CEmployee::Init": {
+      "address": "0x50d56c",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode2",
+          "comment": "x"
+        },
+        {
+          "op": "Decode2",
+          "comment": "y"
+        },
+        {
+          "op": "Decode2",
+          "comment": "foothold (GetFoothold arg)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "ownerName"
+        }
+      ]
+    },
+    "CEmployee::SetBalloon": {
+      "address": "0x50d897",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "miniRoomType"
+        },
+        {
+          "op": "Decode4",
+          "comment": "miniRoomSN",
+          "guard": "miniRoomType != 0"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "title",
+          "guard": "miniRoomType != 0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "curVisitors",
+          "guard": "miniRoomType != 0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "maxVisitors",
+          "guard": "miniRoomType != 0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "spec",
+          "guard": "miniRoomType != 0"
+        }
+      ]
+    },
     "CUIVega::OnVegaResult": {
       "address": "0x82d8d5",
       "direction": "clientbound",
@@ -13501,6 +13608,169 @@
         {
           "op": "Encode4",
           "comment": "m_nResult (this[35]; server-chosen round-trip token, set by sub_82B2C3's open-arm Decode4)"
+        }
+      ]
+    },
+    "CUIShopScanner::OnCreate": {
+      "address": "0x8a0e9a",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode (=5; request hot list on scanner open). COutPacket(0x42)"
+        }
+      ]
+    },
+    "CUIShopScanResult::OnButtonClicked": {
+      "address": "0x8a4423",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "ownerId (dwMiniRoomSN; ITEMDATA+16) when row's *(+44)==0. COutPacket(0x43); buttons 3000-3007 = result rows"
+        },
+        {
+          "op": "Encode4",
+          "comment": "mapId (dwFieldID; ITEMDATA+20)"
+        }
+      ]
+    },
+    "CWvsContext::SendShopScannerItemUseRequest": {
+      "address": "0xa0a25e",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode2",
+          "comment": "source (nPOS inventory slot). COutPacket(0x53); gated nItemID/10000==231"
+        },
+        {
+          "op": "Encode4",
+          "comment": "itemId (nItemID)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "searchItemId (nItemID arg) \u2014 appended by CUIShopScanner::SendScanPacket"
+        },
+        {
+          "op": "Encode1",
+          "comment": "descending (bDescendingOrder) \u2014 SendScanPacket"
+        },
+        {
+          "op": "Encode4",
+          "comment": "updateTime (get_update_time; trailing, NO leading updateTime any version) \u2014 SendScanPacket"
+        }
+      ]
+    },
+    "CWvsContext::OnShopScannerResult#Result": {
+      "address": "0xa28c29",
+      "direction": "clientbound",
+      "dispatch": [
+        {
+          "discriminator": "switch",
+          "case": 6
+        }
+      ],
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (=6; #Result). switch(Decode1()-6)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nNpcShopPrice (>0 inserts synthetic npc-shop row; Atlas always 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "itemId (nItemID)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nCount (result record count)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "ownerName (sCharacterName)",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode4",
+          "comment": "mapId (dwFieldID)",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "title (sTitle)",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode4",
+          "comment": "bundles (nNumber)",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode4",
+          "comment": "bundleSize (nSet)",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode4",
+          "comment": "price (nPrice)",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode4",
+          "comment": "ownerId (dwMiniRoomSN)",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode1",
+          "comment": "channelId (nChannelID)",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode1",
+          "comment": "inventoryType (nTI)",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "GW_ItemSlotBase::Decode(&pItem) = model.Asset; only when nTI==1",
+          "guard": "loop nCount; if nTI==1"
+        }
+      ]
+    },
+    "CWvsContext::OnShopScannerResult#HotList": {
+      "address": "0xa28c29",
+      "direction": "clientbound",
+      "dispatch": [
+        {
+          "discriminator": "switch",
+          "case": 7
+        }
+      ],
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (=7; #HotList). switch(Decode1()-6)==1"
+        },
+        {
+          "op": "Decode1",
+          "comment": "count (byte; hot-list length)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "itemId (m_anHotList entry)",
+          "guard": "loop count"
+        }
+      ]
+    },
+    "CWvsContext::OnShopLinkResult": {
+      "address": "0x8a4e7a",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "code (switch: 0 success/1 closed/2 full/3 busy/4 dead/7 no-trade/17 denied/18 maintenance/23 fm-only/default unable). IDB fn CUIShopScanResult::OnShopLinkResult"
         }
       ]
     }

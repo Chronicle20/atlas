@@ -16,7 +16,7 @@ type Processor interface {
 	Delete(id uuid.UUID) error
 	ByIdProvider(id uuid.UUID) model.Provider[Model]
 	ByQuestIdProvider(questId string) model.Provider[Model]
-	AllProvider() model.Provider[[]Model]
+	AllProvider(page model.Page) model.Provider[model.Paged[Model]]
 	DeleteAllForTenant() (int64, error)
 	ValidateDefinitions() []ValidationResult
 }
@@ -49,8 +49,9 @@ func (p *ProcessorImpl) ByQuestIdProvider(questId string) model.Provider[Model] 
 	return model.Map[Entity, Model](Make)(getByQuestIdProvider(questId)(p.db.WithContext(p.ctx)))
 }
 
-func (p *ProcessorImpl) AllProvider() model.Provider[[]Model] {
-	return model.SliceMap[Entity, Model](Make)(getAllProvider(p.db.WithContext(p.ctx)))(model.ParallelMap())
+func (p *ProcessorImpl) AllProvider(page model.Page) model.Provider[model.Paged[Model]] {
+	ep := getAllPagedProvider(page)(p.db.WithContext(p.ctx))
+	return model.MapPaged(Make)(ep)(model.ParallelMap())
 }
 
 func (p *ProcessorImpl) Create(m Model) (Model, error) {

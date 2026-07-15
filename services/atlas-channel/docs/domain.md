@@ -537,6 +537,71 @@ Provides NPC conversation handling and shop operations.
 
 ---
 
+## Merchant
+
+### Responsibility
+Represents a player-run store — either a personal shop (CharacterShop) or a hired merchant (HiredMerchant) — as a read-only projection of an atlas-merchant shop. The channel service does not own shop lifetime; it projects shops from atlas-merchant REST/Kafka, renders the map object (personal-store mini-room box or hired-merchant employee NPC) and the in-shop interior to sessions, and emits shop lifecycle, visitor, listing, chat, blacklist, and meso commands driven by client interaction.
+
+### Core Models
+- `Model` - Contains id (uuid.UUID), characterId (uint32), shopType (byte), state (byte), title (string), worldId (world.Id), channelId (channel.Id), mapId (uint32), instanceId (uuid.UUID), x (int16), y (int16), permitItemId (uint32), mesoBalance (uint32), createdAt (time.Time), listingCount (int64), visitors ([]uint32), messages ([]MessageModel), listings ([]ListingModel). Getter-only; constructed via `Extract` from `RestModel` (no builder).
+- `MessageModel` - One persisted shop message (owner management-view replay): characterId (uint32), content (string), sentAt (time.Time).
+- `ListingModel` - Contains id (string), shopId (string), itemId (uint32), itemType (byte), quantity (uint16), bundleSize (uint16), bundlesRemaining (uint16), pricePerBundle (uint32), itemSnapshot (AssetData), displayOrder (uint16). Constructed via `ExtractListing`.
+- `AssetData` - Item snapshot for a listing (expiration, quantity, flag, rechargeable, equipment stats, cashId, petId).
+- `SearchListing` - Owl shop-search result row: shopId (uuid.UUID), title, worldId, channelId, mapId, ownerId, shopType, state, itemId, itemType, quantity, bundleSize, bundlesRemaining, pricePerBundle, itemSnapshot (SnapshotRestModel). Built via `NewSearchListing(SearchListingSeed)` (local) or `ExtractSearchListing` (REST).
+- `TopSearch` - Owl hot-list row: itemId (uint32), count (uint64). Built via `ExtractTopSearch`.
+
+### Invariants
+- `shopType` 1 is a CharacterShop (personal shop); `shopType` 2 is a HiredMerchant (`HiredMerchantShopType`). The map render path and interior room branch on this value.
+- Shop `state` mirrors the shared atlas-constants merchant enum, exposed as byte: `StateDraft`, `StateOpen`, `StateMaintenance`, `StateClosed`.
+- `visitors` is the insertion-ordered visiting characters and excludes the owner; the owner is position 0 in the interior room and each visitor occupies its 1-indexed slot.
+- In a personal shop the owner is rendered on the map as a mini-room box on their own avatar with a permit-derived sign skin; in a hired merchant the owner is rendered as a standalone employee NPC carrying `permitItemId`.
+- A character may operate at most one shop; the hired-merchant permit check rejects when `GetByCharacterId` returns an existing shop or `HasFrederickPending` is true.
+
+### State Transitions
+None owned by the channel service. The shop `state` is a projection of atlas-merchant; shop lifecycle (setup/opened/closed, maintenance entered/exited, visitor entered/exited/ejected, create-failed, updated, enter-failed) is driven by atlas-merchant status events.
+
+### Processors
+- `Processor` (interface) - Reads: `InFieldModelProvider`/`ForEachInField` (shops in a field), `GetVisitingShop`, `GetShop` (by shop id, with listings included), `GetByCharacterId`, `HasFrederickPending`, `GetBlacklist`, `GetVisits`, `SearchListings` (owl item search), `GetTopSearches` (owl hot list). Command emitters to COMMAND_TOPIC_MERCHANT: `PlaceShop`, `OpenShop`, `CloseShop`, `EnterShop`, `ExitShop`, `SendMessage`, `EnterMaintenance`, `ExitMaintenance`, `AddListing` (resolves the asset snapshot from the character's inventory slot before emitting), `RemoveListing`, `PurchaseBundle`, `WithdrawMeso`, `OrganizeListings`, `AddBlacklist`, `RemoveBlacklist`, `RecordItemSearch`.
+
+### Rendering helpers
+- `employee.go` - `ToEmployeeSpawn(shop, ownerName)` / `ToEmployeeUpdate(shop)` project a hired-merchant shop into the field employee-NPC spawn/update (employee id and balloon serial = owner character id, template = permit item id, visitor count from `len(Visitors())`).
+- `skin.go` - `StoreSkinSpec(permitItemId)` computes the personal-store balloon sign skin (`nSpec`) from the permit item id (base 5140000; returns 0 when out of range).
+- `select.go` - `SelectOpenShop(shops)` picks the one live shop for owl-warp resolution: the first `StateOpen` shop, else the first non-`StateClosed` shop, else none.
+
+### Character interaction handler
+- `socket/handler/character_interaction.go` decodes the character-interaction dispatcher and resolves each mode via the tenant `operations` table (`isCharacterInteraction`), never via hard-coded opcodes. Store-related modes drive the merchant processor: CREATE of a PersonalShop/MerchantShop mini-room emits `PlaceShop` (shopType 1 for CharacterShop, 2 for MerchantShop); VISIT selects the owner's live shop and emits `EnterShop`; OPEN emits `OpenShop`; CHAT emits `SendMessage`; EXIT emits `CloseShop`/`ExitMaintenance`/`ExitShop` depending on ownership and maintenance state; PERSONAL_STORE_PUT_ITEM / MERCHANT_PUT_ITEM emit `AddListing`; PERSONAL_STORE_BUY / MERCHANT_BUY emit `PurchaseBundle`; PERSONAL_STORE_REMOVE_ITEM / MERCHANT_REMOVE_ITEM emit `RemoveListing`; PERSONAL_STORE_ADD_TO_BLACKLIST and MERCHANT_ADD_TO_BLACK_LIST emit `AddBlacklist`; MERCHANT_REMOVE_FROM_BLACK_LIST emits `RemoveBlacklist`; MERCHANT_MERCHANT_OFF emits `ExitMaintenance`; MERCHANT_ORGANIZE emits `OrganizeListings`; MERCHANT_EXIT emits `CloseShop`/`ExitShop`; MERCHANT_WITHDRAW_MESO emits `WithdrawMeso`. MERCHANT_VIEW_VISIT_LIST and MERCHANT_VIEW_BLACK_LIST read `GetVisits`/`GetBlacklist` and answer with clientbound list packets (no command). CASH_TRADE_OPEN with nProc 4 and a MerchantShop room emits `EnterMaintenance`. Trade, cash-trade, memory-game, and field/personal-store blacklist view/set modes are decoded and logged only.
+
+### Hired-merchant permit handler
+- `socket/handler/hired_merchant_operation.go` handles the entrusted-shop (hired-merchant) serverbound dispatcher. The only mode it acts on is `ModeEntrustedShopCheck`, emitted when a player uses a hired-merchant permit item (compared against the constant, not the `operations` table). It reads `GetByCharacterId` (rejecting with an already-open notice for a live hired merchant, or an unable-to-open notice for a Draft shop) and `HasFrederickPending` (rejecting with a retrieve-from-Frederick notice); otherwise it replies with an open-shop result. It emits no command — the shop is created later via the CharacterInteraction CREATE → `PlaceShop` path.
+
+---
+
+## Shop Scanner (Owl of Minerva)
+
+### Responsibility
+Handles the owl-of-Minerva shop scanner: opening the owl window (hot list), searching merchant listings by item id, and warping to a chosen result's shop. Search and hot-list data come from the MERCHANT service; warp eligibility is decided locally and gated through a pending-entry registry.
+
+### Core Models
+- `Registry` - In-memory singleton (see storage.md) tracking per-character `SearchEntry{ItemId}` (last executed search) and `PendingEntry{ShopId, OwnerId, MapId}` (in-flight warp-then-enter), keyed by `Key{Tenant, CharacterId}`.
+- `WarpCheck` - Value struct carrying the inputs to the warp validation ladder (search presence, owner/character ids, character HP, current-map free-market flag, shop found/world/channel/map/state, and listing presence).
+
+### Invariants
+- Owl actions are only serviced in a free-market room (`_map.IsFreeMarketRoom`).
+- A search with `searchItemId == 0` (legacy no-target frame) is dropped.
+- The owl item-use item is consumed only when the search returns at least one listing.
+- `EvaluateWarp` returns the first failing rung's `ShopLinkResultCode`, or proceed. The ordered checks are: not a free-market map (FMOnly), no prior search (Closed), owner is self (Denied), character dead (Dead), shop not found (Closed), shop world mismatch (Closed), shop map mismatch vs echoed map (Closed), shop map not free-market (FMOnly), shop channel mismatch (Closed), shop under maintenance (Maintenance), shop not open (Closed), no listing present (Busy), else proceed.
+- A pending warp entry is set on a successful warp decision and cleared on visitor entry, on a full-shop arrival, or on session destroy (`ClearCharacter`).
+
+### Processors
+- `Processor` (`shopscanner.NewProcessor(l, ctx)`) - `Search(wp)(s, searchItemId, descending, owlItemId, source, updateTime)` records the search count (`RecordItemSearch`), queries `SearchListings`, resolves owner names, writes the mode-6 scanner result, conditionally consumes the owl item (via consumable `RequestItemConsume`), and stores the last search. `SendHotList(wp)(s)` queries `GetTopSearches` and writes the mode-7 hot list.
+
+### Socket handlers
+- `socket/handler/owl_action.go` - Owl-window open (OWL_ACTION). Resolves the OPEN mode via the tenant `operations` table, requires a free-market room, and calls `SendHotList`.
+- `socket/handler/owl_warp.go` - Result-click warp (OWL_WARP). Rebuilds the `WarpCheck` from the session, last search, character HP, the owner's selected open shop (`SelectOpenShop`), and a re-validated listing lookup; on reject sends the `ShopLinkResult`, on success sets the pending entry and warps via the portal processor.
+- `socket/handler/shop_scanner_item_use.go` - USE-inventory owl double-click (shop-scanner item use). Validates the item classification and inventory slot, then calls `Search`.
+
+---
+
 ## Transport Route
 
 ### Responsibility

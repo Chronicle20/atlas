@@ -69,8 +69,10 @@ type Processor interface {
 	ByIdProvider(decorators ...model.Decorator[Model]) func(id uint32) model.Provider[Model]
 	GetById(decorators ...model.Decorator[Model]) func(id uint32) (Model, error)
 	GetForAccountInWorld(decorators ...model.Decorator[Model]) func(accountId uint32, worldId world.Id) ([]Model, error)
+	GetForAccountInWorldProvider(page model.Page, decorators ...model.Decorator[Model]) func(accountId uint32, worldId world.Id) model.Provider[model.Paged[Model]]
 	GetForName(decorators ...model.Decorator[Model]) func(name string) ([]Model, error)
-	GetAll(decorators ...model.Decorator[Model]) ([]Model, error)
+	GetForNameProvider(page model.Page, decorators ...model.Decorator[Model]) func(name string) model.Provider[model.Paged[Model]]
+	AllProvider(page model.Page, decorators ...model.Decorator[Model]) model.Provider[model.Paged[Model]]
 	SkillModelDecorator(m Model) Model
 	IsValidName(name string) (bool, error)
 	CheckNameValidity(name string, worldId world.Id) (NameValidityResult, error)
@@ -188,6 +190,14 @@ func (p *ProcessorImpl) GetForAccountInWorld(decorators ...model.Decorator[Model
 	}
 }
 
+func (p *ProcessorImpl) GetForAccountInWorldProvider(page model.Page, decorators ...model.Decorator[Model]) func(accountId uint32, worldId world.Id) model.Provider[model.Paged[Model]] {
+	return func(accountId uint32, worldId world.Id) model.Provider[model.Paged[Model]] {
+		ep := getForAccountInWorldPaged(accountId, worldId, page)(p.db.WithContext(p.ctx))
+		mp := model.MapPaged(modelFromEntity)(ep)(model.ParallelMap())
+		return model.MapPaged(model.Decorate[Model](decorators))(mp)(model.ParallelMap())
+	}
+}
+
 func (p *ProcessorImpl) GetForName(decorators ...model.Decorator[Model]) func(name string) ([]Model, error) {
 	return func(name string) ([]Model, error) {
 		mp := model.SliceMap[entity, Model](modelFromEntity)(getForName(name)(p.db.WithContext(p.ctx)))(model.ParallelMap())
@@ -195,9 +205,18 @@ func (p *ProcessorImpl) GetForName(decorators ...model.Decorator[Model]) func(na
 	}
 }
 
-func (p *ProcessorImpl) GetAll(decorators ...model.Decorator[Model]) ([]Model, error) {
-	mp := model.SliceMap(modelFromEntity)(getAll()(p.db.WithContext(p.ctx)))(model.ParallelMap())
-	return model.SliceMap(model.Decorate[Model](decorators))(mp)(model.ParallelMap())()
+func (p *ProcessorImpl) GetForNameProvider(page model.Page, decorators ...model.Decorator[Model]) func(name string) model.Provider[model.Paged[Model]] {
+	return func(name string) model.Provider[model.Paged[Model]] {
+		ep := getForNamePaged(name, page)(p.db.WithContext(p.ctx))
+		mp := model.MapPaged(modelFromEntity)(ep)(model.ParallelMap())
+		return model.MapPaged(model.Decorate[Model](decorators))(mp)(model.ParallelMap())
+	}
+}
+
+func (p *ProcessorImpl) AllProvider(page model.Page, decorators ...model.Decorator[Model]) model.Provider[model.Paged[Model]] {
+	ep := getAll(page)(p.db.WithContext(p.ctx))
+	mp := model.MapPaged(modelFromEntity)(ep)(model.ParallelMap())
+	return model.MapPaged(model.Decorate[Model](decorators))(mp)(model.ParallelMap())
 }
 
 func (p *ProcessorImpl) SkillModelDecorator(m Model) Model {

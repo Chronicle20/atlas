@@ -4,6 +4,7 @@ import (
 	"atlas-channel/channel"
 	"atlas-channel/server"
 	"atlas-channel/session"
+	"atlas-channel/shopscanner"
 	"atlas-channel/socket/writer"
 	"context"
 	"errors"
@@ -13,6 +14,7 @@ import (
 
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	"github.com/Chronicle20/atlas/libs/atlas-socket"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
 
@@ -44,7 +46,13 @@ func CreateSocketService(l logrus.FieldLogger, ctx context.Context, wg *sync.Wai
 					socket.SetPort(port),
 					socket.SetCreator(sp.Create(sc.Channel(), locale)),
 					socket.SetMessageDecryptor(sp.Decrypt(true, hasMapleEncryption)),
-					socket.SetDestroyer(sp.DestroyByIdWithSpan),
+					socket.SetDestroyer(func(sessionId uuid.UUID) {
+						sp.IfPresentById(sessionId, func(s session.Model) error {
+							shopscanner.GetRegistry().ClearCharacter(t, s.CharacterId())
+							return nil
+						})
+						sp.DestroyByIdWithSpan(sessionId)
+					}),
 					socket.SetReadWriter(rw),
 					socket.SetIdleNotifier(session.SendPing(l, ctx, wp), idleThreshold),
 				)

@@ -252,8 +252,7 @@ func (p *ProcessorImpl) Create(f field.Model, input RestModel) (Model, error) {
 
 // getControllerCandidate finds the best character to control monsters in a field.
 // monsterX/monsterY are the controlled monster's position; if a player's puppet
-// sits within vicinity of it (Cosmic Monster.java getNextControllerCandidate /
-// isPuppetInVicinity, distanceSq < 177777), that puppet's owner is preferred as
+// sits within vicinity of it (distanceSq < 177777), that puppet's owner is preferred as
 // the controller over the default least-controlled candidate. When no in-vicinity
 // puppet exists the selection falls back to the unchanged least-loaded pick.
 func (p *ProcessorImpl) getControllerCandidate(f field.Model, monsterX int16, monsterY int16, idp model.Provider[[]uint32]) (uint32, error) {
@@ -1215,7 +1214,7 @@ func (p *ProcessorImpl) ApplyStatusEffect(uniqueId uint32, effect StatusEffect) 
 // isElementallyImmune checks if a monster's resistances block the given status effect.
 // DOOM (Priest, 2311005) intentionally bypasses elemental immunity: the
 // polymorph-to-snail effect overrides resistance — a fire-immune mob still
-// becomes a snail. Source parity with Cosmic (server/StatEffect.java:1531).
+// becomes a snail.
 func isElementallyImmune(info information.Model, effect StatusEffect) (bool, string) {
 	if _, ok := effect.Statuses()[monster2.StatusDoom]; ok {
 		return false, ""
@@ -1450,13 +1449,13 @@ func destroyInTenant(l logrus.FieldLogger) func(ctx context.Context) func(t tena
 // the DRAIN_MP command lands, the monster may already have been
 // one-shot killed by the same player attack (DAMAGE and DRAIN_MP are
 // emitted in the same processAttack call and partitioned by uniqueId,
-// so DAMAGE processes first). In that case Cosmic still plays the
-// visual and refunds the caster — the post-mortem deduction is purely
+// so DAMAGE processes first). In that case the visual still plays and
+// the caster is still refunded — the post-mortem deduction is purely
 // cosmetic.
 //
 // The body.Amount on the emitted event is requestedAmount (the
 // channel-computed MaxMp * X / 100), not the clamped actual delta:
-// Cosmic refunds the caster the full computed amount regardless of how
+// the caster is refunded the full computed amount regardless of how
 // much MP the monster had left to give.
 //
 // The boss check uses testInformationLookup when non-nil so that unit

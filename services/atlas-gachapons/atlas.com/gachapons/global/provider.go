@@ -7,15 +7,21 @@ import (
 	"gorm.io/gorm"
 )
 
-func getAll() database.EntityProvider[[]entity] {
-	return func(db *gorm.DB) model.Provider[[]entity] {
-		return database.SliceQuery[entity](db, &entity{})
+func getAllPagedProvider(page model.Page) database.EntityProvider[model.Paged[entity]] {
+	return func(db *gorm.DB) model.Provider[model.Paged[entity]] {
+		return database.PagedQuery[entity](db, page)
 	}
 }
 
 func getByTier(tier string) database.EntityProvider[[]entity] {
 	return func(db *gorm.DB) model.Provider[[]entity] {
 		return database.SliceQuery[entity](db, &entity{Tier: tier})
+	}
+}
+
+func getByTierPagedProvider(tier string, page model.Page) database.EntityProvider[model.Paged[entity]] {
+	return func(db *gorm.DB) model.Provider[model.Paged[entity]] {
+		return database.PagedQuery[entity](db.Where(&entity{Tier: tier}), page)
 	}
 }
 

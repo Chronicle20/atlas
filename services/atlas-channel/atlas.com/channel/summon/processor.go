@@ -36,9 +36,13 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 var _ Processor = (*ProcessorImpl)(nil)
 
 // InMapModelProvider fetches the summons currently present in field f from
-// atlas-summons (used to replay existing summons to a character entering the map).
+// atlas-summons (used to replay existing summons to a character entering
+// the map). The upstream atlas-summons list is now paginated (task-117), so
+// this drains every page rather than fetching just the first -- a truncated
+// list here means some existing summons silently fail to replay to the
+// entering character.
 func (p *ProcessorImpl) InMapModelProvider(f field.Model) model.Provider[[]Model] {
-	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestInMap(f), Extract, model.Filters[Model]())
+	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(inMapUrl(f), 250, Extract, model.Filters[Model]())
 }
 
 // ForEachInMap applies o to every summon currently in field f.

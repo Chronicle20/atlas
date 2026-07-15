@@ -4,6 +4,7 @@ import (
 	"atlas-npc-conversations/test"
 	"testing"
 
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -32,16 +33,19 @@ func TestProviderFunctionCurrying(t *testing.T) {
 		assert.NotNil(t, provider)
 	})
 
-	t.Run("getAllProvider currying", func(t *testing.T) {
-		provider := getAllProvider(db)
+	t.Run("getAllPagedProvider currying", func(t *testing.T) {
+		providerFactory := getAllPagedProvider(model.Page{Number: 1, Size: 50})
+		assert.NotNil(t, providerFactory)
+
+		provider := providerFactory(db)
 		assert.NotNil(t, provider)
 	})
 
-	t.Run("getAllByNpcIdProvider currying", func(t *testing.T) {
-		providerByNpcId := getAllByNpcIdProvider(npcId)
-		assert.NotNil(t, providerByNpcId)
+	t.Run("getAllByNpcIdPagedProvider currying", func(t *testing.T) {
+		providerFactory := getAllByNpcIdPagedProvider(npcId, model.Page{Number: 1, Size: 50})
+		assert.NotNil(t, providerFactory)
 
-		provider := providerByNpcId(db)
+		provider := providerFactory(db)
 		assert.NotNil(t, provider)
 	})
 }
@@ -70,20 +74,20 @@ func TestProviderFunctionSignatures(t *testing.T) {
 		assert.Equal(t, Entity{}, entity)
 	})
 
-	t.Run("getAllProvider returns slice provider", func(t *testing.T) {
-		provider := getAllProvider(db)
+	t.Run("getAllPagedProvider returns paged provider", func(t *testing.T) {
+		provider := getAllPagedProvider(model.Page{Number: 1, Size: 50})(db)
 
-		entities, err := provider()
+		paged, err := provider()
 		assert.NoError(t, err) // Empty result is not an error
-		assert.Empty(t, entities)
+		assert.Empty(t, paged.Items)
 	})
 
-	t.Run("getAllByNpcIdProvider returns slice provider", func(t *testing.T) {
-		provider := getAllByNpcIdProvider(npcId)(db)
+	t.Run("getAllByNpcIdPagedProvider returns paged provider", func(t *testing.T) {
+		provider := getAllByNpcIdPagedProvider(npcId, model.Page{Number: 1, Size: 50})(db)
 
-		entities, err := provider()
+		paged, err := provider()
 		assert.NoError(t, err) // Empty result is not an error
-		assert.Empty(t, entities)
+		assert.Empty(t, paged.Items)
 	})
 }
 

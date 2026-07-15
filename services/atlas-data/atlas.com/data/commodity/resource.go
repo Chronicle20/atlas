@@ -3,9 +3,11 @@ package commodity
 import (
 	"atlas-data/rest"
 	"net/http"
+	"sort"
 	"strconv"
 
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
@@ -30,17 +32,23 @@ func InitResource(db *gorm.DB) func(si jsonapi.ServerInformation) server.RouteIn
 func handleGetCommodityItemsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
+			query := r.URL.Query()
+			page, err := paginate.ParseParams(query, paginate.DefaultPageSize, paginate.MaxPageSize)
+			if err != nil {
+				server.WriteBadRequest(d.Logger(), w, err.Error())
+				return
+			}
+
 			s := NewStorage(d.Logger(), db)
-			res, err := s.GetAll(d.Context())
+			paged, err := s.AllPagedProvider(d.Context())(page)()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Unable to retrieve commodity items.")
 				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
-			query := r.URL.Query()
 			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+			server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(paged.Items, paginate.EnvelopeFor(paged), r)
 		}
 	}
 }
@@ -49,8 +57,15 @@ func handleGetCommoditiesByItemRequest(db *gorm.DB) func(d *rest.HandlerDependen
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return rest.ParseItemId(d.Logger(), func(itemId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
+				query := r.URL.Query()
+				page, err := paginate.ParseParams(query, paginate.DefaultPageSize, paginate.MaxPageSize)
+				if err != nil {
+					server.WriteBadRequest(d.Logger(), w, err.Error())
+					return
+				}
+
 				s := NewStorage(d.Logger(), db)
-				all, err := s.GetAll(d.Context())
+				all, err := s.DrainAllProvider(d.Context())()
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Unable to retrieve commodities for itemId=%d.", itemId)
 					server.WriteErrorResponse(d.Logger())(w)(err)
@@ -64,9 +79,13 @@ func handleGetCommoditiesByItemRequest(db *gorm.DB) func(d *rest.HandlerDependen
 					}
 				}
 
-				query := r.URL.Query()
+				sort.SliceStable(filtered, func(i, j int) bool {
+					return filtered[i].Id < filtered[j].Id
+				})
+
+				paged := paginate.Slice(filtered, page)
 				queryParams := jsonapi.ParseQueryFields(&query)
-				server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(filtered)
+				server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(paged.Items, paginate.EnvelopeFor(paged), r)
 			}
 		})
 	}

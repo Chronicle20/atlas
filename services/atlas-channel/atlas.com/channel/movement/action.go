@@ -1,8 +1,8 @@
 package movement
 
 // basicAttackRangeLo / basicAttackRangeHi are the inclusive bounds for a
-// basic mob attack action. The classification is taken from Cosmic v83's
-// MoveLifeHandler.java:108 — values outside this band are not basic attacks
+// basic mob attack action in the v83 MoveLife nActionAndDir
+// encoding — values outside this band are not basic attacks
 // (they may be movement, stand, hit, fall, or — for [42, 59] — a named
 // skill, which atlas-channel handles via the existing skill-id branch).
 const (

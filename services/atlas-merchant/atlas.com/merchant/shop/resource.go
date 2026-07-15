@@ -2,7 +2,9 @@ package shop
 
 import (
 	"atlas-merchant/listing"
+	msg "atlas-merchant/message"
 	"atlas-merchant/rest"
+	"atlas-merchant/searchcount"
 	"errors"
 	"net/http"
 	"strconv"
@@ -29,6 +31,8 @@ func InitializeRoutes(si jsonapi.ServerInformation) func(db *gorm.DB) server.Rou
 			r := router.PathPrefix("/merchants/{shopId}").Subrouter()
 			r.HandleFunc("", registerHandler("get_merchant", handleGetMerchant(db))).Methods(http.MethodGet)
 			r.HandleFunc("/relationships/listings", registerHandler("get_merchant_listings", handleGetMerchantListings(db))).Methods(http.MethodGet)
+			r.HandleFunc("/blacklist", registerHandler("get_merchant_blacklist", handleGetMerchantBlacklist(db))).Methods(http.MethodGet)
+			r.HandleFunc("/visits", registerHandler("get_merchant_visits", handleGetMerchantVisits(db))).Methods(http.MethodGet)
 
 			cr := router.PathPrefix("/characters/{characterId}").Subrouter()
 			cr.HandleFunc("/merchants", registerHandler("get_character_merchants", handleGetCharacterMerchants(db))).Methods(http.MethodGet)
@@ -36,6 +40,7 @@ func InitializeRoutes(si jsonapi.ServerInformation) func(db *gorm.DB) server.Rou
 
 			wr := router.PathPrefix("/worlds/{worldId}").Subrouter()
 			wr.HandleFunc("/channels/{channelId}/maps/{mapId}/instances/{instanceId}/merchants", registerHandler("get_field_merchants", handleGetFieldMerchants(db))).Methods(http.MethodGet)
+			wr.HandleFunc("/shop-searches/top", registerHandler("get_top_shop_searches", handleGetTopShopSearches(db))).Methods(http.MethodGet)
 		}
 	}
 }
@@ -75,6 +80,14 @@ func handleGetMerchant(db *gorm.DB) rest.GetHandler {
 					d.Logger().WithError(err).Errorf("Creating REST model.")
 					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
+				}
+
+				// Persisted shop messages ride along so the channel can replay
+				// the chat log into the owner's management view (audit F10).
+				if messages, err := msg.NewProcessor(d.Logger(), d.Context(), db).GetMessages(shopId); err != nil {
+					d.Logger().WithError(err).Warnf("Retrieving messages for shop [%s].", shopId)
+				} else {
+					res.Messages = transformMessages(messages)
 				}
 
 				query := r.URL.Query()
@@ -166,8 +179,20 @@ func handleSearchListings(db *gorm.DB) rest.GetHandler {
 				return
 			}
 
+			criteria := ListingSearchCriteria{ItemId: uint32(v)}
+			if ws := r.URL.Query().Get("worldId"); ws != "" {
+				wv, err := strconv.ParseUint(ws, 10, 8)
+				if err != nil {
+					w.WriteHeader(http.StatusBadRequest)
+					return
+				}
+				wid := world.Id(wv)
+				criteria.WorldId = &wid
+			}
+			criteria.Descending = r.URL.Query().Get("order") == "desc"
+
 			p := NewProcessor(d.Logger(), d.Context(), db)
-			results, err := p.SearchListingsByItemId(uint32(v))
+			results, err := p.SearchListingsByItemId(criteria)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Searching listings by item.")
 				server.WriteErrorResponse(d.Logger())(w)(err)
@@ -222,6 +247,7 @@ func handleGetCharacterVisiting(db *gorm.DB) rest.GetHandler {
 				p := NewProcessor(d.Logger(), d.Context(), db)
 				shopId, err := p.GetShopForCharacter(characterId)
 				if err != nil {
+					d.Logger().WithError(err).Debugf("Character [%d] is not occupying a shop.", characterId)
 					w.WriteHeader(http.StatusNotFound)
 					return
 				}
@@ -229,6 +255,7 @@ func handleGetCharacterVisiting(db *gorm.DB) rest.GetHandler {
 				m, err := p.GetById(shopId)
 				if err != nil {
 					if errors.Is(err, ErrNotFound) {
+						d.Logger().WithError(err).Warnf("Occupancy for character [%d] resolved shop [%s] but it no longer loads.", characterId, shopId)
 						w.WriteHeader(http.StatusNotFound)
 						return
 					}
@@ -247,6 +274,65 @@ func handleGetCharacterVisiting(db *gorm.DB) rest.GetHandler {
 				query := r.URL.Query()
 				queryParams := jsonapi.ParseQueryFields(&query)
 				server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+			}
+		})
+	}
+}
+
+type BlacklistRestModel struct {
+	Id   string `json:"-"`
+	Name string `json:"name"`
+}
+
+func (r BlacklistRestModel) GetName() string        { return "merchant-blacklist" }
+func (r BlacklistRestModel) GetID() string          { return r.Id }
+func (r *BlacklistRestModel) SetID(id string) error { r.Id = id; return nil }
+
+type VisitRestModel struct {
+	Id    string `json:"-"`
+	Name  string `json:"name"`
+	Count uint32 `json:"count"`
+}
+
+func (r VisitRestModel) GetName() string        { return "merchant-visits" }
+func (r VisitRestModel) GetID() string          { return r.Id }
+func (r *VisitRestModel) SetID(id string) error { r.Id = id; return nil }
+
+func handleGetMerchantBlacklist(db *gorm.DB) rest.GetHandler {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseShopId(d.Logger(), func(shopId uuid.UUID) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				names, err := NewProcessor(d.Logger(), d.Context(), db).GetBlacklist(shopId)
+				if err != nil {
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+				res := make([]BlacklistRestModel, 0, len(names))
+				for _, n := range names {
+					res = append(res, BlacklistRestModel{Id: n, Name: n})
+				}
+				query := r.URL.Query()
+				server.MarshalResponse[[]BlacklistRestModel](d.Logger())(w)(c.ServerInformation())(jsonapi.ParseQueryFields(&query))(res)
+			}
+		})
+	}
+}
+
+func handleGetMerchantVisits(db *gorm.DB) rest.GetHandler {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseShopId(d.Logger(), func(shopId uuid.UUID) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				visits, err := NewProcessor(d.Logger(), d.Context(), db).GetVisits(shopId)
+				if err != nil {
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+				res := make([]VisitRestModel, 0, len(visits))
+				for _, v := range visits {
+					res = append(res, VisitRestModel{Id: v.Name(), Name: v.Name(), Count: v.Count()})
+				}
+				query := r.URL.Query()
+				server.MarshalResponse[[]VisitRestModel](d.Logger())(w)(c.ServerInformation())(jsonapi.ParseQueryFields(&query))(res)
 			}
 		})
 	}
@@ -294,6 +380,32 @@ func handleGetFieldMerchants(db *gorm.DB) rest.GetHandler {
 					})
 				})
 			})
+		})
+	}
+}
+
+func handleGetTopShopSearches(db *gorm.DB) rest.GetHandler {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseWorldId(d.Logger(), func(worldId world.Id) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				results, err := searchcount.NewProcessor(d.Logger(), d.Context(), db).GetTop(worldId, 10)
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Getting top shop searches.")
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+
+				res, err := model.SliceMap(searchcount.Transform)(model.FixedProvider(results))(model.ParallelMap())()
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Creating REST models.")
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				server.MarshalResponse[[]searchcount.RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+			}
 		})
 	}
 }

@@ -1568,16 +1568,19 @@
   direction: clientbound
   opcode: 319
   fname: CEmployeePool::OnEmployeeEnterField
+  packet: merchant/clientbound/EmployeeSpawn
   provenance: csv-import
 - op: DESTROY_HIRED_MERCHANT
   direction: clientbound
   opcode: 320
   fname: CEmployeePool::OnEmployeeLeaveField
+  packet: merchant/clientbound/EmployeeDestroy
   provenance: csv-import
 - op: UPDATE_HIRED_MERCHANT
   direction: clientbound
   opcode: 321
   fname: CEmployeePool::OnEmployeeMiniRoomBalloon
+  packet: merchant/clientbound/EmployeeUpdate
   provenance: csv-import
 - op: DROP_ITEM_FROM_MAPOBJECT
   direction: clientbound

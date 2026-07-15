@@ -563,7 +563,6 @@
             "MERCHANT_ORGANIZE": 40,
             "MERCHANT_EXIT": 41,
             "MERCHANT_WITHDRAW_MESO": 43,
-            "MERCHANT_NAME_CHANGE": 45,
             "MERCHANT_VIEW_VISIT_LIST": 46,
             "MERCHANT_VIEW_BLACK_LIST": 47,
             "MERCHANT_ADD_TO_BLACK_LIST": 48,
@@ -1195,6 +1194,26 @@
         "opCode": "0x104",
         "validator": "LoggedInValidator",
         "handler": "ItemUpgradeUpdateHandle"
+      },
+      {
+        "opCode": "0x42",
+        "validator": "LoggedInValidator",
+        "handler": "OwlActionHandle",
+        "options": {
+          "operations": {
+            "OPEN": 5
+          }
+        }
+      },
+      {
+        "opCode": "0x43",
+        "validator": "LoggedInValidator",
+        "handler": "OwlWarpHandle"
+      },
+      {
+        "opCode": "0x53",
+        "validator": "LoggedInValidator",
+        "handler": "ShopScannerItemUseHandle"
       }
     ],
     "writers": [
@@ -2308,6 +2327,18 @@
         "writer": "SpawnMonster"
       },
       {
+        "opCode": "0x109",
+        "writer": "SpawnHiredMerchant"
+      },
+      {
+        "opCode": "0x10A",
+        "writer": "DestroyHiredMerchant"
+      },
+      {
+        "opCode": "0x10B",
+        "writer": "UpdateHiredMerchant"
+      },
+      {
         "opCode": "0xED",
         "writer": "DestroyMonster"
       },
@@ -2729,8 +2760,13 @@
             "INVITE_RESULT": 3,
             "ENTER": 4,
             "ENTER_RESULT": 5,
+            "CHAT": 6,
+            "CHAT_THING": 8,
             "LEAVE": 10,
-            "UPDATE_MERCHANT": 25
+            "UPDATE_MERCHANT": 25,
+            "PERSONAL_STORE_ITEM_SOLD": 26,
+            "MERCHANT_VIEW_VISIT_LIST": 46,
+            "MERCHANT_VIEW_BLACK_LIST": 47
           },
           "enterError": {
             "ROOM_CLOSED": 1,
@@ -2755,8 +2791,20 @@
             "NOT_ENOUGH_MESOS": 21,
             "INCORRECT_PASSWORD": 22,
             "ITEM_EXPIRED": 24
+          },
+          "leaveReason": {
+            "CANNOT_ESTABLISH_HERE": 1,
+            "SHOP_CLOSED": 3,
+            "USER_BANNED": 5,
+            "TIME_LIMIT_PASSED": 6,
+            "OUT_OF_STOCK": 14,
+            "BANNED_TIME_LIMIT": 15
           }
         }
+      },
+      {
+        "opCode": "0x0A5",
+        "writer": "MiniRoom"
       },
       {
         "opCode": "0x13B",
@@ -2994,6 +3042,33 @@
             "RESULT_SUCCESS": 65,
             "RESULT_FAILURE": 67,
             "INVALID": 66
+          }
+        }
+      },
+      {
+        "opCode": "0x46",
+        "writer": "ShopScannerResult",
+        "options": {
+          "operations": {
+            "RESULT": 6,
+            "HOT_LIST": 7
+          }
+        }
+      },
+      {
+        "opCode": "0x47",
+        "writer": "ShopLinkResult",
+        "options": {
+          "operations": {
+            "SUCCESS": 0,
+            "CLOSED": 1,
+            "FULL": 2,
+            "BUSY": 3,
+            "DEAD": 4,
+            "NO_TRADE": 7,
+            "DENIED": 17,
+            "MAINTENANCE": 18,
+            "FM_ONLY": 23
           }
         }
       }

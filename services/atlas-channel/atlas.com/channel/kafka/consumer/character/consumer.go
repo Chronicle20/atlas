@@ -8,9 +8,11 @@ import (
 	"atlas-channel/listener"
 	"atlas-channel/maps/location"
 	_map "atlas-channel/map"
+	"atlas-channel/merchant"
 	"atlas-channel/party"
 	"atlas-channel/server"
 	"atlas-channel/session"
+	"atlas-channel/shopscanner"
 	model2 "atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
 	"context"
@@ -263,6 +265,25 @@ func warpCharacter(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 					// client receives spawn packets in the correct order (SetField first).
 					if serr := mapconsumer.SpawnForSelf(l, ctx, wp)(s, targetField); serr != nil {
 						l.WithError(serr).Warnf("SpawnForSelf failed for character [%d] during warp; continuing.", c.Id())
+					}
+
+					// Owl warp auto-enter (task-127): if this arrival completes a
+					// pending shop-scanner warp, enter the shop as a visitor. The
+					// entry stays pending until VisitorEntered or CapacityFull.
+					reg := shopscanner.GetRegistry()
+					if pe, ok := reg.GetPending(tenant.MustFromContext(ctx), s.CharacterId()); ok {
+						if pe.MapId == event.Body.TargetMapId {
+							warpVisitorName := ""
+							if wc, werr := character.NewProcessor(l, ctx).GetById()(s.CharacterId()); werr == nil {
+								warpVisitorName = wc.Name()
+							}
+							if err := merchant.NewProcessor(l, ctx).EnterShop(s.CharacterId(), pe.ShopId, warpVisitorName); err != nil {
+								l.WithError(err).Errorf("Unable to auto-enter shop [%s] for character [%d] after owl warp.", pe.ShopId, s.CharacterId())
+								reg.RemovePending(tenant.MustFromContext(ctx), s.CharacterId())
+							}
+						} else {
+							reg.RemovePending(tenant.MustFromContext(ctx), s.CharacterId())
+						}
 					}
 					return nil
 				}

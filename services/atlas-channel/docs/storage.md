@@ -25,6 +25,13 @@ The service maintains the following in-memory registries:
 - Each entry holds tenant, channel model, IP address, and port
 - Provides Register and GetAll operations
 
+### Shop Scanner Registry
+- Tracks per-character owl-of-Minerva (shop scanner) state
+- Singleton via `sync.Once`, thread-safe via a single `sync.RWMutex`
+- Keyed by `Key{Tenant, CharacterId}`
+- Holds two maps: `lastSearch` (`SearchEntry{ItemId}` — the most recent executed search) and `pending` (`PendingEntry{ShopId, OwnerId, MapId}` — an in-flight warp-then-enter)
+- Provides SetLastSearch/GetLastSearch, SetPending/GetPending/RemovePending, and ClearCharacter (invoked on session destroy)
+
 ## Data Persistence
 
 All persistent data is managed by external services accessed via REST APIs:
@@ -49,6 +56,7 @@ All persistent data is managed by external services accessed via REST APIs:
 - Chair state: CHAIRS service
 - Chalkboard state: CHALKBOARDS service
 - NPC shop data: NPC_SHOP service
+- Personal shop / hired merchant data (shops, listings, blacklist, visits, Frederick status, shop search): MERCHANT service
 - Transport routes: ROUTES service
 - Weather state: WEATHER service
 - World data: WORLDS service

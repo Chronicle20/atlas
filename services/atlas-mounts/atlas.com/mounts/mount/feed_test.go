@@ -31,7 +31,7 @@ func TestApplyFeedHealsAndGainsExp(t *testing.T) {
 
 func TestApplyFeedLevelsUp(t *testing.T) {
 	// level 1, exp 22, tiredness 30, healMax 30 → gain=ceil((30/30)*(2+6))=8
-	// → exp 30 >= need(1)=24 → level 2. Cosmic does NOT reset exp, so exp stays 30.
+	// → exp 30 >= need(1)=24 → level 2. Exp is NOT reset on level-up, so exp stays 30.
 	res := ApplyFeed(FeedInput{Level: 1, Exp: 22, Tiredness: 30, HealMax: 30})
 	if res.Level != 2 || res.Exp != 30 || !res.LevelUp {
 		t.Fatalf("got %+v", res)
@@ -53,7 +53,7 @@ func TestApplyFeedSingleLevelPerFeedAndTableEnd(t *testing.T) {
 	}{
 		{
 			// One level per feed even when exp is already far past several thresholds
-			// (Cosmic uses a single `if`, not a loop). heal=30, gain=ceil((30/30)*(2*0+6))=6
+			// (leveling is a single `if`, not a loop). heal=30, gain=ceil((30/30)*(2*0+6))=6
 			// → exp 106; level 0 < CAP and 106 >= need(0)=1 → level 1 only; exp NOT reset.
 			name: "single level per feed, exp not reset",
 			in:   FeedInput{Level: 0, Exp: 100, Tiredness: 30, HealMax: 30},

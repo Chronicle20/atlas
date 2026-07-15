@@ -62,8 +62,8 @@ func mtsTestCharacterData() charpkt.CharacterData {
 // writer owns beyond the reused CharacterData envelope. The CharacterData block
 // is variable-length, so we anchor the assertion at the END of the buffer:
 // the last 8 bytes are the server-now FILETIME, preceded by the five LE int32s,
-// preceded by the account-name ZXString. The Cosmic-faithful defaults are the
-// IDA-confirmed five Decode4 values (5000/7/500/24/168); the 8-byte server-time
+// preceded by the account-name ZXString. The defaults are the IDA-confirmed
+// five Decode4 values (5000/7/500/24/168); the 8-byte server-time
 // value is passed explicitly by the test.
 func TestSetItcDefaultsGolden(t *testing.T) {
 	l, _ := testlog.NewNullLogger()

@@ -27,10 +27,10 @@ func NewExpirationTask(l logrus.FieldLogger, ctx context.Context, db *gorm.DB, i
 func (t *ExpirationTask) Run() {
 	noTenantCtx := database.WithoutTenantFilter(t.ctx)
 
-	var results []Entity
-	err := t.db.WithContext(noTenantCtx).
-		Where("expires_at IS NOT NULL AND expires_at < NOW() AND state IN (?, ?)", byte(Open), byte(Maintenance)).
-		Find(&results).Error
+	// Single source of truth for the expiry predicate (incl. Draft — a hired
+	// merchant abandoned during setup must still be reaped at its 24h expiry);
+	// run cross-tenant so one task instance sweeps every tenant.
+	results, err := getExpired()(t.db.WithContext(noTenantCtx))()
 	if err != nil {
 		t.l.WithError(err).Errorln("Error querying expired shops.")
 		return

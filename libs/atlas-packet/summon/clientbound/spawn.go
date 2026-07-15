@@ -60,8 +60,8 @@ func (m SummonSpawn) Encode(l logrus.FieldLogger, ctx context.Context) func(opti
 	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
 		w.WriteInt(m.ownerId)
-		// oid: the summon object id, present on ALL versions (cid, oid, skillId) —
-		// matches Cosmic spawnSummon (ownerId, objectId, skillId). The ACTIVE client
+		// oid: the summon object id, present on ALL versions — the wire is
+		// ownerId, objectId, skillId. The ACTIVE client
 		// dispatch (v83 field path → OnCreated @0x95ADEC) has the DISPATCHER consume
 		// the leading cid, so OnCreated then reads oid, skillId, charLevel, SLV. This
 		// was confirmed live in x32dbg: at OnCreated's first Decode4 the read offset

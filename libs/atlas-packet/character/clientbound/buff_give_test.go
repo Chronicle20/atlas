@@ -38,7 +38,7 @@ func TestBuffGiveEmptyRoundTrip(t *testing.T) {
 }
 
 // TestBuffGiveDiseaseTrailer pins that a BuffGive carrying a mob-applied
-// disease (here SLOW) ends with Cosmic's giveDebuff trailer
+// disease (here SLOW) ends with the debuff trailer
 // (Short(900) + Byte(1)) instead of the buff trailer (Short(0) + Byte(0)).
 // Without this branch the v83 client gets the raw stat but skips the
 // debuff icon and the flag-gated effects (WEAKEN jump-block, etc.).

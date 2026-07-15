@@ -1,0 +1,93 @@
+{
+  "task": "task-127-owl-shop-search",
+  "reviews": [
+    {
+      "reviewer": "backend-guidelines-reviewer",
+      "service": "atlas-merchant, atlas-channel (changed packages only)",
+      "path": "services/atlas-merchant/atlas.com/merchant, services/atlas-channel/atlas.com/channel, libs/atlas-constants/map, libs/atlas-packet/merchant, libs/atlas-packet/cash/serverbound, libs/atlas-database/databasetest",
+      "date": "2026-07-03",
+      "build": "pass",
+      "testsPassed": 1,
+      "testsFailed": 0,
+      "overallStatus": "needs-work",
+      "domains": [
+        {
+          "name": "searchcount (atlas-merchant)",
+          "type": "domain",
+          "checks": [
+            {"id": "DOM-01", "name": "builder.go exists", "status": "fail", "evidence": "no builder.go in services/atlas-merchant/atlas.com/merchant/searchcount/"},
+            {"id": "DOM-02", "name": "ToEntity() method", "status": "fail", "evidence": "searchcount/entity.go has Make(Entity) but no Model.ToEntity()"},
+            {"id": "DOM-03", "name": "Make(Entity) function", "status": "pass", "evidence": "searchcount/entity.go:25"},
+            {"id": "DOM-04", "name": "Transform function", "status": "pass", "evidence": "searchcount/rest.go:24"},
+            {"id": "DOM-05", "name": "TransformSlice function", "status": "warn", "evidence": "absent; callers use model.SliceMap(searchcount.Transform) instead (shop/resource.go:326)"},
+            {"id": "DOM-06", "name": "Processor accepts FieldLogger", "status": "pass", "evidence": "searchcount/processor.go:25"},
+            {"id": "DOM-07", "name": "Handlers pass d.Logger()", "status": "pass", "evidence": "shop/resource.go:319"},
+            {"id": "DOM-08", "name": "POST/PATCH use RegisterInputHandler", "status": "pass", "evidence": "N/A - read-only domain, no POST/PATCH"},
+            {"id": "DOM-09", "name": "Transform errors handled", "status": "pass", "evidence": "shop/resource.go:326-331"},
+            {"id": "DOM-10", "name": "Test DB has tenant callbacks", "status": "pass", "evidence": "searchcount/processor_test.go:16 via databasetest.NewInMemoryTenantDB"},
+            {"id": "DOM-11", "name": "Providers use lazy evaluation", "status": "pass", "evidence": "searchcount/provider.go:12-21"},
+            {"id": "DOM-12", "name": "No os.Getenv() in handlers", "status": "pass", "evidence": "no matches"},
+            {"id": "DOM-13", "name": "No cross-domain logic in handlers", "status": "fail", "evidence": "shop/resource.go:315-339 handleGetTopShopSearches directly instantiates searchcount.NewProcessor from a REST handler in a different domain's resource.go"},
+            {"id": "DOM-14", "name": "Handlers don't call providers directly", "status": "pass", "evidence": "no direct provider calls from resource.go"},
+            {"id": "DOM-15", "name": "No direct entity creation in handlers", "status": "pass", "evidence": "no db.Create/Save/Delete in shop/resource.go"},
+            {"id": "DOM-16", "name": "administrator.go exists for writes", "status": "pass", "evidence": "searchcount/administrator.go:13 incrementSearchCount"},
+            {"id": "DOM-17", "name": "Domain error to HTTP status mapping", "status": "pass", "evidence": "shop/resource.go:320-324"},
+            {"id": "DOM-18", "name": "JSON:API interface on REST models", "status": "pass", "evidence": "searchcount/rest.go:11-22"},
+            {"id": "DOM-19", "name": "Request models use flat structure", "status": "pass", "evidence": "N/A - no CreateRequest/UpdateRequest"},
+            {"id": "DOM-20", "name": "Table-driven tests", "status": "pass", "evidence": "searchcount/processor_test.go, libs/atlas-constants/map/model_test.go:25-47"}
+          ]
+        },
+        {
+          "name": "shopscanner (atlas-channel)",
+          "type": "sub-domain",
+          "checks": [
+            {"id": "SUB-01", "name": "Has processor or uses parent processor", "status": "pass", "evidence": "shopscanner/processor.go:20-28"},
+            {"id": "SUB-02", "name": "Has administrator for writes", "status": "pass", "evidence": "N/A - no DB persistence, pure in-memory registry"},
+            {"id": "SUB-03", "name": "Uses RegisterInputHandler[T] for POST", "status": "pass", "evidence": "N/A - socket packet handlers, not REST"},
+            {"id": "SUB-04", "name": "No manual JSON parsing", "status": "pass", "evidence": "socket/handler/owl_action.go:22-23, owl_warp.go:30-31, shop_scanner_item_use.go:25-26"}
+          ]
+        },
+        {
+          "name": "libs/atlas-constants/map (FM-range helper)",
+          "type": "support",
+          "checks": [
+            {"id": "DOM-21a", "name": "New FM helper does not duplicate existing atlas-constants symbol", "status": "pass", "evidence": "git diff shows net-new addition; correctly placed in libs/atlas-constants/map"},
+            {"id": "DOM-21b", "name": "Item classification 231 uses item.GetClassification, not raw division", "status": "fail", "evidence": "services/atlas-channel/atlas.com/channel/socket/handler/shop_scanner_item_use.go:30 uses uint32(itemId)/10000 != 231 instead of item.GetClassification(itemId) (libs/atlas-constants/item/constants.go:127-129)"},
+            {"id": "DOM-21c", "name": "Pre-existing shop.IsFreemarketRoom not silently duplicated", "status": "warn", "evidence": "services/atlas-merchant/atlas.com/merchant/shop/validation.go:31-58 has a similarly named but functionally different predicate; not a violation but a naming-confusion risk"}
+          ]
+        },
+        {
+          "name": "atlas-channel merchant client (external HTTP)",
+          "type": "support",
+          "checks": [
+            {"id": "EXT-01", "name": "JSON:API target struct implements relationship interfaces", "status": "fail", "evidence": "services/atlas-channel/atlas.com/channel/merchant/rest.go:175-224 ListingSearchRestModel/TopSearchRestModel missing SetToOneReferenceID/SetToManyReferenceIDs"},
+            {"id": "EXT-02", "name": "httptest-backed integration test exists", "status": "fail", "evidence": "no httptest.NewServer anywhere in services/atlas-channel/atlas.com/channel/merchant/"},
+            {"id": "EXT-03", "name": "Errors distinguish 404 from other failures", "status": "pass", "evidence": "merchant/processor.go:96-102 propagates raw error unchanged"},
+            {"id": "EXT-04", "name": "Service URL not hardcoded; uses RootUrl(domain)", "status": "pass", "evidence": "merchant/requests.go:20-22"}
+          ]
+        },
+        {
+          "name": "Kafka topic naming and producer stubbing",
+          "type": "support",
+          "checks": [
+            {"id": "DOM-22", "name": "Dockerfile matches go.mod direct requires", "status": "pass", "evidence": "N/A - go.mod unchanged for both services"},
+            {"id": "DOM-23", "name": "Kafka topic naming convention", "status": "pass", "evidence": "CommandRecordItemSearch reuses existing COMMAND_TOPIC_MERCHANT topic; deploy/ untouched"},
+            {"id": "DOM-24", "name": "Kafka producer stubbed in tests", "status": "pass", "evidence": "no new/changed test in searchcount, shopscanner, channel merchant, or shop hits an unstubbed emit path"}
+          ]
+        }
+      ],
+      "blocking": [
+        "DOM-01: searchcount package missing builder.go",
+        "DOM-02: searchcount/entity.go missing Model.ToEntity()",
+        "DOM-13: shop/resource.go:319 handleGetTopShopSearches calls searchcount.NewProcessor directly from a REST handler, bypassing shop's own processor layer",
+        "DOM-21b: socket/handler/shop_scanner_item_use.go:30 hand-rolls itemId/10000 classification check instead of using item.GetClassification",
+        "EXT-01: ListingSearchRestModel and TopSearchRestModel (atlas-channel merchant/rest.go) missing SetToOneReferenceID/SetToManyReferenceIDs stubs",
+        "EXT-02: no httptest-backed integration test for SearchListings/GetTopSearches client methods"
+      ],
+      "nonBlocking": [
+        "DOM-21c: shop.IsFreemarketRoom (atlas-merchant) and _map.IsFreeMarketRoom (atlas-constants) are similarly named but cover different ranges - naming confusion risk",
+        "DOM-05: searchcount has no TransformSlice function"
+      ]
+    }
+  ]
+}

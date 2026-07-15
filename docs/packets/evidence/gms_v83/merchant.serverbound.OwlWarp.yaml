@@ -1,0 +1,11 @@
+packet: merchant/serverbound/OwlWarp
+direction: serverbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CUIShopScanResult::OnButtonClicked
+    address: "0x8a4423"
+    decompile_sha256: 8a43982638e511e4900c715b88ebb7ea2aa8a9cc89d23383ca1f446d30dfa9d4
+verifies:
+  - libs/atlas-packet/merchant/serverbound/owl_warp_test.go#TestOwlWarpWireShape
+  - libs/atlas-packet/merchant/serverbound/owl_warp_test.go#TestOwlWarpRoundTrip

@@ -1,0 +1,11 @@
+packet: merchant/clientbound/ShopScannerHotList
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnShopScannerResult#HotList
+    address: "0x972c4b"
+    decompile_sha256: 9e72e929877d7092a813da7e446900ac0b367f7e0e391112d167eb788871fd20
+verifies:
+  - libs/atlas-packet/merchant/clientbound/shop_scanner_result_test.go#TestShopScannerHotListRoundTrip
+  - libs/atlas-packet/merchant/clientbound/shop_scanner_result_test.go#TestShopScannerHotListShortCount

@@ -6,11 +6,10 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 )
 
-// TestFaithfulPhysicalParity asserts FaithfulMaxPerHit reproduces Cosmic's
-// calcMaxDamage (physical branch) exactly for a SWORD1H wielder.
+// TestFaithfulPhysicalParity asserts FaithfulMaxPerHit reproduces the
+// physical ceiling formula exactly for a one-handed-sword wielder.
 //
-// Hand computation (Cosmic SummonDamageHandler.calcMaxDamage:130-141 +
-// Character.calculateMaxBaseDamage:792-808):
+// Hand computation:
 //
 //	watk = max(totalWatk=200, 14) = 200
 //	weapon = SWORD1H → multiplier 4.0, mainstat = str = 200, secondary = dex = 100
@@ -33,14 +32,14 @@ func TestFaithfulPhysicalParity(t *testing.T) {
 	got := FaithfulMaxPerHit(false, totalWatk, totalMatk, totalInt, str, dex, luk, item.WeaponTypeOneHandedSword, effWatk, effMatk)
 	const want int64 = 9720
 	if got != want {
-		t.Fatalf("physical FaithfulMaxPerHit = %d, want %d (hand-computed Cosmic value)", got, want)
+		t.Fatalf("physical FaithfulMaxPerHit = %d, want %d (hand-computed value)", got, want)
 	}
 }
 
-// TestFaithfulMagicParity asserts the magic branch matches Cosmic exactly.
+// TestFaithfulMagicParity asserts the magic branch reproduces the
+// INT-curve formula exactly.
 //
-// Hand computation (calcMaxDamage:127-128 +
-// Character.calculateMaxBaseMagicDamage:832-849):
+// Hand computation:
 //
 //	matk = max(totalMatk=200, 14) = 200, totalInt = 120 (<= 1700)
 //	maxbasedamage = 200 - 120 = 80
@@ -64,7 +63,7 @@ func TestFaithfulMagicParity(t *testing.T) {
 	got := FaithfulMaxPerHit(true, totalWatk, totalMatk, totalInt, str, dex, luk, item.WeaponTypeNone, effWatk, effMatk)
 	const want int64 = 940
 	if got != want {
-		t.Fatalf("magic FaithfulMaxPerHit = %d, want %d (hand-computed Cosmic value)", got, want)
+		t.Fatalf("magic FaithfulMaxPerHit = %d, want %d (hand-computed value)", got, want)
 	}
 }
 
@@ -82,7 +81,7 @@ func TestFaithfulBowParity(t *testing.T) {
 	got := FaithfulMaxPerHit(false, 300, 0, 0, 40, 250, 0, item.WeaponTypeBow, 80, 0)
 	const want int64 = 11534
 	if got != want {
-		t.Fatalf("bow FaithfulMaxPerHit = %d, want %d (hand-computed Cosmic value)", got, want)
+		t.Fatalf("bow FaithfulMaxPerHit = %d, want %d (hand-computed value)", got, want)
 	}
 }
 

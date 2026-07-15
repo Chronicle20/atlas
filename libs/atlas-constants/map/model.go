@@ -42,6 +42,12 @@ func (id Id) IsSentinel() bool {
 	return id == EmptyMapId
 }
 
+// IsFreeMarketRoom reports whether id is inside the Free Market
+// (entrance 910000000 through room 22 at 910000022).
+func IsFreeMarketRoom(id Id) bool {
+	return id >= FreeMarketEntranceId && id <= FreeMarketRoomLastId
+}
+
 func GenerateSequentialDungeonIds(baseId Id, size int) []Id {
 	ids := make([]Id, 0)
 	for i := range size {

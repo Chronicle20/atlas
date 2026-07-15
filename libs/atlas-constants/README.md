@@ -27,6 +27,7 @@ a service-local copy.
 | [`inventory/slot`](./inventory/slot) | `Position`, `Type`, `Slot`, `GetSlotByType`, `GetSlotByPosition` | Equip-slot logic (cap, top, weapon, ring1…). |
 | [`invite`](./invite) | `Id`, `Type`, `CommandType`, `StatusType` | Party / guild / family invite flows. |
 | [`item`](./item) | `Id`, `Classification`, `WeaponType`, `GetClassification`, `GetWeaponType`, `Is*` predicates, named `Classification*` constants for hat/face/eye/earring/top/overall/bottom/shoes/gloves/shield/cape/ring/pendant/belt/medal/tamed-mob/saddle, all use+setup+etc+cash singletons | Anything that maps item id → category. **Use `item.GetClassification(id)` instead of `id / 10000`. Use the named `Classification*` constants instead of bare numeric literals.** |
+| [`merchant`](./merchant) | `ShopType` (character/hired-merchant), `ShopState` (Draft/Open/Maintenance/Closed) | Anything interpreting merchant-shop rows off the REST/Kafka wire. **Do not hand-mirror these bytes in services.** |
 | [`job`](./job) | `Id`, `Type` | Job / class IDs and type-codes (Beginner / Warrior / Magician / …). |
 | [`map`](./map) | `Id` (`uint32`), field-limit constants | Map IDs in routing, drop tables, spawn rules. |
 | [`monster`](./monster) | `Id`, monster status / skill constants | Monster IDs and per-monster status flags. |

@@ -1609,6 +1609,7 @@
   direction: clientbound
   opcode: 243
   fname: CEmployeePool::OnEmployeeEnterField
+  packet: merchant/clientbound/EmployeeSpawn
   provenance: ida-discovered
   ida:
     address: 5232256
@@ -1616,6 +1617,7 @@
   direction: clientbound
   opcode: 244
   fname: CEmployeePool::OnEmployeeLeaveField
+  packet: merchant/clientbound/EmployeeDestroy
   provenance: ida-discovered
   ida:
     address: 5232256
@@ -1623,6 +1625,7 @@
   direction: clientbound
   opcode: 245
   fname: CEmployeePool::OnEmployeeMiniRoomBalloon
+  packet: merchant/clientbound/EmployeeUpdate
   provenance: ida-discovered
   ida:
     address: 5232256
@@ -2920,3 +2923,19 @@
   ida:
     address: 7968986
   note: 'v79 CUIItemUpgrade::Update @0x7998da COutPacket(250/0xFA), body Encode4(mode)+Encode4(token). v83 0x104=260 (d-10). Vicious Hammer gauge-confirm sender (task-129 extension, port 13340).'
+- op: OWL_WARP
+  direction: serverbound
+  opcode: 65
+  fname: CUIShopScanResult::OnButtonClicked
+  provenance: ida-discovered
+  ida:
+    address: 8441482
+  note: task-127 - legacy owl warp sender (button click rows 0xBB8-0xBBF); body [int ownerId][int mapId]
+- op: USE_SHOP_SCANNER_ITEM
+  direction: serverbound
+  opcode: 101
+  fname: CWvsContext::SendShopScannerItemUseRequest
+  provenance: ida-discovered
+  ida:
+    address: 9896867
+  note: task-127 - legacy frame [str serial][short pos][int itemId] (pre-v83, no searchItemId/descending/updateTime)

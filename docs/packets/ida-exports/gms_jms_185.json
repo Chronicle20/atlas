@@ -3,6 +3,113 @@
   "md5": "af6652ff9b7c549341f35e3569d7564a",
   "generated_at": "2026-05-14T00:00:00Z",
   "functions": {
+    "CEmployeePool::OnEmployeeEnterField": {
+      "address": "0x542a71",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "employeeId"
+        },
+        {
+          "op": "Decode4",
+          "comment": "templateId (else-branch, employee not already in pool)"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "ref": "CEmployee::Init"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "ref": "CEmployee::SetBalloon"
+        }
+      ]
+    },
+    "CEmployeePool::OnEmployeeLeaveField": {
+      "address": "0x542b0e",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "employeeId"
+        }
+      ]
+    },
+    "CEmployeePool::OnEmployeeMiniRoomBalloon": {
+      "address": "0x542b6c",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "employeeId"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "employee found in pool (GetAt && value)",
+          "ref": "CEmployee::SetBalloon"
+        }
+      ]
+    },
+    "CEmployee::Init": {
+      "address": "0x53eb06",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode2",
+          "comment": "x"
+        },
+        {
+          "op": "Decode2",
+          "comment": "y"
+        },
+        {
+          "op": "Decode2",
+          "comment": "foothold (GetFoothold arg)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "ownerName"
+        }
+      ]
+    },
+    "CEmployee::SetBalloon": {
+      "address": "0x53ee1a",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "miniRoomType"
+        },
+        {
+          "op": "Decode4",
+          "comment": "miniRoomSN",
+          "guard": "miniRoomType != 0"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "title",
+          "guard": "miniRoomType != 0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "curVisitors",
+          "guard": "miniRoomType != 0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "maxVisitors",
+          "guard": "miniRoomType != 0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "spec",
+          "guard": "miniRoomType != 0"
+        }
+      ]
+    },
     "CUIVega::OnVegaResult": {
       "address": "0x8b89ad",
       "direction": "clientbound",

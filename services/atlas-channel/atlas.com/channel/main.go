@@ -805,6 +805,11 @@ func produceWriters() []string {
 		monstercb.MonsterDamageWriter,
 		fieldcb.FieldEffectWeatherWriter,
 		merchantcb.HiredMerchantOperationWriter,
+		merchantcb.ShopScannerResultWriter,
+		merchantcb.ShopLinkResultWriter,
+		merchantcb.MerchantEmployeeSpawnWriter,
+		merchantcb.MerchantEmployeeDestroyWriter,
+		merchantcb.MerchantEmployeeUpdateWriter,
 		interactioncb.CharacterInteractionWriter,
 		interaction2.MiniRoomWriter,
 		mbcb.MonsterBookSetCardWriter,
@@ -928,6 +933,9 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[charsb.MonsterDamageFriendlyHandle] = handler.MonsterDamageFriendlyHandleFunc
 	handlerMap[interactionsb.CharacterInteractionHandle] = handler.CharacterInteractionHandleFunc
 	handlerMap[merchantsb.HiredMerchantOperationHandle] = handler.HiredMerchantOperationHandleFunc
+	handlerMap[merchantsb.OwlActionHandle] = handler.OwlActionHandleFunc
+	handlerMap[merchantsb.OwlWarpHandle] = handler.OwlWarpHandleFunc
+	handlerMap[merchantsb.ShopScannerItemUseHandle] = handler.ShopScannerItemUseHandleFunc
 	handlerMap[mbsb.MonsterBookCoverHandler] = handler.MonsterBookCoverHandleFunc
 	return handlerMap
 }

@@ -6,6 +6,7 @@ import (
 	"atlas-channel/consumable"
 	"atlas-channel/saga"
 	"atlas-channel/session"
+	"atlas-channel/shopscanner"
 	"atlas-channel/socket/writer"
 	"context"
 	"math"
@@ -148,6 +149,13 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			return
 		}
 
+		if it == CashSlotItemTypeStoreSearch {
+			sp := &cashsb.ItemUseStoreSearch{}
+			sp.Decode(l, ctx)(r, readerOptions)
+			_ = shopscanner.NewProcessor(l, ctx).Search(wp)(s, sp.SearchItemId(), sp.Descending(), itemId, source, sp.UpdateTime())
+			return
+		}
+
 		l.Warnf("Character [%d] attempting to use cash item [%d] in slot [%d] of type [%d]. updateTime [%d].", s.CharacterId(), itemId, source, it, updateTime)
 	}
 }
@@ -156,6 +164,7 @@ type CashSlotItemType uint32
 
 const (
 	CashSlotItemTypeFieldEffect   = CashSlotItemType(16)
+	CashSlotItemTypeStoreSearch   = CashSlotItemType(29)
 	CashSlotItemTypePetConsumable = CashSlotItemType(30)
 	CashSlotItemTypeChalkboard    = CashSlotItemType(32)
 	// GetCashSlotItemType's ClassificationPointReset branch (above) routes by
@@ -372,7 +381,7 @@ func GetCashSlotItemType(t tenant.Model) func(itemId item.Id) CashSlotItemType {
 			}
 		}
 		if category == item.ClassificationStoreSearch {
-			return CashSlotItemType(29)
+			return CashSlotItemTypeStoreSearch
 		}
 		if category == item.ClassificationPetConsumable {
 			return CashSlotItemTypePetConsumable

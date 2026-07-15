@@ -1,11 +1,14 @@
 package merchant
 
 import (
+	"atlas-channel/character"
 	merchant2 "atlas-channel/kafka/message/merchant"
 	"atlas-channel/kafka/producer"
 	"context"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	inventory2 "github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 	"github.com/google/uuid"
@@ -18,17 +21,27 @@ type Processor interface {
 	GetVisitingShop(characterId uint32) (Model, error)
 	GetShop(shopId string) (Model, error)
 	GetByCharacterId(characterId uint32) ([]Model, error)
+	HasFrederickPending(characterId uint32) (bool, error)
 	PlaceShop(f field.Model, characterId uint32, shopType byte, title string, permitItemId uint32, x int16, y int16) error
 	OpenShop(characterId uint32, shopId uuid.UUID) error
 	CloseShop(characterId uint32, shopId uuid.UUID) error
-	EnterShop(characterId uint32, shopId uuid.UUID) error
+	EnterShop(characterId uint32, shopId uuid.UUID, visitorName string) error
+	AddBlacklist(characterId uint32, shopId uuid.UUID, name string, bannedCharacterId uint32) error
+	RemoveBlacklist(characterId uint32, shopId uuid.UUID, name string) error
+	GetBlacklist(shopId string) ([]string, error)
+	GetVisits(shopId string) ([]VisitEntry, error)
 	ExitShop(characterId uint32, shopId uuid.UUID) error
 	SendMessage(characterId uint32, shopId uuid.UUID, content string) error
 	EnterMaintenance(characterId uint32, shopId uuid.UUID) error
 	ExitMaintenance(characterId uint32, shopId uuid.UUID) error
+	WithdrawMeso(characterId uint32, shopId uuid.UUID) error
+	OrganizeListings(characterId uint32, shopId uuid.UUID) error
 	AddListing(characterId uint32, shopId uuid.UUID, inventoryType byte, slot int16, quantity uint16, bundleSize uint16, pricePerBundle uint32) error
 	RemoveListing(characterId uint32, shopId uuid.UUID, listingIndex uint16) error
 	PurchaseBundle(characterId uint32, shopId uuid.UUID, listingIndex uint16, bundleCount uint16) error
+	SearchListings(worldId world.Id, itemId uint32, descending bool) ([]SearchListing, error)
+	GetTopSearches(worldId world.Id) ([]TopSearch, error)
+	RecordItemSearch(f field.Model, characterId uint32, itemId uint32) error
 }
 
 type ProcessorImpl struct {
@@ -62,6 +75,14 @@ func (p *ProcessorImpl) GetByCharacterId(characterId uint32) ([]Model, error) {
 	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByCharacterId(characterId), Extract, model.Filters[Model]())()
 }
 
+func (p *ProcessorImpl) HasFrederickPending(characterId uint32) (bool, error) {
+	rm, err := requestFrederickStatus(characterId)(p.l, p.ctx)
+	if err != nil {
+		return false, err
+	}
+	return rm.HasPending, nil
+}
+
 func (p *ProcessorImpl) PlaceShop(f field.Model, characterId uint32, shopType byte, title string, permitItemId uint32, x int16, y int16) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(merchant2.EnvCommandTopic)(PlaceShopCommandProvider(f, characterId, shopType, title, permitItemId, x, y))
 }
@@ -74,8 +95,40 @@ func (p *ProcessorImpl) CloseShop(characterId uint32, shopId uuid.UUID) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(merchant2.EnvCommandTopic)(CloseShopCommandProvider(characterId, shopId))
 }
 
-func (p *ProcessorImpl) EnterShop(characterId uint32, shopId uuid.UUID) error {
-	return producer.ProviderImpl(p.l)(p.ctx)(merchant2.EnvCommandTopic)(EnterShopCommandProvider(characterId, shopId))
+func (p *ProcessorImpl) EnterShop(characterId uint32, shopId uuid.UUID, visitorName string) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(merchant2.EnvCommandTopic)(EnterShopCommandProvider(characterId, shopId, visitorName))
+}
+
+func (p *ProcessorImpl) AddBlacklist(characterId uint32, shopId uuid.UUID, name string, bannedCharacterId uint32) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(merchant2.EnvCommandTopic)(AddBlacklistCommandProvider(characterId, shopId, name, bannedCharacterId))
+}
+
+func (p *ProcessorImpl) RemoveBlacklist(characterId uint32, shopId uuid.UUID, name string) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(merchant2.EnvCommandTopic)(RemoveBlacklistCommandProvider(characterId, shopId, name))
+}
+
+func (p *ProcessorImpl) GetBlacklist(shopId string) ([]string, error) {
+	rms, err := requestBlacklist(shopId)(p.l, p.ctx)
+	if err != nil {
+		return nil, err
+	}
+	names := make([]string, 0, len(rms))
+	for _, rm := range rms {
+		names = append(names, rm.Name)
+	}
+	return names, nil
+}
+
+func (p *ProcessorImpl) GetVisits(shopId string) ([]VisitEntry, error) {
+	rms, err := requestVisits(shopId)(p.l, p.ctx)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]VisitEntry, 0, len(rms))
+	for _, rm := range rms {
+		out = append(out, VisitEntry{Name: rm.Name, Count: rm.Count})
+	}
+	return out, nil
 }
 
 func (p *ProcessorImpl) ExitShop(characterId uint32, shopId uuid.UUID) error {
@@ -94,8 +147,21 @@ func (p *ProcessorImpl) ExitMaintenance(characterId uint32, shopId uuid.UUID) er
 	return producer.ProviderImpl(p.l)(p.ctx)(merchant2.EnvCommandTopic)(ExitMaintenanceCommandProvider(characterId, shopId))
 }
 
+func (p *ProcessorImpl) WithdrawMeso(characterId uint32, shopId uuid.UUID) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(merchant2.EnvCommandTopic)(WithdrawMesoCommandProvider(characterId, shopId))
+}
+
+func (p *ProcessorImpl) OrganizeListings(characterId uint32, shopId uuid.UUID) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(merchant2.EnvCommandTopic)(OrganizeListingsCommandProvider(characterId, shopId))
+}
+
 func (p *ProcessorImpl) AddListing(characterId uint32, shopId uuid.UUID, inventoryType byte, slot int16, quantity uint16, bundleSize uint16, pricePerBundle uint32) error {
-	return producer.ProviderImpl(p.l)(p.ctx)(merchant2.EnvCommandTopic)(AddListingCommandProvider(characterId, shopId, inventoryType, slot, quantity, bundleSize, pricePerBundle))
+	a, err := character.NewProcessor(p.l, p.ctx).GetItemInSlot(characterId, inventory2.Type(inventoryType), slot)()
+	if err != nil {
+		p.l.WithError(err).Errorf("Character [%d] attempting to list item from inventory [%d] slot [%d], but the item could not be resolved.", characterId, inventoryType, slot)
+		return err
+	}
+	return producer.ProviderImpl(p.l)(p.ctx)(merchant2.EnvCommandTopic)(AddListingCommandProvider(characterId, shopId, inventoryType, slot, quantity, bundleSize, pricePerBundle, a))
 }
 
 func (p *ProcessorImpl) RemoveListing(characterId uint32, shopId uuid.UUID, listingIndex uint16) error {
@@ -104,4 +170,16 @@ func (p *ProcessorImpl) RemoveListing(characterId uint32, shopId uuid.UUID, list
 
 func (p *ProcessorImpl) PurchaseBundle(characterId uint32, shopId uuid.UUID, listingIndex uint16, bundleCount uint16) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(merchant2.EnvCommandTopic)(PurchaseBundleCommandProvider(characterId, shopId, listingIndex, bundleCount))
+}
+
+func (p *ProcessorImpl) SearchListings(worldId world.Id, itemId uint32, descending bool) ([]SearchListing, error) {
+	return requests.SliceProvider[ListingSearchRestModel, SearchListing](p.l, p.ctx)(requestSearchListings(itemId, worldId, descending), ExtractSearchListing, model.Filters[SearchListing]())()
+}
+
+func (p *ProcessorImpl) GetTopSearches(worldId world.Id) ([]TopSearch, error) {
+	return requests.SliceProvider[TopSearchRestModel, TopSearch](p.l, p.ctx)(requestTopSearches(worldId), ExtractTopSearch, model.Filters[TopSearch]())()
+}
+
+func (p *ProcessorImpl) RecordItemSearch(f field.Model, characterId uint32, itemId uint32) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(merchant2.EnvCommandTopic)(RecordItemSearchCommandProvider(f, characterId, itemId))
 }

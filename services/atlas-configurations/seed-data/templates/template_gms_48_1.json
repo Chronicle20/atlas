@@ -1030,7 +1030,9 @@
             "ENTER": 4,
             "ENTER_RESULT": 5,
             "LEAVE": 10,
-            "UPDATE_MERCHANT": 22
+            "UPDATE_MERCHANT": 22,
+            "CHAT": 6,
+            "CHAT_THING": 8
           },
           "enterError": {
             "ROOM_CLOSED": 1,

@@ -1700,7 +1700,9 @@
             "LEAVE": 10,
             "UPDATE_MERCHANT": 25,
             "MERCHANT_VIEW_VISIT_LIST": 46,
-            "MERCHANT_VIEW_BLACK_LIST": 47
+            "MERCHANT_VIEW_BLACK_LIST": 47,
+            "CHAT": 6,
+            "CHAT_THING": 8
           },
           "enterError": {
             "ROOM_CLOSED": 1,

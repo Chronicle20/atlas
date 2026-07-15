@@ -2262,12 +2262,14 @@
         "writer": "CharacterInteraction",
         "options": {
           "operations": {
-            "INVITE": 5,
-            "INVITE_RESULT": 10,
-            "ENTER": 9,
-            "ENTER_RESULT": 14,
-            "LEAVE": 3,
-            "UPDATE_MERCHANT": 25
+            "INVITE": 2,
+            "INVITE_RESULT": 3,
+            "ENTER": 4,
+            "ENTER_RESULT": 5,
+            "CHAT": 6,
+            "CHAT_THING": 8,
+            "LEAVE": 10,
+            "UPDATE_MERCHANT": 24
           },
           "enterError": {
             "ROOM_CLOSED": 1,
@@ -2298,8 +2300,8 @@
             "SHOP_CLOSED": 3,
             "USER_BANNED": 5,
             "TIME_LIMIT_PASSED": 6,
-            "OUT_OF_STOCK": 14,
-            "BANNED_TIME_LIMIT": 15
+            "OUT_OF_STOCK": 13,
+            "BANNED_TIME_LIMIT": 14
           }
         }
       },

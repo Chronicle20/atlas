@@ -20,7 +20,7 @@ type ProcessorMock struct {
 	OpenShopFunc             func(characterId uint32, shopId uuid.UUID) error
 	CloseShopFunc            func(characterId uint32, shopId uuid.UUID) error
 	EnterShopFunc            func(characterId uint32, shopId uuid.UUID, visitorName string) error
-	AddBlacklistFunc         func(characterId uint32, shopId uuid.UUID, name string) error
+	AddBlacklistFunc         func(characterId uint32, shopId uuid.UUID, name string, bannedCharacterId uint32) error
 	RemoveBlacklistFunc      func(characterId uint32, shopId uuid.UUID, name string) error
 	GetBlacklistFunc         func(shopId string) ([]string, error)
 	GetVisitsFunc            func(shopId string) ([]merchant.VisitEntry, error)
@@ -110,9 +110,9 @@ func (m *ProcessorMock) EnterShop(characterId uint32, shopId uuid.UUID, visitorN
 	return nil
 }
 
-func (m *ProcessorMock) AddBlacklist(characterId uint32, shopId uuid.UUID, name string) error {
+func (m *ProcessorMock) AddBlacklist(characterId uint32, shopId uuid.UUID, name string, bannedCharacterId uint32) error {
 	if m.AddBlacklistFunc != nil {
-		return m.AddBlacklistFunc(characterId, shopId, name)
+		return m.AddBlacklistFunc(characterId, shopId, name, bannedCharacterId)
 	}
 	return nil
 }

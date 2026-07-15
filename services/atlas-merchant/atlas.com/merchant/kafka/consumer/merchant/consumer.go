@@ -212,7 +212,7 @@ func handleAddBlacklistCommand(db *gorm.DB) message.Handler[merchant2.Command[me
 			l.WithError(err).Errorf("Error parsing shopId [%s].", e.Body.ShopId)
 			return
 		}
-		if err := shop.NewProcessor(l, ctx, db).AddToBlacklistAndEmit(shopId, e.CharacterId, e.Body.Name); err != nil {
+		if err := shop.NewProcessor(l, ctx, db).AddToBlacklistAndEmit(shopId, e.CharacterId, e.Body.Name, e.Body.BannedCharacterId); err != nil {
 			l.WithError(err).Errorf("Error adding [%s] to blacklist for shop [%s].", e.Body.Name, shopId)
 		}
 	}

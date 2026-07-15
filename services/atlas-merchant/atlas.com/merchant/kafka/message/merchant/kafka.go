@@ -129,6 +129,10 @@ type CommandOrganizeListingsBody struct {
 type CommandBlacklistBody struct {
 	ShopId string `json:"shopId"`
 	Name   string `json:"name"`
+	// BannedCharacterId, when non-zero, is a visitor currently in the shop to
+	// eject with the USER_BANNED leave reason as part of the ban (personal-shop
+	// ban button). Zero for a name-only blacklist add.
+	BannedCharacterId uint32 `json:"bannedCharacterId,omitempty"`
 }
 
 const (

@@ -330,7 +330,23 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModePersonalStoreAddToBlackList) {
 			sp := &interaction2.OperationPersonalStoreAddToBlackList{}
 			sp.Decode(l, ctx)(r, readerOptions)
-			l.Debugf("Character [%d] is adding [%s] to field black list from slot [%d].", s.CharacterId(), sp.Name(), sp.Slot())
+			l.Debugf("Character [%d] is banning [%s] from their store at slot [%d].", s.CharacterId(), sp.Name(), sp.Slot())
+			mp := merchant.NewProcessor(l, ctx)
+			visiting, err := mp.GetVisitingShop(s.CharacterId())
+			if err != nil {
+				l.WithError(err).Errorf("Unable to get shop for owner [%d] to ban [%s].", s.CharacterId(), sp.Name())
+				return
+			}
+			// The ban targets the visitor occupying that room slot: slot 0 is the
+			// owner, visitors occupy slots 1..n in the shop's visitor list. Resolve
+			// the banned character id so the merchant can eject them (USER_BANNED)
+			// in addition to blacklisting the name.
+			var bannedCharacterId uint32
+			visitors := visiting.Visitors()
+			if idx := int(sp.Slot()) - 1; idx >= 0 && idx < len(visitors) {
+				bannedCharacterId = visitors[idx]
+			}
+			_ = mp.AddBlacklist(s.CharacterId(), visiting.Id(), sp.Name(), bannedCharacterId)
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModePersonalStoreSetVisitor) {
@@ -495,7 +511,7 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 				l.WithError(err).Errorf("Unable to get visiting shop for character [%d].", s.CharacterId())
 				return
 			}
-			_ = mp.AddBlacklist(s.CharacterId(), visiting.Id(), sp.Name())
+			_ = mp.AddBlacklist(s.CharacterId(), visiting.Id(), sp.Name(), 0)
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeMerchantRemoveFromBlackList) {

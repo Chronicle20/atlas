@@ -53,11 +53,11 @@ type ProcessorMock struct {
 	EnterMaintenanceAndEmitFunc func(shopId uuid.UUID, characterId uint32) error
 	ExitMaintenanceAndEmitFunc  func(shopId uuid.UUID, characterId uint32) error
 	EnterShopAndEmitFunc       func(characterId uint32, shopId uuid.UUID, visitorName string) error
-	AddToBlacklistFunc         func(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32, name string) error
+	AddToBlacklistFunc         func(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32, name string, bannedCharacterId uint32) error
 	RemoveFromBlacklistFunc    func(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32, name string) error
 	GetBlacklistFunc           func(shopId uuid.UUID) ([]string, error)
 	GetVisitsFunc              func(shopId uuid.UUID) ([]visit.Model, error)
-	AddToBlacklistAndEmitFunc  func(shopId uuid.UUID, characterId uint32, name string) error
+	AddToBlacklistAndEmitFunc  func(shopId uuid.UUID, characterId uint32, name string, bannedCharacterId uint32) error
 	RemoveFromBlacklistAndEmitFunc func(shopId uuid.UUID, characterId uint32, name string) error
 	ExitShopAndEmitFunc        func(characterId uint32, shopId uuid.UUID) error
 	AddListingAndEmitFunc      func(shopId uuid.UUID, characterId uint32, itemId uint32, itemType byte, bundleSize uint16, bundleCount uint16, pricePerBundle uint32, itemSnapshot asset.AssetData, inventoryType byte, assetId uint32) (listing.Model, error)
@@ -343,11 +343,11 @@ func (m *ProcessorMock) EnterShopAndEmit(characterId uint32, shopId uuid.UUID, v
 	return nil
 }
 
-func (m *ProcessorMock) AddToBlacklist(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32, name string) error {
+func (m *ProcessorMock) AddToBlacklist(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32, name string, bannedCharacterId uint32) error {
 	if m.AddToBlacklistFunc != nil {
 		return m.AddToBlacklistFunc(mb)
 	}
-	return func(uuid.UUID, uint32, string) error { return nil }
+	return func(uuid.UUID, uint32, string, uint32) error { return nil }
 }
 
 func (m *ProcessorMock) RemoveFromBlacklist(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32, name string) error {
@@ -371,9 +371,9 @@ func (m *ProcessorMock) GetVisits(shopId uuid.UUID) ([]visit.Model, error) {
 	return nil, nil
 }
 
-func (m *ProcessorMock) AddToBlacklistAndEmit(shopId uuid.UUID, characterId uint32, name string) error {
+func (m *ProcessorMock) AddToBlacklistAndEmit(shopId uuid.UUID, characterId uint32, name string, bannedCharacterId uint32) error {
 	if m.AddToBlacklistAndEmitFunc != nil {
-		return m.AddToBlacklistAndEmitFunc(shopId, characterId, name)
+		return m.AddToBlacklistAndEmitFunc(shopId, characterId, name, bannedCharacterId)
 	}
 	return nil
 }

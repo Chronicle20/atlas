@@ -31,9 +31,9 @@ func TestBlacklistEnforcementAndVisitRecording(t *testing.T) {
 
 	mb := testBuffer()
 
-	assert.ErrorIs(t, p.AddToBlacklist(mb)(m.Id(), stranger, "Griefer"), ErrNotOwner)
+	assert.ErrorIs(t, p.AddToBlacklist(mb)(m.Id(), stranger, "Griefer", 0), ErrNotOwner)
 
-	require.NoError(t, p.AddToBlacklist(mb)(m.Id(), owner, "Griefer"))
+	require.NoError(t, p.AddToBlacklist(mb)(m.Id(), owner, "Griefer", 0))
 	names, err := p.GetBlacklist(m.Id())
 	require.NoError(t, err)
 	assert.Equal(t, []string{"Griefer"}, names)

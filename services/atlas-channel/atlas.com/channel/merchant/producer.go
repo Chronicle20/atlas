@@ -259,12 +259,12 @@ func OrganizeListingsCommandProvider(characterId uint32, shopId uuid.UUID) model
 	return producer.SingleMessageProvider(key, value)
 }
 
-func AddBlacklistCommandProvider(characterId uint32, shopId uuid.UUID, name string) model.Provider[[]kafka.Message] {
+func AddBlacklistCommandProvider(characterId uint32, shopId uuid.UUID, name string, bannedCharacterId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &merchant2.Command[merchant2.CommandBlacklistBody]{
 		CharacterId: characterId,
 		Type:        merchant2.CommandAddBlacklist,
-		Body:        merchant2.CommandBlacklistBody{ShopId: shopId.String(), Name: name},
+		Body:        merchant2.CommandBlacklistBody{ShopId: shopId.String(), Name: name, BannedCharacterId: bannedCharacterId},
 	}
 	return producer.SingleMessageProvider(key, value)
 }

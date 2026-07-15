@@ -65,7 +65,7 @@ type Processor interface {
 	WithdrawMesoAndEmit(shopId uuid.UUID, characterId uint32) error
 	OrganizeListingsAndEmit(shopId uuid.UUID, characterId uint32) error
 	EnterShop(mb *message.Buffer) func(characterId uint32, shopId uuid.UUID, visitorName string) error
-	AddToBlacklist(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32, name string) error
+	AddToBlacklist(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32, name string, bannedCharacterId uint32) error
 	RemoveFromBlacklist(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32, name string) error
 	GetBlacklist(shopId uuid.UUID) ([]string, error)
 	GetVisits(shopId uuid.UUID) ([]visit.Model, error)
@@ -81,7 +81,7 @@ type Processor interface {
 	EnterMaintenanceAndEmit(shopId uuid.UUID, characterId uint32) error
 	ExitMaintenanceAndEmit(shopId uuid.UUID, characterId uint32) error
 	EnterShopAndEmit(characterId uint32, shopId uuid.UUID, visitorName string) error
-	AddToBlacklistAndEmit(shopId uuid.UUID, characterId uint32, name string) error
+	AddToBlacklistAndEmit(shopId uuid.UUID, characterId uint32, name string, bannedCharacterId uint32) error
 	RemoveFromBlacklistAndEmit(shopId uuid.UUID, characterId uint32, name string) error
 	ExitShopAndEmit(characterId uint32, shopId uuid.UUID) error
 	AddListingAndEmit(shopId uuid.UUID, characterId uint32, itemId uint32, itemType byte, bundleSize uint16, bundleCount uint16, pricePerBundle uint32, itemSnapshot asset2.AssetData, inventoryType byte, assetId uint32) (listing.Model, error)
@@ -1412,8 +1412,8 @@ func (p *ProcessorImpl) EnterShopAndEmit(characterId uint32, shopId uuid.UUID, v
 // AddToBlacklist / RemoveFromBlacklist are owner-only. A banned name cannot
 // enter the shop (EnterShop enforcement). Both emit SHOP_UPDATED-style refresh
 // via the blacklist-view request path; here they only mutate + confirm.
-func (p *ProcessorImpl) AddToBlacklist(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32, name string) error {
-	return func(shopId uuid.UUID, characterId uint32, name string) error {
+func (p *ProcessorImpl) AddToBlacklist(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32, name string, bannedCharacterId uint32) error {
+	return func(shopId uuid.UUID, characterId uint32, name string, bannedCharacterId uint32) error {
 		e, err := getById(shopId)(p.db.WithContext(p.ctx))()
 		if err != nil {
 			return err
@@ -1423,6 +1423,25 @@ func (p *ProcessorImpl) AddToBlacklist(mb *message.Buffer) func(shopId uuid.UUID
 		}
 		if err := blacklist.NewProcessor(p.l, p.ctx, p.db).Add(shopId, name); err != nil {
 			return err
+		}
+		// If the banned player is currently in the shop, eject them with the
+		// USER_BANNED leave reason (the ban button kicks them out, not just a
+		// name-only blacklist add). Re-entry is already blocked by the EnterShop
+		// blacklist check.
+		if bannedCharacterId != 0 {
+			if vr := visitor.GetRegistry(); vr != nil {
+				visitors, verr := vr.GetVisitors(p.ctx, p.t, shopId)
+				if verr == nil {
+					slot := visitorSlot(visitors, bannedCharacterId)
+					if slot != 0 {
+						if rerr := vr.RemoveVisitor(p.ctx, p.t, shopId, bannedCharacterId); rerr != nil {
+							p.l.WithError(rerr).Warnf("Unable to eject banned visitor [%d] from shop [%s].", bannedCharacterId, shopId)
+						} else if perr := mb.Put(merchant.EnvStatusEventTopic, StatusEventVisitorEjectedProvider(bannedCharacterId, shopId, slot, merchant.LeaveReasonUserBanned)); perr != nil {
+							return perr
+						}
+					}
+				}
+			}
 		}
 		return mb.Put(merchant.EnvStatusEventTopic, StatusEventBlacklistUpdatedProvider(characterId, shopId))
 	}
@@ -1452,10 +1471,10 @@ func (p *ProcessorImpl) GetVisits(shopId uuid.UUID) ([]visit.Model, error) {
 	return visit.NewProcessor(p.l, p.ctx, p.db).List(shopId)
 }
 
-func (p *ProcessorImpl) AddToBlacklistAndEmit(shopId uuid.UUID, characterId uint32, name string) error {
+func (p *ProcessorImpl) AddToBlacklistAndEmit(shopId uuid.UUID, characterId uint32, name string, bannedCharacterId uint32) error {
 	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
-			return p.WithTransaction(tx).AddToBlacklist(buf)(shopId, characterId, name)
+			return p.WithTransaction(tx).AddToBlacklist(buf)(shopId, characterId, name, bannedCharacterId)
 		})
 	})
 }

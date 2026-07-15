@@ -26,7 +26,7 @@ type Processor interface {
 	OpenShop(characterId uint32, shopId uuid.UUID) error
 	CloseShop(characterId uint32, shopId uuid.UUID) error
 	EnterShop(characterId uint32, shopId uuid.UUID, visitorName string) error
-	AddBlacklist(characterId uint32, shopId uuid.UUID, name string) error
+	AddBlacklist(characterId uint32, shopId uuid.UUID, name string, bannedCharacterId uint32) error
 	RemoveBlacklist(characterId uint32, shopId uuid.UUID, name string) error
 	GetBlacklist(shopId string) ([]string, error)
 	GetVisits(shopId string) ([]VisitEntry, error)
@@ -99,8 +99,8 @@ func (p *ProcessorImpl) EnterShop(characterId uint32, shopId uuid.UUID, visitorN
 	return producer.ProviderImpl(p.l)(p.ctx)(merchant2.EnvCommandTopic)(EnterShopCommandProvider(characterId, shopId, visitorName))
 }
 
-func (p *ProcessorImpl) AddBlacklist(characterId uint32, shopId uuid.UUID, name string) error {
-	return producer.ProviderImpl(p.l)(p.ctx)(merchant2.EnvCommandTopic)(AddBlacklistCommandProvider(characterId, shopId, name))
+func (p *ProcessorImpl) AddBlacklist(characterId uint32, shopId uuid.UUID, name string, bannedCharacterId uint32) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(merchant2.EnvCommandTopic)(AddBlacklistCommandProvider(characterId, shopId, name, bannedCharacterId))
 }
 
 func (p *ProcessorImpl) RemoveBlacklist(characterId uint32, shopId uuid.UUID, name string) error {

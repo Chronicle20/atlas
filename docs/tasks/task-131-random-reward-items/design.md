@@ -1,8 +1,12 @@
 # Task 131 — Random Reward Items: Design
 
-Version: v1
+Version: v2
 Status: Approved for planning
 Created: 2026-07-02
+Updated: 2026-07-15 — merged `main`; version scope expanded to the client
+versions added since (v72/v79 dedicated opcode, jms brought in) plus v48/v61 via
+the generic item-use path, and the pre-existing v92 registration gap closed. See
+§2.1, §2.6, §2.7.
 PRD: `docs/tasks/task-131-random-reward-items/prd.md`
 
 ---
@@ -26,16 +30,27 @@ Unlike sibling item-use packets (`InventoryItemUse` reads `updateTime, slot, ite
 
 Client-side routing confirmed (v95 `CDraggableItem::OnDoubleClicked`, `0x506e10`): for Consume-tab items the lottery check runs **first** — `CItemInfo::GetLotteryItem(itemId) != null → SendLotteryItemUseRequest(slot, itemId)` — before `is_state_change_item` and every other consume dispatch. The client populates its lottery registry from every Item.wz Consume/Install/Etc item bearing a `reward` node (`CItemInfo::IterateLotteryItem`/`RegisterLotteryItem`). So the server only receives this opcode for reward-node items; anything else on this opcode is a hacked client.
 
-Per-version opcodes (registry `docs/packets/MapleStory Ops - ServerBound.csv:256`, columns v12/v83/v87/v92/v95/v111/jms; STATUS.md:606 agrees):
+Per-version opcodes. The dedicated `CWvsContext::SendLotteryItemUseRequest`
+opcode was **introduced at v72**; every version from v72 up carries the same
+invariant body (`Encode2(nPos)` + `Encode4(nItemID)`, `CanSendExclRequest`
+guard). v48/v61 predate the opcode and route reward boxes through the generic
+item-use request instead (§2.7). The v72/v79/jms rows below were IDA-verified
+live during the main-merge scope expansion (task-131); each lottery send is a
+distinct 0x83-byte function, confirmed separate from the same-signature
+`SendBridleItemUseRequest`:
 
 | version | opcode | evidence |
 |---|---|---|
+| v48 | — (n-a) | dedicated opcode absent; only `SendConsumeCashItemUseRequest` in the send family → generic path (§2.7) |
+| v61 | — (n-a) | dedicated opcode absent; only `StatChangeByPetQ` + `ConsumeCash` → generic path (§2.7) |
+| v72 | 0x06F | IDA-verified (fn 0x90c93a; distinct bridle @0x90457d) |
+| v79 | 0x06E | IDA-verified (fn 0x95dd02; distinct bridle @0x9558e5) |
 | v83 | 0x070 | IDA-verified this task (fn 0xa1249f) |
 | v84 | 0x070 | registry lineage (STATUS.md; task-100 reshifted table). No v84 IDB — no-IDB convention |
 | v87 | 0x073 | registry + CSV (no v87 instance loaded; CSV row and STATUS.md agree) |
-| v92 | 0x07B | CSV (v92 has no IDB — template-lineage convention, flag in evidence) |
+| v92 | 0x07B | CSV (v92 has no IDB — template-lineage convention, flag in evidence). Not in the coverage matrix version set |
 | v95 | 0x07C | IDA-verified this task (fn 0x9d6c50) |
-| jms | 0x06B | registry — **out of scope** (§2.6) |
+| jms | 0x06B | IDA-verified (fn 0xaf6900); registry/CSV agree. **In scope** (§2.6) |
 
 ### 2.2 `Effect` delivery — server-sent `CUser::OnEffect` LOTTERY_USE arm; codecs already exist
 
@@ -74,9 +89,47 @@ Field inventory from the sweep (drives §6): per-entry keys are `item`, `count`,
 
 See §5 for the decision and alternatives.
 
-### 2.6 jms — out of scope (default confirmed)
+### 2.6 jms — in scope (verified post-merge)
 
-No jms IDB is loaded (current instance set: v48/v61/v72/v79/v83/v95 — verified via `list_instances` this session), so the "cheap parity check" gate in the PRD fails. The registry opcode (`0x06B`) and the jms template's `LOTTERY_USE: 15` operations entry suggest the same body applies, but that is unverified. jms is excluded from v1; no handler entry is added to `template_jms_185_1.json`.
+Originally deferred for lack of a loaded jms IDB. During the main-merge scope
+expansion the jms IDB (`MapleStory_dump_SCY.exe`, port 13344) was available, and
+`CWvsContext::SendLotteryItemUseRequest` @0xaf6900 was IDA-verified: `COutPacket(0x6B)`
+→ `Encode2(nPos)` → `Encode4(nItemID)`, `CanSendExclRequest` guard — byte-identical
+to v83/v95. Opcode `0x06B` matches the registry/CSV. The handler is registered in
+`template_jms_185_1.json`.
+
+### 2.7 v48/v61 — no dedicated opcode; generic item-use path
+
+v48 and v61 predate the dedicated `SendLotteryItemUseRequest` opcode (introduced
+at v72). Their `Send*ItemUseRequest` family is minimal (v48: only
+`SendConsumeCashItemUseRequest`; v61: adds `StatChangeItemUseRequestByPetQ`) — the
+per-type sends (bridle, lottery, exp-up, map-transfer, shop-scanner) that exist
+from v72 do not exist as distinct functions. The `CItemInfo::LOTTERYITEM` registry
+still exists (used for quickslot validation), but reward boxes are used via the
+**generic** item-use request (`CharacterItemUseHandle`, present in both templates),
+not a dedicated opcode. So `LOTTERY_ITEM_USE_REQUEST` is genuinely `n-a` for
+v48/v61 in the coverage matrix.
+
+To make the feature actually work there, the server recognizes reward-node items
+on the generic path: `atlas-consumables` `RequestItemConsume` looks up the item's
+reward table and, when present, delegates to `RequestItemReward` (the same roll →
+create → grant flow) instead of a bare consume. This is version-agnostic: on
+dedicated-opcode versions (v72+) the client routes reward boxes exclusively to the
+lottery opcode (the client's lottery check runs first — §2.1 routing), so the
+generic branch never sees them there; only v48/v61 exercise it.
+
+**Clientbound effect on v48 — known limitation.** The reward roll, grant, and
+world-message announce (§2.2 REWARD_WON) work in both v48 and v61. The visual
+lottery-use effect (§2.2 REWARD_EFFECT) needs a per-version `LOTTERY_USE`
+operations entry to resolve the `CUser::OnEffect` mode byte. task-112 backfilled
+this for v61 (=14, matching v72/v79/v83) but **not v48**, and v48's stripped IDB
+does not expose the effect dispatcher for a clean per-IDB read (DOM-25 forbids
+adding an unverified client-interpreted mode). The degradation is benign: when a
+v48 reward box carries an Effect string, the channel's `CharacterEffect` write
+finds no `LOTTERY_USE` mode and is gracefully dropped — the item is still granted
+and announced. Adding a v48-IDB-verified `LOTTERY_USE` entry (or confirming v48's
+`OnEffect` has no lottery arm, in which case no entry is correct) is a bounded
+follow-up, out of this change's core scope.
 
 ## 3. Architecture overview
 
@@ -200,7 +253,7 @@ atlas-data consumables are stored JSON documents; existing rows lack the new fie
 
 ### 5.8 Config rollout
 
-Seed templates (`services/atlas-configurations/seed-data/templates/`): add to `socket.handlers` in `template_gms_83_1.json`, `_84_`, `_87_`, `_92_`, `_95_` (NOT jms, §2.6):
+Seed templates (`services/atlas-configurations/seed-data/templates/`): add to `socket.handlers` in every version that carries the dedicated opcode — `template_gms_72_1.json`, `_79_`, `_83_`, `_84_`, `_87_`, `_92_`, `_95_`, and `template_jms_185_1.json` (§2.6). v48/v61 get NO lottery handler — they use the generic path (§2.7):
 
 ```json
 { "opCode": "<per-version, §2.1>", "validator": "LoggedInValidator", "handler": "CharacterItemUseLotteryHandle" }
@@ -239,8 +292,8 @@ Live tenants: seed templates apply only at creation — document the config PATC
 
 ## 9. Scope
 
-**In:** v83, v84, v87, v92, v95 GMS tenants; the 56 v83 Consume reward boxes (and any reward-node Consume item in other versions' data — the flow is data-driven).
-**Out:** jms (§2.6); gachapon machines; monster-catch / Solomon items; scripted items; Cash-tab reward boxes (e.g. Cash/0553 — routed by the client through `SendCashSlotItemUseRequest`/cash flows, not this opcode; noted for a future task); atlas-ui.
+**In:** all supported GMS tenants + jms. Dedicated lottery opcode: v72, v79, v83, v84, v87, v92, v95, jms (§2.1). Generic item-use path (reward-table detection server-side): v48, v61 (§2.7). The 56 v83 Consume reward boxes (and any reward-node Consume item in other versions' data — the flow is data-driven).
+**Out:** gachapon machines; monster-catch / Solomon items; scripted items; Cash-tab reward boxes (e.g. Cash/0553 — routed by the client through `SendCashSlotItemUseRequest`/cash flows, not this opcode; noted for a future task); atlas-ui. Note: v92 carries the handler (opcode 0x7B, CSV/template-lineage — no v92 IDB) but is not in the coverage-matrix version set; its template otherwise lacks the generic item-use handlers (pre-existing gap, out of this task's scope).
 
 ## 10. Affected services (delta from PRD §7)
 

@@ -10,9 +10,13 @@
 
 ## Global Constraints
 
-- **Versions in scope: v83, v84, v87, v95 only.** v92 and jms are OUT (no IDB;
-  skeleton/absent operations tables — see `context.md` "Scope decision"). Do NOT
-  add handler entries or invent opcodes/modes for v92 or jms.
+- **Versions in scope (expanded 2026-07-15, post-`main`-merge — design v2 §2.1/§2.6/§2.7):**
+  dedicated lottery opcode in v72 (0x6F), v79 (0x6E), v83 (0x70), v84 (0x70),
+  v87 (0x73), v92 (0x7B), v95 (0x7C), jms (0x6B) — v72/v79/jms IDA-verified live,
+  v84/v87/v92 by no-IDB registry/CSV lineage. v48/v61 have NO dedicated opcode
+  (introduced at v72); reward boxes there use the generic item-use path, with the
+  server detecting the reward table in `RequestItemConsume` (§2.7). Do NOT invent
+  a lottery opcode for v48/v61.
 - **Never hardcode a version branch** keyed on `>83`. Per-version behavior comes
   from tenant config tables (opcodes, effect/world-message/status modes) only.
 - **Randomness: `crypto/rand` only** (`rand.Int(rand.Reader, big.NewInt(...))`).

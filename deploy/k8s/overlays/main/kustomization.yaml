@@ -255,6 +255,8 @@ images:
     newTag: main-293ff9b
   - name: ghcr.io/chronicle20/atlas-mounts/atlas-mounts
     newTag: main-293ff9b
+  - name: ghcr.io/chronicle20/atlas-mts/atlas-mts
+    newTag: main-293ff9b
   - name: ghcr.io/chronicle20/atlas-notes/atlas-notes
     newTag: main-293ff9b
   - name: ghcr.io/chronicle20/atlas-npc-conversations/atlas-npc-conversations

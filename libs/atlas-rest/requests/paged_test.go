@@ -10,6 +10,8 @@ import (
 	"testing"
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus/hooks/test"
 )
 
@@ -179,6 +181,34 @@ func TestDrainProviderWarnsPast20Pages(t *testing.T) {
 	}
 	if !warned {
 		t.Fatal("expected a warning for a >20-page drain")
+	}
+}
+
+// The paged request path must attach the tenant header decorator the same way
+// the non-paged GetRequest does (decorated.go). Without it, tenant-scoped
+// servers reject the request with 400 in ParseTenant — the task-117 regression
+// that stopped atlas-world from reporting channel servers to atlas-login.
+func TestPagedGetRequestEmitsTenantHeader(t *testing.T) {
+	var gotTenant string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotTenant = r.Header.Get(tenant.ID)
+		_, _ = w.Write([]byte(pageDoc(1, 1, 0, 1, 50, 1)))
+	}))
+	defer srv.Close()
+
+	tid := uuid.New()
+	tm, err := tenant.Create(tid, "GMS", 83, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := tenant.WithContext(context.Background(), tm)
+
+	l, _ := test.NewNullLogger()
+	if _, err := PagedGetRequest[pagedFixture](srv.URL+"/fixtures", model.Page{Number: 1, Size: 50})(l, ctx); err != nil {
+		t.Fatal(err)
+	}
+	if gotTenant != tid.String() {
+		t.Fatalf("tenant header not propagated: got %q, want %q", gotTenant, tid.String())
 	}
 }
 

@@ -60,8 +60,8 @@ func (m SummonSpawn) Encode(l logrus.FieldLogger, ctx context.Context) func(opti
 	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
 		w.WriteInt(m.ownerId)
-		// oid: the summon object id, present on ALL versions (cid, oid, skillId) —
-		// matches Cosmic spawnSummon (ownerId, objectId, skillId). The ACTIVE client
+		// oid: the summon object id, present on ALL versions — the wire is
+		// ownerId, objectId, skillId. The ACTIVE client
 		// dispatch (v83 field path → OnCreated @0x95ADEC) has the DISPATCHER consume
 		// the leading cid, so OnCreated then reads oid, skillId, charLevel, SLV. This
 		// was confirmed live in x32dbg: at OnCreated's first Decode4 the read offset
@@ -77,7 +77,15 @@ func (m SummonSpawn) Encode(l logrus.FieldLogger, ctx context.Context) func(opti
 		// fixed writes are client-tolerated. See summon-packet-delta.md §3.1
 		// (CSummoned::Init@0x755740, IDA-confirmed).
 		w.WriteByte(0x0A) // charLevel (visual-only)
-		w.WriteByte(m.level)
+		// SLV byte: present on GMS v83+ and JMS v185, ABSENT on GMS v79. The v79
+		// spawn reader CSummonedPool::OnCreated (sub_89268A@0x89268a) reads only
+		// Decode4(oid), Decode4(skillId), Decode1(charLevel) before descending into
+		// the Init blob (sub_719F7B@0x719f7b, first read Decode2(x)) — i.e. ONE byte
+		// between skillId and x, where v83+ read TWO (charLevel + SLV). Writing the
+		// extra SLV byte on v79 misaligns the client's Decode2(x). See spawnHasSkillLevel.
+		if spawnHasSkillLevel(t) {
+			w.WriteByte(m.level)
+		}
 		w.WriteInt16(m.x)
 		w.WriteInt16(m.y)
 		w.WriteByte(m.stance)
@@ -108,7 +116,9 @@ func (m *SummonSpawn) Decode(l logrus.FieldLogger, ctx context.Context) func(r *
 		m.oid = r.ReadUint32() // present on all versions (see Encode)
 		m.skillId = r.ReadUint32()
 		_ = r.ReadByte() // charLevel (visual-only); see summon-packet-delta.md §3.1
-		m.level = r.ReadByte()
+		if spawnHasSkillLevel(t) {
+			m.level = r.ReadByte() // SLV — absent on GMS v79 (see Encode / spawnHasSkillLevel)
+		}
 		m.x = r.ReadInt16()
 		m.y = r.ReadInt16()
 		m.stance = r.ReadByte()
@@ -135,4 +145,15 @@ func spawnHasAvatarLook(t tenant.Model) bool {
 		return t.MajorAtLeast(185)
 	}
 	return t.IsRegion("GMS") && t.MajorAtLeast(95)
+}
+
+// spawnHasSkillLevel reports whether the spawn Init prefix carries the SLV byte
+// after charLevel. Present on GMS v83+ and JMS v185 (the verified versions all
+// read charLevel + SLV, two bytes, before the x/y Init blob); ABSENT on GMS v79,
+// whose spawn reader CSummonedPool::OnCreated (sub_89268A@0x89268a) reads only a
+// single charLevel byte (Decode1@0x8926b9) before the blob reader sub_719F7B@0x719f7b
+// begins at Decode2(x). Boundary is verified at v79 (absent) / v83 (present);
+// MajorAtLeast(83) places the gate at the first version known to carry it.
+func spawnHasSkillLevel(t tenant.Model) bool {
+	return t.MajorAtLeast(83)
 }

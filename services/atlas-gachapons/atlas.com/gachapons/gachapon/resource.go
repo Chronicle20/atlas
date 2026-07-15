@@ -7,6 +7,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
@@ -32,23 +33,29 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 
 func handleGetAllGachapons(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		ms, err := NewProcessor(d.Logger(), d.Context(), d.DB()).GetAll()()
+		page, err := paginate.ParseParams(r.URL.Query(), paginate.DefaultPageSize, paginate.MaxPageSize)
 		if err != nil {
-			d.Logger().WithError(err).Errorf("Retrieving all gachapons.")
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
 			return
 		}
 
-		res, err := model.SliceMap(Transform)(model.FixedProvider(ms))(model.ParallelMap())()
+		paged, err := NewProcessor(d.Logger(), d.Context(), d.DB()).GetAll(page)()
+		if err != nil {
+			d.Logger().WithError(err).Errorf("Retrieving all gachapons.")
+			server.WriteErrorResponse(d.Logger())(w)(err)
+			return
+		}
+
+		res, err := model.SliceMap(Transform)(model.FixedProvider(paged.Items))(model.ParallelMap())()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Creating REST model.")
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteErrorResponse(d.Logger())(w)(err)
 			return
 		}
 
 		query := r.URL.Query()
 		queryParams := jsonapi.ParseQueryFields(&query)
-		server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+		server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res, paginate.EnvelopeFor(paged), r)
 	}
 }
 
@@ -62,14 +69,14 @@ func handleGetGachapon(d *rest.HandlerDependency, c *rest.HandlerContext) http.H
 					return
 				}
 				d.Logger().WithError(err).Errorf("Retrieving gachapon [%s].", gachaponId)
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
 			rm, err := Transform(m)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -99,7 +106,7 @@ func handleCreateGachapon(d *rest.HandlerDependency, c *rest.HandlerContext, rm 
 		err = NewProcessor(d.Logger(), d.Context(), d.DB()).Create(m)
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Creating gachapon.")
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteErrorResponse(d.Logger())(w)(err)
 			return
 		}
 
@@ -113,7 +120,7 @@ func handleUpdateGachapon(d *rest.HandlerDependency, c *rest.HandlerContext, rm 
 			err := NewProcessor(d.Logger(), d.Context(), d.DB()).Update(gachaponId, rm.Name, rm.CommonWeight, rm.UncommonWeight, rm.RareWeight)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Updating gachapon [%s].", gachaponId)
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 			w.WriteHeader(http.StatusNoContent)
@@ -127,7 +134,7 @@ func handleDeleteGachapon(d *rest.HandlerDependency, c *rest.HandlerContext) htt
 			err := NewProcessor(d.Logger(), d.Context(), d.DB()).Delete(gachaponId)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Deleting gachapon [%s].", gachaponId)
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 			w.WriteHeader(http.StatusNoContent)

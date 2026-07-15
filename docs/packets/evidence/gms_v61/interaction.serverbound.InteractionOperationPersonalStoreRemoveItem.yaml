@@ -1,0 +1,10 @@
+packet: interaction/serverbound/InteractionOperationPersonalStoreRemoveItem
+direction: serverbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: sub_60DF59
+    address: "0x60df59"
+    decompile_sha256: 36c1717ba424546412ff5dae14ced3a8ef5ce868181ccd817bac772ad21f7724
+verifies:
+    - libs/atlas-packet/interaction/serverbound/v61_test.go#TestOperationPersonalStoreRemoveItemV61Bytes

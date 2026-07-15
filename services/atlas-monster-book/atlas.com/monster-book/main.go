@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	"os"
 
 	"atlas-monster-book/card"
@@ -8,14 +10,13 @@ import (
 	"atlas-monster-book/collection"
 	character2 "atlas-monster-book/kafka/consumer/character"
 	mbconsumer "atlas-monster-book/kafka/consumer/monsterbook"
-	"atlas-monster-book/logger"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	outboxlib "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
-	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 )
 
 const serviceName = "atlas-monster-book"
@@ -42,19 +43,32 @@ func GetServer() Server {
 }
 
 func main() {
-	l := logger.CreateLogger(serviceName)
-	l.Infoln("Starting main service.")
+	rt := service.Bootstrap(serviceName)
+	l := rt.Logger()
 
-	tdm := service.GetTeardownManager()
+	db := database.Connect(l, database.SetMigrations(collection.Migration, card.Migration, outboxlib.Migration))
 
-	tc, err := tracing.InitTracer(serviceName)
-	if err != nil {
-		l.WithError(err).Fatal("Unable to initialize tracer.")
-	}
+	// Boot the outbox drainer: publishes the transactional outbox to Kafka.
+	// Leadership is gated by a postgres advisory lock — replicas are safe.
+	publisher := outboxlib.NewTopicWriterPool()
+	drainer := outboxlib.NewDrainer(l, db, publisher, outboxlib.WithDSN(database.DSN()))
+	routine.Go(l, rt.Context(), func(_ context.Context) {
+		drainer.Run(rt.Context())
+	})
+	rt.TeardownFunc(func() {
+		drainer.Stop()
+		publisher.Close()
+	})
 
-	db := database.Connect(l, database.SetMigrations(collection.Migration, card.Migration))
+	server.RegisterTransientErrorClassifier(func(err error) bool {
+		if database.IsTransientConnectionError(err) {
+			database.CountTransient(err)
+			return true
+		}
+		return false
+	})
 
-	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
+	cmf := consumer.GetManager().AddConsumer(l, rt.Context(), rt.WaitGroup())
 	character2.InitConsumers(l)(cmf)(consumerGroupId)
 	mbconsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	if err := character2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
@@ -64,19 +78,17 @@ func main() {
 		l.WithError(err).Fatal("Unable to register monster-book command handlers.")
 	}
 
-	tdm.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
+	rt.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 
 	server.New(l).
-		WithContext(tdm.Context()).
-		WithWaitGroup(tdm.WaitGroup()).
+		WithContext(rt.Context()).
+		WithWaitGroup(rt.WaitGroup()).
 		SetBasePath(GetServer().GetPrefix()).
 		AddRouteInitializer(character.InitResource(GetServer())(db)).
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
+		AddRouteInitializer(server.MountReadiness("/readyz", rt.Ready)).
 		Run()
 
-	tdm.TeardownFunc(tracing.Teardown(l)(tc))
-
-	tdm.Wait()
-	l.Infoln("Service shutdown.")
+	rt.Wait()
 }

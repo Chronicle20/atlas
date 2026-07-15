@@ -22,6 +22,16 @@ func hasSwallowField(t tenant.Model) bool {
 	return (t.Region() == "GMS" && t.MajorVersion() >= 95) || t.Region() == "JMS"
 }
 
+// skillPrepareActionIsByte reports whether the action/direction field rides the wire
+// as a single byte (bit7 = bLeft, bits0-6 = nAction) instead of a 2-byte short.
+// IDA-verified: v72 CUserLocal::DoActiveSkill_Prepare @0x875535 Encode1s
+// `(bLeft<<7)|(nAction&0x7F)` — one byte; GMS v79+ (v79 @0x8c17f2 fixture, action
+// 0x0142) and JMS write a 2-byte short. Mirrors the CUserLocal attack action-width
+// transition (the same nAction field is shared by attack + skill-prepare senders).
+func skillPrepareActionIsByte(t tenant.Model) bool {
+	return t.Region() == "GMS" && t.MajorVersion() < 79
+}
+
 // ─── SkillPrepareInfo ─────────────────────────────────────────────────────────
 
 // SkillPrepareInfo holds the body of a serverbound DoActiveSkill_Prepare packet.
@@ -83,7 +93,11 @@ func (m *SkillPrepareInfo) Encode(l logrus.FieldLogger, ctx context.Context) fun
 		w := response.NewWriter(l)
 		w.WriteInt(m.skillId)
 		w.WriteByte(m.level)
-		w.WriteShort(m.action)
+		if skillPrepareActionIsByte(t) {
+			w.WriteByte(byte(m.action & 0xFF)) // legacy pre-79 GMS: 1-byte action
+		} else {
+			w.WriteShort(m.action)
+		}
 		w.WriteByte(m.actionSpeed)
 		if hasSwallowField(t) && m.skillId == swallowMobPrepareSkillId {
 			w.WriteInt(m.swallowMobId)
@@ -99,7 +113,11 @@ func (m *SkillPrepareInfo) Decode(l logrus.FieldLogger, ctx context.Context) fun
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.skillId = r.ReadUint32()
 		m.level = r.ReadByte()
-		m.action = r.ReadUint16()
+		if skillPrepareActionIsByte(t) {
+			m.action = uint16(r.ReadByte())
+		} else {
+			m.action = r.ReadUint16()
+		}
 		m.actionSpeed = r.ReadByte()
 		if hasSwallowField(t) && m.skillId == swallowMobPrepareSkillId {
 			m.swallowMobId = r.ReadUint32()

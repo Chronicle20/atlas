@@ -2,9 +2,9 @@ package macro
 
 import (
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	"atlas-skills/kafka/message"
 	macro2 "atlas-skills/kafka/message/macro"
-	"atlas-skills/kafka/producer"
 	"context"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
@@ -20,6 +20,12 @@ type Processor interface {
 	// ByCharacterIdProvider returns a provider for all macros for a character
 	ByCharacterIdProvider(characterId uint32) model.Provider[[]Model]
 
+	// ByCharacterIdPagedProvider returns a provider for one page of macros for
+	// a character. Used only by the REST list handler; internal callers that
+	// need every macro (Update's re-read for the status event) continue to
+	// use the unpaged ByCharacterIdProvider above.
+	ByCharacterIdPagedProvider(characterId uint32, page model.Page) model.Provider[model.Paged[Model]]
+
 	// Update updates all macros for a character with message buffer for events
 	Update(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, macros []Model) ([]Model, error)
 
@@ -28,6 +34,9 @@ type Processor interface {
 
 	// Delete deletes all macros for a character
 	Delete(characterId uint32) error
+
+	// WithTransaction returns a Processor that executes against the given transaction
+	WithTransaction(tx *gorm.DB) Processor
 }
 
 // ProcessorImpl implements the Processor interface
@@ -48,9 +57,28 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
+// WithTransaction returns a Processor bound to the given transaction, used to
+// keep a migrated write and its outbox enqueue on the same tx.
+func (p *ProcessorImpl) WithTransaction(tx *gorm.DB) Processor {
+	return &ProcessorImpl{
+		l:   p.l,
+		ctx: p.ctx,
+		db:  tx,
+		t:   p.t,
+	}
+}
+
 // ByCharacterIdProvider returns a provider for all macros for a character
 func (p *ProcessorImpl) ByCharacterIdProvider(characterId uint32) model.Provider[[]Model] {
 	return model.SliceMap(Make)(getByCharacterId(characterId)(p.db.WithContext(p.ctx)))(model.ParallelMap())
+}
+
+// ByCharacterIdPagedProvider returns a provider for one page of macros for a
+// character, used only by the REST list handler.
+func (p *ProcessorImpl) ByCharacterIdPagedProvider(characterId uint32, page model.Page) model.Provider[model.Paged[Model]] {
+	return model.MapPaged(Make)(getByCharacterIdPaged(characterId, page)(p.db.WithContext(p.ctx)))(model.ParallelMap())
 }
 
 // Update updates all macros for a character with message buffer for events
@@ -90,13 +118,17 @@ func (p *ProcessorImpl) Update(mb *message.Buffer) func(transactionId uuid.UUID,
 	}
 }
 
-// UpdateAndEmit updates all macros for a character and emits events
+// UpdateAndEmit updates all macros for a character and emits events. The
+// write and the outbox enqueue share one transaction (Update's own
+// ExecuteTransaction is safely re-entrant inside this outer one).
 func (p *ProcessorImpl) UpdateAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, macros []Model) ([]Model, error) {
 	var result []Model
-	err := message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
-		var err error
-		result, err = p.Update(buf)(transactionId, worldId, characterId, macros)
-		return err
+	err := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			var err error
+			result, err = p.WithTransaction(tx).Update(buf)(transactionId, worldId, characterId, macros)
+			return err
+		})
 	})
 	return result, err
 }

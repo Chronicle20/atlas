@@ -89,7 +89,7 @@ func TestGetById(t *testing.T) {
 
 			reactorId := tc.setup(ten)
 
-			result, err := GetById(l)(ctx)(reactorId)
+			result, err := NewProcessor(l, ctx).GetById(reactorId)
 
 			if tc.expectError {
 				assert.Error(t, err)
@@ -168,7 +168,7 @@ func TestGetInField(t *testing.T) {
 			tc.setup(ten)
 
 			f := field.NewBuilder(tc.worldId, tc.channelId, tc.mapId).Build()
-			results, err := GetInField(l)(ctx)(f)
+			results, err := NewProcessor(l, ctx).GetInField(f)
 
 			assert.NoError(t, err)
 			assert.Len(t, results, tc.expectedCount)
@@ -202,8 +202,8 @@ func TestGetInField_MultiTenant(t *testing.T) {
 	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000)).Build()
 
 	// Query should only return reactors for the requesting tenant
-	results1, err1 := GetInField(l)(ctx1)(f)
-	results2, err2 := GetInField(l)(ctx2)(f)
+	results1, err1 := NewProcessor(l, ctx1).GetInField(f)
+	results2, err2 := NewProcessor(l, ctx2).GetInField(f)
 
 	assert.NoError(t, err1)
 	assert.NoError(t, err2)
@@ -433,7 +433,7 @@ func TestHit_BreakableReactorDestroysOnTerminal(t *testing.T) {
 	// Hit may return a Kafka producer error in unit-test environments where
 	// no broker is reachable; the registry mutations under test happen
 	// before any producer call, so we tolerate that error here.
-	_ = Hit(l)(ctx)(created.Id(), 0, 0)
+	_ = NewProcessor(l, ctx).Hit(created.Id(), 0, 0)
 
 	// After the hit: reactor must be gone from the registry.
 	if _, err := GetRegistry().Get(ten, created.Id()); err == nil {
@@ -470,7 +470,7 @@ func TestHit_ItemReactorPersistsAtTerminal(t *testing.T) {
 
 	// Producer error from missing broker is tolerated; semantic check is on
 	// the registry state.
-	_ = Hit(l)(ctx)(created.Id(), 0, 0)
+	_ = NewProcessor(l, ctx).Hit(created.Id(), 0, 0)
 
 	// Reactor should still exist at state 1.
 	got, err := GetRegistry().Get(ten, created.Id())
@@ -507,7 +507,7 @@ func TestHit_SkillReactorPersistsAtTerminal(t *testing.T) {
 
 	// Producer error from missing broker is tolerated; semantic check is on
 	// the registry state.
-	_ = Hit(l)(ctx)(created.Id(), 0, 0)
+	_ = NewProcessor(l, ctx).Hit(created.Id(), 0, 0)
 
 	got, err := GetRegistry().Get(ten, created.Id())
 	if err != nil {

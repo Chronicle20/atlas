@@ -1,0 +1,10 @@
+packet: pet/clientbound/PetChat
+direction: clientbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: CPet::OnAction
+    address: "0x613543"
+    decompile_sha256: 5e17c6e3570fe22ef5d948ea7de5c9b030f68a294efbd39f1e94880b6f7b0118
+verifies:
+    - libs/atlas-packet/pet/clientbound/v61_test.go#TestPetChatBytesV61

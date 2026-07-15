@@ -37,7 +37,7 @@ wrong). task-092 nearly shipped a duplicate `TOUCH_MONSTER_ATTACK` codec this wa
 2. **Model + codec** — write the immutable `libs/atlas-packet` struct with
    `Encode`/`Decode` that mirror the derived order.
 3. **Wire** — register the writer/handler in `atlas-channel` and route the
-   per-version opcode in all five seed templates.
+   per-version opcode in all nine seed templates.
 4. **Verify** — round-trip + golden-byte test, `// packet-audit:verify`
    markers, evidence pin, regenerate the matrix. (This step is
    `VERIFYING_A_PACKET.md` applied to the codec you just wrote.)
@@ -73,6 +73,25 @@ build site, not a read helper.
 - **Missing fname.** If a registry row has no `fname` (common for serverbound
   send-sites), derive the send-site from the IDB and populate it
   (`provenance: ida-discovered`, address in `ida.address`).
+- **Serverbound opcode↔fname cross-check — `verify-serverbound`.** Both guards
+  above have a bulk checker for the serverbound direction:
+
+  ```bash
+  go run ./tools/packet-audit verify-serverbound --version <key> --ida-port <port>
+  ```
+
+  For every serverbound registry entry it decompiles the client send function
+  (address sourced from the committed audit reports under
+  `docs/packets/audits/<version>/`) and checks the registry opcode appears
+  among the literals passed to `COutPacket::COutPacket`. It writes a
+  Confirmed / Mismatch / Unresolved worklist to
+  `docs/packets/registry/verify_serverbound_<version>.md` and exits 0 either
+  way — it is a worklist generator, not a gate. A **Mismatch** row is exactly
+  the mislabel trap above (wrong fname or wrong opcode assignment): resolve it
+  against the IDB and fix the registry row before deriving. An **Unresolved**
+  row names why (no fname in registry, no audit-report address, decompile
+  error, or dynamic-opcode send site). Full flags in
+  [`audits/STARTING_A_NEW_VERSION_PASS.md`](audits/STARTING_A_NEW_VERSION_PASS.md) §1.5.
 - **Export-resolvability is a precondition for `evidence pin`.** Before you
   rely on being able to pin (Step 4), confirm the op's `fname` resolves as a
   key in `docs/packets/ida-exports/<version>…json`'s `functions` map. If it is
@@ -120,7 +139,7 @@ package clientbound
 
 const MobCrcKeyChangedWriter = "MobCrcKeyChanged"
 
-// Byte layout (IDA-verified, identical across all 5 versions — a single Decode4):
+// Byte layout (IDA-verified, identical across the versions cited below — a single Decode4):
 //   - crcKey : uint32 (CInPacket::Decode4 → this->m_dwMobCrcKey)
 // IDA basis: CMobPool::OnMobCrcKeyChanged — v83 @0x6797be, v87 @0x6b5399, v95 @0x657230.
 type MobCrcKeyChanged struct {
@@ -184,7 +203,7 @@ func (m MobCrcKeyChangedReply) String() string    { return "" }
 ## Step 3 — Wire into atlas-channel + the seed templates
 
 Three edits per op: register in `main.go`, add the channel-side
-writer/handler glue, and route the opcode in all five templates.
+writer/handler glue, and route the opcode in all nine templates.
 
 ### Clientbound
 
@@ -242,9 +261,9 @@ writer/handler glue, and route the opcode in all five templates.
    Gameplay behavior (acting on the decoded packet) is a separate later task;
    this batch lands decode-and-log only.
 
-### Route in all five seed templates
+### Route in all nine seed templates
 
-In each of `services/atlas-configurations/seed-data/templates/template_{gms_83,gms_84,gms_87,gms_95,jms_185}_1.json`,
+In each of `services/atlas-configurations/seed-data/templates/template_{gms_48,gms_61,gms_72,gms_79,gms_83,gms_84,gms_87,gms_95,jms_185}_1.json`,
 insert the route in sorted-opcode position, using the **per-version opcode**
 from `docs/packets/registry/<version>.yaml` (read it per file — opcodes shift
 between versions; see the v84 opcode-table shift below).
@@ -340,6 +359,15 @@ This is `VERIFYING_A_PACKET.md` applied to the codec you just wrote. Briefly:
    run introduces **no new** orphan/dangling/stale/drift lines mentioning your
    packet and does not increase the conflict count. Commit the test, the
    evidence YAMLs, and the regenerated `STATUS.md`/`status.json` together.
+
+### Serverbound: confirm the opcode cross-check before pinning
+
+Before you pin a serverbound cell, the op must land in the **Confirmed** bucket of
+the `verify-serverbound` worklist (the opcode↔fname cross-check from
+[the Step-1 guards](#guards-before-you-write-any-go) above): that is the green
+light to proceed to the §9 three-artifact verification. A **Mismatch** or
+**Unresolved** row is a blocker — resolve it against the IDB (fix the registry
+fname/opcode, or complete the §9 report-gen) before pinning, never around it.
 
 ---
 

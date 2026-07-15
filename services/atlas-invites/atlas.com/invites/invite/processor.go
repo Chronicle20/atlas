@@ -3,8 +3,8 @@ package invite
 import (
 	"atlas-invites/kafka/message"
 	invite2 "atlas-invites/kafka/message/invite"
-	"atlas-invites/kafka/producer"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
@@ -42,6 +42,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 		p:   producer.ProviderImpl(l)(ctx),
 	}
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) GetByCharacterId(characterId uint32) ([]Model, error) {
 	return p.ByCharacterIdProvider(characterId)()

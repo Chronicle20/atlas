@@ -4,17 +4,17 @@ import (
 	"testing"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 )
 
-func mustTenant(t *testing.T, region string, majorVersion uint16) tenant.Model {
+func mustTenant(t *testing.T, region string, major uint16, minor uint16) tenant.Model {
 	t.Helper()
-	tm, err := tenant.Create(uuid.New(), region, majorVersion, 1)
+	m, err := tenant.Create(uuid.New(), region, major, minor)
 	if err != nil {
-		t.Fatalf("unable to create tenant: %v", err)
+		t.Fatalf("tenant: %v", err)
 	}
-	return tm
+	return m
 }
 
 // TestGetCashSlotItemType_SealingLock_VersionShifted pins the version-shifted
@@ -24,12 +24,12 @@ func mustTenant(t *testing.T, region string, majorVersion uint16) tenant.Model {
 func TestGetCashSlotItemType_SealingLock_VersionShifted(t *testing.T) {
 	sealingLockItemId := item.Id(5061000)
 
-	nonGMS95 := mustTenant(t, "GMS", 87)
+	nonGMS95 := mustTenant(t, "GMS", 87, 1)
 	if got := GetCashSlotItemType(nonGMS95)(sealingLockItemId); got != CashSlotItemTypeSealTimed {
 		t.Errorf("non-GMS95 sealing lock: got %v, want CashSlotItemTypeSealTimed(%v)", got, CashSlotItemTypeSealTimed)
 	}
 
-	gms95 := mustTenant(t, "GMS", 95)
+	gms95 := mustTenant(t, "GMS", 95, 1)
 	if got := GetCashSlotItemType(gms95)(sealingLockItemId); got != CashSlotItemTypeSealTimedV95 {
 		t.Errorf("GMS95 sealing lock: got %v, want CashSlotItemTypeSealTimedV95(%v)", got, CashSlotItemTypeSealTimedV95)
 	}
@@ -56,8 +56,8 @@ func TestGetCashSlotItemType_SealingLock_VersionShifted(t *testing.T) {
 // the fix's version-selected `sealTimed` variable relies on. Noted as a
 // dispatch-level coverage gap.
 func TestGetCashSlotItemType_CrossVersionTypeCollision(t *testing.T) {
-	nonGMS95 := mustTenant(t, "GMS", 87)
-	gms95 := mustTenant(t, "GMS", 95)
+	nonGMS95 := mustTenant(t, "GMS", 87, 1)
+	gms95 := mustTenant(t, "GMS", 95, 1)
 
 	// itemId/1000 == 5431 -> "else" branch of ClassificationCharacterCreation
 	// (itemId.Id is uint32; itemId/1000 must be >= 5431 or the subtraction
@@ -77,5 +77,31 @@ func TestGetCashSlotItemType_CrossVersionTypeCollision(t *testing.T) {
 	}
 	if got := GetCashSlotItemType(nonGMS95)(category552ItemId); got == CashSlotItemType(64) {
 		t.Fatalf("non-GMS95 category-552 item unexpectedly returned 64 too: %v", got)
+	}
+}
+
+func TestGetCashSlotItemTypeVegasSpell(t *testing.T) {
+	pre95 := mustTenant(t, "GMS", 83, 1)
+	v95 := mustTenant(t, "GMS", 95, 1)
+	jms := mustTenant(t, "JMS", 185, 1)
+
+	cases := []struct {
+		name string
+		tn   tenant.Model
+		id   item.Id
+		want CashSlotItemType
+	}{
+		{"v83 vega 10", pre95, item.VegasSpell10, CashSlotItemTypeVegasSpellPre95},
+		{"v83 vega 60", pre95, item.VegasSpell60, CashSlotItemTypeVegasSpellPre95},
+		{"v95 vega 10", v95, item.VegasSpell10, CashSlotItemTypeVegasSpell95},
+		{"v95 vega 60", v95, item.VegasSpell60, CashSlotItemTypeVegasSpell95},
+		{"jms vega 10", jms, item.VegasSpell10, CashSlotItemTypeVegasSpellPre95},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := GetCashSlotItemType(tc.tn)(tc.id); got != tc.want {
+				t.Errorf("GetCashSlotItemType(%d) = %d, want %d", tc.id, got, tc.want)
+			}
+		})
 	}
 }

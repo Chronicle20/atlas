@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
@@ -29,16 +30,22 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 func handleGetServiceConfigurations(db *gorm.DB) rest.GetHandler {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			cts, err := NewProcessor(d.Logger(), d.Context(), db).GetAll()
+			page, err := paginate.ParseParams(r.URL.Query(), paginate.DefaultPageSize, paginate.MaxPageSize)
+			if err != nil {
+				server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+				return
+			}
+
+			paged, err := NewProcessor(d.Logger(), d.Context(), db).AllProvider(page)()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Unable to get service configurations.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
 			query := r.URL.Query()
 			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalResponse[[]interface{}](d.Logger())(w)(c.ServerInformation())(queryParams)(cts)
+			server.MarshalPaginatedResponse[[]interface{}](d.Logger())(w)(c.ServerInformation())(queryParams)(paged.Items, paginate.EnvelopeFor(paged), r)
 		}
 	}
 }
@@ -50,7 +57,7 @@ func handleGetServiceConfiguration(db *gorm.DB) rest.GetHandler {
 				cts, err := NewProcessor(d.Logger(), d.Context(), db).GetById(serviceId)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Unable to get service configuration.")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -74,7 +81,7 @@ func handleCreateServiceConfiguration(db *gorm.DB) rest.InputHandler[service.Inp
 			serviceId, err := NewProcessor(d.Logger(), d.Context(), db).Create(input)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Unable to create service configuration.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -85,7 +92,7 @@ func handleCreateServiceConfiguration(db *gorm.DB) rest.InputHandler[service.Inp
 			svc, err := NewProcessor(d.Logger(), d.Context(), db).GetById(serviceId)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Unable to get created service configuration.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -110,7 +117,7 @@ func handleUpdateServiceConfiguration(db *gorm.DB) rest.InputHandler[service.Inp
 				err := NewProcessor(d.Logger(), d.Context(), db).UpdateById(serviceId, input)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Unable to update service configuration.")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -118,7 +125,7 @@ func handleUpdateServiceConfiguration(db *gorm.DB) rest.InputHandler[service.Inp
 				svc, err := NewProcessor(d.Logger(), d.Context(), db).GetById(serviceId)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Unable to get updated service configuration.")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -137,7 +144,7 @@ func handleDeleteServiceConfiguration(db *gorm.DB) rest.GetHandler {
 				err := NewProcessor(d.Logger(), d.Context(), db).DeleteById(serviceId)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Unable to delete service configuration.")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 				w.WriteHeader(http.StatusNoContent)

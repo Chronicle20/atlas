@@ -1,0 +1,10 @@
+packet: cash/serverbound/CashShopOperationGift
+direction: serverbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::SendGiftsPacket
+    address: "0x467f9a"
+    decompile_sha256: fa5a3a70d93aed3919b6bb21327b94c6125f0657ad78d9d1995cedf61cd3086f
+verifies:
+  - libs/atlas-packet/cash/serverbound/shop_operation_gift_test.go#TestShopOperationGiftV72Bytes

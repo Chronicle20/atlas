@@ -1,0 +1,10 @@
+packet: field/serverbound/FieldItcOperationViewWish
+direction: serverbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CITC::OnViewWish
+    address: "0x5735c0"
+    decompile_sha256: f3a97131bdc203abd6812851970f2a6f1634145a05d31334244eac3ecd36b55c
+verifies:
+    - libs/atlas-packet/field/serverbound/itc_operation_test.go#TestItcOperationViewWishByteOutput_v95

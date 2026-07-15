@@ -1,0 +1,10 @@
+packet: npc/clientbound/NpcAskBoxTextConversationDetail
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CScriptMan::OnAskBoxText#AskBoxText
+    address: "0x6c81b1"
+    decompile_sha256: 5f3c470638752a00bf259e2a9773dd3708f640f77131f9c2a0fbcdf3a6ee08dc
+verifies:
+  - libs/atlas-packet/npc/clientbound/conversation_v79_details_test.go#TestNpcConversationAskBoxTextV79

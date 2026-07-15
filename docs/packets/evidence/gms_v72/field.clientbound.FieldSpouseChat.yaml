@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldSpouseChat
+direction: clientbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnCoupleMessage
+    address: "0x5164aa"
+    decompile_sha256: a447c242ffd194a76f9ed35bfff64610d2963020138b6290d0913d994beed3fd
+verifies:
+    - libs/atlas-packet/field/clientbound/spouse_chat_test.go#TestSpouseChatByteOutputV72

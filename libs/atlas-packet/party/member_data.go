@@ -41,6 +41,12 @@ type PartyMember struct {
 //   small PARTYDATA (same as v83), so JMS is explicitly excluded from v95plus.
 func WritePartyData(ctx context.Context, w *response.Writer, members []PartyMember, leaderId uint32) {
 	t := tenant.MustFromContext(ctx)
+	// GMS legacy (< v61): PARTYDATA has NO leaderId field between channels and
+	// maps. IDA v48 PARTYDATA::Decode@0x49c925 = DecodeBuffer(0x126=294); v61/v83
+	// = 298 (memset 0x12A). The 4-byte delta is exactly the leaderId, which the
+	// v61+ struct inserts after the channel array. (task-113 v48 close-I.) v28 is
+	// unverified-by-inference (no v28 IDB) — folded into the v48 legacy shape.
+	legacyNoLeader := t.IsRegion("GMS") && t.MajorVersion() < 61
 	for _, m := range members {
 		w.WriteInt(m.Id)
 	}
@@ -71,7 +77,9 @@ func WritePartyData(ctx context.Context, w *response.Writer, members []PartyMemb
 	for range 6 - len(members) {
 		w.WriteInt(0)
 	}
-	w.WriteInt(leaderId)
+	if !legacyNoLeader {
+		w.WriteInt(leaderId)
+	}
 	for _, m := range members {
 		w.WriteInt(m.MapId)
 	}
@@ -123,6 +131,8 @@ func ReadPartyData(ctx context.Context, r *request.Reader) ([]PartyMember, uint3
 	// JMS v185 uses the small PARTYDATA (0x12A=298 bytes), same as GMS v83.
 	// IDA evidence: JMS OnPartyResult@0xb297e7 qmemcpy(v120,...,0x12Au=298).
 	v95plus := t.Region() == "GMS" && t.MajorVersion() >= 95
+	// GMS legacy (< v61): no leaderId field (see WritePartyData). task-113 close-I.
+	legacyNoLeader := t.IsRegion("GMS") && t.MajorVersion() < 61
 	ids := make([]uint32, 6)
 	for i := range 6 {
 		ids[i] = r.ReadUint32()
@@ -143,7 +153,10 @@ func ReadPartyData(ctx context.Context, r *request.Reader) ([]PartyMember, uint3
 	for i := range 6 {
 		channels[i] = r.ReadInt32()
 	}
-	leaderId := r.ReadUint32()
+	var leaderId uint32
+	if !legacyNoLeader {
+		leaderId = r.ReadUint32()
+	}
 	maps := make([]uint32, 6)
 	for i := range 6 {
 		maps[i] = r.ReadUint32()

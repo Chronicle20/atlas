@@ -55,11 +55,11 @@ func (Character) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc 
 
 	// Face and Hair live under Character.wz/Face and Character.wz/Hair.
 	faceDir := filepath.Join(base, "Face")
-	if err := registerAllInDirectory(l, ctx, faceDir, face.RegisterFace(db)); err != nil {
+	if err := registerAllInDirectory(l, ctx, faceDir, face.NewProcessor(l, ctx, db).RegisterFace); err != nil {
 		l.WithError(err).Warnf("walk %s", faceDir)
 	}
 	hairDir := filepath.Join(base, "Hair")
-	if err := registerAllInDirectory(l, ctx, hairDir, hair.RegisterHair(db)); err != nil {
+	if err := registerAllInDirectory(l, ctx, hairDir, hair.NewProcessor(l, ctx, db).RegisterHair); err != nil {
 		l.WithError(err).Warnf("walk %s", hairDir)
 	}
 
@@ -67,7 +67,7 @@ func (Character) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc 
 	// equipment Read tolerates non-equipment .img.xml entries because Face/Hair
 	// dirs are already registered above and equipment.Read will fail benignly
 	// for them; the walker logs and continues.
-	if err := registerAllInDirectory(l, ctx, base, equipment.RegisterEquipment(db)); err != nil {
+	if err := registerAllInDirectory(l, ctx, base, equipment.NewProcessor(l, ctx, db).RegisterEquipment); err != nil {
 		return err
 	}
 
@@ -77,7 +77,7 @@ func (Character) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc 
 	// creation flow would have starter template data.
 	if _, err := fetchAndSerializeArchive(ctx, l, mc, p, "Etc.wz"); err == nil {
 		mkChar := filepath.Join(root, "Etc.wz", "MakeCharInfo.img.xml")
-		if err := templates.RegisterCharacterTemplate(db)(l)(ctx)(mkChar); err != nil {
+		if err := templates.NewProcessor(l, ctx, db).RegisterCharacterTemplate(mkChar); err != nil {
 			l.WithError(err).Warnf("templates.RegisterCharacterTemplate failed")
 		}
 	}

@@ -1,0 +1,8 @@
+packet: field/serverbound/FieldItcOperationMoveLtoS
+direction: serverbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: CITC::OnMoveITCPurchaseItemLtoS
+    address: "0x529efc"
+    decompile_sha256: 1e4b68b5ec05f26f75fe4c97023298b6ba701adf1b78deaafb96e7f6fbd27a2f

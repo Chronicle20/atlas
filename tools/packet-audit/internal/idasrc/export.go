@@ -92,6 +92,38 @@ func NewExportSource(path string) (*ExportSource, error) {
 	return &ExportSource{file: f}, nil
 }
 
+// SpliceExport implements the VERIFYING_A_PACKET.md §10 surgical-splice path as
+// a tool guarantee: it loads the existing export at existingPath, overlays the
+// SINGLE function `fname` harvested into `fresh`, and returns the deterministic
+// re-marshal (json.MarshalIndent "  " + trailing newline — identical to the
+// export core). Every untouched function round-trips byte-for-byte through the
+// same exportFile struct, so only the one spliced entry changes. It is an error
+// if `fname` is absent from the fresh harvest (nothing to splice) or the
+// existing file cannot be read/parsed.
+func SpliceExport(existingPath string, fresh exportFile, fname string) ([]byte, error) {
+	entry, ok := fresh.Functions[fname]
+	if !ok {
+		return nil, fmt.Errorf("splice: %q not present in the fresh harvest", fname)
+	}
+	b, err := os.ReadFile(existingPath)
+	if err != nil {
+		return nil, fmt.Errorf("splice: read existing export: %w", err)
+	}
+	var merged exportFile
+	if err := json.Unmarshal(b, &merged); err != nil {
+		return nil, fmt.Errorf("splice: parse existing export: %w", err)
+	}
+	if merged.Functions == nil {
+		merged.Functions = map[string]exportFn{}
+	}
+	merged.Functions[fname] = entry
+	out, err := json.MarshalIndent(merged, "", "  ")
+	if err != nil {
+		return nil, fmt.Errorf("splice: marshal: %w", err)
+	}
+	return append(out, '\n'), nil
+}
+
 // Functions returns all FNames in the export.
 func (s *ExportSource) Functions() []string {
 	out := make([]string, 0, len(s.file.Functions))

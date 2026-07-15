@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/driver/sqlite"
@@ -81,7 +82,8 @@ func TestProcessor_GetAll_Empty(t *testing.T) {
 	ctx := context.Background()
 	p := NewProcessor(l, ctx, db)
 
-	results, err := p.GetAll()
+	paged, err := p.AllProvider(model.Page{Number: 1, Size: 250})()
+	results := paged.Items
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -110,7 +112,8 @@ func TestProcessor_GetAll_WithData(t *testing.T) {
 		t.Fatalf("failed to create second tenant: %v", err)
 	}
 
-	results, err := p.GetAll()
+	paged, err := p.AllProvider(model.Page{Number: 1, Size: 250})()
+	results := paged.Items
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -503,7 +506,7 @@ func TestUpdateById_AssignsMissingPresetId(t *testing.T) {
 		t.Fatalf("failed to create tenant: %v", err)
 	}
 
-	fake := &mock.FakeClient{Items: map[uint32]data.ItemInfo{}, Skills: map[uint32]data.SkillInfo{}}
+	fake := &mock.ProcessorMock{Items: map[uint32]data.ItemInfo{}, Skills: map[uint32]data.SkillInfo{}}
 	p := NewProcessor(l, ctx, db).WithValidator(preset.NewValidator(fake))
 
 	input := RestModel{
@@ -537,7 +540,7 @@ func TestUpdateById_ReturnsValidationErrorForInvalidPreset(t *testing.T) {
 	l := testLogger()
 	ctx := context.Background()
 
-	fake := &mock.FakeClient{Items: map[uint32]data.ItemInfo{}, Skills: map[uint32]data.SkillInfo{}}
+	fake := &mock.ProcessorMock{Items: map[uint32]data.ItemInfo{}, Skills: map[uint32]data.SkillInfo{}}
 	p := NewProcessor(l, ctx, db).WithValidator(preset.NewValidator(fake))
 
 	input := RestModel{

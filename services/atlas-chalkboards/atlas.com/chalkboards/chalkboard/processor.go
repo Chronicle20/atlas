@@ -2,9 +2,9 @@ package chalkboard
 
 import (
 	chalkboard2 "atlas-chalkboards/kafka/message/chalkboard"
-	"atlas-chalkboards/kafka/producer"
 	"context"
 	"errors"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
@@ -31,6 +31,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 		t:   tenant.MustFromContext(ctx),
 	}
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) GetById(characterId uint32) (Model, error) {
 	m, ok := getRegistry().Get(p.ctx, characterId)

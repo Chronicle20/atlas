@@ -48,3 +48,7 @@ func ParseInstanceRouteId(l logrus.FieldLogger, next func(string) http.HandlerFu
 func ParseIncubatorRewardId(l logrus.FieldLogger, next func(string) http.HandlerFunc) http.HandlerFunc {
 	return server.ParseStringId(l, "incubatorRewardId", next)
 }
+
+func ParseMtsConfigId(l logrus.FieldLogger, next func(string) http.HandlerFunc) http.HandlerFunc {
+	return server.ParseStringId(l, "mtsConfigId", next)
+}

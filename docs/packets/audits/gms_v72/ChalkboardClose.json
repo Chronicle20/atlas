@@ -1,0 +1,11 @@
+{
+  "WriterName": "ChalkboardClose",
+  "IDAName": "CUserLocal::HandleLButtonClk",
+  "Address": "0x85d00c",
+  "Variant": "GMS/v72",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/character/serverbound/chalkboard_close.go",
+  "Rows": null,
+  "Verdict": 0,
+  "FlatInvalid": false
+}

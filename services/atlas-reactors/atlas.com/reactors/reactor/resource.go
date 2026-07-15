@@ -1,9 +1,10 @@
 package reactor
 
 import (
-	"atlas-reactors/kafka/producer"
 	"atlas-reactors/rest"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"net/http"
+	"sort"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
@@ -11,6 +12,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
@@ -33,7 +35,7 @@ func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
 func handleGetById(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseReactorId(d.Logger(), func(reactorId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			m, err := GetById(d.Logger())(d.Context())(reactorId)
+			m, err := NewProcessor(d.Logger(), d.Context()).GetById(reactorId)
 			if err != nil {
 				w.WriteHeader(http.StatusNotFound)
 				return
@@ -58,7 +60,7 @@ func handleGetByIdInMap(d *rest.HandlerDependency, c *rest.HandlerContext) http.
 				return rest.ParseInstanceId(d.Logger(), func(instanceId uuid.UUID) http.HandlerFunc {
 					return rest.ParseReactorId(d.Logger(), func(reactorId uint32) http.HandlerFunc {
 						return func(w http.ResponseWriter, r *http.Request) {
-							m, err := GetById(d.Logger())(d.Context())(reactorId)
+							m, err := NewProcessor(d.Logger(), d.Context()).GetById(reactorId)
 							if err != nil || m.WorldId() != worldId || m.ChannelId() != channelId || m.MapId() != mapId {
 								w.WriteHeader(http.StatusNotFound)
 								return
@@ -107,14 +109,24 @@ func handleGetInMap(d *rest.HandlerDependency, c *rest.HandlerContext) http.Hand
 			return rest.ParseMapId(d.Logger(), func(mapId _map.Id) http.HandlerFunc {
 				return rest.ParseInstanceId(d.Logger(), func(instanceId uuid.UUID) http.HandlerFunc {
 					return func(w http.ResponseWriter, r *http.Request) {
+						page, err := paginate.ParseParams(r.URL.Query(), paginate.MaxPageSize, paginate.MaxPageSize)
+						if err != nil {
+							server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+							return
+						}
+
 						f := field.NewBuilder(worldId, channelId, mapId).SetInstance(instanceId).Build()
-						ms, err := GetInField(d.Logger())(d.Context())(f)
+						ms, err := NewProcessor(d.Logger(), d.Context()).GetInField(f)
 						if err != nil {
 							w.WriteHeader(http.StatusInternalServerError)
 							return
 						}
 
-						// Filter by name if query parameter provided.
+						// Filter by name if query parameter provided. Applied
+						// before pagination, matching the filter[isSpecial]
+						// precedent (atlas-monster-book task-117): filter first,
+						// then page over the filtered result so meta.total
+						// reflects the filtered count, not the unfiltered one.
 						if name := r.URL.Query().Get("name"); name != "" {
 							filtered := make([]Model, 0)
 							for _, m := range ms {
@@ -125,14 +137,19 @@ func handleGetInMap(d *rest.HandlerDependency, c *rest.HandlerContext) http.Hand
 							ms = filtered
 						}
 
-						res, err := model.SliceMap(Transform)(model.FixedProvider(ms))()()
+						sorted := make([]Model, len(ms))
+						copy(sorted, ms)
+						sort.Slice(sorted, func(i, j int) bool { return sorted[i].Id() < sorted[j].Id() })
+						paged := paginate.Slice(sorted, page)
+
+						res, err := model.SliceMap(Transform)(model.FixedProvider(paged.Items))()()
 						if err != nil {
 							d.Logger().WithError(err).Errorf("Creating REST model.")
 							w.WriteHeader(http.StatusInternalServerError)
 							return
 						}
 
-						server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(r.URL.Query())(res)
+						server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(r.URL.Query())(res, paginate.EnvelopeFor(paged), r)
 					}
 				})
 			})

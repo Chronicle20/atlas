@@ -1,8 +1,10 @@
 package scheduler
 
 import (
-	"atlas-family/kafka/producer"
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"os"
 	"strconv"
 	"time"
@@ -69,7 +71,9 @@ func (j *ReputationResetJob) Start(ctx context.Context) error {
 	}).Info("Starting reputation reset job scheduler")
 
 	// Start the scheduling goroutine
-	go j.scheduleResetJob(ctx)
+	routine.Go(j.log, ctx, func(_ context.Context) {
+		j.scheduleResetJob(ctx)
+	})
 
 	return nil
 }

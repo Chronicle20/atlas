@@ -18,9 +18,9 @@ import (
 	questmessage "atlas-saga-orchestrator/kafka/message/quest"
 	saga2 "atlas-saga-orchestrator/kafka/message/saga"
 	storage2 "atlas-saga-orchestrator/kafka/message/storage"
-	"atlas-saga-orchestrator/kafka/producer"
 	"atlas-saga-orchestrator/map_command"
 	"atlas-saga-orchestrator/monster"
+	"atlas-saga-orchestrator/mts"
 	party_quest "atlas-saga-orchestrator/party_quest"
 	"atlas-saga-orchestrator/pet"
 	portalBlocking "atlas-saga-orchestrator/portal"
@@ -37,6 +37,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/asset"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
@@ -62,6 +63,7 @@ type Handler interface {
 	WithPortalProcessor(portal.Processor) Handler
 	WithPortalBlockingProcessor(portalBlocking.Processor) Handler
 	WithCashshopProcessor(cashshop.Processor) Handler
+	WithMtsProcessor(mts.Processor) Handler
 	WithSystemMessageProcessor(system_message.Processor) Handler
 	WithQuestProcessor(quest.Processor) Handler
 	WithStorageProcessor(storage.Processor) Handler
@@ -121,6 +123,10 @@ type Handler interface {
 	handleReleaseFromStorage(s Saga, st Step[any]) error
 	handleAcceptToCashShop(s Saga, st Step[any]) error
 	handleReleaseFromCashShop(s Saga, st Step[any]) error
+	handleAcceptToMtsListing(s Saga, st Step[any]) error
+	handleReleaseFromMtsHolding(s Saga, st Step[any]) error
+	handleMtsMoveListingToHolding(s Saga, st Step[any]) error
+	handleMtsBidEscrow(s Saga, st Step[any]) error
 	handlePlayPortalSound(s Saga, st Step[any]) error
 	handleShowInfo(s Saga, st Step[any]) error
 	handleShowInfoText(s Saga, st Step[any]) error
@@ -137,6 +143,8 @@ type Handler interface {
 	handleCancelConsumableEffect(s Saga, st Step[any]) error
 	handleResetStats(s Saga, st Step[any]) error
 	handleRebalanceAP(s Saga, st Step[any]) error
+	handleTransferAP(s Saga, st Step[any]) error
+	handleTransferSP(s Saga, st Step[any]) error
 	handleStartInstanceTransport(s Saga, st Step[any]) error
 	handleSaveLocation(s Saga, st Step[any]) error
 	handleWarpToSavedLocation(s Saga, st Step[any]) error
@@ -172,6 +180,7 @@ type HandlerImpl struct {
 	portalP         portal.Processor
 	portalBlockingP portalBlocking.Processor
 	cashshopP       cashshop.Processor
+	mtsP            mts.Processor
 	systemMessageP  system_message.Processor
 	questP          quest.Processor
 	storageP        storage.Processor
@@ -203,6 +212,7 @@ func NewHandler(l logrus.FieldLogger, ctx context.Context) Handler {
 		consumableP:     consumable.NewProcessor(l, ctx),
 		portalBlockingP: portalBlocking.NewProcessor(l, ctx),
 		cashshopP:       cashshop.NewProcessor(l, ctx),
+		mtsP:            mts.NewProcessor(l, ctx),
 		systemMessageP:  system_message.NewProcessor(l, ctx),
 		questP:          quest.NewProcessor(l, ctx),
 		storageP:        storage.NewProcessor(l, ctx),
@@ -457,6 +467,18 @@ func (h *HandlerImpl) WithCashshopProcessor(cashshopP cashshop.Processor) Handle
 		cashshopP:      cashshopP,
 		systemMessageP: h.systemMessageP,
 	}
+}
+
+func (h *HandlerImpl) WithMtsProcessor(mtsP mts.Processor) Handler {
+	// Clone ALL fields, then override mtsP. The explicit field-by-field form the
+	// sibling With* methods use silently drops any HandlerImpl field it forgets to
+	// list (it currently omits 11 of 29 — reactorDropP, portalBlockingP, questP,
+	// storageP, buffP, transportP, savedLocationP, gachaponP, partyQuestP, reactorP,
+	// mapCommandP), nil-ing them on the returned Handler. A shallow struct copy can
+	// never drop a field as HandlerImpl grows — the same pattern the compensator uses.
+	c := *h
+	c.mtsP = mtsP
+	return &c
 }
 
 func (h *HandlerImpl) WithSystemMessageProcessor(systemMessageP system_message.Processor) Handler {
@@ -799,6 +821,18 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleAcceptToCashShop, true
 	case ReleaseFromCashShop:
 		return h.handleReleaseFromCashShop, true
+	case AcceptToMtsListing:
+		return h.handleAcceptToMtsListing, true
+	case ReleaseFromMtsHolding:
+		return h.handleReleaseFromMtsHolding, true
+	case MtsMoveListingToHolding:
+		return h.handleMtsMoveListingToHolding, true
+	case MtsBidEscrow:
+		// MtsBidEscrow is a single-step wallet adjust — reuse the cash-shop
+		// wallet AwardCurrency dispatch (no duplicate). The composites
+		// TransferToMts / WithdrawFromMts / MtsSettlePurchase are expanded, not
+		// dispatched through GetHandler (see expandAndProcessStep).
+		return h.handleMtsBidEscrow, true
 	case PlayPortalSound:
 		return h.handlePlayPortalSound, true
 	case ShowInfo:
@@ -833,6 +867,10 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleResetStats, true
 	case RebalanceAP:
 		return h.handleRebalanceAP, true
+	case TransferAP:
+		return h.handleTransferAP, true
+	case TransferSP:
+		return h.handleTransferSP, true
 	case StartInstanceTransport:
 		return h.handleStartInstanceTransport, true
 	case SaveLocation:
@@ -1974,6 +2012,129 @@ func (h *HandlerImpl) handleReleaseFromCashShop(s Saga, st Step[any]) error {
 	return nil
 }
 
+// handleAcceptToMtsListing handles the AcceptToMtsListing action.
+// Dispatches an ACCEPT_TO_MTS_LISTING command to atlas-mts's custody consumer
+// (COMMAND_TOPIC_MTS_CUSTODY); atlas-mts CREATEs the listing row from the
+// carried snapshot (the item has already left inventory via ReleaseFromCharacter).
+func (h *HandlerImpl) handleAcceptToMtsListing(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(AcceptToMtsListingPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	h.l.Debugf("Accepting item template [%d] to MTS listing [%s] for seller [%d]",
+		payload.TemplateId, payload.ListingId, payload.SellerId)
+
+	err := h.mtsP.AcceptToMtsListingAndEmit(payload.TransactionId, mts.AcceptToMtsListingParams{
+		ListingId:        payload.ListingId,
+		WorldId:          byte(payload.WorldId),
+		SellerId:         payload.SellerId,
+		SellerAccountId:  payload.SellerAccountId,
+		SellerName:       payload.SellerName,
+		SaleType:         payload.SaleType,
+		TemplateId:       payload.TemplateId,
+		Quantity:         payload.Quantity,
+		Strength:         payload.Strength,
+		Dexterity:        payload.Dexterity,
+		Intelligence:     payload.Intelligence,
+		Luck:             payload.Luck,
+		HP:               payload.HP,
+		MP:               payload.MP,
+		WeaponAttack:     payload.WeaponAttack,
+		MagicAttack:      payload.MagicAttack,
+		WeaponDefense:    payload.WeaponDefense,
+		MagicDefense:     payload.MagicDefense,
+		Accuracy:         payload.Accuracy,
+		Avoidability:     payload.Avoidability,
+		Hands:            payload.Hands,
+		Speed:            payload.Speed,
+		Jump:             payload.Jump,
+		Slots:            payload.Slots,
+		Level:            payload.Level,
+		ItemLevel:        payload.ItemLevel,
+		ItemExp:          payload.ItemExp,
+		RingId:           payload.RingId,
+		ViciousCount:     payload.ViciousCount,
+		Flags:            payload.Flags,
+		ListValue:        payload.ListValue,
+		BuyNowPrice:      payload.BuyNowPrice,
+		CommissionRate:   payload.CommissionRate,
+		Category:         payload.Category,
+		SubCategory:      payload.SubCategory,
+		EndsAt:           payload.EndsAt,
+		MinIncrement:     payload.MinIncrement,
+		OfferWishSerial:  payload.OfferWishSerial,
+		OfferWishOwnerId: payload.OfferWishOwnerId,
+	})
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to accept item to MTS listing.")
+		return err
+	}
+
+	return nil
+}
+
+// handleReleaseFromMtsHolding handles the ReleaseFromMtsHolding action.
+// Dispatches a RELEASE_FROM_MTS_HOLDING command to atlas-mts (soft-delete the
+// holding row) before the item is re-granted to the character.
+func (h *HandlerImpl) handleReleaseFromMtsHolding(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(ReleaseFromMtsHoldingPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	h.l.Debugf("Releasing MTS holding [%s]", payload.HoldingId)
+
+	err := h.mtsP.ReleaseFromMtsHoldingAndEmit(payload.TransactionId, payload.HoldingId)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to release MTS holding.")
+		return err
+	}
+
+	return nil
+}
+
+// handleMtsMoveListingToHolding handles the MtsMoveListingToHolding action — the
+// final settlement custody step. atlas-mts marks the listing sold and creates the
+// buyer's holding from the listing snapshot in one local tx.
+func (h *HandlerImpl) handleMtsMoveListingToHolding(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(MtsMoveListingToHoldingPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	h.l.Debugf("Moving MTS listing [%s] to holding for buyer [%d]", payload.ListingId, payload.BuyerId)
+
+	err := h.mtsP.MoveListingToHoldingAndEmit(payload.TransactionId, payload.ListingId, payload.BuyerId, byte(payload.WorldId), payload.ResultKind, payload.Price)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to move MTS listing to holding.")
+		return err
+	}
+
+	return nil
+}
+
+// handleMtsBidEscrow handles the MtsBidEscrow action. It is a single-step cash
+// wallet adjust (escrow a bid by debiting NX Prepaid, or release by crediting),
+// so it REUSES the cash-shop wallet AwardCurrency dispatch — no duplicate
+// command. Prepaid (currencyType 3) is the bid-escrow bucket; Amount is signed
+// (negative to hold, positive to release).
+func (h *HandlerImpl) handleMtsBidEscrow(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(MtsBidEscrowPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	const currencyTypePrepaid = uint32(3)
+	err := h.cashshopP.AwardCurrencyAndEmit(payload.TransactionId, payload.BidderAccountId, currencyTypePrepaid, payload.Amount)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to escrow MTS bid.")
+		return err
+	}
+
+	return nil
+}
+
 // handlePlayPortalSound handles the PlayPortalSound action
 // This is a synchronous action - we send the command and immediately mark complete
 func (h *HandlerImpl) handlePlayPortalSound(s Saga, st Step[any]) error {
@@ -2310,6 +2471,43 @@ func (h *HandlerImpl) handleRebalanceAP(s Saga, st Step[any]) error {
 	err := h.charP.RebalanceAPAndEmit(s.TransactionId(), ch, payload.CharacterId, kafkaTargets)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to rebalance AP.")
+		return err
+	}
+	return nil
+}
+
+// handleTransferAP handles the TransferAP action (AP Reset item 5050000).
+// Moves one already-spent ability point From -> To; atlas-character performs
+// the authoritative validation and emits STAT_CHANGED on success or an ERROR
+// (StatusEventApTransferErrorBody) on rejection.
+func (h *HandlerImpl) handleTransferAP(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(TransferAPPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	ch := channel.NewModel(payload.WorldId, payload.ChannelId)
+	err := h.charP.TransferAPAndEmit(s.TransactionId(), ch, payload.CharacterId, payload.From, payload.To)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to transfer AP.")
+		return err
+	}
+	return nil
+}
+
+// handleTransferSP handles the TransferSP action (SP Reset items 5050001-5050004).
+// Moves one skill point FromSkillId -> ToSkillId; atlas-skills re-validates the
+// tier/job/level and emits SP_TRANSFERRED on success or an ERROR
+// (StatusEventErrorBody) on rejection.
+func (h *HandlerImpl) handleTransferSP(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(TransferSPPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := h.skillP.TransferSPAndEmit(s.TransactionId(), payload.WorldId, payload.CharacterId, payload.JobId, uint32(payload.FromSkillId), uint32(payload.ToSkillId), payload.ItemTier, payload.TargetMaxLevel)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to transfer SP.")
 		return err
 	}
 	return nil

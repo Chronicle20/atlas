@@ -11,7 +11,9 @@ import (
 	"sync"
 	"time"
 
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	"github.com/gorilla/mux"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
 )
 
@@ -103,7 +105,7 @@ func New(l *logrus.Logger) *Builder {
 	sb.host = ""
 	sb.port = "8080"
 	sb.basePath = "/"
-	sb.routeInitializers = make([]RouteInitializer, 0)
+	sb.routeInitializers = []RouteInitializer{MountHandler("/metrics", promhttp.Handler())}
 	sb.routerProducer = func(l logrus.FieldLogger) http.Handler {
 		return produceRoutes(sb.basePath, sb.routeInitializers...)(l)
 	}
@@ -168,7 +170,7 @@ func (sb *Builder) SetRouterProducer(producer RouteProducer) *Builder {
 }
 
 func (sb *Builder) Run() {
-	go func() {
+	routine.Go(sb.l, sb.ctx, func(_ context.Context) {
 		hs := http.Server{
 			Addr:         fmt.Sprintf("%s:%s", sb.host, sb.port),
 			Handler:      sb.routerProducer(sb.l),
@@ -183,7 +185,7 @@ func (sb *Builder) Run() {
 		ctx, cancel := context.WithCancel(sb.ctx)
 		defer cancel()
 
-		go func() {
+		routine.Go(sb.l, ctx, func(_ context.Context) {
 			sb.wg.Add(1)
 			defer sb.wg.Done()
 			err := hs.ListenAndServe()
@@ -191,7 +193,7 @@ func (sb *Builder) Run() {
 				sb.l.WithError(err).Errorf("Error while serving.")
 				return
 			}
-		}()
+		})
 
 		<-ctx.Done()
 		sb.l.Infof("Shutting down server [%s:%s]", sb.host, sb.port)
@@ -203,5 +205,5 @@ func (sb *Builder) Run() {
 		if err != nil {
 			sb.l.WithError(err).Errorf("Closing log writer.")
 		}
-	}()
+	})
 }

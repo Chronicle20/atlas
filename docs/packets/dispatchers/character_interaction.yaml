@@ -33,5 +33,22 @@ operations:
   - { key: INVITE_RESULT,   modes: { gms_v83: 3,  gms_v84: 3,  gms_v87: 3,  gms_v95: 3,  jms_v185: 3  } }
   - { key: ENTER,           modes: { gms_v83: 4,  gms_v84: 4,  gms_v87: 4,  gms_v95: 4,  jms_v185: 4  } }
   - { key: ENTER_RESULT,    modes: { gms_v83: 5,  gms_v84: 5,  gms_v87: 5,  gms_v95: 5,  jms_v185: 5  } }
+  # CHAT is the OnPacketBase dispatcher mode for a room chat line; CHAT_THING is
+  # the config-resolved chatType byte inside the chat body (CMiniRoomBaseDlg::OnChat
+  # reads mode + chatType). Both are base-protocol modes and version-stable
+  # (byte-identical gms_v83/v95/jms — the mini-room protocol predates v83).
+  - { key: CHAT,            modes: { gms_v83: 6,  gms_v84: 6,  gms_v87: 6,  gms_v95: 6,  jms_v185: 6  } }
+  - { key: CHAT_THING,      modes: { gms_v83: 8,  gms_v84: 8,  gms_v87: 8,  gms_v95: 8,  jms_v185: 8  } }
   - { key: LEAVE,           modes: { gms_v83: 10, gms_v84: 10, gms_v87: 10, gms_v95: 10, jms_v185: 10 } }
   - { key: UPDATE_MERCHANT, modes: { gms_v83: 25, gms_v84: 25, gms_v87: 25, gms_v95: 25, jms_v185: 22 } }
+  # PERSONAL_STORE_ITEM_SOLD is the per-sale sold-item notification to the owner
+  # (CPersonalShopDlg::OnSoldItemResult) — UPDATE_MERCHANT+1 in every version
+  # (gms 25->26; jms 22->23), matching the same subclass sub-mode shift as
+  # UPDATE_MERCHANT.
+  - { key: PERSONAL_STORE_ITEM_SOLD, modes: { gms_v83: 26, gms_v84: 26, gms_v87: 26, gms_v95: 26, jms_v185: 23 } }
+  # Hired-merchant view responses echo the request mode byte (CEntrustedShopDlg::OnPacket
+  # sub_51870D: visit-list sub_519505 @0x2E, blacklist-view sub_5193D8 @0x2F on gms_v83).
+  # jms shifts the merchant sub-modes down by 3 (OnVisitList sends 0x2B, OnBlackList 0x2C
+  # — IDA-verified jms @0x54ba0c / @0x54b8df).
+  - { key: MERCHANT_VIEW_VISIT_LIST, modes: { gms_v83: 46, gms_v84: 46, gms_v87: 46, gms_v95: 46, jms_v185: 43 } }
+  - { key: MERCHANT_VIEW_BLACK_LIST, modes: { gms_v83: 47, gms_v84: 47, gms_v87: 47, gms_v95: 47, jms_v185: 44 } }

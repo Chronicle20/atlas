@@ -152,7 +152,7 @@ func TestGetById_HitAvoidsUpstream(t *testing.T) {
 	})
 
 	ctx := ctxFor(t, "GMS")
-	get := GetById(logrus.New())(ctx)
+	get := NewProcessor(logrus.New(), ctx).GetById
 
 	m1, err := get(100)
 	if err != nil {
@@ -187,7 +187,7 @@ func TestGetById_NegativeCache_AvoidsUpstream(t *testing.T) {
 	})
 
 	ctx := ctxFor(t, "GMS")
-	get := GetById(logrus.New())(ctx)
+	get := NewProcessor(logrus.New(), ctx).GetById
 
 	_, err1 := get(404)
 	if !errors.Is(err1, requests.ErrNotFound) {
@@ -217,7 +217,7 @@ func TestGetById_TransientErrorNotCached(t *testing.T) {
 	})
 
 	ctx := ctxFor(t, "GMS")
-	get := GetById(logrus.New())(ctx)
+	get := NewProcessor(logrus.New(), ctx).GetById
 
 	if _, err := get(500); !errors.Is(err, transient) {
 		t.Fatalf("first err = %v, want %v", err, transient)
@@ -244,7 +244,7 @@ func TestGetById_BadRequestNotCached(t *testing.T) {
 	})
 
 	ctx := ctxFor(t, "GMS")
-	get := GetById(logrus.New())(ctx)
+	get := NewProcessor(logrus.New(), ctx).GetById
 
 	for i := 0; i < 3; i++ {
 		_, err := get(400)
@@ -275,8 +275,8 @@ func TestGetById_TenantIsolation(t *testing.T) {
 
 	ctxA := ctxFor(t, "AMS")
 	ctxB := ctxFor(t, "BMS")
-	getA := GetById(logrus.New())(ctxA)
-	getB := GetById(logrus.New())(ctxB)
+	getA := NewProcessor(logrus.New(), ctxA).GetById
+	getB := NewProcessor(logrus.New(), ctxB).GetById
 
 	a1, err := getA(7)
 	if err != nil {
@@ -311,7 +311,7 @@ func TestGetById_KillSwitchBypassesCache(t *testing.T) {
 	})
 
 	ctx := ctxFor(t, "GMS")
-	get := GetById(logrus.New())(ctx)
+	get := NewProcessor(logrus.New(), ctx).GetById
 	for i := 0; i < 3; i++ {
 		if _, err := get(1); err != nil {
 			t.Fatalf("call %d: %v", i, err)
@@ -330,7 +330,7 @@ func TestGetById_NotInitialized_BypassesCache(t *testing.T) {
 	})
 
 	ctx := ctxFor(t, "GMS")
-	get := GetById(logrus.New())(ctx)
+	get := NewProcessor(logrus.New(), ctx).GetById
 	for i := 0; i < 2; i++ {
 		if _, err := get(1); err != nil {
 			t.Fatalf("call %d: %v", i, err)
@@ -357,7 +357,7 @@ func TestGetById_RedisDown_FallsThroughGracefully(t *testing.T) {
 	mr.Close()
 
 	ctx := ctxFor(t, "GMS")
-	get := GetById(logrus.New())(ctx)
+	get := NewProcessor(logrus.New(), ctx).GetById
 	for i := 0; i < 3; i++ {
 		m, err := get(1)
 		if err != nil {
@@ -417,7 +417,7 @@ func TestGetById_HTTPRoundTrip_Integration(t *testing.T) {
 	InitDataCache(rc)
 
 	ctx := ctxFor(t, "GMS")
-	get := GetById(logrus.New())(ctx)
+	get := NewProcessor(logrus.New(), ctx).GetById
 
 	// Positive path through real HTTP transport + real jsonapi decode.
 	m1, err := get(100)
@@ -465,7 +465,7 @@ func TestGetById_NegativeTTLZero_DisablesNegativeCache(t *testing.T) {
 	})
 
 	ctx := ctxFor(t, "GMS")
-	get := GetById(logrus.New())(ctx)
+	get := NewProcessor(logrus.New(), ctx).GetById
 	for i := 0; i < 3; i++ {
 		_, err := get(404)
 		if !errors.Is(err, requests.ErrNotFound) {

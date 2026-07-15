@@ -14,8 +14,8 @@ func TestConfig(t *testing.T) {
 		t.Fatalf("Invalid broker count.")
 	}
 
-	if c.maxWait != time.Millisecond*50 {
-		t.Fatalf("Invalid broker max wait.")
+	if c.maxWait != 10*time.Second {
+		t.Fatalf("expected default maxWait=10s (kafka-go default; MinBytes=1 makes it latency-free), got %v", c.maxWait)
 	}
 
 	c, err := model.Decorate(model.Decorators(SetMaxWait(time.Second * 60)))(c)
@@ -27,8 +27,8 @@ func TestConfig(t *testing.T) {
 func TestFetchTimeoutDefaultsAndOverride(t *testing.T) {
 	c := NewConfig([]string{"test"}, "test", "test_topic", "test_group")
 
-	if c.fetchTimeout != 5*time.Minute {
-		t.Fatalf("expected default fetchTimeout=5m, got %v", c.fetchTimeout)
+	if c.fetchTimeout != time.Minute {
+		t.Fatalf("expected default fetchTimeout=1m (liveness-tick cadence), got %v", c.fetchTimeout)
 	}
 	if c.maxConsecutiveTimeouts != 3 {
 		t.Fatalf("expected default maxConsecutiveTimeouts=3, got %d", c.maxConsecutiveTimeouts)

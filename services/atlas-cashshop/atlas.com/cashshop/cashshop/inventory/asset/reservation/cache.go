@@ -4,6 +4,9 @@ import (
 	"context"
 	"sync"
 	"time"
+
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+	"github.com/sirupsen/logrus"
 )
 
 // ReservationCache is a thread-safe cache for asset reservations
@@ -28,7 +31,9 @@ func GetInstance() *ReservationCache {
 			expirations:  make(map[uint32]time.Time),
 			cancel:       cancel,
 		}
-		go instance.cleanupExpired(ctx)
+		routine.Go(logrus.StandardLogger(), ctx, func(_ context.Context) {
+			instance.cleanupExpired(ctx)
+		})
 	})
 	return instance
 }

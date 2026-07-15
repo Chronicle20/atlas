@@ -5,10 +5,10 @@ import (
 	"atlas-transports/character"
 	"atlas-transports/kafka/message"
 	"atlas-transports/kafka/message/transport"
-	"atlas-transports/kafka/producer"
 	_map "atlas-transports/map"
 	"context"
 	"errors"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"time"
 
 	channel2 "github.com/Chronicle20/atlas/libs/atlas-constants/channel"
@@ -56,6 +56,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 		mp:    _map.NewProcessor(l, ctx),
 	}
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) AddTenant(distinctRoutes []Model, sharedVessels []SharedVesselModel) error {
 	p.l.Debugf("Adding [%d] routes for tenant [%s].", len(distinctRoutes), p.t.Id())

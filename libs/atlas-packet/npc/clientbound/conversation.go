@@ -64,29 +64,44 @@ func (m NpcConversation) String() string {
 	return fmt.Sprintf("speakerTypeId [%d], speakerTemplateId [%d], msgType [%d], param [%d]", m.speakerTypeId, m.speakerTemplateId, m.msgType, m.param)
 }
 
-func (m NpcConversation) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+func (m NpcConversation) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
 		w.WriteByte(m.speakerTypeId)
 		w.WriteInt(m.speakerTemplateId)
 		w.WriteByte(m.msgType)
-		w.WriteByte(m.param)
-		if m.param&4 != 0 {
-			w.WriteInt(m.secondaryNpcTemplateId)
+		// GMS v72 CScriptMan::OnScriptMessage@0x6a0ba9 (GMS_v72.1_U_DEVM.exe, port
+		// 13339) reads only Decode1 speakerTypeId, Decode4 speakerTemplateId,
+		// Decode1 msgType before dispatching to the per-msgType body — there is NO
+		// param byte and NO param&4 secondaryNpcTemplateId at the frame level (the
+		// per-handler `param` arg is passed uninitialised, never read from the
+		// wire). The param byte + optional secondary int were introduced after the
+		// legacy range: v79 OnScriptMessage@0x6c7d3e reads Decode1 param + Decode4
+		// secondary when param&4. Legacy GMS (<79) omits both. delta §3.2
+		t := tenant.MustFromContext(ctx)
+		if !(t.IsRegion("GMS") && !t.MajorAtLeast(79)) {
+			w.WriteByte(m.param)
+			if m.param&4 != 0 {
+				w.WriteInt(m.secondaryNpcTemplateId)
+			}
 		}
 		w.WriteByteArray(m.conversationDetail)
 		return w.Bytes()
 	}
 }
 
-func (m *NpcConversation) Decode(l logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *NpcConversation) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
+		t := tenant.MustFromContext(ctx)
+		legacyNoParam := t.IsRegion("GMS") && !t.MajorAtLeast(79)
 		m.speakerTypeId = r.ReadByte()
 		m.speakerTemplateId = r.ReadUint32()
 		m.msgType = r.ReadByte()
-		m.param = r.ReadByte()
-		if m.param&4 != 0 {
-			m.secondaryNpcTemplateId = r.ReadUint32()
+		if !legacyNoParam {
+			m.param = r.ReadByte()
+			if m.param&4 != 0 {
+				m.secondaryNpcTemplateId = r.ReadUint32()
+			}
 		}
 		m.conversationDetail = r.ReadBytes(int(r.Available()))
 	}
@@ -114,9 +129,22 @@ type SayImageConversationDetail struct {
 	Images []string
 }
 
-func (s *SayImageConversationDetail) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+func (s *SayImageConversationDetail) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
+		// GMS v79 CScriptMan::OnSayImage@0x6c8052 reads a SINGLE DecodeStr (one
+		// image path) with NO count prefix; the count-prefixed multi-image list
+		// was introduced after v79 (v83 @0x961275, v95 @0x6dc310 read Decode1
+		// count + count x DecodeStr). For the legacy GMS range emit just the
+		// first image string (no count). delta §3.2
+		if t, err := tenant.FromContext(ctx)(); err == nil && t.IsRegion("GMS") && !t.MajorAtLeast(83) {
+			if len(s.Images) > 0 {
+				w.WriteAsciiString(s.Images[0])
+			} else {
+				w.WriteAsciiString("")
+			}
+			return w.Bytes()
+		}
 		w.WriteByte(byte(len(s.Images)))
 		for _, image := range s.Images {
 			w.WriteAsciiString(image)
@@ -181,10 +209,26 @@ type AskMenuConversationDetail struct {
 	Message string
 }
 
-func (s *AskMenuConversationDetail) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+func (s *AskMenuConversationDetail) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
 		w.WriteAsciiString(s.Message)
+		// GMS v79 merged the avatar-style menu into ASK_MENU: the client
+		// (CScriptMan::OnAskMenu @0x6c8863, GMS_v79_1_DEVM.exe port 13340) reads
+		// DecodeStr(message) + Decode1(count) + Decode4 x count (avatar look ids,
+		// SetUtilDlgEx_AVATAR). v83+ OnAskMenu (v83 @0x746fad, v95 @0x6dce00) read
+		// a plain single string with NO count. Atlas uses ASK_MENU only for plain
+		// #L#-token text menus, so count is always 0 (no avatar styles). delta §3.2
+		//
+		// v48 (pre-v61) predates the avatar-merge: its ASK_MENU arm (dialog
+		// type 4, dispatch case 5 sub_5B1195@0x5b1195, GMS_v48_1_DEVM.exe port
+		// 13337) reads a SINGLE DecodeStr with NO count byte — the menu items are
+		// #L-token embedded in the string, and the count-prefixed avatar list is a
+		// SEPARATE dispatch arm (ASK_AVATAR, case 6). So the count byte is emitted
+		// only for the v61..v82 merged-menu range, not for v48. task-113 v48 Stage E.
+		if t, err := tenant.FromContext(ctx)(); err == nil && t.IsRegion("GMS") && t.MajorAtLeast(61) && !t.MajorAtLeast(83) {
+			w.WriteByte(0)
+		}
 		return w.Bytes()
 	}
 }
@@ -265,13 +309,27 @@ type AskMemberShopAvatarConversationDetail struct {
 	Candidates []uint32
 }
 
-func (a *AskMemberShopAvatarConversationDetail) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+func (a *AskMemberShopAvatarConversationDetail) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
 		w.WriteAsciiString(a.Message)
-		w.WriteByte(byte(len(a.Candidates)))
-		for _, candidate := range a.Candidates {
-			w.WriteInt(candidate)
+		// GMS v79 member-shop-avatar candidates are client-inventory-driven: the
+		// client (CScriptMan::OnAskMembershopAvatar @0x6c8bc8, GMS_v79_1_DEVM.exe
+		// port 13340) reads DecodeStr(message) + Decode1(count) + count x
+		// (DecodeBuffer(8)=cash item SN int64 + Decode1 byte). That per-entry
+		// format is incompatible with the v83+ int32 style-id list, and Atlas has
+		// no server-side SN data to drive it, so count is always 0 for the legacy
+		// range (msgType 9). v83+ (CScriptMan::OnAskMembershopAvatar#AskMemberShopAvatar)
+		// read Decode4 style ids — unchanged. delta §3.2
+		t := tenant.MustFromContext(ctx)
+		if t.Region() == "GMS" && t.MajorVersion() < 83 {
+			w.WriteByte(0)
+		}
+		if (t.Region() == "GMS" && t.MajorVersion() >= 83) || t.Region() == "JMS" {
+			w.WriteByte(byte(len(a.Candidates)))
+			for _, candidate := range a.Candidates {
+				w.WriteInt(candidate)
+			}
 		}
 		return w.Bytes()
 	}

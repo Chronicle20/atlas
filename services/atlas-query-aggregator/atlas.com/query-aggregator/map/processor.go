@@ -4,6 +4,8 @@ import (
 	"context"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 	"github.com/sirupsen/logrus"
 )
 
@@ -25,10 +27,12 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 // GetPlayerCountInMap retrieves the player count for a single map
 // Returns 0 on error to allow graceful degradation
 func (p *ProcessorImpl) GetPlayerCountInMap(f field.Model) (int, error) {
-	resp, err := requestCharactersInMap(f)(p.l, p.ctx)
+	resp, err := requests.DrainProvider[RestModel, RestModel](p.l, p.ctx)(charactersInMapUrl(f), 250, Extract, model.Filters[RestModel]())()
 	if err != nil {
 		p.l.WithError(err).Warnf("Failed to get characters in map [%d], using count 0", f.MapId())
 		return 0, nil

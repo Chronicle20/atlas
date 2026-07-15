@@ -4,16 +4,14 @@ import (
 	"atlas-gachapons/gachapon"
 	"atlas-gachapons/global"
 	"atlas-gachapons/item"
-	"atlas-gachapons/logger"
 	"atlas-gachapons/reward"
 	"atlas-gachapons/seed"
 	"os"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
-	service "github.com/Chronicle20/atlas/libs/atlas-service"
 	seeder "github.com/Chronicle20/atlas/libs/atlas-seeder"
-	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
+	service "github.com/Chronicle20/atlas/libs/atlas-service"
 	"gorm.io/gorm"
 )
 
@@ -40,15 +38,8 @@ func GetServer() Server {
 }
 
 func main() {
-	l := logger.CreateLogger(serviceName)
-	l.Infoln("Starting main service.")
-
-	tdm := service.GetTeardownManager()
-
-	tc, err := tracing.InitTracer(serviceName)
-	if err != nil {
-		l.WithError(err).Fatal("Unable to initialize tracer.")
-	}
+	rt := service.Bootstrap(serviceName)
+	l := rt.Logger()
 
 	db := database.Connect(l, database.SetMigrations(
 		gachapon.Migration,
@@ -57,9 +48,17 @@ func main() {
 		func(db *gorm.DB) error { return db.AutoMigrate(&seeder.SeedState{}) },
 	))
 
+	server.RegisterTransientErrorClassifier(func(err error) bool {
+		if database.IsTransientConnectionError(err) {
+			database.CountTransient(err)
+			return true
+		}
+		return false
+	})
+
 	server.New(l).
-		WithContext(tdm.Context()).
-		WithWaitGroup(tdm.WaitGroup()).
+		WithContext(rt.Context()).
+		WithWaitGroup(rt.WaitGroup()).
 		SetBasePath(GetServer().GetPrefix()).
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(gachapon.InitResource(GetServer())(db)).
@@ -67,10 +66,8 @@ func main() {
 		AddRouteInitializer(global.InitResource(GetServer())(db)).
 		AddRouteInitializer(reward.InitResource(GetServer())(db)).
 		AddRouteInitializer(seed.InitResource(GetServer())(db)).
+		AddRouteInitializer(server.MountReadiness("/readyz", rt.Ready)).
 		Run()
 
-	tdm.TeardownFunc(tracing.Teardown(l)(tc))
-
-	tdm.Wait()
-	l.Infoln("Service shutdown.")
+	rt.Wait()
 }

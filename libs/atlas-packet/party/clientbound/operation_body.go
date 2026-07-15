@@ -48,9 +48,8 @@ func PartyCreatedBody(partyId uint32) func(logrus.FieldLogger, context.Context) 
 }
 
 // PartyCreatedBodyWithDoor is like PartyCreatedBody but populates the party
-// minimap door indicator fields (FR-3.3).  townMapId and targetMapId follow
-// the Cosmic partyCreated convention: townMapId is the town (portal exit) and
-// targetMapId is the dungeon/area map that the door came from.  x and y are
+// minimap door indicator fields (FR-3.3).  townMapId is the town (portal
+// exit) and targetMapId is the dungeon/area map that the door came from.  x and y are
 // the area-side door minimap coordinates (door.AreaX/AreaY).
 func PartyCreatedBodyWithDoor(partyId uint32, townMapId _map.Id, targetMapId _map.Id, x int16, y int16) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", PartyOperationCreated, func(mode byte) packet.Encoder {

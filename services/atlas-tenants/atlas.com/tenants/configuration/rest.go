@@ -306,6 +306,138 @@ func CreateSingleIncubatorRewardJsonData(reward map[string]interface{}) (json.Ra
 	return CreateIncubatorRewardJsonData([]map[string]interface{}{reward})
 }
 
+// MtsConfigRestModel is the JSON:API resource for the per-tenant MTS economic
+// configuration. The attribute JSON keys must match what atlas-mts decodes in
+// services/atlas-mts/atlas.com/mts/configuration/model.go (RestModel).
+type MtsConfigRestModel struct {
+	Id                string  `json:"-"`
+	ListingFee        uint32  `json:"listingFee"`
+	CommissionRate    float64 `json:"commissionRate"`
+	MaxActiveListings int     `json:"maxActiveListings"`
+	MinLevel          int     `json:"minLevel"`
+	AuctionMinHours   int     `json:"auctionMinHours"`
+	AuctionMaxHours   int     `json:"auctionMaxHours"`
+	PriceFloor        uint32  `json:"priceFloor"`
+	PageSize          int     `json:"pageSize"`
+	MinBidIncrement   uint32  `json:"minBidIncrement"`
+}
+
+// GetID returns the resource ID
+func (m MtsConfigRestModel) GetID() string {
+	return m.Id
+}
+
+// SetID sets the resource ID
+func (m *MtsConfigRestModel) SetID(id string) error {
+	m.Id = id
+	return nil
+}
+
+// GetName returns the resource name
+func (m MtsConfigRestModel) GetName() string {
+	return "mts-configs"
+}
+
+// TransformMtsConfig converts a map[string]interface{} to an MtsConfigRestModel
+func TransformMtsConfig(data map[string]interface{}) (MtsConfigRestModel, error) {
+	id, _ := data["id"].(string)
+
+	attributes, ok := data["attributes"].(map[string]interface{})
+	if !ok {
+		attributes = make(map[string]interface{})
+	}
+
+	listingFee := uint32(0)
+	if val, ok := attributes["listingFee"].(float64); ok {
+		listingFee = uint32(val)
+	}
+
+	commissionRate := float64(0)
+	if val, ok := attributes["commissionRate"].(float64); ok {
+		commissionRate = val
+	}
+
+	maxActiveListings := 0
+	if val, ok := attributes["maxActiveListings"].(float64); ok {
+		maxActiveListings = int(val)
+	}
+
+	minLevel := 0
+	if val, ok := attributes["minLevel"].(float64); ok {
+		minLevel = int(val)
+	}
+
+	auctionMinHours := 0
+	if val, ok := attributes["auctionMinHours"].(float64); ok {
+		auctionMinHours = int(val)
+	}
+
+	auctionMaxHours := 0
+	if val, ok := attributes["auctionMaxHours"].(float64); ok {
+		auctionMaxHours = int(val)
+	}
+
+	priceFloor := uint32(0)
+	if val, ok := attributes["priceFloor"].(float64); ok {
+		priceFloor = uint32(val)
+	}
+
+	pageSize := 0
+	if val, ok := attributes["pageSize"].(float64); ok {
+		pageSize = int(val)
+	}
+
+	minBidIncrement := uint32(0)
+	if val, ok := attributes["minBidIncrement"].(float64); ok {
+		minBidIncrement = uint32(val)
+	}
+
+	return MtsConfigRestModel{
+		Id:                id,
+		ListingFee:        listingFee,
+		CommissionRate:    commissionRate,
+		MaxActiveListings: maxActiveListings,
+		MinLevel:          minLevel,
+		AuctionMinHours:   auctionMinHours,
+		AuctionMaxHours:   auctionMaxHours,
+		PriceFloor:        priceFloor,
+		PageSize:          pageSize,
+		MinBidIncrement:   minBidIncrement,
+	}, nil
+}
+
+// ExtractMtsConfig converts an MtsConfigRestModel to a map[string]interface{}
+func ExtractMtsConfig(m MtsConfigRestModel) (map[string]interface{}, error) {
+	return map[string]interface{}{
+		"type": "mts-configs",
+		"id":   m.Id,
+		"attributes": map[string]interface{}{
+			"listingFee":        m.ListingFee,
+			"commissionRate":    m.CommissionRate,
+			"maxActiveListings": m.MaxActiveListings,
+			"minLevel":          m.MinLevel,
+			"auctionMinHours":   m.AuctionMinHours,
+			"auctionMaxHours":   m.AuctionMaxHours,
+			"priceFloor":        m.PriceFloor,
+			"pageSize":          m.PageSize,
+			"minBidIncrement":   m.MinBidIncrement,
+		},
+	}, nil
+}
+
+// CreateMtsConfigJsonData creates a JSON:API compliant data structure for mts configs
+func CreateMtsConfigJsonData(configs []map[string]interface{}) (json.RawMessage, error) {
+	data := map[string]interface{}{
+		"data": configs,
+	}
+	return json.Marshal(data)
+}
+
+// CreateSingleMtsConfigJsonData creates a JSON:API compliant data structure for a single mts config
+func CreateSingleMtsConfigJsonData(config map[string]interface{}) (json.RawMessage, error) {
+	return CreateMtsConfigJsonData([]map[string]interface{}{config})
+}
+
 // InstanceRouteRestModel is the JSON:API resource for instance routes
 type InstanceRouteRestModel struct {
 	Id                    string   `json:"-"`

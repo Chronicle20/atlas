@@ -33,16 +33,23 @@ const CatchMonsterWriter = "CatchMonster"
 //     v4 != 0 ? 0x10E : 0)` — two wire bytes. The extra success byte is a GMS-95
 //     addition, so the branch gates on GMS region AND major >= 95.
 //
+// Legacy (pre-v83) wire note: CATCH_MONSTER is a per-mob OnMobPacket case (op
+// 229), so the v79 client consumes a leading uniqueId via CMobPool::OnMobPacket
+// @0x646d46 (Decode4 @0x646d50 -> GetMob) BEFORE CMob::OnCatchEffect reads the
+// result byte. See legacyMobPoolPrefix.
+//
 // packet-audit:fname CMob::OnCatchEffect
 type CatchMonster struct {
-	result  byte
-	success byte
+	uniqueId uint32
+	result   byte
+	success  byte
 }
 
-func NewCatchMonster(result byte, success byte) CatchMonster {
-	return CatchMonster{result: result, success: success}
+func NewCatchMonster(uniqueId uint32, result byte, success byte) CatchMonster {
+	return CatchMonster{uniqueId: uniqueId, result: result, success: success}
 }
 
+func (m CatchMonster) UniqueId() uint32  { return m.uniqueId }
 func (m CatchMonster) Result() byte      { return m.result }
 func (m CatchMonster) Success() byte     { return m.success }
 func (m CatchMonster) Operation() string { return CatchMonsterWriter }
@@ -55,10 +62,29 @@ func v95CatchLayout(t tenant.Model) bool {
 	return t.IsRegion("GMS") && t.MajorAtLeast(95)
 }
 
+// legacyMobPoolPrefix reports whether the tenant prepends the per-mob uniqueId
+// that CMobPool::OnMobPacket consumes (Decode4 -> GetMob) before dispatching a
+// per-mob clientbound packet (CATCH_MONSTER / MONSTER_SPECIAL_EFFECT_BY_SKILL /
+// INC_MOB_CHARGE_COUNT) to its CMob handler. VERIFIED for v79: CMobPool::OnMobPacket
+// @0x646d46, Decode4 @0x646d50.
+//
+// Gated to the pre-v83 legacy range per the task-113 campaign freeze on v83+.
+// NOTE: the sibling per-mob packets MonsterHealth (op 228) and MonsterMovement
+// (op 217) — same dispatcher — already carry this uniqueId prefix UNCONDITIONALLY
+// for all versions, so v83+ very likely need it here too; they are left frozen
+// (unchanged) per campaign scope and flagged for a follow-up that can confirm it
+// against the v83/v84/v87/v95/jms IDBs.
+func legacyMobPoolPrefix(t tenant.Model) bool {
+	return t.IsRegion("GMS") && !t.MajorAtLeast(83)
+}
+
 func (m CatchMonster) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
+		if legacyMobPoolPrefix(t) {
+			w.WriteInt(m.uniqueId)
+		}
 		w.WriteByte(m.result)
 		if v95CatchLayout(t) {
 			w.WriteByte(m.success)
@@ -70,6 +96,9 @@ func (m CatchMonster) Encode(l logrus.FieldLogger, ctx context.Context) func(opt
 func (m *CatchMonster) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
+		if legacyMobPoolPrefix(t) {
+			m.uniqueId = r.ReadUint32()
+		}
 		m.result = r.ReadByte()
 		if v95CatchLayout(t) {
 			m.success = r.ReadByte()

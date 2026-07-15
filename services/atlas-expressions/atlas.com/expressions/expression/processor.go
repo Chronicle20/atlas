@@ -3,8 +3,8 @@ package expression
 import (
 	"atlas-expressions/kafka/message"
 	expression2 "atlas-expressions/kafka/message/expression"
-	"atlas-expressions/kafka/producer"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
@@ -40,6 +40,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 		t:   t,
 	}
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 // Change changes the expression for a character
 func (p *ProcessorImpl) Change(mb *message.Buffer, transactionId uuid.UUID, characterId uint32, field field.Model, expression uint32) (Model, error) {

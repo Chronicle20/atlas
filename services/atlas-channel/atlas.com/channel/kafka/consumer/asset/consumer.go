@@ -31,6 +31,7 @@ import (
 	invcb "github.com/Chronicle20/atlas/libs/atlas-packet/inventory/clientbound"
 	messengerpkt "github.com/Chronicle20/atlas/libs/atlas-packet/messenger"
 	messengercb "github.com/Chronicle20/atlas/libs/atlas-packet/messenger/clientbound"
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
@@ -346,7 +347,7 @@ func moveInCompartment(l logrus.FieldLogger) func(ctx context.Context) func(wp w
 
 					var wg sync.WaitGroup
 					wg.Add(2)
-					go func() {
+					routine.Go(l, ctx, func(_ context.Context) {
 						defer wg.Done()
 						inventoryType, ok := inventory.TypeFromItemId(item.Id(e.TemplateId))
 						if !ok {
@@ -356,17 +357,17 @@ func moveInCompartment(l logrus.FieldLogger) func(ctx context.Context) func(wp w
 						if aerr := session.Announce(l)(ctx)(wp)(invcb.InventoryChangeWriter)(invcb.NewChangeBatch(false, invpkt.NewMoveEntry(byte(inventoryType), e.Body.OldSlot, e.Slot)).Encode)(s); aerr != nil {
 							l.WithError(aerr).Errorf("Unable to move [%d] in slot [%d] to [%d] for character [%d].", e.TemplateId, e.Body.OldSlot, e.Slot, s.CharacterId())
 						}
-					}()
-					go func() {
+					})
+					routine.Go(l, ctx, func(_ context.Context) {
 						defer wg.Done()
 						if aerr := _map.NewProcessor(l, ctx).ForSessionsInMap(s.Field(), updateAppearance(l)(ctx)(wp)(c)); aerr != nil {
 							l.WithError(aerr).Errorf("Unable to update appearance for character [%d] in map.", s.CharacterId())
 						}
-					}()
+					})
 
 					if it, ok := inventory.TypeFromItemId(item.Id(e.TemplateId)); ok && it == inventory.TypeValueEquip && (e.Slot <= 0 || e.Body.OldSlot <= 0) {
 						wg.Add(1)
-						go func() {
+						routine.Go(l, ctx, func(_ context.Context) {
 							defer wg.Done()
 							m, merr := messenger.NewProcessor(l, ctx).GetByMemberId(e.CharacterId)
 							if merr != nil {
@@ -382,7 +383,7 @@ func moveInCompartment(l logrus.FieldLogger) func(ctx context.Context) func(wp w
 									return session.Announce(l)(ctx)(wp)(messengercb.MessengerOperationWriter)(messengerpkt.MessengerOperationUpdateBody(um.Slot(), ava))(os)
 								})
 							}
-						}()
+						})
 					}
 
 					wg.Wait()

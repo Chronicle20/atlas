@@ -178,8 +178,36 @@ func mtsTestItem() MtsItem {
 		0x77777777, // nMinPrice
 		0x10101010, // nMaxPrice
 		0x20202020, // nUnitPrice
-		0x3030,     // nProcessStatus
+		MtsProcessStatusHistoryPurchased, // nProcessStatus (semantic key -> config-resolved at Encode)
 	)
+}
+
+// TestResolveProcessStatusCode_DefaultsWhenTableAbsent proves the nProcessStatus
+// column renders the correct disposition even when the tenant processStatusCodes
+// table is absent (the live-config-stale case): each key resolves to its built-in
+// version-stable default rather than collapsing to 0 ("Sold"). A present table
+// overrides the default.
+func TestResolveProcessStatusCode_DefaultsWhenTableAbsent(t *testing.T) {
+	// nil options => built-in defaults.
+	cases := map[string]uint16{
+		MtsProcessStatusNone:             0,
+		MtsProcessStatusHistorySold:      0,
+		MtsProcessStatusHistoryPurchased: 1,
+		MtsProcessStatusHistoryBidLost:   2,
+		MtsProcessStatusHistoryCancelled: 3,
+		MtsProcessStatusAuctionExhibit:   1,
+		MtsProcessStatusAuctionBid:       2,
+	}
+	for key, want := range cases {
+		if got := resolveProcessStatusCode(nil, key); got != want {
+			t.Errorf("default resolveProcessStatusCode(%q) = %d, want %d", key, got, want)
+		}
+	}
+	// A present table overrides the default.
+	opts := map[string]interface{}{"processStatusCodes": map[string]interface{}{"HISTORY_CANCELLED": float64(9)}}
+	if got := resolveProcessStatusCode(opts, MtsProcessStatusHistoryCancelled); got != 9 {
+		t.Errorf("table override = %d, want 9", got)
+	}
 }
 
 // TestMtsItemRoundTrip proves the ITCITEM trailer + embedded GW_ItemSlotBase
@@ -190,7 +218,10 @@ func TestMtsItemRoundTrip(t *testing.T) {
 		t.Run(v.Name, func(t *testing.T) {
 			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
 			var out MtsItem
-			test.RoundTrip(t, ctx, in.Encode, out.Decode, nil)
+			// nProcessStatus is config-resolved from the processStatusCodes writer table
+			// at Encode; supply it so HISTORY_PURCHASED resolves to its wire code (1).
+			opts := map[string]interface{}{"processStatusCodes": map[string]interface{}{"HISTORY_PURCHASED": float64(1)}}
+			test.RoundTrip(t, ctx, in.Encode, out.Decode, opts)
 			if out.ItcSn() != in.ItcSn() {
 				t.Errorf("itcSn: got %x want %x", out.ItcSn(), in.ItcSn())
 			}
@@ -203,8 +234,9 @@ func TestMtsItemRoundTrip(t *testing.T) {
 			if out.Comment() != in.Comment() {
 				t.Errorf("comment: got %q want %q", out.Comment(), in.Comment())
 			}
-			if out.ProcessStatus() != in.ProcessStatus() {
-				t.Errorf("processStatus: got %x want %x", out.ProcessStatus(), in.ProcessStatus())
+			// The key HISTORY_PURCHASED resolved through the table to wire code 1.
+			if out.ProcessStatus() != 1 {
+				t.Errorf("processStatus: got %x want 1 (HISTORY_PURCHASED resolved)", out.ProcessStatus())
 			}
 		})
 	}

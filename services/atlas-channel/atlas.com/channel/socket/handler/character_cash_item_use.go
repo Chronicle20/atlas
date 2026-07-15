@@ -9,6 +9,7 @@ import (
 	"atlas-channel/incubator"
 	"atlas-channel/saga"
 	"atlas-channel/session"
+	"atlas-channel/shopscanner"
 	"atlas-channel/socket/writer"
 	"context"
 	"math"
@@ -20,7 +21,10 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	cashsb "github.com/Chronicle20/atlas/libs/atlas-packet/cash/serverbound"
+	fieldpkt "github.com/Chronicle20/atlas/libs/atlas-packet/field"
+	fieldcb "github.com/Chronicle20/atlas/libs/atlas-packet/field/clientbound"
 	incubatorcb "github.com/Chronicle20/atlas/libs/atlas-packet/incubator/clientbound"
+	statpkt "github.com/Chronicle20/atlas/libs/atlas-packet/stat/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
@@ -34,7 +38,13 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 		p.Decode(l, ctx)(r, readerOptions)
 		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
 
-		updateTimeFirst := (t.Region() == "GMS" && t.MajorVersion() >= 87) || t.Region() == "JMS"
+		// update_time is a leading header int32 (updateTimeFirst) from GMS v87
+		// onward and on JMS v185; only the two oldest GMS builds (v83/v84) carry
+		// it as a trailing int32 in the per-type sub-body. IDA-verified via
+		// CWvsContext::SendConsumeCashItemUseRequest: gms_v87 @0xa9fef9 and
+		// jms_v185 @0xaef2f5 both Encode4(update_time) in the header before the
+		// sub-body switch (task-126). Must match ItemUse's header gate.
+		updateTimeFirst := t.MajorVersion() >= 87
 		updateTime := p.UpdateTime()
 		source := slot.Position(p.Source())
 		itemId := item.Id(p.ItemId())
@@ -351,6 +361,47 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			l.Warnf("Character [%d] attempted to use cube-family item [%d]; not implemented.", s.CharacterId(), itemId)
 			return
 		}
+		if it == CashSlotItemTypeVegasSpellPre95 || it == CashSlotItemTypeVegasSpell95 {
+			sp := cashsb.ItemUseVegaScroll{}
+			sp.Decode(l, ctx)(r, readerOptions)
+			l.Debugf("[%s] read vega sub-body [%s]", p.Operation(), sp.String())
+			enableActions := func() {
+				_ = session.Announce(l)(ctx)(wp)(statpkt.StatChangedWriter)(statpkt.NewStatChanged(make([]statpkt.Update, 0), true).Encode)(s)
+			}
+			if !item.IsVegasSpell(itemId) {
+				l.Warnf("Character [%d] attempted vega scroll with non-vega category-561 item [%d]. Rejecting.", s.CharacterId(), itemId)
+				enableActions()
+				return
+			}
+			if sp.EquipTab() != 1 || sp.ScrollTab() != 2 {
+				l.Warnf("Character [%d] vega scroll with unexpected tab markers equip [%d] scroll [%d]. Impossible from a legit client. Rejecting.", s.CharacterId(), sp.EquipTab(), sp.ScrollTab())
+				enableActions()
+				return
+			}
+			_ = consumable.NewProcessor(l, ctx).RequestVegaScrollUse(s.Field(), character.Id(s.CharacterId()), itemId, source, slot.Position(sp.ScrollSlot()), slot.Position(sp.EquipSlot()))
+			return
+		}
+
+		if it == CashSlotItemTypePointResetTier1 || it == CashSlotItemTypePointResetShared {
+			sp := cashsb.NewItemUsePointReset(updateTimeFirst)
+			sp.Decode(l, ctx)(r, readerOptions)
+			handlePointResetItemUse(l, ctx, wp)(s, itemId, *sp)
+			return
+		}
+
+		if it == viciousHammerCashSlotItemType(t) {
+			sp := cashsb.NewItemUseViciousHammer()
+			sp.Decode(l, ctx)(r, readerOptions)
+			handleViciousHammerOpen(l, ctx, wp)(s, source, *sp)
+			return
+		}
+
+		if it == CashSlotItemTypeStoreSearch {
+			sp := &cashsb.ItemUseStoreSearch{}
+			sp.Decode(l, ctx)(r, readerOptions)
+			_ = shopscanner.NewProcessor(l, ctx).Search(wp)(s, sp.SearchItemId(), sp.Descending(), itemId, source, sp.UpdateTime())
+			return
+		}
 
 		l.Warnf("Character [%d] attempting to use cash item [%d] in slot [%d] of type [%d]. updateTime [%d].", s.CharacterId(), itemId, source, it, updateTime)
 	}
@@ -360,6 +411,7 @@ type CashSlotItemType uint32
 
 const (
 	CashSlotItemTypeFieldEffect   = CashSlotItemType(16)
+	CashSlotItemTypeStoreSearch   = CashSlotItemType(29)
 	CashSlotItemTypePetConsumable = CashSlotItemType(30)
 	CashSlotItemTypeChalkboard    = CashSlotItemType(32)
 	CashSlotItemTypeItemTag       = CashSlotItemType(25)
@@ -368,7 +420,31 @@ const (
 	CashSlotItemTypeSealTimed     = CashSlotItemType(64)
 	CashSlotItemTypeSealTimedV95  = CashSlotItemType(65)
 	CashSlotItemTypeCube          = CashSlotItemType(74)
+
+	// GetCashSlotItemType's ClassificationPointReset branch (above) routes by
+	// itemId%10==1: AP Reset (5050000) and SP Reset tiers 2-4 (5050002-5050004)
+	// collapse onto type 23, while SP Reset tier 1 (5050001) alone lands on
+	// type 24. The type byte therefore CANNOT distinguish AP-vs-SP — the labels
+	// below name only which numeric bucket each is. The arm matches on either
+	// bucket and then dispatches by item id (design §2.4), never by this type.
+	CashSlotItemTypePointResetShared = CashSlotItemType(23) // AP Reset + SP Reset tiers 2-4
+	CashSlotItemTypePointResetTier1  = CashSlotItemType(24) // SP Reset tier 1 only
+	CashSlotItemTypeVegasSpellPre95  = CashSlotItemType(68)
+	CashSlotItemTypeVegasSpell95     = CashSlotItemType(71)
+	CashSlotItemTypeViciousHammer    = CashSlotItemType(66) // GMS < 95
+	CashSlotItemTypeViciousHammerV95 = CashSlotItemType(67) // GMS >= 95
 )
+
+// viciousHammerCashSlotItemType returns the version-scoped CashSlotItemType
+// for the Vicious Hammer item. Plain 66 also denotes CharacterCreation on
+// GMS >= 95 (see the category == item.ClassificationCharacterCreation
+// branch below), so this check must remain version-scoped.
+func viciousHammerCashSlotItemType(t tenant.Model) CashSlotItemType {
+	if t.Region() == "GMS" && t.MajorVersion() >= 95 {
+		return CashSlotItemTypeViciousHammerV95
+	}
+	return CashSlotItemTypeViciousHammer
+}
 
 func GetCashSlotItemType(t tenant.Model) func(itemId item.Id) CashSlotItemType {
 	return func(itemId item.Id) CashSlotItemType {
@@ -559,7 +635,7 @@ func GetCashSlotItemType(t tenant.Model) func(itemId item.Id) CashSlotItemType {
 			}
 		}
 		if category == item.ClassificationStoreSearch {
-			return CashSlotItemType(29)
+			return CashSlotItemTypeStoreSearch
 		}
 		if category == item.ClassificationPetConsumable {
 			return CashSlotItemTypePetConsumable
@@ -719,17 +795,16 @@ func GetCashSlotItemType(t tenant.Model) func(itemId item.Id) CashSlotItemType {
 		}
 		if category == 557 {
 			if t.Region() == "GMS" && t.MajorVersion() >= 95 {
-				return CashSlotItemType(67)
+				return CashSlotItemTypeViciousHammerV95
 			} else {
-				return CashSlotItemType(66)
+				return CashSlotItemTypeViciousHammer
 			}
 		}
-		if category == 561 {
+		if category == item.ClassificationVegasSpell {
 			if t.Region() == "GMS" && t.MajorVersion() >= 95 {
-				return CashSlotItemType(71)
-			} else {
-				return CashSlotItemType(68)
+				return CashSlotItemTypeVegasSpell95
 			}
+			return CashSlotItemTypeVegasSpellPre95
 		}
 		if category == 562 {
 			if t.Region() == "GMS" && t.MajorVersion() >= 95 {
@@ -747,5 +822,44 @@ func GetCashSlotItemType(t tenant.Model) func(itemId item.Id) CashSlotItemType {
 			}
 		}
 		return CashSlotItemType(0)
+	}
+}
+
+// handleViciousHammerOpen performs the cheap pre-check (existence + cap) for
+// the CUIItemUpgrade open-arm gauge. It never mutates state: it either arms
+// the client gauge (mode OPEN) or rejects immediately (mode FAILURE, code 1
+// or 2). WZ eligibility (codes 1/3 from equip data) is left to the
+// authoritative re-validation in atlas-consumables on Packet B (design §4.1)
+// — a gauge that later fails with mode 62 there is correct UX.
+func handleViciousHammerOpen(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, hammerSlot slot.Position, sp cashsb.ItemUseViciousHammer) {
+	return func(s session.Model, hammerSlot slot.Position, sp cashsb.ItemUseViciousHammer) {
+		announce := func(body func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte) {
+			err := session.Announce(l)(ctx)(wp)(fieldcb.ViciousHammerWriter)(body)(s)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to write vicious hammer response to character [%d].", s.CharacterId())
+			}
+		}
+
+		equipSlot := int16(sp.SlotPosition())
+		target, err := character2.NewProcessor(l, ctx).GetEquipableInSlot(s.CharacterId(), equipSlot)()
+		if err != nil {
+			l.Warnf("Character [%d] attempted vicious hammer on missing equip slot [%d].", s.CharacterId(), equipSlot)
+			announce(fieldpkt.ViciousHammerFailureBody(fieldpkt.ViciousHammerReasonNotUpgradable))
+			return
+		}
+		if target.HammersApplied() >= 2 {
+			announce(fieldpkt.ViciousHammerFailureBody(fieldpkt.ViciousHammerReasonCapReached))
+			return
+		}
+
+		token := packViciousHammerToken(int16(hammerSlot), equipSlot)
+		// The client stores this open-arm count and renders the TERMINAL success
+		// notice as "2 - count upgrades are left" (CUIItemUpgrade::OnItemUpgradeResult
+		// success branch — the SUCCESS packet carries no count of its own). That
+		// notice fires AFTER the reservation callback applies +1 to hammersApplied,
+		// so we must send the post-apply count. HammersApplied() here is the
+		// pre-apply value and the arm is only reached when it is < 2 (cap check
+		// above), so +1 always yields the correct 1 or 2 (IDA-verified, task-129).
+		announce(fieldpkt.ViciousHammerOpenBody(token, target.HammersApplied()+1))
 	}
 }

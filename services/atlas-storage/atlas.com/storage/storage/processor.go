@@ -7,9 +7,9 @@ import (
 	"atlas-storage/data/setup"
 	"atlas-storage/kafka/message"
 	"atlas-storage/kafka/message/compartment"
-	"atlas-storage/kafka/producer"
 	"context"
 	"errors"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"sort"
 
 	assetConstants "github.com/Chronicle20/atlas/libs/atlas-constants/asset"
@@ -17,7 +17,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	atlasProducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
@@ -25,21 +25,51 @@ import (
 	"gorm.io/gorm"
 )
 
-type Processor struct {
+type Processor interface {
+	GetOrCreateStorage(worldId world.Id, accountId uint32) (Model, error)
+	GetStorageByWorldAndAccountId(worldId world.Id, accountId uint32) (Model, error)
+	CreateStorage(worldId world.Id, accountId uint32) (Model, error)
+	Deposit(worldId world.Id, accountId uint32, body message.DepositBody) (uint32, error)
+	DepositAndEmit(transactionId uuid.UUID, worldId world.Id, accountId uint32, body message.DepositBody) (uint32, error)
+	Withdraw(body message.WithdrawBody) error
+	WithdrawAndEmit(transactionId uuid.UUID, worldId world.Id, accountId uint32, body message.WithdrawBody) error
+	UpdateMesos(worldId world.Id, accountId uint32, body message.UpdateMesosBody) error
+	UpdateMesosAndEmit(transactionId uuid.UUID, worldId world.Id, accountId uint32, body message.UpdateMesosBody) error
+	DepositRollback(body message.DepositRollbackBody) error
+	Accept(worldId world.Id, accountId uint32, body compartment.AcceptCommandBody) (uint32, int16, error)
+	AcceptAndEmit(worldId world.Id, accountId uint32, characterId uint32, body compartment.AcceptCommandBody) error
+	Release(body compartment.ReleaseCommandBody) error
+	ReleaseAndEmit(worldId world.Id, accountId uint32, characterId uint32, body compartment.ReleaseCommandBody) error
+	MergeAndSort(worldId world.Id, accountId uint32) error
+	ArrangeAndEmit(transactionId uuid.UUID, worldId world.Id, accountId uint32) error
+	EmitProjectionCreatedEvent(characterId uint32, accountId uint32, ch channel.Model, npcId uint32) error
+	ExpireAndEmit(transactionId uuid.UUID, worldId world.Id, accountId uint32, assetId uint32, isCash bool, replaceItemId uint32, replaceMessage string) error
+	DeleteByAccountId(accountId uint32) error
+	EmitProjectionDestroyedEvent(characterId uint32, accountId uint32, worldId world.Id) error
+}
+
+type ProcessorImpl struct {
 	l   logrus.FieldLogger
 	ctx context.Context
 	db  *gorm.DB
 }
 
-func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) *Processor {
-	return &Processor{
+func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor {
+	return &ProcessorImpl{
 		l:   l,
 		ctx: ctx,
 		db:  db,
 	}
 }
 
-func (p *Processor) GetOrCreateStorage(worldId world.Id, accountId uint32) (Model, error) {
+var _ Processor = (*ProcessorImpl)(nil)
+
+// WithTransaction returns a clone of the processor bound to the transaction handle.
+func (p *ProcessorImpl) WithTransaction(tx *gorm.DB) *ProcessorImpl {
+	return &ProcessorImpl{l: p.l, ctx: p.ctx, db: tx}
+}
+
+func (p *ProcessorImpl) GetOrCreateStorage(worldId world.Id, accountId uint32) (Model, error) {
 	t := tenant.MustFromContext(p.ctx)
 
 	s, err := GetByWorldAndAccountId(p.l, p.db.WithContext(p.ctx))(worldId, accountId)
@@ -50,11 +80,11 @@ func (p *Processor) GetOrCreateStorage(worldId world.Id, accountId uint32) (Mode
 	return Create(p.l, p.db.WithContext(p.ctx), t.Id())(worldId, accountId)
 }
 
-func (p *Processor) GetStorageByWorldAndAccountId(worldId world.Id, accountId uint32) (Model, error) {
+func (p *ProcessorImpl) GetStorageByWorldAndAccountId(worldId world.Id, accountId uint32) (Model, error) {
 	return GetByWorldAndAccountId(p.l, p.db.WithContext(p.ctx))(worldId, accountId)
 }
 
-func (p *Processor) CreateStorage(worldId world.Id, accountId uint32) (Model, error) {
+func (p *ProcessorImpl) CreateStorage(worldId world.Id, accountId uint32) (Model, error) {
 	t := tenant.MustFromContext(p.ctx)
 
 	_, err := GetByWorldAndAccountId(p.l, p.db.WithContext(p.ctx))(worldId, accountId)
@@ -65,7 +95,7 @@ func (p *Processor) CreateStorage(worldId world.Id, accountId uint32) (Model, er
 	return Create(p.l, p.db.WithContext(p.ctx), t.Id())(worldId, accountId)
 }
 
-func (p *Processor) Deposit(worldId world.Id, accountId uint32, body message.DepositBody) (uint32, error) {
+func (p *ProcessorImpl) Deposit(worldId world.Id, accountId uint32, body message.DepositBody) (uint32, error) {
 	t := tenant.MustFromContext(p.ctx)
 
 	s, err := p.GetOrCreateStorage(worldId, accountId)
@@ -115,7 +145,7 @@ func (p *Processor) Deposit(worldId world.Id, accountId uint32, body message.Dep
 	return a.Id(), nil
 }
 
-func (p *Processor) DepositAndEmit(transactionId uuid.UUID, worldId world.Id, accountId uint32, body message.DepositBody) (uint32, error) {
+func (p *ProcessorImpl) DepositAndEmit(transactionId uuid.UUID, worldId world.Id, accountId uint32, body message.DepositBody) (uint32, error) {
 	assetId, err := p.Deposit(worldId, accountId, body)
 	if err != nil {
 		return 0, err
@@ -126,7 +156,7 @@ func (p *Processor) DepositAndEmit(transactionId uuid.UUID, worldId world.Id, ac
 	return assetId, nil
 }
 
-func (p *Processor) Withdraw(body message.WithdrawBody) error {
+func (p *ProcessorImpl) Withdraw(body message.WithdrawBody) error {
 	assetId := uint32(body.AssetId)
 	quantity := uint32(body.Quantity)
 
@@ -142,7 +172,7 @@ func (p *Processor) Withdraw(body message.WithdrawBody) error {
 	return asset.Delete(p.l, p.db.WithContext(p.ctx))(assetId)
 }
 
-func (p *Processor) WithdrawAndEmit(transactionId uuid.UUID, worldId world.Id, accountId uint32, body message.WithdrawBody) error {
+func (p *ProcessorImpl) WithdrawAndEmit(transactionId uuid.UUID, worldId world.Id, accountId uint32, body message.WithdrawBody) error {
 	assetId := uint32(body.AssetId)
 
 	a, err := asset.GetById(p.db.WithContext(p.ctx))(assetId)
@@ -160,7 +190,7 @@ func (p *Processor) WithdrawAndEmit(transactionId uuid.UUID, worldId world.Id, a
 	return nil
 }
 
-func (p *Processor) UpdateMesos(worldId world.Id, accountId uint32, body message.UpdateMesosBody) error {
+func (p *ProcessorImpl) UpdateMesos(worldId world.Id, accountId uint32, body message.UpdateMesosBody) error {
 	s, err := GetByWorldAndAccountId(p.l, p.db.WithContext(p.ctx))(worldId, accountId)
 	if err != nil {
 		return err
@@ -185,7 +215,7 @@ func (p *Processor) UpdateMesos(worldId world.Id, accountId uint32, body message
 	return UpdateMesos(p.l, p.db.WithContext(p.ctx))(s.Id(), newMesos)
 }
 
-func (p *Processor) UpdateMesosAndEmit(transactionId uuid.UUID, worldId world.Id, accountId uint32, body message.UpdateMesosBody) error {
+func (p *ProcessorImpl) UpdateMesosAndEmit(transactionId uuid.UUID, worldId world.Id, accountId uint32, body message.UpdateMesosBody) error {
 	s, err := GetByWorldAndAccountId(p.l, p.db.WithContext(p.ctx))(worldId, accountId)
 	if err != nil {
 		return err
@@ -211,12 +241,12 @@ func (p *Processor) UpdateMesosAndEmit(transactionId uuid.UUID, worldId world.Id
 	return nil
 }
 
-func (p *Processor) DepositRollback(body message.DepositRollbackBody) error {
+func (p *ProcessorImpl) DepositRollback(body message.DepositRollbackBody) error {
 	return asset.Delete(p.l, p.db.WithContext(p.ctx))(uint32(body.AssetId))
 }
 
 // Accept accepts an item into storage as part of a transfer saga
-func (p *Processor) Accept(worldId world.Id, accountId uint32, body compartment.AcceptCommandBody) (uint32, int16, error) {
+func (p *ProcessorImpl) Accept(worldId world.Id, accountId uint32, body compartment.AcceptCommandBody) (uint32, int16, error) {
 	t := tenant.MustFromContext(p.ctx)
 
 	s, err := p.GetOrCreateStorage(worldId, accountId)
@@ -310,7 +340,7 @@ func (p *Processor) Accept(worldId world.Id, accountId uint32, body compartment.
 	return a.Id(), slot, nil
 }
 
-func (p *Processor) AcceptAndEmit(worldId world.Id, accountId uint32, characterId uint32, body compartment.AcceptCommandBody) error {
+func (p *ProcessorImpl) AcceptAndEmit(worldId world.Id, accountId uint32, characterId uint32, body compartment.AcceptCommandBody) error {
 	assetId, slot, err := p.Accept(worldId, accountId, body)
 	if err != nil {
 		_ = p.emitCompartmentErrorEvent(worldId, accountId, characterId, body.TransactionId, "ACCEPT_FAILED", err.Error())
@@ -322,7 +352,7 @@ func (p *Processor) AcceptAndEmit(worldId world.Id, accountId uint32, characterI
 	return p.emitCompartmentAcceptedEvent(worldId, accountId, characterId, body.TransactionId, assetId, slot, invType)
 }
 
-func (p *Processor) Release(body compartment.ReleaseCommandBody) error {
+func (p *ProcessorImpl) Release(body compartment.ReleaseCommandBody) error {
 	assetId := uint32(body.AssetId)
 	quantity := uint32(body.Quantity)
 
@@ -343,7 +373,7 @@ func (p *Processor) Release(body compartment.ReleaseCommandBody) error {
 	return asset.UpdateQuantity(p.l, p.db.WithContext(p.ctx))(assetId, newQuantity)
 }
 
-func (p *Processor) ReleaseAndEmit(worldId world.Id, accountId uint32, characterId uint32, body compartment.ReleaseCommandBody) error {
+func (p *ProcessorImpl) ReleaseAndEmit(worldId world.Id, accountId uint32, characterId uint32, body compartment.ReleaseCommandBody) error {
 	assetId := uint32(body.AssetId)
 
 	a, err := asset.GetById(p.db.WithContext(p.ctx))(assetId)
@@ -368,7 +398,7 @@ func inventoryTypeFromTemplateId(templateId uint32) byte {
 	return byte(t)
 }
 
-func (p *Processor) emitCompartmentAcceptedEvent(worldId world.Id, accountId uint32, characterId uint32, transactionId uuid.UUID, assetId uint32, slot int16, inventoryType byte) error {
+func (p *ProcessorImpl) emitCompartmentAcceptedEvent(worldId world.Id, accountId uint32, characterId uint32, transactionId uuid.UUID, assetId uint32, slot int16, inventoryType byte) error {
 	event := &compartment.StatusEvent[compartment.StatusEventAcceptedBody]{
 		WorldId:     worldId,
 		AccountId:   accountId,
@@ -385,7 +415,7 @@ func (p *Processor) emitCompartmentAcceptedEvent(worldId world.Id, accountId uin
 	return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvEventTopicStatus)(createCompartmentMessageProvider(accountId, event))
 }
 
-func (p *Processor) emitCompartmentReleasedEvent(worldId world.Id, accountId uint32, characterId uint32, transactionId uuid.UUID, assetId assetConstants.Id, inventoryType byte) error {
+func (p *ProcessorImpl) emitCompartmentReleasedEvent(worldId world.Id, accountId uint32, characterId uint32, transactionId uuid.UUID, assetId assetConstants.Id, inventoryType byte) error {
 	event := &compartment.StatusEvent[compartment.StatusEventReleasedBody]{
 		WorldId:     worldId,
 		AccountId:   accountId,
@@ -401,7 +431,7 @@ func (p *Processor) emitCompartmentReleasedEvent(worldId world.Id, accountId uin
 	return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvEventTopicStatus)(createCompartmentMessageProvider(accountId, event))
 }
 
-func (p *Processor) emitCompartmentErrorEvent(worldId world.Id, accountId uint32, characterId uint32, transactionId uuid.UUID, errorCode string, errorMessage string) error {
+func (p *ProcessorImpl) emitCompartmentErrorEvent(worldId world.Id, accountId uint32, characterId uint32, transactionId uuid.UUID, errorCode string, errorMessage string) error {
 	event := &compartment.StatusEvent[compartment.StatusEventErrorBody]{
 		WorldId:     worldId,
 		AccountId:   accountId,
@@ -418,11 +448,11 @@ func (p *Processor) emitCompartmentErrorEvent(worldId world.Id, accountId uint32
 }
 
 func createCompartmentMessageProvider[E any](accountId uint32, event *compartment.StatusEvent[E]) func() ([]kafka.Message, error) {
-	key := atlasProducer.CreateKey(int(accountId))
-	return atlasProducer.SingleMessageProvider(key, event)
+	key := producer.CreateKey(int(accountId))
+	return producer.SingleMessageProvider(key, event)
 }
 
-func (p *Processor) emitDepositedEvent(transactionId uuid.UUID, worldId world.Id, accountId uint32, assetId uint32, body message.DepositBody) error {
+func (p *ProcessorImpl) emitDepositedEvent(transactionId uuid.UUID, worldId world.Id, accountId uint32, assetId uint32, body message.DepositBody) error {
 	event := &message.StatusEvent[message.DepositedEventBody]{
 		TransactionId: transactionId,
 		WorldId:       worldId,
@@ -438,7 +468,7 @@ func (p *Processor) emitDepositedEvent(transactionId uuid.UUID, worldId world.Id
 	return producer.ProviderImpl(p.l)(p.ctx)(message.EnvEventTopic)(createMessageProvider(accountId, event))
 }
 
-func (p *Processor) emitWithdrawnEvent(transactionId uuid.UUID, worldId world.Id, accountId uint32, a asset.Model, quantity assetConstants.Quantity) error {
+func (p *ProcessorImpl) emitWithdrawnEvent(transactionId uuid.UUID, worldId world.Id, accountId uint32, a asset.Model, quantity assetConstants.Quantity) error {
 	event := &message.StatusEvent[message.WithdrawnEventBody]{
 		TransactionId: transactionId,
 		WorldId:       worldId,
@@ -455,7 +485,7 @@ func (p *Processor) emitWithdrawnEvent(transactionId uuid.UUID, worldId world.Id
 	return producer.ProviderImpl(p.l)(p.ctx)(message.EnvEventTopic)(createMessageProvider(accountId, event))
 }
 
-func (p *Processor) emitMesosUpdatedEvent(transactionId uuid.UUID, worldId world.Id, accountId uint32, oldMesos uint32, newMesos uint32) error {
+func (p *ProcessorImpl) emitMesosUpdatedEvent(transactionId uuid.UUID, worldId world.Id, accountId uint32, oldMesos uint32, newMesos uint32) error {
 	event := &message.StatusEvent[message.MesosUpdatedEventBody]{
 		TransactionId: transactionId,
 		WorldId:       worldId,
@@ -471,8 +501,8 @@ func (p *Processor) emitMesosUpdatedEvent(transactionId uuid.UUID, worldId world
 }
 
 func createMessageProvider[E any](accountId uint32, event *message.StatusEvent[E]) func() ([]kafka.Message, error) {
-	key := atlasProducer.CreateKey(int(accountId))
-	return atlasProducer.SingleMessageProvider(key, event)
+	key := producer.CreateKey(int(accountId))
+	return producer.SingleMessageProvider(key, event)
 }
 
 // mergeKey is used to group stackable assets for merging
@@ -482,7 +512,7 @@ type mergeKey struct {
 	flag       uint16
 }
 
-func (p *Processor) MergeAndSort(worldId world.Id, accountId uint32) error {
+func (p *ProcessorImpl) MergeAndSort(worldId world.Id, accountId uint32) error {
 	s, err := GetByWorldAndAccountId(p.l, p.db.WithContext(p.ctx))(worldId, accountId)
 	if err != nil {
 		return err
@@ -516,62 +546,73 @@ func (p *Processor) MergeAndSort(worldId world.Id, accountId uint32) error {
 		stackableGroups[key] = append(stackableGroups[key], a)
 	}
 
-	if len(stackableGroups) == 0 {
-		return p.sortAssets(assets)
-	}
-
-	var mergedAssets []asset.Model
-
-	for key, group := range stackableGroups {
+	// Prefetch slot maxima before opening the transaction — these are
+	// atlas-data lookups (network I/O) and must not run inside the tx.
+	slotMaxByTemplate := make(map[uint32]uint32, len(stackableGroups))
+	for key := range stackableGroups {
+		if _, seen := slotMaxByTemplate[key.templateId]; seen {
+			continue
+		}
 		slotMax, err := p.getSlotMaxByTemplateId(key.templateId)
 		if err != nil || slotMax == 0 {
 			slotMax = 100
 		}
-
-		var totalQuantity uint32
-		for _, a := range group {
-			totalQuantity += a.Quantity()
-		}
-
-		numStacks := (totalQuantity + slotMax - 1) / slotMax
-		if numStacks == 0 {
-			numStacks = 1
-		}
-
-		assetsToKeep := min(uint32(len(group)), numStacks)
-
-		sort.Slice(group, func(i, j int) bool {
-			return group[i].Slot() < group[j].Slot()
-		})
-
-		remainingQuantity := totalQuantity
-		for i := uint32(0); i < assetsToKeep; i++ {
-			a := group[i]
-			newQuantity := min(remainingQuantity, slotMax)
-			remainingQuantity -= newQuantity
-
-			err := asset.UpdateQuantity(p.l, p.db.WithContext(p.ctx))(a.Id(), newQuantity)
-			if err != nil {
-				return err
-			}
-
-			mergedAssets = append(mergedAssets, a)
-		}
-
-		for i := int(assetsToKeep); i < len(group); i++ {
-			err := asset.Delete(p.l, p.db.WithContext(p.ctx))(group[i].Id())
-			if err != nil {
-				return err
-			}
-		}
+		slotMaxByTemplate[key.templateId] = slotMax
 	}
 
-	allAssets := append(nonStackables, mergedAssets...)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		if len(stackableGroups) == 0 {
+			return p.sortAssets(tx, assets)
+		}
 
-	return p.sortAssets(allAssets)
+		var mergedAssets []asset.Model
+
+		for key, group := range stackableGroups {
+			slotMax := slotMaxByTemplate[key.templateId]
+
+			var totalQuantity uint32
+			for _, a := range group {
+				totalQuantity += a.Quantity()
+			}
+
+			numStacks := (totalQuantity + slotMax - 1) / slotMax
+			if numStacks == 0 {
+				numStacks = 1
+			}
+
+			assetsToKeep := min(uint32(len(group)), numStacks)
+
+			sort.Slice(group, func(i, j int) bool {
+				return group[i].Slot() < group[j].Slot()
+			})
+
+			remainingQuantity := totalQuantity
+			for i := uint32(0); i < assetsToKeep; i++ {
+				a := group[i]
+				newQuantity := min(remainingQuantity, slotMax)
+				remainingQuantity -= newQuantity
+
+				if err := asset.UpdateQuantity(p.l, tx)(a.Id(), newQuantity); err != nil {
+					return err
+				}
+
+				mergedAssets = append(mergedAssets, a)
+			}
+
+			for i := int(assetsToKeep); i < len(group); i++ {
+				if err := asset.Delete(p.l, tx)(group[i].Id()); err != nil {
+					return err
+				}
+			}
+		}
+
+		allAssets := append(nonStackables, mergedAssets...)
+
+		return p.sortAssets(tx, allAssets)
+	})
 }
 
-func (p *Processor) sortAssets(assets []asset.Model) error {
+func (p *ProcessorImpl) sortAssets(db *gorm.DB, assets []asset.Model) error {
 	byInventoryType := make(map[byte][]asset.Model)
 	for _, a := range assets {
 		invType := inventoryTypeFromTemplateId(a.TemplateId())
@@ -590,8 +631,7 @@ func (p *Processor) sortAssets(assets []asset.Model) error {
 		for i, a := range group {
 			newSlot := int16(i)
 			if a.Slot() != newSlot {
-				err := asset.UpdateSlot(p.l, p.db.WithContext(p.ctx))(a.Id(), newSlot)
-				if err != nil {
+				if err := asset.UpdateSlot(p.l, db)(a.Id(), newSlot); err != nil {
 					return err
 				}
 			}
@@ -601,7 +641,7 @@ func (p *Processor) sortAssets(assets []asset.Model) error {
 	return nil
 }
 
-func (p *Processor) getSlotMax(templateId uint32, m asset.Model) (uint32, error) {
+func (p *ProcessorImpl) getSlotMax(templateId uint32, m asset.Model) (uint32, error) {
 	if m.IsConsumable() {
 		cp := consumable.NewProcessor(p.l, p.ctx)
 		c, err := cp.ByIdProvider(templateId)()
@@ -629,7 +669,7 @@ func (p *Processor) getSlotMax(templateId uint32, m asset.Model) (uint32, error)
 	return 0, nil
 }
 
-func (p *Processor) getSlotMaxByTemplateId(templateId uint32) (uint32, error) {
+func (p *ProcessorImpl) getSlotMaxByTemplateId(templateId uint32) (uint32, error) {
 	invType := inventoryTypeFromTemplateId(templateId)
 	switch inventory.Type(invType) {
 	case inventory.TypeValueUse:
@@ -658,7 +698,7 @@ func (p *Processor) getSlotMaxByTemplateId(templateId uint32) (uint32, error) {
 	}
 }
 
-func (p *Processor) ArrangeAndEmit(transactionId uuid.UUID, worldId world.Id, accountId uint32) error {
+func (p *ProcessorImpl) ArrangeAndEmit(transactionId uuid.UUID, worldId world.Id, accountId uint32) error {
 	err := p.MergeAndSort(worldId, accountId)
 	if err != nil {
 		_ = p.emitErrorEvent(transactionId, worldId, accountId, message.ErrorCodeGeneric, err.Error())
@@ -668,7 +708,7 @@ func (p *Processor) ArrangeAndEmit(transactionId uuid.UUID, worldId world.Id, ac
 	return p.emitArrangedEvent(transactionId, worldId, accountId)
 }
 
-func (p *Processor) emitArrangedEvent(transactionId uuid.UUID, worldId world.Id, accountId uint32) error {
+func (p *ProcessorImpl) emitArrangedEvent(transactionId uuid.UUID, worldId world.Id, accountId uint32) error {
 	event := &message.StatusEvent[message.ArrangedEventBody]{
 		TransactionId: transactionId,
 		WorldId:       worldId,
@@ -680,7 +720,7 @@ func (p *Processor) emitArrangedEvent(transactionId uuid.UUID, worldId world.Id,
 	return producer.ProviderImpl(p.l)(p.ctx)(message.EnvEventTopic)(createMessageProvider(accountId, event))
 }
 
-func (p *Processor) emitErrorEvent(transactionId uuid.UUID, worldId world.Id, accountId uint32, errorCode string, errorMessage string) error {
+func (p *ProcessorImpl) emitErrorEvent(transactionId uuid.UUID, worldId world.Id, accountId uint32, errorCode string, errorMessage string) error {
 	event := &message.StatusEvent[message.ErrorEventBody]{
 		TransactionId: transactionId,
 		WorldId:       worldId,
@@ -702,7 +742,7 @@ func min(a, b uint32) uint32 {
 	return b
 }
 
-func (p *Processor) EmitProjectionCreatedEvent(characterId uint32, accountId uint32, ch channel.Model, npcId uint32) error {
+func (p *ProcessorImpl) EmitProjectionCreatedEvent(characterId uint32, accountId uint32, ch channel.Model, npcId uint32) error {
 	event := &message.StatusEvent[message.ProjectionCreatedEventBody]{
 		WorldId:   ch.WorldId(),
 		AccountId: accountId,
@@ -719,54 +759,60 @@ func (p *Processor) EmitProjectionCreatedEvent(characterId uint32, accountId uin
 	return producer.ProviderImpl(p.l)(p.ctx)(message.EnvEventTopic)(createMessageProvider(accountId, event))
 }
 
-func (p *Processor) ExpireAndEmit(transactionId uuid.UUID, worldId world.Id, accountId uint32, assetId uint32, isCash bool, replaceItemId uint32, replaceMessage string) error {
+func (p *ProcessorImpl) ExpireAndEmit(transactionId uuid.UUID, worldId world.Id, accountId uint32, assetId uint32, isCash bool, replaceItemId uint32, replaceMessage string) error {
 	t := tenant.MustFromContext(p.ctx)
 
-	a, err := asset.GetById(p.db.WithContext(p.ctx))(assetId)
+	err := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		a, err := asset.GetById(tx)(assetId)
+		if err != nil {
+			p.l.WithError(err).Errorf("Failed to find asset [%d] for expiration.", assetId)
+			return err
+		}
+
+		if err := asset.Delete(p.l, tx)(assetId); err != nil {
+			p.l.WithError(err).Errorf("Failed to delete expired asset [%d].", assetId)
+			return err
+		}
+
+		if replaceItemId > 0 {
+			p.l.Debugf("Creating replacement item [%d] for expired storage item [%d].", replaceItemId, a.TemplateId())
+
+			s, err := p.WithTransaction(tx).GetOrCreateStorage(worldId, accountId)
+			if err != nil {
+				p.l.WithError(err).Errorf("Failed to get storage for replacement item creation.")
+				return err
+			}
+
+			assets, err := asset.GetByStorageId(tx)(s.Id())
+			if err != nil {
+				p.l.WithError(err).Errorf("Failed to get assets for slot calculation.")
+				return err
+			}
+			nextSlot := int16(len(assets))
+
+			replacement := asset.NewBuilder(s.Id(), replaceItemId).
+				SetSlot(nextSlot).
+				Build()
+
+			if _, err := asset.Create(p.l, tx, t.Id())(replacement); err != nil {
+				p.l.WithError(err).Errorf("Failed to create replacement item [%d] for account [%d].", replaceItemId, accountId)
+				return err
+			}
+		}
+		return nil
+	})
 	if err != nil {
-		p.l.WithError(err).Errorf("Failed to find asset [%d] for expiration.", assetId)
 		return err
 	}
 
-	err = asset.Delete(p.l, p.db.WithContext(p.ctx))(assetId)
-	if err != nil {
-		p.l.WithError(err).Errorf("Failed to delete expired asset [%d].", assetId)
-		return err
-	}
-
+	// Publish only after the transaction commits: no event for a rolled-back expiry.
 	_ = p.emitExpiredEvent(transactionId, worldId, accountId, isCash, replaceItemId, replaceMessage)
-
-	if replaceItemId > 0 {
-		p.l.Debugf("Creating replacement item [%d] for expired storage item [%d].", replaceItemId, a.TemplateId())
-
-		s, err := p.GetOrCreateStorage(worldId, accountId)
-		if err != nil {
-			p.l.WithError(err).Warnf("Failed to get storage for replacement item creation.")
-			return nil
-		}
-
-		assets, err := asset.GetByStorageId(p.db.WithContext(p.ctx))(s.Id())
-		if err != nil {
-			p.l.WithError(err).Warnf("Failed to get assets for slot calculation.")
-			return nil
-		}
-		nextSlot := int16(len(assets))
-
-		replacement := asset.NewBuilder(s.Id(), replaceItemId).
-			SetSlot(nextSlot).
-			Build()
-
-		_, err = asset.Create(p.l, p.db.WithContext(p.ctx), t.Id())(replacement)
-		if err != nil {
-			p.l.WithError(err).Warnf("Failed to create replacement item [%d] for account [%d].", replaceItemId, accountId)
-		}
-	}
 
 	p.l.Debugf("Expired asset [%d] from storage for account [%d].", assetId, accountId)
 	return nil
 }
 
-func (p *Processor) emitExpiredEvent(transactionId uuid.UUID, worldId world.Id, accountId uint32, isCash bool, replaceItemId uint32, replaceMessage string) error {
+func (p *ProcessorImpl) emitExpiredEvent(transactionId uuid.UUID, worldId world.Id, accountId uint32, isCash bool, replaceItemId uint32, replaceMessage string) error {
 	event := &message.StatusEvent[message.ExpiredStatusEventBody]{
 		TransactionId: transactionId,
 		WorldId:       worldId,
@@ -782,7 +828,7 @@ func (p *Processor) emitExpiredEvent(transactionId uuid.UUID, worldId world.Id, 
 	return producer.ProviderImpl(p.l)(p.ctx)(message.EnvEventTopic)(createMessageProvider(accountId, event))
 }
 
-func (p *Processor) DeleteByAccountId(accountId uint32) error {
+func (p *ProcessorImpl) DeleteByAccountId(accountId uint32) error {
 	storages, err := GetByAccountId(p.l, p.db.WithContext(p.ctx))(accountId)
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to retrieve storages for account [%d].", accountId)
@@ -791,22 +837,22 @@ func (p *Processor) DeleteByAccountId(accountId uint32) error {
 
 	p.l.Infof("Deleting [%d] storage(s) for account [%d].", len(storages), accountId)
 
-	for _, s := range storages {
-		err = asset.DeleteByStorageId(p.l, p.db.WithContext(p.ctx))(s.Id())
-		if err != nil {
-			p.l.WithError(err).Warnf("Failed to delete assets for storage [%s].", s.Id())
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		for _, s := range storages {
+			if err := asset.DeleteByStorageId(p.l, tx)(s.Id()); err != nil {
+				p.l.WithError(err).Errorf("Failed to delete assets for storage [%s].", s.Id())
+				return err
+			}
+			if err := Delete(p.l, tx)(s.Id()); err != nil {
+				p.l.WithError(err).Errorf("Failed to delete storage [%s] for account [%d].", s.Id(), accountId)
+				return err
+			}
 		}
-
-		err = Delete(p.l, p.db.WithContext(p.ctx))(s.Id())
-		if err != nil {
-			p.l.WithError(err).Errorf("Failed to delete storage [%s] for account [%d].", s.Id(), accountId)
-		}
-	}
-
-	return nil
+		return nil
+	})
 }
 
-func (p *Processor) EmitProjectionDestroyedEvent(characterId uint32, accountId uint32, worldId world.Id) error {
+func (p *ProcessorImpl) EmitProjectionDestroyedEvent(characterId uint32, accountId uint32, worldId world.Id) error {
 	event := &message.StatusEvent[message.ProjectionDestroyedEventBody]{
 		WorldId:   worldId,
 		AccountId: accountId,

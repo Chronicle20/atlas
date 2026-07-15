@@ -1,11 +1,14 @@
 package clientbound
 
 import (
+	"bytes"
 	"testing"
 
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=field/clientbound/FieldWhisperSendResult version=gms_v72 ida=0x5166b1
+// packet-audit:verify packet=field/clientbound/FieldWhisperSendResult version=gms_v79 ida=0x51d76d
 // packet-audit:verify packet=field/clientbound/FieldWhisperSendResult version=gms_v83 ida=0x53228e
 // packet-audit:verify packet=field/clientbound/FieldWhisperSendResult version=gms_v84 ida=0x53e514
 // packet-audit:verify packet=field/clientbound/FieldWhisperSendResult version=gms_v87 ida=0x559b1d
@@ -31,6 +34,8 @@ func TestWhisperSendResultRoundTrip(t *testing.T) {
 	}
 }
 
+// packet-audit:verify packet=field/clientbound/FieldWhisperReceive version=gms_v72 ida=0x5166b1
+// packet-audit:verify packet=field/clientbound/FieldWhisperReceive version=gms_v79 ida=0x51d76d
 // packet-audit:verify packet=field/clientbound/FieldWhisperReceive version=gms_v83 ida=0x53228e
 // packet-audit:verify packet=field/clientbound/FieldWhisperReceive version=gms_v84 ida=0x53e514
 // packet-audit:verify packet=field/clientbound/FieldWhisperReceive version=gms_v87 ida=0x559b1d
@@ -62,6 +67,8 @@ func TestWhisperReceiveRoundTrip(t *testing.T) {
 	}
 }
 
+// packet-audit:verify packet=field/clientbound/FieldWhisperFindResultCashShop version=gms_v72 ida=0x5166b1
+// packet-audit:verify packet=field/clientbound/FieldWhisperFindResultCashShop version=gms_v79 ida=0x51d76d
 // packet-audit:verify packet=field/clientbound/FieldWhisperFindResultCashShop version=gms_v83 ida=0x53228e
 // packet-audit:verify packet=field/clientbound/FieldWhisperFindResultCashShop version=gms_v84 ida=0x53e514
 // packet-audit:verify packet=field/clientbound/FieldWhisperFindResultCashShop version=gms_v87 ida=0x559b1d
@@ -84,6 +91,8 @@ func TestWhisperFindResultCashShopRoundTrip(t *testing.T) {
 	}
 }
 
+// packet-audit:verify packet=field/clientbound/FieldWhisperFindResultMap version=gms_v72 ida=0x5166b1
+// packet-audit:verify packet=field/clientbound/FieldWhisperFindResultMap version=gms_v79 ida=0x51d76d
 // packet-audit:verify packet=field/clientbound/FieldWhisperFindResultMap version=gms_v83 ida=0x53228e
 // packet-audit:verify packet=field/clientbound/FieldWhisperFindResultMap version=gms_v84 ida=0x53e514
 // packet-audit:verify packet=field/clientbound/FieldWhisperFindResultMap version=gms_v87 ida=0x559b1d
@@ -135,6 +144,8 @@ func TestWhisperFindResultMapWithXYRoundTrip(t *testing.T) {
 	}
 }
 
+// packet-audit:verify packet=field/clientbound/FieldWhisperFindResultChannel version=gms_v72 ida=0x5166b1
+// packet-audit:verify packet=field/clientbound/FieldWhisperFindResultChannel version=gms_v79 ida=0x51d76d
 // packet-audit:verify packet=field/clientbound/FieldWhisperFindResultChannel version=gms_v83 ida=0x53228e
 // packet-audit:verify packet=field/clientbound/FieldWhisperFindResultChannel version=gms_v84 ida=0x53e514
 // packet-audit:verify packet=field/clientbound/FieldWhisperFindResultChannel version=gms_v87 ida=0x559b1d
@@ -160,6 +171,8 @@ func TestWhisperFindResultChannelRoundTrip(t *testing.T) {
 	}
 }
 
+// packet-audit:verify packet=field/clientbound/FieldWhisperFindResultError version=gms_v72 ida=0x5166b1
+// packet-audit:verify packet=field/clientbound/FieldWhisperFindResultError version=gms_v79 ida=0x51d76d
 // packet-audit:verify packet=field/clientbound/FieldWhisperFindResultError version=gms_v83 ida=0x53228e
 // packet-audit:verify packet=field/clientbound/FieldWhisperFindResultError version=gms_v84 ida=0x53e514
 // packet-audit:verify packet=field/clientbound/FieldWhisperFindResultError version=gms_v87 ida=0x559b1d
@@ -182,11 +195,246 @@ func TestWhisperFindResultErrorRoundTrip(t *testing.T) {
 	}
 }
 
+// packet-audit:verify packet=field/clientbound/FieldWhisperError version=gms_v72 ida=0x5166b1
+// packet-audit:verify packet=field/clientbound/FieldWhisperError version=gms_v79 ida=0x51d76d
 // packet-audit:verify packet=field/clientbound/FieldWhisperError version=gms_v83 ida=0x53228e
 // packet-audit:verify packet=field/clientbound/FieldWhisperError version=gms_v84 ida=0x53e514
 // packet-audit:verify packet=field/clientbound/FieldWhisperError version=gms_v87 ida=0x559b1d
 // packet-audit:verify packet=field/clientbound/FieldWhisperError version=gms_v95 ida=0x5448a0
 // packet-audit:verify packet=field/clientbound/FieldWhisperError version=jms_v185 ida=0x56f4df
+// packet-audit:verify packet=field/clientbound/FieldWhisperSendResult version=gms_v61 ida=0x4eabd7
+// packet-audit:verify packet=field/clientbound/FieldWhisperReceive version=gms_v61 ida=0x4eabd7
+// packet-audit:verify packet=field/clientbound/FieldWhisperFindResultCashShop version=gms_v61 ida=0x4eabd7
+// packet-audit:verify packet=field/clientbound/FieldWhisperFindResultMap version=gms_v61 ida=0x4eabd7
+// packet-audit:verify packet=field/clientbound/FieldWhisperFindResultChannel version=gms_v61 ida=0x4eabd7
+// packet-audit:verify packet=field/clientbound/FieldWhisperFindResultError version=gms_v61 ida=0x4eabd7
+// packet-audit:verify packet=field/clientbound/FieldWhisperError version=gms_v61 ida=0x4eabd7
+//
+// TestWhisperByteOutputV61 pins every present gms_v61 WHISPER (op 0x65 = 101)
+// clientbound sub-mode. IDA: CField::OnWhisper @0x4eabd7 (GMS_v61.1_U_DEVM.exe)
+// dispatches on Decode1(mode)-9 over exactly four top-level modes:
+//   mode 10 SendResult : DecodeStr(target) + Decode1(success)
+//   mode 18 Receive    : DecodeStr(from) + Decode1(ch) + Decode1(gm) + DecodeStr(msg)
+//   mode 34 Error      : DecodeStr(target) + Decode1(whispersEnabled)
+//   mode  9 FindResult : DecodeStr(target) + Decode1(findMode) + Decode4(value)
+//                        [findMode 1 (Map) adds Decode4 x + Decode4 y]
+// The find-mode sub-switch covers findMode 2 (CashShop, value -1), 1 (Map),
+// 3 (Channel), 0/default (Error). Any other top-level mode returns without a
+// read, so WhisperWeather (mode 146) is version-absent in v61 (dispositioned n-a).
+// Every present arm matches the codec field-for-field and is byte-identical to the
+// v72 golden (version-invariant layout).
+func TestWhisperByteOutputV61(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 61, 1)
+
+	send := NewWhisperSendResult(0x0A, "TargetPlayer", true)
+	if got := pt.Encode(t, ctx, send.Encode, nil); !bytes.Equal(got, append(append([]byte{0x0A}, wstrV79("TargetPlayer")...), 0x01)) {
+		t.Errorf("v61 sendResult: got %v", got)
+	}
+
+	recv := NewWhisperReceive(0x12, "SenderPlayer", 3, false, "secret whisper")
+	var rw []byte
+	rw = append(rw, 0x12)
+	rw = append(rw, wstrV79("SenderPlayer")...)
+	rw = append(rw, 0x03, 0x00)
+	rw = append(rw, wstrV79("secret whisper")...)
+	if got := pt.Encode(t, ctx, recv.Encode, nil); !bytes.Equal(got, rw) {
+		t.Errorf("v61 receive: got %v want %v", got, rw)
+	}
+
+	cash := NewWhisperFindResultCashShop(0x09, "ShopPlayer")
+	if got := pt.Encode(t, ctx, cash.Encode, nil); !bytes.Equal(got, append(append([]byte{0x09}, wstrV79("ShopPlayer")...), 0x02, 0xFF, 0xFF, 0xFF, 0xFF)) {
+		t.Errorf("v61 cashShop: got %v", got)
+	}
+
+	mp := NewWhisperFindResultMap(0x09, "MapPlayer", 100000000)
+	if got := pt.Encode(t, ctx, mp.Encode, nil); !bytes.Equal(got, append(append([]byte{0x09}, wstrV79("MapPlayer")...), 0x01, 0x00, 0xE1, 0xF5, 0x05)) {
+		t.Errorf("v61 map: got %v", got)
+	}
+
+	ch := NewWhisperFindResultChannel(0x09, "ChannelPlayer", 5)
+	if got := pt.Encode(t, ctx, ch.Encode, nil); !bytes.Equal(got, append(append([]byte{0x09}, wstrV79("ChannelPlayer")...), 0x03, 0x05, 0x00, 0x00, 0x00)) {
+		t.Errorf("v61 channel: got %v", got)
+	}
+
+	fe := NewWhisperFindResultError(0x09, "MissingPlayer")
+	if got := pt.Encode(t, ctx, fe.Encode, nil); !bytes.Equal(got, append(append([]byte{0x09}, wstrV79("MissingPlayer")...), 0x00, 0x00, 0x00, 0x00, 0x00)) {
+		t.Errorf("v61 findError: got %v", got)
+	}
+
+	er := WhisperError{mode: 0x22, targetName: "BlockedPlayer", whispersEnabled: false}
+	if got := pt.Encode(t, ctx, er.Encode, nil); !bytes.Equal(got, append(append([]byte{0x22}, wstrV79("BlockedPlayer")...), 0x00)) {
+		t.Errorf("v61 error: got %v", got)
+	}
+}
+
+// TestWhisperErrorByteOutputV79 pins the gms_v79 WHISPER (op 0x7F) clientbound
+// error sub-mode. IDA: CField::OnWhisper @0x51d76d (GMS_v79_1_DEVM.exe), v93==34
+// arm reads — Decode1(mode) @0x51d79f, DecodeStr(target) @0x51d87f,
+// Decode1(whispersEnabled) @0x51d88a. WriteAsciiString = uint16-LE len + bytes.
+func TestWhisperErrorByteOutputV79(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 79, 1)
+	input := WhisperError{mode: 0x22, targetName: "BlockedPlayer", whispersEnabled: false}
+	expected := []byte{
+		0x22,                                                                                     // mode @0x51d79f
+		0x0D, 0x00, 0x42, 0x6C, 0x6F, 0x63, 0x6B, 0x65, 0x64, 0x50, 0x6C, 0x61, 0x79, 0x65, 0x72, // target "BlockedPlayer" @0x51d87f
+		0x00, // whispersEnabled=false @0x51d88a
+	}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v79 whisper error golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
+// wstrV79 builds a WriteAsciiString wire field: uint16-LE length + ASCII bytes.
+func wstrV79(s string) []byte {
+	out := []byte{byte(len(s)), byte(len(s) >> 8)}
+	return append(out, []byte(s)...)
+}
+
+// TestWhisperVariantsByteOutputV79 pins the remaining gms_v79 WHISPER (op 0x7F)
+// clientbound sub-modes so the op-cell lifts off worst-of-siblings. IDA:
+// CField::OnWhisper @0x51d76d (GMS_v79_1_DEVM.exe) switch on Decode1(mode) @0x51d79f:
+//   case 10  SendResult  : DecodeStr(target)@0x51db21 + Decode1(success)@0x51db3a
+//   case 18  Receive     : DecodeStr(from)@0x51d965-region + Decode1(ch)@0x51d951 +
+//                          Decode1(gm)@0x51d95c + DecodeStr(msg)@0x51d965
+//   case 9/72 FindResult : DecodeStr(target)@0x51dc37 + Decode1(findMode)@0x51dc52 +
+//                          Decode4(value)@0x51dc5a  [Map adds Decode4 x,y @0x51ddbb/bd]
+//   case 146 Weather     : DecodeStr(from)@0x51d7e5 + Decode1(flag)@0x51d7f3 +
+//                          DecodeStr(msg)@0x51d7fe
+func TestWhisperVariantsByteOutputV79(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 79, 1)
+
+	send := NewWhisperSendResult(0x0A, "TargetPlayer", true)
+	if got := pt.Encode(t, ctx, send.Encode, nil); !bytes.Equal(got, append(append([]byte{0x0A}, wstrV79("TargetPlayer")...), 0x01)) {
+		t.Errorf("v79 sendResult: got %v", got)
+	}
+
+	recv := NewWhisperReceive(0x12, "SenderPlayer", 3, false, "secret whisper")
+	var rw []byte
+	rw = append(rw, 0x12)
+	rw = append(rw, wstrV79("SenderPlayer")...)
+	rw = append(rw, 0x03, 0x00)
+	rw = append(rw, wstrV79("secret whisper")...)
+	if got := pt.Encode(t, ctx, recv.Encode, nil); !bytes.Equal(got, rw) {
+		t.Errorf("v79 receive: got %v want %v", got, rw)
+	}
+
+	cash := NewWhisperFindResultCashShop(0x09, "ShopPlayer")
+	if got := pt.Encode(t, ctx, cash.Encode, nil); !bytes.Equal(got, append(append([]byte{0x09}, wstrV79("ShopPlayer")...), 0x02, 0xFF, 0xFF, 0xFF, 0xFF)) {
+		t.Errorf("v79 cashShop: got %v", got)
+	}
+
+	mp := NewWhisperFindResultMap(0x09, "MapPlayer", 100000000)
+	if got := pt.Encode(t, ctx, mp.Encode, nil); !bytes.Equal(got, append(append([]byte{0x09}, wstrV79("MapPlayer")...), 0x01, 0x00, 0xE1, 0xF5, 0x05)) {
+		t.Errorf("v79 map: got %v", got)
+	}
+
+	ch := NewWhisperFindResultChannel(0x09, "ChannelPlayer", 5)
+	if got := pt.Encode(t, ctx, ch.Encode, nil); !bytes.Equal(got, append(append([]byte{0x09}, wstrV79("ChannelPlayer")...), 0x03, 0x05, 0x00, 0x00, 0x00)) {
+		t.Errorf("v79 channel: got %v", got)
+	}
+
+	fe := NewWhisperFindResultError(0x09, "MissingPlayer")
+	if got := pt.Encode(t, ctx, fe.Encode, nil); !bytes.Equal(got, append(append([]byte{0x09}, wstrV79("MissingPlayer")...), 0x00, 0x00, 0x00, 0x00, 0x00)) {
+		t.Errorf("v79 findError: got %v", got)
+	}
+
+	wx := NewWhisperWeather(0x92, "GMPlayer", "Weather alert!")
+	var ww []byte
+	ww = append(ww, 0x92)
+	ww = append(ww, wstrV79("GMPlayer")...)
+	ww = append(ww, 0x01)
+	ww = append(ww, wstrV79("Weather alert!")...)
+	if got := pt.Encode(t, ctx, wx.Encode, nil); !bytes.Equal(got, ww) {
+		t.Errorf("v79 weather: got %v want %v", got, ww)
+	}
+}
+
+// TestWhisperErrorByteOutputV72 pins the gms_v72 WHISPER (op 0x7B / 123)
+// clientbound error sub-mode. IDA: CField::OnWhisper @0x5166b1
+// (GMS_v72.1_U_DEVM.exe). The dispatcher reads Decode1(mode) @0x5166e3; the
+// mode==34 arm (@0x5167b3) then reads DecodeStr(target) @0x5167c3 and
+// Decode1(whispersEnabled) @0x5167ce. v72 is GMS<87 so the codec (no version
+// gate) matches the v79 legacy wire byte-for-byte. WriteAsciiString =
+// uint16-LE len + ASCII bytes; WriteBool = 1 byte.
+func TestWhisperErrorByteOutputV72(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 72, 1)
+	input := WhisperError{mode: 0x22, targetName: "BlockedPlayer", whispersEnabled: false}
+	expected := []byte{
+		0x22,                                                                                     // mode @0x5166e3
+		0x0D, 0x00, 0x42, 0x6C, 0x6F, 0x63, 0x6B, 0x65, 0x64, 0x50, 0x6C, 0x61, 0x79, 0x65, 0x72, // target "BlockedPlayer" @0x5167c3
+		0x00, // whispersEnabled=false @0x5167ce
+	}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v72 whisper error golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
+// TestWhisperVariantsByteOutputV72 pins the remaining gms_v72 WHISPER (op 0x7B)
+// clientbound sub-modes so the op-cell lifts off worst-of-siblings. IDA:
+// CField::OnWhisper @0x5166b1 (GMS_v72.1_U_DEVM.exe), switch on Decode1(mode)
+// @0x5166e3:
+//
+//	case 10/138 SendResult  : DecodeStr(target)@0x516a65 + Decode1(success)@0x516a7e
+//	case 18     Receive     : DecodeStr(from)@0x516884 + Decode1(ch)@0x516895 +
+//	                          Decode1(gm)@0x5168a0 + DecodeStr(msg)@0x5168a9
+//	case 9/72   FindResult  : DecodeStr(target)@0x516b7b + Decode1(findMode)@0x516b96 +
+//	                          Decode4(value)@0x516b9e  [Map case1 adds Decode4 x,y
+//	                          @0x516cff/0x516d01]
+//	case 146    Weather     : DecodeStr(from)@0x516729 + Decode1(flag)@0x516737 +
+//	                          DecodeStr(msg)@0x516742
+//
+// v72 is GMS<87 so every arm matches the v79 legacy codec byte-for-byte.
+func TestWhisperVariantsByteOutputV72(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 72, 1)
+
+	send := NewWhisperSendResult(0x0A, "TargetPlayer", true)
+	if got := pt.Encode(t, ctx, send.Encode, nil); !bytes.Equal(got, append(append([]byte{0x0A}, wstrV79("TargetPlayer")...), 0x01)) {
+		t.Errorf("v72 sendResult: got %v", got)
+	}
+
+	recv := NewWhisperReceive(0x12, "SenderPlayer", 3, false, "secret whisper")
+	var rw []byte
+	rw = append(rw, 0x12)
+	rw = append(rw, wstrV79("SenderPlayer")...)
+	rw = append(rw, 0x03, 0x00)
+	rw = append(rw, wstrV79("secret whisper")...)
+	if got := pt.Encode(t, ctx, recv.Encode, nil); !bytes.Equal(got, rw) {
+		t.Errorf("v72 receive: got %v want %v", got, rw)
+	}
+
+	cash := NewWhisperFindResultCashShop(0x09, "ShopPlayer")
+	if got := pt.Encode(t, ctx, cash.Encode, nil); !bytes.Equal(got, append(append([]byte{0x09}, wstrV79("ShopPlayer")...), 0x02, 0xFF, 0xFF, 0xFF, 0xFF)) {
+		t.Errorf("v72 cashShop: got %v", got)
+	}
+
+	mp := NewWhisperFindResultMap(0x09, "MapPlayer", 100000000)
+	if got := pt.Encode(t, ctx, mp.Encode, nil); !bytes.Equal(got, append(append([]byte{0x09}, wstrV79("MapPlayer")...), 0x01, 0x00, 0xE1, 0xF5, 0x05)) {
+		t.Errorf("v72 map: got %v", got)
+	}
+
+	ch := NewWhisperFindResultChannel(0x09, "ChannelPlayer", 5)
+	if got := pt.Encode(t, ctx, ch.Encode, nil); !bytes.Equal(got, append(append([]byte{0x09}, wstrV79("ChannelPlayer")...), 0x03, 0x05, 0x00, 0x00, 0x00)) {
+		t.Errorf("v72 channel: got %v", got)
+	}
+
+	fe := NewWhisperFindResultError(0x09, "MissingPlayer")
+	if got := pt.Encode(t, ctx, fe.Encode, nil); !bytes.Equal(got, append(append([]byte{0x09}, wstrV79("MissingPlayer")...), 0x00, 0x00, 0x00, 0x00, 0x00)) {
+		t.Errorf("v72 findError: got %v", got)
+	}
+
+	wx := NewWhisperWeather(0x92, "GMPlayer", "Weather alert!")
+	var ww []byte
+	ww = append(ww, 0x92)
+	ww = append(ww, wstrV79("GMPlayer")...)
+	ww = append(ww, 0x01)
+	ww = append(ww, wstrV79("Weather alert!")...)
+	if got := pt.Encode(t, ctx, wx.Encode, nil); !bytes.Equal(got, ww) {
+		t.Errorf("v72 weather: got %v want %v", got, ww)
+	}
+}
+
 func TestWhisperErrorRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {
@@ -207,6 +455,8 @@ func TestWhisperErrorRoundTrip(t *testing.T) {
 	}
 }
 
+// packet-audit:verify packet=field/clientbound/FieldWhisperWeather version=gms_v72 ida=0x5166b1
+// packet-audit:verify packet=field/clientbound/FieldWhisperWeather version=gms_v79 ida=0x51d76d
 // packet-audit:verify packet=field/clientbound/FieldWhisperWeather version=gms_v83 ida=0x53228e
 // packet-audit:verify packet=field/clientbound/FieldWhisperWeather version=gms_v84 ida=0x53e514
 // packet-audit:verify packet=field/clientbound/FieldWhisperWeather version=gms_v87 ida=0x559b1d
@@ -229,5 +479,73 @@ func TestWhisperWeatherRoundTrip(t *testing.T) {
 				t.Errorf("message: got %v, want %v", output.Message(), input.Message())
 			}
 		})
+	}
+}
+
+// packet-audit:verify packet=field/clientbound/FieldWhisperSendResult version=gms_v48 ida=0x4c71d5
+// packet-audit:verify packet=field/clientbound/FieldWhisperReceive version=gms_v48 ida=0x4c71d5
+// packet-audit:verify packet=field/clientbound/FieldWhisperFindResultCashShop version=gms_v48 ida=0x4c71d5
+// packet-audit:verify packet=field/clientbound/FieldWhisperFindResultMap version=gms_v48 ida=0x4c71d5
+// packet-audit:verify packet=field/clientbound/FieldWhisperFindResultChannel version=gms_v48 ida=0x4c71d5
+// packet-audit:verify packet=field/clientbound/FieldWhisperFindResultError version=gms_v48 ida=0x4c71d5
+// packet-audit:verify packet=field/clientbound/FieldWhisperError version=gms_v48 ida=0x4c71d5
+//
+// TestWhisperByteOutputV48 pins every present gms_v48 WHISPER (op 0x51 = 81)
+// clientbound sub-mode. IDA: CField::OnWhisper @0x4c71d5 (GMS_v48_1_DEVM.exe,
+// port 13337) dispatches on Decode1(mode)-9 over exactly four top-level modes —
+// byte-identical structure to the verified v61 handler @0x4eabd7:
+//   mode 10 SendResult : DecodeStr(target) @0x4c7502 + Decode1(success) @0x4c7518
+//   mode 18 Receive    : DecodeStr(from) @0x4c7308 + Decode1(ch) @0x4c7319 +
+//                        Decode1(gm) @0x4c7324 + DecodeStr(msg) @0x4c732d
+//   mode 34 Error      : DecodeStr(target) @0x4c7239 + Decode1(whispersEnabled) @0x4c7244
+//   mode  9 FindResult : DecodeStr(target) @0x4c763d + Decode1(findMode) @0x4c7652 +
+//                        Decode4(value) @0x4c7655  [findMode 1 (Map) adds Decode4 x,y
+//                        @0x4c779e/@0x4c77a1]
+// The find-mode sub-switch covers findMode 2 (CashShop, value -1), 1 (Map),
+// 3 (Channel), 0/default (Error). Any other top-level mode returns without a read,
+// so WhisperWeather (mode 146) is version-absent in v48 (no gms_v48 report; n-a).
+// Every present arm matches the codec field-for-field and is byte-identical to the
+// v61/v72/v79 golden (version-invariant layout).
+func TestWhisperByteOutputV48(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 48, 1)
+
+	send := NewWhisperSendResult(0x0A, "TargetPlayer", true)
+	if got := pt.Encode(t, ctx, send.Encode, nil); !bytes.Equal(got, append(append([]byte{0x0A}, wstrV79("TargetPlayer")...), 0x01)) {
+		t.Errorf("v48 sendResult: got %v", got)
+	}
+
+	recv := NewWhisperReceive(0x12, "SenderPlayer", 3, false, "secret whisper")
+	var rw []byte
+	rw = append(rw, 0x12)
+	rw = append(rw, wstrV79("SenderPlayer")...)
+	rw = append(rw, 0x03, 0x00)
+	rw = append(rw, wstrV79("secret whisper")...)
+	if got := pt.Encode(t, ctx, recv.Encode, nil); !bytes.Equal(got, rw) {
+		t.Errorf("v48 receive: got %v want %v", got, rw)
+	}
+
+	cash := NewWhisperFindResultCashShop(0x09, "ShopPlayer")
+	if got := pt.Encode(t, ctx, cash.Encode, nil); !bytes.Equal(got, append(append([]byte{0x09}, wstrV79("ShopPlayer")...), 0x02, 0xFF, 0xFF, 0xFF, 0xFF)) {
+		t.Errorf("v48 cashShop: got %v", got)
+	}
+
+	mp := NewWhisperFindResultMap(0x09, "MapPlayer", 100000000)
+	if got := pt.Encode(t, ctx, mp.Encode, nil); !bytes.Equal(got, append(append([]byte{0x09}, wstrV79("MapPlayer")...), 0x01, 0x00, 0xE1, 0xF5, 0x05)) {
+		t.Errorf("v48 map: got %v", got)
+	}
+
+	ch := NewWhisperFindResultChannel(0x09, "ChannelPlayer", 5)
+	if got := pt.Encode(t, ctx, ch.Encode, nil); !bytes.Equal(got, append(append([]byte{0x09}, wstrV79("ChannelPlayer")...), 0x03, 0x05, 0x00, 0x00, 0x00)) {
+		t.Errorf("v48 channel: got %v", got)
+	}
+
+	fe := NewWhisperFindResultError(0x09, "MissingPlayer")
+	if got := pt.Encode(t, ctx, fe.Encode, nil); !bytes.Equal(got, append(append([]byte{0x09}, wstrV79("MissingPlayer")...), 0x00, 0x00, 0x00, 0x00, 0x00)) {
+		t.Errorf("v48 findError: got %v", got)
+	}
+
+	er := WhisperError{mode: 0x22, targetName: "BlockedPlayer", whispersEnabled: false}
+	if got := pt.Encode(t, ctx, er.Encode, nil); !bytes.Equal(got, append(append([]byte{0x22}, wstrV79("BlockedPlayer")...), 0x00)) {
+		t.Errorf("v48 error: got %v", got)
 	}
 }

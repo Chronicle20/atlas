@@ -6,16 +6,6 @@ import (
 	"gorm.io/gorm"
 )
 
-func getByCharacterIdProvider(characterId uint32) func(db *gorm.DB) model.Provider[[]Entity] {
-	return func(db *gorm.DB) model.Provider[[]Entity] {
-		return func() ([]Entity, error) {
-			var entities []Entity
-			result := db.Where("character_id = ?", characterId).Find(&entities)
-			return entities, result.Error
-		}
-	}
-}
-
 func getByCharacterIdAndMapIdProvider(characterId uint32) func(mapId _map.Id) func(db *gorm.DB) model.Provider[Entity] {
 	return func(mapId _map.Id) func(db *gorm.DB) model.Provider[Entity] {
 		return func(db *gorm.DB) model.Provider[Entity] {

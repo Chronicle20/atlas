@@ -2,7 +2,7 @@ import { useTenant } from "@/context/tenant-context";
 import { DataTableWrapper } from "@/components/common/DataTableWrapper";
 import { hiddenColumns, getColumns } from "@/pages/bans-columns";
 import { useMemo, useState } from "react";
-import { useBans, useInvalidateBans } from "@/lib/hooks/api/useBans";
+import { useBansPage, useInvalidateBans } from "@/lib/hooks/api/useBans";
 import { useGridRefresh } from "@/lib/hooks/useGridRefresh";
 import type { Ban } from "@/types/models/ban";
 import { BanType, BanTypeLabels } from "@/types/models/ban";
@@ -19,8 +19,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Plus, Shield } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Pager } from "@/components/common/Pager";
+
+const PAGE_SIZE = 50;
 
 function BansPageSkeleton() {
   return (
@@ -45,23 +48,39 @@ function BansPageSkeleton() {
 export function BansPage() {
   const { activeTenant } = useTenant();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [expireDialogOpen, setExpireDialogOpen] = useState(false);
   const [selectedBan, setSelectedBan] = useState<Ban | null>(null);
 
+  const pageNumber = Math.max(1, Number.parseInt(searchParams.get("page") ?? "1", 10) || 1);
+
   const bansQueryOptions = useMemo(
     () => (typeFilter !== "all" ? { type: Number(typeFilter) as BanType } : undefined),
     [typeFilter]
   );
-  const bansQuery = useBans(activeTenant, bansQueryOptions);
+  const bansQuery = useBansPage(activeTenant, { number: pageNumber, size: PAGE_SIZE }, bansQueryOptions);
   const { invalidateAll } = useInvalidateBans();
   const { isRefreshing, onRefresh } = useGridRefresh([bansQuery]);
 
-  const bans = bansQuery.data ?? [];
+  const bans = bansQuery.data?.data ?? [];
+  const meta = bansQuery.data?.meta ?? null;
   const loading = bansQuery.isLoading;
   const error = bansQuery.error?.message ?? null;
+
+  const handlePageChange = (nextPage: number) => {
+    const next = new URLSearchParams(searchParams);
+    if (nextPage > 1) next.set("page", String(nextPage));
+    else next.delete("page");
+    setSearchParams(next, { replace: false });
+  };
+
+  const handleTypeFilterChange = (value: string) => {
+    setTypeFilter(value);
+    handlePageChange(1);
+  };
 
   const handleView = (ban: Ban) => navigate(`/bans/${ban.id}`);
   const handleDelete = (ban: Ban) => { setSelectedBan(ban); setDeleteDialogOpen(true); };
@@ -87,7 +106,7 @@ export function BansPage() {
           <h2 className="text-2xl font-bold tracking-tight">Bans</h2>
         </div>
         <div className="flex items-center gap-4">
-          <Select value={typeFilter} onValueChange={setTypeFilter}>
+          <Select value={typeFilter} onValueChange={handleTypeFilterChange}>
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Filter by type" />
             </SelectTrigger>
@@ -126,6 +145,15 @@ export function BansPage() {
             },
           }}
         />
+        {meta && bans.length > 0 && (
+          <Pager
+            page={meta.page.number}
+            lastPage={meta.page.last}
+            total={meta.total}
+            pageSize={meta.page.size}
+            onPageChange={handlePageChange}
+          />
+        )}
       </div>
 
       <CreateBanDialog

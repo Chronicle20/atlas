@@ -1,6 +1,7 @@
 package npc
 
 import (
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -28,22 +29,18 @@ func getByNpcIdProvider(npcId uint32) func(db *gorm.DB) model.Provider[Entity] {
 	}
 }
 
-// getAllProvider returns a provider for retrieving all conversations
-func getAllProvider(db *gorm.DB) model.Provider[[]Entity] {
-	return func() ([]Entity, error) {
-		var entities []Entity
-		result := db.Find(&entities)
-		return entities, result.Error
+// getAllPagedProvider returns a provider for retrieving one page of
+// conversations for a tenant
+func getAllPagedProvider(page model.Page) database.EntityProvider[model.Paged[Entity]] {
+	return func(db *gorm.DB) model.Provider[model.Paged[Entity]] {
+		return database.PagedQuery[Entity](db, page)
 	}
 }
 
-// getAllByNpcIdProvider returns a provider for retrieving all conversations for a specific NPC ID
-func getAllByNpcIdProvider(npcId uint32) func(db *gorm.DB) model.Provider[[]Entity] {
-	return func(db *gorm.DB) model.Provider[[]Entity] {
-		return func() ([]Entity, error) {
-			var entities []Entity
-			result := db.Where("npc_id = ?", npcId).Find(&entities)
-			return entities, result.Error
-		}
+// getAllByNpcIdPagedProvider returns a provider for retrieving one page of
+// conversations for a specific NPC ID
+func getAllByNpcIdPagedProvider(npcId uint32, page model.Page) database.EntityProvider[model.Paged[Entity]] {
+	return func(db *gorm.DB) model.Provider[model.Paged[Entity]] {
+		return database.PagedQuery[Entity](db.Where("npc_id = ?", npcId), page)
 	}
 }

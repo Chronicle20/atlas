@@ -25,6 +25,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) Put(characterId uint32, locationType string, mapId _map.Id, portalId uint32) error {
 	_, err := PutSavedLocation(p.l, p.ctx)(characterId, locationType, mapId, portalId)
 	if err != nil {

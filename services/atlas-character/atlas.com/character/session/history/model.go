@@ -89,3 +89,9 @@ func modelFromEntity(e entity) Model {
 		logoutTime:  e.LogoutTime,
 	}
 }
+
+// modelFromEntityProvider adapts modelFromEntity to model.Transformer's
+// (E) (M, error) shape for use with model.MapPaged, which never errors.
+func modelFromEntityProvider(e entity) (Model, error) {
+	return modelFromEntity(e), nil
+}

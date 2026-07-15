@@ -1,0 +1,10 @@
+packet: guild/serverbound/GuildBBSCreateOrEditThread
+direction: serverbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: CUIGuildBBS::OnRegister
+    address: "0x6bb129"
+    decompile_sha256: 8cd5d581da61810400530b753fed263f9884f76ad0e553257fa63aba236830ee
+verifies:
+    - libs/atlas-packet/guild/serverbound/bbs_create_or_edit_thread_test.go#TestBBSCreateOrEditThreadRoundTrip

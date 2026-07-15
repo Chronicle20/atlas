@@ -1,10 +1,15 @@
 import { api } from "@/lib/api/client";
 import { type ServiceOptions, type QueryOptions, type ValidationError } from "@/lib/api/query-params";
+import { fetchAll, fetchPaged } from "@/services/api/pagination";
 import { conversationsService } from "./conversations.service";
 import type { NPC, NpcSearchResult, Shop, Commodity, CommodityAttributes, ShopResponse, NpcSpawnMap, NpcSpawnMapData } from "@/types/models/npc";
 import type { QuestDefinition } from "@/types/models/quest";
 
 const BASE_PATH = "/api/npcs";
+
+// NpcsPage advertises "Results are limited to 50 entries" — searchNpcs is a
+// bounded single-page lookup, not a drained browse (task-117).
+const SEARCH_RESULT_LIMIT = 50;
 
 interface CreateShopInput {
   data: {
@@ -57,11 +62,13 @@ function throwIfInvalidCommodity(attrs: CommodityAttributes, shouldValidate: boo
 
 export const npcsService = {
   /**
-   * Combine shop and conversation lookups into a single NPC list.
+   * Combine shop and conversation lookups into a single NPC list, draining
+   * all pages of each (task-117) — the status map this feeds needs every
+   * NPC, not a page at a time.
    */
   async getAllNPCs(options?: QueryOptions): Promise<NPC[]> {
     try {
-      const shops = await api.getList<Shop>("/api/shops", options);
+      const shops = await fetchAll<Shop>("/api/shops", undefined, options);
       const npcsWithShops: NPC[] = shops.map((shop: Shop) => ({
         id: shop.attributes.npcId,
         hasShop: true,
@@ -100,10 +107,11 @@ export const npcsService = {
     if (query) params.set("search", query);
     if (storebankOnly) params.set("filter[storebank]", "true");
     const qs = params.toString();
-    const npcs = await api.getList<{ id: string; attributes: { name: string; storebank?: boolean } }>(
+    const result = await fetchPaged<{ id: string; attributes: { name: string; storebank?: boolean } }>(
       `/api/data/npcs${qs ? `?${qs}` : ""}`,
+      { number: 1, size: SEARCH_RESULT_LIMIT },
     );
-    return npcs.map(npc => ({ id: parseInt(npc.id), name: npc.attributes.name }));
+    return result.data.map(npc => ({ id: parseInt(npc.id), name: npc.attributes.name }));
   },
 
   async getNPCShop(npcId: number, options?: ServiceOptions): Promise<ShopResponse> {
@@ -263,8 +271,11 @@ export const npcsService = {
     return npc.attributes.name;
   },
 
+  /**
+   * Get every map this NPC spawns on, draining all pages (task-117).
+   */
   async getNpcSpawnMaps(npcId: number): Promise<NpcSpawnMap[]> {
-    const rows = await api.getList<NpcSpawnMapData>(`/api/data/npcs/${npcId}/maps`);
+    const rows = await fetchAll<NpcSpawnMapData>(`/api/data/npcs/${npcId}/maps`);
     return rows.map(row => ({
       npcId,
       mapId: row.attributes.mapId,
@@ -274,8 +285,11 @@ export const npcsService = {
     }));
   },
 
+  /**
+   * Get every quest referencing this NPC, draining all pages (task-117).
+   */
   async getNpcQuests(npcId: number): Promise<QuestDefinition[]> {
-    return api.getList<QuestDefinition>(`/api/data/npcs/${npcId}/quests`);
+    return fetchAll<QuestDefinition>(`/api/data/npcs/${npcId}/quests`);
   },
 };
 

@@ -73,3 +73,9 @@ func TestMonsterBookCardBase(t *testing.T) {
 		t.Errorf("MonsterBookCardBase %d != ClassificationConsumableMonsterCard*10000", MonsterBookCardBase)
 	}
 }
+
+func TestViciousHammerClassification(t *testing.T) {
+	if GetClassification(Id(5570000)) != ClassificationViciousHammer {
+		t.Errorf("GetClassification(5570000) = %d, want ClassificationViciousHammer (557)", GetClassification(Id(5570000)))
+	}
+}

@@ -38,14 +38,14 @@ func handleGetCompartment(db *gorm.DB) rest.GetHandler {
 						return
 					}
 					if err != nil {
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 
 					rm, err := model.Map(Transform)(model.FixedProvider(m))()
 					if err != nil {
 						d.Logger().WithError(err).Errorf("Creating REST model.")
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 
@@ -84,14 +84,14 @@ func handleGetCompartmentByType(db *gorm.DB) rest.GetHandler {
 				}
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Error retrieving compartment by type: %d", inventoryType)
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
 				rm, err := model.Map(Transform)(model.FixedProvider(m))()
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Creating REST model.")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 

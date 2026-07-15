@@ -1,0 +1,8 @@
+packet: field/serverbound/FieldItcOperationChangedCategorySub
+direction: serverbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CITC::OnChangedCategorySub
+    address: "0x57a913"
+    decompile_sha256: 3cb94cbbad8b6e1678dacd4cef48349b7ada7baa5bf85634e43fe46ea10f2c26

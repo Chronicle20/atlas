@@ -1,0 +1,10 @@
+packet: character/clientbound/CharacterMovement
+direction: clientbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: CUserRemote::OnMove
+    address: "0x7bdd6b"
+    decompile_sha256: 5d127de605ad9722313d003640721ebf295d9f5447aada0721e376a673b14cf5
+verifies:
+    - libs/atlas-packet/character/clientbound/movement_test.go#TestCharacterMovementByteOutputV61

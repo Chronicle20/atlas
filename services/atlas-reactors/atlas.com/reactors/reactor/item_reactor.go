@@ -1,16 +1,15 @@
 package reactor
 
 import (
-	"atlas-reactors/kafka/producer"
 	dropMessage "atlas-reactors/kafka/message/drop"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"os"
 	"strconv"
 	"sync"
 	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
-	kafkaProducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/segmentio/kafka-go"
@@ -18,9 +17,9 @@ import (
 )
 
 const (
-	itemReactorStateType               = int32(100)
-	defaultItemReactorActivationDelay  = 5000
-	envItemReactorActivationDelayMs    = "ITEM_REACTOR_ACTIVATION_DELAY_MS"
+	itemReactorStateType              = int32(100)
+	defaultItemReactorActivationDelay = 5000
+	envItemReactorActivationDelayMs   = "ITEM_REACTOR_ACTIVATION_DELAY_MS"
 )
 
 var (
@@ -125,7 +124,7 @@ func scheduleItemReactorActivation(l logrus.FieldLogger, ctx context.Context) fu
 				return
 			}
 
-			err = Hit(l)(ctx)(reactorId, characterId, 0)
+			err = NewProcessor(l, ctx).Hit(reactorId, characterId, 0)
 			if err != nil {
 				l.WithError(err).Errorf("Failed to hit reactor [%d] after item-reactor activation.", reactorId)
 			}
@@ -144,7 +143,7 @@ func emitConsumeDropCommand(l logrus.FieldLogger) func(ctx context.Context) func
 }
 
 func consumeDropCommandProvider(f field.Model, dropId uint32) model.Provider[[]kafka.Message] {
-	key := kafkaProducer.CreateKey(int(f.MapId()))
+	key := producer.CreateKey(int(f.MapId()))
 	value := &dropMessage.Command[dropMessage.CommandConsumeBody]{
 		WorldId:   f.WorldId(),
 		ChannelId: f.ChannelId(),
@@ -155,7 +154,7 @@ func consumeDropCommandProvider(f field.Model, dropId uint32) model.Provider[[]k
 			DropId: dropId,
 		},
 	}
-	return kafkaProducer.SingleMessageProvider(key, value)
+	return producer.SingleMessageProvider(key, value)
 }
 
 func CancelPendingActivation(reactorId uint32) {

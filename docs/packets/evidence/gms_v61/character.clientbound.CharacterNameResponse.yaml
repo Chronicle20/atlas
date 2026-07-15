@@ -1,0 +1,10 @@
+packet: character/clientbound/CharacterNameResponse
+direction: clientbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: CLogin::OnCreateNewCharacterResult
+    address: "0x566bab"
+    decompile_sha256: 9996cc7b022bc2a5d0af9d6165a9a3f8d012afc15603b6283557c18133cec3a2
+verifies:
+    - libs/atlas-packet/character/clientbound/v61_test.go#TestCharacterNameResponseByteOutputV61

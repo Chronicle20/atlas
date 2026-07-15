@@ -34,18 +34,47 @@ type operationsOpts struct {
 }
 
 type dispatcherDoc struct {
-	Writer string `yaml:"writer"`
-	FName  string `yaml:"fname"`
-	Op     string `yaml:"op"`
-	// Opcodes optionally supplies the per-version writer opCode (e.g. "0x14B").
-	// When a template LACKS this writer entirely but the YAML provides the
-	// version's opcode, `operations` generate ADDS the writer entry (opCode +
-	// writer + operations); `--check` flags its absence as missing.
+	// Exactly one of Writer (clientbound) or Handler (serverbound) names the
+	// socket entry this doc drives. Both live under socket.{writers,handlers}
+	// with an identically-shaped options.operations table; the only structural
+	// difference is the array + entry key ("writer" vs "handler").
+	Writer  string `yaml:"writer"`
+	Handler string `yaml:"handler"`
+	FName   string `yaml:"fname"`
+	Op      string `yaml:"op"`
+	// Opcodes optionally supplies the per-version opCode (e.g. "0x14B").
+	// When a template LACKS this entry entirely but the YAML provides the
+	// version's opcode, `operations` generate ADDS the entry (opCode +
+	// writer/handler + operations); `--check` flags its absence as missing.
 	Opcodes    map[string]string `yaml:"opcodes"`
 	Operations []struct {
 		Key   string         `yaml:"key"`
 		Modes map[string]int `yaml:"modes"`
 	} `yaml:"operations"`
+}
+
+// arrayKey / entryKey / targetName resolve which socket array and entry key
+// this doc drives (a writer under socket.writers, or a handler under
+// socket.handlers).
+func (d dispatcherDoc) arrayKey() string {
+	if d.Handler != "" {
+		return "handlers"
+	}
+	return "writers"
+}
+
+func (d dispatcherDoc) entryKey() string {
+	if d.Handler != "" {
+		return "handler"
+	}
+	return "writer"
+}
+
+func (d dispatcherDoc) targetName() string {
+	if d.Handler != "" {
+		return d.Handler
+	}
+	return d.Writer
 }
 
 func runOperations(args []string, stderr io.Writer) int {
@@ -82,25 +111,26 @@ func operationsRun(o operationsOpts, stdout, stderr io.Writer) int {
 			fmt.Fprintf(stderr, "packet-audit operations: parse %s: %v\n", tplPath, err)
 			return 3
 		}
-		writers := writersOf(root)
 		changed := false
 		for _, doc := range docs {
+			name := doc.targetName()
 			expected := expectedTable(doc, vk)
-			w := findWriterNode(writers, doc.Writer)
+			entries := entriesOf(root, doc.arrayKey())
+			w := findEntryNode(entries, doc.entryKey(), name)
 			if w == nil {
 				if len(expected) == 0 {
 					continue
 				}
 				oc, hasOC := doc.Opcodes[vk]
 				if !hasOC {
-					absent = append(absent, fmt.Sprintf("%s: writer %q not in template (cannot populate %d ops; add an opcodes entry to the YAML to wire it)", vk, doc.Writer, len(expected)))
+					absent = append(absent, fmt.Sprintf("%s: %s %q not in template (cannot populate %d ops; add an opcodes entry to the YAML to wire it)", vk, doc.entryKey(), name, len(expected)))
 					continue
 				}
 				if o.Check {
-					missing = append(missing, fmt.Sprintf("%s %s: writer entry absent (should be wired at %s)", vk, doc.Writer, oc))
+					missing = append(missing, fmt.Sprintf("%s %s: entry absent (should be wired at %s)", vk, name, oc))
 					continue
 				}
-				if addWriter(root, doc, oc, expected) {
+				if addEntry(root, doc, oc, expected) {
 					changed = true
 				}
 				continue
@@ -111,14 +141,14 @@ func operationsRun(o operationsOpts, stdout, stderr io.Writer) int {
 			got := operationsOf(w)
 			for k, want := range expected {
 				if gv, ok := got[k]; !ok {
-					missing = append(missing, fmt.Sprintf("%s %s: key %q missing (want %d)", vk, doc.Writer, k, want))
+					missing = append(missing, fmt.Sprintf("%s %s: key %q missing (want %d)", vk, name, k, want))
 				} else if gv != want {
-					drift = append(drift, fmt.Sprintf("%s %s: key %q is %d, want %d", vk, doc.Writer, k, gv, want))
+					drift = append(drift, fmt.Sprintf("%s %s: key %q is %d, want %d", vk, name, k, gv, want))
 				}
 			}
 			for k := range got {
 				if _, ok := expected[k]; !ok {
-					extra = append(extra, fmt.Sprintf("%s %s: key %q in template but not in enumeration", vk, doc.Writer, k))
+					extra = append(extra, fmt.Sprintf("%s %s: key %q in template but not in enumeration", vk, name, k))
 				}
 			}
 			if !o.Check && setOperations(w, doc, expected) {
@@ -186,7 +216,7 @@ func loadDispatcherDocs(dir string) ([]dispatcherDoc, error) {
 		if err := yaml.Unmarshal(raw, &d); err != nil {
 			return nil, fmt.Errorf("%s: %w", p, err)
 		}
-		if d.Writer != "" {
+		if d.Writer != "" || d.Handler != "" {
 			out = append(out, d)
 		}
 	}
@@ -339,25 +369,18 @@ func encodeNode(n *node) ([]byte, error) {
 	return out.Bytes(), nil
 }
 
-func writersOf(root *node) []*node {
-	if root.kind != 'o' {
+func entriesOf(root *node, arrayKey string) []*node {
+	a := arrayNode(root, arrayKey)
+	if a == nil {
 		return nil
 	}
-	socket := root.obj["socket"]
-	if socket == nil || socket.kind != 'o' {
-		return nil
-	}
-	w := socket.obj["writers"]
-	if w == nil || w.kind != 'a' {
-		return nil
-	}
-	return w.arr
+	return a.arr
 }
 
-func findWriterNode(writers []*node, name string) *node {
-	for _, w := range writers {
+func findEntryNode(entries []*node, entryKey, name string) *node {
+	for _, w := range entries {
 		if w.kind == 'o' {
-			if wn := w.obj["writer"]; wn != nil && wn.kind == 's' {
+			if wn := w.obj[entryKey]; wn != nil && wn.kind == 's' {
 				var s string
 				if json.Unmarshal(wn.raw, &s) == nil && s == name {
 					return w
@@ -369,7 +392,7 @@ func findWriterNode(writers []*node, name string) *node {
 }
 
 // writersArrayNode returns the socket.writers array node (for appending).
-func writersArrayNode(root *node) *node {
+func arrayNode(root *node, arrayKey string) *node {
 	if root.kind != 'o' {
 		return nil
 	}
@@ -377,7 +400,7 @@ func writersArrayNode(root *node) *node {
 	if socket == nil || socket.kind != 'o' {
 		return nil
 	}
-	w := socket.obj["writers"]
+	w := socket.obj[arrayKey]
 	if w == nil || w.kind != 'a' {
 		return nil
 	}
@@ -400,21 +423,22 @@ func buildOperationsNode(doc dispatcherDoc, expected map[string]int) *node {
 
 // addWriter appends a new writer entry {opCode, writer, options:{operations}} to
 // socket.writers. Returns true on success.
-func addWriter(root *node, doc dispatcherDoc, opcode string, expected map[string]int) bool {
-	arr := writersArrayNode(root)
+func addEntry(root *node, doc dispatcherDoc, opcode string, expected map[string]int) bool {
+	arr := arrayNode(root, doc.arrayKey())
 	if arr == nil {
 		return false
 	}
+	entryKey := doc.entryKey()
 	ocBytes, _ := json.Marshal(opcode)
-	wnBytes, _ := json.Marshal(doc.Writer)
+	wnBytes, _ := json.Marshal(doc.targetName())
 	opts := &node{kind: 'o', obj: map[string]*node{}, dirty: true}
 	opts.keys = []string{"operations"}
 	opts.obj["operations"] = buildOperationsNode(doc, expected)
 	w := &node{kind: 'o', dirty: true, obj: map[string]*node{
 		"opCode":  {kind: 's', raw: ocBytes},
-		"writer":  {kind: 's', raw: wnBytes},
+		entryKey:  {kind: 's', raw: wnBytes},
 		"options": opts,
-	}, keys: []string{"opCode", "writer", "options"}}
+	}, keys: []string{"opCode", entryKey, "options"}}
 	arr.arr = append(arr.arr, w)
 	arr.dirty = true
 	return true

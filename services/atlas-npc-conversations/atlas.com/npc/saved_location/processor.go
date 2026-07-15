@@ -32,6 +32,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
+var _ Processor = (*processor)(nil)
+
 // GetSavedLocation retrieves a saved location for a character by type
 func (p *processor) GetSavedLocation(characterId uint32, locationType string) model.Provider[Model] {
 	return func() (Model, error) {

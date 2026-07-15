@@ -8,10 +8,14 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// startedQuestsProvider fetches every started quest for a character. The
+// upstream atlas-quest list is now paginated (task-117); GetStartedQuestIds
+// below builds a complete questId->started map for reactor-drop quest
+// matching, so this drains every page rather than fetching just the first.
 func startedQuestsProvider(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32) model.Provider[[]Model] {
 	return func(ctx context.Context) func(characterId uint32) model.Provider[[]Model] {
 		return func(characterId uint32) model.Provider[[]Model] {
-			return requests.SliceProvider[RestModel, Model](l, ctx)(requestStartedQuests(characterId), Extract, model.Filters[Model]())
+			return requests.DrainProvider[RestModel, Model](l, ctx)(startedQuestsUrl(characterId), 250, Extract, model.Filters[Model]())
 		}
 	}
 }

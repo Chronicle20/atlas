@@ -3,10 +3,12 @@ package instance
 import (
 	"atlas-transports/rest"
 	"net/http"
+	"sort"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
@@ -25,6 +27,12 @@ func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
 
 func GetAllInstanceRoutesHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		page, err := paginate.ParseParams(r.URL.Query(), paginate.DefaultPageSize, paginate.MaxPageSize)
+		if err != nil {
+			server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+			return
+		}
+
 		p := NewProcessor(d.Logger(), d.Context())
 		routes := p.GetRoutes()
 
@@ -35,9 +43,14 @@ func GetAllInstanceRoutesHandler(d *rest.HandlerDependency, c *rest.HandlerConte
 			return
 		}
 
+		sort.Slice(rm, func(i, j int) bool {
+			return rm[i].ID.String() < rm[j].ID.String()
+		})
+		paged := paginate.Slice(rm, page)
+
 		query := r.URL.Query()
 		queryParams := jsonapi.ParseQueryFields(&query)
-		server.MarshalResponse[[]RouteRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
+		server.MarshalPaginatedResponse[[]RouteRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(paged.Items, paginate.EnvelopeFor(paged), r)
 	}
 }
 
@@ -83,6 +96,12 @@ func StartInstanceTransportHandler(d *rest.HandlerDependency, c *rest.HandlerCon
 func GetInstanceRouteStatusHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseRouteId(d.Logger(), func(routeId uuid.UUID) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
+			page, err := paginate.ParseParams(r.URL.Query(), paginate.DefaultPageSize, paginate.MaxPageSize)
+			if err != nil {
+				server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+				return
+			}
+
 			ir := getInstanceRegistry()
 			instances := ir.GetInstancesByRoute(uuid.Nil, routeId)
 
@@ -94,9 +113,14 @@ func GetInstanceRouteStatusHandler(d *rest.HandlerDependency, c *rest.HandlerCon
 				}
 			}
 
+			sort.Slice(statuses, func(i, j int) bool {
+				return statuses[i].ID.String() < statuses[j].ID.String()
+			})
+			paged := paginate.Slice(statuses, page)
+
 			query := r.URL.Query()
 			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalResponse[[]InstanceStatusRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(statuses)
+			server.MarshalPaginatedResponse[[]InstanceStatusRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(paged.Items, paginate.EnvelopeFor(paged), r)
 		}
 	})
 }

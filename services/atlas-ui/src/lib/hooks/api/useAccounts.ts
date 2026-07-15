@@ -9,8 +9,9 @@
  * - Proper error handling and loading states
  */
 
-import { useMutation, useQuery, useQueryClient, type UseMutationResult, type UseQueryResult } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient, keepPreviousData, type UseMutationResult, type UseQueryResult } from '@tanstack/react-query';
 import { accountsService, type Account, type AccountAttributes, type AccountQueryOptions } from '@/services/api/accounts.service';
+import type { PagedResult } from '@/services/api/pagination';
 import type { Tenant } from '@/types/models/tenant';
 import type { ServiceOptions } from '@/lib/api/query-params';
 
@@ -19,6 +20,8 @@ export const accountKeys = {
   all: ['accounts'] as const,
   lists: () => [...accountKeys.all, 'list'] as const,
   list: (tenant: Tenant | null, options?: AccountQueryOptions) => [...accountKeys.lists(), tenant?.id || 'no-tenant', options] as const,
+  pagedList: (tenant: Tenant | null, page: number, size: number) =>
+    [...accountKeys.lists(), tenant?.id || 'no-tenant', page, size] as const,
   details: () => [...accountKeys.all, 'detail'] as const,
   detail: (tenant: Tenant | null, id: string) => [...accountKeys.details(), tenant?.id || 'no-tenant', id] as const,
   
@@ -45,6 +48,25 @@ export function useAccounts(
     queryFn: () => accountsService.getAllAccounts({ ...options, useCache: false }),
     enabled: !!tenant?.id,
     gcTime: 5 * 60 * 1000, // 5 minutes
+  });
+}
+
+/**
+ * Hook to fetch a single page of accounts for a tenant (task-117). Backs
+ * the Accounts list view, which pages server-side; keeps the previous
+ * page's data on screen while the next page loads.
+ */
+export function useAccountsPage(
+  tenant: Tenant | null,
+  page: { number: number; size: number },
+  options?: AccountQueryOptions
+): UseQueryResult<PagedResult<Account>, Error> {
+  return useQuery({
+    queryKey: accountKeys.pagedList(tenant, page.number, page.size),
+    queryFn: () => accountsService.getAccountsPage(page, { ...options, useCache: false }),
+    enabled: !!tenant?.id,
+    placeholderData: keepPreviousData,
+    gcTime: 5 * 60 * 1000,
   });
 }
 

@@ -45,6 +45,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 // ByIdProvider retrieves a route by ID
 func (p *ProcessorImpl) ByIdProvider(id string) model.Provider[Model] {
 	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(id), Extract)
@@ -79,9 +81,12 @@ func (p *ProcessorImpl) GetBySchedule(id string) ([]TripScheduleModel, error) {
 	return p.ByScheduleProvider(id)()
 }
 
-// InTenantProvider retrieves all routes in a tenant
+// InTenantProvider retrieves all routes in a tenant. atlas-transports' GET
+// /transports/routes is now paginated (task-117); IsBoatInMap below scans
+// every route in the tenant, a genuine semantic-all consumer, so this
+// drains every page rather than fetching just the first.
 func (p *ProcessorImpl) InTenantProvider() model.Provider[[]Model] {
-	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestInTenant(), Extract, model.Filters[Model]())
+	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(inTenantUrl(), 250, Extract, model.Filters[Model]())
 }
 
 // GetInTenant retrieves all routes in a tenant

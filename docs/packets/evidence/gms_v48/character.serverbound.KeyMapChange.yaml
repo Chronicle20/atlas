@@ -1,0 +1,10 @@
+packet: character/serverbound/KeyMapChange
+direction: serverbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: CFuncKeyMappedMan::SaveFuncKeyMap
+    address: "0x4e5fae"
+    decompile_sha256: 5e3720cc2c3adea827eb9849cc294015bd98e8979b70957ece1dcc0f08431b97
+verifies:
+    - libs/atlas-packet/character/serverbound/key_map_change_test.go#TestKeyMapChangeV48ByteOutput

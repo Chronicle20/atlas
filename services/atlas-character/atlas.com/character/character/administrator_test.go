@@ -238,7 +238,7 @@ func TestSetGm(t *testing.T) {
 	
 	// Test the dynamic update functionality via processor
 	updateInput := character.RestModel{
-		Gm: 2,
+		Gm: gmPtr(2),
 	}
 	err = processor.Update(message.NewBuffer())(uuid.New(), created.Id(), updateInput)
 	if err != nil {
@@ -275,7 +275,7 @@ func TestMultipleEntityUpdateFunctions(t *testing.T) {
 		Face:      20300,
 		Gender:    1,
 		SkinColor: 7,
-		Gm:        3,
+		Gm:        gmPtr(3),
 	}
 	err = processor.Update(message.NewBuffer())(uuid.New(), created.Id(), updateInput)
 	if err != nil {

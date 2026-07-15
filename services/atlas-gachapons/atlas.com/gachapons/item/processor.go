@@ -10,8 +10,14 @@ import (
 )
 
 type Processor interface {
-	GetByGachaponId(gachaponId string) model.Provider[[]Model]
+	GetByGachaponId(gachaponId string, page model.Page) model.Provider[model.Paged[Model]]
+	// GetByGachaponIdAndTier returns every item for the given gachapon+tier,
+	// unpaged. Kept for reward.getMergedPool's semantic-all read (the
+	// reward-selection roulette needs the complete pool, not one page of it).
 	GetByGachaponIdAndTier(gachaponId string, tier string) model.Provider[[]Model]
+	// GetByGachaponIdAndTierPaged is the resource-handler-facing paged
+	// sibling of GetByGachaponIdAndTier.
+	GetByGachaponIdAndTierPaged(gachaponId string, tier string, page model.Page) model.Provider[model.Paged[Model]]
 	Create(m Model) error
 	Delete(id uint32) error
 	Count() (int64, *time.Time, error)
@@ -27,12 +33,20 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 	return &ProcessorImpl{l: l, ctx: ctx, db: db}
 }
 
-func (p *ProcessorImpl) GetByGachaponId(gachaponId string) model.Provider[[]Model] {
-	return model.SliceMap(modelFromEntity)(getByGachaponId(gachaponId)(p.db.WithContext(p.ctx)))()
+var _ Processor = (*ProcessorImpl)(nil)
+
+func (p *ProcessorImpl) GetByGachaponId(gachaponId string, page model.Page) model.Provider[model.Paged[Model]] {
+	ep := getByGachaponIdPagedProvider(gachaponId, page)(p.db.WithContext(p.ctx))
+	return model.MapPaged(modelFromEntity)(ep)(model.ParallelMap())
 }
 
 func (p *ProcessorImpl) GetByGachaponIdAndTier(gachaponId string, tier string) model.Provider[[]Model] {
 	return model.SliceMap(modelFromEntity)(getByGachaponIdAndTier(gachaponId, tier)(p.db.WithContext(p.ctx)))()
+}
+
+func (p *ProcessorImpl) GetByGachaponIdAndTierPaged(gachaponId string, tier string, page model.Page) model.Provider[model.Paged[Model]] {
+	ep := getByGachaponIdAndTierPagedProvider(gachaponId, tier, page)(p.db.WithContext(p.ctx))
+	return model.MapPaged(modelFromEntity)(ep)(model.ParallelMap())
 }
 
 func (p *ProcessorImpl) Create(m Model) error {

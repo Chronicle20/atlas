@@ -1,0 +1,10 @@
+packet: monster/clientbound/MonsterHealth
+direction: clientbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CMob::OnHPIndicator
+    address: "0x61c8aa"
+    decompile_sha256: e403844edd53cc33b8f72f8c39e0ea1d2f5cf773d7a22f157ae7e13dedb21599
+verifies:
+  - libs/atlas-packet/monster/clientbound/health_test.go#TestMonsterHealthBytesV72

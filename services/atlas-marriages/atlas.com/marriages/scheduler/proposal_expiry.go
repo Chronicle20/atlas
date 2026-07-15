@@ -1,6 +1,8 @@
 package scheduler
 
 import (
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+
 	"context"
 	"time"
 
@@ -45,7 +47,9 @@ func (s *ProposalExpiryScheduler) WithInterval(interval time.Duration) *Proposal
 func (s *ProposalExpiryScheduler) Start() {
 	s.log.WithField("interval", s.interval).Info("Starting proposal expiry scheduler")
 
-	go s.run()
+	routine.Go(s.log, s.ctx, func(_ context.Context) {
+		s.run()
+	})
 }
 
 // Stop gracefully stops the scheduler

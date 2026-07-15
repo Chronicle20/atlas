@@ -8,6 +8,7 @@ import (
 	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
+// packet-audit:verify packet=interaction/serverbound/InteractionOperationMerchantRemoveItem version=gms_v79 ida=0x68a756
 // packet-audit:verify packet=interaction/serverbound/InteractionOperationMerchantRemoveItem version=gms_v95 ida=0x6987a0
 func TestOperationMerchantRemoveItemRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
@@ -40,5 +41,17 @@ func TestOperationMerchantRemoveItemBytes(t *testing.T) {
 	want := "2a00"
 	if got != want {
 		t.Errorf("bytes: got %s, want %s", got, want)
+	}
+}
+
+// TestOperationMerchantRemoveItemV72Bytes pins the GMS v72 legacy body (mode byte is
+// dispatcher-framed, not part of this sub-struct). IDA v72 CPersonalShopDlg::MoveItemToInventory#Merchant (sub_6662DB, merchant arm mode 0x24 @0x6663b5): shared body Encode2(index). Body == v79.
+// packet-audit:verify packet=interaction/serverbound/InteractionOperationMerchantRemoveItem version=gms_v72 ida=0x6662db
+func TestOperationMerchantRemoveItemV72Bytes(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	input := OperationMerchantRemoveItem{index: 5}
+	got := hex.EncodeToString(input.Encode(l, pt.CreateContext("GMS", 72, 1))(nil))
+	if got != "0500" {
+		t.Errorf("v72 bytes: got %s, want 0500", got)
 	}
 }

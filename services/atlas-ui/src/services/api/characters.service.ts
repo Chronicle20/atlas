@@ -5,6 +5,7 @@
 import type { ServiceOptions } from '@/lib/api/query-params';
 import type { Character, UpdateCharacterData } from '@/types/models/character';
 import { api } from '@/lib/api/client';
+import { fetchAll, fetchPaged, type PagedResult } from '@/services/api/pagination';
 import { tenantHeaders } from '@/lib/headers';
 import type { Tenant } from '@/types/models/tenant';
 
@@ -18,12 +19,20 @@ class CharactersService {
   private basePath = '/api/characters';
 
   /**
-   * Get all characters for a tenant
+   * Get every character for a tenant, draining all pages (task-117).
+   * Used by consumers that genuinely need the whole collection (e.g. joining
+   * against another list, or filtering client-side by account).
    */
   async getAll(options?: ServiceOptions): Promise<Character[]> {
-    // Set tenant for this request
-    // Use the API client to fetch characters
-    return api.getList<Character>(this.basePath, options);
+    return fetchAll<Character>(this.basePath, undefined, options);
+  }
+
+  /**
+   * Get a single page of characters for a tenant. Used by the Characters
+   * list view (task-117), which pages server-side.
+   */
+  async getPage(page: { number: number; size: number }, options?: ServiceOptions): Promise<PagedResult<Character>> {
+    return fetchPaged<Character>(this.basePath, page, options);
   }
 
   /**

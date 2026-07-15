@@ -19,10 +19,10 @@ const SetFieldWriter = "SetField"
 // warp. In chase mode the v83 client places the avatar from the decoded (x, y)
 // rather than by portal index (CStage::OnSetField @0x776020), so this byte is a
 // fixed placeholder, NOT a per-destination identifier — the coordinates carry
-// the destination. 0x80 is the start of the dynamic-portal range and matches
-// Cosmic, whose Character.changeMap(Point) hardcodes spawnPoint 0x80 for every
-// coordinate warp. (The slot-specific 0x80+slot id only matters on the non-chase
-// portal-warp path, which a position warp deliberately does not use.)
+// the destination. 0x80 is the start of the dynamic-portal range and is the
+// conventional spawnPoint value for every coordinate warp. (The slot-specific
+// 0x80+slot id only matters on the non-chase portal-warp path, which a
+// position warp deliberately does not use.)
 const chasePortalId byte = 0x80
 
 // packet-audit:fname CStage::OnSetField#WarpToMap
@@ -51,9 +51,8 @@ func NewWarpToMap(channelId channel.Id, mapId _map.Id, portalId byte, hp uint16)
 // (x, y) coordinate rather than a named portal. The v83 client reads a "chase"
 // flag after nHP (CStage::OnSetField @0x776020); when set it then reads
 // Decode4 x / Decode4 y and places the avatar there. This is the mechanism a
-// Mystic Door uses to land the user on the linked door's exact position
-// (Cosmic PacketCreator.getWarpToMap position overload). The portal byte is the
-// fixed chasePortalId placeholder — see its doc comment.
+// Mystic Door uses to land the user on the linked door's exact position.
+// The portal byte is the fixed chasePortalId placeholder — see its doc comment.
 func NewWarpToPosition(channelId channel.Id, mapId _map.Id, hp uint16, x int16, y int16) WarpToMap {
 	return WarpToMap{
 		channelId: channelId,
@@ -106,7 +105,12 @@ func (m WarpToMap) Encode(l logrus.FieldLogger, ctx context.Context) func(option
 		w.WriteByte(0) // bCharacterData
 		if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
 			w.WriteShort(0) // nNotifierCheck
-			w.WriteByte(0)  // revive
+			// revive byte: present from GMS v83 (and JMS), absent in legacy GMS
+			// < v83. v79 CStage::OnSetField else-branch (@0x6f07d9) reads mapId
+			// (Decode4 @0x6f0997) immediately after nNotifierCheck — no revive.
+			if (t.Region() == "GMS" && t.MajorVersion() >= 83) || t.Region() == "JMS" {
+				w.WriteByte(0) // revive
+			}
 		}
 		w.WriteInt(uint32(m.mapId))
 		w.WriteByte(m.portalId)
@@ -152,7 +156,10 @@ func (m *WarpToMap) Decode(l logrus.FieldLogger, ctx context.Context) func(r *re
 		_ = r.ReadByte() // bCharacterData
 		if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
 			_ = r.ReadUint16() // nNotifierCheck
-			_ = r.ReadByte()   // revive
+			// revive byte present from GMS v83 (and JMS); absent in legacy GMS < v83.
+			if (t.Region() == "GMS" && t.MajorVersion() >= 83) || t.Region() == "JMS" {
+				_ = r.ReadByte() // revive
+			}
 		}
 		m.mapId = _map.Id(r.ReadUint32())
 		m.portalId = r.ReadByte()

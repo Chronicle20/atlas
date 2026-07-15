@@ -331,19 +331,16 @@ func TestFreeFormNoticeWireShape(t *testing.T) {
 	}
 }
 
-// TestEntrustedShopUnknownChannel proves the exact wire layout for mode 8
-// (the "unknown channel" notice) of CWvsContext::OnEntrustedShopCheckResult
-// (JMS185 @ 0xb0ee59):
+// TestEntrustedShopUnknownChannel proves the exact wire layout of the
+// ERROR_UNKNOWN ("your store is currently open in channel %s FM %d") notice
+// of CWvsContext::OnEntrustedShopCheckResult (v83 @0xa27de3, JMS185 @0xb0ee59):
 //
-//	Decode1   (mode == 8)
-//	Decode4   (shopId — int, little-endian)
-//	Decode1   (channelId)
-//
-// The client uses shopId + channelId to redirect the player toward the channel
-// where the shop actually lives.
+//	Decode1   (mode — config-resolved, 8 on every known version)
+//	Decode4   (int — client displays %100 as the FM room number, v83 @0xa27e6c)
+//	Decode1   (channelId — resolved to a channel name for the notice)
 func TestEntrustedShopUnknownChannel(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
-	in := NewEntrustedShopUnknownChannel(123456, 5) // shopId, channelId
+	in := NewEntrustedShopUnknownChannel(8, 123456, 5) // mode, mapId, channelId
 	for _, v := range test.Variants {
 		t.Run(v.Name, func(t *testing.T) {
 			b := in.Encode(l, test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion))(nil)
@@ -354,8 +351,8 @@ func TestEntrustedShopUnknownChannel(t *testing.T) {
 			if b[0] != 8 {
 				t.Errorf("byte[0] mode = %d, want 8", b[0])
 			}
-			if shopId := binary.LittleEndian.Uint32(b[1:5]); shopId != 123456 {
-				t.Errorf("shopId = %d, want 123456", shopId)
+			if mapId := binary.LittleEndian.Uint32(b[1:5]); mapId != 123456 {
+				t.Errorf("mapId = %d, want 123456", mapId)
 			}
 			if b[5] != 5 {
 				t.Errorf("byte[5] channelId = %d, want 5", b[5])
@@ -366,7 +363,7 @@ func TestEntrustedShopUnknownChannel(t *testing.T) {
 
 // TestEntrustedShopRoundTrip exercises Encode/Decode symmetry for the mode-8 emitter.
 func TestEntrustedShopRoundTrip(t *testing.T) {
-	input := NewEntrustedShopUnknownChannel(987654, 3)
+	input := NewEntrustedShopUnknownChannel(8, 987654, 3)
 	for _, v := range test.Variants {
 		t.Run(v.Name, func(t *testing.T) {
 			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)

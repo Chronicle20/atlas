@@ -1,0 +1,21 @@
+{
+  "WriterName": "FieldMatchTable",
+  "IDAName": "CField::SendChatMsgSlash#MatchTable",
+  "Address": "0x51a2b8",
+  "Variant": "GMS/v79",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/field/serverbound/match_table.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "flag @0x51a2da",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

@@ -4,9 +4,9 @@ import (
 	"atlas-messages/character"
 	"atlas-messages/command"
 	"atlas-messages/kafka/message/pet"
-	"atlas-messages/kafka/producer"
 	petlookup "atlas-messages/pet"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"regexp"
 	"strconv"
 

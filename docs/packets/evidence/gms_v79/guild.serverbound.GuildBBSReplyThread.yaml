@@ -1,0 +1,10 @@
+packet: guild/serverbound/GuildBBSReplyThread
+direction: serverbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CUIGuildBBS::OnComment
+    address: "0x786aa6"
+    decompile_sha256: d142d058b467100441a026a368645652d4d5e28d6269fc3f57d7d8d450449758
+verifies:
+  - libs/atlas-packet/guild/serverbound/bbs_reply_thread_test.go#TestBBSReplyThreadRoundTrip

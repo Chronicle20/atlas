@@ -1,0 +1,10 @@
+packet: interaction/serverbound/InteractionOperationMemoryGameRetreatAnswer
+direction: serverbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: sub_573A54
+    address: "0x573a54"
+    decompile_sha256: dc33d64432388ab247dabe7aabb15a49b3d281d12fb62aaae55c0fca0d4ada6a
+verifies:
+    - libs/atlas-packet/interaction/serverbound/v48_test.go#TestOperationMemoryGameRetreatAnswerV48Bytes

@@ -6,8 +6,23 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
+
+// effectSkillUseIncludesCharacterLevel reports whether the SHOW_SKILL_USE_EFFECT
+// arm (CUser::OnEffect case 1) wire carries the caster-level byte before
+// skillLevel. IDA-verified: v79 CUser::OnEffect @0x89112c case 1 reads only
+// skillId (Decode4 @0x891225) + one byte (Decode1 @0x89122f) — the single byte
+// feeds SKILLENTRY::IsActionAppointed @0x89125a, i.e. it is the skill level
+// (v83's nSLV). v83 CUser::OnEffect @0x9377d9 case 1 reads an EXTRA characterLevel
+// byte FIRST (Decode1 @0x9378d4, stored to this+0x2AE0) before skillLevel
+// (Decode1 @0x9378f1 -> IsActionAppointed @0x93791c). So the caster-level byte was
+// introduced at v83; legacy GMS (< 83) omits it. Leave v83/84/87/95 and JMS
+// unchanged.
+func effectSkillUseIncludesCharacterLevel(t tenant.Model) bool {
+	return !(t.Region() == "GMS" && t.MajorVersion() < 83)
+}
 
 // EffectSkillUse - mode, skillId, characterLevel, skillLevel + conditional berserk/dragonFury/monsterMagnet
 type EffectSkillUse struct {
@@ -64,12 +79,15 @@ func (m EffectSkillUse) String() string {
 	return fmt.Sprintf("skill use skillId [%d] level [%d]", m.skillId, m.skillLevel)
 }
 
-func (m EffectSkillUse) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+func (m EffectSkillUse) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
+	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
 		w.WriteByte(m.mode)
 		w.WriteInt(m.skillId)
-		w.WriteByte(m.characterLevel)
+		if effectSkillUseIncludesCharacterLevel(t) {
+			w.WriteByte(m.characterLevel)
+		}
 		w.WriteByte(m.skillLevel)
 		if m.isBerserk {
 			w.WriteBool(m.berserkDarkForce)
@@ -84,11 +102,14 @@ func (m EffectSkillUse) Encode(l logrus.FieldLogger, _ context.Context) func(opt
 	}
 }
 
-func (m *EffectSkillUse) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *EffectSkillUse) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.mode = r.ReadByte()
 		m.skillId = r.ReadUint32()
-		m.characterLevel = r.ReadByte()
+		if effectSkillUseIncludesCharacterLevel(t) {
+			m.characterLevel = r.ReadByte()
+		}
 		m.skillLevel = r.ReadByte()
 		if m.isBerserk {
 			m.berserkDarkForce = r.ReadBool()
@@ -160,13 +181,16 @@ func (m EffectSkillUseForeign) String() string {
 	return fmt.Sprintf("foreign skill use characterId [%d] skillId [%d] level [%d]", m.characterId, m.skillId, m.skillLevel)
 }
 
-func (m EffectSkillUseForeign) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+func (m EffectSkillUseForeign) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
+	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
 		w.WriteInt(m.characterId)
 		w.WriteByte(m.mode)
 		w.WriteInt(m.skillId)
-		w.WriteByte(m.characterLevel)
+		if effectSkillUseIncludesCharacterLevel(t) {
+			w.WriteByte(m.characterLevel)
+		}
 		w.WriteByte(m.skillLevel)
 		if m.isBerserk {
 			w.WriteBool(m.berserkDarkForce)
@@ -181,12 +205,15 @@ func (m EffectSkillUseForeign) Encode(l logrus.FieldLogger, _ context.Context) f
 	}
 }
 
-func (m *EffectSkillUseForeign) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *EffectSkillUseForeign) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.characterId = r.ReadUint32()
 		m.mode = r.ReadByte()
 		m.skillId = r.ReadUint32()
-		m.characterLevel = r.ReadByte()
+		if effectSkillUseIncludesCharacterLevel(t) {
+			m.characterLevel = r.ReadByte()
+		}
 		m.skillLevel = r.ReadByte()
 		if m.isBerserk {
 			m.berserkDarkForce = r.ReadBool()

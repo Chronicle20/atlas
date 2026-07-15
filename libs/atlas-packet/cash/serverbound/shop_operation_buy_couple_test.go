@@ -15,9 +15,30 @@ func TestShopOperationBuyCoupleRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {
 			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
-			input := ShopOperationBuyCouple{birthday: 19900101, spw: "secret", option: 1, serialNumber: 12345, name: "Player1", message: "Hello"}
+			input := ShopOperationBuyCouple{isPoints: true, currency: 2, birthday: 19900101, spw: "secret", option: 1, serialNumber: 12345, name: "Player1", message: "Hello"}
 			output := ShopOperationBuyCouple{}
 			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
+			if v.Region == "GMS" && v.MajorVersion < 83 {
+				// Legacy GMS (v79): isPoints + currency + serialNumber only.
+				// v48/v28 (GMS < 61) drop the currency int (isPoints+serial).
+				if output.IsPoints() != input.IsPoints() {
+					t.Errorf("isPoints: got %v, want %v", output.IsPoints(), input.IsPoints())
+				}
+				wantCurrency := input.Currency()
+				if v.MajorVersion < 61 {
+					wantCurrency = 0
+				}
+				if output.Currency() != wantCurrency {
+					t.Errorf("currency: got %v, want %v", output.Currency(), wantCurrency)
+				}
+				if output.SerialNumber() != input.SerialNumber() {
+					t.Errorf("serialNumber: got %v, want %v", output.SerialNumber(), input.SerialNumber())
+				}
+				if output.Birthday() != 0 || output.Option() != 0 || output.Name() != "" || output.Message() != "" {
+					t.Errorf("legacy should not carry birthday/option/name/message for %s", v.Name)
+				}
+				return
+			}
 			if v.Region == "JMS" {
 				// JMS body: spw + serialNumber + name + message; no birthday, no option.
 				if output.SPW() != input.SPW() {
@@ -99,5 +120,35 @@ func TestShopOperationBuyCoupleJMS(t *testing.T) {
 	// Spot-check serial at offset 2 (after empty SPW length prefix).
 	if got := binary.LittleEndian.Uint32(b[2:6]); got != 0xAABBCCDD {
 		t.Errorf("JMS serial = 0x%08x, want 0xAABBCCDD", got)
+	}
+}
+
+// TestShopOperationBuyCoupleV79Bytes pins the v79 legacy body. IDA v79
+// CCashShop::OnBuyCouple@0x46859c: COutPacket(221) Encode1(0x1E)=mode (routed op)
+// then Encode1(v46==2)=isPoints, Encode4(v46)=currency, Encode4(a2)=serialNumber.
+// Body after the mode byte is isPoints(1)+currency(4)+serialNumber(4); no
+// SPW/birthday/option and no recipient name/message.
+// packet-audit:verify packet=cash/serverbound/CashShopOperationBuyCouple version=gms_v79 ida=0x46859c
+func TestShopOperationBuyCoupleV79Bytes(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	input := ShopOperationBuyCouple{isPoints: true, currency: 0x01020304, serialNumber: 0x05060708, birthday: 999, option: 9, name: "x", message: "y"}
+	got := hex.EncodeToString(input.Encode(l, pt.CreateContext("GMS", 79, 1))(nil))
+	if got != "01"+"04030201"+"08070605" {
+		t.Errorf("v79 bytes: got %s, want 010403020108070605", got)
+	}
+}
+
+// TestShopOperationBuyCoupleV72Bytes pins the v72 legacy body. IDA v72
+// CCashShop::OnBuyCouple@0x467515 (GMS_v72.1_U_DEVM.exe, port 13339):
+// COutPacket(219) Encode1(0x1D)=mode @0x467842 (routed op) then Encode1(v43==2)=
+// isPoints @0x467852, Encode4(v43)=currency @0x46785d, Encode4(a2)=serialNumber
+// @0x467868. Body after the mode byte == v79: isPoints(1)+currency(4)+serial(4).
+// packet-audit:verify packet=cash/serverbound/CashShopOperationBuyCouple version=gms_v72 ida=0x467515
+func TestShopOperationBuyCoupleV72Bytes(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	input := ShopOperationBuyCouple{isPoints: true, currency: 0x01020304, serialNumber: 0x05060708, birthday: 999, option: 9, name: "x", message: "y"}
+	got := hex.EncodeToString(input.Encode(l, pt.CreateContext("GMS", 72, 1))(nil))
+	if got != "01"+"04030201"+"08070605" {
+		t.Errorf("v72 bytes: got %s, want 010403020108070605", got)
 	}
 }

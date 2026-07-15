@@ -1,0 +1,10 @@
+packet: cash/clientbound/CashCashItemMovedToCashInventory
+direction: clientbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnCashItemResult
+    address: "0x470e13"
+    decompile_sha256: 09cb32a500775e192ede4a30c0b4cab630db5912e65b6ad20902baf97438a09b
+verifies:
+  - libs/atlas-packet/cash/clientbound/v72_test.go#TestCashShopOperationArmsV72

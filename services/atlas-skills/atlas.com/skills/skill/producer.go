@@ -126,6 +126,45 @@ func statusEventDeletedProvider(transactionId uuid.UUID, worldId world.Id, chara
 	return producer.SingleMessageProvider(key, value)
 }
 
+// statusEventSpTransferredProvider emits SP_TRANSFERRED on
+// EVENT_TOPIC_SKILL_STATUS — the saga-completion signal for TRANSFER_SP. The
+// envelope SkillId carries the target (to) skill.
+func statusEventSpTransferredProvider(transactionId uuid.UUID, worldId world.Id, characterId uint32, toSkillId uint32, fromSkillId uint32, fromLevel byte, toLevel byte) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &skill2.StatusEvent[skill2.StatusEventSpTransferredBody]{
+		TransactionId: transactionId,
+		WorldId:       worldId,
+		CharacterId:   characterId,
+		SkillId:       toSkillId,
+		Type:          skill2.StatusEventTypeSpTransferred,
+		Body: skill2.StatusEventSpTransferredBody{
+			FromSkillId: fromSkillId,
+			FromLevel:   fromLevel,
+			ToLevel:     toLevel,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+// statusEventErrorProvider emits ERROR on EVENT_TOPIC_SKILL_STATUS for a
+// rejected TRANSFER_SP; errorType is one of the StatusEventErrorType*
+// constants, detail names the offending skill id.
+func statusEventErrorProvider(transactionId uuid.UUID, worldId world.Id, characterId uint32, skillId uint32, errorType string, detail string) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &skill2.StatusEvent[skill2.StatusEventErrorBody]{
+		TransactionId: transactionId,
+		WorldId:       worldId,
+		CharacterId:   characterId,
+		SkillId:       skillId,
+		Type:          skill2.StatusEventTypeError,
+		Body: skill2.StatusEventErrorBody{
+			Error:  errorType,
+			Detail: detail,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 func statusEventCooldownExpiredProvider(transactionId uuid.UUID, worldId world.Id, characterId uint32, id uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &skill2.StatusEvent[skill2.StatusEventCooldownExpiredBody]{

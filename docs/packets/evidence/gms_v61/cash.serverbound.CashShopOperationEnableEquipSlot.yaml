@@ -1,0 +1,10 @@
+packet: cash/serverbound/CashShopOperationEnableEquipSlot
+direction: serverbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnEnableEquipSlotExt
+    address: "0x459928"
+    decompile_sha256: 4197dc352404dc750368799d41dceecc8ff016818831c6f680e6d7b3d500c972
+verifies:
+    - libs/atlas-packet/cash/serverbound/v61_test.go#TestShopOperationEnableEquipSlotBytesV61

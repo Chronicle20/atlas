@@ -1,0 +1,10 @@
+packet: character/serverbound/InfoRequest
+direction: serverbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: sub_71D059
+    address: "0x71d059"
+    decompile_sha256: edcc263ced2720baed22afdd2f35776481994bd06aff6c620d9a93f1232b4235
+verifies:
+    - libs/atlas-packet/character/serverbound/info_request_test.go#TestInfoRequestV48ByteOutput

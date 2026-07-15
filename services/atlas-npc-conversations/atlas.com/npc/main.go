@@ -5,15 +5,13 @@ import (
 	npcConversation "atlas-npc-conversations/conversation/npc"
 	"atlas-npc-conversations/conversation/quest"
 	"atlas-npc-conversations/conversation/recipe"
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
-	seeder "github.com/Chronicle20/atlas/libs/atlas-seeder"
 	"atlas-npc-conversations/kafka/consumer/character"
 	"atlas-npc-conversations/kafka/consumer/npc"
 	questConsumer "atlas-npc-conversations/kafka/consumer/quest"
 	"atlas-npc-conversations/kafka/consumer/saga"
-	"atlas-npc-conversations/logger"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	seeder "github.com/Chronicle20/atlas/libs/atlas-seeder"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
-	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
@@ -49,18 +47,11 @@ func GetServer() Server {
 }
 
 func main() {
-	l := logger.CreateLogger(serviceName)
-	l.Infoln("Starting main service.")
-
-	tdm := service.GetTeardownManager()
+	rt := service.Bootstrap(serviceName)
+	l := rt.Logger()
 
 	rc := atlas.Connect(l)
 	conversation.InitRegistry(rc)
-
-	tc, err := tracing.InitTracer(serviceName)
-	if err != nil {
-		l.WithError(err).Fatal("Unable to initialize tracer.")
-	}
 
 	db := database.Connect(l, database.SetMigrations(
 		npcConversation.MigrateTable,
@@ -69,7 +60,15 @@ func main() {
 		func(db *gorm.DB) error { return db.AutoMigrate(&seeder.SeedState{}) },
 	))
 
-	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
+	server.RegisterTransientErrorClassifier(func(err error) bool {
+		if database.IsTransientConnectionError(err) {
+			database.CountTransient(err)
+			return true
+		}
+		return false
+	})
+
+	cmf := consumer.GetManager().AddConsumer(l, rt.Context(), rt.WaitGroup())
 	character.InitConsumers(l)(cmf)(consumerGroupId)
 	npc.InitConsumers(l)(cmf)(consumerGroupId)
 	questConsumer.InitConsumers(l)(cmf)(consumerGroupId)
@@ -88,11 +87,11 @@ func main() {
 		l.WithError(err).Fatal("Unable to register kafka handlers.")
 	}
 
-	tdm.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
+	rt.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 
 	server.New(l).
-		WithContext(tdm.Context()).
-		WithWaitGroup(tdm.WaitGroup()).
+		WithContext(rt.Context()).
+		WithWaitGroup(rt.WaitGroup()).
 		SetBasePath(GetServer().GetPrefix()).
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(npcConversation.InitResource(GetServer())(db)).
@@ -101,10 +100,8 @@ func main() {
 		AddRouteInitializer(quest.InitSeedResource(GetServer())(db)).
 		AddRouteInitializer(recipe.InitResource(GetServer())(db)).
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
+		AddRouteInitializer(server.MountReadiness("/readyz", rt.Ready)).
 		Run()
 
-	tdm.TeardownFunc(tracing.Teardown(l)(tc))
-
-	tdm.Wait()
-	l.Infoln("Service shutdown.")
+	rt.Wait()
 }

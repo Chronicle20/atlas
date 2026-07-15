@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldWhisperFindResultError
+direction: clientbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnWhisper#FindResultError
+    address: "0x4eabd7"
+    decompile_sha256: a4b55051f96b69877b427252d39113e4969b3a6eb8d48e4e9c415576605a53b2
+verifies:
+    - libs/atlas-packet/field/clientbound/whisper_test.go#TestWhisperByteOutputV61

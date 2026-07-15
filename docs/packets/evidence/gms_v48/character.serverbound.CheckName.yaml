@@ -1,0 +1,10 @@
+packet: character/serverbound/CheckName
+direction: serverbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: sub_500693
+    address: "0x500693"
+    decompile_sha256: cf8d788dcb4c79c8b5ffe83268d61dd531692acf883a2d9fe94d8a534890cac9
+verifies:
+    - libs/atlas-packet/character/serverbound/check_name_test.go#TestCheckNameV48ByteOutput

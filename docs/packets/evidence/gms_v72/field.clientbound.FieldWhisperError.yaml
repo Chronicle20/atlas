@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldWhisperError
+direction: clientbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnWhisper
+    address: "0x5166b1"
+    decompile_sha256: 4d471b64e7adb69bd06fbe4b76e3cf9b70381f2ad45a350ebe4c8a47c87a26c2
+verifies:
+    - libs/atlas-packet/field/clientbound/whisper_test.go#TestWhisperErrorByteOutputV72

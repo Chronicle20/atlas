@@ -54,7 +54,7 @@ func purgeInner(db *gorm.DB, mc *minio.Client) func(d *rest.HandlerDependency, c
 					http.Error(w, err.Error(), http.StatusForbidden)
 					return
 				}
-				http.Error(w, err.Error(), http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 			w.WriteHeader(http.StatusAccepted)

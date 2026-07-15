@@ -1,0 +1,10 @@
+packet: interaction/serverbound/InteractionOperationTradeAddMeso
+direction: serverbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: sub_68CA10
+    address: "0x68ca10"
+    decompile_sha256: fc5b3b14f85f17f9ae611ae09421e1f5d8af662bd05b89ae55fe6a43da6d32a8
+verifies:
+    - libs/atlas-packet/interaction/serverbound/v61_test.go#TestOperationTradeAddMesoV61Bytes

@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldSetQuestClear
+direction: clientbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: sub_4CBC9A
+    address: "0x4cbc9a"
+    decompile_sha256: 208fdf622351fe7e4fedac2fdd77d63448db7b872c2f1a38cd9ddddc39bb18b6
+verifies:
+    - libs/atlas-packet/field/clientbound/set_quest_clear_test.go#TestSetQuestClearByteOutputV48

@@ -33,6 +33,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	return p
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) Register(ch channel.Model, ipAddress string, port int) error {
 	return registerChannel(p.l)(p.ctx)(NewBuilder().
 		SetId(uuid.New()).

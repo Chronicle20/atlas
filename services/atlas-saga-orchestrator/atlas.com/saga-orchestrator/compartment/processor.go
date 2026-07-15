@@ -3,9 +3,9 @@ package compartment
 import (
 	asset2 "atlas-saga-orchestrator/kafka/message/asset"
 	"atlas-saga-orchestrator/kafka/message/compartment"
-	"atlas-saga-orchestrator/kafka/producer"
 	"context"
 	"errors"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
@@ -54,6 +54,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 	return p
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) RequestCreateItem(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, expiration time.Time) error {
 	return p.RequestCreateItemWithStats(transactionId, characterId, templateId, quantity, expiration, false)

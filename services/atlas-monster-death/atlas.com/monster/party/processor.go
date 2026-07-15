@@ -8,11 +8,25 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func GetByMemberId(l logrus.FieldLogger) func(ctx context.Context) func(memberId uint32) (Model, error) {
-	return func(ctx context.Context) func(memberId uint32) (Model, error) {
-		return func(memberId uint32) (Model, error) {
-			rp := requests.SliceProvider[RestModel, Model](l, ctx)(requestByMemberId(memberId), Extract, model.Filters[Model]())
-			return model.FirstProvider(rp, model.Filters[Model]())()
-		}
+type Processor interface {
+	GetByMemberId(memberId uint32) (Model, error)
+}
+
+type ProcessorImpl struct {
+	l   logrus.FieldLogger
+	ctx context.Context
+}
+
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
+	return &ProcessorImpl{
+		l:   l,
+		ctx: ctx,
 	}
+}
+
+var _ Processor = (*ProcessorImpl)(nil)
+
+func (p *ProcessorImpl) GetByMemberId(memberId uint32) (Model, error) {
+	rp := requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByMemberId(memberId), Extract, model.Filters[Model]())
+	return model.FirstProvider(rp, model.Filters[Model]())()
 }

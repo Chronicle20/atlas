@@ -21,6 +21,9 @@ const (
 	EventTypeIncubatorRewardCreated = "INCUBATOR_REWARD_CREATED"
 	EventTypeIncubatorRewardUpdated = "INCUBATOR_REWARD_UPDATED"
 	EventTypeIncubatorRewardDeleted = "INCUBATOR_REWARD_DELETED"
+	EventTypeMtsConfigCreated       = "MTS_CONFIG_CREATED"
+	EventTypeMtsConfigUpdated       = "MTS_CONFIG_UPDATED"
+	EventTypeMtsConfigDeleted       = "MTS_CONFIG_DELETED"
 )
 
 // ConfigurationStatusEvent is a generic event for configuration status changes
@@ -63,6 +66,18 @@ func CreateIncubatorRewardStatusEventProvider(tenantId uuid.UUID, eventType stri
 		Type:         eventType,
 		ResourceType: "incubator-reward",
 		ResourceId:   incubatorRewardId,
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+// CreateMtsConfigStatusEventProvider creates a provider for mts config status events
+func CreateMtsConfigStatusEventProvider(tenantId uuid.UUID, eventType string, configId string) model.Provider[[]kafka.Message] {
+	key := []byte(tenantId.String())
+	value := ConfigurationStatusEvent{
+		TenantId:     tenantId,
+		Type:         eventType,
+		ResourceType: "mts-config",
+		ResourceId:   configId,
 	}
 	return producer.SingleMessageProvider(key, value)
 }

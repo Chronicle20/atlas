@@ -36,6 +36,10 @@ type (
 	TransferToStoragePayload    = sharedsaga.TransferToStoragePayload
 	WithdrawFromStoragePayload  = sharedsaga.WithdrawFromStoragePayload
 	WithdrawFromCashShopPayload = sharedsaga.WithdrawFromCashShopPayload
+
+	// Point-reset payload types
+	TransferAPPayload = sharedsaga.TransferAPPayload
+	TransferSPPayload = sharedsaga.TransferSPPayload
 )
 
 // Re-export constants from atlas-saga shared library
@@ -49,6 +53,7 @@ const (
 	ItemTagUse           = sharedsaga.ItemTagUse
 	SealingLockUse       = sharedsaga.SealingLockUse
 	IncubatorUse         = sharedsaga.IncubatorUse
+	PointReset           = sharedsaga.PointReset
 
 	// Status constants
 	Pending   = sharedsaga.Pending
@@ -79,6 +84,8 @@ const (
 	ApplyAssetLock        = sharedsaga.ApplyAssetLock
 	IncubatorResult       = sharedsaga.IncubatorResult
 	DestroyAssetFromSlot  = sharedsaga.DestroyAssetFromSlot
+	TransferAP            = sharedsaga.TransferAP
+	TransferSP            = sharedsaga.TransferSP
 )
 
 // TransferToCashShopPayload is kept local because CashId is uint64 here

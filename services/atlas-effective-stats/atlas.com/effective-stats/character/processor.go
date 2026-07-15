@@ -3,10 +3,10 @@ package character
 import (
 	"atlas-effective-stats/external/data/equipment"
 	character2 "atlas-effective-stats/kafka/message/character"
-	"atlas-effective-stats/kafka/producer"
 	"atlas-effective-stats/stat"
 	"context"
 	"fmt"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/google/uuid"
@@ -47,6 +47,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 		ctx: ctx,
 	}
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 // GetEffectiveStats retrieves computed effective stats and bonuses for a character
 // If the character hasn't been initialized yet, this will lazily initialize them

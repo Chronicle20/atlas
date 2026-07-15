@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"atlas-saga-orchestrator/kafka/message/guild"
-	"atlas-saga-orchestrator/kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/google/uuid"
@@ -29,6 +29,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 		ctx: ctx,
 	}
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) RequestName(transactionId uuid.UUID, ch channel.Model, characterId uint32) error {
 	p.l.Debugf("Requesting character [%d] input guild name for creation.", characterId)

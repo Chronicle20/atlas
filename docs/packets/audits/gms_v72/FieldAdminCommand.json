@@ -1,0 +1,21 @@
+{
+  "WriterName": "FieldAdminCommand",
+  "IDAName": "CField::SendChatMsgSlash#AdminCommand",
+  "Address": "0x50bf7c",
+  "Variant": "GMS/v72",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/field/serverbound/admin_command.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "subCommand @0x50bf95",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

@@ -1,0 +1,10 @@
+packet: character/clientbound/StatusMessageCompleteQuestRecord
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnMessage#CompleteQuestRecord
+    address: "0x96b27e"
+    decompile_sha256: 4602151988b31f2906f99d9417d25fb626c882af88dc5192ee027ae3491fcb01
+verifies:
+  - libs/atlas-packet/character/clientbound/status_message_test.go#TestStatusMessageCompleteQuestRecord

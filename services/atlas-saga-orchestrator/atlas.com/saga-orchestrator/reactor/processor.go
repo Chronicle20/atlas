@@ -42,6 +42,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 // HitReactorByName resolves a reactor by name via atlas-reactors REST API,
 // then produces a HIT command to COMMAND_TOPIC_REACTOR.
 func (p *ProcessorImpl) HitReactorByName(f field.Model, characterId uint32, reactorName string) error {

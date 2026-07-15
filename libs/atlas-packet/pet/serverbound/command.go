@@ -6,6 +6,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
@@ -38,19 +39,25 @@ func (m Command) String() string {
 	return fmt.Sprintf("petId [%d] byName [%t] command [%d]", m.petId, m.byName, m.command)
 }
 
-func (m Command) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+func (m Command) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
+	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
-		w.WriteLong(m.petId)
+		if hasLeadingPetId(t) {
+			w.WriteLong(m.petId) // absent on GMS v48 (single-pet)
+		}
 		w.WriteBool(m.byName)
 		w.WriteByte(m.command)
 		return w.Bytes()
 	}
 }
 
-func (m *Command) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *Command) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
-		m.petId = r.ReadUint64()
+		if hasLeadingPetId(t) {
+			m.petId = r.ReadUint64() // absent on GMS v48 (single-pet)
+		}
 		m.byName = r.ReadBool()
 		m.command = r.ReadByte()
 	}

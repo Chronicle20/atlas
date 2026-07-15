@@ -4,9 +4,9 @@ import (
 	tenant2 "atlas-world/configuration/tenant"
 	"atlas-world/kafka/message"
 	channel2 "atlas-world/kafka/message/channel"
-	"atlas-world/kafka/producer"
 	channel3 "atlas-world/kafka/producer/channel"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
@@ -46,6 +46,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 		t:   tenant.MustFromContext(ctx),
 	}
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 // AllProvider returns all channel servers for the tenant
 func (p *ProcessorImpl) AllProvider() model.Provider[[]Model] {

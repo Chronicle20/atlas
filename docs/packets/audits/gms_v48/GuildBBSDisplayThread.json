@@ -1,0 +1,21 @@
+{
+  "WriterName": "GuildBBSDisplayThread",
+  "IDAName": "CUIGuildBBS::SendViewEntryRequest",
+  "Address": "0x609211",
+  "Variant": "GMS/v48",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/guild/serverbound/bbs_display_thread.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "threadId @0x609244 (after BBS_OPERATION mode 3=DISPLAY @0x609236)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

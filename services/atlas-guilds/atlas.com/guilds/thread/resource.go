@@ -6,6 +6,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
@@ -26,23 +27,30 @@ func handleGetGuildThreads(db *gorm.DB) rest.GetHandler {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return rest.ParseGuildId(d.Logger(), func(guildId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				thrs, err := NewProcessor(d.Logger(), d.Context(), db).GetAll(guildId)
+				page, err := paginate.ParseParams(r.URL.Query(), paginate.DefaultPageSize, paginate.MaxPageSize)
 				if err != nil {
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteBadRequest(d.Logger(), w, err.Error())
 					return
 				}
 
-				res, err := model.SliceMap(Transform)(model.FixedProvider(thrs))(model.ParallelMap())()
+				paged, err := NewProcessor(d.Logger(), d.Context(), db).AllProvider(guildId, page)()
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Unable to locate threads for guild [%d].", guildId)
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+
+				res, err := model.SliceMap(Transform)(model.FixedProvider(paged.Items))(model.ParallelMap())()
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Creating REST model.")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
 				// Marshal response
 				query := r.URL.Query()
 				queryParams := jsonapi.ParseQueryFields(&query)
-				server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+				server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res, paginate.EnvelopeFor(paged), r)
 			}
 		})
 	}
@@ -55,14 +63,14 @@ func handleGetGuildThread(db *gorm.DB) rest.GetHandler {
 				return func(w http.ResponseWriter, r *http.Request) {
 					thr, err := NewProcessor(d.Logger(), d.Context(), db).GetById(guildId, threadId)
 					if err != nil {
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 
 					res, err := model.Map(Transform)(model.FixedProvider(thr))()
 					if err != nil {
 						d.Logger().WithError(err).Errorf("Creating REST model.")
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 

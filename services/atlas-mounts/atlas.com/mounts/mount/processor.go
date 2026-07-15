@@ -3,7 +3,6 @@ package mount
 import (
 	"atlas-mounts/kafka/message"
 	mountmsg "atlas-mounts/kafka/message/mount"
-	"atlas-mounts/kafka/producer"
 	"context"
 	"time"
 
@@ -21,7 +20,7 @@ import (
 // consumers in later tasks). worldId is always supplied by the caller — it is
 // never stored on the model.
 type Processor interface {
-	With(opts ...ProcessorOption) *ProcessorImpl
+	With(opts ...ProcessorOption) Processor
 	GetByCharacterId(characterId uint32) (Model, error)
 	ApplyTick(mb *message.Buffer) func(worldId world.Id, characterId uint32) error
 	ApplyFeedAndEmit(mb *message.Buffer) func(worldId world.Id, characterId uint32, healMax int) error
@@ -33,18 +32,18 @@ type ProcessorImpl struct {
 	ctx context.Context
 	db  *gorm.DB
 	t   tenant.Model
-	kp  producer.Provider
 }
 
-func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) *ProcessorImpl {
+func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor {
 	return &ProcessorImpl{
 		l:   l,
 		ctx: ctx,
 		db:  db,
 		t:   tenant.MustFromContext(ctx),
-		kp:  producer.ProviderImpl(l)(ctx),
 	}
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 type ProcessorOption func(*ProcessorImpl)
 
@@ -54,7 +53,7 @@ func WithTransaction(db *gorm.DB) ProcessorOption {
 	}
 }
 
-func (p *ProcessorImpl) With(opts ...ProcessorOption) *ProcessorImpl {
+func (p *ProcessorImpl) With(opts ...ProcessorOption) Processor {
 	clone := *p
 	cp := &clone
 	for _, opt := range opts {

@@ -18,19 +18,3 @@ export const useRestoreBaseline = (tenant: Tenant | null) => {
     },
   });
 };
-
-export const usePublishBaseline = (tenant: Tenant | null) => {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (input: { region: string; majorVersion: number; minorVersion: number }) => {
-      if (!tenant) {
-        throw new Error('usePublishBaseline: tenant is not yet resolved');
-      }
-      return baselineService.publish(tenant, input.region, input.majorVersion, input.minorVersion);
-    },
-    onSuccess: () => {
-      if (!tenant) return;
-      void qc.invalidateQueries({ queryKey: dataStatusKey(tenant.id) });
-    },
-  });
-};

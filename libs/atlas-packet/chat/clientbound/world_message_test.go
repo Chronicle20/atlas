@@ -1,10 +1,75 @@
 package clientbound
 
 import (
+	"bytes"
 	"testing"
 
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
+
+// TestWorldMessageSimpleByteOutputV79 pins the gms_v79 SERVERMESSAGE (op 0x041)
+// clientbound wire for the simple Notice/PopUp/Megaphone/PinkText modes.
+//
+// IDA-verified client decode (GMS_v79_1_DEVM.exe, port 13340) —
+// CWvsContext::OnBroadcastMsg @0x96c94f:
+//
+//	v3 = CInPacket::Decode1   @0x96c96f → mode byte (v129).
+//	(mode != 4, so the mode-4 "hasMessage" prefix branch @0x96c9a9 is skipped)
+//	CInPacket::DecodeStr      @0x96c9bd → message string.
+//	The trailing switch(mode) at LABEL_23 (@0x96cb83) reads NO further wire bytes
+//	for the simple modes (case 0 Notice / case 1 PopUp / case 2 Megaphone /
+//	case 5 PinkText all build a UI element from the already-decoded message).
+//
+// So the simple-mode wire is exactly Decode1(mode) + DecodeStr(message), which
+// the atlas WorldMessageSimple.Encode writes (WriteByte(mode) +
+// WriteAsciiString(message)). WriteAsciiString = uint16-LE length + ASCII bytes
+// (admin_chat golden "hi" = 02 00 68 69).
+//
+// packet-audit:verify packet=chat/clientbound/ChatWorldMessageSimple version=gms_v79 ida=0x96c94f
+func TestWorldMessageSimpleByteOutputV79(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 79, 1)
+
+	// Notice mode (0): Decode1(mode) + DecodeStr("hi").
+	// 0x00 | 0x02 0x00 'h' 'i'
+	input := WorldMessageSimple{mode: 0, message: "hi"}
+	expected := []byte{0x00, 0x02, 0x00, 0x68, 0x69}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v79 servermessage golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
+// TestWorldMessageSimpleByteOutputV72 pins the gms_v72 SERVERMESSAGE clientbound
+// wire for the simple Notice/PopUp/Megaphone/PinkText modes.
+//
+// IDA-verified client decode (GMS_v72.1_U_DEVM.exe, port 13339) —
+// CWvsContext::OnBroadcastMsg @0x91aaac:
+//
+//	v3 = CInPacket::Decode1   @0x91aacc → mode byte (v122).
+//	(mode != 4, so the mode-4 "hasMessage" prefix Decode1 @0x91ab06 is skipped)
+//	CInPacket::DecodeStr      @0x91ab1a → message string.
+//	The first switch(mode) @0x91ab44 reads extra fields only for cases 3/8/9/10/11;
+//	modes 0/1/2/5 fall through with NO extra wire read. The LABEL_23 switch (case 0
+//	Notice body @0x91ace7 / case 1 PopUp / case 2 Megaphone / case 5 PinkText
+//	@0x91b798) builds a UI element from the already-decoded message, reading NO
+//	further wire bytes.
+//
+// So the simple-mode wire is exactly Decode1(mode) + DecodeStr(message) — same
+// layout as v79. WriteAsciiString = uint16-LE length + ASCII ("hi" = 02 00 68 69).
+//
+// packet-audit:verify packet=chat/clientbound/ChatWorldMessageSimple version=gms_v72 ida=0x91aaac
+func TestWorldMessageSimpleByteOutputV72(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 72, 1)
+
+	// Notice mode (0): Decode1(mode) + DecodeStr("hi").
+	// 0x00 | 0x02 0x00 'h' 'i'
+	input := WorldMessageSimple{mode: 0, message: "hi"}
+	expected := []byte{0x00, 0x02, 0x00, 0x68, 0x69}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v72 servermessage golden mismatch: got %v want %v", actual, expected)
+	}
+}
 
 func TestWorldMessageSimpleRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {

@@ -11,6 +11,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -44,9 +45,18 @@ func handleAdjustCurrencyCommand(db *gorm.DB) message.Handler[wallet.AdjustCurre
 		l.Debugf("Received adjust currency command for account [%d]. Currency type: %d, Amount: %d, Transaction: %s",
 			c.AccountId, c.CurrencyType, c.Amount, c.TransactionId.String())
 
-		_, err := wallet2.NewProcessor(l, ctx, db).AdjustCurrencyWithTransaction(c.TransactionId, c.AccountId, c.CurrencyType, c.Amount)
+		proc := wallet2.NewProcessor(l, ctx, db)
+		_, err := proc.AdjustCurrencyWithTransaction(c.TransactionId, c.AccountId, c.CurrencyType, c.Amount)
 		if err != nil {
 			l.WithError(err).Errorf("Could not adjust currency for account [%d].", c.AccountId)
+			// Fail the waiting saga step fast rather than letting it time out. Only a
+			// transactional adjust has a saga waiter; a nil transaction id is a
+			// non-saga adjust with nobody to notify.
+			if c.TransactionId != uuid.Nil {
+				if emitErr := proc.EmitAdjustFailure(c.TransactionId, c.AccountId, err.Error()); emitErr != nil {
+					l.WithError(emitErr).Errorf("Could not emit wallet adjust-failure event for account [%d].", c.AccountId)
+				}
+			}
 			return
 		}
 

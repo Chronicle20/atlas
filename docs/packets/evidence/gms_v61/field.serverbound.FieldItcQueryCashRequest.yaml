@@ -1,0 +1,8 @@
+packet: field/serverbound/FieldItcQueryCashRequest
+direction: serverbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: CITC::TrySendQueryCashRequest
+    address: "0x5291cc"
+    decompile_sha256: 019cefbbf9b7f1c0d281b8a34b9c455978b06184eaa844bb5e88bfc2254033a9

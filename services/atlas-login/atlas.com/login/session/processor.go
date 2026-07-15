@@ -3,11 +3,11 @@ package session
 import (
 	"atlas-login/account/session"
 	session2 "atlas-login/kafka/message/session"
-	"atlas-login/kafka/producer"
 	session3 "atlas-login/kafka/producer/session"
 	"atlas-login/socket/writer"
 	"context"
 	"errors"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"net"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
@@ -58,6 +58,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 	return p
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) WithContext(ctx context.Context) Processor {
 	return NewProcessor(p.l, ctx)

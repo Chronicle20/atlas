@@ -6,6 +6,7 @@ import (
 	"time"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus/hooks/test"
@@ -74,6 +75,17 @@ func TestProcessorCreate(t *testing.T) {
 	}
 }
 
+// allBans drains a single page big enough to hold every seeded row in these
+// tests, standing in for the deleted unfiltered GetByTenant getter.
+func allBans(t *testing.T, p Processor) []Model {
+	t.Helper()
+	paged, err := p.AllProvider(model.Page{Number: 1, Size: 50})()
+	if err != nil {
+		t.Fatalf("Failed to get bans by tenant: %v", err)
+	}
+	return paged.Items
+}
+
 func TestProcessorGetById(t *testing.T) {
 	l, _ := test.NewNullLogger()
 	db := setupTestDatabase(t)
@@ -120,10 +132,7 @@ func TestProcessorGetByTenant(t *testing.T) {
 	createTestBan(t, db, st, BanTypeAccount, "42", true, time.Time{})
 
 	p := NewProcessor(l, ctx, db)
-	bans, err := p.GetByTenant()
-	if err != nil {
-		t.Fatalf("Failed to get bans by tenant: %v", err)
-	}
+	bans := allBans(t, p)
 
 	if len(bans) != 3 {
 		t.Errorf("Expected 3 bans, got %d", len(bans))
@@ -141,10 +150,7 @@ func TestProcessorGetByTenantIsolation(t *testing.T) {
 	createTestBan(t, db, st2, BanTypeIP, "10.0.0.3", true, time.Time{})
 
 	p := NewProcessor(l, testContext(st1), db)
-	bans, err := p.GetByTenant()
-	if err != nil {
-		t.Fatalf("Failed to get bans: %v", err)
-	}
+	bans := allBans(t, p)
 
 	if len(bans) != 2 {
 		t.Errorf("Tenant isolation failed. Expected 2 bans for tenant 1, got %d", len(bans))
@@ -162,13 +168,16 @@ func TestProcessorGetByType(t *testing.T) {
 	createTestBan(t, db, st, BanTypeHWID, "HWID123", true, time.Time{})
 
 	p := NewProcessor(l, ctx, db)
-	bans, err := p.GetByType(BanTypeIP)
+	paged, err := p.ByTypePagedProvider(BanTypeIP, model.Page{Number: 1, Size: 50})()
 	if err != nil {
 		t.Fatalf("Failed to get bans by type: %v", err)
 	}
 
-	if len(bans) != 2 {
-		t.Errorf("Expected 2 IP bans, got %d", len(bans))
+	if len(paged.Items) != 2 {
+		t.Errorf("Expected 2 IP bans, got %d", len(paged.Items))
+	}
+	if paged.Total != 2 {
+		t.Errorf("Expected total 2, got %d", paged.Total)
 	}
 }
 

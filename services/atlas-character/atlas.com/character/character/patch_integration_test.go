@@ -1353,7 +1353,7 @@ func TestGmChangedEventEmission(t *testing.T) {
 	// Test GM status change with message buffer
 	updatePayload := character.RestModel{
 		Id: createdCharacter.Id(),
-		Gm: 1, // Change to GM level 1
+		Gm: gmPtr(1), // Change to GM level 1
 	}
 
 	transactionId := uuid.New()
@@ -1428,3 +1428,129 @@ func TestGmChangedEventEmission(t *testing.T) {
 	}
 }
 
+func gmPtr(v int) *int { return &v }
+
+func TestGmDemotionEventEmission(t *testing.T) {
+	db := testDatabase(t)
+	tenantModel := testTenant()
+	tctx := tenant.WithContext(context.Background(), tenantModel)
+	logger := testLogger()
+
+	originalCharacter := character.NewModelBuilder().
+		SetAccountId(1000).
+		SetWorldId(world.Id(0)).
+		SetName("DemoteMe").
+		SetLevel(1).
+		SetStrength(4).
+		SetDexterity(4).
+		SetIntelligence(4).
+		SetLuck(4).
+		SetMaxHp(50).SetHp(50).
+		SetMaxMp(50).SetMp(50).
+		SetJobId(job.Id(0)).
+		SetGender(0).
+		SetHair(30000).
+		SetFace(20000).
+		SetSkinColor(0).
+		SetGm(1). // starts as GM
+		Build()
+
+	processor := character.NewProcessor(logger, tctx, db)
+	createdCharacter, err := processor.Create(message.NewBuffer())(uuid.New(), originalCharacter, 0)
+	if err != nil {
+		t.Fatalf("Failed to create character for testing: %v", err)
+	}
+
+	buf := message.NewBuffer()
+	updatePayload := character.RestModel{
+		Id: createdCharacter.Id(),
+		Gm: gmPtr(0), // explicit demote
+	}
+
+	transactionId := uuid.New()
+	err = processor.Update(buf)(transactionId, createdCharacter.Id(), updatePayload)
+	if err != nil {
+		t.Fatalf("Failed to update character: %v", err)
+	}
+
+	updatedCharacter, err := processor.GetById()(createdCharacter.Id())
+	if err != nil {
+		t.Fatalf("Failed to get updated character: %v", err)
+	}
+	if updatedCharacter.GM() != 0 {
+		t.Errorf("Expected GM status 0 after demotion, got %d", updatedCharacter.GM())
+	}
+
+	statusMessages, exists := buf.GetAll()[character2.EnvEventTopicCharacterStatus]
+	if !exists || len(statusMessages) != 1 {
+		t.Fatalf("Expected exactly 1 GM_CHANGED event, got %d", len(statusMessages))
+	}
+	var eventValue character2.StatusEvent[character2.StatusEventGmChangedBody]
+	if err := json.Unmarshal(statusMessages[0].Value, &eventValue); err != nil {
+		t.Fatalf("Failed to unmarshal event value: %v", err)
+	}
+	if eventValue.Type != character2.StatusEventTypeGmChanged {
+		t.Errorf("Expected event type '%s', got '%s'", character2.StatusEventTypeGmChanged, eventValue.Type)
+	}
+	if eventValue.Body.OldGm != true || eventValue.Body.NewGm != false {
+		t.Errorf("Expected oldGm=true newGm=false, got oldGm=%t newGm=%t", eventValue.Body.OldGm, eventValue.Body.NewGm)
+	}
+}
+
+func TestGmAbsentMeansNoChange(t *testing.T) {
+	db := testDatabase(t)
+	tenantModel := testTenant()
+	tctx := tenant.WithContext(context.Background(), tenantModel)
+	logger := testLogger()
+
+	originalCharacter := character.NewModelBuilder().
+		SetAccountId(1000).
+		SetWorldId(world.Id(0)).
+		SetName("StayGm").
+		SetLevel(1).
+		SetStrength(4).
+		SetDexterity(4).
+		SetIntelligence(4).
+		SetLuck(4).
+		SetMaxHp(50).SetHp(50).
+		SetMaxMp(50).SetMp(50).
+		SetJobId(job.Id(0)).
+		SetGender(0).
+		SetHair(30000).
+		SetFace(20000).
+		SetSkinColor(0).
+		SetGm(2).
+		Build()
+
+	processor := character.NewProcessor(logger, tctx, db)
+	createdCharacter, err := processor.Create(message.NewBuffer())(uuid.New(), originalCharacter, 0)
+	if err != nil {
+		t.Fatalf("Failed to create character for testing: %v", err)
+	}
+
+	buf := message.NewBuffer()
+	// Gm nil = field absent from the PATCH: must not change GM, must not emit
+	// GM_CHANGED. With no other field set, Update takes the empty-changes early
+	// return and succeeds as a no-op.
+	updatePayload := character.RestModel{
+		Id: createdCharacter.Id(),
+	}
+	err = processor.Update(buf)(uuid.New(), createdCharacter.Id(), updatePayload)
+	if err != nil {
+		t.Fatalf("Failed to update character: %v", err)
+	}
+
+	updatedCharacter, err := processor.GetById()(createdCharacter.Id())
+	if err != nil {
+		t.Fatalf("Failed to get updated character: %v", err)
+	}
+	if updatedCharacter.GM() != 2 {
+		t.Errorf("Expected GM status to remain 2, got %d", updatedCharacter.GM())
+	}
+	for _, msg := range buf.GetAll()[character2.EnvEventTopicCharacterStatus] {
+		var probe character2.StatusEvent[character2.StatusEventGmChangedBody]
+		if err := json.Unmarshal(msg.Value, &probe); err == nil && probe.Type == character2.StatusEventTypeGmChanged {
+			t.Error("GM_CHANGED must not be emitted when gm is absent from the payload")
+		}
+	}
+}

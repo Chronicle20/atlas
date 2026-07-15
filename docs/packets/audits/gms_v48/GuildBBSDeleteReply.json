@@ -1,0 +1,30 @@
+{
+  "WriterName": "GuildBBSDeleteReply",
+  "IDAName": "CUIGuildBBS::OnCommentDelete",
+  "Address": "0x6090f4",
+  "Variant": "GMS/v48",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/guild/serverbound/bbs_delete_reply.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "threadId @0x609158 (after BBS_OPERATION mode 5=DELETE_REPLY @0x609141)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "replyId @0x60917a",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

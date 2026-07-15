@@ -27,9 +27,16 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
+// GetInstanceRoutes fetches every instance route configured for a tenant.
+// atlas-tenants' GET /tenants/{tenantId}/configurations/instance-routes is
+// now paginated (task-117); LoadConfigurationsForTenant (a startup
+// per-tenant bootstrap) needs the complete set, so this drains every page
+// rather than fetching just the first.
 func (p *ProcessorImpl) GetInstanceRoutes(tenantId string) ([]instance.RouteModel, error) {
 	p.l.Debugf("Fetching instance routes for tenant [%s]", tenantId)
-	return requests.SliceProvider[InstanceRouteRestModel, instance.RouteModel](p.l, p.ctx)(requestInstanceRoutes(tenantId), ExtractRoute, model.Filters[instance.RouteModel]())()
+	return requests.DrainProvider[InstanceRouteRestModel, instance.RouteModel](p.l, p.ctx)(instanceRoutesUrl(tenantId), 250, ExtractRoute, model.Filters[instance.RouteModel]())()
 }
 
 func (p *ProcessorImpl) LoadConfigurationsForTenant(tenant tenant.Model) ([]instance.RouteModel, error) {

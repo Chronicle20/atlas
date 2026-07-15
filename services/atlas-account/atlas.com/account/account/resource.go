@@ -2,14 +2,15 @@ package account
 
 import (
 	account2 "atlas-account/kafka/message/account"
-	"atlas-account/kafka/producer"
 	"atlas-account/rest"
 	"errors"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"net/http"
 	"strconv"
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
@@ -22,7 +23,7 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 			register := rest.RegisterHandler(l)(db)(si)
 			registerInput := rest.RegisterInputHandler[RestModel](l)(db)(si)
 			registerPinAttemptInput := rest.RegisterInputHandler[PinAttemptInputRestModel](l)(db)(si)
-		registerPicAttemptInput := rest.RegisterInputHandler[PicAttemptInputRestModel](l)(db)(si)
+			registerPicAttemptInput := rest.RegisterInputHandler[PicAttemptInputRestModel](l)(db)(si)
 
 			r := router.PathPrefix("/accounts").Subrouter()
 			r.HandleFunc("/", registerInput("create_account", handleCreateAccount)).Methods(http.MethodPost)
@@ -57,7 +58,7 @@ func handleUpdateAccount(d *rest.HandlerDependency, c *rest.HandlerContext, inpu
 			res, err := model.Map(Transform)(model.FixedProvider(a))()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -107,23 +108,29 @@ func handleGetAccountByName(d *rest.HandlerDependency, c *rest.HandlerContext) h
 
 func handleGetAccounts(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		as, err := NewProcessor(d.Logger(), d.Context(), d.DB()).GetByTenant()
+		page, err := paginate.ParseParams(r.URL.Query(), paginate.DefaultPageSize, paginate.MaxPageSize)
 		if err != nil {
-			d.Logger().WithError(err).Errorf("Unable to locate accounts.")
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
 			return
 		}
 
-		res, err := model.SliceMap(Transform)(model.FixedProvider(as))(model.ParallelMap())()
+		paged, err := NewProcessor(d.Logger(), d.Context(), d.DB()).AllProvider(page)()
+		if err != nil {
+			d.Logger().WithError(err).Errorf("Unable to locate accounts.")
+			server.WriteErrorResponse(d.Logger())(w)(err)
+			return
+		}
+
+		res, err := model.SliceMap(Transform)(model.FixedProvider(paged.Items))(model.ParallelMap())()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Creating REST model.")
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteErrorResponse(d.Logger())(w)(err)
 			return
 		}
 
 		query := r.URL.Query()
 		queryParams := jsonapi.ParseQueryFields(&query)
-		server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+		server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res, paginate.EnvelopeFor(paged), r)
 	}
 }
 
@@ -158,7 +165,7 @@ func handleDeleteAccount(d *rest.HandlerDependency, _ *rest.HandlerContext) http
 					return
 				}
 				d.Logger().WithError(err).Errorf("Unable to delete account [%d].", accountId)
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 			w.WriteHeader(http.StatusNoContent)
@@ -172,7 +179,7 @@ func handleRecordPinAttempt(d *rest.HandlerDependency, c *rest.HandlerContext, i
 			attempts, limitReached, err := NewProcessor(d.Logger(), d.Context(), d.DB()).RecordPinAttemptAndEmit(accountId, input.Success, input.IpAddress, input.HWID)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Unable to record PIN attempt for account [%d].", accountId)
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -195,7 +202,7 @@ func handleRecordPicAttempt(d *rest.HandlerDependency, c *rest.HandlerContext, i
 			attempts, limitReached, err := NewProcessor(d.Logger(), d.Context(), d.DB()).RecordPicAttemptAndEmit(accountId, input.Success, input.IpAddress, input.HWID)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Unable to record PIC attempt for account [%d].", accountId)
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 

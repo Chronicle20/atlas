@@ -29,8 +29,14 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	return p
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
+// ByCharacterIdProvider fetches every wishlist item for a character. The
+// upstream atlas-cashshop list is now paginated (task-117); callers here
+// (character-info popup, cash-shop entry) need the complete wishlist, so
+// this drains every page rather than fetching just the first.
 func (p *ProcessorImpl) ByCharacterIdProvider(characterId uint32) model.Provider[[]Model] {
-	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByCharacterId(characterId), Extract, model.Filters[Model]())
+	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(byCharacterIdUrl(characterId), 250, Extract, model.Filters[Model]())
 }
 
 func (p *ProcessorImpl) GetByCharacterId(characterId uint32) ([]Model, error) {

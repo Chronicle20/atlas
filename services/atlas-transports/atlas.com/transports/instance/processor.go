@@ -3,9 +3,9 @@ package instance
 import (
 	"atlas-transports/kafka/message"
 	it "atlas-transports/kafka/message/instance_transport"
-	"atlas-transports/kafka/producer"
 	"context"
 	"errors"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
@@ -68,6 +68,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 		p:   producer.ProviderImpl(l)(ctx),
 	}
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) AddTenant(routes []RouteModel) {
 	p.l.Debugf("Adding [%d] instance routes for tenant [%s].", len(routes), p.t.Id())

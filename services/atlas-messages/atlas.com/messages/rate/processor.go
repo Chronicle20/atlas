@@ -25,6 +25,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) GetByCharacter(ch channel.Model, characterId uint32) (Model, error) {
 	rp := requests.Provider[RestModel, Model](p.l, p.ctx)(requestByCharacter(ch, characterId), Extract)
 	return model.Map(model.Decorate[Model](nil))(rp)()

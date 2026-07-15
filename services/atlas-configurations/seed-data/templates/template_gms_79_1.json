@@ -2269,7 +2269,8 @@
             "CHAT": 6,
             "CHAT_THING": 8,
             "LEAVE": 10,
-            "UPDATE_MERCHANT": 24
+            "UPDATE_MERCHANT": 24,
+            "PERSONAL_STORE_ITEM_SOLD": 25
           },
           "enterError": {
             "ROOM_CLOSED": 1,

@@ -571,6 +571,15 @@ func handleListingPurchasedEvent(sc server.Model, wp writer.Producer) func(l log
 		for _, cid := range characterIds {
 			_ = sp.IfPresentByCharacterId(sc.Channel())(cid, session.Announce(l)(ctx)(wp)(interactioncb.CharacterInteractionWriter)(shopRefreshBody(shop, cid, items)))
 		}
+
+		// Personal shops keep a per-session sold-item ledger (items sold / meso
+		// received) that the owner sees; notify them of this sale so the ledger
+		// and running totals advance. Hired merchants accrue via their own
+		// meso-balance path, not this notification.
+		if shop.ShopType() != merchant.HiredMerchantShopType {
+			buyerName := resolveOwnerName(l, ctx, e.Body.BuyerCharacterId)
+			_ = sp.IfPresentByCharacterId(sc.Channel())(shop.CharacterId(), session.Announce(l)(ctx)(wp)(interactioncb.CharacterInteractionWriter)(interactioncb.CharacterInteractionPersonalStoreItemSoldBody(byte(e.Body.ListingIndex), e.Body.BundleCount, buyerName)))
+		}
 	}
 }
 

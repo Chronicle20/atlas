@@ -23,6 +23,10 @@ const (
 	CharacterInteractionModeChatThing      CharacterInteractionMode = "CHAT_THING"      // 8
 	CharacterInteractionModeLeave          CharacterInteractionMode = "LEAVE"           // 10
 	CharacterInteractionModeUpdateMerchant CharacterInteractionMode = "UPDATE_MERCHANT" // 25
+	// CharacterInteractionModePersonalStoreItemSold is the per-sale sold-item
+	// notification to the owner (CPersonalShopDlg::OnSoldItemResult). Its byte is
+	// UPDATE_MERCHANT+1 in every version (v48 23, v61/72 24, v79 25, v83+ 26).
+	CharacterInteractionModePersonalStoreItemSold CharacterInteractionMode = "PERSONAL_STORE_ITEM_SOLD"
 	// The hired-merchant view responses echo the request mode byte: the client
 	// decodes them under the same operation constants it sends
 	// (CEntrustedShopDlg::OnPacket sub_51870D cases 0x2E/0x2F).
@@ -145,6 +149,16 @@ func CharacterInteractionUpdateMerchantBody(meso uint32, items []interaction.Roo
 func CharacterInteractionUpdatePersonalShopBody(items []interaction.RoomShopItem) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", CharacterInteractionModeUpdateMerchant, func(mode byte) packet.Encoder {
 		return NewInteractionUpdatePersonalShop(mode, items)
+	})
+}
+
+// CharacterInteractionPersonalStoreItemSoldBody sends the owner the sold-item
+// notification for one sale (item index in the shop's listing display, bundles
+// purchased, and the buyer's name). The client appends it to the sold ledger
+// and advances the running totals.
+func CharacterInteractionPersonalStoreItemSoldBody(itemIndex byte, bundleCount uint16, buyerName string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", CharacterInteractionModePersonalStoreItemSold, func(mode byte) packet.Encoder {
+		return NewInteractionPersonalShopItemSold(mode, itemIndex, bundleCount, buyerName)
 	})
 }
 

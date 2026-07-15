@@ -326,6 +326,37 @@ func (m *InteractionUpdateMerchant) Decode(l logrus.FieldLogger, ctx context.Con
 	}
 }
 
+// InteractionPersonalShopItemSold notifies the owner that one of their
+// listings sold, so the client appends a row to the sold-item ledger and
+// updates the running totals (m_nTotSold / m_nTotReceived — the "items sold /
+// meso received" the owner sees). CPersonalShopDlg::OnSoldItemResult (v95 PDB
+// @0x69a670) reads Decode1(itemIndex) + Decode2(bundleCount) + DecodeStr(buyer);
+// the client derives units and meso from the item's own stored nSet/nPrice, so
+// only the index, bundle count, and buyer name are on the wire.
+type InteractionPersonalShopItemSold struct {
+	mode        byte
+	itemIndex   byte
+	bundleCount uint16
+	buyerName   string
+}
+
+func NewInteractionPersonalShopItemSold(mode byte, itemIndex byte, bundleCount uint16, buyerName string) InteractionPersonalShopItemSold {
+	return InteractionPersonalShopItemSold{mode: mode, itemIndex: itemIndex, bundleCount: bundleCount, buyerName: buyerName}
+}
+
+func (m InteractionPersonalShopItemSold) Operation() string { return CharacterInteractionWriter }
+
+func (m InteractionPersonalShopItemSold) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
+		w.WriteByte(m.mode)
+		w.WriteByte(m.itemIndex)
+		w.WriteShort(m.bundleCount)
+		w.WriteAsciiString(m.buyerName)
+		return w.Bytes()
+	}
+}
+
 // InteractionVisitList is the hired-merchant visit-list response
 // (CEntrustedShopDlg sub_519505, v83 @0x519505, mode 0x2E): Decode2 count,
 // then per entry DecodeStr name + Decode4 value (the visit count the client

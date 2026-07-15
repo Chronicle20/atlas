@@ -68,8 +68,7 @@ func handleRequestItemReward(l logrus.FieldLogger, ctx context.Context, c consum
 	if c.Type != consumable2.CommandRequestItemReward {
 		return
 	}
-	f := field.NewBuilder(c.WorldId, c.ChannelId, c.MapId).SetInstance(c.Instance).Build()
-	err := consumable.NewProcessor(l, ctx).RequestItemReward(f, uint32(c.CharacterId), c.Body.ItemId, int16(c.Body.Source))
+	err := consumable.NewProcessor(l, ctx).RequestItemReward(uint32(c.CharacterId), c.Body.ItemId, int16(c.Body.Source))
 	if err != nil {
 		l.WithError(err).Errorf("Character [%d] unable to use reward box in slot [%d].", c.CharacterId, c.Body.Source)
 	}

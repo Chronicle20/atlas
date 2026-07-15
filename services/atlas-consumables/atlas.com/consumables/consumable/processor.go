@@ -62,7 +62,7 @@ type Processor interface {
 	ApplyConsumableEffect(transactionId uuid.UUID, _ channel.Model, characterId uint32, itemId item2.Id) error
 	CancelConsumableEffect(_ uuid.UUID, characterId uint32, itemId item2.Id, f field.Model) error
 	FailScroll(characterId uint32, cursed bool, legendarySpirit bool, whiteScroll bool) error
-	RequestItemReward(f field.Model, characterId uint32, itemId item2.Id, source int16) error
+	RequestItemReward(characterId uint32, itemId item2.Id, source int16) error
 	RequestViciousHammer(characterId uint32, hammerSlot int16, equipSlot int16) error
 }
 
@@ -223,6 +223,17 @@ func (p *ProcessorImpl) RequestItemConsume(c channel.Model, characterId uint32, 
 		itemConsumer = ConsumeCashPetFood(transactionId, characterId, slot, itemId)
 	} else if item2.GetClassification(itemId) == item2.ClassificationConsumableSummoningSack {
 		itemConsumer = ConsumeSummoningSack(transactionId, c, characterId, slot, itemId)
+	} else if ci, derr := p.cdp.GetById(uint32(itemId)); derr == nil && validateRewardTable(ci.Rewards()) == nil {
+		// Reward-box (random reward) item arriving through the generic
+		// item-use request. This is the path taken on client versions that
+		// lack the dedicated lottery opcode (v48/v61) — there the client uses
+		// reward boxes via the ordinary consume request, and the server must
+		// recognize the reward table and roll a reward instead of bare-
+		// consuming the box. On dedicated-opcode versions (v72+) the client
+		// routes reward boxes to REQUEST_ITEM_REWARD, so this branch never
+		// sees them there. RequestItemReward opens its own reservation
+		// transaction, so the one created above is simply abandoned unused.
+		return p.RequestItemReward(characterId, itemId, slot)
 	} else {
 		// Fallback: items requested via REQUEST_ITEM_CONSUME that do not
 		// fit any classification-specific branch (e.g., Magic Rock for
@@ -912,8 +923,12 @@ func (p *ProcessorImpl) FailScroll(characterId uint32, cursed bool, legendarySpi
 
 // RequestItemReward begins the reward-box flow: validate the reward table, reserve
 // the box, and on RESERVED run ConsumeReward. Mirrors RequestScroll's structure
-// (processor.go:515). One transactionId spans reserve → create → commit.
-func (p *ProcessorImpl) RequestItemReward(f field.Model, characterId uint32, itemId item2.Id, source int16) error {
+// (processor.go:515). One transactionId spans reserve → create → commit. Reached
+// two ways: the dedicated lottery opcode (v72+), and the generic item-use path
+// for reward boxes on versions without that opcode (v48/v61) — see
+// RequestItemConsume. No field is threaded because the reward flow is
+// character-scoped; the channel localizes presentation from the live session.
+func (p *ProcessorImpl) RequestItemReward(characterId uint32, itemId item2.Id, source int16) error {
 	transactionId := uuid.New()
 
 	ci, err := p.cdp.GetById(uint32(itemId))
@@ -929,7 +944,7 @@ func (p *ProcessorImpl) RequestItemReward(f field.Model, characterId uint32, ite
 	p.l.Debugf("Creating OneTime consumer for reward transaction [%s].", transactionId.String())
 	t, _ := topic.EnvProvider(p.l)(compartment2.EnvEventTopicStatus)()
 	validator := once.ReservationValidator(transactionId, uint32(itemId))
-	handler := compartment.Consume(ConsumeReward(transactionId, f, characterId, source, itemId, ci.Rewards()))
+	handler := compartment.Consume(ConsumeReward(transactionId, characterId, source, itemId, ci.Rewards()))
 	if _, err = consumer.GetManager().RegisterHandler(t, message.AdaptHandler(message.OneTimeConfig(validator, handler))); err != nil {
 		return p.rewardError(characterId, err)
 	}
@@ -954,7 +969,7 @@ func (p *ProcessorImpl) rewardError(characterId uint32, err error) error {
 // ConsumeReward fires on RESERVED. It rolls one reward, requests its creation,
 // and registers a once-handler that commits the box on CREATED or cancels the
 // reservation on CREATION_FAILED (box preserved).
-func ConsumeReward(transactionId uuid.UUID, f field.Model, characterId uint32, slot int16, boxItemId item2.Id, rewards []consumable3.RewardModel) ItemConsumer {
+func ConsumeReward(transactionId uuid.UUID, characterId uint32, slot int16, boxItemId item2.Id, rewards []consumable3.RewardModel) ItemConsumer {
 	return func(l logrus.FieldLogger) func(ctx context.Context) error {
 		return func(ctx context.Context) error {
 			p := NewProcessor(l, ctx).(*ProcessorImpl)
@@ -968,7 +983,7 @@ func ConsumeReward(transactionId uuid.UUID, f field.Model, characterId uint32, s
 			// Register the creation once-handler BEFORE emitting CREATE_ASSET.
 			t, _ := topic.EnvProvider(l)(compartment2.EnvEventTopicStatus)()
 			cv := once.CreationValidator(transactionId)
-			ch := grantReward(transactionId, f, characterId, slot, boxItemId, won)
+			ch := grantReward(transactionId, characterId, slot, boxItemId, won)
 			if _, err = consumer.GetManager().RegisterHandler(t, message.AdaptHandler(message.OneTimeConfig(cv, ch))); err != nil {
 				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
 			}
@@ -985,7 +1000,7 @@ func ConsumeReward(transactionId uuid.UUID, f field.Model, characterId uint32, s
 // grantReward is the CREATED/CREATION_FAILED once-handler. On success it commits
 // the box consume and emits presentation events; on failure it cancels the box
 // reservation (box preserved) and emits the appropriate ERROR.
-func grantReward(transactionId uuid.UUID, f field.Model, characterId uint32, slot int16, boxItemId item2.Id, won consumable3.RewardModel) message.Handler[compartment2.StatusEvent[compartment2.CreateResultEventBody]] {
+func grantReward(transactionId uuid.UUID, characterId uint32, slot int16, boxItemId item2.Id, won consumable3.RewardModel) message.Handler[compartment2.StatusEvent[compartment2.CreateResultEventBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, e compartment2.StatusEvent[compartment2.CreateResultEventBody]) {
 		p := NewProcessor(l, ctx).(*ProcessorImpl)
 
@@ -1009,14 +1024,14 @@ func grantReward(transactionId uuid.UUID, f field.Model, characterId uint32, slo
 		}
 		l.Debugf("Character [%d] reward granted: box [%d] consumed, item [%d] created (transaction [%s]).", characterId, boxItemId, won.ItemId(), transactionId.String())
 
-		p.emitRewardPresentation(f, characterId, boxItemId, won)
+		p.emitRewardPresentation(characterId, boxItemId, won)
 	}
 }
 
 // emitRewardPresentation emits REWARD_EFFECT (if the entry has an Effect path) and
 // REWARD_WON (if the entry has a worldMsg, after /name and /item substitution).
 // Presentation-only: every failure warn-logs and is swallowed (never blocks grant).
-func (p *ProcessorImpl) emitRewardPresentation(_ field.Model, characterId uint32, boxItemId item2.Id, won consumable3.RewardModel) {
+func (p *ProcessorImpl) emitRewardPresentation(characterId uint32, boxItemId item2.Id, won consumable3.RewardModel) {
 	if won.Effect() != "" {
 		if err := producer.ProviderImpl(p.l)(p.ctx)(consumable.EnvEventTopic)(RewardEffectEventProvider(ts.Id(characterId), uint32(boxItemId), won.Effect())); err != nil {
 			p.l.WithError(err).Warnf("Unable to emit reward effect for character [%d].", characterId)

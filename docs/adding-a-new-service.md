@@ -55,9 +55,13 @@ comment at the top of the main kustomization) — do not add it there.
 |---|---|---|
 | 4.1 | `kustomization.yaml` → `ATLAS_DB_NAMES` literal | Add the DB base name (e.g. `atlas-mts`). This single list drives **both** the wave-0 create-DBs job and ephemeral-env teardown (the drop list is derived from it). |
 | 4.2 | `kustomization.yaml` → `images:` | Same entry shape as 3.3. |
-| 4.3 | `kustomization.yaml` → `configMapGenerator` literals | Every topic var as `KEY=KEY-PLACEHOLDER_ATLAS_ENV`. |
-| 4.4 | `patches/db-name-suffix.yaml` | `DB_NAME: "atlas-<db>-PLACEHOLDER_ATLAS_ENV"`. |
-| 4.5 | `patches/consumer-group-env.yaml` | `KAFKA_CONSUMER_GROUP` patch document (PR envs DO inject it, unlike main). |
+| 4.3 | `kustomization.yaml` → `configMapGenerator` topic literals | **Generator-owned.** Regenerate the `KEY=KEY-PLACEHOLDER_ATLAS_ENV` block with `deploy/k8s/overlays/pr/scripts/gen-topic-config.sh` and paste its output into the atlas-env generator — do not hand-edit individual literals. |
+| 4.4 | `patches/db-name-suffix.yaml` | **Generator-owned** (`# Do not edit by hand` header). Re-run `deploy/k8s/overlays/pr/scripts/gen-db-name-suffix.sh`; it emits `DB_NAME: "atlas-<db>-PLACEHOLDER_ATLAS_ENV"` from the base manifest. |
+| 4.5 | `patches/consumer-group-env.yaml` | **Generator-owned** (`# Do not edit by hand` header). Re-run `deploy/k8s/overlays/pr/scripts/gen-consumer-group-patch.sh`; it derives the `KAFKA_CONSUMER_GROUP` value from the `consumerGroupId` literal in the service's `main.go` (PR envs inject it, unlike main). |
+
+Unlike the **main** overlay (§3), whose patches are all hand-maintained, three
+PR-overlay pieces are script-generated. Editing them by hand works until the
+next generator run silently reverts you — always re-run the generator.
 
 ## 5. Ingress (REST services only)
 
@@ -102,14 +106,27 @@ These are the failure modes that make missing entries invisible until runtime:
 
 ## Verification
 
-**First, run the guard** — it machine-checks every enumeration in this doc
-(sections 1–4 and 6, plus configmap key parity and patch-vs-base container
-names) and runs in CI as the `Service Registration Guard` job in
-`pr-validation.yml`:
+**First, run the guard** — it machine-checks the list *memberships and values*
+it can derive from `services.json` + the base manifests, and runs in CI as the
+`Service Registration Guard` job in `pr-validation.yml`:
 
 ```bash
 tools/service-registration-guard.sh
 ```
+
+What it checks: §1 (docker-bake, go.work); §2.1–2.2 (base manifest present,
+kustomization resources); §3 (main overlay images pin, `ATLAS_ENV=main`,
+`DB_NAME=<db>-main` — values, not just presence); §4 (pr images, per-doc
+`DB_NAME`, `ATLAS_DB_NAMES`, consumer-group doc presence for services that
+declare a group); §6.2 (db-bootstrap list); plus atlas-env configmap key
+parity (base keys must be mirrored into each overlay's `atlas-env` generator)
+and patch-doc container names vs the base manifest.
+
+What it **cannot** check, so verify by hand: §2.3 — that you added the *correct
+new* `COMMAND_TOPIC_*`/`EVENT_TOPIC_*` keys to base `env-configmap.yaml` (the
+guard only enforces parity of keys already there, not that the right new ones
+exist); §2.4 — the `atlas.seed-catalog` label; §5 — ingress routes; and §6.1 —
+creating the main database (inherently a manual, out-of-repo step).
 
 A service intentionally shipped without a k8s deployment must be added to the
 `ALLOW_NO_DEPLOYMENT` list inside the guard, with a justification comment.

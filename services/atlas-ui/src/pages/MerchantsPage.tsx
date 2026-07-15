@@ -24,13 +24,15 @@ import { Store, Search, Loader2 } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
 import { getAssetIconUrl } from "@/lib/utils/asset-url";
 import { DataTableWrapper } from "@/components/common/DataTableWrapper";
-import { Pager } from "@/components/common/Pager";
 import { getColumns, hiddenColumns } from "./merchants-columns";
 import { MapCell } from "@/components/map-cell";
 import { ItemNameCell } from "@/components/item-name-cell";
 import { useGridRefresh } from "@/lib/hooks/useGridRefresh";
 
-const MERCHANTS_PAGE_SIZE = 10;
+// Upper bound on matching item-strings expanded per name search. The listings
+// endpoint already caps its own results server-side; this just fetches every
+// matching item in a single page so the whole result set shows in one grid.
+const MERCHANTS_ITEM_SEARCH_LIMIT = 200;
 
 export function MerchantsPage() {
   return (
@@ -40,25 +42,21 @@ export function MerchantsPage() {
   );
 }
 
-async function searchListingsByQuery(
-  query: string,
-  pageNumber: number,
-  pageSize: number,
-): Promise<{ listings: ListingSearchResult[]; total: number; lastPage: number }> {
+async function searchListingsByQuery(query: string): Promise<ListingSearchResult[]> {
   // Numeric short-circuit: query is an item id — no item-strings lookup needed.
   const itemId = parseInt(query, 10);
   if (!isNaN(itemId) && String(itemId) === query) {
-    const listings = await merchantsService.searchListings(itemId);
-    return { listings, total: listings.length, lastPage: 1 };
+    return merchantsService.searchListings(itemId);
   }
-  // Name path: use server-side paged item lookup, then expand listings per item.
-  const page = await itemsService.searchItems({ q: query, pageNumber, pageSize });
+  // Name path: fetch all matching items in a single page, then expand listings
+  // per item into one flat result set (no client-side pagination).
+  const page = await itemsService.searchItems({ q: query, pageNumber: 1, pageSize: MERCHANTS_ITEM_SEARCH_LIMIT });
   const allResults: ListingSearchResult[] = [];
   for (const item of page.items) {
     const data = await merchantsService.searchListings(parseInt(item.id, 10));
     allResults.push(...data);
   }
-  return { listings: allResults, total: page.total, lastPage: page.lastPage };
+  return allResults;
 }
 
 function MerchantsPageContent() {
@@ -67,7 +65,6 @@ function MerchantsPageContent() {
   const initialTab = searchParams.get("tab") ?? "shops";
   const urlQuery = searchParams.get("q") ?? "";
   const [searchInput, setSearchInput] = useState(urlQuery);
-  const [pageNumber, setPageNumber] = useState(1);
 
   const shopsQuery = useQuery<MerchantShop[], Error>({
     queryKey: ["merchants", "shops", activeTenant?.id ?? "no-tenant"],
@@ -79,9 +76,9 @@ function MerchantsPageContent() {
 
   const tenantConfigQuery = useTenantConfiguration(activeTenant?.id ?? "");
 
-  const searchResultsQuery = useQuery<{ listings: ListingSearchResult[]; total: number; lastPage: number }, Error>({
-    queryKey: ["merchants", "search-listings", activeTenant?.id ?? "no-tenant", urlQuery, pageNumber, MERCHANTS_PAGE_SIZE],
-    queryFn: () => searchListingsByQuery(urlQuery, pageNumber, MERCHANTS_PAGE_SIZE),
+  const searchResultsQuery = useQuery<ListingSearchResult[], Error>({
+    queryKey: ["merchants", "search-listings", activeTenant?.id ?? "no-tenant", urlQuery],
+    queryFn: () => searchListingsByQuery(urlQuery),
     enabled: !!activeTenant && urlQuery.length > 0,
   });
 
@@ -90,8 +87,7 @@ function MerchantsPageContent() {
   const error = shopsQuery.error?.message ?? null;
   const tenantConfig: TenantConfig | null = tenantConfigQuery.data ?? null;
 
-  const searchPage = searchResultsQuery.data ?? { listings: [], total: 0, lastPage: 1 };
-  const searchResults = searchPage.listings;
+  const searchResults = searchResultsQuery.data ?? [];
   const searchLoading = searchResultsQuery.isFetching;
   const hasSearched = urlQuery.length > 0;
 
@@ -104,12 +100,10 @@ function MerchantsPageContent() {
       toast.error("Please enter an item ID or name");
       return;
     }
-    setPageNumber(1);
     setSearchParams({ tab: "search", q: searchInput.trim() }, { replace: true });
   };
 
   const handleClear = () => {
-    setPageNumber(1);
     setSearchInput("");
     setSearchParams({ tab: "search" }, { replace: true });
   };
@@ -216,7 +210,7 @@ function MerchantsPageContent() {
                       <TableHeader className="sticky top-0 bg-background z-10">
                         <TableRow>
                           <TableHead className="w-10">Icon</TableHead>
-                          <TableHead>Item</TableHead>
+                          <TableHead>Name</TableHead>
                           <TableHead>Shop</TableHead>
                           <TableHead>Channel</TableHead>
                           <TableHead>Map</TableHead>
@@ -232,15 +226,6 @@ function MerchantsPageContent() {
                       </TableBody>
                     </Table>
                   </div>
-                )}
-                {searchResults.length > 0 && (
-                  <Pager
-                    page={pageNumber}
-                    lastPage={searchPage.lastPage}
-                    total={searchPage.total}
-                    pageSize={MERCHANTS_PAGE_SIZE}
-                    onPageChange={setPageNumber}
-                  />
                 )}
               </CardContent>
             </Card>

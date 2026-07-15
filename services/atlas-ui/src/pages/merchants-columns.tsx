@@ -5,6 +5,7 @@ import type { TenantConfig } from "@/services/api/tenants.service";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 import { MapCell } from "@/components/map-cell";
+import { OwnerNameCell } from "@/components/owner-name-cell";
 import {
   type MerchantShop,
   getShopTypeName,
@@ -86,7 +87,7 @@ export const getColumns = ({ tenant, tenantConfig }: ColumnProps): ColumnDef<Mer
       header: "Owner",
       cell: ({ row }) => (
         <Link to={"/characters/" + row.original.attributes.characterId} className="font-medium text-primary hover:underline">
-          {row.original.attributes.characterId}
+          <OwnerNameCell characterId={String(row.original.attributes.characterId)} tenant={tenant} />
         </Link>
       ),
     },

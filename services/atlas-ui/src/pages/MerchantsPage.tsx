@@ -29,12 +29,30 @@ import { MapCell } from "@/components/map-cell";
 import { ItemNameCell } from "@/components/item-name-cell";
 import { useGridRefresh } from "@/lib/hooks/useGridRefresh";
 
-// Upper bound on matching item-strings expanded per name search. The
-// /api/data/item-strings endpoint rejects page[size] > 50 (searchindex.MaxLimit)
-// with a 400, so this must stay <= 50; a substring name match rarely exceeds
-// that many distinct item templates. The listings endpoint caps its own results
-// server-side, and each matched item's listings expand into one flat grid.
-const MERCHANTS_ITEM_SEARCH_LIMIT = 50;
+// The /api/data/item-strings search is a deliberate sparse-search guardrail:
+// page[size] is capped at 50 (searchindex.MaxLimit, task-006) and > 50 returns
+// 400. So rather than ask for more per request, page through 50 at a time and
+// concatenate — up to a ceiling — then expand every matched item's listings
+// into one flat grid. This shows the full match set without a visible "capped
+// at 50" and without weakening the service limit.
+const ITEM_STRINGS_PAGE_SIZE = 50;
+const MERCHANTS_ITEM_MATCH_CEILING = 200;
+
+async function fetchMatchingItemIds(query: string): Promise<string[]> {
+  const ids: string[] = [];
+  let pageNumber = 1;
+  while (ids.length < MERCHANTS_ITEM_MATCH_CEILING) {
+    const page = await itemsService.searchItems({
+      q: query,
+      pageNumber,
+      pageSize: ITEM_STRINGS_PAGE_SIZE,
+    });
+    for (const item of page.items) ids.push(item.id);
+    if (page.items.length === 0 || pageNumber >= page.lastPage) break;
+    pageNumber += 1;
+  }
+  return ids.slice(0, MERCHANTS_ITEM_MATCH_CEILING);
+}
 
 export function MerchantsPage() {
   return (
@@ -50,12 +68,12 @@ async function searchListingsByQuery(query: string): Promise<ListingSearchResult
   if (!isNaN(itemId) && String(itemId) === query) {
     return merchantsService.searchListings(itemId);
   }
-  // Name path: fetch all matching items in a single page, then expand listings
+  // Name path: page through every matching item template, then expand listings
   // per item into one flat result set (no client-side pagination).
-  const page = await itemsService.searchItems({ q: query, pageNumber: 1, pageSize: MERCHANTS_ITEM_SEARCH_LIMIT });
+  const itemIds = await fetchMatchingItemIds(query);
   const allResults: ListingSearchResult[] = [];
-  for (const item of page.items) {
-    const data = await merchantsService.searchListings(parseInt(item.id, 10));
+  for (const id of itemIds) {
+    const data = await merchantsService.searchListings(parseInt(id, 10));
     allResults.push(...data);
   }
   return allResults;

@@ -6,3 +6,5 @@ ida:
     function: CWvsContext::OnIncubatorResult
     address: "0x9203de"
     decompile_sha256: 063542bfb4f5c1b779f9856cbd98079367cafc782c6a1a02fb1f5e5afac6704e
+verifies:
+    - libs/atlas-packet/incubator/clientbound/result_test.go#TestIncubatorResult

@@ -526,11 +526,6 @@
         "handler": "SummonDamageHandle"
       },
       {
-        "opCode": "0x55",
-        "validator": "LoggedInValidator",
-        "handler": "CharacterCashItemUseHandle"
-      },
-      {
         "opCode": "0xB4",
         "validator": "LoggedInValidator",
         "handler": "EnterMtsHandle"

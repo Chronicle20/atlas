@@ -118,18 +118,37 @@ dedicated-opcode versions (v72+) the client routes reward boxes exclusively to t
 lottery opcode (the client's lottery check runs first — §2.1 routing), so the
 generic branch never sees them there; only v48/v61 exercise it.
 
-**Clientbound effect on v48 — known limitation.** The reward roll, grant, and
-world-message announce (§2.2 REWARD_WON) work in both v48 and v61. The visual
-lottery-use effect (§2.2 REWARD_EFFECT) needs a per-version `LOTTERY_USE`
-operations entry to resolve the `CUser::OnEffect` mode byte. task-112 backfilled
-this for v61 (=14, matching v72/v79/v83) but **not v48**, and v48's stripped IDB
-does not expose the effect dispatcher for a clean per-IDB read (DOM-25 forbids
-adding an unverified client-interpreted mode). The degradation is benign: when a
-v48 reward box carries an Effect string, the channel's `CharacterEffect` write
-finds no `LOTTERY_USE` mode and is gracefully dropped — the item is still granted
-and announced. Adding a v48-IDB-verified `LOTTERY_USE` entry (or confirming v48's
-`OnEffect` has no lottery arm, in which case no entry is correct) is a bounded
-follow-up, out of this change's core scope.
+**Clientbound effect on v48/v61 — resolved by RE (IDA-verified this session).**
+The visual lottery-use effect (§2.2 REWARD_EFFECT) is a `CUser::OnEffect` arm:
+`Decode4(itemId) → play_item_sound(id,0x29) → Decode1(success gate, return if 0)
+→ DecodeStr(path) → Effect_General` — matching the Atlas `EffectLotteryUse`
+encoder `{mode, int itemId, bool success, [if success] ascii path}`. This arm and
+the serverbound opcode were **both introduced at v72**:
+
+| version | OnEffect lottery arm | evidence |
+|---|---|---|
+| v48 | **absent** (switch covers types 0–11 only) | `CUser::OnEffect` @0x6917A7 (renamed; was `sub_6917A7`) |
+| v61 | **absent** (case 14 = `DecodeStr(path)`-only, a different effect) | `CUser::OnEffect` @0x79148d |
+| v72 | case 14 ✓ | `CUser::OnEffect` @0x846e1e |
+| v79 | case 14 ✓ | `CUser::OnEffect` @0x95dd02… (OnEffect @ symbol) |
+| v83 | case 14 ✓ | @0x9377d9 (design §2.2) |
+| v95 | case 16 ✓ | design §2.2 |
+| jms | case 15 ✓ | `CUser::OnEffect` @0x9f6395 |
+
+Consequences (all correct-by-config, no version branches in code):
+- **v48/v92**: no `LOTTERY_USE` operations entry → the channel finds no mode and
+  gracefully drops REWARD_EFFECT; the reward still grants + announces. Correct —
+  these clients have no lottery effect arm.
+- **v61**: task-112 had lineage-copied a fictional `LOTTERY_USE: 14` into v61's
+  operations table (the table lists effect types up to 24 though v61's client only
+  handles 0–14,16). Since this change makes reward boxes reach the reward flow on
+  v61's generic path, that entry would make the channel emit a `{itemId, success,
+  path}` body into v61's `{path}`-only case 14 → misparse. **Fixed here** by
+  removing the spurious entry (both operations blocks), so v61 drops the effect
+  like v48. The broader fictional-table cleanup for v61 is a separate task-112
+  follow-up, out of scope.
+- **v72/v79/v83/v84/v87/v95/jms**: real lottery arm; the effect renders. jms uses
+  case 15, v95 case 16, the rest case 14 — all already in their templates.
 
 ## 3. Architecture overview
 

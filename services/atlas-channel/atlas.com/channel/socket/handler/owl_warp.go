@@ -59,14 +59,18 @@ func OwlWarpHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Prod
 		mp := merchant.NewProcessor(l, ctx)
 		var shopId uuid.UUID
 		shops, err := mp.GetByCharacterId(p.OwnerId())
-		if err == nil && len(shops) > 0 {
-			shop := shops[0]
-			check.ShopFound = true
-			check.ShopWorldId = shop.WorldId()
-			check.ShopChannelId = shop.ChannelId()
-			check.ShopMapId = shop.MapId()
-			check.ShopState = shop.State()
-			shopId = shop.Id()
+		// A character keeps StateClosed leftovers from prior sessions, so shops[0]
+		// is not the live shop — pick the open (or otherwise non-closed) one the
+		// owl search actually surfaced (task-127).
+		if err == nil {
+			if shop, ok := merchant.SelectOpenShop(shops); ok {
+				check.ShopFound = true
+				check.ShopWorldId = shop.WorldId()
+				check.ShopChannelId = shop.ChannelId()
+				check.ShopMapId = shop.MapId()
+				check.ShopState = shop.State()
+				shopId = shop.Id()
+			}
 		}
 
 		// Listing-still-present check: re-query the world-scoped search for the
@@ -86,7 +90,14 @@ func OwlWarpHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Prod
 		}
 
 		if code, ok := shopscanner.EvaluateWarp(check); !ok {
-			l.Infof("Owl warp rejected for character [%d] to owner [%d]: code [%s].", s.CharacterId(), p.OwnerId(), code)
+			// Log the resolved rung inputs — a bare code hides which of the six
+			// CLOSED rungs fired (task-127 diagnosis).
+			l.Infof("Owl warp rejected for character [%d] to owner [%d]: code [%s] "+
+				"(found=%t state=%d shopCh=%d sessCh=%d shopMap=%d echoMap=%d shopWorld=%d sessWorld=%d listing=%t hasSearch=%t fm=%t hp=%d).",
+				s.CharacterId(), p.OwnerId(), code,
+				check.ShopFound, check.ShopState, check.ShopChannelId, check.SessionChannelId,
+				check.ShopMapId, check.EchoedMapId, check.ShopWorldId, check.SessionWorldId,
+				check.ListingPresent, check.HasSearch, check.CurrentMapFM, check.CharacterHp)
 			announceLink(code)
 			return
 		}

@@ -2,8 +2,8 @@ package messenger
 
 import (
 	"atlas-messengers/kafka/message/messenger"
-	"atlas-messengers/kafka/producer"
 	"atlas-messengers/rest"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"net/http"
 	"sort"
 	"strconv"

@@ -3,8 +3,8 @@ package buff
 import (
 	"atlas-saga-orchestrator/kafka/message"
 	buffMsg "atlas-saga-orchestrator/kafka/message/buff"
-	"atlas-saga-orchestrator/kafka/producer"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/sirupsen/logrus"

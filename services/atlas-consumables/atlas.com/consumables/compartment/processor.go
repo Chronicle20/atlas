@@ -2,7 +2,6 @@ package compartment
 
 import (
 	"atlas-consumables/kafka/message/compartment"
-	"atlas-consumables/kafka/producer"
 	"context"
 	"errors"
 	"time"
@@ -10,6 +9,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	item2 "github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )

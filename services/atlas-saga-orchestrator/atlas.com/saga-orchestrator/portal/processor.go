@@ -5,7 +5,7 @@ import (
 
 	"atlas-saga-orchestrator/kafka/message"
 	portalMsg "atlas-saga-orchestrator/kafka/message/portal"
-	"atlas-saga-orchestrator/kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/sirupsen/logrus"

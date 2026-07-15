@@ -5,9 +5,9 @@ import (
 	"atlas-summons/data/skill/effect"
 	"atlas-summons/effectivestats"
 	"atlas-summons/inventory"
-	"atlas-summons/kafka/producer"
 	monstermsg "atlas-summons/monster"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"math/rand"
 	"time"
 

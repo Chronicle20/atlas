@@ -2,8 +2,8 @@ package map_command
 
 import (
 	mapKafka "atlas-saga-orchestrator/kafka/message/map"
-	"atlas-saga-orchestrator/kafka/producer"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/google/uuid"

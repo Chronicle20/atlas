@@ -5,7 +5,6 @@ import (
 
 	characterevt "atlas-summons/kafka/consumer/character"
 	summoncmd "atlas-summons/kafka/consumer/summon"
-	"atlas-summons/logger"
 	"atlas-summons/summon"
 	"atlas-summons/tasks"
 	"atlas-summons/world"
@@ -20,7 +19,6 @@ import (
 	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
-	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"github.com/sirupsen/logrus"
 )
 
@@ -49,23 +47,16 @@ func GetServer() Server {
 }
 
 func main() {
-	l := logger.CreateLogger(serviceName)
-	l.Infoln("Starting main service.")
+	rt := service.Bootstrap(serviceName)
+	l := rt.Logger()
 
 	rc := atlas.Connect(l)
 	summon.InitIdAllocator(rc)
 	summon.InitRegistry(rc)
 
-	tdm := service.GetTeardownManager()
-
-	tc, err := tracing.InitTracer(serviceName)
-	if err != nil {
-		l.WithError(err).Fatal("Unable to initialize tracer.")
-	}
-
 	// Kafka consumers: the COMMAND_TOPIC_SUMMON command consumer (SPAWN) and the
 	// character-status despawn cascade (logout / channel-change / map-change).
-	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
+	cmf := consumer.GetManager().AddConsumer(l, rt.Context(), rt.WaitGroup())
 	summoncmd.InitConsumers(l)(cmf)(consumerGroupId)
 	characterevt.InitConsumers(l)(cmf)(consumerGroupId)
 	if err := summoncmd.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
@@ -75,16 +66,17 @@ func main() {
 		l.WithError(err).Fatal("Unable to register character status handlers.")
 	}
 
-	tdm.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
+	rt.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 
 	server.New(l).
-		WithContext(tdm.Context()).
-		WithWaitGroup(tdm.WaitGroup()).
+		WithContext(rt.Context()).
+		WithWaitGroup(rt.WaitGroup()).
 		SetBasePath(GetServer().GetPrefix()).
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(summon.InitResource(GetServer())).
 		AddRouteInitializer(world.InitResource(GetServer())).
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
+		AddRouteInitializer(server.MountReadiness("/readyz", rt.Ready)).
 		Run()
 
 	// registerSweepTasks runs only on the leader-elected pod. It registers the
@@ -106,8 +98,8 @@ func main() {
 		if err != nil {
 			l.WithError(err).Fatal("Unable to construct LeaderElection.")
 		}
-		routine.Go(l, tdm.Context(), func(_ context.Context) {
-			err := le.Run(tdm.Context(), func(leaderCtx context.Context) {
+		routine.Go(l, rt.Context(), func(_ context.Context) {
+			err := le.Run(rt.Context(), func(leaderCtx context.Context) {
 				registerSweepTasks(l, leaderCtx)
 				<-leaderCtx.Done()
 			})
@@ -117,12 +109,8 @@ func main() {
 		})
 	} else {
 		l.Warnf("SUMMON_LEADER_ELECTION_ENABLED=false — sweep tasks run unconditionally on this pod.")
-		registerSweepTasks(l, tdm.Context())
+		registerSweepTasks(l, rt.Context())
 	}
 
-	tdm.TeardownFunc(tracing.Teardown(l)(tc))
-
-	tdm.Wait()
-
-	l.Infoln("Service shutdown.")
+	rt.Wait()
 }

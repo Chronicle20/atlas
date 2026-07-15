@@ -3,9 +3,9 @@ package cashshop
 import (
 	"atlas-channel/cashshop/inventory/compartment"
 	"atlas-channel/kafka/message/cashshop"
-	"atlas-channel/kafka/producer"
 	"atlas-channel/saga"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"

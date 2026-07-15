@@ -3,9 +3,9 @@ package rate
 import (
 	"atlas-world/kafka/message"
 	rateMessage "atlas-world/kafka/message/rate"
-	"atlas-world/kafka/producer"
 	rateProducer "atlas-world/kafka/producer/rate"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"

@@ -6,8 +6,9 @@ import (
 	"atlas-maps/character/location"
 	"atlas-maps/kafka/message"
 	characterKafka "atlas-maps/kafka/message/character"
-	"atlas-maps/kafka/producer"
+	mapsproducer "atlas-maps/kafka/producer"
 	_map "atlas-maps/map"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
@@ -80,7 +81,7 @@ func (p *ProcessorImpl) ChangeMap(transactionId uuid.UUID, characterId uint32, w
 
 	if err := message.Emit(p.pp)(func(buf *message.Buffer) error {
 		return buf.Put(characterKafka.EnvEventTopicCharacterStatus,
-			producer.MapChangedStatusProvider(transactionId, characterId, worldId, oldField, dest, portalId, useTargetPosition, targetX, targetY))
+			mapsproducer.MapChangedStatusProvider(transactionId, characterId, worldId, oldField, dest, portalId, useTargetPosition, targetX, targetY))
 	}); err != nil {
 		p.l.WithError(err).Errorf("ChangeMap: failed to emit MAP_CHANGED status for character [%d].", characterId)
 	}

@@ -1,8 +1,8 @@
 package reactor
 
 import (
-	"atlas-reactors/kafka/producer"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"sync"
 	"time"
 

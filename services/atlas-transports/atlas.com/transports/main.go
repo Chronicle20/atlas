@@ -13,12 +13,10 @@ import (
 	"atlas-transports/kafka/consumer/configuration"
 	"atlas-transports/kafka/consumer/instance_transport"
 	_map "atlas-transports/kafka/consumer/map"
-	"atlas-transports/logger"
 	tenant2 "atlas-transports/tenant"
 	"atlas-transports/transport"
 	"atlas-transports/transport/config"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
-	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
 	"time"
 
@@ -55,10 +53,8 @@ func GetServer() Server {
 }
 
 func main() {
-	l := logger.CreateLogger(serviceName)
-	l.Infoln("Starting main service.")
-
-	tdm := service.GetTeardownManager()
+	rt := service.Bootstrap(serviceName)
+	l := rt.Logger()
 
 	rc := atlas.Connect(l)
 	channel2.InitRegistry(rc)
@@ -67,12 +63,7 @@ func main() {
 	instance.InitRouteRegistry(rc)
 	transport.InitRouteRegistry(rc)
 
-	tc, err := tracing.InitTracer(serviceName)
-	if err != nil {
-		l.WithError(err).Fatal("Unable to initialize tracer.")
-	}
-
-	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
+	cmf := consumer.GetManager().AddConsumer(l, rt.Context(), rt.WaitGroup())
 	channel.InitConsumers(l)(cmf)(consumerGroupId)
 	character.InitConsumers(l)(cmf)(consumerGroupId)
 	configuration.InitConsumers(l)(cmf)(consumerGroupId)
@@ -94,18 +85,18 @@ func main() {
 		l.WithError(err).Fatal("Unable to register kafka handlers.")
 	}
 
-	tdm.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
+	rt.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 
-	tenants, err := tenant2.NewProcessor(l, tdm.Context()).GetAll()
+	tenants, err := tenant2.NewProcessor(l, rt.Context()).GetAll()
 	if err != nil {
 		l.WithError(err).Fatal("Unable to load tenants.")
 	}
 
 	// Load configurations from the configuration service
-	configProcessor := config.NewProcessor(l, tdm.Context())
-	instanceConfigProcessor := instanceConfig.NewProcessor(l, tdm.Context())
+	configProcessor := config.NewProcessor(l, rt.Context())
+	instanceConfigProcessor := instanceConfig.NewProcessor(l, rt.Context())
 	for _, t := range tenants {
-		ctx := tenant.WithContext(tdm.Context(), t)
+		ctx := tenant.WithContext(rt.Context(), t)
 
 		// Load scheduled transport routes
 		routes, sharedVessels, err := configProcessor.LoadConfigurationsForTenant(t)
@@ -126,17 +117,17 @@ func main() {
 	}
 
 	// Start a background goroutine to periodically update route states and instance transports
-	routine.Go(l, tdm.Context(), func(_ context.Context) {
+	routine.Go(l, rt.Context(), func(_ context.Context) {
 		ticker := time.NewTicker(1 * time.Second)
 		defer ticker.Stop()
 
 		for {
 			select {
-			case <-tdm.Context().Done():
+			case <-rt.Context().Done():
 				return
 			case <-ticker.C:
 				for _, t := range tenants {
-					ctx := tenant.WithContext(tdm.Context(), t)
+					ctx := tenant.WithContext(rt.Context(), t)
 
 					// Update scheduled transport routes
 					transport.NewProcessor(l, ctx).UpdateRoutes()
@@ -153,26 +144,24 @@ func main() {
 
 	// Create and run server
 	server.New(l).
-		WithContext(tdm.Context()).
-		WithWaitGroup(tdm.WaitGroup()).
+		WithContext(rt.Context()).
+		WithWaitGroup(rt.WaitGroup()).
 		SetBasePath(GetServer().GetPrefix()).
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(transport.InitResource(GetServer())).
 		AddRouteInitializer(instance.InitResource(GetServer())).
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
+		AddRouteInitializer(server.MountReadiness("/readyz", rt.Ready)).
 		Run()
 
-	tdm.TeardownFunc(tracing.Teardown(l)(tc))
-
 	// Graceful shutdown: warp all mid-transport characters to start maps
-	tdm.TeardownFunc(func() {
+	rt.TeardownFunc(func() {
 		l.Infoln("Graceful shutdown: handling instance transports.")
 		for _, t := range tenants {
-			ctx := tenant.WithContext(tdm.Context(), t)
+			ctx := tenant.WithContext(rt.Context(), t)
 			_ = instance.NewProcessor(l, ctx).GracefulShutdownAndEmit()
 		}
 	})
 
-	tdm.Wait()
-	l.Infoln("Service shutdown.")
+	rt.Wait()
 }

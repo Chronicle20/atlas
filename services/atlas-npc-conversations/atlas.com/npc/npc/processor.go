@@ -2,8 +2,8 @@ package npc
 
 import (
 	npc2 "atlas-npc-conversations/kafka/message/npc"
-	"atlas-npc-conversations/kafka/producer"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/sirupsen/logrus"

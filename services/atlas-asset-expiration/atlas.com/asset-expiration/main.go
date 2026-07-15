@@ -2,10 +2,8 @@ package main
 
 import (
 	session2 "atlas-asset-expiration/kafka/consumer/session"
-	"atlas-asset-expiration/logger"
 	"atlas-asset-expiration/task"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
-	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
 	"strconv"
 	"time"
@@ -21,18 +19,11 @@ const serviceName = "atlas-asset-expiration"
 var consumerGroupId = consumergroup.Resolve("Asset Expiration Service")
 
 func main() {
-	l := logger.CreateLogger(serviceName)
-	l.Infoln("Starting main service.")
-
-	tdm := service.GetTeardownManager()
-
-	tc, err := tracing.InitTracer(serviceName)
-	if err != nil {
-		l.WithError(err).Fatal("Unable to initialize tracer.")
-	}
+	rt := service.Bootstrap(serviceName)
+	l := rt.Logger()
 
 	// Initialize Kafka consumers
-	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
+	cmf := consumer.GetManager().AddConsumer(l, rt.Context(), rt.WaitGroup())
 
 	// Session status events consumer (for login/logout tracking)
 	session2.InitConsumers(l)(cmf)(consumerGroupId)
@@ -40,26 +31,25 @@ func main() {
 		l.WithError(err).Fatal("Unable to register kafka handlers.")
 	}
 
-	tdm.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
+	rt.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 
 	// Start periodic expiration check task
 	interval := getExpirationInterval()
-	periodicTask := task.NewPeriodicTask(l, tdm.Context(), interval)
+	periodicTask := task.NewPeriodicTask(l, rt.Context(), interval)
 	periodicTask.Start()
 
-	tdm.TeardownFunc(tracing.Teardown(l)(tc))
-	tdm.TeardownFunc(periodicTask.Stop)
+	rt.TeardownFunc(periodicTask.Stop)
 
 	server.New(l).
-		WithContext(tdm.Context()).
-		WithWaitGroup(tdm.WaitGroup()).
+		WithContext(rt.Context()).
+		WithWaitGroup(rt.WaitGroup()).
 		SetBasePath("/api/").
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
+		AddRouteInitializer(server.MountReadiness("/readyz", rt.Ready)).
 		Run()
 
-	tdm.Wait()
-	l.Infoln("Service shutdown.")
+	rt.Wait()
 }
 
 func getExpirationInterval() time.Duration {

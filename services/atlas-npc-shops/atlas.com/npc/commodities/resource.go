@@ -5,7 +5,9 @@ import (
 	"net/http"
 	"strconv"
 
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
@@ -21,6 +23,10 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 	}
 }
 
+// handleGetCommoditiesByItem is DB-backed, filtered by template_id.
+// Entity.Id is a single-column uuid.UUID primary key, so
+// database.PagedQuery applies directly. CommodityByItemRestModel is a pure
+// field copy of Entity — no hidden decoration.
 func handleGetCommoditiesByItem(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
@@ -32,17 +38,22 @@ func handleGetCommoditiesByItem(d *rest.HandlerDependency, c *rest.HandlerContex
 			return
 		}
 
-		var entities []Entity
-		if err := d.DB().WithContext(d.Context()).
-			Where("template_id = ?", uint32(itemId)).
-			Find(&entities).Error; err != nil {
+		page, err := paginate.ParseParams(r.URL.Query(), paginate.MaxPageSize, paginate.MaxPageSize)
+		if err != nil {
+			server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+			return
+		}
+
+		scoped := d.DB().WithContext(d.Context()).Where("template_id = ?", uint32(itemId))
+		paged, err := database.PagedQuery[Entity](scoped, page)()
+		if err != nil {
 			d.Logger().WithError(err).Errorf("Unable to retrieve commodities for itemId=%d.", itemId)
 			server.WriteErrorResponse(d.Logger())(w)(err)
 			return
 		}
 
-		res := make([]CommodityByItemRestModel, 0, len(entities))
-		for _, e := range entities {
+		res := make([]CommodityByItemRestModel, 0, len(paged.Items))
+		for _, e := range paged.Items {
 			res = append(res, CommodityByItemRestModel{
 				Id:              e.Id,
 				NpcId:           e.NpcId,
@@ -58,6 +69,6 @@ func handleGetCommoditiesByItem(d *rest.HandlerDependency, c *rest.HandlerContex
 
 		query := r.URL.Query()
 		queryParams := jsonapi.ParseQueryFields(&query)
-		server.MarshalResponse[[]CommodityByItemRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+		server.MarshalPaginatedResponse[[]CommodityByItemRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res, paginate.EnvelopeFor(paged), r)
 	}
 }

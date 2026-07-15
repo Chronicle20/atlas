@@ -286,12 +286,13 @@ func TestProcessorTransitionState(t *testing.T) {
 	}
 }
 
-// TestProcessorBrowseUnpaged pins the PageSize<0 contract: a negative page
-// size disables paging entirely and returns EVERY filtered row, while the
-// zero value keeps the DefaultPageSize (16) window. The channel relies on
-// the unpaged form to derive the client's categoryItemCnt total (the v83
-// page selector is ceil(total/16), so the total must span all pages).
-func TestProcessorBrowseUnpaged(t *testing.T) {
+// TestProcessorBrowseDefaultPage pins that Browse without an explicit
+// PageSize returns the DefaultPageSize (16) window. The PageSize<0 "unpaged"
+// escape hatch was removed (task-117): a caller that needs every row now
+// pages through explicitly and accumulates (the channel-side equivalent is
+// requests.DrainProvider against the REST endpoint's page[number]/
+// page[size] convention).
+func TestProcessorBrowseDefaultPage(t *testing.T) {
 	p, db, cleanup := test.CreateListingProcessor(t)
 	defer cleanup()
 	resetListings(t, db)
@@ -310,12 +311,23 @@ func TestProcessorBrowseUnpaged(t *testing.T) {
 		t.Fatalf("default browse returned %d rows, want DefaultPageSize %d", len(def), listing.DefaultPageSize)
 	}
 
-	all, err := p.Browse(0, listing.StateActive, listing.BrowseFilter{PageSize: -1})
-	if err != nil {
-		t.Fatalf("Browse unpaged: %v", err)
+	// Page through explicitly (Page is 0-based at the provider level) to
+	// recover every row — the replacement for the removed PageSize<0 hatch.
+	seen := map[string]struct{}{}
+	for page := 0; ; page++ {
+		rows, err := p.Browse(0, listing.StateActive, listing.BrowseFilter{Page: page, PageSize: 16})
+		if err != nil {
+			t.Fatalf("Browse page %d: %v", page, err)
+		}
+		if len(rows) == 0 {
+			break
+		}
+		for _, r := range rows {
+			seen[r.Id().String()] = struct{}{}
+		}
 	}
-	if len(all) != 20 {
-		t.Fatalf("unpaged browse returned %d rows, want 20", len(all))
+	if len(seen) != 20 {
+		t.Fatalf("paged-through browse collected %d distinct rows, want 20", len(seen))
 	}
 }
 

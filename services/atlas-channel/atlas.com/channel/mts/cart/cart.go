@@ -35,9 +35,11 @@ func Items(l logrus.FieldLogger, ctx context.Context, worldId world.Id, characte
 		return nil, err
 	}
 
-	// Resolve ALL favorited listings in ONE browse (serial IN ...) rather than a
-	// GetBySerial per entry: the cart re-renders on every wish add/remove and every
-	// purchase, so a per-entry fan-out would be N atlas-mts round-trips each time.
+	// Resolve ALL favorited listings in ONE drained browse (serial IN ...)
+	// rather than a GetBySerial per entry: the cart re-renders on every wish
+	// add/remove and every purchase, so a per-entry fan-out would be N
+	// atlas-mts round-trips each time. BrowseAll (not Browse) because the
+	// cart's favorited-listing count can exceed one server page.
 	serials := make([]uint32, 0, len(ws))
 	for _, w := range ws {
 		if w.ListingSerial() != 0 {
@@ -46,7 +48,7 @@ func Items(l logrus.FieldLogger, ctx context.Context, worldId world.Id, characte
 	}
 	byNITCSN := make(map[uint32]mtslisting.Model, len(serials))
 	if len(serials) > 0 {
-		ms, berr := mtslisting.NewProcessor(l, ctx).Browse(worldId, mtslisting.BrowseFilter{Serials: serials, PageSize: -1})
+		ms, berr := mtslisting.NewProcessor(l, ctx).BrowseAll(worldId, mtslisting.BrowseFilter{Serials: serials})
 		if berr != nil {
 			l.WithError(berr).Errorf("Unable to resolve cart listings for character [%d]; rendering empty cart.", characterId)
 			return nil, berr

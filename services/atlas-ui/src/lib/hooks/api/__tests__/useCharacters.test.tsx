@@ -17,6 +17,7 @@ import {
 } from '../useCharacters';
 import type { Character, UpdateCharacterData } from '@/types/models/character';
 import type { Tenant } from '@/types/models/tenant';
+import type { PagedResult } from '@/services/api/pagination';
 import type { ReactNode } from 'react';
 
 // Mock the characters service
@@ -233,6 +234,52 @@ describe('useCharacters hooks', () => {
       });
 
       expect(result.current.error).toBe(error);
+    });
+
+    it('invalidates the paged list view so stale rows refresh after an update (FE-INVAL-1, task-117)', async () => {
+      mockCharactersService.update.mockResolvedValue(undefined);
+
+      const queryClient = new QueryClient({
+        defaultOptions: {
+          queries: { retry: false },
+          mutations: { retry: false },
+        },
+      });
+      const TestWrapper = ({ children }: { children: ReactNode }) => (
+        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+      );
+      TestWrapper.displayName = 'TestWrapper';
+
+      // Seed the cache the way useCharactersPage would after the Characters
+      // list view has fetched a page.
+      const pagedKey = characterKeys.pagedList(mockTenant, 1, 20);
+      const pagedData: PagedResult<Character> = {
+        data: [mockCharacter],
+        meta: { total: 1, page: { number: 1, size: 20, last: 1 } },
+      };
+      queryClient.setQueryData(pagedKey, pagedData);
+      expect(queryClient.getQueryState(pagedKey)?.isInvalidated).toBe(false);
+
+      const { result } = renderHook(() => useUpdateCharacter(), { wrapper: TestWrapper });
+
+      result.current.mutate({
+        tenant: mockTenant,
+        characterId: 'char-123',
+        updates: mockUpdateData,
+      });
+
+      await waitFor(() => {
+        expect(result.current.isSuccess).toBe(true);
+      });
+
+      // FE-INVAL-1: pagedList used to be a sibling of lists()/list(), so this
+      // invalidation never reached it and the paged view stayed stale until
+      // a manual refresh. Nesting pagedList under lists() (and scoping the
+      // mutation's invalidation to characterKeys.lists() + tenant, not the
+      // options-pinned characterKeys.list()) fixes it.
+      await waitFor(() => {
+        expect(queryClient.getQueryState(pagedKey)?.isInvalidated).toBe(true);
+      });
     });
   });
 

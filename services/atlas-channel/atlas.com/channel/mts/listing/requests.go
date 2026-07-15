@@ -12,7 +12,9 @@ import (
 
 // Resource is the atlas-mts browse endpoint: GET /worlds/{worldId}/listings with
 // the browse filter as query params (category/subCategory/saleType/itemId/
-// sellerName/page/pageSize). It mirrors atlas-mts's listing.handleBrowseListings.
+// sellerName/page[number]/page[size]). It mirrors atlas-mts's
+// listing.handleBrowseListings, which pages via the repo-wide
+// page[number](1-based)/page[size] convention (task-117).
 const Resource = "worlds/%d/listings"
 
 // BrowseFilter carries the optional browse/search query parameters decoded from
@@ -44,16 +46,25 @@ type BrowseFilter struct {
 	// ExcludeOffers omits sale_type=offer rows from a public browse so escrowed
 	// offers never appear in the For-Sale / Auction tabs.
 	ExcludeOffers bool
-	Page          int
-	PageSize      int
+	// Page is the 0-based page index (mirrors the game client's own 0-based
+	// paging field). query() renders it onto the wire's 1-based page[number]
+	// (Page+1); the caller never sees the +1 — it stays an implementation
+	// detail of the single-page Browse/BrowseProvider path. Unused by the
+	// semantic-all BrowseAll path, which pages via requests.DrainProvider
+	// against the filter-only URL (browseUrl) instead.
+	Page     int
+	PageSize int
 }
 
 func getBaseRequest() string {
 	return requests.RootUrl("MTS")
 }
 
-// query renders the filter as a URL query string (leading "?") or "" when empty.
-func (f BrowseFilter) query() string {
+// filterQuery renders only the non-paging filter fields. Shared by query()
+// (the single-page Browse path, which layers page[number]/page[size] on
+// top) and browseUrl() (the BrowseAll/DrainProvider path, which appends its
+// own page params per iteration and must not have Page/PageSize baked in).
+func (f BrowseFilter) filterQuery() url.Values {
 	q := url.Values{}
 	if f.Category != "" {
 		q.Set("category", f.Category)
@@ -99,11 +110,23 @@ func (f BrowseFilter) query() string {
 	if f.SellerName != "" {
 		q.Set("sellerName", f.SellerName)
 	}
+	return q
+}
+
+// query renders the filter as a single-page browse URL query string (leading
+// "?") or "" when empty. Page (0-based) is rendered onto the wire's 1-based
+// page[number] as Page+1 — atlas-mts's page[number] defaults to 1 (its own
+// 0-based equivalent, page 0), so a zero-valued Page is omitted exactly as
+// the pre-task-117 bare "page" param was, preserving the same default
+// window. PageSize renders directly onto page[size] (same units, no
+// conversion) only when the caller set a non-default value.
+func (f BrowseFilter) query() string {
+	q := f.filterQuery()
 	if f.Page != 0 {
-		q.Set("page", strconv.Itoa(f.Page))
+		q.Set("page[number]", strconv.Itoa(f.Page+1))
 	}
 	if f.PageSize != 0 {
-		q.Set("pageSize", strconv.Itoa(f.PageSize))
+		q.Set("page[size]", strconv.Itoa(f.PageSize))
 	}
 	if len(q) == 0 {
 		return ""
@@ -113,4 +136,17 @@ func (f BrowseFilter) query() string {
 
 func requestBrowse(worldId world.Id, f BrowseFilter) requests.Request[[]RestModel] {
 	return requests.GetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+Resource, byte(worldId)) + f.query())
+}
+
+// browseUrl returns the bare browse URL for the given world/filters, WITHOUT
+// any page params, for requests.DrainProvider (BrowseAll): DrainProvider
+// appends its own page[number]/page[size] per iteration, so this must not
+// bake in Page/PageSize (BrowseAll callers never set them anyway).
+func browseUrl(worldId world.Id, f BrowseFilter) string {
+	base := fmt.Sprintf(getBaseRequest()+Resource, byte(worldId))
+	q := f.filterQuery()
+	if len(q) == 0 {
+		return base
+	}
+	return base + "?" + q.Encode()
 }

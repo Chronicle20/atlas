@@ -41,6 +41,11 @@ type Processor interface {
 	GetById(petId uint32) (Model, error)
 	ByOwnerProvider(ownerId uint32) model.Provider[[]Model]
 	GetByOwner(ownerId uint32) ([]Model, error)
+	// ByOwnerIdPagedProvider returns one page of a character's pets. Used
+	// only by the REST list handler (GET /characters/{characterId}/pets,
+	// task-117); internal callers needing every pet keep using
+	// ByOwnerProvider/GetByOwner above.
+	ByOwnerIdPagedProvider(ownerId uint32, page model.Page) model.Provider[model.Paged[Model]]
 	SpawnedByOwnerProvider(ownerId uint32) model.Provider[[]Model]
 	HungryByOwnerProvider(ownerId uint32) model.Provider[[]Model]
 	HungriestByOwnerProvider(ownerId uint32) model.Provider[Model]
@@ -207,6 +212,10 @@ func (p *ProcessorImpl) ByOwnerProvider(ownerId uint32) model.Provider[[]Model] 
 
 func (p *ProcessorImpl) GetByOwner(ownerId uint32) ([]Model, error) {
 	return model.CollapseProvider(p.ByOwnerProvider)(ownerId)
+}
+
+func (p *ProcessorImpl) ByOwnerIdPagedProvider(ownerId uint32, page model.Page) model.Provider[model.Paged[Model]] {
+	return model.MapPaged(Make)(getByOwnerIdPaged(ownerId, page)(p.db.WithContext(p.ctx)))(model.ParallelMap())
 }
 
 func (p *ProcessorImpl) SpawnedByOwnerProvider(ownerId uint32) model.Provider[[]Model] {

@@ -21,18 +21,24 @@ func getBaseRequest() string {
 	return requests.RootUrl("MTS")
 }
 
-func requestByCharacter(characterId uint32) requests.Request[[]RestModel] {
-	return requests.GetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+Resource, characterId))
+// byCharacterUrl returns the list URL for a character's wishlist. It is a bare
+// URL (not a requests.Request) because the list is now paginated server-side
+// (task-117) and consumed via requests.DrainProvider, which appends its own
+// page[number]/page[size] query params per request.
+func byCharacterUrl(characterId uint32) string {
+	return fmt.Sprintf(getBaseRequest()+Resource, characterId)
 }
 
-// requestWantedByWorld fetches every want-ad in a world, across all characters
-// (atlas-mts handleGetWorldWishlist returns the type=wanted entries world-wide).
-func requestWantedByWorld(worldId byte) requests.Request[[]RestModel] {
-	return requests.GetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+WorldResource, worldId))
+// wantedByWorldUrl returns the list URL for every want-ad in a world, across all
+// characters (atlas-mts handleGetWorldWishlist returns the type=wanted entries
+// world-wide). Paginated server-side (task-117); consumed via DrainProvider.
+func wantedByWorldUrl(worldId byte) string {
+	return fmt.Sprintf(getBaseRequest()+WorldResource, worldId)
 }
 
-// requestByCharacterAndType fetches only the character's cart or wanted entries
-// (atlas-mts handleGetCharacterWishlist honors the `type` query param).
-func requestByCharacterAndType(characterId uint32, wishType string) requests.Request[[]RestModel] {
-	return requests.GetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+Resource, characterId) + "?type=" + url.QueryEscape(wishType))
+// byCharacterAndTypeUrl returns the list URL for only the character's cart or
+// wanted entries (atlas-mts handleGetCharacterWishlist honors the `type` query
+// param). Paginated server-side (task-117); consumed via DrainProvider.
+func byCharacterAndTypeUrl(characterId uint32, wishType string) string {
+	return fmt.Sprintf(getBaseRequest()+Resource, characterId) + "?type=" + url.QueryEscape(wishType)
 }

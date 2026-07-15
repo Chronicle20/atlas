@@ -31,6 +31,7 @@ Activate when working on:
 - [ ] Lazy **Provider** for data access
 - [ ] Kafka **Producer** initialized with context decorators
 - [ ] **Resource** file for route registration and handlers
+- [ ] **Collection GET routes paginate** (`page[number]`/`page[size]`, never a bare `GetAll` + `MarshalResponse[[]...]`) — see [docs/rest-pagination.md](../../../docs/rest-pagination.md)
 - [ ] **Ingress configuration** updated if REST endpoints added/modified
 - [ ] **Service README** updated if API contracts changed
 - [ ] **Requests** + **rest.go** for cross-service REST calls (if needed)
@@ -160,6 +161,7 @@ See [Testing Conventions](resources/testing-guide.md) for comprehensive testing 
 | Kafka Integration | [resources/patterns-kafka.md](resources/patterns-kafka.md) |
 | **Saga Patterns & Step Completion** | **[resources/patterns-saga.md](resources/patterns-saga.md)** |
 | REST JSON:API | [resources/patterns-rest-jsonapi.md](resources/patterns-rest-jsonapi.md) |
+| **REST Collection Pagination** | **[docs/rest-pagination.md](../../../docs/rest-pagination.md)** (repo root) |
 | **DB & Downstream Resilience** | **[resources/patterns-resilience.md](resources/patterns-resilience.md)** |
 | **Ingress & Documentation** | **[resources/patterns-ingress-documentation.md](resources/patterns-ingress-documentation.md)** |
 | Multi-Tenancy Context | [resources/patterns-multitenancy-context.md](resources/patterns-multitenancy-context.md) |

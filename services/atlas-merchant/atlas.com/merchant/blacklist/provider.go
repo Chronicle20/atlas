@@ -7,13 +7,14 @@ import (
 	"gorm.io/gorm"
 )
 
-func getByShopId(shopId uuid.UUID) database.EntityProvider[[]Entity] {
-	return func(db *gorm.DB) model.Provider[[]Entity] {
-		var results []Entity
-		if err := db.Where("shop_id = ?", shopId).Order("name ASC").Find(&results).Error; err != nil {
-			return model.ErrorProvider[[]Entity](err)
-		}
-		return model.FixedProvider(results)
+// getByShopIdPaged is the paged form of the per-shop blacklist query,
+// backing the GET /merchants/{shopId}/blacklist list route (task-117). The
+// prior unpaged form had no internal caller (in-process ban checks use
+// existsByShopIdAndName), so it is deleted rather than kept alongside a
+// paged sibling, per the Group A "delete, don't shadow" convention.
+func getByShopIdPaged(shopId uuid.UUID, page model.Page) database.EntityProvider[model.Paged[Entity]] {
+	return func(db *gorm.DB) model.Provider[model.Paged[Entity]] {
+		return database.PagedQuery[Entity](db.Where("shop_id = ?", shopId).Order("name ASC"), page)
 	}
 }
 

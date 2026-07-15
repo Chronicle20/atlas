@@ -44,20 +44,31 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	return &ProcessorImpl{l: l, ctx: ctx}
 }
 
+// GetByCharacterProvider fetches every wish entry for a character. The upstream
+// atlas-mts list is now paginated (task-117); GetByCharacterItem/
+// GetByCharacterSerial linear-search the result to resolve a single entry, so
+// they need the complete wishlist — this drains every page rather than
+// fetching just the first.
 func (p *ProcessorImpl) GetByCharacterProvider(characterId uint32) model.Provider[[]Model] {
-	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByCharacter(characterId), Extract, model.Filters[Model]())
+	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(byCharacterUrl(characterId), 250, Extract, model.Filters[Model]())
 }
 
 func (p *ProcessorImpl) GetByCharacter(characterId uint32) ([]Model, error) {
 	return p.GetByCharacterProvider(characterId)()
 }
 
+// GetByCharacterAndType fetches every wish entry of one kind (cart or wanted)
+// for a character. The upstream list is now paginated (task-117); the Cart and
+// Wanted MTS views render the complete set, so this drains every page.
 func (p *ProcessorImpl) GetByCharacterAndType(characterId uint32, wishType string) ([]Model, error) {
-	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByCharacterAndType(characterId, wishType), Extract, model.Filters[Model]())()
+	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(byCharacterAndTypeUrl(characterId, wishType), 250, Extract, model.Filters[Model]())()
 }
 
+// GetWantedByWorld fetches every want-ad in a world, across all characters. The
+// upstream list is now paginated (task-117); the cross-character Wanted browse
+// tab renders the complete set, so this drains every page.
 func (p *ProcessorImpl) GetWantedByWorld(worldId byte) ([]Model, error) {
-	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestWantedByWorld(worldId), Extract, model.Filters[Model]())()
+	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(wantedByWorldUrl(worldId), 250, Extract, model.Filters[Model]())()
 }
 
 func (p *ProcessorImpl) GetByCharacterItem(characterId uint32, itemId uint32) (Model, error) {

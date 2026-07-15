@@ -2,7 +2,7 @@ import { useTenant } from "@/context/tenant-context";
 import { DataTableWrapper } from "@/components/common/DataTableWrapper";
 import { hiddenColumns, getColumns } from "@/pages/accounts-columns";
 import { useCallback, useEffect, useState } from "react";
-import { useAccounts } from "@/lib/hooks/api/useAccounts";
+import { useAccountsPage } from "@/lib/hooks/api/useAccounts";
 import { useGridRefresh } from "@/lib/hooks/useGridRefresh";
 import { bansService } from "@/services/api/bans.service";
 import type { Account } from "@/types/models/account";
@@ -13,15 +13,30 @@ import { CreateAccountDialog } from "@/components/features/accounts/CreateAccoun
 import { Button } from "@/components/ui/button";
 import { Toaster, toast } from "sonner";
 import { AccountPageSkeleton } from "@/components/common/skeletons/AccountPageSkeleton";
+import { Pager } from "@/components/common/Pager";
+import { useSearchParams } from "react-router-dom";
+
+const PAGE_SIZE = 50;
 
 export function AccountsPage() {
   const { activeTenant } = useTenant();
-  const accountsQuery = useAccounts(activeTenant!);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const pageNumber = Math.max(1, Number.parseInt(searchParams.get("page") ?? "1", 10) || 1);
+
+  const accountsQuery = useAccountsPage(activeTenant, { number: pageNumber, size: PAGE_SIZE });
   const { isRefreshing, onRefresh } = useGridRefresh([accountsQuery]);
 
-  const accounts = accountsQuery.data ?? [];
+  const accounts = accountsQuery.data?.data ?? [];
+  const meta = accountsQuery.data?.meta ?? null;
   const loading = accountsQuery.isLoading;
   const error = accountsQuery.error?.message ?? null;
+
+  const handlePageChange = (nextPage: number) => {
+    const next = new URLSearchParams(searchParams);
+    if (nextPage > 1) next.set("page", String(nextPage));
+    else next.delete("page");
+    setSearchParams(next, { replace: false });
+  };
 
   const [banStatuses, setBanStatuses] = useState<Map<string, CheckBanAttributes>>(new Map());
   const [banStatusLoading, setBanStatusLoading] = useState(false);
@@ -139,6 +154,15 @@ export function AccountsPage() {
             description: "There are no accounts to display at this time.",
           }}
         />
+        {meta && accounts.length > 0 && (
+          <Pager
+            page={meta.page.number}
+            lastPage={meta.page.last}
+            total={meta.total}
+            pageSize={meta.page.size}
+            onPageChange={handlePageChange}
+          />
+        )}
       </div>
 
       <CreateBanDialog

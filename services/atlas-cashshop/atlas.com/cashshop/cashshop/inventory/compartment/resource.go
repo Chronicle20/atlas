@@ -7,6 +7,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
@@ -64,8 +65,21 @@ func handleGetCompartments(db *gorm.DB) rest.GetHandler {
 					return
 				}
 
-				// If no type parameter was provided, get all compartments
-				res, err := model.SliceMap(Transform)(processor.AllByAccountIdProvider(accountId))(model.ParallelMap())()
+				// If no type parameter was provided, get all compartments (paginated)
+				page, err := paginate.ParseParams(r.URL.Query(), paginate.MaxPageSize, paginate.MaxPageSize)
+				if err != nil {
+					server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+					return
+				}
+
+				paged, err := processor.AllByAccountIdPagedProvider(accountId, page)()
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Creating REST model.")
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+
+				res, err := model.SliceMap(Transform)(model.FixedProvider(paged.Items))(model.ParallelMap())()
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Creating REST model.")
 					server.WriteErrorResponse(d.Logger())(w)(err)
@@ -74,7 +88,7 @@ func handleGetCompartments(db *gorm.DB) rest.GetHandler {
 
 				// Marshal the response
 				queryParams := jsonapi.ParseQueryFields(&query)
-				server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+				server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res, paginate.EnvelopeFor(paged), r)
 			}
 		})
 	}

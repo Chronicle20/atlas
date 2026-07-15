@@ -8,6 +8,7 @@ import (
 	"time"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"atlas-data/canonical"
 	"github.com/google/uuid"
@@ -111,7 +112,7 @@ func TestAllProvider_FallsBackToCanonicalWhenTenantEmpty(t *testing.T) {
 
 	// A real tenant with no rows of its own.
 	realTenant := uuid.New()
-	got, err := newTestStorage(t, db).GetAll(ctxForTenant(t, realTenant))
+	got, err := newTestStorage(t, db).DrainAllProvider(ctxForTenant(t, realTenant))()
 	require.NoError(t, err)
 	require.Len(t, got, 2, "expected fallback to canonical dataset")
 }
@@ -128,7 +129,7 @@ func TestAllProvider_PrefersTenantOwnData(t *testing.T) {
 	realTenant := uuid.New()
 	seedTestDoc(t, db, ctxForTenant(t, realTenant), 2000000, "tenant-only")
 
-	got, err := newTestStorage(t, db).GetAll(ctxForTenant(t, realTenant))
+	got, err := newTestStorage(t, db).DrainAllProvider(ctxForTenant(t, realTenant))()
 	require.NoError(t, err)
 	require.Len(t, got, 1, "tenant with its own data should not fall back")
 	require.Equal(t, uint32(2000000), got[0].Id)
@@ -138,7 +139,7 @@ func TestAllProvider_PrefersTenantOwnData(t *testing.T) {
 // without error.
 func TestAllProvider_EmptyWhenNeitherHasData(t *testing.T) {
 	db := newStorageTestDB(t)
-	got, err := newTestStorage(t, db).GetAll(ctxForTenant(t, uuid.New()))
+	got, err := newTestStorage(t, db).DrainAllProvider(ctxForTenant(t, uuid.New()))()
 	require.NoError(t, err)
 	require.Len(t, got, 0)
 }
@@ -162,7 +163,7 @@ func TestVersionScopedCanonicalFallback_GetAll(t *testing.T) {
 
 	// A v83 tenant with no per-tenant rows should fall back to v83 canonical data.
 	v83TenantCtx := ctxForVersionedTenant(t, uuid.New(), "GMS", 83, 1)
-	got83, err := newTestStorage(t, db).GetAll(v83TenantCtx)
+	got83, err := newTestStorage(t, db).DrainAllProvider(v83TenantCtx)()
 	require.NoError(t, err)
 	require.Len(t, got83, 2, "v83 tenant should fall back to v83 canonical dataset")
 	ids83 := make(map[uint32]bool)
@@ -174,7 +175,7 @@ func TestVersionScopedCanonicalFallback_GetAll(t *testing.T) {
 
 	// A v84 tenant with no per-tenant rows should fall back to v84 canonical data (no cross-version bleed).
 	v84TenantCtx := ctxForVersionedTenant(t, uuid.New(), "GMS", 84, 1)
-	got84, err := newTestStorage(t, db).GetAll(v84TenantCtx)
+	got84, err := newTestStorage(t, db).DrainAllProvider(v84TenantCtx)()
 	require.NoError(t, err)
 	require.Len(t, got84, 1, "v84 tenant should fall back to v84 canonical dataset only")
 	require.Equal(t, uint32(8400000), got84[0].Id, "v84 fallback should not contain v83 docs")
@@ -222,7 +223,7 @@ func TestVersionScopedCanonicalFallback_OwnDataPreferred(t *testing.T) {
 	realCtx := ctxForVersionedTenant(t, realId, "GMS", 83, 1)
 	seedTestDoc(t, db, realCtx, 5000000, "tenant-name")
 
-	gotAll, err := newTestStorage(t, db).GetAll(realCtx)
+	gotAll, err := newTestStorage(t, db).DrainAllProvider(realCtx)()
 	require.NoError(t, err)
 	require.Len(t, gotAll, 1)
 	require.Equal(t, "tenant-name", gotAll[0].Name, "tenant's own data should be preferred over canonical fallback")
@@ -246,7 +247,7 @@ func TestVersionScopedCanonicalFallback_GetByIdAndGetAllAgree(t *testing.T) {
 	tenantCtx := ctxForVersionedTenant(t, uuid.New(), "GMS", 83, 1)
 	sto := newTestStorage(t, db)
 
-	all, err := sto.GetAll(tenantCtx)
+	all, err := sto.DrainAllProvider(tenantCtx)()
 	require.NoError(t, err)
 	require.Len(t, all, 2)
 
@@ -257,4 +258,73 @@ func TestVersionScopedCanonicalFallback_GetByIdAndGetAllAgree(t *testing.T) {
 	byId1, err := sto.GetById(tenantCtx)("7000001")
 	require.NoError(t, err)
 	require.Equal(t, uint32(7000001), byId1.Id)
+}
+
+// AllPagedProvider must page a tenant's own documents in document_id order,
+// with Total reflecting the full unpaged count.
+func TestAllPagedProviderPagesTenantDocs(t *testing.T) {
+	db := newStorageTestDB(t)
+	tenantCtx := ctxForVersionedTenant(t, uuid.New(), "GMS", 83, 1)
+	for i := uint32(1); i <= 7; i++ {
+		seedTestDoc(t, db, tenantCtx, i, fmt.Sprintf("doc-%d", i))
+	}
+
+	p, err := newTestStorage(t, db).AllPagedProvider(tenantCtx)(model.Page{Number: 2, Size: 3})()
+	require.NoError(t, err)
+	require.Equal(t, 7, p.Total)
+	require.Equal(t, model.Page{Number: 2, Size: 3}, p.Page)
+	require.Len(t, p.Items, 3)
+	require.Equal(t, []uint32{4, 5, 6}, []uint32{p.Items[0].Id, p.Items[1].Id, p.Items[2].Id})
+}
+
+// When the requesting tenant has no documents of this type, AllPagedProvider
+// must fall back to the version-scoped canonical dataset — mirroring
+// AllProvider's regression guard (batch-GetAll-skips-fallback, PR #759) so
+// the paged variant does not reintroduce that asymmetry.
+func TestAllPagedProviderCanonicalFallbackOnEmpty(t *testing.T) {
+	db := newStorageTestDB(t)
+	canonId := canonical.TenantId("GMS", 83, 1)
+	canonCtx := ctxForVersionedTenant(t, canonId, "GMS", 83, 1)
+	for i := uint32(1); i <= 4; i++ {
+		seedTestDoc(t, db, canonCtx, i, fmt.Sprintf("canonical-%d", i))
+	}
+
+	tenantCtx := ctxForVersionedTenant(t, uuid.New(), "GMS", 83, 1)
+	p, err := newTestStorage(t, db).AllPagedProvider(tenantCtx)(model.Page{Number: 1, Size: 10})()
+	require.NoError(t, err)
+	require.Equal(t, 4, p.Total, "expected fallback to canonical dataset")
+	require.Len(t, p.Items, 4)
+}
+
+// A tenant with its own documents must not fall back to canonical, even
+// though canonical also has rows of this type.
+func TestAllPagedProviderNoFallbackWhenTenantHasDocs(t *testing.T) {
+	db := newStorageTestDB(t)
+	canonId := canonical.TenantId("GMS", 83, 1)
+	canonCtx := ctxForVersionedTenant(t, canonId, "GMS", 83, 1)
+	for i := uint32(1); i <= 4; i++ {
+		seedTestDoc(t, db, canonCtx, i, fmt.Sprintf("canonical-%d", i))
+	}
+
+	tenantCtx := ctxForVersionedTenant(t, uuid.New(), "GMS", 83, 1)
+	seedTestDoc(t, db, tenantCtx, 100, "tenant-a")
+	seedTestDoc(t, db, tenantCtx, 101, "tenant-b")
+
+	p, err := newTestStorage(t, db).AllPagedProvider(tenantCtx)(model.Page{Number: 1, Size: 10})()
+	require.NoError(t, err)
+	require.Equal(t, 2, p.Total, "tenant with its own data must not fall back to canonical")
+	require.Len(t, p.Items, 2)
+}
+
+// DrainAllProvider must page internally until every document is collected.
+func TestDrainAllProviderReturnsAll(t *testing.T) {
+	db := newStorageTestDB(t)
+	tenantCtx := ctxForVersionedTenant(t, uuid.New(), "GMS", 83, 1)
+	for i := uint32(1); i <= 12; i++ {
+		seedTestDoc(t, db, tenantCtx, i, fmt.Sprintf("doc-%d", i))
+	}
+
+	all, err := newTestStorage(t, db).DrainAllProvider(tenantCtx)()
+	require.NoError(t, err)
+	require.Len(t, all, 12)
 }

@@ -5,11 +5,13 @@ import (
 	"atlas-quest/rest"
 	"errors"
 	"net/http"
+	"sort"
 	"strconv"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
@@ -55,21 +57,27 @@ func handleGetQuestsByCharacter(db *gorm.DB) rest.GetHandler {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				quests, err := NewProcessor(d.Logger(), d.Context(), db).GetByCharacterId(characterId)
+				page, err := paginate.ParseParams(r.URL.Query(), paginate.MaxPageSize, paginate.MaxPageSize)
+				if err != nil {
+					server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+					return
+				}
+
+				paged, err := NewProcessor(d.Logger(), d.Context(), db).ByCharacterIdPagedProvider(characterId, page)()
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Unable to get quests for character [%d].", characterId)
 					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
-				res, err := model.SliceMap(Transform)(model.FixedProvider(quests))()()
+				res, err := model.SliceMap(Transform)(model.FixedProvider(paged.Items))()()
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Creating REST model.")
 					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
-				server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(r.URL.Query())(res)
+				server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(r.URL.Query())(res, paginate.EnvelopeFor(paged), r)
 			}
 		})
 	}
@@ -79,21 +87,27 @@ func handleGetQuestsByCharacterAndState(db *gorm.DB, state State) rest.GetHandle
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				quests, err := NewProcessor(d.Logger(), d.Context(), db).GetByCharacterIdAndState(characterId, state)
+				page, err := paginate.ParseParams(r.URL.Query(), paginate.MaxPageSize, paginate.MaxPageSize)
+				if err != nil {
+					server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+					return
+				}
+
+				paged, err := NewProcessor(d.Logger(), d.Context(), db).ByCharacterIdAndStatePagedProvider(characterId, state, page)()
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Unable to get quests for character [%d] with state [%d].", characterId, state)
 					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
-				res, err := model.SliceMap(Transform)(model.FixedProvider(quests))()()
+				res, err := model.SliceMap(Transform)(model.FixedProvider(paged.Items))()()
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Creating REST model.")
 					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
-				server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(r.URL.Query())(res)
+				server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(r.URL.Query())(res, paginate.EnvelopeFor(paged), r)
 			}
 		})
 	}
@@ -245,6 +259,12 @@ func handleGetQuestProgress(db *gorm.DB) rest.GetHandler {
 		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 			return rest.ParseQuestId(d.Logger(), func(questId uint32) http.HandlerFunc {
 				return func(w http.ResponseWriter, r *http.Request) {
+					page, err := paginate.ParseParams(r.URL.Query(), paginate.MaxPageSize, paginate.MaxPageSize)
+					if err != nil {
+						server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+						return
+					}
+
 					q, err := NewProcessor(d.Logger(), d.Context(), db).GetByCharacterIdAndQuestId(characterId, questId)
 					if errors.Is(err, gorm.ErrRecordNotFound) {
 						w.WriteHeader(http.StatusNotFound)
@@ -256,14 +276,27 @@ func handleGetQuestProgress(db *gorm.DB) rest.GetHandler {
 						return
 					}
 
-					res, err := model.SliceMap(progress.Transform)(model.FixedProvider(q.Progress()))()()
+					// q.Progress() is preloaded via GORM with no explicit ORDER
+					// BY, so its row order is not guaranteed stable across
+					// calls. Sort by Id (unique within a quest's progress
+					// entries) before slicing so pagination is deterministic
+					// (task-117 determinism requirement).
+					prog := make([]progress.Model, len(q.Progress()))
+					copy(prog, q.Progress())
+					sort.SliceStable(prog, func(i, j int) bool {
+						return prog[i].Id() < prog[j].Id()
+					})
+
+					paged := paginate.Slice(prog, page)
+
+					res, err := model.SliceMap(progress.Transform)(model.FixedProvider(paged.Items))()()
 					if err != nil {
 						d.Logger().WithError(err).Errorf("Creating REST model.")
 						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 
-					server.MarshalResponse[[]progress.RestModel](d.Logger())(w)(c.ServerInformation())(r.URL.Query())(res)
+					server.MarshalPaginatedResponse[[]progress.RestModel](d.Logger())(w)(c.ServerInformation())(r.URL.Query())(res, paginate.EnvelopeFor(paged), r)
 				}
 			})
 		})

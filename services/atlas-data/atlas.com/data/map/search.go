@@ -23,19 +23,23 @@ type SearchResult struct {
 	StreetName string
 }
 
-func SearchByQuery(_ logrus.FieldLogger, db *gorm.DB) func(ctx context.Context) func(q string, limit int) ([]SearchResult, error) {
-	return func(ctx context.Context) func(q string, limit int) ([]SearchResult, error) {
-		return func(q string, limit int) ([]SearchResult, error) {
-			spec := searchindex.QuerySpec[SearchIndexEntity]{
-				EntityIdColumn: "map_id",
-				NameColumns:    []string{"name", "street_name"},
-				Order:          "name ASC, map_id ASC",
-			}
+func mapSearchSpec() searchindex.QuerySpec[SearchIndexEntity] {
+	return searchindex.QuerySpec[SearchIndexEntity]{
+		EntityIdColumn: "map_id",
+		NameColumns:    []string{"name", "street_name"},
+		Order:          "name ASC, map_id ASC",
+	}
+}
+
+func SearchByQuery(_ logrus.FieldLogger, db *gorm.DB) func(ctx context.Context) func(q string, offset, limit int) ([]SearchResult, error) {
+	return func(ctx context.Context) func(q string, offset, limit int) ([]SearchResult, error) {
+		return func(q string, offset, limit int) ([]SearchResult, error) {
+			spec := mapSearchSpec()
 			tenantId, err := searchindex.ResolveTenantId(db, ctx, spec)
 			if err != nil {
 				return nil, err
 			}
-			rows, err := searchindex.Search[SearchIndexEntity](db, ctx, tenantId, q, 0, limit, spec)
+			rows, err := searchindex.Search[SearchIndexEntity](db, ctx, tenantId, q, offset, limit, spec)
 			if err != nil {
 				return nil, err
 			}
@@ -44,6 +48,22 @@ func SearchByQuery(_ logrus.FieldLogger, db *gorm.DB) func(ctx context.Context) 
 				out = append(out, SearchResult{Id: r.MapId, Name: r.Name, StreetName: r.StreetName})
 			}
 			return out, nil
+		}
+	}
+}
+
+// CountByQuery returns the total row count matching q for the map search
+// index, mirroring SearchByQuery's tenant resolution so the pagination
+// envelope's meta.total agrees with the paged result set.
+func CountByQuery(db *gorm.DB) func(ctx context.Context) func(q string) (int, error) {
+	return func(ctx context.Context) func(q string) (int, error) {
+		return func(q string) (int, error) {
+			spec := mapSearchSpec()
+			tenantId, err := searchindex.ResolveTenantId(db, ctx, spec)
+			if err != nil {
+				return 0, err
+			}
+			return searchindex.Count(db, ctx, tenantId, q, spec)
 		}
 	}
 }

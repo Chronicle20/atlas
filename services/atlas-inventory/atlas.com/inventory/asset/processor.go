@@ -32,6 +32,7 @@ type Processor interface {
 	WithConsumableProcessor(conp consumable.Processor) Processor
 	ByCompartmentIdProvider(compartmentId uuid.UUID) model.Provider[[]Model]
 	GetByCompartmentId(compartmentId uuid.UUID) ([]Model, error)
+	ByCompartmentIdPagedProvider(compartmentId uuid.UUID, page model.Page) model.Provider[model.Paged[Model]]
 	GetBySlot(compartmentId uuid.UUID, slot int16) (Model, error)
 	BySlotProvider(compartmentId uuid.UUID) func(slot int16) model.Provider[Model]
 	ByIdProvider(id uint32) model.Provider[Model]
@@ -118,6 +119,14 @@ func (p *ProcessorImpl) ByCompartmentIdProvider(compartmentId uuid.UUID) model.P
 
 func (p *ProcessorImpl) GetByCompartmentId(compartmentId uuid.UUID) ([]Model, error) {
 	return p.ByCompartmentIdProvider(compartmentId)()
+}
+
+// ByCompartmentIdPagedProvider is the paginated sibling of ByCompartmentIdProvider,
+// used only by the REST list handler. Internal callers that need every asset in a
+// compartment (compartment processor business logic, kafka consumers) continue to
+// use the unpaged ByCompartmentIdProvider/GetByCompartmentId above.
+func (p *ProcessorImpl) ByCompartmentIdPagedProvider(compartmentId uuid.UUID, page model.Page) model.Provider[model.Paged[Model]] {
+	return model.MapPaged(Make)(getByCompartmentIdPaged(compartmentId, page)(p.db.WithContext(p.ctx)))(model.ParallelMap())
 }
 
 func (p *ProcessorImpl) GetBySlot(compartmentId uuid.UUID, slot int16) (Model, error) {

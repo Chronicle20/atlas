@@ -15,9 +15,9 @@ type ProcessorMock struct {
 	UpdateFunc                      func(id uuid.UUID, m script.MapScript) (script.MapScript, error)
 	DeleteFunc                      func(id uuid.UUID) error
 	ByIdProviderFunc                func(id uuid.UUID) model.Provider[script.MapScript]
-	ByScriptNameProviderFunc        func(scriptName string) model.Provider[[]script.MapScript]
+	ByScriptNameProviderFunc        func(scriptName string, page model.Page) model.Provider[model.Paged[script.MapScript]]
 	ByScriptNameAndTypeProviderFunc func(scriptName string, scriptType string) model.Provider[script.MapScript]
-	AllProviderFunc                 func() model.Provider[[]script.MapScript]
+	AllProviderFunc                 func(page model.Page) model.Provider[model.Paged[script.MapScript]]
 	DeleteAllForTenantFunc          func() (int64, error)
 	CountFunc                       func() (int64, *time.Time, error)
 	ProcessFunc                     func(f field.Model, characterId uint32, scriptName string, scriptType string) script.ProcessResult
@@ -53,11 +53,11 @@ func (m *ProcessorMock) ByIdProvider(id uuid.UUID) model.Provider[script.MapScri
 	return model.FixedProvider(script.MapScript{})
 }
 
-func (m *ProcessorMock) ByScriptNameProvider(scriptName string) model.Provider[[]script.MapScript] {
+func (m *ProcessorMock) ByScriptNameProvider(scriptName string, page model.Page) model.Provider[model.Paged[script.MapScript]] {
 	if m.ByScriptNameProviderFunc != nil {
-		return m.ByScriptNameProviderFunc(scriptName)
+		return m.ByScriptNameProviderFunc(scriptName, page)
 	}
-	return model.FixedProvider([]script.MapScript{})
+	return model.FixedProvider(model.Paged[script.MapScript]{})
 }
 
 func (m *ProcessorMock) ByScriptNameAndTypeProvider(scriptName string, scriptType string) model.Provider[script.MapScript] {
@@ -67,11 +67,11 @@ func (m *ProcessorMock) ByScriptNameAndTypeProvider(scriptName string, scriptTyp
 	return model.FixedProvider(script.MapScript{})
 }
 
-func (m *ProcessorMock) AllProvider() model.Provider[[]script.MapScript] {
+func (m *ProcessorMock) AllProvider(page model.Page) model.Provider[model.Paged[script.MapScript]] {
 	if m.AllProviderFunc != nil {
-		return m.AllProviderFunc()
+		return m.AllProviderFunc(page)
 	}
-	return model.FixedProvider([]script.MapScript{})
+	return model.FixedProvider(model.Paged[script.MapScript]{})
 }
 
 func (m *ProcessorMock) DeleteAllForTenant() (int64, error) {

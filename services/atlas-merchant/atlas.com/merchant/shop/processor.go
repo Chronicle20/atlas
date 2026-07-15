@@ -45,11 +45,14 @@ type Processor interface {
 	GetById(id uuid.UUID) (Model, error)
 	ByIdProvider(id uuid.UUID) model.Provider[Model]
 	GetByCharacterId(characterId uint32) ([]Model, error)
+	GetByCharacterIdPaged(characterId uint32, page model.Page) (model.Paged[Model], error)
 	GetByField(worldId world.Id, channelId channel.Id, mapId uint32, instanceId uuid.UUID) ([]Model, error)
-	GetAllOpen() ([]Model, error)
+	GetByFieldPaged(worldId world.Id, channelId channel.Id, mapId uint32, instanceId uuid.UUID, page model.Page) (model.Paged[Model], error)
+	GetAllOpenPaged(page model.Page) (model.Paged[Model], error)
 	GetListingCounts(shopIds []uuid.UUID) (map[uuid.UUID]int64, error)
-	SearchListingsByItemId(criteria ListingSearchCriteria) ([]ListingSearchResult, error)
+	SearchListingsByItemIdPaged(criteria ListingSearchCriteria, page model.Page) (model.Paged[ListingSearchResult], error)
 	GetListings(shopId uuid.UUID) ([]listing.Model, error)
+	GetListingsPaged(shopId uuid.UUID, page model.Page) (model.Paged[listing.Model], error)
 	CreateShop(characterId uint32, shopType ShopType, title string, worldId world.Id, channelId channel.Id, mapId uint32, instanceId uuid.UUID, x int16, y int16, permitItemId uint32) (Model, error)
 	CreateShopAndEmit(characterId uint32, shopType ShopType, title string, worldId world.Id, channelId channel.Id, mapId uint32, instanceId uuid.UUID, x int16, y int16, permitItemId uint32) (Model, error)
 	OpenShop(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32) error
@@ -67,8 +70,8 @@ type Processor interface {
 	EnterShop(mb *message.Buffer) func(characterId uint32, shopId uuid.UUID, visitorName string) error
 	AddToBlacklist(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32, name string, bannedCharacterId uint32) error
 	RemoveFromBlacklist(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32, name string) error
-	GetBlacklist(shopId uuid.UUID) ([]string, error)
-	GetVisits(shopId uuid.UUID) ([]visit.Model, error)
+	GetBlacklistPaged(shopId uuid.UUID, page model.Page) (model.Paged[string], error)
+	GetVisitsPaged(shopId uuid.UUID, page model.Page) (model.Paged[visit.Model], error)
 	ExitShop(mb *message.Buffer) func(characterId uint32, shopId uuid.UUID) error
 	EjectAllVisitors(shopId uuid.UUID) ([]uint32, error)
 	GetVisitors(shopId uuid.UUID) ([]uint32, error)
@@ -180,24 +183,52 @@ func (p *ProcessorImpl) GetByCharacterId(characterId uint32) ([]Model, error) {
 	return model.SliceMap(Make)(getByCharacterId(characterId)(p.db.WithContext(p.ctx)))(model.ParallelMap())()
 }
 
+// GetByCharacterIdPaged is the paged sibling of GetByCharacterId, backing
+// the GET /characters/{characterId}/merchants list route (task-117).
+func (p *ProcessorImpl) GetByCharacterIdPaged(characterId uint32, page model.Page) (model.Paged[Model], error) {
+	ep := getByCharacterIdPaged(characterId, page)(p.db.WithContext(p.ctx))
+	return model.MapPaged(Make)(ep)(model.ParallelMap())()
+}
+
 func (p *ProcessorImpl) GetByField(worldId world.Id, channelId channel.Id, mapId uint32, instanceId uuid.UUID) ([]Model, error) {
 	return model.SliceMap(Make)(getByField(worldId, channelId, mapId, instanceId)(p.db.WithContext(p.ctx)))(model.ParallelMap())()
 }
 
-func (p *ProcessorImpl) GetAllOpen() ([]Model, error) {
-	return model.SliceMap(Make)(getAllOpen()(p.db.WithContext(p.ctx)))(model.ParallelMap())()
+// GetByFieldPaged is the paged sibling of GetByField, backing the
+// GET /worlds/{worldId}/channels/{channelId}/maps/{mapId}/instances/{instanceId}/merchants
+// list route (task-117).
+func (p *ProcessorImpl) GetByFieldPaged(worldId world.Id, channelId channel.Id, mapId uint32, instanceId uuid.UUID, page model.Page) (model.Paged[Model], error) {
+	ep := getByFieldPaged(worldId, channelId, mapId, instanceId, page)(p.db.WithContext(p.ctx))
+	return model.MapPaged(Make)(ep)(model.ParallelMap())()
+}
+
+// GetAllOpenPaged backs the bare GET /merchants list route (task-117). The
+// prior unpaged GetAllOpen had no internal caller, so it is deleted rather
+// than kept alongside this paged form.
+func (p *ProcessorImpl) GetAllOpenPaged(page model.Page) (model.Paged[Model], error) {
+	ep := getAllOpenPaged(page)(p.db.WithContext(p.ctx))
+	return model.MapPaged(Make)(ep)(model.ParallelMap())()
 }
 
 func (p *ProcessorImpl) GetListingCounts(shopIds []uuid.UUID) (map[uuid.UUID]int64, error) {
 	return listing.NewProcessor(p.db.WithContext(p.ctx)).CountByShopIds(shopIds)
 }
 
-func (p *ProcessorImpl) SearchListingsByItemId(criteria ListingSearchCriteria) ([]ListingSearchResult, error) {
-	return searchListingsByItemId(p.t.Id(), criteria)(p.db.WithContext(p.ctx))()
+// SearchListingsByItemIdPaged backs the GET /merchants/search/listings list
+// route (task-117). The prior unpaged SearchListingsByItemId had no internal
+// caller, so it is deleted rather than kept alongside this paged form.
+func (p *ProcessorImpl) SearchListingsByItemIdPaged(criteria ListingSearchCriteria, page model.Page) (model.Paged[ListingSearchResult], error) {
+	return searchListingsByItemIdPaged(p.t.Id(), criteria, page)(p.db.WithContext(p.ctx))()
 }
 
 func (p *ProcessorImpl) GetListings(shopId uuid.UUID) ([]listing.Model, error) {
 	return listing.NewProcessor(p.db.WithContext(p.ctx)).GetByShopId(shopId)
+}
+
+// GetListingsPaged is the paged sibling of GetListings, backing the
+// GET /merchants/{shopId}/relationships/listings list route (task-117).
+func (p *ProcessorImpl) GetListingsPaged(shopId uuid.UUID, page model.Page) (model.Paged[listing.Model], error) {
+	return listing.NewProcessor(p.db.WithContext(p.ctx)).GetByShopIdPaged(shopId, page)
 }
 
 func (p *ProcessorImpl) GetExpired() ([]Model, error) {
@@ -1463,12 +1494,18 @@ func (p *ProcessorImpl) RemoveFromBlacklist(mb *message.Buffer) func(shopId uuid
 	}
 }
 
-func (p *ProcessorImpl) GetBlacklist(shopId uuid.UUID) ([]string, error) {
-	return blacklist.NewProcessor(p.l, p.ctx, p.db).Names(shopId)
+// GetBlacklistPaged backs the GET /merchants/{shopId}/blacklist list route
+// (task-117). The prior unpaged GetBlacklist had no internal caller (ban
+// checks use blacklist.IsBlacklisted), so it is deleted rather than kept
+// alongside this paged form.
+func (p *ProcessorImpl) GetBlacklistPaged(shopId uuid.UUID, page model.Page) (model.Paged[string], error) {
+	return blacklist.NewProcessor(p.l, p.ctx, p.db).NamesPaged(shopId, page)
 }
 
-func (p *ProcessorImpl) GetVisits(shopId uuid.UUID) ([]visit.Model, error) {
-	return visit.NewProcessor(p.l, p.ctx, p.db).List(shopId)
+// GetVisitsPaged backs the GET /merchants/{shopId}/visits list route
+// (task-117); same delete-don't-shadow treatment as GetBlacklistPaged.
+func (p *ProcessorImpl) GetVisitsPaged(shopId uuid.UUID, page model.Page) (model.Paged[visit.Model], error) {
+	return visit.NewProcessor(p.l, p.ctx, p.db).ListPaged(shopId, page)
 }
 
 func (p *ProcessorImpl) AddToBlacklistAndEmit(shopId uuid.UUID, characterId uint32, name string, bannedCharacterId uint32) error {

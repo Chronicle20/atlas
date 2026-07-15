@@ -8,6 +8,7 @@ import (
 	minio "atlas-data/storage/minio"
 
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
@@ -60,10 +61,18 @@ func publishInner(db *gorm.DB, mc *minio.Client, _ logrus.FieldLogger) func(d *r
 }
 
 // listInner serves GET /data/baselines. Gate order matches publishInner:
-// nil-mc 503 first, then the operator 403, then the listing. The ParseTenant
-// middleware runs on the route (all RegisterHandler routes get it) but the
-// handler never reads the tenant — the nil-UUID synthetic tenant the UI sends
-// is accepted and ignored.
+// nil-mc 503 first, then the operator 403, then the page-param validation,
+// then the listing. The ParseTenant middleware runs on the route (all
+// RegisterHandler routes get it) but the handler never reads the tenant — the
+// nil-UUID synthetic tenant the UI sends is accepted and ignored.
+//
+// Published baselines are a naturally-bounded content dump (one row per
+// published (region, majorVersion, minorVersion)), so this is a standard
+// collection: page[size] defaults to paginate.DefaultPageSize, capped at
+// paginate.MaxPageSize (task-117). The list is materialized from a MinIO
+// bucket listing (Lister.List), not a DB table, and is already deterministically
+// sorted by (region, major, minor) — the materialize + paginate.Slice adapter
+// per docs/rest-pagination.md §3.
 func listInner(mc *minio.Client) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
@@ -75,16 +84,22 @@ func listInner(mc *minio.Client) func(d *rest.HandlerDependency, c *rest.Handler
 				http.Error(w, "operator required", http.StatusForbidden)
 				return
 			}
+			page, perr := paginate.ParseParams(r.URL.Query(), paginate.DefaultPageSize, paginate.MaxPageSize)
+			if perr != nil {
+				server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+				return
+			}
 			items, err := (Lister{MC: mc, Bucket: mc.Cfg().BucketCanonical, L: d.Logger()}).List(r.Context())
 			if err != nil {
 				d.Logger().WithError(err).Errorf("baseline list failed")
 				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
+			paged := paginate.Slice(items, page)
 			query := r.URL.Query()
 			queryParams := jsonapi.ParseQueryFields(&query)
 			w.Header().Set("Content-Type", "application/vnd.api+json")
-			server.MarshalResponse[[]ListItemModel](d.Logger())(w)(c.ServerInformation())(queryParams)(items)
+			server.MarshalPaginatedResponse[[]ListItemModel](d.Logger())(w)(c.ServerInformation())(queryParams)(paged.Items, paginate.EnvelopeFor(paged), r)
 		}
 	}
 }

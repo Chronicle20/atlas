@@ -16,8 +16,12 @@ func getBaseRequest() string {
 	return requests.RootUrl("DATA")
 }
 
-func requestNPCsInMap(mapId _map.Id) requests.Request[[]RestModel] {
-	return requests.GetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+npcsInMap, mapId))
+// npcsInMapUrl is a bare URL (not a requests.Request) because the list is
+// now paginated server-side (task-117) and consumed via
+// requests.DrainProvider, which appends its own page[number]/page[size]
+// query params per request.
+func npcsInMapUrl(mapId _map.Id) string {
+	return fmt.Sprintf(getBaseRequest()+npcsInMap, mapId)
 }
 
 func requestNPCsInMapByObjectId(mapId _map.Id, objectId uint32) requests.Request[[]RestModel] {

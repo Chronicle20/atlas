@@ -10,7 +10,7 @@ import (
 )
 
 type Processor interface {
-	GetAll() model.Provider[[]Model]
+	GetAll(page model.Page) model.Provider[model.Paged[Model]]
 	GetById(id string) (Model, error)
 	Create(m Model) error
 	Update(id string, name string, commonWeight uint32, uncommonWeight uint32, rareWeight uint32) error
@@ -30,8 +30,9 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 
 var _ Processor = (*ProcessorImpl)(nil)
 
-func (p *ProcessorImpl) GetAll() model.Provider[[]Model] {
-	return model.SliceMap(modelFromEntity)(getAll()(p.db.WithContext(p.ctx)))()
+func (p *ProcessorImpl) GetAll(page model.Page) model.Provider[model.Paged[Model]] {
+	ep := getAllPagedProvider(page)(p.db.WithContext(p.ctx))
+	return model.MapPaged(modelFromEntity)(ep)(model.ParallelMap())
 }
 
 func (p *ProcessorImpl) GetById(id string) (Model, error) {

@@ -21,11 +21,14 @@ type ProcessorMock struct {
 	GetByIdFunc                func(id uuid.UUID) (shop.Model, error)
 	ByIdProviderFunc           func(id uuid.UUID) model.Provider[shop.Model]
 	GetByCharacterIdFunc       func(characterId uint32) ([]shop.Model, error)
+	GetByCharacterIdPagedFunc  func(characterId uint32, page model.Page) (model.Paged[shop.Model], error)
 	GetByFieldFunc             func(worldId world.Id, channelId channel.Id, mapId uint32, instanceId uuid.UUID) ([]shop.Model, error)
-	GetAllOpenFunc             func() ([]shop.Model, error)
+	GetByFieldPagedFunc        func(worldId world.Id, channelId channel.Id, mapId uint32, instanceId uuid.UUID, page model.Page) (model.Paged[shop.Model], error)
+	GetAllOpenPagedFunc        func(page model.Page) (model.Paged[shop.Model], error)
 	GetListingCountsFunc       func(shopIds []uuid.UUID) (map[uuid.UUID]int64, error)
-	SearchListingsByItemIdFunc func(criteria shop.ListingSearchCriteria) ([]shop.ListingSearchResult, error)
+	SearchListingsByItemIdPagedFunc func(criteria shop.ListingSearchCriteria, page model.Page) (model.Paged[shop.ListingSearchResult], error)
 	GetListingsFunc            func(shopId uuid.UUID) ([]listing.Model, error)
+	GetListingsPagedFunc       func(shopId uuid.UUID, page model.Page) (model.Paged[listing.Model], error)
 	CreateShopFunc             func(characterId uint32, shopType shop.ShopType, title string, worldId world.Id, channelId channel.Id, mapId uint32, instanceId uuid.UUID, x int16, y int16, permitItemId uint32) (shop.Model, error)
 	CreateShopAndEmitFunc      func(characterId uint32, shopType shop.ShopType, title string, worldId world.Id, channelId channel.Id, mapId uint32, instanceId uuid.UUID, x int16, y int16, permitItemId uint32) (shop.Model, error)
 	OpenShopFunc               func(shopId uuid.UUID, characterId uint32) error
@@ -55,8 +58,8 @@ type ProcessorMock struct {
 	EnterShopAndEmitFunc       func(characterId uint32, shopId uuid.UUID, visitorName string) error
 	AddToBlacklistFunc         func(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32, name string, bannedCharacterId uint32) error
 	RemoveFromBlacklistFunc    func(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32, name string) error
-	GetBlacklistFunc           func(shopId uuid.UUID) ([]string, error)
-	GetVisitsFunc              func(shopId uuid.UUID) ([]visit.Model, error)
+	GetBlacklistPagedFunc      func(shopId uuid.UUID, page model.Page) (model.Paged[string], error)
+	GetVisitsPagedFunc         func(shopId uuid.UUID, page model.Page) (model.Paged[visit.Model], error)
 	AddToBlacklistAndEmitFunc  func(shopId uuid.UUID, characterId uint32, name string, bannedCharacterId uint32) error
 	RemoveFromBlacklistAndEmitFunc func(shopId uuid.UUID, characterId uint32, name string) error
 	ExitShopAndEmitFunc        func(characterId uint32, shopId uuid.UUID) error
@@ -97,6 +100,13 @@ func (m *ProcessorMock) GetByCharacterId(characterId uint32) ([]shop.Model, erro
 	return []shop.Model{}, nil
 }
 
+func (m *ProcessorMock) GetByCharacterIdPaged(characterId uint32, page model.Page) (model.Paged[shop.Model], error) {
+	if m.GetByCharacterIdPagedFunc != nil {
+		return m.GetByCharacterIdPagedFunc(characterId, page)
+	}
+	return model.Paged[shop.Model]{Page: page}, nil
+}
+
 func (m *ProcessorMock) GetByField(worldId world.Id, channelId channel.Id, mapId uint32, instanceId uuid.UUID) ([]shop.Model, error) {
 	if m.GetByFieldFunc != nil {
 		return m.GetByFieldFunc(worldId, channelId, mapId, instanceId)
@@ -104,11 +114,18 @@ func (m *ProcessorMock) GetByField(worldId world.Id, channelId channel.Id, mapId
 	return []shop.Model{}, nil
 }
 
-func (m *ProcessorMock) GetAllOpen() ([]shop.Model, error) {
-	if m.GetAllOpenFunc != nil {
-		return m.GetAllOpenFunc()
+func (m *ProcessorMock) GetByFieldPaged(worldId world.Id, channelId channel.Id, mapId uint32, instanceId uuid.UUID, page model.Page) (model.Paged[shop.Model], error) {
+	if m.GetByFieldPagedFunc != nil {
+		return m.GetByFieldPagedFunc(worldId, channelId, mapId, instanceId, page)
 	}
-	return []shop.Model{}, nil
+	return model.Paged[shop.Model]{Page: page}, nil
+}
+
+func (m *ProcessorMock) GetAllOpenPaged(page model.Page) (model.Paged[shop.Model], error) {
+	if m.GetAllOpenPagedFunc != nil {
+		return m.GetAllOpenPagedFunc(page)
+	}
+	return model.Paged[shop.Model]{Page: page}, nil
 }
 
 func (m *ProcessorMock) GetListingCounts(shopIds []uuid.UUID) (map[uuid.UUID]int64, error) {
@@ -118,11 +135,11 @@ func (m *ProcessorMock) GetListingCounts(shopIds []uuid.UUID) (map[uuid.UUID]int
 	return make(map[uuid.UUID]int64), nil
 }
 
-func (m *ProcessorMock) SearchListingsByItemId(criteria shop.ListingSearchCriteria) ([]shop.ListingSearchResult, error) {
-	if m.SearchListingsByItemIdFunc != nil {
-		return m.SearchListingsByItemIdFunc(criteria)
+func (m *ProcessorMock) SearchListingsByItemIdPaged(criteria shop.ListingSearchCriteria, page model.Page) (model.Paged[shop.ListingSearchResult], error) {
+	if m.SearchListingsByItemIdPagedFunc != nil {
+		return m.SearchListingsByItemIdPagedFunc(criteria, page)
 	}
-	return []shop.ListingSearchResult{}, nil
+	return model.Paged[shop.ListingSearchResult]{Page: page}, nil
 }
 
 func (m *ProcessorMock) GetListings(shopId uuid.UUID) ([]listing.Model, error) {
@@ -130,6 +147,13 @@ func (m *ProcessorMock) GetListings(shopId uuid.UUID) ([]listing.Model, error) {
 		return m.GetListingsFunc(shopId)
 	}
 	return []listing.Model{}, nil
+}
+
+func (m *ProcessorMock) GetListingsPaged(shopId uuid.UUID, page model.Page) (model.Paged[listing.Model], error) {
+	if m.GetListingsPagedFunc != nil {
+		return m.GetListingsPagedFunc(shopId, page)
+	}
+	return model.Paged[listing.Model]{Page: page}, nil
 }
 
 func (m *ProcessorMock) CreateShop(characterId uint32, shopType shop.ShopType, title string, worldId world.Id, channelId channel.Id, mapId uint32, instanceId uuid.UUID, x int16, y int16, permitItemId uint32) (shop.Model, error) {
@@ -357,18 +381,18 @@ func (m *ProcessorMock) RemoveFromBlacklist(mb *message.Buffer) func(shopId uuid
 	return func(uuid.UUID, uint32, string) error { return nil }
 }
 
-func (m *ProcessorMock) GetBlacklist(shopId uuid.UUID) ([]string, error) {
-	if m.GetBlacklistFunc != nil {
-		return m.GetBlacklistFunc(shopId)
+func (m *ProcessorMock) GetBlacklistPaged(shopId uuid.UUID, page model.Page) (model.Paged[string], error) {
+	if m.GetBlacklistPagedFunc != nil {
+		return m.GetBlacklistPagedFunc(shopId, page)
 	}
-	return nil, nil
+	return model.Paged[string]{Items: []string{}, Page: page}, nil
 }
 
-func (m *ProcessorMock) GetVisits(shopId uuid.UUID) ([]visit.Model, error) {
-	if m.GetVisitsFunc != nil {
-		return m.GetVisitsFunc(shopId)
+func (m *ProcessorMock) GetVisitsPaged(shopId uuid.UUID, page model.Page) (model.Paged[visit.Model], error) {
+	if m.GetVisitsPagedFunc != nil {
+		return m.GetVisitsPagedFunc(shopId, page)
 	}
-	return nil, nil
+	return model.Paged[visit.Model]{Items: []visit.Model{}, Page: page}, nil
 }
 
 func (m *ProcessorMock) AddToBlacklistAndEmit(shopId uuid.UUID, characterId uint32, name string, bannedCharacterId uint32) error {

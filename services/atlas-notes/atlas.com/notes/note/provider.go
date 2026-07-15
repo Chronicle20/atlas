@@ -17,24 +17,14 @@ func getByIdProvider(id uint32) database.EntityProvider[Entity] {
 	}
 }
 
-func getByCharacterIdProvider(characterId uint32) database.EntityProvider[[]Entity] {
-	return func(db *gorm.DB) model.Provider[[]Entity] {
-		var entities []Entity
-		err := db.Where("character_id = ?", characterId).Find(&entities).Error
-		if err != nil {
-			return model.ErrorProvider[[]Entity](err)
-		}
-		return model.FixedProvider(entities)
+func getByCharacterIdPagedProvider(characterId uint32, page model.Page) database.EntityProvider[model.Paged[Entity]] {
+	return func(db *gorm.DB) model.Provider[model.Paged[Entity]] {
+		return database.PagedQuery[Entity](db.Where("character_id = ?", characterId), page)
 	}
 }
 
-func getAllProvider() database.EntityProvider[[]Entity] {
-	return func(db *gorm.DB) model.Provider[[]Entity] {
-		var entities []Entity
-		err := db.Find(&entities).Error
-		if err != nil {
-			return model.ErrorProvider[[]Entity](err)
-		}
-		return model.FixedProvider(entities)
+func getAllInTenantProvider(page model.Page) database.EntityProvider[model.Paged[Entity]] {
+	return func(db *gorm.DB) model.Provider[model.Paged[Entity]] {
+		return database.PagedQuery[Entity](db, page)
 	}
 }

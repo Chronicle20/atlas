@@ -3,6 +3,7 @@ package blacklist
 import (
 	"context"
 
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -12,7 +13,7 @@ import (
 type Processor interface {
 	Add(shopId uuid.UUID, name string) error
 	Remove(shopId uuid.UUID, name string) error
-	Names(shopId uuid.UUID) ([]string, error)
+	NamesPaged(shopId uuid.UUID, page model.Page) (model.Paged[string], error)
 	IsBlacklisted(shopId uuid.UUID, name string) (bool, error)
 }
 
@@ -39,16 +40,11 @@ func (p *ProcessorImpl) Remove(shopId uuid.UUID, name string) error {
 	return err
 }
 
-func (p *ProcessorImpl) Names(shopId uuid.UUID) ([]string, error) {
-	es, err := getByShopId(shopId)(p.db.WithContext(p.ctx))()
-	if err != nil {
-		return nil, err
-	}
-	names := make([]string, 0, len(es))
-	for _, e := range es {
-		names = append(names, e.Name)
-	}
-	return names, nil
+// NamesPaged backs the GET /merchants/{shopId}/blacklist list route
+// (task-117). In-process ban checks use IsBlacklisted, not the list.
+func (p *ProcessorImpl) NamesPaged(shopId uuid.UUID, page model.Page) (model.Paged[string], error) {
+	ep := getByShopIdPaged(shopId, page)(p.db.WithContext(p.ctx))
+	return model.MapPaged(func(e Entity) (string, error) { return e.Name, nil })(ep)(model.ParallelMap())()
 }
 
 func (p *ProcessorImpl) IsBlacklisted(shopId uuid.UUID, name string) (bool, error) {

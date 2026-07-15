@@ -3,6 +3,7 @@ package visit
 import (
 	"context"
 
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -11,7 +12,7 @@ import (
 
 type Processor interface {
 	Record(shopId uuid.UUID, name string) error
-	List(shopId uuid.UUID) ([]Model, error)
+	ListPaged(shopId uuid.UUID, page model.Page) (model.Paged[Model], error)
 }
 
 type ProcessorImpl struct {
@@ -35,14 +36,8 @@ func (p *ProcessorImpl) Record(shopId uuid.UUID, name string) error {
 	return err
 }
 
-func (p *ProcessorImpl) List(shopId uuid.UUID) ([]Model, error) {
-	es, err := getByShopId(shopId)(p.db.WithContext(p.ctx))()
-	if err != nil {
-		return nil, err
-	}
-	out := make([]Model, 0, len(es))
-	for _, e := range es {
-		out = append(out, Model{name: e.Name, count: e.Count})
-	}
-	return out, nil
+// ListPaged backs the GET /merchants/{shopId}/visits list route (task-117).
+func (p *ProcessorImpl) ListPaged(shopId uuid.UUID, page model.Page) (model.Paged[Model], error) {
+	ep := getByShopIdPaged(shopId, page)(p.db.WithContext(p.ctx))
+	return model.MapPaged(func(e Entity) (Model, error) { return Model{name: e.Name, count: e.Count}, nil })(ep)(model.ParallelMap())()
 }

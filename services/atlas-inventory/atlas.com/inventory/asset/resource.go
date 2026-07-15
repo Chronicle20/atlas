@@ -6,6 +6,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
@@ -29,13 +30,19 @@ func handleGetAssets(db *gorm.DB) rest.GetHandler {
 		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 			return rest.ParseCompartmentId(d.Logger(), func(compartmentId uuid.UUID) http.HandlerFunc {
 				return func(w http.ResponseWriter, r *http.Request) {
-					ms, err := NewProcessor(d.Logger(), d.Context(), db).GetByCompartmentId(compartmentId)
+					page, err := paginate.ParseParams(r.URL.Query(), paginate.MaxPageSize, paginate.MaxPageSize)
+					if err != nil {
+						server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+						return
+					}
+
+					paged, err := NewProcessor(d.Logger(), d.Context(), db).ByCompartmentIdPagedProvider(compartmentId, page)()
 					if err != nil {
 						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 
-					rm, err := model.SliceMap(Transform)(model.FixedProvider(ms))(model.ParallelMap())()
+					rm, err := model.SliceMap(Transform)(model.FixedProvider(paged.Items))(model.ParallelMap())()
 					if err != nil {
 						d.Logger().WithError(err).Errorf("Creating REST model.")
 						server.WriteErrorResponse(d.Logger())(w)(err)
@@ -44,7 +51,7 @@ func handleGetAssets(db *gorm.DB) rest.GetHandler {
 
 					query := r.URL.Query()
 					queryParams := jsonapi.ParseQueryFields(&query)
-					server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
+					server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm, paginate.EnvelopeFor(paged), r)
 				}
 			})
 		})

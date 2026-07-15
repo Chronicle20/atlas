@@ -255,6 +255,29 @@ Add authentication at the ingress layer. Internal service-to-service calls can u
 
 ---
 
+## High: Unbounded List Endpoints (PS-5)
+
+### Status: RESOLVED (task-117)
+
+86 slice-marshaling handler sites existed across the microservice fleet; effectively one (atlas-data item string search) paginated. Everything else — including `GET /characters` and `GET /accounts`, which scanned an entire tenant table, transformed every row, and ran every `include` decorator per row on every request — was unbounded. See [rest-pagination.md](rest-pagination.md) for the adopted convention and [task-117 endpoint-inventory.md](tasks/task-117-list-endpoint-pagination/endpoint-inventory.md) for the full per-route disposition.
+
+**Implemented:**
+- Shared paged pipeline: `model.Paged[T]`/`model.MapPaged` (`libs/atlas-model`), `database.PagedQuery` (`libs/atlas-database`, SQL-level `COUNT` + `OFFSET`/`LIMIT` with a schema-derived PK tie-break for total ordering), `paginate.ParseParams`/`paginate.Slice`/`paginate.EnvelopeFor` (`libs/atlas-rest/server/paginate`), and `requests.PagedProvider`/`requests.DrainProvider` (`libs/atlas-rest/requests`) for internal semantic-"all" consumers.
+- Every bare/filtered collection GET across all services converted to the `page[number]`/`page[size]` envelope (`meta.total`, `meta.page.{number,size,last}`, JSON:API `links`), with 400 on invalid params (including rejection of the legacy `?limit=` param).
+- Every internal Go call site that consumed a full (now-paginated) collection converted to `requests.DrainProvider`, verified by multi-page drain regression tests (login/channel account and world registries, atlas-account teardown sweep, atlas-query-aggregator skill/quest aggregation, and others).
+- atlas-ui `services/api/pagination.ts` (`fetchPaged`/`fetchAll`) with the same no-envelope compatibility rule as the Go client, so server- and consumer-side conversions could land independently.
+- Repo-wide acceptance sweep (task-117 task 29): `MarshalResponse[[]...]` on a collection route — zero hits; unfiltered `GetAll`-style processor methods — zero genuine gaps (remaining `GetAll` symbols are either semantic-all drain wrappers or registry/aggregation dumps feeding a `paginate.Slice`-paginated route); `requests.SliceProvider` consumers of a converted bare collection — zero gaps after fixing 3 found during the sweep (atlas-login character-select, atlas-query-aggregator skill/quest-by-character).
+
+### Original Problem
+
+44+ REST list handlers ran `db.Find` (or an in-memory `TenantRegistry.GetAll`) with no `Limit`, transformed and JSON:API-decorated every row, and returned the entire result set in one response.
+
+### Original Impact
+
+A tenant with a large `characters`/`accounts`/`guilds` table (or a large game-content doc-store) paid full table-scan + full-decoration cost on every list request, with response size scaling unbounded with tenant/content growth. No mechanism existed to request a bounded slice of a collection.
+
+---
+
 ## Medium: No Connection Pool Configuration
 
 ### Status: RESOLVED

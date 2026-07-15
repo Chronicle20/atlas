@@ -12,8 +12,10 @@
 
 - **Versions in scope (expanded 2026-07-15, post-`main`-merge — design v2 §2.1/§2.6/§2.7):**
   dedicated lottery opcode in v72 (0x6F), v79 (0x6E), v83 (0x70), v84 (0x70),
-  v87 (0x73), v92 (0x7B), v95 (0x7C), jms (0x6B) — v72/v79/jms IDA-verified live,
-  v84/v87/v92 by no-IDB registry/CSV lineage. v48/v61 have NO dedicated opcode
+  v87 (0x73), v92 (0x7B), v95 (0x7C), jms (0x6B) — all IDA-verified live except
+  v92 (no IDB; registry/CSV lineage). v84's send was byte-signature-located in its
+  stripped IDB. All except v92 are promoted to ✅ in the matrix (Task 12). v48/v61
+  have NO dedicated opcode
   (introduced at v72); reward boxes there use the generic item-use path, with the
   server detecting the reward table in `RequestItemConsume` (§2.7). Do NOT invent
   a lottery opcode for v48/v61.
@@ -1603,25 +1605,29 @@ git commit -m "feat(task-131): channel consumer arms for reward effect/announce/
 
 ---
 
-## Task 12: Packet matrix promotion (verify-packet playbook)
+## Task 12: Packet matrix promotion (verify-packet playbook) — DONE (2026-07-15)
 
-Promote the `LOTTERY_ITEM_USE_REQUEST` STATUS.md row for v83/v84/v87/v95. Do NOT
-hand-edit STATUS.md or invent IDA addresses; use the established tooling.
+Promoted the `LOTTERY_ITEM_USE_REQUEST` STATUS.md row to ✅ for **all seven
+versions carrying the opcode** — gms_v72, v79, v83, v84, v87, v95, jms_v185 —
+during the main-merge scope expansion. v48/v61 correctly remain ⬜ n-a (opcode
+absent). Executed against live IDBs (all nine loaded this session):
 
-**Files:**
-- Modify (via tooling): `docs/packets/audits/STATUS.md` and the evidence records under `docs/packets/audits/`
-- The fixture test from Task 3 already carries the v83/v95 `packet-audit:verify` markers.
-
-- [ ] **Step 1: Run the verify-packet playbook.** Invoke the `verify-packet` skill (or dispatch the `packet-verifier` agent) once per version for `inventory/serverbound/LotteryItemUse` × {gms_v83, gms_v84, gms_v87, gms_v95}, following `docs/packets/audits/VERIFYING_A_PACKET.md`. v83 (ida 0xa1249f) and v95 (ida 0x9d6c50) are IDA-verified this task; v84/v87 use the registry-lineage / no-IDB convention per the playbook. The tool regenerates the matrix and pins evidence.
-
-- [ ] **Step 2: Confirm promotion.** Verify STATUS.md shows the `LOTTERY_ITEM_USE_REQUEST` cells for v83/v84/v87/v95 promoted (no longer ❌). Do NOT touch v92/jms cells (out of scope).
-
-- [ ] **Step 3: Commit** whatever artifacts the playbook produced (fixture already committed in Task 3; here it's the matrix + evidence):
-
-```bash
-git add docs/packets/audits/
-git commit -m "docs(task-131): promote LOTTERY_ITEM_USE_REQUEST matrix cells (v83/v84/v87/v95)"
-```
+- [x] **Send functions IDA-verified per version** (`COutPacket(op)` →
+  `Encode2(nPos)` → `Encode4(nItemID)`, `CanSendExclRequest(200,0)` guard;
+  each a distinct 0x83-byte fn, confirmed ≠ the same-signature bridle send):
+  v72 @0x90c93a (0x6F), v79 @0x95dd02 (0x6E), v83 @0xa1249f (0x70),
+  v84 @0xa5c8dc (0x70), v87 @0xaa7ec6 (0x73), v95 @0x9d6c50 (0x7C),
+  jms @0xaf6900 (0x6B). v84 was byte-signature-located (stripped) and renamed.
+- [x] **Linkage:** added `CWvsContext::SendLotteryItemUseRequest` →
+  `inventory/serverbound/LotteryItemUse` to `candidatesFromFName` (run.go).
+- [x] **Export splice:** surgically inserted the send entry (read order
+  Decode2, Decode4) into each version's committed export — 16 lines each, no
+  drift (§10 discipline).
+- [x] **Artifacts per version:** `packet-audit:verify` markers in
+  `lottery_item_use_test.go`, audit reports (Verdict 0 / PASS) under
+  `docs/packets/audits/<v>/InventoryLotteryItemUse.*`, pinned evidence records.
+- [x] **Gates:** `matrix --check` and `fname-doc --check` both exit 0; all seven
+  cells show ✅.
 
 ---
 

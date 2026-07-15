@@ -12,10 +12,11 @@ import (
 const CharacterItemUseLotteryHandle = "CharacterItemUseLotteryHandle"
 
 // LotteryItemUse - reward-box ("lottery") use request.
+// Body is invariant across the versions that carry the opcode (v72+): slot int16,
+// itemId int32. There is no leading updateTime (unlike
+// CUser::SendStatChangeItemUseRequest). IDA-verified per version (task-131); see
+// the verify markers in lottery_item_use_test.go.
 // packet-audit:fname CWvsContext::SendLotteryItemUseRequest
-// Body is invariant across GMS v83-v95: slot int16, itemId int32. There is no
-// leading updateTime (unlike CUser::SendStatChangeItemUseRequest). IDA-verified
-// v83 fn 0xa1249f, v95 fn 0x9d6c50 (design task-131 §2.1).
 type LotteryItemUse struct {
 	source int16
 	itemId uint32

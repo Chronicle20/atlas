@@ -36,3 +36,24 @@ func TestBuilder_BuildsFixedListing(t *testing.T) {
 		t.Fatalf("unexpected fields")
 	}
 }
+
+// TestBuilder_SetOwnerRoundTrip asserts the item-tag owner name set via
+// SetOwner survives Build() and is exposed by Model.Owner(), mirroring the
+// existing Flags()/SetFlags() round trip.
+func TestBuilder_SetOwnerRoundTrip(t *testing.T) {
+	tid := uuid.New()
+	m, err := listing.NewBuilder(tid, 0, 1001).
+		SetSellerName("alice").
+		SetSaleType(listing.SaleTypeFixed).
+		SetState(listing.StateActive).
+		SetTemplateId(1302000).
+		SetQuantity(1).
+		SetOwner("Chronicle").
+		Build()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if m.Owner() != "Chronicle" {
+		t.Fatalf("m.Owner() = %q, want %q", m.Owner(), "Chronicle")
+	}
+}

@@ -72,6 +72,7 @@ type entity struct {
 	RingId        uint32 `gorm:"column:ring_id;not null"`
 	ViciousCount  uint32 `gorm:"column:vicious_count;not null"`
 	Flags         uint16 `gorm:"column:flags;not null"`
+	Owner         string `gorm:"column:owner;not null;default:''"`
 
 	CreatedAt time.Time      `gorm:"column:created_at"`
 	DeletedAt gorm.DeletedAt `gorm:"column:deleted_at;index"`

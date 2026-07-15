@@ -124,6 +124,7 @@ func handleAcceptToMtsListing(pf providerFn) func(db *gorm.DB) message.Handler[c
 					RingId:           b.RingId,
 					ViciousCount:     b.ViciousCount,
 					Flags:            b.Flags,
+					Owner:            b.Owner,
 					ListValue:        b.ListValue,
 					BuyNowPrice:      b.BuyNowPrice,
 					CommissionRate:   b.CommissionRate,

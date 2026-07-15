@@ -629,6 +629,7 @@ func (p *ProcessorImpl) transitionToSellerHolding(db *gorm.DB, id string, termin
 			SetRingId(lm.RingId()).
 			SetViciousCount(lm.ViciousCount()).
 			SetFlags(lm.Flags()).
+			SetOwner(lm.Owner()).
 			Build()
 		if berr != nil {
 			return berr

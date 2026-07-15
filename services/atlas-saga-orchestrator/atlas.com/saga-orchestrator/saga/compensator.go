@@ -1576,6 +1576,7 @@ func assetDataFromMtsListingSnapshot(p AcceptToMtsListingPayload) asset2.AssetDa
 		Level:         p.Level,
 		Experience:    p.ItemExp,
 		Flag:          p.Flags,
+		Owner:         p.Owner,
 	}
 }
 

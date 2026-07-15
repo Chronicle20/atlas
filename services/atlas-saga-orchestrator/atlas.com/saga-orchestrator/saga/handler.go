@@ -2056,6 +2056,7 @@ func (h *HandlerImpl) handleAcceptToMtsListing(s Saga, st Step[any]) error {
 		RingId:           payload.RingId,
 		ViciousCount:     payload.ViciousCount,
 		Flags:            payload.Flags,
+		Owner:            payload.Owner,
 		ListValue:        payload.ListValue,
 		BuyNowPrice:      payload.BuyNowPrice,
 		CommissionRate:   payload.CommissionRate,

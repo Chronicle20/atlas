@@ -57,6 +57,7 @@ type AcceptRequest struct {
 	RingId        uint32
 	ViciousCount  uint32
 	Flags         uint16
+	Owner         string
 
 	// sale params
 	ListValue      uint32
@@ -159,6 +160,7 @@ func (p *ProcessorImpl) Accept(req AcceptRequest) error {
 			SetRingId(b.RingId).
 			SetViciousCount(b.ViciousCount).
 			SetFlags(b.Flags).
+			SetOwner(b.Owner).
 			SetListValue(b.ListValue).
 			SetBuyNowPrice(b.BuyNowPrice).
 			SetCommissionRate(b.CommissionRate).
@@ -329,6 +331,7 @@ func (p *ProcessorImpl) SettleMove(req SettleMoveRequest) (SettleMoveResult, err
 			SetRingId(lm.RingId()).
 			SetViciousCount(lm.ViciousCount()).
 			SetFlags(lm.Flags()).
+			SetOwner(lm.Owner()).
 			Build()
 		if berr != nil {
 			return berr

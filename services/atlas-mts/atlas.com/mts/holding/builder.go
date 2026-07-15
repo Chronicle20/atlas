@@ -44,6 +44,7 @@ type Builder struct {
 	ringId        uint32
 	viciousCount  uint32
 	flags         uint16
+	owner         string
 
 	createdAt time.Time
 }
@@ -192,6 +193,11 @@ func (b *Builder) SetFlags(v uint16) *Builder {
 	return b
 }
 
+func (b *Builder) SetOwner(v string) *Builder {
+	b.owner = v
+	return b
+}
+
 func (b *Builder) SetCreatedAt(v time.Time) *Builder {
 	b.createdAt = v
 	return b
@@ -232,6 +238,7 @@ func (b *Builder) Build() (Model, error) {
 		ringId:        b.ringId,
 		viciousCount:  b.viciousCount,
 		flags:         b.flags,
+		owner:         b.owner,
 		createdAt:     b.createdAt,
 	}, nil
 }

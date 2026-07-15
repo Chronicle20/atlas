@@ -1598,6 +1598,7 @@ func (p *ProcessorImpl) expandTransferToMts(st Step[any]) ([]Step[any], error) {
 				Level:         foundAsset.Level,
 				ItemExp:       foundAsset.Experience,
 				Flags:         foundAsset.Flag,
+				Owner:         foundAsset.Owner,
 
 				// Sale params copied from the seller's TransferToMts payload.
 				ListValue:      payload.ListValue,

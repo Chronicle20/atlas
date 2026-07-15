@@ -733,6 +733,11 @@ func buildMerchantShopRoom(l logrus.FieldLogger, ctx context.Context, cp charact
 	// is approximated as minutes since creation (retail counts from OPEN; the
 	// Draft window is normally minutes). No per-sale ledger is tracked
 	// server-side, so the ledger is empty with the accrued balance as total.
+	// TODO(task-127): maxItemCount is hardcoded to 16. Store permits allow
+	// different capacities (per item descriptions, e.g. 5140000=16, 5140001=24);
+	// drive this from the permit rather than a constant. Needs the authoritative
+	// per-permit limit source (the WZ cash-item slotMax is 0; only the description
+	// text carries it).
 	room := interactionpkt.NewMerchantShopRoom(position, visitors, messages, ownerChar.Name(), shop.Title(), 16, shop.MesoBalance(), items)
 	if position == 0 {
 		room = room.SetOwnerLedger(minutesSince(shop.CreatedAt()), firstTime, nil, shop.MesoBalance())
@@ -778,6 +783,11 @@ func buildPersonalShopRoom(l logrus.FieldLogger, ctx context.Context, cp charact
 	// position is the recipient's slot in the room (0 = owner): the client
 	// branches owner/visitor view on it (CPersonalShopDlg::OnEnterResult
 	// @0x6fc528 — ZERO = owner add-item management UI).
+	// TODO(task-127): maxItemCount is hardcoded to 16. Store permits allow
+	// different capacities (per item descriptions, e.g. 5140000=16, 5140001=24);
+	// drive this from the permit rather than a constant. Needs the authoritative
+	// per-permit limit source (the WZ cash-item slotMax is 0; only the description
+	// text carries it).
 	return interactionpkt.NewPersonalShopRoom(position, visitors, shop.Title(), 16, items), nil
 }
 

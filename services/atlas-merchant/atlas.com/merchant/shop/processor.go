@@ -438,7 +438,9 @@ func (p *ProcessorImpl) EnterMaintenance(mb *message.Buffer) func(shopId uuid.UU
 		// Get visitor list with slots before ejection, then emit events.
 		visitors, _ := p.GetVisitors(shopId)
 		ejected, _ := p.EjectAllVisitors(shopId)
-		emitEjectionEvents(mb, visitors, shopId)
+		// Owner opened the management/maintenance view: kick visitors with the
+		// "shop is closed" message (no dedicated maintenance message exists).
+		emitEjectionEvents(mb, visitors, shopId, merchant.LeaveReasonShopClosed)
 		if len(ejected) > 0 {
 			p.l.Infof("Shop [%s] entered maintenance, ejected %d visitors.", shopId, len(ejected))
 		}
@@ -570,7 +572,13 @@ func (p *ProcessorImpl) CloseShop(mb *message.Buffer) func(shopId uuid.UUID, cha
 		// Get visitor list with slots before ejection, then emit events.
 		visitors, _ := p.GetVisitors(shopId)
 		p.EjectAllVisitors(shopId)
-		emitEjectionEvents(mb, visitors, shopId)
+		// A sold-out close reports out-of-stock; every other close (manual,
+		// disconnect, expired, empty) reports the shop is closed.
+		leaveReason := merchant.LeaveReasonShopClosed
+		if reason == CloseReasonSoldOut {
+			leaveReason = merchant.LeaveReasonOutOfStock
+		}
+		emitEjectionEvents(mb, visitors, shopId, leaveReason)
 
 		if shopType == HiredMerchant {
 			if err := p.storeToFrederick(shopId, characterId, mesoBalance); err != nil {
@@ -979,7 +987,7 @@ func (p *ProcessorImpl) PurchaseBundle(mb *message.Buffer) func(buyerCharacterId
 			// Get visitor list with slots before ejection, then emit events.
 			soldOutVisitors, _ := p.GetVisitors(shopId)
 			p.EjectAllVisitors(shopId)
-			emitEjectionEvents(mb, soldOutVisitors, shopId)
+			emitEjectionEvents(mb, soldOutVisitors, shopId, merchant.LeaveReasonOutOfStock)
 			p.l.Infof("Shop [%s] sold out and closed.", shopId)
 		}
 
@@ -1208,11 +1216,14 @@ func visitorSlot(visitors []uint32, characterId uint32) byte {
 	return 0
 }
 
-// emitEjectionEvents emits a VISITOR_EJECTED event for each visitor in the ordered list.
-func emitEjectionEvents(mb *message.Buffer, visitors []uint32, shopId uuid.UUID) {
+// emitEjectionEvents emits a VISITOR_EJECTED event for each visitor in the
+// ordered list. leaveReason is the client leaveReason table key sent to each
+// ejected visitor so their room UI shows the correct message (SHOP_CLOSED,
+// OUT_OF_STOCK, USER_BANNED) rather than an empty dialog.
+func emitEjectionEvents(mb *message.Buffer, visitors []uint32, shopId uuid.UUID, leaveReason string) {
 	for i, cid := range visitors {
 		slot := byte(i + 1)
-		_ = mb.Put(merchant.EnvStatusEventTopic, StatusEventVisitorEjectedProvider(cid, shopId, slot))
+		_ = mb.Put(merchant.EnvStatusEventTopic, StatusEventVisitorEjectedProvider(cid, shopId, slot, leaveReason))
 	}
 }
 

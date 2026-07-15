@@ -304,13 +304,19 @@ func handleVisitorEvent(sc server.Model, wp writer.Producer) func(l logrus.Field
 				}
 			})
 		case merchant2.StatusEventVisitorEjected:
-			l.Debugf("Visitor [%d] ejected from shop [%s] from slot [%d].", e.Body.CharacterId, e.Body.ShopId, e.Body.Slot)
+			l.Debugf("Visitor [%d] ejected from shop [%s] from slot [%d] reason [%s].", e.Body.CharacterId, e.Body.ShopId, e.Body.Slot, e.Body.LeaveReason)
 
 			// Refresh the field balloon's visitor count for onlookers in the map.
 			broadcastEmployeeBalloonUpdate(l, ctx, wp, e.Body.ShopId)
 
-			// Send LEAVE to the ejected visitor (closes their room UI).
-			_ = sp.IfPresentByCharacterId(sc.Channel())(e.Body.CharacterId, announce(interactioncb.CharacterInteractionLeaveBody(e.Body.Slot, 0)))
+			// Send LEAVE to the ejected visitor with the reason so their room UI
+			// shows the correct message (e.g. "The shop is closed.") instead of an
+			// empty dialog. Fall back to a silent close if no reason was supplied.
+			leaveBody := interactioncb.CharacterInteractionLeaveBody(e.Body.Slot, 0)
+			if e.Body.LeaveReason != "" {
+				leaveBody = interactioncb.CharacterInteractionLeaveReasonBody(e.Body.Slot, e.Body.LeaveReason)
+			}
+			_ = sp.IfPresentByCharacterId(sc.Channel())(e.Body.CharacterId, announce(leaveBody))
 		}
 	}
 }

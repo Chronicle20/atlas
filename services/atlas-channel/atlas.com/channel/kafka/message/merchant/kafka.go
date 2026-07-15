@@ -189,6 +189,10 @@ type StatusEventVisitorBody struct {
 	ShopId      string `json:"shopId"`
 	CharacterId uint32 `json:"characterId"`
 	Slot        byte   `json:"slot"`
+	// LeaveReason is the client "leaveReason" table key sent to an ejected
+	// visitor (VISITOR_EJECTED) so their room UI shows the right message
+	// instead of an empty dialog. Empty for enter/leave events.
+	LeaveReason string `json:"leaveReason,omitempty"`
 }
 
 type StatusEventCapacityFullBody struct {

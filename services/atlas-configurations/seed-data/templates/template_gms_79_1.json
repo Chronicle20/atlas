@@ -2292,6 +2292,14 @@
             "NOT_ENOUGH_MESOS": 21,
             "INCORRECT_PASSWORD": 22,
             "ITEM_EXPIRED": 24
+          },
+          "leaveReason": {
+            "CANNOT_ESTABLISH_HERE": 1,
+            "SHOP_CLOSED": 3,
+            "USER_BANNED": 5,
+            "TIME_LIMIT_PASSED": 6,
+            "OUT_OF_STOCK": 14,
+            "BANNED_TIME_LIMIT": 15
           }
         }
       },

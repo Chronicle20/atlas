@@ -100,11 +100,37 @@ func CharacterInteractionEnterBody(visitor interaction.Visitor) func(logrus.Fiel
 // CharacterInteractionLeaveBody notifies a client that a visitor has left the room.
 // CMiniRoomBaseDlg::OnLeaveBase (v95 0x637510) reads only Decode1(slot); the trailing
 // status byte is consumed by the subclass virtual OnLeave (e.g. CTradingRoomDlg::OnLeave),
-// so the full mode-10 wire shape is mode + slot + status.
+// so the full mode-10 wire shape is mode + slot + status. status 0 = silent close
+// (correct for a voluntary self-exit); use CharacterInteractionLeaveReasonBody to send
+// a reason that shows a message.
 func CharacterInteractionLeaveBody(slot byte, status byte) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", CharacterInteractionModeLeave, func(mode byte) packet.Encoder {
 		return NewInteractionLeave(mode, slot, status)
 	})
+}
+
+// Leave-reason keys resolved via the "leaveReason" tenant writer table. The
+// status byte is client-interpreted (CPersonalShopDlg::OnLeave switch, v95
+// @0x699c40): values not in the switch — including 0 — render an empty Notice
+// dialog, so an ejected visitor must receive a mapped reason (DOM-25).
+const (
+	CharacterInteractionLeaveReasonShopClosed = "SHOP_CLOSED"  // 3  "The shop is closed."
+	CharacterInteractionLeaveReasonUserBanned = "USER_BANNED"  // 5  "The user has been banned."
+	CharacterInteractionLeaveReasonOutOfStock = "OUT_OF_STOCK" // 14 "The items are out of stock."
+)
+
+// CharacterInteractionLeaveReasonBody sends a LEAVE whose status byte is resolved
+// from the tenant "leaveReason" table, so the ejected visitor sees the correct
+// message instead of an empty dialog. reason is one of the
+// CharacterInteractionLeaveReason* keys.
+func CharacterInteractionLeaveReasonBody(slot byte, reason string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		return func(options map[string]interface{}) []byte {
+			mode := atlas_packet.ResolveCode(l, options, "operations", CharacterInteractionModeLeave)
+			status := atlas_packet.ResolveCode(l, options, "leaveReason", reason)
+			return NewInteractionLeave(mode, slot, status).Encode(l, ctx)(options)
+		}
+	}
 }
 
 func CharacterInteractionUpdateMerchantBody(meso uint32, items []interaction.RoomShopItem) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {

@@ -195,7 +195,21 @@ type StatusEventVisitorBody struct {
 	ShopId      string `json:"shopId"`
 	CharacterId uint32 `json:"characterId"`
 	Slot        byte   `json:"slot"`
+	// LeaveReason is the client "leaveReason" table key sent to an ejected
+	// visitor so their room UI shows the right message instead of an empty
+	// dialog. Only set on VISITOR_EJECTED events. One of the LeaveReason*
+	// constants (SHOP_CLOSED / OUT_OF_STOCK / USER_BANNED).
+	LeaveReason string `json:"leaveReason,omitempty"`
 }
+
+// Client "leaveReason" table keys — kept in sync with the atlas-packet
+// interaction clientbound CharacterInteractionLeaveReason* keys and the tenant
+// leaveReason writer table.
+const (
+	LeaveReasonShopClosed = "SHOP_CLOSED"
+	LeaveReasonOutOfStock = "OUT_OF_STOCK"
+	LeaveReasonUserBanned = "USER_BANNED"
+)
 
 type StatusEventCapacityFullBody struct {
 	ShopId string `json:"shopId"`

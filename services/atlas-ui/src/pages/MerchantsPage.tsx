@@ -29,10 +29,12 @@ import { MapCell } from "@/components/map-cell";
 import { ItemNameCell } from "@/components/item-name-cell";
 import { useGridRefresh } from "@/lib/hooks/useGridRefresh";
 
-// Upper bound on matching item-strings expanded per name search. The listings
-// endpoint already caps its own results server-side; this just fetches every
-// matching item in a single page so the whole result set shows in one grid.
-const MERCHANTS_ITEM_SEARCH_LIMIT = 200;
+// Upper bound on matching item-strings expanded per name search. The
+// /api/data/item-strings endpoint rejects page[size] > 50 (searchindex.MaxLimit)
+// with a 400, so this must stay <= 50; a substring name match rarely exceeds
+// that many distinct item templates. The listings endpoint caps its own results
+// server-side, and each matched item's listings expand into one flat grid.
+const MERCHANTS_ITEM_SEARCH_LIMIT = 50;
 
 export function MerchantsPage() {
   return (

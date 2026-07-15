@@ -77,6 +77,7 @@ DBS=(
   atlas-maps
   atlas-marriages
   atlas-merchant
+  atlas-mts
   atlas-notes
   atlas-npc-conversations
   atlas-npc-shops

@@ -38,7 +38,7 @@ func countTestTenant(t *testing.T) tenant.Model {
 	return te
 }
 
-func insertCountScript(t *testing.T, p ScriptProcessor, reactorId string) {
+func insertCountScript(t *testing.T, p Processor, reactorId string) {
 	t.Helper()
 	m := NewReactorScriptBuilder().
 		SetReactorId(reactorId).

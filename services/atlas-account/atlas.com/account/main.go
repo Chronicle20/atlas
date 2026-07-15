@@ -1,12 +1,16 @@
 package main
 
 import (
+	"context"
+
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+
 	"atlas-account/account"
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	account2 "atlas-account/kafka/consumer/account"
 	"atlas-account/logger"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-account/tasks"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	"github.com/Chronicle20/atlas/libs/atlas-service"
 	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
 	"time"
@@ -58,6 +62,14 @@ func main() {
 
 	db := database.Connect(l, database.SetMigrations(account.Migration))
 
+	server.RegisterTransientErrorClassifier(func(err error) bool {
+		if database.IsTransientConnectionError(err) {
+			database.CountTransient(err)
+			return true
+		}
+		return false
+	})
+
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	account2.InitConsumers(l)(cmf)(consumerGroupId)
 	if err := account2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
@@ -75,7 +87,9 @@ func main() {
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
 		Run()
 
-	go tasks.Register(l, tdm.Context())(account.NewTransitionTimeout(l, db, time.Second*time.Duration(5)))
+	routine.Go(l, tdm.Context(), func(_ context.Context) {
+		tasks.Register(l, tdm.Context())(account.NewTransitionTimeout(l, db, time.Second*time.Duration(5)))
+	})
 
 	tdm.TeardownFunc(account.Teardown(l, db))
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))

@@ -1,0 +1,10 @@
+packet: interaction/serverbound/InteractionOperationPersonalStoreRemoveItem
+direction: serverbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CPersonalShopDlg::MoveItemToInventory
+    address: "0x6662db"
+    decompile_sha256: 84d3c93c6f5acf8d4e2f21a3ed909fb65798d70d86459679cde7a9000cfe80e4
+verifies:
+  - libs/atlas-packet/interaction/serverbound/operation_personal_store_remove_item_test.go#TestOperationPersonalStoreRemoveItemV72Bytes

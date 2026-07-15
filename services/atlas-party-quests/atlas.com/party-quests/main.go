@@ -1,15 +1,19 @@
 package main
 
 import (
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	"context"
+
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+
 	"atlas-party-quests/definition"
 	"atlas-party-quests/instance"
 	characterConsumer "atlas-party-quests/kafka/consumer/character"
 	monsterConsumer "atlas-party-quests/kafka/consumer/monster"
 	pqConsumer "atlas-party-quests/kafka/consumer/party_quest"
 	"atlas-party-quests/logger"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
 	tenant2 "atlas-party-quests/tenant"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	"github.com/Chronicle20/atlas/libs/atlas-service"
 	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
 	"time"
@@ -62,6 +66,14 @@ func main() {
 		return db.AutoMigrate(&seeder.SeedState{})
 	}))
 
+	server.RegisterTransientErrorClassifier(func(err error) bool {
+		if database.IsTransientConnectionError(err) {
+			database.CountTransient(err)
+			return true
+		}
+		return false
+	})
+
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	pqConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	characterConsumer.InitConsumers(l)(cmf)(consumerGroupId)
@@ -84,7 +96,7 @@ func main() {
 	}
 
 	// Start background ticker for PQ timers
-	go func() {
+	routine.Go(l, tdm.Context(), func(_ context.Context) {
 		ticker := time.NewTicker(1 * time.Second)
 		defer ticker.Stop()
 
@@ -114,7 +126,7 @@ func main() {
 				}
 			}
 		}
-	}()
+	})
 
 	server.New(l).
 		WithContext(tdm.Context()).

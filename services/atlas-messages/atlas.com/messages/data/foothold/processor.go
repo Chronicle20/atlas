@@ -24,6 +24,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) GetBelow(mapId _map.Id, x int16, y int16) (Model, error) {
 	return requests.Provider[RestModel, Model](p.l, p.ctx)(getInMap(mapId, x, y), Extract)()
 }

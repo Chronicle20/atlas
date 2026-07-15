@@ -1,0 +1,10 @@
+packet: npc/clientbound/NpcAction
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CNpc::OnMove
+    address: "0x662203"
+    decompile_sha256: bb22214e1734c3267d9cf6fa8f44bdb15b7d1814dee580c88d787f20b69b6fcf
+verifies:
+    - libs/atlas-packet/npc/clientbound/action_test.go#TestNpcActionByteOutputV79

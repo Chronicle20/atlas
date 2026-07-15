@@ -228,9 +228,23 @@ func (m *MonsterTemporaryStat) IsMovementAffectingStat(t tenant.Model) bool {
 	return result.H != 0 || result.L != 0
 }
 
-func (m *MonsterTemporaryStat) EncodeMask(_ logrus.FieldLogger, _ tenant.Model, _ map[string]interface{}) func(w *response.Writer) {
+// legacyMobStatMask reports whether the tenant uses the pre-v79 single 32-bit
+// mob temporary-stat mask instead of the 128-bit UINT128 mask. v72
+// CMob::SetTemporaryStat @0x61ebfa, sub_61B59E (OnStatSet) @0x61b5c3 and
+// OnStatReset @0x61b6b8 all read ONE Decode4 for the mask; the 128-bit mask was
+// introduced at v79 (anchor CMob::OnStatSet DecodeBuffer(16)). Legacy range only
+// — v79/v83/84/87/95/jms are unchanged.
+func legacyMobStatMask(t tenant.Model) bool {
+	return t.IsRegion("GMS") && t.MajorVersion() < 79
+}
+
+func (m *MonsterTemporaryStat) EncodeMask(_ logrus.FieldLogger, t tenant.Model, _ map[string]interface{}) func(w *response.Writer) {
 	return func(w *response.Writer) {
 		mask := m.Mask()
+		if legacyMobStatMask(t) {
+			w.WriteInt(uint32(mask.L & 0xFFFFFFFF)) // v72: single 32-bit mask (low L word)
+			return
+		}
 		w.WriteInt(uint32(mask.H >> 32))
 		w.WriteInt(uint32(mask.H & 0xFFFFFFFF))
 		w.WriteInt(uint32(mask.L >> 32))
@@ -309,12 +323,16 @@ func (m *MonsterTemporaryStat) Decode(l logrus.FieldLogger, ctx context.Context)
 	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
 		var mask tool.Uint128
-		h1 := uint64(r.ReadUint32())
-		h2 := uint64(r.ReadUint32())
-		l1 := uint64(r.ReadUint32())
-		l2 := uint64(r.ReadUint32())
-		mask.H = (h1 << 32) | h2
-		mask.L = (l1 << 32) | l2
+		if legacyMobStatMask(t) {
+			mask.L = uint64(r.ReadUint32()) // v72: single 32-bit mask (low L word)
+		} else {
+			h1 := uint64(r.ReadUint32())
+			h2 := uint64(r.ReadUint32())
+			l1 := uint64(r.ReadUint32())
+			l2 := uint64(r.ReadUint32())
+			mask.H = (h1 << 32) | h2
+			mask.L = (l1 << 32) | l2
+		}
 
 		lookup := MonsterTemporaryStatTypeByName(t)
 

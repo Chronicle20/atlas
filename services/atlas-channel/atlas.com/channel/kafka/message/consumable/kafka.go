@@ -13,9 +13,11 @@ import (
 const (
 	EnvCommandTopic = "COMMAND_TOPIC_CONSUMABLE"
 
-	CommandRequestItemConsume = "REQUEST_ITEM_CONSUME"
-	CommandRequestScroll      = "REQUEST_SCROLL"
-	CommandRequestItemReward  = "REQUEST_ITEM_REWARD"
+	CommandRequestItemConsume   = "REQUEST_ITEM_CONSUME"
+	CommandRequestScroll        = "REQUEST_SCROLL"
+	CommandRequestItemReward    = "REQUEST_ITEM_REWARD"
+	CommandRequestVegaScroll    = "REQUEST_VEGA_SCROLL"
+	CommandRequestViciousHammer = "REQUEST_VICIOUS_HAMMER"
 )
 
 type Command[E any] struct {
@@ -46,16 +48,31 @@ type RequestScrollBody struct {
 	LegendarySpirit bool          `json:"legendarySpirit"`
 }
 
+type RequestVegaScrollBody struct {
+	VegaSlot   slot.Position `json:"vegaSlot"`
+	VegaItemId item.Id       `json:"vegaItemId"`
+	ScrollSlot slot.Position `json:"scrollSlot"`
+	EquipSlot  slot.Position `json:"equipSlot"`
+}
+
+type RequestViciousHammerBody struct {
+	HammerSlot slot.Position `json:"hammerSlot"`
+	EquipSlot  slot.Position `json:"equipSlot"`
+}
+
 const (
-	EnvEventTopic   = "EVENT_TOPIC_CONSUMABLE_STATUS"
-	EventTypeError  = "ERROR"
-	EventTypeScroll = "SCROLL"
+	EnvEventTopic          = "EVENT_TOPIC_CONSUMABLE_STATUS"
+	EventTypeError         = "ERROR"
+	EventTypeScroll        = "SCROLL"
+	EventTypeVegaScroll    = "VEGA_SCROLL"
+	EventTypeViciousHammer = "VICIOUS_HAMMER"
 
 	EventTypeRewardEffect = "REWARD_EFFECT"
 	EventTypeRewardWon    = "REWARD_WON"
 
 	ErrorTypePetCannotConsume = "PET_CANNOT_CONSUME"
 	ErrorTypeInventoryFull    = "INVENTORY_FULL"
+	ErrorTypeVegaInvalid      = "VEGA_INVALID"
 )
 
 type Event[E any] struct {
@@ -84,4 +101,14 @@ type RewardWonBody struct {
 	BoxItemId uint32 `json:"boxItemId"`
 	ItemId    uint32 `json:"itemId"`
 	Message   string `json:"message"`
+}
+
+type VegaScrollBody struct {
+	Success bool `json:"success"`
+	Cursed  bool `json:"cursed"`
+}
+
+type ViciousHammerBody struct {
+	Success bool   `json:"success"`
+	Reason  string `json:"reason"`
 }

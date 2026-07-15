@@ -1,0 +1,10 @@
+packet: npc/clientbound/NpcGuideTalkIdx
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CUserLocal::OnTutorMsg
+    address: "0x8b818a"
+    decompile_sha256: aa723912dcbaf62da934148930d5e158d0d8c70b3f20dc82a435c17be928923f
+verifies:
+    - libs/atlas-packet/npc/clientbound/guide_talk_test.go#TestGuideTalkIdxByteOutputV79

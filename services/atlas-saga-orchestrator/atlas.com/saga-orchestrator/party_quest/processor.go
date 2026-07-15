@@ -72,6 +72,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 // RegisterPartyQuest validates party state and produces a REGISTER command to atlas-party-quests
 func (p *ProcessorImpl) RegisterPartyQuest(characterId uint32, worldId world.Id, channelId channel.Id, mapId _map.Id, questId string) error {
 	// Get the character's party

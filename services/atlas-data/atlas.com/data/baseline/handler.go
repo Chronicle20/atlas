@@ -2,26 +2,30 @@ package baseline
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 
 	"atlas-data/rest"
 	minio "atlas-data/storage/minio"
 
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
-// InitResource installs POST /data/baseline/publish and /data/baseline/restore.
+// InitResource installs POST /data/baseline/publish, POST /data/baseline/restore,
+// and GET /data/baselines.
 func InitResource(db *gorm.DB, mc *minio.Client) func(si jsonapi.ServerInformation) server.RouteInitializer {
 	return func(si jsonapi.ServerInformation) server.RouteInitializer {
 		return func(router *mux.Router, l logrus.FieldLogger) {
 			r := router.PathPrefix("/data/baseline").Subrouter()
 			r.HandleFunc("/publish", rest.RegisterInputHandler[PublishInputModel](l)(si)("baseline_publish", publishInner(db, mc, l))).Methods(http.MethodPost)
 			r.HandleFunc("/restore", rest.RegisterInputHandler[RestoreInputModel](l)(si)("baseline_restore", restoreInner(db, mc, l))).Methods(http.MethodPost)
+			// Plural collection route deliberately outside the /data/baseline
+			// subrouter: GET /data/baselines lists published canonical baselines.
+			router.HandleFunc("/data/baselines", rest.RegisterHandler(l)(si)("baselines_list", listInner(mc))).Methods(http.MethodGet)
 		}
 	}
 }
@@ -40,7 +44,7 @@ func publishInner(db *gorm.DB, mc *minio.Client, _ logrus.FieldLogger) func(d *r
 			sum, err := (Publisher{DB: db, MC: mc, L: d.Logger()}).Publish(r.Context(), input.Region, input.MajorVersion, input.MinorVersion)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("baseline publish failed")
-				http.Error(w, fmt.Sprintf("publish failed: %s", err.Error()), http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 			out := PublishOutputModel{
@@ -52,6 +56,50 @@ func publishInner(db *gorm.DB, mc *minio.Client, _ logrus.FieldLogger) func(d *r
 			w.Header().Set("Content-Type", "application/vnd.api+json")
 			w.WriteHeader(http.StatusAccepted)
 			server.MarshalResponse[PublishOutputModel](d.Logger())(w)(c.ServerInformation())(queryParams)(out)
+		}
+	}
+}
+
+// listInner serves GET /data/baselines. Gate order matches publishInner:
+// nil-mc 503 first, then the operator 403, then the page-param validation,
+// then the listing. The ParseTenant middleware runs on the route (all
+// RegisterHandler routes get it) but the handler never reads the tenant — the
+// nil-UUID synthetic tenant the UI sends is accepted and ignored.
+//
+// Published baselines are a naturally-bounded content dump (one row per
+// published (region, majorVersion, minorVersion)), so this is a standard
+// collection: page[size] defaults to paginate.DefaultPageSize, capped at
+// paginate.MaxPageSize (task-117). The list is materialized from a MinIO
+// bucket listing (Lister.List), not a DB table, and is already deterministically
+// sorted by (region, major, minor) — the materialize + paginate.Slice adapter
+// per docs/rest-pagination.md §3.
+func listInner(mc *minio.Client) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			if mc == nil {
+				http.Error(w, "minio unavailable", http.StatusServiceUnavailable)
+				return
+			}
+			if r.Header.Get("X-Atlas-Operator") != "1" {
+				http.Error(w, "operator required", http.StatusForbidden)
+				return
+			}
+			page, perr := paginate.ParseParams(r.URL.Query(), paginate.DefaultPageSize, paginate.MaxPageSize)
+			if perr != nil {
+				server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+				return
+			}
+			items, err := (Lister{MC: mc, Bucket: mc.Cfg().BucketCanonical, L: d.Logger()}).List(r.Context())
+			if err != nil {
+				d.Logger().WithError(err).Errorf("baseline list failed")
+				server.WriteErrorResponse(d.Logger())(w)(err)
+				return
+			}
+			paged := paginate.Slice(items, page)
+			query := r.URL.Query()
+			queryParams := jsonapi.ParseQueryFields(&query)
+			w.Header().Set("Content-Type", "application/vnd.api+json")
+			server.MarshalPaginatedResponse[[]ListItemModel](d.Logger())(w)(c.ServerInformation())(queryParams)(paged.Items, paginate.EnvelopeFor(paged), r)
 		}
 	}
 }
@@ -68,11 +116,11 @@ func restoreInner(db *gorm.DB, mc *minio.Client, _ logrus.FieldLogger) func(d *r
 				return
 			}
 			if err := (Restorer{DB: db, MC: mc, L: d.Logger()}).Restore(req.Context(), input.Region, input.MajorVersion, input.MinorVersion, input.TenantID); err != nil {
-				code := http.StatusInternalServerError
 				if errors.Is(err, ErrSchemaMismatch) || errors.Is(err, ErrShaMismatch) {
-					code = http.StatusUnprocessableEntity
+					http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+					return
 				}
-				http.Error(w, err.Error(), code)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 			w.WriteHeader(http.StatusAccepted)

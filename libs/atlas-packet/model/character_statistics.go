@@ -95,7 +95,12 @@ func (m CharacterStatistics) Encode(l logrus.FieldLogger, ctx context.Context) f
 		w.WriteInt(m.face)
 		w.WriteInt(m.hair)
 
-		if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
+		// Multi-pet (3 pet locker SNs) is the v61+ GW_CharacterStat shape (v61
+		// Decode @0x4b4081 reads DecodeBuffer(24)=3 longs). Legacy GMS v29..v60
+		// (v48, GW_CharacterStat::Decode sub_49B627 @0x49b6bc) reads a single 8-byte
+		// pet locker SN (DecodeBuffer(this+27, 8)); v28 and below likewise single.
+		// Boundary verified: v48 single (IDA @0x49b6bc), v61 triple (IDA @0x4b4081).
+		if (t.Region() == "GMS" && t.MajorVersion() >= 61) || t.Region() == "JMS" {
 			for i := 0; i < 3; i++ {
 				w.WriteLong(m.petIds[i])
 			}
@@ -132,7 +137,10 @@ func (m CharacterStatistics) Encode(l logrus.FieldLogger, ctx context.Context) f
 		w.WriteInt(m.experience)
 		w.WriteInt16(m.fame)
 
-		if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
+		// gachaponExp entered GW_CharacterStat in the legacy range: absent at GMS v61
+		// (verified — v61 GW_CharacterStat::Decode @0x4b4081 reads exp, fame, then
+		// mapId(unsigned long)+spawnPoint with NO gachaExp slot), present by GMS v72.
+		if (t.Region() == "GMS" && t.MajorVersion() > 61) || t.Region() == "JMS" {
 			w.WriteInt(m.gachaponExperience)
 		}
 
@@ -141,7 +149,12 @@ func (m CharacterStatistics) Encode(l logrus.FieldLogger, ctx context.Context) f
 
 		if t.Region() == "GMS" {
 			if t.MajorVersion() > 12 {
-				w.WriteInt(0)
+				// GMS v61 (verified @0x4b4267) reads nothing after spawnPoint — the
+				// trailing int entered alongside gachaExp somewhere in (61,72]. Keep the
+				// legacy <=28 path and v72+ path emitting it; skip only the v29..v61 range.
+				if t.MajorVersion() <= 28 || t.MajorVersion() > 61 {
+					w.WriteInt(0)
+				}
 			} else {
 				w.WriteInt64(0)
 				w.WriteInt(0)
@@ -172,7 +185,9 @@ func (m *CharacterStatistics) Decode(_ logrus.FieldLogger, ctx context.Context) 
 		m.face = r.ReadUint32()
 		m.hair = r.ReadUint32()
 
-		if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
+		// Mirror of Encode: multi-pet (3 longs) is v61+; legacy GMS v29..v60 (v48)
+		// and v28 read a single 8-byte pet locker SN.
+		if (t.Region() == "GMS" && t.MajorVersion() >= 61) || t.Region() == "JMS" {
 			for i := 0; i < 3; i++ {
 				m.petIds[i] = r.ReadUint64()
 			}
@@ -208,7 +223,8 @@ func (m *CharacterStatistics) Decode(_ logrus.FieldLogger, ctx context.Context) 
 		m.experience = r.ReadUint32()
 		m.fame = r.ReadInt16()
 
-		if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
+		// Mirror of Encode: gachaExp absent at GMS v61, present by v72.
+		if (t.Region() == "GMS" && t.MajorVersion() > 61) || t.Region() == "JMS" {
 			m.gachaponExperience = r.ReadUint32()
 		}
 
@@ -217,7 +233,10 @@ func (m *CharacterStatistics) Decode(_ logrus.FieldLogger, ctx context.Context) 
 
 		if t.Region() == "GMS" {
 			if t.MajorVersion() > 12 {
-				_ = r.ReadUint32()
+				// Mirror of Encode: trailing int skipped for the v29..v61 legacy range.
+				if t.MajorVersion() <= 28 || t.MajorVersion() > 61 {
+					_ = r.ReadUint32()
+				}
 			} else {
 				_ = r.ReadInt64()
 				_ = r.ReadUint32()

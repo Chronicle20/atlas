@@ -651,11 +651,13 @@
   direction: clientbound
   opcode: 134
   fname: CStage::OnSetITC
+  packet: field/clientbound/SetItc
   provenance: csv-import
 - op: SET_CASH_SHOP
   direction: clientbound
   opcode: 135
   fname: CStage::OnSetCashShop
+  packet: cash/clientbound/CashShopOpen
   provenance: csv-import
 - op: SET_BACK_EFFECT
   direction: clientbound
@@ -1398,16 +1400,19 @@
   direction: clientbound
   opcode: 282
   fname: CEmployeePool::OnEmployeeEnterField
+  packet: merchant/clientbound/EmployeeSpawn
   provenance: csv-import
 - op: DESTROY_HIRED_MERCHANT
   direction: clientbound
   opcode: 283
   fname: CEmployeePool::OnEmployeeLeaveField
+  packet: merchant/clientbound/EmployeeDestroy
   provenance: csv-import
 - op: UPDATE_HIRED_MERCHANT
   direction: clientbound
   opcode: 284
   fname: CEmployeePool::OnEmployeeMiniRoomBalloon
+  packet: merchant/clientbound/EmployeeUpdate
   provenance: csv-import
 - op: DROP_ITEM_FROM_MAPOBJECT
   direction: clientbound
@@ -1780,13 +1785,15 @@
   opcode: 364
   fname: CMapleTVMan::OnSendMessageResult
   provenance: csv-import
-- op: IDA_0X16F
+- op: MTS_CHARGE_PARAM_RESULT
   direction: clientbound
   opcode: 367
   fname: CITC::OnChargeParamResult
+  packet: field/clientbound/MtsChargeParamResult
   provenance: ida-discovered
   ida:
     address: 6111940
+  note: 'v87 CITC::OnPacket case 0x16F -> CITC::OnChargeParamResult, handler entry 0x5d4300 (bodiless: this[6]=0; billing StringPool; open_web_site — reads nothing from CInPacket). task-113 MTS charge-param verification (renamed from placeholder IDA_0X16F).'
 - op: MTS_OPERATION2
   direction: clientbound
   opcode: 368
@@ -1818,7 +1825,10 @@
   direction: clientbound
   opcode: 379
   fname: CUIVega::OnVegaResult
-  provenance: csv-import
+  provenance: ida-discovered
+  ida:
+    address: 0x8919b6
+  note: 'task-130 Task 4: IDA v87 CUIVega::OnPacket (0x8919a0) case 379 -> OnVegaResult (0x8919b6). Opcode 0x17B/379 confirmed. Single Decode1 mode byte; START in {0x42,0x47}, RESULT in {0x43,0x45}, else -> notice (=v83+2 shift). START carries outcome (Draw sub_890325 + popup sub_891B4E: 0x42->type1 success).'
 - op: IDA_0X17E
   direction: clientbound
   opcode: 382

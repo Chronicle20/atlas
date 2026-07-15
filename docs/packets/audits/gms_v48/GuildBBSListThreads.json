@@ -1,0 +1,21 @@
+{
+  "WriterName": "GuildBBSListThreads",
+  "IDAName": "CUIGuildBBS::SendLoadListRequest",
+  "Address": "0x6091b1",
+  "Variant": "GMS/v48",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/guild/serverbound/bbs_list_threads.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "startIndex @0x6091e4 (after BBS_OPERATION mode 2=LIST @0x6091d6)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

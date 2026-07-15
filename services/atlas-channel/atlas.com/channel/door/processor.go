@@ -11,42 +11,66 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type Processor struct {
+type Processor interface {
+	InFieldModelProvider(f field.Model) model.Provider[[]Model]
+	GetInField(f field.Model) ([]Model, error)
+	ByOwnerModelProvider(ownerCharacterId uint32) model.Provider[[]Model]
+	GetByOwner(ownerCharacterId uint32) ([]Model, error)
+	ForEachInMap(f field.Model, o model.Operator[Model]) error
+	GetByOwnerOnMap(f field.Model, ownerCharacterId uint32) (Model, bool)
+	Spawn(f field.Model, ownerCharacterId, skillId uint32, level byte, x, y int16) error
+	Remove(f field.Model, ownerCharacterId uint32, reason string) error
+}
+
+type ProcessorImpl struct {
 	l   logrus.FieldLogger
 	ctx context.Context
 }
 
-func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
-	return &Processor{l: l, ctx: ctx}
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
+	return &ProcessorImpl{l: l, ctx: ctx}
 }
 
-func (p *Processor) InFieldModelProvider(f field.Model) model.Provider[[]Model] {
-	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestInField(f), Extract, model.Filters[Model]())
+var _ Processor = (*ProcessorImpl)(nil)
+
+// InFieldModelProvider fetches every door currently in one map instance.
+// This is a hot-path consumer (door spawn/state on every channel spawn
+// broadcast, ForEachInMap, GetByOwnerOnMap); the upstream atlas-doors list
+// is now paginated (task-117), so this drains every page rather than
+// fetching just the first -- a truncated list here means doors silently
+// vanish from the client's view.
+func (p *ProcessorImpl) InFieldModelProvider(f field.Model) model.Provider[[]Model] {
+	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(inFieldUrl(f), 250, Extract, model.Filters[Model]())
 }
 
 // GetInField returns all doors in the given field.
-func (p *Processor) GetInField(f field.Model) ([]Model, error) {
+func (p *ProcessorImpl) GetInField(f field.Model) ([]Model, error) {
 	return p.InFieldModelProvider(f)()
 }
 
-func (p *Processor) ByOwnerModelProvider(ownerCharacterId uint32) model.Provider[[]Model] {
-	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByOwner(ownerCharacterId), Extract, model.Filters[Model]())
+// ByOwnerModelProvider fetches every door owned by ownerCharacterId. The
+// upstream atlas-doors list is now paginated (task-117), so this drains
+// every page rather than fetching just the first (a character owns at most
+// one door pair in practice, so this is a single round trip in the common
+// case, but the drain is required for correctness at any size).
+func (p *ProcessorImpl) ByOwnerModelProvider(ownerCharacterId uint32) model.Provider[[]Model] {
+	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(byOwnerUrl(ownerCharacterId), 250, Extract, model.Filters[Model]())
 }
 
 // GetByOwner returns all live doors owned by ownerCharacterId, resolved from
 // either side (area or town) via the atlas-doors by-owner route.
-func (p *Processor) GetByOwner(ownerCharacterId uint32) ([]Model, error) {
+func (p *ProcessorImpl) GetByOwner(ownerCharacterId uint32) ([]Model, error) {
 	return p.ByOwnerModelProvider(ownerCharacterId)()
 }
 
 // ForEachInMap applies op to every door in the given field (area-keyed).
 // Mirrors reactor.Processor.ForEachInMap.
-func (p *Processor) ForEachInMap(f field.Model, o model.Operator[Model]) error {
+func (p *ProcessorImpl) ForEachInMap(f field.Model, o model.Operator[Model]) error {
 	return model.ForEachSlice(p.InFieldModelProvider(f), o, model.ParallelExecute())
 }
 
 // GetByOwnerOnMap returns the door in the field owned by ownerCharacterId, if any.
-func (p *Processor) GetByOwnerOnMap(f field.Model, ownerCharacterId uint32) (Model, bool) {
+func (p *ProcessorImpl) GetByOwnerOnMap(f field.Model, ownerCharacterId uint32) (Model, bool) {
 	ms, err := p.GetInField(f)
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to retrieve doors in field [%d].", f.MapId())
@@ -61,12 +85,12 @@ func (p *Processor) GetByOwnerOnMap(f field.Model, ownerCharacterId uint32) (Mod
 }
 
 // Spawn emits a SPAWN command to atlas-doors for a newly cast Mystic Door.
-func (p *Processor) Spawn(f field.Model, ownerCharacterId, skillId uint32, level byte, x, y int16) error {
+func (p *ProcessorImpl) Spawn(f field.Model, ownerCharacterId, skillId uint32, level byte, x, y int16) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(doormsg.EnvDoorCommandTopic)(SpawnCommandProvider(f, ownerCharacterId, skillId, level, x, y))
 }
 
 // Remove emits a REMOVE command to atlas-doors for the owner's door — used when
 // the caster cancels the Mystic Door buff (the door is dismissed early).
-func (p *Processor) Remove(f field.Model, ownerCharacterId uint32, reason string) error {
+func (p *ProcessorImpl) Remove(f field.Model, ownerCharacterId uint32, reason string) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(doormsg.EnvDoorCommandTopic)(RemoveCommandProvider(f, ownerCharacterId, reason))
 }

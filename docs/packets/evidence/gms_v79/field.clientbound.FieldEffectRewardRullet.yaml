@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldEffectRewardRullet
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnFieldEffect#RewardRullet
+    address: "0x51e577"
+    decompile_sha256: af7a586994237a0a04b1c64f3a845e81fdbd833e8cb19e573dbaa6fa512a6d67
+verifies:
+    - libs/atlas-packet/field/clientbound/effect_test.go#TestFieldEffectByteOutputV79

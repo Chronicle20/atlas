@@ -51,6 +51,21 @@ func le4(v uint32) []byte {
 // packet-audit:verify packet=login/serverbound/CharacterSelect version=gms_v87 ida=0x62e9f6
 // packet-audit:verify packet=login/serverbound/CharacterSelect version=gms_v95 ida=0x5da2a0
 // packet-audit:verify packet=login/serverbound/CharacterSelect version=jms_v185 ida=0x66ddac
+// packet-audit:verify packet=login/serverbound/CharacterSelect version=gms_v79 ida=0x5ccae3
+//
+// gms_v72: CLogin::SendSelectCharPacket = sub_5B1D03 @0x5b1d03 (GMS_v72.1_U_DEVM.exe,
+// port 13339): COutPacket(19) @0x5b1d6c; Encode4(charId) @0x5b1d8c; EncodeStr(mac=
+// GetLocalMacAddress) @0x5b1dc7; EncodeStr(hwid=GetLocalMacAddressWithHDDSerialNo)
+// @0x5b1dfd — charId + mac + hwid, same as the GMS >12 path. Fixtured below.
+//
+// packet-audit:verify packet=login/serverbound/CharacterSelect version=gms_v72 ida=0x5b1d03
+//
+// gms_v61: CHAR_SELECT send = sub_564F79 @0x564f79 (GMS_v61.1_U_DEVM.exe, port
+// 13338): COutPacket(19)@0x564fe3; Encode4(charId)@0x565003; EncodeStr(mac=
+// GetLocalMacAddress)@0x56503e; EncodeStr(hwid=GetLocalMacAddressWithHDDSerialNo)
+// @0x565074 — charId + mac + hwid, same as the GMS >12 path. Fixtured below.
+//
+// packet-audit:verify packet=login/serverbound/CharacterSelect version=gms_v61 ida=0x564f79
 //
 // jms CLogin::SendSelectCharPacket @0x66ddac, m_bLoginOpt<=3 arm:
 //
@@ -65,7 +80,9 @@ func TestCharacterSelectByteOutput(t *testing.T) {
 		Name         string
 		Region       string
 		Major, Minor uint16
-	}{
+	} {
+		{"GMS v61", "GMS", 61, 1},
+		{"GMS v72", "GMS", 72, 1},
 		{"GMS v83", "GMS", 83, 1},
 		{"GMS v84", "GMS", 84, 1},
 		{"GMS v87", "GMS", 87, 1},

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -83,7 +84,7 @@ func TestNewProcessor_PanicsOnMissingTenant(t *testing.T) {
 	})
 }
 
-func TestProcessor_GetAll_Empty(t *testing.T) {
+func TestProcessor_AllProvider_Empty(t *testing.T) {
 	ten := setupTestTenant(t)
 	ctx := setupTestContext(t, ten)
 	l := setupTestLogger(t)
@@ -91,13 +92,14 @@ func TestProcessor_GetAll_Empty(t *testing.T) {
 
 	p := NewProcessor(l, ctx, db)
 
-	result, err := p.GetAll(1)
+	paged, err := p.AllProvider(1, model.Page{Number: 1, Size: 50})()
 
 	assert.NoError(t, err)
-	assert.Empty(t, result)
+	assert.Empty(t, paged.Items)
+	assert.Equal(t, 0, paged.Total)
 }
 
-func TestProcessor_GetAll_ReturnsThreads(t *testing.T) {
+func TestProcessor_AllProvider_ReturnsThreads(t *testing.T) {
 	ten := setupTestTenant(t)
 	ctx := setupTestContext(t, ten)
 	l := setupTestLogger(t)
@@ -126,13 +128,14 @@ func TestProcessor_GetAll_ReturnsThreads(t *testing.T) {
 
 	p := NewProcessor(l, ctx, db)
 
-	result, err := p.GetAll(1)
+	paged, err := p.AllProvider(1, model.Page{Number: 1, Size: 50})()
 
 	assert.NoError(t, err)
-	assert.Len(t, result, 2)
+	assert.Len(t, paged.Items, 2)
+	assert.Equal(t, 2, paged.Total)
 }
 
-func TestProcessor_GetAll_FiltersByGuild(t *testing.T) {
+func TestProcessor_AllProvider_FiltersByGuild(t *testing.T) {
 	ten := setupTestTenant(t)
 	ctx := setupTestContext(t, ten)
 	l := setupTestLogger(t)
@@ -162,11 +165,11 @@ func TestProcessor_GetAll_FiltersByGuild(t *testing.T) {
 
 	p := NewProcessor(l, ctx, db)
 
-	result, err := p.GetAll(1)
+	paged, err := p.AllProvider(1, model.Page{Number: 1, Size: 50})()
 
 	assert.NoError(t, err)
-	assert.Len(t, result, 1)
-	assert.Equal(t, "Guild 1 Thread", result[0].title)
+	assert.Len(t, paged.Items, 1)
+	assert.Equal(t, "Guild 1 Thread", paged.Items[0].title)
 }
 
 func TestProcessor_GetById_NotFound(t *testing.T) {
@@ -286,11 +289,11 @@ func TestProcessor_TenantIsolation(t *testing.T) {
 
 	p := NewProcessor(l, ctx, db)
 
-	result, err := p.GetAll(1)
+	paged, err := p.AllProvider(1, model.Page{Number: 1, Size: 50})()
 
 	assert.NoError(t, err)
-	assert.Len(t, result, 1)
-	assert.Equal(t, "Tenant 1 Thread", result[0].title)
+	assert.Len(t, paged.Items, 1)
+	assert.Equal(t, "Tenant 1 Thread", paged.Items[0].title)
 }
 
 func TestProcessor_WithTransaction(t *testing.T) {

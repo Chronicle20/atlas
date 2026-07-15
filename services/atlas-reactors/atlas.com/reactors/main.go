@@ -1,12 +1,16 @@
 package main
 
 import (
+	"context"
+
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+
 	drop2 "atlas-reactors/kafka/consumer/drop"
 	reactor2 "atlas-reactors/kafka/consumer/reactor"
 	"atlas-reactors/logger"
 	"atlas-reactors/reactor"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-reactors/tasks"
+	"github.com/Chronicle20/atlas/libs/atlas-service"
 	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
 
@@ -67,7 +71,9 @@ func main() {
 
 	tdm.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 
-	go tasks.Register(tasks.NewCooldownCleanup(l))
+	routine.Go(l, tdm.Context(), func(_ context.Context) {
+		tasks.Register(l, tdm.Context())(tasks.NewCooldownCleanup(l))
+	})
 
 	server.New(l).
 		WithContext(tdm.Context()).
@@ -78,7 +84,7 @@ func main() {
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
 		Run()
 
-	tdm.TeardownFunc(reactor.Teardown(l))
+	tdm.TeardownFunc(reactor.NewProcessor(l, tdm.Context()).Teardown())
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))
 
 	tdm.Wait()

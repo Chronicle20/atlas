@@ -50,7 +50,11 @@ func handleChangeCharacterLocation(db *gorm.DB, wp WarpProvider) rest.InputHandl
 			return func(w http.ResponseWriter, r *http.Request) {
 				lp := NewProcessor(d.Logger(), d.Context(), db)
 				ip := info.NewProcessor(d.Logger(), d.Context())
-				status := changeCharacterLocation(d.Logger(), lp, ip, wp(d.Logger(), d.Context(), db), characterId, input.MapId)
+				status, err := changeCharacterLocation(d.Logger(), lp, ip, wp(d.Logger(), d.Context(), db), characterId, input.MapId)
+				if status == http.StatusInternalServerError {
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
 				w.WriteHeader(status)
 			}
 		})
@@ -61,35 +65,35 @@ func handleChangeCharacterLocation(db *gorm.DB, wp WarpProvider) rest.InputHandl
 // returns the HTTP status to write. channelId/instance from the body are
 // ignored — this is a map-only warp; destination channel is the stored channel,
 // instance is uuid.Nil (non-instanced), spawn portal 0.
-func changeCharacterLocation(l logrus.FieldLogger, lp Processor, ip info.Processor, wp WarpProcessor, characterId uint32, targetMapId _map.Id) int {
+func changeCharacterLocation(l logrus.FieldLogger, lp Processor, ip info.Processor, wp WarpProcessor, characterId uint32, targetMapId _map.Id) (int, error) {
 	cur, err := lp.GetById(characterId)
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		l.Warnf("change_character_location: no location row for character [%d]; rejecting 404.", characterId)
-		return http.StatusNotFound
+		return http.StatusNotFound, nil
 	}
 	if err != nil {
 		l.WithError(err).Errorf("change_character_location: loading location for character [%d].", characterId)
-		return http.StatusInternalServerError
+		return http.StatusInternalServerError, err
 	}
 
 	if _, err := ip.GetById(targetMapId); err != nil {
 		if errors.Is(err, requests.ErrNotFound) {
 			l.WithError(err).Warnf("change_character_location: target map [%d] does not exist; rejecting 400.", targetMapId)
-			return http.StatusBadRequest
+			return http.StatusBadRequest, nil
 		}
 		l.WithError(err).Errorf("change_character_location: map-existence check failed for [%d] (infrastructure).", targetMapId)
-		return http.StatusInternalServerError
+		return http.StatusInternalServerError, err
 	}
 
 	dest := field.NewBuilder(cur.WorldId(), cur.ChannelId(), targetMapId).SetInstance(uuid.Nil).Build()
 	if err := wp.ChangeMap(uuid.New(), characterId, cur.WorldId(), dest, 0, false, 0, 0); err != nil {
 		l.WithError(err).Errorf("change_character_location: warp failed for character [%d].", characterId)
-		return http.StatusInternalServerError
+		return http.StatusInternalServerError, err
 	}
 
 	l.WithFields(logrus.Fields{"character_id": characterId, "map_id": targetMapId}).
 		Infof("change_character_location: warped character [%d] to map [%d].", characterId, targetMapId)
-	return http.StatusNoContent
+	return http.StatusNoContent, nil
 }
 
 func handleGetCharacterLocation(db *gorm.DB) rest.GetHandler {
@@ -103,14 +107,14 @@ func handleGetCharacterLocation(db *gorm.DB) rest.GetHandler {
 				}
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Unable to load location for character [%d].", characterId)
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
 				rm, err := model.Map(Transform)(model.FixedProvider(m))()
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Creating REST model.")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 

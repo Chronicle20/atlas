@@ -1,6 +1,10 @@
 package main
 
 import (
+	"context"
+
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+
 	channel2 "atlas-transports/channel"
 	"atlas-transports/instance"
 	instanceConfig "atlas-transports/instance/config"
@@ -10,11 +14,11 @@ import (
 	"atlas-transports/kafka/consumer/instance_transport"
 	_map "atlas-transports/kafka/consumer/map"
 	"atlas-transports/logger"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
 	tenant2 "atlas-transports/tenant"
-	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"atlas-transports/transport"
 	"atlas-transports/transport/config"
+	"github.com/Chronicle20/atlas/libs/atlas-service"
+	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
 	"time"
 
@@ -122,7 +126,7 @@ func main() {
 	}
 
 	// Start a background goroutine to periodically update route states and instance transports
-	go func() {
+	routine.Go(l, tdm.Context(), func(_ context.Context) {
 		ticker := time.NewTicker(1 * time.Second)
 		defer ticker.Stop()
 
@@ -145,7 +149,7 @@ func main() {
 				}
 			}
 		}
-	}()
+	})
 
 	// Create and run server
 	server.New(l).

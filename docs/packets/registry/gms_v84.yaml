@@ -822,6 +822,7 @@
   direction: clientbound
   opcode: 129
   fname: CStage::OnSetITC
+  packet: field/clientbound/SetItc
   provenance: ida-discovered
   ida:
     address: 7965003
@@ -830,6 +831,7 @@
   direction: clientbound
   opcode: 130
   fname: CStage::OnSetCashShop
+  packet: cash/clientbound/CashShopOpen
   provenance: ida-discovered
   ida:
     address: 7965003
@@ -1736,6 +1738,7 @@
   direction: clientbound
   opcode: 272
   fname: CEmployeePool::OnEmployeeEnterField
+  packet: merchant/clientbound/EmployeeSpawn
   provenance: ida-discovered
   ida:
     address: 5348860
@@ -1744,6 +1747,7 @@
   direction: clientbound
   opcode: 273
   fname: CEmployeePool::OnEmployeeLeaveField
+  packet: merchant/clientbound/EmployeeDestroy
   provenance: ida-discovered
   ida:
     address: 5348849
@@ -1752,6 +1756,7 @@
   direction: clientbound
   opcode: 274
   fname: CEmployeePool::OnEmployeeMiniRoomBalloon
+  packet: merchant/clientbound/EmployeeUpdate
   provenance: ida-discovered
   ida:
     address: 5348838
@@ -2264,6 +2269,15 @@
   ida:
     address: 6605770
   note: 'task-100 v84 IDB (cascade): CMapleTVMan dispatcher sub_64C7A4 case 353 -> sub_64C9CA @0x64C9CA (decodes result code -> StringPool result message = CMapleTVMan::OnSendMessageResult); v95 CMapleTVMan::OnPacket case 0x197 -> OnSendMessageResult. Prior csv-import 343 was the stale v83 copy.'
+- op: MTS_CHARGE_PARAM_RESULT
+  direction: clientbound
+  opcode: 356
+  fname: CITC::OnChargeParamResult
+  packet: field/clientbound/MtsChargeParamResult
+  provenance: ida-discovered
+  ida:
+    address: 5981944
+  note: 'v84 CITC sub-dispatcher sub_5B46BC (@0x5b46bc): sub eax,164h; jz -> sub_5B46F8 = CITC::OnChargeParamResult, handler entry 0x5b46f8 (bodiless: this[6]=0; billing StringPool idx5; sub_9C7FE8=open_web_site — reads nothing from CInPacket). Opcode 0x164 matches the tenant template writer route. task-113 v84 MTS charge-param verification.'
 - op: MTS_OPERATION2
   direction: clientbound
   opcode: 347
@@ -2290,18 +2304,20 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: VICIOUS_HAMMER
   direction: clientbound
-  opcode: 361
+  opcode: 364
   fname: CField::OnItemUpgrade
   provenance: ida-discovered
   ida:
-    address: 5522325
-  note: 'task-096 IDA v84: CField::OnPacket (0x53d5a7) routes headers [359,362] (0x167-0x16A) to the OnItemUpgrade vtable forwarder (sub_544395 @0x544395). v83 CSV VICIOUS_HAMMER=354; applying the v84 opcode-table +7 region shift (matches ZAKUM_SHRINE 303->310 and WITCH_TOWER_SCORE_UPDATE) gives 361, which falls inside the confirmed forwarding range. The prior csv-import value 354 was a v83 copy.'
+    address: 5522351
+  note: 'task-129 IDA v84 (CORRECTS task-096): the Vicious Hammer decoder is CUIItemUpgrade::OnItemUpgradeResult (sub_85676C 0x85676c) — verified by content (mode==61 success 2-count str 5059 / mode==62 failure horntail switch 5057/5058/5060 / else open echo token+count), the exact v83 sub_82B2C3 clone. It is reached via CUIItemUpgrade::OnPacket (sub_856756) gate header==364 (0x16C) from the CField forwarder at 0x5443af (this[135]; IDB symbol CField::OnCharacterSale, but functionally the hammer forwarder — CField::OnPacket routes headers 363-366 there). The prior task-096 value 361/0x169 was a WRONG inference: 361 falls in the 359-362 range routed to sub_544395/this[134], whose gate (sub_7FD845) only handles 359 (name-change) and 360 (world-transfer) — 361 is a DEAD opcode there. Matches the +10 v84 clientbound shift (v83 0x162 -> v84 0x16C).'
 - op: VEGA_SCROLL
   direction: clientbound
-  opcode: 358
+  opcode: 368
   fname: CUIVega::OnVegaResult
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 0x858d7e
+  note: 'task-130 Task 4b: IDA-verified against the now-live GMS_v84.1_U_DEVM IDB. CField::OnPacket (0x53d5a7) routes clientbound 367-370 -> CField::OnVega (0x5443c9) -> CUIVega::OnPacket (sub_858D68) case 368 -> CUIVega::OnVegaResult (sub_858D7E, 0x858d7e). Opcode 0x170/368 confirmed; the prior 0x166/358 csv-import carryover was WRONG (below the v84 range, would misroute). Single Decode1 mode byte; START in {0x40,0x45}, RESULT in {0x41,0x43}, else -> "cannot be used" notice (string 5734). START byte carries outcome (Draw sub_857734: this[34]==0x40 -> sub_858F20 type 1 SUCCESS, 0x45 -> type 2 FAIL).'
 - op: LOGIN_PASSWORD
   direction: serverbound
   opcode: 1
@@ -2883,12 +2899,12 @@
   fname: CWvsContext::SendSkillLearnItemUseRequest
   provenance: csv-import
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
-- op: USE_SKILL_RESET_BOOK
+- op: USE_SHOP_SCANNER_ITEM
   direction: serverbound
   opcode: 83
-  fname: CWvsContext::SendSkillResetItemUseRequest
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  fname: CWvsContext::SendShopScannerItemUseRequest
+  provenance: manual
+  note: task-127 — inherited from the v83 IDA finding (0xa0a25e) via the established v84-serverbound≡v83 rule; UNVERIFIED against a v84 IDB (none loaded); provenance is 'manual' (not 'ida-discovered') because no v84-address evidence exists. The BUDDYLIST (CWvsContext::OnFriendResult) / CASH_PET_FOOD_RESULT rows are examples elsewhere in this file of 'manual' provenance used for rows lacking a discrete ida.address — but unlike this row, those were v84-IDB-confirmed (task-085 IDB dispatcher case labels), not carryovers. This row differs — it is a v83-carryover with NO v84 verification (v83 IDA 0xa0a25e; v84 UNVERIFIED, no IDB loaded). See gms_v83.yaml for the primary evidence.
 - op: USE_TELEPORT_ROCK
   direction: serverbound
   opcode: 84
@@ -4016,19 +4032,23 @@
   note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB. CSV serverbound row 405: op name unknown — rename via discover-ops adjudication (provenance: manual)'
 - op: ITC_STATUS_CHARGE
   direction: serverbound
-  opcode: 251
+  opcode: 258
   fname: CITC::OnStatusCharge
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 5959542
+  note: 'task-102: v84 opcode corrected 251->258 (0x102). CITC::OnStatusCharge @0x5aef76 (GMS_v84.1_U_DEVM.exe, IDA port 13337) builds COutPacket(0x102) — push 102h @0x5aef90, structurally identical to the v83 twin @0x59ebda which pushes 0FBh. The stale csv value 251 (0xFB) was the v83 opcode carried over unshifted (same class as the CATCH_MONSTER_WITH_ITEM 251->257 correction). Serverbound 258 has no other claimant.'
 - op: ITC_QUERY_CASH_REQUEST
   direction: serverbound
-  opcode: 252
+  opcode: 259
   fname: CITC::TrySendQueryCashRequest
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 5944426
+  note: 'task-102: v84 opcode corrected 252->259 (0x103). CITC::TrySendQueryCashRequest @0x5af26a (GMS_v84.1_U_DEVM.exe, IDA port 13337) builds COutPacket(0x103) — push 103h @0x5af284, structurally identical to the v83 twin @0x59eece which pushes 0FCh and sitting at the same intra-class offset from CITC::OnStatusCharge (0x2F4). The stale csv value 252 (0xFC) was the v83 opcode carried over unshifted (same class as the sibling ITC_STATUS_CHARGE 251->258 and CATCH_MONSTER_WITH_ITEM 251->257 corrections). Serverbound 259 has no other claimant.'
 - op: ITC_OPERATION
   direction: serverbound
-  opcode: 253
+  opcode: 260
   fname: CITC::OnRegisterSaleEntry
   fname_alts:
   - CITC::OnSaleCurrentItem
@@ -4048,14 +4068,18 @@
   - CITC::OnChangedCategory
   - CITCWnd_Tab::OnButtonClicked
   - CITCBidAuctionDlg::OnButtonClicked
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 5959634
+  note: 'task-102: v84 opcode corrected 253->260 (0xFD->0x104). CITC::OnRegisterSaleEntry @0x5aefd2 (GMS_v84.1_U_DEVM.exe, IDA port 13337) builds COutPacket(0x104) — push 104h @0x5aefff; all 16 sibling CITC senders (OnSaleCurrentItem @0x5af1db, OnBuy @0x5af9fa, OnBuyAuctionImm @0x5afa6d, OnSetZzim @0x5afc00, OnBuyZzim @0x5afc73, OnDeleteZzim @0x5afd11, OnViewWish @0x5afd84, OnBuyWish @0x5afdf7, OnCancelWish @0x5afe6a, OnCancelSaleItem @0x5afedd, OnMoveITCPurchaseItemLtoS @0x5aff86, OnChangedCategory @0x5af5fa, OnChangedCategorySub @0x5af6d9, OnChangedPage @0x5af7c8, OnRegisterWishEntry @0x5af8a5) plus the two inlined dialog handlers (CITCWnd_Tab::OnButtonClicked @0x5c77ca, CITCBidAuctionDlg::OnButtonClicked @0x5d3ec7) all build COutPacket(260). The stale csv value 253 (0xFD) was the v83 opcode carried over unshifted — same +7 region shift as the sibling ITC_STATUS_CHARGE 251->258 and ITC_QUERY_CASH_REQUEST 252->259 corrections (CATCH_MONSTER_WITH_ITEM 251->257 class). Serverbound 260 has no other claimant.'
 - op: ITEM_UPGRADE_UPDATE
   direction: serverbound
-  opcode: 260
+  opcode: 267
   fname: CUIItemUpgrade::Update
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 8741585
+  note: 'task-129 IDA v84: CUIItemUpgrade::Update (sub_8562D1 0x8562d1) sends COutPacket::COutPacket(&v6, 267) then Encode4(m_nReturnResult=a1[34]) + Encode4(m_nResult=a1[35]). Serverbound opcode = 267/0x10B. Prior value 260/0x104 was a v83 CSV copy and is wrong (0x104 collides with a CITC sender in v84). Matches the +7 v84 serverbound shift (v83 0x104 -> v84 0x10B).'
 - op: POTION_DISCOUNT_RATE_CHANGED
   direction: clientbound
   opcode: 96

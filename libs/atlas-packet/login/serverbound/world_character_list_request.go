@@ -50,14 +50,22 @@ func (m WorldCharacterListRequest) Encode(l logrus.FieldLogger, ctx context.Cont
 	w := response.NewWriter(l)
 	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
-		if t.Region() == "GMS" && t.MajorVersion() > 28 {
+		// gameStartMode byte absent on the legacy (< v83) char-list request wire.
+		// IDA v79 CLogin::SendLoginPacket(sub_5CC905)@0x5cc905 emits
+		// COutPacket(5)+Encode1(worldId)+Encode1(channel)+Encode4(ip) only.
+		if t.Region() == "GMS" && t.MajorVersion() >= 83 {
 			w.WriteByte(m.gameStartMode)
 		}
 		w.WriteByte(byte(m.worldId))
 		w.WriteByte(byte(m.channelId))
-		if t.Region() == "GMS" && t.MajorVersion() > 12 {
-			w.WriteInt32(m.socketAddr)
-		} else if t.Region() == "JMS" {
+		// socketAddr (client getsockname int) is a v72+ addition. IDA v61
+		// CLogin::SendLoginPacket twin sub_564DC9@0x564dc9 emits COutPacket(5)+
+		// Encode1(worldId)@0x564efc+Encode1(channelId)@0x564f07 and SendPacket with
+		// NO Encode4 — whereas the v72 twin sub_5B1B25@0x5b1b25 adds getsockname->
+		// Encode4(socketAddr)@0x5b1c92. Gate the int to GMS>=72 so legacy (v61 and the
+		// pre-72 v28 Variants entry, neither IDA-backed for this field) omits it while
+		// v72/v79/v83/84/87/95 keep the socketAddr wire unchanged.
+		if (t.Region() == "GMS" && t.MajorVersion() >= 72) || t.Region() == "JMS" {
 			w.WriteInt32(m.socketAddr)
 		}
 		return w.Bytes()
@@ -67,15 +75,15 @@ func (m WorldCharacterListRequest) Encode(l logrus.FieldLogger, ctx context.Cont
 func (m *WorldCharacterListRequest) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
-		if t.Region() == "GMS" && t.MajorVersion() > 28 {
-			// GMS v28 is not definite here, but this is not present in 28.
+		if t.Region() == "GMS" && t.MajorVersion() >= 83 {
+			// gameStartMode absent below v83 (IDA v79 SendLoginPacket@0x5cc905). Mirror of Encode.
 			m.gameStartMode = r.ReadByte()
 		}
 		m.worldId = world.Id(r.ReadByte())
 		m.channelId = channel.Id(r.ReadByte())
-		if t.Region() == "GMS" && t.MajorVersion() > 12 {
-			m.socketAddr = r.ReadInt32()
-		} else if t.Region() == "JMS" {
+		// socketAddr int is v72+ (IDA v61 sub_564DC9@0x564dc9 omits it; v72
+		// sub_5B1B25@0x5b1b25 adds getsockname->Encode4@0x5b1c92). Mirror of Encode.
+		if (t.Region() == "GMS" && t.MajorVersion() >= 72) || t.Region() == "JMS" {
 			m.socketAddr = r.ReadInt32()
 		}
 	}

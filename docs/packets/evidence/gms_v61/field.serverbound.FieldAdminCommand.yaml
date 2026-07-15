@@ -1,0 +1,10 @@
+packet: field/serverbound/FieldAdminCommand
+direction: serverbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: CField::SendChatMsgSlash#AdminCommand
+    address: "0x80c896"
+    decompile_sha256: fef731465a83b0f444e2ad7b24ac94afaf7a4094a3e80977c4d67f4005f4faac
+verifies:
+    - libs/atlas-packet/field/serverbound/admin_command_test.go#TestAdminCommandByteOutputV61

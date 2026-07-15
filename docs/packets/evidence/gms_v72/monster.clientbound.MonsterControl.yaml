@@ -1,0 +1,10 @@
+packet: monster/clientbound/MonsterControl
+direction: clientbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CMobPool::OnMobChangeController
+    address: "0x6259fb"
+    decompile_sha256: a186036db8dc4d676aed7d6077444703199c9acfdfd8692e01703a2be887cfeb
+verifies:
+  - libs/atlas-packet/monster/clientbound/control_test.go#TestMonsterControlBytesV72

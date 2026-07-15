@@ -1,0 +1,10 @@
+packet: monster/serverbound/MonsterMonsterBomb
+direction: serverbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CMob::TryFirstSelfDestruction
+    address: "0x63d5d6"
+    decompile_sha256: 8a19f5e0bcf9044d74522c81bd32f29fa0ec1b87a1cea005c5d3ce62e8fa5a91
+verifies:
+  - libs/atlas-packet/monster/serverbound/monster_bomb_test.go#TestMonsterBombBytesV79

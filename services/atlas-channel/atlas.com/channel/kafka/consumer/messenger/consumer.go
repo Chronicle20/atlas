@@ -12,13 +12,14 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
-	messengerpkt "github.com/Chronicle20/atlas/libs/atlas-packet/messenger"
-	messengercb "github.com/Chronicle20/atlas/libs/atlas-packet/messenger/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	messengerpkt "github.com/Chronicle20/atlas/libs/atlas-packet/messenger"
+	messengercb "github.com/Chronicle20/atlas/libs/atlas-packet/messenger/clientbound"
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
@@ -78,20 +79,20 @@ func handleLeft(sc server.Model, wp writer.Producer) message.Handler[messenger2.
 		}
 
 		// For remaining messenger members.
-		go func() {
+		routine.Go(l, ctx, func(_ context.Context) {
 			for _, m := range p.Members() {
 				err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(m.Id(), messengerLeft(l)(ctx)(wp)(e.Body.Slot))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to announce character [%d] has left messenger [%d].", tc.Id(), p.Id())
 				}
 			}
-		}()
-		go func() {
+		})
+		routine.Go(l, ctx, func(_ context.Context) {
 			err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.ActorId, messengerLeft(l)(ctx)(wp)(e.Body.Slot))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to announce character [%d] has left messenger [%d].", tc.Id(), p.Id())
 			}
-		}()
+		})
 
 	}
 }
@@ -135,20 +136,20 @@ func handleJoin(sc server.Model, wp writer.Producer) message.Handler[messenger2.
 		}
 
 		// For remaining messenger members.
-		go func() {
+		routine.Go(l, ctx, func(_ context.Context) {
 			for _, m := range p.Members() {
 				if m.Id() == e.ActorId {
 					continue
 				}
 				ava := socketmodel.NewFromCharacter(tc, true)
-			bp := session.Announce(l)(ctx)(wp)(messengercb.MessengerOperationWriter)(messengerpkt.MessengerOperationAddBody(e.Body.Slot, ava, tc.Name(), byte(mm.ChannelId())))
+				bp := session.Announce(l)(ctx)(wp)(messengercb.MessengerOperationWriter)(messengerpkt.MessengerOperationAddBody(e.Body.Slot, ava, tc.Name(), byte(mm.ChannelId())))
 				err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(m.Id(), bp)
 				if err != nil {
 					l.WithError(err).Errorf("Unable to announce character [%d] has joined messenger [%d].", tc.Id(), p.Id())
 				}
 			}
-		}()
-		go func() {
+		})
+		routine.Go(l, ctx, func(_ context.Context) {
 			err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.ActorId, func(s session.Model) error {
 				err = session.Announce(l)(ctx)(wp)(messengercb.MessengerOperationWriter)(messengerpkt.MessengerOperationJoinBody(e.Body.Slot))(s)
 				if err != nil {
@@ -176,6 +177,6 @@ func handleJoin(sc server.Model, wp writer.Producer) message.Handler[messenger2.
 			if err != nil {
 				l.WithError(err).Errorf("Unable to announce character [%d] has joined messenger [%d].", tc.Id(), p.Id())
 			}
-		}()
+		})
 	}
 }

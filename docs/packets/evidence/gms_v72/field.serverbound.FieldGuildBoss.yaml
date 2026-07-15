@@ -1,0 +1,10 @@
+packet: field/serverbound/FieldGuildBoss
+direction: serverbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CField_GuildBoss::BasicActionAttack
+    address: "0x531d91"
+    decompile_sha256: f7ec93edef38e3d16f7626106f2a176810e4c64c96d08bc56678bedfab52bdbd
+verifies:
+    - libs/atlas-packet/field/serverbound/guild_boss_test.go#TestGuildBossByteOutputV72

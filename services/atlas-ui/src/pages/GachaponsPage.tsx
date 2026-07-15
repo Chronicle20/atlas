@@ -1,16 +1,34 @@
 
-import { useGachapons } from "@/lib/hooks/api/useGachapons";
+import { useGachaponsPage } from "@/lib/hooks/api/useGachapons";
 import { DataTableWrapper } from "@/components/common/DataTableWrapper";
 import { columns } from "./gachapons-columns";
 import { PageLoader } from "@/components/common/PageLoader";
 import { useGridRefresh } from "@/lib/hooks/useGridRefresh";
+import { Pager } from "@/components/common/Pager";
+import { useSearchParams } from "react-router-dom";
+
+const PAGE_SIZE = 50;
 
 export function GachaponsPage() {
-  const gachaponsQuery = useGachapons();
-  const { data: gachapons, isLoading, error } = gachaponsQuery;
+  const [searchParams, setSearchParams] = useSearchParams();
+  const pageNumber = Math.max(1, Number.parseInt(searchParams.get("page") ?? "1", 10) || 1);
+
+  const gachaponsQuery = useGachaponsPage({ number: pageNumber, size: PAGE_SIZE });
   const { isRefreshing, onRefresh } = useGridRefresh([gachaponsQuery]);
 
-  if (isLoading) {
+  const gachapons = gachaponsQuery.data?.data ?? [];
+  const meta = gachaponsQuery.data?.meta ?? null;
+  const loading = gachaponsQuery.isLoading;
+  const error = gachaponsQuery.error?.message ?? null;
+
+  const handlePageChange = (nextPage: number) => {
+    const next = new URLSearchParams(searchParams);
+    if (nextPage > 1) next.set("page", String(nextPage));
+    else next.delete("page");
+    setSearchParams(next, { replace: false });
+  };
+
+  if (loading) {
     return <PageLoader />;
   }
 
@@ -22,7 +40,7 @@ export function GachaponsPage() {
       <div className="mt-4">
         <DataTableWrapper
           columns={columns}
-          data={gachapons ?? []}
+          data={gachapons}
           error={error}
           onRefresh={onRefresh}
           isRefreshing={isRefreshing}
@@ -31,6 +49,15 @@ export function GachaponsPage() {
             description: "Gachapon data may not have been seeded yet. Go to Setup to seed gachapons.",
           }}
         />
+        {meta && gachapons.length > 0 && (
+          <Pager
+            page={meta.page.number}
+            lastPage={meta.page.last}
+            total={meta.total}
+            pageSize={meta.page.size}
+            onPageChange={handlePageChange}
+          />
+        )}
       </div>
     </div>
   );

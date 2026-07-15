@@ -20,7 +20,9 @@ func TestChatRoundTrip(t *testing.T) {
 			input := ChatRequest{petId: 12345, updateTime: 100, nType: 1, nAction: 2, msg: "meow"}
 			output := ChatRequest{}
 			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
-			if output.PetId() != input.PetId() {
+			// GMS v48 and older drop the leading petId (single-pet); only assert it
+			// on versions that carry the id (GMS v61+ or JMS).
+			if (v.Region != "GMS" || v.MajorVersion >= 61) && output.PetId() != input.PetId() {
 				t.Errorf("petId: got %v, want %v", output.PetId(), input.PetId())
 			}
 			if output.NType() != input.NType() {
@@ -71,5 +73,92 @@ func TestChatUpdateTimeGate(t *testing.T) {
 		if len(b95)-len(b) != 4 {
 			t.Errorf("%s len = %d, want v95 len %d minus 4 (the updateTime int)", v.Name, len(b), len(b95))
 		}
+	}
+}
+
+// v79 PET_CHAT (sb op 164=0xA4) send order, verified GMS_v79_1_DEVM.exe (port
+// 13340): CPet::DoAction@0x691d4e send block — COutPacket(164)@0x691f17,
+// EncodeBuffer(petId,8)@0x691f2c, Encode1(nType/a2)@0x691f37,
+// Encode1(nAction)@0x691f4b, EncodeStr(msg)@0x691f6b. NO updateTime (that field
+// is GMS v95+ only, gated off here). Wire = petId(8)+nType(1)+nAction(1)+msg(2+len).
+// TestChatBytesV72 pins the v72 wire = v79 (no updateTime, GMS<95). IDA
+// GMS_v72.1_U_DEVM.exe @port 13339: CPet::DoAction@0x66ced9 send block builds
+// COutPacket(162)@0x66d099, EncodeBuffer(petId,8)@0x66d0ae, Encode1(nType)@0x66d0b9,
+// Encode1(nAction)@0x66d0cd, EncodeStr(msg)@0x66d0ed. No updateTime int.
+// packet-audit:verify packet=pet/serverbound/PetChatRequest version=gms_v72 ida=0x66ced9
+func TestChatBytesV72(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 72, 1)
+	in := ChatRequest{petId: 0x0102030405060708, updateTime: 0x11223344, nType: 0x07, nAction: 0x09, msg: "Hi"}
+	got := in.Encode(nil, ctx)(nil)
+	want := []byte{
+		0x08, 0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01, // petId EncodeBuffer(8)@0x66d0ae (LE)
+		0x07,       // nType Encode1@0x66d0b9 (NO updateTime, GMS<95)
+		0x09,       // nAction Encode1@0x66d0cd
+		0x02, 0x00, // msg length EncodeStr@0x66d0ed
+		0x48, 0x69, // "Hi"
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatalf("v72 = % X, want % X", got, want)
+	}
+}
+
+// TestChatBytesV61 pins the v61 wire = v72 (no updateTime, GMS<95). IDA
+// GMS_v61.1_U_DEVM.exe @port 13338: CPet::DoAction@0x6143a2 send block builds
+// COutPacket(139)@0x61455a, EncodeBuffer(petId,8)@0x61456f, Encode1(nType)@0x61457a,
+// Encode1(nAction)@0x61458e, EncodeStr(msg)@0x6145ae. No updateTime int. v72 op162 (Δ-23).
+// packet-audit:verify packet=pet/serverbound/PetChatRequest version=gms_v61 ida=0x6143a2
+func TestChatBytesV61(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 61, 1)
+	in := ChatRequest{petId: 0x0102030405060708, updateTime: 0x11223344, nType: 0x07, nAction: 0x09, msg: "Hi"}
+	got := in.Encode(nil, ctx)(nil)
+	want := []byte{
+		0x08, 0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01, // petId EncodeBuffer(8)@0x61456f (LE)
+		0x07,       // nType Encode1@0x61457a (NO updateTime, GMS<95)
+		0x09,       // nAction Encode1@0x61458e
+		0x02, 0x00, // msg length EncodeStr@0x6145ae
+		0x48, 0x69, // "Hi"
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatalf("v61 = % X, want % X", got, want)
+	}
+}
+
+// packet-audit:verify packet=pet/serverbound/PetChatRequest version=gms_v79 ida=0x691d4e
+func TestChatBytesV79(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 79, 1)
+	in := ChatRequest{petId: 0x0102030405060708, updateTime: 0x11223344, nType: 0x07, nAction: 0x09, msg: "Hi"}
+	got := in.Encode(nil, ctx)(nil)
+	want := []byte{
+		0x08, 0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01, // petId EncodeBuffer(8)@0x691f2c (LE)
+		0x07,       // nType Encode1@0x691f37 (NO updateTime, GMS<95)
+		0x09,       // nAction Encode1@0x691f4b
+		0x02, 0x00, // msg length EncodeStr@0x691f6b
+		0x48, 0x69, // "Hi"
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatalf("v79 = % X, want % X", got, want)
+	}
+}
+
+// TestChatBytesV48 pins the v48 PET_CHAT (sb op 114 / 0x72) send. IDA
+// GMS_v48_1_DEVM.exe @port 13337: CPet::DoAction@0x58e90b builds COutPacket(114),
+// Encode1(nType/a2)@0x58e91a, Encode1(nAction/v8)@0x58e92a, EncodeStr(msg)@0x58e94a
+// — NO leading EncodeBuffer(petId,8) (v48 single-pet), NO updateTime (GMS<95).
+// NB the gms_v48 registry note claimed a leading petId buffer; the send-site
+// decompile proves it absent (body-verified). v61 op139 carries petId.
+// packet-audit:verify packet=pet/serverbound/PetChatRequest version=gms_v48 ida=0x58e7a8
+func TestChatBytesV48(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 48, 1)
+	in := ChatRequest{petId: 0x0102030405060708, updateTime: 0x11223344, nType: 0x07, nAction: 0x09, msg: "Hi"}
+	got := in.Encode(nil, ctx)(nil)
+	want := []byte{
+		// NO petId on v48 (single-pet), NO updateTime (GMS<95)
+		0x07,       // nType Encode1@0x58e91a
+		0x09,       // nAction Encode1@0x58e92a
+		0x02, 0x00, // msg length EncodeStr@0x58e94a
+		0x48, 0x69, // "Hi"
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatalf("v48 = % X, want % X", got, want)
 	}
 }

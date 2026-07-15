@@ -1,0 +1,10 @@
+packet: character/serverbound/ChairFixed
+direction: serverbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: sub_69DF44
+    address: "0x69df44"
+    decompile_sha256: fc3f84b096185abf575f35e5ce5fac711bd23917f533caab4637757bceec77f3
+verifies:
+    - libs/atlas-packet/character/serverbound/chair_fixed_test.go#TestChairFixedV48ByteOutput

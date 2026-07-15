@@ -1,0 +1,10 @@
+packet: npc/clientbound/NpcSayConversationDetail
+direction: clientbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: CScriptMan::OnSay
+    address: "0x63fb44"
+    decompile_sha256: 38f3d17c2dd52d077b42d9eef04d007e5ee598d8afc1f1b8e302fd8d4ac13d67
+verifies:
+  - libs/atlas-packet/npc/clientbound/conversation_v61_details_test.go#TestNpcConversationSayV61

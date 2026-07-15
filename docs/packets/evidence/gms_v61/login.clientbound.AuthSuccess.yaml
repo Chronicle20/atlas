@@ -1,0 +1,11 @@
+packet: login/clientbound/AuthSuccess
+direction: clientbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: CLogin::OnCheckPasswordResult
+    address: "0x5657ce"
+    decompile_sha256: 089a57206fcd0a7a255cc9a89e7c98c0ace547d46cfd752e0587bd546523b5f6
+verifies:
+    - libs/atlas-packet/login/clientbound/auth_success_test.go#TestAuthSuccessV61WireWidth
+    - libs/atlas-packet/login/clientbound/auth_success_test.go#TestAuthSuccessRoundTrip

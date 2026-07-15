@@ -1,0 +1,10 @@
+packet: npc/serverbound/NpcStartConversation
+direction: serverbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: sub_568A2A
+    address: "0x568a2a"
+    decompile_sha256: 550111a1c3ffe7231876bcdbebf6429227c5c37159cc1977a44fce5afc3bf027
+verifies:
+  - libs/atlas-packet/npc/serverbound/conversation_v48_test.go#TestStartConversationByteV48

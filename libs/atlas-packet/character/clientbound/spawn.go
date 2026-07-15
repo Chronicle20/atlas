@@ -41,15 +41,16 @@ type CharacterSpawn struct {
 	x             int16
 	y             int16
 	stance        byte
+	fh            int16
 }
 
 func NewCharacterSpawn(characterId uint32, level byte, name string, guild GuildEmblem,
 	cts *model.CharacterTemporaryStat, jobId uint16, avatar model.Avatar,
-	pets []SpawnPet, enteringField bool, x int16, y int16, stance byte) CharacterSpawn {
+	pets []SpawnPet, enteringField bool, x int16, y int16, stance byte, fh int16) CharacterSpawn {
 	return CharacterSpawn{
 		characterId: characterId, level: level, name: name, guild: guild,
 		cts: cts, jobId: jobId, avatar: avatar, pets: pets,
-		enteringField: enteringField, x: x, y: y, stance: stance,
+		enteringField: enteringField, x: x, y: y, stance: stance, fh: fh,
 	}
 }
 
@@ -61,9 +62,29 @@ func (m CharacterSpawn) String() string {
 func (m CharacterSpawn) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	t := tenant.MustFromContext(ctx)
+	// Legacy GMS (< v83) SPAWN_PLAYER wire divergences (task-113 stage E, v79
+	// GMS_v79_1_DEVM.exe @13340): CUserRemote::Init sub_8D589E reads name as its
+	// FIRST field (@0x8d58c9 DecodeStr) with NO leading Decode1 level byte, unlike
+	// v83 CUserRemote::Init @0x97f55d (@0x97f589 Decode1 level) and v95 @0x955460
+	// (m_nLevel = Decode1). v79 also has a single trailing effect byte (@0x8d5f67)
+	// vs v83's two (@0x97fc33 + @0x97fd90), and no trailing team byte (base
+	// CField::DecodeFieldSpecificData @0x513a15 forwards only the CUser, never the
+	// packet). Leave v83/84/87/95/JMS unchanged.
+	legacy := t.Region() == "GMS" && t.MajorVersion() < 83
+	// Pre-v61 GMS (v48) SPAWN_PLAYER (CUserRemote::Init sub_6BBC17 @0x6bbc17,
+	// GMS_v48_1_DEVM.exe) diverges further from the v79 legacy path: the CTS
+	// foreign decode (sub_5CBA1F @0x6bbcde) goes STRAIGHT to AvatarLook::Decode
+	// (@0x6bbcea) with NO Decode2(jobId) between; the pet section is a single
+	// Decode1 flag + one pet (sub_58C7CC @0x6bbe5e), not the 3-slot bool loop;
+	// and the ring tail is exactly six Decode1 flags (miniroom/adboard/couple/
+	// friend/marriage/final-effect) with NO new-year-card byte. Leave v61+ (the
+	// v79 legacy path) and all anchors unchanged.
+	legacyV48 := t.Region() == "GMS" && t.MajorVersion() < 61
 	return func(options map[string]interface{}) []byte {
 		w.WriteInt(m.characterId)
-		w.WriteByte(m.level)
+		if !legacy {
+			w.WriteByte(m.level)
+		}
 		w.WriteAsciiString(m.name)
 
 		w.WriteAsciiString(m.guild.Name)
@@ -73,7 +94,9 @@ func (m CharacterSpawn) Encode(l logrus.FieldLogger, ctx context.Context) func(o
 		w.WriteByte(m.guild.LogoColor)
 
 		w.WriteByteArray(m.cts.EncodeForeign(l, ctx)(options))
-		w.WriteShort(m.jobId)
+		if !legacyV48 {
+			w.WriteShort(m.jobId)
+		}
 		w.WriteByteArray(m.avatar.Encode(l, ctx)(options))
 
 		if (t.Region() == "GMS" && t.MajorVersion() > 87) || t.Region() == "JMS" {
@@ -98,7 +121,12 @@ func (m CharacterSpawn) Encode(l logrus.FieldLogger, ctx context.Context) func(o
 			w.WriteByte(m.stance)
 		}
 
-		w.WriteShort(0) // fh
+		if m.enteringField {
+			// jump-in spawn is intentionally airborne (y-42, stance 6): no anchor
+			w.WriteInt16(0) // fh
+		} else {
+			w.WriteInt16(m.fh)
+		}
 		// bShowAdminEffect: GMS CUserRemote::Init reads a byte here before the pet
 		// loop; the jms_v185 client (CUserRemote::Init @0xa52876) goes straight from
 		// the foothold short into the pet while-loop with NO admin byte. IDA-verified
@@ -107,21 +135,34 @@ func (m CharacterSpawn) Encode(l logrus.FieldLogger, ctx context.Context) func(o
 			w.WriteByte(0) // bShowAdminEffect
 		}
 
-		// Pets: iterate 3 slots
-		for slot := int8(0); slot < 3; slot++ {
-			var found *SpawnPet
-			for i := range m.pets {
-				if m.pets[i].Slot == slot {
-					found = &m.pets[i]
-					break
+		if legacyV48 {
+			// Pre-v61: single Decode1 flag then one pet (sub_58C7CC), no
+			// terminator byte. The pet body (Int templateId, name, 8-byte SN,
+			// x/y shorts, stance, foothold short, nameTag, chatBalloon) is
+			// byte-identical to model.Pet.Encode.
+			if len(m.pets) > 0 {
+				w.WriteBool(true)
+				w.WriteByteArray(m.pets[0].Pet.Encode(l, ctx)(options))
+			} else {
+				w.WriteByte(0)
+			}
+		} else {
+			// Pets: iterate 3 slots
+			for slot := int8(0); slot < 3; slot++ {
+				var found *SpawnPet
+				for i := range m.pets {
+					if m.pets[i].Slot == slot {
+						found = &m.pets[i]
+						break
+					}
+				}
+				if found != nil {
+					w.WriteBool(true)
+					w.WriteByteArray(found.Pet.Encode(l, ctx)(options))
 				}
 			}
-			if found != nil {
-				w.WriteBool(true)
-				w.WriteByteArray(found.Pet.Encode(l, ctx)(options))
-			}
+			w.WriteByte(0) // end of pets
 		}
-		w.WriteByte(0) // end of pets
 
 		w.WriteInt(1)  // mount level
 		w.WriteInt(0)  // mount exp
@@ -132,15 +173,17 @@ func (m CharacterSpawn) Encode(l logrus.FieldLogger, ctx context.Context) func(o
 		w.WriteByte(0) // friendship ring
 		w.WriteByte(0) // marriage ring
 
-		if t.Region() == "GMS" && t.MajorVersion() < 95 {
+		if t.Region() == "GMS" && t.MajorVersion() >= 61 && t.MajorVersion() < 95 {
+			// v48 (sub_6BBC17) has no new-year-card flag between marriage and the
+			// final-effect byte — only 6 tail flags total.
 			w.WriteByte(0) // new year card
 		}
 
-		w.WriteByte(0) // berserk
+		w.WriteByte(0) // berserk / final-effect flag
 
 		if t.Region() == "GMS" {
-			if t.MajorVersion() <= 87 {
-				w.WriteByte(0)
+			if t.MajorVersion() >= 83 && t.MajorVersion() <= 87 {
+				w.WriteByte(0) // v84..v87 2nd (dragon) effect byte; v79 Init has one effect byte only (@0x8d5f67)
 			}
 			if t.MajorVersion() > 87 {
 				w.WriteByte(0) // new year card
@@ -151,7 +194,9 @@ func (m CharacterSpawn) Encode(l logrus.FieldLogger, ctx context.Context) func(o
 		}
 		// team (carnival) byte: GMS reads a trailing team byte; the jms_v185 client's
 		// last packet read is the final-effect flag above (call 47) — no team byte.
-		if t.Region() != "JMS" {
+		// v79 base CField::DecodeFieldSpecificData @0x513a15 forwards only the CUser
+		// (not the packet) so legacy GMS reads no team byte either.
+		if t.Region() != "JMS" && !legacy {
 			w.WriteByte(0) // team
 		}
 		return w.Bytes()
@@ -169,13 +214,18 @@ func (m CharacterSpawn) Pets() []SpawnPet                 { return m.pets }
 func (m CharacterSpawn) X() int16                         { return m.x }
 func (m CharacterSpawn) Y() int16                         { return m.y }
 func (m CharacterSpawn) Stance() byte                     { return m.stance }
+func (m CharacterSpawn) Fh() int16                        { return m.fh }
 
 func (m *CharacterSpawn) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
 		t := tenant.MustFromContext(ctx)
+		legacy := t.Region() == "GMS" && t.MajorVersion() < 83
+		legacyV48 := t.Region() == "GMS" && t.MajorVersion() < 61
 
 		m.characterId = r.ReadUint32()
-		m.level = r.ReadByte()
+		if !legacy {
+			m.level = r.ReadByte()
+		}
 		m.name = r.ReadAsciiString()
 
 		m.guild.Name = r.ReadAsciiString()
@@ -187,7 +237,9 @@ func (m *CharacterSpawn) Decode(l logrus.FieldLogger, ctx context.Context) func(
 		m.cts = model.NewCharacterTemporaryStat()
 		m.cts.DecodeForeign(l, ctx)(r, options)
 
-		m.jobId = r.ReadUint16()
+		if !legacyV48 {
+			m.jobId = r.ReadUint16()
+		}
 		m.avatar.Decode(l, ctx)(r, options)
 
 		if (t.Region() == "GMS" && t.MajorVersion() > 87) || t.Region() == "JMS" {
@@ -206,19 +258,28 @@ func (m *CharacterSpawn) Decode(l logrus.FieldLogger, ctx context.Context) func(
 		m.y = r.ReadInt16()
 		m.stance = r.ReadByte()
 
-		_ = r.ReadUint16() // fh
+		m.fh = r.ReadInt16()
 		if t.Region() != "JMS" {
 			_ = r.ReadByte() // bShowAdminEffect (GMS-only; jms has no admin byte)
 		}
 
-		// Pets: bool-terminated loop (true+data for each present pet, then false terminator)
 		m.pets = nil
-		slot := int8(0)
-		for r.ReadBool() {
-			pet := model.Pet{}
-			pet.Decode(l, ctx)(r, options)
-			m.pets = append(m.pets, SpawnPet{Slot: slot, Pet: pet})
-			slot++
+		if legacyV48 {
+			// Pre-v61: single Decode1 flag then at most one pet (sub_58C7CC).
+			if r.ReadBool() {
+				pet := model.Pet{}
+				pet.Decode(l, ctx)(r, options)
+				m.pets = append(m.pets, SpawnPet{Slot: 0, Pet: pet})
+			}
+		} else {
+			// Pets: bool-terminated loop (true+data for each present pet, then false terminator)
+			slot := int8(0)
+			for r.ReadBool() {
+				pet := model.Pet{}
+				pet.Decode(l, ctx)(r, options)
+				m.pets = append(m.pets, SpawnPet{Slot: slot, Pet: pet})
+				slot++
+			}
 		}
 
 		_ = r.ReadUint32() // mount level
@@ -230,14 +291,14 @@ func (m *CharacterSpawn) Decode(l logrus.FieldLogger, ctx context.Context) func(
 		_ = r.ReadByte()   // friendship ring
 		_ = r.ReadByte()   // marriage ring
 
-		if t.Region() == "GMS" && t.MajorVersion() < 95 {
-			_ = r.ReadByte() // new year card
+		if t.Region() == "GMS" && t.MajorVersion() >= 61 && t.MajorVersion() < 95 {
+			_ = r.ReadByte() // new year card (absent pre-v61)
 		}
 
-		_ = r.ReadByte() // berserk
+		_ = r.ReadByte() // berserk / final-effect flag
 
 		if t.Region() == "GMS" {
-			if t.MajorVersion() <= 87 {
+			if t.MajorVersion() >= 83 && t.MajorVersion() <= 87 {
 				_ = r.ReadByte()
 			}
 			if t.MajorVersion() > 87 {
@@ -247,8 +308,8 @@ func (m *CharacterSpawn) Decode(l logrus.FieldLogger, ctx context.Context) func(
 		} else if t.Region() == "JMS" {
 			_ = r.ReadByte() // final-effect flag (jms last read)
 		}
-		if t.Region() != "JMS" {
-			_ = r.ReadByte() // team (GMS-only)
+		if t.Region() != "JMS" && !legacy {
+			_ = r.ReadByte() // team (GMS>=83-only)
 		}
 	}
 }

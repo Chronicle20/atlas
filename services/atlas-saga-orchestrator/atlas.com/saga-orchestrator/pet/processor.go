@@ -34,6 +34,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) GainClosenessAndEmit(transactionId uuid.UUID, petId uint32, amount uint16) error {
 	return message.Emit(p.p)(func(mb *message.Buffer) error {
 		return p.GainCloseness(mb)(transactionId, petId, amount)

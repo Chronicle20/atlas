@@ -8,6 +8,8 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
+	interactioncb "github.com/Chronicle20/atlas/libs/atlas-packet/interaction/clientbound"
 	interaction2 "github.com/Chronicle20/atlas/libs/atlas-packet/interaction/serverbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/sirupsen/logrus"
@@ -43,7 +45,6 @@ const (
 	CharacterInteractionModeMerchantOrganize              CharacterInteractionMode = "MERCHANT_ORGANIZE"                  // 40 - 28
 	CharacterInteractionModeMerchantExit                  CharacterInteractionMode = "MERCHANT_EXIT"                      // 41 - 29
 	CharacterInteractionModeMerchantWithdrawMeso          CharacterInteractionMode = "MERCHANT_WITHDRAW_MESO"             // 43 - 2B
-	CharacterInteractionModeMerchantNameChange            CharacterInteractionMode = "MERCHANT_NAME_CHANGE"               // 45 - 2D
 	CharacterInteractionModeMerchantViewVisitList         CharacterInteractionMode = "MERCHANT_VIEW_VISIT_LIST"           // 46 - 2E
 	CharacterInteractionModeMerchantViewBlackList         CharacterInteractionMode = "MERCHANT_VIEW_BLACK_LIST"           // 47 - 2F
 	CharacterInteractionModeMerchantAddToBlackList        CharacterInteractionMode = "MERCHANT_ADD_TO_BLACK_LIST"         // 48 - 30
@@ -64,7 +65,7 @@ const (
 	CharacterInteractionModeMemoryGameFlipCard            CharacterInteractionMode = "MEMORY_GAME_FIP_CARD"               // 68 - 44
 )
 
-func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
+func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 		p := interaction2.Operation{}
 		p.Decode(l, ctx)(r, readerOptions)
@@ -84,11 +85,37 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, _
 			}
 			if roomType == model.PersonalShopMiniRoomType || roomType == model.MerchantShopMiniRoomType {
 				l.Debugf("Character [%d] has created a store. roomType [%d], title [%s], private [%t], position [%d], itemId [%d].", s.CharacterId(), roomType, sp.Title(), sp.Private(), sp.Slot(), sp.ItemId())
-				c, err := character.NewProcessor(l, ctx).GetById()(s.CharacterId())
+				rejectCreate := func(reason string) {
+					l.Warnf("Character [%d] store create rejected: %s. roomType [%d], itemId [%d].", s.CharacterId(), reason, roomType, sp.ItemId())
+					_ = session.Announce(l)(ctx)(wp)(interactioncb.CharacterInteractionWriter)(interactioncb.CharacterInteractionEnterResultErrorBody(interactioncb.CharacterInteractionEnterErrorModeUnable))(s)
+				}
+
+				// Permit validation: the claimed permit must be the right family for
+				// the requested store kind (514 <-> personal store, 503 <-> hired
+				// merchant) and actually present in the character's CASH inventory;
+				// reject with mini-room error 6 otherwise. Permits are durable —
+				// never consumed (owner decision, lifecycle audit Q1).
+				permitClass := item.GetClassification(item.Id(sp.ItemId()))
+				if roomType == model.PersonalShopMiniRoomType && permitClass != item.ClassificationStorePermit {
+					rejectCreate("permit item is not a store permit (514 family)")
+					return
+				}
+				if roomType == model.MerchantShopMiniRoomType && permitClass != item.ClassificationHiredMerchant {
+					rejectCreate("permit item is not a hired-merchant permit (503 family)")
+					return
+				}
+
+				cp := character.NewProcessor(l, ctx)
+				c, err := cp.GetById(cp.InventoryDecorator)(s.CharacterId())
 				if err != nil {
 					l.WithError(err).Errorf("Unable to get character [%d] for shop placement.", s.CharacterId())
 					return
 				}
+				if _, ok := c.Inventory().Cash().FindFirstByItemId(sp.ItemId()); !ok {
+					rejectCreate("permit item not present in cash inventory")
+					return
+				}
+
 				mp := merchant.NewProcessor(l, ctx)
 				shopType := byte(1) // CharacterShop
 				if roomType == model.MerchantShopMiniRoomType {
@@ -125,7 +152,22 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, _
 				l.WithError(err).Errorf("Unable to find shop for owner [%d].", ownerCharacterId)
 				return
 			}
-			_ = mp.EnterShop(s.CharacterId(), shops[0].Id())
+			// The owner may have historical Closed rows (and up to one shop of
+			// each type); visit the one that is actually enterable. Maintenance
+			// is forwarded so the server replies with the faithful rejection.
+			target, ok := pickShopByState(shops, merchant.StateOpen)
+			if !ok {
+				target, ok = pickShopByState(shops, merchant.StateMaintenance)
+			}
+			if !ok {
+				l.Debugf("Character [%d] attempted to visit owner [%d] with no enterable shop.", s.CharacterId(), ownerCharacterId)
+				return
+			}
+			visitorName := ""
+			if vc, verr := character.NewProcessor(l, ctx).GetById()(s.CharacterId()); verr == nil {
+				visitorName = vc.Name()
+			}
+			_ = mp.EnterShop(s.CharacterId(), target.Id(), visitorName)
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeChat) {
@@ -150,7 +192,17 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, _
 				return
 			}
 			if visiting.CharacterId() == s.CharacterId() {
-				_ = mp.CloseShop(s.CharacterId(), visiting.Id())
+				// Owner closing the window: a hired merchant in Maintenance goes back
+				// to running — a stocked merchant outlives the owner's management
+				// view, while ExitMaintenance auto-closes an empty one. A personal
+				// shop, or a merchant still in Draft setup, closes.
+				if visiting.ShopType() == merchant.HiredMerchantShopType && visiting.State() == merchant.StateMaintenance {
+					if err := mp.ExitMaintenance(s.CharacterId(), visiting.Id()); err != nil {
+						l.WithError(err).Errorf("Character [%d] failed to exit maintenance on shop [%s].", s.CharacterId(), visiting.Id())
+					}
+				} else if err := mp.CloseShop(s.CharacterId(), visiting.Id()); err != nil {
+					l.WithError(err).Errorf("Character [%d] failed to close shop [%s]; it may block re-creation until logout.", s.CharacterId(), visiting.Id())
+				}
 			} else {
 				_ = mp.ExitShop(s.CharacterId(), visiting.Id())
 			}
@@ -190,7 +242,14 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, _
 					l.WithError(err).Errorf("Unable to find shop for character [%d].", s.CharacterId())
 					return
 				}
-				_ = mp.EnterMaintenance(s.CharacterId(), shops[0].Id())
+				// Maintenance entry only applies to the character's RUNNING hired
+				// merchant — not a Closed history row or their personal shop.
+				target, ok := pickMerchantByState(shops, merchant.StateOpen)
+				if !ok {
+					l.Debugf("Character [%d] requested merchant maintenance with no open hired merchant.", s.CharacterId())
+					return
+				}
+				_ = mp.EnterMaintenance(s.CharacterId(), target.Id())
 				return
 			}
 			if nProc == 11 && (roomType == model.PersonalShopMiniRoomType || roomType == model.MerchantShopMiniRoomType) {
@@ -237,7 +296,9 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, _
 				l.WithError(err).Errorf("Unable to get visiting shop for character [%d].", s.CharacterId())
 				return
 			}
-			_ = mp.AddListing(s.CharacterId(), visiting.Id(), sp.InventoryType(), sp.Slot(), sp.Quantity(), sp.Set(), sp.Price())
+			if err := mp.AddListing(s.CharacterId(), visiting.Id(), sp.InventoryType(), sp.Slot(), sp.Quantity(), sp.Set(), sp.Price()); err != nil {
+				l.WithError(err).Errorf("Character [%d] failed to add item to store [%s].", s.CharacterId(), visiting.Id())
+			}
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModePersonalStoreBuy) {
@@ -269,7 +330,26 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, _
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModePersonalStoreAddToBlackList) {
 			sp := &interaction2.OperationPersonalStoreAddToBlackList{}
 			sp.Decode(l, ctx)(r, readerOptions)
-			l.Debugf("Character [%d] is adding [%s] to field black list from slot [%d].", s.CharacterId(), sp.Name(), sp.Slot())
+			l.Debugf("Character [%d] is banning [%s] from their store at slot [%d].", s.CharacterId(), sp.Name(), sp.Slot())
+			mp := merchant.NewProcessor(l, ctx)
+			visiting, err := mp.GetVisitingShop(s.CharacterId())
+			if err != nil {
+				l.WithError(err).Errorf("Unable to get shop for owner [%d] to ban [%s].", s.CharacterId(), sp.Name())
+				return
+			}
+			// The ban targets the visitor occupying that room slot: slot 0 is the
+			// owner, visitors occupy slots 1..n in the shop's visitor list. Resolve
+			// the banned character id so the merchant can eject them (USER_BANNED)
+			// in addition to blacklisting the name. GetVisitingShop (/visiting) omits
+			// the visitor list, so read it from GetShop (/merchants/{id}).
+			var bannedCharacterId uint32
+			if full, ferr := mp.GetShop(visiting.Id().String()); ferr == nil {
+				visitors := full.Visitors()
+				if idx := int(sp.Slot()) - 1; idx >= 0 && idx < len(visitors) {
+					bannedCharacterId = visitors[idx]
+				}
+			}
+			_ = mp.AddBlacklist(s.CharacterId(), visiting.Id(), sp.Name(), bannedCharacterId)
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModePersonalStoreSetVisitor) {
@@ -306,7 +386,9 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, _
 				l.WithError(err).Errorf("Unable to get visiting shop for character [%d].", s.CharacterId())
 				return
 			}
-			_ = mp.AddListing(s.CharacterId(), visiting.Id(), sp.InventoryType(), sp.Slot(), sp.Quantity(), sp.Set(), sp.Price())
+			if err := mp.AddListing(s.CharacterId(), visiting.Id(), sp.InventoryType(), sp.Slot(), sp.Quantity(), sp.Set(), sp.Price()); err != nil {
+				l.WithError(err).Errorf("Character [%d] failed to add item to merchant [%s].", s.CharacterId(), visiting.Id())
+			}
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeMerchantBuy) {
@@ -348,6 +430,13 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, _
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeMerchantOrganize) {
 			l.Debugf("Character [%d] has organized merchant inventory.", s.CharacterId())
+			mp := merchant.NewProcessor(l, ctx)
+			visiting, err := mp.GetVisitingShop(s.CharacterId())
+			if err != nil {
+				l.WithError(err).Errorf("Unable to get visiting shop for character [%d].", s.CharacterId())
+				return
+			}
+			_ = mp.OrganizeListings(s.CharacterId(), visiting.Id())
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeMerchantExit) {
@@ -358,37 +447,87 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, _
 				l.WithError(err).Errorf("Unable to get visiting shop for character [%d].", s.CharacterId())
 				return
 			}
-			_ = mp.ExitShop(s.CharacterId(), visiting.Id())
+			// MERCHANT_EXIT (0x29) is the owner's explicit "close store" action:
+			// it fully closes the shop (items back / Fredrick); from anyone else
+			// it is a plain visitor exit.
+			if visiting.CharacterId() == s.CharacterId() {
+				_ = mp.CloseShop(s.CharacterId(), visiting.Id())
+			} else {
+				_ = mp.ExitShop(s.CharacterId(), visiting.Id())
+			}
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeMerchantWithdrawMeso) {
 			l.Debugf("Character [%d] has withdrew merchant meso.", s.CharacterId())
-			return
-		}
-		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeMerchantNameChange) {
-			sp := &interaction2.OperationMerchantNameChange{}
-			sp.Decode(l, ctx)(r, readerOptions)
-			l.Debugf("Character [%d] wants to change their merchant shop name. unk1 [%d].", s.CharacterId(), sp.Unk1())
+			mp := merchant.NewProcessor(l, ctx)
+			visiting, err := mp.GetVisitingShop(s.CharacterId())
+			if err != nil {
+				l.WithError(err).Errorf("Unable to get visiting shop for character [%d].", s.CharacterId())
+				return
+			}
+			_ = mp.WithdrawMeso(s.CharacterId(), visiting.Id())
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeMerchantViewVisitList) {
 			l.Debugf("Character [%d] has viewed merchant visit list.", s.CharacterId())
+			mp := merchant.NewProcessor(l, ctx)
+			visiting, err := mp.GetVisitingShop(s.CharacterId())
+			if err != nil {
+				l.WithError(err).Errorf("Unable to get visiting shop for character [%d].", s.CharacterId())
+				return
+			}
+			visits, err := mp.GetVisits(visiting.Id().String())
+			if err != nil {
+				l.WithError(err).Errorf("Unable to get visits for shop [%s].", visiting.Id())
+				return
+			}
+			entries := make([]interactioncb.InteractionVisitListEntry, 0, len(visits))
+			for _, v := range visits {
+				entries = append(entries, interactioncb.InteractionVisitListEntry{Name: v.Name, Count: v.Count})
+			}
+			_ = session.Announce(l)(ctx)(wp)(interactioncb.CharacterInteractionWriter)(interactioncb.CharacterInteractionVisitListBody(entries))(s)
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeMerchantViewBlackList) {
 			l.Debugf("Character [%d] has viewed merchant black list.", s.CharacterId())
+			mp := merchant.NewProcessor(l, ctx)
+			visiting, err := mp.GetVisitingShop(s.CharacterId())
+			if err != nil {
+				l.WithError(err).Errorf("Unable to get visiting shop for character [%d].", s.CharacterId())
+				return
+			}
+			names, err := mp.GetBlacklist(visiting.Id().String())
+			if err != nil {
+				l.WithError(err).Errorf("Unable to get blacklist for shop [%s].", visiting.Id())
+				return
+			}
+			_ = session.Announce(l)(ctx)(wp)(interactioncb.CharacterInteractionWriter)(interactioncb.CharacterInteractionBlackListBody(names))(s)
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeMerchantAddToBlackList) {
 			sp := &interaction2.OperationMerchantAddToBlackList{}
 			sp.Decode(l, ctx)(r, readerOptions)
 			l.Debugf("Character [%d] is adding [%s] to merchant black list.", s.CharacterId(), sp.Name())
+			mp := merchant.NewProcessor(l, ctx)
+			visiting, err := mp.GetVisitingShop(s.CharacterId())
+			if err != nil {
+				l.WithError(err).Errorf("Unable to get visiting shop for character [%d].", s.CharacterId())
+				return
+			}
+			_ = mp.AddBlacklist(s.CharacterId(), visiting.Id(), sp.Name(), 0)
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeMerchantRemoveFromBlackList) {
 			sp := &interaction2.OperationMerchantRemoveFromBlackList{}
 			sp.Decode(l, ctx)(r, readerOptions)
 			l.Debugf("Character [%d] is removing [%s] from merchant black list.", s.CharacterId(), sp.Name())
+			mp := merchant.NewProcessor(l, ctx)
+			visiting, err := mp.GetVisitingShop(s.CharacterId())
+			if err != nil {
+				l.WithError(err).Errorf("Unable to get visiting shop for character [%d].", s.CharacterId())
+				return
+			}
+			_ = mp.RemoveBlacklist(s.CharacterId(), visiting.Id(), sp.Name())
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeMemoryGameAskTie) {
@@ -457,6 +596,26 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, _
 		}
 		l.Warnf("Character [%d] issued a unhandled character interaction [%d].", s.CharacterId(), mode)
 	}
+}
+
+// pickShopByState returns the first shop in the given state.
+func pickShopByState(shops []merchant.Model, state byte) (merchant.Model, bool) {
+	for _, sh := range shops {
+		if sh.State() == state {
+			return sh, true
+		}
+	}
+	return merchant.Model{}, false
+}
+
+// pickMerchantByState returns the first hired-merchant shop in the given state.
+func pickMerchantByState(shops []merchant.Model, state byte) (merchant.Model, bool) {
+	for _, sh := range shops {
+		if sh.ShopType() == merchant.HiredMerchantShopType && sh.State() == state {
+			return sh, true
+		}
+	}
+	return merchant.Model{}, false
 }
 
 func isCharacterInteraction(l logrus.FieldLogger) func(options map[string]interface{}, op byte, key CharacterInteractionMode) bool {

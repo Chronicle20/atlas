@@ -1,0 +1,10 @@
+packet: inventory/clientbound/InventoryRemove
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnInventoryOperation#Remove
+    address: "0x96953e"
+    decompile_sha256: 7531b1075e7744ba9c99c431332e9f2e877330c9d7e5e45fe358d27bb58c9116
+verifies:
+  - libs/atlas-packet/inventory/clientbound/change_test.go#TestRemoveRoundTrip

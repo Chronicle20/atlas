@@ -10,8 +10,9 @@
  * are handled through in-game systems via Kafka events.
  */
 
-import { useQuery, useQueryClient, type UseQueryResult } from '@tanstack/react-query';
+import { useQuery, useQueryClient, keepPreviousData, type UseQueryResult } from '@tanstack/react-query';
 import { guildsService, type Guild, type GuildAttributes, type GuildMember } from '@/services/api/guilds.service';
+import type { PagedResult } from '@/services/api/pagination';
 import type { ServiceOptions, QueryOptions } from '@/lib/api/query-params';
 import type { Tenant } from '@/types/models/tenant';
 
@@ -20,12 +21,15 @@ export const guildKeys = {
   all: ['guilds'] as const,
   lists: () => [...guildKeys.all, 'list'] as const,
   list: (tenant: Tenant | null, options?: QueryOptions) => [...guildKeys.lists(), tenant?.id, options] as const,
+  pagedList: (tenant: Tenant | null, page: number, size: number) =>
+    [...guildKeys.lists(), tenant?.id ?? 'no-tenant', page, size] as const,
   details: () => [...guildKeys.all, 'detail'] as const,
   detail: (tenant: Tenant | null, id: string) => [...guildKeys.details(), tenant?.id, id] as const,
 
   // Specialized query keys
   searches: () => [...guildKeys.all, 'search'] as const,
-  search: (tenant: Tenant | null, searchTerm: string, worldId?: number) => [...guildKeys.searches(), tenant?.id, searchTerm, worldId] as const,
+  search: (tenant: Tenant | null, searchTerm: string, page: number, size: number) =>
+    [...guildKeys.searches(), tenant?.id, searchTerm, page, size] as const,
   byWorld: (tenant: Tenant | null, worldId: number) => [...guildKeys.lists(), tenant?.id, 'world', worldId] as const,
   withSpace: (tenant: Tenant | null, worldId?: number) => [...guildKeys.lists(), tenant?.id, 'space', worldId] as const,
   rankings: (tenant: Tenant | null, worldId?: number, limit?: number) => [...guildKeys.lists(), tenant?.id, 'rankings', worldId, limit] as const,
@@ -36,13 +40,22 @@ export const guildKeys = {
 // ============================================================================
 
 /**
- * Hook to fetch all guilds for a tenant
+ * Hook to fetch a single page of guilds for a tenant (task-117). Backs the
+ * Guilds list view, which pages server-side; keeps the previous page's data
+ * on screen while the next page loads. Pass `enabled: false` to suspend
+ * fetching (e.g. while a search term is active on the same page).
  */
-export function useGuilds(tenant: Tenant | null, options?: QueryOptions): UseQueryResult<Guild[], Error> {
+export function useGuildsPage(
+  tenant: Tenant | null,
+  page: { number: number; size: number },
+  options?: ServiceOptions,
+  enabled: boolean = true,
+): UseQueryResult<PagedResult<Guild>, Error> {
   return useQuery({
-    queryKey: guildKeys.list(tenant, options),
-    queryFn: () => tenant ? guildsService.getAll({ ...options, useCache: false }) : Promise.reject(new Error('Tenant is required')),
-    enabled: !!tenant?.id,
+    queryKey: guildKeys.pagedList(tenant, page.number, page.size),
+    queryFn: () => guildsService.getPage(page, { ...options, useCache: false }),
+    enabled: !!tenant?.id && enabled,
+    placeholderData: keepPreviousData,
     gcTime: 10 * 60 * 1000, // 10 minutes
   });
 }
@@ -72,18 +85,22 @@ export function useGuildsByWorld(tenant: Tenant, worldId: number, options?: Serv
 }
 
 /**
- * Hook to search guilds by name
+ * Hook to search guilds by name via the server-side `filter[name]`
+ * substring match (task-117), a single page at a time. Pass `enabled: false`
+ * to suspend fetching (e.g. while the search term is empty).
  */
 export function useGuildSearch(
-  tenant: Tenant,
+  tenant: Tenant | null,
   searchTerm: string,
-  worldId?: number,
-  options?: ServiceOptions
-): UseQueryResult<Guild[], Error> {
+  page: { number: number; size: number },
+  options?: ServiceOptions,
+  enabled: boolean = true,
+): UseQueryResult<PagedResult<Guild>, Error> {
   return useQuery({
-    queryKey: guildKeys.search(tenant, searchTerm, worldId),
-    queryFn: () => guildsService.search(searchTerm, worldId, { ...options, useCache: false }),
-    enabled: !!tenant?.id && !!searchTerm,
+    queryKey: guildKeys.search(tenant, searchTerm, page.number, page.size),
+    queryFn: () => guildsService.search(searchTerm, page, { ...options, useCache: false }),
+    enabled: !!tenant?.id && !!searchTerm && enabled,
+    placeholderData: keepPreviousData,
     gcTime: 5 * 60 * 1000,
   });
 }

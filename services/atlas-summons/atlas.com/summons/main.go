@@ -1,6 +1,8 @@
 package main
 
 import (
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+
 	characterevt "atlas-summons/kafka/consumer/character"
 	summoncmd "atlas-summons/kafka/consumer/summon"
 	"atlas-summons/logger"
@@ -19,7 +21,6 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
 	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
 )
 
@@ -83,7 +84,6 @@ func main() {
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(summon.InitResource(GetServer())).
 		AddRouteInitializer(world.InitResource(GetServer())).
-		AddRouteInitializer(server.MountHandler("/metrics", promhttp.Handler())).
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
 		Run()
 
@@ -106,7 +106,7 @@ func main() {
 		if err != nil {
 			l.WithError(err).Fatal("Unable to construct LeaderElection.")
 		}
-		go func() {
+		routine.Go(l, tdm.Context(), func(_ context.Context) {
 			err := le.Run(tdm.Context(), func(leaderCtx context.Context) {
 				registerSweepTasks(l, leaderCtx)
 				<-leaderCtx.Done()
@@ -114,7 +114,7 @@ func main() {
 			if err != nil {
 				l.WithError(err).Errorf("LeaderElection.Run exited with error.")
 			}
-		}()
+		})
 	} else {
 		l.Warnf("SUMMON_LEADER_ELECTION_ENABLED=false — sweep tasks run unconditionally on this pod.")
 		registerSweepTasks(l, tdm.Context())

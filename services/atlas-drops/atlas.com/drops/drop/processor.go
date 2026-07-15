@@ -77,6 +77,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 // Spawn creates a new drop (equipment stats already inline from command)
 func (p *ProcessorImpl) Spawn(msgBuf *message.Buffer) func(mb *ModelBuilder) (Model, error) {
 	return func(mb *ModelBuilder) (Model, error) {

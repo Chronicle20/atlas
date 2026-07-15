@@ -57,7 +57,8 @@ func (m Update) Encode(l logrus.FieldLogger, ctx context.Context) func(options m
 	}
 }
 
-func (m *Update) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *Update) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+	hasGroup := model.BuddyHasFriendGroup(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.mode = r.ReadByte()
 		m.characterId = r.ReadUint32()
@@ -65,7 +66,9 @@ func (m *Update) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request
 		m.characterName = model.ReadPaddedString(r, 13) // friendName
 		_ = r.ReadByte()                                // flag
 		m.channelId = channel.Id(r.ReadInt32())
-		m.group = model.ReadPaddedString(r, 17) // friendGroup
+		if hasGroup {
+			m.group = model.ReadPaddedString(r, 17) // friendGroup (absent in GMS < 72, e.g. v61)
+		}
 		m.inShop = r.ReadBool()
 	}
 }

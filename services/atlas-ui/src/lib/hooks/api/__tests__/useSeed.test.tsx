@@ -148,28 +148,8 @@ describe.each([
 describe.each([
   ['useWzInputStatus', useWzInputStatus, 'getWzInputStatus', 'wzInputStatus'],
   ['useDataStatus', useDataStatus, 'getDataStatus', 'dataStatus'],
-] as const)('%s scope threading', (_, hook, method, keyRoot) => {
-  it('passes the selected scope to the service and keys the cache by scope', async () => {
-    (tenantContext.useTenant as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
-      activeTenant: fakeTenant,
-    });
-    (seedService as unknown as Record<string, ReturnType<typeof vi.fn>>)[method]!.mockResolvedValue({
-      updatedAt: null,
-    });
-
-    const { wrapper, qc } = makeWrapper();
-    const { result } = renderHook(() => hook('shared'), { wrapper });
-
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(
-      (seedService as unknown as Record<string, ReturnType<typeof vi.fn>>)[method],
-    ).toHaveBeenCalledWith(fakeTenant, 'shared');
-    // Scoped cache entry — distinct from the tenant-scope entry.
-    expect(qc.getQueryData([keyRoot, fakeTenant.id, 'shared'])).toBeDefined();
-    expect(qc.getQueryData([keyRoot, fakeTenant.id, 'tenant'])).toBeUndefined();
-  });
-
-  it('defaults to tenant scope when no scope is passed', async () => {
+] as const)('%s', (_, hook, method, keyRoot) => {
+  it('calls the service with only the tenant and keys the cache by tenant id', async () => {
     (tenantContext.useTenant as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
       activeTenant: fakeTenant,
     });
@@ -183,8 +163,8 @@ describe.each([
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(
       (seedService as unknown as Record<string, ReturnType<typeof vi.fn>>)[method],
-    ).toHaveBeenCalledWith(fakeTenant, 'tenant');
-    expect(qc.getQueryData([keyRoot, fakeTenant.id, 'tenant'])).toBeDefined();
+    ).toHaveBeenCalledWith(fakeTenant);
+    expect(qc.getQueryData([keyRoot, fakeTenant.id])).toBeDefined();
   });
 });
 

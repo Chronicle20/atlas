@@ -19,13 +19,15 @@ type ProcessorImpl struct {
 	ctx context.Context
 }
 
-func NewProcessor(l logrus.FieldLogger, ctx context.Context) *ProcessorImpl {
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	p := &ProcessorImpl{
 		l:   l,
 		ctx: ctx,
 	}
 	return p
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) InMapByNameModelProvider(mapId _map.Id, name string) model.Provider[[]Model] {
 	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestInMapByName(mapId, name), Extract, model.Filters[Model]())
@@ -34,4 +36,3 @@ func (p *ProcessorImpl) InMapByNameModelProvider(mapId _map.Id, name string) mod
 func (p *ProcessorImpl) GetInMapByName(mapId _map.Id, name string) (Model, error) {
 	return model.First(p.InMapByNameModelProvider(mapId, name), model.Filters[Model]())
 }
-

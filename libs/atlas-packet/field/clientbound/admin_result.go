@@ -160,7 +160,7 @@ func (m AdminResult) Encode(l logrus.FieldLogger, ctx context.Context) func(opti
 			w.WriteByte(m.bAt(6))
 			w.WriteByte(m.bAt(7))
 		}
-		if t.Region() == "GMS" && t.MajorVersion() < 84 {
+		if t.Region() == "GMS" && t.MajorVersion() >= 83 && t.MajorVersion() < 84 {
 			// v83: s,b,b,b,i,b,b,s,s,s,b,b,b
 			w.WriteAsciiString(m.sAt(0))
 			w.WriteByte(m.bAt(0))
@@ -175,6 +175,21 @@ func (m AdminResult) Encode(l logrus.FieldLogger, ctx context.Context) func(opti
 			w.WriteByte(m.bAt(5))
 			w.WriteByte(m.bAt(6))
 			w.WriteByte(m.bAt(7))
+		}
+		if t.Region() == "GMS" && t.MajorVersion() < 83 {
+			// v79 @0x52075c: b,b,b,i,b,b,s,s,s,b,b,b (export-harvested flat order).
+			w.WriteByte(m.bAt(0))        // Decode1 @0x520d9b (mode 29)
+			w.WriteByte(m.bAt(1))        // Decode1 @0x520b5f (mode 19)
+			w.WriteByte(m.bAt(2))        // Decode1 @0x520b71 (mode 19)
+			w.WriteInt(m.mapId)          // Decode4 @0x520cd9 (mode 19 mapId)
+			w.WriteByte(m.bAt(3))        // Decode1 @0x520bb5 (mode 19 LABEL_45)
+			w.WriteByte(m.bAt(4))        // Decode1 @0x5207c4 (mode 16)
+			w.WriteAsciiString(m.sAt(0)) // DecodeStr @0x5207d5 (mode 11)
+			w.WriteAsciiString(m.sAt(1)) // DecodeStr @0x520827 (mode 11)
+			w.WriteAsciiString(m.sAt(2)) // DecodeStr @0x520836 (mode 11)
+			w.WriteByte(m.bAt(5))        // Decode1 @0x52096d (mode 6)
+			w.WriteByte(m.bAt(6))        // Decode1 @0x520a39 (mode 5)
+			w.WriteByte(m.bAt(7))        // Decode1 @0x520ad0 (mode 4)
 		}
 		return w.Bytes()
 	}
@@ -248,8 +263,23 @@ func (m *AdminResult) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *
 			m.b = append(m.b, r.ReadByte())
 			m.b = append(m.b, r.ReadByte())
 		}
-		if t.Region() == "GMS" && t.MajorVersion() < 84 {
+		if t.Region() == "GMS" && t.MajorVersion() >= 83 && t.MajorVersion() < 84 {
 			m.s = append(m.s, r.ReadAsciiString())
+			m.b = append(m.b, r.ReadByte())
+			m.b = append(m.b, r.ReadByte())
+			m.b = append(m.b, r.ReadByte())
+			m.mapId = r.ReadUint32()
+			m.b = append(m.b, r.ReadByte())
+			m.b = append(m.b, r.ReadByte())
+			m.s = append(m.s, r.ReadAsciiString())
+			m.s = append(m.s, r.ReadAsciiString())
+			m.s = append(m.s, r.ReadAsciiString())
+			m.b = append(m.b, r.ReadByte())
+			m.b = append(m.b, r.ReadByte())
+			m.b = append(m.b, r.ReadByte())
+		}
+		if t.Region() == "GMS" && t.MajorVersion() < 83 {
+			// v79: b,b,b,i,b,b,s,s,s,b,b,b
 			m.b = append(m.b, r.ReadByte())
 			m.b = append(m.b, r.ReadByte())
 			m.b = append(m.b, r.ReadByte())

@@ -5,6 +5,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 )
@@ -29,10 +30,11 @@ func TestGetByItemIdProvider_OrdersByNpcThenStateId(t *testing.T) {
 		}
 	}
 
-	got, err := getByItemIdProvider(9999)(db.WithContext(ctx))()
+	paged, err := getByItemIdPagedProvider(9999, model.Page{Number: 1, Size: 50})(db.WithContext(ctx))()
 	if err != nil {
 		t.Fatalf("provider: %v", err)
 	}
+	got := paged.Items
 	if len(got) != 3 {
 		t.Fatalf("expected 3 rows, got %d", len(got))
 	}
@@ -70,10 +72,11 @@ func TestGetByNpcIdProvider_OrdersByStateIdAndScopesByTenant(t *testing.T) {
 		t.Fatalf("seed B: %v", err)
 	}
 
-	got, err := getByNpcIdProvider(2040020)(db.WithContext(ctxA))()
+	paged, err := getByNpcIdPagedProvider(2040020, model.Page{Number: 1, Size: 50})(db.WithContext(ctxA))()
 	if err != nil {
 		t.Fatalf("provider: %v", err)
 	}
+	got := paged.Items
 	if len(got) != 2 {
 		t.Fatalf("tenant A expected 2 rows, got %d", len(got))
 	}

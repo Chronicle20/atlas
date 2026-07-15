@@ -25,6 +25,10 @@ For large refactors expect multiple fix-and-rebuild cycles. Don't shortcut the b
 5. **`tools/redis-key-guard.sh` clean from the repo root.** Bans keyed Redis
    commands on the raw `go-redis` client outside `libs/atlas-redis` (FR-1.5,
    task-045). Runs alongside `go vet ./...`.
+6. **`tools/goroutine-guard.sh` clean from the repo root.** Bans bare `go`
+   statements outside `libs/atlas-routine` and justified
+   `//goroutine-guard:allow` sites (RR-6, task-115) — every goroutine must be
+   spawned via `routine.Go`. Runs alongside `go vet ./...`.
 
 ## Code Patterns
 
@@ -104,6 +108,18 @@ When updating TODO.md or other tracking docs, always use `Glob` or `Grep` to fin
 ## File Writing / Conventions
 
 - When writing files, always use repo-relative paths or placeholders; never write literal home/absolute paths like `/Users/<name>/...` or `/home/<name>/...` into committed files.
+
+## Packet work
+
+Packet-audit work has ONE canonical playbook per task type and an executable entry point that drives it. Start at [`docs/packets/PROCESS.md`](docs/packets/PROCESS.md) (the source of truth for the version set, baseline status, and CI gates), then pick your entry point:
+
+| Task type | Entry point | Canonical playbook |
+|---|---|---|
+| Implement a new feature codec (clientbound or serverbound) | `/implement-packet` command + `packet-implementer` agent | [`docs/packets/IMPLEMENTING_A_PACKET.md`](docs/packets/IMPLEMENTING_A_PACKET.md) |
+| Bring up a new client-version column | `/bringup-version` command | [`docs/packets/audits/STARTING_A_NEW_VERSION_PASS.md`](docs/packets/audits/STARTING_A_NEW_VERSION_PASS.md) |
+| Audit / implement a mode-prefix dispatcher family | `family-auditor` agent (read-only triage) · `dispatcher-family-implementer` agent (do-mode) | [`docs/packets/DISPATCHER_FAMILY.md`](docs/packets/DISPATCHER_FAMILY.md) |
+
+Every task type's leaf step — promoting one packet × version matrix cell to `✅` — is the single-cell verify procedure: `/verify-packet` command + `packet-verifier` agent, driving [`docs/packets/audits/VERIFYING_A_PACKET.md`](docs/packets/audits/VERIFYING_A_PACKET.md). Do not restate a playbook's procedure in prose elsewhere — link to it.
 
 ## Reverse Engineering / IDA
 

@@ -58,6 +58,14 @@ func main() {
 		l.Fatal("Failed to connect to database")
 	}
 
+	server.RegisterTransientErrorClassifier(func(err error) bool {
+		if database.IsTransientConnectionError(err) {
+			database.CountTransient(err)
+			return true
+		}
+		return false
+	})
+
 	// Initialize and start Kafka consumers
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	family2.InitConsumers(l)(cmf)(consumerGroupId)

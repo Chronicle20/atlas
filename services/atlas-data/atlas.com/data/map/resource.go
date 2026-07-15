@@ -15,6 +15,7 @@ import (
 
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
@@ -47,30 +48,36 @@ func InitResource(db *gorm.DB) func(si jsonapi.ServerInformation) server.RouteIn
 func handleGetMapsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			searchQuery := strings.TrimSpace(r.URL.Query().Get("search"))
-			if _, hasSearch := r.URL.Query()["search"]; hasSearch {
-				handleSearchMaps(db)(d, c)(searchQuery, r.URL.Query().Get("limit"))(w, r)
+			query := r.URL.Query()
+			searchQuery := strings.TrimSpace(query.Get("search"))
+			if _, hasSearch := query["search"]; hasSearch {
+				handleSearchMaps(db)(d, c)(searchQuery)(w, r)
+				return
+			}
+
+			page, err := paginate.ParseParams(query, paginate.DefaultPageSize, paginate.MaxPageSize)
+			if err != nil {
+				server.WriteBadRequest(d.Logger(), w, err.Error())
 				return
 			}
 
 			s := NewStorage(d.Logger(), db)
-			res, err := s.GetAll(d.Context())
+			paged, err := s.AllPagedProvider(d.Context())(page)()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Unable to retrieve maps.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
-			query := r.URL.Query()
 			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+			server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(paged.Items, paginate.EnvelopeFor(paged), r)
 		}
 	}
 }
 
-func handleSearchMaps(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) func(q, limitRaw string) http.HandlerFunc {
-	return func(d *rest.HandlerDependency, c *rest.HandlerContext) func(q, limitRaw string) http.HandlerFunc {
-		return func(q, limitRaw string) http.HandlerFunc {
+func handleSearchMaps(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) func(q string) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) func(q string) http.HandlerFunc {
+		return func(q string) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
 				if q == "" {
 					w.WriteHeader(http.StatusBadRequest)
@@ -80,34 +87,33 @@ func handleSearchMaps(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Handl
 					w.WriteHeader(http.StatusBadRequest)
 					return
 				}
-				limit := SearchMaxLimit
-				if limitRaw != "" {
-					parsed, err := strconv.Atoi(limitRaw)
-					if err != nil || parsed <= 0 {
-						w.WriteHeader(http.StatusBadRequest)
-						return
-					}
-					if parsed > SearchMaxLimit {
-						parsed = SearchMaxLimit
-					}
-					limit = parsed
+				query := r.URL.Query()
+				page, err := paginate.ParseParams(query, SearchMaxLimit, SearchMaxLimit)
+				if err != nil {
+					server.WriteBadRequest(d.Logger(), w, err.Error())
+					return
 				}
 
+				offset := (page.Number - 1) * page.Size
 				start := time.Now()
-				results, err := SearchByQuery(d.Logger(), db)(d.Context())(q, limit)
+				results, err := SearchByQuery(d.Logger(), db)(d.Context())(q, offset, page.Size)
+				var total int
+				if err == nil {
+					total, err = CountByQuery(db)(d.Context())(q)
+				}
 				elapsedMs := time.Since(start).Milliseconds()
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Map search failed.")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
 				if t, terr := tenant.FromContext(d.Context())(); terr == nil {
 					d.Logger().WithFields(logrus.Fields{
-						"tenant_id":   t.Id().String(),
-						"query_len":   len(q),
-						"result_ct":   len(results),
-						"elapsed_ms":  elapsedMs,
+						"tenant_id":  t.Id().String(),
+						"query_len":  len(q),
+						"result_ct":  len(results),
+						"elapsed_ms": elapsedMs,
 					}).Debugf("Map search served.")
 				}
 
@@ -116,9 +122,9 @@ func handleSearchMaps(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Handl
 					rms = append(rms, SearchResultRestModel{Id: _map.Id(s.Id), Name: s.Name, StreetName: s.StreetName})
 				}
 
-				query := r.URL.Query()
+				env := paginate.Envelope{Total: total, PageNumber: page.Number, PageSize: page.Size}
 				queryParams := jsonapi.ParseQueryFields(&query)
-				server.MarshalResponse[[]SearchResultRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rms)
+				server.MarshalPaginatedResponse[[]SearchResultRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rms, env, r)
 			}
 		}
 	}
@@ -151,17 +157,24 @@ func handleGetMapPortalsByNameRequest(db *gorm.DB) func(d *rest.HandlerDependenc
 				vars := mux.Vars(r)
 				portalName := vars["name"]
 
+				query := r.URL.Query()
+				page, err := paginate.ParseParams(query, paginate.DefaultPageSize, paginate.MaxPageSize)
+				if err != nil {
+					server.WriteBadRequest(d.Logger(), w, err.Error())
+					return
+				}
+
 				s := NewStorage(d.Logger(), db)
-				res, err := GetPortalsByName(s)(d.Context())(mapId, portalName)
+				res, err := NewProcessor(d.Logger(), d.Context(), db).GetPortalsByName(s, mapId, portalName)
 				if err != nil {
 					d.Logger().WithError(err).Debugf("Unable to locate map %d.", mapId)
 					w.WriteHeader(http.StatusNotFound)
 					return
 				}
 
-				query := r.URL.Query()
+				paged := paginate.Slice(res, page)
 				queryParams := jsonapi.ParseQueryFields(&query)
-				server.MarshalResponse[[]portal.RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+				server.MarshalPaginatedResponse[[]portal.RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(paged.Items, paginate.EnvelopeFor(paged), r)
 			}
 		})
 	}
@@ -171,17 +184,24 @@ func handleGetMapPortalsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return rest.ParseMapId(d.Logger(), func(mapId _map.Id) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
+				query := r.URL.Query()
+				page, err := paginate.ParseParams(query, paginate.DefaultPageSize, paginate.MaxPageSize)
+				if err != nil {
+					server.WriteBadRequest(d.Logger(), w, err.Error())
+					return
+				}
+
 				s := NewStorage(d.Logger(), db)
-				res, err := GetPortals(s)(d.Context())(mapId)
+				res, err := NewProcessor(d.Logger(), d.Context(), db).GetPortals(s, mapId)
 				if err != nil {
 					d.Logger().WithError(err).Debugf("Unable to locate map %d.", mapId)
 					w.WriteHeader(http.StatusNotFound)
 					return
 				}
 
-				query := r.URL.Query()
+				paged := paginate.Slice(res, page)
 				queryParams := jsonapi.ParseQueryFields(&query)
-				server.MarshalResponse[[]portal.RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+				server.MarshalPaginatedResponse[[]portal.RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(paged.Items, paginate.EnvelopeFor(paged), r)
 			}
 		})
 	}
@@ -193,7 +213,7 @@ func handleGetMapPortalRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *r
 			return rest.ParsePortalId(d.Logger(), func(portalId uint32) http.HandlerFunc {
 				return func(w http.ResponseWriter, r *http.Request) {
 					s := NewStorage(d.Logger(), db)
-					res, err := GetPortalById(s)(d.Context())(mapId, portalId)
+					res, err := NewProcessor(d.Logger(), d.Context(), db).GetPortalById(s, mapId, portalId)
 					if err != nil {
 						d.Logger().WithError(err).Debugf("Unable to locate map %d.", mapId)
 						w.WriteHeader(http.StatusNotFound)
@@ -213,17 +233,24 @@ func handleGetMapReactorsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c 
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return rest.ParseMapId(d.Logger(), func(mapId _map.Id) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
+				query := r.URL.Query()
+				page, err := paginate.ParseParams(query, paginate.DefaultPageSize, paginate.MaxPageSize)
+				if err != nil {
+					server.WriteBadRequest(d.Logger(), w, err.Error())
+					return
+				}
+
 				s := NewStorage(d.Logger(), db)
-				res, err := GetReactors(s)(d.Context())(mapId)
+				res, err := NewProcessor(d.Logger(), d.Context(), db).GetReactors(s, mapId)
 				if err != nil {
 					d.Logger().WithError(err).Debugf("Unable to locate map %d.", mapId)
 					w.WriteHeader(http.StatusNotFound)
 					return
 				}
 
-				query := r.URL.Query()
+				paged := paginate.Slice(res, page)
 				queryParams := jsonapi.ParseQueryFields(&query)
-				server.MarshalResponse[[]reactor.RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+				server.MarshalPaginatedResponse[[]reactor.RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(paged.Items, paginate.EnvelopeFor(paged), r)
 			}
 		})
 	}
@@ -241,17 +268,24 @@ func handleGetMapNPCsByObjectIdRequest(db *gorm.DB) func(d *rest.HandlerDependen
 					return
 				}
 
+				query := r.URL.Query()
+				page, err := paginate.ParseParams(query, paginate.DefaultPageSize, paginate.MaxPageSize)
+				if err != nil {
+					server.WriteBadRequest(d.Logger(), w, err.Error())
+					return
+				}
+
 				s := NewStorage(d.Logger(), db)
-				res, err := GetNpcsByObjectId(s)(d.Context())(mapId, uint32(objectId))
+				res, err := NewProcessor(d.Logger(), d.Context(), db).GetNpcsByObjectId(s, mapId, uint32(objectId))
 				if err != nil {
 					d.Logger().WithError(err).Debugf("Unable to locate map %d object %d.", mapId, objectId)
 					w.WriteHeader(http.StatusNotFound)
 					return
 				}
 
-				query := r.URL.Query()
+				paged := paginate.Slice(res, page)
 				queryParams := jsonapi.ParseQueryFields(&query)
-				server.MarshalResponse[[]npc.RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+				server.MarshalPaginatedResponse[[]npc.RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(paged.Items, paginate.EnvelopeFor(paged), r)
 			}
 		})
 	}
@@ -261,17 +295,24 @@ func handleGetMapNPCsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *res
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return rest.ParseMapId(d.Logger(), func(mapId _map.Id) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
+				query := r.URL.Query()
+				page, err := paginate.ParseParams(query, paginate.DefaultPageSize, paginate.MaxPageSize)
+				if err != nil {
+					server.WriteBadRequest(d.Logger(), w, err.Error())
+					return
+				}
+
 				s := NewStorage(d.Logger(), db)
-				res, err := GetNpcs(s)(d.Context())(mapId)
+				res, err := NewProcessor(d.Logger(), d.Context(), db).GetNpcs(s, mapId)
 				if err != nil {
 					d.Logger().WithError(err).Debugf("Unable to locate map %d.", mapId)
 					w.WriteHeader(http.StatusNotFound)
 					return
 				}
 
-				query := r.URL.Query()
+				paged := paginate.Slice(res, page)
 				queryParams := jsonapi.ParseQueryFields(&query)
-				server.MarshalResponse[[]npc.RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+				server.MarshalPaginatedResponse[[]npc.RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(paged.Items, paginate.EnvelopeFor(paged), r)
 			}
 		})
 	}
@@ -283,7 +324,7 @@ func handleGetMapNPCRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest
 			return rest.ParseNPC(d.Logger(), func(npcId uint32) http.HandlerFunc {
 				return func(w http.ResponseWriter, r *http.Request) {
 					s := NewStorage(d.Logger(), db)
-					res, err := GetNpc(s)(d.Context())(mapId, npcId)
+					res, err := NewProcessor(d.Logger(), d.Context(), db).GetNpc(s, mapId, npcId)
 					if err != nil {
 						d.Logger().WithError(err).Debugf("Unable to locate map %d.", mapId)
 						w.WriteHeader(http.StatusNotFound)
@@ -303,18 +344,25 @@ func handleGetMapMonstersRequest(db *gorm.DB) func(d *rest.HandlerDependency, c 
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return rest.ParseMapId(d.Logger(), func(mapId _map.Id) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
+				query := r.URL.Query()
+				page, err := paginate.ParseParams(query, paginate.DefaultPageSize, paginate.MaxPageSize)
+				if err != nil {
+					server.WriteBadRequest(d.Logger(), w, err.Error())
+					return
+				}
+
 				s := NewStorage(d.Logger(), db)
 				ms := monstertpl.NewStorage(d.Logger(), db)
-				res, err := GetMonsters(s, ms)(d.Context())(mapId)
+				res, err := NewProcessor(d.Logger(), d.Context(), db).GetMonsters(s, ms, mapId)
 				if err != nil {
 					d.Logger().WithError(err).Debugf("Unable to locate map %d.", mapId)
 					w.WriteHeader(http.StatusNotFound)
 					return
 				}
 
-				query := r.URL.Query()
+				paged := paginate.Slice(res, page)
 				queryParams := jsonapi.ParseQueryFields(&query)
-				server.MarshalResponse[[]monster.RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+				server.MarshalPaginatedResponse[[]monster.RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(paged.Items, paginate.EnvelopeFor(paged), r)
 			}
 		})
 	}
@@ -348,14 +396,14 @@ func handleGetMapFootholdBelowRequest(db *gorm.DB) func(d *rest.HandlerDependenc
 				m, err := s.GetById(d.Context())(strconv.Itoa(int(mapId)))
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Unable to retrieve map %d for foothold lookup.", mapId)
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 				p := point.RestModel{X: i.X, Y: i.Y}
 				fh := m.FootholdTree.findBelow(p)
 				if fh == nil {
 					d.Logger().Errorf("Unable to find foothold below position (%d, %d) in map %d.", i.X, i.Y, mapId)
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 

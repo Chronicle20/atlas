@@ -49,6 +49,8 @@ type Processor interface {
 	ResetStats(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32) error
 	RebalanceAPAndEmit(transactionId uuid.UUID, ch channel.Model, characterId uint32, targets []character2.RebalanceAPTarget) error
 	RebalanceAP(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32, targets []character2.RebalanceAPTarget) error
+	TransferAPAndEmit(transactionId uuid.UUID, ch channel.Model, characterId uint32, from string, to string) error
+	TransferAP(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32, from string, to string) error
 }
 
 type ProcessorImpl struct {
@@ -68,6 +70,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 		pp:  portal.NewProcessor(l, ctx),
 	}
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) WarpRandomAndEmit(transactionId uuid.UUID, characterId uint32, field field.Model) error {
 	return message.Emit(p.p)(func(mb *message.Buffer) error {
@@ -252,5 +256,19 @@ func (p *ProcessorImpl) RebalanceAPAndEmit(transactionId uuid.UUID, ch channel.M
 func (p *ProcessorImpl) RebalanceAP(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32, targets []character2.RebalanceAPTarget) error {
 	return func(transactionId uuid.UUID, ch channel.Model, characterId uint32, targets []character2.RebalanceAPTarget) error {
 		return mb.Put(character2.EnvCommandTopic, RebalanceAPProvider(transactionId, ch, characterId, targets))
+	}
+}
+
+// TransferAPAndEmit emits the TRANSFER_AP command that moves one already-spent
+// ability point From -> To (AP Reset item 5050000, task-126).
+func (p *ProcessorImpl) TransferAPAndEmit(transactionId uuid.UUID, ch channel.Model, characterId uint32, from string, to string) error {
+	return message.Emit(p.p)(func(mb *message.Buffer) error {
+		return p.TransferAP(mb)(transactionId, ch, characterId, from, to)
+	})
+}
+
+func (p *ProcessorImpl) TransferAP(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32, from string, to string) error {
+	return func(transactionId uuid.UUID, ch channel.Model, characterId uint32, from string, to string) error {
+		return mb.Put(character2.EnvCommandTopic, TransferAPProvider(transactionId, ch, characterId, from, to))
 	}
 }

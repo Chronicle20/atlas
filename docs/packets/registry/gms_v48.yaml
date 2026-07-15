@@ -1,0 +1,1502 @@
+# Operation registry for gms_v48 (MAJOR 48). Anchor = gms_v61 (FName->Op dictionary).
+# Built Stage B (task-113, Task 4.B): clientbound = `packet-audit discover-ops` switch-walk of the
+# v48 IDB (GMS_v48_1_DEVM.exe, port 13337) joined to the gms_v61.yaml FName->Op dictionary;
+# v48 opcodes are NON-uniformly shifted from v61 (login auth-result MOVED 0->1; CWvsContext window
+# [0x18,0x47] starts Delta-1 and deepens; CField base region Delta~-20; CUserPool base 100). Manual
+# entries are hand-decompiled cases the numeric switch-parser cannot reach (char-literal / vtable /
+# range-router pool dispatch). Char-mgmt 13/14/15 carry body-canonical (v83) FNames keyed to the v48
+# addresses (unnamed subs, no rotated symbol). Serverbound = v48 COutPacket(N) send-sites read from a
+# global COutPacket-ctor (@0x57b77e) harvest; the delta-flagged CHANGE_CHANNEL/MOVE_PLAYER/WHISPER
+# opcodes were BODY-verified from their send-sites (never blind-shifted from v61). CSV v48 column is
+# placeholder (0x000). See discover_gms_v48.md +
+# docs/tasks/task-113-gms-legacy-versions/v48-packet-delta.md.
+#
+# STATUS: clean PARTIAL (see discover_gms_v48.md "Remaining worklist"). Registered here = every
+# body-verified / named-caller op across login, shim, CWvsContext (named + delta-resolved),
+# CField base region, CUserPool spawn/leave, CCashShop (named), and the send-site-harvested +
+# body-verified serverbound set. Deferred (kept OUT to keep the registry clean, listed in the
+# worklist): the unnamed CWvsContext subs' v61 op-identity body-map, and the deep clientbound pool
+# leaves (CUserPool common/remote/local internals, mob/npc/drop/reactor/dialog demuxers) — these
+# need per-leaf body-walks the delta doc itself defers to Stage B/E. No opcode was fabricated.
+
+# ---------------- clientbound: login (CLogin::OnPacket = sub_5007C4 @0x5007c4) ----------------
+- op: LOGIN_STATUS
+  direction: clientbound
+  opcode: 1
+  fname: sub_500931
+  fname_alts:
+  - CLogin::OnCheckPasswordResult
+  provenance: ida-discovered
+  ida:
+    address: 5245233
+  note: 'v48 auth/login-result MOVED to op 1 (v61 op 0); op 0 unused, GuestID (v61 op1) absent. Body = Decode1(result)+regStatus+Decode4 err-cascade + SetCharacterData + COutPacket(8) migrate = OnCheckPasswordResult. delta doc f.'
+- op: SERVERSTATUS
+  direction: clientbound
+  opcode: 3
+  fname: sub_5011D6
+  provenance: ida-discovered
+  ida:
+    address: 5247446
+- op: GENDER_DONE
+  direction: clientbound
+  opcode: 4
+  fname: sub_5037D5
+  provenance: ida-discovered
+  ida:
+    address: 5257173
+- op: CONFIRM_EULA_RESULT
+  direction: clientbound
+  opcode: 5
+  fname: sub_5038F1
+  provenance: ida-discovered
+  ida:
+    address: 5257457
+- op: CHECK_PINCODE
+  direction: clientbound
+  opcode: 6
+  fname: sub_503956
+  provenance: ida-discovered
+  ida:
+    address: 5257558
+  note: 'PIN slot at op 6 (as v61); no SPW cases -> usesPin=false. delta doc e.'
+- op: UPDATE_PINCODE
+  direction: clientbound
+  opcode: 7
+  fname: sub_503C92
+  provenance: ida-discovered
+  ida:
+    address: 5258386
+- op: VIEW_ALL_CHAR
+  direction: clientbound
+  opcode: 8
+  fname: CLogin::OnViewAllCharResult
+  fname_alts:
+  - sub_50232D
+  provenance: ida-discovered
+  ida:
+    address: 5251885
+  note: 'Body = Decode1 sub-mode + per-char AvatarLook::Decode = OnViewAllCharResult (VIEW_ALL_CHAR); op 8 = v61. Canonical fname CLogin::OnViewAllCharResult (unnamed sub_50232D in fname_alts) mirrors v61 cb + the v48 serverbound sibling, linking the op to the CharacterViewAll* audit reports.'
+- op: SELECT_CHARACTER_BY_VAC
+  direction: clientbound
+  opcode: 9
+  fname: sub_5028A6
+  provenance: ida-discovered
+  ida:
+    address: 5253286
+- op: WORLD_INFORMATION
+  direction: clientbound
+  opcode: 10
+  fname: sub_50120A
+  provenance: ida-discovered
+  ida:
+    address: 5247498
+- op: CHARLIST
+  direction: clientbound
+  opcode: 11
+  fname: sub_5013ED
+  provenance: ida-discovered
+  ida:
+    address: 5247981
+  note: 'Per-slot GW_CharacterStat::Decode+AvatarLook::Decode+Decode1?DecodeBuffer(16):memset. v48 CHARLIST OMITS the trailing Decode4 that v61 had after the slot loop (structure delta). Standalone char-list decoder sub_5013ED (the v48 analogue of v61 sub_56688D / v72 sub_5B3646), NOT the shared OnSelectWorldResult; candidatesFromFName maps sub_5013ED -> CharacterList. delta doc c.'
+- op: SERVER_IP
+  direction: clientbound
+  opcode: 12
+  fname: sub_502B70
+  provenance: ida-discovered
+  ida:
+    address: 5254000
+- op: CHAR_NAME_RESPONSE
+  direction: clientbound
+  opcode: 13
+  fname: CLogin::OnCheckDuplicatedIDResult
+  fname_alts:
+  - sub_5016DB
+  provenance: ida-discovered
+  ida:
+    address: 5248731
+  note: 'Body = DecodeStr(name)+Decode1(result) = CHAR_NAME_RESPONSE. Unnamed sub (no rotated symbol, unlike v61); opcode 13 by body (==v61/v83). fname carries body-canonical name for candidatesFromFName. delta doc f.'
+- op: ADD_NEW_CHAR_ENTRY
+  direction: clientbound
+  opcode: 14
+  fname: CLogin::OnCreateNewCharacterResult
+  fname_alts:
+  - sub_501973
+  provenance: ida-discovered
+  ida:
+    address: 5249395
+  note: 'Body = Decode1(result); success GW_CharacterStat::Decode+AvatarLook::Decode into free slot = ADD_NEW_CHAR_ENTRY. Opcode 14 by body. delta doc f.'
+- op: DELETE_CHAR_RESPONSE
+  direction: clientbound
+  opcode: 15
+  fname: CLogin::OnDeleteCharacterResult
+  fname_alts:
+  - sub_5017B6
+  provenance: ida-discovered
+  ida:
+    address: 5248950
+  note: 'Body = Decode4(cid)+Decode1(result)+slot-removal (436-byte-entry qmemcpy shift) = DELETE_CHAR_RESPONSE. Opcode 15 by body. delta doc f.'
+- op: RELOG_RESPONSE
+  direction: clientbound
+  opcode: 22
+  fname: sub_502E3A
+  provenance: ida-discovered
+  ida:
+    address: 5254714
+  note: 'CLogin::OnPacket case 22 (highest explicit login case; no SPW). delta doc f.'
+
+# ---------------- clientbound: top-level shim (CClientSocket::ProcessPacket @0x464fb6) ----------------
+- op: CHANGE_CHANNEL
+  direction: clientbound
+  opcode: 16
+  fname: CClientSocket::OnMigrateCommand
+  provenance: ida-discovered
+  ida:
+    address: 4607926
+- op: PING
+  direction: clientbound
+  opcode: 17
+  fname: CClientSocket::OnAliveReq
+  provenance: ida-discovered
+  ida:
+    address: 4607926
+- op: KOREAN_INTERNET_CAFE_SHIT
+  direction: clientbound
+  opcode: 18
+  fname: CClientSocket::OnAuthenCodeChanged
+  provenance: ida-discovered
+  ida:
+    address: 4607926
+- op: AUTHEN_MESSAGE
+  direction: clientbound
+  opcode: 19
+  fname: CClientSocket::OnAuthenMessage
+  provenance: ida-discovered
+  ida:
+    address: 4607926
+- op: IDA_0X014
+  direction: clientbound
+  opcode: 20
+  fname: sub_733B6B
+  provenance: ida-discovered
+  ida:
+    address: 7551851
+  note: 'v48 top-level case 0x14 (differs from v61 OnPacket_CSecurityClient). Handshake-family; op-identity Stage E. delta doc top-level.'
+- op: IDA_0X015
+  direction: clientbound
+  opcode: 21
+  fname: sub_465378
+  provenance: ida-discovered
+  ida:
+    address: 4608888
+  note: 'v48 top-level case 0x15 (differs from v61 sub_4747E2). Handshake-family; op-identity Stage E. delta doc top-level.'
+
+# ---------------- clientbound: CWvsContext::OnPacket @0x70d215 (window 24-71; cases 25-70) ----------------
+- op: INVENTORY_OPERATION
+  direction: clientbound
+  opcode: 25
+  fname: CWvsContext::OnInventoryOperation
+  provenance: ida-discovered
+  ida:
+    address: 7393813
+- op: INVENTORY_GROW
+  direction: clientbound
+  opcode: 26
+  fname: CWvsContext::OnInventoryGrow
+  provenance: ida-discovered
+  ida:
+    address: 7393813
+- op: STAT_CHANGED
+  direction: clientbound
+  opcode: 27
+  fname: CWvsContext::OnStatChanged
+  provenance: ida-discovered
+  ida:
+    address: 7393813
+- op: GIVE_BUFF
+  direction: clientbound
+  opcode: 28
+  fname: CWvsContext::OnTemporaryStatSet
+  provenance: ida-discovered
+  ida:
+    address: 7393813
+- op: CANCEL_BUFF
+  direction: clientbound
+  opcode: 29
+  fname: CWvsContext::OnTemporaryStatReset
+  provenance: ida-discovered
+  ida:
+    address: 7393813
+  note: 'v48 DROPS v61 OnForcedStatSet(31)/OnForcedStatReset(32) after this; block deepens Delta-3. delta doc a.'
+- op: UPDATE_SKILLS
+  direction: clientbound
+  opcode: 30
+  fname: CWvsContext::OnChangeSkillRecordResult
+  provenance: ida-discovered
+  ida:
+    address: 7393813
+- op: SKILL_USE_RESULT
+  direction: clientbound
+  opcode: 31
+  fname: CWvsContext::OnSkillUseResult
+  provenance: ida-discovered
+  ida:
+    address: 7393813
+- op: FAME_RESPONSE
+  direction: clientbound
+  opcode: 32
+  fname: CWvsContext::OnGivePopularityResult
+  provenance: ida-discovered
+  ida:
+    address: 7393813
+- op: SHOW_STATUS_INFO
+  direction: clientbound
+  opcode: 33
+  fname: CWvsContext::OnMessage
+  provenance: ida-discovered
+  ida:
+    address: 7393813
+  note: 'Status-message dispatcher; operations table arms 0-9 (SAME as v61, no spurious INCREASE_SKILL_POINT). delta doc b.'
+- op: MEMO_RESULT
+  direction: clientbound
+  opcode: 34
+  fname: CWvsContext::OnMemoResult
+  provenance: ida-discovered
+  ida:
+    address: 7393813
+  note: 'v48 DROPS v61 OnOpenFullClientDownloadLink(37) before this; block Delta-4. delta doc a.'
+- op: MAP_TRANSFER_RESULT
+  direction: clientbound
+  opcode: 35
+  fname: CWvsContext::OnMapTransferResult
+  provenance: ida-discovered
+  ida:
+    address: 7393813
+- op: WEDDING_PHOTO
+  direction: clientbound
+  opcode: 36
+  fname: CWvsContext::OnAntiMacroResult
+  provenance: ida-discovered
+  ida:
+    address: 7393813
+- op: CLAIM_RESULT
+  direction: clientbound
+  opcode: 37
+  fname: CWvsContext::OnClaimResult
+  provenance: ida-discovered
+  ida:
+    address: 7393813
+- op: CLAIM_AVAILABLE_TIME
+  direction: clientbound
+  opcode: 38
+  fname: sub_71F525
+  fname_alts:
+  - CWvsContext::OnSetClaimSvrAvailableTime
+  provenance: ida-discovered
+  ida:
+    address: 7468325
+  note: 'delta-resolved: v48 op 38 = v61 CLAIM_AVAILABLE_TIME (Delta-5). delta doc a.'
+- op: CLAIM_STATUS_CHANGED
+  direction: clientbound
+  opcode: 39
+  fname: sub_71F54E
+  fname_alts:
+  - CWvsContext::OnClaimSvrStatusChanged
+  provenance: ida-discovered
+  ida:
+    address: 7468366
+  note: 'delta-resolved: v48 op 39 = v61 CLAIM_STATUS_CHANGED. delta doc a.'
+- op: SET_TAMING_MOB_INFO
+  direction: clientbound
+  opcode: 40
+  fname: CWvsContext::OnSetTamingMobInfo
+  fname_alts:
+  - sub_72032B
+  provenance: ida-discovered
+  ida:
+    address: 7471915
+  note: 'delta-resolved: v48 op 40 = v61 SET_TAMING_MOB_INFO. delta doc a.'
+- op: QUEST_CLEAR
+  direction: clientbound
+  opcode: 41
+  fname: CWvsContext::OnQuestClear
+  provenance: ida-discovered
+  ida:
+    address: 7393813
+- op: INCUBATOR_RESULT
+  direction: clientbound
+  opcode: 42
+  fname: CWvsContext::OnIncubatorResult
+  provenance: ida-discovered
+  ida:
+    address: 7393813
+  note: 'v48 groups incubator early (v61 op 66); reordered. delta doc a.'
+- op: IDA_0X02B
+  direction: clientbound
+  opcode: 43
+  fname: sub_71A135
+  provenance: ida-discovered
+  ida:
+    address: 7446837
+  note: 'unnamed CWvsContext sub; delta doc marks SKILL_LEARN_ITEM/entrusted-shop family (v61 47/48). v61 op-identity body-map DEFERRED (see discover_gms_v48.md remaining).'
+- op: SUE_CHARACTER_RESULT
+  direction: clientbound
+  opcode: 44
+  fname: CWvsContext::OnSueCharacterResult
+  provenance: ida-discovered
+  ida:
+    address: 7393813
+- op: IDA_0X02E
+  direction: clientbound
+  opcode: 46
+  fname: sub_71CE62
+  provenance: ida-discovered
+  ida:
+    address: 7458402
+  note: 'unnamed CWvsContext sub; v61 op-identity body-map DEFERRED (see remaining).'
+- op: IDA_0X02F
+  direction: clientbound
+  opcode: 47
+  fname: sub_71CE49
+  provenance: ida-discovered
+  ida:
+    address: 7458377
+  note: 'unnamed CWvsContext sub; v61 op-identity body-map DEFERRED (see remaining).'
+- op: CHAR_INFO
+  direction: clientbound
+  opcode: 49
+  fname: CWvsContext::OnCharacterInfo
+  provenance: ida-discovered
+  ida:
+    address: 7393813
+- op: PARTY_OPERATION
+  direction: clientbound
+  opcode: 50
+  fname: CWvsContext::OnPartyResult
+  provenance: ida-discovered
+  ida:
+    address: 7393813
+  note: 'party dispatcher; v48 arm set DIFFERS from v61 (re-packed, slot-update at mode 29 not 0x24). delta doc b.'
+- op: ALLIANCE_OPERATION
+  direction: clientbound
+  opcode: 51
+  fname: CWvsContext::OnAllianceResult
+  provenance: ida-discovered
+  ida:
+    address: 7393813
+- op: GUILD_OPERATION
+  direction: clientbound
+  opcode: 53
+  fname: CWvsContext::OnGuildResult
+  provenance: ida-discovered
+  ida:
+    address: 7393813
+- op: SPAWN_PORTAL
+  direction: clientbound
+  opcode: 54
+  fname: CWvsContext::OnTownPortal
+  provenance: ida-discovered
+  ida:
+    address: 7393813
+- op: SERVERMESSAGE
+  direction: clientbound
+  opcode: 55
+  fname: CWvsContext::OnBroadcastMsg
+  provenance: ida-discovered
+  ida:
+    address: 7393813
+  note: 'broadcast dispatcher; operations table arms 0-9 (NARROWER than v61 0-10; NO item-megaphone arm). delta doc b.'
+- op: SHOP_SCANNER_RESULT
+  direction: clientbound
+  opcode: 56
+  fname: CWvsContext::OnShopScannerResult
+  provenance: ida-discovered
+  ida:
+    address: 7393813
+- op: IDA_0X039
+  direction: clientbound
+  opcode: 57
+  fname: sub_71FF8E
+  provenance: ida-discovered
+  ida:
+    address: 7470990
+  note: 'unnamed CWvsContext sub (57-63 block = v61 buddy/friend + upper-tail region); v61 op-identity body-map DEFERRED (see remaining).'
+- op: IDA_0X03A
+  direction: clientbound
+  opcode: 58
+  fname: sub_72025D
+  provenance: ida-discovered
+  ida:
+    address: 7471709
+  note: 'unnamed CWvsContext sub; v61 op-identity body-map DEFERRED (see remaining).'
+- op: IDA_0X03B
+  direction: clientbound
+  opcode: 59
+  fname: sub_720928
+  provenance: ida-discovered
+  ida:
+    address: 7473448
+  note: 'unnamed CWvsContext sub; v61 op-identity body-map DEFERRED (see remaining).'
+- op: IDA_0X03C
+  direction: clientbound
+  opcode: 60
+  fname: sub_720A89
+  provenance: ida-discovered
+  ida:
+    address: 7473801
+  note: 'unnamed CWvsContext sub; v61 op-identity body-map DEFERRED (see remaining).'
+- op: IDA_0X03D
+  direction: clientbound
+  opcode: 61
+  fname: sub_721129
+  provenance: ida-discovered
+  ida:
+    address: 7475497
+  note: 'unnamed CWvsContext sub; v61 op-identity body-map DEFERRED (see remaining).'
+- op: IDA_0X03E
+  direction: clientbound
+  opcode: 62
+  fname: sub_713202
+  provenance: ida-discovered
+  ida:
+    address: 7418370
+  note: 'unnamed CWvsContext sub; v61 op-identity body-map DEFERRED (see remaining).'
+- op: IDA_0X03F
+  direction: clientbound
+  opcode: 63
+  fname: sub_720293
+  provenance: ida-discovered
+  ida:
+    address: 7471763
+  note: 'unnamed CWvsContext sub; v61 op-identity body-map DEFERRED (see remaining).'
+- op: MAPLE_TV_USE_RES
+  direction: clientbound
+  opcode: 64
+  fname: CWvsContext::OnMapleTVUseRes
+  provenance: ida-discovered
+  ida:
+    address: 7393813
+  note: 'v48 compresses v61 upper tail 82-91 into 64-70. delta doc a.'
+- op: AVATAR_MEGAPHONE_RESULT
+  direction: clientbound
+  opcode: 65
+  fname: CWvsContext::OnAvatarMegaphoneRes
+  provenance: ida-discovered
+  ida:
+    address: 7393813
+- op: SET_AVATAR_MEGAPHONE
+  direction: clientbound
+  opcode: 66
+  fname: CWvsContext::OnSetAvatarMegaphone
+  provenance: ida-discovered
+  ida:
+    address: 7393813
+- op: IDA_0X043
+  direction: clientbound
+  opcode: 67
+  fname: sub_721465
+  provenance: ida-discovered
+  ida:
+    address: 7476325
+  note: 'unnamed CWvsContext sub; v61 op-identity body-map DEFERRED (see remaining).'
+- op: IDA_0X044
+  direction: clientbound
+  opcode: 68
+  fname: sub_721481
+  provenance: ida-discovered
+  ida:
+    address: 7476353
+  note: 'unnamed CWvsContext sub; v61 op-identity body-map DEFERRED (see remaining).'
+- op: DESTROY_SHOP_RESULT
+  direction: clientbound
+  opcode: 69
+  fname: CWvsContext::OnDestroyShopResult
+  provenance: ida-discovered
+  ida:
+    address: 7393813
+- op: IDA_0X046
+  direction: clientbound
+  opcode: 70
+  fname: sub_7215EA
+  provenance: ida-discovered
+  ida:
+    address: 7476714
+  note: 'unnamed CWvsContext sub (highest CWvsContext case); v61 op-identity body-map DEFERRED (see remaining).'
+
+# ---------------- clientbound: CStage scene-transition (sub_5C45ED dispatch 73/74) ----------------
+- op: SET_CASH_SHOP
+  direction: clientbound
+  opcode: 74
+  fname: CStage::OnSetCashShop
+  packet: cash/clientbound/CashShopOpen
+  provenance: ida-discovered
+  ida:
+    address: 6049180
+  note: 'sub_5C45ED routes opcode 74 -> sub_5C4D9C (0x5c4d9c) = CStage::OnSetCashShop; opcode 73 -> SET_ITC. LEGACY Cash Shop body: CCashShop::LoadData sub_44E1E5 has DecodeStock/LimitGoods but NO DecodeZeroGoods; ctor sub_447122 reads a single trailing Decode1 (bEventOn) with NO Decode4 nHighest. Writer gates ZeroGoods+nHighest on GMS MajorAtLeast(72). Delta-20 vs v61 SET_CASH_SHOP=94.'
+
+# ---------------- clientbound: CField::OnPacket @0x4c66f2 base char-region 'M'(77)-'b'(98), Delta~-20 ----------------
+- op: BLOCKED_MAP
+  direction: clientbound
+  opcode: 77
+  fname: CField::OnTransferFieldReqIgnored
+  provenance: manual
+  ida:
+    address: 5008129
+  note: "base switch case 'M'(77). Delta-20 vs v61 (97)."
+- op: BLOCKED_SERVER
+  direction: clientbound
+  opcode: 78
+  fname: CField::OnTransferChannelReqIgnored
+  provenance: manual
+  ida:
+    address: 5008359
+  note: "base case 'N'(78)."
+- op: FORCED_MAP_EQUIP
+  direction: clientbound
+  opcode: 79
+  fname: CField::OnFieldSpecificData
+  provenance: manual
+  ida:
+    address: 5008545
+  note: "base case 'O'(79)."
+- op: MULTICHAT
+  direction: clientbound
+  opcode: 80
+  fname: CField::OnGroupMessage
+  provenance: manual
+  ida:
+    address: 5008854
+  note: "base case 'P'(80)."
+- op: WHISPER
+  direction: clientbound
+  opcode: 81
+  fname: CField::OnWhisper
+  provenance: manual
+  ida:
+    address: 5009877
+  note: "base case 'Q'(81). WHISPER Delta-20 vs v61 (101)."
+- op: SPOUSE_CHAT
+  direction: clientbound
+  opcode: 82
+  fname: CField::OnCoupleMessage
+  provenance: manual
+  ida:
+    address: 5009327
+  note: "base case 'R'(82)."
+- op: SUMMON_ITEM_INAVAILABLE
+  direction: clientbound
+  opcode: 83
+  fname: CField::OnSummonItemInavailable
+  provenance: manual
+  ida:
+    address: 5012255
+  note: "base case 'S'(83)."
+- op: FIELD_EFFECT
+  direction: clientbound
+  opcode: 84
+  fname: CField::OnFieldEffect
+  fname_alts:
+  - sub_4C7B59
+  provenance: manual
+  ida:
+    address: 5012313
+  note: "base case 'T'(84); FIELD_EFFECT family."
+- op: FIELD_OBSTACLE_ONOFF_LIST
+  direction: clientbound
+  opcode: 85
+  fname: CField::OnFieldObstacleOnOffStatus
+  fname_alts:
+  - sub_4C930A
+  provenance: manual
+  ida:
+    address: 5018378
+  note: "base case 'U'(85); FIELD_OBSTACLE family (v61 105). delta doc a."
+- op: BLOW_WEATHER
+  direction: clientbound
+  opcode: 86
+  fname: CField::OnBlowWeather
+  fname_alts:
+  - sub_4C95F2
+  provenance: manual
+  ida:
+    address: 5019122
+  note: "base case 'V'(86); BLOW_WEATHER (v61 106). delta doc a."
+- op: ADMIN_RESULT
+  direction: clientbound
+  opcode: 87
+  fname: CField::OnAdminResult
+  provenance: manual
+  ida:
+    address: 5019332
+  note: "base case 'W'(87)."
+- op: OX_QUIZ
+  direction: clientbound
+  opcode: 88
+  fname: CField::OnQuiz
+  provenance: manual
+  ida:
+    address: 5021216
+  note: "base case 'X'(88)."
+- op: GMEVENT_INSTRUCTIONS
+  direction: clientbound
+  opcode: 89
+  fname: CField::OnDesc
+  provenance: manual
+  ida:
+    address: 5022865
+  note: "base case 'Y'(89)."
+- op: CLOCK
+  direction: clientbound
+  opcode: 90
+  fname: CField::OnClock
+  provenance: manual
+  ida:
+    address: 5007090
+  note: "base case 'Z'(90) -> vtable+28 (CField::OnClock). address = dispatcher; vtable-resolved."
+- op: IDA_0X05D
+  direction: clientbound
+  opcode: 93
+  fname: sub_4CBB78
+  provenance: manual
+  ida:
+    address: 5028728
+  note: "base case ']'(93). BODY-VERIFIED (task-113 batch8): sub_4CBB78 reads DecodeBuffer(8) FILETIME + stores this[103/104] via sub_4CBBEE — a v48-inserted per-quest-timer packet, NOT SetQuestClear (empty). v48 inserted this opcode between CLOCK and SetQuestClear vs v61's adjacent layout; true op-identity unknown."
+- op: SET_QUEST_CLEAR
+  direction: clientbound
+  opcode: 94
+  fname: CField::OnSetQuestClear
+  fname_alts:
+  - sub_4CBC9A
+  provenance: manual
+  ida:
+    address: 5029018
+  note: "base case '^'(94). BODY-VERIFIED (task-113 batch8): sub_4CBC9A reads NOTHING, returns sub_4CC659(global+184) — structurally identical to v61 CField::OnSetQuestClear@0x4ef90b (empty, QuestMan helper). Registry SET_QUEST_CLEAR was mislabeled to op 93 (sub_4CBB78, 8-byte read); corrected here to op 94."
+- op: SET_QUEST_TIME
+  direction: clientbound
+  opcode: 95
+  fname: CField::OnSetQuestTime
+  provenance: manual
+  ida:
+    address: 5029037
+  note: "base case '_'(95)."
+- op: ARIANT_RESULT
+  direction: clientbound
+  opcode: 96
+  fname: CField::OnWarnMessage
+  provenance: manual
+  ida:
+    address: 5023700
+  note: "base case '`'(96) = ARIANT_RESULT."
+- op: SET_OBJECT_STATE
+  direction: clientbound
+  opcode: 97
+  fname: CField::OnSetObjectState
+  provenance: manual
+  ida:
+    address: 5029378
+  note: "base case 'a'(97)."
+- op: STOP_CLOCK
+  direction: clientbound
+  opcode: 98
+  fname: CField::OnDestroyClock
+  fname_alts:
+  - sub_4C6AEF
+  provenance: manual
+  ida:
+    address: 5008111
+  note: "base case 'b'(98) = STOP_CLOCK."
+
+# ---------------- clientbound: CUserPool range-router (sub_6B2710) spawn/leave leaves ----------------
+- op: SPAWN_PLAYER
+  direction: clientbound
+  opcode: 100
+  fname: sub_6B277B
+  fname_alts:
+  - CUserPool::OnUserEnterField
+  provenance: manual
+  ida:
+    address: 7022459
+  note: 'sub_6B2710 case a1==100 -> sub_6B277B. SPAWN_PLAYER Delta-20 vs v61 (120). Op 99 (v61 FORCED_MAP_EQUIP slot region) is an unhandled gap in v48.'
+- op: REMOVE_PLAYER_FROM_MAP
+  direction: clientbound
+  opcode: 101
+  fname: CUserPool::OnUserLeaveField
+  fname_alts:
+  - sub_6B2976
+  provenance: manual
+  ida:
+    address: 7022966
+  note: 'sub_6B2710 case a1==101 -> sub_6B2976. (common 102-124 -> sub_6B2A51; remote 125-143 -> sub_6B2AE4; local 144-155 -> sub_6B2C6D: leaf ops DEFERRED, see remaining.)'
+
+# ---------------- clientbound: CCashShop::OnPacket @0x4534d6 ----------------
+- op: IDA_0X0FE
+  direction: clientbound
+  opcode: 254
+  fname: CCashShop::OnNoticeFreeCashItem
+  provenance: ida-discovered
+  ida:
+    address: 4535510
+  note: 'CCashShop welcome/free-item notice; v61 op-name unconfirmed (body-map DEFERRED).'
+- op: IDA_0X0FF
+  direction: clientbound
+  opcode: 255
+  fname: CCashShop::OnOneADay
+  provenance: ida-discovered
+  ida:
+    address: 4535510
+  note: 'CCashShop one-a-day; v61 op-name unconfirmed (body-map DEFERRED).'
+- op: CASHSHOP_CASH_ITEM_RESULT
+  direction: clientbound
+  opcode: 256
+  fname: CCashShop::OnCashItemResult
+  provenance: ida-discovered
+  ida:
+    address: 4535510
+- op: CASHSHOP_CASH_ITEM_GACHAPON_RESULT
+  direction: clientbound
+  opcode: 257
+  fname: CCashShop::OnCashItemGachaponResult
+  provenance: ida-discovered
+  ida:
+    address: 4535510
+- op: CASHSHOP_CHECK_NAME_CHANGE
+  direction: clientbound
+  opcode: 258
+  fname: sub_455A7F
+  fname_alts:
+  - CCashShop::OnCheckNameChangePossibleResult
+  provenance: ida-discovered
+  ida:
+    address: 4545151
+  note: 'unnamed sub_455A7F = OnCheckNameChangePossibleResult (v61 fname_alt sub_463900).'
+- op: CASHSHOP_GACHAPON_STAMP_RESULT
+  direction: clientbound
+  opcode: 259
+  fname: CCashShop::OnCashShopGachaponStampResult
+  provenance: ida-discovered
+  ida:
+    address: 4535510
+- op: CASHSHOP_CHECK_TRANSFER_WORLD_POSSIBLE_RESULT
+  direction: clientbound
+  opcode: 261
+  fname: CCashShop::OnCheckTransferWorldPossibleResult
+  provenance: ida-discovered
+  ida:
+    address: 4535510
+
+# ---------------- serverbound: COutPacket(N) send-sites (ctor harvest @0x57b77e; flagged ops body-verified) ----------------
+- op: LOGIN_PASSWORD
+  direction: serverbound
+  opcode: 1
+  fname: CLogin::SendCheckPasswordPacket
+  provenance: ida-discovered
+  ida:
+    address: 5748606
+  note: 'send-site 0x4ffefd: COutPacket(1)+EncStr(id)+EncStr(pw)+EncBuffer(16)+Enc4(gameRoom)+Enc1(b)+Enc1(0). 2 fields SHORTER than v61 (no trailing Enc1(0)+Enc4(partnerCode)). delta anchor Delta0.'
+- op: SET_GENDER
+  direction: serverbound
+  opcode: 7
+  fname: CLogin::SendSetGenderPacket
+  provenance: ida-discovered
+  ida:
+    address: 5748606
+  note: 'send-site 0x503740: COutPacket(7). (v48 login serverbound is its own enumeration; SET_GENDER at 7.)'
+- op: CHANGE_MAP
+  direction: serverbound
+  opcode: 30
+  fname: CField::SendTransferFieldRequest
+  provenance: ida-discovered
+  ida:
+    address: 5748606
+  note: 'send-site 0x4c5771: COutPacket(30)+Enc1(portalByte)+Enc4(targetMap)+EncStr(portal)+[Enc2 x/y]+Enc1x3. Same body as v61; opcode 30 (v61 35). delta anchor Delta-5. (CCashShop::SendTransferFieldPacket also sends 30.)'
+- op: CHANGE_CHANNEL
+  direction: serverbound
+  opcode: 31
+  fname: sub_4C5886
+  fname_alts:
+  - CField::SendTransferChannelRequest
+  provenance: manual
+  ida:
+    address: 5003524
+  note: 'BODY-VERIFIED send-site 0x4c5904: COutPacket(31)+Encode1(channel a1)+Encode4 (SetExclRequestSent). = CHANGE_CHANNEL. Resolves the delta-doc-flagged unverified opcode (predicted ~31). Delta-5 vs v61 (36).'
+- op: ENTER_CASHSHOP
+  direction: serverbound
+  opcode: 32
+  fname: sub_70BD0D
+  fname_alts:
+  - CWvsContext::SendMigrateToShopRequest
+  provenance: ida-discovered
+  ida:
+    address: 7388429
+  note: 'BODY-VERIFIED send-site 0x70bd0d: CWvsContext throttled (500ms) migrate request — checks migrating flag this[2079] + trade/party guards then COutPacket(32)+Encode4(v8) + SetExclRequestSent, sets this[2079]=1. = ENTER_CASHSHOP (SendMigrateToShopRequest). v61 ENTER_CASHSHOP=37 (Delta-5, matches the 30-38 region).'
+- op: MOVE_PLAYER
+  direction: serverbound
+  opcode: 33
+  fname: sub_6E9923
+  fname_alts:
+  - CVecCtrlUser::EndUpdateActive
+  provenance: manual
+  ida:
+    address: 7248577
+  note: 'BODY-VERIFIED send-site 0x6e9ac1: COutPacket(33)+Encode1(fieldKey=get_field+216)+CMovePath::Flush (sub_5622DA); NO Encode4(crc) (crc gated GMS>=72). = MOVE_PLAYER. Resolves the delta-doc-flagged unverified opcode (predicted ~33). Delta-5 vs v61 (38).'
+- op: CANCEL_CHAIR
+  direction: serverbound
+  opcode: 34
+  fname: CUserLocal::HandleXKeyDown
+  fname_alts:
+    - sub_69DF44
+  provenance: ida-discovered
+  ida:
+    address: 6938436
+  note: 'BODY-VERIFIED send-site 0x69df44 (= CUserLocal::HandleXKeyDown, the X-key-down handler; uniform with v72+ siblings): COutPacket(34)+Encode2(0xFFFF) (chairId=-1 = get up from chair) after CWvsContext::SetExclRequestSent. = CANCEL_CHAIR. Sits directly before USE_CHAIR=35 (chair pair). v61 CANCEL_CHAIR=39 (Delta-5). task-113(v48) stage E: registry fname set to the canonical CUserLocal::HandleXKeyDown so the ChairFixed report links (report.IDAName==registry.fname); evidence pins the real send-site sub_69DF44@0x69df44.'
+- op: USE_CHAIR
+  direction: serverbound
+  opcode: 35
+  fname: CWvsContext::SendSitOnPortableChairRequest
+  fname_alts:
+    - sub_712894
+  provenance: ida-discovered
+  ida:
+    address: 7415956
+  note: 'BODY-VERIFIED send-site 0x712894 (= CWvsContext::SendSitOnPortableChairRequest; uniform with v72+ siblings): COutPacket(35)+Encode4(itemId) then CUser::SetActivePortableChair(itemId). = USE_CHAIR (portable-chair item path). v61 USE_CHAIR=40 (Delta-5). task-113(v48) stage E: registry fname set to canonical CWvsContext::SendSitOnPortableChairRequest so the ChairPortable report links; evidence pins the real send-site sub_712894@0x712894.'
+- op: CLOSE_RANGE_ATTACK
+  direction: serverbound
+  opcode: 36
+  fname: sub_6A0528
+  provenance: ida-discovered
+  ida:
+    address: 6948136
+  note: 'BODY-VERIFIED send-site 0x6a0528: COutPacket(36)+Enc1(fieldKey=get_field+216)+Enc1(nDamagePerMob|count<<4)+Enc4(skillId)+Enc1(flags)+Enc1(bLeft<<7|action&0x7F)+Enc1(v776)+Enc1(mastery)+Enc4(crc)+per-mob{Enc4(mobId)+Enc1(hitAction)+...+Enc4(damage)}+Enc2(x)+Enc2(y). Physical melee skill attack, NO projectile/bullet field (contrast RANGED=37). v61 CLOSE_RANGE_ATTACK=41 (Delta-5).'
+- op: RANGED_ATTACK
+  direction: serverbound
+  opcode: 37
+  fname: sub_6A228C
+  provenance: ida-discovered
+  ida:
+    address: 6955660
+  note: 'BODY-VERIFIED send-site 0x6a228c: COutPacket(37)+Enc1(fieldKey)+Enc1(nDamage|count<<4)+Enc4(skillId)+[Enc4(keyDown) if 3121004 etc]+Enc1(flags)+Enc1(bLeft<<7|action)+Enc1(v776)+Enc1(mastery)+Enc4(crc)+Enc2(v164)+Enc2(v154)+Enc1(shootRange a3)+[Enc4(bulletItemId v183)]+per-mob+Enc2(x)+Enc2(y). Has projectile shootRange + bulletItemId (sub_69D19D reads the star/arrow slot). = RANGED_ATTACK. v61 RANGED_ATTACK=42 (Delta-5).'
+- op: MAGIC_ATTACK
+  direction: serverbound
+  opcode: 38
+  fname: sub_6A3AC7
+  provenance: ida-discovered
+  ida:
+    address: 6961863
+  note: 'BODY-VERIFIED send-site 0x6a3ac7: COutPacket(38)+Enc1(fieldKey)+Enc1(nDamage|count<<4)+Enc4(skillId)+[Enc4(a5) if BigBang 2121001/2221001/2321001]+Enc1(0)+Enc1(bLeft<<7|action)+Enc1(v776)+Enc1(mastery)+Enc4(crc)+per-mob+Enc2(x)+Enc2(y). Magic/area skill attack (skill switch on 2121006/2321008 etc; harvest annotated magic-area). = MAGIC_ATTACK. v61 MAGIC_ATTACK=43 (Delta-5).'
+- op: TAKE_DAMAGE
+  direction: serverbound
+  opcode: 39
+  fname: sub_69D6BF
+  provenance: ida-discovered
+  ida:
+    address: 6936255
+  note: 'BODY-VERIFIED send-site 0x69d6bf: COutPacket(39)+Enc4(crc)+Enc1(0xFE)+Enc4(damage)+Enc2(obstacle/mobId) from the periodic CUserLocal::Update HP-loss path (MakeIncDecHPEffect; 0xFE=obstacle-damage type). = TAKE_DAMAGE. v61 TAKE_DAMAGE=45 (Delta-6, NOT Delta-5 — TOUCH_MONSTER_ATTACK v61 44 not at this opcode).'
+- op: FACE_EXPRESSION
+  direction: serverbound
+  opcode: 42
+  fname: CWvsContext::SendEmotionChange
+  provenance: ida-discovered
+  ida:
+    address: 5748606
+  note: 'send-site 0x71d2f6: COutPacket(42). v61 FACE_EXPRESSION=48 (Delta-6).'
+- op: NPC_TALK
+  direction: serverbound
+  opcode: 46
+  fname: sub_568A2A
+  fname_alts:
+  - CUserLocal::TalkToNpc
+  - sub_56D1F0
+  - sub_69FA53
+  provenance: ida-discovered
+  ida:
+    address: 5671466
+  note: 'BODY-VERIFIED. Primary fname is the fully-decompiled op46 sender sub_568A2A@0x568a2a (Encode4 npcObjId @0x569297/0x569380 + Encode2 userX @0x5692b0/0x569399 + Encode2 userY @0x5692ca/0x5693b3); sub_56D1F0 (now an alt) is only the field hit-test that RETURNS the clicked NPC (no COutPacket). Field NPC-click path: sub_56D1F0 (called from CField::Update @0x4c6cb3 + the cursor-click handler sub_69FA53) walks the clickable field-object pool this[10] (per-node rects via sub_569770/sub_5697BB, point-in-rect dword_80EC4C) and returns the hit NPC object; the click then sends COutPacket(46)+Encode4(npcObjId=obj[34])+Encode2(userX)+Encode2(userY). The membership/commodity-NPC variant sub_568A2A sends the identical op46+Enc4(obj[34])+Enc2(x)+Enc2(y) after its CS_COMMODITY_EX UtilDlg. EXACT v61 NPC_TALK (CUserLocal::TalkToNpc Enc4(npcOid)+Enc2(userX)+Enc2(userY)) shape. v61 NPC_TALK=54 (Delta-8). REFINES the prior op46 negative: op46 is NPC_TALK, NOT GENERAL_CHAT (real GENERAL_CHAT sender is the CField chat-input parser, still unlocated) and NOT a bare shop confirm.'
+- op: ANTI_MACRO_RESULT
+  direction: serverbound
+  opcode: 83
+  fname: sub_5F9718
+  fname_alts:
+  - CUIAntiMacro::SetRet
+  provenance: ida-discovered
+  ida:
+    address: 6264600
+  note: 'BODY-VERIFIED send-site 0x5f9718: CWnd captcha-dialog OnButtonClicked (a2==1 OK) — writes the anti-macro timer field off_80C8A0[2911]=*(this+36)-timeGetTime() then COutPacket(83)+Encode2(sub_744C27(editText)=atoi(typed answer)). Single Enc2 of the typed captcha answer + same timer-field pattern = v61 ANTI_MACRO_RESULT (op96, sub_69C480 Enc2(atoi(editText)), timer field). v61 ANTI_MACRO_RESULT=96 (Delta-13).'
+- op: USE_CASH_ITEM
+  direction: serverbound
+  opcode: 62
+  fname: CWvsContext::SendConsumeCashItemUseRequest
+  provenance: ida-discovered
+  ida:
+    address: 5748606
+  note: 'send-site 0x70e4fe: COutPacket(62). v61 USE_CASH_ITEM=73.'
+- op: ITEM_MOVE
+  direction: serverbound
+  opcode: 55
+  fname: sub_70D8DE
+  provenance: ida-discovered
+  ida:
+    address: 7395038
+  note: 'BODY-VERIFIED send-site 0x70d8de: COutPacket(55)+Encode4(updateTime)+Encode1(a2=inventoryType)+Encode2(a3=srcSlot)+Encode2(a4=dstSlot)+Encode2(a5=quantity) + SetExclRequestSent. Canonical inventory item-move/drop = v61 ITEM_MOVE (sub_831C83). v61 ITEM_MOVE=70 (Delta-15). NB v48 op57/op60/op61 are item-USE-family variants (Enc4(time)+Enc2(slot)+Enc4(itemId), category-gated e.g. op61 only itemId/10000==226) left unresolved pending item-category cross-ref.'
+- op: USE_ITEM
+  direction: serverbound
+  opcode: 65
+  fname: sub_719DD9
+  provenance: ida-discovered
+  ida:
+    address: 7445977
+  note: 'BODY-VERIFIED send-site 0x719dd9: sub_713039(itemId) inventory-validate + item WZ props (StringPool 2089/2090) + map-restriction flags (get_field+58 >>5 / >>8 "cannot use here") + return-scroll target-map check (sub_71E860, notice 2678), then COutPacket(65)+Encode4(updateTime)+Encode2(a2=slot)+Encode4(a3=itemId) + SetExclRequestSent. = USE_ITEM (consumable/return-scroll use; Enc4(time)+Enc2(slot)+Enc4(itemId)). v61 USE_ITEM=71.'
+- op: DISTRIBUTE_AP
+  direction: serverbound
+  opcode: 67
+  fname: CWvsContext::SendAbilityUpRequest
+  fname_alts:
+  - sub_71CD00
+  provenance: ida-discovered
+  ida:
+    address: 7458560
+  note: 'BODY-VERIFIED send-site 0x71cd00: guard _ZtlSecureFuse<short>(charStat+113, +117) > 0 (remaining-AP secure-stored check) then COutPacket(67)+Encode4(updateTime)+Encode4(a2=statFlag) + SetExclRequestSent. Exact v61 DISTRIBUTE_AP (SendAbilityUpRequest Enc4(time)+Enc4(statFlag), remaining-AP gated) twin. v61 DISTRIBUTE_AP=80 (Delta-13).'
+- op: DISTRIBUTE_SP
+  direction: serverbound
+  opcode: 73
+  fname: CWvsContext::SendSkillUpRequest
+  fname_alts:
+  - sub_71CEB3
+  provenance: ida-discovered
+  ida:
+    address: 7458995
+  note: 'BODY-VERIFIED send-site 0x71ceb3: 200ms throttle (sub_4A2518) then COutPacket(73)+Encode4(updateTime)+Encode4(a2=skillId) + SetExclRequestSent. No remaining-points/GetRemoteUser guard (matches v61 DISTRIBUTE_SP "no GetRemoteUser" note; contrast op67 DISTRIBUTE_AP which HAS the remaining-AP guard). Exact v61 DISTRIBUTE_SP (SendSkillUpRequest Enc4(time)+Enc4(skillId)) twin. v61 DISTRIBUTE_SP=82 (Delta-9).'
+- op: HEAL_OVER_TIME
+  direction: serverbound
+  opcode: 68
+  fname: CWvsContext::SendStatChangeRequest
+  provenance: ida-discovered
+  ida:
+    address: 5748606
+  note: 'send-site 0x71a496: COutPacket(68). v61 HEAL_OVER_TIME=81.'
+- op: CANCEL_BUFF
+  direction: serverbound
+  opcode: 71
+  fname: CUserLocal::SendSkillCancelRequest
+  provenance: ida-discovered
+  ida:
+    address: 5748606
+  note: 'send-site 0x6afcf0: COutPacket(71). v61 CANCEL_BUFF=84.'
+- op: CHAR_INFO_REQUEST
+  direction: serverbound
+  opcode: 76
+  fname: CWvsContext::SendCharacterInfoRequest
+  fname_alts:
+  - sub_71D059
+  provenance: ida-discovered
+  ida:
+    address: 7458905
+  note: 'BODY-VERIFIED send-site 0x71d059: CUserPool::GetRemoteUser(a2) then COutPacket(76)+Encode4(remoteCharOid)+Encode4(a2=charId) + SetExclRequestSent, sets this[2079]=1. Called from the field cursor-click handler sub_69FA53 when clicking a remote player. No trailing Enc1(petInfo) (added post-v48). = CHAR_INFO_REQUEST. v61 CHAR_INFO_REQUEST=89 (Delta-13; non-uniform — GIVE_FAME below is Delta0).'
+- op: GIVE_FAME
+  direction: serverbound
+  opcode: 74
+  fname: sub_71CF3B
+  fname_alts:
+  - CWvsContext::SendGivePopularityRequest
+  provenance: ida-discovered
+  ida:
+    address: 7458875
+  note: 'BODY-VERIFIED send-site 0x71cf3b: 300000ms (5-min) cooldown in this[2834] + sub_6B2D42(charId) lookup + not-found (ChatLogAdd 355)/wait (298) notices, then COutPacket(74)+Encode4(*(obj+1620)=targetCharId)+Encode1(a3=flag). CALLER sub_673B1E = CUIUserInfo::OnButtonClicked: case 0x7D4 -> sub_71CF3B(ctx, this[372], 1) fame-UP, case 0x7D5 -> sub_71CF3B(ctx, this[372], 0) fame-DOWN, on this[372]=targetCharId. Exact v61 GIVE_FAME (SendGivePopularityRequest, CUIUserInfo fame up 0x7D4=flag1/down 0x7D5=flag0, Enc4(charId)+Enc1(flag), 5-min cooldown) twin. v61 GIVE_FAME=87 (Delta-13). NOTE: op87 (sub_72069A, a field right-click context-menu social sender with a trailing EncStr + separate cooldown field this[2846]) has a similar fame-like shape but is NOT GIVE_FAME (the UserInfo fame buttons drive op74); op87 left unresolved.'
+- op: MULTI_CHAT
+  direction: serverbound
+  opcode: 89
+  fname: sub_65EB4F
+  fname_alts:
+  - CUIStatusBar::SendGroupMessage
+  provenance: ida-discovered
+  ida:
+    address: 6679375
+  note: 'BODY-VERIFIED send-site 0x65eb4f: type demux (0=buddy sub_72ADD4, 1=party sub_72AC26, 2=guild sub_727148 target lists) then COutPacket(89)+Encode1(type 0/1/2)+Encode1(count)+loop Encode4(targetCharId[i])+EncodeStr(msg). = MULTI_CHAT (SendGroupMessage). v61 MULTI_CHAT=107 (Delta-18).'
+- op: PLAYER_INTERACTION
+  direction: serverbound
+  opcode: 93
+  fname: sub_69FA53
+  fname_alts:
+  - CMiniRoomBaseDlg::SendInviteResult
+  provenance: ida-discovered
+  ida:
+    address: 6945363
+  note: 'BODY-VERIFIED send-site 0x69fa53 (field cursor-click handler): clicking a remote player sends COutPacket(93)+Encode1(4=invite mode)+Encode4(targetCharId)+Encode1(hasName)+[EncodeStr(name) if set]; a second arm (already-open miniroom) sends COutPacket(93)+Enc1(4)+Enc4(charId)+Enc1(0). = PLAYER_INTERACTION (miniroom/trade invite family; harvest also names op93 CMiniRoomBaseDlg::SendInviteResult). v61 PLAYER_INTERACTION=111 (Delta-18). NB the same handler sends op46 (Enc4(id)+Enc2(x)+Enc2(y)) for clicking a hired-merchant/player-shop object — op46 is NOT GENERAL_CHAT (confirms prior negative; real GENERAL_CHAT sender is the CField chat-input parser, twin of v61 CField::SendChatMsg EncStr+Enc1).'
+- op: SPOUSE_CHAT
+  direction: serverbound
+  opcode: 91
+  fname: CUIStatusBar::SendCoupleMessage
+  fname_alts:
+  - sub_65EA0D
+  provenance: ida-discovered
+  ida:
+    address: 6679053
+  note: 'BODY-VERIFIED send-site 0x65ea0d: gated on married flag charData+879 (else notice 154 "not married"), reads spouse name charData+883, then COutPacket(91)+EncodeStr(spouseName)+EncodeStr(a2=message). = v61 SPOUSE_CHAT (CUIStatusBar::SendCoupleMessage). v61 SPOUSE_CHAT=109 (Delta-18).'
+- op: CHANGE_KEYMAP
+  direction: serverbound
+  opcode: 110
+  fname: CFuncKeyMappedMan::SaveFuncKeyMap
+  provenance: ida-discovered
+  ida:
+    address: 5136302
+  note: 'BODY-VERIFIED send-site 0x4e5fae (this=CFuncKeyMappedMan): diffs the 89-entry keymap vs the saved copy (offset +4 vs +449), then COutPacket(110)+Encode4(mode=0)+Encode4(changedCount)+per-key{Encode4(keyIndex)+Encode1(type)+Encode4(action) via sub_49C937} + CFuncKeyMappedMan::AdaptVirtualKey. = v61 CHANGE_KEYMAP (SaveFuncKeyMap). v61 CHANGE_KEYMAP=123 (Delta-13). task-113(v48) stage D: named the send-site (was unnamed sub_4E5FAE in the v48 IDB) to CFuncKeyMappedMan::SaveFuncKeyMap, uniform with all sibling versions (task-109) so the op-identity guard treats v48 like its siblings and does not regress the verified v87/jms CHANGE_KEYMAP cells to a false template-wiring conflict.'
+- op: NOTE_ACTION
+  direction: serverbound
+  opcode: 101
+  fname: CMemoListDlg::SetRet
+  provenance: ida-discovered
+  ida:
+    address: 5459396
+  note: 'task-113(v48) stage D: NOTE_ACTION was omitted from the v48 Stage-B registry although the send-site exists. BODY-VERIFIED CMemoListDlg::SetRet @0x534dc4: on YesNo confirm it COutPacket(101)+Encode1(mode=1)+Encode1(totalCount)+Encode1(deleteCount)+Encode1(emptySlotCount)+per-memo{type==2(receive): Encode4(memoId)+Encode1(type)+Encode4(charId); else: Encode4(memoId)+Encode1(type)} = v61 NOTE_ACTION (CMemoListDlg::SetRet, op 119). Delete-type memos (type==1) additionally fire a secondary COutPacket(102) via sub_57B7C7. v48 opcode 101 (Delta-18 vs v61 119).'
+- op: WHISPER
+  direction: serverbound
+  opcode: 90
+  fname: sub_4C4F3B
+  provenance: manual
+  ida:
+    address: 5001202
+  note: 'BODY-VERIFIED send-site 0x4c4ff2: COutPacket(90)+Encode1(mode=(found?2:1)|4)+EncodeStr(target)+[EncodeStr(msg)]. Exact v61 WHISPER (op 108) body match. Resolves the delta-doc-flagged whisper opcode. Delta-18 vs v61.'
+- op: MESSENGER
+  direction: serverbound
+  opcode: 92
+  fname: CFadeWnd::SendCloseMessage
+  fname_alts:
+  - sub_4BCE54
+  - CUIMessenger::SendPacket
+  provenance: ida-discovered
+  ida:
+    address: 4967508
+  note: 'BODY-VERIFIED send-site 0x4bce54 (CFadeWnd::SendCloseMessage role, the canonical decline handler across v61-v83): invite-response dispatcher on this[47] — arm this[47]==0 sends COutPacket(92)+Encode1(5=mode)+EncodeStr(inviterName this+48)+EncodeStr(selfCharName)+Encode1(0); sibling arms route to party op95 (Enc1(0x15)) and guild op97 (Enc1(0x37)), and CMiniRoomBaseDlg::SendInviteResult. op92 + the CUIMessenger UI region 0x61A701-0x61E25E + the clientbound dispatcher sub_61D8B8 (CField case 238) = MESSENGER. Primary fname aligned to CFadeWnd::SendCloseMessage so the op-cell links the MessengerOperationDeclineInvite audit report; sub_4BCE54 retained as the concrete v48 alt.'
+- op: PARTY_OPERATION
+  direction: serverbound
+  opcode: 94
+  fname: CField::SendJoinPartyMsg
+  fname_alts:
+  - CField::SendKickPartyMsg
+  provenance: ida-discovered
+  ida:
+    address: 5748606
+  note: 'send-site 0x4be91d/0x4c53f6: COutPacket(94); accept-invite Enc1(4)+EncStr(name). delta anchor; v61 112 (Delta-18).'
+- op: DENY_PARTY_REQUEST
+  direction: serverbound
+  opcode: 95
+  fname: CWvsContext::OnPartyResult
+  provenance: ida-discovered
+  ida:
+    address: 5748606
+  note: 'send-site 0x729a4e: COutPacket(95)+Enc1(19|20)+EncStr+EncStr (party block/report reply). delta anchor; v61 113.'
+- op: GUILD_OPERATION
+  direction: serverbound
+  opcode: 96
+  fname: CField::SendCreateGuildAgreeMsg
+  fname_alts:
+  - CField::SendInviteGuildMsg
+  - CField::SendKickGuildMsg
+  - CField::SendSetGuildMarkMsg
+  - CWvsContext::OnGuildResult
+  provenance: ida-discovered
+  ida:
+    address: 5748606
+  note: 'send-site 0x4c59c6 etc: COutPacket(96), CField guild send-region + OnGuildResult reply. v61 GUILD_OPERATION=114 (Delta-18).'
+- op: BUDDYLIST_MODIFY
+  direction: serverbound
+  opcode: 100
+  fname: CField::SendAcceptFriendMsg
+  fname_alts:
+  - CWvsContext::LoadFriend
+  provenance: ida-discovered
+  ida:
+    address: 5748606
+  note: 'send-site 0x4c6538 etc: COutPacket(100). v61 BUDDYLIST_MODIFY=118.'
+- op: WEDDING_ACTION
+  direction: serverbound
+  opcode: 107
+  fname: CField_Wedding::OnWeddingProgress
+  provenance: ida-discovered
+  ida:
+    address: 5748606
+  note: 'send-site 0x4e28a1: COutPacket(107). v61 WEDDING_ACTION=127.'
+- op: WEDDING_TALK
+  direction: serverbound
+  opcode: 108
+  fname: CField_Wedding::OnWeddingProgress
+  provenance: ida-discovered
+  ida:
+    address: 5748606
+  note: 'send-site 0x4e258f: COutPacket(108). v61 WEDDING_TALK=128.'
+- op: PET_COMMAND
+  direction: serverbound
+  opcode: 115
+  fname: sub_58DF8A
+  fname_alts:
+  - CPet::ParseCommand
+  provenance: ida-discovered
+  ida:
+    address: 5824394
+  note: 'BODY-VERIFIED send-site 0x58df8a: parses the typed pet-command string (TrimRight/TrimLeft, prefix chars ''!''(33)/'',''(44)/''~''(126)), scans the pet action-command table (this+116 by pet level range sub_58CFAD), then COutPacket(115)+Encode1(v29=parsedFlag)+Encode1(v32=commandIndex). = v61 PET_COMMAND (CPet::ParseCommand). v61 PET_COMMAND=140 (Delta-25). NB adjacent CPet ops op116 (Enc1(fieldKey)+Enc4(time)+Enc2(x)+Enc2(y)+Enc4(id)+Enc1x3 pet action-at-position) and movepath ops op113/op120 (Enc4(id)+MovePath) are the pet/summon move cluster, left unresolved pending MOVE_PET/MOVE_SUMMON/PET_LOOT disambiguation.'
+- op: PET_CHAT
+  direction: serverbound
+  opcode: 114
+  fname: CPet::DoAction
+  provenance: ida-discovered
+  ida:
+    address: 5748606
+  note: 'send-site 0x58e90b: COutPacket(114)+EncBuffer(petId,8)+Enc1(type)+Enc1(action)+EncStr(msg). v61 PET_CHAT=139.'
+- op: SUMMON_ATTACK
+  direction: serverbound
+  opcode: 121
+  fname: sub_5D9424
+  fname_alts:
+  - CSummoned::TryDoingAttackManual
+  provenance: ida-discovered
+  ida:
+    address: 6132260
+  note: 'BODY-VERIFIED send-site 0x5d9424: summon-attack state this[36]==1, summon skillId this[33] (2121005/2221005/2311006/2321003/3121006/3221005 summon skills), builds mob-hit list, then COutPacket(121)+Encode4(summonSkillId)+Encode1((left<<7)|4)+Encode1(mobCount)+per-mob{Encode4(mobId)+Encode1(hitAction)+Encode1(left<<7|action)+Encode1(...)+Encode1(...)+Encode2(x)+Encode2(y)+Encode2(x2)+Encode2(y2)+Encode2(delay)+Encode4(...)}+Encode2(myX)+Encode2(myY). = v61 SUMMON_ATTACK (CSummoned::TryDoingAttackManual). v61 SUMMON_ATTACK=147 (Delta-26). NB v48 op122 (summon-vs-mob damage, Enc4(summonId)+Enc1(action/0xFE)+Enc4(dmg)+Enc4(mobId)) and op123 (beholder skill 1320008, Enc4(summonId)+Enc4(skillId)+Enc1(flag|5)) are the same summon cluster, left unresolved pending exact SetDamaged/summon-skill disambiguation.'
+- op: DAMAGE_REACTOR
+  direction: serverbound
+  opcode: 145
+  fname: CReactorPool::FindHitReactor
+  provenance: ida-discovered
+  ida:
+    address: 5748606
+  note: 'send-site 0x5a5d1a: COutPacket(145). v61 DAMAGE_REACTOR=172.'
+- op: SNOWBALL
+  direction: serverbound
+  opcode: 149
+  fname: CField_SnowBall::BasicActionAttack
+  provenance: ida-discovered
+  ida:
+    address: 5748606
+  note: 'send-site 0x4dcbff: COutPacket(149). v61 SNOWBALL=176.'
+- op: LEFT_KNOCKBACK
+  direction: serverbound
+  opcode: 150
+  fname: CField_SnowBall::Update
+  provenance: ida-discovered
+  ida:
+    address: 5748606
+  note: 'send-site 0x4dc5d8: COutPacket(150). v61 LEFT_KNOCKBACK=177.'
+- op: GUILD_BOSS
+  direction: serverbound
+  opcode: 153
+  fname: CField_GuildBoss::BasicActionAttack
+  provenance: ida-discovered
+  ida:
+    address: 5748606
+  note: 'send-site 0x4d57d4: COutPacket(153). v61 GUILD_BOSS=180.'
+- op: CASHSHOP_OPERATION
+  direction: serverbound
+  opcode: 160
+  fname: CCashShop::RequestCashPurchaseRecord
+  fname_alts:
+  - CCashShop::OnBuy
+  - CCashShop::OnGift
+  provenance: ida-discovered
+  ida:
+    address: 5748606
+  note: 'send-site 0x44a44d etc: COutPacket(160), CCashShop cash-purchase family (OnBuy/OnBuyCouple/OnBuyFriendship/OnBuyPackage/OnGift/OnSetWish all COutPacket(160)+Enc1(sub-op)). v61 CASHSHOP_OPERATION=196.'
+- op: GENERAL_CHAT
+  direction: serverbound
+  opcode: 40
+  fname: CField::SendChatMsg
+  fname_alts:
+  - sub_4C3DEF
+  provenance: ida-discovered
+  ida:
+    address: 4996591
+  note: 'BODY-VERIFIED send-site 0x4c3def: COutPacket(40)+EncodeStr(msg). Sender resolved via the CUIStatusBar chat-input Enter handler sub_656FF2 (a2==13/Enter): after TrimLeft/Right, if text does NOT start with ''/'' it dispatches by chat-mode this[1560]: mode<=2 -> sub_65EB4F(MULTI_CHAT op89), mode==3 -> sub_65EA0D(SPOUSE_CHAT op91), mode==5 -> sub_4C3DEF(GENERAL_CHAT op40). CONNECT-CRITICAL. v48 general chat is EncodeStr(msg) ONLY (predates the Encode1 showFlag byte present in v61 CField::SendChatMsg EncodeStr+Enc1). v61 GENERAL_CHAT=46. Resolves the long-standing gap; op46 is NPC_TALK, NOT GENERAL_CHAT.'
+- op: PET_LOOT
+  direction: serverbound
+  opcode: 116
+  fname: sub_58ED98
+  fname_alts:
+  - CPet::SendDropPickUpRequest
+  provenance: ida-discovered
+  ida:
+    address: 5827992
+  note: 'BODY-VERIFIED send-site 0x58ed98: COutPacket(116)+Encode1(fieldKey=field+216)+Encode4(exclReqTime via SetExclRequestSent)+Encode2(x=*a2)+Encode2(y=a2[2])+Encode4(dropId=a3)+Encode1(petFlag this[57])+Encode1(petFlag this[63])+Encode1(petFlag this[60]). this = CPet. = v61 PET_LOOT (CPet::SendDropPickUpRequest) drop-pickup body. v48 predates multi-pet so NO leading EncodeBuffer(petId,8) that v61 op141 carries; the three trailing pet-flag Enc1 bytes + CPet receiver + fieldKey/coords/dropId are the definitive PET_LOOT signature. v61 PET_LOOT=141.'
+- op: MOVE_SUMMON
+  direction: serverbound
+  opcode: 120
+  fname: sub_6E7CF8
+  provenance: ida-discovered
+  ida:
+    address: 7240952
+  note: 'BODY-VERIFIED send-site 0x6e7cf8: COutPacket(120)+Encode4(summonId=this[136])+sub_5622DA (CMovePath::Flush helper @0x5622da, contains ZList<CMovePath::ELEM>::AddTail + off_79F898 vtable). = v61 MOVE_SUMMON (Encode4(summonId)+CMovePath::Flush) shape exactly. Guard sub_562275(this[139]==3). v61 MOVE_SUMMON=146.'
+- op: DAMAGE_SUMMON
+  direction: serverbound
+  opcode: 122
+  fname: sub_5DA381
+  fname_alts:
+  - CSummoned::SetDamaged
+  provenance: ida-discovered
+  ida:
+    address: 6136705
+  note: 'BODY-VERIFIED send-site 0x5da381: COutPacket(122)+Encode4(summonId=this[33])+ if(mob!=0){Encode1(attackIdx=a6)+Encode4(damage=a2)+Encode4(mobTemplateId)+Encode1(dir<0 = a7<0)} else {Encode1(0xFE)+Encode4(damage=a2)}. EXACT v61 DAMAGE_SUMMON (CSummoned::SetDamaged) mob/no-mob branch shape. v61 DAMAGE_SUMMON=148. Resolves the prior op122 documented-unresolved summon-damage row.'
+- op: MOVE_PET
+  direction: serverbound
+  opcode: 113
+  fname: sub_6E5BD6
+  fname_alts:
+  - CVecCtrlPet::EndUpdateActive
+  provenance: ida-discovered
+  ida:
+    address: 7232470
+  note: 'send-site 0x6e5bd6: COutPacket(113)+sub_5622DA (CMovePath::Flush, same movepath helper as MOVE_SUMMON op120). Sibling movepath sender to MOVE_SUMMON (op120) but with NO leading id encode -- consistent with v48 single-pet (pre-multipet, matches PET_LOOT op116 also omitting the petId buffer). Vtable-referenced (0x7a386c) CVecCtrl::EndUpdateActive override. = MOVE_PET (v61 op138 CVecCtrlPet::EndUpdateActive EncodeBuffer(petId,8)+CMovePath::Flush; v48 drops the petId buffer). MODERATE confidence: body is movepath-only; the pet-vs-other-movable identity rests on the single-pet no-id shape + sibling adjacency to the Enc4-id MOVE_SUMMON. Resolves the prior op113 documented-unresolved movepath row.'
+- op: MOVE_LIFE
+  direction: serverbound
+  opcode: 129
+  fname: sub_550383
+  fname_alts:
+  - CMob::GenerateMovePath
+  provenance: ida-discovered
+  ida:
+    address: 5571459
+  note: 'BODY-VERIFIED send-site 0x550383: CMob controller move/action sender (calls CMob::DoAttack, CMob::PrepareActionLayer; this = CMob*, this[84]=mobObjId). COutPacket(129)+Encode4(mobId=fuse this+328)+Encode2(moveSeqNo=this[67]+1)+Encode1(flags v63|16*v64)+Encode1(action a2)+Encode4(a4=target)+Encode1(sub_6E1C55)+sub_5622DA(CMovePath::Flush). = v61 MOVE_LIFE (CMob::GenerateMovePath Enc4(mobId)+Enc2+Enc1+Enc1+Enc4+Enc1+...+CMovePath::Flush) -- client is authoritative for mob movement and sends the mob move+action path. v61 MOVE_LIFE=155. NB the sibling CMob::Update senders in the same 0x54/0x55 cluster emit the mob-vs-mob damage family: op132 (sub_54D546: Enc4(mobId)+Enc4(count)), op133 (Enc4(mobId)+Enc4(otherMobId)), op134 (Enc4(mobId)), op135 (sub_551F38: Enc4(mobId)) -- these are the CMob mutual/self-damage senders (v61 MOB_DAMAGE_MOB family 155-161) but their exact field counts differ from the v61 twins; left DOCUMENTED-UNRESOLVED pending per-op disambiguation (not fabricated).'
+- op: ITEM_PICKUP
+  direction: serverbound
+  opcode: 142
+  fname: sub_70D987
+  provenance: ida-discovered
+  ida:
+    address: 7395719
+  note: 'BODY-VERIFIED send-site 0x70d987: COutPacket(142)+Encode1(fieldKey=field+216)+Encode4(exclReqTime via SetExclRequestSent)+Encode2(x=*a2)+Encode2(y=a2[2])+Encode4(dropId=a3). 30ms throttle (sub_4A2518(30,0)) + SetExclRequestSent (this[2079]=1). EXACT v61 ITEM_PICKUP (Enc1(fieldKey)+Enc4+Enc2(x)+Enc2(y)+Enc4(dropId)); the non-pet twin of PET_LOOT (op116, which adds the CPet receiver + 3 pet-flag bytes). v61 ITEM_PICKUP=169. Player drop-pickup (Z key). Resolves the connect/playthrough-critical pickup op.'
+- op: QUEST_ACTION
+  direction: serverbound
+  opcode: 85
+  fname: sub_5997EF
+  fname_alts:
+  - CQuest::StartQuest
+  provenance: ida-discovered
+  ida:
+    address: 5871599
+  note: 'BODY-VERIFIED send-site 0x5997ef: quest-op sender, this=CQuest entry (this[12]=questId u16, this[16]=npcId u32, this[20]=quest-state). COutPacket(85)+Encode1(action)+Encode2(questId)+Encode4(npcId)+Encode2(userX)+Encode2(userY)[+Encode4(answer) for action 2]. Multiple action arms: 1=complete-quest, 2=select-quest-item(+Enc4 selection), 4=start-quest, 5=(re)start. = v61 QUEST_ACTION (CQuest::StartQuest quest operation Enc1(action)+Enc2(questId)+Enc4(npcId)+...). v61 QUEST_ACTION=98. Quest accept/complete/item-select from NPC dialog + quest UI.'
+- op: USE_DOOR
+  direction: serverbound
+  opcode: 103
+  fname: CField::TryEnterTownPortal
+  fname_alts:
+  - sub_5E3082
+  - sub_4CB90A
+  provenance: ida-discovered
+  ida:
+    address: 6172802
+  note: 'BODY-VERIFIED send-site 0x5e3082 (own/field town-portal) + 0x4cb90a (party-member town-portal). Both hit-test the town-portal (door) rect (dword_80EBD4 build-rect + dword_80EC4C point-in-rect) then send COutPacket(103)+Encode4(townPortalOwnerCharId)+Encode1(enterFlag). sub_5E3082 walks the field door pool this[10] and sends Enc1(0) (own/field door, id=portal[2]); sub_4CB90A walks CWvsContext::GetPartyTownPortal and sends Enc1(1) (party door, id=owner char). = v61 USE_DOOR (CField::TryEnterTownPortal [Encode4(ownerId),Encode1(enter)]). v61 USE_DOOR=121. Mystic-door / town-portal enter -- playthrough-critical.'
+- op: SKILL_EFFECT
+  direction: serverbound
+  opcode: 72
+  fname: sub_6ADD4C
+  fname_alts:
+  - CUserLocal::DoActiveSkill_Prepare
+  provenance: ida-discovered
+  ida:
+    address: 6995788
+  note: 'BODY-VERIFIED send-site 0x6adf?? in sub_6ADD4C: the active-skill/keydown prepare sender. Validates CSkillInfo::GetSkillLevel(skillId)>0, handles keydown skills (Hurricane 3121004, Rapid Fire/Big Bang 2121001/2221001/2321001/3221001, Dark Sight 4211001 fusion guard) and routes physical arms through sub_6A0528 (CLOSE_RANGE op36), then COutPacket(72)+Encode4(v50=skillId)+Encode1(a3=level)+Encode1(this[896]&0x7F | (this[223]<<7) = action|bLeft)+Encode1(v30=actionSpeed). EXACT v61 SKILL_EFFECT (CUserLocal::DoActiveSkill_Prepare Enc4(skillId)+Enc1(level)+Enc1(keydir)+Enc1(actionSpeed)). v61 SKILL_EFFECT=85. Non-attack skill cast (buffs/movement/keydown-prepare) — playthrough-critical. (harvest op70 sub_6AD3BC..6AFA91 cluster nearest-push-imm approximates this 0x6AD-0x6AF skill region; actual opcode read = 72.)'
+- op: NPC_TALK_MORE
+  direction: serverbound
+  opcode: 47
+  fname: sub_5B0C11
+  fname_alts:
+  - sub_5B1037
+  - sub_5B1195
+  - sub_5B12E8
+  - sub_5B1494
+  - sub_5B1640
+  - sub_5B18B5
+  - CScriptMan::OnAskMembershopAvatar
+  provenance: ida-discovered
+  ida:
+    address: 5966865
+  note: 'BODY-VERIFIED. NPC conversation-reply dispatcher family (the CScriptMan/CUtilDlgEx Say/Ask handlers), all arms COutPacket(47)+Encode1(msgType)+Encode1(action)+[type-specific payload]. sub_5B0C11 (SAY arm): decodes server dialog (CInPacket DecodeStr+Decode1+Decode1), shows CUtilDlgEx, replies Encode1(0=msgType)+Encode1(action: dlg-ret 0x2001->1 next / 0x2000->0 prev / else -1 end). sub_5B1640 (ASK_AVATAR/membership arm): Encode1(8=msgType)+Encode1(result 0/1/2)+[EncodeBuffer(8) selected avatar look] — reads style-coupon items GetItem(5,...). The 7 sibling handlers sub_5B0C11..sub_5B18B5 each encode a distinct msgType (SAY=0, ASK_YESNO/TEXT/NUMBER/MENU/QUIZ/AVATAR/PET...) then action then optional Encode4(selection)/EncodeStr(text)/buffer. = exact v61 NPC_TALK_MORE (CScriptMan::On{Say,Ask*} COutPacket(56) reply dispatcher). v61 NPC_TALK_MORE=56 (Delta-9, dialog region).'
+- op: NPC_SHOP
+  direction: serverbound
+  opcode: 48
+  fname: sub_5B7422
+  fname_alts:
+  - sub_5B7693
+  - sub_5B4B82
+  - CShopDlg::SendPacket
+  provenance: ida-discovered
+  ida:
+    address: 5993506
+  note: 'BODY-VERIFIED. Mode-prefix NPC_SHOP (CShopDlg) dispatcher, all arms COutPacket(48)+Encode1(mode): sub_5B7422 BUY arm Encode1(0)+Encode2(slot=this[55])+Encode4(itemId=TSecType::GetData(commodity))+Encode2(count) — meso-affordability check (charData meso fuse +149/+153, "not enough mesos" notice 263); sub_5B7693 SELL arm Encode1(1)+Encode2(slot)+Encode4(itemId)+Encode2(count) — reads inventory GetItem(invType,slot); sub_5B4B82 CLOSE arm Encode1(3)+dialog-close sub_4B7230. Enc1(mode 0=buy/1=sell/2=recharge/3=close)+per-mode body = exact v61 NPC_SHOP (sub_6744D9 mode-prefix dispatcher). v61 NPC_SHOP=60.'
+- op: STORAGE
+  direction: serverbound
+  opcode: 52
+  fname: sub_57E987
+  fname_alts:
+  - sub_5832D1
+  - CTrunkDlg::SendPacket
+  provenance: ida-discovered
+  ida:
+    address: 5761927
+  note: 'BODY-VERIFIED. Mode-prefix STORAGE dispatcher, senders in the CTrunkDlg region (0x583xxx, CTrunkDlg::OnPacket receive @0x58332c). sub_57E987: withdraw-item arm — reads storage slot this[1], time-gate sub_744D30(...)<30, then COutPacket(52)+Encode1(4=take-out mode)+Encode4(itemId=**(slot+4)). sub_5832D1: exit arm — COutPacket(52)+Encode1(7=close mode)+close. Enc1(mode)+[Enc4/…] dispatcher = exact v61 STORAGE (sub_603341/… mode-prefix Enc1(mode)+…). v61 STORAGE=61. (op52 cluster = 6 CTrunkDlg send arms 0x57E987..0x5832D1; the sub_4BE880 co-caller is a distinct field-region push-imm artifact.)'
+- op: CANCEL_ITEM_EFFECT
+  direction: serverbound
+  opcode: 57
+  fname: CWvsContext::SendStatChangeItemCancelRequest
+  fname_alts:
+  - sub_70DD49
+  provenance: ida-discovered
+  ida:
+    address: 7396681
+  note: 'BODY-VERIFIED send-site 0x70dd49: sub_4A2518(200,0) throttle then COutPacket(57)+Encode4(a1=sourceId). CALLER sub_43D498 = the CWndMan buff-icon right-click handler (a1==517 WM_RBUTTONDOWN): CWndMan::GetCursorPos + sub_5E0D72 resolves the clicked buff-icon into v5(buffType)+a1(sourceId); v5==1 (item buff) -> sub_70DD49(-a1) [negative sourceId, item-buff cancel]; v5==2 (skill buff, !=1311006) -> CUserLocal::SendSkillCancelRequest (op71 CANCEL_BUFF). Exact v61 CANCEL_ITEM_EFFECT twin (sub_831BB7(-sourceId), single Encode4(sourceId), 200ms guard, item-buff right-click). v61 CANCEL_ITEM_EFFECT=68.'
+
+# ---------------- serverbound: LOGIN/SELECTION FLOW COutPacket(N) send-sites (Task 4.B2f, anchor v61) ----------------
+# v48 login serverbound is its OWN enumeration (non-uniform shift vs v61): world/select region Delta-1
+# (ACCEPT_TOS/SERVERSTATUS/CHARLIST/SERVERLIST/AFTER_LOGIN/REGISTER_PIN/VIEW_ALL/PICK_ALL/VAC each -1),
+# CHAR_SELECT Delta-4 (v61 19 -> v48 15), PLAYER_LOGGEDIN Delta-4 (v61 20 -> v48 16), CHECK/CREATE/DELETE
+# Delta-4, PONG/CLIENT_START_ERROR Delta-1. Every opcode BODY-VERIFIED against its v61 twin send-site
+# (never blind-shifted). Anchors already present: LOGIN_PASSWORD=1, SET_GENDER=7. See v48-loginflow-sb.md.
+- op: SERVERLIST_REREQUEST
+  direction: serverbound
+  opcode: 3
+  fname: sub_4FE15D
+  provenance: ida-discovered
+  ida:
+    address: 5235037
+  note: 'BODY-VERIFIED send-site 0x4fe7ff: the CLogin world-select-screen init (COM UI build) sends bare COutPacket(3) (when off_80C8A0[2056]==1, world-select state) + a second bare COutPacket(27) (when dword_80CA08+44). EXACT twin of v61 CStage/CLogin world-select init sub_56261B which sends bare COutPacket(4) (SERVERLIST_REREQUEST) + bare COutPacket(28). = SERVERLIST_REREQUEST (world/server-list request on entering the world-select screen). v61 SERVERLIST_REREQUEST=4 (Delta-1). op27 = v61 op28 (unregistered, no Atlas handler).'
+- op: CHARLIST_REQUEST
+  direction: serverbound
+  opcode: 4
+  fname: sub_4FFFC4
+  provenance: ida-discovered
+  ida:
+    address: 5242820
+  note: 'BODY-VERIFIED send-site 0x5000e6: after resolving the selected world[i]/channel[a3] node from the world pool this[77], COutPacket(4)+Encode1(worldId=*(_BYTE*)v9)+Encode1(a3=channel) + SetExclRequestSent (this[74]=1). EXACT twin of v61 CHARLIST_REQUEST (SendLoginPacket sub_564DC9: COutPacket(5)+Encode1(world)+Encode1(channel)). Select world+channel -> request character list. v61 CHARLIST_REQUEST=5 (Delta-1). Atlas handler: CharacterListWorldHandle.'
+- op: SERVERSTATUS_REQUEST
+  direction: serverbound
+  opcode: 5
+  fname: sub_50073B
+  provenance: ida-discovered
+  ida:
+    address: 5244731
+  note: 'BODY-VERIFIED send-site 0x50076e: bounds-checks a2 against the world pool this[77] count then COutPacket(5)+Encode2(*(_WORD*)(32*a2+this[77])=worldId) + SetExclRequestSent. EXACT twin of v61 SERVERSTATUS_REQUEST (SendCheckUserLimitPacket sub_5655DF: COutPacket(6)+Encode2(worldEntry)). World user-limit / server-status check. v61 SERVERSTATUS_REQUEST=6 (Delta-1). Atlas handler: ServerStatusHandle.'
+- op: ACCEPT_TOS
+  direction: serverbound
+  opcode: 6
+  fname: sub_5034B2
+  fname_alts:
+  - sub_503517
+  provenance: ida-discovered
+  ida:
+    address: 5256370
+  note: 'BODY-VERIFIED send-site 0x5034dd: on EULA/TOS accept (this[72]==0), sub_51C26A(1) then COutPacket(6)+Encode1(1). The decline arm sub_503517 sends COutPacket(6)+Encode1(0). EXACT twin of v61 ACCEPT_TOS (sub_56842A: EnableLoginCtrl + COutPacket(7)+Encode1(1)). v61 ACCEPT_TOS=7 (Delta-1; v48 SET_GENDER took op7). Atlas handler: AcceptTosHandle.'
+- op: AFTER_LOGIN
+  direction: serverbound
+  opcode: 8
+  fname: sub_503956
+  fname_alts:
+  - CLogin::OnCheckPinCodeResult
+  provenance: ida-discovered
+  ida:
+    address: 5257558
+  note: 'BODY-VERIFIED send-site 0x503bb8 (sub_503956 = v48 OnCheckPinCodeResult, receive case 6): Decode1==2 arm reads the pin dialog result (sub_518ED5) then COutPacket(8)+Encode1(pinResult)+[Encode1(0)+Encode4(off_80C8A0[2057]=accountId)+EncodeStr(chatlog)]. EXACT structural twin of v61 OnCheckPinCodeResult (sub_5688CE) Decode1==2 arm which sends op9 (AFTER_LOGIN, Encode1(pin)+Encode1(0)+Encode4(g_pWvsContext+8232=accountId)+EncodeStr). v61 AFTER_LOGIN=9 (Delta-1). Atlas handler: AfterLoginHandle. (usesPin=false gates the client PIN UI at runtime; the send-site + handler are body-present, registered for anchor parity.)'
+- op: REGISTER_PIN
+  direction: serverbound
+  opcode: 9
+  fname: sub_503956
+  fname_alts:
+  - CLogin::OnCheckPinCodeResult
+  provenance: ida-discovered
+  ida:
+    address: 5257558
+  note: 'BODY-VERIFIED send-site 0x5039f3 (sub_503956, receive case 6): Decode1==1 arm sends COutPacket(9)+Encode1(1)+EncodeStr(chatlog) on success (sub_519081>=0) or COutPacket(9)+Encode1(0) on failure. EXACT twin of v61 OnCheckPinCodeResult (sub_5688CE) Decode1==1 arm which sends op10 (REGISTER_PIN, Encode1(1)+EncodeStr / Encode1(0)). v61 REGISTER_PIN=10 (Delta-1). Atlas handler: RegisterPinHandle. (usesPin=false; registered for anchor parity, body-present.)'
+- op: SERVERLIST_REQUEST
+  direction: serverbound
+  opcode: 10
+  fname: sub_503956
+  fname_alts:
+  - CLogin::OnCheckPinCodeResult
+  provenance: ida-discovered
+  ida:
+    address: 5257558
+  note: 'BODY-VERIFIED send-site 0x503956 (sub_503956, receive case 6): Decode1==0 arm sends bare COutPacket(10). EXACT twin of v61 OnCheckPinCodeResult (sub_5688CE) Decode1==0 arm which sends bare op11 (SERVERLIST_REQUEST). v61 SERVERLIST_REQUEST=11 (Delta-1). Atlas handler: ServerListRequestHandle (second binding; also at op3 SERVERLIST_REREQUEST).'
+- op: VIEW_ALL_CHAR
+  direction: serverbound
+  opcode: 12
+  fname: CLogin::SendViewAllCharPacket
+  fname_alts:
+  - sub_502293
+  provenance: ida-discovered
+  ida:
+    address: 5251731
+  note: 'BODY-VERIFIED send-site 0x5022e1: sends bare COutPacket(11) (if this[72]!=1) then bare COutPacket(12), setting this[54]=1 (timer). Unnamed sub; fname carries canonical CLogin::SendViewAllCharPacket for report linkage / candidatesFromFName, sub_502293 in fname_alts. EXACT twin of v61 VIEW_ALL_CHAR (sub_567117: bare op12 then bare op13, this[61]=1). The leading bare op11 = v61 bare op12 (unregistered migrate-to-charlist request, no Atlas handler). op12 = view-all-characters request. v61 VIEW_ALL_CHAR=13 (Delta-1). Atlas handler: CharacterViewAllHandle.'
+- op: PICK_ALL_CHAR
+  direction: serverbound
+  opcode: 13
+  fname: sub_500254
+  provenance: ida-discovered
+  ida:
+    address: 5243476
+  note: 'BODY-VERIFIED send-site 0x50037f: after mapping the selected slot this[78] through the view-all char arrays this[60]/this[64] (sub_70A921), COutPacket(13)+Encode4(charId=436*this[78]+this[60])+Encode4(*(this[64]+4*this[78]))+EncodeStr(macAddr). EXACT twin of v61 PICK_ALL_CHAR (SendSelectCharPacketByVAC sub_5650B6: COutPacket(14)+Encode4(charId)+Encode4(worldCharId)+EncodeStr(mac)+EncodeStr(mac+HDD)). v48 has ONE EncodeStr (predates GetLocalMacAddressWithHDDSerialNo). Select character from the view-all-char list. v61 PICK_ALL_CHAR=14 (Delta-1). Atlas handler: CharacterViewAllSelectedHandle.'
+- op: VAC
+  direction: serverbound
+  opcode: 14
+  fname: sub_50273F
+  fname_alts:
+  - CLogin::ResetVAC
+  provenance: ida-discovered
+  ida:
+    address: 5252927
+  note: 'BODY-VERIFIED send-site 0x502773: COutPacket(14)+Encode1(1), setting this[55]=1 (view-all-char pong state). The reset arm CLogin::ResetVAC (0x502851) sends COutPacket(14)+Encode1(0). EXACT twin of v61 VAC (MakeVACDlg sub_5675C4: COutPacket(15)+Encode1(1)). v61 VAC=15 (Delta-1). Atlas handler: CharacterViewAllPongHandle.'
+- op: CHAR_SELECT
+  direction: serverbound
+  opcode: 15
+  fname: sub_500174
+  provenance: ida-discovered
+  ida:
+    address: 5243252
+  note: 'BODY-VERIFIED send-site 0x5001c5: for the selected slot this[78] in the single-world char array this[79], COutPacket(15)+Encode4(charId=436*this[78]+this[79])+EncodeStr(macAddr). EXACT twin of v61 CHAR_SELECT (SendSelectCharPacket sub_564F79: COutPacket(19)+Encode4(charId)+EncodeStr(mac)+EncodeStr(mac+HDD)). v48 has ONE EncodeStr (predates HDD-serial variant). Enter game by charId. v61 CHAR_SELECT=19 (Delta-4). Atlas handler: CharacterSelectedHandle.'
+- op: PLAYER_LOGGEDIN
+  direction: serverbound
+  opcode: 16
+  fname: CClientSocket::OnConnect
+  provenance: ida-discovered
+  ida:
+    address: 4602176
+  note: 'BODY-VERIFIED send-site 0x463d9f (CClientSocket::OnConnect @0x463940, normal/non-exception branch): COutPacket(16)+Encode4(off_80C8A0[2078]=localSocketSN/charId)+Encode1(0). EXACT twin of v61 PLAYER_LOGGEDIN (OnConnect @0x472d42 else-branch: COutPacket(20)+Encode4(g_pWvsContext+8328)+Encode1(0)+Encode1(0)); v48 has ONE trailing Encode1(0). Post-connect migrate-in announce. v61 PLAYER_LOGGEDIN=20 (Delta-4). Atlas handler: CharacterLoggedInHandle (NoOpValidator: runs pre-LoggedIn).'
+- op: CHECK_CHAR_NAME
+  direction: serverbound
+  opcode: 17
+  fname: CLogin::SendCheckDuplicateIDPacket
+  fname_alts:
+  - sub_500693
+  provenance: ida-discovered
+  ida:
+    address: 5244563
+  note: 'BODY-VERIFIED send-site 0x5006e7: name-validate (sub_6C1BD8) then COutPacket(17)+EncodeStr(name a2) + SetExclRequestSent. EXACT twin of v61 CHECK_CHAR_NAME (SendCheckDuplicateIDPacket sub_565537: COutPacket(21)+EncodeStr(name)). fname carries body-canonical name for candidatesFromFName (matches the CheckName audit report); sub_500693 @0x500693 is the resolved v48 send-site. v61 CHECK_CHAR_NAME=21 (Delta-4). Atlas handler: CharacterCheckNameHandle.'
+- op: CREATE_CHAR
+  direction: serverbound
+  opcode: 21
+  fname: CLogin::SendNewCharPacket
+  fname_alts:
+  - sub_500545
+  provenance: ida-discovered
+  ida:
+    address: 5244229
+  note: 'BODY-VERIFIED send-site 0x50058b: COutPacket(21)+EncodeStr(name a2)+loop 8x Encode4(sub_500630(i)=appearance: face/hair/skin/coat/pants/shoes/weapon/...)+Encode1(gender=*(dword_80D490+212))+4x Encode1(macAddr bytes a3[i*4]). EXACT twin of v61 CREATE_CHAR (SendNewCharPacket sub_5653E9: name + appearance ints + gender). Create character. v61 CREATE_CHAR=22 (Delta-4). Atlas handler: CreateCharacterHandle.'
+- op: DELETE_CHAR
+  direction: serverbound
+  opcode: 22
+  fname: CLogin::SendDeleteCharPacket
+  fname_alts:
+  - sub_50043F
+  provenance: ida-discovered
+  ida:
+    address: 5243967
+  note: 'BODY-VERIFIED send-site 0x5004bb: after parsing the DOB edit field (sub_51002E on this+97) and validating (sub_50FAB6(13,...)), COutPacket(22)+Encode4(DOB=v5)+Encode4(charId=436*this[78]+this[79]). EXACT twin of v61 DELETE_CHAR (SendDeleteCharPacket sub_5652E3: Encode4(DOB)+Encode4(charId)). Delete character (DOB confirm). v61 DELETE_CHAR=23 (Delta-1). Atlas handler: DeleteCharacterHandle.'
+- op: PONG
+  direction: serverbound
+  opcode: 23
+  fname: CClientSocket::OnAliveReq
+  provenance: ida-discovered
+  ida:
+    address: 4608131
+  note: 'BODY-VERIFIED send-site 0x46509a (CClientSocket::OnAliveReq @0x465083): bare COutPacket(23) heartbeat reply. EXACT twin of v61 PONG (OnAliveReq: bare COutPacket(24)). v61 PONG=24 (Delta-1). Atlas handler: PongHandle (NoOpValidator: heartbeat).'
+- op: CLIENT_START_ERROR
+  direction: serverbound
+  opcode: 24
+  fname: CClientSocket::OnConnect
+  provenance: ida-discovered
+  ida:
+    address: 4602176
+  note: 'BODY-VERIFIED send-site 0x463d42 (CClientSocket::OnConnect @0x463940, exception/crash branch, this[9] set): reads the crash exception file (CWvsApp::GetExceptionFileName) then COutPacket(24)+Encode2(len)+EncodeBuffer(exceptionData). EXACT twin of v61 CLIENT_START_ERROR (OnConnect @0x472d42 exception branch: COutPacket(25)+Encode2(len)+EncodeBuffer). Client start/exception (crash) log report. v61 CLIENT_START_ERROR=25 (Delta-1). Atlas handler: StartErrorHandle (NoOpValidator: pre-LoggedIn). This IS the ExceptionLog send.'

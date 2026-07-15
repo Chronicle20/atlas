@@ -1,0 +1,10 @@
+packet: buddy/serverbound/BuddyOperationAdd
+direction: serverbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: CField::SendSetFriendMsg
+    address: "0x4c6452"
+    decompile_sha256: 256a162cf40c7d9f60afeded0d34e25d394d888912c2b33347dbda10447ad5ea
+verifies:
+    - libs/atlas-packet/buddy/serverbound/v48_test.go#TestOperationAddV48Body

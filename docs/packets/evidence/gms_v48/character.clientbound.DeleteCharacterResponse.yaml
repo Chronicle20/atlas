@@ -1,0 +1,10 @@
+packet: character/clientbound/DeleteCharacterResponse
+direction: clientbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: sub_5017B6
+    address: "0x5017b6"
+    decompile_sha256: d03c86c3e575ed2e81db998261f674425a447940c9682ac654d24d32326ddf5f
+verifies:
+    - libs/atlas-packet/character/clientbound/delete_response_test.go#TestDeleteCharacterResponseByteOutputV48

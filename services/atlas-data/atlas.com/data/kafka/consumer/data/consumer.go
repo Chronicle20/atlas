@@ -41,6 +41,6 @@ func handleStartWorker(db *gorm.DB) message.Handler[command[startWorkerCommandBo
 		if c.Type != CommandStartWorker {
 			return
 		}
-		_ = data.StartWorker(l)(ctx)(db)(c.Body.Name, c.Body.Path)
+		_ = data.NewProcessor(l, ctx, db).StartWorker(c.Body.Name, c.Body.Path)
 	}
 }

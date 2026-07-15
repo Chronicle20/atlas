@@ -1,0 +1,10 @@
+packet: interaction/clientbound/InteractionInteractionUpdateMerchant
+direction: clientbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: CMiniRoomBaseDlg::OnPacketBase
+    address: "0x5bec69"
+    decompile_sha256: b8b79a47046a439b435e311dff6def635558cb0dc7ac7224f058c7dfcc519f19
+verifies:
+    - libs/atlas-packet/interaction/clientbound/v61_test.go#TestInteractionArmsV61

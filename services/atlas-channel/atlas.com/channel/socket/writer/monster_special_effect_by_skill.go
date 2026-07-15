@@ -14,10 +14,10 @@ import (
 // codec gates them on region+version). No emitter wires this writer yet; it is an
 // intentional seam (the codec + route exist so the feature can be turned on
 // without a follow-up packet-plumbing pass).
-func MonsterSpecialEffectBySkillBody(skillId int32, characterId int32, delay uint16) packet.Encode {
+func MonsterSpecialEffectBySkillBody(uniqueId uint32, skillId int32, characterId int32, delay uint16) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 		return func(options map[string]interface{}) []byte {
-			return monsterpkt.NewMonsterSpecialEffectBySkill(skillId, characterId, delay).Encode(l, ctx)(options)
+			return monsterpkt.NewMonsterSpecialEffectBySkill(uniqueId, skillId, characterId, delay).Encode(l, ctx)(options)
 		}
 	}
 }

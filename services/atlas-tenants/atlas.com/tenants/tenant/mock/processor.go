@@ -20,9 +20,8 @@ type ProcessorMock struct {
 	DeleteFunc       func(mb *message.Buffer) func(id uuid.UUID) error
 	DeleteAndEmitFunc func(id uuid.UUID) error
 	GetByIdFunc      func(id uuid.UUID) (tenant.Model, error)
-	GetAllFunc       func() ([]tenant.Model, error)
 	ByIdProviderFunc func(id uuid.UUID) model.Provider[tenant.Model]
-	AllProviderFunc  func() model.Provider[[]tenant.Model]
+	AllProviderFunc  func(page model.Page) model.Provider[model.Paged[tenant.Model]]
 }
 
 // Create is a mock implementation
@@ -87,14 +86,6 @@ func (m *ProcessorMock) GetById(id uuid.UUID) (tenant.Model, error) {
 	return tenant.Model{}, nil
 }
 
-// GetAll is a mock implementation
-func (m *ProcessorMock) GetAll() ([]tenant.Model, error) {
-	if m.GetAllFunc != nil {
-		return m.GetAllFunc()
-	}
-	return []tenant.Model{}, nil
-}
-
 // ByIdProvider is a mock implementation
 func (m *ProcessorMock) ByIdProvider(id uuid.UUID) model.Provider[tenant.Model] {
 	if m.ByIdProviderFunc != nil {
@@ -106,11 +97,11 @@ func (m *ProcessorMock) ByIdProvider(id uuid.UUID) model.Provider[tenant.Model] 
 }
 
 // AllProvider is a mock implementation
-func (m *ProcessorMock) AllProvider() model.Provider[[]tenant.Model] {
+func (m *ProcessorMock) AllProvider(page model.Page) model.Provider[model.Paged[tenant.Model]] {
 	if m.AllProviderFunc != nil {
-		return m.AllProviderFunc()
+		return m.AllProviderFunc(page)
 	}
-	return func() ([]tenant.Model, error) {
-		return []tenant.Model{}, nil
+	return func() (model.Paged[tenant.Model], error) {
+		return model.Paged[tenant.Model]{Page: page}, nil
 	}
 }

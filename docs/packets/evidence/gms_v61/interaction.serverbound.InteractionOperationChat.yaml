@@ -1,0 +1,10 @@
+packet: interaction/serverbound/InteractionOperationChat
+direction: serverbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: sub_5BFCE3
+    address: "0x5bfce3"
+    decompile_sha256: ff036d16b6bb5e2223eef1447e739e8fa21b8a8dc8b0d85355e3b6e596587606
+verifies:
+    - libs/atlas-packet/interaction/serverbound/v61_test.go#TestOperationChatV61Bytes

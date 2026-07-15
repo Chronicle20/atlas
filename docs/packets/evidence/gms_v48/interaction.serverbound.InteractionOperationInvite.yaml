@@ -1,0 +1,10 @@
+packet: interaction/serverbound/InteractionOperationInvite
+direction: serverbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: sub_4C5100
+    address: "0x4c5100"
+    decompile_sha256: 99e6de954e6a9c0f5a2080f0574d7ad397fd38f59d1ed0495eb06102bdf1e899
+verifies:
+    - libs/atlas-packet/interaction/serverbound/v48_test.go#TestOperationInviteV48Bytes

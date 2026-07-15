@@ -16,7 +16,7 @@ type Processor interface {
 	ByIdModelProvider(id uint32) model.Provider[Model]
 	AllProvider() model.Provider[[]Model]
 	GetById(id uint32) (Model, error)
-	GetAll() ([]Model, error)
+	GetAllAccounts() ([]Model, error)
 	IsLoggedIn(id uint32) bool
 	InitializeRegistry() error
 }
@@ -35,19 +35,21 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	return p
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) ByIdModelProvider(id uint32) model.Provider[Model] {
 	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestAccountById(id), Extract)
 }
 
 func (p *ProcessorImpl) AllProvider() model.Provider[[]Model] {
-	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestAccounts, Extract, model.Filters[Model]())
+	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(getBaseRequest()+AccountsResource, 250, Extract, model.Filters[Model]())
 }
 
 func (p *ProcessorImpl) GetById(id uint32) (Model, error) {
 	return p.ByIdModelProvider(id)()
 }
 
-func (p *ProcessorImpl) GetAll() ([]Model, error) {
+func (p *ProcessorImpl) GetAllAccounts() ([]Model, error) {
 	return p.AllProvider()()
 }
 

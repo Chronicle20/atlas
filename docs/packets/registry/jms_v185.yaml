@@ -612,11 +612,13 @@
   direction: clientbound
   opcode: 124
   fname: CStage::OnSetITC
+  packet: field/clientbound/SetItc
   provenance: csv-import
 - op: SET_CASH_SHOP
   direction: clientbound
   opcode: 125
   fname: CStage::OnSetCashShop
+  packet: cash/clientbound/CashShopOpen
   provenance: csv-import
 - op: SET_BACK_EFFECT
   direction: clientbound
@@ -1465,16 +1467,19 @@
   direction: clientbound
   opcode: 286
   fname: CEmployeePool::OnEmployeeEnterField
+  packet: merchant/clientbound/EmployeeSpawn
   provenance: csv-import
 - op: DESTROY_HIRED_MERCHANT
   direction: clientbound
   opcode: 287
   fname: CEmployeePool::OnEmployeeLeaveField
+  packet: merchant/clientbound/EmployeeDestroy
   provenance: csv-import
 - op: UPDATE_HIRED_MERCHANT
   direction: clientbound
   opcode: 288
   fname: CEmployeePool::OnEmployeeMiniRoomBalloon
+  packet: merchant/clientbound/EmployeeUpdate
   provenance: csv-import
 - op: DROP_ITEM_FROM_MAPOBJECT
   direction: clientbound
@@ -1915,7 +1920,10 @@
   direction: clientbound
   opcode: 387
   fname: CUIVega::OnVegaResult
-  provenance: csv-import
+  provenance: ida-discovered
+  ida:
+    address: 0x8b89ad
+  note: 'task-130 Task 4: IDA jms_v185 CUIVega::OnPacket (0x8b8997) arg0==0x183 -> OnVegaResult (0x8b89ad). Opcode 0x183/387 confirmed. Single Decode1 mode byte; START in {0x3B,0x40}, RESULT in {0x3C,0x3E}, else -> notice. START carries outcome (Draw sub_8B7378 + popup sub_8B8B45: 0x3B->type1 success).'
 - op: CONFIRM_LOGOUT_GIFT
   direction: clientbound
   opcode: 390

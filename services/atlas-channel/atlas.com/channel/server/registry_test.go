@@ -1,6 +1,7 @@
 package server_test
 
 import (
+	"context"
 	"testing"
 
 	"atlas-channel/server"
@@ -9,6 +10,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 )
 
@@ -21,7 +23,7 @@ func mustTenant(t *testing.T) tenant.Model {
 func TestRegistry_DeregisterRemoves(t *testing.T) {
 	tm := mustTenant(t)
 	ch := channel.NewModel(world.Id(1), channel.Id(1))
-	m := server.Register(tm, ch, "127.0.0.1", 8585)
+	m := server.NewProcessor(logrus.New(), context.Background()).Register(tm, ch, "127.0.0.1", 8585)
 	k := server.KeyOf(m)
 
 	r := server.GetRegistry()
@@ -34,8 +36,9 @@ func TestRegistry_DeregisterRemoves(t *testing.T) {
 
 func TestRegistry_GetAllReturnsCurrentMembers(t *testing.T) {
 	tm := mustTenant(t)
-	m1 := server.Register(tm, channel.NewModel(world.Id(2), channel.Id(0)), "10.0.0.1", 8585)
-	m2 := server.Register(tm, channel.NewModel(world.Id(2), channel.Id(1)), "10.0.0.2", 8586)
+	sp := server.NewProcessor(logrus.New(), context.Background())
+	m1 := sp.Register(tm, channel.NewModel(world.Id(2), channel.Id(0)), "10.0.0.1", 8585)
+	m2 := sp.Register(tm, channel.NewModel(world.Id(2), channel.Id(1)), "10.0.0.2", 8586)
 
 	r := server.GetRegistry()
 

@@ -23,14 +23,11 @@ import (
 	"sort"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
-	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
 	buddypkt "github.com/Chronicle20/atlas/libs/atlas-packet/buddy"
 	buddyCB "github.com/Chronicle20/atlas/libs/atlas-packet/buddy/clientbound"
 	channelpkt "github.com/Chronicle20/atlas/libs/atlas-packet/channel/clientbound"
@@ -40,8 +37,12 @@ import (
 	fieldcb "github.com/Chronicle20/atlas/libs/atlas-packet/field/clientbound"
 	guildpkt "github.com/Chronicle20/atlas/libs/atlas-packet/guild"
 	guildcb "github.com/Chronicle20/atlas/libs/atlas-packet/guild/clientbound"
+	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	notepkt "github.com/Chronicle20/atlas/libs/atlas-packet/note"
 	notecb "github.com/Chronicle20/atlas/libs/atlas-packet/note/clientbound"
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+	"github.com/Chronicle20/atlas/libs/atlas-tenant"
+	"github.com/sirupsen/logrus"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -187,7 +188,7 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 						}
 						return sp.Destroy(s)
 					}
-					s = sp.SetMapId(s.SessionId(), f.MapId())
+					s = sp.SetField(s.SessionId(), f)
 
 					sp.SessionCreated(s)
 
@@ -201,7 +202,7 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 					if serr := mapconsumer.SpawnForSelf(l, ctx, wp)(s, f); serr != nil {
 						l.WithError(serr).Warnf("SpawnForSelf failed for character [%d] during session bootstrap; continuing.", c.Id())
 					}
-					go func() {
+					routine.Go(l, ctx, func(_ context.Context) {
 						entries := make([]buddyCB.BuddyEntry, 0, len(bl.Buddies()))
 						for _, b := range bl.Buddies() {
 							entries = append(entries, buddyCB.BuddyEntry{CharacterId: b.CharacterId(), Name: b.Name(), ChannelId: channel.Id(b.ChannelId()), Group: b.Group(), InShop: b.InShop()})
@@ -210,8 +211,8 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 						if err != nil {
 							l.WithError(err).Errorf("Unable to write character [%d] buddy list.", c.Id())
 						}
-					}()
-					go func() {
+					})
+					routine.Go(l, ctx, func(_ context.Context) {
 						g, _ := guild.NewProcessor(l, ctx).GetByMemberId(c.Id())
 						if g.Id() != 0 {
 							inGuild := g.Id() != 0
@@ -240,8 +241,8 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 								l.WithError(err).Errorf("Unable to write character [%d] buddy list.", c.Id())
 							}
 						}
-					}()
-					go func() {
+					})
+					routine.Go(l, ctx, func(_ context.Context) {
 						var km map[int32]key.Model
 						km, err = model.CollectToMap[key.Model, int32, key.Model](key.NewProcessor(l, ctx).ByCharacterIdProvider(s.CharacterId()), func(m key.Model) int32 {
 							return m.Key()
@@ -279,15 +280,15 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 						if err != nil {
 							l.WithError(err).Errorf("Unable to show auto mp key map for character [%d].", s.CharacterId())
 						}
-					}()
-					go func() {
+					})
+					routine.Go(l, ctx, func(_ context.Context) {
 						var bs []buff.Model
 						bs, err = buff.NewProcessor(l, ctx).GetByCharacterId(s.CharacterId())
 						if err != nil {
 							l.WithError(err).Debugf("Unable to retrieve active buffs for character [%d].", s.CharacterId())
 							return
 						}
-						// Mounts are transient (Cosmic loads them inactive). Don't re-render a
+						// Mounts are transient across logins. Don't re-render a
 						// persisted MONSTER_RIDING buff on login — cancel it so the player isn't
 						// auto-remounted and the stale buff is cleared from atlas-buffs. The mount
 						// progression (level/exp/tiredness) lives in atlas-mounts and is unaffected.
@@ -305,8 +306,8 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 						if err != nil {
 							l.WithError(err).Errorf("Unable to write character [%d] buddy list.", c.Id())
 						}
-					}()
-					go func() {
+					})
+					routine.Go(l, ctx, func(_ context.Context) {
 						var w world.Model
 						w, err = world.NewProcessor(l, ctx).GetById(s.WorldId())
 						if err != nil {
@@ -316,8 +317,8 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 						if err != nil {
 							l.WithError(err).Errorf("Unable to write character [%d] buddy list.", c.Id())
 						}
-					}()
-					go func() {
+					})
+					routine.Go(l, ctx, func(_ context.Context) {
 						var sms []macro.Model
 						sms, err = macro.NewProcessor(l, ctx).GetByCharacterId(s.CharacterId())
 						if err != nil {
@@ -331,13 +332,13 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 						for _, sm := range sms {
 							mms = append(mms, packetmodel.NewMacro(sm.Name(), sm.Shout(), sm.SkillId1(), sm.SkillId2(), sm.SkillId3()))
 						}
-							macros := packetmodel.NewMacros(mms...)
+						macros := packetmodel.NewMacros(mms...)
 						err = session.Announce(l)(ctx)(wp)(charpkt.CharacterSkillMacroWriter)(macros.Encode)(s)
 						if err != nil {
 							l.WithError(err).Errorf("Unable to show key map for character [%d].", s.CharacterId())
 						}
-					}()
-					go func() {
+					})
+					routine.Go(l, ctx, func(_ context.Context) {
 						var nms []note.Model
 						nms, err = note.NewProcessor(l, ctx).GetByCharacter(s.CharacterId())
 						if err != nil {
@@ -382,7 +383,7 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 						if err != nil {
 							l.WithError(err).Errorf("Unable to show key map for character [%d].", s.CharacterId())
 						}
-					}()
+					})
 					return nil
 				}
 			}

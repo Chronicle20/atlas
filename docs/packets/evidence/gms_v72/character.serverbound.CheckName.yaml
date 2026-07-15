@@ -1,0 +1,10 @@
+packet: character/serverbound/CheckName
+direction: serverbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CLogin::SendCheckDuplicateIDPacket
+    address: "0x46bb81"
+    decompile_sha256: a7bd36431fd4a04d301bc051bbcd0cd2bca8158bf3afbd88d22800e4f5949be1
+verifies:
+  - libs/atlas-packet/character/serverbound/v72_test.go#TestCheckNameByteOutputV72

@@ -26,15 +26,18 @@ import (
 	"atlas-channel/kafka/consumer/guild/thread"
 	"atlas-channel/kafka/consumer/instance_transport"
 	"atlas-channel/kafka/consumer/invite"
+	"atlas-channel/kafka/consumer/macro"
 	"atlas-channel/kafka/consumer/map"
 	merchantConsumer "atlas-channel/kafka/consumer/merchant"
 	"atlas-channel/kafka/consumer/message"
 	"atlas-channel/kafka/consumer/messenger"
 	mistConsumer "atlas-channel/kafka/consumer/mist"
+	mtsConsumer "atlas-channel/kafka/consumer/mts"
 	"atlas-channel/kafka/consumer/monster"
 	mbconsumer "atlas-channel/kafka/consumer/monsterbook"
 	mountConsumer "atlas-channel/kafka/consumer/mount"
 	note3 "atlas-channel/kafka/consumer/note"
+	walletConsumer "atlas-channel/kafka/consumer/wallet"
 	"atlas-channel/kafka/consumer/npc/conversation"
 	"atlas-channel/kafka/consumer/npc/shop"
 	"atlas-channel/kafka/consumer/party"
@@ -53,6 +56,7 @@ import (
 	"atlas-channel/listener"
 	"atlas-channel/logger"
 	monsterDomain "atlas-channel/monster"
+	monsterinfo "atlas-channel/monster/information"
 	"atlas-channel/server"
 	"atlas-channel/session"
 	_ "atlas-channel/skill/handler/registrations"
@@ -67,6 +71,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 
 	buddy2 "github.com/Chronicle20/atlas/libs/atlas-packet/buddy"
@@ -197,6 +202,7 @@ func main() {
 	drop.InitConsumers(l)(cmf)(consumerGroupId)
 	reactor.InitConsumers(l)(cmf)(consumerGroupId)
 	skill.InitConsumers(l)(cmf)(consumerGroupId)
+	macro.InitConsumers(l)(cmf)(consumerGroupId)
 	buff.InitConsumers(l)(cmf)(consumerGroupId)
 	chalkboard.InitConsumers(l)(cmf)(consumerGroupId)
 	messenger.InitConsumers(l)(cmf)(consumerGroupId)
@@ -206,6 +212,8 @@ func main() {
 	system_message.InitConsumers(l)(cmf)(consumerGroupId)
 	cashshop.InitConsumers(l)(cmf)(consumerGroupId)
 	cashshopCompartment.InitConsumers(l)(cmf)(consumerGroupId)
+	mtsConsumer.InitConsumers(l)(cmf)(consumerGroupId)
+	walletConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	note3.InitConsumers(l)(cmf)(consumerGroupId)
 	quest.InitConsumers(l)(cmf)(consumerGroupId)
 	route.InitConsumers(l)(cmf)(consumerGroupId)
@@ -288,6 +296,8 @@ func main() {
 		tid := t.Id()
 		account.GetRegistry().EvictTenant(tid)
 		monsterDomain.GetStatusMirror().EvictTenant(tid)
+		monsterDomain.GetLiveMirror().EvictTenant(tid)
+		monsterinfo.EvictTenant(tid)
 		if inbox := monsterDomain.GetNextSkillInbox(); inbox != nil {
 			inbox.EvictTenant(tid)
 		}
@@ -315,16 +325,20 @@ func main() {
 	})
 
 	build := buildListener(l, tdm, state, validatorMap, handlerMap, writerList)
-	go (&projection.ApplyLoop{
-		State:       state,
-		CaughtUp:    caughtUp,
-		Registry:    listenerRegistry,
-		AddBody:     build,
-		ServerModel: serverModelFn,
-		Interval:    250 * time.Millisecond,
-	}).Run(tdm.Context(), l)
+	routine.Go(l, tdm.Context(), func(_ context.Context) {
+		(&projection.ApplyLoop{
+			State:       state,
+			CaughtUp:    caughtUp,
+			Registry:    listenerRegistry,
+			AddBody:     build,
+			ServerModel: serverModelFn,
+			Interval:    250 * time.Millisecond,
+		}).Run(tdm.Context(), l)
+	})
 
-	go tasks.Register(l, tdm.Context())(channel3.NewHeartbeat(l, tdm.Context(), time.Second*10))
+	routine.Go(l, tdm.Context(), func(_ context.Context) {
+		tasks.Register(l, tdm.Context())(channel3.NewHeartbeat(l, tdm.Context(), time.Second*10))
+	})
 
 	tdm.TeardownFunc(session.Teardown(l))
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))
@@ -353,7 +367,7 @@ func serverModelFn(key server.Key, cfg projection.ListenerConfig) server.Model {
 		// to a synthesized one so the listener can at least start.
 		t, _ = tenant.Create(key.TenantId, cfg.Region, cfg.MajorVersion, cfg.MinorVersion)
 	}
-	return server.Register(t, channel2.NewModel(key.WorldId, key.ChannelId), cfg.IPAddress, cfg.Port)
+	return server.NewProcessor(logrus.New(), context.Background()).Register(t, channel2.NewModel(key.WorldId, key.ChannelId), cfg.IPAddress, cfg.Port)
 }
 
 // buildListener returns the per-(t,w,c) AddBody the projection apply loop
@@ -497,6 +511,9 @@ func buildListener(
 		if err := register(skill.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
 			return nil, err
 		}
+		if err := register(macro.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
 		if err := register(buff.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
 			return nil, err
 		}
@@ -522,6 +539,12 @@ func buildListener(
 			return nil, err
 		}
 		if err := register(cashshopCompartment.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
+		if err := register(mtsConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
+		if err := register(walletConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
 			return nil, err
 		}
 		if err := register(note3.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
@@ -616,6 +639,7 @@ func produceWriters() []string {
 		cashcb.CashShopOpenWriter,
 		cashcb.CashShopOperationWriter,
 		cashcb.CashQueryResultWriter,
+		cashcb.VegaScrollWriter,
 		monstercb.MonsterSpawnWriter,
 		monstercb.MonsterDestroyWriter,
 		monstercb.MonsterControlWriter,
@@ -732,8 +756,10 @@ func produceWriters() []string {
 		fieldcb.ZakumShrineWriter,
 		fieldcb.HorntailCaveWriter,
 		fieldcb.AriantResultWriter,
+		fieldcb.SetItcWriter,
 		fieldcb.MtsOperation2Writer,
 		fieldcb.MtsOperationWriter,
+		fieldcb.MtsChargeParamResultWriter,
 		fieldcb.FootholdInfoWriter,
 		fieldcb.SnowballStateWriter,
 		fieldcb.SnowballHitWriter,
@@ -779,6 +805,11 @@ func produceWriters() []string {
 		monstercb.MonsterDamageWriter,
 		fieldcb.FieldEffectWeatherWriter,
 		merchantcb.HiredMerchantOperationWriter,
+		merchantcb.ShopScannerResultWriter,
+		merchantcb.ShopLinkResultWriter,
+		merchantcb.MerchantEmployeeSpawnWriter,
+		merchantcb.MerchantEmployeeDestroyWriter,
+		merchantcb.MerchantEmployeeUpdateWriter,
 		interactioncb.CharacterInteractionWriter,
 		interaction2.MiniRoomWriter,
 		mbcb.MonsterBookSetCardWriter,
@@ -865,10 +896,15 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[handler.CharacterSkillPrepareHandle] = handler.CharacterSkillPrepareHandleFunc
 	handlerMap[charsb.CharacterBuffCancelHandle] = handler.CharacterBuffCancelHandleFunc
 	handlerMap[cashsb.CharacterCashItemUseHandle] = handler.CharacterCashItemUseHandleFunc
+	handlerMap[fieldsb.ItemUpgradeUpdateHandle] = handler.ItemUpgradeUpdateHandleFunc
 	handlerMap[charsb.ChalkboardCloseHandle] = handler.ChalkboardCloseHandleHandleFunc
 	handlerMap[chatSB.CharacterChatWhisperHandle] = handler.CharacterChatWhisperHandleFunc
 	handlerMap[fieldsb.CharacterSpouseChatHandle] = handler.CharacterSpouseChatHandleFunc
 	handlerMap[messengersb.MessengerOperationHandle] = handler.MessengerOperationHandleFunc
+	handlerMap[fieldsb.EnterMtsHandle] = handler.EnterMtsHandleFunc
+	handlerMap[fieldsb.ItcStatusChargeHandle] = handler.ItcStatusChargeHandleFunc
+	handlerMap[fieldsb.ItcQueryCashRequestHandle] = handler.ItcQueryCashRequestHandleFunc
+	handlerMap[fieldsb.ItcOperationHandle] = handler.ItcOperationHandleFunc
 	handlerMap[petsb.PetMovementHandle] = handler.PetMovementHandleFunc
 	handlerMap[petsb.PetSpawnHandle] = handler.PetSpawnHandleFunc
 	handlerMap[petsb.PetCommandHandle] = handler.PetCommandHandleFunc
@@ -898,6 +934,9 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[charsb.MonsterDamageFriendlyHandle] = handler.MonsterDamageFriendlyHandleFunc
 	handlerMap[interactionsb.CharacterInteractionHandle] = handler.CharacterInteractionHandleFunc
 	handlerMap[merchantsb.HiredMerchantOperationHandle] = handler.HiredMerchantOperationHandleFunc
+	handlerMap[merchantsb.OwlActionHandle] = handler.OwlActionHandleFunc
+	handlerMap[merchantsb.OwlWarpHandle] = handler.OwlWarpHandleFunc
+	handlerMap[merchantsb.ShopScannerItemUseHandle] = handler.ShopScannerItemUseHandleFunc
 	handlerMap[mbsb.MonsterBookCoverHandler] = handler.MonsterBookCoverHandleFunc
 	return handlerMap
 }

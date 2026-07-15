@@ -43,7 +43,7 @@ func makeTenant(t *testing.T) tenant.Model {
 }
 
 func makeServerModel(t *testing.T, tm tenant.Model, w world.Id, c channel.Id) server.Model {
-	return server.Register(tm, channel.NewModel(w, c), "127.0.0.1", 8585+int(c))
+	return server.NewProcessor(logrus.New(), context.Background()).Register(tm, channel.NewModel(w, c), "127.0.0.1", 8585+int(c))
 }
 
 func TestRegistry_AddStoresAndSnapshotsHandle(t *testing.T) {

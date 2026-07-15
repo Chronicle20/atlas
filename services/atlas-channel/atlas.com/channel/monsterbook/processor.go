@@ -67,6 +67,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	return &ProcessorImpl{l: l, ctx: ctx, t: tenant.MustFromContext(ctx)}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 // RequestSetCover emits a SET_COVER command keyed on the character.
 func (p *ProcessorImpl) RequestSetCover(characterId character.Id, coverCardId item.Id) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(mbmsg.EnvCommandTopic)(SetCoverCommandProvider(p.t.Id(), characterId, coverCardId))
@@ -85,9 +87,12 @@ func (p *ProcessorImpl) GetByCharacterId(characterId character.Id) (Collection, 
 }
 
 // CardsByCharacterIdProvider returns a provider that fetches the character's
-// owned monster-book cards from atlas-monster-book.
+// owned monster-book cards from atlas-monster-book. The upstream list is
+// now paginated (task-117); MonsterBookDecorator (character/processor.go)
+// attaches the FULL card list to the character model sent on channel
+// spawn, so this drains every page rather than fetching just the first.
 func (p *ProcessorImpl) CardsByCharacterIdProvider(characterId character.Id) model.Provider[[]Card] {
-	return requests.SliceProvider[CardRestModel, Card](p.l, p.ctx)(requestCardsByCharacterId(characterId), ExtractCard, model.Filters[Card]())
+	return requests.DrainProvider[CardRestModel, Card](p.l, p.ctx)(cardsByCharacterIdUrl(characterId), 250, ExtractCard, model.Filters[Card]())
 }
 
 // GetCardsByCharacterId fetches and returns the owned card list for the character.

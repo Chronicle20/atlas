@@ -1,0 +1,10 @@
+packet: pet/serverbound/PetDropPickUp
+direction: serverbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: sub_58ED98
+    address: "0x58ed98"
+    decompile_sha256: 6facf5126636b537def58eba69f3b637b44bf20ef2d597aa7f1b9ba6d19b3d3a
+verifies:
+  - libs/atlas-packet/pet/serverbound/drop_pick_up_test.go#TestDropPickUpBytesV48

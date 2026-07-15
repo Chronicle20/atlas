@@ -1,0 +1,10 @@
+packet: npc/serverbound/NpcShopBuy
+direction: serverbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: sub_5B7422
+    address: "0x5b7422"
+    decompile_sha256: 8b7254753789be56ce40f4520236ef80aaf0daeb545c2a0222b4c26627dbe55a
+verifies:
+  - libs/atlas-packet/npc/serverbound/shop_v48_test.go#TestShopBuyByteV48

@@ -1,0 +1,10 @@
+packet: npc/clientbound/NpcAskYesNoConversationDetail
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CScriptMan::OnAskYesNo#AskYesNo
+    address: "0x6c86d3"
+    decompile_sha256: 21ed11354dbfa0d5e886591074cd1b000c2b6a849ea5b0de128113f3e6d30e1d
+verifies:
+  - libs/atlas-packet/npc/clientbound/conversation_v79_details_test.go#TestNpcConversationAskYesNoV79

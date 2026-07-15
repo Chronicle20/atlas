@@ -1,0 +1,10 @@
+packet: login/clientbound/ServerIP
+direction: clientbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: sub_502B70
+    address: "0x502b70"
+    decompile_sha256: e511140c63ff98f8448a14807cf3433a67df2d29d44a650340564381521a91fb
+verifies:
+    - libs/atlas-packet/login/clientbound/v48_test.go#TestServerIPV48Body

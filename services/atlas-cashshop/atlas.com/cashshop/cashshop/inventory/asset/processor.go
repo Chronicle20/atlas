@@ -11,6 +11,7 @@ import (
 	"context"
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -54,6 +55,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 		cp:  commodity.NewProcessor(l, ctx),
 	}
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) ByIdProvider(id uint32) model.Provider[Model] {
 	return model.Map(Make)(getByIdProvider(id)(p.db.WithContext(p.ctx)))
@@ -118,12 +121,14 @@ func (p *ProcessorImpl) Create(mb *message.Buffer) func(compartmentId uuid.UUID,
 
 func (p *ProcessorImpl) CreateAndEmit(compartmentId uuid.UUID, templateId uint32, commodityId uint32, quantity uint32, petId uint32, purchasedBy uint32) (Model, error) {
 	var result Model
-	err := message.Emit(p.p)(func(buf *message.Buffer) error {
-		var e error
-		result, e = p.Create(buf)(compartmentId, templateId, commodityId, quantity, petId, purchasedBy)
-		return e
+	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			var e error
+			result, e = NewProcessor(p.l, p.ctx, tx).Create(buf)(compartmentId, templateId, commodityId, quantity, petId, purchasedBy)
+			return e
+		})
 	})
-	return result, err
+	return result, txErr
 }
 
 func (p *ProcessorImpl) CreateWithCashId(mb *message.Buffer) func(compartmentId uuid.UUID, cashId int64, templateId uint32, commodityId uint32, quantity uint32, petId uint32, purchasedBy uint32) (Model, error) {
@@ -172,12 +177,14 @@ func (p *ProcessorImpl) CreateWithCashId(mb *message.Buffer) func(compartmentId 
 
 func (p *ProcessorImpl) CreateWithCashIdAndEmit(compartmentId uuid.UUID, cashId int64, templateId uint32, commodityId uint32, quantity uint32, petId uint32, purchasedBy uint32) (Model, error) {
 	var result Model
-	err := message.Emit(p.p)(func(buf *message.Buffer) error {
-		var e error
-		result, e = p.CreateWithCashId(buf)(compartmentId, cashId, templateId, commodityId, quantity, petId, purchasedBy)
-		return e
+	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			var e error
+			result, e = NewProcessor(p.l, p.ctx, tx).CreateWithCashId(buf)(compartmentId, cashId, templateId, commodityId, quantity, petId, purchasedBy)
+			return e
+		})
 	})
-	return result, err
+	return result, txErr
 }
 
 func (p *ProcessorImpl) UpdateQuantity(id uint32, quantity uint32) error {
@@ -190,6 +197,9 @@ func (p *ProcessorImpl) Delete(_ *message.Buffer) func(id uint32) error {
 	}
 }
 
+// DeleteAndEmit left on the direct producer path: Delete ignores the mb
+// argument (see the `_ *message.Buffer` param above) and never puts an
+// event, so there is nothing state-asserting to enqueue to the outbox.
 func (p *ProcessorImpl) DeleteAndEmit(id uint32) error {
 	return message.Emit(p.p)(func(buf *message.Buffer) error {
 		return p.Delete(buf)(id)
@@ -203,6 +213,9 @@ func (p *ProcessorImpl) Release(_ *message.Buffer) func(id uint32) error {
 	}
 }
 
+// ReleaseAndEmit left on the direct producer path: Release ignores the mb
+// argument and never puts an event, so there is nothing state-asserting to
+// enqueue to the outbox.
 func (p *ProcessorImpl) ReleaseAndEmit(id uint32) error {
 	return message.Emit(p.p)(func(buf *message.Buffer) error {
 		return p.Release(buf)(id)
@@ -244,7 +257,9 @@ func (p *ProcessorImpl) Expire(mb *message.Buffer) func(id uint32, replaceItemId
 }
 
 func (p *ProcessorImpl) ExpireAndEmit(id uint32, replaceItemId uint32, replaceMessage string) error {
-	return message.Emit(p.p)(func(buf *message.Buffer) error {
-		return p.Expire(buf)(id, replaceItemId, replaceMessage)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return NewProcessor(p.l, p.ctx, tx).Expire(buf)(id, replaceItemId, replaceMessage)
+		})
 	})
 }

@@ -19,9 +19,11 @@ type ProcessorImpl struct {
 	ctx context.Context
 }
 
-func NewProcessor(l logrus.FieldLogger, ctx context.Context) *ProcessorImpl {
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	return &ProcessorImpl{l: l, ctx: ctx}
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 // GetById fetches the map from atlas-data including its portals via the
 // ?include=portals query parameter, so a single round-trip populates both map
@@ -31,7 +33,8 @@ func (p *ProcessorImpl) GetById(mapId _map.Id) (Model, error) {
 }
 
 // GetPortals fetches only the portal list for a map via the /portals
-// sub-resource endpoint.
+// sub-resource endpoint. atlas-data's GET /data/maps/{id}/portals is now
+// paginated (task-117), so this drains every page rather than fetching one.
 func (p *ProcessorImpl) GetPortals(mapId _map.Id) ([]Portal, error) {
-	return requests.SliceProvider[PortalRestModel, Portal](p.l, p.ctx)(requestPortals(mapId), ExtractPortal, model.Filters[Portal]())()
+	return requests.DrainProvider[PortalRestModel, Portal](p.l, p.ctx)(portalsUrl(mapId), 250, ExtractPortal, model.Filters[Portal]())()
 }

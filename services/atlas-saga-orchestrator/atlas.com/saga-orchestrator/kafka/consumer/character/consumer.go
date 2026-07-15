@@ -51,6 +51,9 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCharacterMesoErrorEvent))); err != nil {
 			return err
 		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCharacterApTransferErrorEvent))); err != nil {
+			return err
+		}
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCharacterStatChangedEvent))); err != nil {
 			return err
 		}
@@ -172,6 +175,30 @@ func handleCharacterMesoErrorEvent(l logrus.FieldLogger, ctx context.Context, e 
 	}).Error("Character meso operation error occurred, marking saga step as failed")
 
 	_ = p.StepCompleted(e.TransactionId, false)
+}
+
+// handleCharacterApTransferErrorEvent marks a point_reset transfer_ap step
+// failed when atlas-character rejects the TRANSFER_AP command. It threads the
+// service's machine-readable error code + detail onto the step's result map so
+// the point_reset compensator can carry them into the saga-failed event
+// (Task 14 error-threading contract). The acceptance-table gate keeps this
+// ERROR handler from cross-firing with the meso-error handler even though both
+// decode Type == "ERROR".
+func handleCharacterApTransferErrorEvent(l logrus.FieldLogger, ctx context.Context, e character2.StatusEvent[character2.StatusEventApTransferErrorBody]) {
+	if e.Type != character2.StatusEventTypeError {
+		return
+	}
+	p := saga.NewProcessor(l, ctx)
+	if _, ok := p.AcceptEvent(e.TransactionId, saga.EventKindCharacterApTransferError); !ok {
+		return
+	}
+	l.WithFields(logrus.Fields{
+		"transaction_id": e.TransactionId.String(),
+		"character_id":   e.CharacterId,
+		"error":          e.Body.Error,
+		"detail":         e.Body.Detail,
+	}).Debug("AP transfer rejected; marking saga step failed.")
+	_ = p.StepCompletedWithResult(e.TransactionId, false, map[string]any{"errorCode": e.Body.Error, "errorDetail": e.Body.Detail})
 }
 
 func handleCharacterStatChangedEvent(l logrus.FieldLogger, ctx context.Context, e character2.StatusEvent[character2.StatusEventStatChangedBody]) {

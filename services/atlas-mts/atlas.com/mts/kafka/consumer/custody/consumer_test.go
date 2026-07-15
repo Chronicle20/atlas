@@ -1,0 +1,798 @@
+package custody
+
+import (
+	"atlas-mts/holding"
+	"atlas-mts/kafka/message/custody"
+	mtsmsg "atlas-mts/kafka/message/mts"
+	"atlas-mts/listing"
+	"atlas-mts/test"
+	"atlas-mts/transaction"
+	"context"
+	"encoding/json"
+	"sync"
+	"testing"
+
+	kprod "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
+	"github.com/google/uuid"
+	"github.com/segmentio/kafka-go"
+	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
+)
+
+// recordedEvent is a decoded custody status ack captured by the test producer.
+type recordedEvent struct {
+	transactionId uuid.UUID
+	eventType     string
+}
+
+// recordingProducer is a test producer.Provider that decodes every emitted
+// kafka message into a recordedEvent, so assertions can inspect the ack type
+// and transactionId without a live broker.
+type recordingProducer struct {
+	mu     sync.Mutex
+	events []recordedEvent
+}
+
+// provider returns the two-level per-context producer factory the handler
+// expects (func(ctx) func(token) MessageProducer), matching the shape of
+// producer.ProviderImpl(l). Every emitted message is decoded and recorded.
+func (r *recordingProducer) provider() func(ctx context.Context) func(token string) kprod.MessageProducer {
+	return func(ctx context.Context) func(token string) kprod.MessageProducer {
+		return func(token string) kprod.MessageProducer {
+			return func(p model.Provider[[]kafka.Message]) error {
+				ms, err := p()
+				if err != nil {
+					return err
+				}
+				r.mu.Lock()
+				defer r.mu.Unlock()
+				for _, m := range ms {
+					var ev custody.StatusEvent[json.RawMessage]
+					if err := json.Unmarshal(m.Value, &ev); err != nil {
+						return err
+					}
+					r.events = append(r.events, recordedEvent{transactionId: ev.TransactionId, eventType: ev.Type})
+				}
+				return nil
+			}
+		}
+	}
+}
+
+// eventsOfType filters recorded events by their event-type string so assertions
+// can isolate one event family (e.g. MOVED acks vs LISTING_SOLD notices) when a
+// success path emits more than one.
+func eventsOfType(events []recordedEvent, eventType string) []recordedEvent {
+	var out []recordedEvent
+	for _, e := range events {
+		if e.eventType == eventType {
+			out = append(out, e)
+		}
+	}
+	return out
+}
+
+// allEvents merges the two sinks a custody handler now emits to: the DIRECT
+// producer captured by rp (failure-path ERROR acks) and the transactional
+// outbox rows the migrated SUCCESS paths enqueue (task-114 — ACCEPTED,
+// LISTING_CREATED, MOVED, LISTING_SOLD, RELEASED, ITEM_TAKEN_HOME, RESTORED).
+// Both decode to the same {transactionId,type} envelope, so the existing
+// eventsOfType assertions cover the whole emit surface after the migration.
+//
+// Results are scoped to txId: the package uses a cache=shared in-memory DB, so
+// the outbox_entries table (unlike the per-test recordingProducer) leaks rows
+// across sibling tests — filtering on the test's transactionId isolates the
+// assertion exactly as the per-owner holding counts do. Outbox rows are read in
+// id order to mirror publish order.
+func allEvents(t *testing.T, db *gorm.DB, rp *recordingProducer, txId uuid.UUID) []recordedEvent {
+	t.Helper()
+	var out []recordedEvent
+	rp.mu.Lock()
+	for _, e := range rp.events {
+		if e.transactionId == txId {
+			out = append(out, e)
+		}
+	}
+	rp.mu.Unlock()
+	var rows []outbox.Entity
+	if err := db.Order("id ASC").Find(&rows).Error; err != nil {
+		t.Fatalf("read outbox rows: %v", err)
+	}
+	for _, r := range rows {
+		var ev custody.StatusEvent[json.RawMessage]
+		if err := json.Unmarshal(r.MessageValue, &ev); err != nil {
+			t.Fatalf("decode outbox row: %v", err)
+		}
+		if ev.TransactionId != txId {
+			continue
+		}
+		out = append(out, recordedEvent{transactionId: ev.TransactionId, eventType: ev.Type})
+	}
+	return out
+}
+
+func newAcceptCommand(transactionId uuid.UUID, listingId uuid.UUID) custody.Command[custody.AcceptToMtsListingCommandBody] {
+	return custody.Command[custody.AcceptToMtsListingCommandBody]{
+		TransactionId: transactionId,
+		Type:          custody.CommandAcceptToMtsListing,
+		Body: custody.AcceptToMtsListingCommandBody{
+			ListingId:      listingId,
+			WorldId:        0,
+			SellerId:       42,
+			SellerName:     "Seller",
+			SaleType:       string(listing.SaleTypeFixed),
+			TemplateId:     1302000,
+			Quantity:       1,
+			WeaponAttack:   17,
+			Slots:          7,
+			Level:          1,
+			ListValue:      1000,
+			CommissionRate: 0.10,
+			Category:       "equip",
+			SubCategory:    "onehand",
+			MinIncrement:   0,
+		},
+	}
+}
+
+func TestAcceptToMtsListing_CreatesListingAndAcks(t *testing.T) {
+	db := test.SetupTestDB(t, listing.Migration, holding.Migration, outbox.Migration)
+	ctx := test.CreateTestContext()
+	l := logrus.New()
+
+	rp := &recordingProducer{}
+	transactionId := uuid.New()
+	listingId := uuid.New()
+	cmd := newAcceptCommand(transactionId, listingId)
+
+	handleAcceptToMtsListing(rp.provider())(db)(l, ctx, cmd)
+
+	// the listing row was created with the carried id, in active state, snapshot persisted
+	stored, err := listing.GetById(listingId.String())(db.WithContext(ctx))()
+	if err != nil {
+		t.Fatalf("expected listing row created, got error: %v", err)
+	}
+	if stored.Id() != listingId {
+		t.Fatalf("expected listing id %s, got %s", listingId, stored.Id())
+	}
+	if stored.State() != listing.StateActive {
+		t.Fatalf("expected state active, got %s", stored.State())
+	}
+	if stored.TemplateId() != 1302000 || stored.Quantity() != 1 || stored.WeaponAttack() != 17 {
+		t.Fatalf("snapshot not persisted: tmpl=%d qty=%d watk=%d", stored.TemplateId(), stored.Quantity(), stored.WeaponAttack())
+	}
+	// Category is derived server-side from the templateId's inventory type
+	// (1302000 -> equip -> "1"), overriding the payload's "equip" string so the
+	// GET_ITC_LIST sub-tab filter (categorySub -> inventory type) matches.
+	//
+	// ListValue is stored as the seller-supplied BASE price (1000) AS-IS — the
+	// commission is no longer baked in at creation time; the client (and, for
+	// buy/bid, the server) applies commission on top of this base. CommissionRate
+	// is carried on the row for the buy/bid/settle markup calculations.
+	if stored.ListValue() != 1000 || stored.CommissionRate() != 0.10 || stored.Category() != "1" {
+		t.Fatalf("sale params not persisted: lv=%d rate=%v cat=%s", stored.ListValue(), stored.CommissionRate(), stored.Category())
+	}
+
+	// exactly one ACCEPTED ack (drives the saga) + one LISTING_CREATED (drives the
+	// channel's RegisterSaleEntryDone), both carrying the same transactionId.
+	accepted := eventsOfType(allEvents(t, db, rp, transactionId), custody.StatusEventTypeAccepted)
+	if len(accepted) != 1 {
+		t.Fatalf("expected 1 ACCEPTED ack, got %d (all: %v)", len(accepted), allEvents(t, db, rp, transactionId))
+	}
+	if accepted[0].transactionId != transactionId {
+		t.Fatalf("ACCEPTED ack transactionId mismatch: want %s got %s", transactionId, accepted[0].transactionId)
+	}
+	created := eventsOfType(allEvents(t, db, rp, transactionId), mtsmsg.StatusEventTypeListingCreated)
+	if len(created) != 1 {
+		t.Fatalf("expected 1 LISTING_CREATED event, got %d (all: %v)", len(created), allEvents(t, db, rp, transactionId))
+	}
+	if created[0].transactionId != transactionId {
+		t.Fatalf("LISTING_CREATED transactionId mismatch: want %s got %s", transactionId, created[0].transactionId)
+	}
+}
+
+func TestAcceptToMtsListing_ReplayIsNoOpAndReacks(t *testing.T) {
+	db := test.SetupTestDB(t, listing.Migration, holding.Migration, outbox.Migration)
+	ctx := test.CreateTestContext()
+	l := logrus.New()
+
+	rp := &recordingProducer{}
+	transactionId := uuid.New()
+	listingId := uuid.New()
+	cmd := newAcceptCommand(transactionId, listingId)
+
+	// first delivery
+	handleAcceptToMtsListing(rp.provider())(db)(l, ctx, cmd)
+	// replayed delivery (same listingId / transactionId)
+	handleAcceptToMtsListing(rp.provider())(db)(l, ctx, cmd)
+
+	// exactly one listing row with that id (no duplicate created)
+	all, err := listing.GetAll()(db.WithContext(ctx))()
+	if err != nil {
+		t.Fatalf("GetAll error: %v", err)
+	}
+	count := 0
+	for _, m := range all {
+		if m.Id() == listingId {
+			count++
+		}
+	}
+	if count != 1 {
+		t.Fatalf("expected exactly 1 listing row for id %s after replay, got %d (total rows=%d)", listingId, count, len(all))
+	}
+
+	// both deliveries re-emitted the ACCEPTED ack + the LISTING_CREATED notice with
+	// the same transactionId (a replayed LISTING_CREATED is a harmless idempotent
+	// seller notice, mirroring the replayed LISTING_SOLD on the move handler).
+	accepted := eventsOfType(allEvents(t, db, rp, transactionId), custody.StatusEventTypeAccepted)
+	if len(accepted) != 2 {
+		t.Fatalf("expected 2 ACCEPTED acks (original + replay), got %d (all: %v)", len(accepted), allEvents(t, db, rp, transactionId))
+	}
+	created := eventsOfType(allEvents(t, db, rp, transactionId), mtsmsg.StatusEventTypeListingCreated)
+	if len(created) != 2 {
+		t.Fatalf("expected 2 LISTING_CREATED events (original + replay), got %d (all: %v)", len(created), allEvents(t, db, rp, transactionId))
+	}
+	for _, ev := range append(accepted, created...) {
+		if ev.transactionId != transactionId {
+			t.Fatalf("event transactionId mismatch: want %s got %s", transactionId, ev.transactionId)
+		}
+	}
+}
+
+// newAuctionAcceptCommand builds an AcceptToMtsListing command for an AUCTION
+// listing with the given listValue/increment, for the currentBid-seeding tests.
+func newAuctionAcceptCommand(transactionId uuid.UUID, listingId uuid.UUID, listValue uint32, minIncrement uint32) custody.Command[custody.AcceptToMtsListingCommandBody] {
+	return custody.Command[custody.AcceptToMtsListingCommandBody]{
+		TransactionId: transactionId,
+		Type:          custody.CommandAcceptToMtsListing,
+		Body: custody.AcceptToMtsListingCommandBody{
+			ListingId:      listingId,
+			WorldId:        0,
+			SellerId:       42,
+			SellerName:     "Seller",
+			SaleType:       string(listing.SaleTypeAuction),
+			TemplateId:     1302000,
+			Quantity:       1,
+			ListValue:      listValue,
+			CommissionRate: 0.10,
+			Category:       "equip",
+			SubCategory:    "onehand",
+			MinIncrement:   minIncrement,
+		},
+	}
+}
+
+// TestAcceptToMtsListing_SeedsAuctionCurrentBidBelowListValueByIncrement asserts an
+// auction's currentBid is seeded to listValue-increment (NOT listValue itself), so
+// the client's first bid — always current_bid + increment — lands exactly on the
+// seller's advertised starting price (listValue), not one increment above it.
+func TestAcceptToMtsListing_SeedsAuctionCurrentBidBelowListValueByIncrement(t *testing.T) {
+	db := test.SetupTestDB(t, listing.Migration, holding.Migration, outbox.Migration)
+	ctx := test.CreateTestContext()
+	l := logrus.New()
+
+	rp := &recordingProducer{}
+	transactionId := uuid.New()
+	listingId := uuid.New()
+	cmd := newAuctionAcceptCommand(transactionId, listingId, 1000, 100)
+
+	handleAcceptToMtsListing(rp.provider())(db)(l, ctx, cmd)
+
+	stored, err := listing.GetById(listingId.String())(db.WithContext(ctx))()
+	if err != nil {
+		t.Fatalf("expected listing row created, got error: %v", err)
+	}
+	if stored.ListValue() != 1000 {
+		t.Fatalf("listValue = %d, want 1000 (base, unmarked-up)", stored.ListValue())
+	}
+	if stored.CurrentBid() != 900 {
+		t.Fatalf("currentBid = %d, want 900 (listValue 1000 - increment 100)", stored.CurrentBid())
+	}
+}
+
+// TestAcceptToMtsListing_SeedsAuctionCurrentBidZeroWhenListValueBelowIncrement
+// asserts the seed floors at 0 rather than underflowing when listValue does not
+// exceed the increment.
+func TestAcceptToMtsListing_SeedsAuctionCurrentBidZeroWhenListValueBelowIncrement(t *testing.T) {
+	db := test.SetupTestDB(t, listing.Migration, holding.Migration, outbox.Migration)
+	ctx := test.CreateTestContext()
+	l := logrus.New()
+
+	rp := &recordingProducer{}
+	transactionId := uuid.New()
+	listingId := uuid.New()
+	cmd := newAuctionAcceptCommand(transactionId, listingId, 100, 500)
+
+	handleAcceptToMtsListing(rp.provider())(db)(l, ctx, cmd)
+
+	stored, err := listing.GetById(listingId.String())(db.WithContext(ctx))()
+	if err != nil {
+		t.Fatalf("expected listing row created, got error: %v", err)
+	}
+	if stored.CurrentBid() != 0 {
+		t.Fatalf("currentBid = %d, want 0 (listValue 100 does not exceed increment 500)", stored.CurrentBid())
+	}
+}
+
+// TestAcceptToMtsListing_SeedsAuctionCurrentBidDefaultIncrementWhenZero asserts a
+// zero MinIncrement (older channels / unset) falls back to the default increment
+// of 1 for the currentBid seed.
+func TestAcceptToMtsListing_SeedsAuctionCurrentBidDefaultIncrementWhenZero(t *testing.T) {
+	db := test.SetupTestDB(t, listing.Migration, holding.Migration, outbox.Migration)
+	ctx := test.CreateTestContext()
+	l := logrus.New()
+
+	rp := &recordingProducer{}
+	transactionId := uuid.New()
+	listingId := uuid.New()
+	cmd := newAuctionAcceptCommand(transactionId, listingId, 1000, 0)
+
+	handleAcceptToMtsListing(rp.provider())(db)(l, ctx, cmd)
+
+	stored, err := listing.GetById(listingId.String())(db.WithContext(ctx))()
+	if err != nil {
+		t.Fatalf("expected listing row created, got error: %v", err)
+	}
+	if stored.CurrentBid() != 999 {
+		t.Fatalf("currentBid = %d, want 999 (listValue 1000 - default increment 1)", stored.CurrentBid())
+	}
+}
+
+// seedActiveListing persists an active listing row with a known snapshot so the
+// move handler has something to move to a buyer holding.
+func seedActiveListing(t *testing.T, db *gorm.DB, ctx context.Context, listingId uuid.UUID) listing.Model {
+	t.Helper()
+	m, err := listing.NewBuilder(test.TestTenantId, 0, 42).
+		SetId(listingId).
+		SetSellerName("Seller").
+		SetSaleType(listing.SaleTypeFixed).
+		SetState(listing.StateActive).
+		SetTemplateId(1302000).
+		SetQuantity(1).
+		SetWeaponAttack(17).
+		SetSlots(7).
+		SetLevel(1).
+		SetListValue(1000).
+		SetCommissionRate(0.10).
+		SetCategory("equip").
+		SetSubCategory("onehand").
+		Build()
+	if err != nil {
+		t.Fatalf("build listing: %v", err)
+	}
+	stored, err := listing.CreateListing(db.WithContext(ctx), m)
+	if err != nil {
+		t.Fatalf("seed listing: %v", err)
+	}
+	return stored
+}
+
+// holdingsForBuyer returns the (non-deleted) holdings owned by buyerId. The
+// package's cache=shared in-memory DB leaks rows across tests, so per-buyer
+// filtering keeps the "exactly one holding" assertion isolated.
+func holdingsForBuyer(t *testing.T, db *gorm.DB, ctx context.Context, buyerId uint32) []holding.Model {
+	t.Helper()
+	all, err := holding.GetAll()(db.WithContext(ctx))()
+	if err != nil {
+		t.Fatalf("holding GetAll: %v", err)
+	}
+	var out []holding.Model
+	for _, m := range all {
+		if m.OwnerId() == buyerId {
+			out = append(out, m)
+		}
+	}
+	return out
+}
+
+func newMoveCommand(transactionId uuid.UUID, listingId uuid.UUID, buyerId uint32) custody.Command[custody.MtsMoveListingToHoldingCommandBody] {
+	return custody.Command[custody.MtsMoveListingToHoldingCommandBody]{
+		TransactionId: transactionId,
+		Type:          custody.CommandMtsMoveListingToHolding,
+		Body: custody.MtsMoveListingToHoldingCommandBody{
+			ListingId: listingId,
+			BuyerId:   buyerId,
+			WorldId:   0,
+		},
+	}
+}
+
+func TestMtsMoveListingToHolding_MarksSoldCreatesHoldingAndAcks(t *testing.T) {
+	db := test.SetupTestDB(t, listing.Migration, holding.Migration, transaction.Migration, outbox.Migration)
+	ctx := test.CreateTestContext()
+	l := logrus.New()
+
+	transactionId := uuid.New()
+	listingId := uuid.New()
+	// The package uses a cache=shared in-memory DB, so rows leak across tests;
+	// scope holding assertions to this test's unique buyer id.
+	const buyerId = uint32(7770001)
+	seeded := seedActiveListing(t, db, ctx, listingId)
+	sellerId := seeded.SellerId()
+
+	rp := &recordingProducer{}
+	handleMtsMoveListingToHolding(rp.provider())(db)(l, ctx, newMoveCommand(transactionId, listingId, buyerId))
+
+	// listing marked sold
+	stored, err := listing.GetById(listingId.String())(db.WithContext(ctx))()
+	if err != nil {
+		t.Fatalf("listing lookup: %v", err)
+	}
+	if stored.State() != listing.StateSold {
+		t.Fatalf("expected listing state sold, got %s", stored.State())
+	}
+
+	// exactly one holding for the buyer, origin purchased, snapshot copied
+	buyerHoldings := holdingsForBuyer(t, db, ctx, buyerId)
+	if len(buyerHoldings) != 1 {
+		t.Fatalf("expected exactly 1 holding for buyer %d, got %d", buyerId, len(buyerHoldings))
+	}
+	h := buyerHoldings[0]
+	if h.Origin() != holding.OriginPurchased {
+		t.Fatalf("expected origin purchased, got %s", h.Origin())
+	}
+	if h.TemplateId() != 1302000 || h.Quantity() != 1 || h.WeaponAttack() != 17 || h.Slots() != 7 {
+		t.Fatalf("holding snapshot not copied: tmpl=%d qty=%d watk=%d slots=%d", h.TemplateId(), h.Quantity(), h.WeaponAttack(), h.Slots())
+	}
+
+	// exactly one MOVED ack (drives the saga) + one LISTING_SOLD (drives the
+	// channel's BuyItemDone), both carrying the transactionId.
+	moved := eventsOfType(allEvents(t, db, rp, transactionId), custody.StatusEventTypeMoved)
+	if len(moved) != 1 {
+		t.Fatalf("expected 1 MOVED ack, got %d (all: %v)", len(moved), allEvents(t, db, rp, transactionId))
+	}
+	if moved[0].transactionId != transactionId {
+		t.Fatalf("ack transactionId mismatch: want %s got %s", transactionId, moved[0].transactionId)
+	}
+	sold := eventsOfType(allEvents(t, db, rp, transactionId), mtsmsg.StatusEventTypeListingSold)
+	if len(sold) != 1 {
+		t.Fatalf("expected 1 LISTING_SOLD event, got %d (all: %v)", len(sold), allEvents(t, db, rp, transactionId))
+	}
+	if sold[0].transactionId != transactionId {
+		t.Fatalf("LISTING_SOLD transactionId mismatch: want %s got %s", transactionId, sold[0].transactionId)
+	}
+
+	// Settle records TWO transaction-history rows: the buyer's purchase row and
+	// the seller's sale row, each owned by its own character with the other as
+	// counterparty, both carrying the item + sale price snapshot.
+	tp := transaction.NewProcessor(l, ctx, db)
+	buyerTxns, err := tp.GetByCharacter(buyerId)
+	if err != nil {
+		t.Fatalf("transaction GetByCharacter(buyer): %v", err)
+	}
+	if len(buyerTxns) != 1 {
+		t.Fatalf("expected 1 purchase row for buyer %d, got %d", buyerId, len(buyerTxns))
+	}
+	bt := buyerTxns[0]
+	if bt.Kind() != transaction.KindPurchase {
+		t.Errorf("buyer row kind = %q, want purchase", bt.Kind())
+	}
+	if bt.CounterpartyId() != sellerId {
+		t.Errorf("buyer row counterparty = %d, want seller %d", bt.CounterpartyId(), sellerId)
+	}
+	// The buyer's purchase row records what the buyer actually PAID: the marked-up
+	// total, not the seller's base. MarkedUp(1000, rate=0.10, commissionBase=500) =
+	// ceil(1000*1.10) + 500 = 1100 + 500 = 1600 (config fetch fails in test → the
+	// DefaultConfig commissionBase of 500 is used).
+	if bt.ItemId() != 1302000 || bt.Quantity() != 1 || bt.TotalPrice() != 1600 {
+		t.Errorf("buyer row snapshot mismatch: item=%d qty=%d price=%d (want price 1600 marked-up)", bt.ItemId(), bt.Quantity(), bt.TotalPrice())
+	}
+
+	sellerTxns, err := tp.GetByCharacter(sellerId)
+	if err != nil {
+		t.Fatalf("transaction GetByCharacter(seller): %v", err)
+	}
+	if len(sellerTxns) != 1 {
+		t.Fatalf("expected 1 sale row for seller %d, got %d", sellerId, len(sellerTxns))
+	}
+	st := sellerTxns[0]
+	if st.Kind() != transaction.KindSale {
+		t.Errorf("seller row kind = %q, want sale", st.Kind())
+	}
+	if st.CounterpartyId() != buyerId {
+		t.Errorf("seller row counterparty = %d, want buyer %d", st.CounterpartyId(), buyerId)
+	}
+	// The seller's sale row records what the seller NETTED: the base price (1000),
+	// not the marked-up total the buyer paid — the commission is the sink.
+	if st.ItemId() != 1302000 || st.Quantity() != 1 || st.TotalPrice() != 1000 {
+		t.Errorf("seller row snapshot mismatch: item=%d qty=%d price=%d (want price 1000 base)", st.ItemId(), st.Quantity(), st.TotalPrice())
+	}
+}
+
+// TestMtsMoveListingToHolding_UsesSettlePriceNotListingRow pins the bug-1 fix: the
+// history rows record the settle payload's Price (e.g. a buy-now price), NOT the
+// listing row's list value / current bid. A buy-now of an auction previously
+// recorded the last BID here (task-102 live finding).
+func TestMtsMoveListingToHolding_UsesSettlePriceNotListingRow(t *testing.T) {
+	db := test.SetupTestDB(t, listing.Migration, holding.Migration, transaction.Migration, outbox.Migration)
+	ctx := test.CreateTestContext()
+	l := logrus.New()
+
+	transactionId := uuid.New()
+	listingId := uuid.New()
+	const buyerId = uint32(7770078)
+	seeded := seedActiveListing(t, db, ctx, listingId) // list value 1000
+	sellerId := seeded.SellerId()
+
+	// The settle payload carries Price 2000 (a buy-now price ≠ the 1000 list value);
+	// both history rows must reflect 2000, not 1000.
+	cmd := newMoveCommand(transactionId, listingId, buyerId)
+	cmd.Body.Price = 2000
+
+	rp := &recordingProducer{}
+	handleMtsMoveListingToHolding(rp.provider())(db)(l, ctx, cmd)
+
+	tp := transaction.NewProcessor(l, ctx, db)
+	buyerTxns, err := tp.GetByCharacter(buyerId)
+	if err != nil || len(buyerTxns) != 1 {
+		t.Fatalf("buyer rows: err=%v count=%d (want 1)", err, len(buyerTxns))
+	}
+	// buyer PAID MarkedUp(2000, 0.10, 500) = ceil(2000*1.10) + 500 = 2200 + 500 = 2700.
+	if got := buyerTxns[0].TotalPrice(); got != 2700 {
+		t.Errorf("buyer row price = %d, want 2700 (MarkedUp buy-now 2000, not row-derived)", got)
+	}
+	// seedActiveListing uses a fixed seller id, and the in-memory DB leaks rows across
+	// tests, so scope to THIS buyer's sale row (unique buyer => unique counterparty).
+	sellerTxns, err := tp.GetByCharacter(sellerId)
+	if err != nil {
+		t.Fatalf("seller rows: %v", err)
+	}
+	var sellerPrice uint32
+	found := false
+	for _, st := range sellerTxns {
+		if st.CounterpartyId() == buyerId {
+			sellerPrice, found = st.TotalPrice(), true
+		}
+	}
+	if !found {
+		t.Fatalf("no seller sale row with counterparty %d", buyerId)
+	}
+	// seller NETTED the base 2000 (not the 1000 list value).
+	if sellerPrice != 2000 {
+		t.Errorf("seller row price = %d, want 2000 (settle base, not row-derived)", sellerPrice)
+	}
+}
+
+func TestMtsMoveListingToHolding_ReplayCreatesNoSecondHoldingAndReacks(t *testing.T) {
+	db := test.SetupTestDB(t, listing.Migration, holding.Migration, outbox.Migration)
+	ctx := test.CreateTestContext()
+	l := logrus.New()
+
+	transactionId := uuid.New()
+	listingId := uuid.New()
+	// Unique buyer id so the shared in-memory DB's leaked rows don't pollute the
+	// per-buyer count.
+	const buyerId = uint32(7770002)
+	seedActiveListing(t, db, ctx, listingId)
+
+	rp := &recordingProducer{}
+	cmd := newMoveCommand(transactionId, listingId, buyerId)
+
+	// first delivery
+	handleMtsMoveListingToHolding(rp.provider())(db)(l, ctx, cmd)
+	// replayed delivery (same listing/buyer/transaction)
+	handleMtsMoveListingToHolding(rp.provider())(db)(l, ctx, cmd)
+
+	// still exactly one holding for this buyer after replay (no second copy granted)
+	if got := len(holdingsForBuyer(t, db, ctx, buyerId)); got != 1 {
+		t.Fatalf("expected exactly 1 holding for buyer %d after replay, got %d", buyerId, got)
+	}
+
+	// listing remains sold
+	stored, err := listing.GetById(listingId.String())(db.WithContext(ctx))()
+	if err != nil {
+		t.Fatalf("listing lookup: %v", err)
+	}
+	if stored.State() != listing.StateSold {
+		t.Fatalf("expected listing state sold, got %s", stored.State())
+	}
+
+	// both deliveries re-acked MOVED (and re-emitted LISTING_SOLD) with the same
+	// transactionId. A replayed LISTING_SOLD is a harmless idempotent buyer notice.
+	moved := eventsOfType(allEvents(t, db, rp, transactionId), custody.StatusEventTypeMoved)
+	if len(moved) != 2 {
+		t.Fatalf("expected 2 MOVED acks (original + replay), got %d (all: %v)", len(moved), allEvents(t, db, rp, transactionId))
+	}
+	for i, ev := range moved {
+		if ev.transactionId != transactionId {
+			t.Fatalf("ack %d transactionId mismatch: %s", i, ev.transactionId)
+		}
+	}
+	if got := len(eventsOfType(allEvents(t, db, rp, transactionId), mtsmsg.StatusEventTypeListingSold)); got != 2 {
+		t.Fatalf("expected 2 LISTING_SOLD events (original + replay), got %d (all: %v)", got, allEvents(t, db, rp, transactionId))
+	}
+}
+
+func TestReleaseFromMtsHolding_SoftDeletesAndIsIdempotent(t *testing.T) {
+	db := test.SetupTestDB(t, listing.Migration, holding.Migration, outbox.Migration)
+	ctx := test.CreateTestContext()
+	l := logrus.New()
+
+	// seed a holding row to release
+	holdingId := uuid.New()
+	m, err := holding.NewBuilder(test.TestTenantId, 0, 99).
+		SetId(holdingId).
+		SetOrigin(holding.OriginPurchased).
+		SetTemplateId(1302000).
+		SetQuantity(1).
+		Build()
+	if err != nil {
+		t.Fatalf("build holding: %v", err)
+	}
+	if _, err := holding.CreateHolding(db.WithContext(ctx), m); err != nil {
+		t.Fatalf("seed holding: %v", err)
+	}
+
+	rp := &recordingProducer{}
+	transactionId := uuid.New()
+	cmd := custody.Command[custody.ReleaseFromMtsHoldingCommandBody]{
+		TransactionId: transactionId,
+		Type:          custody.CommandReleaseFromMtsHolding,
+		Body:          custody.ReleaseFromMtsHoldingCommandBody{HoldingId: holdingId},
+	}
+
+	// first delivery: soft-deletes + acks
+	handleReleaseFromMtsHolding(rp.provider())(db)(l, ctx, cmd)
+	if _, err := holding.GetById(holdingId.String())(db.WithContext(ctx))(); err == nil {
+		t.Fatalf("expected holding soft-deleted after release")
+	}
+
+	// replayed delivery: already released, re-acks without error
+	handleReleaseFromMtsHolding(rp.provider())(db)(l, ctx, cmd)
+
+	// Both deliveries ack RELEASED (original + replay).
+	released := eventsOfType(allEvents(t, db, rp, transactionId), custody.StatusEventTypeReleased)
+	if len(released) != 2 {
+		t.Fatalf("expected 2 RELEASED acks (original + replay), got %d", len(released))
+	}
+	for i, ev := range released {
+		if ev.transactionId != transactionId {
+			t.Fatalf("RELEASED ack %d transactionId mismatch: %s", i, ev.transactionId)
+		}
+	}
+
+	// Only the first delivery emits ITEM_TAKEN_HOME (which drives the channel's
+	// Transfer Inventory re-push); the replay finds the row already soft-deleted
+	// and skips the re-emit, keeping release idempotent.
+	takenHome := eventsOfType(allEvents(t, db, rp, transactionId), mtsmsg.StatusEventTypeItemTakenHome)
+	if len(takenHome) != 1 {
+		t.Fatalf("expected exactly 1 ITEM_TAKEN_HOME event, got %d", len(takenHome))
+	}
+	if takenHome[0].transactionId != transactionId {
+		t.Fatalf("ITEM_TAKEN_HOME transactionId mismatch: %s", takenHome[0].transactionId)
+	}
+}
+
+// TestRestoreMtsHolding_UndoesReleaseAndIsIdempotent asserts the WithdrawFromMts
+// compensation handler un-soft-deletes the holding (making it readable again)
+// and is idempotent: a replayed restore on an already-live row re-acks RESTORED
+// without error. This is the dupe-safety inverse of ReleaseFromMtsHolding.
+func TestRestoreMtsHolding_UndoesReleaseAndIsIdempotent(t *testing.T) {
+	db := test.SetupTestDB(t, listing.Migration, holding.Migration, outbox.Migration)
+	ctx := test.CreateTestContext()
+	l := logrus.New()
+
+	// seed + release a holding row so there is something to restore
+	holdingId := uuid.New()
+	m, err := holding.NewBuilder(test.TestTenantId, 0, 99).
+		SetId(holdingId).
+		SetOrigin(holding.OriginPurchased).
+		SetTemplateId(1302000).
+		SetQuantity(1).
+		Build()
+	if err != nil {
+		t.Fatalf("build holding: %v", err)
+	}
+	if _, err := holding.CreateHolding(db.WithContext(ctx), m); err != nil {
+		t.Fatalf("seed holding: %v", err)
+	}
+	if _, err := holding.SoftDelete(db.WithContext(ctx), holdingId.String()); err != nil {
+		t.Fatalf("seed release: %v", err)
+	}
+
+	rp := &recordingProducer{}
+	transactionId := uuid.New()
+	cmd := custody.Command[custody.RestoreMtsHoldingCommandBody]{
+		TransactionId: transactionId,
+		Type:          custody.CommandRestoreMtsHolding,
+		Body:          custody.RestoreMtsHoldingCommandBody{HoldingId: holdingId},
+	}
+
+	// first delivery: un-soft-deletes + acks; the holding is readable again
+	handleRestoreMtsHolding(rp.provider())(db)(l, ctx, cmd)
+	if _, err := holding.GetById(holdingId.String())(db.WithContext(ctx))(); err != nil {
+		t.Fatalf("expected holding restored (readable) after restore: %v", err)
+	}
+
+	// replayed delivery: already live, re-acks without error
+	handleRestoreMtsHolding(rp.provider())(db)(l, ctx, cmd)
+
+	if len(allEvents(t, db, rp, transactionId)) != 2 {
+		t.Fatalf("expected 2 RESTORED acks (original + replay), got %d", len(allEvents(t, db, rp, transactionId)))
+	}
+	for i, ev := range allEvents(t, db, rp, transactionId) {
+		if ev.eventType != custody.StatusEventTypeRestored {
+			t.Fatalf("ack %d not RESTORED: %s", i, ev.eventType)
+		}
+		if ev.transactionId != transactionId {
+			t.Fatalf("ack %d transactionId mismatch: %s", i, ev.transactionId)
+		}
+	}
+}
+
+// TestRestoreListingFromHolding_ReversesMove pins the late-comp inverse of a
+// settlement move: after a forward move (listing sold + buyer holding created),
+// RestoreListingFromHolding returns the listing to active and soft-deletes the
+// buyer holding, so a late buy delivers no free item.
+func TestRestoreListingFromHolding_ReversesMove(t *testing.T) {
+	db := test.SetupTestDB(t, listing.Migration, holding.Migration, transaction.Migration, outbox.Migration)
+	ctx := test.CreateTestContext()
+	l := logrus.New()
+
+	transactionId := uuid.New()
+	listingId := uuid.New()
+	const buyerId = uint32(7770101)
+	seedActiveListing(t, db, ctx, listingId)
+
+	rp := &recordingProducer{}
+	// Forward move: listing -> sold, buyer holding created.
+	handleMtsMoveListingToHolding(rp.provider())(db)(l, ctx, newMoveCommand(transactionId, listingId, buyerId))
+	if got := holdingsForBuyer(t, db, ctx, buyerId); len(got) != 1 {
+		t.Fatalf("precondition: expected 1 buyer holding after move, got %d", len(got))
+	}
+
+	// Reverse it.
+	handleRestoreListingFromHolding(rp.provider())(db)(l, ctx, custody.Command[custody.RestoreListingFromHoldingCommandBody]{
+		TransactionId: transactionId,
+		Type:          custody.CommandRestoreListingFromHolding,
+		Body:          custody.RestoreListingFromHoldingCommandBody{ListingId: listingId, BuyerId: buyerId},
+	})
+
+	stored, err := listing.GetById(listingId.String())(db.WithContext(ctx))()
+	if err != nil {
+		t.Fatalf("listing lookup: %v", err)
+	}
+	if stored.State() != listing.StateActive {
+		t.Fatalf("listing state = %s, want active (restored)", stored.State())
+	}
+	if got := holdingsForBuyer(t, db, ctx, buyerId); len(got) != 0 {
+		t.Fatalf("expected 0 live buyer holdings after reverse, got %d (free item not clawed back)", len(got))
+	}
+}
+
+// TestRemoveMtsListing_DeletesActiveOnly pins the late-comp inverse of a spurious
+// accept: an active listing is removed; a sold one is left untouched.
+func TestRemoveMtsListing_DeletesActiveOnly(t *testing.T) {
+	db := test.SetupTestDB(t, listing.Migration, holding.Migration, transaction.Migration, outbox.Migration)
+	ctx := test.CreateTestContext()
+	l := logrus.New()
+
+	activeId := uuid.New()
+	seedActiveListing(t, db, ctx, activeId)
+	rp := &recordingProducer{}
+	handleRemoveMtsListing(rp.provider())(db)(l, ctx, custody.Command[custody.RemoveMtsListingCommandBody]{
+		TransactionId: uuid.New(),
+		Type:          custody.CommandRemoveMtsListing,
+		Body:          custody.RemoveMtsListingCommandBody{ListingId: activeId},
+	})
+	if _, err := listing.GetById(activeId.String())(db.WithContext(ctx))(); err == nil {
+		t.Fatal("expected active listing removed")
+	}
+
+	// A sold listing is not removed (guard).
+	soldId := uuid.New()
+	seedActiveListing(t, db, ctx, soldId)
+	if _, err := listing.UpdateState(db.WithContext(ctx), soldId.String(), listing.StateActive, listing.StateSold); err != nil {
+		t.Fatalf("to sold: %v", err)
+	}
+	handleRemoveMtsListing(rp.provider())(db)(l, ctx, custody.Command[custody.RemoveMtsListingCommandBody]{
+		TransactionId: uuid.New(),
+		Type:          custody.CommandRemoveMtsListing,
+		Body:          custody.RemoveMtsListingCommandBody{ListingId: soldId},
+	})
+	if _, err := listing.GetById(soldId.String())(db.WithContext(ctx))(); err != nil {
+		t.Fatalf("sold listing must survive RemoveMtsListing: %v", err)
+	}
+}

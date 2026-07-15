@@ -1,5 +1,6 @@
 import { api } from "@/lib/api/client";
 import { buildQueryString, type ServiceOptions, type QueryOptions } from "@/lib/api/query-params";
+import { fetchAll, fetchPaged } from "@/services/api/pagination";
 
 const BASE_PATH = "/api/data/maps";
 
@@ -47,18 +48,41 @@ function withSparseFields(options?: QueryOptions): QueryOptions {
   };
 }
 
-async function fetchAll(options?: QueryOptions): Promise<MapData[]> {
+// MapsPage advertises "Results are limited to 50 entries" — the search
+// methods below are bounded single-page lookups, not drained browses
+// (task-117).
+const SEARCH_RESULT_LIMIT = 50;
+
+/**
+ * Drain every page for a genuinely unbounded fetch (task-117).
+ */
+async function fetchAllMaps(options?: QueryOptions): Promise<MapData[]> {
   const finalOptions = withSparseFields(options);
-  const maps = await api.getList<MapData>(
+  const maps = await fetchAll<MapData>(
     `${BASE_PATH}${buildQueryString(finalOptions)}`,
+    undefined,
     finalOptions,
   );
   return sortMaps(maps);
 }
 
+/**
+ * Fetch a single bounded page (task-117) — matches the "Results are limited
+ * to 50 entries" copy on MapsPage.
+ */
+async function fetchSearchPage(options?: QueryOptions): Promise<MapData[]> {
+  const finalOptions = withSparseFields(options);
+  const result = await fetchPaged<MapData>(
+    `${BASE_PATH}${buildQueryString(finalOptions)}`,
+    { number: 1, size: SEARCH_RESULT_LIMIT },
+    finalOptions,
+  );
+  return sortMaps(result.data);
+}
+
 export const mapsService = {
   async getAllMaps(options?: QueryOptions): Promise<MapData[]> {
-    return fetchAll(options);
+    return fetchAllMaps(options);
   },
 
   async getMapById(id: string, options?: ServiceOptions): Promise<MapData> {
@@ -87,15 +111,18 @@ export const mapsService = {
   },
 
   async searchMaps(query: string, options?: QueryOptions): Promise<MapData[]> {
-    return fetchAll({ ...options, search: query });
+    return fetchSearchPage({ ...options, search: query });
   },
 
   async searchMapsByName(name: string, options?: ServiceOptions): Promise<MapData[]> {
-    return fetchAll({ ...options, search: name, filters: { name } });
+    return fetchSearchPage({ ...options, search: name, filters: { name } });
   },
 
+  /**
+   * Get every map on the given street, draining all pages (task-117).
+   */
   async getMapsByStreetName(streetName: string, options?: ServiceOptions): Promise<MapData[]> {
-    return fetchAll({ ...options, filters: { streetName } });
+    return fetchAllMaps({ ...options, filters: { streetName } });
   },
 };
 

@@ -40,6 +40,7 @@ const (
 	ClassificationRevitalizer              = Classification(226)
 	ClassificationConsumableSkillBook      = Classification(228)
 	ClassificationConsumableMasteryBook    = Classification(229)
+	ClassificationConsumableStoreSearch    = Classification(231)
 	ClassificationBullet                   = Classification(233)
 	ClassificationConsumableMonsterCard    = Classification(238)
 
@@ -103,6 +104,7 @@ const (
 	ClassificationRemoteMerchant           = Classification(545)
 	ClassificationPetMultiConsumable       = Classification(546)
 	ClassificationRemoteStore              = Classification(547)
+	ClassificationViciousHammer            = Classification(557)
 
 	WeaponTypeOneHandedSword = WeaponType(0)
 	WeaponTypeOneHandedAxe   = WeaponType(1)

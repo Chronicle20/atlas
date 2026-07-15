@@ -51,6 +51,31 @@ func (s *DbStorage[I, M]) All(ctx context.Context) model.Provider[[]M] {
 	return model.FixedProvider[[]M](results)
 }
 
+// AllPaged pages this document type's rows over the documents table,
+// ordered by document_id (with the schema primary key appended as a
+// tie-break by database.PagedQuery), scoped to the context tenant via the
+// same "type = ?" filter All uses.
+func (s *DbStorage[I, M]) AllPaged(ctx context.Context) func(page model.Page) model.Provider[model.Paged[M]] {
+	return func(page model.Page) model.Provider[model.Paged[M]] {
+		return func() (model.Paged[M], error) {
+			scoped := s.db.WithContext(ctx).Where("type = ?", s.docType).Order("document_id")
+			pe, err := database.PagedQuery[Entity](scoped, page)()
+			if err != nil {
+				return model.Paged[M]{}, err
+			}
+			ms := make([]M, 0, len(pe.Items))
+			for _, doc := range pe.Items {
+				var rm M
+				if err := jsonapi.Unmarshal(doc.Content, &rm); err != nil {
+					return model.Paged[M]{}, err
+				}
+				ms = append(ms, rm)
+			}
+			return model.Paged[M]{Items: ms, Total: pe.Total, Page: pe.Page}, nil
+		}
+	}
+}
+
 func (s *DbStorage[I, M]) ById(ctx context.Context) func(id I) model.Provider[M] {
 	return func(id I) model.Provider[M] {
 		var res M

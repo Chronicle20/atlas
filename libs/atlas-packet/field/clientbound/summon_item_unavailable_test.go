@@ -7,6 +7,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=field/clientbound/FieldSummonItemUnavailable version=gms_v48 ida=0x4c7b1f
 // packet-audit:verify packet=field/clientbound/FieldSummonItemUnavailable version=gms_v83 ida=0x532fcf
 // packet-audit:verify packet=field/clientbound/FieldSummonItemUnavailable version=gms_v84 ida=0x53f255
 // packet-audit:verify packet=field/clientbound/FieldSummonItemUnavailable version=gms_v87 ida=0x55a7e8
@@ -19,6 +20,20 @@ func TestSummonItemUnavailableGolden(t *testing.T) {
 	actual := test.Encode(t, ctx, input.Encode, nil)
 	if !bytes.Equal(actual, expected) {
 		t.Errorf("golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
+// TestSummonItemUnavailableByteOutputV48 pins the gms_v48 SUMMON_ITEM_INAVAILABLE
+// (op 0x53=83) clientbound wire. IDA: CField::OnSummonItemInavailable @0x4c7b1f
+// (GMS_v48_1_DEVM.exe) reads a single Decode1(message) — byte-identical to the
+// version-invariant golden.
+func TestSummonItemUnavailableByteOutputV48(t *testing.T) {
+	input := NewSummonItemUnavailable(0x03)
+	ctx := test.CreateContext("GMS", 48, 1)
+	expected := []byte{0x03}
+	actual := test.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v48 golden mismatch: got %v want %v", actual, expected)
 	}
 }
 

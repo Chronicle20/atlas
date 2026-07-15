@@ -360,6 +360,11 @@
         "handler": "MountFoodHandle"
       },
       {
+        "opCode": "0x52",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterCashItemUseHandle"
+      },
+      {
         "opCode": "0x59",
         "validator": "LoggedInValidator",
         "handler": "CharacterItemUseScrollHandle"
@@ -841,6 +846,126 @@
         "opCode": "0xBD",
         "validator": "LoggedInValidator",
         "handler": "SummonDamageHandle"
+      },
+      {
+        "opCode": "0xA4",
+        "validator": "LoggedInValidator",
+        "handler": "EnterMtsHandle"
+      },
+      {
+        "opCode": "0x109",
+        "validator": "NoOpValidator",
+        "handler": "ItcStatusChargeHandle"
+      },
+      {
+        "opCode": "0x10A",
+        "validator": "LoggedInValidator",
+        "handler": "ItcQueryCashRequestHandle"
+      },
+      {
+        "opCode": "0x10B",
+        "validator": "LoggedInValidator",
+        "handler": "ItcOperationHandle",
+        "options": {
+          "operations": {
+            "REGISTER_SALE": 2,
+            "SALE_CURRENT_ITEM": 3,
+            "REGISTER_WISH_ENTRY": 4,
+            "GET_ITC_LIST": 5,
+            "SEARCH_ITC_LIST": 6,
+            "CANCEL_SALE": 7,
+            "TAKE_HOME": 8,
+            "SET_ZZIM": 9,
+            "DELETE_ZZIM": 10,
+            "VIEW_WISH": 11,
+            "BUY_WISH": 12,
+            "CANCEL_WISH": 13,
+            "BUY": 16,
+            "BUY_ZZIM": 17,
+            "REGISTER_AUCTION": 18,
+            "PLACE_BID": 19,
+            "BUY_AUCTION_IMM": 20
+          }
+        }
+      },
+      {
+        "opCode": "0x112",
+        "validator": "LoggedInValidator",
+        "handler": "ItemUpgradeUpdateHandle"
+      },
+      {
+        "opCode": "0x45",
+        "validator": "LoggedInValidator",
+        "handler": "OwlActionHandle",
+        "options": {
+          "operations": {
+            "OPEN": 5
+          }
+        }
+      },
+      {
+        "opCode": "0x46",
+        "validator": "LoggedInValidator",
+        "handler": "OwlWarpHandle"
+      },
+      {
+        "opCode": "0x81",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterInteractionHandle",
+        "options": {
+          "operations": {
+            "CREATE": 0,
+            "INVITE": 2,
+            "INVITE_DECLINE": 3,
+            "VISIT": 4,
+            "CHAT": 6,
+            "EXIT": 10,
+            "OPEN": 11,
+            "CASH_TRADE_OPEN": 14,
+            "TRADE_PUT_ITEM": 15,
+            "TRADE_ADD_MESO": 16,
+            "TRADE_CONFIRM": 17,
+            "TRANSACTION": 20,
+            "PERSONAL_STORE_PUT_ITEM": 22,
+            "PERSONAL_STORE_BUY": 23,
+            "PERSONAL_STORE_REMOVE_ITEM": 27,
+            "PERSONAL_STORE_ADD_TO_BLACKLIST": 28,
+            "PERSONAL_STORE_SET_VISITOR": 29,
+            "PERSONAL_STORE_SET_BLACK_LIST": 30,
+            "FIELD_ADD_TO_BLACK_LIST": 31,
+            "FIELD_REMOVE_FROM_BLACK_LIST": 32,
+            "MERCHANT_PUT_ITEM": 33,
+            "MERCHANT_BUY": 34,
+            "MERCHANT_REMOVE_ITEM": 38,
+            "MERCHANT_MERCHANT_OFF": 39,
+            "MERCHANT_ORGANIZE": 40,
+            "MERCHANT_EXIT": 41,
+            "MERCHANT_WITHDRAW_MESO": 43,
+            "MERCHANT_VIEW_VISIT_LIST": 46,
+            "MERCHANT_VIEW_BLACK_LIST": 47,
+            "MERCHANT_ADD_TO_BLACK_LIST": 48,
+            "MERCHANT_REMOVE_FROM_BLACK_LIST": 49,
+            "MEMORY_GAME_ASK_TIE": 50,
+            "MEMORY_GAME_TIE_ANSWER": 51,
+            "MEMORY_GAME_FORFEIT": 52,
+            "MEMORY_GAME_ASK_RETREAT": 54,
+            "MEMORY_GAME_RETREAT_ANSWER": 55,
+            "MEMORY_GAME_EXIT_AFTER_GAME": 56,
+            "MEMORY_GAME_CANCEL_EXIT_AFTER_GAME": 57,
+            "MEMORY_GAME_READY": 58,
+            "MEMORY_GAME_UNREADY": 59,
+            "MEMORY_GAME_EXPEL": 60,
+            "MEMORY_GAME_START": 61,
+            "MEMORY_GAME_SKIP": 63,
+            "MEMORY_GAME_MOVE_STONE": 64,
+            "MEMORY_GAME_FIP_CARD": 68
+          }
+        }
+      },
+      {
+        "opCode": "0x42",
+        "validator": "LoggedInValidator",
+        "handler": "HiredMerchantOperationHandle"
       }
     ],
     "writers": [
@@ -1281,8 +1406,16 @@
         "writer": "ScriptProgress"
       },
       {
+        "opCode": "0x84",
+        "writer": "CharacterSkillMacro"
+      },
+      {
         "opCode": "0x85",
         "writer": "SetField"
+      },
+      {
+        "opCode": "0x86",
+        "writer": "SetItc"
       },
       {
         "opCode": "0x87",
@@ -1735,6 +1868,18 @@
         "writer": "SpawnMonster"
       },
       {
+        "opCode": "0x11A",
+        "writer": "SpawnHiredMerchant"
+      },
+      {
+        "opCode": "0x11B",
+        "writer": "DestroyHiredMerchant"
+      },
+      {
+        "opCode": "0x11C",
+        "writer": "UpdateHiredMerchant"
+      },
+      {
         "opCode": "0xFD",
         "writer": "DestroyMonster"
       },
@@ -2179,7 +2324,20 @@
       },
       {
         "opCode": "0x177",
-        "writer": "ViciousHammer"
+        "writer": "ViciousHammer",
+        "options": {
+          "operations": {
+            "OPEN": 0,
+            "SUCCESS": 63,
+            "FAILURE": 64
+          },
+          "errorCodes": {
+            "UNKNOWN": 0,
+            "NOT_UPGRADABLE": 1,
+            "CAP_REACHED": 2,
+            "HORNTAIL": 3
+          }
+        }
       },
       {
         "opCode": "0x155",
@@ -2231,6 +2389,10 @@
         "writer": "RemoveTownDoor"
       },
       {
+        "opCode": "0x16F",
+        "writer": "MtsChargeParamResult"
+      },
+      {
         "opCode": "0x170",
         "writer": "MtsOperation2"
       },
@@ -2238,6 +2400,27 @@
         "opCode": "0x171",
         "writer": "MtsOperation",
         "options": {
+          "processStatusCodes": {
+            "HISTORY_SOLD": 0,
+            "HISTORY_PURCHASED": 1,
+            "HISTORY_BID_LOST": 2,
+            "HISTORY_CANCELLED": 3,
+            "AUCTION_EXHIBIT": 1,
+            "AUCTION_BID": 2
+          },
+          "noticeFailReasons": {
+            "NOT_ENOUGH_NX": 66,
+            "REGISTER_FAILED": 0,
+            "NOT_ENOUGH_MESOS": 67,
+            "NX_ERROR": 68,
+            "INVENTORY_FULL": 71,
+            "LIST_LOAD_FAILED": 73,
+            "CANCEL_HAS_BID": 78,
+            "MAY_NOT_BE_SOLD": 79,
+            "ITEM_SOLD": 81,
+            "STARS_NOT_TRADABLE": 82,
+            "BELOW_MIN_LEVEL": 83
+          },
           "operations": {
             "GET_ITC_LIST_DONE": 21,
             "GET_ITC_LIST_FAILED": 22,
@@ -2366,10 +2549,51 @@
             "INVITE_RESULT": 3,
             "ENTER": 4,
             "ENTER_RESULT": 5,
+            "CHAT": 6,
+            "CHAT_THING": 8,
             "LEAVE": 10,
-            "UPDATE_MERCHANT": 25
+            "UPDATE_MERCHANT": 25,
+            "PERSONAL_STORE_ITEM_SOLD": 26,
+            "MERCHANT_VIEW_VISIT_LIST": 46,
+            "MERCHANT_VIEW_BLACK_LIST": 47
+          },
+          "enterError": {
+            "ROOM_CLOSED": 1,
+            "FULL": 2,
+            "OTHER_REQUESTS": 3,
+            "NOT_WHEN_DEAD": 4,
+            "NOT_IN_EVENT": 5,
+            "UNABLE": 6,
+            "TRADE_NOT_ALLOWED": 7,
+            "NOT_SAME_MAP": 9,
+            "CANNOT_OPEN_STORE_NEAR_PORTAL": 10,
+            "CANNOT_START_GAME_HERE": 11,
+            "CANNOT_OPEN_STORE_IN_CHANNEL": 12,
+            "CANNOT_OPEN_MINI_ROOM_HERE": 13,
+            "CANNOT_START_GAME_HERE_2": 14,
+            "MUST_BE_IN_FREE_MARKET": 15,
+            "MUST_BE_IN_ROOM_722": 16,
+            "CANNOT_ENTER_STORE": 17,
+            "UNDERGOING_MAINTENANCE": 18,
+            "CANNOT_ENTER_TOURNAMENT_ROOM": 19,
+            "TRADE_NOT_ALLOWED_2": 20,
+            "NOT_ENOUGH_MESOS": 21,
+            "INCORRECT_PASSWORD": 22,
+            "ITEM_EXPIRED": 24
+          },
+          "leaveReason": {
+            "CANNOT_ESTABLISH_HERE": 1,
+            "SHOP_CLOSED": 3,
+            "USER_BANNED": 5,
+            "TIME_LIMIT_PASSED": 6,
+            "OUT_OF_STOCK": 14,
+            "BANNED_TIME_LIMIT": 15
           }
         }
+      },
+      {
+        "opCode": "0x0B0",
+        "writer": "MiniRoom"
       },
       {
         "opCode": "0x3B",
@@ -2379,6 +2603,46 @@
             "BBS_THREAD_LIST": 6,
             "BBS_THREAD": 7,
             "BBS_ENTRY_NOT_FOUND": 8
+          }
+        }
+      },
+      {
+        "opCode": "0x17B",
+        "writer": "VegaScroll",
+        "options": {
+          "operations": {
+            "START_SUCCESS": 66,
+            "START_FAILURE": 71,
+            "RESULT_SUCCESS": 67,
+            "RESULT_FAILURE": 69,
+            "INVALID": 68
+          }
+        }
+      },
+      {
+        "opCode": "0x48",
+        "writer": "ShopScannerResult",
+        "options": {
+          "operations": {
+            "RESULT": 6,
+            "HOT_LIST": 7
+          }
+        }
+      },
+      {
+        "opCode": "0x49",
+        "writer": "ShopLinkResult",
+        "options": {
+          "operations": {
+            "SUCCESS": 0,
+            "CLOSED": 1,
+            "FULL": 2,
+            "BUSY": 3,
+            "DEAD": 4,
+            "NO_TRADE": 7,
+            "DENIED": 17,
+            "MAINTENANCE": 18,
+            "FM_ONLY": 23
           }
         }
       }

@@ -38,6 +38,7 @@ func normalTypesOptions() map[string]interface{} {
 	}
 }
 
+// packet-audit:verify packet=character/clientbound/CharacterMovement version=gms_v72 ida=0x87c1f8
 // packet-audit:verify packet=character/clientbound/CharacterMovement version=gms_v83 ida=0x9726ae
 // packet-audit:verify packet=character/clientbound/CharacterMovement version=gms_v84 ida=0x9b26cd
 // packet-audit:verify packet=character/clientbound/CharacterMovement version=gms_v87 ida=0x9f7647
@@ -55,6 +56,7 @@ func TestCharacterMovementByteOutput(t *testing.T) {
 		Region       string
 		Major, Minor uint16
 	}{
+		{"GMS v72", "GMS", 72, 1},
 		{"GMS v83", "GMS", 83, 1},
 		{"GMS v84", "GMS", 84, 1},
 		{"GMS v87", "GMS", 87, 1},
@@ -96,4 +98,42 @@ func TestCharacterMovementByteOutput(t *testing.T) {
 			require.Equal(t, in.CharacterId(), out.CharacterId(), "characterId round-trip")
 		})
 	}
+}
+
+// TestCharacterMovementByteOutputV61 pins the very-legacy GMS v61 MOVE_PLAYER wire.
+// IDA-verified: CUserRemote::OnMove @0x7bdd6b (GMS_v61.1_U_DEVM.exe, port 13338 —
+// registry's dispatcher note-address 0x7bd8eb is the pool switch, not the handler) is a
+// thunk to CMovePath::OnMovePacket @0x5e3770 — byte-identical structure to v72/v83:
+// characterId(4 LE) prefix (read by the pool dispatcher) + the shared model.Movement
+// opaque blob. model.Movement has no version gate, so the blob is byte-identical to v72
+// (OPAQUE_LEDGER VERIFIED-EXCEPTION; model/movement_test.go is the byte oracle).
+// packet-audit:verify packet=character/clientbound/CharacterMovement version=gms_v61 ida=0x7bdd6b
+func TestCharacterMovementByteOutputV61(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	ctx := pt.CreateContext("GMS", 61, 1)
+	opts := normalTypesOptions()
+	mv := model.Movement{
+		StartX: 100,
+		StartY: 200,
+		Elements: []model.MovementCodec{
+			&model.NormalElement{Element: model.Element{
+				ElemType: 0, X: 110, Y: 210, Vx: 5, Vy: -3, Fh: 1,
+				BMoveAction: 7, TElapse: 50,
+			}},
+		},
+	}
+	in := NewCharacterMovement(0x01020304, mv)
+	got := in.Encode(l, ctx)(opts)
+
+	require.GreaterOrEqual(t, len(got), 4, "characterId prefix")
+	require.Equal(t, []byte{0x04, 0x03, 0x02, 0x01}, got[0:4], "characterId LE uint32")
+
+	wantBlob := mv.Encode(l, ctx)(opts)
+	require.True(t, bytes.Equal(got[4:], wantBlob),
+		"move-path blob must equal model.Movement encoder output\n got=% x\nwant=% x", got[4:], wantBlob)
+	require.Equal(t, 4+len(wantBlob), len(got), "no trailing bytes after move-path")
+
+	out := CharacterMovement{}
+	pt.RoundTrip(t, ctx, in.Encode, out.Decode, opts)
+	require.Equal(t, in.CharacterId(), out.CharacterId(), "characterId round-trip")
 }

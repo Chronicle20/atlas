@@ -29,6 +29,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -74,6 +75,14 @@ func main() {
 
 	db := database.Connect(l, database.SetMigrations(visit.MigrateTable, location.Migration))
 
+	server.RegisterTransientErrorClassifier(func(err error) bool {
+		if database.IsTransientConnectionError(err) {
+			database.CountTransient(err)
+			return true
+		}
+		return false
+	})
+
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	character.InitConsumers(l)(cmf)(consumerGroupId)
 	cashshop.InitConsumers(l)(cmf)(consumerGroupId)
@@ -113,9 +122,15 @@ func main() {
 		return characterClient.NewProcessor(l, ctx).Position(characterId)
 	}
 
-	go tasks.Register(tasks.NewRespawn(l, 10000))
-	go tasks.Register(tasks.NewWeather(l, time.Second))
-	go tasks.Register(tasks.NewMistTick(l, 1000, posLookup))
+	routine.Go(l, tdm.Context(), func(_ context.Context) {
+		tasks.Register(l, tdm.Context())(tasks.NewRespawn(l, 10000))
+	})
+	routine.Go(l, tdm.Context(), func(_ context.Context) {
+		tasks.Register(l, tdm.Context())(tasks.NewWeather(l, time.Second))
+	})
+	routine.Go(l, tdm.Context(), func(_ context.Context) {
+		tasks.Register(l, tdm.Context())(tasks.NewMistTick(l, 1000, posLookup))
+	})
 
 	server.New(l).
 		WithContext(tdm.Context()).

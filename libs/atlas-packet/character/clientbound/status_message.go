@@ -285,23 +285,35 @@ func (m StatusMessageDropPickUpMeso) String() string {
 	return fmt.Sprintf("drop pick up meso [%d] partial [%t]", m.amount, m.partial)
 }
 
-func (m StatusMessageDropPickUpMeso) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+func (m StatusMessageDropPickUpMeso) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
+	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
 		w.WriteByte(m.mode)
 		w.WriteInt8(1)
-		w.WriteBool(m.partial)
+		// Legacy GMS (< v79) OnMessage drop arm omits the partial-pickup flag.
+		// v72 sub_9192D0 meso branch (GMS_v72.1_U_DEVM.exe @0x9192d0) reads only
+		// Decode4(meso)@0x91930b + Decode2(cafe)@0x919314 — NO partial byte. v79
+		// sub_96AEEC meso branch (@0x96aeec) reads Decode1(partial)@0x96af28 first.
+		// Leave v79/83/84/87/95/JMS unchanged.
+		if !(t.Region() == "GMS" && t.MajorVersion() < 79) {
+			w.WriteBool(m.partial)
+		}
 		w.WriteInt(m.amount)
 		w.WriteShort(m.internetCafeBonus)
 		return w.Bytes()
 	}
 }
 
-func (m *StatusMessageDropPickUpMeso) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *StatusMessageDropPickUpMeso) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
+		t := tenant.MustFromContext(ctx)
 		m.mode = r.ReadByte()
 		_ = r.ReadInt8()
-		m.partial = r.ReadBool()
+		// Legacy GMS (< v79) has no partial-pickup flag (v72 @0x9192d0).
+		if !(t.Region() == "GMS" && t.MajorVersion() < 79) {
+			m.partial = r.ReadBool()
+		}
 		m.amount = r.ReadUint32()
 		m.internetCafeBonus = r.ReadUint16()
 	}
@@ -507,12 +519,28 @@ func (m StatusMessageIncreaseExperience) Encode(l logrus.FieldLogger, ctx contex
 		w.WriteBool(m.white)
 		w.WriteInt32(m.amount)
 		w.WriteBool(m.inChat)
-		w.WriteInt32(m.monsterBookBonus)
+		// Legacy GMS (< v61) OnMessage IncEXP arm sub_71B9C0 (GMS_v48_1_DEVM.exe
+		// @0x71b9c0) reads a MUCH shorter body than v61/v72: after inChat it reads
+		// Decode1(mobEventBonusPercentage)@0x71ba01, Decode1(partyBonusPercentage)
+		// @0x71ba15, then [if mobEvent>0: Decode1(playTimeHour)@0x71ba24] and STOPS.
+		// It has NO monsterBookBonus/weddingBonusEXP ints, NO inChat quest-rate
+		// block, and NO partyBonusEventRate/partyBonusExp — all of which v61
+		// sub_84418A (@0x84418a, decoded: monsterBook@0x8441cd, wedding@0x8441f3,
+		// partyBonusEventRate@0x844245) reads. Leave v61/72/79/83/84/87/95/JMS unchanged.
+		legacyV48 := t.Region() == "GMS" && t.MajorVersion() < 61
+		if !legacyV48 {
+			w.WriteInt32(m.monsterBookBonus)
+		}
 		w.WriteByte(m.mobEventBonusPercentage)
 		w.WriteByte(m.partyBonusPercentage)
-		w.WriteInt32(m.weddingBonusEXP)
+		if !legacyV48 {
+			w.WriteInt32(m.weddingBonusEXP)
+		}
 		if m.mobEventBonusPercentage > 0 {
 			w.WriteByte(m.playTimeHour)
+		}
+		if legacyV48 {
+			return w.Bytes()
 		}
 		if m.inChat {
 			w.WriteByte(m.questBonusRate)
@@ -522,12 +550,26 @@ func (m StatusMessageIncreaseExperience) Encode(l logrus.FieldLogger, ctx contex
 		}
 		w.WriteByte(m.partyBonusEventRate)
 		w.WriteInt32(m.partyBonusExp)
-		w.WriteInt32(m.itemBonusEXP)
-		w.WriteInt32(m.premiumIPExp)
-		w.WriteInt32(m.rainbowWeekEventEXP)
-		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
-			w.WriteInt32(m.partyEXPRingEXP)
-			w.WriteInt32(m.cakePieEventBonus)
+		// Legacy GMS (< v79) OnMessage IncEXP arm sub_919E04 (GMS_v72.1_U_DEVM.exe
+		// @13339, @0x919e04) reads only ONE trailing Decode4 (var_54 @0x919ec1)
+		// after partyBonusEventRate — it stops after partyBonusExp. v79 sub_96BD0D
+		// (@0x96bd0d) reads THREE trailing Decode4 (partyBonusExp @0x96bdcb,
+		// itemBonusEXP @0x96bdd5, premiumIPExp @0x96bde0). Everything up to and
+		// including partyBonusEventRate is byte-identical between v72 and v79.
+		if !(t.Region() == "GMS" && t.MajorVersion() < 79) {
+			w.WriteInt32(m.itemBonusEXP)
+			w.WriteInt32(m.premiumIPExp)
+			// Legacy GMS (< v83) OnMessage IncEXP arm sub_96BD0D reads only 6 Decode4
+			// exp ints and has NO trailing rainbowWeekEventEXP int, unlike v83
+			// CWvsContext::OnIncEXPMessage @0xa21ac5 which reads a 7th Decode4 (v34,
+			// SP_5436_RAINBOW_WEEK_BONUS_EXP). Leave v83/84/87/95/JMS unchanged.
+			if !(t.Region() == "GMS" && t.MajorVersion() < 83) {
+				w.WriteInt32(m.rainbowWeekEventEXP)
+			}
+			if t.Region() == "GMS" && t.MajorVersion() >= 95 {
+				w.WriteInt32(m.partyEXPRingEXP)
+				w.WriteInt32(m.cakePieEventBonus)
+			}
 		}
 		return w.Bytes()
 	}
@@ -540,12 +582,23 @@ func (m *StatusMessageIncreaseExperience) Decode(_ logrus.FieldLogger, ctx conte
 		m.white = r.ReadBool()
 		m.amount = r.ReadInt32()
 		m.inChat = r.ReadBool()
-		m.monsterBookBonus = r.ReadInt32()
+		// Legacy GMS (< v61) short IncEXP body — see Encode: v48 sub_71B9C0 stops
+		// after the optional playTimeHour, with no monsterBook/wedding ints and no
+		// quest-rate / partyBonus tail.
+		legacyV48 := t.Region() == "GMS" && t.MajorVersion() < 61
+		if !legacyV48 {
+			m.monsterBookBonus = r.ReadInt32()
+		}
 		m.mobEventBonusPercentage = r.ReadByte()
 		m.partyBonusPercentage = r.ReadByte()
-		m.weddingBonusEXP = r.ReadInt32()
+		if !legacyV48 {
+			m.weddingBonusEXP = r.ReadInt32()
+		}
 		if m.mobEventBonusPercentage > 0 {
 			m.playTimeHour = r.ReadByte()
+		}
+		if legacyV48 {
+			return
 		}
 		if m.inChat {
 			m.questBonusRate = r.ReadByte()
@@ -555,12 +608,20 @@ func (m *StatusMessageIncreaseExperience) Decode(_ logrus.FieldLogger, ctx conte
 		}
 		m.partyBonusEventRate = r.ReadByte()
 		m.partyBonusExp = r.ReadInt32()
-		m.itemBonusEXP = r.ReadInt32()
-		m.premiumIPExp = r.ReadInt32()
-		m.rainbowWeekEventEXP = r.ReadInt32()
-		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
-			m.partyEXPRingEXP = r.ReadInt32()
-			m.cakePieEventBonus = r.ReadInt32()
+		// Legacy GMS (< v79) reads only ONE trailing int (v72 sub_919E04 @0x919ec1);
+		// v79+ read itemBonusEXP + premiumIPExp too (sub_96BD0D @0x96bdd5/@0x96bde0).
+		if !(t.Region() == "GMS" && t.MajorVersion() < 79) {
+			m.itemBonusEXP = r.ReadInt32()
+			m.premiumIPExp = r.ReadInt32()
+			// Legacy GMS (< v83) has no trailing rainbowWeekEventEXP int (v79
+			// sub_96BD0D @0x96bd0d reads 6 exp ints vs v83 @0xa21ac5's 7).
+			if !(t.Region() == "GMS" && t.MajorVersion() < 83) {
+				m.rainbowWeekEventEXP = r.ReadInt32()
+			}
+			if t.Region() == "GMS" && t.MajorVersion() >= 95 {
+				m.partyEXPRingEXP = r.ReadInt32()
+				m.cakePieEventBonus = r.ReadInt32()
+			}
 		}
 	}
 }

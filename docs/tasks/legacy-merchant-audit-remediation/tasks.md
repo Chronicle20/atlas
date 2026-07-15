@@ -1,3 +1,11 @@
+> **DISPOSITIONED 2026-07-14** — this plan was never executed as written, and the
+> codebase has since moved through Gen3 unification, outbox adoption, and the
+> task-127 merchant-lifecycle remediation. Per-item assessment:
+> `docs/tasks/task-127-owl-shop-search/legacy-remediation-disposition.md`
+> (42 superseded, 7 moot, 2 still-open — the two open test gaps were closed on
+> the task-127 branch: `shop/listable_test.go`, `listing/administrator_test.go`).
+> The checkboxes below are historical and intentionally left unticked.
+
 # Merchant Audit Remediation — Tasks
 
 - **Last Updated:** 2026-02-24

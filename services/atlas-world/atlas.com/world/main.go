@@ -25,6 +25,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
 )
@@ -131,7 +132,9 @@ func main() {
 	// runs synchronously inside RunBridge before its ticker, so
 	// GetTenantConfigs below (which blocks on readyCh) sees a populated
 	// snapshot.
-	go configuration.RunBridge(tdm.Context(), l, state.Snapshot, time.Second, configuration.ReinitChangedRates(l))
+	routine.Go(l, tdm.Context(), func(_ context.Context) {
+		configuration.RunBridge(tdm.Context(), l, state.Snapshot, time.Second, configuration.ReinitChangedRates(l))
+	})
 
 	// Boot channel-status sweep. GetTenantConfigs blocks until the bridge's
 	// first publish closes readyCh; on error (not ready) log and skip
@@ -144,7 +147,9 @@ func main() {
 	}
 	span.End()
 
-	go tasks.Register(l, tdm.Context())(channel.NewExpiration(l, tdm.Context(), time.Second*10))
+	routine.Go(l, tdm.Context(), func(_ context.Context) {
+		tasks.Register(l, tdm.Context())(channel.NewExpiration(l, tdm.Context(), time.Second*10))
+	})
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))
 

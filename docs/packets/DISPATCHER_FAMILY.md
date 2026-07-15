@@ -100,9 +100,40 @@ except those baselined in `docs/packets/dispatcher-lint-baseline.yaml`:
   committed audit report cites a deleted Atlas file.
 - **INV-5** every dispatcher clientbound struct is constructed by a body function.
 
-The **baseline** lists families not yet migrated (currently `party`, `guild`,
-`buddy`). The linter fails on any violation **outside** the baseline. Migrating a
-family = removing its baseline entry; the baseline only shrinks.
+## Client-table values INSIDE bodies (not just mode bytes)
+
+INV-2/INV-3 cover the dispatcher MODE byte. The same rule extends to any value
+inside an arm's body that the client interprets through its own lookup switch
+— e.g. the `CITC::NoticeFailReason` codes read by the mode-24 reason-notice
+arm (task-102). These MUST also be config-resolved from a tenant writer
+options table, per-version, never Go literals — "IDA-verified identical
+across versions" does not exempt them (task-103 uniformity ruling).
+
+Pattern (see atlas-channel `kafka/consumer/mts/consumer.go` `failNoticeOr` +
+`noticeFailReasons` in the gms seed templates):
+
+- The DOMAIN service emits a SEMANTIC key (string, e.g. `NOT_ENOUGH_NX`) on
+  its Kafka event — domain services never speak client bytes (the WishOrigin
+  layering).
+- The CHANNEL resolves the key against a writer-options table. For OPTIONAL
+  tables, soft-resolve with a fallback to the bare/legacy arm on a missing
+  table or key — never let `ResolveCode`'s 99-on-miss reach the client.
+- The table lands in EVERY supported version's seed template, and the
+  feature's rollout notes call out the live-tenant patch (seed templates
+  never retroactively apply — bug_new_opcodes_not_in_live_tenant_config).
+
+The **baseline** (`docs/packets/dispatcher-lint-baseline.yaml`) lists families
+not yet migrated. It is now **empty** (`exempt_families: []`) — guild (task-103),
+message (task-104), party, and buddy (task-105) all graduated to discrete-per-mode.
+The linter fails on any violation **outside** the baseline (i.e. any violation at
+all now). Migrating a family = removing its baseline entry; the baseline only
+shrinks and has reached empty — new families must be authored discrete-per-mode
+from the start.
+
+Separately, `docs/packets/evidence/families.yaml` (the mode-prefix membership list
+that caps an op at the `🧩` `family` state) is also empty — every dispatcher arm
+graduated (task-096) — so `🧩` currently caps **no** op. A newly-added family that
+should cap needs an explicit `families.yaml` entry.
 
 ### Known limitations (the linter's blind spots)
 

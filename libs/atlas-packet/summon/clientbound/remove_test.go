@@ -39,6 +39,59 @@ func TestSummonRemoveBytes(t *testing.T) {
 	}
 }
 
+// TestSummonRemoveBytesV79 pins the v79 wire byte-for-byte against the live
+// decompile (IDA, GMS_v79_1_DEVM.exe @port 13340). v79 is v83-shaped — same
+// wire, no version delta. Dispatch chain:
+//   - CUserPool::OnUserCommonPacket@0x8c8c79 reads cid (Decode4@0x8c8c84), ops
+//     164-169 → summon cluster sub_892500@0x892500; the else branch reads oid
+//     (Decode4@0x89253f) then for a2==165 (REMOVE_SPECIAL_MAPOBJECT) calls the
+//     OnRemoved leaf sub_71CC52@0x71cc52.
+//   - sub_71CC52 reads ONE byte: Decode1@0x71cc67 (leave/animated flag, branched
+//     0/2/3/4) and nothing else from the packet.
+// Wire = int ownerId(=cid, consumed upstream) + int oid + byte flag. Atlas writes
+// flag = 4 when animated, else 1 (matches the branch).
+// packet-audit:verify packet=summon/clientbound/SummonRemove version=gms_v79 ida=0x71cc52
+func TestSummonRemoveBytesV79(t *testing.T) {
+	in := NewSummonRemove(42, 1000001, true)
+	ctx := test.CreateContext("GMS", 79, 1)
+	got := test.Encode(t, ctx, in.Encode, nil)
+
+	// ownerId=42, oid=1000001=0x000F4241, animated => byte 4 (Decode1@0x71cc67)
+	want := []byte{
+		0x2A, 0x00, 0x00, 0x00, // ownerId (cid, consumed by dispatcher)
+		0x41, 0x42, 0x0F, 0x00, // oid (Decode4@0x89253f in sub_892500)
+		0x04, // animated ? 4 : 1 (Decode1@0x71cc67)
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatalf("v79 bytes = % X, want % X", got, want)
+	}
+}
+
+// TestSummonRemoveBytesV72 pins the v72 wire byte-for-byte against the live
+// decompile (IDA, GMS_v72.1_U_DEVM.exe @port 13339). v72 is v79/v83-shaped.
+// Dispatch chain:
+//   - CUserPool::OnUserCommonPacket reads cid; the summon cluster dispatcher
+//     sub_848023@0x848023 else branch reads oid (Decode4@0x848062) then for a2==161
+//     (REMOVE_SPECIAL_MAPOBJECT) calls the OnRemoved leaf sub_6E8F0F@0x6e8f0f.
+//   - sub_6E8F0F reads ONE byte: Decode1@0x6e8f24 (leave/animated flag, branched
+//     0/2/3/4) and nothing else from the packet.
+// Wire = int ownerId(=cid, consumed upstream) + int oid + byte flag.
+// packet-audit:verify packet=summon/clientbound/SummonRemove version=gms_v72 ida=0x6e8f0f
+func TestSummonRemoveBytesV72(t *testing.T) {
+	in := NewSummonRemove(42, 1000001, true)
+	ctx := test.CreateContext("GMS", 72, 1)
+	got := test.Encode(t, ctx, in.Encode, nil)
+
+	want := []byte{
+		0x2A, 0x00, 0x00, 0x00, // ownerId (cid, consumed by dispatcher)
+		0x41, 0x42, 0x0F, 0x00, // oid (Decode4@0x848062 in sub_848023)
+		0x04, // animated ? 4 : 1 (Decode1@0x6e8f24)
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatalf("v72 bytes = % X, want % X", got, want)
+	}
+}
+
 // TestSummonRemoveBytesV83 pins the v83 wire byte-for-byte against the live
 // decompile. Dispatch chain (IDA, MapleStory_dump.exe @port 13341):
 //   - CUserPool::OnUserCommonPacket@0x972401 reads cid (Decode4@0x97240c), then

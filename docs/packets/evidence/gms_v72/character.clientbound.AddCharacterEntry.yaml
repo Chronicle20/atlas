@@ -1,0 +1,10 @@
+packet: character/clientbound/AddCharacterEntry
+direction: clientbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CLogin::OnCreateNewCharacterResult
+    address: "0x5b3c65"
+    decompile_sha256: fef268a4c601bab444654373e006877c2b020c3aeb072f19a21b013cc8e9bce5
+verifies:
+  - libs/atlas-packet/character/clientbound/v72_test.go#TestAddCharacterEntryByteOutputV72

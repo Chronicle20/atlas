@@ -205,6 +205,14 @@ func isPartyBuff(skillId skill.Id) bool {
 		skill.ClericHealId,
 		skill.ClericBlessId,
 		skill.PriestDispelId,
+		// BishopResurrectionId: the v83 client writes the affected-member
+		// bitmap for 2321006 (CUserLocal::SendSkillUseRequest @0x96d399 —
+		// bitmap byte present whenever non-zero, and FindParty @0x96db3f
+		// special-cases 2321006 to set bits for DEAD members only; the client
+		// never sends the packet with a zero bitmap). Not anti-repeat
+		// (@0x96d6ca) and not mob-affecting: wire is
+		// updateTime(4) skillId(4) slv(1) bitmap(1) delay(2).
+		skill.BishopResurrectionId,
 		skill.PriestHolySymbolId,
 		skill.BishopMapleWarriorId,
 		skill.BishopHolyShieldId,

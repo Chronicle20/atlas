@@ -7,18 +7,24 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type Processor struct {
+type Processor interface {
+	GetTimerByCharacterId(characterId uint32) (TimerModel, error)
+}
+
+type ProcessorImpl struct {
 	l   logrus.FieldLogger
 	ctx context.Context
 }
 
-func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
-	return &Processor{
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
+	return &ProcessorImpl{
 		l:   l,
 		ctx: ctx,
 	}
 }
 
-func (p *Processor) GetTimerByCharacterId(characterId uint32) (TimerModel, error) {
+var _ Processor = (*ProcessorImpl)(nil)
+
+func (p *ProcessorImpl) GetTimerByCharacterId(characterId uint32) (TimerModel, error) {
 	return requests.Provider[TimerRestModel, TimerModel](p.l, p.ctx)(requestTimerByCharacterId(characterId), ExtractTimer)()
 }

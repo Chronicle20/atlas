@@ -1,0 +1,10 @@
+packet: monster/serverbound/MonsterMobDamageMob
+direction: serverbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: CMob::SetDamagedByMob
+    address: "0x5ced89"
+    decompile_sha256: 9d503bf65ffd89d4d170ddf620b0c89500ae4557a9e1cc1505f0e7123fe0ab00
+verifies:
+    - libs/atlas-packet/monster/serverbound/v61_test.go#TestMobDamageMobBytesV61

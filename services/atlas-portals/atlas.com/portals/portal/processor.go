@@ -15,123 +15,121 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func InMapByNameProvider(l logrus.FieldLogger) func(ctx context.Context) func(mapId _map.Id, name string) model.Provider[[]Model] {
-	return func(ctx context.Context) func(mapId _map.Id, name string) model.Provider[[]Model] {
-		return func(mapId _map.Id, name string) model.Provider[[]Model] {
-			return requests.SliceProvider[RestModel, Model](l, ctx)(requestInMapByName(mapId, name), Extract, model.Filters[Model]())
-		}
+type Processor interface {
+	InMapByNameProvider(mapId _map.Id, name string) model.Provider[[]Model]
+	InMapByIdProvider(mapId _map.Id, id uint32) model.Provider[Model]
+	GetInMapByName(mapId _map.Id, name string) (Model, error)
+	GetInMapById(mapId _map.Id, id uint32) (Model, error)
+	InMapProvider(mapId _map.Id) model.Provider[[]Model]
+	Warp(f field.Model, characterId uint32, targetMapId _map.Id)
+	Enter(f field.Model, portalId uint32, characterId uint32)
+	WarpById(f field.Model, characterId uint32, targetMapId _map.Id, portalId uint32)
+	WarpToPosition(f field.Model, characterId uint32, targetMapId _map.Id, x int16, y int16)
+	WarpToPortal(f field.Model, characterId uint32, targetMapId _map.Id, portalProvider model.Provider[uint32])
+}
+
+type ProcessorImpl struct {
+	l   logrus.FieldLogger
+	ctx context.Context
+}
+
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
+	return &ProcessorImpl{
+		l:   l,
+		ctx: ctx,
 	}
 }
 
-func InMapByIdProvider(l logrus.FieldLogger) func(ctx context.Context) func(mapId _map.Id, id uint32) model.Provider[Model] {
-	return func(ctx context.Context) func(mapId _map.Id, id uint32) model.Provider[Model] {
-		return func(mapId _map.Id, id uint32) model.Provider[Model] {
-			return requests.Provider[RestModel, Model](l, ctx)(requestInMapById(mapId, id), Extract)
-		}
-	}
+var _ Processor = (*ProcessorImpl)(nil)
+
+func (p *ProcessorImpl) InMapByNameProvider(mapId _map.Id, name string) model.Provider[[]Model] {
+	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestInMapByName(mapId, name), Extract, model.Filters[Model]())
 }
 
-func GetInMapByName(l logrus.FieldLogger) func(ctx context.Context) func(mapId _map.Id, name string) (Model, error) {
-	return func(ctx context.Context) func(mapId _map.Id, name string) (Model, error) {
-		return func(mapId _map.Id, name string) (Model, error) {
-			return model.First(InMapByNameProvider(l)(ctx)(mapId, name), model.Filters[Model]())
-		}
-	}
+func (p *ProcessorImpl) InMapByIdProvider(mapId _map.Id, id uint32) model.Provider[Model] {
+	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestInMapById(mapId, id), Extract)
 }
 
-func GetInMapById(l logrus.FieldLogger) func(ctx context.Context) func(mapId _map.Id, id uint32) (Model, error) {
-	return func(ctx context.Context) func(mapId _map.Id, id uint32) (Model, error) {
-		return func(mapId _map.Id, id uint32) (Model, error) {
-			return InMapByIdProvider(l)(ctx)(mapId, id)()
-		}
-	}
+func (p *ProcessorImpl) GetInMapByName(mapId _map.Id, name string) (Model, error) {
+	return model.First(p.InMapByNameProvider(mapId, name), model.Filters[Model]())
 }
 
-func InMapProvider(l logrus.FieldLogger) func(ctx context.Context) func(mapId _map.Id) model.Provider[[]Model] {
-	return func(ctx context.Context) func(mapId _map.Id) model.Provider[[]Model] {
-		return func(mapId _map.Id) model.Provider[[]Model] {
-			return requests.SliceProvider[RestModel, Model](l, ctx)(requestInMap(mapId), Extract, model.Filters[Model]())
-		}
-	}
+func (p *ProcessorImpl) GetInMapById(mapId _map.Id, id uint32) (Model, error) {
+	return p.InMapByIdProvider(mapId, id)()
 }
 
-func Warp(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model, characterId uint32, targetMapId _map.Id) {
-	return func(ctx context.Context) func(f field.Model, characterId uint32, targetMapId _map.Id) {
-		return func(f field.Model, characterId uint32, targetMapId _map.Id) {
-			l.Debugf("Character [%d] warping to map [%d].", characterId, targetMapId)
+// InMapProvider fetches every portal in a map. atlas-data's GET
+// /data/maps/{id}/portals is now paginated (task-117), so this drains
+// every page rather than fetching one.
+func (p *ProcessorImpl) InMapProvider(mapId _map.Id) model.Provider[[]Model] {
+	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(inMapUrl(mapId), 250, Extract, model.Filters[Model]())
+}
 
-			portals, err := InMapProvider(l)(ctx)(targetMapId)()
+func (p *ProcessorImpl) Warp(f field.Model, characterId uint32, targetMapId _map.Id) {
+	p.l.Debugf("Character [%d] warping to map [%d].", characterId, targetMapId)
+
+	portals, err := p.InMapProvider(targetMapId)()
+	if err != nil {
+		p.l.WithError(err).Errorf("Unable to retrieve portals for map [%d].", targetMapId)
+		character.NewProcessor(p.l, p.ctx).EnableActions(f, characterId)
+		return
+	}
+
+	if len(portals) == 0 {
+		p.l.Warnf("No portals found in target map [%d]. Defaulting to portal 0.", targetMapId)
+		p.WarpById(f, characterId, targetMapId, 0)
+		return
+	}
+
+	tp := portals[rand.Intn(len(portals))]
+	p.WarpById(f, characterId, targetMapId, tp.Id())
+}
+
+func (p *ProcessorImpl) Enter(f field.Model, portalId uint32, characterId uint32) {
+	p.l.Debugf("Character [%d] entering portal [%d] in map [%d].", characterId, portalId, f.MapId())
+
+	// Check if the portal is blocked for this character
+	if blocked.GetRegistry().IsBlocked(p.ctx, characterId, f.MapId(), portalId) {
+		p.l.Debugf("Portal [%d] in map [%d] is blocked for character [%d]. Enabling actions and returning.", portalId, f.MapId(), characterId)
+		character.NewProcessor(p.l, p.ctx).EnableActions(f, characterId)
+		return
+	}
+
+	pt, err := p.GetInMapById(f.MapId(), portalId)
+	if err != nil {
+		p.l.WithError(err).Errorf("Unable to locate portal [%d] in map [%d] character [%d] is trying to enter.", portalId, f.MapId(), characterId)
+		return
+	}
+
+	if pt.HasScript() {
+		p.l.Debugf("Portal [%s] has script. Executing [%s] for character [%d].", pt.String(), pt.ScriptName(), characterId)
+		portal_actions.ExecuteScript(p.l)(p.ctx)(f, portalId, characterId, pt.ScriptName())
+		return
+	}
+
+	if pt.HasTargetMap() {
+		p.l.Debugf("Portal [%s] has target. Transferring character [%d] to [%d].", pt.String(), characterId, pt.TargetMapId())
+
+		var tp Model
+		tp, err = p.GetInMapByName(pt.TargetMapId(), pt.Target())
+		if err != nil {
+			p.l.WithError(err).Warnf("Unable to locate portal target [%s] for map [%d]. Defaulting to portal 0.", pt.Target(), pt.TargetMapId())
+			tp, err = p.GetInMapById(pt.TargetMapId(), 0)
 			if err != nil {
-				l.WithError(err).Errorf("Unable to retrieve portals for map [%d].", targetMapId)
-				character.EnableActions(l)(ctx)(f, characterId)
+				p.l.WithError(err).Errorf("Unable to locate portal 0 for map [%d]. Is there invalid wz data?", pt.TargetMapId())
+				character.NewProcessor(p.l, p.ctx).EnableActions(f, characterId)
 				return
 			}
-
-			if len(portals) == 0 {
-				l.Warnf("No portals found in target map [%d]. Defaulting to portal 0.", targetMapId)
-				WarpById(l)(ctx)(f, characterId, targetMapId, 0)
-				return
-			}
-
-			tp := portals[rand.Intn(len(portals))]
-			WarpById(l)(ctx)(f, characterId, targetMapId, tp.Id())
 		}
+		p.WarpById(f, characterId, pt.TargetMapId(), tp.Id())
+		return
 	}
+
+	character.NewProcessor(p.l, p.ctx).EnableActions(f, characterId)
 }
 
-func Enter(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model, portalId uint32, characterId uint32) {
-	return func(ctx context.Context) func(f field.Model, portalId uint32, characterId uint32) {
-		return func(f field.Model, portalId uint32, characterId uint32) {
-			l.Debugf("Character [%d] entering portal [%d] in map [%d].", characterId, portalId, f.MapId())
-
-			// Check if the portal is blocked for this character
-			if blocked.GetRegistry().IsBlocked(ctx, characterId, f.MapId(), portalId) {
-				l.Debugf("Portal [%d] in map [%d] is blocked for character [%d]. Enabling actions and returning.", portalId, f.MapId(), characterId)
-				character.EnableActions(l)(ctx)(f, characterId)
-				return
-			}
-
-			p, err := GetInMapById(l)(ctx)(f.MapId(), portalId)
-			if err != nil {
-				l.WithError(err).Errorf("Unable to locate portal [%d] in map [%d] character [%d] is trying to enter.", portalId, f.MapId(), characterId)
-				return
-			}
-
-			if p.HasScript() {
-				l.Debugf("Portal [%s] has script. Executing [%s] for character [%d].", p.String(), p.ScriptName(), characterId)
-				portal_actions.ExecuteScript(l)(ctx)(f, portalId, characterId, p.ScriptName())
-				return
-			}
-
-			if p.HasTargetMap() {
-				l.Debugf("Portal [%s] has target. Transferring character [%d] to [%d].", p.String(), characterId, p.TargetMapId())
-
-				var tp Model
-				tp, err = GetInMapByName(l)(ctx)(p.TargetMapId(), p.Target())
-				if err != nil {
-					l.WithError(err).Warnf("Unable to locate portal target [%s] for map [%d]. Defaulting to portal 0.", p.Target(), p.TargetMapId())
-					tp, err = GetInMapById(l)(ctx)(p.TargetMapId(), 0)
-					if err != nil {
-						l.WithError(err).Errorf("Unable to locate portal 0 for map [%d]. Is there invalid wz data?", p.TargetMapId())
-						character.EnableActions(l)(ctx)(f, characterId)
-						return
-					}
-				}
-				WarpById(l)(ctx)(f, characterId, p.TargetMapId(), tp.Id())
-				return
-			}
-
-			character.EnableActions(l)(ctx)(f, characterId)
-		}
-	}
-}
-
-func WarpById(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model, characterId uint32, targetMapId _map.Id, portalId uint32) {
-	return func(ctx context.Context) func(f field.Model, characterId uint32, targetMapId _map.Id, portalId uint32) {
-		return func(f field.Model, characterId uint32, targetMapId _map.Id, portalId uint32) {
-			WarpToPortal(l)(ctx)(f, characterId, targetMapId, model.FixedProvider(portalId))
-		}
-	}
+func (p *ProcessorImpl) WarpById(f field.Model, characterId uint32, targetMapId _map.Id, portalId uint32) {
+	p.WarpToPortal(f, characterId, targetMapId, model.FixedProvider(portalId))
 }
 
 // WarpToPosition warps the character to an exact (x, y) coordinate in the
@@ -139,21 +137,13 @@ func WarpById(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model
 // on the linked door's position. The CHANGE_MAP command carries the position;
 // atlas-maps relays it on MAP_CHANGED and atlas-channel applies it via the
 // SET_FIELD chase mechanism.
-func WarpToPosition(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model, characterId uint32, targetMapId _map.Id, x int16, y int16) {
-	return func(ctx context.Context) func(f field.Model, characterId uint32, targetMapId _map.Id, x int16, y int16) {
-		return func(f field.Model, characterId uint32, targetMapId _map.Id, x int16, y int16) {
-			_ = producer.ProviderImpl(l)(ctx)(character.EnvCommandTopic)(character.ChangeToPositionProvider(f, characterId, targetMapId, x, y))
-		}
-	}
+func (p *ProcessorImpl) WarpToPosition(f field.Model, characterId uint32, targetMapId _map.Id, x int16, y int16) {
+	_ = producer.ProviderImpl(p.l)(p.ctx)(character.EnvCommandTopic)(character.ChangeToPositionProvider(f, characterId, targetMapId, x, y))
 }
 
-func WarpToPortal(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model, characterId uint32, targetMapId _map.Id, p model.Provider[uint32]) {
-	return func(ctx context.Context) func(f field.Model, characterId uint32, targetMapId _map.Id, p model.Provider[uint32]) {
-		return func(f field.Model, characterId uint32, targetMapId _map.Id, p model.Provider[uint32]) {
-			id, err := p()
-			if err == nil {
-				_ = producer.ProviderImpl(l)(ctx)(character.EnvCommandTopic)(character.ChangeMapProvider(f, characterId, targetMapId, id))
-			}
-		}
+func (p *ProcessorImpl) WarpToPortal(f field.Model, characterId uint32, targetMapId _map.Id, portalProvider model.Provider[uint32]) {
+	id, err := portalProvider()
+	if err == nil {
+		_ = producer.ProviderImpl(p.l)(p.ctx)(character.EnvCommandTopic)(character.ChangeMapProvider(f, characterId, targetMapId, id))
 	}
 }

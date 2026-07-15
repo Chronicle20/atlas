@@ -10,6 +10,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
@@ -40,17 +41,29 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 // GetAllConversationsHandler handles GET /conversations
 func GetAllConversationsHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		mp := NewProcessor(d.Logger(), d.Context(), d.DB()).AllProvider()
-		rm, err := model.SliceMap(Transform)(mp)(model.ParallelMap())()
+		page, err := paginate.ParseParams(r.URL.Query(), paginate.DefaultPageSize, paginate.MaxPageSize)
+		if err != nil {
+			server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+			return
+		}
+
+		paged, err := NewProcessor(d.Logger(), d.Context(), d.DB()).AllProvider(page)()
+		if err != nil {
+			d.Logger().WithError(err).Errorf("Retrieving conversations.")
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		rm, err := model.SliceMap(Transform)(model.FixedProvider(paged.Items))(model.ParallelMap())()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Creating REST model.")
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteErrorResponse(d.Logger())(w)(err)
 			return
 		}
 
 		query := r.URL.Query()
 		queryParams := jsonapi.ParseQueryFields(&query)
-		server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
+		server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm, paginate.EnvelopeFor(paged), r)
 	}
 }
 
@@ -66,13 +79,13 @@ func GetConversationHandler(d *rest.HandlerDependency, c *rest.HandlerContext) h
 			}
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Retrieving conversation.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 			rm, err := model.Map(Transform)(model.FixedProvider(m))()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -98,7 +111,7 @@ func CreateConversationHandler(d *rest.HandlerDependency, c *rest.HandlerContext
 		createdModel, err := NewProcessor(d.Logger(), d.Context(), d.DB()).Create(m)
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Creating conversation.")
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteErrorResponse(d.Logger())(w)(err)
 			return
 		}
 
@@ -106,7 +119,7 @@ func CreateConversationHandler(d *rest.HandlerDependency, c *rest.HandlerContext
 		createdRm, err := Transform(createdModel)
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Transforming domain model to REST model.")
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteErrorResponse(d.Logger())(w)(err)
 			return
 		}
 
@@ -134,7 +147,7 @@ func UpdateConversationHandler(d *rest.HandlerDependency, c *rest.HandlerContext
 			updatedModel, err := NewProcessor(d.Logger(), d.Context(), d.DB()).Update(conversationId, m)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Updating conversation.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -142,7 +155,7 @@ func UpdateConversationHandler(d *rest.HandlerDependency, c *rest.HandlerContext
 			updatedRm, err := Transform(updatedModel)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Transforming domain model to REST model.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -162,7 +175,7 @@ func DeleteConversationHandler(d *rest.HandlerDependency, _ *rest.HandlerContext
 			err := NewProcessor(d.Logger(), d.Context(), d.DB()).Delete(conversationId)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Deleting conversation.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -176,17 +189,29 @@ func DeleteConversationHandler(d *rest.HandlerDependency, _ *rest.HandlerContext
 func GetConversationsByNpcHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseNpcId(d.Logger(), func(npcId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			mp := NewProcessor(d.Logger(), d.Context(), d.DB()).AllByNpcIdProvider(npcId)
-			rm, err := model.SliceMap(Transform)(mp)(model.ParallelMap())()
+			page, err := paginate.ParseParams(r.URL.Query(), paginate.DefaultPageSize, paginate.MaxPageSize)
+			if err != nil {
+				server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+				return
+			}
+
+			paged, err := NewProcessor(d.Logger(), d.Context(), d.DB()).AllByNpcIdProvider(npcId, page)()
+			if err != nil {
+				d.Logger().WithError(err).Errorf("Retrieving conversations for NPC [%d].", npcId)
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+
+			rm, err := model.SliceMap(Transform)(model.FixedProvider(paged.Items))(model.ParallelMap())()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
 			query := r.URL.Query()
 			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
+			server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm, paginate.EnvelopeFor(paged), r)
 		}
 	})
 }
@@ -257,14 +282,13 @@ func ReindexRecipesHandler(d *rest.HandlerDependency, c *rest.HandlerContext) ht
 		impl, ok := processor.(*ProcessorImpl)
 		if !ok {
 			d.Logger().Errorf("Processor is not *ProcessorImpl, cannot reindex.")
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteErrorResponse(d.Logger())(w)(errors.New("processor is not *ProcessorImpl"))
 			return
 		}
 		res, err := impl.ReindexAllRecipes()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Reindexing recipes.")
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+			server.WriteErrorResponse(d.Logger())(w)(err)
 			return
 		}
 

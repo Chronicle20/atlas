@@ -3,6 +3,7 @@ package key
 import (
 	"context"
 
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
@@ -56,6 +57,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 // ByCharacterIdProvider returns a provider for keys by character ID
 func (p *ProcessorImpl) ByCharacterIdProvider(characterId uint32) model.Provider[[]Model] {
 	return entitySliceMapper(byCharacterIdEntityProvider(characterId)(p.db.WithContext(p.ctx)))()
@@ -69,7 +72,7 @@ func (p *ProcessorImpl) GetByCharacterId(characterId uint32) ([]Model, error) {
 
 // Reset resets keys for a character
 func (p *ProcessorImpl) Reset(_ uuid.UUID, characterId uint32) error {
-	return p.db.WithContext(p.ctx).Transaction(func(tx *gorm.DB) error {
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 		err := deleteByCharacter(tx, characterId)
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to delete for character %d.", characterId)
@@ -88,7 +91,7 @@ func (p *ProcessorImpl) Reset(_ uuid.UUID, characterId uint32) error {
 
 // CreateDefault creates default keys for a character
 func (p *ProcessorImpl) CreateDefault(_ uuid.UUID, characterId uint32) error {
-	return p.db.WithContext(p.ctx).Transaction(func(tx *gorm.DB) error {
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 		for i := 0; i < len(defaultKey); i++ {
 			_, err := create(tx, p.t.Id(), characterId, defaultKey[i], defaultType[i], defaultAction[i])
 			if err != nil {
@@ -102,7 +105,7 @@ func (p *ProcessorImpl) CreateDefault(_ uuid.UUID, characterId uint32) error {
 
 // Delete deletes keys for a character
 func (p *ProcessorImpl) Delete(_ uuid.UUID, characterId uint32) error {
-	return p.db.WithContext(p.ctx).Transaction(func(tx *gorm.DB) error {
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 		err := deleteByCharacter(tx, characterId)
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to delete for character %d.", characterId)
@@ -114,7 +117,7 @@ func (p *ProcessorImpl) Delete(_ uuid.UUID, characterId uint32) error {
 
 // ChangeKey changes a key binding
 func (p *ProcessorImpl) ChangeKey(_ uuid.UUID, characterId uint32, key int32, theType int8, action int32) error {
-	return p.db.WithContext(p.ctx).Transaction(func(tx *gorm.DB) error {
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 		_, err := byCharacterKeyEntityProvider(characterId, key)(tx)()
 		if err != nil {
 			_, err = create(tx, p.t.Id(), characterId, key, theType, action)

@@ -32,6 +32,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 	return newProcessorWithInfo(l, ctx, db, info.NewProcessor(l, ctx))
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func newProcessorWithInfo(l logrus.FieldLogger, ctx context.Context, db *gorm.DB, ip info.Processor) *ProcessorImpl {
 	return &ProcessorImpl{l: l, ctx: ctx, db: db, ip: ip}
 }

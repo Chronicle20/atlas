@@ -22,6 +22,7 @@ import { Link } from "react-router-dom";
 import { getAssetIconUrl } from "@/lib/utils/asset-url";
 import { MapCell } from "@/components/map-cell";
 import { ItemNameCell } from "@/components/item-name-cell";
+import { OwnerNameCell } from "@/components/owner-name-cell";
 
 export function MerchantDetailPage() {
   const { activeTenant } = useTenant();
@@ -91,7 +92,12 @@ export function MerchantDetailPage() {
         <CardContent>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             <InfoField label="Shop ID" value={shopId} mono />
-            <InfoField label="Channel" value={`${tenantConfig?.attributes.worlds[a.worldId]?.name || `World ${a.worldId}`} Ch. ${a.channelId + 1}`} />
+            <div className="space-y-1">
+              <p className="text-sm text-muted-foreground">Channel</p>
+              <Badge variant="secondary">
+                {tenantConfig?.attributes.worlds[a.worldId]?.name || `World ${a.worldId}`} Ch. {a.channelId + 1}
+              </Badge>
+            </div>
             <div className="space-y-1">
               <p className="text-sm text-muted-foreground">Map</p>
               <MapCell mapId={String(a.mapId)} tenant={activeTenant} />
@@ -99,7 +105,7 @@ export function MerchantDetailPage() {
             <div className="space-y-1">
               <p className="text-sm text-muted-foreground">Owner</p>
               <Link to={`/characters/${a.characterId}`} className="text-sm font-medium text-primary hover:underline">
-                {a.characterId}
+                <OwnerNameCell characterId={String(a.characterId)} tenant={activeTenant} />
               </Link>
             </div>
             <InfoField label="Position" value={`(${a.x}, ${a.y})`} />
@@ -145,8 +151,7 @@ export function MerchantDetailPage() {
                 <TableHeader className="sticky top-0 bg-background z-10">
                   <TableRow>
                     <TableHead className="w-10">Icon</TableHead>
-                    <TableHead>Item</TableHead>
-                    <TableHead>Template ID</TableHead>
+                    <TableHead>Name</TableHead>
                     <TableHead>Quantity</TableHead>
                     <TableHead>Bundle Size</TableHead>
                     <TableHead>Bundles</TableHead>
@@ -199,9 +204,6 @@ function ListingRow({ listing }: { listing: MerchantListing }) {
         <Link to={`/items/${a.itemId}`}>
           <ItemNameCell itemId={String(a.itemId)} tenant={activeTenant} />
         </Link>
-      </TableCell>
-      <TableCell>
-        <span className="font-mono text-muted-foreground">{a.itemId}</span>
       </TableCell>
       <TableCell>{a.quantity}</TableCell>
       <TableCell>{a.bundleSize}</TableCell>

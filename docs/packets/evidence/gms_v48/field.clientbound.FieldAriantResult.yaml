@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldAriantResult
+direction: clientbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnWarnMessage
+    address: "0x4ca7d4"
+    decompile_sha256: 7dbc915098778e9c9bebac3800ecd1602b784385ceb72ff6bd84ba471debef3c
+verifies:
+    - libs/atlas-packet/field/clientbound/ariant_result_test.go#TestAriantResultByteOutputV48

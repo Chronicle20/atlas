@@ -162,31 +162,34 @@ func (m *RemoteShopWarp) Decode(_ logrus.FieldLogger, _ context.Context) func(r 
 	}
 }
 
-// EntrustedShopUnknownChannel - mode(8), shopId, channelId.
-// Mode 8 of CWvsContext::OnEntrustedShopCheckResult (JMS185 @ 0xb0ee59): the "unknown
-// channel" notice. The body is Decode4(shopId) + Decode1(channelId); the client uses them
-// to redirect the player toward the channel where the shop actually lives. Identical body
-// layout to RemoteShopWarp but a distinct, fixed mode.
+// EntrustedShopUnknownChannel - mode, mapish int, channelId.
+// The ERROR_UNKNOWN mode of CWvsContext::OnEntrustedShopCheckResult (v83
+// @0xa27de3, JMS185 @0xb0ee59): the "your store is currently open in channel
+// %s FM %d" notice. The body is Decode4 + Decode1(channel): the client shows
+// int%100 as the Free-Market room number (v83 @0xa27e6c) and resolves the
+// channel name from the byte. Identical body layout to RemoteShopWarp but a
+// distinct mode; the mode byte is config-resolved by the caller (operations
+// table), never hard-coded.
 type EntrustedShopUnknownChannel struct {
 	mode      byte
-	shopId    uint32
+	mapId     uint32
 	channelId byte
 }
 
-func NewEntrustedShopUnknownChannel(shopId uint32, channelId byte) EntrustedShopUnknownChannel {
-	return EntrustedShopUnknownChannel{mode: 8, shopId: shopId, channelId: channelId}
+func NewEntrustedShopUnknownChannel(mode byte, mapId uint32, channelId byte) EntrustedShopUnknownChannel {
+	return EntrustedShopUnknownChannel{mode: mode, mapId: mapId, channelId: channelId}
 }
 
 func (m EntrustedShopUnknownChannel) Operation() string { return HiredMerchantOperationWriter }
 func (m EntrustedShopUnknownChannel) String() string {
-	return fmt.Sprintf("entrusted shop unknown channel shopId [%d] channelId [%d]", m.shopId, m.channelId)
+	return fmt.Sprintf("entrusted shop unknown channel mapId [%d] channelId [%d]", m.mapId, m.channelId)
 }
 
 func (m EntrustedShopUnknownChannel) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
 		w.WriteByte(m.mode)
-		w.WriteInt(m.shopId)
+		w.WriteInt(m.mapId)
 		w.WriteByte(m.channelId)
 		return w.Bytes()
 	}
@@ -195,7 +198,7 @@ func (m EntrustedShopUnknownChannel) Encode(l logrus.FieldLogger, _ context.Cont
 func (m *EntrustedShopUnknownChannel) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.mode = r.ReadByte()
-		m.shopId = r.ReadUint32()
+		m.mapId = r.ReadUint32()
 		m.channelId = r.ReadByte()
 	}
 }

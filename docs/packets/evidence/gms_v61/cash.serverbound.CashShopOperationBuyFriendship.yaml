@@ -1,0 +1,10 @@
+packet: cash/serverbound/CashShopOperationBuyFriendship
+direction: serverbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnBuyFriendship
+    address: "0x4574b0"
+    decompile_sha256: a7cda7c932caa1707baeb5048efef3ab14b5b76260e12ff0c0d4faf1713df51d
+verifies:
+    - libs/atlas-packet/cash/serverbound/v61_test.go#TestShopOperationBuyFriendshipBytesV61

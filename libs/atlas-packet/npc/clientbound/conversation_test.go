@@ -142,9 +142,16 @@ func TestSayImageConversationDetailEncode(t *testing.T) {
 			d := &SayImageConversationDetail{Images: []string{"img/a", "img/b"}}
 			got := d.Encode(l, ctx)(nil)
 
-			want := []byte{byte(2)}
-			want = append(want, asciiBytes("img/a")...)
-			want = append(want, asciiBytes("img/b")...)
+			var want []byte
+			// GMS <83 (v79 etc.): CScriptMan::OnSayImage @0x6c8052 reads a single
+			// DecodeStr (one image, no count). v83+/JMS read Decode1 count + list.
+			if v.Region == "GMS" && v.MajorVersion < 83 {
+				want = asciiBytes("img/a")
+			} else {
+				want = []byte{byte(2)}
+				want = append(want, asciiBytes("img/a")...)
+				want = append(want, asciiBytes("img/b")...)
+			}
 			if !bytesEqual(got, want) {
 				t.Errorf("SayImage encode mismatch\n got=%v\nwant=%v", got, want)
 			}
@@ -166,9 +173,17 @@ func TestAskMemberShopAvatarConversationDetailEncode(t *testing.T) {
 			got := d.Encode(l, ctx)(nil)
 
 			want := asciiBytes("pick one")
-			want = append(want, byte(2))
-			want = append(want, 0x44, 0x33, 0x22, 0x11)
-			want = append(want, 0x88, 0x77, 0x66, 0x55)
+			// GMS <83 (v79 etc.): the client reads count + (int64 SN + byte) per
+			// entry (CScriptMan::OnAskMembershopAvatar @0x6c8bc8), incompatible
+			// with the v83+ int32 style-id list — Atlas gates count=0. v83+ keeps
+			// the int32 candidate list.
+			if v.Region == "GMS" && v.MajorVersion < 83 {
+				want = append(want, byte(0))
+			} else {
+				want = append(want, byte(2))
+				want = append(want, 0x44, 0x33, 0x22, 0x11)
+				want = append(want, 0x88, 0x77, 0x66, 0x55)
+			}
 			if !bytesEqual(got, want) {
 				t.Errorf("AskMemberShopAvatar encode mismatch\n got=%v\nwant=%v", got, want)
 			}

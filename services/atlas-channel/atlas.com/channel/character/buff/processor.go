@@ -34,8 +34,16 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	return p
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
+
+// ByCharacterIdProvider fetches every buff for a character. The upstream
+// atlas-buffs list is now paginated (task-117); callers here need the
+// complete set (e.g. cancelling every buff invalidated by a map/mount
+// change, or syncing buff state on session events), so this drains every
+// page rather than fetching just the first.
 func (p *ProcessorImpl) ByCharacterIdProvider(characterId uint32) model.Provider[[]Model] {
-	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestById(characterId), Extract, model.Filters[Model]())
+	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(characterBuffsUrl(characterId), 250, Extract, model.Filters[Model]())
 }
 
 func (p *ProcessorImpl) GetByCharacterId(characterId uint32) ([]Model, error) {

@@ -16,6 +16,7 @@ import (
 	map2 "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	monster2 "github.com/Chronicle20/atlas/libs/atlas-constants/monster"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
@@ -67,6 +68,10 @@ type emitter func(topic string, provider model.Provider[[]kafka.Message]) error
 // normally.
 var testInformationLookup func(monsterId uint32) (information.Model, error)
 
+// testMobSkillLookup is a test-only override for mobskill.GetByIdAndLevel.
+// When nil (production), UseSkill calls mobskill.GetByIdAndLevel normally.
+var testMobSkillLookup func(skillId uint16, level uint16) (mobskill.Model, error)
+
 // ProcessorImpl implements the Processor interface
 type ProcessorImpl struct {
 	l         logrus.FieldLogger
@@ -87,10 +92,12 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 		},
 	}
 	p.inFieldFn = func(f field.Model) ([]uint32, error) {
-		return _map.CharacterIdsInFieldProvider(p.l)(p.ctx)(f)()
+		return _map.NewProcessor(p.l, p.ctx).CharacterIdsInFieldProvider(f)()
 	}
 	return p
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 // ByIdProvider returns a provider for a monster by ID
 func (p *ProcessorImpl) ByIdProvider(monsterId uint32) model.Provider[Model] {
@@ -180,7 +187,7 @@ func (p *ProcessorImpl) GetInFieldRect(f field.Model, x1, y1, x2, y2 int16, limi
 // Create creates a new monster in a field
 func (p *ProcessorImpl) Create(f field.Model, input RestModel) (Model, error) {
 	p.l.Debugf("Attempting to create monster [%d] in field [%s].", input.MonsterId, f.Id())
-	ma, err := information.GetById(p.l)(p.ctx)(input.MonsterId)
+	ma, err := information.NewProcessor(p.l, p.ctx).GetById(input.MonsterId)
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to retrieve information necessary to create monster [%d].", input.MonsterId)
 		return Model{}, err
@@ -213,7 +220,7 @@ func (p *ProcessorImpl) Create(f field.Model, input RestModel) (Model, error) {
 	//
 	// StartControl as a public API is preserved for genuine control
 	// transfers (controller leaves, DPS-leader switch, FindNextController).
-	cid, err := p.getControllerCandidate(f, m.X(), m.Y(), _map.CharacterIdsInFieldProvider(p.l)(p.ctx)(f))
+	cid, err := p.getControllerCandidate(f, m.X(), m.Y(), _map.NewProcessor(p.l, p.ctx).CharacterIdsInFieldProvider(f))
 	if err == nil {
 		p.l.Debugf("Created monster [%d] with id [%d] will be controlled by [%d].", m.MonsterId(), m.UniqueId(), cid)
 		m, err = GetMonsterRegistry().ControlMonster(p.t, m.UniqueId(), cid)
@@ -245,8 +252,7 @@ func (p *ProcessorImpl) Create(f field.Model, input RestModel) (Model, error) {
 
 // getControllerCandidate finds the best character to control monsters in a field.
 // monsterX/monsterY are the controlled monster's position; if a player's puppet
-// sits within vicinity of it (Cosmic Monster.java getNextControllerCandidate /
-// isPuppetInVicinity, distanceSq < 177777), that puppet's owner is preferred as
+// sits within vicinity of it (distanceSq < 177777), that puppet's owner is preferred as
 // the controller over the default least-controlled candidate. When no in-vicinity
 // puppet exists the selection falls back to the unchanged least-loaded pick.
 func (p *ProcessorImpl) getControllerCandidate(f field.Model, monsterX int16, monsterY int16, idp model.Provider[[]uint32]) (uint32, error) {
@@ -378,7 +384,7 @@ func (p *ProcessorImpl) Damage(id uint32, characterId uint32, damages []uint32, 
 	// Fetch monster info for boss flag and revives
 	var isBoss bool
 	var revives []uint32
-	if ma, infoErr := information.GetById(p.l)(p.ctx)(m.MonsterId()); infoErr == nil {
+	if ma, infoErr := information.NewProcessor(p.l, p.ctx).GetById(m.MonsterId()); infoErr == nil {
 		isBoss = ma.Boss()
 		revives = ma.Revives()
 	}
@@ -513,7 +519,7 @@ func (p *ProcessorImpl) DamageFriendly(uniqueId uint32, attackerUniqueId uint32,
 		return
 	}
 
-	ma, err := information.GetById(p.l)(p.ctx)(attacker.MonsterId())
+	ma, err := information.NewProcessor(p.l, p.ctx).GetById(attacker.MonsterId())
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to get information for attacking monster [%d].", attacker.MonsterId())
 		return
@@ -599,7 +605,12 @@ func (p *ProcessorImpl) UseSkill(uniqueId uint32, characterId uint32, skillId by
 	}
 
 	// Fetch skill definition from data service
-	sd, err := mobskill.GetByIdAndLevel(p.l)(p.ctx)(uint16(skillId), uint16(skillLevel))
+	var sd mobskill.Model
+	if testMobSkillLookup != nil {
+		sd, err = testMobSkillLookup(uint16(skillId), uint16(skillLevel))
+	} else {
+		sd, err = mobskill.NewProcessor(p.l, p.ctx).GetByIdAndLevel(uint16(skillId), uint16(skillLevel))
+	}
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to retrieve mob skill [%d] level [%d].", skillId, skillLevel)
 		return
@@ -625,10 +636,15 @@ func (p *ProcessorImpl) UseSkill(uniqueId uint32, characterId uint32, skillId by
 
 	// Deduct MP
 	if sd.MpCon() > 0 {
-		_, err = GetMonsterRegistry().DeductMp(p.t, uniqueId, sd.MpCon())
-		if err != nil {
-			p.l.WithError(err).Errorf("Unable to deduct MP from monster [%d].", uniqueId)
+		post, derr := GetMonsterRegistry().DeductMp(p.t, uniqueId, sd.MpCon())
+		if derr != nil {
+			p.l.WithError(derr).Errorf("Unable to deduct MP from monster [%d].", uniqueId)
 			return
+		}
+		// The MP-sufficiency gate above guarantees no clamp, so the
+		// requested MpCon is the exact amount deducted.
+		if eerr := p.emit(EnvEventTopicMonsterStatus, mpChangedStatusEventProvider(post, 0, uint32(skillId), MpChangeReasonSkillCast, sd.MpCon())); eerr != nil {
+			p.l.WithError(eerr).Errorf("Unable to emit MP_CHANGED for monster [%d] skill cast.", uniqueId)
 		}
 	}
 
@@ -649,7 +665,7 @@ func (p *ProcessorImpl) UseSkill(uniqueId uint32, characterId uint32, skillId by
 
 	// Determine animation delay from monster data
 	var animDelay time.Duration
-	ma, err := information.GetById(p.l)(p.ctx)(m.MonsterId())
+	ma, err := information.NewProcessor(p.l, p.ctx).GetById(m.MonsterId())
 	if err == nil {
 		if d, ok := ma.AnimationTimes()["skill1"]; ok && d > 0 {
 			animDelay = time.Duration(d) * time.Millisecond
@@ -697,10 +713,10 @@ func (p *ProcessorImpl) UseSkill(uniqueId uint32, characterId uint32, skillId by
 	}
 
 	if animDelay > 0 {
-		go func() {
+		routine.Go(p.l, p.ctx, func(_ context.Context) {
 			time.Sleep(animDelay)
 			p.applyAnimationDelayedEffect(uniqueId, executeEffect, postExecute)
-		}()
+		})
 	} else {
 		executeEffect()
 		postExecute()
@@ -735,7 +751,7 @@ func (p *ProcessorImpl) UseSkillGM(uniqueId uint32, skillId byte, skillLevel byt
 		return
 	}
 
-	sd, err := mobskill.GetByIdAndLevel(p.l)(p.ctx)(uint16(skillId), uint16(skillLevel))
+	sd, err := mobskill.NewProcessor(p.l, p.ctx).GetByIdAndLevel(uint16(skillId), uint16(skillLevel))
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to retrieve mob skill [%d] level [%d] for GM command.", skillId, skillLevel)
 		return
@@ -785,7 +801,7 @@ func (p *ProcessorImpl) UseBasicAttack(uniqueId uint32, attackPos uint8) {
 	if testInformationLookup != nil {
 		info, err = testInformationLookup(m.MonsterId())
 	} else {
-		info, err = information.GetById(p.l)(p.ctx)(m.MonsterId())
+		info, err = information.NewProcessor(p.l, p.ctx).GetById(m.MonsterId())
 	}
 	if err != nil {
 		p.l.WithError(err).Debugf("UseBasicAttack: cannot fetch template for monster [%d].", uniqueId)
@@ -820,9 +836,15 @@ func (p *ProcessorImpl) UseBasicAttack(uniqueId uint32, attackPos uint8) {
 	}
 
 	if atk.ConMP > 0 {
-		if _, err := GetMonsterRegistry().DeductMp(p.t, uniqueId, uint32(atk.ConMP)); err != nil {
-			p.l.WithError(err).Errorf("UseBasicAttack: DeductMp failed for monster [%d].", uniqueId)
+		post, derr := GetMonsterRegistry().DeductMp(p.t, uniqueId, uint32(atk.ConMP))
+		if derr != nil {
+			p.l.WithError(derr).Errorf("UseBasicAttack: DeductMp failed for monster [%d].", uniqueId)
 			return
+		}
+		// The MP-sufficiency gate above guarantees no clamp, so ConMP is
+		// the exact amount deducted.
+		if eerr := p.emit(EnvEventTopicMonsterStatus, mpChangedStatusEventProvider(post, 0, 0, MpChangeReasonBasicAttack, uint32(atk.ConMP))); eerr != nil {
+			p.l.WithError(eerr).Errorf("UseBasicAttack: unable to emit MP_CHANGED for monster [%d].", uniqueId)
 		}
 	}
 
@@ -1036,7 +1058,7 @@ func (p *ProcessorImpl) executeDebuff(m Model, sd mobskill.Model, skillId byte, 
 
 // executeBanish warps target players to the monster's banish map
 func (p *ProcessorImpl) executeBanish(m Model, sd mobskill.Model) {
-	ma, err := information.GetById(p.l)(p.ctx)(m.MonsterId())
+	ma, err := information.NewProcessor(p.l, p.ctx).GetById(m.MonsterId())
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to get monster info for banish from monster [%d].", m.UniqueId())
 		return
@@ -1079,7 +1101,7 @@ func (p *ProcessorImpl) getDiseaseTargets(m Model, sd mobskill.Model) []uint32 {
 	}
 
 	// AoE: get all characters in the field
-	ids, err := _map.CharacterIdsInFieldProvider(p.l)(p.ctx)(m.Field())()
+	ids, err := _map.NewProcessor(p.l, p.ctx).CharacterIdsInFieldProvider(m.Field())()
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to get characters in field for monster [%d] disease targeting.", m.UniqueId())
 		return nil
@@ -1157,7 +1179,7 @@ func (p *ProcessorImpl) ApplyStatusEffect(uniqueId uint32, effect StatusEffect) 
 		if testInformationLookup != nil {
 			info, infoErr = testInformationLookup(m.MonsterId())
 		} else {
-			info, infoErr = information.GetById(p.l)(p.ctx)(m.MonsterId())
+			info, infoErr = information.NewProcessor(p.l, p.ctx).GetById(m.MonsterId())
 		}
 		if infoErr == nil {
 			// Elemental immunity check
@@ -1192,7 +1214,7 @@ func (p *ProcessorImpl) ApplyStatusEffect(uniqueId uint32, effect StatusEffect) 
 // isElementallyImmune checks if a monster's resistances block the given status effect.
 // DOOM (Priest, 2311005) intentionally bypasses elemental immunity: the
 // polymorph-to-snail effect overrides resistance — a fire-immune mob still
-// becomes a snail. Source parity with Cosmic (server/StatEffect.java:1531).
+// becomes a snail.
 func isElementallyImmune(info information.Model, effect StatusEffect) (bool, string) {
 	if _, ok := effect.Statuses()[monster2.StatusDoom]; ok {
 		return false, ""
@@ -1427,13 +1449,13 @@ func destroyInTenant(l logrus.FieldLogger) func(ctx context.Context) func(t tena
 // the DRAIN_MP command lands, the monster may already have been
 // one-shot killed by the same player attack (DAMAGE and DRAIN_MP are
 // emitted in the same processAttack call and partitioned by uniqueId,
-// so DAMAGE processes first). In that case Cosmic still plays the
-// visual and refunds the caster — the post-mortem deduction is purely
+// so DAMAGE processes first). In that case the visual still plays and
+// the caster is still refunded — the post-mortem deduction is purely
 // cosmetic.
 //
 // The body.Amount on the emitted event is requestedAmount (the
 // channel-computed MaxMp * X / 100), not the clamped actual delta:
-// Cosmic refunds the caster the full computed amount regardless of how
+// the caster is refunded the full computed amount regardless of how
 // much MP the monster had left to give.
 //
 // The boss check uses testInformationLookup when non-nil so that unit
@@ -1457,7 +1479,7 @@ func (p *ProcessorImpl) DrainMp(f field.Model, uniqueId uint32, characterId uint
 		if testInformationLookup != nil {
 			infoModel, infoErr = testInformationLookup(m.MonsterId())
 		} else {
-			infoModel, infoErr = information.GetById(p.l)(p.ctx)(m.MonsterId())
+			infoModel, infoErr = information.NewProcessor(p.l, p.ctx).GetById(m.MonsterId())
 		}
 		if infoErr == nil && infoModel.Boss() {
 			return nil

@@ -1,0 +1,166 @@
+# Version-gated wire-divergence registry (task-169 FR-3.1b)
+#
+# A machine-readable list of the places where a packet's wire encoding changes
+# at a client-version boundary. `packet-audit gate-check` asserts that a
+# VERIFIED byte-fixture pins the encoding on BOTH adjacent versions that straddle
+# each boundary — a gate is only trustworthy if both sides are proven, so a
+# regression (or a wrong boundary) on the unpinned side can't slip through.
+#
+# This is a REPRESENTATIVE seed, not an exhaustive list. It was seeded from
+# task-113's docs/tasks/task-113-gms-legacy-versions/code-gate-audit.md (the
+# cross-version gate table), picking the clearest gates whose two straddling
+# versions are BOTH fixture-verified today. Extend it freely — it only grows.
+#
+# HOW TO ADD A ROW
+#   1. Find the version-gated branch in libs/atlas-packet (grep MajorVersion /
+#      MajorAtLeast). Identify the boundary and the two ADJACENT version keys
+#      that straddle it — one takes the branch, the other doesn't.
+#   2. Set `packet` to the status.json `packet` field for that codec (e.g.
+#      `character/clientbound/CharacterSpawn`) and `direction` to disambiguate.
+#   3. Confirm BOTH straddling keys are `verified` in
+#      docs/packets/audits/status.json. If one side legitimately isn't pinned
+#      yet, set `expect: partial` and a `reason` (do NOT fabricate a fixture) —
+#      gate-check will accept one verified side but keep the gap visible.
+#
+# SCHEMA (per gate)
+#   packet:            status.json `packet` path (maps the gate to a matrix row)
+#   direction:         clientbound | serverbound (disambiguates duplicate paths)
+#   field:             short human note of what the boundary gates
+#   boundary:          the code predicate, e.g. ">87" or ">=95"
+#   lower_version_key: adjacent version on the LOW side of the boundary
+#   upper_version_key: adjacent version on the HIGH side of the boundary
+#   expect:            full (default) | partial  (partial => one side may be unpinned)
+#   reason:            required when expect: partial
+#
+# Adjacency note: lower/upper are the two version columns that touch the
+# boundary; gate-check only inspects those two cells, so intervening n-a columns
+# don't matter.
+
+gates:
+  # ---- boundary v48 / v61 ------------------------------------------------
+  - packet: character/clientbound/CharacterSpawn
+    direction: clientbound
+    field: new-year-card flag (present v61+, absent v48; `>=61 && <95`)
+    boundary: ">=61"
+    lower_version_key: gms_v48
+    upper_version_key: gms_v61
+
+  # ---- boundary v61 / v72 ------------------------------------------------
+  - packet: login/serverbound/WorldCharacterListRequest
+    direction: serverbound
+    field: socketAddr int (added at v72; `(>=72)||JMS`)
+    boundary: ">=72"
+    lower_version_key: gms_v61
+    upper_version_key: gms_v72
+  - packet: character/serverbound/CreateCharacter
+    direction: serverbound
+    field: manual base-stat trailing bytes (present <=v61; `<=61`)
+    boundary: "<=61"
+    lower_version_key: gms_v61
+    upper_version_key: gms_v72
+
+  # ---- boundary v72 / v79 ------------------------------------------------
+  - packet: character/serverbound/CreateCharacter
+    direction: serverbound
+    field: jobIndex (read at v73+; the sole intra-legacy discriminator; `>=73`)
+    boundary: ">=73"
+    lower_version_key: gms_v72
+    upper_version_key: gms_v79
+
+  # ---- boundary v79 / v83 ------------------------------------------------
+  - packet: character/clientbound/CharacterSpawn
+    direction: clientbound
+    field: 2nd (dragon) effect byte (present v83..v87; `>=83 && <=87`)
+    boundary: ">=83"
+    lower_version_key: gms_v79
+    upper_version_key: gms_v83
+
+  # ---- boundary v83 / v84 ------------------------------------------------
+  - packet: character/serverbound/CharacterAttackMeleeRequest
+    direction: serverbound
+    field: attack_info DR-block fields (added at v84; `>=84`)
+    boundary: ">=84"
+    lower_version_key: gms_v83
+    upper_version_key: gms_v84
+  - packet: monster/serverbound/MonsterMovementRequest
+    direction: serverbound
+    field: monster-move v84 fields (`>=84`)
+    boundary: ">=84"
+    lower_version_key: gms_v83
+    upper_version_key: gms_v84
+
+  # ---- boundary v84 / v87 ------------------------------------------------
+  - packet: chat/serverbound/ChatWhisper
+    direction: serverbound
+    field: v87 whisper decode path (`(>=87)||JMS`)
+    boundary: ">=87"
+    lower_version_key: gms_v84
+    upper_version_key: gms_v87
+  - packet: login/serverbound/AllCharacterListRequest
+    direction: serverbound
+    field: view-all-char v87 field (`>=87`)
+    boundary: ">=87"
+    lower_version_key: gms_v84
+    upper_version_key: gms_v87
+  - packet: character/clientbound/CharacterInfo
+    direction: clientbound
+    field: char-info v87 field (`(GMS && >=87)||JMS`)
+    boundary: ">=87"
+    lower_version_key: gms_v84
+    upper_version_key: gms_v87
+  - packet: monster/clientbound/MonsterMovement
+    direction: clientbound
+    field: monster-movement v87 fields (`(>=87)||JMS`)
+    boundary: ">=87"
+    lower_version_key: gms_v84
+    upper_version_key: gms_v87
+
+  # ---- boundary v87 / v95 ------------------------------------------------
+  - packet: character/clientbound/CharacterSpawn
+    direction: clientbound
+    field: v88+ spawn field (`>87`)
+    boundary: ">87"
+    lower_version_key: gms_v87
+    upper_version_key: gms_v95
+  - packet: character/clientbound/CharacterInfo
+    direction: clientbound
+    field: char-info legacy field (present <=v87; `<=87`)
+    boundary: "<=87"
+    lower_version_key: gms_v87
+    upper_version_key: gms_v95
+  - packet: character/clientbound/ItemUpgrade
+    direction: clientbound
+    field: item-upgrade v88+ fields (`>87`)
+    boundary: ">87"
+    lower_version_key: gms_v87
+    upper_version_key: gms_v95
+  - packet: character/clientbound/CharacterExpression
+    direction: clientbound
+    field: expression v88+ fields (`>87`)
+    boundary: ">87"
+    lower_version_key: gms_v87
+    upper_version_key: gms_v95
+  - packet: character/clientbound/CharacterViewAllCharacters
+    direction: clientbound
+    field: view-all v88+ field (`>87`)
+    boundary: ">87"
+    lower_version_key: gms_v87
+    upper_version_key: gms_v95
+  - packet: character/clientbound/CharacterList
+    direction: clientbound
+    field: char-list v88+ field (`>87`)
+    boundary: ">87"
+    lower_version_key: gms_v87
+    upper_version_key: gms_v95
+  - packet: field/clientbound/FieldSetField
+    direction: clientbound
+    field: set-field v95 field (`>=95`)
+    boundary: ">=95"
+    lower_version_key: gms_v87
+    upper_version_key: gms_v95
+  - packet: character/clientbound/CharacterDamage
+    direction: clientbound
+    field: damage v95 fields (`>=95`)
+    boundary: ">=95"
+    lower_version_key: gms_v87
+    upper_version_key: gms_v95

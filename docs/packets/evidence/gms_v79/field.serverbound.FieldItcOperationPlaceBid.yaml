@@ -1,0 +1,8 @@
+packet: field/serverbound/FieldItcOperationPlaceBid
+direction: serverbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CITCBidAuctionDlg::OnButtonClicked
+    address: "0x59da55"
+    decompile_sha256: 629ec4f265b94ada536d6f3c0168742f3acbf9196c254c764c95ded0e78cfd78

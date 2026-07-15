@@ -4,10 +4,12 @@ import (
 	"atlas-world/rest"
 	"errors"
 	"net/http"
+	"sort"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
@@ -70,16 +72,42 @@ func handleGetWorld(d *rest.HandlerDependency, c *rest.HandlerContext) http.Hand
 
 func handleGetWorlds(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		page, err := paginate.ParseParams(r.URL.Query(), paginate.DefaultPageSize, paginate.MaxPageSize)
+		if err != nil {
+			server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+			return
+		}
+
 		p := NewProcessor(d.Logger(), d.Context())
-		ws, err := p.GetWorlds(decoratorsFromInclude(r, p)...)
+		ws, err := p.GetWorlds()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Unable to get all worlds.")
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
+		// Worlds materialize from a Go map keyed by world id (mapDistinctWorldId
+		// over the channel registry) - iteration order is not deterministic, so
+		// sort by the unique id before paging.
+		sorted := make([]Model, len(ws))
+		copy(sorted, ws)
+		sort.Slice(sorted, func(i, j int) bool {
+			return sorted[i].Id() < sorted[j].Id()
+		})
+		paged := paginate.Slice(sorted, page)
+
+		// Apply the ?include=channels decoration only to the current page's
+		// items - it fans out a live channel-registry lookup per world.
+		decorators := decoratorsFromInclude(r, p)
+		decorated, err := model.SliceMap(model.Decorate[Model](decorators))(model.FixedProvider(paged.Items))(model.ParallelMap())()
+		if err != nil {
+			d.Logger().WithError(err).Errorf("Decorating worlds.")
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
 		// Transform worlds to REST models
-		rms, err := model.SliceMap(Transform)(model.FixedProvider(ws))(model.ParallelMap())()
+		rms, err := model.SliceMap(Transform)(model.FixedProvider(decorated))(model.ParallelMap())()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Creating world REST models.")
 			w.WriteHeader(http.StatusInternalServerError)
@@ -88,6 +116,6 @@ func handleGetWorlds(d *rest.HandlerDependency, c *rest.HandlerContext) http.Han
 
 		query := r.URL.Query()
 		queryParams := jsonapi.ParseQueryFields(&query)
-		server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rms)
+		server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rms, paginate.EnvelopeFor(paged), r)
 	}
 }

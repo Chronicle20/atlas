@@ -27,6 +27,7 @@ type Processor interface {
 	LevelChange(mb *message.Buffer) func(characterId uint32, level byte) error
 	JobChangeAndEmit(characterId uint32, jobId job.Id) error
 	JobChange(mb *message.Buffer) func(characterId uint32, jobId job.Id) error
+	GmChange(characterId uint32) error
 	MapChange(characterId uint32, mapId _map.Id) error
 	JoinParty(characterId uint32, partyId uint32) error
 	LeaveParty(characterId uint32) error
@@ -52,6 +53,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) LoginAndEmit(f field.Model, characterId uint32) error {
 	return message.Emit(p.p)(func(buf *message.Buffer) error {
 		return p.Login(buf)(f, characterId)
@@ -62,6 +65,7 @@ func (p *ProcessorImpl) LoginAndEmit(f field.Model, characterId uint32) error {
 func (p *ProcessorImpl) Login(mb *message.Buffer) func(f field.Model, characterId uint32) error {
 	return func(f field.Model, characterId uint32) error {
 		c, err := p.GetById(characterId)
+		refreshers := make([]func(Model) Model, 0, 3)
 		if err != nil {
 			p.l.Debugf("Adding character [%d] from world [%d] to registry.", characterId, f.WorldId())
 			fm, err := p.GetForeignCharacterInfo(characterId)
@@ -70,11 +74,25 @@ func (p *ProcessorImpl) Login(mb *message.Buffer) func(f field.Model, characterI
 				return err
 			}
 			c = GetRegistry().Create(p.ctx, f, characterId, fm.Name(), fm.Level(), fm.JobId(), fm.GM())
+		} else {
+			// The registry entry survives relogs (Redis). GM/level/job can have
+			// changed while offline (or via admin edit) with no event this
+			// service saw — refresh them from the authoritative service.
+			fm, ferr := p.GetForeignCharacterInfo(characterId)
+			if ferr != nil {
+				p.l.WithError(ferr).Warnf("Unable to refresh character [%d] info on login; using cached registry values.", characterId)
+			} else {
+				refreshers = append(refreshers,
+					func(m Model) Model { return m.ChangeGm(fm.GM()) },
+					func(m Model) Model { return m.ChangeLevel(fm.Level()) },
+					func(m Model) Model { return m.ChangeJob(fm.JobId()) },
+				)
+			}
 		}
 
 		p.l.Debugf("Setting character [%d] to online in registry.", characterId)
-		fn := func(m Model) Model { return Model.ChangeChannel(m, f.ChannelId()) }
-		c = GetRegistry().Update(p.ctx, c.Id(), Model.Login, fn)
+		updaters := append(refreshers, Model.Login, func(m Model) Model { return Model.ChangeChannel(m, f.ChannelId()) })
+		c = GetRegistry().Update(p.ctx, c.Id(), updaters...)
 
 		if c.PartyId() != 0 {
 			err = mb.Put(EnvEventMemberStatusTopic, loginEventProvider(c.PartyId(), c.WorldId(), characterId))
@@ -192,6 +210,22 @@ func (p *ProcessorImpl) JobChange(mb *message.Buffer) func(characterId uint32, j
 
 		return nil
 	}
+}
+
+func (p *ProcessorImpl) GmChange(characterId uint32) error {
+	c, err := p.GetById(characterId)
+	if err != nil {
+		// Not in the registry: nothing to refresh; next login populates fresh.
+		return nil
+	}
+	fm, err := p.GetForeignCharacterInfo(characterId)
+	if err != nil {
+		p.l.WithError(err).Errorf("Unable to refresh GM status for character [%d].", characterId)
+		return err
+	}
+	p.l.Debugf("Setting character [%d] GM status to [%d] in registry.", characterId, fm.GM())
+	_ = GetRegistry().Update(p.ctx, c.Id(), func(m Model) Model { return m.ChangeGm(fm.GM()) })
+	return nil
 }
 
 func (p *ProcessorImpl) MapChange(characterId uint32, mapId _map.Id) error {

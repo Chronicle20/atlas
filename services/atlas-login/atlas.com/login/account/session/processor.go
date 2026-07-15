@@ -31,6 +31,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	return p
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) Create(sessionId uuid.UUID, accountId uint32, accountName string, password string, ipAddress string, hwid string) error {
 	return p.mp(session3.EnvCommandTopic)(session2.CreateCommandProvider(sessionId, accountId, accountName, password, ipAddress, hwid))
 }

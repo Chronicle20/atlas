@@ -50,6 +50,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 // SendMessage sends a Kafka command to atlas-channel to display a system message
 func (p *ProcessorImpl) SendMessage(transactionId uuid.UUID, ch channel.Model, characterId uint32, messageType string, message string) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(system_message.EnvCommandTopic)(SendMessageCommandProvider(transactionId, ch, characterId, messageType, message))

@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
@@ -25,16 +26,22 @@ func InitResource(db *gorm.DB) func(si jsonapi.ServerInformation) server.RouteIn
 func handleGetCharacterTemplatesRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			s := NewStorage(d.Logger(), db)
-			res, err := s.GetAll(d.Context())
+			query := r.URL.Query()
+			page, err := paginate.ParseParams(query, paginate.DefaultPageSize, paginate.MaxPageSize)
 			if err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteBadRequest(d.Logger(), w, err.Error())
 				return
 			}
 
-			query := r.URL.Query()
+			s := NewStorage(d.Logger(), db)
+			paged, err := s.AllPagedProvider(d.Context())(page)()
+			if err != nil {
+				server.WriteErrorResponse(d.Logger())(w)(err)
+				return
+			}
+
 			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+			server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(paged.Items, paginate.EnvelopeFor(paged), r)
 		}
 	}
 }

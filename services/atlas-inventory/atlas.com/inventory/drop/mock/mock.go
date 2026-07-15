@@ -1,11 +1,14 @@
 package mock
 
 import (
+	"atlas-inventory/drop"
 	"atlas-inventory/kafka/message"
 	dropMsg "atlas-inventory/kafka/message/drop"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 )
+
+var _ drop.Processor = (*ProcessorImpl)(nil)
 
 type ProcessorImpl struct {
 	CreateForEquipmentFn func(mb *message.Buffer) func(f field.Model, itemId uint32, ed dropMsg.EquipmentData, dropType byte, x int16, y int16, ownerId uint32) error

@@ -15,6 +15,7 @@ import (
 	character2 "github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -60,7 +61,6 @@ type ProcessorImpl struct {
 	ctx context.Context
 	db  *gorm.DB
 	t   tenant.Model
-	p   producer.Provider
 	cp  character.Processor
 	ip  invite.Processor
 }
@@ -71,11 +71,12 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 		ctx: ctx,
 		db:  db,
 		t:   tenant.MustFromContext(ctx),
-		p:   producer.ProviderImpl(l)(ctx),
 		cp:  character.NewProcessor(l, ctx),
 		ip:  invite.NewProcessor(l, ctx),
 	}
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) WithTransaction(tx *gorm.DB) Processor {
 	return &ProcessorImpl{
@@ -83,7 +84,8 @@ func (p *ProcessorImpl) WithTransaction(tx *gorm.DB) Processor {
 		ctx: p.ctx,
 		db:  tx,
 		t:   p.t,
-		p:   p.p,
+		cp:  p.cp,
+		ip:  p.ip,
 	}
 }
 
@@ -106,8 +108,10 @@ func (p *ProcessorImpl) Create(characterId uint32, capacity byte) (Model, error)
 }
 
 func (p *ProcessorImpl) DeleteAndEmit(characterId uint32, worldId world.Id) error {
-	return message.Emit(p.p)(func(buf *message.Buffer) error {
-		return p.Delete(buf)(characterId, worldId)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).Delete(buf)(characterId, worldId)
+		})
 	})
 }
 
@@ -139,37 +143,46 @@ func (p *ProcessorImpl) Delete(mb *message.Buffer) func(characterId uint32, worl
 }
 
 func (p *ProcessorImpl) RequestAddBuddyAndEmit(characterId uint32, worldId world.Id, targetId uint32, group string) error {
-	return message.Emit(p.p)(func(buf *message.Buffer) error {
-		return p.RequestAddBuddy(buf)(characterId, worldId, targetId, group)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).RequestAddBuddy(buf)(characterId, worldId, targetId, group)
+		})
 	})
 }
 
 func (p *ProcessorImpl) RequestAddBuddy(mb *message.Buffer) func(characterId uint32, worldId world.Id, targetId uint32, group string) error {
 	return func(characterId uint32, worldId world.Id, targetId uint32, group string) error {
+		// innerMb is a scratch buffer for this call's events. It is only
+		// merged into the caller-supplied (outbox-bound in production) mb on
+		// success. On failure the inner tx rolled back, so its rejection
+		// ERROR status event may not ride into the outbox alongside a state
+		// change that never happened (D7); it is fired on the direct
+		// producer path in the txErr branch below instead.
+		innerMb := message.NewBuffer()
 		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 			tc, err := p.cp.GetById(targetId)
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to retrieve character [%d] information.", targetId)
-				_ = mb.Put(list2.EnvStatusEventTopic, list3.ErrorStatusEventProvider(character2.Id(characterId), worldId, list2.StatusEventErrorCharacterNotFound))
+				_ = innerMb.Put(list2.EnvStatusEventTopic, list3.ErrorStatusEventProvider(character2.Id(characterId), worldId, list2.StatusEventErrorCharacterNotFound))
 				return err
 			}
 
 			if tc.GM() > 0 {
 				p.l.Infof("Character [%d] attempting to buddy a GM.", characterId)
-				_ = mb.Put(list2.EnvStatusEventTopic, list3.ErrorStatusEventProvider(character2.Id(characterId), worldId, list2.StatusEventErrorCannotBuddyGm))
+				_ = innerMb.Put(list2.EnvStatusEventTopic, list3.ErrorStatusEventProvider(character2.Id(characterId), worldId, list2.StatusEventErrorCannotBuddyGm))
 				return errors.New("cannot buddy a gm")
 			}
 
 			cbl, err := p.WithTransaction(tx).GetByCharacterId(characterId)
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to retrieve buddy list for character [%d] attempting to add buddy.", characterId)
-				_ = mb.Put(list2.EnvStatusEventTopic, list3.ErrorStatusEventProvider(character2.Id(characterId), worldId, list2.StatusEventErrorUnknownError))
+				_ = innerMb.Put(list2.EnvStatusEventTopic, list3.ErrorStatusEventProvider(character2.Id(characterId), worldId, list2.StatusEventErrorUnknownError))
 				return err
 			}
 
 			if byte(len(cbl.Buddies()))+1 > cbl.Capacity() {
 				p.l.Infof("Buddy list for character [%d] is at capacity.", characterId)
-				_ = mb.Put(list2.EnvStatusEventTopic, list3.ErrorStatusEventProvider(character2.Id(characterId), worldId, list2.StatusEventErrorListFull))
+				_ = innerMb.Put(list2.EnvStatusEventTopic, list3.ErrorStatusEventProvider(character2.Id(characterId), worldId, list2.StatusEventErrorListFull))
 				return errors.New("buddy list is at capacity")
 			}
 
@@ -182,20 +195,20 @@ func (p *ProcessorImpl) RequestAddBuddy(mb *message.Buffer) func(characterId uin
 			}
 			if found {
 				p.l.Infof("Target [%d] is already on character [%d] buddy list.", targetId, characterId)
-				_ = mb.Put(list2.EnvStatusEventTopic, list3.ErrorStatusEventProvider(character2.Id(characterId), worldId, list2.StatusEventErrorAlreadyBuddy))
+				_ = innerMb.Put(list2.EnvStatusEventTopic, list3.ErrorStatusEventProvider(character2.Id(characterId), worldId, list2.StatusEventErrorAlreadyBuddy))
 				return errors.New("buddy already exists")
 			}
 
 			obl, err := p.WithTransaction(tx).GetByCharacterId(targetId)
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to retrieve buddy list for character [%d] being added as buddy.", targetId)
-				_ = mb.Put(list2.EnvStatusEventTopic, list3.ErrorStatusEventProvider(character2.Id(characterId), worldId, list2.StatusEventErrorUnknownError))
+				_ = innerMb.Put(list2.EnvStatusEventTopic, list3.ErrorStatusEventProvider(character2.Id(characterId), worldId, list2.StatusEventErrorUnknownError))
 				return err
 			}
 
 			if byte(len(obl.Buddies()))+1 > obl.Capacity() {
 				p.l.Infof("Buddy list for character [%d] is at capacity.", targetId)
-				_ = mb.Put(list2.EnvStatusEventTopic, list3.ErrorStatusEventProvider(character2.Id(characterId), worldId, list2.StatusEventErrorListFull))
+				_ = innerMb.Put(list2.EnvStatusEventTopic, list3.ErrorStatusEventProvider(character2.Id(characterId), worldId, list2.StatusEventErrorListFull))
 				return errors.New("buddy list is at capacity")
 			}
 
@@ -211,12 +224,12 @@ func (p *ProcessorImpl) RequestAddBuddy(mb *message.Buffer) func(characterId uin
 				err = addBuddy(tx, characterId, targetId, tc.Name(), group, false)
 				if err != nil {
 					p.l.WithError(err).Errorf("Unable to add buddy to buddy list for character [%d].", characterId)
-					_ = mb.Put(list2.EnvStatusEventTopic, list3.ErrorStatusEventProvider(character2.Id(characterId), worldId, list2.StatusEventErrorUnknownError))
+					_ = innerMb.Put(list2.EnvStatusEventTopic, list3.ErrorStatusEventProvider(character2.Id(characterId), worldId, list2.StatusEventErrorUnknownError))
 					return err
 				}
 
-				_ = mb.Put(list2.EnvStatusEventTopic, list3.BuddyAddedStatusEventProvider(character2.Id(characterId), worldId, character2.Id(targetId), tc.Name(), -1, group))
-				_ = mb.Put(list2.EnvStatusEventTopic, list3.BuddyAddedStatusEventProvider(character2.Id(targetId), worldId, character2.Id(characterId), mbe.Name(), mbe.ChannelId(), mbe.Group()))
+				_ = innerMb.Put(list2.EnvStatusEventTopic, list3.BuddyAddedStatusEventProvider(character2.Id(characterId), worldId, character2.Id(targetId), tc.Name(), -1, group))
+				_ = innerMb.Put(list2.EnvStatusEventTopic, list3.BuddyAddedStatusEventProvider(character2.Id(targetId), worldId, character2.Id(characterId), mbe.Name(), mbe.ChannelId(), mbe.Group()))
 				// TODO need to trigger a channel request for target.
 				return nil
 			}
@@ -225,39 +238,62 @@ func (p *ProcessorImpl) RequestAddBuddy(mb *message.Buffer) func(characterId uin
 			err = addPendingBuddy(tx, characterId, targetId, tc.Name(), group)
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to add buddy to buddy list for character [%d].", characterId)
-				_ = mb.Put(list2.EnvStatusEventTopic, list3.ErrorStatusEventProvider(character2.Id(characterId), worldId, list2.StatusEventErrorUnknownError))
+				_ = innerMb.Put(list2.EnvStatusEventTopic, list3.ErrorStatusEventProvider(character2.Id(characterId), worldId, list2.StatusEventErrorUnknownError))
 				return err
 			}
 			err = p.ip.Create(characterId, worldId, targetId)
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to create invite for character [%d] to buddy character [%d].", characterId, targetId)
-				_ = mb.Put(list2.EnvStatusEventTopic, list3.ErrorStatusEventProvider(character2.Id(characterId), worldId, list2.StatusEventErrorUnknownError))
+				_ = innerMb.Put(list2.EnvStatusEventTopic, list3.ErrorStatusEventProvider(character2.Id(characterId), worldId, list2.StatusEventErrorUnknownError))
 				return err
 			}
-			_ = mb.Put(list2.EnvStatusEventTopic, list3.BuddyAddedStatusEventProvider(character2.Id(characterId), worldId, character2.Id(targetId), tc.Name(), -1, group))
+			_ = innerMb.Put(list2.EnvStatusEventTopic, list3.BuddyAddedStatusEventProvider(character2.Id(characterId), worldId, character2.Id(targetId), tc.Name(), -1, group))
 			return nil
 		})
 		if txErr != nil {
 			p.l.WithError(txErr).Errorf("Unable to add buddy to buddy list for character [%d].", characterId)
+			// D7: the inner tx rolled back, so innerMb holds only a
+			// rejection ERROR status event reflecting no committed state
+			// change. It must not ride into the outbox-bound mb; fire it on
+			// the direct producer path instead.
+			_ = message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
+				for t, ms := range innerMb.GetAll() {
+					if putErr := buf.Put(t, model.FixedProvider(ms)); putErr != nil {
+						return putErr
+					}
+				}
+				return nil
+			})
 			return nil
+		}
+		for t, ms := range innerMb.GetAll() {
+			if err := mb.Put(t, model.FixedProvider(ms)); err != nil {
+				return err
+			}
 		}
 		return nil
 	}
 }
 
 func (p *ProcessorImpl) RequestDeleteBuddyAndEmit(characterId uint32, worldId world.Id, targetId uint32) error {
-	return message.Emit(p.p)(func(buf *message.Buffer) error {
-		return p.RequestDeleteBuddy(buf)(characterId, worldId, targetId)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).RequestDeleteBuddy(buf)(characterId, worldId, targetId)
+		})
 	})
 }
 
 func (p *ProcessorImpl) RequestDeleteBuddy(mb *message.Buffer) func(characterId uint32, worldId world.Id, targetId uint32) error {
 	return func(characterId uint32, worldId world.Id, targetId uint32) error {
+		// innerMb is a scratch buffer for this call's events; see the
+		// comment in RequestAddBuddy for why (D7: failed/rolled-back tx
+		// rejection events must not ride into the outbox-bound mb).
+		innerMb := message.NewBuffer()
 		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 			cbl, err := p.WithTransaction(tx).GetByCharacterId(characterId)
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to retrieve buddy list for character [%d] attempting to add buddy.", characterId)
-				_ = mb.Put(list2.EnvStatusEventTopic, list3.ErrorStatusEventProvider(character2.Id(characterId), worldId, list2.StatusEventErrorUnknownError))
+				_ = innerMb.Put(list2.EnvStatusEventTopic, list3.ErrorStatusEventProvider(character2.Id(characterId), worldId, list2.StatusEventErrorUnknownError))
 				return err
 			}
 
@@ -273,7 +309,7 @@ func (p *ProcessorImpl) RequestDeleteBuddy(mb *message.Buffer) func(characterId 
 				err = p.ip.Reject(characterId, worldId, targetId)
 				if err != nil {
 					p.l.WithError(err).Errorf("Unable to reject invite for character [%d] to buddy character [%d].", characterId, targetId)
-					_ = mb.Put(list2.EnvStatusEventTopic, list3.ErrorStatusEventProvider(character2.Id(characterId), worldId, list2.StatusEventErrorUnknownError))
+					_ = innerMb.Put(list2.EnvStatusEventTopic, list3.ErrorStatusEventProvider(character2.Id(characterId), worldId, list2.StatusEventErrorUnknownError))
 					return err
 				}
 				return nil
@@ -282,7 +318,7 @@ func (p *ProcessorImpl) RequestDeleteBuddy(mb *message.Buffer) func(characterId 
 			err = removeBuddy(tx, characterId, targetId)
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to remove buddy from buddy list for character [%d].", characterId)
-				_ = mb.Put(list2.EnvStatusEventTopic, list3.ErrorStatusEventProvider(character2.Id(characterId), worldId, list2.StatusEventErrorUnknownError))
+				_ = innerMb.Put(list2.EnvStatusEventTopic, list3.ErrorStatusEventProvider(character2.Id(characterId), worldId, list2.StatusEventErrorUnknownError))
 				return err
 			}
 
@@ -290,44 +326,65 @@ func (p *ProcessorImpl) RequestDeleteBuddy(mb *message.Buffer) func(characterId 
 			update, err = updateBuddyChannel(tx, characterId, targetId, -1)
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to update character [%d] channel to [%d] in [%d] buddy list.", characterId, -1, targetId)
-				_ = mb.Put(list2.EnvStatusEventTopic, list3.ErrorStatusEventProvider(character2.Id(characterId), worldId, list2.StatusEventErrorUnknownError))
+				_ = innerMb.Put(list2.EnvStatusEventTopic, list3.ErrorStatusEventProvider(character2.Id(characterId), worldId, list2.StatusEventErrorUnknownError))
 				return err
 			}
 
-			_ = mb.Put(list2.EnvStatusEventTopic, list3.BuddyRemovedStatusEventProvider(character2.Id(characterId), worldId, character2.Id(targetId)))
+			_ = innerMb.Put(list2.EnvStatusEventTopic, list3.BuddyRemovedStatusEventProvider(character2.Id(characterId), worldId, character2.Id(targetId)))
 
 			if update {
-				_ = mb.Put(list2.EnvStatusEventTopic, list3.BuddyChannelChangeStatusEventProvider(character2.Id(targetId), worldId, character2.Id(characterId), -1))
+				_ = innerMb.Put(list2.EnvStatusEventTopic, list3.BuddyChannelChangeStatusEventProvider(character2.Id(targetId), worldId, character2.Id(characterId), -1))
 			}
 			return nil
 		})
 		if txErr != nil {
 			p.l.WithError(txErr).Errorf("Unable to remove buddy from buddy list for character [%d].", characterId)
+			// D7: fire the rejection event (if any) on the direct producer
+			// path instead of letting it ride into the outbox-bound mb.
+			_ = message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
+				for t, ms := range innerMb.GetAll() {
+					if putErr := buf.Put(t, model.FixedProvider(ms)); putErr != nil {
+						return putErr
+					}
+				}
+				return nil
+			})
 			return nil
+		}
+		for t, ms := range innerMb.GetAll() {
+			if err := mb.Put(t, model.FixedProvider(ms)); err != nil {
+				return err
+			}
 		}
 		return nil
 	}
 }
 
 func (p *ProcessorImpl) AcceptInviteAndEmit(characterId uint32, worldId world.Id, targetId uint32) error {
-	return message.Emit(p.p)(func(buf *message.Buffer) error {
-		return p.AcceptInvite(buf)(characterId, worldId, targetId)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).AcceptInvite(buf)(characterId, worldId, targetId)
+		})
 	})
 }
 
 func (p *ProcessorImpl) AcceptInvite(mb *message.Buffer) func(characterId uint32, worldId world.Id, targetId uint32) error {
 	return func(characterId uint32, worldId world.Id, targetId uint32) error {
+		// innerMb is a scratch buffer for this call's events; see the
+		// comment in RequestAddBuddy for why (D7: failed/rolled-back tx
+		// rejection events must not ride into the outbox-bound mb).
+		innerMb := message.NewBuffer()
 		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 			cbl, err := p.WithTransaction(tx).GetByCharacterId(characterId)
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to retrieve buddy list for character [%d] attempting to add buddy.", characterId)
-				_ = mb.Put(list2.EnvStatusEventTopic, list3.ErrorStatusEventProvider(character2.Id(characterId), worldId, list2.StatusEventErrorUnknownError))
+				_ = innerMb.Put(list2.EnvStatusEventTopic, list3.ErrorStatusEventProvider(character2.Id(characterId), worldId, list2.StatusEventErrorUnknownError))
 				return err
 			}
 
 			if byte(len(cbl.Buddies()))+1 > cbl.Capacity() {
 				p.l.Infof("Buddy list for character [%d] is at capacity.", characterId)
-				_ = mb.Put(list2.EnvStatusEventTopic, list3.ErrorStatusEventProvider(character2.Id(characterId), worldId, list2.StatusEventErrorListFull))
+				_ = innerMb.Put(list2.EnvStatusEventTopic, list3.ErrorStatusEventProvider(character2.Id(characterId), worldId, list2.StatusEventErrorListFull))
 				return errors.New("buddy list is at capacity")
 			}
 
@@ -340,14 +397,14 @@ func (p *ProcessorImpl) AcceptInvite(mb *message.Buffer) func(characterId uint32
 			}
 			if found {
 				p.l.Infof("Target [%d] is already on character [%d] buddy list.", targetId, characterId)
-				_ = mb.Put(list2.EnvStatusEventTopic, list3.ErrorStatusEventProvider(character2.Id(characterId), worldId, list2.StatusEventErrorAlreadyBuddy))
+				_ = innerMb.Put(list2.EnvStatusEventTopic, list3.ErrorStatusEventProvider(character2.Id(characterId), worldId, list2.StatusEventErrorAlreadyBuddy))
 				return errors.New("buddy already exists")
 			}
 
 			obl, err := p.WithTransaction(tx).GetByCharacterId(targetId)
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to retrieve buddy list for character [%d] attempting to add buddy.", characterId)
-				_ = mb.Put(list2.EnvStatusEventTopic, list3.ErrorStatusEventProvider(character2.Id(characterId), worldId, list2.StatusEventErrorUnknownError))
+				_ = innerMb.Put(list2.EnvStatusEventTopic, list3.ErrorStatusEventProvider(character2.Id(characterId), worldId, list2.StatusEventErrorUnknownError))
 				return err
 			}
 			var ob buddy.Model
@@ -360,14 +417,14 @@ func (p *ProcessorImpl) AcceptInvite(mb *message.Buffer) func(characterId uint32
 			c, err := p.cp.GetById(characterId)
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to retrieve character [%d] information.", characterId)
-				_ = mb.Put(list2.EnvStatusEventTopic, list3.ErrorStatusEventProvider(character2.Id(characterId), worldId, list2.StatusEventErrorUnknownError))
+				_ = innerMb.Put(list2.EnvStatusEventTopic, list3.ErrorStatusEventProvider(character2.Id(characterId), worldId, list2.StatusEventErrorUnknownError))
 				return err
 			}
 
 			oc, err := p.cp.GetById(targetId)
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to retrieve character [%d] information.", targetId)
-				_ = mb.Put(list2.EnvStatusEventTopic, list3.ErrorStatusEventProvider(character2.Id(characterId), worldId, list2.StatusEventErrorCharacterNotFound))
+				_ = innerMb.Put(list2.EnvStatusEventTopic, list3.ErrorStatusEventProvider(character2.Id(characterId), worldId, list2.StatusEventErrorCharacterNotFound))
 				return err
 			}
 
@@ -386,21 +443,38 @@ func (p *ProcessorImpl) AcceptInvite(mb *message.Buffer) func(characterId uint32
 				return err
 			}
 
-			_ = mb.Put(list2.EnvStatusEventTopic, list3.BuddyAddedStatusEventProvider(character2.Id(characterId), worldId, character2.Id(targetId), oc.Name(), -1, "Default Group"))
+			_ = innerMb.Put(list2.EnvStatusEventTopic, list3.BuddyAddedStatusEventProvider(character2.Id(characterId), worldId, character2.Id(targetId), oc.Name(), -1, "Default Group"))
 			// TODO need to trigger a channel request for target.
 			return nil
 		})
 		if txErr != nil {
 			p.l.WithError(txErr).Errorf("Unable to add buddy to buddy list for character [%d].", characterId)
+			// D7: fire the rejection event (if any) on the direct producer
+			// path instead of letting it ride into the outbox-bound mb.
+			_ = message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
+				for t, ms := range innerMb.GetAll() {
+					if putErr := buf.Put(t, model.FixedProvider(ms)); putErr != nil {
+						return putErr
+					}
+				}
+				return nil
+			})
 			return nil
+		}
+		for t, ms := range innerMb.GetAll() {
+			if err := mb.Put(t, model.FixedProvider(ms)); err != nil {
+				return err
+			}
 		}
 		return nil
 	}
 }
 
 func (p *ProcessorImpl) DeleteBuddyAndEmit(characterId uint32, worldId world.Id, targetId uint32) error {
-	return message.Emit(p.p)(func(buf *message.Buffer) error {
-		return p.DeleteBuddy(buf)(characterId, worldId, targetId)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).DeleteBuddy(buf)(characterId, worldId, targetId)
+		})
 	})
 }
 
@@ -435,8 +509,10 @@ func (p *ProcessorImpl) DeleteBuddy(mb *message.Buffer) func(characterId uint32,
 }
 
 func (p *ProcessorImpl) UpdateBuddyChannelAndEmit(characterId uint32, worldId world.Id, channelId int8) error {
-	return message.Emit(p.p)(func(buf *message.Buffer) error {
-		return p.UpdateBuddyChannel(buf)(characterId, worldId, channelId)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).UpdateBuddyChannel(buf)(characterId, worldId, channelId)
+		})
 	})
 }
 
@@ -471,8 +547,10 @@ func (p *ProcessorImpl) UpdateBuddyChannel(mb *message.Buffer) func(characterId 
 }
 
 func (p *ProcessorImpl) UpdateBuddyShopStatusAndEmit(characterId uint32, worldId world.Id, inShop bool) error {
-	return message.Emit(p.p)(func(buf *message.Buffer) error {
-		return p.UpdateBuddyShopStatus(buf)(characterId, worldId, inShop)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).UpdateBuddyShopStatus(buf)(characterId, worldId, inShop)
+		})
 	})
 }
 
@@ -546,8 +624,10 @@ func (p *ProcessorImpl) IncreaseCapacityAndEmit(characterId uint32, worldId worl
 }
 
 func (p *ProcessorImpl) IncreaseCapacityWithTransactionAndEmit(transactionId uuid.UUID, characterId uint32, worldId world.Id, newCapacity byte) error {
-	return message.Emit(p.p)(func(buf *message.Buffer) error {
-		return p.IncreaseCapacityWithTransaction(buf)(transactionId, characterId, worldId, newCapacity)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).IncreaseCapacityWithTransaction(buf)(transactionId, characterId, worldId, newCapacity)
+		})
 	})
 }
 

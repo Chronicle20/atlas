@@ -38,6 +38,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, p producer.Provider
 	return NewProcessorWithRegistry(l, ctx, p, GetRegistry())
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 // NewProcessorWithRegistry constructs a Processor backed by the supplied
 // registry instead of the singleton. Used by tick tasks and tests that need
 // to operate on a non-singleton registry while reusing the lifecycle

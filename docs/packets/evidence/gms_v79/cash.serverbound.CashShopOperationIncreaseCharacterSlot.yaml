@@ -1,0 +1,10 @@
+packet: cash/serverbound/CashShopOperationIncreaseCharacterSlot
+direction: serverbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnIncCharacterSlotCount
+    address: "0x4673be"
+    decompile_sha256: ee991c83a7378765160b48838ae07366a81743c02d9be1944d3766c1f0bb7ddb
+verifies:
+  - libs/atlas-packet/cash/serverbound/shop_operation_increase_character_slot_test.go#TestShopOperationIncreaseCharacterSlotV79Bytes

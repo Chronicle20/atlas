@@ -26,6 +26,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) Apply(f field.Model, characterId uint32, fromId uint32, skillId uint32, level byte, durationOverride int32) error {
 	sdp := skill.NewProcessor(p.l, p.ctx)
 

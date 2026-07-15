@@ -1,0 +1,21 @@
+{
+  "WriterName": "Lock",
+  "IDAName": "CUserLocal::OnSetDirectionMode",
+  "Address": "",
+  "Variant": "GMS/v79",
+  "BranchDepth": 2,
+  "AtlasFile": "libs/atlas-packet/ui/clientbound/lock.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 6,
+      "IDAComment": "decompilation failed; hand-trace",
+      "Verdict": 4,
+      "Note": "IDA read-order unresolved: decompilation failed; hand-trace"
+    }
+  ],
+  "Verdict": 4,
+  "FlatInvalid": false
+}

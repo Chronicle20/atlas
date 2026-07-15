@@ -1,0 +1,8 @@
+packet: guild/serverbound/GuildSetNotice
+direction: serverbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: CField::SendSetGuildNoticeMsg
+    address: "0x4c63d8"
+    decompile_sha256: 57a440d6e1096a1cfc865ff2c37df29d85833c95aa2ab7b44d842efe6f1ad5a7

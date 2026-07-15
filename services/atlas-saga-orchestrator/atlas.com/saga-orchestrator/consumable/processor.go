@@ -35,6 +35,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 // ApplyConsumableEffect sends a Kafka command to atlas-consumables to apply item effects
 func (p *ProcessorImpl) ApplyConsumableEffect(transactionId uuid.UUID, ch channel.Model, characterId character.Id, itemId item.Id) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(consumable.EnvCommandTopic)(ApplyConsumableEffectCommandProvider(transactionId, ch, characterId, itemId))

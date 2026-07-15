@@ -36,8 +36,15 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	return p
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
+
+// ByCharacterProvider fetches the complete set of notes for a character.
+// The upstream atlas-notes list is now paginated (task-117); callers here
+// need the whole set (e.g. delivering all pending notes on login), so this
+// drains every page rather than fetching one.
 func (p *ProcessorImpl) ByCharacterProvider(characterId uint32) model.Provider[[]Model] {
-	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByCharacterId(characterId), Extract, model.Filters[Model]())
+	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(characterNotesUrl(characterId), 250, Extract, model.Filters[Model]())
 }
 
 func (p *ProcessorImpl) GetByCharacter(characterId uint32) ([]Model, error) {

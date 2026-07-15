@@ -51,6 +51,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, appearanceProvider 
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 // GenerateHairStyles generates filtered hair style list based on character appearance and parameters
 func (p *ProcessorImpl) GenerateHairStyles(
 	characterId uint32,

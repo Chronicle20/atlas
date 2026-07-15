@@ -1,0 +1,10 @@
+packet: pet/serverbound/PetExcludeItem
+direction: serverbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CPet::SendUpdateExceptionListRequest
+    address: "0x66dc34"
+    decompile_sha256: dd31d4a80aba721f2fd520cb18aecd217b1720a59617c20cc9c00a65eb246164
+verifies:
+  - libs/atlas-packet/pet/serverbound/exclude_item_test.go#TestExcludeItemBytesV72

@@ -100,6 +100,83 @@ func TestSummonAttackBytes(t *testing.T) {
 	}
 }
 
+// summonAttackV79Body is the GMS v79 attack layout: identical to the v83 body
+// EXCEPT it omits the leading char-level byte (0x00) — v79 reads the action byte
+// (direction) FIRST, where v83+ read charLevel then the action byte.
+//
+//	cid=42, oid=2000001=0x001E8481, NO char-level byte, direction=3, count=2,
+//	then per target {monsterOid, byte 6, damage}:
+//	  {1000001=0x000F4241, 6, 1234=0x000004D2}
+//	  {1000002=0x000F4242, 6, 5678=0x0000162E}
+var summonAttackV79Body = []byte{
+	0x2A, 0x00, 0x00, 0x00, // cid (consumed by dispatcher)
+	0x81, 0x84, 0x1E, 0x00, // oid=2000001 (Decode4@0x89253f in sub_892500)
+	0x03,                   // direction (Decode1@0x71d06f, v5&0x7F)
+	0x02,                   // count (Decode1@0x71d08b)
+	0x41, 0x42, 0x0F, 0x00, // target0 monsterOid (Decode4@0x71d0bf)
+	0x06,                   // byte 6 (Decode1@0x71d0cd)
+	0xD2, 0x04, 0x00, 0x00, // target0 damage (Decode4@0x71d0e0)
+	0x42, 0x42, 0x0F, 0x00, // target1 monsterOid
+	0x06,                   // byte 6
+	0x2E, 0x16, 0x00, 0x00, // target1 damage
+}
+
+// TestSummonAttackBytesV79 pins the v79 attack wire byte-for-byte against the live
+// decompile (IDA, GMS_v79_1_DEVM.exe @port 13340). Dispatch chain:
+//   - CUserPool::OnUserCommonPacket@0x8c8c79 reads cid (Decode4@0x8c8c84), ops
+//     164-169 → summon cluster sub_892500@0x892500; the else branch reads oid
+//     (Decode4@0x89253f) then for a2==167 (SUMMON_ATTACK) calls the OnAttack leaf
+//     sub_71CFE9@0x71cfe9.
+//   - sub_71CFE9 reads, after the GetSkill guard (sub_6DC2F7): Decode1@0x71d06f →
+//     action byte (v70=(b>>7)&1 bLeft, v66=b&0x7F direction) — NO leading charLevel
+//     byte (v83+ read charLevel first); Decode1@0x71d08b → count (loop guard
+//     `if (v6 > 0)`); per target: Decode4@0x71d0bf monsterOid; if(oid){ Decode1@
+//     0x71d0cd byte(6); Decode4@0x71d0e0 damage } and NOTHING after the loop.
+// The missing char-level byte is the v79 delta vs v83+ (t.MajorAtLeast(83)=false).
+// packet-audit:verify packet=summon/clientbound/SummonAttack version=gms_v79 ida=0x71cfe9
+func TestSummonAttackBytesV79(t *testing.T) {
+	targets := []SummonAttackTarget{
+		NewSummonAttackTarget(1000001, 1234),
+		NewSummonAttackTarget(1000002, 5678),
+	}
+	in := NewSummonAttack(42, 2000001, 3, targets)
+	ctx := test.CreateContext("GMS", 79, 1)
+	got := test.Encode(t, ctx, in.Encode, nil)
+	if !bytes.Equal(got, summonAttackV79Body) {
+		t.Fatalf("v79 bytes = % X, want % X", got, summonAttackV79Body)
+	}
+	if len(got) != len(summonAttackV83Body)-1 {
+		t.Fatalf("v79 len = %d, want v83 len - 1 (no charLevel) = %d", len(got), len(summonAttackV83Body)-1)
+	}
+}
+
+// TestSummonAttackBytesV72 pins the v72 attack wire byte-for-byte against the live
+// decompile (IDA, GMS_v72.1_U_DEVM.exe @port 13339). Identical to v79 (no leading
+// charLevel byte; t.MajorAtLeast(83)=false). Dispatch chain:
+//   - the summon cluster dispatcher sub_848023@0x848023 else branch reads oid
+//     (Decode4@0x848062) then for a2==163 (SUMMON_ATTACK) calls the OnAttack leaf
+//     sub_6E92A6@0x6e92a6.
+//   - sub_6E92A6 reads: Decode1@0x6e932c → action byte (v6=(b>>7)&1 bLeft,
+//     v73=b&0x7F direction) — NO leading charLevel byte; Decode1@0x6e9351 → count;
+//     per target: Decode4@0x6e937a monsterOid; if(oid){ Decode1@0x6e9388 byte(6);
+//     Decode4@0x6e939b damage } and NOTHING after the loop.
+// packet-audit:verify packet=summon/clientbound/SummonAttack version=gms_v72 ida=0x6e92a6
+func TestSummonAttackBytesV72(t *testing.T) {
+	targets := []SummonAttackTarget{
+		NewSummonAttackTarget(1000001, 1234),
+		NewSummonAttackTarget(1000002, 5678),
+	}
+	in := NewSummonAttack(42, 2000001, 3, targets)
+	ctx := test.CreateContext("GMS", 72, 1)
+	got := test.Encode(t, ctx, in.Encode, nil)
+	if !bytes.Equal(got, summonAttackV79Body) {
+		t.Fatalf("v72 bytes = % X, want % X", got, summonAttackV79Body)
+	}
+	if len(got) != len(summonAttackV83Body)-1 {
+		t.Fatalf("v72 len = %d, want v83 len - 1 (no charLevel) = %d", len(got), len(summonAttackV83Body)-1)
+	}
+}
+
 // TestSummonAttackBytesV83 pins the v83 wire byte-for-byte against the live
 // decompile. Dispatch chain (IDA, MapleStory_dump.exe @port 13341):
 //   - CUserPool::OnUserCommonPacket@0x972401 reads cid (Decode4@0x97240c), routes

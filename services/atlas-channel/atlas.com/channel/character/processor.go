@@ -39,6 +39,7 @@ type Processor interface {
 	RequestDistributeAp(f field.Model, characterId uint32, updateTime uint32, distributes []DistributePacket) error
 	RequestDropMeso(f field.Model, characterId uint32, amount uint32) error
 	ChangeHP(f field.Model, characterId uint32, amount int16) error
+	SetHP(f field.Model, characterId uint32, amount uint16) error
 	ChangeMP(f field.Model, characterId uint32, amount int16) error
 	RequestDistributeSp(f field.Model, characterId uint32, updateTime uint32, skillId uint32, amount int8) error
 	AwardExperience(f field.Model, characterId uint32, distributions []character2.ExperienceDistributions, showEffect bool) error
@@ -61,6 +62,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 	return p
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) GetById(decorators ...model.Decorator[Model]) func(characterId uint32) (Model, error) {
 	return func(characterId uint32) (Model, error) {
@@ -270,6 +273,10 @@ func (p *ProcessorImpl) RequestDropMeso(f field.Model, characterId uint32, amoun
 
 func (p *ProcessorImpl) ChangeHP(f field.Model, characterId uint32, amount int16) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(ChangeHPCommandProvider(f, characterId, amount))
+}
+
+func (p *ProcessorImpl) SetHP(f field.Model, characterId uint32, amount uint16) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(SetHPCommandProvider(f, characterId, amount))
 }
 
 func (p *ProcessorImpl) ChangeMP(f field.Model, characterId uint32, amount int16) error {

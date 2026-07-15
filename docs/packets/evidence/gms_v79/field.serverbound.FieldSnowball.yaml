@@ -1,0 +1,10 @@
+packet: field/serverbound/FieldSnowball
+direction: serverbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CField_SnowBall::BasicActionAttack
+    address: "0x5528a3"
+    decompile_sha256: ac9b2bf7a2bc7f39f900ad0a39ce3496575c20c79c674886c0ab1b958ce3a275
+verifies:
+    - libs/atlas-packet/field/serverbound/snowball_test.go#TestSnowballByteOutputV79

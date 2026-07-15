@@ -1,14 +1,18 @@
 package main
 
 import (
+	"context"
+
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+
 	"atlas-ban/ban"
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"atlas-ban/history"
 	account2 "atlas-ban/kafka/consumer/account"
 	ban2 "atlas-ban/kafka/consumer/ban"
 	"atlas-ban/logger"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-ban/tasks"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	"github.com/Chronicle20/atlas/libs/atlas-service"
 	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
 	"time"
@@ -56,6 +60,14 @@ func main() {
 
 	db := database.Connect(l, database.SetMigrations(ban.Migration, history.Migration))
 
+	server.RegisterTransientErrorClassifier(func(err error) bool {
+		if database.IsTransientConnectionError(err) {
+			database.CountTransient(err)
+			return true
+		}
+		return false
+	})
+
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	ban2.InitConsumers(l)(cmf)(consumerGroupId)
 	if err := ban2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
@@ -78,8 +90,12 @@ func main() {
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
 		Run()
 
-	go tasks.Register(l, tdm.Context())(ban.NewExpiredBanCleanup(l, tdm.Context(), db, time.Minute*time.Duration(5)))
-	go tasks.Register(l, tdm.Context())(history.NewHistoryPurge(l, tdm.Context(), db, time.Hour*time.Duration(24)))
+	routine.Go(l, tdm.Context(), func(_ context.Context) {
+		tasks.Register(l, tdm.Context())(ban.NewExpiredBanCleanup(l, tdm.Context(), db, time.Minute*time.Duration(5)))
+	})
+	routine.Go(l, tdm.Context(), func(_ context.Context) {
+		tasks.Register(l, tdm.Context())(history.NewHistoryPurge(l, tdm.Context(), db, time.Hour*time.Duration(24)))
+	})
 
 	tdm.TeardownFunc(database.Teardown(l, db))
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))

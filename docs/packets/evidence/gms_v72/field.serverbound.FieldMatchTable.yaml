@@ -1,0 +1,10 @@
+packet: field/serverbound/FieldMatchTable
+direction: serverbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CField::SendChatMsgSlash#MatchTable
+    address: "0x5131a7"
+    decompile_sha256: 1e5478c60d47d2871cb9c6d502933c5e6ad025caff8e5be9350bf6f4066b9912
+verifies:
+    - libs/atlas-packet/field/serverbound/match_table_test.go#TestMatchTableByteOutputV72

@@ -6,6 +6,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
@@ -17,18 +18,24 @@ import (
 func GetAllTenantsHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
+			page, err := paginate.ParseParams(r.URL.Query(), paginate.DefaultPageSize, paginate.MaxPageSize)
+			if err != nil {
+				server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+				return
+			}
+
 			processor := NewProcessor(d.Logger(), d.Context(), db)
 
-			restModels, err := model.SliceMap(Transform)(processor.AllProvider())(model.ParallelMap())()
+			paged, err := model.MapPaged(Transform)(processor.AllProvider(page))(model.ParallelMap())()
 			if err != nil {
 				d.Logger().WithError(err).Error("Failed to transform tenant")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
 			query := r.URL.Query()
 			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(restModels)
+			server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(paged.Items, paginate.EnvelopeFor(paged), r)
 		}
 	}
 }
@@ -70,14 +77,14 @@ func CreateTenantHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Ha
 			tenant, err := processor.CreateAndEmit(im.Name(), im.Region(), im.MajorVersion(), im.MinorVersion())
 			if err != nil {
 				d.Logger().WithError(err).Error("Failed to create tenant")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
 			rm, err := Transform(tenant)
 			if err != nil {
 				d.Logger().WithError(err).Error("Failed to transform tenant")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -105,14 +112,14 @@ func UpdateTenantHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Ha
 				tenant, err := processor.UpdateAndEmit(tenantId, im.Name(), im.Region(), im.MajorVersion(), im.MinorVersion())
 				if err != nil {
 					d.Logger().WithError(err).Error("Failed to update tenant")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
 				rm, err := Transform(tenant)
 				if err != nil {
 					d.Logger().WithError(err).Error("Failed to transform tenant")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -133,7 +140,7 @@ func DeleteTenantHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Ha
 				err := processor.DeleteAndEmit(tenantId)
 				if err != nil {
 					d.Logger().WithError(err).Error("Failed to delete tenant")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 

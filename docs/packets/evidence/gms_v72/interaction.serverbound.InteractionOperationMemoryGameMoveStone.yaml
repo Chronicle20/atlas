@@ -1,0 +1,10 @@
+packet: interaction/serverbound/InteractionOperationMemoryGameMoveStone
+direction: serverbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: COmokDlg::PutStoneChecker
+    address: "0x65320c"
+    decompile_sha256: f47fd0461ce6b1361d1c41b01822d8845ede77d11d87b4189da1d73c3f8417fa
+verifies:
+  - libs/atlas-packet/interaction/serverbound/operation_memory_game_move_stone_test.go#TestOperationMemoryGameMoveStoneV72Bytes

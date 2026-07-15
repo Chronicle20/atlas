@@ -37,6 +37,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	return p
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func MultiChatTypeStrToInd(chatType string) byte {
 	if chatType == message2.ChatTypeBuddy {
 		return 0

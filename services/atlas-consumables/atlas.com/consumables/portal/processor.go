@@ -9,24 +9,35 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type Processor struct {
+type Processor interface {
+	InMapProvider(mapId _map.Id) model.Provider[[]Model]
+	RandomSpawnPointProvider(mapId _map.Id) model.Provider[Model]
+	RandomSpawnPointIdProvider(mapId _map.Id) model.Provider[uint32]
+}
+
+type ProcessorImpl struct {
 	l   logrus.FieldLogger
 	ctx context.Context
 }
 
-func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
-	p := &Processor{
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
+	p := &ProcessorImpl{
 		l:   l,
 		ctx: ctx,
 	}
 	return p
 }
 
-func (p *Processor) InMapProvider(mapId _map.Id) model.Provider[[]Model] {
-	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestAll(mapId), Extract, model.Filters[Model]())
+var _ Processor = (*ProcessorImpl)(nil)
+
+// InMapProvider fetches every portal in a map. atlas-data's GET
+// /data/maps/{id}/portals is now paginated (task-117), so this drains
+// every page rather than fetching one.
+func (p *ProcessorImpl) InMapProvider(mapId _map.Id) model.Provider[[]Model] {
+	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(allUrl(mapId), 250, Extract, model.Filters[Model]())
 }
 
-func (p *Processor) RandomSpawnPointProvider(mapId _map.Id) model.Provider[Model] {
+func (p *ProcessorImpl) RandomSpawnPointProvider(mapId _map.Id) model.Provider[Model] {
 	return func() (Model, error) {
 		sps, err := model.FilteredProvider(p.InMapProvider(mapId), model.Filters(SpawnPoint, NoTarget))()
 		if err != nil {
@@ -36,7 +47,7 @@ func (p *Processor) RandomSpawnPointProvider(mapId _map.Id) model.Provider[Model
 	}
 }
 
-func (p *Processor) RandomSpawnPointIdProvider(mapId _map.Id) model.Provider[uint32] {
+func (p *ProcessorImpl) RandomSpawnPointIdProvider(mapId _map.Id) model.Provider[uint32] {
 	return model.Map(getId)(p.RandomSpawnPointProvider(mapId))
 }
 

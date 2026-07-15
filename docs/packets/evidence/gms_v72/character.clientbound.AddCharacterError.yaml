@@ -1,0 +1,10 @@
+packet: character/clientbound/AddCharacterError
+direction: clientbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CLogin::OnCreateNewCharacterResult#AddCharacterError
+    address: "0x5b3c65"
+    decompile_sha256: 0b44441b6e328d2949806bd6d19f5339060c5f6b04b48f15fd107ec5f37a27cd
+verifies:
+  - libs/atlas-packet/character/clientbound/add_entry_error_test.go#TestAddCharacterErrorByteOutputV72

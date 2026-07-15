@@ -67,7 +67,7 @@ func TestCharacterIdsInFieldProviderDrainsBeyondOnePage(t *testing.T) {
 	l, _ := test.NewNullLogger()
 
 	f := field.NewBuilder(world.Id(1), channel.Id(1), mapconst.Id(100000000)).SetInstance(uuid.Nil).Build()
-	ids, err := _map.CharacterIdsInFieldProvider(l)(ctx)(f)()
+	ids, err := _map.NewProcessor(l, ctx).CharacterIdsInFieldProvider(f)()
 	if err != nil {
 		t.Fatal(err)
 	}

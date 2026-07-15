@@ -74,7 +74,8 @@ func TestGetSessionsSinceDrainsAllPages(t *testing.T) {
 	l, _ := test.NewNullLogger()
 
 	since := base.Add(-time.Hour)
-	sessions, err := GetSessionsSince(l)(ctx)(characterId, since)
+	p := NewProcessor(l, ctx)
+	sessions, err := p.GetSessionsSince(characterId, since)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -99,7 +100,7 @@ func TestGetSessionsSinceDrainsAllPages(t *testing.T) {
 	// yield exactly 300 minutes when the query range covers all of them. A
 	// single-fetch implementation (page 1 only) would report 250 minutes.
 	end := base.Add(time.Duration(totalSessions) * time.Minute)
-	playtime, err := ComputePlaytimeInRange(l)(ctx)(characterId, since, end)
+	playtime, err := p.ComputePlaytimeInRange(characterId, since, end)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -65,7 +65,7 @@ func TestGetActiveBuffsDrainsBeyondOnePage(t *testing.T) {
 	ctx := tenant.WithContext(context.Background(), ten)
 	l, _ := test.NewNullLogger()
 
-	ms, err := buffs.GetActiveBuffs(l)(ctx)(characterId)
+	ms, err := buffs.NewProcessor(l, ctx).GetActiveBuffs(characterId)
 	if err != nil {
 		t.Fatal(err)
 	}

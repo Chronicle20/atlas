@@ -64,7 +64,7 @@ func TestGetByMonsterIdDrainsBeyondOnePage(t *testing.T) {
 	ctx := tenant.WithContext(context.Background(), ten)
 	l, _ := test.NewNullLogger()
 
-	ds, err := drop.GetByMonsterId(l)(ctx)(100100)
+	ds, err := drop.NewProcessor(l, ctx).GetByMonsterId(100100)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -60,7 +60,7 @@ func TestGetAssetsDrainsBeyondOnePage(t *testing.T) {
 	ctx := context.Background()
 	l, _ := test.NewNullLogger()
 
-	assets, err := inventory.GetAssets(l)(ctx)(characterId, "compartment-1")
+	assets, err := inventory.NewProcessor(l, ctx).GetAssets(characterId, "compartment-1")
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -62,7 +62,7 @@ func TestGetAssetsDrainsBeyondOnePage(t *testing.T) {
 	ctx := context.Background()
 	l, _ := test.NewNullLogger()
 
-	assets, err := storage.GetAssets(l)(ctx)(accountId, worldId)
+	assets, err := storage.NewProcessor(l, ctx).GetAssets(accountId, worldId)
 	if err != nil {
 		t.Fatal(err)
 	}

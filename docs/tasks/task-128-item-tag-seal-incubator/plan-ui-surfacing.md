@@ -23,7 +23,7 @@
 
 Backend: per-tenant collection at `/api/tenants/{tenantId}/configurations/incubator-rewards` with per-row CRUD (`GET` list, `POST` create, `PATCH /{id}`, `DELETE /{id}`) + `POST /seed`. Row attributes: `{ itemId, quantity, weight }`, string `id`.
 
-### Task A1: incubator-rewards service
+### Task 1: incubator-rewards service
 
 **Files:**
 - Create: `services/atlas-ui/src/services/api/incubator-rewards.service.ts`
@@ -162,14 +162,14 @@ git add services/atlas-ui/src/services/api/incubator-rewards.service.ts services
 git commit -m "feat(ui): incubator-rewards API service"
 ```
 
-### Task A2: incubator-rewards React Query hook
+### Task 2: incubator-rewards React Query hook
 
 **Files:**
 - Create: `services/atlas-ui/src/lib/hooks/api/useIncubatorRewards.ts`
 - Test: `services/atlas-ui/src/lib/hooks/api/__tests__/useIncubatorRewards.test.tsx`
 
 **Interfaces:**
-- Consumes: `incubatorRewardsService` (Task A1).
+- Consumes: `incubatorRewardsService` (Task 1).
 - Produces: `incubatorRewardsKeys`, `useIncubatorRewards(tenantId)`, `useCreateIncubatorReward()`, `useUpdateIncubatorReward()`, `useDeleteIncubatorReward()`, `useSeedIncubatorRewards()`.
 
 - [ ] **Step 1: Write the failing test** (mirrors `__tests__/useMtsConfig` style — render the hook in a `QueryClientProvider`, assert the list query calls the service and mutations invalidate)
@@ -284,7 +284,7 @@ git add services/atlas-ui/src/lib/hooks/api/useIncubatorRewards.ts services/atla
 git commit -m "feat(ui): useIncubatorRewards query + mutation hooks"
 ```
 
-### Task A3: incubator-rewards zod schema
+### Task 3: incubator-rewards zod schema
 
 **Files:**
 - Create: `services/atlas-ui/src/lib/schemas/incubator-rewards.schema.ts`
@@ -343,7 +343,7 @@ git add services/atlas-ui/src/lib/schemas/incubator-rewards.schema.ts services/a
 git commit -m "feat(ui): incubator-rewards zod schema"
 ```
 
-### Task A4: incubator-rewards page (table + dialog + seed)
+### Task 4: incubator-rewards page (table + dialog + seed)
 
 **Files:**
 - Create: `services/atlas-ui/src/pages/tenants-incubator-rewards-form.tsx`
@@ -351,7 +351,7 @@ git commit -m "feat(ui): incubator-rewards zod schema"
 - Test: `services/atlas-ui/src/pages/__tests__/tenants-incubator-rewards-form.test.tsx`
 
 **Interfaces:**
-- Consumes: hooks (A2), schema (A3), `ItemNameCell` (`src/pages/` marketplace helper — import from its module; grep `ItemNameCell` to confirm path), `TenantDetailLayout`, shadcn `Table`, `Dialog`, `AlertDialog`, `Form`, `Input`, `Button`, `sonner` `toast`, `createErrorFromUnknown` (`@/lib/api/errors`).
+- Consumes: hooks (2), schema (3), `ItemNameCell` (`src/pages/` marketplace helper — import from its module; grep `ItemNameCell` to confirm path), `TenantDetailLayout`, shadcn `Table`, `Dialog`, `AlertDialog`, `Form`, `Input`, `Button`, `sonner` `toast`, `createErrorFromUnknown` (`@/lib/api/errors`).
 - Produces: `IncubatorRewardsForm`, `TenantsIncubatorRewardsPage`.
 
 - [ ] **Step 1: Write the failing test** — render `IncubatorRewardsForm` in a router + query provider with the hooks mocked; assert the table shows rows with a computed chance %, and that "Add" opens the dialog.
@@ -453,14 +453,14 @@ git add services/atlas-ui/src/pages/tenants-incubator-rewards-form.tsx services/
 git commit -m "feat(ui): incubator-rewards admin page (table + dialog + seed)"
 ```
 
-### Task A5: wire route + nav link
+### Task 5: wire route + nav link
 
 **Files:**
 - Modify: `services/atlas-ui/src/App.tsx` (lazy import near line 65; `<Route>` near line 128)
 - Modify: `services/atlas-ui/src/components/features/tenants/TenantDetailLayout.tsx` (sidebar array ~lines 12-20)
 
 **Interfaces:**
-- Consumes: `TenantsIncubatorRewardsPage` (A4).
+- Consumes: `TenantsIncubatorRewardsPage` (4).
 
 - [ ] **Step 1: Add the lazy import** in `App.tsx` next to the other `TenantsMtsConfigPage` lazy import:
 
@@ -498,7 +498,7 @@ git commit -m "feat(ui): route + nav for incubator-rewards page"
 
 # Phase B — Inventory tag/seal indicators (atlas-ui only)
 
-### Task B1: type the `owner` field + asset-flags util
+### Task 6: type the `owner` field + asset-flags util
 
 **Files:**
 - Modify: `services/atlas-ui/src/services/api/inventory.service.ts` (Asset.attributes, after `ownerId`)
@@ -571,14 +571,14 @@ git add services/atlas-ui/src/services/api/inventory.service.ts services/atlas-u
 git commit -m "feat(ui): type asset owner + asset-flags helpers (isSealed/isTagged)"
 ```
 
-### Task B2: tooltip owner + seal lines (suppress EXPIRES when sealed)
+### Task 7: tooltip owner + seal lines (suppress EXPIRES when sealed)
 
 **Files:**
 - Modify: `services/atlas-ui/src/components/features/characters/AssetTooltipContent.tsx` (expiration block ~lines 165-178)
 - Test: `services/atlas-ui/src/components/features/characters/__tests__/AssetTooltipContent.test.tsx` (create or extend)
 
 **Interfaces:**
-- Consumes: `isSealed`, `isTagged`, `ZERO_DATE` (B1).
+- Consumes: `isSealed`, `isTagged`, `ZERO_DATE` (6).
 
 - [ ] **Step 1: Write the failing test** — render the tooltip for four cases and assert the lines.
 
@@ -677,14 +677,14 @@ git add services/atlas-ui/src/components/features/characters/AssetTooltipContent
 git commit -m "feat(ui): tooltip owner + seal lines; suppress EXPIRES when sealed"
 ```
 
-### Task B3: EquipmentCell badges + gold ring
+### Task 8: EquipmentCell badges + gold ring
 
 **Files:**
 - Modify: `services/atlas-ui/src/components/features/characters/EquipmentCell.tsx`
 - Test: `services/atlas-ui/src/components/features/characters/__tests__/EquipmentCell.test.tsx` (create or extend)
 
 **Interfaces:**
-- Consumes: `isSealed`, `isTagged` (B1); lucide `Lock`, `Tag`; `cn` (`@/lib/utils`).
+- Consumes: `isSealed`, `isTagged` (6); lucide `Lock`, `Tag`; `cn` (`@/lib/utils`).
 
 - [ ] **Step 1: Write the failing test**
 
@@ -696,7 +696,7 @@ import type { Asset } from "@/services/api/inventory.service";
 import type { Tenant } from "@/services/api/tenants.service";
 
 const tenant = { id: "t1", attributes: { region: "GMS", majorVersion: 83, minorVersion: 1 } } as unknown as Tenant;
-function asset(over: Partial<Asset["attributes"]>): Asset { /* same builder as B1 test, templateId 1040000 */ 
+function asset(over: Partial<Asset["attributes"]>): Asset { /* same builder as 6 test, templateId 1040000 */ 
   return { type: "assets", id: "1", attributes: { flag: 0, owner: "", expiration: "", templateId: 1040000, id: 1, slot: -5, createdAt: "", quantity: 1, ownerId: 0, rechargeable: 0, strength: 0, dexterity: 0, intelligence: 0, luck: 0, hp: 0, mp: 0, weaponAttack: 0, magicAttack: 0, weaponDefense: 0, magicDefense: 0, accuracy: 0, avoidability: 0, hands: 0, speed: 0, jump: 0, slots: 0, levelType: 0, level: 0, experience: 0, hammersApplied: 0, equippedSince: "", cashId: "", commodityId: 0, purchaseBy: 0, petId: 0, ...over } };
 }
 
@@ -770,25 +770,25 @@ git add services/atlas-ui/src/components/features/characters/EquipmentCell.tsx s
 git commit -m "feat(ui): tag/seal badges + gold ring on EquipmentCell"
 ```
 
-### Task B4: InventoryCard badges + gold ring
+### Task 9: InventoryCard badges + gold ring
 
 **Files:**
 - Modify: `services/atlas-ui/src/components/features/characters/InventoryCard.tsx`
 - Test: `services/atlas-ui/src/components/features/characters/__tests__/InventoryCard.test.tsx` (create or extend)
 
 **Interfaces:**
-- Consumes: `isSealed`, `isTagged` (B1); lucide `Lock`, `Tag`; `cn`.
+- Consumes: `isSealed`, `isTagged` (6); lucide `Lock`, `Tag`; `cn`.
 
 - [ ] **Step 1: Read `InventoryCard.tsx`** to locate the item-image container and the card root. It renders one card per `asset`.
 
-- [ ] **Step 2: Write the failing test** — mirror B3's three cases (`seal-icon`, `tag-icon`, neither) against `InventoryCard` with its required props (read the component's `Props` to supply them).
+- [ ] **Step 2: Write the failing test** — mirror 8's three cases (`seal-icon`, `tag-icon`, neither) against `InventoryCard` with its required props (read the component's `Props` to supply them).
 
 - [ ] **Step 3: Run test to verify it fails**
 
 Run: `cd services/atlas-ui && npm run test -- InventoryCard`
 Expected: FAIL.
 
-- [ ] **Step 4: Add the same badges + gold ring** as B3: import `Lock`/`Tag`/`cn`/`isSealed`/`isTagged`; add `ring-1 ring-amber-400/60` (via `cn`) to the card root when `isSealed(asset)`; add the two absolute-positioned `data-testid` icons over the item image (`Tag` top-right, `Lock` bottom-right).
+- [ ] **Step 4: Add the same badges + gold ring** as 8: import `Lock`/`Tag`/`cn`/`isSealed`/`isTagged`; add `ring-1 ring-amber-400/60` (via `cn`) to the card root when `isSealed(asset)`; add the two absolute-positioned `data-testid` icons over the item image (`Tag` top-right, `Lock` bottom-right).
 
 - [ ] **Step 5: Run test to verify it passes**
 
@@ -806,9 +806,9 @@ git commit -m "feat(ui): tag/seal badges + gold ring on InventoryCard"
 
 # Phase C — MTS listing tag/seal indicators (backend + atlas-ui)
 
-The listing snapshot must carry the item's tag `owner` and lock `flag`. The listing already has `flags` end-to-end (model → Transform → REST → UI), so **first verify whether `listing.flags` already reflects the equip `FlagLock`** (Task C1). Then add `owner` (Tasks C2-C4) and render both in the UI (Task C5).
+The listing snapshot must carry the item's tag `owner` and lock `flag`. The listing already has `flags` end-to-end (model → Transform → REST → UI), so **first verify whether `listing.flags` already reflects the equip `FlagLock`** (Task 10). Then add `owner` (Tasks 11-13) and render both in the UI (Task 14).
 
-### Task C1: verify flag carry + locate the snapshot capture site
+### Task 10: verify flag carry + locate the snapshot capture site
 
 **Files:** (investigation only)
 
@@ -829,7 +829,7 @@ git add docs/tasks/task-128-item-tag-seal-incubator/mts-owner-flag-notes.md
 git commit -m "docs(task-128): locate MTS listing snapshot capture site for owner/flag"
 ```
 
-### Task C2: add `owner` to the atlas-mts listing model
+### Task 11: add `owner` to the atlas-mts listing model
 
 **Files:**
 - Modify: `services/atlas-mts/atlas.com/mts/listing/model.go` (struct field ~line 80 area; getter next to `Flags()` at line 137; builder)
@@ -871,14 +871,14 @@ git add services/atlas-mts/atlas.com/mts/listing/
 git commit -m "feat(mts): add owner to listing model + entity"
 ```
 
-### Task C3: expose `owner` on the listing REST model
+### Task 12: expose `owner` on the listing REST model
 
 **Files:**
 - Modify: `services/atlas-mts/atlas.com/mts/listing/rest.go` (`RestModel` add field after `Flags` line 45; `Transform` add mapping after line 157)
 - Test: `services/atlas-mts/atlas.com/mts/listing/rest_test.go` (create or extend)
 
 **Interfaces:**
-- Consumes: `Model.Owner()` (C2).
+- Consumes: `Model.Owner()` (11).
 - Produces: `RestModel.Owner string json:"owner"`.
 
 - [ ] **Step 1: Write the failing test**
@@ -923,12 +923,12 @@ git add services/atlas-mts/atlas.com/mts/listing/rest.go services/atlas-mts/atla
 git commit -m "feat(mts): expose listing owner on REST model"
 ```
 
-### Task C4: capture owner (+ flag) at listing creation
+### Task 13: capture owner (+ flag) at listing creation
 
 **Files:**
 - Modify: `libs/atlas-saga/payloads.go` (the TransferToMts listing-snapshot payload struct near lines 655-675 — add `Owner string json:"owner"`; confirm `Flags uint16` is present)
 - Modify: `libs/atlas-saga/unmarshal.go` / `unmarshal_test.go` if the payload is in the discriminated set
-- Modify: the snapshot-capture site found in Task C1 (populate `owner` — and `flags` if C1 showed it wasn't already — onto the listing from the seller's asset)
+- Modify: the snapshot-capture site found in Task 10 (populate `owner` — and `flags` if 10 showed it wasn't already — onto the listing from the seller's asset)
 - Modify: the payload producer (atlas-channel or atlas-saga-orchestrator) that builds the TransferToMts payload from the asset — set `Owner` from the asset's `owner`
 - Test: a payload round-trip test + the capture-site unit test (extend the nearest existing test in the touched package)
 
@@ -943,7 +943,7 @@ git commit -m "feat(mts): expose listing owner on REST model"
 Run: `go test ./... -run <the new test>` in the touched module.
 Expected: FAIL — owner empty.
 
-- [ ] **Step 3: Implement.** Add `Owner string json:"owner"` to the TransferToMts snapshot payload; set it from the asset owner where the payload is produced; at the capture site, `SetOwner(payload.Owner)` (and `SetFlags(payload.Flags)`/`asset.flag` if C1 showed flags weren't carried) on the listing builder.
+- [ ] **Step 3: Implement.** Add `Owner string json:"owner"` to the TransferToMts snapshot payload; set it from the asset owner where the payload is produced; at the capture site, `SetOwner(payload.Owner)` (and `SetFlags(payload.Flags)`/`asset.flag` if 10 showed flags weren't carried) on the listing builder.
 
 - [ ] **Step 4: Run tests**
 
@@ -957,7 +957,7 @@ git add libs/atlas-saga services/atlas-mts services/atlas-channel services/atlas
 git commit -m "feat(mts): thread item owner (+lock flag) into the listing snapshot"
 ```
 
-### Task C5: render owner + lock on Marketplace rows
+### Task 14: render owner + lock on Marketplace rows
 
 **Files:**
 - Modify: `services/atlas-ui/src/services/api/mts-listings.service.ts` (`MtsListingAttributes` add `owner: string`)
@@ -965,7 +965,7 @@ git commit -m "feat(mts): thread item owner (+lock flag) into the listing snapsh
 - Test: extend the marketplace-row/`ItemNameCell` test (create if none)
 
 **Interfaces:**
-- Consumes: `FLAG_LOCK` from `@/lib/utils/asset-flags` (B1); lucide `Lock`, `Tag`.
+- Consumes: `FLAG_LOCK` from `@/lib/utils/asset-flags` (6); lucide `Lock`, `Tag`.
 
 - [ ] **Step 1: Write the failing test** — render the item cell with a listing whose `flags & 0x01` set and `owner="Chronicle"`; assert a `data-testid="seal-icon"` and the owner text render; and neither when `flags=0`/`owner=""`.
 
@@ -994,7 +994,7 @@ git commit -m "feat(ui): show tag owner + seal lock on Marketplace listings"
 
 # Final verification
 
-### Task V1: full verification + review
+### Task 15: full verification + review
 
 - [ ] **Step 1: atlas-ui build + test**
 

@@ -340,11 +340,14 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			// The ban targets the visitor occupying that room slot: slot 0 is the
 			// owner, visitors occupy slots 1..n in the shop's visitor list. Resolve
 			// the banned character id so the merchant can eject them (USER_BANNED)
-			// in addition to blacklisting the name.
+			// in addition to blacklisting the name. GetVisitingShop (/visiting) omits
+			// the visitor list, so read it from GetShop (/merchants/{id}).
 			var bannedCharacterId uint32
-			visitors := visiting.Visitors()
-			if idx := int(sp.Slot()) - 1; idx >= 0 && idx < len(visitors) {
-				bannedCharacterId = visitors[idx]
+			if full, ferr := mp.GetShop(visiting.Id().String()); ferr == nil {
+				visitors := full.Visitors()
+				if idx := int(sp.Slot()) - 1; idx >= 0 && idx < len(visitors) {
+					bannedCharacterId = visitors[idx]
+				}
 			}
 			_ = mp.AddBlacklist(s.CharacterId(), visiting.Id(), sp.Name(), bannedCharacterId)
 			return

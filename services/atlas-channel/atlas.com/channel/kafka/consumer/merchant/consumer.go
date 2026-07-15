@@ -483,9 +483,19 @@ func handleMessageSentEvent(sc server.Model, wp writer.Producer) func(l logrus.F
 
 		l.Debugf("Message sent in shop [%s] by character [%d] slot [%d].", e.Body.ShopId, e.Body.CharacterId, e.Body.Slot)
 
+		// The miniroom chat wire carries the full "name : message" string —
+		// CMiniRoomBaseDlg::OnChat (v95 @0x639AD0) reads it verbatim and splits on
+		// " : " to recolor/filter; there is no separate name lookup. Without the
+		// prefix the sender's name is missing for other viewers.
+		senderName := resolveOwnerName(l, ctx, e.Body.CharacterId)
+		chatText := e.Body.Content
+		if senderName != "" {
+			chatText = senderName + " : " + e.Body.Content
+		}
+
 		broadcastToShopViewers(l, ctx, sc, wp, e.Body.ShopId, func(characterIds []uint32) {
 			sp := session.NewProcessor(l, ctx)
-			announce := session.Announce(l)(ctx)(wp)(interactioncb.CharacterInteractionWriter)(interactioncb.CharacterInteractionChatBody(e.Body.Slot, e.Body.Content))
+			announce := session.Announce(l)(ctx)(wp)(interactioncb.CharacterInteractionWriter)(interactioncb.CharacterInteractionChatBody(e.Body.Slot, chatText))
 			for _, cid := range characterIds {
 				_ = sp.IfPresentByCharacterId(sc.Channel())(cid, announce)
 			}

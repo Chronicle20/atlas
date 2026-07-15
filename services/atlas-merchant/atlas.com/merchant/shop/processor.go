@@ -70,8 +70,8 @@ type Processor interface {
 	EnterShop(mb *message.Buffer) func(characterId uint32, shopId uuid.UUID, visitorName string) error
 	AddToBlacklist(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32, name string, bannedCharacterId uint32) error
 	RemoveFromBlacklist(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32, name string) error
-	GetBlacklist(shopId uuid.UUID) ([]string, error)
-	GetVisits(shopId uuid.UUID) ([]visit.Model, error)
+	GetBlacklistPaged(shopId uuid.UUID, page model.Page) (model.Paged[string], error)
+	GetVisitsPaged(shopId uuid.UUID, page model.Page) (model.Paged[visit.Model], error)
 	ExitShop(mb *message.Buffer) func(characterId uint32, shopId uuid.UUID) error
 	EjectAllVisitors(shopId uuid.UUID) ([]uint32, error)
 	GetVisitors(shopId uuid.UUID) ([]uint32, error)
@@ -1494,12 +1494,18 @@ func (p *ProcessorImpl) RemoveFromBlacklist(mb *message.Buffer) func(shopId uuid
 	}
 }
 
-func (p *ProcessorImpl) GetBlacklist(shopId uuid.UUID) ([]string, error) {
-	return blacklist.NewProcessor(p.l, p.ctx, p.db).Names(shopId)
+// GetBlacklistPaged backs the GET /merchants/{shopId}/blacklist list route
+// (task-117). The prior unpaged GetBlacklist had no internal caller (ban
+// checks use blacklist.IsBlacklisted), so it is deleted rather than kept
+// alongside this paged form.
+func (p *ProcessorImpl) GetBlacklistPaged(shopId uuid.UUID, page model.Page) (model.Paged[string], error) {
+	return blacklist.NewProcessor(p.l, p.ctx, p.db).NamesPaged(shopId, page)
 }
 
-func (p *ProcessorImpl) GetVisits(shopId uuid.UUID) ([]visit.Model, error) {
-	return visit.NewProcessor(p.l, p.ctx, p.db).List(shopId)
+// GetVisitsPaged backs the GET /merchants/{shopId}/visits list route
+// (task-117); same delete-don't-shadow treatment as GetBlacklistPaged.
+func (p *ProcessorImpl) GetVisitsPaged(shopId uuid.UUID, page model.Page) (model.Paged[visit.Model], error) {
+	return visit.NewProcessor(p.l, p.ctx, p.db).ListPaged(shopId, page)
 }
 
 func (p *ProcessorImpl) AddToBlacklistAndEmit(shopId uuid.UUID, characterId uint32, name string, bannedCharacterId uint32) error {

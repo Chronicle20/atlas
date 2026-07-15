@@ -116,28 +116,19 @@ func (p *ProcessorImpl) RemoveBlacklist(characterId uint32, shopId uuid.UUID, na
 	return producer.ProviderImpl(p.l)(p.ctx)(merchant2.EnvCommandTopic)(RemoveBlacklistCommandProvider(characterId, shopId, name))
 }
 
+// GetBlacklist fetches the complete blacklist for a shop. atlas-merchant's
+// per-shop blacklist list is now paginated (task-117); the mini-room dialog
+// here shows the whole set, so this drains every page rather than fetching
+// one.
 func (p *ProcessorImpl) GetBlacklist(shopId string) ([]string, error) {
-	rms, err := requestBlacklist(shopId)(p.l, p.ctx)
-	if err != nil {
-		return nil, err
-	}
-	names := make([]string, 0, len(rms))
-	for _, rm := range rms {
-		names = append(names, rm.Name)
-	}
-	return names, nil
+	return requests.DrainProvider[BlacklistRestModel, string](p.l, p.ctx)(blacklistUrl(shopId), 250, ExtractBlacklistName, model.Filters[string]())()
 }
 
+// GetVisits fetches the complete visit log for a shop — paginated
+// server-side (task-117) and drained here for the same whole-set dialog
+// semantics as GetBlacklist.
 func (p *ProcessorImpl) GetVisits(shopId string) ([]VisitEntry, error) {
-	rms, err := requestVisits(shopId)(p.l, p.ctx)
-	if err != nil {
-		return nil, err
-	}
-	out := make([]VisitEntry, 0, len(rms))
-	for _, rm := range rms {
-		out = append(out, VisitEntry{Name: rm.Name, Count: rm.Count})
-	}
-	return out, nil
+	return requests.DrainProvider[VisitRestModel, VisitEntry](p.l, p.ctx)(visitsUrl(shopId), 250, ExtractVisitEntry, model.Filters[VisitEntry]())()
 }
 
 func (p *ProcessorImpl) ExitShop(characterId uint32, shopId uuid.UUID) error {
@@ -185,6 +176,9 @@ func (p *ProcessorImpl) SearchListings(worldId world.Id, itemId uint32, descendi
 	return requests.SliceProvider[ListingSearchRestModel, SearchListing](p.l, p.ctx)(requestSearchListings(itemId, worldId, descending), ExtractSearchListing, model.Filters[SearchListing]())()
 }
 
+// GetTopSearches deliberately fetches a single page: the route is a bounded
+// top-N ranking (LIMIT 10 server-side, task-117 envelope), so page 1 at the
+// route's default size is always the complete collection — no drain needed.
 func (p *ProcessorImpl) GetTopSearches(worldId world.Id) ([]TopSearch, error) {
 	return requests.SliceProvider[TopSearchRestModel, TopSearch](p.l, p.ctx)(requestTopSearches(worldId), ExtractTopSearch, model.Filters[TopSearch]())()
 }

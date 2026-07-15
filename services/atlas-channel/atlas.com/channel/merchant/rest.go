@@ -302,3 +302,14 @@ type VisitEntry struct {
 	Name  string
 	Count uint32
 }
+
+// ExtractBlacklistName adapts BlacklistRestModel for the drain pipeline
+// (task-117).
+func ExtractBlacklistName(rm BlacklistRestModel) (string, error) {
+	return rm.Name, nil
+}
+
+// ExtractVisitEntry adapts VisitRestModel for the drain pipeline (task-117).
+func ExtractVisitEntry(rm VisitRestModel) (VisitEntry, error) {
+	return VisitEntry{Name: rm.Name, Count: rm.Count}, nil
+}

@@ -29,6 +29,7 @@ import { getColumns, hiddenColumns } from "./merchants-columns";
 import { MapCell } from "@/components/map-cell";
 import { ItemNameCell } from "@/components/item-name-cell";
 import { useGridRefresh } from "@/lib/hooks/useGridRefresh";
+import { Pager } from "@/components/common/Pager";
 
 // The /api/data/item-strings search is a deliberate sparse-search guardrail:
 // page[size] is capped at 50 (searchindex.MaxLimit, task-006) and > 50 returns

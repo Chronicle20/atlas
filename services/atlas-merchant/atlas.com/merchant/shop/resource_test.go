@@ -8,11 +8,14 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	blacklistpkg "atlas-merchant/blacklist"
 	"atlas-merchant/frederick"
 	message "atlas-merchant/kafka/message"
 	"atlas-merchant/kafka/message/asset"
 	"atlas-merchant/listing"
+	searchcountpkg "atlas-merchant/searchcount"
 	"atlas-merchant/shop"
+	visitpkg "atlas-merchant/visit"
 
 	databasetest "github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
@@ -417,6 +420,181 @@ func TestGetMerchantListingsPaginates(t *testing.T) {
 
 	t.Run("LegacyLimitParamIsBadRequest", func(t *testing.T) {
 		url := fmt.Sprintf("%s/merchants/%s/relationships/listings?limit=5", srv.URL, m.Id().String())
+		req := requestWithTenant(http.MethodGet, url, tenantId)
+
+		resp, err := (&http.Client{}).Do(req)
+		require.NoError(t, err)
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+	})
+}
+
+// TestGetMerchantBlacklistPaginates drives GET /merchants/{shopId}/blacklist
+// (250/250, task-117) through the real resource router. The route was added
+// unpaged by task-127 (owl/mini-room work) and folded into the pagination
+// convention when task-117 rebased over it.
+func TestGetMerchantBlacklistPaginates(t *testing.T) {
+	db := databasetest.NewInMemoryTenantDB(t, shop.Migration, listing.Migration, frederick.Migration, blacklistpkg.Migration, visitpkg.Migration)
+	tenantId := uuid.New()
+	ctx := merchantTestContext(t, tenantId)
+
+	m := seedOpenShop(t, db, ctx, 1001, 910000001, 2000000, 1, "shop1")
+	l, _ := test.NewNullLogger()
+	bp := blacklistpkg.NewProcessor(l, ctx, db)
+	require.NoError(t, bp.Add(m.Id(), "Alice"))
+	require.NoError(t, bp.Add(m.Id(), "Bob"))
+	require.NoError(t, bp.Add(m.Id(), "Carol"))
+
+	srv := httptest.NewServer(setupMerchantRouter(db))
+	defer srv.Close()
+
+	t.Run("FirstPageOfTwo", func(t *testing.T) {
+		url := fmt.Sprintf("%s/merchants/%s/blacklist?page[number]=1&page[size]=2", srv.URL, m.Id().String())
+		req := requestWithTenant(http.MethodGet, url, tenantId)
+
+		resp, err := (&http.Client{}).Do(req)
+		require.NoError(t, err)
+		defer resp.Body.Close()
+
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+
+		var doc jsonapi.Document
+		require.NoError(t, json.NewDecoder(resp.Body).Decode(&doc))
+
+		require.NotNil(t, doc.Data)
+		assert.Len(t, doc.Data.DataArray, 2)
+
+		require.NotNil(t, doc.Meta)
+		assert.EqualValues(t, 3, doc.Meta["total"])
+		page := doc.Meta["page"].(map[string]interface{})
+		assert.EqualValues(t, 2, page["last"])
+	})
+
+	t.Run("DefaultIsWholeSet", func(t *testing.T) {
+		url := fmt.Sprintf("%s/merchants/%s/blacklist", srv.URL, m.Id().String())
+		req := requestWithTenant(http.MethodGet, url, tenantId)
+
+		resp, err := (&http.Client{}).Do(req)
+		require.NoError(t, err)
+		defer resp.Body.Close()
+
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+
+		var doc jsonapi.Document
+		require.NoError(t, json.NewDecoder(resp.Body).Decode(&doc))
+		require.NotNil(t, doc.Data)
+		assert.Len(t, doc.Data.DataArray, 3)
+	})
+
+	t.Run("PageSizeZeroIsBadRequest", func(t *testing.T) {
+		url := fmt.Sprintf("%s/merchants/%s/blacklist?page[size]=0", srv.URL, m.Id().String())
+		req := requestWithTenant(http.MethodGet, url, tenantId)
+
+		resp, err := (&http.Client{}).Do(req)
+		require.NoError(t, err)
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+	})
+}
+
+// TestGetMerchantVisitsPaginates drives GET /merchants/{shopId}/visits
+// (250/250, task-117) through the real resource router.
+func TestGetMerchantVisitsPaginates(t *testing.T) {
+	db := databasetest.NewInMemoryTenantDB(t, shop.Migration, listing.Migration, frederick.Migration, blacklistpkg.Migration, visitpkg.Migration)
+	tenantId := uuid.New()
+	ctx := merchantTestContext(t, tenantId)
+
+	m := seedOpenShop(t, db, ctx, 1001, 910000001, 2000000, 1, "shop1")
+	l, _ := test.NewNullLogger()
+	vp := visitpkg.NewProcessor(l, ctx, db)
+	require.NoError(t, vp.Record(m.Id(), "Alice"))
+	require.NoError(t, vp.Record(m.Id(), "Alice"))
+	require.NoError(t, vp.Record(m.Id(), "Bob"))
+	require.NoError(t, vp.Record(m.Id(), "Carol"))
+
+	srv := httptest.NewServer(setupMerchantRouter(db))
+	defer srv.Close()
+
+	t.Run("FirstPageOfTwoOrderedByCount", func(t *testing.T) {
+		url := fmt.Sprintf("%s/merchants/%s/visits?page[number]=1&page[size]=2", srv.URL, m.Id().String())
+		req := requestWithTenant(http.MethodGet, url, tenantId)
+
+		resp, err := (&http.Client{}).Do(req)
+		require.NoError(t, err)
+		defer resp.Body.Close()
+
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+
+		var doc jsonapi.Document
+		require.NoError(t, json.NewDecoder(resp.Body).Decode(&doc))
+
+		require.NotNil(t, doc.Data)
+		require.Len(t, doc.Data.DataArray, 2)
+
+		// Alice has 2 visits and must lead the count-DESC ordering.
+		var first map[string]interface{}
+		require.NoError(t, json.Unmarshal(doc.Data.DataArray[0].Attributes, &first))
+		assert.Equal(t, "Alice", first["name"])
+		assert.EqualValues(t, 2, first["count"])
+
+		require.NotNil(t, doc.Meta)
+		assert.EqualValues(t, 3, doc.Meta["total"])
+	})
+
+	t.Run("PageSizeZeroIsBadRequest", func(t *testing.T) {
+		url := fmt.Sprintf("%s/merchants/%s/visits?page[size]=0", srv.URL, m.Id().String())
+		req := requestWithTenant(http.MethodGet, url, tenantId)
+
+		resp, err := (&http.Client{}).Do(req)
+		require.NoError(t, err)
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+	})
+}
+
+// TestGetTopShopSearchesPaginates drives GET /worlds/{worldId}/shop-searches/top
+// (bounded top-N via paginate.Slice, task-117) through the real resource
+// router.
+func TestGetTopShopSearchesPaginates(t *testing.T) {
+	db := databasetest.NewInMemoryTenantDB(t, shop.Migration, listing.Migration, frederick.Migration, searchcountpkg.Migration)
+	tenantId := uuid.New()
+	ctx := merchantTestContext(t, tenantId)
+
+	l, _ := test.NewNullLogger()
+	sp := searchcountpkg.NewProcessor(l, ctx, db)
+	// item 2000001 searched twice, 2000000 once — count DESC puts 2000001 first.
+	require.NoError(t, sp.RecordSearch(0, 2000001))
+	require.NoError(t, sp.RecordSearch(0, 2000001))
+	require.NoError(t, sp.RecordSearch(0, 2000000))
+
+	srv := httptest.NewServer(setupMerchantRouter(db))
+	defer srv.Close()
+
+	t.Run("EnvelopeWithWholeTopList", func(t *testing.T) {
+		url := fmt.Sprintf("%s/worlds/0/shop-searches/top", srv.URL)
+		req := requestWithTenant(http.MethodGet, url, tenantId)
+
+		resp, err := (&http.Client{}).Do(req)
+		require.NoError(t, err)
+		defer resp.Body.Close()
+
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+
+		var doc jsonapi.Document
+		require.NoError(t, json.NewDecoder(resp.Body).Decode(&doc))
+
+		require.NotNil(t, doc.Data)
+		require.Len(t, doc.Data.DataArray, 2)
+
+		require.NotNil(t, doc.Meta)
+		assert.EqualValues(t, 2, doc.Meta["total"])
+	})
+
+	t.Run("PageSizeZeroIsBadRequest", func(t *testing.T) {
+		url := fmt.Sprintf("%s/worlds/0/shop-searches/top?page[size]=0", srv.URL)
 		req := requestWithTenant(http.MethodGet, url, tenantId)
 
 		resp, err := (&http.Client{}).Do(req)

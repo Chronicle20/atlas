@@ -1590,6 +1590,38 @@ git commit -m "feat(atlas-notes): paginate GET /notes (task-117)"
 git commit -m "feat(atlas-merchant): paginate merchant list routes (task-117)"
 ```
 
+#### Task 14 addendum — routes pulled in by the rebase over task-127 (owl shop scanner)
+
+Rebasing onto main (2026-07-15) pulled in task-127, which added four new GET
+routes to atlas-merchant after Task 14 was executed. Folding them into the
+convention (same recipe, same page-size decisions as their siblings):
+
+- [x] `GET /merchants/search/listings` — task-127 rewrote the search with
+  criteria (`worldId` filter, `order` asc/desc, explicit tenant predicates)
+  and a `MaxSearchResults=200` game cap. Merge resolution: keep the criteria,
+  make the game cap the route's default/max page size (200/200), pagination
+  hand-rolled with a qualified `listings.id` tiebreaker (the JOIN makes
+  `database.PagedQuery`'s unqualified `ORDER BY id` ambiguous). The
+  page-param-less atlas-channel owl consumer gets the capped top-N in one
+  response, unchanged.
+- [x] `GET /merchants/{shopId}/blacklist` — DB-paged 250/250
+  (`blacklist.NamesPaged` via PagedQuery, `name ASC`); unpaged form deleted
+  (in-process ban checks use `IsBlacklisted`, not the list). atlas-channel
+  dialog consumer converted to `DrainProvider`.
+- [x] `GET /merchants/{shopId}/visits` — DB-paged 250/250
+  (`visit.ListPaged`, `count DESC` + PK tiebreak); the visit log grows with
+  unique visitor names, so this is a genuine unbounded list. atlas-channel
+  dialog consumer converted to `DrainProvider`.
+- [x] `GET /worlds/{worldId}/shop-searches/top` — bounded top-N (`LIMIT 10`,
+  now with `item_id ASC` tiebreak for a total order); envelope via
+  materialize + `paginate.Slice`. atlas-channel consumer deliberately stays
+  a single-page fetch (page 1 at route default is always the whole ranking).
+- [x] `GET /characters/{characterId}/frederick` — single-resource status
+  document, not a list; out of scope by FR definition.
+
+Route tests in `shop/resource_test.go` (`TestGetMerchantBlacklistPaginates`,
+`TestGetMerchantVisitsPaginates`, `TestGetTopShopSearchesPaginates`).
+
 ---
 
 ### Task 15: atlas-ui — shared pagination utility + envelope types

@@ -6,6 +6,8 @@ import (
 	blacklistpkg "atlas-merchant/blacklist"
 	visitpkg "atlas-merchant/visit"
 
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
@@ -34,9 +36,10 @@ func TestBlacklistEnforcementAndVisitRecording(t *testing.T) {
 	assert.ErrorIs(t, p.AddToBlacklist(mb)(m.Id(), stranger, "Griefer", 0), ErrNotOwner)
 
 	require.NoError(t, p.AddToBlacklist(mb)(m.Id(), owner, "Griefer", 0))
-	names, err := p.GetBlacklist(m.Id())
+	names, err := p.GetBlacklistPaged(m.Id(), model.Page{Number: 1, Size: 250})
 	require.NoError(t, err)
-	assert.Equal(t, []string{"Griefer"}, names)
+	assert.Equal(t, []string{"Griefer"}, names.Items)
+	assert.Equal(t, 1, names.Total)
 
 	require.NoError(t, p.EnterShop(mb)(9001, m.Id(), "Griefer"))
 	visitors, err := p.GetVisitors(m.Id())
@@ -44,14 +47,15 @@ func TestBlacklistEnforcementAndVisitRecording(t *testing.T) {
 	assert.NotContains(t, visitors, uint32(9001), "banned visitor not admitted")
 
 	require.NoError(t, p.EnterShop(mb)(9002, m.Id(), "Buyer"))
-	visits, err := p.GetVisits(m.Id())
+	visits, err := p.GetVisitsPaged(m.Id(), model.Page{Number: 1, Size: 250})
 	require.NoError(t, err)
-	require.Len(t, visits, 1)
-	assert.Equal(t, "Buyer", visits[0].Name())
-	assert.Equal(t, uint32(1), visits[0].Count())
+	require.Len(t, visits.Items, 1)
+	assert.Equal(t, "Buyer", visits.Items[0].Name())
+	assert.Equal(t, uint32(1), visits.Items[0].Count())
 
 	require.NoError(t, p.RemoveFromBlacklist(mb)(m.Id(), owner, "Griefer"))
-	names, err = p.GetBlacklist(m.Id())
+	names, err = p.GetBlacklistPaged(m.Id(), model.Page{Number: 1, Size: 250})
 	require.NoError(t, err)
-	assert.Empty(t, names)
+	assert.Empty(t, names.Items)
+	assert.Equal(t, 0, names.Total)
 }

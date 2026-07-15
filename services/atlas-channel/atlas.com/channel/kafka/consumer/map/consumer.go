@@ -691,6 +691,7 @@ func spawnMerchantsForSession(l logrus.FieldLogger) func(ctx context.Context) fu
 						// character id (task-127; see merchant consumer note).
 						Id:              m.CharacterId(),
 						Title:           m.Title(),
+						Spec:            merchant.StoreSkinSpec(m.PermitItemId()),
 						CapacityVal:     4,
 						OwnerId:         m.CharacterId(),
 						VisitorCount:    byte(len(m.Visitors())),

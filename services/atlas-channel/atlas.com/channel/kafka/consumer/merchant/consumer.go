@@ -153,7 +153,15 @@ func handleShopOpenedEvent(sc server.Model, wp writer.Producer) func(l logrus.Fi
 				}
 			}
 		} else {
-			// Personal store: the box attaches to the owner's own avatar.
+			// Personal store: the box attaches to the owner's own avatar. Fetch the
+			// shop to resolve the permit item id, which drives the store-sign skin
+			// (nSpec / PSSkin index) the client renders on the map.
+			var skinSpec byte
+			if shop, err := merchant.NewProcessor(l, ctx).GetShop(e.Body.ShopId); err != nil {
+				l.WithError(err).Warnf("Unable to load personal shop [%s] for skin; using plain sign.", e.Body.ShopId)
+			} else {
+				skinSpec = merchant.StoreSkinSpec(shop.PermitItemId())
+			}
 			mr := &interactionpkt.MiniRoomBase{
 				MiniRoomTypeVal: interactionpkt.PersonalShopMiniRoomType,
 				// Id is the balloon's dwMiniRoomSN (CUser::OnMiniRoomBalloon
@@ -164,6 +172,7 @@ func handleShopOpenedEvent(sc server.Model, wp writer.Producer) func(l logrus.Fi
 				// and no one can enter the store (task-127).
 				Id:              e.CharacterId,
 				Title:           e.Body.Title,
+				Spec:            skinSpec,
 				CapacityVal:     4,
 				OwnerId:         e.CharacterId,
 				VisitorCount:    0,

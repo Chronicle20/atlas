@@ -34,12 +34,17 @@ type MiniRoomBase struct {
 	Id              uint32
 	Title           string
 	Private         bool
-	GameKind        byte
-	GameOn          bool
-	CapacityVal     byte
-	OwnerId         uint32
-	VisitorCount    byte
-	VisitorList     []MiniRoomVisitor
+	// Spec is the balloon's nSpec byte (CUser::OnMiniRoomBalloon reads it as the
+	// 5th Decode1 and passes it to CChatBalloon::MakeMiniRoomBalloon as nSpec).
+	// Its meaning is per room type: for a personal shop (type 4) it is the
+	// store-sign skin index (WZ .../PSSkin/<Spec>); for a game room it is the
+	// game kind. Left 0 for the plain personal-store sign.
+	Spec         byte
+	GameOn       bool
+	CapacityVal  byte
+	OwnerId      uint32
+	VisitorCount byte
+	VisitorList  []MiniRoomVisitor
 }
 
 func (m *MiniRoomBase) Type() MiniRoomType {
@@ -67,7 +72,7 @@ func (m *MiniRoomBase) Spawn(characterId uint32) packet.Encode {
 			w.WriteInt(m.Id)
 			w.WriteAsciiString(m.Title)
 			w.WriteBool(m.Private)
-			w.WriteByte(m.GameKind)
+			w.WriteByte(m.Spec)
 			w.WriteByte(m.VisitorCount)
 			w.WriteByte(m.CapacityVal)
 			w.WriteBool(m.GameOn)
